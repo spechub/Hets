@@ -123,6 +123,7 @@ isaProve checkCons thName (Theory sig nSens) = do
       showLemma = if showLemmas sig 
                    then concat lemmas ++ "\n" ++ concat (map (++"\n") decs)
                    else ""
+--
       showAxs = concat $ map ((++"\n") . showSen) (map markSimp disAxs)
       showGoals = concat $ map showGoal disGoals
       getFN = reverse . fst . break (=='/') . reverse
@@ -175,17 +176,17 @@ isaProve checkCons thName (Theory sig nSens) = do
       showConsAx ax = showPretty (sentence ax) ""
 
 markSimp ax = ax{senName = senName ax ++ 
-              {-trace (show ax ++" "++ show (isSimpRule (senTerm (sentence ax)))) -}
-                 (if isSimpRule (senTerm (sentence ax)) then " [simp]" else "")}
+               (if isSimpRule (senTerm (sentence ax)) then " [simp]" else "")}
 
 -- | test whether a formula should be put into the simpset
 isSimpRule :: Term -> Bool
 -- only universal quantifications
-isSimpRule App {funId = Const {termName = "All"}, argId = arg} = isSimpRule (termId arg)
-isSimpRule App {funId = Const {termName = "Ex"}, argId = arg} = False
-isSimpRule App {funId = Const {termName = "Ex1"}, argId = arg} = False
+isSimpRule App {funId = Const {termName = (VName {new="All"})}, argId = arg} = isSimpRule (termId arg)
+isSimpRule App {funId = Const {termName = (VName {new="Ex"})}, argId = arg} = False
+isSimpRule App {funId = Const {termName = (VName {new="Ex1"})}, argId = arg} = False
 -- accept everything expect from abstractions
 isSimpRule App {funId = arg1, argId = arg2} = isSimpRule arg1 && isSimpRule arg2
+isSimpRule MixfixApp {funId = arg1, argIds = [arg2,xs]} = isSimpRule arg1 && isSimpRule arg2
 isSimpRule Const {} = True
 isSimpRule Free{}  = True
 isSimpRule Var{}   = True
@@ -199,9 +200,10 @@ isSimpRule arg     = False
 
 -- output a sentences
 showSen :: PrettyPrint a => Named a -> String
-showSen s =  (if null (senName s) then "" 
+showSen s =  --trace (show (sentence s)) 
+	     ((if null (senName s) then "" 
                 else senName s++": ")
-             ++ "\""++showPretty (sentence s) "\""
+             ++ "\""++showPretty (sentence s) "\"")
 
 -- form a lemmas from given axiom and add them both to Isabelles simplifier
 formLemmas :: Named a -> (String, String)
@@ -222,11 +224,13 @@ freeTypesTerm :: Term -> Term
 --freeTypesTerm (Const "O") = Const "OO"  
 --freeTypesTerm (Const c) = Const c 
 --freeTypesTerm (Free v) = Free v  
-freeTypesTerm (Const "O" t) = Const "OO" (freeTypesTyp t) 
-freeTypesTerm (Const c t) = Const c (freeTypesTyp t)
+freeTypesTerm (Const (VName {new="O",orig=c}) t) = 
+    Const (VName {new="OO",orig=c}) (freeTypesTyp t) 
+freeTypesTerm (Const n t) = Const n (freeTypesTyp t)
 freeTypesTerm (Free v t) = Free v (freeTypesTyp t) 
 freeTypesTerm (Abs v ty t f) = Abs (freeTypesTerm v) (freeTypesTyp ty) (freeTypesTerm t) f 
 freeTypesTerm (App t1 t2 f) = App (freeTypesTerm t1) (freeTypesTerm t2) f
+freeTypesTerm (MixfixApp t1 t2 f) = MixfixApp (freeTypesTerm t1) (map freeTypesTerm t2) f
 freeTypesTerm (Case term alts) = 
   Case (freeTypesTerm term) (map freeTypesTermPair alts)
 freeTypesTerm (If t1 t2 t3 c) =

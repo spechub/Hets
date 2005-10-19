@@ -25,8 +25,17 @@ mkIsaSet = Set.fromList . concatMap words
    keep all words in case we also want to use symbols
 -}
 
-pureS :: Set.Set String
-pureS = mkIsaSet [
+data IsaSets = IsaSets 
+    { types  :: Set.Set String
+    , consts  :: Set.Set String
+    --,keywords  :: Set.Set String?
+    }
+
+pureS :: IsaSets
+pureS = 
+  IsaSets {
+  types =  mkIsaSet [""],
+  consts = mkIsaSet [
   "!!   %   (   )   ,   .   ...   ::   ;   ==   ==>   =>   OFCLASS",
   "PROP   TYPE   [   [|   \\<And>   \\<Colon>   \\<Longrightarrow>",
   "\\<Rightarrow>   \\<^sub>   \\<dots>   \\<equiv>   \\<equiv>\\<^sup>?",
@@ -45,10 +54,13 @@ pureS = mkIsaSet [
   "index   itself   logic   logic   logic_class   longid   num   num_const",
   "prop   pttrn   pttrns   sort   struct   tid   tvar   type   types   var",
   "xnum   xstr"
-  ]
+  ]}
 
-holS :: Set.Set String
-holS = mkIsaSet [
+holS :: IsaSets
+holS = 
+  IsaSets {
+  types =  mkIsaSet [""],
+  consts = mkIsaSet [
   "!   !!   %   &   (   )   *   +   ,   -   -->   .   ...   /   0",
   "1   ::   ;   <   <=   =   ==   ==>   =>   ?   ?!   ALL   EX   EX!",
   "LEAST   OFCLASS   PROP   THE   TYPE   [   [|   \\<And>   \\<Colon>",
@@ -85,10 +97,14 @@ holS = mkIsaSet [
   "order_class   plus   plus_class   prop   pttrn   pttrns   sort   struct",
   "tid   times   times_class   tvar   type   type   type_class   types",
   "uminus   var   xnum   xstr   zero   zero_class"
-  ]
+  ]}
 
-holcfS :: Set.Set String
-holcfS = mkIsaSet [
+
+holcfS :: IsaSets
+holcfS = 
+  IsaSets {
+  types =  mkIsaSet [""],
+  consts = mkIsaSet [
   "!   !!   #   $   %   &   (   ()   (:   (]   (|   (}   )   *   **",
   "+   ++   ,   -   -->   ->   -`   .   ..   ...   ..}   /   //   0   1   :",
   ":)   ::   :=   ;   <   <*>   <*lex*>   <+>   <<   <<|   <=   <|   =   ==",
@@ -215,10 +231,13 @@ holcfS = mkIsaSet [
   "upd_fst   upd_snd   update   updates   updbind   updbinds   uprod   upt",
   "upto   usum   var   vimage   wellorder   wellorder_class   wf   wfrec",
   "wfrec_rel   xnum   xstr   zero   zero_class   zip   {}   ~=>"
-  ]
+  ]}
 
-mainS :: Set.Set String
-mainS = mkIsaSet [
+mainS :: IsaSets
+mainS = 
+  IsaSets {
+  types =  mkIsaSet ["Int"],
+  consts = mkIsaSet [
   "!   !!   #   %   &   (   ()   (]   (|   (}   )   *   +   ++   ,",
   "-   -->   -`   .   ..   ...   ..}   /   //   0   1   :   ::   :=   ;   <",
   "<*>   <*lex*>   <+>   <=   =   ==   ==>   =>   ?   ?!   @   ALL   BIT",
@@ -326,4 +345,4 @@ mainS = mkIsaSet [
   "updates   updbind   updbinds   uprod   upt   upto   usum   var   vimage",
   "wellorder   wellorder_class   wf   wfrec   wfrec_rel   xnum   xstr",
   "zero   zero_class   zip   {}   ~=>"
-  ]
+  ]}

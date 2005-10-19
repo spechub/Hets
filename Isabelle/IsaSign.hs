@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Copyright   :  (c) University of Cambridge, Cambridge, England
-               adaption (c) Till Mossakowski, Uni Bremen 2002-2004
+               adaption (c) Till Mossakowski, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -23,12 +23,14 @@ import qualified Common.Lib.Map as Map
 -------------------- not quite from src/Pure/term.ML ------------------------
 ----------------------------- Names -----------------------------------------
 
+--data IName = IName {orig::String, new::String}
+
 type IName = String
 
 type CName = IName  -- class name
 type TName = IName  -- type name
-type VName = IName -- value name
-
+data VName = VName { new :: IName, orig :: IName }  -- value name
+	   deriving (Ord, Eq, Show)
 {-Indexnames can be quickly renamed by adding an offset to the integer part,
   for resolution.-}
 type Indexname = (String,Int)
@@ -161,6 +163,9 @@ data Term =
       | App  { funId :: Term, 
                argId :: Term, 
                continuity   :: Continuity }    -- application
+      | MixfixApp { funId :: Term, 
+                    argIds :: [Term], 
+                    continuity   :: Continuity } -- mixfix application
       | If { ifId   :: Term, 
              thenId :: Term, 
              elseId :: Term,

@@ -109,7 +109,7 @@ transTheory trSig trForm (sign,sens) =
   return (IsaSign.emptySign {
     baseSig = baseSign,
     tsig = emptyTypeSig {arities = 
-               Set.fold (\s -> let s1 = (showIsaT s baseSign) in
+               Set.fold (\s -> let s1 = showIsaTypeT s baseSign in
                                 if s1 `elem` dtTypes then id
                                  else Map.insert s1 [(isaTerm, [])]) 
                                Map.empty (sortSet sign)},
@@ -129,17 +129,18 @@ transTheory trSig trForm (sign,sens) =
     dtTypes = map ((\(Type s _ _) -> s).fst) $ concat dtDefs
     insertOps op ts m = 
      if Set.size ts == 1 
-      then Map.insert (showIsaT op baseSign) (transOpType (Set.findMin ts)) m
+      then Map.insert (mkVName $ showIsaConstT op baseSign) 
+               (transOpType (Set.findMin ts)) m
       else 
-      foldl (\m1 (t,i) -> Map.insert (showIsaIT op i baseSign) 
+      foldl (\m1 (t,i) -> Map.insert (mkVName $ showIsaConstIT op i baseSign) 
                           (transOpType t) m1) m 
             (zip (Set.toList ts) [1..(Set.size ts)])
     insertPreds pre ts m =
      if Set.size ts == 1 
-      then Map.insert (showIsaT pre baseSign) 
+      then Map.insert (mkVName $ showIsaConstT pre baseSign) 
                (transPredType (Set.findMin ts)) m
       else
-      foldl (\m1 (t,i) -> Map.insert (showIsaIT pre i baseSign) 
+      foldl (\m1 (t,i) -> Map.insert (mkVName $ showIsaConstIT pre i baseSign) 
                           (transPredType t) m1) m 
             (zip (Set.toList ts) [1..Set.size ts])
 
@@ -243,7 +244,7 @@ topoSort dts = whileL (collectL inI_ 1) inI_ adI_ dts
     selElemAt l xs = xs !! (l - 1)                                  
 
 makeDtDefs :: CASL.Sign.Sign f e -> [Named (FORMULA f)] 
-               -> [[(Typ,[(String,[Typ])])]]
+               -> [[(Typ,[(VName,[Typ])])]]
 makeDtDefs sign = delDoubles . (mapMaybe $ makeDtDef sign)
   where
   delDoubles xs = delDouble xs []
@@ -258,12 +259,12 @@ makeDtDefs sign = delDoubles . (mapMaybe $ makeDtDef sign)
 
 
 makeDtDef :: CASL.Sign.Sign f e -> Named (FORMULA f) -> 
-             Maybe [(Typ,[(String,[Typ])])]
+             Maybe [(Typ,[(VName,[Typ])])]
 makeDtDef sign nf = case sentence nf of 
   Sort_gen_ax constrs True -> Just(map makeDt srts) where 
     (srts,ops,_maps) = recover_Sort_gen_ax constrs
     makeDt s = (transSort s, map makeOp (List.filter (hasTheSort s) ops))
-    makeOp opSym = (transOP_SYMB sign opSym, transArgs opSym)
+    makeOp opSym = (mkVName $ transOP_SYMB sign opSym, transArgs opSym)
     hasTheSort s (Qual_op_name _ ot _) = s == res_OP_TYPE ot 
     hasTheSort _ _ = error "CFOL2IsabelleHOL.hasTheSort"
     transArgs (Qual_op_name _ ot _) = map transSort $ args_OP_TYPE ot
@@ -271,7 +272,7 @@ makeDtDef sign nf = case sentence nf of
   _ -> Nothing
 
 transSort :: SORT -> Typ
-transSort s = Type (showIsaT s baseSign) [] []
+transSort s = Type (showIsaTypeT s baseSign) [] []
 
 transOpType :: OpType -> Typ
 transOpType ot = mkCurryFunType (map transSort $ opArgs ot) 
@@ -285,10 +286,10 @@ transPredType pt = mkCurryFunType (map transSort $ predArgs pt) boolType
 
 var :: String -> Term
 --(c) var v = IsaSign.Free v noType isaTerm
-var v = IsaSign.Free v noType
+var v = IsaSign.Free (mkVName v) noType
 
 transVar :: VAR -> String
-transVar v = showIsaT (simpleIdToId v) baseSign
+transVar v = showIsaConstT (simpleIdToId v) baseSign
 
 xvar :: Int -> String
 xvar i = if i<=26 then [chr (i+ord('a'))] else "x"++show i
@@ -298,7 +299,7 @@ rvar i = if i<=9 then [chr (i+ord('R'))] else "R"++show i
 
 quantifyIsa :: String -> (String, Typ) -> Term -> Term
 quantifyIsa q (v,t) phi =
-  App (Const q noType) (Abs (Free v noType) t phi NotCont) NotCont
+  App (conDouble q) (Abs (Free (mkVName v) noType) t phi NotCont) NotCont
 --(c) App (Const q noType isaTerm) (Abs (Cont v noType isaTerm) t phi NotCont) 
 --(c) NotCont
 --quantifyIsa :: String -> (String, Typ) -> Term -> Term
@@ -316,9 +317,9 @@ quantify q (v,t) phi  =
 transOP_SYMB :: CASL.Sign.Sign f e -> OP_SYMB -> String
 transOP_SYMB sign (Qual_op_name op ot _) = 
   case (do ots <- Map.lookup op (opMap sign) 
-           if Set.size ots == 1 then return $ showIsaT op baseSign
+           if Set.size ots == 1 then return $ showIsaConstT op baseSign
             else do i <- elemIndex (toOpType ot) (Set.toList ots)
-                    return $ showIsaIT op (i+1) baseSign) of
+                    return $ showIsaConstIT op (i+1) baseSign) of
     Just str -> str  
     Nothing -> error ("CASL2Isabelle unknown op: " ++ show op)
 transOP_SYMB _ (Op_name _) = error "CASL2Isabelle: unqualified operation"
@@ -326,9 +327,9 @@ transOP_SYMB _ (Op_name _) = error "CASL2Isabelle: unqualified operation"
 transPRED_SYMB :: CASL.Sign.Sign f e -> PRED_SYMB -> String
 transPRED_SYMB sign (Qual_pred_name p pt _) =
   case (do pts <- Map.lookup p (predMap sign)
-           if Set.size pts == 1 then return $ showIsaT p baseSign 
+           if Set.size pts == 1 then return $ showIsaConstT p baseSign 
             else do i <- elemIndex (toPredType pt) (Set.toList pts)
-                    return $ showIsaIT p (i+1) baseSign) of
+                    return $ showIsaConstIT p (i+1) baseSign) of
     Just str -> str
     Nothing -> error ("CASL2Isabelle unknown pred: " ++ show p)
 transPRED_SYMB _ (Pred_name _) = error "CASL2Isabelle: unqualified predicate"
@@ -358,7 +359,7 @@ transFORMULA _sign _tr (True_atom _) = true
 transFORMULA _sign _tr (False_atom _) = false
 transFORMULA sign tr (Predication psymb args _) =
   foldl termAppl
-            (con $ transPRED_SYMB sign psymb)
+            (conDouble $ transPRED_SYMB sign psymb)
             (map (transTERM sign tr) args)
 transFORMULA sign tr (Existl_equation t1 t2 _) | term_sort t1 == term_sort t2 =
   binEq (transTERM sign tr t1) (transTERM sign tr t2)
@@ -377,10 +378,10 @@ transTERM _sign _tr (Qual_var v _s _) =
   var $ transVar v
 transTERM sign tr (Application opsymb args _) =
   foldl termAppl
-            (con $ transOP_SYMB sign opsymb)
+            (conDouble $ transOP_SYMB sign opsymb)
             (map (transTERM sign tr) args)
 transTERM sign tr (Conditional t1 phi t2 _) | term_sort t1 == term_sort t2 =
-  foldl termAppl (con "If") [transFORMULA sign tr phi,
+  foldl termAppl (conDouble "If") [transFORMULA sign tr phi,
        transTERM sign tr t1, transTERM sign tr t2]
 transTERM sign tr (Sorted_term t s _) | term_sort t == s = transTERM sign tr t
 transTERM sign tr (Cast t s _) | term_sort t == s = transTERM sign tr t

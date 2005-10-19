@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Sonja Groening, Christian Maeder, Uni Bremen 2004
+Copyright   :  (c) Sonja Groening, Christian Maeder, Uni Bremen 2004-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -18,37 +18,49 @@ import Isabelle.IsaSign
 termAppl :: Term -> Term -> Term
 termAppl t1 t2 = App t1 t2 NotCont
 
+termMixfixAppl :: Term -> [Term] -> Term
+termMixfixAppl t1 t2 = MixfixApp t1 t2 NotCont
+
 -- | apply binary operation to arguments
+--binConst :: String -> Term -> Term -> Term
+--binConst s t1 t2 = termAppl (termAppl (conDouble s) t1) t2
+
 binConst :: String -> Term -> Term -> Term
-binConst s t1 t2 = termAppl (termAppl (con s) t1) t2
+binConst s t1 t2 = MixfixApp (conDouble s) [t1,t2] NotCont
 
 -- | construct a constant
-conT :: String -> Term
+conT :: VName -> Term
 conT s = Const s noType
 
 -- | construct a constant with no type
-con :: String -> Term
+con :: VName -> Term
 con s = Const s noType
 
+mkVName :: String -> VName 
+mkVName s = VName { new = s, orig = s }
+
+conDouble :: String -> Term
+conDouble = con . mkVName
+	   
 -- * some stuff
 
 someS :: String
 someS = "Some"
 
 conSomeT :: Typ -> Term
-conSomeT t = Const someS t
+conSomeT t = Const (mkVName someS) t
 
 -- | some constant with no type
 conSome :: Term
-conSome = con someS
+conSome = conDouble someS
 
 -- | defOp constant
 defOp :: Term
-defOp = con "defOp"
+defOp = conDouble"defOp"
 
 -- | not constant
 notOp :: Term
-notOp = con "Not"
+notOp = conDouble "Not"
 
 -- * quantor strings
 
@@ -87,8 +99,8 @@ binEqv = binConst eqv
 
 -- * boolean constants
 true, false :: Term
-true = Const "True" boolType
-false = Const "False" boolType
+true = Const (VName {new="True",orig="True"}) boolType
+false = Const (VName {new="False",orig="False"}) boolType
 
 -- | pair stuff
 pairC :: String

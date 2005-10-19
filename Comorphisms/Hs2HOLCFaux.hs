@@ -249,10 +249,10 @@ prepInst1 i =
 -------------------------------- constants ------------------------------------------
 
 xDummy :: IsaTerm
-xDummy = Const "dummy" noType
+xDummy = conDouble "dummy"
 
 holEq :: IsaTerm -> IsaTerm -> IsaTerm
-holEq t1 t2 = termMAppl NotCont (Const eq noType) [t1, t2]
+holEq t1 t2 = termMAppl NotCont (conDouble eq) [t1, t2]
 
 -------------------------------- Name translation ----------------------------------
 -- Translating to strings compatible with Isabelle
@@ -262,7 +262,7 @@ class IsaName a where
  showIsaString :: a -> String
 
 showIsaS :: String -> IsaSign.IName
-showIsaS = transStringT HOLCF_thy
+showIsaS = transConstStringT HOLCF_thy
 
 instance IsaName String where
  showIsaName x = showIsaS x
@@ -307,8 +307,8 @@ instance IsaName a => IsaName (TiTypes.Type a) where
 
 ------------------ auxiliary name functions (inessentially) depending on IsaSign ------------------
 
-joinNames :: [VName] -> String
-joinNames ls = concat [x ++ "_X" | x <- ls]
+joinNames :: [String] -> String
+joinNames = concatMap (++ "_X")
 
 transTN :: String -> String -> String
 transTN s1 s2 = case (s1,s2) of 
@@ -441,38 +441,42 @@ argTypes a = case a of
 ---------------- lifting, tuples, multiple abstractions and applications, fixpoints -----------
 
 termLift :: Term -> Term
-termLift t = App (Const "Def" noType) t NotCont
+termLift t = App (conDouble "Def") t NotCont
 
 funLift1 :: Term -> Term
-funLift1 f = termMAppl NotCont (Const "flift1" noType) [f]
+funLift1 f = termMAppl NotCont (conDouble "flift1") [f]
 
 funLift2 :: Term -> Term
-funLift2 f = termMAppl NotCont (Const "flift2" noType) [f]
+funLift2 f = termMAppl NotCont (conDouble "flift2") [f]
 
 funFliftbin :: Term -> Term
-funFliftbin f = termMAppl NotCont (Const "fliftbin" noType) [f]
+funFliftbin f = termMAppl NotCont (conDouble "fliftbin") [f]
 
 termMAbs :: Continuity -> [Term] -> Term -> Term
 termMAbs c ts t = 
  case ts of 
    [] -> t
-   v:vs -> if v == (Const "DIC" noType) then (termMAbs c vs t) else 
+   v:vs -> if isDicConst v then (termMAbs c vs t) else 
       IsaSign.Abs v (termType v) (termMAbs c vs t) c  
 --      termMAbs c vs (IsaSign.Abs v (termType v) t c)  
 
+isDicConst :: Term -> Bool
+isDicConst t = case t of 
+    Const vn _ | IsaSign.orig vn == "DIC"  -> True
+    _ -> False
+
 termMAppl :: Continuity -> Term -> [Term] -> Term
 termMAppl c t ts = 
- case (t,ts) of   
-   (Const "inst__Prelude_Num_Int" _, [a]) -> a
-   (Const "fromInteger" _, [a]) -> a
-   (Const "derived__Prelude_Eq_Bool" _, [a]) -> a
+  let prelTest vn = elem (IsaSign.orig vn) 
+               [ "inst__Prelude_Num_Int"
+               , "fromInteger"
+               , "derived__Prelude_Eq_Bool"]
+ in case (t, ts) of   
+   (Const vn _, [a]) | prelTest vn -> a
    (_,[]) -> t
-   (_,v:vs) -> if v == (Const "DIC" noType) then (termMAppl c t vs) else 
-      case v of  
-        (Const "inst__Prelude_Num_Int" _) -> (termMAppl c t vs)
-        (Const "fromInteger" _) -> (termMAppl c t vs)
-        (Const "derived__Prelude_Eq_Bool" _) -> (termMAppl c t vs)
-        _ -> termMAppl c (App t v c) vs 
+   (_,v:vs) -> case v of 
+         Const vn _ | isDicConst v || prelTest vn -> termMAppl c t vs
+         _ -> termMAppl c (App t v c) vs 
 
 fixPointRep :: Term -> Term -> Term
 fixPointRep t1 t2 = case t1 of
@@ -485,12 +489,12 @@ tupleSelector mx n t c
   | n == 0 = error "Haskell2IsabelleHOLCF, tupleSelector - error 2"
   | mx < n = error "Haskell2IsabelleHOLCF, tupleSelector - error 3"
   | n == mx = tupleSelect (n - 1) t c
-  | True = termMAppl c (Const "cfst" noType) $ [tupleSelect (n - 1) t c]
+  | True = termMAppl c (conDouble "cfst") $ [tupleSelect (n - 1) t c]
 
 tupleSelect :: Int -> Term -> Continuity -> Term
 tupleSelect n t c = case n of
   0 -> t
-  _ -> tupleSelect (n - 1) (termMAppl c (Const "csnd" noType) [t]) c
+  _ -> tupleSelect (n - 1) (termMAppl c (conDouble "csnd") [t]) c
 
 ------------------------ replacement functions -----------------------------------------
 
@@ -603,9 +607,9 @@ simTerms t1 t2 = case (t1, t2) of
 
 newConstTab :: [Named IsaSign.Sentence] -> ConstTab
 -- newConstTab ls = Map.fromList [(extAxName x, extAxType x) | x <- ls]
-newConstTab ls = Map.fromList [(extAxName x, extAxType x) | x <- ls]
+newConstTab ls = Map.fromList [(mkVName $ extAxName x, extAxType x) | x <- ls]
 
-extAxName :: Named Sentence -> VName
+extAxName :: Named Sentence -> String
 extAxName s = senName s
 -- extAxName s = case s of 
 --   NamedSen n _ _ _ -> n

@@ -131,8 +131,8 @@ showQuantStr s | s == allS = "!"
                | otherwise = error "IsaPrint.showQuantStr"
 
 showTerm :: Term -> String
-showTerm (Const c _) = c
-showTerm (Free v _) = v
+showTerm (Const (VName {new=c}) _) = c
+showTerm (Free  (VName {new=v}) _) = v
 
 showTerm (Tuplex ls c) = case c of
    IsCont -> "< " ++ (showTupleArgs ls) ++ ">" -- the extra space takes care of a minor Isabelle bug
@@ -162,7 +162,8 @@ showTerm (Abs v y t l)
 -- showTerm t@(Const c _) = showPTree (toPrecTree t) 
 showTerm (Paren t) = showTerm t 
 showTerm (Fix t) = lb++"fix"++"$"++(showTerm t)++rb
-showTerm t@(App _ _ NotCont) = showPTree (toPrecTree t) 
+showTerm t@(App _ _ NotCont) = showPTree (toPrecTree t)
+showTerm t@(MixfixApp _ _ NotCont) = showPTree (toPrecTree t)
 showTerm (App t1 t2 IsCont) = lb++(showTerm t1)++"$"++(showTerm t2)++rb
 showTerm Bottom = "UU"
 
@@ -208,15 +209,14 @@ showQuant s var typ term =
         ++ showTerm term
 
 outerShowTerm :: Term -> String
-outerShowTerm (App (Const q _) (Abs v ty t _) _) | q == allS = 
+outerShowTerm (App (Const (VName {new=q}) _) (Abs v ty t _) _) | q == allS = 
   outerShowQuant "!!" v ty t 
-outerShowTerm (App (App (Const o _) t1 _) t2 _) | o == impl =
+outerShowTerm (App (App (Const (VName {new=o}) _) t1 _) t2 _) | o == impl = 
   showTerm t1 ++ " ==> " ++ outerShowTerm1 t2
 outerShowTerm t = showTerm t
 
 outerShowTerm1 :: Term -> String
-outerShowTerm1 t@(App (App (Const o _) _ _) _ _) | o == impl =
-  outerShowTerm t
+outerShowTerm1 t@(App (App (Const (VName {new=o}) _) _ _) _ _) | o == impl = outerShowTerm t
 outerShowTerm1 t = showTerm t
 
 outerShowQuant :: String -> Term -> Typ -> Term -> String
@@ -296,38 +296,70 @@ binFunct s | s == eqv  = eqvPrec
 toPrecTree :: Term -> PrecTermTree
 toPrecTree trm =
   case trm of
-    App c1@(Const q _) a2@(Abs _ _ _ _) _ | q `elem` [allS, exS, ex1S] -> 
-       Node (isaAppPrec $ con quantS) [toPrecTree c1, toPrecTree a2]
---    App t1 t2 IsCont -> Node (capplPrec $ con cappl) 
---                   [toPrecTree t1, toPrecTree t2] 
-    App (App t@(Const o _) t3 NotCont) t2 NotCont ->
-      Node (binFunct o t) [toPrecTree t3, toPrecTree t2]
-    App t1 t2 NotCont -> Node (isaAppPrec $ con dummyS) 
+    App c1@(Const (VName {new=q}) _) a2@(Abs _ _ _ _) _ | q `elem` [allS, exS, ex1S] -> 
+       Node (isaAppPrec $ conDouble quantS) [toPrecTree c1, toPrecTree a2]
+    App (App t@(Const (VName {new=o}) _) t3 NotCont) t2 NotCont ->
+	Node (binFunct o t) [toPrecTree t3, toPrecTree t2]
+    App t1 t2 NotCont -> Node (isaAppPrec $ conDouble dummyS) 
                    [toPrecTree t1, toPrecTree t2] 
+    MixfixApp t@(Const (VName {new=n,orig=o}) v) (t2:t3) NotCont ->
+	if ((length t3) == 1) then
+	   Node (binFunct n t) [toPrecTree t2, toPrecTree (head t3)]
+	else
+	   let (hd,tl) = (getParts ' ' (tail (tail o))) in
+		Node (binFunct n t) [toPrecTree t2, 
+				     toPrecTree (MixfixApp (Const (VName {new=n,orig=tl}) v) t3 NotCont)]
+
     _ -> Node (noPrec trm) []
+
+getParts _ [] = ([],[])
+getParts '_' (x:xs) = 
+    if x=='_' then ([],'_':'_':xs)
+    else 
+     let (hd,tl)=(getParts x xs) in 
+	 (x:hd,tl)
+getParts _ (x:xs) =
+    let (hd,tl)=(getParts x xs) in 
+	(x:hd,tl)
+
+hasDoubleULines::Char->String->Bool
+hasDoubleULines _ [] = False
+hasDoubleULines '_' ('_':xs) = True
+hasDoubleULines _ (x:xs) = hasDoubleULines x xs
+
+rmDoubleULines:: Char -> String -> String
+rmDoubleULines _ [] = []
+rmDoubleULines '_' ('_':xs) = rmDoubleULines '_' xs
+rmDoubleULines _ (x:xs) = x : rmDoubleULines x xs
+
 
 data Assoc = LeftAs | NoAs | RightAs
 
 showPTree :: PrecTermTree -> String
 showPTree (Node (PrecTerm term _) []) = showTerm term
-showPTree (Node (PrecTerm term pre) annos) = 
-  let leftChild = head annos
-      rightChild = last annos
-   in
-     case term of
-          Const c _ | c == eq -> infixP pre "=" LeftAs leftChild rightChild
-                    | c == "op +" -> infixP pre "+" LeftAs leftChild rightChild
-                    | c == "op -" -> infixP pre "-" LeftAs leftChild rightChild
-                    | c == "op *" -> infixP pre "*" LeftAs leftChild rightChild
-                    | c == "(op ##)" -> infixP pre "##" RightAs leftChild rightChild
---                    | c == cappl -> infixP pre "$" LeftAs leftChild rightChild
-                    | c `elem` [conj, disj, impl] ->
-                        infixP pre (drop 3 c) RightAs leftChild rightChild
-                    | c == dummyS  -> simpleInfix pre leftChild rightChild
-                    | c == isaPair -> pair leftChild rightChild
-                    | c == quantS  -> quant leftChild rightChild
-                    | otherwise    -> prefixP pre c leftChild rightChild
-          _ -> showTerm term
+showPTree (Node (PrecTerm term pre) annos) =  
+  let [leftChild, rightChild] = annos
+   in case term of {
+         Const (VName {orig=c}) _
+	       | c == eq -> infixP pre "=" LeftAs leftChild rightChild
+	       | c == "op +" -> infixP pre "+" LeftAs leftChild rightChild
+	       | c == "op -" -> infixP pre "-" LeftAs leftChild rightChild
+	       | c == "op *" -> infixP pre "*" LeftAs leftChild rightChild
+	       | c == "(op ##)" -> infixP pre "##" RightAs leftChild rightChild
+--	        | c1 == cappl -> infixP pre "$" LeftAs leftChild rightChild
+	       | c `elem` [conj, disj, impl] ->
+                   infixP pre (drop 3 c) RightAs leftChild rightChild
+	       | c == dummyS  -> simpleInfix pre leftChild rightChild
+	       | c == isaPair -> pair leftChild rightChild
+	       | c == quantS  -> quant leftChild rightChild
+{-	       | hasDoubleULines ' ' c -> 
+	               infixP pre 
+			      (takeWhile (/='_') (dropWhile (=='_') c)) 
+			      RightAs leftChild rightChild
+-- this does not work for __::__-->__ in Graph.casl
+-} 
+	       | otherwise    -> prefixP pre c leftChild rightChild;
+      _ -> showTerm term}
 
 {- Logical connectors: For readability and by habit they are written 
    at an infix position.
@@ -423,7 +455,7 @@ simpleInfix pAdult leftChild rightChild
 {- Quantification _in_ Formulas
 -}
 quant :: PrecTermTree -> PrecTermTree -> String
-quant (Node (PrecTerm (Const q _) _) []) 
+quant (Node (PrecTerm (Const (VName {new=q}) _) _) []) 
           (Node (PrecTerm (Abs v ty t _) _) []) = 
               lb++showQuant (showQuantStr q) v ty t++rb
 quant _ _ = error "[Isabelle.IsaPrint] Wrong quantification!?"
@@ -495,13 +527,25 @@ instance PrettyPrint Sign where
              else empty) <+> (text $ show t) $$ rest 
       dtyp sig t = elem t $ 
          concat [map (typeId . fst) x | x <- (domainTab sig) ++ (dataTypeTab sig)]
---        
+
     vvcat = foldr ($+$) empty
-    showsConstTab tab =
+    showsConstTab tab =  
      if Map.null tab then empty
       else text("consts") $$ Map.foldWithKey showConst empty tab $$ text "\n"
-    showConst c t rest = text (show c) <+> text "::" <+> 
-              text ("\"" ++ showTyp Unquoted 1000 t ++ "\"") $$ rest
+
+    showConst (VName {new=c1,orig=c2}) t rest =
+	      (text (show c1) <+> text "::" <+> 
+               text ("\"" ++ showTyp Unquoted 1000 t ++ "\"")
+               -- <+> text(showAlt c2) 
+	       $$ rest)
+	   
+    --show only this alternative-versions where __ is in the string
+    --because only this ones change something
+    --maybe it's better to find and remove __ in one step
+    showAlt::String->String
+    showAlt str = "(\""++(rmDoubleULines ' ' str)++"\")"
+    --if (hasDoubleULines ' ' str) then "(\""++(rmDoubleULines ' ' str)++"\")" else ""
+		  			 							  
     showDataTypeDefs dtDefs = vcat $ map showDataTypeDef dtDefs
     showDataTypeDef [] = empty
     showDataTypeDef (dt:dts) = 
@@ -520,10 +564,10 @@ instance PrettyPrint Sign where
     showDomain (t,op:ops) =
        text (showTyp Quoted 1000 t) <+> text "=" <+> (showDOp op)
        <+> (hsep $ map ((text "|" <+>) . showDOp) ops)
-    showDOp (opname,args) =
+    showDOp ((VName {new=opname}),args) =
        text opname <+> (hsep $ [text $ sp++lb++opname++"_"++(show n)
            ++"::"++sp++(showOpArg x)++rb | (x,n) <- listEnum args])
-    showOp (opname,args) =
+    showOp ((VName {new=opname}),args) =
        text opname <+> (hsep $ map (text . showOpArg) args)
     showOpArg arg = case arg of
                     TFree _ _ -> showTyp Null 1000 arg
@@ -537,7 +581,7 @@ instance PrettyPrint Sign where
                                                 . (showCons b)) cons)
           clSome = sc True
           cl = sc False
-          showCons b (cName, args) =
+          showCons b ((VName {new=cName}), args) =
             let pat = cName ++ (concat $ map ((sp ++) . showArg) args) 
                             ++ sp ++ "=>" ++ sp 
                 term = showCaseTerm cName args
