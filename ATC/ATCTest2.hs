@@ -1,24 +1,19 @@
 module Main where
 
-import System
-import Data.List
-import GHC.Read
+import System.Environment
 import System.Random
--- import Options
--- import Common.Utils
 import Common.SimpPretty
--- import Syntax.AS_Library
 import Common.ATerm.Lib
+import Common.ATerm.ReadWrite
 import qualified Common.Lib.Map as Map
 import Data.Array
-import Data.FiniteMap
--- import WriteFn
--- import ReadFn
+import Data.List (isPrefixOf)
+import GHC.Read
 
 getTenRandoms :: IO [Int]
 getTenRandoms = getRand 10
     where getRand x
-              | x <= 0    = return []
+              | x <= (0 :: Int) = return []
               | otherwise = do y <- getStdRandom (randomR (1,6))
                                ys <- getRand (x-1)
                                return (y:ys)
@@ -50,7 +45,7 @@ usage cmd _ = do putStrLn ("unknown command: "++cmd)
                  putStrLn ("Known commands are: ReadWrite, BigMap, BigRel, BigSet")
                  fail "no known command given" 
 
-generateRandomLists :: String -> IO ([(Int,Int)],[(Int,String)])
+generateRandomLists :: String -> IO [(Int,Int)]
 generateRandomLists upstr  = do
     up <- case readEither upstr of
           Right u -> do putStrLn ("generating list with "++show u
@@ -59,12 +54,7 @@ generateRandomLists upstr  = do
           Left  m -> do putStrLn ("no upper_number read\n"++
                                   m++"\ngenerating list with 2000 items")
                         return 2000
-    str <- readFile "ATC/Haskell.header.hs"
-    let strs = words str
-        arrStr = listArray (0,length strs - 1) strs
-    ilist <- genIList up
-    strlist <- genSList arrStr up
-    return (ilist,strlist)
+    genIList up
 
 genIList :: Int -> IO [(Int,Int)]
 genIList cnt
@@ -82,7 +72,7 @@ genSList strs cnt = do
 
 testDDataMap :: String ->  FilePath -> IO ()
 testDDataMap upperstr fp = do
-                  (int_list,str_list) <- generateRandomLists upperstr
+                  int_list <- generateRandomLists upperstr
                   let int_map = (Map.fromList int_list)
                       (int_att,selectedATermIndex) =
                           (toShATerm emptyATermTable int_map)
@@ -100,7 +90,7 @@ testDDataMap upperstr fp = do
 
 checkDDataMap :: String ->  FilePath -> IO ()
 checkDDataMap upperstr fp = do
-                  (int_list,str_list) <- generateRandomLists upperstr
+                  int_list <- generateRandomLists upperstr
                   let int_map = (Map.fromList int_list)
                   str <- readFile fp
                   let read_map = fromShATerm (readATerm str)
@@ -111,7 +101,7 @@ checkDDataMap upperstr fp = do
 
 testListConv :: String ->  FilePath -> IO ()
 testListConv upperstr fp = do
-                  (int_list,str_list) <- generateRandomLists upperstr
+                  int_list <- generateRandomLists upperstr
                   let (int_att,selectedATermIndex) =
                           (toShATerm emptyATermTable (reverse int_list))
                   putStrLn $ show (getTopIndex int_att,selectedATermIndex)
@@ -128,7 +118,7 @@ testListConv upperstr fp = do
 
 checkListConv :: String ->  FilePath -> IO ()
 checkListConv upperstr fp = do
-                  (int_list,str_list) <- generateRandomLists upperstr
+                  int_list <- generateRandomLists upperstr
                   str <- readFile fp
                   let read_list = fromShATerm (readATerm str)
                   putStrLn ("BigList of (Int,Int) is " ++
