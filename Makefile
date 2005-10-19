@@ -322,9 +322,6 @@ hets.cgi: $(sources) GUI/hets_cgi.hs
             $(HC_FLAGS) $(PFE_FLAGS) -O
 	strip hets.cgi
 
-taxonomy: Taxonomy/taxonomyTool.hs $(tax_sources)
-	$(HC) --make -o Taxonomy/taxonomyTool $< -ifgl $(HC_OPTS)
-
 ###############################
 ### TAGS files for (x)emacs 
 # load them with "M-x" "visit-tags-table" from
@@ -486,13 +483,13 @@ o_clean:
 ### remove binaries
 bin_clean: 
 	$(RM) hets
+	$(RM) hets.cgi
 	$(RM) test_parser
 	$(RM) CASL/capa
 	$(RM) HasCASL/hacapa
-	$(RM) Haskell/hapa
 	$(RM) Haskell/hana
-	$(RM) Haskell/wrap
 	$(RM) ToHaskell/h2h
+	$(RM) ToHaskell/h2hf
 	$(RM) Syntax/hetpa
 	$(RM) Static/hetana
 	$(RM) GUI/hetdg
@@ -502,7 +499,6 @@ bin_clean:
 	$(RM) atctest2
 	$(RM) atctest
 	$(RM) Common/annos
-	$(RM) ToHaskell/translateAna
 	$(RM) Taxonomy/taxonomyTool
 
 ### additionally removes the library files
@@ -592,8 +588,11 @@ OWL_DL/readAStest: OWL_DL/ToHaskellAS.hs Common/ATerm/*.hs \
 hetdg: GUI/hetdg.hs $(drifted_files) *.hs 
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
+taxonomy: Taxonomy/taxonomyTool.hs $(tax_sources)
+	$(HC) --make -o Taxonomy/taxonomyTool $< $(HC_OPTS)
+
 checkMakeBinaries: test_parser hetpa hetana Test.o \
-    atermlibtest hatermdiff atctest
+    atermlibtest hatermdiff atctest atctest2 taxonomy
 
 ### run tests in other directories
 check: checkMakeBinaries
