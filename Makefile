@@ -285,10 +285,10 @@ tax_objects = $(patsubst %.hs, %.o, $(tax_sources))
 ####################################################################
 ### targets
 
-.PHONY : all hets-opt hets-optimized clean d_clean real_clean bin_clean \
-    lib_clean distclean check capa hacapa h2h clean_genRules genRules \
+.PHONY : all hets-opt hets-optimized clean o_clean real_clean bin_clean \
+    distclean check capa hacapa h2h h2hf clean_genRules genRules \
     taxonomy count doc apache_doc post_doc4apache \
-     derivedSources install_hets install release patch
+    derivedSources install_hets install release cgi patch ghci
 
 .SECONDARY : %.hs %.d $(generated_rule_files) $(gen_inline_axiom_files)
 
@@ -500,6 +500,7 @@ bin_clean:
 	$(RM) atctest
 	$(RM) Common/annos
 	$(RM) Taxonomy/taxonomyTool
+	$(RM) OWL_DL/readAStest
 
 ### additionally removes the library files
 real_clean: clean
@@ -545,7 +546,8 @@ Haskell/hana: Haskell/hana.hs Haskell/HatAna.hs Haskell/PreludeString.hs
 ### Haskell to Isabelle-HOLCF translation
 h2hf: ToHaskell/h2hf
 
-ToHaskell/h2hf: ToHaskell/h2hf.hs ToHaskell/*.hs Haskell/*.hs HasCASL/*.hs Isabelle/*.hs Common/*.hs 
+ToHaskell/h2hf: ToHaskell/h2hf.hs ToHaskell/*.hs Haskell/*.hs \
+    HasCASL/*.hs Isabelle/*.hs Common/*.hs 
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### HasCASL to Haskell translation
@@ -573,25 +575,27 @@ atctest2: ATC/ATCTest2.hs Common/SimpPretty.hs Common/ATerm/*.hs \
 ### ATerm.Lib test system
 atermlibtest: Common/ATerm/ATermLibTest.hs Common/SimpPretty.hs \
     Common/ATerm/*.hs Common/Lib/*.hs
-	$(HC) --make -o $@ $< $(HC_OPTS) $(EXTRA_HC_OPTS)
+	$(HC) --make -o $@ $< $(HC_OPTS)
 
 hatermdiff: Common/ATerm/ATermDiffMain.hs Common/SimpPretty.hs \
     Common/ATerm/*.hs Common/Lib/*.hs
-	$(HC) --make -o $@ $< $(HC_OPTS) $(EXTRA_HC_OPTS)
+	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### OWL_DL test target
 OWL_DL/readAStest: OWL_DL/ToHaskellAS.hs Common/ATerm/*.hs \
    Common/Lib/*.hs OWL_DL/*.hs
-	$(HC) --make -o $@ $< $(HC_OPTS) $(EXTRA_HC_OPTS)
+	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### HetCASL with dev graph
 hetdg: GUI/hetdg.hs $(drifted_files) *.hs 
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
-taxonomy: Taxonomy/taxonomyTool.hs $(tax_sources)
-	$(HC) --make -o Taxonomy/taxonomyTool $< $(HC_OPTS)
+taxonomy: Taxonomy/taxonomyTool
 
-checkMakeBinaries: test_parser hetpa hetana Test.o \
+Taxonomy/taxonomyTool: Taxonomy/taxonomyTool.hs $(tax_sources)
+	$(HC) --make -o $@ $< $(HC_OPTS)
+
+checkMakeBinaries: test_parser hetpa hetana Test.o OWL_DL/readAStest \
     atermlibtest hatermdiff atctest atctest2 taxonomy
 
 ### run tests in other directories
