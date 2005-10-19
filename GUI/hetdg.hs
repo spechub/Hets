@@ -1,11 +1,11 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2004
+Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  hets@tzi.de
 Stability   :  provisional
-Portability :  non-portable(via imports
+Portability :  non-portable(via imports)
 
 Temporary interface for displaying development graphs.
    Should be replaced with hets in the future.
@@ -17,7 +17,6 @@ Temporary interface for displaying development graphs.
 -- cd into the folder where HetCATS lives
 -- cvs co uni
 -- configure
--- gmake boot
 -- gmake packages
 
 
@@ -26,39 +25,26 @@ module Main
 where
 
 import System.Environment
-import Comorphisms.LogicGraph
 import Static.AnalysisLibrary
-import System.IO
 import Static.DotGraph
 
-import GUI.ConvertDevToAbstractGraph
+import GUI.ShowGraph
 
-import GUI.AbstractGraphView
 import Driver.Options
 
-import Static.DevGraph
+import qualified Common.Lib.Map as Map
 
-import Data.Char
-import DaVinciGraph
-import GraphDisp
-import Data.IORef
-
-proceed fname showdg = do
-  res <- anaFile logicGraph defaultLogic defaultHetcatsOpts emptyLibEnv fname 
-  case res of
-    Just (ln,_,dg,libenv) -> 
-      if showdg then do
-       graphMem <- initializeConverter
-       (gid,gv,cmaps) <- convertGraph graphMem ln libenv
-       GUI.AbstractGraphView.redisplay gid gv
-       getLine
-       return () 
-      else do
-        h <- openFile (fname++".dot") WriteMode
-        sequence (map (hPutStrLn h) (dot dg))
-        hClose h
+process :: FilePath -> Bool -> IO ()
+process fname showdg = do
+  res <- anaLib defaultHetcatsOpts fname
+  if showdg then showGraph fname defaultHetcatsOpts res
+     else case res of
+    Just (ln, lenv) -> case Map.lookup ln lenv of
+        Nothing -> error "hetdg: lookup"
+        Just (_,_,dg) -> writeFile (fname++".dot") $ concat $ dot dg
     _ -> return ()
 
+main :: IO ()
 main = do
-  args <- getArgs
-  proceed (head args) (not ((tail args)==["-dot"]))
+  fn : opts <- getArgs
+  process fn $ not $ opts == ["-dot"]
