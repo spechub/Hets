@@ -6,7 +6,7 @@ module Integrate where
 
 import qualified HetsInterface as Hets
 --import OmdocHXT
-import OmdocDevGraph hiding (run)
+import OmdocDevGraph hiding (run, when)
 import CASL.Sign
 import CASL.Morphism
 import CASL.Logic_CASL
@@ -25,14 +25,16 @@ import qualified Data.Graph.Inductive.Tree as Tree
 import qualified Logic.Grothendieck as Logic.Grothendieck
 import CASL.Amalgamability(CASLSign)
 
-import qualified Text.XML.HXT.Parser as HXT hiding (run, trace)
-import qualified Text.XML.HXT.DOM.XmlTreeTypes as HXTT
+import qualified Text.XML.HXT.Parser as HXT hiding (run, trace, when)
+import qualified Text.XML.HXT.DOM.XmlTreeTypes as HXTT hiding (when)
 
 import qualified Comorphisms.CASL2PCFOL as Com
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
+
+import qualified Common.Result as Result
 
 import qualified Common.AS_Annotation as Ann
 
@@ -55,10 +57,13 @@ import Common.Utils (joinWith)
 
 import qualified System.IO.Error as System.IO.Error
 import qualified System.Directory as System.Directory
+import qualified System.Posix.Files as System.Posix.Files
 import qualified System.Exit as Exit
 
 import qualified System.Environment as Env
 import qualified System.Console.GetOpt as GetOpt
+
+import Control.Monad
 
 import Char (toLower, isSpace)
 
@@ -185,107 +190,409 @@ writeOmdocDTD dtd t f = HXT.run' $
 		writeableTreesDTD dtd t
 
 -- | processing options for getopt		
-data PO = POInput String | POOutput String | POShowGraph | POLib String | POSandbox String | POHelp | PODTDURI String
+data PO = POInput String | POInputType String | POOutput String | POOutputType String | POShowGraph | POLib String | POSandbox String | POHelp | PODTDURI String | PODebug
 		
 processingOptions::[GetOpt.OptDescr PO]
 processingOptions =
 	[
 	  GetOpt.Option ['i'] ["input"] (GetOpt.ReqArg POInput "INPUT") "File to read from"
+	, GetOpt.Option ['r'] ["input-type"] (GetOpt.ReqArg POInputType "INPUTTYPE (casl, omdoc, env)") "Type of input"
 	, GetOpt.Option ['o'] ["output"] (GetOpt.ReqArg POOutput "OUTPUT") "File to write to"
+	, GetOpt.Option ['w'] ["output-type"] (GetOpt.ReqArg POOutputType "OUTPUTTYPE (omdoc, env, fullenv)") "Type of output"
 	, GetOpt.Option ['l'] ["library"] (GetOpt.ReqArg POLib "LIBDIR") "Directory to search for input files"
 	, GetOpt.Option ['g'] ["showgraph"] (GetOpt.NoArg POShowGraph) "Show Graph"
 	, GetOpt.Option ['a'] ["all-libs"] (GetOpt.OptArg (POSandbox . (fromMaybe "")) "OUTDIR") "Output all used libraries [to dir]"
 	, GetOpt.Option ['h'] ["help"] (GetOpt.NoArg POHelp) "print this info"
 	, GetOpt.Option ['d'] ["dtd-uri"] (GetOpt.ReqArg PODTDURI "DTDURI") "URI for OMDoc-DTD"
+	, GetOpt.Option [] ["debug"] (GetOpt.NoArg PODebug) "enable debugging-messages"
 	]
 	
 usageString::String
 usageString = GetOpt.usageInfo "Integrate [-i <input>] [-o <output>] [-l dir] [-g] [-a[<directory>]] [-d <dtd-uri>]" processingOptions
 
--- | some basic interface for command-line use... not very usefull right now.
--- conversion only works from casl to omdoc. omdoc to casl is limited to showing
--- the resulting graph (no data output)
--- you can get the xml-output for a single file to stdout by using '-' as output
--- you can not feed stdin into this 
+-- | convert a file name that may have a suffix to a library name
+-- taken from AnalysisLibrary (not exported)
+fileToLibName :: DOptions.HetcatsOpts -> FilePath -> ASL.LIB_NAME
+fileToLibName opts efile =
+    let path = DOptions.libdir opts
+        file = DOptions.rmSuffix efile -- cut of extension
+        nfile = dropWhile (== '/') $         -- cut off leading slashes
+                if isPrefixOf path file
+                then drop (length path) file -- cut off libdir prefix
+                else file
+    in ASL.Lib_id $ ASL.Indirect_link nfile Id.nullRange
+	
+data FileType = FTCASL | FTOMDoc | FTEnv | FTFullEnv | FTNone
+	deriving Eq
+	
+instance Show FileType where
+	show FTCASL = "CASL"
+	show FTOMDoc = "OMDoc"
+	show FTEnv = "Environment"
+	show FTFullEnv = "Full-Environment"
+	show FTNone = "None"
+	
+instance Read FileType where
+	readsPrec _ r =
+		let
+			wsdroplen = length $ takeWhile Char.isSpace r
+		in
+			(\s ->
+				if isPrefixOf "casl" s then [(FTCASL, drop (4+wsdroplen) r)]
+				else
+				if isPrefixOf "omdoc" s then [(FTOMDoc, drop (5+wsdroplen) r)]
+				else
+				if isPrefixOf "xml" s then [(FTOMDoc, drop (3+wsdroplen) r)]
+				else
+				if isPrefixOf "env" s then [(FTEnv, drop (3+wsdroplen) r)]
+				else
+				if isPrefixOf "fenv" s then [(FTFullEnv, drop (4+wsdroplen) r)]
+				else
+				if isPrefixOf "none" s then [(FTNone, drop (4+wsdroplen) r)]
+				else
+				if isPrefixOf "-" s then [(FTNone, drop (1+wsdroplen) r)]
+				else
+					[]
+			) $ map Char.toLower $ drop wsdroplen r 
+
+type FileTypes = [FileType]
+	
+supportedInput::FileTypes
+supportedInput = [FTCASL, FTOMDoc, FTFullEnv, FTEnv]
+
+supportedOutput::FileTypes
+supportedOutput = [FTOMDoc, FTEnv, FTFullEnv, FTNone]
+
+-- | tries to determine the type of a file by its extension
+-- "-" and "none" lead to FTNone
+fileType::String->Maybe FileType
+fileType s =
+	let
+		suffix = reverse $ takeWhile (/='.') $ reverse s
+		parse = readsPrec 0 suffix
+	in
+		case parse of
+			[(ft, "")] -> Just ft
+			_ -> Nothing
+
+-- | some basic interface for command-line use... 
+-- you can read in CASL, OMDoc or Environments (ATerm) and ouput OMDoc or
+-- Environments.
+-- Currently there are two forms of environments. One that is the output from
+-- Hets - a single GlobalContext - and a second that is a full environment 
+-- with the name of the library that was read in and all related GlobalContexts.
+-- Actually the latter is not really what is wanted and will be removed when
+-- better ways of retrieving related DGraphs are developed.
 main::IO ()
 main =
 	do
 		args <- Env.getArgs
-		(options, nonoptions) <- case GetOpt.getOpt GetOpt.Permute processingOptions args of
-			(o,n,[]) -> return (o,n)
-			(_,_,errs) -> ioError (userError (concat errs ++ usageString))
-		if ((length args) == 0) || ((length ( filter (\op -> case op of POHelp -> True; _ -> False) options )) /= 0)
-			then
-				do
-					putStrLn usageString
-					Exit.exitWith (Exit.ExitSuccess)
-			else
-				do
-					return ()
-		inputopts <- return $ filter (\op -> case op of POInput _ -> True; _ -> False) options
-		outputopts <- return $ filter (\op -> case op of POOutput _ -> True; _ -> False) options
-		alloutopts <- return $ filter (\op -> case op of POSandbox _ -> True; _ -> False) options
-		showgraphopts <- return $ filter (\op -> case op of POShowGraph -> True; _ -> False) options
-		dtduriopts <- return $ filter (\op -> case op of PODTDURI _ -> True; _ -> False) options
+		(options, nonoptions) <-
+			case GetOpt.getOpt GetOpt.Permute processingOptions args of
+				(o,n,[]) -> return (o,n)
+				(_,_,errs) -> ioError (userError (concat errs ++ usageString))
+		when
+			-- no arguments or Help requested
+			(	((length args) == 0) ||
+				((length
+					(filter
+						(\op -> case op of POHelp -> True; _ -> False)
+						options)
+					) /= 0)
+			)
+			(do
+				-- print usage and exit
+				putStrLn usageString
+				Exit.exitWith (Exit.ExitSuccess))
+		-- filter out options
+		inputopts <- return $ filter
+			(\op -> case op of POInput _ -> True; _ -> False)
+			options
+		inputtypeopts <- return $ filter
+			(\op -> case op of POInputType _ -> True; _ -> False)
+			options
+		outputopts <- return $ filter
+			(\op -> case op of POOutput _ -> True; _ -> False)
+			options
+		outputtypeopts <- return $ filter
+			(\op -> case op of POOutputType _ -> True; _ -> False)
+			options
+		alloutopts <- return $ filter
+			(\op -> case op of POSandbox _ -> True; _ -> False)
+			options
+		showgraphopts <- return $ filter
+			(\op -> case op of POShowGraph -> True; _ -> False)
+			options
+		dtduriopts <- return $ filter
+			(\op -> case op of PODTDURI _ -> True; _ -> False)
+			options
+		debugopts <- return $ filter
+			(\op -> case op of PODebug -> True; _ -> False)
+			options
+		debug <- return $ (case debugopts of [] -> False; _ -> True)
 		input <- return $ case inputopts of
 					[] -> case nonoptions of
 						[] -> "-"
 						_ -> head nonoptions
 					((POInput s):r) -> s
+		-- determine input type from parameter or filename
+		inputtype <-
+			case inputtypeopts of
+				[] ->
+					do
+					when
+						debug
+						(putStrLn "No Input-Type given. Trying to find out...")
+					mft <- return $ fileType input
+					case mft of
+						(Just ft) -> return ft
+						Nothing ->
+							ioError (userError "Cannot determine Input-Type!")
+				((POInputType s):r) -> return $ read s
+		when
+			debug
+			(putStrLn ("Input-Type is : " ++ (show inputtype)))
+		-- check if this type is supported
+		unless
+			(elem inputtype supportedInput)
+			(ioError (userError "Unsupported type of input..."))
 		output <- return $ case outputopts of
 					[] -> ""
 					((POOutput s):r) -> s
+		-- determine output type from parameter or filename
+		outputtype <- if output /= []
+			then
+				case outputtypeopts of
+					[] ->
+						do
+						when
+							debug
+							(putStrLn
+								"No Output-Type given. Trying to find out..."
+							)
+						mft <- return $ fileType output
+						case mft of
+							(Just ft) -> return ft
+							Nothing ->
+								ioError
+									(userError "Cannot determine Output-Type!")
+					((POOutputType s):r) -> return $ read s
+			else
+				return FTNone
+		when
+			debug
+			(putStrLn ("Output-Type is : " ++ (show outputtype)))
+		-- check if this type is supported
+		unless
+			(elem outputtype supportedOutput)
+			(ioError (userError "Unsupported type of output..."))
 		sandbox <- return $ case alloutopts of
 			[] -> ""
 			((POSandbox s):r) -> s
+		when
+			debug
+			(putStrLn ("Sandbox set to : \"" ++ sandbox++ "\""))  
 		doshow <- return $ (length showgraphopts) /= 0
+		when
+			debug
+			(putStrLn ("Graph-Output : " ++ (if doshow then "Yes" else "No"))) 
 		dtduri <- return $ case dtduriopts of
 			[] -> defaultDTDURI
 			((PODTDURI s):r) -> s
 		searchpath <- return $ map (\(POLib s) -> s) $ filter (\o -> case o of (POLib _) -> True; _ -> False) options
-		inputOmdoc <- return $ ( (isSuffixOf ".omdoc" input) || (isSuffixOf ".xml" input) )
-		inputCasl <- return $ ( (isSuffixOf ".casl" input) )
-		if inputOmdoc
-			then
-				do
-					ig <- makeImportGraph input searchpath
-					(ln,dg,lenv) <- return $ dGraphGToLibEnv $ hybridGToDGraphG $ processImportGraph ig
-					if doshow
-						then
-							showdg (ln,dg,lenv)
-						else
-							return ()
-			else if inputCasl
-				then
-					do
-					mdgenv <- Hets.run input
-					(ln,_,dg,lenv) <- case mdgenv of
-						Nothing -> ioError (userError "Could not load CASL-File...")
-						(Just env) -> return env
-					omdoc <- return $ devGraphToOmdoc dg (stripLibName (show ln))
-					if doshow
-						then
-							showdg (ln,dg,lenv)
-						else
-							return ()
-					case output of
-						"" -> return ()
-						"-" -> showOmdocDTD dtduri omdoc >> return ()
-						_ -> writeOmdocDTD dtduri omdoc output >> return ()
-					case sandbox of
-						"" -> return ()
-						_ ->
-								let
-									igdg = libEnvToDGraphG (ln,dg,lenv)
-									igx = dGraphGToXmlG igdg
-								in
+		when
+			debug
+			(putStrLn
+				((show inputtype) ++ "(" ++ input ++ ") -> "
+					++ (show outputtype) ++ "(" ++ output ++ ")"))
+		-- get input
+		(ln, dg, lenv) <-
+			case ((\inty -> case inty of FTFullEnv -> FTEnv; _ -> inty) inputtype) of
+				FTOMDoc ->
+						do
+						when debug (putStrLn ("Trying to load omdoc-file..."))
+						ig <- makeImportGraph input searchpath
+						(return $ dGraphGToLibEnv $ hybridGToDGraphG $
+							processImportGraph ig)
+				FTCASL->
+						do
+						when debug (putStrLn ("Trying to load casl-file..."))
+						menv <- Hets.run input
+						(ln' ,lenv' ) <- case menv of
+							Nothing ->
+								ioError
+									(userError "Could not load CASL-File...")
+							(Just env) -> return env
+						dg <- case Map.lookup ln' lenv' of
+							Nothing ->
+								ioError
+									(userError "Could not get DGraph...")
+							(Just (_,_,dg' )) -> return dg'
+						return (ln' ,dg,lenv' )
+				FTEnv ->
+						-- currently environment processing is done in one
+						-- section to handle full and non-full environments
+						-- this may change...
+						do
+						when debug (putStrLn "Trying to load env-file...")
+						s <- readFile input
+						-- parse input for both variants (lazy)
+						(Result.Result _ menv) <-
+							return
+								((Hets.fromShATermString s)::(Result.Result (ASL.LIB_NAME, LibEnv)))
+						(Result.Result _ mgc) <-
+							return
+								((Hets.fromShATermString s)::(Result.Result GlobalContext))
+						-- parser will use error if it is not it's type...
+						(Control.Exception.catch
+							(
+								do
+								when
+									debug
+									(putStr "...as full environment...")
+								(return menv) >>= \x -> case x of
+									(Just me) -> return me >>=  
+										\me@(meln, melenv) ->
+										do
+											 -- evaluate to trigger error
+											tmp <- return $! Map.size $! melenv
+											return $ lnLibEnvToLnDGLibEnv me 
+									Nothing ->
+										error "Error processing environment..."
+							)
+							(\_ ->
+								-- if the first parser triggers this exception
+								-- the next parser tries the other variant
+							  Control.Exception.catch
+								  (
 									do
-										putStrLn ("Writing to " ++ sandbox )
-										writeXmlG dtduri igx sandbox
-				else
-					do 
-					putStrLn ("Cannot process this input : \"" ++ input ++ "\"")
+									when
+										debug
+										(putStr
+											"failed.\n...as globalcontext...")
+									(return mgc) >>= \x -> case x of
+										(Just gc) ->
+											return gc >>= \(ga,ge,dg) ->
+												do
+													lname <-
+														return
+															(fileToLibName Hets.dho input)
+													 -- evaluate to trigger error
+													tmp <-
+														return $! Graph.nodes $!
+															dg
+													return
+														(lname,
+														dg,
+														(Map.fromList
+															[(lname, (ga,ge,dg))]
+															)
+														)
+										Nothing -> error "Error processing environment..."
+									)
+								  (\_ ->
+								  	-- if this exception is triggered, no parser
+									-- was able to process the file...
+								  	when
+										debug
+										(putStrLn "failed.")
+									>> ioError
+										(userError
+											"Unable to process env-file..."
+										)
+									)
+							)) >>= \e -> -- one of the parsers succeded
+								when
+									debug
+									(putStrLn "success.")
+								>> return e 
+				_ -> -- no input (?)
+						do
+						ioError (userError "No input to process...")
+		when doshow
+				(when debug (putStrLn "Showing Graph...") >>
+				showdg (ln,lenv))
+		case outputtype of
+			FTOMDoc ->
+				do
+				when debug (putStrLn ("Outputting OMDoc..."))
+				omdoc <- return $ devGraphToOmdoc dg (stripLibName (show ln))
+				case output of
+					"" -> return ()
+						-- show/writeOmdocDTD :: IO XmlTrees --> return ()
+					"-" -> showOmdocDTD dtduri omdoc >> return ()
+					_ -> writeOmdocDTD dtduri omdoc output >> return ()
+				case sandbox of
+					"" -> return ()
+					_ ->
+							let
+								igdg = libEnvToDGraphG (ln,dg,lenv)
+								igx = dGraphGToXmlG igdg
+							in
+								do
+									writeXmlG dtduri igx sandbox
+			FTEnv -> -- on output separate functions are used for environment
+				do
+				when debug (putStrLn ("Outputting GlobalContext..."))
+				ga <- case Map.lookup ln lenv of
+					Nothing -> ioError (userError "Lookup failed...")
+					(Just ga' ) -> return ga'
+				case output of
+					"" -> return ()
+					"-" ->
+						putStrLn (Hets.toShATermString ga)
+					_ ->
+						Hets.globalContexttoShATerm output ga
+			FTFullEnv ->
+				do
+				when debug (putStrLn ("Outputting Full Environment..."))
+				case output of
+					"" -> return ()
+					"-" ->
+						putStrLn (Hets.toShATermString (ln,lenv))
+					_ ->
+						writeFile output (Hets.toShATermString (ln,lenv))
+			_ ->
+				return ()
 		return ()
+		
+lnLibEnvToLnDGLibEnv::(ASL.LIB_NAME, LibEnv)->(ASL.LIB_NAME, DGraph, LibEnv)
+lnLibEnvToLnDGLibEnv (ln,lenv) =
+	let
+		dg = case Map.lookup ln lenv of
+			(Just (_,_,dg' )) -> dg'
+			Nothing -> error "Cannot lookup DGraph in LibEnv!"
+	in
+		(ln, dg, lenv)
+		
+removeSuffix::String->String
+removeSuffix s = case dropWhile (/='.') $ reverse s of
+	[] -> s
+	(dot:r) -> reverse r
+
+-- | this does not really work right now 'in the wild'...
+libEnvFromEnvironment::DOptions.HetcatsOpts->FilePath->IO (Maybe (ASL.LIB_NAME, LibEnv))
+libEnvFromEnvironment ho f =
+	let
+		asCASL = removeSuffix f ++ ".casl"
+	in
+	do
+		fileExists <- System.Directory.doesFileExist asCASL
+		unless
+			fileExists
+			(do
+				writeFile asCASL "dummy"
+				System.Posix.Files.touchFile f)
+		menv <- Hets.anaLib ho asCASL	-- anaLib will look for the environment
+										-- and see it is more recent...
+		unless
+			fileExists
+			(do System.Directory.removeFile asCASL)
+		return menv
+			
+		
+libEnvFromOmdocFile::String->[String]->IO (ASL.LIB_NAME, DGraph, LibEnv)
+libEnvFromOmdocFile f l = makeImportGraph f l >>= return . dGraphGToLibEnv . hybridGToDGraphG . processImportGraph
 
 -- | loads an omdoc-file and returns it even if there are errors
 -- fatal errors lead to IOError
@@ -1894,17 +2201,6 @@ getOmdocID = xshow . applyXmlFilter (isTag "omdoc" .> getQualValue "xml" "id")
 		
 omdocToDevGraph::HXT.XmlTrees->(DGraph, String)
 omdocToDevGraph t = (xmlToDGraph (applyXmlFilter (isTag "omdoc" .> getChildren) t) (Graph.mkGraph [] []), getOmdocID t) 
-{-
-importOmdoc::String->(IO (DGraph, String))
-importOmdoc file =
-	do
-		importGraph <- makeImportGraph file
-		loadresult <- loadOmdoc file
-		omdoc <- case loadresult of
-					(Left error) -> putStrLn ("Error loading \"" ++ file ++ "\"") >> return (HXT.txt "" emptyRoot)
-					(Right doc) -> return doc
-		return (xmlToDGraph omdoc (Graph.mkGraph [] []), getOmdocID omdoc)
--}		
 	
 dgNameToLnDGLe::(DGraph, String)->(ASL.LIB_NAME,DGraph,LibEnv)
 dgNameToLnDGLe (dg, name) =
@@ -1918,7 +2214,7 @@ showDGAndName::(DGraph, String)->(IO ())
 showDGAndName (dg,name) =
 	Hets.showGraph name DOptions.defaultHetcatsOpts $
 		(\a -> (Just a) ) $
-		(\(a,b,c) -> (a, "", b, c)) $
+		(\(a,_,c) -> (a, c)) $
 		dgNameToLnDGLe (dg, name)
 		
 getCatalogueInformation::HXT.XmlTrees->(Map.Map String String)
@@ -2304,10 +2600,10 @@ writeXmlG dtduri ig sandbox =
 			
 -- | shows a developement-graph and it's environment using the
 -- uniform-workbench			
-showdg::(ASL.LIB_NAME, DGraph, LibEnv)->IO ()
-showdg (ln,dg,lenv) =
+showdg::(ASL.LIB_NAME, LibEnv)->IO ()
+showdg (ln,lenv) =
 	-- dho is 'defaultHetcatsOpts' (not visible here)...
-	Hets.showGraph "" Hets.dho (Just (ln, "", dg, lenv))
+	Hets.showGraph "" Hets.dho (Just (ln, lenv))
 	 
 showLink::DGraph->Graph.Node->Graph.Node->String
 showLink dg n1 n2 =

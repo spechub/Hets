@@ -16,7 +16,7 @@ The Main module of the Heterogeneous Tool Set.
 {- todo: option for omitting writing of env
 -}
 
-module HetsInterface where
+module HetsInterface (module HetsInterface, module Driver.ReadFn, module Driver.WriteFn, module Static.AnalysisLibrary) where
 
 import Control.Monad (when)
 
@@ -96,70 +96,17 @@ import Debug.Trace (trace)
 import Haskell.Haskell2DG
 #endif
 -}
-{-
-showGraph :: FilePath -> HetcatsOpts -> 
-             Maybe (LIB_NAME, -- filename
-                    a,   -- as tree
-                    b,   -- development graph
-                    LibEnv    -- DGraphs for imported modules 
-                   )  -> IO ()
-showGraph file opt env =
-    case env of
-        Just (ln,_,_,libenv) -> do
-            putIfVerbose opt 2 ("Trying to display " ++ file
-                                ++ " in a graphical window")
-            putIfVerbose opt 3 "Initializing Converter"
-#ifdef UNI_PACKAGE
-            graphMem <- initializeConverter
-            useHTk -- All messages are displayed in TK dialog windows 
-                   -- from this point on
-            putIfVerbose opt 3 "Converting Graph"
-            (gid, gv, _cmaps) <- convertGraph graphMem ln libenv opt
-            GUI.AbstractGraphView.redisplay gid gv
-            graph <- get_graphid gid gv
-            sync(destroyed graph)
-            InfoBus.shutdown
-            exitWith ExitSuccess 
-#else
-            fail "No graph display interface; UNI_PACKAGE option has been disabled during compilation of Hets"
-#endif
-        Nothing -> putIfVerbose opt 1
-            ("Error: Basic Analysis is neccessary to display "
-             ++ "graphs in a graphical window")
 
--}
-
-showGraph::FilePath->HetcatsOpts->Maybe (LIB_NAME, a, v, LibEnv)->IO ()
+showGraph::FilePath->HetcatsOpts->Maybe (LIB_NAME, LibEnv)->IO ()
 showGraph file opt env =
 	case env of
-		Just (ln,_,_,libenv) -> do
+		Just (ln, libenv) -> do
 			GUI.showGraph file opt (Just (ln, libenv))
 		Nothing -> return ()
 
-{-
-hasEnvOut :: HetcatsOpts -> Bool
-hasEnvOut = any ( \ o -> case o of EnvOut -> True
-                                   _ -> False) . outtypes
--}
-{-
--- Just (_,_,dg,_) <- run "CASL/test/X1.casl"
--- let (Just caslsign) = getCASLSign $ getFirstNodeSign dg 
-run  :: FilePath -> IO (Maybe (LIB_NAME, LIB_DEFN, DGraph, LibEnv))
-run file = 
-    do let opt = defaultHetcatsOpts
-       ld <- read_LIB_DEFN opt file
-       defl <- lookupLogic "logic from command line: " 
-                                        (defLogic opt) logicGraph
-       Common.Result.Result ds res <- ioresToIO 
-                                       (ana_LIB_DEFN logicGraph defl opt 
-                                        emptyLibEnv ld)
-       showDiags opt ds
-       return res
--}
-
-run :: FilePath -> IO (Maybe (LIB_NAME, LIB_DEFN, DGraph, LibEnv))
-run file =
-	do
+run :: FilePath -> IO (Maybe (LIB_NAME, LibEnv))
+run file = anaLib dho file
+{-	do
 		res <- anaLib dho file
 		return $ case res of
 			Nothing -> Nothing
@@ -171,44 +118,13 @@ run file =
 						(Just (_,_,dg' )) -> dg'
 				in
 					Just (ln, fakelibdefn, dg, lenv)
-
+-}
 dho::HetcatsOpts
 dho = defaultHetcatsOpts
 
-{- Call this function as follows (be sure that there is no ../uni):
-make hets
-make ghci
-:l hets.hs
-:module +Data.Graph.Inductive.Graph
-Just (ln,ast,dg,libenv)<-run "../CASL-lib/List.casl"
--}
-
-{- showGraph2::FilePath -> IO ()
-showGraph2 f = do
-	env <- run f
-	showGraph f Driver.Options.defaultHetcatsOpts env -}
-
--- further functions for extracting information from the output
-{-toCASLsens :: G_l_sentence_list -> [Named (FORMULA ())]
-toCASLsens (G_l_sentence_list lid sens) = 
-   case coerce lid CASL sens of 
-          Just sens' -> sens'
-          _ -> error "not a list of CASL sentences"-- Get first node from DG and extract signature
--}
-
-
-	  
 getFirstNodeSign = (\x -> (\(_,s) -> dgn_sign s) ((labNodes x)!!0) )
 
 getFirstNode = (\x -> ((labNodes x)!!0))
-
---getFirstNodeSentence = (\x -> (\(_,s) -> dgn_sens s) ((labNodes x)!!0) )
-
---getNodeSentence = (\(_,s) -> dgn_sens s)
---getNodeSentence = (\(_,s) -> toNamedList $ (\(G_theory _ _ thsens) -> thsens) $ dgn_theory s)
-
---getSentences::(Gro.G_l_sentence_list)->(Maybe [Ann.Named CASLFORMULA])
---getSentences (Gro.G_l_sentence_list _ t) = cast t
 
 -- isAxiom was added... (a :: Bool)
 transSen::[Ann.Named CASLFORMULA]->[(String, CASLFORMULA)]
@@ -223,12 +139,12 @@ getPureFormulas::[(String, CASLFORMULA)]->[CASLFORMULA]
 getPureFormulas [] = []
 getPureFormulas ((name, f):rest) = [f] ++ getPureFormulas rest
 
---getFormulas = (\x -> getPureFormulas $ (\(Just s) -> transSen s) $ getSentences $ getFirstNodeSentence x)
---getNamedFormulas = (\x -> (\(Just s) -> transSen s) $ getSentences $ getFirstNodeSentence x)
-
+getDG::FilePath->IO DGraph
 getDG f = do
-	(Just (_,_,dg,_)) <- run f
-	return dg 
+	(Just (ln,lenv)) <- run f
+	case Map.lookup ln lenv of
+		Nothing -> error "Error looking op DGraph"
+		(Just (_,_,dg)) -> return dg
 
 -- Cast Signature to CASLSignature if possible
 getCASLSign::G_sign->(Maybe CASLSign)
@@ -236,9 +152,6 @@ getCASLSign (G_sign _ sign) = cast sign -- sign is of class Typeable -> cast -> 
 
 getJustCASLSign::(Maybe CASLSign)->CASLSign
 getJustCASLSign (Just cs) = cs
-
---getCASLFormula::Gro.G_l_sentence_list->CASLFORMULA
---getCASLFormula  sl = let (Just asl)=getSentences sl in (\(a, b) -> b) ((transSen asl)!!0) 
 
 -- Get a String-representation of a Set
 getSetStringList::(Show a)=>Set.Set a -> [String]
@@ -332,21 +245,7 @@ stringsToCASLSign cs =
 		,extendedInfo = () -- ignored
 	}
 
--- we need more info to make a graph...
--- just the DGraph is not sufficient...
---showgraph :: DGraph -> IO()
---showgraph dg = do
---		showGraph "no-file" defaultHetcatsOpts (Just ((ASL.Lib_id (ASL.Direct_link "" [])), (ASL.Lib_defn (ASL.Lib_id (ASL.Direct_link "" [])) [] [] []), dg, Map.empty)) 
 
-
-{- Call this function as follows:
-ghci -fglasgow-exts -fno-monomorphism-restriction  -fallow-overlapping-instances -fallow-undecidable-instances -ighc -ifgl -ihxt
-:l hets.hs
-:module +Common.Lib.Graph
-Just (ln,ast,dg,libenv)<-run "../CASL-lib/List.casl"
--}
-
-		
 -- Filter out links for collecting sorts, rels, preds...
 -- only four types of links are allowed (and afaik needed for this)
 linkFilter::[(Graph.LEdge DGLinkLab)]->[(Graph.LEdge DGLinkLab)]
@@ -601,7 +500,7 @@ type DGStructure = Map.Map LIB_NAME AllMaps
 createDGStructure::FilePath->(IO DGStructure)
 createDGStructure f = 
 	do
-		(Just (_, _, _, lenv)) <- run f
+		(Just (_, lenv)) <- run f
 		return (
 			foldl (\map (lname, (_,_,dg)) ->
 				Map.insert lname (getAll dg) map
@@ -1088,7 +987,7 @@ createReducedNode dg (n,node) =
 						buildCASLNodeDiff nnode inode
 						) node (globalnodes ++ hidingnodes)) localnodes
 				)
-
+				
 {-
 a hiding import is a global import, limited to a subset of the exporting node
 a local import is an import of the local attributes of the exporting node
