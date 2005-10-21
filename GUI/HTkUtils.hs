@@ -17,10 +17,8 @@ import System.Directory
 import HTk
 import Core
 import ScrollBox
-import TextDisplay
 import FileDialog
- -- only to avoid problematic ghc 6.2.1 compilation order
-import Common.Lib.Rel()
+
 import Maybe
 
 -- | create a window with title and list of options, return selected option
@@ -56,7 +54,7 @@ createTextSaveDisplayExt :: String -- ^ title of the window
                          -- the window is closed
                          -> IO (Toplevel,Editor) -- ^ the window in which 
                          -- the text is displayed
-createTextSaveDisplayExt title filename txt conf unpost =
+createTextSaveDisplayExt title fname txt conf upost =
   do win <- createToplevel [text title]
      b   <- newFrame win  [relief Groove, borderwidth (cm 0.05)]    
      t   <- newLabel b [text title, HTk.font (Helvetica, Roman, 18::Int)]
@@ -75,10 +73,10 @@ createTextSaveDisplayExt title filename txt conf unpost =
 
      quit <- clicked q
      save <- clicked s
-     spawnEvent (forever (quit >>> do destroy win; unpost
+     spawnEvent (forever (quit >>> do destroy win; upost
                            +>
                          save >>> do disableButs q s
-                                     askFileNameAndSave filename txt
+                                     askFileNameAndSave fname txt
                                      enableButs q s
                                      done))
      return (win, ed)
