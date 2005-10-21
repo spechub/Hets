@@ -1,7 +1,40 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) Uni Bremen 2005
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+
+Maintainer  :  till@tzi.de
+Stability   :  provisional
+Portability :  non-portable(uni-HaXml package)
+
+XML output for composition tables
+
+-}
 module CASL.CompositionTable.CompositionTable where
 
+{-
+DTD unter http://www.tzi.de/cofi/hets/CompositionTable.dtd
+
+type BaseRel = String
+
+type CompositionTable = [(BaseRel,BaseRel,[BaseRel])]
+type ConverseTable = [(BaseRel,BaseRel)]
+
+data Table = Table { name :: String,
+                     compositionTable :: CompositionTable,
+                     converseTable :: ConverseTable,
+                     identity :: BaseRel,
+                     models :: [(String,String)]
+                   }
+
+-- hets --spec=RCC8 -o comptable.xml Calculi/Space/RCC8.het
+-- writes Calculi/Space/RCC8.comptable.xml
+
+eliminate ops on rhs, resulting in list of base relations
+add equations for id
+-}
+
 import Text.XML.HaXml.Xml2Haskell
-import Text.XML.HaXml.OneOfN
 import Text.XML.HaXml.Types
 import Text.XML.HaXml.Pretty
 import Text.PrettyPrint.HughesPJ (Doc, vcat, render)
@@ -28,11 +61,14 @@ rootTag = "table"
 
 -- Create DTD without internal entities
 table_dtd::DocTypeDecl
-table_dtd = DTD rootTag (Just (PUBLIC (PubidLiteral publicId) (SystemLiteral systemURI))) []
+table_dtd = DTD rootTag 
+    (Just (PUBLIC (PubidLiteral publicId) (SystemLiteral systemURI))) []
 
 -- Create a Prolog for XML-Version 1.0 and UTF-8 encoding (or ISO ?)
 table_prolog::Prolog
-table_prolog = Prolog (Just (XMLDecl "1.0" (Just (EncodingDecl "UTF-8")) Nothing)) (Just table_dtd)
+table_prolog = Prolog 
+    (Just (XMLDecl "1.0" (Just (EncodingDecl "UTF-8")) Nothing)) 
+    $ Just table_dtd
 
 -- This function renders a Table-instance into a Doc-instance (pretty printing)
 table_document::Table->Doc
@@ -50,34 +86,42 @@ readTable = fReadXml
 
 {-Type decls-}
 
-data Table = Table Table_Attrs Compositiontable Conversetable
-                   Models
-           deriving (Eq,Show)
+data Table = Table Table_Attrs Compositiontable Conversetable Models
+             deriving (Eq,Show)
+
 data Table_Attrs = Table_Attrs
     { tableName :: String
     , tableIdentity :: String
-    } deriving (Eq,Show)
-newtype Compositiontable = Compositiontable [Cmptabentry]               deriving (Eq,Show)
-newtype Conversetable = Conversetable [Contabentry]             deriving (Eq,Show)
-newtype Models = Models [Model]                 deriving (Eq,Show)
+    } deriving (Eq, Show)
+
+newtype Compositiontable = Compositiontable [Cmptabentry] 
+    deriving (Eq, Show)
+newtype Conversetable = Conversetable [Contabentry] 
+    deriving (Eq, Show)
+newtype Models = Models [Model]
+    deriving (Eq, Show)
+
 data Cmptabentry = Cmptabentry Cmptabentry_Attrs [Baserel]
-                 deriving (Eq,Show)
+                   deriving (Eq, Show)
+
 data Cmptabentry_Attrs = Cmptabentry_Attrs
     { cmptabentryArgBaserel1 :: String
     , cmptabentryArgBaserel2 :: String
-    } deriving (Eq,Show)
+    } deriving (Eq, Show)
+
 data Contabentry = Contabentry
     { contabentryArgBaseRel :: String
     , contabentryConverseBaseRel :: String
-    } deriving (Eq,Show)
+    } deriving (Eq, Show)
+
 data Model = Model
     { modelString1 :: String
     , modelString2 :: String
-    } deriving (Eq,Show)
+    } deriving (Eq, Show)
+
 data Baserel = Baserel
     { baserelBaserel :: String
-    } deriving (Eq,Show)
-
+    } deriving (Eq, Show)
 
 {-Instance decls-}
 
@@ -85,7 +129,7 @@ instance XmlContent Table where
     fromElem (CElem (Elem "table" as c0):rest) =
         (\(a,ca)->
            (\(b,cb)->
-              (\(c,cc)->
+              (\(c, _)->
                  (Just (Table (fromAttrs as) a b c), rest))
               (definite fromElem "<models>" "table" cb))
            (definite fromElem "<conversetable>" "table" ca))
@@ -107,7 +151,7 @@ instance XmlAttributes Table_Attrs where
         ]
 instance XmlContent Compositiontable where
     fromElem (CElem (Elem "compositiontable" [] c0):rest) =
-        (\(a,ca)->
+        (\(a, _)->
            (Just (Compositiontable a), rest))
         (many fromElem c0)
     fromElem (CMisc _:rest) = fromElem rest
@@ -116,7 +160,7 @@ instance XmlContent Compositiontable where
         [CElem (Elem "compositiontable" [] (concatMap toElem a))]
 instance XmlContent Conversetable where
     fromElem (CElem (Elem "conversetable" [] c0):rest) =
-        (\(a,ca)->
+        (\(a, _)->
            (Just (Conversetable a), rest))
         (many fromElem c0)
     fromElem (CMisc _:rest) = fromElem rest
@@ -125,7 +169,7 @@ instance XmlContent Conversetable where
         [CElem (Elem "conversetable" [] (concatMap toElem a))]
 instance XmlContent Models where
     fromElem (CElem (Elem "models" [] c0):rest) =
-        (\(a,ca)->
+        (\(a, _)->
            (Just (Models a), rest))
         (many fromElem c0)
     fromElem (CMisc _:rest) = fromElem rest
@@ -134,7 +178,7 @@ instance XmlContent Models where
         [CElem (Elem "models" [] (concatMap toElem a))]
 instance XmlContent Cmptabentry where
     fromElem (CElem (Elem "cmptabentry" as c0):rest) =
-        (\(a,ca)->
+        (\(a, _)->
            (Just (Cmptabentry (fromAttrs as) a), rest))
         (many fromElem c0)
     fromElem (CMisc _:rest) = fromElem rest
@@ -144,8 +188,10 @@ instance XmlContent Cmptabentry where
 instance XmlAttributes Cmptabentry_Attrs where
     fromAttrs as =
         Cmptabentry_Attrs
-          { cmptabentryArgBaserel1 = definiteA fromAttrToStr "cmptabentry" "argBaserel1" as
-          , cmptabentryArgBaserel2 = definiteA fromAttrToStr "cmptabentry" "argBaserel2" as
+          { cmptabentryArgBaserel1 = definiteA fromAttrToStr "cmptabentry" 
+                                     "argBaserel1" as
+          , cmptabentryArgBaserel2 = definiteA fromAttrToStr "cmptabentry" 
+                                     "argBaserel2" as
           }
     toAttrs v = catMaybes 
         [ toAttrFrStr "argBaserel1" (cmptabentryArgBaserel1 v)
@@ -161,8 +207,10 @@ instance XmlContent Contabentry where
 instance XmlAttributes Contabentry where
     fromAttrs as =
         Contabentry
-          { contabentryArgBaseRel = definiteA fromAttrToStr "contabentry" "argBaseRel" as
-          , contabentryConverseBaseRel = definiteA fromAttrToStr "contabentry" "converseBaseRel" as
+          { contabentryArgBaseRel = definiteA fromAttrToStr "contabentry"
+                                    "argBaseRel" as
+          , contabentryConverseBaseRel = definiteA fromAttrToStr "contabentry"
+                                         "converseBaseRel" as
           }
     toAttrs v = catMaybes 
         [ toAttrFrStr "argBaseRel" (contabentryArgBaseRel v)
@@ -200,6 +248,5 @@ instance XmlAttributes Baserel where
     toAttrs v = catMaybes 
         [ toAttrFrStr "baserel" (baserelBaserel v)
         ]
-
 
 {-Done-}
