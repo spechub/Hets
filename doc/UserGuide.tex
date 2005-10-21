@@ -74,6 +74,12 @@
 
 \newcommand     {\Horn}{\normalTEXTSC{H}{ORN}}
 
+%%%%% Klaus macros
+\newcommand{\CASLDL}{\textmd{\textsc{Casl-DL}}\xspace}
+\newcommand{\Dolce}{\textmd{\textsc{Dolce}}\xspace}
+\newcommand{\SHOIN}{$\mathcal{SHOIN}$(\textbf{D})\xspace}
+%%%%% end of Klaus macros
+
 %% Use \ELAN-\CASL, \HOL-\CASL, \Isabelle/\HOL
 
 \newcommand{\LCF}{LCF\xspace}
@@ -110,7 +116,7 @@
 \begin{document}
 
 \title{{\bf \protect{\LARGEHets} User Guide}\\ 
--- Version 0.35 --}
+-- Version 0.44 --}
 \author{Till Mossakowski\\[1em]
 Department of Computer Science\\ and Bremen
 Institute for Safe Systems,\\ University of Bremen, Germany.\\[1em]
@@ -147,39 +153,121 @@ architectural specifications and libraries. The latter of course needs
 to call the logic-specific tools whenever a basic specification is
 encountered.
 
-\begin{figure}
-$$\xymatrix{
-\Text{Haskell} 
-&
-\Text{\HasCASL} \ar[l]
-&
-\Text{\CspCASL}
-&
-\Text{\ModalCASL}
-&
-\Text{\CoCASL}
- \\
-&
-\Text{\CASL} \ar[u] \ar[ur] \ar[urr] \ar[urrr]
-&
-}$$
-\caption{Graph of logics currently supported by \Hets.\label{fig:LogicGraph}}
-\end{figure}
+\section{Logics supported by \Hets}
 
 \begin{figure}
+  \begin{center}
+    \includegraphics[scale=0.4]{LogicGraph}
+  \end{center}
+\caption{Graph of logics currently supported by \Hets. The more an 
+ellipse is filled, the more stable is the implementation of the logic.}
+\label{fig:LogicGraph}
+\end{figure}
+
+
+\begin{figure}
+\begin{center}
 \begin{tabular}{|l|c|c|c|}\hline
 Language & Parser & Static Analysis & Prover \\\hline
-\CASL & x & x & (x) \\\hline
-\CoCASL & x & x & (x) \\\hline
+\CASL & x & x & - \\\hline
+\CoCASL & x & x & - \\\hline
 \ModalCASL & x & x & - \\\hline
 \HasCASL & x & (x) & - \\\hline
-Haskell/HasSLe & x & x & -\\\hline
+Haskell & x & x & -\\\hline
 \CspCASL & (x) & - & - \\\hline
-Structured specifications & x & x & (x) \\\hline
-Architectural specifications & x & - & -\\\hline
+%Structured specifications & x & x & (x) \\\hline
+%Architectural specifications & x & x & -\\\hline
+\CASLDL & x & - & - \\\hline
+OWL DL basic & x & (x) & - \\\hline
+OWL DL structure & x & (x) & - \\\hline
+SPASS & - & - & x \\\hline
+Isabelle & - & - & x \\\hline
 \end{tabular}
+\end{center}
 \caption{Current degree of \Hets support for the different languages.\label{fig:Languages}}
 \end{figure}
+
+\begin{description}
+  
+\item[CASL] extends many sorted first-order logic with partial
+  functions and subsorting.  It also provides induction sentences,
+  expressing the (free) generation of datatypes.
+%It is mainly designed and used for the
+%specification of requirements for software systems. But it is also
+%used for the specification of \Dolce (Descriptive Ontology for
+%Linguistic and Cognitive Engineering), an Upper Ontology for knowledge
+%representation. \cite{Gangemi:2002:SOD} Further it is now used to
+%specify calculi for time and space. 
+For more details on \CASL see \cite{CASL-RM,CASL-UM}.
+%
+We have implemented the \CASL logic in such a way that much of the
+implementation can be re-used for \CASL extensions as well; this
+is achieved via ``holes'' (realized via polymorphic variables) in the
+types for signatures, morphisms, abstract syntax etc.  This eases
+integration of \CASL extensions and keeps the effort of integrating
+\CASL extensions quite moderate.
+
+\item[CoCASL] \cite{MossakowskiEA04} is a coalgebraic extension of \CASL,
+suited for the specification of process types and reactive system.
+The central proof method is coinduction.
+
+\item[ModalCASL] is an extension of \CASL with multi-modalities and
+term modalities. It allows the specification of modal systems with 
+Kripke's possible worlds semantics. It is also possible to express
+certain forms of dynamic logic. 
+
+\item[HasCASL] is a higher order extension of \CASL allowing
+  polymorphic datatypes and functions. It is closely related to the
+  programming language Haskell and allows program constructs being
+  embedded in the specification. 
+  An overview of \HasCASL is given in \cite{Schroeder:2002:HIS};
+the language is summarized in \cite{HasCASL/Summary}.
+The latter document is also available on the CD-ROM 
+in \texttt{Tools/Hets/doc}.
+
+\item[Haskell] is a modern, pure and strongly typed functional
+  programming language. It simultaneously is the implementation
+  language of \Hets, such that in the future, \Hets might be applied
+  to itself.
+The definitive reference for Haskell is \cite{PeytonJones03},
+see also \url{www.haskell.org}. 
+  
+\item[CspCASL] \cite{Roggenbach:2003:C-CN} is a combination of \CASL
+  with the process algebra CSP.
+
+\item[OWL DL] is the Web Ontology Language (OWL) recommended by the
+  World Wide Web Consortium (W3C, \texttt{http://www.w3c.org}). It is
+  used for knowledge representation and the Semantic Web
+  \cite{berners:2001:SWeb}. 
+Hets calls an external OWL DL parser
+  written in JAVA to obtain the abstract syntax for an OWL file and its
+  imports. The JAVA parser is also doing a first analysis classifying
+  the OWL ontology into the sublanguages OWL Full, OWL DL and OWL
+  Lite. 
+ Hets only supports the last two, more restricted variants. 
+The
+  structuring of the OWL imports is displayed as Development Graph.
+
+\item[CASL-DL] is an extension of a restriction of \CASL, realizing
+a strongly typed variant of OWL DL in \CASL syntax.
+It extends
+  \CASL with cardinality restrictions for the description of sorts and
+  unary predicates. The restrictions are based on the equivalence
+  between \CASLDL, OWL~DL and \SHOIN. Compared to \CASL only unary
+  and binary predicates, predefined datatypes and concepts (subsorts
+  of the topsort Thing) are allowed. It is used to bring OWL DL and
+  \CASL closer together.
+
+\item[SPASS] \cite{WeidenbachEtAl02} is an automatic theorem prover for first-order logic
+with equality.
+
+\item[Isabelle] \cite{NipPauWen02} is an interactive theorem prover for higher-order
+logic.
+\end{description}
+SPASS and Isabelle are the only logics coming with a prover. Proof
+support for the other logics can be obtained by using logic translations
+to a prover-supported logic.
+
 
 An introduction to \CASL can be found in the \CASL User Manual
 \cite{CASL/UserManual}; the detailed language reference is given in
@@ -192,107 +280,77 @@ are forthcoming, until then, \cite{Mossakowski:2003:FHS} may serve as a short
 introduction. Moreover, the main heterogeneous constructs will be illustrated 
 in Sect.~\ref{sec:HetSpec} below.
 
-An overview of \HasCASL is given in \cite{Schroeder:2002:HIS};
-the language is summarized in \cite{HasCASL/Summary}.
-The latter document is also available on the CD-ROM 
-in \texttt{Tools/Hets/doc}.
-The definitive reference for Haskell is \cite{PeytonJones03},
-see also \url{www.haskell.org}. An introduction to \CspCASL
-is given in \cite{Roggenbach:2003:CCN}.
 
 \section{Getting started}
  
 The latest \Hets version can be obtained from the
-\CoFI tools home page
+\Hets tools home page
 \begin{quote}
-\texttt{http://www.cofi.info/Tools}
+\texttt{http://www.tzi.de/cofi/hets}
 \end{quote}
  Since \Hets is being
 improved constantly, it is recommended always to use the latest version.
 
 \Hets currently is available for Linux, Solaris and
-Mac OS-X. You can either start the script \texttt{Tools/Hets/hets} 
-(the script automatically finds the binary for your architecture).
-Or you can install \Hets on your local file system (which
-is strongly recommended, since only then \Hets can write intermediate
-\texttt{.env} files that are needed for compilation of library
-downloads). This is done by
-opening a shell, \texttt{cd}ing
-into \texttt{Tools/Hets}on the CD-ROM\footnote{
-For Linux and Solaris users: you may need to mount the CD-ROM first.
-You can lookup in \texttt{/etc/fstab}
-where it is mounted, typcial locations are \texttt{/media/cdrom}
-or \texttt{/mount/cdrom}. 
-For MacIntosh
-users: cd into \texttt{/Volumes} and look there for the CD-ROM.} and then calling
-\begin{quote}
-\texttt{./install <dir>}
-\end{quote}
-where \texttt{<dir>} is the directory where \Hets should be
-installed.
+Mac OS-X. 
 
-MacIntosh users need to install some libraries from 
-\texttt{Tools/Hets/hets/macintosh}
-\begin{verbatim}
-     cp libreadline.4.3.dylib /usr/local/lib
-     tar xzf Haskell-libs.tgz -C /Library/Frameworks 
-\end{verbatim}
-The \texttt{install} script installs these automatically for you.
-Note that you may have to be \texttt{root} in order to be able to 
-do this. See
-\begin{quote}
- \url{http://www.osxfaq.com/Tutorials/Root\_User\_Creation/index.ws}
-\end{quote}
-for instructions how to create a root user.
-%After downloading your platform specific distribution,
-%you have to unpack it as follows (note that the filenames will
-%be slightly different, depending on your platform):
-
-%\begin{verbatim}
-%tar zxf hets.tgz   # gtar under Solaris
-%\end{verbatim}
+MacIntosh users need to install some libraries, which can be found
+at the \Hets download page.
 
 If you want to compile \Hets from the sources, please follow the
-instructions of the \texttt{Tools/Hets/src/INSTALL} file.
+link ``Hets: source code and information for developers''
+on teh \Hets web page, download the sources (as tarball or from
+cvs), and follow the
+instructions in the \texttt{INSTALL} file.
 
-\subsection*{daVinci}
-For the display of development graphs, \Hets uses daVinci.
-daVinci is maintained by b-novative and b-novative holds all rights.
-This release may be accompanied with free binary releases of daVinci
-Version 2.1, but daVinci 2.1 is no longer supported or maintained.
-However, you are encouraged to obtain the latest version of daVinci
-Presenter (currently 3.0.5) from \url{http://www.b-novative.com}.
-It needs a license key, but is free for academic purposes.
+\subsection*{uDraw(Graph)}
+For the display of development graphs (with the -g option), \Hets uses
+uDraw(Graph), formerly known as daVinci.
+You can get uDraw(Graph) freely from 
+\begin{quote}
+\url{http://www.tzi.de/uDrawGraph/en/}.
+\end{quote}
+Moreover, you need Tcl/Tk as well, available freely from
+\begin{quote}
+\url{http://www.scriptics.com/software/tcltk/}.
+\end{quote}
+But Tcl/Tk probably has been already installed
+on your computer anyway.
 
-Linux: the Linux binary release of daVinci 2.1 relies on the old
-shlibs5 that must be installed on your system (if ./daVinci cannot be
-found/executed, then shlibs5 are missing)
+Set the environment variable \texttt{\$UNIWISH} to the wish binary
+(which is part of Tcl/Tk), and \texttt{\$UNIDAVINCI} to the
+uDraw(Graph) binary. Furthermore, uDraw(Graph) requires that
+\texttt{DAVINCIHOME} is set to the installation directory of
+uDraw(Graph).
 
-Solaris: the Solaris binary release of daVinci 2.1 should work without
-problems
+\subsection*{Isabelle}
 
-Macintosh (Darwin): there is no release of daVinci for Macintosh, but
-b-novative may have one in the mean time
+For theorem proving with Isabelle, you need to install Isabelle,
+which is available freely from 
+\begin{quote}
+\url{http://www.cl.cam.ac.uk/Research/HVG/Isabelle/}.
+\end{quote}
+We recommend to use the latest version (Isabelle 2005), together
+with Proof General, a proof interface that comes with the Isabelle
+distribution. Proof General uses the Eamcs or Xemacs editor.
 
-For best quality, get the latest version of daVinci from b-novative.
+Set the environment variable
+\texttt{\$HETS\_ISABELLE} to the Isabelle (or Emacs, for use with proof general) binary, and set \texttt{\$LC\_CTYPE} to \texttt{C}.
 
-\subsection*{Environment variables}
+\subsection*{SPASS}
 
-The script in \texttt{Tools/Hets/hets} sets the following environment
-variables:
+For theorem proving with SPASS, obtain SPASS freely from 
+\begin{quote}
+\texttt{http://spass.mpi-sb.mpg.de/}.
+\end{quote}
 
-For \Hets to find daVinci, the environment variables \texttt{DAVINCIHOME} and
-\texttt{UNIDAVINCI} must be set to the installation directory of daVinci and to
-the actual executable, respectively.
-\begin{verbatim}
-export DAVINCIHOME=<path>/daVinci_V2.1
-export UNIDAVINCI=<path>/daVinci_V2.1/daVinci
-\end{verbatim}
+\subsection*{Libraries of specifications}
+
+A repository of libraries of specifications for use with \Hets
+is available under \url{http://www.cofi.info/Libraries}.
 
 The environment variable \texttt{HETS\_LIB} should be set to
-a location where specification libraries are stored. By default,
-it is set to the \texttt{Libraries} directory on the CD-ROM
-(or the corresponding copy on your local file system).
+a location where the specification libraries are stored. 
 
 %\QUERY{This should be done by the install script!}
 
@@ -359,7 +417,8 @@ Use \texttt{DIR} as the directory for specification libraries
 (equivalently, you can set the variable \texttt{HETS\_LIB} before
 calling \Hets).
 \item[\texttt{--casl-amalg=ANALYSIS}]
-  The \texttt{ANALYSIS} argument specifies the options for
+  For the analysis of architectural specification (a quite advanced
+  feature of \CASL), the \texttt{ANALYSIS} argument specifies the options for
   amalgamability checking 
   algorithm for \CASL logic; it is a comma-separated list of zero or
   more of the following options:
@@ -390,6 +449,7 @@ Ending & default logic & structuring language\\\hline
 \texttt{.casl} & \CASL & \CASL \\\hline
 \texttt{.het} & \CASL & \CASL \\\hline
 \texttt{.hs} & Haskell/HasSLe & Haskell\\\hline
+\texttt{.owl} & OWL DL, OWL Lite & OWL\\\hline
 \end{tabular}
 
 \medskip
@@ -684,9 +744,9 @@ links in the sense of \cite[IV:4]{CASL/RefManual}.
 \end{description}
 
 We now explain the menus of the development graph window.
-Most of the pull-down menus of the window are daVinci-specific
+Most of the pull-down menus of the window are uDraw(Graph)-specific
 layout menus;
-their function can be looked up in the daVinci documentation.
+their function can be looked up in the uDraw(Graph) documentation.
 The exception is the Edit menu. Moreover, the nodes and links
 of the graph have attached pop-up menus, which appear when
 clicking with the right mouse button.
@@ -694,19 +754,24 @@ clicking with the right mouse button.
 \begin{description}
 \item[Edit] This menu has two submenus:
 \begin{description}
-\item[Unnamed nodes] With the ``Hide'' submenu, it is possible
+\item[Unnamed nodes] 
+The ``Hide/show names'' menu is a toggle:
+you can switcn on or off the display of names for nodes that
+are initially unnamed. The newly named nodes get names that
+are derived from named neighbour nodes.
+
+With the ``Hide nodes'' submenu, it is possible
 to reduce the complexity of the graph by hiding all unnamed nodes;
 only nodes corresponding to named specifications remain displayed.
 Paths between named nodes going through unnamed nodes
-are displayed as links. With the ``Show'' submenu, the unnamed
+are displayed as links. With the ``Show nodes'' submenu, the unnamed
 nodes re-appear.
 \item[Proofs] This menu allows to apply some of the deduction
 rules for development graphs, see Sect. IV:4.4 of the \CASL 
-Reference Manual \cite{CASL/RefManual}. However, it is still
-experimental and far from being completely implemented.
-Moreover, in the future \Hets will be interfaced with various
- logic-specific theorem proving, rewriting and consistency checking
- tools.  
+Reference Manual \cite{CASL/RefManual}. While support for
+local and global (definition or theorem) links is stable, 
+support for hiding links and consistency checking is still
+experimental.
 \end{description}
 \item[Pop-up menu for nodes]
 Here, the number of submenus depends on the type of the node:
@@ -918,7 +983,7 @@ Hutter and Bartek Klin (through work on its precursors \Cats and
 \MAYA).
 
 \bibliographystyle{plain}
-\bibliography{cofibib,cofi-ann,UM,hets}
+\bibliography{cofibib,cofi-ann,UM,hets,kl}
 \end{document}
 
 
