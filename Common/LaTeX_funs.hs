@@ -125,10 +125,6 @@ pt_length i = showFFloat (Just 3) pt "pt"
     where pt :: Float
           pt = fromRational (toRational i /351) 
 
--- a hack to have some debug prints
-condTrace :: String -> a -> a
-condTrace s v = v -- trace s v
-
 {- functions to calculate a word-width in integer with a given word
    type or purpose
 
@@ -209,12 +205,12 @@ sum_char_width_deb pref_fun cFM key_cFM s = sum_char_width' s 0
                             Nothing -> sum_char_width' rest nl 
               where nl = r + lookupWithDefault_cFM (c1:[])
           lookupWithDefault_cFM s' = case Map.lookup s' cFM of
-                                     Nothing -> condTrace 
+                                     Nothing -> {- trace 
                                                    ((pref_fun
                                                      . showString s' 
                                                      . showString "\' of \"" 
                                                      . showString s)
-                                                    "\" not found!")
+                                                    "\" not found!") -}
                                                    2200
                                      Just w  -> w    
 
