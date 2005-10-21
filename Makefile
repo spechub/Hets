@@ -167,7 +167,6 @@ endif
 
 HC_OPTS = $(HC_FLAGS) $(HC_INCLUDE) $(HC_PACKAGE) $(PFE_FLAGS) $(HC_PROF) \
     -DCASLEXTENSIONS
-DRIFT_OPTS = +RTS -K10m -RTS
 
 ####################################################################
 ## sources for hets 
@@ -627,7 +626,7 @@ hets.hs: Driver/Version.hs
 
 %.hs: %.der.hs $(DRIFT)
 	$(RM) $@
-	($(DRIFT_ENV);	export DERIVEPATH; $(DRIFT) $(DRIFT_OPTS) $< > $@)
+	($(DRIFT_ENV); export DERIVEPATH; $(DRIFT) $< > $@)
 	chmod 444 $@
 
 ## rules for inlineAxioms
