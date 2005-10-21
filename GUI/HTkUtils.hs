@@ -1,11 +1,11 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c)  Till Mossakowski, Klaus Lüttich, and Rene Wagner, Uni Bremen 2002-2005
+Copyright   :  (c) K. Lüttich, Rene Wagner, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luettich@tzi.de
 Stability   :  provisional
-Portability :  non-portable (imports Logic)
+Portability :  non-portable (imports HTk)
 
 Utilities on top of HTk
 -}
@@ -15,11 +15,8 @@ module GUI.HTkUtils where
 import System.Directory
 
 import HTk
-import Core
 import ScrollBox
 import FileDialog
-
-import Maybe
 
 -- | create a window with title and list of options, return selected option
 listBox :: String -> [String] -> IO (Maybe Int)
@@ -111,8 +108,9 @@ askFileNameAndSave defFN txt =
     where saveFile fp = writeFile fp txt
 
 --- added by RW
--- |
--- Represents the state of a goal in a 'ListBox' that uses 'populateGoalsListBox'
+{- |
+Represents the state of a goal in a 'ListBox' that uses 'populateGoalsListBox'
+-}
 data LBStatusIndicator = LBIndicatorProved
                        | LBIndicatorDisproved
                        | LBIndicatorOpen
@@ -139,12 +137,13 @@ data LBGoalView = LBGoalView { -- | status indicator
 -- Populates a 'ListBox' with goals. After the initial call to this function
 -- the number of goals is assumed to remain constant in ensuing calls.
 populateGoalsListBox :: ListBox String -- ^ listbox
-                     -> [LBGoalView] -- ^ list of goals. length must remain constant after the first call
+                     -> [LBGoalView] -- ^ list of goals
+--  length must remain constant after the first call
                      -> IO ()
 populateGoalsListBox lb v = do
   selectedOld <- (getSelection lb) :: IO (Maybe [Int])
   lb # value (toString v)
-  when (isJust selectedOld) 
-       (mapM_ (\n -> selection n lb) (fromJust selectedOld))
+  maybe (return ()) (mapM_ (\n -> selection n lb)) selectedOld
   where
-    toString = map (\ LBGoalView {statIndicator = i, goalDescription = d} -> (indicatorString i) ++ (' ':d))
+    toString = map (\ LBGoalView {statIndicator = i, goalDescription = d} -> 
+                        (indicatorString i) ++ (' ' : d))
