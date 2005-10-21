@@ -1,5 +1,4 @@
-{-| 
-   
+{- | 
 Module      :  $Header$
 Copyright   :  (c) Jorina F. Gerken, Till Mossakowski, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -54,7 +53,6 @@ import Data.Graph.Inductive.Graph
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.Id
-import Common.AS_Annotation
 import Syntax.AS_Library
 import Syntax.Print_AS_Library()
 import Proofs.EdgeUtils
@@ -62,7 +60,6 @@ import Proofs.StatusUtils
 import Proofs.Global
 import Proofs.Local
 import Proofs.HideTheoremShift
-import Proofs.TheoremHideShift
 import GUI.Utils
 
 {- todo: implement apply for GlobDecomp and Subsumption 
@@ -74,79 +71,75 @@ applyRule = error "Proofs.hs:applyRule"
 
 {- automatically applies all rules to the library
    denoted by the library name of the given proofstatus-}
-automatic :: ProofStatus -> IO ProofStatus
+automatic :: ProofStatus -> ProofStatus
 automatic = automaticRecursive 0
 
 
 {- applies the rules recursively until no further changes can be made -}
-automaticRecursive :: Int -> ProofStatus -> IO ProofStatus
-automaticRecursive cnt proofstatus = do
-  auxProofstatus@(ln, libEnv, historyMap) <- automaticApplyRules proofstatus
-  finalProofstatus <- mergeHistories cnt auxProofstatus
-  case finalProofstatus of
-    Nothing -> return proofstatus
+automaticRecursive :: Int -> ProofStatus -> ProofStatus
+automaticRecursive cnt proofstatus = 
+  let auxProofstatus = automaticApplyRules proofstatus
+      finalProofstatus = mergeHistories cnt auxProofstatus
+  in case finalProofstatus of
+    Nothing -> proofstatus
     Just p -> automaticRecursive 1 p
 
 
 {- sequentially applies all rules to the given proofstatus,
    ie to the library denoted by the library name of the proofstatus -}
-automaticApplyRules :: ProofStatus -> IO ProofStatus
-automaticApplyRules p = do
---  p0 <- theoremHideShift p
-  p1 <- globSubsume p --p0
-  p2 <- globDecomp p1
-  p3 <- localInference p2
-  let p4 = locDecomp p3
-  hideTheoremShift True p4
+automaticApplyRules :: ProofStatus -> ProofStatus
+automaticApplyRules p = 
+   --  theoremHideShift p
+  let p1 = globSubsume p
+      p2 = globDecomp p1
+      p3 = localInference p2
+      p4 = locDecomp p3
+  in automaticHideTheoremShift p4
 
 
 {- merges for every library the new history elements
    to one new history element -}
-mergeHistories :: Int -> ProofStatus -> IO (Maybe ProofStatus)
-mergeHistories cnt proofstatus@(ln,libEnv,_) = do
-  (numChanges,newProofstatus) <- mergeHistoriesAux cnt (libNames) proofstatus
-  if (numChanges > 0) then 
-     return (Just (changeCurrentLibName ln newProofstatus))
-    else return Nothing
-
-  where
-    libNames = Map.keys libEnv
-
+mergeHistories :: Int -> ProofStatus -> Maybe ProofStatus
+mergeHistories cnt proofstatus@(ln,libEnv,_) = 
+  let (numChanges,newProofstatus) = mergeHistoriesAux cnt 
+                                    (Map.keys libEnv) proofstatus
+  in if (numChanges > 0) then 
+     Just $ changeCurrentLibName ln newProofstatus
+    else Nothing
 
 {- auxiliary method for mergeHistories:
    determined the library names and recursively applies mergeHistory -}
-mergeHistoriesAux :: Int -> [LIB_NAME] -> ProofStatus -> IO (Int,ProofStatus)
-mergeHistoriesAux cnt [] proofstatus = return (0,proofstatus)
-mergeHistoriesAux cnt (ln:list) proofstatus = do
-  ps <- mergeHistory cnt (changeCurrentLibName ln proofstatus)
-  case ps of
-    Just newProofstatus -> do 
-      (i,finalProofstatus) <- mergeHistoriesAux cnt list newProofstatus
-      return (i+1,finalProofstatus)
+mergeHistoriesAux :: Int -> [LIB_NAME] -> ProofStatus -> (Int,ProofStatus)
+mergeHistoriesAux _ [] proofstatus = (0, proofstatus)
+mergeHistoriesAux cnt (ln:list) proofstatus =
+  let ps = mergeHistory cnt (changeCurrentLibName ln proofstatus)
+  in case ps of
+    Just newProofstatus -> let 
+      (i,finalProofstatus) = mergeHistoriesAux cnt list newProofstatus
+      in (i+1,finalProofstatus)
     Nothing -> mergeHistoriesAux cnt list proofstatus
-
 
 {- merges the new history elements of a single library
    to one new history elemebt-}
-mergeHistory :: Int -> ProofStatus -> IO (Maybe ProofStatus)
-mergeHistory cnt proofstatus@(ln,libEnv,historyMap) = do
+mergeHistory :: Int -> ProofStatus -> Maybe ProofStatus
+mergeHistory cnt proofstatus@(ln,libEnv,historyMap) =
   let history = lookupHistory ln proofstatus
-      dgraph = lookupDGraph ln proofstatus
-  let (newHistoryPart, oldHistory) = splitAt (5+cnt) history
-  if (null (concat (map snd (take 5 newHistoryPart)))) && (cnt == 1) then
-     return Nothing
-   else do
+--      dgraph = lookupDGraph ln proofstatus
+      (newHistoryPart, oldHistory) = splitAt (5+cnt) history
+  in if null (concatMap snd $ take 5 newHistoryPart) && cnt == 1 then
+     Nothing
+   else
     let (rules, changes) = concatHistoryElems (reverse newHistoryPart)
         newHistoryElem = (rules, removeContraryChanges changes)
         newHistory = newHistoryElem:oldHistory
-    return (Just (ln,libEnv,Map.insert ln newHistory historyMap))
-
+    in Just (ln, libEnv, Map.insert ln newHistory historyMap)
 
 {- concats the given history elements to one history element-}
 concatHistoryElems :: [([DGRule],[DGChange])] -> ([DGRule],[DGChange])
-concatHistoryElems [] = ([],[])
-concatHistoryElems ((rules,changes):elems) =
-  (rules++(fst (concatHistoryElems elems)),changes++(snd (concatHistoryElems elems)))
+concatHistoryElems [] = ([], [])
+concatHistoryElems ((rules, changes) : elems) =
+  (rules ++ fst (concatHistoryElems elems),
+         changes ++ snd (concatHistoryElems elems))
 
 -- ---------------
 -- basic inference
@@ -173,14 +166,14 @@ getConsCheckers cms =
 selectProver :: [(a,AnyComorphism)] -> IOResult (a,AnyComorphism)
 selectProver [p] = return p
 selectProver [] = resToIORes $ fatal_error "No prover available" nullRange
-selectProver provers = do
+selectProver ps = do
    sel <- ioToIORes $ listBox 
                 "Choose a translation to a prover-supported logic"
-                (map (show.snd) provers)
+                $ map (show.snd) ps
    i <- case sel of
            Just j -> return j
-           _ -> resToIORes $ fatal_error "Proofs.Proofs: selection" nullRange
-   return (provers!!i)
+           _ -> resToIORes $ fail "Proofs.Proofs: selection"
+   return $ ps !! i
  
 cons_check :: Logic lid sublogics
               basic_spec sentence symb_items symb_map_items
@@ -201,7 +194,7 @@ proveTheory _ = prove
 basicInferenceNode :: Bool -> LogicGraph -> (LIB_NAME,Node) -> ProofStatus 
                           -> IO (Result ProofStatus)
 basicInferenceNode checkCons lg (ln, node)
-         proofStatus@(libname,libEnv,proofHistory) = do
+         proofStatus@(libname, libEnv, _) = do
       let dGraph = lookupDGraph libname proofStatus
       ioresToIO $ do 
         -- compute the theory of the node, and its name
@@ -253,26 +246,26 @@ basicInferenceNode checkCons lg (ln, node)
             -- todo: throw out the stuff about edges
             -- instead, mark proven things as proven in the node
             let newThms = filter isProvedStat ps
-            (nextDGraph, nextHistoryElem) <- 
-              if null newThms then return (dGraph,([],[]))
-               else do
-                 let oldNode = labNode' (safeContext "Proofs.InferBasic.basicInferenceNode"  dGraph node)
-                     (_,oldContents) = oldNode
+                (nextDGraph, nextHistoryElem) = 
+                 if null newThms then (dGraph, ([], []))
+                 else let 
+                     oldNode@(_,oldContents) = labNode' (safeContext 
+                        "Proofs.InferBasic.basicInferenceNode"  dGraph node)
                      newTh = case (dgn_theory oldContents) of
                              G_theory lid sig sens ->
                                G_theory lid sig (markProved (Comorphism cid) 
                                                             lidT newThms sens)
                      n = getNewNode dGraph
                      newNode = (n, oldContents{dgn_theory = newTh})
-                 (newGraph,changes) <- ioToIORes $
+                     (newGraph,changes) =
                              adoptEdges (insNode newNode $ dGraph) node n
-                 let newGraph' = delNode node $ newGraph
+                     newGraph' = delNode node $ newGraph
                      newChanges = InsertNode newNode : changes ++ 
                                         [DeleteNode oldNode]
                      rules = map (\s -> BasicInference (Comorphism cid) 
                                             (BasicProof lidT s)) 
                                  ps
-                 return (newGraph',(rules,newChanges))
+                     in (newGraph',(rules,newChanges))
             return $ mkResultProofStatus proofStatus nextDGraph nextHistoryElem
 
 -- | mark all newly proven goals with their proof tree
@@ -281,12 +274,11 @@ markProved :: (Ord a, Logic lid sublogics
          sign morphism symbol raw_symbol proof_tree) => 
      AnyComorphism -> lid -> [Proof_status proof_tree] -> ThSens a -> ThSens a
 markProved c lid status = 
- Set.map (\sen -> 
+ Set.map $ \sen -> 
   let findProof [] = sen
       findProof (s:rest) =
        if goalName s == senName (value sen) 
-        then sen {thmStatus = (c,BasicProof lid s) : thmStatus sen}
+        then sen { thmStatus = (c, BasicProof lid s) : thmStatus sen }
         else findProof rest
    in findProof status
-   )
-     
+

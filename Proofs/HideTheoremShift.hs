@@ -22,7 +22,10 @@ hide theorem shift proof in development graphs.
    Springer-Verlag 2001.
 -}
 
-module Proofs.HideTheoremShift (hideTheoremShift) where
+module Proofs.HideTheoremShift 
+    ( interactiveHideTheoremShift
+    , automaticHideTheoremShift
+    ) where
 
 import Logic.Grothendieck
 import Static.DevGraph
@@ -34,15 +37,31 @@ import Proofs.EdgeUtils
 import Proofs.StatusUtils
 import GUI.Utils
 
+import Control.Monad.Identity
+
 -- ----------------------------------------------
 -- hide theorem shift
 -- ----------------------------------------------
 
-hideTheoremShift :: Bool -> ProofStatus -> IO ProofStatus
-hideTheoremShift isAutomatic proofStatus@(ln,_,_) = do
+type ListSelector m a = [a] -> m (Maybe a)
+type PathTuple = ([LEdge DGLinkLab], [LEdge DGLinkLab])
+type ProofBaseSelector m = DGraph -> ListSelector m PathTuple
+
+interactiveHideTheoremShift :: ProofStatus -> IO ProofStatus
+interactiveHideTheoremShift = hideTheoremShift hideTheoremShift_selectProofBase
+
+automaticHideTheoremShift :: ProofStatus -> ProofStatus
+automaticHideTheoremShift = runIdentity . hideTheoremShift 
+  (const $ \ l -> return $ case l of 
+                  [a] -> Just a   -- may be take the first one always?
+                  _ -> Nothing)
+
+hideTheoremShift :: Monad m => ProofBaseSelector m 
+                 -> ProofStatus -> m ProofStatus
+hideTheoremShift proofBaseSel proofStatus@(ln,_,_) = do
   let dgraph = lookupDGraph ln proofStatus
       hidingThmEdges = filter isUnprovenHidingThm (labEdges dgraph)
-  result <- hideTheoremShiftAux dgraph ([],[]) hidingThmEdges isAutomatic
+  result <- hideTheoremShiftAux dgraph ([],[]) hidingThmEdges proofBaseSel
   let nextDGraph = fst result
       nextHistoryElem = snd result
       newProofStatus
@@ -51,15 +70,15 @@ hideTheoremShift isAutomatic proofStatus@(ln,_,_) = do
 
 
 {- auxiliary method for hideTheoremShift -}
-hideTheoremShiftAux :: DGraph -> ([DGRule],[DGChange])
-                    -> [LEdge DGLinkLab] -> Bool 
-                    -> IO (DGraph,([DGRule],[DGChange]))
+hideTheoremShiftAux :: Monad m => DGraph -> ([DGRule],[DGChange])
+                    -> [LEdge DGLinkLab] ->  ProofBaseSelector m
+                    -> m (DGraph,([DGRule],[DGChange]))
 hideTheoremShiftAux dgraph historyElement [] _ =
   return (dgraph, historyElement)
-hideTheoremShiftAux dgraph (rules,changes) (ledge:list) isAutomatic = 
-  do proofBasis <- findProofBasisForHideTheoremShift dgraph ledge isAutomatic
+hideTheoremShiftAux dgraph (rules,changes) (ledge:list) proofBaseSel = 
+  do proofBasis <- findProofBaseForHideTheoremShift dgraph ledge proofBaseSel
      if (null proofBasis)
-      then hideTheoremShiftAux dgraph (rules,changes) list isAutomatic
+      then hideTheoremShiftAux dgraph (rules,changes) list proofBaseSel
        else do
          let newEdge = makeProvenHidingThmEdge proofBasis ledge
              auxDGraph = insEdge newEdge (delLEdge ledge dgraph)
@@ -67,7 +86,7 @@ hideTheoremShiftAux dgraph (rules,changes) (ledge:list) isAutomatic =
              (newDGraph,newChanges) = 
                  insertNewEdges auxDGraph auxChanges proofBasis
              newRules = (HideTheoremShift ledge):rules
-         hideTheoremShiftAux newDGraph (newRules,newChanges) list isAutomatic
+         hideTheoremShiftAux newDGraph (newRules,newChanges) list proofBaseSel
 
 {- inserts the given edges into the development graph and adds a corresponding entry to the changes -}
 insertNewEdges :: DGraph -> [DGChange] -> [LEdge DGLinkLab] -> (DGraph,[DGChange])
@@ -93,13 +112,12 @@ makeProvenHidingThmEdge proofBasisEdges ledge@(src,tgt,edgeLab) =
 
 
 {- selects a proof basis for 'hide theorem shift' if there is one-}
-findProofBasisForHideTheoremShift :: DGraph -> LEdge DGLinkLab -> Bool
-                          -> IO [LEdge DGLinkLab]
-findProofBasisForHideTheoremShift dgraph (ledge@(src,tgt,edgelab)) isAutomatic=
-  if (null pathPairsFilteredByConservativity) then return []
-   else 
-     do pb <- hideTheoremShift_selectProofBasis dgraph 
-                         pathPairsFilteredByConservativity isAutomatic
+findProofBaseForHideTheoremShift
+    :: Monad m => DGraph -> LEdge DGLinkLab 
+    -> ProofBaseSelector m -> m [LEdge DGLinkLab]
+findProofBaseForHideTheoremShift dgraph (ledge@(src,tgt,edgelab)) 
+                                  proofBaseSel =
+     do pb <- proofBaseSel dgraph pathPairsFilteredByConservativity
         case pb of
           Nothing -> return []
           Just proofBasis -> do let fstPath = fst proofBasis
@@ -139,22 +157,22 @@ filterPairsByConservativityOfSecondPath (pair:list) =
 {- selects a proofBasis (i.e. a path tuple) from the list of possible ones:
    If there is exaclty one proofBasis in the list, this is returned.
    If there are more than one and the method is called in automatic mode Nothing is returned. In non-automatic mode the user is asked to select a proofBasis via listBox. -}
-hideTheoremShift_selectProofBasis :: 
-    DGraph -> [([LEdge DGLinkLab], [LEdge DGLinkLab])] -> Bool
+hideTheoremShift_selectProofBase :: 
+    DGraph -> [([LEdge DGLinkLab], [LEdge DGLinkLab])]
                  -> IO (Maybe ([LEdge DGLinkLab], [LEdge DGLinkLab]))
-hideTheoremShift_selectProofBasis _ (basis:[]) _ = return (Just basis)
-hideTheoremShift_selectProofBasis dgraph basisList isAutomatic =
-  case isAutomatic of
-    True -> return Nothing
-    False -> do sel <- listBox 
+hideTheoremShift_selectProofBase dgraph basisList =
+  case basisList of
+    [] -> return Nothing
+    [basis] -> return $ Just basis
+    _ -> do
+         sel <- listBox 
                        "Choose a path tuple as the proof basis"
                        (map (prettyPrintPathTuple dgraph) basisList)
-                i <- case sel of
-                       Just j -> return j
-                       _ -> error ("Proofs.Proofs: " ++
-                                   "selection of proof basis failed")
-                return (Just (basisList!!i))
-
+         case sel of
+             Just j -> return $ Just (basisList !! j) 
+             _ -> return Nothing -- error ("Proofs.Proofs: " ++
+                               -- "selection of proof basis failed")
+                  -- failing or outputting something here may be a bad idea
 
 {- returns a string representation of the given paths:
    for each path a tuple of the names of its nodes is shown, the two are combined by an 'and' -}

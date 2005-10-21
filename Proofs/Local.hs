@@ -1,5 +1,4 @@
-{-| 
-   
+{- | 
 Module      :  $Header$
 Copyright   :  (c) Jorina F. Gerken, Till Mossakowski, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -114,22 +113,20 @@ isSameTranslation th morphism path =
 -- ----------------------------------------------
 
 -- applies local subsumption to all unproven local theorem edges
-localInference :: ProofStatus -> IO ProofStatus
-localInference proofStatus@(ln,libEnv,_) = do
+localInference :: ProofStatus -> ProofStatus
+localInference proofStatus@(ln,libEnv,_) =
   let dgraph = lookupDGraph ln proofStatus
       localThmEdges = filter isUnprovenLocalThm (labEdges dgraph)
-  result <- localInferenceAux libEnv ln dgraph ([],[]) localThmEdges
-  let nextDGraph = fst result
-      nextHistoryElem = snd result
-      newProofStatus
-          = mkResultProofStatus proofStatus nextDGraph nextHistoryElem
-  return newProofStatus
+      (nextDGraph, nextHistoryElem) = 
+          localInferenceAux libEnv ln dgraph ([],[]) localThmEdges
+  in mkResultProofStatus proofStatus nextDGraph nextHistoryElem
 
 -- auxiliary method for localInference
-localInferenceAux :: LibEnv -> LIB_NAME -> DGraph -> ([DGRule],[DGChange]) -> [LEdge DGLinkLab]
-                    -> IO (DGraph,([DGRule],[DGChange]))
-localInferenceAux _ _ dgraph historyElement [] = return (dgraph, historyElement)
-localInferenceAux libEnv ln dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
+localInferenceAux :: LibEnv -> LIB_NAME -> DGraph -> ([DGRule],[DGChange]) 
+                  -> [LEdge DGLinkLab] -> (DGraph,([DGRule],[DGChange]))
+localInferenceAux _ _ dgraph historyElement [] = (dgraph, historyElement)
+localInferenceAux libEnv ln dgraph (rules, changes) 
+                      (ledge@(src,tgt,edgeLab) : list) =
   case maybeThSrc of
     Just thSrc ->
       case (maybeResult (computeTheory libEnv (ln, tgt)), 
@@ -137,7 +134,7 @@ localInferenceAux libEnv ln dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):li
         (Just (G_theory lidTgt _ sensTgt), Just (G_theory lidSrc _ sensSrc)) ->
           case maybeResult (coerceThSens lidTgt lidSrc "" sensTgt) of
             Nothing -> localInferenceAux libEnv ln dgraph (rules,changes) list
-            Just sentencesTgt -> do
+            Just sentencesTgt -> 
               -- check if all source axioms are also axioms in the target
               let goals = Set.filter (isAxiom  . value) sensSrc 
                            Set.\\ sentencesTgt
@@ -148,29 +145,31 @@ localInferenceAux libEnv ln dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):li
                              Nothing -> G_theory lid sig sens
                              Just goals'' -> 
                                  G_theory lid sig (sens `joinSens` goals'')
-              if Set.null goals
-                then do
+             in if Set.null goals
+                then
                  let newEdge = (src, tgt, newLab)
                      newGraph = insEdge newEdge auxGraph
-                     newChanges = changes ++ [DeleteEdge ledge, InsertEdge newEdge]
-                 localInferenceAux libEnv ln newGraph (newRules,newChanges) list
-                else do 
+                     newChanges = changes ++ 
+                                  [DeleteEdge ledge, InsertEdge newEdge]
+                 in localInferenceAux libEnv ln newGraph 
+                        (newRules,newChanges) list
+                else 
                  let n = getNewNode auxGraph
                      newNode = (n, oldContents{dgn_theory = newTh})
                      newList = map (replaceNode tgt n) list
-                 (newGraph,changes') <- adoptEdges (insNode newNode $ auxGraph) tgt n
-                 let newEdge = (src, n, newLab)
+                     (newGraph,changes') = adoptEdges 
+                                           (insNode newNode $ auxGraph) tgt n
+                     newEdge = (src, n, newLab)
                      newGraph' = insEdge newEdge  $  delNode tgt $ newGraph
                      newLibEnv = Map.adjust adjMap ln libEnv 
                      adjMap (annos, env, _dg) = (annos,env,newGraph')
                      newChanges = changes ++ DeleteEdge ledge :
                                     InsertNode newNode : changes' ++ 
                                     [DeleteNode oldNode,InsertEdge newEdge]
-                 localInferenceAux newLibEnv ln newGraph' (newRules,newChanges) newList
+                 in localInferenceAux newLibEnv ln newGraph' 
+                        (newRules,newChanges) newList
         _ -> localInferenceAux libEnv ln dgraph (rules,changes) list
-    _ -> -- showDiags defaultHetcatsOpts (errSrc++errTgt)
-                 localInferenceAux libEnv ln dgraph (rules,changes) list
-
+    _ -> localInferenceAux libEnv ln dgraph (rules,changes) list
   where
     morphism = dgl_morphism edgeLab
     maybeThSrc = computeLocalTheory libEnv (ln, src)

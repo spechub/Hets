@@ -1,5 +1,4 @@
-{-| 
-   
+{- |
 Module      :  $Header$
 Copyright   :  (c) Jorina F. Gerken, Till Mossakowski, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -104,8 +103,9 @@ isUnprovenHidingThm (_,_,edgeLab) =
 -- ----------------------------------------------------------------------------
 -- other methods on edges
 -- ----------------------------------------------------------------------------
-{- returns true, if an identical edge is already in the graph or marked to be inserted,
- false otherwise-}
+
+{- | returns true, if an identical edge is already in the graph or
+     marked to be inserted, false otherwise -}
 isDuplicate :: LEdge DGLinkLab -> DGraph -> [DGChange] -> Bool
 isDuplicate newEdge dgraph changes = 
   elem (InsertEdge newEdge) changes || elem newEdge (labEdges dgraph)
@@ -115,11 +115,14 @@ isIdentityEdge :: LEdge DGLinkLab -> LibEnv -> DGraph -> Bool
 isIdentityEdge (src,tgt,edgeLab) libEnv dgraph =
   if isDGRef nodeLab then 
     case Map.lookup (dgn_libname nodeLab) libEnv of
-      Just (_,_,refDgraph) -> isIdentityEdge (dgn_node nodeLab,tgt,edgeLab) libEnv refDgraph
+      Just (_,_,refDgraph) -> isIdentityEdge 
+                              (dgn_node nodeLab,tgt,edgeLab) libEnv refDgraph
       Nothing -> False
-   else if src == tgt && (dgl_morphism edgeLab) == (ide Grothendieck (dgn_sign nodeLab)) then True else False
+   else src == tgt && 
+        dgl_morphism edgeLab == ide Grothendieck (dgn_sign nodeLab)
 
-  where nodeLab = lab' (safeContext "Proofs.EdgeUtils.isIdentityEdge" dgraph src)
+  where nodeLab = lab' $ safeContext "Proofs.EdgeUtils.isIdentityEdge" 
+                  dgraph src
 
 {- returns the DGLinkLab of the given LEdge -}
 getLabelOfEdge :: (LEdge b) -> b
@@ -173,9 +176,10 @@ getAllLocGlobPathsBetween dgraph src tgt =
     outEdges = out dgraph src
     locEdges = [(edge,target)|edge@(_,target,_) <- 
                 (filter isLocalEdge outEdges)]
-    locGlobPaths = (concat [map ([edge]++) 
-                      (getAllPathsOfTypesBetween dgraph isGlobalEdge node tgt [])|
-                         (edge,node) <- locEdges])
+    locGlobPaths = concat 
+                   [map ([edge]++) 
+                   $ getAllPathsOfTypesBetween dgraph isGlobalEdge node tgt []
+                    |  (edge, node) <- locEdges]
     globPaths = getAllPathsOfTypesBetween dgraph isGlobalEdge src tgt []
 
 
@@ -215,7 +219,8 @@ getAllPathsOfTypesBetween dgraph types src tgt path =
         [(edge, source)| edge@(source,_,_) <- edgesOfTypes, source /= src]
 
 
-getAllPathsOfTypeFrom :: DGraph -> Node -> (LEdge DGLinkLab -> Bool) -> [[LEdge DGLinkLab]]
+getAllPathsOfTypeFrom :: DGraph -> Node -> (LEdge DGLinkLab -> Bool) 
+                      -> [[LEdge DGLinkLab]]
 getAllPathsOfTypeFrom = getAllPathsOfTypeFromAux []
 
 
@@ -322,15 +327,15 @@ elemOfProofBasis ledge (_,_,dglink) =
 
 
 {- adopts the edges of the old node to the new node -}
-adoptEdges :: DGraph -> Node -> Node -> IO (DGraph,[DGChange])
-adoptEdges dgraph oldNode newNode = do
+adoptEdges :: DGraph -> Node -> Node -> (DGraph, [DGChange])
+adoptEdges dgraph oldNode newNode = 
   let ingoingEdges = inn dgraph oldNode
       outgoingEdges = [outEdge| outEdge <- out dgraph oldNode,
                                 not (elem outEdge ingoingEdges)]
       (auxGraph, changes) = adoptEdgesAux dgraph ingoingEdges newNode True
       (finalGraph, furtherChanges) 
           = adoptEdgesAux auxGraph outgoingEdges newNode False
-  return (finalGraph, changes ++ furtherChanges)
+  in (finalGraph, changes ++ furtherChanges)
 
 {- auxiliary method for adoptEdges -}
 adoptEdgesAux :: DGraph -> [LEdge DGLinkLab] -> Node -> Bool
