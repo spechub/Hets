@@ -12,7 +12,7 @@ Utilities on top of HTk
 
 module GUI.HTkUtils where
 
--- import System.Directory
+import System.Directory
 
 import HTk
 import ScrollBox
