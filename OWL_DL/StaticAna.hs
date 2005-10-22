@@ -399,7 +399,7 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
         let namedSent = NamedSen { senName = (printQN iid1) 
                                       ++ "_SameIndividual_"
                                       ++ (printQN iid2),        
-                                   isAxiom = False,
+                                   isAxiom = True,
                                    isDef = True,
                                    sentence = OWLFact si
                                  }
@@ -410,7 +410,7 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
         let namedSent = NamedSen { senName = (printQN iid1)
                                      ++ "DifferentIndividuals"
                                      ++ (printQN iid2), 
-                                   isAxiom = False,
+                                   isAxiom = True,
                                    isDef = True,
                                    sentence = OWLFact di
                                  }
