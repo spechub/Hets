@@ -61,29 +61,12 @@ import GUI.HTkUtils
 
 import qualified Common.Lib.Map as Map
 
+import Proofs.GUIState
+
 -- debugging
 import Debug.Trace
 
 -- * Proof Management GUI
-
--- ** Backing Data Structures 
-
-{- |
-  Represents the global state of the prover GUI.
--}
-data State = State { -- | currently selected goal or Nothing
-                     selectedGoals :: [String],
-		     -- | whether a prover is running or not
-		     proverRunning :: Bool
-                   }
-
-{- |
-  Creates an initial State.
--}
-initialState :: GUI.ProofManagement.State
-initialState = 
-    State {selectedGoals = [],
-           proverRunning = False }
 
 -- ** Defining the view
 
@@ -110,10 +93,10 @@ statusRunning :: (ProverStatusColour, String)
 statusRunning = (Blue, "Waiting for Prover")
 
 {- |
-  Converts a 'GUI.ProofManagement.State' into a ('ProverStatusColour', 'String') tuple to be
+  Converts a 'ProofGUIState' into a ('ProverStatusColour', 'String') tuple to be
   displayed by the GUI.
 -}
-toGuiStatus :: GUI.ProofManagement.State
+toGuiStatus :: ProofGUIState
             -> (ProverStatusColour, String)
 toGuiStatus st = if proverRunning st
   then statusRunning
@@ -136,7 +119,7 @@ toStatusIndicator st = case st of
 
   Uses 'toStatusIndicator' internally.
 -}
-goalsView :: GUI.ProofManagement.State  -- ^ current global state
+goalsView :: ProofGUIState  -- ^ current global state
           -> [LBGoalView] -- ^ resulting ['LBGoalView'] list
 goalsView _ = []
 
@@ -149,7 +132,7 @@ goalsView _ = []
 {- |
    Updates the display of the status of the selected goals.
 -}
-updateDisplay :: GUI.ProofManagement.State -- ^ current global state
+updateDisplay :: ProofGUIState -- ^ current global state
               -> Bool -- ^ set to 'True' if you want the 'ListBox' to be updated
               -> ListBox String -- ^ 'ListBox' displaying the status of all goals (see 'goalsView')
               -> ListBox String -- ^ 'ListBox' displaying possible morphism paths to prover logics
