@@ -296,27 +296,36 @@ instance PrettyPrint Fact where
         Indiv individual -> printText0 ga individual
 
 instance PrettyPrint Individual where
-    printText0 ga individual@(Individual iid _ _ values) =
+    printText0 ga (Individual iid _ types values) =
         case iid of
         Just _ ->
-            printIndividual values
-        _ -> text $ show individual
-     where printIndividual :: [Value] -> Doc
-           printIndividual [] = empty
-           printIndividual (hv:tv) =
+            printIndividual iid values
+        _ -> brackets ((printIndividual (Just (QN "" "_:x" "" )) values) $+$
+               (nest 2 $ printAnonymIndividual types))
+             
+     where printIndividual :: (Maybe IndividualID) -> [Value] -> Doc
+           printIndividual _ [] = empty
+           printIndividual iid' (hv:tv) =
                case hv of
                ValueID pid indivID -> 
-                   (char '(') <> (printText0 ga pid) <+> (printText0 ga iid)
+                   (char '(') <> (printText0 ga pid) <+> (printText0 ga iid')
                    <+> (printText0 ga indivID) <> (char ')') $+$
-                   (printIndividual tv)
+                   (printIndividual iid' tv)
                ValueIndiv pid indiv ->
-                   (char '(') <> (printText0 ga pid) <+> (printText0 ga iid)
+                   (char '(') <> (printText0 ga pid) <+> (printText0 ga iid')
                    <+> (printText0 ga indiv) <> (char ')') $+$
-                   (printIndividual tv)
+                   (printIndividual iid' tv)
                ValueDL pid dl ->
-                   (char '(') <> (printText0 ga pid) <+> (printText0 ga iid)
+                   (char '(') <> (printText0 ga pid) <+> (printText0 ga iid')
                    <+> (printText0 ga dl) <> (char ')') $+$
-                   (printIndividual tv)
+                   (printIndividual iid' tv)
+
+           printAnonymIndividual :: [Type] -> Doc
+           printAnonymIndividual [] = empty
+           printAnonymIndividual (h:r) =
+               parens ((printText0 ga h) <+> (text "\"_:x\"")) 
+              <+> printAnonymIndividual r
+                      
         
 -- to show restrictions, descriptions and cardinalities need the id of classes
 -- or properties, so those are implemented not in PrettyPrint. 
