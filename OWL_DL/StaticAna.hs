@@ -348,7 +348,7 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
        case maybeIID of
         Prelude.Nothing ->          -- Error (Warnung): Individual without name
             let namedSent = NamedSen { senName = "Individual",  
-                                       isAxiom = True, 
+                                       isAxiom = False, 
                                        isDef = True,
                                        sentence = OWLFact ind
                                      }
@@ -395,22 +395,24 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
                          in  msSet iid r (diagL ++ [diag'], 
                                           Set.insert membership ms)
      
-    Fc si@(SameIndividual iid1 iid2 _) ->
+    Fc si@(SameIndividual iid1 iid2 iids) ->
         let namedSent = NamedSen { senName = (printQN iid1) 
                                       ++ "_SameIndividual_"
-                                      ++ (printQN iid2),        
-                                   isAxiom = True,
+                                      ++ (if null iids then (printQN iid2) 
+                                             else ""),        
+                                   isAxiom = False,
                                    isDef = True,
                                    sentence = OWLFact si
                                  }
         in  concatResult (Result [] (Just (Ontology mID (direc++[directiv]) ns,
                                            inSign, [namedSent])))
                 (anaDirective ga inSign onto rest) 
-    Fc di@(DifferentIndividuals iid1 iid2 _) ->
+    Fc di@(DifferentIndividuals iid1 iid2 iids) ->
         let namedSent = NamedSen { senName = (printQN iid1)
-                                     ++ "DifferentIndividuals"
-                                     ++ (printQN iid2), 
-                                   isAxiom = True,
+                                     ++ "_DifferentIndividuals_"
+                                     ++ (if null iids then (printQN iid2) 
+                                            else ""), 
+                                   isAxiom = False,
                                    isDef = True,
                                    sentence = OWLFact di
                                  }
