@@ -58,7 +58,7 @@ instance PNamespace QName where
                                          else local
                                      )
               -- hiding "ftp://" oder "http://"   
-              in if ((length pre' > 2) && (isAlpha $ head $ reverse pre')) 
+              in if ((length pre' > 3) && (isAlpha $ head $ reverse pre')) 
                      || (null local') then
                     QN pre local nsUri
                     else let local'' = tail local'
@@ -82,8 +82,7 @@ instance PNamespace QName where
     
     renameNamespace tMap old@(QN pre local nsUri) = 
         case Map.lookup pre tMap of
-        Prelude.Nothing -> 
-            old
+        Prelude.Nothing -> old
         Just pre' -> QN pre' local nsUri
         
 instance PNamespace Ontology where      
@@ -518,7 +517,8 @@ integrateNamespaces oldNsMap testNsMap =
                       -> (Namespace, TranslationMap)
          testAndInteg old [] tm = (old, tm)
          testAndInteg old ((pre, uri):r) tm 
-             | Map.member pre old && uri `elem` (Map.elems old) =
+             | Map.member pre old && uri == (fromJust $ Map.lookup pre old) = 
+                                              -- `elem` (Map.elems old) =
                  testAndInteg old r tm
              -- if the uri already existed in old map, the key muss be changed.
              | Map.member uri revMap = 
@@ -588,3 +588,5 @@ printQN :: QName -> String
 printQN (QN pre local uri)
             | null pre = show (uri ++ ":" ++ local)
             | otherwise = show (pre ++ ":" ++ local)
+
+
