@@ -312,7 +312,7 @@ toGuiStatus cf st = case st of
 
 
 {- |
-  Converts a 'Proof_status' into a short 'GUI.HTkUtils.LBStatusIndicator' to be
+  Converts a 'Proof_status' into a 'GUI.HTkUtils.LBStatusIndicator' to be
   displayed by the GUI in a 'ListBox'.
 -}
 toStatusIndicator :: SPASSConfig -- ^ current prover configuration
@@ -330,7 +330,7 @@ toStatusIndicator _ st = case st of
   Uses 'toStatusIndicator' internally.
 -}
 goalsView :: SPASS.Prove.State  -- ^ current global prover state
-          -> [LBGoalView] -- ^ resulting ['String'] list
+          -> [LBGoalView] -- ^ resulting ['LBGoalView'] list
 goalsView s = map (\ g ->
                        let res = Map.lookup g (resultsMap s)
                            cf = Map.findWithDefault
