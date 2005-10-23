@@ -205,3 +205,9 @@ data DataRange = DID DatatypeID
 
 emptyOntology :: Ontology
 emptyOntology = Ontology Prelude.Nothing [] Map.empty
+
+
+-- check if QName is empty
+isEmptyQN :: QName -> Bool
+isEmptyQN (QN a b c) =
+    (null a) && (null b) && (null c)
