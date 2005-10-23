@@ -23,7 +23,7 @@ import Common.GlobalAnnotations
 import Common.Lib.Pretty
 import Common.PrettyPrint
 
-import Text.XML.HXT.DOM.XmlTreeTypes
+import Text.XML.HXT.DOM.XmlTreeTypes 
 import OWL_DL.Sign
 import OWL_DL.AS
 
@@ -94,11 +94,12 @@ instance PrettyPrint Directive where
 instance PrettyPrint Axiom where
     printText0 ga axiom =
 	case axiom of
-	Class cid _ _ _ descs ->             -- descs is here unionOf or complementOf
+	Class cid _ _ _ descs ->       -- descs is here unionOf or complementOf
           foldListToDocV ga (printDescription ga) cid descs
 	EnumeratedClass cid _ _ iids ->
-	    printDescription ga cid $ OneOfDes iids 
-	DisjointClasses desc1 desc2 _ ->     -- description list is ignored (always empty)
+                  parens ((text "forall ((x owl:Thing))") $+$ 
+	                  (printDescription ga cid $ OneOfDes iids)) 
+	DisjointClasses desc1 desc2 _ ->   -- description list is ignored (always empty)
 	    (text "(forall ((x owl:Thing)) (not (and (") <> 
 	          (printDescription ga emptyQN desc1) <+>
                   (text "x) (") <> 
@@ -116,7 +117,9 @@ instance PrettyPrint Axiom where
 	         (text "x)))")	
 	  _      -> 
 	      case x of
-	        DC cid1 -> printDescription ga cid1 y
+	        DC cid1 ->
+                   parens ((text "forall ((x owl:Thing))") $+$ 
+                            (printDescription ga cid1 y))
 	        _       -> error ("EquivalentClasses Error:" ++ (show axiom))
 	  ) desc1 descs
 	Datatype dID _ _ -> 
@@ -196,8 +199,10 @@ instance PrettyPrint SignAxiom where
 	     (text "(forall ((x owl:Thing) (y rdfs:Literal))") $+$
                 (nest 2 $ text "implies (") <> (printText0 ga rid) <+>
 		(text "x y)") $+$
-		(nest 4 $ text "(or") 
-		<+> (foldListToDocH ga (form5 ga) rid rranges)
+                (if (length rranges > 1) then
+		    (nest 4 $ text "(or ") 
+                   else (nest 4 $ lparen))
+		<> (foldListToDocH ga (form5 ga) rid rranges)
                 <> (char ')') $+$ (text ")))")
 	    _         ->
 	      foldListToDocV ga  
@@ -320,25 +325,25 @@ printRestriction1 _ _ [] = empty
 printRestriction1 ga dpID (h:r) =
     case h of
     DRCAllValuesFrom dataRange -> 
-	(text "(forall ((x owl:Thing)) ") $+$
+	-- (text "(forall ((x owl:Thing)) ") $+$
 	-- (nest 2 $ text "(restriction x)") $+$
-	(nest 2 $ text "(forall (y) (implies (") <> (printText0 ga dpID) <+>
+	(text "(forall (y) (implies (") <> (printText0 ga dpID) <+>
 	   (text "x y) (") <> (printText0 ga dataRange) <+>
 	   (text "y)))") $+$
-	(text ")") $+$
+	-- (text ")") $+$
 	(printRestriction1 ga dpID r)
     DRCSomeValuesFrom dataRange -> 
-	(text "(forall ((x owl:Thing)) ") $+$
+	-- (text "(forall ((x owl:Thing)) ") $+$
 	-- (nest 2 $ text "(restriction x)") $+$
-	(nest 2 $ text "(exists (y) (and (") <> (printText0 ga dpID) <+>
+	(text "(exists (y) (and (") <> (printText0 ga dpID) <+>
 	   (text "x y) (") <> (printText0 ga dataRange) <+>
 	   (text "y)))") $+$
-	(text ")") $+$
+	-- (text ")") $+$
 	(printRestriction1 ga dpID r)
     DRCValue dl -> 
-	(text "(forall ((x owl:Thing)) (") <>
+	-- (text "(forall ((x owl:Thing)) (") <>
 	  (printText0 ga dpID) <+> (text "x") <+>
-	  (printText0 ga dl) <> (text "))") $+$
+	  (printText0 ga dl) $+$
 	(printRestriction1 ga dpID r)
     DRCCardinality cardinality -> 
         (printCard ga dpID cardinality) $+$
@@ -349,25 +354,25 @@ printRestriction2 _ _ [] = empty
 printRestriction2 ga ipID (h:r) =
     case h of
     IRCAllValuesFrom desc -> 
-	(text "(forall ((x owl:Thing)) ") $+$
+	-- (text "(forall ((x owl:Thing)) ") $+$
 	-- (nest 2 $ text "(restriction x)") $+$
-	(nest 2 $ text "(forall (y) (implies (") <> (printText0 ga ipID) <+>
+	(text "(forall (y) (implies (") <> (printText0 ga ipID) <+>
 	   (text "x y) (") <> (printDescription ga ipID desc) <+>
 	   (text "y)))") $+$
-	(text ")") $+$
+	-- (text ")") $+$
 	(printRestriction2 ga ipID r)
     IRCSomeValuesFrom desc -> 
-	(text "(forall ((x owl:Thing)) ") $+$
+	-- (text "(forall ((x owl:Thing)) ") $+$
 	-- (nest 2 $ text "(restriction x)") $+$
-	(nest 2 $ text "(exists (y) (and (") <> (printText0 ga ipID) <+>
+	(text "(exists (y) (and (") <> (printText0 ga ipID) <+>
 	   (text "x y) (") <> (printDescription ga ipID desc) <+>
 	   (text "y)))") $+$
-	(text ")") $+$
+	-- (text ")") $+$
 	(printRestriction2 ga ipID r)
     IRCValue iid -> 
-	(text "(forall ((x owl:Thing)) (") <>
+	-- (text "(forall ((x owl:Thing)) (") <>
 	  (printText0 ga ipID) <+> (text "x") <+>
-	  (printText0 ga iid) <> (text "))") $+$
+	  (printText0 ga iid) $+$
 	(printRestriction2 ga ipID r)
 
     IRCCardinality cardinality -> 
@@ -378,44 +383,63 @@ printCard :: GlobalAnnos -> URIreference -> Cardinality -> Doc
 printCard ga pid card =
     case card of
     MinCardinality n -> 
-      (text "(forall ((x owl:Thing)) ") $+$
+     if n > 1 then
+      parens (-- (text "forall ((x owl:Thing)) ") $+$
 	-- (nest 2 $ text "(restriction x)") $+$
-	(nest 2 $ text "(exists ((x1 owl:Thing) ... (x") <> (int n) <+>
+	( parens  
+         ((text "exists ((x1 owl:Thing) ... (x") <> (int n) <+>
                                   (text "owl:Thing)) (and ") $+$
-        (nest 4 $ text "[ALLDIFFERENT x1 ... x") <> (int n) <>
-                                  (text "]") $+$
-	(nest 4 $ text "(") <> (printText0 ga pid) <+> (text "x x1) ...") <+>
+        (nest 2 $ brackets ((text "ALLDIFFERENT x1 ... x") <> (int n))) $+$ 
+        (nest 2 $ text "(") <> (printText0 ga pid) <+> (text "x x1) ...") <+>
 	   (text "(") <> (printText0 ga pid) <+> (text "x x") <> (int n) <>
-			          (text ")") $+$
-	(nest 2 $ text "))") $+$
-      (text ")")
+			          (text "))")
+	 )))
+      else
+       parens (-- (text "forall ((x owl:Thing)) ") $+$
+	       (parens 
+                ((text "exists (x1 owl:Thing)") <+>
+                 (parens ((printText0 ga pid) <+> (text "x x1"))))))
     MaxCardinality n -> 
-      (text "(forall ((x owl:Thing) (x1 owl:Thing) ... (x") <> (int (n+1)) <+>
-                  (text "owl:Thing)) (implies") $+$
-	-- (nest 2 $ text "(and (restriction x)") $+$
-	(nest 4 $ text "(") <> (printText0 ga pid) <+> (text "x x1) ...")<+>
-	     (text "(") <> (printText0 ga pid) <+> (text "x x") <> 
-		(int (n+1)) <> (text "))") $+$
-	(nest 2 $ (text "not [ALLDIFFERENT x1 ... x")) <> (int (n+1)) <>
-                                  (text "])") $+$
-	(text ")") 
+     if n > 1 then
+      parens ((text "forall ((x1 owl:Thing) ... (x") <> 
+              (int (n+1)) <+> (text "owl:Thing)) (implies") $+$
+	      -- (nest 2 $ text "(and (restriction x)") $+$
+	      (nest 3 $ text "(") <> (printText0 ga pid) <+> 
+              (text "x x1) ...")<+> (text "(") <> (printText0 ga pid) <+> 
+              (text "x x") <> (int (n+1)) <> (text "))") $+$
+	      (nest 2 $ (text "not [ALLDIFFERENT x1 ... x")) <> (int (n+1)) <>
+              (text "])"))
+      else 
+        parens ((text "forall ((x1 owl:Thing))") <+> 
+                (parens ((text "implies") $+$
+		         (nest 2 $ parens ((printText0 ga pid) <+> 
+                                           (text "x x1"))))))
     Cardinality n ->
-      (text "(forall ((x owl:Thing)) ") $+$
+     if n > 1 then
+      -- (text "(forall ((x owl:Thing)) ") $+$
 	-- (nest 2 $ text "(restriction x)") $+$
-	(nest 2 $ text "(exists ((x1 owl:Thing) ... (x") <> (int n) <+>
+	(text "(exists ((x1 owl:Thing) ... (x") <> (int n) <+>
                                   (text "owl:Thing)) (and ") $+$
-        (nest 4 $ text "[ALLDIFFERENT x1 ... x") <> (int n) <>
+        (nest 2 $ text "[ALLDIFFERENT x1 ... x") <> (int n) <>
                                   (text "]") $+$
-	(nest 4 $ text "(") <> (printText0 ga pid) <+> (text "x x1) ...") <+>
+	(nest 2 $ text "(") <> (printText0 ga pid) <+> (text "x x1) ...") <+>
 	   (text "(") <> (printText0 ga pid) <+> (text "x x") <> (int n) <>
 			          (text ")") $+$
-	(nest 4 $ text "(forall ((z owl:Thing)) (implies") $+$
-	(nest 6 $ text "(") <> (printText0 ga pid) <+> (text "x z)") $+$
-	(nest 6 $ text "(or (= z x1) ... (= z x") <> (int n) <> 
-	            (text "))") $+$
-	(nest 4 $ text "))") $+$
+	(nest 2 $ text "(forall ((z owl:Thing)) (implies") $+$
+	(nest 4 $ text "(") <> (printText0 ga pid) <+> (text "x z)") $+$
+	(nest 4 $ text "(or (= z x1) ... (= z x") <> (int n) <> 
+	           (text "))") $+$
 	(nest 2 $ text "))") $+$
-	(text ")")
+	(text ")))") 
+       else 
+        -- (text "(forall ((x owl:Thing)) ") $+$
+	(text "(exists ((x1 owl:Thing)) (and ") $+$
+        (nest 2 $ text "(") <> (printText0 ga pid) <+> (text "x x1)") $+$
+	(nest 2 $ text "(forall ((z owl:Thing)) (implies") $+$
+	(nest 4 $ text "(") <> (printText0 ga pid) <+> (text "x z)") $+$
+	(nest 4 $ text "((= z x1))") $+$
+	(nest 2 $ text "))") $+$
+	(text ")))")
 
 printDescription :: GlobalAnnos -> URIreference -> Description -> Doc
 printDescription ga iD desc =
@@ -423,27 +447,43 @@ printDescription ga iD desc =
         DC cid -> printText0 ga cid
         DR restr -> printText0 ga restr
         UnionOf descs -> 
-            (text "(forall ((x owl:Thing))") $+$
-            (nest 2 $ text "(iff (") <> (printText0 ga iD) <+> (text "x)") $+$
-            (nest 3 $ text "(or (") <> (foldListToDocH ga (form1 ga) iD descs)
+         if isEmptyQN iD then
+            parens ((text "or (") <> (foldListToDocH ga (form1 ga) iD descs)
+                                        <> (char ')')) 
+           else
+            -- (text "(forall ((x owl:Thing))") $+$
+            (text "(iff (") <> (printText0 ga iD) <+> (text "x)") $+$
+            (nest 2 $ text "(or (") <> (foldListToDocH ga (form1 ga) iD descs)
                                         <> (char ')') $+$
-            (text "))") 
+            (text ")))") 
         IntersectionOf descs -> 
-            (text "(forall ((x owl:Thing))") $+$
-              (nest 2 $ text "(iff (") <> (printText0 ga iD) <+> 
-              (text "x)") $+$ (nest 3 $ text "(and (") <> 
+         if isEmptyQN iD then
+            parens ((text "and (") <> 
+                    (foldListToDocH ga (form1 ga) iD descs) <> (char ')')) 
+           else
+            -- (text "(forall ((x owl:Thing))") $+$
+              (text "(iff (") <> (printText0 ga iD) <+> 
+              (text "x)") $+$ (nest 2 $ text "(and (") <> 
               (foldListToDocH ga (form1 ga) iD descs) <> (char ')')  $+$
-              (text "))")
+              (text ")))")
         ComplementOf desc1 ->
-            (text "(forall ((x owl:Thing)) (iff (") <> (printText0 ga iD) <+>
+         if isEmptyQN iD then
+            parens ((text "not (") <> (printDescription ga iD desc1) <+>
+                    (text "x)"))
+           else
+            (text "(iff (") <> (printText0 ga iD) <+>
                     (text "x) (not (") <> (printDescription ga iD desc1) <+>
-                    (text "x))))")
+                    (text "x)))")
         OneOfDes inds -> 
-            (text "(forall ((x owl:Thing)) ") $+$
-            (nest 2 $ text "(iff (") <> (printText0 ga iD) <+> (text "x)") $+$
-            (nest 3 $ text "(or (") <> (foldListToDocH ga (form2 ga) iD inds) 
+         if isEmptyQN iD then
+            parens ((text "or (") <> (foldListToDocH ga (form2 ga) iD inds) 
+                                        <> (char ')'))             
+           else
+            -- (text "(forall ((x owl:Thing)) ") $+$
+            (text "(iff (") <> (printText0 ga iD) <+> (text "x)") $+$
+            (nest 2 $ text "(or (") <> (foldListToDocH ga (form2 ga) iD inds) 
                                         <> (char ')') $+$
-            (text "))") 
+            (text ")))") 
 
 -- form of pretty print 
 foldSetToDoc :: (PrettyPrint a) => GlobalAnnos -> Set.Set a -> Doc
