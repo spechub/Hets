@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Uni Bremen 2003 - 2005
+Copyright   :  (c) Sonja Groening, C. Maeder, Uni Bremen 2003-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -38,7 +38,7 @@ import Isabelle.Logic_Isabelle
 import Isabelle.Translate
 
 -- | The identity of the comorphism
-data HasCASL2IsabelleHOL = HasCASL2IsabelleHOL deriving (Show)
+data HasCASL2IsabelleHOL = HasCASL2IsabelleHOL deriving Show
 
 instance Language HasCASL2IsabelleHOL -- default definition is okay
 
@@ -156,7 +156,7 @@ transType t = case getTypeAppl t of
                     if isPartialArrow tid && not (isPredType t)
                         then mkOptionType tr else tr
           else if isProductId tid && num > 1 then
-             foldl1 IsaSign.prodType $ map transType tyArgs
+             foldl1 prodType $ map transType tyArgs
           else foldl binTypeAppl (Type (showIsaTypeT tid baseSign) [] [])
                $ map transType tyArgs
        else foldl binTypeAppl (TFree (showIsaTypeT tid baseSign) [])
@@ -349,7 +349,7 @@ abstraction sign pat body =
         TupleTerm terms _           -> evalTupleType terms
         _                           -> 
           error "HasCASL2IsabelleHOL.abstraction"
-    evalTupleType t = foldr1 IsaSign.prodType (map getType t)
+    evalTupleType t = foldr1 prodType (map getType t)
 
 -- translation of lambda patterns 
 -- a pattern keeps his type 't', isn't translated to 't option'

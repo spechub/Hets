@@ -175,8 +175,8 @@ transT :: Show d => (PNT -> Maybe IsaType) -> (PNT -> Maybe IsaType) -> (d -> Ma
                     HsTypeStruct.TI PNT d -> Maybe IsaType
 transT trIdV trIdC trT t =
  case mapTI3 trIdV trIdC trT t of    
-    Just (HsTyFun t1 t2) -> return $ IsaSign.mkContFun t1 t2
-    Just (HsTyApp t1 t2) -> return $ IsaSign.typeAppl t1 [t2]
+    Just (HsTyFun t1 t2) -> return $ mkContFun t1 t2
+    Just (HsTyApp t1 t2) -> return $ typeAppl t1 [t2]
     Just (HsTyVar a) -> return a
     Just (HsTyCon k) -> return k 
     _ -> Nothing
@@ -185,7 +185,7 @@ transT trIdV trIdC trT t =
 getSort :: Continuity -> [HsType] -> PNT -> IsaSort
 getSort r c t = case c of 
    [] -> case r of 
-             IsCont -> IsaSign.dom
+             IsCont -> dom
              NotCont -> [isaTerm]
    x:cs -> let a = getInstType x 
                b = getInstClass x
@@ -207,17 +207,17 @@ transIdC t = case t of
   in 
   case (UniqueNames.orig t) of 
     UniqueNames.G (PlainModule m) n _ -> 
-         IsaSign.Type (transTN m n) IsaSign.dom tfs 
+         IsaSign.Type (transTN m n) dom tfs 
     UniqueNames.G (MainModule m) n _ -> 
-         IsaSign.Type (transPath m n) IsaSign.dom tfs 
-    _ -> IsaSign.Type (showIsaName t) IsaSign.dom tfs
+         IsaSign.Type (transPath m n) dom tfs 
+    _ -> IsaSign.Type (showIsaName t) dom tfs
 
 transFields ::  PNT -> [IsaType] 
 transFields t = case t of 
     PNT _ (TypedIds.Type q) _ -> 
-          [TFree (showIsaS x) IsaSign.dom | (PN x _) <- TypedIds.fields q]
+          [TFree (showIsaS x) dom | (PN x _) <- TypedIds.fields q]
     PNT _ (TypedIds.FieldOf _ q) _ -> 
-          [TFree (showIsaS x) IsaSign.dom | (PN x _) <- TypedIds.fields q]
+          [TFree (showIsaS x) dom | (PN x _) <- TypedIds.fields q]
     _ -> []
 --    _ -> error "Haskell2IsabelleHOLCF.transFields"
 
