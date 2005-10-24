@@ -37,6 +37,7 @@ import Logic.Grothendieck
 import Data.Graph.Inductive.Query.DFS
 import Data.Graph.Inductive.Query.BFS
 import Maybe(fromJust)
+import List
 
 -- | call for owl parser (env. variable $HETS_OWL_PARSER muss be defined)
 parseOWL :: FilePath              -- ^ local filepath or uri
@@ -212,10 +213,11 @@ staticAna :: FilePath
                        ))
 staticAna file (ontoMap, dg) =  
     do let topNodes = topsort dg
-       Result _ res <-
+       Result diagnosis res <-
            nodesStaticAna (reverse topNodes) Map.empty ontoMap Map.empty dg []
        case res of
-           Just (_, dg', _) ->     
+           Just (_, dg', _) -> do
+            putStrLn $ show $ List.nub diagnosis     
             return (Just (simpleLibName file, 
                           simpleLibEnv file 
                           (insEdges (reverseLinks $ labEdges dg') 
