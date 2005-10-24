@@ -185,7 +185,7 @@ itCorrection s
 sum_char_width_deb :: (String -> String) -- only used for an hackie debug thing
                    -> Map.Map String Int 
                    -> Map.Map Char [String]  -> String -> Int
-sum_char_width_deb pref_fun cFM key_cFM s = sum_char_width' s 0
+sum_char_width_deb _pref_fun cFM key_cFM s = sum_char_width' s 0
     where sum_char_width' []  r = r
           sum_char_width' [c] r 
               | c == ' '  = r + lookupWithDefault_cFM "~"
