@@ -20,11 +20,7 @@ works for SPASS.
       line "Display", "Prove",...
 
     - under MacOS X the window trembles because of the "Close" button
-      in the right corner. Please move it slightly to the left
-
-    - Window Title will be partly set with theory name 
-      (as it is for the SPASS GUI) 
-       "<theory_name> - Select Goal(s) and Prove"
+      in the right corner. Please move it slightly to the left. 
 
     - 'proofManagementGUI' may fill the select lists with fake data:
       Provers: ["Isabelle","SPASS"]
@@ -43,6 +39,7 @@ import Logic.Prover
 import Common.AS_Annotation
 import Common.PrettyPrint
 import Common.ProofUtils
+import qualified Common.Result as Result
 
 import Data.List
 import Data.Maybe
@@ -62,6 +59,9 @@ import GUI.HTkUtils
 import qualified Common.Lib.Map as Map
 
 import Proofs.GUIState
+import Logic.Logic
+import qualified Comorphisms.KnownProvers as KnownProvers
+import qualified Static.DevGraph as DevGraph
 
 -- debugging
 import Debug.Trace
@@ -153,14 +153,17 @@ updateDisplay st updateLb goalsLb pathsLb statusLabel = do
 {- |
   Invokes the GUI.
 -}
-proofManagementGUI :: IO() -- ^ nothing
-proofManagementGUI = do
+proofManagementGUI :: String -- ^ theory name
+                   -> DevGraph.G_theory
+                   -> KnownProvers.KnownProversMap
+                   -> IO (Result.Result DevGraph.G_theory)
+proofManagementGUI thName th knownProvers = do
   -- initial backing data structure
   let initState = initialState
   stateRef <- newIORef initState
 
   -- main window
-  main <- createToplevel [text $ "Select Goal(s) and Prove"]
+  main <- createToplevel [text $ thName ++ " - Select Goal(s) and Prove"]
   pack main [Expand On, Fill Both]
 
   -- VBox for the whole window
@@ -253,7 +256,7 @@ proofManagementGUI = do
   pathsFrame <- newFrame rhb3 []
   pack pathsFrame []
   pathsLb <- newListBox pathsFrame [value $ ([]::[String]), bg "white",
-                                      selectMode Single, height 5, width 28] :: IO (ListBox String)
+                                      selectMode Single, height 4, width 28] :: IO (ListBox String)
   pack pathsLb [Expand On, Side AtLeft, Fill Both]
   pathsSb <- newScrollBar pathsFrame []
   pack pathsSb [Expand On, Side AtRight, Fill Y]
@@ -293,31 +296,31 @@ proofManagementGUI = do
     (forever
       ((selectGoal >>> do
           s <- readIORef stateRef
-	  putStrLn "goal selected"
+          putStrLn "goal selected"
           done)
       +> (selectAllGoals >>> do
             s <- readIORef stateRef
-	    putStrLn "select all clicked"
+            putStrLn "select all clicked"
             done)
       +> (displayGoals >>> do
             s <- readIORef stateRef
-	    putStrLn "display clicked"
+            putStrLn "display clicked"
             done)
       +> (selectProverPath>>> do
             s <- readIORef stateRef
-	    putStrLn "proverPath selected"
+            putStrLn "proverPath selected"
             done)
       +> (moreProverPaths >>> do
             s <- readIORef stateRef
-	    putStrLn "more clicked"
+            putStrLn "more clicked"
             done)
       +> (doProve >>> do
             s <- readIORef stateRef
-	    putStrLn "prove clicked"
+            putStrLn "prove clicked"
             done)
       +> (showProofDetails >>> do
             s <- readIORef stateRef
-	    putStrLn "proof details clicked"
+            putStrLn "proof details clicked"
             done)
       ))
   sync (close >>> destroy main)
@@ -327,5 +330,5 @@ proofManagementGUI = do
 
   -- TODO: do something with the results
 
-  return ()
+  return (Result.Result {Result.diags = [], Result.maybeResult = Nothing})
 
