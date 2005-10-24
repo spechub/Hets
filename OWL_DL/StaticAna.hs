@@ -31,7 +31,7 @@ basicOWL_DLAnalysis ::
         Result (Ontology,Sign,Sign,[Named Sentence])
 basicOWL_DLAnalysis (ontology@(Ontology oName _ ns), inSign, ga) =
     let -- importsUriList = searchImport ontology
-        diags1 = foldl (++) [] (map isImportInNamespace (Map.elems (removeDefault ns)))
+        diags1 = foldl (++) [] (map isNamespaceInImport (Map.elems (removeDefault ns)))
         (integNamespace, transMap) = 
             integrateNamespaces (namespaceMap inSign) ns
         ontology' = renameNamespace transMap ontology
@@ -52,18 +52,18 @@ basicOWL_DLAnalysis (ontology@(Ontology oName _ ns), inSign, ga) =
                 anaDirective ga (inSign' {ontologyID = nullID}) 
                                  (Ontology Prelude.Nothing [] ns') directives
         
-        isImportInNamespace :: String -> [Diagnosis]
-        isImportInNamespace uri =
+        isNamespaceInImport :: String -> [Diagnosis]
+        isNamespaceInImport uri =
           if null uri then [] 
             else
-            let uri' = take ((length uri) -1) uri        -- remove #
-            in if uri' `elem` importList 
+             let uri' = take ((length uri) -1) uri
+             in  if uri' `elem` importList 
                   then [] 
                   else 
                     [mkDiag 
                         Warning 
-                        (uri' ++ " is not imported in ontology: " ++ 
-                                 (show $ localPart $ fromJust oName)) 
+                        ("\"" ++ uri' ++ "\"" ++ " is not imported in ontology: " ++ 
+                                  (show $ localPart $ fromJust oName)) 
                         ()]
         importList = (localPart $ fromJust oName):(searchImport ontology)
 
@@ -84,7 +84,9 @@ basicOWL_DLAnalysis (ontology@(Ontology oName _ ns), inSign, ga) =
             findImports' (ha:ra) =
                 case ha of
                 URIAnnotation _ qn ->
-                        (namespaceUri qn):(findImports' ra)
+                    let nsUri = localPart qn
+--                    in  (take ((length nsUri) -1) nsUri):(findImports' ra)   -- remove #
+                    in nsUri:(findImports' ra)
                 _ -> []
 
         removeDefault :: Namespace -> Namespace
