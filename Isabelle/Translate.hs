@@ -12,11 +12,8 @@ translate 'Id' to Isabelle strings
 -}
 
 module Isabelle.Translate (showIsaConstT, showIsaConstIT, 
-			  showIsaTypeT, showIsaTypeIT,
-			   --showIsaT, showIsaIT,
-			   transConstStringT, transTypeStringT,
-                           transString, isaPrelude,
-                           charMap) where
+			   showIsaTypeT, transConstStringT, 
+                           transString, isaPrelude) where
 
 import Common.Id 
 import Common.ProofUtils
@@ -30,67 +27,48 @@ import Isabelle.IsaStrings
 
 ------------------- Id translation functions -------------------
 data IsaPreludes = IsaPreludes 
-    {preTypes :: Map.Map BaseSig (Set.Set String),
-     preConsts :: Map.Map BaseSig (Set.Set String)}
+    { preTypes :: Map.Map BaseSig (Set.Set String)
+    , preConsts :: Map.Map BaseSig (Set.Set String) }
 
 isaPrelude :: IsaPreludes
 isaPrelude = IsaPreludes {
   preTypes = Map.fromList 
   [(HsHOLCF_thy, types holcfS), (MainHC_thy, types mainS),
-   (Main_thy, types mainS), (HOLCF_thy, types holcfS), 
-   (HOL_thy, types holS), (Pure_thy, types pureS)],
+   (Main_thy, types mainS), (HOLCF_thy, types holcfS)],
   preConsts = Map.fromList 
   [(HsHOLCF_thy, Set.insert "fliftbin" (consts holcfS)),
-   (MainHC_thy, foldr Set.insert  (consts mainS) ["pApp","apt","app","defOp","pair"]),
-   (Main_thy,  consts mainS), (HOLCF_thy, consts holcfS), 
-   (HOL_thy,  consts holS), (Pure_thy, consts pureS)]}
-
---showIsaT :: Id -> BaseSig -> String 
---showIsaT ide thy = let 
---    rdru = reverse . dropWhile (== '_') 
---    tr = transTypeStringT thy
---    str = show ide
---    in if isInfix2 ide then "XX" ++ tr (rdru $ rdru str) else tr str
-    -- otherwise cutting off may lead to a name clash!
-
---showIsaIT :: Id -> Int -> BaseSig -> String
---showIsaIT ident i theory = showIsaT ident theory ++ "_" ++ show i
+   (MainHC_thy, foldr Set.insert  (consts mainS) 
+                  ["pApp","apt","app","defOp","pair"]),
+   (Main_thy,  consts mainS), (HOLCF_thy, consts holcfS)]}
 
 showIsaT1 :: (String -> String) -> Id -> String
 showIsaT1 tr ide = let
     rdru = reverse . dropWhile (== '_') 
     str = show ide
     in if isInfix2 ide then "XX" ++ tr (rdru $ rdru str) else tr str
-    -- otherwise cutting off may lead to a name clash!
 
 showIsaConstT :: Id -> BaseSig -> String 
 showIsaConstT ide thy = showIsaT1 (transConstStringT thy) ide
+
 showIsaTypeT :: Id -> BaseSig -> String 
 showIsaTypeT ide thy = showIsaT1 (transTypeStringT thy) ide
 
+-- | add a number for overloading 
 showIsaConstIT :: Id -> Int -> BaseSig -> String
 showIsaConstIT ident i theory = showIsaConstT ident theory ++ "_" ++ show i
-showIsaTypeIT :: Id -> Int -> BaseSig -> String
-showIsaTypeIT ident i theory = showIsaTypeT ident theory ++ "_" ++ show i
 
---transOldStringT :: BaseSig -> String -> String
---transOldStringT i s = let t = transString s in
---  if Set.member t $ maybe (error "Isabelle.Translate.transStringT") id 
---         $ Map.lookup i (preConsts isaPrelude)
---  then t++"X" else t -- ++ "X" else t
+transIsaStringT :: Map.Map BaseSig (Set.Set String) -> BaseSig 
+                -> String -> String
+transIsaStringT m i s = let t = transString s in
+  if Set.member t $ maybe (error "Isabelle.transIsaStringT") id 
+         $ Map.lookup i m
+  then t ++ "X" else t
 
 transConstStringT :: BaseSig -> String -> String
-transConstStringT i s = let t = transString s in
-  if Set.member t $ maybe (error "Isabelle.Translate.transStringT") id 
-         $ Map.lookup i (preConsts isaPrelude)
-  then t++"X" else t -- ++ "X" else t
+transConstStringT = transIsaStringT $ preConsts isaPrelude
 
 transTypeStringT :: BaseSig -> String -> String
-transTypeStringT i s = let t = transString s in
-  if Set.member t $ maybe (error "Isabelle.Translate.transStringT") id 
-         $ Map.lookup i (preTypes isaPrelude)
-  then t++"X" else t -- ++ "X" else t
-
+transTypeStringT  = transIsaStringT $ preTypes isaPrelude
 
 -- | check for legal alphanumeric isabelle characters
 isIsaChar :: Char -> Bool

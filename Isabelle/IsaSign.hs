@@ -242,8 +242,11 @@ emptyTypeSig = TySg {
 
 -------------------- from src/Pure/sign.ML ------------------------
 
-data BaseSig = Pure_thy | HOL_thy | HOLCF_thy | Main_thy | MainHC_thy | HsHOLCF_thy
-             deriving (Eq, Ord, Show) 
+data BaseSig = Main_thy  -- ^ main theory of higher order logic (HOL)
+             | MainHC_thy  -- ^ extend main theory of HOL logic for HasCASL
+             | HOLCF_thy   -- ^ higher order logic for continuous functions
+             | HsHOLCF_thy  -- ^ HOLCF for Haskell
+               deriving (Eq, Ord, Show) 
              {- possibly simply supply a theory like MainHC as string 
                 or recursively as Isabelle.Sign -}
 
@@ -275,7 +278,7 @@ type DomainEntry = (Typ,[DomainAlt])
 type DomainAlt = (VName,[Typ])
 
 emptySign :: Sign
-emptySign = Sign { baseSig = Pure_thy,
+emptySign = Sign { baseSig = Main_thy,
                    tsig = emptyTypeSig,
                    constTab = Map.empty,
                    dataTypeTab = [],

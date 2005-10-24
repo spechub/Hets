@@ -22,83 +22,13 @@ import qualified Common.Lib.Set as Set
 mkIsaSet :: [String] -> Set.Set String
 mkIsaSet = Set.fromList . concatMap words
 {- fewer list elements are better to optimize ("\",\"" -> "   ") 
-   keep all words in case we also want to use symbols
+   but keep all words in case we also want to use symbols
 -}
 
 data IsaSets = IsaSets 
     { types  :: Set.Set String
     , consts  :: Set.Set String
-    --,keywords  :: Set.Set String?
     }
-
-pureS :: IsaSets
-pureS = 
-  IsaSets {
-  types =  mkIsaSet [""],
-  consts = mkIsaSet [
-  "!!   %   (   )   ,   .   ...   ::   ;   ==   ==>   =>   OFCLASS",
-  "PROP   TYPE   [   [|   \\<And>   \\<Colon>   \\<Longrightarrow>",
-  "\\<Rightarrow>   \\<^sub>   \\<dots>   \\<equiv>   \\<equiv>\\<^sup>?",
-  "\\<index>   \\<lambda>   \\<lbrakk>   \\<rbrakk>   \\<struct>   ]   _",
-  "_::   op   {   {}   |]   }",
-
-  "!!   !!   #prop   ==   ==   ==>   ==>   ==>   =?=   Goal",
-  "Goal   TYPE   _DDDOT   _DDDOT   _K   _TYPE   _abs   _appl   _appl",
-  "_aprop   _args   _asms   _bigimpl   _bigimpl   _bracket   _bracket",
-  "_classes   _constify   _constrain   _constrain   _dummy_ofsort   _idts",
-  "_idtyp   _idtyp   _index   _indexvar   _lambda   _lambda",
-  "_meta_conjunction   _mk_ofclass   _noindex   _ofclass   _ofsort",
-  "_ofsort   _pttrns   _sort   _struct   _tapp   _tappl   _topsort   _types",
-  "all   any   aprop   args   asms   cargs   classes   dummy   dummy",
-  "dummy_pattern   dummy_pattern   fun   fun   fun   id   idt   idts",
-  "index   itself   logic   logic   logic_class   longid   num   num_const",
-  "prop   pttrn   pttrns   sort   struct   tid   tvar   type   types   var",
-  "xnum   xstr"
-  ]}
-
-holS :: IsaSets
-holS = 
-  IsaSets {
-  types =  mkIsaSet [""],
-  consts = mkIsaSet [
-  "!   !!   %   &   (   )   *   +   ,   -   -->   .   ...   /   0",
-  "1   ::   ;   <   <=   =   ==   ==>   =>   ?   ?!   ALL   EX   EX!",
-  "LEAST   OFCLASS   PROP   THE   TYPE   [   [|   \\<And>   \\<Colon>",
-  "\\<Longrightarrow>   \\<Rightarrow>   \\<^sub>   \\<^sub>1   \\<and>",
-  "\\<bar>   \\<dots>   \\<equiv>   \\<equiv>\\<^sup>?   \\<exists>",
-  "\\<exists>!   \\<forall>   \\<index>   \\<lambda>   \\<lbrakk>   \\<le>",
-  "\\<longrightarrow>   \\<not>   \\<noteq>   \\<or>   \\<rbrakk>",
-  "\\<struct>   ]   _   _::   case   else   if   in   let   of   op   then",
-  "{   {}   |   |]   }   ~   ~=",
-
-  "!!   !!   #prop   0   1   ==   ==   ==>   ==>   ==>",
-  "=?=   ALL    ALL    ALL    ALL    All   EX    EX    EX    EX    EX! ",
-  "EX!    EX!    EX!    Ex   Ex1   False   Goal   Goal   If   LEAST ",
-  "Least   Let   Not   Not   Not   TYPE   The   True   Trueprop   _DDDOT",
-  "_DDDOT   _K   _Let   _TYPE   _The   _abs   _appl   _applC   _aprop",
-  "_args   _asms   _bigimpl   _bigimpl   _bind   _binds   _bracket",
-  "_bracket   _cargs   _case1   _case1   _case2   _case_syntax   _classes",
-  "_constify   _constrain   _constrain   _dummy_ofsort   _idts   _idtyp",
-  "_idtyp   _index   _index1   _indexvar   _lambda   _lambda   _leAll",
-  "_leAll   _leAll   _leAll   _leEx   _leEx   _leEx   _leEx   _lessAll",
-  "_lessAll   _lessAll   _lessAll   _lessEx   _lessEx   _lessEx   _lessEx",
-  "_meta_conjunction   _mk_ofclass   _noindex   _not_equal   _not_equal",
-  "_not_equal   _not_equal   _not_equal   _ofclass   _ofsort   _ofsort",
-  "_pttrns   _sort   _struct   _tapp   _tappl   _topsort   _types   abs",
-  "abs   abs   all   any   aprop   arbitrary   args   asms   bool   cargs",
-  "case_syn   cases_syn   classes   divide   dummy   dummy   dummy_pattern",
-  "dummy_pattern   fun   fun   fun   id   idt   idts   index   induct_conj",
-  "induct_equal   induct_forall   induct_implies   inverse   inverse",
-  "inverse_class   itself   letbind   letbinds   linorder   linorder_class",
-  "logic   logic   logic_class   longid   max   min   minus   minus_class",
-  "mono   num   num_const   one   one_class   op &   op &   op &   op *",
-  "op +   op -   op -->   op -->   op <   op <   op <=   op <=   op <=",
-  "op <=   op =   op =   op |   op |   op |   ord   ord_class   order",
-  "order_class   plus   plus_class   prop   pttrn   pttrns   sort   struct",
-  "tid   times   times_class   tvar   type   type   type_class   types",
-  "uminus   var   xnum   xstr   zero   zero_class"
-  ]}
-
 
 holcfS :: IsaSets
 holcfS = 
