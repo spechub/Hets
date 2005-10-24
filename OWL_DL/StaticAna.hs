@@ -17,24 +17,28 @@ import OWL_DL.AS
 import Text.XML.HXT.DOM.XmlTreeTypes
 import Common.Id
 import qualified Common.Lib.Set as Set
+import qualified Common.Lib.Map as Map
 import Common.AS_Annotation
 import Common.Result
 import Common.GlobalAnnotations
 import OWL_DL.Namespace
+import Maybe
 -- import Debug.Trace
 
 -- | static analysis of ontology with incoming sign.
 basicOWL_DLAnalysis :: 
     (Ontology, Sign, GlobalAnnos) ->
         Result (Ontology,Sign,Sign,[Named Sentence])
-basicOWL_DLAnalysis (ontology@(Ontology _ _ ns), inSign, ga) =
-    let (integNamespace, transMap) = 
+basicOWL_DLAnalysis (ontology@(Ontology oName _ ns), inSign, ga) =
+    let -- importsUriList = searchImport ontology
+        diags1 = foldl (++) [] (map isImportInNamespace (Map.elems (removeDefault ns)))
+        (integNamespace, transMap) = 
             integrateNamespaces (namespaceMap inSign) ns
         ontology' = renameNamespace transMap ontology
-        Result diags1 (Just (onto, accSign, namedSen)) = 
+        Result diags2 (Just (onto, accSign, namedSen)) = 
             anaOntology (inSign {namespaceMap = integNamespace}) ontology'
         diffSign = diffSig accSign inSign
-    in  Result diags1 $ Just (onto, diffSign, accSign, namedSen)
+    in  Result (diags1 ++ diags2) $ Just (onto, diffSign, accSign, namedSen)
    
   where -- static analysis with changed namespace base of inSign.
         anaOntology :: Sign -> Ontology
@@ -47,6 +51,46 @@ basicOWL_DLAnalysis (ontology@(Ontology _ _ ns), inSign, ga) =
             Ontology Prelude.Nothing directives ns' ->
                 anaDirective ga (inSign' {ontologyID = nullID}) 
                                  (Ontology Prelude.Nothing [] ns') directives
+        
+        isImportInNamespace :: String -> [Diagnosis]
+        isImportInNamespace uri =
+          if null uri then [] 
+            else
+            let uri' = take ((length uri) -1) uri        -- remove #
+            in if uri' `elem` importList 
+                  then [] 
+                  else 
+                    [mkDiag 
+                        Warning 
+                        (uri' ++ " is not imported in ontology: " ++ 
+                                 (show $ localPart $ fromJust oName)) 
+                        ()]
+        importList = (localPart $ fromJust oName):(searchImport ontology)
+
+        searchImport :: Ontology -> [String]
+        searchImport (Ontology _ directives _) = findImports directives
+            where
+            findImports :: [Directive] -> [String]
+            findImports [] = []
+            findImports (hd:rd) = 
+                case hd of
+                Ax (OntologyProperty oid uriannos) ->   
+                    if localPart oid == "imports" then
+                       findImports' uriannos
+                       else findImports rd
+                _ -> findImports rd
+            findImports' :: [OWL_DL.AS.Annotation] -> [String]
+            findImports' [] = []
+            findImports' (ha:ra) =
+                case ha of
+                URIAnnotation _ qn ->
+                        (namespaceUri qn):(findImports' ra)
+                _ -> []
+
+        removeDefault :: Namespace -> Namespace
+        removeDefault namespace =
+            Map.delete "owl" (Map.delete "xsd" (Map.delete "rdf" 
+                     (Map.delete "rdfs" (Map.delete "xml" namespace))))
                           
 -- | concat the current result with total result 
 -- | first parameter is an result from current directive
