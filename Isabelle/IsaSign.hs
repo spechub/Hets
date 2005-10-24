@@ -11,8 +11,6 @@ Portability :  portable
 Data structures for Isabelle signatures and theories.
    Adapted from Isabelle.
 
-LogicList.hs
-LogicGraph.hs
 
 -}
 
@@ -23,22 +21,26 @@ import qualified Common.Lib.Map as Map
 -------------------- not quite from src/Pure/term.ML ------------------------
 ----------------------------- Names -----------------------------------------
 
---data IName = IName {orig::String, new::String}
+-- | type names
+type TName = String
 
-type IName = String
+-- | names for values or constants (non-classes and non-types)
+data VName = VName 
+    { new :: String -- ^ name within Isabelle
+    , orig :: String  -- ^ original name from other logic
+    } deriving (Ord, Eq, Show)
 
-type CName = IName  -- class name
-type TName = IName  -- type name
-data VName = VName { new :: IName, orig :: IName }  -- value name
-	   deriving (Ord, Eq, Show)
-{-Indexnames can be quickly renamed by adding an offset to the integer part,
-  for resolution.-}
-type Indexname = (String,Int)
+{- | Indexnames can be quickly renamed by adding an offset to the integer part,
+     for resolution. -}
+data Indexname = Indexname 
+    { unindexed :: String
+    , indexOffset :: Int
+    } deriving (Ord, Eq, Show)
 
 --------- Classes
 {- Types are classified by sorts. -}
 
-data IsaClass  = IsaClass {classId :: CName}
+data IsaClass  = IsaClass {classId :: String}
                  deriving (Ord, Eq, Show)   
 
 type Sort  = [IsaClass]
@@ -72,7 +74,7 @@ data Typ = Type  { typeId    :: TName,
                    typeArgs  :: [Typ] } 
          | TFree { typeId    :: TName,
                    typeSort  :: Sort }
-         | TVar  { indexname :: Indexname, -- (String,Int)
+         | TVar  { indexname :: Indexname,
                    typeSort  :: Sort }
          deriving (Eq, Ord, Show)
 
@@ -250,14 +252,14 @@ data BaseSig = Main_thy  -- ^ main theory of higher order logic (HOL)
              {- possibly simply supply a theory like MainHC as string 
                 or recursively as Isabelle.Sign -}
 
-data Sign = Sign { baseSig :: BaseSig, -- like Pure, HOL, Main etc.
-                   tsig :: TypeSig,
-                   constTab :: ConstTab,  -- value cons with type
-                   domainTab :: DomainTab,  
-                   dataTypeTab :: DataTypeTab,
-                   showLemmas :: Bool
-                 }
-             deriving (Eq, Show)
+data Sign = Sign 
+    { baseSig :: BaseSig, -- like Main etc.
+      tsig :: TypeSig,
+      constTab :: ConstTab,  -- value cons with type
+      domainTab :: DomainTab,  
+      dataTypeTab :: DataTypeTab,
+      showLemmas :: Bool
+    } deriving (Eq, Show)
 
  {- list of datatype definitions
     each of these consists of a list of (mutually recursive) datatypes

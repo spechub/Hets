@@ -258,10 +258,10 @@ holEq t1 t2 = termMAppl NotCont (conDouble eq) [t1, t2]
 -- Translating to strings compatible with Isabelle
 
 class IsaName a where
- showIsaName :: a -> IName
+ showIsaName :: a -> String
  showIsaString :: a -> String
 
-showIsaS :: String -> IsaSign.IName
+showIsaS :: String -> String
 showIsaS = transConstStringT HOLCF_thy
 
 instance IsaName String where

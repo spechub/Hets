@@ -44,12 +44,6 @@ instance PrintLaTeX Sentence where
 instance PrettyPrint Sentence where
       printText0 _ = text . showTerm . senTerm
 
-showIsaDef :: Named Sentence -> Doc
-showIsaDef x = let d = senName x in 
-  if d == "" then empty
-  else text (d++"_def:") <+> text ("\""++(showTerm $ senTerm $ sentence x)++"\"")
---  else text (d++"_def:"++sp++"\""++(showTerm $ senTerm $ sentence x)++"\"")
-
 instance PrettyPrint Typ where
   printText0 _ = text . showTyp Null 1000 -- Unquoted 1000
 
@@ -70,7 +64,7 @@ showTyp a pri t = case t of
    Unquoted -> lb ++ "\'" ++ v ++ "::" ++ (showSort s) ++ rb
    Quoted -> "\'" ++ v ++ "::\"" ++ (showSort s) ++ "\""
    Null ->  "\'" ++ v
- (TVar (v,_) s) -> case a of
+ (TVar iv s) -> let v = unindexed iv in case a of
    Unquoted -> lb ++ "?\'" ++ v ++ "::" ++ (showSort s) ++ rb
    Quoted -> "?\'" ++ v ++ "::\"" ++ (showSort s) ++ "\""
    Null ->  "?\'" ++ v
@@ -593,14 +587,13 @@ instance PrettyPrint Sign where
             where sa = (concat $ map ((sp ++) . showArg) args)
           showArg (TFree [] _) = "varName"
           showArg (TFree (n:ns) _) = [toLower n] ++ ns
-          showArg (TVar ([], _) _) = "varName"
-          showArg (TVar ((n:ns), _) _) = [toLower n] ++ ns
+          showArg (TVar v s) = showArg (TFree (unindexed v) s)
           showArg (Type [] _ _) = "varName"
           showArg (Type m@(n:ns) _ s) = 
             if m == "typeAppl" || m == "fun" || m == "*"  then concat $ map showArg s
               else [toLower n] ++ ns
           showName (TFree v _) = v
-          showName (TVar (v, _) _)  = v
+          showName (TVar v _) = unindexed v
           showName (Type n _ _) = n
           proof = "apply (case_tac caseVar)\napply (auto)\ndone\n"
       in

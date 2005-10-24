@@ -245,9 +245,6 @@ mapTI3 vf cf tf ty = case ty of
 
 ------------------------------ Class translation ------------------------------
 
-mkIsaClass :: CName -> IsaClass
-mkIsaClass n = IsaClass n
-
 transClass :: HsType -> IsaClass
 transClass x = case x of 
     Typ (HsTyCon c) -> IsaClass (showIsaName c)
@@ -299,7 +296,7 @@ transScheme s = maybe (error "HsHOLCF, transScheme") id $ transMScheme IsCont s
 
 getClassrel :: TyMap -> IsaSign.Classrel
 getClassrel f = 
-     liftMapByList Map.toList Map.fromList (mkIsaClass . showIsaName) transClassInfo f
+     liftMapByList Map.toList Map.fromList (IsaClass . showIsaName) transClassInfo f
 
 transClassInfo :: (Kind, HsTypeInfo) -> Maybe [IsaClass]
 transClassInfo p = case snd p of 
