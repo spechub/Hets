@@ -41,6 +41,7 @@ import CASL.CompositionTable.CompositionTable
 #endif
 
 import Isabelle.CreateTheories
+import SPASS.CreateDFGDoc
 
 import Logic.Prover
 import Static.DevGraph
@@ -78,6 +79,7 @@ write_LIB_DEFN ga file opt ld = do
                 write_casl_latex opt ga (filename t) ld
             EnvOut -> return () -- implemented in hets.hs
             ThyFile -> return () -- (requires environment)
+            DfgFile -> return () -- (requires environment)
             ComptableXml -> return ()
             _ -> putIfVerbose opt 0 $ "Error: the OutType \"" ++
                         show t ++ "\" is not implemented" 
@@ -174,6 +176,12 @@ writeSpecFiles opt file lenv (ln, gctx) = let
                                 ThyFile -> case printTheory ln i gTh of
                                     Nothing -> putIfVerbose opt 0 $
                                         "could not translate to Isabelle " ++
+                                         show i
+                                    Just d -> writeVerbFile opt f $
+                                              shows d "\n"
+                                DfgFile -> case printDFG ln i gTh of
+                                    Nothing -> putIfVerbose opt 0 $
+                                        "could not translate to SPASS " ++
                                          show i
                                     Just d -> writeVerbFile opt f $
                                               shows d "\n"

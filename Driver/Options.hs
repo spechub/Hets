@@ -87,12 +87,13 @@ treeS = "tree."
 bafS = ".baf"
 astS = "ast"
 
-graphS, ppS, envS, naxS, thyS, comptableXmlS :: String
+graphS, ppS, envS, naxS, thyS, dfgS, comptableXmlS :: String
 graphS = "graph."
 ppS = "pp."
 envS = "env"
 naxS = ".nax"
 thyS = "thy"
+dfgS = "dfg"
 comptableXmlS = "comptable.xml"
 
 showOpt :: String -> String
@@ -263,6 +264,7 @@ data OutType = PrettyOut PrettyType
              | GraphOut GraphType
              | EnvOut
              | ThyFile -- isabelle theory file
+             | DfgFile -- SPASS input file
              | ComptableXml
 
 instance Show OutType where
@@ -272,6 +274,7 @@ instance Show OutType where
              GraphOut f -> graphS ++ show f
              EnvOut -> envS
              ThyFile -> thyS
+             DfgFile -> dfgS
              ComptableXml -> comptableXmlS
 
 instance Read OutType where
@@ -287,6 +290,8 @@ instance Read OutType where
              [(EnvOut, drop (length envS) s)]
         else if isPrefixOf thyS s then
              [(ThyFile, drop (length thyS) s)]
+        else if isPrefixOf dfgS s then
+             [(DfgFile, drop (length dfgS) s)]
         else if isPrefixOf comptableXmlS s then
              [(ComptableXml, drop (length comptableXmlS) s)]
         else [(HetCASLOut h f, u) | (h, d : t) <- reads s,
@@ -411,7 +416,7 @@ options =
     , Option ['o'] [outtypesS] (ReqArg parseOutTypes "OTYPES")
       ("output file types, default " ++ show defaultOutType ++ "," ++ crS ++
        listS ++ crS ++ bS ++ envS ++ crS ++ bS ++
-       thyS ++ crS ++ bS ++ comptableXmlS ++ crS ++ bS ++
+       thyS ++ dfgS ++ crS ++ bS ++ comptableXmlS ++ crS ++ bS ++
        ppS ++ joinBar (map show prettyList) ++ crS ++ bS ++
        graphS ++ joinBar (map show graphList) ++ crS ++ bS ++
        astS ++ formS ++ crS ++ bS ++
