@@ -266,11 +266,22 @@ disSPOId cType sid ty idSet
                         x -> '_':show (length ty - (case x of 
                                                     COp _ -> 1 
                                                     _     -> 0))
+--          tr x = trace ("disSPOId: Input: "++show cType ++ ' ':show sid 
+--                        ++ ' ':show ty ++ "\n  Output: "++ show x) x
           lkup x = Set.member x idSet
           addType res n = 
               let nres = asid ++ '_':fc n
+                  nres' = nres ++ '_':show n
               in if nres == res 
-                 then error ("CASL2SPASS: cannot calculate unambigous id for "++sid)
+                 then if nres' == res 
+                      then error ("CASL2SPASS: cannot calculate "++
+                                  "unambigous id for "
+                                  ++sid ++ " with type " ++ show ty 
+                                  ++ " and nres = "++ nres ++ "\n with idSet "
+                                  ++ show idSet)
+                      else if not (lkup nres') 
+                           then nres'
+                           else addType nres (n+1)
                  else if not (lkup nres) 
                       then nres
                       else addType nres (n+1)
