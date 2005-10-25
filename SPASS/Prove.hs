@@ -312,33 +312,15 @@ toGuiStatus cf st = case st of
 
 
 {- |
-  Converts a 'Proof_status' into a 'GUI.HTkUtils.LBStatusIndicator' to be
-  displayed by the GUI in a 'ListBox'.
--}
-toStatusIndicator :: SPASSConfig -- ^ current prover configuration
-                  -> (Proof_status a) -- ^ status to convert
-                  -> LBStatusIndicator
-toStatusIndicator _ st = case st of
-  Proved _ _ _ _ _ -> LBIndicatorProved
-  Disproved _ -> LBIndicatorDisproved
-  _ -> LBIndicatorOpen
-
-{- |
   Generates a list of 'GUI.HTkUtils.LBGoalView' representations of all goals
   from a 'SPASS.Prove.State'.
-
-  Uses 'toStatusIndicator' internally.
 -}
 goalsView :: SPASS.Prove.State  -- ^ current global prover state
           -> [LBGoalView] -- ^ resulting ['LBGoalView'] list
 goalsView s = map (\ g ->
                        let res = Map.lookup g (resultsMap s)
-                           cf = Map.findWithDefault
-                                (error "updateDisplay: configsMap \
-                                       \was not initialised!!")
-                                g (configsMap s)
                            statind = maybe LBIndicatorOpen
-                                       ((toStatusIndicator cf) . fst)
+                                       (indicatorFromProof_status . fst)
                                        res
                         in
                           LBGoalView {statIndicator = statind, goalDescription = g})

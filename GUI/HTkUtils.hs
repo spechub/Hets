@@ -18,6 +18,8 @@ import HTk
 import ScrollBox
 import FileDialog
 
+import Logic.Prover hiding(value)
+
 -- | create a window with title and list of options, return selected option
 listBox :: String -> [String] -> IO (Maybe Int)
 listBox title entries =
@@ -147,3 +149,12 @@ populateGoalsListBox lb v = do
   where
     toString = map (\ LBGoalView {statIndicator = i, goalDescription = d} -> 
                         (indicatorString i) ++ (' ' : d))
+
+-- | Converts a 'Logic.Prover.Proof_status' into a 'LBStatusIndicator'
+indicatorFromProof_status :: Proof_status a
+                      -> LBStatusIndicator
+indicatorFromProof_status st = case st of
+  Proved _ _ _ _ _ -> LBIndicatorProved
+  Disproved _ -> LBIndicatorDisproved
+  _ -> LBIndicatorOpen
+
