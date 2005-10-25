@@ -121,7 +121,11 @@ toStatusIndicator st = case st of
 -}
 goalsView :: ProofGUIState  -- ^ current global state
           -> [LBGoalView] -- ^ resulting ['LBGoalView'] list
-goalsView _ = []
+goalsView st = []
+-- this blows up. giving up for tonight.
+--  where
+--    nGoals = getNGoals $ theory st
+--    getNGoals (DevGraph.G_theory _ _ thSen) = DevGraph.toNamedList thSen
 
 -- ** GUI Implementation
 
@@ -153,13 +157,16 @@ updateDisplay st updateLb goalsLb pathsLb statusLabel = do
 {- |
   Invokes the GUI.
 -}
-proofManagementGUI :: String -- ^ theory name
+proofManagementGUI :: (ProofGUIState -> IO ProofGUIState)
+                   -> (ProofGUIState -> IO ProofGUIState)
+                   -> String -- ^ theory name
                    -> DevGraph.G_theory
                    -> KnownProvers.KnownProversMap
                    -> IO (Result.Result DevGraph.G_theory)
-proofManagementGUI thName th knownProvers = do
+proofManagementGUI proveF fineGrainedSelectionF thName th@(DevGraph.G_theory _ _ thSen) knownProvers = do
+
   -- initial backing data structure
-  let initState = initialState
+  let initState = initialState thName th knownProvers
   stateRef <- newIORef initState
 
   -- main window
@@ -331,4 +338,7 @@ proofManagementGUI thName th knownProvers = do
   -- TODO: do something with the results
 
   return (Result.Result {Result.diags = [], Result.maybeResult = Nothing})
+
+  where
+    nGoals = DevGraph.toNamedList thSen
 
