@@ -25,10 +25,10 @@ import Logic.Grothendieck
 import Static.DevGraph
 import Static.DGToSpec
 import Common.Result
-import Common.AS_Annotation
+import Logic.Prover
 import Common.Utils
-import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
+import qualified Common.OrderedMap as OMap
 import Data.Graph.Inductive.Graph
 import Data.Maybe
 import Proofs.EdgeUtils
@@ -136,8 +136,8 @@ localInferenceAux libEnv ln dgraph (rules, changes)
             Nothing -> localInferenceAux libEnv ln dgraph (rules,changes) list
             Just sentencesTgt -> 
               -- check if all source axioms are also axioms in the target
-              let goals = Set.filter (isAxiom  . value) sensSrc 
-                           Set.\\ sentencesTgt
+              let goals = OMap.filter isAxiom sensSrc 
+                           OMap.\\ sentencesTgt
                   goals' = markAsGoal goals
                   newTh = case (dgn_theory oldContents) of
                           G_theory lid sig sens ->
@@ -145,7 +145,7 @@ localInferenceAux libEnv ln dgraph (rules, changes)
                              Nothing -> G_theory lid sig sens
                              Just goals'' -> 
                                  G_theory lid sig (sens `joinSens` goals'')
-             in if Set.null goals
+             in if OMap.null goals
                 then
                  let newEdge = (src, tgt, newLab)
                      newGraph = insEdge newEdge auxGraph

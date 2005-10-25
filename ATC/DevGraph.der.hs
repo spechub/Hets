@@ -40,7 +40,6 @@ import ATC.Grothendieck
 {-! for ImpUnitSigOrSig derive : ShATermConvertible !-}
 {-! for ArchSig derive : ShATermConvertible !-}
 {-! for GlobalEntry derive : ShATermConvertible !-}
-{-! for SenStatus derive : ShATermConvertible !-}
 {-! for DGChange derive : ShATermConvertible !-}
 
 instance ShATermConvertible BasicProof where

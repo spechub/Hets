@@ -22,13 +22,14 @@ import Logic.Grothendieck
 import Static.DevGraph
 import Syntax.AS_Library
 import Syntax.AS_Structured
-import Common.AS_Annotation
+import Common.AS_Annotation (Annoted(..))
+import Logic.Prover
 import Common.Result
 import Common.Id
 import Common.Utils
 import Data.Graph.Inductive.Graph
 import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
+import qualified Common.OrderedMap as OMap
 
 emptyAnno :: SPEC -> Annoted SPEC
 emptyAnno x = Annoted x nullRange [] []
@@ -182,5 +183,4 @@ computePathTheory libEnv ln e@(src, _, link) = do
 
 axiomsToTheorems :: G_theory -> G_theory
 axiomsToTheorems (G_theory lid sign sens) =
-   G_theory lid sign $ Set.map ( \ x -> x {value = (value x) 
-                                          {isAxiom = True}} ) sens
+   G_theory lid sign $ OMap.map ( \ x -> x {isAxiom = True} ) sens

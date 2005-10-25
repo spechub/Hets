@@ -25,6 +25,7 @@ import Syntax.AS_Library
 import Syntax.Print_AS_Library()
 
 import Static.DevGraph
+import Logic.Prover
 
 import Isabelle.CreateThy as CreateThy
 

@@ -117,7 +117,8 @@ import Logic.Comorphism
 import Logic.Grothendieck
 import Static.DevGraph
 import Syntax.AS_Structured
-import Common.AS_Annotation
+import Common.AS_Annotation hiding (isAxiom,isDef)
+import Logic.Prover
 import Common.Result
 import Common.Id
 import Data.Graph.Inductive.Graph

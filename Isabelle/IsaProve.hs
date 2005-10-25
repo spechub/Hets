@@ -71,7 +71,7 @@ isabelleConsChecker =
               prover_sublogic = "Isabelle",
               prove = \ thn mor -> isaProve True thn (t_target mor) }
 
-isaProve :: Bool -> String -> Theory Sign Sentence -> IO([Proof_status ()])
+isaProve :: Bool -> String -> Theory Sign Sentence () -> IO([Proof_status ()])
 isaProve checkCons thName (Theory sig nSens) = do
   ex <- doesFileExist fileName
   exorig <- doesFileExist origName
@@ -111,8 +111,8 @@ isaProve checkCons thName (Theory sig nSens) = do
 --   system (isabelle ++ "/isabelle -e "++newThy++" -q HOL" ++ " heap.isa")
   return [] -- ??? to be implemented
   where
-      nSens' = prepareSenNames transString nSens
-      (disAxs, disGoals) = partition isAxiom nSens' 
+      nSens' = prepareSenNames transString (toNamedList nSens)
+      (disAxs, disGoals) = partition Common.AS_Annotation.isAxiom nSens' 
       thName' = thName++if checkCons then "_c" else ""
       fileName = thName'++".thy"
       origName = thName'++".orig.thy"

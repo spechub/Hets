@@ -45,6 +45,7 @@ import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Graph.Inductive.Tree as Tree
 
 import qualified Common.Lib.Map as Map
+import qualified Common.OrderedMap as OMap
 import qualified Common.Lib.Set as Set
 
 import Common.AS_Annotation
@@ -53,9 +54,7 @@ import Common.Id
 import Common.Lib.Pretty
 import Common.PrettyPrint
 import Common.PPUtils
-import Common.ProofUtils
 import Common.Result
-import Common.DynamicUtils 
 
 import Data.Dynamic
 import Data.List as List
@@ -150,8 +149,8 @@ locallyEmpty ::  DGNodeLab -> Bool
 locallyEmpty dgn = 
   case dgn_theory dgn of
   G_theory _lid _sigma sens ->
-    Set.null $ Set.filter 
-      (\s -> not (isAxiomSenStatus s) && not (isProvenSenStatus s) ) sens 
+    OMap.null $ OMap.filter 
+      (\s -> not (Logic.Prover.isAxiom s) && not (isProvenSenStatus s) ) sens 
 
 -- | link inscriptions in development graphs           
 data DGLinkLab = DGLink {
@@ -317,6 +316,12 @@ instance Show BasicProof where
   show Conjectured = "Conjectured"
   show Handwritten = "Handwritten"
 
+basicProofTc :: TyCon
+basicProofTc = mkTyCon "Static.DevGraph.BasicProof"
+
+instance Typeable BasicProof where
+    typeOf _ = mkTyConApp basicProofTc []
+
 data BasicConsProof = BasicConsProof -- more detail to be added ...
      deriving (Show, Eq)
 
@@ -445,7 +450,7 @@ extendDGraphRev :: DGraph    -- ^ the development graph to be extended
 extendDGraphRev dg (NodeSig n _) morph orig = case dom Grothendieck morph of
     sourceSig@(G_sign lid src) -> let
         nodeContents = DGNode {dgn_name = emptyNodeName,
-                               dgn_theory = G_theory lid src Set.empty,
+                               dgn_theory = G_theory lid src OMap.empty,
                                dgn_nf = Nothing,
                                dgn_sigma = Nothing,
                                dgn_origin = orig,
@@ -532,81 +537,14 @@ instance PrettyPrint DGOrigin where
      DGProof -> "constructed within a proof"
      _ -> show origin
 
--- * sentence packing
+-- * Heterogenous sentences
 
-data SenStatus a = SenStatus
-     { value :: Named a
-     , order :: Int
-     , thmStatus :: [(AnyComorphism,BasicProof)]
-     } deriving Show
+type HetSenStatus a = SenStatus a (AnyComorphism,BasicProof)
 
-isProvenSenStatus :: SenStatus a -> Bool
+isProvenSenStatus :: HetSenStatus a -> Bool
 isProvenSenStatus = any isProvenSenStatusAux . thmStatus
   where isProvenSenStatusAux (_,BasicProof _ (Proved _ _ _ _ _)) = True 
         isProvenSenStatusAux _ = False
-
-isAxiomSenStatus :: SenStatus a -> Bool
-isAxiomSenStatus = isAxiom . value
-
-instance PrettyPrint a => PrettyPrint (SenStatus a) where
-  printText0 ga x =
-     printText0 ga (value x)
-
-emptySenStatus :: SenStatus a
-emptySenStatus = SenStatus { value = error "emptySenStatus"
-                           , order = 0
-                           , thmStatus = [] }
-
-instance Eq a => Eq (SenStatus a) where
-    d1 == d2 = sentence (value d1) == sentence (value d2)
-
-instance Ord a => Ord (SenStatus a) where
-    d1 <= d2 = sentence (value d1) <= sentence (value d2)
-
-decoTc :: TyCon
-decoTc = mkTyCon "Static.DevGraph.SenStatus"
-
-instance Typeable s => Typeable (SenStatus s) where 
-  typeOf s = mkTyConApp decoTc [typeOf ((undefined :: SenStatus a -> a) s)]
-
-type ThSens a = Set.Set (SenStatus a)
-
-noSens :: ThSens a
-noSens = Set.empty
-
--- | join and disambiguate
-joinSens :: Ord a => ThSens a -> ThSens a -> ThSens a
-joinSens s1 s2 = let l1 = Set.toList s1
-                     sel = senName . value
-                     upd n s = s { value = (value s) { senName = n }} 
-                     ns = Set.map sel s1  
-                     m = foldr (max . order) 0 l1
-                     l2 = map ( \ e -> e {order = m + order e }) 
-                          $ Set.toList s2 
-                 in Set.fromDistinctAscList $ mergeSens l1 
-                        $ genericDisambigSens sel upd ns l2
-    where mergeSens [] l2 = l2
-          mergeSens l1 [] = l1
-          mergeSens l1@(e1 : r1) l2@(e2 : r2) = case compare e1 e2 of
-              LT -> e1 : mergeSens r1 l2
-              EQ -> e1 { thmStatus = List.union (thmStatus e1) $ thmStatus e2 }
-                    : mergeSens r1 r2
-              GT -> e2 : mergeSens l1 r2
-
-mapValue :: (a -> b) -> SenStatus a -> SenStatus b
-mapValue f d = d { value = mapNamed f $ value d } 
-
-markAsGoal :: Ord a => ThSens a -> ThSens a
-markAsGoal = Set.map (\d -> d { value = (value d) {isAxiom = False}})
-
-toNamedList :: ThSens a -> [Named a]
-toNamedList s = let compO d1 d2 = compare (order d1) (order d2)
-                in map value $ sortBy compO $ Set.toList s  
-
-toThSens :: Ord a => [Named a] -> ThSens a
-toThSens sens = Set.fromList $ zipWith 
-    ( \ v i -> emptySenStatus { value = v, order = i })
-    sens [1..]
 
 -- * Grothendieck theories
 
@@ -617,15 +555,16 @@ data G_theory = forall lid sublogics
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
-  G_theory lid sign (ThSens sentence)
+  G_theory lid sign (ThSens sentence (AnyComorphism,BasicProof))
 
 coerceThSens :: 
    (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
    Logic  lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
-   Monad m) => lid1 -> lid2 -> String 
-            -> ThSens sentence1 -> m (ThSens sentence2)
+   Monad m,
+   Typeable b) => lid1 -> lid2 -> String 
+            -> ThSens sentence1 b -> m (ThSens sentence2 b)
 coerceThSens l1 l2 msg t1 = primCoerce l1 l2 msg t1
 
 instance Eq G_theory where
@@ -648,14 +587,15 @@ sublogicOfTh :: G_theory -> G_sublogics
 sublogicOfTh (G_theory lid sigma sens) =
   let sub = Set.fold Logic.Logic.join 
                   (min_sublogic_sign lid sigma)
-                  (Set.map (min_sublogic_sentence lid . sentence . value) 
+                  (Set.fromList $ map snd $ OMap.toList $ 
+                   OMap.map (min_sublogic_sentence lid . value) 
                        sens)
    in G_sublogics lid sub
 
 -- | simplify a theory (throw away qualifications)
 simplifyTh :: G_theory -> G_theory
 simplifyTh (G_theory lid sigma sens) = G_theory lid sigma $ 
-    Set.map (mapValue $ simplify_sen lid sigma) sens
+      OMap.map (mapValue $ simplify_sen lid sigma) sens
 
 -- | Translation of a G_theory along a GMorphism
 translateG_theory :: GMorphism -> G_theory -> Result G_theory

@@ -29,6 +29,7 @@ import Logic.Logic
 import Logic.Coerce
 import Logic.Grothendieck
 import Logic.Comorphism
+import Logic.Prover
 
 import Comorphisms.LogicGraph
 
@@ -60,6 +61,7 @@ import TextDisplay
 import qualified HTk
 
 import qualified Common.Lib.Map as Map
+import qualified Common.OrderedMap as OMap
 import qualified Common.Lib.Set as Set
 import Common.Lib.Pretty as Pretty hiding (isEmpty)
 import Common.Id
@@ -933,8 +935,8 @@ showStatusAux :: DGNodeLab -> String
 showStatusAux dgnode =
   case dgn_theory dgnode of
   G_theory _ _ sens ->
-     let goals = Set.filter (not . isAxiomSenStatus) sens
-         (proven,open) = Set.partition isProvenSenStatus goals
+     let goals = OMap.filter (not . isAxiom) sens
+         (proven,open) = OMap.partition isProvenSenStatus goals
       in "Proven proof goals:\n" 
          ++ showPretty proven "" 
          ++ if not (isRefNode dgnode) && dgn_cons dgnode /= None 

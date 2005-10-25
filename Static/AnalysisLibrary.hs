@@ -26,6 +26,7 @@ module Static.AnalysisLibrary
 import Logic.Logic
 import Logic.Coerce
 import Logic.Grothendieck
+import Logic.Prover
 import Data.Graph.Inductive.Graph
 import Syntax.AS_Structured hiding (View_defn, Spec_defn)
 import Syntax.AS_Library
@@ -34,7 +35,7 @@ import Static.PrintDevGraph
 import Static.AnalysisStructured
 import Static.AnalysisArchitecture
 import Comorphisms.LogicGraph
-import Common.AS_Annotation
+import Common.AS_Annotation hiding (isAxiom, isDef)
 import Common.GlobalAnnotations
 import Common.ConvertGlobalAnnos
 import Common.AnalyseAnnos

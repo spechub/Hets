@@ -42,6 +42,7 @@ import CASL.CompositionTable.CompositionTable
 
 import Isabelle.CreateTheories
 
+import Logic.Prover
 import Static.DevGraph
 import Static.DGToSpec
 

@@ -27,6 +27,7 @@ import Logic.Coerce
 import Common.Id
 import Common.Result
 import List
+import Logic.Prover
 import qualified Common.Lib.Map as Map
 -- import qualified Common.Lib.Set as Set
 import Maybe(fromJust)

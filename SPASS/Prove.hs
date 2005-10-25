@@ -36,13 +36,12 @@ import SPASS.Conversions
 import SPASS.ProveHelp
 import SPASS.Translate
 
-import Common.AS_Annotation
+import qualified Common.AS_Annotation as AS_Anno
 import Common.PrettyPrint
 import Common.ProofUtils
 
 import ChildProcess
 import ProcessClasses
-import System.Exit
 import Text.Regex
 import Data.List
 import Data.Maybe
@@ -59,6 +58,7 @@ import SpinButton
 import DialogWin
 import TextDisplay
 import Separator
+import XSelection
 import Space
 
 import GUI.HTkUtils
@@ -214,7 +214,7 @@ type SPASSGoalNameMap = Map.Map String String
 data State = State { -- | currently selected goal or Nothing
                      currentGoal :: Maybe SPIdentifier,
                      -- | theory to work on
-                     theory :: Theory Sign Sentence,
+                     theory :: Theory Sign Sentence (),
                      -- | stores the prover configurations for each goal
                      configsMap :: SPASSConfigsMap,
                      -- | stores the results retrieved by running SPASS for each goal
@@ -222,18 +222,18 @@ data State = State { -- | currently selected goal or Nothing
                      -- | stores a mapping to SPASS compliant identifiers for all goals
                      goalNamesMap :: SPASSGoalNameMap,
                      -- | list of all goals
-                     goalsList :: [Named SPTerm]
+                     goalsList :: [AS_Anno.Named SPTerm]
                    }
 
 {- |
   Creates an initial State around a Theory.
 -}
-initialState :: Theory Sign Sentence -> SPASSGoalNameMap 
-             -> [Named Sentence] -> SPASS.Prove.State
+initialState :: Theory Sign Sentence () -> SPASSGoalNameMap 
+             -> [AS_Anno.Named Sentence] -> SPASS.Prove.State
 initialState th gm gs = 
     State {currentGoal = Nothing,
            theory = th,
-           configsMap = Map.fromList (map (\ g -> (senName g, emptyConfig) ) gs),
+           configsMap = Map.fromList (map (\ g -> (AS_Anno.senName g, emptyConfig) ) gs),
            resultsMap = emptyResultsMap,
            goalNamesMap = gm,
            goalsList = gs}
@@ -342,7 +342,7 @@ goalsView s = map (\ g ->
                                        res
                         in
                           LBGoalView {statIndicator = statind, goalDescription = g})
-                   (map senName (goalsList s))
+                   (map AS_Anno.senName (goalsList s))
 
 -- ** GUI Implementation
 
@@ -384,14 +384,14 @@ goalProcessed :: IORef SPASS.Prove.State -- ^ IORef pointing to the backing Stat
               -> Int -- ^ total number of goals
               -> Label -- ^ info label
               -> Button -- ^ cancel (continue) button
-              -> Named SPTerm -- ^ goal that has just been processed
+              -> AS_Anno.Named SPTerm -- ^ goal that has just been processed
               -> (SpassProverRetval, SPASSResult)
               -> IO Bool
 goalProcessed stateRef tLimit numGoals label cbutton nGoal (retval, res) = do
   s <- readIORef stateRef
 
-  let s' = s{resultsMap = Map.insert (senName nGoal) res (resultsMap s),
-             configsMap = adjustOrSetConfig (\ c -> c{timeLimitExceeded = isTimeLimitExceeded retval}) (senName nGoal) (configsMap s)}
+  let s' = s{resultsMap = Map.insert (AS_Anno.senName nGoal) res (resultsMap s),
+             configsMap = adjustOrSetConfig (\ c -> c{timeLimitExceeded = isTimeLimitExceeded retval}) (AS_Anno.senName nGoal) (configsMap s)}
   writeIORef stateRef s'
 
   if (numGoals - (Map.size $ resultsMap s')) > 0
@@ -438,9 +438,9 @@ updateDisplay st updateLb goalsLb statusLabel timeEntry optionsEntry axiomsLb = 
                in do 
                 statusLabel # text label
                 statusLabel # foreground (show color)
-                timeEntry # value t'
-                optionsEntry # value opts'
-                axiomsLb # value (usedAxs::[String])
+                timeEntry # HTk.value t'
+                optionsEntry # HTk.value opts'
+                axiomsLb # HTk.value (usedAxs::[String])
                 return ()) 
           (currentGoal st)
 
@@ -450,18 +450,19 @@ updateDisplay st updateLb goalsLb statusLabel timeEntry optionsEntry axiomsLb = 
   Dialog window that runs all goals through the batch prover. 
 -}
 batchDlg :: String -- ^ theory name
-         -> Theory Sign Sentence -- ^ theory consisting of a SPASS.Sign.Sign and a list of Named SPASS.Sign.Sentence
+         -> Theory Sign Sentence () -- ^ theory consisting of a SPASS.Sign.Sign and a list of Named SPASS.Sign.Sentence
          -> IO SPASS.Prove.State -- ^ initial global state for the main window
 batchDlg thName th = do
   let initState = initialState th 
-                  (collectNameMapping goals (filter isAxiom nSens)) goals
+                  (collectNameMapping goals (filter AS_Anno.isAxiom nSens)) goals
   if (not $ null goals)
     then runBatchDlg initState
     else return initState
 
   where
-    Theory _ nSens = th
-    (_, goals) = partition isAxiom 
+    Theory _ nSens' = th
+    nSens = toNamedList nSens'
+    (_, goals) = partition AS_Anno.isAxiom 
                      (prepareSenNames transSenName nSens)
     runBatchDlg s = do
       stateRef <- newIORef s
@@ -506,7 +507,7 @@ batchDlg thName th = do
   then drops the user into a detailed GUI.
 -}
 spassProveGUI :: String -- ^ theory name
-              -> Theory Sign Sentence -- ^ theory consisting of a SPASS.Sign.Sign and a list of Named SPASS.Sign.Sentence
+              -> Theory Sign Sentence () -- ^ theory consisting of a SPASS.Sign.Sign and a list of Named SPASS.Sign.Sentence
               -> IO([Proof_status ()]) -- ^ proof status for each goal
 spassProveGUI thName th = do
   -- batch window creates initial backing data structure
@@ -539,7 +540,7 @@ spassProveGUI thName th = do
   pack lbFrame [Expand On, Fill Both]
 
   s0 <- readIORef stateRef
-  lb <- newListBox lbFrame [bg "white",
+  lb <- newListBox lbFrame [bg "white",exportSelection False,
                             selectMode Single, height 15] :: IO (ListBox String)
   populateGoalsListBox lb (goalsView s0)
   pack lb [Expand On, Side AtLeft, Fill Both]
@@ -557,7 +558,7 @@ spassProveGUI thName th = do
   grid l1 [GridPos (0,0), Columnspan 2, Sticky W]
   l2 <- newLabel right [text "TimeLimit"]
   grid l2 [GridPos (1,1), Sticky W]
-  (timeEntry :: Entry Int) <- newEntry right [width 18, value guiDefaultTimeLimit]
+  (timeEntry :: Entry Int) <- newEntry right [width 18, HTk.value guiDefaultTimeLimit]
   grid timeEntry [GridPos (3,1), Sticky W]
   timeSpinner <- newSpinButton right (\sp -> synchronize main
                                      (do
@@ -574,7 +575,7 @@ spassProveGUI thName th = do
                                                            _ -> if isJust t then (fromJust t) - 10 else guiDefaultTimeLimit - 10)
                                             let s' = sEnt {configsMap = adjustOrSetConfig (setTimeLimit t') goal (configsMap sEnt)}
                                             writeIORef stateRef s'
-                                            timeEntry # value (maybe guiDefaultTimeLimit id (timeLimit (getConfig goal (configsMap s'))))
+                                            timeEntry # HTk.value (maybe guiDefaultTimeLimit id (timeLimit (getConfig goal (configsMap s'))))
                                             done)
                                           else noGoalSelected)) []
   grid timeSpinner [GridPos (3,1), Sticky E]
@@ -594,8 +595,10 @@ spassProveGUI thName th = do
   grid l6 [GridPos (1,7), Sticky NW]
   axiomsFrame <- newFrame right []
   grid axiomsFrame [GridPos (2,7), Columnspan 2]
-  axiomsLb <- newListBox axiomsFrame [value $ ([]::[String]), bg "white",
-                                      selectMode Browse, height 6, width 20] :: IO (ListBox String)
+  axiomsLb <- newListBox axiomsFrame [HTk.value $ ([]::[String]), 
+                                      bg "white",exportSelection False,
+                                      selectMode Browse, 
+                                      height 6, width 20] :: IO (ListBox String)
   pack axiomsLb [Side AtLeft, Fill Y]
   axiomsSb <- newScrollBar axiomsFrame []
   pack axiomsSb [Side AtRight, Fill Y]
@@ -644,7 +647,7 @@ spassProveGUI thName th = do
                      else s
           sel <- (getSelection lb) :: IO (Maybe [Int])
           let s'' = if isJust sel
-                      then s' {currentGoal = Just $ senName 
+                      then s' {currentGoal = Just $ AS_Anno.senName 
                                             (goals !! (head $ fromJust sel))}
                       else s'
           writeIORef stateRef s''
@@ -658,9 +661,9 @@ spassProveGUI thName th = do
                 curEntTL <- (getValueSafe timeEntry) :: IO Int
                 let goal = fromJust $ currentGoal rs
                 let s = rs {configsMap = adjustOrSetConfig (setTimeLimit curEntTL) goal (configsMap rs)}
-                let (beforeThis, afterThis) = splitAt (fromJust $ findIndex (\sen -> senName sen == goal) goals) goals
-                let proved = filter (\sen-> checkGoal (resultsMap s) (senName sen)) beforeThis
-                let lp' = foldl (\lp provedGoal -> insertSentence lp (provedGoal{isAxiom = True})) initialLogicalPart (reverse proved)
+                let (beforeThis, afterThis) = splitAt (fromJust $ findIndex (\sen -> AS_Anno.senName sen == goal) goals) goals
+                let proved = filter (\sen-> checkGoal (resultsMap s) (AS_Anno.senName sen)) beforeThis
+                let lp' = foldl (\lp provedGoal -> insertSentence lp (provedGoal{AS_Anno.isAxiom = True})) initialLogicalPart (reverse proved)
                 extraOptions <- (getValue optionsEntry) :: IO String
                 let s' = s {configsMap = adjustOrSetConfig (setExtraOpts (words extraOptions)) goal (configsMap s)}
                 statusLabel # text (snd statusRunning)
@@ -700,12 +703,13 @@ spassProveGUI thName th = do
       ))
   sync (exit >>> destroy main)
   s <- readIORef stateRef
-  let proof_stats = map (\g -> let res = Map.lookup g (resultsMap s) in if isJust res then fst $ fromJust res else Open g) (map senName goals)
+  let proof_stats = map (\g -> let res = Map.lookup g (resultsMap s) in if isJust res then fst $ fromJust res else Open g) (map AS_Anno.senName goals)
   return proof_stats
   where
     noGoalSelected = createErrorWin "Please select a goal first." []
-    Theory sign nSens = th
-    (axioms, goals) = partition isAxiom 
+    Theory sign nSens' = th
+    nSens = toNamedList nSens'
+    (axioms, goals) = partition AS_Anno.isAxiom 
                           (prepareSenNames transSenName nSens)
     initialLogicalPart = foldl insertSentence (signToSPLogicalPart sign) (reverse axioms)
     showResMap mp = 
@@ -760,9 +764,9 @@ checkGoal resMap goal =
   as axioms.
 -}
 spassProveBatch :: Int -- ^ batch time limit
-                -> (Named SPTerm -> (SpassProverRetval, SPASSResult) -> IO Bool) -- ^ called after every prover run. return True if you want the prover to continue.
+                -> (AS_Anno.Named SPTerm -> (SpassProverRetval, SPASSResult) -> IO Bool) -- ^ called after every prover run. return True if you want the prover to continue.
                 -> String -- ^ theory name
-                -> Theory Sign Sentence -- ^ theory consisting of a SPASS.Sign.Sign and a list of Named SPASS.Sign.Sentence
+                -> Theory Sign Sentence () -- ^ theory consisting of a SPASS.Sign.Sign and a list of Named SPASS.Sign.Sentence
                 -> IO([Proof_status ()]) -- ^ proof status for each goal
 spassProveBatch tLimit f _ (Theory sig nSens) =
   do -- putStrLn $ showPretty initialLogicalPart ""
@@ -773,7 +777,7 @@ spassProveBatch tLimit f _ (Theory sig nSens) =
   where
     batchProve _ resDone [] = return (reverse resDone)
     batchProve lp resDone (g:gs) = do
-        putStrLn $ "Trying to prove goal: " ++ (senName g)
+        putStrLn $ "Trying to prove goal: " ++ (AS_Anno.senName g)
         -- putStrLn $ show g
         (err, (res, full)) <- runSpass lp (emptyConfig {timeLimit = Just tLimit}) g
         putStrLn $ "SPASS returned: " ++ (show err)
@@ -781,18 +785,19 @@ spassProveBatch tLimit f _ (Theory sig nSens) =
         -- runSpass will return SpassError. we have to stop the recursion in that
         -- case
         case err of
-          SpassError _ -> return ((reverse (res:resDone)) ++ (map (Open . senName) gs))
+          SpassError _ -> return ((reverse (res:resDone)) ++ (map (Open . AS_Anno.senName) gs))
           _ -> do
                  -- add proved goals as axioms
                  let lp' = if (isProved res)
-                             then (insertSentence lp (g{isAxiom = True}))
+                             then (insertSentence lp (g{AS_Anno.isAxiom = True}))
                              else lp
                  cont <- f g (err, (res, full))
                  if cont
                    then batchProve lp' (res:resDone) gs
-                   else return ((reverse (res:resDone)) ++ (map (Open . senName) gs))
-    (axioms, goals) = partition isAxiom 
-                          (prepareSenNames transSenName nSens)
+                   else return ((reverse (res:resDone)) ++ (map (Open . AS_Anno.senName) gs))
+    nSens' = toNamedList nSens
+    (axioms, goals) = partition AS_Anno.isAxiom 
+                          (prepareSenNames transSenName nSens')
     initialLogicalPart = foldl insertSentence (signToSPLogicalPart sig) (reverse axioms)
 
 -- * SPASS Interfacing Code
@@ -870,7 +875,7 @@ parseSpassOutput spass = parseProtected (parseStart True) (Nothing, [], [])
 -}
 runSpass :: SPLogicalPart -- ^ logical part containing the input Sign and axioms and possibly goals that have been proved earlier as additional axioms
          -> SPASSConfig -- ^ configuration to use
-         -> Named SPTerm -- ^ goal to prove
+         -> AS_Anno.Named SPTerm -- ^ goal to prove
          -> IO (SpassProverRetval, SPASSResult) -- ^ (retval, (proof status, complete output))
 runSpass lp cfg nGoal = do
   putStrLn ("running 'SPASS" ++ (concatMap (' ':) allOptions) ++ "'")
@@ -883,16 +888,16 @@ runSpass lp cfg nGoal = do
       return (case excep of
                 -- this is supposed to distinguish "fd ... vanished" errors from other exceptions
                 Exception.IOException e -> (SpassError ("Internal error communicating with SPASS.\n"++show e),
-                                    (Open (senName nGoal), []))
+                                    (Open (AS_Anno.senName nGoal), []))
                 _ -> (SpassError ("Error running SPASS.\n"++show excep), 
-                        (Open (senName nGoal), []))))
+                        (Open (AS_Anno.senName nGoal), []))))
 
   where
     runSpassReal spass namedGoal = do
       -- check if SPASS is running
       e <- getToolStatus spass
       if isJust e
-        then return (SpassError "Could not start SPASS. Is SPASS in your $PATH?", (Open (senName namedGoal), []))
+        then return (SpassError "Could not start SPASS. Is SPASS in your $PATH?", (Open (AS_Anno.senName namedGoal), []))
         else do
           -- debugging output
           -- putStrLn ("This will be sent to SPASS:\n" ++ showPretty problem "\n")
@@ -925,14 +930,14 @@ runSpass lp cfg nGoal = do
 
     proof_status res usedAxs options
       | isJust res && elem (fromJust res) proved =
-          (SpassSuccess, Proved (senName nGoal) usedAxs "SPASS" () (Tactic_script (concatMap (' ':) options)))
+          (SpassSuccess, Proved (AS_Anno.senName nGoal) usedAxs "SPASS" () (Tactic_script (concatMap (' ':) options)))
       | isJust res && elem (fromJust res) disproved =
-          (SpassSuccess, Disproved (senName nGoal))
+          (SpassSuccess, Disproved (AS_Anno.senName nGoal))
       | isJust res && elem (fromJust res) timelimit =
-          (SpassTLimitExceeded, Open (senName nGoal))
+          (SpassTLimitExceeded, Open (AS_Anno.senName nGoal))
       | isNothing res =
-          (SpassError "Internal error.", Open (senName nGoal))
-      | otherwise = (SpassSuccess, Open (senName nGoal))
+          (SpassError "Internal error.", Open (AS_Anno.senName nGoal))
+      | otherwise = (SpassSuccess, Open (AS_Anno.senName nGoal))
     proved = ["Proof found."]
     disproved = ["Completion found."]
     timelimit = ["Ran out of time."]

@@ -1,6 +1,7 @@
-{- | 
+{-| 
+   
 Module      :  $Header$
-Copyright   :  (c) Jorina F. Gerken, Till Mossakowski, Uni Bremen 2002-2004
+Copyright   :  (c) Jorina F. Gerken, Till Mossakowski, Klaus Lüttich, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  jfgerken@tzi.de
@@ -47,11 +48,10 @@ import Static.DevGraph
 import Static.DGToSpec
 import Common.Result
 import Common.PrettyPrint
-import Common.AS_Annotation
 import Common.Utils
 import Data.Graph.Inductive.Graph
 import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
+import qualified Common.OrderedMap as OMap
 import Common.Id
 import Syntax.AS_Library
 import Syntax.Print_AS_Library()
@@ -179,7 +179,7 @@ cons_check :: Logic lid sublogics
               basic_spec sentence symb_items symb_map_items
               sign morphism symbol raw_symbol proof_tree 
            => lid -> ConsChecker sign sentence morphism proof_tree 
-           -> String -> TheoryMorphism sign sentence morphism 
+           -> String -> TheoryMorphism sign sentence morphism proof_tree
            -> IO([Proof_status proof_tree])
 cons_check _ = prove
 
@@ -187,10 +187,11 @@ proveTheory :: Logic lid sublogics
               basic_spec sentence symb_items symb_map_items
               sign morphism symbol raw_symbol proof_tree 
            => lid -> Prover sign sentence proof_tree 
-           -> String -> Theory sign sentence -> IO([Proof_status proof_tree])
+           -> String -> Theory sign sentence proof_tree 
+           -> IO([Proof_status proof_tree])
 proveTheory _ = prove
 
--- applies basic inference to a given node
+-- | applies basic inference to a given node
 basicInferenceNode :: Bool -> LogicGraph -> (LIB_NAME,Node) -> ProofStatus 
                           -> IO (Result ProofStatus)
 basicInferenceNode checkCons lg (ln, node)
@@ -201,8 +202,9 @@ basicInferenceNode checkCons lg (ln, node)
         -- may contain proved theorems
         G_theory lid1 sign axs <- 
              resToIORes $ computeTheory libEnv (ln, node)
+        -- ioToIORes $ putStrLn ("G_theory "++show lid1++" "++show sign++" "++show axs)
         ctx <- resToIORes 
-                    $ maybeToMonad ("Could node find node "++show node)
+                    $ maybeToMonad ("Could not find node "++show node)
                     $ fst $ match node dGraph
         let nodeName = dgn_name $ lab' ctx 
             thName = showPretty (getLIB_ID ln) "_"
@@ -220,7 +222,7 @@ basicInferenceNode checkCons lg (ln, node)
             let lidT = targetLogic cid
             incl <- resToIORes $ inclusion lidT (empty_signature lidT) sign''
             let mor = TheoryMorphism { t_source = empty_theory lidT, 
-                                       t_target = Theory sign'' sens'',
+                                       t_target = Theory sign'' (toThSens sens''),
                                        t_morphism = incl } 
             cc' <- coerceConsChecker lid4 lidT "" cc
             ps <- ioToIORes $ cons_check lidT cc' thName mor
@@ -233,7 +235,7 @@ basicInferenceNode checkCons lg (ln, node)
             (G_prover lid4 p, Comorphism cid) <- selectProver $ getProvers cms
             -- remove proved theorems from set of axioms
             let ax_list = toNamedList 
-                           (Set.filter (\x -> not (isProvenSenStatus x)) axs)
+                           (OMap.filter (\x -> not (isProvenSenStatus x)) axs)
             let lidT = targetLogic cid
                 transTh = resToIORes . map_theory cid
             bTh' <- coerceBasicTheory lid1 (sourceLogic cid) "" 
@@ -241,7 +243,7 @@ basicInferenceNode checkCons lg (ln, node)
             (sign'',sens'') <- transTh bTh'
             -- call the prover
             p' <- coerceProver lid4 lidT "" p
-            ps <- ioToIORes (proveTheory lidT p' thName (Theory sign'' sens''))
+            ps <- ioToIORes (proveTheory lidT p' thName (Theory sign'' (toThSens sens'')))
             -- update the development graph
             -- todo: throw out the stuff about edges
             -- instead, mark proven things as proven in the node
@@ -272,13 +274,13 @@ basicInferenceNode checkCons lg (ln, node)
 markProved :: (Ord a, Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
          sign morphism symbol raw_symbol proof_tree) => 
-     AnyComorphism -> lid -> [Proof_status proof_tree] -> ThSens a -> ThSens a
+     AnyComorphism -> lid -> [Proof_status proof_tree] -> ThSens a (AnyComorphism,BasicProof) -> ThSens a (AnyComorphism,BasicProof)
 markProved c lid status = 
- Set.map $ \sen -> 
-  let findProof [] = sen
+ OMap.mapWithKey $ \ name senStat -> 
+  let findProof [] = senStat
       findProof (s:rest) =
-       if goalName s == senName (value sen) 
-        then sen { thmStatus = (c, BasicProof lid s) : thmStatus sen }
+       if goalName s == name 
+        then senStat { thmStatus = (c, BasicProof lid s) : thmStatus senStat }
         else findProof rest
    in findProof status
 

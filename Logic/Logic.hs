@@ -380,8 +380,8 @@ class (StaticAnalysis lid
 empty_theory :: StaticAnalysis lid 
         basic_spec sentence proof_tree symb_items symb_map_items
         sign morphism symbol raw_symbol =>
-        lid -> Theory sign sentence
-empty_theory lid = Theory (empty_signature lid) []
+        lid -> Theory sign sentence proof_tree
+empty_theory lid = Theory (empty_signature lid) Map.empty
  
 ----------------------------------------------------------------
 -- Existential type covering any logic

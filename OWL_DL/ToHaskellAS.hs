@@ -31,7 +31,7 @@ import OWL_DL.StaticAna
 import OWL_DL.Sign
 import Common.GlobalAnnotations
 import Common.Result
-import Common.AS_Annotation
+import Common.AS_Annotation hiding (isDef,isAxiom)
 import Syntax.AS_Library
 import Driver.Options
 import qualified GUI.AbstractGraphView as GUI.AbstractGraphView 
@@ -42,6 +42,7 @@ import qualified Events as Events
 import Destructible
 import Common.Id
 import Logic.Grothendieck
+import Logic.Prover
 import Data.Graph.Inductive.Query.DFS
 import Data.Graph.Inductive.Query.BFS
 import Data.Tree

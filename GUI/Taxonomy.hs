@@ -17,7 +17,7 @@ module GUI.Taxonomy where
 
 
 import Logic.Logic
-import Logic.Grothendieck
+import Logic.Prover
 import Static.DevGraph
 
 import Taxonomy.MMiSSOntology

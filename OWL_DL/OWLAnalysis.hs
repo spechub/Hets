@@ -29,11 +29,12 @@ import Data.Graph.Inductive.Graph
 import Static.DevGraph
 import Common.GlobalAnnotations
 import Common.Result
-import Common.AS_Annotation
+import Common.AS_Annotation hiding (isAxiom,isDef)
 import Syntax.AS_Library
 import Driver.Options
 import Common.Id
 import Logic.Grothendieck
+import Logic.Prover
 import Data.Graph.Inductive.Query.DFS
 import Data.Graph.Inductive.Query.BFS
 import Maybe(fromJust)
