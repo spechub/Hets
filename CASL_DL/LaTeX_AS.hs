@@ -1,13 +1,14 @@
 {- |
 Module      :  $Header$
 Copyright   :  (c) Klaus Lüttich, Uni Bremen 2005
-Licence     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
+License     :  similar to LGPL, see HetCATS/LICENCE.txt or LIZENZ.txt
 
 Maintainer  :  hets@tzi.de
 Stability   :  experimental
-Portability :  portable 
+Portability :  portable
    
-latex output of the abstract syntax
+LaTeX output of the abstract syntax
+
 -}
 
 module CASL_DL.LaTeX_AS where
