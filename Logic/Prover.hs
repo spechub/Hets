@@ -163,8 +163,6 @@ data ProverTemplate goal proof_tree = Prover
 type Prover sign sentence proof_tree = 
     ProverTemplate (Theory sign sentence proof_tree) proof_tree
 
---    ProverTemplate (Theory sign (sentence, Maybe (Proof_status proof_tree))) proof_tree
-
 type ConsChecker sign sentence morphism proof_tree =
     ProverTemplate (TheoryMorphism sign sentence morphism proof_tree) proof_tree  
 
