@@ -36,7 +36,7 @@ import Control.Exception
 
 import Logic.Prover
 
-import Common.AS_Annotation
+import qualified Common.AS_Annotation as AS_Anno
 import Common.PrettyPrint
 import Common.ProofUtils
 import qualified Common.Result as Result
@@ -60,6 +60,7 @@ import qualified Common.Lib.Map as Map
 
 import Proofs.GUIState
 import Logic.Logic
+import Logic.Prover
 import qualified Comorphisms.KnownProvers as KnownProvers
 import qualified Static.DevGraph as DevGraph
 
@@ -103,17 +104,6 @@ toGuiStatus st = if proverRunning st
   else statusNotRunning
 
 {- |
-  Converts a 'Proof_status' into a short 'GUI.HTkUtils.LBStatusIndicator' to be
-  displayed by the GUI in a 'ListBox'.
--}
-toStatusIndicator :: (Proof_status a) -- ^ status to convert
-                  -> LBStatusIndicator
-toStatusIndicator st = case st of
-  Proved _ _ _ _ _ -> LBIndicatorProved
-  Disproved _ -> LBIndicatorDisproved
-  _ -> LBIndicatorOpen
-
-{- |
   Generates a list of 'GUI.HTkUtils.LBGoalView' representations of all goals
   from a 'SPASS.Prove.State'.
 
@@ -121,11 +111,11 @@ toStatusIndicator st = case st of
 -}
 goalsView :: ProofGUIState  -- ^ current global state
           -> [LBGoalView] -- ^ resulting ['LBGoalView'] list
-goalsView st = []
--- this blows up. giving up for tonight.
---  where
---    nGoals = getNGoals $ theory st
---    getNGoals (DevGraph.G_theory _ _ thSen) = DevGraph.toNamedList thSen
+goalsView st@(ProofGUIState { theory = DevGraph.G_theory _ _ thSen}) = []
+  where
+    goals = map AS_Anno.senName nGoals
+    (_, nGoals) = partition AS_Anno.isAxiom
+                      (toNamedList thSen)
 
 -- ** GUI Implementation
 
