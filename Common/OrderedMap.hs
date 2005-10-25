@@ -1,22 +1,21 @@
 {- | 
-   
-   Module      :  $Header$
-   Copyright   :  (c)  Klaus Lüttich and Uni Bremen 2005
-   License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+Module      :  $Header$
+Copyright   :  (c)  Klaus Lüttich and Uni Bremen 2005
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-   Maintainer  :  luettich@tzi.de
-   Stability   :  provisional
-   Portability :  portable
+Maintainer  :  luettich@tzi.de
+Stability   :  provisional
+Portability :  portable
 
 ordered maps keep the ordering if converted from a list and of all
 insert operations which are implemented; toList uses the
-insertion/conversion order for the creation of the new list
+insertion\/conversion order for the creation of the new list
 
 -}
 
 module Common.OrderedMap ( OMap
                          , ElemWOrd(..)
-                         , Map.empty, Map.null, Map.size,
+                         , Map.empty, Map.null, Map.size
                          , Map.member
                          , lookup
                          , insert,insertWith,insertWithKey
@@ -35,7 +34,7 @@ import qualified Data.List as List
 import Data.Maybe
 import Control.Monad
 
-infix 9 \\
+infix 9 \\ -- add a comment for cpp
 
 (\\) :: Ord k => OMap k a -> OMap k b -> OMap k a
 m1 \\ m2 = difference m1 m2
@@ -56,7 +55,8 @@ lookup :: (Monad m,Functor m,Ord k) => k -> OMap k a -> m a
 lookup k m = liftM ele $ Map.lookup k m
 
 insert :: Ord k => k -> a -> OMap k a -> OMap k a
-insert k e m = Map.insertWith (\ ne oe -> oe {ele = ele ne}) k (EWOrd (Map.size m) e) m
+insert k e m = Map.insertWith (\ ne oe -> oe {ele = ele ne}) 
+               k (EWOrd (Map.size m) e) m
 
 insertWith :: Ord k => (a -> a -> a) -> k -> a -> OMap k a -> OMap k a 
 insertWith f k e m = insertWithKey  (\ _k x y -> f x y) k e m
@@ -105,8 +105,6 @@ partitionWithKey p m = case Map.partitionWithKey (\ k x -> p k (ele x)) m of
 fromList :: Ord k => [(k,a)] -> OMap k a
 fromList = List.foldl ins Map.empty
     where ins m (k,e) = insert k e m
--- Map.fromList $ zipWith toElem l [0..]
---    where toElem (k,e) i = (k,EWOrd i e)
 
 toList :: Ord k => OMap k a -> [(k,a)]
 toList = List.map (\ (k,e) -> (k,ele e)) . List.sortBy comp . Map.toList
