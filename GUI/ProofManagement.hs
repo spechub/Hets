@@ -262,8 +262,8 @@ proofManagementGUI proveF fineGrainedSelectionF thName th@(DevGraph.G_theory _ _
 
   pathsFrame <- newFrame rhb3 []
   pack pathsFrame []
-  pathsLb <- newListBox pathsFrame [value $ ([]::[String]), bg "white",
-                                      selectMode Single, height 4, width 28] :: IO (ListBox String)
+  pathsLb <- newListBox pathsFrame [HTk.value $ ([]::[String]), bg "white",
+                                    selectMode Single, height 4, width 28] :: IO (ListBox String)
   pack pathsLb [Expand On, Side AtLeft, Fill Both]
   pathsSb <- newScrollBar pathsFrame []
   pack pathsSb [Expand On, Side AtRight, Fill Y]
@@ -340,5 +340,5 @@ proofManagementGUI proveF fineGrainedSelectionF thName th@(DevGraph.G_theory _ _
   return (Result.Result {Result.diags = [], Result.maybeResult = Nothing})
 
   where
-    nGoals = DevGraph.toNamedList thSen
+    nGoals = toNamedList thSen
 
