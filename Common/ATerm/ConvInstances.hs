@@ -23,6 +23,7 @@ import qualified Data.Graph.Inductive.Tree as Tree
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set 
 import qualified Common.Lib.Rel as Rel
+import qualified Common.OrderedMap as OMap
 import Common.Id
 import Common.Result
 
@@ -43,6 +44,8 @@ instance (ShATermConvertible a,
 instance (Ord a, ShATermConvertible a, ShATermConvertible b) 
     => ShATermConvertible (Map.Map a b) where
     {-# SPECIALIZE instance ShATermConvertible (Map.Map Id (Set.Set Id)) #-}
+    {-# SPECIALIZE instance (ShATermConvertible a) 
+           => ShATermConvertible (Map.Map String (OMap.ElemWOrd a)) #-}
     {-# SPECIALIZE instance (ShATermConvertible b, Ord b) 
       => ShATermConvertible (Map.Map Id (Set.Set b)) #-}
     toShATerm att fm = case toShATerm att $ Map.toAscList fm of
@@ -54,6 +57,20 @@ instance (Ord a, ShATermConvertible a, ShATermConvertible b)
                            l -> Map.fromDistinctAscList l
                        u     -> fromShATermError "Map" u
                        where aterm = getATerm att
+
+instance (ShATermConvertible a) => ShATermConvertible (OMap.ElemWOrd a) where
+    toShATerm att0 e =
+       case toShATerm att0 (OMap.order e) of { (att1,aa') ->
+       case toShATerm att1 (OMap.ele e) of { (att2,bb') ->
+          addATerm (ShAAppl "EWOrd"  [ aa' , bb' ] []) att2}}
+    fromShATerm att =
+        case getATerm att of
+            (ShAAppl "EWOrd" [ aa , bb ] _) ->
+                case fromShATerm (getATermByIndex1 aa att) of { aa' ->
+                case fromShATerm (getATermByIndex1 bb att) of { bb' ->
+                    OMap.EWOrd { OMap.order = aa', OMap.ele = bb' }}}
+            u -> fromShATermError "ElemWOrd" u
+
 
 instance (Ord a,ShATermConvertible a) => ShATermConvertible (Set.Set a) where
     {-# SPECIALIZE instance ShATermConvertible (Set.Set Id) #-}
