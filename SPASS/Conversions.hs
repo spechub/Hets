@@ -78,8 +78,10 @@ signToSPLogicalPart s =
 
     predDecl = concatMap predDecls (Map.toList (predMap s))
 
-    predDecls (p, tset) = map (toPDecl p) (Set.toList tset)
-    toPDecl p t = SPPredDecl {predSym = p, sortSyms = t} 
+    predDecls (p, tset) = concatMap (toPDecl p) (Set.toList tset)
+    toPDecl p t 
+        | null t    = []
+        | otherwise = [SPPredDecl {predSym = p, sortSyms = t}]
 
     genDecl = map (\(ssym, Just gen) -> SPGenDecl {sortSym = ssym, freelyGenerated = freely gen, funcList = byFunctions gen}) (filter (isJust . snd) (Map.toList (sortMap s)))
 
