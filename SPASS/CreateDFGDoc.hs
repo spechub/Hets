@@ -28,6 +28,7 @@ import Common.Id
 import Common.PrettyPrint
 import Common.Result
 import Common.GlobalAnnotations
+import Common.ProofUtils
 import Syntax.AS_Library
 
 import CASL.Logic_CASL
@@ -36,6 +37,7 @@ import Comorphisms.KnownProvers
 
 import SPASS.Logic_SPASS
 import SPASS.Conversions
+import SPASS.Translate
 import SPASS.Sign
 import SPASS.Print ()
 
@@ -62,9 +64,12 @@ printDFG ln sn (G_theory lid sign thSens) =
                                                      status = SPStateUnknown,
                                                      desc = "",
                                                      date = Nothing},
-                        logicalPart = foldl insertSentence 
-                                            (signToSPLogicalPart sig) 
-                                            (reverse sen) }
+                        logicalPart = 
+                            foldl insertSentence 
+                                  (signToSPLogicalPart sig) 
+                                  (reverse $ 
+                                   prepareSenNames transSenName sen) }
+
         max_sub_SPASS = top {sub_features = LocFilSub}
         spassCMS = fromJust $ findComorphism (G_sublogics CASL max_sub_SPASS)
                                              knSPASSCms

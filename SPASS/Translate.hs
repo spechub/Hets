@@ -51,7 +51,12 @@ transId iden
     where str = show iden
 
 charMap_SP :: Map.Map Char String
-charMap_SP = Map.insert '\'' "Prime" charMap
+charMap_SP = Map.union charMap 
+             (Map.fromList [('\'',"Prime")
+                           ,('[',"LBrc")
+                           ,(']',"RBrc")
+                           ,('/',"Slash")
+                           ,(':',"Colon")])
 
 transToSPChar :: Char -> SPIdentifier
 transToSPChar c
