@@ -579,6 +579,18 @@ findComorphismPaths lg (G_sublogics lid sub) =
               Just c1 -> Just (c1,c:comps)
         in catMaybes $ map addCoMor $ filter (not . (`elem` comps)) $ coMors
 
+-- | finds first comorphism with a matching sublogic
+findComorphism ::Monad m => G_sublogics -> [AnyComorphism] -> m AnyComorphism
+findComorphism _ [] = fail "No matching comorphism found"
+findComorphism gsl@(G_sublogics lid sub) ((Comorphism cid):rest) =
+    let l2 = sourceLogic cid 
+        rec = findComorphism gsl rest in
+   if language_name lid == language_name l2 
+      then if coerceSublogic lid l2 sub <= sourceSublogic cid
+              then return $ Comorphism cid
+              else rec
+      else rec
+
 -- | check transpotability of Grothendieck signature morphisms
 -- | (currently returns false for heterogeneous morphisms)
 isTransportable :: GMorphism -> Bool
