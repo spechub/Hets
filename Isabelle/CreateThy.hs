@@ -24,14 +24,13 @@ import Isabelle.IsaSign as IsaSign
 import Isabelle.Translate
 import Isabelle.IsaPrint
 import Isabelle.IsaHOLCFPrint 
-import Debug.Trace
 
 createTheoryText :: Sign -> [Named Sentence] -> Doc
 createTheoryText sig sens =
     let (axs, rest) = getAxioms (prepareSenNames transString sens)
         (defs, rs) = getDefs rest
         (rdefs, _) = getRecDefs rs
-    in --    trace ("\n" ++ (show $ arities $ tsig sig)) $ 
+    in 
     printText sig $++$
     (if null axs then empty else text "axioms" $$ 
         vsep (map printNamedSen axs)) $++$
@@ -65,7 +64,7 @@ printNamedSen sen = case s of
     _ -> "theorem " ++ lab) 
     <+> colon <+> doubleQuotes (case senTerm s of
       IsaEq (Const (VName {new=df}) y) t ->  
-        text df <+> text "::" <+> text (showTyp Unquoted 1000 y) 
+        text df <+> text "::" <+> printTyp Unquoted y
                  <+> text "==" <+> text (showOUTerm t)
       _ -> printText s)
  where lab = senName sen

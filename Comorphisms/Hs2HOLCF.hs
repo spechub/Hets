@@ -171,12 +171,15 @@ transType c t = maybe noType id $ transMType IsCont c t
 transMType :: Continuity -> [HsType] -> HsType -> Maybe IsaType
 transMType a c (Typ t) = transT (transIdV a c) transIdC (transMType a c) t
 
-transT :: Show d => (PNT -> Maybe IsaType) -> (PNT -> Maybe IsaType) -> (d -> Maybe IsaType) -> 
-                    HsTypeStruct.TI PNT d -> Maybe IsaType
+transT :: Show d => (PNT -> Maybe IsaType) -> (PNT -> Maybe IsaType) 
+       -> (d -> Maybe IsaType) -> HsTypeStruct.TI PNT d -> Maybe IsaType
 transT trIdV trIdC trT t =
  case mapTI3 trIdV trIdC trT t of    
     Just (HsTyFun t1 t2) -> return $ mkContFun t1 t2
-    Just (HsTyApp t1 t2) -> return $ typeAppl t1 [t2]
+    Just (HsTyApp t1 t2) -> case t1 of 
+        IsaSign.Type name s args -> -- better resolve nested HsTyApp first
+            return $ IsaSign.Type name s $ args ++ [t2] 
+        _ -> Nothing
     Just (HsTyVar a) -> return a
     Just (HsTyCon k) -> return k 
     _ -> Nothing

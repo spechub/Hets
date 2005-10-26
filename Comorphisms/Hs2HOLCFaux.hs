@@ -335,12 +335,15 @@ typeLift t = IsaSign.Type "lift" (remove_duplicates $ pcpo:(typeSort t)) [t]
 
 typeLift1 :: Typ -> Typ
 typeLift1 t = case t of
-   IsaSign.Type funS s [t1,t2] -> IsaSign.Type "dFun" (remove_duplicates $ pcpo:s) [typeLift t1, t2]
+   IsaSign.Type name s [t1,t2] | name == funS -> 
+       IsaSign.Type cFunS (remove_duplicates $ pcpo:s) [typeLift t1, t2]
    _ -> error "Hs2HOLCFaux, typeLift1"
 
 typeLift2 :: Typ -> Typ
 typeLift2 t = case t of
-   IsaSign.Type funS s [t1,t2] -> IsaSign.Type "dFun" (remove_duplicates $ pcpo:s) [typeLift t1, typeLift t2]
+   IsaSign.Type name s [t1,t2] | name == funS -> 
+       IsaSign.Type cFunS (remove_duplicates $ pcpo:s) 
+                  [typeLift t1, typeLift t2]
    _ -> error "Hs2HOLCFaux, typeLift2"
 
 ----------------------------- equivalence of types modulo variables name -------------------
@@ -417,12 +420,12 @@ data IsaVT = IsaConst | IsaVal deriving (Eq, Show)
 getDomType :: AConstTab -> VName -> IsaType
 getDomType ctab c = let x = Map.lookup c ctab in
                            case x of
-                                  Nothing -> error "Haskell2IsabelleHOLCF.getDomType"
-                                  Just y -> getHeadType $ fst y
+                           Nothing -> error "Haskell2IsabelleHOLCF.getDomType"
+                           Just y -> getHeadType $ fst y
 
 getHeadType :: IsaType -> IsaType
 getHeadType t = case t of 
-  IsaSign.Type "dFun" _ [t1,t2] -> getHeadType t2
+  IsaSign.Type name _ [t1,t2] | name == cFunS -> getHeadType t2
   _ -> t
 
 getFieldTypes :: AConstTab -> VName -> [IsaType]
@@ -433,7 +436,7 @@ getFieldTypes ctab c = let x = Map.lookup c ctab in
 
 argTypes :: IsaType -> [IsaType]
 argTypes a = case a of
-    IsaSign.Type "dFun" _ [b,c] -> b:argTypes c
+    IsaSign.Type name _ [b,c] | name == cFunS -> b : argTypes c
     _ -> [] 
 
 

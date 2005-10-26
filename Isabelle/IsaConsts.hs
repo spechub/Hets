@@ -33,16 +33,6 @@ pcpo = IsaClass "pcpo"
 
 -- * predefinded types
 
-typeAppl :: Typ -> [Typ] -> Typ
-typeAppl t ts =
- case ts of
-   [] -> t
-   v:vs -> typeAppl (binTypeAppl t v) vs
-
-binTypeAppl :: Typ -> Typ -> Typ
-binTypeAppl t1 t2 = case t1 of
-    Type n s ts -> Type n s (t2:ts)
-    _ -> error "IsaSign.binTypeAppl, unsupported type application"
 noType :: Typ
 noType = Type "dummy" holType []
 
@@ -71,26 +61,27 @@ flatDom = Type "flat" dom []
 
 {- sort is ok? -}
 mkContFun :: Typ -> Typ -> Typ
-mkContFun t1 t2 = Type "dFun" dom [t1,t2]
+mkContFun t1 t2 = Type cFunS dom [t1,t2]
 
 mkStrictProduct :: Typ -> Typ -> Typ
-mkStrictProduct t1 t2 = Type "**" dom [t1,t2]
+mkStrictProduct t1 t2 = Type sProdS dom [t1,t2]
 
 mkContProduct :: Typ -> Typ -> Typ
-mkContProduct t1 t2 = Type "*" dom [t1,t2]
+mkContProduct t1 t2 = Type prodS dom [t1,t2]
 
 {-handy for multiple args: [T1,...,Tn]--->T  gives  T1-->(T2--> ... -->T)-}
 mkCurryContFun :: [Typ] -> Typ -> Typ
 mkCurryContFun = flip $ foldr mkContFun -- was "--->" before
 
 mkStrictSum :: Typ -> Typ -> Typ
-mkStrictSum t1 t2 = Type "++" dom [t1,t2]
+mkStrictSum t1 t2 = Type sSumS dom [t1,t2]
 
-prodS :: TName
+prodS, sProdS, funS, cFunS, sSumS :: TName
 prodS = "*"    -- this is printed as it is!
-
-funS :: TName
-funS = "fun"  -- may be this should be "=>" for printing
+sProdS = "**"
+funS = "=>"
+cFunS = "->" 
+sSumS = "++"
 
 -- * functions for term formation
 

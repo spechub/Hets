@@ -157,10 +157,9 @@ transType t = case getTypeAppl t of
                         then mkOptionType tr else tr
           else if isProductId tid && num > 1 then
              foldl1 prodType $ map transType tyArgs
-          else foldl binTypeAppl (Type (showIsaTypeT tid baseSign) [] [])
-               $ map transType tyArgs
-       else foldl binTypeAppl (TFree (showIsaTypeT tid baseSign) [])
-            $ map transType tyArgs
+          else Type (showIsaTypeT tid baseSign) [] $ map transType tyArgs
+       else TFree (showIsaTypeT tid baseSign) [] 
+            -- type arguments are not allowed here!
    _ -> error $ "transType " ++ showPretty t "\n" ++ show t
 
 ---------- translation of a datatype declaration ----------
