@@ -393,6 +393,7 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
     Fc ind@(Indiv (Individual maybeIID _ types values)) ->
        case maybeIID of
         Prelude.Nothing ->          -- Error (Warnung): Individual without name
+{-
             let namedSent = NamedSen { senName = "Individual",  
                                        isAxiom = False, 
                                        isDef = True,
@@ -403,6 +404,9 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
                               (Just (Ontology mID (direc ++ [directiv]) ns, 
                                      inSign, [namedSent])))
                 (anaDirective ga inSign onto rest)
+-}
+            -- ignore all anonymous individuals -> can also be handled in java
+            anaDirective ga inSign onto rest
         Just iid -> 
             let oriInd = individuals inSign
             in  let (diagL, membershipSet) = msSet iid types ([], Set.empty) 
