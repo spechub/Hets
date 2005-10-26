@@ -21,7 +21,9 @@ import System.Environment (getArgs)
 
 import Driver.Options
 
+#ifdef CASLEXTENSIONS
 import OWL_DL.OWLAnalysis
+#endif
 
 import Static.AnalysisLibrary
 
@@ -48,9 +50,11 @@ processFile opts file =
              HaskellIn -> anaHaskellFile opts file
 #endif
 -}
+#ifdef CASLEXTENSIONS
              OWL_DLIn -> do
                  ontoMap <- parseOWL file
                  structureAna file opts ontoMap
+#endif
              _ -> anaLib opts file
        case gui opts of
            Not -> return ()
