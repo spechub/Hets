@@ -615,7 +615,7 @@ translateG_theory (GMorphism cid _ morphism2)
 joinG_sentences :: Monad m => G_theory -> G_theory -> m G_theory
 joinG_sentences (G_theory lid1 sig1 sens1) (G_theory lid2 sig2 sens2) = do
   sens2' <- coerceThSens lid2 lid1 "joinG_sentences" sens2
-  sign2' <- coerceSign lid2 lid1 "joinG_sentences" sig2
+  sig2' <- coerceSign lid2 lid1 "joinG_sentences" sig2
   return $ assert (sig1 == sig2') $ G_theory lid1 sig1 $ joinSens sens1 sens2'
 
 -- | flattening the sentences form a list of G_theories
