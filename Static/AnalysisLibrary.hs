@@ -57,7 +57,16 @@ anaLib opts file = do
     Result ds res <- ioresToIO $ anaLibFileOrGetEnv logicGraph defl opts 
                      emptyLibEnv (fileToLibName opts file) file
     showDiags opts ds 
-    return res
+    case res of 
+        Nothing -> return res
+        Just (ln, lenv) -> case Map.lookup ln lenv of
+              Nothing -> return res
+              Just gctx@(ga, ge, _) -> do
+                  writeSpecFiles opts file lenv (ln, ge)
+                  putIfVerbose opts 5 $ show $
+                                printLibrary lenv (ln, gctx)
+                  putIfVerbose opts 3 $ showPretty ga ""
+                  return res
 
 -- | parsing and static analysis for files
 -- Parameters: logic graph, default logic, file name
@@ -101,16 +110,12 @@ anaString lgraph defl opts libenv input file =
               ana_LIB_DEFN lgraph defl opts libenv ast
           case Map.lookup ln lenv of
               Nothing -> error $ "anaString: missing library: " ++ show ln
-              Just gctx@(ga, ge, _) -> ioToIORes $ do
+              Just gctx@(ga, _, _) -> ioToIORes $ do
                   case gui opts of
                       Only -> return ()
                       _ -> write_LIB_DEFN ga file opts ld
                   when (hasEnvOut opts)
                         (writeFileInfo opts file gctx)
-                  writeSpecFiles opts file lenv (ln, ge)
-                  putIfVerbose opts 5 $ show $
-                                printLibrary lenv (ln, gctx)
-                  putIfVerbose opts 3 $ showPretty ga ""
                   return (ln, lenv)
   Nothing -> resToIORes $ Result ds Nothing
 
