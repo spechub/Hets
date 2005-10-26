@@ -19,10 +19,10 @@ import CASL.Print_AS_Basic()
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
+import qualified Common.Lib.State as State
 import Common.PrettyPrint
 import Common.PPUtils
 import Common.Lib.Pretty
-import Common.Lib.State
 import Common.Keywords
 import Common.Id
 import Common.Result
@@ -195,37 +195,37 @@ remPartOpsM :: Ord a => Map.Map a (Set.Set OpType)
             -> Map.Map a (Set.Set OpType) 
 remPartOpsM = Map.map remPartOps
 
-addDiags :: [Diagnosis] -> State (Sign f e) ()
+addDiags :: [Diagnosis] -> State.State (Sign f e) ()
 addDiags ds = 
-    do e <- get
-       put e { envDiags = reverse ds ++ envDiags e }
+    do e <- State.get
+       State.put e { envDiags = reverse ds ++ envDiags e }
 
-addSort :: SORT -> State (Sign f e) ()
+addSort :: SORT -> State.State (Sign f e) ()
 addSort s = 
-    do e <- get
+    do e <- State.get
        let m = sortSet e
        if Set.member s m then 
           addDiags [mkDiag Hint "redeclared sort" s] 
-          else put e { sortSet = Set.insert s m }
+          else State.put e { sortSet = Set.insert s m }
 
 hasSort :: Sign f e -> SORT -> [Diagnosis]
 hasSort e s = if Set.member s $ sortSet e then [] 
                 else [mkDiag Error "unknown sort" s]
 
-checkSorts :: [SORT] -> State (Sign f e) ()
+checkSorts :: [SORT] -> State.State (Sign f e) ()
 checkSorts s = 
-    do e <- get
+    do e <- State.get
        addDiags $ concatMap (hasSort e) s
 
-addSubsort :: SORT -> SORT -> State (Sign f e) ()
+addSubsort :: SORT -> SORT -> State.State (Sign f e) ()
 addSubsort = addSubsortOrIso True
 
-addSubsortOrIso :: Bool -> SORT -> SORT -> State (Sign f e) ()
+addSubsortOrIso :: Bool -> SORT -> SORT -> State.State (Sign f e) ()
 addSubsortOrIso b super sub = 
     do if b then checkSorts [super, sub] else return ()
-       e <- get
+       e <- State.get
        let r = sortRel e  
-       put e { sortRel = (if b then id else 
+       State.put e { sortRel = (if b then id else 
                          Rel.insert super sub) $ Rel.insert sub super r }
        let p = posOfId sub
            rel = " '" ++ showPretty sub (if b then " < "
@@ -257,10 +257,10 @@ addSubsortOrIso b super sub =
                              "' made isomorphic by" ++ rel) p]
                   else return()
 
-closeSubsortRel :: State (Sign f e) ()
+closeSubsortRel :: State.State (Sign f e) ()
 closeSubsortRel= 
-    do e <- get
-       put e { sortRel = Rel.transClosure $ sortRel e }
+    do e <- State.get
+       State.put e { sortRel = Rel.transClosure $ sortRel e }
 
 alsoWarning :: String -> Id -> [Diagnosis]
 alsoWarning msg i = [mkDiag Warning ("also known as " ++ msg) i]
@@ -271,20 +271,20 @@ checkWithOtherMap msg m i =
     Nothing -> []
     Just _ -> alsoWarning msg i
 
-addVars :: VAR_DECL -> State (Sign f e) ()
+addVars :: VAR_DECL -> State.State (Sign f e) ()
 addVars (Var_decl vs s _) = do 
     checkSorts [s]
     mapM_ (addVar s) vs
 
-addVar :: SORT -> SIMPLE_ID -> State (Sign f e) ()
+addVar :: SORT -> SIMPLE_ID -> State.State (Sign f e) ()
 addVar s v = 
-    do e <- get
+    do e <- State.get
        let m = varMap e
            i = simpleIdToId v 
            ds = case Map.lookup v m of
                 Just _ -> [mkDiag Warning "known variable shadowed" v] 
                 Nothing -> []
-       put e { varMap = Map.insert v s m }
+       State.put e { varMap = Map.insert v s m }
        addDiags $ ds ++ checkWithOtherMap "operation" (opMap e) i
                 ++ checkWithOtherMap "predicate" (predMap e) i
 

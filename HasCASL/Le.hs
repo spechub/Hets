@@ -16,7 +16,7 @@ import HasCASL.As
 import HasCASL.AsUtils
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
-import Common.Lib.State
+import qualified Common.Lib.State as State
 import Common.Result
 import Common.Id
 import Common.AS_Annotation(Named)
@@ -169,61 +169,61 @@ initialEnv = Env Map.empty Map.empty Map.empty Map.empty Map.empty [] []
 -- * accessing the environment
 
 -- | add diagnostic messages 
-addDiags :: [Diagnosis] -> State Env ()
+addDiags :: [Diagnosis] -> State.State Env ()
 addDiags ds =
-    do e <- get
-       put $ e {envDiags = reverse ds ++ envDiags e}
+    do e <- State.get
+       State.put $ e {envDiags = reverse ds ++ envDiags e}
 
 -- | add sentences
-appendSentences :: [Named Sentence] -> State Env ()
+appendSentences :: [Named Sentence] -> State.State Env ()
 appendSentences fs =
-    do e <- get
-       put $ e {sentences = reverse fs ++ sentences e}
+    do e <- State.get
+       State.put $ e {sentences = reverse fs ++ sentences e}
 
 -- | store a class map
-putClassMap :: ClassMap -> State Env ()
+putClassMap :: ClassMap -> State.State Env ()
 putClassMap ce = do 
-    e <- get 
-    put e { classMap = ce }
+    e <- State.get 
+    State.put e { classMap = ce }
 
 -- | store local assumptions
-putLocalVars :: Map.Map Id VarDefn -> State Env ()
+putLocalVars :: Map.Map Id VarDefn -> State.State Env ()
 putLocalVars vs =  do 
-    e <- get 
-    put e { localVars = vs }
+    e <- State.get 
+    State.put e { localVars = vs }
 
 -- | converting a result to a state computation
-fromResult :: (Env -> Result a) -> State Env (Maybe a)
+fromResult :: (Env -> Result a) -> State.State Env (Maybe a)
 fromResult f = do 
-   e <- get
+   e <- State.get
    let Result ds mr = f e
    addDiags ds
    return mr
 
 -- | store local type variables
-putLocalTypeVars :: LocalTypeVars -> State Env ()
+putLocalTypeVars :: LocalTypeVars -> State.State Env ()
 putLocalTypeVars tvs = do 
-    e <- get 
-    put e { localTypeVars = tvs }
+    e <- State.get 
+    State.put e { localTypeVars = tvs }
 
 -- | store a complete type map
-putTypeMap :: TypeMap -> State Env ()
+putTypeMap :: TypeMap -> State.State Env ()
 putTypeMap tm = do 
-    e <- get 
-    put e { typeMap = tm }
+    e <- State.get 
+    State.put e { typeMap = tm }
 
 -- | store assumptions
-putAssumps :: Assumps -> State Env ()
+putAssumps :: Assumps -> State.State Env ()
 putAssumps ops = do 
-    e <- get
-    put e { assumps = ops }
+    e <- State.get
+    State.put e { assumps = ops }
 
 -- | get the variable
 getVar :: VarDecl -> Id
 getVar(VarDecl v _ _ _) = v
 
 -- | check uniqueness of variables 
-checkUniqueVars :: [VarDecl] -> State Env ()
+checkUniqueVars :: [VarDecl] -> State.State Env ()
 checkUniqueVars = addDiags . checkUniqueness . map getVar
 
 -- * morphisms
