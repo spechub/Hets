@@ -2,13 +2,14 @@
 module UserRulesHetCATS (hetcatsrules) where
 
 import RuleUtils -- gives some examples 
-
+import UserRuleGhcBinary
 import Pretty
 import List 
 
 hetcatsrules :: [RuleDef]
 hetcatsrules = [("ShATermConvertible",shatermfn, "", "", Nothing),
 	       	("UpPos",updateposfn, "", "", Nothing)]
+               ++ userRulesGhcBinary
 
 -- useful helper things
 addPrime doc = doc <> char '\''
