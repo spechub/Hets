@@ -29,6 +29,7 @@ todo:
 
 Integrate stuff from Saarbrücken
 Should AS be stored in GloblaContext as well?
+simplifyTh should be removed from instance PrettyPrint G_theory
 -}
 
 module Static.DevGraph where
