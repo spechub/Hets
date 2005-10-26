@@ -186,3 +186,10 @@ safeContext err g v =
                           " not present in graph with nodes:\n"++
                           show (nodes g)++"\nand edges:\n"++show (edges g))
     (Just c,_)  -> c 
+
+{- |
+  advice from http://haskell.org/hawiki/ThingsToAvoid use this instead of 
+  direct application of selector function
+-}
+comparing :: (Ord b) => (a -> b) -> a -> a -> Ordering
+comparing selector x y = compare (selector x) (selector y)
