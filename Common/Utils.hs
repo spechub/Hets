@@ -179,7 +179,8 @@ notUnique (h:t) = let
                                          False -> rest
 
 -- safe context for graphs
-safeContext :: (Show a, Show b,Graph gr) => String -> gr a b -> Node -> Context a b
+safeContext :: (Show a, Show b,Graph gr) => String -> gr a b -> Node 
+            -> Context a b
 safeContext err g v =
   case match v g of
     (Nothing,_) -> error (err++": Match Exception, Node: "++show v++
@@ -188,7 +189,7 @@ safeContext err g v =
     (Just c,_)  -> c 
 
 {- |
-  advice from http://haskell.org/hawiki/ThingsToAvoid use this instead of 
+  advice from <http://haskell.org/hawiki/ThingsToAvoid> use this instead of 
   direct application of selector function
 -}
 comparing :: (Ord b) => (a -> b) -> a -> a -> Ordering
