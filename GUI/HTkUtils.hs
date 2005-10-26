@@ -19,6 +19,7 @@ import ScrollBox
 import FileDialog
 
 import Logic.Prover hiding(value)
+import Static.DevGraph
 
 -- | create a window with title and list of options, return selected option
 listBox :: String -> [String] -> IO (Maybe Int)
@@ -116,6 +117,9 @@ Represents the state of a goal in a 'ListBox' that uses 'populateGoalsListBox'
 data LBStatusIndicator = LBIndicatorProved
                        | LBIndicatorDisproved
                        | LBIndicatorOpen
+                       | LBIndicatorGuessed
+                       | LBIndicatorConjectured
+                       | LBIndicatorHandwritten
 
 -- |
 -- Converts a 'LBStatusIndicator' into a short 'String' representing it in
@@ -123,9 +127,12 @@ data LBStatusIndicator = LBIndicatorProved
 indicatorString :: LBStatusIndicator
                 -> String
 indicatorString i = case i of
-  LBIndicatorProved    -> "[+]"
-  LBIndicatorDisproved -> "[-]"
-  LBIndicatorOpen      -> "[ ]"
+  LBIndicatorProved      -> "[+]"
+  LBIndicatorDisproved   -> "[-]"
+  LBIndicatorOpen        -> "[ ]"
+  LBIndicatorGuessed     -> "[.]"
+  LBIndicatorConjectured -> "[:]"
+  LBIndicatorHandwritten -> "[/]"
 
 -- |
 -- Represents a goal in a 'ListBox' that uses 'populateGoalsListBox'
@@ -152,9 +159,18 @@ populateGoalsListBox lb v = do
 
 -- | Converts a 'Logic.Prover.Proof_status' into a 'LBStatusIndicator'
 indicatorFromProof_status :: Proof_status a
-                      -> LBStatusIndicator
+                          -> LBStatusIndicator
 indicatorFromProof_status st = case st of
   Proved _ _ _ _ _ -> LBIndicatorProved
   Disproved _ -> LBIndicatorDisproved
   _ -> LBIndicatorOpen
+
+-- | Converts a 'BasicProof' into a 'LBStatusIndicator'
+indicatorFromBasicProof :: BasicProof
+                        -> LBStatusIndicator
+indicatorFromBasicProof p = case p of
+  BasicProof _ st -> indicatorFromProof_status st
+  Guessed         -> LBIndicatorGuessed
+  Conjectured     -> LBIndicatorConjectured
+  Handwritten     -> LBIndicatorHandwritten
 
