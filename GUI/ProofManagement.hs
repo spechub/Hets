@@ -142,16 +142,47 @@ updateDisplay st updateLb goalsLb pathsLb statusLabel = do
     statusLabel # foreground (show color)
     return () 
 
+{- |
+  Called whenever the button "Select All" is clicked.
+-}
+doSelectAllGoals :: ProofGUIState
+		 -> ListBox String
+                 -> IO ProofGUIState
+doSelectAllGoals s lb = return s
+
+{- |
+  Called whenever the button "Display" is clicked.
+-}
+doDisplayGoals :: ProofGUIState
+               -> IO ProofGUIState
+doDisplayGoals s = return s
+
+{- |
+  Called whenever the button "Show proof details" is clicked.
+-}
+doShowProofDetails :: ProofGUIState
+                   -> IO ProofGUIState
+doShowProofDetails s = return s
+
+{- |
+  Called whenever a prover is selected from the "Pick Theorem Prover" ListBox.
+-}
+doSelectProverPath :: ProofGUIState
+		   -> ListBox String
+                   -> IO ProofGUIState
+doSelectProverPath s lb = return s
+
+
 -- *** Main GUI
 
 {- |
   Invokes the GUI.
 -}
-proofManagementGUI :: (ProofGUIState -> IO ProofGUIState)
-                   -> (ProofGUIState -> IO ProofGUIState)
+proofManagementGUI :: (ProofGUIState -> IO ProofGUIState) -- ^ called whenever the "Prove" button is clicked
+                   -> (ProofGUIState -> IO ProofGUIState) -- ^ called whenever the "More fine grained selection" button is clicked
                    -> String -- ^ theory name
-                   -> DevGraph.G_theory
-                   -> KnownProvers.KnownProversMap
+                   -> DevGraph.G_theory -- ^ theory
+                   -> KnownProvers.KnownProversMap -- ^ map of known provers
                    -> IO (Result.Result DevGraph.G_theory)
 proofManagementGUI proveF fineGrainedSelectionF thName th@(DevGraph.G_theory _ _ thSen) knownProvers = do
 
@@ -220,7 +251,7 @@ proofManagementGUI proveF fineGrainedSelectionF thName th@(DevGraph.G_theory _ _
   proveButton <- newButton rhb1 [text "Prove"]
   pack proveButton []
 
-  proofDetailsButton <- newButton rhb1 [text "Show Proof Details"]
+  proofDetailsButton <- newButton rhb1 [text "Show proof details"]
   pack proofDetailsButton []
 
   vsp1 <- newSpace rvb vspacing []
@@ -289,6 +320,7 @@ proofManagementGUI proveF fineGrainedSelectionF thName th@(DevGraph.G_theory _ _
   close <- clicked closeButton
 
   -- event handlers
+  -- NOTE: all actual work is done in the callback functions
   spawnEvent 
     (forever
       ((selectGoal >>> do
@@ -297,27 +329,33 @@ proofManagementGUI proveF fineGrainedSelectionF thName th@(DevGraph.G_theory _ _
           done)
       +> (selectAllGoals >>> do
             s <- readIORef stateRef
-            putStrLn "select all clicked"
+	    s' <- doSelectAllGoals s lb
+	    writeIORef stateRef s'
             done)
       +> (displayGoals >>> do
             s <- readIORef stateRef
-            putStrLn "display clicked"
+	    s' <- doDisplayGoals s
+	    writeIORef stateRef s'
             done)
       +> (selectProverPath>>> do
             s <- readIORef stateRef
-            putStrLn "proverPath selected"
+	    s' <- doSelectProverPath s pathsLb
+	    writeIORef stateRef s'
             done)
       +> (moreProverPaths >>> do
             s <- readIORef stateRef
-            putStrLn "more clicked"
+	    s' <- fineGrainedSelectionF s
+	    writeIORef stateRef s'
             done)
       +> (doProve >>> do
             s <- readIORef stateRef
-            putStrLn "prove clicked"
+	    s' <- proveF s
+	    writeIORef stateRef s'
             done)
       +> (showProofDetails >>> do
             s <- readIORef stateRef
-            putStrLn "proof details clicked"
+	    s' <- doShowProofDetails s
+	    writeIORef stateRef s'
             done)
       ))
   sync (close >>> destroy main)
@@ -325,10 +363,6 @@ proofManagementGUI proveF fineGrainedSelectionF thName th@(DevGraph.G_theory _ _
   -- read the global state back in
   s <- readIORef stateRef
 
-  -- TODO: do something with the results
+  -- TODO: do something with the resulting G_theory before returning it?
 
-  return (Result.Result {Result.diags = [], Result.maybeResult = Nothing})
-
-  where
-    nGoals = toNamedList thSen
-
+  return (Result.Result {Result.diags = [], Result.maybeResult = Just (theory s)})
