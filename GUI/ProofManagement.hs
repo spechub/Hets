@@ -374,6 +374,8 @@ proofManagementGUI proveF fineGrainedSelectionF thName th@(DevGraph.G_theory _ _
             done)
       +> (moreProverPaths >>> do
             s <- readIORef stateRef
+	    -- TODO: depending on what fineGrainedSelectionF turns out to do in the end,
+	    --       set proverRunning and call updateDisplay as below
 	    s' <- fineGrainedSelectionF s
 	    writeIORef stateRef s'
             done)
