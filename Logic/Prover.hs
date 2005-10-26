@@ -16,8 +16,10 @@ module Logic.Prover where
 
 import qualified Common.AS_Annotation as AS_Anno
 import Common.PrettyPrint
+import Common.Utils
 import Common.ProofUtils
 import qualified Common.OrderedMap as OMap
+import qualified Common.Lib.Map as Map (toList,fromList)
 
 import Data.Dynamic
 import Data.List
@@ -33,8 +35,7 @@ data SenStatus a tStatus = SenStatus
 
 
 instance PrettyPrint a => PrettyPrint (SenStatus a b) where
-  printText0 ga x =
-     printText0 ga (value x)
+  printText0 ga x = printText0 ga (value x)
 
 emptySenStatus :: SenStatus a b
 emptySenStatus = SenStatus { value = error "emptySenStatus"
@@ -71,20 +72,23 @@ noSens = OMap.empty
 
 -- | join and disambiguate
 joinSens :: (Ord a,Eq b) => ThSens a b -> ThSens a b -> ThSens a b
-joinSens s1 s2 = let l1 = OMap.toList s1
-                     sel = fst
-                     upd n (_,e) = (n,e)
-                     ns = OMap.keysSet s1  
-                     l2 = OMap.toList s2 
-                 in OMap.fromList $ mergeSens l1 
-                        $ genericDisambigSens sel upd ns l2
+joinSens s1 s2 = let l1 = sortBy (comparing snd) $ Map.toList s1
+                     updN n (_,e) = (n,e)
+                     m = OMap.size s1
+                     l2 = map (\ (x,e) -> 
+                                    (x,e {OMap.order = m + OMap.order e })) $ 
+                          sortBy (comparing snd) $ Map.toList s2 
+                 in Map.fromList $ mergeSens l1 $
+                         genericDisambigSens fst updN (OMap.keysSet s1) l2
     where mergeSens [] l2 = l2
           mergeSens l1 [] = l1
           mergeSens l1@((k1,e1) : r1) l2@((k2,e2) : r2) = 
               case compare e1 e2 of
               LT -> (k1,e1) : mergeSens r1 l2
-              EQ -> (k1,e1 { thmStatus = union (thmStatus e1) 
-                                               (thmStatus e2) })
+              EQ -> (k1,e1 { OMap.ele = (OMap.ele e1) 
+                                        { thmStatus = 
+                                              union (thmStatus $ OMap.ele e1) 
+                                                  (thmStatus $ OMap.ele e2)}})
                     : mergeSens r1 r2
               GT -> (k2,e2) : mergeSens l1 r2
 
