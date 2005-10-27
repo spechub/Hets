@@ -1,10 +1,10 @@
 {- |
 Module      :  $Header$
 Description :  Goal management GUI.
-Copyright   :  (c) Rene Wagner, Uni Bremen 2005
+Copyright   :  (c) Rene Wagner, Klaus Lüttich, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  rwagner@tzi.de
+Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  needs POSIX
 
@@ -14,19 +14,6 @@ works for SPASS.
 -}
 
 {- ToDo:
-
-    - "Pick Theorem Prover" needs only 4 lines as default for now and
-      it could have less columns such that it is as wide as the Button
-      line "Display", "Prove",...
-
-    - under MacOS X the window trembles because of the "Close" button
-      in the right corner. Please move it slightly to the left. 
-
-    - 'proofManagementGUI' may fill the select lists with fake data:
-      Provers: ["Isabelle","SPASS"]
-      Goals: ["min_0","div_mod_Nat","power_Nat"] where the first goal 
-      is "proved" and the other two are "Open"
-      Window Title: "Basic/Numbers_Nat_E1 - "
 
 -}
 
@@ -57,6 +44,7 @@ import Space
 import GUI.HTkUtils
 
 import qualified Common.Lib.Map as Map
+import qualified Common.OrderedMap as OMap
 
 import Proofs.GUIState
 import Logic.Logic
@@ -111,13 +99,17 @@ toGuiStatus st = if proverRunning st
 -}
 goalsView :: ProofGUIState  -- ^ current global state
           -> [LBGoalView] -- ^ resulting ['LBGoalView'] list
-goalsView st@(ProofGUIState { theory = DevGraph.G_theory _ _ thSen}) = []
+goalsView = map toStatus . OMap.toList . goalMap
+    where toStatus (l,st) =
+              let tStatus = thmStatus st
+                  si = if null tStatus 
+                       then LBIndicatorOpen
+                       else indicatorFromBasicProof (maximum tStatus) 
+              in LBGoalView { statIndicator = si
+                            , goalDescription = l}
+
 -- TODO: for every element of goals perform a lookup on thSen to retrieve the associated BasicProof
 --       map that using GUI.HTkUtils.indicatorFromBasicProof and pass it to GUI.HTkUtils.populateGoalsListBox
-  where
-    goals = map AS_Anno.senName nGoals
-    (_, nGoals) = partition AS_Anno.isAxiom
-                      (toNamedList thSen)
 
 -- ** GUI Implementation
 
@@ -130,8 +122,7 @@ goalsView st@(ProofGUIState { theory = DevGraph.G_theory _ _ thSen}) = []
 populatePathsListBox :: ListBox String
                      -> KnownProvers.KnownProversMap
 		     -> IO ()
-populatePathsListBox lb provers = return ()
--- TODO: implement this
+populatePathsListBox lb provers = lb # HTk.value (Map.keys provers)
 
 -- *** Callbacks
 
@@ -214,7 +205,13 @@ doShowProofDetails s = return s
 doSelectProverPath :: ProofGUIState
 		   -> ListBox String
                    -> IO ProofGUIState
-doSelectProverPath s lb = return s
+doSelectProverPath s lb = 
+    do selected <- (getSelection lb) :: IO (Maybe [Int]) 
+       return (s {selectedProver = 
+                      maybe Nothing 
+                            (\ (x:_) -> Just (Map.keys (proversMap s) !! x)) 
+                            selected
+                 })
 -- TODO: retrieve selected index from lb, look that up in the list of known
 --       provers, and save the prover name in selectedProver
 
@@ -371,7 +368,6 @@ proofManagementGUI proveF fineGrainedSelectionF thName th@(DevGraph.G_theory _ _
     (forever
       ((selectGoal >>> do
           s <- readIORef stateRef
-          s <- readIORef stateRef
 	  s' <- doSelectGoal s lb
 	  writeIORef stateRef s'
           done)
@@ -392,10 +388,12 @@ proofManagementGUI proveF fineGrainedSelectionF thName th@(DevGraph.G_theory _ _
             done)
       +> (moreProverPaths >>> do
             s <- readIORef stateRef
-	    -- TODO: depending on what fineGrainedSelectionF turns out to do in the end,
-	    --       set proverRunning and call updateDisplay as below
-	    s' <- fineGrainedSelectionF s
-	    writeIORef stateRef s'
+	    let s' = s{proverRunning = True}
+	    updateDisplay s' True lb pathsLb statusLabel
+	    s'' <- fineGrainedSelectionF s
+	    let s''' = s'' {proverRunning = False}
+	    updateDisplay s''' True lb pathsLb statusLabel
+	    writeIORef stateRef s'''
             done)
       +> (doProve >>> do
             s <- readIORef stateRef
