@@ -183,7 +183,12 @@ doSelectGoal s@(ProofGUIState { theory = DevGraph.G_theory _ _ thSen}) lb = do
 -}
 doDisplayGoals :: ProofGUIState
                -> IO ProofGUIState
-doDisplayGoals s = return s
+doDisplayGoals s@(ProofGUIState {theoryName = thName, selectedGoals = goals, goalMap = gMap}) = do
+  createTextSaveDisplay ("Details on Selected Goals from Theory " ++ thName) (thName ++ "-goals.txt") goalsInfo
+  return s
+  where
+    goalsInfo = concatMap (\ g -> g ++ ":\n\n" ++ (oneGoal g) ++ "\n\n") goals
+    oneGoal g = unlines (map ("    "++) (lines (showPretty (fromJust (Map.lookup g gMap)) "")))
 -- TODO: convert selected goals to String using showPretty, concatenate those
 --       (plus some headers maybe), and pass the resulting String to
 --       createTextSaveDisplay
