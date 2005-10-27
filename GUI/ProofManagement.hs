@@ -162,9 +162,25 @@ doSelectAllGoals :: ProofGUIState
                  -> IO ProofGUIState
 doSelectAllGoals s@(ProofGUIState { theory = DevGraph.G_theory _ _ thSen}) lb = do
   let s' = s{selectedGoals = goals}
-  -- TODO: verify that 0 is correct here
-  mapM_ (\n -> selection n lb) (map snd (zip goals ([0..]::[Int])))
   -- FIXME: this will probably blow up if the number of goals isn't constant
+  mapM_ (\n -> selection n lb) (map snd (zip goals ([0..]::[Int])))
+  return s'
+  where
+    goals = map AS_Anno.senName nGoals
+    (_, nGoals) = partition AS_Anno.isAxiom
+                      (toNamedList thSen)
+
+{- |
+  Called whenever a goal is selected from the goals 'ListBox'
+-}
+doSelectGoal :: ProofGUIState
+             -> ListBox String
+	     -> IO ProofGUIState
+doSelectGoal s@(ProofGUIState { theory = DevGraph.G_theory _ _ thSen}) lb = do
+  sel <- (getSelection lb) :: IO (Maybe [Int])
+  -- FIXME: this will probably blow up if the number of goals isn't constant
+  let selGoals = maybe ([]) (map (goals!!)) sel
+  let s' = s{selectedGoals = selGoals}
   return s'
   where
     goals = map AS_Anno.senName nGoals
@@ -355,7 +371,9 @@ proofManagementGUI proveF fineGrainedSelectionF thName th@(DevGraph.G_theory _ _
     (forever
       ((selectGoal >>> do
           s <- readIORef stateRef
-          putStrLn "goal selected"
+          s <- readIORef stateRef
+	  s' <- doSelectGoal s lb
+	  writeIORef stateRef s'
           done)
       +> (selectAllGoals >>> do
             s <- readIORef stateRef
