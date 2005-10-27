@@ -14,7 +14,8 @@ comorphisms.
 
 -}
 
-module Comorphisms.KnownProvers (KnownProversMap, knownProvers) where
+module Comorphisms.KnownProvers (KnownProversMap,
+                                 knownProvers,shrinkKnownProvers) where
 
 import Data.Maybe 
 import Control.Monad
@@ -23,6 +24,8 @@ import qualified Common.Lib.Map as Map
 
 import Common.Result
 
+import Logic.Logic hiding (top)
+import Logic.Coerce
 import Logic.Grothendieck
 import Logic.Comorphism
 
@@ -52,6 +55,14 @@ knownProvers =
        spassCs <- spassComorphisms
        return (Map.fromList [("Isabelle", isaCs),
                              ("SPASS", spassCs)])
+
+shrinkKnownProvers :: G_sublogics -> KnownProversMap -> KnownProversMap
+shrinkKnownProvers (G_sublogics lid1 sub1) = Map.map shrinkList
+    where shrinkList = filter 
+                 (\ (Comorphism cid)-> 
+                      let lid2 = sourceLogic cid
+                      in language_name lid2 == language_name lid1 
+                         && coerceSublogic lid1 lid2 sub1 <= sourceSublogic cid)
 
 isaComorphisms :: Result [AnyComorphism]
 isaComorphisms = do
