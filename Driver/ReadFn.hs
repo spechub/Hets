@@ -1,4 +1,4 @@
-{-| 
+{- | 
 Module      :  $Header$
 Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -51,22 +51,27 @@ readLIB_DEFN_from_file :: FilePath -> IO (Result LIB_DEFN)
 readLIB_DEFN_from_file = readShATermFile
 
 readShATermFile :: (ShATermConvertible a) => FilePath -> IO (Result a)
-readShATermFile fp = do str <- readFile fp
-                        return (fromShATermString str) 
-                        
-fromShATermString :: (ShATermConvertible a) => String -> Result a
-fromShATermString str = if null str then Result [dia3] Nothing else
+readShATermFile fp = do 
+    str <- readFile fp
+    return (fromShATermString str)
+                   
+fromVersionedATT :: (ShATermConvertible a) => ATermTable -> Result a
+fromVersionedATT att =
     case getATerm att of
     ShAAppl "hets" [versionnr,aterm] [] -> 
-        if hetcats_version == (fromShATerm $ getATermByIndex1 versionnr att)
+        if hetcats_version == fromShATerm (getATermByIndex1 versionnr att)
         then Result [] (Just $ fromShATerm $ getATermByIndex1 aterm att)
-        else Result [dia1] Nothing
-    _                                   ->  Result [dia2] Nothing
-    where att  = readATerm str
-          dia1 = Diag Warning "Wrong version number ... re-analyzing" nullRange
-          dia2 = Diag Warning "Couldn't convert ShATerm back from file" 
-                      nullRange
-          dia3 = Diag Warning "got empty string from file" nullRange
+        else Result [Diag Warning 
+                     "Wrong version number ... re-analyzing" 
+                     nullRange] Nothing
+    _  ->  Result [Diag Warning 
+                   "Couldn't convert ShATerm back from ATermTable" 
+                   nullRange] Nothing
+
+fromShATermString :: (ShATermConvertible a) => String -> Result a
+fromShATermString str = if null str then 
+    Result [Diag Warning "got empty string from file" nullRange] Nothing 
+    else fromVersionedATT $ readATerm str
 
 globalContextfromShATerm :: FilePath -> IO (Result GlobalContext)
 globalContextfromShATerm = readShATermFile
