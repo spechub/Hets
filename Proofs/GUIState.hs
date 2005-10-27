@@ -37,8 +37,6 @@ data ProofGUIState lid sentence =
 	theory :: G_theory,
         -- | logic id associated with following maps
         logic_id :: lid,
-        -- | axioms are stored in a separate map
-        axiomMap :: ThSens sentence (AnyComorphism,BasicProof),
         -- | goals are stored in a separate map
         goalMap :: ThSens sentence (AnyComorphism,BasicProof),
 	-- | currently known provers
@@ -67,17 +65,16 @@ initialState ::
              -> G_theory
 	     -> KnownProversMap
              -> m (ProofGUIState lid1 sentence1)
-initialState lid1 thN th@(G_theory lid2 _ thSens) pm = 
-    do thSens' <- coerceThSens lid2 lid1 "creating initial GUI State" thSens
-       let (gMap,aMap) = Map.partition (isAxiom . OMap.ele) thSens'
+initialState lid1 thN (G_theory lid2 sig thSens) pm = 
+    do let (gMap,aMap) = Map.partition (isAxiom . OMap.ele) thSens
+       gMap' <- coerceThSens lid2 lid1 "creating initial GUI State" gMap
        return $ 
            ProofGUIState { theoryName = thN,
-		           theory = th,
+		           theory = G_theory lid2 sig aMap,
                            logic_id = lid1,
-                           goalMap = gMap,
-                           axiomMap = aMap,
+                           goalMap = gMap',
 		           proversMap = pm,
-                           allGoals = OMap.keys gMap,
+                           allGoals = OMap.keys gMap',
                            selectedGoals = [],
                            proverRunning = False,
                            allGoalsSelected = False,
