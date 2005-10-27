@@ -122,7 +122,9 @@ goalsView = map toStatus . OMap.toList . goalMap
 populatePathsListBox :: ListBox String
                      -> KnownProvers.KnownProversMap
 		     -> IO ()
-populatePathsListBox lb provers = lb # HTk.value (Map.keys provers)
+populatePathsListBox lb provers = do
+  lb # HTk.value (Map.keys provers)
+  return ()
 
 -- *** Callbacks
 
@@ -188,7 +190,7 @@ doDisplayGoals s@(ProofGUIState {theoryName = thName, selectedGoals = goals, goa
   return s
   where
     goalsInfo = concatMap (\ g -> g ++ ":\n\n" ++ (oneGoal g) ++ "\n\n") goals
-    oneGoal g = unlines (map ("    "++) (lines (showPretty (fromJust (Map.lookup g gMap)) "")))
+    oneGoal g = unlines (map ("    "++) (lines (showPretty $ Logic.Prover.value (fromJust (Map.lookup g gMap)) "")))
 -- TODO: convert selected goals to String using showPretty, concatenate those
 --       (plus some headers maybe), and pass the resulting String to
 --       createTextSaveDisplay
