@@ -142,6 +142,16 @@ data Proof_status proof_tree =
                       | Consistent Tactic_script
      deriving (Eq, Show)
 
+instance Eq a => Ord (Proof_status a) where
+    Open _ <= _ = True
+    Disproved _ <= x = case x of
+                       Open _ -> False
+                       _ -> True
+    Proved _ _ _ _ _ <= x = case x of
+                            Proved _ _ _ _ _ -> True
+                            _ -> False
+    _ <= _ = False
+
 isProvedStat :: Proof_status proof_tree -> Bool
 isProvedStat (Proved _ _ _ _ _) = True
 isProvedStat _ = False
