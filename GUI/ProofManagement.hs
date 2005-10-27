@@ -185,14 +185,20 @@ doSelectGoal s@(ProofGUIState { theory = DevGraph.G_theory _ _ thSen}) lb = do
 {- |
   Called whenever the button "Display" is clicked.
 -}
-doDisplayGoals :: ProofGUIState lid sentence
-               -> IO (ProofGUIState lid sentence)
-doDisplayGoals s@(ProofGUIState {theoryName = thName, selectedGoals = goals, goalMap = gMap}) = do
-  createTextSaveDisplay ("Details on Selected Goals from Theory " ++ thName) (thName ++ "-goals.txt") goalsInfo
+doDisplayGoals ::
+    (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1) => 
+                  lid1
+	       -> ProofGUIState lid1 sentence1
+               -> IO (ProofGUIState lid1 sentence1)
+doDisplayGoals lid1 s@(ProofGUIState {theoryName = thName, selectedGoals = goals, theory=DevGraph.G_theory lid2 sig thSens}) = do
+  let (gMap,_) = Map.partition (isAxiom . OMap.ele) thSens
+  gMap' <- DevGraph.coerceThSens lid2 lid1 "creating initial GUI State" gMap
+  createTextSaveDisplay ("Details on Selected Goals from Theory " ++ thName) (thName ++ "-goals.txt") (goalsInfo gMap')
   return s
   where
-    goalsInfo = concatMap (\ g -> g ++ ":\n\n" ++ (oneGoal g) ++ "\n\n") goals
-    oneGoal g = unlines (map ("    "++) (lines (showPretty $ Logic.Prover.value (fromJust (Map.lookup g gMap)) "")))
+    goalsInfo gm = concatMap (\ g -> g ++ ":\n\n" ++ (oneGoal gm g) ++ "\n\n") goals
+    oneGoal gm g = unlines (map ("    "++) (lines (showPretty (Logic.Prover.value (fromJust (OMap.lookup g gm))) "")))
 -- TODO: convert selected goals to String using showPretty, concatenate those
 --       (plus some headers maybe), and pass the resulting String to
 --       createTextSaveDisplay
@@ -203,6 +209,17 @@ doDisplayGoals s@(ProofGUIState {theoryName = thName, selectedGoals = goals, goa
 doShowProofDetails :: ProofGUIState lid sentence
                    -> IO (ProofGUIState lid sentence)
 doShowProofDetails s = return s
+--doShowProofDetails s@(ProofGUIState {theoryName = thName, selectedGoals = goals, goalMap = gMap}) = do
+--  createTextSaveDisplay ("Proof Details on Selected Goals from Theory " ++ thName) (thName ++ "-proof-details.txt") proofsInfo
+--  return s
+--  where
+--    proofsInfo = concatMap (\ g -> g ++ ":\n\n" ++ (oneProof g) ++ "\n\n") goals
+--    oneProof g = unlines (map ("    "++) (lines (showP $ pstatus g))) 
+--    showP p = case p of
+--      Proved {goalName=n, usedAxioms=axs, proverName=pName} -> "goalName: " ++ n ++ "\nusedAxioms: " ++ (show axs) ++ "\nproverName: " ++ pName
+--      Consistent _ -> "Consistent"
+--      _ -> show p
+--    pstatus g = maximum $ map snd $ thmStatus (fromJust (OMap.lookup g gMap))
 -- TODO: convert all information except proofTree and tacticScript from 
 --       Proof_status for each goal to String, concatenate those and
 --       the label of each goal as a header, and pass the resulting
@@ -405,7 +422,7 @@ proofManagementGUI lid proveF fineGrainedSelectionF
             done)
       +> (displayGoals >>> do
             s <- readIORef stateRef
-	    s' <- doDisplayGoals s
+	    s' <- doDisplayGoals lid s
 	    writeIORef stateRef s'
             done)
       +> (selectProverPath>>> do
