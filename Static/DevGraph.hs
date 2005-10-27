@@ -312,6 +312,25 @@ instance Eq BasicProof where
     coerceBasicProof lid1 lid2 "Eq BasicProof" p1 == Just p2
   _ == _ = False
 
+instance Ord BasicProof where
+    Guessed <= _ = True
+    Conjectured <= x = case x of
+                       Guessed -> False
+                       _ ->  True
+    Handwritten <= x = case x of
+                       Guessed -> False
+                       Conjectured -> False
+                       _ ->  True
+    BasicProof lid1 pst1 <= x = 
+        case x of
+        BasicProof lid2 pst2 
+            | isProvedStat pst1 && not (isProvedStat pst2) -> False
+            | not (isProvedStat pst1) && isProvedStat pst2 -> True
+            | otherwise -> case primCoerce lid1 lid2 "" pst1 of
+                           Nothing -> False
+                           Just pst1' -> pst1' <= pst2
+        _ -> False
+
 instance Show BasicProof where
   show (BasicProof _ p1) = show p1
   show Guessed = "Guessed"
