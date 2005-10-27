@@ -85,7 +85,7 @@ statusRunning = (Blue, "Waiting for Prover")
   Converts a 'ProofGUIState' into a ('ProverStatusColour', 'String') tuple to be
   displayed by the GUI.
 -}
-toGuiStatus :: ProofGUIState
+toGuiStatus :: ProofGUIState lid sentence
             -> (ProverStatusColour, String)
 toGuiStatus st = if proverRunning st
   then statusRunning
@@ -97,14 +97,15 @@ toGuiStatus st = if proverRunning st
 
   Uses 'toStatusIndicator' internally.
 -}
-goalsView :: ProofGUIState  -- ^ current global state
+goalsView :: ProofGUIState lid sentence  -- ^ current global state
           -> [LBGoalView] -- ^ resulting ['LBGoalView'] list
 goalsView = map toStatus . OMap.toList . goalMap
     where toStatus (l,st) =
               let tStatus = thmStatus st
                   si = if null tStatus 
                        then LBIndicatorOpen
-                       else indicatorFromBasicProof (maximum tStatus) 
+                       else indicatorFromBasicProof 
+                                (maximum $ map snd $ tStatus) 
               in LBGoalView { statIndicator = si
                             , goalDescription = l}
 
@@ -131,7 +132,7 @@ populatePathsListBox lb provers = do
 {- |
    Updates the display of the status of the selected goals.
 -}
-updateDisplay :: ProofGUIState -- ^ current global state
+updateDisplay :: ProofGUIState lid sentence -- ^ current global state
               -> Bool -- ^ set to 'True' if you want the 'ListBox' to be updated
               -> ListBox String -- ^ 'ListBox' displaying the status of all goals (see 'goalsView')
               -> ListBox String -- ^ 'ListBox' displaying possible morphism paths to prover logics
@@ -150,10 +151,11 @@ updateDisplay st updateLb goalsLb pathsLb statusLabel = do
 {- |
   Called whenever the button "Select All" is clicked.
 -}
-doSelectAllGoals :: ProofGUIState
+doSelectAllGoals :: ProofGUIState lid sentence
 		 -> ListBox String
-                 -> IO ProofGUIState
-doSelectAllGoals s@(ProofGUIState { theory = DevGraph.G_theory _ _ thSen}) lb = do
+                 -> IO (ProofGUIState lid sentence)
+doSelectAllGoals s@(ProofGUIState {theory = DevGraph.G_theory _ _ thSen}) lb = 
+  do
   let s' = s{selectedGoals = goals}
   -- FIXME: this will probably blow up if the number of goals isn't constant
   mapM_ (\n -> selection n lb) (map snd (zip goals ([0..]::[Int])))
@@ -166,9 +168,9 @@ doSelectAllGoals s@(ProofGUIState { theory = DevGraph.G_theory _ _ thSen}) lb = 
 {- |
   Called whenever a goal is selected from the goals 'ListBox'
 -}
-doSelectGoal :: ProofGUIState
+doSelectGoal :: ProofGUIState lid sentence
              -> ListBox String
-	     -> IO ProofGUIState
+	     -> IO (ProofGUIState lid sentence)
 doSelectGoal s@(ProofGUIState { theory = DevGraph.G_theory _ _ thSen}) lb = do
   sel <- (getSelection lb) :: IO (Maybe [Int])
   -- FIXME: this will probably blow up if the number of goals isn't constant
@@ -183,8 +185,8 @@ doSelectGoal s@(ProofGUIState { theory = DevGraph.G_theory _ _ thSen}) lb = do
 {- |
   Called whenever the button "Display" is clicked.
 -}
-doDisplayGoals :: ProofGUIState
-               -> IO ProofGUIState
+doDisplayGoals :: ProofGUIState lid sentence
+               -> IO (ProofGUIState lid sentence)
 doDisplayGoals s@(ProofGUIState {theoryName = thName, selectedGoals = goals, goalMap = gMap}) = do
   createTextSaveDisplay ("Details on Selected Goals from Theory " ++ thName) (thName ++ "-goals.txt") goalsInfo
   return s
@@ -198,8 +200,8 @@ doDisplayGoals s@(ProofGUIState {theoryName = thName, selectedGoals = goals, goa
 {- |
   Called whenever the button "Show proof details" is clicked.
 -}
-doShowProofDetails :: ProofGUIState
-                   -> IO ProofGUIState
+doShowProofDetails :: ProofGUIState lid sentence
+                   -> IO (ProofGUIState lid sentence)
 doShowProofDetails s = return s
 -- TODO: convert all information except proofTree and tacticScript from 
 --       Proof_status for each goal to String, concatenate those and
@@ -209,9 +211,9 @@ doShowProofDetails s = return s
 {- |
   Called whenever a prover is selected from the "Pick Theorem Prover" ListBox.
 -}
-doSelectProverPath :: ProofGUIState
+doSelectProverPath :: ProofGUIState lid sentence
 		   -> ListBox String
-                   -> IO ProofGUIState
+                   -> IO (ProofGUIState lid sentence)
 doSelectProverPath s lb = 
     do selected <- (getSelection lb) :: IO (Maybe [Int]) 
        return (s {selectedProver = 
@@ -228,16 +230,31 @@ doSelectProverPath s lb =
 {- |
   Invokes the GUI.
 -}
-proofManagementGUI :: (ProofGUIState -> IO ProofGUIState) -- ^ called whenever the "Prove" button is clicked
-                   -> (ProofGUIState -> IO ProofGUIState) -- ^ called whenever the "More fine grained selection" button is clicked
-                   -> String -- ^ theory name
-                   -> DevGraph.G_theory -- ^ theory
-                   -> KnownProvers.KnownProversMap -- ^ map of known provers
-                   -> IO (Result.Result DevGraph.G_theory)
-proofManagementGUI proveF fineGrainedSelectionF thName th@(DevGraph.G_theory _ _ thSen) knownProvers = do
-
+proofManagementGUI ::
+    (Logic lid sublogics1
+               basic_spec1
+               sentence
+               symb_items1
+               symb_map_items1
+               sign1
+               morphism1
+               symbol1
+               raw_symbol1
+               proof_tree1) => 
+       lid 
+    -> (ProofGUIState lid sentence -> IO (ProofGUIState lid sentence)) 
+    -- ^ called whenever the "Prove" button is clicked
+    -> (ProofGUIState lid sentence -> IO (ProofGUIState lid sentence)) 
+    -- ^ called whenever the "More fine grained selection" button is clicked
+    -> String -- ^ theory name
+    -> DevGraph.G_theory -- ^ theory
+    -> KnownProvers.KnownProversMap -- ^ map of known provers
+    -> IO (Result.Result DevGraph.G_theory)
+proofManagementGUI lid proveF fineGrainedSelectionF 
+                   thName th@(DevGraph.G_theory _ _ thSen) knownProvers = 
+  do
   -- initial backing data structure
-  let initState = initialState thName th knownProvers
+  initState <- initialState lid thName th knownProvers
   stateRef <- newIORef initState
 
   -- main window
