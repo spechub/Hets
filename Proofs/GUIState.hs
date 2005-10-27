@@ -41,6 +41,8 @@ data ProofGUIState lid sentence =
         goalMap :: ThSens sentence (AnyComorphism,BasicProof),
 	-- | currently known provers
 	proversMap :: KnownProversMap,
+        -- | comorphisms fitting with sublogic of this G_theory
+        cormorphismsToProvers :: [AnyComorphism],
         -- | all goals in the theory
         allGoals :: [String],
         -- | currently selected goals
@@ -64,8 +66,9 @@ initialState ::
               -> String
              -> G_theory
 	     -> KnownProversMap
+             -> [AnyComorphism]
              -> m (ProofGUIState lid1 sentence1)
-initialState lid1 thN (G_theory lid2 sig thSens) pm = 
+initialState lid1 thN (G_theory lid2 sig thSens) pm cms = 
     do let (gMap,aMap) = Map.partition (isAxiom . OMap.ele) thSens
        gMap' <- coerceThSens lid2 lid1 "creating initial GUI State" gMap
        return $ 
@@ -74,6 +77,7 @@ initialState lid1 thN (G_theory lid2 sig thSens) pm =
                            logic_id = lid1,
                            goalMap = gMap',
 		           proversMap = pm,
+                           comorphismsToProvers = cms,
                            allGoals = OMap.keys gMap',
                            selectedGoals = [],
                            proverRunning = False,

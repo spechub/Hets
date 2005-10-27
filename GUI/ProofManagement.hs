@@ -249,12 +249,15 @@ proofManagementGUI ::
     -> String -- ^ theory name
     -> DevGraph.G_theory -- ^ theory
     -> KnownProvers.KnownProversMap -- ^ map of known provers
+    -> [AnyComorphism] -- ^ list of suitable comorphisms to provers 
+                       -- for sublogic of G_theory
     -> IO (Result.Result DevGraph.G_theory)
 proofManagementGUI lid proveF fineGrainedSelectionF 
-                   thName th@(DevGraph.G_theory _ _ thSen) knownProvers = 
+                   thName th@(DevGraph.G_theory _ _ thSen) 
+                   knownProvers comorphList = 
   do
   -- initial backing data structure
-  initState <- initialState lid thName th knownProvers
+  initState <- initialState lid thName th knownProvers comorphList
   stateRef <- newIORef initState
 
   -- main window
