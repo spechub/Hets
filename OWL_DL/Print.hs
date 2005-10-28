@@ -247,12 +247,28 @@ instance PrettyPrint DataRange where
         DID dtID -> printText0 ga dtID
         OneOfData dls ->
             (text "(forall ((x rdfs:Literal))") $+$
-              (nest 2 $ text "(iff (") <> (text "class") <+> (text "x)") $+$
+             (if allEqTypedLit dls then
+                 case head dls of
+                 TypedL (_, drType) ->
+                    (nest 2 $ text "(iff (") <> (printText0 ga drType) <+> 
+                    (text "x)") 
+                 _  -> error "false check datarange."
+                else empty) $+$ 
               (nest 3 $ text "(or (") <> 
               (foldListToDocH ga (form4 ga) emptyQN dls) <> (char ')') $+$
               (text "))")
         RLit rdfLit   -> (text "rdf_literal") <+> (text rdfLit)
-
+      where allEqTypedLit :: [DataLiteral] -> Bool
+            allEqTypedLit [] = False
+            allEqTypedLit (TypedL (_, ty):dls') = all check dls'
+                where check :: DataLiteral -> Bool
+                      check dl = case dl of
+                          TypedL (_, t) -> if t == ty then True 
+                                           else False
+                          _             -> False
+            allEqTypedLit _ = False
+               
+    
 instance PrettyPrint DataLiteral where
     printText0 ga dl =
         case dl of
@@ -284,11 +300,9 @@ instance PrettyPrint Fact where
                                <+> (printText0 ga y) <> (char ')'))
                            iid1 (iid2:iids)
         DifferentIndividuals iid1 iid2 iids -> 
-            (text "(forall ((x owl:Thing)) (iff") $+$
-              (nest 4 $ text "(") <> (text "class") <+> (text "x)") $+$
-              (nest 3 $ text "(or (") <> 
+            (text "(forall ((x owl:Thing))") $+$
+              (nest 2 $ text "(or (") <> 
               (foldListToDocH ga (form2 ga) emptyQN (iid1:iid2:iids)) <> 
-              (char ')') $+$
               (text "))") $+$
               (text "[ALLDIFFERENT") <+> 
               (foldListToDocH ga (form3 ga) emptyQN (iid1:iid2:iids)) <> 
@@ -300,8 +314,9 @@ instance PrettyPrint Individual where
         case iid of
         Just _ ->
             printIndividual iid values
-        _ -> brackets ((printIndividual (Just (QN "" "_:x" "" )) values) $+$
-               (nest 2 $ printAnonymIndividual types))
+        _ -> brackets ((printIndividual (Just (QN "" "_:x" "" )) 
+                        values) $+$
+                       (nest 2 $ printAnonymIndividual types))
              
      where printIndividual :: (Maybe IndividualID) -> [Value] -> Doc
            printIndividual _ [] = empty
@@ -313,7 +328,7 @@ instance PrettyPrint Individual where
                    (printIndividual iid' tv)
                ValueIndiv pid indiv ->
                    (char '(') <> (printText0 ga pid) <+> (printText0 ga iid')
-                   <+> (printText0 ga indiv) <> (char ')') $+$
+                   $+$ (nest 2 $ printText0 ga indiv) <> (char ')') $+$
                    (printIndividual iid' tv)
                ValueDL pid dl ->
                    (char '(') <> (printText0 ga pid) <+> (printText0 ga iid')
