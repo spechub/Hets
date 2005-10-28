@@ -394,18 +394,18 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
        case maybeIID of
         Prelude.Nothing ->          -- Error (Warnung): Individual without name
 {-
-            let namedSent = NamedSen { senName = "Individual",  
+            let namedSent = NamedSen { senName = "anonymous Individual",  
                                        isAxiom = False, 
                                        isDef = True,
                                        sentence = OWLFact ind
                                      }
                 diag = [Diag Warning "Individual without name" nullRange]
-            in  concatResult (Result diag 
+            in  concatResult (Result (trace (show $ senName namedSent) diag) 
                               (Just (Ontology mID (direc ++ [directiv]) ns, 
                                      inSign, [namedSent])))
-                (anaDirective ga inSign onto rest)
+                    (anaDirective ga inSign onto rest)
 -}
-            -- ignore all anonymous individuals -> can also be handled in java
+            -- ignore all anonymous individuals 
             anaDirective ga inSign onto rest
         Just iid -> 
             let oriInd = individuals inSign
@@ -416,14 +416,17 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
                                 axioms = Set.union membershipSet ax
                                }
                     namedSent = if not $ null values then
-                                   [NamedSen { senName = "Individual",  
+                                   [NamedSen { senName = "Individual_" ++ 
+                                                         (printQN iid),  
                                                isAxiom = True, 
                                                isDef = True,
                                                sentence = OWLFact ind
                                              }]
-                                   else []
+                                  else []
                 in  concatResult 
-                         (Result diagL (Just (onto, accSign, namedSent)))
+                         (Result diagL 
+                          (Just (Ontology mID (direc ++ [directiv]) ns, 
+                                 accSign, namedSent)))
                          (anaDirective ga accSign onto rest) 
  
           where                                   
@@ -450,7 +453,7 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
                                       ++ "_SameIndividual_"
                                       ++ (if null iids then (printQN iid2) 
                                              else ""),        
-                                   isAxiom = False,
+                                   isAxiom = True,
                                    isDef = True,
                                    sentence = OWLFact si
                                  }
@@ -462,7 +465,7 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
                                      ++ "_DifferentIndividuals_"
                                      ++ (if null iids then (printQN iid2) 
                                             else ""), 
-                                   isAxiom = False,
+                                   isAxiom = True,
                                    isDef = True,
                                    sentence = OWLFact di
                                  }
