@@ -21,6 +21,7 @@ module Common.OrderedMap ( OMap
                          , insert,insertWith,insertWithKey
                          , map, mapWithKey
                          , delete,(\\),difference
+                         , update, updateWithKey
                          , filter, filterWithKey
                          , partition, partitionWithKey
                          , fromList, toList
@@ -70,13 +71,30 @@ delete :: Ord k => k -> OMap k a -> OMap k a
 delete k m = 
     if Map.size dm == Map.size m 
        then dm
-       else Map.map (updateOrder (order $ fromJust $ Map.lookup k m)) dm
+       else updateOrder (order $ fromJust $ Map.lookup k m) dm
     where dm = Map.delete k m
-          updateOrder dOrder e 
+
+updateOrder :: Ord k => 
+               Int -- ^ order of removed element
+            -> OMap k a -> OMap k a
+updateOrder dOrder = Map.map updateOrd
+    where updateOrd e 
               | order e < dOrder = e
               | order e == dOrder = error "Something strange happened" 
               | order e > dOrder = e { order = order e - 1}
               | otherwise = error "Never happens"
+
+update :: Ord k => (a -> Maybe a) -> k -> OMap k a -> OMap k a
+update f k m = updateWithKey (\ _k x -> f x) k m
+
+updateWithKey :: Ord k => (k -> a -> Maybe a) -> k -> OMap k a -> OMap k a
+updateWithKey f k m1 = 
+    let m2 = Map.updateWithKey (\ k1 e -> case f k1 (ele e) of
+                                         Nothing -> Nothing
+                                         Just x -> Just (e {ele = x})) k m1
+    in if Map.size m2 == Map.size m1 
+       then m2
+       else updateOrder (order $ fromJust $ Map.lookup k m1) m2
 
 filter :: Ord k => (a -> Bool) -> OMap k a -> OMap k a
 filter p = filterWithKey (\ _k x -> p x) 
@@ -99,8 +117,8 @@ partition p = partitionWithKey (\ _k a -> p a)
 partitionWithKey :: Ord k => (k -> a -> Bool) -> OMap k a 
                  -> (OMap k a,OMap k a)
 partitionWithKey p m = case Map.partitionWithKey (\ k x -> p k (ele x)) m of
-                       (x,y) -> (updateOrder x,updateOrder y)
-    where updateOrder = fromList . toList
+                       (x,y) -> (updOrder x,updOrder y)
+    where updOrder = fromList . toList
 
 fromList :: Ord k => [(k,a)] -> OMap k a
 fromList = List.foldl ins Map.empty
