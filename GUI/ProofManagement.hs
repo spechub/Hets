@@ -25,9 +25,11 @@ import Logic.Prover
 
 import qualified Common.AS_Annotation as AS_Anno
 import Common.PrettyPrint
+import qualified Common.Lib.Pretty as Pretty
+import Common.PPUtils
 import Common.ProofUtils
 import qualified Common.Result as Result
-
+import Common.GlobalAnnotations
 import Data.List
 import Data.Maybe
 import Data.IORef
@@ -40,6 +42,7 @@ import DialogWin
 import TextDisplay
 import Separator
 import Space
+import XSelection
 
 import GUI.HTkUtils
 
@@ -143,6 +146,13 @@ updateDisplay st updateLb goalsLb pathsLb statusLabel = do
     -- update goals listbox
     when updateLb
          (populateGoalsListBox goalsLb (goalsView st))
+    -- set selected Prover
+    let ind = if (isJust $ selectedProver st) 
+              then findIndex (==(fromJust $ selectedProver st)) 
+                       $ Map.keys (proversMap st)
+              else Nothing
+    when (isJust ind)
+         (selection (fromJust ind) pathsLb >> return ())
     -- update status label
     let (color, label) = toGuiStatus st
     statusLabel # text label
@@ -162,9 +172,7 @@ doSelectAllGoals s@(ProofGUIState {theory = DevGraph.G_theory _ _ thSen}) lb =
   mapM_ (\n -> selection n lb) (map snd (zip goals ([0..]::[Int])))
   return s'
   where
-    goals = map AS_Anno.senName nGoals
-    (_, nGoals) = partition AS_Anno.isAxiom
-                      (toNamedList thSen)
+    goals = OMap.keys (goalMap s)
 
 {- |
   Called whenever a goal is selected from the goals 'ListBox'
@@ -172,59 +180,94 @@ doSelectAllGoals s@(ProofGUIState {theory = DevGraph.G_theory _ _ thSen}) lb =
 doSelectGoal :: ProofGUIState lid sentence
              -> ListBox String
 	     -> IO (ProofGUIState lid sentence)
-doSelectGoal s@(ProofGUIState { theory = DevGraph.G_theory _ _ thSen}) lb = do
+doSelectGoal s lb = do
   sel <- (getSelection lb) :: IO (Maybe [Int])
   -- FIXME: this will probably blow up if the number of goals isn't constant
   let selGoals = maybe ([]) (map (goals!!)) sel
-  let s' = s{selectedGoals = selGoals}
+      s' = s{selectedGoals = selGoals}
   return s'
-  where
-    goals = map AS_Anno.senName nGoals
-    (_, nGoals) = partition AS_Anno.isAxiom
-                      (toNamedList thSen)
+  where goals = OMap.keys (goalMap s)
 
 {- |
   Called whenever the button "Display" is clicked.
 -}
 doDisplayGoals ::
     (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1) => 
-                  lid1
-	       -> ProofGUIState lid1 sentence1
-               -> IO (ProofGUIState lid1 sentence1)
-doDisplayGoals lid1 s@(ProofGUIState {theoryName = thName, selectedGoals = goals, theory=DevGraph.G_theory lid2 sig thSens}) = do
-  let (gMap,_) = Map.partition (isAxiom . OMap.ele) thSens
-  gMap' <- DevGraph.coerceThSens lid2 lid1 "creating initial GUI State" gMap
-  createTextSaveDisplay ("Details on Selected Goals from Theory " ++ thName) (thName ++ "-goals.txt") (goalsInfo gMap')
-  return s
-  where
-    goalsInfo gm = concatMap (\ g -> g ++ ":\n\n" ++ (oneGoal gm g) ++ "\n\n") goals
-    oneGoal gm g = unlines (map ("    "++) (lines (showPretty (Logic.Prover.value (fromJust (OMap.lookup g gm))) "")))
--- TODO: convert selected goals to String using showPretty, concatenate those
---       (plus some headers maybe), and pass the resulting String to
---       createTextSaveDisplay
+            sign1 morphism1 symbol1 raw_symbol1 proof_tree1) =>
+       ProofGUIState lid1 sentence1
+    -> IO () 
+doDisplayGoals s@(ProofGUIState { theoryName = thName
+                                , theory=DevGraph.G_theory lid1 sig1 _}) = 
+    do sens' <- DevGraph.coerceThSens (logicId s) lid1 "" sens
+       createTextSaveDisplay ("Selected Goals from Theory " ++ thName) 
+                          (thName ++ "-goals.txt") (goalsText sens')
+    where goalsText s' = show $ 
+                      vsep (map (print_named lid1 emptyGlobalAnnos 
+                                 . AS_Anno.mapNamed (simplify_sen lid1 sig1)) 
+                                           $ toNamedList s')
+          sens = selectedGoalMap s
 
 {- |
   Called whenever the button "Show proof details" is clicked.
 -}
-doShowProofDetails :: ProofGUIState lid sentence
-                   -> IO (ProofGUIState lid sentence)
-doShowProofDetails s = return s
---doShowProofDetails s@(ProofGUIState {theoryName = thName, selectedGoals = goals, goalMap = gMap}) = do
---  createTextSaveDisplay ("Proof Details on Selected Goals from Theory " ++ thName) (thName ++ "-proof-details.txt") proofsInfo
---  return s
---  where
---    proofsInfo = concatMap (\ g -> g ++ ":\n\n" ++ (oneProof g) ++ "\n\n") goals
---    oneProof g = unlines (map ("    "++) (lines (showP $ pstatus g))) 
---    showP p = case p of
---      Proved {goalName=n, usedAxioms=axs, proverName=pName} -> "goalName: " ++ n ++ "\nusedAxioms: " ++ (show axs) ++ "\nproverName: " ++ pName
---      Consistent _ -> "Consistent"
---      _ -> show p
---    pstatus g = maximum $ map snd $ thmStatus (fromJust (OMap.lookup g gMap))
--- TODO: convert all information except proofTree and tacticScript from 
---       Proof_status for each goal to String, concatenate those and
---       the label of each goal as a header, and pass the resulting
---       String to createTextSaveDisplay
+doShowProofDetails :: 
+    (Logic lid
+           sublogics1
+           basic_spec1
+           sentence
+           symb_items1
+           symb_map_items1
+           sign1
+           morphism1
+           symbol1
+           raw_symbol1
+           proof_tree1,
+     Eq proof_tree1) => 
+       ProofGUIState lid sentence
+    -> IO ()
+doShowProofDetails s@(ProofGUIState { theoryName = thName
+                                , theory=DevGraph.G_theory lid1 sig1 _}) = 
+     return ()
+{-    do -- sens' <- DevGraph.coerceThSens (logicId s) lid1 "" sens
+       createTextSaveDisplay ("Proof Details of Selected Goals from Theory " ++ thName) 
+                          (thName ++ "-proof-details.txt") (detailsText sens)
+    where detailsText s' = show $ 
+                      vsep (map (\ (l,st) -> Pretty.text l Pretty.$$ 
+                                            Pretty.nest 5 (printSenStat st)) $ 
+                            OMap.toList s')
+          printSenStat :: Eq proof_tree => 
+                          (SenStatus sentence 
+                           (AnyComorphism, Proof_status proof_tree)) 
+                       -> Pretty.Doc
+          printSenStat st =
+              let tStatus = thmStatus st
+                  pstat = maximumBy (\ (_,x1) (_,x2) -> compare x1 x2) 
+                                    tStatus
+                  (stat,details) = 
+                      if null tStatus 
+                         then (Pretty.text "Open",[])
+                         else getStat pstat 
+                  getStat :: (AnyComorphism,Proof_status pt) 
+                          -> (Pretty.Doc,[Pretty.Doc])
+                  getStat (c,ps) = case ps of
+                               Open _ -> (Pretty.text "Open",[])
+                               Disproved _ -> (Pretty.text "Disproved",[])
+                               Proved _ uaxs pr _ _ -> 
+                                   (Pretty.text "Proved",
+                                    [Pretty.text "Used axioms:" Pretty.<+> 
+                                     Pretty.fsep (Pretty.punctuate 
+                                                       Pretty.comma
+                                                       (map (Pretty.text 
+                                                             . show) 
+                                                            uaxs))
+                                    ,Pretty.text "Prover:" Pretty.<+> 
+                                     Pretty.text pr
+                                    ,Pretty.text "Used comorphism:" Pretty.<+> 
+                                     Pretty.text (show c)
+                                    ])
+              in Pretty.vcat ((Pretty.text "Status:" Pretty.<+> stat):details)
+          sens = selectedGoalMap s
+-}
 
 {- |
   Called whenever a prover is selected from the "Pick Theorem Prover" ListBox.
@@ -276,6 +319,7 @@ proofManagementGUI lid proveF fineGrainedSelectionF
                    thName th@(DevGraph.G_theory _ _ thSen) 
                    knownProvers comorphList = 
   do
+  -- KnownProvers.showKnownProvers knownProvers
   -- initial backing data structure
   initState <- initialState lid thName th knownProvers comorphList
   stateRef <- newIORef initState
@@ -305,8 +349,9 @@ proofManagementGUI lid proveF fineGrainedSelectionF
   lbFrame <- newFrame b3 []
   pack lbFrame [Expand On, Fill Both]
 
-  lb <- newListBox lbFrame [bg "white",
-                            selectMode Multiple, height 15] :: IO (ListBox String)
+  lb <- newListBox lbFrame [bg "white",exportSelection False,
+                            selectMode Multiple, 
+                            height 15] :: IO (ListBox String)
   populateGoalsListBox lb (goalsView initState)
   pack lb [Expand On, Side AtLeft, Fill Both]
   sb <- newScrollBar lbFrame []
@@ -374,7 +419,8 @@ proofManagementGUI lid proveF fineGrainedSelectionF
   pathsFrame <- newFrame rhb3 []
   pack pathsFrame []
   pathsLb <- newListBox pathsFrame [HTk.value $ ([]::[String]), bg "white",
-                                    selectMode Single, height 4, width 28] :: IO (ListBox String)
+                                    selectMode Single, exportSelection False,
+                                    height 4, width 28] :: IO (ListBox String)
   populatePathsListBox pathsLb knownProvers
   pack pathsLb [Expand On, Side AtLeft, Fill Both]
   pathsSb <- newScrollBar pathsFrame []
@@ -399,6 +445,8 @@ proofManagementGUI lid proveF fineGrainedSelectionF
   
   closeButton <- newButton bottom [text "Close"]
   pack closeButton [Expand Off, Fill None, Side AtRight]
+
+  updateDisplay initState False lb pathsLb statusLabel
 
   -- events
   (selectGoal, _) <- bindSimple lb (ButtonPress (Just 1))
@@ -425,8 +473,7 @@ proofManagementGUI lid proveF fineGrainedSelectionF
             done)
       +> (displayGoals >>> do
             s <- readIORef stateRef
-	    s' <- doDisplayGoals lid s
-	    writeIORef stateRef s'
+	    doDisplayGoals s
             done)
       +> (selectProverPath>>> do
             s <- readIORef stateRef
@@ -459,8 +506,7 @@ proofManagementGUI lid proveF fineGrainedSelectionF
             done)
       +> (showProofDetails >>> do
             s <- readIORef stateRef
-	    s' <- doShowProofDetails s
-	    writeIORef stateRef s'
+	    doShowProofDetails s
             done)
       ))
   sync (close >>> destroy main)
