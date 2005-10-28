@@ -220,7 +220,7 @@ data State = State { -- | currently selected goal or Nothing
                      -- | stores the results retrieved by running SPASS for each goal
                      resultsMap :: SPASSResultsMap,
                      -- | stores a mapping to SPASS compliant identifiers for all goals
-                     goalNamesMap :: SPASSGoalNameMap,
+                     namesMap :: SPASSGoalNameMap,
                      -- | list of all goals
                      goalsList :: [AS_Anno.Named SPTerm]
                    }
@@ -235,7 +235,7 @@ initialState th gm gs =
            theory = th,
            configsMap = Map.fromList (map (\ g -> (AS_Anno.senName g, emptyConfig) ) gs),
            resultsMap = emptyResultsMap,
-           goalNamesMap = gm,
+           namesMap = gm,
            goalsList = gs}
 
 {- |
@@ -436,16 +436,16 @@ batchDlg :: String -- ^ theory name
          -> IO SPASS.Prove.State -- ^ initial global state for the main window
 batchDlg thName th = do
   let initState = initialState th 
-                  (collectNameMapping goals (filter AS_Anno.isAxiom nSens)) goals
+                  (collectNameMapping nSens oSens') goals
   if (not $ null goals)
     then runBatchDlg initState
     else return initState
 
   where
-    Theory _ nSens' = th
-    nSens = toNamedList nSens'
-    (_, goals) = partition AS_Anno.isAxiom 
-                     (prepareSenNames transSenName nSens)
+    Theory _ oSens = th
+    oSens' = toNamedList oSens
+    nSens = prepareSenNames transSenName oSens'
+    (_, goals) = partition AS_Anno.isAxiom nSens
     runBatchDlg s = do
       stateRef <- newIORef s
       tLimit <- getBatchTimeLimit
@@ -685,7 +685,16 @@ spassProveGUI thName th = do
       ))
   sync (exit >>> destroy main)
   s <- readIORef stateRef
-  let proof_stats = map (\g -> let res = Map.lookup g (resultsMap s) in if isJust res then fst $ fromJust res else Open g) (map AS_Anno.senName goals)
+  let proof_stats = map (\g -> let res = Map.lookup g (resultsMap s) 
+                                   g' = Map.findWithDefault 
+                                        (error ("Lookup of name failed: "++
+                                                "should not happen"))
+                                        g (namesMap s)
+                                   pStat = fst $ fromJust res
+                               in if isJust res 
+                                  then transNames (namesMap s) pStat
+                                  else Open g') 
+                    (map AS_Anno.senName goals)
   return proof_stats
   where
     noGoalSelected = createErrorWin "Please select a goal first." []
@@ -701,7 +710,17 @@ spassProveGUI thName th = do
                              shows r . (++) ",\n     \"" .
                              (++) (unlines outp) . (++) "\")\n" . resF) id 
                     (Map.toList mp)) "}" 
-
+    transNames nm pStat = case pStat of
+                          Open x -> Open $ trN x
+                          Disproved x -> Disproved $ trN x
+                          st@(Proved n uas _ _ _) ->     
+                              st { goalName = trN n
+                                 , usedAxioms = map trN uas}
+                          _ -> error "No consitency yet"
+        where trN x' = Map.findWithDefault 
+                        (error ("Lookup of name failed: "++
+                                "should not happen"))
+                        x' nm
 -- * Non-interactive Batch Prover
 
 -- ** Constants
