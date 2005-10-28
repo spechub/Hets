@@ -15,7 +15,9 @@ comorphisms.
 -}
 
 module Comorphisms.KnownProvers (KnownProversMap,
-                                 knownProvers,shrinkKnownProvers) where
+                                 knownProvers,
+                                 shrinkKnownProvers,
+                                 showKnownProvers) where
 
 import Data.Maybe 
 import Control.Monad
@@ -82,20 +84,26 @@ isaComorphisms = do
 
 spassComorphisms :: Result [AnyComorphism]
 spassComorphisms = 
-    do let max_sub_SPASS = top {sub_features = LocFilSub}
+    do let max_sub_SPASS = top { sub_features = LocFilSub
+                               , cons_features = 
+                                   (cons_features top) {onlyInjConstrs=False} }
            idCASL =  Comorphism (IdComorphism CASL max_sub_SPASS)
        partOut <- (compComorphism idCASL (Comorphism CASL2SubCFOL) 
                    >>= (\x -> compComorphism x (Comorphism CASL2SPASS)))
        -- mod2SPASS <- compComorphism (Comorphism Modal2CASL) partOut
        return [Comorphism CASL2SPASS,partOut]
 
-showKnownProvers :: IO ()
-showKnownProvers = 
+showAllKnownProvers :: IO ()
+showAllKnownProvers = 
     do let Result ds mkpMap = knownProvers
        putStrLn "Diagnosises:"
        putStrLn $ unlines $ map show ds
-       putStrLn "-----------\nKnownProvers:"
-       when (isJust mkpMap) 
-            (putStrLn $ unlines $ map form $ Map.toList $ fromJust mkpMap)
+       maybe (return ()) showKnownProvers mkpMap
+
+showKnownProvers :: KnownProversMap -> IO ()
+showKnownProvers km =
+    do putStrLn "-----------\nKnownProvers:"
+       putStrLn $ unlines $ map form $ Map.toList $ km
     where form (name,cl) =
               name ++ concatMap (\c -> "\n       "++show c) cl
+
