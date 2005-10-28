@@ -57,12 +57,7 @@ knownProvers =
                              ("SPASS", spassCs)])
 
 shrinkKnownProvers :: G_sublogics -> KnownProversMap -> KnownProversMap
-shrinkKnownProvers (G_sublogics lid1 sub1) = Map.map shrinkList
-    where shrinkList = filter 
-                 (\ (Comorphism cid)-> 
-                      let lid2 = sourceLogic cid
-                      in language_name lid2 == language_name lid1 
-                         && coerceSublogic lid1 lid2 sub1 <= sourceSublogic cid)
+shrinkKnownProvers sub = Map.map (filter (lessSublogicComor sub))
 
 isaComorphisms :: Result [AnyComorphism]
 isaComorphisms = do
