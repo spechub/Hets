@@ -74,7 +74,7 @@ initialState ::
              -> [(G_prover,AnyComorphism)]
              -> m (ProofGUIState lid1 sentence1)
 initialState lid1 thN th@(G_theory lid2 sig thSens) pm cms = 
-    do let (gMap,aMap) = Map.partition (isAxiom . OMap.ele) thSens
+    do let (aMap,gMap) = Map.partition (isAxiom . OMap.ele) thSens
        gMap' <- coerceThSens lid2 lid1 "creating initial GUI State" gMap
        return $ 
            ProofGUIState { theoryName = thN,
@@ -94,3 +94,7 @@ initialState lid1 thN th@(G_theory lid2 sig thSens) pm cms =
                                             else Just (last $ Map.keys pm)
                          }
       
+selectedGoalMap :: ProofGUIState lid sentence 
+              -> ThSens sentence (AnyComorphism,BasicProof)
+selectedGoalMap st = Map.filterWithKey selected (goalMap st)
+    where selected k _ = k `elem` (selectedGoals st)

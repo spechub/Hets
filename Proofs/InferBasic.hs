@@ -44,8 +44,12 @@ import Logic.Prover
 import Logic.Grothendieck
 import Logic.Comorphism
 import Logic.Coerce
+
+import Comorphisms.KnownProvers
+
 import Static.DevGraph
 import Static.DGToSpec
+
 import Common.Result
 import Common.PrettyPrint
 import Common.Utils
@@ -55,12 +59,18 @@ import qualified Common.OrderedMap as OMap
 import Common.Id
 import Syntax.AS_Library
 import Syntax.Print_AS_Library()
+
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
 import Proofs.Global
 import Proofs.Local
 import Proofs.HideTheoremShift
+import Proofs.GUIState
+
 import GUI.Utils
+import GUI.ProofManagement
+
+import Data.List
 
 {- todo: implement apply for GlobDecomp and Subsumption 
    the list of DGChage must be constructed in parallel to the
@@ -209,9 +219,10 @@ basicInferenceNode checkCons lg (ln, node)
         let nodeName = dgn_name $ lab' ctx 
             thName = showPretty (getLIB_ID ln) "_"
                      ++ {-maybe (show node)-} showName nodeName
+            thForProof = G_theory lid1 sign axs
+            sublogic = sublogicOfTh thForProof
         -- select a suitable translation and prover
-        let cms = findComorphismPaths lg $ sublogicOfTh $ 
-                     G_theory lid1 sign axs 
+            cms = findComorphismPaths lg sublogic 
         if checkCons then do 
             (G_cons_checker lid4 cc, Comorphism cid) <- 
                  selectProver $ getConsCheckers cms
@@ -232,6 +243,18 @@ basicInferenceNode checkCons lg (ln, node)
                   = mkResultProofStatus proofStatus dGraph nextHistoryElem
             return newProofStatus
           else do -- proving
+
+            -- get known Provers
+            kpMap <- resToIORes $ knownProvers
+            let kpMap' = shrinkKnownProvers sublogic kpMap
+            newTh@(G_theory lidPr _ thSensPr) <- IOResult $
+                   proofManagementGUI lid1 proveKnownPMap 
+                                           proveFineGrainedSelect
+                                           thName
+                                           thForProof
+                                           kpMap'
+                                           (getProvers cms)
+            {-                                           
             (G_prover lid4 p, Comorphism cid) <- selectProver $ getProvers cms
             -- remove proved theorems from set of axioms
             let ax_list = toNamedList 
@@ -244,38 +267,114 @@ basicInferenceNode checkCons lg (ln, node)
             -- call the prover
             p' <- coerceProver lid4 lidT "" p
             ps <- ioToIORes (proveTheory lidT p' thName (Theory sign'' (toThSens sens'')))
+            -}
             -- update the development graph
             -- todo: throw out the stuff about edges
             -- instead, mark proven things as proven in the node
-            let newThms = filter isProvedStat ps
-                (nextDGraph, nextHistoryElem) = 
-                 if null newThms then (dGraph, ([], []))
-                 else let 
-                     oldNode@(_,oldContents) = labNode' (safeContext 
-                        "Proofs.InferBasic.basicInferenceNode"  dGraph node)
-                     newTh = case (dgn_theory oldContents) of
-                             G_theory lid sig sens ->
-                               G_theory lid sig (markProved (Comorphism cid) 
-                                                            lidT newThms sens)
-                     n = getNewNode dGraph
-                     newNode = (n, oldContents{dgn_theory = newTh})
-                     (newGraph,changes) =
-                             adoptEdges (insNode newNode $ dGraph) node n
-                     newGraph' = delNode node $ newGraph
-                     newChanges = InsertNode newNode : changes ++ 
+            -- TODO: Reimplement stuff
+            let (nextDGraph, nextHistoryElem) =
+                    (dGraph,([],[]))
+{-               let  
+                oldNode@(_,oldContents) = 
+                    labNode' (safeContext 
+                              "Proofs.InferBasic.basicInferenceNode"  
+                              dGraph node)
+                n = getNewNode dGraph
+                newNode = (n, oldContents{dgn_theory = newTh})
+                (newGraph,changes) =
+                    adoptEdges (insNode newNode $ dGraph) node n
+                newGraph' = delNode node $ newGraph
+                newChanges = InsertNode newNode : changes ++ 
                                         [DeleteNode oldNode]
-                     rules = map (\s -> BasicInference (Comorphism cid) 
-                                            (BasicProof lidT s)) 
-                                 ps
-                     in (newGraph',(rules,newChanges))
-            return $ mkResultProofStatus proofStatus nextDGraph nextHistoryElem
+                rules = map (\s -> BasicInference (Comorphism cid) 
+                                                  (BasicProof lidT s)) 
+                        []  -- [Proof_status] not longer available
+               in (newGraph',(rules,newChanges)) -}
+            return $ 
+               mkResultProofStatus proofStatus nextDGraph nextHistoryElem
+
+proveKnownPMap :: (Logic lid sublogics1
+               basic_spec1
+               sentence
+               symb_items1
+               symb_map_items1
+               sign1
+               morphism1
+               symbol1
+               raw_symbol1
+               proof_tree1) => 
+       ProofGUIState lid sentence -> IO (Result (ProofGUIState lid sentence))
+proveKnownPMap st =
+    let mpr = do pr_s <- selectedProver st
+                 ps <- Map.lookup pr_s (proversMap st)
+                 find (lessSublogicComor (sublogicOfTheory st)) ps
+    in case mpr of
+       Nothing -> proveFineGrainedSelect st
+       Just pr -> callProver st (head $ getProvers [pr])
+
+callProver :: (Logic lid sublogics1
+               basic_spec1
+               sentence
+               symb_items1
+               symb_map_items1
+               sign1
+               morphism1
+               symbol1
+               raw_symbol1
+               proof_tree1) => 
+       ProofGUIState lid sentence 
+    -> (G_prover,AnyComorphism) -> IO (Result (ProofGUIState lid sentence))
+callProver st (G_prover lid4 p, Comorphism cid) =
+    case theory st of
+    G_theory lid1 sign sens ->
+        ioresToIO $ do 
+        let sel_goals =
+                   -- remove proved theorems from map of goals
+                   (Map.filter (\x -> not (isProvenSenStatus $ OMap.ele x)) 
+                   (selectedGoalMap st))
+            lidT = targetLogic cid
+        sel_goals' <- primCoerce (logicId st) lid1 "" sel_goals
+        bTh' <- coerceBasicTheory lid1 (sourceLogic cid) "" 
+                   (sign, toNamedList $ Map.union sens sel_goals')
+        (sign'',sens'') <- resToIORes $ map_theory cid bTh' 
+        -- call the prover
+        p' <- coerceProver lid4 lidT "" p
+        ps <- ioToIORes (proveTheory lidT p' (theoryName st) 
+                           (Theory sign'' (toThSens sens'')))
+        -- ioToIORes $ putStrLn $ show ps
+        return $ st { goalMap = 
+                          markProved (Comorphism cid) lidT 
+                                     (filter isProvedStat ps) 
+                                     (goalMap st) 
+                    }
+
+proveFineGrainedSelect :: 
+    (Logic lid sublogics1
+               basic_spec1
+               sentence
+               symb_items1
+               symb_map_items1
+               sign1
+               morphism1
+               symbol1
+               raw_symbol1
+               proof_tree1) => 
+       ProofGUIState lid sentence -> IO (Result (ProofGUIState lid sentence))
+proveFineGrainedSelect st = 
+    ioresToIO $ do 
+       pr <- selectProver $ comorphismsToProvers st
+       IOResult $ callProver st pr
 
 -- | mark all newly proven goals with their proof tree
 markProved :: (Ord a, Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
          sign morphism symbol raw_symbol proof_tree) => 
      AnyComorphism -> lid -> [Proof_status proof_tree] -> ThSens a (AnyComorphism,BasicProof) -> ThSens a (AnyComorphism,BasicProof)
-markProved c lid status = 
+markProved c lid status thSens = foldl upd thSens status
+    where upd m pStat = OMap.update (updStat pStat) (goalName pStat) m
+          updStat ps s = Just $ 
+                s { thmStatus = (c, BasicProof lid ps) : thmStatus s}
+{-
  OMap.mapWithKey $ \ name senStat -> 
   let findProof [] = senStat
       findProof (s:rest) =
@@ -283,4 +382,4 @@ markProved c lid status =
         then senStat { thmStatus = (c, BasicProof lid s) : thmStatus senStat }
         else findProof rest
    in findProof status
-
+-}
