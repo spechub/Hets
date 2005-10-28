@@ -15,6 +15,8 @@ works for SPASS.
 
 {- ToDo:
 
+  - grey out GUI while waiting for Prover
+  - remove warnings
 -}
 
 module GUI.ProofManagement where
@@ -28,6 +30,7 @@ import Common.PrettyPrint
 import qualified Common.Lib.Pretty as Pretty
 import Common.PPUtils
 import Common.ProofUtils
+import Common.Utils
 import qualified Common.Result as Result
 import Common.GlobalAnnotations
 import Data.List
@@ -221,53 +224,47 @@ doShowProofDetails ::
            morphism1
            symbol1
            raw_symbol1
-           proof_tree1,
-     Eq proof_tree1) => 
+           proof_tree1) => 
        ProofGUIState lid sentence
     -> IO ()
 doShowProofDetails s@(ProofGUIState { theoryName = thName
                                 , theory=DevGraph.G_theory lid1 sig1 _}) = 
-     return ()
-{-    do -- sens' <- DevGraph.coerceThSens (logicId s) lid1 "" sens
-       createTextSaveDisplay ("Proof Details of Selected Goals from Theory " ++ thName) 
-                          (thName ++ "-proof-details.txt") (detailsText sens)
-    where detailsText s' = show $ 
+     createTextSaveDisplay ("Proof Details of Selected Goals from Theory " 
+                            ++ thName) 
+                           (thName ++ "-proof-details.txt") (detailsText sens)
+    where sens = selectedGoalMap s
+          detailsText s' = show $ 
                       vsep (map (\ (l,st) -> Pretty.text l Pretty.$$ 
-                                            Pretty.nest 5 (printSenStat st)) $ 
+                                            Pretty.nest 4 (printSenStat st)) $ 
                             OMap.toList s')
-          printSenStat :: Eq proof_tree => 
-                          (SenStatus sentence 
-                           (AnyComorphism, Proof_status proof_tree)) 
-                       -> Pretty.Doc
-          printSenStat st =
-              let tStatus = thmStatus st
-                  pstat = maximumBy (\ (_,x1) (_,x2) -> compare x1 x2) 
-                                    tStatus
-                  (stat,details) = 
-                      if null tStatus 
-                         then (Pretty.text "Open",[])
-                         else getStat pstat 
-                  getStat :: (AnyComorphism,Proof_status pt) 
-                          -> (Pretty.Doc,[Pretty.Doc])
-                  getStat (c,ps) = case ps of
-                               Open _ -> (Pretty.text "Open",[])
-                               Disproved _ -> (Pretty.text "Disproved",[])
-                               Proved _ uaxs pr _ _ -> 
-                                   (Pretty.text "Proved",
-                                    [Pretty.text "Used axioms:" Pretty.<+> 
-                                     Pretty.fsep (Pretty.punctuate 
-                                                       Pretty.comma
-                                                       (map (Pretty.text 
-                                                             . show) 
-                                                            uaxs))
-                                    ,Pretty.text "Prover:" Pretty.<+> 
-                                     Pretty.text pr
-                                    ,Pretty.text "Used comorphism:" Pretty.<+> 
-                                     Pretty.text (show c)
-                                    ])
-              in Pretty.vcat ((Pretty.text "Status:" Pretty.<+> stat):details)
-          sens = selectedGoalMap s
--}
+          printSenStat st = 
+              if null $ thmStatus st
+                 then stat "Open"
+                 else Pretty.vcat $ 
+                      map printCmWStat $ 
+                      sortBy (comparing snd) $ thmStatus st
+          stat s = Pretty.text "Status:" Pretty.<+> Pretty.text s
+          printCmWStat (c,bp) =
+              Pretty.text "Com:" Pretty.<+> Pretty.text (show c) Pretty.$$
+              Pretty.nest 4 (printBP bp)
+          printBP bp = case bp of
+                       DevGraph.BasicProof _ ps -> 
+                           case ps of
+                           Open _ -> stat "Open"
+                           Disproved _ -> stat "Disproved"
+                           Proved _ uaxs pr _ _ -> 
+                               stat "Proved" 
+                               Pretty.$$ Pretty.text "Used axioms:" Pretty.<+> 
+                               Pretty.fsep (Pretty.punctuate 
+                                                  Pretty.comma
+                                                  (map (Pretty.text 
+                                                        . show) 
+                                                       uaxs)) 
+                               Pretty.$$ Pretty.text "Prover:" Pretty.<+> 
+                               Pretty.text pr
+
+                       x -> stat (show x)
+
 
 {- |
   Called whenever a prover is selected from the "Pick Theorem Prover" ListBox.
@@ -513,7 +510,14 @@ proofManagementGUI lid proveF fineGrainedSelectionF
 
   -- read the global state back in
   s <- readIORef stateRef
-
+  case theory s of
+   DevGraph.G_theory lidT sigT sensT -> 
+    do gMap <- DevGraph.coerceThSens (logicId s) lidT "" (goalMap s)
+       return (Result.Result {Result.diags = accDiags s, 
+                              Result.maybeResult = 
+                                  Just (DevGraph.G_theory lidT sigT 
+                                                    (Map.union sensT gMap))
+                             }
+              )
   -- TODO: do something with the resulting G_theory before returning it?
 
-  return (Result.Result {Result.diags = accDiags s, Result.maybeResult = Just (theory s)})

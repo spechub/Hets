@@ -6,7 +6,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luettich@tzi.de
 Stability   :  provisional
-Portability :  needs POSIX
+Portability :  non-portable(Logic)
 
 The 'ProofGUIState' data structure abstracts the GUI implementation details
 away by allowing callback function to use it as the sole input and output.

@@ -247,7 +247,7 @@ basicInferenceNode checkCons lg (ln, node)
             -- get known Provers
             kpMap <- resToIORes $ knownProvers
             let kpMap' = shrinkKnownProvers sublogic kpMap
-            newTh@(G_theory lidPr _ thSensPr) <- IOResult $
+            newTh@(G_theory lidT _ thSensPr) <- IOResult $
                    proofManagementGUI lid1 proveKnownPMap 
                                            proveFineGrainedSelect
                                            thName
@@ -273,25 +273,24 @@ basicInferenceNode checkCons lg (ln, node)
             -- instead, mark proven things as proven in the node
             -- TODO: Reimplement stuff
             let (nextDGraph, nextHistoryElem) =
-                    (dGraph,([],[]))
-{-               let  
-                oldNode@(_,oldContents) = 
+     --               (dGraph,([],[]))
+                  let  
+                  oldNode@(_,oldContents) = 
                     labNode' (safeContext 
                               "Proofs.InferBasic.basicInferenceNode"  
                               dGraph node)
-                n = getNewNode dGraph
-                newNode = (n, oldContents{dgn_theory = newTh})
-                (newGraph,changes) =
+                  n = getNewNode dGraph
+                  newNode = (n, oldContents{dgn_theory = newTh})
+                  (newGraph,changes) =
                     adoptEdges (insNode newNode $ dGraph) node n
-                newGraph' = delNode node $ newGraph
-                newChanges = InsertNode newNode : changes ++ 
-                                        [DeleteNode oldNode]
-                rules = map (\s -> BasicInference (Comorphism cid) 
-                                                  (BasicProof lidT s)) 
-                        []  -- [Proof_status] not longer available
-               in (newGraph',(rules,newChanges)) -}
-            return $ 
-               mkResultProofStatus proofStatus nextDGraph nextHistoryElem
+                  newGraph' = delNode node $ newGraph
+                  newChanges = InsertNode newNode : changes ++ 
+                                          [DeleteNode oldNode]
+                  rules = [] -- map (\s -> BasicInference (Comorphism cid) 
+                             --     (BasicProof lidT s)) 
+                         -- FIXME: [Proof_status] not longer available
+                  in (newGraph',(rules,newChanges)) 
+            return $ mkResultProofStatus proofStatus nextDGraph nextHistoryElem
 
 proveKnownPMap :: (Logic lid sublogics1
                basic_spec1
@@ -333,7 +332,7 @@ callProver st (G_prover lid4 p, Comorphism cid) =
                    (Map.filter (\x -> not (isProvenSenStatus $ OMap.ele x)) 
                    (selectedGoalMap st))
             lidT = targetLogic cid
-        sel_goals' <- primCoerce (logicId st) lid1 "" sel_goals
+        sel_goals' <- coerceThSens (logicId st) lid1 "" sel_goals
         bTh' <- coerceBasicTheory lid1 (sourceLogic cid) "" 
                    (sign, toNamedList $ Map.union sens sel_goals')
         (sign'',sens'') <- resToIORes $ map_theory cid bTh' 
