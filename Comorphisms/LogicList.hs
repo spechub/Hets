@@ -62,7 +62,7 @@ logicList = [Logic CASL, Logic HasCASL,
              Logic Haskell, 
 #endif
 #ifdef CASLEXTENSIONS 
-             Logic CoCASL, Logic Modal, Logic CspCASL, Logic COL,
+             Logic CoCASL, Logic Modal, Logic CspCASL, -- Logic COL,
              Logic OWL_DL, Logic CASL_DL,
 #endif
              Logic Isabelle,Logic SPASS]
