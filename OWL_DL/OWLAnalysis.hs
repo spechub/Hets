@@ -182,7 +182,7 @@ structureAna file opt ontoMap =
             return (Just (simpleLibName file,
                           simpleLibEnv file $ reverseGraph dg))
          Skip       -> return $ fail ""     -- Nothing is ambiguous
-         _          -> staticAna file (newOntoMap, dg)
+         _          -> staticAna file opt (newOntoMap, dg)
      where -- output Analyzing messages for structured anaylsis
            printMsg :: [LNode DGNodeLab] -> IO()
            printMsg [] = putStrLn ""
@@ -208,17 +208,19 @@ simpleLibName s = Lib_id (Direct_link ("library_" ++ s) (Range []))
 -- | sequence call for nodesStaticAna on the basis of topologically
 -- | sort of all nodes
 staticAna :: FilePath
+          -> HetcatsOpts
           -> (OntologyMap, DGraph)
           -> IO (Maybe (LIB_NAME,     -- filename
                         LibEnv        -- DGraphs for imported modules 
                        ))
-staticAna file (ontoMap, dg) =  
+staticAna file opt (ontoMap, dg) =  
     do let topNodes = topsort dg
-       Result diagnosis res <-
+       Result diagnoses res <-
            nodesStaticAna (reverse topNodes) Map.empty ontoMap Map.empty dg []
        case res of
            Just (_, dg', _) -> do
-            putStrLn $ show $ List.nub diagnosis     
+            showDiags opt $ List.nub diagnoses
+            -- putStrLn $ show $ List.nub diagnosis     
             return (Just (simpleLibName file, 
                           simpleLibEnv file 
                           (insEdges (reverseLinks $ labEdges dg') 
