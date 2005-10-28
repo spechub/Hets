@@ -48,6 +48,7 @@ import qualified Common.OrderedMap as OMap
 
 import Proofs.GUIState
 import Logic.Logic
+import Logic.Grothendieck
 import Logic.Prover
 import qualified Comorphisms.KnownProvers as KnownProvers
 import qualified Static.DevGraph as DevGraph
@@ -259,14 +260,16 @@ proofManagementGUI ::
                raw_symbol1
                proof_tree1) => 
        lid 
-    -> (ProofGUIState lid sentence -> IO (ProofGUIState lid sentence)) 
+    -> (   ProofGUIState lid sentence 
+        -> IO (Result.Result (ProofGUIState lid sentence)))
     -- ^ called whenever the "Prove" button is clicked
-    -> (ProofGUIState lid sentence -> IO (ProofGUIState lid sentence)) 
+    -> (   ProofGUIState lid sentence 
+        -> IO (Result.Result (ProofGUIState lid sentence)))
     -- ^ called whenever the "More fine grained selection" button is clicked
     -> String -- ^ theory name
     -> DevGraph.G_theory -- ^ theory
     -> KnownProvers.KnownProversMap -- ^ map of known provers
-    -> [AnyComorphism] -- ^ list of suitable comorphisms to provers 
+    -> [(G_prover,AnyComorphism)] -- ^ list of suitable comorphisms to provers 
                        -- for sublogic of G_theory
     -> IO (Result.Result DevGraph.G_theory)
 proofManagementGUI lid proveF fineGrainedSelectionF 
@@ -434,8 +437,11 @@ proofManagementGUI lid proveF fineGrainedSelectionF
             s <- readIORef stateRef
 	    let s' = s{proverRunning = True}
 	    updateDisplay s' True lb pathsLb statusLabel
-	    s'' <- fineGrainedSelectionF s
-	    let s''' = s'' {proverRunning = False}
+	    Result.Result ds ms'' <- fineGrainedSelectionF s
+            s'' <- case ms'' of
+                   Nothing -> fail "fineGrainedSelection returned Nothing"
+                   Just x -> return x
+	    let s''' = s'' {proverRunning = False,accDiags = accDiags s'' ++ ds}
 	    updateDisplay s''' True lb pathsLb statusLabel
 	    writeIORef stateRef s'''
             done)
@@ -443,8 +449,11 @@ proofManagementGUI lid proveF fineGrainedSelectionF
             s <- readIORef stateRef
 	    let s' = s{proverRunning = True}
 	    updateDisplay s' True lb pathsLb statusLabel
-	    s'' <- proveF s'
-	    let s''' = s''{proverRunning = False}
+	    Result.Result ds ms'' <- proveF s'
+            s'' <- case ms'' of
+                   Nothing -> fail "proveF returned Nothing"
+                   Just x -> return x
+	    let s''' = s''{proverRunning = False,accDiags = accDiags s'' ++ ds}
 	    updateDisplay s''' True lb pathsLb statusLabel
 	    writeIORef stateRef s'''
             done)
@@ -461,4 +470,4 @@ proofManagementGUI lid proveF fineGrainedSelectionF
 
   -- TODO: do something with the resulting G_theory before returning it?
 
-  return (Result.Result {Result.diags = [], Result.maybeResult = Just (theory s)})
+  return (Result.Result {Result.diags = accDiags s, Result.maybeResult = Just (theory s)})

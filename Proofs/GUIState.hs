@@ -17,6 +17,7 @@ module Proofs.GUIState where
 
 import qualified Common.OrderedMap as OMap
 import qualified Common.Lib.Map as Map
+import Common.Result
 
 import Logic.Logic 
 import Logic.Prover
@@ -36,19 +37,23 @@ data ProofGUIState lid sentence =
 	-- | Grothendieck theory
 	theory :: G_theory,
         -- | logic id associated with following maps
-        logic_id :: lid,
+        logicId :: lid,
+        -- | sublogic of initial G_theory
+        sublogicOfTheory :: G_sublogics,
         -- | goals are stored in a separate map
         goalMap :: ThSens sentence (AnyComorphism,BasicProof),
 	-- | currently known provers
 	proversMap :: KnownProversMap,
         -- | comorphisms fitting with sublogic of this G_theory
-        cormorphismsToProvers :: [AnyComorphism],
+        comorphismsToProvers :: [(G_prover,AnyComorphism)],
         -- | all goals in the theory
-        allGoals :: [String],
+--        allGoals :: [String],
         -- | currently selected goals
         selectedGoals :: [String],
         -- | whether a prover is running or not
         proverRunning :: Bool,
+        -- | accumulated Diagnosis during Proofs
+        accDiags :: [Diagnosis],
         -- | wether all goals are selected or not
         allGoalsSelected :: Bool,
         -- | which prover (if any) is currently selected
@@ -66,20 +71,22 @@ initialState ::
               -> String
              -> G_theory
 	     -> KnownProversMap
-             -> [AnyComorphism]
+             -> [(G_prover,AnyComorphism)]
              -> m (ProofGUIState lid1 sentence1)
-initialState lid1 thN (G_theory lid2 sig thSens) pm cms = 
+initialState lid1 thN th@(G_theory lid2 sig thSens) pm cms = 
     do let (gMap,aMap) = Map.partition (isAxiom . OMap.ele) thSens
        gMap' <- coerceThSens lid2 lid1 "creating initial GUI State" gMap
        return $ 
            ProofGUIState { theoryName = thN,
 		           theory = G_theory lid2 sig aMap,
-                           logic_id = lid1,
+                           sublogicOfTheory = sublogicOfTh th,
+                           logicId = lid1,
                            goalMap = gMap',
 		           proversMap = pm,
                            comorphismsToProvers = cms,
-                           allGoals = OMap.keys gMap',
+                           -- allGoals = OMap.keys gMap',
                            selectedGoals = [],
+                           accDiags = [],
                            proverRunning = False,
                            allGoalsSelected = False,
                            selectedProver = if null (Map.keys pm) 
