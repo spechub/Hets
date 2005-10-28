@@ -30,7 +30,6 @@ import OWL_DL.AS
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 
-
 instance PrintLaTeX Sign where
   printLatex0 = printText0
 
@@ -51,7 +50,7 @@ instance PrettyPrint URIreference where
     printText0 _ (QN prefix localpart uri)
         | localpart == "_" = text $ show "_"
         | null prefix = if null uri then
-                           text $ show localpart
+                           text localpart
                            else text $ show (uri ++ ":" ++ localpart)
         | otherwise =   text $ show ( prefix ++ ":" ++ localpart) 
 
@@ -310,37 +309,66 @@ instance PrettyPrint Fact where
         Indiv individual -> printText0 ga individual
 
 instance PrettyPrint Individual where
-    printText0 ga (Individual iid _ types values) =
-        case iid of
-        Just _ ->
-            printIndividual iid values
-        _ -> brackets ((printIndividual (Just (QN "" "_:x" "" )) 
-                        values) $+$
-                       (nest 2 $ printAnonymIndividual types))
-             
-     where printIndividual :: (Maybe IndividualID) -> [Value] -> Doc
-           printIndividual _ [] = empty
-           printIndividual iid' (hv:tv) =
+   printText0 ga (Individual iid _ _ values) =
+       printIndividual iid values (-1)
+
+     where printIndividual :: (Maybe IndividualID) 
+                           -> [Value]
+                           -> Int 
+                           -> Doc
+           printIndividual _ [] _ = empty
+           printIndividual iid' (hv:tv) level =
                case hv of
                ValueID pid indivID -> 
-                   (char '(') <> (printText0 ga pid) <+> (printText0 ga iid')
-                   <+> (printText0 ga indivID) <> (char ')') $+$
-                   (printIndividual iid' tv)
+                   parens ((printText0 ga pid) <+> (printText0 ga iid')
+                   <+> (printText0 ga indivID)) $+$
+                   (printIndividual iid' tv level)
                ValueIndiv pid indiv ->
-                   (char '(') <> (printText0 ga pid) <+> (printText0 ga iid')
-                   $+$ (nest 2 $ printText0 ga indiv) <> (char ')') $+$
-                   (printIndividual iid' tv)
+                 (if level == -1 then
+                     parens ((printText0 ga pid) <+> (printText0 ga iid')
+                             $+$ (nest 2 $ printIntIndiv iid' pid indiv 0))
+                     else (printIntIndiv iid' pid indiv level))
+                   $+$ (nest 2 $ printIndividual iid' tv 
+                        (if level < 0 then 0 else level))
                ValueDL pid dl ->
-                   (char '(') <> (printText0 ga pid) <+> (printText0 ga iid')
-                   <+> (printText0 ga dl) <> (char ')') $+$
-                   (printIndividual iid' tv)
-
-           printAnonymIndividual :: [Type] -> Doc
-           printAnonymIndividual [] = empty
-           printAnonymIndividual (h:r) =
-               parens ((printText0 ga h) <+> (text "\"_:x\"")) 
-              <+> printAnonymIndividual r
-                      
+                   parens ((printText0 ga pid) <+> (printText0 ga iid')
+                           <+> (printText0 ga dl)) $+$
+                   (printIndividual iid' tv level)
+           
+           printIntIndiv :: (Maybe IndividualID)
+                         -> IndividualvaluedPropertyID 
+                         -> Individual
+                         -> Int
+                         -> Doc
+           printIntIndiv iid' pid ind@(Individual iidI _ typesI valuesI) level
+             = case iidI of
+               Just _ -> printText0 ga ind
+               _      -> printAnonymIndividual iid' pid typesI valuesI level
+                         
+           printAnonymIndividual :: (Maybe IndividualID)
+                                 -> IndividualvaluedPropertyID
+                                 -> [Type]
+                                 -> [Value]
+                                 -> Int
+                                 -> Doc
+           printAnonymIndividual iid' ipID typesI valuesI level= 
+               parens ((text ("exists (" ++ choiceName level ++ ")")) $+$ 
+                 (nest 2 $ parens ((text "and") <+> 
+                  (foldListToDocH ga 
+                   (\x y -> case x of 
+                       (QN _ str _) -> 
+                        parens ((printDescription ga emptyQN y) <+> 
+                         (text str))) (simpleQN $ choiceName level) typesI) $+$
+                   (nest 4 $ parens ((printText0 ga ipID) <+> 
+                      (printText0 ga iid') <+> (text $ choiceName level))) $+$ 
+                  (nest 4 $ printIndividual (Just $ simpleQN $ choiceName level) valuesI (level+1)))))
+           
+           choiceName :: Int -> String
+           choiceName level 
+               | level == 0 = "x"
+               | level == 1 = "y"
+               | level == 2 = "z"
+               | otherwise = "z" ++ (show (level -2))
         
 -- to show restrictions, descriptions and cardinalities need the id of classes
 -- or properties, so those are implemented not in PrettyPrint. 
@@ -568,3 +596,7 @@ form5 ga _ dl =
 
 emptyQN :: QName
 emptyQN = QN "" "" ""
+
+simpleQN :: String -> QName
+simpleQN str = QN "" str ""
+
