@@ -300,6 +300,13 @@ compComorphism (Comorphism cid1) (Comorphism cid2) =
     else fail ("Logic mismatch in composition of "++language_name cid1++
                      " and "++language_name cid2)
 
+-- | check if sublogic fits for comorphism
+lessSublogicComor :: G_sublogics -> AnyComorphism -> Bool
+lessSublogicComor (G_sublogics lid1 sub1) (Comorphism cid) =
+    let lid2 = sourceLogic cid
+    in language_name lid2 == language_name lid1 
+           && coerceSublogic lid1 lid2 sub1 <= sourceSublogic cid
+
 --- Morphisms ---
 
 -- | Existential type for morphisms
