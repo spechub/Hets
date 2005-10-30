@@ -67,6 +67,14 @@ is_Sort_gen_ax f = case f of
                      Sort_gen_ax _ _ -> True
                      _ -> False   
 
+is_Def :: FORMULA f -> Bool
+is_Def f = case (quanti f) of
+             Implication (Definedness _ _) _ _ _ -> True
+             Equivalence (Definedness _ _) _ _ -> True
+             Negation (Definedness _ _) _ -> True
+             Definedness _ _ -> True
+             _ -> False
+
 
 is_impli :: FORMULA f -> Bool
 is_impli f = case (quanti f) of
