@@ -86,15 +86,14 @@ instance (Ord a,ShATermConvertible a) => ShATermConvertible (Set.Set a) where
 
 instance (Ord a,ShATermConvertible a) => ShATermConvertible (Rel.Rel a) where
     {-# SPECIALIZE instance ShATermConvertible (Rel.Rel Id) #-}
-    toShATerm att set = case toShATerm att $ Rel.toList set of
+    toShATerm att rel = case toShATerm att $ Rel.toMap rel of
                         (att1,i) -> 
                            addATerm (ShAAppl "Rel" [i] []) att1
-    fromShATerm att  = case aterm of
-                       (ShAAppl "Rel" [i] []) -> 
+    fromShATerm att  = case getATerm att of
+                       ShAAppl "Rel" [i] [] -> 
                            case fromShATerm (getATermByIndex1 i att) of
-                           l -> Rel.fromList l
+                           m -> Rel.fromDistinctMap m
                        u     -> fromShATermError "Rel" u
-                       where aterm = getATerm att
 
 instance (ShATermConvertible a) => ShATermConvertible (Maybe a) where
     {-# SPECIALIZE instance ShATermConvertible (Maybe Token) #-}
