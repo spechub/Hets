@@ -38,7 +38,7 @@ module Common.Lib.Rel (Rel(), empty, null,
                        intransKernel, mostRight,
                        restrict, toSet, fromSet, topSort, nodes,
                        transpose, transReduce, setInsert, keysSet,
-                       haveCommonLeftElem,
+                       haveCommonLeftElem, fromDistinctMap,
                        locallyFiltered,flatSet,partSet) where
 
 import Prelude hiding (map, null)
@@ -48,6 +48,9 @@ import qualified Data.List as List
 
 data Rel a = Rel { toMap :: Map.Map a (Set.Set a) } deriving Eq
 -- the invariant is that set values are never empty
+
+fromDistinctMap :: Map.Map a (Set.Set a) -> Rel a
+fromDistinctMap = Rel
 
 -- | the empty relation
 empty :: Rel a
