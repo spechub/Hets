@@ -1,7 +1,6 @@
-{-| 
-   
+{- |
 Module      :  $Header$
-Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2004
+Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  till@tzi.de
@@ -63,9 +62,9 @@ import Control.Monad
 import Control.Exception
 
 getNewNode :: Tree.Gr a b -> Node
-getNewNode g = case newNodes 1 g of 
+getNewNode g = case newNodes 1 g of
                [n] -> n
-               _ -> error "Static.DevGraph.getNewNode" 
+               _ -> error "Static.DevGraph.getNewNode"
 
 -- * Types for structured specification analysis
 
@@ -78,13 +77,13 @@ getNewNode g = case newNodes 1 g of
 -- | and non-zero number (for these, names are usually hidden)
 type NODE_NAME = (SIMPLE_ID, String, Int)
 
--- | node inscriptions in development graphs           
-data DGNodeLab = 
+-- | node inscriptions in development graphs
+data DGNodeLab =
   DGNode {
     dgn_name :: NODE_NAME,  -- name in the input language
     dgn_theory :: G_theory, -- local theory
     dgn_nf :: Maybe Node,   -- normal form, for Theorem-Hide-Shift
-    dgn_sigma :: Maybe GMorphism, -- inclusion of signature into nf signature 
+    dgn_sigma :: Maybe GMorphism, -- inclusion of signature into nf signature
     dgn_origin :: DGOrigin,  -- origin in input language
     dgn_cons :: Conservativity,
     dgn_cons_status :: ThmLinkStatus
@@ -95,7 +94,7 @@ data DGNodeLab =
     dgn_node :: Node,            -- pointer to ref'd node
     dgn_theory :: G_theory, -- local proof goals
     dgn_nf :: Maybe Node,        -- normal form, for Theorem-Hide-Shift
-    dgn_sigma :: Maybe GMorphism -- inclusion of signature into nf signature 
+    dgn_sigma :: Maybe GMorphism -- inclusion of signature into nf signature
   } deriving (Show, Eq)
 
 dgn_sign :: DGNodeLab -> G_sign
@@ -148,13 +147,13 @@ isDGRef (DGNode _ _ _ _ _ _ _) = False
 isDGRef (DGRef _ _ _ _ _ _) = True
 
 locallyEmpty ::  DGNodeLab -> Bool
-locallyEmpty dgn = 
+locallyEmpty dgn =
   case dgn_theory dgn of
   G_theory _lid _sigma sens ->
-    OMap.null $ OMap.filter 
-      (\s -> not (Logic.Prover.isAxiom s) && not (isProvenSenStatus s) ) sens 
+    OMap.null $ OMap.filter
+      (\s -> not (Logic.Prover.isAxiom s) && not (isProvenSenStatus s) ) sens
 
--- | link inscriptions in development graphs           
+-- | link inscriptions in development graphs
 data DGLinkLab = DGLink {
               dgl_morphism :: GMorphism,  -- signature morphism of link
               dgl_type :: DGLinkType,     -- type: local, global, def, thm?
@@ -174,11 +173,8 @@ instance PrettyPrint DGLinkLab where
     an undo operation
 -}
 
-{-type ProofStatus = (GlobalContext,LibEnv,[([DGRule],[DGChange])],DGraph)
-umstellen auf:-}
-
-type ProofHistory = [([DGRule],[DGChange])]
-type ProofStatus = (LIB_NAME,LibEnv,Map.Map LIB_NAME ProofHistory) 
+type ProofHistory = [([DGRule], [DGChange])]
+type ProofStatus = (LIB_NAME, LibEnv, Map.Map LIB_NAME ProofHistory)
 
 data DGChange = InsertNode (LNode DGNodeLab)
               | DeleteNode (LNode DGNodeLab)
@@ -194,7 +190,7 @@ instance Show DGChange where
 
 -- | Link types of development graphs
 -- | Sect. IV:4.2 of the CASL Reference Manual explains them in depth
-data DGLinkType = LocalDef 
+data DGLinkType = LocalDef
             | GlobalDef
             | HidingDef
             | FreeDef MaybeNode -- the "parameter" node
@@ -234,12 +230,12 @@ instance Show Conservativity where
 
 -- | Rules in the development graph calculus
 -- | Sect. IV:4.4 of the CASL Reference Manual explains them in depth
-data DGRule = 
+data DGRule =
    TheoremHideShift
  | HideTheoremShift (LEdge DGLinkLab)
  | Borrowing
  | ConsShift
- | DefShift 
+ | DefShift
  | MonoShift
  | DefToMono
  | MonoToCons
@@ -256,9 +252,10 @@ data DGRule =
    deriving (Show, Eq)
 
 instance PrettyPrint DGRule where
-  printText0 ga r = case r of 
+  printText0 ga r = case r of
    TheoremHideShift -> text "Theorem-Hide-Shift"
-   HideTheoremShift l -> text "Hide-Theorem-Shift; resulting link:" <+> printLEdgeInProof ga l
+   HideTheoremShift l -> text "Hide-Theorem-Shift; resulting link:"
+                         <+> printLEdgeInProof ga l
    Borrowing -> text "Borrowing"
    ConsShift -> text "Cons-Shift"
    DefShift  -> text "Def-Shift"
@@ -267,18 +264,24 @@ instance PrettyPrint DGRule where
    MonoToCons -> text "MonoToCons"
    FreeIsMono -> text "FreeIsMono"
    MonoIsFree -> text "MonoIsFree"
-   GlobDecomp l -> text "Global Decomposition; resulting link:"  <+> printLEdgeInProof ga l 
-   LocDecomp l -> text "Local Decomposition; resulting link:" <+> printLEdgeInProof ga l
-   LocInference l -> text "Local Inference; resulting link:" <+> printLEdgeInProof ga l
-   GlobSubsumption l -> text "Global Subsumption; resulting link:" <+> printLEdgeInProof ga l
-   Composition ls -> 
+   GlobDecomp l -> text "Global Decomposition; resulting link:"
+                   <+> printLEdgeInProof ga l
+   LocDecomp l -> text "Local Decomposition; resulting link:"
+                  <+> printLEdgeInProof ga l
+   LocInference l -> text "Local Inference; resulting link:"
+                     <+> printLEdgeInProof ga l
+   GlobSubsumption l -> text "Global Subsumption; resulting link:"
+                           <+> printLEdgeInProof ga l
+   Composition ls ->
        text "Composition" <+> vcat (map (printLEdgeInProof ga) ls)
    LocalInference -> text "Local Inference"
-   BasicInference c bp -> text "Basic Inference using:" <+> text ("Comorphism: "++show c ++ "Proof tree: "++show bp)
-   BasicConsInference _ bp -> text "Basic Cons-Inference using:" <+> text (show bp)
+   BasicInference c bp -> text "Basic Inference using:"
+       <+> text ("Comorphism: "++show c ++ "Proof tree: "++show bp)
+   BasicConsInference _ bp -> text "Basic Cons-Inference using:"
+       <+> text (show bp)
 
 printLEdgeInProof :: GlobalAnnos -> LEdge DGLinkLab -> Doc
-printLEdgeInProof ga (s,t,l) = 
+printLEdgeInProof ga (s,t,l) =
   printText0 ga s <> text "-->" <> printText0 ga t <> text ":"
   <+> printLabInProof ga l
 
@@ -286,11 +289,10 @@ printLabInProof :: GlobalAnnos -> DGLinkLab -> Doc
 printLabInProof ga l =
   hang(
     printText0 ga (dgl_type l)
-    <+> text "with origin: " 
+    <+> text "with origin: "
     <> printText0 ga (dgl_origin l)
     <> text ", and morphism: " )
    2 (printText0 ga (dgl_morphism l))
-
 
 data BasicProof =
   forall lid sublogics
@@ -321,9 +323,9 @@ instance Ord BasicProof where
                        Guessed -> False
                        Conjectured -> False
                        _ ->  True
-    BasicProof lid1 pst1 <= x = 
+    BasicProof lid1 pst1 <= x =
         case x of
-        BasicProof lid2 pst2 
+        BasicProof lid2 pst2
             | isProvedStat pst1 && not (isProvedStat pst2) -> False
             | not (isProvedStat pst1) && isProvedStat pst2 -> True
             | otherwise -> case primCoerce lid1 lid2 "" pst1 of
@@ -346,27 +348,25 @@ instance Typeable BasicProof where
 data BasicConsProof = BasicConsProof -- more detail to be added ...
      deriving (Show, Eq)
 
-data ThmLinkStatus = LeftOpen 
+data ThmLinkStatus = LeftOpen
                    | Proven DGRule [LEdge DGLinkLab]
                      deriving (Show, Eq)
 
 instance PrettyPrint ThmLinkStatus where
-    printText0 ga tls = case tls of 
+    printText0 ga tls = case tls of
         LeftOpen -> text "Open"
         Proven r ls -> hang (text "Proven with rule" <+> printText0 ga r
                              $$ text "Proof based on links:")
                        2 (vcat (map (printLEdgeInProof ga) ls))
 
-
-
 -- | Data type indicating the origin of nodes and edges in the input language
 -- | This is not used in the DG calculus, only may be used in the future
 -- | for reconstruction of input and management of change.
-data DGOrigin = DGBasic | DGExtension | DGTranslation | DGUnion | DGHiding 
-              | DGRevealing | DGRevealTranslation | DGFree | DGCofree 
-              | DGLocal | DGClosed | DGClosedLenv | DGLogicQual | DGLogicQualLenv 
-              | DGData
-              | DGFormalParams | DGImports | DGSpecInst SIMPLE_ID | DGFitSpec 
+data DGOrigin = DGBasic | DGExtension | DGTranslation | DGUnion | DGHiding
+              | DGRevealing | DGRevealTranslation | DGFree | DGCofree
+              | DGLocal | DGClosed | DGClosedLenv | DGLogicQual
+              | DGLogicQualLenv | DGData
+              | DGFormalParams | DGImports | DGSpecInst SIMPLE_ID | DGFitSpec
               | DGView SIMPLE_ID | DGFitView SIMPLE_ID | DGFitViewImp SIMPLE_ID
               | DGFitViewA SIMPLE_ID | DGFitViewAImp SIMPLE_ID | DGProof
               | DGintegratedSCC
@@ -383,7 +383,7 @@ data NodeSig = NodeSig Node G_sign deriving (Show, Eq)
 data MaybeNode = JustNode NodeSig | EmptyNode AnyLogic deriving (Show, Eq)
 
 instance PrettyPrint NodeSig where
-  printText0 ga (NodeSig n sig) = 
+  printText0 ga (NodeSig n sig) =
     ptext "node" <+> printText0 ga n <> ptext ":" <> printText0 ga sig
 
 emptyG_sign :: AnyLogic -> G_sign
@@ -410,7 +410,7 @@ getNodeLogic (NodeSig _ (G_sign lid _)) = Logic lid
 nodeSigUnion :: LogicGraph -> DGraph -> [MaybeNode] -> DGOrigin
              -> Result (NodeSig, DGraph)
 nodeSigUnion lgraph dg nodeSigs orig =
-  do sigUnion@(G_sign lid sigU) <- gsigManyUnion lgraph 
+  do sigUnion@(G_sign lid sigU) <- gsigManyUnion lgraph
                                    $ map getMaybeSig nodeSigs
      let nodeContents = DGNode {dgn_name = emptyNodeName,
                                 dgn_theory = G_theory lid sigU noSens,
@@ -421,13 +421,13 @@ nodeSigUnion lgraph dg nodeSigs orig =
                                 dgn_cons_status = LeftOpen}
          node = getNewNode dg
          dg' = insNode (node, nodeContents) dg
-         inslink dgres nsig = do 
+         inslink dgres nsig = do
              dgv <- dgres
              case nsig of
                  EmptyNode _ -> dgres
-                 JustNode (NodeSig n sig) -> do 
+                 JustNode (NodeSig n sig) -> do
                      incl <- ginclusion lgraph sig sigUnion
-                     return $ insEdge (n, node, DGLink 
+                     return $ insEdge (n, node, DGLink
                          {dgl_morphism = incl,
                           dgl_type = GlobalDef,
                           dgl_origin = orig }) dgv
@@ -439,11 +439,11 @@ nodeSigUnion lgraph dg nodeSigs orig =
 extendDGraph :: DGraph    -- ^ the development graph to be extended
              -> NodeSig   -- ^ the NodeSig from which the morphism originates
              -> GMorphism -- ^ the morphism to be inserted
-             -> DGOrigin  
+             -> DGOrigin
              -> Result (NodeSig, DGraph)
 -- ^ returns the target signature of the morphism and the resulting DGraph
 extendDGraph dg (NodeSig n _) morph orig = case cod Grothendieck morph of
-    targetSig@(G_sign lid tar) -> let 
+    targetSig@(G_sign lid tar) -> let
         nodeContents = DGNode {dgn_name = emptyNodeName,
                                dgn_theory = G_theory lid tar noSens,
                                dgn_nf = Nothing,
@@ -459,15 +459,14 @@ extendDGraph dg (NodeSig n _) morph orig = case cod Grothendieck morph of
         dg'' = insEdge (n, node, linkContents) dg'
         in return (NodeSig node targetSig, dg'')
 
-
--- | Extend the development graph with given morphism pointing to 
+-- | Extend the development graph with given morphism pointing to
 -- given NodeSig
 extendDGraphRev :: DGraph    -- ^ the development graph to be extended
              -> NodeSig   -- ^ the NodeSig to which the morphism points
              -> GMorphism -- ^ the morphism to be inserted
-             -> DGOrigin  
+             -> DGOrigin
              -> Result (NodeSig, DGraph)
--- ^ returns 1. the source signature of the morphism and 2. the resulting DGraph
+-- ^ returns the source signature of the morphism and the resulting DGraph
 extendDGraphRev dg (NodeSig n _) morph orig = case dom Grothendieck morph of
     sourceSig@(G_sign lid src) -> let
         nodeContents = DGNode {dgn_name = emptyNodeName,
@@ -494,12 +493,11 @@ type ExtGenSig = (MaybeNode, [NodeSig], G_sign, NodeSig)
 -- source, morphism, parameterized target
 type ExtViewSig = (NodeSig,GMorphism,ExtGenSig)
 
-
 -- * Types for architectural and unit specification analysis
 -- (as defined for basic static semantics in Chap. III:5.1)
 
 data UnitSig = Unit_sig NodeSig
-             | Par_unit_sig [NodeSig] NodeSig 
+             | Par_unit_sig [NodeSig] NodeSig
                deriving Show
 
 data ImpUnitSigOrSig = Imp_unit_sig MaybeNode UnitSig
@@ -514,19 +512,18 @@ data ArchSig = ArchSig StUnitCtx UnitSig deriving Show
 
 -- * Types for global and library environments
 
-data GlobalEntry = SpecEntry ExtGenSig 
+data GlobalEntry = SpecEntry ExtGenSig
                  | ViewEntry ExtViewSig
                  | ArchEntry ArchSig
-                 | UnitEntry UnitSig 
+                 | UnitEntry UnitSig
                  | RefEntry
                    deriving Show
 
 type GlobalEnv = Map.Map SIMPLE_ID GlobalEntry
 
-type GlobalContext = (GlobalAnnos,GlobalEnv,DGraph)
+type GlobalContext = (GlobalAnnos, GlobalEnv, DGraph)
 
 type LibEnv = Map.Map LIB_NAME GlobalContext
-
 
 emptyLibEnv :: LibEnv
 emptyLibEnv = Map.empty
@@ -547,14 +544,14 @@ instance PrettyPrint DGOrigin where
      DGClosedLenv -> "closed specification (inclusion of local environment)"
      DGFormalParams -> "formal parameters of a generic specification"
      DGImports -> "imports of a generic specification"
-     DGSpecInst n -> ("instantiation of "++showPretty n "")
+     DGSpecInst n -> "instantiation of " ++ showPretty n ""
      DGFitSpec -> "fittig specification"
-     DGView n -> ("view "++showPretty n "")
-     DGFitView n -> ("fitting view "++showPretty n "")
-     DGFitViewImp n -> ("fitting view (imports) "++showPretty n "")
-     DGFitViewA n -> ("fitting view (actual parameters) "++showPretty n "")
-     DGFitViewAImp n -> ("fitting view (imports and actual parameters) "
-                         ++showPretty n "")
+     DGView n -> "view " ++ showPretty n ""
+     DGFitView n -> "fitting view " ++ showPretty n ""
+     DGFitViewImp n -> "fitting view (imports) " ++ showPretty n ""
+     DGFitViewA n -> "fitting view (actual parameters) "++ showPretty n ""
+     DGFitViewAImp n -> "fitting view (imports and actual parameters) "
+                        ++showPretty n ""
      DGProof -> "constructed within a proof"
      _ -> show origin
 
@@ -564,7 +561,7 @@ type HetSenStatus a = SenStatus a (AnyComorphism,BasicProof)
 
 isProvenSenStatus :: HetSenStatus a -> Bool
 isProvenSenStatus = any isProvenSenStatusAux . thmStatus
-  where isProvenSenStatusAux (_,BasicProof _ (Proved _ _ _ _ _)) = True 
+  where isProvenSenStatusAux (_,BasicProof _ (Proved _ _ _ _ _)) = True
         isProvenSenStatusAux _ = False
 
 -- * Grothendieck theories
@@ -578,18 +575,18 @@ data G_theory = forall lid sublogics
           sign morphism symbol raw_symbol proof_tree =>
   G_theory lid sign (ThSens sentence (AnyComorphism,BasicProof))
 
-coerceThSens :: 
+coerceThSens ::
    (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
    Logic  lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
    Monad m,
-   Typeable b) => lid1 -> lid2 -> String 
+   Typeable b) => lid1 -> lid2 -> String
             -> ThSens sentence1 b -> m (ThSens sentence2 b)
 coerceThSens l1 l2 msg t1 = primCoerce l1 l2 msg t1
 
 instance Eq G_theory where
-  G_theory l1 sig1 sens1 == G_theory l2 sig2 sens2 = 
+  G_theory l1 sig1 sens1 == G_theory l2 sig2 sens2 =
      coerceSign l1 l2 "" sig1 == Just sig2
      && coerceThSens l1 l2 "" sens1 == Just sens2
 
@@ -598,33 +595,31 @@ instance Show G_theory where
      show sign ++ "\n" ++ show sens
 
 instance PrettyPrint G_theory where
-  printText0 ga g = case simplifyTh g of 
-     G_theory lid sign sens -> 
-         printText0 ga sign $++$ vsep (map (print_named lid ga) 
+  printText0 ga g = case simplifyTh g of
+     G_theory lid sign sens ->
+         printText0 ga sign $++$ vsep (map (print_named lid ga)
                                            $ toNamedList sens)
 
 -- | compute sublogic of a theory
 sublogicOfTh :: G_theory -> G_sublogics
 sublogicOfTh (G_theory lid sigma sens) =
-  let sub = Set.fold Logic.Logic.join 
+  let sub = Set.fold Logic.Logic.join
                   (min_sublogic_sign lid sigma)
-                  (Set.fromList $ map snd $ OMap.toList $ 
-                   OMap.map (min_sublogic_sentence lid . value) 
+                  (Set.fromList $ map snd $ OMap.toList $
+                   OMap.map (min_sublogic_sentence lid . value)
                        sens)
    in G_sublogics lid sub
 
 -- | simplify a theory (throw away qualifications)
 simplifyTh :: G_theory -> G_theory
-simplifyTh (G_theory lid sigma sens) = G_theory lid sigma $ 
+simplifyTh (G_theory lid sigma sens) = G_theory lid sigma $
       OMap.map (mapValue $ simplify_sen lid sigma) sens
 
 -- | Translation of a G_theory along a GMorphism
 translateG_theory :: GMorphism -> G_theory -> Result G_theory
-translateG_theory (GMorphism cid _ morphism2)
-                           (G_theory lid sign sens) = do
+translateG_theory (GMorphism cid _ morphism2) (G_theory lid sign sens) = do
   let tlid = targetLogic cid
-  --(sigma2,_) <- map_sign cid sign1
-  bTh <- coerceBasicTheory lid (sourceLogic cid) 
+  bTh <- coerceBasicTheory lid (sourceLogic cid)
                     "translateG_theory" (sign, toNamedList sens)
   (_, sens'') <- map_theory cid bTh
   sens''' <- mapM (mapNamedM $ map_sen tlid morphism2) sens''
@@ -651,8 +646,7 @@ signOf (G_theory lid sign _) = G_sign lid sign
 
 type GDiagram = Tree.Gr G_theory GMorphism
 
-gWeaklyAmalgamableCocone :: GDiagram 
-                         -> Result (G_theory,Map.Map Graph.Node GMorphism)
-gWeaklyAmalgamableCocone _ = 
-    return (undefined,Map.empty) -- dummy implementation
-
+gWeaklyAmalgamableCocone :: GDiagram
+                         -> Result (G_theory, Map.Map Graph.Node GMorphism)
+gWeaklyAmalgamableCocone _ =
+    return (undefined, Map.empty) -- dummy implementation
