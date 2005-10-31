@@ -5,12 +5,12 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
 Stability   :  experimental
-Portability :  portable 
+Portability :  portable
 
-conversion for mixfix printing 
+conversion for mixfix printing
 -}
 
-module HasCASL.MixPrint where 
+module HasCASL.MixPrint where
 
 import Common.GlobalAnnotations
 import Common.AS_Annotation
@@ -27,12 +27,12 @@ import HasCASL.Builtin
 import Data.Maybe
 import Data.List
 
-data Weight = Weight Int Id Id Id -- top, left, right 
+data Weight = Weight Int Id Id Id -- top, left, right
 
 mkTrivWeight :: Id -> Int -> Weight
-mkTrivWeight i n = Weight n i i i 
+mkTrivWeight i n = Weight n i i i
 
-data ConvFuns a = ConvFuns 
+data ConvFuns a = ConvFuns
     { parenthesize :: [a] -> a
     , juxtapose :: [a] -> a
     , convTok :: Token -> a
@@ -42,13 +42,13 @@ data ConvFuns a = ConvFuns
     , convId :: Id -> a
     }
 
-checkMyArg :: AssocEither -> GlobalAnnos -> (Id, Int) 
+checkMyArg :: AssocEither -> GlobalAnnos -> (Id, Int)
            -> (Id, Int) -> Id -> Bool
 checkMyArg side ga (op, opPrec) (arg, argPrec) weight =
     let precs = prec_annos ga
         assocs = assoc_annos ga
     in if argPrec <= 0 then False
-       else case compare argPrec opPrec of 
+       else case compare argPrec opPrec of
            LT -> False
            GT -> True
            EQ -> if joinPlace side arg then
@@ -56,9 +56,9 @@ checkMyArg side ga (op, opPrec) (arg, argPrec) weight =
                Lower -> True
                Higher -> False
                BothDirections -> False
-               NoDirection -> 
-                   case (isInfix arg, joinPlace side op) of 
-                        (True, True) -> if arg == op 
+               NoDirection ->
+                   case (isInfix arg, joinPlace side op) of
+                        (True, True) -> if arg == op
                                         then not $ isAssoc side assocs op
                                         else True
                         (False, True) -> True
@@ -72,14 +72,14 @@ getSimpleIdPrec (pm, _, m) i =  if i == applId then m + 1
     (if begPlace i || endPlace i then m
      else m + 2) i pm
 
-toMixWeight :: GlobalAnnos 
+toMixWeight :: GlobalAnnos
          -> SplitM a
          -> ConvFuns a
          -> a -> (a, Maybe Weight)
 toMixWeight ga splt convFuns trm =
-    case splt trm of 
+    case splt trm of
     Nothing -> (convertTerm convFuns ga trm, Nothing)
-    Just (i@(Id ts cs _), aas) -> let 
+    Just (i@(Id ts cs _), aas) -> let
         newGa = addBuiltins ga
         pa = prec_annos newGa
         precs@(_, _, m) = mkPrecIntMap pa
@@ -87,70 +87,69 @@ toMixWeight ga splt convFuns trm =
         dw = Just $ mkTrivWeight i p
         doSplit = maybe (error "doSplit") id . splt
         mk t = (convTok convFuns t, dw)
-      in if isGenNumber splt ga i aas then 
-             mk $ toNumber doSplit i aas 
+      in if isGenNumber splt ga i aas then
+             mk $ toNumber doSplit i aas
          else if isGenFrac splt ga i aas then
              mk $ toFrac doSplit aas
-         else if isGenFloat splt ga i aas then 
+         else if isGenFloat splt ga i aas then
              mk $ toFloat doSplit ga aas
-         else if isGenString splt ga i aas then 
+         else if isGenString splt ga i aas then
              mk $ toString doSplit ga i aas
          else if isGenList splt ga i aas then
-             let mkList op args cl = 
-                     juxtapose convFuns 
+             let mkList op args cl =
+                     juxtapose convFuns
                          [ convId convFuns op
-                         , commarize convFuns $ 
+                         , commarize convFuns $
                                    map (convertTerm convFuns ga) args
                          , convId convFuns cl ]
              in (toMixfixList mkList doSplit ga i aas, dw)
       else let
         newArgs = map (toMixWeight ga splt convFuns) aas
-        n = length aas
-        in if null aas || placeCount i /= n then
-              case aas of
+        in if null newArgs || length newArgs /= placeCount i then
+              case newArgs of
               [] -> (convId convFuns i, dw)
-              _ -> (juxtapose convFuns [convId convFuns i, 
+              _ -> (juxtapose convFuns [convId convFuns i,
                       parenthesize convFuns $ map fst newArgs],
-                    Just $ mkTrivWeight applId (m + 1)) 
-           else let 
-             parArgs = zipWith ( \ (arg, itm) num ->
+                    Just $ mkTrivWeight applId (m + 1))
+           else let
+             parArgs = reverse $ foldl ( \ l (arg, itm) ->
                 let pArg = parenthesize convFuns [arg]
                 in case itm of
-                Nothing -> pArg
-                Just (Weight q ta la ra) -> if isLeftArg i num then 
-                       if checkMyArg ARight newGa (i, p) (ta, q) ra 
+                Nothing -> pArg : l
+                Just (Weight q ta la ra) -> (if isLeftArg i l then
+                       if checkMyArg ARight newGa (i, p) (ta, q) ra
                        then arg else pArg
-                    else if isRightArg i num then
+                    else if isRightArg i l then
                        if checkMyArg ALeft newGa (i, p) (ta, q) la
                        then arg else pArg
-                    else arg) newArgs [0 .. ]
-             leftW = if isLeftArg i 0 then
+                    else arg) : l) [] newArgs
+             leftW = if isLeftArg i [] then
                   case snd $ head newArgs of
-                  Just (Weight  _ _ l _) -> if begPlace l then 
+                  Just (Weight  _ _ l _) -> if begPlace l then
                         case precRel pa i l of
                         Higher -> l
                         _ -> i
                         else i
                   _ -> i
                   else i
-             rightW = if isRightArg i (length newArgs - 1) then
+             rightW = if isRightArg i $ tail newArgs then
                   case snd $ last newArgs of
-                  Just (Weight _ _ _ r) -> if endPlace r then 
+                  Just (Weight _ _ _ r) -> if endPlace r then
                         case precRel pa i r of
                         Higher -> r
                         _ -> i
                         else i
                   _ -> i
                   else i
-             fts = fst $ splitMixToken ts 
-             (rArgs, fArgs) = mapAccumL ( \ ac t -> 
-               if isPlace t then case ac of 
+             fts = fst $ splitMixToken ts
+             (rArgs, fArgs) = mapAccumL ( \ ac t ->
+               if isPlace t then case ac of
                  hd : tl -> (tl, hd)
                  _ -> error "addPlainArg"
-                 else (ac, convTok convFuns t)) parArgs fts   
-            in (juxtapose convFuns $ fArgs ++ 
+                 else (ac, convTok convFuns t)) parArgs fts
+            in (juxtapose convFuns $ fArgs ++
                  (if null cs then [] else [convComp convFuns cs])
-                 ++ rArgs, Just $ Weight p i 
+                 ++ rArgs, Just $ Weight p i
                  leftW rightW)
 
 hsConvFuns :: ConvFuns Term
@@ -167,7 +166,7 @@ ideToTerm :: Id -> Term
 ideToTerm i = ResolvedMixTerm i [] nullRange
 
 parenthesizeTerms :: [Term] -> Term
-parenthesizeTerms ts = case ts of 
+parenthesizeTerms ts = case ts of
     trm@(QualVar _) : [] -> trm
     trm@(QualOp _ _ _ _) : [] -> trm
     trm@(TupleTerm _ _) : [] -> trm
@@ -177,13 +176,13 @@ parenthesizeTerms ts = case ts of
 
 splitTerm :: Term -> Maybe (Id, [Term])
 splitTerm trm = case trm of
-  ResolvedMixTerm i ts _ -> case ts of 
+  ResolvedMixTerm i ts _ -> case ts of
      [TupleTerm args _] | placeCount i > 1 -> Just (i, args)
      _ -> Just(i, ts)
   ApplTerm (ResolvedMixTerm i [] _) t2 _ ->
-      Just (i, case t2 of 
+      Just (i, case t2 of
           TupleTerm ts _ | placeCount i > 1 -> ts
-          _ -> [t2])                                       
+          _ -> [t2])
   ApplTerm t1 t2 _ -> Just(applId, [t1, t2])
   _ -> Nothing
 
@@ -204,17 +203,17 @@ convTerm ga = foldTerm $ convTermRec ga
 
 rmTypeRec :: MapRec
 rmTypeRec = mapRec
-    { foldQualOp = \ t _ (InstOpId i _ _) _ ps -> 
-                 if elem i $ map fst bList then 
-                    ResolvedMixTerm i [] ps else t 
-    , foldTypedTerm = \ _ nt q ty ps -> 
-           case q of 
-           Inferred -> nt 
-           _ -> case nt of 
+    { foldQualOp = \ t _ (InstOpId i _ _) _ ps ->
+                 if elem i $ map fst bList then
+                    ResolvedMixTerm i [] ps else t
+    , foldTypedTerm = \ _ nt q ty ps ->
+           case q of
+           Inferred -> nt
+           _ -> case nt of
                TypedTerm _ oq oty _ | oty == ty || oq == InType -> nt
-               QualVar (VarDecl _ oty _ _) | oty == ty -> nt 
+               QualVar (VarDecl _ oty _ _) | oty == ty -> nt
                _ -> TypedTerm nt q ty ps
-    }   
+    }
 
 rmSomeTypes :: Term -> Term
 rmSomeTypes = foldTerm rmTypeRec
