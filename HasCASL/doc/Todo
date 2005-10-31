@@ -49,6 +49,7 @@ The supertype relation is not checked in isSubEnv and diffEnv
 sentences need to be generated for subtype definitions!
 
 
+
 terms: 
 
 the order of types in instance lists is given by the order of the
@@ -60,21 +61,28 @@ yet.
 checking for a legal let-Pattern (a variable applied to arguments) for
 executable terms (ProgEq.hs).
 
-redeclarations of builtin identifiers are forbidden and ignored
+redeclarations of builtin identifiers are forbidden and ignored. Do
+not allow to redeclare "__ __"!
 
 terms in sentences (from formulas) are not quantified
-over global variables
+over global variables. (AsToLe.hs)
 
 exhaustive and overlapping patterns are not checked for several
 program equations or case patterns. (Merge.hs?)
 
 Sentences for attributes comm, assoc, unit are not generated yet.
+Generate a sentence for OpDefns (the currently generated lambda terms
+cannot be read back in by CASL).
 
 MixAna only recognizes unknown variables and thus cannot check for shadowing
 
 Unify alone handles lazy types 
 
-the removal of types for printing can be refined (propagated to the arguments)
+The removal of types for printing can be refined (propagated to the
+arguments)
+
+Currently the output is ie. "even (0)" but "even 0" would be better if it
+must not be CASL.
 
 
 
@@ -98,7 +106,6 @@ is unused (also parser error messages are poor)
 
 
 
-
 Haskell:
 formulas are not translated to P-Logic Axioms
 
@@ -108,13 +115,32 @@ conflict with the prelude)
 free types with subtypes components get too few constructors (and
 become disjoint types, see HasCASL/Secd.het)
 
-
 Programatica's output of decorated modules is not legal haskell
 wrt. inserted dictionaries
 
 
 
-HetAna/Logic:
+Static/AnalysisLibrary:
+duplicate code at "outputStdout" and "hasErrors"
+
+ugly "showDiags{,1}" at "IO (Maybe" 
+
+
+
+Isabelle/IsaSign:
+only use VName.new for the key in constTab by giving instance Eq/Ord
+VName.
+
+correct showAlt, don't do it for HasCASL
+
+
+
+Proofs/EdgeUtils, Proofs/StatusUtils:
+delLEdge, removeContraryChanges uses expensive DGraph Eq
+
+
+
+Logic/Logic:
 comparing symbol sets with (symbol-) equality may be a problem
 
 legal_obj (Logic.hs) is currently unused 
@@ -124,3 +150,13 @@ Design a comand line interface to trigger various outputs and
 translations (without daVinci!) to allow for profiling 
 (started)
 
+
+
+Common/ATerm/AbstractSyntax:
+add Updateable and Readonly IntMaps for creating and using ATT
+
+try to detect sharing earlier via addresses and an address map, 
+add a function to the class to avoid rewriting of all instances.
+
+try show/read of ATT directly,
+maybe write Binary instances for Grothendieck and DevGraph, too
