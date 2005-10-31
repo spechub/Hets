@@ -1,15 +1,25 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) K. Lüttich, C. Maeder and Uni Bremen 2002-2005
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+
+Maintainer  :  maeder@tzi.de
+Stability   :  provisional
+Portability :  portable
+
+generate ShATermConvertible instances
+
+-}
 
 module UserRulesHetCATS (hetcatsrules) where
 
 import RuleUtils -- gives some examples 
-import UserRuleGhcBinary
 import Pretty
 import List 
 
 hetcatsrules :: [RuleDef]
 hetcatsrules = [("ShATermConvertible",shatermfn, "", "", Nothing),
 	       	("UpPos",updateposfn, "", "", Nothing)]
-               ++ userRulesGhcBinary
 
 -- useful helper things
 addPrime doc = doc <> char '\''
@@ -65,7 +75,7 @@ closeBraces = hcat . map (const $ char '}')
 childToShATerm v i = let 
 	   attN_v' = parenList [text ("att" ++ show (i+1)), addPrime v]
            attO = text ("att" ++ show i)
-	   in text "case" <+> text ("toShATerm") <+> attO <+> v 
+	   in text "case" <+> text "toShATerm" <+> attO <+> v 
 	       <+> text "of {" <+> attN_v' <+> text "->"
 
 makeFromShATermFn dat = 
@@ -84,11 +94,10 @@ makeFromShATerm b
         childFromShATerm v = text "case fromShATerm" <+> 
 	          parens (text "getATermByIndex1" <+> v <+> text "att") <+> 
 	          text "of {" <+> addPrime v <+> text "->"
-    in text "(ShAAppl" <+> doubleQuotes (text (constructor b)) <+>
-       bracketList cvs <+> text "_) ->"
+    in text "ShAAppl" <+> doubleQuotes (text $ constructor b) <+>
+       bracketList cvs <+> text "_ ->"
        $$ nest 4 (
 	    block (map childFromShATerm cvs ++
-		   [ppCons b (varNames' ts) <+> 
-                    closeBraces ts]))
+		   [ppCons b (varNames' ts) <+> closeBraces ts]))
 
 -- end of ATermConvertible derivation
