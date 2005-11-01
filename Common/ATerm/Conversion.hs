@@ -20,7 +20,6 @@ module Common.ATerm.Conversion(
 
 import Common.ATerm.AbstractSyntax
 import Data.List (mapAccumL)
-import Data.Maybe
 import Data.Ratio
 
 class ShATermConvertible t where
