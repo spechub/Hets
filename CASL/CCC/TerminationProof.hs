@@ -176,7 +176,8 @@ terminationProof fsn = (not $ null all_axioms) && (not $ proof)
     fs1 = map sentence (filter is_user_or_sort_gen fsn)
     fs = trace (showPretty fs1 "all formulars") fs1
     all_axioms1 = filter (\f->(not $ is_Sort_gen_ax f) &&
-                             (not $ is_Membership f)) fs
+                              (not $ is_Membership f) &&
+                              (not $ is_Def f)) fs
     all_axioms = trace (showPretty all_axioms1 "Terminal_allAxiom") all_axioms1
     all_predSymbs = everyOnce $ concat $ map predSymbsOfAxiom all_axioms
     fconstrs = concat $ map constraintOfAxiom fs
@@ -312,12 +313,15 @@ term_cime t =
     Conditional t1 f t2 _ -> 
         ("when_else("++(term_cime t1)++","++
          (t_f_str f)++","++(term_cime t2)++")")  
-              -- Achtung
-    _ -> error "CASL.CCC.FreeTypes.<Termination_Term>"
+    _ -> error "CASL.CCC.TerminationProof.<Term>"
   where t_f_str f=case f of                     --  condition of term
                     Strong_equation t1 t2 _ -> 
                         ("eq("++(term_cime t1)++","++(term_cime t2)++")")
-                    _ -> error "CASL.CCC.FreeTypes.<Termination_Term-Formula>"
+               --    Predication PRED_SYMB [TERM f] Range
+                    Predication ps ts _ ->
+                        ((predS_cime ps) ++ "(" ++
+                        (terms_cime ts) ++ ")")
+                    _ -> error "CASL.CCC.TerminationProof.<Term-Formula>"
 
 
 dimension :: Int -> String
@@ -335,7 +339,7 @@ opS_cime o_s =
   case o_s of
     Qual_op_name op_n (Op_type _ a_sorts _ _) _ -> 
         ((id_cime op_n) ++ (dimension $ length a_sorts))
-    _ -> error "CASL.CCC.FreeTypes.<Termination_Signature_OP_SYMB: Op_name>"
+    _ -> error "CASL.CCC.TerminationProof.<Signature_OP_SYMB: Op_name>"
 
 
 {- transform PRED_SYMB to Signature of cime (predStr)
@@ -345,7 +349,7 @@ predS_cime p_s =
   case p_s of
     Qual_pred_name pred_n (Pred_type sts _) _ -> 
         ((id_cime pred_n) ++ (dimension $ length sts))
-    _ -> error "CASL.CCC.FreeTypes.<predS_cime>"
+    _ -> error "CASL.CCC.TerminationProof.<predS_cime>"
 
 
 {- transform Implication to cime:
@@ -434,8 +438,8 @@ impli_cime index f =
                     (terms_cime ts2) ++ ");\n" ++
                     fk2++"(True,False,"++(terms_cime ts2) ++
                     ") -> " ++ "True;\n"),(index + 2))
-                _ -> error "CASL.CCC.FreeTypes.<impli_cime>"
-          _ -> error "CASL.CCC.FreeTypes.<impli_cime>"
+                _ -> error "CASL.CCC.TerminationProof.<impli_cime_p_eq>"
+          _ -> error "CASL.CCC.TerminationProof.<impli_cime_p>"
     Implication (Strong_equation t1 t2 _) f1 _ _ ->
         case (quanti f1) of
           Strong_equation t3 t4 _ ->
@@ -505,9 +509,80 @@ impli_cime index f =
                     (terms_cime ts1) ++ ");\n" ++
                     fk2++"("++(term_cime t2)++",False," ++ 
                     (terms_cime ts1) ++ ") -> " ++ "True;\n"),(index + 2))
-                _ -> error "CASL.CCC.FreeTypes.<impli_cime>"
-          _ -> error "CASL.CCC.FreeTypes.<impli_cime>"
-    _ -> error "CASL.CCC.FreeTypes.<impli_cime>"
+                _ -> error "CASL.CCC.TerminationProof.<impli_cime_s_eq>"
+          _ -> error "CASL.CCC.TerminationProof.<impli_cime_s>"
+    Implication (Existl_equation t1 t2 _) f1 _ _ ->
+        case (quanti f1) of
+          Strong_equation t3 t4 _ ->
+              (("eq(" ++ (term_cime t3) ++ "," ++ (term_cime t4) ++ ") -> " ++
+              fk1 ++ "(" ++ (term_cime t1) ++ "," ++ (term_cime t3) ++ "," ++ 
+              (term_cime t4) ++ ");\n" ++
+              fk1 ++ "(" ++ (term_cime t2) ++ "," ++ (term_cime t3) ++ "," ++
+              (term_cime t4) ++ ") -> True;\n"),(index + 1))
+          Negation (Strong_equation t3 t4 _) _ ->
+              (("eq(" ++ (term_cime t3) ++ "," ++ (term_cime t4) ++ ") -> " ++
+              fk1 ++ "(" ++ (term_cime t1) ++ "," ++ (term_cime t3) ++ "," ++ 
+              (term_cime t4) ++ ");\n" ++
+              fk1 ++ "(" ++ (term_cime t2) ++ "," ++ (term_cime t3) ++ "," ++
+              (term_cime t4) ++ ") -> False;\n"),(index + 1))
+          Equivalence (Predication predS1 ts1 _) f2 _->
+              case (quanti f2) of
+                Predication predS2 ts2 _ ->
+                    (((predSymStr predS2)++"("++(terms_cime ts2) ++ ") -> " ++
+                    fk1 ++ "(" ++ (term_cime t1) ++ "," ++
+                    (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ ")," ++
+                    (terms_cime ts2) ++ ");\n" ++
+                    fk1++"("++(term_cime t2)++ ",True," ++ (terms_cime ts2) ++
+                    ") -> True;\n" ++
+                    (predSymStr predS1)++"("++(terms_cime ts1)++") -> " ++
+                    fk2 ++ "(" ++ (term_cime t1) ++ "," ++
+                    (predSymStr predS2) ++ "(" ++ (terms_cime ts2) ++ ")," ++ 
+                    (terms_cime ts1) ++ ");\n" ++
+                    fk2++"("++(term_cime t2) ++ ",True,"++(terms_cime ts1) ++
+                    ") -> True;\n"),(index + 2))
+                Negation (Predication predS2 ts2 _) _ ->
+                    (((predSymStr predS2)++"("++(terms_cime ts2) ++ ") -> " ++
+                    fk1 ++ "(" ++ (term_cime t1) ++ "," ++
+                    (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ ")," ++
+                    (terms_cime ts2) ++ ");\n" ++
+                    fk1++"("++(term_cime t2)++ ",True," ++ (terms_cime ts2) ++
+                    ") -> False;\n" ++
+                    (predSymStr predS1)++"("++(terms_cime ts1)++") -> " ++
+                    fk2 ++ "(" ++ (term_cime t1) ++ "," ++
+                    (predSymStr predS2) ++ "(" ++ (terms_cime ts2) ++ ")," ++ 
+                    (terms_cime ts1) ++ ");\n" ++
+                    fk2++"("++(term_cime t2) ++ ",False,"++(terms_cime ts1) ++
+                    ") -> True;\n"),(index + 2))
+                Strong_equation t3 t4 _ ->
+                    (("eq("++(term_cime t3)++","++(term_cime t4)++") -> " ++
+                    fk1 ++ "(" ++ (term_cime t1) ++ "," ++
+                    (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++
+                    ")," ++ (term_cime t3)++","++(term_cime t4) ++ ");\n" ++
+                    fk1 ++ "(" ++ (term_cime t2) ++ ",True," ++ 
+                    (term_cime t3)++ "," ++ (term_cime t4) ++ ") -> " ++
+                    "True;\n" ++
+                    (predSymStr predS1)++"(" ++ (terms_cime ts1) ++ ") -> " ++
+                    fk2 ++ "(" ++ (term_cime t1) ++ "," ++ 
+                    (term_cime t3) ++ "," ++ (terms_cime ts1) ++ ");\n" ++
+                    fk2++"("++(term_cime t2)++"," ++ (term_cime t4) ++ "," ++ 
+                    (terms_cime ts1) ++ ") -> " ++ "True;\n"),(index + 2))
+                Negation (Strong_equation t3 t4 _) _ ->
+                    (("eq("++(term_cime t3)++","++(term_cime t4)++") -> " ++
+                    fk1 ++ "(" ++ (term_cime t1) ++ "," ++
+                    (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++
+                    ")," ++ (term_cime t3)++","++(term_cime t4) ++ ");\n" ++
+                    fk1 ++ "(" ++ (term_cime t2) ++ ",True," ++ 
+                    (term_cime t3)++ "," ++ (term_cime t4) ++ ") -> " ++
+                    "False;\n" ++
+                    (predSymStr predS1)++"(" ++ (terms_cime ts1) ++ ") -> " ++
+                    fk2 ++ "(" ++ (term_cime t1) ++ ",eq(" ++ 
+                    (term_cime t3) ++ "," ++ (term_cime t4) ++ ")," ++
+                    (terms_cime ts1) ++ ");\n" ++
+                    fk2++"("++(term_cime t2)++",False," ++ 
+                    (terms_cime ts1) ++ ") -> " ++ "True;\n"),(index + 2))
+                _ -> error "CASL.CCC.TerminationProof.<impli_cime_ex_eq>"
+          _ -> error "CASL.CCC.TerminationProof.<impli_cime_ex>"
+    _ -> error "CASL.CCC.TerminationProof.<impli_cime>"
   where fk1 = "af" ++ (show index)
         fk2 = "af" ++ (show $ index +1)
 
@@ -569,8 +644,12 @@ equiv_cime index f =
               ")," ++ (terms_cime ts1) ++ ");\n" ++
               fk2 ++ "(False," ++ (terms_cime ts1) ++ ") -> " ++ "True;\n"),
               (index + 2))
-          _ -> error "!! " --(showPretty f1 "CASL.CCC.FreeTypes.<equiv_cime1>")
-    _ -> error "CASL.CCC.FreeTypes.<equiv_cime2>"
+          _ -> error "!! "
+    Equivalence (Existl_equation t1 t2 _) f1 _ ->
+        error "eq_ex"
+    Equivalence (Strong_equation t1 t2 _) f1 _ ->
+        error "eq_st"
+    _ -> error "CASL.CCC.TerminationProof.<equiv_cime>"
   where fk1 = "af" ++ (show index)
         fk2 = "af" ++ (show $ index + 1)
  
@@ -580,7 +659,7 @@ impli_equiv_cime index f =
   case (quanti f) of
     Implication _ _ _ _ -> impli_cime index f
     Equivalence _ _ _ -> equiv_cime index f
-    _ -> error "CASL.CCC.FreeTypes.<impli_equiv_cime2>"
+    _ -> error "CASL.CCC.TerminationProof.<impli_equiv_cime2>"
 
 {- transform a axiom to cime (f_str)
 -}
@@ -604,21 +683,23 @@ axiom_cime f =
               "eq(" ++ (term_cime t1) ++ "," ++ (term_cime t2) ++ ") -> False"
           Strong_equation t1 t2 _ -> 
               "eq(" ++ (term_cime t1) ++ "," ++ (term_cime t2) ++ ") -> False"
-          _ -> error "CASL.CCC.FreeTypes.<Termination_Axioms_Negation>"
+          Definedness _ _ -> ""           -- not implement
+          _ -> error "CASL.CCC.TerminationProof.<Axioms_Negation>"
     True_atom _ -> 
-        error "CASL.CCC.FreeTypes.<Termination_Axioms_True>"     
+        error "CASL.CCC.TerminationProof.<Axioms_True>"     
     False_atom _ -> 
-        error "CASL.CCC.FreeTypes.<Termination_Axioms_False>"
+        error "CASL.CCC.TerminationProof.<Axioms_False>"
     Predication p_s ts _ -> 
         ((predSymStr p_s) ++ "(" ++ (termsStr ts) ++ ") -> True")
     Definedness _ _ -> 
-        error "CASL.CCC.FreeTypes.<Termination_Axioms_Definedness>"
+        error "CASL.CCC.TerminationProof.<Axioms_Definedness>"
     Existl_equation t1 t2 _ -> 
         (term_cime t1) ++ " -> " ++ (term_cime t2)
     Strong_equation t1 t2 _ -> 
         (term_cime t1) ++ " -> " ++ (term_cime t2)                   
-    _ -> error "CASL.CCC.FreeTypes.<Termination_Axioms>"
-  where termsStr ts = if null ts then error "CASL.CCC.FreeTypes.axiom_cime"
+    _ -> error "CASL.CCC.TerminationProof.<Axioms>"
+  where termsStr ts = if null ts 
+                      then error "CASL.CCC.TerminationProof.axiom_cime"
                       else tail $ concat $ map (\s->","++s) $ map term_cime ts
 
 

@@ -98,7 +98,7 @@ checkFreeType (osig,osens) m fsn
                 head $ filter (\t->not $ checkVar_App t) leadingTerms
         in warning Nothing ("a variable occurs twice in a leading term of " ++
                             opSymStr os) pos 
-    | (not $ null fsn) && (terminationProof (osens ++ fsn)) =
+    | (not $ null fs) && (terminationProof (osens ++ fsn)) =
         warning Nothing "not terminating" nullRange
     | not $ null overlap_query = 
   --  | not $ null overlapSym = 
