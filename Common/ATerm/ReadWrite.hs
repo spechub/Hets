@@ -55,7 +55,7 @@ data ReadTAFStruct = RTS ATermTable
 readATerm :: String -> ATermTable 
 readATerm ('!':str)     = 
     case readTAF emptyATermTable str emptyRTable 0 of
-    (RTS at _ _rt _l, _) -> at
+    (RTS at _ _rt _l, _) -> toReadonlyATT at
 readATerm str           = 
     fst $ fst $ readAT emptyATermTable (dropSpaces str)
 
@@ -203,7 +203,7 @@ spanAbbrevChar :: String -> (String,String)
 spanAbbrevChar          = span isBase64Char
 
 isIntHead :: Char -> Bool
-isIntHead c             = (isDigit c) || (c=='-')
+isIntHead c = isDigit c || c == '-'
 
 spanNotQuote' :: String -> (String,String)
 spanNotQuote' []                = error "spanNotQuote'"
@@ -215,7 +215,7 @@ spanNotQuote' (x:xs')   = case spanNotQuote' xs' of
 
 condAddRElement :: Int -> Int -> ReadTable -> ReadTable
 condAddRElement ai len tbl@(RTab abb_ai_map siz) = 
-    if len > 7 || snd (abbrev (siz)) < len then
+    if len > 7 || snd (abbrev siz) < len then
        RTab (Map.insert siz ai abb_ai_map) (siz + 1)
     else tbl
 
@@ -239,7 +239,7 @@ data Write_struct = WS WriteTable Doc_len
 -- ATermString is expected!! The Argument should be the throwing
 -- function name.
 fatal_error :: String -> a 
-fatal_error fn = error (fn++": empty SharedATermString found!!")
+fatal_error fn = error $ fn ++ ": empty SharedATermString found!!" 
 
 writeATerm :: ATermTable -> String
 writeATerm at           = writeAT at ""
@@ -247,7 +247,7 @@ writeATerm at           = writeAT at ""
 writeSharedATermSDoc :: ATermTable -> SDoc
 writeSharedATermSDoc at = 
     if getTopIndex at == -1 then fatal_error "writeSharedATermSDoc: empty"
-    else case writeTAF at emptyWTable of
+    else case writeTAF (toReadonlyATT at) emptyWTable of
     WS _ (Doc_len doc l)
         | l == 0 -> fatal_error "writeSharedATermSDoc"
         | otherwise -> text "!" <> doc 
@@ -419,7 +419,7 @@ mkAbbrevAux x str l =
   else (str, l)
 
 deAbbrev :: [Char] -> Int
-deAbbrev =  let f m c = 64*m + toBase64Int c in foldl f 0 
+deAbbrev =  let f m c = 64 * m + toBase64Int c in foldl f 0 
 
 {-
 toBase64 :: [Char]
