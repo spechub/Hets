@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2004
+Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -36,54 +36,39 @@ class ShATermConvertible t where
 
     fromShATermList at = 
         case getATerm at of
-        aterm -> 
-            case aterm of 
             ShAList ats _ ->  
-                map (\i -> fromShATerm (getATermByIndex1 i at)) ats
-            _           -> fromShATermError "[a]" aterm
+                map (\ i -> fromShATerm (getATermByIndex1 i at)) ats
+            aterm -> fromShATermError "[a]" aterm
 
 fromShATermError :: String -> ShATerm -> a
-fromShATermError t u = error ("Cannot convert ShATerm to "++t++": "++(err u))
+fromShATermError t u = error $ "Cannot convert ShATerm to " 
+                       ++ t ++ ": " ++ err u
     where err te = case te of 
-                  ShAAppl s l _ -> "!ShAAppl "++s 
-                                   ++ " ("++show (length l)++")"
+                  ShAAppl s l _ -> "!ShAAppl "++ s 
+                                   ++ " (" ++ show (length l) ++ ")"
                   ShAList l _   -> "!ShAList"
-                                   ++ " ("++show (length l)++")"
+                                   ++ " (" ++ show (length l) ++ ")"
                   ShAInt i _    -> "!ShAInt " ++ show i
-
 
 -- some instances -----------------------------------------------
 instance ShATermConvertible Bool where
     toShATerm att b = case b of
-                       True  -> addATerm (ShAAppl "true" [] []) att 
-                       False -> addATerm (ShAAppl "false" [] []) att
-    fromShATerm att = case at of 
-                       ShAAppl "true"  [] _ -> True
-                       ShAAppl "false" [] _ -> False
-                       _                     -> fromShATermError "Bool" at
-                      where at = getATerm att
--- for Integer derive : ShATermConvertible hand written!
+                       True  -> addATerm (ShAAppl "T" [] []) att 
+                       False -> addATerm (ShAAppl "F" [] []) att
+    fromShATerm att = case getATerm att of 
+                       ShAAppl "T" [] _ -> True
+                       ShAAppl "F" [] _ -> False
+                       at -> fromShATermError "Bool" at
 
 instance ShATermConvertible Integer where
     toShATerm att x = addATerm (ShAInt x []) att
-    fromShATerm att = case at of 
-                       (ShAInt x _)  -> x
-                       _             -> fromShATermError "Integer" at
-                      where at = getATerm att
+    fromShATerm att = case getATerm att of 
+                       ShAInt x _ -> x
+                       at  -> fromShATermError "Integer" at
 
 instance ShATermConvertible Int where
     toShATerm att x = toShATerm att (toInteger x)
-    fromShATerm att = case mi y of
-                       (Just i) -> i
-                       Nothing  -> error ("Integer to big for Int: "++(show y))
-                      where
-                      y::Integer 
-                      y = fromShATerm att
-
-mi :: (Num a) => Integer -> Maybe a
-mi x = if toInteger ((fromInteger::Integer->Int) x) == x 
-                  then Just (fromInteger x) 
-                  else Nothing                     
+    fromShATerm att = integer2Int $ fromShATerm att
 
 instance (ShATermConvertible a, Integral a) 
     => ShATermConvertible (Ratio a) where
@@ -94,45 +79,26 @@ instance (ShATermConvertible a, Integral a)
           (att2,i2') ->
               addATerm (ShAAppl "Ratio" [i1',i2'] []) att2
    fromShATerm att = 
-       case aterm of
-       (ShAAppl "Ratio" [i1',i2'] _) -> 
+       case getATerm att of
+       ShAAppl "Ratio" [i1',i2'] _ -> 
            case fromShATerm (getATermByIndex1 i1' att) of
            i1 -> 
              case fromShATerm (getATermByIndex1 i2' att) of
              i2 -> (i1 % i2)
-       _                ->  fromShATermError "Ratio" aterm
-       where aterm = getATerm att 
+       aterm ->  fromShATermError "Ratio" aterm
 
 instance ShATermConvertible Char where                   
-   toShATerm att c = addATerm (ShAAppl (show (c:[])) [] []) att 
-   fromShATerm att = case at of
-                      (ShAAppl s [] _) -> conv s
-                      _                ->  fromShATermError "Char" at
-                      where at = getATerm att 
+   toShATerm att c = addATerm (ShAAppl (show [c]) [] []) att 
+   fromShATerm att = case getATerm att of
+                     ShAAppl s [] _ -> str2Char s
+                     at -> fromShATermError "Char" at
    toShATermList att s = addATerm (ShAAppl (show s) [] []) att
-   fromShATermList att = case at of 
-                         (ShAAppl s [] _) -> read s
-                         _                -> fromShATermError "String" at
-                       where at = getATerm att
+   fromShATermList att = case getATerm att of 
+                         ShAAppl s [] _ -> read s
+                         at -> fromShATermError "String" at
                         
-conv :: String -> Char
-conv ('\"':sr) = case reverse sr of
-                  ('\"':so) -> conv' (reverse so)
-                               where
-                               conv' ('\\':x:[]) = case x of
-                                   'n'  -> '\n'
-                                   't'  -> '\t'
-                                   'r'  -> '\r'
-                                   '\"' -> '\"'
-                                   _    -> error "very strange reach"
-                               conv' (x:[]) = x
-                               conv' _ = error "String not convertible to char"
-                  _         -> error "No matching '\"' found"
-conv _         = error "String doesn't begin with '\"'"
-
 instance ShATermConvertible () where
-    toShATerm att _ = addATerm (ShAAppl "UNIT" [] []) att
-    fromShATerm att = case at of
-                       (ShAAppl "UNIT" [] _) -> ()
-                       _                 -> fromShATermError "()" at
-                      where at = getATerm att
+    toShATerm att _ = addATerm (ShAAppl "U" [] []) att
+    fromShATerm att = case getATerm att of
+                      ShAAppl "U" [] _ -> ()
+                      at -> fromShATermError "()" at
