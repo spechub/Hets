@@ -16,7 +16,8 @@ module Common.ATerm.AbstractSyntax
      addATerm,addATermNoFullSharing,
      getATerm, toReadonlyATT,
      getATermIndex,getTopIndex,
-     getATermByIndex1) where
+     getATermByIndex1, str2Char, integer2Int
+    ) where
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Map as DMap
@@ -75,3 +76,22 @@ getATermIndex t (ATT a_iDFM _ _) = Map.findWithDefault (-1) t a_iDFM
 
 getATermByIndex1 :: Int -> ATermTable -> ATermTable
 getATermByIndex1 i (ATT a_iDFM i_aDFM _) = ATT a_iDFM i_aDFM i
+
+-- | conversion of a string in double quotes to a character
+str2Char :: String -> Char
+str2Char ('\"' : sr) = conv' (init sr) where
+                               conv' [x] = x
+                               conv' ['\\', x] = case x of
+                                   'n'  -> '\n'
+                                   't'  -> '\t'
+                                   'r'  -> '\r'
+                                   '\"' -> '\"'
+                                   _    -> error "strToChar"
+                               conv' _ = error "String not convertible to char"
+str2Char _         = error "String doesn't begin with '\"'"
+
+-- | conversion of an unlimited integer to a machine int
+integer2Int :: Integer -> Int
+integer2Int x = if toInteger ((fromInteger :: Integer -> Int) x) == x 
+                  then fromInteger x 
+                  else error $ "Integer to big for Int: " ++ show x
