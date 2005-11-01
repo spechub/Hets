@@ -24,18 +24,16 @@ hetcatsrules = [("ShATermConvertible",shatermfn, "", "", Nothing),
 -- useful helper things
 addPrime doc = doc <> char '\''
 
-ppCons b vs = let c = text $ constructor b in  
-    if null vs then c else parens $ fsep (c : vs)
+ppCons b vs = let c = ppCons' b vs in  
+    if null vs then c else parens c
+
+ppCons' b vs = fsep $ text (constructor b) : vs
 
 -- begin of PosItem derivation 
 updateposfn dat =
     if any ((elem posLC) . types) (body dat) then
-       instanceSkeleton "PosItem"
-	       [ (makeGetPosFn, empty)
-	       ]
-               dat
-    else
-      empty
+       instanceSkeleton "PosItem" [ (makeGetPosFn, empty) ] dat
+    else empty
  
 posLC = Con "Range"
 
@@ -91,13 +89,12 @@ makeFromShATermFn dat =
 makeFromShATerm b
   = let ts = types b
         cvs = varNames ts
-        childFromShATerm v = text "case fromShATerm" <+> 
-	          parens (text "getATermByIndex1" <+> v <+> text "att") <+> 
-	          text "of {" <+> addPrime v <+> text "->"
+        childFromShATerm v = text "case fromShATerm $ getATermByIndex1"
+	          <+> v <+> text "att of {" <+> addPrime v <+> text "->"
     in text "ShAAppl" <+> doubleQuotes (text $ constructor b) <+>
        bracketList cvs <+> text "_ ->"
        $$ nest 4 (
 	    block (map childFromShATerm cvs ++
-		   [ppCons b (varNames' ts) <+> closeBraces ts]))
+		   [ppCons' b (varNames' ts) <+> closeBraces ts]))
 
 -- end of ATermConvertible derivation
