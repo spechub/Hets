@@ -1,5 +1,5 @@
 {-# OPTIONS -cpp #-}
-{-|
+{- |
 Module      :  $Header$
 Copyright   :  (c) Klaus Lüttich, C.Maeder, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -53,18 +53,16 @@ import ATC.GlobalAnnotations()
 import Driver.Version
 import Driver.Options
 
-{---
+{- |
   Write the given LIB_DEFN in every format that HetcatsOpts includes.
   Filenames are determined by the output formats.
-  @param opt - Options Either default or given on the comandline
-  @param ld  - a LIB_DEFN read as ATerm or parsed
 -}
 write_LIB_DEFN :: GlobalAnnos -> FilePath -> HetcatsOpts -> LIB_DEFN -> IO ()
-write_LIB_DEFN ga file opt ld = do 
+write_LIB_DEFN ga file opt ld = do
     let odir' = outdir opt
         (base, path, _) = fileparse downloadExtensions file
         odir = if null odir' then path else odir'
-        filePrefix = pathAndBase odir base 
+        filePrefix = pathAndBase odir base
         filename ty = filePrefix ++ "." ++ show ty
         verbMesg ty = putIfVerbose opt 3 $ "Writing file: " ++ filename ty
         printAscii ty = do
@@ -82,13 +80,13 @@ write_LIB_DEFN ga file opt ld = do
             DfgFile -> return () -- (requires environment)
             ComptableXml -> return ()
             _ -> putIfVerbose opt 0 $ "Error: the OutType \"" ++
-                        show t ++ "\" is not implemented" 
+                        show t ++ "\" is not implemented"
     putIfVerbose opt 3 ("Current OutDir: " ++ odir)
     mapM_ write_type $ outtypes opt
 
 pathAndBase :: FilePath -> FilePath -> FilePath
-pathAndBase path base = 
-    if null path then base 
+pathAndBase path base =
+    if null path then base
        else if last path == '/' then path ++ base
             else path ++ "/" ++ base
 
@@ -102,8 +100,8 @@ debug_latex_filename = (\(b,p,_) -> p++ b ++ ".debug.tex") .
 write_casl_latex :: HetcatsOpts -> GlobalAnnos -> FilePath -> LIB_DEFN -> IO ()
 write_casl_latex opt ga oup ld =
     do writeFile oup $ printLIB_DEFN_latex ga ld
-       doIfVerbose opt 5 $ 
-           writeFile (debug_latex_filename oup) $ 
+       doIfVerbose opt 5 $
+           writeFile (debug_latex_filename oup) $
                printLIB_DEFN_debugLatex ga ld
 
 writeShATermFile :: (ShATermConvertible a) => FilePath -> a -> IO ()
@@ -115,10 +113,10 @@ writeShATermFileSDoc fp atcon =
 
 versionedATermTable :: (ShATermConvertible a) => a -> ATermTable
 versionedATermTable atcon =
-    case  {-# SCC "att0" #-} toShATerm emptyATermTable hetcats_version of
+    case toShATerm emptyATermTable hetcats_version of
     (att0,versionnr) ->
-        case {-# SCC "att1" #-} toShATerm att0 atcon of
-        (att1,aterm) ->  {-# SCC "att3" #-}
+        case toShATerm att0 atcon of
+        (att1,aterm) ->
             fst $ addATerm (ShAAppl "hets" [versionnr,aterm] []) att1
 
 toShATermString :: (ShATermConvertible a) => a -> String
