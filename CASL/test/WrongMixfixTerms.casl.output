@@ -7,7 +7,7 @@
 *** Error 5.1, expected further mixfix token: ["(__)","__"]
 a < b
 a < b
-*** Error 8.1-8.4, expected further mixfix token: ["(","(op )","(var )"]
+*** Error 8.1-8.4, expected further mixfix token: ["(","(var )"]
 *** Error 9.1, unexpected mixfix token: (
 *** Error 10.13, unexpected mixfix token: ,
 *** Error 11.12, not a formula: (op a : b)
@@ -74,3 +74,4 @@ a < b
   __[__]__(A, a, +__(b))
   __+__(A__([__](a)), b)
 *** Error 30.2-30.4, expected further mixfix token: ["!=","/=","<","<=","<>"]
+*** Error 31.1-31.9, expected further mixfix token: ["p","x"]

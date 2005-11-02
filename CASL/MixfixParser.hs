@@ -37,16 +37,12 @@ mkRule = mixRule 1
 mkSingleArgRule :: Int -> Id -> Rule
 mkSingleArgRule b ide = (protect ide, b, getPlainTokenList ide ++ [varTok])
 
-mkSingleOpArgRule :: Int -> Id -> Rule
-mkSingleOpArgRule b ide = (protect ide, b, getPlainTokenList ide ++ [exprTok])
-
 mkArgsRule :: Int -> Id -> Rule
 mkArgsRule b ide = (protect ide, b, getPlainTokenList ide
                       ++ getTokenPlaceList tupleId)
 
-singleArgId, singleOpArgId, multiArgsId :: Id
+singleArgId, multiArgsId :: Id
 singleArgId = mkId (getPlainTokenList exprId ++ [varTok])
-singleOpArgId = mkId (getPlainTokenList exprId ++ [exprTok])
 
 multiArgsId = mkId (getPlainTokenList exprId ++
                                  getPlainTokenList tupleId)
@@ -56,19 +52,15 @@ initRules ga (opS, predS) =
     let ops = Set.toList opS
         preds = Set.toList predS
     in concat [ mkRule typeId :
-       mkRule exprId :
        mkRule varId :
        mkRule singleArgId :
-       mkRule singleOpArgId :
        mkRule multiArgsId :
        listRules 1 ga,
        map (mixRule 0) preds,
        map (mkSingleArgRule 0) preds,
-       map (mkSingleOpArgRule 0) preds,
        map (mkArgsRule 0) preds,
        map mkRule ops,
        map (mkSingleArgRule 1) ops,
-       map (mkSingleOpArgRule 1) ops,
        map (mkArgsRule 1) ops]
 
 -- | meaningful position of a term

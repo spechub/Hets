@@ -18,7 +18,7 @@
 *** Error 18.1, unexpected mixfix token: <=
 *** Error 19.1, unexpected mixfix token: .a
 *** Error 20.1, unexpected mixfix token: 'a'
-*** Error 21.1-21.4, expected further mixfix token: ["(","(op )","(var )"]
+*** Error 21.1-21.4, expected further mixfix token: ["(","(var )"]
 *** Error 22.7, unexpected mixfix token: b
 *** Error 23.10, expected further mixfix token: ["p","x","["]
 *** Error 23.7, unexpected mixfix token: b

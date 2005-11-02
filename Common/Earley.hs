@@ -269,7 +269,7 @@ scanItem addType ks (trm, t)
     in case ts of
        [] -> []
        hd : tt -> let r = q { rest = tt } in
-          if hd == t then
+          if hd == t || t == exprTok && hd == varTok then
                if t == commaTok then
                   case tt of
                   sd : _ | sd == termTok ->
@@ -277,7 +277,7 @@ scanItem addType ks (trm, t)
                              [ r, q { rest = termTok : ts } ]
                   _ -> [r]
               else if t == exprTok || t == varTok then
-                   [r { args = trm : args p }]
+                   [r { args = trm : pArgs }]
               else if t == typeTok then
                   case (tt, pArgs) of
                   ([], [arg]) -> [q { rest = [], args = [addType trm arg] }]
