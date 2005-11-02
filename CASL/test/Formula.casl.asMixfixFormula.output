@@ -4,8 +4,7 @@
 *** Error 4.18-4.20, expected further mixfix token: [":","!=","/=","<","<="]
 *** Error 5.7, unexpected mixfix token: <
 *** Error 6.3, unexpected mixfix token: #=
-*** Error 7.10, unexpected mixfix token: predy
-*** Error 7.1, unexpected mixfix token: exists1
+ . exists1(predy :: bb)
  . exists predy: bb . a
  . exists! a: v . x
  . exists! a: v . x

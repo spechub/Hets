@@ -1382,7 +1382,7 @@ op b : a
 *** Error 268.15, unknown sort 'b'
 *** Hint 269.6, redeclared sort 's'
 *** Warning 269.6, void reflexive subsort 's'
-*** Error 270.3, unexpected mixfix token: a
+*** Error 270.3, no operation with 0 arguments found for 'a'
 *** Warning 271.11, known variable shadowed 'a'
 *** Warning 272.6, known variable shadowed 'a'
 *** Warning 272.11, known variable shadowed 'a'

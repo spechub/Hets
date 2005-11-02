@@ -1210,7 +1210,7 @@ pred q : s
 *** Error 268.9, unknown sort 'b'
 *** Error 268.6, wrong number of places '__a'
 *** Error 268.15, unknown sort 'b'
-*** Error 270.3, unexpected mixfix token: a
+*** Error 270.3, no operation with 0 arguments found for 'a'
 *** Error 285.17, unknown sort 's2'
 *** Error 285.20, unknown sort 's1'
 *** Error 285.31, unknown sort 'a'

@@ -42,10 +42,9 @@ mkArgsRule b ide = (protect ide, b, getPlainTokenList ide
                       ++ getTokenPlaceList tupleId)
 
 singleArgId, multiArgsId :: Id
-singleArgId = mkId (getPlainTokenList exprId ++ [varTok])
+singleArgId = mkId [exprTok, varTok]
 
-multiArgsId = mkId (getPlainTokenList exprId ++
-                                 getPlainTokenList tupleId)
+multiArgsId = mkId (exprTok : getPlainTokenList tupleId)
 
 initRules ::  GlobalAnnos -> IdSet -> [Rule]
 initRules ga (opS, predS) =
@@ -119,10 +118,16 @@ type MixResolve f = GlobalAnnos -> IdSet -> f -> Result f
 iterateCharts :: (PrettyPrint f, PosItem f) => (f -> f)
               -> MixResolve f -> GlobalAnnos -> IdSet -> [TERM f]
               -> TermChart f -> TermChart f
-iterateCharts par extR g ids terms c =
+iterateCharts par extR g ids@(ops, preds) terms c =
     let self = iterateCharts par extR g ids
         expand = expandPos Mixfix_token
-        oneStep = nextChart addType toAppl g c
+        addRule :: Token -> [Rule]
+        addRule tok = if isSimpleToken tok && 
+                      let mem = Set.member $ mkId [tok, placeTok] 
+                      in not (mem ops || mem preds)
+                      then let i = mkId [tok] in 
+                      [mkRule i, mkSingleArgRule 1 i, mkArgsRule 1 i] else []
+        oneStep = nextChart addType toAppl addRule g c
         resolveTerm = resolveMixTrm par extR g ids
     in if null terms then c
        else case head terms of
@@ -178,8 +183,10 @@ iterateCharts par extR g ids terms c =
 
 mkIdSet :: Set.Set Id -> Set.Set Id -> IdSet
 mkIdSet ops preds =
-    let both = Set.intersection ops preds in
-        (ops, Set.difference preds both)
+    let f = Set.filter (not . isSimpleId)
+        mixOps = f ops
+        both = Set.intersection mixOps preds in
+        (mixOps, Set.difference (f preds) both)
 
 resolveMixfix :: (PrettyPrint f, PosItem f) => (f -> f)
               -> MixResolve f -> GlobalAnnos -> Set.Set Id -> Set.Set Id
@@ -207,17 +214,12 @@ resolveFormula par extR g ops preds f =
 
 resolveMixFrm :: (PrettyPrint f, PosItem f) => (f -> f)
               -> MixResolve f -> MixResolve (FORMULA f)
-resolveMixFrm par extR g ids@(ops, onlyPreds) frm =
+resolveMixFrm par extR g ids frm =
     let self = resolveMixFrm par extR g ids
         resolveTerm = resolveMixTrm par extR g ids in
     case frm of
        Quantification q vs fOld ps ->
-           let varIds = Set.fromList $ concatMap (\ (Var_decl va _ _) ->
-                               map simpleIdToId va) vs
-               newIds = (Set.union ops varIds,
-                         (Set.\\) onlyPreds varIds)
-           in
-           do fNew <- resolveMixFrm par extR g newIds fOld
+           do fNew <- resolveMixFrm par extR g ids fOld
               return $ Quantification q vs fNew ps
        Conjunction fsOld ps ->
            do fsNew <- mapM self fsOld

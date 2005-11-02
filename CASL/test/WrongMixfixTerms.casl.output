@@ -16,16 +16,11 @@ a < b
 *** Error 14.1-14.4, ambiguous mixfix term
   A__([__](a))
   A[a]
-  __[__](A, a)
-  __[a](A)
 *** Error 15.1-15.4, ambiguous mixfix term
   __[__](B, a)
   __[a](B)
 *** Error 16.1-16.9, ambiguous mixfix term
   A__([__]__(a, A__([__]__(a, p))))
-  __[__]__(A, a, A__([__]__(a, p)))
-  __[__]__(A__([__]__(a, A)), a, p)
-  ____p(A, [__]__(a, A__([__](a))))
   ____p(A[a], A__([__](a)))
 *** Error 17.1-17.5, ambiguous mixfix term
   A__(__!([__](a)))
@@ -42,9 +37,6 @@ a < b
 *** Error 21.1-21.5, ambiguous mixfix term
   [__](__+__(a, b))
   __::__(__+__(a, b), [ ])
-*** Error 22.1-22.6, ambiguous mixfix term
-  A__([a])
-  A([a])
 *** Error 22.3-22.5, ambiguous mixfix term
   [__](a)
   __::__(a, [ ])
@@ -71,7 +63,6 @@ a < b
   A__(__::__(a, [ ]))
 *** Error 29.1-29.8, ambiguous mixfix term
   A__([__]__(a, +__(b)))
-  __[__]__(A, a, +__(b))
   __+__(A__([__](a)), b)
 *** Error 30.2-30.4, expected further mixfix token: ["!=","/=","<","<=","<>"]
 *** Error 31.1-31.9, expected further mixfix token: ["p","x"]

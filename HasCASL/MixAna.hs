@@ -50,7 +50,7 @@ iterateCharts :: GlobalAnnos -> [Term] -> TermChart
 iterateCharts ga terms chart =
     do e <- get
        let self = iterateCharts ga
-           oneStep = nextChart addType toMixTerm ga chart
+           oneStep = nextChart addType toMixTerm (const []) ga chart
            vs = localVars e
            tm = typeMap e
        case terms of

@@ -1,2 +1,1 @@
-*** Error 1.21, unexpected mixfix token: ab
-*** Error 2.9, expected further mixfix token: [":","!=","/=","<","<="]
+*** Error 1.9, expected further mixfix token: [":","!=","/=","<","<="]

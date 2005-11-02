@@ -12,7 +12,7 @@ generic mixfix analysis
 
 module Common.Earley (Rule
                      -- * special tokens for special ids
-                     , varTok, exprTok, typeTok
+                     , varTok, exprTok, typeTok, placeTok
                      , applId, parenId, typeId, exprId, varId
                      , tupleId, unitId, unknownId, isUnknownId, unToken
                      , Knowns, protect, listRules, mixRule
@@ -459,15 +459,15 @@ data Chart a = Chart { prevTable :: Table a
 -- The first function adds a type to the result.
 -- The second function filters based on argument and operator info.
 -- If filtering yields 'Nothing' further filtering by precedence is applied.
-nextChart :: (a -> a -> a) -> ToExpr a -> GlobalAnnos -> Chart a
-          -> (a, Token) -> Chart a
-nextChart addType toExpr ga st term@(_, tok) =
+nextChart :: (a -> a -> a) -> ToExpr a -> (Token -> [Rule]) -> GlobalAnnos 
+          -> Chart a -> (a, Token) -> Chart a
+nextChart addType toExpr addRules ga st term@(_, tok) =
     let table = prevTable st
         idx = currIndex st
         (cItems, sItems) = currItems st
         (cRules, sRules) = rules st
         pItems = if null cItems && idx /= startIndex then sItems else 
-                 map (mkItem idx) sRules ++ sItems
+                 map (mkItem idx) (addRules tok ++ sRules) ++ sItems
         scannedItems = scan addType (knowns st) term pItems
         nextTable = if null cItems && idx /= startIndex then table
                     else Map.insert idx (map (mkItem idx) cRules ++ cItems) 
