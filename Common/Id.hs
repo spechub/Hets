@@ -20,6 +20,8 @@ A simple identifier is a lexical token given by a string and a start position.
 
 module Common.Id where
 
+import Data.Char
+
 -- do use in data types that derive d directly 
 data Pos = SourcePos { sourceName :: String
                      , sourceLine :: !Int 
@@ -100,6 +102,11 @@ mkSimpleId s = Token s nullRange
 
 extSimpleId :: String -> SIMPLE_ID -> SIMPLE_ID
 extSimpleId s sid = sid {tokStr = tokStr sid ++ s}
+
+isSimpleToken :: Token -> Bool
+isSimpleToken t = case tokStr t of
+    c : r -> isAlpha c || isDigit c && null r || c == '\''
+    "" -> False
 
 -- | show the plain string
 showTok :: Token -> ShowS
@@ -245,7 +252,9 @@ isSingle _   = False
 
 -- | test for a 'SIMPLE_ID'
 isSimpleId :: Id -> Bool
-isSimpleId (Id ts cs _) = null cs && isSingle ts
+isSimpleId (Id ts cs _) = null cs && case ts of 
+    [t] -> isSimpleToken t
+    _ -> False
 
 -- ** fixity stuff 
 
