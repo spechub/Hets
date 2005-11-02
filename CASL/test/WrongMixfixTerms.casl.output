@@ -3,8 +3,8 @@
   __::__(a, [ ])
 *** Error 2.1-2.6, expected further mixfix token: ["p","x"]
 *** Error 3.1-3.2, expected further mixfix token: ["p","x"]
-*** Error 4.1-4.3, expected further mixfix token: ["(__)"]
-*** Error 5.1, expected further mixfix token: ["(__)","__"]
+*** Error 4.3, expected further mixfix token: ["__"]
+*** Error 5.1, expected further mixfix token: ["__"]
 a < b
 a < b
 *** Error 8.1-8.4, expected further mixfix token: ["(","(var )"]

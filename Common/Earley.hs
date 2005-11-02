@@ -333,9 +333,7 @@ mkExpr toExpr Item { rule = orig, posList = ps, args = iArgs } =
 reduce :: GlobalAnnos -> Table a -> ToExpr a -> Item a -> [Item a]
 reduce ga table toExpr itm =
     map (addArg ga toExpr itm)
-        $ filter ( \ oi@Item{ rest = ts } -> case ts of
-                   hd : _ | hd == termTok -> checkPrecs ga itm oi
-                   _ -> False)
+        $ filter (checkPrecs ga itm)
         $ lookUp table $ index itm
 
 -- | 'Id' starts with a 'place'
@@ -422,15 +420,11 @@ complete :: ToExpr a -> GlobalAnnos -> Table a -> [Item a] -> [Item a]
 complete toExpr ga table items =
     let reducedItems = recReduce ga table toExpr $
                        reduceCompleted ga table toExpr items
-        in reducedItems
-           ++ items
+        in reducedItems ++ items
 
-predict :: [Item a] -> [Item a] -> [Item a]
-predict rs items =
-    if any ( \ Item{ rest = ts } ->
-            not (null ts) && head ts == termTok) items
-    then rs ++ items
-    else items
+doPredict :: [Item a] -> ([Item a], [Item a])
+doPredict items = partition ( \ Item{ rest = ts } ->
+                      not (null ts) && head ts == termTok) items
 
 ordItem :: Item a -> Item a -> Ordering
 ordItem Item{ index = i1, rest = r1, rule = n1 }
@@ -456,11 +450,10 @@ mergeItems (i1:r1) (i2:r2) =
 -- | the whole state for mixfix resolution
 data Chart a = Chart { prevTable :: Table a
                        , currIndex :: Index
-                       , currItems :: [Item a]
-                       , rules :: [Rule]
+                       , currItems :: ([Item a], [Item a])
+                       , rules :: ([Rule], [Rule])
                        , knowns :: Knowns
                        , solveDiags :: [Diagnosis] }
-               deriving Show
 
 -- | make one scan, complete, and predict step.
 -- The first function adds a type to the result.
@@ -471,17 +464,21 @@ nextChart :: (a -> a -> a) -> ToExpr a -> GlobalAnnos -> Chart a
 nextChart addType toExpr ga st term@(_, tok) =
     let table = prevTable st
         idx = currIndex st
-        items = currItems st
-        rs = rules st
-        scannedItems = scan addType (knowns st) term items
-        nextTable = Map.insert idx items table
+        (cItems, sItems) = currItems st
+        (cRules, sRules) = rules st
+        pItems = if null cItems && idx /= startIndex then sItems else 
+                 map (mkItem idx) sRules ++ sItems
+        scannedItems = scan addType (knowns st) term pItems
+        nextTable = if null cItems && idx /= startIndex then table
+                    else Map.insert idx (map (mkItem idx) cRules ++ cItems) 
+                         table
+        completedItems = complete toExpr ga nextTable
+                         $ sortBy ordItem $ scannedItems
         nextIdx = incrIndex idx
-    in  if null items then st else
+    in  if null pItems then st else
         st { prevTable = nextTable
            , currIndex = nextIdx
-           , currItems =  predict (map (mkItem nextIdx) rs)
-           $ complete toExpr ga nextTable
-           $ sortBy ordItem scannedItems
+           , currItems = doPredict completedItems
            , solveDiags = (if null scannedItems then
                       [Diag Error ("unexpected mixfix token: " ++ tokStr tok)
                       $ tokPos tok]
@@ -493,18 +490,18 @@ mixDiags ds st = st { solveDiags = ds ++ solveDiags st }
 
 -- | create the initial chart
 initChart :: [Rule] -> Knowns -> Chart a
-initChart ruleS knownS =
+initChart ruleS knownS = 
     Chart { prevTable = Map.empty
           , currIndex = startIndex
-          , currItems = map (mkItem startIndex) ruleS
-          , rules = ruleS
+          , currItems = ([], [])
+          , rules = partition ( \ (_, _, t : _) -> t == termTok) ruleS
           , knowns = knownS
           , solveDiags = [] }
 
 -- | extract resolved result
 getResolved :: (a -> ShowS) -> Range -> ToExpr a -> Chart a -> Result a
 getResolved pp p toExpr st =
-    let items = filter ((currIndex st/=) . index) $ currItems st
+    let items = snd $ currItems st
         ds = solveDiags st
     in case items of
        [] -> Result ds Nothing
