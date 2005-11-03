@@ -20,6 +20,7 @@ import COL.StatAna
 import COL.LaTeX_COL()
 import CASL.Sign
 import CASL.StaticAna
+import CASL.MixfixParser
 import CASL.Morphism
 import CASL.SymbolMapAnalysis
 import CASL.Logic_CASL
@@ -91,7 +92,8 @@ instance StaticAnalysis COL C_BASIC_SPEC COLFORMULA ()
                COLMor 
                Symbol RawSymbol where
          basic_analysis COL = Just $ basicAnalysis (const $ const return) 
-                              (const return) ana_COL_SIG_ITEM const
+                              (const $ const return) ana_COL_SIG_ITEM 
+                              emptyMix const
          stat_symb_map_items COL = statSymbMapItems
          stat_symb_items COL = statSymbItems
          ensures_amalgamability COL _ = 

@@ -98,7 +98,6 @@ forall m, n, r, s: Int; a, b, c, d: Nat
 %(Int_mult_def)%
 . m - n = m + - n %(Int_sub_def)%
 . + m = m %(Int_pos_def)%
-. - (a - b) = b - a %(Int_neg_def)%
 . sign(m) = 0 when m = 0 else 1 when m > 0 else - 1
 %(Int_sign_def)%
 . m <= n <=> n - m in Nat %(Int_leq_def)%
@@ -159,7 +158,6 @@ forall p, q: Pos; n: Nat; i, j: Int; x, y, z: Rat
 . not def x / 0 %(Rat_divide_def1)%
 . (x / y = z <=> z = x * y) if not y = 0 %(Rat_divide_def2)%
 . + x = x %(Rat_plus_def)%
-. - (i / p) = - i / p %(Rat_minus_def)%
 . abs(i / p) = abs(i) / p %(Rat_abs_def)%
 . x ^ 0 = 1 %(Rat_power_0)%
 . x ^ suc(n) = x * x ^ n %(Rat_power_suc)%
@@ -1369,8 +1367,14 @@ op b : a
 *** Hint 98.15, redeclared op 'max'
 *** Hint 121.18, redeclared sort 'Int'
 *** Hint 121.12, redeclared sort 'Nat'
+*** Error 147.8-147.16, ambiguous mixfix term
+  -__(__-__(a, b))
+  -(__-__(a, b))
 *** Hint 209.17, redeclared sort 'Rat'
 *** Hint 209.11, redeclared sort 'Int'
+*** Error 246.8-246.14, ambiguous mixfix term
+  -__(__/__(i, p))
+  -(__/__(i, p))
 *** Error 261.9-261.21, ambiguous mixfix term
   __*__(i, __-__(q, __*__(j, p)))
   __-__(__*__(i, q), __*__(j, p))

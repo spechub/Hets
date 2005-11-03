@@ -27,7 +27,6 @@ import CoCASL.CoCASLSign
 
 import CASL.Sign
 import CASL.MixfixParser
-import CASL.Utils
 import CASL.ShowMixfix
 import CASL.StaticAna
 import CASL.AS_Basic_CASL
@@ -55,14 +54,43 @@ basicCoCASLAnalysis :: (BASIC_SPEC C_BASIC_ITEM C_SIG_ITEM C_FORMULA,
                               Sign C_FORMULA CoCASLSign,
                               Sign C_FORMULA CoCASLSign,
                               [Named (FORMULA C_FORMULA)])
-basicCoCASLAnalysis = 
-    basicAnalysis minExpForm ana_C_BASIC_ITEM ana_C_SIG_ITEM diffCoCASLSign
+basicCoCASLAnalysis = basicAnalysis minExpForm ana_C_BASIC_ITEM 
+                      ana_C_SIG_ITEM ana_CMix diffCoCASLSign
 
 instance Resolver C_FORMULA where
     putParen = mapC_FORMULA
     mixResolve = resolveC_FORMULA
     checkMix = noExtMixfixCo
     putInj = injC_FORMULA
+
+ana_CMix :: Mix C_BASIC_ITEM C_SIG_ITEM C_FORMULA CoCASLSign
+ana_CMix = emptyMix 
+    { getBaseIds = ids_C_BASIC_ITEM
+    , getSigIds = ids_C_SIG_ITEM 
+    , getExtIds = \ e -> mkIdSets (Rel.keysSet $ constructors e) Set.empty }
+
+ids_C_BASIC_ITEM :: C_BASIC_ITEM -> IdSets
+ids_C_BASIC_ITEM ci = case ci of
+    CoFree_datatype al _ -> 
+        (Set.unions $ map (ids_CODATATYPE_DECL . item) al, Set.empty)
+    CoSort_gen al _ -> unite $ map (ids_SIG_ITEMS ids_C_SIG_ITEM . item) al
+
+ids_C_SIG_ITEM :: C_SIG_ITEM -> IdSets
+ids_C_SIG_ITEM (CoDatatype_items al _) = 
+    (Set.unions $ map (ids_CODATATYPE_DECL . item) al, Set.empty)
+
+ids_CODATATYPE_DECL :: CODATATYPE_DECL -> Set.Set Id
+ids_CODATATYPE_DECL (CoDatatype_decl _ al _) = 
+    Set.unions $ map (ids_COALTERNATIVE . item) al
+
+ids_COALTERNATIVE :: COALTERNATIVE -> Set.Set Id
+ids_COALTERNATIVE a = case a of
+    Co_construct _ mi cs _ -> Set.unions $ 
+        maybe Set.empty single mi : map ids_COCOMPONENTS cs
+    CoSubsorts _ _ -> Set.empty  
+
+ids_COCOMPONENTS :: COCOMPONENTS -> Set.Set Id
+ids_COCOMPONENTS (CoSelect l _ _) = Set.unions $ map single l 
 
 data CoRecord a b c d = CoRecord 
     { foldBoxOrDiamond :: C_FORMULA -> Bool -> d -> a -> Range -> c
@@ -155,8 +183,8 @@ minExpForm ga s form =
                return $ BoxOrDiamond b nm f2 ps
         phi -> return phi
 
-ana_C_SIG_ITEM :: Ana C_SIG_ITEM C_FORMULA CoCASLSign
-ana_C_SIG_ITEM _ mi = 
+ana_C_SIG_ITEM :: Ana C_SIG_ITEM C_BASIC_ITEM C_SIG_ITEM C_FORMULA CoCASLSign
+ana_C_SIG_ITEM _ _ mi = 
     case mi of 
     CoDatatype_items al _ -> 
         do let sorts = map (( \ (CoDatatype_decl s _ _) -> s) . item) al
@@ -315,8 +343,9 @@ ana_COCOMPONENTS s c = do
                       return $ Just $ Component i ty) cs 
     return $ partition ((==Total) . opKind . compType) $ catMaybes sels 
 
-ana_C_BASIC_ITEM :: Ana C_BASIC_ITEM C_FORMULA CoCASLSign
-ana_C_BASIC_ITEM ga bi = do
+ana_C_BASIC_ITEM 
+    :: Ana C_BASIC_ITEM C_BASIC_ITEM C_SIG_ITEM C_FORMULA CoCASLSign
+ana_C_BASIC_ITEM mix ga bi = do
   case bi of
     CoFree_datatype al ps -> 
         do let sorts = map (( \ (CoDatatype_decl s _ _) -> s) . item) al
@@ -326,7 +355,7 @@ ana_C_BASIC_ITEM ga bi = do
            closeSubsortRel 
            return bi
     CoSort_gen al ps ->
-        do (gs,ul) <- ana_CoGenerated ana_C_SIG_ITEM ga ([], al)
+        do (gs,ul) <- ana_CoGenerated ana_C_SIG_ITEM mix ga ([], al)
            toCoSortGenAx ps False $ unionGenAx gs
            return $ CoSort_gen ul ps
 
@@ -347,11 +376,11 @@ toCoSortGenAx ps isFree (sorts, rel, ops) = do
                   True False $ ExtFORMULA $ CoSort_gen_ax sortList 
                            (opSyms ++ injSyms) isFree]
 
-ana_CoGenerated :: Ana C_SIG_ITEM C_FORMULA CoCASLSign
+ana_CoGenerated :: Ana C_SIG_ITEM C_BASIC_ITEM C_SIG_ITEM C_FORMULA CoCASLSign
                 -> Ana ([GenAx], [Annoted (SIG_ITEMS C_SIG_ITEM C_FORMULA)]) 
-                   C_FORMULA CoCASLSign
-ana_CoGenerated anaf ga (_, al) = do
-   ul <- mapAnM (ana_SIG_ITEMS minExpForm anaf ga Generated) al
+                   C_BASIC_ITEM C_SIG_ITEM C_FORMULA CoCASLSign
+ana_CoGenerated anaf mix ga (_, al) = do
+   ul <- mapAnM (ana_SIG_ITEMS minExpForm anaf mix ga Generated) al
    return (map (getCoGenSig . item) ul, ul)
    
 getCoGenSig :: SIG_ITEMS C_SIG_ITEM C_FORMULA -> GenAx

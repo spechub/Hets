@@ -10,7 +10,7 @@ Portability :  portable
 generic mixfix analysis
 -}
 
-module Common.Earley (Rule
+module Common.Earley (Rule, Rules, partitionRules
                      -- * special tokens for special ids
                      , varTok, exprTok, typeTok, placeTok
                      , applId, parenId, typeId, exprId, varId
@@ -19,7 +19,7 @@ module Common.Earley (Rule
                      , getTokenPlaceList
                      , endPlace, begPlace
                      -- * resolution chart
-                     , Chart, mixDiags, ToExpr
+                     , Chart, mixDiags, ToExpr, rules, addRules
                      , initChart, nextChart, getResolved
                      -- * printing
                      , joinPlace, isLeftArg, isRightArg)
@@ -84,7 +84,7 @@ setPlainIdePos (Id ts cs _) ps =
            in (Id (front ++ newPls) (reverse newCs) (reverseRange ps3), ps7)
 
 -- | a special index type for more type safety
-newtype Index = Index Int deriving (Eq, Ord, Show)
+newtype Index = Index Int deriving (Eq, Ord)
 
 -- deriving Num is also possible
 -- but the following functions are sufficient
@@ -108,17 +108,6 @@ data Item a = Item
     , rest :: [Token]   -- part of the rule after the "dot"
     , index :: Index    -- index into the Table/input string
     }
-
-instance Show (Item a) where
-    showsPrec _ Item { rule = ide, rest = d, index = Index i } =
-        let v = getPlainTokenList ide
-            first = takeDiff d v
-            showToks = showSepList id showTok
-            in showChar '['. showToks first
-                          . showChar '.'
-                          . showToks d
-                          . showString ", "
-                          . shows i . showChar ']'
 
 -- | the non-terminal
 termStr :: String
@@ -452,6 +441,7 @@ data Chart a = Chart { prevTable :: Table a
                        , currIndex :: Index
                        , currItems :: ([Item a], [Item a])
                        , rules :: ([Rule], [Rule])
+                       , addRules :: Token -> [Rule]
                        , knowns :: Knowns
                        , solveDiags :: [Diagnosis] }
 
@@ -459,15 +449,15 @@ data Chart a = Chart { prevTable :: Table a
 -- The first function adds a type to the result.
 -- The second function filters based on argument and operator info.
 -- If filtering yields 'Nothing' further filtering by precedence is applied.
-nextChart :: (a -> a -> a) -> ToExpr a -> (Token -> [Rule]) -> GlobalAnnos 
+nextChart :: (a -> a -> a) -> ToExpr a -> GlobalAnnos 
           -> Chart a -> (a, Token) -> Chart a
-nextChart addType toExpr addRules ga st term@(_, tok) =
+nextChart addType toExpr ga st term@(_, tok) =
     let table = prevTable st
         idx = currIndex st
         (cItems, sItems) = currItems st
         (cRules, sRules) = rules st
         pItems = if null cItems && idx /= startIndex then sItems else 
-                 map (mkItem idx) (addRules tok ++ sRules) ++ sItems
+                 map (mkItem idx) (addRules st tok ++ sRules) ++ sItems
         scannedItems = scan addType (knowns st) term pItems
         nextTable = if null cItems && idx /= startIndex then table
                     else Map.insert idx (map (mkItem idx) cRules ++ cItems) 
@@ -488,13 +478,20 @@ nextChart addType toExpr addRules ga st term@(_, tok) =
 mixDiags :: [Diagnosis] -> Chart a -> Chart a
 mixDiags ds st = st { solveDiags = ds ++ solveDiags st }
 
+type Rules = ([Rule], [Rule]) -- postfix and prefix rules 
+
+-- | presort rules
+partitionRules :: [Rule] -> Rules
+partitionRules = partition ( \ (_, _, t : _) -> t == termTok)
+
 -- | create the initial chart
-initChart :: [Rule] -> Knowns -> Chart a
-initChart ruleS knownS = 
+initChart :: (Token -> [Rule]) -> Rules -> Knowns -> Chart a
+initChart adder ruleS knownS = 
     Chart { prevTable = Map.empty
           , currIndex = startIndex
           , currItems = ([], [])
-          , rules = partition ( \ (_, _, t : _) -> t == termTok) ruleS
+          , rules = ruleS
+          , addRules = adder
           , knowns = knownS
           , solveDiags = [] }
 

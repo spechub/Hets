@@ -122,10 +122,10 @@ addSentences ds =
 -- * traversing all data types of the abstract syntax
 
 ana_BASIC_SPEC :: Resolver f => Min f e 
-               -> Ana b f e -> Ana s f e -> GlobalAnnos
+               -> Ana b b s f e -> Ana s b s f e -> Mix b s f e -> GlobalAnnos
                -> BASIC_SPEC b s f -> State (Sign f e) (BASIC_SPEC b s f)
-ana_BASIC_SPEC mef ab as ga (Basic_spec al) = fmap Basic_spec $
-      mapAnM (ana_BASIC_ITEMS mef ab as ga) al
+ana_BASIC_SPEC mef ab anas mix ga (Basic_spec al) = fmap Basic_spec $
+      mapAnM (ana_BASIC_ITEMS mef ab anas mix ga) al
 
 -- looseness of a datatype
 data GenKind = Free | Generated | Loose deriving (Show, Eq, Ord)
@@ -140,13 +140,13 @@ unionGenAx = foldr ( \ (s1, r1, f1) (s2, r2, f2) ->
                          Rel.union r1 r2,
                          Set.union f1 f2)) emptyGenAx
 
-ana_BASIC_ITEMS :: Resolver f => Min f e  
-                -> Ana b f e -> Ana s f e -> GlobalAnnos 
+ana_BASIC_ITEMS :: Resolver f => Min f e -> Ana b b s f e -> Ana s b s f e 
+                -> Mix b s f e -> GlobalAnnos 
                 -> BASIC_ITEMS b s f -> State (Sign f e) (BASIC_ITEMS b s f)
-ana_BASIC_ITEMS mef ab as ga bi = 
+ana_BASIC_ITEMS mef ab anas mix ga bi = 
     case bi of 
     Sig_items sis -> fmap Sig_items $ 
-                     ana_SIG_ITEMS mef as ga Loose sis 
+                     ana_SIG_ITEMS mef anas mix ga Loose sis 
     Free_datatype al ps -> 
         do let sorts = map (( \ (Datatype_decl s _ _) -> s) . item) al
            mapM_ addSort sorts
@@ -155,7 +155,7 @@ ana_BASIC_ITEMS mef ab as ga bi =
            closeSubsortRel 
            return bi
     Sort_gen al ps ->
-        do (gs,ul) <- ana_Generated mef as ga al
+        do (gs,ul) <- ana_Generated mef anas mix ga al
            toSortGenAx ps False $ unionGenAx gs
            return $ Sort_gen ul ps
     Var_items il _ -> 
@@ -167,17 +167,13 @@ ana_BASIC_ITEMS mef ab as ga bi =
            vds <- gets envDiags
            sign <- get
            put e { envDiags = vds } -- restore with shadowing warnings 
-           let preds = allPredIds sign
-               ops = formulaIds sign
-               newGa = addAssocs ga sign
-               (es, resFs, anaFs) = foldr ( \ f (dss, ress, anas) -> 
-                      let Result ds m = anaForm mef newGa ops preds sign 
-                                        $ item f
+           let (es, resFs, anaFs) = foldr ( \ f (dss, ress, ranas) -> 
+                      let Result ds m = anaForm mef mix ga sign $ item f
                       in case m of
-                         Nothing -> (ds ++ dss, ress, anas)
+                         Nothing -> (ds ++ dss, ress, ranas)
                          Just (resF, anaF) -> 
                              (ds ++ dss, f {item = resF} : ress, 
-                                 f {item = anaF} : anas))
+                                 f {item = anaF} : ranas))
                      ([], [], []) afs
                fufs = map (mapAn (\ f -> let 
                                  vs = map ( \ (v, s) -> 
@@ -192,17 +188,14 @@ ana_BASIC_ITEMS mef ab as ga bi =
            return $ Local_var_axioms il resFs ps
     Axiom_items afs ps ->                   
         do sign <- get
-           ops <- gets formulaIds
-           preds <- gets allPredIds
-           newGa <- gets $ addAssocs ga
-           let (es, resFs, anaFs) = foldr ( \ f (dss, ress, anas) -> 
-                      let Result ds m = anaForm mef newGa ops preds sign 
-                                        $ item f
+           let (es, resFs, anaFs) = foldr ( \ f (dss, ress, ranas) -> 
+                      let Result ds m = anaForm mef mix ga
+                                        sign $ item f
                       in case m of
-                         Nothing -> (ds ++ dss, ress, anas)
+                         Nothing -> (ds ++ dss, ress, ranas)
                          Just (resF, anaF) -> 
                              (ds ++ dss, f {item = resF} : ress, 
-                                 f {item = anaF} : anas))
+                                 f {item = anaF} : ranas))
                      ([], [], []) afs
                fufs = map (mapAn (\ f -> let
                                  vs = map ( \ (v, s) -> 
@@ -214,7 +207,7 @@ ana_BASIC_ITEMS mef ab as ga bi =
            addDiags es
            addSentences sens                        
            return $ Axiom_items resFs ps
-    Ext_BASIC_ITEMS b -> fmap Ext_BASIC_ITEMS $ ab ga b
+    Ext_BASIC_ITEMS b -> fmap Ext_BASIC_ITEMS $ ab mix ga b
 
 mapAn :: (a -> b) -> Annoted a -> Annoted b
 mapAn f an = replaceAnnoted (f $ item an) an
@@ -254,19 +247,19 @@ toSortGenAx ps isFree (sorts, rel, ops) = do
                   True False f]
 
 ana_SIG_ITEMS :: Resolver f => Min f e  
-                -> Ana s f e -> GlobalAnnos -> GenKind 
+                -> Ana s b s f e -> Mix b s f e -> GlobalAnnos -> GenKind 
                 -> SIG_ITEMS s f -> State (Sign f e) (SIG_ITEMS s f)
-ana_SIG_ITEMS mef as ga gk si = 
+ana_SIG_ITEMS mef anas mix ga gk si = 
     case si of 
     Sort_items al ps -> 
-        do ul <- mapM (ana_SORT_ITEM mef ga) al 
+        do ul <- mapM (ana_SORT_ITEM mef mix ga) al 
            closeSubsortRel
            return $ Sort_items ul ps
     Op_items al ps -> 
-        do ul <- mapM (ana_OP_ITEM mef ga) al 
+        do ul <- mapM (ana_OP_ITEM mef mix ga) al 
            return $ Op_items ul ps
     Pred_items al ps -> 
-        do ul <- mapM (ana_PRED_ITEM mef ga) al 
+        do ul <- mapM (ana_PRED_ITEM mef mix ga) al 
            return $ Pred_items ul ps
     Datatype_items al _ -> 
         do let sorts = map (( \ (Datatype_decl s _ _) -> s) . item) al
@@ -274,14 +267,14 @@ ana_SIG_ITEMS mef as ga gk si =
            mapAnM (ana_DATATYPE_DECL gk) al 
            closeSubsortRel
            return si
-    Ext_SIG_ITEMS s -> fmap Ext_SIG_ITEMS $ as ga s
+    Ext_SIG_ITEMS s -> fmap Ext_SIG_ITEMS $ anas mix ga s
 
 -- helper
-ana_Generated :: Resolver f => Min f e 
-              -> Ana s f e -> GlobalAnnos -> [Annoted (SIG_ITEMS s f)]     
+ana_Generated :: Resolver f => Min f e -> Ana s b s f e -> Mix b s f e 
+              -> GlobalAnnos -> [Annoted (SIG_ITEMS s f)]     
               -> State (Sign f e) ([GenAx], [Annoted (SIG_ITEMS s f)])
-ana_Generated mef as ga  al = do
-   ul <- mapAnM (ana_SIG_ITEMS mef as ga Generated) al
+ana_Generated mef anas mix ga  al = do
+   ul <- mapAnM (ana_SIG_ITEMS mef anas mix ga Generated) al
    return (map (getGenSig . item) ul, ul)
    
 getGenSig :: SIG_ITEMS s f -> GenAx
@@ -326,17 +319,17 @@ getGenSorts si =
                               Rel.insert s t) r il) Rel.empty il)
         in (sorts, rel, Set.empty)
            
-
 getOps :: OP_ITEM f -> Set.Set Component
 getOps oi = case oi of 
     Op_decl is ty _ _ -> 
         Set.fromList $ map ( \ i -> Component i $ toOpType ty) is
-    Op_defn i par _ _ -> Set.singleton $ Component i $ toOpType $ headToType par
+    Op_defn i par _ _ -> 
+        Set.singleton $ Component i $ toOpType $ headToType par
 
-ana_SORT_ITEM :: Resolver f => Min f e 
+ana_SORT_ITEM :: Resolver f => Min f e -> Mix b s f e 
               -> GlobalAnnos -> Annoted (SORT_ITEM  f) 
               -> State (Sign f e) (Annoted (SORT_ITEM f))
-ana_SORT_ITEM mef ga asi =
+ana_SORT_ITEM mef mix ga asi =
     case item asi of 
     Sort_decl il _ ->
         do mapM_ addSort il
@@ -350,11 +343,8 @@ ana_SORT_ITEM mef ga asi =
            put e { varMap = Map.empty }
            addVars (Var_decl [v] super ps) 
            sign <- get
-           ops <- gets formulaIds 
-           preds <- gets allPredIds
-           newGa <- gets $ addAssocs ga
            put e -- restore 
-           let Result ds mf = anaForm mef newGa ops preds sign $ item af
+           let Result ds mf = anaForm mef mix ga sign $ item af
                lb = getRLabel af
                lab = if null lb then getRLabel asi else lb
            addDiags ds 
@@ -380,15 +370,15 @@ ana_SORT_ITEM mef ga asi =
                          $ zip tl il
            return asi
 
-ana_OP_ITEM :: Resolver f => Min f e -> GlobalAnnos -> Annoted (OP_ITEM f) 
-            -> State (Sign f e) (Annoted (OP_ITEM f))
-ana_OP_ITEM mef ga aoi = 
+ana_OP_ITEM :: Resolver f => Min f e -> Mix b s f e -> GlobalAnnos 
+            -> Annoted (OP_ITEM f) -> State (Sign f e) (Annoted (OP_ITEM f))
+ana_OP_ITEM mef mix ga aoi = 
     case item aoi of 
     Op_decl ops ty il ps -> 
         do let oty = toOpType ty
                ni = notImplied aoi
            mapM_ (addOp oty) ops
-           ul <- mapM (ana_OP_ATTR mef ga oty ni ops) il
+           ul <- mapM (ana_OP_ATTR mef mix ga oty ni ops) il
            if null $ filter ( \ i -> case i of 
                                    Assoc_op_attr -> True
                                    _ -> False) il 
@@ -409,11 +399,8 @@ ana_OP_ITEM mef ga aoi =
            put e { varMap = Map.empty }
            mapM_ addVars vs
            sign <- get
-           ops <- gets formulaIds
-           preds <- gets allPredIds 
-           newGa <- gets $ addAssocs ga
            put e -- restore
-           let Result ds mt = anaTerm mef newGa ops preds sign 
+           let Result ds mt = anaTerm mef mix ga sign 
                               (res_OP_TYPE ty) ps $ item at
            addDiags ds
            case mt of 
@@ -432,10 +419,10 @@ headToType (Op_head k args r ps) = Op_type k (sortsOfArgs args) r ps
 sortsOfArgs :: [ARG_DECL] -> [SORT]
 sortsOfArgs = concatMap ( \ (Arg_decl l s _) -> map (const s) l)
 
-ana_OP_ATTR :: Resolver f => Min f e -> GlobalAnnos 
+ana_OP_ATTR :: Resolver f => Min f e -> Mix b s f e -> GlobalAnnos 
             -> OpType -> Bool -> [Id] -> (OP_ATTR f)
             -> State (Sign f e) (Maybe (OP_ATTR f))
-ana_OP_ATTR mef ga ty ni ois oa = do
+ana_OP_ATTR mef mix ga ty ni ois oa = do
   let   sty = toOP_TYPE ty
         rty = opRes ty 
         atys = opArgs ty 
@@ -451,10 +438,7 @@ ana_OP_ATTR mef ga ty ni ois oa = do
   case oa of 
     Unit_op_attr t ->
         do sign <- get
-           ops <- gets allOpIds
-           preds <- gets allPredIds 
-           newGa <- gets $ addAssocs ga
-           let Result ds mt = anaTerm mef newGa ops preds 
+           let Result ds mt = anaTerm mef mix ga
                               sign { varMap = Map.empty } rty q t
            addDiags ds
            case mt of 
@@ -520,10 +504,10 @@ makeUnit b t ty ni i =
                       (Application (Qual_op_name i (toOP_TYPE ty) p) rargs p)
                       qv p) p
 
-ana_PRED_ITEM :: Resolver f => Min f e 
+ana_PRED_ITEM :: Resolver f => Min f e -> Mix b s f e
               -> GlobalAnnos -> Annoted (PRED_ITEM f)
               -> State (Sign f e) (Annoted (PRED_ITEM f))
-ana_PRED_ITEM mef ga ap = 
+ana_PRED_ITEM mef mix ga ap = 
     case item ap of 
     Pred_decl preds ty _ -> 
         do mapM (addPred $ toPredType ty) preds
@@ -540,11 +524,8 @@ ana_PRED_ITEM mef ga ap =
            put e { varMap = Map.empty }
            mapM_ addVars vs          
            sign <- get
-           ops <- gets formulaIds
-           preds <- gets allPredIds 
-           newGa <- gets $ addAssocs ga
            put e -- restore
-           let Result ds mt = anaForm mef newGa ops preds sign $ item at
+           let Result ds mt = anaForm mef mix ga sign $ item at
            addDiags ds
            case mt of 
              Nothing -> return ap {item = Pred_decl [i] ty ps}
@@ -782,7 +763,7 @@ resultToState f a = do
 
 -- wrap it all up for a logic
 
-type Ana b f e = GlobalAnnos -> b -> State (Sign f e) b
+type Ana a b s f e = Mix b s f e -> GlobalAnnos -> a -> State (Sign f e) a
 
 class (PrettyPrint f, PosItem f) => Resolver f where
    putParen :: f -> f -- ^ put parenthesis around mixfix terms
@@ -791,32 +772,39 @@ class (PrettyPrint f, PosItem f) => Resolver f where
                              -- analysed completely by mixfix resolution
    putInj :: f -> f -- ^ insert injections 
 
-anaForm :: Resolver f => Min f e -> GlobalAnnos -> Set.Set Id -> Set.Set Id 
+anaForm :: Resolver f => Min f e -> Mix b s f e -> GlobalAnnos
         -> Sign f e -> (FORMULA f) -> Result (FORMULA f, FORMULA f)
-anaForm mef ga ops preds sign f = do 
-    resF <- resolveFormula putParen mixResolve ga ops preds f
+anaForm mef mix ga sign f = do 
+    resF <- resolveFormula putParen mixResolve (addAssocs ga sign) 
+            (mixRules mix) f
     anaF <- minExpFORMULA mef ga sign 
          $ assert (noMixfixF checkMix resF) resF
     return (resF, anaF)
 
-anaTerm :: Resolver f => Min f e -> GlobalAnnos -> Set.Set Id -> Set.Set Id 
+anaTerm :: Resolver f => Min f e -> Mix b s f e -> GlobalAnnos
         -> Sign f e -> SORT -> Range -> (TERM f) -> Result (TERM f, TERM f)
-anaTerm mef ga ops preds sign srt pos t = do 
-    resT <- resolveMixfix putParen mixResolve ga ops preds t
+anaTerm mef mix ga sign srt pos t = do 
+    resT <- resolveMixfix putParen mixResolve (addAssocs ga sign) 
+            (mixRules mix) t
     anaT <- oneExpTerm mef ga sign 
          $ assert (noMixfixT checkMix resT) $ Sorted_term resT srt pos
     return (resT, anaT)
 
 basicAnalysis :: Resolver f
               => Min f e -- ^ type analysis of f
-              -> Ana b f e  -- ^ static analysis of basic item b
-              -> Ana s f e  -- ^ static analysis of signature item s  
+              -> Ana b b s f e  -- ^ static analysis of basic item b
+              -> Ana s b s f e  -- ^ static analysis of signature item s
+              -> Mix b s f e -- ^ for mixfix analysis 
               -> (e -> e -> e) -- ^ difference of signature extension e
               -> (BASIC_SPEC b s f, Sign f e, GlobalAnnos)
          -> Result (BASIC_SPEC b s f, Sign f e, Sign f e, [Named (FORMULA f)])
-basicAnalysis mef anab anas dif (bs, inSig, ga) = 
-    let (newBs, accSig) = runState (ana_BASIC_SPEC mef anab anas ga bs) 
-                          inSig
+basicAnalysis mef anab anas mix dif (bs, inSig, ga) = 
+    let allIds = unite $ ids_BASIC_SPEC (getBaseIds mix) (getSigIds mix) bs
+                 : getExtIds mix (extendedInfo inSig) : 
+                  [mkIdSets (allOpIds inSig) $ allPredIds inSig]
+        (newBs, accSig) = runState (ana_BASIC_SPEC mef anab anas
+               mix { mixRules = (addRule allIds, initRules ga allIds) } 
+               ga bs) inSig
         ds = reverse $ envDiags accSig
         sents = reverse $ sentences accSig
         cleanSig = accSig { envDiags = [], sentences = [], varMap = Map.empty }
@@ -827,8 +815,8 @@ basicAnalysis mef anab anas dif (bs, inSig, ga) =
 basicCASLAnalysis :: (BASIC_SPEC () () (), Sign () (), GlobalAnnos)
                   -> Result (BASIC_SPEC () () (), Sign () (), 
                              Sign () (), [Named (FORMULA ())])
-basicCASLAnalysis = 
-    basicAnalysis (const $ const return) (const return) (const return) const
+basicCASLAnalysis = basicAnalysis (const $ const return) 
+    (const $ const return) (const $ const return) emptyMix const
 
 instance Resolver () where
     putParen = id

@@ -40,14 +40,25 @@ basicModalAnalysis :: (BASIC_SPEC M_BASIC_ITEM M_SIG_ITEM M_FORMULA,
                               Sign M_FORMULA ModalSign,
                               Sign M_FORMULA ModalSign,
                               [Named (FORMULA M_FORMULA)])
-basicModalAnalysis = 
-    basicAnalysis minExpForm ana_M_BASIC_ITEM ana_M_SIG_ITEM diffModalSign
+basicModalAnalysis = basicAnalysis minExpForm ana_M_BASIC_ITEM 
+                     ana_M_SIG_ITEM ana_Mix diffModalSign
 
 instance Resolver M_FORMULA where
     putParen = mapM_FORMULA
     mixResolve = resolveM_FORMULA
     checkMix = noExtMixfixM
     putInj = injM_FORMULA
+
+ana_Mix :: Mix M_BASIC_ITEM M_SIG_ITEM M_FORMULA ModalSign
+ana_Mix = emptyMix { getSigIds = ids_M_SIG_ITEM }
+
+-- rigid ops will also be part of the CASL signature
+ids_M_SIG_ITEM :: M_SIG_ITEM -> IdSets
+ids_M_SIG_ITEM si = case si of
+    Rigid_op_items _ al _ -> 
+        (Set.unions $ map (ids_OP_ITEM . item) al, Set.empty)
+    Rigid_pred_items _ al _ -> 
+        (Set.empty, Set.unions $ map (ids_PRED_ITEM . item) al)
 
 mapMODALITY :: MODALITY -> MODALITY
 mapMODALITY m = case m of 
@@ -117,11 +128,11 @@ minExpForm ga s form =
                f2 <- minExpFORMULA minExpForm ga s f
                return $ BoxOrDiamond b nm f2 ps
 
-ana_M_SIG_ITEM :: Ana M_SIG_ITEM M_FORMULA ModalSign
-ana_M_SIG_ITEM ga mi = 
+ana_M_SIG_ITEM :: Ana M_SIG_ITEM M_BASIC_ITEM M_SIG_ITEM M_FORMULA ModalSign
+ana_M_SIG_ITEM mix ga mi = 
     case mi of 
     Rigid_op_items r al ps -> 
-        do ul <- mapM (ana_OP_ITEM minExpForm ga) al 
+        do ul <- mapM (ana_OP_ITEM minExpForm mix ga) al 
            case r of
                Rigid -> mapM_ ( \ aoi -> case item aoi of 
                    Op_decl ops ty _ _ -> 
@@ -132,7 +143,7 @@ ana_M_SIG_ITEM ga mi =
                _ -> return ()
            return $ Rigid_op_items r ul ps
     Rigid_pred_items r al ps -> 
-        do ul <- mapM (ana_PRED_ITEM minExpForm ga) al 
+        do ul <- mapM (ana_PRED_ITEM minExpForm mix ga) al 
            case r of
                Rigid -> mapM_ ( \ aoi -> case item aoi of 
                    Pred_decl ops ty _ -> 
@@ -153,18 +164,19 @@ addRigidPred ty i m = return
              (Set.insert ty $ Map.findWithDefault Set.empty i rps) rps }
 
 
-ana_M_BASIC_ITEM :: Ana M_BASIC_ITEM M_FORMULA ModalSign
-ana_M_BASIC_ITEM ga bi = do
+ana_M_BASIC_ITEM 
+    :: Ana M_BASIC_ITEM M_BASIC_ITEM M_SIG_ITEM M_FORMULA ModalSign
+ana_M_BASIC_ITEM mix ga bi = do
     case bi of
         Simple_mod_decl al fs ps -> do
             mapM_ ((updateExtInfo . preAddModId) . item) al
-            newFs <- mapAnM (ana_FORMULA False ga) fs 
+            newFs <- mapAnM (ana_FORMULA False mix ga) fs 
             mapM_ ((updateExtInfo . addModId newFs) . item) al
             return $ Simple_mod_decl al newFs ps
         Term_mod_decl al fs ps -> do
             e <- get
             mapM_ ((updateExtInfo . preAddModSort e) . item) al
-            newFs <- mapAnM (ana_FORMULA True ga) fs 
+            newFs <- mapAnM (ana_FORMULA True mix ga) fs 
             mapM_ ((updateExtInfo . addModSort newFs) . item) al
             return $ Term_mod_decl al newFs ps
 
@@ -191,17 +203,17 @@ addModSort :: [AnModFORM] -> SORT -> ModalSign -> Result ModalSign
 addModSort frms i m = 
        return m { termModies = Map.insert i frms $ termModies m }
 
-ana_FORMULA :: Bool -> Ana (FORMULA M_FORMULA) M_FORMULA ModalSign
-ana_FORMULA b ga f = 
+ana_FORMULA 
+    :: Bool 
+    -> Ana (FORMULA M_FORMULA) M_BASIC_ITEM M_SIG_ITEM M_FORMULA ModalSign
+ana_FORMULA b mix ga f = 
     if isPropForm b f then do
            let ps = map (mkId . (: [])) $ Set.toList $ getFormPredToks f
            pm <- gets predMap
            mapM_ (addPred $ PredType []) ps
-           ops <- gets formulaIds
-           preds <- gets allPredIds
            newGa <- gets $ addAssocs ga
            let Result es m = resolveFormula mapM_FORMULA 
-                             resolveM_FORMULA newGa ops preds f
+                             resolveM_FORMULA newGa (mixRules mix) f
            addDiags es
            e <- get
            phi <- case m of  

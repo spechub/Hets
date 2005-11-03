@@ -67,7 +67,9 @@ resolveTerm ga = do
            newGa = addBuiltins ga 
            prec@(_, _, m) = mkPrecIntMap $ prec_annos newGa
            chart = evalState (iterateCharts newGa [trm] $ 
-                              initChart (listRules (m+2) newGa ++
+                              initChart (const []) 
+                                        (partitionRules $ 
+                                         listRules (m+2) newGa ++
                                          initRules (prec, stdPreds) 
                                          builtinIds (Set.toList ids))
                               Set.empty) 

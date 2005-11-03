@@ -23,6 +23,7 @@ import Common.Result
 import Common.Lexer
 import Common.PPUtils
 import Common.PrettyPrint
+import Common.Earley
 
 import Common.Token
 import CASL.Formula
@@ -57,14 +58,19 @@ stdOps, stdPreds :: Set.Set Id
 stdOps = mkIds stdOpsL
 stdPreds = mkIds stdPredsL 
 
+myIdSets :: IdSets
+myIdSets = mkIdSets (mkIds stdOpsL) $ mkIds stdPredsL
+
+myMix :: GlobalAnnos -> (Token -> [Rule], Rules)
+myMix ga = (addRule myIdSets, initRules ga myIdSets)
+
 resolveForm :: GlobalAnnos -> AParser () (Result (FORMULA ()))
 resolveForm ga = 
-      resolveFormula id (const $ const return) 
-                     ga stdOps stdPreds `fmap` formula []
+      resolveFormula id (const $ const return) ga (myMix ga) `fmap` formula []
 
 resolveTerm :: GlobalAnnos -> AParser () (Result (TERM ()))
 resolveTerm ga = 
-      resolveMixfix id (const $ const return) ga stdOps stdPreds `fmap` term []
+      resolveMixfix id (const $ const return) ga (myMix ga) `fmap` term []
 
 testTerm ::  AParser () WrapString
 testTerm = do t <- term [] :: AParser () (TERM ())

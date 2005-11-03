@@ -50,7 +50,7 @@ iterateCharts :: GlobalAnnos -> [Term] -> TermChart
 iterateCharts ga terms chart =
     do e <- get
        let self = iterateCharts ga
-           oneStep = nextChart addType toMixTerm (const []) ga chart
+           oneStep = nextChart addType toMixTerm ga chart
            vs = localVars e
            tm = typeMap e
        case terms of
@@ -220,9 +220,10 @@ resolver ga bs trm =
                                          map (:[]) ":{}[](),"))
                     $ Set.unions $ map getKnowns ids
        chart<- iterateCharts ga [trm] $
-               initChart (listRules (m + 3) ga ++
-                          (initRules ps bs
-                          ids)) (if unknownId `elem` bs then ks else Set.empty)
+               initChart (const []) (partitionRules $ 
+                                     listRules (m + 3) ga ++
+                                     initRules ps bs ids) 
+                             (if unknownId `elem` bs then ks else Set.empty)
        let Result ds mr = getResolved
               (shows . printTerm emptyGlobalAnnos . parenTerm) (getRange trm)
                           toMixTerm chart

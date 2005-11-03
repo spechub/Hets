@@ -36,6 +36,7 @@ import CspCASL.AS_CSP_CASL
 import CspCASL.SignCSP
 import CASL.Sign
 import CASL.StaticAna
+import CASL.MixfixParser
 import CASL.Overload
 import Common.Result
 import Common.GlobalAnnotations
@@ -58,8 +59,9 @@ statBasicSpec :: CSP_CASL_C_SPEC -> Result CSPSign
 statBasicSpec (Csp_casl_c_spec sp ch p) =
   do (sp',sig,_,_) <- basicAnalysis 
                                (const $ const return) 
-                               (const return)
-                               (const return) 
+                               (const $ const return)
+                               (const $ const return)
+                               emptyMix
                                diffCSPAddSign
                                (sp, emptyCSPSign, emptyGlobalAnnos)
      let (_, accSig) = runState (ana_BASIC_CSP (ch,p)) sig

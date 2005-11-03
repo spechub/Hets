@@ -1262,7 +1262,6 @@
                            (v1 * v3 + v2 * v4) - (v2 * v3 + v1 * v4),
                . forall v1, v2: Int . v1 - v2 = v1 + - v2,
                . forall v1: Int . + v1 = v1,
-               . forall v1, v2: Nat . - (v1 - v2) = v2 - v1,
                . forall v1: Int
                      . sign(v1) = 0 when v1 = 0 else 1 when v1 > 0 else - 1,
                . forall v1, v2: Int . v1 <= v2 <=> v2 - v1 in Nat,
@@ -1319,7 +1318,6 @@
                . forall v1, v2, v3: Rat
                      . (v1 / v2 = v3 <=> v3 = v1 * v2) if not v2 = 0,
                . forall v1: Rat . + v1 = v1,
-               . forall v1: Pos; v2: Int . - (v2 / v1) = - v2 / v1,
                . forall v1: Pos; v2: Int . abs(v2 / v1) = abs(v2) / v1,
                . forall v1: Rat . v1 ^ 0 = 1,
                . forall v1: Nat; v2: Rat . v2 ^ suc(v1) = v2 * v2 ^ v1,
@@ -1796,8 +1794,14 @@
 *** Hint 98.15, redeclared op 'max'
 *** Hint 121.18, redeclared sort 'Int'
 *** Hint 121.12, redeclared sort 'Nat'
+*** Error 147.8-147.16, ambiguous mixfix term
+  -__(__-__(a, b))
+  -(__-__(a, b))
 *** Hint 209.17, redeclared sort 'Rat'
 *** Hint 209.11, redeclared sort 'Int'
+*** Error 246.8-246.14, ambiguous mixfix term
+  -__(__/__(i, p))
+  -(__/__(i, p))
 *** Error 261.9-261.21, ambiguous mixfix term
   __*__(i, __-__(q, __*__(j, p)))
   __-__(__*__(i, q), __*__(j, p))
