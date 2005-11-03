@@ -163,7 +163,7 @@ endif
 ### cannot link the various .o files properly. So after switching on
 ### Profiling, do an 'gmake real_clean; gmake'
 ### Comment in the following line for switching on profiling. 
-#HC_PROF = -prof -auto-all 
+#HC_PROF = -prof -auto-all -fignore-asserts
 
 HC_OPTS = $(HC_FLAGS) $(HC_INCLUDE) $(HC_PACKAGE) $(PFE_FLAGS) $(HC_PROF) \
     -DCASLEXTENSIONS
