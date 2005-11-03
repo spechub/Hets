@@ -33,18 +33,26 @@ import CASL.Print_AS_Basic()
 import Control.Exception (assert)
 
 data Mix b s f e = MixRecord 
-    { getBaseIds :: b -> IdSets
-    , getSigIds :: s -> IdSets
-    , getExtIds :: e -> IdSets
-    , mixRules :: (Token -> [Rule], Rules)
+    { getBaseIds :: b -> IdSets -- ^ ids of extra basic items
+    , getSigIds :: s -> IdSets  -- ^ ids of extra sig items
+    , getExtIds :: e -> IdSets  -- ^ ids of signature extensions
+    , mixRules :: (Token -> [Rule], Rules) -- ^ rules for Earley
+    , putParen :: f -> f -- ^ parenthesize extended formula
+    , mixResolve :: MixResolve f -- ^ resolve extended formula
+    , checkMix :: (f -> Bool) -- ^ post check extended formula
+    , putInj :: f -> f  -- ^ insert injections in extended formula
     }
 
 emptyMix :: Mix b s f e
-emptyMix = MixRecord { getBaseIds = const emptyIdSets
-                     , getSigIds = const emptyIdSets
-                     , getExtIds = const emptyIdSets
-                     , mixRules = error "emptyMix" 
-                     }
+emptyMix = MixRecord 
+    { getBaseIds = const emptyIdSets
+    , getSigIds = const emptyIdSets
+    , getExtIds = const emptyIdSets
+    , mixRules = error "emptyMix"
+    , putParen = id
+    , mixResolve = const $ const return
+    , checkMix = const True
+    , putInj = id }
 
 -- * precompute non-simple op and pred identifier for mixfix rules
 

@@ -121,7 +121,7 @@ addSentences ds =
 
 -- * traversing all data types of the abstract syntax
 
-ana_BASIC_SPEC :: Resolver f => Min f e 
+ana_BASIC_SPEC :: PrettyPrint f => Min f e 
                -> Ana b b s f e -> Ana s b s f e -> Mix b s f e -> GlobalAnnos
                -> BASIC_SPEC b s f -> State (Sign f e) (BASIC_SPEC b s f)
 ana_BASIC_SPEC mef ab anas mix ga (Basic_spec al) = fmap Basic_spec $
@@ -140,7 +140,7 @@ unionGenAx = foldr ( \ (s1, r1, f1) (s2, r2, f2) ->
                          Rel.union r1 r2,
                          Set.union f1 f2)) emptyGenAx
 
-ana_BASIC_ITEMS :: Resolver f => Min f e -> Ana b b s f e -> Ana s b s f e 
+ana_BASIC_ITEMS :: PrettyPrint f => Min f e -> Ana b b s f e -> Ana s b s f e 
                 -> Mix b s f e -> GlobalAnnos 
                 -> BASIC_ITEMS b s f -> State (Sign f e) (BASIC_ITEMS b s f)
 ana_BASIC_ITEMS mef ab anas mix ga bi = 
@@ -246,7 +246,7 @@ toSortGenAx ps isFree (sorts, rel, ops) = do
                    showSepList (showString "_") showId sortList "")
                   True False f]
 
-ana_SIG_ITEMS :: Resolver f => Min f e  
+ana_SIG_ITEMS :: PrettyPrint f => Min f e  
                 -> Ana s b s f e -> Mix b s f e -> GlobalAnnos -> GenKind 
                 -> SIG_ITEMS s f -> State (Sign f e) (SIG_ITEMS s f)
 ana_SIG_ITEMS mef anas mix ga gk si = 
@@ -270,7 +270,7 @@ ana_SIG_ITEMS mef anas mix ga gk si =
     Ext_SIG_ITEMS s -> fmap Ext_SIG_ITEMS $ anas mix ga s
 
 -- helper
-ana_Generated :: Resolver f => Min f e -> Ana s b s f e -> Mix b s f e 
+ana_Generated :: PrettyPrint f => Min f e -> Ana s b s f e -> Mix b s f e 
               -> GlobalAnnos -> [Annoted (SIG_ITEMS s f)]     
               -> State (Sign f e) ([GenAx], [Annoted (SIG_ITEMS s f)])
 ana_Generated mef anas mix ga  al = do
@@ -326,7 +326,7 @@ getOps oi = case oi of
     Op_defn i par _ _ -> 
         Set.singleton $ Component i $ toOpType $ headToType par
 
-ana_SORT_ITEM :: Resolver f => Min f e -> Mix b s f e 
+ana_SORT_ITEM :: PrettyPrint f => Min f e -> Mix b s f e 
               -> GlobalAnnos -> Annoted (SORT_ITEM  f) 
               -> State (Sign f e) (Annoted (SORT_ITEM f))
 ana_SORT_ITEM mef mix ga asi =
@@ -370,7 +370,7 @@ ana_SORT_ITEM mef mix ga asi =
                          $ zip tl il
            return asi
 
-ana_OP_ITEM :: Resolver f => Min f e -> Mix b s f e -> GlobalAnnos 
+ana_OP_ITEM :: PrettyPrint f => Min f e -> Mix b s f e -> GlobalAnnos 
             -> Annoted (OP_ITEM f) -> State (Sign f e) (Annoted (OP_ITEM f))
 ana_OP_ITEM mef mix ga aoi = 
     case item aoi of 
@@ -419,7 +419,7 @@ headToType (Op_head k args r ps) = Op_type k (sortsOfArgs args) r ps
 sortsOfArgs :: [ARG_DECL] -> [SORT]
 sortsOfArgs = concatMap ( \ (Arg_decl l s _) -> map (const s) l)
 
-ana_OP_ATTR :: Resolver f => Min f e -> Mix b s f e -> GlobalAnnos 
+ana_OP_ATTR :: PrettyPrint f => Min f e -> Mix b s f e -> GlobalAnnos 
             -> OpType -> Bool -> [Id] -> (OP_ATTR f)
             -> State (Sign f e) (Maybe (OP_ATTR f))
 ana_OP_ATTR mef mix ga ty ni ois oa = do
@@ -504,7 +504,7 @@ makeUnit b t ty ni i =
                       (Application (Qual_op_name i (toOP_TYPE ty) p) rargs p)
                       qv p) p
 
-ana_PRED_ITEM :: Resolver f => Min f e -> Mix b s f e
+ana_PRED_ITEM :: PrettyPrint f => Min f e -> Mix b s f e
               -> GlobalAnnos -> Annoted (PRED_ITEM f)
               -> State (Sign f e) (Annoted (PRED_ITEM f))
 ana_PRED_ITEM mef mix ga ap = 
@@ -765,32 +765,25 @@ resultToState f a = do
 
 type Ana a b s f e = Mix b s f e -> GlobalAnnos -> a -> State (Sign f e) a
 
-class (PrettyPrint f, PosItem f) => Resolver f where
-   putParen :: f -> f -- ^ put parenthesis around mixfix terms
-   mixResolve :: MixResolve f -- ^ resolve mixfix terms 
-   checkMix :: (f -> Bool) -- ^ check if a formula extension has been 
-                             -- analysed completely by mixfix resolution
-   putInj :: f -> f -- ^ insert injections 
-
-anaForm :: Resolver f => Min f e -> Mix b s f e -> GlobalAnnos
+anaForm :: PrettyPrint f => Min f e -> Mix b s f e -> GlobalAnnos
         -> Sign f e -> (FORMULA f) -> Result (FORMULA f, FORMULA f)
 anaForm mef mix ga sign f = do 
-    resF <- resolveFormula putParen mixResolve (addAssocs ga sign) 
-            (mixRules mix) f
+    resF <- resolveFormula (putParen mix) (mixResolve mix) 
+            (addAssocs ga sign) (mixRules mix) f
     anaF <- minExpFORMULA mef ga sign 
-         $ assert (noMixfixF checkMix resF) resF
+         $ assert (noMixfixF (checkMix mix) resF) resF
     return (resF, anaF)
 
-anaTerm :: Resolver f => Min f e -> Mix b s f e -> GlobalAnnos
+anaTerm :: PrettyPrint f => Min f e -> Mix b s f e -> GlobalAnnos
         -> Sign f e -> SORT -> Range -> (TERM f) -> Result (TERM f, TERM f)
 anaTerm mef mix ga sign srt pos t = do 
-    resT <- resolveMixfix putParen mixResolve (addAssocs ga sign) 
-            (mixRules mix) t
+    resT <- resolveMixfix (putParen mix) (mixResolve mix) 
+            (addAssocs ga sign) (mixRules mix) t
     anaT <- oneExpTerm mef ga sign 
-         $ assert (noMixfixT checkMix resT) $ Sorted_term resT srt pos
+         $ assert (noMixfixT (checkMix mix) resT) $ Sorted_term resT srt pos
     return (resT, anaT)
 
-basicAnalysis :: Resolver f
+basicAnalysis :: PrettyPrint f
               => Min f e -- ^ type analysis of f
               -> Ana b b s f e  -- ^ static analysis of basic item b
               -> Ana s b s f e  -- ^ static analysis of signature item s
@@ -817,9 +810,3 @@ basicCASLAnalysis :: (BASIC_SPEC () () (), Sign () (), GlobalAnnos)
                              Sign () (), [Named (FORMULA ())])
 basicCASLAnalysis = basicAnalysis (const $ const return) 
     (const $ const return) (const $ const return) emptyMix const
-
-instance Resolver () where
-    putParen = id
-    mixResolve = const $ const return
-    checkMix = const True
-    putInj = id

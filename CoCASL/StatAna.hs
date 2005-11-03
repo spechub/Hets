@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Till Mossakowski, Uni Bremen 2004
+Copyright   :  (c) Till Mossakowski, Uni Bremen 2004-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  hausmann@tzi.de
@@ -57,17 +57,15 @@ basicCoCASLAnalysis :: (BASIC_SPEC C_BASIC_ITEM C_SIG_ITEM C_FORMULA,
 basicCoCASLAnalysis = basicAnalysis minExpForm ana_C_BASIC_ITEM 
                       ana_C_SIG_ITEM ana_CMix diffCoCASLSign
 
-instance Resolver C_FORMULA where
-    putParen = mapC_FORMULA
-    mixResolve = resolveC_FORMULA
-    checkMix = noExtMixfixCo
-    putInj = injC_FORMULA
-
 ana_CMix :: Mix C_BASIC_ITEM C_SIG_ITEM C_FORMULA CoCASLSign
 ana_CMix = emptyMix 
     { getBaseIds = ids_C_BASIC_ITEM
     , getSigIds = ids_C_SIG_ITEM 
-    , getExtIds = \ e -> mkIdSets (Rel.keysSet $ constructors e) Set.empty }
+    , getExtIds = \ e -> mkIdSets (Rel.keysSet $ constructors e) Set.empty
+    , putParen = mapC_FORMULA
+    , mixResolve = resolveC_FORMULA
+    , checkMix = noExtMixfixCo
+    , putInj = injC_FORMULA }
 
 ids_C_BASIC_ITEM :: C_BASIC_ITEM -> IdSets
 ids_C_BASIC_ITEM ci = case ci of

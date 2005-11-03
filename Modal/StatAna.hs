@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Christian Maeder, Uni Bremen 2004
+Copyright   :  (c) Christian Maeder, Uni Bremen 2004-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luettich@tzi.de
@@ -43,14 +43,13 @@ basicModalAnalysis :: (BASIC_SPEC M_BASIC_ITEM M_SIG_ITEM M_FORMULA,
 basicModalAnalysis = basicAnalysis minExpForm ana_M_BASIC_ITEM 
                      ana_M_SIG_ITEM ana_Mix diffModalSign
 
-instance Resolver M_FORMULA where
-    putParen = mapM_FORMULA
-    mixResolve = resolveM_FORMULA
-    checkMix = noExtMixfixM
-    putInj = injM_FORMULA
-
 ana_Mix :: Mix M_BASIC_ITEM M_SIG_ITEM M_FORMULA ModalSign
-ana_Mix = emptyMix { getSigIds = ids_M_SIG_ITEM }
+ana_Mix = emptyMix 
+    { getSigIds = ids_M_SIG_ITEM
+    , putParen = mapM_FORMULA
+    , mixResolve = resolveM_FORMULA
+    , checkMix = noExtMixfixM
+    , putInj = injM_FORMULA }
 
 -- rigid ops will also be part of the CASL signature
 ids_M_SIG_ITEM :: M_SIG_ITEM -> IdSets
