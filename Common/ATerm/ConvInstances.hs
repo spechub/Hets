@@ -240,7 +240,42 @@ instance ShATermConvertible Id where
                     Id a' b' c' }}}
             u -> fromShATermError "Id" u
 
+instance ShATermConvertible DiagKind where
+    toShATerm att0 Error =
+        addATerm (ShAAppl "Error" [] []) att0
+    toShATerm att0 Warning =
+        addATerm (ShAAppl "Warning" [] []) att0
+    toShATerm att0 Hint =
+        addATerm (ShAAppl "Hint" [] []) att0
+    toShATerm att0 Debug =
+        addATerm (ShAAppl "Debug" [] []) att0
+    toShATerm att0 MessageW =
+        addATerm (ShAAppl "MessageW" [] []) att0
+    fromShATerm att =
+        case getATerm att of
+            (ShAAppl "Error" [] _) ->
+                    Error
+            (ShAAppl "Warning" [] _) ->
+                    Warning
+            (ShAAppl "Hint" [] _) ->
+                    Hint
+            (ShAAppl "Debug" [] _) ->
+                    Debug
+            (ShAAppl "MessageW" [] _) ->
+                    MessageW
+            u -> fromShATermError "DiagKind" u
+
 instance ShATermConvertible Diagnosis where
-    toShATerm _ _ = error "ConvInstances.toShATerm.Diagnosis"
-    fromShATerm _ = error "ConvInstances.fromShaTerm.Diagnosis"
-    -- undefined on purpose since all diags should be deleted
+    toShATerm att0 (Diag a b c) =
+        case toShATerm att0 a of { (att1,a') ->
+        case toShATerm att1 b of { (att2,b') ->
+        case toShATerm att2 c of { (att3,c') ->
+        addATerm (ShAAppl "Diag" [a',b',c'] []) att3 }}}
+    fromShATerm att =
+        case getATerm att of
+            (ShAAppl "Diag" [a,b,c] _) ->
+                    case fromShATerm (getATermByIndex1 a att) of { a' ->
+                    case fromShATerm (getATermByIndex1 b att) of { b' ->
+                    case fromShATerm (getATermByIndex1 c att) of { c' ->
+                    (Diag a' b' c') }}}
+            u -> fromShATermError "Diagnosis" u
