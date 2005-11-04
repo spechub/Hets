@@ -122,12 +122,17 @@ anaString lgraph defl opts libenv input file =
 -- lookup/read a library
 anaLibFile :: LogicGraph -> AnyLogic -> HetcatsOpts -> LibEnv -> LIB_NAME
               -> IOResult (LIB_NAME, LibEnv)
-anaLibFile lgraph defl opts libenv ln = do
-     putMessageIORes opts 1 $ "Downloading " ++ showPretty ln " ..."
-     res <- anaLibFileOrGetEnv lgraph defl opts libenv ln 
-         $ libNameToFile opts ln
-     putMessageIORes opts 1 $ "... loaded " ++ showPretty ln ""
-     return res
+anaLibFile lgraph defl opts libenv ln = 
+    let lnstr = showPretty ln "" in case Map.lookup ln libenv of
+    Just _ -> do 
+        putMessageIORes opts 1 $ "Analyzing from " ++ lnstr
+        return (ln, libenv)
+    Nothing -> do 
+        putMessageIORes opts 1 $ "Downloading " ++ lnstr ++ " ..."
+        res <- anaLibFileOrGetEnv lgraph defl opts libenv ln 
+            $ libNameToFile opts ln
+        putMessageIORes opts 1 $ "... loaded " ++ lnstr
+        return res
 
 -- | convert a file name that may have a suffix to a library name
 fileToLibName :: HetcatsOpts -> FilePath -> LIB_NAME
@@ -153,11 +158,7 @@ libNameToFile opts libname =
 -- lookup/read a library
 anaLibFileOrGetEnv :: LogicGraph -> AnyLogic -> HetcatsOpts -> LibEnv
               -> LIB_NAME -> FilePath -> IOResult (LIB_NAME, LibEnv)
-anaLibFileOrGetEnv lgraph defl opts libenv libname file =
-  -- is the library already in memory?
-  case Map.lookup libname libenv of
-   Just _ -> return (libname, libenv)
-   Nothing -> IOResult $ do
+anaLibFileOrGetEnv lgraph defl opts libenv libname file = IOResult $ do
      let env_file = rmSuffix file ++ ".env"
      recent_env_file <- checkRecentEnv opts env_file file
      if recent_env_file
