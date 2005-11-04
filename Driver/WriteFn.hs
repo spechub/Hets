@@ -104,12 +104,11 @@ write_casl_latex opt ga oup ld =
            writeFile (debug_latex_filename oup) $
                printLIB_DEFN_debugLatex ga ld
 
+toShATermString :: (ShATermConvertible a) => a -> String
+toShATermString atcon = writeSharedATerm (versionedATermTable atcon)
+
 writeShATermFile :: (ShATermConvertible a) => FilePath -> a -> IO ()
 writeShATermFile fp atcon = writeFile fp $ toShATermString atcon
-
-writeShATermFileSDoc :: (ShATermConvertible a) => FilePath -> a -> IO ()
-writeShATermFileSDoc fp atcon =
-   writeFileSDoc fp $ writeSharedATermSDoc (versionedATermTable atcon)
 
 versionedATermTable :: (ShATermConvertible a) => a -> ATermTable
 versionedATermTable atcon =
@@ -119,8 +118,9 @@ versionedATermTable atcon =
         (att1,aterm) ->
             fst $ addATerm (ShAAppl "hets" [versionnr,aterm] []) att1
 
-toShATermString :: (ShATermConvertible a) => a -> String
-toShATermString atcon = writeSharedATerm (versionedATermTable atcon)
+writeShATermFileSDoc :: (ShATermConvertible a) => FilePath -> a -> IO ()
+writeShATermFileSDoc fp atcon =
+   writeFileSDoc fp $ writeSharedATermSDoc (versionedATermTable atcon)
 
 globalContexttoShATerm :: FilePath -> GlobalContext -> IO ()
 globalContexttoShATerm fp gc = writeShATermFileSDoc fp gc
