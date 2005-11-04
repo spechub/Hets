@@ -170,9 +170,7 @@ defaultHetcatsOpts =
           , intype   = GuessIn
           , libdir   = ""
           , outdir   = ""
-          , outtypes = [defaultOutType]
-          -- better default options, but not implemented yet:
-          --, outtypes = [HetCASLOut OutASTree OutXml]
+          , outtypes = [] -- no default
           , rawopts  = []
           , defLogic = "CASL"
           , verbose  = 1
@@ -180,8 +178,8 @@ defaultHetcatsOpts =
           , caslAmalg = [Cell]
           }
 
-defaultOutType :: OutType
-defaultOutType = PrettyOut PrettyAscii
+-- defaultOutType :: OutType
+-- defaultOutType = PrettyOut PrettyAscii
 
 -- | every 'Flag' describes an option (see usage info)
 data Flag = Verbose  Int
@@ -414,7 +412,7 @@ options =
     , Option ['O'] [outdirS]  (ReqArg OutDir "DIR")
       "destination directory for output files"
     , Option ['o'] [outtypesS] (ReqArg parseOutTypes "OTYPES")
-      ("output file types, default " ++ show defaultOutType ++ "," ++ crS ++
+      ("output file types, default nothing," ++ crS ++
        listS ++ crS ++ bS ++ envS ++ crS ++ bS ++
        thyS ++ dfgS ++ crS ++ bS ++ comptableXmlS ++ crS ++ bS ++
        ppS ++ joinBar (map show prettyList) ++ crS ++ bS ++
