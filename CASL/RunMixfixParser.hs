@@ -38,10 +38,7 @@ stdOpsL = ["__^__", "__*__", "__+__", "[__]","__div__","__mod__", "__rem__",
           [ "____p", "q____","____x____", "{____}",
           "repeat__until__", "while__do__od", 
             "__where__but__", "__where__done",
-           "__ --> __", "__{__}--__-->{__}__", 
-           "Pl7","folge_dem_Gang","nicht_wenden","Pl3","RS3", "RS6"] ++
-        map (:[]) 
-        "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+           "__ --> __", "__{__}--__-->{__}__"]
          ++ ["A[a[c,d],b]", "B[a[c,d],b]", "__B[a[c,d],b]__", 
              "a[c,d]", "__a[c,d]__", "A[a]", "A__B", 
              "A__", "__[a]", "__p", 
@@ -49,7 +46,7 @@ stdOpsL = ["__^__", "__*__", "__+__", "[__]","__div__","__mod__", "__rem__",
 
 stdPredsL = ["__<__", "__<=__", "__>__", "__>=__", "__!=__", "__<>__",
              "__/=__", "even__", "odd__", "__isEmpty",
-            "__<=__<=__"] ++ map (:[]) "abcdpqrstuvwxyzPQRSTUVWXYZ" 
+            "__<=__<=__"]
 
 mkIds :: [String] -> Set.Set Id
 mkIds = Set.fromList . map (parseString $ parseId [])

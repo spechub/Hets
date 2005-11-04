@@ -32,4 +32,4 @@ not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-f = (\ x . x as s --> s)
+f = (\ x : s . x as s --> s)

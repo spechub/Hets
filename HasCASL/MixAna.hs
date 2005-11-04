@@ -15,7 +15,6 @@ module HasCASL.MixAna where
 import Common.GlobalAnnotations
 import Common.Result
 import Common.Id
-import Common.Keywords
 import Common.Earley
 import Common.ConvertLiteral
 import Common.Lib.State
@@ -43,10 +42,8 @@ addType :: Term -> Term -> Term
 addType (MixTypeTerm q ty ps) t = TypedTerm t q ty ps
 addType _ _ = error "addType"
 
-type TermChart = Chart Term
-
-iterateCharts :: GlobalAnnos -> [Term] -> TermChart
-              -> State Env TermChart
+iterateCharts :: GlobalAnnos -> [Term] -> Chart Term
+              -> State Env (Chart Term)
 iterateCharts ga terms chart =
     do e <- get
        let self = iterateCharts ga
@@ -190,50 +187,57 @@ toMixTerm i ar qs =
            let [op, arg] = ar in mkPatAppl op arg qs
     else if i == tupleId || i == unitId then
          mkTupleTerm ar qs
-    else if isUnknownId i then
-         QualVar $ VarDecl (simpleIdToId $ unToken i)
-                     (MixfixType []) Other qs
     else ResolvedMixTerm i ar qs
 
-getKnowns :: Id -> Knowns
-getKnowns (Id ts cs _) = Set.union (Set.fromList (map tokStr ts)) $
+getKnowns :: Id -> Set.Set Token
+getKnowns (Id ts cs _) = Set.union (Set.fromList ts) $
                          Set.unions (map getKnowns cs)
 
 resolvePattern :: GlobalAnnos -> Pattern -> State Env (Maybe Pattern)
-resolvePattern ga p = do
-    mp <- resolver ga (unknownId : builtinIds) p
-    case mp of
-        Nothing -> return Nothing
-        Just np -> fmap Just $ anaPattern np
+resolvePattern = resolver True
 
 resolve :: GlobalAnnos -> Term -> State Env (Maybe Term)
-resolve ga = resolver ga builtinIds
+resolve = resolver False
 
-resolver :: GlobalAnnos -> [Id] -> Term
-         -> State Env (Maybe Term)
-resolver ga bs trm =
+resolver :: Bool -> GlobalAnnos -> Term -> State Env (Maybe Term)
+resolver isPat ga trm =
     do ass <- gets assumps
        vs <- gets localVars
-       ps@((_, _, m), _) <- gets preIds
-       let ids = Set.toList $ Set.union (Rel.keysSet ass) $ Rel.keysSet vs
-           ks = Set.union (Set.fromList (tokStr exprTok: inS :
-                                         map (:[]) ":{}[](),"))
-                    $ Set.unions $ map getKnowns ids
-       chart<- iterateCharts ga [trm] $
-               initChart (const []) (partitionRules $ 
-                                     listRules (m + 3) ga ++
-                                     initRules ps bs ids) 
-                             (if unknownId `elem` bs then ks else Set.empty)
+       ps <- gets preIds
+       let (addRule, ruleS, sIds) = makeRules ga ps 
+                 $ Set.union (Rel.keysSet ass) $ Rel.keysSet vs
+       chart <- iterateCharts ga [trm] $ initChart addRule ruleS
        let Result ds mr = getResolved
               (shows . printTerm emptyGlobalAnnos . parenTerm) (getRange trm)
                           toMixTerm chart
        addDiags ds
-       return mr
+       if isPat then case mr of 
+           Nothing -> return mr
+           Just pat -> fmap Just $ anaPattern sIds pat
+           else return mr
+
+uTok :: Token
+uTok = mkSimpleId "_"
 
 builtinIds :: [Id]
 builtinIds = [unitId, parenId, tupleId, exprId, typeId, applId]
 
-initRules ::  (PrecMap, Set.Set Id) -> [Id] -> [Id] -> [Rule]
+makeRules :: GlobalAnnos -> (PrecMap, Set.Set Id) -> Set.Set Id 
+          -> (Token -> [Rule], Rules, Set.Set Id)
+makeRules ga ps@((_, _, m), _) aIds = 
+    let (sIds, ids) = Set.partition isSimpleId aIds
+        ks = Set.fold (Set.union . getKnowns) Set.empty ids
+        rIds = Set.union ids $ Set.intersection sIds $ Set.map simpleIdToId ks
+        m2 = m + 2
+    in ( \ tok -> if isSimpleToken tok
+                     && not (Set.member tok ks)
+                         || tok == uTok then 
+                     [(simpleIdToId tok, m2, [tok])] else []
+       , partitionRules $ listRules m2 ga ++
+                        initRules ps builtinIds (Set.toList rIds)
+       , sIds)
+
+initRules :: (PrecMap, Set.Set Id) -> [Id] -> [Id] -> [Rule]
 initRules (pm@(_, _, m), ps) bs is =
     map ( \ i -> mixRule (getIdPrec pm ps i) i)
             (bs ++ is) ++
@@ -241,31 +245,36 @@ initRules (pm@(_, _, m), ps) bs is =
             (filter isMixfix is)
 
 -- create fresh type vars for unknown ids tagged with type MixfixType [].
-anaPattern :: Pattern -> State Env Pattern
-anaPattern pat =
+anaPattern :: Set.Set Id -> Pattern -> State Env Pattern
+anaPattern s pat =
     case pat of
     QualVar vd -> do newVd <- checkVarDecl vd
                      return $ QualVar newVd
-    ResolvedMixTerm i pats ps -> do
-         l <- mapM anaPattern pats
-         return $ ResolvedMixTerm i l ps
+    ResolvedMixTerm i pats ps | null pats && 
+        (isSimpleId i || i == simpleIdToId uTok) && 
+        not (Set.member i s) -> do 
+            (tvar, c) <- toEnvState $ freshVar $ posOfId i
+            return $ QualVar $ VarDecl i (TypeName tvar rStar c) Other ps
+        | otherwise -> do
+            l <- mapM (anaPattern s) pats
+            return $ ResolvedMixTerm i l ps
     ApplTerm p1 p2 ps -> do
-         p3 <- anaPattern p1
-         p4 <- anaPattern p2
+         p3 <- anaPattern s p1
+         p4 <- anaPattern s p2
          return $ ApplTerm p3 p4 ps
     TupleTerm pats ps -> do
-         l <- mapM anaPattern pats
+         l <- mapM (anaPattern s) pats
          return $ TupleTerm l ps
     TypedTerm p q ty ps -> do
          case p of
              QualVar (VarDecl v (MixfixType []) ok qs) ->
                  let newVd = VarDecl v ty ok (qs `appRange` ps) in
                  return $ QualVar newVd
-             _ -> do newP <- anaPattern p
+             _ -> do newP <- anaPattern s p
                      return $ TypedTerm newP q ty ps
     AsPattern vd p2 ps -> do
          newVd <- checkVarDecl vd
-         p4 <- anaPattern p2
+         p4 <- anaPattern s p2
          return $ AsPattern newVd p4 ps
     _ -> return pat
     where checkVarDecl vd@(VarDecl v t ok ps) = case t of

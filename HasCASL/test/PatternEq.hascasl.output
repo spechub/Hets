@@ -10,10 +10,10 @@ program (op snd : s * t -> t) ((var x : s), (var y : t)) : t =
             (var y : t)
 program (op snd : s * t -> t) ((var x : s), (var y : t)) : t =
             (var y : t)
-program (op snd : s * t -> t) ((var x : s), (var y : t)) : t =
-            (var y : t)
+program (op snd : s * t -> t) ((var x : s) : s, (var y : t) : t) :
+        t = (var y : t)
 op a : s
-program (var b : s) = (op a : s)
+program (var b : s) : s = (op a : s)
 op b : s
 program (op b : s) = (op a : s)
 op x : s;
@@ -61,8 +61,8 @@ program snd ((var x : s), (var y : t)) : t = (var y : t)
 program snd ((var x : s), (var y : t)) : t = (var y : t) : t
 program snd ((var x : s), (var y : t)) : t = (var y : t)
 program snd ((var x : s), (var y : t)) : t = (var y : t)
-program snd ((var x : s), (var y : t)) : t = (var y : t)
-program (var b : s) = a
+program snd ((var x : s) : s, (var y : t) : t) : t = (var y : t)
+program (var b : s) : s = a
 program b = a
 c = (snd (x, y) as t)
 %% Diagnostics -----------------------------------------------------------

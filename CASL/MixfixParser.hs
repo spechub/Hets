@@ -290,8 +290,7 @@ resolveMixTrm :: PrettyPrint f => (f -> f)
               -> MixResolve f -> MixResolve (TERM f)
 resolveMixTrm par extR ga (adder, ruleS) trm =
         getResolved (showTerm par ga) (posOfTerm trm) toAppl
-           $ iterateCharts par extR ga [trm] $
-            initChart adder ruleS Set.empty
+           $ iterateCharts par extR ga [trm] $ initChart adder ruleS
 
 showTerm :: PrettyPrint f => (f -> f) -> GlobalAnnos -> TERM f -> ShowS
 showTerm par ga = shows . printText0 ga . mapTerm par

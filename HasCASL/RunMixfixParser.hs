@@ -37,10 +37,8 @@ stdOpsL = ["__^__", "__*__", "__+__", "[__]","__div__","__mod__", "__rem__",
           [ "____p", "q____","____x____", "{____}",
           "repeat__until__", "while__do__od", 
             "__none__but__", "__one__done",
-           "__ --> __", "__{__}--__-->{__}__", 
-           "Pl7","folge_dem_Gang","nicht_wenden","Pl3","RS3", "RS6"] ++
-        map (:[]) 
-        "#0123456789abcdefghijklmnoABCDEFGHIJKLMNO"
+           "__ --> __", "__{__}--__-->{__}__"] 
+         ++ map (:[]) "#0123456789abcdefghijklmnopqxABCDEFGHIJKLMNO"
          ++ ["A[a[c,d],b]", "B[a[c,d],b]", "__B[a[c,d],b]__", 
              "a[c,d]", "__a[c,d]__", "A[a]", "A__B", 
              "A__", "__[a]", "__p", "__#", "D__",
@@ -51,7 +49,7 @@ stdOpsL = ["__^__", "__*__", "__+__", "[__]","__div__","__mod__", "__rem__",
 
 stdPredsL = ["__<__", "__<=__", "__>__", "__>=__", "__!=__", "__<>__",
              "__/=__", "even__", "odd__", "__isEmpty",
-             "__<=__<=__"] ++ map (:[]) "pqrstuvwxyzPQRSTUVWXYZ" 
+             "__<=__<=__"]
 
 mkIds :: [String] -> Set.Set Id
 mkIds = Set.fromList . map (parseString some_id)
@@ -65,15 +63,11 @@ resolveTerm ga = do
        trm <- term  
        let ids = stdOps `Set.union` stdPreds
            newGa = addBuiltins ga 
-           prec@(_, _, m) = mkPrecIntMap $ prec_annos newGa
-           chart = evalState (iterateCharts newGa [trm] $ 
-                              initChart (const []) 
-                                        (partitionRules $ 
-                                         listRules (m+2) newGa ++
-                                         initRules (prec, stdPreds) 
-                                         builtinIds (Set.toList ids))
-                              Set.empty) 
-                   initialEnv { preIds = (prec, stdPreds) }
+           ps = (mkPrecIntMap $ prec_annos newGa, stdPreds)
+           (addRule, ruleS, _) = makeRules newGa ps ids 
+           chart = evalState (iterateCharts newGa [trm] 
+                             $ initChart addRule ruleS) 
+                   initialEnv { preIds = ps }
        return $ getResolved (shows . printTerm emptyGlobalAnnos . parenTerm)
                   (getRange trm) toMixTerm chart
 

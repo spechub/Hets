@@ -14,8 +14,8 @@ module Common.Earley (Rule, Rules, partitionRules
                      -- * special tokens for special ids
                      , varTok, exprTok, typeTok, placeTok
                      , applId, parenId, typeId, exprId, varId
-                     , tupleId, unitId, unknownId, isUnknownId, unToken
-                     , Knowns, protect, listRules, mixRule
+                     , tupleId, unitId
+                     , protect, listRules, mixRule
                      , getTokenPlaceList
                      , endPlace, begPlace
                      -- * resolution chart
@@ -29,7 +29,6 @@ import Common.Id
 import Common.Result
 import Common.GlobalAnnotations
 import Common.AS_Annotation
-import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 import Data.List
 
@@ -134,9 +133,6 @@ exprTok = mkSimpleId "(op )"
 -- | token for a fixed (or recursively resolved) argument expression
 varTok :: Token
 varTok = mkSimpleId "(var )"
--- | token for an unknown variable (within patterns)
-unknownTok :: Token
-unknownTok = mkSimpleId "(?)"
 
 -- | the invisible application rule with two places
 applId :: Id
@@ -159,9 +155,6 @@ exprId = mkId [exprTok]
 -- | see 'varTok'
 varId :: Id
 varId = mkId [varTok]
--- | see 'unknownTok'
-unknownId :: Id
-unknownId = mkId [unknownTok]
 
 listId :: (Id, Id) -> Id
 listId (f,c) = Id [listTok] [f,c] nullRange
@@ -179,15 +172,6 @@ unProtect _ = error "unProtect"
 
 isProtected :: Id -> Bool
 isProtected (Id ts _ _) = not (null ts) && head ts == protectTok
-
--- | test if an 'unknownId' was matched
-isUnknownId :: Id -> Bool
-isUnknownId (Id ts _ _) = not (null ts) && head ts == unknownTok
-
--- | get unknown token from an 'unknownId'
-unToken :: Id -> Token
-unToken (Id [_,t] _ _) = t
-unToken _ = error "unToken"
 
 type Rule = (Id, Int, [Token])
 
@@ -247,14 +231,11 @@ type Table a = Map.Map Index [Item a]
 lookUp :: Table a -> Index -> [Item a]
 lookUp ce k = Map.findWithDefault [] k ce
 
--- | a set of strings that do not match a 'unknownTok'
-type Knowns = Set.Set String
-
 -- | recognize next token (possible introduce new tuple variable)
-scanItem :: (a -> a -> a) -> Knowns -> (a, Token) -> Item a -> [Item a]
-scanItem addType ks (trm, t)
-    p@Item{ rest = ts, args = pArgs, rule = ide, posList = pRange } =
-    let q = p { posList = tokPos t `appRange` pRange }
+scanItem :: (a -> a -> a) -> (a, Token) -> Item a -> [Item a]
+scanItem addType (trm, t)
+    p@Item{ rest = ts, args = pArgs, posList = pRange } =
+    let q = p { posList = appRange (tokPos t) pRange }
     in case ts of
        [] -> []
        hd : tt -> let r = q { rest = tt } in
@@ -272,14 +253,10 @@ scanItem addType ks (trm, t)
                   ([], [arg]) -> [q { rest = [], args = [addType trm arg] }]
                   _ -> error "scanItem: typeTok"
               else [r]
-          else if Set.null ks then []
-               else if isUnknownId ide
-                 && not (tokStr t `Set.member` ks) then
-               [r { rule = mkId [unknownTok, t]}]
-               else []
+          else []
 
-scan :: (a -> a -> a) -> Knowns -> (a, Token) -> [Item a] -> [Item a]
-scan f ks term = concatMap (scanItem f ks term)
+scan :: (a -> a -> a) -> (a, Token) -> [Item a] -> [Item a]
+scan f term = concatMap (scanItem f term)
 
 mkAmbigs :: ToExpr a -> Item a -> [a]
 mkAmbigs toExpr p@Item{ args = l, ambigArgs = aArgs } =
@@ -442,7 +419,6 @@ data Chart a = Chart { prevTable :: Table a
                        , currItems :: ([Item a], [Item a])
                        , rules :: ([Rule], [Rule])
                        , addRules :: Token -> [Rule]
-                       , knowns :: Knowns
                        , solveDiags :: [Diagnosis] }
 
 -- | make one scan, complete, and predict step.
@@ -458,7 +434,7 @@ nextChart addType toExpr ga st term@(_, tok) =
         (cRules, sRules) = rules st
         pItems = if null cItems && idx /= startIndex then sItems else 
                  map (mkItem idx) (addRules st tok ++ sRules) ++ sItems
-        scannedItems = scan addType (knowns st) term pItems
+        scannedItems = scan addType term pItems
         nextTable = if null cItems && idx /= startIndex then table
                     else Map.insert idx (map (mkItem idx) cRules ++ cItems) 
                          table
@@ -485,14 +461,13 @@ partitionRules :: [Rule] -> Rules
 partitionRules = partition ( \ (_, _, t : _) -> t == termTok)
 
 -- | create the initial chart
-initChart :: (Token -> [Rule]) -> Rules -> Knowns -> Chart a
-initChart adder ruleS knownS = 
+initChart :: (Token -> [Rule]) -> Rules -> Chart a
+initChart adder ruleS = 
     Chart { prevTable = Map.empty
           , currIndex = startIndex
           , currItems = ([], [])
           , rules = ruleS
           , addRules = adder
-          , knowns = knownS
           , solveDiags = [] }
 
 -- | extract resolved result

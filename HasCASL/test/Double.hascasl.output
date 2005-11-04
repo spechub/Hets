@@ -69,8 +69,8 @@ f : a ->? b
 x : a
 %% Sentences -------------------------------------------------------------
 forall f : a ->? b; x : a . twice2 f x = (f (f x) as b)
-twice3 = (\ (f, x) . f (f x) as (a ->? b) * a ->? b)
-twice = (\ (f)(x) . f (f x) as (a ->? b) -> a ->? b)
+twice3 = (\ (f : a ->? b, x : a) . f (f x) as (a ->? b) * a ->? b)
+twice = (\ (f)(x : a) . f (f x) as (a ->? b) -> a ->? b)
 twice f x = f (f x)
 %% Diagnostics -----------------------------------------------------------
 *** Hint 1.6, is type variable 'a'

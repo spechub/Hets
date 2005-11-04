@@ -93,7 +93,7 @@ x : m a
 fail = emptySet
 fail = ""
 fmap g = map g
-fmap g x = x bind (\ y .! return (g y))
+fmap g x = x bind (\ y : a .! return (g y))
 %% Diagnostics -----------------------------------------------------------
 *** Hint 7.5, is type variable 'a'
 *** Hint 7.8, is type variable 'b'
