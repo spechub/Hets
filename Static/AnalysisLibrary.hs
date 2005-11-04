@@ -122,9 +122,12 @@ anaString lgraph defl opts libenv input file =
 -- lookup/read a library
 anaLibFile :: LogicGraph -> AnyLogic -> HetcatsOpts -> LibEnv -> LIB_NAME
               -> IOResult (LIB_NAME, LibEnv)
-anaLibFile lgraph defl opts libenv libname = do
-     anaLibFileOrGetEnv lgraph defl (addEnvOut opts) libenv libname 
-         $ libNameToFile opts libname
+anaLibFile lgraph defl opts libenv ln = do
+     putMessageIORes opts 1 $ "Downloading " ++ showPretty ln " ..."
+     res <- anaLibFileOrGetEnv lgraph defl opts libenv ln 
+         $ libNameToFile opts ln
+     putMessageIORes opts 1 $ "... loaded " ++ showPretty ln ""
+     return res
 
 -- | convert a file name that may have a suffix to a library name
 fileToLibName :: HetcatsOpts -> FilePath -> LIB_NAME
@@ -166,26 +169,18 @@ anaLibFileOrGetEnv lgraph defl opts libenv libname file =
                      showDiags1 opts $ resToIORes $ Result dias $ Just ()
                      anaSourceFile lgraph defl opts libenv file
                  Just gc@(_,_,dgraph) -> do
-                     putIfVerbose opts 1 ""
                           -- get all DGRefs from DGraph
-                     let libEnv' = Map.insert libname gc libenv
-                         nodesDGRef =
-                                 filter (\ labDG -> case labDG of
-                                                      DGRef _ _ _ _ _ _ -> True
-                                                      _ -> False)
-                                        (map snd (labNodes dgraph))
-                       -- and call anaLibFile with each of the dgn_libname
-                       -- of the DGRefs
-                         refLibs = map dgn_libname nodesDGRef
-                         newRefLibs =
-                                 filter (\ ln ->
-                                          not (ln `elem` Map.keys libEnv'))
-                                   refLibs
-                     Result ds mEnv <- ioresToIO $ foldl (\ioLibEnv tlibname ->
-                                do p_libEnv <- ioLibEnv
-                                   fmap snd $ anaLibFile lgraph defl
-                                           opts p_libEnv tlibname
-                                ) (return libEnv') newRefLibs
+                     Result ds mEnv <- ioresToIO $ foldl 
+                         ( \ ioLibEnv labDG -> case snd labDG of
+                             DGRef { dgn_libname = ln } -> do
+                                 p_libEnv <- ioLibEnv
+                                 if Map.member ln p_libEnv then 
+                                    return p_libEnv
+                                    else fmap snd $ anaLibFile lgraph defl
+                                         opts p_libEnv ln
+                             _ -> ioLibEnv) 
+                         (return $ Map.insert libname gc libenv) 
+                         $ labNodes dgraph
                      return $ Result ds $ fmap
                                 ( \ rEnv -> (libname, rEnv)) mEnv
         else ioresToIO $ anaSourceFile lgraph defl opts libenv file
@@ -258,7 +253,8 @@ ana_LIB_ITEM lgraph _defl opts libenv gctx@(gannos, genv, _) l
              (Spec_defn spn gen asp pos) = do
   putMessageIORes opts 1 $ "Analyzing spec " ++ showPretty spn ""
   (gen',(imp,params,allparams),dg') <-
-     resToIORes (ana_GENERICITY lgraph gctx l opts (extName "P" (makeName spn)) gen)
+     resToIORes (ana_GENERICITY lgraph gctx l opts 
+                 (extName "P" (makeName spn)) gen)
   (sp',body,dg'') <-
      resToIORes (ana_SPEC lgraph (gannos,genv,dg')
                           allparams (makeName spn) opts (item asp))
@@ -268,11 +264,10 @@ ana_LIB_ITEM lgraph _defl opts libenv gctx@(gannos, genv, _) l
                                 ("Name "++ showPretty spn " already defined")
                                 pos)
    else return (libItem',
-                (gannos,
-                 Map.insert spn (SpecEntry (imp,params,getMaybeSig allparams,body)) genv,
-                 dg''),
-                l,
-                libenv)
+                (gannos, Map.insert spn 
+                 (SpecEntry 
+                  (imp, params, getMaybeSig allparams, body)) genv,
+                 dg''), l, libenv)
 
 ana_LIB_ITEM lgraph defl opts libenv gctx l
              (View_defn vn gen vt gsis pos) = do
@@ -352,7 +347,6 @@ ana_LIB_ITEM lgraph defl opts libenv (gannos,genv,dg) l
              libItem@(Download_items ln items _) = do
   -- we take as the default logic for imported libs
   -- the global default logic
-  putMessageIORes opts 1 $ "Downloading " ++ showPretty ln ""
   (ln', libenv') <- anaLibFile lgraph defl opts libenv ln
   if ln == ln' then case Map.lookup ln libenv' of
     Nothing -> error $ "Internal error: did not find library " ++
