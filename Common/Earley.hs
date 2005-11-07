@@ -82,17 +82,8 @@ setPlainIdePos (Id ts cs _) ps =
              (newPls, ps7) = setToksPos pls ps4
            in (Id (front ++ newPls) (reverse newCs) (reverseRange ps3), ps7)
 
--- | a special index type for more type safety
-newtype Index = Index Int deriving (Eq, Ord)
-
--- deriving Num is also possible
--- but the following functions are sufficient
--- | the initial index
-startIndex :: Index
-startIndex = Index 0
-
-incrIndex :: Index -> Index
-incrIndex (Index i) = Index (i + 1)
+-- no special index type anymore (assuming not much more development)
+-- the info Int denotes fast precedence
 
 data Item a = Item
     { rule :: Id        -- the rule to match
@@ -105,7 +96,7 @@ data Item a = Item
     , ambigArgs :: [[a]] -- field for ambiguities
     , ambigs :: [[a]]   -- field for ambiguities
     , rest :: [Token]   -- part of the rule after the "dot"
-    , index :: Index    -- index into the Table/input string
+    , index :: Int    -- index into the Table/input string
     }
 
 -- | the non-terminal
@@ -175,7 +166,7 @@ isProtected (Id ts _ _) = not (null ts) && head ts == protectTok
 
 type Rule = (Id, Int, [Token])
 
-mkItem :: Index -> Rule -> Item a
+mkItem :: Int -> Rule -> Item a
 mkItem ind (ide, inf, toks) =
     Item { rule = ide
          , info = inf
@@ -226,9 +217,9 @@ listRules inf g =
                listRule (c, n) (b1 ++ [termTok, commaTok, termTok] ++ b2)]
                  ) $ Map.toList lists
 
-type Table a = Map.Map Index [Item a]
+type Table a = Map.Map Int [Item a]
 
-lookUp :: Table a -> Index -> [Item a]
+lookUp :: Table a -> Int -> [Item a]
 lookUp ce k = Map.findWithDefault [] k ce
 
 -- | recognize next token (possible introduce new tuple variable)
@@ -415,7 +406,7 @@ mergeItems (i1:r1) (i2:r2) =
 
 -- | the whole state for mixfix resolution
 data Chart a = Chart { prevTable :: Table a
-                       , currIndex :: Index
+                       , currIndex :: Int
                        , currItems :: ([Item a], [Item a])
                        , rules :: ([Rule], [Rule])
                        , addRules :: Token -> [Rule]
@@ -432,15 +423,15 @@ nextChart addType toExpr ga st term@(_, tok) =
         idx = currIndex st
         (cItems, sItems) = currItems st
         (cRules, sRules) = rules st
-        pItems = if null cItems && idx /= startIndex then sItems else 
+        pItems = if null cItems && idx /= 0 then sItems else 
                  map (mkItem idx) (addRules st tok ++ sRules) ++ sItems
         scannedItems = scan addType term pItems
-        nextTable = if null cItems && idx /= startIndex then table
+        nextTable = if null cItems && idx /= 0 then table
                     else Map.insert idx (map (mkItem idx) cRules ++ cItems) 
                          table
         completedItems = complete toExpr ga nextTable
                          $ sortBy ordItem $ scannedItems
-        nextIdx = incrIndex idx
+        nextIdx = idx + 1
     in  if null pItems then st else
         st { prevTable = nextTable
            , currIndex = nextIdx
@@ -464,7 +455,7 @@ partitionRules = partition ( \ (_, _, t : _) -> t == termTok)
 initChart :: (Token -> [Rule]) -> Rules -> Chart a
 initChart adder ruleS = 
     Chart { prevTable = Map.empty
-          , currIndex = startIndex
+          , currIndex = 0
           , currItems = ([], [])
           , rules = ruleS
           , addRules = adder
@@ -477,7 +468,7 @@ getResolved pp p toExpr st =
         ds = solveDiags st
     in case items of
        [] -> Result ds Nothing
-       _ -> let (finals, rest1) = partition ((startIndex==) . index) items
+       _ -> let (finals, rest1) = partition ((0 ==) . index) items
                 (result, rest2) = partition (null . rest) finals
             in case result of
                [] ->      let expected = if null rest2
