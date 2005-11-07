@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Copyright   :  (c) University of Cambridge, Cambridge, England
-               adaption (c) Till Mossakowski, Uni Bremen 2002-2004
+               adaption (c) Till Mossakowski, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -57,6 +57,9 @@ printSort l = case l of
 
 data SynFlag = Unquoted | Quoted | Null 
 
+doubleColon :: Doc
+doubleColon = text "::"
+
 printTyp :: SynFlag -> Typ -> Doc
 printTyp a = fst . printType a
 
@@ -65,8 +68,8 @@ printType a t = case t of
  (TFree v s) -> (let d = text $ if isPrefixOf "\'" v || isPrefixOf "?\'" v 
                                 then v  else '\'' : v 
                  in if null s then d else case a of
-   Unquoted -> d <> text "::" <> printSort s
-   Quoted -> d <> text "::" <> doubleQuotes (printSort s)
+   Unquoted -> d <> doubleColon <> printSort s
+   Quoted -> d <> doubleColon <> doubleQuotes (printSort s)
    Null -> d, 1000)
  (TVar iv s) -> printType a $ TFree ("?\'" ++ unindexed iv) s
  (Type name _ args) -> case args of 
@@ -450,11 +453,6 @@ quant (Node (PrecTerm (Const (VName {new=q}) _) _) [])
               lb++showQuant (showQuantStr q) v ty t++rb
 quant _ _ = error "[Isabelle.IsaPrint] Wrong quantification!?"
 
-listEnum :: [a] -> [(a,Int)]
-listEnum l = case l of
- [] -> []
- a:as -> (a,length (a:as)):(listEnum as)
-
 pr :: PrecTermTree -> Precedence
 pr (Node (PrecTerm _ p) _) = p
 
@@ -469,7 +467,7 @@ instance PrettyPrint Classrel where
    where 
    showTyconClass t cl rest = case cl of 
      Nothing -> rest
-     Just x -> text "axclass" <+> text (classId t) <+> text "<" <+> 
+     Just x -> text "axclass" <+> printClass t <+> text "<" <+> 
        (if null x  then text "pcpo" else printSort x) $$ rest
 
 instance PrettyPrint Arities where
@@ -479,9 +477,9 @@ instance PrettyPrint Arities where
    showInstances t cl rest =
      (vcat $ map (showInstance t) cl) $$ rest
    showInstance t xs = 
-     (text "instance") <+> (text $ show t) <+> text "::" 
-                           <+> showInstArgs (snd xs)  
-        <+> text (classId $ fst xs) $$ text "by intro_classes"
+     text "instance" <+> text t <> doubleColon 
+                           <> showInstArgs (snd xs)  
+        <> printClass(fst xs) $$ text "by intro_classes"
    showInstArgs ys = case ys of 
      [] -> empty
      _ : _ -> parens $ showInstArgsR ys
@@ -505,61 +503,46 @@ showTycon sig t arity' rest =
 
 dtyp :: Sign -> TName -> Bool
 dtyp sig t = elem t $ 
-         concat [map (typeId . fst) x | x <- domainTab sig ++ dataTypeTab sig]
+         concat [map (typeId . fst) x | x <- domainTab sig]
+
+-- | show alternative syntax (computed by comorphisms) 
+showAlt :: VName -> Doc
+showAlt VName { new = newV, orig = origV } = if newV /= origV then 
+    parens $ doubleQuotes $ text origV else empty
 
 instance PrettyPrint Sign where
   printText0 ga sig = printText0 ga
     (baseSig sig) <> colon $++$
     printTypeDecls sig $++$
     printText0 ga (classrel $ tsig sig) $++$
-    showDataTypeDefs (dataTypeTab sig) $++$
     showDomainDefs (domainTab sig) $++$
     showsConstTab (constTab sig) $++$     
-    (if showLemmas sig then showCaseLemmata (dataTypeTab sig) else empty) $++$
-                                   -- this may prints an "o"
+    (if showLemmas sig then showCaseLemmata (domainTab sig) else empty) $++$
+                                   -- this may print an "o"
     printText0 ga (tsig sig) 
     where
-
-    showsConstTab tab =  
-     if Map.null tab then empty
-      else text "consts" $$ Map.foldWithKey showConst empty tab
-
-    showConst vn t rest =
-	      text (new vn) <+> text "::" <+> 
-               doubleQuotes (printTyp Unquoted t)
-               -- <+> text(showAlt c2) 
-	       $$ rest
-	   
-    --show only this alternative-versions where __ is in the string
-    --because only this ones change something
-    --maybe it's better to find and remove __ in one step
-    showAlt::String->String
-    showAlt str = "(\""++(rmDoubleULines ' ' str)++"\")"
-    --if (hasDoubleULines ' ' str) then "(\""++(rmDoubleULines ' ' str)++"\")" else ""
-		  			 							  
-    showDataTypeDefs dtDefs = vcat $ map showDataTypeDef dtDefs
-    showDataTypeDef [] = empty
-    showDataTypeDef (dt:dts) = 
-       (text "datatype") <+> (showDataType dt)
-       <+> (vcat $ map ((text ("\n"++"and") <+>) . showDataType) dts) <> text "\n"
-    showDataType (_,[]) = error "IsaPrint.showDataType"
-    showDataType (t,op:ops) =
-       printTyp Quoted t <+> text "=" <+> (showOp op) 
-       <+> (hsep $ map ((text "|" <+>) . showOp) ops)
+    showsConstTab tab = if Map.null tab then empty else text "consts" 
+                        $$ Map.foldWithKey showConst empty tab
+    showConst vn t rest = text (new vn) <+> doubleColon <+> 
+                          doubleQuotes (printTyp Unquoted t)
+                          <+> showAlt vn $$ rest
+    isDomain = case baseSig sig of 
+               HOLCF_thy -> True 
+               HsHOLCF_thy -> True 
+               _ -> False
     showDomainDefs dtDefs = vcat $ map showDomainDef dtDefs
-    showDomainDef [] = empty
-    showDomainDef (dt:dts) =
-       (text "domain") <+> (showDomain dt) 
-       <+> (vcat $ map ((text ("\n"++"and") <+>) . showDomain) dts) <> text "\n"
-    showDomain (_,[]) = error "IsaPrint.showDomain"
-    showDomain (t,op:ops) =
-       printTyp Quoted t <+> text "=" <+> (showDOp op)
-       <+> (hsep $ map ((text "|" <+>) . showDOp) ops)
-    showDOp ((VName {new=opname}),args) =
-       text opname <+> hsep [parens (text (opname ++ "_" ++ show n)
-           <> text "::" <+> showOpArg x) | (x,n) <- listEnum args]
-    showOp ((VName {new=opname}),args) =
-       text opname <+> hsep (map showOpArg args)
+    showDomainDef dts = if null dts then empty else 
+        text (if isDomain then "domain" else "datatype") 
+        <+> vcat (prepPunctuate (text "and ") $ map showDomain dts)
+    showDomain (t, ops) =
+       printTyp Unquoted t <+> equals <+>
+       hsep (punctuate (text " |") $ map showDOp ops)
+    showDOp (VName { new = opname }, args) = 
+       text opname <+> hsep (map (showDOpArg opname) 
+                            $ zip args $ reverse [1 .. length args]) 
+    showDOpArg o (a, i) = if isDomain then 
+           parens $ text (o ++ "_" ++ show i) <> doubleColon <> showOpArg a
+           else showOpArg a
     showOpArg arg = case arg of
                     TFree _ _ -> printTyp Null arg
                     _         -> doubleQuotes $ printTyp Null arg
@@ -587,8 +570,9 @@ instance PrettyPrint Sign where
           showArg (TVar v s) = showArg (TFree (unindexed v) s)
           showArg (Type [] _ _) = "varName"
           showArg (Type m@(n:ns) _ s) = 
-            if m == "typeAppl" || m == "fun" || m == "*"  then concat $ map showArg s
-              else [toLower n] ++ ns
+            if m == "typeAppl" || m == "fun" || m == "*"  
+               then concat $ map showArg s
+               else [toLower n] ++ ns
           showName (TFree v _) = v
           showName (TVar v _) = unindexed v
           showName (Type n _ _) = n

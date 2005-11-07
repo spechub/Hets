@@ -97,7 +97,7 @@ transSignature sign =
                                Map.empty 
                                (assumps sign),
     -- translation of datatype declarations
-    dataTypeTab = transDatatype (typeMap sign),
+    domainTab = transDatatype (typeMap sign),
     showLemmas = True },
     [] ) 
    where 
@@ -164,16 +164,16 @@ transType t = case getTypeAppl t of
 
 ---------- translation of a datatype declaration ----------
 
-transDatatype :: TypeMap -> DataTypeTab
+transDatatype :: TypeMap -> DomainTab
 transDatatype tm = map transDataEntry (Map.fold extractDataypes [] tm)
   where extractDataypes ti des = case typeDefn ti of
                                    DatatypeDefn de -> des++[de]
                                    _               -> des
 
 -- datatype with name (tyId) + args (tyArgs) and alternatives
-transDataEntry :: DataEntry -> DataTypeTabEntry
+transDataEntry :: DataEntry -> [DomainEntry]
 transDataEntry (DataEntry _ tyId Le.Free tyArgs _ alts) = 
-                         [((transDName tyId tyArgs), (map transAltDefn alts))]
+                         [(transDName tyId tyArgs, map transAltDefn alts)]
   where transDName ti ta = Type (showIsaTypeT ti baseSign) [] 
                            $ map transTypeArg ta
 transDataEntry _ = error "HasCASL2IsabelleHOL.transDataEntry"
@@ -183,7 +183,7 @@ transTypeArg :: TypeArg -> Typ
 transTypeArg ta = TFree (showIsaTypeT (getTypeVar ta) baseSign) []
 
 -- datatype alternatives/constructors
-transAltDefn :: AltDefn -> DataTypeAlt
+transAltDefn :: AltDefn -> (VName, [Typ])
 transAltDefn (Construct opId ts Total _) = 
    let ts' = map transType ts
    in case opId of

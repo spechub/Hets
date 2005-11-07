@@ -46,7 +46,7 @@ data Indexname = Indexname
 --------- Classes
 {- Types are classified by sorts. -}
 
-data IsaClass  = IsaClass {classId :: String}
+data IsaClass  = IsaClass String
                  deriving (Ord, Eq, Show)
 
 type Sort  = [IsaClass]
@@ -188,7 +188,6 @@ data Sign = Sign
       tsig :: TypeSig,
       constTab :: ConstTab,  -- value cons with type
       domainTab :: DomainTab,
-      dataTypeTab :: DataTypeTab,
       showLemmas :: Bool
     } deriving (Eq, Show)
 
@@ -200,21 +199,15 @@ data Sign = Sign
 
 type ConstTab = Map.Map VName Typ
 
-type DataTypeTab = [DataTypeTabEntry]
-type DataTypeTabEntry = [DataTypeEntry] -- (type,[value cons])
-type DataTypeEntry = (Typ,[DataTypeAlt])
-type DataTypeAlt = (VName,[Typ])
+-- same types for data types and domains
 
-type DomainTab = [DomainTabEntry]
-type DomainTabEntry = [DomainEntry] -- (type,[value cons])
-type DomainEntry = (Typ,[DomainAlt])
-type DomainAlt = (VName,[Typ])
+type DomainTab = [[DomainEntry]]
+type DomainEntry = (Typ, [(VName, [Typ])])
 
 emptySign :: Sign
 emptySign = Sign { baseSig = Main_thy,
                    tsig = emptyTypeSig,
                    constTab = Map.empty,
-                   dataTypeTab = [],
                    domainTab = [],
                    showLemmas = False }
 

@@ -104,7 +104,7 @@ transTheory :: SignTranslator f e ->
                FormulaTranslator f e ->
                (CASL.Sign.Sign f e, [Named (FORMULA f)])
                    -> Result IsaTheory 
-transTheory trSig trForm (sign,sens) = 
+transTheory trSig trForm (sign, sens) = 
   fmap (trSig sign (extendedInfo sign)) $
   return (IsaSign.emptySign {
     baseSig = baseSign,
@@ -117,8 +117,8 @@ transTheory trSig trForm (sign,sens) =
                 (Map.filterWithKey (isNotIn dtDefs) 
                 $ Map.foldWithKey insertOps Map.empty 
                 $ opMap sign) $ predMap sign,
-    dataTypeTab = dtDefs},      
-     map (mapNamed (mapSen trForm sign)) real_sens)  
+    domainTab = dtDefs},      
+         map (mapNamed (mapSen trForm sign)) real_sens)  
      -- for now, no new sentences
   where 
     (real_sens, sort_gen_axs) = List.partition 
@@ -145,9 +145,8 @@ transTheory trSig trForm (sign,sens) =
             (zip (Set.toList ts) [1..Set.size ts])
 
 -- | filter out constructors from data types  
-isNotIn :: DataTypeTab -> VName -> Typ -> Bool
+isNotIn :: DomainTab -> VName -> Typ -> Bool
 isNotIn l a _ = all (all (isNotIn' a . snd)) l where
-    isNotIn' :: VName -> [DataTypeAlt] -> Bool
     isNotIn' c = all ((/= c) . fst)
 
 -- topoSort 
