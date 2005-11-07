@@ -28,7 +28,13 @@ type TName = String
 data VName = VName
     { new :: String -- ^ name within Isabelle
     , orig :: String  -- ^ original name from other logic
-    } deriving (Ord, Eq, Show)
+    } deriving Show
+
+instance Eq VName where
+    v1 == v2 = new v1 == new v2
+
+instance Ord VName where
+    v1 <= v2 = new v1 <= new v2
 
 {- | Indexnames can be quickly renamed by adding an offset to the integer part,
      for resolution. -}
