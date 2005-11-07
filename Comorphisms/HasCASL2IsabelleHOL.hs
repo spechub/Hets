@@ -114,15 +114,15 @@ transSignature sign =
             let transOp = transOpInfo (head infos)
             in case transOp of 
                  Just op -> 
-		     Map.insert (VName {new=showIsaConstT name baseSign,orig=show name}) op m
+		     Map.insert (mkVName $ showIsaConstT name baseSign) op m
                  Nothing -> m
           else 
             let transOps = map transOpInfo infos
             in  foldl (\ m' (transOp,i) -> 
                            case transOp of
-                             Just typ -> Map.insert (VName {new=showIsaConstIT name i baseSign,
-						     orig=show name ++ show i})
-                                                    typ m'
+                             Just typ -> Map.insert 
+                                 (mkVName $ showIsaConstIT name i baseSign)
+                                 typ m'
                              Nothing   -> m')
                       m (zip transOps [1::Int ..])
 
@@ -174,7 +174,8 @@ transDatatype tm = map transDataEntry (Map.fold extractDataypes [] tm)
 transDataEntry :: DataEntry -> DataTypeTabEntry
 transDataEntry (DataEntry _ tyId Le.Free tyArgs _ alts) = 
                          [((transDName tyId tyArgs), (map transAltDefn alts))]
-  where transDName ti ta = Type (showIsaTypeT ti baseSign) [] (map transTypeArg ta)
+  where transDName ti ta = Type (showIsaTypeT ti baseSign) [] 
+                           $ map transTypeArg ta
 transDataEntry _ = error "HasCASL2IsabelleHOL.transDataEntry"
 
 -- arguments of datatype's typeconstructor
@@ -186,9 +187,8 @@ transAltDefn :: AltDefn -> DataTypeAlt
 transAltDefn (Construct opId ts Total _) = 
    let ts' = map transType ts
    in case opId of
-        Just opId' -> ((VName {new=showIsaConstT opId' baseSign,
-			       orig=show opId'}), ts')
-        Nothing  -> ((VName {new="",orig=""}), ts')
+        Just opId' -> (mkVName $ showIsaConstT opId' baseSign, ts')
+        Nothing  -> (mkVName "", ts')
 transAltDefn _ = error "HasCASL2IsabelleHOL.transAltDefn"
 
 ------------------------------ Formulas ------------------------------
@@ -380,7 +380,7 @@ transTotalLambda sign (LambdaTerm pats part body _) =
     Total   -> lambdaAbs transTotalLambda
   where 
     lambdaAbs f =
-      if (null pats) then Abs (IsaSign.Free (VName {new="dummyVar",orig="dummyVar"}) noType) 
+      if (null pats) then Abs (IsaSign.Free (mkVName "dummyVar") noType) 
                                noType (f sign body) NotCont
 --      if (null pats) then Abs [("dummyVar", noType)] 
         else foldr (abstraction sign) (f sign body) pats
@@ -701,4 +701,3 @@ transPat sign (TupleTerm terms@(_ : _) _) =
 transPat _ (QualOp _ (InstOpId i _ _) _ _) = 
     conDouble (showIsaConstT i baseSign)
 transPat _ _ =  error "HasCASL2IsabelleHOL.transPat"
-
