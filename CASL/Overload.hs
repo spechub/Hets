@@ -503,14 +503,7 @@ leqP' sign p1 p2 =
 
 -- | Divide a Set (List) into equivalence classes w.r.t. eq
 leqClasses :: Ord a => (a -> a -> Bool) -> Set.Set a -> [[a]]
-leqClasses eq os = 
-    map (Set.toList) $ Rel.sccOfClosure $ Rel.transClosure $ leqRel os
-    where -- create the (non-transitive) overload relation
-          leqRel l = if Set.null l then Rel.empty else 
-                     let (x, r) = Set.deleteFindMin l in
-                     Rel.insert x x $ Set.fold ( \ e s -> 
-                     if eq x e then Rel.insert x e 
-                        $ Rel.insert e x s else s) (leqRel r) r
+leqClasses eq os = map Set.toList $ Rel.partSet eq os 
 
 -- | Transform a list [l1,l2, ... ln] to (in sloppy notation)
 -- [[x1,x2, ... ,xn] | x1<-l1, x2<-l2, ... xn<-ln]
