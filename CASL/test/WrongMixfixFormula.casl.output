@@ -1,1 +1,1 @@
-*** Error 1.9, expected further mixfix token: [":","!=","/=","<","<="]
+*** Error 1.9, expected further mixfix token: ["!","*","+","-","-->"]

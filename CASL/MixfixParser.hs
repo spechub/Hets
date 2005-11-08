@@ -15,7 +15,7 @@ module CASL.MixfixParser
     ( resolveFormula, resolveMixfix, MixResolve
     , resolveMixTrm, resolveMixFrm
     , IdSets, mkIdSets, emptyIdSets, unite, single
-    , initRules, addRule, Mix(..), emptyMix
+    , makeRules, Mix(..), emptyMix
     , ids_BASIC_SPEC, ids_SIG_ITEMS, ids_OP_ITEM, ids_PRED_ITEM)
     where
 
@@ -24,6 +24,7 @@ import Common.GlobalAnnotations
 import Common.Result
 import Common.Id
 import qualified Common.Lib.Set as Set
+import qualified Common.Lib.Map as Map
 import Common.Earley
 import Common.ConvertLiteral
 import Common.PrettyPrint
@@ -128,28 +129,48 @@ mkArgsRule :: Int -> Id -> Rule
 mkArgsRule b ide = (protect ide, b, getPlainTokenList ide
                       ++ getTokenPlaceList tupleId)
 
-singleArgId, multiArgsId :: Id
+singleArgId :: Id
 singleArgId = mkId [exprTok, varTok]
 
+multiArgsId :: Id
 multiArgsId = mkId (exprTok : getPlainTokenList tupleId)
 
--- insert only non-simple identifiers 
-initRules ::  GlobalAnnos -> IdSets -> Rules
-initRules ga (opS, predS) =
-    let ops = Set.toList opS
-        preds = Set.toList $ Set.difference predS opS
-    in partitionRules $ concat 
-       [ mkRule typeId :
-       mkRule varId :
-       mkRule singleArgId :
-       mkRule multiArgsId :
-       listRules 1 ga,
-       map (mixRule 0) preds,
-       map (mkSingleArgRule 0) preds,
-       map (mkArgsRule 0) preds,
-       map mkRule ops,
-       map (mkSingleArgRule 1) ops,
-       map (mkArgsRule 1) ops]
+-- | additional scan rules
+addRule :: GlobalAnnos -> [Rule] -> IdSets -> Token -> [Rule]
+addRule ga uRules (ops, preds) tok = 
+    let addR p = Set.fold ( \ i@(Id (t : _) _ _)  -> 
+               Map.insertWith (++) t
+                [mixRule p i, mkSingleArgRule p i, mkArgsRule p i])
+        lm = foldr ( \ r@(_, _, t : _) -> Map.insertWith (++) t [r])
+             Map.empty $ listRules 1 ga
+        varR = mkRule varId
+        m = Map.insert placeTok uRules 
+            $ Map.insert varTok [varR]
+            $ Map.insert exprTok 
+                  [varR, mkRule singleArgId, mkRule multiArgsId] 
+            $ addR 0 (addR 1 lm ops) preds
+    in (if isSimpleToken tok && 
+                      let mem = Set.member $ mkId [tok, placeTok] 
+                      in not (mem ops || mem preds)
+                      then let i = mkId [tok] in 
+                      [mkRule i, mkSingleArgRule 1 i, mkArgsRule 1 i] 
+       else []) ++ Map.findWithDefault [] tok m
+
+-- insert only identifiers starting with a place
+initRules :: IdSets -> Rules
+initRules (opS, predS) =
+    let addR p = Set.fold ( \ i l -> mixRule p i : l)
+    in (addR 1 (addR 0 [mkRule typeId] predS) opS, [])
+
+-- | rule construction 
+makeRules :: GlobalAnnos -> IdSets -> (Token -> [Rule], Rules)
+makeRules ga (opS, predS) = let 
+    (cOps, sOps) = Set.partition begPlace opS
+    (cPreds, sPreds) = Set.partition begPlace $ Set.difference predS opS
+    addR p = Set.fold ( \ i l -> 
+           mkSingleArgRule p i : mkArgsRule p i : l)
+    uRules = addR 0 (addR 1 [] cOps) cPreds
+    in (addRule ga uRules (sOps, sPreds), initRules (cOps, cPreds))
 
 -- | meaningful position of a term
 posOfTerm :: TERM f -> Range
@@ -204,14 +225,6 @@ addType tt t =
     _ -> error "addType"
 
 type MixResolve f = GlobalAnnos -> (Token -> [Rule], Rules) -> f -> Result f
-
--- | additional scan rules
-addRule :: IdSets -> Token -> [Rule]
-addRule (ops, preds) tok = if isSimpleToken tok && 
-                      let mem = Set.member $ mkId [tok, placeTok] 
-                      in not (mem ops || mem preds)
-                      then let i = mkId [tok] in 
-                      [mkRule i, mkSingleArgRule 1 i, mkArgsRule 1 i] else []
 
 iterateCharts :: PrettyPrint f => (f -> f)
               -> MixResolve f -> GlobalAnnos -> [TERM f]

@@ -796,7 +796,7 @@ basicAnalysis mef anab anas mix dif (bs, inSig, ga) =
                  : getExtIds mix (extendedInfo inSig) : 
                   [mkIdSets (allOpIds inSig) $ allPredIds inSig]
         (newBs, accSig) = runState (ana_BASIC_SPEC mef anab anas
-               mix { mixRules = (addRule allIds, initRules ga allIds) } 
+               mix { mixRules = makeRules ga allIds } 
                ga bs) inSig
         ds = reverse $ envDiags accSig
         sents = reverse $ sentences accSig
