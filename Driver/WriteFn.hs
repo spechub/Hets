@@ -160,6 +160,7 @@ writeSpecFiles :: HetcatsOpts -> FilePath -> LibEnv
                -> (LIB_NAME, GlobalEnv) -> IO()
 writeSpecFiles opt file lenv (ln, gctx) = let
         ns = specNames opt
+        outTypes = outtypes opt
         allSpecs = null ns in
         mapM_ ( \ i -> case Map.lookup i gctx of
                Just (SpecEntry (_,_,_, NodeSig n _)) ->
@@ -201,7 +202,8 @@ writeSpecFiles opt file lenv (ln, gctx) = let
                                                  fromJust res
 #endif
                                 _ -> return () -- ignore other file types
-                             ) $ outtypes opt
+                             ) outTypes
                _ -> if allSpecs then return () else
                     putIfVerbose opt 0 $ "Unknown spec name: " ++ show i
-              ) $ if allSpecs then Map.keys gctx else ns
+              ) $ if null outTypes then [] else 
+                      if allSpecs then Map.keys gctx else ns
