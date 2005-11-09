@@ -163,11 +163,12 @@ anaLibFileOrGetEnv lgraph defl opts libenv libname file = IOResult $ do
      recent_env_file <- checkRecentEnv opts env_file file
      if recent_env_file
         then do
-             putIfVerbose opts 1 $ "Reading "++ env_file
+             putIfVerbose opts 1 $ "Reading " ++ env_file
              Result dias mgc <- globalContextfromShATerm env_file
              case mgc of
                  Nothing -> ioresToIO $ do
                      showDiags1 opts $ resToIORes $ Result dias $ Just ()
+                     ioToIORes $ putIfVerbose opts 1 $ "Deleting " ++ env_file
                      anaSourceFile lgraph defl opts libenv file
                  Just gc@(_,_,dgraph) -> do
                           -- get all DGRefs from DGraph
