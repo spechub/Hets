@@ -304,12 +304,9 @@ haveCommonLeftElem t1 t2 =
 partSet :: (Ord a) => (a -> a -> Bool) -> Set.Set a -> [(Set.Set a)]
 partSet f s = if Set.null s then [] else
               let (x, s') = Set.deleteFindMin s
-                  (ds, es) = List.partition (Set.null . fst)
-                             $ List.map (Set.partition (f x))
+                  (ds, es) = List.partition (Set.null . Set.filter (f x))
                              $ partSet f s'
-              in Set.insert x (Set.union (Set.unions $ List.map fst es)
-                     $ Set.unions $ List.map snd es)
-                 : List.map snd ds
+              in Set.insert x (Set.unions es) : ds
 
 -- | flattens a set of non empty sets and uses the minimal element of
 -- each set to represent the set
