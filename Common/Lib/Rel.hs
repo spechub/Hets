@@ -74,8 +74,7 @@ isSubrelOf a b = Set.isSubsetOf (toSet a) $ toSet b
 
 -- | insert an ordered pair
 insert :: Ord a => a -> a -> Rel a -> Rel a
-insert a b (Rel m) = Rel $ Map.insert a
-    (Set.insert b $ Map.findWithDefault Set.empty a m) m
+insert a b = Rel . setInsert a b . toMap
 
 -- | delete an ordered pair
 delete :: Ord a => a -> a -> Rel a -> Rel a
@@ -307,7 +306,7 @@ partSet f s = if Set.null s then [] else
                              $ partSet f s'
               in Set.insert x (Set.unions es) : ds
 
--- | flattens a set of non empty sets and uses the minimal element of
+-- | flattens a list of non-empty sets and uses the minimal element of
 -- each set to represent the set
 flatSet :: (Ord a) => [Set.Set a] -> Set.Set a
 flatSet = Set.fromList . List.map (\s -> if Set.null s
