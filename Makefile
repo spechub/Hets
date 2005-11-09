@@ -76,6 +76,9 @@ HC_INCLUDE = $(addprefix -i, $(INCLUDE_PATH))
 
 logics = CASL HasCASL Isabelle Modal CoCASL COL CspCASL CASL_DL SPASS OWL_DL
 
+TESTTARGETS += test_parser hetpa hetana Test.o \
+    atermlibtest hatermdiff atctest atctest2 taxonomy
+
 UNI_PACKAGE_CONF = $(wildcard ../uni/uni-package.conf)
 ifneq ($(strip $(UNI_PACKAGE_CONF)),)
 HC_PACKAGE = -package-conf $(UNI_PACKAGE_CONF) -package uni-davinci \
@@ -88,6 +91,7 @@ uni_dirs = ../uni/davinci ../uni/graphs ../uni/events \
 
 uni_sources = $(wildcard $(addsuffix /haddock/*.hs, $(uni_dirs))) \
     $(wildcard ../uni/htk/haddock/*/*.hs)
+TESTTARGETS += hetdg OWL_DL/readAStest
 endif
 
 ### list of directories to run checks in
@@ -156,6 +160,7 @@ Haskell/ATC_Haskell.der.hs: $(Haskell_files) $(GENRULES)
 	$(GENRULECALL) -i Haskell.BaseATC -o $@ $(Haskell_files)
 
 TESTDIRS += ToHaskell
+TESTTARGETS += hana h2hf
 endif
 
 ### Profiling (only for debugging)
@@ -594,11 +599,8 @@ taxonomy: Taxonomy/taxonomyTool
 Taxonomy/taxonomyTool: Taxonomy/taxonomyTool.hs $(tax_sources)
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
-checkMakeBinaries: test_parser hetpa hetana Test.o OWL_DL/readAStest \
-    atermlibtest hatermdiff atctest atctest2 taxonomy
-
 ### run tests in other directories
-check: checkMakeBinaries
+check: $(TESTTARGETS)
 	for i in $(TESTDIRS); do $(MAKE) -C $$i check; done
 
 ####################################################################
