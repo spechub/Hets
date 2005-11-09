@@ -287,7 +287,6 @@ addCycle c r = if Set.null c then error "addCycle" else
     in insert m a $ foldr ( \ (x, y) -> insert x y) (delete a a r) $
        zip (Set.toAscList d) (Set.toAscList b)
 
-
 {--------------------------------------------------------------------
   common transitive left element of two elements (Added by K.L.)
 --------------------------------------------------------------------}
@@ -299,8 +298,8 @@ haveCommonLeftElem t1 t2 =
     Map.fold(\ e rs -> rs || (t1 `Set.member` e &&
                               t2 `Set.member` e)) False . toMap
 
--- | partitions a set into a set of disjoint non empty subsets
--- determined by the given function as equivilance classes
+-- | partitions a set into a list of disjoint non-empty subsets
+-- determined by the given function as equivalence classes
 partSet :: (Ord a) => (a -> a -> Bool) -> Set.Set a -> [(Set.Set a)]
 partSet f s = if Set.null s then [] else
               let (x, s') = Set.deleteFindMin s
