@@ -54,23 +54,3 @@ getRecDefs = partition ( \ s -> case sentence s of
                             RecDef _ _ -> True
                             _ -> False)
 
-printNamedSen :: Named Sentence -> Doc
-printNamedSen sen = case s of 
- RecDef kw xs -> text kw $$ fixrecP xs
- _ -> text (case s of
-    ConstDef _ -> lab ++ "_def"
-    Sentence _ -> lab
-    _ -> "theorem " ++ lab) 
-    <+> colon <+> doubleQuotes (case senTerm s of
-      IsaEq (Const vn y) t ->  
-        text (new vn) <+> doubleColon <+> printType y
-                 <+> text "==" <+> printOUTerm t
-      _ -> printText s)
- where lab = senName sen
-       s = sentence sen
-       fixrecP as = case as of
-              [] -> empty
-              [b] -> vcat (map (doubleQuotes . printText) b)
-              b:bs -> vcat (map (doubleQuotes . printText) b) 
-                      $$ text "and" $++$ fixrecP bs
-

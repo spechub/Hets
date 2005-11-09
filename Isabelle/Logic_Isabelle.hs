@@ -16,14 +16,11 @@ module Isabelle.Logic_Isabelle where
 import Data.Dynamic
 
 import Common.DynamicUtils 
-import Common.Lib.Pretty
-import Common.AS_Annotation
-import Common.PrettyPrint
 import Common.DefaultMorphism
 
 import Logic.Logic
 
-import Isabelle.ATC_Isabelle
+import Isabelle.ATC_Isabelle()
 import Isabelle.IsaSign
 import Isabelle.IsaPrint
 #ifdef UNI_PACKAGE
@@ -67,14 +64,9 @@ instance Category Isabelle Sign IsabelleMorphism where
 instance Logic.Logic.Syntax Isabelle () () ()
     -- default implementation is fine!
 
-
 instance Sentences Isabelle Sentence () Sign IsabelleMorphism ()  where
       map_sen Isabelle _ s = return s
-      print_named Isabelle ga s = 
-        (if null lab then empty 
-        else text lab <+> colon <> space) <> doubleQuotes (printText0 ga sen)
-        where lab = senName s
-              sen = sentence s
+      print_named Isabelle _ = printNamedSen
 #ifdef UNI_PACKAGE
       provers Isabelle = [isabelleProver] 
       cons_checkers Isabelle = [isabelleConsChecker]

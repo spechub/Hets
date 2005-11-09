@@ -17,15 +17,13 @@ Printing functions for Isabelle logic.
 
 module Isabelle.IsaPrint 
     ( showBaseSig
-    , doubleColon
-    , printType
-    , printTerm
-    , printOUTerm
+    , printNamedSen
     ) where
 
 import Isabelle.IsaSign 
 import Isabelle.IsaConsts
 import Common.Lib.Pretty
+import Common.AS_Annotation
 import Common.PrettyPrint
 import Common.PPUtils
 import qualified Common.Lib.Map as Map
@@ -36,22 +34,6 @@ import Data.List
 
 showBaseSig :: BaseSig -> String
 showBaseSig = reverse . drop 4 . reverse . show
-
-instance PrettyPrint BaseSig where
-     printText0 _ s = text $ showBaseSig s
-
-instance PrettyPrint IsaClass where
-     printText0 _ (IsaClass c) = parens $ text c
-
-instance PrintLaTeX Sentence where
-  printLatex0 = printText0
-
-{- test for sentence translation -}
-instance PrettyPrint Sentence where
-      printText0 _ = text . showTerm . senTerm
-
-instance PrettyPrint Typ where
-  printText0 _ = printTyp Null
 
 printClass :: IsaClass -> Doc
 printClass (IsaClass x) = text x
@@ -107,18 +89,29 @@ printTypeOp x name r1 r2 =
         d4 = if i2 < r then parens d2 else d2
     in (d3 <+> text name <+> d4, r)
 
-instance PrettyPrint TypeSig where
-  printText0 ga tysig = printText0 ga $ arities tysig
+and_docs :: [Doc] -> Doc
+and_docs ds = vcat $ prepPunctuate (text "and ") ds
 
-instance PrettyPrint Term where
-  printText0 _ = text . showTerm -- outerShowTerm   
-  -- back to showTerm, because meta !! causes problems with show ?thesis
+-- | printing a named sentence
+printNamedSen :: Named Sentence -> Doc
+printNamedSen NamedSen { senName = lab, sentence = s } = 
+  let d = printSentence s in case s of 
+  RecDef _ _ -> d
+  _ -> text (case s of
+    ConstDef _ -> lab ++ "_def"
+    Sentence _ -> lab
+    _ -> "theorem " ++ lab) 
+    <+> colon <+> doubleQuotes d
 
-showQuantStr :: String -> String
-showQuantStr s | s == allS = "!"
-               | s == exS  = "?"
-               | s == ex1S = "?!"
-               | otherwise = error "IsaPrint.showQuantStr"
+-- | sentence printing
+printSentence :: Sentence -> Doc
+printSentence s = case s of 
+  RecDef kw xs -> text kw <+>
+     and_docs(map (vcat . map (doubleQuotes . printTerm)) xs)
+  _ -> case senTerm s of
+      IsaEq (Const vn y) t ->  text (new vn) <+> doubleColon 
+                      <+> printType y <+> text "==" <+> printOUTerm t
+      t -> printTerm t
 
 -- | omits type of outer abstraction
 printOUTerm :: Term -> Doc
@@ -128,8 +121,17 @@ printOUTerm t = case t of
      IsCont -> "LAM") <+> printTerm v <> text "." <+> printOUTerm tm 
   _ -> printTerm t
 
+-- | print plain term
 printTerm :: Term -> Doc
 printTerm = text . showTerm
+
+-- look into this Strings 
+
+showQuantStr :: String -> String
+showQuantStr s | s == allS = "!"
+               | s == exS  = "?"
+               | s == ex1S = "?!"
+               | otherwise = error "IsaPrint.showQuantStr"
 
 showTerm :: Term -> String
 showTerm (Const (VName {new=c}) _) = c
@@ -184,7 +186,7 @@ showTerm (If t1 t2 t3 c) = case c of
            ++ showTerm t2 ++ sp ++ "else" ++ sp ++ showTerm t3 ++ rb
   IsCont -> 
     lb ++ "If" ++ sp ++ showTerm t1 ++ sp ++ "then" ++ sp 
-           ++ showTerm t2 ++ sp ++ "else" ++ sp ++ showTerm t3 ++ sp ++ "fi" ++ rb
+        ++ showTerm t2 ++ sp ++ "else" ++ sp ++ showTerm t3 ++ sp ++ "fi" ++ rb
 
 showTerm (Let pts t) = lb ++ "let" ++ sp ++ showPat False (head pts) 
                                 ++ concat (map (showPat True) (tail pts))
@@ -296,7 +298,6 @@ toPrecTree trm =
                           (Const (VName {new=n,orig=tl}) v) t3 NotCont]
     _ -> Node (noPrec trm) []
 
-
 twoUs :: Char -> Char -> Bool
 twoUs c x = c == '_' && x == '_'
 
@@ -339,7 +340,8 @@ showPTree (Node (PrecTerm term pre) annos) =
    If the precedence of one side is weaker (here: higher number) than the 
    connector's one it is bracketed. Otherwise not. 
 -}
-infixP :: Precedence -> String -> Assoc -> PrecTermTree -> PrecTermTree -> String
+infixP :: Precedence -> String -> Assoc -> PrecTermTree -> PrecTermTree 
+       -> String
 infixP pAdult stAdult assoc leftChild rightChild 
     | (pAdult < prLeftCld) && (pAdult < prRightCld) = both
     | pAdult < prLeftCld = 
@@ -441,37 +443,32 @@ pair :: PrecTermTree -> PrecTermTree -> String
 pair leftChild rightChild = lb++showPTree leftChild++", "++
                                 showPTree rightChild++rb
 
--- instances for Classrel and Arities, in alternative to TSig
-instance PrettyPrint Classrel where
- printText0 _ s = Map.foldWithKey showTyconClass empty s 
-   where 
-   showTyconClass t cl rest = case cl of 
-     Nothing -> rest
-     Just x -> text "axclass" <+> printClass t <+> text "<" <+> 
-       (if null x  then text "pcpo" else printSort x) $$ rest
+-- end of term printing
 
-instance PrettyPrint Arities where
- printText0 _ s = if Map.null s then empty  
-      else Map.foldWithKey showInstances empty s 
-   where 
-   showInstances t cl rest =
-     (vcat $ map (showInstance t) cl) $$ rest
-   showInstance t xs = 
-     text "instance" <+> text t <> doubleColon 
-                           <> showInstArgs (snd xs)  
-        <> printClass(fst xs) $$ text "by intro_classes"
-   showInstArgs ys = case ys of 
+printClassrel :: Classrel -> Doc
+printClassrel = vcat . map ( \ (t, cl) -> case cl of 
+     Nothing -> empty
+     Just x -> text "axclass" <+> printClass t <+> text "<" <+> 
+       (if null x  then text "pcpo" else printSort x)) . Map.toList 
+
+printArities :: Arities -> Doc
+printArities = vcat . map ( \ (t, cl) -> 
+                  vcat $ map (printInstance t) cl) . Map.toList
+
+printInstance :: TName -> (IsaClass, [(Typ, Sort)]) -> Doc
+printInstance t xs = text "instance" <+> text t <> doubleColon <> 
+    (case snd xs of 
      [] -> empty
-     _ : _ -> parens $ showInstArgsR ys
-   showInstArgsR ys = hsep $ punctuate comma $ map
-                (doubleQuotes . printSort . snd) ys
+     ys -> parens $ hsep $ punctuate comma 
+           $ map (doubleQuotes . printSort . snd) ys)
+    <> printClass (fst xs) $$ text "by intro_classes"
 
 printTypeDecls :: Sign -> Doc
 printTypeDecls sig =  
-    Map.foldWithKey (showTycon sig) empty $ arities $ tsig sig
+    Map.foldWithKey (printTycon sig) empty $ arities $ tsig sig
 
-showTycon :: Sign -> TName -> [(a, [b])] -> Doc -> Doc
-showTycon sig t arity' rest = 
+printTycon :: Sign -> TName -> [(a, [b])] -> Doc -> Doc
+printTycon sig t arity' rest = 
               let arity = if null arity' then
                           error "IsaPrint.printText0 (TypeSig)" 
                                 else length (snd $ head arity') in 
@@ -486,46 +483,45 @@ dtyp sig t = elem t $
          concat [map (typeId . fst) x | x <- domainTab sig]
 
 -- | show alternative syntax (computed by comorphisms) 
-showAlt :: VName -> Doc
-showAlt VName { new = newV, orig = origV } = if newV /= origV then 
+printAlt :: VName -> Doc
+printAlt VName { new = newV, orig = origV } = if newV /= origV then 
     parens $ doubleQuotes $ text origV else empty
 
 instance PrettyPrint Sign where
-  printText0 ga sig = printText0 ga
-    (baseSig sig) <> colon $++$
+  printText0 _ sig = text (showBaseSig $ baseSig sig) <> colon $++$
     printTypeDecls sig $++$
-    printText0 ga (classrel $ tsig sig) $++$
-    showDomainDefs (domainTab sig) $++$
-    showsConstTab (constTab sig) $++$     
+    printClassrel (classrel $ tsig sig) $++$
+    printDomainDefs (domainTab sig) $++$
+    printConstTab (constTab sig) $++$     
     (if showLemmas sig then showCaseLemmata (domainTab sig) else empty) $++$
                                    -- this may print an "o"
-    printText0 ga (tsig sig) 
+    printArities (arities $ tsig sig) 
     where
-    showsConstTab tab = if Map.null tab then empty else text "consts" 
-                        $$ Map.foldWithKey showConst empty tab
-    showConst vn t rest = text (new vn) <+> doubleColon <+> 
-                          doubleQuotes (printType t)
-                          <+> showAlt vn $$ rest
+    printConstTab tab = if Map.null tab then empty else text "consts" 
+                        $$ vcat (map printConst $ Map.toList tab)
+    printConst (vn, t) = text (new vn) <+> doubleColon <+> 
+                          doubleQuotes (printType t) <+> printAlt vn
     isDomain = case baseSig sig of 
                HOLCF_thy -> True 
                HsHOLCF_thy -> True 
                _ -> False
-    showDomainDefs dtDefs = vcat $ map showDomainDef dtDefs
-    showDomainDef dts = if null dts then empty else 
+    printDomainDefs dtDefs = vcat $ map printDomainDef dtDefs
+    printDomainDef dts = if null dts then empty else 
         text (if isDomain then "domain" else "datatype") 
-        <+> vcat (prepPunctuate (text "and ") $ map showDomain dts)
-    showDomain (t, ops) =
+        <+> and_docs (map printDomain dts)
+    printDomain (t, ops) =
        printType t <+> equals <+>
-       hsep (punctuate (text " |") $ map showDOp ops)
-    showDOp (VName { new = opname }, args) = 
-       text opname <+> hsep (map (showDOpArg opname) 
+       hsep (punctuate (text " |") $ map printDOp ops)
+    printDOp (VName { new = opname }, args) = 
+       text opname <+> hsep (map (printDOpArg opname) 
                             $ zip args $ reverse [1 .. length args]) 
-    showDOpArg o (a, i) = if isDomain then 
-           parens $ text (o ++ "_" ++ show i) <> doubleColon <> showOpArg a
-           else showOpArg a
-    showOpArg arg = case arg of
-                    TFree _ _ -> printTyp Null arg
-                    _         -> doubleQuotes $ printTyp Null arg
+    printDOpArg o (a, i) = let 
+      d = case a of 
+            TFree _ _ -> printTyp Null a
+            _         -> doubleQuotes $ printTyp Null a
+      in if isDomain then 
+           parens $ text (o ++ "_" ++ show i) <> doubleColon <> d
+           else d
     showCaseLemmata dtDefs = text (concat $ map showCaseLemmata1 dtDefs)
     showCaseLemmata1 dts = concat $ map showCaseLemma dts
     showCaseLemma (_, []) = ""
@@ -565,6 +561,12 @@ instance PrettyPrint Sign where
 
 instance PrintLaTeX Sign where
     printLatex0 = printText0
+
+instance PrintLaTeX Sentence where
+  printLatex0 = printText0
+
+instance PrettyPrint Sentence where
+      printText0 _ = printSentence
 
 sp :: String
 sp = " "
