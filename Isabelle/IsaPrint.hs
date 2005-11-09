@@ -55,7 +55,7 @@ printSort l = case l of
     [c] -> printClass c 
     _ -> braces . hsep . punctuate comma $ map printClass l
 
-data SynFlag = Unquoted | Quoted | Null 
+data SynFlag = Unquoted | Null 
 
 doubleColon :: Doc
 doubleColon = text "::"
@@ -69,7 +69,6 @@ printType a t = case t of
                                 then v  else '\'' : v 
                  in if null s then d else case a of
    Unquoted -> d <> doubleColon <> printSort s
-   Quoted -> d <> doubleColon <> doubleQuotes (printSort s)
    Null -> d, 1000)
  (TVar iv s) -> printType a $ TFree ("?\'" ++ unindexed iv) s
  (Type name _ args) -> case args of 
