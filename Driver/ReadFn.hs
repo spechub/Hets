@@ -34,6 +34,7 @@ import Text.ParserCombinators.Parsec
 
 import Driver.Options
 import Driver.Version
+import System.Directory
 
 read_LIB_DEFN_M :: Monad m => LogicGraph -> AnyLogic -> HetcatsOpts 
                 -> FilePath -> String -> m LIB_DEFN
@@ -53,7 +54,11 @@ readLIB_DEFN_from_file = readShATermFile
 readShATermFile :: (ShATermConvertible a) => FilePath -> IO (Result a)
 readShATermFile fp = do 
     str <- readFile fp
-    return (fromShATermString str)
+    r <- return $ fromShATermString str
+    case r of 
+      Result _ Nothing -> removeFile fp
+      _ -> return ()
+    return r
                    
 fromVersionedATT :: (ShATermConvertible a) => ATermTable -> Result a
 fromVersionedATT att =
