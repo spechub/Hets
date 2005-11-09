@@ -12,8 +12,8 @@
 
 INCLUDE_PATH = hxt
 
-HC         = ghc
-HC_INCLUDE = -i$(INCLUDE_PATH) -package fgl
+HC = ghc
+HC_INCLUDE = -i$(INCLUDE_PATH)
 
 # check for the "uni" library
 UNI_PACKAGE_CONF := $(wildcard ../uni/uni-package.conf)
@@ -36,26 +36,37 @@ PFE_FLAGS = -package data -package text $(PFE_PATH) -DPROGRAMATICA \
             -fno-monomorphism-restriction -fallow-undecidable-instances
 endif
 
-HC_OPTS    = -fglasgow-exts -fallow-overlapping-instances \
-    $(HC_PACKAGE) $(HC_INCLUDE) $(PFE_FLAGS) -DCASLEXTENSIONS
+# OPTS without uni packages
+HC_OPTS1 = -fglasgow-exts -fallow-overlapping-instances \
+    $(HC_INCLUDE) $(PFE_FLAGS) -DCASLEXTENSIONS
+
+HC_OPTS    = $(HC_OPTS1) $(HC_PACKAGE)
 
 ####################################################################
 ### targets
+.PHONY : all clean o_clean bin_clean
 
-all: hets-optimized
+all: hets
 
-hets-optimized:
-	$(HC) --make -O -o hets hets.hs $(HC_OPTS) -w
+hets: o_clean
+	$(HC) --make -O -o $@ hets.hs $(HC_OPTS) -w
 	strip hets
+
+# cleaning needed due to recompilation problem with and without uni
+hets.cgi: o_clean
+	$(HC) --make -O -package WASH GUI/hets_cgi.hs -o $@ $(HC_OPTS1) -w
+	strip hets.cgi
+
 
 ###############
 ### clean up
 
-### remove binary
+### remove binaries
 bin_clean: 
-	$(RM) hets
+	$(RM) hets hets.cgi
 
 ### remove *.hi and *.o
-clean: bin_clean
+o_clean: 
 	find . -name \*.o -o -name \*.hi | xargs $(RM) -r
 
+clean: o_clean bin_clean 
