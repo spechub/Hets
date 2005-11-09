@@ -15,7 +15,13 @@ Printing functions for Isabelle logic.
   properly construct docs
 -}
 
-module Isabelle.IsaPrint where
+module Isabelle.IsaPrint 
+    ( showBaseSig
+    , doubleColon
+    , printType
+    , printTerm
+    , printOUTerm
+    ) where
 
 import Isabelle.IsaSign 
 import Isabelle.IsaConsts
@@ -60,32 +66,35 @@ data SynFlag = Unquoted | Null
 doubleColon :: Doc
 doubleColon = text "::"
 
-printTyp :: SynFlag -> Typ -> Doc
-printTyp a = fst . printType a
+printType :: Typ -> Doc
+printType = printTyp Unquoted
 
-printType :: SynFlag -> Typ -> (Doc, Int)
-printType a t = case t of 
+printTyp :: SynFlag -> Typ -> Doc
+printTyp a = fst . printTypeAux a
+
+printTypeAux :: SynFlag -> Typ -> (Doc, Int)
+printTypeAux a t = case t of 
  (TFree v s) -> (let d = text $ if isPrefixOf "\'" v || isPrefixOf "?\'" v 
                                 then v  else '\'' : v 
                  in if null s then d else case a of
    Unquoted -> d <> doubleColon <> printSort s
    Null -> d, 1000)
- (TVar iv s) -> printType a $ TFree ("?\'" ++ unindexed iv) s
+ (TVar iv s) -> printTypeAux a $ TFree ("?\'" ++ unindexed iv) s
  (Type name _ args) -> case args of 
    [t1, t2] | elem name [prodS, sProdS, funS, cFunS, sSumS] -> 
        printTypeOp a name t1 t2
    _  -> ((case args of
            [] -> empty
-           [arg] -> let (d, i) = printType a arg in
+           [arg] -> let (d, i) = printTypeAux a arg in
                       if i < 1000 then parens d else d
            _ -> parens $ hsep $ punctuate comma $ 
-                       map (fst . printType a) args)
+                       map (fst . printTypeAux a) args)
           <+> text name, 1000)
 
 printTypeOp :: SynFlag -> TName -> Typ -> Typ -> (Doc, Int)
 printTypeOp x name r1 r2 = 
-    let (d1, i1) = printType x r1
-        (d2, i2) = printType x r2
+    let (d1, i1) = printTypeAux x r1
+        (d2, i2) = printTypeAux x r2
         (l, r) = Map.findWithDefault (0 :: Int, 0 :: Int) 
                     name $ Map.fromList 
                     [ (funS, (1,0))
@@ -105,18 +114,22 @@ instance PrettyPrint Term where
   printText0 _ = text . showTerm -- outerShowTerm   
   -- back to showTerm, because meta !! causes problems with show ?thesis
 
-typedVars2st :: (a -> String) -> (b -> String) -> [(a,b)] -> String
-typedVars2st f g ls = concat [" (" ++ (f x) ++ "::" ++ (g y) ++ ")" 
-                              | (x,y) <- ls]
-
-showTypedVars :: [(Term,Typ)] -> String
-showTypedVars = typedVars2st showTerm (show . parens . printTyp Unquoted)
-
 showQuantStr :: String -> String
 showQuantStr s | s == allS = "!"
                | s == exS  = "?"
                | s == ex1S = "?!"
                | otherwise = error "IsaPrint.showQuantStr"
+
+-- | omits type of outer abstraction
+printOUTerm :: Term -> Doc
+printOUTerm t = case t of
+  (Abs v _ tm l) -> parens $ (text $ case l of 
+     NotCont -> "%"
+     IsCont -> "LAM") <+> printTerm v <> text "." <+> printOUTerm tm 
+  _ -> printTerm t
+
+printTerm :: Term -> Doc
+printTerm = text . showTerm
 
 showTerm :: Term -> String
 showTerm (Const (VName {new=c}) _) = c
@@ -195,25 +208,8 @@ showPattern t = showTerm t
 
 showQuant :: String -> Term -> Typ -> Term -> String
 showQuant s var typ term =
-   s++sp++ showTerm var ++" :: "++ show (printTyp Null typ) ++ " . "
+   s++sp++ showTerm var ++" :: "++ show (printType typ) ++ " . "
         ++ showTerm term
-
-outerShowTerm :: Term -> String
-outerShowTerm (App (Const (VName {new=q}) _) (Abs v ty t _) _) | q == allS = 
-  outerShowQuant "!!" v ty t 
-outerShowTerm (App (App (Const (VName {new=o}) _) t1 _) t2 _) | o == impl = 
-  showTerm t1 ++ " ==> " ++ outerShowTerm1 t2
-outerShowTerm t = showTerm t
-
-outerShowTerm1 :: Term -> String
-outerShowTerm1 t@(App (App (Const (VName {new=o}) _) _ _) _ _) | o == impl = outerShowTerm t
-outerShowTerm1 t = showTerm t
-
-outerShowQuant :: String -> Term -> Typ -> Term -> String
-outerShowQuant s var typ term =
-  s++sp++ showTerm var ++" :: "++ show (printTyp Null typ) ++ " . "
-   ++ outerShowTerm term 
-
 
 {-   
    For nearly perfect parenthesis - they only appear when needed - 
@@ -247,9 +243,6 @@ isaAppPrec t = PrecTerm t 0
 appPrec :: Term -> PrecTerm
 appPrec t = PrecTerm t 5
 
-eqvPrec :: Term -> PrecTerm
-eqvPrec t = PrecTerm t 7
-
 eqPrec :: Term -> PrecTerm
 eqPrec t = PrecTerm t 10
 
@@ -275,12 +268,11 @@ dummyS :: String
 dummyS = "Dummy" 
 
 binFunct :: String -> Term -> PrecTerm
-binFunct s | s == eqv  = eqvPrec
-           | s == eq   = eqPrec
+binFunct s | s == eq   = eqPrec
            | s == conj = andPrec
            | s == disj = orPrec
            | s == impl = implPrec
---           | s == cappl = capplPrec
+           | s == cappl = capplPrec
            | otherwise = appPrec
 
 toPrecTree :: Term -> PrecTermTree
@@ -313,17 +305,6 @@ getParts _ "" = ("", "")
 getParts c (x : xs) = 
     if twoUs c x then ("" , c : x : xs)
     else let (hd, tl) = getParts x xs in (x : hd, tl)
-
-hasDoubleULines::Char->String->Bool
-hasDoubleULines _ [] = False
-hasDoubleULines c (x : xs) = 
-    twoUs c x || hasDoubleULines x xs
-
-rmDoubleULines:: Char -> String -> String
-rmDoubleULines _ [] = []
-rmDoubleULines '_' ('_':xs) = rmDoubleULines '_' xs
-rmDoubleULines c (x:xs) = if twoUs c x then rmDoubleULines '_' xs
-                          else x : rmDoubleULines x xs
 
 data Assoc = LeftAs | NoAs | RightAs
 
@@ -523,7 +504,7 @@ instance PrettyPrint Sign where
     showsConstTab tab = if Map.null tab then empty else text "consts" 
                         $$ Map.foldWithKey showConst empty tab
     showConst vn t rest = text (new vn) <+> doubleColon <+> 
-                          doubleQuotes (printTyp Unquoted t)
+                          doubleQuotes (printType t)
                           <+> showAlt vn $$ rest
     isDomain = case baseSig sig of 
                HOLCF_thy -> True 
@@ -534,7 +515,7 @@ instance PrettyPrint Sign where
         text (if isDomain then "domain" else "datatype") 
         <+> vcat (prepPunctuate (text "and ") $ map showDomain dts)
     showDomain (t, ops) =
-       printTyp Unquoted t <+> equals <+>
+       printType t <+> equals <+>
        hsep (punctuate (text " |") $ map showDOp ops)
     showDOp (VName { new = opname }, args) = 
        text opname <+> hsep (map (showDOpArg opname) 
@@ -582,13 +563,6 @@ instance PrettyPrint Sign where
                 ++ "=\n" ++ "Some" ++ sp ++ lb ++ cs ++ cl ++ rb ++ "\"\n"
                 ++ proof
 
-quote_underscores :: String -> String
-quote_underscores [] = []
-quote_underscores ('_':'_':rest) = '_':quote_underscores rest
-quote_underscores ('_':rest) = '\'':'_':quote_underscores rest
-quote_underscores (c:rest) = c:quote_underscores rest
-
-
 instance PrintLaTeX Sign where
     printLatex0 = printText0
 
@@ -606,7 +580,3 @@ lb = "("
 
 lbb :: String
 lbb = lb++lb
-
-
-bracketize :: Bool -> String -> String
-bracketize b s = if b then lb++s++rb else s

@@ -153,19 +153,16 @@ disj = "op |"
 impl :: String
 impl = "op -->"
 
-eqv :: String
-eqv = "op ="
-
 eq :: String
 eq = "op ="
 
 -- * binary junctors
 binConj, binDisj, binImpl, binEqv, binEq :: Term -> Term -> Term
-binConj= binConst conj
+binConj = binConst conj
 binDisj = binConst disj
 binImpl = binConst impl
 binEq = binConst eq
-binEqv = binConst eqv
+binEqv = binEq
 
 -- * boolean constants
 true, false :: Term

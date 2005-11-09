@@ -23,7 +23,6 @@ import Common.ProofUtils
 import Isabelle.IsaSign as IsaSign
 import Isabelle.Translate
 import Isabelle.IsaPrint
-import Isabelle.IsaHOLCFPrint 
 
 createTheoryText :: Sign -> [Named Sentence] -> Doc
 createTheoryText sig sens =
@@ -63,9 +62,9 @@ printNamedSen sen = case s of
     Sentence _ -> lab
     _ -> "theorem " ++ lab) 
     <+> colon <+> doubleQuotes (case senTerm s of
-      IsaEq (Const (VName {new=df}) y) t ->  
-        text df <+> text "::" <+> printTyp Unquoted y
-                 <+> text "==" <+> text (showOUTerm t)
+      IsaEq (Const vn y) t ->  
+        text (new vn) <+> doubleColon <+> printType y
+                 <+> text "==" <+> printOUTerm t
       _ -> printText s)
  where lab = senName sen
        s = sentence sen
