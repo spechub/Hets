@@ -307,13 +307,13 @@ transApplOp s typ tt tt' = case getTypeAppl typ of
 transLog :: Env -> Id -> As.Term -> As.Term -> IsaSign.Term
 transLog sign opId opTerm t = case t of
  TupleTerm [l' , r'] _
-  | opId == andId  -> binConst conj l r 
-  | opId == orId   -> binConst disj l r
-  | opId == implId -> binConst impl l r 
-  | opId == infixIf -> binConst impl r l 
-  | opId == eqvId  -> binConst eqv  l r
-  | opId == exEq   -> binConst conj (binConst eq l r) $ 
-                      binConst conj (termAppl defOp l) $ 
+  | opId == andId  -> binConj l r 
+  | opId == orId   -> binDisj l r
+  | opId == implId -> binImpl l r 
+  | opId == infixIf -> binImpl r l 
+  | opId == eqvId  -> binEq  l r
+  | opId == exEq   -> binConj (binEq l r) $ 
+                      binConj (termAppl defOp l) $ 
                       termAppl defOp r
   | opId == eqId -> binConst eq l r
   where l = transTerm sign l'
