@@ -44,7 +44,10 @@ main = do
 processFile :: HetcatsOpts -> FilePath -> IO ()
 processFile opts file =
     do putIfVerbose opts 2 ("Processing input: " ++ file)
-       res <- case guess file (intype opts) of
+       case guess file (intype opts) of
+         DGIn -> showDGGraph file opts
+         s -> do 
+           res <- case s of
 {-
 #ifdef PROGRAMATICA
              HaskellIn -> anaHaskellFile opts file
@@ -56,6 +59,6 @@ processFile opts file =
                  structureAna file opts ontoMap
 #endif
              _ -> anaLib opts file
-       case gui opts of
-           Not -> return ()
-           _  -> showGraph file opts res
+           case gui opts of
+             Not -> return ()
+             _  -> showGraph file opts res

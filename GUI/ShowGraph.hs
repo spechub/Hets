@@ -31,23 +31,33 @@ import Destructible
 import DialogWin (useHTk)
 #endif
 
+import Data.IORef
 
 showGraph :: FilePath -> HetcatsOpts ->
              Maybe (LIB_NAME, -- filename
                     LibEnv    -- DGraphs for imported modules
                    )  -> IO ()
-showGraph file opt env =
-    case env of
-        Just (ln, libenv) -> do
-            putIfVerbose opt 2 ("Trying to display " ++ file
-                                ++ " in a graphical window")
-            putIfVerbose opt 3 "Initializing Converter"
+showGraph file opts env = case env of
+        Just (ln, libenv) -> 
+            showGraphAux file opts ( \ gm -> convertGraph gm ln libenv opts)
+        Nothing -> putIfVerbose opts 1 $
+            "Error: Basic Analysis is neccessary to display "
+             ++ "graphs in a graphical window"
+
+
+showGraphAux :: FilePath -> HetcatsOpts 
+             -> (IORef GraphMem -> IO (Descr, GraphInfo, ConversionMaps)) 
+             -> IO ()
+showGraphAux file opts convFct = do
+            putIfVerbose opts 2 $ "Trying to display " ++ file
+                             ++ " in a graphical window"
+            putIfVerbose opts 3 "Initializing Converter"
 #ifdef UNI_PACKAGE
             graphMem <- initializeConverter
             useHTk -- All messages are displayed in TK dialog windows
                    -- from this point on
-            putIfVerbose opt 3 "Converting Graph"
-            (gid, gv, _cmaps) <- convertGraph graphMem ln libenv opt
+            putIfVerbose opts 3 "Converting Graph"
+            (gid, gv, _cmaps) <- convFct graphMem
             GUI.AbstractGraphView.redisplay gid gv
             graph <- get_graphid gid gv
             sync(destroyed graph)
@@ -57,6 +67,8 @@ showGraph file opt env =
             fail $ "No graph display interface; " ++
               "UNI_PACKAGE option has been disabled during compilation of Hets"
 #endif
-        Nothing -> putIfVerbose opt 1
-            ("Error: Basic Analysis is neccessary to display "
-             ++ "graphs in a graphical window")
+
+showDGGraph :: FilePath -> HetcatsOpts -> IO ()
+showDGGraph file opts = do 
+  putStrLn "implement dg handling"
+  showGraphAux file opts $ const $ batchOpenProofStatus file opts
