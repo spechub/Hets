@@ -59,6 +59,7 @@ import GraphDisp
 import GraphConfigure
 import TextDisplay
 import qualified HTk
+import InfoBus
 
 import qualified Common.Lib.Map as Map
 import qualified Common.OrderedMap as OMap
@@ -208,18 +209,23 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts = do
                    Nothing -> fail "Could not open file."
               )
          -- action on "save"
-             (do proofStatus <- readIORef ioRefProofStatus
-                 writeShATermFile ("./" ++ (show ln) ++ ".dg") proofStatus)
+             (encapsulateWaitTermAct
+               (do proofStatus <- readIORef ioRefProofStatus
+                   let filename = "./" ++ (show ln) ++ ".dg"
+                   writeShATermFile filename proofStatus
+                   putStrLn ("Wrote "++filename)))
          -- action on "save as...:"
-             (do currentPath <- getCurrentDirectory
-                 evnt <- newFileDialogStr "Save as..." currentPath
-                 maybeFilePath <- HTk.sync evnt
-                 case maybeFilePath of
-                   Just filePath -> do
-                     proofStatus <- readIORef ioRefProofStatus
-                     writeShATermFile filePath proofStatus
-                   Nothing -> fail "Could not save file."
-              )
+             (encapsulateWaitTermAct
+               (do currentPath <- getCurrentDirectory
+                   evnt <- newFileDialogStr "Save as..." currentPath
+                   maybeFilePath <- HTk.sync evnt
+                   case maybeFilePath of
+                     Just filePath -> do
+                       proofStatus <- readIORef ioRefProofStatus
+                       writeShATermFile filePath proofStatus
+                       putStrLn ("Wrote "++filePath)
+                     Nothing -> fail "Could not save file."
+               ))
          -- the global menu
              [GlobalMenu (Menu Nothing
                [Menu (Just "Unnamed nodes")
