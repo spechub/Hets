@@ -16,6 +16,7 @@ module GUI.ShowGraph
 where
 
 import System.Exit (ExitCode(ExitSuccess), exitWith)
+import Data.IORef
 
 import Driver.Options
 
@@ -31,22 +32,19 @@ import Destructible
 import DialogWin (useHTk)
 #endif
 
-import Data.IORef
-
 showGraph :: FilePath -> HetcatsOpts ->
              Maybe (LIB_NAME, -- filename
                     LibEnv    -- DGraphs for imported modules
                    )  -> IO ()
 showGraph file opts env = case env of
-        Just (ln, libenv) -> 
+        Just (ln, libenv) ->
             showGraphAux file opts ( \ gm -> convertGraph gm ln libenv opts)
         Nothing -> putIfVerbose opts 1 $
             "Error: Basic Analysis is neccessary to display "
              ++ "graphs in a graphical window"
 
-
-showGraphAux :: FilePath -> HetcatsOpts 
-             -> (IORef GraphMem -> IO (Descr, GraphInfo, ConversionMaps)) 
+showGraphAux :: FilePath -> HetcatsOpts
+             -> (IORef GraphMem -> IO (Descr, GraphInfo, ConversionMaps))
              -> IO ()
 showGraphAux file opts convFct = do
             putIfVerbose opts 2 $ "Trying to display " ++ file
@@ -69,6 +67,5 @@ showGraphAux file opts convFct = do
 #endif
 
 showDGGraph :: FilePath -> HetcatsOpts -> IO ()
-showDGGraph file opts = do 
-  putStrLn "implement dg handling"
+showDGGraph file opts =
   showGraphAux file opts $ const $ batchOpenProofStatus file opts
