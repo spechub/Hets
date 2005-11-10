@@ -209,7 +209,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts = do
               )
          -- action on "save"
              (do proofStatus <- readIORef ioRefProofStatus
-                 writeShATermFile ("./" ++ (show ln) ++ ".log") proofStatus)
+                 writeShATermFile ("./" ++ (show ln) ++ ".dg") proofStatus)
          -- action on "save as...:"
              (do currentPath <- getCurrentDirectory
                  evnt <- newFileDialogStr "Save as..." currentPath
