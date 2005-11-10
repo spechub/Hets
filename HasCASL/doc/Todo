@@ -127,11 +127,11 @@ ugly "showDiags{,1}" at "IO (Maybe"
 
 
 
-Isabelle/IsaSign:
-only use VName.new for the key in constTab by giving instance Eq/Ord
-VName.
-
-correct showAlt, don't do it for HasCASL
+HasCASL2IsabelleHOL:
+transTotalLambda goes wrong in HasCASL/Functions.het
+and let goes wrong in HasCASL/State.het.
+if types of bound variables are printed, 
+type variables are wrongly represented
 
 
 
