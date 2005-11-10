@@ -201,8 +201,10 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts = do
                  evnt <- fileDialogStr "Open..." currentPath
                  maybeFilePath <- HTk.sync evnt
                  case maybeFilePath of
-                   Just filePath -> openProofStatus filePath ioRefProofStatus 
-                                    convRef opts
+                   Just filePath -> 
+                           do openProofStatus filePath ioRefProofStatus 
+                                              convRef opts
+                              return ()
                    Nothing -> fail "Could not open file."
               )
          -- action on "save"
@@ -420,7 +422,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts = do
 
 
 openProofStatus :: FilePath -> (IORef ProofStatus) -> (IORef ConversionMaps)
-                -> HetcatsOpts -> IO()
+                -> HetcatsOpts -> IO(Descr, GraphInfo, ConversionMaps)
 openProofStatus filename ioRefProofStatus convRef opts =
   do resultProofStatus <- proofStatusFromShATerm filename
      case Res.maybeResult resultProofStatus of
@@ -435,8 +437,14 @@ openProofStatus filename ioRefProofStatus convRef opts =
                           <- convertGraph graphMem' ln libEnv' opts
             writeIORef convRef convMaps
             redisplay gid actGraphInfo
-            return ()
+            return (gid, actGraphInfo, convMaps)
 
+batchOpenProofStatus :: FilePath -> HetcatsOpts 
+                           -> IO(Descr, GraphInfo, ConversionMaps)
+batchOpenProofStatus filename opts = do
+  ioRefProofStatus <- newIORef (undefined :: ProofStatus)
+  convRef <- newIORef (undefined :: ConversionMaps)
+  openProofStatus filename ioRefProofStatus convRef opts
                                   
 proofMenu :: GInfo
              -> (ProofStatus -> IO (Res.Result ProofStatus))
