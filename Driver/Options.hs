@@ -217,7 +217,7 @@ instance Show GuiType where
 
 -- | 'InType' describes the type of input the infile contains
 data InType = ATermIn ATType | ASTreeIn ATType | CASLIn | HetCASLIn | OWL_DLIn
-            | HaskellIn | GuessIn
+            | HaskellIn | DGIn | GuessIn
 
 instance Show InType where
     show i = case i of
@@ -227,6 +227,7 @@ instance Show InType where
              HetCASLIn -> "het"
              OWL_DLIn -> "owl"
              HaskellIn -> "hs"
+             DGIn -> "dg"
              GuessIn -> ""
 
 -- maybe this optional tree prefix can be omitted
@@ -251,7 +252,7 @@ instance Show ATType where
                        NonBAF -> ""
 
 plainInTypes :: [InType]
-plainInTypes = [CASLIn, HetCASLIn, OWL_DLIn, HaskellIn]
+plainInTypes = [CASLIn, HetCASLIn, OWL_DLIn, HaskellIn, DGIn]
 
 aInTypes :: [InType]
 aInTypes = [ f x | f <- [ASTreeIn, ATermIn], x <- [BAF, NonBAF] ]
@@ -448,7 +449,7 @@ parseVerbosity (Just s)
 
 -- | intypes useable for downloads
 downloadExtensions :: [String]
-downloadExtensions = map ('.' :) $ 
+downloadExtensions = map ('.' :) $
          map show plainInTypes
          ++ map ((treeS ++) . show) [ATermIn BAF, ATermIn NonBAF]
          ++ map show aInTypes
