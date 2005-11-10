@@ -107,7 +107,7 @@ con :: VName -> Term
 con s = Const s noType
 
 mkVName :: String -> VName
-mkVName s = VName { new = s, orig = s }
+mkVName s = VName { new = s, altSyn = "" }
 
 conDouble :: String -> Term
 conDouble = con . mkVName

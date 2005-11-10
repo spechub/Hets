@@ -97,17 +97,16 @@ printNamedSen :: Named Sentence -> Doc
 printNamedSen NamedSen { senName = lab, sentence = s } = 
   let d = printSentence s in case s of 
   RecDef _ _ -> d
-  _ -> text (case s of
+  _ -> let dd = doubleQuotes d in if null lab then dd else text (case s of
     ConstDef _ -> lab ++ "_def"
     Sentence _ -> lab
-    _ -> "theorem " ++ lab) 
-    <+> colon <+> doubleQuotes d
+    _ -> "theorem " ++ lab) <+> colon <+> dd
 
 -- | sentence printing
 printSentence :: Sentence -> Doc
 printSentence s = case s of 
   RecDef kw xs -> text kw <+>
-     and_docs(map (vcat . map (doubleQuotes . printTerm)) xs)
+     and_docs (map (vcat . map (doubleQuotes . printTerm)) xs)
   _ -> case senTerm s of
       IsaEq (Const vn y) t ->  text (new vn) <+> doubleColon 
                       <+> printType y <+> text "==" <+> printOUTerm t
@@ -150,16 +149,9 @@ showTerm (Tuplex ls c) = case c of
                     ++ "," ++ showTupleArgs as
       _ -> showTerm a ++ "," ++ showTupleArgs as
 
-showTerm (Abs v y t l) 
-  | y == noType = lb ++ (case l of 
+showTerm (Abs v _y t l) = lb ++ (case l of 
     NotCont -> "%"
     IsCont -> "LAM ") ++ showTerm v ++ ". " ++ showTerm t ++ rb
-  | True = lb ++ (case l of 
-    NotCont -> "%"
-    IsCont -> "LAM ") ++ (case v of 
-      (Free _ w) -> showTerm v ++ "::" 
-       ++ show (printTyp Null w)
-      _ -> showTerm v) ++ ". " ++ showTerm t ++ rb
 
 -- showTerm (App (Const q _) (Abs v ty t _) _) | q `elem` [allS, exS, ex1S] =
 --   showQuant (showQuantStr q) v ty t
@@ -209,9 +201,8 @@ showPattern :: Term -> String
 showPattern t = showTerm t
 
 showQuant :: String -> Term -> Typ -> Term -> String
-showQuant s var typ term =
-   s++sp++ showTerm var ++" :: "++ show (printType typ) ++ " . "
-        ++ showTerm term
+showQuant s var _typ term =
+   s++sp++ showTerm var ++ " . "  ++ showTerm term
 
 {-   
    For nearly perfect parenthesis - they only appear when needed - 
@@ -287,25 +278,9 @@ toPrecTree trm =
         Node (binFunct (new vn) t) [toPrecTree t3, toPrecTree t2]
     App t1 t2 NotCont -> Node (isaAppPrec $ conDouble dummyS) 
                    [toPrecTree t1, toPrecTree t2] 
-    MixfixApp t@(Const (VName {new=n,orig=o}) v) (t2:t3) NotCont ->
-	if length t3 == 1 then
-	   Node (binFunct n t) [toPrecTree t2, toPrecTree (head t3)]
-	else
-	   let (_, tl) = getParts ' ' $ tail $ tail o in
-		Node (binFunct n t) 
-                         [toPrecTree t2, 
-			  toPrecTree $ MixfixApp 
-                          (Const (VName {new=n,orig=tl}) v) t3 NotCont]
+    MixfixApp t@(Const vn _) [t2, t3] NotCont ->
+	   Node (binFunct (new vn) t) [toPrecTree t2, toPrecTree t3]
     _ -> Node (noPrec trm) []
-
-twoUs :: Char -> Char -> Bool
-twoUs c x = c == '_' && x == '_'
-
-getParts :: Char -> String -> (String, String)
-getParts _ "" = ("", "")
-getParts c (x : xs) = 
-    if twoUs c x then ("" , c : x : xs)
-    else let (hd, tl) = getParts x xs in (x : hd, tl)
 
 data Assoc = LeftAs | NoAs | RightAs
 
@@ -314,7 +289,7 @@ showPTree (Node (PrecTerm term _) []) = showTerm term
 showPTree (Node (PrecTerm term pre) annos) =  
   let [leftChild, rightChild] = annos
    in case term of {
-         Const (VName {orig=c}) _
+         Const (VName { new = c }) _
 	       | c == eq -> infixP pre "=" LeftAs leftChild rightChild
 	       | c == "op +" -> infixP pre "+" LeftAs leftChild rightChild
 	       | c == "op -" -> infixP pre "-" LeftAs leftChild rightChild
@@ -484,8 +459,8 @@ dtyp sig t = elem t $
 
 -- | show alternative syntax (computed by comorphisms) 
 printAlt :: VName -> Doc
-printAlt VName { new = newV, orig = origV } = if newV /= origV then 
-    parens $ doubleQuotes $ text origV else empty
+printAlt VName { altSyn = altV } = if altV /= "" then 
+    parens $ doubleQuotes $ text altV else empty
 
 instance PrettyPrint Sign where
   printText0 _ sig = text (showBaseSig $ baseSig sig) <> colon $++$

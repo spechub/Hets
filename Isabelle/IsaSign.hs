@@ -27,8 +27,12 @@ type TName = String
 -- | names for values or constants (non-classes and non-types)
 data VName = VName
     { new :: String -- ^ name within Isabelle
-    , orig :: String  -- ^ original name from other logic
+    , altSyn :: String  -- ^ alternative mixfix syntax
     } deriving Show
+
+-- | the original (Haskell) name
+orig :: VName -> String
+orig = new 
 
 instance Eq VName where
     v1 == v2 = new v1 == new v2
