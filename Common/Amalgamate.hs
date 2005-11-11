@@ -42,11 +42,15 @@ instance Show CASLAmalgOpt where
 instance Read CASLAmalgOpt where
     readsPrec _ = readShow caslAmalgOpts
 
+-- | test all possible values
+readShowAux :: [(String, a)] -> ReadS a
+readShowAux l s = case find ( \ (p, _) -> isPrefixOf p s) l of
+               Nothing -> []
+               Just (p, t) -> [(t, drop (length p) s)]
+
 -- | input all possible values and read one as it is shown
 readShow :: Show a => [a] -> ReadS a
-readShow l s = case find ( \ o -> isPrefixOf (show o) s) l of
-               Nothing -> []
-               Just t -> [(t, drop (length $ show t) s)]
+readShow l = readShowAux $ map ( \ o -> (show o, o)) l
              
 -- | possible CASL amalgamability options
 caslAmalgOpts :: [CASLAmalgOpt]
