@@ -440,7 +440,7 @@ install: hets-opt install-hets
 genRules: $(generated_rule_files)
 
 CASL/ATC_CASL.der.hs: $(CASL_files) $(GENRULES)
-	$(GENRULECALL) -i ATC.AS_Annotation -o $@ $(CASL_files)
+	$(GENRULECALL) -i ATC.GlobalAnnotations -o $@ $(CASL_files)
 
 HasCASL/ATC_HasCASL.der.hs: $(HasCASL_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.AS_Annotation -o $@ $(HasCASL_files)

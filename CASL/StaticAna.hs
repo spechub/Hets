@@ -72,7 +72,9 @@ addOp ty i =
 addAssocOp :: OpType -> Id -> State (Sign f e) ()
 addAssocOp ty i = do
        e <- get
-       put e { assocOps = addOpTo i ty $ assocOps e }
+       put e { assocOps = addOpTo i ty $ assocOps e 
+             , globAnnos = updAssocMap (addAssocId i) $ globAnnos e
+             }
 
 updateExtInfo :: (e -> Result e) -> State (Sign f e) ()
 updateExtInfo upd = do
@@ -99,12 +101,16 @@ addPred ty i =
 allOpIds :: Sign f e -> Set.Set Id
 allOpIds = Rel.keysSet . opMap
 
-addAssocs :: GlobalAnnos -> Sign f e -> GlobalAnnos
-addAssocs ga e =
-    ga { assoc_annos =  
-                foldr ( \ i m -> case Map.lookup i m of
-                        Nothing -> Map.insert i ALeft m
-                        _ -> m ) (assoc_annos ga) (Map.keys $ assocOps e) } 
+addAssocs :: Sign f e -> GlobalAnnos -> GlobalAnnos
+addAssocs e = updAssocMap (\ m -> foldr addAssocId m $ Map.keys $ assocOps e)
+
+updAssocMap :: (AssocMap -> AssocMap) -> GlobalAnnos -> GlobalAnnos
+updAssocMap f ga = ga { assoc_annos = f $ assoc_annos ga }
+
+addAssocId :: Id -> AssocMap -> AssocMap
+addAssocId i m = case Map.lookup i m of
+                   Nothing -> Map.insert i ALeft m
+                   _ -> m 
 
 formulaIds :: Sign f e -> Set.Set Id
 formulaIds e = let ops = allOpIds e in
@@ -769,7 +775,7 @@ anaForm :: PrettyPrint f => Min f e -> Mix b s f e -> GlobalAnnos
         -> Sign f e -> (FORMULA f) -> Result (FORMULA f, FORMULA f)
 anaForm mef mix ga sign f = do 
     resF <- resolveFormula (putParen mix) (mixResolve mix) 
-            (addAssocs ga sign) (mixRules mix) f
+            (globAnnos sign) (mixRules mix) f
     anaF <- minExpFORMULA mef ga sign 
          $ assert (noMixfixF (checkMix mix) resF) resF
     return (resF, anaF)
@@ -778,7 +784,7 @@ anaTerm :: PrettyPrint f => Min f e -> Mix b s f e -> GlobalAnnos
         -> Sign f e -> SORT -> Range -> (TERM f) -> Result (TERM f, TERM f)
 anaTerm mef mix ga sign srt pos t = do 
     resT <- resolveMixfix (putParen mix) (mixResolve mix) 
-            (addAssocs ga sign) (mixRules mix) t
+            (globAnnos sign) (mixRules mix) t
     anaT <- oneExpTerm mef ga sign 
          $ assert (noMixfixT (checkMix mix) resT) $ Sorted_term resT srt pos
     return (resT, anaT)
@@ -797,7 +803,7 @@ basicAnalysis mef anab anas mix dif (bs, inSig, ga) =
                   [mkIdSets (allOpIds inSig) $ allPredIds inSig]
         (newBs, accSig) = runState (ana_BASIC_SPEC mef anab anas
                mix { mixRules = makeRules ga allIds } 
-               ga bs) inSig
+               ga bs) inSig { globAnnos = addAssocs inSig ga }
         ds = reverse $ envDiags accSig
         sents = reverse $ sentences accSig
         cleanSig = accSig { envDiags = [], sentences = [], varMap = Map.empty }

@@ -45,6 +45,7 @@ data Sign f e = Sign { sortSet :: Set.Set SORT
                , varMap :: Map.Map SIMPLE_ID SORT
                , sentences :: [Named (FORMULA f)]        
                , envDiags :: [Diagnosis]
+               , globAnnos :: GlobalAnnos
                , extendedInfo :: e
                } deriving Show
 
@@ -66,6 +67,7 @@ emptySign e = Sign { sortSet = Set.empty
                , varMap = Map.empty
                , sentences = []
                , envDiags = []
+               , globAnnos = emptyGlobalAnnos 
                , extendedInfo = e }
 
 -- | proper subsorts (possibly excluding input sort)

@@ -210,7 +210,7 @@ ana_FORMULA b mix ga f =
            let ps = map (mkId . (: [])) $ Set.toList $ getFormPredToks f
            pm <- gets predMap
            mapM_ (addPred $ PredType []) ps
-           newGa <- gets $ addAssocs ga
+           newGa <- gets globAnnos
            let Result es m = resolveFormula mapM_FORMULA 
                              resolveM_FORMULA newGa (mixRules mix) f
            addDiags es
