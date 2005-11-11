@@ -37,6 +37,9 @@ printTheory le ln ga (sn, ge) = case ge of
     SpecEntry (_,_,_, NodeSig n _) ->
         case maybeResult $ computeTheory le (ln, n) of
             Nothing -> P.empty
-            Just g -> text specS <+> printText0 ga sn <+> text equalS
-                         $$ printText0 ga g
+            Just g -> printTh ga sn g
     _ -> P.empty
+
+printTh :: GlobalAnnos -> SIMPLE_ID -> G_theory -> Doc 
+printTh ga sn g = text specS <+> printText0 ga sn <+> text equalS
+                    $$ printText0 ga g

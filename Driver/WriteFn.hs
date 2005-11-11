@@ -20,6 +20,7 @@ import Data.Maybe
 
 import Text.PrettyPrint.HughesPJ(render)
 import Common.Utils
+import Common.PrettyPrint
 import Common.Result
 import Common.GlobalAnnotations (GlobalAnnos)
 import Common.ConvertGlobalAnnos()
@@ -46,6 +47,7 @@ import SPASS.CreateDFGDoc
 import Logic.Prover
 import Static.DevGraph
 import Static.DGToSpec
+import qualified Static.PrintDevGraph as DG
 
 import ATC.DevGraph()
 import ATC.GlobalAnnotations()
@@ -75,12 +77,7 @@ write_LIB_DEFN ga file opt ld = do
             PrettyOut PrettyLatex -> do
                 verbMesg t
                 write_casl_latex opt ga (filename t) ld
-            EnvOut -> return () -- implemented in hets.hs
-            ThyFile -> return () -- (requires environment)
-            DfgFile -> return () -- (requires environment)
-            ComptableXml -> return ()
-            _ -> putIfVerbose opt 0 $ "Error: the OutType \"" ++
-                        show t ++ "\" is not implemented"
+            _ -> return () -- implemented elsewhere
     putIfVerbose opt 3 ("Current OutDir: " ++ odir)
     mapM_ write_type $ outtypes opt
 
@@ -157,35 +154,44 @@ writeVerbFile opt f str = do
     writeFile f str
 
 writeSpecFiles :: HetcatsOpts -> FilePath -> LibEnv
-               -> (LIB_NAME, GlobalEnv) -> IO()
-writeSpecFiles opt file lenv (ln, gctx) = let
-        ns = specNames opt
-        outTypes = outtypes opt
-        allSpecs = null ns in
-        mapM_ ( \ i -> case Map.lookup i gctx of
-               Just (SpecEntry (_,_,_, NodeSig n _)) ->
-                   case maybeResult $ computeTheory lenv (ln, n) of
-                   Nothing -> putIfVerbose opt 0 $
+               -> GlobalAnnos -> (LIB_NAME, GlobalEnv) -> IO()
+writeSpecFiles opt file lenv ga (ln, gctx) = let
+    ns = specNames opt
+    outTypes = outtypes opt
+    allSpecs = null ns in
+    mapM_ ( \ i -> case Map.lookup i gctx of
+        Just (SpecEntry (_,_,_, NodeSig n _)) ->
+            case maybeResult $ computeTheory lenv (ln, n) of
+              Nothing -> putIfVerbose opt 0 $
                               "could not compute theory of spec " ++ show i
-                   Just gTh@(G_theory lid sign0 sens0) ->
-                       mapM_ ( \ t ->
-                           let f = rmSuffix file ++ "_" ++ show i ++ "."
-                                   ++ show t
-                           in case t of
-                                ThyFile -> case printTheory ln i gTh of
+              Just gTh@(G_theory lid sign0 sens0) ->
+                  mapM_ ( \ t ->
+                      let f = rmSuffix file ++ "_" ++ show i ++ "." ++ show t
+                      in case t of
+                      ThyFile -> case printTheory ln i gTh of
                                     Nothing -> putIfVerbose opt 0 $
                                         "could not translate to Isabelle " ++
                                          show i
                                     Just d -> writeVerbFile opt f $
                                               shows d "\n"
-                                DfgFile -> case printDFG ln i gTh of
+                      DfgFile -> case printDFG ln i gTh of
                                     Nothing -> putIfVerbose opt 0 $
                                         "could not translate to SPASS " ++
                                          show i
                                     Just d -> writeVerbFile opt f $
                                               shows d "\n"
+                      TheoryFile d -> if null $ show d then
+                          writeVerbFile opt f $ 
+                              shows (DG.printTh ga i gTh) "\n"
+                          else putIfVerbose opt 0
+                                   "printing theory delta is not implemented"
+                      SigFile d -> if null $ show d then
+                          writeVerbFile opt f $ 
+                              shows (printText0 ga $ signOf gTh) "\n"
+                          else putIfVerbose opt 0
+                                 "printing signature delta is not implemented"
 #ifdef UNI_PACKAGE
-                                ComptableXml -> let
+                      ComptableXml -> let
                                     th = (sign0, toNamedList sens0)
                                     r1 = coerceBasicTheory lid CASL "" th
                                   in case r1 of
@@ -201,9 +207,9 @@ writeSpecFiles opt file lenv (ln, gctx) = let
                                                  render $ table_document $
                                                  fromJust res
 #endif
-                                _ -> return () -- ignore other file types
+                      _ -> return () -- ignore other file types
                              ) outTypes
-               _ -> if allSpecs then return () else
+        _ -> if allSpecs then return () else
                     putIfVerbose opt 0 $ "Unknown spec name: " ++ show i
               ) $ if null outTypes then [] else 
                       if allSpecs then Map.keys gctx else ns

@@ -62,7 +62,7 @@ anaLib opts file = do
         Just (ln, lenv) -> case Map.lookup ln lenv of
               Nothing -> return res
               Just gctx@(ga, ge, _) -> do
-                  writeSpecFiles opts file lenv (ln, ge)
+                  writeSpecFiles opts file lenv ga (ln, ge)
                   putIfVerbose opts 5 $ show $
                                 printLibrary lenv (ln, gctx)
                   putIfVerbose opts 3 $ showPretty ga ""
