@@ -17,7 +17,6 @@ module Common.Earley (Rule, Rules, partitionRules
                      , tupleId, unitId
                      , protect, listRules, mixRule
                      , getTokenPlaceList
-                     , endPlace, begPlace
                      -- * resolution chart
                      , Chart, mixDiags, ToExpr, rules, addRules
                      , initChart, nextChart, getResolved
@@ -41,15 +40,6 @@ dropPrefix (_ : xs) (_ : ys) = dropPrefix xs ys
 -- | take the difference of the two input lists take (length l2 - length l1) l2
 takeDiff :: [a] -> [b] -> [b]
 takeDiff l1 l2 = zipWith const l2 $ dropPrefix l1 l2
-
--- | reconstruct the token list of an 'Id'.
--- Replace top-level places with the input String
-getTokenList :: String -> Id -> [Token]
-getTokenList placeStr (Id ts cs ps) =
-    let convert =  map (\ t -> if isPlace t then t {tokStr = placeStr} else t)
-    in if null cs then convert ts else
-       let (toks, pls) = splitMixToken ts in
-           convert toks ++ getCompoundTokenList cs ps ++ convert pls
 
 -- | update token positions.
 -- return remaining positions
@@ -293,14 +283,6 @@ reduce ga table toExpr itm =
         $ filter (checkPrecs ga itm)
         $ lookUp table $ index itm
 
--- | 'Id' starts with a 'place'
-begPlace :: Id -> Bool
-begPlace (Id toks _ _) = not (null toks) && isPlace (head toks)
-
--- | 'Id' ends with a 'place'
-endPlace :: Id -> Bool
-endPlace (Id toks _ _) = not (null toks) && isPlace (last toks)
-
 -- | check if a left argument will be added.
 -- (The 'Int' is the number of current arguments.)
 isLeftArg :: Id -> [a] -> Bool
@@ -416,18 +398,18 @@ data Chart a = Chart { prevTable :: Table a
 -- The first function adds a type to the result.
 -- The second function filters based on argument and operator info.
 -- If filtering yields 'Nothing' further filtering by precedence is applied.
-nextChart :: (a -> a -> a) -> ToExpr a -> GlobalAnnos 
+nextChart :: (a -> a -> a) -> ToExpr a -> GlobalAnnos
           -> Chart a -> (a, Token) -> Chart a
 nextChart addType toExpr ga st term@(_, tok) =
     let table = prevTable st
         idx = currIndex st
         (cItems, sItems) = currItems st
         (cRules, sRules) = rules st
-        pItems = if null cItems && idx /= 0 then sItems else 
+        pItems = if null cItems && idx /= 0 then sItems else
                  map (mkItem idx) (addRules st tok ++ sRules) ++ sItems
         scannedItems = scan addType term pItems
         nextTable = if null cItems && idx /= 0 then table
-                    else Map.insert idx (map (mkItem idx) cRules ++ cItems) 
+                    else Map.insert idx (map (mkItem idx) cRules ++ cItems)
                          table
         completedItems = complete toExpr ga nextTable
                          $ sortBy ordItem $ scannedItems
@@ -445,7 +427,7 @@ nextChart addType toExpr ga st term@(_, tok) =
 mixDiags :: [Diagnosis] -> Chart a -> Chart a
 mixDiags ds st = st { solveDiags = ds ++ solveDiags st }
 
-type Rules = ([Rule], [Rule]) -- postfix and prefix rules 
+type Rules = ([Rule], [Rule]) -- postfix and prefix rules
 
 -- | presort rules
 partitionRules :: [Rule] -> Rules
@@ -453,7 +435,7 @@ partitionRules = partition ( \ (_, _, t : _) -> t == termTok)
 
 -- | create the initial chart
 initChart :: (Token -> [Rule]) -> Rules -> Chart a
-initChart adder ruleS = 
+initChart adder ruleS =
     Chart { prevTable = Map.empty
           , currIndex = 0
           , currItems = ([], [])
