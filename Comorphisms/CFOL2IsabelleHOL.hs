@@ -127,20 +127,21 @@ transTheory trSig trForm (sign, sens) =
                 _ -> True) sens
     dtDefs = topoSort (makeDtDefs sign sort_gen_axs)
     dtTypes = map ((\(Type s _ _) -> s).fst) $ concat dtDefs
+    ga = globAnnos sign
     insertOps op ts m = 
      if Set.size ts == 1 
-      then Map.insert (mkVName $ showIsaConstT op baseSign) 
+      then Map.insert (mkIsaConstT ga op baseSign) 
                (transOpType (Set.findMin ts)) m
       else 
-      foldl (\m1 (t,i) -> Map.insert (mkVName $ showIsaConstIT op i baseSign) 
+      foldl (\m1 (t,i) -> Map.insert (mkIsaConstIT ga op i baseSign) 
                           (transOpType t) m1) m 
             (zip (Set.toList ts) [1..(Set.size ts)])
     insertPreds pre ts m =
      if Set.size ts == 1 
-      then Map.insert (mkVName $ showIsaConstT pre baseSign) 
+      then Map.insert (mkIsaConstT ga pre baseSign) 
                (transPredType (Set.findMin ts)) m
       else
-      foldl (\m1 (t,i) -> Map.insert (mkVName $ showIsaConstIT pre i baseSign) 
+      foldl (\m1 (t,i) -> Map.insert (mkIsaConstIT ga pre i baseSign) 
                           (transPredType t) m1) m 
             (zip (Set.toList ts) [1..Set.size ts])
 
@@ -263,7 +264,7 @@ makeDtDef sign nf = case sentence nf of
   Sort_gen_ax constrs True -> Just(map makeDt srts) where 
     (srts,ops,_maps) = recover_Sort_gen_ax constrs
     makeDt s = (transSort s, map makeOp (List.filter (hasTheSort s) ops))
-    makeOp opSym = (mkVName $ transOP_SYMB sign opSym, transArgs opSym)
+    makeOp opSym = (transOP_SYMB sign opSym, transArgs opSym)
     hasTheSort s (Qual_op_name _ ot _) = s == res_OP_TYPE ot 
     hasTheSort _ _ = error "CFOL2IsabelleHOL.hasTheSort"
     transArgs (Qual_op_name _ ot _) = map transSort $ args_OP_TYPE ot
@@ -313,22 +314,22 @@ quantify q (v,t) phi  =
   qname Existential = exS
   qname Unique_existential = ex1S
 
-transOP_SYMB :: CASL.Sign.Sign f e -> OP_SYMB -> String
-transOP_SYMB sign (Qual_op_name op ot _) = 
+transOP_SYMB :: CASL.Sign.Sign f e -> OP_SYMB -> VName
+transOP_SYMB sign (Qual_op_name op ot _) = let ga = globAnnos sign in
   case (do ots <- Map.lookup op (opMap sign) 
-           if Set.size ots == 1 then return $ showIsaConstT op baseSign
+           if Set.size ots == 1 then return $ mkIsaConstT ga op baseSign
             else do i <- elemIndex (toOpType ot) (Set.toList ots)
-                    return $ showIsaConstIT op (i+1) baseSign) of
+                    return $ mkIsaConstIT ga op (i+1) baseSign) of
     Just str -> str  
     Nothing -> error ("CASL2Isabelle unknown op: " ++ show op)
 transOP_SYMB _ (Op_name _) = error "CASL2Isabelle: unqualified operation"
 
-transPRED_SYMB :: CASL.Sign.Sign f e -> PRED_SYMB -> String
-transPRED_SYMB sign (Qual_pred_name p pt _) =
+transPRED_SYMB :: CASL.Sign.Sign f e -> PRED_SYMB -> VName
+transPRED_SYMB sign (Qual_pred_name p pt _) = let ga = globAnnos sign in
   case (do pts <- Map.lookup p (predMap sign)
-           if Set.size pts == 1 then return $ showIsaConstT p baseSign 
+           if Set.size pts == 1 then return $ mkIsaConstT ga p baseSign 
             else do i <- elemIndex (toPredType pt) (Set.toList pts)
-                    return $ showIsaConstIT p (i+1) baseSign) of
+                    return $ mkIsaConstIT ga p (i+1) baseSign) of
     Just str -> str
     Nothing -> error ("CASL2Isabelle unknown pred: " ++ show p)
 transPRED_SYMB _ (Pred_name _) = error "CASL2Isabelle: unqualified predicate"
@@ -358,7 +359,7 @@ transFORMULA _sign _tr (True_atom _) = true
 transFORMULA _sign _tr (False_atom _) = false
 transFORMULA sign tr (Predication psymb args _) =
   foldl termAppl
-            (conDouble $ transPRED_SYMB sign psymb)
+            (con $ transPRED_SYMB sign psymb)
             (map (transTERM sign tr) args)
 transFORMULA sign tr (Existl_equation t1 t2 _) | term_sort t1 == term_sort t2 =
   binEq (transTERM sign tr t1) (transTERM sign tr t2)
@@ -377,7 +378,7 @@ transTERM _sign _tr (Qual_var v _s _) =
   var $ transVar v
 transTERM sign tr (Application opsymb args _) =
   foldl termAppl
-            (conDouble $ transOP_SYMB sign opsymb)
+            (con $ transOP_SYMB sign opsymb)
             (map (transTERM sign tr) args)
 transTERM sign tr (Conditional t1 phi t2 _) | term_sort t1 == term_sort t2 =
   foldl termAppl (conDouble "If") [transFORMULA sign tr phi,

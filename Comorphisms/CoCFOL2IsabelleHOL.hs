@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Till Mossakowski and Uni Bremen 2003
+Copyright   :  (c) Till Mossakowski and Uni Bremen 2003-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  hausmann@tzi.de
@@ -122,7 +122,7 @@ formTrCoCASL sign (CoSort_gen_ax sorts ops _) =
              -- variables for the extra parameters
              varDecls = zip [xvar j | j <- indicesArgs] (map transSort args)
              -- the selector ...
-             topC = conDouble (transOP_SYMB sign opsymb)
+             topC = con (transOP_SYMB sign opsymb)
              -- applied to x and extra parameter vars
              appFold = foldl ( \ t1 t2 -> App t1 t2 NotCont)
              rhs = appFold (App topC (var "x") NotCont) 
