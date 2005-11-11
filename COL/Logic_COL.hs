@@ -30,12 +30,12 @@ import CASL.MapSentence
 import CASL.SymbolParser
 import Logic.Logic
 import Data.Dynamic
-import Common.DynamicUtils 
+import Common.DynamicUtils
 
 data COL = COL deriving Show
 
 instance Language COL where
- description _ = 
+ description _ =
   "COLCASL extends CASL by constructors and observers"
 
 type C_BASIC_SPEC = BASIC_SPEC () COL_SIG_ITEM ()
@@ -52,7 +52,7 @@ instance Typeable COL_SIG_ITEM where
 instance Typeable COLSign where
   typeOf _ = mkTyConApp colSignTc []
 
-instance Category COL CSign COLMor  
+instance Category COL CSign COLMor
     where
          -- ide :: id -> object -> morphism
          ide COL = idMor dummy
@@ -70,7 +70,7 @@ instance Category COL CSign COLMor
 
 instance Syntax COL C_BASIC_SPEC
                 SYMB_ITEMS SYMB_MAP_ITEMS
-      where 
+      where
          parse_basic_spec COL = Just $ basicSpec col_reserved_words
          parse_symb_items COL = Just $ symbItems col_reserved_words
          parse_symb_map_items COL = Just $ symbMapItems col_reserved_words
@@ -83,20 +83,20 @@ instance Sentences COL COLFORMULA () CSign COLMor Symbol where
       sym_of COL = symOf
       symmap_of COL = morphismToSymbMap
       sym_name COL = symName
-      provers COL = [] 
+      provers COL = []
       cons_checkers COL = []
 
 instance StaticAnalysis COL C_BASIC_SPEC COLFORMULA ()
                SYMB_ITEMS SYMB_MAP_ITEMS
-               CSign 
-               COLMor 
+               CSign
+               COLMor
                Symbol RawSymbol where
-         basic_analysis COL = Just $ basicAnalysis (const $ const return) 
-                              (const $ const return) ana_COL_SIG_ITEM 
+         basic_analysis COL = Just $ basicAnalysis (const return)
+                              (const return) ana_COL_SIG_ITEM
                               emptyMix const
          stat_symb_map_items COL = statSymbMapItems
          stat_symb_items COL = statSymbItems
-         ensures_amalgamability COL _ = 
+         ensures_amalgamability COL _ =
              fail "COL: ensures_amalgamability nyi" -- ???
 
          sign_to_basic_spec COL _sigma _sens = Basic_spec [] -- ???
@@ -104,9 +104,9 @@ instance StaticAnalysis COL C_BASIC_SPEC COLFORMULA ()
          symbol_to_raw COL = symbolToRaw
          id_to_raw COL = idToRaw
          matches COL = CASL.Morphism.matches
-         
+
          empty_signature COL = emptySign emptyCOLSign
-         signature_union COL sigma1 sigma2 = 
+         signature_union COL sigma1 sigma2 =
            return $ addSig addCOLSign sigma1 sigma2
          morphism_union COL = morphismUnion (const id) addCOLSign
          final_union COL = finalUnion addCOLSign
@@ -115,12 +115,12 @@ instance StaticAnalysis COL C_BASIC_SPEC COLFORMULA ()
          cogenerated_sign COL = cogeneratedSign dummy
          generated_sign COL = generatedSign dummy
          induced_from_morphism COL = inducedFromMorphism dummy
-         induced_from_to_morphism COL = 
+         induced_from_to_morphism COL =
              inducedFromToMorphism dummy isSubCOLSign
 
 instance Logic COL ()
                C_BASIC_SPEC COLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
-               CSign 
+               CSign
                COLMor
                Symbol RawSymbol () where
          min_sublogic_basic_spec COL _basic_spec = ()

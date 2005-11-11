@@ -34,7 +34,7 @@ import Common.PrettyPrint
 import Common.Result
 
 -- | the type of the type checking function of extensions
-type Min f e = GlobalAnnos -> Sign f e -> f -> Result f
+type Min f e = Sign f e -> f -> Result f
 
 {-----------------------------------------------------------
     - Minimal expansion of a formula -
@@ -49,86 +49,76 @@ type Min f e = GlobalAnnos -> Sign f e -> f -> Result f
     + Definedness is handled by expanding the subterm.
     + Membership is handled like Cast
 -----------------------------------------------------------}
-minExpFORMULA :: PrettyPrint f =>
-                 Min f e               ->
-                 GlobalAnnos           ->
-                 Sign f e              ->
-                 (FORMULA f)           ->
-                 Result (FORMULA f)
-minExpFORMULA mef ga sign formula = case formula of
+minExpFORMULA :: PrettyPrint f => Min f e -> Sign f e -> FORMULA f
+              -> Result (FORMULA f)
+minExpFORMULA mef sign formula = case formula of
     Quantification q vars f pos -> do
         -- add 'vars' to signature
         let (_, sign') = runState (mapM_ addVars vars) sign
         -- expand subformula
-        f' <- minExpFORMULA mef ga sign' f
+        f' <- minExpFORMULA mef sign' f
         return (Quantification q vars f' pos)
     Conjunction fs pos -> do
-        fs' <- mapR (minExpFORMULA mef ga sign) fs
+        fs' <- mapR (minExpFORMULA mef sign) fs
         return (Conjunction fs' pos)
     Disjunction fs pos -> do
-        fs' <- mapR (minExpFORMULA mef ga sign) fs
+        fs' <- mapR (minExpFORMULA mef sign) fs
         return (Disjunction fs' pos)
-    Implication f1 f2 b pos -> 
+    Implication f1 f2 b pos ->
         joinResultWith (\ f1' f2' -> Implication f1' f2' b pos)
-              (minExpFORMULA mef ga sign f1) $ minExpFORMULA mef ga sign f2
-    Equivalence f1 f2 pos -> 
+              (minExpFORMULA mef sign f1) $ minExpFORMULA mef sign f2
+    Equivalence f1 f2 pos ->
         joinResultWith (\ f1' f2' -> Equivalence f1' f2' pos)
-              (minExpFORMULA mef ga sign f1) $ minExpFORMULA mef ga sign f2
+              (minExpFORMULA mef sign f1) $ minExpFORMULA mef sign f2
     Negation f pos -> do
-        f' <- minExpFORMULA mef ga sign f
+        f' <- minExpFORMULA mef sign f
         return (Negation f' pos)
     Predication (Pred_name ide) terms pos
-        -> minExpFORMULA_pred mef ga sign ide Nothing terms pos
+        -> minExpFORMULA_pred mef sign ide Nothing terms pos
     Predication (Qual_pred_name ide ty pos1) terms pos2
-        -> minExpFORMULA_pred mef ga sign ide (Just $ toPredType ty) 
+        -> minExpFORMULA_pred mef sign ide (Just $ toPredType ty)
            terms (pos1 `appRange` pos2)
     Existl_equation term1 term2 pos
-        -> minExpFORMULA_eq mef ga sign Existl_equation term1 term2 pos
+        -> minExpFORMULA_eq mef sign Existl_equation term1 term2 pos
     Strong_equation term1 term2 pos
-        -> minExpFORMULA_eq mef ga sign Strong_equation term1 term2 pos
+        -> minExpFORMULA_eq mef sign Strong_equation term1 term2 pos
     Definedness term pos -> do
-        t <- oneExpTerm mef ga sign term
+        t <- oneExpTerm mef sign term
         return (Definedness t pos)
     Membership term sort pos -> do
-        ts   <- minExpTerm mef ga sign term
-        let fs = map (concatMap ( \ t -> 
+        ts   <- minExpTerm mef sign term
+        let fs = map (concatMap ( \ t ->
                     let s = term_sort t in
                     if leq_SORT sign sort s then
                     [Membership t sort pos] else
-                    map ( \ c -> 
+                    map ( \ c ->
                         Membership (Sorted_term t c pos) sort pos)
-                    $ minimalSupers sign s sort)) ts 
-        is_unambiguous ga formula fs pos
-    ExtFORMULA f -> fmap ExtFORMULA $ mef ga sign f
+                    $ minimalSupers sign s sort)) ts
+        is_unambiguous (globAnnos sign) formula fs pos
+    ExtFORMULA f -> fmap ExtFORMULA $ mef sign f
     _ -> return formula -- do not fail even for unresolved cases
 
 -- | test if a term can be uniquely resolved
-oneExpTerm :: PrettyPrint f => Min f e -> GlobalAnnos -> Sign f e 
+oneExpTerm :: PrettyPrint f => Min f e -> Sign f e
            -> TERM f -> Result (TERM f)
-oneExpTerm minF ga sign term = do 
-    ts <- minExpTerm minF ga sign term
-    is_unambiguous ga term ts nullRange
+oneExpTerm minF sign term = do
+    ts <- minExpTerm minF sign term
+    is_unambiguous (globAnnos sign) term ts nullRange
 
 {-----------------------------------------------------------
     - Minimal expansion of an equation formula -
   see minExpTerm_cond
 -----------------------------------------------------------}
-minExpFORMULA_eq :: PrettyPrint f =>
-                    Min f e               ->
-                    GlobalAnnos           ->
-                    Sign f e              ->
-                    (TERM f -> TERM f -> Range -> FORMULA f) -> 
-                    TERM f                ->
-                    TERM f                ->
-                    Range              ->
-                    Result (FORMULA f)
-minExpFORMULA_eq mef ga sign eq term1 term2 pos = do
-    ps <- minExpTerm_cond mef ga sign ( \ t1 t2 -> eq t1 t2 pos) 
+minExpFORMULA_eq :: PrettyPrint f => Min f e -> Sign f e
+                 -> (TERM f -> TERM f -> Range -> FORMULA f)
+                 -> TERM f -> TERM f -> Range -> Result (FORMULA f)
+minExpFORMULA_eq mef sign eq term1 term2 pos = do
+    ps <- minExpTerm_cond mef sign ( \ t1 t2 -> eq t1 t2 pos)
           term1 term2 pos
-    is_unambiguous ga (eq term1 term2 pos) ps pos
+    is_unambiguous (globAnnos sign) (eq term1 term2 pos) ps pos
 
 -- | check if there is at least one solution
-hasSolutions :: PrettyPrint f => GlobalAnnos -> f -> [[f]] -> Range 
+hasSolutions :: PrettyPrint f => GlobalAnnos -> f -> [[f]] -> Range
              -> Result [[f]]
 hasSolutions ga topterm ts pos = let terms = filter (not . null) ts in
    if null terms then Result
@@ -137,38 +127,38 @@ hasSolutions ga topterm ts pos = let terms = filter (not . null) ts in
     else return terms
 
 -- | check if there is a unique equivalence class
-is_unambiguous :: PrettyPrint f => GlobalAnnos -> f -> [[f]] -> Range 
+is_unambiguous :: PrettyPrint f => GlobalAnnos -> f -> [[f]] -> Range
                -> Result f
-is_unambiguous ga topterm ts pos = do 
+is_unambiguous ga topterm ts pos = do
     terms <- hasSolutions ga topterm ts pos
-    case terms of 
+    case terms of
         [ term : _ ] -> return term
-        _ -> Result [Diag Error ("ambiguous term\n  " ++ 
-                showSepList (showString "\n  ") (shows . printText0 ga) 
+        _ -> Result [Diag Error ("ambiguous term\n  " ++
+                showSepList (showString "\n  ") (shows . printText0 ga)
                 (take 5 $ map head terms) "") pos] Nothing
 
 checkIdAndArgs :: Id -> [a] -> Range -> Result Int
-checkIdAndArgs ide args poss =     
+checkIdAndArgs ide args poss =
     let nargs = length args
         pargs = placeCount ide
-    in if isMixfix ide && pargs /= nargs then 
+    in if isMixfix ide && pargs /= nargs then
     Result [Diag Error
-       ("expected " ++ shows pargs " argument(s) of mixfix identifier '" 
+       ("expected " ++ shows pargs " argument(s) of mixfix identifier '"
          ++ showPretty ide "' but found " ++ shows nargs " argument(s)")
        poss] Nothing
     else return nargs
 
 
-noOpOrPred :: PrettyPrint t =>
-              [a] -> String -> Maybe t -> Id -> Range -> Int -> Result ()
+noOpOrPred :: PrettyPrint t => [a] -> String -> Maybe t -> Id -> Range
+           -> Int -> Result ()
 noOpOrPred ops str mty ide pos nargs =
-    if null ops then case mty of 
-           Nothing -> Result [Diag Error 
+    if null ops then case mty of
+           Nothing -> Result [Diag Error
              ("no " ++ str ++ " with " ++ shows nargs " argument"
-              ++ (if nargs == 1 then "" else "s") ++ " found for '" 
+              ++ (if nargs == 1 then "" else "s") ++ " found for '"
               ++ showPretty ide "'") pos] Nothing
            Just ty -> Result [Diag Error
-             ("no " ++ str ++ " with profile '" 
+             ("no " ++ str ++ " with profile '"
               ++ showPretty ty "' found for '"
               ++ showPretty ide "'") pos] Nothing
        else return ()
@@ -177,26 +167,20 @@ noOpOrPred ops str mty ide pos nargs =
     - Minimal expansion of a predication formula -
     see minExpTerm_appl
 -----------------------------------------------------------}
-minExpFORMULA_pred :: PrettyPrint f =>
-                      Min f e               ->
-                      GlobalAnnos           ->
-                      Sign f e              ->
-                      Id                    ->
-                      Maybe PredType        ->
-                      [TERM f]              ->
-                      Range                 ->
-                      Result (FORMULA f)
-minExpFORMULA_pred mef ga sign ide mty args pos = do
+minExpFORMULA_pred :: PrettyPrint f => Min f e -> Sign f e -> Id
+                   -> Maybe PredType -> [TERM f] -> Range
+                   -> Result (FORMULA f)
+minExpFORMULA_pred mef sign ide mty args pos = do
     nargs <- checkIdAndArgs ide args pos
     let -- predicates matching that name in the current environment
-        preds' = Set.filter ( \ p -> length (predArgs p) == nargs) $ 
+        preds' = Set.filter ( \ p -> length (predArgs p) == nargs) $
               Map.findWithDefault Set.empty ide $ predMap sign
-        preds = case mty of 
+        preds = case mty of
                    Nothing -> leqClasses (leqP' sign) preds'
-                   Just ty -> if Set.member ty preds' 
+                   Just ty -> if Set.member ty preds'
                               then [[ty]] else []
     noOpOrPred preds "predicate" mty ide pos nargs
-    expansions <- mapM (minExpTerm mef ga sign) args
+    expansions <- mapM (minExpTerm mef sign) args
     let get_profiles :: [[TERM f]] -> [[(PredType, [TERM f])]]
         get_profiles cs = map (get_profile cs) preds
         get_profile :: [[TERM f]] -> [PredType] -> [(PredType, [TERM f])]
@@ -209,27 +193,23 @@ minExpFORMULA_pred mef ga sign ide mty args pos = do
         qualForms = qualifyPreds ide pos
                        $ concatMap (get_profiles . combine)
                        $ combine expansions
-    is_unambiguous ga (Predication (Pred_name ide) args pos) qualForms pos
+    is_unambiguous (globAnnos sign)
+                       (Predication (Pred_name ide) args pos) qualForms pos
 
 qualifyPreds :: Id -> Range -> [[(PredType, [TERM f])]] -> [[FORMULA f]]
-qualifyPreds ide pos = map $ map $ qualify_pred ide pos 
+qualifyPreds ide pos = map $ map $ qualify_pred ide pos
 
 -- | qualify a single pred, given by its signature and its arguments
 qualify_pred :: Id -> Range -> (PredType, [TERM f]) -> FORMULA f
-qualify_pred ide pos (pred', terms') = 
+qualify_pred ide pos (pred', terms') =
     Predication (Qual_pred_name ide (toPRED_TYPE pred') pos) terms' pos
 
 -- | expansions of an equation formula or a conditional
-minExpTerm_eq :: PrettyPrint f =>
-                    Min f e               ->
-                    GlobalAnnos           ->
-                    Sign f e              ->
-                    TERM f                ->
-                    TERM f                ->
-                    Result [[(TERM f, TERM f)]]
-minExpTerm_eq mef ga sign term1 term2 = do
-    exps1 <- minExpTerm mef ga sign term1
-    exps2 <- minExpTerm mef ga sign term2
+minExpTerm_eq :: PrettyPrint f =>  Min f e -> Sign f e -> TERM f -> TERM f
+              -> Result [[(TERM f, TERM f)]]
+minExpTerm_eq mef sign term1 term2 = do
+    exps1 <- minExpTerm mef sign term1
+    exps2 <- minExpTerm mef sign term2
     return $ map (minimize_eq sign)
            $ map getPairs $ combine [exps1, exps2]
 
@@ -237,7 +217,7 @@ getPairs :: [[TERM f]] -> [(TERM f, TERM f)]
 getPairs cs = [ (t1, t2) | [t1,t2] <- combine cs ]
 
 minimize_eq :: Sign f e -> [(TERM f, TERM f)] -> [(TERM f, TERM f)]
-minimize_eq s l = keepMinimals s (term_sort . snd) $ 
+minimize_eq s l = keepMinimals s (term_sort . snd) $
                   keepMinimals s (term_sort . fst) l
 
 {-----------------------------------------------------------
@@ -248,71 +228,63 @@ minimize_eq s l = keepMinimals s (term_sort . snd) $
   * 'Application' terms are handled by 'minExpTerm_op'.
   * 'Conditional' terms are handled by 'minExpTerm_cond'.
 -----------------------------------------------------------}
-minExpTerm :: PrettyPrint f =>
-              Min f e               ->
-              GlobalAnnos           ->
-              Sign f e              ->
-              TERM f                ->
-              Result [[TERM f]]
-minExpTerm _ _ sign (Qual_var var sort _)
-    = let ts = minExpTerm_var sign var (Just sort)
-      in if null ts then mkError "no matching qualified variable found" var
-         else return ts
-minExpTerm mef ga sign (Application op terms pos)
-    = minExpTerm_op mef ga sign op terms pos
-minExpTerm mef ga sign top@(Sorted_term term sort pos) = do
-    expandedTerm <- minExpTerm mef ga sign term
-    -- choose expansions that fit the given signature, then qualify
-    let validExps = map (filter ( \ t -> leq_SORT sign (term_sort t) sort)) 
-                          expandedTerm
-    hasSolutions ga top (map (map (\ t -> 
-                 Sorted_term t sort pos)) validExps) pos 
-minExpTerm mef ga sign top@(Cast term sort pos) = do
-    expandedTerm <- minExpTerm mef ga sign term
-    -- find a unique minimal common supersort
-    let ts = map (concatMap (\ t -> 
-                    let s = term_sort t in
+minExpTerm :: PrettyPrint f => Min f e -> Sign f e -> TERM f
+           -> Result [[TERM f]]
+minExpTerm mef sign top = let ga = globAnnos sign in case top of
+    Qual_var var sort _ -> let ts = minExpTerm_var sign var (Just sort) in
+        if null ts then mkError "no matching qualified variable found" var
+        else return ts
+    Application op terms pos -> minExpTerm_op mef sign op terms pos
+    Sorted_term term sort pos -> do
+      expandedTerm <- minExpTerm mef sign term
+      -- choose expansions that fit the given signature, then qualify
+      let validExps = map (filter $ \ t -> leq_SORT sign (term_sort t) sort)
+                      expandedTerm
+      hasSolutions ga top (map (map (\ t ->
+                 Sorted_term t sort pos)) validExps) pos
+    Cast term sort pos -> do
+      expandedTerm <- minExpTerm mef sign term
+      -- find a unique minimal common supersort
+      let ts = map (concatMap (\ t -> let s = term_sort t in
                     if leq_SORT sign sort s then
                     if leq_SORT sign s sort then [t] else
                     [Cast t sort pos] else
-                    map ( \ c -> 
+                    map ( \ c ->
                         Cast (Sorted_term t c pos) sort pos)
                     $ minimalSupers sign s sort)) expandedTerm
-    hasSolutions ga top ts pos
-minExpTerm mef ga sign (Conditional term1 formula term2 pos) = do
-    f <- minExpFORMULA mef ga sign formula
-    ts <- minExpTerm_cond mef ga sign ( \ t1 t2 -> Conditional t1 f t2 pos) 
-                    term1 term2 pos
-    hasSolutions ga (Conditional term1 formula term2 pos) ts pos
-minExpTerm _ _ _n _
-    = error "minExpTerm"
+      hasSolutions ga top ts pos
+    Conditional term1 formula term2 pos -> do
+      f <- minExpFORMULA mef sign formula
+      ts <- minExpTerm_cond mef sign ( \ t1 t2 -> Conditional t1 f t2 pos)
+            term1 term2 pos
+      hasSolutions ga (Conditional term1 formula term2 pos) ts pos
+    _ -> error "minExpTerm"
 
 -- | Minimal expansion of a possibly qualified variable identifier
 minExpTerm_var :: Sign f e -> Token -> Maybe SORT -> [[TERM f]]
-minExpTerm_var sign tok ms = case Map.lookup tok $ varMap sign of 
+minExpTerm_var sign tok ms = case Map.lookup tok $ varMap sign of
     Nothing -> []
     Just s -> let qv = [[Qual_var tok s nullRange]] in
-              case ms of 
+              case ms of
               Nothing -> qv
               Just s2 -> if s == s2 then qv else []
 
 -- | minimal expansion of an (possibly qualified) operator application
-minExpTerm_appl :: PrettyPrint f => Min f e -> GlobalAnnos 
-                -> Sign f e -> Id -> Maybe OpType -> [TERM f] 
-                -> Range -> Result [[TERM f]]
-minExpTerm_appl mef ga sign ide mty args pos = do
+minExpTerm_appl :: PrettyPrint f => Min f e -> Sign f e -> Id
+                -> Maybe OpType -> [TERM f] -> Range -> Result [[TERM f]]
+minExpTerm_appl mef sign ide mty args pos = do
     nargs <- checkIdAndArgs ide args pos
     let -- functions matching that name in the current environment
-        ops' = Set.filter ( \ o -> length (opArgs o) == nargs) $ 
+        ops' = Set.filter ( \ o -> length (opArgs o) == nargs) $
               Map.findWithDefault Set.empty ide $ opMap sign
-        ops = case mty of 
+        ops = case mty of
                    Nothing -> leqClasses (leqF' sign) ops'
-                   Just ty -> if Set.member ty ops' || 
+                   Just ty -> if Set.member ty ops' ||
                                   -- might be known to be total
-                                 Set.member ty {opKind = Total} ops' 
+                                 Set.member ty {opKind = Total} ops'
                               then [[ty]] else []
     noOpOrPred ops "operation" mty ide pos nargs
-    expansions <- mapM (minExpTerm mef ga sign) args
+    expansions <- mapM (minExpTerm mef sign) args
     let  -- generate profiles as descr. on p. 339 (Step 3)
         get_profiles cs = map (get_profile cs) ops
         get_profile cs os = [ (op', ts) |
@@ -322,17 +294,18 @@ minExpTerm_appl mef ga sign ide mty args pos = do
                              (map term_sort ts)
                              (opArgs op') ]
         qualTerms = qualifyOps ide pos
-                       $ map (minimize_op sign) 
+                       $ map (minimize_op sign)
                        $ concatMap (get_profiles . combine)
                        $ combine expansions
-    hasSolutions ga (Application (Op_name ide) args pos) qualTerms pos
+    hasSolutions (globAnnos sign)
+        (Application (Op_name ide) args pos) qualTerms pos
 
 qualifyOps :: Id -> Range -> [[(OpType, [TERM f])]] -> [[TERM f]]
 qualifyOps ide pos = map $ map $ qualify_op ide pos
 
     -- qualify a single op, given by its signature and its arguments
 qualify_op :: Id -> Range -> (OpType, [TERM f]) -> TERM f
-qualify_op ide pos (op', terms') = 
+qualify_op ide pos (op', terms') =
     Application (Qual_op_name ide (toOP_TYPE op') pos) terms' pos
 
 {-----------------------------------------------------------
@@ -353,28 +326,23 @@ qualify_op ide pos (op', terms') =
   7. Transform each term in the minimized set into a qualified function
     application term.
 -----------------------------------------------------------}
-minExpTerm_op :: PrettyPrint f =>
-                 Min f e               ->
-                 GlobalAnnos           ->
-                 Sign f e              ->
-                 OP_SYMB               ->
-                 [TERM f] -> Range     ->
-                 Result [[TERM f]]
-minExpTerm_op mef ga sign (Op_name ide@(Id (tok:_) _ _)) args pos =
-    let res = minExpTerm_appl mef ga sign ide Nothing args pos in
-      if null args && isSimpleId ide then 
+minExpTerm_op :: PrettyPrint f => Min f e -> Sign f e -> OP_SYMB -> [TERM f]
+              -> Range -> Result [[TERM f]]
+minExpTerm_op mef sign (Op_name ide@(Id (tok:_) _ _)) args pos =
+    let res = minExpTerm_appl mef sign ide Nothing args pos in
+      if null args && isSimpleId ide then
           let vars = minExpTerm_var sign tok Nothing
-          in if null vars then res else 
-             case maybeResult res of 
-             Nothing -> return vars 
+          in if null vars then res else
+             case maybeResult res of
+             Nothing -> return vars
              Just ops -> return (ops ++ vars)
-      else res 
-minExpTerm_op mef ga sign (Qual_op_name ide ty pos1) args pos2 = 
-   if length args /= length (args_OP_TYPE ty) then 
+      else res
+minExpTerm_op mef sign (Qual_op_name ide ty pos1) args pos2 =
+   if length args /= length (args_OP_TYPE ty) then
       mkError "type qualification does not match number of arguments" ide
-   else minExpTerm_appl mef ga sign ide (Just $ toOpType ty) args
+   else minExpTerm_appl mef sign ide (Just $ toOpType ty) args
         (pos1 `appRange` pos2)
-minExpTerm_op _ _ _ _ _ _ = error "minExpTerm_op"
+minExpTerm_op _ _ _ _ _ = error "minExpTerm_op"
 
 {-----------------------------------------------------------
     - Minimal expansion of a conditional -
@@ -383,22 +351,16 @@ minExpTerm_op _ _ _ _ _ _ = error "minExpTerm_op"
   P(C_1, C_2) for each (C_1, C_2) \in minExpTerm(t1) x minExpTerm(t_2).
   Separate these profiles into equivalence classes and take the
   unification of all these classes. Minimize each equivalence class.
-  Finally transform the eq. classes into lists of 
+  Finally transform the eq. classes into lists of
   conditionals with equally sorted terms.
 -----------------------------------------------------------}
-minExpTerm_cond :: PrettyPrint f =>
-                   Min f e               ->
-                   GlobalAnnos           ->
-                   Sign f e              ->
-                   (TERM f -> TERM f -> a) -> 
-                   TERM f                ->
-                   TERM f                ->
-                   Range                 ->
-                   Result [[a]]
-minExpTerm_cond  mef ga sign f term1 term2 pos = do
-    pairs <- minExpTerm_eq mef ga sign term1 term2
-    return $ map (concatMap ( \ (t1, t2) -> 
-              let s1 = term_sort t1 
+minExpTerm_cond :: PrettyPrint f => Min f e -> Sign f e
+                -> (TERM f -> TERM f -> a) -> TERM f -> TERM f -> Range
+                -> Result [[a]]
+minExpTerm_cond mef sign f term1 term2 pos = do
+    pairs <- minExpTerm_eq mef sign term1 term2
+    return $ map (concatMap ( \ (t1, t2) ->
+              let s1 = term_sort t1
                   s2 = term_sort t2
               in if s1 == s2 then [f t1 t2]
               else if leq_SORT sign s2 s1 then
@@ -426,19 +388,19 @@ term_sort term' = case term' of
     Qual_var _ sort _                     -> sort
     Cast _ sort _                         -> sort
     Application (Qual_op_name _ ty _) _ _ -> res_OP_TYPE ty
-    Conditional t1 _ _ _                  -> term_sort t1 
+    Conditional t1 _ _ _                  -> term_sort t1
     _ -> error "term_sort: unsorted TERM after expansion"
 
 -- | the (possibly incomplete) list of supersorts common to both sorts
 common_supersorts :: Bool -> Sign f e -> SORT -> SORT -> [SORT]
-common_supersorts b sign s1 s2 = 
-    if s1 == s2 then [s1] else 
+common_supersorts b sign s1 s2 =
+    if s1 == s2 then [s1] else
     let l1 = supersortsOf s1 sign
         l2 = supersortsOf s2 sign in
     if Set.member s2 l1 then if b then [s2] else [s1] else
     if Set.member s1 l2 then if b then [s1] else [s2] else
     Set.toList $ if b then Set.intersection l1 l2
-                 else Set.intersection (subsortsOf s1 sign) 
+                 else Set.intersection (subsortsOf s1 sign)
                              $ subsortsOf s2 sign
 
 -- | True if both sorts have a common supersort
@@ -449,12 +411,12 @@ have_common_supersorts b s s1 s2 = not $ null $ common_supersorts b s s1 s2
 have_common_subsorts :: Sign f e -> SORT -> SORT -> Bool
 have_common_subsorts = have_common_supersorts False
 
--- | if True test if s1 > s2 
+-- | if True test if s1 > s2
 geq_SORT :: Bool -> Sign f e -> SORT -> SORT -> Bool
 geq_SORT b sign s1 s2 = let rel = sortRel sign in
     if b then Rel.member s2 s1 rel else Rel.member s1 s2 rel
 
--- | if True test if s1 < s2 
+-- | if True test if s1 < s2
 leq_SORT :: Sign f e -> SORT -> SORT -> Bool
 leq_SORT sign s1 s2 = s1 == s2 || Set.member s2 (supersortsOf s1 sign)
 
@@ -463,7 +425,7 @@ minimalSupers :: Sign f e -> SORT -> SORT -> [SORT]
 minimalSupers = minimalSupers1 True
 
 minimalSupers1 :: Bool -> Sign f e -> SORT -> SORT -> [SORT]
-minimalSupers1 b s s1 s2 = 
+minimalSupers1 b s s1 s2 =
     keepMinimals1 b s id $ common_supersorts b s s1 s2
 
 -- | maximal common subsorts of the two input sorts
@@ -477,14 +439,14 @@ keepMinimals = keepMinimals1 True
 keepMinimals1 :: Bool -> Sign f e -> (a -> SORT) -> [a] -> [a]
 keepMinimals1 b s f l = case l of
     [] -> []
-    x : r1 -> let v = f x 
+    x : r1 -> let v = f x
                   r2 = filter (\ y -> let w = f y in
                        not (geq_SORT b s w v) && v /= w) r1
                   m = keepMinimals1 b s f r2
               in if any (geq_SORT b s v . f) r2 then m
-                 else x : m 
+                 else x : m
 
--- | True if both ops are in the overloading relation 
+-- | True if both ops are in the overloading relation
 leqF :: Sign f e -> OpType -> OpType -> Bool
 leqF sign o1 o2 = length (opArgs o1) == length (opArgs o2) && leqF' sign o1 o2
 
@@ -492,18 +454,18 @@ leqF' :: Sign f e -> OpType -> OpType -> Bool
 leqF' sign o1 o2 = have_common_supersorts True sign (opRes o1) (opRes o2) &&
     and (zipWith (have_common_subsorts sign) (opArgs o1) (opArgs o2))
 
--- | True if both preds are in the overloading relation 
+-- | True if both preds are in the overloading relation
 leqP :: Sign f e -> PredType -> PredType -> Bool
-leqP sign p1 p2 = length (predArgs p1) == length (predArgs p2) 
+leqP sign p1 p2 = length (predArgs p1) == length (predArgs p2)
                   && leqP' sign p1 p2
 
 leqP' :: Sign f e -> PredType -> PredType -> Bool
-leqP' sign p1 p2 = 
-    and $ zipWith (have_common_subsorts sign) (predArgs p1) $ predArgs p2 
+leqP' sign p1 p2 =
+    and $ zipWith (have_common_subsorts sign) (predArgs p1) $ predArgs p2
 
 -- | Divide a Set (List) into equivalence classes w.r.t. eq
 leqClasses :: Ord a => (a -> a -> Bool) -> Set.Set a -> [[a]]
-leqClasses eq os = map Set.toList $ Rel.partSet eq os 
+leqClasses eq os = map Set.toList $ Rel.partSet eq os
 
 -- | Transform a list [l1,l2, ... ln] to (in sloppy notation)
 -- [[x1,x2, ... ,xn] | x1<-l1, x2<-l2, ... xn<-ln]

@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Markus Roggenbach and Till Mossakowski and Uni Bremen 2004
+Copyright   :  (c) Markus Roggenbach, Till Mossakowski, Uni Bremen 2004-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  M.Roggenbach@swansea.ac.uk
@@ -16,7 +16,7 @@ static analysis for CSP-CASL
 
    sentences are completely missing:
    use equation systems of processes, like:
-   
+
    spec hugo =
      data ...
      channel ...
@@ -37,55 +37,47 @@ import CspCASL.SignCSP
 import CASL.Sign
 import CASL.StaticAna
 import CASL.MixfixParser
-import CASL.Overload
 import Common.Result
 import Common.GlobalAnnotations
 import qualified Common.Lib.Map as Map
 import Common.Lib.State
-import Common.PrettyPrint
 import Common.Id
 import Common.AS_Annotation
 
 -- | static analysis for standalone tool
 statAna :: C3PO -> Result CSPSign
-statAna (Named_c3po (Named_csp_casl_spec _ sp)) =
-  statBasicSpec sp
+statAna (Named_c3po (Named_csp_casl_spec _ sp)) = statBasicSpec sp
 
-statAna (C3po sp) =
-  statBasicSpec sp
-
+statAna (C3po sp) = statBasicSpec sp
 
 statBasicSpec :: CSP_CASL_C_SPEC -> Result CSPSign
 statBasicSpec (Csp_casl_c_spec sp ch p) =
-  do (sp',sig,_,_) <- basicAnalysis 
-                               (const $ const return) 
-                               (const $ const return)
-                               (const $ const return)
-                               emptyMix
-                               diffCSPAddSign
-                               (sp, emptyCSPSign, emptyGlobalAnnos)
+  do (_sp',sig,_,_) <- basicAnalysis
+         (const return) (const return) (const return)
+         emptyMix diffCSPAddSign (sp, emptyCSPSign, emptyGlobalAnnos)
      let (_, accSig) = runState (ana_BASIC_CSP (ch,p)) sig
      return accSig
-        
+
 -- | static analysis for Hets
-basicAnalysisCspCASL :: (Basic_CSP_CASL_C_SPEC,CSPSign,GlobalAnnos) 
+basicAnalysisCspCASL :: (Basic_CSP_CASL_C_SPEC,CSPSign,GlobalAnnos)
         -> Result (Basic_CSP_CASL_C_SPEC,CSPSign,CSPSign,[Named ()])
-basicAnalysisCspCASL (Basic_csp_casl_c_spec ch p,sigma,ga) =
+basicAnalysisCspCASL (Basic_csp_casl_c_spec ch p,sigma, _ga) =
   do let ((ch',p'), accSig) = runState (ana_BASIC_CSP (ch,p)) sigma
-         diffSig = diffCSPSign accSig sigma
+         diffedSig = diffCSPSign accSig sigma
          ds = reverse $ envDiags accSig
      Result ds (Just ()) -- insert diags
-     return (Basic_csp_casl_c_spec ch' p',diffSig,accSig,[])
+     return (Basic_csp_casl_c_spec ch' p',diffedSig,accSig,[])
 
 -- | the main CspCASL analysis function
-ana_BASIC_CSP :: (CHANNEL_DECL, PROCESS_DEFN) 
+ana_BASIC_CSP :: (CHANNEL_DECL, PROCESS_DEFN)
          -> State CSPSign (CHANNEL_DECL, PROCESS_DEFN)
 ana_BASIC_CSP (ch, p) = do
    ch' <- anaChannels ch
-   p' <- anaProcesses p 
-   return (ch',p') 
+   p' <- anaProcesses p
+   return (ch',p')
 
-anaChannels (Channel_items cits) = 
+anaChannels :: CHANNEL_DECL -> State CSPSign CHANNEL_DECL
+anaChannels (Channel_items cits) =
   fmap Channel_items $ mapM (anaChannel) cits
 
 anaChannel :: CHANNEL_ITEM -> State CSPSign CHANNEL_ITEM
@@ -97,8 +89,7 @@ anaChannel chdecl@(Channel_decl newnames s) = do
   -- test for double declaration with different sorts should be added
   let ins m n = Map.insert (mkId [n]) s m
   put sig { extendedInfo = ext { channelNames = foldl ins oldchn newnames } }
-  return chdecl  
+  return chdecl
 
-
-anaProcesses p =
-  return p
+anaProcesses :: PROCESS_DEFN -> State CSPSign PROCESS_DEFN
+anaProcesses p = return p

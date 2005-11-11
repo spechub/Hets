@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2004
+Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  till@tzi.de
@@ -14,7 +14,7 @@ Here is the place where the class Logic is instantiated for CASL.
 module CASL.Logic_CASL(module CASL.Logic_CASL, CASLSign, CASLMor) where
 
 import CASL.AS_Basic_CASL
-import CASL.LaTeX_CASL
+import CASL.LaTeX_CASL()
 import CASL.Parse_AS_Basic
 import CASL.SymbolParser
 import CASL.MapSentence
@@ -23,7 +23,7 @@ import Common.AS_Annotation
 import Text.ParserCombinators.Parsec
 import Logic.Logic
 import Common.Lexer((<<))
-import CASL.ATC_CASL
+import CASL.ATC_CASL()
 
 import CASL.Sublogic
 import CASL.Sign
@@ -42,12 +42,12 @@ import CASL.CCC.OnePoint -- currently unused
 data CASL = CASL deriving Show
 
 instance Language CASL where
- description _ = 
-  "CASL - the Common algebraic specification language\n\ 
-  \This logic is subsorted partial first-order logic \ 
-  \with sort generation constraints\n\ 
-  \See the CASL User Manual, LNCS 2900, Springer Verlag\n\ 
-  \and the CASL Reference Manual, LNCS 2960, Springer Verlag\n\ 
+ description _ =
+  "CASL - the Common algebraic specification language\n\
+  \This logic is subsorted partial first-order logic \
+  \with sort generation constraints\n\
+  \See the CASL User Manual, LNCS 2900, Springer Verlag\n\
+  \and the CASL Reference Manual, LNCS 2960, Springer Verlag\n\
   \See also http://www.cofi.info/CASL.html"
 
 type CASLBasicSpec = BASIC_SPEC () () ()
@@ -59,10 +59,9 @@ type CASLFORMULA = FORMULA ()
 dummy :: a -> b -> ()
 dummy _ _ = ()
 
-
 -- dummy of "Min f e"
-dummyMin :: a -> b -> c -> Result ()
-dummyMin _ _ _ = Result {diags = [], maybeResult = Just ()}
+dummyMin :: b -> c -> Result ()
+dummyMin _ _ = Result {diags = [], maybeResult = Just ()}
 
 trueC :: a -> b -> Bool
 trueC _ _ = True
@@ -73,17 +72,17 @@ tc_BASIC_SPEC, tc_SYMB_ITEMS, tc_SYMB_MAP_ITEMS, casl_SublocigsTc,
 
 casl_SublocigsTc  = mkTyCon "CASL.Sublogics.CASL_Sublogics"
 tc_BASIC_SPEC     = mkTyCon "CASL.AS_Basic_CASL.BASIC_SPEC"
-tc_SYMB_ITEMS     = mkTyCon "CASL.AS_Basic_CASL.SYMB_ITEMS"  
-tc_SYMB_MAP_ITEMS = mkTyCon "CASL.AS_Basic_CASL.SYMB_MAP_ITEMS" 
+tc_SYMB_ITEMS     = mkTyCon "CASL.AS_Basic_CASL.SYMB_ITEMS"
+tc_SYMB_MAP_ITEMS = mkTyCon "CASL.AS_Basic_CASL.SYMB_MAP_ITEMS"
 sentenceTc       = mkTyCon "CASL.AS_Basic_CASL.FORMULA"
 signTc           = mkTyCon "CASL.Morphism.Sign"
 morphismTc       = mkTyCon "CASL.Morphism.Morphism"
 symbolTc         = mkTyCon "CASL.Morphism.Symbol"
 rawSymbolTc      = mkTyCon "CASL.Morphism.RawSymbol"
 
-instance (Typeable b, Typeable s, Typeable f) 
+instance (Typeable b, Typeable s, Typeable f)
     => Typeable (BASIC_SPEC b s f) where
-  typeOf b = mkTyConApp tc_BASIC_SPEC 
+  typeOf b = mkTyConApp tc_BASIC_SPEC
              [typeOf $ (undefined :: BASIC_SPEC b s f -> b) b,
               typeOf $ (undefined :: BASIC_SPEC b s f -> s) b,
               typeOf $ (undefined :: BASIC_SPEC b s f -> f) b]
@@ -92,13 +91,13 @@ instance Typeable SYMB_ITEMS where
 instance Typeable SYMB_MAP_ITEMS where
   typeOf _ = mkTyConApp tc_SYMB_MAP_ITEMS []
 instance Typeable f => Typeable (FORMULA f) where
-  typeOf f = mkTyConApp sentenceTc 
+  typeOf f = mkTyConApp sentenceTc
              [typeOf $ (undefined :: FORMULA f -> f) f]
 instance (Typeable f, Typeable e) => Typeable (Sign f e) where
-  typeOf s = mkTyConApp signTc 
+  typeOf s = mkTyConApp signTc
              [typeOf $ (undefined :: Sign f e -> f) s,
               typeOf $ (undefined :: Sign f e -> e) s]
-instance (Typeable e, Typeable f, Typeable m) => 
+instance (Typeable e, Typeable f, Typeable m) =>
     Typeable (Morphism f e m) where
   typeOf m = mkTyConApp morphismTc
              [typeOf $ (undefined :: Morphism f e m -> f) m,
@@ -111,7 +110,7 @@ instance Typeable RawSymbol where
 instance Typeable CASL_Sublogics where
   typeOf _ = mkTyConApp casl_SublocigsTc []
 
-instance Category CASL CASLSign CASLMor  
+instance Category CASL CASLSign CASLMor
     where
          -- ide :: id -> object -> morphism
          ide CASL = idMor dummy
@@ -129,7 +128,7 @@ instance Category CASL CASLSign CASLMor
 
 instance Syntax CASL CASLBasicSpec
                 SYMB_ITEMS SYMB_MAP_ITEMS
-      where 
+      where
          parse_basic_spec CASL = Just $ basicSpec []
          parse_symb_items CASL = Just $ symbItems []
          parse_symb_map_items CASL = Just $ symbMapItems []
@@ -156,13 +155,13 @@ instance Sentences CASL CASLFORMULA () CASLSign CASLMor Symbol where
 
 instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA ()
                SYMB_ITEMS SYMB_MAP_ITEMS
-               CASLSign 
-               CASLMor 
+               CASLSign
+               CASLMor
                Symbol RawSymbol where
          basic_analysis CASL = Just $ basicCASLAnalysis
          stat_symb_map_items CASL = statSymbMapItems
          stat_symb_items CASL = statSymbItems
-         ensures_amalgamability CASL (opts, diag, sink, desc) = 
+         ensures_amalgamability CASL (opts, diag, sink, desc) =
              ensuresAmalgamability opts diag sink desc
 
          sign_to_basic_spec CASL _sigma _sens = Basic_spec [] -- ???
@@ -171,9 +170,9 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA ()
          id_to_raw CASL = idToRaw
          matches CASL = CASL.Morphism.matches
          is_transportable CASL = isSortInjective
-         
+
          empty_signature CASL = emptySign ()
-         signature_union CASL sigma1 sigma2 = 
+         signature_union CASL sigma1 sigma2 =
            return $ addSig dummy sigma1 sigma2
          morphism_union CASL = morphismUnion (const id) dummy
          final_union CASL = finalUnion dummy
@@ -188,7 +187,7 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA ()
 
 instance Logic CASL CASL.Sublogic.CASL_Sublogics
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
-               CASLSign 
+               CASLSign
                CASLMor
                Symbol RawSymbol () where
 

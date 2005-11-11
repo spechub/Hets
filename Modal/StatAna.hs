@@ -40,11 +40,11 @@ basicModalAnalysis :: (BASIC_SPEC M_BASIC_ITEM M_SIG_ITEM M_FORMULA,
                               Sign M_FORMULA ModalSign,
                               Sign M_FORMULA ModalSign,
                               [Named (FORMULA M_FORMULA)])
-basicModalAnalysis = basicAnalysis minExpForm ana_M_BASIC_ITEM 
+basicModalAnalysis = basicAnalysis minExpForm ana_M_BASIC_ITEM
                      ana_M_SIG_ITEM ana_Mix diffModalSign
 
 ana_Mix :: Mix M_BASIC_ITEM M_SIG_ITEM M_FORMULA ModalSign
-ana_Mix = emptyMix 
+ana_Mix = emptyMix
     { getSigIds = ids_M_SIG_ITEM
     , putParen = mapM_FORMULA
     , mixResolve = resolveM_FORMULA
@@ -54,38 +54,38 @@ ana_Mix = emptyMix
 -- rigid ops will also be part of the CASL signature
 ids_M_SIG_ITEM :: M_SIG_ITEM -> IdSets
 ids_M_SIG_ITEM si = case si of
-    Rigid_op_items _ al _ -> 
+    Rigid_op_items _ al _ ->
         (Set.unions $ map (ids_OP_ITEM . item) al, Set.empty)
-    Rigid_pred_items _ al _ -> 
+    Rigid_pred_items _ al _ ->
         (Set.empty, Set.unions $ map (ids_PRED_ITEM . item) al)
 
 mapMODALITY :: MODALITY -> MODALITY
-mapMODALITY m = case m of 
+mapMODALITY m = case m of
     Term_mod t -> Term_mod $ mapTerm mapM_FORMULA t
     _ -> m
 
 mapM_FORMULA :: M_FORMULA -> M_FORMULA
-mapM_FORMULA (BoxOrDiamond b m f ps) = 
+mapM_FORMULA (BoxOrDiamond b m f ps) =
     BoxOrDiamond b (mapMODALITY m) (mapFormula mapM_FORMULA f) ps
 
 injMODALITY :: MODALITY -> MODALITY
-injMODALITY m = case m of 
+injMODALITY m = case m of
     Term_mod t -> Term_mod $ injTerm injM_FORMULA t
     _ -> m
 
 injM_FORMULA :: M_FORMULA -> M_FORMULA
-injM_FORMULA (BoxOrDiamond b m f ps) = 
+injM_FORMULA (BoxOrDiamond b m f ps) =
     BoxOrDiamond b (injMODALITY m) (injFormula injM_FORMULA f) ps
 
 resolveMODALITY :: MixResolve MODALITY
-resolveMODALITY ga ids m = case m of 
-    Term_mod t -> fmap Term_mod $ resolveMixTrm mapM_FORMULA 
+resolveMODALITY ga ids m = case m of
+    Term_mod t -> fmap Term_mod $ resolveMixTrm mapM_FORMULA
                   resolveM_FORMULA ga ids t
     _ -> return m
 
 resolveM_FORMULA :: MixResolve M_FORMULA
-resolveM_FORMULA ga ids cf = case cf of 
-   BoxOrDiamond b m f ps -> do 
+resolveM_FORMULA ga ids cf = case cf of
+   BoxOrDiamond b m f ps -> do
        nm <- resolveMODALITY ga ids m
        nf <- resolveMixFrm mapM_FORMULA resolveM_FORMULA ga ids f
        return $ BoxOrDiamond b nm nf ps
@@ -97,58 +97,58 @@ noExtMixfixM mf =
     BoxOrDiamond _ _ f _     -> noInner f
 
 minExpForm :: Min M_FORMULA ModalSign
-minExpForm ga s form = 
+minExpForm s form =
     let minMod md ps = case md of
                   Simple_mod i -> minMod (Term_mod (Mixfix_token i)) ps
                   Term_mod t -> let
                     r = do
-                      t2 <- oneExpTerm minExpForm ga s t
+                      t2 <- oneExpTerm minExpForm s t
                       let srt = term_sort t2
                           trm = Term_mod t2
-                      if Map.member srt $ termModies $ extendedInfo s 
+                      if Map.member srt $ termModies $ extendedInfo s
                          then return trm
-                         else Result [mkDiag Error 
+                         else Result [mkDiag Error
                               ("unknown term modality sort '"
                                ++ showId srt "' for term") t ]
                               $ Just trm
                     in case t of
-                       Mixfix_token tm -> 
-                           if Map.member tm $ modies $ extendedInfo s 
+                       Mixfix_token tm ->
+                           if Map.member tm $ modies $ extendedInfo s
                               then return $ Simple_mod tm
                               else case maybeResult r of
-                                  Nothing -> Result 
+                                  Nothing -> Result
                                       [mkDiag Error "unknown modality" tm]
                                       $ Just $ Simple_mod tm
                                   _ -> r
                        _ -> r
     in case form of
-        BoxOrDiamond b m f ps -> 
+        BoxOrDiamond b m f ps ->
             do nm <- minMod m ps
-               f2 <- minExpFORMULA minExpForm ga s f
+               f2 <- minExpFORMULA minExpForm s f
                return $ BoxOrDiamond b nm f2 ps
 
 ana_M_SIG_ITEM :: Ana M_SIG_ITEM M_BASIC_ITEM M_SIG_ITEM M_FORMULA ModalSign
-ana_M_SIG_ITEM mix ga mi = 
-    case mi of 
-    Rigid_op_items r al ps -> 
-        do ul <- mapM (ana_OP_ITEM minExpForm mix ga) al 
+ana_M_SIG_ITEM mix mi =
+    case mi of
+    Rigid_op_items r al ps ->
+        do ul <- mapM (ana_OP_ITEM minExpForm mix) al
            case r of
-               Rigid -> mapM_ ( \ aoi -> case item aoi of 
-                   Op_decl ops ty _ _ -> 
+               Rigid -> mapM_ ( \ aoi -> case item aoi of
+                   Op_decl ops ty _ _ ->
                        mapM_ (updateExtInfo . addRigidOp (toOpType ty)) ops
-                   Op_defn i par _ _ -> 
-                       updateExtInfo $ addRigidOp (toOpType $ headToType par) 
+                   Op_defn i par _ _ ->
+                       updateExtInfo $ addRigidOp (toOpType $ headToType par)
                                 i ) ul
                _ -> return ()
            return $ Rigid_op_items r ul ps
-    Rigid_pred_items r al ps -> 
-        do ul <- mapM (ana_PRED_ITEM minExpForm mix ga) al 
+    Rigid_pred_items r al ps ->
+        do ul <- mapM (ana_PRED_ITEM minExpForm mix) al
            case r of
-               Rigid -> mapM_ ( \ aoi -> case item aoi of 
-                   Pred_decl ops ty _ -> 
+               Rigid -> mapM_ ( \ aoi -> case item aoi of
+                   Pred_decl ops ty _ ->
                        mapM_ (updateExtInfo . addRigidPred (toPredType ty)) ops
-                   Pred_defn i (Pred_head args _) _ _ -> 
-                       updateExtInfo $ addRigidPred 
+                   Pred_defn i (Pred_head args _) _ _ ->
+                       updateExtInfo $ addRigidPred
                                 (PredType $ sortsOfArgs args) i ) ul
                _ -> return ()
            return $ Rigid_pred_items r ul ps
@@ -159,69 +159,69 @@ addRigidOp ty i m = return
 
 addRigidPred :: PredType -> Id -> ModalSign -> Result ModalSign
 addRigidPred ty i m = return
-       m { rigidPreds = let rps = rigidPreds m in Map.insert i 
+       m { rigidPreds = let rps = rigidPreds m in Map.insert i
              (Set.insert ty $ Map.findWithDefault Set.empty i rps) rps }
 
 
-ana_M_BASIC_ITEM 
+ana_M_BASIC_ITEM
     :: Ana M_BASIC_ITEM M_BASIC_ITEM M_SIG_ITEM M_FORMULA ModalSign
-ana_M_BASIC_ITEM mix ga bi = do
+ana_M_BASIC_ITEM mix bi = do
     case bi of
         Simple_mod_decl al fs ps -> do
             mapM_ ((updateExtInfo . preAddModId) . item) al
-            newFs <- mapAnM (ana_FORMULA False mix ga) fs 
+            newFs <- mapAnM (ana_FORMULA False mix) fs
             mapM_ ((updateExtInfo . addModId newFs) . item) al
             return $ Simple_mod_decl al newFs ps
         Term_mod_decl al fs ps -> do
             e <- get
             mapM_ ((updateExtInfo . preAddModSort e) . item) al
-            newFs <- mapAnM (ana_FORMULA True mix ga) fs 
+            newFs <- mapAnM (ana_FORMULA True mix) fs
             mapM_ ((updateExtInfo . addModSort newFs) . item) al
             return $ Term_mod_decl al newFs ps
 
 preAddModId :: SIMPLE_ID -> ModalSign -> Result ModalSign
-preAddModId i m = 
-    let ms = modies m in 
-    if Map.member i ms then 
+preAddModId i m =
+    let ms = modies m in
+    if Map.member i ms then
        Result [mkDiag Hint "repeated modality" i] $ Just m
        else return m { modies = Map.insert i [] ms }
 
 addModId :: [AnModFORM] -> SIMPLE_ID -> ModalSign -> Result ModalSign
 addModId frms i m = return m { modies = Map.insert i frms $ modies m }
 
-preAddModSort :: Sign M_FORMULA ModalSign -> SORT -> ModalSign 
+preAddModSort :: Sign M_FORMULA ModalSign -> SORT -> ModalSign
               -> Result ModalSign
-preAddModSort e i m = 
+preAddModSort e i m =
     let ms = termModies m
-        ds = hasSort e i 
-    in if Map.member i ms || not (null ds) then 
+        ds = hasSort e i
+    in if Map.member i ms || not (null ds) then
        Result (mkDiag Hint "repeated term modality" i : ds) $ Just m
        else return m { termModies = Map.insert i [] ms }
 
 addModSort :: [AnModFORM] -> SORT -> ModalSign -> Result ModalSign
-addModSort frms i m = 
+addModSort frms i m =
        return m { termModies = Map.insert i frms $ termModies m }
 
-ana_FORMULA 
-    :: Bool 
+ana_FORMULA
+    :: Bool
     -> Ana (FORMULA M_FORMULA) M_BASIC_ITEM M_SIG_ITEM M_FORMULA ModalSign
-ana_FORMULA b mix ga f = 
+ana_FORMULA b mix f =
     if isPropForm b f then do
            let ps = map (mkId . (: [])) $ Set.toList $ getFormPredToks f
            pm <- gets predMap
            mapM_ (addPred $ PredType []) ps
            newGa <- gets globAnnos
-           let Result es m = resolveFormula mapM_FORMULA 
+           let Result es m = resolveFormula mapM_FORMULA
                              resolveM_FORMULA newGa (mixRules mix) f
            addDiags es
            e <- get
-           phi <- case m of  
+           phi <- case m of
                Nothing -> return f
-               Just r -> resultToState (minExpFORMULA minExpForm ga e) r
+               Just r -> resultToState (minExpFORMULA minExpForm e) r
            e2 <- get
            put e2 {predMap = pm}
            return phi
-    else do addDiags [mkDiag Error 
+    else do addDiags [mkDiag Error
                "Modality declarations may only contain propositional axioms"
                 f] >> return f
 
@@ -230,9 +230,9 @@ getFormPredToks frm = case frm of
     Quantification _ _ f _ -> getFormPredToks f
     Conjunction fs _ -> Set.unions $ map getFormPredToks fs
     Disjunction fs _ -> Set.unions $ map getFormPredToks fs
-    Implication f1 f2 _ _ -> 
+    Implication f1 f2 _ _ ->
         Set.union (getFormPredToks f1) $ getFormPredToks f2
-    Equivalence f1 f2 _  -> 
+    Equivalence f1 f2 _  ->
         Set.union (getFormPredToks f1) $ getFormPredToks f2
     Negation f _ -> getFormPredToks f
     Mixfix_formula (Mixfix_token t) -> Set.singleton t
@@ -240,9 +240,9 @@ getFormPredToks frm = case frm of
     ExtFORMULA (BoxOrDiamond _ _ f _) -> getFormPredToks f
     Predication _ ts _ -> Set.unions $ map getTermPredToks ts
     Definedness t _ -> getTermPredToks t
-    Existl_equation t1 t2 _ -> 
+    Existl_equation t1 t2 _ ->
         Set.union (getTermPredToks t1) $ getTermPredToks t2
-    Strong_equation t1 t2 _ -> 
+    Strong_equation t1 t2 _ ->
         Set.union (getTermPredToks t1) $ getTermPredToks t2
     Membership t _ _ -> getTermPredToks t
     _ -> Set.empty
@@ -253,7 +253,7 @@ getTermPredToks trm = case trm of
     Sorted_term t _ _ -> getTermPredToks t
     Cast t _ _ -> getTermPredToks t
     Conditional t1 f t2 _ -> Set.union (getTermPredToks t1) $
-        Set.union (getFormPredToks f) $ getTermPredToks t2                   
+        Set.union (getFormPredToks f) $ getTermPredToks t2
     Mixfix_term ts -> Set.unions $ map getTermPredToks ts
     Mixfix_parenthesized ts _ -> Set.unions $ map getTermPredToks ts
     Mixfix_bracketed ts _ -> Set.unions $ map getTermPredToks ts
