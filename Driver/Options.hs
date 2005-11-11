@@ -1,4 +1,4 @@
-{-|
+{- |
 Module      :  $Header$
 Copyright   :  (c) Martin Kühl, Christian Maeder, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -87,13 +87,16 @@ treeS = "tree."
 bafS = ".baf"
 astS = "ast"
 
-graphS, ppS, envS, naxS, thyS, dfgS, comptableXmlS :: String
+graphS, ppS, envS, naxS, thyS, dfgS, comptableXmlS, sigS, thS, deltaS :: String
 graphS = "graph."
 ppS = "pp."
 envS = "env"
 naxS = ".nax"
 thyS = "thy"
 dfgS = "dfg"
+sigS = "sig"
+thS = "th"
+deltaS = ".delta"
 comptableXmlS = "comptable.xml"
 
 showOpt :: String -> String
@@ -232,17 +235,10 @@ instance Show InType where
 
 -- maybe this optional tree prefix can be omitted
 instance Read InType where
-    readsPrec _ s = let f = filter ( \ o -> (case o of
-                                 ATermIn _ -> isPrefixOf (treeS ++ show o) s
-                                 _ -> False) || isPrefixOf (show o) s)
-                            (plainInTypes ++ aInTypes)
-                        in case f of
-                           [] -> []
-                           t : _ -> [(t, drop (length (show t) +
-                                             case t of
-                                             ATermIn _ -> if isPrefixOf treeS s
-                                               then length treeS else 0
-                                             _ -> 0) s)]
+    readsPrec _ = readShowAux $ map ( \ i -> (show i, i))
+                  (plainInTypes ++ aInTypes)
+                  ++ [(treeS ++ genTermS ++ show at, ATermIn at)
+                           | at <- [BAF, NonBAF]]
 
 -- | 'ATType' describes distinct types of ATerms
 data ATType = BAF | NonBAF
@@ -265,6 +261,8 @@ data OutType = PrettyOut PrettyType
              | ThyFile -- isabelle theory file
              | DfgFile -- SPASS input file
              | ComptableXml
+             | SigFile Delta -- signature as text
+             | TheoryFile Delta -- signature with sentences as text
 
 instance Show OutType where
     show o = case o of
@@ -275,26 +273,29 @@ instance Show OutType where
              ThyFile -> thyS
              DfgFile -> dfgS
              ComptableXml -> comptableXmlS
+             SigFile d -> sigS ++ show d
+             TheoryFile d -> thS ++ show d
+
+outTypeList :: [OutType]
+outTypeList = let dl = [Delta, Complete] in
+    [ EnvOut, ThyFile, DfgFile, ComptableXml ]
+    ++ [ PrettyOut p | p <- prettyList ]
+    ++ [ SigFile d | d <- dl ]
+    ++ [ TheoryFile d | d <- dl ]
+    ++ [ HetCASLOut h f | h <- OutASTree : hetOutTypeList, f <- formatList ]
+    ++ [ GraphOut f | f <- graphList ]
 
 instance Read OutType where
-    readsPrec  _ s = if isPrefixOf ppS s then
-        case reads $ drop (length ppS) s of
-                 [(p, r)] -> [(PrettyOut p, r)]
-                 _ -> hetsError (s ++ " expected one of " ++ show prettyList)
-        else if isPrefixOf graphS s then
-        case reads $ drop (length graphS) s of
-                 [(t, r)] -> [(GraphOut t, r)]
-                 _ -> hetsError (s ++ " expected one of " ++ show graphList)
-        else if isPrefixOf envS s then
-             [(EnvOut, drop (length envS) s)]
-        else if isPrefixOf thyS s then
-             [(ThyFile, drop (length thyS) s)]
-        else if isPrefixOf dfgS s then
-             [(DfgFile, drop (length dfgS) s)]
-        else if isPrefixOf comptableXmlS s then
-             [(ComptableXml, drop (length comptableXmlS) s)]
-        else [(HetCASLOut h f, u) | (h, d : t) <- reads s,
-              d == '.' , (f, u) <- reads t]
+    readsPrec  _ = readShowAux $ map ( \ o -> (show o, o)) outTypeList
+                      ++ [(show h ++ naxS ++ "." ++ show f, HetCASLOut h f)
+                              | h <- hetOutTypeList, f <- formatList ]
+
+data Delta = Delta | Complete
+
+instance Show Delta where
+    show d = case d of
+               Delta -> deltaS
+               _ -> ""
 
 -- | 'PrettyType' describes the type of output we want the pretty-printer
 -- to generate
@@ -305,9 +306,6 @@ instance Show PrettyType where
              PrettyAscii -> "het"
              PrettyLatex -> "tex"
              PrettyHtml -> "html"
-
-instance Read PrettyType where
-    readsPrec _ = readShow prettyList
 
 prettyList :: [PrettyType]
 prettyList = [PrettyAscii,  PrettyLatex, PrettyHtml]
@@ -320,17 +318,8 @@ instance Show HetOutType where
              OutASTree -> astS
              OutDGraph f b -> show f ++ "dg" ++ if b then naxS else ""
 
-instance Read HetOutType where
-    readsPrec _ s = if isPrefixOf astS s then
-                    [(OutASTree, drop (length astS) s)]
-                    else case readShow outTypeList s of
-                    l@[(OutDGraph f _, r)] -> if isPrefixOf naxS r then
-                             [(OutDGraph f True, drop (length naxS) r)]
-                             else l
-                    _ -> hetsError (s ++ " is not a valid OTYPE")
-
-outTypeList :: [HetOutType]
-outTypeList = [ OutDGraph f False | f <- [ Flattened, HidingOutside, Full]]
+hetOutTypeList :: [HetOutType]
+hetOutTypeList = [ OutDGraph f False | f <- [ Flattened, HidingOutside, Full]]
 
 -- | 'Flattening' describes how flat the Earth really is (TODO: add comment)
 data Flattening = Flattened | HidingOutside | Full
@@ -352,9 +341,6 @@ instance Show HetOutFormat where
              OutHtml -> "html"
              OutXml -> "xml"
 
-instance Read HetOutFormat where
-    readsPrec _ = readShow formatList
-
 formatList :: [HetOutFormat]
 formatList = [OutAscii, OutTerm, OutTaf, OutHtml, OutXml]
 
@@ -366,9 +352,6 @@ instance Show GraphType where
              Dot -> "dot"
              PostScript -> "ps"
              Davinci -> "davinci"
-
-instance Read GraphType where
-    readsPrec _ = readShow graphList
 
 graphList :: [GraphType]
 graphList = [Dot, PostScript, Davinci]
@@ -414,12 +397,16 @@ options =
       "destination directory for output files"
     , Option ['o'] [outtypesS] (ReqArg parseOutTypes "OTYPES")
       ("output file types, default nothing," ++ crS ++
-       listS ++ crS ++ bS ++ envS ++ crS ++ bS ++
-       thyS ++ dfgS ++ crS ++ bS ++ comptableXmlS ++ crS ++ bS ++
-       ppS ++ joinBar (map show prettyList) ++ crS ++ bS ++
-       graphS ++ joinBar (map show graphList) ++ crS ++ bS ++
-       astS ++ formS ++ crS ++ bS ++
-       joinBar (map show outTypeList) ++ bracket naxS ++ formS)
+       listS ++ crS
+       ++ bS ++ envS ++ crS
+       ++ bS ++ thyS ++ crS
+       ++ bS ++ dfgS ++ crS
+       ++ bS ++ comptableXmlS ++ crS
+       ++ bS ++ joinBar [sigS, thS] ++ bracket deltaS ++ crS
+       ++ bS ++ ppS ++ joinBar (map show prettyList) ++ crS
+       ++ bS ++ graphS ++ joinBar (map show graphList) ++ crS
+       ++ bS ++ astS ++ formS ++ crS
+       ++ bS ++ joinBar (map show hetOutTypeList) ++ bracket naxS ++ formS)
     , Option ['n'] [specS] (ReqArg parseSpecOpts "SPECS")
       ("process specs option " ++ crS ++ listS ++ " SIMPLE-ID")
     , Option ['r'] [rawS] (ReqArg parseRawOpts "RAW")
@@ -453,7 +440,7 @@ downloadExtensions = map ('.' :) $
          map show plainInTypes
          ++ map ((treeS ++) . show) [ATermIn BAF, ATermIn NonBAF]
          ++ map show aInTypes
-         
+
 -- | remove the extension from a file
 rmSuffix :: FilePath -> FilePath
 rmSuffix = fst . stripSuffix downloadExtensions
@@ -462,8 +449,8 @@ rmSuffix = fst . stripSuffix downloadExtensions
 -- checks if a source file for the given file name exists
 existsAnSource :: HetcatsOpts -> FilePath -> IO (Maybe FilePath)
 existsAnSource opts file = do
-       let base = rmSuffix file 
-           exts = case intype opts of 
+       let base = rmSuffix file
+           exts = case intype opts of
                   GuessIn -> downloadExtensions
                   e@(ATermIn _) -> ['.' : show e, '.' : treeS ++ show e]
                   e -> ['.' : show e]
@@ -527,7 +514,6 @@ checkEitherDirOrExFile fp =
 -- | 'parseInType' parses an 'InType' Flag from user input
 parseInType :: String -> Flag
 parseInType = InType . parseInType1
-
 
 -- | 'parseInType1' parses an 'InType' Flag from a String
 parseInType1 :: String -> InType
@@ -692,7 +678,6 @@ checkOutDir (OutDir file) =
        if exists && writable perms then return ()
           else hetsError $ "Not a valid output directory: " ++ file
 checkOutDir _ = return ()
-
 
 -- Nil Permissions. Returned, if an Error occurred in FS-Interaction
 noPerms :: Permissions
