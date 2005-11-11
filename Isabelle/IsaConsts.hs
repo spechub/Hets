@@ -80,7 +80,7 @@ prodS, sProdS, funS, cFunS, sSumS :: TName
 prodS = "*"    -- this is printed as it is!
 sProdS = "**"
 funS = "=>"
-cFunS = "->" 
+cFunS = "->"
 sSumS = "++"
 
 -- * functions for term formation
@@ -105,9 +105,6 @@ conT s = Const s noType
 -- | construct a constant with no type
 con :: VName -> Term
 con s = Const s noType
-
-mkVName :: String -> VName
-mkVName s = VName { new = s, altSyn = "" }
 
 conDouble :: String -> Term
 conDouble = con . mkVName

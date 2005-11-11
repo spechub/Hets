@@ -15,12 +15,12 @@ Printing functions for Isabelle logic.
   properly construct docs
 -}
 
-module Isabelle.IsaPrint 
+module Isabelle.IsaPrint
     ( showBaseSig
     , printNamedSen
     ) where
 
-import Isabelle.IsaSign 
+import Isabelle.IsaSign
 import Isabelle.IsaConsts
 import Common.Lib.Pretty
 import Common.AS_Annotation
@@ -39,11 +39,11 @@ printClass :: IsaClass -> Doc
 printClass (IsaClass x) = text x
 
 printSort :: Sort -> Doc
-printSort l = case l of 
-    [c] -> printClass c 
+printSort l = case l of
+    [c] -> printClass c
     _ -> braces . hsep . punctuate comma $ map printClass l
 
-data SynFlag = Unquoted | Null 
+data SynFlag = Unquoted | Null
 
 doubleColon :: Doc
 doubleColon = text "::"
@@ -55,30 +55,30 @@ printTyp :: SynFlag -> Typ -> Doc
 printTyp a = fst . printTypeAux a
 
 printTypeAux :: SynFlag -> Typ -> (Doc, Int)
-printTypeAux a t = case t of 
- (TFree v s) -> (let d = text $ if isPrefixOf "\'" v || isPrefixOf "?\'" v 
-                                then v  else '\'' : v 
+printTypeAux a t = case t of
+ (TFree v s) -> (let d = text $ if isPrefixOf "\'" v || isPrefixOf "?\'" v
+                                then v  else '\'' : v
                  in if null s then d else case a of
    Unquoted -> d <> doubleColon <> printSort s
    Null -> d, 1000)
  (TVar iv s) -> printTypeAux a $ TFree ("?\'" ++ unindexed iv) s
- (Type name _ args) -> case args of 
-   [t1, t2] | elem name [prodS, sProdS, funS, cFunS, sSumS] -> 
+ (Type name _ args) -> case args of
+   [t1, t2] | elem name [prodS, sProdS, funS, cFunS, sSumS] ->
        printTypeOp a name t1 t2
    _  -> ((case args of
            [] -> empty
            [arg] -> let (d, i) = printTypeAux a arg in
                       if i < 1000 then parens d else d
-           _ -> parens $ hsep $ punctuate comma $ 
+           _ -> parens $ hsep $ punctuate comma $
                        map (fst . printTypeAux a) args)
           <+> text name, 1000)
 
 printTypeOp :: SynFlag -> TName -> Typ -> Typ -> (Doc, Int)
-printTypeOp x name r1 r2 = 
+printTypeOp x name r1 r2 =
     let (d1, i1) = printTypeAux x r1
         (d2, i2) = printTypeAux x r2
-        (l, r) = Map.findWithDefault (0 :: Int, 0 :: Int) 
-                    name $ Map.fromList 
+        (l, r) = Map.findWithDefault (0 :: Int, 0 :: Int)
+                    name $ Map.fromList
                     [ (funS, (1,0))
                     , (cFunS, (1,0))
                     , (sSumS, (11, 10))
@@ -94,8 +94,8 @@ and_docs ds = vcat $ prepPunctuate (text "and ") ds
 
 -- | printing a named sentence
 printNamedSen :: Named Sentence -> Doc
-printNamedSen NamedSen { senName = lab, sentence = s } = 
-  let d = printSentence s in case s of 
+printNamedSen NamedSen { senName = lab, sentence = s } =
+  let d = printSentence s in case s of
   RecDef _ _ -> d
   _ -> let dd = doubleQuotes d in if null lab then dd else text (case s of
     ConstDef _ -> lab ++ "_def"
@@ -104,27 +104,27 @@ printNamedSen NamedSen { senName = lab, sentence = s } =
 
 -- | sentence printing
 printSentence :: Sentence -> Doc
-printSentence s = case s of 
+printSentence s = case s of
   RecDef kw xs -> text kw <+>
      and_docs (map (vcat . map (doubleQuotes . printTerm)) xs)
   _ -> case senTerm s of
-      IsaEq (Const vn y) t ->  text (new vn) <+> doubleColon 
+      IsaEq (Const vn y) t ->  text (new vn) <+> doubleColon
                       <+> printType y <+> text "==" <+> printOUTerm t
       t -> printTerm t
 
 -- | omits type of outer abstraction
 printOUTerm :: Term -> Doc
 printOUTerm t = case t of
-  (Abs v _ tm l) -> parens $ (text $ case l of 
+  (Abs v _ tm l) -> parens $ (text $ case l of
      NotCont -> "%"
-     IsCont -> "LAM") <+> printTerm v <> text "." <+> printOUTerm tm 
+     IsCont -> "LAM") <+> printTerm v <> text "." <+> printOUTerm tm
   _ -> printTerm t
 
 -- | print plain term
 printTerm :: Term -> Doc
 printTerm = text . showTerm
 
--- look into this Strings 
+-- look into this Strings
 
 showQuantStr :: String -> String
 showQuantStr s | s == allS = "!"
@@ -137,56 +137,56 @@ showTerm (Const (VName {new=c}) _) = c
 showTerm (Free  (VName {new=v}) _) = v
 
 showTerm (Tuplex ls c) = case c of
-   IsCont -> "< " ++ (showTupleArgs ls) ++ ">" 
+   IsCont -> "< " ++ (showTupleArgs ls) ++ ">"
  -- the extra space takes care of a minor Isabelle bug
-   NotCont -> "(" ++ (showTupleArgs ls) ++ ")" 
- where 
-   showTupleArgs xs = case xs of 
+   NotCont -> "(" ++ (showTupleArgs ls) ++ ")"
+ where
+   showTupleArgs xs = case xs of
      [] -> []
      [a] -> showTerm a
      a:as -> case a of
-      (Free _ t) -> showTerm a ++ "::" ++ show (printTyp Null t) 
+      (Free _ t) -> showTerm a ++ "::" ++ show (printTyp Null t)
                     ++ "," ++ showTupleArgs as
       _ -> showTerm a ++ "," ++ showTupleArgs as
 
-showTerm (Abs v _y t l) = lb ++ (case l of 
+showTerm (Abs v _y t l) = lb ++ (case l of
     NotCont -> "%"
     IsCont -> "LAM ") ++ showTerm v ++ ". " ++ showTerm t ++ rb
 
 -- showTerm (App (Const q _) (Abs v ty t _) _) | q `elem` [allS, exS, ex1S] =
 --   showQuant (showQuantStr q) v ty t
--- showTerm t@(Const c _) = showPTree (toPrecTree t) 
-showTerm (Paren t) = showTerm t 
+-- showTerm t@(Const c _) = showPTree (toPrecTree t)
+showTerm (Paren t) = showTerm t
 showTerm (Fix t) = lb++"fix"++"$"++(showTerm t)++rb
 showTerm t@(App _ _ NotCont) = showPTree (toPrecTree t)
 showTerm t@(MixfixApp _ _ NotCont) = showPTree (toPrecTree t)
 showTerm (App t1 t2 IsCont) = lb++(showTerm t1)++"$"++(showTerm t2)++rb
 showTerm Bottom = "UU"
 
-showTerm (IsaEq t1 t2) = lb ++ (showTerm t1) ++ sp ++ "==" 
+showTerm (IsaEq t1 t2) = lb ++ (showTerm t1) ++ sp ++ "=="
                          ++ sp ++ (showTerm t2) ++ rb
 showTerm (Case term alts) =
   let sAlts = map showCaseAlt alts
-  in lb ++ "case" ++ sp ++ showTerm term ++ sp ++ "of" 
+  in lb ++ "case" ++ sp ++ showTerm term ++ sp ++ "of"
          ++ sp ++ head sAlts
-         ++ concat (map ((++) ("\n" ++ sp ++ sp ++ sp ++ "|" ++ sp)) 
+         ++ concat (map ((++) ("\n" ++ sp ++ sp ++ sp ++ "|" ++ sp))
                                                     (tail sAlts)) ++ rb
 
 showTerm (If t1 t2 t3 c) = case c of
-  NotCont -> 
-    lb ++ "if" ++ sp ++ showTerm t1 ++ sp ++ "then" ++ sp 
+  NotCont ->
+    lb ++ "if" ++ sp ++ showTerm t1 ++ sp ++ "then" ++ sp
            ++ showTerm t2 ++ sp ++ "else" ++ sp ++ showTerm t3 ++ rb
-  IsCont -> 
-    lb ++ "If" ++ sp ++ showTerm t1 ++ sp ++ "then" ++ sp 
+  IsCont ->
+    lb ++ "If" ++ sp ++ showTerm t1 ++ sp ++ "then" ++ sp
         ++ showTerm t2 ++ sp ++ "else" ++ sp ++ showTerm t3 ++ sp ++ "fi" ++ rb
 
-showTerm (Let pts t) = lb ++ "let" ++ sp ++ showPat False (head pts) 
+showTerm (Let pts t) = lb ++ "let" ++ sp ++ showPat False (head pts)
                                 ++ concat (map (showPat True) (tail pts))
                                 ++ sp ++ "in" ++ sp ++ showTerm t ++ rb
-showTerm t = error $ "Isa.showTerm: " ++ show t 
+showTerm t = error $ "Isa.showTerm: " ++ show t
 
 showPat :: Bool -> (Term, Term) -> String
-showPat b (pat, term) = 
+showPat b (pat, term) =
   let s = sp ++ showTerm pat ++ sp ++ "=" ++ sp ++ showTerm term
   in-- showTerm (Const c _) = c
 
@@ -204,8 +204,8 @@ showQuant :: String -> Term -> Typ -> Term -> String
 showQuant s var _typ term =
    s++sp++ showTerm var ++ " . "  ++ showTerm term
 
-{-   
-   For nearly perfect parenthesis - they only appear when needed - 
+{-
+   For nearly perfect parenthesis - they only appear when needed -
    a formula/term is broken open in following pieces:
                             (logical) connector
                            /                   \
@@ -221,7 +221,7 @@ data PrecTerm = PrecTerm Term Precedence deriving (Show)
 type Precedence = Int
 
 {- Precedences (descending): __ __ (Isabelle's term application),
-                             application of HasCASL ops, <=>, =, /\, \/, => 
+                             application of HasCASL ops, <=>, =, /\, \/, =>
    Associativity:  =  -- left
                    => -- right
                    /\ -- right
@@ -255,10 +255,10 @@ noPrec :: Term -> PrecTerm
 noPrec t = PrecTerm t (-10)
 
 quantS :: String
-quantS = "QUANT" 
+quantS = "QUANT"
 
 dummyS :: String
-dummyS = "Dummy" 
+dummyS = "Dummy"
 
 binFunct :: String -> Term -> PrecTerm
 binFunct s | s == eq   = eqPrec
@@ -271,13 +271,13 @@ binFunct s | s == eq   = eqPrec
 toPrecTree :: Term -> PrecTermTree
 toPrecTree trm =
   case trm of
-    App c1@(Const vn _) a2@(Abs _ _ _ _) _ 
-        | new vn `elem` [allS, exS, ex1S] -> 
+    App c1@(Const vn _) a2@(Abs _ _ _ _) _
+        | new vn `elem` [allS, exS, ex1S] ->
             Node (isaAppPrec $ conDouble quantS) [toPrecTree c1, toPrecTree a2]
     App (App t@(Const vn _) t3 NotCont) t2 NotCont ->
         Node (binFunct (new vn) t) [toPrecTree t3, toPrecTree t2]
-    App t1 t2 NotCont -> Node (isaAppPrec $ conDouble dummyS) 
-                   [toPrecTree t1, toPrecTree t2] 
+    App t1 t2 NotCont -> Node (isaAppPrec $ conDouble dummyS)
+                   [toPrecTree t1, toPrecTree t2]
     MixfixApp t@(Const vn _) [t2, t3] NotCont ->
 	   Node (binFunct (new vn) t) [toPrecTree t2, toPrecTree t3]
     _ -> Node (noPrec trm) []
@@ -286,7 +286,7 @@ data Assoc = LeftAs | NoAs | RightAs
 
 showPTree :: PrecTermTree -> String
 showPTree (Node (PrecTerm term _) []) = showTerm term
-showPTree (Node (PrecTerm term pre) annos) =  
+showPTree (Node (PrecTerm term pre) annos) =
   let [leftChild, rightChild] = annos
    in case term of {
          Const (VName { new = c }) _
@@ -301,40 +301,40 @@ showPTree (Node (PrecTerm term pre) annos) =
 	       | c == dummyS  -> simpleInfix pre leftChild rightChild
 	       | c == isaPair -> pair leftChild rightChild
 	       | c == quantS  -> quant leftChild rightChild
-{-	       | hasDoubleULines ' ' c -> 
-	               infixP pre 
-			      (takeWhile (/='_') (dropWhile (=='_') c)) 
+{-	       | hasDoubleULines ' ' c ->
+	               infixP pre
+			      (takeWhile (/='_') (dropWhile (=='_') c))
 			      RightAs leftChild rightChild
 -- this does not work for __::__-->__ in Graph.casl
--} 
+-}
 	       | otherwise    -> prefixP pre c leftChild rightChild;
       _ -> showTerm term}
 
-{- Logical connectors: For readability and by habit they are written 
+{- Logical connectors: For readability and by habit they are written
    at an infix position.
-   If the precedence of one side is weaker (here: higher number) than the 
-   connector's one it is bracketed. Otherwise not. 
+   If the precedence of one side is weaker (here: higher number) than the
+   connector's one it is bracketed. Otherwise not.
 -}
-infixP :: Precedence -> String -> Assoc -> PrecTermTree -> PrecTermTree 
+infixP :: Precedence -> String -> Assoc -> PrecTermTree -> PrecTermTree
        -> String
-infixP pAdult stAdult assoc leftChild rightChild 
+infixP pAdult stAdult assoc leftChild rightChild
     | (pAdult < prLeftCld) && (pAdult < prRightCld) = both
-    | pAdult < prLeftCld = 
-        case assoc of 
+    | pAdult < prLeftCld =
+        case assoc of
           LeftAs  -> if pAdult == prRightCld then both else left
           RightAs -> left
           NoAs    -> left
-    | pAdult < prRightCld = 
+    | pAdult < prRightCld =
         case assoc of
           LeftAs  -> right
           RightAs -> if pAdult == prLeftCld then both else right
           NoAs    -> right
-    | (pAdult == prLeftCld) && (pAdult == prRightCld) = 
+    | (pAdult == prLeftCld) && (pAdult == prRightCld) =
         case assoc of
           LeftAs  -> right
           RightAs -> left
           NoAs    -> no
-    | pAdult == prLeftCld = 
+    | pAdult == prLeftCld =
         case assoc of
           LeftAs  -> no
           RightAs -> left
@@ -355,20 +355,20 @@ infixP pAdult stAdult assoc leftChild rightChild
         no =  stLeftCld ++sp++ stAdult ++sp++ stRightCld
 
 
-{- Application of (HasCASL-)operations with two arguments. 
+{- Application of (HasCASL-)operations with two arguments.
    Both arguments are usually bracketed, except single ones.
 -}
 prefixP :: Precedence -> String -> PrecTermTree -> PrecTermTree -> String
-prefixP pAdult stAdult leftChild rightChild 
+prefixP pAdult stAdult leftChild rightChild
     | (pAdult <= prLeftCld) && (pAdult <= prRightCld) =
           stAdult ++
               sp++lb++ stLeftCld ++rb++
                   sp++lb++ stRightCld ++rb
-    | pAdult <= prLeftCld = 
+    | pAdult <= prLeftCld =
           stAdult ++
               sp++lb++ stLeftCld ++rb++
                   sp++ stRightCld
-    | pAdult <= prRightCld = 
+    | pAdult <= prRightCld =
           stAdult ++
               sp++ stLeftCld ++
                   sp++lb++ stRightCld ++rb
@@ -380,18 +380,18 @@ prefixP pAdult stAdult leftChild rightChild
         stLeftCld = showPTree leftChild
         stRightCld = showPTree rightChild
 
-{- Isabelle application: An operation/a datatype-constructor is applied 
+{- Isabelle application: An operation/a datatype-constructor is applied
    to one argument. The whole expression is always bracketed.
 -}
 simpleInfix :: Precedence -> PrecTermTree -> PrecTermTree -> String
-simpleInfix pAdult leftChild rightChild 
-    | (pAdult < prLeftCld) && (pAdult < prRightCld) = 
+simpleInfix pAdult leftChild rightChild
+    | (pAdult < prLeftCld) && (pAdult < prRightCld) =
           lbb++ stLeftCld ++rb++
                 sp++lb++ stRightCld ++rbb
-    | pAdult < prLeftCld = 
+    | pAdult < prLeftCld =
           lbb++ stLeftCld ++rb++
                 sp++ stRightCld ++rb
-    | pAdult < prRightCld = 
+    | pAdult < prRightCld =
           lb++ stLeftCld ++sp++
                lb++ stRightCld ++rbb
     | otherwise = lb++ stLeftCld ++sp++
@@ -405,8 +405,8 @@ simpleInfix pAdult leftChild rightChild
 {- Quantification _in_ Formulas
 -}
 quant :: PrecTermTree -> PrecTermTree -> String
-quant (Node (PrecTerm (Const (VName {new=q}) _) _) []) 
-          (Node (PrecTerm (Abs v ty t _) _) []) = 
+quant (Node (PrecTerm (Const (VName {new=q}) _) _) [])
+          (Node (PrecTerm (Abs v ty t _) _) []) =
               lb++showQuant (showQuantStr q) v ty t++rb
 quant _ _ = error "[Isabelle.IsaPrint] Wrong quantification!?"
 
@@ -421,107 +421,108 @@ pair leftChild rightChild = lb++showPTree leftChild++", "++
 -- end of term printing
 
 printClassrel :: Classrel -> Doc
-printClassrel = vcat . map ( \ (t, cl) -> case cl of 
+printClassrel = vcat . map ( \ (t, cl) -> case cl of
      Nothing -> empty
-     Just x -> text "axclass" <+> printClass t <+> text "<" <+> 
-       (if null x  then text "pcpo" else printSort x)) . Map.toList 
+     Just x -> text "axclass" <+> printClass t <+> text "<" <+>
+       (if null x  then text "pcpo" else printSort x)) . Map.toList
 
 printArities :: Arities -> Doc
-printArities = vcat . map ( \ (t, cl) -> 
+printArities = vcat . map ( \ (t, cl) ->
                   vcat $ map (printInstance t) cl) . Map.toList
 
 printInstance :: TName -> (IsaClass, [(Typ, Sort)]) -> Doc
-printInstance t xs = text "instance" <+> text t <> doubleColon <> 
-    (case snd xs of 
+printInstance t xs = text "instance" <+> text t <> doubleColon <>
+    (case snd xs of
      [] -> empty
-     ys -> parens $ hsep $ punctuate comma 
+     ys -> parens $ hsep $ punctuate comma
            $ map (doubleQuotes . printSort . snd) ys)
     <> printClass (fst xs) $$ text "by intro_classes"
 
 printTypeDecls :: Sign -> Doc
-printTypeDecls sig =  
+printTypeDecls sig =
     Map.foldWithKey (printTycon sig) empty $ arities $ tsig sig
 
-printTycon :: Sign -> TName -> [(a, [b])] -> Doc -> Doc
-printTycon sig t arity' rest = 
+printTycon :: Sign -> TName -> [(IsaClass, [(Typ, Sort)])] -> Doc -> Doc
+printTycon sig t arity' rest =
               let arity = if null arity' then
-                          error "IsaPrint.printText0 (TypeSig)" 
-                                else length (snd $ head arity') in 
-            if dtyp sig t then empty else  
-            text "typedecl" <+> 
-            (if arity > 0 
+                          error "IsaPrint.printText0 (TypeSig)"
+                                else length (snd $ head arity') in
+            if dtyp sig t then empty else
+            text "typedecl" <+>
+            (if arity > 0
              then parens $ hsep (map (text . ("'a"++) . show) [1..arity])
-             else empty) <+> text t $$ rest 
+             else empty) <+> text t $$ rest
 
 dtyp :: Sign -> TName -> Bool
-dtyp sig t = elem t $ 
+dtyp sig t = elem t $
          concat [map (typeId . fst) x | x <- domainTab sig]
 
--- | show alternative syntax (computed by comorphisms) 
+-- | show alternative syntax (computed by comorphisms)
 printAlt :: VName -> Doc
-printAlt VName { altSyn = altV } = if altV /= "" then 
-    parens $ doubleQuotes $ text altV else empty
+printAlt VName { altSyn = altV } = case altV of
+    Nothing -> empty
+    Just altS -> parens $ text $ show altS
 
 instance PrettyPrint Sign where
   printText0 _ sig = text (showBaseSig $ baseSig sig) <> colon $++$
     printTypeDecls sig $++$
     printClassrel (classrel $ tsig sig) $++$
     printDomainDefs (domainTab sig) $++$
-    printConstTab (constTab sig) $++$     
+    printConstTab (constTab sig) $++$
     (if showLemmas sig then showCaseLemmata (domainTab sig) else empty) $++$
                                    -- this may print an "o"
-    printArities (arities $ tsig sig) 
+    printArities (arities $ tsig sig)
     where
-    printConstTab tab = if Map.null tab then empty else text "consts" 
+    printConstTab tab = if Map.null tab then empty else text "consts"
                         $$ vcat (map printConst $ Map.toList tab)
-    printConst (vn, t) = text (new vn) <+> doubleColon <+> 
+    printConst (vn, t) = text (new vn) <+> doubleColon <+>
                           doubleQuotes (printType t) <+> printAlt vn
-    isDomain = case baseSig sig of 
-               HOLCF_thy -> True 
-               HsHOLCF_thy -> True 
+    isDomain = case baseSig sig of
+               HOLCF_thy -> True
+               HsHOLCF_thy -> True
                _ -> False
     printDomainDefs dtDefs = vcat $ map printDomainDef dtDefs
-    printDomainDef dts = if null dts then empty else 
-        text (if isDomain then "domain" else "datatype") 
+    printDomainDef dts = if null dts then empty else
+        text (if isDomain then "domain" else "datatype")
         <+> and_docs (map printDomain dts)
     printDomain (t, ops) =
        printType t <+> equals <+>
        hsep (punctuate (text " |") $ map printDOp ops)
-    printDOp (VName { new = opname }, args) = 
-       text opname <+> hsep (map (printDOpArg opname) 
-                            $ zip args $ reverse [1 .. length args]) 
-    printDOpArg o (a, i) = let 
-      d = case a of 
+    printDOp (VName { new = opname }, args) =
+       text opname <+> hsep (map (printDOpArg opname)
+                            $ zip args $ reverse [1 .. length args])
+    printDOpArg o (a, i) = let
+      d = case a of
             TFree _ _ -> printTyp Null a
             _         -> doubleQuotes $ printTyp Null a
-      in if isDomain then 
+      in if isDomain then
            parens $ text (o ++ "_" ++ show i) <> doubleColon <> d
            else d
     showCaseLemmata dtDefs = text (concat $ map showCaseLemmata1 dtDefs)
     showCaseLemmata1 dts = concat $ map showCaseLemma dts
     showCaseLemma (_, []) = ""
-    showCaseLemma (tyCons, (c:cons)) = 
+    showCaseLemma (tyCons, (c:cons)) =
       let cs = "case caseVar of" ++ sp
-          sc b = showCons b c ++ (concat $ map (("   | " ++) 
+          sc b = showCons b c ++ (concat $ map (("   | " ++)
                                                 . (showCons b)) cons)
           clSome = sc True
           cl = sc False
           showCons b ((VName {new=cName}), args) =
-            let pat = cName ++ (concat $ map ((sp ++) . showArg) args) 
-                            ++ sp ++ "=>" ++ sp 
+            let pat = cName ++ (concat $ map ((sp ++) . showArg) args)
+                            ++ sp ++ "=>" ++ sp
                 term = showCaseTerm cName args
             in
                if b then pat ++ "Some" ++ sp ++ lb ++ term ++ rb ++ "\n"
                  else pat ++ term ++ "\n"
-          showCaseTerm name args = if null name then sa 
+          showCaseTerm name args = if null name then sa
                                      else [toLower (head name)] ++ sa
             where sa = (concat $ map ((sp ++) . showArg) args)
           showArg (TFree [] _) = "varName"
           showArg (TFree (n:ns) _) = [toLower n] ++ ns
           showArg (TVar v s) = showArg (TFree (unindexed v) s)
           showArg (Type [] _ _) = "varName"
-          showArg (Type m@(n:ns) _ s) = 
-            if m == "typeAppl" || m == "fun" || m == "*"  
+          showArg (Type m@(n:ns) _ s) =
+            if m == "typeAppl" || m == "fun" || m == "*"
                then concat $ map showArg s
                else [toLower n] ++ ns
           showName (TFree v _) = v

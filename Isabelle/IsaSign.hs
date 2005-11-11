@@ -27,12 +27,20 @@ type TName = String
 -- | names for values or constants (non-classes and non-types)
 data VName = VName
     { new :: String -- ^ name within Isabelle
-    , altSyn :: String  -- ^ alternative mixfix syntax
+    , altSyn :: Maybe AltSyntax  -- ^ mixfix template syntax
     } deriving Show
+
+data AltSyntax = AltSyntax String [Int] Int
+
+instance Show AltSyntax where
+    show (AltSyntax s is i) = show s ++ show is ++ show i
+
+mkVName :: String -> VName
+mkVName s = VName { new = s, altSyn = Nothing }
 
 -- | the original (Haskell) name
 orig :: VName -> String
-orig = new 
+orig = new
 
 instance Eq VName where
     v1 == v2 = new v1 == new v2
