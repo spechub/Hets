@@ -804,7 +804,9 @@ basicAnalysis mef anab anas mix dif (bs, inSig, ga) =
                bs) inSig { globAnnos = addAssocs inSig ga }
         ds = reverse $ envDiags accSig
         sents = reverse $ sentences accSig
-        cleanSig = accSig { envDiags = [], sentences = [], varMap = Map.empty }
+        cleanSig = accSig { envDiags = [], sentences = []
+                          , varMap = Map.empty
+                          , globAnnos = emptyGlobalAnnos }
         diff = diffSig cleanSig inSig
             { extendedInfo = dif (extendedInfo accSig) $ extendedInfo inSig }
     in Result ds $ Just (newBs, diff, cleanSig, sents)
