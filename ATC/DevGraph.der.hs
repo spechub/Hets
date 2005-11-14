@@ -9,7 +9,7 @@ Stability   :  provisional
 Portability :  portable
 
 derive 'ShATermConvertible' instance 
-  for the type(s): 'DGNodeLab' 'DGLinkLab' 'DGRule' 'BasicConsProof' 'ThmLinkStatus' 'DGLinkType' 'Conservativity' 'DGOrigin' 'NodeSig' 'MaybeNode' 'UnitSig' 'ImpUnitSigOrSig' 'ArchSig' 'GlobalEntry' 'SenStatus' 'DGChange'
+  for the type(s): 'DGNodeLab' 'DGLinkLab' 'DGRule' 'BasicConsProof' 'ThmLinkStatus' 'DGLinkType' 'Conservativity' 'DGOrigin' 'NodeSig' 'MaybeNode' 'UnitSig' 'ImpUnitSigOrSig' 'ArchSig' 'GlobalEntry' 'DGChange'
 
 instances for 'BasicProof' and 'G_theory' need to be given explicitely
 
