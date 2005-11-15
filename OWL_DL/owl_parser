@@ -18,6 +18,6 @@ done
 
 #CLASSPATH=$CLASSPATH:$LIBHOME$JUNIT/junit.jar:$LIBHOME/aterm-java-1.6.jar:$LIBHOME/log4j-1.2.7.jar:$LIBHOME/pellet.jar
 
-java -cp $CLASSPATH OWL2ATerm $* || exit $?
+java -cp $CLASSPATH:./OWLParser.jar OWL2ATerm $* || exit $?
 mv output.term ../
 cd -
