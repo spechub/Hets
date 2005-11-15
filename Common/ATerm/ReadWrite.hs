@@ -151,7 +151,7 @@ readTAF at str@(x:xs) tbl l
          (RTS at'' str''' tbl'' l'', ann) ->
            case addATermNoFullSharing (ShAAppl c kids ann) at'' of
            (at_t,ai) -> let l''' = l' + l''+ length c in
-              (RTS at_t str''' (condAddRElement ai l''' tbl'') l''', ai)
+              (RTS at_t str''' (condAddRElement ai l''' tbl'') (l + l'''), ai)
   | otherwise             = error $ error_saterm (take 6 str)
 readTAF _ [] _ _ = error "readTAF: empty string"
 
