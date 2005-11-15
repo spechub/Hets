@@ -111,53 +111,49 @@ readAnn at str       = ((at,[]),str)
 
 -- shared --
 
-readTAF :: ATermTable -> String
-        -> ReadTable -> Int -> (ReadTAFStruct, Int)
-readTAF at str@(x:xs) tbl l
+readTAF :: ATermTable -> String -> ReadTable -> Int -> (ReadTAFStruct, Int)
+readTAF at str tbl l = case readTAF' at str tbl of
+    (RTS at' str' tbl' l', eith) -> let l'' = l + l' in case eith of
+        Left i -> (RTS at' str' tbl' l'', i)
+        Right a -> case addATerm a at' of
+            (at'', i) ->
+                (RTS at'' str' (condAddRElement i l' tbl') l'', i)
+
+readTAF' :: ATermTable -> String -> ReadTable
+         -> (ReadTAFStruct, Either Int ShATerm)
+readTAF' at str@(x:xs) tbl
   | x == '#' =
     case spanAbbrevChar xs of
-    (i,str') -> (RTS at str' tbl (l+(length i)+1),
-           getATermIndex (getAbbrevTerm (deAbbrev i) at tbl) at)
+    (i,str') -> (RTS at str' tbl $ length i + 1,
+           Left $ getAbbrevTerm (deAbbrev i) tbl)
   | x == '[' =
         case readTAFs at ']' (dropSpaces xs) tbl 1 of
         (RTS at' str'  tbl'  l', kids) ->
-          case readAnnTAF at' (dropSpaces str') tbl' 0 of
-          (RTS at'' str'' tbl'' l'', ann)  ->
-           case addATermNoFullSharing (ShAList kids ann) at'' of
-                (at_t, ai) -> let l''' = l''+l' in
-                       (RTS at_t str'' (condAddRElement ai l''' tbl'')
-                        (l + l'''), ai)
+          case readAnnTAF at' (dropSpaces str') tbl' l' of
+          (rs, ann)  -> (rs, Right $ ShAList kids ann)
   | isIntHead x =
      case span isDigit xs of
-     (i,str') ->
-         case readAnnTAF at str' tbl 0 of
-         (RTS at' str'' tbl' l'', ann) ->
-           case readInteger (x:i) of
-           (intl, l') ->
-            case addATermNoFullSharing (ShAInt intl ann) at' of
-            (at_t, ai) -> let l''' = l''+l' in
-              (RTS at_t str'' (condAddRElement ai l''' tbl') (l + l'''), ai)
+     (i,str') -> let (intl, l') = readInteger $ x : i in
+         case readAnnTAF at (dropSpaces str') tbl l' of
+         (rs, ann) -> (rs, Right $ ShAInt intl ann)
   | isAlpha x || x=='"' || x=='(' || x == '_' || x == '*' || x == '+' =
      case readAFun str of
      (c,str') ->
-       case readParenTAFs at (dropSpaces str') tbl 0 of
+       case readParenTAFs at (dropSpaces str') tbl $ length c of
        (RTS at' str'' tbl' l', kids) ->
-         case readAnnTAF at' (dropSpaces str'') tbl' 0 of
-         (RTS at'' str''' tbl'' l'', ann) ->
-           case addATermNoFullSharing (ShAAppl c kids ann) at'' of
-           (at_t,ai) -> let l''' = l' + l''+ length c in
-              (RTS at_t str''' (condAddRElement ai l''' tbl'') (l + l'''), ai)
-  | otherwise             = error $ error_saterm (take 6 str)
-readTAF _ [] _ _ = error "readTAF: empty string"
+         case readAnnTAF at' (dropSpaces str'') tbl' l' of
+         (rs, ann) -> (rs, Right $ ShAAppl c kids ann)
+  | otherwise             = error $ error_saterm $ take 6 str
+readTAF' _ [] _ = error "readTAF: empty string"
 
-readParenTAFs :: ATermTable -> String -> ReadTable
-              -> Int -> (ReadTAFStruct, [Int])
-readParenTAFs at ('(':str) tbl l  =  readTAFs at ')'(dropSpaces str) tbl (l+1)
-readParenTAFs at str       tbl l  =  (RTS at str tbl l, [])
+readParenTAFs :: ATermTable -> String -> ReadTable -> Int
+              -> (ReadTAFStruct, [Int])
+readParenTAFs at ('(':str) tbl l = readTAFs at ')'(dropSpaces str) tbl $ l + 1
+readParenTAFs at str       tbl l = (RTS at str tbl l, [])
 
-readTAFs :: ATermTable -> Char -> String -> ReadTable
-         -> Int -> (ReadTAFStruct, [Int])
-readTAFs at par s@(p:str) tbl l | par == p  = (RTS at str tbl (l+1), [])
+readTAFs :: ATermTable -> Char -> String -> ReadTable -> Int
+         -> (ReadTAFStruct, [Int])
+readTAFs at par s@(p:str) tbl l | par == p  = (RTS at str tbl $ l + 1, [])
                                 | otherwise = readTAFs1 at par s tbl l
 readTAFs _ _ [] _ _ = error "readTAFs: empty string"
 
@@ -168,18 +164,18 @@ readTAFs1 at par str tbl l =
     (RTS at' str'  tbl'  l' , t) ->
       case readTAFs' at' par (dropSpaces str') tbl' l' of
       (RTS at'' str'' tbl'' l'', ts) ->
-              (RTS at'' str'' tbl'' l'', t:ts)
+              (RTS at'' str'' tbl'' l'', t : ts)
 
 readTAFs' :: ATermTable -> Char -> String -> ReadTable -> Int
-                        -> (ReadTAFStruct, [Int])
-readTAFs' at par (',':str) tbl l = readTAFs1 at par (dropSpaces str) tbl (l+1)
-readTAFs' at par s@(p:str) tbl l | par == p  = (RTS at str tbl (l+1), [])
-                                 | otherwise = error $ error_paren (take 6 s)
+          -> (ReadTAFStruct, [Int])
+readTAFs' at par (',':str) tbl l =
+    readTAFs1 at par (dropSpaces str) tbl $ l + 1
+readTAFs' at par s@(p:str) tbl l | par == p  = (RTS at str tbl $ l + 1, [])
+                                 | otherwise = error $ error_paren $ take 6 s
 readTAFs' _ _ [] _ _ = error "readTAFs': empty string"
 
-readAnnTAF :: ATermTable -> String -> ReadTable -> Int
-           -> (ReadTAFStruct, [Int])
-readAnnTAF at ('{':str) tbl l = readTAFs at '}' (dropSpaces str) tbl (l+1)
+readAnnTAF :: ATermTable -> String -> ReadTable -> Int -> (ReadTAFStruct, [Int])
+readAnnTAF at ('{':str) tbl l = readTAFs at '}' (dropSpaces str) tbl $ l + 1
 readAnnTAF at str       tbl l = (RTS at str tbl l, [])
 
 -- helpers --
@@ -209,7 +205,7 @@ spanNotQuote' (x:xs')   = case spanNotQuote' xs' of
 
 condAddRElement :: Int -> Int -> ReadTable -> ReadTable
 condAddRElement ai len tbl@(RTab abb_ai_map siz) =
-    if len > 7 || snd (abbrev siz) < len then
+    if snd (abbrev siz) < len then
        RTab (Map.insert siz ai abb_ai_map) (siz + 1)
     else tbl
 
@@ -364,9 +360,6 @@ parenthesiseAnnS s@(Doc_len d dl)
 -- Map: Abbrev     -> ATermIndex
 data ReadTable  = RTab (Map.Map Int Int) Int
 
--- 1st Map: ATermIndex -> Abbrev
--- TODO: implement 2nd Map as WriteCache
---         (sf::ShowS,length of String in sf::Int) .. done
 data WriteTable = WTab (Map.Map Int Doc_len) Int
 
 emptyRTable :: ReadTable
@@ -375,9 +368,8 @@ emptyRTable = RTab Map.empty 0
 emptyWTable :: WriteTable
 emptyWTable = WTab Map.empty 0
 
-getAbbrevTerm :: Int -> ATermTable -> ReadTable -> ShATerm
-getAbbrevTerm i at (RTab abb_ai_map _) =
-    getATerm $ getATermByIndex1 (abb_ai_map Map.! i) at
+getAbbrevTerm :: Int -> ReadTable -> Int
+getAbbrevTerm i (RTab abb_ai_map _) = abb_ai_map Map.! i
 
 --- Intger Read ---------------------------------------------------------------
 
