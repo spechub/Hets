@@ -186,7 +186,7 @@ instance (ShATermConvertible a, ShATermConvertible b, ShATermConvertible c,
            c' -> 
             case fromShATerm (getATermByIndex1 d att) of
             d' -> (a',b',c',d')
-        at -> fromShATermError "(a,b,c)" at
+        at -> fromShATermError "(a,b,c,d)" at
 
 instance ShATermConvertible Pos where
     toShATerm att0 (SourcePos a b c) =
