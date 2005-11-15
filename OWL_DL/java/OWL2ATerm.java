@@ -292,10 +292,10 @@ public class OWL2ATerm implements OWLValidationConstants {
 			ATerm ontologyID;
 			// Build ontology header
 			if (ontology.getURI() != null) {
-				ontologyID = factory.parse("Just(\""
+				ontologyID = factory.parse("J(\""
 						+ ontology.getURI().toString() + "\")");
 			} else {
-				ontologyID = factory.parse("Nothing");
+				ontologyID = factory.parse("N");
 			}
 
 			AFun axFun = factory.makeAFun("Ax", 1, false);

@@ -1,6 +1,5 @@
 import aterm.*;
 import aterm.pure.PureFactory;
-import java.io.PrintStream;
 import java.io.Writer;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -27,7 +26,7 @@ public class ATermRender2 implements Renderer, ShortFormProvider {
 		fcFun = factory.makeAFun("Fc", 1, false);
 		annoFun = factory.makeAFun("Anno", 1, false);
 		superFun = factory.makeAFun("Super", 1, false);
-		justFun = factory.makeAFun("Just", 1, false);
+		justFun = factory.makeAFun("J", 1, false);
 		visitor = new RenderingVisitor2(this, ontology);
 		try {
 			allURIs = OntologyHelper.allURIs(ontology);
@@ -61,8 +60,8 @@ public class ATermRender2 implements Renderer, ShortFormProvider {
 		ATermList descs = factory.makeList();
 		if (clazz.getURI() != null) {
 			classID = strToATermAppl(shortForm(clazz.getURI()));
-			dep = strToATermAppl1(clazz.isDeprecated(ontology) ? "true"
-					: "false");
+			dep = strToATermAppl1(clazz.isDeprecated(ontology) ? "T"
+					: "F");
 		}
 		if (!clazz.getAnnotations(ontology).isEmpty())
 			annos = makeAnno(clazz.getAnnotations().iterator());
@@ -155,7 +154,7 @@ public class ATermRender2 implements Renderer, ShortFormProvider {
 																	// of
 																	// getIncomingObjectPropertyValues?
 			if (!m.isEmpty())
-				indivID = strToATermAppl1("Nothing");
+				indivID = strToATermAppl1("N");
 			else
 				indivID = factory.makeAppl(justFun,
 						strToATermAppl(shortForm(ind.getURI())));
@@ -237,16 +236,16 @@ public class ATermRender2 implements Renderer, ShortFormProvider {
 			OWLObjectProperty prop) throws OWLException {
 		AFun opFun = factory.makeAFun("ObjectProperty", 9, false);
 		ATermAppl indivID = strToATermAppl(shortForm(prop.getURI()));
-		ATermAppl function = strToATermAppl1("Nothing");
+		ATermAppl function = strToATermAppl1("N");
 		ATermAppl symmetric = strToATermAppl("");
-		ATermAppl inverseOf = strToATermAppl1("Nothing");
+		ATermAppl inverseOf = strToATermAppl1("N");
 		ATermList superList = emptyList;
 		ATermList domainList = emptyList;
 		ATermList rangeList = emptyList;
 		ATermList annoList = emptyList;
 		annoList = makeAnno(prop.getAnnotations().iterator());
-		ATermAppl deprecated = prop.isDeprecated(ontology) ? strToATermAppl1("true")
-				: strToATermAppl1("false");
+		ATermAppl deprecated = prop.isDeprecated(ontology) ? strToATermAppl1("T")
+				: strToATermAppl1("F");
 		if (prop.isInverseFunctional(ontology) && prop.isFunctional(ontology))
 			function = factory.makeAppl(justFun,
 					strToATermAppl1("Functional_InverseFunctional"));
@@ -257,8 +256,8 @@ public class ATermRender2 implements Renderer, ShortFormProvider {
 		else if (prop.isInverseFunctional(ontology))
 			function = factory.makeAppl(justFun,
 					strToATermAppl1("InverseFunctional"));
-		symmetric = prop.isSymmetric(ontology) ? strToATermAppl1("true")
-				: strToATermAppl1("false");
+		symmetric = prop.isSymmetric(ontology) ? strToATermAppl1("T")
+				: strToATermAppl1("F");
 		for (Iterator it = prop.getInverses(ontology).iterator(); it.hasNext();) {
 			OWLObjectProperty inv = (OWLObjectProperty) (OWLObjectProperty) it
 					.next();
@@ -306,8 +305,8 @@ public class ATermRender2 implements Renderer, ShortFormProvider {
 		AFun dtpFun = factory.makeAFun("DatatypeProperty", 7, false);
 		ATermAppl dvpID = strToATermAppl(shortForm(prop.getURI()));
 		ATermList annoList = emptyList;
-		ATermAppl deprecated = strToATermAppl1("false");
-		ATermAppl functional = strToATermAppl1("false");
+		ATermAppl deprecated = strToATermAppl1("F");
+		ATermAppl functional = strToATermAppl1("F");
 		ATermList superList = emptyList;
 		ATermList domainList = emptyList;
 		ATermList rangeList = emptyList;
@@ -315,9 +314,9 @@ public class ATermRender2 implements Renderer, ShortFormProvider {
 			annoList = makeAnno(it);
 
 		if (prop.isDeprecated(ontology))
-			deprecated = strToATermAppl1("true");
+			deprecated = strToATermAppl1("T");
 		if (prop.isFunctional(ontology))
-			functional = strToATermAppl1("true");
+			functional = strToATermAppl1("T");
 		for (Iterator it = prop.getSuperProperties(ontology).iterator(); it
 				.hasNext();) {
 			OWLObjectProperty sup = (OWLObjectProperty) (OWLObjectProperty) it
@@ -356,8 +355,8 @@ public class ATermRender2 implements Renderer, ShortFormProvider {
 	public ATermAppl renderDataType(OWLOntology ontology, OWLDataType datatype)
 			throws OWLException {
 		AFun dataTypeFun = factory.makeAFun("DataType", 3, false);
-		ATermAppl isdep = datatype.isDeprecated(ontology) ? strToATermAppl1("true")
-				: strToATermAppl1("false");
+		ATermAppl isdep = datatype.isDeprecated(ontology) ? strToATermAppl1("T")
+				: strToATermAppl1("F");
 		ATermList annos = makeAnno(datatype.getAnnotations(ontology).iterator());
 		ATermAppl result = factory.makeAppl(dataTypeFun,
 				strToATermAppl(shortForm(datatype.getURI())), isdep, annos);
