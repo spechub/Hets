@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Klaus LÃ¼ttich, Heng Jiang, Uni Bremen 2002-2005
+Copyright   :  (c) Klaus Lüttich, Heng Jiang, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luettich@tzi.de
@@ -77,11 +77,13 @@ graphFromMap uri onto (ontoMap, dg) =
 
         morphism = idComorphism (Logic OWL_DL) 
         Result _ (Just comorphism) = 
-            gEmbedComorphism morphism (G_sign OWL_DL currentSign)       
+            gEmbedComorphism morphism (G_sign OWL_DL currentSign) 
+        -- TODO: check if gEmbed (Logic.Grothendieck) and G_morphism 
+        -- works better
         ledgeList = map (\y -> 
                              let (indT, _) = y
                              in (ind, indT, DGLink { dgl_morphism = comorphism,
-                                                     dgl_type = GlobalDef,
+                                                     dgl_type = LocalDef,
                                                      dgl_origin = DGImports
                                                    })
                         ) tagLNodes
