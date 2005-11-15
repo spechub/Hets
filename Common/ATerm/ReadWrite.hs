@@ -315,24 +315,17 @@ dlConcat s1@(Doc_len sf1 sl1) s2@(Doc_len sf2 sl2)
     | otherwise = Doc_len (sf1 <> sf2) (sl1 + sl2)
 
 dlConcat_comma :: Doc_len -> Doc_len -> Doc_len         
-dlConcat_comma d1 d2 = 
-    case dlConcat d1 d2 of
-    Doc_len d l -> Doc_len (d <> comma) (l + 1)
+dlConcat_comma (Doc_len sf1 sl1) (Doc_len sf2 sl2) =
+    Doc_len (sf1 <> comma <> sf2) (sl1 + sl2 + 1)
 
 -- produce a String function with a comma seperated string converted ATerms
 writeTAFs :: ATermTable -> [Int] -> WriteTable -> Write_struct
-writeTAFs _  [] tbl = (WS tbl $ Doc_len empty 0)
-writeTAFs at inds tbl = writeTAFs' inds (WS tbl $ Doc_len empty 0)
-    where writeTAFs' :: [Int] -> Write_struct -> Write_struct
-          writeTAFs' [] _ = error "not reachable"
-          writeTAFs' [i] (WS t s) = 
-              case  wT t i of
-              (WS t' s') -> WS t' (dlConcat s s')
-          writeTAFs' (i:is) (WS t s) = 
-              case  wT t i of
-              (WS t' s') -> writeTAFs' is (WS t' (dlConcat_comma s s'))
-          wT :: WriteTable -> Int -> Write_struct
-          wT t i = writeTAF (getATermByIndex1 i at) t
+writeTAFs at inds tbl = case inds of
+    [] -> WS tbl $ Doc_len empty 0
+    i : is -> case writeTAF (getATermByIndex1 i at) tbl of
+              ws@(WS t1 s1) -> if null is then ws
+                else case writeTAFs at is t1 of 
+                       WS t2 s2 -> WS t2 $ dlConcat_comma s1 s2
 
 integerDoc :: Integer -> Doc_len
 integerDoc i = let s = show i in Doc_len (text s) $ length s
