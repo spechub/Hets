@@ -49,7 +49,7 @@ data ATermTable = ATT !(Map.Map ShATerm Int) !IntMap !Int
 toReadonlyATT :: ATermTable -> ATermTable
 toReadonlyATT (ATT s t i) = ATT s 
     (case t of 
-     Updateable m -> Readonly $ array (0, i) $ DMap.toList m 
+     Updateable m -> Readonly $ listArray (0, i) $ DMap.elems m 
      _ -> t ) i 
 
 emptyATermTable :: ATermTable
