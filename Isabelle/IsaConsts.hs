@@ -123,18 +123,18 @@ conSome = conDouble someS
 
 -- | defOp constant
 defOp :: Term
-defOp = conDouble"defOp"
+defOp = conDouble "defOp"
 
 -- | not constant
 notOp :: Term
-notOp = conDouble "Not"
+notOp = conDouble "\\<not>"
 
 -- * quantor strings
 
 allS, exS, ex1S :: String
-allS = "All"
-exS = "Ex"
-ex1S = "Ex1"
+allS = "!"
+exS = "?"
+ex1S = "?!"
 
 -- * strings of binary ops
 
