@@ -31,7 +31,6 @@ import Data.Graph.Inductive.Graph
 import Syntax.AS_Structured hiding (View_defn, Spec_defn)
 import Syntax.AS_Library
 import Static.DevGraph
-import Static.PrintDevGraph
 import Static.AnalysisStructured
 import Static.AnalysisArchitecture
 import Comorphisms.LogicGraph
@@ -61,10 +60,8 @@ anaLib opts file = do
         Nothing -> return res
         Just (ln, lenv) -> case Map.lookup ln lenv of
               Nothing -> return res
-              Just gctx@(ga, ge, _) -> do
+              Just (ga, ge, _) -> do
                   writeSpecFiles opts file lenv ga (ln, ge)
-                  putIfVerbose opts 5 $ show $
-                                printLibrary lenv (ln, gctx)
                   putIfVerbose opts 3 $ showPretty ga ""
                   return res
 
