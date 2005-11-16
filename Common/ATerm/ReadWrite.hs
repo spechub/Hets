@@ -51,7 +51,7 @@ data ReadTAFStruct = RTS ATermTable
 
 readATerm :: String -> ATermTable
 readATerm ('!':str)     =
-    case readTAF emptyATermTable str emptyRTable 0 of
+    case readTAF emptyATermTable str emptyRTable of
     (RTS at _ _rt _l, _) -> toReadonlyATT at
 readATerm str           =
     fst $ fst $ readAT emptyATermTable (dropSpaces str)
@@ -111,13 +111,13 @@ readAnn at str       = ((at,[]),str)
 
 -- shared --
 
-readTAF :: ATermTable -> String -> ReadTable -> Int -> (ReadTAFStruct, Int)
-readTAF at str tbl l = case readTAF' at str tbl of
-    (RTS at' str' tbl' l', eith) -> let l'' = l + l' in case eith of
-        Left i -> (RTS at' str' tbl' l'', i)
+readTAF :: ATermTable -> String -> ReadTable -> (ReadTAFStruct, Int)
+readTAF at str tbl = case readTAF' at str tbl of
+    (rs@(RTS at' str' tbl' l'), eith) -> case eith of
+        Left i -> (rs, i)
         Right a -> case addATerm a at' of
             (at'', i) ->
-                (RTS at'' str' (condAddRElement i l' tbl') l'', i)
+                (RTS at'' str' (condAddRElement i l' tbl') l', i)
 
 readTAF' :: ATermTable -> String -> ReadTable
          -> (ReadTAFStruct, Either Int ShATerm)
@@ -160,9 +160,9 @@ readTAFs _ _ [] _ _ = error "readTAFs: empty string"
 readTAFs1 :: ATermTable -> Char -> String -> ReadTable -> Int
           -> (ReadTAFStruct, [Int])
 readTAFs1 at par str tbl l =
-    case  readTAF at (dropSpaces str) tbl l of
+    case  readTAF at (dropSpaces str) tbl of
     (RTS at' str'  tbl'  l' , t) ->
-      case readTAFs' at' par (dropSpaces str') tbl' l' of
+      case readTAFs' at' par (dropSpaces str') tbl' $ l + l' of
       (RTS at'' str'' tbl'' l'', ts) ->
               (RTS at'' str'' tbl'' l'', t : ts)
 
@@ -205,16 +205,16 @@ spanNotQuote' (x:xs')   = case spanNotQuote' xs' of
 
 condAddRElement :: Int -> Int -> ReadTable -> ReadTable
 condAddRElement ai len tbl@(RTab abb_ai_map siz) =
-    if snd (abbrev siz) < len then
+    if abbrevSize siz < len then
        RTab (Map.insert siz ai abb_ai_map) (siz + 1)
     else tbl
 
 condAddWElement :: Int -> Int -> WriteTable -> WriteTable
 condAddWElement ai len tbl@(WTab ai_abb_map siz) =
-    let da@(Doc_len _ doclen) = abbrevD siz in
-    if doclen < len then
-       WTab (Map.insert ai da ai_abb_map) $ siz + 1
-    else tbl
+    case abbrevD siz of 
+      da@(Doc_len _ docLen) -> if docLen < len 
+          then WTab (Map.insert ai da ai_abb_map) $ siz + 1
+          else tbl
 
 --- From ATerm to String  -----------------------------------------------------
 
@@ -271,7 +271,6 @@ writeTAF at tbl@(WTab ai_abb_map _) = let i = getTopIndex at in
     Nothing  -> case writeTAF' at tbl of
                 (WS tbl' d_len@(Doc_len _ len)) ->
                     WS (condAddWElement i len tbl') d_len
-          -- risking a faulty writeTAF' implementation
 
 writeTAF' :: ATermTable -> WriteTable -> Write_struct
 writeTAF' at tbl =
@@ -379,22 +378,31 @@ readInteger s = case s of
                          (m, l) -> (negate m, l + 1)
                          else conv s
                   _ -> error "readInteger"
-    where f (m, l) x = (toInteger (ord x - ord '0') + 10 * m, l + 1)
+    where f (m, l) x = (toInteger (digitToInt x) + 10 * m, l + 1)
           conv = foldl f (0, 0)
 
 --- Base 64 encoding ----------------------------------------------------------
 
-mkAbbrev :: Int -> (String, Int)
-mkAbbrev x
-  | x > 0       = mkAbbrevAux x "" 1
-  | x == 0      = ("A", 2)
-  | otherwise   = error ("mkAbbrev: negative Int "++ show x)
+abbrevD :: Int -> Doc_len
+abbrevD i = Doc_len (text $ abbrev i) $ abbrevSize i
 
-mkAbbrevAux :: Int -> String -> Int -> (String, Int)
-mkAbbrevAux x str l =
+abbrev :: Int -> String
+abbrev i = '#' : mkAbbrev i
+
+mkAbbrev :: Int -> String
+mkAbbrev x = if x > 0 then mkAbbrevAux x "" else "A" 
+
+mkAbbrevAux :: Int -> String -> String
+mkAbbrevAux x str =
   if x > 0 then case quotRem x 64 of
-         (d, m) -> mkAbbrevAux d (toBase64Char m : str) (l + 1)
-  else (str, l)
+         (d, m) -> mkAbbrevAux d $ toBase64Char m : str
+  else str
+
+abbrevSizeAux :: Int -> Int
+abbrevSizeAux x = if x > 0 then 1 + abbrevSizeAux (quot x 64) else 0
+
+abbrevSize :: Int -> Int 
+abbrevSize x = if x < 64 then 2 else 1 + abbrevSizeAux x
 
 deAbbrev :: [Char] -> Int
 deAbbrev =  let f m c = 64 * m + toBase64Int c in foldl f 0
@@ -411,32 +419,31 @@ toBase64 =
 
 toBase64Int :: Char -> Int
 toBase64Int c
-    | c >= 'A' && c <= 'Z' = ord c - ord 'A'
-    | c >= 'a' && c <= 'z' = ord c - ord 'a' + 26
-    | isDigit c = ord c - ord '0' + 52
+    | isUpper c = ord c - ordA
+    | isLower c = ord c - orda_26
+    | isDigit c = ord c + mord0_52
     | c == '+' = 62
-    | c == '/' = 63
-    | otherwise = error "toBase64Int"
+    | otherwise = 63 -- '/'
+
+ordA :: Int
+ordA = ord 'A'
+
+orda_26 :: Int
+orda_26 = ord 'a' - 26
+
+mord0_52 :: Int
+mord0_52 = 52 - ord '0'
 
 toBase64Char :: Int -> Char
 toBase64Char i
-    | i < 26 = chr (ord 'A' + i)
-    | i < 52 = chr (ord 'a' + i - 26)
-    | i < 62 = chr (ord '0' + i - 52)
+    | i < 26 = chr (ordA + i)
+    | i < 52 = chr (orda_26 + i)
+    | i < 62 = chr (i - mord0_52)
     | i == 62 = '+'
-    | i == 63 = '/'
-    | otherwise = error "toBase64Char"
+    | otherwise = '/' -- 63
 
 isBase64Char :: Char -> Bool
 isBase64Char c = isAscii c && (isAlphaNum c || c == '+' || c == '/')
-
--- helpers --
-
-abbrevD :: Int -> Doc_len
-abbrevD i = case abbrev i of (abbStr, len) -> Doc_len (text abbStr) len
-
-abbrev :: Int -> (String, Int)
-abbrev i = case mkAbbrev i of (str, l) -> ('#' : str, l)
 
 -- error messages --------------------
 
