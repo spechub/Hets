@@ -117,12 +117,8 @@ addBuiltins ga =
 
 mkPrecIntMap :: Rel.Rel Id -> PrecMap
 mkPrecIntMap r = 
-    let t = Rel.topSort r
-        l = length t
-        m = foldr ( \ (n, s) m1 -> 
-                    Set.fold ( \ i m2 -> Map.insert i n m2)  m1 s)
-                 Map.empty $ zip [1..l] t
-        in (m, m Map.! eqId, l)
+    let (m, t) = Rel.toPrecMap r
+        in (m, m Map.! eqId, t)
 
 aVar :: Id
 aVar = simpleIdToId $ mkSimpleId "a"

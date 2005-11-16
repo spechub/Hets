@@ -30,16 +30,15 @@ for plain maps involving sets.
 
 -}
 
-module Common.Lib.Rel (Rel(), empty, null,
-                       insert, member, toMap, map,
-                       union , isSubrelOf, difference, path, delete,
-                       succs, predecessors, irreflex, sccOfClosure,
-                       transClosure, fromList, toList, image,
-                       intransKernel, mostRight,
-                       restrict, toSet, fromSet, topSort, nodes,
-                       transpose, transReduce, setInsert, keysSet,
-                       haveCommonLeftElem, fromDistinctMap,
-                       locallyFiltered, flatSet, partSet) where
+module Common.Lib.Rel 
+    ( Rel(), empty, null, insert, member, toMap, map
+    , union , isSubrelOf, difference, path, delete
+    , succs, predecessors, irreflex, sccOfClosure
+    , transClosure, fromList, toList, image, toPrecMap
+    , intransKernel, mostRight, restrict, toSet, fromSet, topSort, nodes
+    , transpose, transReduce, setInsert, keysSet
+    , haveCommonLeftElem, fromDistinctMap, locallyFiltered, flatSet, partSet
+    ) where
 
 import Prelude hiding (map, null)
 import qualified Common.Lib.Map as Map
@@ -217,6 +216,13 @@ keysSet = Set.fromDistinctAscList . Map.keys
 
 elemsSet :: Ord a => Map.Map a (Set.Set a) -> Set.Set a
 elemsSet = Set.unions . Map.elems
+
+{- | Construct a precedence map from a closed relation. Indices range
+   between 1 and the second value that is output. -}
+toPrecMap :: Ord a =>  Rel a -> (Map.Map a Int, Int)
+toPrecMap r = foldl ( \ (m1, c) s -> let n = c + 1 in
+                    (Set.fold ( \ i -> Map.insert i n) m1 s, n))
+                 (Map.empty, 0) $ topSort r
 
 topSortDAG :: Ord a => Rel a -> [Set.Set a]
 topSortDAG r@(Rel m) = if Map.null m then [] else
