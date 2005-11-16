@@ -459,9 +459,9 @@ dtyp sig t = elem t $
 
 -- | show alternative syntax (computed by comorphisms)
 printAlt :: VName -> Doc
-printAlt VName { altSyn = altV } = case altV of
+printAlt (VName _ altV) = case altV of
     Nothing -> empty
-    Just altS -> parens $ text $ show altS
+    Just (AltSyntax s _is _i) -> parens $ doubleQuotes (text s)
 
 instance PrettyPrint Sign where
   printText0 _ sig = text (showBaseSig $ baseSig sig) <> colon $++$
@@ -476,7 +476,7 @@ instance PrettyPrint Sign where
     printConstTab tab = if Map.null tab then empty else text "consts"
                         $$ vcat (map printConst $ Map.toList tab)
     printConst (vn, t) = text (new vn) <+> doubleColon <+>
-                          doubleQuotes (printType t) -- <+> printAlt vn
+                          doubleQuotes (printType t) <+> printAlt vn
     isDomain = case baseSig sig of
                HOLCF_thy -> True
                HsHOLCF_thy -> True

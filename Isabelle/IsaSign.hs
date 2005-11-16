@@ -30,10 +30,7 @@ data VName = VName
     , altSyn :: Maybe AltSyntax  -- ^ mixfix template syntax
     } deriving Show
 
-data AltSyntax = AltSyntax String [Int] Int
-
-instance Show AltSyntax where
-    show (AltSyntax s is i) = show s ++ show is ++ show i
+data AltSyntax = AltSyntax String [Int] Int deriving Show
 
 mkVName :: String -> VName
 mkVName s = VName { new = s, altSyn = Nothing }
