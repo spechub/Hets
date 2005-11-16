@@ -48,18 +48,17 @@ toAltSyntax _ga i = let
     newPlace = "/ _"
     hd : tl = getTokenList newPlace i
     convert = \ Token { tokStr = s } -> if s == newPlace then s
-                         else quote_underscores s
+                         else quote s
     in if isMixfix i then Just $ AltSyntax
-    ((if begPlace i then "_ " else convert hd) ++ concatMap convert tl)
+    ('(' : (if begPlace i then "_ " else convert hd) 
+     ++ concatMap convert tl ++ ")")
     (replicate (placeCount i) 0) 999
     else Nothing
 
-quote_underscores :: String -> String
-quote_underscores l = case l of
+quote :: String -> String
+quote l = case l of
     [] -> l
-    c : r -> (case c of
-                '_' -> "'_"
-                _ -> [c]) ++ quote_underscores r
+    c : r -> (if c `elem` "_/'" then '\'' : [c] else [c]) ++ quote r
 
 showIsaT1 :: (String -> String) -> Id -> String
 showIsaT1 tr ide = let
