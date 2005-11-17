@@ -127,7 +127,7 @@ defOp = conDouble "defOp"
 
 -- | not constant
 notOp :: Term
-notOp = conDouble "\\<not>"
+notOp = conDouble "~"
 
 -- * quantor strings
 
