@@ -19,9 +19,11 @@ module Isabelle.Translate
 import Common.Id
 import Common.ProofUtils
 import Common.GlobalAnnotations
+import Common.AS_Annotation
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
+import qualified Common.Lib.Rel as Rel
 import Data.Char
 
 import Isabelle.IsaSign
@@ -44,15 +46,32 @@ isaPrelude = IsaPreludes {
    (Main_thy,  consts mainS), (HOLCF_thy, consts holcfS)]}
 
 toAltSyntax :: GlobalAnnos -> Id -> Maybe AltSyntax
-toAltSyntax _ga i = let
+toAltSyntax ga i = let
+    (precMap, mx) = Rel.toPrecMap $ prec_annos ga
+    minPrec = 42
+    adjustPrec p = 2 * p + minPrec
     newPlace = "/ _"
+    minL = replicate (placeCount i) minPrec
+    minL1 = tail minL
+    minL2 = tail minL1
     hd : tl = getTokenList newPlace i
     convert = \ Token { tokStr = s } -> if s == newPlace then s
                          else quote s
+    (precList, erg) = if isInfix i then case Map.lookup i precMap of
+        Just p -> let 
+            q = adjustPrec p  
+            (l, r) = case Map.lookup i $ assoc_annos ga of
+                 Nothing -> (q, q)
+                 Just ALeft -> (q, q + 1)
+                 Just ARight -> (q + 1, q)
+            in (l : minL2 ++ [r], q)
+        Nothing -> let q = adjustPrec $ mx + 1 in (q : minL2 ++ [q], minPrec)
+      else if begPlace i then let q = adjustPrec $ mx + 3 in (q : minL1 , q)
+      else if endPlace i then let q = adjustPrec $ mx + 2 in (minL1 ++ [q], q)
+      else (minL, adjustPrec $ mx + 4)
     in if isMixfix i then Just $ AltSyntax
     ('(' : (if begPlace i then "_ " else convert hd) 
-     ++ concatMap convert tl ++ ")")
-    (replicate (placeCount i) 0) 999
+     ++ concatMap convert tl ++ ")") precList erg
     else Nothing
 
 quote :: String -> String
