@@ -35,10 +35,12 @@ basicOWL_DLAnalysis (ontology@(Ontology oName _ ns), inSign, ga) =
         (integNamespace, transMap) = 
             integrateNamespaces (namespaceMap inSign) ns
         ontology' = renameNamespace transMap ontology
-        Result diags2 (Just (onto, accSign, namedSen)) = 
-            anaOntology (inSign {namespaceMap = integNamespace}) ontology'
-        diffSign = diffSig accSign inSign
-    in  Result (diags1 ++ diags2) $ Just (onto, diffSign, accSign, namedSen)
+    in  case anaOntology (inSign {namespaceMap = integNamespace}) ontology' of
+        Result diags2 (Just (onto, accSign, namedSen)) ->
+          let diffSign = diffSig accSign inSign
+          in  Result (diags1 ++ diags2) $ 
+                        Just (onto, diffSign, accSign, namedSen)
+        _        -> error "unknow error in static analysis. Pleas try again."
    
   where -- static analysis with changed namespace base of inSign.
         anaOntology :: Sign -> Ontology
