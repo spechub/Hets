@@ -101,6 +101,7 @@ writeFileSDoc :: FilePath -> SDoc -> IO ()
 writeFileSDoc fp sd =
      do h <- openFile fp WriteMode
         fullRender (hPutStr h) (>>) sd
+        hPutStrLn h ""
         hClose h
 
 render doc       = showSDoc doc ""
