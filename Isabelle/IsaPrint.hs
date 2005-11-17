@@ -461,7 +461,8 @@ dtyp sig t = elem t $
 printAlt :: VName -> Doc
 printAlt (VName _ altV) = case altV of
     Nothing -> empty
-    Just (AltSyntax s _is _i) -> parens $ doubleQuotes (text s)
+    Just (AltSyntax s is i) -> parens $ doubleQuotes (text s)
+                               <+> text (show is) <+> text (show i)
 
 instance PrettyPrint Sign where
   printText0 _ sig = text (showBaseSig $ baseSig sig) <> colon $++$
