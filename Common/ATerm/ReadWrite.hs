@@ -13,13 +13,14 @@ module Common.ATerm.ReadWrite (
 
         readATerm,       -- :: String -> ATermTable
         writeATerm,      -- :: ATermTable -> String
+        writeATermSDoc,  -- :: ATermTable -> SDoc
         writeSharedATerm,-- :: ATermTable -> String
         writeSharedATermSDoc -- :: ATermTable -> SDoc
 ) where
 
 {-
         Author: Joost Visser, CWI, 2002
-        Changed by: Klaus Luettich & Felix Reckers, 2002-2003
+        Changed by: Klaus Luettich & Felix Reckers, 2002-2003, C. Maeder 2005
 
         This module contains functions for reading and writing ATerms
         from and to Strings. Two ATerm formats are supported:
@@ -50,66 +51,16 @@ data ReadTAFStruct = RTS ATermTable
                          Int -- length of ATerm as String
 
 readATerm :: String -> ATermTable
-readATerm ('!':str)     =
+readATerm = readATerm' . dropWhile ( \ c -> isSpace c || c == '!')
+
+readATerm' :: String -> ATermTable
+readATerm' str =
     case readTAF emptyATermTable str emptyRTable of
-    (RTS at _ _rt _l, _) -> toReadonlyATT at
-readATerm str           =
-    fst $ fst $ readAT emptyATermTable (dropSpaces str)
+    (RTS at rt _ _, _) -> case dropSpaces rt of 
+       [] -> toReadonlyATT at
+       s -> error $ "garbage following aterm: " ++ take 10 s 
 
--- non-shared --
-
-readAT :: ATermTable -> String -> ((ATermTable,Int),String)
-readAT at ('[':str)        =  let ((at',kids), str') = readATs at ']'
-                                                       (dropSpaces str)
-                                  ((at'',ann), str'')= readAnn at'
-                                                       (dropSpaces str')
-                              in (addATerm (ShAList kids ann) at'', str'')
-readAT at str@(c:cs)
-  | isIntHead c            =  let (i,str') = span isDigit cs
-                                  ((at',ann), str'') = readAnn at
-                                                       (dropSpaces str')
-                              in (addATerm (ShAInt (read (c:i)) ann) at',str'')
-  | c=='(' || isAFunChar c || c=='"' =
-             let (c',str') = readAFun str
-                 ((at',kids), str'')  = readParenATs at (dropSpaces str')
-                 ((at'',ann), str''') = readAnn at' (dropSpaces str'')
-             in (addATerm (ShAAppl c' kids ann) at'', str''')
-  | otherwise              = error $ error_aterm (take 6 str)
-readAT _ []                = error "readATerm: empty string"
-
-
-readAFun :: String -> (String,String)
-readAFun ('"':str)      =  let (c, str') = spanNotQuote' str
-                           in ('"' : c, str')
-readAFun str            =  spanAFunChar str
-
-readParenATs :: ATermTable -> String -> ((ATermTable,[Int]),String)
-readParenATs at ('(':str) =  readATs at ')' (dropSpaces str)
-readParenATs at str       =  ((at,[]),str)
-
-readATs :: ATermTable -> Char -> String -> ((ATermTable,[Int]),String)
-readATs at par s@(p:str)  | par == p   = ((at,[]),str)
-                          | otherwise  = readATs1 at par s
-readATs _ _ [] = error "readATs: empty string"
-
-readATs1 :: ATermTable -> Char -> String -> ((ATermTable,[Int]),String)
-readATs1 at par str     =  let ((at',t),str')    = readAT   at
-                                                   (dropSpaces str)
-                               ((at'',ts),str'') = readATs' at' par
-                                                   (dropSpaces str')
-                           in ((at'',t:ts),str'')
-
-readATs' :: ATermTable -> Char -> String -> ((ATermTable,[Int]),String)
-readATs' at par (',':str)  = readATs1 at par (dropSpaces str)
-readATs' at par s@(p:str)  | par == p  = ((at,[]),str)
-                           | otherwise = error (error_paren (take 6 s))
-readATs' _ _ [] = error "readATs': empty string"
-
-readAnn :: ATermTable -> String -> ((ATermTable,[Int]),String)
-readAnn at ('{':str) = readATs at '}' (dropSpaces str)
-readAnn at str       = ((at,[]),str)
-
--- shared --
+-- non-shared is a special case of shared
 
 readTAF :: ATermTable -> String -> ReadTable -> (ReadTAFStruct, Int)
 readTAF at str tbl = case readTAF' at str tbl of
@@ -119,94 +70,95 @@ readTAF at str tbl = case readTAF' at str tbl of
             (at'', i) ->
                 (RTS at'' str' (condAddRElement i l' tbl') l', i)
 
-readTAF' :: ATermTable -> String -> ReadTable
+readTAF' :: ATermTable -> String -> ReadTable 
          -> (ReadTAFStruct, Either Int ShATerm)
-readTAF' at str@(x:xs) tbl
-  | x == '#' =
-    case spanAbbrevChar xs of
-    (i,str') -> (RTS at str' tbl $ length i + 1,
-           Left $ getAbbrevTerm (deAbbrev i) tbl)
-  | x == '[' =
-        case readTAFs at ']' (dropSpaces xs) tbl 1 of
-        (RTS at' str'  tbl'  l', kids) ->
+readTAF' at str tbl = case str of
+  '#' : xs -> case spanAbbrevChar xs of
+      (i, str') -> (RTS at str' tbl $ length i + 1, 
+                    Left $ getAbbrevTerm (deAbbrev i) tbl)
+  '[' : _ -> case readParTAFs '[' ']' at str tbl 0 of
+      (RTS at' str'  tbl'  l', kids) ->
           case readAnnTAF at' (dropSpaces str') tbl' l' of
-          (rs, ann)  -> (rs, Right $ ShAList kids ann)
-  | isIntHead x =
-     case span isDigit xs of
-     (i,str') -> let (intl, l') = readInteger $ x : i in
-         case readAnnTAF at (dropSpaces str') tbl l' of
-         (rs, ann) -> (rs, Right $ ShAInt intl ann)
-  | isAlpha x || x=='"' || x=='(' || x == '_' || x == '*' || x == '+' =
-     case readAFun str of
-     (c,str') ->
-       case readParenTAFs at (dropSpaces str') tbl $ length c of
-       (RTS at' str'' tbl' l', kids) ->
-         case readAnnTAF at' (dropSpaces str'') tbl' l' of
-         (rs, ann) -> (rs, Right $ ShAAppl c kids ann)
-  | otherwise             = error $ error_saterm $ take 6 str
-readTAF' _ [] _ = error "readTAF: empty string"
+            (rs, ann) -> (rs, Right $ ShAList kids ann)
+  x : xs | isIntHead x -> case span isDigit xs of
+      (i, str') -> let (intl, l') = readInteger $ x : i in
+          case readAnnTAF at (dropSpaces str') tbl l' of
+            (rs, ann) -> (rs, Right $ ShAInt intl ann)
+  _ -> case readAFun str of
+      (c, str') -> case readParenTAFs at (dropSpaces str') tbl $ length c of
+          (RTS at' str'' tbl' l', kids) ->
+              case readAnnTAF at' (dropSpaces str'') tbl' l' of
+                (rs, ann) -> (rs, Right $ ShAAppl c kids ann)
 
 readParenTAFs :: ATermTable -> String -> ReadTable -> Int
               -> (ReadTAFStruct, [Int])
-readParenTAFs at ('(':str) tbl l = readTAFs at ')'(dropSpaces str) tbl $ l + 1
-readParenTAFs at str       tbl l = (RTS at str tbl l, [])
+readParenTAFs = readParTAFs '(' ')'
 
-readTAFs :: ATermTable -> Char -> String -> ReadTable -> Int
+readParTAFs :: Char -> Char -> ATermTable -> String -> ReadTable -> Int
+              -> (ReadTAFStruct, [Int])
+readParTAFs op cp at str tbl l = case str of
+    p : r | op == p -> readTAFs0 at cp (dropSpaces r) tbl $ l + 1
+    _ -> (RTS at str tbl l, [])
+
+readTAFs0 :: ATermTable -> Char -> String -> ReadTable -> Int
          -> (ReadTAFStruct, [Int])
-readTAFs at par s@(p:str) tbl l | par == p  = (RTS at str tbl $ l + 1, [])
-                                | otherwise = readTAFs1 at par s tbl l
-readTAFs _ _ [] _ _ = error "readTAFs: empty string"
+readTAFs0 at par str tbl l = case str of 
+    p : r | par == p -> (RTS at r tbl $ l + 1, [])
+    _ -> readTAFs1 at par str tbl l 
 
 readTAFs1 :: ATermTable -> Char -> String -> ReadTable -> Int
           -> (ReadTAFStruct, [Int])
 readTAFs1 at par str tbl l =
-    case  readTAF at (dropSpaces str) tbl of
-    (RTS at' str'  tbl'  l' , t) ->
-      case readTAFs' at' par (dropSpaces str') tbl' $ l + l' of
-      (RTS at'' str'' tbl'' l'', ts) ->
-              (RTS at'' str'' tbl'' l'', t : ts)
+    case readTAF at (dropSpaces str) tbl of
+      (RTS at' str'  tbl'  l', t) ->
+          case readTAFs2 at' par (dropSpaces str') tbl' $ l + l' of
+            (RTS at'' str'' tbl'' l'', ts) -> 
+                (RTS at'' str'' tbl'' l'', t : ts)
 
-readTAFs' :: ATermTable -> Char -> String -> ReadTable -> Int
+readTAFs2 :: ATermTable -> Char -> String -> ReadTable -> Int
           -> (ReadTAFStruct, [Int])
-readTAFs' at par (',':str) tbl l =
-    readTAFs1 at par (dropSpaces str) tbl $ l + 1
-readTAFs' at par s@(p:str) tbl l | par == p  = (RTS at str tbl $ l + 1, [])
-                                 | otherwise = error $ error_paren $ take 6 s
-readTAFs' _ _ [] _ _ = error "readTAFs': empty string"
+readTAFs2 at par str tbl l = case str of 
+    ',' : r -> readTAFs1 at par (dropSpaces r) tbl $ l + 1
+    p : r | par == p -> (RTS at r tbl $ l + 1, [])
+    _ -> error $ "expecting ',' or '" ++ [par] ++ "' in aterm but found: " 
+         ++ take 10 str
 
 readAnnTAF :: ATermTable -> String -> ReadTable -> Int -> (ReadTAFStruct, [Int])
-readAnnTAF at ('{':str) tbl l = readTAFs at '}' (dropSpaces str) tbl $ l + 1
-readAnnTAF at str       tbl l = (RTS at str tbl l, [])
+readAnnTAF = readParTAFs '{' '}'
 
 -- helpers --
 
 dropSpaces :: String -> String
-dropSpaces              = dropWhile isSpace
+dropSpaces = dropWhile isSpace
 
-spanAFunChar :: String -> (String,String)
-spanAFunChar            = span isAFunChar
+readAFun :: String -> (String,String)
+readAFun str = case str of 
+  q : r | q == '"' -> let (c, s) = spanNotQuote' r in (q : c, s)
+  _ -> span isAFunChar str
+
+spanNotQuote' :: String -> (String,String)
+spanNotQuote' str = case str of
+     q : r | q == '"'  -> ([q], r)
+     c : r@(d : s) -> let 
+         (e, l) = if c == '\\' then ([c, d], s) else ([c], r)
+         (f, t) = spanNotQuote' l
+         in (e ++ f, t)
+     _ -> error $ "wrongly terminated aterm string: " ++ take 10 str
 
 isAFunChar :: Char -> Bool
 isAFunChar c = isAlphaNum c || c `elem` "_*+-."
 
 spanAbbrevChar :: String -> (String,String)
-spanAbbrevChar          = span isBase64Char
+spanAbbrevChar = span isBase64Char
 
 isIntHead :: Char -> Bool
 isIntHead c = isDigit c || c == '-'
 
-spanNotQuote' :: String -> (String,String)
-spanNotQuote' []                = error "spanNotQuote'"
-spanNotQuote' ('"':xs')         = ("\"",xs')
-spanNotQuote' ('\\':c:xs')      = case spanNotQuote' xs' of
-                                  (ys,zs) -> ('\\':c:ys,zs)
-spanNotQuote' (x:xs')   = case spanNotQuote' xs' of
-                               (ys,zs) -> (x:ys,zs)
-
 condAddRElement :: Int -> Int -> ReadTable -> ReadTable
-condAddRElement ai len tbl@(RTab abb_ai_map siz) =
-    if abbrevSize siz < len then
-       RTab (Map.insert siz ai abb_ai_map) (siz + 1)
+condAddRElement ai len tbl@(RTab abb_ai_map p@(sizL, modV) siz) =
+    if sizL < len then
+       let s = siz + 1 in RTab (Map.insert siz ai abb_ai_map) 
+           (if rem s modV == 0 then (sizL + 1, 64 * modV) else p) s
     else tbl
 
 condAddWElement :: Int -> Int -> WriteTable -> WriteTable
@@ -223,132 +175,84 @@ data Doc_len = Doc_len SDoc Int
 
 data Write_struct = WS WriteTable Doc_len
 
--- an error generated every time when at least one non-empty
--- ATermString is expected!! The Argument should be the throwing
--- function name.
-fatal_error :: String -> a
-fatal_error fn = error $ fn ++ ": empty SharedATermString found!!"
-
 writeATerm :: ATermTable -> String
-writeATerm at           = writeAT at ""
+writeATerm = render . writeATermSDoc
+
+writeATermSDoc :: ATermTable -> SDoc
+writeATermSDoc = writeSharedATermSDoc' False
 
 writeSharedATermSDoc :: ATermTable -> SDoc
-writeSharedATermSDoc at =
-    if getTopIndex at == -1 then fatal_error "writeSharedATermSDoc: empty"
-    else case writeTAF (toReadonlyATT at) emptyWTable of
-    WS _ (Doc_len doc l)
-        | l == 0 -> fatal_error "writeSharedATermSDoc"
-        | otherwise -> text "!" <> doc
+writeSharedATermSDoc = writeSharedATermSDoc' True
 
 writeSharedATerm :: ATermTable -> String
 writeSharedATerm = render . writeSharedATermSDoc
 
--- non-shared --
+writeSharedATermSDoc' :: Bool -> ATermTable -> SDoc
+writeSharedATermSDoc' b at =
+    case writeTAF b (toReadonlyATT at) emptyWTable of
+    WS _ (Doc_len doc _) -> (if b then text "!" else empty) <> doc
 
-writeAT :: ATermTable -> ShowS
-writeAT at     =
-    case (getATerm at) of
-             (ShAAppl c ts as) -> writeATermAux c (writeAT' at ts) .
-                                  writeParenthesiseAnn (writeAT' at as)
-             (ShAList ts as)   -> bracket (commaSep (writeAT' at ts)) .
-                                  writeParenthesiseAnn (writeAT' at as)
-             (ShAInt i as)     -> showString (show i) .
-                                  writeParenthesiseAnn (writeAT' at as)
--- don't use showInt: can't show negative numbers
-writeAT' :: ATermTable -> [Int] -> [ShowS]
-writeAT' _at []     = []
-writeAT' at (i:is) = let at' = getATermByIndex1 i at
-                         str = writeAT at'
-                         strs = writeAT' at is
-                     in (str:strs)
+--shared (if input is True)
 
---shared--
-
-writeTAF :: ATermTable -> WriteTable -> Write_struct
-writeTAF at tbl@(WTab ai_abb_map _) = let i = getTopIndex at in
+writeTAF :: Bool -> ATermTable -> WriteTable -> Write_struct
+writeTAF b at tbl@(WTab ai_abb_map _) = let i = getTopIndex at in
     case Map.lookup i ai_abb_map of
-    Just s -> WS tbl s
-    Nothing  -> case writeTAF' at tbl of
-                (WS tbl' d_len@(Doc_len _ len)) ->
-                    WS (condAddWElement i len tbl') d_len
+    Just s -> if b then WS tbl s else writeTAF' b at tbl
+    Nothing  -> case writeTAF' b at tbl of
+        WS tbl' d_len@(Doc_len _ len) -> WS (condAddWElement i len tbl') d_len
 
-writeTAF' :: ATermTable -> WriteTable -> Write_struct
-writeTAF' at tbl =
-    case getATerm at of
-    (ShAAppl c ts as) ->
-              case writeTAFs at ts tbl of
-              (WS tbl' kids) ->
-                  case writeTAFs at as tbl' of
-                  (WS tbl'' kidsAnn) ->
-                     WS tbl'' $ dlConcat (writeATermAuxS c kids)
-                                         (parenthesiseAnnS kidsAnn)
-    (ShAList ts as)   ->
-              case writeTAFs at ts tbl of
-              (WS tbl' kids) ->
-                  case writeTAFs at as tbl' of
-                  (WS tbl'' kidsAnn) ->
-                      WS tbl'' $ dlConcat (bracketS kids)
-                                          (parenthesiseAnnS kidsAnn)
-    (ShAInt i as)     ->
-        case writeTAFs at as tbl of
-        (WS tbl' kidsAnn) ->
-                 -- don't use showInt: can't show negative numbers
-              WS tbl' $ dlConcat (integerDoc i)
-                                 (parenthesiseAnnS kidsAnn)
+writeTAF' :: Bool -> ATermTable -> WriteTable -> Write_struct
+writeTAF' b at tbl = case getATerm at of
+    ShAAppl c ts anns -> case writeTAFs b at ts tbl of
+        WS tbl' kids -> case writeTAFs b at anns tbl' of
+            WS tbl'' kidsAnn -> WS tbl'' $ dlConcat (writeATermAuxS c kids)
+                                $ parenthesiseAnnS kidsAnn
+    ShAList ts anns -> case writeTAFs b at ts tbl of
+        WS tbl' kids -> case writeTAFs b at anns tbl' of
+            WS tbl'' kidsAnn -> WS tbl'' $ dlConcat (bracketS kids)
+                                $ parenthesiseAnnS kidsAnn
+    ShAInt i anns -> case writeTAFs b at anns tbl of
+        WS tbl' kidsAnn -> WS tbl' $ dlConcat (integerDoc i)
+                           $ parenthesiseAnnS kidsAnn
 
 dlConcat :: Doc_len -> Doc_len -> Doc_len
 dlConcat s1@(Doc_len sf1 sl1) s2@(Doc_len sf2 sl2)
     | sl1 == 0 = s2
     | sl2 == 0 = s1
-    | otherwise = Doc_len (sf1 <> sf2) (sl1 + sl2)
+    | otherwise = Doc_len (sf1 <> sf2) $ sl1 + sl2 
 
 dlConcat_comma :: Doc_len -> Doc_len -> Doc_len
 dlConcat_comma (Doc_len sf1 sl1) (Doc_len sf2 sl2) =
-    Doc_len (sf1 <> comma <> sf2) (sl1 + sl2 + 1)
+    Doc_len (sf1 <> comma <> sf2) $ sl1 + sl2 + 1
 
 -- produce a String function with a comma seperated string converted ATerms
-writeTAFs :: ATermTable -> [Int] -> WriteTable -> Write_struct
-writeTAFs at inds tbl = case inds of
+writeTAFs :: Bool -> ATermTable -> [Int] -> WriteTable -> Write_struct
+writeTAFs b at inds tbl = case inds of
     [] -> WS tbl $ Doc_len empty 0
-    i : is -> case writeTAF (getATermByIndex1 i at) tbl of
+    i : is -> case writeTAF b (getATermByIndex1 i at) tbl of
               ws@(WS t1 s1) -> if null is then ws
-                else case writeTAFs at is t1 of
+                else case writeTAFs b at is t1 of
                        WS t2 s2 -> WS t2 $ dlConcat_comma s1 s2
 
-integerDoc :: Integer -> Doc_len
-integerDoc i = let s = show i in Doc_len (text s) $ length s
+doc_len :: String -> Doc_len
+doc_len s = Doc_len (text s) $ length s
 
-writeATermAux :: String -> [ShowS] -> ShowS
-writeATermAux c [] = showString c
-writeATermAux c ts = showString c . parenthesise (commaSep ts)
+integerDoc :: Integer -> Doc_len
+integerDoc = doc_len . show
 
 writeATermAuxS :: String -> Doc_len -> Doc_len
-writeATermAuxS c doc_len =
-    dlConcat (Doc_len (text c) (length c)) $ parenthesiseS doc_len
-
-writeParenthesiseAnn :: [ShowS] -> ShowS
-writeParenthesiseAnn [] = id
-writeParenthesiseAnn as = parenthesiseAnn $ commaSep as
-
-commaSep :: [ShowS] -> ShowS
-commaSep [] = id
-commaSep str = foldr1 (\x y-> x . showChar ',' . y) str
-
-bracket, parenthesise, parenthesiseAnn :: ShowS -> ShowS
-bracket         str = showChar '[' . str . showChar ']'
-parenthesise    str = showChar '(' . str . showChar ')'
-parenthesiseAnn str = showChar '{' . str . showChar '}'
+writeATermAuxS s = dlConcat (doc_len s) . parenthesiseS
 
 bracketS, parenthesiseS, parenthesiseAnnS :: Doc_len -> Doc_len
 bracketS         (Doc_len d dl)
-    | dl == 0 = Doc_len (text "[]") 2
-    | otherwise = Doc_len (brackets d) (dl+2)
+    | dl == 0 = doc_len "[]"
+    | otherwise = Doc_len (brackets d) $ dl + 2
 parenthesiseS    s@(Doc_len d dl)
     | dl == 0 = s
-    | otherwise = Doc_len (parens d) (dl+2)
+    | otherwise = Doc_len (parens d) $ dl + 2
 parenthesiseAnnS s@(Doc_len d dl)
     | dl == 0 = s
-    | otherwise = Doc_len (braces d) (dl+2)
+    | otherwise = Doc_len (braces d) $ dl + 2
 
 --- Tables of ATerms ----------------------------------------------------------
 
@@ -357,18 +261,21 @@ parenthesiseAnnS s@(Doc_len d dl)
 -- ATermIndex is the Index that is given by getATermIndex.
 
 -- Map: Abbrev     -> ATermIndex
-data ReadTable  = RTab (Map.Map Int Int) Int
+data ReadTable  = RTab (Map.Map Int Int) (Int, Int) Int 
+       -- (length of size, 64^i) and size
 
 data WriteTable = WTab (Map.Map Int Doc_len) Int
 
 emptyRTable :: ReadTable
-emptyRTable = RTab Map.empty 0
+emptyRTable = RTab Map.empty (2, 64) 0
 
 emptyWTable :: WriteTable
 emptyWTable = WTab Map.empty 0
 
 getAbbrevTerm :: Int -> ReadTable -> Int
-getAbbrevTerm i (RTab abb_ai_map _) = abb_ai_map Map.! i
+getAbbrevTerm i (RTab abb_ai_map _ _) = case Map.lookup i abb_ai_map of 
+    Nothing -> error $ "unknown aterm index " ++ abbrev i
+    Just a -> a
 
 --- Intger Read ---------------------------------------------------------------
 
@@ -384,7 +291,7 @@ readInteger s = case s of
 --- Base 64 encoding ----------------------------------------------------------
 
 abbrevD :: Int -> Doc_len
-abbrevD i = Doc_len (text $ abbrev i) $ abbrevSize i
+abbrevD i = doc_len $ abbrev i
 
 abbrev :: Int -> String
 abbrev i = '#' : mkAbbrev i
@@ -398,14 +305,8 @@ mkAbbrevAux x str =
          (d, m) -> mkAbbrevAux d $ toBase64Char m : str
   else str
 
-abbrevSizeAux :: Int -> Int
-abbrevSizeAux x = if x > 0 then 1 + abbrevSizeAux (quot x 64) else 0
-
-abbrevSize :: Int -> Int 
-abbrevSize x = if x < 64 then 2 else 1 + abbrevSizeAux x
-
 deAbbrev :: [Char] -> Int
-deAbbrev =  let f m c = 64 * m + toBase64Int c in foldl f 0
+deAbbrev = let f m c = 64 * m + toBase64Int c in foldl f 0
 
 {-
 toBase64 :: [Char]
@@ -444,14 +345,3 @@ toBase64Char i
 
 isBase64Char :: Char -> Bool
 isBase64Char c = isAscii c && (isAlphaNum c || c == '+' || c == '/')
-
--- error messages --------------------
-
-error_paren, error_aterm, error_saterm :: String -> String
-error_paren s = "Can't parse '" ++ take 1 s ++
-    "',expecting \",\" or matching parenthesis" ++
-    "\nFollowing characters are:" ++ drop 1 s
-error_aterm s = "Can't parse '" ++ s ++
-    "', expecting ATermAppl, ATermList or ATermInt"
-error_saterm s = "Can't parse '" ++ s ++
-    "', expecting Abbreviate, ATermAppl, ATermList or ATermInt"
