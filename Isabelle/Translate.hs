@@ -45,16 +45,19 @@ isaPrelude = IsaPreludes {
                   ["pApp","apt","app","defOp","pair"]),
    (Main_thy,  consts mainS), (HOLCF_thy, consts holcfS)]}
 
-toAltSyntax :: GlobalAnnos -> Id -> Maybe AltSyntax
-toAltSyntax ga i = let
+toAltSyntax :: GlobalAnnos -> Int -> Id -> Maybe AltSyntax
+toAltSyntax ga n i = let
     (precMap, mx) = Rel.toPrecMap $ prec_annos ga
     minPrec = 42
     adjustPrec p = 2 * p + minPrec
     newPlace = "/ _"
-    minL = replicate (placeCount i) minPrec
+    minL = replicate n minPrec
     minL1 = tail minL
     minL2 = tail minL1
-    hd : tl = getTokenList newPlace i
+    (hd : tl) = getTokenList newPlace i
+    tts = concatMap convert tl
+    ht = convert hd
+    ts = ht ++ tts
     convert = \ Token { tokStr = s } -> if s == newPlace then s
                          else quote s
     (precList, erg) = if isInfix i then case Map.lookup i precMap of
@@ -69,15 +72,21 @@ toAltSyntax ga i = let
       else if begPlace i then let q = adjustPrec $ mx + 3 in (q : minL1 , q)
       else if endPlace i then let q = adjustPrec $ mx + 2 in (minL1 ++ [q], q)
       else (minL, adjustPrec $ mx + 4)
-    in if isMixfix i then Just $ AltSyntax
-    ('(' : (if begPlace i then "_ " else convert hd) 
-     ++ concatMap convert tl ++ ")") precList erg
-    else Nothing
+    in if n == 0 then if ts == show i then Nothing else 
+                          Just $ AltSyntax ts [] 999
+       else if isMixfix i then Just $ AltSyntax
+                ('(' : (if begPlace i then "_ " else ht) 
+                         ++ tts ++ ")") precList erg
+       else Just $ AltSyntax 
+            (ts ++ "'(" ++ 
+                   concat (replicate (n - 1) "_,/ ")
+                   ++ "_')") minL $ adjustPrec $ mx + 4 
 
 quote :: String -> String
 quote l = case l of
     [] -> l
-    c : r -> (if c `elem` "_/'" then '\'' : [c] else [c]) ++ quote r
+    c : r -> (if c `elem` "_/'()" then '\'' : [c] 
+              else if c `elem` "\\\"" then '\\' : [c] else [c]) ++ quote r
 
 showIsaT1 :: (String -> String) -> Id -> String
 showIsaT1 tr ide = let
@@ -88,13 +97,15 @@ showIsaT1 tr ide = let
 showIsaConstT :: Id -> BaseSig -> String
 showIsaConstT ide thy = showIsaT1 (transConstStringT thy) ide
 
-mkIsaConstT :: GlobalAnnos -> Id -> BaseSig -> VName
+-- also pass number of arguments
+mkIsaConstT :: GlobalAnnos -> Int -> Id -> BaseSig -> VName
 mkIsaConstT = mkIsaConstVName showIsaConstT
 
-mkIsaConstVName :: (Id -> BaseSig -> String) -> GlobalAnnos -> Id -> BaseSig
-                -> VName
-mkIsaConstVName f ga ide thy = VName { new = f ide thy
-                                     , altSyn = toAltSyntax ga ide }
+mkIsaConstVName :: (Id -> BaseSig -> String) 
+                -> GlobalAnnos -> Int -> Id -> BaseSig -> VName
+mkIsaConstVName f ga n ide thy = VName 
+ { new = f ide thy
+ , altSyn = toAltSyntax ga n ide }
 
 showIsaTypeT :: Id -> BaseSig -> String
 showIsaTypeT ide thy = showIsaT1 (transTypeStringT thy) ide
@@ -103,9 +114,9 @@ showIsaTypeT ide thy = showIsaT1 (transTypeStringT thy) ide
 showIsaConstIT :: Id -> Int -> BaseSig -> String
 showIsaConstIT ide i thy = showIsaConstT ide thy ++ "_" ++ show i
 
-mkIsaConstIT :: GlobalAnnos -> Id -> Int -> BaseSig -> VName
-mkIsaConstIT ga ide i = mkIsaConstVName
-                        ( \ ide' -> showIsaConstIT ide' i) ga ide
+mkIsaConstIT :: GlobalAnnos -> Int -> Id -> Int -> BaseSig -> VName
+mkIsaConstIT ga n ide i = mkIsaConstVName
+                        ( \ ide' -> showIsaConstIT ide' i) ga n ide
 
 transIsaStringT :: Map.Map BaseSig (Set.Set String) -> BaseSig
                 -> String -> String

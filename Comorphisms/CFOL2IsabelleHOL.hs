@@ -130,20 +130,24 @@ transTheory trSig trForm (sign, sens) =
     ga = globAnnos sign
     insertOps op ts m = 
      if Set.size ts == 1 
-      then Map.insert (mkIsaConstT ga op baseSign) 
-               (transOpType (Set.findMin ts)) m
+      then let t = Set.findMin ts in 
+           Map.insert (mkIsaConstT ga (length $ opArgs t) op baseSign) 
+               (transOpType t) m
       else 
-      foldl (\m1 (t,i) -> Map.insert (mkIsaConstIT ga op i baseSign) 
-                          (transOpType t) m1) m 
-            (zip (Set.toList ts) [1..(Set.size ts)])
+      foldl (\m1 (t,i) -> 
+             Map.insert (mkIsaConstIT ga (length $ opArgs t) op i baseSign) 
+                    (transOpType t) m1) m 
+                (zip (Set.toList ts) [1..(Set.size ts)])
     insertPreds pre ts m =
      if Set.size ts == 1 
-      then Map.insert (mkIsaConstT ga pre baseSign) 
+      then let t = Set.findMin ts in
+           Map.insert (mkIsaConstT ga (length $ predArgs t) pre baseSign) 
                (transPredType (Set.findMin ts)) m
       else
-      foldl (\m1 (t,i) -> Map.insert (mkIsaConstIT ga pre i baseSign) 
-                          (transPredType t) m1) m 
-            (zip (Set.toList ts) [1..Set.size ts])
+      foldl (\m1 (t,i) -> 
+             Map.insert (mkIsaConstIT ga (length $ predArgs t) pre i baseSign) 
+                    (transPredType t) m1) m 
+                (zip (Set.toList ts) [1..Set.size ts])
 
 -- | filter out constructors from data types  
 isNotIn :: DomainTab -> VName -> Typ -> Bool
@@ -315,22 +319,28 @@ quantify q (v,t) phi  =
   qname Unique_existential = ex1S
 
 transOP_SYMB :: CASL.Sign.Sign f e -> OP_SYMB -> VName
-transOP_SYMB sign (Qual_op_name op ot _) = let ga = globAnnos sign in
+transOP_SYMB sign (Qual_op_name op ot _) = let 
+  ga = globAnnos sign 
+  l = length $ args_OP_TYPE ot in
   case (do ots <- Map.lookup op (opMap sign) 
-           if Set.size ots == 1 then return $ mkIsaConstT ga op baseSign
-            else do i <- elemIndex (toOpType ot) (Set.toList ots)
-                    return $ mkIsaConstIT ga op (i+1) baseSign) of
-    Just str -> str  
+           if Set.size ots == 1 then return $ mkIsaConstT ga l op baseSign
+             else do 
+                   i <- elemIndex (toOpType ot) (Set.toList ots)
+                   return $ mkIsaConstIT ga l op (i+1) baseSign) of
+    Just vn -> vn 
     Nothing -> error ("CASL2Isabelle unknown op: " ++ show op)
 transOP_SYMB _ (Op_name _) = error "CASL2Isabelle: unqualified operation"
 
 transPRED_SYMB :: CASL.Sign.Sign f e -> PRED_SYMB -> VName
-transPRED_SYMB sign (Qual_pred_name p pt _) = let ga = globAnnos sign in
+transPRED_SYMB sign (Qual_pred_name p pt@(Pred_type args _) _) = let
+  ga = globAnnos sign 
+  l = length args in
   case (do pts <- Map.lookup p (predMap sign)
-           if Set.size pts == 1 then return $ mkIsaConstT ga p baseSign 
-            else do i <- elemIndex (toPredType pt) (Set.toList pts)
-                    return $ mkIsaConstIT ga p (i+1) baseSign) of
-    Just str -> str
+           if Set.size pts == 1 then return $ mkIsaConstT ga l p baseSign 
+             else do 
+                   i <- elemIndex (toPredType pt) (Set.toList pts)
+                   return $ mkIsaConstIT ga l p (i+1) baseSign) of
+    Just vn -> vn
     Nothing -> error ("CASL2Isabelle unknown pred: " ++ show p)
 transPRED_SYMB _ (Pred_name _) = error "CASL2Isabelle: unqualified predicate"
 
