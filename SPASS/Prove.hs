@@ -687,8 +687,9 @@ spassProveGUI thName th = do
   s <- readIORef stateRef
   let proof_stats = map (\g -> let res = Map.lookup g (resultsMap s) 
                                    g' = Map.findWithDefault 
-                                        (error ("Lookup of name failed: "++
-                                                "should not happen"))
+                                        (error ("Lookup of name failed: (1) "
+                                                ++"should not happen \""
+                                                ++g++"\""))
                                         g (namesMap s)
                                    pStat = fst $ fromJust res
                                in if isJust res 
@@ -715,12 +716,17 @@ spassProveGUI thName th = do
                           Disproved x -> Disproved $ trN x
                           st@(Proved n uas _ _ _) ->     
                               st { goalName = trN n
-                                 , usedAxioms = map trN uas}
+                                 , usedAxioms = foldr (fil (trN n)) [] uas}
                           _ -> error "No consitency yet"
         where trN x' = Map.findWithDefault 
-                        (error ("Lookup of name failed: "++
-                                "should not happen"))
+                        (error ("Lookup of name failed: (2) "++
+                                "should not happen \""++x'++"\""))
                         x' nm
+              fil g ax axs = 
+                  maybe (trace ("*** SPASS Warning: unknown axiom \""++
+                                ax++"\" omitted from list of used\n"++
+                                "      axioms of goal \""++g++"\"")
+                                  axs) (:axs) (Map.lookup ax nm)
 -- * Non-interactive Batch Prover
 
 -- ** Constants
