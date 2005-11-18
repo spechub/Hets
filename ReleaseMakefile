@@ -53,7 +53,7 @@ hets: critical_clean
 	strip hets
 
 hets.cgi: critical_clean
-	$(HC) --make -O -package WASH GUI/hets_cgi.hs -o $@ $(HC_OPTS1) -w
+	$(HC) --make -O GUI/hets_cgi.hs -o $@ $(HC_OPTS1) -w
 	strip hets.cgi
 
 
