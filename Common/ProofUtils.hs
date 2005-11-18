@@ -67,11 +67,14 @@ nameSens sens =
                               else sen
 
 -- | collect the mapping of new to old names
-collectNameMapping :: [Named a] -> [Named a] -> Map.Map String String
+collectNameMapping ::Show a => [Named a] -> [Named a] -> Map.Map String String
 collectNameMapping n o = Map.fromList (zipWith toPair n o)
     where toPair nSen oSen = (senName nSen,
                               if null oName
-                                 then "<unnamed>"++senName nSen
+                                 then error ("Common.ProofUtils."++
+                                             "collectNameMapping: sentence "++
+                                             "without name found: "++
+                                             show (sentence oSen))
                                  else oName)
               where oName = senName oSen
 

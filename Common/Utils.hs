@@ -19,6 +19,8 @@ module Common.Utils where
 import Data.List
 import Data.Graph.Inductive.Graph
 
+import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 
 {- |
   A function inspired by perls join function. It joins a list of
@@ -187,6 +189,20 @@ safeContext err g v =
                           " not present in graph with nodes:\n"++
                           show (nodes g)++"\nand edges:\n"++show (edges g))
     (Just c,_)  -> c 
+
+{- |
+   filter a map according to a given list of keys (it dosen't hurt if a key is not present in the map)
+-}
+filterMapWithList :: Ord k => [k] -> Map.Map k e -> Map.Map k e
+filterMapWithList l = filterMapWithSet sl 
+    where sl = Set.fromList l
+
+{- |
+   filter a map according to a given set of keys (it dosen't hurt if a key is not present in the map)
+-}
+filterMapWithSet :: Ord k => Set.Set k -> Map.Map k e -> Map.Map k e
+filterMapWithSet s = Map.filterWithKey selected 
+    where selected k _ = Set.member k s
 
 {- |
   advice from <http://haskell.org/hawiki/ThingsToAvoid> use this instead of 
