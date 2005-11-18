@@ -10,7 +10,6 @@ Portability :  portable
 -}
 
 module Common.ATerm.ReadWrite (
-
         readATerm,       -- :: String -> ATermTable
         writeATerm,      -- :: ATermTable -> String
         writeATermSDoc,  -- :: ATermTable -> SDoc
@@ -33,6 +32,8 @@ module Common.ATerm.ReadWrite (
         Current limitations:
 
                 BLOBS and place-holders are not supported.
+
+        accidental support for the empty aterm: ShAAppl "" [] []
 -}
 
 import Common.ATerm.AbstractSyntax
@@ -47,7 +48,7 @@ data ReadTAFStruct = RTS ATermTable
                          -- ATermTable
                          String
                          -- remaing part of the ATerm as String
-                         ReadTable
+                         (AbbrevTable Int)
                          Int -- length of ATerm as String
 
 readATerm :: String -> ATermTable
@@ -55,27 +56,28 @@ readATerm = readATerm' . dropWhile ( \ c -> isSpace c || c == '!')
 
 readATerm' :: String -> ATermTable
 readATerm' str =
-    case readTAF emptyATermTable str emptyRTable of
-    (RTS at rt _ _, _) -> case dropSpaces rt of 
+    case readTAF emptyATermTable str emptyATab of
+    (RTS at rt _ _, _) -> case dropSpaces rt of
        [] -> toReadonlyATT at
-       s -> error $ "garbage following aterm: " ++ take 10 s 
+       s -> error $ "garbage following aterm: " ++ take 10 s
 
--- non-shared is a special case of shared
+-- non-shared is a special case of shared (but could be made more fool proof)
 
-readTAF :: ATermTable -> String -> ReadTable -> (ReadTAFStruct, Int)
+readTAF :: ATermTable -> String -> AbbrevTable Int -> (ReadTAFStruct, Int)
 readTAF at str tbl = case readTAF' at str tbl of
     (rs@(RTS at' str' tbl' l'), eith) -> case eith of
         Left i -> (rs, i)
         Right a -> case addATerm a at' of
             (at'', i) ->
-                (RTS at'' str' (condAddRElement i l' tbl') l', i)
+                (RTS at'' str' (insertATab l' (sizeATab tbl') i tbl') l', i)
 
-readTAF' :: ATermTable -> String -> ReadTable 
+readTAF' :: ATermTable -> String -> AbbrevTable Int
          -> (ReadTAFStruct, Either Int ShATerm)
 readTAF' at str tbl = case str of
   '#' : xs -> case spanAbbrevChar xs of
-      (i, str') -> (RTS at str' tbl $ length i + 1, 
-                    Left $ getAbbrevTerm (deAbbrev i) tbl)
+      (i, str') -> case lookupATab (deAbbrev i) tbl of
+          Nothing -> error $ "unknown aterm index " ++ '#' : i
+          Just a -> (RTS at str' tbl $ length i + 1, Left a)
   '[' : _ -> case readParTAFs '[' ']' at str tbl 0 of
       (RTS at' str'  tbl'  l', kids) ->
           case readAnnTAF at' (dropSpaces str') tbl' l' of
@@ -90,40 +92,41 @@ readTAF' at str tbl = case str of
               case readAnnTAF at' (dropSpaces str'') tbl' l' of
                 (rs, ann) -> (rs, Right $ ShAAppl c kids ann)
 
-readParenTAFs :: ATermTable -> String -> ReadTable -> Int
+readParenTAFs :: ATermTable -> String -> AbbrevTable Int -> Int
               -> (ReadTAFStruct, [Int])
 readParenTAFs = readParTAFs '(' ')'
 
-readParTAFs :: Char -> Char -> ATermTable -> String -> ReadTable -> Int
+readParTAFs :: Char -> Char -> ATermTable -> String -> AbbrevTable Int -> Int
               -> (ReadTAFStruct, [Int])
 readParTAFs op cp at str tbl l = case str of
     p : r | op == p -> readTAFs0 at cp (dropSpaces r) tbl $ l + 1
     _ -> (RTS at str tbl l, [])
 
-readTAFs0 :: ATermTable -> Char -> String -> ReadTable -> Int
+readTAFs0 :: ATermTable -> Char -> String -> AbbrevTable Int -> Int
          -> (ReadTAFStruct, [Int])
-readTAFs0 at par str tbl l = case str of 
+readTAFs0 at par str tbl l = case str of
     p : r | par == p -> (RTS at r tbl $ l + 1, [])
-    _ -> readTAFs1 at par str tbl l 
+    _ -> readTAFs1 at par str tbl l
 
-readTAFs1 :: ATermTable -> Char -> String -> ReadTable -> Int
+readTAFs1 :: ATermTable -> Char -> String -> AbbrevTable Int -> Int
           -> (ReadTAFStruct, [Int])
 readTAFs1 at par str tbl l =
     case readTAF at (dropSpaces str) tbl of
       (RTS at' str'  tbl'  l', t) ->
           case readTAFs2 at' par (dropSpaces str') tbl' $ l + l' of
-            (RTS at'' str'' tbl'' l'', ts) -> 
+            (RTS at'' str'' tbl'' l'', ts) ->
                 (RTS at'' str'' tbl'' l'', t : ts)
 
-readTAFs2 :: ATermTable -> Char -> String -> ReadTable -> Int
+readTAFs2 :: ATermTable -> Char -> String -> AbbrevTable Int -> Int
           -> (ReadTAFStruct, [Int])
-readTAFs2 at par str tbl l = case str of 
+readTAFs2 at par str tbl l = case str of
     ',' : r -> readTAFs1 at par (dropSpaces r) tbl $ l + 1
     p : r | par == p -> (RTS at r tbl $ l + 1, [])
-    _ -> error $ "expecting ',' or '" ++ [par] ++ "' in aterm but found: " 
+    _ -> error $ "expecting ',' or '" ++ [par] ++ "' in aterm but found: "
          ++ take 10 str
 
-readAnnTAF :: ATermTable -> String -> ReadTable -> Int -> (ReadTAFStruct, [Int])
+readAnnTAF :: ATermTable -> String -> AbbrevTable Int -> Int
+           -> (ReadTAFStruct, [Int])
 readAnnTAF = readParTAFs '{' '}'
 
 -- helpers --
@@ -132,14 +135,14 @@ dropSpaces :: String -> String
 dropSpaces = dropWhile isSpace
 
 readAFun :: String -> (String,String)
-readAFun str = case str of 
+readAFun str = case str of
   q : r | q == '"' -> let (c, s) = spanNotQuote' r in (q : c, s)
   _ -> span isAFunChar str
 
 spanNotQuote' :: String -> (String,String)
 spanNotQuote' str = case str of
      q : r | q == '"'  -> ([q], r)
-     c : r@(d : s) -> let 
+     c : r@(d : s) -> let
          (e, l) = if c == '\\' then ([c, d], s) else ([c], r)
          (f, t) = spanNotQuote' l
          in (e ++ f, t)
@@ -154,26 +157,11 @@ spanAbbrevChar = span isBase64Char
 isIntHead :: Char -> Bool
 isIntHead c = isDigit c || c == '-'
 
-condAddRElement :: Int -> Int -> ReadTable -> ReadTable
-condAddRElement ai len tbl@(RTab abb_ai_map p@(sizL, modV) siz) =
-    if sizL < len then
-       let s = siz + 1 in RTab (Map.insert siz ai abb_ai_map) 
-           (if rem s modV == 0 then (sizL + 1, 64 * modV) else p) s
-    else tbl
+--- From (shared) ATerms to strings via simple documents with associated length
 
-condAddWElement :: Int -> Int -> WriteTable -> WriteTable
-condAddWElement ai len tbl@(WTab ai_abb_map siz) =
-    case abbrevD siz of 
-      da@(Doc_len _ docLen) -> if docLen < len 
-          then WTab (Map.insert ai da ai_abb_map) $ siz + 1
-          else tbl
-
---- From ATerm to String  -----------------------------------------------------
-
--- a helper data Type for SDocs paired with the associated length
 data Doc_len = Doc_len SDoc Int
 
-data Write_struct = WS WriteTable Doc_len
+data Write_struct = WS (AbbrevTable Doc_len) Doc_len
 
 writeATerm :: ATermTable -> String
 writeATerm = render . writeATermSDoc
@@ -189,19 +177,20 @@ writeSharedATerm = render . writeSharedATermSDoc
 
 writeSharedATermSDoc' :: Bool -> ATermTable -> SDoc
 writeSharedATermSDoc' b at =
-    case writeTAF b (toReadonlyATT at) emptyWTable of
+    case writeTAF b (toReadonlyATT at) emptyATab of
     WS _ (Doc_len doc _) -> (if b then text "!" else empty) <> doc
 
 --shared (if input is True)
 
-writeTAF :: Bool -> ATermTable -> WriteTable -> Write_struct
-writeTAF b at tbl@(WTab ai_abb_map _) = let i = getTopIndex at in
-    case Map.lookup i ai_abb_map of
+writeTAF :: Bool -> ATermTable -> AbbrevTable Doc_len -> Write_struct
+writeTAF b at tbl = let i = getTopIndex at in
+    case lookupATab i tbl of
     Just s -> if b then WS tbl s else writeTAF' b at tbl
     Nothing  -> case writeTAF' b at tbl of
-        WS tbl' d_len@(Doc_len _ len) -> WS (condAddWElement i len tbl') d_len
+        WS tbl' d_len@(Doc_len _ len) ->
+            WS (insertATab len i (abbrevD $ sizeATab tbl') tbl') d_len
 
-writeTAF' :: Bool -> ATermTable -> WriteTable -> Write_struct
+writeTAF' :: Bool -> ATermTable -> AbbrevTable Doc_len -> Write_struct
 writeTAF' b at tbl = case getATerm at of
     ShAAppl c ts anns -> case writeTAFs b at ts tbl of
         WS tbl' kids -> case writeTAFs b at anns tbl' of
@@ -219,14 +208,14 @@ dlConcat :: Doc_len -> Doc_len -> Doc_len
 dlConcat s1@(Doc_len sf1 sl1) s2@(Doc_len sf2 sl2)
     | sl1 == 0 = s2
     | sl2 == 0 = s1
-    | otherwise = Doc_len (sf1 <> sf2) $ sl1 + sl2 
+    | otherwise = Doc_len (sf1 <> sf2) $ sl1 + sl2
 
 dlConcat_comma :: Doc_len -> Doc_len -> Doc_len
 dlConcat_comma (Doc_len sf1 sl1) (Doc_len sf2 sl2) =
     Doc_len (sf1 <> comma <> sf2) $ sl1 + sl2 + 1
 
--- produce a String function with a comma seperated string converted ATerms
-writeTAFs :: Bool -> ATermTable -> [Int] -> WriteTable -> Write_struct
+-- produce comma seperated output from aterm indices
+writeTAFs :: Bool -> ATermTable -> [Int] -> AbbrevTable Doc_len -> Write_struct
 writeTAFs b at inds tbl = case inds of
     [] -> WS tbl $ Doc_len empty 0
     i : is -> case writeTAF b (getATermByIndex1 i at) tbl of
@@ -243,39 +232,51 @@ integerDoc = doc_len . show
 writeATermAuxS :: String -> Doc_len -> Doc_len
 writeATermAuxS s = dlConcat (doc_len s) . parenthesiseS
 
-bracketS, parenthesiseS, parenthesiseAnnS :: Doc_len -> Doc_len
+-- list brackets must not be omitted
+bracketS :: Doc_len -> Doc_len
 bracketS         (Doc_len d dl)
     | dl == 0 = doc_len "[]"
     | otherwise = Doc_len (brackets d) $ dl + 2
+
+parenthesiseS :: Doc_len -> Doc_len
 parenthesiseS    s@(Doc_len d dl)
     | dl == 0 = s
     | otherwise = Doc_len (parens d) $ dl + 2
+
+parenthesiseAnnS :: Doc_len -> Doc_len
 parenthesiseAnnS s@(Doc_len d dl)
     | dl == 0 = s
     | otherwise = Doc_len (braces d) $ dl + 2
 
---- Tables of ATerms ----------------------------------------------------------
+{- | This abbreviation table maps abbreviation ints to aterm indices for
+     reading and aterm indices to abbreviation docs during writing. -}
+data AbbrevTable a = ATab (Map.Map Int a) (Int, Int) Int
 
--- These Tables consist of FiniteMaps, because all ATerms are indexed
--- with an Int in the second component of the ATermTable. So
--- ATermIndex is the Index that is given by getATermIndex.
+{- The last component is the current maximal abbreviation int that
+serves as a key when reading and as a value when writing. The pair
+stores the size of this component and the maximal power of 64
+that is less than it, in order to simplify the computation of the size
+of the next abbreviation int. -}
 
--- Map: Abbrev     -> ATermIndex
-data ReadTable  = RTab (Map.Map Int Int) (Int, Int) Int 
-       -- (length of size, 64^i) and size
+-- | initial table
+emptyATab :: AbbrevTable a
+emptyATab = ATab Map.empty (2, 64) 0
 
-data WriteTable = WTab (Map.Map Int Doc_len) Int
+-- | only insert if the first argument is greater than the abbreviation size
+insertATab :: Int -> Int -> a -> AbbrevTable a -> AbbrevTable a
+insertATab dl i a t@(ATab m p@(sl, b) s) =
+    if dl > sl then let n = s + 1 in
+        ATab (Map.insert i a m)
+           (if rem n b == 0 then (sl + 1, 64 * b) else p) n
+    else t
 
-emptyRTable :: ReadTable
-emptyRTable = RTab Map.empty (2, 64) 0
+-- | get current abbreviation size
+sizeATab :: AbbrevTable a -> Int
+sizeATab (ATab _ _ s) = s
 
-emptyWTable :: WriteTable
-emptyWTable = WTab Map.empty 0
-
-getAbbrevTerm :: Int -> ReadTable -> Int
-getAbbrevTerm i (RTab abb_ai_map _ _) = case Map.lookup i abb_ai_map of 
-    Nothing -> error $ "unknown aterm index " ++ abbrev i
-    Just a -> a
+-- | lookup map value
+lookupATab :: Int -> AbbrevTable a -> Maybe a
+lookupATab i (ATab m _ _) = Map.lookup i m
 
 --- Intger Read ---------------------------------------------------------------
 
@@ -285,7 +286,7 @@ readInteger s = case s of
                          (m, l) -> (negate m, l + 1)
                          else conv s
                   _ -> error "readInteger"
-    where f (m, l) x = (toInteger (digitToInt x) + 10 * m, l + 1)
+    where f (m, l) x = (toInteger (ord x - ord0) + 10 * m, l + 1)
           conv = foldl f (0, 0)
 
 --- Base 64 encoding ----------------------------------------------------------
@@ -297,7 +298,7 @@ abbrev :: Int -> String
 abbrev i = '#' : mkAbbrev i
 
 mkAbbrev :: Int -> String
-mkAbbrev x = if x > 0 then mkAbbrevAux x "" else "A" 
+mkAbbrev x = if x > 0 then mkAbbrevAux x "" else "A"
 
 mkAbbrevAux :: Int -> String -> String
 mkAbbrevAux x str =
@@ -326,15 +327,6 @@ toBase64Int c
     | c == '+' = 62
     | otherwise = 63 -- '/'
 
-ordA :: Int
-ordA = ord 'A'
-
-orda_26 :: Int
-orda_26 = ord 'a' - 26
-
-mord0_52 :: Int
-mord0_52 = 52 - ord '0'
-
 toBase64Char :: Int -> Char
 toBase64Char i
     | i < 26 = chr (ordA + i)
@@ -345,3 +337,17 @@ toBase64Char i
 
 isBase64Char :: Char -> Bool
 isBase64Char c = isAscii c && (isAlphaNum c || c == '+' || c == '/')
+
+-- a couple of constants
+
+ordA :: Int
+ordA = ord 'A'
+
+orda_26 :: Int
+orda_26 = ord 'a' - 26
+
+ord0 :: Int
+ord0 = ord '0'
+
+mord0_52 :: Int
+mord0_52 = 52 - ord0
