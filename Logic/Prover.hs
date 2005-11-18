@@ -132,8 +132,8 @@ data TheoryMorphism sign sen mor proof_tree =
 data Tactic_script = Tactic_script String deriving (Eq, Ord, Show)
 
 data Proof_status proof_tree = 
-                        Open String
-                      | Disproved String 
+                        Open { goalName :: String }
+                      | Disproved { goalName :: String }
                       | Proved { goalName :: String,
                                  usedAxioms :: [String], -- used axioms or theorems or goals
                                  proverName :: String, -- name of prover
