@@ -557,9 +557,9 @@ integrateOntology onto1@(Ontology oid1 directives1 ns1)
               if id1 == id2 then Just id1
                  else 
                  Just (id1 { localPart=
-                             (localPart $ strToQN $ localPart id1) ++ 
+                             (uriToName $ localPart id1) ++ 
                              "_" ++ 
-                             (localPart $ strToQN $ localPart id2)})
+                             (uriToName $ uriToName $ localPart id2)})
 
 -- | reverse a map: (key, value) -> (value, key)
 reverseMap :: (Ord a) => Map.Map k a -> Map.Map a k
@@ -571,17 +571,16 @@ reverseMap oldMap =
        | Map.member mElem newMap = error "double keys in translationMap."
        | otherwise = Map.insert mElem mKey newMap
 
--- build a QName from string, without prefix.
-strToQN :: String -> QName
-strToQN str = 
+-- build a QName from string, only local part (for node name, etc.).
+uriToName :: String -> String
+uriToName str = 
     let str' = if head str == '"' then
                   read str::String
                   else str
         nodeName = fst $ span (/='/') $ reverse str'
     in  if head nodeName == '#' then
-           QN "" (fst $ span (/='.') (reverse $ tail nodeName)) str'  
-           -- QN prefix local uri
-           else QN ""  (fst $ span (/='.') (reverse nodeName)) str'
+            fst $ span (/='.') (reverse $ tail nodeName)  
+           else fst $ span (/='.') (reverse nodeName)
 
 -- output a QName for pretty print
 printQN :: QName -> String
