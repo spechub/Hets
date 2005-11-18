@@ -14,12 +14,13 @@ works for SPASS.
 -}
 
 {- ToDo:
-
+  - add "(De)select all" functionality for ListBoxes ... done
+  - add interface for fine grained axiom and theorem selection ... done
   - grey out GUI while waiting for Prover
   - remove warnings
 -}
 
-module GUI.ProofManagement where
+module GUI.ProofManagement (proofManagementGUI) where
 
 import Control.Exception
 
@@ -134,6 +135,17 @@ populatePathsListBox lb provers = do
   lb # HTk.value (Map.keys provers)
   return ()
 
+populateAxiomsList :: 
+    (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+            sign1 morphism1 symbol1 raw_symbol1 proof_tree1) =>
+       ListBox String
+    -> ProofGUIState lid1 sentence1
+    -> IO ()
+populateAxiomsList lbAxs s =
+    do aM' <- axiomMap s
+       lbAxs # HTk.value (OMap.keys aM')
+       return ()
+
 -- *** Callbacks
 
 {- |
@@ -162,20 +174,42 @@ updateDisplay st updateLb goalsLb pathsLb statusLabel = do
     statusLabel # foreground (show color)
     return () 
 
+updateStateSelectAllAxs :: 
+    (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+            sign1 morphism1 symbol1 raw_symbol1 proof_tree1) =>
+           IORef (ProofGUIState lid1 sentence1)
+        -> IO ()
+updateStateSelectAllAxs stateRef =
+    do s <- readIORef stateRef
+       aM' <- axiomMap s
+       writeIORef stateRef (s{includedAxioms = OMap.keys aM' })
+
+updateStateGetSelectedGoals s lb =
+    do sel <- (getSelection lb) :: IO (Maybe [Int])
+       return (s {selectedGoals = 
+                      maybe [] (map ((OMap.keys (goalMap s))!!)) sel})
+
+updateStateGetSelectedSens s lbAxs lbThs =
+    do aM <- axiomMap s
+       selA <- (getSelection lbAxs) :: IO (Maybe [Int])
+       selT <- (getSelection lbThs) :: IO (Maybe [Int])
+       return (s { includedAxioms   = maybe [] (fil aM) selA
+                 , includedTheorems = maybe [] (fil (goalMap s)) selT })
+    where fil x = map ((OMap.keys x)!!)
+
 {- |
-  Called whenever the button "Select All" is clicked.
+ Depending on the first argument all entries in a ListBox are selected 
+  or deselected
 -}
-doSelectAllGoals :: ProofGUIState lid sentence
-		 -> ListBox String
-                 -> IO (ProofGUIState lid sentence)
-doSelectAllGoals s@(ProofGUIState {theory = DevGraph.G_theory _ _ thSen}) lb = 
-  do
-  let s' = s{selectedGoals = goals}
-  -- FIXME: this will probably blow up if the number of goals isn't constant
-  mapM_ (\n -> selection n lb) (map snd (zip goals ([0..]::[Int])))
-  return s'
-  where
-    goals = OMap.keys (goalMap s)
+doSelectAllEntries :: Bool -- ^ indicates wether all entries should be selected 
+                         -- or deselected 
+		 -> ListBox a
+                 -> IO ()
+doSelectAllEntries selectAll lb = 
+  if selectAll 
+     then selectionRange (0::Int) EndOfText lb 
+              >> return ()
+     else clearSelection lb
 
 {- |
   Called whenever a goal is selected from the goals 'ListBox'
@@ -209,6 +243,7 @@ doDisplayGoals s@(ProofGUIState { theoryName = thName
                                  . AS_Anno.mapNamed (simplify_sen lid1 sig1)) 
                                            $ toNamedList s')
           sens = selectedGoalMap s
+
 
 {- |
   Called whenever the button "Show proof details" is clicked.
@@ -283,6 +318,51 @@ doSelectProverPath s lb =
 --       provers, and save the prover name in selectedProver
 
 
+newSelectButtonsFrame b3 =
+  do 
+  selFrame <- newFrame b3 []
+  pack selFrame [Expand Off, Fill None, Anchor South]
+
+  selHBox <- newHBox selFrame []
+  pack selHBox [Expand Off, Fill None]
+
+  selectAllButton <- newButton selHBox [text "Select all"]
+  pack selectAllButton [Expand Off, Fill None]
+
+  deselectAllButton <- newButton selHBox [text "Deselect all"]
+  pack deselectAllButton [Expand Off, Fill None]
+  -- events
+  selectAll <- clicked selectAllButton
+  deselectAll <- clicked deselectAllButton
+
+  return (selectAll,deselectAll)
+
+newExtSelListBoxFrame b2 title hValue =
+  do
+  left <- newFrame b2 []
+  pack left [Expand On, Fill Both]
+
+  b3 <- newVBox left []
+  pack b3 [Expand On, Fill Both]
+
+  l0 <- newLabel b3 [text title]
+  pack l0 [Anchor NorthWest]
+
+  lbFrame <- newFrame b3 []
+  pack lbFrame [Expand On, Fill Both]
+
+  lb <- newListBox lbFrame [bg "white",exportSelection False,
+                            selectMode Multiple, 
+                            height hValue] :: IO (ListBox String)
+
+  pack lb [Expand On, Side AtLeft, Fill Both]
+  sb <- newScrollBar lbFrame []
+  pack sb [Expand On, Side AtRight, Fill Y]
+  lb # scrollbar Vertical sb
+  -- buttons for goal selection
+  (selectAll,deselectAll) <- newSelectButtonsFrame b3
+  return (selectAll,deselectAll,lb)
+
 -- *** Main GUI
 
 {- |
@@ -333,30 +413,11 @@ proofManagementGUI lid proveF fineGrainedSelectionF
   b2 <- newHBox b []
   pack b2 [Expand On, Fill Both]
 
-  -- left frame (goals)
-  left <- newFrame b2 []
-  pack left [Expand On, Fill Both]
-
-  b3 <- newVBox left []
-  pack b3 [Expand On, Fill Both]
-
-  l0 <- newLabel b3 [text "Goals:"]
-  pack l0 [Anchor NorthWest]
-
-  lbFrame <- newFrame b3 []
-  pack lbFrame [Expand On, Fill Both]
-
-  lb <- newListBox lbFrame [bg "white",exportSelection False,
-                            selectMode Multiple, 
-                            height 15] :: IO (ListBox String)
+  -- ListBox for goal selection
+  (selectAllGoals,deselectAllGoals,lb) <- newExtSelListBoxFrame b2 "Goals:" 15
+ 
+  -- put the labels in the listbox
   populateGoalsListBox lb (goalsView initState)
-  pack lb [Expand On, Side AtLeft, Fill Both]
-  sb <- newScrollBar lbFrame []
-  pack sb [Expand On, Side AtRight, Fill Y]
-  lb # scrollbar Vertical sb
-
-  selectAllButton <- newButton b3 [text "Select all"]
-  pack selectAllButton [Expand Off, Fill None, Anchor SouthEast]
 
   -- right frame (options/results)
   right <- newFrame b2 []
@@ -436,18 +497,52 @@ proofManagementGUI lid proveF fineGrainedSelectionF
   sp2 <- newSpace b (cm 0.15) []
   pack sp2 [Expand Off, Fill X, Side AtBottom]
 
+  -- theory composer frame (toggled with button)
+  composer <- newFrame b []
+  pack composer [Expand On, Fill Both]
+
+  compBox <- newVBox composer []
+  pack compBox [Expand On, Fill Both]
+  
+  newLabel compBox [text "Fine grained composition of theory:"] >>=
+        (\ lab -> pack lab [])                                       
+
+  icomp <- newFrame compBox []
+  pack icomp [Expand On, Fill Both]
+
+  icBox <- newHBox icomp []
+  pack icBox [Expand On, Fill Both]
+
+  (selectAllAxs,deselectAllAxs,lbAxs) 
+      <- newExtSelListBoxFrame icBox "Axioms to include:" 10
+
+  (selectAllThs,deselectAllThs,lbThs) 
+      <- newExtSelListBoxFrame icBox "Theorems to include:" 10
+
+  populateAxiomsList lbAxs initState
+  lbThs # HTk.value (OMap.keys (goalMap initState))
+  doSelectAllEntries True lbAxs
+  doSelectAllEntries True lbThs
+
+  -- separator
+  sp1 <- newSpace b (cm 0.15) []
+  pack sp1 [Expand Off, Fill X, Side AtBottom]
+
+  newHSeparator b
+
+  sp2 <- newSpace b (cm 0.15) []
+  pack sp2 [Expand Off, Fill X, Side AtBottom]
+
   -- bottom frame (close button)
   bottom <- newFrame b []
   pack bottom [Expand Off, Fill Both]
   
   closeButton <- newButton bottom [text "Close"]
-  pack closeButton [Expand Off, Fill None, Side AtRight]
+  pack closeButton [Expand Off, Fill None, Side AtRight,PadX (pp 13)]
 
   updateDisplay initState False lb pathsLb statusLabel
 
   -- events
-  (selectGoal, _) <- bindSimple lb (ButtonPress (Just 1))
-  selectAllGoals <- clicked selectAllButton
   (selectProverPath, _) <- bindSimple pathsLb (ButtonPress (Just 1))
   displayGoals <- clicked displayGoalsButton
   moreProverPaths <- clicked moreButton
@@ -458,19 +553,37 @@ proofManagementGUI lid proveF fineGrainedSelectionF
   -- event handlers
   spawnEvent 
     (forever
-      ((selectGoal >>> do
-          s <- readIORef stateRef
-	  s' <- doSelectGoal s lb
-	  writeIORef stateRef s'
-          done)
+      (  (deselectAllGoals >>> do
+	    doSelectAllEntries False lb
+            modifyIORef stateRef (\s -> s{selectedGoals = []})
+            done)
       +> (selectAllGoals >>> do
-            s <- readIORef stateRef
-	    s' <- doSelectAllGoals s lb
-	    writeIORef stateRef s'
+	    doSelectAllEntries True lb
+            modifyIORef stateRef 
+                            (\s -> s{selectedGoals = OMap.keys (goalMap s)})
+            done)
+      +> (selectAllAxs >>> do
+            doSelectAllEntries True lbAxs
+            updateStateSelectAllAxs stateRef
+            done)
+      +> (selectAllThs >>> do
+            doSelectAllEntries True lbThs
+            modifyIORef stateRef
+                        (\s -> s{includedTheorems = 
+                                     OMap.keys (goalMap s)})
+            done)
+      +> (deselectAllAxs >>> do
+	    doSelectAllEntries False lbAxs
+            modifyIORef stateRef (\s -> s{includedAxioms = []})
+            done)
+      +> (deselectAllThs >>> do
+	    doSelectAllEntries False lbThs
+            modifyIORef stateRef (\s -> s{includedTheorems = []})
             done)
       +> (displayGoals >>> do
             s <- readIORef stateRef
-	    doDisplayGoals s
+            s' <- updateStateGetSelectedGoals s lb
+	    doDisplayGoals s'
             done)
       +> (selectProverPath>>> do
             s <- readIORef stateRef
@@ -481,7 +594,9 @@ proofManagementGUI lid proveF fineGrainedSelectionF
             s <- readIORef stateRef
 	    let s' = s{proverRunning = True}
 	    updateDisplay s' True lb pathsLb statusLabel
-	    Result.Result ds ms'' <- fineGrainedSelectionF s
+            prState <- (updateStateGetSelectedSens s' lbAxs lbThs >>=
+                        (\ si -> updateStateGetSelectedGoals si lb))
+	    Result.Result ds ms'' <- fineGrainedSelectionF prState
             s'' <- case ms'' of
                    Nothing -> fail "fineGrainedSelection returned Nothing"
                    Just x -> return x
@@ -493,7 +608,11 @@ proofManagementGUI lid proveF fineGrainedSelectionF
             s <- readIORef stateRef
 	    let s' = s{proverRunning = True}
 	    updateDisplay s' True lb pathsLb statusLabel
-	    Result.Result ds ms'' <- proveF s'
+            prState <- (updateStateGetSelectedSens s' lbAxs lbThs >>=
+                        (\ si -> updateStateGetSelectedGoals si lb))
+            -- putStrLn (show (includedAxioms prState)++
+            --                   ' ':show (includedTheorems prState))
+	    Result.Result ds ms'' <- proveF prState
             s'' <- case ms'' of
                    Nothing -> fail "proveF returned Nothing"
                    Just x -> return x
@@ -503,6 +622,7 @@ proofManagementGUI lid proveF fineGrainedSelectionF
             done)
       +> (showProofDetails >>> do
             s <- readIORef stateRef
+            s' <- updateStateGetSelectedGoals s lb
 	    doShowProofDetails s
             done)
       ))
