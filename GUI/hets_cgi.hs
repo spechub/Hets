@@ -56,7 +56,6 @@ import System.Posix.IO
 import System.Posix.Types
 import System.Posix.Files
 import System.Posix.Process
-import System.Posix.Env
 import Data.List
 import Control.Monad
 import Driver.Version
@@ -122,6 +121,7 @@ hetcasl_sty_url = "http://www.informatik.uni-bremen.de/agbkb/forschung/formal_me
 
 webOpts :: HetcatsOpts
 webOpts = defaultHetcatsOpts {outputToStdout = False,
+                              libdir = casl_lib_dir,
                               verbose = 0}
 
 data SelectedBoxes = 
@@ -212,7 +212,7 @@ handle (F5 input box1 box2 box3 box4) =
 anaInput :: String -> SelectedBoxes -> FilePath 
          -> IO (CRes.Result Output)
 anaInput contents selectedBoxes outputfiles =
-   do setEnv "HETS_LIB" casl_lib_dir True
+   do 
       let CRes.Result parseErrors mast = 
               read_LIB_DEFN_M logicGraph defaultLogic 
                               webOpts "<stdin>" contents
