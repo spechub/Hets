@@ -15,7 +15,6 @@ module OWL_DL.StaticAna where
 import OWL_DL.Sign
 import OWL_DL.AS
 import Text.XML.HXT.DOM.XmlTreeTypes
-import Common.Id
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 import Common.AS_Annotation
@@ -87,7 +86,7 @@ basicOWL_DLAnalysis (ontology@(Ontology oName _ ns), inSign, ga) =
                 case ha of
                 URIAnnotation _ qn ->
                     let nsUri = localPart qn
---                    in  (take ((length nsUri) -1) nsUri):(findImports' ra)   -- remove #
+--  in  (take ((length nsUri) -1) nsUri):(findImports' ra)   -- remove #
                     in nsUri:(findImports' ra)
                 _ -> []
 
