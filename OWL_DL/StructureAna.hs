@@ -17,7 +17,6 @@ import Data.Graph.Inductive.Graph
 import OWL_DL.Sign
 import OWL_DL.Logic_OWL_DL
 import OWL_DL.AS
--- import OWL_DL.ReadWrite
 -- import Common.DefaultMorphism
 import Data.Graph.Inductive.Query.DFS
 import Text.XML.HXT.DOM.XmlTreeTypes
@@ -31,10 +30,10 @@ import Logic.Prover
 import qualified Common.Lib.Map as Map
 -- import qualified Common.Lib.Set as Set
 import Maybe(fromJust)
--- import Debug.Trace
--- import Data.Graph.Inductive.Tree
 import Char(isDigit)
 import OWL_DL.Namespace
+
+import Debug.Trace
 
 type OntologyMap = Map.Map String Ontology
 
@@ -60,9 +59,7 @@ graphFromMap :: String -> Ontology
              -> (OntologyMap, DGraph)
 graphFromMap uri onto (ontoMap, dg) =
     let existedLNodes = labNodes dg
-        -- existedLEdges = labEdges dg
-        
-        currentSign = simpleSign $ strToQN uri
+        currentSign = simpleSign $ QN "" uri ""
        -- get current node
         (lnode, ontoMap1) = 
             createLNodes [uri] existedLNodes ontoMap 
@@ -83,7 +80,7 @@ graphFromMap uri onto (ontoMap, dg) =
         ledgeList = map (\y -> 
                              let (indT, _) = y
                              in (ind, indT, DGLink { dgl_morphism = comorphism,
-                                                     dgl_type = LocalDef,
+                                                     dgl_type = GlobalDef,
                                                      dgl_origin = DGImports
                                                    })
                         ) tagLNodes
@@ -172,9 +169,9 @@ createLNodes (hs:rs) exLNodes om =
                                   
 buildLNodeFromStr :: String -> Int -> (LNode DGNodeLab)
 buildLNodeFromStr uri i =
-    let name = strToQN uri
-        nodeName = makeName $ mkSimpleId $ localPart name
-        currentSign = simpleSign name
+    let name = uriToName uri
+        nodeName = makeName $ mkSimpleId name
+        currentSign = simpleSign $ QN "" uri ""
     in  (i+1, DGNode { dgn_name = nodeName,
                        dgn_theory = G_theory OWL_DL currentSign noSens,
                        -- lass erstmal kein Signatur.
@@ -201,7 +198,7 @@ rebuildDGraph :: [[Node]] -> OntologyMap -> DGraph -> (OntologyMap, DGraph)
 rebuildDGraph [] ontoMap dg = (ontoMap, dg)
 rebuildDGraph (hd:rs) ontoMap dg 
    | length hd <= 1 = rebuildDGraph rs ontoMap dg
-   | otherwise = 
+   | otherwise      = 
        let (ontoMap', dg') = integrateScc hd ontoMap dg
        in   rebuildDGraph rs ontoMap' dg'
 
@@ -223,7 +220,9 @@ integrateScc nodeList ontoMap dg =
          Map.insert (getNameFromNode newName)
                     (foldl integrateOntology emptyOntology ontologies)
                     (Map.filterWithKey (\x _ -> not $ x `elem` dgnNames) ontoMap), 
-         insNode (newNodeNum, 
+         delNodes nodeList 
+           $ changeEdges decomps newNodeNum 
+           $ insNode (newNodeNum, 
                  DGNode { dgn_name = newName,
                           dgn_theory = newTheory,
                           dgn_nf = Prelude.Nothing,
@@ -232,35 +231,35 @@ integrateScc nodeList ontoMap dg =
                           dgn_cons = None,
                           dgn_cons_status = LeftOpen
                         }
-                ) $ changeEdges2 decomps newNodeNum (delNodes nodeList dg)
+                ) dg
         )
 
 -- simple integrate Theory
 integrateTheory :: [G_theory] -> G_theory
-integrateTheory theories = -- head theories
+integrateTheory theories = 
   foldl assembleTheories emptyOWL_DLTheory theories
    where
     assembleTheories :: G_theory -> G_theory -> G_theory
     assembleTheories (G_theory lid1 sign1 theSen1) 
                      (G_theory lid2 sign2 theSen2) =
-              let thSen1' = maybe (error "could not coerce sentences") 
-                        id (coerceThSens lid1 lid2 "" theSen1)
-                  sign1' = maybe (error "could not coerce sign") 
-                        id (coerceSign lid1 lid2 "" sign1)
-                  csign = case signature_union lid2 sign1' sign2 of
+              let thSen2' = maybe (error "could not coerce sentences") 
+                        id (coerceThSens lid2 lid1 "" theSen2)
+                  sign2' = maybe (error "could not coerce sign") 
+                        id (coerceSign lid2 lid1 "" sign2)
+                  csign = case signature_union lid1 sign2' sign1 of
                           Result dgs mv -> 
                               maybe (error ("sig_union"++show dgs)) id mv
-              in G_theory lid2 csign (joinSens thSen1' theSen2)
+              in G_theory lid1 csign (joinSens theSen1 thSen2')
 
 
 
 getNameFromNode :: NODE_NAME -> String
 getNameFromNode (sid, _, _) = show sid
 
-changeEdges2 :: [Context DGNodeLab DGLinkLab] -> Node -> DGraph -> DGraph
-changeEdges2 [] _ dg = dg
-changeEdges2 ((fromNodes, n, _, toNodes):r) newNode dg =
-    changeEdges2 r newNode $ changeTo toNodes $ changeFrom fromNodes dg
+changeEdges :: [Context DGNodeLab DGLinkLab] -> Node -> DGraph -> DGraph
+changeEdges [] _ dg = dg
+changeEdges ((fromNodes, n, _, toNodes):r) newNode dg =
+    changeEdges r newNode $ changeTo toNodes $ changeFrom fromNodes dg
     where changeFrom :: [(DGLinkLab, Node)] -> DGraph -> DGraph
           changeFrom [] dg2 = dg2
           changeFrom ((dgLink,fn):rf) dg2 
