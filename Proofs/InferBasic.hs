@@ -55,6 +55,7 @@ import Common.PrettyPrint
 import Common.Utils
 import Data.Graph.Inductive.Graph
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 import qualified Common.OrderedMap as OMap
 import Common.Id
 import Syntax.AS_Library
@@ -327,14 +328,30 @@ callProver st (G_prover lid4 p, Comorphism cid) =
     case theory st of
     G_theory lid1 sign sens ->
         ioresToIO $ do 
-        let sel_goals =
-                   -- remove proved theorems from map of goals
-                   (Map.filter (\x -> not (isProvenSenStatus $ OMap.ele x)) 
-                   (selectedGoalMap st))
+          -- coerce goalMap
+        ths <- coerceThSens (logicId st) lid1 
+                            "Proofs.InferBasic.callProver: selected goals" 
+                            (goalMap st)
+          -- partition goalMap
+        let (sel_goals,other_goals) = 
+                let selected k _ = Set.member k s
+                    s = Set.fromList (selectedGoals st)
+                in Map.partitionWithKey selected ths
+            provenThs =
+                   Map.filter (\x -> (isProvenSenStatus $ OMap.ele x)) 
+                   other_goals
+          -- select goals from goalMap
+            -- sel_goals = filterMapWithList (selectedGoals st) goals
+          -- select proven theorems from goalMap
+            sel_provenThs = OMap.map (\ x -> x{isAxiom = True}) $ 
+                            filterMapWithList (includedTheorems st) provenThs
+            sel_sens = filterMapWithList (includedAxioms st) sens
             lidT = targetLogic cid
-        sel_goals' <- coerceThSens (logicId st) lid1 "" sel_goals
-        bTh' <- coerceBasicTheory lid1 (sourceLogic cid) "" 
-                   (sign, toNamedList $ Map.union sens sel_goals')
+        bTh' <- coerceBasicTheory lid1 (sourceLogic cid) 
+                   "Proofs.InferBasic.callProver: basic theory"
+                   (sign, toNamedList $ 
+                          Map.union sel_sens $ 
+                          Map.union sel_provenThs sel_goals)
         (sign'',sens'') <- resToIORes $ map_theory cid bTh' 
         -- call the prover
         p' <- coerceProver lid4 lidT "" p
@@ -343,7 +360,7 @@ callProver st (G_prover lid4 p, Comorphism cid) =
         -- ioToIORes $ putStrLn $ show ps
         return $ st { goalMap = 
                           markProved (Comorphism cid) lidT 
-                                     (filter isProvedStat ps) 
+                                     ({-filter isProvedStat-} ps) 
                                      (goalMap st) 
                     }
 
@@ -368,7 +385,9 @@ proveFineGrainedSelect st =
 markProved :: (Ord a, Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
          sign morphism symbol raw_symbol proof_tree) => 
-     AnyComorphism -> lid -> [Proof_status proof_tree] -> ThSens a (AnyComorphism,BasicProof) -> ThSens a (AnyComorphism,BasicProof)
+       AnyComorphism -> lid -> [Proof_status proof_tree] 
+    -> ThSens a (AnyComorphism,BasicProof) 
+    -> ThSens a (AnyComorphism,BasicProof)
 markProved c lid status thSens = foldl upd thSens status
     where upd m pStat = OMap.update (updStat pStat) (goalName pStat) m
           updStat ps s = Just $ 
