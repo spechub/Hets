@@ -79,6 +79,7 @@ simpleSign :: ID -> Sign
 simpleSign ontoID = 
             emptySign { ontologyID = ontoID }
 
+-- ignoed ontologyID
 diffSig :: Sign -> Sign -> Sign
 diffSig a b = 
     a { concepts = concepts a `Set.difference` concepts b
@@ -93,7 +94,10 @@ diffSig a b =
 
 addSign :: Sign -> Sign -> Sign
 addSign toIns totalSign =
-    totalSign { concepts = Set.union (concepts totalSign) 
+    totalSign { ontologyID = (let QN _ lp1 _ = ontologyID totalSign
+                                  QN _ lp2 _ = ontologyID toIns
+                              in  QN "" (lp1 ++ "_" ++ lp2) ""),
+                concepts = Set.union (concepts totalSign) 
                                      (concepts toIns),
                 primaryConcepts = Set.union (primaryConcepts totalSign) 
                                             (primaryConcepts toIns),
