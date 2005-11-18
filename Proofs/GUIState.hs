@@ -18,6 +18,7 @@ module Proofs.GUIState where
 import qualified Common.OrderedMap as OMap
 import qualified Common.Lib.Map as Map
 import Common.Result
+import Common.Utils
 
 import Logic.Logic 
 import Logic.Prover
@@ -46,16 +47,16 @@ data ProofGUIState lid sentence =
 	proversMap :: KnownProversMap,
         -- | comorphisms fitting with sublogic of this G_theory
         comorphismsToProvers :: [(G_prover,AnyComorphism)],
-        -- | all goals in the theory
---        allGoals :: [String],
         -- | currently selected goals
         selectedGoals :: [String],
+        -- | axioms to include for the proof
+        includedAxioms :: [String],
+        -- | theorems to include for the proof
+        includedTheorems :: [String],
         -- | whether a prover is running or not
         proverRunning :: Bool,
         -- | accumulated Diagnosis during Proofs
         accDiags :: [Diagnosis],
-        -- | wether all goals are selected or not
-        allGoalsSelected :: Bool,
         -- | which prover (if any) is currently selected
         selectedProver :: Maybe String
       }
@@ -84,17 +85,28 @@ initialState lid1 thN th@(G_theory lid2 sig thSens) pm cms =
                            goalMap = gMap',
 		           proversMap = pm,
                            comorphismsToProvers = cms,
-                           -- allGoals = OMap.keys gMap',
                            selectedGoals = [],
+                           includedAxioms = OMap.keys aMap,
+                           includedTheorems = OMap.keys gMap,
                            accDiags = [],
                            proverRunning = False,
-                           allGoalsSelected = False,
                            selectedProver = if null (Map.keys pm) 
                                             then Nothing
                                             else Just (last $ Map.keys pm)
                          }
-      
+
+
 selectedGoalMap :: ProofGUIState lid sentence 
               -> ThSens sentence (AnyComorphism,BasicProof)
-selectedGoalMap st = Map.filterWithKey selected (goalMap st)
-    where selected k _ = k `elem` (selectedGoals st)
+selectedGoalMap st = filterMapWithList (selectedGoals st) (goalMap st)
+
+axiomMap :: 
+    (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
+     Monad m) =>
+       ProofGUIState lid1 sentence1 
+    -> m (ThSens sentence1 (AnyComorphism,BasicProof))
+axiomMap s = 
+    case theory s of
+    G_theory lid1 _ aM -> 
+        coerceThSens lid1 (logicId s) "Proofs.GUIState.axiomMap" aM
