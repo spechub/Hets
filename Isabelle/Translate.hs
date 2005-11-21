@@ -72,8 +72,7 @@ toAltSyntax ga n i = let
       else if begPlace i then let q = adjustPrec $ mx + 3 in (q : minL1 , q)
       else if endPlace i then let q = adjustPrec $ mx + 2 in (minL1 ++ [q], q)
       else (minL, adjustPrec $ mx + 4)
-    in if n == 0 then if ts == show i then Nothing else 
-                          Just $ AltSyntax ts [] 999
+    in if n == 0 then Just $ AltSyntax ts [] 999
        else if isMixfix i then Just $ AltSyntax
                 ('(' : (if begPlace i then "_ " else ht) 
                          ++ tts ++ ")") precList erg
