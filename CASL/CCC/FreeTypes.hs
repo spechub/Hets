@@ -291,7 +291,10 @@ checkFreeType (osig,osens) m fsn
           _ -> Implication (Conjunction cond nullRange) resQ True nullRange
       where cond= everyOnce $ concat $ map conditionAxiom fos
             res= concat $ map resultAxiom fos
-            resQ = Strong_equation (head res) (last res) nullRange
+            resQ 
+              | null res = Negation (Conjunction cond nullRange) nullRange
+              | length res == 1 = Negation (head cond) nullRange
+              | otherwise = Strong_equation (head res) (last res) nullRange
     overlap_query1 = map overlapQuery overlapAxioms
     overlap_query = trace (showPretty overlap_query1 "OverlapQ") overlap_query1
     pattern_Pos [] = error "pattern overlap"
@@ -460,6 +463,7 @@ conditionAxiom ::  FORMULA f -> [ FORMULA f]
 conditionAxiom f = case f of
                      Quantification _ _ f' _ -> conditionAxiom f'
                      Implication f' _ _ _ -> [f']
+                     Equivalence _ f' _ -> [f']
                      _ -> []
 
 

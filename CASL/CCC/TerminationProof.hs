@@ -606,44 +606,46 @@ equiv_cime index f =
               (((predSymStr predS2) ++ "(" ++ (terms_cime ts2) ++ ") -> " ++
               fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ 
               ")," ++ (terms_cime ts2) ++ ");\n" ++
-              fk1 ++ "(True," ++ (terms_cime ts2) ++ ") -> True;\n" ++
-              (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ ") -> " ++
-              fk2 ++ "(" ++ (predSymStr predS2) ++ "(" ++ (terms_cime ts2) ++ 
-              ")," ++ (terms_cime ts1) ++ ");\n" ++
-              fk2 ++ "(True," ++ (terms_cime ts1) ++ ") -> True;\n"),
-              (index + 2))
+              fk1 ++ "(True," ++ (terms_cime ts2) ++ ") -> True;\n"),
+              (index +2))
+        --    (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ ") -> " ++
+        --    fk2 ++ "(" ++ (predSymStr predS2) ++ "(" ++ (terms_cime ts2) ++ 
+        --    ")," ++ (terms_cime ts1) ++ ");\n" ++
+        --    fk2 ++ "(True," ++ (terms_cime ts1) ++ ") -> True;\n"),
+        --    (index + 2))
           Negation (Predication predS2 ts2 _) _ ->           -- !!
               (((predSymStr predS2) ++ "(" ++ (terms_cime ts2) ++ ") -> " ++
               fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ 
               ")," ++ (terms_cime ts2) ++ ");\n" ++
-              fk1 ++ "(True," ++ (terms_cime ts2) ++ ") -> False;\n" ++
-              (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ ") -> " ++
-              fk2 ++ "(" ++ (predSymStr predS2) ++ "(" ++ (terms_cime ts2) ++ 
-              ")," ++ (terms_cime ts1) ++ ");\n" ++
-              fk2 ++ "(False," ++ (terms_cime ts1) ++ ") -> True;\n"),
-              (index + 2))
+              fk1 ++ "(True," ++ (terms_cime ts2) ++ ") -> False;\n"),
+              (index +2))
+        --    (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ ") -> " ++
+        --    fk2 ++ "(" ++ (predSymStr predS2) ++ "(" ++ (terms_cime ts2) ++ 
+        --    ")," ++ (terms_cime ts1) ++ ");\n" ++
+        --    fk2 ++ "(False," ++ (terms_cime ts1) ++ ") -> True;\n"),
+        --    (index + 2))
           Strong_equation t1 t2 _ -> 
               (("eq(" ++ (term_cime t1) ++ "," ++ (term_cime t2) ++ ") -> " ++
               fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++
               ")," ++ (term_cime t1) ++ "," ++ (term_cime t2) ++ ");\n" ++
               fk1++"(True,"++(term_cime t1)++","++(term_cime t2)++") -> " ++
-              "True;\n" ++
-              (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ ") -> " ++
-              fk2 ++ "(" ++ (term_cime t1) ++ "," ++ (terms_cime ts1) ++ 
-              ");\n" ++
-              fk2 ++ "(" ++ (term_cime t2) ++ "," ++ (terms_cime ts1) ++
-              ") -> " ++ "True;\n"),(index + 2))
+              "True;\n"),(index + 2))
+        --    (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ ") -> " ++
+        --    fk2 ++ "(" ++ (term_cime t1) ++ "," ++ (terms_cime ts1) ++ 
+        --    ");\n" ++
+        --    fk2 ++ "(" ++ (term_cime t2) ++ "," ++ (terms_cime ts1) ++
+        --    ") -> " ++ "True;\n"),(index + 2))
           Negation (Strong_equation t1 t2 _) _ ->
               (("eq(" ++ (term_cime t1) ++ "," ++ (term_cime t2) ++ ") -> " ++
               fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++
               ")," ++ (term_cime t1) ++ "," ++ (term_cime t2) ++ ");\n" ++
               fk1 ++ "(True," ++ (term_cime t1) ++ "," ++ (term_cime t2) ++ 
-              ") -> False;\n" ++
-              (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ ") -> " ++
-              fk2 ++ "(eq(" ++ (term_cime t1) ++ "," ++ (term_cime t2) ++ 
-              ")," ++ (terms_cime ts1) ++ ");\n" ++
-              fk2 ++ "(False," ++ (terms_cime ts1) ++ ") -> " ++ "True;\n"),
-              (index + 2))
+              ") -> False;\n"),(index +2))
+        --      (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ ") -> " ++
+        --      fk2 ++ "(eq(" ++ (term_cime t1) ++ "," ++ (term_cime t2) ++ 
+        --      ")," ++ (terms_cime ts1) ++ ");\n" ++
+        --      fk2 ++ "(False," ++ (terms_cime ts1) ++ ") -> " ++ "True;\n"),
+        --      (index + 2))
           _ -> error "!! "
     Equivalence (Existl_equation t1 t2 _) f1 _ ->
         error "eq_ex"
