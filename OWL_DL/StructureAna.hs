@@ -74,9 +74,20 @@ graphFromMap uri onto (ontoMap, dg) =
 
         morphism = idComorphism (Logic OWL_DL) 
         Result _ (Just comorphism) = 
-            gEmbedComorphism morphism (G_sign OWL_DL currentSign) 
+             gEmbedComorphism morphism (G_sign OWL_DL currentSign) 
         -- TODO: check if gEmbed (Logic.Grothendieck) and G_morphism 
-        -- works better
+        -- works better:
+        --   gEmbed :: G_morphism -> GMorphism
+        --   data G_morphism = G_morphism lid morphism
+        --   data GMorpihism = GMorphism cid sign morphism
+        --   data AnyComorphism = Comorphism cid
+        --   moeglicher Weg: 
+        --     sigma2 <- coerceSign lid1 lid2 "XXXXXX" sigma
+        --     sys = sym_of lid sigma
+        --     sys1 = sym_of lid sigma1
+        --     mor = adjustPos pos $ cogenerated_sign lid 
+        --              (sys1 `Set.difference` sys) sigma2
+        --      gEmbed (G_morphism lid mor)
         ledgeList = map (\y -> 
                              let (indT, _) = y
                              in (ind, indT, DGLink { dgl_morphism = comorphism,
