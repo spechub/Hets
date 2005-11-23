@@ -122,301 +122,88 @@ printOUTerm t = case t of
 
 -- | print plain term
 printTerm :: Term -> Doc
-printTerm = text . showTerm
+printTerm = printPlainTerm
 
--- look into this Strings
+printPlainTerm :: Term -> Doc
+printPlainTerm = fst . printTrm
 
-showQuantStr :: String -> String
-showQuantStr s | s == allS = "!"
-               | s == exS  = "?"
-               | s == ex1S = "?!"
-               | otherwise = error "IsaPrint.showQuantStr"
+printParenTerm :: Int -> Term -> Doc
+printParenTerm i t = case printTrm t of
+    (d, j) -> if j < i then parens d else d
 
-showTerm :: Term -> String
-showTerm (Const (VName {new=c}) _) = c
-showTerm (Free  (VName {new=v}) _) = v
+printTrm :: Term -> (Doc, Int)
+printTrm trm = case trm of
+    Const vn _ -> case altSyn vn of
+        Nothing -> (text $ new vn, maxPrio)
+        Just (AltSyntax s is i) -> if null is then 
+            (replaceUnderlines s [], i) else (text $ new vn, i)
+    Free vn _ -> (text $ new vn, maxPrio)
+    Var (Indexname _ _) _ -> error "Isa.Term.Var not used"
+    Bound _ -> error "Isa.Term.Bound not used"
+    Abs v _ b c -> ((text $ case c of
+        NotCont -> "%"
+        IsCont -> "LAM") <+> printPlainTerm v <> text "." 
+                    <+> printPlainTerm b, lowPrio)
+    If i t e NotCont -> (text "if" <+> printPlainTerm i <+> 
+                        text "then" <+> printPlainTerm t <+>
+                        text "else" <+> printPlainTerm e, 
+                        lowPrio)
+    If i t e IsCont -> (text "If" <+> printPlainTerm i <+> 
+                        text "then" <+> printPlainTerm t <+>
+                        text "else" <+> printPlainTerm e <+> text "fi", 
+                        maxPrio)
+    Case e ps -> (text "case" <+> printPlainTerm e <+> text "of"
+                  $$ vcat (punctuate (space <> text "|") $ 
+                         map (\ (p, t) -> printPlainTerm p <+> text "=>"
+                                       <+> printPlainTerm t) ps), lowPrio)
+    Let es i -> (text "let" <+> 
+           vcat (punctuate semi $ 
+                 map (\ (p, t) -> printPlainTerm p <+> text "="
+                               <+> printPlainTerm t) es) 
+           <+> text "in" <+> printPlainTerm i, lowPrio)
+    IsaEq t1 t2 -> (printParenTerm (isaEqPrio + 1) t1 <+> text "=="
+                   <+> printParenTerm isaEqPrio t2, isaEqPrio)
+    Tuplex cs c -> ((case c of 
+        NotCont -> parens
+        IsCont -> \ d -> text "<" <+> d <+> text ">") $ 
+                        fsep (punctuate comma $ map printPlainTerm cs)
+                    , maxPrio)
+    Fix t -> (text "fix $" <+> printParenTerm maxPrio t, maxPrio - 1)
+    Bottom -> (text "UU", maxPrio)
+    Wildcard -> error "Isa.Term.Wildcard not used"
+    Paren t -> (parens $ printPlainTerm t, maxPrio)
+    App f a c -> case f of 
+        Const (VName _ (Just (AltSyntax s [j] i))) _
+            -> (replaceUnderlines s [printParenTerm j a] , i)
+        Const vn _ | new vn `elem` [allS, exS, ex1S] -> case a of
+            Abs v _ b _ -> (text (new vn) <+> printPlainTerm v
+                    <> text "." 
+                    <+> printPlainTerm b, lowPrio)
+            _ -> error "printTrm.quantor"
+        _ -> (printParenTerm (maxPrio - 1) f <+>
+                    (case c of
+                       NotCont -> empty
+                       IsCont -> text "$")
+                    <+> printParenTerm maxPrio a, maxPrio - 1)
+    MixfixApp f args c -> case f of 
+        Const (VName _ (Just (AltSyntax s is i))) _ | length is == length args
+            -> (replaceUnderlines s $ zipWith printParenTerm is args, i)
+        MixfixApp g margs@(_ : _) _ -> printTrm $ MixfixApp g (margs ++ args) c
+        _ -> case args of 
+             [] -> printTrm f
+             a : l -> printTrm (MixfixApp (App f a c) l c)
 
-showTerm (Tuplex ls c) = case c of
-   IsCont -> "< " ++ (showTupleArgs ls) ++ ">"
- -- the extra space takes care of a minor Isabelle bug
-   NotCont -> "(" ++ (showTupleArgs ls) ++ ")"
- where
-   showTupleArgs xs = case xs of
-     [] -> []
-     [a] -> showTerm a
-     a:as -> case a of
-      (Free _ t) -> showTerm a ++ "::" ++ show (printTyp Null t)
-                    ++ "," ++ showTupleArgs as
-      _ -> showTerm a ++ "," ++ showTupleArgs as
-
-showTerm (Abs v _y t l) = lb ++ (case l of
-    NotCont -> "%"
-    IsCont -> "LAM ") ++ showTerm v ++ ". " ++ showTerm t ++ rb
-
--- showTerm (App (Const q _) (Abs v ty t _) _) | q `elem` [allS, exS, ex1S] =
---   showQuant (showQuantStr q) v ty t
--- showTerm t@(Const c _) = showPTree (toPrecTree t)
-showTerm (Paren t) = showTerm t
-showTerm (Fix t) = lb++"fix"++"$"++(showTerm t)++rb
-showTerm t@(App _ _ NotCont) = showPTree (toPrecTree t)
-showTerm t@(MixfixApp _ _ NotCont) = showPTree (toPrecTree t)
-showTerm (App t1 t2 IsCont) = lb++(showTerm t1)++"$"++(showTerm t2)++rb
-showTerm Bottom = "UU"
-
-showTerm (IsaEq t1 t2) = lb ++ (showTerm t1) ++ sp ++ "=="
-                         ++ sp ++ (showTerm t2) ++ rb
-showTerm (Case term alts) =
-  let sAlts = map showCaseAlt alts
-  in lb ++ "case" ++ sp ++ showTerm term ++ sp ++ "of"
-         ++ sp ++ head sAlts
-         ++ concat (map ((++) ("\n" ++ sp ++ sp ++ sp ++ "|" ++ sp))
-                                                    (tail sAlts)) ++ rb
-
-showTerm (If t1 t2 t3 c) = case c of
-  NotCont ->
-    lb ++ "if" ++ sp ++ showTerm t1 ++ sp ++ "then" ++ sp
-           ++ showTerm t2 ++ sp ++ "else" ++ sp ++ showTerm t3 ++ rb
-  IsCont ->
-    lb ++ "If" ++ sp ++ showTerm t1 ++ sp ++ "then" ++ sp
-        ++ showTerm t2 ++ sp ++ "else" ++ sp ++ showTerm t3 ++ sp ++ "fi" ++ rb
-
-showTerm (Let pts t) = lb ++ "let" ++ sp ++ showPat False (head pts)
-                                ++ concat (map (showPat True) (tail pts))
-                                ++ sp ++ "in" ++ sp ++ showTerm t ++ rb
-showTerm t = error $ "Isa.showTerm: " ++ show t
-
-showPat :: Bool -> (Term, Term) -> String
-showPat b (pat, term) =
-  let s = sp ++ showTerm pat ++ sp ++ "=" ++ sp ++ showTerm term
-  in-- showTerm (Const c _) = c
-
-    if b then ";" ++ s
-      else s
-
-showCaseAlt :: (Term, Term) -> String
-showCaseAlt (pat, term) =
-  showPattern pat ++ sp ++ "=>" ++ sp ++ showTerm term
-
-showPattern :: Term -> String
-showPattern t = showTerm t
-
-showQuant :: String -> Term -> Typ -> Term -> String
-showQuant s var _typ term =
-   s++sp++ showTerm var ++ " . "  ++ showTerm term
-
-{-
-   For nearly perfect parenthesis - they only appear when needed -
-   a formula/term is broken open in following pieces:
-                            (logical) connector
-                           /                   \
-                          /                     \
-                formula's lhs               formula's rhs
-
-   Every connector is annotated with its precedence, every 'unbreakable'
-   formula gets the lowest precedence.
--}
-
--- term annotated with precedence
-data PrecTerm = PrecTerm Term Precedence deriving (Show)
-type Precedence = Int
-
-{- Precedences (descending): __ __ (Isabelle's term application),
-                             application of HasCASL ops, <=>, =, /\, \/, =>
-   Associativity:  =  -- left
-                   => -- right
-                   /\ -- right
-                   \/ -- right
--}
-
-data PrecTermTree = Node PrecTerm [PrecTermTree]
-
-isaAppPrec :: Term -> PrecTerm
-isaAppPrec t = PrecTerm t 0
-
-appPrec :: Term -> PrecTerm
-appPrec t = PrecTerm t 5
-
-eqPrec :: Term -> PrecTerm
-eqPrec t = PrecTerm t 10
-
-andPrec :: Term -> PrecTerm
-andPrec t = PrecTerm t 20
-
-orPrec :: Term -> PrecTerm
-orPrec t = PrecTerm t 30
-
-implPrec :: Term -> PrecTerm
-implPrec t = PrecTerm t 40
-
-capplPrec :: Term -> PrecTerm
-capplPrec t = PrecTerm t 999
-
-noPrec :: Term -> PrecTerm
-noPrec t = PrecTerm t (-10)
-
-quantS :: String
-quantS = "QUANT"
-
-dummyS :: String
-dummyS = "Dummy"
-
-binFunct :: String -> Term -> PrecTerm
-binFunct s | s == eq   = eqPrec
-           | s == conj = andPrec
-           | s == disj = orPrec
-           | s == impl = implPrec
-           | s == cappl = capplPrec
-           | otherwise = appPrec
-
-toPrecTree :: Term -> PrecTermTree
-toPrecTree trm =
-  case trm of
-    App c1@(Const vn _) a2@(Abs _ _ _ _) _
-        | new vn `elem` [allS, exS, ex1S] ->
-            Node (isaAppPrec $ conDouble quantS) [toPrecTree c1, toPrecTree a2]
-    App (App t@(Const vn _) t3 NotCont) t2 NotCont ->
-        Node (binFunct (new vn) t) [toPrecTree t3, toPrecTree t2]
-    App t1 t2 NotCont -> Node (isaAppPrec $ conDouble dummyS)
-                   [toPrecTree t1, toPrecTree t2]
-    MixfixApp t@(Const vn _) [t2, t3] NotCont ->
-	   Node (binFunct (new vn) t) [toPrecTree t2, toPrecTree t3]
-    _ -> Node (noPrec trm) []
-
-data Assoc = LeftAs | NoAs | RightAs
-
-showPTree :: PrecTermTree -> String
-showPTree (Node (PrecTerm term _) []) = showTerm term
-showPTree (Node (PrecTerm term pre) annos) =
-  let [leftChild, rightChild] = annos
-   in case term of {
-         Const (VName { new = c }) _
-	       | c == eq -> infixP pre "=" LeftAs leftChild rightChild
-	       | c == "op +" -> infixP pre "+" LeftAs leftChild rightChild
-	       | c == "op -" -> infixP pre "-" LeftAs leftChild rightChild
-	       | c == "op *" -> infixP pre "*" LeftAs leftChild rightChild
-	       | c == "(op ##)" -> infixP pre "##" RightAs leftChild rightChild
---	        | c1 == cappl -> infixP pre "$" LeftAs leftChild rightChild
-	       | c `elem` [conj, disj, impl] ->
-                   infixP pre (drop 3 c) RightAs leftChild rightChild
-	       | c == dummyS  -> simpleInfix pre leftChild rightChild
-	       | c == isaPair -> pair leftChild rightChild
-	       | c == quantS  -> quant leftChild rightChild
-{-	       | hasDoubleULines ' ' c ->
-	               infixP pre
-			      (takeWhile (/='_') (dropWhile (=='_') c))
-			      RightAs leftChild rightChild
--- this does not work for __::__-->__ in Graph.casl
--}
-	       | otherwise    -> prefixP pre c leftChild rightChild;
-      _ -> showTerm term}
-
-{- Logical connectors: For readability and by habit they are written
-   at an infix position.
-   If the precedence of one side is weaker (here: higher number) than the
-   connector's one it is bracketed. Otherwise not.
--}
-infixP :: Precedence -> String -> Assoc -> PrecTermTree -> PrecTermTree
-       -> String
-infixP pAdult stAdult assoc leftChild rightChild
-    | (pAdult < prLeftCld) && (pAdult < prRightCld) = both
-    | pAdult < prLeftCld =
-        case assoc of
-          LeftAs  -> if pAdult == prRightCld then both else left
-          RightAs -> left
-          NoAs    -> left
-    | pAdult < prRightCld =
-        case assoc of
-          LeftAs  -> right
-          RightAs -> if pAdult == prLeftCld then both else right
-          NoAs    -> right
-    | (pAdult == prLeftCld) && (pAdult == prRightCld) =
-        case assoc of
-          LeftAs  -> right
-          RightAs -> left
-          NoAs    -> no
-    | pAdult == prLeftCld =
-        case assoc of
-          LeftAs  -> no
-          RightAs -> left
-          NoAs    -> no
-    | pAdult == prRightCld =
-        case assoc of
-          LeftAs  -> right
-          RightAs -> no
-          NoAs    -> no
-    | otherwise = no
-  where prLeftCld = pr leftChild
-        prRightCld = pr rightChild
-        stLeftCld = showPTree leftChild
-        stRightCld = showPTree rightChild
-        left = lb++ stLeftCld ++rb++sp++ stAdult ++sp++ stRightCld
-        both = lb++ stLeftCld ++rb++sp++ stAdult ++sp++lb++ stRightCld ++rb
-        right = stLeftCld ++sp++ stAdult ++sp++lb++ stRightCld ++rb
-        no =  stLeftCld ++sp++ stAdult ++sp++ stRightCld
-
-
-{- Application of (HasCASL-)operations with two arguments.
-   Both arguments are usually bracketed, except single ones.
--}
-prefixP :: Precedence -> String -> PrecTermTree -> PrecTermTree -> String
-prefixP pAdult stAdult leftChild rightChild
-    | (pAdult <= prLeftCld) && (pAdult <= prRightCld) =
-          stAdult ++
-              sp++lb++ stLeftCld ++rb++
-                  sp++lb++ stRightCld ++rb
-    | pAdult <= prLeftCld =
-          stAdult ++
-              sp++lb++ stLeftCld ++rb++
-                  sp++ stRightCld
-    | pAdult <= prRightCld =
-          stAdult ++
-              sp++ stLeftCld ++
-                  sp++lb++ stRightCld ++rb
-    | otherwise =  stAdult ++
-                       sp++ stLeftCld ++
-                           sp++ stRightCld
-  where prLeftCld = pr leftChild
-        prRightCld = pr rightChild
-        stLeftCld = showPTree leftChild
-        stRightCld = showPTree rightChild
-
-{- Isabelle application: An operation/a datatype-constructor is applied
-   to one argument. The whole expression is always bracketed.
--}
-simpleInfix :: Precedence -> PrecTermTree -> PrecTermTree -> String
-simpleInfix pAdult leftChild rightChild
-    | (pAdult < prLeftCld) && (pAdult < prRightCld) =
-          lbb++ stLeftCld ++rb++
-                sp++lb++ stRightCld ++rbb
-    | pAdult < prLeftCld =
-          lbb++ stLeftCld ++rb++
-                sp++ stRightCld ++rb
-    | pAdult < prRightCld =
-          lb++ stLeftCld ++sp++
-               lb++ stRightCld ++rbb
-    | otherwise = lb++ stLeftCld ++sp++
-                       stRightCld ++rb
-  where prLeftCld = pr leftChild
-        prRightCld = pr rightChild
-        stLeftCld = showPTree leftChild
-        stRightCld = showPTree rightChild
-
-
-{- Quantification _in_ Formulas
--}
-quant :: PrecTermTree -> PrecTermTree -> String
-quant (Node (PrecTerm (Const (VName {new=q}) _) _) [])
-          (Node (PrecTerm (Abs v ty t _) _) []) =
-              lb++showQuant (showQuantStr q) v ty t++rb
-quant _ _ = error "[Isabelle.IsaPrint] Wrong quantification!?"
-
-pr :: PrecTermTree -> Precedence
-pr (Node (PrecTerm _ p) _) = p
-
--- Prints: (p1, p2)
-pair :: PrecTermTree -> PrecTermTree -> String
-pair leftChild rightChild = lb++showPTree leftChild++", "++
-                                showPTree rightChild++rb
+replaceUnderlines :: String -> [Doc] -> Doc
+replaceUnderlines str l = case str of
+    "" -> empty
+    '\'': r@(q : s) -> if q `elem` "_/'()" 
+                       then text [q] <> replaceUnderlines s l
+                       else text "'" <> replaceUnderlines r l
+    '_' : r -> case l of
+                  h : t -> h <> replaceUnderlines r t
+                  _ -> error "replaceUnderlines"
+    q : r -> if q `elem` "()/" then replaceUnderlines r l
+             else text [q] <> replaceUnderlines r l
 
 -- end of term printing
 
@@ -462,7 +249,8 @@ printAlt :: VName -> Doc
 printAlt (VName _ altV) = case altV of
     Nothing -> empty
     Just (AltSyntax s is i) -> parens $ doubleQuotes (text s)
-        <+> if null is then empty else text (show is) <+> text (show i)
+        <+> if null is then empty else text (show is) <+> 
+            if i == maxPrio then empty else text (show i)
 
 instance PrettyPrint Sign where
   printText0 _ sig = text (showBaseSig $ baseSig sig) <> colon $++$
@@ -489,9 +277,10 @@ instance PrettyPrint Sign where
     printDomain (t, ops) =
        printType t <+> equals <+>
        hsep (punctuate (text " |") $ map printDOp ops)
-    printDOp (VName { new = opname }, args) =
+    printDOp (vn, args) = let opname = new vn in
        text opname <+> hsep (map (printDOpArg opname)
                             $ zip args $ reverse [1 .. length args])
+       <+> printAlt vn
     printDOpArg o (a, i) = let
       d = case a of
             TFree _ _ -> printTyp Null a
@@ -551,11 +340,5 @@ sp = " "
 rb :: String
 rb = ")"
 
-rbb :: String
-rbb = rb++rb
-
 lb :: String
 lb = "("
-
-lbb :: String
-lbb = lb++lb
