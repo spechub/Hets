@@ -176,7 +176,8 @@ minExpFORMULA_pred mef sign ide mty args pos = do
         preds' = Set.filter ( \ p -> length (predArgs p) == nargs) $
               Map.findWithDefault Set.empty ide $ predMap sign
         preds = case mty of
-                   Nothing -> leqClasses (leqP' sign) preds'
+                   Nothing -> map (pSortBy predArgs sign) 
+                              $ leqClasses (leqP' sign) preds'
                    Just ty -> if Set.member ty preds'
                               then [[ty]] else []
     noOpOrPred preds "predicate" mty ide pos nargs
@@ -278,7 +279,8 @@ minExpTerm_appl mef sign ide mty args pos = do
         ops' = Set.filter ( \ o -> length (opArgs o) == nargs) $
               Map.findWithDefault Set.empty ide $ opMap sign
         ops = case mty of
-                   Nothing -> leqClasses (leqF' sign) ops'
+                   Nothing -> map (pSortBy opArgs sign)
+                              $ leqClasses (leqF' sign) ops'
                    Just ty -> if Set.member ty ops' ||
                                   -- might be known to be total
                                  Set.member ty {opKind = Total} ops'
@@ -473,3 +475,50 @@ combine      :: [[a]] -> [[a]]
 combine []    = [[]]
 combine (x:l) = concatMap ((`map` combine l) . (:)) x
 -- a better name would be "combine"
+
+cmpSubsort :: Sign f e -> POrder SORT
+cmpSubsort sign s1 s2 = 
+    if s1 == s2 then Just EQ else
+    let l1 = supersortsOf s1 sign
+        l2 = supersortsOf s2 sign
+        b = Set.member s1 l2 in
+    if Set.member s2 l1 then 
+        if b then Just EQ
+        else Just LT
+    else if b then Just GT else Nothing
+
+cmpSubsorts :: Sign f e -> POrder [SORT]
+cmpSubsorts sign l1 l2 = 
+    let l = zipWith (cmpSubsort sign) l1 l2
+    in if null l then Just EQ else foldr1 
+       ( \ c1 c2 -> if c1 == c2 then c1 else case (c1, c2) of 
+           (Nothing, _) -> Nothing
+           (_, Nothing) -> Nothing
+           (Just EQ, _) -> c2
+           (_, Just EQ) -> c1
+           _ -> Nothing) l
+
+pSortBy ::  (a -> [SORT]) -> Sign f e -> [a] -> [a]
+pSortBy f sign = let pOrd a b = cmpSubsorts sign (f a) (f b) 
+                 in concat . rankBy pOrd
+
+-- * stolen from Keith Wansbrough 2000, Partial.lhs
+
+-- | the partial order relation type
+type POrder a = a -> a -> Maybe Ordering
+
+-- | split a set into the minimal elements and the remaining elements
+minimalBy :: POrder a -> [a] -> ([a],[a])
+minimalBy order es = go es [] []
+  where go (x:xs) ms rs = if any (\ e -> order x e == Just GT) es
+                          then go xs ms (x:rs)
+                          else go xs (x:ms) rs
+        go []     ms rs = (ms,rs)
+
+-- | split a set into ranks of elements, minimal first
+rankBy :: POrder a -> [a] -> [[a]]
+rankBy order l = go l
+  where go []       = []
+        go es@(_:_) = let (xs,ys) = minimalBy order es
+                      in
+                      xs : go ys
