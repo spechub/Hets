@@ -60,7 +60,7 @@ import Data.Dynamic
 import Data.List as List
 import Control.Monad
 import Control.Exception
-import Debug.Trace
+-- import Debug.Trace
 
 getNewNode :: Tree.Gr a b -> Node
 getNewNode g = case newNodes 1 g of
@@ -631,7 +631,7 @@ joinG_sentences :: Monad m => G_theory -> G_theory -> m G_theory
 joinG_sentences (G_theory lid1 sig1 sens1) (G_theory lid2 sig2 sens2) = do
   sens2' <- coerceThSens lid2 lid1 "joinG_sentences" sens2
   sig2' <- coerceSign lid2 lid1 "joinG_sentences" sig2
-  return $ assert (let t = sig1 == sig2' in if not t then trace ("What's wrong:\n"++show sig1++"\n"++show sig2') t else t) $ G_theory lid1 sig1 $ joinSens sens1 sens2'
+  return $ assert (sig1 == sig2') $ G_theory lid1 sig1 $ joinSens sens1 sens2'
 
 -- | flattening the sentences form a list of G_theories
 flatG_sentences :: Monad m => G_theory -> [G_theory] -> m G_theory
