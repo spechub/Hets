@@ -13,7 +13,7 @@ translate 'Id' to Isabelle strings
 
 module Isabelle.Translate
     ( showIsaConstT, showIsaConstIT, showIsaTypeT, transConstStringT
-    , mkIsaConstT, mkIsaConstIT, transString, isaPrelude, toAltSyntax
+    , mkIsaConstT, mkIsaConstIT, transString, isaPrelude
     ) where
 
 import Common.Id
@@ -27,6 +27,7 @@ import qualified Common.Lib.Rel as Rel
 import Data.Char
 
 import Isabelle.IsaSign
+import Isabelle.IsaConsts
 import Isabelle.IsaStrings
 
 ------------------- Id translation functions -------------------
@@ -45,17 +46,26 @@ isaPrelude = IsaPreludes {
                   ["pApp","apt","app","defOp","pair"]),
    (Main_thy,  consts mainS), (HOLCF_thy, consts holcfS)]}
 
-toAltSyntax :: GlobalAnnos -> Int -> Id -> Maybe AltSyntax
-toAltSyntax ga n i = let
+toAltSyntax :: Bool -> Int -> GlobalAnnos -> Int -> Id -> BaseSig 
+            -> Maybe AltSyntax
+toAltSyntax prd over ga n i@(Id ms cs qs) thy = let
     (precMap, mx) = Rel.toPrecMap $ prec_annos ga
-    minPrec = 42
+    minPrec = if prd then 42 else 52
     adjustPrec p = 2 * p + minPrec
-    newPlace = "/ _"
-    minL = replicate n minPrec
+    newPlace = "/ _ "
+    minL = replicate n lowPrio
     minL1 = tail minL
     minL2 = tail minL1
-    (hd : tl) = getTokenList newPlace i
-    tts = concatMap convert tl
+    (fs, ps) = splitMixToken ms
+    nonPlaces = filter (not . isPlace) fs
+    constSet = Map.findWithDefault Set.empty thy $ preConsts isaPrelude
+    over2 = if isSingle nonPlaces && Set.member (tokStr $ head nonPlaces) 
+            constSet || Set.member (show i) constSet
+            then over + 1 else over
+    newFs = if null fs || over2 < 2 then fs else 
+                fs ++ [mkSimpleId $ replicate (over2 - 1) '\'']
+    (hd : tl) = getTokenList newPlace $ Id (newFs ++ ps) cs qs
+    tts = (if endPlace i then init else id) $ concatMap convert tl
     ht = convert hd
     ts = ht ++ tts
     convert = \ Token { tokStr = s } -> if s == newPlace then s
@@ -64,22 +74,22 @@ toAltSyntax ga n i = let
         Just p -> let 
             q = adjustPrec p  
             (l, r) = case Map.lookup i $ assoc_annos ga of
-                 Nothing -> (q, q)
+                 Nothing -> (q + 1, q + 1)
                  Just ALeft -> (q, q + 1)
                  Just ARight -> (q + 1, q)
             in (l : minL2 ++ [r], q)
         Nothing -> let q = adjustPrec $ mx + 1 in (q : minL2 ++ [q], minPrec)
       else if begPlace i then let q = adjustPrec $ mx + 3 in (q : minL1 , q)
       else if endPlace i then let q = adjustPrec $ mx + 2 in (minL1 ++ [q], q)
-      else (minL, adjustPrec $ mx + 4)
-    in if n == 0 then Just $ AltSyntax ts [] 999
+      else (minL, maxPrio - 1)
+    in if n == 0 then Just $ AltSyntax ts [] maxPrio
        else if isMixfix i then Just $ AltSyntax
                 ('(' : (if begPlace i then "_ " else ht) 
                          ++ tts ++ ")") precList erg
        else Just $ AltSyntax 
             (ts ++ "'(" ++ 
                    concat (replicate (n - 1) "_,/ ")
-                   ++ "_')") minL $ adjustPrec $ mx + 4 
+                   ++ "_')") minL $ maxPrio - 1
 
 quote :: String -> String
 quote l = case l of
@@ -97,14 +107,14 @@ showIsaConstT :: Id -> BaseSig -> String
 showIsaConstT ide thy = showIsaT1 (transConstStringT thy) ide
 
 -- also pass number of arguments
-mkIsaConstT :: GlobalAnnos -> Int -> Id -> BaseSig -> VName
-mkIsaConstT = mkIsaConstVName showIsaConstT
+mkIsaConstT :: Bool -> GlobalAnnos -> Int -> Id -> BaseSig -> VName
+mkIsaConstT = mkIsaConstVName 1 showIsaConstT
 
-mkIsaConstVName :: (Id -> BaseSig -> String) 
-                -> GlobalAnnos -> Int -> Id -> BaseSig -> VName
-mkIsaConstVName f ga n ide thy = VName 
+mkIsaConstVName :: Int -> (Id -> BaseSig -> String) 
+                -> Bool -> GlobalAnnos -> Int -> Id -> BaseSig -> VName
+mkIsaConstVName over f prd ga n ide thy = VName 
  { new = f ide thy
- , altSyn = toAltSyntax ga n ide }
+ , altSyn = toAltSyntax prd over ga n ide thy }
 
 showIsaTypeT :: Id -> BaseSig -> String
 showIsaTypeT ide thy = showIsaT1 (transTypeStringT thy) ide
@@ -113,9 +123,12 @@ showIsaTypeT ide thy = showIsaT1 (transTypeStringT thy) ide
 showIsaConstIT :: Id -> Int -> BaseSig -> String
 showIsaConstIT ide i thy = showIsaConstT ide thy ++ "_" ++ show i
 
-mkIsaConstIT :: GlobalAnnos -> Int -> Id -> Int -> BaseSig -> VName
-mkIsaConstIT ga n ide i = mkIsaConstVName
-                        ( \ ide' -> showIsaConstIT ide' i) ga n ide
+mkIsaConstIT :: Bool -> GlobalAnnos -> Int -> Id -> Int -> BaseSig -> VName
+mkIsaConstIT prd ga n ide i thy = 
+    {- if n == 0 || isPrefixOf "g__" (show ide) 
+    then mkVName $ showIsaConstIT ide i thy
+    else -}
+    mkIsaConstVName i ( \ ide' -> showIsaConstIT ide' i) prd ga n ide thy
 
 transIsaStringT :: Map.Map BaseSig (Set.Set String) -> BaseSig
                 -> String -> String

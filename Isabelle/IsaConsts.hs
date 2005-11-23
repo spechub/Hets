@@ -85,22 +85,24 @@ sSumS = "++"
 
 -- * functions for term formation
 
+maxPrio :: Int
+maxPrio = 1000
+
+lowPrio :: Int
+lowPrio = 10
+
+isaEqPrio :: Int
+isaEqPrio = 2 -- left assoc
+
 termAppl :: Term -> Term -> Term
-termAppl t1 t2 = App t1 t2 NotCont
+termAppl t1 t2 = MixfixApp t1 [t2] NotCont
 
 termMixfixAppl :: Term -> [Term] -> Term
 termMixfixAppl t1 t2 = MixfixApp t1 t2 NotCont
 
 -- | apply binary operation to arguments
---binConst :: String -> Term -> Term -> Term
---binConst s t1 t2 = termAppl (termAppl (conDouble s) t1) t2
-
 binConst :: String -> Term -> Term -> Term
 binConst s t1 t2 = MixfixApp (conDouble s) [t1,t2] NotCont
-
--- | construct a constant
-conT :: VName -> Term
-conT s = Const s noType
 
 -- | construct a constant with no type
 con :: VName -> Term
@@ -127,7 +129,7 @@ defOp = conDouble "defOp"
 
 -- | not constant
 notOp :: Term
-notOp = conDouble "~"
+notOp = con $ VName "Not" $ Just $ AltSyntax "~/ _" [40] 40
 
 -- * quantor strings
 
@@ -137,9 +139,6 @@ exS = "?"
 ex1S = "?!"
 
 -- * strings of binary ops
-
-cappl :: String
-cappl = "op $"
 
 conj :: String
 conj = "op &"
@@ -153,12 +152,15 @@ impl = "op -->"
 eq :: String
 eq = "op ="
 
+binVNameAppl :: VName -> Term -> Term -> Term
+binVNameAppl v t1 t2 = MixfixApp (con v) [t1,t2] NotCont
+
 -- * binary junctors
 binConj, binDisj, binImpl, binEqv, binEq :: Term -> Term -> Term
-binConj = binConst conj
-binDisj = binConst disj
-binImpl = binConst impl
-binEq = binConst eq
+binConj = binVNameAppl $ VName conj $ Just $ AltSyntax "(_ &/ _)"   [36, 35] 35
+binDisj = binVNameAppl $ VName disj $ Just $ AltSyntax "(_ |/ _)"   [31, 30] 30
+binImpl = binVNameAppl $ VName impl $ Just $ AltSyntax "(_ -->/ _)" [26, 25] 25
+binEq   = binVNameAppl $ VName eq   $ Just $ AltSyntax "(_ =/ _)"   [50, 51] 50
 binEqv = binEq
 
 -- * boolean constants

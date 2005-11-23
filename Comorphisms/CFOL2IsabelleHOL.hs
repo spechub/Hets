@@ -131,21 +131,23 @@ transTheory trSig trForm (sign, sens) =
     insertOps op ts m = 
      if Set.size ts == 1 
       then let t = Set.findMin ts in 
-           Map.insert (mkIsaConstT ga (length $ opArgs t) op baseSign) 
+           Map.insert (mkIsaConstT False ga (length $ opArgs t) op baseSign) 
                (transOpType t) m
       else 
       foldl (\m1 (t,i) -> 
-             Map.insert (mkIsaConstIT ga (length $ opArgs t) op i baseSign) 
+             Map.insert (mkIsaConstIT False ga 
+                         (length $ opArgs t) op i baseSign) 
                     (transOpType t) m1) m 
                 (zip (Set.toList ts) [1..(Set.size ts)])
     insertPreds pre ts m =
      if Set.size ts == 1 
       then let t = Set.findMin ts in
-           Map.insert (mkIsaConstT ga (length $ predArgs t) pre baseSign) 
+           Map.insert (mkIsaConstT True ga (length $ predArgs t) pre baseSign) 
                (transPredType (Set.findMin ts)) m
       else
       foldl (\m1 (t,i) -> 
-             Map.insert (mkIsaConstIT ga (length $ predArgs t) pre i baseSign) 
+             Map.insert (mkIsaConstIT True ga 
+                         (length $ predArgs t) pre i baseSign) 
                     (transPredType t) m1) m 
                 (zip (Set.toList ts) [1..Set.size ts])
 
@@ -323,10 +325,11 @@ transOP_SYMB sign (Qual_op_name op ot _) = let
   ga = globAnnos sign 
   l = length $ args_OP_TYPE ot in
   case (do ots <- Map.lookup op (opMap sign) 
-           if Set.size ots == 1 then return $ mkIsaConstT ga l op baseSign
+           if Set.size ots == 1 
+             then return $ mkIsaConstT False ga l op baseSign
              else do 
                    i <- elemIndex (toOpType ot) (Set.toList ots)
-                   return $ mkIsaConstIT ga l op (i+1) baseSign) of
+                   return $ mkIsaConstIT False ga l op (i+1) baseSign) of
     Just vn -> vn 
     Nothing -> error ("CASL2Isabelle unknown op: " ++ show op)
 transOP_SYMB _ (Op_name _) = error "CASL2Isabelle: unqualified operation"
@@ -336,10 +339,10 @@ transPRED_SYMB sign (Qual_pred_name p pt@(Pred_type args _) _) = let
   ga = globAnnos sign 
   l = length args in
   case (do pts <- Map.lookup p (predMap sign)
-           if Set.size pts == 1 then return $ mkIsaConstT ga l p baseSign 
+           if Set.size pts == 1 then return $ mkIsaConstT True ga l p baseSign 
              else do 
                    i <- elemIndex (toPredType pt) (Set.toList pts)
-                   return $ mkIsaConstIT ga l p (i+1) baseSign) of
+                   return $ mkIsaConstIT True ga l p (i+1) baseSign) of
     Just vn -> vn
     Nothing -> error ("CASL2Isabelle unknown pred: " ++ show p)
 transPRED_SYMB _ (Pred_name _) = error "CASL2Isabelle: unqualified predicate"
