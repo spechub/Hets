@@ -33,6 +33,7 @@ import Common.AS_Annotation hiding (isAxiom,isDef)
 import Syntax.AS_Library
 import Driver.Options
 import Common.Id
+import Logic.Logic
 import Logic.Grothendieck
 import Logic.Prover
 import Data.Graph.Inductive.Query.DFS
@@ -179,6 +180,7 @@ structureAna file opt ontoMap =
        case analysis opt of 
          Structured -> do                   -- only structure analysis
             printMsg $ labNodes dg
+            putStrLn $ show dg
             return (Just (simpleLibName file,
                           simpleLibEnv file $ reverseGraph dg))
          Skip       -> return $ fail ""     -- Nothing is ambiguous
@@ -220,12 +222,11 @@ staticAna file opt (ontoMap, dg) =
        case res of
            Just (_, dg', _) -> do
             showDiags opt $ List.nub diagnoses
-            -- putStrLn $ show $ List.nub diagnosis     
-            return (Just (simpleLibName file, 
-                          simpleLibEnv file 
-                          (insEdges (reverseLinks $ labEdges dg') 
+            let dg'' = insEdges (reverseLinks $ labEdges dg') 
                            (delEdges (edges dg') dg')
-                          )))
+            -- putStrLn $ show dg''     
+            return (Just (simpleLibName file, 
+                          simpleLibEnv file dg''))
            _            -> error "no devGraph..."
 
 -- | a map to save which node has been analysed.
@@ -305,7 +306,9 @@ nodeStaticAna
                  -- by remove of an node all associated edges are also deleted
                  -- so the deges must be saved before remove the node, then
                  -- appended again.
-		 ledges = (inn dg n) ++ (out dg n)
+                 -- The out edges (after reverse are inn edges) must
+                 -- also with new signature be changed.
+		 ledges = (inn dg n) ++ (map (changeGMorOfEdges newSig) (out dg n))
                  newG = insEdges ledges (insNode newLNode (delNode n dg))
                  
  	     return $ Result (oldDiags ++ diag)
@@ -313,7 +316,16 @@ nodeStaticAna
                             newG, newGlobalNs))
 	  _   -> do let actDiag = mkDiag Error 
 				    ("error by analysing of " ++ (show mid)) ()
-                    return $ Result (actDiag:oldDiags) Prelude.Nothing 
+                    return $ Result (actDiag:oldDiags) Prelude.Nothing
+            -- The GMorphism of edge should also with new Signature be changed, 
+            -- since with "show theory" the edges also with Sign one links 
+            -- (see Static.DevGraph.joinG_sentences).
+      where changeGMorOfEdges :: Sign -> LEdge DGLinkLab -> LEdge DGLinkLab
+            changeGMorOfEdges newSign (n1, n2, edge) = 
+                let newCMor = idComorphism (Logic OWL_DL) 
+                    Result _ newGMor = gEmbedComorphism newCMor (G_sign OWL_DL newSign)
+                in  (n1, n2, edge {dgl_morphism = fromJust newGMor})
+
 -- The other nodes in list are examined whether they were already analyzed.
 -- if yes then signs of it for further analysis are taken out; otherwise they
 -- are first analyzed (with complete part tree of this node).
