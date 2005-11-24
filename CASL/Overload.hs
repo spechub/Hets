@@ -492,17 +492,15 @@ cmpSubsorts sign l1 l2 =
     let l = zipWith (cmpSubsort sign) l1 l2
     in if null l then Just EQ else foldr1 
        ( \ c1 c2 -> if c1 == c2 then c1 else case (c1, c2) of 
-           (Nothing, _) -> Nothing
-           (_, Nothing) -> Nothing
            (Just EQ, _) -> c2
            (_, Just EQ) -> c1
            _ -> Nothing) l
 
-pSortBy ::  (a -> [SORT]) -> Sign f e -> [a] -> [a]
+pSortBy :: (a -> [SORT]) -> Sign f e -> [a] -> [a]
 pSortBy f sign = let pOrd a b = cmpSubsorts sign (f a) (f b) 
                  in concat . rankBy pOrd
 
--- * stolen from Keith Wansbrough 2000, Partial.lhs
+-- * stolen from Keith Wansbrough 2000, Partial.lhs (and modified)
 
 -- | the partial order relation type
 type POrder a = a -> a -> Maybe Ordering
@@ -513,12 +511,11 @@ minimalBy order es = go es [] []
   where go (x:xs) ms rs = if any (\ e -> order x e == Just GT) es
                           then go xs ms (x:rs)
                           else go xs (x:ms) rs
-        go []     ms rs = (ms,rs)
+        go []     ms rs = (reverse ms, reverse rs)
 
 -- | split a set into ranks of elements, minimal first
 rankBy :: POrder a -> [a] -> [[a]]
-rankBy order l = go l
-  where go []       = []
-        go es@(_:_) = let (xs,ys) = minimalBy order es
-                      in
-                      xs : go ys
+rankBy order l = case l of 
+    [] -> []
+    _ -> let (xs,ys) = minimalBy order l
+         in xs : rankBy order ys
