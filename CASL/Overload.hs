@@ -1,11 +1,11 @@
 {- |
-    Module      :  $Header$
-    Copyright   :  (c) Martin Kuehl, T. Mossakowski, C. Maeder, Uni Bremen 2004-2005
-    License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+ Module      :  $Header$
+ Copyright   :  (c) Martin Kuehl, T. Mossakowski, C. Maeder, Uni Bremen 2004-2005
+ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-    Maintainer  :  maeder@tzi.de
-    Stability   :  provisional
-    Portability :  portable
+ Maintainer  :  maeder@tzi.de
+ Stability   :  provisional
+ Portability :  portable
 
 Overload resolution (injections are inserted separately)
     Follows Sect. III:3.3 of the CASL Reference Manual.
@@ -32,6 +32,7 @@ import Common.Id
 import Common.GlobalAnnotations
 import Common.PrettyPrint
 import Common.Result
+import Common.Partial
 
 -- | the type of the type checking function of extensions
 type Min f e = Sign f e -> f -> Result f
@@ -176,7 +177,7 @@ minExpFORMULA_pred mef sign ide mty args pos = do
         preds' = Set.filter ( \ p -> length (predArgs p) == nargs) $
               Map.findWithDefault Set.empty ide $ predMap sign
         preds = case mty of
-                   Nothing -> map (pSortBy predArgs sign) 
+                   Nothing -> map (pSortBy predArgs sign)
                               $ leqClasses (leqP' sign) preds'
                    Just ty -> if Set.member ty preds'
                               then [[ty]] else []
@@ -477,45 +478,25 @@ combine (x:l) = concatMap ((`map` combine l) . (:)) x
 -- a better name would be "combine"
 
 cmpSubsort :: Sign f e -> POrder SORT
-cmpSubsort sign s1 s2 = 
+cmpSubsort sign s1 s2 =
     if s1 == s2 then Just EQ else
     let l1 = supersortsOf s1 sign
         l2 = supersortsOf s2 sign
         b = Set.member s1 l2 in
-    if Set.member s2 l1 then 
+    if Set.member s2 l1 then
         if b then Just EQ
         else Just LT
     else if b then Just GT else Nothing
 
 cmpSubsorts :: Sign f e -> POrder [SORT]
-cmpSubsorts sign l1 l2 = 
+cmpSubsorts sign l1 l2 =
     let l = zipWith (cmpSubsort sign) l1 l2
-    in if null l then Just EQ else foldr1 
-       ( \ c1 c2 -> if c1 == c2 then c1 else case (c1, c2) of 
+    in if null l then Just EQ else foldr1
+       ( \ c1 c2 -> if c1 == c2 then c1 else case (c1, c2) of
            (Just EQ, _) -> c2
            (_, Just EQ) -> c1
            _ -> Nothing) l
 
 pSortBy :: (a -> [SORT]) -> Sign f e -> [a] -> [a]
-pSortBy f sign = let pOrd a b = cmpSubsorts sign (f a) (f b) 
+pSortBy f sign = let pOrd a b = cmpSubsorts sign (f a) (f b)
                  in concat . rankBy pOrd
-
--- * stolen from Keith Wansbrough 2000, Partial.lhs (and modified)
-
--- | the partial order relation type
-type POrder a = a -> a -> Maybe Ordering
-
--- | split a set into the minimal elements and the remaining elements
-minimalBy :: POrder a -> [a] -> ([a],[a])
-minimalBy order es = go es [] []
-  where go (x:xs) ms rs = if any (\ e -> order x e == Just GT) es
-                          then go xs ms (x:rs)
-                          else go xs (x:ms) rs
-        go []     ms rs = (reverse ms, reverse rs)
-
--- | split a set into ranks of elements, minimal first
-rankBy :: POrder a -> [a] -> [[a]]
-rankBy order l = case l of 
-    [] -> []
-    _ -> let (xs,ys) = minimalBy order l
-         in xs : rankBy order ys
