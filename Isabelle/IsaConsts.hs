@@ -134,9 +134,9 @@ notOp = con $ VName "Not" $ Just $ AltSyntax "~/ _" [40] 40
 -- * quantor strings
 
 allS, exS, ex1S :: String
-allS = "!"
-exS = "?"
-ex1S = "?!"
+allS = "ALL"
+exS = "EX"
+ex1S = "EX!"
 
 -- * strings of binary ops
 
