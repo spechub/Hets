@@ -94,7 +94,7 @@ Version 2.0     24 April 1997
 ======================================================================
 Relative to John's original paper, there are the following new features:
 
-1.  There's an empty document, "empty".  It's a left and right unit for 
+1.  There's an empty document, "empty".  It's a left and right unit for
     both <> and $$, and anywhere in the argument list for
     sep, hcat, hsep, vcat, fcat etc.
 
@@ -103,7 +103,7 @@ Relative to John's original paper, there are the following new features:
 2.  There is a paragraph-fill combinator, fsep, that's much like sep,
     only it keeps fitting things on one line until it can't fit any more.
 
-3.  Some random useful extra combinators are provided.  
+3.  Some random useful extra combinators are provided.
         <+> puts its arguments beside each other with a space between them,
             unless either argument is empty in which case it returns the other
 
@@ -119,7 +119,7 @@ Relative to John's original paper, there are the following new features:
 
         These new ones do the obvious things:
                 char, semi, comma, colon, space,
-                parens, brackets, braces, 
+                parens, brackets, braces,
                 quotes, doubleQuotes
 
 4.  The "above" combinator, $$, now overlaps its two arguments if the
@@ -157,7 +157,7 @@ Relative to John's original paper, there are the following new features:
 
 5.      Several different renderers are provided:
         * a standard one
-        * one that uses cut-marks to avoid deeply-nested documents 
+        * one that uses cut-marks to avoid deeply-nested documents
                         simply piling up in the right-hand margin
         * one that ignores indentation (fewer chars output; good for machines)
         * one that ignores indentation and newlines (ditto, only more so)
@@ -184,20 +184,20 @@ module Common.Lib.Pretty (
         parens, brackets, braces, quotes, doubleQuotes,
 
         -- * Combining documents
-        (<>), (<+>), hcat, hsep, 
-        ($$), ($+$), vcat, 
-        sep, cat, 
-        fsep, fcat, 
+        (<>), (<+>), hcat, hsep,
+        ($$), ($+$), vcat,
+        sep, cat,
+        fsep, fcat,
         nest,
         hang, punctuate,
-        
+
         -- * Predicates on documents
         isEmpty,
 
         -- * Rendering documents
 
         -- ** Default rendering
-        render, 
+        render,
 
         -- ** Rendering with a particular style
         Style(..),
@@ -213,7 +213,7 @@ module Common.Lib.Pretty (
 
 import Prelude
 
-infixl 6 <> 
+infixl 6 <>
 infixl 6 <+>
 infixl 5 $$, $+$
 
@@ -284,11 +284,11 @@ nest   :: Int -> Doc -> Doc;     -- ^ Nested
 -- GHC-specific ones.
 
 hang :: Doc -> Int -> Doc -> Doc   -- ^ @hang d1 n d2 = sep [d1, nest n d2]@
-punctuate :: Doc -> [Doc] -> [Doc] 
+punctuate :: Doc -> [Doc] -> [Doc]
   -- ^ @punctuate p [d1, ... dn] = [d1 \<> p, d2 \<> p, ... dn-1 \<> p, dn]@
 
 
--- Displaying @Doc@ values. 
+-- Displaying @Doc@ values.
 
 instance Show Doc where
   showsPrec _prec doc cont = showDoc doc cont
@@ -320,7 +320,7 @@ style :: Style
 style = Style { lineLength = 100, ribbonsPerLine = 1.5, mode = PageMode }
 
 -- | Rendering mode
-data Mode = PageMode            -- ^Normal 
+data Mode = PageMode            -- ^Normal
           | ZigZagMode          -- ^With zig-zag cuts
           | LeftMode            -- ^No indentation, infinitely long lines
           | OneLineMode         -- ^All on one line
@@ -366,7 +366,7 @@ Laws for nest
 
 Miscellaneous
 ~~~~~~~~~~~~~
-<m1>    (text s <> x) $$ y = text s <> ((text "" <> x)) $$ 
+<m1>    (text s <> x) $$ y = text s <> ((text "" <> x)) $$
                                          nest (-length s) y)
 
 <m2>    (x $$ y) <> z = x $$ (y <> z)
@@ -384,12 +384,12 @@ Laws for list versions
 Laws for oneLiner
 ~~~~~~~~~~~~~~~~~
 <o1>    oneLiner (nest k p) = nest k (oneLiner p)
-<o2>    oneLiner (x <> y)   = oneLiner x <> oneLiner y 
+<o2>    oneLiner (x <> y)   = oneLiner x <> oneLiner y
 
 You might think that the following verion of <m1> would
 be neater:
 
-<3 NO>  (text s <> x) $$ y = text s <> ((empty <> x)) $$ 
+<3 NO>  (text s <> x) $$ y = text s <> ((empty <> x)) $$
                                          nest (-length s) y)
 
 But it doesn't work, for if x=empty, we would have
@@ -450,7 +450,7 @@ punctuate p (a:ds) = go a ds
 data Doc
  = Empty                                -- empty
  | NilAbove Doc                         -- text "" $$ x
- | TextBeside TextDetails !Int Doc      -- text s <> x  
+ | TextBeside TextDetails !Int Doc      -- text s <> x
  | Nest !Int Doc                        -- nest k x
  | Union Doc Doc                        -- ul `union` ur
  | NoDoc                                -- The empty set of documents
@@ -458,7 +458,7 @@ data Doc
  | Above  Doc Bool Doc                  -- True <=> never overlap
 
 -- RDoc is a "reduced Doc", guaranteed not to have a top-level Above or Beside
-type RDoc = Doc         
+type RDoc = Doc
 
 reduceDoc :: Doc -> RDoc
 reduceDoc (Beside p g q) = beside p g (reduceDoc q)
@@ -476,25 +476,25 @@ nl_text    = Chr '\n'
 
 {-
   Here are the invariants:
-  
+
   * The argument of NilAbove is never Empty. Therefore
     a NilAbove occupies at least two lines.
-  
+
   * The arugment of @TextBeside@ is never @Nest@.
-  
-  
-  * The layouts of the two arguments of @Union@ both flatten to the same 
+
+
+  * The layouts of the two arguments of @Union@ both flatten to the same
     string.
-  
+
   * The arguments of @Union@ are either @TextBeside@, or @NilAbove@.
-  
+
   * The right argument of a union cannot be equivalent to the empty set
     (@NoDoc@).  If the left argument of a union is equivalent to the
     empty set (@NoDoc@), then the @NoDoc@ appears in the first line.
-  
+
   * An empty document is always represented by @Empty@.  It can't be
     hidden inside a @Nest@, or a @Union@ of two @Empty@s.
-  
+
   * The first line of every layout in the left argument of @Union@ is
     longer than the first line of any layout in the right argument.
     (1) ensures that the left argument has a first line.  In view of
@@ -531,8 +531,9 @@ union_ p q = Union p q
 
 empty = Empty
 
-isEmpty Empty = True
-isEmpty _     = False
+isEmpty d = case reduceDoc d of
+              Empty -> True
+              _ -> False
 
 char  c = textBeside_ (Chr c) 1 Empty
 text  s = case length   s of {sl -> textBeside_ (Str s)  sl Empty}
@@ -572,13 +573,13 @@ aboveNest :: RDoc -> Bool -> Int -> RDoc -> RDoc
 
 aboveNest _                   _ k _ | k `seq` False = (error "Pretty.hs")
 aboveNest NoDoc               _ _ _ = NoDoc
-aboveNest (p1 `Union` p2)     g k q = aboveNest p1 g k q `union_` 
+aboveNest (p1 `Union` p2)     g k q = aboveNest p1 g k q `union_`
                                       aboveNest p2 g k q
-                                
+
 aboveNest Empty               _ k q = mkNest k q
 aboveNest (Nest k1 p)         g k q = nest_ k1 (aboveNest p g (k - k1) q)
                                   -- p can't be Empty, so no need for mkNest
-                                
+
 aboveNest (NilAbove p)        g k q = nilAbove_ (aboveNest p g k q)
 aboveNest (TextBeside s sl p) g k q = k1 `seq` textBeside_ s sl rest
                                     where
@@ -590,11 +591,11 @@ aboveNest _ _ _ _ = error "Common.Lib.Pretty.aboveNest"
 
 
 nilAboveNest :: Bool -> Int -> RDoc -> RDoc
--- Specification: text s <> nilaboveNest g k q 
+-- Specification: text s <> nilaboveNest g k q
 --              = text s <> (text "" $g$ nest k q)
 
 nilAboveNest _ k _           | k `seq` False = (error "Pretty.hs")
-nilAboveNest _ _ Empty       = Empty    
+nilAboveNest _ _ Empty       = Empty
         -- Here's why the "text s <>" is in the spec!
 nilAboveNest g k (Nest k1 q) = nilAboveNest g (k + k1) q
 
@@ -611,13 +612,13 @@ p <+> q = Beside p True  q
 
 beside :: Doc -> Bool -> RDoc -> RDoc
 -- Specification: beside g p q = p <g> q
- 
+
 beside NoDoc               _ _   = NoDoc
 beside (p1 `Union` p2)     g q   = (beside p1 g q) `union_` (beside p2 g q)
 beside Empty               _ q   = q
 beside (Nest k p)          g q   = nest_ k (beside p g q)       -- p non-empty
-beside p@(Beside p1 g1 q1) g2 q2 
-           {- (A `op1` B) `op2` C == A `op1` (B `op2` C)  iff op1 == op2 
+beside p@(Beside p1 g1 q1) g2 q2
+           {- (A `op1` B) `op2` C == A `op1` (B `op2` C)  iff op1 == op2
               [ && (op1 == <> || op1 == <+>) ] -}
          | g1 == g2              = beside p1 g1 (beside q1 g2 q2)
          | otherwise             = beside (reduceDoc p) g2 q2
@@ -631,7 +632,7 @@ beside (TextBeside s sl p) g q   = textBeside_ s sl rest
 
 
 nilBeside :: Bool -> RDoc -> RDoc
--- Specification: text "" <> nilBeside g p 
+-- Specification: text "" <> nilBeside g p
 --              = text "" <g> p
 
 nilBeside _ Empty      = Empty  -- Hence the text "" in the spec
@@ -678,7 +679,7 @@ sepNB :: Bool -> Doc -> Int -> [Doc] -> Doc
 sepNB g (Nest _ p)  k ys  = sepNB g p k ys
 
 sepNB g Empty k ys        = oneLiner (nilBeside g (reduceDoc rest))
-                                `mkUnion` 
+                                `mkUnion`
                             nilAboveNest False k (reduceDoc (vcat ys))
                           where
                             rest | g         = hsep ys
@@ -692,10 +693,10 @@ sepNB g p k ys            = sep1 g p k ys
 fsep = fill True
 fcat = fill False
 
--- Specification: 
+-- Specification:
 --   fill []  = empty
 --   fill [p] = p
---   fill (p1:p2:ps) = oneLiner p1 <#> nest (length p1) 
+--   fill (p1:p2:ps) = oneLiner p1 <#> nest (length p1)
 --                                          (fill (oneLiner p2 : ps))
 --                     `union`
 --                      p1 $$ fill ps
@@ -724,7 +725,7 @@ fillNB _ _          k _ | k `seq` False = (error "Pretty.hs")
 fillNB g (Nest _ p) k s = fillNB g p k s
 fillNB _ Empty _ []     = Empty
 fillNB g Empty k (y:ys) = nilBeside g (fill1 g (oneLiner (reduceDoc y)) k1 ys)
-                             `mkUnion` 
+                             `mkUnion`
                              nilAboveNest False k (fill g (y:ys))
                            where
                              k1 | g         = k - 1
@@ -778,14 +779,14 @@ best _ w' r p'
     get1 w sl (NilAbove p)        = nilAbove_ (get (w - sl) p)
     get1 w sl (TextBeside t tl p) = textBeside_ t tl (get1 w (sl + tl) p)
     get1 w sl (Nest _ p)          = get1 w sl p
-    get1 w sl (p `Union` q)       = nicest1 w r sl (get1 w sl p) 
+    get1 w sl (p `Union` q)       = nicest1 w r sl (get1 w sl p)
                                                    (get1 w sl q)
     get1 _ _ _                    = error "Pretty.best.get1"
 
 nicest :: Int -> Int -> Doc -> Doc -> Doc
 nicest w r p q = nicest1 w r 0 p q
 nicest1 :: Int -> Int -> Int -> Doc -> Doc -> Doc
-nicest1 w r sl p q | fits ((w `minn` r) - sl) p = p 
+nicest1 w r sl p q | fits ((w `minn` r) - sl) p = p
                    | otherwise                  = q
                      where minn x y | x < y     = x
                                     | otherwise = y
@@ -793,7 +794,7 @@ nicest1 w r sl p q | fits ((w `minn` r) - sl) p = p
 fits :: Int     -- Space available
      -> Doc
      -> Bool    -- True if *first line* of Doc fits in space available
- 
+
 fits n _    | n < 0 = False
 fits _ NoDoc               = False
 fits _ Empty               = True
@@ -805,7 +806,7 @@ fits _ _                   = error "Pretty.fits"
 -- @first@ returns its first argument if it is non-empty, otherwise its second.
 
 first :: Doc -> Doc -> Doc
-first p q | nonEmptySet p = p 
+first p q | nonEmptySet p = p
           | otherwise     = q
 
 nonEmptySet :: Doc -> Bool
@@ -826,12 +827,12 @@ oneLiner (NilAbove _)        = NoDoc
 oneLiner (TextBeside s sl p) = textBeside_ s sl (oneLiner p)
 oneLiner (Nest k p)          = nest_ k (oneLiner p)
 oneLiner (p `Union` _)       = oneLiner p
-oneLiner _                   = error "Pretty.oneLiner" 
+oneLiner _                   = error "Pretty.oneLiner"
 
 -- ---------------------------------------------------------------------------
 -- Displaying the best layout
 
-renderStyle style' doc 
+renderStyle style' doc
   = fullRender (mode style')
                (lineLength style')
                (ribbonsPerLine style')
@@ -849,19 +850,19 @@ string_txt (Str s1)  s2 = s1 ++ s2
 string_txt (PStr s1) s2 = s1 ++ s2
 
 
-fullRender OneLineMode _ _ txt end doc = 
+fullRender OneLineMode _ _ txt end doc =
     easy_display space_text txt end (reduceDoc doc)
-fullRender LeftMode    _ _ txt end doc = 
+fullRender LeftMode    _ _ txt end doc =
     easy_display nl_text    txt end (reduceDoc doc)
 
 fullRender mode' line_length ribbons_per_line txt end doc
   = display mode' line_length ribbon_length txt end best_doc
-  where 
+  where
     best_doc = best mode' hacked_line_length ribbon_length (reduceDoc doc)
 
     hacked_line_length, ribbon_length :: Int
     ribbon_length = round (fromIntegral line_length / ribbons_per_line)
-    hacked_line_length = case mode' of 
+    hacked_line_length = case mode' of
                          ZigZagMode -> maxBound
                          _ -> line_length
 
@@ -873,9 +874,9 @@ display mode' page_width ribbon_width txt end doc
         lay k _            | k `seq` False = (error "Pretty.hs")
         lay k (Nest k1 p)  = lay (k + k1) p
         lay _ Empty        = end
-    
+
         lay k (NilAbove p) = nl_text `txt` lay k p
-    
+
         lay k (TextBeside s sl p)
             = case mode' of
                     ZigZagMode |  k >= gap_width
@@ -892,10 +893,10 @@ display mode' page_width ribbon_width txt end doc
 
                     _ -> lay1 k s sl p
         lay _ _ = error "Pretty.lay"
-    
+
         lay1 k _ sl _ | k+sl `seq` False = (error "Pretty.hs")
         lay1 k s sl p = Str (indent k) `txt` (s `txt` lay2 (k + sl) p)
-    
+
         lay2 k _ | k `seq` False = (error "Pretty.hs")
         lay2 k (NilAbove p)        = nl_text `txt` lay k p
         lay2 k (TextBeside s sl p) = s `txt` (lay2 (k + sl) p)
@@ -907,19 +908,19 @@ display mode' page_width ribbon_width txt end doc
     }}
 
 easy_display :: TextDetails -> (TextDetails -> a -> a) -> a -> Doc -> a
-easy_display nl txt end doc 
+easy_display nl txt end doc
   = lay doc cant_fail
   where
     cant_fail = error "easy_display: NoDoc"
     lay NoDoc               no_doc = no_doc
-    lay (Union _p q)       _no_doc = {- lay p -} (lay q cant_fail) 
+    lay (Union _p q)       _no_doc = {- lay p -} (lay q cant_fail)
     -- Second arg can't be NoDoc
     lay (Nest _ p)          no_doc = lay p no_doc
     lay Empty              _no_doc = end
-    lay (NilAbove p)       _no_doc = nl `txt` lay p cant_fail     
+    lay (NilAbove p)       _no_doc = nl `txt` lay p cant_fail
     -- NoDoc always on first line
     lay (TextBeside s _ p)  no_doc = s `txt` lay p no_doc
-    lay _                   _      = error "Pretty.easy_display.lay"     
+    lay _                   _      = error "Pretty.easy_display.lay"
 
 indent :: Int -> String
 indent n = multi_ch n ' '
