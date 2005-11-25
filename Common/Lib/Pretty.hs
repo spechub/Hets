@@ -568,9 +568,8 @@ p $$  q = above_ p False q
 p $+$ q = above_ p True q
 
 above :: Doc -> Bool -> RDoc -> RDoc
-above (Above p g1 q1)  g2 q2 = above p g1 (above q1 g2 q2)
-above p@(Beside _ _ _) g  q  = aboveNest (reduceDoc p) g 0 q
-above p g q                  = aboveNest p             g 0 q
+above (Above p g1 q1)  g2 q2 = above p g1 (aboveNest q1 g2 0 q2)
+above p                g  q  = aboveNest (reduceDoc p) g 0 q
 
 aboveNest :: RDoc -> Bool -> Int -> RDoc -> RDoc
 -- Specfication: aboveNest p g k q = p $g$ (nest k q)
