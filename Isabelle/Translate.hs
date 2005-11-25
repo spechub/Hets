@@ -63,7 +63,8 @@ toAltSyntax prd over ga n i@(Id ms cs qs) thy = let
             constSet || Set.member (show i) constSet
             then over + 1 else over
     newFs = if null fs || over2 < 2 then fs else 
-                fs ++ [mkSimpleId $ replicate (over2 - 1) '\'']
+                fs ++ [mkSimpleId $ let o1 = over2 - 1 in 
+                    if over2 < 4 then replicate o1 '\'' else '_' : show o1]
     (hd : tl) = getTokenList newPlace $ Id (newFs ++ ps) cs qs
     tts = (if endPlace i then init else id) $ concatMap convert tl
     ht = convert hd
