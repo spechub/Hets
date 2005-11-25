@@ -531,9 +531,8 @@ union_ p q = Union p q
 
 empty = Empty
 
-isEmpty d = case reduceDoc d of
-              Empty -> True
-              _ -> False
+isEmpty Empty = True
+isEmpty _     = False
 
 char  c = textBeside_ (Chr c) 1 Empty
 text  s = case length   s of {sl -> textBeside_ (Str s)  sl Empty}
@@ -560,8 +559,13 @@ mkUnion p q     = p `union_` q
 -- ---------------------------------------------------------------------------
 -- Vertical composition @$$@
 
-p $$  q = Above p False q
-p $+$ q = Above p True q
+above_ :: Doc -> Bool -> Doc -> Doc
+above_ Empty _ q = q
+above_ p _ Empty = p
+above_ p g q = Above p g q
+
+p $$  q = above_ p False q
+p $+$ q = above_ p True q
 
 above :: Doc -> Bool -> RDoc -> RDoc
 above (Above p g1 q1)  g2 q2 = above p g1 (above q1 g2 q2)
@@ -607,8 +611,13 @@ nilAboveNest g k q           | (not g) && (k > 0) -- No newline if no overlap
 -- ---------------------------------------------------------------------------
 -- Horizontal composition @<>@
 
-p <>  q = Beside p False q
-p <+> q = Beside p True  q
+beside_ :: Doc -> Bool -> Doc -> Doc
+beside_ Empty _ q = q
+beside_ p _ Empty = p
+beside_ p g q = Beside p g q
+
+p <>  q = beside_ p False q
+p <+> q = beside_ p True  q
 
 beside :: Doc -> Bool -> RDoc -> RDoc
 -- Specification: beside g p q = p <g> q
