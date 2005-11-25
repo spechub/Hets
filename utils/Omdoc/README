@@ -1,3 +1,34 @@
+2005-11-25 - Hendrik Iben
+Cleaned up rest of the code and niced up the Makefile.
+
+2005-11-24 - Hendrik Iben
+I finally took the time to modify the code according to compiler-warnings.
+Without ghc complaining, compile-time decreased a lot (about 4(!) times on
+my machine...).
+
+2005-11-23 - Hendrik Iben
+I finally found a solution to the problem of hxt getting stuck on complex 
+documents. It seems the only way of having xml processing done in a reliable 
+way is to use the Haskell Xml Toolbox as a seperate package. At least all my 
+previous troubles were gone after I installed HXT-5.3 as described by it's 
+documentation. Maybe I am just using the wrong compiler options when using 
+HXTs source directly but at least it works again (and I think it is even much 
+faster now).
+
+In order to use/compile the code you now need to install the following packages.
+They are all installable via Cabal so installing them is very easy. If the 
+compilation process complains about things hidden in packages just add the
+specific package in the '*package*.cabal' file to the ghc-options.
+
+packages :
+NewBinary - http://www.n-heptane.com/nhlab/
+The Haskell Cryptographic Library - http://www.haskell.org/crypto/
+Haskell HTTP Package - http://www.haskell.org/http/
+The Haskell XML Toolbox (5.3) - http://www.fh-wedel.de/~si/HXmlToolbox/
+
+Using HXT-5.3 also introduces the ability of RelaxNG validating a document. I 
+have not yet tried this...
+
 2005-10-11 - Hendrik Iben
 After some cleaning up the xml-conversion seems not to violate the OMDoc-
 DTD v1.2 any more.

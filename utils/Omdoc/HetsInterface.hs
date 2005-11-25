@@ -1,73 +1,31 @@
-{-# OPTIONS -cpp #-}
 {- |
-Module      :  $Header$
-Copyright   :  (c) Uni Bremen 2003
-License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
-
-Maintainer  :  maeder@tzi.de
-Stability   :  provisional
-Portability :  non-portable (imports Logic.Logic)
-
-The Main module of the Heterogeneous Tool Set. 
-   It provides the main function to call.
-
--}
-
-{- todo: option for omitting writing of env
+Stolen from HetCATS/hets.hs
+Interface for accessing Hets-System
 -}
 
 module HetsInterface (module HetsInterface, module Driver.ReadFn, module Driver.WriteFn, module Static.AnalysisLibrary) where
 
-import Control.Monad (when)
-
-import System.Environment (getArgs)
-import System.Exit (ExitCode(ExitSuccess), exitWith)
-
 import Data.Graph.Inductive.Graph
 import qualified Data.Graph.Inductive.Graph as Graph --
 
-import Common.Utils
-import Common.Result
-import Common.PrettyPrint
 import Common.AS_Annotation
 import Common.GlobalAnnotations (emptyGlobalAnnos)
-import qualified Common.Lib.Map as Map
 
-
-import Syntax.AS_Library (LIB_DEFN(..), LIB_NAME()) 
-import Syntax.GlobalLibraryAnnotations (initGlobalAnnos)
+import Syntax.AS_Library (LIB_NAME()) 
 
 import Driver.ReadFn
 import Driver.WriteFn
 import Driver.Options
 
-import Comorphisms.LogicGraph
-
---import Logic.Languages
 import Logic.Grothendieck hiding (Morphism)
 
 import Static.AnalysisLibrary
 import Static.DevGraph
 import Static.PrintDevGraph()
 
-import Isabelle.CreateTheories
-
--- for extraction functions
 import CASL.AS_Basic_CASL
 import CASL.Logic_CASL
 
-
---import Syntax.Print_HetCASL
-#ifdef UNI_PACKAGE
-import GUI.AbstractGraphView
-import GUI.ConvertDevToAbstractGraph
-import InfoBus 
-import Events
-import Destructible
-import DialogWin (useHTk)
-#endif
-
--- my imports
 import CASL.Sign
 import CASL.Morphism
 import qualified CASL.AS_Basic_CASL as CASLBasic
@@ -78,24 +36,15 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Rel as Rel
 import qualified Logic.Grothendieck as Gro
 import qualified Common.AS_Annotation as Ann
-import qualified Syntax.AS_Library as ASL
 import qualified Data.Maybe as Data.Maybe
 
 import qualified GUI.ShowGraph as GUI
 
-import qualified CASL.Morphism as CASL.Morphism
+import qualified Logic.Prover as Prover
 
-import Logic.Logic as Logic
+import qualified Common.OrderedMap as OMap
 
-import Data.List (sortBy)
-
-import Debug.Trace (trace)
-
-{-
-#ifdef PROGRAMATICA
-import Haskell.Haskell2DG
-#endif
--}
+--import Debug.Trace (trace)
 
 showGraph::FilePath->HetcatsOpts->Maybe (LIB_NAME, LibEnv)->IO ()
 showGraph file opt env =
@@ -106,25 +55,9 @@ showGraph file opt env =
 
 run :: FilePath -> IO (Maybe (LIB_NAME, LibEnv))
 run file = anaLib dho file
-{-	do
-		res <- anaLib dho file
-		return $ case res of
-			Nothing -> Nothing
-			(Just (ln, lenv)) ->
-				let
-					fakelibdefn = ASL.Lib_defn ln [] Id.nullRange []
-					dg = case Map.lookup ln lenv of
-						Nothing -> error "Cannot find entry for library."
-						(Just (_,_,dg' )) -> dg'
-				in
-					Just (ln, fakelibdefn, dg, lenv)
--}
+
 dho::HetcatsOpts
 dho = defaultHetcatsOpts
-
-getFirstNodeSign = (\x -> (\(_,s) -> dgn_sign s) ((labNodes x)!!0) )
-
-getFirstNode = (\x -> ((labNodes x)!!0))
 
 -- isAxiom was added... (a :: Bool)
 transSen::[Ann.Named CASLFORMULA]->[(String, CASLFORMULA)]
@@ -137,7 +70,7 @@ transSenBack ((n, s):rest) = (Ann.NamedSen n False False s):(transSenBack rest)
 
 getPureFormulas::[(String, CASLFORMULA)]->[CASLFORMULA]
 getPureFormulas [] = []
-getPureFormulas ((name, f):rest) = [f] ++ getPureFormulas rest
+getPureFormulas ((_, f):rest) = [f] ++ getPureFormulas rest
 
 getDG::FilePath->IO DGraph
 getDG f = do
@@ -152,6 +85,7 @@ getCASLSign (G_sign _ sign) = cast sign -- sign is of class Typeable -> cast -> 
 
 getJustCASLSign::(Maybe CASLSign)->CASLSign
 getJustCASLSign (Just cs) = cs
+getJustCASLSign Nothing = error "Nothing"
 
 -- Get a String-representation of a Set
 getSetStringList::(Show a)=>Set.Set a -> [String]
@@ -169,11 +103,11 @@ getRelStringsList s = map (\(a, b) -> (show a, show b)) $ Rel.toList s
 getOpMapStringsList::OpMap->[(String, [(String, [String], String)])]
 getOpMapStringsList om = map (\(a, b) -> ((show a), map opTypeToStrings (Set.toList b))) (Map.toList om) where
 	opTypeToStrings::OpType->(String, [String], String)
-	opTypeToStrings (OpType {opKind=ok, opArgs=oa, opRes=or}) = (show ok, map show oa, show or)
+	opTypeToStrings (OpType {opKind=ok, opArgs=oa, opRes=or' }) = (show ok, map show oa, show or' )
 	
 -- Get strings to represent a predicate-mapping
 getPredTypeStringsList::(Map.Map (Id.Id) (Set.Set PredType))->[(String, [[String]])]
-getPredTypeStringsList pm = map (\(id, pts) -> (show id,
+getPredTypeStringsList pm = map (\(id' , pts) -> (show id' ,
 					map (\(PredType set) -> map show set) $ Set.toList pts ) ) $ Map.toList pm
 
 -- String representation of non ignored CASLSign-Components					
@@ -213,7 +147,7 @@ This might be a source of later errors.
 FunKinds are checked against a String... needs more work.
 -}
 opMapStringsToOpMap::[(String, [(String, [String], String)])]->OpMap
-opMapStringsToOpMap ops = foldr (\(id, ops) m -> Map.insert (stringToId id) (Set.fromList $ map mkOpType ops) m) Map.empty ops where  
+opMapStringsToOpMap ops = foldr (\(id' , ops' ) m -> Map.insert (stringToId id' ) (Set.fromList $ map mkOpType ops' ) m) Map.empty ops where  
 	mkOpType::(String,[String],String)->OpType
 	mkOpType (opkind, args, res) = OpType
 					(if opkind == "Partial" then CASLBasic.Partial else CASLBasic.Total)
@@ -224,8 +158,8 @@ opMapStringsToOpMap ops = foldr (\(id, ops) m -> Map.insert (stringToId id) (Set
 Predicate-mapping
 -}
 predMapStringsToPredMap::[(String, [[String]])]->(Map.Map Id.Id (Set.Set PredType))
-predMapStringsToPredMap pres = foldr (\(id, args) m -> Map.insert
-							(stringToId id)
+predMapStringsToPredMap pres = foldr (\(id' , args) m -> Map.insert
+							(stringToId id' )
 							(Set.fromList $ map (\n -> PredType (map (\s -> stringToId s) n)) args)
 							m
 						) Map.empty pres
@@ -242,6 +176,7 @@ stringsToCASLSign cs =
 		,varMap = Map.empty -- ignored
 		,sentences = [] -- ignored
 		,envDiags = [] -- ignored
+		,globAnnos = emptyGlobalAnnos
 		,extendedInfo = () -- ignored
 	}
 
@@ -250,14 +185,14 @@ stringsToCASLSign cs =
 -- only four types of links are allowed (and afaik needed for this)
 linkFilter::[(Graph.LEdge DGLinkLab)]->[(Graph.LEdge DGLinkLab)]
 linkFilter [] = []
-linkFilter ((l@(n,m,link)):rest) =
+linkFilter ((l@(_,_,link)):rest) =
 	(case dgl_type link of
 		LocalDef -> [l]
 		GlobalDef -> [l]
 		-- LocalThm's with 'Mono' cons tend to link back to their 
 		-- origin, effectively wiping out the sorts, etc...
-		(LocalThm tls1 c tls2) -> case c of Def -> [l]; _ -> []
-		(GlobalThm tls1 c tls2) -> case c of Def -> [l]; _ -> []
+		(LocalThm _ c _) -> case c of Def -> [l]; _ -> []
+		(GlobalThm _ c _) -> case c of Def -> [l]; _ -> []
 		_ -> []) ++ linkFilter rest
 		
 -- return a list with all NodeLabs where imports a made (see also 'linkFilter')
@@ -292,9 +227,9 @@ signViaMorphism dg n =
 
 -- gets something from a DGNode or returns default value for DGRefS
 getFromDGNode::DGNodeLab->(DGNodeLab->a)->a->a
-getFromDGNode node get def =
+getFromDGNode node get' def =
 	if isDGRef node then def else
-		get node
+		get' node
 		
 getFromNode::DGraph->Graph.Node->(DGNodeLab->Bool)->(DGNodeLab->a)->(DGraph->Graph.Node->a)->a
 getFromNode dg n usenode getnode getgraphnode =
@@ -307,56 +242,56 @@ getFromNode dg n usenode getnode getgraphnode =
 -- generic function to calculate a delta between a node and the nodes it
 -- imports from
 getFromNodeDelta::DGraph->Graph.Node->(DGNodeLab->a)->(a->a->a)->a->a
-getFromNodeDelta dg n get delta def =
+getFromNodeDelta dg n get' delta def =
 	let	node = (\(Just a) -> a) $ Graph.lab dg n
 		innodes = inputNodeLabs dg n
 	in
-		foldl (\r n ->
-			delta r $ getFromDGNode n get def
-			) (getFromDGNode node get def) innodes
+		foldl (\r n' ->
+			delta r $ getFromDGNode n' get' def
+			) (getFromDGNode node get' def) innodes
 			
 getFromNodeDeltaM::DGraph->Graph.Node->(DGNodeLab->Bool)->(DGNodeLab->a)->(DGraph->Graph.Node->a)->(a->a->a)->a
 getFromNodeDeltaM dg n usenode getnode getgraphnode delta =
-	let	node = (\(Just a) -> a) $ Graph.lab dg n
+	let	--node = (\(Just a) -> a) $ Graph.lab dg n
 		innodes = inputNodes dg n
 	in
-		foldl (\r n ->
-			delta r $ getFromNode dg n usenode getnode getgraphnode
+		foldl (\r n' ->
+			delta r $ getFromNode dg n' usenode getnode getgraphnode
 			) (getFromNode dg n usenode getnode getgraphnode) innodes
 	
 			
 -- helper function to extract an element from the caslsign of a node
 -- or to provide a safe default
 getFromCASLSign::DGNodeLab->(CASLSign->a)->a->a
-getFromCASLSign node get def =
+getFromCASLSign node get' def =
 	getFromDGNode
 		node
 		(\n ->
 			let caslsign = getJustCASLSign $ getCASLSign (dgn_sign n)
-			in get caslsign
+			in get' caslsign
 		)
 		def
 		
 getFromCASLSignM::DGraph->Graph.Node->(CASLSign->a)->a
-getFromCASLSignM dg n get =
+getFromCASLSignM dg n get' =
 	let	node = (\(Just a) -> a) $ Graph.lab dg n
 		caslsign = if isDGRef node
 					then signViaMorphism dg n
 					else getJustCASLSign $ getCASLSign (dgn_sign node)
-	in	get caslsign
+	in	get' caslsign
 			
 		
 -- wrapper around 'getFromNodeDelta' for CASLSign-specific operations
 getFromCASLSignDelta::DGraph->Graph.Node->(CASLSign->a)->(a->a->a)->a->a
-getFromCASLSignDelta dg n get delta def =
-	getFromNodeDelta dg n (\g -> getFromCASLSign g get def) delta def
+getFromCASLSignDelta dg n get' delta def =
+	getFromNodeDelta dg n (\g -> getFromCASLSign g get' def) delta def
 
 getFromCASLSignDeltaM::DGraph->Graph.Node->(CASLSign->a)->(a->a->a)->a->a
-getFromCASLSignDeltaM dg n get delta _ =
+getFromCASLSignDeltaM dg n get' delta _ =
 	getFromNodeDeltaM dg n
 		(\_ -> False)
-		(\g -> undefined::a)
-		(\dg' n' -> getFromCASLSignM dg' n' get)
+		(\_ -> undefined::a)
+		(\dg' n' -> getFromCASLSignM dg' n' get' )
 		delta
 	
 -- extract all sorts from a node that are not imported from other nodes
@@ -384,8 +319,8 @@ getNodeSentences::DGNodeLab->[Ann.Named CASLFORMULA]
 getNodeSentences (DGRef {}) = []
 getNodeSentences node =
 	let
-		(Just csen) = (\(G_theory _ _ thsens) -> (cast thsens)::(Maybe (ThSens CASLFORMULA))) $ dgn_theory node
-	in toNamedList csen
+		(Just csen) = (\(G_theory _ _ thsens) -> (cast thsens)::(Maybe (Prover.ThSens CASLFORMULA (AnyComorphism, BasicProof)))) $ dgn_theory node
+	in Prover.toNamedList csen
 
 -- extract the sentences from a node that are not imported from other nodes				
 getNodeDeltaSentences::DGraph->Graph.Node->(Set.Set (Ann.Named CASLFORMULA))
@@ -502,8 +437,8 @@ createDGStructure f =
 	do
 		(Just (_, lenv)) <- run f
 		return (
-			foldl (\map (lname, (_,_,dg)) ->
-				Map.insert lname (getAll dg) map
+			foldl (\map' (lname, (_,_,dg)) ->
+				Map.insert lname (getAll dg) map'
 				) Map.empty $ Map.toList lenv
 			)
 
@@ -528,10 +463,10 @@ getNodeImportsNodeNames dg = getNodeNameMapping dg (
 	\dgr n -> Set.fromList $ 
 	 foldl (\names (from,node) ->
 	 	let
-			edges = filter (\(a,b,_) -> (a == from) && (b==n)) $ Graph.labEdges dgr
-			caslmorph = case edges of
+			edges' = filter (\(a,b,_) -> (a == from) && (b==n)) $ Graph.labEdges dgr
+			caslmorph = case edges' of
 				[] -> emptyCASLMorphism
-				(l:r) -> getCASLMorph l
+				(l:_) -> getCASLMorph l
 			mmm = if isEmptyMorphism caslmorph
 				then
 					Nothing
@@ -549,7 +484,7 @@ adjustNodeName _ name = name
 getNodeNames::DGraph->(Set.Set (Graph.Node, String))
 getNodeNames dg =
 	fst $ foldl (\(ns, num) (n, node) ->
-		(Set.insert (n, adjustNodeName ("AnonNode_"++(show num)) $ getDGNodeName node) ns, num+1)
+		(Set.insert (n, adjustNodeName ("AnonNode_"++(show num)) $ getDGNodeName node) ns, (num+1)::Integer)
 		) (Set.empty, 1) $ Graph.labNodes dg
 		
 partition::(a->Bool)->[a]->([a], [a])
@@ -561,8 +496,8 @@ getNodeNamesNodeRef::DGraph->(Set.Set (Graph.Node, String), Set.Set (Graph.Node,
 getNodeNamesNodeRef dg =
 	let
 		lnodes = Graph.labNodes dg
-		(nodes, refs) = partition (\(_,n) -> not $ isDGRef n) lnodes
-		nnames = map (\(n, node) -> (n, adjustNodeName ("AnonNode_"++(show n)) $ getDGNodeName node)) nodes
+		(nodes' , refs) = partition (\(_,n) -> not $ isDGRef n) lnodes
+		nnames = map (\(n, node) -> (n, adjustNodeName ("AnonNode_"++(show n)) $ getDGNodeName node)) nodes'
 		rnames = map (\(n, node) -> (n, adjustNodeName ("AnonRef_"++(show n)) $ getDGNodeName node)) refs
 	in
 		(Set.fromList nnames, Set.fromList rnames)
@@ -636,11 +571,11 @@ findNodeNameForOperatorWithFK importsMap opsMap (opId, fk) name =
 
 findNodeNameForSentenceName::ImportsMap->SensMap->String->String->(Maybe String)
 findNodeNameForSentenceName importsMap sensMap sName name =
-	findNodeNameFor importsMap sensMap (\n -> not $ Set.null $ Set.filter (\n -> (senName n) == sName) n) name
+	findNodeNameFor importsMap sensMap (\n -> not $ Set.null $ Set.filter (\n' -> (senName n' ) == sName) n) name
 	
 findNodeNameForSentence::ImportsMap->SensMap->CASLFORMULA->String->(Maybe String)
 findNodeNameForSentence importsMap sensMap s name =
-	findNodeNameFor importsMap sensMap (\n -> not $ Set.null $ Set.filter (\n -> (sentence n) == s) n) name
+	findNodeNameFor importsMap sensMap (\n -> not $ Set.null $ Set.filter (\n' -> (sentence n' ) == s) n) name
 	
 
 -- | Reduce a DevGraph by backtracking importing links
@@ -651,8 +586,8 @@ createReducedDGraph dg =
 	in Graph.mkGraph (map (createReducedNode dg) lnodes) ledges
 	
 
-buildCASLSentenceDiff::(ThSens CASLFORMULA)->(ThSens CASLFORMULA)->(ThSens CASLFORMULA)
-buildCASLSentenceDiff = Set.difference
+buildCASLSentenceDiff::(Prover.ThSens CASLFORMULA (AnyComorphism, BasicProof))->(Prover.ThSens CASLFORMULA (AnyComorphism, BasicProof))->(Prover.ThSens CASLFORMULA (AnyComorphism, BasicProof))
+buildCASLSentenceDiff = OMap.difference
 
 buildCASLSignDiff::CASLSign->CASLSign->CASLSign
 buildCASLSignDiff = diffSig
@@ -675,11 +610,11 @@ emptyCASLSign = emptySign ()
 buildCASLNodeDiff::DGNodeLab->DGNodeLab->DGNodeLab
 buildCASLNodeDiff
 	node1@(DGNode { dgn_theory = th1})
-	node2@(DGNode { dgn_theory = th2}) =
-		let	sens1 = (\(G_theory _ sign sens) -> (cast sens)::(Maybe (ThSens CASLFORMULA))) th1
-			sens2 = (\(G_theory _ sign sens) -> (cast sens)::(Maybe (ThSens CASLFORMULA))) th2
-			sign1 = (\(G_theory _ sign sens) -> (cast sign)::(Maybe CASLSign)) th1
-			sign2 = (\(G_theory _ sign sens) -> (cast sign)::(Maybe CASLSign)) th2
+	(DGNode { dgn_theory = th2}) =
+		let	sens1 = (\(G_theory _ _ sens) -> (cast sens)::(Maybe (Prover.ThSens CASLFORMULA (AnyComorphism, BasicProof)))) th1
+			sens2 = (\(G_theory _ _ sens) -> (cast sens)::(Maybe (Prover.ThSens CASLFORMULA (AnyComorphism, BasicProof)))) th2
+			sign1 = (\(G_theory _ sign _) -> (cast sign)::(Maybe CASLSign)) th1
+			sign2 = (\(G_theory _ sign _) -> (cast sign)::(Maybe CASLSign)) th2
 		in
 		   case (sens1, sens2, sign1, sign2) of
 		   	(Just se1, Just se2, Just si1, Just si2) ->
@@ -693,45 +628,44 @@ buildCASLNodeDiff n _ = n -- error "Either one or both Nodes are DGRefs. I canno
 stripCASLMorphism::DGNodeLab->(CASL.Morphism.Morphism () () ())->DGNodeLab
 stripCASLMorphism
 	n@(DGNode { dgn_theory = th } )
-	(CASL.Morphism.Morphism { CASL.Morphism.sort_map = sm, CASL.Morphism.fun_map = fm, CASL.Morphism.pred_map = pm }) =
-		let	mcsi = (\(G_theory lid sign sens) -> (cast sign)::(Maybe CASLSign)) th
-			mcse = (\(G_theory lid sign sens) -> (cast sens)::(Maybe (ThSens CASLFORMULA))) th
+	(CASL.Morphism.Morphism { CASL.Morphism.fun_map = fm, CASL.Morphism.pred_map = pm }) =
+		let	mcsi = (\(G_theory _ sign _) -> (cast sign)::(Maybe CASLSign)) th
+			mcse = (\(G_theory _ _ sens) -> (cast sens)::(Maybe (Prover.ThSens CASLFORMULA (AnyComorphism, BasicProof)))) th
 		in case mcsi of
-			(Just (Sign ss sr om ao oldpm vm se ev ei)) ->
-				let	funlist = (map (\(_, (f, fk)) -> f) $ Map.toList fm)::[Id.Id]
+			(Just (Sign ss sr om ao oldpm vm se ev ga ei)) ->
+				let	funlist = (map (\(_, (f, _)) -> f) $ Map.toList fm)::[Id.Id]
 					predlist = (map (\(_, p) -> p) $ Map.toList pm)::[Id.Id]
-					newpredmap = foldl (\nmap id ->
-						Map.filterWithKey (\k _ -> k /= id) nmap
+					newpredmap = foldl (\nmap' id' ->
+						Map.filterWithKey (\k _ -> k /= id' ) nmap'
 						) oldpm predlist
-					newopmap = foldl (\nmap id ->
-						Map.filterWithKey (\k _ -> k /= id) nmap
+					newopmap = foldl (\nmap' id' ->
+						Map.filterWithKey (\k _ -> k /= id' ) nmap'
 						) om funlist
-					newassocmap = foldl (\nmap id ->
-						Map.filterWithKey (\k _ -> k /= id) nmap
+					newassocmap = foldl (\nmap' id' ->
+						Map.filterWithKey (\k _ -> k /= id' ) nmap'
 						) ao funlist
 				in	case mcse of
-						(Just csens) -> n { dgn_theory = (G_theory CASL (Sign ss sr newopmap newassocmap newpredmap vm se ev ei) csens) }
+						(Just csens) -> n { dgn_theory = (G_theory CASL (Sign ss sr newopmap newassocmap newpredmap vm se ev ga ei) csens) }
 						_ -> error "Could not cast sentences to (ThSens CASLFORMULA) (but a CASLSign was cast... (wierd!))"
 			Nothing -> n  -- maybe this node is not CASL-related... leave it as is
-stripCASLMorphism n@(DGRef {dgn_libname = ln}) _ = n -- can DGRefS have a morphism from another node in the graph ?
+stripCASLMorphism n@(DGRef {}) _ = n -- can DGRefS have a morphism from another node in the graph ?
 
 
 stripCASLMorphisms::DGraph->(Graph.LNode DGNodeLab)->(Graph.LNode DGNodeLab)
 stripCASLMorphisms dg (n, node) =
 	case node of
-		(DGRef {dgn_libname = ln}) -> (n, node) -- no need to do this for a reference...
+		(DGRef {}) -> (n, node) -- no need to do this for a reference...
 		_ ->
 			let	incoming = filter ( \(_,tn,_) -> n == tn ) $ Graph.labEdges dg
-				imports = filter ( \(_,_,iedge) ->
+				{- imports = filter ( \(_,_,iedge) ->
 					case iedge of
-						DGLink m t o ->
+						(DGLink _ t _) ->
 							case t of
 								LocalDef -> True
 								GlobalDef -> True
 								HidingDef -> True
 								_ -> False
-						_ -> False
-					) incoming
+					) incoming -}
 				morphisms = map ( \(_,_,e) -> dgl_morphism e) incoming
 			in (n,
 				foldl (\newnode gmorph ->
@@ -751,18 +685,18 @@ type MorphismMap = (
 		
 implode::[a]->[[a]]->[a]
 implode _ [] = []
-implode _ [last] = last
-implode with (item:rest) = item ++ with ++ (implode with rest)
+implode _ [last' ] = last'
+implode with (item' :rest) = item' ++ with ++ (implode with rest)
 
 createHidingString::CASLSign->String
-createHidingString (Sign sortset _ opmap _ predmap _ _ _ _) =
+createHidingString (Sign sortset _ opmap _ predmap _ _ _ _ _) =
 	let hidden = map show (Set.toList sortset) ++
 			 map show (Map.keys opmap) ++
 			 map show (Map.keys predmap)
 	in	implode ", " hidden
 
 getSymbols::CASLSign->[Id.Id]
-getSymbols (Sign sortset _ opmap _ predmap _ _ _ _) =
+getSymbols (Sign sortset _ opmap _ predmap _ _ _ _ _) =
 	(Set.toList sortset) ++ (Map.keys opmap) ++ (Map.keys predmap)
 	
 makeMorphismMap::(Morphism () () ())->MorphismMap
@@ -865,7 +799,7 @@ applyMorphHiding (sortmap, funmap, predmap, hidingset) hidings =
 	
 buildMorphismSign::MorphismMap->[Id.Id]->CASLSign->CASLSign
 buildMorphismSign
-	mm@(mmsm, mmfm, mmpm, _) 
+	(mmsm, mmfm, mmpm, _) 
 	hidings
 	sourcesign =
 	let
@@ -878,6 +812,7 @@ buildMorphismSign
 			varmap
 			sens
 			envdiags
+			ga
 			ext
 			) = applySignHiding sourcesign hidings
 	in
@@ -918,72 +853,72 @@ buildMorphismSign
 			(Map.map (\vsort -> Map.findWithDefault vsort vsort mmsm) varmap)
 			sens
 			envdiags
+			ga
 			ext
 	
 applySignHiding::CASLSign->[Id.Id]->CASLSign
 applySignHiding 
-	(Sign sortset sortrel opmap assocops predmap varmap sens envdiags ext)
+	(Sign sortset sortrel opmap assocops predmap varmap sens envdiags ga ext)
 	hidings =
 	Sign
 		(Set.filter (not . flip elem hidings) sortset)
-		(Rel.fromList $ filter (\(id,_) -> not $ elem id hidings) $ Rel.toList sortrel)
+		(Rel.fromList $ filter (\(id' ,_) -> not $ elem id' hidings) $ Rel.toList sortrel)
 		(Map.filterWithKey (\sid _ -> not $ elem sid hidings) opmap)
 		(Map.filterWithKey (\sid _ -> not $ elem sid hidings) assocops)
 		(Map.filterWithKey (\sid _ -> not $ elem sid hidings) predmap)
 		(Map.filter (\varsort -> not $ elem varsort hidings) varmap)
 		sens
 		envdiags
+		ga
 		ext
 
 createLocalNode::DGraph->(Graph.LNode DGNodeLab)->(Graph.LNode DGNodeLab)
 createLocalNode dg (n, node) =
 	case node of
-		(DGRef {dgn_libname = ln}) -> (n, node) -- this is actually bad 
+		(DGRef {}) -> (n, node) -- this is actually bad 
 			-- there is often a Morphism associated with a DGRef so should
 			-- we strip to morphed symbols from this ?
 		_ ->
 			let	incoming = filter ( \(_,tn,_) -> n == tn ) $ Graph.labEdges dg
-				imports = filter ( \(_,_,iedge) ->
+				{-imports = filter ( \(_,_,iedge) ->
 					case iedge of
-						DGLink m t o ->
+						(DGLink _ t _) ->
 							case t of
 								LocalDef -> True
 								GlobalDef -> True
 								HidingDef -> True
 								_ -> False
-						_ -> False
-					) incoming
-				innodes = map ( \(n,_,_) -> (\(Just a) -> a) $ Graph.lab dg n ) incoming
+					) incoming-}
+				innodes = map ( \(n' ,_,_) -> (\(Just a) -> a) $ Graph.lab dg n' ) incoming
 			in
 				(n, foldl (\lnode inode -> buildCASLNodeDiff lnode inode) node innodes)
 		
 createReducedNode::DGraph->(Graph.LNode DGNodeLab)->(Graph.LNode DGNodeLab)
 createReducedNode dg (n,node) = 
 	case node of
-		(DGRef {dgn_libname = ln}) -> (n, node)
+		(DGRef {}) -> (n, node)
 		_ ->
 			let	incoming = filter ( \(_,tn,_) -> n == tn ) $ Graph.labEdges dg
 				(li,gi,hi) =
 					foldl ( \(nli, ngi, nhi) edge@(_,_,iedge) ->
 					case iedge of
-						DGLink m t o ->
+						(DGLink _ t _) ->
 							case t of
 								LocalDef -> (nli++[edge], ngi, nhi)
 								GlobalDef -> (nli, ngi++[edge], nhi) 
 								HidingDef -> (nli, ngi, nhi++[edge])
 								_ -> (nli, ngi, nhi)
-						_ -> (nli, ngi, nhi)
 						) ([],[],[]) incoming
-				localnodes = map ( \(n,_,_) -> (\(Just a) -> (n, a)) $ Graph.lab dg n ) li
-				globalnodes = map ( \(n,_,_) -> (\(Just a) -> (n, a)) $ Graph.lab dg n ) gi
-				hidingnodes = map ( \(n,_,_) -> (\(Just a) -> (n, a)) $ Graph.lab dg n ) hi
+				localnodes = map ( \(n' ,_,_) -> (\(Just a) -> (n' , a)) $ Graph.lab dg n' ) li
+				globalnodes = map ( \(n' ,_,_) -> (\(Just a) -> (n' , a)) $ Graph.lab dg n' ) gi
+				hidingnodes = map ( \(n' ,_,_) -> (\(Just a) -> (n' , a)) $ Graph.lab dg n' ) hi
 			in
 				stripCASLMorphisms dg (n,
-					foldl (\nnode (inn, inode) ->
-						let (rn, rnode) = createLocalNode dg (inn, inode)
+					foldl (\nnode (inn'' , inode) ->
+						let (_, rnode) = createLocalNode dg (inn'' , inode)
 						in buildCASLNodeDiff nnode rnode
 						)
-					(foldl (\nnode (inn, inode) ->
+					(foldl (\nnode (_, inode) ->
 						buildCASLNodeDiff nnode inode
 						) node (globalnodes ++ hidingnodes)) localnodes
 				)

@@ -9,6 +9,7 @@ module OmdocDevGraph (module OmdocDevGraph, module Text.XML.HXT.Parser) where
 
 -- XML processing is of course needed.
 import Text.XML.HXT.Parser
+import Text.XML.HXT.Arrow
 
 -- once there were good reasons for these imports.
 -- i still let them here if i run into trouble.
@@ -23,10 +24,10 @@ import Text.XML.HXT.Parser
 
 -- For extracting the DevGraph and some CASL-specific funtions
 --import qualified Hets as Hets
-import qualified HetsInterface as Hets
+--import qualified HetsInterface as Hets
 
 -- there is a need to check for certain strings
-import Char(isLower)
+--import Char(isLower)
 
 -- a shortcut to showXmlTrees
 showXmlTreesNS::XmlTrees->String
