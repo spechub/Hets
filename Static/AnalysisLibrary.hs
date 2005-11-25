@@ -76,7 +76,7 @@ anaSourceFile lgraph defl opts libenv fname = IOResult $ do
         return $ fail $ "a file for input '" ++ fname ++ "' not found."
     Just fname'' -> do
         input <- readFile fname''
-        putIfVerbose opts 1 $ "Reading file " ++ fname''
+        putIfVerbose opts 2 $ "Reading file " ++ fname''
         ioresToIO $ anaString lgraph defl opts libenv input fname''
 
 -- | parsing and static analysis for string (=contents of file)

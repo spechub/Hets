@@ -45,7 +45,7 @@ main = do
 
 processFile :: HetcatsOpts -> FilePath -> IO ()
 processFile opts file =
-    do putIfVerbose opts 2 ("Processing input: " ++ file)
+    do putIfVerbose opts 3 ("Processing input: " ++ file)
        case guess file (intype opts) of
 #ifdef UNI_PACKAGE
          DGIn -> showDGGraph file opts

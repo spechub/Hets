@@ -66,7 +66,7 @@ write_LIB_DEFN ga file opt ld = do
         odir = if null odir' then path else odir'
         filePrefix = pathAndBase odir base
         filename ty = filePrefix ++ "." ++ show ty
-        verbMesg ty = putIfVerbose opt 3 $ "Writing file: " ++ filename ty
+        verbMesg ty = putIfVerbose opt 2 $ "Writing file: " ++ filename ty
         printAscii ty = do
                 verbMesg ty
                 write_casl_asc opt ga (filename ty) ld
