@@ -16,7 +16,7 @@ module Isabelle.CreateTheories where
 import Common.Id
 import Common.PrettyPrint
 import Common.Result
-import Common.Lib.Pretty as P
+import Common.Lib.Pretty
 
 import Logic.Coerce
 import Logic.Comorphism
@@ -41,8 +41,8 @@ import Comorphisms.Haskell2IsabelleHOLCF
 import Haskell.Logic_Haskell
 #endif
 
-printTheory :: LIB_NAME -> SIMPLE_ID -> G_theory -> Maybe Doc
-printTheory ln sn (G_theory lid sign0 sens0) = 
+printTheory :: String -> LIB_NAME -> SIMPLE_ID -> G_theory -> Maybe Doc
+printTheory libdir ln sn (G_theory lid sign0 sens0) = 
                 let th = (sign0, toNamedList sens0)
                     r1 = do
                       th0 <- coerceBasicTheory lid CASL "" th
@@ -69,8 +69,4 @@ printTheory ln sn (G_theory lid sign0 sens0) =
                    Just (sign, sens) -> let 
                      tn = reverse (takeWhile (/= '/') $ reverse $ show ln)
                           ++ "_" ++ showPretty sn ""
-                     doc = text "theory" <+> text tn <+> text "=" $$
-                          createTheoryText sign sens
-                     in Just doc
-
-
+                     in Just $ printIsaTheory tn libdir sign sens

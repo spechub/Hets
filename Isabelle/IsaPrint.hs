@@ -253,7 +253,7 @@ printAlt (VName _ altV) = case altV of
             if i == maxPrio then empty else text (show i)
 
 instance PrettyPrint Sign where
-  printText0 _ sig = text (showBaseSig $ baseSig sig) <> colon $++$
+  printText0 _ sig = 
     printTypeDecls sig $++$
     printClassrel (classrel $ tsig sig) $++$
     printDomainDefs (domainTab sig) $++$

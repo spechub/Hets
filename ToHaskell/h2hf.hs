@@ -20,8 +20,6 @@ import Common.AnnoState
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 
-import Common.Lib.Pretty
-
 import Comorphisms.Hs2HOLCF
 
 import Isabelle.CreateThy
@@ -45,6 +43,7 @@ main = getArgs >>= mapM_ process
 
 process :: FilePath -> IO ()
 process fn = do s <- readFile fn
+                ld <- getEnv "HETS_LIB"
                 s1 <- return $ dropWhile (\x -> x == '\n' || x == ' ') s
                 s2 <- return $ if takeWhile (/= ' ') s1 == "module" 
                                then dropWhile (/= '\n') s1 else s1  
@@ -54,7 +53,6 @@ process fn = do s <- readFile fn
                          tn = dropWhile (== '"') $ (takeWhile (/= '.') 
                               $ reverse (takeWhile (\x -> x /= '/') $ reverse 
                               $ show fn)) ++ "_theory" 
-                         doc = text "theory" <+> text tn <+> text "=" $$
-                            createTheoryText sig hs
+                         doc = printIsaTheory tn ld sig hs
                          in writeFile (tn ++ ".thy") (shows doc "\n")
                        Left err -> putStrLn $ show err

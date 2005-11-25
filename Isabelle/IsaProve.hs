@@ -42,6 +42,7 @@ import Isabelle.IsaSign
 import Isabelle.IsaPrint
 import Isabelle.IsaConsts
 import Isabelle.Translate
+import Isabelle.CreateThy
 
 import Common.AS_Annotation
 import Common.PrettyPrint
@@ -73,6 +74,11 @@ isaProve :: Bool -> String -> Theory Sign Sentence () -> IO([Proof_status ()])
 isaProve checkCons thName (Theory sig nSens) = do
   ex <- doesFileExist fileName
   exorig <- doesFileExist origName
+  libdir <- getEnv "HETS_LIB"
+  let showTheory = show $ printIsaTheory (getFN thName) libdir sig 
+                   $ map markSimp disAxs ++ map markSimp disGoals
+                   -- currently ignore showLemma (add them as sentences)
+      theory = if checkCons then showConsTheory else showTheory
   case (ex,exorig) of
     (True,True) -> do
              putStrLn ("diff -u "++origName++" "++fileName++" > "++patchName)
@@ -116,21 +122,11 @@ isaProve checkCons thName (Theory sig nSens) = do
       origName = thName'++".orig.thy"
       patchName = thName'++".patch"
       provedName = thName'++"_proved.thy"
-      theory = if checkCons then showConsTheory else showTheory
       (lemmas, decs) = unzip (map formLemmas disAxs)
       showLemma = if showLemmas sig
                    then concat lemmas ++ "\n" ++ concat (map (++"\n") decs)
                    else ""
---
-      showAxs = concat $ map ((++"\n") . showSen) (map markSimp disAxs)
-      showGoals = concat $ map showGoal disGoals
       getFN = reverse . fst . break (=='/') . reverse
-      showGoal goal = (("theorem "++) .  (++"\noops\n") . showSen)
-                      (markSimp goal)
-      showTheory = thyPath ++ "theory " ++ getFN thName ++ " = "
-                   ++ showPretty sig "\n\naxioms\n"
-                   ++ showAxs ++ "\n" ++ showLemma ++ "\n\n" ++ showGoals
-                   ++ "\nend\n"
       withoutThms thy =
         let thy' = takeWhile (isNotPrefixOf "theorem") (lines thy)
             sub = map subThyName thy'
@@ -164,7 +160,7 @@ isaProve checkCons thName (Theory sig nSens) = do
       thyPath = "ML \"val hetsLib = (OS.Process.getEnv \\\"HETS_LIB\\\"); \n"
                    ++ "case hetsLib of NONE => add_path \\\".\\\" \n"
                    ++ "| SOME s => add_path (s ^ \\\"/Isabelle\\\")\"\n\n"
-      showConsTheory =
+      showConsTheory = -- also change this into a sentence
          "theory " ++ getFN thName ++ " = "
          ++ showBaseSig (baseSig sig) ++" : \n"
          ++ "lemma inconsistent:\n "

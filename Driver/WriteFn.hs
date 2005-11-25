@@ -168,7 +168,7 @@ writeSpecFiles opt file lenv ga (ln, gctx) = let
                   mapM_ ( \ t ->
                       let f = rmSuffix file ++ "_" ++ show i ++ "." ++ show t
                       in case t of
-                      ThyFile -> case printTheory ln i gTh of
+                      ThyFile -> case printTheory (libdir opt) ln i gTh of
                                     Nothing -> putIfVerbose opt 0 $
                                         "could not translate to Isabelle " ++
                                          show i

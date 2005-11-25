@@ -574,6 +574,7 @@ above p                g  q  = aboveNest (reduceDoc p) g 0 q
 aboveNest :: RDoc -> Bool -> Int -> RDoc -> RDoc
 -- Specfication: aboveNest p g k q = p $g$ (nest k q)
 
+
 aboveNest _                   _ k _ | k `seq` False = (error "Pretty.hs")
 aboveNest NoDoc               _ _ _ = NoDoc
 aboveNest (p1 `Union` p2)     g k q = aboveNest p1 g k q `union_`
