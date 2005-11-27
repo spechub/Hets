@@ -319,7 +319,7 @@ term_cime t =
                         ("eq("++(term_cime t1)++","++(term_cime t2)++")")
                --    Predication PRED_SYMB [TERM f] Range
                     Predication ps ts _ ->
-                        ((predS_cime ps) ++ "(" ++
+                        ((predSymStr ps) ++ "(" ++
                         (terms_cime ts) ++ ")")
                     _ -> error "CASL.CCC.TerminationProof.<Term-Formula>"
 
@@ -375,6 +375,16 @@ impli_cime index f =
   case (quanti f) of
     Implication (Predication predS1 ts1 _) f1 _ _ ->
         case (quanti f1) of
+          Conjunction fs _ ->
+              (((axiom_subcime (quanti f1)) ++ "->" ++ 
+              fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ 
+              "));\n" ++
+              fk1 ++ "(True) -> True;\n"),(index+1))
+          Disjunction fs _ ->
+              (((axiom_subcime (quanti f1)) ++ "->" ++ 
+              fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ 
+              "));\n" ++
+              fk1 ++ "(True) -> True;\n"),(index+1))
           Strong_equation t1 t2 _ ->
               (("eq(" ++ (term_cime t1) ++ "," ++ (term_cime t2) ++ ") -> " ++
               fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++
@@ -389,59 +399,83 @@ impli_cime index f =
               ") -> False;\n"),(index + 1))
           Equivalence (Predication predS2 ts2 _) f2 _ ->
               case (quanti f2) of
+                Conjunction fs _ ->
+                    (((axiom_subcime (quanti f2)) ++ "->" ++ 
+                    fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
+                    (terms_cime ts1) ++ ")," ++ (predSymStr predS2) ++ "(" ++ 
+                    (terms_cime ts2) ++"));\n" ++
+                    fk1 ++ "(True,True) -> True;\n"),(index+1))
+                Disjunction fs _ ->
+                    (((axiom_subcime (quanti f2)) ++ "->" ++ 
+                    fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
+                    (terms_cime ts1) ++ ")," ++ (predSymStr predS2) ++ "(" ++ 
+                    (terms_cime ts2) ++"));\n" ++
+                    fk1 ++ "(True,True) -> True;\n"),(index+1))
                 Predication predS3 ts3 _ ->
                     (((predSymStr predS3)++"("++(terms_cime ts3)++") -> "++
                     fk1++"("++(predSymStr predS1)++"("++(terms_cime ts1) ++ 
                     ")," ++ (predSymStr predS2) ++ "(" ++ (terms_cime ts2) ++
                     ")," ++ (terms_cime ts3) ++ ");\n" ++
-                    fk1++"(True,True,"++(terms_cime ts3)++") -> True;\n" ++
-                    (predSymStr predS2)++"(" ++ (terms_cime ts2) ++ ") -> " ++
-                    fk2++"("++(predSymStr predS1)++"(" ++ (terms_cime ts1) ++ 
-                    ")," ++ (predSymStr predS3) ++ "(" ++ (terms_cime ts3) ++
-                    ")," ++ (terms_cime ts2) ++ ");\n" ++
-                    fk2++"(True,True," ++ (terms_cime ts2) ++ ") -> True;\n"),
-                    (index + 2))
+                    fk1++"(True,True,"++(terms_cime ts3)++") -> True;\n"),
+                    (index +2))
+          --        (predSymStr predS2)++"(" ++ (terms_cime ts2) ++ ") -> " ++
+          --        fk2++"("++(predSymStr predS1)++"(" ++ (terms_cime ts1) ++ 
+          --        ")," ++ (predSymStr predS3) ++ "(" ++ (terms_cime ts3) ++
+          --        ")," ++ (terms_cime ts2) ++ ");\n" ++
+          --        fk2++"(True,True," ++ (terms_cime ts2) ++ ") -> True;\n"),
+          --        (index + 2))
                 Negation (Predication predS3 ts3 _) _ ->
                     (((predSymStr predS3)++"("++(terms_cime ts3)++") -> "++
                     fk1++"("++(predSymStr predS1)++"("++(terms_cime ts1) ++ 
                     ")," ++ (predSymStr predS2) ++ "(" ++ (terms_cime ts2) ++
                     ")," ++ (terms_cime ts3) ++ ");\n" ++
-                    fk1++"(True,True,"++(terms_cime ts3)++") -> False;\n" ++
-                    (predSymStr predS2)++"(" ++ (terms_cime ts2) ++ ") -> " ++
-                    fk2++"("++(predSymStr predS1)++"(" ++ (terms_cime ts1) ++ 
-                    ")," ++ (predSymStr predS3) ++ "(" ++ (terms_cime ts3) ++
-                    ")," ++ (terms_cime ts2) ++ ");\n" ++
-                    fk2++"(True,False," ++ (terms_cime ts2) ++ ") -> True;\n"),
+                    fk1++"(True,True,"++(terms_cime ts3)++") -> False;\n"),
                     (index + 2))
+          --        (predSymStr predS2)++"(" ++ (terms_cime ts2) ++ ") -> " ++
+          --        fk2++"("++(predSymStr predS1)++"(" ++ (terms_cime ts1) ++ 
+          --        ")," ++ (predSymStr predS3) ++ "(" ++ (terms_cime ts3) ++
+          --        ")," ++ (terms_cime ts2) ++ ");\n" ++
+          --        fk2++"(True,False," ++ (terms_cime ts2) ++ ") -> True;\n"),
+          --        (index + 2))
                 Strong_equation t1 t2 _ ->
                     (("eq("++(term_cime t1)++","++(term_cime t2)++") -> " ++
                     fk1++"("++(predSymStr predS1)++"("++(terms_cime ts1)++
                     ")," ++ (predSymStr predS2) ++ "(" ++ (terms_cime ts2) ++
                     "),"++(term_cime t1)++","++(term_cime t2)++");\n" ++
                     fk1++"(True,True,"++(term_cime t1)++","++(term_cime t2)++ 
-                    ") -> True;\n" ++
-                    (predSymStr predS2)++"("++(terms_cime ts2)++ ") -> " ++
-                    fk2++"("++(predSymStr predS1)++"("++(terms_cime ts1) ++
-                    "),"++(term_cime t1)++","++(terms_cime ts2) ++ ");\n" ++
-                    fk2++"(True,"++(term_cime t2)++","++(terms_cime ts2) ++
-                    ") -> " ++ "True;\n"),(index + 2))
+                    ") -> True;\n"),(index +2))
+          --        (predSymStr predS2)++"("++(terms_cime ts2)++ ") -> " ++
+          --        fk2++"("++(predSymStr predS1)++"("++(terms_cime ts1) ++
+          --        "),"++(term_cime t1)++","++(terms_cime ts2) ++ ");\n" ++
+          --        fk2++"(True,"++(term_cime t2)++","++(terms_cime ts2) ++
+          --        ") -> " ++ "True;\n"),(index + 2))
                 Negation (Strong_equation t1 t2 _) _ ->
                     (("eq("++(term_cime t1)++","++(term_cime t2)++") -> " ++
                     fk1++"("++(predSymStr predS1)++"("++(terms_cime ts1)++
                     ")," ++ (predSymStr predS2) ++ "(" ++ (terms_cime ts2) ++
                     "),"++(term_cime t1)++","++(term_cime t2)++");\n" ++
                     fk1++"(True,True,"++(term_cime t1)++","++(term_cime t2)++ 
-                    ") -> False;\n" ++
-                    (predSymStr predS2)++"("++(terms_cime ts2)++ ") -> " ++
-                    fk2++"("++(predSymStr predS1)++"("++(terms_cime ts1) ++
-                    "),eq("++(term_cime t1)++","++(term_cime t2)++"),"++
-                    (terms_cime ts2) ++ ");\n" ++
-                    fk2++"(True,False,"++(terms_cime ts2) ++
-                    ") -> " ++ "True;\n"),(index + 2))
-                _ -> error "CASL.CCC.TerminationProof.<impli_cime_p_eq>"
+                    ") -> False;\n"),(index +2))
+          --        (predSymStr predS2)++"("++(terms_cime ts2)++ ") -> " ++
+          --        fk2++"("++(predSymStr predS1)++"("++(terms_cime ts1) ++
+          --        "),eq("++(term_cime t1)++","++(term_cime t2)++"),"++
+          --        (terms_cime ts2) ++ ");\n" ++
+          --        fk2++"(True,False,"++(terms_cime ts2) ++
+          --          ") -> " ++ "True;\n"),(index + 2))
+                _ -> error "CASL.CCC.TerminationProof.<impli_cime_p_eq_p>"
+          Equivalence (Strong_equation t1 t2 _) (Strong_equation t3 t4 _) _ ->
+              error " to do"
           _ -> error "CASL.CCC.TerminationProof.<impli_cime_p>"
     Implication (Strong_equation t1 t2 _) f1 _ _ ->
         case (quanti f1) of
+          Conjunction fs _ ->
+              (((axiom_subcime (quanti f1)) ++ "->" ++ 
+              fk1 ++ "(" ++ (term_cime t1) ++ ");\n" ++
+              fk1 ++ "(" ++ (term_cime t2) ++ ") -> True;\n"),(index+1))
+          Disjunction fs _ ->
+              (((axiom_subcime (quanti f1)) ++ "->" ++ 
+              fk1 ++ "(" ++ (term_cime t1) ++ ");\n" ++
+              fk1 ++ "(" ++ (term_cime t2) ++ ") -> True;\n"),(index+1))
           Strong_equation t3 t4 _ ->
               (("eq(" ++ (term_cime t3) ++ "," ++ (term_cime t4) ++ ") -> " ++
               fk1 ++ "(" ++ (term_cime t1) ++ "," ++ (term_cime t3) ++ "," ++ 
@@ -456,6 +490,18 @@ impli_cime index f =
               (term_cime t4) ++ ") -> False;\n"),(index + 1))
           Equivalence (Predication predS1 ts1 _) f2 _->
               case (quanti f2) of
+                Conjunction fs _ ->
+                    (((axiom_subcime (quanti f2)) ++ "->" ++ 
+                    fk1 ++ "(" ++ (term_cime t1) ++ "," ++ 
+                    (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ "));\n"++
+                    fk1 ++ "(" ++ (term_cime t2) ++ ",True) -> True;\n"),
+                    (index+1))
+                Disjunction fs _ ->
+                    (((axiom_subcime (quanti f2)) ++ "->" ++ 
+                    fk1 ++ "(" ++ (term_cime t1) ++ "," ++ 
+                    (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ "));\n"++
+                    fk1 ++ "(" ++ (term_cime t2) ++ ",True) -> True;\n"),
+                    (index+1))
                 Predication predS2 ts2 _ ->
                     (((predSymStr predS2)++"("++(terms_cime ts2) ++ ") -> " ++
                     fk1 ++ "(" ++ (term_cime t1) ++ "," ++
@@ -513,6 +559,14 @@ impli_cime index f =
           _ -> error "CASL.CCC.TerminationProof.<impli_cime_s>"
     Implication (Existl_equation t1 t2 _) f1 _ _ ->
         case (quanti f1) of
+          Conjunction fs _ ->
+              (((axiom_subcime (quanti f1)) ++ "->" ++ 
+              fk1 ++ "(" ++ (term_cime t1) ++ ");\n" ++
+              fk1 ++ "(" ++ (term_cime t2) ++ ") -> True;\n"),(index+1))
+          Disjunction fs _ ->
+              (((axiom_subcime (quanti f1)) ++ "->" ++ 
+              fk1 ++ "(" ++ (term_cime t1) ++ ");\n" ++
+              fk1 ++ "(" ++ (term_cime t2) ++ ") -> True;\n"),(index+1))
           Strong_equation t3 t4 _ ->
               (("eq(" ++ (term_cime t3) ++ "," ++ (term_cime t4) ++ ") -> " ++
               fk1 ++ "(" ++ (term_cime t1) ++ "," ++ (term_cime t3) ++ "," ++ 
@@ -527,6 +581,18 @@ impli_cime index f =
               (term_cime t4) ++ ") -> False;\n"),(index + 1))
           Equivalence (Predication predS1 ts1 _) f2 _->
               case (quanti f2) of
+                Conjunction fs _ ->
+                    (((axiom_subcime (quanti f2)) ++ "->" ++ 
+                    fk1 ++ "(" ++ (term_cime t1) ++ "," ++ 
+                    (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ "));\n"++
+                    fk1 ++ "(" ++ (term_cime t2) ++ ",True) -> True;\n"),
+                    (index+1))
+                Disjunction fs _ ->
+                    (((axiom_subcime (quanti f2)) ++ "->" ++ 
+                    fk1 ++ "(" ++ (term_cime t1) ++ "," ++ 
+                    (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ "));\n"++
+                    fk1 ++ "(" ++ (term_cime t2) ++ ",True) -> True;\n"),
+                    (index+1))
                 Predication predS2 ts2 _ ->
                     (((predSymStr predS2)++"("++(terms_cime ts2) ++ ") -> " ++
                     fk1 ++ "(" ++ (term_cime t1) ++ "," ++
@@ -586,6 +652,7 @@ impli_cime index f =
   where fk1 = "af" ++ (show index)
         fk2 = "af" ++ (show $ index +1)
 
+
 {- transform Equivalence to cime: 
    (p(t_1,...,t_m) <=> phi)
      Example:
@@ -602,6 +669,16 @@ equiv_cime index f =
   case (quanti f) of
     Equivalence (Predication predS1 ts1 _) f1 _ ->
         case (quanti f1) of
+          Conjunction _ _ ->
+              (((axiom_subcime (quanti f1)) ++ "->" ++ 
+              fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ 
+              "));\n" ++
+              fk1 ++ "(True) -> True;\n"),(index+1))
+          Disjunction fs _ ->
+              (((axiom_subcime (quanti f1)) ++ "->" ++ 
+              fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ 
+              "));\n" ++
+              fk1 ++ "(True) -> True;\n"),(index+1))              
           Predication predS2 ts2 _ ->
               (((predSymStr predS2) ++ "(" ++ (terms_cime ts2) ++ ") -> " ++
               fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_cime ts1) ++ 
@@ -663,6 +740,7 @@ impli_equiv_cime index f =
     Equivalence _ _ _ -> equiv_cime index f
     _ -> error "CASL.CCC.TerminationProof.<impli_equiv_cime2>"
 
+
 {- transform a axiom to cime (f_str)
 -}
 axiom_cime :: FORMULA f -> Cime
@@ -680,7 +758,7 @@ axiom_cime f =
           Disjunction fs _ ->
               disj_cime fs ++ " -> False"
           Predication p_s ts _ -> 
-              ((predSymStr p_s) ++ "(" ++ (termsStr ts) ++ ") -> False")
+              ((predSymStr p_s) ++ "(" ++ (terms_cime ts) ++ ") -> False")
           Existl_equation t1 t2 _ -> 
               "eq(" ++ (term_cime t1) ++ "," ++ (term_cime t2) ++ ") -> False"
           Strong_equation t1 t2 _ -> 
@@ -692,7 +770,7 @@ axiom_cime f =
     False_atom _ -> 
         error "CASL.CCC.TerminationProof.<Axioms_False>"
     Predication p_s ts _ -> 
-        ((predSymStr p_s) ++ "(" ++ (termsStr ts) ++ ") -> True")
+        ((predSymStr p_s) ++ "(" ++ (terms_cime ts) ++ ") -> True")
     Definedness _ _ -> 
         error "CASL.CCC.TerminationProof.<Axioms_Definedness>"
     Existl_equation t1 t2 _ -> 
@@ -700,33 +778,87 @@ axiom_cime f =
     Strong_equation t1 t2 _ -> 
         (term_cime t1) ++ " -> " ++ (term_cime t2)                   
     _ -> error "CASL.CCC.TerminationProof.<Axioms>"
-  where termsStr ts = if null ts 
-                      then error "CASL.CCC.TerminationProof.axiom_cime"
-                      else tail $ concat $ map (\s->","++s) $ map term_cime ts
+--  where termsStr ts = if null ts 
+--                    then error "CASL.CCC.TerminationProof.axiom_cime"
+--                    else tail $ concat $ map (\s->","++s) $ map term_cime ts
+
+
+{- transform a axiom to subcime
+-}
+axiom_subcime :: FORMULA f -> Cime
+axiom_subcime f = 
+  case (quanti f) of
+    Quantification _ _ f' _ -> axiom_subcime f'
+    Conjunction fs _ -> 
+        conj_cime fs
+    Disjunction fs _ -> 
+        disj_cime fs
+    Negation f' _ ->
+        case f' of
+          Conjunction fs _ ->
+              "not(" ++ conj_cime fs ++ ")"
+          Disjunction fs _ ->
+              "not(" ++ disj_cime fs ++ ")"
+          Predication p_s ts _ -> 
+              "not(" ++ (predSymStr p_s) ++ "(" ++ (terms_cime ts) ++ "))"
+          Existl_equation t1 t2 _ -> 
+              "not(eq(" ++ (term_cime t1) ++ "," ++ (term_cime t2) ++ "))"
+          Strong_equation t1 t2 _ -> 
+              "not(eq(" ++ (term_cime t1) ++ "," ++ (term_cime t2) ++ "))"
+          Definedness _ _ -> 
+              ""           -- not implement
+          _ -> error "CASL.CCC.TerminationProof.cime_subcime.<Negation>"
+    True_atom _ -> 
+        error "CASL.CCC.TerminationProof.axiom_subcime.<True>"     
+    False_atom _ -> 
+        error "CASL.CCC.TerminationProof.axiom_subcime.<False>"
+    Predication p_s ts _ -> 
+        (predSymStr p_s) ++ "(" ++ (terms_cime ts) ++ ")"
+    Definedness _ _ -> 
+        error "CASL.CCC.TerminationProof.<Axioms_Definedness>"
+    Existl_equation t1 t2 _ -> 
+        "eq(" ++ (term_cime t1) ++ "," ++ (term_cime t2) ++ ")"
+    Strong_equation t1 t2 _ -> 
+        "eq(" ++ (term_cime t1) ++ "," ++ (term_cime t2) ++ ")"
+    _ -> error "CASL.CCC.TerminationProof.axiom_subcime.<Axioms>"
 
 
 conj_cime :: [FORMULA f] -> Cime
 conj_cime fs =
-  if length fs == 2 then ("and(" ++ (axiom_cime $ head fs) ++ "," ++
-                                   (axiom_cime $ last fs) ++ ")")
+  if length fs == 2 then ("and(" ++ (axiom_subcime $ head fs) ++ "," ++
+                                   (axiom_subcime $ last fs) ++ ")")
   else ("and(" ++ (axiom_cime $ head fs) ++ "," ++
                   (conj_cime $ tail fs) ++ ")")
 
 disj_cime :: [FORMULA f] -> Cime
 disj_cime fs =
-  if length fs == 2 then ("or(" ++ (axiom_cime $ head fs) ++ "," ++
-                                  (axiom_cime $ last fs) ++ ")")
+  if length fs == 2 then ("or(" ++ (axiom_subcime $ head fs) ++ "," ++
+                                  (axiom_subcime $ last fs) ++ ")")
   else ("or(" ++ (axiom_cime $ head fs) ++ "," ++
                  (conj_cime $ tail fs) ++ ")")
 
+
 -- the signature for auxiliary function
+   -- input axiom
+   -- functionindex
+   -- functionname
+   -- number of arguments
+   -- next functionindex
 sigAuxf :: FORMULA f -> Int -> [((String,Int),Int)]
 sigAuxf f i = 
         case (quanti f) of
           Implication _ f' _ _ -> 
-              case f' of 
+              case f' of
+                Conjunction _ _ ->
+                    [((("af"++show(i)),1),i+1)]
+                Disjunction _ _ ->
+                    [((("af"++show(i)),1),i+1)] 
                 Equivalence (Predication _ ts1 _) f1 _  ->
                     case f1 of
+                      Conjunction _ _ ->
+                          [((("af"++show(i)),2),i+1)]
+                      Disjunction _ _ ->
+                          [((("af"++show(i)),2),i+1)]
                       Strong_equation _ _ _ ->
                           [((("af"++show(i)),4),i+2),
                            ((("af"++show(i+1)),2+(length ts1)),i+2)]
@@ -747,6 +879,10 @@ sigAuxf f i =
                 _ -> [(("",-1),i)]
           Equivalence (Predication _ ts _) f' _ ->
               case f' of
+                Conjunction _ _ ->
+                    [((("af"++show(i)),1),i+1)]
+                Disjunction _ _ ->
+                    [((("af"++show(i)),1),i+1)]
                 Predication _ ts2 _ ->
                     [((("af"++show(i)),1+(length ts2)),i+2),
                      ((("af"++show(i+1)),1+(length ts)),i+2)]
@@ -762,8 +898,11 @@ sigAuxf f i =
                 _ -> [(("",-1),i)]
           _ -> [(("",-1),i)]     
 
+
 terms_cime :: [TERM f] -> Cime
 terms_cime ts = 
     if null ts then ""
     else tail $ concat $ map (\s->","++s) $ map term_cime ts
+
+
 
