@@ -63,7 +63,7 @@ getAxioms, getDefs, getRecDefs :: [Named Sentence] ->
                  ([Named Sentence], [Named Sentence])
 
 getAxioms = partition ( \ s -> case sentence s of 
-                            Sentence _ -> True
+                            Sentence _ -> isAxiom s
                             _ -> False)
 
 getDefs = partition ( \ s -> case sentence s of 
