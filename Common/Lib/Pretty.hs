@@ -461,8 +461,8 @@ data Doc
 type RDoc = Doc
 
 reduceDoc :: Doc -> RDoc
-reduceDoc (Beside p g q) = beside p g q
-reduceDoc (Above  p g q) = above  p g q
+reduceDoc (Beside p g q) = beside p g (reduceDoc q)
+reduceDoc (Above  p g q) = above  p g (reduceDoc q)
 reduceDoc p              = p
 
 
@@ -562,18 +562,18 @@ mkUnion p q     = p `union_` q
 above_ :: Doc -> Bool -> Doc -> Doc
 above_ Empty _ q = q
 above_ p _ Empty = p
-above_ p g q = Above p g (reduceDoc q)
+above_ p g q = Above p g q
 
 p $$  q = above_ p False q
 p $+$ q = above_ p True q
 
 above :: Doc -> Bool -> RDoc -> RDoc
-above (Above p g1 q1)  g2 q2 = above p g1 (aboveNest q1 g2 0 q2)
-above p                g  q  = aboveNest (reduceDoc p) g 0 q
+above (Above p g1 q1)  g2 q2 = above p g1 (above q1 g2 q2)
+above p@(Beside _ _ _) g  q  = aboveNest (reduceDoc p) g 0 (reduceDoc q)
+above p g q                  = aboveNest p             g 0 (reduceDoc q)
 
 aboveNest :: RDoc -> Bool -> Int -> RDoc -> RDoc
 -- Specfication: aboveNest p g k q = p $g$ (nest k q)
-
 
 aboveNest _                   _ k _ | k `seq` False = (error "Pretty.hs")
 aboveNest NoDoc               _ _ _ = NoDoc
@@ -614,7 +614,7 @@ nilAboveNest g k q           | (not g) && (k > 0) -- No newline if no overlap
 beside_ :: Doc -> Bool -> Doc -> Doc
 beside_ Empty _ q = q
 beside_ p _ Empty = p
-beside_ p g q = Beside p g (reduceDoc q)
+beside_ p g q = Beside p g q
 
 p <>  q = beside_ p False q
 p <+> q = beside_ p True  q
