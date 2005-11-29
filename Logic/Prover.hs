@@ -71,6 +71,10 @@ noSens :: ThSens a b
 noSens = OMap.empty
 
 -- | join and disambiguate
+--
+-- * separate Axioms from Theorems
+--
+-- * don't merge sentences with same key but different contents?
 joinSens :: (Ord a,Eq b) => ThSens a b -> ThSens a b -> ThSens a b
 joinSens s1 s2 = let l1 = sortBy (comparing snd) $ Map.toList s1
                      updN n (_,e) = (n,e)
@@ -85,11 +89,14 @@ joinSens s1 s2 = let l1 = sortBy (comparing snd) $ Map.toList s1
           mergeSens l1@((k1,e1) : r1) l2@((k2,e2) : r2) = 
               case compare e1 e2 of
               LT -> (k1,e1) : mergeSens r1 l2
-              EQ -> (k1,e1 { OMap.ele = (OMap.ele e1) 
+              EQ 
+                  | isAxiom (OMap.ele e1) == isAxiom (OMap.ele e2)
+                      -> (k1,e1 { OMap.ele = (OMap.ele e1) 
                                         { thmStatus = 
                                               union (thmStatus $ OMap.ele e1) 
                                                   (thmStatus $ OMap.ele e2)}})
-                    : mergeSens r1 r2
+                         : mergeSens r1 r2
+                  | otherwise -> (k1,e1):mergeSens r1 l2
               GT -> (k2,e2) : mergeSens l1 r2
 
 mapValue :: (a -> b) -> SenStatus a c -> SenStatus b c
@@ -108,6 +115,7 @@ toNamed k s = AS_Anno.NamedSen
               , AS_Anno.isDef    = isDef s
               , AS_Anno.isAxiom  = isAxiom s}
 
+-- | putting Sentences from a list into a map 
 toThSens :: Ord a => [AS_Anno.Named a] -> ThSens a b
 toThSens = OMap.fromList . map
     ( \ v -> (AS_Anno.senName v,
