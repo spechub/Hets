@@ -360,9 +360,17 @@ callProver st (G_prover lid4 p, Comorphism cid) =
         -- ioToIORes $ putStrLn $ show ps
         return $ st { goalMap = 
                           markProved (Comorphism cid) lidT 
-                                     ({-filter isProvedStat-} ps) 
+                                     (filter (provedOrDisproved 
+                                              (includedAxioms st ==
+                                               OMap.keys sens)) ps) 
                                      (goalMap st) 
                     }
+    where provedOrDisproved allSentencesIncluded senStat =
+              isProvedStat senStat || 
+             (allSentencesIncluded && case senStat of
+                                      Disproved _ -> True
+                                      _ -> False)
+
 
 proveFineGrainedSelect :: 
     (Logic lid sublogics1
