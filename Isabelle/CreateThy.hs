@@ -29,7 +29,7 @@ printIsaTheory tn libdir sign sens = let
     b = baseSig sign
     bs = showBaseSig b
     ld = if null libdir then "" else libdir ++ "/Isabelle/"
-    use s = if null ld then empty else text ("use" ++ s) <+> 
+    use = if null ld then empty else text "uses" <+> 
            doubleQuotes (text $ ld ++ "prelude")
     in text ("theory " ++ tn) 
     $$ text "imports" <+> (if case b of
@@ -37,9 +37,8 @@ printIsaTheory tn libdir sign sens = let
                           HOLCF_thy -> False
                           _ -> True then doubleQuotes 
                                     $ text $ ld ++ bs else text bs)
-    $$ use "s" 
+    $$ use 
     $$ text "begin"
-    $$ use ""
     $++$ printTheoryBody sign sens
     $++$ text "end"
 
