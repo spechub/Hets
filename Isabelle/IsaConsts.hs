@@ -39,6 +39,9 @@ noType = Type "dummy" holType []
 boolType :: Typ
 boolType = Type "bool" holType []
 
+intType :: Typ
+intType = Type "int" holType []
+
 mkOptionType :: Typ -> Typ
 mkOptionType t = Type "option" holType [t]
 
