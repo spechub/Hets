@@ -55,7 +55,7 @@ instance Comorphism Haskell2IsabelleHOLCF -- multi-parameter class Com.
        (sig2,_) <- map_sign Haskell2IsabelleHOLCF (cod Haskell mor)
        inclusion Isabelle sig1 sig2
     map_theory Haskell2IsabelleHOLCF (sign, sens) = do
-        (sign',sens') <- Hs2HOLCF.transTheory sign sens
+        (sign',sens') <- Hs2HOLCF.transTheory IsCont sign sens
         return (sign', sens')
     map_symbol Haskell2IsabelleHOLCF _ = 
         error "Haskell2IsabelleHOLCF.map_symbol"
