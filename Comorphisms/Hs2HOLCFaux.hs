@@ -252,7 +252,7 @@ xDummy :: IsaTerm
 xDummy = conDouble "dummy"
 
 holEq :: IsaTerm -> IsaTerm -> IsaTerm
-holEq t1 t2 = termMAppl NotCont (conDouble eq) [t1, t2]
+holEq t1 t2 = termMAppl NotCont (con eqV) [t1, t2]
 
 -------------------------------- Name translation ----------------------------------
 -- Translating to strings compatible with Isabelle
@@ -498,12 +498,12 @@ termMAppl c t ts =
 isaAnd :: Continuity -> Term -> Term -> Term
 isaAnd c t1 t2 = termMAppl c (case c of 
        IsCont -> conDouble "trand"
-       NotCont -> conDouble conj) [t1, t2]
+       NotCont -> con conjV) [t1, t2]
 
 isaOr :: Continuity -> Term -> Term -> Term
 isaOr c t1 t2 = termMAppl c (case c of 
        IsCont -> conDouble "tror"
-       NotCont -> conDouble disj) [t1, t2]
+       NotCont -> con disjV) [t1, t2]
 
 isaEx :: Continuity -> Term -> Term -> Term
 isaEx c x t = let qs = IsaSign.App (conDouble exS) 

@@ -521,31 +521,32 @@ transHV a s x = let
       tag = elem pcpo (typeSort k)
       qq = pp x
       mkConst w = Const (mkVName w) k
+      mkVConst v = Const v k
       mkFree w = Free (mkVName w) k
       mFree w = Free (mkVName w) noType
       flist = [mFree "x", mFree "y"]
    in if qq == "error" then Nothing else return $
    case qq of  
-   "==" -> if tag == False then mkConst eq
+   "==" -> if tag == False then mkVConst eqV
            else 
      (termMAbs IsCont flist
-        (termLift $ termMAppl NotCont (mkConst eq)
+        (termLift $ termMAppl NotCont (mkVConst eqV)
            flist))
-   "&&" -> if tag == False then mkConst conj
+   "&&" -> if tag == False then mkVConst conjV
             else mkConst "trand" 
-   "||" -> if tag == False then mkConst disj
+   "||" -> if tag == False then mkVConst disjV
             else mkConst "tror"
-   "+" -> if tag == False then mkConst "op +"
-           else funFliftbin $ mkConst "op +" 
-   "-" -> if tag == False then mkConst "op -"
-           else funFliftbin $ mkConst "op -" 
-   "*" -> if tag == False then mkConst "op *"
-           else funFliftbin $ mkConst "op *"
+   "+" -> (if tag == False then id
+           else funFliftbin) $ mkVConst plusV
+   "-" -> (if tag == False then id
+           else funFliftbin) $ mkVConst minusV
+   "*" -> (if tag == False then id
+           else funFliftbin) $ mkVConst timesV
    "head" -> if tag == False then mkConst "hd"
               else mkConst "lHd"
    "tail" -> if tag == False then mkConst "tl"
               else mkConst "lTl" 
-   ":"    -> if tag == False then mkConst "op #"
+   ":"    -> if tag == False then mkVConst consV
               else mkConst "lCons" 
    _ -> case x of
         PNT (PN _ (UniqueNames.G _ _ _)) _ _ -> mkConst n
