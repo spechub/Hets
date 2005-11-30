@@ -144,14 +144,12 @@ printTrm trm = case trm of
         NotCont -> "%"
         IsCont -> "LAM") <+> printPlainTerm v <> text "." 
                     <+> printPlainTerm b, lowPrio)
-    If i t e NotCont -> (text "if" <+> printPlainTerm i <+> 
+    If i t e c -> let d = printPlainTerm i <+> 
                         text "then" <+> printPlainTerm t <+>
-                        text "else" <+> printPlainTerm e, 
-                        lowPrio)
-    If i t e IsCont -> (text "If" <+> printPlainTerm i <+> 
-                        text "then" <+> printPlainTerm t <+>
-                        text "else" <+> printPlainTerm e <+> text "fi", 
-                        maxPrio)
+                        text "else" <+> printPlainTerm e
+                  in case c of 
+        NotCont -> (text "if" <+> d, lowPrio)
+        IsCont -> (text "If" <+> d <+> text "fi", maxPrio)
     Case e ps -> (text "case" <+> printPlainTerm e <+> text "of"
                   $$ vcat (punctuate (space <> text "|") $ 
                          map (\ (p, t) -> printPlainTerm p <+> text "=>"
