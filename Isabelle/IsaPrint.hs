@@ -170,26 +170,32 @@ printTrm trm = case trm of
     Bottom -> (text "UU", maxPrio)
     Wildcard -> error "Isa.Term.Wildcard not used"
     Paren t -> (parens $ printPlainTerm t, maxPrio)
-    App f a c -> case f of 
-        Const (VName _ (Just (AltSyntax s [j] i))) _
-            -> (replaceUnderlines s [printParenTerm j a] , i)
-        Const vn _ | new vn `elem` [allS, exS, ex1S] -> case a of
-            Abs v _ b _ -> (text (new vn) <+> printPlainTerm v
+    App f a c -> printTrm $ MixfixApp f [a] c
+    MixfixApp f args c -> case f of 
+        Const (VName _ (Just (AltSyntax s is i))) _ -> let l = length is in
+            case compare l $ length args of 
+               EQ -> (replaceUnderlines s $ zipWith printParenTerm is args, i)
+               LT -> let (fargs, rargs) = splitAt l args in
+                     printApp c (MixfixApp f fargs c) rargs
+               GT -> printApp c f args
+        Const vn _ | new vn `elem` [allS, exS, ex1S] -> case args of
+            [Abs v _ b _] -> (text (new vn) <+> printPlainTerm v
                     <> text "." 
                     <+> printPlainTerm b, lowPrio)
-            _ -> error "printTrm.quantor"
-        _ -> (printParenTerm (maxPrio - 1) f <+>
-                    (case c of
-                       NotCont -> empty
-                       IsCont -> text "$")
-                    <+> printParenTerm maxPrio a, maxPrio - 1)
-    MixfixApp f args c -> case f of 
-        Const (VName _ (Just (AltSyntax s is i))) _ | length is == length args
-            -> (replaceUnderlines s $ zipWith printParenTerm is args, i)
-        MixfixApp g margs@(_ : _) _ -> printTrm $ MixfixApp g (margs ++ args) c
-        _ -> case args of 
-             [] -> printTrm f
-             a : l -> printTrm (MixfixApp (App f a c) l c)
+            _ -> printApp c f args
+        MixfixApp g margs@(_ : _) d | c == d -> 
+            printTrm $ MixfixApp g (margs ++ args) d
+        App g a d | c == d -> printTrm $ MixfixApp g (a : args) d
+        _ -> printApp c f args
+
+printApp :: Continuity -> Term -> [Term] -> (Doc, Int)
+printApp c t l = case l of
+     [] -> printTrm t
+     _ -> (hsep $ (case c of 
+          NotCont -> id 
+          IsCont -> punctuate $ text " $") 
+          $ printParenTerm (maxPrio - 1) t : map (printParenTerm maxPrio) l
+          , maxPrio - 1)
 
 replaceUnderlines :: String -> [Doc] -> Doc
 replaceUnderlines str l = case str of
