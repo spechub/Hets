@@ -155,15 +155,51 @@ impl = "op -->"
 eq :: String
 eq = "op ="
 
+conjV :: VName
+conjV = VName conj $ Just $ AltSyntax "(_ &/ _)"   [36, 35] 35
+
+disjV :: VName
+disjV = VName disj $ Just $ AltSyntax "(_ |/ _)"   [31, 30] 30
+
+implV :: VName
+implV = VName impl $ Just $ AltSyntax "(_ -->/ _)" [26, 25] 25
+
+eqV :: VName
+eqV   = VName eq   $ Just $ AltSyntax "(_ =/ _)"   [50, 51] 50
+
+plusS :: String
+plusS = "op +"
+
+minusS :: String
+minusS = "op -"
+
+timesS :: String
+timesS = "op *"
+
+consS :: String
+consS = "Cons"
+
+plusV :: VName 
+plusV = VName plusS $ Just $ AltSyntax "(_ +/ _)"   [65, 66] 65
+
+minusV :: VName 
+minusV = VName minusS $ Just $ AltSyntax "(_ -/ _)" [65, 66] 65
+
+timesV :: VName 
+timesV = VName timesS $ Just $ AltSyntax "(_ */ _)" [70, 71] 70
+
+consV :: VName
+consV = VName consS $ Just $ AltSyntax "(_ #/ _)" [66, 65] 65
+
 binVNameAppl :: VName -> Term -> Term -> Term
 binVNameAppl v t1 t2 = MixfixApp (con v) [t1,t2] NotCont
 
 -- * binary junctors
 binConj, binDisj, binImpl, binEqv, binEq :: Term -> Term -> Term
-binConj = binVNameAppl $ VName conj $ Just $ AltSyntax "(_ &/ _)"   [36, 35] 35
-binDisj = binVNameAppl $ VName disj $ Just $ AltSyntax "(_ |/ _)"   [31, 30] 30
-binImpl = binVNameAppl $ VName impl $ Just $ AltSyntax "(_ -->/ _)" [26, 25] 25
-binEq   = binVNameAppl $ VName eq   $ Just $ AltSyntax "(_ =/ _)"   [50, 51] 50
+binConj = binVNameAppl conjV
+binDisj = binVNameAppl disjV
+binImpl = binVNameAppl implV
+binEq   = binVNameAppl eqV
 binEqv = binEq
 
 -- * boolean constants
