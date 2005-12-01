@@ -282,8 +282,8 @@ instance PrettyPrint Sign where
        printType t <+> equals <+>
        hsep (punctuate (text " |") $ map printDOp ops)
     printDOp (vn, args) = let opname = new vn in
-       text opname <+> hsep (map (printDOpArg opname)
-                            $ zip args $ reverse [1 .. length args])
+       text opname <+> hsep (map (printDOpArg opname) 
+                            $ zip args [1 :: Int .. ])
        <+> printAlt vn
     printDOpArg o (a, i) = let
       d = case a of
