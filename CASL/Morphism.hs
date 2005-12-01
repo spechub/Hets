@@ -250,14 +250,14 @@ symbMapToMorphism extEm sigma1 sigma2 smap = let
     of Just sym -> let j = symName sym in case symbType sym of
          OpAsItemType oty -> let k = opKind oty in 
             if j == i && opKind ot == k then m
-            else Map.insert (i, oty {opKind = Partial}) (j, k) m
+            else Map.insert (i, ot {opKind = Partial}) (j, k) m
          _ -> m
        _ -> m
   mapPred i pts m = Set.fold (insPred i) m pts
   insPred i pt m =
     case Map.lookup (Symbol {symName = i, symbType = PredAsItemType pt}) smap
     of Just sym -> let j = symName sym in  case symbType sym of
-         PredAsItemType pty -> if i == j then m else Map.insert (i, pty) j m
+         PredAsItemType _ -> if i == j then m else Map.insert (i, pt) j m
          _ -> m
        _ -> m 
   in return (Morphism { msource = sigma1,
