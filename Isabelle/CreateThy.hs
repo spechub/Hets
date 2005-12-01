@@ -59,9 +59,9 @@ printTheoryBody sig sens =
         vsep (map printNamedSen rdefs)) $++$
     (if null ts then empty else
         vsep (map ( \ t -> printNamedSen t $$
-                   text (case thmProof t of
-                           Nothing -> "oops"
-                           Just s -> s)
+                   text (case sentence t of
+                         Theorem { thmProof = Just s } -> s
+                         _ -> "oops")
                   $++$ callML "record" (text $ show $ Quote $ senName t)) ts))
 
 callML :: String -> Doc -> Doc
