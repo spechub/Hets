@@ -137,7 +137,7 @@ localInferenceAux libEnv ln dgraph (rules, changes)
             Just sentencesTgt -> 
               -- check if all source axioms are also axioms in the target
               let goals = OMap.filter isAxiom sensSrc 
-                           OMap.\\ sentencesTgt
+                           `diffSens` sentencesTgt
                   goals' = markAsGoal goals
                   newTh = case (dgn_theory oldContents) of
                           G_theory lid sig sens ->
