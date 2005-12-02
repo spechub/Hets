@@ -74,15 +74,19 @@ anaSourceFile lgraph defl opts libenv fname = IOResult $ do
   case fname' of
     Nothing -> do
         return $ fail $ "a file for input '" ++ fname ++ "' not found."
-    Just fname'' -> do
-        input <- readFile fname''
-        putIfVerbose opts 2 $ "Reading file " ++ fname''
-        ioresToIO $ anaString lgraph defl opts libenv input fname''
+    Just file -> 
+        if isSuffixOf envSuffix file then let file' = rmSuffix file in
+            ioresToIO $ anaLibFileOrGetEnv lgraph defl opts libenv 
+                   (fileToLibName opts file') file' 
+        else do
+        input <- readFile file
+        putIfVerbose opts 2 $ "Reading file " ++ file
+        ioresToIO $ anaString lgraph defl opts libenv input file
 
 -- | parsing and static analysis for string (=contents of file)
 -- Parameters: logic graph, default logic, contents of file, filename
 anaString :: LogicGraph -> AnyLogic -> HetcatsOpts -> LibEnv -> String
-              -> FilePath -> IOResult (LIB_NAME, LibEnv)
+          -> FilePath -> IOResult (LIB_NAME, LibEnv)
 anaString lgraph defl opts libenv input file =
   let Result ds mast = read_LIB_DEFN_M lgraph defl opts file input
   in case mast of
@@ -156,7 +160,7 @@ libNameToFile opts libname =
 anaLibFileOrGetEnv :: LogicGraph -> AnyLogic -> HetcatsOpts -> LibEnv
               -> LIB_NAME -> FilePath -> IOResult (LIB_NAME, LibEnv)
 anaLibFileOrGetEnv lgraph defl opts libenv libname file = IOResult $ do
-     let env_file = rmSuffix file ++ ".env"
+     let env_file = rmSuffix file ++ envSuffix
      recent_env_file <- checkRecentEnv opts env_file file
      if recent_env_file
         then do
