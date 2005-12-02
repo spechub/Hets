@@ -27,6 +27,7 @@ module Driver.Options
     , hetcatsOpts
     , hasEnvOut
     , addEnvOut
+    , envSuffix
     , HetcatsOpts(..)
     , GuiType(..)
     , InType(..)
@@ -443,7 +444,11 @@ downloadExtensions = map ('.' :) $
 
 -- | remove the extension from a file
 rmSuffix :: FilePath -> FilePath
-rmSuffix = fst . stripSuffix downloadExtensions
+rmSuffix = fst . stripSuffix (envSuffix : downloadExtensions)
+
+-- | the suffix of env files
+envSuffix :: String
+envSuffix = '.' : envS
 
 -- |
 -- checks if a source file for the given file name exists
@@ -454,7 +459,7 @@ existsAnSource opts file = do
                   GuessIn -> downloadExtensions
                   e@(ATermIn _) -> ['.' : show e, '.' : treeS ++ show e]
                   e -> ['.' : show e]
-           names = map (base ++) $ exts
+           names = file : map (base ++) (exts ++ [envSuffix])
        -- look for the first existing file
        validFlags <- mapM checkInFile names
        return (find fst (zip validFlags names) >>= (return . snd))
@@ -470,8 +475,8 @@ addEnvOut opts = if hasEnvOut opts then opts else
                  opts { outtypes = EnvOut : outtypes opts }
 
 -- |
--- gets two Paths and checks if the first file is more recent than the
--- second one
+-- gets two Paths and checks if the first file is not older than the
+-- second one and should return True for two identical files
 checkRecentEnv :: HetcatsOpts -> FilePath -> FilePath -> IO Bool
 checkRecentEnv opts fp1 base2 =
    do fp1_valid <- checkInFile fp1
@@ -481,7 +486,7 @@ checkRecentEnv opts fp1 base2 =
         maybe (return False)
              (\ fp2 ->     do fp1_time <- getModificationTime fp1
                               fp2_time <- getModificationTime fp2
-                              return (fp1_time > fp2_time))
+                              return (fp1_time >= fp2_time))
              maybe_source_file
 
 -- |
