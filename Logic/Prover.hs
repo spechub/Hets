@@ -1,7 +1,6 @@
-{-| 
-   
+{- | 
 Module      :  $Header$
-Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2004
+Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  till@tzi.de
@@ -20,6 +19,7 @@ import Common.Utils
 import Common.ProofUtils
 import qualified Common.OrderedMap as OMap
 import qualified Common.Lib.Map as Map (toList,fromList)
+import qualified Common.Lib.Set as Set
 
 import Data.Dynamic
 import Data.List
@@ -44,10 +44,12 @@ emptySenStatus = SenStatus { value = error "emptySenStatus"
                            , thmStatus = [] }
 
 instance Eq a => Eq (SenStatus a b) where
-    d1 == d2 = (value d1) == (value d2)
+    d1 == d2 = (value d1, isAxiom d1, isDef d1) == 
+               (value d2, isAxiom d2, isDef d2)
 
 instance Ord a => Ord (SenStatus a b) where
-    d1 <= d2 = (value d1) <= (value d2)
+    d1 <= d2 = (value d1, isAxiom d1, isDef d1) <= 
+               (value d2, isAxiom d2, isDef d2)
 
 decoTc :: TyCon
 decoTc = mkTyCon "Static.DevGraph.SenStatus"
@@ -60,7 +62,8 @@ elemWOrdTc :: TyCon
 elemWOrdTc = mkTyCon "Common.OrderedMap.ElemWOrd"
 
 instance (Typeable a) => Typeable (OMap.ElemWOrd a) where 
-  typeOf s = mkTyConApp elemWOrdTc [typeOf ((undefined :: OMap.ElemWOrd a -> a) s)]
+  typeOf s = mkTyConApp elemWOrdTc 
+             [typeOf ((undefined :: OMap.ElemWOrd a -> a) s)]
 
 instance PrettyPrint a => PrettyPrint (OMap.ElemWOrd a) where
     printText0 ga e = printText0 ga (OMap.ele e)
@@ -77,27 +80,37 @@ noSens = OMap.empty
 -- * don't merge sentences with same key but different contents?
 joinSens :: (Ord a,Eq b) => ThSens a b -> ThSens a b -> ThSens a b
 joinSens s1 s2 = let l1 = sortBy (comparing snd) $ Map.toList s1
-                     updN n (_,e) = (n,e)
+                     updN n (_, e) = (n, e)
                      m = OMap.size s1
                      l2 = map (\ (x,e) -> 
                                     (x,e {OMap.order = m + OMap.order e })) $ 
                           sortBy (comparing snd) $ Map.toList s2 
-                 in Map.fromList $ mergeSens l1 $
-                         genericDisambigSens fst updN (OMap.keysSet s1) l2
+                 in Map.fromList $ genericDisambigSens fst updN 
+                        Set.empty $ mergeSens l1 l2
     where mergeSens [] l2 = l2
           mergeSens l1 [] = l1
-          mergeSens l1@((k1,e1) : r1) l2@((k2,e2) : r2) = 
+          mergeSens l1@((k1, e1) : r1) l2@((k2, e2) : r2) = 
               case compare e1 e2 of
-              LT -> (k1,e1) : mergeSens r1 l2
-              EQ 
-                  | isAxiom (OMap.ele e1) == isAxiom (OMap.ele e2)
-                      -> (k1,e1 { OMap.ele = (OMap.ele e1) 
+              LT -> (k1, e1) : mergeSens r1 l2
+              EQ -> (k1, e1 { OMap.ele = (OMap.ele e1) 
                                         { thmStatus = 
                                               union (thmStatus $ OMap.ele e1) 
                                                   (thmStatus $ OMap.ele e2)}})
                          : mergeSens r1 r2
-                  | otherwise -> (k1,e1):mergeSens r1 l2
-              GT -> (k2,e2) : mergeSens l1 r2
+              GT -> (k2, e2) : mergeSens l1 r2
+
+diffSens :: (Ord a,Eq b) => ThSens a b -> ThSens a b -> ThSens a b
+diffSens s1 s2 = let 
+    l1 = sortBy (comparing snd) $ Map.toList s1
+    l2 = sortBy (comparing snd) $ Map.toList s2
+    in Map.fromList $ diffS l1 l2
+    where diffS [] _ = []
+          diffS l1 [] = l1
+          diffS l1@((k1, e1) : r1) l2@((_, e2) : r2) = 
+              case compare e1 e2 of
+              LT -> (k1, e1) : diffS r1 l2
+              EQ -> diffS r1 r2
+              GT -> diffS l1 r2
 
 mapValue :: (a -> b) -> SenStatus a c -> SenStatus b c
 mapValue f d = d { value = f $ value d } 
@@ -122,19 +135,18 @@ toThSens = OMap.fromList . map
               emptySenStatus { value   = AS_Anno.sentence v
                              , isAxiom = AS_Anno.isAxiom v
                              , isDef   = AS_Anno.isDef v }))
+    . disambiguateSens Set.empty
 
--- theories and theory morphisms
-
+-- | theories with a signature and sentences with proof states 
 data Theory sign sen proof_tree = 
     Theory sign (ThSens sen (Proof_status proof_tree))
 
+-- | theory morphisms between two theories
 data TheoryMorphism sign sen mor proof_tree = 
      TheoryMorphism {t_source :: Theory sign sen proof_tree,
                      t_target :: Theory sign sen proof_tree,
                      t_morphism :: mor
                     } 
-
--- proofs and provers
 
 -- e.g. the file name, or the script itself, or a configuration string
 data Tactic_script = Tactic_script String deriving (Eq, Ord, Show)
@@ -143,7 +155,8 @@ data Proof_status proof_tree =
                         Open { goalName :: String }
                       | Disproved { goalName :: String }
                       | Proved { goalName :: String,
-                                 usedAxioms :: [String], -- used axioms or theorems or goals
+                                 usedAxioms :: [String], 
+                                 -- used axioms or theorems or goals
                                  proverName :: String, -- name of prover
                                  proofTree :: proof_tree,
                                  tacticScript :: Tactic_script }
@@ -164,6 +177,7 @@ isProvedStat :: Proof_status proof_tree -> Bool
 isProvedStat (Proved _ _ _ _ _) = True
 isProvedStat _ = False
 
+-- | prover or consistency checker
 data ProverTemplate goal proof_tree = Prover
     { prover_name :: String,
       prover_sublogic :: String,
@@ -172,21 +186,11 @@ data ProverTemplate goal proof_tree = Prover
       -- output: proof status for goals and lemmas
     }
 
-{- possibly needed in the future
-              add_sym :: symbol -> IO(Bool),  -- returns True if succeeded
-              remove_sym :: symbol -> IO(Bool), -- returns True if succeeded
-              add_sen :: sen -> IO(Bool),  -- returns True if succeeded
-              remove_sen :: sen -> IO(Bool), -- returns True if succeeded
-              add_termination_info :: [symbol] -> [(symbol,[symbol])] -> IO(Bool), -- returns True if succeeded
-              remove_termination_info :: [symbol] -> [(symbol,[symbol])] -> IO(Bool), -- returns True if succeeded
-              replay :: proof_tree -> Maybe sen -- what about the theory???
--}
-
 type Prover sign sentence proof_tree = 
     ProverTemplate (Theory sign sentence proof_tree) proof_tree
 
 type ConsChecker sign sentence morphism proof_tree =
-    ProverTemplate (TheoryMorphism sign sentence morphism proof_tree) proof_tree  
+  ProverTemplate (TheoryMorphism sign sentence morphism proof_tree) proof_tree
 
 theoryTc :: TyCon
 theoryTc = mkTyCon "Logic.Prover.Theory"
