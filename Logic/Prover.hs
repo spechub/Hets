@@ -19,7 +19,6 @@ import Common.Utils
 import Common.ProofUtils
 import qualified Common.OrderedMap as OMap
 import qualified Common.Lib.Map as Map (toList,fromList)
-import qualified Common.Lib.Set as Set
 
 import Data.Dynamic
 import Data.List
@@ -32,7 +31,6 @@ data SenStatus a tStatus = SenStatus
      , isDef :: Bool
      , thmStatus :: [tStatus]
      } deriving Show
-
 
 instance PrettyPrint a => PrettyPrint (SenStatus a b) where
   printText0 ga x = printText0 ga (value x)
@@ -85,8 +83,8 @@ joinSens s1 s2 = let l1 = sortBy (comparing snd) $ Map.toList s1
                      l2 = map (\ (x,e) -> 
                                     (x,e {OMap.order = m + OMap.order e })) $ 
                           sortBy (comparing snd) $ Map.toList s2 
-                 in Map.fromList $ genericDisambigSens fst updN 
-                        Set.empty $ mergeSens l1 l2
+                 in Map.fromList $ mergeSens l1 $
+                         genericDisambigSens fst updN (OMap.keysSet s1) l2
     where mergeSens [] l2 = l2
           mergeSens l1 [] = l1
           mergeSens l1@((k1, e1) : r1) l2@((k2, e2) : r2) = 
@@ -135,7 +133,6 @@ toThSens = OMap.fromList . map
               emptySenStatus { value   = AS_Anno.sentence v
                              , isAxiom = AS_Anno.isAxiom v
                              , isDef   = AS_Anno.isDef v }))
-    . disambiguateSens Set.empty
 
 -- | theories with a signature and sentences with proof states 
 data Theory sign sen proof_tree = 
