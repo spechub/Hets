@@ -12,6 +12,7 @@ Hets is written in Haskell (see <http://www.haskell.org> and
 The general background of Hets is explained in /Heterogeneous
 specification and the heterogeneous tool set/
 (<http://www.tzi.de/~till/papers/habil.ps>).
+A short introduction is given in <http://www.tzi.de/~till/papers/hets-tacas.pdf>.
 
 The Hets modules are grouped using hierarchical modules (where modules
 can be grouped into folders); we here only discuss the top view on
