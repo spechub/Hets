@@ -47,7 +47,7 @@ printTheoryBody sig sens =
     let (axs, rest) = getAxioms (prepareSenNames transString sens)
         (defs, rs) = getDefs rest
         (rdefs, ts) = getRecDefs rs
-        tNames = map senName ts
+        tNames = map senName $ ts ++ axs
     in
     callML "initialize" (text $ show $ map Quote tNames) $++$
     printText sig $++$
