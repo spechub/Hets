@@ -61,7 +61,8 @@ knownProvers =
                              ("SPASS", spassCs)])
 
 shrinkKnownProvers :: G_sublogics -> KnownProversMap -> KnownProversMap
-shrinkKnownProvers sub = Map.map (filter (lessSublogicComor sub))
+shrinkKnownProvers sub = Map.filter (not . null) . 
+                         Map.map (filter (lessSublogicComor sub))
 
 isaComorphisms :: Result [AnyComorphism]
 isaComorphisms = do
