@@ -43,7 +43,7 @@ printSort l = case l of
     [c] -> printClass c
     _ -> braces . hsep . punctuate comma $ map printClass l
 
-data SynFlag = Unquoted | Null
+data SynFlag = Quoted | Unquoted | Null
 
 doubleColon :: Doc
 doubleColon = text "::"
@@ -58,8 +58,10 @@ printTypeAux :: SynFlag -> Typ -> (Doc, Int)
 printTypeAux a t = case t of
  (TFree v s) -> (let d = text $ if isPrefixOf "\'" v || isPrefixOf "?\'" v
                                 then v  else '\'' : v
+                     c = printSort s
                  in if null s then d else case a of
-   Unquoted -> d <> doubleColon <> printSort s
+   Quoted -> d <> doubleColon <> if null $ tail s then c else doubleQuotes c
+   Unquoted -> d <> doubleColon <> c
    Null -> d, 1000)
  (TVar iv s) -> printTypeAux a $ TFree ("?\'" ++ unindexed iv) s
  (Type name _ args) -> case args of
@@ -279,7 +281,7 @@ instance PrettyPrint Sign where
         text (if isDomain then "domain" else "datatype")
         <+> and_docs (map printDomain dts)
     printDomain (t, ops) =
-       printType t <+> equals <+>
+       printTyp Quoted t <+> equals <+>
        hsep (punctuate (text " |") $ map printDOp ops)
     printDOp (vn, args) = let opname = new vn in
        text opname <+> hsep (map (printDOpArg opname) 
