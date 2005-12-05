@@ -281,7 +281,7 @@ instance PrettyPrint Sign where
         text (if isDomain then "domain" else "datatype")
         <+> and_docs (map printDomain dts)
     printDomain (t, ops) =
-       printTyp Quoted t <+> equals <+>
+       printTyp (if isDomain then Quoted else Null) t <+> equals <+>
        hsep (punctuate (text " |") $ map printDOp ops)
     printDOp (vn, args) = let opname = new vn in
        text opname <+> hsep (map (printDOpArg opname) 
