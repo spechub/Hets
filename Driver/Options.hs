@@ -21,7 +21,7 @@ module Driver.Options
     , rmSuffix
     , checkUri
     , checkRecentEnv
-    , checkEitherDirOrExFile
+    , checkInFile
     , doIfVerbose
     , putIfVerbose
     , hetcatsOpts
@@ -488,33 +488,6 @@ checkRecentEnv opts fp1 base2 =
                               fp2_time <- getModificationTime fp2
                               return (fp1_time >= fp2_time))
              maybe_source_file
-
--- |
--- gets a FilePath and checks whether it is a directory or an executable File;
--- * Just True: it is a dir
---
--- * Just False: it is an executable file
---
--- * Nothing: it is nothing of the two above
---
--- /Warning: Not compatible with GUI.hets_cgi.hs/
-checkEitherDirOrExFile :: FilePath -> IO (Maybe Bool)
-checkEitherDirOrExFile fp =
-    do isDir <- doesDirectoryExist fp
-       (isRead,isExec,isSearch) <- catch getPerms errs
-       return (if isDir && isSearch && isRead
-               then Just True
-               else if isRead && isExec
-                    then Just False
-                    else Nothing)
-    where getPerms = do p <- getPermissions fp
-                        return (readable p,
-                                executable p,
-                                searchable p)
-          errs ex
-               | isPermissionError ex ||
-                 isDoesNotExistError ex = return (False,False,False)
-               | otherwise = ioError ex
 
 -- | 'parseInType' parses an 'InType' Flag from user input
 parseInType :: String -> Flag
