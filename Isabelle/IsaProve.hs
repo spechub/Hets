@@ -11,168 +11,149 @@ Portability :  portable
 Interface for Isabelle theorem prover.
 -}
 {-
-  todo: thy files in subdir
+  todo: thy files in subdir, check of legal changes in thy file
+   consistency check  
 
   Interface between Isabelle and Hets:
-  Hets writes Isabelle .thy file and opens window with button (GUI/HTkUtils.hs,
-    uni/htk/test, ask cxl)
-  User extends .thy file with proofs
-  User presses button
-  Hets reads in user-modified .thy file
-  Hets write new .thy file (different name), consisting of
-    - original theory (i.e. put theory string into variable)
-    - proof part of user-modified file (look for first "\ntheorem")
-    - ML code for check_theorem
-    - ML "check_theorem \"name1\" \"theorem1\" name.thy"   (name: thName)
-      ...
-    - ML "check_theorem \"namen\" "\theoremn\" name.thy"
-  Hets runs new .thy file in Isar batch mode (system " .... ")
-  Hets inspects log file and extracts proven theorems
-
-  fun check_theorem name thm thy =
-    aconv(#prop(rep_thm(Drule.freeze_all(get_thm thy name))),
-           snd(read_axm (sign_of thy) (name,thm)))
-    handle _ => false;
+   Hets writes Isabelle .thy file and starts Isabelle
+   User extends .thy file with proofs
+   User finishes Isabelle
+   Hets reads in created *.deps files
 -}
 
 module Isabelle.IsaProve where
 
 import Logic.Prover
 import Isabelle.IsaSign
-import Isabelle.IsaPrint
 import Isabelle.IsaConsts
 import Isabelle.Translate
 import Isabelle.CreateThy
 
 import Common.AS_Annotation
-import Common.PrettyPrint
 import Common.DefaultMorphism
 import Common.ProofUtils
+import qualified Common.Lib.Map as Map
 
-import Data.List
+import Driver.Options
 
-import ChildProcess
+import Data.Char
+
 import Directory
 import System
 
-import HTk
+isabelleS :: String
+isabelleS = "Isabelle"
 
 isabelleProver :: Prover Sign Sentence ()
 isabelleProver =
-     Prover { prover_name = "Isabelle",
-              prover_sublogic = "Isabelle",
+     Prover { prover_name = isabelleS,
+              prover_sublogic = isabelleS,
               prove = isaProve False
             }
 
 isabelleConsChecker :: ConsChecker Sign Sentence (DefaultMorphism Sign) ()
 isabelleConsChecker =
      Prover { prover_name = "Isabelle-refute",
-              prover_sublogic = "Isabelle",
-              prove = \ thn mor -> isaProve True thn (t_target mor) }
+              prover_sublogic = isabelleS,
+              prove = \ thn mor -> error "isabelleConsChecker" }
+
+prepareTheory :: Theory Sign Sentence () 
+    -> (Sign, [Named Sentence], [Named Sentence], Map.Map String String)
+prepareTheory (Theory sig nSens) = let
+    oSens = toNamedList nSens
+    nSens' = prepareSenNames transString oSens
+    (disAxs, disGoals) = getAxioms nSens'
+    in (sig, map markSimp disAxs, map markSimp disGoals, 
+       Map.fromList $ zip (map senName nSens') $ map senName oSens)
+-- return a reverse mapping for renamed sentences
+
+removeDepFiles :: String -> [String] -> IO ()
+removeDepFiles thName = mapM_ $ removeFile . getDepsFileName thName
+
+getDepsFileName :: String -> String -> String
+getDepsFileName thName thm = thName ++ "_" ++ thm ++ ".deps"
+
+getProofDeps :: Map.Map String String -> String -> String 
+             -> IO (Proof_status ())
+getProofDeps m thName thm = do
+    let file = getDepsFileName thName thm
+        mapN n = Map.findWithDefault n n m
+        strip = takeWhile (not . isSpace) . dropWhile isSpace 
+    b <- checkInFile file
+    if b then do
+        s <- readFile file
+        if null s then return $ Open $ mapN thm
+           else let l = filter (not . null) $ map strip $ lines s 
+                in return $ mkProved (mapN thm) $ map mapN l
+      else return $ Open $ mapN thm
+
+getAllProofDeps :: Map.Map String String -> String -> [String]
+                -> IO([Proof_status ()])
+getAllProofDeps m thName = mapM $ getProofDeps m thName
+    
+mkProved :: String -> [String] -> Proof_status ()
+mkProved thm used = Proved 
+    { goalName = thm
+    , usedAxioms = used
+    , proverName = isabelleS
+    , proofTree = ()
+    , tacticScript = Tactic_script "unknown isabelle user input"
+    }
+
+prepareThyFiles :: String -> String -> IO ()
+prepareThyFiles thyFile thy = do
+    let origFile = thyFile ++ ".orig"
+    exOrig <- checkInFile origFile
+    exThyFile <- checkInFile thyFile
+    if exOrig then return () else writeFile origFile thy
+    if exThyFile then return () else writeFile thyFile thy
+    s <- readFile origFile 
+    if s == thy then do -- orig file is up to date
+         thy_time <- getModificationTime thyFile
+         orig_time <- getModificationTime origFile
+         if thy_time >= orig_time then  -- use the current file
+                  return ()
+                  else patchThyFile origFile thyFile thy
+      else patchThyFile origFile thyFile thy
+
+patchThyFile :: FilePath -> FilePath -> String -> IO ()
+patchThyFile origFile thyFile thy = do 
+  let patchFile = thyFile ++ ".patch"
+      oldFile = thyFile ++ ".old"
+      diffCall = "diff -u " ++ origFile ++ " " ++ thyFile 
+                 ++ " > " ++ patchFile
+      patchCall = "patch -u " ++ thyFile ++ " " ++ patchFile
+  callSystem diffCall
+  renameFile thyFile oldFile
+  writeFile origFile thy 
+  writeFile thyFile thy 
+  callSystem patchCall
+  return()
+  
+callSystem :: String -> IO ExitCode
+callSystem s = putStrLn s >> system s
 
 isaProve :: Bool -> String -> Theory Sign Sentence () -> IO([Proof_status ()])
-isaProve checkCons thName (Theory sig nSens) = do
-  ex <- doesFileExist fileName
-  exorig <- doesFileExist origName
-  libdir <- getEnv "HETS_LIB"
-  let showTheory = show $ printIsaTheory (getFN thName) libdir sig 
-                   $ map markSimp disAxs ++ map markSimp disGoals
-                   -- currently ignore showLemma (add them as sentences)
-      theory = if checkCons then showConsTheory else showTheory
-  case (ex,exorig) of
-    (True,True) -> do
-             putStrLn ("diff -u "++origName++" "++fileName++" > "++patchName)
-             system ("diff -u "++origName++" "++fileName++" > "++patchName)
-             writeFile fileName theory
-             putStrLn ("cp "++fileName++" "++origName)
-             system ("cp "++fileName++" "++origName)
-             putStrLn ("patch -u "++fileName++" "++patchName)
-             system ("patch -u "++fileName++" "++patchName)
-             return ()
-    (True,False) -> do
-             system ("cp "++fileName++" "++fileName++".old")
-             writeFile fileName theory
-             system ("cp "++fileName++" "++origName)
-             return ()
-    (False,_) -> do
-             writeFile fileName theory
-             system ("cp "++fileName++" "++origName)
-             return ()
+isaProve checkCons thName th = do
+  let (sig, axs, ths, m) = prepareTheory th
+      thms = map senName ths
+  hlibdir <- getEnv "HETS_LIB"
+  let thBaseName = reverse . takeWhile (/= '/') $ reverse thName
+      thy = show $ printIsaTheory thBaseName hlibdir sig $ axs ++ ths
+      thyFile = thName ++ ".thy"
+  prepareThyFiles thyFile thy
+  removeDepFiles thName thms
   isabelle <- getEnv "HETS_ISABELLE"
-  newChildProcess isabelle [arguments [fileName]]
-  t <- createToplevel [text "Proof confirmation window"]
-  b <- newButton t [text "Please press me when current theory is proved!",
-                         size(50,10)]
-  pack b []
-  clickedb <- clicked b
-  sync (clickedb >>> destroy t)
-  provedThy <- readFile fileName
-  let newThy = withoutThms theory ++ onlyThms provedThy
-                                  ++ checkThm
-                                  ++ concat (map checkThms disGoals)
-
-  writeFile provedName newThy
---   system (isabelle ++ "/isabelle -e "++newThy++" -q HOL" ++ " heap.isa")
-  return [] -- ??? to be implemented
-  where
-      nSens' = prepareSenNames transString (toNamedList nSens)
-      (disAxs, disGoals) = partition Common.AS_Annotation.isAxiom nSens'
-      thName' = thName++if checkCons then "_c" else ""
-      fileName = thName'++".thy"
-      origName = thName'++".orig.thy"
-      patchName = thName'++".patch"
-      provedName = thName'++"_proved.thy"
-      (lemmas, decs) = unzip (map formLemmas disAxs)
-      showLemma = if showLemmas sig
-                   then concat lemmas ++ "\n" ++ concat (map (++"\n") decs)
-                   else ""
-      getFN = reverse . fst . break (=='/') . reverse
-      withoutThms thy =
-        let thy' = takeWhile (isNotPrefixOf "theorem") (lines thy)
-            sub = map subThyName thy'
-            subThyName s | "theory" `isPrefixOf` s =
-                              unwords (map subTN (words s))
-                         | otherwise = s
-            subTN s | s == (getFN thName) = (getFN thName)++"_proved"
-                    | otherwise = s
-        in (unlines . dropWhile (isNotPrefixOf "theory")) sub
-      onlyThms thy =
-        let l = lines thy
-            newl = if null l then l
-                     else init l ++ [methodSetUp] ++ [last l]
-        in (unlines .
-              dropWhile (isNotPrefixOf "theorem")) newl
-      isNotPrefixOf t s = (not . (isPrefixOf t)) s
-      methodSetUp = "method_setup ML_init = "
-                    ++ "\"Method.ctxt_args (fn ctxt => "
-                    ++ "((context (ProofContext.theory_of ctxt);"
-                    ++ " Method.METHOD (fn thm  => (Simp_tac 1)))))\""
-                    ++ " ML_init\n"
-      checkThm = "ML \"fun check_theorem name thm =\n"
-                 ++ "let val thy = (the_context())\n"
-                 ++ "in aconv(#prop(rep_thm(Drule.freeze_all(get_thm thy "
-                 ++ "name))),snd(read_axm (sign_of thy) "
-                 ++ "(name,thm))) handle _ => false\n"
-                 ++ "end\"\n"
-      checkThms thm = "ML \"check_theorem \\\""
-                      ++ senName thm ++ "\\\" "
-                      ++ "\\\"" ++ showPretty (sentence thm) "\\\"\"\n "
-      thyPath = "ML \"val hetsLib = (OS.Process.getEnv \\\"HETS_LIB\\\"); \n"
-                   ++ "case hetsLib of NONE => add_path \\\".\\\" \n"
-                   ++ "| SOME s => add_path (s ^ \\\"/Isabelle\\\")\"\n\n"
-      showConsTheory = -- also change this into a sentence
-         "theory " ++ getFN thName ++ " = "
-         ++ showBaseSig (baseSig sig) ++" : \n"
-         ++ "lemma inconsistent:\n "
-         ++ "\"~( ("
-         ++ concat (intersperse " ) & \\\n("
-             ("(? x . True)":map (showConsAx . mapNamed freeTypesSen) disAxs))
-         ++ ") )\"\nrefute\noops\n\n"
-      showConsAx ax = showPretty (sentence ax) ""
+  callSystem $ isabelle ++ " " ++ thyFile
+  getAllProofDeps m thName thms
 
 markSimp :: Named Sentence -> Named Sentence
-markSimp ax = ax{senName = senName ax ++
-               (if isSimpRuleSen $ sentence ax then " [simp]" else "")}
+markSimp = mapNamed markSimpSen 
+
+markSimpSen :: Sentence -> Sentence
+markSimpSen s = case s of
+                  Sentence {} -> s {isSimp = isSimpRuleSen s}
+                  _ -> s
 
 isSimpRuleSen :: Sentence -> Bool
 isSimpRuleSen sen = case sen of
@@ -189,8 +170,8 @@ isSimpRule App { funId = Const {termName = VName { new = q }}
 -- accept everything expect from abstractions
 isSimpRule App {funId = arg1, argId = arg2} =
     isSimpRule arg1 && isSimpRule arg2
-isSimpRule MixfixApp {funId = arg1, argIds = [arg2, arg3]} =
-    isSimpRule arg1 && isSimpRule arg2 && isSimpRule arg3
+isSimpRule MixfixApp {funId = arg1, argIds = args } =
+    isSimpRule arg1 && all isSimpRule args
 isSimpRule Const{} = True
 isSimpRule Free{}  = True
 isSimpRule Var{}   = True
@@ -201,53 +182,3 @@ isSimpRule Case{}  = True
 isSimpRule Let{}   = True
 isSimpRule (Paren t) = isSimpRule t
 isSimpRule _       = False
-
--- output a sentences
-showSen :: Named Sentence -> String
-showSen = show . printNamedSen
-
--- form a lemmas from given axiom and add them both to Isabelles simplifier
-formLemmas :: Named a -> (String, String)
-formLemmas sen =
-  let (sn, ln) = lemmaName (senName sen)
-   in
-     ("lemmas " ++ ln ++ " = " ++ sn ++ " [simplified]\n",
-      dec ln ++ "\n" ++ dec sn)
-  where
-  lemmaName s = (s, s++"'")
-  dec s = "declare " ++ s ++ " [simp]"
-
-mapSentence :: (Term -> Term) -> Sentence -> Sentence
-mapSentence f sen = case sen of
-    RecDef kw sens -> RecDef kw $ map (map f) sens
-    _ -> sen { senTerm = f $ senTerm sen }
-
--- | remove type constants from a term
-freeTypesSen :: Sentence -> Sentence
-freeTypesSen = mapSentence freeTypesTerm
-
-freeTypesTerm :: Term -> Term
-freeTypesTerm (Const vn t) = Const
-    (if new vn == "O" then vn {new="OO"} else vn) (freeTypesTyp t)
-freeTypesTerm (Free v t) = Free v (freeTypesTyp t)
-freeTypesTerm (Abs v ty t f) =
-    Abs (freeTypesTerm v) (freeTypesTyp ty) (freeTypesTerm t) f
-freeTypesTerm (App t1 t2 f) = App (freeTypesTerm t1) (freeTypesTerm t2) f
-freeTypesTerm (MixfixApp t1 t2 f) =
-    MixfixApp (freeTypesTerm t1) (map freeTypesTerm t2) f
-freeTypesTerm (Case term alts) =
-  Case (freeTypesTerm term) (map freeTypesTermPair alts)
-freeTypesTerm (If t1 t2 t3 c) =
-  If (freeTypesTerm t1) (freeTypesTerm t2) (freeTypesTerm t3) c
-freeTypesTerm (Let defs body) =
-  Let (map freeTypesTermPair defs) (freeTypesTerm body)
-freeTypesTerm (Fix f) =
-  Fix (freeTypesTerm f)
-freeTypesTerm t = t
-
-freeTypesTermPair :: (Term, Term) -> (Term, Term)
-freeTypesTermPair (t1, t2) = (freeTypesTerm t1, freeTypesTerm t2)
-
-freeTypesTyp :: Typ -> Typ
-freeTypesTyp (Type t s _) = TFree t s
-freeTypesTyp t = t
