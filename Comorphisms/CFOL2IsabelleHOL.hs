@@ -348,9 +348,7 @@ transPRED_SYMB sign (Qual_pred_name p pt@(Pred_type args _) _) = let
 transPRED_SYMB _ (Pred_name _) = error "CASL2Isabelle: unqualified predicate"
 
 mapSen :: FormulaTranslator f e -> CASL.Sign.Sign f e -> FORMULA f -> Sentence
-mapSen trFrom sign phi = 
-  Sentence {senTerm = transFORMULA sign trFrom phi}
-
+mapSen trFrom sign phi = mkSen $ transFORMULA sign trFrom phi
 
 transFORMULA :: CASL.Sign.Sign f e -> FormulaTranslator f e 
                 -> FORMULA f -> Term

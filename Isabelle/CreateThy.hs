@@ -60,7 +60,7 @@ printTheoryBody sig sens =
     (if null ts then empty else
         vsep (map ( \ t -> printNamedSen t $$
                    text (case sentence t of
-                         Theorem { thmProof = Just s } -> s
+                         Sentence { thmProof = Just s } -> s
                          _ -> "oops")
                   $++$ callML "record" (text $ show $ Quote $ senName t)) ts))
 
@@ -76,14 +76,13 @@ getAxioms, getDefs, getRecDefs :: [Named Sentence] ->
                  ([Named Sentence], [Named Sentence])
 
 getAxioms = partition ( \ s -> case sentence s of
-                            Sentence _ -> isAxiom s
+                            Sentence {} -> isAxiom s 
                             _ -> False)
 
 getDefs = partition ( \ s -> case sentence s of
-                            ConstDef _ -> True
+                            ConstDef {} -> True
                             _ -> False)
 
 getRecDefs = partition ( \ s -> case sentence s of
-                            RecDef _ _ -> True
+                            RecDef {} -> True
                             _ -> False)
-

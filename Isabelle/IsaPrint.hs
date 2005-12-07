@@ -98,12 +98,15 @@ and_docs ds = vcat $ prepPunctuate (text "and ") ds
 printNamedSen :: Named Sentence -> Doc
 printNamedSen NamedSen { senName = lab, sentence = s, isAxiom = b } =
   let d = printSentence s in case s of
-  RecDef _ _ -> d
+  RecDef {} -> d
   _ -> let dd = doubleQuotes d in if null lab then dd else text (case s of
-    ConstDef _ -> lab ++ "_def"
-    Sentence _ | b -> lab
-    _ -> "theorem " ++ lab) <+> colon <+> dd
-
+    ConstDef {} -> lab ++ "_def"
+    Sentence {isSimp = c} -> 
+        (if b then "" else "theorem ") 
+        ++ lab ++ 
+        (if c then " [simp]" else "")
+    _ -> error "printNamedSen") <+> colon <+> dd
+    
 -- | sentence printing
 printSentence :: Sentence -> Doc
 printSentence s = case s of

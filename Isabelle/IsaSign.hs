@@ -125,14 +125,16 @@ data Term =
       | Wildcard
       deriving (Eq, Ord, Show)
 
-data Sentence = Sentence { senTerm :: Term } -- axiom
-              | Theorem { thmFlag :: Bool  -- True for "theorem"
-                        , senTerm :: Term
-                        , thmProof :: Maybe String }
+data Sentence = Sentence { isSimp :: Bool   -- True for "[simp]"
+                         , senTerm :: Term
+                         , thmProof :: Maybe String }
               | ConstDef { senTerm :: Term }
               | RecDef { keyWord :: String
                        , senTerms :: [[Term]] }
                 deriving (Eq, Ord, Show)
+
+mkSen :: Term -> Sentence
+mkSen t = Sentence {isSimp = False, thmProof = Nothing, senTerm = t }
 
 -------------------- from src/Pure/sorts.ML ------------------------
 

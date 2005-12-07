@@ -72,9 +72,9 @@ instance Comorphism HasCASL2IsabelleHOL
        inclusion Isabelle sig1 sig2
     map_sentence HasCASL2IsabelleHOL sign phi =
        case transSentence sign phi of
-         Nothing   -> warning (Sentence {senTerm = true}) 
+         Nothing   -> warning (mkSen true) 
                            "translation of sentence not implemented" nullRange
-         Just (ts) -> return $ Sentence {senTerm = ts}
+         Just (ts) -> return $ mkSen ts
     map_symbol HasCASL2IsabelleHOL _ = error "HasCASL2IsabelleHOL.map_symbol"
 
 
