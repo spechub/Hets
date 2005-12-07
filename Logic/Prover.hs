@@ -19,6 +19,7 @@ import Common.Utils
 import Common.ProofUtils
 import qualified Common.OrderedMap as OMap
 import qualified Common.Lib.Map as Map (toList,fromList)
+import qualified Common.Lib.Set as Set
 
 import Data.Dynamic
 import Data.List
@@ -133,6 +134,7 @@ toThSens = OMap.fromList . map
               emptySenStatus { value   = AS_Anno.sentence v
                              , isAxiom = AS_Anno.isAxiom v
                              , isDef   = AS_Anno.isDef v }))
+    . disambiguateSens Set.empty . nameSens
 
 -- | theories with a signature and sentences with proof states 
 data Theory sign sen proof_tree = 

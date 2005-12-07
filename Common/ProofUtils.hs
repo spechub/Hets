@@ -18,26 +18,26 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.AS_Annotation
 
-{- |
-prepareSenNames prepares sentence names for the usage within provers.
+{- 
 
  * generic names are added
 
  * disambiguation of duplicate assigned names
 
+is done by toThSens
+
  * translation of special characters with the aid of the provided function
+
+is done by prepareSenNames
 
 Warning: all sentence names are disambiguated by adding a natural number.
 If that does not work for a certain reasoner you can hand in a function
 which uses a different alghorithm.
 -}
-prepareSenNames :: (String -> String) -> [Named a] -> [Named a]
-prepareSenNames trFun =
-    disambiguateSens Set.empty . transSens trFun . nameSens
 
 -- | translate special characters in sentence names
-transSens :: (String -> String) -> [Named a] -> [Named a]
-transSens trFun = map (\ax -> ax{senName = trFun (senName ax)})
+prepareSenNames :: (String -> String) -> [Named a] -> [Named a]
+prepareSenNames trFun = map (\ax -> ax{senName = trFun (senName ax)})
 
 -- | disambiguate sentence names
 disambiguateSens :: Set.Set String -> [Named a] -> [Named a]
