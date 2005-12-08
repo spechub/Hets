@@ -26,7 +26,6 @@ import Common.Id
 import Common.Utils
 import Data.Graph.Inductive.Graph
 import qualified Common.Lib.Map as Map
-import qualified Common.OrderedMap as OMap
 
 dgToSpec :: DGraph -> Node -> Result SPEC
 dgToSpec dg node = do
@@ -101,7 +100,8 @@ getAllIngoingEdges libEnv (ln,node) =
 
   where
     dgraph = lookupDGraphInLibEnv ln libEnv
-    nodelab = lab' (safeContext "Static.DGToSpec.getAllIngoingEdges" dgraph node)
+    nodelab = lab' $ safeContext "Static.DGToSpec.getAllIngoingEdges"
+              dgraph node
     inEdgesInThisGraph = [(ln,inEdge)| inEdge <- inn dgraph node]
     refLn = dgn_libname nodelab
     refGraph = lookupDGraphInLibEnv refLn libEnv
