@@ -27,8 +27,7 @@ data Annote_text = Line_anno String | Group_anno [String] deriving (Show, Eq)
 
 -- | formats to be displayed (may be extended in the future).
 -- Drop 3 from the show result to get the string for parsing and printing
-data Display_format = DF_HTML | DF_LATEX | DF_RTF
-                     deriving (Show, Eq, Ord)
+data Display_format = DF_HTML | DF_LATEX | DF_RTF deriving (Show, Eq, Ord)
 
 -- | swap the entries of a lookup table
 swapTable :: [(a, b)] -> [(b, a)]
@@ -57,7 +56,7 @@ data PrecRel = Higher | Lower | BothDirections | NoDirection
                deriving (Show, Eq)
 
 -- | either left or right associative
-data AssocEither = ALeft | ARight deriving (Show,Eq)
+data AssocEither = ALeft | ARight deriving (Show, Eq)
 
 -- | semantic (line) annotations without further information.
 -- Use the same drop-3-trick as for the 'Display_format'.
@@ -101,31 +100,7 @@ data Annotation = -- | constructor for comments or unparsed annotes
                 | Semantic_anno Semantic_anno Range
                 -- position information for annotations is provided
                 -- by every annotation
-                  deriving (Show)
-
-
-instance Eq Annotation where
-      Unparsed_anno aw1 at1 _ == Unparsed_anno aw2 at2 _
-          = (aw1,at1)==(aw2,at2)
-      Display_anno i1 x1 _ == Display_anno i2 x2 _
-          = (i1,x1)==(i2,x2)
-      List_anno i1 i2 i3 _ == List_anno i4 i5 i6 _
-          = (i1,i2,i3)==(i4,i5,i6)
-      Number_anno i1 _ == Number_anno i2 _
-          = i1==i2
-      Float_anno  i1 i2 _ == Float_anno i3 i4 _
-          = (i1,i2)==(i3,i4)
-      String_anno i1 i2 _ == String_anno i3 i4 _
-          = (i1,i2)==(i3,i4)
-      Prec_anno pr1 i1 i2 _ == Prec_anno pr2 i3 i4 _
-          = (pr1,i1,i2)==(pr2,i3,i4)
-      Assoc_anno ae1 i1 _ == Assoc_anno ae2 i2 _
-          = (ae1,i1) == (ae2,i2)
-      Label str1 _ == Label str2 _
-          = str1 == str2
-      Semantic_anno sa1 _ == Semantic_anno sa2 _
-          = sa1 == sa2
-      _ == _ = False
+                  deriving (Show, Eq)
 
 -- |
 -- 'isLabel' tests if the given 'Annotation' is a label
@@ -134,17 +109,15 @@ isLabel :: Annotation -> Bool
 isLabel a = case a of
             Label _ _ -> True
             _         -> False
+
 isImplies :: Annotation -> Bool
-isImplies a =
-    case  a of
+isImplies a = case a of
     Semantic_anno SA_implies _  -> True
     _ -> False
 
 isImplied :: Annotation -> Bool
-isImplied a =
-    case  a of
+isImplied a = case a of
     Semantic_anno SA_implied _  -> True
-    -- Semantic_anno _ _  -> False
     _ -> False
 
 -- |
@@ -171,36 +144,39 @@ isAnnote = not . isComment
 -- and following (right 'r_annos') annotations.
 -- 'opt_pos' should carry the position of an optional semicolon
 -- following a formula (but is currently unused).
-data Annoted a = Annoted { item :: a
-                         , opt_pos :: Range
-                         , l_annos :: [Annotation]
-                         , r_annos :: [Annotation]}
-                 deriving (Show, Eq)
+data Annoted a = Annoted
+    { item :: a
+    , opt_pos :: Range
+    , l_annos :: [Annotation]
+    , r_annos :: [Annotation] } deriving (Show, Eq)
 
 notImplied :: Annoted a -> Bool
 notImplied a = not $ any isImplied $ r_annos a
 
 -- | naming or labelling sentences
-data Named s = NamedSen { senName  :: String,
-                          isAxiom :: Bool,
-                          isDef :: Bool,
-                          sentence :: s }
-               deriving (Eq, Ord, Show)
+data Named s = NamedSen
+    { senName  :: String
+    , isAxiom :: Bool
+    , isDef :: Bool
+    , sentence :: s } deriving (Eq, Ord, Show)
 
 -- | equip a sentence with an empty name
 emptyName :: s -> Named s
-emptyName x = NamedSen { senName = "", sentence = x,
-                         isAxiom = True, isDef = False}
+emptyName x =
+    NamedSen { senName = "", sentence = x, isAxiom = True, isDef = False}
+
+reName :: (String -> String) -> Named s -> Named s
+reName f x = x { senName = f $ senName x }
 
 -- | extending sentence maps to maps on labelled sentences
-mapNamed :: (s ->t) -> Named s -> Named t
-mapNamed f x = x { sentence = f (sentence x) }
+mapNamed :: (s -> t) -> Named s -> Named t
+mapNamed f x = x { sentence = f $ sentence x }
 
 -- | extending sentence maybe-maps to maps on labelled sentences
 mapNamedM :: Monad m => (s -> m t) -> Named s -> m (Named t)
 mapNamedM f x = do
-  y <- f (sentence x)
-  return (x {sentence = y})
+  y <- f $ sentence x
+  return x {sentence = y}
 
 -- | process all items and wrap matching annotations around the results
 mapAnM :: (Monad m) => (a -> m b) -> [Annoted a] -> m [Annoted b]
@@ -214,11 +190,15 @@ replaceAnnoted x (Annoted _ o l r) = Annoted x o l r
 
 -- | add further following annotations
 appendAnno :: Annoted a -> [Annotation] -> Annoted a
-appendAnno (Annoted x p l r) y = Annoted x p l (r++y)
+appendAnno (Annoted x p l r) y = Annoted x p l $ r ++ y
 
 -- | put together preceding annotations and an item
 addLeftAnno :: [Annotation] -> a -> Annoted a
 addLeftAnno l i = Annoted i nullRange l []
+
+-- | decorate with no annotations
+emptyAnno :: a -> Annoted a
+emptyAnno = addLeftAnno []
 
 -- | get the label following (or to the right of) an 'item'
 getRLabel :: Annoted a -> String
