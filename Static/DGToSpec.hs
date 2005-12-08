@@ -1,7 +1,6 @@
-{-| 
-   
+{- |
 Module      :  $Header$
-Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2004
+Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  till@tzi.de
@@ -12,17 +11,15 @@ Convert development graph back to structured specification
    and compute theory
 -}
 
-
 module Static.DGToSpec
 where
-
 
 import Logic.Logic
 import Logic.Grothendieck
 import Static.DevGraph
 import Syntax.AS_Library
 import Syntax.AS_Structured
-import Common.AS_Annotation (Annoted(..))
+import Common.AS_Annotation
 import Logic.Prover
 import Common.Result
 import Common.Id
@@ -31,9 +28,6 @@ import Data.Graph.Inductive.Graph
 import qualified Common.Lib.Map as Map
 import qualified Common.OrderedMap as OMap
 
-emptyAnno :: SPEC -> Annoted SPEC
-emptyAnno x = Annoted x nullRange [] []
-
 dgToSpec :: DGraph -> Node -> Result SPEC
 dgToSpec dg node = do
   let (_,_,n,preds) = safeContext "Static.DGToSpec.dgToSpec" dg node
@@ -41,14 +35,14 @@ dgToSpec dg node = do
   let apredSps = map emptyAnno predSps
       pos = nullRange
   case n of
-    DGNode _ (G_theory lid1 sigma sen') _ _ DGBasic _ _ -> 
-      do let b = Basic_spec $ G_basic_spec lid1 $ 
+    DGNode _ (G_theory lid1 sigma sen') _ _ DGBasic _ _ ->
+      do let b = Basic_spec $ G_basic_spec lid1 $
                  sign_to_basic_spec lid1 sigma $ toNamedList sen'
          if null apredSps
           then return b
           else return (Extension (apredSps++[emptyAnno b]) pos)
     DGRef name _ _ _ _ _ -> return (Spec_inst (getName name) [] pos)
-    _ -> case dgn_origin n of 
+    _ -> case dgn_origin n of
         DGExtension ->
          return (Extension apredSps pos)
         DGUnion ->
@@ -67,7 +61,7 @@ dgToSpec dg node = do
          return (Spec_inst name [] pos)
         _ -> return (Extension apredSps pos)
 
-{- compute the theory of a given node. 
+{- compute the theory of a given node.
    If this node is a DGRef, the referenced node is looked up first. -}
 computeLocalTheory :: Monad m => LibEnv -> LibNode -> m G_theory
 computeLocalTheory libEnv (ln, node) =
@@ -78,9 +72,9 @@ computeLocalTheory libEnv (ln, node) =
     else return $ dgn_theory nodeLab
     where
       dgraph = lookupDGraphInLibEnv ln libEnv
-      nodeLab = lab' $ safeContext "Static.DGToSpec.computeLocalTheory" dgraph node
+      nodeLab = lab' $ safeContext "Static.DGToSpec.computeLocalTheory"
+                dgraph node
       refLn = dgn_libname nodeLab
-
 
 type LibNode = (LIB_NAME,Node)
 type LibLEdge = (LIB_NAME,LEdge DGLinkLab)
@@ -91,10 +85,10 @@ getSourceLibNode (ln,edge) = (ln, getSourceNode edge)
 lookupDGraphInLibEnv :: LIB_NAME -> LibEnv -> DGraph
 lookupDGraphInLibEnv ln libEnv =
     case Map.lookup ln libEnv of
-    Nothing -> error ("lookupDGraphInLibEnv: Could not find development graph "
-                      ++ "with library name " ++(show ln)++ " in given libEnv")
+    Nothing -> error $
+               "lookupDGraphInLibEnv: Could not find development graph "
+               ++ "with library name " ++ show ln ++ " in given libEnv"
     Just (_,_,dgraph) -> dgraph
-
 
 {- returns all edges that go directly in the given node,
    in case of a DGRef node also all ingoing edges of the referenced node
@@ -105,7 +99,7 @@ getAllIngoingEdges libEnv (ln,node) =
     False -> inEdgesInThisGraph
     True -> inEdgesInThisGraph ++ inEdgesInRefGraph
 
-  where 
+  where
     dgraph = lookupDGraphInLibEnv ln libEnv
     nodelab = lab' (safeContext "Static.DGToSpec.getAllIngoingEdges" dgraph node)
     inEdgesInThisGraph = [(ln,inEdge)| inEdge <- inn dgraph node]
@@ -131,7 +125,6 @@ calculateMorphismOfPath ((_src,_tgt,edgeLab):furtherPath) =
     morphism = dgl_morphism edgeLab
     maybeMorphismOfFurtherPath = calculateMorphismOfPath furtherPath
 
-
 -- ------------------------------------
 -- methods to get the nodes of an edge
 -- ------------------------------------
@@ -154,33 +147,34 @@ isLocalDef (_,_,edgeLab) =
     _ -> False
 
 -- | or two predicates
-liftOr :: (a -> Bool) -> (a -> Bool) -> a -> Bool 
-liftOr f g x = f x || g x 
+liftOr :: (a -> Bool) -> (a -> Bool) -> a -> Bool
+liftOr f g x = f x || g x
 
 -- | Compute the theory of a node (CASL Reference Manual, p. 294, Def. 4.9)
-computeTheory :: LibEnv -> LibNode -> Result G_theory 
-computeTheory libEnv (ln, n) = 
+computeTheory :: LibEnv -> LibNode -> Result G_theory
+computeTheory libEnv (ln, n) =
   let dg = lookupDGraphInLibEnv ln libEnv
       nodeLab = lab' $ safeContext "Static.DGToSpec.computeTheory" dg n
       inEdges = filter (liftOr isLocalDef isGlobalDef) $ inn dg n
       localTh = dgn_theory nodeLab
   in if isDGRef nodeLab then let refLn = dgn_libname nodeLab in
       case Map.lookup refLn libEnv of
-      Just _ -> do 
+      Just _ -> do
           refTh <- computeTheory libEnv (refLn, dgn_node nodeLab)
-          flatG_sentences localTh [axiomsToTheorems $ refTh]
-      Nothing -> fail ("Statoc.DGToSpec.computeTheory: referenced library "++show refLn++" not found")
+          flatG_sentences localTh [theoremsToAxioms $ refTh]
+      Nothing -> fail $ "Statoc.DGToSpec.computeTheory: referenced library "
+                 ++ show refLn ++ " not found"
      else do
   ths <- mapM (computePathTheory libEnv ln) inEdges
   flatG_sentences localTh ths
 
-computePathTheory :: LibEnv -> LIB_NAME -> LEdge DGLinkLab -> Result G_theory 
-computePathTheory libEnv ln e@(src, _, link) = do 
+computePathTheory :: LibEnv -> LIB_NAME -> LEdge DGLinkLab -> Result G_theory
+computePathTheory libEnv ln e@(src, _, link) = do
   th <- if isLocalDef e then computeLocalTheory libEnv (ln, src)
-          else computeTheory libEnv (ln, src) 
+          else computeTheory libEnv (ln, src)
   -- translate theory and turn all imported theorems into axioms
-  translateG_theory (dgl_morphism link) $ axiomsToTheorems th
+  translateG_theory (dgl_morphism link) $ theoremsToAxioms th
 
-axiomsToTheorems :: G_theory -> G_theory
-axiomsToTheorems (G_theory lid sign sens) =
-   G_theory lid sign $ OMap.map ( \ x -> x {isAxiom = True} ) sens
+theoremsToAxioms :: G_theory -> G_theory
+theoremsToAxioms (G_theory lid sign sens) =
+   G_theory lid sign $ markAsAxiom True sens
