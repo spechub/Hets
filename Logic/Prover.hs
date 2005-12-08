@@ -1,4 +1,4 @@
-{- | 
+{- |
 Module      :  $Header$
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -37,31 +37,32 @@ instance PrettyPrint a => PrettyPrint (SenStatus a b) where
   printText0 ga x = printText0 ga (value x)
 
 emptySenStatus :: SenStatus a b
-emptySenStatus = SenStatus { value = error "emptySenStatus"
-                           , isDef = False
-                           , isAxiom = True
-                           , thmStatus = [] }
+emptySenStatus = SenStatus 
+   { value = error "emptySenStatus"
+   , isDef = False
+   , isAxiom = True
+   , thmStatus = [] }
 
 instance Eq a => Eq (SenStatus a b) where
-    d1 == d2 = (value d1, isAxiom d1, isDef d1) == 
+    d1 == d2 = (value d1, isAxiom d1, isDef d1) ==
                (value d2, isAxiom d2, isDef d2)
 
 instance Ord a => Ord (SenStatus a b) where
-    d1 <= d2 = (value d1, isAxiom d1, isDef d1) <= 
+    d1 <= d2 = (value d1, isAxiom d1, isDef d1) <=
                (value d2, isAxiom d2, isDef d2)
 
 decoTc :: TyCon
 decoTc = mkTyCon "Static.DevGraph.SenStatus"
 
-instance (Typeable s,Typeable b) => Typeable (SenStatus s b) where 
+instance (Typeable s,Typeable b) => Typeable (SenStatus s b) where
   typeOf s = mkTyConApp decoTc [typeOf ((undefined :: SenStatus a b -> a) s),
                                 typeOf ((undefined :: SenStatus a b -> b) s)]
 
 elemWOrdTc :: TyCon
 elemWOrdTc = mkTyCon "Common.OrderedMap.ElemWOrd"
 
-instance (Typeable a) => Typeable (OMap.ElemWOrd a) where 
-  typeOf s = mkTyConApp elemWOrdTc 
+instance (Typeable a) => Typeable (OMap.ElemWOrd a) where
+  typeOf s = mkTyConApp elemWOrdTc
              [typeOf ((undefined :: OMap.ElemWOrd a -> a) s)]
 
 instance PrettyPrint a => PrettyPrint (OMap.ElemWOrd a) where
@@ -81,53 +82,56 @@ joinSens :: (Ord a,Eq b) => ThSens a b -> ThSens a b -> ThSens a b
 joinSens s1 s2 = let l1 = sortBy (comparing snd) $ Map.toList s1
                      updN n (_, e) = (n, e)
                      m = OMap.size s1
-                     l2 = map (\ (x,e) -> 
-                                    (x,e {OMap.order = m + OMap.order e })) $ 
-                          sortBy (comparing snd) $ Map.toList s2 
+                     l2 = map (\ (x,e) ->
+                                    (x,e {OMap.order = m + OMap.order e })) $
+                          sortBy (comparing snd) $ Map.toList s2
                  in Map.fromList $ mergeSens l1 $
                          genericDisambigSens fst updN (OMap.keysSet s1) l2
     where mergeSens [] l2 = l2
           mergeSens l1 [] = l1
-          mergeSens l1@((k1, e1) : r1) l2@((k2, e2) : r2) = 
+          mergeSens l1@((k1, e1) : r1) l2@((k2, e2) : r2) =
               case compare e1 e2 of
               LT -> (k1, e1) : mergeSens r1 l2
-              EQ -> (k1, e1 { OMap.ele = (OMap.ele e1) 
-                                        { thmStatus = 
-                                              union (thmStatus $ OMap.ele e1) 
+              EQ -> (k1, e1 { OMap.ele = (OMap.ele e1)
+                                        { thmStatus =
+                                              union (thmStatus $ OMap.ele e1)
                                                   (thmStatus $ OMap.ele e2)}})
                          : mergeSens r1 r2
               GT -> (k2, e2) : mergeSens l1 r2
 
 diffSens :: (Ord a,Eq b) => ThSens a b -> ThSens a b -> ThSens a b
-diffSens s1 s2 = let 
+diffSens s1 s2 = let
     l1 = sortBy (comparing snd) $ Map.toList s1
     l2 = sortBy (comparing snd) $ Map.toList s2
     in Map.fromList $ diffS l1 l2
     where diffS [] _ = []
           diffS l1 [] = l1
-          diffS l1@((k1, e1) : r1) l2@((_, e2) : r2) = 
+          diffS l1@((k1, e1) : r1) l2@((_, e2) : r2) =
               case compare e1 e2 of
               LT -> (k1, e1) : diffS r1 l2
               EQ -> diffS r1 r2
               GT -> diffS l1 r2
 
 mapValue :: (a -> b) -> SenStatus a c -> SenStatus b c
-mapValue f d = d { value = f $ value d } 
+mapValue f d = d { value = f $ value d }
+
+markAsAxiom :: Ord a => Bool -> ThSens a b -> ThSens a b
+markAsAxiom b = OMap.map (\d -> d { isAxiom = b})
 
 markAsGoal :: Ord a => ThSens a b -> ThSens a b
-markAsGoal = OMap.map (\d -> d { isAxiom = False})
+markAsGoal = markAsAxiom False
 
 toNamedList :: ThSens a b -> [AS_Anno.Named a]
 toNamedList = map (uncurry toNamed) . OMap.toList
 
 toNamed :: String -> SenStatus a b -> AS_Anno.Named a
-toNamed k s = AS_Anno.NamedSen 
+toNamed k s = AS_Anno.NamedSen
               { AS_Anno.sentence = value s
               , AS_Anno.senName  = k
               , AS_Anno.isDef    = isDef s
               , AS_Anno.isAxiom  = isAxiom s}
 
--- | putting Sentences from a list into a map 
+-- | putting Sentences from a list into a map
 toThSens :: Ord a => [AS_Anno.Named a] -> ThSens a b
 toThSens = OMap.fromList . map
     ( \ v -> (AS_Anno.senName v,
@@ -136,31 +140,30 @@ toThSens = OMap.fromList . map
                              , isDef   = AS_Anno.isDef v }))
     . disambiguateSens Set.empty . nameSens
 
--- | theories with a signature and sentences with proof states 
-data Theory sign sen proof_tree = 
+-- | theories with a signature and sentences with proof states
+data Theory sign sen proof_tree =
     Theory sign (ThSens sen (Proof_status proof_tree))
 
 -- | theory morphisms between two theories
-data TheoryMorphism sign sen mor proof_tree = 
-     TheoryMorphism {t_source :: Theory sign sen proof_tree,
-                     t_target :: Theory sign sen proof_tree,
-                     t_morphism :: mor
-                    } 
+data TheoryMorphism sign sen mor proof_tree = TheoryMorphism 
+    { t_source :: Theory sign sen proof_tree
+    , t_target :: Theory sign sen proof_tree
+    , t_morphism :: mor }
 
 -- e.g. the file name, or the script itself, or a configuration string
 data Tactic_script = Tactic_script String deriving (Eq, Ord, Show)
 
-data Proof_status proof_tree = 
+data Proof_status proof_tree =
                         Open { goalName :: String }
                       | Disproved { goalName :: String }
                       | Proved { goalName :: String,
-                                 usedAxioms :: [String], 
+                                 usedAxioms :: [String],
                                  -- used axioms or theorems or goals
                                  proverName :: String, -- name of prover
                                  proofTree :: proof_tree,
                                  tacticScript :: Tactic_script }
                       | Consistent Tactic_script
-     deriving (Eq, Show)
+     deriving Show
 
 instance Eq a => Ord (Proof_status a) where
     Open _ <= _ = True
@@ -171,6 +174,10 @@ instance Eq a => Ord (Proof_status a) where
                             Proved _ _ _ _ _ -> True
                             _ -> False
     _ <= _ = False
+
+-- Ord instance must match Eq instance!
+instance Eq a => Eq (Proof_status a) where
+    a == b = compare a b == EQ
 
 isProvedStat :: Proof_status proof_tree -> Bool
 isProvedStat (Proved _ _ _ _ _) = True
@@ -185,7 +192,7 @@ data ProverTemplate goal proof_tree = Prover
       -- output: proof status for goals and lemmas
     }
 
-type Prover sign sentence proof_tree = 
+type Prover sign sentence proof_tree =
     ProverTemplate (Theory sign sentence proof_tree) proof_tree
 
 type ConsChecker sign sentence morphism proof_tree =
@@ -194,9 +201,9 @@ type ConsChecker sign sentence morphism proof_tree =
 theoryTc :: TyCon
 theoryTc = mkTyCon "Logic.Prover.Theory"
 
-instance (Typeable a, Typeable b,Typeable c) 
+instance (Typeable a, Typeable b,Typeable c)
     => Typeable (Theory a b c) where
-        typeOf t = mkTyConApp theoryTc 
+        typeOf t = mkTyConApp theoryTc
                [typeOf ((undefined :: Theory a b c -> a) t),
                 typeOf ((undefined :: Theory a b c -> b) t),
                 typeOf ((undefined :: Theory a b c -> c) t)]
@@ -204,9 +211,9 @@ instance (Typeable a, Typeable b,Typeable c)
 theoryMorTc :: TyCon
 theoryMorTc = mkTyCon "Logic.Prover.TheoryMorphism"
 
-instance (Typeable a, Typeable b, Typeable c, Typeable d) 
+instance (Typeable a, Typeable b, Typeable c, Typeable d)
     => Typeable (TheoryMorphism a b c d) where
-        typeOf t = mkTyConApp theoryMorTc 
+        typeOf t = mkTyConApp theoryMorTc
                [typeOf ((undefined :: TheoryMorphism a b c d -> a) t),
                 typeOf ((undefined :: TheoryMorphism a b c d -> b) t),
                 typeOf ((undefined :: TheoryMorphism a b c d -> c) t),
@@ -216,7 +223,7 @@ proverTc :: TyCon
 proverTc = mkTyCon "Logic.Prover.ProverTemplate"
 
 instance (Typeable a, Typeable b) => Typeable (ProverTemplate a b) where
-    typeOf p = mkTyConApp proverTc 
+    typeOf p = mkTyConApp proverTc
                [typeOf ((undefined :: ProverTemplate a b -> a) p),
                 typeOf ((undefined :: ProverTemplate a b -> b) p)]
 

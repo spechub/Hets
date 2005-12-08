@@ -18,7 +18,7 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.AS_Annotation
 
-{- 
+{-
 
  * generic names are added
 
@@ -37,7 +37,7 @@ which uses a different alghorithm.
 
 -- | translate special characters in sentence names
 prepareSenNames :: (String -> String) -> [Named a] -> [Named a]
-prepareSenNames trFun = map (\ax -> ax{senName = trFun (senName ax)})
+prepareSenNames = map . reName
 
 -- | disambiguate sentence names
 disambiguateSens :: Set.Set String -> [Named a] -> [Named a]
