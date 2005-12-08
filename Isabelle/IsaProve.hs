@@ -12,7 +12,7 @@ Interface for Isabelle theorem prover.
 -}
 {-
   todo: thy files in subdir, check of legal changes in thy file
-   consistency check  
+   consistency check
 
   Interface between Isabelle and Hets:
    Hets writes Isabelle .thy file and starts Isabelle
@@ -26,8 +26,8 @@ module Isabelle.IsaProve where
 import Logic.Prover
 import Isabelle.IsaSign
 import Isabelle.IsaConsts
+import Isabelle.IsaPrint
 import Isabelle.Translate
-import Isabelle.CreateThy
 
 import Common.AS_Annotation
 import Common.DefaultMorphism
@@ -57,13 +57,13 @@ isabelleConsChecker =
               prover_sublogic = isabelleS,
               prove = \ thn mor -> error "isabelleConsChecker" }
 
-prepareTheory :: Theory Sign Sentence () 
+prepareTheory :: Theory Sign Sentence ()
     -> (Sign, [Named Sentence], [Named Sentence], Map.Map String String)
 prepareTheory (Theory sig nSens) = let
     oSens = toNamedList nSens
     nSens' = prepareSenNames transString oSens
     (disAxs, disGoals) = getAxioms nSens'
-    in (sig, map markSimp disAxs, map markSimp disGoals, 
+    in (sig, map markSimp disAxs, map markSimp disGoals,
        Map.fromList $ zip (map senName nSens') $ map senName oSens)
 -- return a reverse mapping for renamed sentences
 
@@ -73,26 +73,26 @@ removeDepFiles thName = mapM_ $ removeFile . getDepsFileName thName
 getDepsFileName :: String -> String -> String
 getDepsFileName thName thm = thName ++ "_" ++ thm ++ ".deps"
 
-getProofDeps :: Map.Map String String -> String -> String 
+getProofDeps :: Map.Map String String -> String -> String
              -> IO (Proof_status ())
 getProofDeps m thName thm = do
     let file = getDepsFileName thName thm
         mapN n = Map.findWithDefault n n m
-        strip = takeWhile (not . isSpace) . dropWhile isSpace 
+        strip = takeWhile (not . isSpace) . dropWhile isSpace
     b <- checkInFile file
     if b then do
         s <- readFile file
         if null s then return $ Open $ mapN thm
-           else let l = filter (not . null) $ map strip $ lines s 
+           else let l = filter (not . null) $ map strip $ lines s
                 in return $ mkProved (mapN thm) $ map mapN l
       else return $ Open $ mapN thm
 
 getAllProofDeps :: Map.Map String String -> String -> [String]
                 -> IO([Proof_status ()])
 getAllProofDeps m thName = mapM $ getProofDeps m thName
-    
+
 mkProved :: String -> [String] -> Proof_status ()
-mkProved thm used = Proved 
+mkProved thm used = Proved
     { goalName = thm
     , usedAxioms = used
     , proverName = isabelleS
@@ -107,7 +107,7 @@ prepareThyFiles thyFile thy = do
     exThyFile <- checkInFile thyFile
     if exOrig then return () else writeFile origFile thy
     if exThyFile then return () else writeFile thyFile thy
-    s <- readFile origFile 
+    s <- readFile origFile
     if s == thy then do -- orig file is up to date
          thy_time <- getModificationTime thyFile
          orig_time <- getModificationTime origFile
@@ -117,19 +117,19 @@ prepareThyFiles thyFile thy = do
       else patchThyFile origFile thyFile thy
 
 patchThyFile :: FilePath -> FilePath -> String -> IO ()
-patchThyFile origFile thyFile thy = do 
+patchThyFile origFile thyFile thy = do
   let patchFile = thyFile ++ ".patch"
       oldFile = thyFile ++ ".old"
-      diffCall = "diff -u " ++ origFile ++ " " ++ thyFile 
+      diffCall = "diff -u " ++ origFile ++ " " ++ thyFile
                  ++ " > " ++ patchFile
       patchCall = "patch -u " ++ thyFile ++ " " ++ patchFile
   callSystem diffCall
   renameFile thyFile oldFile
-  writeFile origFile thy 
-  writeFile thyFile thy 
+  writeFile origFile thy
+  writeFile thyFile thy
   callSystem patchCall
   return()
-  
+
 callSystem :: String -> IO ExitCode
 callSystem s = putStrLn s >> system s
 
@@ -148,7 +148,7 @@ isaProve checkCons thName th = do
   getAllProofDeps m thName thms
 
 markSimp :: Named Sentence -> Named Sentence
-markSimp = mapNamed markSimpSen 
+markSimp = mapNamed markSimpSen
 
 markSimpSen :: Sentence -> Sentence
 markSimpSen s = case s of

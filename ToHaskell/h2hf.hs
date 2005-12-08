@@ -22,9 +22,8 @@ import Common.AS_Annotation
 import Common.GlobalAnnotations
 
 import Comorphisms.Hs2HOLCF
-import Comorphisms.Hs2HOLCFaux
 
-import Isabelle.CreateThy
+import Isabelle.IsaPrint
 import Isabelle.IsaSign as IsaSign
 
 import Haskell.HatAna as HatAna

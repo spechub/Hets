@@ -17,6 +17,8 @@ Printing functions for Isabelle logic.
 
 module Isabelle.IsaPrint
     ( showBaseSig
+    , printIsaTheory
+    , getAxioms
     , printNamedSen
     ) where
 
@@ -30,6 +32,70 @@ import qualified Common.Lib.Map as Map
 
 import Data.Char
 import Data.List
+
+printIsaTheory :: String -> String -> Sign -> [Named Sentence] -> Doc
+printIsaTheory tn libdir sign sens = let
+    b = baseSig sign
+    bs = showBaseSig b
+    ld = if null libdir then "" else libdir ++ "/Isabelle/"
+    use = if null ld then empty else text "uses" <+>
+           doubleQuotes (text $ ld ++ "prelude")
+    in text ("theory " ++ tn)
+    $$ text "imports" <+> (if case b of
+                          Main_thy -> False
+                          HOLCF_thy -> False
+                          _ -> True then doubleQuotes
+                                    $ text $ ld ++ bs else text bs)
+    $$ use
+    $$ text "begin"
+    $++$ printTheoryBody sign sens
+    $++$ text "end"
+
+printTheoryBody :: Sign -> [Named Sentence] -> Doc
+printTheoryBody sig sens =
+    let (axs, rest) = getAxioms sens
+        (defs, rs) = getDefs rest
+        (rdefs, ts) = getRecDefs rs
+        tNames = map senName $ ts ++ axs
+    in
+    callML "initialize" (text $ show $ map Quote tNames) $++$
+    printText sig $++$
+    (if null axs then empty else text "axioms" $$
+        vsep (map printNamedSen axs)) $++$
+    (if null defs then empty else text "defs" $$
+        vsep (map printNamedSen defs)) $++$
+    (if null rdefs then empty else
+        vsep (map printNamedSen rdefs)) $++$
+    (if null ts then empty else
+        vsep (map ( \ t -> printNamedSen t $$
+                   text (case sentence t of
+                         Sentence { thmProof = Just s } -> s
+                         _ -> "oops")
+                  $++$ callML "record" (text $ show $ Quote $ senName t)) ts))
+
+callML :: String -> Doc -> Doc
+callML fun args =
+    text "ML" <+> doubleQuotes (text ("Header." ++ fun) <+> args)
+
+data QuotedString = Quote String
+instance Show QuotedString where
+    show (Quote s) = init . tail . show $ show s
+
+getAxioms, getDefs, getRecDefs :: [Named Sentence] ->
+                 ([Named Sentence], [Named Sentence])
+
+getAxioms = partition ( \ s -> case sentence s of
+                            Sentence {} -> isAxiom s
+                            _ -> False)
+
+getDefs = partition ( \ s -> case sentence s of
+                            ConstDef {} -> True
+                            _ -> False)
+
+getRecDefs = partition ( \ s -> case sentence s of
+                            RecDef {} -> True
+                            _ -> False)
+
 ------------------- Printing functions -------------------
 
 showBaseSig :: BaseSig -> String
@@ -101,12 +167,12 @@ printNamedSen NamedSen { senName = lab, sentence = s, isAxiom = b } =
   RecDef {} -> d
   _ -> let dd = doubleQuotes d in if null lab then dd else text (case s of
     ConstDef {} -> lab ++ "_def"
-    Sentence {isSimp = c} -> 
-        (if b then "" else "theorem ") 
-        ++ lab ++ 
+    Sentence {isSimp = c} ->
+        (if b then "" else "theorem ")
+        ++ lab ++
         (if c then " [simp]" else "")
     _ -> error "printNamedSen") <+> colon <+> dd
-    
+
 -- | sentence printing
 printSentence :: Sentence -> Doc
 printSentence s = case s of
@@ -140,35 +206,35 @@ printTrm :: Term -> (Doc, Int)
 printTrm trm = case trm of
     Const vn _ -> case altSyn vn of
         Nothing -> (text $ new vn, maxPrio)
-        Just (AltSyntax s is i) -> if null is then 
+        Just (AltSyntax s is i) -> if null is then
             (replaceUnderlines s [], i) else (text $ new vn, i)
     Free vn _ -> (text $ new vn, maxPrio)
     Var (Indexname _ _) _ -> error "Isa.Term.Var not used"
     Bound _ -> error "Isa.Term.Bound not used"
     Abs v _ b c -> ((text $ case c of
         NotCont -> "%"
-        IsCont -> "LAM") <+> printPlainTerm v <> text "." 
+        IsCont -> "LAM") <+> printPlainTerm v <> text "."
                     <+> printPlainTerm b, lowPrio)
-    If i t e c -> let d = printPlainTerm i <+> 
+    If i t e c -> let d = printPlainTerm i <+>
                         text "then" <+> printPlainTerm t <+>
                         text "else" <+> printPlainTerm e
-                  in case c of 
+                  in case c of
         NotCont -> (text "if" <+> d, lowPrio)
         IsCont -> (text "If" <+> d <+> text "fi", maxPrio)
     Case e ps -> (text "case" <+> printPlainTerm e <+> text "of"
-                  $$ vcat (punctuate (space <> text "|") $ 
+                  $$ vcat (punctuate (space <> text "|") $
                          map (\ (p, t) -> printPlainTerm p <+> text "=>"
                                        <+> printPlainTerm t) ps), lowPrio)
-    Let es i -> (text "let" <+> 
-           vcat (punctuate semi $ 
+    Let es i -> (text "let" <+>
+           vcat (punctuate semi $
                  map (\ (p, t) -> printPlainTerm p <+> text "="
-                               <+> printPlainTerm t) es) 
+                               <+> printPlainTerm t) es)
            <+> text "in" <+> printPlainTerm i, lowPrio)
     IsaEq t1 t2 -> (printParenTerm (isaEqPrio + 1) t1 <+> text "=="
                    <+> printParenTerm isaEqPrio t2, isaEqPrio)
-    Tuplex cs c -> ((case c of 
+    Tuplex cs c -> ((case c of
         NotCont -> parens
-        IsCont -> \ d -> text "<" <+> d <+> text ">") $ 
+        IsCont -> \ d -> text "<" <+> d <+> text ">") $
                         fsep (punctuate comma $ map printPlainTerm cs)
                     , maxPrio)
     Fix t -> (text "fix $" <+> printParenTerm maxPrio t, maxPrio - 1)
@@ -176,19 +242,19 @@ printTrm trm = case trm of
     Wildcard -> error "Isa.Term.Wildcard not used"
     Paren t -> (parens $ printPlainTerm t, maxPrio)
     App f a c -> printTrm $ MixfixApp f [a] c
-    MixfixApp f args c -> case f of 
+    MixfixApp f args c -> case f of
         Const (VName _ (Just (AltSyntax s is i))) _ -> let l = length is in
-            case compare l $ length args of 
+            case compare l $ length args of
                EQ -> (replaceUnderlines s $ zipWith printParenTerm is args, i)
                LT -> let (fargs, rargs) = splitAt l args in
                      printApp c (MixfixApp f fargs c) rargs
                GT -> printApp c f args
         Const vn _ | new vn `elem` [allS, exS, ex1S] -> case args of
             [Abs v _ b _] -> (text (new vn) <+> printPlainTerm v
-                    <> text "." 
+                    <> text "."
                     <+> printPlainTerm b, lowPrio)
             _ -> printApp c f args
-        MixfixApp g margs@(_ : _) d | c == d -> 
+        MixfixApp g margs@(_ : _) d | c == d ->
             printTrm $ MixfixApp g (margs ++ args) d
         App g a d | c == d -> printTrm $ MixfixApp g (a : args) d
         _ -> printApp c f args
@@ -196,16 +262,16 @@ printTrm trm = case trm of
 printApp :: Continuity -> Term -> [Term] -> (Doc, Int)
 printApp c t l = case l of
      [] -> printTrm t
-     _ -> (hsep $ (case c of 
-          NotCont -> id 
-          IsCont -> punctuate $ text " $") 
+     _ -> (hsep $ (case c of
+          NotCont -> id
+          IsCont -> punctuate $ text " $")
           $ printParenTerm (maxPrio - 1) t : map (printParenTerm maxPrio) l
           , maxPrio - 1)
 
 replaceUnderlines :: String -> [Doc] -> Doc
 replaceUnderlines str l = case str of
     "" -> empty
-    '\'': r@(q : s) -> if q `elem` "_/'()" 
+    '\'': r@(q : s) -> if q `elem` "_/'()"
                        then text [q] <> replaceUnderlines s l
                        else text "'" <> replaceUnderlines r l
     '_' : r -> case l of
@@ -258,11 +324,11 @@ printAlt :: VName -> Doc
 printAlt (VName _ altV) = case altV of
     Nothing -> empty
     Just (AltSyntax s is i) -> parens $ doubleQuotes (text s)
-        <+> if null is then empty else text (show is) <+> 
+        <+> if null is then empty else text (show is) <+>
             if i == maxPrio then empty else text (show i)
 
 instance PrettyPrint Sign where
-  printText0 _ sig = 
+  printText0 _ sig =
     printTypeDecls sig $++$
     printClassrel (classrel $ tsig sig) $++$
     printDomainDefs (domainTab sig) $++$
@@ -287,7 +353,7 @@ instance PrettyPrint Sign where
        printTyp (if isDomain then Quoted else Null) t <+> equals <+>
        hsep (punctuate (text " |") $ map printDOp ops)
     printDOp (vn, args) = let opname = new vn in
-       text opname <+> hsep (map (printDOpArg opname) 
+       text opname <+> hsep (map (printDOpArg opname)
                             $ zip args [1 :: Int .. ])
        <+> printAlt vn
     printDOpArg o (a, i) = let
