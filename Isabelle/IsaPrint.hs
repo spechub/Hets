@@ -165,7 +165,10 @@ printNamedSen :: Named Sentence -> Doc
 printNamedSen NamedSen { senName = lab, sentence = s, isAxiom = b } =
   let d = printSentence s in case s of
   RecDef {} -> d
-  _ -> let dd = doubleQuotes d in if null lab then dd else text (case s of
+  _ -> let dd = doubleQuotes d in
+       if isRefute s then text "lemma" <+> text lab <+> colon
+              <+> dd $$ text "refute"
+       else if null lab then dd else text (case s of
     ConstDef {} -> lab ++ "_def"
     Sentence {isSimp = c} ->
         (if b then "" else "theorem ")
@@ -181,7 +184,7 @@ printSentence s = case s of
   _ -> case senTerm s of
       IsaEq (Const vn y) t ->  text (new vn) <+> doubleColon
                       <+> printType y <+> text "==" <+> printOUTerm t
-      t -> printTerm t
+      t -> printPlainTerm (not $ isRefute s) t
 
 -- | omits type of outer abstraction
 printOUTerm :: Term -> Doc
@@ -193,79 +196,83 @@ printOUTerm t = case t of
 
 -- | print plain term
 printTerm :: Term -> Doc
-printTerm = printPlainTerm
+printTerm = printPlainTerm True
 
-printPlainTerm :: Term -> Doc
-printPlainTerm = fst . printTrm
+printPlainTerm :: Bool -> Term -> Doc
+printPlainTerm b = fst . printTrm b
 
-printParenTerm :: Int -> Term -> Doc
-printParenTerm i t = case printTrm t of
+printParenTerm :: Bool -> Int -> Term -> Doc
+printParenTerm b i t = case printTrm b t of
     (d, j) -> if j < i then parens d else d
 
-printTrm :: Term -> (Doc, Int)
-printTrm trm = case trm of
+-- | print the term using the alternative syntax (if True)
+printTrm :: Bool -> Term -> (Doc, Int)
+printTrm b trm = case trm of
     Const vn _ -> case altSyn vn of
         Nothing -> (text $ new vn, maxPrio)
-        Just (AltSyntax s is i) -> if null is then
-            (replaceUnderlines s [], i) else (text $ new vn, i)
+        Just (AltSyntax s is i) -> if b && null is then
+            (replaceUnderlines s [], i) else (text $ new vn, maxPrio)
     Free vn _ -> (text $ new vn, maxPrio)
     Var (Indexname _ _) _ -> error "Isa.Term.Var not used"
     Bound _ -> error "Isa.Term.Bound not used"
-    Abs v _ b c -> ((text $ case c of
+    Abs v _ t c -> ((text $ case c of
         NotCont -> "%"
-        IsCont -> "LAM") <+> printPlainTerm v <> text "."
-                    <+> printPlainTerm b, lowPrio)
-    If i t e c -> let d = printPlainTerm i <+>
-                        text "then" <+> printPlainTerm t <+>
-                        text "else" <+> printPlainTerm e
+        IsCont -> "LAM") <+> printPlainTerm b v <> text "."
+                    <+> printPlainTerm b t, lowPrio)
+    If i t e c -> let d = printPlainTerm b i <+>
+                        text "then" <+> printPlainTerm b t <+>
+                        text "else" <+> printPlainTerm b e
                   in case c of
         NotCont -> (text "if" <+> d, lowPrio)
         IsCont -> (text "If" <+> d <+> text "fi", maxPrio)
-    Case e ps -> (text "case" <+> printPlainTerm e <+> text "of"
+    Case e ps -> (text "case" <+> printPlainTerm b e <+> text "of"
                   $$ vcat (punctuate (space <> text "|") $
-                         map (\ (p, t) -> printPlainTerm p <+> text "=>"
-                                       <+> printPlainTerm t) ps), lowPrio)
+                         map (\ (p, t) -> printPlainTerm b p <+> text "=>"
+                                       <+> printPlainTerm b t) ps), lowPrio)
     Let es i -> (text "let" <+>
            vcat (punctuate semi $
-                 map (\ (p, t) -> printPlainTerm p <+> text "="
-                               <+> printPlainTerm t) es)
-           <+> text "in" <+> printPlainTerm i, lowPrio)
-    IsaEq t1 t2 -> (printParenTerm (isaEqPrio + 1) t1 <+> text "=="
-                   <+> printParenTerm isaEqPrio t2, isaEqPrio)
+                 map (\ (p, t) -> printPlainTerm b p <+> text "="
+                               <+> printPlainTerm b t) es)
+           <+> text "in" <+> printPlainTerm b i, lowPrio)
+    IsaEq t1 t2 -> (printParenTerm b (isaEqPrio + 1) t1 <+> text "=="
+                   <+> printParenTerm b isaEqPrio t2, isaEqPrio)
     Tuplex cs c -> ((case c of
         NotCont -> parens
         IsCont -> \ d -> text "<" <+> d <+> text ">") $
-                        fsep (punctuate comma $ map printPlainTerm cs)
+                        fsep (punctuate comma $ map (printPlainTerm b) cs)
                     , maxPrio)
-    Fix t -> (text "fix $" <+> printParenTerm maxPrio t, maxPrio - 1)
+    Fix t -> (text "fix $" <+> printParenTerm b maxPrio t, maxPrio - 1)
     Bottom -> (text "UU", maxPrio)
     Wildcard -> error "Isa.Term.Wildcard not used"
-    Paren t -> (parens $ printPlainTerm t, maxPrio)
-    App f a c -> printTrm $ MixfixApp f [a] c
+    Paren t -> (parens $ printPlainTerm b t, maxPrio)
+    App f a c -> printTrm b $ MixfixApp f [a] c
     MixfixApp f args c -> case f of
-        Const (VName _ (Just (AltSyntax s is i))) _ -> let l = length is in
+        Const (VName n (Just (AltSyntax s is i))) _ -> let l = length is in
             case compare l $ length args of
-               EQ -> (replaceUnderlines s $ zipWith printParenTerm is args, i)
+               EQ -> if b || n == notS || isPrefixOf "op " n then
+                   (replaceUnderlines s
+                     $ zipWith (printParenTerm b) is args, i)
+                   else printApp b c f args
                LT -> let (fargs, rargs) = splitAt l args in
-                     printApp c (MixfixApp f fargs c) rargs
-               GT -> printApp c f args
+                     printApp b c (MixfixApp f fargs c) rargs
+               GT -> printApp b c f args
         Const vn _ | new vn `elem` [allS, exS, ex1S] -> case args of
-            [Abs v _ b _] -> (text (new vn) <+> printPlainTerm v
+            [Abs v _ t _] -> (text (new vn) <+> printPlainTerm b v
                     <> text "."
-                    <+> printPlainTerm b, lowPrio)
-            _ -> printApp c f args
+                    <+> printPlainTerm b t, lowPrio)
+            _ -> printApp b c f args
         MixfixApp g margs@(_ : _) d | c == d ->
-            printTrm $ MixfixApp g (margs ++ args) d
-        App g a d | c == d -> printTrm $ MixfixApp g (a : args) d
-        _ -> printApp c f args
+            printTrm b $ MixfixApp g (margs ++ args) d
+        App g a d | c == d -> printTrm b $ MixfixApp g (a : args) d
+        _ -> printApp b c f args
 
-printApp :: Continuity -> Term -> [Term] -> (Doc, Int)
-printApp c t l = case l of
-     [] -> printTrm t
+printApp :: Bool -> Continuity -> Term -> [Term] -> (Doc, Int)
+printApp b c t l = case l of
+     [] -> printTrm b t
      _ -> (hsep $ (case c of
           NotCont -> id
           IsCont -> punctuate $ text " $")
-          $ printParenTerm (maxPrio - 1) t : map (printParenTerm maxPrio) l
+          $ printParenTerm b (maxPrio - 1) t : map (printParenTerm b maxPrio) l
           , maxPrio - 1)
 
 replaceUnderlines :: String -> [Doc] -> Doc

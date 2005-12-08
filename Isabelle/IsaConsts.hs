@@ -130,9 +130,15 @@ conSome = conDouble someS
 defOp :: Term
 defOp = conDouble "defOp"
 
+notS :: String
+notS = "Not"
+
+notV :: VName
+notV = VName notS $ Just $ AltSyntax "~/ _" [40] 40
+
 -- | not constant
 notOp :: Term
-notOp = con $ VName "Not" $ Just $ AltSyntax "~/ _" [40] 40
+notOp = con notV
 
 -- * quantor strings
 
@@ -179,13 +185,13 @@ timesS = "op *"
 consS :: String
 consS = "Cons"
 
-plusV :: VName 
+plusV :: VName
 plusV = VName plusS $ Just $ AltSyntax "(_ +/ _)"   [65, 66] 65
 
-minusV :: VName 
+minusV :: VName
 minusV = VName minusS $ Just $ AltSyntax "(_ -/ _)" [65, 66] 65
 
-timesV :: VName 
+timesV :: VName
 timesV = VName timesS $ Just $ AltSyntax "(_ */ _)" [70, 71] 70
 
 consV :: VName

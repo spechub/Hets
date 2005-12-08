@@ -126,6 +126,7 @@ data Term =
       deriving (Eq, Ord, Show)
 
 data Sentence = Sentence { isSimp :: Bool   -- True for "[simp]"
+                         , isRefuteAux :: Bool
                          , senTerm :: Term
                          , thmProof :: Maybe String }
               | ConstDef { senTerm :: Term }
@@ -134,7 +135,19 @@ data Sentence = Sentence { isSimp :: Bool   -- True for "[simp]"
                 deriving (Eq, Ord, Show)
 
 mkSen :: Term -> Sentence
-mkSen t = Sentence {isSimp = False, thmProof = Nothing, senTerm = t }
+mkSen t = Sentence
+    { isSimp = False
+    , isRefuteAux = False
+    , thmProof = Nothing
+    , senTerm = t }
+
+mkRefuteSen :: Term -> Sentence
+mkRefuteSen t = (mkSen t) { isRefuteAux = True }
+
+isRefute :: Sentence -> Bool
+isRefute s = case s of
+    Sentence { isRefuteAux = b } -> b
+    _ -> False
 
 -------------------- from src/Pure/sorts.ML ------------------------
 

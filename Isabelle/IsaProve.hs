@@ -37,9 +37,12 @@ import qualified Common.Lib.Map as Map
 import Driver.Options
 
 import Data.Char
+import Control.Monad
 
-import Directory
-import System
+import System.Directory
+import System.Environment
+import System.Exit
+import System.Cmd
 
 isabelleS :: String
 isabelleS = "Isabelle"
@@ -48,14 +51,29 @@ isabelleProver :: Prover Sign Sentence ()
 isabelleProver =
      Prover { prover_name = isabelleS,
               prover_sublogic = isabelleS,
-              prove = isaProve False
+              prove = isaProve
             }
 
 isabelleConsChecker :: ConsChecker Sign Sentence (DefaultMorphism Sign) ()
 isabelleConsChecker =
      Prover { prover_name = "Isabelle-refute",
               prover_sublogic = isabelleS,
-              prove = \ thn mor -> error "isabelleConsChecker" }
+              prove = consCheck }
+
+-- | the name of the inconsistent lemma for consistency checks
+inconsistentS :: String
+inconsistentS = "inconsistent"
+
+consCheck :: String -> TheoryMorphism Sign Sentence (DefaultMorphism Sign) ()
+          -> IO([Proof_status ()])
+consCheck thName tm = case t_target tm of
+    Theory sig nSens -> let (axs, _) = getAxioms $ toNamedList nSens in
+       isaProve (thName ++ "_c") $
+           Theory emptySign { baseSig = baseSig sig }
+               $ markAsGoal $ toThSens $ if null axs then [] else
+                   [ (emptyName $ mkRefuteSen $ termAppl notOp
+                     $ foldr1 binConj $ map (senTerm . sentence) axs)
+                     { senName = inconsistentS } ]
 
 prepareTheory :: Theory Sign Sentence ()
     -> (Sign, [Named Sentence], [Named Sentence], Map.Map String String)
@@ -68,7 +86,10 @@ prepareTheory (Theory sig nSens) = let
 -- return a reverse mapping for renamed sentences
 
 removeDepFiles :: String -> [String] -> IO ()
-removeDepFiles thName = mapM_ $ removeFile . getDepsFileName thName
+removeDepFiles thName = mapM_ $ \ thm -> do
+  let depFile = getDepsFileName thName thm
+  ex <- doesFileExist depFile
+  when ex $ removeFile depFile
 
 getDepsFileName :: String -> String -> String
 getDepsFileName thName thm = thName ++ "_" ++ thm ++ ".deps"
@@ -107,14 +128,11 @@ prepareThyFiles thyFile thy = do
     exThyFile <- checkInFile thyFile
     if exOrig then return () else writeFile origFile thy
     if exThyFile then return () else writeFile thyFile thy
+    thy_time <- getModificationTime thyFile
+    orig_time <- getModificationTime origFile
     s <- readFile origFile
-    if s == thy then do -- orig file is up to date
-         thy_time <- getModificationTime thyFile
-         orig_time <- getModificationTime origFile
-         if thy_time >= orig_time then  -- use the current file
-                  return ()
-                  else patchThyFile origFile thyFile thy
-      else patchThyFile origFile thyFile thy
+    unless (thy_time >= orig_time && s == thy)
+      $ patchThyFile origFile thyFile thy
 
 patchThyFile :: FilePath -> FilePath -> String -> IO ()
 patchThyFile origFile thyFile thy = do
@@ -122,9 +140,10 @@ patchThyFile origFile thyFile thy = do
       oldFile = thyFile ++ ".old"
       diffCall = "diff -u " ++ origFile ++ " " ++ thyFile
                  ++ " > " ++ patchFile
-      patchCall = "patch -u " ++ thyFile ++ " " ++ patchFile
+      patchCall = "patch -fu " ++ thyFile ++ " " ++ patchFile
   callSystem diffCall
   renameFile thyFile oldFile
+  removeFile origFile
   writeFile origFile thy
   writeFile thyFile thy
   callSystem patchCall
@@ -133,8 +152,8 @@ patchThyFile origFile thyFile thy = do
 callSystem :: String -> IO ExitCode
 callSystem s = putStrLn s >> system s
 
-isaProve :: Bool -> String -> Theory Sign Sentence () -> IO([Proof_status ()])
-isaProve checkCons thName th = do
+isaProve :: String -> Theory Sign Sentence () -> IO([Proof_status ()])
+isaProve thName th = do
   let (sig, axs, ths, m) = prepareTheory th
       thms = map senName ths
   hlibdir <- getEnv "HETS_LIB"
