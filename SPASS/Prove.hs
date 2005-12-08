@@ -15,14 +15,15 @@ See <http://spass.mpi-sb.mpg.de/> for details on SPASS.
 
 {- 
     todo:
-      - use one of the technices in Comorphisms.CASL2SPASS to translate
-        formula labels into correct SPASS identifiers; 
-        and keep track of this translation for getting the right names
-        for ProofStatus ...
-        partly implemented
+      - check if the theorem is used in the proof; 
+        if not, the theory is inconsistent; 
+        options: leaves goal open and/or emmits a warning...
+      - window opens too small on linux; why?
+      - add timelimit option to batch mode
+      - improve help message
+      - batch mode restart button
       - Implement a consistency checker based on GUI
-      - check if proving is possible more than one time even 
-        if the Goal was already proved
+
 -}
 
 module SPASS.Prove where
@@ -55,7 +56,7 @@ import System.IO.Error
 
 import HTk
 import SpinButton
-import DialogWin
+import Messages
 import TextDisplay
 import Separator
 import XSelection
@@ -652,7 +653,7 @@ spassProveGUI thName th = do
                 statusLabel # foreground (show $ fst statusRunning)
                 (retval, (res, output)) <- runSpass lp' (getConfig goal (configsMap s')) (head afterThis)
                 case retval of
-                  SpassError message -> createErrorWin message []
+                  SpassError message -> errorMess message
                   _ -> return ()
                 let s'' = s'{resultsMap = Map.insert goal (res, output) (resultsMap s'),
                              configsMap = adjustOrSetConfig (\ c -> c{timeLimitExceeded = isTimeLimitExceeded retval}) goal (configsMap s')}
@@ -698,7 +699,7 @@ spassProveGUI thName th = do
                     (map AS_Anno.senName goals)
   return proof_stats
   where
-    noGoalSelected = createErrorWin "Please select a goal first." []
+    noGoalSelected = errorMess "Please select a goal first."
     Theory sign nSens' = th
     nSens = toNamedList nSens'
     (axioms, goals) = partition AS_Anno.isAxiom 
@@ -712,8 +713,8 @@ spassProveGUI thName th = do
                              (++) (unlines outp) . (++) "\")\n" . resF) id 
                     (Map.toList mp)) "}" 
     transNames nm pStat = case pStat of
-                          Open x -> Open $ trN x
-                          Disproved x -> Disproved $ trN x
+                          Open x1 -> Open $ trN x1
+                          Disproved x1 -> Disproved $ trN x1
                           st@(Proved n uas _ _ _) ->     
                               st { goalName = trN n
                                  , usedAxioms = foldr (fil (trN n)) [] uas}
