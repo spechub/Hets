@@ -14,44 +14,31 @@ works for SPASS.
 -}
 
 {- ToDo:
-  - add "(De)select all" functionality for ListBoxes ... done
-  - add interface for fine grained axiom and theorem selection ... done
   - grey out GUI while waiting for Prover
   - remove warnings
 -}
 
 module GUI.ProofManagement (proofManagementGUI) where
 
-import Control.Exception
-
-import Logic.Prover
-
 import qualified Common.AS_Annotation as AS_Anno
-import Common.PrettyPrint
 import qualified Common.Lib.Pretty as Pretty
 import Common.PPUtils
-import Common.ProofUtils
 import Common.Utils
 import qualified Common.Result as Result
 import Common.GlobalAnnotations
+import qualified Common.Lib.Map as Map
+import qualified Common.OrderedMap as OMap
+
 import Data.List
 import Data.Maybe
 import Data.IORef
-import qualified Control.Exception as Exception
-import qualified Control.Concurrent as Concurrent
 
 import HTk
-import SpinButton
-import DialogWin
-import TextDisplay
 import Separator
 import Space
 import XSelection
 
 import GUI.HTkUtils
-
-import qualified Common.Lib.Map as Map
-import qualified Common.OrderedMap as OMap
 
 import Proofs.GUIState
 import Logic.Logic
@@ -61,7 +48,7 @@ import qualified Comorphisms.KnownProvers as KnownProvers
 import qualified Static.DevGraph as DevGraph
 
 -- debugging
-import Debug.Trace
+-- import Debug.Trace
 
 -- * Proof Management GUI
 
@@ -131,8 +118,8 @@ goalsView = map toStatus . OMap.toList . goalMap
 populatePathsListBox :: ListBox String
                      -> KnownProvers.KnownProversMap
 		     -> IO ()
-populatePathsListBox lb provers = do
-  lb # HTk.value (Map.keys provers)
+populatePathsListBox lb prvs = do
+  lb # HTk.value (Map.keys prvs)
   return ()
 
 populateAxiomsList :: 
@@ -184,18 +171,31 @@ updateStateSelectAllAxs stateRef =
        aM' <- axiomMap s
        writeIORef stateRef (s{includedAxioms = OMap.keys aM' })
 
+updateStateGetSelectedGoals ::
+    (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+            sign1 morphism1 symbol1 raw_symbol1 proof_tree1) =>
+           ProofGUIState lid1 sentence1
+        -> ListBox String
+        -> IO (ProofGUIState lid1 sentence1)
 updateStateGetSelectedGoals s lb =
     do sel <- (getSelection lb) :: IO (Maybe [Int])
        return (s {selectedGoals = 
                       maybe [] (map ((OMap.keys (goalMap s))!!)) sel})
 
+updateStateGetSelectedSens ::
+    (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+            sign1 morphism1 symbol1 raw_symbol1 proof_tree1) =>
+           ProofGUIState lid1 sentence1
+        -> ListBox String -- ^ axioms listbox
+        -> ListBox String --  theorems listbox
+        -> IO (ProofGUIState lid1 sentence1)
 updateStateGetSelectedSens s lbAxs lbThs =
     do aM <- axiomMap s
        selA <- (getSelection lbAxs) :: IO (Maybe [Int])
        selT <- (getSelection lbThs) :: IO (Maybe [Int])
        return (s { includedAxioms   = maybe [] (fil aM) selA
                  , includedTheorems = maybe [] (fil (goalMap s)) selT })
-    where fil x = map ((OMap.keys x)!!)
+    where fil str = map ((OMap.keys str)!!)
 
 {- |
  Depending on the first argument all entries in a ListBox are selected 
@@ -210,20 +210,6 @@ doSelectAllEntries selectAll lb =
      then selectionRange (0::Int) EndOfText lb 
               >> return ()
      else clearSelection lb
-
-{- |
-  Called whenever a goal is selected from the goals 'ListBox'
--}
-doSelectGoal :: ProofGUIState lid sentence
-             -> ListBox String
-	     -> IO (ProofGUIState lid sentence)
-doSelectGoal s lb = do
-  sel <- (getSelection lb) :: IO (Maybe [Int])
-  -- FIXME: this will probably blow up if the number of goals isn't constant
-  let selGoals = maybe ([]) (map (goals!!)) sel
-      s' = s{selectedGoals = selGoals}
-  return s'
-  where goals = OMap.keys (goalMap s)
 
 {- |
   Called whenever the button "Display" is clicked.
@@ -262,8 +248,7 @@ doShowProofDetails ::
            proof_tree1) => 
        ProofGUIState lid sentence
     -> IO ()
-doShowProofDetails s@(ProofGUIState { theoryName = thName
-                                , theory=DevGraph.G_theory lid1 sig1 _}) = 
+doShowProofDetails s@(ProofGUIState { theoryName = thName}) = 
      createTextSaveDisplay ("Proof Details of Selected Goals from Theory " 
                             ++ thName) 
                            (thName ++ "-proof-details.txt") (detailsText sens)
@@ -278,7 +263,7 @@ doShowProofDetails s@(ProofGUIState { theoryName = thName
                  else Pretty.vcat $ 
                       map printCmWStat $ 
                       sortBy (comparing snd) $ thmStatus st
-          stat s = Pretty.text "Status:" Pretty.<+> Pretty.text s
+          stat str = Pretty.text "Status:" Pretty.<+> Pretty.text str
           printCmWStat (c,bp) =
               Pretty.text "Com:" Pretty.<+> Pretty.text (show c) Pretty.$$
               Pretty.nest 4 (printBP bp)
@@ -297,8 +282,10 @@ doShowProofDetails s@(ProofGUIState { theoryName = thName
                                                        uaxs)) 
                                Pretty.$$ Pretty.text "Prover:" Pretty.<+> 
                                Pretty.text pr
-
-                       x -> stat (show x)
+                           Consistent _ -> -- has no meaning here and 
+                                           -- is ignored therefore
+                                           Pretty.empty
+                       otherProof -> stat (show otherProof)
 
 
 {- |
@@ -311,13 +298,11 @@ doSelectProverPath s lb =
     do selected <- (getSelection lb) :: IO (Maybe [Int]) 
        return (s {selectedProver = 
                       maybe Nothing 
-                            (\ (x:_) -> Just (Map.keys (proversMap s) !! x)) 
+                            (\ (index:_) -> 
+                                 Just (Map.keys (proversMap s) !! index)) 
                             selected
                  })
--- TODO: retrieve selected index from lb, look that up in the list of known
---       provers, and save the prover name in selectedProver
-
-
+newSelectButtonsFrame :: Container par => par -> IO (Event (), Event ())
 newSelectButtonsFrame b3 =
   do 
   selFrame <- newFrame b3 []
@@ -336,7 +321,9 @@ newSelectButtonsFrame b3 =
   deselectAll <- clicked deselectAllButton
 
   return (selectAll,deselectAll)
-
+newExtSelListBoxFrame :: (Container par) =>
+                         par -> String -> Distance 
+                      -> IO (Event (), Event (), ListBox String)
 newExtSelListBoxFrame b2 title hValue =
   do
   left <- newFrame b2 []
@@ -393,7 +380,7 @@ proofManagementGUI ::
                        -- for sublogic of G_theory
     -> IO (Result.Result DevGraph.G_theory)
 proofManagementGUI lid proveF fineGrainedSelectionF 
-                   thName th@(DevGraph.G_theory _ _ thSen) 
+                   thName th
                    knownProvers comorphList = 
   do
   -- KnownProvers.showKnownProvers knownProvers
@@ -517,7 +504,7 @@ proofManagementGUI lid proveF fineGrainedSelectionF
       <- newExtSelListBoxFrame icBox "Axioms to include:" 10
 
   (selectAllThs,deselectAllThs,lbThs) 
-      <- newExtSelListBoxFrame icBox "Theorems to include:" 10
+      <- newExtSelListBoxFrame icBox "Theorems to include if proven:" 10
 
   populateAxiomsList lbAxs initState
   lbThs # HTk.value (OMap.keys (goalMap initState))
@@ -525,13 +512,13 @@ proofManagementGUI lid proveF fineGrainedSelectionF
   doSelectAllEntries True lbThs
 
   -- separator
-  sp1 <- newSpace b (cm 0.15) []
-  pack sp1 [Expand Off, Fill X, Side AtBottom]
+  spac1 <- newSpace b (cm 0.15) []
+  pack spac1 [Expand Off, Fill X, Side AtBottom]
 
   newHSeparator b
 
-  sp2 <- newSpace b (cm 0.15) []
-  pack sp2 [Expand Off, Fill X, Side AtBottom]
+  spac2 <- newSpace b (cm 0.15) []
+  pack spac2 [Expand Off, Fill X, Side AtBottom]
 
   -- bottom frame (close button)
   bottom <- newFrame b []
@@ -599,7 +586,7 @@ proofManagementGUI lid proveF fineGrainedSelectionF
 	    Result.Result ds ms'' <- fineGrainedSelectionF prState
             s'' <- case ms'' of
                    Nothing -> fail "fineGrainedSelection returned Nothing"
-                   Just x -> return x
+                   Just res -> return res
 	    let s''' = s'' {proverRunning = False,accDiags = accDiags s'' ++ ds}
 	    updateDisplay s''' True lb pathsLb statusLabel
 	    writeIORef stateRef s'''
@@ -615,7 +602,7 @@ proofManagementGUI lid proveF fineGrainedSelectionF
 	    Result.Result ds ms'' <- proveF prState
             s'' <- case ms'' of
                    Nothing -> fail "proveF returned Nothing"
-                   Just x -> return x
+                   Just res -> return res
 	    let s''' = s''{proverRunning = False,accDiags = accDiags s'' ++ ds}
 	    updateDisplay s''' True lb pathsLb statusLabel
 	    writeIORef stateRef s'''
@@ -623,7 +610,7 @@ proofManagementGUI lid proveF fineGrainedSelectionF
       +> (showProofDetails >>> do
             s <- readIORef stateRef
             s' <- updateStateGetSelectedGoals s lb
-	    doShowProofDetails s
+	    doShowProofDetails s'
             done)
       ))
   sync (close >>> destroy main)
