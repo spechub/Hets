@@ -25,32 +25,37 @@ module Haskell.Wrapper where
 
 import Text.ParserCombinators.Parsec
 import Common.Lexer
+import Data.Char
 
-hStuff, stuff :: GenParser Char st String
+hStuff, stuff :: CharParser st String
 hStuff = flat $ many stuff
 
 stuff = lineComment <|> nestComment <|> stringLit <|> charLit
         <|> balanced "{}"
         <|> balanced "()"
         <|> balanced "[]"
+        <|> graphic <:> many (graphic <|> prime)
         <|> single (noneOf "])}") <?> ""
 
-balanced :: String -> GenParser Char st String
+balanced :: String -> CharParser st String
 balanced [o, c] = char o <:> hStuff <++> string [c]
 balanced _ = error "balanced"
 
-nestComment :: GenParser Char st String
+graphic :: CharParser st Char
+graphic = try (char '-' << notFollowedBy (char '-')) <|> satisfy (\ c ->
+    isPrint c && not (isSpace c || elem c "-\"'{([])}"))
+
+nestComment :: CharParser st String
 nestComment = nestedComment "{-" "-}"
 
-lineComment, stringLit, charLit :: GenParser Char st String
+lineComment, stringLit, charLit :: CharParser st String
 lineComment = try (string "--") <++> many (noneOf "\n\r")
               <++> many (oneOf "\n\r")
 
-stringLit = char '\"' <:> flat (many (single (noneOf "\\\"")
-                                 <|> char '\\' <:> single anyChar))
-            <++> string "\""
+stringLit = enclosedBy (flat $ many $ single (noneOf "\\\"")
+                        <|> char '\\' <:> single anyChar) $ char '\"'
 
 charLit = try (string "'''") <|>
-          char '\'' <:> flat (many (single (noneOf "\\\'")
-                                 <|> char '\\' <:> single anyChar))
-          <++> string "\'"
+          enclosedBy (flat $ many $ single (noneOf "\\\'")
+                      <|> char '\\' <:> single anyChar)
+          (char '\'')
