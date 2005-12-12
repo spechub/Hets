@@ -1,11 +1,11 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2004
+Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
 Stability   :  experimental
-Portability :  portable 
+Portability :  portable
 
 test the haskell wrapper
 
@@ -15,19 +15,15 @@ module Main where
 
 import System.Environment
 import Haskell.Wrapper
+import Common.Lexer
 import Text.ParserCombinators.Parsec
 
 main :: IO ()
-main = do
-    l <- getArgs
-    if length l == 1 
-       then do
-            let f = head l
-            s <- readFile f
-            let r = parse hStuff f s
-            putStr $ case r of
-                         Right x -> x
-                         Left err -> show err
-        else do 
-             p <- getProgName
-             putStrLn("Usage: "++p++" <file>")
+main = getArgs >>= mapM_ process
+
+process :: String -> IO ()
+process f = do
+  s <- readFile f
+  putStr $ case parse (hStuff << eof) f s of
+             Right x -> x
+             Left err -> show err
