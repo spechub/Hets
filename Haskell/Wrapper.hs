@@ -34,16 +34,12 @@ stuff = lineComment <|> nestComment <|> stringLit <|> charLit
         <|> balanced "{}"
         <|> balanced "()"
         <|> balanced "[]"
-        <|> graphic <:> many (graphic <|> prime)
+        <|> satisfy isAlpha <:> many (satisfy isAlphaNum <|> prime)
         <|> single (noneOf "])}") <?> ""
 
 balanced :: String -> CharParser st String
 balanced [o, c] = char o <:> hStuff <++> string [c]
 balanced _ = error "balanced"
-
-graphic :: CharParser st Char
-graphic = try (char '-' << notFollowedBy (char '-')) <|> satisfy (\ c ->
-    isPrint c && not (isSpace c || elem c "-\"'{([])}"))
 
 nestComment :: CharParser st String
 nestComment = nestedComment "{-" "-}"
