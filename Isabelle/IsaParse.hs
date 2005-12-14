@@ -42,7 +42,6 @@ longident = ident <++> flat (many $ char '.' <:> ident)
 symident :: CharParser st String
 symident = many1 (oneOf "!#$&*+-/:<=>?@^_|~" <?> "sym") <|> greek
 
-
 isaString :: CharParser st String
 isaString = enclosedBy (flat $ many (single (noneOf "\\\"")
                                  <|> char '\\' <:> single anyChar))
@@ -192,6 +191,9 @@ isaKeywords = markups ++
 nameP :: CharParser st String 
 nameP = reserved isaKeywords $ lexP name 
 
+namerefP :: CharParser st String 
+namerefP = reserved isaKeywords $ lexP nameref 
+
 parname :: CharParser st String 
 parname = lexS "(" <++> lexP name <++> lexS ")"
 
@@ -214,18 +216,85 @@ theoryHead = do
     oc <- option Nothing $ fmap Just nameP
     return $ TheoryHead oh th is us oc
 
-classDecl :: CharParser st [String]
-classDecl = do 
+commalist :: CharParser st a -> CharParser st [a]
+commalist p = fmap fst $ lexP p `separatedBy` lexS ","
+
+parensP :: CharParser st a -> CharParser st a
+parensP p = do 
+    lexS "("
+    a <- p
+    lexS ")"
+    return a
+
+bracketsP :: CharParser st a -> CharParser st a
+bracketsP p = do 
+    lexS "["
+    a <- p
+    lexS "]"
+    return a
+
+infixP :: CharParser st ()
+infixP = do 
+    choice $ map lexS ["infix", "infixl", "infixr"]
+    option "" $ lexP isaString
+    lexP nat
+    return ()
+
+mixfixSuffix :: CharParser st ()
+mixfixSuffix = do
+    lexP isaString
+    option [] $ bracketsP $ commalist nat -- prios
+    option "" $ lexP nat
+    return ()
+
+mixfix :: CharParser st ()
+mixfix = lexS "(" >> 
+    (infixP <|> mixfixSuffix <|> (lexS "binder" >> mixfixSuffix) 
+     <|> (lexS "structure" >> return ())) << lexS ")"
+
+atom :: CharParser st String
+atom = var <|> typeP -- nameref covers nat and symident keywords
+
+args :: CharParser st [String]
+args = many $ lexP atom   
+
+arg :: CharParser st [String]
+arg = fmap (:[]) (lexP atom) <|> parensP args <|> bracketsP args
+
+attributes :: CharParser st ()
+attributes = bracketsP (commalist $ lexP nameref >> args) >> return ()
+
+classdecl :: CharParser st [String]
+classdecl = do 
     n <- nameP
     lexS "<" <|> lexS "\\<subseteq>"
-    (ns, _) <- nameref `separatedBy` lexS ","
+    ns <- commalist nameref
     return $ n : ns
 
-arity :: CharParser st [String]
-arity = fmap (:[]) nameref <|> do
-    lexS "("
-    (ns, _) <- nameref `separatedBy` lexS ","
-    lexS ")"
-    n <- nameref
+classes :: CharParser st ()
+classes = lexS "classes" >> many1 classdecl >> return ()
+
+typespec :: CharParser st [String]
+typespec = fmap (:[]) namerefP <|> do
+    ns <- parensP (commalist typefree) <|> fmap (:[]) (lexP typefree)
+    n <- namerefP
     return $ n : ns
-    
+
+optinfix :: CharParser st ()
+optinfix = option () $ parensP infixP
+
+types :: CharParser st [[String]]
+types = lexS "types" >> many1 (typespec << (lexS "=" >> typeP >> optinfix))
+
+typedecl :: CharParser st [[String]]
+typedecl = lexS "typedecl" >> many1 (typespec << optinfix)
+
+arity :: CharParser st [String]
+arity = fmap (:[]) namerefP <|> do
+    ns <- parensP $ commalist nameref
+    n <- namerefP
+    return $ n : ns
+
+arities :: CharParser st [[String]]
+arities = lexS "arities" >> many1 (namerefP <:> (lexS "::" >> arity))
+
