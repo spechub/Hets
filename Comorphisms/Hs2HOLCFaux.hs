@@ -96,6 +96,11 @@ type IsaTypeInsts = (TName, [(IsaClass, [(IsaType, [IsaClass])])])
 
 
 ----------------------------- GENERIC auxiliary functions ---------------------
+
+showL ls = concat $ map (\x -> (show x) ++ "\n") ls
+
+traceL ls = trace (concat $ map (\x -> "\n" ++ x ++ "\n") ls)
+
 ----------------------------- list functions ----------------------------------
 
 removeEL :: Eq a => [[a]] -> [[a]]
@@ -158,7 +163,7 @@ abGetDep f ls = case ls of
 abCheckDep :: (a -> a -> Bool) -> [a] -> [a] -> Bool
 abCheckDep f as bs = genOr (\x -> genOr (f x) bs) as  
 
-checkDep ::  ([x] -> [x] -> Bool) -> [[x]] -> [[x]] -> [[x]] -> [[x]]
+checkDep :: ([x] -> [x] -> Bool) -> [[x]] -> [[x]] -> [[x]] -> [[x]]
 checkDep f ls ms cs = case ls of 
   a:as -> case ms of 
      b:bs -> 
@@ -272,6 +277,10 @@ showIsaHsN :: Show a => (String -> a) -> HsName.HsName -> a
 showIsaHsN f t = case t of  
        Qual _ y -> f y
        UnQual w -> f w
+
+instance IsaName PNT.PId where
+ showIsaName (PN x _) = showIsaS x
+ showIsaString (PN x _) = x
 
 instance IsaName HsName.HsName where
  showIsaName = showIsaHsN showIsaS
@@ -397,6 +406,35 @@ typeVarsRep f ls t = case t of
  IsaSign.TFree n s -> maybe t id $ f ls n s
  IsaSign.TVar i s -> t
 
+------------------ more extraction and replacement functions -------------------
+
+unifyTVars :: [IsaType] -> (IsaType,[IsaType])
+unifyTVars ls = case chkTHead ls of
+   False -> error "Hs2HOLCFaux,unifyTVars"
+   True -> uTV ls
+ where 
+   uTV ls = case ls of 
+    ((IsaSign.Type funS _ [i,_]):_) -> 
+           (i, [b | (IsaSign.Type funS _ [_,b]) <- ls])
+    _ -> error "Hs2HOLCFaux,uTV"
+
+chkTHead :: [IsaType] -> Bool
+chkTHead ls = case ls of 
+   (IsaSign.Type "=>" _ [x,l]):(IsaSign.Type "=>" s [y,m]):ns -> 
+      if typEq x y then 
+         chkTHead ((IsaSign.Type funS s [y,m]):ns) else False
+   [IsaSign.Type "=>" _ _] -> True
+   _ -> False 
+
+renTVars :: [Typ] -> [Typ]
+renTVars ls =  [renTVar b a | (a, b) <- listEnum ls]
+ where 
+  renTVar n t = 
+    case t of
+      TFree x s -> if (take 2 x == "vX") then t else
+                       TFree (x ++ "XX" ++ (show n)) s
+      IsaSign.Type a b cs -> IsaSign.Type a b (map (renTVar n) cs)
+      _ -> t
 
 ---------------------------- Instances -----------------------------------------
 
@@ -475,11 +513,6 @@ termMAbs c ts t =
    v:vs -> if isDicConst v then (termMAbs c vs t) else 
       IsaSign.Abs v (termType v) (termMAbs c vs t) c  
 
-isDicConst :: Term -> Bool
-isDicConst t = case t of 
-    Const vn _ | IsaSign.orig vn == "DIC"  -> True
-    _ -> False
-
 termMAppl :: Continuity -> Term -> [Term] -> Term
 termMAppl c t ts = 
   let prelTest vn = elem (IsaSign.orig vn) 
@@ -493,7 +526,7 @@ termMAppl c t ts =
          Const vn _ | isDicConst v || prelTest vn -> termMAppl c t vs
          _ -> termMAppl c (App t v c) vs 
 
--- connectives
+----------------------- connectives --------------------------------------------
 
 isaAnd :: Continuity -> Term -> Term -> Term
 isaAnd c t1 t2 = termMAppl c (case c of 
@@ -533,8 +566,313 @@ tupleSelect n t c = case n of
   _ -> tupleSelect (n - 1) 
      (termMAppl c (conDouble (case c of IsCont -> "csnd"; NotCont -> "snd")) [t]) c
 
+------------------------------------- term filters -----------------------------
+
+isDicConst :: Term -> Bool
+isDicConst t = case t of 
+    Const vn _ | IsaSign.orig vn == "DIC"  -> True
+    _ -> False
+
+constFilter :: Term -> [Term]
+constFilter t = case t of
+ IsaSign.Const _ _ -> [t]
+ IsaSign.Abs _ _ x _ -> constFilter x
+ IsaSign.App x y _ -> concat $ map constFilter [x,y]
+ IsaSign.If x y z c -> concat $ map constFilter [x,y,z] 
+ IsaSign.Case x ys -> concat $ map constFilter (x:(map snd ys))
+ IsaSign.Let xs y -> concat $ map constFilter (y:(map snd xs))
+ IsaSign.IsaEq x y -> concat $ map constFilter [x,y]
+ IsaSign.Tuplex xs _ -> concat $ map constFilter xs
+ IsaSign.Fix x -> constFilter x
+ IsaSign.Paren x -> constFilter x
+ _ -> [t]
+ 
+elPos :: Int -> [Term] -> Term -> Maybe Int
+elPos n ls x = case (listEnum ls) of 
+  [] -> Nothing
+  a:as -> if constEq x (fst a) then Just $ (snd a + (n - length ls)) 
+                                 else elPos n (map fst as) x
+
+-------------------- subterm extraction -------------------------------------
+
+extFBody :: Term -> (Term, [Term])
+extFBody t = extFB t []
+ where 
+  extFB t as = case t of
+     IsaSign.Abs x _ b _ -> extFB b (x:as) 
+     _ -> (t, reverse as)
+
+extTBody :: Term -> (Term, [Term])
+extTBody t = extTB t []
+ where 
+  extTB t as = case t of
+     IsaSign.App a x _ -> extTB a (x:as) 
+     _ -> (t,as)
+
+------------------- eliminating case expressions ---------------------------
+
+destCaseS :: Continuity -> IsaTerm -> IsaTerm -> [IsaTerm]
+destCaseS c d t = [holEq (App d x c) y | (x,y) <- destCase t id]
+
+destCase :: IsaTerm -> (VName -> VName) -> [(IsaPattern,IsaTerm)]
+destCase t f = let w = (extFBody t) in case w of 
+    (Case v ls, vv:vs) -> case v of   
+          Free n tt -> [(renVars (Free (f n) tt) [l] l, -- repl. l if l is a var.
+                  renVars (Free (f n) tt)  
+                         [l] (termMAbs NotCont vs m)) | (l,m) <- ls] 
+          _ -> [(l,termMAbs NotCont vs m) | (l,m) <- ls]
+    _ -> error "Hs2HOLCFaux, destCase"
+
+----------------------------- equivalence on terms ------------------------------
+
+constEq :: Term -> Term -> Bool
+constEq t1 t2 = case (t1,t2) of
+  (Const m x, Const n y) -> if n == m && typEq x y then True else False
+  _ -> False
+
+{- this functions was actually meant to compare only constructors - check out, there might be bugs -} 
+simTerms :: Term -> Term -> Bool
+simTerms t1 t2 = case (t1, t2) of
+ (IsaSign.Const x _,  IsaSign.Const y _) -> if x == y then True else False
+ (IsaSign.Free _ _, IsaSign.Free _ _) -> True
+ (IsaSign.Var _ _, IsaSign.Var _ _) -> True
+ (IsaSign.Bound _, IsaSign.Bound _) -> True
+ (IsaSign.Abs _ _ _ c, IsaSign.Abs _ _ _ d) -> if c == d then True else False
+ (If _ _ _ c, If _ _ _ d) -> if c == d then True else False
+ (Case _ _, Case _ _) -> True
+ (Let _ _, Let _ _) -> True
+ (IsaEq _ _, IsaEq _ _) -> True
+ (Fix _, Fix _) -> True
+ (Bottom, Bottom) -> True
+ (Tuplex _ _, Tuplex _ _) -> True
+ (Paren x, y) -> simTerms x y
+ (x, Paren y) -> simTerms x y
+ (Wildcard, Wildcard) -> True
+ _ -> False
 
 ------------------------ replacement functions -----------------------------------
+
+{- in term t, replaces variable f for variables in ls     -} 
+renVars ::  Term -> [Term] -> Term -> Term
+renVars f ls t = case t of
+ IsaSign.Free n t1 -> if (elem t ls) then f else t
+ IsaSign.Abs v y x c -> IsaSign.Abs v y (renVars f ls x) c
+ IsaSign.App x y c -> IsaSign.App (renVars f ls x) (renVars f ls y) c
+ IsaSign.If x y z c -> 
+     IsaSign.If (renVars f ls x) (renVars f ls y) (renVars f ls z) c 
+ IsaSign.Case x ys -> 
+     IsaSign.Case (renVars f ls x) [(a,renVars f ls b) | (a,b) <- ys]
+ IsaSign.Let xs y -> 
+     IsaSign.Let [(a,renVars f ls b) | (a,b) <- xs] (renVars f ls y)
+ IsaSign.IsaEq x y -> IsaSign.IsaEq (renVars f ls x) (renVars f ls y) 
+ IsaSign.Tuplex xs c -> IsaSign.Tuplex (map (renVars f ls) xs) c
+ IsaSign.Fix x -> IsaSign.Fix (renVars f ls x)
+ IsaSign.Paren x -> IsaSign.Paren (renVars f ls x) 
+ _ -> t  
+
+renFuns :: (Term -> Maybe Term) -> Term -> Term
+renFuns f t = case t of
+-- IsaSign.Const _ _ -> f t 
+ IsaSign.Abs v y x c -> IsaSign.Abs v y (renFuns f x) c
+-- IsaSign.App x y c -> IsaSign.App (renFuns f x) (renFuns f y) c
+ IsaSign.App x y c -> maybe (IsaSign.App (renFuns f x) (renFuns f y) c) id
+        $ f t
+ IsaSign.If x y z c -> 
+     IsaSign.If (renFuns f x) (renFuns f y) (renFuns f z) c 
+ IsaSign.Case x ys -> 
+     IsaSign.Case (renFuns f x) [(a,renFuns f b) | (a,b) <- ys]
+ IsaSign.Let xs y -> 
+     IsaSign.Let [(a,renFuns f b) | (a,b) <- xs] (renFuns f y)
+ IsaSign.IsaEq x y -> IsaSign.IsaEq (renFuns f x) (renFuns f y) 
+ IsaSign.Tuplex xs c -> IsaSign.Tuplex (map (renFuns f) xs) c
+ IsaSign.Fix x -> IsaSign.Fix (renFuns f x)
+ IsaSign.Paren x -> IsaSign.Paren (renFuns f x) 
+ _ -> t  
+
+
+---------------------- SENTENCES -----------------------------------------------
+--------------------- getting info from sentences ------------------------------
+
+newConstTab :: Continuity -> [Named IsaSign.Sentence] -> ConstTab
+newConstTab c ls = case c of 
+  IsCont -> Map.empty 
+  NotCont ->
+     Map.fromList [(mkVName $ extAxName x, extAxType x) | x <- ls]
+
+extAxName :: Named Sentence -> String
+extAxName s = senName s
+
+extAxType :: Named Sentence -> Typ
+extAxType s = case s of 
+  NamedSen _ True _ (ConstDef (IsaEq (Const _ t) _)) -> t
+  NamedSen _ True _ 
+    (RecDef _ (((App (App _ (App (Const _ t) _ _) _) _ _):_):_)) -> t
+  _ -> noType -- trace (show s ++ "\n") $ 
+        --  error "Hs2HOLCFaux, extAxType"
+
+extFunTerm :: Named Sentence -> Term
+extFunTerm s = case s of 
+  NamedSen _ _ _ (ConstDef (IsaEq t _)) -> fst $ extTBody t
+  _ -> error "Hs2HOLCFaux, extFunTerm"
+
+extLeftH :: Named Sentence -> Term
+extLeftH s = case s of 
+  NamedSen _ _ _ (ConstDef (IsaEq t _)) -> t
+  _ -> error "Hs2HOLCFaux, extLeftH"
+
+extRightH :: Named Sentence -> Term
+extRightH s = case s of 
+  NamedSen _ _ _ (ConstDef (IsaEq _ t)) -> t
+  _ -> error "Hs2HOLCFaux, extRightH"
+
+{- left comp is the def name, right comp are the constants in the def  -} 
+sentAna :: Named Sentence -> (Term, [Term])
+sentAna s = case s of
+  NamedSen _ True _ (ConstDef (IsaEq l r)) -> (l, constFilter r)
+
+------------------ checking for mutually recursive function defs ---------------
+
+getDepSent :: [[Named Sentence]] -> [[Named Sentence]]
+getDepSent ls = abGetDep sentDepOn ls   
+
+sentDepOn :: Named Sentence -> Named Sentence -> Bool
+sentDepOn x y = 
+  depOn (\x y -> simTerms x y && typEq (termType x) (termType y)) (fst . sentAna) (snd . sentAna) x y 
+
+------------------- adding fixpoints ---------------------------------------
+
+fixMRec :: Continuity -> [[Named Sentence]] -> [Named Sentence]
+fixMRec c ls = addFixPoints c $ getDepSent ls
+
+addFixPoints :: Continuity -> [[Named Sentence]] -> [Named Sentence]
+addFixPoints c xs = concat $ map (fixPoint c) xs
+
+fixPoint :: Continuity -> [Named Sentence] -> [Named Sentence]
+fixPoint c xs = case xs of
+  [a] -> if sentDepOn a a 
+         then case a of 
+           NamedSen l m n (ConstDef (IsaEq lh rh)) -> case c of
+             IsCont ->             
+                [NamedSen l m n $ RecDef "fixrec" [[holEq lh rh]]]
+             NotCont -> [NamedSen l m n $ RecDef "primrec"  
+                                               [destCaseS c lh rh]]   
+           _ -> error "Hs2HOLCFaux, fixPoint"
+         else xs
+  a:as -> case c of 
+    IsCont -> let
+         jn = joinNames (map extAxName xs) -- name is ininfluential here
+         ys = [[holEq (extLeftH x) $ extRightH x] | x <- xs]
+      in [NamedSen jn True False $ RecDef "fixrec" ys]
+    NotCont -> let 
+         jj = joinNames (map extAxName xs)
+         jn = mkVName jj
+         jt1 = unifyTVars (map extAxType xs) 
+         jt = mkFunType (fst jt1)
+                (typTuple NotCont (renTVars $ snd jt1))
+         jl = Const jn jt
+         n = length xs
+         rs = map extRightH xs
+         ls = map extFunTerm xs
+         yys = [destCase x (\n -> jn) | x <- rs]
+         yyys = reassemble yys
+         zs = [(p,Tuplex (map (renFuns (newFCons (Const jn noType) ls)) ts) 
+                                                                  NotCont) 
+                           | (p,ts) <- Map.toList yyys]
+         os = [mkNewDef x jj n m | (x,m) <- listEnum xs]
+         ps = (NamedSen jj True False $ makeRecDef jl zs):os
+      in ps
+  [] -> []
+
+makeRecDef :: Term -> [(Term,Term)] -> Sentence
+makeRecDef t ls = 
+ RecDef "primrec" [map (\x -> holEq (App t (fst x) NotCont) (snd x)) ls]
+
+mkNewDef :: Named Sentence -> String -> Int -> Int -> Named Sentence 
+mkNewDef s z x y = let a = NotCont in case s of 
+   NamedSen l m n (ConstDef (IsaEq lh rh)) -> case (lh, extFBody rh) of
+     (Const nn _,(_,w:ws)) -> 
+        NamedSen l m n (ConstDef (IsaEq lh $ -- (Const nn noType) $ 
+           termMAbs a (w:ws) $ termMAppl a (tupleSelector x y 
+                 (App (conDouble z) w a) a) ws))
+   _ -> error "Hs2HOLCFaux,mkNewDef"
+
+reassemble :: [[(Term,Term)]] -> Map.Map Term [Term] -- [(b, [c])]
+reassemble ls = foldl 
+ (\ms x -> 
+     Map.insert (fst x) ((Map.findWithDefault [] (fst x) ms) ++ [(snd x)]) ms) 
+   Map.empty (concat ls)
+  
+newFCons :: Term -> [Term] -> Term -> Maybe Term
+newFCons t ls k = case k of
+ App n w NotCont -> case (elPos (length ls) ls n) of
+   Nothing -> Nothing
+   Just i -> 
+      Just $ tupleSelector (length ls) i (IsaSign.App t w NotCont) NotCont
+ _ -> Nothing
+ 
+
+
+
+
+
+-------------------------- unused ----------------------------------------------
+
+litEq :: Term -> Term -> Bool
+litEq t1 t2 = case (t1,t2) of
+  (Free m x, Const n y) -> if n == m && typEq x y then True else False
+  _ -> False
+
+mkNewLH :: String -> Term
+mkNewLH n = let x = (Free (mkVName "x") intType)
+ in IsaSign.Abs x intType 
+     (App (conDouble n) (App (conDouble "nat") x NotCont) NotCont) NotCont
+
+nFCons :: Term -> [Term] -> Term -> Term
+nFCons f ls t = maybe t id $ newFCons f ls t
+
+extVars :: IsaPattern -> VName
+extVars p = case p of 
+    Free x _ -> x 
+    _ -> error "Haskell2IsabelleHOLCF.extVars"
+
+caseVars :: Term -> [Term]
+caseVars t = case t of
+  Case _ b -> concat $ map freeVars (map fst b)
+
+freeVars :: Term -> [Term]
+freeVars t = case t of 
+ IsaSign.Free n t1 -> [t]
+ IsaSign.Abs v y x c -> freeVars x
+ IsaSign.App x y c -> freeVars x ++ freeVars y
+ IsaSign.Tuplex xs c -> concat $ map freeVars xs
+ IsaSign.Paren x -> freeVars x 
+ _ -> []  
+
+uTVars :: IsaType -> IsaType
+uTVars tt = case tt of 
+ (IsaSign.Type funS _ [x,t]) -> let ks = (listEnum $ freeTVars x) 
+  in repTV ks t  
+ _ -> error "Hs2HOLCFaux,uTVars"
+ where 
+  repTV ls a = case ls of 
+    [] -> a
+    y:ys -> repTV ys 
+      (repTVar (fst y) 
+         (TFree ("vX" ++ (show $ snd y)) (typeSort (fst y))) a)
+
+freeTVars :: IsaType -> [IsaType]
+freeTVars t = 
+    case t of
+      TFree _ _ -> [t]
+      IsaSign.Type _ _ cs -> concat $ map freeTVars cs
+      _ -> []
+
+repTVar :: Typ -> Typ -> Typ -> Typ
+repTVar t1 t2 t = 
+    case t of
+      TFree _ _ -> if t == t1 then t2 else t
+      IsaSign.Type a b cs -> IsaSign.Type a b (map (repTVar t1 t2) cs)
+      _ -> t
 
 {- replaces constants with variables of same name and type -}
 {-
@@ -571,322 +909,4 @@ ntElem mx vn ty ls x tx = let r = [(t,n) | (y,(t,n)) <- remove_duplicates ls, x 
   _ -> error "Haskell2IsabelleHOLCF, tElem"
 
 -}
-
-
-------------------------------------- term filters -----------------------------
-
-extVars :: IsaPattern -> VName
-extVars p = case p of 
-    Free x _ -> x 
-    _ -> error "Haskell2IsabelleHOLCF.extVars"
-
-constFilter :: Term -> [Term]
-constFilter t = case t of
- IsaSign.Const _ _ -> [t]
- IsaSign.Abs _ _ x _ -> constFilter x
- IsaSign.App x y _ -> concat $ map constFilter [x,y]
- IsaSign.If x y z c -> concat $ map constFilter [x,y,z] 
- IsaSign.Case x ys -> concat $ map constFilter (x:(map snd ys))
- IsaSign.Let xs y -> concat $ map constFilter (y:(map snd xs))
- IsaSign.IsaEq x y -> concat $ map constFilter [x,y]
- IsaSign.Tuplex xs _ -> concat $ map constFilter xs
- IsaSign.Fix x -> constFilter x
- IsaSign.Paren x -> constFilter x
- _ -> [t]
- 
------------------------------ equivalence on terms ------------------------------
-
-constEq :: Term -> Term -> Bool
-constEq t1 t2 = case (t1,t2) of
-  (Const m x, Const n y) -> if n == m && typEq x y then True else False
-  _ -> False
-
-litEq :: Term -> Term -> Bool
-litEq t1 t2 = case (t1,t2) of
-  (Free m x, Const n y) -> if n == m && typEq x y then True else False
-  _ -> False
-
-{- this functions was actually meant to compare only constructors - check out, there might be bugs -} 
-simTerms :: Term -> Term -> Bool
-simTerms t1 t2 = case (t1, t2) of
- (IsaSign.Const x _,  IsaSign.Const y _) -> if x == y then True else False
- (IsaSign.Free _ _, IsaSign.Free _ _) -> True
- (IsaSign.Var _ _, IsaSign.Var _ _) -> True
- (IsaSign.Bound _, IsaSign.Bound _) -> True
- (IsaSign.Abs _ _ _ c, IsaSign.Abs _ _ _ d) -> if c == d then True else False
- (If _ _ _ c, If _ _ _ d) -> if c == d then True else False
- (Case _ _, Case _ _) -> True
- (Let _ _, Let _ _) -> True
- (IsaEq _ _, IsaEq _ _) -> True
- (Fix _, Fix _) -> True
- (Bottom, Bottom) -> True
- (Tuplex _ _, Tuplex _ _) -> True
- (Paren x, y) -> simTerms x y
- (x, Paren y) -> simTerms x y
- (Wildcard, Wildcard) -> True
- _ -> False
-
-
----------------------- SENTENCES -----------------------------------------------
---------------------- getting info from sentences ------------------------------
-
-newConstTab :: Continuity -> [Named IsaSign.Sentence] -> ConstTab
-newConstTab c ls = case c of 
-  IsCont -> Map.empty 
-  NotCont ->
-     Map.fromList [(mkVName $ extAxName x, extAxType x) | x <- ls]
-
-extAxName :: Named Sentence -> String
-extAxName s = senName s
-
-extAxType :: Named Sentence -> Typ
-extAxType s = case s of 
-  NamedSen _ True _ (ConstDef (IsaEq (Const _ t) _)) -> t
-  NamedSen _ True _ 
-    (RecDef _ (((App (App _ (App (Const _ t) _ _) _) _ _):_):_)) -> t
-  _ -> noType -- trace (show s ++ "\n") $ 
-        --  error "Hs2HOLCFaux, extAxType"
-
-extTBody :: Term -> (Term, [Term])
-extTBody t = extTB t []
- where 
-  extTB t as = case t of
-     IsaSign.App a x _ -> extTB a (x:as) 
-     _ -> (t,as)
-
-extFunTerm :: Named Sentence -> Term
-extFunTerm s = case s of 
-  NamedSen _ _ _ (ConstDef (IsaEq t _)) -> fst $ extTBody t
-  _ -> error "Hs2HOLCFaux, extFunTerm"
-
-extLeftH :: Named Sentence -> Term
-extLeftH s = case s of 
-  NamedSen _ _ _ (ConstDef (IsaEq t _)) -> t
-  _ -> error "Hs2HOLCFaux, extLeftH"
-
-extRightH :: Named Sentence -> Term
-extRightH s = case s of 
-  NamedSen _ _ _ (ConstDef (IsaEq _ t)) -> t
-  _ -> error "Hs2HOLCFaux, extRightH"
-
-{- left comp is the def name, right comp are the constants in the def  -} 
-sentAna :: Named Sentence -> (Term, [Term])
-sentAna s = case s of
-  NamedSen _ True _ (ConstDef (IsaEq l r)) -> (l, constFilter r)
-
------------------- checking for mutually recursive function defs ---------------
-
-getDepSent :: [[Named Sentence]] -> [[Named Sentence]]
-getDepSent ls = abGetDep sentDepOn ls   
-
-sentDepOn :: Named Sentence -> Named Sentence -> Bool
-sentDepOn x y = 
-  depOn (\x y -> simTerms x y && typEq (termType x) (termType y)) (fst . sentAna) (snd . sentAna) x y 
-
-
-------------------- adding fixpoints ---------------------------------------
-
-fixMRec :: Continuity -> [[Named Sentence]] -> [Named Sentence]
-fixMRec c ls = addFixPoints c $ getDepSent ls
-
-addFixPoints :: Continuity -> [[Named Sentence]] -> [Named Sentence]
-addFixPoints c xs = concat $ map (fixPoint c) xs
-
-destCase :: IsaTerm -> (VName -> VName) -> [(IsaPattern,IsaTerm)]
-destCase t f = let w = (extFBody t) in case w of 
-    (Case v ls, vv:vs) -> case v of   
-          Free n tt -> [(renVars (Free (f n) tt) [l] l, -- repl. l if l is a var.
-                  renVars (Free (f n) tt)  
-                         [l] (termMAbs NotCont vs m)) | (l,m) <- ls] 
-          _ -> [(l,termMAbs NotCont vs m) | (l,m) <- ls]
-    _ -> error "Hs2HOLCFaux, destCase"
-
-extFBody :: Term -> (Term, [Term])
-extFBody t = extFB t []
- where 
-  extFB t as = case t of
-     IsaSign.Abs x _ b _ -> extFB b (x:as) 
-     _ -> (t, reverse as)
-
-destCaseS :: Continuity -> IsaTerm -> IsaTerm -> [IsaTerm]
-destCaseS c d t = [holEq (App d x c) y | (x,y) <- destCase t id]
-
-makeRecDef :: Term -> [(Term,Term)] -> Sentence
-makeRecDef t ls = 
- RecDef "primrec" [map (\x -> holEq (App t (fst x) NotCont) (snd x)) ls]
-
-mkNewLH :: String -> Term
-mkNewLH n = let x = (Free (mkVName "x") intType)
- in IsaSign.Abs x intType 
-     (App (conDouble n) (App (conDouble "nat") x NotCont) NotCont) NotCont
-
-mkNewDef :: Named Sentence -> String -> Int -> Int -> Named Sentence 
-mkNewDef s z x y = let a = NotCont in case s of 
-   NamedSen l m n (ConstDef (IsaEq lh rh)) -> case (lh, extFBody rh) of
-     (Const nn _,(_,w:ws)) -> 
-        NamedSen l m n (ConstDef (IsaEq lh $ -- (Const nn noType) $ 
-           termMAbs a (w:ws) $ termMAppl a (tupleSelector x y 
-                 (App (conDouble z) w a) a) ws))
-   _ -> error "Hs2HOLCFaux,mkNewDef"
-
-fixPoint :: Continuity -> [Named Sentence] -> [Named Sentence]
-fixPoint c xs = case xs of
-  [a] -> if sentDepOn a a 
-         then case a of 
-           NamedSen l m n (ConstDef (IsaEq lh rh)) -> case c of
-             IsCont ->             
-                [NamedSen l m n $ RecDef "fixrec" [[holEq lh rh]]]
-             NotCont -> [NamedSen l m n $ RecDef "primrec"  
-                                               [destCaseS c lh rh]]   
-           _ -> error "Hs2HOLCFaux, fixPoint"
-         else xs
-  a:as -> case c of 
-    IsCont -> let
-         jn = joinNames (map extAxName xs) -- name is ininfluential here
-         ys = [[holEq (extLeftH x) $ extRightH x] | x <- xs]
-      in [NamedSen jn True False $ RecDef "fixrec" ys]
-    NotCont -> let 
-         jj = joinNames (map extAxName xs)
-         jn = mkVName jj
-         jt1 = unifyTVars (map extAxType xs) 
-         jt = mkFunType (fst jt1)
-                (typTuple NotCont (renTVars $ snd jt1))
-         jl = Const jn jt
-         n = length xs
-         rs = map extRightH xs
-         ls = map extFunTerm xs
-         yys = [destCase x (\n -> jn) | x <- rs]
-         yyys = reassemble yys
-         zs = [(p,Tuplex (map (renFuns (nFCons (Const jn noType) ls)) ts) 
-                                                                  NotCont) 
-                           | (p,ts) <- Map.toList yyys]
-         os = [mkNewDef x jj n m | (x,m) <- listEnum xs]
-         ps = (NamedSen jj True False $ makeRecDef jl zs):os
-      in ps
-  [] -> []
-
-caseVars :: Term -> [Term]
-caseVars t = case t of
-  Case _ b -> concat $ map freeVars (map fst b)
-
-freeVars :: Term -> [Term]
-freeVars t = case t of 
- IsaSign.Free n t1 -> [t]
- IsaSign.Abs v y x c -> freeVars x
- IsaSign.App x y c -> freeVars x ++ freeVars y
- IsaSign.Tuplex xs c -> concat $ map freeVars xs
- IsaSign.Paren x -> freeVars x 
- _ -> []  
-
-unifyTVars :: [IsaType] -> (IsaType,[IsaType])
-unifyTVars ls = case chkTHead ls of
-   False -> error "Hs2HOLCFaux,unifyTVars"
-   True -> uTV ls
- where 
-   uTV ls = case ls of 
-    ((IsaSign.Type funS _ [i,_]):_) -> 
-           (i, [b | (IsaSign.Type funS _ [_,b]) <- ls])
-    _ -> error "Hs2HOLCFaux,uTV"
-
-chkTHead :: [IsaType] -> Bool
-chkTHead ls = case ls of 
-   (IsaSign.Type "=>" _ [x,l]):(IsaSign.Type "=>" s [y,m]):ns -> 
-      if typEq x y then 
-         chkTHead ((IsaSign.Type funS s [y,m]):ns) else False
-   [IsaSign.Type "=>" _ _] -> True
-   _ -> False 
-
-uTVars :: IsaType -> IsaType
-uTVars tt = case tt of 
- (IsaSign.Type funS _ [x,t]) -> let ks = (listEnum $ freeTVars x) 
-  in repTV ks t  
- _ -> error "Hs2HOLCFaux,uTVars"
- where 
-  repTV ls a = case ls of 
-    [] -> a
-    y:ys -> repTV ys 
-      (repTVar (fst y) 
-         (TFree ("vX" ++ (show $ snd y)) (typeSort (fst y))) a)
   
-freeTVars :: IsaType -> [IsaType]
-freeTVars t = 
-    case t of
-      TFree _ _ -> [t]
-      IsaSign.Type _ _ cs -> concat $ map freeTVars cs
-      _ -> []
-
-repTVar :: Typ -> Typ -> Typ -> Typ
-repTVar t1 t2 t = 
-    case t of
-      TFree _ _ -> if t == t1 then t2 else t
-      IsaSign.Type a b cs -> IsaSign.Type a b (map (repTVar t1 t2) cs)
-      _ -> t
-
-renTVars :: [Typ] -> [Typ]
-renTVars ls =  [renTVar b a | (a, b) <- listEnum ls]
- where 
-  renTVar n t = 
-    case t of
-      TFree x s -> if (take 2 x == "vX") then t else
-                       TFree (x ++ "XX" ++ (show n)) s
-      IsaSign.Type a b cs -> IsaSign.Type a b (map (renTVar n) cs)
-      _ -> t
-
-reassemble :: [[(Term,Term)]] -> Map.Map Term [Term] -- [(b, [c])]
-reassemble ls = foldl 
- (\ms x -> 
-     Map.insert (fst x) ((Map.findWithDefault [] (fst x) ms) ++ [(snd x)]) ms) 
-   Map.empty (concat ls)
-  
-{- in term t, replaces variable f for variables in ls     -} 
-renVars ::  Term -> [Term] -> Term -> Term
-renVars f ls t = case t of
- IsaSign.Free n t1 -> if (elem t ls) then f else t
- IsaSign.Abs v y x c -> IsaSign.Abs v y (renVars f ls x) c
- IsaSign.App x y c -> IsaSign.App (renVars f ls x) (renVars f ls y) c
- IsaSign.If x y z c -> 
-     IsaSign.If (renVars f ls x) (renVars f ls y) (renVars f ls z) c 
- IsaSign.Case x ys -> 
-     IsaSign.Case (renVars f ls x) [(a,renVars f ls b) | (a,b) <- ys]
- IsaSign.Let xs y -> 
-     IsaSign.Let [(a,renVars f ls b) | (a,b) <- xs] (renVars f ls y)
- IsaSign.IsaEq x y -> IsaSign.IsaEq (renVars f ls x) (renVars f ls y) 
- IsaSign.Tuplex xs c -> IsaSign.Tuplex (map (renVars f ls) xs) c
- IsaSign.Fix x -> IsaSign.Fix (renVars f ls x)
- IsaSign.Paren x -> IsaSign.Paren (renVars f ls x) 
- _ -> t  
-
-nFCons :: Term -> [Term] -> Term -> Term
-nFCons f ls t = maybe t id $ newFCons f ls t
-
-renFuns :: (Term -> Term) -> Term -> Term
-renFuns f t = case t of
- IsaSign.Const _ _ -> f t 
- IsaSign.Abs v y x c -> IsaSign.Abs v y (renFuns f x) c
- IsaSign.App x y c -> IsaSign.App (renFuns f x) (renFuns f y) c
- IsaSign.If x y z c -> 
-     IsaSign.If (renFuns f x) (renFuns f y) (renFuns f z) c 
- IsaSign.Case x ys -> 
-     IsaSign.Case (renFuns f x) [(a,renFuns f b) | (a,b) <- ys]
- IsaSign.Let xs y -> 
-     IsaSign.Let [(a,renFuns f b) | (a,b) <- xs] (renFuns f y)
- IsaSign.IsaEq x y -> IsaSign.IsaEq (renFuns f x) (renFuns f y) 
- IsaSign.Tuplex xs c -> IsaSign.Tuplex (map (renFuns f) xs) c
- IsaSign.Fix x -> IsaSign.Fix (renFuns f x)
- IsaSign.Paren x -> IsaSign.Paren (renFuns f x) 
- _ -> t  
-
-elPos :: Int -> [Term] -> Term -> Maybe Int
-elPos n ls x = case (listEnum ls) of 
-  [] -> Nothing
-  a:as -> if constEq x (fst a) then Just $ (snd a + (n - length ls)) 
-                                 else elPos n (map fst as) x
-
-newFCons :: Term -> [Term] -> Term -> Maybe Term
-newFCons t ls n = case (elPos (length ls) ls n) of
-  Nothing -> Nothing
-  Just i -> let w = (Free (mkVName $ "x") noType) 
-   in Just $ IsaSign.Abs w noType 
-          (tupleSelector (length ls) i (IsaSign.App t w NotCont) NotCont) 
-                                              NotCont
-
