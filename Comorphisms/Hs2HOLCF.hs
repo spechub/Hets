@@ -417,20 +417,75 @@ transMExp a cs t = case t of
           z <- transMExp a cs k
           return $ Let w z
        HsCase e as -> do e1 <- transMExp a cs e
-                         bs <- mapM (transCases a cs) as 
-                         return $ Case e1 bs
+                         bs <- transCases a cs as -- mapM (transCasePt a cs) as 
+                         return -- $ traceL [show e, show e1, showL as, showL bs] 
+                                   $ Case e1 bs
        _ -> transE a (mkVName . showIsaName) (transMExp a cs) (transMPat a cs) e
     TiPropDecorate.TiSpec w s _ -> case w of 
        HsVar x -> transHV a s x
        HsCon x -> transCN a s x
     TiPropDecorate.TiTyped x _ -> transMExp a cs x
     _                      -> Nothing 
-  where 
-    transCases r cs k = case k of 
-       HsAlt _ p (HsBody e) _ -> do b <- transMExp r cs e
-                                    a <- transMPat r cs p
-                                    return $ (a,b)
+
+transCases :: Continuity -> ConstTab -> -- [PNT.PName] -> 
+     [HsGuardsStruct.HsAlt (TiPropDecorate.TiExp PNT) (TiPat PNT) 
+                                       (TiPropDecorate.TiDecls PNT)] ->
+              Maybe [(IsaTerm,IsaTerm)]
+transCases r cs ks = case ks of 
+ [] -> return []
+ x:xs -> let 
+     cnn = fst $ extCI $ fst (extPE x)
+     fs = [extPE f | f <- ks]
+     ys = [(snd $ extCI $ fst f, f) | f <- fs]
+  in -- mapM $ transCasePt $ 
+       mapM (\h -> trCase r cs h ys) cnn 
+ where
+  extPE k = case k of
+       HsAlt _ p (HsBody e) _ -> (p,e)
        _ -> error "HsHOLCF, transCases"
+  extCI k = case k of
+       TiPSpec (HsCon (PNT z (ConstrOf _ x) _)) _ _ -> 
+           ([(showIsaName $ conName w, conArity w) | w <- constructors x],
+               showIsaName z) 
+       TiPApp m _ -> extCI m
+       TiDecorate.Pat HsPWildCard -> ([],"_")
+       _ -> error "H2HOLCF, extCI" 
+--  trCases r cs cnn ks = undefined
+
+trCase :: Continuity -> ConstTab -> (String,Int) -> 
+       [(String,(TiPat PNT, TiPropDecorate.TiExp PNT))] 
+                                 -> Maybe (IsaTerm,IsaTerm)
+trCase r cs h ys = case ys of 
+    [] -> case r of 
+      IsCont -> return (buildPat r h, IsaSign.Bottom)
+      NotCont -> error "Hs2HOLCF, trCase: missing pattern"
+    a:as -> if (fst a) == (fst h) 
+       then (transCasePt r cs (snd a) (snd h))
+       else if (fst a) == "_" 
+       then buildWPt r cs h $ snd (snd a) 
+       else trCase r cs h as 
+ where
+  transCasePt r cs k n = -- case k of HsAlt _ p (HsBody e) _ 
+        do b <- transMExp r cs (snd k)
+           a <- transMPat r cs (fst k) 
+           return $ repVsCPt r cs a b n
+  repVsCPt r cs a b n = case a of
+      IsaSign.Const _ _ -> (a,b)
+      IsaSign.App x y z -> case y of 
+        IsaSign.Free _ _ -> let 
+             nv = (Free (mkVName $ "pX" ++ (show n)) noType)
+             nr = renVars nv [y] b 
+             st = repVsCPt r cs x nr (n-1) 
+             nf = App (fst st) nv z
+             ns = renVars nv [y] $ snd st 
+           in (nf, ns)
+      _ -> error "Hs2HOLCF, repVsCPt"  
+  buildWPt r cs k sk = do 
+        sh <- transMExp r cs sk
+        return (buildPat r k, sh) 
+  buildPat r (x,n) = termMAppl r (Const (mkVName $ showIsaName x) noType) $ mkVs n
+  mkVs n = if 0 < n 
+     then (Free (mkVName $ "pX" ++ (show n)) noType):(mkVs (n-1)) else []
 
 transPatBind :: Continuity -> ConstTab -> PrDecl -> Maybe (IsaTerm,IsaTerm)
 transPatBind a cs s = case s of
@@ -548,6 +603,10 @@ transHV a s x = let
               else mkConst "lTl" 
    ":"    -> if tag == False then mkVConst consV
               else mkConst "lCons" 
+   "fst"    -> if tag == False then mkConst "fst"
+              else mkConst "cfst" 
+   "snd"    -> if tag == False then mkConst "snd"
+              else mkConst "csnd" 
    _ -> case x of
         PNT (PN _ (UniqueNames.G _ _ _)) _ _ -> mkConst n
         PNT (PN _ (UniqueNames.S _)) _ _ -> mkFree n
