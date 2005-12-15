@@ -174,7 +174,7 @@ transSignature c sign =
   Result [] $ Just $ IsaSign.emptySign 
   { baseSig = case c of 
                    IsCont -> HsHOLCF_thy
-                   NotCont -> Main_thy,
+                   NotCont -> HsHOL_thy,
     tsig = emptyTypeSig 
            { 
              classrel = getClassrel (HatAna.types sign),
