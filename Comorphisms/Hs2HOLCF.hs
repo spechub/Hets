@@ -418,7 +418,7 @@ transMExp a cs t = case t of
           return $ Let w z
        HsCase e as -> do e1 <- transMExp a cs e
                          bs <- transCases a cs as -- mapM (transCasePt a cs) as 
-                         return -- $ traceL [show e, show e1, showL as, showL bs] 
+                         return -- traceL [show e, show e1, showL as, showL bs] 
                                    $ Case e1 bs
        _ -> transE a (mkVName . showIsaName) (transMExp a cs) (transMPat a cs) e
     TiPropDecorate.TiSpec w s _ -> case w of 
