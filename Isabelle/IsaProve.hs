@@ -27,12 +27,17 @@ import Logic.Prover
 import Isabelle.IsaSign
 import Isabelle.IsaConsts
 import Isabelle.IsaPrint
+import Isabelle.IsaParse
 import Isabelle.Translate
 
 import Common.AS_Annotation
 import Common.DefaultMorphism
 import Common.ProofUtils
+import Common.Result
+import Common.PrettyPrint
 import qualified Common.Lib.Map as Map
+
+import Text.ParserCombinators.Parsec
 
 import Driver.Options
 
@@ -112,6 +117,21 @@ getAllProofDeps :: Map.Map String String -> String -> [String]
                 -> IO([Proof_status ()])
 getAllProofDeps m thName = mapM $ getProofDeps m thName
 
+checkFinalThyFile :: String -> String -> IO Bool
+checkFinalThyFile thyFile thy = do 
+  s <- readFile thyFile 
+  case parse parseTheory thyFile s of 
+    Right (hb, b) -> case parse parseTheory "" thy of 
+        Right (ho, o) -> do 
+            let ds = compatibleBodies o b
+            mapM_ (\ d -> putStrLn $ showPretty d "") ds
+            if hb /= ho then do 
+                  putStrLn "illegal change of theory header"
+                  return False 
+              else return $ null ds
+        Left _ -> error "checkFinalThyFile"
+    Left err -> putStrLn (show err) >> return False
+
 mkProved :: String -> [String] -> Proof_status ()
 mkProved thm used = Proved
     { goalName = thm
@@ -147,7 +167,25 @@ patchThyFile origFile thyFile thy = do
   writeFile origFile thy
   writeFile thyFile thy
   callSystem patchCall
-  return()
+  s <- readFile thyFile 
+  case parse parseTheory thyFile s of 
+    Right (hb, b) -> case parse parseTheory origFile thy of 
+        Right (ho, o) -> do
+            let ds = compatibleBodies o b
+                h = hb == ho
+            mapM_ (\ d -> putStrLn $ showPretty d { diagKind = Warning } "") ds
+            unless h $ putStrLn "theory header is corrupt"
+            unless (h && null ds) $ revertThyFile thyFile thy
+        Left err -> error $ "Isabelle parseTheory: " ++ show err
+    Left err -> do 
+      putStrLn $ show err
+      revertThyFile thyFile thy
+
+revertThyFile :: String -> String -> IO ()
+revertThyFile thyFile thy = do 
+    putStrLn $ "replacing corrupt file " ++ show thyFile
+    removeFile thyFile
+    writeFile thyFile thy
 
 callSystem :: String -> IO ExitCode
 callSystem s = putStrLn s >> system s
@@ -164,7 +202,9 @@ isaProve thName th = do
   removeDepFiles thName thms
   isabelle <- getEnv "HETS_ISABELLE"
   callSystem $ isabelle ++ " " ++ thyFile
-  getAllProofDeps m thName thms
+  ok <- checkFinalThyFile thyFile thy
+  if ok then getAllProofDeps m thName thms
+     else return []
 
 markSimp :: Named Sentence -> Named Sentence
 markSimp = mapNamed markSimpSen

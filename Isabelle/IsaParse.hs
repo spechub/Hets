@@ -10,18 +10,24 @@ Portability :  portable
 parse the outer syntax of an Isabelle theory file
 -}
 
-module Main where
+module Isabelle.IsaParse 
+    (parseTheory
+    , Body
+    , TheoryHead(..)
+    , compatibleBodies) where
 
-import System.Environment
 import Data.List
 import Common.Lexer
 import Text.ParserCombinators.Parsec
+import qualified Common.Lib.Map as Map
+import Common.Id
+import Common.Result
 
 latin :: CharParser st String
 latin = single letter <?> "latin"
 
 greek :: CharParser st String
-greek = string "\\<" <++> 
+greek = string "\\<" <++>
          option "" (string "^") -- isup or isup
          <++> many1 letter <++> string ">" <?> "greek"
 
@@ -64,7 +70,7 @@ name = ident <|> symident <|> isaString <|> nat
 nameref :: CharParser st String -- sort
 nameref = longident <|> symident <|> isaString <|> nat
 
-text :: CharParser st String 
+text :: CharParser st String
 text = nameref <|> verbatim
 
 typefree :: CharParser st String
@@ -105,7 +111,7 @@ endS = "end"
 headerS :: String
 headerS = "header"
 
-headerP :: CharParser st String 
+headerP :: CharParser st String
 headerP = lexS headerS >> lexP text
 
 theoryS :: String
@@ -175,16 +181,18 @@ constsS :: String
 constsS = "consts"
 
 domainS :: String
-domainS = "domain" 
+domainS = "domain"
 
 datatypeS :: String
 datatypeS = "datatype"
 
-fixrecS :: String
-fixrecS = "fixrec"
+otherKeys :: [String]
+otherKeys = 
+    [ datatypeS, domainS, oopsS, refuteS
+    , "sorry", "done", "fixrec", "primrec", "by", "proofs", "apply"]
 
 isaKeywords :: [String]
-isaKeywords = markups ++
+isaKeywords = markups ++ otherKeys ++ 
     [ importsS
     , usesS
     , beginS
@@ -203,50 +211,49 @@ isaKeywords = markups ++
     , constsS
     , domainS
     , datatypeS
-    , fixrecS
     , andS
-    , endS] 
+    , endS]
 
-nameP :: CharParser st String 
-nameP = reserved isaKeywords $ lexP name 
+nameP :: CharParser st String
+nameP = reserved isaKeywords $ lexP name
 
-namerefP :: CharParser st String 
-namerefP = reserved isaKeywords $ lexP nameref 
+namerefP :: CharParser st String
+namerefP = reserved isaKeywords $ lexP nameref
 
-parname :: CharParser st String 
+parname :: CharParser st String
 parname = lexS "(" <++> lexP name <++> lexS ")"
 
-data TheoryHead = TheoryHead 
-   { header :: Maybe String 
-   , theoryname :: String
+data TheoryHead = TheoryHead
+   { theoryname :: String
    , imports :: [String]
    , uses :: [String]
    , context :: Maybe String
-   }
+   } deriving Eq
 
 theoryHead :: CharParser st TheoryHead
 theoryHead = do
-    oh <- option Nothing $ fmap Just headerP 
+    option () isaSkip
+    option Nothing $ fmap Just headerP
     lexS theoryS
-    th <- nameP 
+    th <- nameP
     is <- option [] (lexS importsS >> many nameP)
-    us <- option [] (lexS usesS >> many (nameP <|> parname))   
+    us <- option [] (lexS usesS >> many (nameP <|> parname))
     lexS beginS
     oc <- option Nothing $ fmap Just nameP
-    return $ TheoryHead oh th is us oc
+    return $ TheoryHead th is us oc
 
 commalist :: CharParser st a -> CharParser st [a]
 commalist p = fmap fst $ lexP p `separatedBy` lexS ","
 
 parensP :: CharParser st a -> CharParser st a
-parensP p = do 
+parensP p = do
     lexS "("
     a <- p
     lexS ")"
     return a
 
 bracketsP :: CharParser st a -> CharParser st a
-bracketsP p = do 
+bracketsP p = do
     lexS "["
     a <- p
     lexS "]"
@@ -257,29 +264,30 @@ locale = parensP $ lexS "in" >> nameP
 
 markupP :: CharParser st String
 markupP = choice (map lexS markups) <++> option "" locale <++> lexP text
-         
 
 infixP :: CharParser st ()
 infixP = forget $ choice (map lexS ["infix", "infixl", "infixr"])
          >> option "" (lexP isaString) >> lexP nat
 
 mixfixSuffix :: CharParser st ()
-mixfixSuffix = forget $ lexP isaString 
+mixfixSuffix = forget $ lexP isaString
     >> option [] (bracketsP $ commalist nat) >> option "" (lexP nat) -- prios
 
 mixfix :: CharParser st ()
-mixfix = lexS "(" >> 
-    (infixP <|> mixfixSuffix <|> (lexS "binder" >> mixfixSuffix) 
+mixfix = lexS "(" >>
+    (infixP <|> mixfixSuffix <|> (lexS "binder" >> mixfixSuffix)
      <|> (forget $ lexS "structure")) << lexS ")"
 
 atom :: CharParser st String
 atom = var <|> typeP -- nameref covers nat and symident keywords
 
 args :: CharParser st [String]
-args = many $ lexP atom   
+args = many $ lexP atom
 
+{- 
 arg :: CharParser st [String]
 arg = fmap (:[]) (lexP atom) <|> parensP args <|> bracketsP args
+-}
 
 attributes :: CharParser st ()
 attributes = forget (bracketsP $ commalist $ lexP nameref >> args)
@@ -288,7 +296,7 @@ lessOrEq :: CharParser st String
 lessOrEq = lexS "<" <|> lexS "\\<subseteq>"
 
 classdecl :: CharParser st [String]
-classdecl = do 
+classdecl = do
     n <- nameP
     lessOrEq
     ns <- commalist nameref
@@ -318,25 +326,34 @@ arity = fmap (:[]) namerefP <|> do
     n <- namerefP
     return $ n : ns
 
+{-
 arities :: CharParser st [[String]]
 arities = lexS "arities" >> many1 (namerefP <:> (lexS "::" >> arity))
+-}
 
-consts :: CharParser st [String]
-consts = lexS constsS >> many1 (nameP << (lexS "::" >> lexP typeP 
-                                          >> option () mixfix))
+data Const = Const String String
+
+consts :: CharParser st [Const]
+consts = lexS constsS >> many1 (bind Const nameP (lexS "::" >> lexP typeP
+                                          << option () mixfix))
 
 axmdecl :: CharParser st String
-axmdecl = (nameP << option () attributes) << lexS ":" 
+axmdecl = (nameP << option () attributes) << lexS ":"
 
-prop :: CharParser st String 
+prop :: CharParser st String
 prop = reserved isaKeywords $ lexP term
 
-defs :: CharParser st [String]
-defs = lexS defsS >> option "" (parensP $ lexS "overloaded") >>
-       many1 (axmdecl << prop)
+data Axiom = Axiom String String
 
-axioms :: CharParser st [String]
-axioms = lexS axiomsS >> many1 (axmdecl << prop)
+axiomsP :: CharParser st [Axiom]
+axiomsP = many1 (bind Axiom axmdecl prop)
+
+defs :: CharParser st [Axiom]
+defs = lexS defsS >> option "" (parensP $ lexS "overloaded") >>
+       axiomsP
+
+axioms :: CharParser st [Axiom]
+axioms = lexS axiomsS >> axiomsP
 
 thmbind :: CharParser st String
 thmbind = (nameP << option () attributes) <|> (attributes >> return "")
@@ -345,37 +362,39 @@ selection :: CharParser st ()
 selection = forget . parensP . commalist $
   lexP nat >> option "" (lexS "-" >> option "" (lexP nat))
 
-thmref :: CharParser st String 
+thmref :: CharParser st String
 thmref = namerefP << (option () selection >> option () attributes)
 
-thmrefs :: CharParser st [String] 
+thmrefs :: CharParser st [String]
 thmrefs = many1 thmref
 
-thmdef :: CharParser st String 
+thmdef :: CharParser st String
 thmdef = try $ thmbind << lexS "="
 
-thmdecl :: CharParser st String 
+thmdecl :: CharParser st String
 thmdecl = try $ thmbind << lexS ":"
 
 theorems :: CharParser st ()
-theorems = forget $ (lexS theoremsS <|> lexS lemmasS) >> option "" locale 
-    >> separatedBy (option "" thmdef >> thmrefs) (lexS andS)  
+theorems = forget $ (lexS theoremsS <|> lexS lemmasS) >> option "" locale
+    >> separatedBy (option "" thmdef >> thmrefs) (lexS andS)
 
 proppat :: CharParser st ()
 proppat = forget . parensP . many1 $ lexP term
 
-props :: CharParser st String 
-props = option "" thmdecl << many1 (prop >> option () proppat)
+data Goal = Goal String [String]
 
-goal :: CharParser st [String]
+props :: CharParser st Goal
+props = bind Goal (option "" thmdecl) $ many1 (prop << option () proppat)
+
+goal :: CharParser st [Goal]
 goal = fmap fst $ separatedBy props (lexS andS)
-     
-lemma :: CharParser st [String]
+
+lemma :: CharParser st [Goal]
 lemma = choice (map lexS [lemmaS, theoremS, corollaryS])
     >> option "" locale >> goal -- longgoal ignored
 
 instanceP :: CharParser st String
-instanceP = 
+instanceP =
     lexS instanceS >> namerefP << (lexS "::" << arity <|> lessOrEq << namerefP)
 
 axclass :: CharParser st [String]
@@ -392,34 +411,76 @@ anyP = lexP $ atom <|> many1 (char '.')
 unknown :: CharParser st ()
 unknown = skipMany1 $ forget (reserved (delete andS isaKeywords) anyP)
           <|> forget (parensP rec) <|> forget (bracketsP rec)
-          where rec = commalist $ unknown <|> forget anyP 
+          where rec = commalist $ unknown <|> forget anyP
 
-theoryBody :: CharParser st ()
-theoryBody = skipMany $
-    forget typedecl
-    <|> forget types
-    <|> forget consts
-    <|> forget defs
-    <|> forget classes
-    <|> forget markupP
-    <|> forget theorems
-    <|> forget axioms
-    <|> forget instanceP
-    <|> forget lemma
-    <|> forget axclass
-    <|> forget mltext 
-    <|> (choice (map lexS [datatypeS, domainS, fixrecS]) >> skipMany unknown)
-    <|> unknown
+data BodyElem = Axioms [Axiom]
+              | Goals [Goal]
+              | Consts [Const]
+              | Ignored
 
-parseTheory :: CharParser st ()
-parseTheory = theoryHead >> theoryBody << lexS endS
+ignore :: Functor f => f a -> f BodyElem
+ignore = fmap $ const Ignored 
 
-main :: IO ()
-main = getArgs >>= mapM_ process
+theoryBody :: CharParser st [BodyElem]
+theoryBody = many $
+    ignore typedecl
+    <|> ignore types
+    <|> fmap Consts consts
+    <|> fmap Axioms defs
+    <|> ignore classes
+    <|> ignore markupP
+    <|> ignore theorems
+    <|> fmap Axioms axioms
+    <|> ignore instanceP
+    <|> fmap Goals lemma
+    <|> ignore axclass
+    <|> ignore mltext
+    <|> ignore (choice (map lexS otherKeys) >> skipMany unknown)
+    <|> ignore unknown
 
-process :: String -> IO ()
-process f = do
-  s <- readFile f
-  putStrLn $ case parse (parseTheory << eof) f s of
-             Right _ -> "succeeded"
-             Left err -> show err
+data Body = Body
+    { axiomsF :: Map.Map String String
+    , goalsF :: Map.Map String [String]
+    , constsF :: Map.Map String String
+    } deriving Show
+
+addAxiom :: Axiom -> Map.Map String String -> Map.Map String String
+addAxiom (Axiom n a) m = Map.insert n a m
+
+addGoal :: Goal -> Map.Map String [String] -> Map.Map String [String]
+addGoal (Goal n a) m = Map.insert n a m
+
+addConst :: Const -> Map.Map String String -> Map.Map String String
+addConst (Const n a) m = Map.insert n a m
+
+emptyBody :: Body
+emptyBody = Body 
+    { axiomsF = Map.empty
+    , goalsF = Map.empty
+    , constsF = Map.empty
+    }
+
+concatBodyElems :: BodyElem -> Body -> Body
+concatBodyElems x b = case x of
+    Axioms l -> b { axiomsF = foldr addAxiom (axiomsF b) l }
+    Goals l -> b { goalsF = foldr addGoal (goalsF b) l }
+    Consts l -> b { constsF = foldr addConst (constsF b) l }
+    Ignored -> b
+
+parseTheory :: CharParser st (TheoryHead, Body)
+parseTheory = bind (,) 
+    theoryHead (fmap (foldr concatBodyElems emptyBody) theoryBody) 
+    << lexS endS << eof
+
+compatibleBodies :: Body -> Body -> [Diagnosis]
+compatibleBodies b1 b2 = 
+    (map (\ (k, _) -> 
+          Diag Error ("added (or changed) axiom " ++ show k) nullRange)
+    $ Map.toList $ Map.differenceWith eqN (axiomsF b2) $ axiomsF b1) 
+    ++ (map (\ (k, _) -> 
+             Diag Error ("added (or changed) constant " ++ show k) nullRange)
+       $ Map.toList $ Map.differenceWith eqN (constsF b2) $ constsF b1)
+    ++ (map (\ (k, _) -> 
+             Diag Error ("deleted (or changed) goal " ++ show k) nullRange)
+       $ Map.toList $ Map.differenceWith eqN (goalsF b1) $ goalsF b2)
+    where eqN a b = if a == b then Nothing else Just a
