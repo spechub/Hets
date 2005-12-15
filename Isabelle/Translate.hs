@@ -38,15 +38,17 @@ data IsaPreludes = IsaPreludes
 isaPrelude :: IsaPreludes
 isaPrelude = IsaPreludes {
   preTypes = Map.fromList
-  [(HsHOLCF_thy, types holcfS), (MainHC_thy, types mainS),
+  [(HsHOL_thy, types mainS),
+   (HsHOLCF_thy, types holcfS), (MainHC_thy, types mainS),
    (Main_thy, types mainS), (HOLCF_thy, types holcfS)],
   preConsts = Map.fromList
-  [(HsHOLCF_thy, Set.insert "fliftbin" (consts holcfS)),
+  [(HsHOL_thy, consts mainS),
+   (HsHOLCF_thy, Set.insert "fliftbin" (consts holcfS)),
    (MainHC_thy, foldr Set.insert  (consts mainS)
                   ["pApp","apt","app","defOp","pair"]),
    (Main_thy,  consts mainS), (HOLCF_thy, consts holcfS)]}
 
-toAltSyntax :: Bool -> Int -> GlobalAnnos -> Int -> Id -> BaseSig 
+toAltSyntax :: Bool -> Int -> GlobalAnnos -> Int -> Id -> BaseSig
             -> Maybe AltSyntax
 toAltSyntax prd over ga n i@(Id ms cs qs) thy = let
     (precMap, mx) = Rel.toPrecMap $ prec_annos ga
@@ -59,11 +61,11 @@ toAltSyntax prd over ga n i@(Id ms cs qs) thy = let
     (fs, ps) = splitMixToken ms
     nonPlaces = filter (not . isPlace) fs
     constSet = Map.findWithDefault Set.empty thy $ preConsts isaPrelude
-    over2 = if isSingle nonPlaces && Set.member (tokStr $ head nonPlaces) 
+    over2 = if isSingle nonPlaces && Set.member (tokStr $ head nonPlaces)
             constSet || Set.member (show i) constSet
             then over + 1 else over
-    newFs = if null fs || over2 < 2 then fs else 
-                fs ++ [mkSimpleId $ let o1 = over2 - 1 in 
+    newFs = if null fs || over2 < 2 then fs else
+                fs ++ [mkSimpleId $ let o1 = over2 - 1 in
                     if over2 < 4 then replicate o1 '\'' else '_' : show o1]
     (hd : tl) = getTokenList newPlace $ Id (newFs ++ ps) cs qs
     tts = (if endPlace i then init else id) $ concatMap convert tl
@@ -72,8 +74,8 @@ toAltSyntax prd over ga n i@(Id ms cs qs) thy = let
     convert = \ Token { tokStr = s } -> if s == newPlace then s
                          else quote s
     (precList, erg) = if isInfix i then case Map.lookup i precMap of
-        Just p -> let 
-            q = adjustPrec p  
+        Just p -> let
+            q = adjustPrec p
             (l, r) = case Map.lookup i $ assoc_annos ga of
                  Nothing -> (q + 1, q + 1)
                  Just ALeft -> (q, q + 1)
@@ -85,17 +87,17 @@ toAltSyntax prd over ga n i@(Id ms cs qs) thy = let
       else (minL, maxPrio - 1)
     in if n == 0 then Just $ AltSyntax ts [] maxPrio
        else if isMixfix i then Just $ AltSyntax
-                ('(' : (if begPlace i then "_ " else ht) 
+                ('(' : (if begPlace i then "_ " else ht)
                          ++ tts ++ ")") precList erg
-       else Just $ AltSyntax 
-            (ts ++ "'(" ++ 
+       else Just $ AltSyntax
+            (ts ++ "'(" ++
                    concat (replicate (n - 1) "_,/ ")
                    ++ "_')") minL $ maxPrio - 1
 
 quote :: String -> String
 quote l = case l of
     [] -> l
-    c : r -> (if c `elem` "_/'()" then '\'' : [c] 
+    c : r -> (if c `elem` "_/'()" then '\'' : [c]
               else if c `elem` "\\\"" then '\\' : [c] else [c]) ++ quote r
 
 showIsaT1 :: (String -> String) -> Id -> String
@@ -111,9 +113,9 @@ showIsaConstT ide thy = showIsaT1 (transConstStringT thy) ide
 mkIsaConstT :: Bool -> GlobalAnnos -> Int -> Id -> BaseSig -> VName
 mkIsaConstT = mkIsaConstVName 1 showIsaConstT
 
-mkIsaConstVName :: Int -> (Id -> BaseSig -> String) 
+mkIsaConstVName :: Int -> (Id -> BaseSig -> String)
                 -> Bool -> GlobalAnnos -> Int -> Id -> BaseSig -> VName
-mkIsaConstVName over f prd ga n ide thy = VName 
+mkIsaConstVName over f prd ga n ide thy = VName
  { new = f ide thy
  , altSyn = toAltSyntax prd over ga n ide thy }
 
@@ -125,8 +127,8 @@ showIsaConstIT :: Id -> Int -> BaseSig -> String
 showIsaConstIT ide i thy = showIsaConstT ide thy ++ "_" ++ show i
 
 mkIsaConstIT :: Bool -> GlobalAnnos -> Int -> Id -> Int -> BaseSig -> VName
-mkIsaConstIT prd ga n ide i thy = 
-    {- if n == 0 || isPrefixOf "g__" (show ide) 
+mkIsaConstIT prd ga n ide i thy =
+    {- if n == 0 || isPrefixOf "g__" (show ide)
     then mkVName $ showIsaConstIT ide i thy
     else -}
     mkIsaConstVName i ( \ ide' -> showIsaConstIT ide' i) prd ga n ide thy

@@ -203,6 +203,7 @@ data BaseSig = Main_thy  -- ^ main theory of higher order logic (HOL)
              | MainHC_thy  -- ^ extend main theory of HOL logic for HasCASL
              | HOLCF_thy   -- ^ higher order logic for continuous functions
              | HsHOLCF_thy  -- ^ HOLCF for Haskell
+             | HsHOL_thy  -- ^ HOL for Haskell
                deriving (Eq, Ord, Show)
              {- possibly simply supply a theory like MainHC as string
                 or recursively as Isabelle.Sign -}
