@@ -122,7 +122,7 @@ con s = Const s noType
 conDouble :: String -> Term
 conDouble = con . mkVName
 	
--- * some stuff
+-- * some stuff for HasCASL
 
 -- | Some string
 someS :: String
@@ -136,9 +136,24 @@ conSomeT t = Const (mkVName someS) t
 conSome :: Term
 conSome = conDouble someS
 
+aptS :: String
+aptS = "apt"
+
+appS :: String
+appS = "app"
+
+pAppS :: String
+pAppS = "pApp"
+
+defOpS :: String
+defOpS = "defOp"
+
+fliftbinS :: String
+fliftbinS = "fliftbin"
+
 -- | defOp constant
 defOp :: Term
-defOp = conDouble "defOp"
+defOp = conDouble defOpS
 
 -- | Not string
 cNot :: String
