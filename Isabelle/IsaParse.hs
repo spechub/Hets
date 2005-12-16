@@ -302,7 +302,7 @@ instanceP =
     lexS instanceS >> namerefP << (lexS "::" << arity <|> lessOrEq << namerefP)
 
 axclass :: Parser [String]
-axclass = lexS axclassS >> classdecl << many1 (axmdecl >> prop)
+axclass = lexS axclassS >> classdecl << many (axmdecl >> prop)
 
 mltext :: Parser String
 mltext = lexS mlS >> lexP text
