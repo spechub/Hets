@@ -33,7 +33,6 @@ import Isabelle.Translate
 import Common.AS_Annotation
 import Common.DefaultMorphism
 import Common.ProofUtils
-import Common.Result
 import Common.PrettyPrint
 import qualified Common.Lib.Map as Map
 
@@ -117,8 +116,8 @@ getAllProofDeps :: Map.Map String String -> String -> [String]
                 -> IO([Proof_status ()])
 getAllProofDeps m thName = mapM $ getProofDeps m thName
 
-checkFinalThyFile :: (TheoryHead, Body) -> String -> String -> IO Bool
-checkFinalThyFile (ho, bo) thyFile thy = do
+checkFinalThyFile :: (TheoryHead, Body) -> String -> IO Bool
+checkFinalThyFile (ho, bo) thyFile = do
   s <- readFile thyFile
   case parse parseTheory thyFile s of
     Right (hb, b) -> do
@@ -201,7 +200,7 @@ isaProve thName th = do
       isabelleEnv <- getEnv "HETS_ISABELLE"
       let isabelle = if null isabelleEnv then "Isabelle" else isabelleEnv
       callSystem $ isabelle ++ " " ++ thyFile
-      ok <- checkFinalThyFile (ho, bo) thyFile thy
+      ok <- checkFinalThyFile (ho, bo) thyFile
       if ok then getAllProofDeps m thName thms
           else return []
     Left err -> do
