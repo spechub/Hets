@@ -20,6 +20,7 @@ import Data.Maybe
 
 import Text.PrettyPrint.HughesPJ(render)
 import Common.Utils
+import Common.Lexer
 import Common.PrettyPrint
 import Common.Result
 import Common.GlobalAnnotations (GlobalAnnos)
@@ -42,6 +43,7 @@ import CASL.CompositionTable.CompositionTable
 #endif
 
 import Isabelle.CreateTheories
+import Isabelle.IsaParse
 import SPASS.CreateDFGDoc
 
 import Logic.Prover
@@ -172,8 +174,9 @@ writeSpecFiles opt file lenv ga (ln, gctx) = let
                                     Nothing -> putIfVerbose opt 0 $
                                         "could not translate to Isabelle " ++
                                          show i
-                                    Just d -> writeVerbFile opt f $
-                                              shows d "\n"
+                                    Just d -> let s = shows d "\n" in
+                                        case parseString parseTheory s of
+                                          (_, _) -> writeVerbFile opt f s
                       DfgFile -> case printDFG ln i gTh of
                                     Nothing -> putIfVerbose opt 0 $
                                         "could not translate to SPASS " ++
