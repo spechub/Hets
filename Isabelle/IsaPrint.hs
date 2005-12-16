@@ -38,18 +38,18 @@ printIsaTheory tn libdir sign sens = let
     b = baseSig sign
     bs = showBaseSig b
     ld = if null libdir then "" else libdir ++ "/Isabelle/"
-    use = if null ld then empty else text "uses" <+>
+    use = if null ld then empty else text usesS <+>
            doubleQuotes (text $ ld ++ "prelude")
-    in text ("theory " ++ tn)
-    $$ text "imports" <+> (if case b of
+    in text theoryS <+> text tn
+    $$ text importsS <+> (if case b of
                           Main_thy -> False
                           HOLCF_thy -> False
                           _ -> True then doubleQuotes
                                     $ text $ ld ++ bs else text bs)
     $$ use
-    $$ text "begin"
+    $$ text beginS
     $++$ printTheoryBody sign sens
-    $++$ text "end"
+    $++$ text endS
 
 printTheoryBody :: Sign -> [Named Sentence] -> Doc
 printTheoryBody sig sens =
@@ -60,9 +60,9 @@ printTheoryBody sig sens =
     in
     callML "initialize" (text $ show $ map Quote tNames) $++$
     printText sig $++$
-    (if null axs then empty else text "axioms" $$
+    (if null axs then empty else text axiomsS $$
         vsep (map printNamedSen axs)) $++$
-    (if null defs then empty else text "defs" $$
+    (if null defs then empty else text defsS $$
         vsep (map printNamedSen defs)) $++$
     (if null rdefs then empty else
         vsep (map printNamedSen rdefs)) $++$
@@ -70,12 +70,12 @@ printTheoryBody sig sens =
         vsep (map ( \ t -> printNamedSen t $$
                    text (case sentence t of
                          Sentence { thmProof = Just s } -> s
-                         _ -> "oops")
+                         _ -> oopsS)
                   $++$ callML "record" (text $ show $ Quote $ senName t)) ts))
 
 callML :: String -> Doc -> Doc
 callML fun args =
-    text "ML" <+> doubleQuotes (text ("Header." ++ fun) <+> args)
+    text mlS <+> doubleQuotes (text ("Header." ++ fun) <+> args)
 
 data QuotedString = Quote String
 instance Show QuotedString where
@@ -113,6 +113,9 @@ data SynFlag = Quoted | Unquoted | Null
 
 doubleColon :: Doc
 doubleColon = text "::"
+
+bar :: [Doc] -> [Doc]
+bar = punctuate $ space <> text "|"
 
 printType :: Typ -> Doc
 printType = printTyp Unquoted
@@ -158,7 +161,7 @@ printTypeOp x name r1 r2 =
     in (d3 <+> text name <+> d4, r)
 
 and_docs :: [Doc] -> Doc
-and_docs ds = vcat $ prepPunctuate (text "and ") ds
+and_docs ds = vcat $ prepPunctuate (text andS <> space) ds
 
 -- | printing a named sentence
 printNamedSen :: Named Sentence -> Doc
@@ -166,14 +169,14 @@ printNamedSen NamedSen { senName = lab, sentence = s, isAxiom = b } =
   let d = printSentence s in case s of
   RecDef {} -> d
   _ -> let dd = doubleQuotes d in
-       if isRefute s then text "lemma" <+> text lab <+> colon
-              <+> dd $$ text "refute"
-       else if null lab then dd else text (case s of
-    ConstDef {} -> lab ++ "_def"
+       if isRefute s then text lemmaS <+> text lab <+> colon
+              <+> dd $$ text refuteS
+       else if null lab then dd else (case s of
+    ConstDef {} -> text $ lab ++ "_def"
     Sentence {isSimp = c} ->
-        (if b then "" else "theorem ")
-        ++ lab ++
-        (if c then " [simp]" else "")
+        (if b then empty else text theoremS)
+        <+> text lab <+>
+        (if c then brackets $ text simpS else empty)
     _ -> error "printNamedSen") <+> colon <+> dd
 
 -- | sentence printing
@@ -183,16 +186,8 @@ printSentence s = case s of
      and_docs (map (vcat . map (doubleQuotes . printTerm)) xs)
   _ -> case senTerm s of
       IsaEq (Const vn y) t ->  text (new vn) <+> doubleColon
-                      <+> printType y <+> text "==" <+> printOUTerm t
+                      <+> printType y <+> text "==" <+> printTerm t
       t -> printPlainTerm (not $ isRefute s) t
-
--- | omits type of outer abstraction
-printOUTerm :: Term -> Doc
-printOUTerm t = case t of
-  (Abs v _ tm l) -> parens $ (text $ case l of
-     NotCont -> "%"
-     IsCont -> "LAM") <+> printTerm v <> text "." <+> printOUTerm tm
-  _ -> printTerm t
 
 -- | print plain term
 printTerm :: Term -> Doc
@@ -226,7 +221,7 @@ printTrm b trm = case trm of
         NotCont -> (text "if" <+> d, lowPrio)
         IsCont -> (text "If" <+> d <+> text "fi", maxPrio)
     Case e ps -> (text "case" <+> printPlainTerm b e <+> text "of"
-                  $$ vcat (punctuate (space <> text "|") $
+                  $$ vcat (bar $
                          map (\ (p, t) -> printPlainTerm b p <+> text "=>"
                                        <+> printPlainTerm b t) ps), lowPrio)
     Let es i -> (text "let" <+>
@@ -249,7 +244,7 @@ printTrm b trm = case trm of
     MixfixApp f args c -> case f of
         Const (VName n (Just (AltSyntax s is i))) _ -> let l = length is in
             case compare l $ length args of
-               EQ -> if b || n == notS || isPrefixOf "op " n then
+               EQ -> if b || n == cNot || isPrefixOf "op " n then
                    (replaceUnderlines s
                      $ zipWith (printParenTerm b) is args, i)
                    else printApp b c f args
@@ -292,15 +287,15 @@ replaceUnderlines str l = case str of
 printClassrel :: Classrel -> Doc
 printClassrel = vcat . map ( \ (t, cl) -> case cl of
      Nothing -> empty
-     Just x -> text "axclass" <+> printClass t <+> text "<" <+>
-       (if null x  then text "pcpo" else printSort x)) . Map.toList
+     Just x -> text axclassS <+> printClass t <+> text "<" <+>
+       (if null x  then text pcpoS else printSort x)) . Map.toList
 
 printArities :: Arities -> Doc
 printArities = vcat . map ( \ (t, cl) ->
                   vcat $ map (printInstance t) cl) . Map.toList
 
 printInstance :: TName -> (IsaClass, [(Typ, Sort)]) -> Doc
-printInstance t xs = text "instance" <+> text t <> doubleColon <>
+printInstance t xs = text instanceS <+> text t <> doubleColon <>
     (case snd xs of
      [] -> empty
      ys -> parens $ hsep $ punctuate comma
@@ -314,10 +309,10 @@ printTypeDecls sig =
 printTycon :: Sign -> TName -> [(IsaClass, [(Typ, Sort)])] -> Doc -> Doc
 printTycon sig t arity' rest =
               let arity = if null arity' then
-                          error "IsaPrint.printText0 (TypeSig)"
+                          error "IsaPrint.printTycon"
                                 else length (snd $ head arity') in
             if dtyp sig t then empty else
-            text "typedecl" <+>
+            text typedeclS <+>
             (if arity > 0
              then parens $ hsep (map (text . ("'a"++) . show) [1..arity])
              else empty) <+> text t $$ rest
@@ -344,7 +339,7 @@ instance PrettyPrint Sign where
                                    -- this may print an "o"
     printArities (arities $ tsig sig)
     where
-    printConstTab tab = if Map.null tab then empty else text "consts"
+    printConstTab tab = if Map.null tab then empty else text constsS
                         $$ vcat (map printConst $ Map.toList tab)
     printConst (vn, t) = text (new vn) <+> doubleColon <+>
                           doubleQuotes (printType t) <+> printAlt vn
@@ -354,11 +349,11 @@ instance PrettyPrint Sign where
                _ -> False
     printDomainDefs dtDefs = vcat $ map printDomainDef dtDefs
     printDomainDef dts = if null dts then empty else
-        text (if isDomain then "domain" else "datatype")
+        text (if isDomain then domainS else datatypeS)
         <+> and_docs (map printDomain dts)
     printDomain (t, ops) =
        printTyp (if isDomain then Quoted else Null) t <+> equals <+>
-       hsep (punctuate (text " |") $ map printDOp ops)
+       hsep (bar $ map printDOp ops)
     printDOp (vn, args) = let opname = new vn in
        text opname <+> hsep (map (printDOpArg opname)
                             $ zip args [1 :: Int .. ])

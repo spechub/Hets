@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-utilities for the (Has)CASL, Haskell to Isabelle comorphisms
+constants for Isabelle
 
 -}
 
@@ -22,14 +22,17 @@ import Isabelle.IsaSign
 holType :: Sort
 holType = [IsaClass "hol_type"]
 
-dom :: Sort
-dom = [pcpo]
-
 isaTerm :: IsaClass
 isaTerm = IsaClass "type"
 
+pcpoS :: String
+pcpoS = "pcpo"
+
 pcpo :: IsaClass
-pcpo = IsaClass "pcpo"
+pcpo = IsaClass pcpoS
+
+dom :: Sort
+dom = [pcpo]
 
 -- * predefinded types
 
@@ -88,18 +91,23 @@ sSumS = "++"
 
 -- * functions for term formation
 
+-- | 1000
 maxPrio :: Int
 maxPrio = 1000
 
+-- | 10
 lowPrio :: Int
 lowPrio = 10
 
+-- | 2
 isaEqPrio :: Int
 isaEqPrio = 2 -- left assoc
 
+-- | function application
 termAppl :: Term -> Term -> Term
 termAppl t1 t2 = MixfixApp t1 [t2] NotCont
 
+-- | function application to a list of arguments
 termMixfixAppl :: Term -> [Term] -> Term
 termMixfixAppl t1 t2 = MixfixApp t1 t2 NotCont
 
@@ -116,9 +124,11 @@ conDouble = con . mkVName
 	
 -- * some stuff
 
+-- | Some string
 someS :: String
 someS = "Some"
 
+-- | Some term
 conSomeT :: Typ -> Term
 conSomeT t = Const (mkVName someS) t
 
@@ -130,13 +140,15 @@ conSome = conDouble someS
 defOp :: Term
 defOp = conDouble "defOp"
 
-notS :: String
-notS = "Not"
+-- | Not string
+cNot :: String
+cNot = "Not"
 
+-- | Not VName
 notV :: VName
-notV = VName notS $ Just $ AltSyntax "~/ _" [40] 40
+notV = VName cNot $ Just $ AltSyntax "~/ _" [40] 40
 
--- | not constant
+-- | Not constant
 notOp :: Term
 notOp = con notV
 
@@ -147,7 +159,7 @@ allS = "ALL"
 exS = "EX"
 ex1S = "EX!"
 
--- * strings of binary ops
+-- * Strings and VNames of binary ops
 
 conj :: String
 conj = "op &"
@@ -197,6 +209,7 @@ timesV = VName timesS $ Just $ AltSyntax "(_ */ _)" [70, 71] 70
 consV :: VName
 consV = VName consS $ Just $ AltSyntax "(_ #/ _)" [66, 65] 65
 
+-- | apply VName operator to two term
 binVNameAppl :: VName -> Term -> Term -> Term
 binVNameAppl v t1 t2 = MixfixApp (con v) [t1,t2] NotCont
 
@@ -209,13 +222,160 @@ binEq   = binVNameAppl eqV
 binEqv = binEq
 
 -- * boolean constants
-true, false :: Term
-true = Const (mkVName "True") boolType
-false = Const (mkVName "False") boolType
 
--- | pair stuff
+cTrue :: String
+cTrue = "True"
+
+cFalse :: String
+cFalse = "False"
+
+true :: Term
+true = Const (mkVName cTrue) boolType
+
+false :: Term
+false = Const (mkVName cFalse) boolType
+
+-- | lower case pair
 pairC :: String
 pairC = "pair"
 
+-- | upper case pair
 isaPair :: String
 isaPair = "Pair"
+
+-- * keywords in theory files from the Isar Reference Manual 2005
+
+endS :: String
+endS = "end"
+
+headerS :: String
+headerS = "header"
+
+theoryS :: String
+theoryS = "theory"
+
+importsS :: String
+importsS = "imports"
+
+usesS :: String
+usesS = "uses"
+
+beginS :: String
+beginS = "begin"
+
+contextS :: String
+contextS = "context"
+
+axiomsS :: String
+axiomsS = "axioms"
+
+defsS :: String
+defsS = "defs"
+
+oopsS :: String
+oopsS = "oops"
+
+mlS :: String
+mlS = "ML"
+
+andS :: String
+andS = "and"
+
+lemmasS :: String
+lemmasS = "lemmas"
+
+lemmaS :: String
+lemmaS = "lemma"
+
+corollaryS :: String
+corollaryS = "corollary"
+
+refuteS :: String
+refuteS = "refute"
+
+theoremsS :: String
+theoremsS = "theorems"
+
+theoremS :: String
+theoremS = "theorem"
+
+axclassS :: String
+axclassS = "axclass"
+
+classesS :: String
+classesS = "classes"
+
+instanceS :: String
+instanceS = "instance"
+
+typedeclS :: String
+typedeclS = "typedecl"
+
+typesS :: String
+typesS = "types"
+
+constsS :: String
+constsS = "consts"
+
+domainS :: String
+domainS = "domain"
+
+datatypeS :: String
+datatypeS = "datatype"
+
+fixrecS :: String
+fixrecS = "fixrec"
+
+primrecS :: String
+primrecS = "primrec"
+
+simpS :: String
+simpS = "simp"
+
+markups :: [String]
+markups =
+    [ "--", "chapter" , "section", "subsection", "subsubsection", "text"
+    , "text_raw", "sect", "subsect", "subsubsect", "txt", "txt_raw"]
+
+-- | toplevel keys that are currently ignored
+ignoredKeys :: [String]
+ignoredKeys =
+    [ datatypeS, domainS, oopsS, refuteS, fixrecS, primrecS
+    , "sorry", "done", "by", "proofs", "apply", "qed"
+    , "classrel", "defaultsort", "nonterminls", "arities"
+    , "constdefs", "syntax", "no_syntax", "translations"
+    , "global", "local", "hide", "use", "setup", "method_setup"
+    , "ML_command", "ML_setup", "oracle"
+    , "fix", "assume", "presume", "def", "note", "then", "from", "with"
+    , "using", "have", "show", "hence", "thus", "shows", ".", ".."
+--    , "rule", "iprover","OF", "of", "where", "assumption", "this", "-"
+    , "let", "is", "next", "apply_end", "defer", "prefer", "back", "declare"
+    , "pr", "thm", "prf", "term", "prop", "typ", "full_prf"
+    , "undo", "redo", "kill", "thms_containing", "thms_deps"
+    , "cd", "pwd", "use_thy", "use_thy_only", "update_thy", "update_thy_only"
+    , "display_drafts", "in", "locale" -- "intro_classes"
+    , "fixes", "constrains", "assumes", "defines", "notes", "includes"
+    , "interpretation", "interpret", "obtain", "also", "finally"
+    , "moreover", "ultimately" -- "trans", "sym", "symmetric"
+    , "case", "judgment", "typedef", "morphisms", "record", "rep_datatype"
+    , "recdef", "recdef_tc", "specification","ax_specification"
+    , "inductive", "coinductive", "inductive_cases", "codatatype"
+    , "code_module", "code_library", "consts_code", "types_code" ]
+    ++ map (++ "_translation")
+       [ "parse_ast", "parse", "print", "print_ast", "typed_print", "token" ]
+    ++ map ("print_" ++)
+       [ "commands", "syntax", "methods", "attributes", "theorems", "tcset"
+       , "facts", "binds", "drafts", "locale", "locales", "interps"
+       , "trans_rules", "simp_set", "claset", "cases", "induct_rules" ]
+
+-- | toplevel keywords currently recognized by IsaParse
+usedTopKeys :: [String]
+usedTopKeys = markups ++
+    [ importsS, usesS, beginS, contextS, mlS, axiomsS, defsS, constsS
+    , lemmasS, theoremsS, lemmaS, corollaryS, theoremS
+    , classesS, axclassS, instanceS, typesS, typedeclS, endS ]
+
+-- | all Isabelle keywords
+isaKeywords :: [String]
+isaKeywords = "::" : andS : theoryS : map (:[]) ":=<"
+              ++ usedTopKeys ++ ignoredKeys

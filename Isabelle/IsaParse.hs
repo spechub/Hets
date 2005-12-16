@@ -10,7 +10,7 @@ Portability :  portable
 parse the outer syntax of an Isabelle theory file
 -}
 
-module Isabelle.IsaParse 
+module Isabelle.IsaParse
     (parseTheory
     , Body
     , TheoryHead(..)
@@ -20,6 +20,7 @@ import Data.List
 import Common.Lexer
 import Text.ParserCombinators.Parsec
 import qualified Common.Lib.Map as Map
+import Isabelle.IsaConsts
 import Common.Id
 import Common.Result
 
@@ -91,11 +92,6 @@ var = try (char '?' <:> isaLetter) <++> restident <++> indexsuffix
 term :: CharParser st String -- prop
 term = var <|> nameref
 
-markups :: [String]
-markups = ["--", "chapter"
-          , "section", "subsection", "subsubsection", "text", "text_raw"
-          , "sect", "subsect", "subsubsect", "txt", "txt_raw"]
-
 isaSkip :: CharParser st ()
 isaSkip = skipMany (many1 space <|> nestComment <?> "")
 
@@ -105,114 +101,8 @@ lexP p = p << isaSkip
 lexS :: String -> CharParser st String
 lexS = lexP . try . string
 
-endS :: String
-endS = "end"
-
-headerS :: String
-headerS = "header"
-
 headerP :: CharParser st String
 headerP = lexS headerS >> lexP text
-
-theoryS :: String
-theoryS = "theory"
-
-importsS :: String
-importsS = "imports"
-
-usesS :: String
-usesS = "uses"
-
-beginS :: String
-beginS = "begin"
-
-contextS :: String
-contextS = "context"
-
-axiomsS :: String
-axiomsS = "axioms"
-
-defsS :: String
-defsS = "defs"
-
-oopsS :: String
-oopsS = "oops"
-
-mlS :: String
-mlS = "ML"
-
-andS :: String
-andS = "and"
-
-lemmasS :: String
-lemmasS = "lemmas"
-
-lemmaS :: String
-lemmaS = "lemma"
-
-corollaryS :: String
-corollaryS = "corollary"
-
-refuteS :: String
-refuteS = "refute"
-
-theoremsS :: String
-theoremsS = "theorems"
-
-theoremS :: String
-theoremS = "theorem"
-
-axclassS :: String
-axclassS = "axclass"
-
-classesS :: String
-classesS = "classes"
-
-instanceS :: String
-instanceS = "instance"
-
-typedeclS :: String
-typedeclS = "typedecl"
-
-typesS :: String
-typesS = "types"
-
-constsS :: String
-constsS = "consts"
-
-domainS :: String
-domainS = "domain"
-
-datatypeS :: String
-datatypeS = "datatype"
-
-otherKeys :: [String]
-otherKeys = 
-    [ datatypeS, domainS, oopsS, refuteS
-    , "sorry", "done", "fixrec", "primrec", "by", "proofs", "apply"]
-
-isaKeywords :: [String]
-isaKeywords = markups ++ otherKeys ++ 
-    [ importsS
-    , usesS
-    , beginS
-    , contextS
-    , mlS
-    , axiomsS
-    , defsS
-    , lemmasS
-    , theoremsS
-    , lemmaS
-    , corollaryS
-    , theoremS
-    , axclassS
-    , instanceS
-    , typedeclS
-    , constsS
-    , domainS
-    , datatypeS
-    , andS
-    , endS]
 
 nameP :: CharParser st String
 nameP = reserved isaKeywords $ lexP name
@@ -259,6 +149,20 @@ bracketsP p = do
     lexS "]"
     return a
 
+bracesP :: CharParser st a -> CharParser st a
+bracesP p = do
+    lexS "{"
+    a <- p
+    lexS "}"
+    return a
+
+recordP :: CharParser st a -> CharParser st a
+recordP p = do
+    lexS "(|"
+    a <- p
+    lexS "|)"
+    return a
+
 locale :: CharParser st String
 locale = parensP $ lexS "in" >> nameP
 
@@ -284,7 +188,7 @@ atom = var <|> typeP -- nameref covers nat and symident keywords
 args :: CharParser st [String]
 args = many $ lexP atom
 
-{- 
+{-
 arg :: CharParser st [String]
 arg = fmap (:[]) (lexP atom) <|> parensP args <|> bracketsP args
 -}
@@ -403,14 +307,17 @@ axclass = lexS axclassS >> classdecl << many1 (axmdecl >> prop)
 mltext :: CharParser st String
 mltext = lexS mlS >> lexP text
 
--- allow '.' in proofs
+-- allow '.' sequences in unknown parts
 anyP :: CharParser st String
 anyP = lexP $ atom <|> many1 (char '.')
 
--- allow "and" in unknown proofs
+-- allow "and", etc. in unknown parts
 unknown :: CharParser st ()
-unknown = skipMany1 $ forget (reserved (delete andS isaKeywords) anyP)
-          <|> forget (parensP rec) <|> forget (bracketsP rec)
+unknown = skipMany1 $ forget (reserved usedTopKeys anyP)
+          <|> forget (recordP rec)
+          <|> forget (parensP rec)
+          <|> forget (bracketsP rec)
+          <|> forget (bracesP rec)
           where rec = commalist $ unknown <|> forget anyP
 
 data BodyElem = Axioms [Axiom]
@@ -419,7 +326,7 @@ data BodyElem = Axioms [Axiom]
               | Ignored
 
 ignore :: Functor f => f a -> f BodyElem
-ignore = fmap $ const Ignored 
+ignore = fmap $ const Ignored
 
 theoryBody :: CharParser st [BodyElem]
 theoryBody = many $
@@ -435,9 +342,10 @@ theoryBody = many $
     <|> fmap Goals lemma
     <|> ignore axclass
     <|> ignore mltext
-    <|> ignore (choice (map lexS otherKeys) >> skipMany unknown)
+    <|> ignore (choice (map lexS ignoredKeys) >> skipMany unknown)
     <|> ignore unknown
 
+-- | extracted theory information
 data Body = Body
     { axiomsF :: Map.Map String String
     , goalsF :: Map.Map String [String]
@@ -454,7 +362,7 @@ addConst :: Const -> Map.Map String String -> Map.Map String String
 addConst (Const n a) m = Map.insert n a m
 
 emptyBody :: Body
-emptyBody = Body 
+emptyBody = Body
     { axiomsF = Map.empty
     , goalsF = Map.empty
     , constsF = Map.empty
@@ -468,19 +376,19 @@ concatBodyElems x b = case x of
     Ignored -> b
 
 parseTheory :: CharParser st (TheoryHead, Body)
-parseTheory = bind (,) 
-    theoryHead (fmap (foldr concatBodyElems emptyBody) theoryBody) 
+parseTheory = bind (,)
+    theoryHead (fmap (foldr concatBodyElems emptyBody) theoryBody)
     << lexS endS << eof
 
 compatibleBodies :: Body -> Body -> [Diagnosis]
-compatibleBodies b1 b2 = 
-    (map (\ (k, _) -> 
+compatibleBodies b1 b2 =
+    (map (\ (k, _) ->
           Diag Error ("added (or changed) axiom " ++ show k) nullRange)
-    $ Map.toList $ Map.differenceWith eqN (axiomsF b2) $ axiomsF b1) 
-    ++ (map (\ (k, _) -> 
+    $ Map.toList $ Map.differenceWith eqN (axiomsF b2) $ axiomsF b1)
+    ++ (map (\ (k, _) ->
              Diag Error ("added (or changed) constant " ++ show k) nullRange)
        $ Map.toList $ Map.differenceWith eqN (constsF b2) $ constsF b1)
-    ++ (map (\ (k, _) -> 
+    ++ (map (\ (k, _) ->
              Diag Error ("deleted (or changed) goal " ++ show k) nullRange)
        $ Map.toList $ Map.differenceWith eqN (goalsF b1) $ goalsF b2)
     where eqN a b = if a == b then Nothing else Just a
