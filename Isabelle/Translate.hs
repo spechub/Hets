@@ -35,17 +35,23 @@ data IsaPreludes = IsaPreludes
     { preTypes :: Map.Map BaseSig (Set.Set String)
     , preConsts :: Map.Map BaseSig (Set.Set String) }
 
+isaKeyset :: Set.Set String
+isaKeyset = Set.fromList isaKeywords
+
+mkPreludeMap :: [(BaseSig, Set.Set String)] ->  Map.Map BaseSig (Set.Set String)
+mkPreludeMap = Map.fromList . map (\ (b, s) -> (b, Set.union s isaKeyset))
+
 isaPrelude :: IsaPreludes
 isaPrelude = IsaPreludes {
-  preTypes = Map.fromList
+  preTypes = mkPreludeMap
   [(HsHOL_thy, types mainS),
    (HsHOLCF_thy, types holcfS), (MainHC_thy, types mainS),
    (Main_thy, types mainS), (HOLCF_thy, types holcfS)],
-  preConsts = Map.fromList
+  preConsts = mkPreludeMap
   [(HsHOL_thy, consts mainS),
-   (HsHOLCF_thy, Set.insert "fliftbin" (consts holcfS)),
-   (MainHC_thy, foldr Set.insert  (consts mainS)
-                  ["pApp","apt","app","defOp","pair"]),
+   (HsHOLCF_thy, Set.insert fliftbinS (consts holcfS)),
+   (MainHC_thy, foldr Set.insert (consts mainS)
+                  [pAppS, aptS, appS, defOpS, pairC]),
    (Main_thy,  consts mainS), (HOLCF_thy, consts holcfS)]}
 
 toAltSyntax :: Bool -> Int -> GlobalAnnos -> Int -> Id -> BaseSig
