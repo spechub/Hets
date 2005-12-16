@@ -117,19 +117,17 @@ getAllProofDeps :: Map.Map String String -> String -> [String]
                 -> IO([Proof_status ()])
 getAllProofDeps m thName = mapM $ getProofDeps m thName
 
-checkFinalThyFile :: String -> String -> IO Bool
-checkFinalThyFile thyFile thy = do 
-  s <- readFile thyFile 
-  case parse parseTheory thyFile s of 
-    Right (hb, b) -> case parse parseTheory "" thy of 
-        Right (ho, o) -> do 
-            let ds = compatibleBodies o b
+checkFinalThyFile :: (TheoryHead, Body) -> String -> String -> IO Bool
+checkFinalThyFile (ho, bo) thyFile thy = do
+  s <- readFile thyFile
+  case parse parseTheory thyFile s of
+    Right (hb, b) -> do
+            let ds = compatibleBodies bo b
             mapM_ (\ d -> putStrLn $ showPretty d "") ds
-            if hb /= ho then do 
+            if hb /= ho then do
                   putStrLn "illegal change of theory header"
-                  return False 
+                  return False
               else return $ null ds
-        Left _ -> error "checkFinalThyFile"
     Left err -> putStrLn (show err) >> return False
 
 mkProved :: String -> [String] -> Proof_status ()
@@ -141,8 +139,8 @@ mkProved thm used = Proved
     , tacticScript = Tactic_script "unknown isabelle user input"
     }
 
-prepareThyFiles :: String -> String -> IO ()
-prepareThyFiles thyFile thy = do
+prepareThyFiles :: (TheoryHead, Body) -> String -> String -> IO ()
+prepareThyFiles ast thyFile thy = do
     let origFile = thyFile ++ ".orig"
     exOrig <- checkInFile origFile
     exThyFile <- checkInFile thyFile
@@ -152,10 +150,10 @@ prepareThyFiles thyFile thy = do
     orig_time <- getModificationTime origFile
     s <- readFile origFile
     unless (thy_time >= orig_time && s == thy)
-      $ patchThyFile origFile thyFile thy
+      $ patchThyFile ast origFile thyFile thy
 
-patchThyFile :: FilePath -> FilePath -> String -> IO ()
-patchThyFile origFile thyFile thy = do
+patchThyFile :: (TheoryHead, Body) -> FilePath -> FilePath -> String -> IO ()
+patchThyFile (ho, bo) origFile thyFile thy = do
   let patchFile = thyFile ++ ".patch"
       oldFile = thyFile ++ ".old"
       diffCall = "diff -u " ++ origFile ++ " " ++ thyFile
@@ -167,22 +165,20 @@ patchThyFile origFile thyFile thy = do
   writeFile origFile thy
   writeFile thyFile thy
   callSystem patchCall
-  s <- readFile thyFile 
-  case parse parseTheory thyFile s of 
-    Right (hb, b) -> case parse parseTheory origFile thy of 
-        Right (ho, o) -> do
-            let ds = compatibleBodies o b
+  s <- readFile thyFile
+  case parse parseTheory thyFile s of
+    Right (hb, b) -> do
+            let ds = compatibleBodies bo b
                 h = hb == ho
-            mapM_ (\ d -> putStrLn $ showPretty d { diagKind = Warning } "") ds
+            mapM_ (\ d -> putStrLn $ showPretty d "") ds
             unless h $ putStrLn "theory header is corrupt"
             unless (h && null ds) $ revertThyFile thyFile thy
-        Left err -> error $ "Isabelle parseTheory: " ++ show err
-    Left err -> do 
+    Left err -> do
       putStrLn $ show err
       revertThyFile thyFile thy
 
 revertThyFile :: String -> String -> IO ()
-revertThyFile thyFile thy = do 
+revertThyFile thyFile thy = do
     putStrLn $ "replacing corrupt file " ++ show thyFile
     removeFile thyFile
     writeFile thyFile thy
@@ -196,15 +192,24 @@ isaProve thName th = do
       thms = map senName ths
   hlibdir <- getEnv "HETS_LIB"
   let thBaseName = reverse . takeWhile (/= '/') $ reverse thName
-      thy = show $ printIsaTheory thBaseName hlibdir sig $ axs ++ ths
+      thy = shows (printIsaTheory thBaseName hlibdir sig $ axs ++ ths) "\n"
       thyFile = thName ++ ".thy"
-  prepareThyFiles thyFile thy
-  removeDepFiles thName thms
-  isabelle <- getEnv "HETS_ISABELLE"
-  callSystem $ isabelle ++ " " ++ thyFile
-  ok <- checkFinalThyFile thyFile thy
-  if ok then getAllProofDeps m thName thms
-     else return []
+  case parse parseTheory thyFile thy of
+    Right (ho, bo) -> do
+      prepareThyFiles (ho, bo) thyFile thy
+      removeDepFiles thName thms
+      isabelleEnv <- getEnv "HETS_ISABELLE"
+      let isabelle = if null isabelleEnv then "Isabelle" else isabelleEnv
+      callSystem $ isabelle ++ " " ++ thyFile
+      ok <- checkFinalThyFile (ho, bo) thyFile thy
+      if ok then getAllProofDeps m thName thms
+          else return []
+    Left err -> do
+      putStrLn $ show err
+      putStrLn $ "Sorry, generated theory cannot be parsed, see: " ++ thyFile
+      writeFile thyFile thy
+      putStrLn "aborting Isabelle proof attempt"
+      return []
 
 markSimp :: Named Sentence -> Named Sentence
 markSimp = mapNamed markSimpSen
