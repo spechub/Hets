@@ -22,8 +22,8 @@ CLEAN_PATH = . hxt/Data hxt/Text/XML/HXT/DOM hxt/Text/XML/HXT/Parser \
     CspCASL ATC ToHaskell Proofs Comorphisms Isabelle Driver \
     Taxonomy CASL_DL SPASS OWL_DL $(PFE_PATHS)
 
-# the 'replacing spaces' example was taken from the (GNU) Make info manual 
-empty = 
+# the 'replacing spaces' example was taken from the (GNU) Make info manual
+empty =
 space = $(empty) $(empty)
 
 ## set ghc imports properly for your system
@@ -61,14 +61,14 @@ GENRULECALL = $(GENRULES) -r ShATermConvertible -i Common.ATerm.Lib
 DRIFT = utils/DrIFT
 INLINEAXIOMS = utils/outlineAxioms
 HADDOCK = haddock
-CPPP = cpp 
+CPPP = cpp
 
 # remove -fno-warn-orphans for older ghcs
 HC_WARN = -Wall -fno-warn-orphans
 HC_FLAGS = -package fgl \
     $(HC_WARN) -fglasgow-exts -fno-monomorphism-restriction \
-    -fallow-overlapping-instances -fallow-undecidable-instances 
-# -ddump-minimal-imports 
+    -fallow-overlapping-instances -fallow-undecidable-instances
+# -ddump-minimal-imports
 # flags also come in via  ../uni/uni-package.conf
 # but added it here in case of compilation without uni
 
@@ -76,7 +76,7 @@ HC_INCLUDE = $(addprefix -i, $(INCLUDE_PATH))
 
 logics = CASL HasCASL Isabelle Modal CoCASL COL CspCASL CASL_DL SPASS OWL_DL
 
-TESTTARGETS += test_parser hetpa hetana Test.o \
+TESTTARGETS += test_parser hetpa hetana Test.o wrap isa \
     atermlibtest hatermdiff atctest atctest2 taxonomy
 
 UNI_PACKAGE_CONF = $(wildcard ../uni/uni-package.conf)
@@ -167,14 +167,14 @@ endif
 ### Attention every module must be compiled with profiling or the linker
 ### cannot link the various .o files properly. So after switching on
 ### Profiling, do an 'gmake real_clean; gmake'
-### Comment in the following line for switching on profiling. 
+### Comment in the following line for switching on profiling.
 #HC_PROF = -prof -auto-all -fignore-asserts
 
 HC_OPTS = $(HC_FLAGS) $(HC_INCLUDE) $(HC_PACKAGE) $(PFE_FLAGS) $(HC_PROF) \
     -DCASLEXTENSIONS
 
 ####################################################################
-## sources for hets 
+## sources for hets
 
 non_sources = Common/LaTeX_maps.svmono.hs CspCASL/Main.hs \
     Common/CaslLanguage.hs ./Test.hs Static/LogicStructured.hs
@@ -221,11 +221,11 @@ ATC/Prover.der.hs: Logic/Prover.hs $(GENRULES)
 	$(GENRULECALL) -x ProverTemplate -i ATC.AS_Annotation -o $@ $<
 
 CASL_files = CASL/Sublogic.hs CASL/Morphism.hs CASL/Sign.hs \
-    CASL/AS_Basic_CASL.der.hs 
+    CASL/AS_Basic_CASL.der.hs
 
 HasCASL_files = HasCASL/As.hs HasCASL/Le.hs HasCASL/Sublogic.hs
 
-Isabelle_files = Isabelle/IsaSign.hs 
+Isabelle_files = Isabelle/IsaSign.hs
 
 Modal_files = Modal/AS_Modal.hs Modal/ModalSign.hs
 CoCASL_files = CoCASL/AS_CoCASL.hs CoCASL/CoCASLSign.hs CoCASL/Sublogic.hs
@@ -261,8 +261,8 @@ cpp_sources = Common/DynamicUtils.hs \
     Comorphisms/LogicList.hs Comorphisms/LogicGraph.hs \
     Comorphisms/KnownProvers.hs hets.hs $(happy_files)
 
-# unused, remove when header files are gone 
-genrule_header_files = $(wildcard ATC/*.header.hs) 
+# unused, remove when header files are gone
+genrule_header_files = $(wildcard ATC/*.header.hs)
 
 nondoc_sources = $(wildcard utils/DrIFT-src/*.hs) \
     $(wildcard utils/DrIFT-src/*.lhs) \
@@ -289,7 +289,7 @@ tax_objects = $(patsubst %.hs, %.o, $(tax_sources))
 ### targets
 
 .PHONY : all hets-opt hets-optimized clean o_clean real_clean bin_clean \
-    distclean check capa hacapa h2h h2hf clean_genRules genRules \
+    distclean check capa hacapa wrap isa h2h h2hf clean_genRules genRules \
     taxonomy count doc apache_doc post_doc4apache \
     derivedSources install_hets install release cgi patch ghci
 
@@ -300,21 +300,21 @@ patch:
 hets: $(sources) $(derived_sources)
 	$(HC) --make -o $@ hets.hs $(HC_OPTS)
 
-hets-opt: 
+hets-opt:
 	$(MAKE) distclean
 	$(MAKE) derivedSources
 	$(MAKE) clean
 	$(MAKE) hets-optimized
 
-hets-optimized: $(derived_sources) 
+hets-optimized: $(derived_sources)
 	$(HC) --make -O -o hets hets.hs $(HC_OPTS)
-	strip hets 
+	strip hets
 
 hets-old: $(objects)
 	$(RM) $@
 	$(HC) -o hets $(HC_OPTS) $(objects)
 
-cgi: 
+cgi:
 	$(MAKE) distclean
 	$(MAKE) derivedSources
 	$(MAKE) real_clean
@@ -326,12 +326,12 @@ hets.cgi: $(sources) GUI/hets_cgi.hs
 	strip hets.cgi
 
 ###############################
-### TAGS files for (x)emacs 
+### TAGS files for (x)emacs
 # load them with "M-x" "visit-tags-table" from
 # "HetCATS/hetcats.TAGS"
 # use "M-." to search for a tag
 # !!Beware this is somewhat instable, because it uses an absolute path!!
-hetcats.TAGS: $(sources) 
+hetcats.TAGS: $(sources)
 	/home/ger/linux/ghc-5.04.2/bin/i386-unknown-linux/hasktags \
 	    $(sources); mv TAGS $@; mv tags hetcats.tags
 
@@ -366,7 +366,7 @@ docs/index.html: $(doc_sources)
            $(PERL) -pe 's+/[^/]*.haddock,+,+g'` ; \
         $(HADDOCK) -o docs -h -v -s ../%F $$HINTERFACES \
             -t 'Hets - the Heterogeneous Tool Set' \
-            -p Hets-Haddock-Prologue.txt $(doc_sources) 
+            -p Hets-Haddock-Prologue.txt $(doc_sources)
 
 # sources are not copied here
 apache_doc:
@@ -384,7 +384,7 @@ post_doc4apache:
 	$(PERL) utils/post_process_docs.pl a-docs \
             'Common.Lib.Map.html:Common.Lib._Map.html'
 	$(PERL) utils/post_process_docs.pl a-docs \
-            'Data.Map.html:Data._Map.html'  
+            'Data.Map.html:Data._Map.html'
 
 ###############################
 ### release management
@@ -406,7 +406,7 @@ $(INLINEAXIOMS): $(INLINEAXIOMS_deps)
             -package hssource -i../.. -o $(INLINEAXIOMS)
 	strip $(INLINEAXIOMS)
 
-release: 
+release:
 	$(RM) -r HetCATS
 	cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:/repository\
             co -P HetCATS
@@ -469,7 +469,7 @@ OWL_DL/ATC_OWL_DL.der.hs: $(OWL_DL_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.AS_Annotation -i OWL_DL.ReadWrite \
           -o $@ $(OWL_DL_files)
 
-clean_genRules: 
+clean_genRules:
 	$(RM) $(generated_rule_files) $(gendrifted_files) $(hspp_sources) \
             Haskell/ATC_Haskell.der.hs
 
@@ -484,13 +484,15 @@ o_clean:
 	    (cd $$p ; $(RM) *.hi *.o) ; done
 
 ### remove binaries
-bin_clean: 
+bin_clean:
 	$(RM) hets
 	$(RM) hets.cgi
 	$(RM) test_parser
 	$(RM) CASL/capa
 	$(RM) HasCASL/hacapa
 	$(RM) Haskell/hana
+	$(RM) Haskell/wrap
+	$(RM) Isabelle/isa
 	$(RM) ToHaskell/h2h
 	$(RM) ToHaskell/h2hf
 	$(RM) Syntax/hetpa
@@ -510,7 +512,7 @@ real_clean: clean
 
 ### additionally removes generated files not in the CVS tree
 distclean: clean clean_genRules
-	$(RM) $(derived_sources) 
+	$(RM) $(derived_sources)
 	$(RM) utils/DrIFT utils/genRules $(INLINEAXIOMS)
 
 ####################################################################
@@ -521,7 +523,7 @@ distclean: clean clean_genRules
 test_parser: Common/test_parser
 
 Common/test_parser: Common/test_parser.hs Common/AS_Annotation.der.hs
-	$(HC) --make -o $@ $< $(HC_OPTS) 
+	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### interactive
 ghci: $(derived_sources)
@@ -537,7 +539,19 @@ CASL/capa: CASL/capa.hs Common/*.hs CASL/*.hs
 ### HasCASL parser
 hacapa: HasCASL/hacapa
 
-HasCASL/hacapa: HasCASL/hacapa.hs Common/*.hs HasCASL/*.hs 
+HasCASL/hacapa: HasCASL/hacapa.hs Common/*.hs HasCASL/*.hs
+	$(HC) --make -o $@ $< $(HC_OPTS)
+
+### Haskell wrapper parser
+wrap: Haskell/wrap
+
+Haskell/wrap: Haskell/wrap.hs Common/*.hs Haskell/Wrapper.hs
+	$(HC) --make -o $@ $< $(HC_OPTS)
+
+### Isar parser
+isa: Isabelle/isa
+
+Isabelle/isa: Isabelle/isa.hs Common/*.hs Isabelle/*.hs
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### Haskell analysis
@@ -550,7 +564,7 @@ Haskell/hana: Haskell/hana.hs Haskell/HatAna.hs Haskell/PreludeString.hs
 h2hf: ToHaskell/h2hf
 
 ToHaskell/h2hf: ToHaskell/h2hf.hs ToHaskell/*.hs Haskell/*.hs \
-    HasCASL/*.hs Isabelle/*.hs Common/*.hs 
+    HasCASL/*.hs Isabelle/*.hs Common/*.hs
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### HasCASL to Haskell translation
@@ -560,15 +574,15 @@ ToHaskell/h2h: ToHaskell/h2h.hs ToHaskell/*.hs Haskell/*.hs HasCASL/*.hs
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### HetCASL parser
-hetpa: Syntax/hetpa.hs Syntax/*.hs 
+hetpa: Syntax/hetpa.hs Syntax/*.hs
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### HetCASL parser
-hetana: Static/hetana.hs Static/*.hs 
+hetana: Static/hetana.hs Static/*.hs
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### ATC test system
-atctest: ATC/ATCTest.hs ATC/*.hs 
+atctest: ATC/ATCTest.hs ATC/*.hs
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 atctest2: ATC/ATCTest2.hs Common/SimpPretty.hs Common/ATerm/*.hs \
@@ -590,7 +604,7 @@ OWL_DL/readAStest: OWL_DL/ToHaskellAS.hs Common/ATerm/*.hs \
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### HetCASL with dev graph
-hetdg: GUI/hetdg.hs $(drifted_files) *.hs 
+hetdg: GUI/hetdg.hs $(drifted_files) *.hs
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 taxonomy: Taxonomy/taxonomyTool
@@ -636,7 +650,7 @@ hets.hs: Driver/Version.hs
 	$(INLINEAXIOMS) $< > $@
 	chmod 444 $@
 
-## rule for cpp and haddock 
+## rule for cpp and haddock
 %.hspp: %.hs
 	$(HC) -E -cpp -DUNI_PACKAGE -optP -P $<
 
