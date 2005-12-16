@@ -307,6 +307,23 @@ axclass = lexS axclassS >> classdecl << many (axmdecl >> prop)
 mltext :: Parser String
 mltext = lexS mlS >> lexP text
 
+cons :: Parser [String]
+cons = bind (:) nameP (many $ lexP typeP) << option () mixfix
+
+data Dtspec = Dtspec [String] [[String]]
+
+dtspec :: Parser Dtspec
+dtspec = do
+    option "" parname
+    t <- typespec
+    optinfix
+    lexS "="
+    cs <- fmap fst $ separatedBy cons $ lexS "|"
+    return $ Dtspec t cs
+
+datatype :: Parser [Dtspec]
+datatype = lexS datatypeS >> fmap fst (separatedBy dtspec $ lexS andS)
+
 -- allow '.' sequences in unknown parts
 anyP :: Parser String
 anyP = lexP $ atom <|> many1 (char '.')
@@ -323,6 +340,7 @@ unknown = skipMany1 $ forget (reserved usedTopKeys anyP)
 data BodyElem = Axioms [Axiom]
               | Goals [Goal]
               | Consts [Const]
+              | Datatype [Dtspec]
               | Ignored
 
 ignore :: Functor f => f a -> f BodyElem
@@ -332,6 +350,7 @@ theoryBody :: Parser [BodyElem]
 theoryBody = many $
     ignore typedecl
     <|> ignore types
+    <|> fmap Datatype datatype
     <|> fmap Consts consts
     <|> fmap Axioms defs
     <|> ignore classes
@@ -350,6 +369,7 @@ data Body = Body
     { axiomsF :: Map.Map String String
     , goalsF :: Map.Map String [String]
     , constsF :: Map.Map String String
+    , datatypesF :: Map.Map [String] [[String]]
     } deriving Show
 
 addAxiom :: Axiom -> Map.Map String String -> Map.Map String String
@@ -361,11 +381,16 @@ addGoal (Goal n a) m = Map.insert n a m
 addConst :: Const -> Map.Map String String -> Map.Map String String
 addConst (Const n a) m = Map.insert n a m
 
+addDatatype :: Dtspec -> Map.Map [String] [[String]]
+            -> Map.Map [String] [[String]]
+addDatatype (Dtspec n a) m = Map.insert n a m
+
 emptyBody :: Body
 emptyBody = Body
     { axiomsF = Map.empty
     , goalsF = Map.empty
     , constsF = Map.empty
+    , datatypesF = Map.empty
     }
 
 concatBodyElems :: BodyElem -> Body -> Body
@@ -373,6 +398,7 @@ concatBodyElems x b = case x of
     Axioms l -> b { axiomsF = foldr addAxiom (axiomsF b) l }
     Goals l -> b { goalsF = foldr addGoal (goalsF b) l }
     Consts l -> b { constsF = foldr addConst (constsF b) l }
+    Datatype l -> b { datatypesF = foldr addDatatype (datatypesF b) l }
     Ignored -> b
 
 parseTheory :: Parser (TheoryHead, Body)
@@ -388,6 +414,9 @@ compatibleBodies b1 b2 =
     ++ (map (\ (k, _) ->
              Diag Error ("added (or changed) constant " ++ show k) nullRange)
        $ Map.toList $ Map.differenceWith eqN (constsF b2) $ constsF b1)
+    ++ (map (\ (k, _) ->
+             Diag Error ("added (or changed) datatype " ++ show k) nullRange)
+       $ Map.toList $ Map.differenceWith eqN (datatypesF b2) $ datatypesF b1)
     ++ (map (\ (k, _) ->
              Diag Error ("deleted (or changed) goal " ++ show k) nullRange)
        $ Map.toList $ Map.differenceWith eqN (goalsF b1) $ goalsF b2)

@@ -355,7 +355,7 @@ markups =
 -- | toplevel keys that are currently ignored
 ignoredKeys :: [String]
 ignoredKeys =
-    [ datatypeS, domainS, oopsS, refuteS, fixrecS, primrecS
+    [ domainS, oopsS, refuteS, fixrecS, primrecS
     , "sorry", "done", "by", "proofs", "apply", "qed"
     , "classrel", "defaultsort", "nonterminls", "arities"
     , "constdefs", "syntax", "no_syntax", "translations"
@@ -387,10 +387,10 @@ ignoredKeys =
 usedTopKeys :: [String]
 usedTopKeys = markups ++
     [ importsS, usesS, beginS, contextS, mlS, axiomsS, defsS, constsS
-    , lemmasS, theoremsS, lemmaS, corollaryS, theoremS
+    , lemmasS, theoremsS, lemmaS, corollaryS, theoremS, datatypeS
     , classesS, axclassS, instanceS, typesS, typedeclS, endS ]
 
 -- | all Isabelle keywords
 isaKeywords :: [String]
-isaKeywords = "::" : andS : theoryS : map (:[]) ":=<"
+isaKeywords = "::" : andS : theoryS : map (:[]) ":=<|"
               ++ usedTopKeys ++ ignoredKeys
