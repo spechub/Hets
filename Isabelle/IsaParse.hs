@@ -24,93 +24,93 @@ import Isabelle.IsaConsts
 import Common.Id
 import Common.Result
 
-latin :: CharParser st String
+latin :: Parser String
 latin = single letter <?> "latin"
 
-greek :: CharParser st String
+greek :: Parser String
 greek = string "\\<" <++>
          option "" (string "^") -- isup or isup
          <++> many1 letter <++> string ">" <?> "greek"
 
-isaLetter :: CharParser st String
+isaLetter :: Parser String
 isaLetter = latin <|> greek
 
-quasiletter :: CharParser st String
+quasiletter :: Parser String
 quasiletter = single (digit <|> prime <|> char '_' ) <|> isaLetter
               <?> "quasiletter"
 
-restident :: CharParser st String
+restident :: Parser String
 restident = flat (many quasiletter)
 
-ident :: CharParser st String
+ident :: Parser String
 ident = isaLetter <++> restident
 
-longident :: CharParser st String
+longident :: Parser String
 longident = ident <++> flat (many $ char '.' <:> ident)
 
-symident :: CharParser st String
+symident :: Parser String
 symident = many1 (oneOf "!#$&*+-/:<=>?@^_|~" <?> "sym") <|> greek
 
-isaString :: CharParser st String
+isaString :: Parser String
 isaString = enclosedBy (flat $ many (single (noneOf "\\\"")
                                  <|> char '\\' <:> single anyChar))
             (char '\"')
 
-verbatim :: CharParser st String
+verbatim :: Parser String
 verbatim = plainBlock "{*" "*}"
 
-nestComment :: CharParser st String
+nestComment :: Parser String
 nestComment = nestedComment "(*" "*)"
 
-nat :: CharParser st String
+nat :: Parser String
 nat = many1 digit <?> "nat"
 
-name :: CharParser st String
+name :: Parser String
 name = ident <|> symident <|> isaString <|> nat
 
-nameref :: CharParser st String -- sort
+nameref :: Parser String -- sort
 nameref = longident <|> symident <|> isaString <|> nat
 
-text :: CharParser st String
+text :: Parser String
 text = nameref <|> verbatim
 
-typefree :: CharParser st String
+typefree :: Parser String
 typefree = prime <:> ident
 
-indexsuffix :: CharParser st String
+indexsuffix :: Parser String
 indexsuffix =  option "" (char '.' <:> nat)
 
-typevar :: CharParser st String
+typevar :: Parser String
 typevar = try (string "?'") <++> ident <++> option "" (char '.' <:> nat)
 
-typeP :: CharParser st String
+typeP :: Parser String
 typeP = typefree <|> typevar <|> nameref
 
-var :: CharParser st String
+var :: Parser String
 var = try (char '?' <:> isaLetter) <++> restident <++> indexsuffix
 
-term :: CharParser st String -- prop
+term :: Parser String -- prop
 term = var <|> nameref
 
-isaSkip :: CharParser st ()
+isaSkip :: Parser ()
 isaSkip = skipMany (many1 space <|> nestComment <?> "")
 
-lexP :: CharParser st a -> CharParser st a
+lexP :: Parser a -> Parser a
 lexP p = p << isaSkip
 
-lexS :: String -> CharParser st String
+lexS :: String -> Parser String
 lexS = lexP . try . string
 
-headerP :: CharParser st String
+headerP :: Parser String
 headerP = lexS headerS >> lexP text
 
-nameP :: CharParser st String
+nameP :: Parser String
 nameP = reserved isaKeywords $ lexP name
 
-namerefP :: CharParser st String
+namerefP :: Parser String
 namerefP = reserved isaKeywords $ lexP nameref
 
-parname :: CharParser st String
+parname :: Parser String
 parname = lexS "(" <++> lexP name <++> lexS ")"
 
 data TheoryHead = TheoryHead
@@ -120,7 +120,7 @@ data TheoryHead = TheoryHead
    , context :: Maybe String
    } deriving Eq
 
-theoryHead :: CharParser st TheoryHead
+theoryHead :: Parser TheoryHead
 theoryHead = do
     option () isaSkip
     option Nothing $ fmap Just headerP
@@ -132,187 +132,187 @@ theoryHead = do
     oc <- option Nothing $ fmap Just nameP
     return $ TheoryHead th is us oc
 
-commalist :: CharParser st a -> CharParser st [a]
+commalist :: Parser a -> Parser [a]
 commalist p = fmap fst $ lexP p `separatedBy` lexS ","
 
-parensP :: CharParser st a -> CharParser st a
+parensP :: Parser a -> Parser a
 parensP p = do
     lexS "("
     a <- p
     lexS ")"
     return a
 
-bracketsP :: CharParser st a -> CharParser st a
+bracketsP :: Parser a -> Parser a
 bracketsP p = do
     lexS "["
     a <- p
     lexS "]"
     return a
 
-bracesP :: CharParser st a -> CharParser st a
+bracesP :: Parser a -> Parser a
 bracesP p = do
     lexS "{"
     a <- p
     lexS "}"
     return a
 
-recordP :: CharParser st a -> CharParser st a
+recordP :: Parser a -> Parser a
 recordP p = do
     lexS "(|"
     a <- p
     lexS "|)"
     return a
 
-locale :: CharParser st String
+locale :: Parser String
 locale = parensP $ lexS "in" >> nameP
 
-markupP :: CharParser st String
+markupP :: Parser String
 markupP = choice (map lexS markups) <++> option "" locale <++> lexP text
 
-infixP :: CharParser st ()
+infixP :: Parser ()
 infixP = forget $ choice (map lexS ["infix", "infixl", "infixr"])
          >> option "" (lexP isaString) >> lexP nat
 
-mixfixSuffix :: CharParser st ()
+mixfixSuffix :: Parser ()
 mixfixSuffix = forget $ lexP isaString
     >> option [] (bracketsP $ commalist nat) >> option "" (lexP nat) -- prios
 
-mixfix :: CharParser st ()
+mixfix :: Parser ()
 mixfix = lexS "(" >>
     (infixP <|> mixfixSuffix <|> (lexS "binder" >> mixfixSuffix)
      <|> (forget $ lexS "structure")) << lexS ")"
 
-atom :: CharParser st String
+atom :: Parser String
 atom = var <|> typeP -- nameref covers nat and symident keywords
 
-args :: CharParser st [String]
+args :: Parser [String]
 args = many $ lexP atom
 
 {-
-arg :: CharParser st [String]
+arg :: Parser [String]
 arg = fmap (:[]) (lexP atom) <|> parensP args <|> bracketsP args
 -}
 
-attributes :: CharParser st ()
+attributes :: Parser ()
 attributes = forget (bracketsP $ commalist $ lexP nameref >> args)
 
-lessOrEq :: CharParser st String
+lessOrEq :: Parser String
 lessOrEq = lexS "<" <|> lexS "\\<subseteq>"
 
-classdecl :: CharParser st [String]
+classdecl :: Parser [String]
 classdecl = do
     n <- nameP
     lessOrEq
     ns <- commalist nameref
     return $ n : ns
 
-classes :: CharParser st ()
+classes :: Parser ()
 classes = forget $ lexS classesS >> many1 classdecl
 
-typespec :: CharParser st [String]
+typespec :: Parser [String]
 typespec = fmap (:[]) namerefP <|> do
     ns <- parensP (commalist typefree) <|> fmap (:[]) (lexP typefree)
     n <- namerefP
     return $ n : ns
 
-optinfix :: CharParser st ()
+optinfix :: Parser ()
 optinfix = option () $ parensP infixP
 
-types :: CharParser st [[String]]
+types :: Parser [[String]]
 types = lexS typesS >> many1 (typespec << (lexS "=" >> lexP typeP >> optinfix))
 
-typedecl :: CharParser st [[String]]
+typedecl :: Parser [[String]]
 typedecl = lexS typedeclS >> many1 (typespec << optinfix)
 
-arity :: CharParser st [String]
+arity :: Parser [String]
 arity = fmap (:[]) namerefP <|> do
     ns <- parensP $ commalist nameref
     n <- namerefP
     return $ n : ns
 
 {-
-arities :: CharParser st [[String]]
+arities :: Parser [[String]]
 arities = lexS "arities" >> many1 (namerefP <:> (lexS "::" >> arity))
 -}
 
 data Const = Const String String
 
-consts :: CharParser st [Const]
+consts :: Parser [Const]
 consts = lexS constsS >> many1 (bind Const nameP (lexS "::" >> lexP typeP
                                           << option () mixfix))
 
-axmdecl :: CharParser st String
+axmdecl :: Parser String
 axmdecl = (nameP << option () attributes) << lexS ":"
 
-prop :: CharParser st String
+prop :: Parser String
 prop = reserved isaKeywords $ lexP term
 
 data Axiom = Axiom String String
 
-axiomsP :: CharParser st [Axiom]
+axiomsP :: Parser [Axiom]
 axiomsP = many1 (bind Axiom axmdecl prop)
 
-defs :: CharParser st [Axiom]
+defs :: Parser [Axiom]
 defs = lexS defsS >> option "" (parensP $ lexS "overloaded") >>
        axiomsP
 
-axioms :: CharParser st [Axiom]
+axioms :: Parser [Axiom]
 axioms = lexS axiomsS >> axiomsP
 
-thmbind :: CharParser st String
+thmbind :: Parser String
 thmbind = (nameP << option () attributes) <|> (attributes >> return "")
 
-selection :: CharParser st ()
+selection :: Parser ()
 selection = forget . parensP . commalist $
   lexP nat >> option "" (lexS "-" >> option "" (lexP nat))
 
-thmref :: CharParser st String
+thmref :: Parser String
 thmref = namerefP << (option () selection >> option () attributes)
 
-thmrefs :: CharParser st [String]
+thmrefs :: Parser [String]
 thmrefs = many1 thmref
 
-thmdef :: CharParser st String
+thmdef :: Parser String
 thmdef = try $ thmbind << lexS "="
 
-thmdecl :: CharParser st String
+thmdecl :: Parser String
 thmdecl = try $ thmbind << lexS ":"
 
-theorems :: CharParser st ()
+theorems :: Parser ()
 theorems = forget $ (lexS theoremsS <|> lexS lemmasS) >> option "" locale
     >> separatedBy (option "" thmdef >> thmrefs) (lexS andS)
 
-proppat :: CharParser st ()
+proppat :: Parser ()
 proppat = forget . parensP . many1 $ lexP term
 
 data Goal = Goal String [String]
 
-props :: CharParser st Goal
+props :: Parser Goal
 props = bind Goal (option "" thmdecl) $ many1 (prop << option () proppat)
 
-goal :: CharParser st [Goal]
+goal :: Parser [Goal]
 goal = fmap fst $ separatedBy props (lexS andS)
 
-lemma :: CharParser st [Goal]
+lemma :: Parser [Goal]
 lemma = choice (map lexS [lemmaS, theoremS, corollaryS])
     >> option "" locale >> goal -- longgoal ignored
 
-instanceP :: CharParser st String
+instanceP :: Parser String
 instanceP =
     lexS instanceS >> namerefP << (lexS "::" << arity <|> lessOrEq << namerefP)
 
-axclass :: CharParser st [String]
+axclass :: Parser [String]
 axclass = lexS axclassS >> classdecl << many1 (axmdecl >> prop)
 
-mltext :: CharParser st String
+mltext :: Parser String
 mltext = lexS mlS >> lexP text
 
 -- allow '.' sequences in unknown parts
-anyP :: CharParser st String
+anyP :: Parser String
 anyP = lexP $ atom <|> many1 (char '.')
 
 -- allow "and", etc. in unknown parts
-unknown :: CharParser st ()
+unknown :: Parser ()
 unknown = skipMany1 $ forget (reserved usedTopKeys anyP)
           <|> forget (recordP rec)
           <|> forget (parensP rec)
@@ -328,7 +328,7 @@ data BodyElem = Axioms [Axiom]
 ignore :: Functor f => f a -> f BodyElem
 ignore = fmap $ const Ignored
 
-theoryBody :: CharParser st [BodyElem]
+theoryBody :: Parser [BodyElem]
 theoryBody = many $
     ignore typedecl
     <|> ignore types
@@ -375,7 +375,7 @@ concatBodyElems x b = case x of
     Consts l -> b { constsF = foldr addConst (constsF b) l }
     Ignored -> b
 
-parseTheory :: CharParser st (TheoryHead, Body)
+parseTheory :: Parser (TheoryHead, Body)
 parseTheory = bind (,)
     theoryHead (fmap (foldr concatBodyElems emptyBody) theoryBody)
     << lexS endS << eof
