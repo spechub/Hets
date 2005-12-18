@@ -407,6 +407,13 @@ transMExp a cs t = case t of
            NotCont -> 
               Const (mkVName $ "(" ++ show n ++ "::int)") 
                      (IsaSign.Type "int" [] [])
+       HsLit _ (HsFloatPrim n) -> return $ case a of
+           IsCont -> 
+              Const (mkVName $ "(Def (" ++ show n ++ "::int))") 
+                     (IsaSign.Type "dRat" [] [])
+           NotCont -> 
+              Const (mkVName $ "(" ++ show n ++ "::int)") 
+                     (IsaSign.Type "Rat" [] [])
        HsList xs -> return $ case xs of 
           [] -> case a of 
                    IsCont -> conDouble "lNil"
@@ -434,23 +441,30 @@ transCases :: Continuity -> ConstTab -> -- [PNT.PName] ->
 transCases r cs ks = case ks of 
  [] -> return []
  x:xs -> let 
-     cnn = fst $ extCI $ fst (extPE x)
+     cnn = extCL r cs ks
      fs = [extPE f | f <- ks]
-     ys = [(snd $ extCI $ fst f, f) | f <- fs]
-  in -- mapM $ transCasePt $ 
+     ys = [(snd $ extCI r cs $ fst f, f) | f <- fs]
+  in -- traceL [show cnn, showL ys] $ -- mapM $ transCasePt $ 
        mapM (\h -> trCase r cs h ys) cnn 
  where
   extPE k = case k of
        HsAlt _ p (HsBody e) _ -> (p,e)
        _ -> error "HsHOLCF, transCases"
-  extCI k = case k of
+  extCL r cs ks = case ks of 
+       [] -> error "Hs2HOLCF, extCL - case expression not allowed" 
+       x:xs -> let p = (fst $ extCI r cs $ fst (extPE x)) 
+           in if p /= [] then p else extCL r cs xs
+  extCI r cs k = case k of
        TiPSpec (HsCon (PNT z (ConstrOf _ x) _)) _ _ -> 
-           ([(showIsaName $ conName w, conArity w) | w <- constructors x],
-               showIsaName z) 
-       TiPApp m _ -> extCI m
-       TiDecorate.Pat HsPWildCard -> ([],"_")
+         let gBN (UniqueNames.PN q _) = q 
+           in ([(gBN $ conName w, conArity w) | 
+                                     w <- constructors x],
+                    pp z) -- showIsaName z) 
+       TiPApp m _ -> extCI r cs m
+       TiDecorate.Pat u -> case u of 
+          HsPWildCard -> ([],"_")
+          _ -> ([], pp u) 
        _ -> error "H2HOLCF, extCI" 
---  trCases r cs cnn ks = undefined
 
 trCase :: Continuity -> ConstTab -> (String,Int) -> 
        [(String,(TiPat PNT, TiPropDecorate.TiExp PNT))] 
@@ -566,8 +580,10 @@ transCN c s x = let
       ":"      -> f "lCons"
       _        -> f y
   else case pp x of 
-      ":"      -> f "#"
-      _        -> f y
+     "True"   -> f "True"
+     "False"  -> f "False"      
+     ":"      -> f "op #"
+     _        -> f y
 
 transHV :: Continuity -> HsScheme -> PNT -> Maybe IsaTerm
 transHV a s x = let 

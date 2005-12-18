@@ -323,10 +323,12 @@ transTN :: Continuity -> String -> String -> String
 transTN c s1 s2 = case (c,s1,s2) of 
    (IsCont,"Prelude","Bool") -> "tr"
    (IsCont,"Prelude","Int") -> "dInt"
+   (IsCont,"Prelude","Rational") -> "dRat"
    (IsCont,"Prelude","[]") -> "llist"
    (IsCont,"Prelude","(,)") -> "*"
    (NotCont,"Prelude","Bool") -> "bool"
    (NotCont,"Prelude","Int") -> "int"
+   (IsCont,"Prelude","Rational") -> "Rat"
    (NotCont,"Prelude","[]") -> "list"
    (NotCont,"Prelude","(,)") -> "*"
    _ -> transPath s1 s2 
