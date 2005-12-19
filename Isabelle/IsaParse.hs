@@ -18,11 +18,14 @@ module Isabelle.IsaParse
 
 import Data.List
 import Common.Lexer
-import Text.ParserCombinators.Parsec
+import Text.ParserCombinators.Parsec as Parse
 import qualified Common.Lib.Map as Map
 import Isabelle.IsaConsts
 import Common.Id
 import Common.Result
+import Common.PrettyPrint
+import Common.Lib.Pretty as Pretty 
+    ( punctuate, comma, text, (<+>), empty, Doc, parens, hcat)
 
 latin :: Parser String
 latin = single letter <?> "latin"
@@ -71,8 +74,8 @@ name = ident <|> symident <|> isaString <|> nat
 nameref :: Parser String -- sort
 nameref = longident <|> symident <|> isaString <|> nat
 
-text :: Parser String
-text = nameref <|> verbatim
+isaText :: Parser String
+isaText = nameref <|> verbatim
 
 typefree :: Parser String
 typefree = prime <:> ident
@@ -95,29 +98,29 @@ term = var <|> nameref
 isaSkip :: Parser ()
 isaSkip = skipMany (many1 space <|> nestComment <?> "")
 
-lexP :: Parser a -> Parser a
-lexP p = p << isaSkip
+lexP :: Parser String -> Parser Token
+lexP pa = bind (\ p s -> Token s (Range [p])) getPos $ pa << isaSkip
 
 lexS :: String -> Parser String
-lexS = lexP . try . string
+lexS s = try (string s) << isaSkip
 
-headerP :: Parser String
-headerP = lexS headerS >> lexP text
+headerP :: Parser Token
+headerP = lexS headerS >> lexP isaText
 
-nameP :: Parser String
-nameP = reserved isaKeywords $ lexP name
+nameP :: Parser Token
+nameP = lexP $ reserved isaKeywords name
 
-namerefP :: Parser String
-namerefP = reserved isaKeywords $ lexP nameref
+namerefP :: Parser Token
+namerefP = lexP $ reserved isaKeywords nameref
 
-parname :: Parser String
-parname = lexS "(" <++> lexP name <++> lexS ")"
+parname :: Parser Token
+parname = lexS "(" >> lexP name << lexS ")"
 
 data TheoryHead = TheoryHead
-   { theoryname :: String
-   , imports :: [String]
-   , uses :: [String]
-   , context :: Maybe String
+   { theoryname :: Token
+   , imports :: [Token]
+   , uses :: [Token]
+   , context :: Maybe Token
    } deriving Eq
 
 theoryHead :: Parser TheoryHead
@@ -133,7 +136,7 @@ theoryHead = do
     return $ TheoryHead th is us oc
 
 commalist :: Parser a -> Parser [a]
-commalist p = fmap fst $ lexP p `separatedBy` lexS ","
+commalist p = fmap fst $ p `separatedBy` lexS ","
 
 parensP :: Parser a -> Parser a
 parensP p = do
@@ -163,19 +166,20 @@ recordP p = do
     lexS "|)"
     return a
 
-locale :: Parser String
-locale = parensP $ lexS "in" >> nameP
+locale :: Parser ()
+locale = forget . parensP $ lexS "in" >> nameP
 
-markupP :: Parser String
-markupP = choice (map lexS markups) <++> option "" locale <++> lexP text
+markupP :: Parser Token
+markupP = choice (map lexS markups) >> option () locale >> lexP isaText
 
 infixP :: Parser ()
 infixP = forget $ choice (map lexS ["infix", "infixl", "infixr"])
-         >> option "" (lexP isaString) >> lexP nat
+         >> option () (forget $ lexP isaString) >> lexP nat
 
 mixfixSuffix :: Parser ()
 mixfixSuffix = forget $ lexP isaString
-    >> option [] (bracketsP $ commalist nat) >> option "" (lexP nat) -- prios
+    >> option [] (bracketsP $ commalist $ lexP nat) 
+           >> option () (forget $ lexP nat)
 
 mixfix :: Parser ()
 mixfix = lexS "(" >>
@@ -185,7 +189,7 @@ mixfix = lexS "(" >>
 atom :: Parser String
 atom = var <|> typeP -- nameref covers nat and symident keywords
 
-args :: Parser [String]
+args :: Parser [Token]
 args = many $ lexP atom
 
 {-
@@ -194,39 +198,56 @@ arg = fmap (:[]) (lexP atom) <|> parensP args <|> bracketsP args
 -}
 
 attributes :: Parser ()
-attributes = forget (bracketsP $ commalist $ lexP nameref >> args)
+attributes = forget (bracketsP $ commalist namerefP >> args)
 
 lessOrEq :: Parser String
 lessOrEq = lexS "<" <|> lexS "\\<subseteq>"
 
-classdecl :: Parser [String]
+classdecl :: Parser [Token]
 classdecl = do
     n <- nameP
     lessOrEq
-    ns <- commalist nameref
+    ns <- commalist namerefP
     return $ n : ns
 
 classes :: Parser ()
 classes = forget $ lexS classesS >> many1 classdecl
 
-typespec :: Parser [String]
-typespec = fmap (:[]) namerefP <|> do
-    ns <- parensP (commalist typefree) <|> fmap (:[]) (lexP typefree)
+data Typespec = Typespec Token [Token] deriving (Eq, Ord)
+
+toDoc :: Typespec -> Doc
+toDoc (Typespec t ps) = (if null ps then empty else 
+    parens $ hcat $ punctuate comma $ map (text . show) ps)
+    <+> text (show t)   
+
+instance Show Typespec where
+    show = show . toDoc
+
+instance PrettyPrint Typespec where
+    printText0 _ = toDoc
+
+instance PosItem Typespec where
+    getRange (Typespec t _) = getRange t
+
+typespec :: Parser Typespec
+typespec = fmap (\ n -> Typespec n []) namerefP <|> do
+    ns <- parensP (commalist typefreeP) <|> fmap (:[]) typefreeP
     n <- namerefP
-    return $ n : ns
+    return $ Typespec n ns
+    where typefreeP = lexP typefree
 
 optinfix :: Parser ()
 optinfix = option () $ parensP infixP
 
-types :: Parser [[String]]
+types :: Parser [Typespec]
 types = lexS typesS >> many1 (typespec << (lexS "=" >> lexP typeP >> optinfix))
 
-typedecl :: Parser [[String]]
+typedecl :: Parser [Typespec]
 typedecl = lexS typedeclS >> many1 (typespec << optinfix)
 
-arity :: Parser [String]
+arity :: Parser [Token]
 arity = fmap (:[]) namerefP <|> do
-    ns <- parensP $ commalist nameref
+    ns <- parensP $ commalist namerefP
     n <- namerefP
     return $ n : ns
 
@@ -235,19 +256,19 @@ arities :: Parser [[String]]
 arities = lexS "arities" >> many1 (namerefP <:> (lexS "::" >> arity))
 -}
 
-data Const = Const String String
+data Const = Const Token Token
 
 consts :: Parser [Const]
 consts = lexS constsS >> many1 (bind Const nameP (lexS "::" >> lexP typeP
                                           << option () mixfix))
 
-axmdecl :: Parser String
+axmdecl :: Parser Token
 axmdecl = (nameP << option () attributes) << lexS ":"
 
-prop :: Parser String
-prop = reserved isaKeywords $ lexP term
+prop :: Parser Token
+prop = lexP $ reserved isaKeywords term
 
-data Axiom = Axiom String String
+data Axiom = Axiom Token Token
 
 axiomsP :: Parser [Axiom]
 axiomsP = many1 (bind Axiom axmdecl prop)
@@ -259,62 +280,65 @@ defs = lexS defsS >> option "" (parensP $ lexS "overloaded") >>
 axioms :: Parser [Axiom]
 axioms = lexS axiomsS >> axiomsP
 
-thmbind :: Parser String
-thmbind = (nameP << option () attributes) <|> (attributes >> return "")
+thmbind :: Parser Token
+thmbind = (nameP << option () attributes) <|> (attributes >> lexP (string ""))
 
 selection :: Parser ()
 selection = forget . parensP . commalist $
-  lexP nat >> option "" (lexS "-" >> option "" (lexP nat))
+  natP >> option () (lexS "-" >> option () (forget natP))
+  where natP = lexP nat
 
-thmref :: Parser String
+thmref :: Parser Token
 thmref = namerefP << (option () selection >> option () attributes)
 
-thmrefs :: Parser [String]
+thmrefs :: Parser [Token]
 thmrefs = many1 thmref
 
-thmdef :: Parser String
+thmdef :: Parser Token
 thmdef = try $ thmbind << lexS "="
 
-thmdecl :: Parser String
+thmdecl :: Parser Token
 thmdecl = try $ thmbind << lexS ":"
 
 theorems :: Parser ()
-theorems = forget $ (lexS theoremsS <|> lexS lemmasS) >> option "" locale
-    >> separatedBy (option "" thmdef >> thmrefs) (lexS andS)
+theorems = forget $ (lexS theoremsS <|> lexS lemmasS) 
+    >> option () locale
+    >> separatedBy (option () (forget thmdef) >> thmrefs) (lexS andS)
 
 proppat :: Parser ()
 proppat = forget . parensP . many1 $ lexP term
 
-data Goal = Goal String [String]
+data Goal = Goal Token [Token]
 
 props :: Parser Goal
-props = bind Goal (option "" thmdecl) $ many1 (prop << option () proppat)
+props = bind Goal (option (mkSimpleId "") thmdecl) 
+        $ many1 (prop << option () proppat)
 
 goal :: Parser [Goal]
 goal = fmap fst $ separatedBy props (lexS andS)
 
 lemma :: Parser [Goal]
 lemma = choice (map lexS [lemmaS, theoremS, corollaryS])
-    >> option "" locale >> goal -- longgoal ignored
+    >> option () locale >> goal -- longgoal ignored
 
-instanceP :: Parser String
+instanceP :: Parser Token
 instanceP =
     lexS instanceS >> namerefP << (lexS "::" << arity <|> lessOrEq << namerefP)
 
-axclass :: Parser [String]
+axclass :: Parser [Token]
 axclass = lexS axclassS >> classdecl << many (axmdecl >> prop)
 
-mltext :: Parser String
-mltext = lexS mlS >> lexP text
+mltext :: Parser Token
+mltext = lexS mlS >> lexP isaText
 
-cons :: Parser [String]
+cons :: Parser [Token]
 cons = bind (:) nameP (many $ lexP typeP) << option () mixfix
 
-data Dtspec = Dtspec [String] [[String]]
+data Dtspec = Dtspec Typespec [[Token]]
 
 dtspec :: Parser Dtspec
 dtspec = do
-    option "" parname
+    option () $ forget parname
     t <- typespec
     optinfix
     lexS "="
@@ -326,16 +350,16 @@ datatype = lexS datatypeS >> fmap fst (separatedBy dtspec $ lexS andS)
 
 -- allow '.' sequences in unknown parts
 anyP :: Parser String
-anyP = lexP $ atom <|> many1 (char '.')
+anyP = atom <|> many1 (char '.')
 
 -- allow "and", etc. in unknown parts
 unknown :: Parser ()
-unknown = skipMany1 $ forget (reserved usedTopKeys anyP)
+unknown = skipMany1 $ forget (lexP $ reserved usedTopKeys anyP)
           <|> forget (recordP rec)
           <|> forget (parensP rec)
           <|> forget (bracketsP rec)
           <|> forget (bracesP rec)
-          where rec = commalist $ unknown <|> forget anyP
+          where rec = commalist $ unknown <|> forget (lexP anyP)
 
 data BodyElem = Axioms [Axiom]
               | Goals [Goal]
@@ -366,23 +390,23 @@ theoryBody = many $
 
 -- | extracted theory information
 data Body = Body
-    { axiomsF :: Map.Map String String
-    , goalsF :: Map.Map String [String]
-    , constsF :: Map.Map String String
-    , datatypesF :: Map.Map [String] [[String]]
+    { axiomsF :: Map.Map Token Token
+    , goalsF :: Map.Map Token [Token]
+    , constsF :: Map.Map Token Token
+    , datatypesF :: Map.Map Typespec [[Token]]
     } deriving Show
 
-addAxiom :: Axiom -> Map.Map String String -> Map.Map String String
+addAxiom :: Axiom -> Map.Map Token Token -> Map.Map Token Token
 addAxiom (Axiom n a) m = Map.insert n a m
 
-addGoal :: Goal -> Map.Map String [String] -> Map.Map String [String]
+addGoal :: Goal -> Map.Map Token [Token] -> Map.Map Token [Token]
 addGoal (Goal n a) m = Map.insert n a m
 
-addConst :: Const -> Map.Map String String -> Map.Map String String
+addConst :: Const -> Map.Map Token Token -> Map.Map Token Token
 addConst (Const n a) m = Map.insert n a m
 
-addDatatype :: Dtspec -> Map.Map [String] [[String]]
-            -> Map.Map [String] [[String]]
+addDatatype :: Dtspec -> Map.Map Typespec [[Token]]
+            -> Map.Map Typespec [[Token]]
 addDatatype (Dtspec n a) m = Map.insert n a m
 
 emptyBody :: Body
@@ -408,16 +432,30 @@ parseTheory = bind (,)
 
 compatibleBodies :: Body -> Body -> [Diagnosis]
 compatibleBodies b1 b2 =
-    (map (\ (k, _) ->
-          Diag Error ("added (or changed) axiom " ++ show k) nullRange)
-    $ Map.toList $ Map.differenceWith eqN (axiomsF b2) $ axiomsF b1)
-    ++ (map (\ (k, _) ->
-             Diag Error ("added (or changed) constant " ++ show k) nullRange)
-       $ Map.toList $ Map.differenceWith eqN (constsF b2) $ constsF b1)
-    ++ (map (\ (k, _) ->
-             Diag Error ("added (or changed) datatype " ++ show k) nullRange)
-       $ Map.toList $ Map.differenceWith eqN (datatypesF b2) $ datatypesF b1)
-    ++ (map (\ (k, _) ->
-             Diag Error ("deleted (or changed) goal " ++ show k) nullRange)
-       $ Map.toList $ Map.differenceWith eqN (goalsF b1) $ goalsF b2)
-    where eqN a b = if a == b then Nothing else Just a
+    diffMap "axiom" LT (axiomsF b2) (axiomsF b1)
+    ++ diffMap "constant" EQ (constsF b2) (constsF b1)
+    ++ diffMap "datatype" EQ (datatypesF b2) (datatypesF b1)
+    ++ diffMap "goal" GT (goalsF b1) (goalsF b2)
+
+diffMap :: (Ord a, PrettyPrint a, PosItem a, Eq b, Show b) 
+          => String -> Ordering -> Map.Map a b -> Map.Map a b -> [Diagnosis]
+diffMap msg o m1 m2 = 
+    let k1 = Map.keys m1
+        k2 = Map.keys m2
+        kd21 = k2 \\ k1
+        kd12 = k1 \\ k2
+    in if k1 == k2 then
+    map ( \ (k, a) -> mkDiag Error 
+          (msg ++ " entry " ++ show a ++ " was changed for: ") k)
+    $ Map.toList $ 
+    Map.differenceWith ( \ a b -> if a == b then Nothing else
+                                      Just a) m1 m2
+    else let b = case o of 
+                   EQ -> null kd21
+                   GT -> False
+                   LT -> True
+             kd = if b then kd12 else kd21  
+               in map ( \ k -> mkDiag Error 
+                    (msg ++ " entry illegally " ++ 
+                         if b then "added" else "deleted") k) kd
+
