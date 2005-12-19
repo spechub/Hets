@@ -25,10 +25,22 @@ term t = case t of
 
 
 -- Quantifier is always ignored
-quanti :: (FORMULA f) -> (FORMULA f)
+quanti :: FORMULA f -> FORMULA f
 quanti f = case f of
              Quantification _ _ f' _ -> quanti f'
              _ -> f
+
+
+is_ex_quanti :: FORMULA f -> Bool
+is_ex_quanti f = 
+    case f of
+      Quantification Existential _ _ _ -> True 
+      Quantification Unique_existential _ _ _ -> True
+      Quantification _ _ f' _ -> is_ex_quanti f'
+      Implication f1 f2 _ _ -> (is_ex_quanti f1) || (is_ex_quanti f2)
+      Equivalence f1 f2 _ -> (is_ex_quanti f1) || (is_ex_quanti f2)
+      Negation f' _ -> is_ex_quanti f'
+      _ -> False 
 
 
 constraintOfAxiom :: FORMULA f -> [Constraint]

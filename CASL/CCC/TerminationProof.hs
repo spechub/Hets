@@ -40,6 +40,7 @@ terminationProof fsn = (not $ null all_axioms) && (not $ proof)
     fs = trace (showPretty fs1 "all formulars") fs1
     all_axioms1 = filter (\f->(not $ is_Sort_gen_ax f) &&
                               (not $ is_Membership f) &&
+                              (not $ is_ex_quanti f) &&
                               (not $ is_Def f)) fs
     all_axioms = trace (showPretty all_axioms1 "Terminal_allAxiom") all_axioms1
     all_predSymbs = everyOnce $ concat $ map predSymbsOfAxiom all_axioms

@@ -98,12 +98,14 @@ checkFreeType (osig,osens) m fsn
                 head $ filter (\t->not $ checkVar_App t) leadingTerms
         in warning Nothing ("a variable occurs twice in a leading term of " ++
                             opSymStr os) pos 
-    | (not $ null fs) && (terminationProof (osens ++ fsn)) =
+    | (not $ null fs_terminalProof) && (terminationProof $ (osens ++ fsn)) =
         warning Nothing "not terminating" nullRange
-    | not $ null overlap_query = 
-  --  | not $ null overlapSym = 
-        return (Just (True,overlap_query))
-    | not $ null subSortsF = return (Just (True,concat $ map snd subSortsF))
+    | not $ ((null (overlap_query ++ ex_axioms)) &&
+             (null subSortsF)) = 
+        return (Just (True,(overlap_query ++ 
+                            ex_axioms ++
+                            (concat $ map snd subSortsF))))
+  --  | not $ null subSortsF = return (Just (True,concat $ map snd subSortsF))
     | otherwise = return (Just (True,[]))
 
 {-
@@ -131,6 +133,10 @@ checkFreeType (osig,osens) m fsn
     where
     fs1 = map sentence (filter is_user_or_sort_gen fsn)
     fs = trace (showPretty fs1 "new formulars") fs1     -- new formulars
+    fs_terminalProof = filter (\f->(not $ is_Sort_gen_ax f) &&
+                                   (not $ is_Membership f) &&
+                                   (not $ is_ex_quanti f) &&
+                                   (not $ is_Def f)) fs
     ofs = map sentence (filter is_user_or_sort_gen osens)
     sig = imageOfMorphism m
     oldSorts1 = Set.union (sortSet sig) (sortSet osig)
@@ -306,6 +312,8 @@ checkFreeType (osig,osens) m fsn
                    Left (Qual_op_name on _ ps) -> (idStr on,ps)
                    Right (Qual_pred_name pn _ ps) -> (idStr pn,ps)
                    _ -> error "pattern overlap"
+    ex_axioms = filter is_ex_quanti $ 
+                map sentence (filter is_user_or_sort_gen (osens ++ fsn))
 
 
 
