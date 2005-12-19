@@ -356,7 +356,7 @@ markups =
 ignoredKeys :: [String]
 ignoredKeys =
     [ domainS, oopsS, refuteS, fixrecS, primrecS
-    , "sorry", "done", "by", "proofs", "apply", "qed"
+    , "sorry", "done", "by", "proof", "apply", "qed"
     , "classrel", "defaultsort", "nonterminls", "arities"
     , "constdefs", "syntax", "no_syntax", "translations"
     , "global", "local", "hide", "use", "setup", "method_setup"
