@@ -54,7 +54,7 @@ genericDisambigSens sel upd nameSet (ax : rest) =
       ax : genericDisambigSens sel upd (Set.insert name nameSet) rest
   (_, _, greater) -> let
       name' = head $ filter (not . flip Set.member greater)
-                          [name++show (i :: Int) | i<-[1..]]
+                          [name++'_':show (i :: Int) | i<-[1..]]
       in upd name' ax :
          genericDisambigSens sel upd (Set.insert name' nameSet) rest
 
