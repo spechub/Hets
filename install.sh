@@ -8,8 +8,7 @@ INSTALLDIR=/home/www/agbkb/forschung/formal_methods/CoFI/hets
 VERSION=$1
 for i in linux solaris mac
 do
-  (cd $INSTALLDIR/$i; cp -p daily/hets versions/hets-$VERSION; \
-      bzip2 versions/hets-$VERSION)
+  (cd $INSTALLDIR/$i; cp -p daily/hets.bz2 versions/hets-$VERSION.bz2)
 done
       
 (cd $INSTALLDIR/src-distribution; \
