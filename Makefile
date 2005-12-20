@@ -115,7 +115,8 @@ happy_files += $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs
 LEX_DIR = $(PFE_TOOLDIR)/base/parse2/Lexer
 
 patch: Haskell/Programatica.patch
-	patch -sNlp0 -d $(PFE_TOOLDIR) -i `pwd`/$< || exit 0
+	patch -usNlp0 -d $(PFE_TOOLDIR) -i `pwd`/$< \
+	    base/parse2/NumberNames.hs || exit 0
 
 $(LEX_DIR)/HsLex.hs: $(LEX_DIR)Gen/HsLexerGen
 	echo "{-# OPTIONS -w #-}" > $@
