@@ -5,15 +5,15 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  meader@tzi.de
 Stability   :  experimental
-Portability :  non-portable(programatica and isabelle) 
+Portability :  non-portable(uses programatica)
 
 test translation from Haskell to Isabelle
 -}
 
 module Main where
 
-import Debug.Trace
 import System.Environment
+import Data.Char
 
 import Text.ParserCombinators.Parsec
 import Common.Result
@@ -30,57 +30,48 @@ import Haskell.HatAna as HatAna
 import Haskell.HatParser
 
 pickParser :: Continuity -> AParser () (IsaSign.Sign, [Named IsaSign.Sentence])
-pickParser c = case c of 
-  NotCont -> kParser 
-  IsCont -> hParser
-
-hParser :: AParser () (IsaSign.Sign, [Named IsaSign.Sentence])
-hParser = do 
+pickParser c = do
    b <- hatParser
-   let res@(Result _ m) = do 
+   let res@(Result _ m) = do
           (_, _, sig, sens) <- hatAna (b, HatAna.emptySign, emptyGlobalAnnos)
-          transTheory IsCont sig sens
-   case m of 
-      Nothing -> error $ show res
-      Just x -> return x
-
-kParser :: AParser () (IsaSign.Sign, [Named IsaSign.Sentence])
-kParser = do 
-   b <- hatParser
-   let res@(Result _ m) = do 
-          (_, _, sig, sens) <- hatAna (b, HatAna.emptySign, emptyGlobalAnnos)
-          transTheory NotCont sig sens
-   case m of 
-      Nothing -> error $ show res
+          transTheory c sig sens
+   case m of
+      Nothing -> fail $ show res
       Just x -> return x
 
 main :: IO ()
-main = do (a:as) <- getArgs 
-          b      <- return $ case a of 
-                             "hol" -> NotCont
-                             "HOL" -> NotCont
-                             "h" -> NotCont
-                             "holcf" -> IsCont
-                             "HOLCF" -> IsCont
-                             "hc" -> IsCont
-                             _ -> error "command line input error: first argument must be either h (HOL) or hc (HOLCF)."
-          trace (show b ++ "\n") $ mapM_ (process b) as
+main = do
+  let err = "command line input error: first argument must be"
+            ++ " either h (HOL) or hc (HOLCF)."
+  l <- getArgs
+  case l of
+    [] -> putStrLn err
+    c : fs -> let elm = elem $ map toLower c in
+        mapM_ (process (if elm ["h", "hol"] then NotCont
+                   else if elm ["hc", "holcf"] then IsCont
+                   else error err)) fs
 
 process :: Continuity -> FilePath -> IO ()
-process k fn = do s <- readFile fn
-                  s1 <- return $ dropWhile (\x -> x == '\n' || x == ' ') s
-                  ld <- getEnv "HETS_LIB"  --
-                  s2 <- trace (show "h2hf running. Writing filename_hc.thy (HOLCF) - filename_h.thy (HOL)") $ 
-                          return $ if takeWhile (/= ' ') s1 == "module" 
-                               then dropWhile (/= '\n') s1 else s1  
-                  let r = runParser (pickParser k) (emptyAnnos ()) fn s2  
-                  case r of 
-                       Right (sig, hs) -> let 
-                         tn = dropWhile (== '"') $ (takeWhile (/= '.') 
-                              $ reverse (takeWhile (\x -> x /= '/') $ reverse 
-                              $ show fn)) ++ (case k of 
-                                           IsCont -> "_hc"
-                                           NotCont -> "_h")
-                         doc = printIsaTheory tn ld sig hs   --
-                         in writeFile (tn ++ ".thy") (shows doc "\n")
-                       Left err -> putStrLn $ show err
+process c fn = do
+  putStrLn $ "translating " ++ show fn ++ " to " ++ case c of
+             IsCont -> "HOLCF"
+             NotCont -> "HOL"
+  s <- readFile fn
+  ld <- getEnv "HETS_LIB"
+  let ds = dropWhile isSpace
+      s1 = ds s
+      ns = not . isSpace
+      (front, rest) = span ns s1
+      s2 = if front == "module" then dropWhile ns $ ds rest else s1
+  case runParser (pickParser c) (emptyAnnos ()) fn s2 of
+    Right (sig, hs) -> do
+      let tn = takeWhile (/= '.')
+               (reverse . takeWhile ( \ x -> x /= '/') $ reverse fn) ++ "_"
+                ++ case c of
+                     IsCont -> "hc"
+                     NotCont -> "h"
+          doc = printIsaTheory tn ld sig hs
+          thyFile = tn ++ ".thy"
+      putStrLn $ "writing " ++ show thyFile
+      writeFile thyFile (shows doc "\n")
+    Left err -> putStrLn $ show err
