@@ -176,7 +176,7 @@ printNamedSen NamedSen { senName = lab, sentence = s, isAxiom = b } =
     Sentence {isSimp = c} ->
         (if b then empty else text theoremS)
         <+> text lab <+>
-        (if c then brackets $ text simpS else empty)
+        (if c && b then brackets $ text simpS else empty)
     _ -> error "printNamedSen") <+> colon <+> dd
 
 -- | sentence printing
@@ -184,10 +184,7 @@ printSentence :: Sentence -> Doc
 printSentence s = case s of
   RecDef kw xs -> text kw <+>
      and_docs (map (vcat . map (doubleQuotes . printTerm)) xs)
-  _ -> case senTerm s of
-      IsaEq (Const vn y) t ->  text (new vn) <+> doubleColon
-                      <+> printType y <+> text "==" <+> printTerm t
-      t -> printPlainTerm (not $ isRefute s) t
+  _ -> printPlainTerm (not $ isRefute s) $ senTerm s
 
 -- | print plain term
 printTerm :: Term -> Doc
@@ -229,7 +226,9 @@ printTrm b trm = case trm of
                  map (\ (p, t) -> printPlainTerm b p <+> text "="
                                <+> printPlainTerm b t) es)
            <+> text "in" <+> printPlainTerm b i, lowPrio)
-    IsaEq t1 t2 -> (printParenTerm b (isaEqPrio + 1) t1 <+> text "=="
+    IsaEq t1 t2 -> ((case t1 of
+--        Const vn y ->  text (new vn) <+> doubleColon <+> printType y
+        _ -> printParenTerm b (isaEqPrio + 1) t1) <+> text "=="
                    <+> printParenTerm b isaEqPrio t2, isaEqPrio)
     Tuplex cs c -> ((case c of
         NotCont -> parens
