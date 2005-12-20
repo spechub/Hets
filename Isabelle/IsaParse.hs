@@ -18,14 +18,12 @@ module Isabelle.IsaParse
 
 import Data.List
 import Common.Lexer
-import Text.ParserCombinators.Parsec as Parse
+import Text.ParserCombinators.Parsec
 import qualified Common.Lib.Map as Map
 import Isabelle.IsaConsts
 import Common.Id
 import Common.Result
 import Common.PrettyPrint
-import Common.Lib.Pretty as Pretty 
-    ( punctuate, comma, text, (<+>), empty, Doc, parens, hcat)
 
 latin :: Parser String
 latin = single letter <?> "latin"
@@ -178,7 +176,7 @@ infixP = forget $ choice (map lexS ["infix", "infixl", "infixr"])
 
 mixfixSuffix :: Parser ()
 mixfixSuffix = forget $ lexP isaString
-    >> option [] (bracketsP $ commalist $ lexP nat) 
+    >> option [] (bracketsP $ commalist $ lexP nat)
            >> option () (forget $ lexP nat)
 
 mixfix :: Parser ()
@@ -213,21 +211,7 @@ classdecl = do
 classes :: Parser ()
 classes = forget $ lexS classesS >> many1 classdecl
 
-data Typespec = Typespec Token [Token] deriving (Eq, Ord)
-
-toDoc :: Typespec -> Doc
-toDoc (Typespec t ps) = (if null ps then empty else 
-    parens $ hcat $ punctuate comma $ map (text . show) ps)
-    <+> text (show t)   
-
-instance Show Typespec where
-    show = show . toDoc
-
-instance PrettyPrint Typespec where
-    printText0 _ = toDoc
-
-instance PosItem Typespec where
-    getRange (Typespec t _) = getRange t
+data Typespec = Typespec Token [Token]
 
 typespec :: Parser Typespec
 typespec = fmap (\ n -> Typespec n []) namerefP <|> do
@@ -301,7 +285,7 @@ thmdecl :: Parser Token
 thmdecl = try $ thmbind << lexS ":"
 
 theorems :: Parser ()
-theorems = forget $ (lexS theoremsS <|> lexS lemmasS) 
+theorems = forget $ (lexS theoremsS <|> lexS lemmasS)
     >> option () locale
     >> separatedBy (option () (forget thmdef) >> thmrefs) (lexS andS)
 
@@ -311,7 +295,7 @@ proppat = forget . parensP . many1 $ lexP term
 data Goal = Goal Token [Token]
 
 props :: Parser Goal
-props = bind Goal (option (mkSimpleId "") thmdecl) 
+props = bind Goal (option (mkSimpleId "") thmdecl)
         $ many1 (prop << option () proppat)
 
 goal :: Parser [Goal]
@@ -393,7 +377,7 @@ data Body = Body
     { axiomsF :: Map.Map Token Token
     , goalsF :: Map.Map Token [Token]
     , constsF :: Map.Map Token Token
-    , datatypesF :: Map.Map Typespec [[Token]]
+    , datatypesF :: Map.Map Token ([Token], [[Token]])
     } deriving Show
 
 addAxiom :: Axiom -> Map.Map Token Token -> Map.Map Token Token
@@ -405,9 +389,9 @@ addGoal (Goal n a) m = Map.insert n a m
 addConst :: Const -> Map.Map Token Token -> Map.Map Token Token
 addConst (Const n a) m = Map.insert n a m
 
-addDatatype :: Dtspec -> Map.Map Typespec [[Token]]
-            -> Map.Map Typespec [[Token]]
-addDatatype (Dtspec n a) m = Map.insert n a m
+addDatatype :: Dtspec -> Map.Map Token ([Token], [[Token]])
+            -> Map.Map Token ([Token], [[Token]])
+addDatatype (Dtspec (Typespec n ps) a) m = Map.insert n (ps, a) m
 
 emptyBody :: Body
 emptyBody = Body
@@ -437,25 +421,25 @@ compatibleBodies b1 b2 =
     ++ diffMap "datatype" EQ (datatypesF b2) (datatypesF b1)
     ++ diffMap "goal" GT (goalsF b1) (goalsF b2)
 
-diffMap :: (Ord a, PrettyPrint a, PosItem a, Eq b, Show b) 
+diffMap :: (Ord a, PrettyPrint a, PosItem a, Eq b, Show b)
           => String -> Ordering -> Map.Map a b -> Map.Map a b -> [Diagnosis]
-diffMap msg o m1 m2 = 
+diffMap msg o m1 m2 =
     let k1 = Map.keys m1
         k2 = Map.keys m2
         kd21 = k2 \\ k1
         kd12 = k1 \\ k2
     in if k1 == k2 then
-    map ( \ (k, a) -> mkDiag Error 
+    map ( \ (k, a) -> mkDiag Error
           (msg ++ " entry " ++ show a ++ " was changed for: ") k)
-    $ Map.toList $ 
+    $ Map.toList $
     Map.differenceWith ( \ a b -> if a == b then Nothing else
                                       Just a) m1 m2
-    else let b = case o of 
+    else let b = case o of
                    EQ -> null kd21
                    GT -> False
                    LT -> True
-             kd = if b then kd12 else kd21  
-               in map ( \ k -> mkDiag Error 
-                    (msg ++ " entry illegally " ++ 
+             kd = if b then kd12 else kd21
+               in map ( \ k -> mkDiag Error
+                    (msg ++ " entry illegally " ++
                          if b then "added" else "deleted") k) kd
 
