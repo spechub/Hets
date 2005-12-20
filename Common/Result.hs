@@ -221,7 +221,9 @@ instance PrettyPrint Diagnosis where
     printText0 _ (Diag k s (Range sp)) =
         (if isMessageW
             then empty
-            else text "***" <+> text (show k))
+            else text (case k of
+                  Error -> "***"
+                  _ -> "###") <+> text (show k))
         <> (case sp of
              [] | isMessageW -> empty
                 | otherwise  -> comma
