@@ -434,64 +434,64 @@ def (op __o__ : HomSys * HomSys ->? HomSys) (h2, h1) =>
   (op cod : HomSys -> System) h2)
  as HomSys)
 %% Diagnostics -----------------------------------------------------------
-*** Hint 7.7, is type variable 'S'
-*** Hint 7.9, is type variable 'V'
-*** Hint 8.12, rebound type variable 'S'
-*** Hint 19.7, is type variable 'Elem'
-*** Hint 20.18, rebound type variable 'Elem'
-*** Hint 31.6, is type variable 'Elem'
-*** Hint 31.6, rebound type variable 'Elem'
-*** Hint 33.10, not a kind 'MultiSet Elem'
-*** Hint 33.27, not a kind 'Set Elem'
-*** Hint 35.17, not a class 'Elem'
-*** Hint 34.12, rebound variable 'S'
-*** Hint 34.12, rebound variable 'S'
-*** Hint, rejected 'Unit < Nat' of '((var x : Elem), (var S : Set Elem))'
+### Hint 7.7, is type variable 'S'
+### Hint 7.9, is type variable 'V'
+### Hint 8.12, rebound type variable 'S'
+### Hint 19.7, is type variable 'Elem'
+### Hint 20.18, rebound type variable 'Elem'
+### Hint 31.6, is type variable 'Elem'
+### Hint 31.6, rebound type variable 'Elem'
+### Hint 33.10, not a kind 'MultiSet Elem'
+### Hint 33.27, not a kind 'Set Elem'
+### Hint 35.17, not a class 'Elem'
+### Hint 34.12, rebound variable 'S'
+### Hint 34.12, rebound variable 'S'
+### Hint, rejected 'Unit < Nat' of '((var x : Elem), (var S : Set Elem))'
 
-*** Hint 37.7, is type variable 'S'
-*** Hint 37.7, rebound type variable 'S'
-*** Hint 38.21, rebound type variable 'S'
-*** Hint 40.7, is type variable 'a'
-*** Hint 45.7, is type variable 'S'
-*** Hint 45.7, rebound type variable 'S'
-*** Hint 45.9, is type variable 'V'
-*** Hint 45.9, rebound type variable 'V'
-*** Hint 45.11, is type variable 'U'
-*** Hint 46.12, rebound type variable 'S'
-*** Hint 62.7, is type variable 'S'
-*** Hint 62.7, rebound type variable 'S'
-*** Hint 62.10, is type variable 'V'
-*** Hint 62.10, rebound type variable 'V'
-*** Hint 72.23, not a kind 'MultiSet P'
-*** Hint 73.26, not a kind 'MultiSet P'
-*** Hint 72.45, rejected 'Unit < Nat' of '((var p1 : MultiSet P),
+### Hint 37.7, is type variable 'S'
+### Hint 37.7, rebound type variable 'S'
+### Hint 38.21, rebound type variable 'S'
+### Hint 40.7, is type variable 'a'
+### Hint 45.7, is type variable 'S'
+### Hint 45.7, rebound type variable 'S'
+### Hint 45.9, is type variable 'V'
+### Hint 45.9, rebound type variable 'V'
+### Hint 45.11, is type variable 'U'
+### Hint 46.12, rebound type variable 'S'
+### Hint 62.7, is type variable 'S'
+### Hint 62.7, rebound type variable 'S'
+### Hint 62.10, is type variable 'V'
+### Hint 62.10, rebound type variable 'V'
+### Hint 72.23, not a kind 'MultiSet P'
+### Hint 73.26, not a kind 'MultiSet P'
+### Hint 72.45, rejected 'Unit < Nat' of '((var p1 : MultiSet P),
  (op range[_v161; _v173 _v174 _v172] :
   forall S : Type; V : Type . (S ->? V) -> Set V)
  (var pre : T ->? MultiSet P))'
 
-*** Hint 73.48, rejected 'Unit < Nat' of '((var p1 : MultiSet P),
+### Hint 73.48, rejected 'Unit < Nat' of '((var p1 : MultiSet P),
  (op range[_v276; _v288 _v289 _v287] :
   forall S : Type; V : Type . (S ->? V) -> Set V)
  (var pre : T ->? MultiSet P))'
 
-*** Hint 81.19, not a class 'T'
-*** Hint 80.14-80.35, in type of '((var hp : P ->? P), (op places : Net -> Set P) (var n1 : Net),
+### Hint 81.19, not a class 'T'
+### Hint 80.14-80.35, in type of '((var hp : P ->? P), (op places : Net -> Set P) (var n1 : Net),
  (op places : Net -> Set P) (var n2 : Net))'
   typename 'P' (79.35)
   is not unifiable with type '_v381 ->? Nat' (63.47)
 
-*** Hint 80.47-80.78, in type of '((var ht : T ->? T),
+### Hint 80.47-80.78, in type of '((var ht : T ->? T),
  (op transitions : Net -> Set T) (var n1 : Net),
  (op transitions : Net -> Set T) (var n2 : Net))'
   typename 'T' (79.45)
   is not unifiable with type '_v555 ->? Nat' (63.47)
 
-*** Hint 81.31, rejected 'Unit < Nat' of '((var t : T), (op transitions : Net -> Set T) (var n1 : Net))'
+### Hint 81.31, rejected 'Unit < Nat' of '((var t : T), (op transitions : Net -> Set T) (var n1 : Net))'
 
-*** Hint 95.38, not a class 'P'
-*** Hint, rejected 'Nat < Unit' of '((var x : P), (var m : Marking))'
+### Hint 95.38, not a class 'P'
+### Hint, rejected 'Nat < Unit' of '((var x : P), (var m : Marking))'
 
-*** Hint 94.29-95.62, rejected 'Unit < Nat' of 'let ((var p : _v1024 _v1025 _v1023),
+### Hint 94.29-95.62, rejected 'Unit < Nat' of 'let ((var p : _v1024 _v1025 _v1023),
      (var pre1 : _v1028 _v1029 (_v1032 _v1033 _v1031)),
      (var post1 : _v1036 _v1037 (_v1040 _v1041 _v1039)))
       = (var n : Net)
@@ -504,8 +504,8 @@ in forall x : P
         forall Elem : Type . Pred (Elem * MultiSet Elem))
        ((var x : P), (var p : _v1024 _v1025 _v1023))'
 
-*** Hint 104.19, not a class 'P'
-*** Hint 104.24-104.74, in type of '((op freq[P] : forall Elem : Type . Elem * MultiSet Elem -> Nat)
+### Hint 104.19, not a class 'P'
+### Hint 104.24-104.74, in type of '((op freq[P] : forall Elem : Type . Elem * MultiSet Elem -> Nat)
  ((var p : P),
   (op marking : System -> Marking) (var sys1 : System)),
  (op freq[P] : forall Elem : Type . Elem * MultiSet Elem -> Nat)
@@ -514,101 +514,101 @@ in forall x : P
   typename 'Nat' (28.38)
   is not unifiable with type '_v1288 ->? Nat' (23.33)
 
-*** Hint 112.12, not a class 'HomSys'
-*** Hint 112.16, not a class 'HomSys'
-*** Hint, in type of '((var h2 : HomSys), (var h1 : HomSys))'
+### Hint 112.12, not a class 'HomSys'
+### Hint 112.16, not a class 'HomSys'
+### Hint, in type of '((var h2 : HomSys), (var h1 : HomSys))'
   typename '_t1088' (93.8)
   is not unifiable with type '_t366 (Set P)' (71.34)
 
-*** Hint, in type of '((var h2 : HomSys), (var h1 : HomSys))'
+### Hint, in type of '((var h2 : HomSys), (var h1 : HomSys))'
   typename '__->?__'
   is not unifiable with type '_t1516 System (P ->? P)' (102.54)
 
-*** Hint, in type of '((var h2 : HomSys), (var h1 : HomSys))'
+### Hint, in type of '((var h2 : HomSys), (var h1 : HomSys))'
   typename '_t1088' (93.8)
   is not unifiable with type '_t366 (Set P)' (71.34)
 
-*** Hint, in type of '((var h2 : HomSys), (var h1 : HomSys))'
+### Hint, in type of '((var h2 : HomSys), (var h1 : HomSys))'
   typename '__->?__'
   is not unifiable with type '_t1516 System (P ->? P)' (102.54)
 
-*** Hint, in type of '(var h1 : HomSys)'
+### Hint, in type of '(var h1 : HomSys)'
   typename '_t1088' (93.8)
   is not unifiable with type '_t366 (Set P)' (71.34)
 
-*** Hint, in type of '(var h1 : HomSys)'
+### Hint, in type of '(var h1 : HomSys)'
   typename '__->?__'
   is not unifiable with type '_t1516 System (P ->? P)' (102.54)
 
-*** Hint, in type of '(var h2 : HomSys)'
+### Hint, in type of '(var h2 : HomSys)'
   typename '_t1088' (93.8)
   is not unifiable with type '_t366 (Set P)' (71.34)
 
-*** Hint, in type of '(var h1 : HomSys)'
+### Hint, in type of '(var h1 : HomSys)'
   typename '_t1088' (93.8)
   is not unifiable with type '_t366 (Set P)' (71.34)
 
-*** Hint 114.15-114.40, in type of '((op placesMap : HomSys -> P ->? P) (var h2 : HomSys),
+### Hint 114.15-114.40, in type of '((op placesMap : HomSys -> P ->? P) (var h2 : HomSys),
  (op placesMap : HomSys -> P ->? P) (var h1 : HomSys))'
   typename '__->?__'
   is not unifiable with type '_t1516 System (P ->? P)' (102.54)
 
-*** Hint, in type of '(var h2 : HomSys)'
+### Hint, in type of '(var h2 : HomSys)'
   typename '_t1088' (93.8)
   is not unifiable with type '_t366 (Set P)' (71.34)
 
-*** Hint, in type of '(var h1 : HomSys)'
+### Hint, in type of '(var h1 : HomSys)'
   typename '_t1088' (93.8)
   is not unifiable with type '_t366 (Set P)' (71.34)
 
-*** Hint 114.15-114.40, in type of '((op placesMap : HomSys -> P ->? P) (var h2 : HomSys),
+### Hint 114.15-114.40, in type of '((op placesMap : HomSys -> P ->? P) (var h2 : HomSys),
  (op placesMap : HomSys -> P ->? P) (var h1 : HomSys))'
   typename '__->?__'
   is not unifiable with type '_t1018 Net (P ->? P)' (79.35)
 
-*** Hint, in type of '(var h2 : HomSys)'
+### Hint, in type of '(var h2 : HomSys)'
   typename '_t1088' (93.8)
   is not unifiable with type '_t366 (Set P)' (71.34)
 
-*** Hint, in type of '(var h1 : HomSys)'
+### Hint, in type of '(var h1 : HomSys)'
   typename '_t1088' (93.8)
   is not unifiable with type '_t366 (Set P)' (71.34)
 
-*** Hint, in type of '(var h2 : HomSys)'
+### Hint, in type of '(var h2 : HomSys)'
   typename '_t1088' (93.8)
   is not unifiable with type '_t366 (Set P)' (71.34)
 
-*** Hint, in type of '(var h1 : HomSys)'
+### Hint, in type of '(var h1 : HomSys)'
   typename '_t1088' (93.8)
   is not unifiable with type '_t366 (Set P)' (71.34)
 
-*** Hint 114.44-114.79, in type of '((op transitionsMap : HomSys -> T ->? T) (var h2 : HomSys),
+### Hint 114.44-114.79, in type of '((op transitionsMap : HomSys -> T ->? T) (var h2 : HomSys),
  (op transitionsMap : HomSys -> T ->? T) (var h1 : HomSys))'
   typename '__->?__'
   is not unifiable with type '_t1516 System (P ->? P)' (102.54)
 
-*** Hint, in type of '(var h2 : HomSys)'
+### Hint, in type of '(var h2 : HomSys)'
   typename '_t1088' (93.8)
   is not unifiable with type '_t366 (Set P)' (71.34)
 
-*** Hint, in type of '(var h1 : HomSys)'
+### Hint, in type of '(var h1 : HomSys)'
   typename '_t1088' (93.8)
   is not unifiable with type '_t366 (Set P)' (71.34)
 
-*** Hint 114.44-114.79, in type of '((op transitionsMap : HomSys -> T ->? T) (var h2 : HomSys),
+### Hint 114.44-114.79, in type of '((op transitionsMap : HomSys -> T ->? T) (var h2 : HomSys),
  (op transitionsMap : HomSys -> T ->? T) (var h1 : HomSys))'
   typename '__->?__'
   is not unifiable with type '_t1018 Net (P ->? P)' (79.35)
 
-*** Hint, in type of '(var h2 : HomSys)'
+### Hint, in type of '(var h2 : HomSys)'
   typename '_t1088' (93.8)
   is not unifiable with type '_t366 (Set P)' (71.34)
 
-*** Hint, in type of '(var h1 : HomSys)'
+### Hint, in type of '(var h1 : HomSys)'
   typename '_t1088' (93.8)
   is not unifiable with type '_t366 (Set P)' (71.34)
 
-*** Hint, in type of '(var h2 : HomSys)'
+### Hint, in type of '(var h2 : HomSys)'
   typename '_t1088' (93.8)
   is not unifiable with type '_t366 (Set P)' (71.34)
 

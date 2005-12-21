@@ -55,6 +55,6 @@ x : a
 snoc nil x = snoc nil x
 head nil x = x
 %% Diagnostics -----------------------------------------------------------
-*** Hint 1.5, is type variable 'a'
-*** Hint 2.11, rebound type variable 'a'
-*** Hint 6.9, not a class 'a'
+### Hint 1.5, is type variable 'a'
+### Hint 2.11, rebound type variable 'a'
+### Hint 6.9, not a class 'a'

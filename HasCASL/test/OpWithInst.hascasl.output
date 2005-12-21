@@ -37,5 +37,5 @@ true : Unit %(fun)%
 %% Sentences -------------------------------------------------------------
 a = [s] a
 %% Diagnostics -----------------------------------------------------------
-*** Warning 4.22, missing kind for type variable  'a'
-*** Warning 6.28, missing kind for type variable  'a'
+### Warning 4.22, missing kind for type variable  'a'
+### Warning 6.28, missing kind for type variable  'a'

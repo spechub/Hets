@@ -33,8 +33,8 @@ not__ : ? Unit ->? Unit %(fun)%
 true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Diagnostics -----------------------------------------------------------
-*** Hint 2.27-2.32, wrong covariance of 'a'
-*** Hint 2.27-2.32, no kind found for 'a'
+### Hint 2.27-2.32, wrong covariance of 'a'
+### Hint 2.27-2.32, no kind found for 'a'
 *** Error 2.27-2.32, no kind found for 'Pred a'
-*** Hint 3.27, wrong contravariance of 'b'
+### Hint 3.27, wrong contravariance of 'b'
 *** Error 3.27, no kind found for 'b'

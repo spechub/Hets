@@ -73,6 +73,6 @@ twice3 = (\ (f : a ->? b, x : a) . f (f x) as (a ->? b) * a ->? b)
 twice = (\ (f)(x : a) . f (f x) as (a ->? b) -> a ->? b)
 twice f x = f (f x)
 %% Diagnostics -----------------------------------------------------------
-*** Hint 1.6, is type variable 'a'
-*** Hint 9.7, not a kind 'a ->? b'
-*** Hint 9.20, not a class 'a'
+### Hint 1.6, is type variable 'a'
+### Hint 9.7, not a kind 'a ->? b'
+### Hint 9.20, not a class 'a'

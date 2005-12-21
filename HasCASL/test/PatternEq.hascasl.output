@@ -67,4 +67,4 @@ program b = a
 c = (snd (x, y) as t)
 %% Diagnostics -----------------------------------------------------------
 *** Error 14.11-14.18, illegal toplevel pattern '((var x : s), (var y : s))'
-*** Warning 17.10, illegal lhs pattern '(var b : s)'
+### Warning 17.10, illegal lhs pattern '(var b : s)'

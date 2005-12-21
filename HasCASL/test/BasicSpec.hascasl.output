@@ -163,80 +163,80 @@ type Data4
       Cons42 : Data2 * Data1 ->? Data4 (sel2 :? Data2; sel1 :? Data1)
 true
 %% Diagnostics -----------------------------------------------------------
-*** Warning 1.7, void universe class declaration 'Type'
-*** Hint 3.5, is type variable 't'
+### Warning 1.7, void universe class declaration 'Type'
+### Hint 3.5, is type variable 't'
 *** Error 7.11, illegal type pattern argument '__'
 *** Error 11.16, not a class 'd'
-*** Warning 11.7, unchanged class 'a'
-*** Warning 11.10, unchanged class 'b'
-*** Warning 11.13, unchanged class 'c'
-*** Hint 11.19, refined class 'a'
-*** Hint 16.7, not a class 's'
-*** Hint 18.15, rebound variable 'x'
+### Warning 11.7, unchanged class 'a'
+### Warning 11.10, unchanged class 'b'
+### Warning 11.13, unchanged class 'c'
+### Hint 11.19, refined class 'a'
+### Hint 16.7, not a class 's'
+### Hint 18.15, rebound variable 'x'
 *** Error 20.12, unexpected mixfix token: res
-*** Hint 21.6, rebound variable 'x'
-*** Hint 21.6, rebound variable 'x'
-*** Warning 21.5-21.16, illegal lhs pattern '(var fst : s * t ->? s) ((var x : s), (var y : t))'
-*** Hint 22.6, rebound variable 'x'
-*** Hint 22.6, rebound variable 'x'
-*** Warning 22.5-22.16, illegal lhs pattern '(var snd : s * t ->? t) ((var x : s), (var y : t))'
-*** Hint 28.41, in type of '((var p : _v35), (pred tt : s))'
+### Hint 21.6, rebound variable 'x'
+### Hint 21.6, rebound variable 'x'
+### Warning 21.5-21.16, illegal lhs pattern '(var fst : s * t ->? s) ((var x : s), (var y : t))'
+### Hint 22.6, rebound variable 'x'
+### Hint 22.6, rebound variable 'x'
+### Warning 22.5-22.16, illegal lhs pattern '(var snd : s * t ->? t) ((var x : s), (var y : t))'
+### Hint 28.41, in type of '((var p : _v35), (pred tt : s))'
   typename 's' (24.15)
   is not unifiable with type 's ->? Unit' (15.11)
 
-*** Hint 28.35-28.41, untypable application (with result type: ? Unit)
+### Hint 28.35-28.41, untypable application (with result type: ? Unit)
  'eq (p, tt)'
 *** Error 28.33, no typing for 'program (var all : _v34) ((var p : _v35) : ? s) : ? Unit =
               eq (p, tt)'
-*** Hint 30.14, rebound variable 'x'
-*** Hint 30.40, no type match for: t1
+### Hint 30.14, rebound variable 'x'
+### Hint 30.40, no type match for: t1
   with (maximal) type: _v64 ->? _v63 ->? _v62 ->? _v61 ->? ? Unit
   known types:
     
-*** Hint 30.40-30.42, untypable application (with result type: _v63 ->? _v62 ->? _v61 ->? ? Unit)
+### Hint 30.40-30.42, untypable application (with result type: _v63 ->? _v62 ->? _v61 ->? ? Unit)
  't1 ()'
-*** Hint 30.40-30.45, untypable application (with result type: _v62 ->? _v61 ->? ? Unit)
+### Hint 30.40-30.45, untypable application (with result type: _v62 ->? _v61 ->? ? Unit)
  't1 () res'
-*** Hint 30.40-30.49, untypable application (with result type: _v61 ->? ? Unit)
+### Hint 30.40-30.49, untypable application (with result type: _v61 ->? ? Unit)
  't1 () res t2'
-*** Hint 30.40-30.52, untypable application (with result type: ? Unit)
+### Hint 30.40-30.52, untypable application (with result type: ? Unit)
  't1 () res t2 ()'
 *** Error 30.38, no typing for 'program (var And : _v46) (x, (var y : _v47) : ? Unit) : ? Unit =
               t1 () res t2 ()'
 *** Error 32.12, unexpected mixfix token: impl
 *** Error 34.12, unexpected mixfix token: or
-*** Hint 37.27, no type match for: all
+### Hint 37.27, no type match for: all
   with (maximal) type: _v74 ->? ? Unit
   known types:
     
-*** Hint 37.27-38.45, untypable application (with result type: ? Unit)
+### Hint 37.27-38.45, untypable application (with result type: ? Unit)
  'all
   (\ (var r : _v68) : ? Unit . all (\ x : s . p x impl r) impl r)'
 *** Error 37.25, no typing for 'program (var ex : _v66) ((var p : _v67) : ? s) : ? Unit =
               all
               (\ (var r : _v68) : ? Unit . all (\ x : s . p x impl r) impl r)'
-*** Hint 40.20, no type match for: all
+### Hint 40.20, no type match for: all
   with (maximal) type: _v82 ->? ? Unit
   known types:
     
-*** Hint 40.20-40.38, untypable application (with result type: ? Unit)
+### Hint 40.20-40.38, untypable application (with result type: ? Unit)
  'all (\ (var r : _v76) : ? Unit . r ())'
 *** Error 40.18, no typing for 'program (var ff : _v75) () : ? Unit =
               all (\ (var r : _v76) : ? Unit . r ())'
-*** Hint 45.9, not a class 't'
-*** Hint 45.8, rebound variable 'x'
-*** Hint 45.16, not a class 't'
-*** Hint 57.11, redeclared type 's'
-*** Hint 66.22, not a class 's'
-*** Hint 66.21, rebound variable 'x'
-*** Hint 66.25, no type match for: e
+### Hint 45.9, not a class 't'
+### Hint 45.8, rebound variable 'x'
+### Hint 45.16, not a class 't'
+### Hint 57.11, redeclared type 's'
+### Hint 66.22, not a class 's'
+### Hint 66.21, rebound variable 'x'
+### Hint 66.25, no type match for: e
   with (maximal) type: Unit
   known types:
     
 *** Error 66.25, no typing for 'e'
-*** Hint 67.9, not a class 's'
-*** Hint 67.8, rebound variable 'x'
-*** Hint 67.12, no type match for: e
+### Hint 67.9, not a class 's'
+### Hint 67.8, rebound variable 'x'
+### Hint 67.12, no type match for: e
   with (maximal) type: Unit
   known types:
     
