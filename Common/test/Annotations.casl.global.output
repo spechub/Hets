@@ -32,18 +32,18 @@
 %list [__], nil, cons
 %number __@@__
 %floating __frac__, __exp__
-*** Hint 1.1-2.1, no analysis of '%% many legal annotations for testing purposes'
-*** Hint 2.1-6.1, no analysis of '%{group comment 
+### Hint 1.1-2.1, no analysis of '%% many legal annotations for testing purposes'
+### Hint 2.1-6.1, no analysis of '%{group comment 
   %{
     over many lines
   %% } % }%'
-*** Hint 7.1-8.1, no analysis of '%%line comment starting immidiately after %%containing %{ }% , ending in %%'
-*** Hint 11.1-11.17, no analysis of '%(one_line_label)%'
-*** Hint 13.1-16.1, no analysis of '%(multi 
+### Hint 7.1-8.1, no analysis of '%%line comment starting immidiately after %%containing %{ }% , ending in %%'
+### Hint 11.1-11.17, no analysis of '%(one_line_label)%'
+### Hint 13.1-16.1, no analysis of '%(multi 
     line
     label)%'
-*** Hint 26.1-27.1, no analysis of '%% one word annotes '
-*** Hint 27.1, no analysis of '%implies'
-*** Hint 28.1, no analysis of '%def'
-*** Hint 29.2, no analysis of '%cons'
-*** Hint 30.1, no analysis of '%mono'
+### Hint 26.1-27.1, no analysis of '%% one word annotes '
+### Hint 27.1, no analysis of '%implies'
+### Hint 28.1, no analysis of '%def'
+### Hint 29.2, no analysis of '%cons'
+### Hint 30.1, no analysis of '%mono'

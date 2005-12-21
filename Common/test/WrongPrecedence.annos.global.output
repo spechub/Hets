@@ -8,4 +8,4 @@ a,b
 b,c 'a'
 *** Error 5.14, identifier has already other associativity 'b'
 *** Error 5.16, identifier has already other associativity 'a'
-*** Hint 5.20, repeated associative identifier 'd'
+### Hint 5.20, repeated associative identifier 'd'
