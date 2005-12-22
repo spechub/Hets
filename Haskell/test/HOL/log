@@ -1,0 +1,352 @@
++ for i in '*.thy'
+++ basename mrec3_h.thy .thy
++ j=mrec3_h
++ isabelle -q -e 'use_thy "mrec3_h";print_depth 300;theory "mrec3_h";axioms_of it;quit();'
+val it = false : bool
+ML> val commit = fn : unit -> bool
+Loading theory "HsHOL" (required by "mrec3_h")
+Loading theory "mrec3_h"
+[opening /home/maeder/casl/CASL-lib/Isabelle/prelude.ML]
+structure Header :
+  sig val record : string -> unit
+      val initialize : string list -> unit end
+val it = () : unit
+Proofs for datatype(s) "Prelude_Boolx"
+Constructing representing sets ...
+  Proving monotonicity ...
+  Proving the introduction rules ...
+  Proving the induction rule ...
+Proving isomorphism properties ...
+Proving freeness of constructors ...
+Proving induction rule for datatypes ...
+Proving case distinction theorems ...
+Constructing primrec combinators ...
+  Proving monotonicity ...
+  Proving the introduction rules ...
+  Proving the elimination rules ...
+Proving termination and uniqueness of primrec functions ...
+Proving characteristic theorems for primrec combinators ...
+Proving characteristic theorems for case combinators ...
+Proving equations for case splitting ...
+Proving additional theorems for TFL ...
+Proving equations for size function ...
+Proofs for datatype(s) "Prelude_Natx"
+Constructing representing sets ...
+  Proving monotonicity ...
+  Proving the introduction rules ...
+  Proving the induction rule ...
+Proving isomorphism properties ...
+Proving freeness of constructors ...
+Proving induction rule for datatypes ...
+Proving case distinction theorems ...
+Constructing primrec combinators ...
+  Proving monotonicity ...
+  Proving the introduction rules ...
+  Proving the elimination rules ...
+Proving termination and uniqueness of primrec functions ...
+Proving characteristic theorems for primrec combinators ...
+Proving characteristic theorems for case combinators ...
+Proving equations for case splitting ...
+Proving additional theorems for TFL ...
+Proving equations for size function ...
+Proving equations for primrec function(s) "mrec3_h.map1_Xmap2_X" ...
+val it = () : unit
+val it = () : unit
+val it =
+  {ProtoPure, Pure, CPure, HOL, Lattice_Locales, Orderings, LOrder, Set,
+    Typedef, Fun, Product_Type, FixedPoint, Sum_Type, Relation, Record,
+    Inductive, Transitive_Closure, Wellfounded_Recursion, OrderedGroup,
+    Ring_and_Field, Nat, NatArith, Datatype_Universe, Datatype, Divides,
+    Power, Finite_Set, Wellfounded_Relations, Equiv_Relations, IntDef,
+    Numeral, IntArith, SetInterval, Recdef, IntDiv, NatBin, NatSimprocs,
+    Presburger, Relation_Power, Parity, GCD, Binomial, PreList, List, Map,
+    Refute, SAT, Hilbert_Choice, Infinite_Set, Extraction, Reconstruction,
+    Main, HsHOL, mrec3_h} : theory
+val it =
+  [("mrec3_h.map1_def","map1 == %x. fst (map1_Xmap2_X x)"),
+   ("mrec3_h.map2_def","map2 == %x. snd (map1_Xmap2_X x)"),
+   ("mrec3_h.Prelude_Natx.Sx_def",
+    "Sx ?x1.0 ==
+     Abs_Prelude_Natx (In1 (In0 (??.Datatype_Universe.Leaf (Inr ?x1.0))))"),
+   ("mrec3_h.Prelude_Natx.Zx_def","Zx == Abs_Prelude_Natx (In0 arbitrary)"),
+   ("mrec3_h.Prelude_Natx.SSx_def",
+    "SSx ?x2.0 ?x1.0 ==
+     Abs_Prelude_Natx
+      (In1
+        (In1
+          (Scons (Rep_Prelude_Natx ?x2.0)
+            (??.Datatype_Universe.Leaf (Inl ?x1.0)))))"),
+   ("mrec3_h.Prelude_Boolx.Minx_def",
+    "Minx == Abs_Prelude_Boolx (In0 arbitrary)"),
+   ("mrec3_h.Prelude_Boolx.Plusx_def",
+    "Plusx == Abs_Prelude_Boolx (In1 arbitrary)"),
+   ("mrec3_h.type_definition_Prelude_Natx",
+    "EX x. x : Prelude_Natx_rep_set
+     ==> type_definition Rep_Prelude_Natx Abs_Prelude_Natx
+          Prelude_Natx_rep_set"),
+   ("mrec3_h.type_definition_Prelude_Boolx",
+    "EX x. x : Prelude_Boolx_rep_set
+     ==> type_definition Rep_Prelude_Boolx Abs_Prelude_Boolx
+          Prelude_Boolx_rep_set"),
+   ("mrec3_h.Prelude_Natx.Prelude_Natx_rec_def",
+    "Prelude_Natx_rec ?f1.0 ?f2.0 ?f3.0 ==
+     %x. THE y. (x, y) : Prelude_Natx_rec_set ?f1.0 ?f2.0 ?f3.0"),
+   ("mrec3_h.Prelude_Natx.Prelude_Natx_case_def",
+    "Prelude_Natx_case ?f1.0 ?f2.0 ?f3.0 ==
+     Prelude_Natx_rec ?f1.0 ?f2.0 (%x1 x2 x3. ?f3.0 x1 x2)"),
+   ("mrec3_h.Prelude_Natx.Prelude_Natx_size_def",
+    "size == Prelude_Natx_rec 0 (%x. 0) (%x xa xb. xb + Suc 0)"),
+   ("mrec3_h.Prelude_Boolx.Prelude_Boolx_rec_def",
+    "Prelude_Boolx_rec ?f1.0 ?f2.0 ==
+     %x. THE y. (x, y) : Prelude_Boolx_rec_set ?f1.0 ?f2.0"),
+   ("mrec3_h.Prelude_Boolx.Prelude_Boolx_case_def",
+    "Prelude_Boolx_case ?f1.0 ?f2.0 == Prelude_Boolx_rec ?f1.0 ?f2.0"),
+   ("mrec3_h.Prelude_Boolx.Prelude_Boolx_size_def",
+    "size == Prelude_Boolx_rec 0 0"),
+   ("mrec3_h.Prelude_Natx.Prelude_Natx_rec_set.defs_1",
+    "Prelude_Natx_rec_set ?f1.0 ?f2.0 ?f3.0 ==
+     lfp
+      (%S.
+          {x.
+           x = (Zx, ?f1.0) |
+           (EX x1. x = (Sx x1, ?f2.0 x1)) |
+           (EX x1 x2 y1. x = (SSx x2 x1, ?f3.0 x2 x1 y1) & (x2, y1) : S)})"),
+   ("mrec3_h.Prelude_Natx.Prelude_Natx_rep_set.defs_1",
+    "Prelude_Natx_rep_set ==
+     lfp
+      (%S.
+          {x.
+           x = In0 arbitrary |
+           (EX x1. x = In1 (In0 (??.Datatype_Universe.Leaf (Inr x1)))) |
+           (EX x1 x2.
+               x = In1 (In1 (Scons x2 (??.Datatype_Universe.Leaf (Inl x1)))) &
+               x2 : S)})"),
+   ("mrec3_h.Prelude_Boolx.Prelude_Boolx_rec_set.defs_1",
+    "Prelude_Boolx_rec_set ?f1.0 ?f2.0 ==
+     lfp (%S. {x. x = (Minx, ?f1.0) | x = (Plusx, ?f2.0)})"),
+   ("mrec3_h.Prelude_Boolx.Prelude_Boolx_rep_set.defs_1",
+    "Prelude_Boolx_rep_set ==
+     lfp (%S. {x. x = In0 arbitrary | x = In1 arbitrary})"),
+   ("mrec3_h.map1_Xmap2_X.map1_Xmap2_X_Prelude_Natx_def",
+    "map1_Xmap2_X ==
+     Prelude_Natx_rec (%f. Sx (f 0), %w f. Zx)
+      (%pX1. (%f. Sx (f pX1), %w f. Sx (pX1 + 1)))
+      (%pX1 pX2 pX1a.
+          (snd pX1a pX2, %w f. if pX2 = Minx then SSx pX1 w else fst pX1a f))")]
+  : (string * thm) list
++ for i in '*.thy'
+++ basename mrec_h.thy .thy
++ j=mrec_h
++ isabelle -q -e 'use_thy "mrec_h";print_depth 300;theory "mrec_h";axioms_of it;quit();'
+val it = false : bool
+ML> val commit = fn : unit -> bool
+Loading theory "HsHOL" (required by "mrec_h")
+Loading theory "mrec_h"
+[opening /home/maeder/casl/CASL-lib/Isabelle/prelude.ML]
+structure Header :
+  sig val record : string -> unit
+      val initialize : string list -> unit end
+val it = () : unit
+Proofs for datatype(s) "Prelude_Natx"
+Constructing representing sets ...
+  Proving monotonicity ...
+  Proving the introduction rules ...
+  Proving the induction rule ...
+Proving isomorphism properties ...
+Proving freeness of constructors ...
+Proving induction rule for datatypes ...
+Proving case distinction theorems ...
+Constructing primrec combinators ...
+  Proving monotonicity ...
+  Proving the introduction rules ...
+  Proving the elimination rules ...
+Proving termination and uniqueness of primrec functions ...
+Proving characteristic theorems for primrec combinators ...
+Proving characteristic theorems for case combinators ...
+Proving equations for case splitting ...
+Proving additional theorems for TFL ...
+Proving equations for size function ...
+Proving equations for primrec function(s) "mrec_h.fun1_Xfun2_X" ...
+val it = () : unit
+val it = () : unit
+val it =
+  {ProtoPure, Pure, CPure, HOL, Lattice_Locales, Orderings, LOrder, Set,
+    Typedef, Fun, Product_Type, FixedPoint, Sum_Type, Relation, Record,
+    Inductive, Transitive_Closure, Wellfounded_Recursion, OrderedGroup,
+    Ring_and_Field, Nat, NatArith, Datatype_Universe, Datatype, Divides,
+    Power, Finite_Set, Wellfounded_Relations, Equiv_Relations, IntDef,
+    Numeral, IntArith, SetInterval, Recdef, IntDiv, NatBin, NatSimprocs,
+    Presburger, Relation_Power, Parity, GCD, Binomial, PreList, List, Map,
+    Refute, SAT, Hilbert_Choice, Infinite_Set, Extraction, Reconstruction,
+    Main, HsHOL, mrec_h} : theory
+val it =
+  [("mrec_h.fun1_def","fun1 == %x. fst (fun1_Xfun2_X x)"),
+   ("mrec_h.fun2_def","fun2 == %x. snd (fun1_Xfun2_X x)"),
+   ("mrec_h.Prelude_Natx.Sx_def",
+    "Sx ?x2.0 ?x1.0 ==
+     Abs_Prelude_Natx
+      (In1 (Scons (??.Datatype_Universe.Leaf ?x2.0) (Rep_Prelude_Natx ?x1.0)))"),
+   ("mrec_h.Prelude_Natx.Zx_def","Zx == Abs_Prelude_Natx (In0 arbitrary)"),
+   ("mrec_h.type_definition_Prelude_Natx",
+    "EX x. x : Prelude_Natx_rep_set
+     ==> type_definition Rep_Prelude_Natx Abs_Prelude_Natx
+          Prelude_Natx_rep_set"),
+   ("mrec_h.Prelude_Natx.Prelude_Natx_rec_def",
+    "Prelude_Natx_rec ?f1.0 ?f2.0 ==
+     %x. THE y. (x, y) : Prelude_Natx_rec_set ?f1.0 ?f2.0"),
+   ("mrec_h.Prelude_Natx.Prelude_Natx_case_def",
+    "Prelude_Natx_case ?f1.0 ?f2.0 ==
+     Prelude_Natx_rec ?f1.0 (%x1 x2 x3. ?f2.0 x1 x2)"),
+   ("mrec_h.Prelude_Natx.Prelude_Natx_size_def",
+    "size == Prelude_Natx_rec 0 (%x xa xb. xb + Suc 0)"),
+   ("mrec_h.Prelude_Natx.Prelude_Natx_rec_set.defs_1",
+    "Prelude_Natx_rec_set ?f1.0 ?f2.0 ==
+     lfp
+      (%S.
+          {x.
+           x = (Zx, ?f1.0) |
+           (EX x1 x2 y1. x = (Sx x2 x1, ?f2.0 x2 x1 y1) & (x1, y1) : S)})"),
+   ("mrec_h.Prelude_Natx.Prelude_Natx_rep_set.defs_1",
+    "Prelude_Natx_rep_set ==
+     lfp
+      (%S.
+          {x.
+           x = In0 arbitrary |
+           (EX x1 x2.
+               x = In1 (Scons (??.Datatype_Universe.Leaf x2) x1) & x1 : S)})"),
+   ("mrec_h.fun1_Xfun2_X.fun1_Xfun2_X_Prelude_Natx_def",
+    "fun1_Xfun2_X ==
+     Prelude_Natx_rec ((Zx, 0), 0)
+      (%pX1 pX2 pX2a.
+          ((Sx pX1 (fst (fst pX2a)), pX1 * snd pX2a), snd (fst pX2a) + pX1))")]
+  : (string * thm) list
++ for i in '*.thy'
+++ basename wcard_h.thy .thy
++ j=wcard_h
++ isabelle -q -e 'use_thy "wcard_h";print_depth 300;theory "wcard_h";axioms_of it;quit();'
+val it = false : bool
+ML> val commit = fn : unit -> bool
+Loading theory "HsHOL" (required by "wcard_h")
+Loading theory "wcard_h"
+[opening /home/maeder/casl/CASL-lib/Isabelle/prelude.ML]
+structure Header :
+  sig val record : string -> unit
+      val initialize : string list -> unit end
+val it = () : unit
+Proofs for datatype(s) "Prelude_Boolx"
+Constructing representing sets ...
+  Proving monotonicity ...
+  Proving the introduction rules ...
+  Proving the induction rule ...
+Proving isomorphism properties ...
+Proving freeness of constructors ...
+Proving induction rule for datatypes ...
+Proving case distinction theorems ...
+Constructing primrec combinators ...
+  Proving monotonicity ...
+  Proving the introduction rules ...
+  Proving the elimination rules ...
+Proving termination and uniqueness of primrec functions ...
+Proving characteristic theorems for primrec combinators ...
+Proving characteristic theorems for case combinators ...
+Proving equations for case splitting ...
+Proving additional theorems for TFL ...
+Proving equations for size function ...
+Proofs for datatype(s) "Prelude_Natx"
+Constructing representing sets ...
+  Proving monotonicity ...
+  Proving the introduction rules ...
+  Proving the induction rule ...
+Proving isomorphism properties ...
+Proving freeness of constructors ...
+Proving induction rule for datatypes ...
+Proving case distinction theorems ...
+Constructing primrec combinators ...
+  Proving monotonicity ...
+  Proving the introduction rules ...
+  Proving the elimination rules ...
+Proving termination and uniqueness of primrec functions ...
+Proving characteristic theorems for primrec combinators ...
+Proving characteristic theorems for case combinators ...
+Proving equations for case splitting ...
+Proving additional theorems for TFL ...
+Proving equations for size function ...
+val it = () : unit
+val it = () : unit
+val it =
+  {ProtoPure, Pure, CPure, HOL, Lattice_Locales, Orderings, LOrder, Set,
+    Typedef, Fun, Product_Type, FixedPoint, Sum_Type, Relation, Record,
+    Inductive, Transitive_Closure, Wellfounded_Recursion, OrderedGroup,
+    Ring_and_Field, Nat, NatArith, Datatype_Universe, Datatype, Divides,
+    Power, Finite_Set, Wellfounded_Relations, Equiv_Relations, IntDef,
+    Numeral, IntArith, SetInterval, Recdef, IntDiv, NatBin, NatSimprocs,
+    Presburger, Relation_Power, Parity, GCD, Binomial, PreList, List, Map,
+    Refute, SAT, Hilbert_Choice, Infinite_Set, Extraction, Reconstruction,
+    Main, HsHOL, wcard_h} : theory
+val it =
+  [("wcard_h.map1_def",
+    "map1 ==
+     %x f. case x of Zx => Sx (f 0) | Sx pX1 => Sx (f pX1) | SSx pX2 pX1 => x"),
+   ("wcard_h.Prelude_Natx.Sx_def",
+    "Sx ?x1.0 ==
+     Abs_Prelude_Natx (In1 (In0 (??.Datatype_Universe.Leaf (Inr ?x1.0))))"),
+   ("wcard_h.Prelude_Natx.Zx_def","Zx == Abs_Prelude_Natx (In0 arbitrary)"),
+   ("wcard_h.Prelude_Natx.SSx_def",
+    "SSx ?x2.0 ?x1.0 ==
+     Abs_Prelude_Natx
+      (In1
+        (In1
+          (Scons (Rep_Prelude_Natx ?x2.0)
+            (??.Datatype_Universe.Leaf (Inl ?x1.0)))))"),
+   ("wcard_h.Prelude_Boolx.Minx_def",
+    "Minx == Abs_Prelude_Boolx (In0 arbitrary)"),
+   ("wcard_h.Prelude_Boolx.Plusx_def",
+    "Plusx == Abs_Prelude_Boolx (In1 arbitrary)"),
+   ("wcard_h.type_definition_Prelude_Natx",
+    "EX x. x : Prelude_Natx_rep_set
+     ==> type_definition Rep_Prelude_Natx Abs_Prelude_Natx
+          Prelude_Natx_rep_set"),
+   ("wcard_h.type_definition_Prelude_Boolx",
+    "EX x. x : Prelude_Boolx_rep_set
+     ==> type_definition Rep_Prelude_Boolx Abs_Prelude_Boolx
+          Prelude_Boolx_rep_set"),
+   ("wcard_h.Prelude_Natx.Prelude_Natx_rec_def",
+    "Prelude_Natx_rec ?f1.0 ?f2.0 ?f3.0 ==
+     %x. THE y. (x, y) : Prelude_Natx_rec_set ?f1.0 ?f2.0 ?f3.0"),
+   ("wcard_h.Prelude_Natx.Prelude_Natx_case_def",
+    "Prelude_Natx_case ?f1.0 ?f2.0 ?f3.0 ==
+     Prelude_Natx_rec ?f1.0 ?f2.0 (%x1 x2 x3. ?f3.0 x1 x2)"),
+   ("wcard_h.Prelude_Natx.Prelude_Natx_size_def",
+    "size == Prelude_Natx_rec 0 (%x. 0) (%x xa xb. xb + Suc 0)"),
+   ("wcard_h.Prelude_Boolx.Prelude_Boolx_rec_def",
+    "Prelude_Boolx_rec ?f1.0 ?f2.0 ==
+     %x. THE y. (x, y) : Prelude_Boolx_rec_set ?f1.0 ?f2.0"),
+   ("wcard_h.Prelude_Boolx.Prelude_Boolx_case_def",
+    "Prelude_Boolx_case ?f1.0 ?f2.0 == Prelude_Boolx_rec ?f1.0 ?f2.0"),
+   ("wcard_h.Prelude_Boolx.Prelude_Boolx_size_def",
+    "size == Prelude_Boolx_rec 0 0"),
+   ("wcard_h.Prelude_Natx.Prelude_Natx_rec_set.defs_1",
+    "Prelude_Natx_rec_set ?f1.0 ?f2.0 ?f3.0 ==
+     lfp
+      (%S.
+          {x.
+           x = (Zx, ?f1.0) |
+           (EX x1. x = (Sx x1, ?f2.0 x1)) |
+           (EX x1 x2 y1. x = (SSx x2 x1, ?f3.0 x2 x1 y1) & (x2, y1) : S)})"),
+   ("wcard_h.Prelude_Natx.Prelude_Natx_rep_set.defs_1",
+    "Prelude_Natx_rep_set ==
+     lfp
+      (%S.
+          {x.
+           x = In0 arbitrary |
+           (EX x1. x = In1 (In0 (??.Datatype_Universe.Leaf (Inr x1)))) |
+           (EX x1 x2.
+               x = In1 (In1 (Scons x2 (??.Datatype_Universe.Leaf (Inl x1)))) &
+               x2 : S)})"),
+   ("wcard_h.Prelude_Boolx.Prelude_Boolx_rec_set.defs_1",
+    "Prelude_Boolx_rec_set ?f1.0 ?f2.0 ==
+     lfp (%S. {x. x = (Minx, ?f1.0) | x = (Plusx, ?f2.0)})"),
+   ("wcard_h.Prelude_Boolx.Prelude_Boolx_rep_set.defs_1",
+    "Prelude_Boolx_rep_set ==
+     lfp (%S. {x. x = In0 arbitrary | x = In1 arbitrary})")]
+  : (string * thm) list
