@@ -160,7 +160,7 @@ Haskell_files = $(addsuffix .hs, \
 Haskell/ATC_Haskell.der.hs: $(Haskell_files) $(GENRULES)
 	$(GENRULECALL) -i Haskell.BaseATC -o $@ $(Haskell_files)
 
-TESTDIRS += ToHaskell
+TESTDIRS += ToHaskell Haskell/test
 TESTTARGETS += hana h2hf
 endif
 
