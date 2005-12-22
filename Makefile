@@ -95,7 +95,7 @@ TESTTARGETS += hetdg OWL_DL/readAStest
 endif
 
 ### list of directories to run checks in
-TESTDIRS += Common CASL HasCASL
+TESTDIRS += Common CASL HasCASL test
 
 PFE_TOOLDIR = $(wildcard ../programatica/tools)
 ifneq ($(strip $(PFE_TOOLDIR)),)
