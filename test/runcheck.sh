@@ -1,8 +1,15 @@
-#!/usr/local/bin/bash
+#!/bin/sh
 
-for i in *.hascasl
+for i in */ 
 do
   echo "processing $i"
-  ../hetpa $i
-  ../hetana $i
+  cd $i
+  if [ -f Makefile ] 
+      then gmake
+  elif [ -x run.sh ] 
+      then ./run.sh
+  else echo "nothing done in $i" 
+  fi 
+  cd ..
 done
+  

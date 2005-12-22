@@ -1,0 +1,15 @@
+library ParameterSpecTest
+
+spec X =
+     sort sX
+     pred A : sX *sX
+end
+
+spec Sym [sort s pred p1:s*s] =
+     forall x,y:s
+     . p1(x,y) <=> p1(y,x)
+end
+
+spec X_inv =
+     Sym [X] 
+end
