@@ -6,7 +6,7 @@ run ()
 {
   cd $1
   ../../../ToHaskell/h2hf $1 *.hs
-  ./runisabelle.sh >& log
+  ./runisabelle.sh > log 2>&1
   fgrep '***' log 
   cvs diff -u log
 cd ..
