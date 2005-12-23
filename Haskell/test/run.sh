@@ -1,5 +1,7 @@
 #!/bin/sh
 
+CVSROOT=:pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:/repository
+
 run ()
 {
   cd $1

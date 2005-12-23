@@ -1,15 +1,21 @@
 #!/bin/sh
 
-for i in */ 
+CVSROOT=:pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:/repository
+
+export CVSROOT
+
+for i in *
 do
-  echo "processing $i"
-  cd $i
-  if [ -f Makefile ] 
+  if [ -d $i ]; then
+    echo "processing $i"
+    cd $i
+    if [ -f Makefile ] 
       then gmake
-  elif [ -x run.sh ] 
+    elif [ -x run.sh ] 
       then ./run.sh
-  else echo "nothing done in $i" 
+    else echo "nothing done in $i" 
+    fi 
+    cd ..
   fi 
-  cd ..
 done
   
