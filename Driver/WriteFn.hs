@@ -17,6 +17,7 @@ module Driver.WriteFn where
 
 import Control.Monad
 import Data.Maybe
+import Data.List
 
 import Text.PrettyPrint.HughesPJ(render)
 import Common.Utils
@@ -50,6 +51,7 @@ import Logic.Prover
 import Static.DevGraph
 import Static.DGToSpec
 import qualified Static.PrintDevGraph as DG
+import Proofs.InferBasic
 
 import ATC.DevGraph()
 import ATC.GlobalAnnotations()
@@ -157,10 +159,16 @@ writeVerbFile opt f str = do
 
 writeSpecFiles :: HetcatsOpts -> FilePath -> LibEnv
                -> GlobalAnnos -> (LIB_NAME, GlobalEnv) -> IO()
-writeSpecFiles opt file lenv ga (ln, gctx) = let
-    ns = specNames opt
-    outTypes = outtypes opt
-    allSpecs = null ns in
+writeSpecFiles opt file lenv ga (ln, gctx) = do
+    let ns = specNames opt
+        (dgFiles, outTypes) = partition (\ t -> case t of
+            DGFile -> True
+            _ -> False) $ outtypes opt
+        allSpecs = null ns
+    unless (null dgFiles) $ do
+      let f = rmSuffix file ++ "." ++ show (head dgFiles)
+      writeVerbFile opt f $ toShATermString $ automatic
+                        $ emptyProofStatus ln lenv
     mapM_ ( \ i -> case Map.lookup i gctx of
         Just (SpecEntry (_,_,_, NodeSig n _)) ->
             case maybeResult $ computeTheory lenv (ln, n) of
@@ -184,12 +192,12 @@ writeSpecFiles opt file lenv ga (ln, gctx) = let
                                     Just d -> writeVerbFile opt f $
                                               shows d "\n"
                       TheoryFile d -> if null $ show d then
-                          writeVerbFile opt f $ 
+                          writeVerbFile opt f $
                               shows (DG.printTh ga i gTh) "\n"
                           else putIfVerbose opt 0
                                    "printing theory delta is not implemented"
                       SigFile d -> if null $ show d then
-                          writeVerbFile opt f $ 
+                          writeVerbFile opt f $
                               shows (printText0 ga $ signOf gTh) "\n"
                           else putIfVerbose opt 0
                                  "printing signature delta is not implemented"
@@ -214,5 +222,5 @@ writeSpecFiles opt file lenv ga (ln, gctx) = let
                              ) outTypes
         _ -> if allSpecs then return () else
                     putIfVerbose opt 0 $ "Unknown spec name: " ++ show i
-              ) $ if null outTypes then [] else 
+              ) $ if null outTypes then [] else
                       if allSpecs then Map.keys gctx else ns

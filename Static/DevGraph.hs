@@ -177,6 +177,9 @@ instance PrettyPrint DGLinkLab where
 type ProofHistory = [([DGRule], [DGChange])]
 type ProofStatus = (LIB_NAME, LibEnv, Map.Map LIB_NAME ProofHistory)
 
+emptyProofStatus :: LIB_NAME -> LibEnv -> ProofStatus
+emptyProofStatus ln le = (ln, le, Map.map (const [([], [])]) le)
+
 data DGChange = InsertNode (LNode DGNodeLab)
               | DeleteNode (LNode DGNodeLab)
               | InsertEdge (LEdge DGLinkLab)

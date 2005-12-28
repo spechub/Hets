@@ -88,17 +88,12 @@ treeS = "tree."
 bafS = ".baf"
 astS = "ast"
 
-graphS, ppS, envS, naxS, thyS, dfgS, comptableXmlS, sigS, thS, deltaS :: String
+graphS, ppS, envS, naxS, deltaS :: String
 graphS = "graph."
 ppS = "pp."
 envS = "env"
 naxS = ".nax"
-thyS = "thy"
-dfgS = "dfg"
-sigS = "sig"
-thS = "th"
 deltaS = ".delta"
-comptableXmlS = "comptable.xml"
 
 showOpt :: String -> String
 showOpt s = if null s then "" else " --" ++ s
@@ -258,6 +253,7 @@ aInTypes = [ f x | f <- [ASTreeIn, ATermIn], x <- [BAF, NonBAF] ]
 data OutType = PrettyOut PrettyType
              | HetCASLOut HetOutType HetOutFormat
              | GraphOut GraphType
+             | DGFile
              | EnvOut
              | ThyFile -- isabelle theory file
              | DfgFile -- SPASS input file
@@ -270,16 +266,20 @@ instance Show OutType where
              PrettyOut p -> ppS ++ show p
              HetCASLOut h f -> show h ++ "." ++ show f
              GraphOut f -> graphS ++ show f
+             DGFile -> "dg"
              EnvOut -> envS
-             ThyFile -> thyS
-             DfgFile -> dfgS
-             ComptableXml -> comptableXmlS
-             SigFile d -> sigS ++ show d
-             TheoryFile d -> thS ++ show d
+             ThyFile -> "thy"
+             DfgFile -> "dfg"
+             ComptableXml -> "comptable.xml"
+             SigFile d -> "sig" ++ show d
+             TheoryFile d -> "th" ++ show d
+
+plainOutTypeList :: [OutType]
+plainOutTypeList = [ DGFile, EnvOut, ThyFile, DfgFile, ComptableXml ]
 
 outTypeList :: [OutType]
 outTypeList = let dl = [Delta, Complete] in
-    [ EnvOut, ThyFile, DfgFile, ComptableXml ]
+    plainOutTypeList
     ++ [ PrettyOut p | p <- prettyList ]
     ++ [ SigFile d | d <- dl ]
     ++ [ TheoryFile d | d <- dl ]
@@ -296,7 +296,7 @@ data Delta = Delta | Complete
 instance Show Delta where
     show d = case d of
                Delta -> deltaS
-               _ -> ""
+               Complete -> ""
 
 -- | 'PrettyType' describes the type of output we want the pretty-printer
 -- to generate
@@ -398,12 +398,11 @@ options =
       "destination directory for output files"
     , Option ['o'] [outtypesS] (ReqArg parseOutTypes "OTYPES")
       ("output file types, default nothing," ++ crS ++
-       listS ++ crS
-       ++ bS ++ envS ++ crS
-       ++ bS ++ thyS ++ crS
-       ++ bS ++ dfgS ++ crS
-       ++ bS ++ comptableXmlS ++ crS
-       ++ bS ++ joinBar [sigS, thS] ++ bracket deltaS ++ crS
+       listS ++ crS ++ concatMap ( \ t -> bS ++ show t ++ crS)
+             plainOutTypeList
+       ++ bS ++ joinBar (map show [SigFile Complete,
+                                   TheoryFile Complete])
+              ++ bracket deltaS ++ crS
        ++ bS ++ ppS ++ joinBar (map show prettyList) ++ crS
        ++ bS ++ graphS ++ joinBar (map show graphList) ++ crS
        ++ bS ++ astS ++ formS ++ crS

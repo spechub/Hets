@@ -186,9 +186,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts = do
   event <- newIORef 0
   convRef <- newIORef convMaps
   showInternalNames <- newIORef (InternalNames False [])
-  let proofHistory = Map.fromList [(key,[([]::[DGRule], []::[DGChange])])|
-                                   key <- Map.keys (libname2dg convMaps)]
-  ioRefProofStatus <- newIORef (ln, libname2dg convMaps,proofHistory)
+  ioRefProofStatus <- newIORef $ emptyProofStatus ln $ libname2dg convMaps
   ioRefSubtreeEvents <- newIORef (Map.empty::(Map.Map Descr Descr))
   ioRefVisibleNodes <- newIORef [(Graph.nodes dGraph)]
   let gid = nextGraphId graphMem
