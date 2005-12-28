@@ -38,6 +38,7 @@ import Static.DevGraph
 import Static.DGToSpec
 
 import Proofs.InferBasic
+import Proofs.Automatic
 import Proofs.Global
 import Proofs.Local
 import Proofs.Composition

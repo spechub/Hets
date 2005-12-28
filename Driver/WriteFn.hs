@@ -51,7 +51,7 @@ import Logic.Prover
 import Static.DevGraph
 import Static.DGToSpec
 import qualified Static.PrintDevGraph as DG
-import Proofs.InferBasic
+import Proofs.Automatic
 
 import ATC.DevGraph()
 import ATC.GlobalAnnotations()

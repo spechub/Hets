@@ -63,9 +63,9 @@ INLINEAXIOMS = utils/outlineAxioms
 HADDOCK = haddock
 CPPP = cpp
 
-# remove -fno-warn-orphans for older ghcs
+# remove -fno-warn-orphans for older ghcs and add -ifgl
 HC_WARN = -Wall -fno-warn-orphans
-HC_FLAGS = -package fgl \
+HC_FLAGS = \
     $(HC_WARN) -fglasgow-exts -fno-monomorphism-restriction \
     -fallow-overlapping-instances -fallow-undecidable-instances
 # -ddump-minimal-imports
@@ -77,7 +77,7 @@ HC_INCLUDE = $(addprefix -i, $(INCLUDE_PATH))
 logics = CASL HasCASL Isabelle Modal CoCASL COL CspCASL CASL_DL SPASS OWL_DL
 
 TESTTARGETS += test_parser hetpa hetana Test.o wrap isa \
-    atermlibtest hatermdiff atctest atctest2 taxonomy
+    atermlibtest hatermdiff atctest atctest2
 
 UNI_PACKAGE_CONF = $(wildcard ../uni/uni-package.conf)
 ifneq ($(strip $(UNI_PACKAGE_CONF)),)
@@ -91,7 +91,7 @@ uni_dirs = ../uni/davinci ../uni/graphs ../uni/events \
 
 uni_sources = $(wildcard $(addsuffix /haddock/*.hs, $(uni_dirs))) \
     $(wildcard ../uni/htk/haddock/*/*.hs)
-TESTTARGETS += hetdg OWL_DL/readAStest
+TESTTARGETS += hetdg OWL_DL/readAStest taxonomy
 endif
 
 ### list of directories to run checks in

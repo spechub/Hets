@@ -17,6 +17,7 @@ import qualified Common.AS_Annotation as AS_Anno
 import Common.PrettyPrint
 import Common.Utils
 import Common.ProofUtils
+import Common.DynamicUtils
 import qualified Common.OrderedMap as OMap
 import qualified Common.Lib.Map as Map (toList,fromList)
 import qualified Common.Lib.Set as Set
