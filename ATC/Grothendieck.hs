@@ -24,193 +24,207 @@ atcLogicLookup :: String -> String -> AnyLogic
 atcLogicLookup s = lookupLogic_in_LG $ "ShATermConvertible " ++ s ++ ":"
 
 instance ShATermConvertible G_basic_spec where
-     toShATerm att0 (G_basic_spec lid basic_spec) = 
+     toShATerm att0 (G_basic_spec lid basic_spec) =
          case toShATerm att0 (language_name lid) of { (att1,i1) ->
          case toShATerm att1 basic_spec of { (att2,i2) ->
            addATerm (ShAAppl "G_basic_spec" [i1,i2] []) att2}}
-     fromShATerm att = 
+     fromShATerm att =
          case getATerm att of
-            (ShAAppl "G_basic_spec" [i1,i2] _) ->
+            ShAAppl "G_basic_spec" [i1,i2] _ ->
                 case fromShATerm (getATermByIndex1 i1 att) of { i1' ->
                 case (getATermByIndex1 i2 att) of { att' ->
                 case atcLogicLookup "G_basic_spec" i1'  of {
-                    Logic lid -> 
-                        G_basic_spec lid (fromShATerm att')}}} 
-            u     -> fromShATermError "G_basic_spec" u
+                    Logic lid ->
+                        G_basic_spec lid (fromShATerm att')}}}
+            u -> fromShATermError "G_basic_spec" u
+     type_of _ = "Grothendieck.G_basic_spec"
 
 instance ShATermConvertible G_sign where
-     toShATerm att0 (G_sign lid sign) = 
+     toShATerm att0 (G_sign lid sign) =
          case toShATerm att0 (language_name lid) of { (att1,i1) ->
          case toShATerm att1 sign of { (att2,i2) ->
            addATerm (ShAAppl "G_sign" [i1,i2] []) att2}}
-     fromShATerm att = 
+     fromShATerm att =
          case getATerm att of
-            (ShAAppl "G_sign" [i1,i2] _) ->
+            ShAAppl "G_sign" [i1,i2] _ ->
                 let i1' = fromShATerm (getATermByIndex1 i1 att)
                     att' = getATermByIndex1 i2 att
                 in case atcLogicLookup "G_sign" i1' of
                     Logic lid -> G_sign lid (fromShATerm att')
-            u     -> fromShATermError "G_sign" u
+            u -> fromShATermError "G_sign" u
+     type_of _ = "Grothendieck.G_sign"
 
 instance ShATermConvertible G_ext_sign where
-     toShATerm att0 (G_ext_sign lid sign _) = 
+     toShATerm att0 (G_ext_sign lid sign _) =
          case toShATerm att0 (language_name lid) of { (att1,i1) ->
          case toShATerm att1 sign of { (att2,i2) ->
            addATerm (ShAAppl "G_ext_sign" [i1,i2] []) att2}}
-     fromShATerm att = 
+     fromShATerm att =
          case getATerm att of
-            (ShAAppl "G_ext_sign" [i1,i2] _) ->
+            ShAAppl "G_ext_sign" [i1,i2] _ ->
                 let i1' = fromShATerm (getATermByIndex1 i1 att)
                     att' = getATermByIndex1 i2 att
-                in case atcLogicLookup "G_ext_sign" 
+                in case atcLogicLookup "G_ext_sign"
                    i1' of
                     Logic lid -> G_ext_sign lid (fromShATerm att') Set.empty
-            u     -> fromShATermError "G_ext_sign" u
+            u -> fromShATermError "G_ext_sign" u
+     type_of _ = "Grothendieck.G_ext_sign"
 
 instance ShATermConvertible G_sign_list where
-     toShATerm att0 (G_sign_list lid signs) = 
+     toShATerm att0 (G_sign_list lid signs) =
          case toShATerm att0 (language_name lid) of { (att1,i1) ->
          case toShATerm att1 signs of { (att2,i2) ->
            addATerm (ShAAppl "G_sign_list" [i1,i2] []) att2}}
      fromShATerm att =
          case getATerm att of
-            (ShAAppl "G_sign_list" [i1,i2] _) ->
+            ShAAppl "G_sign_list" [i1,i2] _ ->
                 let i1' = fromShATerm (getATermByIndex1 i1 att)
                     att' = getATermByIndex1 i2 att
-                in case atcLogicLookup "G_sign_list" 
+                in case atcLogicLookup "G_sign_list"
                    i1' of Logic lid -> G_sign_list lid (fromShATerm att')
-            u     -> fromShATermError "G_sign" u
+            u -> fromShATermError "G_sign_list" u
+     type_of _ = "Grothendieck.G_sign_list"
 
 instance ShATermConvertible G_symbol where
-     toShATerm att0 (G_symbol lid symbol) = 
+     toShATerm att0 (G_symbol lid symbol) =
          case toShATerm att0 (language_name lid) of { (att1,i1) ->
          case toShATerm att1 symbol of { (att2,i2) ->
            addATerm (ShAAppl "G_symbol" [i1,i2] []) att2}}
-     fromShATerm att = 
+     fromShATerm att =
          case getATerm att of
-            (ShAAppl "G_symbol" [i1,i2] _) ->
+            ShAAppl "G_symbol" [i1,i2] _ ->
                 let i1' = fromShATerm (getATermByIndex1 i1 att)
                     att' = getATermByIndex1 i2 att
-                in case atcLogicLookup "G_symbol" 
+                in case atcLogicLookup "G_symbol"
                    i1' of Logic lid -> G_symbol lid (fromShATerm att')
-            u     -> fromShATermError "G_symbol" u
+            u -> fromShATermError "G_symbol" u
+     type_of _ = "Grothendieck.G_symbol"
 
 instance ShATermConvertible G_symb_items_list where
-     toShATerm att0 (G_symb_items_list lid symb_items) = 
+     toShATerm att0 (G_symb_items_list lid symb_items) =
          case toShATerm att0 (language_name lid) of { (att1,i1) ->
          case toShATerm att1 symb_items of { (att2,i2) ->
            addATerm (ShAAppl "G_symb_items_list" [i1,i2] []) att2 }}
-     fromShATerm att = 
+     fromShATerm att =
          case getATerm att of
-            (ShAAppl "G_symb_items_list" [i1,i2] _) ->
+            ShAAppl "G_symb_items_list" [i1,i2] _ ->
                 let i1' = fromShATerm (getATermByIndex1 i1 att)
                     att' = getATermByIndex1 i2 att
-                in case atcLogicLookup 
+                in case atcLogicLookup
                        "G_symb_items_list" i1' of
                     Logic lid -> G_symb_items_list lid (fromShATerm att')
-            u     -> fromShATermError "G_symb_items_list" u
+            u -> fromShATermError "G_symb_items_list" u
+     type_of _ = "Grothendieck.G_symb_items_list"
 
 instance ShATermConvertible G_symb_map_items_list where
-     toShATerm att0 (G_symb_map_items_list lid symb_map_items) = 
+     toShATerm att0 (G_symb_map_items_list lid symb_map_items) =
          case toShATerm att0 (language_name lid) of { (att1,i1) ->
          case toShATerm att1 symb_map_items of { (att2,i2) ->
            addATerm (ShAAppl "G_symb_map_items_list" [i1,i2] []) att2}}
-     fromShATerm att = 
+     fromShATerm att =
          case getATerm att of
-            (ShAAppl "G_symb_map_items_list" [i1,i2] _) ->
+            ShAAppl "G_symb_map_items_list" [i1,i2] _ ->
                 let i1' = fromShATerm (getATermByIndex1 i1 att)
                     att' = getATermByIndex1 i2 att
-                in case atcLogicLookup 
+                in case atcLogicLookup
                        "G_symb_map_items_list" i1' of
                     Logic lid -> G_symb_map_items_list lid (fromShATerm att')
-            u     -> fromShATermError "G_symb_map_items_list" u
+            u -> fromShATermError "G_symb_map_items_list" u
+     type_of _ = "Grothendieck.G_symb_map_items_list"
 
 instance ShATermConvertible G_diagram where
-     toShATerm att0 (G_diagram lid diagram) = 
+     toShATerm att0 (G_diagram lid diagram) =
          case toShATerm att0 (language_name lid) of { (att1,i1) ->
          case toShATerm att1 diagram of { (att2,i2) ->
            addATerm (ShAAppl "G_diagram" [i1,i2] []) att2}}
-     fromShATerm att = 
+     fromShATerm att =
          case getATerm att of
-            (ShAAppl "G_diagram" [i1,i2] _) ->
+            ShAAppl "G_diagram" [i1,i2] _ ->
                 let i1' = fromShATerm (getATermByIndex1 i1 att)
                     att' = getATermByIndex1 i2 att
-                in case atcLogicLookup "G_diagram" 
+                in case atcLogicLookup "G_diagram"
                    i1' of Logic lid -> G_diagram lid (fromShATerm att')
-            u     -> fromShATermError "G_diagram" u
+            u -> fromShATermError "G_diagram" u
+     type_of _ = "Grothendieck.G_diagram"
 
 instance ShATermConvertible G_sublogics where
-     toShATerm att0 (G_sublogics lid sublogics) = 
+     toShATerm att0 (G_sublogics lid sublogics) =
          case toShATerm att0 (language_name lid)  of { (att1,i1) ->
          case toShATerm att1 sublogics of { (att2,i2) ->
            addATerm (ShAAppl "G_sublogics" [i1,i2] []) att2}}
-     fromShATerm att = 
+     fromShATerm att =
          case getATerm att of
-            (ShAAppl "G_sublogics" [i1,i2] _) ->
+            ShAAppl "G_sublogics" [i1,i2] _ ->
                 let i1' = fromShATerm (getATermByIndex1 i1 att)
                     att' = getATermByIndex1 i2 att
-                in case atcLogicLookup 
-                          "G_sublogics" i1' of 
+                in case atcLogicLookup
+                          "G_sublogics" i1' of
                     Logic lid -> G_sublogics lid (fromShATerm att')
-            u     -> fromShATermError "G_sublogics" u
+            u -> fromShATermError "G_sublogics" u
+     type_of _ = "Grothendieck.G_sublogics"
 
 instance ShATermConvertible G_morphism where
-     toShATerm att0 (G_morphism lid morphism) = 
+     toShATerm att0 (G_morphism lid morphism) =
          case toShATerm att0 (language_name lid) of { (att1,i1) ->
          case toShATerm att1 morphism of { (att2,i2) ->
            addATerm (ShAAppl "G_morphism" [i1,i2] []) att2}}
-     fromShATerm att = 
+     fromShATerm att =
          case getATerm att of
-            (ShAAppl "G_morphism" [i1,i2] _) ->
+            ShAAppl "G_morphism" [i1,i2] _ ->
                 let i1' = fromShATerm (getATermByIndex1 i1 att)
                     att' = getATermByIndex1 i2 att
-                in case atcLogicLookup "G_morphism" 
+                in case atcLogicLookup "G_morphism"
                    i1' of Logic lid -> G_morphism lid (fromShATerm att')
-            u     -> fromShATermError "G_morphism" u
+            u -> fromShATermError "G_morphism" u
+     type_of _ = "Grothendieck.G_morphism"
 
 instance ShATermConvertible AnyComorphism where
-     toShATerm att0 (Comorphism cid) = 
+     toShATerm att0 (Comorphism cid) =
          case toShATerm att0 (language_name cid) of { (att1,i1) ->
            addATerm (ShAAppl "Comorphism" [i1] []) att1}
-     fromShATerm att = 
+     fromShATerm att =
          case getATerm att of
-            (ShAAppl "Comorphism" [i1] _) -> 
-                let i1' = fromShATerm (getATermByIndex1 i1 att) 
-                in propagateErrors 
+            ShAAppl "Comorphism" [i1] _ ->
+                let i1' = fromShATerm (getATermByIndex1 i1 att)
+                in propagateErrors
                     $ lookupComorphism_in_LG i1'
-            u     -> fromShATermError "Comorphism" u
+            u -> fromShATermError "AnyComorphism" u
+     type_of _ = "Grothendieck.AnyComorphism"
 
 instance ShATermConvertible GMorphism where
-     toShATerm att0 (GMorphism cid sign1 morphism2) = 
+     toShATerm att0 (GMorphism cid sign1 morphism2) =
          case toShATerm att0 (language_name cid) of { (att1,i1) ->
          case toShATerm att1 sign1 of { (att2,i2) ->
          case toShATerm att2 morphism2 of { (att3,i3) ->
            addATerm (ShAAppl "GMorphism" [i1,i2,i3] []) att3}}}
-     fromShATerm att = 
+     fromShATerm att =
            case getATerm att of
-            (ShAAppl "GMorphism" [i1,i2,i3] _) ->
+            ShAAppl "GMorphism" [i1,i2,i3] _ ->
                 let i1'  = fromShATerm (getATermByIndex1 i1 att)
                     att' = getATermByIndex1 i2 att
                     att'' = getATermByIndex1 i3 att
                 in case propagateErrors $ lookupComorphism_in_LG i1' of
                      Comorphism cid ->
-                       GMorphism cid (fromShATerm att') (fromShATerm att'') 
-            u     -> fromShATermError "GMorphism" u
+                       GMorphism cid (fromShATerm att') (fromShATerm att'')
+            u -> fromShATermError "GMorphism" u
+     type_of _ = "Grothendieck.GMorphism"
 
 instance ShATermConvertible Grothendieck where
-     toShATerm att0 Grothendieck = 
+     toShATerm att0 Grothendieck =
          addATerm (ShAAppl "Grothendieck" [] []) att0
      fromShATerm att = case getATerm att of
-                      (ShAAppl "Grothendieck" [] _) -> Grothendieck
-                      u     -> fromShATermError "Grothendiek" u
+                      ShAAppl "Grothendieck" [] _ -> Grothendieck
+                      u -> fromShATermError "Grothendiek" u
+     type_of _ = "Grothendieck.Grothendieck"
 
 instance ShATermConvertible AnyLogic where
-     toShATerm att0 (Logic lid) = 
+     toShATerm att0 (Logic lid) =
          case toShATerm att0 (language_name lid) of { (att1,i1) ->
            addATerm (ShAAppl "Logic" [i1] []) att1}
-     fromShATerm att = 
+     fromShATerm att =
          case getATerm att of
-            (ShAAppl "Logic" [i1] _) ->
+            ShAAppl "Logic" [i1] _ ->
                 let i1' = fromShATerm (getATermByIndex1 i1 att)
                 in atcLogicLookup "AnyLogic" i1'
-            u     -> fromShATermError "AnyLogic" u
+            u -> fromShATermError "AnyLogic" u
+     type_of _ = "Grothendieck.AnyLogic"

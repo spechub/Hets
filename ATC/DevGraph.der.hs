@@ -8,14 +8,11 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-derive 'ShATermConvertible' instance 
+derive 'ShATermConvertible' instance
   for the type(s): 'DGNodeLab' 'DGLinkLab' 'DGRule' 'BasicConsProof' 'ThmLinkStatus' 'DGLinkType' 'Conservativity' 'DGOrigin' 'NodeSig' 'MaybeNode' 'UnitSig' 'ImpUnitSigOrSig' 'ArchSig' 'GlobalEntry' 'DGChange'
 
 instances for 'BasicProof' and 'G_theory' need to be given explicitely
-
-
 -}
-
 
 module ATC.DevGraph where
 
@@ -43,7 +40,7 @@ import ATC.Grothendieck
 {-! for DGChange derive : ShATermConvertible !-}
 
 instance ShATermConvertible BasicProof where
-     toShATerm att0 (BasicProof lid p) = 
+     toShATerm att0 (BasicProof lid p) =
          case toShATerm att0 (language_name lid) of { (att1,i1) ->
          case toShATerm att1 p of { (att2,i2) ->
             addATerm (ShAAppl "BasicProof" [i1,i2] []) att2}}
@@ -57,9 +54,9 @@ instance ShATermConvertible BasicProof where
          case toShATerm att0 (show Handwritten) of { (att1, i1) ->
             addATerm (ShAAppl "BasicProof" [i1] []) att1}
 
-     fromShATerm att = 
+     fromShATerm att =
          case getATerm att of
-            (ShAAppl "BasicProof" [i1,i2] _) ->
+            ShAAppl "BasicProof" [i1,i2] _ ->
                case fromShATerm (getATermByIndex1 i1 att) of { i1' ->
                case getATermByIndex1 i2 att of { att' ->
                case atcLogicLookup "BasicProof" i1'  of {
@@ -71,21 +68,23 @@ instance ShATermConvertible BasicProof where
                  "Conjectured" -> Conjectured
                  "Handwritten" -> Handwritten
                  _ -> fromShATermError "BasicProof" v}
-            u     -> fromShATermError "BasicProof" u
+            u -> fromShATermError "BasicProof" u
+     type_of _ = "DevGraph.BasicProof"
 
 instance ShATermConvertible G_theory where
-     toShATerm att0 (G_theory lid sign sens) = 
+     toShATerm att0 (G_theory lid sign sens) =
          case toShATerm att0 (language_name lid) of { (att1,i1) ->
          case toShATerm att1 sign of { (att2,i2) ->
          case toShATerm att2 sens of { (att3,i3) ->
            addATerm (ShAAppl "G_theory" [i1,i2,i3] []) att3}}}
-     fromShATerm att = 
+     fromShATerm att =
          case getATerm att of
-            (ShAAppl "G_theory" [i1,i2,i3] _) ->
+            ShAAppl "G_theory" [i1,i2,i3] _ ->
                 let i1' = fromShATerm (getATermByIndex1 i1 att)
                     att' = getATermByIndex1 i2 att
                     att'' = getATermByIndex1 i3 att'
                 in case atcLogicLookup "G_theory" i1' of
-                    Logic lid -> G_theory lid (fromShATerm att') 
+                    Logic lid -> G_theory lid (fromShATerm att')
                                                (fromShATerm att'')
-            u     -> fromShATermError "G_theory" u
+            u -> fromShATermError "G_theory" u
+     type_of _ = "DevGraph.G_theory"
