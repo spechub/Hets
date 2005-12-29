@@ -159,8 +159,8 @@ localInferenceAux libEnv ln dgraph (rules, changes)
                      newList = map (replaceNode tgt n) list
                      (newGraph,changes') = adoptEdges 
                                            (insNode newNode $ auxGraph) tgt n
-                     newEdge = (src, n, newLab)
-                     newGraph' = insEdge newEdge  $  delNode tgt $ newGraph
+                     newEdge = (if src==tgt then n else src, n, newLab)
+                     newGraph' = insEdge newEdge $ delNode tgt $ newGraph
                      newLibEnv = Map.adjust adjMap ln libEnv 
                      adjMap (annos, env, _dg) = (annos,env,newGraph')
                      newChanges = changes ++ DeleteEdge ledge :
