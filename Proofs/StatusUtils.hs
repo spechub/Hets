@@ -28,7 +28,7 @@ lookupDGraphError libname = error ("Could not find lib with name <"
                                    ++(show libname)++ "> in the given LibEnv")
 
 mkResultProofStatus :: ProofStatus -> DGraph -> ([DGRule],[DGChange]) -> ProofStatus
-mkResultProofStatus (libname,libEnv,proofHistory) dgraph historyElem =
+mkResultProofStatus (libname,libEnv,proofHistory) dgraph (dgrules,dgchanges) =
   case Map.lookup libname libEnv of
     Nothing -> lookupDGraphError libname
     Just (globalContext,globalAnnos,_) ->
@@ -38,6 +38,7 @@ mkResultProofStatus (libname,libEnv,proofHistory) dgraph historyElem =
                   (prepareResultProofHistory proofHistory))
       
     where
+      historyElem = (dgrules,removeContraryChanges dgchanges)
       history = case Map.lookup libname proofHistory of
                   Nothing -> []
                   Just h -> h
@@ -192,6 +193,16 @@ getContraryChange change =
 
 
 removeChange :: DGChange -> [DGChange] -> [DGChange]
-removeChange change changes =
-  (takeWhile (change /=) changes)
-  ++(tail (dropWhile (change /=) changes))
+removeChange _ [] = []
+removeChange c1 (c2:rest) | c1==c2 = rest
+removeChange c1@(DeleteNode (n,_)) (c2:rest) =
+  case c2 of
+    InsertEdge (n1,n2,_) -> removeChangeAux n1 n2
+    DeleteEdge (n1,n2,_) -> removeChangeAux n1 n2
+    _ -> c2:removeChange c1 rest
+  where removeChangeAux n1 n2 =
+         if n==n1 || n==n2 
+           then removeChange c1 rest
+           else c2:removeChange c1 rest
+removeChange c1 (c2:rest) = c2:removeChange c1 rest
+

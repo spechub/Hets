@@ -34,6 +34,7 @@ import Data.Maybe
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
 import Syntax.AS_Library
+import Common.PrettyPrint
 
 -- --------------------
 -- local decomposition
