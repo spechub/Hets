@@ -98,9 +98,21 @@ instance Eq G_sign where
      coerceSign i1 i2 "Eq G_sign" sigma1 == Just sigma2
 
 -- | prefer a faster subsignature test if possible
-is_subgsign :: G_sign -> G_sign -> Bool
-is_subgsign (G_sign i1 sigma1) (G_sign i2 sigma2) = 
+isHomSubGsign :: G_sign -> G_sign -> Bool
+isHomSubGsign (G_sign i1 sigma1) (G_sign i2 sigma2) = 
     maybe False (is_subsig i1 sigma1) $ coerceSign i2 i1 "is_subgsign" sigma2 
+
+isSubGsign :: LogicGraph -> G_sign -> G_sign -> Bool
+isSubGsign lg (G_sign lid1 sigma1) (G_sign lid2 sigma2) =
+  Just True ==
+  do Comorphism cid <- resultToMaybe $ 
+                         logicInclusion lg (Logic lid1) (Logic lid2)
+     sigma1' <- coerceSign lid1 (sourceLogic cid) 
+                "Grothendieck.isSubGsign: cannot happen" sigma1
+     sigma2' <- coerceSign lid2 (targetLogic cid) 
+                "Grothendieck.isSubGsign: cannot happen" sigma2
+     sigma1t <- resultToMaybe $ map_sign cid sigma1'
+     return $ is_subsig (targetLogic cid) (fst sigma1t) sigma2'
 
 instance Show G_sign where
     show (G_sign _ s) = show s
@@ -557,7 +569,11 @@ ginclusion logicGraph (G_sign lid1 sigma1) (G_sign lid2 sigma2) = do
 -- | with itermediate inclusion
 compInclusion :: LogicGraph -> GMorphism -> GMorphism -> Result GMorphism
 compInclusion lg mor1 mor2 = do
-  incl <- ginclusion lg (cod Grothendieck mor1) (dom Grothendieck mor2)
+  let sigma1 = cod Grothendieck mor1
+      sigma2 = dom Grothendieck mor2
+  unless (isSubGsign lg sigma1 sigma2)
+         (fail "Logic.Grothendieck.compInclusion: not a subsignature")
+  incl <- ginclusion lg sigma1 sigma2
   mor <- comp Grothendieck mor1 incl
   comp Grothendieck mor mor2
 

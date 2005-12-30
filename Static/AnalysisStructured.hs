@@ -364,7 +364,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
                "Annotation %implied should come after a BASIC-ITEM")
                 pos)
          if anno1==SA_implies then do
-           when (not (is_subgsign sig1 sig')) (pplain_error ()
+           when (not (isHomSubGsign sig1 sig')) (pplain_error ()
              (text "Signature must not be extended in presence of %implies")
              pos)
    -- insert a theorem link according to p. 319 of the CASL Reference Manual
@@ -945,7 +945,7 @@ ana_FIT_ARG lg (gannos,genv,dg) spname nsigI (NodeSig nP gsigmaP)
          -- the subcase with nonempty import
          JustNode (NodeSig nI _) -> do
            gsigmaIS <- adj $ gsigUnion lg gsigmaI gsigmaS
-           when (not (is_subgsign gsigmaP gsigmaIS))
+           when (not (isSubGsign lg gsigmaP gsigmaIS))
              (pplain_error ()
               (text "Parameter does not match source of fittig view."
                $$ text "Parameter signature:"

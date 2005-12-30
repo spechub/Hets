@@ -236,7 +236,7 @@ ana_UNIT_EXPRESSION lgraph defl gctx@(gannos, genv, _) curl opts
        let pos = getPos_UNIT_EXPRESSION exp
            checkSubSign [] _ = True
            checkSubSign (dnsub : dnsigs) nsup =
-             if is_subgsign (getSig $ getSigFromDiag dnsub) $ getSig nsup
+             if isSubGsign lgraph (getSig $ getSigFromDiag dnsub) $ getSig nsup
                   then checkSubSign dnsigs nsup else False
        -- check that signatures in pardnsigs are subsignatures of pnsig
        if checkSubSign pardnsigs pnsig 

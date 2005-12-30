@@ -22,6 +22,10 @@ hide theorem shift proof in development graphs.
    Springer-Verlag 2001.
 -}
 
+{-
+ todo: use compInclusion instead of compHomInclusion
+-}
+
 module Proofs.HideTheoremShift 
     ( interactiveHideTheoremShift
     , automaticHideTheoremShift
@@ -241,7 +245,7 @@ selectPathPairs paths1 paths2 =
     haveSameTgt :: LEdge DGLinkLab -> LEdge DGLinkLab -> Bool
     haveSameTgt (_,tgt1,_) (_,tgt2,_) = tgt1 == tgt2
 
-{- returns a list of path pairs by keeping those pairs, whose first path composed with the first given morphism and whose second path composed with the second given morphism result in the same morphism, and droping all other pairs.-}
+{- returns a list of path pairs by keeping those pairs, whose first path composed with the first given morphism and whose second path composed with the second given morphism result in the same morphism, and dropping all other pairs.-}
 filterPairsByResultingMorphisms :: [([LEdge DGLinkLab],[[LEdge DGLinkLab]])] 
                                 -> GMorphism -> GMorphism
                                 -> [([LEdge DGLinkLab],[LEdge DGLinkLab])]
@@ -268,6 +272,7 @@ compMaybeMorphisms :: Maybe GMorphism -> Maybe GMorphism -> Maybe GMorphism
 compMaybeMorphisms morph1 morph2 =
   case (morph1, morph2) of
     (Just m1, Just m2) -> resultToMaybe $ compHomInclusion m1 m2 
+       -- This should be compInclusion, but this would need the logic graph
     _ -> Nothing
 
 {- returns the Conservativity if the given edge has one,
