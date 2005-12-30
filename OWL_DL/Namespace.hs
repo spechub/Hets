@@ -208,7 +208,7 @@ instance PNamespace Axiom where
     propagateNspaces ns axiom =
         case axiom of
         Thing   -> Thing
-        OWL_DL.AS.Nothing -> OWL_DL.AS.Nothing
+        AxNothing -> AxNothing
         Class cID isdep modal annos descriptions -> 
             Class (propagateNspaces ns cID)
                           isdep modal
@@ -276,7 +276,7 @@ instance PNamespace Axiom where
     renameNamespace tMap axiom =
         case axiom of
         Thing   -> Thing
-        OWL_DL.AS.Nothing -> OWL_DL.AS.Nothing
+        AxNothing -> AxNothing
         Class cID isdep modal annos descriptions -> 
             Class (renameNamespace tMap cID)
                           isdep modal

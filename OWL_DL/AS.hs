@@ -95,7 +95,7 @@ type Type = Description
 
 -- | Axiom (Class Axioms, Descriptions, Restrictions, Property Axioms)
 data Axiom = Thing
-           | OWL_DL.AS.Nothing
+           | AxNothing
            | Class 
                    ClassID 
                    Bool -- True == deprecated

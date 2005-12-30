@@ -282,7 +282,7 @@ instance ShATermConvertible Value where
 instance ShATermConvertible Axiom where
     toShATerm att0 Thing =
         addATerm (ShAAppl "Thing" [] []) att0
-    toShATerm att0 OWL_DL.AS.Nothing =
+    toShATerm att0 AxNothing =
         addATerm (ShAAppl "Nothing" [] []) att0
     toShATerm att0 (Class aa ab ac ad ae) =
         case toShATerm att0 aa of { (att1,aa') ->
@@ -366,7 +366,7 @@ instance ShATermConvertible Axiom where
             ShAAppl "Thing" [ ] _ ->
                     Thing
             ShAAppl "Nothing" [ ] _ ->
-                    OWL_DL.AS.Nothing
+                    AxNothing
             ShAAppl "Class" [ aa,ab,ac,ad,ae ] _ ->
                     case fromShATerm $ getATermByIndex1 aa att of { aa' ->
                     case fromShATerm $ getATermByIndex1 ab att of { ab' ->
