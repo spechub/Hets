@@ -195,14 +195,14 @@ getContraryChange change =
 removeChange :: DGChange -> [DGChange] -> [DGChange]
 removeChange _ [] = []
 removeChange c1 (c2:rest) | c1==c2 = rest
+-- when a node is removed afterwards, throw away all edge operations
+-- refering to that node that are encountered on the way
 removeChange c1@(DeleteNode (n,_)) (c2:rest) =
-  case c2 of
-    InsertEdge (n1,n2,_) -> removeChangeAux n1 n2
-    DeleteEdge (n1,n2,_) -> removeChangeAux n1 n2
-    _ -> c2:removeChange c1 rest
-  where removeChangeAux n1 n2 =
-         if n==n1 || n==n2 
-           then removeChange c1 rest
-           else c2:removeChange c1 rest
+  if case c2 of
+     InsertEdge (n1,n2,_) -> n==n1 || n==n2 
+     DeleteEdge (n1,n2,_) -> n==n1 || n==n2 
+     _ -> False
+   then removeChange c1 rest
+   else c2:removeChange c1 rest
 removeChange c1 (c2:rest) = c2:removeChange c1 rest
 
