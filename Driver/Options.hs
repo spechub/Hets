@@ -28,6 +28,7 @@ module Driver.Options
     , hasEnvOut
     , addEnvOut
     , envSuffix
+    , hetsVersion
     , HetcatsOpts(..)
     , GuiType(..)
     , InType(..)
@@ -55,6 +56,10 @@ import System.IO.Error
 import System.Exit
 
 import Data.List
+
+-- | short version without date for ATC files
+hetsVersion :: String
+hetsVersion = takeWhile (/= ',') hetcats_version
 
 bracket :: String -> String
 bracket s = "[" ++ s ++ "]"

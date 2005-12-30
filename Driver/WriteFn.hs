@@ -10,7 +10,6 @@ Portability :  non-portable(DevGraph)
 
 This module provides functions to write a pretty printed abstract
   syntax and all the other formats.
-
 -}
 
 module Driver.WriteFn where
@@ -56,7 +55,6 @@ import Proofs.Automatic
 import ATC.DevGraph()
 import ATC.GlobalAnnotations()
 
-import Driver.Version
 import Driver.Options
 
 {- |
@@ -113,7 +111,7 @@ writeShATermFile fp atcon = writeFile fp $ toShATermString atcon
 
 versionedATermTable :: (ShATermConvertible a) => a -> ATermTable
 versionedATermTable atcon =
-    case toShATerm emptyATermTable hetcats_version of
+    case toShATerm emptyATermTable hetsVersion of
     (att0,versionnr) ->
         case toShATerm att0 atcon of
         (att1,aterm) ->
