@@ -209,7 +209,17 @@ data DGLinkType = LocalDef
               -- DGLink S1 S2 m2 (DGLinkType m1 p) n
               -- corresponds to a span of morphisms
               -- S1 <--m1-- S --m2--> S2
-              deriving (Show, Eq)
+              deriving (Show)
+
+instance Eq DGLinkType where
+  LocalDef == LocalDef = True
+  HidingDef == HidingDef = True
+  FreeDef n1 == FreeDef n2 = n1==n2
+  LocalThm _ _ _ ==  LocalThm _ _ _ = True
+  GlobalThm _ _ _ == GlobalThm _ _ _ = True
+  HidingThm m1 _ == HidingThm m2 _ = m1 == m2
+  FreeThm m1 _ == FreeThm m2 _ = m1 == m2
+  _ == _ = False
 
 instance PrettyPrint DGLinkType where
     printText0 _ t = text $ case t of
