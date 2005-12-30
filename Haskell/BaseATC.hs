@@ -1,4 +1,4 @@
-{- | 
+{- |
 Module      :  $Header$
 Copyright   :  (c) Christian Maeder, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -13,9 +13,15 @@ a few basic 'ShATermConvertible' instances needed by "Haskell.ATC_Haskell"
 module Haskell.BaseATC where
 
 import Common.ATerm.Lib
+import Common.DynamicUtils
 import SrcLoc
 
-instance (ShATermConvertible a, ShATermConvertible b) 
+_tc_SrcLocTc :: TyCon
+_tc_SrcLocTc = mkTyCon "SrcLoc"
+instance Typeable SrcLoc where
+    typeOf _ = mkTyConApp _tc_SrcLocTc []
+
+instance (ShATermConvertible a, ShATermConvertible b)
     => ShATermConvertible (Either a b) where
     toShATerm att0 (Left aa) =
         case toShATerm att0 aa of { (att1,aa') ->
@@ -32,7 +38,6 @@ instance (ShATermConvertible a, ShATermConvertible b)
                     case fromShATerm $ getATermByIndex1 aa att of { aa' ->
                     Right aa' }
             u -> fromShATermError "Either" u
-    type_of _ = "Prelude.Either"
 
 instance ShATermConvertible SrcLoc where
     toShATerm att0 (SrcLoc aa ab ac ad) =
@@ -50,4 +55,3 @@ instance ShATermConvertible SrcLoc where
                     case fromShATerm $ getATermByIndex1 ad att of { ad' ->
                     SrcLoc aa' ab' ac' ad' }}}}
             u -> fromShATermError "SrcLoc" u
-    type_of _ = "Haskell.SrcLoc"

@@ -23,8 +23,6 @@ import CASL.Morphism
 import Common.Id
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
-import Data.Dynamic
-import Common.DynamicUtils
 import Common.Lib.Pretty
 import Common.PrettyPrint
 import Common.PrintLaTeX
@@ -71,15 +69,6 @@ computeExt _ _  =
   CSPAddMorphism { channelMap = Map.empty -- ???
                  , processMap = Map.empty -- ???
                  }
-
-
-signTc      = mkTyCon "CspCASL.SignCSP.CSPAddSign"
-instance Typeable CSPAddSign where
-  typeOf _ = mkTyConApp signTc []
-
-morTc      = mkTyCon "CspCASL.SignCSP.CSPAddMorphism"
-instance Typeable CSPAddMorphism where
-  typeOf _ = mkTyConApp morTc []
 
 -- dummy instances, need to be elaborated!
 instance PrettyPrint CSPAddSign where

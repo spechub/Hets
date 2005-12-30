@@ -15,9 +15,6 @@ Instance of class Logic for SPASS.
 
 module SPASS.Logic_SPASS where
 
-import Data.Dynamic
-
-import Common.DynamicUtils 
 import Common.DefaultMorphism
 
 import SPASS.ATC_SPASS
@@ -41,16 +38,6 @@ instance Language SPASS where
   "SPASS - an automated theorem prover\n" ++
   "This logic corresponds to the logic of SPASS.\n" ++
   "See http://spass.mpi-sb.mpg.de/"
-
-sentenceTc, signTc :: TyCon
-
-sentenceTc      = mkTyCon "SPASS.Sign.SPTerm"
-signTc          = mkTyCon "SPASS.Sign.Sign"
-
-instance Typeable SPTerm where
-    typeOf _ = mkTyConApp sentenceTc []
-instance Typeable Sign where
-    typeOf _ = mkTyConApp signTc []
 
 instance Category SPASS Sign SPASSMorphism where
   dom SPASS = domOfDefaultMorphism

@@ -16,17 +16,27 @@ module Haskell.TiATC where
 import Common.ATerm.Lib
 import qualified TiTypes
 import qualified TiKinds
-import qualified TiPropDecorate as T
-import qualified TiDecorate as D
-import qualified TiInstanceDB as I
-import qualified PropSyntaxRec as P
+import qualified TiPropDecorate
+import qualified TiDecorate
+import qualified TiInstanceDB
+import qualified PropSyntaxRec
 import Haskell.HatParser(HsDecls(..))
 import Haskell.HatAna(Sign(..))
 import Haskell.ATC_Haskell()
 import ATC.Set()
+import Common.DynamicUtils
 
-instance ShATermConvertible i => ShATermConvertible (I.InstEntry i) where
-    toShATerm att0 (I.IE a b c) =
+_tc_TiInstanceDB_InstEntryTc :: TyCon
+_tc_TiInstanceDB_InstEntryTc = mkTyCon "TiInstanceDB.InstEntry"
+instance (Typeable a) => Typeable (TiInstanceDB.InstEntry a) where
+    typeOf x = mkTyConApp _tc_TiInstanceDB_InstEntryTc [typeOf (geta x)]
+      where
+        geta :: TiInstanceDB.InstEntry a -> a
+        geta = undefined
+
+instance ShATermConvertible i
+    => ShATermConvertible (TiInstanceDB.InstEntry i) where
+    toShATerm att0 (TiInstanceDB.IE a b c) =
         case toShATerm att0 a of { (att1,a') ->
         case toShATerm att1 b of { (att2,b') ->
         case toShATerm att2 c of { (att3,c') ->
@@ -37,9 +47,13 @@ instance ShATermConvertible i => ShATermConvertible (I.InstEntry i) where
                     case fromShATerm $ getATermByIndex1 a att of { a' ->
                     case fromShATerm $ getATermByIndex1 b att of { b' ->
                     case fromShATerm $ getATermByIndex1 c att of { c' ->
-                    I.IE a' b' c' }}}
+                    TiInstanceDB.IE a' b' c' }}}
             u -> fromShATermError "TiInstanceDB.InstEntry" u
-    type_of _ = "TiInstanceDB.InstEntry"
+
+_tc_TiKinds_KVarTc :: TyCon
+_tc_TiKinds_KVarTc = mkTyCon "TiKinds.KVar"
+instance Typeable TiKinds.KVar where
+    typeOf _ = mkTyConApp _tc_TiKinds_KVarTc []
 
 instance ShATermConvertible TiKinds.KVar where
     toShATerm att0 (TiKinds.KVar a) =
@@ -51,7 +65,11 @@ instance ShATermConvertible TiKinds.KVar where
                     case fromShATerm $ getATermByIndex1 a att of { a' ->
                     TiKinds.KVar a' }
             u -> fromShATermError  "TiKinds.KVar" u
-    type_of _ = "TiKinds.KVar"
+
+_tc_TiKinds_KindTc :: TyCon
+_tc_TiKinds_KindTc = mkTyCon "TiKinds.Kind"
+instance Typeable TiKinds.Kind where
+    typeOf _ = mkTyConApp _tc_TiKinds_KindTc []
 
 instance ShATermConvertible TiKinds.Kind where
     toShATerm att0 (TiKinds.K a) =
@@ -69,7 +87,11 @@ instance ShATermConvertible TiKinds.Kind where
                     case fromShATerm $ getATermByIndex1 a att of { a' ->
                     TiKinds.Kvar a' }
             u -> fromShATermError "TiKinds.Kind" u
-    type_of _ = "TiKinds.Kind"
+
+_tc_TiKinds_KindConstraintTc :: TyCon
+_tc_TiKinds_KindConstraintTc = mkTyCon "TiKinds.KindConstraint"
+instance Typeable TiKinds.KindConstraint where
+    typeOf _ = mkTyConApp _tc_TiKinds_KindConstraintTc []
 
 instance ShATermConvertible TiKinds.KindConstraint where
     toShATerm att0 (aa TiKinds.:=* ab) =
@@ -83,7 +105,17 @@ instance ShATermConvertible TiKinds.KindConstraint where
                     case fromShATerm $ getATermByIndex1 ab att of { ab' ->
                     (TiKinds.:=*) aa' ab' }}
             u -> fromShATermError "TiKinds.KindConstraint" u
-    type_of _ = "TiKinds.KindConstraint"
+
+_tc_TiTypes_QualTc :: TyCon
+_tc_TiTypes_QualTc = mkTyCon "TiTypes.Qual"
+instance (Typeable a,
+          Typeable b) => Typeable (TiTypes.Qual a b) where
+    typeOf x = mkTyConApp _tc_TiTypes_QualTc [typeOf (geta x),typeOf (getb x)]
+      where
+        geta :: TiTypes.Qual a b -> a
+        geta = undefined
+        getb :: TiTypes.Qual a b -> b
+        getb = undefined
 
 instance (ShATermConvertible i,
           ShATermConvertible t) => ShATermConvertible (TiTypes.Qual i t) where
@@ -98,7 +130,14 @@ instance (ShATermConvertible i,
                     case fromShATerm $ getATermByIndex1 ab att of { ab' ->
                     (TiTypes.:=>) aa' ab' }}
             u -> fromShATermError "TiTypes.Qual" u
-    type_of _ = "TiTypes.Qual"
+
+_tc_TiTypes_SchemeTc :: TyCon
+_tc_TiTypes_SchemeTc = mkTyCon "TiTypes.Scheme"
+instance (Typeable a) => Typeable (TiTypes.Scheme a) where
+    typeOf x = mkTyConApp _tc_TiTypes_SchemeTc [typeOf (geta x)]
+      where
+        geta :: TiTypes.Scheme a -> a
+        geta = undefined
 
 instance (ShATermConvertible v) => ShATermConvertible (TiTypes.Scheme v) where
     toShATerm att0 (TiTypes.Forall aa ab ac) =
@@ -114,7 +153,14 @@ instance (ShATermConvertible v) => ShATermConvertible (TiTypes.Scheme v) where
                     case fromShATerm $ getATermByIndex1 ac att of { ac' ->
                     TiTypes.Forall aa' ab' ac' }}}
             u -> fromShATermError "TiTypes.Scheme" u
-    type_of _ = "TiTypes.Scheme"
+
+_tc_TiTypes_TypeInfoTc :: TyCon
+_tc_TiTypes_TypeInfoTc = mkTyCon "TiTypes.TypeInfo"
+instance (Typeable a) => Typeable (TiTypes.TypeInfo a) where
+    typeOf x = mkTyConApp _tc_TiTypes_TypeInfoTc [typeOf (geta x)]
+      where
+        geta :: TiTypes.TypeInfo a -> a
+        geta = undefined
 
 instance ShATermConvertible i => ShATermConvertible (TiTypes.TypeInfo i) where
     toShATerm att0 TiTypes.Data =
@@ -152,7 +198,18 @@ instance ShATermConvertible i => ShATermConvertible (TiTypes.TypeInfo i) where
             ShAAppl "Tyvar" [ ] _ ->
                     TiTypes.Tyvar
             u -> fromShATermError "TiTypes.TypeInfo" u
-    type_of _ = "TiTypes.TypeInfo"
+
+_tc_TiTypes_TypingTc :: TyCon
+_tc_TiTypes_TypingTc = mkTyCon "TiTypes.Typing"
+instance (Typeable a,
+          Typeable b) => Typeable (TiTypes.Typing a b) where
+    typeOf x = mkTyConApp _tc_TiTypes_TypingTc
+               [typeOf (geta x),typeOf (getb x)]
+      where
+        geta :: TiTypes.Typing a b -> a
+        geta = undefined
+        getb :: TiTypes.Typing a b -> b
+        getb = undefined
 
 instance (ShATermConvertible x, ShATermConvertible t)
     => ShATermConvertible (TiTypes.Typing x t) where
@@ -167,7 +224,14 @@ instance (ShATermConvertible x, ShATermConvertible t)
                     case fromShATerm $ getATermByIndex1 ab att of { ab' ->
                     (TiTypes.:>:) aa' ab' }}
             u -> fromShATermError "TiTypes.Typing" u
-    type_of _ = "TiTypes.Typing"
+
+_tc_TiTypes_SubstTc :: TyCon
+_tc_TiTypes_SubstTc = mkTyCon "TiTypes.Subst"
+instance (Typeable a) => Typeable (TiTypes.Subst a) where
+    typeOf x = mkTyConApp _tc_TiTypes_SubstTc [typeOf (geta x)]
+      where
+        geta :: TiTypes.Subst a -> a
+        geta = undefined
 
 instance (ShATermConvertible i) => ShATermConvertible (TiTypes.Subst i) where
     toShATerm att0 (TiTypes.S aa) =
@@ -179,70 +243,110 @@ instance (ShATermConvertible i) => ShATermConvertible (TiTypes.Subst i) where
                     case fromShATerm $ getATermByIndex1 aa att of { aa' ->
                     TiTypes.S aa' }
             u -> fromShATermError "TiTypes.Subst" u
-    type_of _ = "TiTypes.Subst"
 
-instance (ShATermConvertible i) => ShATermConvertible (P.HsDeclI i) where
-    toShATerm att0 (P.Dec aa) =
+_tc_PropSyntaxRec_HsDeclITc :: TyCon
+_tc_PropSyntaxRec_HsDeclITc = mkTyCon "PropSyntaxRec.HsDeclI"
+instance (Typeable a) => Typeable (PropSyntaxRec.HsDeclI a) where
+    typeOf x = mkTyConApp _tc_PropSyntaxRec_HsDeclITc [typeOf (geta x)]
+      where
+        geta :: PropSyntaxRec.HsDeclI a -> a
+        geta = undefined
+
+instance (ShATermConvertible i)
+    => ShATermConvertible (PropSyntaxRec.HsDeclI i) where
+    toShATerm att0 (PropSyntaxRec.Dec aa) =
         case toShATerm att0 aa of { (att1,aa') ->
         addATerm (ShAAppl "Dec" [ aa' ] []) att1 }
     fromShATerm att =
         case getATerm att of
             ShAAppl "Dec" [ aa ] _ ->
                     case fromShATerm $ getATermByIndex1 aa att of { aa' ->
-                    P.Dec aa' }
+                    PropSyntaxRec.Dec aa' }
             u -> fromShATermError "PropSyntaxRec.HsDeclI" u
-    type_of _ = "PropSyntaxRec.HsDeclI"
 
-instance (ShATermConvertible i) => ShATermConvertible (P.AssertionI i) where
-    toShATerm att0 (P.PA aa) =
+_tc_PropSyntaxRec_AssertionITc :: TyCon
+_tc_PropSyntaxRec_AssertionITc = mkTyCon "PropSyntaxRec.AssertionI"
+instance (Typeable a) => Typeable (PropSyntaxRec.AssertionI a) where
+    typeOf x = mkTyConApp _tc_PropSyntaxRec_AssertionITc [typeOf (geta x)]
+      where
+        geta :: PropSyntaxRec.AssertionI a -> a
+        geta = undefined
+
+instance (ShATermConvertible i)
+    => ShATermConvertible (PropSyntaxRec.AssertionI i) where
+    toShATerm att0 (PropSyntaxRec.PA aa) =
         case toShATerm att0 aa of { (att1,aa') ->
         addATerm (ShAAppl "PA" [ aa' ] []) att1 }
     fromShATerm att =
         case getATerm att of
             ShAAppl "PA" [ aa ] _ ->
                     case fromShATerm $ getATermByIndex1 aa att of { aa' ->
-                    P.PA aa' }
+                    PropSyntaxRec.PA aa' }
             u -> fromShATermError "PropSyntaxRec.AssertionI" u
-    type_of _ = "PropSyntaxRec.AssertionI"
 
-instance (ShATermConvertible i) => ShATermConvertible (P.PredicateI i) where
-    toShATerm att0 (P.PP aa) =
+_tc_PropSyntaxRec_PredicateITc :: TyCon
+_tc_PropSyntaxRec_PredicateITc = mkTyCon "PropSyntaxRec.PredicateI"
+instance (Typeable a) => Typeable (PropSyntaxRec.PredicateI a) where
+    typeOf x = mkTyConApp _tc_PropSyntaxRec_PredicateITc [typeOf (geta x)]
+      where
+        geta :: PropSyntaxRec.PredicateI a -> a
+        geta = undefined
+
+instance (ShATermConvertible i)
+    => ShATermConvertible (PropSyntaxRec.PredicateI i) where
+    toShATerm att0 (PropSyntaxRec.PP aa) =
         case toShATerm att0 aa of { (att1,aa') ->
         addATerm (ShAAppl "PP" [ aa' ] []) att1 }
     fromShATerm att =
         case getATerm att of
             ShAAppl "PP" [ aa ] _ ->
                     case fromShATerm $ getATermByIndex1 aa att of { aa' ->
-                    P.PP aa' }
+                    PropSyntaxRec.PP aa' }
             u -> fromShATermError "PropSyntaxRec.PredicateI" u
-    type_of _ = "PropSyntaxRec.PredicateI"
 
-instance (ShATermConvertible i) => ShATermConvertible (P.HsExpI i) where
-    toShATerm att0 (P.Exp aa) =
+_tc_PropSyntaxRec_HsExpITc :: TyCon
+_tc_PropSyntaxRec_HsExpITc = mkTyCon "PropSyntaxRec.HsExpI"
+instance (Typeable a) => Typeable (PropSyntaxRec.HsExpI a) where
+    typeOf x = mkTyConApp _tc_PropSyntaxRec_HsExpITc [typeOf (geta x)]
+      where
+        geta :: PropSyntaxRec.HsExpI a -> a
+        geta = undefined
+
+instance (ShATermConvertible i)
+    => ShATermConvertible (PropSyntaxRec.HsExpI i) where
+    toShATerm att0 (PropSyntaxRec.Exp aa) =
         case toShATerm att0 aa of { (att1,aa') ->
         addATerm (ShAAppl "Exp" [ aa' ] []) att1 }
     fromShATerm att =
         case getATerm att of
             ShAAppl "Exp" [ aa ] _ ->
                     case fromShATerm $ getATermByIndex1 aa att of { aa' ->
-                    P.Exp aa' }
+                    PropSyntaxRec.Exp aa' }
             u -> fromShATermError "PropSyntaxRec.HsExpI" u
-    type_of _ = "PropSyntaxRec.HsExpI"
 
-instance (ShATermConvertible i) => ShATermConvertible (D.TiPat i) where
-    toShATerm att0 (D.Pat aa) =
+_tc_TiDecorate_TiPatTc :: TyCon
+_tc_TiDecorate_TiPatTc = mkTyCon "TiDecorate.TiPat"
+instance (Typeable a) => Typeable (TiDecorate.TiPat a) where
+    typeOf x = mkTyConApp _tc_TiDecorate_TiPatTc [typeOf (geta x)]
+      where
+        geta :: TiDecorate.TiPat a -> a
+        geta = undefined
+
+instance (ShATermConvertible i)
+    => ShATermConvertible (TiDecorate.TiPat i) where
+    toShATerm att0 (TiDecorate.Pat aa) =
         case toShATerm att0 aa of { (att1,aa') ->
         addATerm (ShAAppl "Pat" [ aa' ] []) att1 }
-    toShATerm att0 (D.TiPApp aa ab) =
+    toShATerm att0 (TiDecorate.TiPApp aa ab) =
         case toShATerm att0 aa of { (att1,aa') ->
         case toShATerm att1 ab of { (att2,ab') ->
         addATerm (ShAAppl "TiPApp" [ aa',ab' ] []) att2 }}
-    toShATerm att0 (D.TiPSpec aa ab ac) =
+    toShATerm att0 (TiDecorate.TiPSpec aa ab ac) =
         case toShATerm att0 aa of { (att1,aa') ->
         case toShATerm att1 ab of { (att2,ab') ->
         case toShATerm att2 ac of { (att3,ac') ->
         addATerm (ShAAppl "TiPSpec" [ aa',ab',ac' ] []) att3 }}}
-    toShATerm att0 (D.TiPTyped aa ab) =
+    toShATerm att0 (TiDecorate.TiPTyped aa ab) =
         case toShATerm att0 aa of { (att1,aa') ->
         case toShATerm att1 ab of { (att2,ab') ->
         addATerm (ShAAppl "TiPTyped" [ aa',ab' ] []) att2 }}
@@ -250,33 +354,41 @@ instance (ShATermConvertible i) => ShATermConvertible (D.TiPat i) where
         case getATerm att of
             ShAAppl "Pat" [ aa ] _ ->
                     case fromShATerm $ getATermByIndex1 aa att of { aa' ->
-                    D.Pat aa' }
+                    TiDecorate.Pat aa' }
             ShAAppl "TiPApp" [ aa,ab ] _ ->
                     case fromShATerm $ getATermByIndex1 aa att of { aa' ->
                     case fromShATerm $ getATermByIndex1 ab att of { ab' ->
-                    D.TiPApp aa' ab' }}
+                    TiDecorate.TiPApp aa' ab' }}
             ShAAppl "TiPSpec" [ aa,ab,ac ] _ ->
                     case fromShATerm $ getATermByIndex1 aa att of { aa' ->
                     case fromShATerm $ getATermByIndex1 ab att of { ab' ->
                     case fromShATerm $ getATermByIndex1 ac att of { ac' ->
-                    D.TiPSpec aa' ab' ac' }}}
+                    TiDecorate.TiPSpec aa' ab' ac' }}}
             ShAAppl "TiPTyped" [ aa,ab ] _ ->
                     case fromShATerm $ getATermByIndex1 aa att of { aa' ->
                     case fromShATerm $ getATermByIndex1 ab att of { ab' ->
-                    D.TiPTyped aa' ab' }}
+                    TiDecorate.TiPTyped aa' ab' }}
             u -> fromShATermError "TiDecorate.TiPat" u
-    type_of _ = "TiDecorate.TiPat"
 
-instance (ShATermConvertible i) => ShATermConvertible (T.TiExp i) where
-    toShATerm att0 (T.Exp aa) =
+_tc_TiPropDecorate_TiExpTc :: TyCon
+_tc_TiPropDecorate_TiExpTc = mkTyCon "TiPropDecorate.TiExp"
+instance (Typeable a) => Typeable (TiPropDecorate.TiExp a) where
+    typeOf x = mkTyConApp _tc_TiPropDecorate_TiExpTc [typeOf (geta x)]
+      where
+        geta :: TiPropDecorate.TiExp a -> a
+        geta = undefined
+
+instance (ShATermConvertible i)
+    => ShATermConvertible (TiPropDecorate.TiExp i) where
+    toShATerm att0 (TiPropDecorate.Exp aa) =
         case toShATerm att0 aa of { (att1,aa') ->
         addATerm (ShAAppl "Exp" [ aa' ] []) att1 }
-    toShATerm att0 (T.TiSpec aa ab ac) =
+    toShATerm att0 (TiPropDecorate.TiSpec aa ab ac) =
         case toShATerm att0 aa of { (att1,aa') ->
         case toShATerm att1 ab of { (att2,ab') ->
         case toShATerm att2 ac of { (att3,ac') ->
         addATerm (ShAAppl "TiSpec" [ aa',ab',ac' ] []) att3 }}}
-    toShATerm att0 (T.TiTyped aa ab) =
+    toShATerm att0 (TiPropDecorate.TiTyped aa ab) =
         case toShATerm att0 aa of { (att1,aa') ->
         case toShATerm att1 ab of { (att2,ab') ->
         addATerm (ShAAppl "TiTyped" [ aa',ab' ] []) att2 }}
@@ -284,21 +396,29 @@ instance (ShATermConvertible i) => ShATermConvertible (T.TiExp i) where
         case getATerm att of
             ShAAppl "Exp" [ aa ] _ ->
                     case fromShATerm $ getATermByIndex1 aa att of { aa' ->
-                    T.Exp aa' }
+                    TiPropDecorate.Exp aa' }
             ShAAppl "TiSpec" [ aa,ab,ac ] _ ->
                     case fromShATerm $ getATermByIndex1 aa att of { aa' ->
                     case fromShATerm $ getATermByIndex1 ab att of { ab' ->
                     case fromShATerm $ getATermByIndex1 ac att of { ac' ->
-                    T.TiSpec aa' ab' ac' }}}
+                    TiPropDecorate.TiSpec aa' ab' ac' }}}
             ShAAppl "TiTyped" [ aa,ab ] _ ->
                     case fromShATerm $ getATermByIndex1 aa att of { aa' ->
                     case fromShATerm $ getATermByIndex1 ab att of { ab' ->
-                    T.TiTyped aa' ab' }}
+                    TiPropDecorate.TiTyped aa' ab' }}
             u -> fromShATermError "TiPropDecorate.TiExp" u
-    type_of _ = "TiPropDecorate.TiExp"
 
-instance (ShATermConvertible i) => ShATermConvertible (T.OTiAssertion i) where
-    toShATerm att0 (T.OA aa ab ac) =
+_tc_TiPropDecorate_OTiAssertionTc :: TyCon
+_tc_TiPropDecorate_OTiAssertionTc = mkTyCon "TiPropDecorate.OTiAssertion"
+instance (Typeable a) => Typeable (TiPropDecorate.OTiAssertion a) where
+    typeOf x = mkTyConApp _tc_TiPropDecorate_OTiAssertionTc [typeOf (geta x)]
+      where
+        geta :: TiPropDecorate.OTiAssertion a -> a
+        geta = undefined
+
+instance (ShATermConvertible i)
+    => ShATermConvertible (TiPropDecorate.OTiAssertion i) where
+    toShATerm att0 (TiPropDecorate.OA aa ab ac) =
         case toShATerm att0 aa of { (att1,aa') ->
         case toShATerm att1 ab of { (att2,ab') ->
         case toShATerm att2 ac of { (att3,ac') ->
@@ -309,48 +429,80 @@ instance (ShATermConvertible i) => ShATermConvertible (T.OTiAssertion i) where
                     case fromShATerm $ getATermByIndex1 aa att of { aa' ->
                     case fromShATerm $ getATermByIndex1 ab att of { ab' ->
                     case fromShATerm $ getATermByIndex1 ac att of { ac' ->
-                    T.OA aa' ab' ac' }}}
+                    TiPropDecorate.OA aa' ab' ac' }}}
             u -> fromShATermError "TiPropDecorate.OTiAssertion" u
-    type_of _ = "TiPropDecorate.OTiAssertion"
 
-instance (ShATermConvertible i) => ShATermConvertible (T.TiPredicate i) where
-    toShATerm att0 (T.PP aa) =
+_tc_TiPropDecorate_TiPredicateTc :: TyCon
+_tc_TiPropDecorate_TiPredicateTc = mkTyCon "TiPropDecorate.TiPredicate"
+instance (Typeable a) => Typeable (TiPropDecorate.TiPredicate a) where
+    typeOf x = mkTyConApp _tc_TiPropDecorate_TiPredicateTc [typeOf (geta x)]
+      where
+        geta :: TiPropDecorate.TiPredicate a -> a
+        geta = undefined
+
+instance (ShATermConvertible i)
+    => ShATermConvertible (TiPropDecorate.TiPredicate i) where
+    toShATerm att0 (TiPropDecorate.PP aa) =
         case toShATerm att0 aa of { (att1,aa') ->
         addATerm (ShAAppl "PP" [ aa' ] []) att1 }
     fromShATerm att =
         case getATerm att of
             ShAAppl "PP" [ aa ] _ ->
                     case fromShATerm $ getATermByIndex1 aa att of { aa' ->
-                    T.PP aa' }
+                    TiPropDecorate.PP aa' }
             u -> fromShATermError "TiPropDecorate.TiPredicate" u
-    type_of _ = "TiPropDecorate.TiPredicate"
 
-instance (ShATermConvertible i) => ShATermConvertible (T.TiAssertion i) where
-    toShATerm att0 (T.PA aa) =
+_tc_TiPropDecorate_TiAssertionTc :: TyCon
+_tc_TiPropDecorate_TiAssertionTc = mkTyCon "TiPropDecorate.TiAssertion"
+instance (Typeable a) => Typeable (TiPropDecorate.TiAssertion a) where
+    typeOf x = mkTyConApp _tc_TiPropDecorate_TiAssertionTc [typeOf (geta x)]
+      where
+        geta :: TiPropDecorate.TiAssertion a -> a
+        geta = undefined
+
+instance (ShATermConvertible i)
+    => ShATermConvertible (TiPropDecorate.TiAssertion i) where
+    toShATerm att0 (TiPropDecorate.PA aa) =
         case toShATerm att0 aa of { (att1,aa') ->
         addATerm (ShAAppl "PA" [ aa' ] []) att1 }
     fromShATerm att =
         case getATerm att of
             ShAAppl "PA" [ aa ] _ ->
                     case fromShATerm $ getATermByIndex1 aa att of { aa' ->
-                    T.PA aa' }
+                    TiPropDecorate.PA aa' }
             u -> fromShATermError "TiPropDecorate.TiAssertion" u
-    type_of _ = "TiPropDecorate.TiAssertion"
 
-instance (ShATermConvertible i) => ShATermConvertible (T.TiDecl i) where
-    toShATerm att0 (T.Dec aa) =
+_tc_TiPropDecorate_TiDeclTc :: TyCon
+_tc_TiPropDecorate_TiDeclTc = mkTyCon "TiPropDecorate.TiDecl"
+instance (Typeable a) => Typeable (TiPropDecorate.TiDecl a) where
+    typeOf x = mkTyConApp _tc_TiPropDecorate_TiDeclTc [typeOf (geta x)]
+      where
+        geta :: TiPropDecorate.TiDecl a -> a
+        geta = undefined
+
+instance (ShATermConvertible i)
+    => ShATermConvertible (TiPropDecorate.TiDecl i) where
+    toShATerm att0 (TiPropDecorate.Dec aa) =
         case toShATerm att0 aa of { (att1,aa') ->
         addATerm (ShAAppl "Dec" [ aa' ] []) att1 }
     fromShATerm att =
         case getATerm att of
             ShAAppl "Dec" [ aa ] _ ->
                     case fromShATerm $ getATermByIndex1 aa att of { aa' ->
-                    T.Dec aa' }
+                    TiPropDecorate.Dec aa' }
             u -> fromShATermError "TiPropDecorate.TiDecl" u
-    type_of _ = "TiPropDecorate.TiDecl"
 
-instance (ShATermConvertible i) => ShATermConvertible (T.TiDecls i) where
-    toShATerm att0 (T.Decs aa ab) =
+_tc_TiPropDecorate_TiDeclsTc :: TyCon
+_tc_TiPropDecorate_TiDeclsTc = mkTyCon "TiPropDecorate.TiDecls"
+instance (Typeable a) => Typeable (TiPropDecorate.TiDecls a) where
+    typeOf x = mkTyConApp _tc_TiPropDecorate_TiDeclsTc [typeOf (geta x)]
+      where
+        geta :: TiPropDecorate.TiDecls a -> a
+        geta = undefined
+
+instance (ShATermConvertible i)
+    => ShATermConvertible (TiPropDecorate.TiDecls i) where
+    toShATerm att0 (TiPropDecorate.Decs aa ab) =
         case toShATerm att0 aa of { (att1,aa') ->
         case toShATerm att1 ab of { (att2,ab') ->
         addATerm (ShAAppl "Decs" [ aa',ab' ] []) att2 }}
@@ -359,9 +511,20 @@ instance (ShATermConvertible i) => ShATermConvertible (T.TiDecls i) where
             ShAAppl "Decs" [ aa,ab ] _ ->
                     case fromShATerm $ getATermByIndex1 aa att of { aa' ->
                     case fromShATerm $ getATermByIndex1 ab att of { ab' ->
-                    T.Decs aa' ab' }}
+                    TiPropDecorate.Decs aa' ab' }}
             u -> fromShATermError "TiPropDecorate.TiDecls" u
-    type_of _ = "TiPropDecorate.TiDecls"
+
+hsDeclsTc :: TyCon
+hsDeclsTc = mkTyCon "Haskell.HatParser.HsDecls"
+
+instance Typeable HsDecls where
+    typeOf _ = mkTyConApp hsDeclsTc []
+
+tyconSign :: TyCon
+tyconSign = mkTyCon "Haskell.HatAna.Sign"
+
+instance Typeable Sign where
+  typeOf _ = mkTyConApp tyconSign []
 
 instance ShATermConvertible HsDecls where
     toShATerm att0 (HsDecls aa) =
@@ -373,7 +536,6 @@ instance ShATermConvertible HsDecls where
                     case fromShATerm $ getATermByIndex1 aa att of { aa' ->
                     HsDecls aa' }
             u -> fromShATermError "Haskell.HsDecls" u
-    type_of _ = "Haskell.HsDecls"
 
 instance ShATermConvertible Sign where
     toShATerm att0 (Sign aa ab ac ad ae) =
@@ -393,4 +555,3 @@ instance ShATermConvertible Sign where
                     case fromShATerm $ getATermByIndex1 ae att of { ae' ->
                     Sign aa' ab' ac' ad' ae' }}}}}
             u -> fromShATermError "Haskell.Sign" u
-    type_of _ = "Haskell.Sign"

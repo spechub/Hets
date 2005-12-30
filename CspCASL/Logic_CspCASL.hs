@@ -1,4 +1,3 @@
-
 {- |
 Module      :  $Header$
 Copyright   :  (c)  Markus Roggenbach, Till Mossakowski and Uni Bremen 2003
@@ -6,11 +5,12 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  M.Roggenbach@swansea.ac.uk
 Stability   :  experimental
-Portability :  non-portable
+Portability :  non-portable(import Logic.Logic)
 
 Here is the place where the class Logic is instantiated for CspCASL.
    Also the instances for Syntax an Category.
-
+-}
+{-
    todo:
      - writing real functions
      - Modul Sign.hs mit CSP-CASL-Signaturen und Morphismen, basiernd auf CASL.Sign
@@ -46,10 +46,7 @@ import CASL.Sign
 import CASL.Morphism
 
 import Logic.Logic
-import Data.Dynamic
-import Common.DynamicUtils 
 import Common.Lib.Map as Map
-
 
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
@@ -75,7 +72,6 @@ instance Category CspCASL CSPSign CSPMorphism
          -- legal_mor :: id -> morphism -> Bool
          legal_mor CspCASL _ = fun_err "legal_mor"
 
-
 -- abstract syntax, parsing (and printing)
 
 instance Syntax CspCASL Basic_CSP_CASL_C_SPEC
@@ -85,20 +81,9 @@ instance Syntax CspCASL Basic_CSP_CASL_C_SPEC
          parse_symb_items CspCASL = Just $ symbItems csp_casl_keywords
          parse_symb_map_items CspCASL = Just $ symbMapItems csp_casl_keywords
 
--- lattices (for sublogics)
-
-{-
-instance LatticeWithTop () where
-    -- meet, join :: l -> l -> l
-    meet = fun_err "meet"
-    join = fun_err "join"
-    -- top :: l
-    top = fun_err "top"
-
--}
+-- lattices (for sublogics) missing
 
 -- CspCASL logic
-
 
 instance Sentences CspCASL () () CSPSign CSPMorphism () where
   parse_sentence CspCASL = Nothing
@@ -123,16 +108,8 @@ instance Logic CspCASL ()
 
          data_logic CspCASL = Just (Logic CASL)
 
-
-cspCaslBasicSpecTc :: TyCon
-cspCaslBasicSpecTc = mkTyCon "CspCASL.Basic_CSP_CASL_C_SPEC"
-
-instance Typeable Basic_CSP_CASL_C_SPEC where
-    typeOf _ = mkTyConApp cspCaslBasicSpecTc []
-
----- helpers ---------------------------------
+---- helper ---------------------------------
 fun_err :: String -> a
 fun_err fname = 
-    error ("*** CspCASL.Logic_CspCASL: Function \"" ++ fname ++ "\" is not yet implemented!")
-
-----------------------------------------------
+    error $ "*** CspCASL.Logic_CspCASL: Function \"" ++ fname 
+              ++ "\" is not yet implemented!"

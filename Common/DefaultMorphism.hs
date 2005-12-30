@@ -20,7 +20,6 @@ import Common.Keywords
 import Common.PrettyPrint
 import Common.ATerm.Lib
 import Common.DynamicUtils
-import Data.Dynamic
 
 data DefaultMorphism sign = MkMorphism sign sign deriving (Show, Eq)
 
@@ -54,7 +53,6 @@ instance (ShATermConvertible a) => ShATermConvertible (DefaultMorphism a) where
                     case fromShATerm (getATermByIndex1 t att) of {  t' ->
                     (MkMorphism s' t') }}
             u -> fromShATermError "DefaultMorphism" u
-    type_of _ = "DefaultMorphism"
 
 domOfDefaultMorphism, codOfDefaultMorphism :: DefaultMorphism sign -> sign
 domOfDefaultMorphism (MkMorphism s _) = s

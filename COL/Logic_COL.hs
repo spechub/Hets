@@ -29,8 +29,6 @@ import CASL.Parse_AS_Basic
 import CASL.MapSentence
 import CASL.SymbolParser
 import Logic.Logic
-import Data.Dynamic
-import Common.DynamicUtils
 
 data COL = COL deriving Show
 
@@ -42,15 +40,6 @@ type C_BASIC_SPEC = BASIC_SPEC () COL_SIG_ITEM ()
 type CSign = Sign () COLSign
 type COLMor = Morphism () COLSign ()
 type COLFORMULA = FORMULA ()
-
-tc_COL_SIG_ITEM, colSignTc :: TyCon
-tc_COL_SIG_ITEM    = mkTyCon "COL.AS_COL.COL_SIG_ITEM"
-colSignTc      = mkTyCon "COL.COLSign.COLSign"
-
-instance Typeable COL_SIG_ITEM where
-  typeOf _ = mkTyConApp tc_COL_SIG_ITEM []
-instance Typeable COLSign where
-  typeOf _ = mkTyConApp colSignTc []
 
 instance Category COL CSign COLMor
     where

@@ -32,12 +32,9 @@ import CASL.Parse_AS_Basic
 import CASL.MapSentence
 import CASL.SymbolParser
 import CASL.Taxonomy
+import CASL.SimplifySen
 
 import Logic.Logic
-import Data.Dynamic
-import Common.DynamicUtils
- 
-import CASL.SimplifySen
 
 data CASL_DL = CASL_DL deriving Show
 
@@ -50,21 +47,6 @@ instance Language CASL_DL  where
 type CDSign = Sign DL_FORMULA CASL_DLSign
 type CDMor = Morphism DL_FORMULA CASL_DLSign ()
 type CDFORMULA = FORMULA DL_FORMULA
-
-tc_CD_FORMULA, tc_CD_SIG_ITEM, tc_CD_BASIC_ITEM, cdSignTc :: TyCon
-tc_CD_FORMULA     = mkTyCon "CASL_DL.AS_CASL_DL.DL_FORMULA"
-tc_CD_SIG_ITEM    = mkTyCon "CASL_DL.AS_CASL_DL.DL_SIG_ITEM"
-tc_CD_BASIC_ITEM  = mkTyCon "CASL_DL.AS_CASL_DL.DL_BASIC_ITEM"
-cdSignTc      = mkTyCon "CASL_DL.Sign.CASL_DLSign"
-
-instance Typeable DL_FORMULA where
-  typeOf _ = mkTyConApp tc_CD_FORMULA []
--- instance Typeable M_SIG_ITEM where
---  typeOf _ = mkTyConApp tc_CD_SIG_ITEM []
--- instance Typeable M_BASIC_ITEM where
---  typeOf _ = mkTyConApp tc_CD_BASIC_ITEM []
-instance Typeable CASL_DLSign where
-  typeOf _ = mkTyConApp cdSignTc []
 
 instance Category CASL_DL CDSign CDMor  
     where

@@ -22,7 +22,6 @@ import qualified Common.OrderedMap as OMap
 import qualified Common.Lib.Map as Map (toList,fromList)
 import qualified Common.Lib.Set as Set
 
-import Data.Dynamic
 import Data.List
 
 -- * sentence packing
@@ -38,7 +37,7 @@ instance PrettyPrint a => PrettyPrint (SenStatus a b) where
   printText0 ga x = printText0 ga (value x)
 
 emptySenStatus :: SenStatus a b
-emptySenStatus = SenStatus 
+emptySenStatus = SenStatus
    { value = error "emptySenStatus"
    , isDef = False
    , isAxiom = True
@@ -51,20 +50,6 @@ instance Eq a => Eq (SenStatus a b) where
 instance Ord a => Ord (SenStatus a b) where
     d1 <= d2 = (value d1, isAxiom d1, isDef d1) <=
                (value d2, isAxiom d2, isDef d2)
-
-decoTc :: TyCon
-decoTc = mkTyCon "Static.DevGraph.SenStatus"
-
-instance (Typeable s,Typeable b) => Typeable (SenStatus s b) where
-  typeOf s = mkTyConApp decoTc [typeOf ((undefined :: SenStatus a b -> a) s),
-                                typeOf ((undefined :: SenStatus a b -> b) s)]
-
-elemWOrdTc :: TyCon
-elemWOrdTc = mkTyCon "Common.OrderedMap.ElemWOrd"
-
-instance (Typeable a) => Typeable (OMap.ElemWOrd a) where
-  typeOf s = mkTyConApp elemWOrdTc
-             [typeOf ((undefined :: OMap.ElemWOrd a -> a) s)]
 
 instance PrettyPrint a => PrettyPrint (OMap.ElemWOrd a) where
     printText0 ga e = printText0 ga (OMap.ele e)
@@ -146,7 +131,7 @@ data Theory sign sen proof_tree =
     Theory sign (ThSens sen (Proof_status proof_tree))
 
 -- | theory morphisms between two theories
-data TheoryMorphism sign sen mor proof_tree = TheoryMorphism 
+data TheoryMorphism sign sen mor proof_tree = TheoryMorphism
     { t_source :: Theory sign sen proof_tree
     , t_target :: Theory sign sen proof_tree
     , t_morphism :: mor }
@@ -199,27 +184,6 @@ type Prover sign sentence proof_tree =
 type ConsChecker sign sentence morphism proof_tree =
   ProverTemplate (TheoryMorphism sign sentence morphism proof_tree) proof_tree
 
-theoryTc :: TyCon
-theoryTc = mkTyCon "Logic.Prover.Theory"
-
-instance (Typeable a, Typeable b,Typeable c)
-    => Typeable (Theory a b c) where
-        typeOf t = mkTyConApp theoryTc
-               [typeOf ((undefined :: Theory a b c -> a) t),
-                typeOf ((undefined :: Theory a b c -> b) t),
-                typeOf ((undefined :: Theory a b c -> c) t)]
-
-theoryMorTc :: TyCon
-theoryMorTc = mkTyCon "Logic.Prover.TheoryMorphism"
-
-instance (Typeable a, Typeable b, Typeable c, Typeable d)
-    => Typeable (TheoryMorphism a b c d) where
-        typeOf t = mkTyConApp theoryMorTc
-               [typeOf ((undefined :: TheoryMorphism a b c d -> a) t),
-                typeOf ((undefined :: TheoryMorphism a b c d -> b) t),
-                typeOf ((undefined :: TheoryMorphism a b c d -> c) t),
-                typeOf ((undefined :: TheoryMorphism a b c d -> d) t)]
-
 proverTc :: TyCon
 proverTc = mkTyCon "Logic.Prover.ProverTemplate"
 
@@ -227,11 +191,4 @@ instance (Typeable a, Typeable b) => Typeable (ProverTemplate a b) where
     typeOf p = mkTyConApp proverTc
                [typeOf ((undefined :: ProverTemplate a b -> a) p),
                 typeOf ((undefined :: ProverTemplate a b -> b) p)]
-
-tcProof_status :: TyCon
-tcProof_status = mkTyCon "Logic.Prover.Proof_status"
-
-instance Typeable proof_tree => Typeable (Proof_status proof_tree) where
-  typeOf b = mkTyConApp tcProof_status
-             [typeOf $ (undefined :: Proof_status proof_tree -> proof_tree) b]
 

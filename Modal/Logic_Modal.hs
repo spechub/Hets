@@ -33,8 +33,6 @@ import CASL.SymbolParser
 import CASL.Taxonomy
 
 import Logic.Logic
-import Data.Dynamic
-import Common.DynamicUtils
 
 import CASL.SimplifySen
 
@@ -51,21 +49,6 @@ instance Language Modal  where
 type MSign = Sign M_FORMULA ModalSign
 type ModalMor = Morphism M_FORMULA ModalSign ()
 type ModalFORMULA = FORMULA M_FORMULA
-
-tc_M_FORMULA, tc_M_SIG_ITEM, tc_M_BASIC_ITEM, modalSignTc :: TyCon
-tc_M_FORMULA     = mkTyCon "Modal.AS_Modal.M_FORMULA"
-tc_M_SIG_ITEM    = mkTyCon "Modal.AS_Modal.M_SIG_ITEM"
-tc_M_BASIC_ITEM  = mkTyCon "Modal.AS_Modal.M_BASIC_ITEM"
-modalSignTc      = mkTyCon "Modal.ModalSign.ModalSign"
-
-instance Typeable M_FORMULA where
-  typeOf _ = mkTyConApp tc_M_FORMULA []
-instance Typeable M_SIG_ITEM where
-  typeOf _ = mkTyConApp tc_M_SIG_ITEM []
-instance Typeable M_BASIC_ITEM where
-  typeOf _ = mkTyConApp tc_M_BASIC_ITEM []
-instance Typeable ModalSign where
-  typeOf _ = mkTyConApp modalSignTc []
 
 instance Category Modal MSign ModalMor
     where

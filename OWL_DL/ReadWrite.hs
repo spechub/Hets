@@ -21,7 +21,98 @@ import Text.XML.HXT.DOM.XmlTreeTypes
 import qualified Common.Lib.Map as Map
 import OWL_DL.AS
 import Common.ATerm.Lib
-import Char
+import Common.DynamicUtils
+import Data.Char
+
+_tc_QNameTc :: TyCon
+_tc_QNameTc = mkTyCon "QName"
+instance Typeable QName where
+    typeOf _ = mkTyConApp _tc_QNameTc []
+
+_tc_MessageTc :: TyCon
+_tc_MessageTc = mkTyCon "Message"
+instance Typeable Message where
+    typeOf _ = mkTyConApp _tc_MessageTc []
+
+_tc_OntologyTc :: TyCon
+_tc_OntologyTc = mkTyCon "Ontology"
+instance Typeable Ontology where
+    typeOf _ = mkTyConApp _tc_OntologyTc []
+
+_tc_DirectiveTc :: TyCon
+_tc_DirectiveTc = mkTyCon "Directive"
+instance Typeable Directive where
+    typeOf _ = mkTyConApp _tc_DirectiveTc []
+
+_tc_AnnotationTc :: TyCon
+_tc_AnnotationTc = mkTyCon "Annotation"
+instance Typeable Annotation where
+    typeOf _ = mkTyConApp _tc_AnnotationTc []
+
+_tc_DataLiteralTc :: TyCon
+_tc_DataLiteralTc = mkTyCon "DataLiteral"
+instance Typeable DataLiteral where
+    typeOf _ = mkTyConApp _tc_DataLiteralTc []
+
+_tc_FactTc :: TyCon
+_tc_FactTc = mkTyCon "Fact"
+instance Typeable Fact where
+    typeOf _ = mkTyConApp _tc_FactTc []
+
+_tc_IndividualTc :: TyCon
+_tc_IndividualTc = mkTyCon "Individual"
+instance Typeable Individual where
+    typeOf _ = mkTyConApp _tc_IndividualTc []
+
+_tc_ValueTc :: TyCon
+_tc_ValueTc = mkTyCon "Value"
+instance Typeable Value where
+    typeOf _ = mkTyConApp _tc_ValueTc []
+
+_tc_AxiomTc :: TyCon
+_tc_AxiomTc = mkTyCon "Axiom"
+instance Typeable Axiom where
+    typeOf _ = mkTyConApp _tc_AxiomTc []
+
+_tc_FuncTc :: TyCon
+_tc_FuncTc = mkTyCon "Func"
+instance Typeable Func where
+    typeOf _ = mkTyConApp _tc_FuncTc []
+
+_tc_ModalityTc :: TyCon
+_tc_ModalityTc = mkTyCon "Modality"
+instance Typeable Modality where
+    typeOf _ = mkTyConApp _tc_ModalityTc []
+
+_tc_DescriptionTc :: TyCon
+_tc_DescriptionTc = mkTyCon "Description"
+instance Typeable Description where
+    typeOf _ = mkTyConApp _tc_DescriptionTc []
+
+_tc_RestrictionTc :: TyCon
+_tc_RestrictionTc = mkTyCon "Restriction"
+instance Typeable Restriction where
+    typeOf _ = mkTyConApp _tc_RestrictionTc []
+
+_tc_DrcomponentTc :: TyCon
+_tc_DrcomponentTc = mkTyCon "Drcomponent"
+instance Typeable Drcomponent where
+    typeOf _ = mkTyConApp _tc_DrcomponentTc []
+
+_tc_IrcomponentTc :: TyCon
+_tc_IrcomponentTc = mkTyCon "Ircomponent"
+instance Typeable Ircomponent where
+    typeOf _ = mkTyConApp _tc_IrcomponentTc []
+
+_tc_CardinalityTc :: TyCon
+_tc_CardinalityTc = mkTyCon "Cardinality"
+instance Typeable Cardinality where
+    typeOf _ = mkTyConApp _tc_CardinalityTc []
+
+_tc_DataRangeTc :: TyCon
+_tc_DataRangeTc = mkTyCon "DataRange"
+instance Typeable DataRange where
+    typeOf _ = mkTyConApp _tc_DataRangeTc []
 
 instance ShATermConvertible Message where
     toShATerm att0 (Message aa) =
@@ -33,7 +124,6 @@ instance ShATermConvertible Message where
                     case fromShATerm $ getATermByIndex1 aa att of { aa' ->
                     Message aa' }
             u -> fromShATermError "OWL_DL.Message" u
-    type_of _ = "OWL_DL.Message"
 
 instance ShATermConvertible Ontology where
     toShATerm att0 (Ontology aa ab ac) =
@@ -49,7 +139,6 @@ instance ShATermConvertible Ontology where
                     case fromShATerm $ getATermByIndex1 ac att of { ac' ->
                     Ontology aa' ab' ac' }}}
             u -> fromShATermError "OWL_DL.Ontology" u
-    type_of _ = "OWL_DL.Ontology"
 
 instance ShATermConvertible Namespace where
     -- von Map koennen viele namespace ATerm aufgabaut werden, die nach
@@ -80,7 +169,6 @@ instance ShATermConvertible Namespace where
                      case fromShATerm $ getATermByIndex1 uri att of { uri' ->
                            mkMap r (Map.insert name' uri' mp)}}
                  u -> fromShATermError "OWL_DL.mkMap.Namespace" u
-    type_of _ = "OWL_DL.Namespace"
 
 instance ShATermConvertible QName where
     toShATerm att0 (QN aa ab _) =
@@ -105,7 +193,6 @@ instance ShATermConvertible QName where
                                      else QN "" ns ""
                           else  QN pre (tail loc) ""
          u -> fromShATermError "OWL_DL.QName" u
-    type_of _ = "OWL_DL.QName"
 
 instance ShATermConvertible Directive where
     toShATerm att0 (Anno aa) =
@@ -129,7 +216,6 @@ instance ShATermConvertible Directive where
                     case fromShATerm $ getATermByIndex1 aa att of { aa' ->
                     Fc aa' }
             u -> fromShATermError "OWL_DL.Directive" u
-    type_of _ = "OWL_DL.Directive"
 
 instance ShATermConvertible Annotation where
     toShATerm att0 (OntoAnnotation aa ab) =
@@ -167,7 +253,6 @@ instance ShATermConvertible Annotation where
                     case fromShATerm $ getATermByIndex1 ab att of { ab' ->
                     IndivAnnotation aa' ab' }}
             u -> fromShATermError "OWL_DL.Annotation" u
-    type_of _ = "OWL_DL.Annotation"
 
 instance ShATermConvertible DataLiteral where
     toShATerm att0 (TypedL aa) =
@@ -197,7 +282,6 @@ instance ShATermConvertible DataLiteral where
                     case fromShATerm $ getATermByIndex1 aa att of { aa' ->
                     RDFSL aa' }
             u -> fromShATermError "OWL_DL.DataLiteral" u
-    type_of _ = "OWL_DL.DataLiteral"
 
 instance ShATermConvertible Fact where
     toShATerm att0 (Indiv aa) =
@@ -229,7 +313,6 @@ instance ShATermConvertible Fact where
                     case fromShATerm $ getATermByIndex1 ac att of { ac' ->
                     DifferentIndividuals aa' ab' ac' }}}
             u -> fromShATermError "OWL_DL.Fact" u
-    type_of _ = "OWL_DL.Fact"
 
 instance ShATermConvertible Individual where
     toShATerm att0 (Individual aa ab ac ad) =
@@ -247,7 +330,6 @@ instance ShATermConvertible Individual where
                     case fromShATerm $ getATermByIndex1 ad att of { ad' ->
                     Individual aa' ab' ac' ad' }}}}
             u -> fromShATermError "OWL_DL.Individual" u
-    type_of _ = "OWL_DL.Individual"
 
 instance ShATermConvertible Value where
     toShATerm att0 (ValueID aa ab) =
@@ -277,7 +359,6 @@ instance ShATermConvertible Value where
                     case fromShATerm $ getATermByIndex1 ab att of { ab' ->
                     ValueDL aa' ab' }}
             u -> fromShATermError "OWL_DL.Value" u
-    type_of _ = "OWL_DL.Value"
 
 instance ShATermConvertible Axiom where
     toShATerm att0 Thing =
@@ -445,7 +526,6 @@ instance ShATermConvertible Axiom where
                     case fromShATerm $ getATermByIndex1 ab att of { ab' ->
                     ISubPropertyOf aa' ab' }}
             u -> fromShATermError "OWL_DL.Axiom" u
-    type_of _ = "OWL_DL.Axiom"
 
 instance ShATermConvertible Func where
     toShATerm att0 Functional =
@@ -467,7 +547,6 @@ instance ShATermConvertible Func where
             ShAAppl "Transitive" [ ] _ ->
                     Transitive
             u -> fromShATermError "OWL_DL.Func" u
-    type_of _ = "OWL_DL.Func"
 
 instance ShATermConvertible Modality where
     toShATerm att0 Complete =
@@ -481,7 +560,6 @@ instance ShATermConvertible Modality where
             ShAAppl "Partial" [ ] _ ->
                     Partial
             u -> fromShATermError "OWL_DL.Modality" u
-    type_of _ = "OWL_DL.Modality"
 
 instance ShATermConvertible Description where
     toShATerm att0 (DC aa) =
@@ -523,7 +601,6 @@ instance ShATermConvertible Description where
                     case fromShATerm $ getATermByIndex1 aa att of { aa' ->
                     OneOfDes aa' }
             u -> fromShATermError "OWL_DL.Description" u
-    type_of _ = "OWL_DL.Description"
 
 instance ShATermConvertible Restriction where
     toShATerm att0 (DataRestriction aa ab ac) =
@@ -549,7 +626,6 @@ instance ShATermConvertible Restriction where
                     case fromShATerm $ getATermByIndex1 ac att of { ac' ->
                     IndivRestriction aa' ab' ac' }}}
             u -> fromShATermError "OWL_DL.Restriction" u
-    type_of _ = "OWL_DL.Restriction"
 
 instance ShATermConvertible Drcomponent where
     toShATerm att0 (DRCAllValuesFrom aa) =
@@ -579,7 +655,6 @@ instance ShATermConvertible Drcomponent where
                     case fromShATerm $ getATermByIndex1 aa att of { aa' ->
                     DRCCardinality aa' }
             u -> fromShATermError "OWL_DL.Drcomponent" u
-    type_of _ = "OWL_DL.Drcomponent"
 
 instance ShATermConvertible Ircomponent where
     toShATerm att0 (IRCAllValuesFrom aa) =
@@ -609,7 +684,6 @@ instance ShATermConvertible Ircomponent where
                     case fromShATerm $ getATermByIndex1 aa att of { aa' ->
                     IRCCardinality aa' }
             u -> fromShATermError "OWL_DL.Ircomponent" u
-    type_of _ = "OWL_DL.Ircomponent"
 
 instance ShATermConvertible Cardinality where
     toShATerm att0 (MinCardinality aa) =
@@ -633,7 +707,6 @@ instance ShATermConvertible Cardinality where
                     case fromShATerm $ getATermByIndex1 aa att of { aa' ->
                     Cardinality aa' }
             u -> fromShATermError "OWL_DL.Cardinality" u
-    type_of _ = "OWL_DL.Cardinality"
 
 instance ShATermConvertible DataRange where
     toShATerm att0 (DID aa) =
@@ -657,4 +730,3 @@ instance ShATermConvertible DataRange where
                     case fromShATerm $ getATermByIndex1 aa att of { aa' ->
                     RLit aa' }
             u -> fromShATermError "OWL_DL.DataRange" u
-    type_of _ = "OWL_DL.DataRange"

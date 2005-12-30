@@ -16,21 +16,20 @@ module Common.ATerm.Conversion(
        fromShATerm,        -- :: ATermTable -> t
        toShATermList,      -- :: ATermTable -> [t] -> (ATermTable,Int)
        fromShATermList,    -- :: ATermTable -> [t]
-       type_of,            -- :: t -> String
        fromShATermError,   -- :: String -> ShATerm -> a
                               ) where
 
 import Common.ATerm.AbstractSyntax
 import Data.List (mapAccumL)
 import Data.Ratio
+import Data.Typeable
 
-class ShATermConvertible t where
+class Typeable t => ShATermConvertible t where
     -- functions for conversion to an ATermTable
     toShATerm       :: ATermTable -> t -> (ATermTable,Int)
     toShATermList   :: ATermTable -> [t] -> (ATermTable,Int)
     fromShATerm     :: ATermTable -> t
     fromShATermList :: ATermTable -> [t]
-    type_of :: t -> String -- ^ deriving Typeable is more complicated
 
     -- default functions ignore the Annotation part
     toShATermList att0 ts = case mapAccumL toShATerm att0 ts of
@@ -61,19 +60,16 @@ instance ShATermConvertible Bool where
                        ShAAppl "T" [] _ -> True
                        ShAAppl "F" [] _ -> False
                        u -> fromShATermError "Prelude.Bool" u
-    type_of _ = "Prelude.Bool"
 
 instance ShATermConvertible Integer where
     toShATerm att x = addATerm (ShAInt x []) att
     fromShATerm att = case getATerm att of
                        ShAInt x _ -> x
                        u  -> fromShATermError "Prelude.Integer" u
-    type_of _ = "Prelude.Integer"
 
 instance ShATermConvertible Int where
     toShATerm att x = toShATerm att (toInteger x)
     fromShATerm att = integer2Int $ fromShATerm att
-    type_of _ = "Prelude.Int"
 
 instance (ShATermConvertible a, Integral a)
     => ShATermConvertible (Ratio a) where
@@ -91,7 +87,6 @@ instance (ShATermConvertible a, Integral a)
              case fromShATerm (getATermByIndex1 i2' att) of
              i2 -> (i1 % i2)
        u ->  fromShATermError "Prelude.Integral" u
-    type_of _ = "Prelude.Integral"
 
 instance ShATermConvertible Char where
     toShATerm att c = addATerm (ShAAppl (show [c]) [] []) att
@@ -102,11 +97,9 @@ instance ShATermConvertible Char where
     fromShATermList att = case getATerm att of
                             ShAAppl s [] _ -> read s
                             u -> fromShATermError "String" u
-    type_of _ = "Prelude.Char"
 
 instance ShATermConvertible () where
     toShATerm att _ = addATerm (ShAAppl "U" [] []) att
     fromShATerm att = case getATerm att of
                       ShAAppl "U" [] _ -> ()
                       u -> fromShATermError "()" u
-    type_of _ = "()"

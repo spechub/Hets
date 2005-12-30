@@ -18,10 +18,6 @@ Here is the place where the class Logic is instantiated for OWL DL.
 
 module OWL_DL.Logic_OWL_DL where
 
-import Data.Dynamic
-
-import Common.DynamicUtils
--- import Common.Result
 import Common.AS_Annotation
 import Common.DefaultMorphism
 import Common.Lib.Pretty
@@ -36,27 +32,12 @@ import OWL_DL.Sign
 -- import Logic.Comorphism
 import OWL_DL.StaticAna
 
-
 data OWL_DL = OWL_DL deriving Show
 
 instance Language OWL_DL where
  description _ = 
   "OWL DL -- Web Ontology Language Description Logic http://wwww.w3c.org/"
 
-
--- Typeable instance
-tc_Sign, tc_Sentence, tc_Ontology :: TyCon
-
-tc_Sign = mkTyCon "OWL_DL.Sign.Sign"
-tc_Sentence = mkTyCon "OWL_DL.Sign.Sentence"
-tc_Ontology     = mkTyCon "OWL_DL.AS.Ontology"
-
-instance Typeable Sign where
-  typeOf _ = mkTyConApp tc_Sign []
-instance Typeable Sentence where
-  typeOf _ = mkTyConApp tc_Sentence []
-instance Typeable Ontology where
-      typeOf _ = mkTyConApp tc_Ontology []
 type OWL_DLMorphism = DefaultMorphism Sign
 
 instance Category OWL_DL Sign OWL_DLMorphism  
@@ -73,7 +54,6 @@ instance Category OWL_DL Sign OWL_DLMorphism
 instance Syntax OWL_DL Ontology () ()
     -- default implementation is fine!
 
-
 -- OWL DL logic
 
 instance Sentences OWL_DL Sentence () Sign OWL_DLMorphism () where
@@ -84,7 +64,6 @@ instance Sentences OWL_DL Sentence () Sign OWL_DLMorphism () where
         else space <> text "%%" <+> text (senName namedSen) 
     provers OWL_DL = [] 
     cons_checkers OWL_DL = []
-
 
 instance StaticAnalysis OWL_DL Ontology Sentence ()
                () ()

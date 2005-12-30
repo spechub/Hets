@@ -32,8 +32,6 @@ import CASL.Parse_AS_Basic
 import CASL.MapSentence
 import CASL.SymbolParser
 import Logic.Logic
-import Data.Dynamic
-import Common.DynamicUtils 
 
 data CoCASL = CoCASL deriving Show
 
@@ -43,25 +41,6 @@ instance Language CoCASL  where
 
 type CoCASLMor = Morphism C_FORMULA CoCASLSign ()
 type CoCASLFORMULA = FORMULA C_FORMULA
-
-tc_C_FORMULA, tc_C_SIG_ITEM, tc_C_BASIC_ITEM, 
-  modalSignTc, cocasl_SublocigsTc :: TyCon
-tc_C_FORMULA     = mkTyCon "CoCASL.AS_CoCASL.C_FORMULA"
-tc_C_SIG_ITEM    = mkTyCon "CoCASL.AS_CoCASL.C_SIG_ITEM"
-tc_C_BASIC_ITEM  = mkTyCon "CoCASL.AS_CoCASL.C_BASIC_ITEM"
-modalSignTc      = mkTyCon "CoCASL.CoCASLSign.CoCASLSign"
-cocasl_SublocigsTc  = mkTyCon "CoCASL.Sublogics.CoCASL_Sublogics"
-
-instance Typeable C_FORMULA where
-  typeOf _ = mkTyConApp tc_C_FORMULA []
-instance Typeable C_SIG_ITEM where
-  typeOf _ = mkTyConApp tc_C_SIG_ITEM []
-instance Typeable C_BASIC_ITEM where
-  typeOf _ = mkTyConApp tc_C_BASIC_ITEM []
-instance Typeable CoCASLSign where
-  typeOf _ = mkTyConApp modalSignTc []
-instance Typeable CoCASL_Sublogics where
-  typeOf _ = mkTyConApp cocasl_SublocigsTc []
 
 instance Category CoCASL CSign CoCASLMor  
     where

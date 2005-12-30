@@ -29,59 +29,25 @@ import HasCASL.Sublogic
 import HasCASL.SimplifyTerm
 import HasCASL.Merge
 import Logic.Logic
-import Data.Dynamic
-import Common.DynamicUtils 
 
 data HasCASL = HasCASL deriving (Show)
 instance Language HasCASL where
- description _ = 
-  "HasCASL - Algebraic Specification + Functional Programming = \ 
-  \Environment for Formal Software Development\n\ 
-  \This logic is based on the partial lambda calculus,\n\ 
-  \and features subsorting, overloading and type class polymorphism\n\ 
-  \See the HasCASL summary and further papers,\n\ 
+ description _ =
+  "HasCASL - Algebraic Specification + Functional Programming = \
+  \Environment for Formal Software Development\n\
+  \This logic is based on the partial lambda calculus,\n\
+  \and features subsorting, overloading and type class polymorphism\n\
+  \See the HasCASL summary and further papers,\n\
   \available at http://www.tzi.de/cofi/HasCASL"
-
-basicSpecTc, envTc, senTc, symbolTc, rawSymbolTc, 
-    symbItemsTc, symbMapItemsTc, morphismTc, sublogicTc :: TyCon
-
-basicSpecTc      = mkTyCon "HasCASL.As.BasicSpec"
-envTc            = mkTyCon "HasCASL.Le.Env"
-senTc            = mkTyCon "HasCASL.Le.Sentence"
-symbolTc         = mkTyCon "HasCASL.Morphism.Symbol"
-rawSymbolTc      = mkTyCon "HasCASL.Morphism.RawSymbol"
-symbItemsTc      = mkTyCon "HasCASL.Symbol.SymbolItems"
-symbMapItemsTc   = mkTyCon "HasCASL.Symbol.SymbolMapItems"
-morphismTc       = mkTyCon "HasCASL.Morphism.Morphism"
-sublogicTc       = mkTyCon "HasCASL.Sublogic.HasCASL_Sublogics"
-
-instance Typeable BasicSpec where
-    typeOf _ = mkTyConApp basicSpecTc []
-instance Typeable Env where
-    typeOf _ = mkTyConApp envTc []
-instance Typeable Sentence where
-    typeOf _ = mkTyConApp senTc []
-instance Typeable Symbol where
-    typeOf _ = mkTyConApp symbolTc []
-instance Typeable RawSymbol where
-    typeOf _ = mkTyConApp rawSymbolTc []
-instance Typeable SymbItems where
-    typeOf _ = mkTyConApp symbItemsTc []
-instance Typeable SymbMapItems where
-    typeOf _ = mkTyConApp symbMapItemsTc []
-instance Typeable Morphism where
-    typeOf _ = mkTyConApp morphismTc []
-instance Typeable HasCASL_Sublogics where
-    typeOf _ = mkTyConApp sublogicTc []
 
 instance Syntax HasCASL BasicSpec
                 SymbItems SymbMapItems
-      where 
+      where
          parse_basic_spec HasCASL = Just basicSpec
          parse_symb_items HasCASL = Just symbItems
          parse_symb_map_items HasCASL = Just symbMapItems
 
-instance Category HasCASL Env Morphism where 
+instance Category HasCASL Env Morphism where
     ide HasCASL e = ideMor e
     comp HasCASL m1 m2 = compMor m1 m2
     dom HasCASL m = msource m
@@ -96,15 +62,15 @@ instance Sentences HasCASL Sentence () Env Morphism Symbol where
     sym_of HasCASL = symOf
     symmap_of HasCASL = morphismToSymbMap
     parse_sentence HasCASL = Nothing
-    provers HasCASL = [] 
+    provers HasCASL = []
     cons_checkers HasCASL = []
 
 instance StaticAnalysis HasCASL BasicSpec Sentence ()
                SymbItems SymbMapItems
-               Env 
-               Morphism 
+               Env
+               Morphism
                Symbol RawSymbol where
-    basic_analysis HasCASL = Just basicAnalysis 
+    basic_analysis HasCASL = Just basicAnalysis
     signature_union HasCASL = merge
     empty_signature HasCASL = initialEnv
     induced_from_to_morphism HasCASL = inducedFromToMorphism
@@ -132,7 +98,7 @@ instance LatticeWithTop HasCASL_Sublogics where
 
 instance Logic HasCASL HasCASL_Sublogics
                BasicSpec Sentence SymbItems SymbMapItems
-               Env 
+               Env
                Morphism
                Symbol RawSymbol () where
          stability _ = Testing

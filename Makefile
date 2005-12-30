@@ -57,7 +57,8 @@ HC = ghc
 PERL = perl
 HAPPY = happy -sga
 GENRULES = utils/genRules
-GENRULECALL = $(GENRULES) -r ShATermConvertible -i Common.ATerm.Lib
+GENRULECALL = $(GENRULES) -r Typeable -r ShATermConvertible \
+    -i Common.DynamicUtils -i Common.ATerm.Lib
 DRIFT = utils/DrIFT
 INLINEAXIOMS = utils/outlineAxioms
 HADDOCK = haddock
@@ -257,7 +258,7 @@ derived_sources += $(drifted_files) Driver/Version.hs $(happy_files) \
 # sources that have {-# OPTIONS -cpp #-}
 cpp_sources = Common/DynamicUtils.hs \
     Common/Lib/Set.hs Common/Lib/Map.hs ATC/Set.hs\
-    Isabelle/Logic_Isabelle.hs Isabelle/CreateTheories.hs \
+    Isabelle/CreateTheories.hs \
     SPASS/Logic_SPASS.hs GUI/Utils.hs Driver/WriteFn.hs \
     Comorphisms/LogicList.hs Comorphisms/LogicGraph.hs \
     Comorphisms/KnownProvers.hs hets.hs $(happy_files)

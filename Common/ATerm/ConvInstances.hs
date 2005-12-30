@@ -16,7 +16,7 @@ performance.
 
 -- specialization does not seem to gain anything
 
-module Common.ATerm.ConvInstances where
+module Common.ATerm.ConvInstances() where
 
 import Common.ATerm.Conversion
 import Common.ATerm.AbstractSyntax
@@ -28,6 +28,15 @@ import qualified Common.Lib.Rel as Rel
 import qualified Common.OrderedMap as OMap
 import Common.Id
 import Common.Result
+import Data.Typeable
+
+grTc :: TyCon
+grTc = mkTyCon "Data.Graph.Inductive.Tree.Gr"
+
+instance (Typeable a, Typeable b) => Typeable (Tree.Gr a b) where
+  typeOf s = mkTyConApp grTc
+             [ typeOf ((undefined :: Tree.Gr a b -> a) s)
+             , typeOf ((undefined :: Tree.Gr a b -> b) s)]
 
 instance (ShATermConvertible a,
           ShATermConvertible b) => ShATermConvertible (Tree.Gr a b) where
@@ -42,7 +51,6 @@ instance (ShATermConvertible a,
                 case fromShATerm (getATermByIndex1 bb att) of { bb' ->
                     mkGraph aa' bb' }}
             u -> fromShATermError "Data.Graph.Inductive.Tree.Gr" u
-    type_of _ = "Data.Graph.Inductive.Tree.Gr"
 
 instance (Ord a, ShATermConvertible a, ShATermConvertible b)
     => ShATermConvertible (Map.Map a b) where
@@ -58,7 +66,13 @@ instance (Ord a, ShATermConvertible a, ShATermConvertible b)
                            case fromShATerm (getATermByIndex1 i att) of
                            l -> Map.fromDistinctAscList l
                        u -> fromShATermError "Map.Map" u
-    type_of _ = "Map.Map"
+
+elemWOrdTc :: TyCon
+elemWOrdTc = mkTyCon "Common.OrderedMap.ElemWOrd"
+
+instance (Typeable a) => Typeable (OMap.ElemWOrd a) where
+  typeOf s = mkTyConApp elemWOrdTc
+             [typeOf ((undefined :: OMap.ElemWOrd a -> a) s)]
 
 instance (ShATermConvertible a) => ShATermConvertible (OMap.ElemWOrd a) where
     toShATerm att0 e =
@@ -72,7 +86,6 @@ instance (ShATermConvertible a) => ShATermConvertible (OMap.ElemWOrd a) where
                 case fromShATerm (getATermByIndex1 bb att) of { bb' ->
                     OMap.EWOrd { OMap.order = aa', OMap.ele = bb' }}}
             u -> fromShATermError "OMap.ElemWOrd" u
-    type_of _ = "OMap.ElemWOrd"
 
 instance (Ord a,ShATermConvertible a) => ShATermConvertible (Set.Set a) where
     {-# SPECIALIZE instance ShATermConvertible (Set.Set Id) #-}
@@ -83,7 +96,13 @@ instance (Ord a,ShATermConvertible a) => ShATermConvertible (Set.Set a) where
                            case fromShATerm (getATermByIndex1 i att) of
                            l -> Set.fromDistinctAscList l
                        u -> fromShATermError "Set.Set" u
-    type_of _ = "Set.Set"
+
+relTc :: TyCon
+relTc = mkTyCon "Rel.Rel"
+
+instance (Typeable a) => Typeable (Rel.Rel a) where
+  typeOf s = mkTyConApp relTc
+             [typeOf ((undefined :: Rel.Rel a -> a) s)]
 
 instance (Ord a,ShATermConvertible a) => ShATermConvertible (Rel.Rel a) where
     {-# SPECIALIZE instance ShATermConvertible (Rel.Rel Id) #-}
@@ -94,7 +113,6 @@ instance (Ord a,ShATermConvertible a) => ShATermConvertible (Rel.Rel a) where
                            case fromShATerm (getATermByIndex1 i att) of
                            m -> Rel.fromDistinctMap m
                        u -> fromShATermError "Rel.Rel" u
-    type_of _ = "Rel.Rel"
 
 instance (ShATermConvertible a) => ShATermConvertible (Maybe a) where
     {-# SPECIALIZE instance ShATermConvertible (Maybe Token) #-}
@@ -109,7 +127,6 @@ instance (ShATermConvertible a) => ShATermConvertible (Maybe a) where
                            case fromShATerm (getATermByIndex1 x att) of
                            x' -> Just x'
                       u -> fromShATermError "Prelude.Maybe" u
-    type_of _ = "Prelude.Maybe"
 
 instance ShATermConvertible a => ShATermConvertible [a] where
     -- for compound Ids, Set.Set and Rel.Rel
@@ -122,7 +139,6 @@ instance ShATermConvertible a => ShATermConvertible [a] where
     {-# SPECIALIZE instance ShATermConvertible [Pos] #-}
     toShATerm att l  = toShATermList att l
     fromShATerm att  = fromShATermList att
-    type_of _ = "[]"
 
 instance (ShATermConvertible a, ShATermConvertible b)
     => ShATermConvertible (a, b) where
@@ -147,7 +163,6 @@ instance (ShATermConvertible a, ShATermConvertible b)
                           x' -> case fromShATerm (getATermByIndex1 y att) of
                             y' -> (x',y')
                       u -> fromShATermError "(,)" u
-    type_of _ = "(,)"
 
 instance (ShATermConvertible a, ShATermConvertible b, ShATermConvertible c)
     => ShATermConvertible (a, b, c) where
@@ -170,7 +185,6 @@ instance (ShATermConvertible a, ShATermConvertible b, ShATermConvertible c)
                           case fromShATerm (getATermByIndex1 c att) of
                           c' -> (a',b',c')
                        u -> fromShATermError "(,,)" u
-    type_of _ = "(,,)"
 
 instance (ShATermConvertible a, ShATermConvertible b, ShATermConvertible c,
           ShATermConvertible d) => ShATermConvertible (a, b, c, d) where
@@ -196,63 +210,90 @@ instance (ShATermConvertible a, ShATermConvertible b, ShATermConvertible c,
             case fromShATerm (getATermByIndex1 d att) of
             d' -> (a',b',c',d')
         u -> fromShATermError "(,,,)" u
-    type_of _ = "(,,,)"
+
+_tc_PosTc :: TyCon
+_tc_PosTc = mkTyCon "Pos"
+instance Typeable Pos where
+    typeOf _ = mkTyConApp _tc_PosTc []
+
+_tc_RangeTc :: TyCon
+_tc_RangeTc = mkTyCon "Range"
+instance Typeable Range where
+    typeOf _ = mkTyConApp _tc_RangeTc []
+
+_tc_TokenTc :: TyCon
+_tc_TokenTc = mkTyCon "Token"
+instance Typeable Token where
+    typeOf _ = mkTyConApp _tc_TokenTc []
+
+_tc_IdTc :: TyCon
+_tc_IdTc = mkTyCon "Id"
+instance Typeable Id where
+    typeOf _ = mkTyConApp _tc_IdTc []
 
 instance ShATermConvertible Pos where
     toShATerm att0 (SourcePos a b c) =
         case toShATerm att0 a of { (att1,a') ->
         case toShATerm att1 b of { (att2,b') ->
         case toShATerm att2 c of { (att3,c') ->
-        addATerm (ShAAppl "P" [a',b',c'] []) att3 }}}
+        addATerm (ShAAppl "SourcePos" [a',b',c'] []) att3 }}}
     fromShATerm att =
         case getATerm att of
-            ShAAppl "P" [a,b,c] _ ->
+            ShAAppl "SourcePos" [a,b,c] _ ->
                     case fromShATerm $ getATermByIndex1 a att of { a' ->
                     case fromShATerm $ getATermByIndex1 b att of { b' ->
                     case fromShATerm $ getATermByIndex1 c att of { c' ->
                     SourcePos a' b' c' }}}
-            u -> fromShATermError "Common.Id.Pos" u
-    type_of _ = "Common.Id.Pos"
+            u -> fromShATermError "Pos" u
 
 instance ShATermConvertible Range where
     toShATerm att0 (Range a) =
-        case toShATerm att0 a of
-        (att1, a') -> addATerm (ShAAppl "R" [a'] []) att1
+        case toShATerm att0 a of { (att1,a') ->
+        addATerm (ShAAppl "Range" [a'] []) att1 }
     fromShATerm att =
         case getATerm att of
-            ShAAppl "R" [a] _ -> Range $ fromShATerm $ getATermByIndex1 a att
-            u -> fromShATermError "Common.Id.Range" u
-    type_of _ = "Common.Id.Range"
+            ShAAppl "Range" [a] _ ->
+                    case fromShATerm $ getATermByIndex1 a att of { a' ->
+                    Range a' }
+            u -> fromShATermError "Range" u
 
 instance ShATermConvertible Token where
     toShATerm att0 (Token a b) =
         case toShATerm att0 a of { (att1,a') ->
         case toShATerm att1 b of { (att2,b') ->
-        addATerm (ShAAppl "T" [a',b'] []) att2 }}
+        addATerm (ShAAppl "Token" [a',b'] []) att2 }}
     fromShATerm att =
         case getATerm att of
-            ShAAppl "T" [a,b] _ ->
+            ShAAppl "Token" [a,b] _ ->
                     case fromShATerm $ getATermByIndex1 a att of { a' ->
                     case fromShATerm $ getATermByIndex1 b att of { b' ->
                     Token a' b' }}
-            u -> fromShATermError "Common.Id.Token" u
-    type_of _ = "Common.Id.Token"
+            u -> fromShATermError "Token" u
 
 instance ShATermConvertible Id where
     toShATerm att0 (Id a b c) =
         case toShATerm att0 a of { (att1,a') ->
         case toShATerm att1 b of { (att2,b') ->
         case toShATerm att2 c of { (att3,c') ->
-        addATerm (ShAAppl "I" [a',b',c'] []) att3 }}}
+        addATerm (ShAAppl "Id" [a',b',c'] []) att3 }}}
     fromShATerm att =
         case getATerm att of
-            ShAAppl "I" [a,b,c] _ ->
+            ShAAppl "Id" [a,b,c] _ ->
                     case fromShATerm $ getATermByIndex1 a att of { a' ->
                     case fromShATerm $ getATermByIndex1 b att of { b' ->
                     case fromShATerm $ getATermByIndex1 c att of { c' ->
                     Id a' b' c' }}}
-            u -> fromShATermError "Common.Id.Id" u
-    type_of _ = "Common.Id.Id"
+            u -> fromShATermError "Id" u
+
+_tc_DiagKindTc :: TyCon
+_tc_DiagKindTc = mkTyCon "DiagKind"
+instance Typeable DiagKind where
+    typeOf _ = mkTyConApp _tc_DiagKindTc []
+
+_tc_DiagnosisTc :: TyCon
+_tc_DiagnosisTc = mkTyCon "Diagnosis"
+instance Typeable Diagnosis where
+    typeOf _ = mkTyConApp _tc_DiagnosisTc []
 
 instance ShATermConvertible DiagKind where
     toShATerm att0 Error =
@@ -267,18 +308,17 @@ instance ShATermConvertible DiagKind where
         addATerm (ShAAppl "MessageW" [] []) att0
     fromShATerm att =
         case getATerm att of
-            (ShAAppl "Error" [] _) ->
+            ShAAppl "Error" [] _ ->
                     Error
-            (ShAAppl "Warning" [] _) ->
+            ShAAppl "Warning" [] _ ->
                     Warning
-            (ShAAppl "Hint" [] _) ->
+            ShAAppl "Hint" [] _ ->
                     Hint
-            (ShAAppl "Debug" [] _) ->
+            ShAAppl "Debug" [] _ ->
                     Debug
-            (ShAAppl "MessageW" [] _) ->
+            ShAAppl "MessageW" [] _ ->
                     MessageW
-            u -> fromShATermError "Common.Result.DiagKind" u
-    type_of _ = "Common.Result.DiagKind"
+            u -> fromShATermError "DiagKind" u
 
 instance ShATermConvertible Diagnosis where
     toShATerm att0 (Diag a b c) =
@@ -288,10 +328,9 @@ instance ShATermConvertible Diagnosis where
         addATerm (ShAAppl "Diag" [a',b',c'] []) att3 }}}
     fromShATerm att =
         case getATerm att of
-            (ShAAppl "Diag" [a,b,c] _) ->
-                    case fromShATerm (getATermByIndex1 a att) of { a' ->
-                    case fromShATerm (getATermByIndex1 b att) of { b' ->
-                    case fromShATerm (getATermByIndex1 c att) of { c' ->
-                    (Diag a' b' c') }}}
-            u -> fromShATermError "Common.Result.Diagnosis" u
-    type_of _ = "Common.Result.Diagnosis"
+            ShAAppl "Diag" [a,b,c] _ ->
+                    case fromShATerm $ getATermByIndex1 a att of { a' ->
+                    case fromShATerm $ getATermByIndex1 b att of { b' ->
+                    case fromShATerm $ getATermByIndex1 c att of { c' ->
+                    Diag a' b' c' }}}
+            u -> fromShATermError "Diagnosis" u

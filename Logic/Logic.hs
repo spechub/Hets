@@ -10,7 +10,7 @@ Portability :  non-portable (various -fglasgow-exts extensions)
 
 Provides data structures for logics (with symbols). Logics are
    a type class with an /identity/ type (usually interpreted
-   by a singleton set) which serves to treat logics as 
+   by a singleton set) which serves to treat logics as
    data. All the functions in the type class take the
    identity as first argument in order to determine the logic.
 
@@ -18,16 +18,16 @@ Provides data structures for logics (with symbols). Logics are
 
    This module uses multiparameter type classes
    (<http://haskell.org/ghc/docs/latest/html/users_guide/type-extensions.html#multi-param-type-classes>)
-   with functional dependencies (<http://haskell.org/hawiki/FunDeps>) 
-   for defining an interface for the notion of logic. Multiparameter type 
+   with functional dependencies (<http://haskell.org/hawiki/FunDeps>)
+   for defining an interface for the notion of logic. Multiparameter type
    classes are needed because a logic consists of a collection of types,
    together with operations on these. Functional dependencies
    are needed because no operation will involve all types of
    the multiparameter type class; hence we need a method to derive
-   the missing types. We chose an easy way: for each logic, we 
+   the missing types. We chose an easy way: for each logic, we
    introduce a new singleton type that constitutes the identity
    of the logic. All other types of the multiparameter type class
-   depend on this 'identy constituting' type, and all operations take 
+   depend on this 'identy constituting' type, and all operations take
    the 'identity constituting' type as first arguments. The value
    of the argument of the 'identity constituting' type is irrelevant
    (note that there is only one value of such a type anyway).
@@ -46,7 +46,7 @@ Provides data structures for logics (with symbols). Logics are
    (general notion of logic - also proof theory;
     notion of logic representation, called map there)
 
-   T. Mossakowski: 
+   T. Mossakowski:
    Specification in an arbitrary institution with symbols
    14th WADT 1999, LNCS 1827, p. 252--270
    (treatment of symbols and raw symbols, see also CASL semantics)
@@ -86,11 +86,7 @@ import Common.Print_AS_Annotation
 import Logic.Prover -- for one half of class Sentences
 
 import Common.PrettyPrint
-
-import Data.Dynamic
-import Common.DynamicUtils 
-
--- for Conversion to ATerms 
+import Common.DynamicUtils
 import Common.ATerm.Lib -- (ShATermConvertible)
 
 -- passed to ensures_amalgamability
@@ -104,19 +100,19 @@ data Stability = Stable | Testing | Unstable | Experimental
      deriving (Eq,Show)
 
 -- | shortcut for class constraints
-class (Show a, PrettyPrint a, PrintLaTeX a, Typeable a, ShATermConvertible a) 
+class (Show a, PrettyPrint a, PrintLaTeX a, Typeable a, ShATermConvertible a)
     => PrintTypeConv a
 
 -- | shortcut for class constraints with equality
 class (Eq a, PrintTypeConv a) => EqPrintTypeConv a
 
-instance (Show a, PrettyPrint a, PrintLaTeX a, Typeable a, 
+instance (Show a, PrettyPrint a, PrintLaTeX a, Typeable a,
                ShATermConvertible a) => PrintTypeConv a
 instance (Eq a, PrintTypeConv a) => EqPrintTypeConv a
 
 type EndoMap a = Map.Map a a
 
--- languages, define like "data CASL = CASL deriving Show" 
+-- languages, define like "data CASL = CASL deriving Show"
 
 class Show lid => Language lid where
     language_name :: lid -> String
@@ -140,12 +136,12 @@ class (Language lid, Eq sign, Eq morphism)
 
 -- abstract syntax, parsing and printing
 
-class (Language lid, PrintTypeConv basic_spec, 
-       EqPrintTypeConv symb_items, 
-       EqPrintTypeConv symb_map_items) 
+class (Language lid, PrintTypeConv basic_spec,
+       EqPrintTypeConv symb_items,
+       EqPrintTypeConv symb_map_items)
     => Syntax lid basic_spec symb_items symb_map_items
         | lid -> basic_spec symb_items symb_map_items
-      where 
+      where
          -- parsing
          parse_basic_spec :: lid -> Maybe(AParser st basic_spec)
          parse_symb_items :: lid -> Maybe(AParser st symb_items)
@@ -158,10 +154,10 @@ class (Language lid, PrintTypeConv basic_spec,
 -- sentences (plus prover stuff and "symbol" with "Ord" for efficient lookup)
 
 class (Category lid sign morphism, Ord sentence,
-       Ord symbol, 
+       Ord symbol,
        PrintTypeConv sign, PrintTypeConv morphism,
        PrintTypeConv sentence, PrintTypeConv symbol,
-       Eq proof_tree, Show proof_tree, ShATermConvertible proof_tree, 
+       Eq proof_tree, Show proof_tree, ShATermConvertible proof_tree,
        Typeable proof_tree)
     => Sentences lid sentence proof_tree sign morphism symbol
         | lid -> sentence proof_tree sign morphism symbol
@@ -180,17 +176,17 @@ class (Category lid sign morphism, Ord sentence,
       print_named _ = printLabelledSen
       sym_of :: lid -> sign -> Set.Set symbol
       symmap_of :: lid -> morphism -> EndoMap symbol
-      sym_name :: lid -> symbol -> Id 
+      sym_name :: lid -> symbol -> Id
       provers :: lid -> [Prover sign sentence proof_tree]
       provers _ = []
-      cons_checkers :: lid -> [ConsChecker sign sentence morphism proof_tree] 
+      cons_checkers :: lid -> [ConsChecker sign sentence morphism proof_tree]
       cons_checkers _ = []
-      conservativityCheck :: lid -> (sign, [Named sentence]) -> 
+      conservativityCheck :: lid -> (sign, [Named sentence]) ->
                        morphism -> [Named sentence] -> Result (Maybe Bool)
       conservativityCheck l _ _ _ = statErr l "conservativityCheck"
 
 -- | a dummy function to allow type checking *.inline.hs files
-inlineAxioms :: StaticAnalysis lid 
+inlineAxioms :: StaticAnalysis lid
         basic_spec sentence proof_tree symb_items symb_map_items
         sign morphism symbol raw_symbol => lid -> String -> [Named sentence]
 inlineAxioms _ _ = error "inlineAxioms"
@@ -202,14 +198,14 @@ statErr lid str = fail ("Logic." ++ str ++ " nyi for: " ++ language_name lid)
 class ( Syntax lid basic_spec symb_items symb_map_items
       , Sentences lid sentence proof_tree sign morphism symbol
       , Ord raw_symbol, PrintLaTeX raw_symbol, Typeable raw_symbol)
-    => StaticAnalysis lid 
+    => StaticAnalysis lid
         basic_spec sentence proof_tree symb_items symb_map_items
-        sign morphism symbol raw_symbol 
+        sign morphism symbol raw_symbol
         | lid -> basic_spec sentence proof_tree symb_items symb_map_items
-                 sign morphism symbol raw_symbol 
+                 sign morphism symbol raw_symbol
       where
          -- static analysis of basic specifications and symbol maps
-         basic_analysis :: lid -> 
+         basic_analysis :: lid ->
                            Maybe((basic_spec,  -- abstract syntax tree
                             sign,   -- efficient table for env signature
                             GlobalAnnos) ->   -- global annotations
@@ -224,13 +220,13 @@ class ( Syntax lid basic_spec symb_items symb_map_items
 
          -- Shouldn't the following deliver Maybes???
          sign_to_basic_spec :: lid -> sign -> [Named sentence] -> basic_spec
-         stat_symb_map_items :: 
+         stat_symb_map_items ::
              lid -> [symb_map_items] -> Result (EndoMap raw_symbol)
-         stat_symb_map_items _ _ = fail "Logic.stat_symb_map_items"     
-         stat_symb_items :: lid -> [symb_items] -> Result [raw_symbol] 
+         stat_symb_map_items _ _ = fail "Logic.stat_symb_map_items"
+         stat_symb_items :: lid -> [symb_items] -> Result [raw_symbol]
          stat_symb_items l _ = statErr l "stat_symb_items"
          -- amalgamation
-         weaklyAmalgamableCocone :: lid -> Tree.Gr sign morphism 
+         weaklyAmalgamableCocone :: lid -> Tree.Gr sign morphism
                                      -> Result (sign, Map.Map Node morphism)
          weaklyAmalgamableCocone l _ = statErr l "weaklyAmalgamableCocone"
          -- architectural sharing analysis
@@ -243,9 +239,9 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          ensures_amalgamability l _ = statErr l "ensures_amalgamability"
          -- symbols and symbol maps
          symbol_to_raw :: lid -> symbol -> raw_symbol
-         id_to_raw :: lid -> Id -> raw_symbol 
+         id_to_raw :: lid -> Id -> raw_symbol
          matches :: lid -> symbol -> raw_symbol -> Bool
-   
+
          -- operations on signatures and morphisms
          empty_signature :: lid -> sign
          signature_union :: lid -> sign -> sign -> Result sign
@@ -255,29 +251,29 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          final_union :: lid -> sign -> sign -> Result sign
          final_union l _ _ = statErr l "final_union"
          is_transportable :: lid -> morphism -> Bool
-         is_transportable l _ = 
+         is_transportable l _ =
             error ("Logic.is_transportable nyi for logic"++language_name l)
 
            -- see CASL reference manual, III.4.1.2
          is_subsig :: lid -> sign -> sign -> Bool
          inclusion :: lid -> sign -> sign -> Result morphism
          inclusion l _ _ = statErr l "inclusion"
-         generated_sign, cogenerated_sign :: 
+         generated_sign, cogenerated_sign ::
              lid -> Set.Set symbol -> sign -> Result morphism
          generated_sign l _ _ = statErr l "generated_sign"
          cogenerated_sign l _ _ = statErr l "cogenerated_sign"
-         induced_from_morphism :: 
+         induced_from_morphism ::
              lid -> EndoMap raw_symbol -> sign -> Result morphism
          induced_from_morphism l _ _ = statErr l "induced_from_morphism"
-         induced_from_to_morphism :: 
+         induced_from_to_morphism ::
              lid -> EndoMap raw_symbol -> sign -> sign -> Result morphism
-         induced_from_to_morphism l _ _ _ = 
+         induced_from_to_morphism l _ _ _ =
              statErr l "induced_from_to_morphism"
          -- generate taxonomy from theory
-         theory_to_taxonomy :: lid 
+         theory_to_taxonomy :: lid
                             -> TaxoGraphKind
                             -> MMiSSOntology
-                            -> sign -> [Named sentence] 
+                            -> sign -> [Named sentence]
                             -> Result MMiSSOntology
          theory_to_taxonomy l _ _ _ _ = statErr l "theory_to_taxonomy"
 
@@ -287,7 +283,7 @@ class (Ord l, Show l) => LatticeWithTop l where
   meet, join :: l -> l -> l
   top :: l
 
--- a dummy instance 
+-- a dummy instance
 instance LatticeWithTop () where
   meet _ _ = ()
   join _ _ = ()
@@ -295,11 +291,11 @@ instance LatticeWithTop () where
 
 -- logics
 
-class (StaticAnalysis lid 
+class (StaticAnalysis lid
         basic_spec sentence proof_tree symb_items symb_map_items
         sign morphism symbol raw_symbol,
        LatticeWithTop sublogics, ShATermConvertible sublogics,
-       Typeable sublogics) 
+       Typeable sublogics)
     => Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree
@@ -317,7 +313,7 @@ class (StaticAnalysis lid
          data_logic :: lid -> Maybe AnyLogic
          data_logic _ = Nothing
 
-         sublogic_names :: lid -> sublogics -> [String] 
+         sublogic_names :: lid -> sublogics -> [String]
          sublogic_names lid _ = [language_name lid]
              -- the first name is the principal name
          all_sublogics :: lid -> [sublogics]
@@ -337,7 +333,7 @@ class (StaticAnalysis lid
          is_in_morphism _ _ _ = False
          is_in_symbol :: lid -> sublogics -> symbol -> Bool
          is_in_symbol _ _ _ = False
- 
+
          min_sublogic_basic_spec :: lid -> basic_spec -> sublogics
          min_sublogic_basic_spec _ _ = top
          min_sublogic_sentence :: lid -> sentence -> sublogics
@@ -352,16 +348,16 @@ class (StaticAnalysis lid
          min_sublogic_morphism _ _ = top
          min_sublogic_symbol :: lid -> symbol -> sublogics
          min_sublogic_symbol _ _ = top
-         proj_sublogic_basic_spec :: lid -> sublogics 
+         proj_sublogic_basic_spec :: lid -> sublogics
                                   -> basic_spec -> basic_spec
-         proj_sublogic_basic_spec _ _ b = b                          
-         proj_sublogic_symb_items :: lid -> sublogics 
+         proj_sublogic_basic_spec _ _ b = b
+         proj_sublogic_symb_items :: lid -> sublogics
                                   -> symb_items -> Maybe symb_items
          proj_sublogic_symb_items _ _ _ = Nothing
-         proj_sublogic_symb_map_items :: lid -> sublogics 
+         proj_sublogic_symb_map_items :: lid -> sublogics
                                       -> symb_map_items -> Maybe symb_map_items
          proj_sublogic_symb_map_items _ _ _ = Nothing
-         proj_sublogic_sign :: lid -> sublogics -> sign -> sign 
+         proj_sublogic_sign :: lid -> sublogics -> sign -> sign
          proj_sublogic_sign _ _ s = s
          proj_sublogic_morphism :: lid -> sublogics -> morphism -> morphism
          proj_sublogic_morphism _ _ m = m
@@ -377,12 +373,12 @@ class (StaticAnalysis lid
 -- Derived functions
 ----------------------------------------------------------------
 
-empty_theory :: StaticAnalysis lid 
+empty_theory :: StaticAnalysis lid
         basic_spec sentence proof_tree symb_items symb_map_items
         sign morphism symbol raw_symbol =>
         lid -> Theory sign sentence proof_tree
 empty_theory lid = Theory (empty_signature lid) Map.empty
- 
+
 ----------------------------------------------------------------
 -- Existential type covering any logic
 ----------------------------------------------------------------
@@ -405,39 +401,16 @@ tyconAnyLogic = mkTyCon "Logic.Logic.AnyLogic"
 instance Typeable AnyLogic where
   typeOf _ = mkTyConApp tyconAnyLogic []
 
-----------------------------------------------------------------
--- Typeable instances
-----------------------------------------------------------------
-
-namedTc :: TyCon
-namedTc = mkTyCon "Common.AS_Annotation.Named"
-
-instance Typeable s => Typeable (Named s) where 
-  typeOf s = mkTyConApp namedTc [typeOf ((undefined :: Named a -> a) s)]
-
-setTc :: TyCon
-setTc = mkTyCon "Common.Lib.Set.Set"
-
-instance Typeable a => Typeable (Set.Set a) where
-  typeOf s = mkTyConApp setTc [typeOf ((undefined:: Set.Set a -> a) s)]
-
-mapTc :: TyCon
-mapTc = mkTyCon "Common.Lib.Map.Map"
-
-instance (Typeable a, Typeable b) => Typeable (Map.Map a b) where
-  typeOf m = mkTyConApp mapTc [typeOf ((undefined :: Map.Map a b -> a) m),
-                            typeOf ((undefined :: Map.Map a b -> b) m)]
-
 {- class hierarchy:
                             Language
-               __________/     
+               __________/
    Category
-      |                  /       
+      |                  /
    Sentences      Syntax
       \            /
       StaticAnalysis (no sublogics)
-            \                        
-             \                             
+            \
+             \
             Logic
 
 -}
