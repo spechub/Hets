@@ -14,11 +14,24 @@ mkAppTy was renamed to mkTyConApp in ghc version 6.3 upwards
 
 module Common.DynamicUtils (mkTyConApp, mkTyCon, TyCon, Typeable(..)) where
 
-import Data.Typeable
-
-#if __GLASGOW_HASKELL__<=602
 import Data.Dynamic
+#if __GLASGOW_HASKELL__<=602
+import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 
 mkTyConApp :: TyCon -> [TypeRep] -> TypeRep
 mkTyConApp = mkAppTy
+
+setTc :: TyCon
+setTc = mkTyCon "Common.Lib.Set.Set"
+
+instance Typeable a => Typeable (Set.Set a) where
+  typeOf s = mkTyConApp setTc [typeOf ((undefined:: Set.Set a -> a) s)]
+
+mapTc :: TyCon
+mapTc = mkTyCon "Common.Lib.Map.Map"
+
+instance (Typeable a, Typeable b) => Typeable (Map.Map a b) where
+  typeOf m = mkTyConApp mapTc [typeOf ((undefined :: Map.Map a b -> a) m),
+                            typeOf ((undefined :: Map.Map a b -> b) m)]
 #endif

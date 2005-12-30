@@ -28,7 +28,7 @@ import qualified Common.Lib.Rel as Rel
 import qualified Common.OrderedMap as OMap
 import Common.Id
 import Common.Result
-import Data.Typeable
+import Common.DynamicUtils
 
 grTc :: TyCon
 grTc = mkTyCon "Data.Graph.Inductive.Tree.Gr"
