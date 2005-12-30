@@ -36,29 +36,28 @@ Add proof status information
 
 -}
 
-module Proofs.InferBasic (basicInferenceNode) where
+module Proofs.InferBasic (basicInferenceNode, getGoals) where
 
 import Static.DevGraph
-
-import qualified Common.Lib.Map as Map
+import Static.DGToSpec
 
 import Syntax.AS_Library
 import Syntax.Print_AS_Library()
 
 import Proofs.StatusUtils
-import Proofs.Global
-import Proofs.Local
-import Proofs.HideTheoremShift
+import Proofs.EdgeUtils
+import Proofs.GUIState
 
 import Common.Id
 import Common.Result
 import Common.PrettyPrint
 import Common.Utils
-
+import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.OrderedMap as OMap
 
 import Data.Graph.Inductive.Graph
+import Data.List (find)
 
 import Logic.Logic
 import Logic.Prover
@@ -68,15 +67,8 @@ import Logic.Coerce
 
 import Comorphisms.KnownProvers
 
-import Static.DGToSpec
-
-import Proofs.EdgeUtils
-import Proofs.GUIState
-
 import GUI.Utils
 import GUI.ProofManagement
-
-import Data.List
 
 -- ---------------
 -- basic inference
