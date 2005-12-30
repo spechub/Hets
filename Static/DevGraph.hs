@@ -57,11 +57,8 @@ import Common.PPUtils
 import Common.Result
 import Common.DynamicUtils
 
-import Data.Dynamic
-import Data.List as List
 import Control.Monad
 import Control.Exception
--- import Debug.Trace
 
 getNewNode :: Tree.Gr a b -> Node
 getNewNode g = case newNodes 1 g of
