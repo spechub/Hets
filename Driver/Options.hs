@@ -727,7 +727,7 @@ hetsError errorString = error (errorString ++ "\n" ++ hetsUsage)
 -- | 'hetsUsage' generates usage information for the commandline
 hetsUsage :: String
 hetsUsage = usageInfo header options
-    where header = "Usage: hets [OPTION...] file ... file"
+    where header = "Usage: hets [OPTION...] file ... file [+RTS -?]"
 
 -- | 'putIfVerbose' prints a given String to StdOut when the given HetcatsOpts'
 -- Verbosity exceeds the given level
