@@ -20,9 +20,9 @@ module Common.ATerm.Conversion(
                               ) where
 
 import Common.ATerm.AbstractSyntax
+import Common.DynamicUtils
 import Data.List (mapAccumL)
 import Data.Ratio
-import Data.Typeable
 
 class Typeable t => ShATermConvertible t where
     -- functions for conversion to an ATermTable
