@@ -1,6 +1,6 @@
-{-| 
+{- | 
 Module      :  $Header$
-Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2004
+Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -9,7 +9,6 @@ Portability :  non-portable
 
 This module supplies a signature type and a type checking function
 for the Haskell logic. 
-
 -}
 
 module Haskell.HatAna (module Haskell.HatAna, PNT, TiDecl) where
@@ -194,7 +193,8 @@ preludeConflicts =
                             in
         if preludeEntity e then 
             (es, 
-             Diag Warning ("possible Prelude conflict:\n  " ++ pp e) (Range p) : ds)
+             Diag Warning ("possible Prelude conflict:\n  " ++ pp e) 
+                      (Range p) : ds)
            else (d : es, ds)) ([], [])
 
 preludeEntity :: (Printable i, Show t, DefinedNames i t) => 
@@ -235,5 +235,3 @@ preludeConstrs =
 
 preludeTypes :: Set.Set String
 preludeTypes = Set.fromList $ map pp $ Map.keys $ types preludeSign
-
-
