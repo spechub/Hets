@@ -236,10 +236,10 @@ instance ShATermConvertible Pos where
         case toShATerm att0 a of { (att1,a') ->
         case toShATerm att1 b of { (att2,b') ->
         case toShATerm att2 c of { (att3,c') ->
-        addATerm (ShAAppl "SourcePos" [a',b',c'] []) att3 }}}
+        addATerm (ShAAppl "P" [a',b',c'] []) att3 }}}
     fromShATerm att =
         case getATerm att of
-            ShAAppl "SourcePos" [a,b,c] _ ->
+            ShAAppl _ [a,b,c] _ ->
                     case fromShATerm $ getATermByIndex1 a att of { a' ->
                     case fromShATerm $ getATermByIndex1 b att of { b' ->
                     case fromShATerm $ getATermByIndex1 c att of { c' ->
@@ -249,10 +249,10 @@ instance ShATermConvertible Pos where
 instance ShATermConvertible Range where
     toShATerm att0 (Range a) =
         case toShATerm att0 a of { (att1,a') ->
-        addATerm (ShAAppl "Range" [a'] []) att1 }
+        addATerm (ShAAppl "R" [a'] []) att1 }
     fromShATerm att =
         case getATerm att of
-            ShAAppl "Range" [a] _ ->
+            ShAAppl ('R' : _) [a] _ ->
                     case fromShATerm $ getATermByIndex1 a att of { a' ->
                     Range a' }
             u -> fromShATermError "Range" u
@@ -261,10 +261,10 @@ instance ShATermConvertible Token where
     toShATerm att0 (Token a b) =
         case toShATerm att0 a of { (att1,a') ->
         case toShATerm att1 b of { (att2,b') ->
-        addATerm (ShAAppl "Token" [a',b'] []) att2 }}
+        addATerm (ShAAppl "T" [a',b'] []) att2 }}
     fromShATerm att =
         case getATerm att of
-            ShAAppl "Token" [a,b] _ ->
+            ShAAppl ('T' : _) [a,b] _ ->
                     case fromShATerm $ getATermByIndex1 a att of { a' ->
                     case fromShATerm $ getATermByIndex1 b att of { b' ->
                     Token a' b' }}
@@ -275,10 +275,10 @@ instance ShATermConvertible Id where
         case toShATerm att0 a of { (att1,a') ->
         case toShATerm att1 b of { (att2,b') ->
         case toShATerm att2 c of { (att3,c') ->
-        addATerm (ShAAppl "Id" [a',b',c'] []) att3 }}}
+        addATerm (ShAAppl "I" [a',b',c'] []) att3 }}}
     fromShATerm att =
         case getATerm att of
-            ShAAppl "Id" [a,b,c] _ ->
+            ShAAppl ('I' : _) [a,b,c] _ ->
                     case fromShATerm $ getATermByIndex1 a att of { a' ->
                     case fromShATerm $ getATermByIndex1 b att of { b' ->
                     case fromShATerm $ getATermByIndex1 c att of { c' ->
