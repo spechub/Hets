@@ -32,7 +32,8 @@ signChars = "!#$&*+-./:<=>?@\\^|~" ++ "¡¢£§©¬°±²³µ¶·¹¿×÷"
 -- \172 neg \183 middle dot \215 times
 
 scanAnySigns :: CharParser st String
-scanAnySigns = many1 (oneOf signChars <?> "casl sign") <?> "signs"
+scanAnySigns = fmap (\ s -> if s == "×" then "*" else s)
+       (many1 (oneOf signChars <?> "casl sign")) <?> "signs"
 
 -- | casl letters
 caslLetters :: String
