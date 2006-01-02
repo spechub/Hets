@@ -286,8 +286,8 @@ instance PrettyPrint DataRange where
 instance PrettyPrint DataLiteral where
     printText0 ga dl =
         case dl of
-        TypedL (lf, uri) -> parens ((text (lf ++ ":") <+> 
-                                     (printText0 ga uri))
+        TypedL (lf, uri) -> parens (text (lf ++ ":") <+> 
+                                     printText0 ga uri)
         PlainL (lf, lt)  -> parens (text ("stringInLang '"++lf++" : "++lt))
         Plain lf         -> text lf 
         RDFSL rdfLit     -> -- (text "rdf_literal") <+> (text rdfLit)
