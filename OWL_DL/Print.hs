@@ -195,7 +195,7 @@ instance PrettyPrint SignAxiom where
     printText0 ga signAxiom =
 	case signAxiom of
 	Subconcept cid1 cid2 -> 
-	    (text "(forall ((u rdfs:Resource)) (implies (" <> 
+	    (text "(forall ((owl:Thing)) (implies (" <> 
 	             (printText0 ga cid1) <> 
 	             (text " u) (") <> (printText0 ga cid2) <> (text " u)))"))
 	RoleDomain rid rdomains ->
@@ -286,8 +286,8 @@ instance PrettyPrint DataRange where
 instance PrettyPrint DataLiteral where
     printText0 ga dl =
         case dl of
-        TypedL (lf, uri) -> parens ((printText0 ga uri) <+>
-                                    (text (": " ++ lf)))
+        TypedL (lf, uri) -> parens ((text (lf ++ ":") <+> 
+                                     (printText0 ga uri))
         PlainL (lf, lt)  -> parens (text ("stringInLang '"++lf++" : "++lt))
         Plain lf         -> text lf 
         RDFSL rdfLit     -> -- (text "rdf_literal") <+> (text rdfLit)
