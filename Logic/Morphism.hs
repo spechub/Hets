@@ -1,5 +1,4 @@
-{-| 
-   
+{- |
 Module      :  $Header$
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -8,10 +7,9 @@ Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable (via Logic)
 
-Provides data structures for institution morphisms. 
+Provides data structures for institution morphisms.
    These are just collections of
    functions between (some of) the types of logics.
-
 -}
 
 {-   References: see Logic.hs
@@ -26,15 +24,14 @@ import Logic.Logic
 import Logic.Comorphism
 import qualified Common.Lib.Set as Set
 import Data.Maybe
-import Data.Dynamic
-import Common.DynamicUtils 
+import Common.DynamicUtils
 
 class (Language cid,
        Logic lid1 sublogics1
         basic_spec1 sentence1 symb_items1 symb_map_items1
         sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
        Logic lid2 sublogics2
-        basic_spec2 sentence2 symb_items2 symb_map_items2 
+        basic_spec2 sentence2 symb_items2 symb_map_items2
         sign2 morphism2 symbol2 raw_symbol2 proof_tree2) =>
   Morphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -55,10 +52,10 @@ class (Language cid,
     morMapSublogic :: cid -> sublogics1 -> sublogics2
     -- default implementation
 --    morMapSublogic cid _ = targetSublogic cid
-    -- the translation functions are partial 
+    -- the translation functions are partial
     -- because the target may be a sublanguage
     -- map_basic_spec :: cid -> basic_spec1 -> Maybe basic_spec2
-    -- we do not cover theoroidal morphisms, 
+    -- we do not cover theoroidal morphisms,
     --   since there are no relevant examples and they do not compose nicely
     -- no mapping of theories, since signatrures and sentences are mapped
     --   contravariantly
@@ -72,23 +69,23 @@ class (Language cid,
     -- morConstituents not needed, because composition only via lax triangles
 
 
--- identity morphisms      
+-- identity morphisms
 
-data IdMorphism lid sublogics = 
+data IdMorphism lid sublogics =
      IdMorphism lid sublogics deriving Show
 
 idMorphismTc :: TyCon
 idMorphismTc = mkTyCon "Logic.Morphism.IdMorphism"
 
-instance Typeable (IdMorphism lid sub) where 
+instance Typeable (IdMorphism lid sub) where
   typeOf _ = mkTyConApp idMorphismTc []
 
 instance Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree =>
          Language (IdMorphism lid sublogics) where
-           language_name (IdMorphism lid sub) = 
-               case sublogic_names lid sub of 
+           language_name (IdMorphism lid sub) =
+               case sublogic_names lid sub of
                [] -> error "language_name IdMorphism"
                h : _ -> "id_" ++ language_name lid ++ "." ++ h
 
@@ -101,13 +98,13 @@ instance Logic lid sublogics
           sign morphism symbol raw_symbol proof_tree
           lid sublogics
           basic_spec sentence symb_items symb_map_items
-          sign morphism symbol raw_symbol proof_tree 
+          sign morphism symbol raw_symbol proof_tree
          where
            morSourceLogic (IdMorphism lid _sub) = lid
            morTargetLogic (IdMorphism lid _sub) = lid
            morSourceSublogic (IdMorphism _lid sub) = sub
            morTargetSublogic (IdMorphism _lid sub) = sub
-           morMapSublogic _ _ = 
+           morMapSublogic _ _ =
                error "Logic.Morphism.IdMorphism.morMapSublogic"
            morMap_sign _ = Just
            morMap_morphism _ = Just
