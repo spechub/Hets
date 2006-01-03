@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  ShATermConvertible instances
-Copyright   :  (c) Uni Bremen 2005
+Copyright   :  (c) C. Maeder, Uni Bremen 2005-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt
 
 Maintainer  :  maeder@tzi.de
@@ -75,21 +75,20 @@ instance ShATermConvertible BasicProof where
     toShATerm att0 Handwritten =
          case toShATerm att0 (show Handwritten) of { (att1, i1) ->
             addATerm (ShAAppl "BasicProof" [i1] []) att1}
-
-    fromShATerm att =
-         case getATerm att of
+    fromShATermAux ix att =
+         case getShATerm ix att of
             ShAAppl "BasicProof" [i1,i2] _ ->
-               case fromShATerm (getATermByIndex1 i1 att) of { i1' ->
-               case getATermByIndex1 i2 att of { att' ->
-               case atcLogicLookup "BasicProof" i1'  of {
-                    Logic lid -> BasicProof lid (fromShATerm att')}}}
+                case fromShATerm' i1 att of { (att1, i1') ->
+                case atcLogicLookup "BasicProof" i1' of { Logic lid ->
+                case fromShATerm' i2 att1 of { (att2, i2') ->
+                (att2, BasicProof lid i2') }}}
             v@(ShAAppl "BasicProof" [i1] _) ->
-               case fromShATerm (getATermByIndex1 i1 att) of { i1' ->
-               case i1' of
+               case fromShATerm' i1 att of { (att1, i1') ->
+               (att1, case i1' of
                  "Guessed" -> Guessed
                  "Conjectured" -> Conjectured
                  "Handwritten" -> Handwritten
-                 _ -> fromShATermError "BasicProof" v}
+                 _ -> fromShATermError "BasicProof" v)}
             u -> fromShATermError "BasicProof" u
 
 instance ShATermConvertible G_theory where
@@ -98,13 +97,12 @@ instance ShATermConvertible G_theory where
          case toShATerm att1 sign of { (att2,i2) ->
          case toShATerm att2 sens of { (att3,i3) ->
            addATerm (ShAAppl "G_theory" [i1,i2,i3] []) att3}}}
-    fromShATerm att =
-         case getATerm att of
+    fromShATermAux ix att =
+         case getShATerm ix att of
             ShAAppl "G_theory" [i1,i2,i3] _ ->
-                let i1' = fromShATerm (getATermByIndex1 i1 att)
-                    att' = getATermByIndex1 i2 att
-                    att'' = getATermByIndex1 i3 att'
-                in case atcLogicLookup "G_theory" i1' of
-                    Logic lid -> G_theory lid (fromShATerm att')
-                                               (fromShATerm att'')
+                case fromShATerm' i1 att of { (att1, i1') ->
+                case atcLogicLookup "G_theory" i1' of { Logic lid ->
+                case fromShATerm' i2 att1 of { (att2, i2') ->
+                case fromShATerm' i3 att2 of { (att3, i3') ->
+                (att3, G_theory lid i2' i3') }}}}
             u -> fromShATermError "G_theory" u

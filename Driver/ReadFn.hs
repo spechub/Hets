@@ -62,8 +62,8 @@ fromVersionedATT :: (ShATermConvertible a) => ATermTable -> Result a
 fromVersionedATT att =
     case getATerm att of
     ShAAppl "hets" [versionnr,aterm] [] ->
-        if hetsVersion == fromShATerm (getATermByIndex1 versionnr att)
-        then Result [] (Just $ fromShATerm $ getATermByIndex1 aterm att)
+        if hetsVersion == snd (fromShATermAux versionnr att)
+        then Result [] (Just $ snd $ fromShATermAux aterm att)
         else Result [Diag Warning
                      "Wrong version number ... re-analyzing"
                      nullRange] Nothing

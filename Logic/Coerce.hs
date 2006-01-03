@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Till Mossakowski, C.Maeder and Uni Bremen 2005
+Copyright   :  (c) T. Mossakowski, C. Maeder, Uni Bremen 2005-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  till@tzi.de
@@ -8,7 +8,6 @@ Stability   :  provisional
 Portability :  non-portable (various -fglasgow-exts extensions)
 
 -- for coercion used in Grothendieck.hs and Analysis modules
-
 -}
 
 module Logic.Coerce where
@@ -19,7 +18,7 @@ import Common.Id
 import Common.Result
 import Common.AS_Annotation
 import qualified Common.Lib.Set as Set
-import Data.Dynamic
+import Common.DynamicUtils
 import ATC.Prover()
 
 -- coercion using the language name

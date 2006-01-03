@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2005
+Copyright   :  (c) Klaus Lüttich, C.Maeder, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -10,14 +10,7 @@ Portability :  portable
 the class ShATermConvertible and a few instances
 -}
 
-module Common.ATerm.Conversion(
-       ShATermConvertible,
-       toShATerm,          -- :: ATermTable -> t -> (ATermTable,Int)
-       fromShATerm,        -- :: ATermTable -> t
-       toShATermList,      -- :: ATermTable -> [t] -> (ATermTable,Int)
-       fromShATermList,    -- :: ATermTable -> [t]
-       fromShATermError,   -- :: String -> ShATerm -> a
-                              ) where
+module Common.ATerm.Conversion where
 
 import Common.ATerm.AbstractSyntax
 import Common.DynamicUtils
@@ -26,20 +19,37 @@ import Data.Ratio
 
 class Typeable t => ShATermConvertible t where
     -- functions for conversion to an ATermTable
-    toShATerm       :: ATermTable -> t -> (ATermTable,Int)
-    toShATermList   :: ATermTable -> [t] -> (ATermTable,Int)
+    toShATerm       :: ATermTable -> t -> (ATermTable, Int)
+    toShATermList   :: ATermTable -> [t] -> (ATermTable, Int)
     fromShATerm     :: ATermTable -> t
     fromShATermList :: ATermTable -> [t]
+    fromShATermAux  :: Int -> ATermTable -> (ATermTable, t)
+    fromShATerm'    :: Int -> ATermTable -> (ATermTable, t)
+    fromShATermList' :: Int -> ATermTable -> (ATermTable, [t])
+    fromShATerm att = snd $ fromShATerm' (getTopIndex att) att
+    fromShATerm' i att = let ty = show $ typeOf (undefined :: t) in
+      case getATerm' i ty att of
+        Just d -> (att, fromDyn d $ error $ "fromShATerm': generic " ++ ty)
+        _ -> case fromShATermAux i att of
+               (attN, t) -> (setATerm' i ty (toDyn t) attN, t)
+    fromShATermAux i att = (att, fromShATerm $ getATermByIndex1 i att)
 
     -- default functions ignore the Annotation part
     toShATermList att0 ts = case mapAccumL toShATerm att0 ts of
                           (att1, inds) -> addATerm (ShAList inds []) att1
 
-    fromShATermList att =
-        case getATerm att of
+    fromShATermList att = snd $ fromShATermList' (getTopIndex att) att
+
+    fromShATermList' ix att0 =
+        let ty = show $ typeOf (undefined :: [t]) in
+        case getATerm' ix ty att0 of
+          Just d -> (att0, fromDyn d $ error $
+                             "fromShATermList': generic" ++ ty)
+          Nothing ->  case getShATerm ix att0 of
             ShAList ats _ ->
-                map (\ i -> fromShATerm (getATermByIndex1 i att)) ats
-            u -> fromShATermError "[a]" u
+                case mapAccumL (flip fromShATerm') att0 ats of
+                  (attN, ts) -> (setATerm' ix ty (toDyn ts) attN, ts)
+            u -> fromShATermError "[]" u
 
 fromShATermError :: String -> ShATerm -> a
 fromShATermError t u = error $ "Cannot convert ShATerm to "
@@ -56,20 +66,23 @@ instance ShATermConvertible Bool where
     toShATerm att b = case b of
                        True  -> addATerm (ShAAppl "T" [] []) att
                        False -> addATerm (ShAAppl "F" [] []) att
-    fromShATerm att = case getATerm att of
-                       ShAAppl "T" [] _ -> True
-                       ShAAppl "F" [] _ -> False
-                       u -> fromShATermError "Prelude.Bool" u
+    fromShATermAux ix att0 = case getShATerm ix att0 of
+            ShAAppl "T" [] _ -> (att0, True)
+            ShAAppl "F" [] _ -> (att0, False)
+            u -> fromShATermError "Prelude.Bool" u
 
 instance ShATermConvertible Integer where
     toShATerm att x = addATerm (ShAInt x []) att
-    fromShATerm att = case getATerm att of
-                       ShAInt x _ -> x
-                       u  -> fromShATermError "Prelude.Integer" u
+    fromShATermAux ix att0 =
+         case getShATerm ix att0 of
+            ShAInt x _ -> (att0, x)
+            u -> fromShATermError "Prelude.Integer" u
 
 instance ShATermConvertible Int where
     toShATerm att x = toShATerm att (toInteger x)
-    fromShATerm att = integer2Int $ fromShATerm att
+    fromShATermAux ix att0 = case getShATerm ix att0 of
+            ShAInt x _ -> (att0, integer2Int x)
+            u -> fromShATermError "Prelude.Int" u
 
 instance (ShATermConvertible a, Integral a)
     => ShATermConvertible (Ratio a) where
@@ -79,27 +92,34 @@ instance (ShATermConvertible a, Integral a)
           case toShATerm att1 i2 of
           (att2,i2') ->
               addATerm (ShAAppl "Ratio" [i1',i2'] []) att2
-    fromShATerm att =
-       case getATerm att of
-       ShAAppl "Ratio" [i1',i2'] _ ->
-           case fromShATerm (getATermByIndex1 i1' att) of
-           i1 ->
-             case fromShATerm (getATermByIndex1 i2' att) of
-             i2 -> (i1 % i2)
-       u ->  fromShATermError "Prelude.Integral" u
+    fromShATermAux ix att0 =
+        case getShATerm ix att0 of
+            ShAAppl "Ratio" [a,b] _ ->
+                    case fromShATerm' a $! att0 of { (att1, a') ->
+                    case fromShATerm' b $! att1 of { (att2, b') ->
+                    (att2, a' %  b') }}
+            u -> fromShATermError "Prelude.Integral" u
 
 instance ShATermConvertible Char where
     toShATerm att c = addATerm (ShAAppl (show [c]) [] []) att
-    fromShATerm att = case getATerm att of
-                        ShAAppl s [] _ -> str2Char s
-                        u -> fromShATermError "Char" u
+    fromShATermAux ix att0 = case getShATerm ix att0 of
+            ShAAppl s [] _ -> (att0, str2Char s)
+            u -> fromShATermError "Prelude.Char" u
+
     toShATermList att s = addATerm (ShAAppl (show s) [] []) att
-    fromShATermList att = case getATerm att of
-                            ShAAppl s [] _ -> read s
-                            u -> fromShATermError "String" u
+    fromShATermList' ix att0 =
+        let ty = show $ typeOf (undefined :: String) in
+        case getATerm' ix ty att0 of
+          Just d -> (att0, fromDyn d $ error "fromShATerm': String")
+          Nothing -> case getShATerm ix att0 of
+            ShAAppl s [] _ ->
+                    case read s of
+                    {t -> (setATerm' ix ty (toDyn t) $!
+                                    getATermByIndex1 ix $! att0, t)}
+            u -> fromShATermError "Prelude.String" u
 
 instance ShATermConvertible () where
     toShATerm att _ = addATerm (ShAAppl "U" [] []) att
-    fromShATerm att = case getATerm att of
-                      ShAAppl "U" [] _ -> ()
-                      u -> fromShATermError "()" u
+    fromShATermAux ix att0 = case getShATerm ix att0 of
+            ShAAppl "U" [] _ -> (att0, ())
+            u -> fromShATermError "()" u

@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) K. Lüttich, C. Maeder and Uni Bremen 2002-2005
+Copyright   :  (c) K. Lüttich, C. Maeder and Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -47,56 +47,60 @@ makeGetPosFn b =
 -- end of PosItem derivation
 
 -- begin of ShATermConvertible derivation
--- Author: luettich@tzi.de
-
 shatermfn dat
   = instanceSkeleton "ShATermConvertible"
       [ (makeToShATerm, empty) ]
       dat
       $$ makeFromShATermFn dat
 
+att i = text $ "att" ++ show (i :: Int)
+
 makeToShATerm b
   = let ts = types b
         vs = varNames ts
-    in text "toShATerm att0" <+> -- this first Argument is an ATermTable
+    in text "toShATerm" <+> att 0 <+> -- this first argument is an ATermTable
        ppCons b vs <+>
        text "=" $$ nest 4
        (vcat (zipWith childToShATerm vs [0 :: Int ..]) $$
             text "addATerm (ShAAppl" <+>
             doubleQuotes (text (constructor b)) <+>
             bracketList (varNames' ts) <+> text "[])" <+>
-            text ("att" ++ show (length ts)) <+>
+            att (length ts) <+>
             closeBraces ts)
 
 closeBraces = hcat . map (const $ char '}')
 
+pair f s = parens $ f <> comma <+> s
+
 childToShATerm v i = let
-           attN_v' = parenList [text ("att" ++ show (i+1)), addPrime v]
-           attO = text ("att" ++ show i)
-           in text "case" <+> text "toShATerm" <+> attO <+> v
+           attN_v' = pair (att $ i + 1) $ addPrime v
+           in text "case" <+> text "toShATerm" <+> att i <+> v
                <+> text "of {" <+> attN_v' <+> text "->"
 
 makeFromShATermFn dat =
-    block [text "fromShATerm att =",
-           block [fnstart, block cases]]
+    block [text "fromShATermAux ix att0 =",
+           block [fnstart, block $ cases ++ [def_case]]]
         where
-        fnstart     = text "case getATerm att of"
-        cases       = map makeFromShATerm (body dat) ++ [def_case]
-        u = text "u"
+        fnstart     = text "case getShATerm ix att0 of"
+        cases       = map makeFromShATerm (body dat)
+        typename    = name dat
+        u           = text "u"
         def_case    = u <+> text "-> fromShATermError" <+>
-                      doubleQuotes (text $ name dat) <+> u
+                      doubleQuotes (text typename) <+> u
 
 makeFromShATerm b
   = let ts = types b
         cvs = varNames ts
-        childFromShATerm v = text "case fromShATerm $ getATermByIndex1"
-                  <+> v <+> text "att of {" <+> addPrime v <+> text "->"
+        childFromShATerm v i =
+            text "case fromShATerm'"
+                  <+> v <+> att i <+> text "of {"
+                       <+> pair (att $ i + 1) (addPrime v) <+> text "->"
     in text "ShAAppl" <+> doubleQuotes (text $ constructor b) <+>
        bracketList cvs <+> text "_ ->"
        $$ nest 4 (
-            block (map childFromShATerm cvs ++
-                   [ppCons' b (varNames' ts) <+> closeBraces ts]))
-
+            block (zipWith childFromShATerm cvs [0 :: Int ..] ++
+                   [pair (att $ length ts) (ppCons' b $ varNames' ts)
+                             <+> closeBraces ts]))
 -- end of ATermConvertible derivation
 
 typeablefn :: Data -> Doc
@@ -122,6 +126,5 @@ typeablefn  dat
         = text "get" <> text var <+> dc <+> tpe <+> rArrow
           <+> text var $$
           text "get" <> text var <+> equals <+> text "undefined"
-
-where_decls [] = empty
-where_decls ds = text "  where" $$ block ds
+      where_decls [] = empty
+      where_decls ds = text "  where" $$ block ds

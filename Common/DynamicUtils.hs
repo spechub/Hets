@@ -11,7 +11,8 @@ Portability :  non-portable (does -cpp on __GLASGOW_HASKELL__)
 mkAppTy was renamed to mkTyConApp in ghc version 6.3 upwards
 -}
 
-module Common.DynamicUtils (mkTyConApp, mkTyCon, TyCon, Typeable(..)) where
+module Common.DynamicUtils ( mkTyConApp, mkTyCon, TyCon, Typeable(..)
+                           , Dynamic, toDyn, fromDyn) where
 
 import Data.Dynamic
 #if __GLASGOW_HASKELL__<=602
