@@ -196,7 +196,7 @@ drifted_files = Syntax/AS_Architecture.hs Syntax/AS_Library.hs \
     Modal/AS_Modal.hs CoCASL/AS_CoCASL.hs COL/AS_COL.hs CASL_DL/AS_CASL_DL.hs\
     $(gendrifted_files)
 
-atc_files = Common/AS_Annotation.der.hs \
+atc_files = Common/AS_Annotation.der.hs Common/DefaultMorphism.hs \
     Syntax/AS_Structured.der.hs Syntax/AS_Architecture.der.hs \
     Common/GlobalAnnotations.hs Syntax/AS_Library.der.hs \
     Logic/Prover.hs
@@ -205,6 +205,9 @@ atc_der_files = $(foreach file, $(atc_files), \
     ATC/$(basename $(basename $(notdir $(file)))).der.hs)
 
 ATC/AS_Annotation.der.hs: Common/AS_Annotation.der.hs $(GENRULES)
+	$(GENRULECALL) -o $@ $<
+
+ATC/DefaultMorphism.der.hs: Common/DefaultMorphism.hs $(GENRULES)
 	$(GENRULECALL) -o $@ $<
 
 ATC/AS_Structured.der.hs: Syntax/AS_Structured.der.hs $(GENRULES)

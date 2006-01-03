@@ -1,15 +1,16 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) C. Maeder, and Uni Bremen 2002-2005
+Copyright   :  (c) C. Maeder, and Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
 Stability   :  provisional
-Portability :  portable (imports DynamicUtils, ATermLib, LaTeX)
+Portability :  portable
 
 supply a default morphism for a given signature
-(due to functional deps the instance for Logic.Category cannot be supplied)
 -}
+
+-- due to functional deps the instance for Logic.Category cannot be supplied
 
 module Common.DefaultMorphism where
 
@@ -18,16 +19,8 @@ import Common.LaTeX_utils
 import Common.LaTeX_funs
 import Common.Keywords
 import Common.PrettyPrint
-import Common.ATerm.Lib
-import Common.DynamicUtils
 
 data DefaultMorphism sign = MkMorphism sign sign deriving (Show, Eq)
-
-morTc :: TyCon
-morTc = mkTyCon "Common.DefaultMorphism.DefaultMorphism"
-
-instance Typeable a => Typeable (DefaultMorphism a) where
-  typeOf s = mkTyConApp morTc [typeOf ((undefined:: DefaultMorphism a -> a) s)]
 
 instance PrettyPrint a => PrettyPrint (DefaultMorphism a) where
     printText0 ga (MkMorphism s t) =
@@ -40,19 +33,6 @@ instance PrintLaTeX a => PrintLaTeX (DefaultMorphism a) where
         sp_braces_latex (printLatex0 ga s)
                     $$ nest 1 (text mapsTo)
                     <\+> sp_braces_latex (printLatex0 ga t)
-
-instance (ShATermConvertible a) => ShATermConvertible (DefaultMorphism a) where
-    toShATerm att0 (MkMorphism s t) =
-        case toShATerm att0 s of {  (att1, s') ->
-        case toShATerm att1 t of {  (att2, t') ->
-        addATerm (ShAAppl "MkMorphism" [ s', t'] []) att2 }}
-    fromShATerm att =
-        case getATerm att of
-            ShAAppl "MkMorphism" [ s, t ] _ ->
-                    case fromShATerm (getATermByIndex1 s att) of {  s' ->
-                    case fromShATerm (getATermByIndex1 t att) of {  t' ->
-                    (MkMorphism s' t') }}
-            u -> fromShATermError "DefaultMorphism" u
 
 domOfDefaultMorphism, codOfDefaultMorphism :: DefaultMorphism sign -> sign
 domOfDefaultMorphism (MkMorphism s _) = s

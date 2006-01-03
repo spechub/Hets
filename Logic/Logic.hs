@@ -1,7 +1,7 @@
 {-# OPTIONS -fallow-undecidable-instances #-}
 {- |
 Module      :  $Header$
-Copyright   :  (c) Till Mossakowski, and Uni Bremen 2002-2003
+Copyright   :  (c) Till Mossakowski, and Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  till@tzi.de
@@ -88,10 +88,8 @@ import Logic.Prover -- for one half of class Sentences
 import Common.PrettyPrint
 import Common.DynamicUtils
 import Common.ATerm.Lib -- (ShATermConvertible)
-
--- passed to ensures_amalgamability
-import Common.Amalgamate
-
+import ATC.DefaultMorphism()
+import Common.Amalgamate -- passed to ensures_amalgamability
 import Common.Taxonomy
 import Taxonomy.MMiSSOntology (MMiSSOntology)
 
