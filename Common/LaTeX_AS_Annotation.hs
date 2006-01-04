@@ -20,6 +20,7 @@ import Common.GlobalAnnotations
 import Common.Id (Id(..),splitMixToken,Token,nullRange)
 import Common.PrintLaTeX
 import Common.Lib.Pretty
+import Common.PPUtils (printToks)
 import Common.Lexer(whiteChars)
 import Common.LaTeX_funs 
 
@@ -68,7 +69,7 @@ instance PrintLaTeX Annotation where
                                      <\\+> maybe (la s2) pr_tops tops
                  tops = lookupDisplay ga DF_LATEX aa
                  la = casl_annotation_latex . escape_latex  
-                 pr_tops = hcat . map printAnnotationToken_latex
+                 pr_tops = fcat . printToks aa printAnnotationToken_latex
                  nullSnd (_,s2) = not $ null s2
                  printSmallId_orig_latex (Id toks ids _) =
                      let ids' = case ids of
@@ -153,9 +154,9 @@ printSmallId_latex ga i@(Id tops ids _) =
                        . punctuate smallComma_latex 
                        . map (printSmallId_latex ga)) ids
         (ts,ps) = splitMixToken tops
-        pr_tops = hcat . map (printToken_latex casl_annotation_latex)
+        pr_tops = fcat . map (printToken_latex casl_annotation_latex)
     in maybe (pr_tops ts <> ids' <> pr_tops ps)
-             (hcat . map printAnnotationToken_latex)
+             (fcat . printToks i printAnnotationToken_latex)
              (lookupDisplay ga DF_LATEX i)
              
 printLatexGroup :: String -> Doc -> Doc

@@ -20,6 +20,7 @@ module Common.PrintLaTeX
     , setTabWithSpaces
     , printToken_latex
     , printDisplayToken_latex
+    , printId
     ) 
     where
 
@@ -30,6 +31,7 @@ import Data.List (isPrefixOf,isSuffixOf)
 import Common.Id
 import Common.Lib.Pretty
 import Common.PrettyPrint
+import Common.PPUtils (printToks)
 import Common.GlobalAnnotations
 import Common.LaTeX_funs
 
@@ -379,11 +381,25 @@ instance PrintLaTeX Token where
                                     else head ts) 
                          (lookupDisplay ga DF_LATEX i) 
 
-
-isLaTeXmacro :: String -> Bool 
-isLaTeXmacro s = or ['\\' `elem` s,
-                     '^' `elem` s,
-                     '_' `elem` s]
+-- | print latex identifier
+printId :: (GlobalAnnos -> Token -> Doc) -- ^ function to print a Token
+           -> GlobalAnnos -> (Maybe Display_format) 
+           -> ([Token] -> Doc)    -- ^ function to join translated tokens
+           -> Id -> Doc
+printId pf ga mdf f i =
+    let glue_tok pf' = hcat . map pf'
+        print_ (Id tops_p ids_p _) = 
+            if null ids_p then glue_tok (pf ga) tops_p 
+            else let (toks, places) = splitMixToken tops_p
+                     comp = pf ga (mkSimpleId "[") <> 
+                            fcat (punctuate comma_latex
+                                            $ map (printId pf ga mdf f) ids_p)
+                            <> pf ga (mkSimpleId "]")
+                 in fcat [glue_tok (pf ga) toks, comp, 
+                          glue_tok (pf ga) places]
+        in maybe (print_ i) 
+           ( \ df -> maybe (print_ i) f
+             $ lookupDisplay ga df i) mdf
 
 printToken_latex :: (String -> Doc) -> Token -> Doc
 printToken_latex strConvDoc_fun t =
@@ -404,12 +420,12 @@ printToken_latex strConvDoc_fun t =
 
 printDisplayToken_latex :: (String -> Doc) -> Token -> Doc
 printDisplayToken_latex strConvDoc_fun t =
-    if isLaTeXmacro str && not (isPlace t)
+    if not (isPlace t)
        then latex_macro "\\Ax{"<>strConvDoc_fun str<>latex_macro "}"
        else printToken_latex strConvDoc_fun t
     where str = tokStr t
 
 instance PrintLaTeX Id where
     printLatex0 ga i = printId printLatex0 ga (Just DF_LATEX)
-       (hcat . map (printDisplayToken_latex casl_axiom_latex)) i
+       (fcat . printToks i (printDisplayToken_latex casl_axiom_latex)) i
 

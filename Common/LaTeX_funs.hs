@@ -305,7 +305,13 @@ casl_keyword_latex, casl_annotation_latex, casl_annotationbf_latex,
        casl_comment_latex, casl_structid_latex,
        casl_normal_latex :: String -> Doc
 casl_keyword_latex s      = sp_text (keyword_width s)    s
-casl_annotation_latex s   = sp_text (annotation_width s) s
+casl_annotation_latex s   = let s' = conv s 
+                            in sp_text (annotation_width s) s'
+    where conv [] = []
+          conv (x:xs) 
+              | x == '~' = "\\sim{}"++conv xs
+              | otherwise = x:conv xs
+
 casl_annotationbf_latex s = sp_text (annotationbf_width s) s
 casl_comment_latex s      = sp_text (comment_width s)    s
 casl_structid_latex s     = sp_text (structid_width s)   s

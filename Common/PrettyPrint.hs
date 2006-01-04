@@ -19,7 +19,7 @@ module Common.PrettyPrint
     , printText
     , isChar
     , textStyle
-    , printId
+    -- , printId
     ) 
     where
 
@@ -71,27 +71,6 @@ isChar t = take 1 (tokStr t) == "\'"
 
 instance PrettyPrint Id where
     printText0 _ = text . show
-
--- | print latex identifier
-printId :: (GlobalAnnos -> Token -> Doc) -- ^ function to print a Token
-           -> GlobalAnnos -> (Maybe Display_format) 
-           -> ([Token] -> Doc)    -- ^ function to join translated tokens
-           -> Id -> Doc
-
-printId pf ga mdf f i =
-    let glue_tok pf' = hcat . map pf'
-        print_ (Id tops_p ids_p _) = 
-            if null ids_p then glue_tok (pf ga) tops_p 
-            else let (toks, places) = splitMixToken tops_p
-                     comp = pf ga (mkSimpleId "[") <> 
-                            fcat (punctuate (pf ga $ mkSimpleId ",") 
-                                            $ map (printId pf ga mdf f) ids_p)
-                            <> pf ga (mkSimpleId "]")
-                 in fcat [glue_tok (pf ga) toks, comp, 
-                          glue_tok (pf ga) places]
-        in maybe (print_ i) 
-           ( \ df -> maybe (print_ i) f
-             $ lookupDisplay ga df i) mdf
 
 instance PrettyPrint () where
     printText0 _ga _s = empty
