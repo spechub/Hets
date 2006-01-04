@@ -28,6 +28,9 @@ import Common.PPUtils
 import CASL.AS_Basic_CASL
 import CASL.LiteralFuns
 
+import Control.Exception
+import Debug.Trace
+
 instance (PrettyPrint b, PrettyPrint s, PrettyPrint f) =>
     PrettyPrint (BASIC_SPEC b s f) where
     printText0 ga (Basic_spec l) = 
@@ -386,7 +389,7 @@ condPrint_Mixfix :: (Token -> Doc)
                  ->  GlobalAnnos -> Id -> [TERM f] -> Doc
 condPrint_Mixfix pTok pId pTrm parens_fun
                  beside_fun fsep_fun comma_doc mpt_fun mdf
-                 ga i l =
+                 ga i l = 
     if isMixfix dispId
     then
        if placeCount dispId == length l
@@ -490,7 +493,11 @@ print_mixfix_appl pTok pId pTrm parens_fun
               else
                  (places,terms_a_comp,empty)
           -- fillIn :: PrettyPrint f => [Token] -> [TERM f] -> [Doc]
-          fillIn tps ts = let (_,nl) = mapAccumL pr ts tps in nl
+          fillIn tps ts = if isDisplayAnnoModi 
+                          then {- WARNING HACK!! -} 
+                               assert (trace "Dangerous hack!!" True) $ 
+                                      fillPlaces oid pf' pTrm tps ts 
+                          else let (_,nl) = mapAccumL pr ts tps in nl
           -- pr :: PrettyPrint f => [TERM f] -> Token -> ([TERM f],Doc)
           pr [] top = ([], pf' top)
           pr tS@(t:ts) top 
@@ -501,6 +508,19 @@ print_mixfix_appl pTok pId pTrm parens_fun
                               then f 
                               else pTok) 
                       mpt_fun
+
+{- | fillPlaces fills pretty printed Terms into the places; 
+   but it also considers if tokens end with any paren, in this case it 
+   searches for a closing paren of the same kind and prints the term within 
+   these parens
+-}
+fillPlaces :: Id -- ^ original id for the error message
+           -> (Token -> Doc) -- ^ for printing tokens and places
+           -> (TERM f -> Doc) -- ^ for printing a term
+           -> [Token] -- ^ tokens and places of this application
+           -> [TERM f] -- ^ terms to fill in to the places
+           -> [Doc] 
+fillPlaces oid tpf pTrm tps ts = fillPlaces' True oid tpf pTrm tps ts
 
 -- printing consistent prefix application and predication
 print_prefix_appl :: (TERM f -> Doc)   -- ^ print TERM recursively 

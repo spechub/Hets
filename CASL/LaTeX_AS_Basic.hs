@@ -444,7 +444,7 @@ print_kind_latex ga k l =
                s' -> casl_keyword_latex s'
 
 condPrint_Mixfix_latex :: PrintLaTeX f => GlobalAnnos -> Id -> [TERM f] -> Doc
-condPrint_Mixfix_latex ga =
+condPrint_Mixfix_latex ga = 
     condPrint_Mixfix (printLatex0 ga) (printLatex0 ga) (printLatex0 ga)
                      parens_tab_latex
                      (<\+>) fsep_latex comma_latex 
