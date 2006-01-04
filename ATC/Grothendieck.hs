@@ -1,4 +1,3 @@
-{-# OPTIONS -fno-strictness #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) Felix Reckers, C. Maeder, Uni Bremen 2002-2006

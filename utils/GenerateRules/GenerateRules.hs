@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  generate DriFT directives
-Copyright   :  (c) Felix Reckers, C.Maeder, Uni Bremen 2002-2005
+Copyright   :  (c) Felix Reckers, C. Maeder, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -56,7 +56,6 @@ genRules flags files =
            ds = datas \\ excs
            rule =  concat $ intersperse ", " rules
            fileHead = "{-# OPTIONS -fno-warn-unused-imports #-}" ++
-             "\n{-# OPTIONS -fno-strictness #-}" ++
              "\n{- |\nModule      :  " ++ outf ++
              "\nDescription :  generated " ++ rule ++ " instances" ++
              "\nCopyright   :  (c) Uni Bremen 2005" ++

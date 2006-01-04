@@ -1,4 +1,3 @@
-{-# OPTIONS -fno-strictness #-}
 {- |
 Module      :  $Header$
 Description :  ShATermConvertible instances
