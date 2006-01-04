@@ -13,6 +13,7 @@ utility functions for edges of a development graphs.
 
 module Proofs.EdgeUtils where
 
+import Debug.Trace
 import Data.List(nub)
 import Logic.Logic
 import Logic.Grothendieck
@@ -253,20 +254,22 @@ getInsertedEdges (change:list) =
 -- methods to check and select proof basis
 -- ----------------------------------------
 
-{- determines all proven paths in the given list and tries to selet a
+{- determines all proven paths in the given list and tries to select a
    proof basis from these (s. selectProofBasisAux);
    if this fails the same is done for the rest of the given paths, i.e.
    for the unproven ones -}
 selectProofBasis :: LEdge DGLinkLab -> [[LEdge DGLinkLab]]
                  -> [LEdge DGLinkLab]
 selectProofBasis ledge paths =
-  if null provenProofBasis then selectProofBasisAux ledge unprovenPaths
-   else provenProofBasis
+  let res =
+       if null provenProofBasis then selectProofBasisAux ledge unprovenPaths
+        else provenProofBasis
+   in {-trace ("edge:"++show ledge++"\nflag:"++show( null provenProofBasis)++"\nprovenPaths:"++show provenPaths++"\nres:"++show res)-} res
 
   where 
     provenPaths = filterProvenPaths paths
     provenProofBasis = selectProofBasisAux ledge provenPaths
-    unprovenPaths = [path | path <- paths, notElem path provenPaths]
+    unprovenPaths = filter (`notElem` provenPaths) paths
 
 {- selects the first path that does not form a proof cycle with the given
  label (if such a path exits) and returns the labels of its edges -}
@@ -300,14 +303,13 @@ getProofBasis (_,_,label) =
 
 {- returns all proven paths from the given list -}
 filterProvenPaths :: [[LEdge DGLinkLab]] -> [[LEdge DGLinkLab]]
-filterProvenPaths [] = []
-filterProvenPaths (path:list) =
-  if (and [isProven edge| edge <- path]) then path:(filterProvenPaths list)
-   else filterProvenPaths list
+filterProvenPaths = filter (all isProven)
 
 {- opposite of isProofCycle -}
 notProofCycle :: LEdge DGLinkLab -> [LEdge DGLinkLab] -> Bool
-notProofCycle ledge = not.(isProofCycle ledge)
+notProofCycle ledge x = 
+  {-trace ("ledge:"++show ledge++"\nnotProofCycle"++show f)-} f
+  where f = (not.(isProofCycle ledge)) x
 
 {- checks if the given label is contained in the ProofBasis of one of the
    edges of the given path -}
@@ -321,8 +323,8 @@ isProofCycle ledge (e:path) =
 elemOfProofBasis :: LEdge DGLinkLab -> (LEdge DGLinkLab) -> Bool
 elemOfProofBasis ledge (_,_,dglink) =
   case dgl_type dglink of 
-    (GlobalThm (Proven _ proofBasis) _ _) -> elem ledge proofBasis
-    (LocalThm (Proven _ proofBasis) _ _) -> elem ledge proofBasis
+    (GlobalThm (Proven _ proofBasis) _ _) -> roughElem ledge proofBasis
+    (LocalThm (Proven _ proofBasis) _ _) -> roughElem ledge proofBasis
     _ -> False
 
 

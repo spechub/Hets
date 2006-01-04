@@ -164,12 +164,19 @@ instance PrettyPrint DGLinkLab where
                     <+> printText0 ga (dgl_type l)
                     <+> printText0 ga (dgl_origin l)
 
--- | finer equality, taking proof status into account
+-- | coarser equality, ignoring the proof status
 eqDGLinkLab :: DGLinkLab -> DGLinkLab -> Bool
 eqDGLinkLab l1 l2 =
   dgl_morphism l1 == dgl_morphism l2
   && eqDGLinkType (dgl_type l1) (dgl_type l2)
   && dgl_origin l1 == dgl_origin l2
+
+eqLEdgeDGLinkLab :: LEdge DGLinkLab -> LEdge DGLinkLab -> Bool
+eqLEdgeDGLinkLab (m1,n1,l1) (m2,n2,l2) =
+   m1==m2 && n1==n2 && eqDGLinkLab l1 l2
+
+roughElem :: LEdge DGLinkLab -> [LEdge DGLinkLab] -> Bool
+roughElem x = any (`eqLEdgeDGLinkLab` x)
 
 {-
    proof status = (DG0,[(R1,DG1),...,(Rn,DGn)])
@@ -189,15 +196,7 @@ data DGChange = InsertNode (LNode DGNodeLab)
               | DeleteNode (LNode DGNodeLab)
               | InsertEdge (LEdge DGLinkLab)
               | DeleteEdge (LEdge DGLinkLab)
-                deriving Eq
-
--- | finer equality for DGChange, taking proof status into account
-eqDGChange :: DGChange -> DGChange -> Bool
-eqDGChange (InsertEdge (m1,n1,l1)) (InsertEdge (m2,n2,l2)) =
-   m1==m2 && n1==n2 && eqDGLinkLab l1 l2
-eqDGChange (DeleteEdge (m1,n1,l1)) (DeleteEdge (m2,n2,l2)) =
-   m1==m2 && n1==n2 && eqDGLinkLab l1 l2
-eqDGChange x y = x==y
+              deriving Eq
 
 instance Show DGChange where
   show (InsertNode (n,_)) = "InsertNode "++show n
@@ -221,31 +220,19 @@ data DGLinkType = LocalDef
               -- DGLink S1 S2 m2 (DGLinkType m1 p) n
               -- corresponds to a span of morphisms
               -- S1 <--m1-- S --m2--> S2
-              deriving (Show)
+              deriving (Eq,Show)
 
--- Generally, the proof status is not relevant
-instance Eq DGLinkType where
-  LocalDef == LocalDef = True
-  HidingDef == HidingDef = True
-  FreeDef n1 == FreeDef n2 = n1==n2
-  LocalThm _ _ _ ==  LocalThm _ _ _ = True
-  GlobalThm _ _ _ == GlobalThm _ _ _ = True
-  HidingThm m1 _ == HidingThm m2 _ = m1 == m2
-  FreeThm m1 _ == FreeThm m2 _ = m1 == m2
-  _ == _ = False
-
--- | Finer equality for thoses cases where proof status is relevant
+-- | Coarser equality ignoring the proof status
 eqDGLinkType :: DGLinkType -> DGLinkType -> Bool
-eqDGLinkType LocalDef LocalDef = True
-eqDGLinkType HidingDef HidingDef = True
-eqDGLinkType (FreeDef n1) (FreeDef n2) = n1==n2
-eqDGLinkType (LocalThm s1 t1 u1) (LocalThm s2 t2 u2) = 
-      s1==s2 && t1==t2 && u1==u2
-eqDGLinkType (GlobalThm s1 t1 u1) (GlobalThm s2 t2 u2) = 
-      s1==s2 && t1==t2 && u1==u2
-eqDGLinkType (HidingThm m1 s1) (HidingThm m2 s2) = m1 == m2 && s1==s2
-eqDGLinkType (FreeThm m1 s1) (FreeThm m2 s2) = m1 == m2 && s1==s2
-eqDGLinkType _ _ = False
+LocalDef `eqDGLinkType` LocalDef = True
+HidingDef `eqDGLinkType` HidingDef = True
+FreeDef n1 `eqDGLinkType` FreeDef n2 = n1==n2
+LocalThm _ _ _ `eqDGLinkType`  LocalThm _ _ _ = True
+GlobalThm _ _ _ `eqDGLinkType` GlobalThm _ _ _ = True
+HidingThm m1 _ `eqDGLinkType` HidingThm m2 _ = m1 == m2
+FreeThm m1 _ `eqDGLinkType` FreeThm m2 _ = m1 == m2
+_ `eqDGLinkType` _ = False
+
 
 instance PrettyPrint DGLinkType where
     printText0 _ t = text $ case t of

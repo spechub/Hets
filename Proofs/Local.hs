@@ -1,6 +1,6 @@
 {- | 
 Module      :  $Header$
-Copyright   :  (c) Jorina F. Gerken, Till Mossakowski, Uni Bremen 2002-2004
+Copyright   :  (c) Jorina F. Gerken, Till Mossakowski, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  jfgerken@tzi.de
@@ -71,11 +71,11 @@ locDecompAux libEnv ln dgraph (rules,changes)
     morphism = dgl_morphism edgeLab
     allPaths = getAllLocGlobPathsBetween dgraph src tgt
     th = computeLocalTheory libEnv (ln, src)
-    pathsWithoutEdgeItself = [ path | path <- allPaths, notElem ledge path ]
+    pathsWithoutEdgeItself = filter (notElem ledge) allPaths
     filteredPaths = filterByTranslation th morphism pathsWithoutEdgeItself
     proofBasis = selectProofBasis ledge filteredPaths
     auxGraph = delLEdge ledge dgraph
-    (LocalThm _ conservativity conservStatus) = (dgl_type edgeLab)
+    LocalThm _ conservativity conservStatus = dgl_type edgeLab
     newEdge = (src,
                tgt,
                DGLink {dgl_morphism = morphism,
@@ -96,7 +96,7 @@ filterByTranslation :: Maybe G_theory -> GMorphism -> [[LEdge DGLinkLab]]
                     -> [[LEdge DGLinkLab]]
 filterByTranslation maybeTh morphism paths =
   case maybeTh of
-    Just th -> [path| path <- paths, isSameTranslation th morphism path]
+    Just th -> filter (isSameTranslation th morphism) paths
     Nothing -> []
 --     isSameTranslation th morphism (calculateMorphismOfPath path)]
 
@@ -110,7 +110,7 @@ isSameTranslation th morphism path =
       Nothing -> False
 
 -- ----------------------------------------------
--- local subsumption
+-- local inference
 -- ----------------------------------------------
 
 -- applies local subsumption to all unproven local theorem edges

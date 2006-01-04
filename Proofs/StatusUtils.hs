@@ -176,7 +176,7 @@ showNodeChange (descr, nodelab) =
 removeContraryChanges :: [DGChange] -> [DGChange]
 removeContraryChanges [] = []
 removeContraryChanges (change:changes) =
-  if any (`eqDGChange` contraryChange) changes
+  if contraryChange `elem` changes
    then removeContraryChanges (removeChange contraryChange changes)
     else change:(removeContraryChanges changes)
   where
