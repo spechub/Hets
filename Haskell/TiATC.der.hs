@@ -1,13 +1,14 @@
+{-# OPTIONS -fno-strictness #-}
 {- |
 Module      :  $Header$
-Copyright   :  (c) Christian Maeder, Uni Bremen 2005
+Copyright   :  (c) Christian Maeder, Uni Bremen 2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-remaining 'ShATermConvertible' instances for "Haskell.Logic_Haskell" based on
+some 'ShATermConvertible' instances based on
 the generated instances in "Haskell.ATC_Haskell".
 -}
 

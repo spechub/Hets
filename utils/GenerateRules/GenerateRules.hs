@@ -56,6 +56,7 @@ genRules flags files =
            ds = datas \\ excs
            rule =  concat $ intersperse ", " rules
            fileHead = "{-# OPTIONS -fno-warn-unused-imports #-}" ++
+             "\n{-# OPTIONS -fno-strictness #-}" ++
              "\n{- |\nModule      :  " ++ outf ++
              "\nDescription :  generated " ++ rule ++ " instances" ++
              "\nCopyright   :  (c) Uni Bremen 2005" ++

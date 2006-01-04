@@ -1,6 +1,7 @@
+{-# OPTIONS -fno-strictness #-}
 {- | 
 Module      :  $Header$
-Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2005
+Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
