@@ -5,7 +5,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
 Stability   :  provisional
-Portability :  portable
+Portability :  non-portable(imports AbstractSyntax)
 
 the class ShATermConvertible and a few instances
 -}
@@ -16,16 +16,45 @@ import Common.ATerm.AbstractSyntax
 import Common.DynamicUtils
 import Data.List (mapAccumL)
 import Data.Ratio
+import Control.Monad
 
 class Typeable t => ShATermConvertible t where
     -- functions for conversion to an ATermTable
     toShATerm       :: ATermTable -> t -> (ATermTable, Int)
     toShATermList   :: ATermTable -> [t] -> (ATermTable, Int)
+    toShATerm'      :: ATermTable -> t -> IO (ATermTable, Int)
+    toShATermAux    :: ATermTable -> t -> IO (ATermTable, Int)
+    toShATermList'  :: ATermTable -> [t] -> IO (ATermTable, Int)
     fromShATerm     :: ATermTable -> t
     fromShATermList :: ATermTable -> [t]
     fromShATermAux  :: Int -> ATermTable -> (ATermTable, t)
     fromShATerm'    :: Int -> ATermTable -> (ATermTable, t)
     fromShATermList' :: Int -> ATermTable -> (ATermTable, [t])
+
+    toShATerm' att t = do
+       k <- mkKey t
+       m <- getKey k att
+       case m of
+         Nothing -> do
+           (att1, i) <- toShATermAux att t
+           setKey k i att1
+           return (att1, i)
+         Just i -> return (att, i)
+    toShATermAux att = return . toShATerm att
+    toShATermList' att ts = do
+       k <- mkKey ts
+       m <- getKey k att
+       case m of
+         Nothing -> do
+           (att2, inds) <- foldM (\ (att0, l) t -> do
+                    (att1, i) <- toShATerm' att0 t
+                    return (att1, i : l)) (att, []) ts
+           case addATerm (ShAList (reverse inds) []) att2 of
+             (att3, i) -> do
+                      setKey k i att3
+                      return (att3, i)
+         Just i -> return (att, i)
+
     fromShATerm att = snd $ fromShATerm' (getTopIndex att) att
     fromShATerm' i att = let ty = show $ typeOf (undefined :: t) in
       case getATerm' i ty att of
@@ -80,6 +109,7 @@ instance ShATermConvertible Integer where
 
 instance ShATermConvertible Int where
     toShATerm att x = toShATerm att (toInteger x)
+    toShATermAux att x = toShATerm' att (toInteger x)
     fromShATermAux ix att0 = case getShATerm ix att0 of
             ShAInt x _ -> (att0, integer2Int x)
             u -> fromShATermError "Prelude.Int" u
@@ -92,6 +122,10 @@ instance (ShATermConvertible a, Integral a)
           case toShATerm att1 i2 of
           (att2,i2') ->
               addATerm (ShAAppl "Ratio" [i1',i2'] []) att2
+    toShATermAux att0 i = let (i1, i2) = (numerator i, denominator i) in do
+       (att1,i1') <- toShATerm' att0 i1
+       (att2,i2') <- toShATerm' att1 i2
+       return $ addATerm (ShAAppl "Ratio" [i1',i2'] []) att2
     fromShATermAux ix att0 =
         case getShATerm ix att0 of
             ShAAppl "Ratio" [a,b] _ ->
@@ -105,7 +139,15 @@ instance ShATermConvertible Char where
     fromShATermAux ix att0 = case getShATerm ix att0 of
             ShAAppl s [] _ -> (att0, str2Char s)
             u -> fromShATermError "Prelude.Char" u
-
+    toShATermList' att s = do
+       k <- mkKey s
+       m <- getKey k att
+       case m of
+         Nothing -> case toShATermList att s of
+             (att3, i) -> do
+                      setKey k i att3
+                      return (att3, i)
+         Just i -> return (att, i)
     toShATermList att s = addATerm (ShAAppl (show s) [] []) att
     fromShATermList' ix att0 =
         let ty = show $ typeOf (undefined :: String) in

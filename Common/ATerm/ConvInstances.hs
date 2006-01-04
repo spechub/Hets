@@ -44,6 +44,10 @@ instance (ShATermConvertible a,
        case toShATerm att0 (labNodes graph) of { (att1,aa') ->
        case toShATerm att1 (labEdges graph) of { (att2,bb') ->
           addATerm (ShAAppl "Graph"  [ aa' , bb' ] []) att2}}
+    toShATermAux att0 graph = do
+       (att1, aa') <- toShATerm' att0 (labNodes graph)
+       (att2, bb') <- toShATerm' att1 (labEdges graph)
+       return $ addATerm (ShAAppl "Graph"  [ aa' , bb' ] []) att2
     fromShATermAux ix att0 =
         case getShATerm ix att0 of
             ShAAppl "Graph" [a,b] _ ->
@@ -61,6 +65,9 @@ instance (Ord a, ShATermConvertible a, ShATermConvertible b)
       => ShATermConvertible (Map.Map Id (Set.Set b)) #-}
     toShATerm att fm = case toShATerm att $ Map.toAscList fm of
                        (att1, i) -> addATerm (ShAAppl "Map" [i] []) att1
+    toShATermAux att fm = do
+      (att1, i) <- toShATerm' att $ Map.toAscList fm
+      return $ addATerm (ShAAppl "Map" [i] []) att1
     fromShATermAux ix att0 =
         case getShATerm ix att0 of
             ShAAppl "Map" [a] _ ->
@@ -80,6 +87,10 @@ instance (ShATermConvertible a) => ShATermConvertible (OMap.ElemWOrd a) where
        case toShATerm att0 (OMap.order e) of { (att1,aa') ->
        case toShATerm att1 (OMap.ele e) of { (att2,bb') ->
           addATerm (ShAAppl "EWOrd"  [ aa' , bb' ] []) att2}}
+    toShATermAux att0 e = do
+       (att1,aa') <- toShATerm' att0 (OMap.order e)
+       (att2,bb') <- toShATerm' att1 (OMap.ele e)
+       return $ addATerm (ShAAppl "EWOrd"  [ aa' , bb' ] []) att2
     fromShATermAux ix att0 =
         case getShATerm ix att0 of
             ShAAppl "EWOrd" [a,b] _ ->
@@ -92,6 +103,9 @@ instance (Ord a,ShATermConvertible a) => ShATermConvertible (Set.Set a) where
     {-# SPECIALIZE instance ShATermConvertible (Set.Set Id) #-}
     toShATerm att set = case  toShATerm att $ Set.toAscList set of
                         (att1, i) -> addATerm (ShAAppl "Set" [i] []) att1
+    toShATermAux att set = do
+      (att1, i) <-  toShATerm' att $ Set.toAscList set
+      return $ addATerm (ShAAppl "Set" [i] []) att1
     fromShATermAux ix att0 =
         case getShATerm ix att0 of
             ShAAppl "Set" [a] _ ->
@@ -110,6 +124,9 @@ instance (Ord a,ShATermConvertible a) => ShATermConvertible (Rel.Rel a) where
     {-# SPECIALIZE instance ShATermConvertible (Rel.Rel Id) #-}
     toShATerm att rel = case toShATerm att $ Rel.toMap rel of
                         (att1, i) -> addATerm (ShAAppl "Rel" [i] []) att1
+    toShATermAux att rel = do
+      (att1, i) <-  toShATerm' att $ Rel.toMap rel
+      return $ addATerm (ShAAppl "Rel" [i] []) att1
     fromShATermAux ix att0 =
         case getShATerm ix att0 of
             ShAAppl "Rel" [a] _ ->
@@ -124,6 +141,11 @@ instance (ShATermConvertible a) => ShATermConvertible (Maybe a) where
                      Just x -> case toShATerm att x of
                                   (att1, x') ->
                                    addATerm (ShAAppl "J" [x'] []) att1
+    toShATermAux att mb = case mb of
+        Nothing -> return $ addATerm (ShAAppl "N" [] []) att
+        Just x -> do
+          (att1, x') <- toShATerm' att x
+          return $ addATerm (ShAAppl "J" [x'] []) att1
     fromShATermAux ix att0 =
         case getShATerm ix att0 of
             ShAAppl "N" [] _ -> (att0, Nothing)
@@ -141,7 +163,8 @@ instance ShATermConvertible a => ShATermConvertible [a] where
     {-# SPECIALIZE instance ShATermConvertible [Char] #-}
     -- for all types in AST with [Pos]
     {-# SPECIALIZE instance ShATermConvertible [Pos] #-}
-    toShATerm att l  = toShATermList att l
+    toShATerm att l = toShATermList att l
+    toShATerm' att l = toShATermList' att l
     fromShATerm' ix att = fromShATermList' ix att
 
 instance (ShATermConvertible a, ShATermConvertible b)
@@ -161,6 +184,10 @@ instance (ShATermConvertible a, ShATermConvertible b)
                              case toShATerm att1 y of
                              (att2, y') ->
                                addATerm (ShAAppl "" [x',y'] []) att2
+    toShATermAux att0 (x,y) = do
+      (att1, x') <- toShATerm' att0 x
+      (att2, y') <- toShATerm' att1 y
+      return $ addATerm (ShAAppl "" [x',y'] []) att2
     fromShATermAux ix att0 =
         case getShATerm ix att0 of
             ShAAppl "" [a,b] _ ->
@@ -181,6 +208,11 @@ instance (ShATermConvertible a, ShATermConvertible b, ShATermConvertible c)
                                case toShATerm att2 c of
                                (att3,z') ->
                                   addATerm (ShAAppl "" [x',y',z'] []) att3
+    toShATermAux att0 (x,y,z) = do
+      (att1, x') <- toShATerm' att0 x
+      (att2, y') <- toShATerm' att1 y
+      (att3, z') <- toShATerm' att2 z
+      return $ addATerm (ShAAppl "" [x',y',z'] []) att3
     fromShATermAux ix att0 =
         case getShATerm ix att0 of
             ShAAppl "" [a,b,c] _ ->
@@ -202,6 +234,12 @@ instance (ShATermConvertible a, ShATermConvertible b, ShATermConvertible c,
                     case toShATerm att3 d of
                     (att4,d') ->
                         addATerm (ShAAppl "" [a',b',c',d'] []) att4
+    toShATermAux att0 (x,y,z,w) = do
+      (att1, x') <- toShATerm' att0 x
+      (att2, y') <- toShATerm' att1 y
+      (att3, z') <- toShATerm' att2 z
+      (att4, w') <- toShATerm' att3 w
+      return $ addATerm (ShAAppl "" [x',y',z',w'] []) att4
     fromShATermAux ix att0 =
         case getShATerm ix att0 of
             ShAAppl "" [a,b,c,d] _ ->
