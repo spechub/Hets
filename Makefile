@@ -148,6 +148,11 @@ Ast_Haskell_files = HsDeclStruct HsExpStruct HsFieldsStruct \
     HsGuardsStruct HsKindStruct HsPatStruct HsTypeStruct HsAssocStruct \
     HsModule HsName HsLiteral HsIdent
 
+#files in base/TI/
+#Ti_Haskell_files = TiTypes TiKinds TiDecorate TiInstanceDB
+
+#Ti_Prop_files = property/TI/TiPropDecorate property/syntax/PropSyntaxRec
+
 Other_PFE_files = property/AST/HsPropStruct base/defs/PNT \
     base/defs/UniqueNames base/Modules/TypedIds base/Modules/Ents \
     base/parse2/SourceNames base/syntax/SyntaxRec \
@@ -160,6 +165,8 @@ Haskell_files = $(addsuffix .hs, \
 ## rule for ATC generation
 Haskell/ATC_Haskell.der.hs: $(Haskell_files) $(GENRULES)
 	$(GENRULECALL) -i Haskell.BaseATC -o $@ $(Haskell_files)
+
+hs_der_files += Haskell/TiATC.hs Haskell/TiDecorateATC.hs Haskell/TiPropATC.hs
 
 TESTDIRS += ToHaskell Haskell/test
 TESTTARGETS += hana h2hf
@@ -256,7 +263,7 @@ inline_axiom_files = Comorphisms/CASL2PCFOL.hs Comorphisms/PCFOL2CFOL.hs \
 gen_inline_axiom_files = $(patsubst %.hs,%.inline.hs, $(inline_axiom_files))
 
 derived_sources += $(drifted_files) Driver/Version.hs $(happy_files) \
-    $(inline_axiom_files) Modal/ModalSystems.hs
+    $(inline_axiom_files) Modal/ModalSystems.hs $(hs_der_files)
 
 # sources that have {-# OPTIONS -cpp #-}
 cpp_sources = Common/DynamicUtils.hs \

@@ -28,7 +28,7 @@ import Common.Lib.Pretty
 import Common.AS_Annotation
 import Common.DefaultMorphism
 
-import Haskell.TiATC()
+import Haskell.TiPropATC()
 import Haskell.HatParser
 import Haskell.HatAna
 
