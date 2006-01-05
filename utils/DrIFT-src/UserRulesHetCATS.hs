@@ -42,25 +42,29 @@ makeGetPosFn b =
            accFun d t = if isEmpty d && t == posLC
                  then (text "p", text "p")
                  else (d, text "_")
-       in hang (text "getRange" <+> ppCons b vs <+> text "=")
+       in hang (text "getRange" <+> ppCons b vs <+> equals)
                4 $ if isEmpty e then text "nullRange" else e
 -- end of PosItem derivation
 
 -- begin of ShATermConvertible derivation
 shatermfn dat
   = instanceSkeleton "ShATermConvertible"
-      [ (makeToShATerm, empty) ]
+      [ (makeToShATerm, empty), (makeToShATerm', empty) ]
       dat
       $$ makeFromShATermFn dat
 
 att i = text $ "att" ++ show (i :: Int)
 
+closeBraces = hcat . map (const $ char '}')
+
+pair f s = parens $ f <> comma <+> s
+
 makeToShATerm b
   = let ts = types b
         vs = varNames ts
-    in text "toShATerm" <+> att 0 <+> -- this first argument is an ATermTable
+    in text "toShATerm" <+> att 0 <+>
        ppCons b vs <+>
-       text "=" $$ nest 4
+       equals $$ nest 4
        (vcat (zipWith childToShATerm vs [0 :: Int ..]) $$
             text "addATerm (ShAAppl" <+>
             doubleQuotes (text (constructor b)) <+>
@@ -68,14 +72,23 @@ makeToShATerm b
             att (length ts) <+>
             closeBraces ts)
 
-closeBraces = hcat . map (const $ char '}')
+childToShATerm v i = text "case" <+> text "toShATerm" <+> att i <+> v
+    <+> text "of {" <+> pair (att $ i + 1) (addPrime v) <+> rArrow
 
-pair f s = parens $ f <> comma <+> s
+makeToShATerm' b
+  = let ts = types b
+        vs = varNames ts
+    in text "toShATermAux" <+> att 0 <+>
+       ppCons b vs <+>
+       equals <+> text "do" $$ nest 4
+       (vcat (zipWith childToShATerm' vs [0 :: Int ..]) $$
+            text "return $ addATerm (ShAAppl" <+>
+            doubleQuotes (text (constructor b)) <+>
+            bracketList (varNames' ts) <+> text "[])" <+>
+            att (length ts))
 
-childToShATerm v i = let
-           attN_v' = pair (att $ i + 1) $ addPrime v
-           in text "case" <+> text "toShATerm" <+> att i <+> v
-               <+> text "of {" <+> attN_v' <+> text "->"
+childToShATerm' v i = pair (att $ i + 1) (addPrime v) <+> lArrow
+    <+> text "toShATerm'" <+> att i <+> v
 
 makeFromShATermFn dat =
     block [text "fromShATermAux ix att0 =",
@@ -85,7 +98,7 @@ makeFromShATermFn dat =
         cases       = map makeFromShATerm (body dat)
         typename    = name dat
         u           = text "u"
-        def_case    = u <+> text "-> fromShATermError" <+>
+        def_case    = u <+> rArrow <+> text "fromShATermError" <+>
                       doubleQuotes (text typename) <+> u
 
 makeFromShATerm b
@@ -94,9 +107,9 @@ makeFromShATerm b
         childFromShATerm v i =
             text "case fromShATerm'"
                   <+> v <+> att i <+> text "of {"
-                       <+> pair (att $ i + 1) (addPrime v) <+> text "->"
+                       <+> pair (att $ i + 1) (addPrime v) <+> rArrow
     in text "ShAAppl" <+> doubleQuotes (text $ constructor b) <+>
-       bracketList cvs <+> text "_ ->"
+       bracketList cvs <+> text "_" <+> rArrow
        $$ nest 4 (
             block (zipWith childFromShATerm cvs [0 :: Int ..] ++
                    [pair (att $ length ts) (ppCons' b $ varNames' ts)
