@@ -314,9 +314,7 @@ notProofCycle ledge x =
 {- checks if the given label is contained in the ProofBasis of one of the
    edges of the given path -}
 isProofCycle :: LEdge DGLinkLab -> [LEdge DGLinkLab] -> Bool
-isProofCycle _ [] = False
-isProofCycle ledge (e:path) =
-  if (elemOfProofBasis ledge e) then True else (isProofCycle ledge path)
+isProofCycle ledge = any (ledge `elemOfProofBasis`)
 
 {- checks if the given label is contained in the ProofBasis of the given 
    edge -}
