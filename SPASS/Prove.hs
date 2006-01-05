@@ -52,6 +52,7 @@ import qualified Control.Concurrent as Concurrent
 
 import GHC.Read
 import System
+import System.Directory
 import System.IO.Error
 
 import HTk
@@ -651,7 +652,7 @@ spassProveGUI thName th = do
                 let s' = s {configsMap = adjustOrSetConfig (setExtraOpts (words extraOptions)) goal (configsMap s)}
                 statusLabel # text (snd statusRunning)
                 statusLabel # foreground (show $ fst statusRunning)
-                (retval, (res, output)) <- runSpass lp' (getConfig goal (configsMap s')) (head afterThis)
+                (retval, (res, output)) <- runSpass lp' (getConfig goal (configsMap s')) thName (head afterThis)
                 case retval of
                   SpassError message -> errorMess message
                   _ -> return ()
@@ -776,7 +777,7 @@ spassProveBatch :: Int -- ^ batch time limit
                 -> String -- ^ theory name
                 -> Theory Sign Sentence () -- ^ theory consisting of a SPASS.Sign.Sign and a list of Named SPASS.Sign.Sentence
                 -> IO([Proof_status ()]) -- ^ proof status for each goal
-spassProveBatch tLimit f _ (Theory sig nSens) =
+spassProveBatch tLimit f thName (Theory sig nSens) =
   do -- putStrLn $ showPretty initialLogicalPart ""
      -- read batchTimeLimit from ENV variable if set otherwise use constant
      pstl <- {- trace (showPretty initialLogicalPart (show goals)) -} (batchProve initialLogicalPart [] goals)
@@ -787,7 +788,7 @@ spassProveBatch tLimit f _ (Theory sig nSens) =
     batchProve lp resDone (g:gs) = do
         putStrLn $ "Trying to prove goal: " ++ (AS_Anno.senName g)
         -- putStrLn $ show g
-        (err, (res, full)) <- runSpass lp (emptyConfig {timeLimit = Just tLimit}) g
+        (err, (res, full)) <- runSpass lp (emptyConfig {timeLimit = Just tLimit}) thName g
         putStrLn $ "SPASS returned: " ++ (show err)
         -- if the batch prover runs in a separate thread that's killed via killThread
         -- runSpass will return SpassError. we have to stop the recursion in that
@@ -883,9 +884,10 @@ parseSpassOutput spass = parseProtected (parseStart True) (Nothing, [], [])
 -}
 runSpass :: SPLogicalPart -- ^ logical part containing the input Sign and axioms and possibly goals that have been proved earlier as additional axioms
          -> SPASSConfig -- ^ configuration to use
+         -> String -- ^ name of the theory in the DevGraph
          -> AS_Anno.Named SPTerm -- ^ goal to prove
          -> IO (SpassProverRetval, SPASSResult) -- ^ (retval, (proof status, complete output))
-runSpass lp cfg nGoal = do
+runSpass lp cfg thName nGoal = do
   putStrLn ("running 'SPASS" ++ (concatMap (' ':) allOptions) ++ "'")
   spass <- newChildProcess "SPASS" [ChildProcess.arguments allOptions]
   Exception.catch (runSpassReal spass nGoal)
@@ -907,27 +909,34 @@ runSpass lp cfg nGoal = do
       if isJust e
         then return (SpassError "Could not start SPASS. Is SPASS in your $PATH?", (Open (AS_Anno.senName namedGoal), []))
         else do
-          -- debugging output
-          -- putStrLn ("This will be sent to SPASS:\n" ++ showPretty problem "\n")
-          -- FIXME: use printText0 instead. but where to get an instance of
-          -- GlobalAnnos from?
-          -- This can't be fixed until the prover interface is updated to hand
-          -- in global annos
-          sendMsg spass (showPretty problem "")
+          let prob = showPretty problem ""
+              fn d = d++'/':map remSlash (name(description(problem)))++".dfg"
+          mWriteSPASSFileDir <- getSPASSFileDir
+          maybe (return ()) 
+                (\ d -> catch (do putStrLn ("writing SPASS problem to file: "
+                                            ++fn d)
+                                  writeFile (fn d) prob)
+                                  -- !! Warning: this catch is unsafe!!
+                              (\ _ -> return ()))
+                mWriteSPASSFileDir
+          sendMsg spass prob
           (res, usedAxs, output) <- parseSpassOutput spass
           let (err, retval) = proof_status res usedAxs cleanOptions
           return (err, (retval, output))
-
+    remSlash c = case c of 
+                 '/' -> '_'
+                 _   -> c
     -- FIXME: this should be retrieved from the user instead of being hardcoded.
-    problem = SPProblem {identifier = "hets_exported",
-                         description = SPDescription {name = "hets_exported",
-                                                      author = "hets user",
-                                                      SPASS.Sign.version = Nothing,
-                                                      logic = Nothing,
-                                                      status = SPStateUnknown,
-                                                      desc = "",
-                                                      date = Nothing},
-                         logicalPart = insertSentence lp nGoal}
+    problem = SPProblem 
+        {identifier = "hets_exported",
+         description = SPDescription {name = thName++'_':AS_Anno.senName nGoal,
+                                      author = "hets user",
+                                      SPASS.Sign.version = Nothing,
+                                      logic = Nothing,
+                                      status = SPStateUnknown,
+                                      desc = "",
+                                      date = Nothing},
+         logicalPart = insertSentence lp nGoal}
     filterOptions = ["-DocProof", "-Stdin", "-TimeLimit"]
     cleanOptions = filter (\ opt -> not (or (map (flip isPrefixOf opt) filterOptions))) (extraOpts cfg)
     tLimit = if isJust (timeLimit cfg)
@@ -935,6 +944,13 @@ runSpass lp cfg nGoal = do
                -- this is OK. the batch prover always has the time limit set
                else guiDefaultTimeLimit
     allOptions = cleanOptions ++ ["-DocProof", "-Stdin", "-TimeLimit=" ++ (show tLimit)]
+
+    getSPASSFileDir = do
+        mfp <- Exception.catch (getEnv "HETS_SPASS_FILE_DIR" >>= 
+                                           (return . Just))
+                               (\ _ -> return $ Nothing)
+        exis <- maybe (return False) doesDirectoryExist mfp
+        return $ if exis then mfp else Nothing
 
     proof_status res usedAxs options
       | isJust res && elem (fromJust res) proved =
