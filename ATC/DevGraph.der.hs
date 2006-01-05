@@ -66,15 +66,16 @@ instance ShATermConvertible BasicProof where
          case toShATerm att0 (language_name lid) of { (att1,i1) ->
          case toShATerm att1 p of { (att2,i2) ->
             addATerm (ShAAppl "BasicProof" [i1,i2] []) att2}}
-    toShATerm att0 Guessed =
-         case toShATerm att0 (show Guessed) of { (att1, i1) ->
+    toShATerm att0 o =
+         case toShATerm att0 (show o) of { (att1, i1) ->
             addATerm (ShAAppl "BasicProof" [i1] []) att1}
-    toShATerm att0 Conjectured =
-         case toShATerm att0 (show Conjectured) of { (att1, i1) ->
-            addATerm (ShAAppl "BasicProof" [i1] []) att1}
-    toShATerm att0 Handwritten =
-         case toShATerm att0 (show Handwritten) of { (att1, i1) ->
-            addATerm (ShAAppl "BasicProof" [i1] []) att1}
+    toShATermAux att0 (BasicProof lid p) = do
+         (att1,i1) <- toShATerm' att0 (language_name lid)
+         (att2,i2) <- toShATerm' att1 p
+         return $ addATerm (ShAAppl "BasicProof" [i1,i2] []) att2
+    toShATermAux att0 o = do
+         (att1, i1) <- toShATerm' att0 (show o)
+         return $ addATerm (ShAAppl "BasicProof" [i1] []) att1
     fromShATermAux ix att =
          case getShATerm ix att of
             ShAAppl "BasicProof" [i1,i2] _ ->
@@ -97,6 +98,11 @@ instance ShATermConvertible G_theory where
          case toShATerm att1 sign of { (att2,i2) ->
          case toShATerm att2 sens of { (att3,i3) ->
            addATerm (ShAAppl "G_theory" [i1,i2,i3] []) att3}}}
+    toShATermAux att0 (G_theory lid sign sens) = do
+         (att1,i1) <- toShATerm' att0 (language_name lid)
+         (att2,i2) <- toShATerm' att1 sign
+         (att3,i3) <- toShATerm' att2 sens
+         return $ addATerm (ShAAppl "G_theory" [i1,i2,i3] []) att3
     fromShATermAux ix att =
          case getShATerm ix att of
             ShAAppl "G_theory" [i1,i2,i3] _ ->

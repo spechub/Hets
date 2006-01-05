@@ -103,23 +103,24 @@ write_casl_latex opt ga oup ld =
            writeFile (debug_latex_filename oup) $
                printLIB_DEFN_debugLatex ga ld
 
-toShATermString :: (ShATermConvertible a) => a -> String
-toShATermString atcon = writeSharedATerm (versionedATermTable atcon)
+toShATermString :: (ShATermConvertible a) => a -> IO String
+toShATermString atcon = fmap writeSharedATerm $ versionedATermTable atcon
 
 writeShATermFile :: (ShATermConvertible a) => FilePath -> a -> IO ()
-writeShATermFile fp atcon = writeFile fp $ toShATermString atcon
+writeShATermFile fp atcon = toShATermString atcon >>= writeFile fp
 
-versionedATermTable :: (ShATermConvertible a) => a -> ATermTable
-versionedATermTable atcon =
-    case toShATerm emptyATermTable hetsVersion of
-    (att0,versionnr) ->
-        case toShATerm att0 atcon of
-        (att1,aterm) ->
-            fst $ addATerm (ShAAppl "hets" [versionnr,aterm] []) att1
+versionedATermTable :: (ShATermConvertible a) => a -> IO ATermTable
+versionedATermTable atcon = do
+    att0 <- newATermTable
+    case toShATerm att0 hetsVersion of
+      (att1, versionnr) -> do
+        (att2, aterm) <- toShATermAux att1 atcon
+        return $ fst $ addATerm (ShAAppl "hets" [versionnr,aterm] []) att2
 
 writeShATermFileSDoc :: (ShATermConvertible a) => FilePath -> a -> IO ()
-writeShATermFileSDoc fp atcon =
-   writeFileSDoc fp $ writeSharedATermSDoc (versionedATermTable atcon)
+writeShATermFileSDoc fp atcon = do
+   att <- versionedATermTable atcon
+   writeFileSDoc fp $ writeSharedATermSDoc att
 
 globalContexttoShATerm :: FilePath -> GlobalContext -> IO ()
 globalContexttoShATerm fp gc = writeShATermFileSDoc fp gc
@@ -165,8 +166,8 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
         allSpecs = null ns
     unless (null dgFiles) $ do
       let f = rmSuffix file ++ "." ++ show (head dgFiles)
-      writeVerbFile opt f $ toShATermString $ automatic
-                        $ emptyProofStatus ln lenv
+      str <- toShATermString $ automatic $ emptyProofStatus ln lenv
+      writeVerbFile opt f str
     mapM_ ( \ i -> case Map.lookup i gctx of
         Just (SpecEntry (_,_,_, NodeSig n _)) ->
             case maybeResult $ computeTheory lenv (ln, n) of

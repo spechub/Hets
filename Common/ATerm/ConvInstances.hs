@@ -276,6 +276,11 @@ instance ShATermConvertible Pos where
         case toShATerm att1 b of { (att2, b') ->
         case toShATerm att2 c of { (att3, c') ->
         addATerm (ShAAppl "P" [a',b',c'] []) att3 }}}
+    toShATermAux att0 (SourcePos a b c) = do
+        (att1, a') <- toShATerm' att0 a
+        (att2, b') <- toShATerm' att1 b
+        (att3, c') <- toShATerm' att2 c
+        return $ addATerm (ShAAppl "P" [a',b',c'] []) att3
     fromShATermAux ix att0 =
         case getShATerm ix att0 of
             ShAAppl _ [a,b,c] _ ->
@@ -289,6 +294,9 @@ instance ShATermConvertible Range where
     toShATerm att0 (Range a) =
         case toShATerm att0 a of { (att1, a') ->
         addATerm (ShAAppl "R" [a'] []) att1 }
+    toShATermAux att0 (Range a) = do
+        (att1, a') <- toShATerm' att0 a
+        return $ addATerm (ShAAppl "R" [a'] []) att1
     fromShATermAux ix att0 =
         case getShATerm ix att0 of
             ShAAppl ('R' : _) [a] _ ->
@@ -301,6 +309,10 @@ instance ShATermConvertible Token where
         case toShATerm att0 a of { (att1, a') ->
         case toShATerm att1 b of { (att2, b') ->
         addATerm (ShAAppl "T" [a',b'] []) att2 }}
+    toShATermAux att0 (Token a b) = do
+        (att1, a') <- toShATerm' att0 a
+        (att2, b') <- toShATerm' att1 b
+        return $ addATerm (ShAAppl "T" [a',b'] []) att2
     fromShATermAux ix att0 =
         case getShATerm ix att0 of
             ShAAppl ('T' : _) [a,b] _ ->
@@ -315,6 +327,11 @@ instance ShATermConvertible Id where
         case toShATerm att1 b of { (att2, b') ->
         case toShATerm att2 c of { (att3, c') ->
         addATerm (ShAAppl "I" [a',b',c'] []) att3 }}}
+    toShATermAux att0 (Id a b c) = do
+        (att1, a') <- toShATerm' att0 a
+        (att2, b') <- toShATerm' att1 b
+        (att3, c') <- toShATerm' att2 c
+        return $ addATerm (ShAAppl "I" [a',b',c'] []) att3
     fromShATermAux ix att0 =
         case getShATerm ix att0 of
             ShAAppl ('I' : _) [a,b,c] _ ->
@@ -365,6 +382,11 @@ instance ShATermConvertible Diagnosis where
         case toShATerm att1 b of { (att2, b') ->
         case toShATerm att2 c of { (att3, c') ->
         addATerm (ShAAppl "Diag" [a',b',c'] []) att3 }}}
+    toShATermAux att0 (Diag a b c) = do
+        (att1, a') <- toShATerm' att0 a
+        (att2, b') <- toShATerm' att1 b
+        (att3, c') <- toShATerm' att2 c
+        return $ addATerm (ShAAppl "Diag" [a',b',c'] []) att3
     fromShATermAux ix att0 =
         case getShATerm ix att0 of
             ShAAppl "Diag" [a,b,c] _ ->

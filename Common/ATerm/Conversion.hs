@@ -38,7 +38,6 @@ class Typeable t => ShATermConvertible t where
          Nothing -> do
            (att1, i) <- toShATermAux att t
            setKey k i att1
-           return (att1, i)
          Just i -> return (att, i)
     toShATermAux att = return . toShATerm att
     toShATermList' att ts = do
@@ -50,9 +49,7 @@ class Typeable t => ShATermConvertible t where
                     (att1, i) <- toShATerm' att0 t
                     return (att1, i : l)) (att, []) ts
            case addATerm (ShAList (reverse inds) []) att2 of
-             (att3, i) -> do
-                      setKey k i att3
-                      return (att3, i)
+             (att3, i) -> setKey k i att3
          Just i -> return (att, i)
 
     fromShATerm att = snd $ fromShATerm' (getTopIndex att) att
@@ -144,9 +141,7 @@ instance ShATermConvertible Char where
        m <- getKey k att
        case m of
          Nothing -> case toShATermList att s of
-             (att3, i) -> do
-                      setKey k i att3
-                      return (att3, i)
+             (att3, i) -> setKey k i att3
          Just i -> return (att, i)
     toShATermList att s = addATerm (ShAAppl (show s) [] []) att
     fromShATermList' ix att0 =
