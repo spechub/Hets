@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Christian Maeder, Uni Bremen 2005
+Copyright   :  (c) Christian Maeder, Uni Bremen 2005-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -29,14 +29,14 @@ instance (ShATermConvertible a, ShATermConvertible b)
     toShATerm att0 (Right aa) =
         case toShATerm att0 aa of { (att1,aa') ->
         addATerm (ShAAppl "Right" [ aa' ] []) att1 }
-    fromShATerm att =
-        case getATerm att of
+    fromShATermAux ix att =
+        case getShATerm ix att of
             ShAAppl "Left" [ aa ] _ ->
-                    case fromShATerm $ getATermByIndex1 aa att of { aa' ->
-                    Left aa' }
+                    case fromShATerm' aa att of { (att2, aa') ->
+                    (att2, Left aa') }
             ShAAppl "Right" [ aa ] _ ->
-                    case fromShATerm $ getATermByIndex1 aa att of { aa' ->
-                    Right aa' }
+                    case fromShATerm' aa att of { (att2, aa') ->
+                    (att2, Right aa') }
             u -> fromShATermError "Either" u
 
 instance ShATermConvertible SrcLoc where
@@ -46,12 +46,12 @@ instance ShATermConvertible SrcLoc where
         case toShATerm att2 ac of { (att3,ac') ->
         case toShATerm att3 ad of { (att4,ad') ->
         addATerm (ShAAppl "SrcLoc" [ aa',ab',ac',ad' ] []) att4 }}}}
-    fromShATerm att =
-        case getATerm att of
+    fromShATermAux ix att0 =
+        case getShATerm ix att0 of
             ShAAppl "SrcLoc" [ aa,ab,ac,ad ] _ ->
-                    case fromShATerm $ getATermByIndex1 aa att of { aa' ->
-                    case fromShATerm $ getATermByIndex1 ab att of { ab' ->
-                    case fromShATerm $ getATermByIndex1 ac att of { ac' ->
-                    case fromShATerm $ getATermByIndex1 ad att of { ad' ->
-                    SrcLoc aa' ab' ac' ad' }}}}
+                    case fromShATerm' aa att0 of { (att1, aa') ->
+                    case fromShATerm' ab att1 of { (att2, ab') ->
+                    case fromShATerm' ac att2 of { (att3, ac') ->
+                    case fromShATerm' ad att3 of { (att4, ad') ->
+                    (att4, SrcLoc aa' ab' ac' ad') }}}}
             u -> fromShATermError "SrcLoc" u

@@ -31,7 +31,7 @@ GHC_IMPORTS = `$(HC) --print-libdir`/imports
 # import directories for ghc-5.04.2
 GHC5 = $(GHC_IMPORTS)/base:$(GHC_IMPORTS)/haskell98
 DRIFT_ENV = \
-    DERIVEPATH=.:ghc:$(GHC_IMPORTS):$(GHC5):$(subst $(space),:,$(PFE_PATHS))
+    DERIVEPATH=.:hxt:$(GHC_IMPORTS):$(GHC5):$(subst $(space),:,$(PFE_PATHS))
 
 # override on commandline for other architectures
 INSTALLDIR = \
@@ -206,10 +206,16 @@ drifted_files = Syntax/AS_Architecture.hs Syntax/AS_Library.hs \
 atc_files = Common/AS_Annotation.der.hs Common/DefaultMorphism.hs \
     Syntax/AS_Structured.der.hs Syntax/AS_Architecture.der.hs \
     Common/GlobalAnnotations.hs Syntax/AS_Library.der.hs \
-    Logic/Prover.hs
+    Logic/Prover.hs #Common/Id.hs Common/Result.hs OWL_DL/AS.hs
 
 atc_der_files = $(foreach file, $(atc_files), \
     ATC/$(basename $(basename $(notdir $(file)))).der.hs)
+
+ATC/Id.der.hs: Common/Id.hs $(GENRULES)
+	$(GENRULECALL) -o $@ $<
+
+ATC/Result.der.hs: Common/Result.hs $(GENRULES)
+	$(GENRULECALL) -o $@ $<
 
 ATC/AS_Annotation.der.hs: Common/AS_Annotation.der.hs $(GENRULES)
 	$(GENRULECALL) -o $@ $<
@@ -263,7 +269,8 @@ inline_axiom_files = Comorphisms/CASL2PCFOL.hs Comorphisms/PCFOL2CFOL.hs \
 gen_inline_axiom_files = $(patsubst %.hs,%.inline.hs, $(inline_axiom_files))
 
 derived_sources += $(drifted_files) Driver/Version.hs $(happy_files) \
-    $(inline_axiom_files) Modal/ModalSystems.hs $(hs_der_files)
+    $(inline_axiom_files) Modal/ModalSystems.hs $(hs_der_files) \
+    OWL_DL/ReadWrite.hs
 
 # sources that have {-# OPTIONS -cpp #-}
 cpp_sources = Common/DynamicUtils.hs \
