@@ -24,7 +24,7 @@ module Common.ATerm.AbstractSyntax
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Map as DMap
-import qualified Data.IntMap as HTab
+import qualified Common.Lib.Map as HTab
 import Common.DynamicUtils
 import Data.Array
 import System.Mem.StableName
@@ -63,7 +63,7 @@ mkKey t = do
     return $ Key (hashStableName s) (show ty) $ EqKey (unsafeCoerce# s) ty
 
 data ATermTable = ATT
-    !(HTab.IntMap (Map.Map String [(EqKey, Int)]))
+    !(HTab.Map Int (Map.Map String [(EqKey, Int)]))
     !(Map.Map ShATerm Int) !IntMap !Int
     !(Map.Map (Int, String) Dynamic)
 
@@ -92,8 +92,8 @@ addATerm t at@(ATT _ a_iDFM _ _ _) =
 setKey :: Key -> Int -> ATermTable -> IO (ATermTable, Int)
 setKey k i (ATT t s l m d) = return (ATT (setHKey k i t) s l m d, i)
 
-setHKey :: Key -> Int -> (HTab.IntMap (Map.Map String [(EqKey, Int)]))
-          -> (HTab.IntMap (Map.Map String [(EqKey, Int)]))
+setHKey :: Key -> Int -> (HTab.Map Int (Map.Map String [(EqKey, Int)]))
+          -> (HTab.Map Int (Map.Map String [(EqKey, Int)]))
 setHKey (Key h st k) i t = case HTab.lookup h t of
     Nothing -> HTab.insert h (Map.singleton st [(k, i)]) t
     Just m  -> case Map.lookup st m of
