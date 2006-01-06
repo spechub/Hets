@@ -7,7 +7,7 @@ import Text.ParserCombinators.Parsec
 import qualified Common.CaslLanguage as L(casl_id, semi, whiteSpace)
 import Common.Anno_Parser
 import Common.Lib.Pretty
-import Common.PrettyPrint hiding (printId)
+import Common.PrettyPrint
 import Common.AS_Annotation
 import Common.Print_AS_Annotation()
 import Common.GlobalAnnotations
@@ -24,11 +24,11 @@ cleanP p = do {L.whiteSpace ; res <- p; eof ; return res}
 
 testPL par inp = testP id (cleanP par) "" inp
 
-parseFile par name = do 
+parseFile par name = do
     inp <- readFile name
     testP (printText0 emptyGlobalAnnos) (cleanP par) name inp
 
-testFile par name = do 
+testFile par name = do
     inp <- readFile name
     mapM_ (testLine par) $ lines inp
     where testLine p line = do { putStr "** Input was: "
@@ -37,7 +37,7 @@ testFile par name = do
                                ; testPL p line
                                }
 
-testFileC name = do 
+testFileC name = do
     inp <- readFile name
     mapM_ testLine $ lines inp
     where testLine line = showDiff line (test_id L.casl_id line)
@@ -45,38 +45,38 @@ testFileC name = do
 
 testData p s = parse (do {L.whiteSpace ; res <- p; eof ; return res}) "" s
 
-test_id p inp = case (testData p inp) of 
+test_id p inp = case (testData p inp) of
                 Left err -> print err
                 Right ide -> printId ide
 
 
 -- Comparing Id-Parser and presenting results
 testFileCS name = do inp <- readFile name
-                     ((ma,dif),rl) <- return $ 
+                     ((ma,dif),rl) <- return $
                             mapAccumL testLine (0, 0) (lines inp)
                      sequence rl
                      putStrLn $ "------\nMatched: " ++ show ma ++
                                 "\nDiffs: " ++ show dif
-                    
-    where testLine (ma,dif) line = 
+
+    where testLine (ma,dif) line =
               let res1 = testData L.casl_id line
                   res2 = testData (parseId []) line
                   (ma1,dif1,out) = comp res1 res2 line
               in ((ma + ma1 :: Int, dif + dif1 :: Int), out)
 
-comp (Left err1) (Left err2) line = 
+comp (Left err1) (Left err2) line =
     (0,0,showDiff line (print err1) (print err2))
-comp (Left err1) (Right id2) line = 
+comp (Left err1) (Right id2) line =
     (0,1,showDiff line (print err1) (printId id2))
-comp (Right id1) (Left err2) line = 
+comp (Right id1) (Left err2) line =
     (0,1,showDiff line (printId id1) (print err2))
-comp (Right id1) (Right id2) line = 
+comp (Right id1) (Right id2) line =
               if id1 == id2 then (1 :: Int, 0 :: Int, putStr "")
-              else if showId id1 "" == showId id2 "" then diff_rep 
-                   else diff_parse where 
+              else if showId id1 "" == showId id2 "" then diff_rep
+                   else diff_parse where
           diff_parse = (0,1,putStrLn "Different Parses!" >> diff)
           diff_rep = (1,0, putStrLn "Diferent Representations!" >> diff)
-          diff = showDiff line (printId id1) (printId id2) 
+          diff = showDiff line (printId id1) (printId id2)
 
 showDiff line out1 out2 =
     do putStr "** Input was: "
@@ -86,32 +86,32 @@ showDiff line out1 out2 =
        putStr "** Result(CM) is: "
        out2
 
-printId ide@(Id _ comps _) = do 
+printId ide@(Id _ comps _) = do
     if null comps then putChar 'M' else putChar 'C'
-    putStr ": " 
+    putStr ": "
     putStrLn (showId ide "")
 
 -- call it with "-p {casl_id, casl_id2} <files>"
-main = do 
+main = do
     as <- getArgs
     (p,files) <- return (extract_par as)
-    mapM_ (parseFile' p) files  
-    where extract_par = extract_par' "annotations" [] 
-          extract_par' p ac args = case args of 
-             [] -> error 
+    mapM_ (parseFile' p) files
+    where extract_par = extract_par' "annotations" []
+          extract_par' p ac args = case args of
+             [] -> error
                    "usage: <prog> -p (annotation|casl_id|casl_id2) <files>"
-             [_] -> (p,ac ++ args) 
-             x:ltl@(y:tl) -> if x == "-p" 
+             [_] -> (p,ac ++ args)
+             x:ltl@(y:tl) -> if x == "-p"
                              then extract_par' y ac tl
-                             else extract_par' p (ac++x:[]) (ltl)    
+                             else extract_par' p (ac++x:[]) (ltl)
           parseFile' s = case s of
                          "annotations" -> parseFile annotations
-                         "casl_id"     -> testFileC 
-                         "casl_id2"    -> testFileCS 
+                         "casl_id"     -> testFileC
+                         "casl_id2"    -> testFileCS
                          _             -> error ("*** unknown parser " ++ s)
 
 instance PrettyPrint [Annotation] where
     printText0 ga = vcat . map (printText0 ga)
-              
-testId = testPL (sepBy L.casl_id L.semi) 
-         "__++__ ; __+*[y__,a_l'__,4]__ ; {__}[__] ; __a__b[__z]" 
+
+testId = testPL (sepBy L.casl_id L.semi)
+         "__++__ ; __+*[y__,a_l'__,4]__ ; {__}[__] ; __a__b[__z]"
