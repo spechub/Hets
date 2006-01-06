@@ -73,7 +73,7 @@ locDecompAux libEnv ln dgraph (rules,changes)
     th = computeLocalTheory libEnv (ln, src)
     pathsWithoutEdgeItself = filter (notElem ledge) allPaths
     filteredPaths = filterByTranslation th morphism pathsWithoutEdgeItself
-    proofBasis = selectProofBasis ledge filteredPaths
+    proofBasis = selectProofBasis dgraph ledge filteredPaths
     auxGraph = delLEdge ledge dgraph
     LocalThm _ conservativity conservStatus = dgl_type edgeLab
     newEdge = (src,
