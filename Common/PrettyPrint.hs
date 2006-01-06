@@ -1,26 +1,25 @@
 {- |
-   Module      :  $Header$
-   Copyright   :  (c) Klaus Lüttich, Christian Maeder and Uni Bremen 2002-2003 
-   License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+Module      :  $Header$
+Copyright   :  (c) Klaus Lüttich, Christian Maeder and Uni Bremen 2002-2006
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-   Maintainer  :  luettich@tzi.de
-   Stability   :  provisional
-   Portability :  portable
+Maintainer  :  luettich@tzi.de
+Stability   :  provisional
+Portability :  portable
 
 This classes needs to be instantiated for every datastructure in AS_*
-   for LaTeX and isolatin-1 pretty printing. 
+   for LaTeX and isolatin-1 pretty printing.
 -}
 
-module Common.PrettyPrint 
+module Common.PrettyPrint
     ( showPretty
-    , renderText 
+    , renderText
     , PrettyPrint(..)
     , PrintLaTeX(..)
     , printText
     , isChar
     , textStyle
-    -- , printId
-    ) 
+    )
     where
 
 import Common.Id
@@ -41,11 +40,11 @@ printText = printText0 emptyGlobalAnnos
 
 -- | a more pretty alternative for shows
 showPretty :: PrettyPrint a => a -> ShowS
-showPretty = shows . printText0 emptyGlobalAnnos 
+showPretty = shows . printText0 emptyGlobalAnnos
 
 textStyle :: Style
-textStyle = style {lineLength=80, ribbonsPerLine= 1.19} 
--- maximum line length 80 with 67 printable chars (up to 13 indentation chars) 
+textStyle = style {lineLength=80, ribbonsPerLine= 1.19}
+-- maximum line length 80 with 67 printable chars (up to 13 indentation chars)
 
 renderText :: Maybe Int -> Doc -> String
 renderText mi d = fullRender (mode           textStyle')
@@ -53,9 +52,9 @@ renderText mi d = fullRender (mode           textStyle')
                              (ribbonsPerLine textStyle')
                              string_txt_comp
                              ""
-                             d 
-                  
-    where textStyle' = textStyle {lineLength = 
+                             d
+
+    where textStyle' = textStyle {lineLength =
                                         maybe (lineLength textStyle) id mi}
           string_txt_comp td = case td of
                                Chr  c -> showChar   c
