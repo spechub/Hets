@@ -64,6 +64,10 @@ data ProverStatusColour
   | Blue
    deriving (Bounded,Enum,Show)
 
+data SelButtonFrame = SBF (Event ()) (Event ()) [Button]
+
+data SelAllListbox = SAL SelButtonFrame (ListBox String)
+
 {- |
   Generates a ('ProverStatusColour', 'String') tuple.
 -}
@@ -302,7 +306,8 @@ doSelectProverPath s lb =
                                  Just (Map.keys (proversMap s) !! index)) 
                             selected
                  })
-newSelectButtonsFrame :: Container par => par -> IO (Event (), Event ())
+
+newSelectButtonsFrame :: Container par => par -> IO SelButtonFrame
 newSelectButtonsFrame b3 =
   do 
   selFrame <- newFrame b3 []
@@ -320,10 +325,11 @@ newSelectButtonsFrame b3 =
   selectAll <- clicked selectAllButton
   deselectAll <- clicked deselectAllButton
 
-  return (selectAll,deselectAll)
+  return (SBF selectAll deselectAll [deselectAllButton,selectAllButton])
+
 newExtSelListBoxFrame :: (Container par) =>
                          par -> String -> Distance 
-                      -> IO (Event (), Event (), ListBox String)
+                      -> IO SelAllListbox
 newExtSelListBoxFrame b2 title hValue =
   do
   left <- newFrame b2 []
@@ -346,12 +352,14 @@ newExtSelListBoxFrame b2 title hValue =
   sb <- newScrollBar lbFrame []
   pack sb [Expand On, Side AtRight, Fill Y]
   lb # scrollbar Vertical sb
+
   -- buttons for goal selection
-  (selectAll,deselectAll) <- newSelectButtonsFrame b3
-  return (selectAll,deselectAll,lb)
+  sbf <- newSelectButtonsFrame b3
+  return (SAL sbf lb)
+
+
 
 -- *** Main GUI
-
 {- |
   Invokes the GUI.
 -}
@@ -386,7 +394,7 @@ proofManagementGUI lid proveF fineGrainedSelectionF
   -- KnownProvers.showKnownProvers knownProvers
   -- initial backing data structure
   initState <- initialState lid thName th knownProvers comorphList
-  stateRef <- newIORef initState
+  stateRef <- newIORef initState 
 
   -- main window
   main <- createToplevel [text $ thName ++ " - Select Goal(s) and Prove"]
@@ -401,7 +409,8 @@ proofManagementGUI lid proveF fineGrainedSelectionF
   pack b2 [Expand On, Fill Both]
 
   -- ListBox for goal selection
-  (selectAllGoals,deselectAllGoals,lb) <- newExtSelListBoxFrame b2 "Goals:" 15
+  (SAL (SBF selectAllGoals deselectAllGoals goalBtns) lb) 
+      <- newExtSelListBoxFrame b2 "Goals:" 15
  
   -- put the labels in the listbox
   populateGoalsListBox lb (goalsView initState)
@@ -500,10 +509,10 @@ proofManagementGUI lid proveF fineGrainedSelectionF
   icBox <- newHBox icomp []
   pack icBox [Expand On, Fill Both]
 
-  (selectAllAxs,deselectAllAxs,lbAxs) 
-      <- newExtSelListBoxFrame icBox "Axioms to include:" 10
+  (SAL (SBF selectAllAxs deselectAllAxs axsBtns) lbAxs) 
+       <- newExtSelListBoxFrame icBox "Axioms to include:" 10
 
-  (selectAllThs,deselectAllThs,lbThs) 
+  (SAL (SBF selectAllThs deselectAllThs thsBtns) lbThs) 
       <- newExtSelListBoxFrame icBox "Theorems to include if proven:" 10
 
   populateAxiomsList lbAxs initState
@@ -528,6 +537,11 @@ proofManagementGUI lid proveF fineGrainedSelectionF
   pack closeButton [Expand Off, Fill None, Side AtRight,PadX (pp 13)]
 
   updateDisplay initState False lb pathsLb statusLabel
+
+  let wids = [EnW pathsLb,EnW lbThs,EnW lb,EnW lbAxs] ++ 
+             map EnW (axsBtns++goalBtns++thsBtns++
+                      [closeButton,displayGoalsButton,proveButton,
+                       proofDetailsButton,moreButton])
 
   -- events
   (selectProverPath, _) <- bindSimple pathsLb (ButtonPress (Just 1))
@@ -581,6 +595,7 @@ proofManagementGUI lid proveF fineGrainedSelectionF
             s <- readIORef stateRef
 	    let s' = s{proverRunning = True}
 	    updateDisplay s' True lb pathsLb statusLabel
+            disableWids wids
             prState <- (updateStateGetSelectedSens s' lbAxs lbThs >>=
                         (\ si -> updateStateGetSelectedGoals si lb))
 	    Result.Result ds ms'' <- fineGrainedSelectionF prState
@@ -588,6 +603,7 @@ proofManagementGUI lid proveF fineGrainedSelectionF
                    Nothing -> fail "fineGrainedSelection returned Nothing"
                    Just res -> return res
 	    let s''' = s'' {proverRunning = False,accDiags = accDiags s'' ++ ds}
+            enableWids wids
 	    updateDisplay s''' True lb pathsLb statusLabel
 	    writeIORef stateRef s'''
             done)
@@ -595,6 +611,7 @@ proofManagementGUI lid proveF fineGrainedSelectionF
             s <- readIORef stateRef
 	    let s' = s{proverRunning = True}
 	    updateDisplay s' True lb pathsLb statusLabel
+            disableWids wids
             prState <- (updateStateGetSelectedSens s' lbAxs lbThs >>=
                         (\ si -> updateStateGetSelectedGoals si lb))
             -- putStrLn (show (includedAxioms prState)++
@@ -604,6 +621,7 @@ proofManagementGUI lid proveF fineGrainedSelectionF
                    Nothing -> fail "proveF returned Nothing"
                    Just res -> return res
 	    let s''' = s''{proverRunning = False,accDiags = accDiags s'' ++ ds}
+            enableWids wids
 	    updateDisplay s''' True lb pathsLb statusLabel
 	    writeIORef stateRef s'''
             done)

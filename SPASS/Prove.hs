@@ -618,6 +618,10 @@ spassProveGUI thName th = do
   saveConfiguration <- clicked saveButton
   exit <- clicked exitButton
 
+  let wids = [EnW lb, EnW timeEntry, EnW timeSpinner] ++ 
+             map EnW [proveButton,detailsButton,helpButton,
+                      saveButton,exitButton]
+
   -- event handlers
   spawnEvent 
     (forever
@@ -652,7 +656,9 @@ spassProveGUI thName th = do
                 let s' = s {configsMap = adjustOrSetConfig (setExtraOpts (words extraOptions)) goal (configsMap s)}
                 statusLabel # text (snd statusRunning)
                 statusLabel # foreground (show $ fst statusRunning)
+                disableWids wids
                 (retval, (res, output)) <- runSpass lp' (getConfig goal (configsMap s')) thName (head afterThis)
+                enableWids wids
                 case retval of
                   SpassError message -> errorMess message
                   _ -> return ()

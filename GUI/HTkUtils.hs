@@ -174,3 +174,11 @@ indicatorFromBasicProof p = case p of
   Conjectured     -> LBIndicatorConjectured
   Handwritten     -> LBIndicatorHandwritten
 
+-- | existential type for widgets that can be enabled and disabled
+data EnableWid = forall wid . HasEnable wid => EnW wid        
+
+enableWids :: [EnableWid] -> IO ()
+enableWids = mapM_ ( \ ew -> case ew of EnW w -> enable w >> return ())
+
+disableWids :: [EnableWid] -> IO ()
+disableWids = mapM_ ( \ ew -> case ew of EnW w -> disable w >> return ())
