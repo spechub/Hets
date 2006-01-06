@@ -222,6 +222,12 @@ data DGLinkType = LocalDef
               -- S1 <--m1-- S --m2--> S2
               deriving (Eq,Show)
 
+thmLinkStatus :: DGLinkType -> Maybe ThmLinkStatus
+thmLinkStatus (LocalThm s _ _) = Just s
+thmLinkStatus (GlobalThm s _ _) = Just s
+thmLinkStatus (HidingThm _ s) = Just s
+thmLinkStatus _ = Nothing
+
 -- | Coarser equality ignoring the proof status
 eqDGLinkType :: DGLinkType -> DGLinkType -> Bool
 LocalDef `eqDGLinkType` LocalDef = True
