@@ -311,7 +311,7 @@ getProofBasis dg (src,tgt,label) =
   where newProofBasis = 
          case lookup tgt (lsuc dg src) >>= (thmLinkStatus . dgl_type) of
            Just (Proven _ proofBasis) -> proofBasis
-           Nothing -> []
+           _ -> []
 
 {- returns all proven paths from the given list -}
 filterProvenPaths :: [[LEdge DGLinkLab]] -> [[LEdge DGLinkLab]]
@@ -344,3 +344,13 @@ adoptEdgesAux dgraph (oldEdge@(src,tgt,edgelab):list) node areIngoingEdges =
     auxGraph = insEdge newEdge (delLEdge oldEdge dgraph)
     (finalGraph,furtherChanges) 
         = adoptEdgesAux auxGraph list node areIngoingEdges
+
+{- adjusts a node whose label is changed -}
+adjustNode :: DGraph -> (Node,DGNodeLab) -> DGNodeLab -> (DGraph, [DGChange])
+adjustNode dgraph (node,oldLab) newLab = 
+  let edges = nub (inn dgraph node ++ out dgraph node)
+      changes = map DeleteEdge edges ++ [DeleteNode (node,oldLab)]
+                ++ [InsertNode (node,newLab)] ++ map InsertEdge edges
+      newDgraph = insEdges edges $ insNode (node,newLab) $
+                  delNode node $ dgraph
+   in (newDgraph,changes)
