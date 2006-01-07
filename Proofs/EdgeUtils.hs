@@ -129,7 +129,7 @@ isIdentityEdge (src,tgt,edgeLab) libEnv dgraph =
   where nodeLab = lab' $ safeContext "Proofs.EdgeUtils.isIdentityEdge" 
                   dgraph src
 
-{- returns the DGLinkLab of the given LEdge -}
+{- | returns the DGLinkLab of the given LEdge -}
 getLabelOfEdge :: (LEdge b) -> b
 getLabelOfEdge (_,_,label) = label
 
@@ -137,7 +137,7 @@ getLabelOfEdge (_,_,label) = label
 -- methods that calculate paths of certain types
 -- ----------------------------------------------
 
-{- returns all paths consisting of edges of the given type in the given
+{- | returns all paths consisting of edges of the given type in the given
    development graph-}
 getAllPathsOfType :: DGraph -> (LEdge DGLinkLab -> Bool) -> [[LEdge DGLinkLab]]
 getAllPathsOfType dgraph isType =
@@ -151,7 +151,7 @@ getAllPathsOfType dgraph isType =
     targets = nub (map getTargetNode edgesOfType)
 
 
-{- returns a list of all proven global paths of the given morphism between
+{- | returns a list of all proven global paths of the given morphism between
    the given source and target node-}
 getAllGlobPathsOfMorphismBetween :: DGraph -> GMorphism -> Node -> Node
                                           -> [[LEdge DGLinkLab]]
@@ -162,7 +162,7 @@ getAllGlobPathsOfMorphismBetween dgraph morphism src tgt =
       allPaths = getAllGlobPathsBetween dgraph src tgt
 
 
-{- returns all paths from the given list whose morphism is equal to the
+{- | returns all paths from the given list whose morphism is equal to the
    given one-}
 filterPathsByMorphism :: GMorphism -> [[LEdge DGLinkLab]]
                       -> [[LEdge DGLinkLab]]
@@ -170,7 +170,7 @@ filterPathsByMorphism morphism paths =
   [path| path <- paths, (calculateMorphismOfPath path) == (Just morphism)]
 
 
-{- returns all paths consisting of global edges only
+{- | returns all paths consisting of global edges only
    or
    of one local edge followed by any number of global edges-}
 getAllLocGlobPathsBetween :: DGraph -> Node -> Node -> [[LEdge DGLinkLab]]
@@ -188,14 +188,14 @@ getAllLocGlobPathsBetween dgraph src tgt =
     globPaths = getAllPathsOfTypesBetween dgraph isGlobalEdge src tgt []
 
 
-{- returns all paths of globalDef edges or globalThm edges 
+{- | returns all paths of globalDef edges or globalThm edges 
    between the given source and target node -}
 getAllGlobPathsBetween :: DGraph -> Node -> Node -> [[LEdge DGLinkLab]]
 getAllGlobPathsBetween dgraph src tgt =
   getAllPathsOfTypesBetween dgraph (liftOr isGlobalDef isGlobalThm) src tgt []
 
 
-{- returns all paths consiting of edges of the given type between the
+{- | returns all paths consiting of edges of the given type between the
    given node -}
 getAllPathsOfTypeBetween :: DGraph -> (LEdge DGLinkLab -> Bool) -> Node
                             -> Node -> [[LEdge DGLinkLab]]
@@ -203,7 +203,7 @@ getAllPathsOfTypeBetween dgraph isType src tgt =
   getAllPathsOfTypesBetween dgraph isType src tgt []
 
 
-{- returns all paths consisting of edges of the given types between
+{- | returns all paths consisting of edges of the given types between
    the given nodes -}
 getAllPathsOfTypesBetween :: DGraph -> (LEdge DGLinkLab -> Bool) -> Node 
                              -> Node -> [LEdge DGLinkLab]
@@ -246,7 +246,7 @@ getAllPathsOfTypeFromAux path dgraph src isType =
 -- methods to determine the inserted edges in the given dgchange
 -- --------------------------------------------------------------
 
-{- returns all insertions of edges from the given list of changes -}
+{- | returns all insertions of edges from the given list of changes -}
 getInsertedEdges :: [DGChange] -> [LEdge DGLinkLab]
 getInsertedEdges [] = []
 getInsertedEdges (change:list) = 
@@ -258,7 +258,7 @@ getInsertedEdges (change:list) =
 -- methods to check and select proof basis
 -- ----------------------------------------
 
-{- determines all proven paths in the given list and tries to select a
+{- | determines all proven paths in the given list and tries to select a
    proof basis from these (s. selectProofBasisAux);
    if this fails the same is done for the rest of the given paths, i.e.
    for the unproven ones -}
@@ -275,7 +275,7 @@ selectProofBasis dg ledge paths =
     provenProofBasis = selectProofBasisAux dg ledge provenPaths
     unprovenPaths = filter (`notElem` provenPaths) paths
 
-{- selects the first path that does not form a proof cycle with the given
+{- | selects the first path that does not form a proof cycle with the given
  label (if such a path exits) and returns the labels of its edges -}
 selectProofBasisAux :: DGraph -> LEdge DGLinkLab -> [[LEdge DGLinkLab]]
                     -> [LEdge DGLinkLab]
@@ -286,7 +286,7 @@ selectProofBasisAux dg ledge (path:list) =
     where b = calculateProofBasis dg path
 
 
-{- calculates the proofBasis of the given path,
+{- | calculates the proofBasis of the given path,
  i.e. the list of all DGLinkLabs the proofs of the edges contained in the path
  are based on, plus the DGLinkLabs of the edges themselves;
  duplicates are not removed here, but in the calling method
@@ -297,7 +297,7 @@ calculateProofBasis dg (ledge:list) =
   ledge:((getProofBasis dg ledge)++(calculateProofBasis dg list))
 
 
-{- returns the proofBasis contained in the given DGLinkLab -}
+{- | returns the proofBasis contained in the given DGLinkLab -}
 getProofBasis :: DGraph -> LEdge DGLinkLab -> [LEdge DGLinkLab]
 getProofBasis dg (src,tgt,label) =
   case dgl_type label of 
@@ -313,13 +313,13 @@ getProofBasis dg (src,tgt,label) =
            Just (Proven _ proofBasis) -> proofBasis
            _ -> []
 
-{- returns all proven paths from the given list -}
+{- | returns all proven paths from the given list -}
 filterProvenPaths :: [[LEdge DGLinkLab]] -> [[LEdge DGLinkLab]]
 filterProvenPaths = filter (all isProven)
 
 
 
-{- adopts the edges of the old node to the new node -}
+{- | adopts the edges of the old node to the new node -}
 adoptEdges :: DGraph -> Node -> Node -> (DGraph, [DGChange])
 adoptEdges dgraph oldNode newNode = 
   let ingoingEdges = inn dgraph oldNode
@@ -330,7 +330,7 @@ adoptEdges dgraph oldNode newNode =
           = adoptEdgesAux auxGraph outgoingEdges newNode False
   in (finalGraph, changes ++ furtherChanges)
 
-{- auxiliary method for adoptEdges -}
+{- | auxiliary method for adoptEdges -}
 adoptEdgesAux :: DGraph -> [LEdge DGLinkLab] -> Node -> Bool
                      -> (DGraph,[DGChange])
 adoptEdgesAux dgraph [] _ _ = (dgraph,[])
@@ -345,7 +345,7 @@ adoptEdgesAux dgraph (oldEdge@(src,tgt,edgelab):list) node areIngoingEdges =
     (finalGraph,furtherChanges) 
         = adoptEdgesAux auxGraph list node areIngoingEdges
 
-{- adjusts a node whose label is changed -}
+{- | adjusts a node whose label is changed -}
 adjustNode :: DGraph -> (Node,DGNodeLab) -> DGNodeLab -> (DGraph, [DGChange])
 adjustNode dgraph (node,oldLab) newLab = 
   let edges = nub (inn dgraph node ++ out dgraph node)
