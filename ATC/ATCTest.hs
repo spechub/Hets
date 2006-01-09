@@ -16,17 +16,20 @@ main = do args <- getArgs
 testATC :: FilePath -> IO ()
 testATC fp = do
   libdefn <- read_sml_ATerm fp
-  putStrLn $ show $ show libdefn == show (readWriteATerm libdefn)
-  ld <- readWriteATerm' libdefn
-  putStrLn $ show $ show libdefn == show ld
+  ld1 <- readWriteATerm1 libdefn
+  putStrLn $ show $ show libdefn == show ld1
+  ld2 <- readWriteATerm2 libdefn
+  putStrLn $ show $ show libdefn == show ld2
 
 
-readWriteATerm :: LIB_DEFN -> LIB_DEFN
-readWriteATerm ld  = let  att1 = fst $ toShATerm emptyATermTable ld
-                     in fromShATerm att1
+readWriteATerm1 :: LIB_DEFN -> IO LIB_DEFN
+readWriteATerm1 ld  = do
+    att0 <- newATermTable
+    (att1, _) <- toShATerm' att0 ld
+    return $ fromShATerm att1
 
-readWriteATerm' :: LIB_DEFN -> IO LIB_DEFN
-readWriteATerm' ld  = do
+readWriteATerm2 :: LIB_DEFN -> IO LIB_DEFN
+readWriteATerm2 ld  = do
     str <- toShATermString ld
     return $ maybe (error "readWriteATerm'")
                          id $ maybeResult $ fromShATermString str

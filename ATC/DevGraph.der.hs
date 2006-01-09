@@ -62,13 +62,6 @@ instance Typeable G_theory where
     typeOf _ = mkTyConApp _tc_G_theoryTc []
 
 instance ShATermConvertible BasicProof where
-    toShATerm att0 (BasicProof lid p) =
-         case toShATerm att0 (language_name lid) of { (att1,i1) ->
-         case toShATerm att1 p of { (att2,i2) ->
-            addATerm (ShAAppl "BasicProof" [i1,i2] []) att2}}
-    toShATerm att0 o =
-         case toShATerm att0 (show o) of { (att1, i1) ->
-            addATerm (ShAAppl "BasicProof" [i1] []) att1}
     toShATermAux att0 (BasicProof lid p) = do
          (att1,i1) <- toShATerm' att0 (language_name lid)
          (att2,i2) <- toShATerm' att1 p
@@ -93,11 +86,6 @@ instance ShATermConvertible BasicProof where
             u -> fromShATermError "BasicProof" u
 
 instance ShATermConvertible G_theory where
-    toShATerm att0 (G_theory lid sign sens) =
-         case toShATerm att0 (language_name lid) of { (att1,i1) ->
-         case toShATerm att1 sign of { (att2,i2) ->
-         case toShATerm att2 sens of { (att3,i3) ->
-           addATerm (ShAAppl "G_theory" [i1,i2,i3] []) att3}}}
     toShATermAux att0 (G_theory lid sign sens) = do
          (att1,i1) <- toShATerm' att0 (language_name lid)
          (att2,i2) <- toShATerm' att1 sign

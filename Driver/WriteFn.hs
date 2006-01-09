@@ -112,10 +112,9 @@ writeShATermFile fp atcon = toShATermString atcon >>= writeFile fp
 versionedATermTable :: (ShATermConvertible a) => a -> IO ATermTable
 versionedATermTable atcon = do
     att0 <- newATermTable
-    case toShATerm att0 hetsVersion of
-      (att1, versionnr) -> do
-        (att2, aterm) <- toShATermAux att1 atcon
-        return $ fst $ addATerm (ShAAppl "hets" [versionnr,aterm] []) att2
+    (att1, versionnr) <- toShATermAux att0 hetsVersion
+    (att2, aterm) <- toShATermAux att1 atcon
+    return $ fst $ addATerm (ShAAppl "hets" [versionnr,aterm] []) att2
 
 writeShATermFileSDoc :: (ShATermConvertible a) => FilePath -> a -> IO ()
 writeShATermFileSDoc fp atcon = do

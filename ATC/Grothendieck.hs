@@ -75,10 +75,6 @@ atcLogicLookup :: String -> String -> AnyLogic
 atcLogicLookup s = lookupLogic_in_LG $ "ShATermConvertible " ++ s ++ ":"
 
 instance ShATermConvertible G_basic_spec where
-     toShATerm att0 (G_basic_spec lid basic_spec) =
-         case toShATerm att0 (language_name lid) of { (att1,i1) ->
-         case toShATerm att1 basic_spec of { (att2,i2) ->
-           addATerm (ShAAppl "G_basic_spec" [i1,i2] []) att2}}
      toShATermAux att0 (G_basic_spec lid basic_spec) = do
          (att1,i1) <- toShATerm' att0 (language_name lid)
          (att2,i2) <- toShATerm' att1 basic_spec
@@ -93,10 +89,6 @@ instance ShATermConvertible G_basic_spec where
             u -> fromShATermError "G_basic_spec" u
 
 instance ShATermConvertible G_sign where
-     toShATerm att0 (G_sign lid sign) =
-         case toShATerm att0 (language_name lid) of { (att1,i1) ->
-         case toShATerm att1 sign of { (att2,i2) ->
-           addATerm (ShAAppl "G_sign" [i1,i2] []) att2}}
      toShATermAux att0 (G_sign lid sign) = do
          (att1,i1) <- toShATerm' att0 (language_name lid)
          (att2,i2) <- toShATerm' att1 sign
@@ -111,10 +103,6 @@ instance ShATermConvertible G_sign where
             u -> fromShATermError "G_sign" u
 
 instance ShATermConvertible G_ext_sign where
-     toShATerm att0 (G_ext_sign lid sign _) =
-         case toShATerm att0 (language_name lid) of { (att1,i1) ->
-         case toShATerm att1 sign of { (att2,i2) ->
-           addATerm (ShAAppl "G_ext_sign" [i1,i2] []) att2}}
      toShATermAux att0 (G_ext_sign lid sign _) = do
          (att1,i1) <- toShATerm' att0 (language_name lid)
          (att2,i2) <- toShATerm' att1 sign
@@ -129,10 +117,6 @@ instance ShATermConvertible G_ext_sign where
             u -> fromShATermError "G_ext_sign" u
 
 instance ShATermConvertible G_sign_list where
-     toShATerm att0 (G_sign_list lid signs) =
-         case toShATerm att0 (language_name lid) of { (att1,i1) ->
-         case toShATerm att1 signs of { (att2,i2) ->
-           addATerm (ShAAppl "G_sign_list" [i1,i2] []) att2}}
      toShATermAux att0 (G_sign_list lid signs) = do
          (att1,i1) <- toShATerm' att0 (language_name lid)
          (att2,i2) <- toShATerm' att1 signs
@@ -147,10 +131,6 @@ instance ShATermConvertible G_sign_list where
             u -> fromShATermError "G_sign_list" u
 
 instance ShATermConvertible G_symbol where
-     toShATerm att0 (G_symbol lid symbol) =
-         case toShATerm att0 (language_name lid) of { (att1,i1) ->
-         case toShATerm att1 symbol of { (att2,i2) ->
-           addATerm (ShAAppl "G_symbol" [i1,i2] []) att2}}
      toShATermAux att0 (G_symbol lid symbol) = do
          (att1,i1) <- toShATerm' att0 (language_name lid)
          (att2,i2) <- toShATerm' att1 symbol
@@ -165,10 +145,6 @@ instance ShATermConvertible G_symbol where
             u -> fromShATermError "G_symbol" u
 
 instance ShATermConvertible G_symb_items_list where
-     toShATerm att0 (G_symb_items_list lid symb_items) =
-         case toShATerm att0 (language_name lid) of { (att1,i1) ->
-         case toShATerm att1 symb_items of { (att2,i2) ->
-           addATerm (ShAAppl "G_symb_items_list" [i1,i2] []) att2 }}
      toShATermAux att0 (G_symb_items_list lid symb_items) = do
          (att1,i1) <- toShATerm' att0 (language_name lid)
          (att2,i2) <- toShATerm' att1 symb_items
@@ -183,10 +159,6 @@ instance ShATermConvertible G_symb_items_list where
             u -> fromShATermError "G_symb_items_list" u
 
 instance ShATermConvertible G_symb_map_items_list where
-     toShATerm att0 (G_symb_map_items_list lid symb_map_items) =
-         case toShATerm att0 (language_name lid) of { (att1,i1) ->
-         case toShATerm att1 symb_map_items of { (att2,i2) ->
-           addATerm (ShAAppl "G_symb_map_items_list" [i1,i2] []) att2}}
      toShATermAux att0 (G_symb_map_items_list lid symb_map_items) = do
          (att1,i1) <- toShATerm' att0 (language_name lid)
          (att2,i2) <- toShATerm' att1 symb_map_items
@@ -202,10 +174,6 @@ instance ShATermConvertible G_symb_map_items_list where
             u -> fromShATermError "G_symb_map_items_list" u
 
 instance ShATermConvertible G_diagram where
-     toShATerm att0 (G_diagram lid diagram) =
-         case toShATerm att0 (language_name lid) of { (att1,i1) ->
-         case toShATerm att1 diagram of { (att2,i2) ->
-           addATerm (ShAAppl "G_diagram" [i1,i2] []) att2}}
      toShATermAux att0 (G_diagram lid diagram) = do
          (att1,i1) <- toShATerm' att0 (language_name lid)
          (att2,i2) <- toShATerm' att1 diagram
@@ -220,10 +188,6 @@ instance ShATermConvertible G_diagram where
             u -> fromShATermError "G_diagram" u
 
 instance ShATermConvertible G_sublogics where
-     toShATerm att0 (G_sublogics lid sublogics) =
-         case toShATerm att0 (language_name lid)  of { (att1,i1) ->
-         case toShATerm att1 sublogics of { (att2,i2) ->
-           addATerm (ShAAppl "G_sublogics" [i1,i2] []) att2}}
      toShATermAux att0 (G_sublogics lid sublogics) = do
          (att1,i1) <- toShATerm' att0 (language_name lid)
          (att2,i2) <- toShATerm' att1 sublogics
@@ -238,10 +202,6 @@ instance ShATermConvertible G_sublogics where
             u -> fromShATermError "G_sublogics" u
 
 instance ShATermConvertible G_morphism where
-     toShATerm att0 (G_morphism lid morphism) =
-         case toShATerm att0 (language_name lid) of { (att1,i1) ->
-         case toShATerm att1 morphism of { (att2,i2) ->
-           addATerm (ShAAppl "G_morphism" [i1,i2] []) att2}}
      toShATermAux att0 (G_morphism lid morphism) = do
          (att1,i1) <- toShATerm' att0 (language_name lid)
          (att2,i2) <- toShATerm' att1 morphism
@@ -256,9 +216,6 @@ instance ShATermConvertible G_morphism where
             u -> fromShATermError "G_morphism" u
 
 instance ShATermConvertible AnyComorphism where
-     toShATerm att0 (Comorphism cid) =
-         case toShATerm att0 (language_name cid) of { (att1,i1) ->
-           addATerm (ShAAppl "Comorphism" [i1] []) att1}
      toShATermAux att0 (Comorphism cid) = do
          (att1,i1) <- toShATerm' att0 (language_name cid)
          return $ addATerm (ShAAppl "Comorphism" [i1] []) att1
@@ -270,11 +227,6 @@ instance ShATermConvertible AnyComorphism where
             u -> fromShATermError "AnyComorphism" u
 
 instance ShATermConvertible GMorphism where
-     toShATerm att0 (GMorphism cid sign1 morphism2) =
-         case toShATerm att0 (language_name cid) of { (att1,i1) ->
-         case toShATerm att1 sign1 of { (att2,i2) ->
-         case toShATerm att2 morphism2 of { (att3,i3) ->
-           addATerm (ShAAppl "GMorphism" [i1,i2,i3] []) att3}}}
      toShATermAux att0 (GMorphism cid sign1 morphism2) = do
          (att1,i1) <- toShATerm' att0 (language_name cid)
          (att2,i2) <- toShATerm' att1 sign1
@@ -292,16 +244,13 @@ instance ShATermConvertible GMorphism where
             u -> fromShATermError "GMorphism" u
 
 instance ShATermConvertible Grothendieck where
-     toShATerm att0 Grothendieck =
-         addATerm (ShAAppl "Grothendieck" [] []) att0
+     toShATermAux att0 Grothendieck =
+         return $ addATerm (ShAAppl "Grothendieck" [] []) att0
      fromShATermAux ix att = case getShATerm ix att of
                       ShAAppl "Grothendieck" [] _ -> (att, Grothendieck)
                       u -> fromShATermError "Grothendiek" u
 
 instance ShATermConvertible AnyLogic where
-     toShATerm att0 (Logic lid) =
-         case toShATerm att0 (language_name lid) of { (att1,i1) ->
-           addATerm (ShAAppl "Logic" [i1] []) att1}
      toShATermAux att0 (Logic lid) = do
          (att1,i1) <- toShATerm' att0 (language_name lid)
          return $ addATerm (ShAAppl "Logic" [i1] []) att1

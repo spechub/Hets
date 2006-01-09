@@ -49,7 +49,7 @@ makeGetPosFn b =
 -- begin of ShATermConvertible derivation
 shatermfn dat
   = instanceSkeleton "ShATermConvertible"
-      [ (makeToShATerm, empty), (makeToShATerm', empty) ]
+      [ (makeToShATerm, empty) ]
       dat
       $$ makeFromShATermFn dat
 
@@ -62,32 +62,16 @@ pair f s = parens $ f <> comma <+> s
 makeToShATerm b
   = let ts = types b
         vs = varNames ts
-    in text "toShATerm" <+> att 0 <+>
-       ppCons b vs <+>
-       equals $$ nest 4
-       (vcat (zipWith childToShATerm vs [0 :: Int ..]) $$
-            text "addATerm (ShAAppl" <+>
-            doubleQuotes (text (constructor b)) <+>
-            bracketList (varNames' ts) <+> text "[])" <+>
-            att (length ts) <+>
-            closeBraces ts)
-
-childToShATerm v i = text "case" <+> text "toShATerm" <+> att i <+> v
-    <+> text "of {" <+> pair (att $ i + 1) (addPrime v) <+> rArrow
-
-makeToShATerm' b
-  = let ts = types b
-        vs = varNames ts
     in text "toShATermAux" <+> att 0 <+>
        ppCons b vs <+>
        equals <+> text "do" $$ nest 4
-       (vcat (zipWith childToShATerm' vs [0 :: Int ..]) $$
+       (vcat (zipWith childToShATerm vs [0 :: Int ..]) $$
             text "return $ addATerm (ShAAppl" <+>
             doubleQuotes (text (constructor b)) <+>
             bracketList (varNames' ts) <+> text "[])" <+>
             att (length ts))
 
-childToShATerm' v i = pair (att $ i + 1) (addPrime v) <+> lArrow
+childToShATerm v i = pair (att $ i + 1) (addPrime v) <+> lArrow
     <+> text "toShATerm'" <+> att i <+> v
 
 makeFromShATermFn dat =

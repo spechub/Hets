@@ -23,12 +23,12 @@ instance Typeable SrcLoc where
 
 instance (ShATermConvertible a, ShATermConvertible b)
     => ShATermConvertible (Either a b) where
-    toShATerm att0 (Left aa) =
-        case toShATerm att0 aa of { (att1,aa') ->
-        addATerm (ShAAppl "Left" [ aa' ] []) att1 }
-    toShATerm att0 (Right aa) =
-        case toShATerm att0 aa of { (att1,aa') ->
-        addATerm (ShAAppl "Right" [ aa' ] []) att1 }
+    toShATermAux att0 (Left aa) = do
+        (att1,aa') <- toShATerm' att0 aa
+        return $ addATerm (ShAAppl "Left" [ aa' ] []) att1
+    toShATermAux att0 (Right aa) = do
+        (att1,aa') <- toShATerm' att0 aa
+        return $ addATerm (ShAAppl "Right" [ aa' ] []) att1
     fromShATermAux ix att =
         case getShATerm ix att of
             ShAAppl "Left" [ aa ] _ ->
@@ -40,12 +40,12 @@ instance (ShATermConvertible a, ShATermConvertible b)
             u -> fromShATermError "Either" u
 
 instance ShATermConvertible SrcLoc where
-    toShATerm att0 (SrcLoc aa ab ac ad) =
-        case toShATerm att0 aa of { (att1,aa') ->
-        case toShATerm att1 ab of { (att2,ab') ->
-        case toShATerm att2 ac of { (att3,ac') ->
-        case toShATerm att3 ad of { (att4,ad') ->
-        addATerm (ShAAppl "SrcLoc" [ aa',ab',ac',ad' ] []) att4 }}}}
+    toShATermAux att0 (SrcLoc aa ab ac ad) = do
+        (att1,aa') <- toShATerm' att0 aa
+        (att2,ab') <- toShATerm' att1 ab
+        (att3,ac') <- toShATerm' att2 ac
+        (att4,ad') <- toShATerm' att3 ad
+        return $ addATerm (ShAAppl "SrcLoc" [ aa',ab',ac',ad' ] []) att4
     fromShATermAux ix att0 =
         case getShATerm ix att0 of
             ShAAppl "SrcLoc" [ aa,ab,ac,ad ] _ ->

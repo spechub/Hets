@@ -20,18 +20,18 @@ getTenRandoms = getRand 10
 
 main :: IO ()
 main = do args <- getArgs
-          setStdGen (mkStdGen 50) -- setting an initial RandomGenerator 
-                                  -- is like setting the seed in C 
+          setStdGen (mkStdGen 50) -- setting an initial RandomGenerator
+                                  -- is like setting the seed in C
 --        tens <- getTenRandoms
         --  putStrLn (show tens)
           --fail "stop"
           let (cmd,files) = (head args,tail args)
           let cmdFun = case cmd of
                        "ReadWrite" -> testATC
-                       cmds 
-                           | isPrefixOf "BigMap" cmds  -> 
+                       cmds
+                           | isPrefixOf "BigMap" cmds  ->
                                testDDataMap (drop 6 cmds)
-                           | isPrefixOf "BigList" cmds  -> 
+                           | isPrefixOf "BigList" cmds  ->
                                testListConv (drop 7 cmds)
                            | isPrefixOf "CheckBigMap" cmds ->
                                checkDDataMap (drop 11 cmds)
@@ -43,7 +43,7 @@ main = do args <- getArgs
 usage :: String -> FilePath -> IO ()
 usage cmd _ = do putStrLn ("unknown command: "++cmd)
                  putStrLn ("Known commands are: ReadWrite, BigMap, BigRel, BigSet")
-                 fail "no known command given" 
+                 fail "no known command given"
 
 generateRandomLists :: String -> IO [(Int,Int)]
 generateRandomLists upstr  = do
@@ -74,10 +74,10 @@ testDDataMap :: String ->  FilePath -> IO ()
 testDDataMap upperstr fp = do
                   int_list <- generateRandomLists upperstr
                   let int_map = (Map.fromList int_list)
-                      (int_att,selectedATermIndex) =
-                          (toShATerm emptyATermTable int_map)
+                  att0 <- newATermTable
+                  (int_att,selectedATermIndex) <- toShATerm' att0 int_map
                   putStrLn $ show (getTopIndex int_att,selectedATermIndex)
-                  writeFileSDoc fp $ 
+                  writeFileSDoc fp $
                        writeSharedATermSDoc int_att
                   putStrLn "File written\nstart reading"
                   str <- readFile fp
@@ -102,10 +102,11 @@ checkDDataMap upperstr fp = do
 testListConv :: String ->  FilePath -> IO ()
 testListConv upperstr fp = do
                   int_list <- generateRandomLists upperstr
-                  let (int_att,selectedATermIndex) =
-                          (toShATerm emptyATermTable (reverse int_list))
+                  att0 <- newATermTable
+                  (int_att,selectedATermIndex) <-
+                          toShATerm' att0 $ reverse int_list
                   putStrLn $ show (getTopIndex int_att,selectedATermIndex)
-                  writeFileSDoc fp $ 
+                  writeFileSDoc fp $
                        writeSharedATermSDoc int_att
                   putStrLn "File written\nstart reading"
                   str <- readFile fp
@@ -136,8 +137,8 @@ testATC fp = do str <- readFile fp
                 let att = readATerm str
                 putStrLn ("Reading File "++fp++" ...")
                 let fp' = resultFP fp
-                putStrLn ("Writing File "++fp'++" ...")                
+                putStrLn ("Writing File "++fp'++" ...")
                 writeFileSDoc fp' (writeSharedATermSDoc att)
 
-                
+
 
