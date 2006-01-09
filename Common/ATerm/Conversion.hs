@@ -1,4 +1,3 @@
-{-# OPTIONS -fscoped-type-variables #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) Klaus Lüttich, C.Maeder, Uni Bremen 2002-2006
@@ -23,32 +22,17 @@ class Typeable t => ShATermConvertible t where
     -- functions for conversion to an ATermTable
     toShATerm       :: ATermTable -> t -> (ATermTable, Int)
     toShATermList   :: ATermTable -> [t] -> (ATermTable, Int)
-    toShATerm'      :: ATermTable -> t -> IO (ATermTable, Int)
     toShATermAux    :: ATermTable -> t -> IO (ATermTable, Int)
     toShATermList'  :: ATermTable -> [t] -> IO (ATermTable, Int)
     fromShATermAux  :: Int -> ATermTable -> (ATermTable, t)
     fromShATermList' :: Int -> ATermTable -> (ATermTable, [t])
 
-    toShATerm' att t = do
-       k <- mkKey t
-       m <- getKey k att
-       case m of
-         Nothing -> do
-           (att1, i) <- toShATermAux att t
-           setKey k i att1
-         Just i -> return (att, i)
     toShATermAux att = return . toShATerm att
     toShATermList' att ts = do
-       k <- mkKey ts
-       m <- getKey k att
-       case m of
-         Nothing -> do
            (att2, inds) <- foldM (\ (att0, l) t -> do
                     (att1, i) <- toShATerm' att0 t
                     return (att1, i : l)) (att, []) ts
-           case addATerm (ShAList (reverse inds) []) att2 of
-             (att3, i) -> setKey k i att3
-         Just i -> return (att, i)
+           return $ addATerm (ShAList (reverse inds) []) att2
     -- default functions ignore the Annotation part
     toShATermList att0 ts = case mapAccumL toShATerm att0 ts of
                           (att1, inds) -> addATerm (ShAList inds []) att1
@@ -58,16 +42,27 @@ class Typeable t => ShATermConvertible t where
                 mapAccumL (flip fromShATerm') att0 ats
             u -> fromShATermError "[]" u
 
+toShATerm' :: ShATermConvertible t => ATermTable -> t -> IO (ATermTable, Int)
+toShATerm' att t = do
+       k <- mkKey t
+       m <- getKey k att
+       case m of
+         Nothing -> do
+           (att1, i) <- toShATermAux att t
+           setKey k i att1
+         Just i -> return (att, i)
+
 fromShATerm :: ShATermConvertible t => ATermTable -> t
 fromShATerm att = snd $ fromShATerm' (getTopIndex att) att
 
 fromShATerm' :: ShATermConvertible t => Int -> ATermTable -> (ATermTable, t)
-fromShATerm' i att :: (ATermTable, t) =
-    let ty = show $ typeOf (undefined :: t) in
-      case getATerm' i ty att of
+fromShATerm' i att = let
+    ty = show $ typeOf $ snd r
+    r = case getATerm' i ty att of
         Just d -> (att, fromDyn d $ error $ "fromShATerm': generic " ++ ty)
         _ -> case fromShATermAux i att of
                (attN, t) -> (setATerm' i ty (toDyn t) attN, t)
+    in r
 
 fromShATermError :: String -> ShATerm -> a
 fromShATermError t u = error $ "Cannot convert ShATerm to "
@@ -128,13 +123,7 @@ instance ShATermConvertible Char where
     fromShATermAux ix att0 = case getShATerm ix att0 of
             ShAAppl s [] _ -> (att0, str2Char s)
             u -> fromShATermError "Prelude.Char" u
-    toShATermList' att s = do
-       k <- mkKey s
-       m <- getKey k att
-       case m of
-         Nothing -> case toShATermList att s of
-             (att3, i) -> setKey k i att3
-         Just i -> return (att, i)
+    toShATermList' att s = return $ toShATermList att s
     toShATermList att s = addATerm (ShAAppl (show s) [] []) att
     fromShATermList' ix att0 =
         case getShATerm ix att0 of

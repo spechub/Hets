@@ -164,7 +164,7 @@ instance ShATermConvertible a => ShATermConvertible [a] where
     -- for all types in AST with [Pos]
     {-# SPECIALIZE instance ShATermConvertible [Pos] #-}
     toShATerm att l = toShATermList att l
-    toShATerm' att l = toShATermList' att l
+    toShATermAux att l = toShATermList' att l
     fromShATermAux ix att = fromShATermList' ix att
 
 instance (ShATermConvertible a, ShATermConvertible b)
