@@ -44,7 +44,7 @@ import Proofs.Local
 import Proofs.Composition
 import Proofs.HideTheoremShift
 import Proofs.TheoremHideShift
-
+import Proofs.StatusUtils
 
 import GUI.AbstractGraphView
 import GUI.ShowLogicGraph
@@ -1215,7 +1215,7 @@ showJustSubtree ioRefGraphMem descr abstractGraph convMaps visibleNodes =
                  -- and we already know its descriptor (descr)
                  nodesOfSubtree = getNodeDescriptors dgNodesOfSubtree 
                                   libname convMaps
-                 nodesToHide = filter (notElemR nodesOfSubtree) allNodes
+                 nodesToHide = filter (`notElem` nodesOfSubtree) allNodes
              graphMem <- readIORef ioRefGraphMem
              (Result eventDescr errorMsg) <- hidenodes abstractGraph 
                                              nodesToHide (graphInfo graphMem)
@@ -1252,47 +1252,51 @@ getNodesOfSubtree dgraph visibleNodes node =
            [n| n <- (pre dgraph node), elem n visibleNodes]
           remainingVisibleNodes = [n| n <- visibleNodes, notElem n predOfNode]
 
-elemR :: Eq a => [a] -> a -> Bool
-elemR list element = elem element list
 
-notElemR :: Eq a => [a] -> a -> Bool
-notElemR list element = notElem element list
-
-
-
--- | apply the changes computed by proof rules (see folder Proofs)
--- to the displayed development graph
+-- | apply the changes of first history item (computed by proof rules, 
+-- see folder Proofs) to the displayed development graph
 applyChanges :: Descr -> LIB_NAME -> GraphInfo -> Descr -> IORef [[Node]]
                   -> ConversionMaps
                   -> [([DGRule],[DGChange])]
                   -> IO (Descr, ConversionMaps)
 applyChanges gid libname grInfo eventDescr ioRefVisibleNodes
-             convMaps history =
-  case history of
-    [] -> return (eventDescr, convMaps)
-    historyElem : _ ->
-      case snd historyElem of
-        [] -> return (eventDescr, convMaps)
-        changes@(_:_) -> do
-    --putStrLn ("applyChanges: "++show (fst historyElem)++"\n"++show changes)
-          visibleNodes <- readIORef ioRefVisibleNodes
-          (newVisibleNodes, newEventDescr, newConvMaps) <- 
-              applyChangesAux gid libname grInfo visibleNodes
-                          eventDescr convMaps changes
-          writeIORef ioRefVisibleNodes newVisibleNodes
-          return (newEventDescr, newConvMaps)
+             convMaps [] = return (eventDescr,convMaps)
+applyChanges gid libname grInfo eventDescr ioRefVisibleNodes
+             convMaps (historyElem:_) =
+  applyChangesAux gid libname grInfo ioRefVisibleNodes
+        (eventDescr, convMaps) changes
+  where changes = removeContraryChanges (snd historyElem)
 
--- | apply one change to displayed development graph
-applyChangesAux :: Descr -> LIB_NAME -> GraphInfo -> [[Node]] -> Descr
+-- | auxiliary function for applyChanges
+applyChangesAux :: Descr -> LIB_NAME -> GraphInfo -> IORef [[Node]]
+                  -> (Descr, ConversionMaps)
+                  -> [DGChange]
+                  -> IO (Descr, ConversionMaps)
+applyChangesAux gid libname grInfo  ioRefVisibleNodes
+            (eventDescr, convMaps) changeList  =
+  case changeList of
+    [] -> return (eventDescr, convMaps)
+    changes@(_:_) -> do
+      --putStrLn ("applyChangesAux:\n"++show changes)
+      visibleNodes <- readIORef ioRefVisibleNodes
+      (newVisibleNodes, newEventDescr, newConvMaps) <- 
+          applyChangesAux2 gid libname grInfo visibleNodes
+                      eventDescr convMaps changes
+      writeIORef ioRefVisibleNodes newVisibleNodes
+      return (newEventDescr, newConvMaps)
+
+-- | auxiliary function for applyChanges
+applyChangesAux2 :: Descr -> LIB_NAME -> GraphInfo -> [[Node]] -> Descr
                   -> ConversionMaps -> [DGChange]
                   -> IO ([[Node]], Descr, ConversionMaps)
-applyChangesAux _ _ _ visibleNodes eventDescr convMaps [] =
+applyChangesAux2 _ _ _ visibleNodes eventDescr convMaps [] =
     return (visibleNodes, eventDescr+1, convMaps)
-applyChangesAux gid libname grInfo visibleNodes _ convMaps (change:changes) =
+applyChangesAux2 gid libname grInfo visibleNodes _ convMaps (change:changes) =
   case change of
     InsertNode (node, nodelab) -> do
       let nodetype = getDGNodeType nodelab
           nodename = getDGNodeName nodelab
+      -- putStrLn ("inserting node "++show nodename++" of type "++show nodetype)
       (Result descr err) <-
           addnode gid nodetype nodename grInfo
       case err of
@@ -1304,15 +1308,16 @@ applyChangesAux gid libname grInfo visibleNodes _ convMaps (change:changes) =
                                Map.insert dgNode descr (dg2abstrNode convMaps),
                                abstr2dgNode =
                                Map.insert descr dgNode (abstr2dgNode convMaps)}
-             applyChangesAux gid libname grInfo newVisibleNodes (descr+1) 
+             applyChangesAux2 gid libname grInfo newVisibleNodes (descr+1) 
                              newConvMaps changes
         Just msg ->
-               error ("applyChangesAux: could not add node " ++ (show node)
+               error ("applyChangesAux2: could not add node " ++ (show node)
                       ++" with name " ++ (show (nodename)) ++ "\n"
                       ++ msg)
     DeleteNode (node, nodelab) -> do
       let nodename = getDGNodeName nodelab
           dgnode = (libname,node)
+      -- putStrLn ("inserting node "++show nodename)
       case Map.lookup dgnode (dg2abstrNode convMaps) of
         Just abstrNode -> do
           (Result descr err) <- delnode gid abstrNode grInfo
@@ -1324,13 +1329,13 @@ applyChangesAux gid libname grInfo visibleNodes _ convMaps (change:changes) =
                                   Map.delete dgnode (dg2abstrNode convMaps),
                                   abstr2dgNode =
                                   Map.delete abstrNode (abstr2dgNode convMaps)}
-                applyChangesAux gid libname grInfo newVisibleNodes (descr+1)
+                applyChangesAux2 gid libname grInfo newVisibleNodes (descr+1)
                                 newConvMaps changes
-            Just msg -> error ("applyChangesAux: could not delete node "
+            Just msg -> error ("applyChangesAux2: could not delete node "
                                ++ (show node) ++ " with name " 
                                ++ (show nodename) ++ "\n"
                                ++ msg)
-        Nothing -> error ("applyChangesAux: could not delte node " 
+        Nothing -> error ("applyChangesAux2: could not delte node " 
                           ++ (show node) ++ " with name " 
                           ++ (show nodename) ++": " ++
                           "node does not exist in abstraction graph")
@@ -1350,14 +1355,14 @@ applyChangesAux gid libname grInfo visibleNodes _ convMaps (change:changes) =
                                Map.insert dgEdge descr (dg2abstrEdge convMaps),
                                abstr2dgEdge =
                                Map.insert descr dgEdge (abstr2dgEdge convMaps)}
-                       applyChangesAux gid libname grInfo visibleNodes
+                       applyChangesAux2 gid libname grInfo visibleNodes
                                  (descr+1) newConvMaps changes
                   Just msg -> 
-                   error ("applyChangesAux: could not add link from "
+                   error ("applyChangesAux2: could not add link from "
                           ++ (show src) ++ " to " ++ (show tgt) ++ ":\n"
                           ++ (show msg))
            _ -> 
-               error ("applyChangesAux: could not add link " ++ (show src) 
+               error ("applyChangesAux2: could not add link " ++ (show src) 
                       ++ " to " ++ (show tgt) ++ ": illegal end nodes")
    
 
@@ -1375,13 +1380,13 @@ applyChangesAux gid libname grInfo visibleNodes _ convMaps (change:changes) =
                                  abstr2dgEdge = 
                                      Map.delete abstrEdge (abstr2dgEdge 
                                                            convMaps)}
-                        applyChangesAux gid libname grInfo visibleNodes
+                        applyChangesAux2 gid libname grInfo visibleNodes
                                  (descr+1) newConvMaps changes
-                   Just msg -> error ("applyChangesAux: could not delete edge "
+                   Just msg -> error ("applyChangesAux2: could not delete edge "
                                       ++ (show abstrEdge) ++ ":\n"
                                       ++msg)
 
-            Nothing -> error ("applyChangesAux: deleted edge from " 
+            Nothing -> error ("applyChangesAux2: deleted edge from " 
                               ++ (show src) ++ " to " ++ (show tgt) 
                               ++ " of type " ++ showPretty (dgl_type edgelab) 
                               " and origin " ++ (show (dgl_origin edgelab))

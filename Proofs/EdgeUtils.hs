@@ -17,7 +17,6 @@ utility functions for edges of a development graphs.
 
 module Proofs.EdgeUtils where
 
-import Debug.Trace
 import Data.List(nub, lookup)
 import Logic.Logic
 import Logic.Grothendieck
@@ -265,11 +264,8 @@ getInsertedEdges (change:list) =
 selectProofBasis :: DGraph -> LEdge DGLinkLab -> [[LEdge DGLinkLab]]
                  -> [LEdge DGLinkLab]
 selectProofBasis dg ledge paths =
-  let res =
-       if null provenProofBasis then selectProofBasisAux dg ledge unprovenPaths
-        else provenProofBasis
-   in {-trace ("edge:"++show ledge++"\nflag:"++show( null provenProofBasis)++"\nprovenPaths:"++show provenPaths++"\nres:"++show res)-} res
-
+  if null provenProofBasis then selectProofBasisAux dg ledge unprovenPaths
+     else provenProofBasis
   where 
     provenPaths = filterProvenPaths paths
     provenProofBasis = selectProofBasisAux dg ledge provenPaths
@@ -281,37 +277,42 @@ selectProofBasisAux :: DGraph -> LEdge DGLinkLab -> [[LEdge DGLinkLab]]
                     -> [LEdge DGLinkLab]
 selectProofBasisAux _ _ [] = []
 selectProofBasisAux dg ledge (path:list) =
-    if not (roughElem ledge b) then {- OK, no cyclic proof -} nub b 
+    if not (roughElem ledge b) then {- OK, no cyclic proof -} b 
      else selectProofBasisAux dg ledge list
-    where b = calculateProofBasis dg path
+    where b = calculateProofBasis dg path []
 
 
 {- | calculates the proofBasis of the given path,
- i.e. the list of all DGLinkLabs the proofs of the edges contained in the path
- are based on, plus the DGLinkLabs of the edges themselves;
- duplicates are not removed here, but in the calling method
- selectProofBasisAux -}
+ i.e. (recursively) close the list of DGLinkLabs under the relation
+ 'is proved using'. If a DGLinkLab has proof status LeftOpen,
+ look up in the development graph for its current status -}
 calculateProofBasis :: DGraph -> [LEdge DGLinkLab] -> [LEdge DGLinkLab]
-calculateProofBasis dg [] = []
-calculateProofBasis dg (ledge:list) =
-  ledge:((getProofBasis dg ledge)++(calculateProofBasis dg list))
-
-
-{- | returns the proofBasis contained in the given DGLinkLab -}
-getProofBasis :: DGraph -> LEdge DGLinkLab -> [LEdge DGLinkLab]
-getProofBasis dg (src,tgt,label) =
-  case dgl_type label of 
-    (GlobalThm (Proven _ proofBasis) _ _) -> proofBasis
-    (LocalThm (Proven _ proofBasis) _ _) -> proofBasis
-    (HidingThm _ (Proven _ proofBasis)) -> proofBasis
-    (GlobalThm LeftOpen _ _) -> newProofBasis 
-    (LocalThm LeftOpen _ _) -> newProofBasis
-    (HidingThm _ LeftOpen) -> newProofBasis
-    _ -> []  -- todo: also treat conservativity proof status
-  where newProofBasis = 
+                        -> [LEdge DGLinkLab]
+calculateProofBasis dg [] acc = acc
+calculateProofBasis dg (ledge@(src,tgt,label):list) acc =
+  if roughElem ledge acc 
+    then calculateProofBasis dg list acc
+    else 
+     case oneStepProofBasis label of
+      Left proofBasis -> calculateProofBasis dg (proofBasis++list) (ledge:acc)
+      Right True -> calculateProofBasis dg (curProofBasis++list) (ledge:acc)
+      Right False -> calculateProofBasis dg list (ledge:acc)
+  where curProofBasis = 
          case lookup tgt (lsuc dg src) >>= (thmLinkStatus . dgl_type) of
            Just (Proven _ proofBasis) -> proofBasis
            _ -> []
+
+oneStepProofBasis :: DGLinkLab -> Either [LEdge DGLinkLab] Bool
+oneStepProofBasis label =
+  case dgl_type label of 
+    (GlobalThm (Proven _ proofBasis) _ _) -> Left proofBasis
+    (LocalThm (Proven _ proofBasis) _ _) -> Left proofBasis
+    (HidingThm _ (Proven _ proofBasis)) -> Left proofBasis
+    (GlobalThm LeftOpen _ _) -> Right True
+    (LocalThm LeftOpen _ _) -> Right True
+    (HidingThm _ LeftOpen) -> Right True
+    _ -> Right False  -- todo: also treat conservativity proof status
+
 
 {- | returns all proven paths from the given list -}
 filterProvenPaths :: [[LEdge DGLinkLab]] -> [[LEdge DGLinkLab]]

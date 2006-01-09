@@ -155,20 +155,17 @@ localInferenceAux libEnv ln dgraph (rules, changes)
                  in localInferenceAux libEnv ln newGraph 
                         (newRules,newChanges) list
                 else 
-                 let n = getNewNode auxGraph
-                     newNode = (n, oldContents{dgn_theory = newTh})
-                     newList = map (replaceNode tgt n) list
-                     (newGraph,changes') = adoptEdges 
-                                           (insNode newNode $ auxGraph) tgt n
-                     newEdge = (if src==tgt then n else src, n, newLab)
-                     newGraph' = insEdge newEdge $ delNode tgt $ newGraph
+                 let newNodeLab = oldContents{dgn_theory = newTh}
+                     (newGraph,changes') = 
+                           adjustNode auxGraph oldNode newNodeLab
+                     newEdge = (src, tgt, newLab)
+                     newGraph' = insEdge newEdge newGraph
                      newLibEnv = Map.adjust adjMap ln libEnv 
                      adjMap (annos, env, _dg) = (annos,env,newGraph')
                      newChanges = changes ++ DeleteEdge ledge :
-                                    InsertNode newNode : changes' ++ 
-                                    [DeleteNode oldNode,InsertEdge newEdge]
+                                  changes' ++ [InsertEdge newEdge]
                  in localInferenceAux newLibEnv ln newGraph' 
-                        (newRules,newChanges) newList
+                        (newRules,newChanges) list
         _ -> localInferenceAux libEnv ln dgraph (rules,changes) list
     _ -> localInferenceAux libEnv ln dgraph (rules,changes) list
   where

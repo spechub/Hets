@@ -176,19 +176,25 @@ showNodeChange (descr, nodelab) =
 removeContraryChanges :: [DGChange] -> [DGChange]
 removeContraryChanges [] = []
 removeContraryChanges (change:changes) =
-  if contraryChange `elem` changes
-   then removeContraryChanges (removeChange contraryChange changes)
-    else change:(removeContraryChanges changes)
+  case contraryChange of
+    Just c -> removeContraryChanges (removeChange c changes)
+    Nothing -> change:(removeContraryChanges changes)
   where
-    contraryChange = getContraryChange change
+    contraryChange = 
+      case getContraryChange change of
+        Just c -> if c  `elem` changes then Just c else Nothing
+        Nothing -> Nothing
 
-getContraryChange :: DGChange -> DGChange
+getContraryChange :: DGChange -> Maybe DGChange
 getContraryChange change =
   case change of
-    InsertEdge edge -> DeleteEdge edge
-    DeleteEdge edge -> InsertEdge edge
-    InsertNode node -> DeleteNode node
-    DeleteNode node -> InsertNode node
+    InsertEdge edge -> Just $ DeleteEdge edge
+    -- re-insertion of deleted edge may be useful if node has changed
+    DeleteEdge edge -> Nothing 
+    InsertNode node -> Just $ DeleteNode node
+    -- re-insertion of deleted node may be useful if node has changed
+    -- ... although this should be recognized ... a bit strange ...
+    DeleteNode node -> Nothing -- Just $ InsertNode node
 
 
 removeChange :: DGChange -> [DGChange] -> [DGChange]

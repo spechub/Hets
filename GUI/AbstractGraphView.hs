@@ -78,7 +78,8 @@ data AbstractionGraph = AbstractionGraph {
        -- and a list of hide/abstract events with the hidden nodes/edges (for each event),
        -- which is used to restore things when showIt is called
        edgeComp :: CompTable,
-       eventTable :: [(Int,Entry)]}
+       eventTable :: [(Int,Entry)],
+       deletedNodes :: [Int]}
 
 type Descr = Int
 type EdgeValue = (String,Int,Maybe (LEdge DGLinkLab))
@@ -197,7 +198,8 @@ makegraph title open save saveAs menus nodetypeparams edgetypeparams comptable g
             nodes = [], 
             edges = [], 
             edgeComp = comptable,
-            eventTable = [] }
+            eventTable = [],
+            deletedNodes = [] }
   writeIORef gv ((ev_cnt,g):gs,ev_cnt+1)
   return (Result ev_cnt Nothing)
 
@@ -238,7 +240,9 @@ delnode gid node gv =
   fetch_graph gid gv False (\(g,ev_cnt) ->
       case lookup node (nodes g) of
         Just n -> do deleteNode (theGraph g) (snd n)
-                     return (g{nodes = remove node (nodes g)},0,ev_cnt+1,Nothing)
+                     return (g{nodes = remove node (nodes g),
+                               deletedNodes = deletedNodes g},
+                             0,ev_cnt+1,Nothing)
         Nothing ->  return (g,0,ev_cnt,Just ("delnode: illegal node: "++show node))
     )
 {-

@@ -7,7 +7,7 @@ Maintainer  :  jfgerken@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-Proofs in development graphs.
+Proof rule "basic inference" in the development graphs calculus.
    Follows Sect. IV:4.4 of the CASL Reference Manual.
 -}
 
@@ -20,19 +20,11 @@ Proofs in development graphs.
    Lecture Notes in Computer Science 2029, p. 269-283,
    Springer-Verlag 2001.
 
-todo in general:
+todo:
 
-Order of rule application: try to use local links induced by %implies
-for subsumption proofs (such that the %implied formulas need not be
-re-proved)
+do not add new dg nodes, but just change the old one
 
-Integrate stuff from Saarbrücken
-Add proof status information
-
- what should be in proof status:
-
-- proofs of thm links according to rules
-- cons, def and mono annos, and their proofs
+Integrate stuff from Saarbrücken (what exactly?)
 
 -}
 
@@ -176,23 +168,17 @@ basicInferenceNode checkCons lg (ln, node)
             -- todo: throw out the stuff about edges
             -- instead, mark proven things as proven in the node
             -- TODO: Reimplement stuff
-            let (nextDGraph, nextHistoryElem) =
-                  let
-                  oldNode@(_,oldContents) =
+            let oldNode@(_,oldContents) =
                     labNode' (safeContext
                               "Proofs.InferBasic.basicInferenceNode"
                               dGraph node)
-                  n = getNewNode dGraph
-                  newNode = (n, oldContents{dgn_theory = newTh})
-                  (newGraph,changes) =
-                    adoptEdges (insNode newNode $ dGraph) node n
-                  newGraph' = delNode node $ newGraph
-                  newChanges = InsertNode newNode : changes ++
-                                          [DeleteNode oldNode]
-                  rules = [] -- map (\s -> BasicInference (Comorphism cid)
-                             --     (BasicProof lidT s))
+                newNodeLab = oldContents{dgn_theory = newTh}
+                (nextDGraph,changes) =
+                    adjustNode dGraph oldNode newNodeLab
+                rules = [] -- map (\s -> BasicInference (Comorphism cid)
+                           --     (BasicProof lidT s))
                          -- FIXME: [Proof_status] not longer available
-                  in (newGraph',(rules,newChanges))
+                nextHistoryElem = (rules,changes)
             return $ mkResultProofStatus proofStatus nextDGraph nextHistoryElem
 
 proveKnownPMap :: (Logic lid sublogics1

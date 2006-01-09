@@ -199,10 +199,10 @@ data DGChange = InsertNode (LNode DGNodeLab)
               deriving Eq
 
 instance Show DGChange where
-  show (InsertNode (n,_)) = "InsertNode "++show n
-  show (DeleteNode (n,_)) = "DeleteNode "++show n
-  show (InsertEdge (n,m,_)) = "InsertEdge "++show n++"->"++show m
-  show (DeleteEdge (n,m,_)) = "DeleteEdge "++show n++"->"++show m
+  show (InsertNode (n,l)) = "InsertNode "++show n -- ++show l
+  show (DeleteNode (n,l)) = "DeleteNode "++show n -- ++show l
+  show (InsertEdge (n,m,l)) = "InsertEdge "++show n++"->"++show m -- ++show l
+  show (DeleteEdge (n,m,l)) = "DeleteEdge "++show n++"->"++show m -- ++show l
 
 -- | Link types of development graphs
 -- | Sect. IV:4.2 of the CASL Reference Manual explains them in depth
