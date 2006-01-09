@@ -573,7 +573,7 @@ spassProveGUI thName th = do
   grid l4 [GridPos (0,5), Columnspan 2, Sticky W]
   l5 <- newLabel right [text "Status"]
   grid l5 [GridPos (1,6), Sticky W]
-  statusLabel <- newLabel right [text "Open"]
+  statusLabel <- newLabel right [text " -- "]
   grid statusLabel [GridPos (2,6), Columnspan 2, Sticky W]
   l6 <- newLabel right [text "Used Axioms"]
   grid l6 [GridPos (1,7), Sticky NW]
@@ -618,9 +618,13 @@ spassProveGUI thName th = do
   saveConfiguration <- clicked saveButton
   exit <- clicked exitButton
 
-  let wids = [EnW lb, EnW timeEntry, EnW timeSpinner] ++ 
-             map EnW [proveButton,detailsButton,helpButton,
+  let goalSpecificWids = [EnW timeEntry, EnW timeSpinner,EnW optionsEntry] ++ 
+                         map EnW [proveButton,detailsButton]
+      wids = EnW lb : goalSpecificWids ++
+             map EnW [helpButton,
                       saveButton,exitButton]
+
+  disableWids goalSpecificWids
 
   -- event handlers
   spawnEvent 
@@ -629,16 +633,19 @@ spassProveGUI thName th = do
           s <- readIORef stateRef
           let oldGoal = currentGoal s
           curEntTL <- (getValueSafe timeEntry) :: IO Int
-          let s' = if isJust oldGoal
-                     then s {configsMap = adjustOrSetConfig
-                                          (setTimeLimit curEntTL) (fromJust oldGoal) (configsMap s)}
-                     else s
+          let s' = maybe s 
+                         (\ og -> s 
+                             {configsMap = 
+                                  adjustOrSetConfig (setTimeLimit curEntTL) 
+                                                    og (configsMap s)})  
+                         oldGoal
           sel <- (getSelection lb) :: IO (Maybe [Int])
-          let s'' = if isJust sel
-                      then s' {currentGoal = Just $ AS_Anno.senName 
-                                            (goals !! (head $ fromJust sel))}
-                      else s'
+          let s'' = maybe s' (\ sg -> s' {currentGoal = 
+                                              Just $ AS_Anno.senName 
+                                               (goals !! (head sg))}) 
+                             sel
           writeIORef stateRef s''
+          maybe (return ()) (\_ -> enableWids goalSpecificWids) sel
           updateDisplay s'' False lb statusLabel timeEntry optionsEntry axiomsLb
           done)
       +> (doProve >>> do
