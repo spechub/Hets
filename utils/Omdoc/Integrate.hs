@@ -42,7 +42,7 @@ import qualified Logic.Logic as Logic
 import qualified Logic.Prover as Prover
 
 import Data.Maybe (fromMaybe)
-import Data.List (nub, isPrefixOf, isSuffixOf)
+import Data.List (nub, isPrefixOf, isSuffixOf, find)
 
 --import qualified Data.Typeable as Data.Typeable
 
@@ -66,7 +66,7 @@ import qualified System.Console.GetOpt as GetOpt
 
 import Control.Monad
 
-import Char (toLower, isSpace)
+import Char (toLower, isSpace, isAlpha, isAlphaNum, isDigit, isAscii)
 
 data ImportContext a = ImportContext {
 						 importsMap :: Hets.ImportsMap
@@ -640,14 +640,6 @@ loadOmdocForXPath f =
 			,(a_check_namespaces,v_1)
 			] emptyRoot
 						
-stringToXml::String->(IO XmlTrees)
-stringToXml s =
-	(
-	HXT.run' $ parseDocument
-		[(a_validate, v_0), ("use-string", v_1)]
-		(head (replaceChildren (xtext s) emptyRoot))
-	) >>= return . applyXmlFilter getChildren
-		
 stripLibName::String->String
 stripLibName = last . explode "/"
 
@@ -685,20 +677,20 @@ devGraphToXmlCMPIO dg =
 		in
 		    foldl (\dgxio (node, name' ) ->
 		    	let
-					nSorts = fromMaybe Set.empty $ Map.lookup name' sorts' 
+					nSorts = Map.findWithDefault Set.empty name' sorts' 
 					-- OMDocS 'insort' is opposite to CASL-Sort-Relation 
-					nInsorts = Rel.transpose $ fromMaybe Rel.empty $ Map.lookup name' rels'
+					nInsorts = Rel.transpose $ Map.findWithDefault Rel.empty name' rels'
 					nInsortMap = foldl (\m (a,b) -> 
 						Map.insert a (Set.insert b (Map.findWithDefault Set.empty a m)) m
 						) Map.empty $ Rel.toList nInsorts
-					nPreds = fromMaybe Map.empty $ Map.lookup name' preds'  
-					nOps = fromMaybe Map.empty $ Map.lookup name' ops'
-					nSens = fromMaybe Set.empty $ Map.lookup name' sens
+					nPreds = Map.findWithDefault Map.empty name' preds'  
+					nOps = Map.findWithDefault Map.empty name' ops'
+					nSens = Map.findWithDefault Set.empty name' sens
 					(_, sortgen) = partitionSensSortGen $ Set.toList nSens
 					constructors = makeConstructors sortgen
 					
 					-- sort-imports (not all imports)
-					nImports = fromMaybe Set.empty $ Map.lookup name' mimports
+					nImports = Map.findWithDefault Set.empty name' mimports
 					-- what adts are needed (insort, cons or both)
 					adtsorts = nub $ (map (\ (a,_) -> a) $ Map.toList nInsortMap) ++
 						(map (\(a,_) -> a) $ Map.toList constructors)
@@ -757,6 +749,255 @@ devGraphToXmlCMPIO dg =
 						+++ xmlNL
 						)
 				) (return (refsToCatalogue dg +++ xmlNL)) $ Set.toList onlynodenameset
+	
+devGraphToXmlCMPIOXmlNamed::Static.DevGraph.DGraph->IO (HXT.XmlTree->HXT.XmlTrees)
+devGraphToXmlCMPIOXmlNamed dg =
+	let
+		(onlynodenameset, onlyrefnameset) = Hets.getNodeDGNamesNodeRef dg
+		(onlynodexmlnamelist, xmlnames_onxnl) = createXmlNames nodeTupelToNodeName [] (Set.toList onlynodenameset)
+		(onlyrefxmlnamelist, xmlnames_orxnl) = createXmlNames nodeTupelToNodeName xmlnames_onxnl (Set.toList onlyrefnameset)
+		nodenameset = Set.union onlynodenameset onlyrefnameset
+		nodexmlnameset = Set.fromList (onlynodexmlnamelist ++ onlyrefxmlnamelist)
+		nodenamemap = Map.fromList $ Set.toList nodenameset
+		sortswomap = Hets.getSortsWOWithNodeDGNamesWO dg
+		relswomap= Hets.getRelationsWOWithNodeDGNamesWOSMDGWO dg sortswomap
+		predswomap = Hets.getPredMapsWOWithNodeDGNamesWO dg
+		opswomap = Hets.getOpMapsWOWithNodeDGNamesWO dg
+		senswomap = Hets.getSentencesWOWithNodeDGNamesWO dg
+		-- sorts
+		(xmlnamedsortswomap, xmlnames_sm) =
+			(processSubContents
+				(\xmlnames c -> uniqueXmlNamesContainerWONExt
+					xmlnames
+					show
+					c
+					(pSCStrip id)
+					(\(k, swo) xname -> (k,XmlNamed swo xname))
+				)
+				xmlnames_orxnl
+				sortswomap)::(Map.Map Hets.NODE_NAMEWO (Set.Set (XmlNamed Hets.SORTWO)), XmlNameList)
+		-- relations -- maybe not needed with xmlnames...
+		xmlnames_rm = xmlnames_sm
+		xmlnamedrelswomap =
+			foldl
+				(\relmap' theory ->
+					let
+						theorysorts = Map.findWithDefault Set.empty theory xmlnamedsortswomap
+					in
+						Map.insert
+							theory
+							(Rel.fromList
+								(map (\(a,b) ->
+									let
+										a' = case Set.toList (Set.filter (\i -> (xnItem i) == a) theorysorts) of
+											[] -> error "No such sort in theory..."
+											(i:_) -> XmlNamed a (xnName i)
+										b' = case Set.toList (Set.filter (\i -> (xnItem i) == b) theorysorts) of
+											[] -> error "No such sort in theory..."
+											(i:_) -> XmlNamed b (xnName i)
+									in
+										(a' , b' )
+									) (Rel.toList (Map.findWithDefault Rel.empty theory relswomap))))
+							relmap' 
+				)
+				Map.empty
+				(Map.keys relswomap)
+		-- predicates
+		(xmlnamedpredswomap, xmlnames_pm) =
+			(processSubContents
+				(\xmlnames c -> uniqueXmlNamesContainerWONExt
+					xmlnames
+					show
+					c
+					(pSCStrip (\(pidwo,_) -> pidwo))
+					(\(k, (pidwo, pset)) xname -> (k, (XmlNamed pidwo xname, pset)))
+				)
+				xmlnames_orxnl
+				predswomap)::(Map.Map Hets.NODE_NAMEWO (Map.Map (XmlNamed Hets.IdWO) (Set.Set PredType)), XmlNameList)
+		-- operators
+		(xmlnamedopswomap, xmlnames_om) =
+			(processSubContents
+				(\xmlnames c ->
+					uniqueXmlNamesContainerWONExt
+						xmlnames
+						show
+						c
+						(pSCStrip (\(oidwo,_) -> oidwo))
+						(\(k,(oidwo,oset)) xname -> (k, (XmlNamed oidwo xname, oset)))
+				)
+				xmlnames_pm
+				opswomap)::(Map.Map Hets.NODE_NAMEWO (Map.Map (XmlNamed Hets.IdWO) (Set.Set OpType)), XmlNameList)
+		-- sentences
+		(xmlnamedsenswomap, xmlnames_senm) =
+			(processSubContents
+				(\xmlnames nsensset ->
+					uniqueXmlNamesContainerWONExt
+						xmlnames
+						Ann.senName
+						nsensset
+						(pSCStrip id)
+						(\(k, senswo) xname -> (k, XmlNamed senswo xname))
+				)
+				xmlnames_om
+				senswomap)::(Map.Map Hets.NODE_NAMEWO (Set.Set (XmlNamed Hets.SentenceWO)), XmlNameList)
+	in
+		return $
+			foldl (\x xnodetupel ->
+				let
+					theoname = xnName xnodetupel
+					(nodenum, nodename) = xnItem xnodetupel
+					theosorts = Map.findWithDefault Set.empty (Hets.mkWON nodename nodenum) xmlnamedsortswomap
+					realsorts = Set.filter (\i -> (Hets.woOrigin (xnItem i)) == nodenum) theosorts
+					realsortswo = Set.map (xnItem) realsorts
+					theorels = Map.findWithDefault Rel.empty (Hets.mkWON nodename nodenum) relswomap
+					-- only keep relations that include at least one sort from the
+					-- current theory
+					realrels = Rel.fromList $ filter (\(a,b) ->
+						(Set.member a realsortswo) || (Set.member b realsortswo)
+						) (Rel.toList theorels)
+					insorts = Rel.transpose realrels 
+					insortmap =
+						foldl (\m (a,b) ->
+							Map.insert
+								a
+								(Set.insert b (Map.findWithDefault Set.empty a m))
+								m
+							) Map.empty (Rel.toList insorts)
+					adtsorts = Map.keys insortmap ++ (map (\(a,_) -> xnItem a) (Map.toList constructors))
+					theopreds = Map.findWithDefault Map.empty (Hets.mkWON nodename nodenum) xmlnamedpredswomap
+					realtheopreds = Map.filterWithKey (\idxnwon _ -> (Hets.woOrigin (xnItem idxnwon)) == nodenum) theopreds
+					theoops = Map.findWithDefault Map.empty (Hets.mkWON nodename nodenum) xmlnamedopswomap
+					realtheoops = Map.filterWithKey (\idxnwon _ -> (Hets.woOrigin (xnItem idxnwon)) == nodenum) theoops
+					theosens = Map.findWithDefault Set.empty (Hets.mkWON nodename nodenum) xmlnamedsenswomap
+					realtheosens = Set.filter (\i -> (Hets.woOrigin (xnItem i)) == nodenum) theosens
+					(_, sortgenxn) = partitionSensSortGenXN (Set.toList realtheosens)
+					(constructors, xmlnames_cons) = makeConstructorsXN xmlnames_senm sortgenxn
+				in
+					x +++ xmlNL +++ HXT.etag "theory" += (
+						(HXT.sattr "id" theoname) +++
+						(Set.fold (\xnwos x' ->
+							x' +++ (sortToXmlXN (xnWOaToXNa xnwos)) +++ xmlNL
+							) xmlNL realsorts) +++
+						(foldl (\x' sortwo ->
+							let
+								insortset = Map.findWithDefault Set.empty sortwo insortmap
+								sortxn = case find (\i -> Hets.sameOrigin sortwo (xnItem i) && sortwo == (xnItem i)) (Set.toList theosorts) of
+									Nothing -> error "Sort in relation but not in theory..."
+									(Just sortxn' ) -> xnWOaToXNa sortxn'
+								insortsetxn = Set.map (\i ->
+									case find (\j -> Hets.sameOrigin i (xnItem j) && i == (xnItem j)) (Set.toList theosorts) of
+										Nothing -> error "Sort in relation but not in theory..."
+										(Just sortxn' ) -> xnWOaToXNa sortxn'
+									) insortset
+							in
+								x' +++ createADTXN (sortxn, insortsetxn) (HXT.txt "") +++ xmlNL
+							) xmlNL adtsorts) +++
+						(foldl (\x' (pxnid, pset) ->
+							let
+								pxnset = Set.map (\i -> predTypeToPredTypeXNWON theosorts i) pset 
+							in
+								x' +++ predicationToXmlXN nodexmlnameset (pxnid, pxnset) +++ xmlNL) (HXT.txt "") (Map.toList realtheopreds)
+						) +++
+						(foldl (\x' (oxnid, oset) ->
+							let
+								oxnset = Set.map (\i -> opTypeToOpTypeXNWON theosorts i) oset 
+							in
+								x' +++ operatorToXmlXN nodexmlnameset (oxnid, oxnset) +++ xmlNL) (HXT.txt "") (Map.toList realtheoops)
+						)
+						)
+				) (HXT.txt "") onlynodexmlnamelist 
+				
+	where
+	nodeTupelToNodeName::(a, NODE_NAME)->String
+	nodeTupelToNodeName = nodeToNodeName . snd
+	
+	nodeToNodeName::NODE_NAME->String
+	nodeToNodeName = (\nn ->
+							let
+								nodename = showName nn
+							in
+								if (length nodename) == 0
+									then
+										"AnonNode_"
+									else
+										nodename
+							)
+
+type WithOriginTheory a = Hets.WithOrigin a String
+
+type XmlNamedWO a b = XmlNamed (Hets.WithOrigin a b)
+type XmlNamedWON a = XmlNamedWO a Graph.Node
+
+type XmlNamedWONSORT = XmlNamedWON SORT
+
+xnWOaToXNa::XmlNamedWO a b->XmlNamed a
+xnWOaToXNa a = XmlNamed (Hets.woItem (xnItem a)) (xnName a)
+
+xnWOaToa::XmlNamedWO a b->a
+xnWOaToa a = Hets.woItem (xnItem a)
+
+-- just an alias to complete this
+xnWOaToWOa::XmlNamedWO a b->Hets.WithOrigin a b
+xnWOaToWOa a = xnItem a
+
+{-
+nodeSetWOToNodeSetTheory::(Ord a)=>Set.Set (XmlNamed Hets.NODE_NAMEWO)->Set.Set (XmlNamed (Hets.WithOriginNode a))->Set.Set (XmlNamed (WithOriginTheory a))
+nodeSetWOToNodeSetTheory nodenameset tonameset =
+	Set.map (\(XmlNamed (Hets.WithOrigin { Hets.woItem = aitem , Hets.woOrigin = aorigin }) axname) ->
+		let
+			origins = Set.filter (\o' -> (Hets.woOrigin (xnItem o' )) == aorigin) nodenameset
+		in
+			case Set.toList origins of
+				[] -> error "!!!"
+				((XmlNamed _ xname):_) ->
+					XmlNamed (mkWOT aitem xname) axname
+			) tonameset
+	-}		
+data PredTypeXNWON = PredTypeXNWON {predArgsXNWON :: [XmlNamedWON SORT]}
+	deriving (Show, Eq, Ord)
+	
+data OpTypeXNWON = OpTypeXNWON { opKind :: FunKind, opArgsXNWON :: [XmlNamedWON SORT], opResXNWON :: (XmlNamedWON SORT) }
+	deriving (Show, Eq, Ord)
+	
+sortToXmlNamedWONSORT::[XmlNamedWONSORT]->SORT->(Maybe XmlNamedWONSORT)
+sortToXmlNamedWONSORT list s = find (\i -> s == (xnWOaToa i)) list
+	
+predTypeToPredTypeXNWON::Set.Set (XmlNamedWON SORT)->PredType->PredTypeXNWON
+predTypeToPredTypeXNWON sortwoset (PredType {predArgs = pA}) =
+	let
+		xnwonsorts = Set.toList sortwoset
+		xnwonargs = map (\a -> case (sortToXmlNamedWONSORT xnwonsorts a) of
+			Nothing -> error "Unable to find xml-named sort for predicate argument!"
+			(Just xnsort) -> xnsort) pA
+	in
+		PredTypeXNWON xnwonargs
+		
+opTypeToOpTypeXNWON::Set.Set (XmlNamedWON SORT)->OpType->OpTypeXNWON
+opTypeToOpTypeXNWON sortwoset (OpType {CASL.Sign.opKind = oK, opArgs = oA, opRes = oR}) =
+	let
+		xnwonsorts = Set.toList sortwoset
+		xnwonargs = map (\a -> case (sortToXmlNamedWONSORT xnwonsorts a) of
+			Nothing -> error "Unable to find xml-named sort for operator argument!"
+			(Just xnsort) -> xnsort) oA
+		xnwonres = case sortToXmlNamedWONSORT xnwonsorts oR of
+			Nothing -> error "Unable to find xml-named sort for operator result!"
+			(Just xnsort) -> xnsort
+	in
+		OpTypeXNWON oK xnwonargs xnwonres
+{-	
+	PredTypeWOT (map (\s -> case Set.toList (Set.filter (\i -> (Hets.woItem i) == s) sortwoset) of
+		[] -> error "!!!"
+		(i:_) -> Hets.WithOrigin s (Hets.woOrigin i)
+		) pA)
+-}
+
+nodeNameInfo::NODE_NAME->HXT.XmlFilter
+nodeNameInfo (tok, ext, int) =
+	(HXT.etag "data" += (
+		(HXT.sattr "format" "Hets-NodeName")
+		+++ (HXT.sattr "pto" "Hets")
+		+++ (HXT.cdata ((show tok) ++ "," ++ ext ++ "," ++ (show int)))
+		))
 				
 -- | Convert a DevGraph to an XML-Representation (without omdoc parent)				
 devGraphToXml::Static.DevGraph.DGraph->(HXT.XmlTree->HXT.XmlTrees)
@@ -873,6 +1114,21 @@ sortToXml::SORT->(HXT.XmlTree->HXT.XmlTrees)
 -- NAME -> ID
 sortToXml s = HXT.etag "symbol" += ( qualattr symbolTypeXMLNS symbolTypeXMLAttr "sort" +++ qualattr sortNameXMLNS sortNameXMLAttr (show s) )
 
+sortToXmlXN::XmlNamed SORT->HXT.XmlFilter
+sortToXmlXN xnSort =
+	((HXT.etag "symbol" +=
+		( qualattr symbolTypeXMLNS symbolTypeXMLAttr "sort"
+		+++ qualattr sortNameXMLNS sortNameXMLAttr (xnName xnSort)))
+	+++ xmlNL +++
+	(HXT.etag "presentation" += (
+		(HXT.sattr "for" (xnName xnSort))
+		+++ HXT.etag "use" += (
+			(HXT.sattr "format" "Hets")
+			+++ (HXT.txt (idToString (xnItem xnSort)))
+			)
+		)
+	))
+	
 -- | create an ADT for a SORT-Relation and constructor information (in xml)
 createADT::(SORT, Set.Set SORT)->HXT.XmlFilter->HXT.XmlFilter
 createADT (s,ss) constructors =
@@ -891,6 +1147,24 @@ createADT (s,ss) constructors =
 		)
 	)
 
+-- | create an ADT for a SORT-Relation and constructor information (in xml)
+createADTXN::(XmlNamed SORT, Set.Set (XmlNamed SORT))->HXT.XmlFilter->HXT.XmlFilter
+createADTXN (s,ss) constructors =
+	HXT.etag "adt" -- += (qualattr "xml" "id" ((show s)++"-adt")) -- id must be unique but is optional anyway... 
+	+= (
+	    xmlNL +++
+	    (HXT.etag "sortdef" += (
+			HXT.sattr "name" (xnName s) +++
+			HXT.sattr "type" "free" +++
+			constructors +++
+			(foldl (\isx is ->
+				isx +++ xmlNL +++ (HXT.etag "insort" += (HXT.sattr "for" ("#" ++ (xnName is))))
+			) (HXT.txt "") $ Set.toList ss)
+			+++ xmlNL
+			) +++ xmlNL
+		)
+	)
+	
 -- | creates a xml-representation for a list of constructors	
 createAllConstructors::[(Id.Id, Set.Set OpType)]->HXT.XmlFilter
 createAllConstructors cs = foldl (\cx c ->
@@ -910,6 +1184,24 @@ createConstructor cid (OpType _ args _) =
 			argx +++ xmlNL +++
 			(HXT.etag "argument" += (HXT.sattr "sort" (show arg)))
 			) (HXT.txt "") args
+		)
+		
+createAllConstructorsXN::[(XmlNamedWON Id.Id, Set.Set OpTypeXNWON)]->HXT.XmlFilter
+createAllConstructorsXN cs = foldl (\cx c ->	
+	cx +++ createConstructorsXN c +++ xmlNL ) (HXT.txt "") cs
+		
+createConstructorsXN::(XmlNamedWON Id.Id, Set.Set OpTypeXNWON)->HXT.XmlFilter
+createConstructorsXN (cidxn, opxnset) = foldl (\cx opxn -> cx +++ createConstructorXN cidxn opxn +++ xmlNL) (HXT.txt "") $ Set.toList opxnset
+		
+createConstructorXN::(XmlNamedWON Id.Id)->OpTypeXNWON->HXT.XmlFilter
+createConstructorXN cidxn (OpTypeXNWON _ opargsxn _) =
+	HXT.etag "constructor" += (
+		HXT.sattr "name" (xnName cidxn) +++
+		xmlNL +++
+		foldl (\argx arg ->
+			argx +++ xmlNL +++
+			(HXT.etag "argument" += (HXT.sattr "sort" (xnName arg)))
+			) (HXT.txt "") opargsxn
 		)
 		
 initOrEmpty::[a]->[a]
@@ -955,7 +1247,7 @@ consToSens sort conlist =
 			)
 			True
 		)
-	
+		
 -- | creates a xml-representation for a predication
 -- needs a map of imports, sorts, the name of the current theory and the predication
 predicationToXml::Hets.ImportsMap->Hets.SortsMap->String->(Id.Id, (Set.Set PredType))->(HXT.XmlTree->HXT.XmlTrees)
@@ -1010,6 +1302,64 @@ predicationToXml imports' sorts' name' (predId, ptSet) =
 		) (HXT.txt "") $ Set.toList ptSet
 	)
 	
+type TheoryXNSet = Set.Set (XmlNamed (Graph.Node, NODE_NAME))
+	
+getTheoryXmlName::TheoryXNSet->Graph.Node->Maybe XmlName
+getTheoryXmlName ts n =
+	case find (\i -> (fst (xnItem i)) == n) $ Set.toList ts of
+		Nothing -> Nothing
+		(Just i) -> Just (xnName i)
+		
+-- | creates a xml-representation for a predication
+-- needs a map of imports, sorts, the name of the current theory and the predication
+predicationToXmlXN::TheoryXNSet->(XmlNamedWON Id.Id, (Set.Set PredTypeXNWON))->(HXT.XmlTree->HXT.XmlTrees)
+predicationToXmlXN theoryset (pIdXN, pTXNSet) =
+	(HXT.etag "symbol" += (
+		qualattr predNameXMLNS predNameXMLAttr (xnName pIdXN)
+		+++ qualattr symbolTypeXMLNS symbolTypeXMLAttr "object"
+		)
+	) += ( 
+		foldl (\tx (PredTypeXNWON predArgsXN' ) ->
+			tx +++ xmlNL
+			+++
+			(HXT.etag "type" += (
+				HXT.sattr "system" "casl"
+				)
+			) += (
+				xmlNL +++
+				HXT.etag "OMOBJ" += (
+					xmlNL +++
+					HXT.etag "OMA" += (
+						xmlNL +++
+						(HXT.etag "OMS" += (
+							HXT.sattr "cd" "casl"
+							+++ HXT.sattr "name" "predication"
+							)
+						) +++
+						(foldl (\px sxn ->
+							px +++ xmlNL
+							+++
+							(HXT.etag "OMS" += (
+								HXT.sattr
+									"cd"
+									(fromMaybe
+										"unknownOrigin"
+										(getTheoryXmlName theoryset (Hets.woOrigin (xnItem sxn)))
+									)
+									+++ HXT.sattr "name" (xnName sxn)
+								)
+							)
+						) (HXT.txt "") predArgsXN' )
+						+++ xmlNL
+					)
+					+++ xmlNL
+				)
+				+++ xmlNL
+			)
+			+++ xmlNL
+		) (HXT.txt "") $ Set.toList pTXNSet
+	)
+	
 -- | creates a xml-representation for an operator
 -- needs a map of imports, sorts, the name of the current theory and the operator
 operatorToXml::Hets.ImportsMap->Hets.SortsMap->String->(Id.Id, (Set.Set OpType))->(HXT.XmlTree->HXT.XmlTrees)
@@ -1045,6 +1395,43 @@ operatorToXml imports' sorts' name' (opId, otSet) =
 		)
 		+++ xmlNL
 		) (HXT.txt "") $ Set.toList otSet
+	)
+	
+-- | creates a xml-representation for an operator
+-- needs a map of imports, sorts, the name of the current theory and the operator
+operatorToXmlXN::TheoryXNSet->(XmlNamedWON Id.Id, (Set.Set OpTypeXNWON))->(HXT.XmlTree->HXT.XmlTrees)
+operatorToXmlXN theoryset (opIdXN, oTXNSet) =
+-- NAME -> ID
+	(HXT.etag "symbol" += (qualattr opNameXMLNS opNameXMLAttr (xnName opIdXN) +++ qualattr symbolTypeXMLNS symbolTypeXMLAttr "object"))
+	+= ( 
+		foldl (\tx (OpTypeXNWON fk opArgsXN' opResXN' ) ->
+		tx +++ xmlNL
+		+++
+		(HXT.etag "type" += (HXT.sattr "system" "casl"))
+		+= (	xmlNL +++
+			HXT.etag "OMOBJ"
+			+= (
+				xmlNL +++
+				HXT.etag "OMA"
+				+= (
+					xmlNL +++
+					(HXT.etag "OMS" += (HXT.sattr "cd" "casl" +++ HXT.sattr "name" (if fk==Total then "function" else "partial-function") ))
+					+++
+					(foldl (\px sxn ->
+						px +++ xmlNL
+						+++
+						createSymbolForSortXN theoryset sxn
+						) (HXT.txt "") opArgsXN' )
+					+++ xmlNL +++
+					createSymbolForSortXN theoryset opResXN'
+					+++ xmlNL
+				)
+				+++ xmlNL
+			)
+			+++ xmlNL
+		)
+		+++ xmlNL
+		) (HXT.txt "") $ Set.toList oTXNSet
 	)
 	
 sortToOM::Hets.ImportsMap->Hets.SortsMap->String->SORT->HXT.XmlFilter
@@ -1593,10 +1980,51 @@ partitionSensSortGen sens =
 			(sens' ++[s],sortgen)
 		) ([],[]) sens
 
+-- | this function partitions a list of CASLFORMULAS into two lists of
+-- 'CASLFORMULA's : the first list contains 'normal' CFs and the second
+-- all CFs that generate sorts (constructors)
+partitionSensSortGenXN::[XmlNamedWON (Ann.Named CASLFORMULA)]->([XmlNamedWON (Ann.Named CASLFORMULA)], [XmlNamedWON (Ann.Named CASLFORMULA)])
+partitionSensSortGenXN sens =
+	foldl (\(sens' ,sortgen) xnsens -> --s@(Ann.NamedSen name' _ _ sentence) ->
+		let
+			(Ann.NamedSen name' _ _ sentence) = xnWOaToa xnsens
+		in
+			if isPrefixOf "ga_generated_" name' then
+				case sentence of
+					(Sort_gen_ax _ True) -> (sens' , sortgen++[xnsens])
+					_ -> (sens' ++ [xnsens],sortgen)
+			else
+				(sens' ++[xnsens],sortgen)
+		) ([],[]) sens
+
 -- | creates constructors from a list of 'CASLFORMULA's (see : 'partitionSensSortGen')
 makeConstructors::[Ann.Named CASLFORMULA]->(Map.Map Id.Id (Map.Map Id.Id (Set.Set OpType)))
 makeConstructors sortgenaxlist =
 	Map.fromList $ map makeConstructorMap sortgenaxlist
+	
+makeConstructorsXN::XmlNameList->[XmlNamedWON (Ann.Named CASLFORMULA)]->(Map.Map (XmlNamedWON Id.Id) (Map.Map (XmlNamedWON Id.Id) (Set.Set OpType)), XmlNameList)
+makeConstructorsXN xmlnames sortgenaxxnlist =
+	foldl (\(mapping, xmlnames' ) sortgenaxxn ->
+		let
+			sortgenax = xnWOaToa sortgenaxxn
+			origin = Hets.woOrigin (xnItem sortgenaxxn)
+			(cid, copmap) = makeConstructorMap sortgenax
+			(copxnmap, xmlnames'' ) =
+				(uniqueXmlNamesContainerExt
+					xmlnames'
+					show
+					copmap
+					(\_ _ -> False) -- there are no duplicates here
+					fst
+					(\(oid, oset) xname -> (XmlNamed (Hets.mkWON oid origin) xname, oset)))::(Map.Map (XmlNamed (Hets.WithOriginNode Id.Id)) (Set.Set OpType), XmlNameList)
+			cidxname = createUniqueName xmlnames'' (adjustStringForXmlName (show cid))
+			cidxnwo = XmlNamed (Hets.mkWON cid origin) cidxname
+		in
+			(Map.insert cidxnwo copxnmap mapping, cidxname:xmlnames'' )
+			) (Map.empty, xmlnames) sortgenaxxnlist
+					
+		
+--	Map.fromList $ map makeConstructorMapXN sortgenaxxnlist
 
 -- | creates constructors from a 'CASLFORMULA'
 makeConstructorMap::(Ann.Named CASLFORMULA)->(Id.Id, (Map.Map Id.Id (Set.Set OpType)))
@@ -1608,6 +2036,15 @@ makeConstructorMap (Ann.NamedSen senname _ _ (Sort_gen_ax cons _)) =
 				) Map.empty cons
 	in (Hets.stringToId sort, constructormap)
 makeConstructorMap _ = error "Wrong application of makeConstructorMap!"
+
+makeConstructorMapXN::XmlNamedWON (Ann.Named CASLFORMULA)->(XmlNamedWON Id.Id, (Map.Map Id.Id (Set.Set OpType)))
+makeConstructorMapXN sensxn =
+	let
+		sens = xnWOaToa sensxn
+		(cid, cmap) = makeConstructorMap sens
+	in
+		(XmlNamed (Hets.mkWON cid (Hets.woOrigin (xnItem sensxn))) (xnName sensxn), cmap)
+		
 
 -- | creates a String-representation of a DGLinkType	
 linkTypeToString::DGLinkType->String
@@ -1728,6 +2165,20 @@ inDGToXml dg n nodenames =
 	if length inLinks == 0 then HXT.txt "" else
 	(HXT.etag "private" += (HXT.sattr "for" (Map.findWithDefault "unknownNode" n nodenames)))
 	+= ((HXT.etag "data" += (HXT.sattr "format" "Hets-Imports" +++ HXT.sattr "pto" "Hets"))
+		+= HXT.cdata (
+		foldl (\ins (from, dgl) ->
+			ins ++ ("From:\""++ from ++ "\" " ++ (linkToString dgl) ++ "\n")
+			) "\n" named)
+		)
+		
+inDGToXmlForPrivate::DGraph->Graph.Node->(Map.Map Graph.Node String)->HXT.XmlFilter
+inDGToXmlForPrivate dg n nodenames =
+	let
+		inLinks = map (\ (from,_,a) -> (from, a) ) $ Graph.inn dg n
+		named = map ( \ (from, a) -> (Map.findWithDefault "unknownNode" from nodenames, a)) inLinks  
+	in
+	if length inLinks == 0 then HXT.txt "" else
+	((HXT.etag "data" += (HXT.sattr "format" "Hets-Imports" +++ HXT.sattr "pto" "Hets"))
 		+= HXT.cdata (
 		foldl (\ins (from, dgl) ->
 			ins ++ ("From:\""++ from ++ "\" " ++ (linkToString dgl) ++ "\n")
@@ -3505,6 +3956,10 @@ createSymbolForSort::Hets.ImportsMap->Hets.SortsMap->SORT->String->(HXT.XmlTree-
 createSymbolForSort imports' sorts' sort name' =
 	HXT.etag "OMS" += ( HXT.sattr "cd" (fromMaybe "unknown" $ Hets.findNodeNameForSort imports' sorts' sort name' ) +++ HXT.sattr "name" (show sort) )
 
+createSymbolForSortXN::TheoryXNSet->XmlNamedWON SORT->(HXT.XmlTree->HXT.XmlTrees)
+createSymbolForSortXN theoryset xnsort =
+	HXT.etag "OMS" += ( HXT.sattr "cd" (fromMaybe "unknown" $ getTheoryXmlName theoryset (Hets.woOrigin (xnItem xnsort)) ) +++ HXT.sattr "name" (xnName xnsort) )
+	
 -- | create the xml-representation for a formula (in context of a theory)	
 processFormula ::
 	Hets.ImportsMap-> -- ^ the map of imports
@@ -3735,7 +4190,240 @@ processFormula _ _ _ _ _
 processFormula _ _ _ _ _
 	(ExtFORMULA _) =
 		HXT.etag unsupportedS +++
+		HXT.txt ( "<-- " ++ "ExtFORMULA" ++ " //-->")
+		
+{-		
+-- | create the xml-representation for a formula (in context of a theory)	
+processFormulaXN ::
+	TheoryXNSet-> -- ^ set of theories
+	Set.Set XmlNamedWONSORT-> -- ^ set of sorts
+	Graph.Node-> -- ^ current node
+	(FORMULA f)-> -- ^ the formula to process
+	(HXT.XmlTree->HXT.XmlTrees) -- ^ a xml-representation of the formula
+-- Quantification
+processFormulaXN imports' sorts' preds' ops' name'
+	(Quantification q vl f _) =
+		( HXT.etag "OMBIND" += (
+			xmlNL +++
+			(HXT.etag "OMS" +=
+				(HXT.sattr "cd" caslS +++
+				HXT.sattr "name" (quantName q))
+			) +++
+			(xmlNL) +++
+			(processVarDecl imports' sorts' name' vl) +++
+			(processFormula imports' sorts' preds' ops' name' f) )
+		) +++
+		xmlNL
+-- Conjunction
+processFormulaXN imports' sorts' preds' ops' name'
+	(Conjunction fl _) =
+		(HXT.etag "OMA" += (
+			xmlNL +++
+			( HXT.etag "OMS" +=
+				(HXT.sattr "cd" caslS +++
+				HXT.sattr "name" caslConjunctionS)
+			) +++
+			(foldl (\forms f ->
+				forms +++
+				processFormula imports' sorts' preds' ops' name' f
+				) (xmlNL) fl)
+		) ) +++
+		xmlNL
+-- Disjunction
+processFormulaXN imports' sorts' preds' ops' name'
+	(Disjunction fl _) =
+		(HXT.etag "OMA" += (
+			xmlNL +++
+			( HXT.etag "OMS" +=
+				(HXT.sattr "cd" caslS +++
+				HXT.sattr "name" caslDisjunctionS)
+			) +++
+			(foldl (\forms f ->
+				forms +++
+				processFormula imports' sorts' preds' ops' name' f
+				) (xmlNL) fl)
+		) ) +++
+		xmlNL
+-- Implication
+processFormulaXN imports' sorts' preds' ops' name'
+	(Implication f1 f2 b _) =
+		( HXT.etag "OMA" += (
+			xmlNL +++
+			( HXT.etag "OMS" +=
+				(HXT.sattr "cd" caslS +++
+				HXT.sattr "name" caslImplicationS)
+			) +++
+			(xmlNL) +++
+			(processFormula imports' sorts' preds' ops' name' f1) +++
+			(processFormula imports' sorts' preds' ops' name' f2) +++
+			(processFormula imports' sorts' preds' ops' name'
+				(if b then True_atom Id.nullRange else False_atom Id.nullRange))
+		) ) +++
+		xmlNL
+-- Equivalence
+processFormulaXN imports' sorts' preds' ops' name'
+	(Equivalence f1 f2 _) =
+		( HXT.etag "OMA" += (
+			xmlNL +++
+			( HXT.etag "OMS" +=
+				(HXT.sattr "cd" caslS +++
+				HXT.sattr "name" caslEquivalenceS)
+			) +++
+			(xmlNL) +++
+			(processFormula imports' sorts' preds' ops' name' f1) +++
+			(processFormula imports' sorts' preds' ops' name' f2)
+		) ) +++
+		xmlNL
+-- Negation
+processFormulaXN imports' sorts' preds' ops' name'
+	(Negation f _) =
+		( HXT.etag "OMA" += (
+			xmlNL +++
+			( HXT.etag "OMS" +=
+				(HXT.sattr "cd" caslS +++
+				HXT.sattr "name" caslNegationS)
+			) +++
+			(xmlNL) +++
+			(processFormula imports' sorts' preds' ops' name' f)
+		) ) +++
+		xmlNL
+-- Predication
+processFormulaXN imports' sorts' preds' ops' name'
+	(Predication p tl _) =
+		(HXT.etag "OMA" += (
+			xmlNL +++
+			(HXT.etag "OMS" +=
+				(HXT.sattr "cd" caslS +++
+				HXT.sattr "name" caslPredicationS)
+			) +++
+			xmlNL +++
+			(xmlNL) +++
+			(createSymbolForPredication imports' preds' name' p) +++
+			(foldl (\term t ->
+				term +++
+				(processTerm imports' sorts' preds' ops' name' t) +++
+				xmlNL
+				) (HXT.txt "") tl
+			) +++
+			(xmlNL)
+		) ) +++
+		xmlNL
+-- Definedness
+processFormulaXN imports' sorts' preds' ops' name'
+	(Definedness t _ ) =
+		(HXT.etag "OMA" += (
+			xmlNL +++
+			( HXT.etag "OMS" +=
+				(HXT.sattr "cd" caslS +++
+				HXT.sattr "name" caslDefinednessS)
+			) +++
+			(xmlNL) +++
+			(processTerm imports' sorts' preds' ops' name' t)
+		) ) +++
+		xmlNL
+-- Existl_equation
+processFormulaXN imports' sorts' preds' ops' name'
+	(Existl_equation t1 t2 _) = 
+		( HXT.etag "OMA" += (
+			xmlNL +++
+			( HXT.etag "OMS" +=
+				(HXT.sattr "cd" caslS +++
+				HXT.sattr "name" caslExistl_equationS)
+			) +++
+			(xmlNL) +++
+			(processTerm imports' sorts' preds' ops' name' t1) +++
+			(processTerm imports' sorts' preds' ops' name' t2)
+		) ) +++
+		xmlNL
+-- Strong_equation
+processFormulaXN imports' sorts' preds' ops' name'
+	(Strong_equation t1 t2 _) = 
+		( HXT.etag "OMA" += (
+			xmlNL +++
+			( HXT.etag "OMS" +=
+				(HXT.sattr "cd" caslS +++
+				HXT.sattr "name" caslStrong_equationS)
+			) +++
+			(xmlNL) +++
+			(processTerm imports' sorts' preds' ops' name' t1) +++
+			(processTerm imports' sorts' preds' ops' name' t2)
+		) ) +++
+		xmlNL
+-- Membership
+processFormulaXN imports' sorts' preds' ops' name'
+	(Membership t s _) = 
+		( HXT.etag "OMA" += (
+			xmlNL +++
+			( HXT.etag "OMS" +=
+				(HXT.sattr "cd" caslS +++
+				HXT.sattr "name" caslMembershipS)
+			) +++
+			(xmlNL) +++
+			(processTerm imports' sorts' preds' ops' name' t) +++
+			(createSymbolForSort imports' sorts' s name' )
+		) ) +++
+		xmlNL
+-- False_atom
+processFormulaXN _ _ _ _ _
+	(False_atom _) =
+		(HXT.etag "OMS" +=
+			(HXT.sattr "cd" caslS +++
+			HXT.sattr "name" caslSymbolAtomFalseS)
+		) +++
+		xmlNL
+-- True_atom
+processFormulaXN _ _ _ _ _
+	(True_atom _) =
+		(HXT.etag "OMS" +=
+			(HXT.sattr "cd" caslS +++
+			HXT.sattr "name" caslSymbolAtomTrueS)
+		) +++
+		xmlNL
+-- Sort_gen_ax
+processFormulaXN imports' _ _ ops' name'
+	(Sort_gen_ax constraints freetype) =
+		( HXT.etag "OMA" +=
+			(xmlNL +++
+			( HXT.etag "OMS" +=
+				(HXT.sattr "cd" caslS +++
+				HXT.sattr "name" caslSort_gen_axS)
+			) +++
+			(xmlNL) +++
+			--(HXT.etag "OMBVAR" += -- ombvar not allowed in oma
+			--	( xmlNL +++
+				(processConstraints imports' ops' name' constraints) +++
+			--	)
+			--) +++
+			HXT.etag "OMS" +=
+				(HXT.sattr "cd" caslS +++
+				HXT.sattr "name"
+					(if freetype then
+							caslSymbolAtomTrueS
+						else
+							caslSymbolAtomFalseS)
+				) +++
+				xmlNL
+			) +++
+			xmlNL) +++
+			xmlNL
+-- unsupported formulas
+-- Mixfix_formula
+processFormulaXN _ _ _ _ _
+	(Mixfix_formula _) =
+		HXT.etag unsupportedS +++
+		HXT.txt ( "<-- " ++ "Mixfix_formula" ++ " //-->")
+-- Unparsed_formula
+processFormulaXN _ _ _ _ _
+	(Unparsed_formula s _) =
+		HXT.etag unsupportedS +++
+		HXT.txt ( "<-- " ++ "Unparsed_formula \"" ++ s ++ "\" //-->")
+-- ExtFORMULA
+processFormulaXN _ _ _ _ _
+	(ExtFORMULA _) =
+		HXT.etag unsupportedS +++
 		HXT.txt ( "<-- " ++ "ExtFORMULA" ++ " //-->") 
+
+-}
 
 -- | create an xml-representation for a predication
 createSymbolForPredication::
@@ -4432,7 +5120,370 @@ idToXml::Id.Id->(HXT.XmlTree->HXT.XmlTrees)
 idToXml id' = HXT.cdata (idToString id' )
 
 idFromXml::HXT.XmlTrees->Id.Id
-idFromXml = read . xshow . applyXmlFilter getChildren 
-		
+idFromXml = read . xshow . applyXmlFilter getChildren
 
+
+		
+createPresentationForId::Id.Id->String->HXT.XmlFilter
+createPresentationForId theId givenName =
+	HXT.etag "presentation" += (
+			(HXT.sattr "for" givenName)
+		+++ xmlNL
+		+++	(HXT.etag "use" += (
+					(HXT.sattr "format" "Hets")
+				+++	(HXT.txt (idToString theId)) 
+				))
+		+++	xmlNL
+		)
+		
+createIdFromPresentation::HXT.XmlTree->Id.Id
+createIdFromPresentation t =
+	let
+		idString = xshow $ applyXmlFilter (getChildren .> isTag "use" .>
+			withSValue "format" "Hets" .> getChildren) [t]
+	in
+		read idString
+		
+type XmlName = String
+-- this type is used to store already used names
+type XmlNameList = [XmlName]
+
+data XmlNamed a = XmlNamed { xnItem::a, xnName::XmlName }
+
+instance (Eq a)=>Eq (XmlNamed a) where
+	x1 == x2 = (xnItem x1) == (xnItem x2)
+
+instance (Ord a)=>Ord (XmlNamed a) where
+	compare x1 x2 = compare (xnItem x1) (xnItem x2)
+
+instance (Show a)=>Show (XmlNamed a) where
+	show x = (show $ xnItem x) ++ " xml:(" ++ (xnName x) ++ ")"
+
+-- | Container-Class	
+class Container a b | a -> b where
+	getItems::a->[b]
+	fromItems::[b]->a
+	
+-- | Container-Conversion
+con_convert::(Container q i, Container r i)=>q->r
+con_convert c = fromItems (getItems c)
+
+-- | Container-Mapping
+con_map::(Container q i, Container r j)=>(i->j)->q->r
+con_map f = fromItems . (map f) . getItems
+
+-- Lists are containers
+instance Container [a] a where
+	getItems = id
+	fromItems = id
+	
+-- Sets are containers
+instance (Ord a)=>Container (Set.Set a) a where
+	getItems = Set.toList
+	fromItems = Set.fromList
+	
+-- Maps are containers
+instance (Ord a)=>Container (Map.Map a b) (a,b) where
+	getItems = Map.toList
+	fromItems = Map.fromList
+	
+-- Relations are containers
+instance (Ord a)=>Container (Rel.Rel a) (a,a) where
+	getItems = Rel.toList
+	fromItems = Rel.fromList	
+	
+-- | remove characters from a String to use it in xml
+-- follows the xml Name-production-rule (without combining-char and extender)
+adjustStringForXmlName::String->XmlName
+adjustStringForXmlName [] = "Empty"
+adjustStringForXmlName s@(firstChar:_) =
+	preventEmpty $
+	if (Char.isDigit firstChar)
+		then
+			adjustStringForXmlName ("N"++s)
+		else
+			filter
+				(\c ->
+					-- xml-names may contain letters, digits and
+					-- the symbols shown below
+					(isAscii c)
+					&&	(
+						(isAlphaNum c)
+						||	(elem c [':','_','.','-'])
+						)
+				)
+				-- remove everything until a letter or ':' or '_' is found
+				(dropWhile
+					(\c ->
+						not (
+							(isAlpha c)
+							||	(elem c [':', '_'])
+							)
+					)
+					(replaceSpecial s)
+				)
+	where
+		replaceSpecial::String->String
+		replaceSpecial [] = []
+		replaceSpecial ('\194':r) = replaceSpecial r -- Unicode (Â in ISO-8859-15...)
+		replaceSpecial (c:r) =
+			case c of
+				' ' -> "_"
+				'*' -> "Ast"
+				'<' -> "Lower"
+				'>' -> "Greater"
+				';' -> "SemiColon"
+				'/' -> "Division"
+				'+' -> "Plus"
+				'-' -> "Minus"
+				'%' -> "Percent"
+				'(' -> "BrackOpen"
+				')' -> "BrackClose"
+				'{' -> "BraceOpen"
+				'}' -> "BraceClose"
+				'[' -> "SBrackOpen"
+				']' -> "SBrackClose"
+				'=' -> "Equals"
+				',' -> "Comma"
+				'#' -> "Hash"
+				'\'' -> "SQuote"
+				'"' -> "Quote"
+				'~' -> "Tilde"
+				'`' -> "AccGrav"
+				'\\' -> "Backslash"
+				'!' -> "Excla"
+				'?' -> "Quest"
+				'@' -> "At"
+				'$' -> "Dollar"
+				'&' -> "Amp"
+				'^' -> "Circ"
+				'\167' -> "Para"
+				'\176' -> "Degree"
+				_ -> [c]
+			++ replaceSpecial r
+		preventEmpty::String->String
+		preventEmpty [] = "Empty"
+		preventEmpty q = q
+
+-- | create unique xml-names for a list of items with a list of previous names
+-- and a naming function and return resulting list and list of used names
+createXmlNames::(a->String)->XmlNameList->[a]->([XmlNamed a], XmlNameList)
+createXmlNames = createXmlNamesCon
+	
+-- | create unique names for items in a container with a list of previous names
+-- and a naming function and return a container of named elements and a list
+-- of used names
+createXmlNamesCon::(Container q a, Container r (XmlNamed a))=>(a->String)->XmlNameList->q->(r, XmlNameList)
+createXmlNamesCon nameForItem xmlnames container =
+	let
+		items = getItems container
+		(newitems, newnames) = foldl (\(items' , xmlnames' ) item ->
+			let
+				initialname = adjustStringForXmlName (nameForItem item)
+				finalitemname = createUniqueName xmlnames' initialname
+			in
+				(items' ++ [XmlNamed item finalitemname], finalitemname:xmlnames' )
+				) ([], xmlnames) items
+	in
+		(fromItems newitems, newnames)
+
+-- | create unique names for a list of items providing a function to check if
+-- two elements are equal
+uniqueXmlNames::XmlNameList->(a->a->Bool)->(a->String)->[a]->([XmlNamed a], XmlNameList)
+uniqueXmlNames xmlnames isequal tostring =
+	foldl (\(xmlnamed, xmlnames' ) listitem ->
+	let
+		initialname = adjustStringForXmlName (tostring listitem)
+		itemname = createUniqueName xmlnames' initialname 
+	in
+		case find ((isequal listitem) . xnItem) xmlnamed of
+			Nothing ->  ( (XmlNamed listitem itemname):xmlnamed, itemname:xmlnames' )
+			(Just previous) -> ((XmlNamed listitem (xnName previous)):xmlnamed , xmlnames' )
+	) ([],xmlnames)
+
+-- | unique xml names for container	
+uniqueXmlNamesContainer::(Container c i, Container d (XmlNamed i))=>
+	XmlNameList->
+	(a->String)-> -- ^ how to find an initial name for a converted item
+	c->
+	(i->i->Bool)->
+	(i->a)-> -- ^ specify a conversion of items (or 'id')
+	(d, XmlNameList)
+uniqueXmlNamesContainer
+	xmlnames
+	tostring
+	container
+	isequal
+	conversion =
+		let
+			items = getItems container
+			(newitems, newxmlnames) =
+				foldl(\(newitems' , newxmlnames' ) listitem ->
+					let
+						converted = conversion listitem
+						initialname = adjustStringForXmlName (tostring converted)
+						itemname = createUniqueName newxmlnames' initialname
+					in
+						case find ((isequal listitem) . xnItem) newitems' of
+							Nothing -> ( (XmlNamed listitem itemname):newitems' , itemname:newxmlnames' )
+							(Just previous) -> ((XmlNamed listitem (xnName previous)):newitems' , newxmlnames' )
+					) ([], xmlnames) items
+		in
+			(fromItems newitems, newxmlnames)
+	
+-- | use this function to process containers that are stored in other containers
+--  - think map key->container - and return container with containers of processed 
+-- items. the trick is that the key association is the same as long as the 
+-- processing function does not alter the key (but it may do so)
+-- the processing function needs to take an initial status and the final status 
+-- will be returned
+processSubContents::(Ord k, Container a (k, p), Container p q, Container t r, Container b (k, t))=>
+	(s->[(k, q)]->([(k, r)], s))->s->a->(b, s)
+processSubContents
+	subprocess
+	startvalue
+	container =
+	let
+		allitems = getItems container
+		tagged = concatMap (\(k,c) -> map (\i -> (k,i)) (getItems c)) allitems
+		(processeditems, finalstatus) = subprocess startvalue tagged
+		sorted = foldl (\sorted' (k,i) ->
+			insertAtKey (k,i) sorted'
+			) [] processeditems
+		kconpairs = map (\(k,l) -> (k,fromItems l)) sorted
+	in
+		(fromItems kconpairs, finalstatus)
+	where
+	insertAtKey::(Eq k)=>(k,v)->[(k,[v])]->[(k,[v])]
+	insertAtKey (k,v) [] = [(k,[v])]
+	insertAtKey (k,v) ((lk,l):r) =
+		if k == lk then (lk,v:l):r else (lk,l):(insertAtKey (k,v) r)
+
+-- strip-function for using processSubContents		
+pSCStrip::(a->b)->(z,a)->b
+pSCStrip f (_,a) = f a
+
+-- creates a unique name from an initial name and a list of used names
+-- the returned string will be the initial name or the initial name with a
+-- number appended
+createUniqueName::XmlNameList->String->String
+createUniqueName
+	xmlnames initialname =
+		initialname ++
+			(nzshow
+				(until
+					(\n -> not $ elem (initialname ++ (nzshow n)) xmlnames)
+					(+1)
+					0
+				)
+			)
+	where
+	nzshow::Int->String
+	nzshow 0 = ""
+	nzshow i = show i
+
+-- | unique xml names for container	
+uniqueXmlNamesContainerExt::(Container c i, Container d j)=>
+	XmlNameList->
+	(a->String)-> -- ^ how to find an initial name for a converted item
+	c->
+	(a->a->Bool)->
+	(i->a)-> -- ^ specify a conversion of items (or 'id')
+	(i->XmlName->j)->
+	(d, XmlNameList)
+uniqueXmlNamesContainerExt
+	xmlnames
+	tostring
+	container
+	isequal
+	extract
+	synthesize =
+		let
+			items = getItems container
+			(newitems, newxmlnames) =
+				foldl(\(newitems' , newxmlnames' ) listitem ->
+					let
+						extracted = extract listitem
+						initialname = adjustStringForXmlName (tostring extracted)
+						itemname = createUniqueName newxmlnames' initialname
+					in
+						case find ((isequal extracted) . extract . fst) newitems' of
+							Nothing -> ( (listitem, itemname):newitems' , itemname:newxmlnames' )
+							(Just (_, pname)) -> ( (listitem, pname):newitems' , newxmlnames' )
+					) ([], xmlnames) items
+		in
+			(fromItems (map (uncurry synthesize) newitems), newxmlnames)
+			
+uniqueXmlNamesContainerWONExt::(Container c i, Container d j, Eq a)=>
+	XmlNameList->
+	(a->String)-> -- ^ how to find an initial name for a converted item
+	c->
+	(i->(Hets.WithOriginNode a))-> -- ^ specify a conversion of items (or 'id')
+	(i->XmlName->j)->
+	(d, XmlNameList)
+uniqueXmlNamesContainerWONExt xmlnames tostring container extract synthesize =
+	uniqueXmlNamesContainerExt
+		xmlnames
+		(tostring . Hets.woItem)
+		container
+		(\p q -> p == q) -- sameOrigin and equalItem
+		extract
+		synthesize
+	
+attributeCon::(Container c a, Container d b, Container q r)=>
+	(a->b->Bool)->
+	a->
+	(a->b->r)->
+	c->
+	d->
+	q
+attributeCon
+	attribmatch
+	defaultAttribute
+	attribute
+	source
+	target =
+	let
+		attributeitems = getItems source
+		targetitems = getItems target
+		newitems = map (\i ->
+			attribute
+				(case find ((flip attribmatch) i) attributeitems of
+					Nothing -> defaultAttribute
+					(Just attribItem) -> attribItem)
+				i) targetitems
+	in
+		fromItems newitems
+		
+attributeWithXmlNamesCon::(Container c (XmlNamed a), Container d b, Container q r)=>
+	(a->b->Bool)->
+	(XmlName->b->r)
+	->c
+	->d
+	->q
+attributeWithXmlNamesCon
+	matched
+	attribute =
+	attributeCon
+		(\a b -> matched (xnItem a) b)
+		(error "Unknown Element!")
+		(\a b -> attribute (xnName a) b)
+	
+uniqueXmlNamesContainerWON::(Eq i, Container c (Hets.WithOriginNode i), Container d (XmlNamed (Hets.WithOriginNode i)))=>
+	XmlNameList->
+	(a->String)->
+	c->
+	(i->a)->
+	(d, XmlNameList)
+uniqueXmlNamesContainerWON
+	xmlnames
+	tostring
+	container
+	extract =
+		uniqueXmlNamesContainer
+			xmlnames
+			tostring
+			container
+			(\a b -> a == b) -- sameOrigin and equalItem
+			(extract . Hets.woItem)
 

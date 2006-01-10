@@ -44,7 +44,13 @@ import qualified Logic.Prover as Prover
 
 import qualified Common.OrderedMap as OMap
 
---import Debug.Trace (trace)
+import qualified Debug.Trace as Debug.Trace
+
+import qualified Data.List as Data.List
+
+
+dtt::String->a->a
+dtt = Debug.Trace.trace
 
 showGraph::FilePath->HetcatsOpts->Maybe (LIB_NAME, LibEnv)->IO ()
 showGraph file opt env =
@@ -222,8 +228,50 @@ signViaMorphism dg n =
 				in	case mcaslmorph of
 						(Just caslmorph) -> CASL.Morphism.msource caslmorph
 						_ -> emptySign ()
+						
+data WithOrigin a b = WithOrigin { woItem::a, woOrigin::b }
 		
-		
+--data WithOriginNode a = WithOriginNode { wonItem::a, wonOrigin::Graph.Node }
+type WithOriginNode a = WithOrigin a Graph.Node
+
+
+-- Equality and Ordering may not only depend on the stored items as this would
+-- lead to removal in sets,maps,etc...
+-- But still equality-checks on items are needed.
+
+equalItems::(Eq a)=>WithOrigin a b->WithOrigin a c->Bool
+equalItems p q = (woItem p) == (woItem q) 
+
+compareItems::(Ord a)=>WithOrigin a b->WithOrigin a c->Ordering
+compareItems p q = compare (woItem p) (woItem q)
+
+instance (Eq a, Eq b)=>Eq (WithOrigin a b) where
+	wo1 == wo2 = ((woOrigin wo1) == (woOrigin wo2)) && ((woItem wo1) == (woItem wo2))  
+	
+instance (Eq a, Ord b, Ord a)=>Ord (WithOrigin a b) where
+	compare wo1 wo2 =
+		let
+			icmp = compare (woItem wo1) (woItem wo2)
+		in
+			if icmp == EQ then compare (woOrigin wo1) (woOrigin wo2) else icmp 
+	
+instance (Show a, Show b)=>Show (WithOrigin a b) where
+	show wo = (show (woItem wo)) ++ " Origin:(" ++ (show (woOrigin wo)) ++ ")"
+	
+wonItem::WithOriginNode a->a
+wonItem = woItem
+
+wonOrigin::WithOriginNode a->Graph.Node
+wonOrigin = woOrigin
+	
+mkWON::a->Graph.Node->WithOriginNode a
+mkWON = WithOrigin
+	
+originOrder::(Ord o)=>WithOrigin a o->WithOrigin b o->Ordering
+originOrder wo1 wo2 = compare (woOrigin wo1) (woOrigin wo2)
+	
+sameOrigin::(Eq o)=>WithOrigin a o->WithOrigin a o->Bool
+sameOrigin wo1 wo2 = (woOrigin wo1) == (woOrigin wo2) 
 
 -- gets something from a DGNode or returns default value for DGRefS
 getFromDGNode::DGNodeLab->(DGNodeLab->a)->a->a
@@ -238,7 +286,7 @@ getFromNode dg n usenode getnode getgraphnode =
 			getnode node
 		else
 			getgraphnode dg n
-		
+			
 -- generic function to calculate a delta between a node and the nodes it
 -- imports from
 getFromNodeDelta::DGraph->Graph.Node->(DGNodeLab->a)->(a->a->a)->a->a
@@ -256,10 +304,168 @@ getFromNodeDeltaM dg n usenode getnode getgraphnode delta =
 		innodes = inputNodes dg n
 	in
 		foldl (\r n' ->
-			delta r $ getFromNode dg n' usenode getnode getgraphnode
+			let 
+				newvalue = getFromNode dg n' usenode getnode getgraphnode
+				result = delta r newvalue
+			in
+				result
 			) (getFromNode dg n usenode getnode getgraphnode) innodes
-	
 			
+getFromNodeWithOriginsM::
+	DGraph->
+	Graph.Node->
+	(DGNodeLab->Bool)->
+	(DGNodeLab->a)->
+	(DGraph->Graph.Node->a)->
+	(a->[b])->
+	(b->DGraph->Graph.Node->Bool)->
+	([WithOriginNode b]->c)->
+	c
+getFromNodeWithOriginsM dg n usenode getnode getgraphnode getcomponents isorigin createresult =
+	let
+		item' = getFromNode dg n usenode getnode getgraphnode
+		components = getcomponents item'
+		traced = foldl (\traced' c ->
+			let
+				mo = traceOrigin dg n [] (isorigin c)
+			in
+				traced' ++ [case mo of
+					Nothing -> mkWON c n -- current node is origin
+					(Just o) -> mkWON c o]
+				) [] components
+	in
+		createresult traced
+		
+getFromNodeWithOriginsMSet::
+	(Ord a)=>
+	DGraph->
+	Graph.Node->
+	(DGNodeLab->Bool)->
+	(DGNodeLab->Set.Set a)->
+	(DGraph->Graph.Node->Set.Set a)->
+	(a->DGraph->Graph.Node->Bool)->
+	Set.Set (WithOriginNode a)
+getFromNodeWithOriginsMSet dg n usenode getset getgraphset isorigin =
+	getFromNodeWithOriginsM dg n usenode getset getgraphset Set.toList isorigin Set.fromList
+
+getFromCASLSignWithOrigins::
+	DGraph->Graph.Node->(CASLSign->a)->(a->[b])->(b->a->Bool)->([WithOriginNode b]->c)->c
+getFromCASLSignWithOrigins dg n caslget getcomponents isorigin createresult =
+	getFromNodeWithOriginsM dg n (\_ -> False) (\_ -> undefined::a)
+		(\dg' n' -> getFromCASLSignM dg' n' caslget)
+		getcomponents
+		(\i dg' n' -> isorigin i (getFromCASLSignM dg' n' caslget))
+		createresult
+		
+getSortsFromNodeWithOrigins::
+	DGraph->Graph.Node->SortsWO
+getSortsFromNodeWithOrigins dg n =
+	getFromCASLSignWithOrigins
+		dg
+		n
+		sortSet
+		Set.toList
+		Set.member
+		Set.fromList
+		
+getOpsMapFromNodeWithOrigins::
+	DGraph->Graph.Node->OpsWO
+getOpsMapFromNodeWithOrigins dg n =
+	getFromCASLSignWithOrigins
+		dg
+		n
+		opMap
+		Map.toList
+		(\(mid, _) om -> case Map.lookup mid om of
+			Nothing -> False
+			(Just _) -> True)
+		(Map.fromList . (map (\mewo ->
+			(mkWON (fst (wonItem mewo)) (wonOrigin mewo), snd (wonItem mewo)))))
+			
+getAssocOpsMapFromNodeWithOrigins::
+	DGraph->Graph.Node->OpsWO
+getAssocOpsMapFromNodeWithOrigins dg n =
+	getFromCASLSignWithOrigins
+		dg
+		n
+		assocOps
+		Map.toList
+		(\(mid, _) om -> case Map.lookup mid om of
+			Nothing -> False
+			(Just _) -> True)
+		(Map.fromList . (map (\mewo ->
+			(mkWON (fst (wonItem mewo)) (wonOrigin mewo), snd (wonItem mewo)))))
+			
+getPredsMapFromNodeWithOrigins::
+	DGraph->Graph.Node->PredsWO
+getPredsMapFromNodeWithOrigins dg n =
+	getFromCASLSignWithOrigins
+		dg
+		n
+		predMap
+		Map.toList
+		(\(mid, _) om -> case Map.lookup mid om of
+			Nothing -> False
+			(Just _) -> True)
+		(Map.fromList . (map (\mewo ->
+			(mkWON (fst (wonItem mewo)) (wonOrigin mewo), snd (wonItem mewo)))))
+			
+getSensFromNodeWithOrigins::
+	DGraph->Graph.Node->SensWO
+getSensFromNodeWithOrigins dg n =
+	getFromNodeWithOriginsMSet
+		dg
+		n
+		(\_ -> True)
+		(Set.fromList . getNodeSentences)
+		(\_ _ -> undefined::Set.Set (Ann.Named CASLFORMULA))
+		(\s dg' n' ->
+			case lab dg' n' of
+				Nothing -> False
+				(Just node) -> elem s (getNodeSentences node)
+		)
+			
+traceOrigin::DGraph->Graph.Node->[Graph.Node]->(DGraph->Graph.Node->Bool)->Maybe Graph.Node
+traceOrigin dg n visited test =
+	if (elem n visited) -- circle encountered...
+		then
+			Nothing -- we are performing a depth-search so terminate this tree
+		else
+			-- check if this node still carries the attribute
+			if not $ test dg n
+				then
+					-- it does not, but the previous node did
+					if (length visited) == 0
+						then
+							{-	there was no previous node. this means the start
+								node did not have the attribute searched for -}
+							Debug.Trace.trace
+								"traceOrigin: search from invalid node"
+								Nothing
+						else
+							-- normal case, head is the previous node
+							(Just (head visited))
+				else
+					-- this node still carries the attribute
+					let
+						-- get possible node for import (OmDOC-specific)
+						innodes = inputNodes dg n
+						-- find first higher origin
+						mo = first
+								(\n' -> traceOrigin dg n' (n:visited) test)
+								innodes
+					in
+						-- if there is no higher origin, this node is the origin
+						case mo of
+							Nothing ->
+								{-	if further search fails, then this
+									node must be the origin -}
+								(Just n) 
+							(Just _) ->
+							 	-- else use found origin
+								mo
+								
+								
 -- helper function to extract an element from the caslsign of a node
 -- or to provide a safe default
 getFromCASLSign::DGNodeLab->(CASLSign->a)->a->a
@@ -280,7 +486,6 @@ getFromCASLSignM dg n get' =
 					else getJustCASLSign $ getCASLSign (dgn_sign node)
 	in	get' caslsign
 			
-		
 -- wrapper around 'getFromNodeDelta' for CASLSign-specific operations
 getFromCASLSignDelta::DGraph->Graph.Node->(CASLSign->a)->(a->a->a)->a->a
 getFromCASLSignDelta dg n get' delta def =
@@ -293,10 +498,39 @@ getFromCASLSignDeltaM dg n get' delta _ =
 		(\_ -> undefined::a)
 		(\dg' n' -> getFromCASLSignM dg' n' get' )
 		delta
-	
+		
 -- extract all sorts from a node that are not imported from other nodes
 getNodeDeltaSorts::DGraph->Graph.Node->(Set.Set SORT)
 getNodeDeltaSorts dg n = getFromCASLSignDeltaM dg n sortSet Set.difference Set.empty
+
+getRelsFromNodeWithOrigins::Maybe SortsWO->DGraph->Graph.Node->Rel.Rel SORTWO
+getRelsFromNodeWithOrigins mswo dg n =
+	let
+		sortswo = case mswo of
+			Nothing -> getSortsFromNodeWithOrigins dg n
+			(Just swo) -> swo
+		rel = getFromCASLSignM dg n sortRel
+	in
+		Rel.fromList $
+			map (\(a, b) ->
+				let
+					swoa = case Set.toList $ Set.filter (\m -> a == wonItem m) sortswo of
+						[] ->
+							Debug.Trace.trace
+								("Unknown Sort in Relation... ("
+									++ (show a) ++ ")")
+								(mkWON a n)
+						(i:_) -> i
+					swob = case Set.toList $ Set.filter (\m -> b == wonItem m) sortswo of
+						[] ->
+							Debug.Trace.trace
+								("Unknown Sort in Relation... ("
+									++ (show b) ++ ")")
+								(mkWON b n)
+						(i:_) -> i
+				in
+					(swoa, swob)
+					) $ Rel.toList rel
 
 -- extract all relations from a node that are not imported from other nodes
 getNodeDeltaRelations::DGraph->Graph.Node->(Rel.Rel SORT)
@@ -339,6 +573,41 @@ getNodeNameMapping dg mapper dispose =
 			Map.insert (adjustNodeName ("AnonNode_"++(show n)) $ getDGNodeName node) (mapper dg n) mapping
 		) Map.empty $ Graph.labNodes dg
 
+getNodeDGNameMapping::DGraph->(DGraph->Graph.Node->a)->(a->Bool)->(Map.Map NODE_NAME a)
+getNodeDGNameMapping dg mapper dispose =
+	 foldl (\mapping (n,node) ->
+		let mapped = mapper dg n
+		in
+		if dispose mapped then
+			mapping
+		else
+			Map.insert (dgn_name node) mapped mapping
+		) Map.empty $ Graph.labNodes dg
+		
+getNodeDGNameMappingWO::DGraph->(DGraph->Graph.Node->a)->(a->Bool)->(Map.Map NODE_NAMEWO a)
+getNodeDGNameMappingWO dg mapper dispose =
+	 foldl (\mapping (n,node) ->
+		let mapped = mapper dg n
+		in
+		if dispose mapped then
+			mapping
+		else
+			Map.insert (mkWON (dgn_name node) n) mapped mapping
+		) Map.empty $ Graph.labNodes dg
+		
+getNodeDGNameMappingWONP::DGraph->(NODE_NAMEWO->DGraph->Graph.Node->a)->(a->Bool)->(Map.Map NODE_NAMEWO a)
+getNodeDGNameMappingWONP dg mapper dispose =
+	 foldl (\mapping (n,node) ->
+		let
+			thisname = mkWON (dgn_name node) n
+			mapped = mapper thisname dg n
+		in
+		if dispose mapped then
+			mapping
+		else
+			Map.insert thisname mapped mapping
+		) Map.empty $ Graph.labNodes dg
+		
 type Imports = Set.Set (String, (Maybe MorphismMap))
 type Sorts = Set.Set SORT
 type Rels = Rel.Rel SORT
@@ -346,12 +615,32 @@ type Preds = Map.Map Id.Id (Set.Set PredType)
 type Ops = Map.Map Id.Id (Set.Set OpType)
 type Sens = Set.Set (Ann.Named CASLFORMULA)
 
+type NODE_NAMEWO = WithOriginNode NODE_NAME
+type SORTWO = WithOriginNode SORT
+type IdWO = WithOriginNode Id.Id
+type SentenceWO = WithOriginNode (Ann.Named CASLFORMULA)
+
+
+type ImportsWO = Set.Set (NODE_NAMEWO, (Maybe MorphismMap))
+type SortsWO = Set.Set SORTWO
+type RelsWO = Rel.Rel SORTWO
+type PredsWO = Map.Map IdWO (Set.Set PredType)
+type OpsWO = Map.Map IdWO (Set.Set OpType)
+type SensWO = Set.Set SentenceWO
+
 type ImportsMap = Map.Map String Imports
 type SortsMap = Map.Map String Sorts
 type RelsMap = Map.Map String Rels
 type PredsMap = Map.Map String Preds
 type OpsMap = Map.Map String Ops
 type SensMap = Map.Map String Sens
+
+type ImportsMapDGWO = Map.Map NODE_NAMEWO ImportsWO
+type SortsMapDGWO = Map.Map NODE_NAMEWO SortsWO
+type RelsMapDGWO = Map.Map NODE_NAMEWO RelsWO
+type PredsMapDGWO = Map.Map NODE_NAMEWO PredsWO
+type OpsMapDGWO = Map.Map NODE_NAMEWO OpsWO
+type SensMapDGWO = Map.Map NODE_NAMEWO SensWO
 
 type AllMaps = (ImportsMap, SortsMap, RelsMap, PredsMap, OpsMap, SensMap)
 
@@ -400,21 +689,57 @@ lookupMaps sorts rels preds ops sens name =
 getSortsWithNodeNames::DGraph->SortsMap
 getSortsWithNodeNames dg = getNodeNameMapping dg getNodeDeltaSorts Set.null
 
+getSortsWithNodeDGNames::DGraph->Map.Map NODE_NAME Sorts
+getSortsWithNodeDGNames dg = getNodeDGNameMapping dg getNodeDeltaSorts Set.null
+
+getSortsWOWithNodeDGNamesWO::DGraph->SortsMapDGWO
+getSortsWOWithNodeDGNamesWO dg =
+	getNodeDGNameMappingWO dg getSortsFromNodeWithOrigins Set.null
+
 -- create a mapping of node-name -> Relation of Sorts for all nodes
 getRelationsWithNodeNames::DGraph->RelsMap
 getRelationsWithNodeNames dg = getNodeNameMapping dg getNodeDeltaRelations Rel.null
 
+getRelationsWithNodeDGNames::DGraph->Map.Map NODE_NAME Rels
+getRelationsWithNodeDGNames dg = getNodeDGNameMapping dg getNodeDeltaRelations Rel.null
+
+getRelationsWOWithNodeDGNamesWO::DGraph->RelsMapDGWO
+getRelationsWOWithNodeDGNamesWO dg =
+	getNodeDGNameMappingWO dg (getRelsFromNodeWithOrigins Nothing) Rel.null
+
+getRelationsWOWithNodeDGNamesWOSMDGWO::DGraph->SortsMapDGWO->RelsMapDGWO
+getRelationsWOWithNodeDGNamesWOSMDGWO dg sm =
+	getNodeDGNameMappingWONP dg (\nodenamewo -> getRelsFromNodeWithOrigins (Map.lookup nodenamewo sm)) Rel.null
+	
 -- create a mapping of node-name -> Predicate-Mapping (PredName -> Set of PredType)
 getPredMapsWithNodeNames::DGraph->PredsMap
 getPredMapsWithNodeNames dg = getNodeNameMapping dg getNodeDeltaPredMaps Map.null
+
+getPredMapsWithNodeDGNames::DGraph->Map.Map NODE_NAME Preds
+getPredMapsWithNodeDGNames dg = getNodeDGNameMapping dg getNodeDeltaPredMaps Map.null
+
+getPredMapsWOWithNodeDGNamesWO::DGraph->PredsMapDGWO
+getPredMapsWOWithNodeDGNamesWO dg = getNodeDGNameMappingWO dg getPredsMapFromNodeWithOrigins Map.null 
 
 -- create a mapping of node-name -> Operand-Mapping (OpName -> Set of OpType)
 getOpMapsWithNodeNames::DGraph->OpsMap
 getOpMapsWithNodeNames dg = getNodeNameMapping dg getNodeDeltaOpMaps Map.null
 
+getOpMapsWithNodeDGNames::DGraph->Map.Map NODE_NAME Ops
+getOpMapsWithNodeDGNames dg = getNodeDGNameMapping dg getNodeDeltaOpMaps Map.null
+
+getOpMapsWOWithNodeDGNamesWO::DGraph->OpsMapDGWO
+getOpMapsWOWithNodeDGNamesWO dg = getNodeDGNameMappingWO dg getOpsMapFromNodeWithOrigins Map.null 
+
 -- get a mapping of node-name -> Set of Sentences (CASL-formulas)
 getSentencesWithNodeNames::DGraph->SensMap
 getSentencesWithNodeNames dg = getNodeNameMapping dg getNodeDeltaSentences Set.null
+
+getSentencesWithNodeDGNames::DGraph->Map.Map NODE_NAME Sens
+getSentencesWithNodeDGNames dg = getNodeDGNameMapping dg getNodeDeltaSentences Set.null
+
+getSentencesWOWithNodeDGNamesWO::DGraph->SensMapDGWO
+getSentencesWOWithNodeDGNamesWO dg = getNodeDGNameMappingWO dg getSensFromNodeWithOrigins Set.null
 
 getAll::DGraph->AllMaps
 getAll dg = (
@@ -476,6 +801,24 @@ getNodeImportsNodeNames dg = getNodeNameMapping dg (
 			((adjustNodeName ("AnonNode_"++(show from)) $ getDGNodeName node), mmm):names
 		) [] $ inputLNodes dgr n ) Set.null
 	
+getNodeImportsNodeDGNames::DGraph->Map.Map NODE_NAME (Set.Set (NODE_NAME, Maybe MorphismMap))
+getNodeImportsNodeDGNames dg = getNodeDGNameMapping dg (
+	\dgr n -> Set.fromList $ 
+	 foldl (\names (from,node) ->
+	 	let
+			edges' = filter (\(a,b,_) -> (a == from) && (b==n)) $ Graph.labEdges dgr
+			caslmorph = case edges' of
+				[] -> emptyCASLMorphism
+				(l:_) -> getCASLMorph l
+			mmm = if isEmptyMorphism caslmorph
+				then
+					Nothing
+				else
+					(Just (makeMorphismMap caslmorph))
+		in
+			((dgn_name node), mmm):names
+		) [] $ inputLNodes dgr n ) Set.null
+		
 adjustNodeName::String->String->String
 adjustNodeName def [] = def
 adjustNodeName _ name = name
@@ -502,6 +845,15 @@ getNodeNamesNodeRef dg =
 	in
 		(Set.fromList nnames, Set.fromList rnames)
 			
+getNodeDGNamesNodeRef::DGraph->(Set.Set (Graph.Node, NODE_NAME), Set.Set (Graph.Node, NODE_NAME))
+getNodeDGNamesNodeRef dg =
+	let
+		lnodes = Graph.labNodes dg
+		(nodes' , refs) = partition (\(_,n) -> not $ isDGRef n) lnodes
+		nnames = map (\(n, node) -> (n, dgn_name node)) nodes'
+		rnames = map (\(n, node) -> (n, dgn_name node)) refs
+	in
+		(Set.fromList nnames, Set.fromList rnames)
 
 
 -- go through a list and perform a function on each element that returns a Maybe
@@ -681,6 +1033,13 @@ type MorphismMap = (
 		,(Map.Map (Id.Id,OpType) (Id.Id,OpType))
 		,(Map.Map (Id.Id,PredType) (Id.Id,PredType))
 		,(Set.Set SORT)
+		)
+		
+type MorphismMapWO = (
+		(Map.Map SORTWO SORTWO)
+		,(Map.Map (IdWO,OpType) (IdWO, OpType))
+		,(Map.Map (IdWO,PredType) (IdWO,PredType))
+		,(Set.Set SORTWO)
 		)
 		
 implode::[a]->[[a]]->[a]
@@ -945,5 +1304,9 @@ how to get the local attributes :
 	just strip all imported attributes from the node (without reducing other nodes).
 	only local attributes can remain...
 -}
+
+
+
+
 
 
