@@ -5,6 +5,7 @@ import System.Random
 import Common.SimpPretty
 import Common.ATerm.Lib
 import Common.ATerm.ReadWrite
+import Common.ATerm.Unshared
 import qualified Common.Lib.Map as Map
 import Data.Array
 import Data.List (isPrefixOf)

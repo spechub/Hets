@@ -48,9 +48,6 @@ toShATerm' att t = do
            setKey k i att1
          Just i -> return (att, i)
 
-fromShATerm :: ShATermConvertible t => ATermTable -> t
-fromShATerm att = snd $ fromShATerm' (getTopIndex att) att
-
 fromShATerm' :: ShATermConvertible t => Int -> ATermTable -> (ATermTable, t)
 fromShATerm' i att = let
     ty = show $ typeOf $ snd r

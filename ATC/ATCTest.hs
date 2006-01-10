@@ -25,8 +25,8 @@ testATC fp = do
 readWriteATerm1 :: LIB_DEFN -> IO LIB_DEFN
 readWriteATerm1 ld  = do
     att0 <- newATermTable
-    (att1, _) <- toShATerm' att0 ld
-    return $ fromShATerm att1
+    (att1, ix) <- toShATerm' att0 ld
+    return $ snd $ fromShATerm' ix att1
 
 readWriteATerm2 :: LIB_DEFN -> IO LIB_DEFN
 readWriteATerm2 ld  = do
