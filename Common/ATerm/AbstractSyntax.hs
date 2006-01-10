@@ -52,19 +52,18 @@ find i t = case t of
     Updateable m -> DMap.findWithDefault (ShAInt (-1) []) i m
     Readonly a -> a ! i
 
-data EqKey = EqKey !(StableName ()) !TypeRep deriving Eq
+data EqKey = EqKey (StableName ()) TypeRep deriving Eq
 
-data Key = Key !Int !String !EqKey
+data Key = Key Int EqKey
 
 mkKey :: Typeable a => a -> IO Key
 mkKey t = do
     s <- makeStableName t
-    let ty = typeOf t
-    return $ Key (hashStableName s) (show ty) $ EqKey (unsafeCoerce# s) ty
+    return $ Key (hashStableName s) $ EqKey (unsafeCoerce# s) $ typeOf t
 
 data ATermTable = ATT
-    !(HTab.Map Int (Map.Map String [(EqKey, Int)]))
-    !(Map.Map ShATerm Int) !IntMap !Int
+    (HTab.Map Int [(EqKey, Int)])
+    !(Map.Map ShATerm Int) !IntMap Int
     !(Map.Map (Int, String) Dynamic)
 
 toReadonlyATT :: ATermTable -> ATermTable
@@ -79,33 +78,23 @@ emptyATermTable = ATT HTab.empty Map.empty empty (-1) Map.empty
 newATermTable :: IO ATermTable
 newATermTable = return $ emptyATermTable
 
-addATermNoFullSharing :: ShATerm -> ATermTable -> (ATermTable,Int)
+addATermNoFullSharing :: ShATerm -> ATermTable -> (ATermTable, Int)
 addATermNoFullSharing t (ATT h a_iDFM i_aDFM i1 dM) = let j = i1 + 1 in
     (ATT h (Map.insert t j a_iDFM) (insert j t i_aDFM) j dM, j)
 
-addATerm :: ShATerm -> ATermTable -> (ATermTable,Int)
+addATerm :: ShATerm -> ATermTable -> (ATermTable, Int)
 addATerm t at@(ATT _ a_iDFM _ _ _) =
   case Map.lookup t a_iDFM of
     Nothing -> addATermNoFullSharing t at
     Just i -> (at, i)
 
 setKey :: Key -> Int -> ATermTable -> IO (ATermTable, Int)
-setKey k i (ATT t s l m d) = return (ATT (setHKey k i t) s l m d, i)
-
-setHKey :: Key -> Int -> (HTab.Map Int (Map.Map String [(EqKey, Int)]))
-          -> (HTab.Map Int (Map.Map String [(EqKey, Int)]))
-setHKey (Key h st k) i t = case HTab.lookup h t of
-    Nothing -> HTab.insert h (Map.singleton st [(k, i)]) t
-    Just m  -> case Map.lookup st m of
-        Nothing -> HTab.insert h (Map.insert st [(k, i)] m) t
-        Just l -> HTab.insert h (Map.insert st ((k, i) : l) m) t
+setKey (Key h e) i (ATT t s l m d) =
+    return (ATT (HTab.insertWith (++) h [(e, i)] t) s l m d, i)
 
 getKey :: Key -> ATermTable -> IO (Maybe Int)
-getKey (Key h st k) (ATT t _ _ _ _) = return $ case HTab.lookup h t of
-    Nothing -> Nothing
-    Just m -> case Map.lookup st m of
-        Nothing -> Nothing
-        Just l -> List.lookup k l
+getKey (Key h k) (ATT t _ _ _ _) = 
+    return $ List.lookup k $ HTab.findWithDefault [] h t
 
 getATerm :: ATermTable -> ShATerm
 getATerm (ATT _ _ i_aFM i _) = find i i_aFM
