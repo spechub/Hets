@@ -64,7 +64,10 @@ data ProverStatusColour
   | Blue
    deriving (Bounded,Enum,Show)
 
-data SelButtonFrame = SBF (Event ()) (Event ()) [Button]
+data SelButtonFrame = SBF { selAllEv :: Event ()
+                          , deselAllEv :: Event ()
+                          , sbf_btns :: [Button] 
+                          , sbf_btnFrame :: Frame}
 
 data SelAllListbox = SAL SelButtonFrame (ListBox String)
 
@@ -107,9 +110,6 @@ goalsView = map toStatus . OMap.toList . goalMap
                                 (maximum $ map snd $ tStatus) 
               in LBGoalView { statIndicator = si
                             , goalDescription = l}
-
--- TODO: for every element of goals perform a lookup on thSen to retrieve the associated BasicProof
---       map that using GUI.HTkUtils.indicatorFromBasicProof and pass it to GUI.HTkUtils.populateGoalsListBox
 
 -- ** GUI Implementation
 
@@ -200,6 +200,13 @@ updateStateGetSelectedSens s lbAxs lbThs =
        return (s { includedAxioms   = maybe [] (fil aM) selA
                  , includedTheorems = maybe [] (fil (goalMap s)) selT })
     where fil str = map ((OMap.keys str)!!)
+
+enableWidsUponSelection :: ListBox String -> [EnableWid] -> IO ()
+enableWidsUponSelection lb goalSpecificWids =
+    do sel <- (getSelection lb) :: IO (Maybe [Int])
+       maybe (disableWids goalSpecificWids)
+             (const $ enableWids goalSpecificWids)
+             sel
 
 {- |
  Depending on the first argument all entries in a ListBox are selected 
@@ -307,7 +314,8 @@ doSelectProverPath s lb =
                             selected
                  })
 
-newSelectButtonsFrame :: Container par => par -> IO SelButtonFrame
+newSelectButtonsFrame :: (Container par) => 
+                         par -> IO SelButtonFrame
 newSelectButtonsFrame b3 =
   do 
   selFrame <- newFrame b3 []
@@ -325,7 +333,10 @@ newSelectButtonsFrame b3 =
   selectAll <- clicked selectAllButton
   deselectAll <- clicked deselectAllButton
 
-  return (SBF selectAll deselectAll [deselectAllButton,selectAllButton])
+  return (SBF { selAllEv = selectAll
+              , deselAllEv = deselectAll 
+              , sbf_btns = [deselectAllButton,selectAllButton]
+              , sbf_btnFrame = selFrame })
 
 newExtSelListBoxFrame :: (Container par) =>
                          par -> String -> Distance 
@@ -409,9 +420,16 @@ proofManagementGUI lid proveF fineGrainedSelectionF
   pack b2 [Expand On, Fill Both]
 
   -- ListBox for goal selection
-  (SAL (SBF selectAllGoals deselectAllGoals goalBtns) lb) 
-      <- newExtSelListBoxFrame b2 "Goals:" 15
+  (SAL (SBF { selAllEv = selectAllGoals
+            , deselAllEv = deselectAllGoals
+            , sbf_btns = goalBtns
+            , sbf_btnFrame = goalsBtnFrame}) lb) 
+      <- newExtSelListBoxFrame b2 "Goals:" 14
  
+  -- button to select only the open goals
+  selectOpenGoalsButton <- newButton goalsBtnFrame [text "Select Open Goals"]
+  pack selectOpenGoalsButton [Expand Off, Fill None, Side AtLeft]
+  
   -- put the labels in the listbox
   populateGoalsListBox lb (goalsView initState)
 
@@ -509,10 +527,14 @@ proofManagementGUI lid proveF fineGrainedSelectionF
   icBox <- newHBox icomp []
   pack icBox [Expand On, Fill Both]
 
-  (SAL (SBF selectAllAxs deselectAllAxs axsBtns) lbAxs) 
+  (SAL (SBF { selAllEv = selectAllAxs
+            , deselAllEv = deselectAllAxs
+            , sbf_btns = axsBtns}) lbAxs) 
        <- newExtSelListBoxFrame icBox "Axioms to include:" 10
 
-  (SAL (SBF selectAllThs deselectAllThs thsBtns) lbThs) 
+  (SAL (SBF { selAllEv = selectAllThs
+            , deselAllEv = deselectAllThs
+            , sbf_btns = thsBtns}) lbThs) 
       <- newExtSelListBoxFrame icBox "Theorems to include if proven:" 10
 
   populateAxiomsList lbAxs initState
@@ -538,13 +560,19 @@ proofManagementGUI lid proveF fineGrainedSelectionF
 
   updateDisplay initState False lb pathsLb statusLabel
 
-  let wids = [EnW pathsLb,EnW lbThs,EnW lb,EnW lbAxs] ++ 
-             map EnW (axsBtns++goalBtns++thsBtns++
-                      [closeButton,displayGoalsButton,proveButton,
-                       proofDetailsButton,moreButton])
+  let goalSpecificWids = map EnW [displayGoalsButton,proveButton,
+                                  proofDetailsButton,moreButton]
+      wids = [EnW pathsLb,EnW lbThs,EnW lb,EnW lbAxs] ++ 
+             map EnW (selectOpenGoalsButton : closeButton : 
+                      axsBtns++goalBtns++thsBtns) ++
+             goalSpecificWids
+
+  disableWids goalSpecificWids
 
   -- events
   (selectProverPath, _) <- bindSimple pathsLb (ButtonPress (Just 1))
+  (selectGoals, _) <- bindSimple lb (ButtonPress (Just 1))
+  selectOpenGoals <- clicked selectOpenGoalsButton
   displayGoals <- clicked displayGoalsButton
   moreProverPaths <- clicked moreButton
   doProve <- clicked proveButton
@@ -554,12 +582,34 @@ proofManagementGUI lid proveF fineGrainedSelectionF
   -- event handlers
   spawnEvent 
     (forever
-      (  (deselectAllGoals >>> do
+      (  (selectGoals >>> do
+             enableWidsUponSelection lb goalSpecificWids
+             done)
+      +> (selectOpenGoals >>> do
+             s <- readIORef stateRef
+             clearSelection lb
+             let isOpenGoal (_,st) = 
+                     let thst = thmStatus st
+                     in if null thst 
+                        then True
+                        else case maximum $ map snd $ thst of
+                             DevGraph.BasicProof _ pst -> 
+                                 case pst of
+                                 Open _ -> True
+                                 _ -> False
+                             _ -> False
+             mapM_ (\ i -> selection i lb) 
+                   (findIndices isOpenGoal $ OMap.toList $ goalMap s )
+             enableWidsUponSelection lb goalSpecificWids
+             done)
+      +> (deselectAllGoals >>> do
 	    doSelectAllEntries False lb
+            disableWids goalSpecificWids
             modifyIORef stateRef (\s -> s{selectedGoals = []})
             done)
       +> (selectAllGoals >>> do
 	    doSelectAllEntries True lb
+            enableWids goalSpecificWids
             modifyIORef stateRef 
                             (\s -> s{selectedGoals = OMap.keys (goalMap s)})
             done)
