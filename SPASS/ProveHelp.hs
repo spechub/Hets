@@ -16,6 +16,8 @@ module SPASS.ProveHelp where
 
 spassHelpText :: String
 spassHelpText =
+  "If you want to add your own options for controlling SPASS make sure you \n"++
+  "start with -Auto=0. This switches off the automatic selection of rules\n\n"++
   "The following text is a quotation from: \n"++
   "    \"SPASS Version 2.0\" by Christoph Weidenbach et.al.\n"++
   "   (This document is part of the SPASS-2.1 source distribution)\n\n"++
