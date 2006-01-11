@@ -24,7 +24,7 @@ module Common.ATerm.AbstractSyntax
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Map as IntMap
-import Common.DynamicUtils
+import Data.Dynamic
 import Data.Array
 import System.Mem.StableName
 import GHC.Prim
@@ -64,7 +64,7 @@ mkKey t = do
 data ATermTable = ATT
     (IntMap.Map Int [(EqKey, Int)])
     !(Map.Map ShATerm Int) !IntMap Int
-    !(IntMap.Map Int [(TypeRep, Dynamic)])
+    !(IntMap.Map Int [Dynamic])
 
 toReadonlyATT :: ATermTable -> ATermTable
 toReadonlyATT (ATT h s t i dM) = ATT h s
@@ -112,16 +112,12 @@ getATermByIndex1 :: Int -> ATermTable -> ATermTable
 getATermByIndex1 i (ATT h a_iDFM i_aDFM _ dM) = ATT h a_iDFM i_aDFM i dM
 
 getATerm' :: Typeable t => Int -> ATermTable -> Maybe t
-getATerm' i (ATT _ _ _ _ dM) = let
-    ty = typeOf (fromJust m) -- result type annotation is rejected by haddock
-    m = case List.lookup ty $ IntMap.findWithDefault [] i dM of
-          Nothing -> Nothing
-          Just d -> Just $ fromDyn d $ error $ "getATerm' " ++ show ty
-    in m
+getATerm' i (ATT _ _ _ _ dM) =
+    listToMaybe $ mapMaybe fromDynamic $ IntMap.findWithDefault [] i dM
 
 setATerm' :: Typeable t => Int -> t -> ATermTable -> ATermTable
 setATerm' i t (ATT h a_iDFM i_aDFM m dM) =
-    ATT h a_iDFM i_aDFM m $ IntMap.insertWith (++) i [(typeOf t, toDyn t)] dM
+    ATT h a_iDFM i_aDFM m $ IntMap.insertWith (++) i [toDyn t] dM
 
 -- | conversion of a string in double quotes to a character
 str2Char :: String -> Char
