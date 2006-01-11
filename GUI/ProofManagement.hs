@@ -14,7 +14,7 @@ works for SPASS.
 -}
 
 {- ToDo:
-  - grey out GUI while waiting for Prover
+
   - remove warnings
 -}
 
@@ -200,13 +200,6 @@ updateStateGetSelectedSens s lbAxs lbThs =
        return (s { includedAxioms   = maybe [] (fil aM) selA
                  , includedTheorems = maybe [] (fil (goalMap s)) selT })
     where fil str = map ((OMap.keys str)!!)
-
-enableWidsUponSelection :: ListBox String -> [EnableWid] -> IO ()
-enableWidsUponSelection lb goalSpecificWids =
-    do sel <- (getSelection lb) :: IO (Maybe [Int])
-       maybe (disableWids goalSpecificWids)
-             (const $ enableWids goalSpecificWids)
-             sel
 
 {- |
  Depending on the first argument all entries in a ListBox are selected 

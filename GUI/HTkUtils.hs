@@ -182,3 +182,12 @@ enableWids = mapM_ ( \ ew -> case ew of EnW w -> enable w >> return ())
 
 disableWids :: [EnableWid] -> IO ()
 disableWids = mapM_ ( \ ew -> case ew of EnW w -> disable w >> return ())
+
+-- | enables widgets only if at least one entry is selected in the listbox, 
+-- otherwise the widgets are disabled
+enableWidsUponSelection :: ListBox String -> [EnableWid] -> IO ()
+enableWidsUponSelection lb goalSpecificWids =
+    do sel <- (getSelection lb) :: IO (Maybe [Int])
+       maybe (disableWids goalSpecificWids)
+             (const $ enableWids goalSpecificWids)
+             sel
