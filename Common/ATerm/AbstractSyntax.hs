@@ -23,33 +23,33 @@ module Common.ATerm.AbstractSyntax
     ) where
 
 import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Map as DMap
-import qualified Common.Lib.Map as HTab
+import qualified Common.Lib.Map as IntMap
 import Common.DynamicUtils
 import Data.Array
 import System.Mem.StableName
 import GHC.Prim
 import qualified Data.List as List
+import Data.Maybe
 
 data ShATerm = ShAAppl String [Int] [Int]
              | ShAList [Int]        [Int]
              | ShAInt  Integer      [Int]
                deriving (Eq, Ord)
 
-data IntMap = Updateable !(DMap.Map Int ShATerm)
+data IntMap = Updateable !(IntMap.Map Int ShATerm)
             | Readonly !(Array Int ShATerm)
 
 empty :: IntMap
-empty = Updateable $ DMap.empty
+empty = Updateable $ IntMap.empty
 
 insert :: Int -> ShATerm -> IntMap -> IntMap
 insert i s t = case t of
-    Updateable m -> Updateable $ DMap.insert i s m
+    Updateable m -> Updateable $ IntMap.insert i s m
     _ -> error "ATerm.insert"
 
 find :: Int -> IntMap -> ShATerm
 find i t = case t of
-    Updateable m -> DMap.findWithDefault (ShAInt (-1) []) i m
+    Updateable m -> IntMap.findWithDefault (ShAInt (-1) []) i m
     Readonly a -> a ! i
 
 data EqKey = EqKey (StableName ()) TypeRep deriving Eq
@@ -62,18 +62,18 @@ mkKey t = do
     return $ Key (hashStableName s) $ EqKey (unsafeCoerce# s) $ typeOf t
 
 data ATermTable = ATT
-    (HTab.Map Int [(EqKey, Int)])
+    (IntMap.Map Int [(EqKey, Int)])
     !(Map.Map ShATerm Int) !IntMap Int
-    !(Map.Map Int [(TypeRep, Dynamic)])
+    !(IntMap.Map Int [(TypeRep, Dynamic)])
 
 toReadonlyATT :: ATermTable -> ATermTable
 toReadonlyATT (ATT h s t i dM) = ATT h s
     (case t of
-     Updateable m -> Readonly $ listArray (0, i) $ DMap.elems m
+     Updateable m -> Readonly $ listArray (0, i) $ IntMap.elems m
      _ -> t ) i dM
 
 emptyATermTable :: ATermTable
-emptyATermTable = ATT HTab.empty Map.empty empty (-1) Map.empty
+emptyATermTable = ATT IntMap.empty Map.empty empty (-1) IntMap.empty
 
 newATermTable :: IO ATermTable
 newATermTable = return $ emptyATermTable
@@ -90,11 +90,11 @@ addATerm t at@(ATT _ a_iDFM _ _ _) =
 
 setKey :: Key -> Int -> ATermTable -> IO (ATermTable, Int)
 setKey (Key h e) i (ATT t s l m d) =
-    return (ATT (HTab.insertWith (++) h [(e, i)] t) s l m d, i)
+    return (ATT (IntMap.insertWith (++) h [(e, i)] t) s l m d, i)
 
 getKey :: Key -> ATermTable -> IO (Maybe Int)
 getKey (Key h k) (ATT t _ _ _ _) =
-    return $ List.lookup k $ HTab.findWithDefault [] h t
+    return $ List.lookup k $ IntMap.findWithDefault [] h t
 
 getATerm :: ATermTable -> ShATerm
 getATerm (ATT _ _ i_aFM i _) = find i i_aFM
@@ -111,13 +111,17 @@ getATermIndex t (ATT _ a_iDFM _ _ _) = Map.findWithDefault (-1) t a_iDFM
 getATermByIndex1 :: Int -> ATermTable -> ATermTable
 getATermByIndex1 i (ATT h a_iDFM i_aDFM _ dM) = ATT h a_iDFM i_aDFM i dM
 
-getATerm' :: Int -> TypeRep -> ATermTable -> Maybe Dynamic
-getATerm' i ty (ATT _ _ _ _ dM) =
-    List.lookup ty $ Map.findWithDefault [] i dM
+getATerm' :: Typeable t => Int -> ATermTable -> Maybe t
+getATerm' i (ATT _ _ _ _ dM) = let
+    ty = typeOf (fromJust m) -- result type annotation is rejected by haddock
+    m = case List.lookup ty $ IntMap.findWithDefault [] i dM of
+          Nothing -> Nothing
+          Just d -> Just $ fromDyn d $ error $ "getATerm' " ++ show ty
+    in m
 
-setATerm' :: Int -> TypeRep -> Dynamic -> ATermTable -> ATermTable
-setATerm' i ty d (ATT h a_iDFM i_aDFM m dM) =
-    ATT h a_iDFM i_aDFM m $ Map.insertWith (++) i [(ty, d)] dM
+setATerm' :: Typeable t => Int -> t -> ATermTable -> ATermTable
+setATerm' i t (ATT h a_iDFM i_aDFM m dM) =
+    ATT h a_iDFM i_aDFM m $ IntMap.insertWith (++) i [(typeOf t, toDyn t)] dM
 
 -- | conversion of a string in double quotes to a character
 str2Char :: String -> Char

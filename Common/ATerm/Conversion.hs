@@ -49,14 +49,10 @@ toShATerm' att t = do
          Just i -> return (att, i)
 
 fromShATerm' :: ShATermConvertible t => Int -> ATermTable -> (ATermTable, t)
-fromShATerm' i att = let
-    ty = typeOf $ snd r
-    r = case getATerm' i ty att of
-        Just d -> (att, fromDyn d $ error
-                          $ "fromShATerm': generic " ++ show ty)
+fromShATerm' i att = case getATerm' i att of
+        Just d -> (att, d)
         _ -> case fromShATermAux i att of
-               (attN, t) -> (setATerm' i ty (toDyn t) attN, t)
-    in r
+               (attN, t) -> (setATerm' i t attN, t)
 
 fromShATermError :: String -> ShATerm -> a
 fromShATermError t u = error $ "Cannot convert ShATerm to "
