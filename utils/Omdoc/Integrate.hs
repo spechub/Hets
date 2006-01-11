@@ -840,6 +840,7 @@ devGraphToXmlCMPIOXmlNamed dg =
 				)
 				xmlnames_om
 				senswomap)::(Map.Map Hets.NODE_NAMEWO (Set.Set (XmlNamed Hets.SentenceWO)), XmlNameList)
+		importsmap = Hets.getNodeImportsNodeDGNames dg
 	in
 		return $
 			foldl (\x xnodetupel ->
@@ -863,7 +864,6 @@ devGraphToXmlCMPIOXmlNamed dg =
 								(Set.insert b (Map.findWithDefault Set.empty a m))
 								m
 							) Map.empty (Rel.toList insorts)
-					adtsorts = Map.keys insortmap ++ (map (\(a,_) -> xnItem a) (Map.toList constructors))
 					theopreds = Map.findWithDefault Map.empty (Hets.mkWON nodename nodenum) xmlnamedpredswomap
 					realtheopreds = Map.filterWithKey (\idxnwon _ -> (Hets.woOrigin (xnItem idxnwon)) == nodenum) theopreds
 					theoops = Map.findWithDefault Map.empty (Hets.mkWON nodename nodenum) xmlnamedopswomap
@@ -871,13 +871,37 @@ devGraphToXmlCMPIOXmlNamed dg =
 					theosens = Map.findWithDefault Set.empty (Hets.mkWON nodename nodenum) xmlnamedsenswomap
 					realtheosens = Set.filter (\i -> (Hets.woOrigin (xnItem i)) == nodenum) theosens
 					(_, sortgenxn) = partitionSensSortGenXN (Set.toList realtheosens)
-					(constructors, xmlnames_cons) = makeConstructorsXN xmlnames_senm sortgenxn
+					(constructors, xmlnames_cons) = makeConstructorsXN theosorts xmlnames_senm sortgenxn
+					adtsorts = Map.keys insortmap ++ (map (\(a,_) -> xnItem a) (Map.toList constructors))
+					theoimports = Map.findWithDefault Set.empty nodename importsmap
 				in
 					x +++ xmlNL +++ HXT.etag "theory" += (
 						(HXT.sattr "id" theoname) +++
+						-- imports/morphisms
+						(foldl (\x' (nodename' , mmm) ->
+							let
+								nodenamex = case Set.toList $ Set.filter (\i -> (snd (xnItem i)) == nodename' ) nodexmlnameset of
+									[] -> error "Import from Unknown node..."
+									(l:_) -> xnName l
+							in
+								x' +++
+								HXT.etag "imports" += (
+									(HXT.sattr "from" ("#" ++ nodenamex)) +++
+									(
+										case mmm of
+											(Just mm) ->
+												morphismMapToXml mm nodenamex theoname
+											Nothing -> HXT.txt ""
+									)
+									) +++
+								xmlNL
+							) (HXT.txt "") (Set.toList theoimports)
+						) +++
+						-- sorts
 						(Set.fold (\xnwos x' ->
 							x' +++ (sortToXmlXN (xnWOaToXNa xnwos)) +++ xmlNL
 							) xmlNL realsorts) +++
+						-- adts
 						(foldl (\x' sortwo ->
 							let
 								insortset = Map.findWithDefault Set.empty sortwo insortmap
@@ -889,21 +913,25 @@ devGraphToXmlCMPIOXmlNamed dg =
 										Nothing -> error "Sort in relation but not in theory..."
 										(Just sortxn' ) -> xnWOaToXNa sortxn'
 									) insortset
+								constructorx = createAllConstructorsXN $ Map.toList $ Map.findWithDefault Map.empty (XmlNamed sortwo (xnName sortxn)) constructors
 							in
-								x' +++ createADTXN (sortxn, insortsetxn) (HXT.txt "") +++ xmlNL
+								x' +++ createADTXN (sortxn, insortsetxn) constructorx +++ xmlNL
 							) xmlNL adtsorts) +++
+						-- predicates
 						(foldl (\x' (pxnid, pset) ->
 							let
 								pxnset = Set.map (\i -> predTypeToPredTypeXNWON theosorts i) pset 
 							in
 								x' +++ predicationToXmlXN nodexmlnameset (pxnid, pxnset) +++ xmlNL) (HXT.txt "") (Map.toList realtheopreds)
 						) +++
+						-- operators
 						(foldl (\x' (oxnid, oset) ->
 							let
 								oxnset = Set.map (\i -> opTypeToOpTypeXNWON theosorts i) oset 
 							in
 								x' +++ operatorToXmlXN nodexmlnameset (oxnid, oxnset) +++ xmlNL) (HXT.txt "") (Map.toList realtheoops)
-						)
+						) +++
+						xmlNL
 						)
 				) (HXT.txt "") onlynodexmlnamelist 
 				
@@ -922,6 +950,8 @@ devGraphToXmlCMPIOXmlNamed dg =
 									else
 										nodename
 							)
+							
+
 
 type WithOriginTheory a = Hets.WithOrigin a String
 
@@ -2002,25 +2032,14 @@ makeConstructors::[Ann.Named CASLFORMULA]->(Map.Map Id.Id (Map.Map Id.Id (Set.Se
 makeConstructors sortgenaxlist =
 	Map.fromList $ map makeConstructorMap sortgenaxlist
 	
-makeConstructorsXN::XmlNameList->[XmlNamedWON (Ann.Named CASLFORMULA)]->(Map.Map (XmlNamedWON Id.Id) (Map.Map (XmlNamedWON Id.Id) (Set.Set OpType)), XmlNameList)
-makeConstructorsXN xmlnames sortgenaxxnlist =
+makeConstructorsXN::Set.Set XmlNamedWONSORT->XmlNameList->[XmlNamedWON (Ann.Named CASLFORMULA)]->(Map.Map (XmlNamedWON Id.Id) (Map.Map (XmlNamedWON Id.Id) (Set.Set OpTypeXNWON)), XmlNameList)
+makeConstructorsXN sortxnwoset xmlnames sortgenaxxnlist =
 	foldl (\(mapping, xmlnames' ) sortgenaxxn ->
 		let
-			sortgenax = xnWOaToa sortgenaxxn
-			origin = Hets.woOrigin (xnItem sortgenaxxn)
-			(cid, copmap) = makeConstructorMap sortgenax
-			(copxnmap, xmlnames'' ) =
-				(uniqueXmlNamesContainerExt
-					xmlnames'
-					show
-					copmap
-					(\_ _ -> False) -- there are no duplicates here
-					fst
-					(\(oid, oset) xname -> (XmlNamed (Hets.mkWON oid origin) xname, oset)))::(Map.Map (XmlNamed (Hets.WithOriginNode Id.Id)) (Set.Set OpType), XmlNameList)
-			cidxname = createUniqueName xmlnames'' (adjustStringForXmlName (show cid))
-			cidxnwo = XmlNamed (Hets.mkWON cid origin) cidxname
+			(conidxnwo, conmap, xmlnames'' ) =
+				makeConstructorMapXN sortxnwoset xmlnames' sortgenaxxn
 		in
-			(Map.insert cidxnwo copxnmap mapping, cidxname:xmlnames'' )
+			(Map.insertWith (\a b -> Map.union a b) conidxnwo conmap mapping, xmlnames'' )
 			) (Map.empty, xmlnames) sortgenaxxnlist
 					
 		
@@ -2037,13 +2056,27 @@ makeConstructorMap (Ann.NamedSen senname _ _ (Sort_gen_ax cons _)) =
 	in (Hets.stringToId sort, constructormap)
 makeConstructorMap _ = error "Wrong application of makeConstructorMap!"
 
-makeConstructorMapXN::XmlNamedWON (Ann.Named CASLFORMULA)->(XmlNamedWON Id.Id, (Map.Map Id.Id (Set.Set OpType)))
-makeConstructorMapXN sensxn =
+makeConstructorMapXN::Set.Set XmlNamedWONSORT->XmlNameList->XmlNamedWON (Ann.Named CASLFORMULA)->(XmlNamedWON Id.Id, (Map.Map (XmlNamedWON Id.Id) (Set.Set OpTypeXNWON)), XmlNameList)
+makeConstructorMapXN sortxnwoset xmlnames sensxnwo =
 	let
-		sens = xnWOaToa sensxn
-		(cid, cmap) = makeConstructorMap sens
+		sens = xnWOaToa sensxnwo
+		(Ann.NamedSen senname _ _ (Sort_gen_ax cons _)) = sens
+		origin = Hets.woOrigin (xnItem sensxnwo)
+		sort = drop (length "ga_generated_") senname
+		sortxn = case sortToXmlNamedWONSORT (Set.toList sortxnwoset) (Hets.stringToId sort) of
+			Nothing -> error "Cannot find sort to make constructor for!"
+			(Just sortxn' ) -> sortxn'
+		(constructormap, xmlnames' ) =
+			foldl(\(cmap, xmlnames'' ) (Constraint _ symbs _) ->
+				foldl (\(tcmap, xmlnames''' ) (Qual_op_name name' ot _) ->
+					let
+						opxmlname = createUniqueName xmlnames''' (adjustStringForXmlName (show name' ))
+					in
+						(Map.insertWith (Set.union) (XmlNamed (Hets.mkWON name' origin) opxmlname) (Set.singleton (opTypeToOpTypeXNWON sortxnwoset (cv_Op_typeToOpType ot))) tcmap, xmlnames''' )
+					) (cmap, xmlnames'' ) $ map fst symbs
+				) (Map.empty, xmlnames) cons
 	in
-		(XmlNamed (Hets.mkWON cid (Hets.woOrigin (xnItem sensxn))) (xnName sensxn), cmap)
+		(sortxn, constructormap, xmlnames' )
 		
 
 -- | creates a String-representation of a DGLinkType	
