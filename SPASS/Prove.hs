@@ -387,9 +387,13 @@ batchInfoText :: Int -- ^ batch time limt
               -> Int -- ^ number of that have been processed
               -> String
 batchInfoText tl gTotal gDone =
+  let totalSecs = (gTotal - gDone) * tl
+      (remMins,secs) = divMod totalSecs 60
+      (hours,mins) = divMod remMins 60
+  in 
   "Batch mode runnig\n"++
   show gDone ++ "/" ++ show gTotal ++ " goals processed.\n" ++
-  "At most " ++ show ((gTotal - gDone) * tl) ++ "s remaining."
+  "At most "++show hours++"h "++show mins++"m "++show secs++"s remaining."
 
 -- *** Callbacks
 
