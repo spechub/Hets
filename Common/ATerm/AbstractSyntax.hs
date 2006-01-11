@@ -64,7 +64,7 @@ mkKey t = do
 data ATermTable = ATT
     (HTab.Map Int [(EqKey, Int)])
     !(Map.Map ShATerm Int) !IntMap Int
-    !(Map.Map (Int, String) Dynamic)
+    !(Map.Map Int [(TypeRep, Dynamic)])
 
 toReadonlyATT :: ATermTable -> ATermTable
 toReadonlyATT (ATT h s t i dM) = ATT h s
@@ -93,7 +93,7 @@ setKey (Key h e) i (ATT t s l m d) =
     return (ATT (HTab.insertWith (++) h [(e, i)] t) s l m d, i)
 
 getKey :: Key -> ATermTable -> IO (Maybe Int)
-getKey (Key h k) (ATT t _ _ _ _) = 
+getKey (Key h k) (ATT t _ _ _ _) =
     return $ List.lookup k $ HTab.findWithDefault [] h t
 
 getATerm :: ATermTable -> ShATerm
@@ -111,12 +111,13 @@ getATermIndex t (ATT _ a_iDFM _ _ _) = Map.findWithDefault (-1) t a_iDFM
 getATermByIndex1 :: Int -> ATermTable -> ATermTable
 getATermByIndex1 i (ATT h a_iDFM i_aDFM _ dM) = ATT h a_iDFM i_aDFM i dM
 
-getATerm' :: Int -> String -> ATermTable -> Maybe Dynamic
-getATerm' i str (ATT _ _ _ _ dM) = Map.lookup (i, str) dM
+getATerm' :: Int -> TypeRep -> ATermTable -> Maybe Dynamic
+getATerm' i ty (ATT _ _ _ _ dM) =
+    List.lookup ty $ Map.findWithDefault [] i dM
 
-setATerm' :: Int -> String -> Dynamic -> ATermTable -> ATermTable
-setATerm' i str d (ATT h a_iDFM i_aDFM m dM) =
-    ATT h a_iDFM i_aDFM m $ Map.insert (i, str) d dM
+setATerm' :: Int -> TypeRep -> Dynamic -> ATermTable -> ATermTable
+setATerm' i ty d (ATT h a_iDFM i_aDFM m dM) =
+    ATT h a_iDFM i_aDFM m $ Map.insertWith (++) i [(ty, d)] dM
 
 -- | conversion of a string in double quotes to a character
 str2Char :: String -> Char

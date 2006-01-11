@@ -50,9 +50,10 @@ toShATerm' att t = do
 
 fromShATerm' :: ShATermConvertible t => Int -> ATermTable -> (ATermTable, t)
 fromShATerm' i att = let
-    ty = show $ typeOf $ snd r
+    ty = typeOf $ snd r
     r = case getATerm' i ty att of
-        Just d -> (att, fromDyn d $ error $ "fromShATerm': generic " ++ ty)
+        Just d -> (att, fromDyn d $ error
+                          $ "fromShATerm': generic " ++ show ty)
         _ -> case fromShATermAux i att of
                (attN, t) -> (setATerm' i ty (toDyn t) attN, t)
     in r
