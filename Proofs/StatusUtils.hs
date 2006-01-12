@@ -1,4 +1,4 @@
-{- | 
+{- |
 Module      :  $Header$
 Copyright   :  (c) Jorina F. Gerken, Till Mossakowski, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -38,25 +38,25 @@ emptyProofStatus ln le = (ln, le, Map.map (const emptyProofHistory) le)
 -- -------------------------------
 -- methods used in several proofs
 -- -------------------------------
-lookupDGraphError :: LIB_NAME -> a
-lookupDGraphError libname = error ("Could not find lib with name <" 
-                                   ++(show libname)++ "> in the given LibEnv")
 
-mkResultProofStatus :: ProofStatus -> DGraph -> ([DGRule],[DGChange]) -> ProofStatus
-mkResultProofStatus (libname,libEnv,proofHistory) dgraph (dgrules,dgchanges) =
-  case Map.lookup libname libEnv of
-    Nothing -> lookupDGraphError libname
-    Just (globalContext,globalAnnos,_) ->
-      (libname,
-       Map.insert libname (globalContext,globalAnnos,dgraph) libEnv,
-       Map.insert libname (historyElem:history) 
-                  (prepareResultProofHistory proofHistory))
-      
-    where
+{- returns the global context that belongs to the given library name-}
+lookupGlobalContext :: LIB_NAME -> ProofStatus -> GlobalContext
+lookupGlobalContext ln (_,libEnv,_) =
+  Map.findWithDefault (error "lookupGlobalContext") ln libEnv
+
+lookupDGraph :: LIB_NAME -> ProofStatus -> DGraph
+lookupDGraph ln = devGraph . lookupGlobalContext ln
+
+mkResultProofStatus :: ProofStatus -> DGraph -> ([DGRule], [DGChange])
+                    -> ProofStatus
+mkResultProofStatus ps@(ln,libEnv,proofHistory) dgraph (dgrules,dgchanges) =
+  let globalContext = lookupGlobalContext ln ps
       historyElem = (dgrules,removeContraryChanges dgchanges)
-      history = case Map.lookup libname proofHistory of
-                  Nothing -> []
-                  Just h -> h
+      history = Map.findWithDefault [] ln proofHistory
+  in (ln,
+       Map.insert ln globalContext { devGraph = dgraph } libEnv,
+       Map.insert ln (historyElem:history)
+                  (prepareResultProofHistory proofHistory))
 
 prepareResultProofHistory :: Map.Map LIB_NAME ProofHistory
                           -> Map.Map LIB_NAME ProofHistory
@@ -68,7 +68,7 @@ prepareResultProofHistory proofHistory = Map.map (([],[]):) proofHistory
 
 {- prepares the all histories of the proof history of the given proofstatus -}
 prepareProofStatus :: ProofStatus -> ProofStatus
-prepareProofStatus (ln,libEnv,history) = 
+prepareProofStatus (ln,libEnv,history) =
   (ln,libEnv,Map.map prepareHistory history)
 
 
@@ -94,20 +94,6 @@ reviseHistory [] = []
 reviseHistory ((_,changes):history) =
   ([TheoremHideShift],(removeContraryChanges changes)):history
 
-
-{- returns the global context that belongs to the given library name-}
-lookupGlobalContext :: LIB_NAME -> ProofStatus -> GlobalContext
-lookupGlobalContext ln (_,libEnv,_) =
-  case Map.lookup ln libEnv of
-    Nothing -> lookupDGraphError ln
-    Just globalContext -> globalContext
-
-{- returns the development graph that belongs to the given library name-}
-lookupDGraph :: LIB_NAME -> ProofStatus -> DGraph
-lookupDGraph ln proofstatus = dgraph
-  where
-    (_,_,dgraph) = lookupGlobalContext ln proofstatus
-
 {- returns the history that belongs to the given library name-}
 lookupHistory :: LIB_NAME -> ProofStatus -> ProofHistory
 lookupHistory ln (_,_,historyMap) =
@@ -127,25 +113,19 @@ updateHistory ln changes proofstatus@(l,libEnv,historyMap) =
 updateLibEnv :: LIB_NAME -> DGraph -> ProofStatus -> ProofStatus
 updateLibEnv ln dgraph proofstatus@(l,libEnv,historyMap) =
   (l,
-   Map.insert ln 
-   (updateDGraphInGlobalContext dgraph (lookupGlobalContext ln proofstatus))
+   Map.insert ln
+   (lookupGlobalContext ln proofstatus) { devGraph = dgraph }
    libEnv,
    historyMap)
 
 {- updates the library environment and the proof history of the given
    proofstatus for the given library name-}
-updateProofStatus :: LIB_NAME -> DGraph -> [DGChange] -> ProofStatus 
+updateProofStatus :: LIB_NAME -> DGraph -> [DGChange] -> ProofStatus
                   -> ProofStatus
 updateProofStatus ln dgraph changes proofstatus =
   updateHistory ln changes proofstatusAux
   where
     proofstatusAux = updateLibEnv ln dgraph proofstatus
-
-{- replaces the development graph of the given global context with
-   the given graph-}
-updateDGraphInGlobalContext :: DGraph -> GlobalContext -> GlobalContext
-updateDGraphInGlobalContext dgraph (gAnnos,gEnv,_) = (gAnnos,gEnv,dgraph)
-
 
 {- changes the library name of the given proofstatus to the given name -}
 changeCurrentLibName :: LIB_NAME -> ProofStatus -> ProofStatus
@@ -163,7 +143,7 @@ addChanges changes (hElem:history) = (fst hElem, (snd hElem)++changes):history
 
 showChanges :: [DGChange] -> String
 showChanges [] = ""
-showChanges (change:changes) = 
+showChanges (change:changes) =
   case change of
     InsertEdge edge -> "InsertEdge " ++ (showEdgeChange edge)
                        ++ (showChanges changes)
@@ -195,21 +175,20 @@ removeContraryChanges (change:changes) =
     Just c -> removeContraryChanges (removeChange c changes)
     Nothing -> change:(removeContraryChanges changes)
   where
-    contraryChange = 
+    contraryChange =
       case getContraryChange change of
         Just c -> if c  `elem` changes then Just c else Nothing
         Nothing -> Nothing
 
 getContraryChange :: DGChange -> Maybe DGChange
-getContraryChange change =
-  case change of
+getContraryChange change = case change of
     InsertEdge edge -> Just $ DeleteEdge edge
     -- re-insertion of deleted edge may be useful if node has changed
-    DeleteEdge edge -> Nothing 
     InsertNode node -> Just $ DeleteNode node
     -- re-insertion of deleted node may be useful if node has changed
     -- ... although this should be recognized ... a bit strange ...
-    DeleteNode node -> Nothing -- Just $ InsertNode node
+    DeleteEdge _ -> Nothing
+    DeleteNode _ -> Nothing -- Just $ InsertNode node
 
 
 removeChange :: DGChange -> [DGChange] -> [DGChange]
@@ -219,8 +198,8 @@ removeChange c1 (c2:rest) | c1==c2 = rest
 -- refering to that node that are encountered on the way
 removeChange c1@(DeleteNode (n,_)) (c2:rest) =
   if case c2 of
-     InsertEdge (n1,n2,_) -> n==n1 || n==n2 
-     DeleteEdge (n1,n2,_) -> n==n1 || n==n2 
+     InsertEdge (n1,n2,_) -> n==n1 || n==n2
+     DeleteEdge (n1,n2,_) -> n==n1 || n==n2
      _ -> False
    then removeChange c1 rest
    else c2:removeChange c1 rest

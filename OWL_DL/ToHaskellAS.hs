@@ -1,18 +1,17 @@
 {- |
 Module      :  $Header$
-Copyright   :  Heng Jiang, Uni Bremen 2004-2005
+Copyright   :  Heng Jiang, Uni Bremen 2004-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  jiang@tzi.de
 Stability   :  provisional
-Portability :  portable
+Portability :  non-portable (imports Logic.Grothendieck)
 
 -}
 
 module Main where
 
 import OWL_DL.AS
--- import OWL_DL.ReadWrite
 import OWL_DL.Namespace
 import OWL_DL.Logic_OWL_DL
 import Common.ATerm.ReadWrite
@@ -23,10 +22,8 @@ import System.Environment(getEnv)
 import qualified Data.Map as Map
 import qualified List as List
 import OWL_DL.StructureAna
-import Data.Graph.Inductive.Tree
 import Data.Graph.Inductive.Graph
 import Static.DevGraph
--- import Data.Graph.Inductive.Internal.FiniteMap
 import OWL_DL.StaticAna
 import OWL_DL.Sign
 import Common.GlobalAnnotations
@@ -45,9 +42,6 @@ import Logic.Grothendieck
 import Logic.Prover
 import Data.Graph.Inductive.Query.DFS
 import Data.Graph.Inductive.Query.BFS
-import Data.Tree
-import Debug.Trace
-
 import Maybe(fromJust)
 
 main :: IO()
@@ -145,7 +139,6 @@ testIntegrate :: [ATerm] -> IO()
 testIntegrate al =  
     do let ontologies = map snd $ reverse $ parsingAll al
        putStrLn $ show (foldl integrateOntology emptyOntology ontologies) 
-
 
 -- | 
 -- this function show the abstract syntax of each OWL ontology from 
@@ -421,13 +414,12 @@ showGraph (ln, libenv) =
 
 simpleLibEnv :: String -> DGraph -> LibEnv
 simpleLibEnv filename dg =
-    Map.singleton (simpleLibName filename) 
-           (emptyGlobalAnnos, Map.singleton (mkSimpleId "") 
-            (SpecEntry ((JustNode nodeSig), [], g_sign, nodeSig)), dg)
+    Map.singleton (simpleLibName filename) emptyGlobalContext
+           { globalEnv = Map.singleton (mkSimpleId "") 
+             (SpecEntry ((JustNode nodeSig), [], g_sign, nodeSig))
+           , devGraph = dg }
        where nodeSig = NodeSig 0 g_sign
              g_sign = G_sign OWL_DL emptySign
 
 simpleLibName :: String -> LIB_NAME
 simpleLibName s = Lib_id (Direct_link ("library_" ++ s) (Range []))
-
-

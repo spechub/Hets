@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) C. Maeder, Uni Bremen 2002-2005
+Copyright   :  (c) C. Maeder, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -26,7 +26,7 @@ import Static.DevGraph
 import Static.DGToSpec
 
 printLibrary :: LibEnv -> (LIB_NAME, GlobalContext) -> Doc
-printLibrary le (ln, (ga, ge, _)) =
+printLibrary le (ln, GlobalContext { globalAnnos = ga, globalEnv = ge }) =
     text libraryS <+> printText0 ga ln $$
          foldr (aboveWithNLs 2) P.empty
                    (map (printTheory le ln ga) $ Map.toList ge)
@@ -40,6 +40,6 @@ printTheory le ln ga (sn, ge) = case ge of
             Just g -> printTh ga sn g
     _ -> P.empty
 
-printTh :: GlobalAnnos -> SIMPLE_ID -> G_theory -> Doc 
+printTh :: GlobalAnnos -> SIMPLE_ID -> G_theory -> Doc
 printTh ga sn g = text specS <+> printText0 ga sn <+> text equalS
                     $$ printText0 ga g

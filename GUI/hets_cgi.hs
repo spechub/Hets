@@ -1,6 +1,6 @@
 {- |
 Module       : $Header$
-Copyright    : (c) Heng Jiang, Klaus Lüttich Uni Bremen 2004-2005
+Copyright    : (c) Heng Jiang, Klaus Lüttich Uni Bremen 2004-2006
 License      : similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer   : jiang@tzi.de
@@ -40,13 +40,11 @@ import Driver.WriteFn
 import Driver.ReadFn
 import qualified Common.Lib.Map as Map
 import qualified Common.Result as CRes
--- import Common.AS_Annotation
 import Static.AnalysisLibrary
 import Comorphisms.LogicGraph
 import Static.DevGraph
 import Syntax.AS_Library
 import Syntax.Print_HetCASL
--- import Syntax.Parse_AS_Structured
 import Maybe
 import Random
 import IO
@@ -248,12 +246,12 @@ anaInput contents selectedBoxes outputfiles =
                       -> SelectedBoxes 
                       -> IO (CRes.Result Output)
       process_result ds (libName, libDefn, _, libEnv) outputfile conf =
-          do let (globalAnnos, _, _) =  fromJust $ Map.lookup libName libEnv
+          do let gannos = globalAnnos $ Map.find libName libEnv
                  fMode = foldl unionFileModes nullFileMode 
                                 [ownerReadMode, ownerWriteMode, 
                                  groupReadMode, groupWriteMode, 
                                  otherReadMode]
-                 resAsc = printLIB_DEFN_text globalAnnos libDefn
+                 resAsc = printLIB_DEFN_text gannos libDefn
              when (outputTex conf)
                   (do
                     let pptexFile = outputfile ++ ".pp.tex"
@@ -261,7 +259,7 @@ anaInput contents selectedBoxes outputfiles =
                         pdfFile   = outputfile ++ ".pdf"
                         tmpFile   = outputfile ++ ".tmp"
                     write_casl_latex webOpts 
-                         globalAnnos pptexFile libDefn
+                         gannos pptexFile libDefn
                     writeFile latexFile (latex_header ++
                                          "\\input{"++ pptexFile ++
                                          "}\n \\end{document}\n") 
@@ -276,7 +274,7 @@ anaInput contents selectedBoxes outputfiles =
              when (outputTxt conf)
                   (do
                     let txtFile = outputfile ++ ".txt"
-                    write_casl_asc webOpts globalAnnos txtFile libDefn
+                    write_casl_asc webOpts gannos txtFile libDefn
                     setFileMode txtFile fMode
                   )
              return (CRes.Result ds $ Just $ selectOut conf libDefn resAsc)

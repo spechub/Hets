@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2005
+Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  till@tzi.de
@@ -83,11 +83,7 @@ getSourceLibNode (ln,edge) = (ln, getSourceNode edge)
 
 lookupDGraphInLibEnv :: LIB_NAME -> LibEnv -> DGraph
 lookupDGraphInLibEnv ln libEnv =
-    case Map.lookup ln libEnv of
-    Nothing -> error $
-               "lookupDGraphInLibEnv: Could not find development graph "
-               ++ "with library name " ++ show ln ++ " in given libEnv"
-    Just (_,_,dgraph) -> dgraph
+    devGraph $ Map.findWithDefault (error "lookupDGraphInLibEnv") ln libEnv
 
 {- returns all edges that go directly in the given node,
    in case of a DGRef node also all ingoing edges of the referenced node

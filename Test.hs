@@ -1,4 +1,3 @@
-
 import Syntax.AS_Library
 import Static.AnalysisLibrary
 import Static.DevGraph
@@ -6,7 +5,6 @@ import Static.PrintDevGraph
 import Driver.Options
 import qualified Common.Lib.Map as Map
 import Common.Lib.Pretty
-
 import System.Environment
 
 process :: FilePath -> IO (Maybe (LIB_NAME, LibEnv))
@@ -31,11 +29,10 @@ getDevGraph fname = do
     Nothing -> error "getDevGraph: process"
     Just (ln, lenv) -> case Map.lookup ln lenv of
         Nothing -> error "getDevGraph: lookup"
-        Just (_,_,dg) -> return dg
+        Just gctx -> return $ devGraph gctx
 
 main :: IO()
 main = do
   files <- getArgs
   mapM_ process files
   return ()
-

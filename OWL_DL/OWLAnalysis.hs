@@ -1,12 +1,13 @@
 {- |
 Module      :  $Header$
-Copyright   :  Heng Jiang, Uni Bremen 2004-2005
+Copyright   :  Heng Jiang, Uni Bremen 2004-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  jiang@tzi.de
 Stability   :  provisional
-Portability :  portable
+Portability :  non-portable (inports Logic.Logic)
 
+analyse owl files
 -}
 
 module OWL_DL.OWLAnalysis where
@@ -197,9 +198,10 @@ structureAna file opt ontoMap =
 -- showGraph
 simpleLibEnv :: FilePath -> DGraph -> LibEnv
 simpleLibEnv filename dg =
-    Map.singleton (simpleLibName filename) 
-           (emptyGlobalAnnos, Map.singleton (mkSimpleId "") 
-            (SpecEntry ((JustNode nodeSig), [], g_sign, nodeSig)), dg)
+    Map.singleton (simpleLibName filename) emptyGlobalContext
+           { globalEnv = Map.singleton (mkSimpleId "") 
+                         (SpecEntry ((JustNode nodeSig), [], g_sign, nodeSig))
+           , devGraph = dg }
        where nodeSig = NodeSig 0 g_sign
              g_sign = G_sign OWL_DL emptySign
 

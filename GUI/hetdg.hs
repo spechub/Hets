@@ -1,15 +1,14 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2005
+Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  hets@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  non-portable(via imports)
 
 Temporary interface for displaying development graphs.
    Should be replaced with hets in the future.
-   
 -}
 
 -- needs ghc and UniForM workbench
@@ -19,20 +18,17 @@ Temporary interface for displaying development graphs.
 -- configure
 -- gmake packages
 
-
 module Main
 
 where
 
 import System.Environment
+import qualified Common.Lib.Map as Map
 import Static.AnalysisLibrary
 import Static.DotGraph
-
+import Static.DevGraph
 import GUI.ShowGraph
-
 import Driver.Options
-
-import qualified Common.Lib.Map as Map
 
 process :: FilePath -> Bool -> IO ()
 process fname showdg = do
@@ -41,7 +37,7 @@ process fname showdg = do
      else case res of
     Just (ln, lenv) -> case Map.lookup ln lenv of
         Nothing -> error "hetdg: lookup"
-        Just (_,_,dg) -> writeFile (fname++".dot") $ concat $ dot dg
+        Just gctx -> writeFile (fname++".dot") $ concat $ dot $ devGraph gctx
     _ -> return ()
 
 main :: IO ()

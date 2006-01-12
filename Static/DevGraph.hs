@@ -156,7 +156,7 @@ locallyEmpty dgn =
 data DGLinkLab = DGLink {
               dgl_morphism :: GMorphism,  -- signature morphism of link
               dgl_type :: DGLinkType,     -- type: local, global, def, thm?
-              -- dgl_depends :: [Int], 
+              -- dgl_depends :: [Int],
               dgl_origin :: DGOrigin }    -- origin in input language
               deriving (Show, Eq)
 
@@ -546,7 +546,17 @@ data GlobalEntry = SpecEntry ExtGenSig
 
 type GlobalEnv = Map.Map SIMPLE_ID GlobalEntry
 
-type GlobalContext = (GlobalAnnos, GlobalEnv, DGraph)
+data GlobalContext = GlobalContext
+    { globalAnnos :: GlobalAnnos
+    , globalEnv :: GlobalEnv
+    , devGraph :: DGraph
+    }
+
+emptyGlobalContext :: GlobalContext
+emptyGlobalContext = GlobalContext
+   { globalAnnos = emptyGlobalAnnos
+   , globalEnv = Map.empty
+   , devGraph = Graph.empty }
 
 type LibEnv = Map.Map LIB_NAME GlobalContext
 

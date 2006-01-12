@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Till Mossakowski and Uni Bremen 2003-2005
+Copyright   :  (c) Till Mossakowski and Uni Bremen 2003-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  till@tzi.de
@@ -141,7 +141,8 @@ insEdgeNub (v, w, l) g =
 -- options: here we need the info: shall only the structure be analysed?
 ana_SPEC :: LogicGraph -> GlobalContext -> MaybeNode -> NODE_NAME ->
             HetcatsOpts -> SPEC -> Result (SPEC,NodeSig,DGraph)
-ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
+ana_SPEC lg gctx nsig name opts sp =
+ let dg = devGraph gctx in
  case sp of
   Basic_spec (G_basic_spec lid bspec) ->
     do G_sign lid' sigma' <- return (getMaybeSig nsig)
@@ -153,7 +154,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
                           ("no basic analysis for logic "
                                          ++language_name lid)
                           (basic_analysis lid)
-                   b (bspec,sigma,gannos)
+                   b (bspec,sigma, globalAnnos gctx)
        incl <- ginclusion lg
                       (G_sign lid sigma) (G_sign lid sigma_complete)
        let node_contents =
@@ -301,7 +302,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
       (sps',nsigs,dg',_) <-
           let ana r sp' = do
                 (sps1,nsigs,dg',n) <- r
-                (sp1,nsig',dg1) <- ana_SPEC lg (gannos,genv,dg')
+                (sp1,nsig',dg1) <- ana_SPEC lg gctx { devGraph = dg' }
                                             nsig n opts sp'
                 return (sp1:sps1,nsig':nsigs,dg1,inc n)
            in foldl ana (return ([],[],dg,extName "U" name)) sps
@@ -347,7 +348,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
    ana res (name',asp') = do
      (sps', nsig', dg') <- res
      (sp1', nsig1@(NodeSig n1 sig1), dg1) <-
-         ana_SPEC lg (gannos,genv,dg') nsig' name' opts (item asp')
+         ana_SPEC lg gctx { devGraph = dg' } nsig' name' opts (item asp')
      -- insert theorem link for semantic annotations
      -- take the first semantic annotation
      let anno = find isSemanticAnno $ l_annos asp'
@@ -444,7 +445,8 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
       (sp2, nsig'@(NodeSig _ (G_sign lid' sigma')), dg') <-
           ana_SPEC lg gctx nsig (extName "L" name) opts sp1
       (sp2', NodeSig n'' (G_sign lid'' sigma''), dg'') <-
-          ana_SPEC lg (gannos,genv,dg') (JustNode nsig') (inc name) opts sp1'
+          ana_SPEC lg gctx { devGraph = dg' }
+                       (JustNode nsig') (inc name) opts sp1'
       let gsigma = getMaybeSig nsig
       G_sign lid sigma <- return gsigma
       sigma1 <- coerceSign lid' lid "Analysis of local spec" sigma'
@@ -569,7 +571,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
 
   Spec_inst spname afitargs pos -> do
    let adj = adjustPos pos
-   case Map.lookup spname genv of
+   case Map.lookup spname $ globalEnv gctx of
     Nothing -> fatal_error
                  ("Specification "++ showPretty spname " not found") pos
     Just (ViewEntry _) ->
@@ -693,7 +695,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
        where
        anaFitArg res (nsig',fa) = do
          (fas',dg1,args,name') <- res
-         (fa',dg',arg) <- ana_FIT_ARG lg (gannos,genv,dg1)
+         (fa',dg',arg) <- ana_FIT_ARG lg gctx { devGraph = dg1 }
                               spname imps nsig' opts name' fa
          return (fa':fas',dg',arg:args,inc name')
        parLink gsigma' node (_mor_i, NodeSig nA_i sigA_i) = do
@@ -738,7 +740,7 @@ ana_SPEC lg gctx@(gannos,genv,dg) nsig name opts sp =
                 insNode (node,node_contents) dg1
           nsig2 = NodeSig node gsigmaD'
       (sp2',nsig3,dg3) <-
-         ana_SPEC lg (gannos,genv,dg2) (JustNode nsig2) name opts sp2
+         ana_SPEC lg gctx { devGraph = dg2 } (JustNode nsig2) name opts sp2
       return (Data (Logic lidD) (Logic lidP)
                    (replaceAnnoted sp1' asp1)
                    (replaceAnnoted sp2' asp2)
@@ -899,10 +901,11 @@ ana_FIT_ARG lg gctx spname nsigI
            (G_morphism lidP mor,nsigA)
            )
 
-ana_FIT_ARG lg (gannos,genv,dg) spname nsigI (NodeSig nP gsigmaP)
+ana_FIT_ARG lg gctx spname nsigI (NodeSig nP gsigmaP)
             opts name fv@(Fit_view vn afitargs pos) = do
    let adj = adjustPos pos
-   case Map.lookup vn genv of
+       dg = devGraph gctx
+   case Map.lookup vn $ globalEnv gctx of
     Nothing -> fatal_error
                  ("View "++ showPretty vn " not found") pos
     Just (SpecEntry _) ->
@@ -1091,7 +1094,7 @@ ana_FIT_ARG lg (gannos,genv,dg) spname nsigI (NodeSig nP gsigmaP)
        where
        anaFitArg res (nsig',fa) = do
          (fas',dg1,args,name') <- res
-         (fa',dg',arg) <- ana_FIT_ARG lg (gannos,genv,dg1)
+         (fa',dg',arg) <- ana_FIT_ARG lg gctx { devGraph = dg1 }
                                   spname imps nsig' opts name' fa
          return (fa':fas',dg',arg:args,inc name')
        parLink gsigmaRes node (_mor_i,nsigA_i) = do
@@ -1213,30 +1216,30 @@ ana_GENERICITY :: LogicGraph -> GlobalContext -> AnyLogic -> HetcatsOpts
                     -> Result (GENERICITY, GenericitySig, DGraph)
 
 -- zero parameters,
-ana_GENERICITY _ (_,_,dg) l _ _
+ana_GENERICITY _ gctx l _ _
                gen@(Genericity (Params []) (Imported imps) pos) = do
   when (not (null imps))
    (plain_error () "Parameterless specifications must not have imports"
      pos)
-  return (gen,(EmptyNode l, [], EmptyNode l),dg)
+  return (gen,(EmptyNode l, [], EmptyNode l), devGraph gctx)
 
 -- one parameter ...
-ana_GENERICITY lg gctx@(gannos,genv,_) l opts name
+ana_GENERICITY lg gctx l opts name
                (Genericity (Params [asp]) imps pos) = do
   (imps',nsigI,dg') <- ana_IMPORTS lg gctx l opts (extName "I" name) imps
-  (sp',nsigP,dg'') <- ana_SPEC lg (gannos,genv,dg') nsigI
+  (sp',nsigP,dg'') <- ana_SPEC lg gctx { devGraph = dg' } nsigI
                       name opts (item asp)
   return (Genericity (Params [replaceAnnoted sp' asp]) imps' pos,
           (nsigI, [nsigP], JustNode nsigP),
           dg'')
 
 -- ... and more parameters
-ana_GENERICITY lg gctx@(gannos,genv,_) l opts name
+ana_GENERICITY lg gctx l opts name
                (Genericity params imps pos) = do
   let adj = adjustPos pos
   (imps',nsigI,dg') <- ana_IMPORTS lg gctx l opts (extName "I" name) imps
   (params',nsigPs,dg'') <-
-      ana_PARAMS lg (gannos,genv,dg') l nsigI opts (inc name) params
+      ana_PARAMS lg gctx { devGraph = dg' } l nsigI opts (inc name) params
   gsigmaP <- adj $ gsigManyUnion lg (map getSig nsigPs)
   G_sign lidP gsigP <- return gsigmaP
   let node_contents = DGNode {
@@ -1264,8 +1267,9 @@ ana_GENERICITY lg gctx@(gannos,genv,_) l opts name
 ana_PARAMS :: LogicGraph -> GlobalContext -> AnyLogic -> MaybeNode
            -> HetcatsOpts -> NODE_NAME -> PARAMS
            -> Result (PARAMS, [NodeSig], DGraph)
-ana_PARAMS lg (gannos,genv,dg) _ nsigI opts name (Params asps) = do
-  (sps',pars,dg',_) <- foldl ana (return ([],[],dg,name)) (map item asps)
+ana_PARAMS lg gctx _ nsigI opts name (Params asps) = do
+  (sps',pars,dg',_) <- foldl ana (return ([],[], devGraph gctx,name))
+                       $ map item asps
   return (Params (map (uncurry replaceAnnoted)
                       (zip (reverse sps') asps)),
           reverse pars,
@@ -1273,15 +1277,15 @@ ana_PARAMS lg (gannos,genv,dg) _ nsigI opts name (Params asps) = do
   where
   ana res sp = do
     (sps',pars,dg1,n) <- res
-    (sp',par,dg') <- ana_SPEC lg (gannos,genv,dg1) nsigI n opts sp
+    (sp',par,dg') <- ana_SPEC lg gctx { devGraph = dg1 } nsigI n opts sp
     return (sp':sps',par:pars,dg',inc n)
 
 ana_IMPORTS ::  LogicGraph -> GlobalContext -> AnyLogic -> HetcatsOpts
                 -> NODE_NAME -> IMPORTED
                 -> Result (IMPORTED, MaybeNode, DGraph)
-ana_IMPORTS lg gctx@(_, _, dg) l opts name imps@(Imported asps) =
+ana_IMPORTS lg gctx l opts name imps@(Imported asps) =
   case asps of
-  [] -> return (imps, EmptyNode l, dg)
+  [] -> return (imps, EmptyNode l, devGraph gctx)
   _ -> do
       let sp = Union asps nullRange
       (Union asps' _, nsig', dg') <-
@@ -1297,12 +1301,12 @@ ana_IMPORTS lg gctx@(_, _, dg) l opts name imps@(Imported asps) =
 ana_VIEW_TYPE :: LogicGraph -> GlobalContext -> AnyLogic
               -> MaybeNode -> HetcatsOpts -> NODE_NAME -> VIEW_TYPE
               -> Result (VIEW_TYPE, (NodeSig, NodeSig), DGraph)
-ana_VIEW_TYPE lg gctx@(gannos,genv,_) l parSig opts name
+ana_VIEW_TYPE lg gctx l parSig opts name
               (View_type aspSrc aspTar pos) = do
   (spSrc',srcNsig,dg') <-
      ana_SPEC lg gctx (EmptyNode l) (extName "S" name) opts (item aspSrc)
   (spTar',tarNsig,dg'') <-
-     ana_SPEC lg (gannos,genv,dg') parSig
+     ana_SPEC lg gctx { devGraph = dg' } parSig
                   (extName "T" name) opts (item aspTar)
   return (View_type (replaceAnnoted spSrc' aspSrc)
                     (replaceAnnoted spTar' aspTar)
@@ -1324,7 +1328,7 @@ homogenizeGM (Logic lid) gsis =
 
 -- | check if structured analysis should be performed
 isStructured :: HetcatsOpts -> Bool
-isStructured a = case analysis a of 
+isStructured a = case analysis a of
                    Structured -> True
                    _ -> False
 
