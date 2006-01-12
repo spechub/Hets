@@ -1252,6 +1252,17 @@ getNodesOfSubtree dgraph visibleNodes node =
            [n| n <- (pre dgraph node), elem n visibleNodes]
           remainingVisibleNodes = [n| n <- visibleNodes, notElem n predOfNode]
 
+-- | apply the changes history to the displayed development graph
+applyHistory :: Descr -> LIB_NAME -> GraphInfo -> Descr -> IORef [[Node]]
+                  -> ConversionMaps
+                  -> [([DGRule],[DGChange])]
+                  -> IO (Descr, ConversionMaps)
+applyHistory gid libname grInfo eventDescr ioRefVisibleNodes
+             convMaps history =
+  applyChangesAux gid libname grInfo ioRefVisibleNodes
+        (eventDescr, convMaps) changes
+  where changes = removeContraryChanges (concatMap snd history)
+
 
 -- | apply the changes of first history item (computed by proof rules, 
 -- see folder Proofs) to the displayed development graph
