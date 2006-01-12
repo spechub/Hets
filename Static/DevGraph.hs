@@ -156,6 +156,7 @@ locallyEmpty dgn =
 data DGLinkLab = DGLink {
               dgl_morphism :: GMorphism,  -- signature morphism of link
               dgl_type :: DGLinkType,     -- type: local, global, def, thm?
+              -- dgl_depends :: [Int], 
               dgl_origin :: DGOrigin }    -- origin in input language
               deriving (Show, Eq)
 
@@ -383,7 +384,7 @@ data BasicConsProof = BasicConsProof -- more detail to be added ...
      deriving (Show, Eq)
 
 data ThmLinkStatus = LeftOpen
-                   | Proven DGRule [LEdge DGLinkLab]
+                   | Proven DGRule [LEdge DGLinkLab]  -- Proven DGRule Int
                      deriving (Show, Eq)
 
 instance PrettyPrint ThmLinkStatus where
@@ -407,6 +408,10 @@ data DGOrigin = DGBasic | DGExtension | DGTranslation | DGUnion | DGHiding
               deriving (Show, Eq)
 
 type DGraph = Tree.Gr DGNodeLab DGLinkLab
+{- type DGraph = DGraph {  dgraph :: Tree.Gr DGNodeLab Int
+                         , dgptr :: Int
+                         , dglabels :: Map.Map Int (LEdge DGLinkLab) }
+-}
 
 -- | Node with signature in a DG
 data NodeSig = NodeSig Node G_sign deriving (Show, Eq)
