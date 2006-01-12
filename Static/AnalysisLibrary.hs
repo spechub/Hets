@@ -1,6 +1,6 @@
-{-|
+{- |
 Module      :  $Header$
-Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2005
+Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  till@tzi.de
@@ -146,16 +146,6 @@ fileToLibName opts efile =
                 else file
     in Lib_id $ Indirect_link nfile nullRange
 
--- | create a file name without suffix from a library name
-libNameToFile :: HetcatsOpts -> LIB_NAME -> FilePath
-libNameToFile opts libname =
-           case getLIB_ID libname of
-                Indirect_link file _ ->
-                  let path = libdir opts
-                     -- add trailing "/" if necessary
-                  in pathAndBase path file
-                Direct_link _ _ -> error "libNameToFile"
-
 -- lookup/read a library
 anaLibFileOrGetEnv :: LogicGraph -> AnyLogic -> HetcatsOpts -> LibEnv
               -> LIB_NAME -> FilePath -> IOResult (LIB_NAME, LibEnv)
@@ -164,11 +154,9 @@ anaLibFileOrGetEnv lgraph defl opts libenv libname file = IOResult $ do
      recent_env_file <- checkRecentEnv opts env_file file
      if recent_env_file
         then do
-             putIfVerbose opts 1 $ "Reading " ++ env_file
-             Result dias mgc <- globalContextfromShATerm env_file
+             mgc <- readVerbose opts env_file
              case mgc of
                  Nothing -> ioresToIO $ do
-                     showDiags1 opts $ resToIORes $ Result dias $ Just ()
                      ioToIORes $ putIfVerbose opts 1 $ "Deleting " ++ env_file
                      anaSourceFile lgraph defl opts libenv file
                  Just gc@(_,_,dgraph) -> do

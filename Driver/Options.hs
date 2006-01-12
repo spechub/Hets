@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Martin Kühl, Christian Maeder, Uni Bremen 2002-2005
+Copyright   :  (c) Martin Kühl, Christian Maeder, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -11,37 +11,7 @@ Datatypes for options that hets understands.
    Useful functions to parse and check user-provided values.
 -}
 
-module Driver.Options
-    ( defaultHetcatsOpts
-    , showDiags
-    , showDiags1
-    , guess
-    , existsAnSource
-    , downloadExtensions
-    , rmSuffix
-    , checkUri
-    , checkRecentEnv
-    , checkInFile
-    , doIfVerbose
-    , putIfVerbose
-    , hetcatsOpts
-    , hasEnvOut
-    , addEnvOut
-    , envSuffix
-    , hetsVersion
-    , HetcatsOpts(..)
-    , GuiType(..)
-    , InType(..)
-    , AnaType(..)
-    , RawOpt(..)
-    , OutType(..)
-    , HetOutFormat(..)
-    , HetOutType(..)
-    , PrettyType(..)
-    , ATType(..)
-    , GraphType(..)
-    , Flattening(..)
-    ) where
+module Driver.Options where
 
 import Driver.Version
 import Common.Utils
@@ -93,12 +63,13 @@ treeS = "tree."
 bafS = ".baf"
 astS = "ast"
 
-graphS, ppS, envS, naxS, deltaS :: String
+graphS, ppS, envS, naxS, deltaS, prfS :: String
 graphS = "graph."
 ppS = "pp."
 envS = "env"
 naxS = ".nax"
 deltaS = ".delta"
+prfS ="prf"
 
 showOpt :: String -> String
 showOpt s = if null s then "" else " --" ++ s
@@ -182,9 +153,6 @@ defaultHetcatsOpts =
           , caslAmalg = [Cell]
           }
 
--- defaultOutType :: OutType
--- defaultOutType = PrettyOut PrettyAscii
-
 -- | every 'Flag' describes an option (see usage info)
 data Flag = Verbose  Int
           | Quiet
@@ -221,7 +189,7 @@ instance Show GuiType where
 
 -- | 'InType' describes the type of input the infile contains
 data InType = ATermIn ATType | ASTreeIn ATType | CASLIn | HetCASLIn | OWL_DLIn
-            | HaskellIn | DGIn | GuessIn
+            | HaskellIn | DGIn | PrfIn | GuessIn
 
 instance Show InType where
     show i = case i of
@@ -232,6 +200,7 @@ instance Show InType where
              OWL_DLIn -> "owl"
              HaskellIn -> "hs"
              DGIn -> "dg"
+             PrfIn -> prfS
              GuessIn -> ""
 
 -- maybe this optional tree prefix can be omitted
@@ -249,7 +218,7 @@ instance Show ATType where
                        NonBAF -> ""
 
 plainInTypes :: [InType]
-plainInTypes = [CASLIn, HetCASLIn, OWL_DLIn, HaskellIn, DGIn]
+plainInTypes = [CASLIn, HetCASLIn, OWL_DLIn, HaskellIn, PrfIn, DGIn]
 
 aInTypes :: [InType]
 aInTypes = [ f x | f <- [ASTreeIn, ATermIn], x <- [BAF, NonBAF] ]
@@ -258,7 +227,7 @@ aInTypes = [ f x | f <- [ASTreeIn, ATermIn], x <- [BAF, NonBAF] ]
 data OutType = PrettyOut PrettyType
              | HetCASLOut HetOutType HetOutFormat
              | GraphOut GraphType
-             | DGFile
+             | Prf
              | EnvOut
              | ThyFile -- isabelle theory file
              | DfgFile -- SPASS input file
@@ -271,7 +240,7 @@ instance Show OutType where
              PrettyOut p -> ppS ++ show p
              HetCASLOut h f -> show h ++ "." ++ show f
              GraphOut f -> graphS ++ show f
-             DGFile -> "dg"
+             Prf -> prfS
              EnvOut -> envS
              ThyFile -> "thy"
              DfgFile -> "dfg"
@@ -280,10 +249,10 @@ instance Show OutType where
              TheoryFile d -> "th" ++ show d
 
 plainOutTypeList :: [OutType]
-plainOutTypeList = [ DGFile, EnvOut, ThyFile, DfgFile, ComptableXml ]
+plainOutTypeList = [Prf, EnvOut, ThyFile, DfgFile, ComptableXml]
 
 outTypeList :: [OutType]
-outTypeList = let dl = [Delta, Complete] in
+outTypeList = let dl = [Delta, Fully] in
     plainOutTypeList
     ++ [ PrettyOut p | p <- prettyList ]
     ++ [ SigFile d | d <- dl ]
@@ -296,12 +265,12 @@ instance Read OutType where
                       ++ [(show h ++ naxS ++ "." ++ show f, HetCASLOut h f)
                               | h <- hetOutTypeList, f <- formatList ]
 
-data Delta = Delta | Complete
+data Delta = Delta | Fully
 
 instance Show Delta where
     show d = case d of
                Delta -> deltaS
-               Complete -> ""
+               Fully -> ""
 
 -- | 'PrettyType' describes the type of output we want the pretty-printer
 -- to generate
@@ -405,8 +374,8 @@ options =
       ("output file types, default nothing," ++ crS ++
        listS ++ crS ++ concatMap ( \ t -> bS ++ show t ++ crS)
              plainOutTypeList
-       ++ bS ++ joinBar (map show [SigFile Complete,
-                                   TheoryFile Complete])
+       ++ bS ++ joinBar (map show [SigFile Fully,
+                                   TheoryFile Fully])
               ++ bracket deltaS ++ crS
        ++ bS ++ ppS ++ joinBar (map show prettyList) ++ crS
        ++ bS ++ graphS ++ joinBar (map show graphList) ++ crS
@@ -453,6 +422,10 @@ rmSuffix = fst . stripSuffix (envSuffix : downloadExtensions)
 -- | the suffix of env files
 envSuffix :: String
 envSuffix = '.' : envS
+
+-- | the suffix of env files
+prfSuffix :: String
+prfSuffix = '.' : prfS
 
 -- |
 -- checks if a source file for the given file name exists
@@ -748,6 +721,13 @@ doIfVerbose :: HetcatsOpts -> Int -> (IO ()) -> IO ()
 doIfVerbose opts level func =
     if (verbose opts) >= level then func
         else return ()
+
+-- | add base file name (second argument) to path 
+pathAndBase :: FilePath -> FilePath -> FilePath
+pathAndBase path base =
+    if null path then base
+       else if last path == '/' then path ++ base
+            else path ++ "/" ++ base
 
 -- | show diagnostic messages (see Result.hs), according to verbosity level
 showDiags :: HetcatsOpts -> [Diagnosis] -> IO()

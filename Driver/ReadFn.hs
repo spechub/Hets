@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2005
+Copyright   :  (c) Klaus Lüttich, C. Maeder, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luettich@tzi.de
@@ -18,6 +18,7 @@ import Logic.Grothendieck
 import Syntax.AS_Library
 import Syntax.Parse_AS_Library
 import Static.DevGraph
+import Proofs.StatusUtils
 
 import ATC.AS_Library()
 import ATC.DevGraph()
@@ -26,6 +27,7 @@ import ATC.Sml_cats
 
 import Common.ATerm.Lib
 import Common.ATerm.ReadWrite
+import qualified Common.Lib.Map as Map
 import Common.AnnoState
 import Common.Id
 import Common.Result
@@ -46,10 +48,7 @@ read_LIB_DEFN_M lgraph defl opts file input =
          Left err  -> fail (showErr err)
          Right ast -> return ast
 
-readLIB_DEFN_from_file :: FilePath -> IO (Result LIB_DEFN)
-readLIB_DEFN_from_file = readShATermFile
-
-readShATermFile :: (ShATermConvertible a) => FilePath -> IO (Result a)
+readShATermFile :: ShATermConvertible a => FilePath -> IO (Result a)
 readShATermFile fp = do
     str <- readFile fp
     r <- return $ fromShATermString str
@@ -58,7 +57,7 @@ readShATermFile fp = do
       _ -> return ()
     return r
 
-fromVersionedATT :: (ShATermConvertible a) => ATermTable -> Result a
+fromVersionedATT :: ShATermConvertible a => ATermTable -> Result a
 fromVersionedATT att =
     case getATerm att of
     ShAAppl "hets" [versionnr,aterm] [] ->
@@ -71,13 +70,46 @@ fromVersionedATT att =
                    "Couldn't convert ShATerm back from ATermTable"
                    nullRange] Nothing
 
-fromShATermString :: (ShATermConvertible a) => String -> Result a
+fromShATermString :: ShATermConvertible a => String -> Result a
 fromShATermString str = if null str then
     Result [Diag Warning "got empty string from file" nullRange] Nothing
     else fromVersionedATT $ readATerm str
 
-globalContextfromShATerm :: FilePath -> IO (Result GlobalContext)
-globalContextfromShATerm = readShATermFile
-
 proofStatusFromShATerm :: FilePath -> IO (Result ProofStatus)
 proofStatusFromShATerm = readShATermFile
+
+readVerbose :: ShATermConvertible a => HetcatsOpts -> FilePath -> IO (Maybe a)
+readVerbose opts file = do
+    putIfVerbose opts 1 $ "Reading " ++ file
+    Result ds mgc <- readShATermFile file
+    showDiags opts ds
+    return mgc
+
+-- | create a file name without suffix from a library name
+libNameToFile :: HetcatsOpts -> LIB_NAME -> FilePath
+libNameToFile opts ln =
+           case getLIB_ID ln of
+                Indirect_link file _ ->
+                  let path = libdir opts
+                     -- add trailing "/" if necessary
+                  in pathAndBase path file
+                Direct_link _ _ -> error "libNameToFile"
+
+readPrfFile :: HetcatsOpts -> LIB_NAME -> IO (LIB_NAME, ProofHistory)
+readPrfFile opts ln = do
+    let fname = libNameToFile opts ln 
+        prfFile = fname ++ prfSuffix
+    recent <- checkRecentEnv opts prfFile fname
+    h <- if recent then 
+          fmap (maybe emptyProofHistory id) $ readVerbose opts prfFile
+       else return emptyProofHistory
+    return (ln, h)
+            
+readPrfFiles :: HetcatsOpts -> LIB_NAME -> LibEnv -> IO ProofStatus
+readPrfFiles opts ln le = do
+    l <- mapM (readPrfFile opts) $ Map.keys le
+    return (ln, le, Map.fromList l)
+              
+    
+
+  

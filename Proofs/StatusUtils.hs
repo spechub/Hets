@@ -1,15 +1,13 @@
-{-| 
-   
+{- | 
 Module      :  $Header$
-Copyright   :  (c) Jorina F. Gerken, Till Mossakowski, Uni Bremen 2002-2004
+Copyright   :  (c) Jorina F. Gerken, Till Mossakowski, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  jfgerken@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-utility functions for manipulating the proof status
-
+the proof status with manipulating functions
 -}
 
 module Proofs.StatusUtils where
@@ -19,6 +17,23 @@ import Data.Graph.Inductive.Graph
 import Common.PrettyPrint
 import qualified Common.Lib.Map as Map
 import Syntax.AS_Library
+
+{-
+   proof status = (DG0,[(R1,DG1),...,(Rn,DGn)])
+   DG0 is the development graph resulting from the static analysis
+   Ri is a list of rules that transforms DGi-1 to DGi
+   With the list of intermediate proof states, one can easily implement
+    an undo operation
+-}
+
+type ProofHistory = [([DGRule], [DGChange])]
+type ProofStatus = (LIB_NAME, LibEnv, Map.Map LIB_NAME ProofHistory)
+
+emptyProofHistory :: ProofHistory
+emptyProofHistory = [([], [])]
+
+emptyProofStatus :: LIB_NAME -> LibEnv -> ProofStatus
+emptyProofStatus ln le = (ln, le, Map.map (const emptyProofHistory) le)
 
 -- -------------------------------
 -- methods used in several proofs

@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2005
+Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  till@tzi.de
@@ -179,20 +179,6 @@ eqLEdgeDGLinkLab (m1,n1,l1) (m2,n2,l2) =
 roughElem :: LEdge DGLinkLab -> [LEdge DGLinkLab] -> Bool
 roughElem x = any (`eqLEdgeDGLinkLab` x)
 
-{-
-   proof status = (DG0,[(R1,DG1),...,(Rn,DGn)])
-   DG0 is the development graph resulting from the static analysis
-   Ri is a list of rules that transforms DGi-1 to DGi
-   With the list of intermediate proof states, one can easily implement
-    an undo operation
--}
-
-type ProofHistory = [([DGRule], [DGChange])]
-type ProofStatus = (LIB_NAME, LibEnv, Map.Map LIB_NAME ProofHistory)
-
-emptyProofStatus :: LIB_NAME -> LibEnv -> ProofStatus
-emptyProofStatus ln le = (ln, le, Map.map (const [([], [])]) le)
-
 data DGChange = InsertNode (LNode DGNodeLab)
               | DeleteNode (LNode DGNodeLab)
               | InsertEdge (LEdge DGLinkLab)
@@ -200,10 +186,10 @@ data DGChange = InsertNode (LNode DGNodeLab)
               deriving Eq
 
 instance Show DGChange where
-  show (InsertNode (n,l)) = "InsertNode "++show n -- ++show l
-  show (DeleteNode (n,l)) = "DeleteNode "++show n -- ++show l
-  show (InsertEdge (n,m,l)) = "InsertEdge "++show n++"->"++show m -- ++show l
-  show (DeleteEdge (n,m,l)) = "DeleteEdge "++show n++"->"++show m -- ++show l
+  show (InsertNode (n, _)) = "InsertNode "++show n -- ++show l
+  show (DeleteNode (n, _)) = "DeleteNode "++show n -- ++show l
+  show (InsertEdge (n,m, _)) = "InsertEdge "++show n++"->"++show m -- ++show l
+  show (DeleteEdge (n,m, _)) = "DeleteEdge "++show n++"->"++show m -- ++show l
 
 -- | Link types of development graphs
 -- | Sect. IV:4.2 of the CASL Reference Manual explains them in depth
@@ -423,7 +409,7 @@ data MaybeNode = JustNode NodeSig | EmptyNode AnyLogic deriving (Show, Eq)
 
 instance PrettyPrint NodeSig where
   printText0 ga (NodeSig n sig) =
-    ptext "node" <+> printText0 ga n <> ptext ":" <> printText0 ga sig
+    text "node" <+> printText0 ga n <> colon <> printText0 ga sig
 
 emptyG_sign :: AnyLogic -> G_sign
 emptyG_sign (Logic lid) = G_sign lid (empty_signature lid)

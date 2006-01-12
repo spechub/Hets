@@ -1,7 +1,7 @@
 {-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
-Copyright   :  (c) Klaus Lüttich, C.Maeder, Uni Bremen 2002-2005
+Copyright   :  (c) Klaus Lüttich, C.Maeder, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -49,6 +49,7 @@ import SPASS.CreateDFGDoc
 import Logic.Prover
 import Static.DevGraph
 import Static.DGToSpec
+import Proofs.StatusUtils
 import qualified Static.PrintDevGraph as DG
 import Proofs.Automatic
 
@@ -83,12 +84,6 @@ write_LIB_DEFN ga file opt ld = do
     putIfVerbose opt 3 ("Current OutDir: " ++ odir)
     mapM_ write_type $ outtypes opt
 
-pathAndBase :: FilePath -> FilePath -> FilePath
-pathAndBase path base =
-    if null path then base
-       else if last path == '/' then path ++ base
-            else path ++ "/" ++ base
-
 write_casl_asc :: HetcatsOpts -> GlobalAnnos -> FilePath -> LIB_DEFN -> IO ()
 write_casl_asc _ ga oup ld = writeFile oup $ printLIB_DEFN_text ga ld
 
@@ -121,34 +116,17 @@ writeShATermFileSDoc fp atcon = do
    att <- versionedATermTable atcon
    writeFileSDoc fp $ writeSharedATermSDoc att
 
-globalContexttoShATerm :: FilePath -> GlobalContext -> IO ()
-globalContexttoShATerm fp gc = writeShATermFileSDoc fp gc
-
 writeFileInfo :: HetcatsOpts -> FilePath -> GlobalContext -> IO()
 writeFileInfo opts file gctx =
   let envFile = rmSuffix file ++ ".env" in
   case analysis opts of
   Basic -> do
       putIfVerbose opts 2 ("Writing file: " ++ envFile)
-      catch (globalContexttoShATerm envFile gctx) $ \ err -> do
+      catch (writeShATermFileSDoc envFile gctx) $ \ err -> do
               putIfVerbose opts 2 (envFile ++ " not written")
               putIfVerbose opts 3 ("see following error description:\n"
                                    ++ shows err "\n")
   _ -> putIfVerbose opts 2 ("Not writing " ++ envFile)
-
-write_casl_asc_stdout :: HetcatsOpts -> GlobalAnnos -> LIB_DEFN -> IO(String)
-write_casl_asc_stdout opt ga ld =
-    do putIfVerbose opt 3 (show (printText0_eGA ga))
-       return $ printLIB_DEFN_text ga ld
-
-write_casl_latex_stdout :: HetcatsOpts -> GlobalAnnos -> LIB_DEFN -> IO(String)
-write_casl_latex_stdout opt ga ld =
-    do putIfVerbose opt 3 (show (printText0_eGA ga))
-       return $ printLIB_DEFN_latex ga ld
-
-proofStatusToShATerm :: FilePath -> ProofStatus -> IO()
-proofStatusToShATerm filepath proofStatus =
-  writeShATermFileSDoc filepath proofStatus
 
 writeVerbFile :: HetcatsOpts -> FilePath -> String -> IO()
 writeVerbFile opt f str = do
@@ -159,13 +137,14 @@ writeSpecFiles :: HetcatsOpts -> FilePath -> LibEnv
                -> GlobalAnnos -> (LIB_NAME, GlobalEnv) -> IO()
 writeSpecFiles opt file lenv ga (ln, gctx) = do
     let ns = specNames opt
-        (dgFiles, outTypes) = partition (\ t -> case t of
-            DGFile -> True
+        (prfFiles, outTypes) = partition (\ t -> case t of
+            Prf -> True
             _ -> False) $ outtypes opt
         allSpecs = null ns
-    unless (null dgFiles) $ do
-      let f = rmSuffix file ++ "." ++ show (head dgFiles)
-      str <- toShATermString $ automatic $ emptyProofStatus ln lenv
+    unless (null prfFiles) $ do
+      let f = rmSuffix file ++ "." ++ show (head prfFiles)
+          (_, _, hs) = automatic $ emptyProofStatus ln lenv
+      str <- toShATermString $ Map.findWithDefault [] ln hs
       writeVerbFile opt f str
     mapM_ ( \ i -> case Map.lookup i gctx of
         Just (SpecEntry (_,_,_, NodeSig n _)) ->
