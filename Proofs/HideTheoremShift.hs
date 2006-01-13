@@ -31,6 +31,7 @@ module Proofs.HideTheoremShift
     ) where
 
 import Logic.Grothendieck
+import Syntax.AS_Library
 import Static.DevGraph
 import Static.DGToSpec
 import Common.Result
@@ -50,25 +51,26 @@ type ListSelector m a = [a] -> m (Maybe a)
 type PathTuple = ([LEdge DGLinkLab], [LEdge DGLinkLab])
 type ProofBaseSelector m = DGraph -> ListSelector m PathTuple
 
-interactiveHideTheoremShift :: ProofStatus -> IO ProofStatus
-interactiveHideTheoremShift = hideTheoremShift hideTheoremShift_selectProofBase
+interactiveHideTheoremShift :: LIB_NAME -> ProofStatus -> IO ProofStatus
+interactiveHideTheoremShift = 
+    hideTheoremShift hideTheoremShift_selectProofBase
 
-automaticHideTheoremShift :: ProofStatus -> ProofStatus
-automaticHideTheoremShift = runIdentity . hideTheoremShift
+automaticHideTheoremShift :: LIB_NAME -> ProofStatus -> ProofStatus
+automaticHideTheoremShift ln = runIdentity . hideTheoremShift
   (const $ \ l -> return $ case l of
                   [a] -> Just a   -- may be take the first one always?
-                  _ -> Nothing)
+                  _ -> Nothing) ln
 
-hideTheoremShift :: Monad m => ProofBaseSelector m
+hideTheoremShift :: Monad m => ProofBaseSelector m -> LIB_NAME
                  -> ProofStatus -> m ProofStatus
-hideTheoremShift proofBaseSel proofStatus@(ln,_,_) = do
+hideTheoremShift proofBaseSel ln proofStatus = do
   let dgraph = lookupDGraph ln proofStatus
       hidingThmEdges = filter isUnprovenHidingThm (labEdges dgraph)
   result <- hideTheoremShiftAux dgraph ([],[]) hidingThmEdges proofBaseSel
   let nextDGraph = fst result
       nextHistoryElem = snd result
       newProofStatus
-          = mkResultProofStatus proofStatus nextDGraph nextHistoryElem
+          = mkResultProofStatus ln proofStatus nextDGraph nextHistoryElem
   return newProofStatus
 
 {- auxiliary method for hideTheoremShift -}

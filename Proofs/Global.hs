@@ -1,6 +1,6 @@
 {- | 
 Module      :  $Header$
-Copyright   :  (c) Jorina F. Gerken, Till Mossakowski, Uni Bremen 2002-2004
+Copyright   :  (c) Jorina F. Gerken, Till Mossakowski, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  jfgerken@tzi.de
@@ -27,12 +27,12 @@ todo for Jorina:
 module Proofs.Global (globSubsume, globDecomp) where
 
 import Data.List(nub)
-
 import Data.Graph.Inductive.Graph
 
 import Logic.Grothendieck
 import Static.DevGraph
 import Static.DGToSpec
+import Syntax.AS_Library
 
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
@@ -47,17 +47,16 @@ import Proofs.StatusUtils
    where e1...en are the global theorem links in DGm
    DGm+1 results from DGm by application of GlobDecomp e1,...,GlobDecomp en -}
 
-
 {- applies global decomposition to all unproven global theorem edges
    if possible -}
-globDecomp :: ProofStatus -> ProofStatus
-globDecomp proofStatus@(libname, _, _) =
-  let dgraph = lookupDGraph libname proofStatus
+globDecomp :: LIB_NAME -> ProofStatus -> ProofStatus
+globDecomp ln proofStatus =
+  let dgraph = lookupDGraph ln proofStatus
       globalThmEdges = filter isUnprovenGlobalThm (labEdges dgraph)
       (newDGraph, newHistoryElem) = globDecompAux dgraph globalThmEdges ([],[])
 --        (finalDGraph, finalHistoryElem) 
 --            = removeSuperfluousInsertions newDGraph newHistoryElem
-  in mkResultProofStatus proofStatus newDGraph newHistoryElem 
+  in mkResultProofStatus ln proofStatus newDGraph newHistoryElem 
         --finalDGraph finalHistoryElem
 
 {- removes all superfluous insertions from the list of changes as well as
@@ -67,7 +66,6 @@ removeSuperfluousInsertions :: DGraph -> ([DGRule],[DGChange])
                                  -> (DGraph,([DGRule],[DGChange]))
 removeSuperfluousInsertions dgraph (rules,changes)
   = (newDGraph,(rules,newChanges))
-
   where
     localThms = [edge | (InsertEdge edge) 
                         <- filter isLocalThmInsertion changes]
@@ -76,8 +74,6 @@ removeSuperfluousInsertions dgraph (rules,changes)
     newChanges = (filter (not.isLocalThmInsertion) changes)
                      ++ [InsertEdge edge | edge <- localThmsToInsert]
 
-
-
 {- auxiliary function for globDecomp (above)
    actual implementation -}
 globDecompAux :: DGraph -> [LEdge DGLinkLab] -> ([DGRule],[DGChange])
@@ -85,18 +81,15 @@ globDecompAux :: DGraph -> [LEdge DGLinkLab] -> ([DGRule],[DGChange])
 globDecompAux dgraph [] historyElem = (dgraph, historyElem)
 globDecompAux dgraph (edge:list) historyElem =
   globDecompAux newDGraph list newHistoryElem
-
   where
     (newDGraph, newChanges) = globDecompForOneEdge dgraph edge
     newHistoryElem = (((GlobDecomp edge):(fst historyElem)),
                         (newChanges++(snd historyElem)))
 
-
 -- applies global decomposition to a single edge
 globDecompForOneEdge :: DGraph -> LEdge DGLinkLab -> (DGraph,[DGChange])
 globDecompForOneEdge dgraph edge =
   globDecompForOneEdgeAux dgraph edge [] paths
-  
   where
     source = getSourceNode edge
     defEdgesToSource = [e | e <- labEdges dgraph, 
@@ -119,7 +112,6 @@ globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes [] =
             ((DeleteEdge edge):changes))
       else ((insEdge provenEdge (delLEdge edge dgraph)),
             ((DeleteEdge edge):((InsertEdge provenEdge):changes)))
-
   where
     (GlobalThm _ conservativity conservStatus) = (dgl_type edgeLab)
     proofBasis = getInsertedEdges changes
@@ -137,7 +129,6 @@ globDecompForOneEdgeAux dgraph edge@(_,target,_) changes
   if isDuplicate newEdge dgraph changes-- list
     then globDecompForOneEdgeAux dgraph edge changes list
    else globDecompForOneEdgeAux newGraph edge newChanges list
-
   where
     hd = head path
     isHiding = not (null path) && isHidingDef hd
@@ -178,8 +169,8 @@ globDecompForOneEdgeAux dgraph edge@(_,target,_) changes
 -- -------------------
 
 -- applies global subsumption to all unproven global theorem edges if possible
-globSubsume ::  ProofStatus -> ProofStatus
-globSubsume proofStatus@(ln,libEnv,_) =
+globSubsume :: LIB_NAME -> ProofStatus -> ProofStatus
+globSubsume ln proofStatus@libEnv =
   let dgraph = lookupDGraph ln proofStatus
       globalThmEdges = filter isUnprovenGlobalThm (labEdges dgraph)
     -- the 'nub' is just a workaround, because some of the edges in the graph
@@ -187,8 +178,7 @@ globSubsume proofStatus@(ln,libEnv,_) =
     -- problems on deletion
       (nextDGraph, nextHistoryElem) =
           globSubsumeAux libEnv dgraph ([],[]) (nub globalThmEdges)
-  in mkResultProofStatus proofStatus nextDGraph nextHistoryElem
-
+  in mkResultProofStatus ln proofStatus nextDGraph nextHistoryElem
 
 {- auxiliary function for globSubsume (above)
    the actual implementation -}
@@ -206,7 +196,6 @@ globSubsumeAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
           (newRules,(DeleteEdge ledge):((InsertEdge newEdge):changes)) list
    else 
      globSubsumeAux libEnv dgraph (rules,changes) list
-
   where
     morphism = dgl_morphism edgeLab
     allPaths = getAllGlobPathsOfMorphismBetween dgraph morphism src tgt
@@ -289,7 +278,6 @@ removeSuperfluousEdges dgraph [] = (dgraph,[])
 removeSuperfluousEdges dgraph es
   = removeSuperfluousEdgesAux dgraph es 
         (calculateResultingEdges combinedPaths) []
-
   where
     localThmPaths
         = localThmPathsBetweenNodes dgraph (map (getSourceNode) es)
@@ -307,7 +295,6 @@ removeSuperfluousEdgesAux dgraph ((edge@(src,tgt,edgeLab)):list)
           newDGraph list newResultingEdges edgesToInsert
       else removeSuperfluousEdgesAux
            dgraph list resultingEdges (edge:edgesToInsert)
-
   where 
     equivalentEdges 
         = [e | e <- resultingEdges,(snd e) == (src,tgt,dgl_morphism edgeLab)]

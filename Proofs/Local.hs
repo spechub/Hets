@@ -21,19 +21,19 @@ re-proved)
 
 module Proofs.Local (localInference, locDecomp) where
 
+import Proofs.EdgeUtils
+import Proofs.StatusUtils
 import Logic.Grothendieck
+import Logic.Prover
 import Static.DevGraph
 import Static.DGToSpec
+import Syntax.AS_Library
 import Common.Result
-import Logic.Prover
 import Common.Utils
 import qualified Common.Lib.Map as Map
 import qualified Common.OrderedMap as OMap
 import Data.Graph.Inductive.Graph
 import Data.Maybe
-import Proofs.EdgeUtils
-import Proofs.StatusUtils
-import Syntax.AS_Library
 
 -- --------------------
 -- local decomposition
@@ -42,13 +42,13 @@ import Syntax.AS_Library
 {- a merge of the rules local subsumption, local decomposition I and
    local decomposition II -}
 -- applies this merge of rules to all unproven localThm edges if possible
-locDecomp ::  ProofStatus -> ProofStatus
-locDecomp proofStatus@(ln,libEnv,_) =
+locDecomp :: LIB_NAME -> ProofStatus -> ProofStatus
+locDecomp ln proofStatus@libEnv =
   let dgraph = lookupDGraph ln proofStatus
       localThmEdges = filter isUnprovenLocalThm (labEdges dgraph)
       (nextDGraph, nextHistoryElem) =
           locDecompAux libEnv ln dgraph ([],[]) localThmEdges
-  in mkResultProofStatus proofStatus nextDGraph nextHistoryElem
+  in mkResultProofStatus ln proofStatus nextDGraph nextHistoryElem
 
 {- auxiliary function for locDecomp (above)
    actual implementation -}
@@ -65,7 +65,6 @@ locDecompAux libEnv ln dgraph (rules,changes)
           then locDecompAux libEnv ln auxGraph
                  (newRules, DeleteEdge ledge : changes) list
        else locDecompAux libEnv ln newGraph (newRules,newChanges) list
-
   where
     morphism = dgl_morphism edgeLab
     allPaths = getAllLocGlobPathsBetween dgraph src tgt
@@ -86,7 +85,6 @@ locDecompAux libEnv ln dgraph (rules,changes)
     newGraph = insEdge newEdge auxGraph
     newRules =  LocDecomp ledge : rules
     newChanges = DeleteEdge ledge : InsertEdge newEdge : changes
-
 
 {- | removes all paths from the given list of paths whose morphism does
 not translate the given sentence list to the same resulting sentence
@@ -113,13 +111,13 @@ isSameTranslation th morphism path =
 -- ----------------------------------------------
 
 -- applies local subsumption to all unproven local theorem edges
-localInference :: ProofStatus -> ProofStatus
-localInference proofStatus@(ln,libEnv,_) =
+localInference :: LIB_NAME -> ProofStatus -> ProofStatus
+localInference ln proofStatus@libEnv =
   let dgraph = lookupDGraph ln proofStatus
       localThmEdges = filter isUnprovenLocalThm (labEdges dgraph)
       (nextDGraph, nextHistoryElem) =
           localInferenceAux libEnv ln dgraph ([],[]) localThmEdges
-  in mkResultProofStatus proofStatus nextDGraph nextHistoryElem
+  in mkResultProofStatus ln proofStatus nextDGraph nextHistoryElem
 
 -- auxiliary method for localInference
 localInferenceAux :: LibEnv -> LIB_NAME -> DGraph -> ([DGRule],[DGChange])

@@ -1,6 +1,6 @@
 {- | 
 Module      :  $Header$
-Copyright   :  (c) Jorina F. Gerken, Till Mossakowski, Uni Bremen 2002-2004
+Copyright   :  (c) Jorina F. Gerken, Till Mossakowski, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  jfgerken@tzi.de
@@ -17,6 +17,7 @@ module Proofs.Composition (composition, compositionCreatingEdges) where
 import Logic.Grothendieck
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
+import Syntax.AS_Library
 import Static.DevGraph
 import Static.DGToSpec
 import Data.Graph.Inductive.Graph
@@ -26,13 +27,13 @@ import Data.Graph.Inductive.Graph
    theorems with the morphism and the conservativity of the corresponding
    path. If a new edge is the proven version of a previsously existing 
    edge, that edge is deleted. -}
-compositionCreatingEdges :: ProofStatus -> ProofStatus
-compositionCreatingEdges proofStatus@(libname,_,_) =
+compositionCreatingEdges :: LIB_NAME -> ProofStatus -> ProofStatus
+compositionCreatingEdges libname proofStatus =
   let dgraph = lookupDGraph libname proofStatus
       pathsToCompose = getAllPathsOfType dgraph isGlobalThm
       (newDGraph,newHistoryElem)
           = compositionCreatingEdgesAux dgraph pathsToCompose ([],[])
-  in mkResultProofStatus proofStatus newDGraph newHistoryElem
+  in mkResultProofStatus libname proofStatus newDGraph newHistoryElem
 
 {- auxiliary method for compositionCreatingEdges -}
 compositionCreatingEdgesAux :: DGraph -> [[LEdge DGLinkLab]] 
@@ -99,13 +100,13 @@ deleteRedundantEdgesAux dgraph (edge : list) changes =
    and checks, if they are a composition of a global theorem path. If so, 
    the edge is proven, with the corresponding path as its proof basis. 
    If there is more than one path, the first of them is arbitrarily taken. -}
-composition :: ProofStatus -> ProofStatus
-composition proofStatus@(libname,_,_) = 
+composition :: LIB_NAME -> ProofStatus -> ProofStatus
+composition libname proofStatus = 
   let dgraph = lookupDGraph libname proofStatus
       globalThmEdges = filter isGlobalThm (labEdges dgraph)
       (newDGraph, newHistoryElem) = 
           compositionAux dgraph globalThmEdges ([],[])
-  in mkResultProofStatus proofStatus newDGraph newHistoryElem
+  in mkResultProofStatus libname proofStatus newDGraph newHistoryElem
 
 {- | auxiliary method for composition -}
 compositionAux :: DGraph -> [LEdge DGLinkLab] -> ([DGRule],[DGChange]) 
@@ -130,7 +131,6 @@ compositionForOneEdge :: DGraph -> LEdge DGLinkLab
 compositionForOneEdge dgraph edge@(src,tgt,labl) =
   compositionForOneEdgeAux edge [path | path <- pathsOfMorphism,
                                  not (elem edge path)]
-
   where
     globThmPaths = getAllPathsOfTypeBetween dgraph isGlobalThm src tgt
     pathsOfMorphism = filterPathsByMorphism (dgl_morphism labl) globThmPaths
@@ -144,7 +144,6 @@ compositionForOneEdgeAux edge@(src,tgt,labl) (path:paths)
                         then handleConservativityMono newEdge path 
                          else Just (newEdge,path)
   | otherwise = compositionForOneEdgeAux edge paths
-
   where
     cons = getConservativity edge
     pathCons = getConservativityOfPath path
@@ -188,8 +187,3 @@ getConservativityStatus (_,_,labl) =
     LocalThm _ _ consStatus -> consStatus
     GlobalThm _ _ consStatus -> consStatus
     _ -> error "getConservativityStatus"
-
-{- returns the label of the given edge
-getEdgeLabel :: LEdge DGLinkLab -> DGLinkLab
-getEdgeLabel (_,_,label) = label
--}

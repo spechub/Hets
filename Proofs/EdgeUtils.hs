@@ -10,20 +10,16 @@ Portability :  non-portable(Logic)
 utility functions for edges of a development graphs.
 -}
 
-
 {- todo: also treat conservativity proof status in computation of proof basis
 -}
 
 module Proofs.EdgeUtils where
 
 import Data.List(nub, lookup)
-import Logic.Logic
 import Logic.Grothendieck
 import Static.DevGraph
 import Static.DGToSpec
 import Data.Graph.Inductive.Graph
-import qualified Common.Lib.Map as Map
-import Common.Utils
 
 delLEdge :: LEdge DGLinkLab -> DGraph -> DGraph
 delLEdge (v, w, l) g = case match v g of
@@ -77,7 +73,6 @@ isUnprovenLocalThm (_,_,edgeLab) =
     (LocalThm LeftOpen _ _) -> True
     _ -> False
 
-
 isHidingEdge :: LEdge DGLinkLab -> Bool
 isHidingEdge edge = isHidingDef edge || isHidingThm edge
 
@@ -89,7 +84,6 @@ isHidingDef (_,_,edgeLab) =
 
 isHidingThm :: LEdge DGLinkLab -> Bool
 isHidingThm edge = isProvenHidingThm edge || isUnprovenHidingThm edge
-
 
 isProvenHidingThm :: LEdge DGLinkLab -> Bool
 isProvenHidingThm (_,_,edgeLab) =
@@ -113,20 +107,6 @@ isDuplicate :: LEdge DGLinkLab -> DGraph -> [DGChange] -> Bool
 isDuplicate newEdge dgraph changes =
   elem (InsertEdge newEdge) changes || elem newEdge (labEdges dgraph)
 
-
-isIdentityEdge :: LEdge DGLinkLab -> LibEnv -> DGraph -> Bool
-isIdentityEdge (src,tgt,edgeLab) libEnv dgraph =
-  if isDGRef nodeLab then
-    case Map.lookup (dgn_libname nodeLab) libEnv of
-      Just gctx -> isIdentityEdge (dgn_node nodeLab,tgt,edgeLab) libEnv
-                 $ devGraph gctx
-      Nothing -> False
-   else src == tgt &&
-        dgl_morphism edgeLab == ide Grothendieck (dgn_sign nodeLab)
-
-  where nodeLab = lab' $ safeContext "Proofs.EdgeUtils.isIdentityEdge"
-                  dgraph src
-
 {- | returns the DGLinkLab of the given LEdge -}
 getLabelOfEdge :: (LEdge b) -> b
 getLabelOfEdge (_,_,label) = label
@@ -142,12 +122,10 @@ getAllPathsOfType dgraph isType =
   concat
   [concat (map (getAllPathsOfTypeBetween dgraph isType source) targets) |
    source <- sources]
-
   where
     edgesOfType = [edge | edge <- filter isType (labEdges dgraph)]
     sources = nub (map getSourceNode edgesOfType)
     targets = nub (map getTargetNode edgesOfType)
-
 
 {- | returns a list of all proven global paths of the given morphism between
    the given source and target node-}
@@ -155,10 +133,8 @@ getAllGlobPathsOfMorphismBetween :: DGraph -> GMorphism -> Node -> Node
                                           -> [[LEdge DGLinkLab]]
 getAllGlobPathsOfMorphismBetween dgraph morphism src tgt =
   filterPathsByMorphism morphism allPaths
-
   where
       allPaths = getAllGlobPathsBetween dgraph src tgt
-
 
 {- | returns all paths from the given list whose morphism is equal to the
    given one-}
@@ -167,14 +143,12 @@ filterPathsByMorphism :: GMorphism -> [[LEdge DGLinkLab]]
 filterPathsByMorphism morphism paths =
   [path| path <- paths, (calculateMorphismOfPath path) == (Just morphism)]
 
-
 {- | returns all paths consisting of global edges only
    or
    of one local edge followed by any number of global edges-}
 getAllLocGlobPathsBetween :: DGraph -> Node -> Node -> [[LEdge DGLinkLab]]
 getAllLocGlobPathsBetween dgraph src tgt =
   locGlobPaths ++ globPaths
-
   where
     outEdges = out dgraph src
     locEdges = [(edge,target)|edge@(_,target,_) <-
@@ -185,13 +159,11 @@ getAllLocGlobPathsBetween dgraph src tgt =
                     |  (edge, node) <- locEdges]
     globPaths = getAllPathsOfTypesBetween dgraph isGlobalEdge src tgt []
 
-
 {- | returns all paths of globalDef edges or globalThm edges
    between the given source and target node -}
 getAllGlobPathsBetween :: DGraph -> Node -> Node -> [[LEdge DGLinkLab]]
 getAllGlobPathsBetween dgraph src tgt =
   getAllPathsOfTypesBetween dgraph (liftOr isGlobalDef isGlobalThm) src tgt []
-
 
 {- | returns all paths consiting of edges of the given type between the
    given node -}
@@ -199,7 +171,6 @@ getAllPathsOfTypeBetween :: DGraph -> (LEdge DGLinkLab -> Bool) -> Node
                             -> Node -> [[LEdge DGLinkLab]]
 getAllPathsOfTypeBetween dgraph isType src tgt =
   getAllPathsOfTypesBetween dgraph isType src tgt []
-
 
 {- | returns all paths consisting of edges of the given types between
    the given nodes -}
@@ -211,7 +182,6 @@ getAllPathsOfTypesBetween dgraph types src tgt path =
           ++ (concat
                [getAllPathsOfTypesBetween dgraph types src nextTgt (edge:path)|
                (edge,nextTgt) <- nextStep] )
-
   where
     inGoingEdges = inn dgraph tgt
     edgesOfTypes =
@@ -221,11 +191,9 @@ getAllPathsOfTypesBetween dgraph types src tgt path =
     nextStep =
         [(edge, source)| edge@(source,_,_) <- edgesOfTypes, source /= src]
 
-
 getAllPathsOfTypeFrom :: DGraph -> Node -> (LEdge DGLinkLab -> Bool)
                       -> [[LEdge DGLinkLab]]
 getAllPathsOfTypeFrom = getAllPathsOfTypeFromAux []
-
 
 getAllPathsOfTypeFromAux :: [LEdge DGLinkLab] -> DGraph -> Node
                          -> (LEdge DGLinkLab -> Bool) -> [[LEdge DGLinkLab]]
@@ -234,7 +202,6 @@ getAllPathsOfTypeFromAux path dgraph src isType =
     ++(concat
         [getAllPathsOfTypeFromAux (path ++ [edge]) dgraph nextSrc isType|
          (edge,nextSrc) <- nextStep])
-
   where
     edgesFromSrc = out dgraph src
     nextStep = [(edge,tgt)| edge@(_,tgt,_) <- edgesFromSrc,
@@ -280,7 +247,6 @@ selectProofBasisAux dg ledge (path:list) =
      else selectProofBasisAux dg ledge list
     where b = calculateProofBasis dg path []
 
-
 {- | calculates the proofBasis of the given path,
  i.e. (recursively) close the list of DGLinkLabs under the relation
  'is proved using'. If a DGLinkLab has proof status LeftOpen,
@@ -312,12 +278,9 @@ oneStepProofBasis label =
     (HidingThm _ LeftOpen) -> Right True
     _ -> Right False  -- todo: also treat conservativity proof status
 
-
 {- | returns all proven paths from the given list -}
 filterProvenPaths :: [[LEdge DGLinkLab]] -> [[LEdge DGLinkLab]]
 filterProvenPaths = filter (all isProven)
-
-
 
 {- | adopts the edges of the old node to the new node -}
 adoptEdges :: DGraph -> Node -> Node -> (DGraph, [DGChange])

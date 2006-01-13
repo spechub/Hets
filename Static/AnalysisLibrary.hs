@@ -136,17 +136,6 @@ anaLibFile lgraph defl opts libenv ln =
         putMessageIORes opts 1 $ "... loaded " ++ lnstr
         return res
 
--- | convert a file name that may have a suffix to a library name
-fileToLibName :: HetcatsOpts -> FilePath -> LIB_NAME
-fileToLibName opts efile =
-    let path = libdir opts
-        file = rmSuffix efile -- cut of extension
-        nfile = dropWhile (== '/') $         -- cut off leading slashes
-                if isPrefixOf path file
-                then drop (length path) file -- cut off libdir prefix
-                else file
-    in Lib_id $ Indirect_link nfile nullRange
-
 -- lookup/read a library
 anaLibFileOrGetEnv :: LogicGraph -> AnyLogic -> HetcatsOpts -> LibEnv
               -> LIB_NAME -> FilePath -> IOResult (LIB_NAME, LibEnv)

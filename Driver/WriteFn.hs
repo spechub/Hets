@@ -49,8 +49,8 @@ import SPASS.CreateDFGDoc
 import Logic.Prover
 import Static.DevGraph
 import Static.DGToSpec
-import Proofs.StatusUtils
 import qualified Static.PrintDevGraph as DG
+import Proofs.StatusUtils
 import Proofs.Automatic
 
 import ATC.DevGraph()
@@ -143,8 +143,7 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
         allSpecs = null ns
     unless (null prfFiles) $ do
       let f = rmSuffix file ++ "." ++ show (head prfFiles)
-          (_, _, hs) = automatic $ emptyProofStatus ln lenv
-      str <- toShATermString $ Map.findWithDefault [] ln hs
+      str <- toShATermString $ lookupHistory ln $ automatic ln lenv
       writeVerbFile opt f str
     mapM_ ( \ i -> case Map.lookup i gctx of
         Just (SpecEntry (_,_,_, NodeSig n _)) ->

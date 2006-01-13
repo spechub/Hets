@@ -546,17 +546,24 @@ data GlobalEntry = SpecEntry ExtGenSig
 
 type GlobalEnv = Map.Map SIMPLE_ID GlobalEntry
 
+emptyHistory :: ([DGRule], [DGChange])
+emptyHistory = ([], [])
+
+type ProofHistory = [([DGRule], [DGChange])]
 data GlobalContext = GlobalContext
     { globalAnnos :: GlobalAnnos
     , globalEnv :: GlobalEnv
     , devGraph :: DGraph
+    , proofHistory :: ProofHistory
     }
 
 emptyGlobalContext :: GlobalContext
 emptyGlobalContext = GlobalContext
    { globalAnnos = emptyGlobalAnnos
    , globalEnv = Map.empty
-   , devGraph = Graph.empty }
+   , devGraph = Graph.empty 
+   , proofHistory = [emptyHistory]
+   }
 
 type LibEnv = Map.Map LIB_NAME GlobalContext
 

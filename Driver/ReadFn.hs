@@ -35,6 +35,8 @@ import Text.ParserCombinators.Parsec
 
 import Driver.Options
 import System.Directory
+import Control.Monad
+import Data.List
 
 read_LIB_DEFN_M :: Monad m => LogicGraph -> AnyLogic -> HetcatsOpts
                 -> FilePath -> String -> m LIB_DEFN
@@ -95,21 +97,29 @@ libNameToFile opts ln =
                   in pathAndBase path file
                 Direct_link _ _ -> error "libNameToFile"
 
-readPrfFile :: HetcatsOpts -> LIB_NAME -> IO (LIB_NAME, ProofHistory)
-readPrfFile opts ln = do
+-- | convert a file name that may have a suffix to a library name
+fileToLibName :: HetcatsOpts -> FilePath -> LIB_NAME
+fileToLibName opts efile =
+    let path = libdir opts
+        file = rmSuffix efile -- cut of extension
+        nfile = dropWhile (== '/') $         -- cut off leading slashes
+                if isPrefixOf path file
+                then drop (length path) file -- cut off libdir prefix
+                else file
+    in Lib_id $ Indirect_link nfile nullRange
+
+readPrfFile :: HetcatsOpts -> ProofStatus -> LIB_NAME -> IO ProofStatus
+readPrfFile opts ps ln = do
     let fname = libNameToFile opts ln 
         prfFile = fname ++ prfSuffix
     recent <- checkRecentEnv opts prfFile fname
     h <- if recent then 
-          fmap (maybe emptyProofHistory id) $ readVerbose opts prfFile
-       else return emptyProofHistory
-    return (ln, h)
+          fmap (maybe [emptyHistory] id) $ readVerbose opts prfFile
+       else return [emptyHistory]
+    return $ Map.update (\ c -> Just c { proofHistory = h }) ln ps  
             
-readPrfFiles :: HetcatsOpts -> LIB_NAME -> LibEnv -> IO ProofStatus
-readPrfFiles opts ln le = do
-    l <- mapM (readPrfFile opts) $ Map.keys le
-    return (ln, le, Map.fromList l)
-              
-    
+readPrfFiles :: HetcatsOpts -> LibEnv -> IO ProofStatus
+readPrfFiles opts le = do
+    foldM (readPrfFile opts) le $ Map.keys le
 
   

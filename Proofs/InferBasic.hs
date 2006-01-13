@@ -113,10 +113,9 @@ proveTheory :: Logic lid sublogics
 proveTheory _ = prove
 
 -- | applies basic inference to a given node
-basicInferenceNode :: Bool -> LogicGraph -> (LIB_NAME,Node) -> ProofStatus
-                          -> IO (Result ProofStatus)
-basicInferenceNode checkCons lg (ln, node)
-         proofStatus@(libname, libEnv, _) = do
+basicInferenceNode :: Bool -> LogicGraph -> (LIB_NAME,Node) -> LIB_NAME 
+                   -> ProofStatus -> IO (Result ProofStatus)
+basicInferenceNode checkCons lg (ln, node) libname  proofStatus@libEnv = do
       let dGraph = lookupDGraph libname proofStatus
       ioresToIO $ do
         -- compute the theory of the node, and its name
@@ -149,8 +148,8 @@ basicInferenceNode checkCons lg (ln, node)
             ioToIORes $ cons_check lidT cc' thName mor
             let nextHistoryElem = ([LocalInference],[])
              -- ??? to be implemented
-                newProofStatus
-                  = mkResultProofStatus proofStatus dGraph nextHistoryElem
+                newProofStatus = mkResultProofStatus libname 
+                                 proofStatus dGraph nextHistoryElem
             return newProofStatus
           else do -- proving
             -- get known Provers
@@ -179,7 +178,8 @@ basicInferenceNode checkCons lg (ln, node)
                            --     (BasicProof lidT s))
                          -- FIXME: [Proof_status] not longer available
                 nextHistoryElem = (rules,changes)
-            return $ mkResultProofStatus proofStatus nextDGraph nextHistoryElem
+            return $ mkResultProofStatus libname proofStatus 
+                   nextDGraph nextHistoryElem
 
 proveKnownPMap :: (Logic lid sublogics1
                basic_spec1
