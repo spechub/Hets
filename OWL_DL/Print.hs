@@ -156,7 +156,7 @@ instance PrettyPrint Axiom where
                                              parens ((printText0 ga iid) <+>
 			                             (text "x y")) <+> 
                                              parens ((printText0 ga pid) <+>
-			                             (text "x y"))))  $+$
+			                             (text "y x"))))  $+$
   			(printText0 ga (ObjectProperty iid p2 p3 p4 
    		              Prelude.Nothing isSymmetric maybeFunc p8 p9))
 	    _ -> if isSymmetric then
@@ -195,7 +195,7 @@ instance PrettyPrint SignAxiom where
     printText0 ga signAxiom =
 	case signAxiom of
 	Subconcept cid1 cid2 -> 
-	    (text "(forall ((owl:Thing)) (implies (" <> 
+	    (text "(forall ((u owl:Thing)) (implies (" <> 
 	             (printText0 ga cid1) <> 
 	             (text " u) (") <> (printText0 ga cid2) <> (text " u)))"))
 	RoleDomain rid rdomains ->
