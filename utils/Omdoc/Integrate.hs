@@ -191,7 +191,7 @@ writeOmdocDTD dtd' t f = HXT.run' $
 		writeableTreesDTD dtd' t
 
 -- | processing options for getopt		
-data PO = POInput String | POInputType String | POOutput String | POOutputType String | POShowGraph | POLib String | POSandbox String | POHelp | PODTDURI String | PODebug
+data PO = POInput String | POInputType String | POOutput String | POOutputType String | POShowGraph | POLib String | POSandbox String | POHelp | PODTDURI String | PODebug | PONewOutput
 		
 processingOptions::[GetOpt.OptDescr PO]
 processingOptions =
@@ -206,6 +206,7 @@ processingOptions =
 	, GetOpt.Option ['h'] ["help"] (GetOpt.NoArg POHelp) "print this info"
 	, GetOpt.Option ['d'] ["dtd-uri"] (GetOpt.ReqArg PODTDURI "DTDURI") "URI for OMDoc-DTD"
 	, GetOpt.Option [] ["debug"] (GetOpt.NoArg PODebug) "enable debugging-messages"
+	, GetOpt.Option ['n'] ["new-output"] (GetOpt.NoArg PONewOutput) "use new output (possibly buggy, no read-in-support yet)"
 	]
 	
 usageString::String
@@ -331,6 +332,10 @@ main =
 			(\op -> case op of PODebug -> True; _ -> False)
 			options
 		debug <- return $ (case debugopts of [] -> False; _ -> True)
+		newoutputopts <- return $ filter
+			(\op -> case op of PONewOutput -> True; _ -> False)
+			options
+		newoutput <- return $ (case newoutputopts of [] -> False; _ -> True)
 		input <- return $ case inputopts of
 					[] -> case nonoptions of
 						[] -> "-"
@@ -524,7 +529,8 @@ main =
 			FTOMDoc ->
 				do
 				when debug (putStrLn ("Outputting OMDoc..."))
-				omdoc <- devGraphToOmdocCMPIO dg (stripLibName (show ln))
+				when (debug && newoutput) (putStrLn ("using new output (you cannot read this in again yet)"))
+				omdoc <- (if newoutput then devGraphToOmdocCMPIOXN else devGraphToOmdocCMPIO) dg (stripLibName (show ln))
 				case output of
 					"" -> return ()
 						-- show/writeOmdocDTD :: IO XmlTrees --> return ()
@@ -653,6 +659,16 @@ devGraphToOmdocCMPIO dg name' =
 					+++ xmlNL +++ dgx )) emptyRoot
 			)
 
+-- | Convert a DevGraph to OMDoc-XML with given xml:id attribute
+devGraphToOmdocCMPIOXN::Static.DevGraph.DGraph->String->IO HXT.XmlTrees
+devGraphToOmdocCMPIOXN dg name' =
+	do
+		dgx <- devGraphToXmlCMPIOXmlNamed dg
+		return (
+			(HXT.etag "omdoc" += ( qualattr omdocNameXMLNS omdocNameXMLAttr name'
+					+++ xmlNL +++ dgx )) emptyRoot
+			)
+			
 -- | Convert a DevGraph to OMDoc-XML with given xml:id attribute
 devGraphToOmdoc::Static.DevGraph.DGraph->String->HXT.XmlTrees
 devGraphToOmdoc dg name' = (HXT.etag "omdoc" += ( qualattr omdocNameXMLNS omdocNameXMLAttr name'
@@ -842,98 +858,104 @@ devGraphToXmlCMPIOXmlNamed dg =
 				senswomap)::(Map.Map Hets.NODE_NAMEWO (Set.Set (XmlNamed Hets.SentenceWO)), XmlNameList)
 		importsmap = Hets.getNodeImportsNodeDGNames dg
 	in
-		return $
-			foldl (\x xnodetupel ->
-				let
-					theoname = xnName xnodetupel
-					(nodenum, nodename) = xnItem xnodetupel
-					theosorts = Map.findWithDefault Set.empty (Hets.mkWON nodename nodenum) xmlnamedsortswomap
-					realsorts = Set.filter (\i -> (Hets.woOrigin (xnItem i)) == nodenum) theosorts
-					realsortswo = Set.map (xnItem) realsorts
-					theorels = Map.findWithDefault Rel.empty (Hets.mkWON nodename nodenum) relswomap
-					-- only keep relations that include at least one sort from the
-					-- current theory
-					realrels = Rel.fromList $ filter (\(a,b) ->
-						(Set.member a realsortswo) || (Set.member b realsortswo)
-						) (Rel.toList theorels)
-					insorts = Rel.transpose realrels 
-					insortmap =
-						foldl (\m (a,b) ->
-							Map.insert
-								a
-								(Set.insert b (Map.findWithDefault Set.empty a m))
-								m
-							) Map.empty (Rel.toList insorts)
-					theopreds = Map.findWithDefault Map.empty (Hets.mkWON nodename nodenum) xmlnamedpredswomap
-					realtheopreds = Map.filterWithKey (\idxnwon _ -> (Hets.woOrigin (xnItem idxnwon)) == nodenum) theopreds
-					theoops = Map.findWithDefault Map.empty (Hets.mkWON nodename nodenum) xmlnamedopswomap
-					realtheoops = Map.filterWithKey (\idxnwon _ -> (Hets.woOrigin (xnItem idxnwon)) == nodenum) theoops
-					theosens = Map.findWithDefault Set.empty (Hets.mkWON nodename nodenum) xmlnamedsenswomap
-					realtheosens = Set.filter (\i -> (Hets.woOrigin (xnItem i)) == nodenum) theosens
-					(_, sortgenxn) = partitionSensSortGenXN (Set.toList realtheosens)
-					(constructors, xmlnames_cons) = makeConstructorsXN theosorts xmlnames_senm sortgenxn
-					adtsorts = Map.keys insortmap ++ (map (\(a,_) -> xnItem a) (Map.toList constructors))
-					theoimports = Map.findWithDefault Set.empty nodename importsmap
-				in
-					x +++ xmlNL +++ HXT.etag "theory" += (
-						(HXT.sattr "id" theoname) +++
-						-- imports/morphisms
-						(foldl (\x' (nodename' , mmm) ->
-							let
-								nodenamex = case Set.toList $ Set.filter (\i -> (snd (xnItem i)) == nodename' ) nodexmlnameset of
-									[] -> error "Import from Unknown node..."
-									(l:_) -> xnName l
-							in
-								x' +++
-								HXT.etag "imports" += (
-									(HXT.sattr "from" ("#" ++ nodenamex)) +++
-									(
-										case mmm of
-											(Just mm) ->
-												morphismMapToXml mm nodenamex theoname
-											Nothing -> HXT.txt ""
-									)
-									) +++
-								xmlNL
-							) (HXT.txt "") (Set.toList theoimports)
-						) +++
-						-- sorts
-						(Set.fold (\xnwos x' ->
-							x' +++ (sortToXmlXN (xnWOaToXNa xnwos)) +++ xmlNL
-							) xmlNL realsorts) +++
-						-- adts
-						(foldl (\x' sortwo ->
-							let
-								insortset = Map.findWithDefault Set.empty sortwo insortmap
-								sortxn = case find (\i -> Hets.sameOrigin sortwo (xnItem i) && sortwo == (xnItem i)) (Set.toList theosorts) of
+		foldl (\xio xnodetupel ->
+			let
+				theoname = xnName xnodetupel
+				(nodenum, nodename) = xnItem xnodetupel
+				theosorts = Map.findWithDefault Set.empty (Hets.mkWON nodename nodenum) xmlnamedsortswomap
+				realsorts = Set.filter (\i -> (Hets.woOrigin (xnItem i)) == nodenum) theosorts
+				realsortswo = Set.map (xnItem) realsorts
+				theorels = Map.findWithDefault Rel.empty (Hets.mkWON nodename nodenum) relswomap
+				-- only keep relations that include at least one sort from the
+				-- current theory
+				realrels = Rel.fromList $ filter (\(a,b) ->
+					(Set.member a realsortswo) || (Set.member b realsortswo)
+					) (Rel.toList theorels)
+				insorts = Rel.transpose realrels 
+				insortmap =
+					foldl (\m (a,b) ->
+						Map.insert
+							a
+							(Set.insert b (Map.findWithDefault Set.empty a m))
+							m
+						) Map.empty (Rel.toList insorts)
+				theopreds = Map.findWithDefault Map.empty (Hets.mkWON nodename nodenum) xmlnamedpredswomap
+				realtheopreds = Map.filterWithKey (\idxnwon _ -> (Hets.woOrigin (xnItem idxnwon)) == nodenum) theopreds
+				theoops = Map.findWithDefault Map.empty (Hets.mkWON nodename nodenum) xmlnamedopswomap
+				realtheoops = Map.filterWithKey (\idxnwon _ -> (Hets.woOrigin (xnItem idxnwon)) == nodenum) theoops
+				theosens = Map.findWithDefault Set.empty (Hets.mkWON nodename nodenum) xmlnamedsenswomap
+				realtheosens = Set.filter (\i -> (Hets.woOrigin (xnItem i)) == nodenum) theosens
+				(_, sortgenxn) = partitionSensSortGenXN (Set.toList realtheosens)
+				(constructors, xmlnames_cons) = makeConstructorsXN theosorts xmlnames_senm sortgenxn
+				adtsorts = Map.keys insortmap ++ (map (\(a,_) -> xnItem a) (Map.toList constructors))
+				theoimports = Map.findWithDefault Set.empty nodename importsmap
+				theopredsxn = Map.map (\ps -> Set.map (predTypeToPredTypeXNWON theosorts) ps) theopreds
+				theoopsxn = Map.map (\os -> Set.map (opTypeToOpTypeXNWON theosorts) os) theoops
+				sensxmlio = wrapFormulasCMPIOXN (PFInput nodexmlnameset theosorts theopredsxn theoopsxn) (Set.toList realtheosens) 
+			in
+				do
+				x <- xio
+				sensxml <- sensxmlio
+				return $ x +++ xmlNL +++ HXT.etag "theory" += (
+					(HXT.sattr "id" theoname) +++
+					-- imports/morphisms
+					(foldl (\x' (nodename' , mmm) ->
+						let
+							nodenamex = case Set.toList $ Set.filter (\i -> (snd (xnItem i)) == nodename' ) nodexmlnameset of
+								[] -> error "Import from Unknown node..."
+								(l:_) -> xnName l
+						in
+							x' +++
+							HXT.etag "imports" += (
+								(HXT.sattr "from" ("#" ++ nodenamex)) +++
+								(
+									case mmm of
+										(Just mm) ->
+											morphismMapToXml mm nodenamex theoname
+										Nothing -> HXT.txt ""
+								)
+								) +++
+							xmlNL
+						) (HXT.txt "") (Set.toList theoimports)
+					) +++
+					-- sorts
+					(Set.fold (\xnwos x' ->
+						x' +++ (sortToXmlXN (xnWOaToXNa xnwos)) +++ xmlNL
+						) xmlNL realsorts) +++
+					-- adts
+					(foldl (\x' sortwo ->
+						let
+							insortset = Map.findWithDefault Set.empty sortwo insortmap
+							sortxn = case find (\i -> Hets.sameOrigin sortwo (xnItem i) && sortwo == (xnItem i)) (Set.toList theosorts) of
+								Nothing -> error "Sort in relation but not in theory..."
+								(Just sortxn' ) -> xnWOaToXNa sortxn'
+							insortsetxn = Set.map (\i ->
+								case find (\j -> Hets.sameOrigin i (xnItem j) && i == (xnItem j)) (Set.toList theosorts) of
 									Nothing -> error "Sort in relation but not in theory..."
 									(Just sortxn' ) -> xnWOaToXNa sortxn'
-								insortsetxn = Set.map (\i ->
-									case find (\j -> Hets.sameOrigin i (xnItem j) && i == (xnItem j)) (Set.toList theosorts) of
-										Nothing -> error "Sort in relation but not in theory..."
-										(Just sortxn' ) -> xnWOaToXNa sortxn'
-									) insortset
-								constructorx = createAllConstructorsXN $ Map.toList $ Map.findWithDefault Map.empty (XmlNamed sortwo (xnName sortxn)) constructors
-							in
-								x' +++ createADTXN (sortxn, insortsetxn) constructorx +++ xmlNL
-							) xmlNL adtsorts) +++
-						-- predicates
-						(foldl (\x' (pxnid, pset) ->
-							let
-								pxnset = Set.map (\i -> predTypeToPredTypeXNWON theosorts i) pset 
-							in
-								x' +++ predicationToXmlXN nodexmlnameset (pxnid, pxnset) +++ xmlNL) (HXT.txt "") (Map.toList realtheopreds)
-						) +++
-						-- operators
-						(foldl (\x' (oxnid, oset) ->
-							let
-								oxnset = Set.map (\i -> opTypeToOpTypeXNWON theosorts i) oset 
-							in
-								x' +++ operatorToXmlXN nodexmlnameset (oxnid, oxnset) +++ xmlNL) (HXT.txt "") (Map.toList realtheoops)
-						) +++
-						xmlNL
-						)
-				) (HXT.txt "") onlynodexmlnamelist 
+								) insortset
+							constructorx = createAllConstructorsXN $ Map.toList $ Map.findWithDefault Map.empty (XmlNamed sortwo (xnName sortxn)) constructors
+						in
+							x' +++ createADTXN (sortxn, insortsetxn) constructorx +++ xmlNL
+						) xmlNL adtsorts) +++
+					-- predicates
+					(foldl (\x' (pxnid, pset) ->
+						let
+							pxnset = Set.map (\i -> predTypeToPredTypeXNWON theosorts i) pset 
+						in
+							x' +++ predicationToXmlXN nodexmlnameset (pxnid, pxnset) +++ xmlNL) (HXT.txt "") (Map.toList realtheopreds)
+					) +++
+					-- operators
+					(foldl (\x' (oxnid, oset) ->
+						let
+							oxnset = Set.map (\i -> opTypeToOpTypeXNWON theosorts i) oset 
+						in
+							x' +++ operatorToXmlXN nodexmlnameset (oxnid, oxnset) +++ xmlNL) (HXT.txt "") (Map.toList realtheoops)
+					) +++
+					-- sentences
+					sensxml
+					)
+			) (return $ HXT.txt "") onlynodexmlnamelist 
 				
 	where
 	nodeTupelToNodeName::(a, NODE_NAME)->String
@@ -991,6 +1013,21 @@ data OpTypeXNWON = OpTypeXNWON { opKind :: FunKind, opArgsXNWON :: [XmlNamedWON 
 	
 sortToXmlNamedWONSORT::[XmlNamedWONSORT]->SORT->(Maybe XmlNamedWONSORT)
 sortToXmlNamedWONSORT list s = find (\i -> s == (xnWOaToa i)) list
+
+sortToXmlNamedWONSORTSet::Set.Set XmlNamedWONSORT->SORT->(Maybe XmlNamedWONSORT)
+sortToXmlNamedWONSORTSet sortset sort =
+	case Set.toList $ Set.filter (\i -> sort == (xnWOaToa i)) sortset of
+		[] -> Nothing
+		(i:_) -> (Just i)
+		
+aToXmlNamedWONa::(Eq a)=>[XmlNamedWON a]->a->(Maybe (XmlNamedWON a))
+aToXmlNamedWONa xnlist a = find (\i -> a == (xnWOaToa i)) xnlist
+
+aToXmlNamedWONaSet::(Eq a, Ord a)=>Set.Set (XmlNamedWON a)->a->(Maybe (XmlNamedWON a))
+aToXmlNamedWONaSet xnset a =
+	case Set.toList $ Set.filter (\i -> a == (xnWOaToa i)) xnset of
+		[] -> Nothing
+		(i:_) -> (Just i)
 	
 predTypeToPredTypeXNWON::Set.Set (XmlNamedWON SORT)->PredType->PredTypeXNWON
 predTypeToPredTypeXNWON sortwoset (PredType {predArgs = pA}) =
@@ -3797,6 +3834,15 @@ wrapFormulasCMPIO imports' sorts' preds' ops' name' fs =
 	do
 		poslinemap <- posLines posLists
 		(\(a,_) -> return a) $ foldl (\(wrapped, n) f -> (wrapped +++ (wrapFormulaCMP imports' sorts' preds' ops' name' n f poslinemap), n+1) ) (HXT.txt "", 1) fs
+		
+wrapFormulasCMPIOXN::PFInput->[XmlNamedWON (Ann.Named CASLFORMULA)]->IO (HXT.XmlTree->HXT.XmlTrees)
+wrapFormulasCMPIOXN pfinput fs =
+	let
+		posLists = concatMap Id.getPosList (map (Ann.sentence . xnWOaToa) fs)
+	in
+	do
+		poslinemap <- posLines posLists
+		return $ foldl (\wrapped f -> wrapped +++ (wrapFormulaCMPXN pfinput f poslinemap) ) (HXT.txt "") fs
 
 wrapFormulaCMP::
 	Hets.ImportsMap->
@@ -3856,6 +3902,51 @@ wrapFormulaCMP
 			)
 			)
 	) +++ xmlNL
+	
+wrapFormulaCMPXN::
+	PFInput->
+	(XmlNamedWON (Ann.Named CASLFORMULA))->
+	(Map.Map Id.Pos String)->
+	(HXT.XmlTree->HXT.XmlTrees)
+wrapFormulaCMPXN
+	pfinput
+	ansenxn
+	poslinemap =
+	let
+		sens = Ann.sentence (xnWOaToa ansenxn)
+		sposl = Id.getPosList sens
+	in
+	(
+		(createQAttributed
+			"axiom"
+			[	(axiomNameXMLNS,
+				axiomNameXMLAttr,
+				(xnName ansenxn))
+			]
+		) += (
+			(xmlNL +++
+			((foldl (\cmpx p -> cmpx += (HXT.txt ("\n" ++ (Map.findWithDefault "" p poslinemap))) ) (HXT.etag "CMP") sposl) += (HXT.txt "\n"))+++ 
+			xmlNL +++
+			(HXT.etag "FMP"	+= (
+				xmlNL +++
+				(
+				 HXT.etag "OMOBJ" +++
+				 xmlNL
+				) += (
+					xmlNL +++
+					(processFormulaXN
+						pfinput
+						sens
+					)
+					) +++
+				xmlNL
+				)
+			) +++
+			xmlNL
+			)
+			)
+	) +++ xmlNL
+
 	
 wrapFormula::
 	Hets.ImportsMap->
@@ -3989,9 +4080,18 @@ createSymbolForSort::Hets.ImportsMap->Hets.SortsMap->SORT->String->(HXT.XmlTree-
 createSymbolForSort imports' sorts' sort name' =
 	HXT.etag "OMS" += ( HXT.sattr "cd" (fromMaybe "unknown" $ Hets.findNodeNameForSort imports' sorts' sort name' ) +++ HXT.sattr "name" (show sort) )
 
-createSymbolForSortXN::TheoryXNSet->XmlNamedWON SORT->(HXT.XmlTree->HXT.XmlTrees)
+createSymbolForSortXN::TheoryXNSet->XmlNamedWONSORT->(HXT.XmlTree->HXT.XmlTrees)
 createSymbolForSortXN theoryset xnsort =
 	HXT.etag "OMS" += ( HXT.sattr "cd" (fromMaybe "unknown" $ getTheoryXmlName theoryset (Hets.woOrigin (xnItem xnsort)) ) +++ HXT.sattr "name" (xnName xnsort) )
+	
+createSymbolForSortWithSortXNSet::TheoryXNSet->Set.Set XmlNamedWONSORT->SORT->HXT.XmlFilter
+createSymbolForSortWithSortXNSet theoryset theorysorts sort =
+	let
+		xnsort = case sortToXmlNamedWONSORTSet theorysorts sort of
+			Nothing -> error "Cannot create the Symbol because I cannot find the Sort !"
+			(Just xnsort' ) -> xnsort'
+	in
+		createSymbolForSortXN theoryset xnsort
 	
 -- | create the xml-representation for a formula (in context of a theory)	
 processFormula ::
@@ -4225,16 +4325,19 @@ processFormula _ _ _ _ _
 		HXT.etag unsupportedS +++
 		HXT.txt ( "<-- " ++ "ExtFORMULA" ++ " //-->")
 		
-{-		
+data PFInput = PFInput 	{	 theorySet::TheoryXNSet
+							,theorySorts::Set.Set XmlNamedWONSORT
+							,theoryPreds::Map.Map (XmlNamedWON Id.Id) (Set.Set PredTypeXNWON)
+							,theoryOps::Map.Map (XmlNamedWON Id.Id) (Set.Set OpTypeXNWON)
+						}
+		
 -- | create the xml-representation for a formula (in context of a theory)	
 processFormulaXN ::
-	TheoryXNSet-> -- ^ set of theories
-	Set.Set XmlNamedWONSORT-> -- ^ set of sorts
-	Graph.Node-> -- ^ current node
+	PFInput->
 	(FORMULA f)-> -- ^ the formula to process
 	(HXT.XmlTree->HXT.XmlTrees) -- ^ a xml-representation of the formula
 -- Quantification
-processFormulaXN imports' sorts' preds' ops' name'
+processFormulaXN pfinput 
 	(Quantification q vl f _) =
 		( HXT.etag "OMBIND" += (
 			xmlNL +++
@@ -4243,12 +4346,12 @@ processFormulaXN imports' sorts' preds' ops' name'
 				HXT.sattr "name" (quantName q))
 			) +++
 			(xmlNL) +++
-			(processVarDecl imports' sorts' name' vl) +++
-			(processFormula imports' sorts' preds' ops' name' f) )
+			(processVarDeclXN (theorySet pfinput) (theorySorts pfinput) vl) +++
+			(processFormulaXN pfinput f) )
 		) +++
 		xmlNL
 -- Conjunction
-processFormulaXN imports' sorts' preds' ops' name'
+processFormulaXN pfinput
 	(Conjunction fl _) =
 		(HXT.etag "OMA" += (
 			xmlNL +++
@@ -4258,12 +4361,12 @@ processFormulaXN imports' sorts' preds' ops' name'
 			) +++
 			(foldl (\forms f ->
 				forms +++
-				processFormula imports' sorts' preds' ops' name' f
+				processFormulaXN pfinput f
 				) (xmlNL) fl)
 		) ) +++
 		xmlNL
 -- Disjunction
-processFormulaXN imports' sorts' preds' ops' name'
+processFormulaXN pfinput
 	(Disjunction fl _) =
 		(HXT.etag "OMA" += (
 			xmlNL +++
@@ -4273,12 +4376,12 @@ processFormulaXN imports' sorts' preds' ops' name'
 			) +++
 			(foldl (\forms f ->
 				forms +++
-				processFormula imports' sorts' preds' ops' name' f
+				processFormulaXN pfinput f
 				) (xmlNL) fl)
 		) ) +++
 		xmlNL
 -- Implication
-processFormulaXN imports' sorts' preds' ops' name'
+processFormulaXN pfinput
 	(Implication f1 f2 b _) =
 		( HXT.etag "OMA" += (
 			xmlNL +++
@@ -4287,14 +4390,14 @@ processFormulaXN imports' sorts' preds' ops' name'
 				HXT.sattr "name" caslImplicationS)
 			) +++
 			(xmlNL) +++
-			(processFormula imports' sorts' preds' ops' name' f1) +++
-			(processFormula imports' sorts' preds' ops' name' f2) +++
-			(processFormula imports' sorts' preds' ops' name'
+			(processFormulaXN pfinput f1) +++
+			(processFormulaXN pfinput f2) +++
+			(processFormulaXN pfinput
 				(if b then True_atom Id.nullRange else False_atom Id.nullRange))
 		) ) +++
 		xmlNL
 -- Equivalence
-processFormulaXN imports' sorts' preds' ops' name'
+processFormulaXN pfinput
 	(Equivalence f1 f2 _) =
 		( HXT.etag "OMA" += (
 			xmlNL +++
@@ -4303,12 +4406,12 @@ processFormulaXN imports' sorts' preds' ops' name'
 				HXT.sattr "name" caslEquivalenceS)
 			) +++
 			(xmlNL) +++
-			(processFormula imports' sorts' preds' ops' name' f1) +++
-			(processFormula imports' sorts' preds' ops' name' f2)
+			(processFormulaXN pfinput f1) +++
+			(processFormulaXN pfinput f2)
 		) ) +++
 		xmlNL
 -- Negation
-processFormulaXN imports' sorts' preds' ops' name'
+processFormulaXN pfinput
 	(Negation f _) =
 		( HXT.etag "OMA" += (
 			xmlNL +++
@@ -4317,11 +4420,11 @@ processFormulaXN imports' sorts' preds' ops' name'
 				HXT.sattr "name" caslNegationS)
 			) +++
 			(xmlNL) +++
-			(processFormula imports' sorts' preds' ops' name' f)
+			(processFormulaXN pfinput f)
 		) ) +++
 		xmlNL
 -- Predication
-processFormulaXN imports' sorts' preds' ops' name'
+processFormulaXN pfinput
 	(Predication p tl _) =
 		(HXT.etag "OMA" += (
 			xmlNL +++
@@ -4331,10 +4434,10 @@ processFormulaXN imports' sorts' preds' ops' name'
 			) +++
 			xmlNL +++
 			(xmlNL) +++
-			(createSymbolForPredication imports' preds' name' p) +++
+			(createSymbolForPredicationXN (theorySet pfinput) (theoryPreds pfinput) p) +++
 			(foldl (\term t ->
 				term +++
-				(processTerm imports' sorts' preds' ops' name' t) +++
+				(processTermXN pfinput t) +++
 				xmlNL
 				) (HXT.txt "") tl
 			) +++
@@ -4342,7 +4445,7 @@ processFormulaXN imports' sorts' preds' ops' name'
 		) ) +++
 		xmlNL
 -- Definedness
-processFormulaXN imports' sorts' preds' ops' name'
+processFormulaXN pfinput
 	(Definedness t _ ) =
 		(HXT.etag "OMA" += (
 			xmlNL +++
@@ -4351,11 +4454,11 @@ processFormulaXN imports' sorts' preds' ops' name'
 				HXT.sattr "name" caslDefinednessS)
 			) +++
 			(xmlNL) +++
-			(processTerm imports' sorts' preds' ops' name' t)
+			(processTermXN pfinput t)
 		) ) +++
 		xmlNL
 -- Existl_equation
-processFormulaXN imports' sorts' preds' ops' name'
+processFormulaXN pfinput
 	(Existl_equation t1 t2 _) = 
 		( HXT.etag "OMA" += (
 			xmlNL +++
@@ -4364,12 +4467,12 @@ processFormulaXN imports' sorts' preds' ops' name'
 				HXT.sattr "name" caslExistl_equationS)
 			) +++
 			(xmlNL) +++
-			(processTerm imports' sorts' preds' ops' name' t1) +++
-			(processTerm imports' sorts' preds' ops' name' t2)
+			(processTermXN pfinput t1) +++
+			(processTermXN pfinput t2)
 		) ) +++
 		xmlNL
 -- Strong_equation
-processFormulaXN imports' sorts' preds' ops' name'
+processFormulaXN pfinput
 	(Strong_equation t1 t2 _) = 
 		( HXT.etag "OMA" += (
 			xmlNL +++
@@ -4378,12 +4481,12 @@ processFormulaXN imports' sorts' preds' ops' name'
 				HXT.sattr "name" caslStrong_equationS)
 			) +++
 			(xmlNL) +++
-			(processTerm imports' sorts' preds' ops' name' t1) +++
-			(processTerm imports' sorts' preds' ops' name' t2)
+			(processTermXN pfinput t1) +++
+			(processTermXN pfinput t2)
 		) ) +++
 		xmlNL
 -- Membership
-processFormulaXN imports' sorts' preds' ops' name'
+processFormulaXN pfinput
 	(Membership t s _) = 
 		( HXT.etag "OMA" += (
 			xmlNL +++
@@ -4392,12 +4495,12 @@ processFormulaXN imports' sorts' preds' ops' name'
 				HXT.sattr "name" caslMembershipS)
 			) +++
 			(xmlNL) +++
-			(processTerm imports' sorts' preds' ops' name' t) +++
-			(createSymbolForSort imports' sorts' s name' )
+			(processTermXN pfinput t) +++
+			(createSymbolForSortWithSortXNSet (theorySet pfinput) (theorySorts pfinput) s )
 		) ) +++
 		xmlNL
 -- False_atom
-processFormulaXN _ _ _ _ _
+processFormulaXN _
 	(False_atom _) =
 		(HXT.etag "OMS" +=
 			(HXT.sattr "cd" caslS +++
@@ -4405,7 +4508,7 @@ processFormulaXN _ _ _ _ _
 		) +++
 		xmlNL
 -- True_atom
-processFormulaXN _ _ _ _ _
+processFormulaXN _
 	(True_atom _) =
 		(HXT.etag "OMS" +=
 			(HXT.sattr "cd" caslS +++
@@ -4413,7 +4516,7 @@ processFormulaXN _ _ _ _ _
 		) +++
 		xmlNL
 -- Sort_gen_ax
-processFormulaXN imports' _ _ ops' name'
+processFormulaXN pfinput
 	(Sort_gen_ax constraints freetype) =
 		( HXT.etag "OMA" +=
 			(xmlNL +++
@@ -4424,7 +4527,7 @@ processFormulaXN imports' _ _ ops' name'
 			(xmlNL) +++
 			--(HXT.etag "OMBVAR" += -- ombvar not allowed in oma
 			--	( xmlNL +++
-				(processConstraints imports' ops' name' constraints) +++
+				(processConstraintsXN pfinput constraints) +++
 			--	)
 			--) +++
 			HXT.etag "OMS" +=
@@ -4441,22 +4544,20 @@ processFormulaXN imports' _ _ ops' name'
 			xmlNL
 -- unsupported formulas
 -- Mixfix_formula
-processFormulaXN _ _ _ _ _
+processFormulaXN _
 	(Mixfix_formula _) =
 		HXT.etag unsupportedS +++
 		HXT.txt ( "<-- " ++ "Mixfix_formula" ++ " //-->")
 -- Unparsed_formula
-processFormulaXN _ _ _ _ _
+processFormulaXN _
 	(Unparsed_formula s _) =
 		HXT.etag unsupportedS +++
 		HXT.txt ( "<-- " ++ "Unparsed_formula \"" ++ s ++ "\" //-->")
 -- ExtFORMULA
-processFormulaXN _ _ _ _ _
+processFormulaXN _
 	(ExtFORMULA _) =
 		HXT.etag unsupportedS +++
 		HXT.txt ( "<-- " ++ "ExtFORMULA" ++ " //-->") 
-
--}
 
 -- | create an xml-representation for a predication
 createSymbolForPredication::
@@ -4507,6 +4608,72 @@ createSymbolForPredication imports' preds' name'
 				) +++
 			xmlNL
 		)
+		
+-- | create an xml-representation for a predication
+createSymbolForPredicationXN::
+	TheoryXNSet->
+	Map.Map (XmlNamedWON Id.Id) (Set.Set PredTypeXNWON)->
+	PRED_SYMB-> -- ^ the predication to process
+	(XmlTree->XmlTrees) -- ^ a xml-representation of the predication
+-- Pred_name
+createSymbolForPredicationXN theoryset theorypreds
+	(Pred_name pr) =
+		let
+			xnpred = case aToXmlNamedWONa (map fst $ Map.toList theorypreds) pr of
+				Nothing -> error "Cannot find predicate in theory!"
+				(Just xnpred' ) -> xnpred'
+		in
+			HXT.etag "OMS" += 
+				(HXT.sattr "cd" (fromMaybe "unknown" $
+					getTheoryXmlName theoryset (Hets.woOrigin (xnItem xnpred))) +++
+				HXT.sattr "name" (xnName xnpred)
+				)
+-- Qual_pred_name
+createSymbolForPredicationXN theoryset theorypreds
+	(Qual_pred_name pr (Pred_type args _) _) =
+		let
+			xnpred = case aToXmlNamedWONa (map fst $ Map.toList theorypreds) pr of
+				Nothing -> error "Cannot find predicate in theory!"
+				(Just xnpred' ) -> xnpred'
+			xnptset = Map.findWithDefault Set.empty xnpred theorypreds
+			thisxnpt = case Set.toList $ Set.filter (\(PredTypeXNWON argsxn) ->
+				let
+					pureargs = map xnWOaToa argsxn
+				in
+					args == pureargs
+					) xnptset of
+				[] -> error "Cannot find used predicate-type in theory!"
+				(i:_) -> i 
+			xnargs = (\(PredTypeXNWON args' ) -> args' ) thisxnpt
+		in
+			HXT.etag "OMATTR" +=
+				(xmlNL +++
+				HXT.etag "OMATP" +=
+					(xmlNL +++
+					HXT.etag "OMS" +=
+						(HXT.sattr "cd" "casl" +++ HXT.sattr "name" "type") +++
+					xmlNL +++
+					(HXT.etag "OMSTR" +=
+						HXT.txt
+							( (foldl
+								(\t s -> t ++ "-\\" ++ (xnName s))
+								(if xnargs == [] then "" else (xnName $ head xnargs))
+								(drop 1 xnargs)
+							   )
+							)
+					)
+					) +++
+					xmlNL
+				+++ -- symbol was left out of omattr... need to check back-conversion
+				xmlNL +++
+				HXT.etag "OMS" +=
+					( HXT.sattr "cd" ( fromMaybe "unknown" $
+						getTheoryXmlName theoryset (Hets.woOrigin (xnItem xnpred))
+						) +++
+					HXT.sattr "name" (xnName xnpred)
+					) +++
+				xmlNL
+			)
 
 
 --data QUANTIFIER = Universal | Existential | Unique_existential
@@ -4533,6 +4700,30 @@ processConstraints importsmap opsmap name' ((ABC.Constraint news ops' origs):_) 
 						))
 					+++ xmlNL
 					+++ processOperator importsmap opsmap name' op
+					) ) +++ xmlNL
+				) (HXT.txt "") ops'
+			) )
+		+++ xmlNL
+		+++ (HXT.etag "OMS" += (HXT.sattr "cd" caslS +++ HXT.sattr "name" (show origs))))) +++ xmlNL
+		
+-- need to check if this is correct with Xml --
+processConstraintsXN::PFInput->[ABC.Constraint]->(HXT.XmlTree->HXT.XmlTrees)
+processConstraintsXN _ [] = HXT.txt ""
+processConstraintsXN pfinput ((ABC.Constraint news ops' origs):_) =
+	(HXT.etag "OMBIND" += (
+		(HXT.etag "OMS" += (HXT.sattr "cd" caslS +++ HXT.sattr "name" (show news)))
+		+++ xmlNL
+		+++ (HXT.etag "OMBVAR" +=(
+			foldl (\opsx (op, il) ->
+				opsx +++ (HXT.etag "OMATTR" += (
+					(HXT.etag "OMATP" += (
+						HXT.etag "OMS" += (HXT.sattr "cd" caslS +++ HXT.sattr "name" "constraint-indices")
+						+++ (HXT.etag "OMSTR" += HXT.txt (
+							foldl (\s i -> (s++(show i)++"|")) "" il
+							))
+						))
+					+++ xmlNL
+					+++ processOperatorXN pfinput op
 					) ) +++ xmlNL
 				) (HXT.txt "") ops'
 			) )
@@ -4811,11 +5002,27 @@ processVarDecl imports' sorts' name' vdl = (HXT.etag "OMBVAR" += (xmlNL +++ (pro
 			(HXT.txt "") vl ) -- end fold
 			+++ (processVarDecls imports'' sorts'' name'' vdl' )
 	
+-- first newline needs pulling up because we have a list of lists...
+processVarDeclXN :: TheoryXNSet -> Set.Set XmlNamedWONSORT -> [VAR_DECL] -> (HXT.XmlTree->HXT.XmlTrees)
+processVarDeclXN theoryset theorysorts vdl =
+	(HXT.etag "OMBVAR" += (xmlNL +++ (processVarDecls theoryset theorysorts vdl)) ) +++ xmlNL
+	where
+	processVarDecls :: TheoryXNSet -> Set.Set XmlNamedWONSORT -> [VAR_DECL] -> (HXT.XmlTree->HXT.XmlTrees)
+	processVarDecls _ _ [] = HXT.txt ""
+	processVarDecls theoryset' theorysorts' ((Var_decl vl s _):vdl' ) = (foldl (\decls vd -> decls +++
+	-- <ombattr><omatp><oms>+</omatp><omv></ombattr>
+		( createTypedVarXN theoryset theorysorts' s (show vd) )
+			+++ xmlNL)
+			(HXT.txt "") vl ) -- end fold
+			+++ (processVarDecls theoryset' theorysorts' vdl' )
+			
 -- get var decls
 getVarDecls::XmlTrees->[(String, String)]
 getVarDecls vt = map (\t ->
 		(xshow $ applyXmlFilter (getChildren .> isTag "OMATP" .> getChildren .> isTag "OMS" .> withValue "name" (/=typeS) .> getValue "name") [t],
 		 xshow $ applyXmlFilter (getChildren .> isTag "OMV" .> getValue "name") [t]) ) ((applyXmlFilter (isTag "OMBVAR" .> getChildren .> isTag "OMATTR") vt)::[XmlTree])
+
+-- reminder : switching to XmlNamed-structures makes use of current theory name obsolete...
 
 createATP::Hets.ImportsMap->Hets.SortsMap->SORT->String->(XmlTree->XmlTrees)
 createATP imports' sorts' sort name' =
@@ -4824,9 +5031,21 @@ createATP imports' sorts' sort name' =
 		 +++ createSymbolForSort imports' sorts' sort name'
 		 )
 		 
+createATPXN::TheoryXNSet -> Set.Set XmlNamedWONSORT -> SORT ->(XmlTree->XmlTrees)
+createATPXN theoryset theorysorts sort =
+	etag "OMATP" +=
+		(( etag "OMS" += ( sattr "cd" caslS +++ sattr "name" typeS ) )
+		 +++ createSymbolForSortWithSortXNSet theoryset theorysorts sort
+		 )
+		 
 createTypedVar::Hets.ImportsMap->Hets.SortsMap->SORT->String->String->(XmlTree->XmlTrees)
 createTypedVar imports' sorts' sort name' varname =
 	etag "OMATTR" += ( (createATP imports' sorts' sort name' ) +++ (etag "OMV" += (sattr "name" varname) ) )
+	
+-- TODO : change to correct types
+createTypedVarXN::TheoryXNSet -> Set.Set XmlNamedWONSORT->SORT->String->(XmlTree->XmlTrees)
+createTypedVarXN theoryset theorysorts sort varname =
+	etag "OMATTR" += ( (createATPXN theoryset theorysorts sort) +++ (etag "OMV" += (sattr "name" varname) ) )
 	
 -- | create a xml-representation from a term (in context of a theory)
 processTerm::
@@ -4894,6 +5113,70 @@ processTerm imports' sorts' preds' ops' name'
 		processTerm imports' sorts' preds' ops' name' t
 -- Unsupported Terms...
 processTerm _ _ _ _ _ _ = error "Unsupported Term encountered..." 
+
+
+-- | create a xml-representation from a term (in context of a theory)
+processTermXN::
+	PFInput->
+	(TERM f)-> -- ^ the term to process
+	(HXT.XmlTree->HXT.XmlTrees) -- ^ xml-representation of the term
+-- Simple_id
+processTermXN _
+	(Simple_id id' ) =
+		HXT.etag "OMV" +=
+			HXT.sattr "name" (show id' ) -- not needed
+-- Qual_var
+processTermXN pfinput
+	(Qual_var v s _) =
+		( createTypedVarXN (theorySet pfinput) (theorySorts pfinput) s (show v) ) +++
+		xmlNL
+-- Application
+processTermXN pfinput
+	(Application op termlist _) =
+		if null termlist
+			then
+				(processOperatorXN pfinput op) +++
+				xmlNL
+			else
+				(etag "OMA" +=
+					(xmlNL +++ (HXT.cmt "appl") +++
+					( processOperatorXN pfinput op ) +++
+					(foldl (\terms t ->
+						terms +++
+						(processTermXN pfinput t)
+						) (HXT.cmt "terms") termlist
+					)
+					) ) +++
+					xmlNL
+-- Cast
+processTermXN pfinput
+	(Cast t s _) =
+		processTermXN pfinput
+			(Application
+				(Op_name $ Hets.stringToId "PROJ")
+				[t, (Simple_id $ Id.mkSimpleId (show s))]
+				Id.nullRange
+			)
+-- Conditional
+processTermXN pfinput
+	(Conditional t1 f t2 _) =
+		HXT.etag "OMA" +=
+			(xmlNL +++
+			(HXT.etag "OMS" +=
+				(HXT.sattr "cd" caslS +++
+				HXT.sattr "name" "IfThenElse"
+				)
+			) +++
+			(processFormulaXN pfinput f) +++
+			(processTermXN pfinput t1) +++
+			(processTermXN pfinput t2)
+			)
+-- Sorted_term is to be ignored in OMDoc (but could be modelled...) (Sample/Simple.casl uses it...)
+processTermXN pfinput
+	(Sorted_term t _ _) =
+		processTermXN pfinput t
+-- Unsupported Terms...
+processTermXN _ _ = error "Unsupported Term encountered..." 
 
 
 isTermXml::XmlFilter
@@ -5018,6 +5301,90 @@ processOperator imports' ops' name'
 			)
 		
 
+-- | create a xml-representation of an operator (in context of a theory)
+processOperatorXN::
+	PFInput->
+	OP_SYMB-> -- ^ the operator to process
+	(XmlTree->XmlTrees) -- ^ the xml-representation of the operator
+-- Op_name
+processOperatorXN pfinput
+	(Op_name op) =
+		let
+			opxn = case aToXmlNamedWONa (map fst $ Map.toList (theoryOps pfinput)) op of
+				Nothing -> error "Cannot find operator in theory!"
+				(Just opxn' ) -> opxn'
+		in
+			HXT.etag "OMS" +=
+				(HXT.sattr "cd" 
+					(fromMaybe "unknown" $
+						getTheoryXmlName (theorySet pfinput) (Hets.woOrigin (xnItem opxn))) +++
+					HXT.sattr "name" (xnName opxn)
+				)
+-- Qual_op_name
+processOperatorXN pfinput
+	(Qual_op_name op (Op_type fk args res _) _) =
+		let
+			opxn = case aToXmlNamedWONa (map fst $ Map.toList (theoryOps pfinput)) op of
+				Nothing -> error "Cannot find operator in theory!"
+				(Just opxn' ) -> opxn'
+			opxnset = Map.findWithDefault (Set.empty) opxn (theoryOps pfinput)
+			thisopxn = case Set.toList $ Set.filter (\(OpTypeXNWON fk' argsxn' resxn' ) ->
+				let
+					pureargs = map xnWOaToa argsxn'
+					pureres = xnWOaToa resxn'
+				in
+					(args == pureargs) &&
+					(res == pureres) &&
+					(fk == fk' )
+					) opxnset of
+				[] -> error "Cannot find used optype in theory!"
+				(i:_) -> i
+			(argsxn, resxn) = (\(OpTypeXNWON _ argsxn' resxn' ) -> (argsxn' , resxn' ) ) thisopxn
+		in
+			HXT.etag "OMATTR" +=
+				(xmlNL +++
+				HXT.etag "OMATP" += -- create attribution for this operator (sign)
+					(xmlNL +++
+					HXT.etag "OMS" += -- type of operator
+						(HXT.sattr "cd" "casl" +++
+						HXT.sattr "name" "funtype"
+						) +++
+					xmlNL +++
+					(HXT.etag "OMSTR" +=
+						(HXT.txt (show fk)) -- 'Partial' or 'Total'
+					) +++
+					xmlNL +++
+					HXT.etag "OMS" += -- signature of operator
+						(HXT.sattr "cd" "casl" +++
+						HXT.sattr "name" "type"
+						) +++
+					xmlNL +++
+					(HXT.etag "OMSTR" += -- create a string t1-\\t2-\\...-\\tn
+						(HXT.txt ( (foldl
+							(\t s -> t ++ (xnName s) ++ "-\\")
+							-- the function could be easier but we need different
+							-- behaviour for functions without parameters...
+							(if (length argsxn > 0) then
+									(xnName (head argsxn)) ++ "-\\"
+								else
+									"" )
+							(if (length argsxn) > 0 then tail argsxn else [])
+							) ++ (xnName resxn) )
+						)
+					) +++
+					xmlNL
+					) +++
+					xmlNL +++
+					HXT.etag "OMS" += -- finally : the name of the operator
+						( HXT.sattr "cd"
+							( fromMaybe "unknown" $
+								getTheoryXmlName (theorySet pfinput) (Hets.woOrigin (xnItem opxn))
+							) +++
+							HXT.sattr "name" (xnName opxn)
+						)
+				)
+
+			
 trim::(a->Bool)->[a]->[a]
 trim test list = dropWhile test (reverse (dropWhile test (reverse list)))
 
