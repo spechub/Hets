@@ -94,16 +94,16 @@ instance PrettyPrint Axiom where
     printText0 ga axiom =
 	case axiom of
 	Class cid _ _ _ descs ->       -- descs is here unionOf or complementOf
-          foldListToDocV ga (printDescription ga) cid descs
+          foldListToDocV ga (printDescription ga 0) cid descs
 	EnumeratedClass cid _ _ iids ->
                   parens ((text "forall ((x owl:Thing))") $+$ 
-	                  (printDescription ga cid $ OneOfDes iids)) 
+	                  (printDescription ga 0 cid $ OneOfDes iids)) 
 	DisjointClasses desc1 desc2 _ ->   -- description list is ignored (always empty)
 	   parens ((text "forall ((x owl:Thing))") <+>
-                    parens ((text "not") <> parens ((text "and") <>
-                    parens ((printDescription ga emptyQN desc1) <+>
+                    parens ((text "not") <+> parens ((text "and") <+>
+                    parens ((printDescription ga 0 emptyQN desc1) <+>
                      (text "x")) <+> 
-                     parens ((printDescription ga emptyQN desc2) <+> (text "x")))))
+                     parens ((printDescription ga 0 emptyQN desc2) <+> (text "x")))))
 
 	EquivalentClasses desc1 descs ->  
          foldListToDocV ga 
@@ -112,14 +112,14 @@ instance PrettyPrint Axiom where
 	  DC cid2 ->
 	    parens ((text "forall ((x owl:Thing))") <+> 
                     parens (text "iff" <> 
-                    parens ((printDescription ga emptyQN x) <+> 
+                    parens ((printDescription ga 0 emptyQN x) <+> 
                     (text "x")) <+> parens ((printText0 ga cid2) <+> 
                     (text "x"))))	
 	  _      -> 
 	      case x of
 	        DC cid1 ->
                    parens ((text "forall ((x owl:Thing))") $+$ 
-                            (printDescription ga cid1 y))
+                            (printDescription ga 0 cid1 y))
 	        _       -> error ("EquivalentClasses Error:" ++ (show axiom))
 	  ) desc1 descs
 	Datatype dID _ _ -> 
@@ -156,18 +156,20 @@ instance PrettyPrint Axiom where
                                              parens ((printText0 ga iid) <+>
 			                             (text "x y")) <+> 
                                              parens ((printText0 ga pid) <+>
-			                             (text "y x"))))  $+$
-  			(printText0 ga (ObjectProperty iid p2 p3 p4 
-   		              Prelude.Nothing isSymmetric maybeFunc p8 p9))
+			                             (text "y x"))))  
+               -- * inverse and transitive properties are separated. 
+  	       -- 	(printText0 ga (ObjectProperty iid p2 p3 p4 
+               --         Prelude.Nothing isSymmetric maybeFunc p8 p9))
 	    _ -> if isSymmetric then
                      parens ((text "forall ((x owl:Thing) (y owl:Thing))") 
                                 <+>  parens ((text "implies") <> 
                                              parens ((printText0 ga iid) <+>
 			                             (text "x y")) <+> 
                                              parens ((printText0 ga iid) <+>
-			                             (text "y x"))))  $+$
-  			(printText0 ga (ObjectProperty iid p2 p3 p4 
-   		              Prelude.Nothing isSymmetric maybeFunc p8 p9))
+			                             (text "y x"))))  
+                 -- * inverse and transitive properties are separated.
+  		 --	(printText0 ga (ObjectProperty iid p2 p3 p4 
+   		 --             Prelude.Nothing isSymmetric maybeFunc p8 p9))
 		    else 
 		      case maybeFunc of
 		         Just InverseFunctional ->
@@ -242,17 +244,17 @@ instance PrettyPrint SignAxiom where
 	      (nest 4 $ text "(= y z)") $+$
 	      (text "))")
 	Conceptmembership iID desc ->
-	    parens ((printDescription ga iID desc) 
+	    parens ((printDescription ga 0 iID desc) 
 		     <+> (printText0 ga iID))
 
 instance PrettyPrint RDomain where
     printText0 ga (RDomain desc) =
-        printDescription ga emptyQN desc
+        printDescription ga 0 emptyQN desc   -- ToDo: level hierachie
 
 instance PrettyPrint RRange where
     printText0 ga rRange =
         case rRange of
-        RIRange desc -> printDescription ga emptyQN desc
+        RIRange desc -> printDescription ga 0 emptyQN desc -- ToDo: level hierachie
         RDRange dataRange -> printText0 ga dataRange 
 
 instance PrettyPrint DataRange where
@@ -303,7 +305,7 @@ instance PrettyPrint Restriction where
 
 instance PrettyPrint Description where
     printText0 ga desc =
-        printDescription ga emptyQN desc
+        printDescription ga 0 emptyQN desc -- ToDo: level hierachie
 
 instance PrettyPrint Fact where
     printText0 ga fact =
@@ -371,19 +373,13 @@ instance PrettyPrint Individual where
                   (foldListToDocH ga 
                    (\x y -> case x of 
                        (QN _ str _) -> 
-                        parens ((printDescription ga emptyQN y) <+> 
+                        parens ((printDescription ga 0 emptyQN y) <+> 
                          (text str))) (simpleQN $ choiceName level) typesI) $+$
                    (nest 4 $ parens ((printText0 ga ipID) <+> 
                       (printText0 ga iid') <+> (text $ choiceName level))) $+$ 
                   (nest 4 $ printIndividual (Just $ simpleQN $ choiceName level) valuesI (level+1)))))
            
-           choiceName :: Int -> String
-           choiceName level 
-               | level == 0 = "x"
-               | level == 1 = "y"
-               | level == 2 = "z"
-               | otherwise = "z" ++ (show (level -2))
-        
+       
 -- to show restrictions, descriptions and cardinalities need the id of classes
 -- or properties, so those are implemented not in PrettyPrint. 
 printRestriction1 :: GlobalAnnos -> URIreference -> [Drcomponent] -> Doc
@@ -427,7 +423,7 @@ printRestriction2 ga ipID (h:r) =
 	parens ((text "forall (y owl:Thing)") <+> 
                 parens ((text "implies") <> parens ((printText0 ga ipID) <+>
 	                                            (text "x y")) <+> 
-                        parens ((printDescription ga ipID desc) <+> 
+                        parens ((printDescription ga 0 ipID desc) <+> 
                                 (text "y")))) $+$
 	-- (text ")") $+$
 	(printRestriction2 ga ipID r)
@@ -437,7 +433,7 @@ printRestriction2 ga ipID (h:r) =
 	parens ((text "exists (y owl:Thing)") <+> 
                 parens ((text "and") <> parens ((printText0 ga ipID) <+>
 	                                            (text "x y")) <+> 
-                        parens ((printDescription ga ipID desc) <+> 
+                        parens ((printDescription ga 0 ipID desc) <+> 
                                 (text "y")))) $+$
 	-- (text ")") $+$
 	(printRestriction2 ga ipID r)
@@ -513,46 +509,47 @@ printCard ga pid card =
 	(nest 2 $ text "))") $+$
 	(text ")))")
 
-printDescription :: GlobalAnnos -> URIreference -> Description -> Doc
-printDescription ga iD desc =
+printDescription :: GlobalAnnos -> Int -> URIreference -> Description -> Doc
+printDescription ga level iD desc =
     case desc of
         DC cid -> printText0 ga cid
         DR restr -> printText0 ga restr
         UnionOf descs -> 
          if isEmptyQN iD then
-            parens ((text "or (") <> (foldListToDocH ga (form1 ga) iD descs)
+            parens ((text "or (") <> (foldListToDocH ga (form1 ga (level +1)) iD descs)
                                         <> (char ')')) 
            else
             -- (text "(forall ((x owl:Thing))") $+$
-            (text "(iff (") <> (printText0 ga iD) <+> (text "x)") $+$
-            (nest 2 $ text "(or (") <> (foldListToDocH ga (form1 ga) iD descs)
+            (text "(iff (") <> (printText0 ga iD) <+> 
+                                (text (choiceName level ++ ")")) $+$
+            (nest 2 $ text "(or (") <> (foldListToDocH ga (form1 ga (level+1)) iD descs)
                                         <> (char ')') $+$
             (text ")))") 
         IntersectionOf descs -> 
          if isEmptyQN iD then
             parens ((text "and (") <> 
-                    (foldListToDocH ga (form1 ga) iD descs) <> (char ')')) 
+                    (foldListToDocH ga (form1 ga (level+1)) iD descs) <> (char ')')) 
            else
             -- (text "(forall ((x owl:Thing))") $+$
-              (text "(iff (") <> (printText0 ga iD) <+> 
-              (text "x)") $+$ (nest 2 $ text "(and (") <> 
-              (foldListToDocH ga (form1 ga) iD descs) <> (char ')')  $+$
+              (text "(iff (") <> (printText0 ga iD) <+> (text (choiceName level ++ ")"))
+              $+$ (nest 2 $ text "(and (") <> 
+              (foldListToDocH ga (form1 ga (level+1)) iD descs) <> (char ')')  $+$
               (text ")))")
         ComplementOf desc1 ->
          if isEmptyQN iD then
-            parens ((text "not (") <> (printDescription ga iD desc1) <+>
-                    (text "x)"))
+            parens ((text "not (") <> (printDescription ga (level +1) iD desc1) <+>
+                    (text (choiceName level ++ ")")))
            else
             (text "(iff (") <> (printText0 ga iD) <+>
-                    (text "x) (not (") <> (printDescription ga iD desc1) <+>
-                    (text "x)))")
+                    ((text $ choiceName level) <> (text ") (not (")) <> (printDescription ga (level+1) iD desc1) <+>
+                    ((text $ choiceName level) <> (text ")))"))
         OneOfDes inds -> 
          if isEmptyQN iD then
             parens ((text "or (") <> (foldListToDocH ga (form2 ga) iD inds) 
                                         <> (char ')'))             
            else
             -- (text "(forall ((x owl:Thing)) ") $+$
-            (text "(iff (") <> (printText0 ga iD) <+> (text "x)") $+$
+            (text "(iff (") <> (printText0 ga iD) <+> ((text $ choiceName level) <> (text ")")) $+$
             (nest 2 $ text "(or (") <> (foldListToDocH ga (form2 ga) iD inds) 
                                         <> (char ')') $+$
             (text ")))") 
@@ -591,9 +588,9 @@ foldListToDocH ga printForm iD (h:r) =
     (printForm iD h) <+> (foldListToDocH ga printForm iD r)
 
 -- output form with different demands
-form1 :: GlobalAnnos -> URIreference -> Description -> Doc
-form1 ga _ des = 
-    parens (printDescription ga emptyQN  des)  
+form1 :: GlobalAnnos -> Int -> URIreference-> Description -> Doc
+form1 ga level _ des = 
+    parens (printDescription ga level emptyQN des)  
       --           <+>  (text "x)")      -- should x be deleted?
 
 form2 :: GlobalAnnos -> URIreference -> IndividualID -> Doc
@@ -618,4 +615,10 @@ emptyQN = QN "" "" ""
 
 simpleQN :: String -> QName
 simpleQN str = QN "" str ""
-
+               
+choiceName :: Int -> String
+choiceName level 
+    | level == 0 = "x"
+    | level == 1 = "y"
+    | level == 2 = "z"
+    | otherwise = "z" ++ (show (level -2))

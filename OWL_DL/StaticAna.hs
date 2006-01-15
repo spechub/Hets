@@ -256,7 +256,7 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
 				     }
         in concatResult ( Result [] (Just (onto, accSign, [])))
                   (anaDirective ga accSign onto rest)  
-    Ax op@(ObjectProperty ivId _ _ _ m_inv isSmy maybeFunc domains ranges)->
+    Ax op@(ObjectProperty ivId p2 p3 p4 m_inv isSmy maybeFunc domains ranges)->
         let ivr = indValuedRoles inSign
 	    ax = axioms inSign
 	    roleDomains = foldDomain ivId domains ax
@@ -278,29 +278,46 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
 			     inSign { indValuedRoles = Set.insert ivId ivr,
 				       axioms = roleRangesAndDomains
 				     }
-	    namedSent = case maybeFunc of
-			Just Functional                   -> []
-			-- Just Functional_InverseFunctional -> []
+	    (remake, namedSent) = case maybeFunc of   -- case of inverse or transitive
+ 			Just Functional                   -> (False, [])
+			Just Transitive                   -> 
+                           case m_inv of
+                             Prelude.Nothing ->
+                                 (False, [NamedSen { senName = 
+					 "transitive_individual_valued_role",
+					     isAxiom = True,
+					     isDef = True,
+					     sentence = OWLAxiom op
+					   }])
+                             _ -> (True, [NamedSen { senName = 
+					 "transitive_individual_valued_role",
+					     isAxiom = True,
+					     isDef = True,
+					     sentence = OWLAxiom (ObjectProperty ivId p2 p3 p4 (Prelude.Nothing) isSmy maybeFunc domains ranges)}])
+            -- then either InverseFunction or Functional_InverseFunctional:
 			_                                 ->
 			  case m_inv of
 			  Prelude.Nothing ->
 			      if not isSmy then 
-				 []
+				 (False, [])
 				 else
-				 [NamedSen { senName = 
+				 (False, [NamedSen { senName = 
 					 "individual_valued_role",
 					     isAxiom = True,
 					     isDef = True,
 					     sentence = OWLAxiom op
-					   } ]
-			  _ -> [NamedSen { senName = 
+					   } ])
+			  _ -> (False, [NamedSen { senName = 
 					    "inverse_individual_valued_role",
 					    isAxiom = True,
 					    isDef = True,
 					    sentence = OWLAxiom op
-					  } ]
-        in concatResult ( Result [] (Just (onto, accSign, namedSent)))
-                  (anaDirective ga accSign onto rest)  
+					  } ])
+        in if remake then
+               concatResult ( Result [] (Just (onto, accSign, namedSent)))
+                      (anaDirective ga accSign onto ((Ax (ObjectProperty ivId p2 p3 p4 m_inv isSmy (Prelude.Nothing) domains ranges)):rest)) 
+             else concatResult ( Result [] (Just (onto, accSign, namedSent)))
+                      (anaDirective ga accSign onto rest)  
     -- annotation properties are not yet handled.
     Ax (AnnotationProperty apid _) -> 
         let accSign = inSign { annotationRoles = 
