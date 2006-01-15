@@ -514,7 +514,7 @@ main =
 											"Unable to process env-file..."
 										)
 									)
-							)) >>= \e -> -- one of the parsers succeded
+							)) >>= \e -> -- one of the parsers succeeded
 								when
 									debug
 									(putStrLn "success.")
@@ -897,7 +897,17 @@ devGraphToXmlCMPIOXmlNamed dg =
 				x <- xio
 				sensxml <- sensxmlio
 				return $ x +++ xmlNL +++ HXT.etag "theory" += (
-					(HXT.sattr "id" theoname) +++
+					(qualattr "xml" "id" theoname) +++
+					-- presentation
+					(HXT.etag "presentation" += (
+						(HXT.sattr "for" theoname)
+						+++ HXT.etag "use" += (
+							(HXT.sattr "format" "Hets")
+							+++ (HXT.txt (idToString $ nodeNameToId (snd (xnItem xnodetupel))))
+							)
+						)
+					) +++
+					xmlNL +++
 					-- imports/morphisms
 					(foldl (\x' (nodename' , mmm) ->
 						let
@@ -973,6 +983,28 @@ devGraphToXmlCMPIOXmlNamed dg =
 										nodename
 							)
 							
+							
+processXmlForDGraph::HXT.XmlTrees->TheoryXNSet
+processXmlForDGraph xml =
+	let
+		omdoc = applyXmlFilter (isTag "omdoc") xml
+		xmltheories = applyXmlFilter (getChildren .> isTag "theory") omdoc
+		theories = foldl (\tl tx ->
+			let
+				theoid = xshow $ applyXmlFilter (getQualValue "xml" "id") [tx]
+				theohetsnodenames = xshow $ applyXmlFilter
+					(
+						getChildren .> isTag "presentation" .>
+						withSValue "for" theoid .> getChildren .>
+						isTag "use" .> withSValue "format" "Hets" .>
+						getChildren
+					) [tx]
+				theohetsnodename = idToNodeName $ read theohetsnodenames
+			in
+				tl ++ [XmlNamed (length tl, theohetsnodename) theoid]
+				) [] xmltheories
+	in
+		Set.fromList theories
 
 
 type WithOriginTheory a = Hets.WithOrigin a String
@@ -3063,7 +3095,7 @@ processImportGraph ig =
 						-- get the outgoing edges (imports) for this node
 						imports' = Graph.out ig nodenum
 						-- for all these edges, check whether it points
-						-- to a unprocessed node
+						-- to an unprocessed node
 						unprocessedimports = filter (\(_,from,_) ->
 							-- but do not count a reference back to current node...
 							if null (filter (\(n,_) -> (n/=nodenum) && (from == n)) unprocessed)
@@ -5490,6 +5522,13 @@ idToString (Id.Id toks ids _) =
 		(implode "," (map (\(Id.Token s _) -> s) toks)) ++
 		(implode "," (map idToString ids)) ++
 		"]"
+		
+nodeNameToId::NODE_NAME->Id.Id
+nodeNameToId (s,e,n) = Id.mkId [s,(Hets.stringToSimpleId e),(Hets.stringToSimpleId (show n))]
+
+idToNodeName::Id.Id->NODE_NAME
+idToNodeName (Id.Id toks _ _) = (toks!!0, show (toks!!1), read (show (toks!!2)))
+	
 		
 instance Read Id.Id where
 	readsPrec _ s =
