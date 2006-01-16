@@ -36,6 +36,7 @@ import Comorphisms.LogicGraph
 import Syntax.AS_Library
 import Static.DevGraph
 import Static.DGToSpec
+import Static.AnalysisLibrary
 
 import Proofs.InferBasic
 import Proofs.Automatic
@@ -173,7 +174,6 @@ convertGraph graphMem libname libEnv opts =
                           ++ (show libname)
                            ++ " does not exist")
 
-
 -- | initializes an empty abstract graph with the needed node and edge types,
 -- return type equals the one of convertGraph
 initializeGraph :: IORef GraphMem -> LIB_NAME -> DGraph -> ConversionMaps
@@ -199,7 +199,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts = do
                  maybeFilePath <- HTk.sync evnt
                  case maybeFilePath of
                    Just filePath ->
-                           do openProofStatus filePath ioRefProofStatus
+                           do openProofStatus ln filePath ioRefProofStatus
                                               convRef opts
                               return ()
                    Nothing -> fail "Could not open file."
@@ -207,8 +207,8 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts = do
          -- action on "save"
              (encapsulateWaitTermAct
                (do proofStatus <- readIORef ioRefProofStatus
-                   let filename = "./" ++ (show ln) ++ ".dg"
-                   writeShATermFile filename proofStatus
+                   let filename = libNameToFile opts ln ++ prfSuffix
+                   writeShATermFile filename $ lookupHistory ln proofStatus
                    putStrLn ("Wrote "++filename)))
          -- action on "save as...:"
              (encapsulateWaitTermAct
@@ -218,7 +218,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts = do
                    case maybeFilePath of
                      Just filePath -> do
                        proofStatus <- readIORef ioRefProofStatus
-                       writeShATermFile filePath proofStatus
+                       writeShATermFile filePath $ lookupHistory ln proofStatus
                        putStrLn ("Wrote "++filePath)
                      Nothing -> fail "Could not save file."
                ))
@@ -263,7 +263,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts = do
                    Button "Global Decomposition"
                           (proofMenu gInfo (return . return . globDecomp ln)),
                    Button "Local Inference"
-                          (proofMenu gInfo (return . return . 
+                          (proofMenu gInfo (return . return .
                                             localInference ln)),
                    Button "Local Decomposition (merge of rules)"
                           (proofMenu gInfo (return . return . locDecomp ln)),
@@ -424,22 +424,27 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts = do
   return (descr,graphInfo graphMem',convRef)
 
 -- | implementation of open menu, read in a proof status
-openProofStatus :: FilePath -> (IORef ProofStatus) 
+openProofStatus :: LIB_NAME -> FilePath -> (IORef ProofStatus)
                 -> (IORef ConversionMaps)
                 -> HetcatsOpts -> IO(Descr, GraphInfo, ConversionMaps)
-openProofStatus filename ioRefProofStatus convRef opts =
-  do resultProofStatus <- proofStatusFromShATerm filename
-     case Res.maybeResult resultProofStatus of
-       Nothing -> error ("Could not read proof status from file '"
-                         ++ (show filename) ++ "'")
-       Just proofStatus@libEnv' ->
-         do writeIORef ioRefProofStatus proofStatus
+openProofStatus libname file ioRefProofStatus convRef opts =
+  if fileToLibName opts file /= libname then
+      error $ "file name must correspond to library name: "
+                ++ showPretty libname ""
+  else
+  do m <- anaLib opts file
+     case m of
+       Nothing -> error $ "Could not read proof status from file '"
+                  ++ file ++ "'"
+       Just (ln, libEnv) -> do
+            proofStatus <- readPrfFiles opts libEnv
+            writeIORef ioRefProofStatus proofStatus
             initGraphInfo <- initgraphs
             graphMem' <- (newIORef GraphMem{nextGraphId = 0,
                                       graphInfo = initGraphInfo})
-            let ln = fileToLibName opts filename
+            let ln = fileToLibName opts file
             (gid, actGraphInfo, convMaps)
-                          <- convertGraph graphMem' ln libEnv' opts
+                          <- convertGraph graphMem' ln proofStatus opts
             writeIORef convRef convMaps
             redisplay gid actGraphInfo
             return (gid, actGraphInfo, convMaps)
@@ -450,7 +455,8 @@ batchOpenProofStatus :: FilePath -> HetcatsOpts
 batchOpenProofStatus filename opts = do
   ioRefProofStatus <- newIORef (undefined :: ProofStatus)
   convRef <- newIORef (undefined :: ConversionMaps)
-  openProofStatus filename ioRefProofStatus convRef opts
+  openProofStatus (fileToLibName opts filename) filename
+                  ioRefProofStatus convRef opts
 
 -- | apply a rule of the development graph calculus
 proofMenu :: GInfo
