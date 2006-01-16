@@ -810,8 +810,10 @@ spassProveGUI thName th = do
             extOpts <- (getValue batchOptionsEntry) :: IO String
             writeIORef stateRef (s {batchModeIsRunning = True})
             let numGoals = Map.size $ filterOpenGoals $ resultsMap s
-            batchStatusLabel # text (batchInfoText tLimit numGoals 0)
-            batchProverId <- Concurrent.forkIO 
+            if numGoals > 0 
+             then do
+              batchStatusLabel # text (batchInfoText tLimit numGoals 0)
+              batchProverId <- Concurrent.forkIO 
                    (do spassProveBatch tLimit extOpts 
                           (\ gPSF nSen res -> do 
                               cont <- goalProcessed stateRef tLimit numGoals 
@@ -832,12 +834,15 @@ spassProveGUI thName th = do
                               return cont)
                           thName s 
                        return ())
-            modifyIORef threadStateRef 
+              modifyIORef threadStateRef 
                         (\ ts -> ts{batchId = Just batchProverId})
-            disableWids wids
-            enable lb
-            enable stopBatchButton
-            done)
+              disableWids wids
+              enable lb
+              enable stopBatchButton
+              done
+             else do
+              batchStatusLabel # text ("No further open goals\n\n")
+              done)
       +> (stopBatch >>> do
             cleanupThread threadStateRef
             modifyIORef threadStateRef (\ s -> s {batchStopped = True})
