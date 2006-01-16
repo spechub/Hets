@@ -78,9 +78,6 @@ fromShATermString str = if null str then
     Result [Diag Warning "got empty string from file" nullRange] Nothing
     else fromVersionedATT $ readATerm str
 
-proofStatusFromShATerm :: FilePath -> IO (Result ProofStatus)
-proofStatusFromShATerm = readShATermFile
-
 readVerbose :: ShATermConvertible a => HetcatsOpts -> FilePath -> IO (Maybe a)
 readVerbose opts file = do
     putIfVerbose opts 1 $ "Reading " ++ file
