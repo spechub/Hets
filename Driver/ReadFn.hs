@@ -17,6 +17,7 @@ import Logic.Logic
 import Logic.Grothendieck
 import Syntax.AS_Library
 import Syntax.Parse_AS_Library
+import Syntax.Print_AS_Library()
 import Static.DevGraph
 import Proofs.StatusUtils
 import Proofs.EdgeUtils
@@ -32,6 +33,7 @@ import qualified Common.Lib.Map as Map
 import Common.AnnoState
 import Common.Id
 import Common.Result
+import Common.PrettyPrint
 import Text.ParserCombinators.Parsec
 
 import Driver.Options
@@ -78,12 +80,20 @@ fromShATermString str = if null str then
     Result [Diag Warning "got empty string from file" nullRange] Nothing
     else fromVersionedATT $ readATerm str
 
-readVerbose :: ShATermConvertible a => HetcatsOpts -> FilePath -> IO (Maybe a)
-readVerbose opts file = do
+readVerbose :: ShATermConvertible a => HetcatsOpts -> LIB_NAME -> FilePath
+            -> IO (Maybe a)
+readVerbose opts ln file = do
     putIfVerbose opts 1 $ "Reading " ++ file
     Result ds mgc <- readShATermFile file
     showDiags opts ds
-    return mgc
+    case mgc of
+      Nothing -> return Nothing
+      Just (ln2, a) -> do
+        unless (ln2 == ln) $
+               putIfVerbose opts 0 $ "incompatible library names: "
+               ++ showPretty ln " (requested) vs. "
+               ++ showPretty ln2 " (found)"
+        return $ Just a
 
 -- | create a file name without suffix from a library name
 libNameToFile :: HetcatsOpts -> LIB_NAME -> FilePath
@@ -112,7 +122,7 @@ readPrfFile opts ps ln = do
         prfFile = fname ++ prfSuffix
     recent <- checkRecentEnv opts prfFile fname
     h <- if recent then
-          fmap (maybe [emptyHistory] id) $ readVerbose opts prfFile
+          fmap (maybe [emptyHistory] id) $ readVerbose opts ln prfFile
        else return [emptyHistory]
     return $ Map.update ( \ c -> Just c
                           { devGraph = changesDG (devGraph c)

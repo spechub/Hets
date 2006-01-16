@@ -208,7 +208,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts = do
              (encapsulateWaitTermAct
                (do proofStatus <- readIORef ioRefProofStatus
                    let filename = libNameToFile opts ln ++ prfSuffix
-                   writeShATermFile filename $ lookupHistory ln proofStatus
+                   writeShATermFile filename (ln, lookupHistory ln proofStatus)
                    putStrLn ("Wrote "++filename)))
          -- action on "save as...:"
              (encapsulateWaitTermAct
@@ -448,15 +448,6 @@ openProofStatus libname file ioRefProofStatus convRef opts =
             writeIORef convRef convMaps
             redisplay gid actGraphInfo
             return (gid, actGraphInfo, convMaps)
-
--- | command line version of reading in the proof status
-batchOpenProofStatus :: FilePath -> HetcatsOpts
-                           -> IO(Descr, GraphInfo, ConversionMaps)
-batchOpenProofStatus filename opts = do
-  ioRefProofStatus <- newIORef (undefined :: ProofStatus)
-  convRef <- newIORef (undefined :: ConversionMaps)
-  openProofStatus (fileToLibName opts filename) filename
-                  ioRefProofStatus convRef opts
 
 -- | apply a rule of the development graph calculus
 proofMenu :: GInfo

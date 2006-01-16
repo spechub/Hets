@@ -118,7 +118,7 @@ anaString lgraph defl opts libenv input file =
                       Only -> return ()
                       _ -> write_LIB_DEFN (globalAnnos gctx) file opts ld
                   when (hasEnvOut opts)
-                        (writeFileInfo opts file gctx)
+                        (writeFileInfo opts ln file gctx)
                   return (ln, lenv)
   Nothing -> resToIORes $ Result ds Nothing
 
@@ -145,7 +145,7 @@ anaLibFileOrGetEnv lgraph defl opts libenv libname file = IOResult $ do
      recent_env_file <- checkRecentEnv opts env_file file
      if recent_env_file
         then do
-             mgc <- readVerbose opts env_file
+             mgc <- readVerbose opts libname env_file
              case mgc of
                  Nothing -> ioresToIO $ do
                      ioToIORes $ putIfVerbose opts 1 $ "Deleting " ++ env_file

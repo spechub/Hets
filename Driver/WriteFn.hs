@@ -116,13 +116,13 @@ writeShATermFileSDoc fp atcon = do
    att <- versionedATermTable atcon
    writeFileSDoc fp $ writeSharedATermSDoc att
 
-writeFileInfo :: HetcatsOpts -> FilePath -> GlobalContext -> IO()
-writeFileInfo opts file gctx =
+writeFileInfo :: HetcatsOpts -> LIB_NAME -> FilePath -> GlobalContext -> IO()
+writeFileInfo opts ln file gctx =
   let envFile = rmSuffix file ++ ".env" in
   case analysis opts of
   Basic -> do
       putIfVerbose opts 2 ("Writing file: " ++ envFile)
-      catch (writeShATermFileSDoc envFile gctx) $ \ err -> do
+      catch (writeShATermFileSDoc envFile (ln, gctx)) $ \ err -> do
               putIfVerbose opts 2 (envFile ++ " not written")
               putIfVerbose opts 3 ("see following error description:\n"
                                    ++ shows err "\n")
@@ -143,7 +143,7 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
         allSpecs = null ns
     unless (null prfFiles) $ do
       let f = rmSuffix file ++ "." ++ show (head prfFiles)
-      str <- toShATermString $ lookupHistory ln $ automatic ln lenv
+      str <- toShATermString (ln, lookupHistory ln $ automatic ln lenv)
       writeVerbFile opt f str
     mapM_ ( \ i -> case Map.lookup i gctx of
         Just (SpecEntry (_,_,_, NodeSig n _)) ->
