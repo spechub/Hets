@@ -1,11 +1,11 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Heng Jiang, Uni Bremen 2005
+Copyright   :  (c) Heng Jiang, Uni Bremen 2005-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  jiang@tzi.de
 Stability   :  provisional
-Portability :  unknown
+Portability :  portable
 
 Pretty printing for OWL DL theories. 
 
@@ -15,6 +15,7 @@ Pretty printing for OWL DL theories.
     todo:
      - invent ASCII display syntax for OWL_DL theories (Klaus)
      - implement printing of a theory
+     - shorten lines longer than 80 cpl
 -}
 
 module OWL_DL.Print where
@@ -44,7 +45,7 @@ instance PrettyPrint Sign where
     ((text "data_valued_roles ") <> (foldSetToDoc ga p6)) $+$
     ((text "individuals ") <> (foldSetToDoc ga p8)) $+$
     ((text "sign_axioms") $+$ (foldSetToDoc2 ga p9)) $+$ 
-    (text "\n") 
+    (text "\n") -- bad style
 
 instance PrettyPrint URIreference where
     printText0 _ (QN prefix localpart uri)
@@ -157,7 +158,7 @@ instance PrettyPrint Axiom where
 			                             (text "x y")) <+> 
                                              parens ((printText0 ga pid) <+>
 			                             (text "y x"))))  
-               -- * inverse and transitive properties are separated. 
+               -- inverse and transitive properties are separated. 
   	       -- 	(printText0 ga (ObjectProperty iid p2 p3 p4 
                --         Prelude.Nothing isSymmetric maybeFunc p8 p9))
 	    _ -> if isSymmetric then
@@ -167,9 +168,6 @@ instance PrettyPrint Axiom where
 			                             (text "x y")) <+> 
                                              parens ((printText0 ga iid) <+>
 			                             (text "y x"))))  
-                 -- * inverse and transitive properties are separated.
-  		 --	(printText0 ga (ObjectProperty iid p2 p3 p4 
-   		 --             Prelude.Nothing isSymmetric maybeFunc p8 p9))
 		    else 
 		      case maybeFunc of
 		         Just InverseFunctional ->
