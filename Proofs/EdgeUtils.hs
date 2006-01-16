@@ -15,16 +15,59 @@ utility functions for edges of a development graphs.
 
 module Proofs.EdgeUtils where
 
-import Data.List(nub, lookup)
 import Logic.Grothendieck
 import Static.DevGraph
 import Static.DGToSpec
 import Data.Graph.Inductive.Graph
+import Data.List
 
 delLEdge :: LEdge DGLinkLab -> DGraph -> DGraph
 delLEdge (v, w, l) g = case match v g of
     (Just(p, v', l', s), g') -> (p, v', l', filter (/= (l, w)) s) & g'
     _ -> g
+
+safeDelLEdge :: LEdge DGLinkLab -> DGraph -> DGraph
+safeDelLEdge e@(v, w, _) g = case match v g of
+    (Just(p, v', l', s), g') ->
+        let (ls, rs) = partition (\ (k, n) ->
+                                  eqLEdgeDGLinkLab e (n, w, k)) s in
+        case ls of
+          [] -> error $ "delLEdge no edge: " ++ show e
+          [_] -> (p, v', l', rs) & g'
+          _ -> error $ "delLEdge multiplge edges: " ++ show e
+    _ -> error $ "delLEdge no node for edge: " ++ show e
+
+insLEdge :: LEdge DGLinkLab -> DGraph -> DGraph
+insLEdge e@(v, w, l) g = case match v g of
+    (Just(p, v', l', s), g') ->
+        let ls = filter (\ (k, n) -> eqLEdgeDGLinkLab e (n, w, k)) s in
+        case ls of
+          [] -> (p, v', l', (l, w) : s) & g'
+          _ -> error $ "insLEdge multiple edge: " ++ show e
+    _ -> error $ "insLEdge no node for edge: " ++ show e
+
+delLNode :: LNode DGNodeLab -> DGraph -> DGraph
+delLNode n@(v, l) g = case match v g of
+    (Just(p, _, l', s), g') ->
+       if l' == l then
+           if null p && null s then g'
+           else error $ "delLNode remaining edgges: " ++ show (p ++ s)
+       else error $ "delLNode wrong label: " ++ show n
+    _ -> error $ "delLNode no such node: " ++ show n
+
+insLNode :: LNode DGNodeLab -> DGraph -> DGraph
+insLNode n@(v, _) g =
+    if gelem v g then error $ "insLNode " ++ show n else insNode n g
+
+changeDG :: DGraph -> DGChange -> DGraph
+changeDG g c = case c of
+    InsertNode n -> insLNode n g
+    DeleteNode n -> delLNode n g
+    InsertEdge e -> insEdge e g
+    DeleteEdge e -> delLEdge e g
+
+changesDG :: DGraph -> [DGChange] -> DGraph
+changesDG = foldl' changeDG
 
 -- -------------------------------------
 -- methods to check the type of an edge

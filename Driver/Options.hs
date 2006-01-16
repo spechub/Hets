@@ -189,7 +189,7 @@ instance Show GuiType where
 
 -- | 'InType' describes the type of input the infile contains
 data InType = ATermIn ATType | ASTreeIn ATType | CASLIn | HetCASLIn | OWL_DLIn
-            | HaskellIn | DGIn | PrfIn | GuessIn
+            | HaskellIn | PrfIn | GuessIn
 
 instance Show InType where
     show i = case i of
@@ -199,7 +199,6 @@ instance Show InType where
              HetCASLIn -> "het"
              OWL_DLIn -> "owl"
              HaskellIn -> "hs"
-             DGIn -> "dg"
              PrfIn -> prfS
              GuessIn -> ""
 
@@ -218,7 +217,7 @@ instance Show ATType where
                        NonBAF -> ""
 
 plainInTypes :: [InType]
-plainInTypes = [CASLIn, HetCASLIn, OWL_DLIn, HaskellIn, PrfIn, DGIn]
+plainInTypes = [CASLIn, HetCASLIn, OWL_DLIn, HaskellIn, PrfIn]
 
 aInTypes :: [InType]
 aInTypes = [ f x | f <- [ASTreeIn, ATermIn], x <- [BAF, NonBAF] ]
@@ -722,7 +721,7 @@ doIfVerbose opts level func =
     if (verbose opts) >= level then func
         else return ()
 
--- | add base file name (second argument) to path 
+-- | add base file name (second argument) to path
 pathAndBase :: FilePath -> FilePath -> FilePath
 pathAndBase path base =
     if null path then base

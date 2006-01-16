@@ -20,6 +20,7 @@ module Main where
 import System.Environment (getArgs)
 
 import Driver.Options
+import Driver.ReadFn
 
 #ifdef CASLEXTENSIONS
 import OWL_DL.OWLAnalysis
@@ -47,10 +48,7 @@ processFile :: HetcatsOpts -> FilePath -> IO ()
 processFile opts file =
     do putIfVerbose opts 3 ("Processing input: " ++ file)
        case guess file (intype opts) of
-#ifdef UNI_PACKAGE
-         DGIn -> showDGGraph file opts
-#endif
-         s -> do 
+         s -> do
            res <- case s of
 {-
 #ifdef PROGRAMATICA
@@ -62,6 +60,13 @@ processFile opts file =
                  ontoMap <- parseOWL file
                  structureAna file opts ontoMap
 #endif
+             PrfIn -> do
+               m <- anaLib opts file
+               case m of
+                 Nothing -> return Nothing
+                 Just (ln, libEnv) -> do
+                     proofStatus <- readPrfFiles opts libEnv
+                     return $ Just (ln, proofStatus)
              _ -> anaLib opts file
            case gui opts of
              Not -> return ()

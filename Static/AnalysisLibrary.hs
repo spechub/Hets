@@ -76,7 +76,8 @@ anaSourceFile lgraph defl opts libenv fname = IOResult $ do
     Nothing -> do
         return $ fail $ "a file for input '" ++ fname ++ "' not found."
     Just file ->
-        if isSuffixOf envSuffix file then let file' = rmSuffix file in
+        if any (flip isSuffixOf file) [envSuffix, prfSuffix] then
+            let file' = rmSuffix file in
             ioresToIO $ anaLibFileOrGetEnv lgraph defl opts libenv
                    (fileToLibName opts file') file'
         else do

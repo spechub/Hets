@@ -19,6 +19,7 @@ import Syntax.AS_Library
 import Syntax.Parse_AS_Library
 import Static.DevGraph
 import Proofs.StatusUtils
+import Proofs.EdgeUtils
 
 import ATC.AS_Library()
 import ATC.DevGraph()
@@ -110,16 +111,19 @@ fileToLibName opts efile =
 
 readPrfFile :: HetcatsOpts -> ProofStatus -> LIB_NAME -> IO ProofStatus
 readPrfFile opts ps ln = do
-    let fname = libNameToFile opts ln 
+    let fname = libNameToFile opts ln
         prfFile = fname ++ prfSuffix
     recent <- checkRecentEnv opts prfFile fname
-    h <- if recent then 
+    h <- if recent then
           fmap (maybe [emptyHistory] id) $ readVerbose opts prfFile
        else return [emptyHistory]
-    return $ Map.update (\ c -> Just c { proofHistory = h }) ln ps  
-            
+    return $ Map.update ( \ c -> Just c
+                          { devGraph = changesDG (devGraph c)
+                                      $ concatMap snd h
+                          , proofHistory = h } ) ln ps
+
 readPrfFiles :: HetcatsOpts -> LibEnv -> IO ProofStatus
 readPrfFiles opts le = do
     foldM (readPrfFile opts) le $ Map.keys le
 
-  
+
