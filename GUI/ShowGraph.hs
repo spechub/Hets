@@ -60,7 +60,3 @@ showGraphAux file opts convFct = do
             exitWith ExitSuccess
             fail $ "No graph display interface; " ++
               "UNI_PACKAGE option has been disabled during compilation of Hets"
-
-showDGGraph :: FilePath -> HetcatsOpts -> IO ()
-showDGGraph file opts =
-  showGraphAux file opts $ const $ batchOpenProofStatus file opts
