@@ -18,8 +18,6 @@ See <http://spass.mpi-sb.mpg.de/> for details on SPASS.
 
       - window opens too small on linux; why? ... maybe fixed
 
-      - add checkbox to switch if proved theorems are included or not
-
       - check if the theorem is used in the proof; 
         if not, the theory is inconsistent; 
         mark goal as proved and emmit a warning...
@@ -671,6 +669,30 @@ spassProveGUI thName th = do
   sp2_2 <- newSpace b (cm 0.15) []
   pack sp2_2 [Expand Off, Fill X, Side AtBottom]
 
+  -- global options frame
+  globalOptsFr <- newFrame b []
+  pack globalOptsFr [Expand Off, Fill Both]
+
+  gOptsTitle <- newLabel globalOptsFr [text "Global Options:"]
+  pack gOptsTitle [Side AtTop]
+
+  inclProvedThsTK <- createTkVariable True
+  inclProvedThsCheckButton <- 
+         newCheckButton globalOptsFr 
+                        [variable inclProvedThsTK,
+                         text ("include preceeding proven therorems"++
+                               " in next proof attempt")]
+  pack inclProvedThsCheckButton [Side AtLeft]
+
+  -- separator 3
+  sp1_3 <- newSpace b (cm 0.15) []
+  pack sp1_3 [Expand Off, Fill X, Side AtBottom]
+
+  newHSeparator b
+
+  sp2_3 <- newSpace b (cm 0.15) []
+  pack sp2_3 [Expand Off, Fill X, Side AtBottom]
+
   -- bottom frame (help/save/exit buttons)
   bottom <- newFrame b []
   pack bottom [Expand Off, Fill Both]
@@ -704,7 +726,7 @@ spassProveGUI thName th = do
                          map EnW [proveButton,detailsButton,saveDFGButton]
       wids = EnW lb : goalSpecificWids ++
              [EnW batchTimeEntry, EnW batchTimeSpinner,
-              EnW batchOptionsEntry] ++
+              EnW batchOptionsEntry,EnW inclProvedThsCheckButton] ++
              map EnW [helpButton,saveButton,exitButton,runBatchButton]
 
   disableWids goalSpecificWids
@@ -735,10 +757,12 @@ spassProveGUI thName th = do
           done)
       +> (saveDFG >>> do
             rs <- readIORef stateRef
+            inclProvedThs <- readTkVariable inclProvedThsTK
             maybe (return ()) 
                   (\ goal -> do
                       let (nGoal,lp') = 
-                              prepareLP (initialLogicalPart rs) rs goal
+                              prepareLP (initialLogicalPart rs) rs 
+                                        goal inclProvedThs
                       prob <- genSPASSProblem thName lp' nGoal
                       createTextSaveDisplay ("SPASS Problem for Goal "++goal) 
                                             (thName++goal++".dfg") prob
@@ -752,12 +776,14 @@ spassProveGUI thName th = do
               else (do
                 curEntTL <- (getValueSafe guiDefaultTimeLimit 
                                           timeEntry) :: IO Int
+                inclProvedThs <- readTkVariable inclProvedThsTK
                 let goal = fromJust $ currentGoal rs
                     s = rs {configsMap = adjustOrSetConfig 
                                             (setTimeLimit curEntTL) 
                                             goal 
                                             (configsMap rs)}
-                    (nGoal,lp') = prepareLP (initialLogicalPart rs) rs goal
+                    (nGoal,lp') = prepareLP (initialLogicalPart rs) rs 
+                                            goal inclProvedThs
                 extraOptions <- (getValue optionsEntry) :: IO String
                 let s' = s {configsMap = adjustOrSetConfig 
                                             (setExtraOpts (words extraOptions))
@@ -813,8 +839,9 @@ spassProveGUI thName th = do
             if numGoals > 0 
              then do
               batchStatusLabel # text (batchInfoText tLimit numGoals 0)
+              inclProvedThs <- readTkVariable inclProvedThsTK
               batchProverId <- Concurrent.forkIO 
-                   (do spassProveBatch tLimit extOpts 
+                   (do spassProveBatch tLimit extOpts inclProvedThs
                           (\ gPSF nSen res -> do 
                               cont <- goalProcessed stateRef tLimit numGoals 
                                                     batchStatusLabel 
@@ -895,7 +922,7 @@ spassProveGUI thName th = do
                (batchId st)
 
     noGoalSelected = errorMess "Please select a goal first."
-    prepareLP iLP s goal =
+    prepareLP iLP s goal inclProvedThs =
        let (beforeThis, afterThis) = 
                splitAt (fromJust $ 
                         findIndex (\sen -> AS_Anno.senName sen == goal) 
@@ -903,11 +930,16 @@ spassProveGUI thName th = do
                        (goalsList s)
            proved = filter (\sen-> checkGoal (resultsMap s) 
                                        (AS_Anno.senName sen)) beforeThis
-       in (head afterThis,
-           foldl (\lp provedGoal -> 
+       in if inclProvedThs 
+             then (head afterThis,
+                   foldl (\lp provedGoal -> 
                      insertSentence lp (provedGoal{AS_Anno.isAxiom = True})) 
-                 iLP 
-                 (reverse proved))
+                         iLP 
+                         (reverse proved))
+             else (maybe (error ("SPASS.Prove.prepareLP: Goal "++goal++
+                                 " not found!!"))
+                         id (find ((==goal) . AS_Anno.senName) (goalsList s)),
+                   iLP)
     showResMap mp = 
         '{':(foldr  (\ (k,(r,outp)) resF -> 
                              shows k . 
@@ -977,6 +1009,7 @@ checkGoal resMap goal =
 -}
 spassProveBatch :: Int -- ^ batch time limit
                 -> String -- ^ extra options passed
+                -> Bool -- ^ True means include proved theorems
                 -> (Int 
                     -> AS_Anno.Named SPTerm 
                     -> (SpassProverRetval, SPASSResult) 
@@ -986,7 +1019,7 @@ spassProveBatch :: Int -- ^ batch time limit
                 -> String -- ^ theory name
                 -> SPASS.Prove.State
                 -> IO ([Proof_status ()]) -- ^ proof status for each goal
-spassProveBatch tLimit extraOptions f thName st =
+spassProveBatch tLimit extraOptions inclProvedThs f thName st =
     batchProve (initialLogicalPart st) 0 [] (goalsList st)
   {- do -- putStrLn $ showPretty initialLogicalPart ""
      -- read batchTimeLimit from ENV variable if set otherwise use constant
@@ -998,7 +1031,7 @@ spassProveBatch tLimit extraOptions f thName st =
     openGoals = filterOpenGoals (resultsMap st)
 
     addToLP g res lp = 
-        if isProved res
+        if isProved res && inclProvedThs
         then insertSentence lp (g{AS_Anno.isAxiom = True})
         else lp
     batchProve _ _ resDone [] = return (reverse resDone)
