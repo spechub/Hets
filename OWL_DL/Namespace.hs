@@ -5,10 +5,9 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  jiang@tzi.de
 Stability   :  provisional
-Portability :  portable
+Portability :  non-portable(instances for Namespace and Named Sentence)
 
-This module is OWL namespace handler.
-
+This module is OWL namespace handler
 -}
 
 
