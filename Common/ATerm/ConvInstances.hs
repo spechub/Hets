@@ -1,4 +1,3 @@
-{-# OPTIONS -fglasgow-exts #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) Klaus Lüttich, C. Maeder, Uni Bremen 2005-2006
@@ -6,7 +5,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
 Stability   :  provisional
-Portability :  non-portable (SPECIALIZE pragma)
+Portability :  non-portable (SPECIALIZE pragma, overlapping Typeable instances)
 
 This module provides instances of
 Common.ATerm.Conversion.ShATermConvertible.  The purpose is separation

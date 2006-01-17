@@ -5,7 +5,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
 Stability   :  provisional
-Portability :  non-portable(imports System.Mem.StableName)
+Portability :  non-portable(imports System.Mem.StableName and GHC.Prim)
 
 data types and utilities for shared ATerms and the ATermTable
 -}
