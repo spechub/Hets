@@ -39,7 +39,8 @@ basicOWL_DLAnalysis (ontology@(Ontology oName _ ns), inSign, ga) =
           let diffSign = diffSig accSign inSign
           in  Result (diags1 ++ diags2) $ 
                         Just (onto, diffSign, accSign, namedSen)
-        _        -> error "unknow error in static analysis. Pleas try again."
+        _        -> error ("unknow error in static analysis. Pleas try again.\n" ++ 
+                           (show $ anaOntology (inSign {namespaceMap = integNamespace}) ontology'))
    
   where -- static analysis with changed namespace base of inSign.
         anaOntology :: Sign -> Ontology
@@ -426,6 +427,10 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
             -- ignore all anonymous individuals 
             anaDirective ga inSign onto rest
         Just iid -> 
+         if localPart iid == "_" then
+           -- if a individual named "_" is it also anonymous individual -> ignored
+           anaDirective ga inSign onto rest
+           else
             let oriInd = individuals inSign
             in  let (diagL, membershipSet) = msSet iid types ([], Set.empty) 
                     ax = axioms inSign 
