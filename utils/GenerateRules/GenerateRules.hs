@@ -62,7 +62,8 @@ genRules flags files =
              "\nLicense     :  similar to LGPL, see HetCATS/LICENSE.txt" ++
              "\n\nMaintainer  :  maeder@tzi.de" ++
              "\nStability   :  provisional" ++
-             "\nPortability :  portable\n" ++
+             "\nPortability :  non-portable(overlapping Typeable instances)\n"
+             ++
              "\nAutomatic derivation of instances via DrIFT-rule " ++
                    rule ++
              "\n  for the type(s):" ++
