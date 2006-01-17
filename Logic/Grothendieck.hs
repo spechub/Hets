@@ -1,4 +1,3 @@
-{-# OPTIONS -fallow-overlapping-instances -fallow-incoherent-instances #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) Till Mossakowski, and Uni Bremen 2002-2004
@@ -577,7 +576,7 @@ compInclusion lg mor1 mor2 = do
   comp Grothendieck mor mor2
 
 -- | Composition of two Grothendieck signature morphisms
--- | with itermediate homogeneous inclusion
+-- | with intermediate homogeneous inclusion
 compHomInclusion :: GMorphism -> GMorphism -> Result GMorphism
 compHomInclusion mor1 mor2 = compInclusion emptyLogicGraph mor1 mor2
 
