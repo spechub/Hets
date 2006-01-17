@@ -44,10 +44,11 @@ transSenName = transId . simpleIdToId . mkSimpleId
 
 transId :: Id -> SPIdentifier
 transId iden 
-    | checkIdentifier str = if Set.member str reservedWords 
+    | checkIdentifier str = substDigits $
+                            if Set.member str reservedWords 
                             then "X_"++str
                             else str
-    | otherwise = concatMap transToSPChar str
+    | otherwise = substDigits $ concatMap transToSPChar (dropWhile (=='_') str)
     where str = show iden
 
 charMap_SP :: Map.Map Char String
@@ -60,3 +61,21 @@ transToSPChar c
     | checkSPChar c = [c]
     | otherwise = Map.findWithDefault def c charMap_SP
     where def = "Slash_"++ show (ord c)
+
+substDigits :: String -> String
+substDigits = concatMap subst
+    where subst c     
+              | isDigit c = case c of
+                '0' -> "zero"
+                '1' -> "one"
+                '2' -> "two"
+                '3' -> "three"
+                '4' -> "four"
+                '5' -> "five"
+                '6' -> "six"
+                '7' -> "seven"
+                '8' -> "eight"
+                '9' -> "nine"
+                _ -> error ("SPASS.Translate.substDigits: unknown digit: \'"
+                            ++c:"\'")
+              | otherwise = [c]

@@ -111,7 +111,7 @@ type SPIdentifier = String
 -}
 checkIdentifier :: String-> Bool
 checkIdentifier "" = False
-checkIdentifier xs = and (map checkSPChar xs)
+checkIdentifier xs@(x:_) = and ((x /= '_') : map checkSPChar xs)
 
 {- |
 Allowed SPASS characters are letters, digits, and underscores.
