@@ -334,21 +334,20 @@ instance PrettyPrint Individual where
            printIndividual iid' (hv:tv) level =
                case hv of
                ValueID pid indivID -> 
-                   parens ((printText0 ga pid) <+> (printText0 ga iid')
-                   <+> (printText0 ga indivID)) $+$
-                   (printIndividual iid' tv level)
+                   parens (printText0 ga pid <+> printText0 ga iid'
+                   <+> printText0 ga indivID) $+$
+                   printIndividual iid' tv level
                ValueIndiv pid indiv ->
                 parens ( 
                  (if level == -1 then
                      printIntIndiv iid' pid indiv 0
-                     else (printIntIndiv iid' pid indiv level))
-                   $+$ (nest 2 $ printIndividual iid' tv 
+                     else printIntIndiv iid' pid indiv level))
+                   $+$ nest 2 (printIndividual iid' tv 
                         (if level < 0 then 0 else level))
                ValueDL pid dl ->
-                   parens ((printText0 ga pid) <+> (printText0 ga iid')
-                           <+> (printText0 ga dl)) $+$
-                   (printIndividual iid' tv level)
-                       )
+                   parens (printText0 ga pid <+> printText0 ga iid'
+                           <+> printText0 ga dl) $+$
+                   printIndividual iid' tv level
            printIntIndiv :: (Maybe IndividualID)
                          -> IndividualvaluedPropertyID 
                          -> Individual
