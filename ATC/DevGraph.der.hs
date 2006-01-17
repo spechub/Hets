@@ -6,7 +6,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt
 
 Maintainer  :  maeder@tzi.de
 Stability   :  provisional
-Portability :  portable
+Portability :  non-portable(imports DevGraph)
 
 derive 'ShATermConvertible' instance
   for the type(s): 'DGNodeLab' 'DGLinkLab' 'DGRule' 'BasicConsProof' 'ThmLinkStatus' 'DGLinkType' 'Conservativity' 'DGOrigin' 'NodeSig' 'MaybeNode' 'UnitSig' 'ImpUnitSigOrSig' 'ArchSig' 'GlobalEntry' 'DGChange'
