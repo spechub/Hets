@@ -316,13 +316,10 @@ instance PrettyPrint Fact where
                                <+> (printText0 ga y)))
                            iid1 (iid2:iids)
         DifferentIndividuals iid1 iid2 iids -> 
-            (text "(forall ((x owl:Thing))") $+$
-              (nest 2 $ text "(or (") <> 
-              (foldListToDocH ga (form2 ga) emptyQN (iid1:iid2:iids)) <> 
-              (text ")))") $+$
-              (text "[ALLDIFFERENT") <+> 
-              (foldListToDocH ga (form3 ga) emptyQN (iid1:iid2:iids)) <> 
-              (char ']')
+            parens ((text "forall ((x owl:Thing))") $+$
+                    (nest 2 $ parens ((text "or") <+> 
+                                      (parens (foldListToDocH ga (form2 ga) emptyQN (iid1:iid2:iids)))))) $+$
+            brackets (text "ALLDEFFERENT" <+> (foldListToDocH ga (form3 ga) emptyQN (iid1:iid2:iids)))
         Indiv individual -> printText0 ga individual
 
 instance PrettyPrint Individual where
@@ -341,9 +338,9 @@ instance PrettyPrint Individual where
                    <+> (printText0 ga indivID)) $+$
                    (printIndividual iid' tv level)
                ValueIndiv pid indiv ->
+                parens ( 
                  (if level == -1 then
-                     parens ((printText0 ga pid) <+> (printText0 ga iid')
-                             $+$ (nest 2 $ printIntIndiv iid' pid indiv 0))
+                     printIntIndiv iid' pid indiv 0
                      else (printIntIndiv iid' pid indiv level))
                    $+$ (nest 2 $ printIndividual iid' tv 
                         (if level < 0 then 0 else level))
@@ -351,7 +348,7 @@ instance PrettyPrint Individual where
                    parens ((printText0 ga pid) <+> (printText0 ga iid')
                            <+> (printText0 ga dl)) $+$
                    (printIndividual iid' tv level)
-           
+                       )
            printIntIndiv :: (Maybe IndividualID)
                          -> IndividualvaluedPropertyID 
                          -> Individual
@@ -369,15 +366,18 @@ instance PrettyPrint Individual where
                                  -> Int
                                  -> Doc
            printAnonymIndividual iid' ipID typesI valuesI level= 
-               parens ((text ("exists (" ++ choiceName level ++ ")")) $+$ 
+               parens ((text ("exists (owl:Thing " ++ choiceName level ++ ")")) $+$ 
                  (nest 2 $ parens ((text "and") <+> 
-                  (foldListToDocH ga 
+                  (foldListToDocV ga 
+                   -- className (type)
                    (\x y -> case x of 
                        (QN _ str _) -> 
                         parens ((printDescription ga 0 emptyQN y) <+> 
                          (text str))) (simpleQN $ choiceName level) typesI) $+$
+                   -- (propertyID individualID x)
                    (nest 4 $ parens ((printText0 ga ipID) <+> 
                       (printText0 ga iid') <+> (text $ choiceName level))) $+$ 
+                   -- values
                   (nest 4 $ printIndividual (Just $ simpleQN $ choiceName level) valuesI (level+1)))))
            
        
