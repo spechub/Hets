@@ -93,9 +93,9 @@ automaticApplyRules ln = foldl (.) id $ map (\ f -> f ln) rules
 {- | merges for every library the new history elements
    to one new history element -}
 mergeHistories :: Int -> Int -> LibEnv -> Maybe LibEnv
-mergeHistories cnt lenNewHistory proofstatus@libEnv =
+mergeHistories cnt lenNewHistory libEnv =
   let (numChanges,newProofstatus) = mergeHistoriesAux cnt lenNewHistory
-                                    (Map.keys libEnv) proofstatus
+                                    (Map.keys libEnv) libEnv
   in if numChanges > 0 then
      Just newProofstatus
     else Nothing
@@ -118,7 +118,6 @@ mergeHistoriesAux cnt lenNewHistory (ln:list) proofstatus =
 mergeHistory :: Int -> Int -> LIB_NAME -> LibEnv -> Maybe LibEnv
 mergeHistory cnt lenNewHistory ln proofstatus =
   let history = lookupHistory ln proofstatus
---      dgraph = lookupDGraph ln proofstatus
       (newHistoryPart, oldHistory) = splitAt (lenNewHistory+cnt) history
   in if null (concatMap snd $ take lenNewHistory newHistoryPart)
         && cnt == 1 then
