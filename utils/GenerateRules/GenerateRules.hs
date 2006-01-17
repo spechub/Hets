@@ -54,8 +54,9 @@ genRules flags files =
        let q@(rules, excs, is, outf) = anaFlags flags
            (datas, imports) = (( \ (x,y) -> (concat x,concat y)) . unzip) ids
            ds = datas \\ excs
-           rule =  concat $ intersperse ", " rules
-           fileHead = "{-# OPTIONS -O0 -fno-warn-unused-imports #-}" ++
+           rule = concat $ intersperse ", " rules
+           fileHead =
+             "{-# OPTIONS -fvia-C -O0 -fno-warn-unused-imports #-}" ++
              "\n{- |\nModule      :  " ++ outf ++
              "\nDescription :  generated " ++ rule ++ " instances" ++
              "\nCopyright   :  (c) Uni Bremen 2005" ++
