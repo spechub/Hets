@@ -40,7 +40,7 @@ endif
 HC_OPTS1 = -fglasgow-exts -fallow-overlapping-instances \
     $(HC_INCLUDE) $(PFE_FLAGS) -DCASLEXTENSIONS
 
-HC_OPTS    = $(HC_OPTS1) $(HC_PACKAGE)
+HC_OPTS = $(HC_OPTS1) $(HC_PACKAGE)
 
 ####################################################################
 ### targets
@@ -49,11 +49,11 @@ HC_OPTS    = $(HC_OPTS1) $(HC_PACKAGE)
 all: hets
 
 hets: critical_clean
-	$(HC) --make -O -o $@ hets.hs $(HC_OPTS) -w
+	$(HC) --make -O -optc-O3 -o $@ hets.hs $(HC_OPTS) -w
 	strip hets
 
 hets.cgi: critical_clean
-	$(HC) --make -O GUI/hets_cgi.hs -o $@ $(HC_OPTS1) -w
+	$(HC) --make -O -optc-O3 GUI/hets_cgi.hs -o $@ $(HC_OPTS1) -w
 	strip hets.cgi
 
 
