@@ -29,13 +29,13 @@ printLibrary :: LibEnv -> (LIB_NAME, GlobalContext) -> Doc
 printLibrary le (ln, GlobalContext { globalAnnos = ga, globalEnv = ge }) =
     text libraryS <+> printText0 ga ln $$
          foldr (aboveWithNLs 2) P.empty
-                   (map (printTheory le ln ga) $ Map.toList ge)
+                   (map (uncurry $ printTheory le ln ga) $ Map.toList ge)
 
 printTheory :: LibEnv -> LIB_NAME -> GlobalAnnos
-            -> (SIMPLE_ID, GlobalEntry) -> Doc
-printTheory le ln ga (sn, ge) = case ge of
+            -> SIMPLE_ID -> GlobalEntry -> Doc
+printTheory le ln ga sn ge = case ge of
     SpecEntry (_,_,_, NodeSig n _) ->
-        case maybeResult $ computeTheory le (ln, n) of
+        case maybeResult $ computeTheory le ln n of
             Nothing -> P.empty
             Just g -> printTh ga sn g
     _ -> P.empty

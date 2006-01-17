@@ -29,40 +29,27 @@ import Common.Utils
     an undo operation
 -}
 
-type ProofStatus = LibEnv
-
 -- -------------------------------
 -- methods used in several proofs
 -- -------------------------------
 
-{- returns the global context that belongs to the given library name -}
-lookupProofStatus :: LIB_NAME -> ProofStatus -> GlobalContext
-lookupProofStatus ln = 
-    Map.findWithDefault (error "lookupGlobalContext") ln
-
-lookupGlobalContext :: LIB_NAME -> ProofStatus -> GlobalContext
-lookupGlobalContext = lookupProofStatus
-
 {- returns the history that belongs to the given library name-}
-lookupHistory :: LIB_NAME -> ProofStatus -> ProofHistory
-lookupHistory ln = proofHistory . lookupProofStatus ln
+lookupHistory :: LIB_NAME -> LibEnv -> ProofHistory
+lookupHistory ln = proofHistory . lookupGlobalContext ln
 
-lookupDGraph :: LIB_NAME -> ProofStatus -> DGraph
-lookupDGraph ln = devGraph . lookupGlobalContext ln
-
-mkResultProofStatus :: LIB_NAME -> ProofStatus -> DGraph 
-                    -> ([DGRule], [DGChange]) -> ProofStatus
+mkResultProofStatus :: LIB_NAME -> LibEnv -> DGraph
+                    -> ([DGRule], [DGChange]) -> LibEnv
 mkResultProofStatus ln ps dgraph (dgrules, dgchanges) =
-  let c = lookupProofStatus ln ps
+  let c = lookupGlobalContext ln ps
       historyElem = (dgrules,removeContraryChanges dgchanges)
   in Map.insert ln (c { devGraph = dgraph
-                      , proofHistory = historyElem : proofHistory c }) 
+                      , proofHistory = historyElem : proofHistory c })
      $ prepareResultProofHistory ps
 
-mapProofHistory :: (ProofHistory -> ProofHistory) -> ProofStatus -> ProofStatus
+mapProofHistory :: (ProofHistory -> ProofHistory) -> LibEnv -> LibEnv
 mapProofHistory f = Map.map ( \ c -> c { proofHistory = f $ proofHistory c } )
 
-prepareResultProofHistory :: ProofStatus -> ProofStatus
+prepareResultProofHistory :: LibEnv -> LibEnv
 prepareResultProofHistory = mapProofHistory (emptyHistory :)
 
 -- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -70,7 +57,7 @@ prepareResultProofHistory = mapProofHistory (emptyHistory :)
 -- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 {- prepares the all histories of the proof history of the given proofstatus -}
-prepareProofStatus :: ProofStatus -> ProofStatus
+prepareProofStatus :: LibEnv -> LibEnv
 prepareProofStatus = mapProofHistory prepareHistory
 
 {- prepares the given history for the rule application by appending
@@ -82,7 +69,7 @@ prepareHistory history@((_,[]):_) = history
 prepareHistory history = emptyHistory : history
 
 {- revises the history of the given proofstatus -}
-reviseProofStatus :: ProofStatus -> ProofStatus
+reviseProofStatus :: LibEnv -> LibEnv
 reviseProofStatus = mapProofHistory reviseHistory
 
 {- removes the contrary changes form the given history and adds the name
@@ -94,12 +81,12 @@ reviseHistory ((_,changes) : history) =
 
 {- updates the library environment and the proof history of the given
    proofstatus for the given library name-}
-updateProofStatus :: LIB_NAME -> DGraph -> [DGChange] -> ProofStatus
-                  -> ProofStatus
+updateProofStatus :: LIB_NAME -> DGraph -> [DGChange] -> LibEnv
+                  -> LibEnv
 updateProofStatus ln dgraph changes =
-  Map.update (\ c -> Just c 
+  Map.update (\ c -> Just c
                { devGraph = dgraph
-               , proofHistory = addChanges changes $ proofHistory c}) ln 
+               , proofHistory = addChanges changes $ proofHistory c}) ln
 
 {- adds the given changes to the given history -}
 addChanges :: [DGChange] -> [([DGRule],[DGChange])] -> [([DGRule],[DGChange])]
@@ -172,7 +159,7 @@ removeChange c1@(DeleteNode (n,_)) (c2:rest) =
    else c2:removeChange c1 rest
 removeChange c1 (c2:rest) = c2:removeChange c1 rest
 
-isIdentityEdge :: LEdge DGLinkLab -> ProofStatus -> DGraph -> Bool
+isIdentityEdge :: LEdge DGLinkLab -> LibEnv -> DGraph -> Bool
 isIdentityEdge (src,tgt,edgeLab) ps dgraph =
   if isDGRef nodeLab then
     let dg = lookupDGraph (dgn_libname nodeLab) ps in

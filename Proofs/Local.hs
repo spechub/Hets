@@ -42,13 +42,13 @@ import Data.Maybe
 {- a merge of the rules local subsumption, local decomposition I and
    local decomposition II -}
 -- applies this merge of rules to all unproven localThm edges if possible
-locDecomp :: LIB_NAME -> ProofStatus -> ProofStatus
-locDecomp ln proofStatus@libEnv =
-  let dgraph = lookupDGraph ln proofStatus
+locDecomp :: LIB_NAME -> LibEnv -> LibEnv
+locDecomp ln libEnv =
+  let dgraph = lookupDGraph ln libEnv
       localThmEdges = filter isUnprovenLocalThm (labEdges dgraph)
       (nextDGraph, nextHistoryElem) =
           locDecompAux libEnv ln dgraph ([],[]) localThmEdges
-  in mkResultProofStatus ln proofStatus nextDGraph nextHistoryElem
+  in mkResultProofStatus ln libEnv nextDGraph nextHistoryElem
 
 {- auxiliary function for locDecomp (above)
    actual implementation -}
@@ -68,7 +68,7 @@ locDecompAux libEnv ln dgraph (rules,changes)
   where
     morphism = dgl_morphism edgeLab
     allPaths = getAllLocGlobPathsBetween dgraph src tgt
-    th = computeLocalTheory libEnv (ln, src)
+    th = computeLocalTheory libEnv ln src
     pathsWithoutEdgeItself = filter (notElem ledge) allPaths
     filteredPaths = filterByTranslation th morphism pathsWithoutEdgeItself
     proofBasis = selectProofBasis dgraph ledge filteredPaths
@@ -111,13 +111,13 @@ isSameTranslation th morphism path =
 -- ----------------------------------------------
 
 -- applies local subsumption to all unproven local theorem edges
-localInference :: LIB_NAME -> ProofStatus -> ProofStatus
-localInference ln proofStatus@libEnv =
-  let dgraph = lookupDGraph ln proofStatus
+localInference :: LIB_NAME -> LibEnv -> LibEnv
+localInference ln libEnv =
+  let dgraph = lookupDGraph ln libEnv
       localThmEdges = filter isUnprovenLocalThm (labEdges dgraph)
       (nextDGraph, nextHistoryElem) =
           localInferenceAux libEnv ln dgraph ([],[]) localThmEdges
-  in mkResultProofStatus ln proofStatus nextDGraph nextHistoryElem
+  in mkResultProofStatus ln libEnv nextDGraph nextHistoryElem
 
 -- auxiliary method for localInference
 localInferenceAux :: LibEnv -> LIB_NAME -> DGraph -> ([DGRule],[DGChange])
@@ -127,7 +127,7 @@ localInferenceAux libEnv ln dgraph (rules, changes)
                       (ledge@(src,tgt,edgeLab) : list) =
   case maybeThSrc of
     Just thSrc ->
-      case (maybeResult (computeTheory libEnv (ln, tgt)),
+      case (maybeResult (computeTheory libEnv ln tgt),
                         maybeResult (translateG_theory morphism thSrc)) of
         (Just (G_theory lidTgt _ sensTgt), Just (G_theory lidSrc _ sensSrc)) ->
           case maybeResult (coerceThSens lidTgt lidSrc "" sensTgt) of
@@ -167,7 +167,7 @@ localInferenceAux libEnv ln dgraph (rules, changes)
     _ -> localInferenceAux libEnv ln dgraph (rules,changes) list
   where
     morphism = dgl_morphism edgeLab
-    maybeThSrc = computeLocalTheory libEnv (ln, src)
+    maybeThSrc = computeLocalTheory libEnv ln src
     auxGraph = delLEdge ledge dgraph
     (LocalThm _ conservativity conservStatus) = (dgl_type edgeLab)
     newLab = DGLink {dgl_morphism = morphism,
@@ -175,7 +175,7 @@ localInferenceAux libEnv ln dgraph (rules, changes)
                          (LocalThm (Proven (LocInference ledge) [])
                           conservativity conservStatus),
                        dgl_origin = DGProof}
-    newRules = (LocInference ledge):rules
+    newRules = LocInference ledge : rules
     oldNode = labNode' (safeContext "localInferenceAux" dgraph tgt)
     (_,oldContents) = oldNode
     replaceNode from to (src',tgt',labl) =

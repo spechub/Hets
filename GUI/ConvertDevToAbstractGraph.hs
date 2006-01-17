@@ -115,13 +115,11 @@ type DGraphToAGraphEdge = Map.Map (LIB_NAME,(Descr,Descr,String)) Descr
 type AGraphToDGraphNode = Map.Map Descr (LIB_NAME,Node)
 type AGraphToDGraphEdge = Map.Map Descr (LIB_NAME,(Descr,Descr,String))
 
-
 data InternalNames =
      InternalNames { showNames :: Bool,
                      updater :: [(String,(String -> String) -> IO ())] }
 
-
-type GInfo = (IORef ProofStatus,
+type GInfo = (IORef LibEnv,
               IORef Descr,
               IORef ConversionMaps,
               Descr,
@@ -424,7 +422,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts = do
   return (descr,graphInfo graphMem',convRef)
 
 -- | implementation of open menu, read in a proof status
-openProofStatus :: LIB_NAME -> FilePath -> (IORef ProofStatus)
+openProofStatus :: LIB_NAME -> FilePath -> (IORef LibEnv)
                 -> (IORef ConversionMaps)
                 -> HetcatsOpts -> IO(Descr, GraphInfo, ConversionMaps)
 openProofStatus libname file ioRefProofStatus convRef opts =
@@ -442,7 +440,6 @@ openProofStatus libname file ioRefProofStatus convRef opts =
             initGraphInfo <- initgraphs
             graphMem' <- (newIORef GraphMem{nextGraphId = 0,
                                       graphInfo = initGraphInfo})
-            let ln = fileToLibName opts file
             (gid, actGraphInfo, convMaps)
                           <- convertGraph graphMem' ln proofStatus opts
             writeIORef convRef convMaps
@@ -451,7 +448,7 @@ openProofStatus libname file ioRefProofStatus convRef opts =
 
 -- | apply a rule of the development graph calculus
 proofMenu :: GInfo
-             -> (ProofStatus -> IO (Res.Result ProofStatus))
+             -> (LibEnv -> IO (Res.Result LibEnv))
              -> IO ()
 proofMenu (ioRefProofStatus, event, convRef, gid, ln, actGraphInfo, _
           , hOpts, ioRefVisibleNodes) proofFun = do
@@ -478,7 +475,7 @@ proofMenu (ioRefProofStatus, event, convRef, gid, ln, actGraphInfo, _
       redisplay gid actGraphInfo
       return ()
 
-proofMenuSef :: GInfo -> (ProofStatus -> ProofStatus) -> IO ()
+proofMenuSef :: GInfo -> (LibEnv -> LibEnv) -> IO ()
 proofMenuSef gInfo proofFun = proofMenu gInfo (return . return . proofFun)
 
 -- -------------------------------------------------------------
@@ -794,15 +791,15 @@ getSignatureOfNode descr ab2dgNode dgraph =
 {- |
    fetches the theory from a node inside the IO Monad
    (added by KL based on code in getTheoryOfNode) -}
-lookupTheoryOfNode :: IORef ProofStatus -> Descr -> AGraphToDGraphNode ->
+lookupTheoryOfNode :: IORef LibEnv -> Descr -> AGraphToDGraphNode ->
                       DGraph -> IO (Res.Result (Node,G_theory))
 lookupTheoryOfNode proofStatusRef descr ab2dgNode _ = do
  libEnv <- readIORef proofStatusRef
  case (do
-  libNode@(_, node) <-
+  (ln, node) <-
         Res.maybeToResult nullRange ("Node "++show descr++" not found")
                        $ Map.lookup descr ab2dgNode
-  gth <- computeTheory libEnv libNode
+  gth <- computeTheory libEnv ln node
   return (node, gth)
     ) of
    r -> return r
@@ -855,10 +852,10 @@ translateTheoryOfNode (proofStatusRef,_,_,_,_,_,_,opts,_)
                       descr ab2dgNode dgraph = do
  libEnv <- readIORef proofStatusRef
  case (do
-   libNode@(_, node) <-
+   (ln, node) <-
         Res.maybeToResult nullRange ("Node "++show descr++" not found")
                        $ Map.lookup descr ab2dgNode
-   th <- computeTheory libEnv libNode
+   th <- computeTheory libEnv ln node
    return (node,th) ) of
   Res.Result [] (Just (node,th)) -> do
     Res.Result diags _ <-  Res.ioresToIO(
@@ -889,17 +886,17 @@ translateTheoryOfNode (proofStatusRef,_,_,_,_,_,_,opts,_)
 
 {- | outputs the sublogic of a node in a window;
 used by the node menu defined in initializeGraph-}
-getSublogicOfNode :: IORef ProofStatus -> Descr -> AGraphToDGraphNode
+getSublogicOfNode :: IORef LibEnv -> Descr -> AGraphToDGraphNode
                   -> DGraph -> IO()
 getSublogicOfNode proofStatusRef descr ab2dgNode dgraph = do
   libEnv <- readIORef proofStatusRef
   case Map.lookup descr ab2dgNode of
-    Just libNode@(_, node) ->
+    Just (ln, node) ->
       let dgnode = lab' (context dgraph node)
           name = case dgnode of
                        (DGNode nname _ _ _ _ _ _) -> nname
                        _ -> emptyNodeName
-       in case computeTheory libEnv libNode of
+       in case computeTheory libEnv ln node of
         Res.Result _ (Just th) ->
                 let logstr = show $ sublogicOfTh th
                     title =  "Sublogic of "++showName name
@@ -1013,8 +1010,8 @@ showProofStatusOfThm descr Nothing =
 checkconservativityOfEdge :: Descr -> GInfo -> Maybe (LEdge DGLinkLab) -> IO()
 checkconservativityOfEdge _ (ref,_,_,_,ln,_,_,_,_)
                            (Just (source,target,linklab)) = do
-  ps@libEnv <- readIORef ref
-  let dgraph = lookupDGraph ln ps
+  libEnv <- readIORef ref
+  let dgraph = lookupDGraph ln libEnv
       dgtar = lab' (context dgraph target)
   case dgtar of
     DGNode _ (G_theory lid _ sens) _ _ _ _ _ ->
@@ -1022,7 +1019,7 @@ checkconservativityOfEdge _ (ref,_,_,_,ln,_,_,_,_)
      GMorphism cid _ morphism2 -> do
       morphism2' <- coerceMorphism (targetLogic cid) lid
                    "checkconservativityOfEdge" morphism2
-      let th = case computeTheory libEnv (ln, source) of
+      let th = case computeTheory libEnv ln source of
                 Res.Result _ (Just th1) -> th1
                 _ -> error "checkconservativityOfEdge: computeTheory"
       G_theory lid1 sign1 sens1 <- return th
@@ -1067,7 +1064,6 @@ convertNodes convMaps descr grInfo dgraph libname
                                 grInfo
                                 (labNodes dgraph)
                                 libname
-
 
 {- | auxiliary function for convertNodes if the given list of nodes is
 emtpy, it returns the conversion maps unchanged otherwise it adds the

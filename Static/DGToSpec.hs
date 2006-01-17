@@ -25,7 +25,6 @@ import Common.Result
 import Common.Id
 import Common.Utils
 import Data.Graph.Inductive.Graph
-import qualified Common.Lib.Map as Map
 
 dgToSpec :: DGraph -> Node -> Result SPEC
 dgToSpec dg node = do
@@ -62,48 +61,22 @@ dgToSpec dg node = do
 
 {- compute the theory of a given node.
    If this node is a DGRef, the referenced node is looked up first. -}
-computeLocalTheory :: Monad m => LibEnv -> LibNode -> m G_theory
-computeLocalTheory libEnv (ln, node) =
+computeLocalTheory :: Monad m => LibEnv -> LIB_NAME -> Node -> m G_theory
+computeLocalTheory libEnv ln node =
   if isDGRef nodeLab
-    then case Map.lookup refLn libEnv of
-      Just _ -> computeLocalTheory libEnv (refLn,dgn_node nodeLab)
-      Nothing -> fail "computeLocalTheory"
+    then
+      computeLocalTheory libEnv refLn $ dgn_node nodeLab
     else return $ dgn_theory nodeLab
     where
-      dgraph = lookupDGraphInLibEnv ln libEnv
+      dgraph = lookupDGraph ln libEnv
       nodeLab = lab' $ safeContext "Static.DGToSpec.computeLocalTheory"
                 dgraph node
       refLn = dgn_libname nodeLab
 
-type LibNode = (LIB_NAME,Node)
-type LibLEdge = (LIB_NAME,LEdge DGLinkLab)
-
-getSourceLibNode :: LibLEdge -> LibNode
-getSourceLibNode (ln,edge) = (ln, getSourceNode edge)
-
-lookupDGraphInLibEnv :: LIB_NAME -> LibEnv -> DGraph
-lookupDGraphInLibEnv ln libEnv =
-    devGraph $ Map.findWithDefault (error "lookupDGraphInLibEnv") ln libEnv
 
 {- returns all edges that go directly in the given node,
    in case of a DGRef node also all ingoing edges of the referenced node
    are returned -}
-getAllIngoingEdges :: LibEnv -> LibNode -> [LibLEdge]
-getAllIngoingEdges libEnv (ln,node) =
-  case isDGRef nodelab of
-    False -> inEdgesInThisGraph
-    True -> inEdgesInThisGraph ++ inEdgesInRefGraph
-
-  where
-    dgraph = lookupDGraphInLibEnv ln libEnv
-    nodelab = lab' $ safeContext "Static.DGToSpec.getAllIngoingEdges"
-              dgraph node
-    inEdgesInThisGraph = [(ln,inEdge)| inEdge <- inn dgraph node]
-    refLn = dgn_libname nodelab
-    refGraph = lookupDGraphInLibEnv refLn libEnv
-    refNode = dgn_node nodelab
-    inEdgesInRefGraph = [(refLn,inEdge)| inEdge <- inn refGraph refNode]
-
 -- --------------------------------------
 -- methods to determine or get morphisms
 -- --------------------------------------
@@ -147,27 +120,23 @@ liftOr :: (a -> Bool) -> (a -> Bool) -> a -> Bool
 liftOr f g x = f x || g x
 
 -- | Compute the theory of a node (CASL Reference Manual, p. 294, Def. 4.9)
-computeTheory :: LibEnv -> LibNode -> Result G_theory
-computeTheory libEnv (ln, n) =
-  let dg = lookupDGraphInLibEnv ln libEnv
+computeTheory :: LibEnv -> LIB_NAME -> Node -> Result G_theory
+computeTheory libEnv ln n =
+  let dg = lookupDGraph ln libEnv
       nodeLab = lab' $ safeContext "Static.DGToSpec.computeTheory" dg n
       inEdges = filter (liftOr isLocalDef isGlobalDef) $ inn dg n
       localTh = dgn_theory nodeLab
-  in if isDGRef nodeLab then let refLn = dgn_libname nodeLab in
-      case Map.lookup refLn libEnv of
-      Just _ -> do
-          refTh <- computeTheory libEnv (refLn, dgn_node nodeLab)
+  in if isDGRef nodeLab then let refLn = dgn_libname nodeLab in do
+          refTh <- computeTheory libEnv refLn $ dgn_node nodeLab
           flatG_sentences localTh [theoremsToAxioms $ refTh]
-      Nothing -> fail $ "Statoc.DGToSpec.computeTheory: referenced library "
-                 ++ show refLn ++ " not found"
      else do
   ths <- mapM (computePathTheory libEnv ln) inEdges
   flatG_sentences localTh ths
 
 computePathTheory :: LibEnv -> LIB_NAME -> LEdge DGLinkLab -> Result G_theory
 computePathTheory libEnv ln e@(src, _, link) = do
-  th <- if isLocalDef e then computeLocalTheory libEnv (ln, src)
-          else computeTheory libEnv (ln, src)
+  th <- if isLocalDef e then computeLocalTheory libEnv ln src
+          else computeTheory libEnv ln src
   -- translate theory and turn all imported theorems into axioms
   translateG_theory (dgl_morphism link) $ theoremsToAxioms th
 

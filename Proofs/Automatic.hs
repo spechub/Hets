@@ -58,12 +58,12 @@ applyRule = error "Proofs.hs:applyRule"
 
 {- | automatically applies all rules to the library
    denoted by the library name of the given proofstatus-}
-automatic :: LIB_NAME -> ProofStatus -> ProofStatus
-automatic ln = fromJust . mergeHistories 0 2 . 
+automatic :: LIB_NAME -> LibEnv -> LibEnv
+automatic ln = fromJust . mergeHistories 0 2 .
             localInference ln . automaticRecursive ln 0
 
 {- | applies the rules recursively until no further changes can be made -}
-automaticRecursive :: LIB_NAME -> Int -> ProofStatus -> ProofStatus
+automaticRecursive :: LIB_NAME -> Int -> LibEnv -> LibEnv
 automaticRecursive ln cnt proofstatus =
   let auxProofstatus = automaticApplyRules ln proofstatus
       finalProofstatus = mergeHistories cnt noRules auxProofstatus
@@ -72,8 +72,8 @@ automaticRecursive ln cnt proofstatus =
     Just p -> automaticRecursive ln 1 p
 
 -- | list of rules to use
-rules :: [LIB_NAME -> ProofStatus -> ProofStatus]
-rules = 
+rules :: [LIB_NAME -> LibEnv -> LibEnv]
+rules =
     [automaticHideTheoremShift
     , locDecomp
     , globDecomp
@@ -87,12 +87,12 @@ noRules = length rules
 
 {- | sequentially applies all rules to the given proofstatus,
    ie to the library denoted by the library name of the proofstatus -}
-automaticApplyRules :: LIB_NAME -> ProofStatus -> ProofStatus
-automaticApplyRules ln = foldl (.) id $ map (\ f -> f ln) rules 
+automaticApplyRules :: LIB_NAME -> LibEnv -> LibEnv
+automaticApplyRules ln = foldl (.) id $ map (\ f -> f ln) rules
 
 {- | merges for every library the new history elements
    to one new history element -}
-mergeHistories :: Int -> Int -> ProofStatus -> Maybe ProofStatus
+mergeHistories :: Int -> Int -> LibEnv -> Maybe LibEnv
 mergeHistories cnt lenNewHistory proofstatus@libEnv =
   let (numChanges,newProofstatus) = mergeHistoriesAux cnt lenNewHistory
                                     (Map.keys libEnv) proofstatus
@@ -102,33 +102,32 @@ mergeHistories cnt lenNewHistory proofstatus@libEnv =
 
 {- | auxiliary method for mergeHistories:
    determined the library names and recursively applies mergeHistory -}
-mergeHistoriesAux :: Int -> Int -> [LIB_NAME] -> ProofStatus 
-                  -> (Int, ProofStatus)
+mergeHistoriesAux :: Int -> Int -> [LIB_NAME] -> LibEnv -> (Int, LibEnv)
 mergeHistoriesAux _ _ [] proofstatus = (0, proofstatus)
 mergeHistoriesAux cnt lenNewHistory (ln:list) proofstatus =
   let ps = mergeHistory cnt lenNewHistory ln proofstatus
   in case ps of
     Just newProofstatus -> let
-      (i,finalProofstatus) = mergeHistoriesAux cnt lenNewHistory list 
+      (i,finalProofstatus) = mergeHistoriesAux cnt lenNewHistory list
                              newProofstatus
       in (i+1,finalProofstatus)
     Nothing -> mergeHistoriesAux cnt lenNewHistory list proofstatus
 
 {- | merges the new history elements of a single library
    to one new history elemebt-}
-mergeHistory :: Int -> Int -> LIB_NAME -> ProofStatus -> Maybe ProofStatus
+mergeHistory :: Int -> Int -> LIB_NAME -> LibEnv -> Maybe LibEnv
 mergeHistory cnt lenNewHistory ln proofstatus =
   let history = lookupHistory ln proofstatus
 --      dgraph = lookupDGraph ln proofstatus
       (newHistoryPart, oldHistory) = splitAt (lenNewHistory+cnt) history
-  in if null (concatMap snd $ take lenNewHistory newHistoryPart) 
+  in if null (concatMap snd $ take lenNewHistory newHistoryPart)
         && cnt == 1 then
      Nothing
    else
     let (dgrules, changes) = concatHistoryElems (reverse newHistoryPart)
         newHistoryElem = (dgrules, removeContraryChanges changes)
         newHistory = newHistoryElem:oldHistory
-    in Just $ Map.update (\ c -> Just c { proofHistory = newHistory }) 
+    in Just $ Map.update (\ c -> Just c { proofHistory = newHistory })
        ln proofstatus
 
 {- | concats the given history elements to one history element-}

@@ -19,7 +19,6 @@ import Syntax.AS_Library
 import Syntax.Parse_AS_Library
 import Syntax.Print_AS_Library()
 import Static.DevGraph
-import Proofs.StatusUtils
 import Proofs.EdgeUtils
 
 import ATC.AS_Library()
@@ -116,7 +115,7 @@ fileToLibName opts efile =
                 else file
     in Lib_id $ Indirect_link nfile nullRange
 
-readPrfFile :: HetcatsOpts -> ProofStatus -> LIB_NAME -> IO ProofStatus
+readPrfFile :: HetcatsOpts -> LibEnv -> LIB_NAME -> IO LibEnv
 readPrfFile opts ps ln = do
     let fname = libNameToFile opts ln
         prfFile = fname ++ prfSuffix
@@ -129,8 +128,6 @@ readPrfFile opts ps ln = do
                                       $ concatMap snd h
                           , proofHistory = h } ) ln ps
 
-readPrfFiles :: HetcatsOpts -> LibEnv -> IO ProofStatus
+readPrfFiles :: HetcatsOpts -> LibEnv -> IO LibEnv
 readPrfFiles opts le = do
     foldM (readPrfFile opts) le $ Map.keys le
-
-

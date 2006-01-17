@@ -51,18 +51,18 @@ type ListSelector m a = [a] -> m (Maybe a)
 type PathTuple = ([LEdge DGLinkLab], [LEdge DGLinkLab])
 type ProofBaseSelector m = DGraph -> ListSelector m PathTuple
 
-interactiveHideTheoremShift :: LIB_NAME -> ProofStatus -> IO ProofStatus
-interactiveHideTheoremShift = 
+interactiveHideTheoremShift :: LIB_NAME -> LibEnv -> IO LibEnv
+interactiveHideTheoremShift =
     hideTheoremShift hideTheoremShift_selectProofBase
 
-automaticHideTheoremShift :: LIB_NAME -> ProofStatus -> ProofStatus
+automaticHideTheoremShift :: LIB_NAME -> LibEnv -> LibEnv
 automaticHideTheoremShift ln = runIdentity . hideTheoremShift
   (const $ \ l -> return $ case l of
                   [a] -> Just a   -- may be take the first one always?
                   _ -> Nothing) ln
 
 hideTheoremShift :: Monad m => ProofBaseSelector m -> LIB_NAME
-                 -> ProofStatus -> m ProofStatus
+                 -> LibEnv -> m LibEnv
 hideTheoremShift proofBaseSel ln proofStatus = do
   let dgraph = lookupDGraph ln proofStatus
       hidingThmEdges = filter isUnprovenHidingThm (labEdges dgraph)

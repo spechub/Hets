@@ -1,4 +1,4 @@
-{- | 
+{- |
 Module      :  $Header$
 Copyright   :  (c) Jorina F. Gerken, Till Mossakowski, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -15,7 +15,7 @@ global proofs in development graphs.
 todo for Jorina:
 
    - bei GlobDecomp hinzufügen:
-     zusätzlich alle Pfade K<--theta-- M --sigma-->N in den aktuellen 
+     zusätzlich alle Pfade K<--theta-- M --sigma-->N in den aktuellen
      Knoten N, die mit einem HidingDef anfangen, und danach nur GlobalDef
      theta ist der Signaturmorphismus des HidingDef's (geht "falsch rum")
      sigma ist die Komposition der Signaturmorphismen auf dem restl. Pfad
@@ -41,7 +41,7 @@ import Proofs.StatusUtils
 -- global decomposition
 -- ---------------------
 
-{- apply rule GlobDecomp to all global theorem links in the current DG 
+{- apply rule GlobDecomp to all global theorem links in the current DG
    current DG = DGm
    add to proof status the pair ([GlobDecomp e1,...,GlobDecomp en],DGm+1)
    where e1...en are the global theorem links in DGm
@@ -49,14 +49,14 @@ import Proofs.StatusUtils
 
 {- applies global decomposition to all unproven global theorem edges
    if possible -}
-globDecomp :: LIB_NAME -> ProofStatus -> ProofStatus
+globDecomp :: LIB_NAME -> LibEnv -> LibEnv
 globDecomp ln proofStatus =
   let dgraph = lookupDGraph ln proofStatus
       globalThmEdges = filter isUnprovenGlobalThm (labEdges dgraph)
       (newDGraph, newHistoryElem) = globDecompAux dgraph globalThmEdges ([],[])
---        (finalDGraph, finalHistoryElem) 
+--        (finalDGraph, finalHistoryElem)
 --            = removeSuperfluousInsertions newDGraph newHistoryElem
-  in mkResultProofStatus ln proofStatus newDGraph newHistoryElem 
+  in mkResultProofStatus ln proofStatus newDGraph newHistoryElem
         --finalDGraph finalHistoryElem
 
 {- removes all superfluous insertions from the list of changes as well as
@@ -67,7 +67,7 @@ removeSuperfluousInsertions :: DGraph -> ([DGRule],[DGChange])
 removeSuperfluousInsertions dgraph (rules,changes)
   = (newDGraph,(rules,newChanges))
   where
-    localThms = [edge | (InsertEdge edge) 
+    localThms = [edge | (InsertEdge edge)
                         <- filter isLocalThmInsertion changes]
     (newDGraph, localThmsToInsert)
         = removeSuperfluousEdges dgraph localThms
@@ -92,7 +92,7 @@ globDecompForOneEdge dgraph edge =
   globDecompForOneEdgeAux dgraph edge [] paths
   where
     source = getSourceNode edge
-    defEdgesToSource = [e | e <- labEdges dgraph, 
+    defEdgesToSource = [e | e <- labEdges dgraph,
                                  isDefEdge e && (getTargetNode e) == source]
     paths = [e:edge:[]|e <- defEdgesToSource]++[edge:[]]
     --getAllLocOrHideGlobDefPathsTo dgraph (getSourceNode edge) []
@@ -104,7 +104,7 @@ globDecompForOneEdgeAux :: DGraph -> LEdge DGLinkLab -> [DGChange] ->
                            [[LEdge DGLinkLab]] -> (DGraph,[DGChange])
 {- if the list of paths is empty from the beginning, nothing is done
    otherwise the unprovenThm edge is replaced by a proven one -}
-globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes [] = 
+globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes [] =
 --  if null changes then (dgraph, changes)
   -- else
      if isDuplicate provenEdge dgraph changes
@@ -118,7 +118,7 @@ globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes [] =
     provenEdge = (source,
                   target,
                   DGLink {dgl_morphism = dgl_morphism edgeLab,
-                          dgl_type = 
+                          dgl_type =
                             (GlobalThm (Proven (GlobDecomp edge) proofBasis)
                              conservativity conservStatus),
                           dgl_origin = DGProof}
@@ -140,11 +140,11 @@ globDecompForOneEdgeAux dgraph edge@(_,target,_) changes
     newEdge = if isHiding then hidingEdge
                else if isGlobalDef hd then globalEdge else localEdge
     node = getSourceNode hd
-    hidingEdge = 
+    hidingEdge =
        (node,
         target,
         DGLink {dgl_morphism = morphism,
-                dgl_type = HidingThm (dgl_morphism $ 
+                dgl_type = HidingThm (dgl_morphism $
                                       getLabelOfEdge hd) LeftOpen,
                 dgl_origin = DGProof})
     globalEdge = (node,
@@ -169,16 +169,16 @@ globDecompForOneEdgeAux dgraph edge@(_,target,_) changes
 -- -------------------
 
 -- applies global subsumption to all unproven global theorem edges if possible
-globSubsume :: LIB_NAME -> ProofStatus -> ProofStatus
-globSubsume ln proofStatus@libEnv =
-  let dgraph = lookupDGraph ln proofStatus
+globSubsume :: LIB_NAME -> LibEnv -> LibEnv
+globSubsume ln libEnv =
+  let dgraph = lookupDGraph ln libEnv
       globalThmEdges = filter isUnprovenGlobalThm (labEdges dgraph)
     -- the 'nub' is just a workaround, because some of the edges in the graph
     -- do not differ from each other in this representation - which causes
     -- problems on deletion
       (nextDGraph, nextHistoryElem) =
           globSubsumeAux libEnv dgraph ([],[]) (nub globalThmEdges)
-  in mkResultProofStatus ln proofStatus nextDGraph nextHistoryElem
+  in mkResultProofStatus ln libEnv nextDGraph nextHistoryElem
 
 {- auxiliary function for globSubsume (above)
    the actual implementation -}
@@ -189,12 +189,12 @@ globSubsumeAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
   if not (null proofBasis) || isIdentityEdge ledge libEnv dgraph
    then
      if isDuplicate newEdge dgraph changes then
-        globSubsumeAux libEnv (delLEdge ledge dgraph) 
+        globSubsumeAux libEnv (delLEdge ledge dgraph)
           (newRules,(DeleteEdge ledge):changes) list
       else
         globSubsumeAux libEnv (insEdge newEdge (delLEdge ledge dgraph))
           (newRules,(DeleteEdge ledge):((InsertEdge newEdge):changes)) list
-   else 
+   else
      globSubsumeAux libEnv dgraph (rules,changes) list
   where
     morphism = dgl_morphism edgeLab
@@ -223,7 +223,7 @@ localThmPathsBetweenNodes _ [] = []
 localThmPathsBetweenNodes dgraph ns = localThmPathsBetweenNodesAux dgraph ns ns
 
 {- auxiliary method for localThmPathsBetweenNodes -}
-localThmPathsBetweenNodesAux :: DGraph -> [Node] -> [Node] 
+localThmPathsBetweenNodesAux :: DGraph -> [Node] -> [Node]
                              -> [[LEdge DGLinkLab]]
 localThmPathsBetweenNodesAux _ [] _ = []
 localThmPathsBetweenNodesAux dgraph (node:srcNodes) tgtNodes =
@@ -244,7 +244,7 @@ combinePathsWithEdge [] _ = []
 combinePathsWithEdge (path:paths) edge@(src,_,_) =
   case path of
     [] -> combinePathsWithEdge paths edge
-    _ :_ -> if getTargetNode (last path) == src 
+    _ :_ -> if getTargetNode (last path) == src
               then (path ++ [edge]) : combinePathsWithEdge paths edge
                 else combinePathsWithEdge paths edge
 
@@ -254,7 +254,7 @@ combinePathsWithEdge (path:paths) edge@(src,_,_) =
    complete path
    if there is an empty path in the given list or the morphsim cannot be
    calculated, it is simply ignored -}
-calculateResultingEdges :: [[LEdge DGLinkLab]] 
+calculateResultingEdges :: [[LEdge DGLinkLab]]
                         -> [(LEdge DGLinkLab, (Node, Node, GMorphism))]
 calculateResultingEdges [] = []
 calculateResultingEdges (path : paths) =
@@ -266,7 +266,7 @@ calculateResultingEdges (path : paths) =
          Just morphism -> (lst, (src, tgt, morphism)) :
                           calculateResultingEdges paths
        where lst = last path
-             src = getSourceNode hd 
+             src = getSourceNode hd
              tgt = getTargetNode lst
 
 {- removes from the given list every edge for which there is already an
@@ -276,7 +276,7 @@ removeSuperfluousEdges :: DGraph -> [LEdge DGLinkLab]
                        -> (DGraph,[LEdge DGLinkLab])
 removeSuperfluousEdges dgraph [] = (dgraph,[])
 removeSuperfluousEdges dgraph es
-  = removeSuperfluousEdgesAux dgraph es 
+  = removeSuperfluousEdgesAux dgraph es
         (calculateResultingEdges combinedPaths) []
   where
     localThmPaths
@@ -284,19 +284,19 @@ removeSuperfluousEdges dgraph es
     combinedPaths = combinePathsWithEdges localThmPaths es
 
 {- auxiliary method for removeSuperfluousEdges -}
-removeSuperfluousEdgesAux :: DGraph -> [LEdge DGLinkLab] 
-                          -> [(LEdge DGLinkLab,(Node,Node,GMorphism))] 
+removeSuperfluousEdgesAux :: DGraph -> [LEdge DGLinkLab]
+                          -> [(LEdge DGLinkLab,(Node,Node,GMorphism))]
                           -> [LEdge DGLinkLab] -> (DGraph,[LEdge DGLinkLab])
 removeSuperfluousEdgesAux dgraph [] _ edgesToInsert= (dgraph,edgesToInsert)
-removeSuperfluousEdgesAux dgraph ((edge@(src,tgt,edgeLab)):list) 
+removeSuperfluousEdgesAux dgraph ((edge@(src,tgt,edgeLab)):list)
                           resultingEdges edgesToInsert =
   if not (null equivalentEdges)
      then removeSuperfluousEdgesAux
           newDGraph list newResultingEdges edgesToInsert
       else removeSuperfluousEdgesAux
            dgraph list resultingEdges (edge:edgesToInsert)
-  where 
-    equivalentEdges 
+  where
+    equivalentEdges
         = [e | e <- resultingEdges,(snd e) == (src,tgt,dgl_morphism edgeLab)]
     newResultingEdges = [e | e <- resultingEdges,(fst e) /= edge]
     newDGraph = delLEdge edge dgraph

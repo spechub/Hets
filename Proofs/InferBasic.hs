@@ -69,7 +69,7 @@ import GUI.ProofManagement
 getGoals :: LibEnv -> LIB_NAME -> LEdge DGLinkLab
          -> Result G_theory
 getGoals libEnv ln (n,_,edge) = do
-  th <- computeLocalTheory libEnv (ln, n)
+  th <- computeLocalTheory libEnv ln n
   translateG_theory (dgl_morphism edge) th
 
 getProvers :: [AnyComorphism] -> [(G_prover, AnyComorphism)]
@@ -113,15 +113,15 @@ proveTheory :: Logic lid sublogics
 proveTheory _ = prove
 
 -- | applies basic inference to a given node
-basicInferenceNode :: Bool -> LogicGraph -> (LIB_NAME,Node) -> LIB_NAME 
-                   -> ProofStatus -> IO (Result ProofStatus)
-basicInferenceNode checkCons lg (ln, node) libname  proofStatus@libEnv = do
-      let dGraph = lookupDGraph libname proofStatus
+basicInferenceNode :: Bool -> LogicGraph -> (LIB_NAME,Node) -> LIB_NAME
+                   -> LibEnv -> IO (Result LibEnv)
+basicInferenceNode checkCons lg (ln, node) libname libEnv = do
+      let dGraph = lookupDGraph libname libEnv
       ioresToIO $ do
         -- compute the theory of the node, and its name
         -- may contain proved theorems
         thForProof@(G_theory lid1 sign axs) <-
-             resToIORes $ computeTheory libEnv (ln, node)
+             resToIORes $ computeTheory libEnv ln node
         ctx <- resToIORes
                     $ maybeToMonad ("Could not find node "++show node)
                     $ fst $ match node dGraph
@@ -140,7 +140,7 @@ basicInferenceNode checkCons lg (ln, node) libname  proofStatus@libEnv = do
             (sign'', sens'') <- resToIORes $ map_theory cid bTh'
             let lidT = targetLogic cid
             incl <- resToIORes $ inclusion lidT (empty_signature lidT) sign''
-            let mor = TheoryMorphism 
+            let mor = TheoryMorphism
                       { t_source = empty_theory lidT,
                         t_target = Theory sign'' (toThSens sens''),
                         t_morphism = incl }
@@ -148,8 +148,8 @@ basicInferenceNode checkCons lg (ln, node) libname  proofStatus@libEnv = do
             ioToIORes $ cons_check lidT cc' thName mor
             let nextHistoryElem = ([LocalInference],[])
              -- ??? to be implemented
-                newProofStatus = mkResultProofStatus libname 
-                                 proofStatus dGraph nextHistoryElem
+                newProofStatus = mkResultProofStatus libname
+                                 libEnv dGraph nextHistoryElem
             return newProofStatus
           else do -- proving
             -- get known Provers
@@ -162,7 +162,6 @@ basicInferenceNode checkCons lg (ln, node) libname  proofStatus@libEnv = do
                                            thForProof
                                            kpMap'
                                            (getProvers cms)
-
             -- update the development graph
             -- todo: throw out the stuff about edges
             -- instead, mark proven things as proven in the node
@@ -178,7 +177,7 @@ basicInferenceNode checkCons lg (ln, node) libname  proofStatus@libEnv = do
                            --     (BasicProof lidT s))
                          -- FIXME: [Proof_status] not longer available
                 nextHistoryElem = (rules,changes)
-            return $ mkResultProofStatus libname proofStatus 
+            return $ mkResultProofStatus libname libEnv
                    nextDGraph nextHistoryElem
 
 proveKnownPMap :: (Logic lid sublogics1

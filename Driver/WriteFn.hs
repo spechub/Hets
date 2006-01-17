@@ -147,7 +147,7 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
       writeVerbFile opt f str
     mapM_ ( \ i -> case Map.lookup i gctx of
         Just (SpecEntry (_,_,_, NodeSig n _)) ->
-            case maybeResult $ computeTheory lenv (ln, n) of
+            case maybeResult $ computeTheory lenv ln n of
               Nothing -> putIfVerbose opt 0 $
                               "could not compute theory of spec " ++ show i
               Just gTh@(G_theory lid sign0 sens0) ->

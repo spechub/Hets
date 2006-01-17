@@ -509,7 +509,7 @@ extendDGraphRev dg (NodeSig n _) morph orig = case dom Grothendieck morph of
         dg'' = insEdge (node, n, linkContents) dg'
         in return (NodeSig node sourceSig, dg'')
 
--- import, formal parameters andd united signature of formal params
+-- import, formal parameters and united signature of formal params
 type GenericitySig = (MaybeNode, [NodeSig], MaybeNode)
 
 -- import, formal parameters, united signature of formal params, body
@@ -561,14 +561,24 @@ emptyGlobalContext :: GlobalContext
 emptyGlobalContext = GlobalContext
    { globalAnnos = emptyGlobalAnnos
    , globalEnv = Map.empty
-   , devGraph = Graph.empty 
+   , devGraph = Graph.empty
    , proofHistory = [emptyHistory]
    }
 
 type LibEnv = Map.Map LIB_NAME GlobalContext
 
+-- | an empty environment
 emptyLibEnv :: LibEnv
 emptyLibEnv = Map.empty
+
+-- | returns the global context that belongs to the given library name
+lookupGlobalContext :: LIB_NAME -> LibEnv -> GlobalContext
+lookupGlobalContext ln =
+    Map.findWithDefault (error "lookupGlobalContext") ln
+
+-- | returns the development graph that belongs to the given library name
+lookupDGraph :: LIB_NAME -> LibEnv -> DGraph
+lookupDGraph ln = devGraph . lookupGlobalContext ln
 
 instance PrettyPrint DGOrigin where
   printText0 _ origin = text $ case origin of
