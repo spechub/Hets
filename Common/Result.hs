@@ -1,9 +1,9 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) K. Lüttich, T. Mossakowski, C. Maeder, Uni Bremen 2002-2005
+Copyright   :  (c) K. Lüttich, T. Mossakowski, C. Maeder, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  till@tzi.de
+Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
@@ -77,55 +77,28 @@ instance Functor Result where
 
 instance Monad Result where
   return x = Result [] $ Just x
-  Result errs Nothing >>= _ = Result errs Nothing
-  Result errs1 (Just x) >>= f = Result (errs1++errs2) y
-     where Result errs2 y = f x
+  r@(Result e m) >>= f = case m of
+      Nothing -> Result e Nothing
+      Just x -> joinResult r $ f x
   fail s = fatal_error s nullRange
 
 appendDiags :: [Diagnosis] -> Result ()
 appendDiags ds = Result ds (Just ())
 
--- | join two results
+-- | join two results with a combining function
 joinResultWith :: (a -> b -> c) -> Result a -> Result b -> Result c
 joinResultWith f (Result d1 m1) (Result d2 m2) = Result (d1 ++ d2) $
     do r1 <- m1
        r2 <- m2
        return $ f r1 r2
 
+-- | join two results
+joinResult :: Result a -> Result b -> Result b
+joinResult = joinResultWith (\ _ b -> b)
+
 -- | join a list of results that are independently computed
 mapR :: (a -> Result a) -> [a] -> Result [a]
 mapR ana = foldr (joinResultWith (:)) (Result [] $ Just []) . map ana
-
--- | bind results within the 'IO' monad
-ioBind :: IO(Result a) -> (a -> IO(Result b)) -> IO(Result b)
-x `ioBind` f = do
-  res <- x
-  case res of
-    Result errs Nothing -> return (Result errs Nothing)
-    Result errs1 (Just v) -> do
-      Result errs2 y <- f v
-      return (Result (errs1++errs2) y)
-
-newtype IOResult a = IOResult (IO(Result a))
-
-instance Monad IOResult where
-  return x = IOResult (return (return x))
-  IOResult x >>= f = IOResult (x `ioBind` (\y -> let IOResult z = f y in z))
-
-instance Functor IOResult where
-  fmap f m = m >>= (return . f)
-
--- | unpack an IOResult
-ioresToIO :: IOResult a -> IO(Result a)
-ioresToIO (IOResult x) = x
-
--- | pack an IO value as IOResult
-ioToIORes :: IO a -> IOResult a
-ioToIORes = IOResult . (fmap return)
-
--- | pack a pure result as IOResult
-resToIORes :: Result a -> IOResult a
-resToIORes = IOResult . return
 
 -- | a failing result with a proper position
 fatal_error :: String -> Range -> Result a
@@ -247,4 +220,3 @@ instance PrettyPrint a => PrettyPrint (Result a) where
                                        Nothing -> empty
                                        Just x -> printText0 g x) :
                                            map (printText0 g) ds)
-

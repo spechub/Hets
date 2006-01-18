@@ -1,9 +1,9 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Jorina F. Gerken, Till Mossakowski, Klaus Lüttich, Uni Bremen 2002-2005
+Copyright   :  (c) J. Gerken, T. Mossakowski, K. Lüttich, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  jfgerken@tzi.de
+Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
@@ -42,12 +42,14 @@ import Proofs.GUIState
 
 import Common.Id
 import Common.Result
+import Common.ResultT
 import Common.PrettyPrint
 import Common.Utils
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.OrderedMap as OMap
 
+import Control.Monad.Trans
 import Data.Graph.Inductive.Graph
 import Data.List (find)
 
@@ -84,16 +86,16 @@ getConsCheckers cms =
         cm@(Comorphism cid) <- cms,
         p <- cons_checkers (targetLogic cid)]
 
-selectProver :: [(a,AnyComorphism)] -> IOResult (a,AnyComorphism)
+selectProver :: [(a,AnyComorphism)] -> ResultT IO (a,AnyComorphism)
 selectProver [p] = return p
-selectProver [] = resToIORes $ fatal_error "No prover available" nullRange
+selectProver [] = liftR $ fatal_error "No prover available" nullRange
 selectProver ps = do
-   sel <- ioToIORes $ listBox
+   sel <- lift $ listBox
                 "Choose a translation to a prover-supported logic"
                 $ map (show.snd) ps
    i <- case sel of
            Just j -> return j
-           _ -> resToIORes $ fail "Proofs.Proofs: selection"
+           _ -> liftR $ fail "Proofs.Proofs: selection"
    return $ ps !! i
 
 cons_check :: Logic lid sublogics
@@ -117,12 +119,12 @@ basicInferenceNode :: Bool -> LogicGraph -> (LIB_NAME,Node) -> LIB_NAME
                    -> LibEnv -> IO (Result LibEnv)
 basicInferenceNode checkCons lg (ln, node) libname libEnv = do
       let dGraph = lookupDGraph libname libEnv
-      ioresToIO $ do
+      runResultT $ do
         -- compute the theory of the node, and its name
         -- may contain proved theorems
         thForProof@(G_theory lid1 sign axs) <-
-             resToIORes $ computeTheory libEnv ln node
-        ctx <- resToIORes
+             liftR $ computeTheory libEnv ln node
+        ctx <- liftR
                     $ maybeToMonad ("Could not find node "++show node)
                     $ fst $ match node dGraph
         let nodeName = dgn_name $ lab' ctx
@@ -137,15 +139,15 @@ basicInferenceNode checkCons lg (ln, node) libname libEnv = do
             bTh' <- coerceBasicTheory lid1 (sourceLogic cid) ""
                    (sign, toNamedList axs)
             -- Borrowing: translate theory
-            (sign'', sens'') <- resToIORes $ map_theory cid bTh'
+            (sign'', sens'') <- liftR $ map_theory cid bTh'
             let lidT = targetLogic cid
-            incl <- resToIORes $ inclusion lidT (empty_signature lidT) sign''
+            incl <- liftR $ inclusion lidT (empty_signature lidT) sign''
             let mor = TheoryMorphism
                       { t_source = empty_theory lidT,
                         t_target = Theory sign'' (toThSens sens''),
                         t_morphism = incl }
             cc' <- coerceConsChecker lid4 lidT "" cc
-            ioToIORes $ cons_check lidT cc' thName mor
+            lift $ cons_check lidT cc' thName mor
             let nextHistoryElem = ([LocalInference],[])
              -- ??? to be implemented
                 newProofStatus = mkResultProofStatus libname
@@ -153,9 +155,9 @@ basicInferenceNode checkCons lg (ln, node) libname libEnv = do
             return newProofStatus
           else do -- proving
             -- get known Provers
-            kpMap <- resToIORes $ knownProvers
+            kpMap <- liftR $ knownProvers
             let kpMap' = shrinkKnownProvers sublogic kpMap
-            newTh <- IOResult $
+            newTh <- ResultT $
                    proofManagementGUI lid1 proveKnownPMap
                                            proveFineGrainedSelect
                                            thName
@@ -214,7 +216,7 @@ callProver :: (Logic lid sublogics1
 callProver st (G_prover lid4 p, Comorphism cid) =
     case theory st of
     G_theory lid1 sign sens ->
-        ioresToIO $ do
+        runResultT $ do
           -- coerce goalMap
         ths <- coerceThSens (logicId st) lid1
                             "Proofs.InferBasic.callProver: selected goals"
@@ -239,12 +241,12 @@ callProver st (G_prover lid4 p, Comorphism cid) =
                    (sign, toNamedList $
                           Map.union sel_sens $
                           Map.union sel_provenThs sel_goals)
-        (sign'',sens'') <- resToIORes $ map_theory cid bTh'
+        (sign'',sens'') <- liftR $ map_theory cid bTh'
         -- call the prover
         p' <- coerceProver lid4 lidT "" p
-        ps <- ioToIORes (proveTheory lidT p' (theoryName st)
+        ps <- lift (proveTheory lidT p' (theoryName st)
                            (Theory sign'' (toThSens sens'')))
-        -- ioToIORes $ putStrLn $ show ps
+        -- lift $ putStrLn $ show ps
         return $ st { goalMap =
                           markProved (Comorphism cid) lidT
                                      (filter (provedOrDisproved
@@ -271,9 +273,9 @@ proveFineGrainedSelect ::
                proof_tree1) =>
        ProofGUIState lid sentence -> IO (Result (ProofGUIState lid sentence))
 proveFineGrainedSelect st =
-    ioresToIO $ do
+    runResultT $ do
        pr <- selectProver $ comorphismsToProvers st
-       IOResult $ callProver st pr
+       ResultT $ callProver st pr
 
 -- | mark all newly proven goals with their proof tree
 markProved :: (Ord a, Logic lid sublogics

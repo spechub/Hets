@@ -17,6 +17,7 @@ import Driver.Version
 import Common.Utils
 import Common.Id
 import Common.Result
+import Common.ResultT
 import Common.Amalgamate
 
 import System.Directory
@@ -25,6 +26,7 @@ import System.Console.GetOpt
 import System.IO.Error
 import System.Exit
 
+import Control.Monad.Trans
 import Data.List
 
 -- | short version without date for ATC files
@@ -731,19 +733,19 @@ pathAndBase path base =
 -- | show diagnostic messages (see Result.hs), according to verbosity level
 showDiags :: HetcatsOpts -> [Diagnosis] -> IO()
 showDiags opts ds = do
-    ioresToIO $ showDiags1 opts $ resToIORes $ Result ds Nothing
+    runResultT $ showDiags1 opts $ liftR $ Result ds Nothing
     return ()
 
 -- | show diagnostic messages (see Result.hs), according to verbosity level
-showDiags1 :: HetcatsOpts -> IOResult a -> IOResult a
+showDiags1 :: HetcatsOpts -> ResultT IO a -> ResultT IO a
 showDiags1 opts res = do
   if outputToStdout opts
-     then do Result ds res' <- ioToIORes $ ioresToIO res
-             ioToIORes $ sequence $ map (putStrLn . show) -- take maxdiags
+     then do Result ds res' <- lift $ runResultT res
+             lift $ sequence $ map (putStrLn . show) -- take maxdiags
                        $ filter (relevantDiagKind . diagKind) ds
              case res' of
                Just res'' -> return res''
-               Nothing    -> resToIORes $ Result [] Nothing
+               Nothing    -> liftR $ Result [] Nothing
      else res
   where relevantDiagKind Error = True
         relevantDiagKind Warning = (verbose opts) >= 2
