@@ -1,13 +1,13 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Klaus Lüttich, Christian Maeder, Uni Bremen 2002-2004
+Copyright   :  (c) Klaus Lüttich, Christian Maeder, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-This is the Abstract Syntax tree of CASL Basic_specs, Symb_items and 
+This is the Abstract Syntax tree of CASL Basic_specs, Symb_items and
    Symb_map_items.
    Follows Sect. II:2.2 of the CASL Reference Manual.
 -}
@@ -15,7 +15,7 @@ This is the Abstract Syntax tree of CASL Basic_specs, Symb_items and
 module CASL.AS_Basic_CASL where
 
 import Common.Id
-import Common.AS_Annotation 
+import Common.AS_Annotation
 import Data.List (nub)
 
 -- DrIFT command
@@ -29,8 +29,8 @@ data BASIC_ITEMS b s f = Sig_items (SIG_ITEMS s f)
                    -- but preceding the keyword is now an Annotation allowed
                  | Free_datatype [Annoted DATATYPE_DECL] Range
                    -- pos: free, type, semi colons
-                 | Sort_gen [Annoted (SIG_ITEMS s f)] Range 
-                   -- pos: generated, opt. braces 
+                 | Sort_gen [Annoted (SIG_ITEMS s f)] Range
+                   -- pos: generated, opt. braces
                  | Var_items [VAR_DECL] Range
                    -- pos: var, semi colons
                  | Local_var_axioms [VAR_DECL] [Annoted (FORMULA f)] Range
@@ -40,7 +40,7 @@ data BASIC_ITEMS b s f = Sig_items (SIG_ITEMS s f)
                  | Ext_BASIC_ITEMS b
                    deriving Show
 
-data SIG_ITEMS s f = Sort_items [Annoted (SORT_ITEM f)] Range 
+data SIG_ITEMS s f = Sort_items [Annoted (SORT_ITEM f)] Range
                  -- pos: sort, semi colons
                | Op_items [Annoted (OP_ITEM f)] Range
                  -- pos: op, semi colons
@@ -57,7 +57,7 @@ data SORT_ITEM f = Sort_decl [SORT] Range
                  -- pos: commas, <
                | Subsort_defn SORT VAR SORT (Annoted (FORMULA f)) Range
                  -- pos: "=", "{", ":", ".", "}"
-                 -- the left anno list stored in Annoted Formula is 
+                 -- the left anno list stored in Annoted Formula is
                  -- parsed after the equal sign
                | Iso_decl [SORT] Range
                  -- pos: "="s
@@ -107,7 +107,7 @@ data PRED_HEAD = Pred_head [ARG_DECL] Range
                  -- pos: "(",semi colons , ")"
                  deriving Show
 
-data DATATYPE_DECL = Datatype_decl SORT [Annoted ALTERNATIVE] Range 
+data DATATYPE_DECL = Datatype_decl SORT [Annoted ALTERNATIVE] Range
                      -- pos: "::=", "|"s
                      deriving Show
 
@@ -119,14 +119,14 @@ data ALTERNATIVE = Alt_construct FunKind OP_NAME [COMPONENTS] Range
 
 data COMPONENTS = Cons_select FunKind [OP_NAME] SORT Range
                   -- pos: commas, colon or ":?"
-                | Sort SORT               
+                | Sort SORT
                   deriving Show
 
 data VAR_DECL = Var_decl [VAR] SORT Range
                 -- pos: commas, colon
                 deriving (Show, Eq, Ord)
 
-{- Position definition for FORMULA: 
+{- Position definition for FORMULA:
    Information on parens are also encoded in Range.  If there
    are more Pos than necessary there is a pair of Pos enclosing the
    other Pos informations which encode the brackets of every kind
@@ -139,13 +139,13 @@ data FORMULA f = Quantification QUANTIFIER [VAR_DECL] (FORMULA f) Range
              | Disjunction [FORMULA f] Range
                -- pos: "\/"s
              | Implication (FORMULA f) (FORMULA f) Bool Range
-               -- pos: "=>" or "if" (True -> "=>")         
+               -- pos: "=>" or "if" (True -> "=>")
              | Equivalence (FORMULA f) (FORMULA f) Range
                -- pos: "<=>"
              | Negation (FORMULA f) Range
                -- pos: not
              | True_atom Range
-               -- pos: true         
+               -- pos: true
              | False_atom Range
                -- pos: false
              | Predication PRED_SYMB [TERM f] Range
@@ -190,7 +190,7 @@ integers. The origSort in a Constraint is the original sort
 corresponding to the index.  Note that this representation of sort
 generation constraints is efficiently tailored towards both the use in
 the proof calculus (Chap. IV:2, p. 282 of the CASL Reference Manual)
-and the coding into second order logic (p. 429 of Theoret. Comp. Sci. 286). 
+and the coding into second order logic (p. 429 of Theoret. Comp. Sci. 286).
 -}
 
 data Constraint = Constraint { newSort :: SORT,
@@ -198,38 +198,38 @@ data Constraint = Constraint { newSort :: SORT,
                                origSort :: SORT }
                   deriving (Show, Eq, Ord)
 
--- | from a Sort_gex_ax, recover:  
+-- | from a Sort_gex_ax, recover:
 -- | a traditional sort generation constraint plus a sort mapping
-recover_Sort_gen_ax :: [Constraint] -> 
+recover_Sort_gen_ax :: [Constraint] ->
                         ([SORT],[OP_SYMB],[(SORT,SORT)])
-recover_Sort_gen_ax constrs = 
+recover_Sort_gen_ax constrs =
   if length (nub sorts) == length sorts
      -- no duplicate sorts, i.e. injective sort map? Then we can ignore indices
      then (sorts,map fst (concat (map opSymbs constrs)),[])
      -- otherwise, we have to introduce new sorts for the indices
      -- and afterwards rename them into the sorts they denote
      else (map indSort1 indices,map indOp indOps1,map sortMap indSorts)
-  where 
+  where
   sorts = map newSort constrs
   indices = [0..length sorts-1]
   indSorts = zip indices sorts
   indSort (i,s) = if i<0 then s else indSort1 i
   indSort1 i = origSort $ head (drop i constrs)
-  sortMap (i,s) = (indSort1 i,s) 
+  sortMap (i,s) = (indSort1 i,s)
   indOps = zip indices (map opSymbs constrs)
   indOps1 = concat (map (\(i,ops) -> map ((,) i) ops) indOps)
   indOp (res,(Qual_op_name on (Op_type k args1 res1 pos1) pos,args)) =
-     Qual_op_name on 
-         (Op_type k (map indSort (zip args args1)) 
+     Qual_op_name on
+         (Op_type k (map indSort (zip args args1))
                         (indSort (res,res1)) pos1) pos
-  indOp _ = error 
+  indOp _ = error
       "CASL/AS_Basic_CASL: Internal error: Unqualified OP_SYMB in Sort_gen_ax"
 
--- | from a free Sort_gex_ax, recover:  
+-- | from a free Sort_gex_ax, recover:
 -- | the sorts, each paired with the constructors
 -- | fails (i.e. delivers Nothing) if the sort map is not injective
 recover_free_Sort_gen_ax :: [Constraint] -> Maybe [(SORT,[OP_SYMB])]
-recover_free_Sort_gen_ax constrs = 
+recover_free_Sort_gen_ax constrs =
   if length (nub sorts) == length sorts
      -- no duplicate sorts, i.e. injective sort map?
      then Just $ map getOpProfile constrs
@@ -241,7 +241,7 @@ recover_free_Sort_gen_ax constrs =
 data QUANTIFIER = Universal | Existential | Unique_existential
                   deriving (Show, Eq, Ord)
 
-data PRED_SYMB = Pred_name PRED_NAME 
+data PRED_SYMB = Pred_name PRED_NAME
                | Qual_pred_name PRED_NAME PRED_TYPE Range
                  -- pos: "(", pred, colon, ")"
                  deriving (Show, Eq, Ord)
@@ -266,13 +266,13 @@ data TERM f = Simple_id SIMPLE_ID    -- "Var" might be a better constructor
           | Mixfix_sorted_term SORT Range
             -- pos: colon
           | Mixfix_cast SORT Range
-            -- pos: "as" 
+            -- pos: "as"
           | Mixfix_parenthesized [TERM f] Range  -- non-emtpy term list
-            -- pos: "(", commas, ")" 
+            -- pos: "(", commas, ")"
           | Mixfix_bracketed [TERM f] Range
-            -- pos: "[", commas, "]" 
-          | Mixfix_braced [TERM f] Range         -- also for list-notation 
-            -- pos: "{", "}" 
+            -- pos: "[", commas, "]"
+          | Mixfix_braced [TERM f] Range         -- also for list-notation
+            -- pos: "{", "}"
             deriving (Show, Eq, Ord)
 
 data OP_SYMB = Op_name OP_NAME
@@ -288,35 +288,27 @@ type SORT = Id
 
 type VAR = SIMPLE_ID
 
------ 
-data SYMB_ITEMS = Symb_items SYMB_KIND [SYMB] Range 
+-----
+data SYMB_ITEMS = Symb_items SYMB_KIND [SYMB] Range
                   -- pos: SYMB_KIND, commas
-                  deriving (Show, Eq)
-
-data SYMB_ITEMS_LIST = Symb_items_list [SYMB_ITEMS] Range 
-                  -- pos: commas
                   deriving (Show, Eq)
 
 data SYMB_MAP_ITEMS = Symb_map_items SYMB_KIND [SYMB_OR_MAP] Range
                       -- pos: SYMB_KIND, commas
                       deriving (Show, Eq)
 
-data SYMB_MAP_ITEMS_LIST = Symb_map_items_list [SYMB_MAP_ITEMS] Range 
-                  -- pos: commas
-                  deriving (Show, Eq)
-
-data SYMB_KIND = Implicit | Sorts_kind 
+data SYMB_KIND = Implicit | Sorts_kind
                | Ops_kind | Preds_kind
                  deriving (Show, Eq)
 
 data SYMB = Symb_id Id
-          | Qual_id Id TYPE Range 
+          | Qual_id Id TYPE Range
             -- pos: colon
             deriving (Show, Eq)
 
 data TYPE = O_type OP_TYPE
           | P_type PRED_TYPE
-          | A_type SORT -- ambiguous pred or (constant total) op 
+          | A_type SORT -- ambiguous pred or (constant total) op
             deriving (Show, Eq)
 
 data SYMB_OR_MAP = Symb SYMB

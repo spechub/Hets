@@ -1,7 +1,6 @@
 {- |
-
 Module      :  $Header$
-Copyright   :  (c) Pascal Schmidt, Christian Maeder, and Uni Bremen 2002-2003
+Copyright   :  (c) Pascal Schmidt, C. Maeder, and Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -12,10 +11,9 @@ This module provides the sublogic functions (as required by Logic.hs)
   for CASL. The functions allow to compute the minimal sublogics needed
   by a given element, to check whether an item is part of a given
   sublogic, and to project an element into a given sublogic.
-
-  - implement 'pr_sign'
-
 -}
+
+-- to do: implement pr_sign
 
 module CASL.Sublogic ( -- * datatypes
                    CASL_Sublogics(..),
@@ -47,10 +45,10 @@ module CASL.Sublogic ( -- * datatypes
                    need_ghorn,
                    need_fol,
                    -- * functions for Logic instance
-                   
+
                    -- * sublogic to string conversion
                    sublogics_name,
-                   
+
                    -- * list of all sublogics
                    sublogics_all,
 
@@ -58,9 +56,7 @@ module CASL.Sublogic ( -- * datatypes
                    in_basic_spec,
                    in_sentence,
                    in_symb_items,
-                   in_symb_items_list,
                    in_symb_map_items,
-                   in_symb_map_items_list,
                    in_sign,
                    in_morphism,
                    in_symbol,
@@ -73,7 +69,7 @@ module CASL.Sublogic ( -- * datatypes
                    sl_sign,
                    sl_morphism,
                    sl_symbol,
-                   
+
                    -- * projects an element into a given sublogic
                    pr_basic_spec,
                    pr_symb_items,
@@ -110,23 +106,23 @@ data SubsortingFeatures = NoSub
                         | Sub
                           deriving (Show,Ord,Eq)
 
-data SortGenerationFeatures = 
+data SortGenerationFeatures =
           NoSortGen
-        | SortGen { emptyMapping :: Bool 
+        | SortGen { emptyMapping :: Bool
                     -- ^ Mapping of indexed sorts is empty
                   , onlyInjConstrs :: Bool
                     -- ^ only injective constructors
                   } deriving (Show,Eq)
 
 instance Ord SortGenerationFeatures where
-  {-   NoSortGen False False > NoSortGen True False 
+  {-   NoSortGen False False > NoSortGen True False
      > NoSortGen False True  > NoSortGen True True -}
-    compare x y = 
+    compare x y =
         case x of
         NoSortGen -> case y of
                      NoSortGen -> EQ
                      _         -> LT
-        SortGen em_x ojc_x -> 
+        SortGen em_x ojc_x ->
             case y of
             NoSortGen -> GT
             SortGen em_y ojc_y ->
@@ -155,7 +151,7 @@ instance Ord SortGenerationFeatures where
 data CASL_Sublogics = CASL_SL
                       { sub_features :: SubsortingFeatures, -- ^ subsorting
                         has_part::Bool,  -- ^ partiality
-                        cons_features :: SortGenerationFeatures,  
+                        cons_features :: SortGenerationFeatures,
                             -- ^ sort generation constraints
                         has_eq::Bool,    -- ^ equality
                         has_pred::Bool,  -- ^ predicates
@@ -244,39 +240,14 @@ need_fol = bottom { which_logic = FOL }
 -- Functions to generate a list of all sublogics for CASL
 -----------------------------------------------------------------------------
 
--- conversion from Int in [0..127] range to CASL_Sublogics
-{-
-boolFromInt :: Int -> Bool
-boolFromInt 0 = False
-boolFromInt _ = True
-
-formulasFromInt :: Int -> CASL_Formulas
-formulasFromInt 0 = Atomic
-formulasFromInt 1 = Horn
-formulasFromInt 2 = GHorn
-formulasFromInt _ = FOL
-
-sublogicFromInt :: Int -> CASL_Sublogics
-sublogicFromInt i =
-  let
-    divmod = (\x y -> (div x y,mod x y))
-    (f,fr) = divmod i  32
-    (e,er) = divmod fr 16
-    (d,dr) = divmod er 8
-    (c,cr) = divmod dr 4
-    (b,a)  = divmod cr 2
-  in
-    CASL_SL (boolFromInt a) (boolFromInt b) (boolFromInt c) (boolFromInt d)
-            (boolFromInt e) (formulasFromInt f)
--}
 -- all elements
 -- create a list of all CASL sublogics by generating all possible
 -- feature combinations and then filtering illegal ones out
 --
 sublogics_all :: [CASL_Sublogics]
-sublogics_all = 
-    filter (not . adjust_check) 
-           [ CASL_SL s_f pa_b c_f e_b pr_b fo 
+sublogics_all =
+    filter (not . adjust_check)
+           [ CASL_SL s_f pa_b c_f e_b pr_b fo
                        | s_f <- [NoSub,LocFilSub,Sub ],
                          pa_b <- [True,False],
                          pr_b <- [True,False],
@@ -299,14 +270,14 @@ formulas_name True  Atomic = "Atom"
 formulas_name False Atomic = "Eq"
 
 sublogics_name :: CASL_Sublogics -> [String]
-sublogics_name x = [   ( case sub_features x of 
+sublogics_name x = [   ( case sub_features x of
                          NoSub     -> ""
                          LocFilSub -> "Sul"
                          Sub       -> "Sub")
                     ++ ( if (has_part x) then "P" else "")
-                    ++ ( if (has_cons x) 
+                    ++ ( if (has_cons x)
                          then (  (if onlyInjConstrs (cons_features x)
-                                  then "s" else "") 
+                                  then "s" else "")
                                ++(if emptyMapping (cons_features x)
                                   then "e" else "")
                                ++"C")
@@ -336,7 +307,7 @@ sublogics_min a b = CASL_SL (min (sub_features a) (sub_features b))
 
 instance Ord CASL_Sublogics where
   x <= y = sublogics_min x y == x
-  
+
 ------------------------------------------------------------------------------
 -- Helper functions
 ------------------------------------------------------------------------------
@@ -349,7 +320,7 @@ comp_list l = foldl sublogics_max bottom l
 -- adjust illegal combination "subsorting with atomic logic"
 --
 adjust_logic :: CASL_Sublogics -> CASL_Sublogics
-adjust_logic x = if (adjust_check x) then 
+adjust_logic x = if (adjust_check x) then
                    x { which_logic = Horn }
                  else
                    x
@@ -386,7 +357,7 @@ mapMaybePos (p1:pl) f (h:t) = let
 --
 mapPos :: Int -> Range -> (a -> Maybe b) -> [a] -> ([b],Range)
 mapPos c (Range p) f l = let
-                   (res,pos) = (\(x,y) -> (catMaybes x,y)) 
+                   (res,pos) = (\(x,y) -> (catMaybes x,y))
                                $ unzip $ mapMaybePos (drop c p) f l
                  in
                    (res,Range ((take c p)++pos))
@@ -407,19 +378,19 @@ mapPos c (Range p) f l = let
 sl_form_level :: (Bool,Bool) -> FORMULA f -> CASL_Sublogics
 sl_form_level (isCompound,leftImp) phi =
  case phi of
-   Quantification q _ f _ -> 
-    if is_atomic_q q 
-    then sl_form_level (isCompound,leftImp) f 
+   Quantification q _ f _ ->
+    if is_atomic_q q
+    then sl_form_level (isCompound,leftImp) f
     else need_fol
    Conjunction l _ -> comp_list $ map (sl_form_level (True,leftImp)) l
    Disjunction _ _ -> need_fol
-   Implication l1 l2 _ _ -> if leftImp then need_fol else 
+   Implication l1 l2 _ _ -> if leftImp then need_fol else
                comp_list [sl_form_level (True,True) l1,
                    sl_form_level (True,False) l2,
-                   if isCompound 
-                   then need_ghorn 
+                   if isCompound
+                   then need_ghorn
                    else need_horn]
-   Equivalence l1 l2 _ -> 
+   Equivalence l1 l2 _ ->
     if leftImp
     then need_fol
     else comp_list [sl_form_level (True,True) l1,
@@ -574,16 +545,16 @@ sl_form (Existl_equation t u _) = comp_list [need_eq,sl_term t,sl_term u]
 sl_form (Strong_equation t u _) = comp_list [need_eq,sl_term t,sl_term u]
 -- need_sub is tested elsewhere (need_pred not required)
 sl_form (Membership t _ _) = sl_term t
-sl_form (Sort_gen_ax constraints _) = 
+sl_form (Sort_gen_ax constraints _) =
     case recover_Sort_gen_ax constraints of
-    (_,ops,mapping) 
+    (_,ops,mapping)
         | null mapping && null otherConstrs       -> need_se_cons
         | null mapping && not (null otherConstrs) -> need_e_cons
         | not (null mapping) && null otherConstrs -> need_s_cons
         | otherwise                               -> need_cons
-       where otherConstrs = 
+       where otherConstrs =
                  filter (\ o -> case o of
-                                Op_name _ -> 
+                                Op_name _ ->
                                     error "CASL.Sublogic.sl_form: Wrong \
                                           \OP_SYMB constructor."
                                 Qual_op_name n _ _ -> n /= injName) ops
@@ -593,9 +564,6 @@ sl_form _ = error "CASL.Sublogic.sl_form"
 sl_symb_items :: SYMB_ITEMS -> CASL_Sublogics
 sl_symb_items (Symb_items k l _) = sublogics_max (sl_symb_kind k)
                                    (comp_list $ map sl_symb l)
-
-sl_symb_items_list :: SYMB_ITEMS_LIST -> CASL_Sublogics
-sl_symb_items_list (Symb_items_list l _) = comp_list $ map sl_symb_items l
 
 sl_symb_kind :: SYMB_KIND -> CASL_Sublogics
 sl_symb_kind (Preds_kind) = need_pred
@@ -614,10 +582,6 @@ sl_symb_map_items :: SYMB_MAP_ITEMS -> CASL_Sublogics
 sl_symb_map_items (Symb_map_items k l _) = sublogics_max (sl_symb_kind k)
                                           (comp_list $ map sl_symb_or_map l)
 
-sl_symb_map_items_list :: SYMB_MAP_ITEMS_LIST -> CASL_Sublogics
-sl_symb_map_items_list (Symb_map_items_list l _) = 
-    comp_list $ map sl_symb_map_items l
-
 sl_symb_or_map :: SYMB_OR_MAP -> CASL_Sublogics
 sl_symb_or_map (Symb s) = sl_symb s
 sl_symb_or_map (Symb_map s t _) = sublogics_max (sl_symb s) (sl_symb t)
@@ -628,14 +592,14 @@ sl_symb_or_map (Symb_map s t _) = sublogics_max (sl_symb s) (sl_symb t)
 --
 
 sl_sign :: Sign f e -> CASL_Sublogics
-sl_sign s = 
-    let subs = if Rel.null (sortRel s) 
-               then bottom 
-               else if Rel.locallyFiltered (sortRel s) 
-                    then need_sul 
+sl_sign s =
+    let subs = if Rel.null (sortRel s)
+               then bottom
+               else if Rel.locallyFiltered (sortRel s)
+                    then need_sul
                     else need_sub
         preds = if Map.null $ predMap s then bottom else need_pred
-        partial = if any ( \ t -> opKind t == Partial) $ Set.toList 
+        partial = if any ( \ t -> opKind t == Partial) $ Set.toList
                   $ Set.unions $ Map.elems $ opMap s then need_part else bottom
         in sublogics_max subs (sublogics_max preds partial)
 
@@ -697,12 +661,6 @@ in_symb_items l x = in_x l x sl_symb_items
 in_symb_map_items :: CASL_Sublogics -> SYMB_MAP_ITEMS -> Bool
 in_symb_map_items l x = in_x l x sl_symb_map_items
 
-in_symb_items_list :: CASL_Sublogics -> SYMB_ITEMS_LIST -> Bool
-in_symb_items_list l x = in_x l x sl_symb_items_list
-
-in_symb_map_items_list :: CASL_Sublogics -> SYMB_MAP_ITEMS_LIST -> Bool
-in_symb_map_items_list l x = in_x l x sl_symb_map_items_list
-
 in_sign :: CASL_Sublogics -> Sign f e -> Bool
 in_sign l x = in_x l x sl_sign
 
@@ -760,9 +718,9 @@ pr_formula l f = pr_check l sl_formula f
 --
 pr_make_sorts :: [SORT] -> Annoted (BASIC_ITEMS b s f)
 pr_make_sorts s =
-  Annoted (Sig_items (Sort_items 
-             [Annoted (Sort_decl s nullRange) nullRange [][]] 
-             nullRange)) 
+  Annoted (Sig_items (Sort_items
+             [Annoted (Sort_decl s nullRange) nullRange [][]]
+             nullRange))
           nullRange [][]
 
 -- when processing BASIC_SPEC, add a Sort_decl in front for sorts
@@ -786,7 +744,7 @@ pr_basic_spec l (Basic_spec s) =
 -- returns a non-empty list of [SORT] if datatypes had to be removed
 -- completely
 --
-pr_basic_items :: CASL_Sublogics -> BASIC_ITEMS b s f 
+pr_basic_items :: CASL_Sublogics -> BASIC_ITEMS b s f
                    -> (Maybe (BASIC_ITEMS b s f), [SORT])
 pr_basic_items l (Sig_items s) =
                let
@@ -838,7 +796,7 @@ pr_basic_items l (Axiom_items f p) =
 pr_basic_items _ _ = error "CASL.Sublogic.pr_basic_items"
 
 pr_datatype_decl :: CASL_Sublogics -> DATATYPE_DECL -> Maybe DATATYPE_DECL
-pr_datatype_decl l (Datatype_decl s a p) = 
+pr_datatype_decl l (Datatype_decl s a p) =
                  let
                    (res,pos) = mapPos 1 p (pr_annoted l pr_alternative) a
                  in
@@ -891,14 +849,14 @@ pr_lost_dt sl ((Datatype_decl s l p):t) =
                          s:(pr_lost_dt sl t)
                        else
                          pr_lost_dt sl t
-                         
+
 pr_symbol :: CASL_Sublogics -> Symbol -> Maybe Symbol
 pr_symbol l s = pr_check l sl_symbol s
 
 -- returns a non-empty list of [SORT] if datatypes had to be removed
 -- completely
 --
-pr_sig_items :: CASL_Sublogics -> SIG_ITEMS s f 
+pr_sig_items :: CASL_Sublogics -> SIG_ITEMS s f
                 -> (Maybe (SIG_ITEMS s f),[SORT])
 pr_sig_items l (Sort_items s p) =
              let
@@ -939,7 +897,7 @@ pr_op_item l i = pr_check l sl_op_item i
 -- sort declarations if the sublogic disallows subsorting to
 -- avoid loosing sorts in the projection
 --
-pr_sort_item :: 
+pr_sort_item ::
                 CASL_Sublogics -> SORT_ITEM f -> Maybe (SORT_ITEM f)
 pr_sort_item _ (Sort_decl s p) = Just (Sort_decl s p)
 pr_sort_item l (Subsort_decl sl s p) =
@@ -1015,7 +973,7 @@ pr_symb l (Qual_id i t p) =
 
 pr_sign :: CASL_Sublogics -> Sign f e -> Sign f e
 pr_sign _sl s = s -- do something here
-    
+
 pr_morphism :: CASL_Sublogics -> Morphism f e m -> Morphism f e m
 pr_morphism l1 m =
   let
@@ -1037,7 +995,7 @@ pr_fun_map l m = Map.filterWithKey (pr_fun_map_entry l) m
 pr_fun_map_entry :: CASL_Sublogics -> (Id, OpType) -> (Id, FunKind) -> Bool
 pr_fun_map_entry l (_,t) (_,b) =
                  if (has_part l) then True
-                 else ((in_x l t sl_optype) && b == Partial) 
+                 else ((in_x l t sl_optype) && b == Partial)
 
 -- compute a morphism that consists of the original signature
 -- and the projected signature
