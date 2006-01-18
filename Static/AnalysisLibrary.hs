@@ -241,18 +241,18 @@ ana_LIB_ITEM lgraph _defl opts libenv gctx l
      liftR (ana_GENERICITY lgraph gctx l opts
                  (extName "P" (makeName spn)) gen)
   (sp',body,dg'') <-
-     liftR (ana_SPEC lgraph gctx { devGraph = dg' }
+     liftR (ana_SPEC lgraph dg'
                           allparams (makeName spn) opts (item asp))
   let libItem' = Spec_defn spn gen' (replaceAnnoted sp' asp) pos
       genv = globalEnv gctx
   if Map.member spn genv
-   then liftR (plain_error (libItem',gctx,l,libenv)
+   then liftR (plain_error (libItem', dg'', l, libenv)
                                 ("Name "++ showPretty spn " already defined")
                                 pos)
    else return (libItem',
-                gctx { globalEnv = Map.insert spn (SpecEntry
-                            (imp, params, getMaybeSig allparams, body)) genv
-                     , devGraph = dg'' }, l, libenv)
+                dg'' { globalEnv = Map.insert spn (SpecEntry
+                            (imp, params, getMaybeSig allparams, body)) genv }
+                     , l, libenv)
 
 ana_LIB_ITEM lgraph defl opts libenv gctx l
              (View_defn vn gen vt gsis pos) = do
@@ -264,11 +264,10 @@ ana_LIB_ITEM lgraph defl opts libenv gctx l
 ana_LIB_ITEM lgraph defl opts libenv gctx l
              (Arch_spec_defn asn asp pos) = do
   putMessageIORes opts 1 $ "Analyzing arch spec " ++ showPretty asn ""
-  (archSig, dg', asp') <- liftR (ana_ARCH_SPEC lgraph defl gctx l opts
+  (archSig, gctx', asp') <- liftR (ana_ARCH_SPEC lgraph defl gctx l opts
                                       (item asp))
   let asd' = Arch_spec_defn asn (replaceAnnoted asp' asp) pos
-      gctx' = gctx { devGraph = dg' }
-      genv = globalEnv gctx
+      genv = globalEnv gctx'
   if Map.member asn genv
      then
      liftR (plain_error (asd', gctx', l, libenv)
@@ -283,11 +282,10 @@ ana_LIB_ITEM lgraph defl opts libenv gctx l
 ana_LIB_ITEM lgraph defl opts libenv gctx l
              usd@(Unit_spec_defn usn usp pos) = do
   putMessageIORes opts 1 $ "Analyzing unit spec " ++ showPretty usn ""
-  (unitSig, dg', usp') <- liftR (ana_UNIT_SPEC lgraph defl gctx l opts
+  (unitSig, gctx', usp') <- liftR (ana_UNIT_SPEC lgraph defl gctx l opts
                                       (EmptyNode defl) usp)
   let usd' = Unit_spec_defn usn usp' pos
-      genv = globalEnv gctx
-      gctx' = gctx { devGraph = dg' }
+      genv = globalEnv gctx'
   if Map.member usn genv
      then
      liftR (plain_error (usd, gctx', l, libenv)
@@ -353,11 +351,12 @@ ana_VIEW_DEFN lgraph _defl libenv gctx l opts
   let adj = adjustPos pos
   (gen',(imp,params,allparams),dg') <-
        ana_GENERICITY lgraph gctx l opts (extName "VG" (makeName vn)) gen
-  (vt',(src,tar),dg'') <-
-       ana_VIEW_TYPE lgraph gctx { devGraph = dg' } l allparams opts
+  (vt', (src,tar), gctx'') <-
+       ana_VIEW_TYPE lgraph dg' l allparams opts
                          (makeName vn) vt
   let gsigmaS = getSig src
       gsigmaT = getSig tar
+      dg'' = devGraph gctx''
   G_sign lidS sigmaS <- return gsigmaS
   G_sign lidT sigmaT <- return gsigmaT
   gsis1 <- adj $ homogenizeGM (Logic lidS) gsis
@@ -377,14 +376,14 @@ ana_VIEW_DEFN lgraph _defl libenv gctx l opts
                    -- 'LeftOpen' for conserv correct?
                dgl_origin = DGView vn})
       vsig = (src,gmor,(imp,params,getMaybeSig allparams,tar))
-      genv = globalEnv gctx
+      genv = globalEnv gctx''
   if Map.member vn genv
-   then plain_error (View_defn vn gen' vt' gsis pos,gctx,l,libenv)
+   then plain_error (View_defn vn gen' vt' gsis pos, gctx'', l, libenv)
                     ("Name "++showPretty vn " already defined")
                     pos
    else return (View_defn vn gen' vt' gsis pos,
-                gctx { globalEnv = Map.insert vn (ViewEntry vsig) genv
-                     , devGraph = insEdge link dg''}, l, libenv)
+                gctx'' { globalEnv = Map.insert vn (ViewEntry vsig) genv
+                       , devGraph = insEdge link dg''}, l, libenv)
 
 ana_ITEM_NAME_OR_MAP :: LIB_NAME -> GlobalEnv -> Result (GlobalEnv, DGraph)
                      -> ITEM_NAME_OR_MAP -> Result (GlobalEnv, DGraph)
