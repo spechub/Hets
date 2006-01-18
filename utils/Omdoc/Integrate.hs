@@ -145,10 +145,10 @@ writeableTrees::XmlTrees->XmlTree
 writeableTrees t =
 		(NTree
 			((\(NTree a _) -> a) emptyRoot)
-			((NTree omdocDocTypeElem [])
+			{- ((NTree omdocDocTypeElem [])
 				:(NTree (XText "\n")[])
-				:t)
-			
+				:t) -}
+			t
 		)
 		
 -- | this function wraps trees into a form that can be written by HXT
@@ -191,7 +191,7 @@ writeOmdocDTD dtd' t f = HXT.run' $
 		writeableTreesDTD dtd' t
 
 -- | processing options for getopt		
-data PO = POInput String | POInputType String | POOutput String | POOutputType String | POShowGraph | POLib String | POSandbox String | POHelp | PODTDURI String | PODebug | PONewOutput
+data PO = POInput String | POInputType String | POOutput String | POOutputType String | POShowGraph | POLib String | POSandbox String | POHelp | PODTDURI String | PODebug | PONewOutput | PODisableDTD
 		
 processingOptions::[GetOpt.OptDescr PO]
 processingOptions =
@@ -207,6 +207,7 @@ processingOptions =
 	, GetOpt.Option ['d'] ["dtd-uri"] (GetOpt.ReqArg PODTDURI "DTDURI") "URI for OMDoc-DTD"
 	, GetOpt.Option [] ["debug"] (GetOpt.NoArg PODebug) "enable debugging-messages"
 	, GetOpt.Option ['n'] ["new-output"] (GetOpt.NoArg PONewOutput) "use new output (possibly buggy, no read-in-support yet)"
+	, GetOpt.Option [] ["disable-dtd"] (GetOpt.NoArg PODisableDTD) "disable putting DTD-location in OMDoc-Output"
 	]
 	
 usageString::String
@@ -336,6 +337,10 @@ main =
 			(\op -> case op of PONewOutput -> True; _ -> False)
 			options
 		newoutput <- return $ (case newoutputopts of [] -> False; _ -> True)
+		disabledtdopts <- return $ filter
+			(\op -> case op of PODisableDTD -> True; _ -> False)
+			options
+		disabledtd <- return $ (case disabledtdopts of [] -> False; _ -> True)
 		input <- return $ case inputopts of
 					[] -> case nonoptions of
 						[] -> "-"
@@ -412,6 +417,9 @@ main =
 			[] -> defaultDTDURI
 			((PODTDURI s):_) -> s
 			_ -> error "wierd entry for dtduri..."
+		when
+			(debug && disabledtd)
+			(putStrLn "DTD-Output disabled...")
 		searchpath <- return $ map (\(POLib s) -> s) $ filter (\o' -> case o' of (POLib _) -> True; _ -> False) options
 		when
 			debug
@@ -534,8 +542,8 @@ main =
 				case output of
 					"" -> return ()
 						-- show/writeOmdocDTD :: IO XmlTrees --> return ()
-					"-" -> showOmdocDTD dtduri omdoc >> return ()
-					_ -> writeOmdocDTD dtduri omdoc output >> return ()
+					"-" -> (if disabledtd then showOmdoc else showOmdocDTD dtduri) omdoc >> return ()
+					_ -> (if disabledtd then writeOmdoc else writeOmdocDTD dtduri) omdoc output >> return ()
 				case sandbox of
 					"" -> return ()
 					_ ->
@@ -944,7 +952,7 @@ devGraphToXmlCMPIOXmlNamed dg =
 									Nothing -> error "Sort in relation but not in theory..."
 									(Just sortxn' ) -> xnWOaToXNa sortxn'
 								) insortset
-							constructorx = createAllConstructorsXN $ Map.toList $ Map.findWithDefault Map.empty (XmlNamed sortwo (xnName sortxn)) constructors
+							constructorx = createAllConstructorsXN nodexmlnameset $ Map.toList $ Map.findWithDefault Map.empty (XmlNamed sortwo (xnName sortxn)) constructors
 						in
 							x' +++ createADTXN (sortxn, insortsetxn) constructorx +++ xmlNL
 						) xmlNL adtsorts) +++
@@ -963,9 +971,14 @@ devGraphToXmlCMPIOXmlNamed dg =
 							x' +++ operatorToXmlXN nodexmlnameset (oxnid, oxnset) +++ xmlNL) (HXT.txt "") (Map.toList realtheoops)
 					) +++
 					-- sentences
-					sensxml
+					sensxml +++
+					xmlNL +++
+					-- this constructs Hets-internal links a private data (but uses xmlnames for reference)
+					inDGToXmlXN dg nodenum nodexmlnameset
 					)
-			) (return $ HXT.txt "") onlynodexmlnamelist 
+					-- when constructing the catalogues a reference to the xmlname used in _this_ document is used
+					-- it is very likely possible, that this theory has another name in real life (unless there are no name-collisions)
+			) (return $ refsToCatalogueXN dg nodexmlnameset +++ xmlNL) onlynodexmlnamelist 
 				
 	where
 	nodeTupelToNodeName::(a, NODE_NAME)->String
@@ -983,30 +996,6 @@ devGraphToXmlCMPIOXmlNamed dg =
 										nodename
 							)
 							
-							
-processXmlForDGraph::HXT.XmlTrees->TheoryXNSet
-processXmlForDGraph xml =
-	let
-		omdoc = applyXmlFilter (isTag "omdoc") xml
-		xmltheories = applyXmlFilter (getChildren .> isTag "theory") omdoc
-		theories = foldl (\tl tx ->
-			let
-				theoid = xshow $ applyXmlFilter (getQualValue "xml" "id") [tx]
-				theohetsnodenames = xshow $ applyXmlFilter
-					(
-						getChildren .> isTag "presentation" .>
-						withSValue "for" theoid .> getChildren .>
-						isTag "use" .> withSValue "format" "Hets" .>
-						getChildren
-					) [tx]
-				theohetsnodename = idToNodeName $ read theohetsnodenames
-			in
-				tl ++ [XmlNamed (length tl, theohetsnodename) theoid]
-				) [] xmltheories
-	in
-		Set.fromList theories
-
-
 type WithOriginTheory a = Hets.WithOrigin a String
 
 type XmlNamedWO a b = XmlNamed (Hets.WithOrigin a b)
@@ -1083,13 +1072,8 @@ opTypeToOpTypeXNWON sortwoset (OpType {CASL.Sign.opKind = oK, opArgs = oA, opRes
 			(Just xnsort) -> xnsort
 	in
 		OpTypeXNWON oK xnwonargs xnwonres
-{-	
-	PredTypeWOT (map (\s -> case Set.toList (Set.filter (\i -> (Hets.woItem i) == s) sortwoset) of
-		[] -> error "!!!"
-		(i:_) -> Hets.WithOrigin s (Hets.woOrigin i)
-		) pA)
--}
 
+-- unused ?
 nodeNameInfo::NODE_NAME->HXT.XmlFilter
 nodeNameInfo (tok, ext, int) =
 	(HXT.etag "data" += (
@@ -1200,6 +1184,28 @@ refsToCatalogue dg =
 				) (HXT.txt "") refs
 		)
 		
+refsToCatalogueXN::DGraph->TheoryXNSet->HXT.XmlFilter
+refsToCatalogueXN dg theoryset =
+	let
+		refs = filter (\(_, node) -> isDGRef node) $ Graph.labNodes dg
+	in
+		HXT.etag "catalogue" += (
+			xmlNL +++
+			foldl (\cx (n, node) ->
+				cx +++
+				HXT.etag "loc" += (
+					HXT.sattr
+						"theory"
+						(case getTheoryXmlName theoryset n of
+							Nothing -> error "No Theory for Reference!"
+							(Just xnname' ) -> xnname' )
+						+++
+					HXT.sattr "omdoc" (asOmdocFile (unwrapLinkSource $ dgn_libname node))
+					) +++
+					xmlNL
+				) (HXT.txt "") refs
+			)
+		
 -- | newline in XML
 xmlNL::(HXT.XmlTree->HXT.XmlTrees)
 xmlNL = HXT.txt "\n"
@@ -1210,8 +1216,10 @@ importToXml i = HXT.etag "imports" += (HXT.sattr "from" ("#"++i))
 
 -- | create a xml-representation for a SORT
 sortToXml::SORT->(HXT.XmlTree->HXT.XmlTrees)
--- NAME -> ID
-sortToXml s = HXT.etag "symbol" += ( qualattr symbolTypeXMLNS symbolTypeXMLAttr "sort" +++ qualattr sortNameXMLNS sortNameXMLAttr (show s) )
+sortToXml s = HXT.etag "symbol" += (
+	qualattr symbolTypeXMLNS symbolTypeXMLAttr "sort" +++
+	qualattr sortNameXMLNS sortNameXMLAttr (show s)
+	)
 
 sortToXmlXN::XmlNamed SORT->HXT.XmlFilter
 sortToXmlXN xnSort =
@@ -1285,21 +1293,38 @@ createConstructor cid (OpType _ args _) =
 			) (HXT.txt "") args
 		)
 		
-createAllConstructorsXN::[(XmlNamedWON Id.Id, Set.Set OpTypeXNWON)]->HXT.XmlFilter
-createAllConstructorsXN cs = foldl (\cx c ->	
-	cx +++ createConstructorsXN c +++ xmlNL ) (HXT.txt "") cs
+createAllConstructorsXN::TheoryXNSet->[(XmlNamedWON Id.Id, Set.Set OpTypeXNWON)]->HXT.XmlFilter
+createAllConstructorsXN theoryset cs = foldl (\cx c ->	
+	cx +++ createConstructorsXN theoryset c +++ xmlNL ) (HXT.txt "") cs
 		
-createConstructorsXN::(XmlNamedWON Id.Id, Set.Set OpTypeXNWON)->HXT.XmlFilter
-createConstructorsXN (cidxn, opxnset) = foldl (\cx opxn -> cx +++ createConstructorXN cidxn opxn +++ xmlNL) (HXT.txt "") $ Set.toList opxnset
+createConstructorsXN::TheoryXNSet->(XmlNamedWON Id.Id, Set.Set OpTypeXNWON)->HXT.XmlFilter
+createConstructorsXN theoryset (cidxn, opxnset) = foldl (\cx opxn -> cx +++ createConstructorXN theoryset cidxn opxn +++ xmlNL) (HXT.txt "") $ Set.toList opxnset
 		
-createConstructorXN::(XmlNamedWON Id.Id)->OpTypeXNWON->HXT.XmlFilter
-createConstructorXN cidxn (OpTypeXNWON _ opargsxn _) =
+createConstructorXN::TheoryXNSet->(XmlNamedWON Id.Id)->OpTypeXNWON->HXT.XmlFilter
+createConstructorXN theoryset cidxn (OpTypeXNWON _ opargsxn _) =
 	HXT.etag "constructor" += (
 		HXT.sattr "name" (xnName cidxn) +++
 		xmlNL +++
 		foldl (\argx arg ->
 			argx +++ xmlNL +++
-			(HXT.etag "argument" += (HXT.sattr "sort" (xnName arg)))
+			--(HXT.etag "argument" += (HXT.sattr "sort" (xnName arg))) -- old syntax ?
+			(HXT.etag "argument" += (
+				HXT.etag "type" += (
+					HXT.etag "OMOBJ" += (
+						HXT.etag "OMS" += (
+							HXT.sattr
+								"cd"
+								(case getTheoryXmlName theoryset (Hets.woOrigin (xnItem arg)) of
+									Nothing -> "unknown"
+									(Just xnname' ) -> xnname'
+								)
+							+++
+							HXT.sattr "name" (xnName arg)
+							)
+						)
+					)
+				)
+			)
 			) (HXT.txt "") opargsxn
 		)
 		
@@ -2273,6 +2298,30 @@ inDGToXml dg n nodenames =
 			) "\n" named)
 		)
 		
+inDGToXmlXN::DGraph->Graph.Node->TheoryXNSet->HXT.XmlFilter
+inDGToXmlXN dg n theoryset =
+	let
+		inLinks = map (\ (from,_,a) -> (from,a) )  $ Graph.inn dg n
+		named = map (\ (from, a) -> 
+			let
+				xname = case getTheoryXmlName theoryset from of
+					Nothing -> "unknownNode"
+					(Just xname' ) -> xname'
+			in
+				(xname, a) ) inLinks
+		xnodename = case getTheoryXmlName theoryset n of
+			Nothing -> error "Origin unknown!"
+			(Just xnodename' ) -> xnodename'
+	in
+	if length inLinks == 0 then HXT.txt "" else
+	(HXT.etag "private" += (HXT.sattr "for" xnodename))
+	+= ((HXT.etag "data" += (HXT.sattr "format" "Hets-Imports" +++ HXT.sattr "pto" "Hets"))
+		+= HXT.cdata (
+		foldl (\ins (from, dgl) ->
+			ins ++ ("From:\""++ from ++ "\" " ++ (linkToString dgl) ++ "\n")
+			) "\n" named)
+		)
+		
 inDGToXmlForPrivate::DGraph->Graph.Node->(Map.Map Graph.Node String)->HXT.XmlFilter
 inDGToXmlForPrivate dg n nodenames =
 	let
@@ -2371,10 +2420,51 @@ nodeNamesFromXmlXP t = Set.fromList $
 			++" | @"
 			++theoryNameXMLAttr
 			++"") .> getChildren) t
+
+data AnnotatedXML a = AXML { axAnn::a, axXml::HXT.XmlTrees }
+	deriving Show
+
+type AnnXMLN = AnnotatedXML Graph.Node
+
+instance (Eq a)=>Eq (AnnotatedXML a) where
+	ax1 == ax2 = (axAnn ax1) == (axAnn ax2)
+	
+instance (Ord a)=>Ord (AnnotatedXML a) where
+	compare ax1 ax2 = compare (axAnn ax1) (axAnn ax2)
 	
 nodeNamesFromXml::HXT.XmlTrees->(Set.Set String)
 nodeNamesFromXml t = 
 	Set.fromList $ map (\n -> xshow [n]) $ applyXmlFilter ( isTag "theory" .> theoryNameFilter ) t
+	
+buildAXTheorySet::HXT.XmlTrees->Set.Set AnnXMLN
+buildAXTheorySet t =
+	let
+		theories = applyXmlFilter (getChildren .> isTag "theory") t
+	in
+		Set.fromList $ zipWith
+			(\n t' -> AXML n [t' ])
+			[1..]
+			theories
+	
+nodeNamesXNFromXml::Set.Set AnnXMLN->TheoryXNSet
+nodeNamesXNFromXml axmlset =
+	Set.fromList $ Set.fold
+		(\axml txnl ->
+			let
+				theoid = xshow $ applyXmlFilter (getQualValue "xml" "id") (axXml axml)
+				theohetsnodenames = xshow $ applyXmlFilter
+					(
+						getChildren .> isTag "presentation" .>
+						withSValue "for" theoid .> getChildren .>
+						isTag "use" .> withSValue "format" "Hets" .>
+						getChildren
+					) (axXml axml)
+				theohetsnodename = idToNodeName $ read theohetsnodenames
+			in
+				txnl ++ [XmlNamed ((axAnn axml), theohetsnodename) theoid]
+		)
+		[]
+		axmlset
 	
 sortsFromXmlTheory::HXT.XmlTrees->(Set.Set SORT)
 sortsFromXmlTheory t =
@@ -2382,6 +2472,35 @@ sortsFromXmlTheory t =
 		applyXmlFilter (
 			getChildren .> isTag "symbol" .>
 			withQualSValue symbolTypeXMLNS symbolTypeXMLAttr "sort" .> getQualValue sortNameXMLNS sortNameXMLAttr) t
+			
+sortsXNWONFromXmlTheory::HXT.XmlTrees->Graph.Node->(Set.Set XmlNamedWONSORT)
+sortsXNWONFromXmlTheory t n =
+	let
+		sortnames = map (\m -> xshow [m]) $
+			applyXmlFilter
+				(
+					getChildren .> isTag "symbol" .>
+					withQualSValue symbolTypeXMLNS symbolTypeXMLAttr "sort" .>
+					getQualValue sortNameXMLNS sortNameXMLAttr
+				)
+				t
+	in
+	Set.fromList $ foldl (\xnss sn ->
+		let
+			hetspress = xshow $ applyXmlFilter (
+				getChildren .> 
+				isTag "presentation" .> withSValue "for" sn .>
+				getChildren .> isTag "use" .> withSValue "format" "Hets" .>
+				getChildren) t
+				-- hets presentations are optional
+			hetspres = case hetspress of
+				[] -> (Hets.stringToId sn)
+				x -> read x -- incorrect hets presentations will cause an exception here
+		in
+			xnss ++ [ XmlNamed (Hets.mkWON hetspres n) sn ]
+		) [] sortnames
+		
+		
 	
 sortsFromXml::HXT.XmlTrees->Hets.SortsMap
 sortsFromXml t =
@@ -2391,6 +2510,24 @@ sortsFromXml t =
 		in
 			Map.insert name' sorts' map'
 		) Map.empty $ applyXmlFilter (isTag "theory") t
+		
+-- we need annotated xml to define an origin in term of graph-nodes
+-- xml-theory-fragments are just nodes in the devgraph...
+-- it does not matter if the node-numbers are the same when encoding/decoding
+-- they only have to be unique (for the document)
+sortsXNWONFromXml::Set.Set AnnXMLN->Set.Set XmlNamedWONSORT
+sortsXNWONFromXml xmltheoryset =
+	Set.fold
+		(\axml sset ->
+			Set.union sset (sortsXNWONFromXmlTheory (axXml axml) (axAnn axml))
+		)
+		Set.empty
+		xmltheoryset
+		
+findByName::(Container b (XmlNamed a))=>String->b->Maybe (XmlNamed a)
+findByName iname icon =
+	find (\i -> (xnName i) == iname) (getItems icon)
+
 
 relsFromXmlTheory::HXT.XmlTrees->(Rel.Rel SORT)
 relsFromXmlTheory t =
@@ -2406,6 +2543,38 @@ relsFromXmlTheory t =
 			-- note that we restore 'CASL-Order' here
 		in	map (\n -> (n, sort)) insorts
 		
+relsXNWONFromXmlTheory::Set.Set XmlNamedWONSORT->HXT.XmlTrees->Rel.Rel XmlNamedWONSORT
+relsXNWONFromXmlTheory xnsortset t =
+	let
+		adts = applyXmlFilter (getChildren .> isTag "adt") t
+		relations = concat $ map relsFromXmlADT adts
+	in
+		Rel.fromList relations
+	where
+	relsFromXmlADT::HXT.XmlTree->[(XmlNamedWONSORT, XmlNamedWONSORT)]
+	relsFromXmlADT t' =
+		let
+			xnsorts = xshow $
+				applyXmlFilter
+					(getChildren .> isTag "sortdef" .>
+						withSValue "type" "free" .> getValue "name")
+					[t' ]
+			xninsortss = map (\n -> drop 1 $ xshow [n]) $
+				applyXmlFilter
+					(getChildren .> isTag "sortdef" .> getChildren .>
+						isTag "insort" .> getValue "for")
+						[t' ]
+			xnsort = case findByName xnsorts xnsortset of
+				Nothing -> error "Relation for unknown sort!"
+				(Just xnsort' ) -> xnsort'
+			xninsorts = map (\s -> case findByName s xnsortset of
+				Nothing -> error "Relation with unknown sort!"
+				(Just xs' ) -> xs'
+				) xninsortss
+			-- note that we restore 'CASL-Order' here
+		in	map (\n -> (n, xnsort)) xninsorts
+	
+		
 relsFromXml::HXT.XmlTrees->Hets.RelsMap
 relsFromXml t =
 	foldl (\map' theory ->
@@ -2414,6 +2583,29 @@ relsFromXml t =
 		in
 			Map.insert name' rels' map'
 		) Map.empty $ applyXmlFilter (isTag "theory") t
+		
+relsXNWONFromXml::TheoryXNSet->Set.Set XmlNamedWONSORT->Set.Set AnnXMLN->Map.Map XmlName (Rel.Rel XmlNamedWONSORT)
+relsXNWONFromXml theoryset xnsortset anxnset =
+	Set.fold
+		(\axml mapping ->
+			let
+				theoname = case getTheoryXmlName theoryset (axAnn axml) of
+					Nothing -> error "Theory has no name!"
+					(Just theoname' ) -> theoname' 
+				theorels = relsXNWONFromXmlTheory xnsortset (axXml axml)
+			in
+				if Rel.null theorels
+					then
+						mapping
+					else
+						Map.insert
+							theoname
+							theorels
+							mapping
+		)
+		Map.empty
+		anxnset
+	
 		
 predsFromXmlTheory::HXT.XmlTrees->(Map.Map Id.Id (Set.Set PredType))
 predsFromXmlTheory t =
@@ -2724,8 +2916,6 @@ importGraphToDGNodes ig n =
 			$ Set.toList nodenames) ++ refs
 		
 
-		
-
 cleanNodeName::DGNodeLab->DGNodeLab
 cleanNodeName (node@(DGNode { })) =
 	if isPrefix "AnonNode" (getDGNodeName node)
@@ -2909,13 +3099,13 @@ getCatalogueInformation t =
 data TheoryImport = TI (String, String)
 
 instance Show TheoryImport where
-	show (TI (tn, ts)) = ("Import von \"" ++ tn ++ "\" aus \"" ++ ts ++ "\".")
+	show (TI (tn, ts)) = ("Import of \"" ++ tn ++ "\" from \"" ++ ts ++ "\".")
 
 -- | source name, source (absolute)
 data Source a = S (String, String) a 
 
 instance Show (Source a) where
-	show (S (sn, sf) _) = ("Quelle \"" ++ sn ++ "\" Datei : \"" ++ sf ++ "\".");
+	show (S (sn, sf) _) = ("Source \"" ++ sn ++ "\" File : \"" ++ sf ++ "\".");
 
 type ImportGraph a = Tree.Gr (Source a) TheoryImport 
 
@@ -5523,9 +5713,11 @@ idToString (Id.Id toks ids _) =
 		(implode "," (map idToString ids)) ++
 		"]"
 		
+-- this encapsulates a node_name in an id
 nodeNameToId::NODE_NAME->Id.Id
 nodeNameToId (s,e,n) = Id.mkId [s,(Hets.stringToSimpleId e),(Hets.stringToSimpleId (show n))]
 
+-- this reads back an encapsulated node_name
 idToNodeName::Id.Id->NODE_NAME
 idToNodeName (Id.Id toks _ _) = (toks!!0, show (toks!!1), read (show (toks!!2)))
 	
