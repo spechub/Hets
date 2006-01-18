@@ -66,11 +66,8 @@ checkUniqueness l =
 
 -- | The result monad. A failing result should include an error message.
 data Result a = Result { diags :: [Diagnosis]
-                       , maybeResult :: (Maybe a)
-                       } deriving (Show)
-
-instance Eq a => Eq (Result a) where
-  Result _ res1 == Result _ res2 = res1==res2
+                       , maybeResult :: Maybe a
+                       } deriving Show
 
 instance Functor Result where
     fmap f (Result errs m) = Result errs $ fmap f m

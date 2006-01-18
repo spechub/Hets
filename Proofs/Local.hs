@@ -3,7 +3,7 @@ Module      :  $Header$
 Copyright   :  (c) Jorina F. Gerken, Till Mossakowski, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  jfgerken@tzi.de
+Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
@@ -103,7 +103,8 @@ isSameTranslation :: G_theory -> GMorphism -> [LEdge DGLinkLab] -> Bool
 isSameTranslation th morphism path =
   case calculateMorphismOfPath path of
       Just morphismOfPath ->
-         translateG_theory morphism th == translateG_theory morphismOfPath th
+         maybeResult (translateG_theory morphism th) ==
+                     maybeResult (translateG_theory morphismOfPath th)
       Nothing -> False
 
 -- ----------------------------------------------
