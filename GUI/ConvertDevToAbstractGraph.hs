@@ -3,7 +3,7 @@ Module      :  $Header$
 Copyright   :  (c) Jorina Freya Gerken, Till Mossakowski, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  jfgerken@tzi.de
+Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic)
 
@@ -69,6 +69,7 @@ import Common.Lib.Pretty as Pretty hiding (isEmpty)
 import Common.Id
 import Common.PrettyPrint
 import qualified Common.Result as Res
+import Common.ResultT
 
 import Driver.Options
 import Driver.WriteFn
@@ -79,6 +80,7 @@ import Data.IORef
 import Data.Maybe
 import List(nub)
 import Control.Monad
+import Control.Monad.Trans
 
 {- Maps used to track which node resp edge of the abstract graph
 correspondes with which of the development graph and vice versa and
@@ -858,16 +860,16 @@ translateTheoryOfNode (proofStatusRef,_,_,_,_,_,_,opts,_)
    th <- computeTheory libEnv ln node
    return (node,th) ) of
   Res.Result [] (Just (node,th)) -> do
-    Res.Result diags _ <-  Res.ioresToIO(
+    Res.Result diags _ <-  runResultT(
       do G_theory lid sign sens <- return th
          -- find all comorphism paths starting from lid
          let paths = findComorphismPaths logicGraph (sublogicOfTh th)
          -- let the user choose one
-         sel <- Res.ioToIORes $ listBox "Choose a logic translation"
+         sel <- lift $ listBox "Choose a logic translation"
                    (map show paths)
          i <- case sel of
            Just j -> return j
-           _ -> Res.resToIORes $ Res.fatal_error "" nullRange
+           _ -> liftR $ Res.fatal_error "" nullRange
          Comorphism cid <- return (paths!!i)
          -- adjust lid's
          let lidS = sourceLogic cid
@@ -876,8 +878,8 @@ translateTheoryOfNode (proofStatusRef,_,_,_,_,_,_,opts,_)
          sens' <- coerceThSens lid lidS "" sens
          -- translate theory along chosen comorphism
          (sign'',sens1) <-
-             Res.resToIORes $ map_theory cid (sign', toNamedList sens')
-         Res.ioToIORes $ displayTheory "Translated theory" node dgraph
+             liftR $ map_theory cid (sign', toNamedList sens')
+         lift $ displayTheory "Translated theory" node dgraph
             (G_theory lidT sign'' $ toThSens sens1)
      )
     showDiags opts diags
