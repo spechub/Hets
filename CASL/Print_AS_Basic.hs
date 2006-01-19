@@ -10,6 +10,8 @@ Portability :  portable
 pretty printing data types of 'BASIC_SPEC'
 -}
 
+-- to do: remove the "Dangerous hack"
+
 module CASL.Print_AS_Basic where
 
 import Common.Id
@@ -26,7 +28,6 @@ import CASL.AS_Basic_CASL
 import CASL.LiteralFuns
 
 import Data.List (mapAccumL)
-import Debug.Trace
 
 instance (PrettyPrint b, PrettyPrint s, PrettyPrint f) =>
     PrettyPrint (BASIC_SPEC b s f) where
@@ -486,7 +487,7 @@ print_mixfix_appl pTok pId pTrm parens_fun
           -- fillIn :: PrettyPrint f => [Token] -> [TERM f] -> [Doc]
           fillIn tps ts = if isDisplayAnnoModi
                           then {- WARNING HACK!! -}
-                               trace "Dangerous hack!!" $
+                               -- trace "Dangerous hack!!" $
                                       fillPlaces oid pf' pTrm tps ts
                           else let (_,nl) = mapAccumL pr ts tps in nl
           -- pr :: PrettyPrint f => [TERM f] -> Token -> ([TERM f],Doc)
