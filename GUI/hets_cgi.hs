@@ -38,25 +38,25 @@ import WASH.CGI.CGI as CGI
 import Driver.Options
 import Driver.WriteFn
 import Driver.ReadFn
+import Driver.Version
 import qualified Common.Lib.Map as Map
 import qualified Common.Result as CRes
+import Common.ResultT
 import Static.AnalysisLibrary
 import Comorphisms.LogicGraph
 import Static.DevGraph
 import Syntax.AS_Library
 import Syntax.Print_HetCASL
-import Maybe
-import Random
-import IO
-import Time
+
+import System.Random
+import System.IO
+import System.Time
 import System.Cmd
 import System.Posix.IO
 import System.Posix.Types
 import System.Posix.Files
 import System.Posix.Process
-import Data.List
 import Control.Monad
-import Driver.Version
 
 ------ Configuration section -------------------------
 
@@ -221,7 +221,7 @@ anaInput contents selectedBoxes outputfiles =
       ana_ast ast =
          do
          CRes.Result ds mres <-
-             CRes.ioresToIO (ana_LIB_DEFN logicGraph defaultLogic
+             runResultT (ana_LIB_DEFN logicGraph defaultLogic
                                      webOpts
                                      emptyLibEnv ast)
          let ds1 = filter diagFilter ds
