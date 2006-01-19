@@ -871,7 +871,7 @@ devGraphToXmlCMPIOXmlNamed dg =
 				theoname = xnName xnodetupel
 				(nodenum, nodename) = xnItem xnodetupel
 				theosorts = Map.findWithDefault Set.empty (Hets.mkWON nodename nodenum) xmlnamedsortswomap
-				realsorts = Set.filter (\i -> (Hets.woOrigin (xnItem i)) == nodenum) theosorts
+				realsorts = Set.filter (\i -> (xnWOaToO i) == nodenum) theosorts
 				realsortswo = Set.map (xnItem) realsorts
 				theorels = Map.findWithDefault Rel.empty (Hets.mkWON nodename nodenum) relswomap
 				-- only keep relations that include at least one sort from the
@@ -888,11 +888,11 @@ devGraphToXmlCMPIOXmlNamed dg =
 							m
 						) Map.empty (Rel.toList insorts)
 				theopreds = Map.findWithDefault Map.empty (Hets.mkWON nodename nodenum) xmlnamedpredswomap
-				realtheopreds = Map.filterWithKey (\idxnwon _ -> (Hets.woOrigin (xnItem idxnwon)) == nodenum) theopreds
+				realtheopreds = Map.filterWithKey (\idxnwon _ -> (xnWOaToO idxnwon) == nodenum) theopreds
 				theoops = Map.findWithDefault Map.empty (Hets.mkWON nodename nodenum) xmlnamedopswomap
-				realtheoops = Map.filterWithKey (\idxnwon _ -> (Hets.woOrigin (xnItem idxnwon)) == nodenum) theoops
+				realtheoops = Map.filterWithKey (\idxnwon _ -> (xnWOaToO idxnwon) == nodenum) theoops
 				theosens = Map.findWithDefault Set.empty (Hets.mkWON nodename nodenum) xmlnamedsenswomap
-				realtheosens = Set.filter (\i -> (Hets.woOrigin (xnItem i)) == nodenum) theosens
+				realtheosens = Set.filter (\i -> (xnWOaToO i) == nodenum) theosens
 				(_, sortgenxn) = partitionSensSortGenXN (Set.toList realtheosens)
 				(constructors, xmlnames_cons) = makeConstructorsXN theosorts xmlnames_senm sortgenxn
 				adtsorts = Map.keys insortmap ++ (map (\(a,_) -> xnItem a) (Map.toList constructors))
@@ -1009,6 +1009,9 @@ xnWOaToXNa a = XmlNamed (Hets.woItem (xnItem a)) (xnName a)
 xnWOaToa::XmlNamedWO a b->a
 xnWOaToa a = Hets.woItem (xnItem a)
 
+xnWOaToO::XmlNamedWO a b->b
+xnWOaToO a = Hets.woOrigin (xnItem a)
+
 -- just an alias to complete this
 xnWOaToWOa::XmlNamedWO a b->Hets.WithOrigin a b
 xnWOaToWOa a = xnItem a
@@ -1060,6 +1063,10 @@ predTypeToPredTypeXNWON sortwoset (PredType {predArgs = pA}) =
 	in
 		PredTypeXNWON xnwonargs
 		
+predTypeXNWONToPredType::PredTypeXNWON->PredType
+predTypeXNWONToPredType (PredTypeXNWON xnargs) =
+	PredType $ map xnWOaToa xnargs
+		
 opTypeToOpTypeXNWON::Set.Set (XmlNamedWON SORT)->OpType->OpTypeXNWON
 opTypeToOpTypeXNWON sortwoset (OpType {CASL.Sign.opKind = oK, opArgs = oA, opRes = oR}) =
 	let
@@ -1072,6 +1079,10 @@ opTypeToOpTypeXNWON sortwoset (OpType {CASL.Sign.opKind = oK, opArgs = oA, opRes
 			(Just xnsort) -> xnsort
 	in
 		OpTypeXNWON oK xnwonargs xnwonres
+		
+opTypeXNWONToOpType::OpTypeXNWON->OpType
+opTypeXNWONToOpType (OpTypeXNWON fk xnargs xnres) =
+	OpType fk (map xnWOaToa xnargs) (xnWOaToa xnres)
 
 -- unused ?
 nodeNameInfo::NODE_NAME->HXT.XmlFilter
@@ -1314,7 +1325,7 @@ createConstructorXN theoryset cidxn (OpTypeXNWON _ opargsxn _) =
 						HXT.etag "OMS" += (
 							HXT.sattr
 								"cd"
-								(case getTheoryXmlName theoryset (Hets.woOrigin (xnItem arg)) of
+								(case getTheoryXmlName theoryset (xnWOaToO arg) of
 									Nothing -> "unknown"
 									(Just xnname' ) -> xnname'
 								)
@@ -1434,6 +1445,12 @@ getTheoryXmlName ts n =
 		Nothing -> Nothing
 		(Just i) -> Just (xnName i)
 		
+getNodeForTheoryName::TheoryXNSet->XmlName->Maybe Graph.Node
+getNodeForTheoryName xntheoryset xname =
+	case find (\i -> (xnName i) == xname) $ Set.toList xntheoryset of
+		Nothing -> Nothing
+		(Just i) -> Just (fst (xnItem i))
+		
 -- | creates a xml-representation for a predication
 -- needs a map of imports, sorts, the name of the current theory and the predication
 predicationToXmlXN::TheoryXNSet->(XmlNamedWON Id.Id, (Set.Set PredTypeXNWON))->(HXT.XmlTree->HXT.XmlTrees)
@@ -1468,7 +1485,7 @@ predicationToXmlXN theoryset (pIdXN, pTXNSet) =
 									"cd"
 									(fromMaybe
 										"unknownOrigin"
-										(getTheoryXmlName theoryset (Hets.woOrigin (xnItem sxn)))
+										(getTheoryXmlName theoryset (xnWOaToO sxn))
 									)
 									+++ HXT.sattr "name" (xnName sxn)
 								)
@@ -2155,7 +2172,7 @@ makeConstructorMapXN sortxnwoset xmlnames sensxnwo =
 	let
 		sens = xnWOaToa sensxnwo
 		(Ann.NamedSen senname _ _ (Sort_gen_ax cons _)) = sens
-		origin = Hets.woOrigin (xnItem sensxnwo)
+		origin = xnWOaToO sensxnwo
 		sort = drop (length "ga_generated_") senname
 		sortxn = case sortToXmlNamedWONSORT (Set.toList sortxnwoset) (Hets.stringToId sort) of
 			Nothing -> error "Cannot find sort to make constructor for!"
@@ -2473,8 +2490,8 @@ sortsFromXmlTheory t =
 			getChildren .> isTag "symbol" .>
 			withQualSValue symbolTypeXMLNS symbolTypeXMLAttr "sort" .> getQualValue sortNameXMLNS sortNameXMLAttr) t
 			
-sortsXNWONFromXmlTheory::HXT.XmlTrees->Graph.Node->(Set.Set XmlNamedWONSORT)
-sortsXNWONFromXmlTheory t n =
+sortsXNWONFromXmlTheory::AnnXMLN->(Set.Set XmlNamedWONSORT)
+sortsXNWONFromXmlTheory anxml =
 	let
 		sortnames = map (\m -> xshow [m]) $
 			applyXmlFilter
@@ -2483,7 +2500,7 @@ sortsXNWONFromXmlTheory t n =
 					withQualSValue symbolTypeXMLNS symbolTypeXMLAttr "sort" .>
 					getQualValue sortNameXMLNS sortNameXMLAttr
 				)
-				t
+				(axXml anxml)
 	in
 	Set.fromList $ foldl (\xnss sn ->
 		let
@@ -2491,15 +2508,14 @@ sortsXNWONFromXmlTheory t n =
 				getChildren .> 
 				isTag "presentation" .> withSValue "for" sn .>
 				getChildren .> isTag "use" .> withSValue "format" "Hets" .>
-				getChildren) t
+				getChildren) (axXml anxml)
 				-- hets presentations are optional
 			hetspres = case hetspress of
 				[] -> (Hets.stringToId sn)
 				x -> read x -- incorrect hets presentations will cause an exception here
 		in
-			xnss ++ [ XmlNamed (Hets.mkWON hetspres n) sn ]
+			xnss ++ [ XmlNamed (Hets.mkWON hetspres (axAnn anxml)) sn ]
 		) [] sortnames
-		
 		
 	
 sortsFromXml::HXT.XmlTrees->Hets.SortsMap
@@ -2518,8 +2534,8 @@ sortsFromXml t =
 sortsXNWONFromXml::Set.Set AnnXMLN->Set.Set XmlNamedWONSORT
 sortsXNWONFromXml xmltheoryset =
 	Set.fold
-		(\axml sset ->
-			Set.union sset (sortsXNWONFromXmlTheory (axXml axml) (axAnn axml))
+		(\anxml sset ->
+			Set.union sset (sortsXNWONFromXmlTheory anxml)
 		)
 		Set.empty
 		xmltheoryset
@@ -2527,7 +2543,20 @@ sortsXNWONFromXml xmltheoryset =
 findByName::(Container b (XmlNamed a))=>String->b->Maybe (XmlNamed a)
 findByName iname icon =
 	find (\i -> (xnName i) == iname) (getItems icon)
-
+	
+-- search for a certainly named item and prefer items of specified origin
+-- check result for origin if important
+findByNameAndOrigin::(Eq b, Container c (XmlNamedWO a b))=>String->b->c->Maybe (XmlNamedWO a b)
+findByNameAndOrigin iname iorig icon =
+	let
+		candidates = filter (\i -> (xnName i) == iname) (getItems icon)
+	in
+		case find (\i -> (xnWOaToO i) == iorig) candidates of
+			Nothing ->
+				case candidates of
+					(i:_) -> (Just i)
+					_ -> Nothing
+			i -> i
 
 relsFromXmlTheory::HXT.XmlTrees->(Rel.Rel SORT)
 relsFromXmlTheory t =
@@ -2543,10 +2572,10 @@ relsFromXmlTheory t =
 			-- note that we restore 'CASL-Order' here
 		in	map (\n -> (n, sort)) insorts
 		
-relsXNWONFromXmlTheory::Set.Set XmlNamedWONSORT->HXT.XmlTrees->Rel.Rel XmlNamedWONSORT
-relsXNWONFromXmlTheory xnsortset t =
+relsXNWONFromXmlTheory::Set.Set XmlNamedWONSORT->AnnXMLN->Rel.Rel XmlNamedWONSORT
+relsXNWONFromXmlTheory xnsortset anxml =
 	let
-		adts = applyXmlFilter (getChildren .> isTag "adt") t
+		adts = applyXmlFilter (getChildren .> isTag "adt") (axXml anxml)
 		relations = concat $ map relsFromXmlADT adts
 	in
 		Rel.fromList relations
@@ -2564,10 +2593,10 @@ relsXNWONFromXmlTheory xnsortset t =
 					(getChildren .> isTag "sortdef" .> getChildren .>
 						isTag "insort" .> getValue "for")
 						[t' ]
-			xnsort = case findByName xnsorts xnsortset of
+			xnsort = case findByNameAndOrigin xnsorts (axAnn anxml) xnsortset of
 				Nothing -> error "Relation for unknown sort!"
 				(Just xnsort' ) -> xnsort'
-			xninsorts = map (\s -> case findByName s xnsortset of
+			xninsorts = map (\s -> case findByNameAndOrigin s (axAnn anxml) xnsortset of
 				Nothing -> error "Relation with unknown sort!"
 				(Just xs' ) -> xs'
 				) xninsortss
@@ -2592,7 +2621,7 @@ relsXNWONFromXml theoryset xnsortset anxnset =
 				theoname = case getTheoryXmlName theoryset (axAnn axml) of
 					Nothing -> error "Theory has no name!"
 					(Just theoname' ) -> theoname' 
-				theorels = relsXNWONFromXmlTheory xnsortset (axXml axml)
+				theorels = relsXNWONFromXmlTheory xnsortset axml
 			in
 				if Rel.null theorels
 					then
@@ -2633,6 +2662,56 @@ predsFromXmlTheory t =
 					withValue "name" (/="predication") .>
 					getValue "name" ) [t' ]
 			in	(pId, PredType $ map (\n -> Hets.stringToId $ xshow [n]) args)
+			
+type XmlNamedWONId = XmlNamedWON Id.Id
+
+getPresentationString::String->HXT.XmlTrees->String
+getPresentationString for t =
+	xshow $ applyXmlFilter (isTag "presentation" .> withSValue "for" for .>
+		getChildren .> isTag "use" .> withSValue "format" "Hets" .> 
+		getChildren) t
+	
+
+predsXNWONFromXmlTheory::Set.Set XmlNamedWONSORT->AnnXMLN->Map.Map XmlNamedWONId (Set.Set PredTypeXNWON)
+predsXNWONFromXmlTheory xnsortset anxml =
+	let
+		objsymbols = applyXmlFilter (getChildren .> isTag "symbol" .> withQualSValue symbolTypeXMLNS symbolTypeXMLAttr "object") (axXml anxml)
+		predsymbols = filter (\n -> applyXmlFilter (
+				getChildren .> isTag "type" .>
+				getChildren .> isTag "OMOBJ" .>
+				getChildren .> isTag "OMA" .>
+				getChildren .> isTag "OMS" .>
+				withSValue "cd" "casl" .>
+				withSValue "name" "predication") [n] /= []) objsymbols
+	in
+		foldl (\map' (p, pt) ->
+			Map.insert p (Set.insert pt $ Map.findWithDefault Set.empty p map' ) map'
+			) Map.empty $ map predFromXmlSymbol (map (\t -> AXML (axAnn anxml) [t]) predsymbols)
+	where
+		predFromXmlSymbol::AnnXMLN->(XmlNamedWONId, PredTypeXNWON)
+		predFromXmlSymbol panxml =
+			let
+				pidxname = xshow $ applyXmlFilter (getQualValue predNameXMLNS predNameXMLAttr) (axXml panxml)
+				pids = getPresentationString pidxname (axXml anxml) -- yes, reference to 'outer' xml
+				pid = case pids of
+					[] -> Hets.stringToId pidxname
+					_ -> read pids
+				args = map (\n -> xshow [n]) $ applyXmlFilter (
+					getChildren .> isTag "type" .> withSValue "system" "casl" .>
+					getChildren .> isTag "OMOBJ" .>
+					getChildren .> isTag "OMA" .>
+					getChildren .> isTag "OMS" .>
+					withValue "name" (/="predication") .>
+					getValue "name" ) (axXml panxml)
+				xnargs = map
+					(\a -> case findByNameAndOrigin a (axAnn anxml) xnsortset of
+						Nothing -> error "Unknown type of argument!"
+						(Just xnarg) -> xnarg
+					)
+					args
+			in	(XmlNamed (Hets.mkWON pid (axAnn anxml)) pidxname, PredTypeXNWON xnargs)
+	
+			
 		
 predsFromXml::HXT.XmlTrees->Hets.PredsMap
 predsFromXml t =
@@ -2642,6 +2721,28 @@ predsFromXml t =
 		in
 			Map.insert name' preds' map'
 		) Map.empty $ applyXmlFilter (isTag "theory") t
+		
+predsXNWONFromXml::TheoryXNSet->Set.Set XmlNamedWONSORT->Set.Set AnnXMLN->Map.Map XmlName (Map.Map XmlNamedWONId (Set.Set PredTypeXNWON))
+predsXNWONFromXml xntheoryset xnsortset anxmlset =
+	Set.fold
+		(\anxml mapping ->
+			let
+				theopreds = predsXNWONFromXmlTheory xnsortset anxml
+			in
+				if Map.null theopreds
+					then
+						mapping
+					else
+						Map.insert
+							(case getTheoryXmlName xntheoryset (axAnn anxml) of
+								Nothing -> error "Unknown theory!"
+								(Just xname) -> xname
+							)
+							(predsXNWONFromXmlTheory xnsortset anxml)
+							mapping
+		)
+		Map.empty
+		anxmlset
 		
 opsFromXmlTheory::HXT.XmlTrees->(Map.Map Id.Id (Set.Set OpType))
 opsFromXmlTheory t =
@@ -2678,6 +2779,61 @@ opsFromXmlTheory t =
 				res = Hets.stringToId $ xshow $ [last (argsall)]
 			in	(oId, OpType (if isTotal then Total else Partial) (map (\n -> Hets.stringToId $ xshow [n]) args) res)
 			
+opsXNWONFromXmlTheory::Set.Set XmlNamedWONSORT->AnnXMLN->Map.Map XmlNamedWONId (Set.Set OpTypeXNWON)
+opsXNWONFromXmlTheory xnsortset anxml =
+	let
+		objsymbols = applyXmlFilter (getChildren .> isTag "symbol" .> withQualSValue symbolTypeXMLNS symbolTypeXMLAttr "object") (axXml anxml)
+		opsymbols = filter (\n -> applyXmlFilter (
+				getChildren .> isTag "type" .>
+				getChildren .> isTag "OMOBJ" .>
+				getChildren .> isTag "OMA" .>
+				getChildren .> isTag "OMS" .>
+				withSValue "cd" "casl" .>
+				withValue "name" (\n' -> n' == "function" || n' == "partial-function") ) [n] /= []) objsymbols
+	in
+		foldl (\map' (p, pt) ->
+			Map.insert p (Set.insert pt $ Map.findWithDefault Set.empty p map' ) map'
+			) Map.empty $ map opFromXmlSymbol (map (\n -> AXML (axAnn anxml) [n]) opsymbols) 
+	where
+		opFromXmlSymbol::AnnXMLN->(XmlNamedWONId, OpTypeXNWON)
+		opFromXmlSymbol oanxml =
+			let
+				oidxname = xshow $ applyXmlFilter (getQualValue opNameXMLNS opNameXMLAttr) (axXml oanxml)
+				oids = getPresentationString oidxname (axXml anxml)
+				oid = case oids of
+					[] -> Hets.stringToId oidxname
+					_ -> read oids
+				isTotal = applyXmlFilter (
+					getChildren .> isTag "type" .> withSValue "system" "casl" .>
+					getChildren .> isTag "OMOBJ" .>
+					getChildren .> isTag "OMA" .>
+					getChildren .> isTag "OMS" .>
+					withSValue "name" "function") (axXml oanxml) /= []
+				argsall = map (\n -> xshow [n]) $ applyXmlFilter (
+					getChildren .> isTag "type" .> withSValue "system" "casl" .>
+					getChildren .> isTag "OMOBJ" .>
+					getChildren .> isTag "OMA" .>
+					getChildren .> isTag "OMS" .>
+					withValue "name" (\n -> n /= "function" && n /= "partial-function") .>
+					getValue "name" ) (axXml oanxml)
+				xnargsall = map
+					(\a -> case findByNameAndOrigin a (axAnn anxml) xnsortset of
+						Nothing -> error "Unknown type of argument!"
+						(Just xnarg) -> xnarg
+					)
+					argsall
+				xnargs = take (length(xnargsall)-1) xnargsall
+				xnres = last (xnargsall)
+			in
+				(
+					XmlNamed (Hets.mkWON oid (axAnn anxml)) oidxname,
+					OpTypeXNWON
+						(if isTotal then Total else Partial)
+						xnargs
+						xnres
+				)
+	
+			
 	
 opsFromXml::HXT.XmlTrees->Hets.OpsMap
 opsFromXml t =
@@ -2687,6 +2843,27 @@ opsFromXml t =
 		in
 			Map.insert name' ops' map'
 		) Map.empty $ applyXmlFilter (isTag "theory") t
+		
+opsXNWONFromXml::TheoryXNSet->Set.Set XmlNamedWONSORT->Set.Set AnnXMLN->Map.Map XmlName (Map.Map XmlNamedWONId (Set.Set OpTypeXNWON))
+opsXNWONFromXml xntheoryset xnsortset anxmlset =
+	Set.fold
+		(\anxml mapping ->
+			let
+				theoops = opsXNWONFromXmlTheory xnsortset anxml
+			in
+				if Map.null theoops
+					then
+						mapping
+					else
+						Map.insert
+							(case getTheoryXmlName xntheoryset (axAnn anxml) of
+								Nothing -> error "Unknown theory!"
+								(Just xname) -> xname
+							)
+							theoops
+							mapping
+		) Map.empty anxmlset
+						
 
 -- | imports lead to edges but if the information is not stored in the
 -- document there is no clue on what type of edge to create...
@@ -4304,7 +4481,7 @@ createSymbolForSort imports' sorts' sort name' =
 
 createSymbolForSortXN::TheoryXNSet->XmlNamedWONSORT->(HXT.XmlTree->HXT.XmlTrees)
 createSymbolForSortXN theoryset xnsort =
-	HXT.etag "OMS" += ( HXT.sattr "cd" (fromMaybe "unknown" $ getTheoryXmlName theoryset (Hets.woOrigin (xnItem xnsort)) ) +++ HXT.sattr "name" (xnName xnsort) )
+	HXT.etag "OMS" += ( HXT.sattr "cd" (fromMaybe "unknown" $ getTheoryXmlName theoryset (xnWOaToO xnsort) ) +++ HXT.sattr "name" (xnName xnsort) )
 	
 createSymbolForSortWithSortXNSet::TheoryXNSet->Set.Set XmlNamedWONSORT->SORT->HXT.XmlFilter
 createSymbolForSortWithSortXNSet theoryset theorysorts sort =
@@ -4847,7 +5024,7 @@ createSymbolForPredicationXN theoryset theorypreds
 		in
 			HXT.etag "OMS" += 
 				(HXT.sattr "cd" (fromMaybe "unknown" $
-					getTheoryXmlName theoryset (Hets.woOrigin (xnItem xnpred))) +++
+					getTheoryXmlName theoryset (xnWOaToO xnpred)) +++
 				HXT.sattr "name" (xnName xnpred)
 				)
 -- Qual_pred_name
@@ -4890,7 +5067,7 @@ createSymbolForPredicationXN theoryset theorypreds
 				xmlNL +++
 				HXT.etag "OMS" +=
 					( HXT.sattr "cd" ( fromMaybe "unknown" $
-						getTheoryXmlName theoryset (Hets.woOrigin (xnItem xnpred))
+						getTheoryXmlName theoryset (xnWOaToO xnpred)
 						) +++
 					HXT.sattr "name" (xnName xnpred)
 					) +++
@@ -5539,7 +5716,7 @@ processOperatorXN pfinput
 			HXT.etag "OMS" +=
 				(HXT.sattr "cd" 
 					(fromMaybe "unknown" $
-						getTheoryXmlName (theorySet pfinput) (Hets.woOrigin (xnItem opxn))) +++
+						getTheoryXmlName (theorySet pfinput) (xnWOaToO opxn)) +++
 					HXT.sattr "name" (xnName opxn)
 				)
 -- Qual_op_name
@@ -5600,7 +5777,7 @@ processOperatorXN pfinput
 					HXT.etag "OMS" += -- finally : the name of the operator
 						( HXT.sattr "cd"
 							( fromMaybe "unknown" $
-								getTheoryXmlName (theorySet pfinput) (Hets.woOrigin (xnItem opxn))
+								getTheoryXmlName (theorySet pfinput) (xnWOaToO opxn)
 							) +++
 							HXT.sattr "name" (xnName opxn)
 						)
