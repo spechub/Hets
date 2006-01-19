@@ -134,12 +134,12 @@ readAnnTAF = readParTAFs '{' '}'
 dropSpaces :: String -> String
 dropSpaces = dropWhile isSpace
 
-readAFun :: String -> (String,String)
+readAFun :: String -> (String, String)
 readAFun str = case str of
   q : r | q == '"' -> let (c, s) = spanNotQuote' r in (q : c, s)
   _ -> span isAFunChar str
 
-spanNotQuote' :: String -> (String,String)
+spanNotQuote' :: String -> (String, String)
 spanNotQuote' str = case str of
      q : r | q == '"'  -> ([q], r)
      c : r@(d : s) -> let
@@ -151,7 +151,7 @@ spanNotQuote' str = case str of
 isAFunChar :: Char -> Bool
 isAFunChar c = isAlphaNum c || c `elem` "_*+-."
 
-spanAbbrevChar :: String -> (String,String)
+spanAbbrevChar :: String -> (String, String)
 spanAbbrevChar = span isBase64Char
 
 isIntHead :: Char -> Bool
@@ -250,7 +250,7 @@ parenthesiseAnnS s@(Doc_len d dl)
 
 {- | This abbreviation table maps abbreviation ints to aterm indices for
      reading and aterm indices to abbreviation docs during writing. -}
-data AbbrevTable a = ATab (Map.Map Int a) (Int, Int) Int
+data AbbrevTable a = ATab !(Map.Map Int a) !(Int, Int) !Int
 
 {- The last component is the current maximal abbreviation int that
 serves as a key when reading and as a value when writing. The pair
