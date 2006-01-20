@@ -182,7 +182,7 @@ transFuncMap idMap sign =
                                      im' tset)
                     sid fma t = disSPOId (COp t) (transId iden) 
                                        (uType (transOpType t))
-                                       (Set.union (Map.keysSet fma)
+                                       (Set.union (Rel.keysSet fma)
                                            (elemsSPId_Set idMap))
                     uType t = fst t ++ [snd t]
 
@@ -251,7 +251,7 @@ transPredMap idMap sign =
                                      im' tset)
                     sid fma t = disSPOId (CPred t) (transId iden) 
                                        (transPredType t)
-                                       (Set.union (Map.keysSet fma)
+                                       (Set.union (Rel.keysSet fma)
                                            (elemsSPId_Set idMap))
 
 disSPOId :: CType -> SPIdentifier -> [SPIdentifier] -> 
@@ -404,7 +404,7 @@ mkInjOp (opMap,idMap) qo@(Qual_op_name i ot _) =
                         (utype (transOpType ot')) usedNames
           ot' = CSign.toOpType ot
           lsid = lookupSPId i (COp ot') idMap
-          usedNames = Map.keysSet opMap
+          usedNames = Rel.keysSet opMap
           err = error ("CASL2SPASS.mkInjOp: Cannot find SPId for '"++
                        show qo++"'")
           utype t = fst t ++ [snd t]
@@ -441,7 +441,7 @@ transSign sign = (SPSign.emptySign { sortRel =
             Set.fold (\ i (sm,im) -> 
                           let sid = disSPOId CSort (transId i) 
                                        [take 20 (cycle "So")]
-                                       (Map.keysSet sm)
+                                       (Rel.keysSet sm)
                           in (Map.insert sid Nothing sm,
                               insertSPId i CSort sid im)) 
                                         (Map.empty,Map.empty) 

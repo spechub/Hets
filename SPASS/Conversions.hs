@@ -51,8 +51,7 @@ signToSPLogicalPart s =
                                                  arity = length (head
                                                           (Set.toList ts))}) 
                                      (Map.toList (predMap s)),
-                         sorts = map SPSimpleSignSym 
-                                 (Set.toList ((Map.keysSet (sortMap s))))}
+                         sorts = map SPSimpleSignSym $ Map.keys $ sortMap s }
 
     decList = subsortDecl ++ termDecl ++ predDecl ++ genDecl
 
