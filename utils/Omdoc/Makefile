@@ -12,7 +12,8 @@ HC = ghc
 HC_WARN = -Wall -fno-warn-orphans
 HC_FLAGS = $(HC_WARN) -package fgl -fglasgow-exts -fno-monomorphism-restriction \
     -fallow-overlapping-instances -fallow-undecidable-instances \
-	-ignore-package HaXml-1.12 -package hxt-5.3
+	-ignore-package HaXml-1.12 -package hxt-5.3 \
+	-H512m
 # -ddump-minimal-imports 
 # flags also come in via  ../uni/uni-package.conf
 # but added it here in case of compilation without uni
@@ -39,4 +40,6 @@ integrate: Integrate.hs HetsInterface.hs OmdocDevGraph.hs
 interactive: ghci
 ghci: 
 	$(HC)i $(HCI_OPTS)
-	
+
+clean:
+	rm *.hi *.o integrate

@@ -83,7 +83,7 @@ getDG f = do
 	(Just (ln,lenv)) <- run f
 	case Map.lookup ln lenv of
 		Nothing -> error "Error looking op DGraph"
-		(Just (_,_,dg)) -> return dg
+		(Just gc) -> return $ devGraph gc
 
 -- Cast Signature to CASLSignature if possible
 getCASLSign::G_sign->(Maybe CASLSign)
@@ -762,8 +762,8 @@ createDGStructure f =
 	do
 		(Just (_, lenv)) <- run f
 		return (
-			foldl (\map' (lname, (_,_,dg)) ->
-				Map.insert lname (getAll dg) map'
+			foldl (\map' (lname, gc) ->
+				Map.insert lname (getAll (devGraph gc)) map'
 				) Map.empty $ Map.toList lenv
 			)
 

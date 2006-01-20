@@ -448,7 +448,7 @@ main =
 							Nothing ->
 								ioError
 									(userError "Could not get DGraph...")
-							(Just (_,_,dg' )) -> return dg'
+							(Just gc) -> return $ devGraph gc
 						return (ln' ,dg,lenv' )
 				FTEnv ->
 						-- currently environment processing is done in one
@@ -493,7 +493,6 @@ main =
 											"failed.\n...as globalcontext...")
 									(return mgc) >>= \x -> case x of
 										(Just gc) ->
-											return gc >>= \(ga,ge,dg) ->
 												do
 													lname <-
 														return
@@ -501,12 +500,12 @@ main =
 													 -- evaluate to trigger error
 													_ <-
 														return $! Graph.nodes $!
-															dg
+															(devGraph gc)
 													return
 														(lname,
-														dg,
+														(devGraph gc),
 														(Map.fromList
-															[(lname, (ga,ge,dg))]
+															[(lname, gc)]
 															)
 														)
 										Nothing -> error "Error processing environment..."
@@ -562,18 +561,18 @@ main =
 				case output of
 					"" -> return ()
 					"-" ->
-						putStrLn (Hets.toShATermString ga)
+						Hets.toShATermString ga >>= putStrLn
 					_ ->
-						Hets.globalContexttoShATerm output ga
+						Hets.writeShATermFile output ga
 			FTFullEnv ->
 				do
 				when debug (putStrLn ("Outputting Full Environment..."))
 				case output of
 					"" -> return ()
 					"-" ->
-						putStrLn (Hets.toShATermString (ln,lenv))
+						Hets.toShATermString (ln,lenv) >>= putStrLn
 					_ ->
-						writeFile output (Hets.toShATermString (ln,lenv))
+						Hets.writeShATermFile output (ln,lenv)
 			_ ->
 				return ()
 		return ()
@@ -582,7 +581,7 @@ lnLibEnvToLnDGLibEnv::(ASL.LIB_NAME, LibEnv)->(ASL.LIB_NAME, DGraph, LibEnv)
 lnLibEnvToLnDGLibEnv (ln,lenv) =
 	let
 		dg = case Map.lookup ln lenv of
-			(Just (_,_,dg' )) -> dg'
+			(Just gc) -> devGraph gc
 			Nothing -> error "Cannot lookup DGraph in LibEnv!"
 	in
 		(ln, dg, lenv)
@@ -3250,7 +3249,8 @@ dgNameToLnDGLe::(DGraph, String)->(ASL.LIB_NAME,DGraph,LibEnv)
 dgNameToLnDGLe (dg, name' ) =
 	let
 		libname = (ASL.Lib_id (ASL.Indirect_link name' Id.nullRange))
-		lenv = Map.fromList $ [ (libname, (GA.emptyGlobalAnnos, Map.empty, dg))  ]
+		--lenv = Map.fromList $ [ (libname, (GA.emptyGlobalAnnos, Map.empty, dg))  ]
+		lenv = Map.fromList $ [ (libname, emptyGlobalContext { devGraph = dg } )  ]
 	in
 		(libname, dg, lenv)
 		
@@ -3531,7 +3531,8 @@ dGraphGToLibEnv ig =
 		lenv = Map.fromList $ map ( \(S (_, src) dg) ->
 					(
 						(ASL.Lib_id (ASL.Indirect_link src Id.nullRange)),
-						(GA.emptyGlobalAnnos, Map.empty, dg)
+						--(GA.emptyGlobalAnnos, Map.empty, dg)
+						emptyGlobalContext { devGraph = dg }
 					)
 					) nodes
 	in
@@ -3545,7 +3546,7 @@ unwrapLinkSource _ = error "Wrong application of unwrapLinkSource!"
 libEnvToDGraphG::(ASL.LIB_NAME, DGraph, LibEnv)->(ImportGraph DGraph)
 libEnvToDGraphG (ln,dg,lenv) =
 	let
-		input = (:) (ln,dg) $ map (\(ln' , (_,_,dg' )) -> (ln', dg' )) .
+		input = (:) (ln,dg) $ map (\(ln' , gc) -> (ln', (devGraph gc) )) .
 				filter (\(ln' ,_) -> ln' /= ln) $
 				Map.toList lenv
 	in
