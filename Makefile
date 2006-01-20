@@ -523,6 +523,7 @@ bin_clean:
 	$(RM) atctest2
 	$(RM) atctest
 	$(RM) Common/annos
+	$(RM) Common/test_parser
 	$(RM) Taxonomy/taxonomyTool
 	$(RM) OWL_DL/readAStest
 
@@ -532,6 +533,7 @@ real_clean: clean
 ### additionally removes generated files not in the CVS tree
 distclean: clean clean_genRules
 	$(RM) $(derived_sources)
+	$(RM) Modal/GeneratePatterns.inline.hs utils/appendHaskellPreludeString
 	$(RM) utils/DrIFT utils/genRules $(INLINEAXIOMS)
 
 ####################################################################
