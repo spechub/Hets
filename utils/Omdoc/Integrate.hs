@@ -2671,8 +2671,8 @@ getPresentationString for t =
 		getChildren) t
 	
 
-predsXNWONFromXmlTheory::Set.Set XmlNamedWONSORT->AnnXMLN->Map.Map XmlNamedWONId (Set.Set PredTypeXNWON)
-predsXNWONFromXmlTheory xnsortset anxml =
+predsXNWONFromXmlTheory::TheoryXNSet->Set.Set XmlNamedWONSORT->AnnXMLN->Map.Map XmlNamedWONId (Set.Set PredTypeXNWON)
+predsXNWONFromXmlTheory xntheoryset xnsortset anxml =
 	let
 		objsymbols = applyXmlFilter (getChildren .> isTag "symbol" .> withQualSValue symbolTypeXMLNS symbolTypeXMLAttr "object") (axXml anxml)
 		predsymbols = filter (\n -> applyXmlFilter (
@@ -2695,19 +2695,32 @@ predsXNWONFromXmlTheory xnsortset anxml =
 				pid = case pids of
 					[] -> Hets.stringToId pidxname
 					_ -> read pids
-				args = map (\n -> xshow [n]) $ applyXmlFilter (
-					getChildren .> isTag "type" .> withSValue "system" "casl" .>
-					getChildren .> isTag "OMOBJ" .>
-					getChildren .> isTag "OMA" .>
-					getChildren .> isTag "OMS" .>
-					withValue "name" (/="predication") .>
-					getValue "name" ) (axXml panxml)
-				xnargs = map
-					(\a -> case findByNameAndOrigin a (axAnn anxml) xnsortset of
-						Nothing -> error "Unknown type of argument!"
-						(Just xnarg) -> xnarg
+				argtags = applyXmlFilter (getChildren .> isTag "type" .> withSValue "system" "casl" .>
+					getChildren .> isTag "OMOBJ" .> getChildren .> isTag "OMA" .>
+					getChildren .> isTag "OMS" .> withValue "name" (/="predication") ) (axXml panxml)
+				argswithcds = map (\n ->
+					(
+						xshow $ applyXmlFilter (getValue "name") [n],
+						xshow $ applyXmlFilter (getValue "cd") [n]
 					)
-					args
+					) argtags
+				xnargs = map
+					(\(axname, acd) ->
+						let
+							theonode = case getNodeForTheoryName xntheoryset acd of
+								Nothing -> error "Unknown Theory for Argument!"
+								(Just n) -> n
+						in
+							case findByNameAndOrigin axname theonode xnsortset of
+								Nothing -> error "Unknown type of argument!"
+								(Just xnarg) ->
+									if (xnWOaToO xnarg) /= theonode
+										then
+											error "Found Argument but in wrong Theory!"
+										else
+											xnarg
+					)
+					argswithcds
 			in	(XmlNamed (Hets.mkWON pid (axAnn anxml)) pidxname, PredTypeXNWON xnargs)
 	
 			
@@ -2726,7 +2739,7 @@ predsXNWONFromXml xntheoryset xnsortset anxmlset =
 	Set.fold
 		(\anxml mapping ->
 			let
-				theopreds = predsXNWONFromXmlTheory xnsortset anxml
+				theopreds = predsXNWONFromXmlTheory xntheoryset xnsortset anxml
 			in
 				if Map.null theopreds
 					then
@@ -2737,7 +2750,7 @@ predsXNWONFromXml xntheoryset xnsortset anxmlset =
 								Nothing -> error "Unknown theory!"
 								(Just xname) -> xname
 							)
-							(predsXNWONFromXmlTheory xnsortset anxml)
+							theopreds
 							mapping
 		)
 		Map.empty
@@ -2778,8 +2791,8 @@ opsFromXmlTheory t =
 				res = Hets.stringToId $ xshow $ [last (argsall)]
 			in	(oId, OpType (if isTotal then Total else Partial) (map (\n -> Hets.stringToId $ xshow [n]) args) res)
 			
-opsXNWONFromXmlTheory::Set.Set XmlNamedWONSORT->AnnXMLN->Map.Map XmlNamedWONId (Set.Set OpTypeXNWON)
-opsXNWONFromXmlTheory xnsortset anxml =
+opsXNWONFromXmlTheory::TheoryXNSet->Set.Set XmlNamedWONSORT->AnnXMLN->Map.Map XmlNamedWONId (Set.Set OpTypeXNWON)
+opsXNWONFromXmlTheory xntheoryset xnsortset anxml =
 	let
 		objsymbols = applyXmlFilter (getChildren .> isTag "symbol" .> withQualSValue symbolTypeXMLNS symbolTypeXMLAttr "object") (axXml anxml)
 		opsymbols = filter (\n -> applyXmlFilter (
@@ -2808,19 +2821,35 @@ opsXNWONFromXmlTheory xnsortset anxml =
 					getChildren .> isTag "OMA" .>
 					getChildren .> isTag "OMS" .>
 					withSValue "name" "function") (axXml oanxml) /= []
-				argsall = map (\n -> xshow [n]) $ applyXmlFilter (
+				argsalltags = applyXmlFilter (
 					getChildren .> isTag "type" .> withSValue "system" "casl" .>
 					getChildren .> isTag "OMOBJ" .>
 					getChildren .> isTag "OMA" .>
 					getChildren .> isTag "OMS" .>
-					withValue "name" (\n -> n /= "function" && n /= "partial-function") .>
-					getValue "name" ) (axXml oanxml)
-				xnargsall = map
-					(\a -> case findByNameAndOrigin a (axAnn anxml) xnsortset of
-						Nothing -> error "Unknown type of argument!"
-						(Just xnarg) -> xnarg
+					withValue "name" (\n -> n /= "function" && n /= "partial-function")
+					) (axXml oanxml)
+				argsallwithcds = map (\n ->
+					(
+						xshow $ applyXmlFilter (getValue "name") [n],
+						xshow $ applyXmlFilter (getValue "cd") [n]
 					)
-					argsall
+					) argsalltags
+				xnargsall = map
+					(\(axname, acd) ->
+						let
+							theonode = case getNodeForTheoryName xntheoryset acd of
+								Nothing -> error "No Theory for Argument!"
+								(Just n) -> n
+						in
+							case findByNameAndOrigin axname theonode xnsortset of
+								Nothing -> error "Unknown type of argument!"
+								(Just xnarg) -> if (xnWOaToO xnarg) /= theonode
+									then
+										error "Found Argument but in wrong Theory!"
+									else
+										xnarg
+					)
+					argsallwithcds
 				xnargs = take (length(xnargsall)-1) xnargsall
 				xnres = last (xnargsall)
 			in
@@ -2848,7 +2877,7 @@ opsXNWONFromXml xntheoryset xnsortset anxmlset =
 	Set.fold
 		(\anxml mapping ->
 			let
-				theoops = opsXNWONFromXmlTheory xnsortset anxml
+				theoops = opsXNWONFromXmlTheory xntheoryset xnsortset anxml
 			in
 				if Map.null theoops
 					then
@@ -5179,6 +5208,14 @@ lastorempty::[a]->[a]
 lastorempty [] = []
 lastorempty l = [last l]
 
+data FFXInput = FFXInput {
+	xnTheorySet :: TheoryXNSet
+	,xnSortSet :: Set.Set XmlNamedWONSORT
+	,xnRelSet :: Rel.Rel XmlNamedWONSORT
+	,xnPredMap :: Map.Map XmlNamedWONId (Set.Set PredTypeXNWON)
+	,xnOpMap :: Map.Map XmlNamedWONId (Map.Map XmlNamedWONId (Set.Set OpTypeXNWON))
+	}
+
 formulaFromXml::FormulaContext->(HXT.XmlTrees)->(FORMULA ())
 formulaFromXml fc t = if (applyXmlFilter (isTag "OMBIND") t) /= [] then -- it's a quantifier...
 			let	quantTree = singleitem 1 (applyXmlFilter (isTag "OMBIND") t)
@@ -5374,7 +5411,56 @@ predicationFromXml t =
 		Pred_name $ Hets.stringToId sname
 	else
 		Qual_pred_name (Hets.stringToId sname) prtype Id.nullRange
+		
+-- NOTE: need to fix formula generation because new format makes explicit
+-- signatures obsolete...
 						
+predicationXNFromXml::FFXInput->AnnXMLN->PRED_SYMB
+predicationXNFromXml ffxi anxml =
+	let	signature =
+			if (applyXmlFilter (isTag "OMATTR") (axXml anxml)) /= [] then
+				xshow $ applyXmlFilter (
+					getChildren .> isTag "OMATP" .>
+					getChildren .> isTag "OMSTR" .>
+					getChildren ) (axXml anxml)
+			else
+				""
+		types = explode "-\\" signature
+		prtype =
+			Pred_type
+				(map
+					(\t ->
+						case findByNameAndOrigin t (axAnn anxml) (xnSortSet ffxi) of
+							Nothing -> error "Cannot find argument!"
+							(Just txn) -> xnWOaToa txn
+					)
+					types
+				)
+				Id.nullRange
+		symbolXml = if signature == "" then
+						applyXmlFilter (isTag "OMS") (axXml anxml)
+						else
+						applyXmlFilter (
+							isTag "OMATTR" .>
+							getChildren .> isTag "OMS"
+							) (axXml anxml)
+		sxname = xshow $ applyXmlFilter (getValue "name") symbolXml
+		sxcd = xshow $ applyXmlFilter (getValue "cd") symbolXml
+		theonode = case getNodeForTheoryName (xnTheorySet ffxi) sxcd of
+			Nothing -> error "No Theory for used predicate!"
+			(Just n) -> n
+		predXNWONId = case findByNameAndOrigin sxname theonode (map fst $ Map.toList $ xnPredMap ffxi) of
+			Nothing -> error "Unknown Predicate!"
+			(Just p) -> if (xnWOaToO p) /= theonode
+				then
+					error "Predicate found but in wrong theory!"
+				else
+					p
+	in
+	if signature == [] then
+		Pred_name (xnWOaToa predXNWONId)
+	else
+		Qual_pred_name (xnWOaToa predXNWONId) prtype Id.nullRange
 
 -- String to Quantifiert...
 quantFromName::String->QUANTIFIER
