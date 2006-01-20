@@ -13,13 +13,16 @@ Here is the place where the class Logic is instantiated for CASL.
 
 module OWL_DL.AS where
 
-{- -- global: ShATermConvertible !-}
-
-import Text.XML.HXT.DOM.XmlTreeTypes
 import qualified Common.Lib.Map as Map
  
-type URIreference =  QName
--- type URIreference = String
+-- QName copied from Text/XML/HXT/DOM/XmlTreeTypes.hs
+data QName = QN { namePrefix    :: String -- ^ the name prefix part
+                , localPart     :: String -- ^ the local part
+                , namespaceUri  :: String -- ^ the associated namespace uri
+                }
+             deriving (Eq, Ord, Show, Read)
+
+type URIreference = QName
 
 type DatatypeID = URIreference
 type ClassID = URIreference
@@ -67,9 +70,11 @@ data DataLiteral = TypedL TypedLiteral
 type RDFSLiteral = String
 
 type TypedLiteral = (LexicalForm, URIreference)  
-                    -- ^ consist of a lexical representatoin and a URI.                   
+                    -- ^ consist of a lexical representatoin and a URI.
+                   
 type PlainLiteral = (LexicalForm, LanguageTag)  
-                    -- ^ Unicode string in Normal Form C and an optional language tag
+          -- ^ Unicode string in Normal Form C and an optional language tag
+
 type LexicalForm = String        
 type LanguageTag = String
 
@@ -163,7 +168,10 @@ data Axiom = Thing
                    IndividualvaluedPropertyID
              deriving (Show,Eq,Ord)
 
-data Func = Functional | InverseFunctional | Functional_InverseFunctional | Transitive
+data Func = Functional 
+          | InverseFunctional 
+          | Functional_InverseFunctional 
+          | Transitive
             deriving (Show, Eq,Ord)
 
 data Modality = Complete | Partial
@@ -177,8 +185,9 @@ data Description = DC ClassID
                  | OneOfDes [IndividualID]
                    deriving (Show,Eq,Ord)
 
-data Restriction = DataRestriction DatavaluedPropertyID Drcomponent [Drcomponent]
-                 | IndivRestriction IndividualvaluedPropertyID Ircomponent [Ircomponent]
+data Restriction = 
+          DataRestriction DatavaluedPropertyID Drcomponent [Drcomponent]
+        | IndivRestriction IndividualvaluedPropertyID Ircomponent [Ircomponent]
                    deriving (Show, Eq,Ord)
 
 data Drcomponent = DRCAllValuesFrom DataRange
@@ -205,7 +214,6 @@ data DataRange = DID DatatypeID
 
 emptyOntology :: Ontology
 emptyOntology = Ontology Prelude.Nothing [] Map.empty
-
 
 -- check if QName is empty
 isEmptyQN :: QName -> Bool

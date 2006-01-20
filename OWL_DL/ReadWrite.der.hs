@@ -18,7 +18,6 @@ manual instance for 'Ontology'
 -}
 module OWL_DL.ReadWrite where
 
-import Text.XML.HXT.DOM.XmlTreeTypes
 import qualified Common.Lib.Map as Map
 import OWL_DL.AS
 import Common.ATerm.Lib

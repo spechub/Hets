@@ -14,7 +14,6 @@ module OWL_DL.StaticAna where
 
 import OWL_DL.Sign
 import OWL_DL.AS
-import Text.XML.HXT.DOM.XmlTreeTypes
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 import Common.AS_Annotation

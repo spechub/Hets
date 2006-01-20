@@ -13,7 +13,6 @@ Signatures and sentences for OWL_DL.
 module OWL_DL.Sign where
 
 import OWL_DL.AS
-import Text.XML.HXT.DOM.XmlTreeTypes
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 

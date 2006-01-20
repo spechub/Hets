@@ -23,7 +23,7 @@ import CASL.AS_Basic_CASL
 import CASL_DL.AS_CASL_DL
 
 import Data.List
-import Text.XML.HXT.DOM.XmlTreeTypes (QName)          
+import OWL_DL.AS (QName)          
 import OWL_DL.ReadWrite ()
 
 data CASL_DLSign = 

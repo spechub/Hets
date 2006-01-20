@@ -18,7 +18,6 @@ import OWL_DL.Sign
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.AS_Annotation as Common.Annotation
-import Text.XML.HXT.DOM.XmlTreeTypes
 import List(find, nub)
 import Maybe(fromJust)
 import Char(isDigit, isAlpha)

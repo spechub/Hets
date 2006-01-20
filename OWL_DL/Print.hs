@@ -23,7 +23,6 @@ import Common.GlobalAnnotations
 import Common.Lib.Pretty
 import Common.PrettyPrint
 
-import Text.XML.HXT.DOM.XmlTreeTypes 
 import OWL_DL.Sign
 import OWL_DL.AS
 

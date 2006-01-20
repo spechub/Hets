@@ -19,7 +19,6 @@ import OWL_DL.Logic_OWL_DL
 import OWL_DL.AS
 -- import Common.DefaultMorphism
 import Data.Graph.Inductive.Query.DFS
-import Text.XML.HXT.DOM.XmlTreeTypes
 import Logic.Grothendieck
 import Logic.Logic
 import Logic.Coerce
