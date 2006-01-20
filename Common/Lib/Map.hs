@@ -95,7 +95,6 @@ module Common.Lib.Map  (
             -- * Conversion
             , elems
             , keys
-            , keysSet
             , assocs
             
             -- ** Lists
@@ -152,7 +151,6 @@ module Common.Lib.Map  (
 import Prelude hiding (lookup,map,filter,foldr,foldl,null)
 
 #if __GLASGOW_HASKELL__<=602
-import qualified Common.Lib.Set as Set
 import qualified Data.List as List
 
 {-
@@ -907,10 +905,6 @@ elems m
 keys  :: Map k a -> [k]
 keys m
   = [k | (k,x) <- assocs m]
-
--- | /O(n)/. The set of all keys of the map.
-keysSet :: Map k a -> Set.Set k
-keysSet m = Set.fromDistinctAscList (keys m)
 
 -- | /O(n)/. Return all key\/value pairs in the map in ascending key order.
 assocs :: Map k a -> [(k,a)]
