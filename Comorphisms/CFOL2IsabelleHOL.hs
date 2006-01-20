@@ -121,28 +121,24 @@ transTheory trSig trForm (sign, sens) =
     dtDefs = topoSort (makeDtDefs sign sort_gen_axs)
     dtTypes = map ((\(Type s _ _) -> s).fst) $ concat dtDefs
     ga = globAnnos sign
-    insertOps op ts m =
-     if Set.size ts == 1
-      then let t = Set.findMin ts in
+    insertOps op ts m = case Set.lookupSingleton ts of
+      Just t ->
            Map.insert (mkIsaConstT False ga (length $ opArgs t) op baseSign)
                (transOpType t) m
-      else
-      foldl (\m1 (t,i) ->
+      Nothing -> foldl (\m1 (t,i) ->
              Map.insert (mkIsaConstIT False ga
                          (length $ opArgs t) op i baseSign)
                     (transOpType t) m1) m
-                (zip (Set.toList ts) [1..(Set.size ts)])
-    insertPreds pre ts m =
-     if Set.size ts == 1
-      then let t = Set.findMin ts in
+                (zip (Set.toList ts) [1..])
+    insertPreds pre ts m = case Set.lookupSingleton ts of
+      Just t ->
            Map.insert (mkIsaConstT True ga (length $ predArgs t) pre baseSign)
                (transPredType (Set.findMin ts)) m
-      else
-      foldl (\m1 (t,i) ->
+      Nothing ->  foldl (\m1 (t,i) ->
              Map.insert (mkIsaConstIT True ga
                          (length $ predArgs t) pre i baseSign)
                     (transPredType t) m1) m
-                (zip (Set.toList ts) [1..Set.size ts])
+                (zip (Set.toList ts) [1..])
 
 -- | filter out constructors from data types
 isNotIn :: DomainTab -> VName -> Typ -> Bool
@@ -316,7 +312,7 @@ transOP_SYMB sign (Qual_op_name op ot _) = let
   ga = globAnnos sign
   l = length $ args_OP_TYPE ot in
   case (do ots <- Map.lookup op (opMap sign)
-           if Set.size ots == 1
+           if Set.isSingleton ots
              then return $ mkIsaConstT False ga l op baseSign
              else do
                    i <- elemIndex (toOpType ot) (Set.toList ots)
@@ -330,7 +326,8 @@ transPRED_SYMB sign (Qual_pred_name p pt@(Pred_type args _) _) = let
   ga = globAnnos sign
   l = length args in
   case (do pts <- Map.lookup p (predMap sign)
-           if Set.size pts == 1 then return $ mkIsaConstT True ga l p baseSign
+           if Set.isSingleton pts 
+             then return $ mkIsaConstT True ga l p baseSign
              else do
                    i <- elemIndex (toPredType pt) (Set.toList pts)
                    return $ mkIsaConstIT True ga l p (i+1) baseSign) of

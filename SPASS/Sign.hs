@@ -79,13 +79,9 @@ checkArities s =
 
 checkPredArities :: PredMap -> Bool
 checkPredArities = Map.fold checkSet True 
-    where checkSet s bv 
-              | Set.null s = False
-              | Set.size s == 1 = bv 
-              | otherwise = 
-                  bv && 
-                  all (\ x -> length x == length (head sl)) (tail sl)
-                  where sl = Set.toList s
+    where checkSet s bv = bv && not (Set.null s) &&
+                  all (\ x -> length x == length hd) tl
+                      where hd : tl = Set.toList s
 
 checkFuncArities :: FuncMap -> Bool
 checkFuncArities = checkPredArities . mapToPredMap

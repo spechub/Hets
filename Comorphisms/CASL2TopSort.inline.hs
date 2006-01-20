@@ -142,7 +142,7 @@ generateSubSortMap sortRels pMap =
              (Rel.mostRight sortRels)
         toPredInfo k e = 
             let ts = case Set.filter (\pts -> Rel.member k pts sortRels) mR of
-                     s -> assert (Set.size s == 1) (head (Set.toList s))
+                     s -> assert (Set.isSingleton s) (head (Set.toList s))
             in PredInfo { topSort_PI = ts
                         , directSuperSorts_PI = Set.difference e mR
                         , predicate_PI = k }
@@ -448,8 +448,8 @@ genDisjunction :: [TERM f] -- ^ Qual_vars
                   -> (Set.Set [Maybe PRED_NAME])
                   -> Maybe (FORMULA f)
 genDisjunction vars spn  
-    | Set.size spn == 1 = 
-        case genConjunction [] (head (Set.toList spn)) of
+    | Set.isSingleton spn = 
+        case disjs of
         []  -> Nothing
         [x] -> Just x
         _   -> error "CASL2TopSort.genDisjunction: this cannot happen"

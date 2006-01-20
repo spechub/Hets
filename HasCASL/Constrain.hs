@@ -182,7 +182,7 @@ collapser r =
         ks = map (Set.partition ( \ e -> case e of 
                                       TypeName _ _ n -> n==0
                                       _ -> error "collapser")) t
-        ws = filter (\ p -> Set.size (fst p) > 1) ks
+        ws = filter (\ p -> Set.compareSize 1 (fst p) == LT) ks
     in if null ws then
        return $ foldr ( \ (cs, vs) s -> 
                if Set.null cs then 
@@ -267,24 +267,24 @@ monoSubst te r t =
         vs = Set.toList $ Set.union (varSet t) $ Set.unions $ map varSet 
               $ Set.toList $ Rel.nodes r
         monos = filter ( \ (i, (n, rk)) -> case monotonic te i t of
-                                (True, _) -> 1 == Set.size 
+                                (True, _) -> Set.isSingleton 
                                     (Rel.predecessors r $ 
                                         TypeName n rk i)
                                 _ -> False) vs
         antis = filter ( \ (i, (n, rk)) -> case monotonic te i t of
-                                (_, True) -> 1 == Set.size
+                                (_, True) -> Set.isSingleton
                                      (Rel.succs r $ 
                                          TypeName n rk i)
                                 _ -> False) vs
         resta = filter ( \ (i, (n, rk)) -> case monotonic te i t of
-                                (True, True) -> 1 < Set.size
+                                (True, True) -> Set.compareSize 1
                                      (Rel.succs r $ 
-                                         TypeName n rk i)
+                                         TypeName n rk i) == LT
                                 _ -> False) vs
         restb = filter ( \ (i, (n, rk)) -> case monotonic te i t of
-                                (True, True) -> 1 < Set.size
+                                (True, True) -> Set.compareSize 1
                                      (Rel.predecessors r $ 
-                                         TypeName n rk i)
+                                         TypeName n rk i) == LT
                                 _ -> False) vs
     in if null antis then 
           if null monos then 

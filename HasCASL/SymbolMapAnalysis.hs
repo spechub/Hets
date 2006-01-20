@@ -104,10 +104,10 @@ typeFun e rmap s k = do
                  Just r -> Set.singleton r)
                [ASymbol $ idToTypeSymbol e s k, AnID s, AKindedId SK_type s]
     -- rsys contains the raw symbols to which s is mapped to
-    case Set.size rsys of
-          0 -> return s  -- use default = identity mapping
-          1 -> return $ rawSymName $ Set.findMin rsys -- take the unique rsy
-          _ -> Result [mkDiag Error ("type: " ++ showPretty s 
+    if Set.null rsys then return s -- use default = identity mapping
+       else case Set.lookupSingleton rsys of 
+       Just rsy -> return $ rawSymName rsy
+       Nothing -> Result [mkDiag Error ("type: " ++ showPretty s 
                        " mapped ambiguously") rsys] Nothing
 
 -- | compute mapping of functions
@@ -209,7 +209,7 @@ inducedFromToMorphism rmap1 sigma1 sigma2 = do
             s2 = symOf sigma2
             Symbol n1 t1 _  = Set.findMin s1
             Symbol n2 t2 _  = Set.findMin s2
-        in if Set.size s1 == 1 && Set.size s2 == 1 
+        in if Set.isSingleton s1 && Set.isSingleton s2
               && symbTypeToKind t1 == SK_type 
               && symbTypeToKind t2 == SK_type then
           return mor1 { typeIdMap = Map.singleton n1 n2 } 

@@ -178,10 +178,10 @@ inducedFromMorphism extEm rmap sigma = do
 sortFun :: RawSymbolMap -> Id -> Result Id
 sortFun rmap s = 
     -- rsys contains the raw symbols to which s is mapped to
-    case Set.size rsys of
-          0 -> return s  -- use default = identity mapping
-          1 -> return $ rawSymName $ Set.findMin rsys -- take the unique rsy
-          _ -> pplain_error s  -- ambiguity! generate an error 
+    if Set.null rsys then return s -- use default = identity mapping
+    else case Set.lookupSingleton rsys of
+          Just rsy -> return $ rawSymName rsy -- take the unique rsy
+          Nothing -> pplain_error s  -- ambiguity! generate an error 
                  (text "Sort" <+> printText s 
                   <+> text "mapped ambiguously:" <+> printText rsys)
                  nullRange
@@ -505,7 +505,8 @@ type PosMap = (Map.Map Symbol (SymbolSet,(Bool,Int)),
 -- postpone entries with no default mapping and size > 1
 postponeEntry :: Symbol -> SymbolSet -> Bool
 postponeEntry sym symset = 
-  (not $ any (preservesName sym) $ Set.toList symset) && Set.size symset > 1
+  (not $ any (preservesName sym) $ Set.toList symset) && 
+         Set.compareSize 1 symset == LT
 
 removeFromPosmap :: Symbol -> (Bool,Int) -> PosMap -> PosMap
 removeFromPosmap sym card (posmap1,posmap2) =
@@ -603,7 +604,7 @@ inducedFromToMorphism extEm isSubExt  rmap sigma1 sigma2 = do
    then return (mor1 {mtarget = sigma2})
    -- no => OK, we've to take the hard way
    else let sortSet2 = sortSet sigma2 in 
-        if Map.null rmap && Set.size symset1 == 1 && Set.size sortSet2 == 1 
+        if Map.null rmap && Set.isSingleton symset1 && Set.isSingleton sortSet2
            then return mor1 
                     { mtarget = sigma2 
                     , sort_map = Map.singleton (symName $ Set.findMin symset1) 

@@ -146,16 +146,16 @@ transFuncMap :: IdType_SPId_Map ->
                 (FuncMap, IdType_SPId_Map)
 transFuncMap idMap sign = 
     Map.foldWithKey toSPOpType (Map.empty,idMap) (CSign.opMap sign)
-    where toSPOpType iden typeSet (fm,im) 
-              | Set.null typeSet = 
+    where toSPOpType iden typeSet (fm,im) =
+              if Set.null typeSet then 
                   error ("CASL2SPASS: empty sets are not allowed in OpMaps: "
                          ++ show iden)
-              | Set.size typeSet == 1 =
-                  let oType = head (Set.toList typeSet)
-                      sid' = sid fm oType
+              else case Set.lookupSingleton typeSet of
+              Just oType -> 
+                  let sid' = sid fm oType
                   in (Map.insert sid' (Set.singleton (transOpType oType)) fm,
                       insertSPId iden (COp oType) sid' im)
-              | otherwise =  
+              Nothing ->  
                   case partOverload (leqF sign) 
                            (partArities (length . CSign.opArgs) typeSet) of
                   (overl,diffs) -> 
@@ -202,10 +202,11 @@ partOverload :: (Ord a) => (a -> a -> Bool)
              -> Set.Set (Set.Set a) 
              -> (Set.Set (Set.Set a), Set.Set a)
 partOverload leq = Set.fold part (Set.empty,Set.empty)
-    where part s (overl,diffs)
-              | Set.null s = (overl,diffs)
-              | Set.size s == 1 = (overl,Set.union diffs s)
-              | otherwise = 
+    where part s (overl,diffs) = 
+              if Set.null s then (overl, diffs)
+              else case Set.lookupSingleton s of 
+              Just m -> (overl, Set.delete m diffs)
+              Nothing ->
                   case Set.deleteFindMin s of
                   (x,s') -> 
                       case Set.partition (\ y -> leq x y) s' of
@@ -221,16 +222,16 @@ transPredMap :: IdType_SPId_Map ->
                 (PredMap, IdType_SPId_Map)
 transPredMap idMap sign = 
     Map.foldWithKey toSPPredType (Map.empty,idMap) (CSign.predMap sign)
-    where toSPPredType iden typeSet (fm,im) 
-              | Set.null typeSet = 
+    where toSPPredType iden typeSet (fm,im) =
+              if Set.null typeSet then 
                   error ("CASL2SPASS: empty sets are not allowed in PredMaps: "
                          ++ show iden)
-              | Set.size typeSet == 1 =
-                  let pType = head (Set.toList typeSet)
-                      sid' = sid fm pType
+              else case Set.lookupSingleton typeSet of 
+              Just pType -> 
+                  let sid' = sid fm pType
                   in (Map.insert sid' (Set.singleton (transPredType pType)) fm,
                       insertSPId iden (CPred pType) sid' im)
-              | otherwise = 
+              Nothing -> 
                   case partOverload (leqP sign) 
                            (partArities (length . CSign.predArgs) typeSet) of
                   (overl,diffs) -> 

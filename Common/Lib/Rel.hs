@@ -325,9 +325,7 @@ flatSet = Set.fromList . List.map (\s -> if Set.null s
 locallyFiltered :: (Ord a) => Rel a -> Bool
 locallyFiltered rel = (check . flatSet . partSet iso . mostRight) rel
     where iso x y = member x y rel && member y x rel
-          check s
-              | Set.size s <= 1 = True
-              | otherwise =
+          check s = Set.null s || Set.isSingleton s ||
                   Set.fold (\y rs -> rs &&
                                      not (haveCommonLeftElem x y rel)) True s'
                   && check s'

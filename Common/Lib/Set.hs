@@ -44,7 +44,10 @@ module Common.Lib.Set  (
             -- * Query
             , null
             , size
+            , compareSize
             , member
+            , lookupSingleton
+            , isSingleton
             , isSubsetOf
             , isProperSubsetOf
             
@@ -1063,3 +1066,15 @@ prop_List xs
 #else
 import Data.Set
 #endif
+
+-- | /O(1)/ try to extract the element from a singleton set
+lookupSingleton :: Set a -> Maybe a
+lookupSingleton s = if size s == 1 then Just $ findMin s else Nothing 
+
+-- | /O(1)/ test if set is a singleton
+isSingleton :: Set a -> Bool
+isSingleton s = size s == 1
+
+-- | /O(1)/ compare the number with the set's size 
+compareSize :: Int -> Set a -> Ordering
+compareSize i = compare i . size

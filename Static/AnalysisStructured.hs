@@ -1131,10 +1131,10 @@ mapID idmap i@(Id toks comps pos1) =
     Nothing -> do
       compsnew <- sequence $ map (mapID idmap) comps
       return (Id toks compsnew pos1)
-    Just ids -> case Set.size ids of
-      0 -> return i
-      1 -> return $ Set.findMin ids
-      _ -> pplain_error i
+    Just ids -> if Set.null ids then return i else 
+      case Set.lookupSingleton ids of
+        Just j -> return j
+        Nothing -> pplain_error i
              (text "Identifier component " <+> printText i
               <+> text "can be mapped in various ways:"
               <+> printText ids) nullRange
