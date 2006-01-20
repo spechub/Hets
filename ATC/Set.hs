@@ -26,6 +26,13 @@ instance Typeable a => Typeable (Set a) where
   typeOf s = mkTyConApp setTc [typeOf ((undefined:: Set a -> a) s)]
 
 instance (Ord a, ShATermConvertible a) => ShATermConvertible (Set a) where
-    toShATerm att fm = toShATerm att $ setToList fm
-    fromShATerm att  = mkSet $ fromShATerm att
+    toShATermAux att set = do
+      (att1, i) <-  toShATerm' att $ setToList set
+      return $ addATerm (ShAAppl "DataSet" [i] []) att1
+    fromShATermAux ix att0 =
+        case getShATerm ix att0 of
+            ShAAppl "DataSet" [a] _ ->
+                    case fromShATerm' a att0 of { (att1, a') ->
+                    (att1, mkSet a') }
+            u -> fromShATermError "Data.Set.Set" u
 #endif
