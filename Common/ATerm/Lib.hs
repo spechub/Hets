@@ -17,6 +17,6 @@ module Common.ATerm.Lib (
             
 ) where
 
-import Common.ATerm.AbstractSyntax hiding (addATermNoFullSharing)
+import Common.ATerm.AbstractSyntax
 import Common.ATerm.Conversion
 import Common.ATerm.ConvInstances

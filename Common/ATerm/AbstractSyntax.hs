@@ -14,9 +14,9 @@ module Common.ATerm.AbstractSyntax
     (ShATerm(..),
      ATermTable,
      emptyATermTable,
-     addATerm,addATermNoFullSharing,
+     addATerm,
      getATerm, toReadonlyATT,
-     getATermIndex,getTopIndex,
+     getTopIndex,
      getATerm', setATerm', getShATerm,
      Key(..), newATermTable, getKey, setKey, mkKey,
      getATermByIndex1, str2Char, integer2Int
@@ -104,9 +104,6 @@ getShATerm i (ATT _ _ i_aFM _ _) = find i i_aFM
 
 getTopIndex :: ATermTable -> Int
 getTopIndex (ATT _ _ _ i _) = i
-
-getATermIndex :: ShATerm -> ATermTable -> Int
-getATermIndex t (ATT _ a_iDFM _ _ _) = Map.findWithDefault (-1) t a_iDFM
 
 getATermByIndex1 :: Int -> ATermTable -> ATermTable
 getATermByIndex1 i (ATT h a_iDFM i_aDFM _ dM) = ATT h a_iDFM i_aDFM i dM
