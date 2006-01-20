@@ -10,7 +10,7 @@
 ####################################################################
 ## Some varibles, which control the compilation
 
-INCLUDE_PATH = hxt
+INCLUDE_PATH =
 
 HC = ghc
 HC_INCLUDE = -i$(INCLUDE_PATH)
