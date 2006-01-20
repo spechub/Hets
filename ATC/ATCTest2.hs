@@ -1,4 +1,4 @@
-module Main() where
+module Main where
 
 import System.Environment
 import System.Random
@@ -7,25 +7,13 @@ import Common.ATerm.Lib
 import Common.ATerm.ReadWrite
 import Common.ATerm.Unshared
 import qualified Common.Lib.Map as Map
-import Data.Array
 import Data.List (isPrefixOf)
 import GHC.Read
-
-getTenRandoms :: IO [Int]
-getTenRandoms = getRand 10
-    where getRand x
-              | x <= (0 :: Int) = return []
-              | otherwise = do y <- getStdRandom (randomR (1,6))
-                               ys <- getRand (x-1)
-                               return (y:ys)
 
 main :: IO ()
 main = do args <- getArgs
           setStdGen (mkStdGen 50) -- setting an initial RandomGenerator
                                   -- is like setting the seed in C
---        tens <- getTenRandoms
-        --  putStrLn (show tens)
-          --fail "stop"
           let (cmd,files) = (head args,tail args)
           let cmdFun = case cmd of
                        "ReadWrite" -> testATC
@@ -42,9 +30,10 @@ main = do args <- getArgs
           mapM_ cmdFun files
 
 usage :: String -> FilePath -> IO ()
-usage cmd _ = do putStrLn ("unknown command: "++cmd)
-                 putStrLn ("Known commands are: ReadWrite, BigMap, BigRel, BigSet")
-                 fail "no known command given"
+usage cmd _ = do 
+  putStrLn ("unknown command: "++cmd)
+  putStrLn ("Known commands are: ReadWrite, [Check]Big{Map,List}<n>")
+  fail "no known command given"
 
 generateRandomLists :: String -> IO [(Int,Int)]
 generateRandomLists upstr  = do
@@ -63,13 +52,6 @@ genIList cnt
     | otherwise = do v <- getStdRandom (randomR (1,maxBound::Int))
                      l <- genIList (cnt-1)
                      return ((cnt,v):l)
-
-genSList :: Array Int String -> Int -> IO [(Int,String)]
-genSList strs cnt = do
-    ilist <- genIList cnt
-    return (map trans ilist)
-    where trans :: (Int,Int) -> (Int,String)
-          trans (i,j) = (i,strs ! (j `mod` (snd (bounds strs) + 1)))
 
 testDDataMap :: String ->  FilePath -> IO ()
 testDDataMap upperstr fp = do
@@ -140,6 +122,3 @@ testATC fp = do str <- readFile fp
                 let fp' = resultFP fp
                 putStrLn ("Writing File "++fp'++" ...")
                 writeFileSDoc fp' (writeSharedATermSDoc att)
-
-
-
