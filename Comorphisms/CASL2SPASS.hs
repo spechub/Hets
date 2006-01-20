@@ -204,10 +204,8 @@ partOverload :: (Ord a) => (a -> a -> Bool)
 partOverload leq = Set.fold part (Set.empty,Set.empty)
     where part s (overl,diffs) = 
               if Set.null s then (overl, diffs)
-              else case Set.lookupSingleton s of 
-              Just m -> (overl, Set.delete m diffs)
-              Nothing ->
-                  case Set.deleteFindMin s of
+              else if Set.isSingleton s then (overl, Set.union diffs s)
+              else case Set.deleteFindMin s of
                   (x,s') -> 
                       case Set.partition (\ y -> leq x y) s' of
                       (ov,rest) -> 
