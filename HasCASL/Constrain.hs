@@ -306,10 +306,10 @@ monoSubst te r t =
                                         $ Set.toList s
                     in Map.singleton i $ Set.findMin $ if Set.null sl then s
                        else sl
-          else Map.fromAscList $ map ( \ (i, (n, rk)) -> 
+          else Map.fromDistinctAscList $ map ( \ (i, (n, rk)) -> 
                 (i, Set.findMin $ Rel.predecessors r $ 
                   TypeName n rk i)) monos
-       else Map.fromAscList $ map ( \ (i, (n, rk)) -> 
+       else Map.fromDistinctAscList $ map ( \ (i, (n, rk)) -> 
                 (i, Set.findMin $ Rel.succs r $ 
                   TypeName n rk i)) antis
        
