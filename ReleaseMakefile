@@ -10,10 +10,7 @@
 ####################################################################
 ## Some varibles, which control the compilation
 
-INCLUDE_PATH =
-
 HC = ghc
-HC_INCLUDE = -i$(INCLUDE_PATH)
 
 # check for the "uni" library
 UNI_PACKAGE_CONF := $(wildcard ../uni/uni-package.conf)
@@ -38,7 +35,7 @@ endif
 
 # OPTS without uni packages
 HC_OPTS1 = -fglasgow-exts -fallow-overlapping-instances \
-    $(HC_INCLUDE) $(PFE_FLAGS) -DCASLEXTENSIONS
+    $(PFE_FLAGS) -DCASLEXTENSIONS
 
 HC_OPTS = $(HC_OPTS1) $(HC_PACKAGE)
 
