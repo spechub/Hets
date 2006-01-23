@@ -99,7 +99,7 @@ terminationProof fsn = (not $ null all_axioms) && (not $ proof)
             where tmp = impli_equiv_cime i (head afs)
     axAux = auxAxstr impli_equiv 1 ""  
     varhead = "let X = vars \"t1 t2 "
-    axhead = "let axioms = TRS F X \"eq(t1,t1) -> True;\n" ++ 
+    axhead = "let axioms = HTRS {} F X \"eq(t1,t1) -> True;\n" ++ 
                                     "eq(t1,t2) -> False;\n" ++
                                     "and(True,True) -> True;\n" ++
                                     "and(True,False) -> False;\n" ++
@@ -124,15 +124,17 @@ terminationProof fsn = (not $ null all_axioms) && (not $ proof)
              else (axhead ++ (axiomStr n_impli_equiv "") ++ axAux ++ "\";\n")
     ipath = "/tmp/Input.cime"
     opath = "/tmp/Result.cime"
-    c_proof = ("termcrit \"dp\";\n" ++
-               "termination axioms;\n" ++
-               "#quit;")  
+    c_proof = ("termcrit \"minimal\";\n" ++
+               "polyinterpkind{(\"linear\",2);(\"simple\",2);" ++
+               "(\"simple\",6);(\"simple\",19)};\n" ++
+               "h_termination axioms;\n" ++
+               "#quit;")
     proof = unsafePerformIO (do
                 writeFile ipath (c_sigs ++ c_vars ++ c_axms ++ c_proof)
                 system ("cime < " ++ ipath ++ " | cat > " ++ opath)
                 res <- readFile opath
                 -- system ("rm ./CASL/CCC/*.cime")
-                return (subStr "Termination proof found." res))
+                return (subStr "Modular termination proof found." res))
 
 
 type Cime = String
