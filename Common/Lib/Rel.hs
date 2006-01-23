@@ -290,7 +290,7 @@ addCycle c r = if Set.null c then error "addCycle" else
     let (a, b) = Set.deleteFindMin c
         (m, d) = Set.deleteFindMax c
     in insert m a $ foldr ( \ (x, y) -> insert x y) (delete a a r) $
-       zip (Set.toAscList d) (Set.toAscList b)
+       zip (Set.toList d) (Set.toList b)
 
 {--------------------------------------------------------------------
   common transitive left element of two elements (Added by K.L.)

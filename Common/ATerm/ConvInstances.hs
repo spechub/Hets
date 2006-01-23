@@ -59,7 +59,7 @@ instance (Ord a, ShATermConvertible a, ShATermConvertible b)
     {-# SPECIALIZE instance (ShATermConvertible b, Ord b)
       => ShATermConvertible (Map.Map Id (Set.Set b)) #-}
     toShATermAux att fm = do
-      (att1, i) <- toShATerm' att $ Map.toAscList fm
+      (att1, i) <- toShATerm' att $ Map.toList fm
       return $ addATerm (ShAAppl "Map" [i] []) att1
     fromShATermAux ix att0 =
         case getShATerm ix att0 of
@@ -91,7 +91,7 @@ instance (ShATermConvertible a) => ShATermConvertible (OMap.ElemWOrd a) where
 instance (Ord a,ShATermConvertible a) => ShATermConvertible (Set.Set a) where
     {-# SPECIALIZE instance ShATermConvertible (Set.Set Id) #-}
     toShATermAux att set = do
-      (att1, i) <-  toShATerm' att $ Set.toAscList set
+      (att1, i) <-  toShATerm' att $ Set.toList set
       return $ addATerm (ShAAppl "Set" [i] []) att1
     fromShATermAux ix att0 =
         case getShATerm ix att0 of

@@ -1,7 +1,6 @@
-{-| 
-   
+{- | 
 Module      :  $Header$
-Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2004
+Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luettich@tzi.de
@@ -10,8 +9,9 @@ Portability :  portable
 
 Useful functions for pretty printing that will be allmost useful for
    many logics.
+-}
 
-   Todo:
+{-   Todo:
      - Add your own functions.
 -}
 
@@ -159,11 +159,11 @@ instance PrettyPrint a => PrettyPrint [a] where
 --------------------------------------------------------------------}
 
 instance PrettyPrint a => PrettyPrint (Set.Set a) where
-  printText0 ga s  = printListSet ga True (Set.toAscList s)
+  printText0 ga s  = printListSet ga True (Set.toList s)
 
 -- | print a set without enclosing braces
 printSet :: (PrettyPrint a) => GlobalAnnos -> Set.Set a -> Doc
-printSet ga s = printListSet ga False (Set.toAscList s)
+printSet ga s = printListSet ga False (Set.toList s)
 
 printListSet :: (PrettyPrint a) => GlobalAnnos -> Bool -> [a] -> Doc
 printListSet _ False [] = empty     
@@ -178,7 +178,7 @@ printListSet ga showBra (x:xs)
   Maps
 --------------------------------------------------------------------}
 instance (PrettyPrint k, PrettyPrint a) => PrettyPrint (Map.Map k a) where
-  printText0 ga m  = printMap ga (Map.toAscList m)
+  printText0 ga m  = printMap ga (Map.toList m)
 
 printMap :: (PrettyPrint k,PrettyPrint a) => GlobalAnnos -> [(k,a)] -> Doc
 printMap _ []     

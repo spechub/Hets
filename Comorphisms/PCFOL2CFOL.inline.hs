@@ -160,9 +160,9 @@ generateFOLAxioms sig = filter (not . is_True_atom . sentence) $ map
   d = defPred
   bsorts = sortsWithBottom sig
   sortList = Set.toList bsorts
-  opList = [(f,t) | (f,types) <- Map.assocs $ opMap sig,
+  opList = [(f,t) | (f,types) <- Map.toList $ opMap sig,
                     t <- Set.toList types ]
-  predList = [(p,t) | (p,types) <- Map.assocs $ predMap sig,
+  predList = [(p,t) | (p,types) <- Map.toList $ predMap sig,
                     t <- Set.toList types ]
   x = mkSimpleId "x"
   mkVars n = [mkSimpleId ("x_"++show i) | i<-[1..n]]

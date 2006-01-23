@@ -1191,7 +1191,7 @@ extendMorphism (G_sign lid sigmaP) (G_sign lidB sigmaB1)
    (pplain_error () (text "Symbols shared between actual parameter and body"
                      $$ text "must be in formal parameter:"
                      $$ printText illShared ) nullRange)
-  let myKernel m = Set.fromDistinctAscList $ comb1 $ Map.assocs m
+  let myKernel m = Set.fromDistinctAscList $ comb1 $ Map.toList m
       comb1 [] = []
       comb1 (p : qs) =
            comb2 p qs [] ++ comb1 qs

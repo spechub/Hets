@@ -122,7 +122,7 @@ taggedValsToEquivClasses rel' =
         prepMap rel = 
             foldl (\m -> \k -> Map.insert (snd k) [] m) Map.empty rel
         -- conv: perform actual conversion
-        convert [] m = map snd (Map.toAscList m)
+        convert [] m = map snd (Map.toList m)
         convert ((ds, ect) : dsps) m =
             let m' = Map.update (\ec -> Just (ds : ec)) ect m
             in convert dsps m'
@@ -247,7 +247,7 @@ mergeEquivClassesBy cond rel =
 
         myTagMap = merge initialTagMap rel 0
 
-    in foldl tagMapToRel [] (Map.toAscList myTagMap)
+    in foldl tagMapToRel [] (Map.toList myTagMap)
 
 -- | Merge the equivalence classes for given tags.
 mergeEquivClasses :: Eq b
