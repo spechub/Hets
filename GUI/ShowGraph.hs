@@ -56,6 +56,6 @@ showGraphAux file opts convFct = do
             GUI.AbstractGraphView.redisplay gid gv
             graph <- get_graphid gid gv
             sync(destroyed graph)
-            InfoBus.shutdown
             destroy wishInst
+            InfoBus.shutdown
             exitWith ExitSuccess
