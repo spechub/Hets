@@ -2501,6 +2501,9 @@ mapSetToSet mapping =
 	foldl (\set (_, s) ->
 		Set.union set s
 		) Set.empty (Map.toList mapping)
+		
+mapListToMapSet::(Ord b)=>Map.Map a [b]->Map.Map a (Set.Set b)
+mapListToMapSet = Map.map Set.fromList
 
 data AnnotatedXML a = AXML { axAnn::a, axXml::HXT.XmlTrees }
 	deriving Show
@@ -5233,6 +5236,26 @@ isTrueAtom _ = False
 unwrapFormulas::FormulaContext->HXT.XmlTrees->[(Ann.Named CASLFORMULA)]
 unwrapFormulas fc t = map (\n -> unwrapFormula fc [n]) $ ((applyXmlFilter (isTag "axiom") t)::[XmlTree])
 
+unwrapFormulasXN::FFXInput->Set.Set AnnXMLN->[(Ann.Named CASLFORMULA)]
+unwrapFormulasXN ffxi anxmlset =
+	Set.fold (\anxml anfl ->
+		let
+			axioms = applyXmlFilter (getChildren .> isTag "axiom") (axXml anxml)
+		in
+			anfl ++ foldl (\unwrapped axxml ->
+				let
+					ansen = unwrapFormulaXN ffxi (AXML (axAnn anxml) [axxml])
+					ansenname = Ann.senName ansen
+					anpress = getPresentationString ansenname (axXml anxml)
+					anname = case anpress of
+						[] -> ansenname
+						_ -> anpress
+				in
+					unwrapped ++ [ansen { Ann.senName = anname }]
+				) [] axioms
+				) [] anxmlset
+		
+
 adjustFormulaName::String->String
 adjustFormulaName s =
 	if isPrefixOf "AnonAx" s then "" else
@@ -5258,6 +5281,13 @@ unwrapFormula fc t =
 	in
 		Ann.NamedSen (adjustFormulaName name' ) True False (formulaFromXml fc formtree)
 
+unwrapFormulaXN::FFXInput->AnnXMLN->(Ann.Named CASLFORMULA)
+unwrapFormulaXN ffxi anxml =
+	let
+		axname = xshow $ applyXmlFilter (getQualValue axiomNameXMLNS axiomNameXMLAttr) (axXml anxml)
+		formtree = applyXmlFilter (getChildren .> isTag "FMP" .> getChildren .> isTag "OMOBJ" .> getChildren) (axXml anxml)
+	in
+		Ann.NamedSen (axname) True False (formulaFromXmlXN ffxi (AXML (axAnn anxml) formtree))
 		  
 tailorempty::[a]->[a]
 tailorempty [] = []
@@ -5268,11 +5298,11 @@ lastorempty [] = []
 lastorempty l = [last l]
 
 data FFXInput = FFXInput {
-	xnTheorySet :: TheoryXNSet
-	,xnSortSet :: Set.Set XmlNamedWONSORT
-	,xnRelSet :: Rel.Rel XmlNamedWONSORT
-	,xnPredMap :: Map.Map XmlName (Set.Set PredTypeXNWON)
-	,xnOpMap :: Map.Map XmlName (Map.Map XmlNamedWONId (Set.Set OpTypeXNWON))
+	xnTheorySet :: TheoryXNSet -- set of theorys (xmlnames + origin in graph)
+	,xnSortSet :: Map.Map XmlName (Set.Set XmlNamedWONSORT) -- theory -> sorts mapping
+	,xnRelSet :: Map.Map XmlName (Rel.Rel XmlNamedWONSORT) -- theory -> rels
+	,xnPredMap :: Map.Map XmlName (Set.Set (XmlNamedWONId, PredTypeXNWON)) -- theory -> preds
+	,xnOpMap :: Map.Map XmlName (Set.Set (XmlNamedWONId, OpTypeXNWON)) -- theory -> ops
 	}
 
 formulaFromXml::FormulaContext->(HXT.XmlTrees)->(FORMULA ())
@@ -5415,6 +5445,147 @@ formulaFromXml fc t = if (applyXmlFilter (isTag "OMBIND") t) /= [] then -- it's 
 			  else
 			  	error ("Impossible to create formula from \"" ++ xshow t++ "\"") 
 
+formulaFromXmlXN::FFXInput->AnnXMLN->FORMULA ()
+formulaFromXmlXN ffxi anxml =
+	if (applyXmlFilter (isTag "OMBIND") (axXml anxml)) /= [] then -- it's a quantifier...
+			let	quantTree = singleitem 1 (applyXmlFilter (isTag "OMBIND") (axXml anxml))
+				quant = quantFromName $ xshow $ applyXmlFilter (getChildren .> isTag "OMS" .> withSValue "cd" caslS .> getValue "name") quantTree
+				-- first element is the quantification-OMS
+				formula = drop 1 ((applyXmlFilter (getChildren .> (isTag "OMA" +++ isTag "OMATTR" +++ isTag "OMBIND" +++ isTag "OMS")) quantTree)::[XmlTree]) 
+				vardeclS = getVarDecls (applyXmlFilter (getChildren .> isTag "OMBVAR") quantTree)
+				vardeclS2 = pairsToWhatIWant vardeclS
+			in
+				Quantification quant (map (\(s, vl) -> Var_decl (map Hets.stringToSimpleId vl) (Hets.stringToId s) Id.nullRange) vardeclS2) (formulaFromXmlXN ffxi (AXML (axAnn anxml) formula)) Id.nullRange
+			else if (applyXmlFilter (isTag "OMA") (axXml anxml)) /= [] then -- the case begins...
+			  let
+			  	formTree = applyXmlFilter (isTag "OMA") (axXml anxml)
+				applySymXml = singleitem 1 (applyXmlFilter (getChildren .> isTag "OMS") formTree)
+				applySym = xshow $ applyXmlFilter (getValue "name") applySymXml
+				applySymCD = xshow $ applyXmlFilter (getValue "cd") applySymXml
+			  in
+				let	formulas = map (\n -> formulaFromXmlXN ffxi (AXML (axAnn anxml) [n])) ((applyXmlFilter (getChildren .> (isTag "OMA" +++ isTag "OMATTR" +++ isTag "OMBIND")) formTree)::[XmlTree])
+					terms = map (\n -> termFromXmlXN ffxi (AXML (axAnn anxml) [n])) ((applyXmlFilter (getChildren .> (isTag "OMV" +++ isTag "OMATTR" +++ isTag "OMA")) formTree)::[XmlTree])
+				in
+				-- 'case applySym' does not work if case-strings are non fixed (above definition is not fixed enough...) 
+			  	--case applySym of
+					if applySym == caslConjunctionS then
+						Conjunction formulas Id.nullRange
+					else
+					if applySym == caslDisjunctionS then
+						Disjunction formulas Id.nullRange
+					else
+					if applySym `elem` [caslImplicationS, caslImplication2S] then
+						let
+							boolF = formulaFromXmlXN ffxi (AXML (axAnn anxml) (applyXmlFilter (processChildren (isTag "OMS") .> getChild 1) formTree)) 
+						in
+							if (length formulas) < 2
+								then
+									Debug.Trace.trace ("Impossible to create implication...") (False_atom Id.nullRange)
+								else
+									Implication (formulas!!0) (formulas!!1) (isTrueAtom(boolF)) Id.nullRange
+					else
+					if applySym `elem` [caslEquivalenceS, caslEquivalence2S] then
+						if (length formulas) < 2
+							then
+								Debug.Trace.trace ("Impossible to create equivalence...") (False_atom Id.nullRange)
+							else
+								Equivalence (formulas!!0) (formulas!!1) Id.nullRange
+					else
+					if applySym == caslNegationS then
+						if formulas == []
+							then
+								Debug.Trace.trace ("Impossible to create negation...") (False_atom Id.nullRange)
+							else
+								Negation (formulas!!0) Id.nullRange
+					else
+					if applySym == caslPredicationS then
+						let
+							predxml = applyXmlFilter (processChildren (isTag "OMS" +++ isTag "OMATTR") .> getChild 1) (axXml anxml)
+							pred' = predicationFromXmlXN ffxi (AXML (axAnn anxml) predxml)
+							termxml = (applyXmlFilter (getChildren .> (isTag "OMATTR" +++ isTag "OMA")) (axXml anxml))
+							predterms = map (\tx -> termFromXmlXN ffxi (AXML (axAnn anxml) [tx])) $ tailorempty termxml
+						in
+						if predxml == []
+							then
+								Debug.Trace.trace ("Impossible to create predication...") (False_atom Id.nullRange)
+							else
+								Predication pred' predterms Id.nullRange 
+					else
+					if applySym == caslDefinednessS then
+						Definedness (termFromXmlXN ffxi (AXML (axAnn anxml) (applyXmlFilter (getChildren .> (isTag "OMV" +++ isTag "OMATTR" +++ isTag "OMA" )) (axXml anxml)))) Id.nullRange
+					else
+					if applySym == caslExistl_equationS then
+						if (length terms) < 2
+							then
+								Debug.Trace.trace ("Impossible to create existl_equation...") (False_atom Id.nullRange)
+							else
+								Existl_equation (terms!!0) (terms!!1) Id.nullRange
+					else
+					if applySym == caslStrong_equationS then
+						if (length terms) < 2
+							then
+								Debug.Trace.trace ("Impossible to create strong_equation...") (False_atom Id.nullRange)
+							else
+								Strong_equation (terms!!0) (terms!!1) Id.nullRange
+					else
+					if applySym == caslMembershipS then
+						let	sort = xshow $ lastorempty (applyXmlFilter (getChildren .> isTag "OMS" .> getValue "name") formTree)
+						in
+						if terms == []
+							then
+								Debug.Trace.trace ("Impossible to create Membership...") (False_atom Id.nullRange)
+							else
+								Membership (head terms) (Hets.stringToId sort) Id.nullRange
+					else
+					if applySym == caslSort_gen_axS then
+						let	freeType = if (xshow $ applyXmlFilter (getValue "name") [(applyXmlFilter (getChildren .> isTag "OMS") formTree)!!1]) == caslSymbolAtomFalseS then False else True
+							constraintsx = applyXmlFilter
+								(
+								--getChildren .> isTag "OMBVAR" .> -- removed (see generation)
+								getChildren .> isTag "OMBIND"
+								) formTree
+							constraints = xmlToConstraints constraintsx
+						in
+						Sort_gen_ax constraints freeType
+					else
+					error "Lazy programmer didn't implement this yet..."
+--					if applySym /= [] then
+{-						Debug.Trace.trace ("No matching casl-application found! Trying to find predicate...") $
+							let
+								-- try to find the node for this predicate
+								mprednodename = Hets.findNodeNameForPredication (imports fc) (preds fc) (Hets.stringToId applySym) (currentName fc)
+								predsMap' = case mprednodename of
+									-- try to get predicate set via CD
+									Nothing -> Map.findWithDefault (Debug.Trace.trace ("No Node found by CD...") Map.empty) applySymCD (preds fc)
+									-- try to get predicate map from the node
+									(Just prednodename) -> Map.findWithDefault (Debug.Trace.trace ("Node should contain predicate, but does not...") Map.empty) prednodename (preds fc)
+								-- try to find the predicate set from the map
+								mptset = Map.lookup (Hets.stringToId applySym) predsMap' :: (Maybe (Set.Set PredType))
+								-- terms to apply predication to...
+								predterms = map (\n -> termFromXml fc [n]) $ tail $ ((applyXmlFilter (getChildren .> (isTag "OMATTR" +++ isTag "OMA")) t)::[XmlTree])
+							in
+								case mptset of
+									Nothing -> Debug.Trace.trace ("Could not find Predication for \"" ++ applySym ++ "\" from \"" ++ applySymCD ++ "\"") (False_atom Id.nullRange) -- error ("Could not find Predication for \"" ++ applySym ++ "\" from \"" ++ applySymCD ++ "\"")
+									(Just ptset) ->
+										if Set.null ptset
+											then
+												error ("Found mapping for predication \"" ++ applySym ++ "\" but no actual values... this is odd!")
+											else
+												Predication (Qual_pred_name (Hets.stringToId applySym) (cv_PredTypeToPred_type $ head $ Set.toList ptset) Id.nullRange) predterms Id.nullRange -}
+--					else
+--						error ("Expected a casl application symbol, but \"" ++ applySym ++ "\" was found!")
+			  else if (applyXmlFilter (isTag "OMS") (axXml anxml)) /= [] then
+			  	let trueOrFalse = xshow $ singleitem 1 (applyXmlFilter (isTag "OMS" .> withSValue "cd" caslS .> getValue "name") (axXml anxml))
+				in
+				if trueOrFalse == caslSymbolAtomTrueS then
+					True_atom Id.nullRange
+					else
+						if trueOrFalse == caslSymbolAtomFalseS then
+							False_atom Id.nullRange
+							else
+								Debug.Trace.trace (caslSymbolAtomTrueS ++ " or " ++ caslSymbolAtomFalseS ++ " expected, but \"" ++ trueOrFalse ++ "\" found!") (False_atom Id.nullRange)
+			  else
+			  	error ("Impossible to create formula from \"" ++ xshow (axXml anxml)++ "\"") 
 
 
 xmlToConstraints::HXT.XmlTrees->[ABC.Constraint]
@@ -5470,57 +5641,30 @@ predicationFromXml t =
 		Pred_name $ Hets.stringToId sname
 	else
 		Qual_pred_name (Hets.stringToId sname) prtype Id.nullRange
-		
--- NOTE: need to fix formula generation because new format makes explicit
--- signatures obsolete...
-{- there is something to fix before this function can work...						
-predicationXNFromXml::FFXInput->AnnXMLN->PRED_SYMB
-predicationXNFromXml ffxi anxml = 
-	let -}
-		{- signature =
-			if (applyXmlFilter (isTag "OMATTR") (axXml anxml)) /= [] then
-				xshow $ applyXmlFilter (
-					getChildren .> isTag "OMATP" .>
-					getChildren .> isTag "OMSTR" .>
-					getChildren ) (axXml anxml)
-			else
-				""
-		types = explode "-\\" signature
-		prtype =
-			Pred_type
-				(map
-					(\t ->
-						case findByNameAndOrigin t (axAnn anxml) (xnSortSet ffxi) of
-							Nothing -> error "Cannot find argument!"
-							(Just txn) -> xnWOaToa txn
-					)
-					types
-				)
-				Id.nullRange -}
-		{- symbolXml = if signature == "" then
-						applyXmlFilter (isTag "OMS") (axXml anxml)
-						else
-						applyXmlFilter (
-							isTag "OMATTR" .>
-							getChildren .> isTag "OMS"
-							) (axXml anxml) -}
-		{- symbolXml = applyXmlFilter (isTag "OMS") (axXml anxml)
+
+
+predicationFromXmlXN::FFXInput->AnnXMLN->PRED_SYMB
+predicationFromXmlXN ffxi anxml = 
+	let
+		symbolXml = applyXmlFilter (isTag "OMS") (axXml anxml)
 		sxname = xshow $ applyXmlFilter (getValue "name") symbolXml
 		sxcd = xshow $ applyXmlFilter (getValue "cd") symbolXml
 		theonode = case getNodeForTheoryName (xnTheorySet ffxi) sxcd of
-			Nothing -> error "No Theory for used predicate!"
+			Nothing -> error ("No Theory for used predicate (Node) !" ++ sxname)
 			(Just n) -> n
 		theoxn = case findByName sxcd (xnTheorySet ffxi) of
-			Nothing -> error "No Theory for used predicate!"
+			Nothing -> error ("No Theory for used predicate (Name) !" ++ sxname)
 			(Just theoxn' ) -> theoxn'
-		theopreds = Map.findWithDefault Map.empty (xnName theoxn) (xnPredMap ffxi) 
-		predxnid = case findByName sxname (map fst $ Map.toList theopreds) of
+		theopreds = Map.findWithDefault Set.empty (xnName theoxn) (xnPredMap ffxi) 
+		predxnid = case findByName sxname (map fst $ Set.toList theopreds) of
 			Nothing -> error "No such predicate in Theory!"
 			(Just predxnid' ) -> predxnid'
-		predXNWON = Map.findWithDefault (error "Predicate not found!") predxnid theopreds
+		predXNWON = case lookup predxnid $ Set.toList theopreds of
+			Nothing -> error "Predicate not found!"
+			(Just pxnwon) -> pxnwon
 	in
-		Qual_pred_name (xnWOaToa predxnid) (cv_PredTypeToPred_type $ predTypeXNWONToPredType predXNWON) Id.nullRange -}
-
+		Qual_pred_name (xnWOaToa predxnid) (cv_PredTypeToPred_type $ predTypeXNWONToPredType predXNWON) Id.nullRange
+		
 -- String to Quantifiert...
 quantFromName::String->QUANTIFIER
 quantFromName s
@@ -5766,6 +5910,62 @@ termFromXml fc t = if (applyXmlFilter (isTag "OMV") t) /= [] then
 		else
 			error ("Impossible to create term from \"" ++ xshow t++"\"") 
 
+termFromXmlXN::FFXInput->AnnXMLN->(TERM ())
+termFromXmlXN ffxi anxml =
+	if (applyXmlFilter (isTag "OMV") (axXml anxml)) /= []
+		then
+			Simple_id $ Hets.stringToSimpleId $ xshow $ applyXmlFilter (isTag "OMV" .> getValue "name") (axXml anxml)
+		else
+		if (applyXmlFilter (isTag "OMATTR") (axXml anxml)) /= [] then
+			if applyXmlFilter
+					(isTag "OMATTR" .> getChildren .>
+						isTag "OMATP" .> getChildren .>
+						isTag "OMS" .> withSValue "name" "funtype")
+					(axXml anxml)
+				/= []
+				then
+					Application (operatorFromXmlXN ffxi anxml) [] Id.nullRange
+				else
+					Qual_var
+						(Hets.stringToSimpleId $ xshow $
+							applyXmlFilter
+								(isTag "OMATTR" .> getChildren .>
+									isTag "OMV" .> getValue "name")
+								(axXml anxml)
+						)
+						(Hets.stringToId $ xshow $
+							applyXmlFilter
+								(isTag "OMATTR" .> getChildren .>
+								isTag "OMATP" .> getChildren .>
+								isTag "OMS" .> withValue "name" (/=typeS) .>
+								getValue "name")
+							(axXml anxml)
+						)
+						Id.nullRange
+		else
+		if (applyXmlFilter (isTag "OMA") (axXml anxml) ) /= []
+			then
+				let
+					operator = operatorFromXmlXN
+						ffxi
+						(AXML (axAnn anxml) [head $ applyXmlFilter (getChildren .> isOperatorXml) (axXml anxml)])
+					terms = map (\n -> termFromXmlXN ffxi (AXML (axAnn anxml) [n])) $
+						applyXmlFilter isTermXml $
+						drop 1 $ -- drop out operator
+						applyXmlFilter (getChildren .> isTermOrOpXml) (axXml anxml)
+				in
+				if (opName operator) == "PROJ" then
+					Cast (head terms) (Hets.stringToId $ show (head $ tail terms)) Id.nullRange
+			else
+			if (opName operator) == "IfThenElse" then
+				let
+					formula = formulaFromXmlXN ffxi (AXML (axAnn anxml) [head (applyXmlFilter (getChildren .> (isTag "OMA" +++ isTag "OMBIND")) (axXml anxml))])
+				in 
+					Conditional (head terms) formula (head $ tail terms) Id.nullRange 
+			else
+				Application operator terms Id.nullRange
+		else
+			error ("Impossible to create term from \"" ++ xshow (axXml anxml) ++"\"") 
 			
 cv_Op_typeToOpType::OP_TYPE->OpType
 cv_Op_typeToOpType (Op_type fk args res _) = OpType fk args res
@@ -5982,6 +6182,29 @@ operatorFromXml t =
 		Op_name $ Hets.stringToId sname
 	else
 		Qual_op_name (Hets.stringToId sname) optype Id.nullRange
+		
+operatorFromXmlXN::FFXInput->AnnXMLN->OP_SYMB
+operatorFromXmlXN ffxi anxml =
+	let
+		funkind = getFunKind (axXml anxml)
+		symbolXml = applyXmlFilter (isTag "OMS") (axXml anxml)
+		sxname = xshow $ applyXmlFilter (getValue "name") symbolXml
+		scd = xshow $ applyXmlFilter (getValue "cd") symbolXml
+		theonode = case getNodeForTheoryName (xnTheorySet ffxi) scd of
+			Nothing -> error "No Theory for used operator!"
+			(Just n) -> n
+		theoxn = case findByName scd (xnTheorySet ffxi) of
+			Nothing -> error "No Theory for used operator!"
+			(Just theoxn' ) -> theoxn'
+		theoops = Map.findWithDefault Set.empty (xnName theoxn) (xnOpMap ffxi) 
+		opxnid = case findByName sxname (map fst $ Set.toList theoops) of
+			Nothing -> error "No such predicate in Theory!"
+			(Just opxnid' ) -> opxnid'
+		opXNWON = case lookup opxnid $ Set.toList theoops of
+			Nothing -> error "Operator not found!"
+			(Just oxnwon) -> oxnwon
+	in
+		Qual_op_name (xnWOaToa opxnid) (cv_OpTypeToOp_type $ opTypeXNWONToOpType opXNWON) Id.nullRange
 		
 getSorts::XmlTrees->[String]
 getSorts st = map (\t -> xshow $ applyXmlFilter (getValue "name") [t]) ((applyXmlFilter (getChildren .> isTag "OMATP" .> getChildren .> isTag "OMS" .> withValue "name" (/=typeS)) st)::[XmlTree])
