@@ -70,6 +70,11 @@ processFile opts file =
              _ -> anaLib opts file
            case gui opts of
              Not -> return ()
+             _  -> 
 #ifdef UNI_PACKAGE
-             _  -> showGraph file opts res
+                   showGraph file opts res
+#else
+                   fail $ "No graph display interface; \n" ++
+                          "UNI_PACKAGE option has been "++
+                          "disabled during compilation of Hets"
 #endif
