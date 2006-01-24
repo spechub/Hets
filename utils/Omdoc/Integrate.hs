@@ -780,6 +780,17 @@ mapToSetToTupelList mapping =
 			l' ++ [(a, i)]
 			) l (getItems s)
 		) [] (Map.toList mapping)
+		
+makePresentationFor::XmlName->String->HXT.XmlFilter
+makePresentationFor xname presstring =
+	HXT.etag "presentation" += (
+		(HXT.sattr "for" xname)
+		+++ HXT.etag "use" += (
+			(HXT.sattr "format" "Hets")
+			+++ (HXT.txt presstring)
+			)
+		)
+
 	
 devGraphToXmlCMPIOXmlNamed::Static.DevGraph.DGraph->IO (HXT.XmlTree->HXT.XmlTrees)
 devGraphToXmlCMPIOXmlNamed dg =
@@ -896,13 +907,9 @@ devGraphToXmlCMPIOXmlNamed dg =
 							(Set.insert b (Map.findWithDefault Set.empty a m))
 							m
 						) Map.empty (Rel.toList insorts)
---				theopreds = Map.findWithDefault Map.empty (Hets.mkWON nodename nodenum) xmlnamedpredswomap
 				theopreds = Map.findWithDefault [] (Hets.mkWON nodename nodenum) xmlnamedpredswomap
---				realtheopreds = Map.filterWithKey (\idxnwon _ -> (xnWOaToO idxnwon) == nodenum) theopreds
 				realtheopreds = filter (\(idxnwon, _) -> (xnWOaToO idxnwon) == nodenum) theopreds
---				theoops = Map.findWithDefault Map.empty (Hets.mkWON nodename nodenum) xmlnamedopswomap
 				theoops = Map.findWithDefault [] (Hets.mkWON nodename nodenum) xmlnamedopswomap
---				realtheoops = Map.filterWithKey (\idxnwon _ -> (xnWOaToO idxnwon) == nodenum) theoops
 				realtheoops = filter (\(idxnwon, _) -> (xnWOaToO idxnwon) == nodenum) theoops
 				theosens = Map.findWithDefault Set.empty (Hets.mkWON nodename nodenum) xmlnamedsenswomap
 				realtheosens = Set.filter (\i -> (xnWOaToO i) == nodenum) theosens
@@ -910,9 +917,7 @@ devGraphToXmlCMPIOXmlNamed dg =
 				(constructors, xmlnames_cons) = makeConstructorsXN theosorts xmlnames_senm sortgenxn
 				adtsorts = Map.keys insortmap ++ (map (\(a,_) -> xnItem a) (Map.toList constructors))
 				theoimports = Map.findWithDefault Set.empty nodename importsmap
-				--theopredsxn = Map.map (\ps -> Set.map (predTypeToPredTypeXNWON theosorts) ps) theopreds
 				theopredsxn = map (\(k,p) -> (k, predTypeToPredTypeXNWON theosorts p)) theopreds
---				theoopsxn = Map.map (\os -> Set.map (opTypeToOpTypeXNWON theosorts) os) theoops
 				theoopsxn = map (\(k,op) -> (k, opTypeToOpTypeXNWON theosorts op)) theoops
 				sensxmlio = wrapFormulasCMPIOXN (PFInput nodexmlnameset theosorts theopredsxn theoopsxn) (Set.toList realtheosens) 
 			in
@@ -922,16 +927,13 @@ devGraphToXmlCMPIOXmlNamed dg =
 				return $ x +++ xmlNL +++ HXT.etag "theory" += (
 					(qualattr "xml" "id" theoname) +++
 					-- presentation
-					(HXT.etag "presentation" += (
-						(HXT.sattr "for" theoname)
-						+++ HXT.etag "use" += (
-							(HXT.sattr "format" "Hets")
-							+++ (HXT.txt (idToString $ nodeNameToId (snd (xnItem xnodetupel))))
-							)
-						)
-					) +++
+					makePresentationFor
+						theoname
+						(idToString $ nodeNameToId (snd (xnItem xnodetupel))) +++
 					xmlNL +++
 					-- imports/morphisms
+					-- I still need to find a way of modelling Hets-libraries
+					-- in Omdoc-Imports...
 					(foldl (\x' (nodename' , mmm) ->
 						let
 							nodenamex = case Set.toList $ Set.filter (\i -> (snd (xnItem i)) == nodename' ) nodexmlnameset of
@@ -953,9 +955,21 @@ devGraphToXmlCMPIOXmlNamed dg =
 					) +++
 					-- sorts
 					(Set.fold (\xnwos x' ->
-						x' +++ (sortToXmlXN (xnWOaToXNa xnwos)) +++ xmlNL
+						x' +++
+						(sortToXmlXN (xnWOaToXNa xnwos)) +++
+						xmlNL +++
+						makePresentationFor
+							(xnName xnwos)
+							(idToString (xnWOaToa xnwos)) +++
+						xmlNL
 						) xmlNL realsorts) +++
 					-- adts
+					{- 
+					   no presentation needed for adts as they are 
+					   generated from a) relations and b) sentences.
+					   relations have their presentation via sort-definition
+					   and sentences get their own presentation tags.
+					-}
 					(foldl (\x' sortwo ->
 						let
 							insortset = Map.findWithDefault Set.empty sortwo insortmap
@@ -972,23 +986,47 @@ devGraphToXmlCMPIOXmlNamed dg =
 							x' +++ createADTXN (sortxn, insortsetxn) constructorx +++ xmlNL
 						) xmlNL adtsorts) +++
 					-- predicates
-					(foldl (\x' (pxnid, p) ->
-						let
-							px = predTypeToPredTypeXNWON theosorts p 
-						in
-							x' +++ predicationToXmlXN nodexmlnameset (pxnid, px) +++ xmlNL) (HXT.txt "") realtheopreds
+					(foldl
+						(\x' (pxnid, p) ->
+							let
+								px = predTypeToPredTypeXNWON theosorts p 
+							in
+								x' +++
+								predicationToXmlXN
+									nodexmlnameset
+									(pxnid, px) +++
+								xmlNL +++
+								makePresentationFor
+									(xnName pxnid)
+									(idToString $ xnWOaToa pxnid) +++
+								xmlNL
+						)
+						(HXT.txt "")
+						realtheopreds
 					) +++
 					-- operators
-					(foldl (\x' (oxnid, op) ->
-						let
-							ox = opTypeToOpTypeXNWON theosorts op 
-						in
-							x' +++ operatorToXmlXN nodexmlnameset (oxnid, ox) +++ xmlNL) (HXT.txt "") realtheoops
+					(foldl
+						(\x' (oxnid, op) ->
+							let
+								ox = opTypeToOpTypeXNWON theosorts op 
+							in
+								x' +++ 
+								operatorToXmlXN
+									nodexmlnameset
+									(oxnid, ox) +++
+								xmlNL +++
+								makePresentationFor
+									(xnName oxnid)
+									(idToString $ xnWOaToa oxnid) +++
+								xmlNL
+						)
+						(HXT.txt "")
+						realtheoops
 					) +++
 					-- sentences
 					sensxml +++
 					xmlNL +++
-					-- this constructs Hets-internal links a private data (but uses xmlnames for reference)
+					-- this constructs Hets-internal links as private data (but uses xmlnames for reference)
 					inDGToXmlXN dg nodenum nodexmlnameset
 					)
 					-- when constructing the catalogues a reference to the xmlname used in _this_ document is used
@@ -1252,7 +1290,7 @@ sortToXmlXN xnSort =
 	((HXT.etag "symbol" +=
 		( qualattr symbolTypeXMLNS symbolTypeXMLAttr "sort"
 		+++ qualattr sortNameXMLNS sortNameXMLAttr (xnName xnSort)))
-	+++ xmlNL +++
+	{- +++ xmlNL +++
 	(HXT.etag "presentation" += (
 		(HXT.sattr "for" (xnName xnSort))
 		+++ HXT.etag "use" += (
@@ -1260,7 +1298,8 @@ sortToXmlXN xnSort =
 			+++ (HXT.txt (idToString (xnItem xnSort)))
 			)
 		)
-	))
+	) -}
+	)
 	
 -- | create an ADT for a SORT-Relation and constructor information (in xml)
 createADT::(SORT, Set.Set SORT)->HXT.XmlFilter->HXT.XmlFilter
@@ -2442,6 +2481,8 @@ getQualValue prefix localpart =
 theoryNameFilter::HXT.XmlFilter
 theoryNameFilter = (getQualValue theoryNameXMLNS theoryNameXMLAttr)
 
+-- this is just a fragment of xpath-expressions from HXT
+-- maybe(!) this can be used more effective that current methods...
 nodeNamesFromXmlXP::HXT.XmlTrees->(Set.Set String)
 nodeNamesFromXmlXP t = Set.fromList $
 	map (\n -> xshow [n]) $
@@ -2453,6 +2494,13 @@ nodeNamesFromXmlXP t = Set.fromList $
 			++" | @"
 			++theoryNameXMLAttr
 			++"") .> getChildren) t
+			
+-- remove keys from a map (will result in removing double entries when merging sets)
+mapSetToSet::(Ord b)=>Map.Map a (Set.Set b)->Set.Set b
+mapSetToSet mapping =
+	foldl (\set (_, s) ->
+		Set.union set s
+		) Set.empty (Map.toList mapping)
 
 data AnnotatedXML a = AXML { axAnn::a, axXml::HXT.XmlTrees }
 	deriving Show
@@ -2707,7 +2755,7 @@ type XmlNamedWONId = XmlNamedWON Id.Id
 
 getPresentationString::String->HXT.XmlTrees->String
 getPresentationString for t =
-	xshow $ applyXmlFilter (isTag "presentation" .> withSValue "for" for .>
+	xshow $ applyXmlFilter (getChildren .> isTag "presentation" .> withSValue "for" for .>
 		getChildren .> isTag "use" .> withSValue "format" "Hets" .> 
 		getChildren) t
 	
@@ -2732,7 +2780,7 @@ predsXNWONFromXmlTheory xntheoryset xnsortset anxml =
 				pidxname = xshow $ applyXmlFilter (getQualValue predNameXMLNS predNameXMLAttr) (axXml panxml)
 				pids = getPresentationString pidxname (axXml anxml) -- yes, reference to 'outer' xml
 				pid = case pids of
-					[] -> Hets.stringToId pidxname
+					[] -> Debug.Trace.trace ("Note: No Hets-Presentation found for Predicate with Xml-ID : \"" ++ pidxname ++ "\"") $ Hets.stringToId pidxname
 					_ -> read pids
 				argtags = applyXmlFilter (getChildren .> isTag "type" .> withSValue "system" "casl" .>
 					getChildren .> isTag "OMOBJ" .> getChildren .> isTag "OMA" .>
@@ -2850,7 +2898,7 @@ opsXNWONFromXmlTheory xntheoryset xnsortset anxml =
 				oidxname = xshow $ applyXmlFilter (getQualValue opNameXMLNS opNameXMLAttr) (axXml oanxml)
 				oids = getPresentationString oidxname (axXml anxml)
 				oid = case oids of
-					[] -> Hets.stringToId oidxname
+					[] -> Debug.Trace.trace ("Note: No Hets-Presentation found for Operator with Xml-ID : \"" ++ oidxname ++ "\"") $ Hets.stringToId oidxname
 					_ -> read oids
 				isTotal = applyXmlFilter (
 					getChildren .> isTag "type" .> withSValue "system" "casl" .>
@@ -4410,7 +4458,9 @@ wrapFormulaCMPXN
 			) +++
 			xmlNL
 			)
-			)
+			) +++
+		xmlNL +++
+		makePresentationFor (xnName ansenxn) (Ann.senName (xnWOaToa ansenxn))
 	) +++ xmlNL
 
 	
