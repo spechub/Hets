@@ -19,8 +19,7 @@ module Common.ATerm.ConvInstances() where
 
 import Common.ATerm.Conversion
 import Common.ATerm.AbstractSyntax
-import Data.Graph.Inductive.Graph
-import qualified Data.Graph.Inductive.Tree as Tree
+import qualified Common.Lib.Graph as Tree
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
@@ -30,7 +29,7 @@ import Common.Result
 import Common.DynamicUtils
 
 grTc :: TyCon
-grTc = mkTyCon "Data.Graph.Inductive.Tree.Gr"
+grTc = mkTyCon "Common.Lib.Graph.Gr"
 
 instance (Typeable a, Typeable b) => Typeable (Tree.Gr a b) where
   typeOf s = mkTyConApp grTc
@@ -40,16 +39,14 @@ instance (Typeable a, Typeable b) => Typeable (Tree.Gr a b) where
 instance (ShATermConvertible a,
           ShATermConvertible b) => ShATermConvertible (Tree.Gr a b) where
     toShATermAux att0 graph = do
-       (att1, aa') <- toShATerm' att0 (labNodes graph)
-       (att2, bb') <- toShATerm' att1 (labEdges graph)
-       return $ addATerm (ShAAppl "Graph"  [ aa' , bb' ] []) att2
+       (att1, a') <- toShATerm' att0 (Tree.toMap graph)
+       return $ addATerm (ShAAppl "Gr"  [a'] []) att1
     fromShATermAux ix att0 =
         case getShATerm ix att0 of
-            ShAAppl "Graph" [a,b] _ ->
+            ShAAppl "Gr" [a] _ ->
                     case fromShATerm' a att0 of { (att1, a') ->
-                    case fromShATerm' b att1 of { (att2, b') ->
-                    (att2, mkGraph a' b') }}
-            u -> fromShATermError "Data.Graph.Inductive.Tree.Gr" u
+                    (att1, Tree.Gr a') }
+            u -> fromShATermError "Common.Lib.Graph.Gr" u
 
 instance (Ord a, ShATermConvertible a, ShATermConvertible b)
     => ShATermConvertible (Map.Map a b) where

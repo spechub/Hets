@@ -42,7 +42,7 @@ import Logic.Coerce
 import Syntax.AS_Library
 
 import Data.Graph.Inductive.Graph as Graph
-import qualified Data.Graph.Inductive.Tree as Tree
+import qualified Common.Lib.Graph as Tree
 
 import qualified Common.Lib.Map as Map
 import qualified Common.OrderedMap as OMap

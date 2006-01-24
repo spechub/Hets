@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Till Mossakowski, and Uni Bremen 2002-2004
+Copyright   :  (c) Till Mossakowski, and Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  till@tzi.de
@@ -48,7 +48,7 @@ import Logic.Morphism
 import Logic.Coerce
 import Common.PrettyPrint
 import Common.Lib.Pretty
-import qualified Data.Graph.Inductive.Tree as Tree
+import qualified Common.Lib.Graph as Tree
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.Result

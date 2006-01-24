@@ -76,8 +76,7 @@ import Common.Id
 import Common.GlobalAnnotations
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
-import qualified Data.Graph.Inductive.Tree as Tree(Gr)
-import Data.Graph.Inductive.Graph(Node)
+import Common.Lib.Graph as Tree
 import Common.Lib.Pretty
 import Common.AnnoState
 import Common.Result
@@ -225,13 +224,13 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          stat_symb_items l _ = statErr l "stat_symb_items"
          -- amalgamation
          weaklyAmalgamableCocone :: lid -> Tree.Gr sign morphism
-                                     -> Result (sign, Map.Map Node morphism)
+                                     -> Result (sign, Map.Map Int morphism)
          weaklyAmalgamableCocone l _ = statErr l "weaklyAmalgamableCocone"
          -- architectural sharing analysis
          ensures_amalgamability :: lid ->
               ([CASLAmalgOpt],        -- the program options
                Tree.Gr sign morphism, -- the diagram to be analyzed
-               [(Node, morphism)],    -- the sink
+               [(Int, morphism)],     -- the sink
                Tree.Gr String String) -- the descriptions of nodes and edges
                   -> Result Amalgamates
          ensures_amalgamability l _ = statErr l "ensures_amalgamability"
