@@ -48,7 +48,7 @@ showGraphAux file opts convFct = do
             putIfVerbose opts 2 $ "Trying to display " ++ file
                              ++ " in a graphical window"
             putIfVerbose opts 3 "Initializing Converter"
-            graphMem <- initializeConverter
+            (graphMem,wishInst) <- initializeConverter
             useHTk -- All messages are displayed in TK dialog windows
                    -- from this point on
             putIfVerbose opts 3 "Converting Graph"
@@ -57,6 +57,5 @@ showGraphAux file opts convFct = do
             graph <- get_graphid gid gv
             sync(destroyed graph)
             InfoBus.shutdown
+            destroy wishInst
             exitWith ExitSuccess
-            fail $ "No graph display interface; " ++
-              "UNI_PACKAGE option has been disabled during compilation of Hets"

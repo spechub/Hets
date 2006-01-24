@@ -132,14 +132,14 @@ type GInfo = (IORef LibEnv,
               IORef [[Node]]
              )
 
-initializeConverter :: IO (IORef GraphMem)
+initializeConverter :: IO (IORef GraphMem,HTk.HTk)
 initializeConverter =
-    do HTk.initHTk [HTk.withdrawMainWin]
+    do wishInst <- HTk.initHTk [HTk.withdrawMainWin]
        showLogicGraph daVinciSort
        initGraphInfo <- initgraphs
        graphMem <- (newIORef GraphMem{nextGraphId = 0,
                                       graphInfo = initGraphInfo})
-       return graphMem
+       return (graphMem,wishInst)
 
 -- | converts the development graph given by its libname into an abstract
 -- graph and returns the descriptor of the latter, the graphInfo it is
