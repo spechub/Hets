@@ -61,7 +61,7 @@ import GraphDisp
 import GraphConfigure
 import TextDisplay
 import qualified HTk
-import InfoBus
+import InfoBus (encapsulateWaitTermAct)
 
 import qualified Common.Lib.Map as Map
 import qualified Common.OrderedMap as OMap
