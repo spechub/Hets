@@ -128,11 +128,10 @@ import Data.List hiding (union)
 import Common.PrettyPrint
 import Common.Lib.Pretty
 import Control.Monad
-import Debug.Trace
 
 insEdgeNub :: LEdge DGLinkLab -> DGraph -> DGraph
 insEdgeNub (v, w, l) g =
-   if (l, w) `elem` s then trace ("insEdgeNub: " ++ show (v, w)) g
+   if (l, w) `elem` s then g
       else (p, v, l', (l, w) : s) & g'
    where (Just (p, _, l', s), g') = match v g
 
