@@ -31,7 +31,7 @@ GHC_IMPORTS = `$(HC) --print-libdir`/imports
 # import directories for ghc-5.04.2
 GHC5 = $(GHC_IMPORTS)/base:$(GHC_IMPORTS)/haskell98
 DRIFT_ENV = \
-    DERIVEPATH=.:hxt:$(GHC_IMPORTS):$(GHC5):$(subst $(space),:,$(PFE_PATHS))
+    DERIVEPATH=.:$(GHC_IMPORTS):$(GHC5):$(subst $(space),:,$(PFE_PATHS))
 
 # override on commandline for other architectures
 INSTALLDIR = \
@@ -292,7 +292,7 @@ nondoc_sources = $(wildcard utils/DrIFT-src/*.hs) \
     $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hspp \
     Modal/GeneratePatterns.inline.hs \
     Haskell/PreludeString.append.hs Haskell/ProgramaticaPrelude.hs \
-    hxt/HXT.hs hxt/Net.hs $(patsubst %.hs, %.der.hs, $(drifted_files))
+    $(patsubst %.hs, %.der.hs, $(drifted_files))
 
 hspp_sources = $(patsubst %.hs, %.hspp, $(cpp_sources))
 
