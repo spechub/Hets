@@ -55,6 +55,8 @@ data ProofGUIState lid sentence =
         includedTheorems :: [String],
         -- | whether a prover is running or not
         proverRunning :: Bool,
+        -- | just for the prove event handler to not kill the wish
+        proofManagementDestroyed :: Bool,
         -- | accumulated Diagnosis during Proofs
         accDiags :: [Diagnosis],
         -- | which prover (if any) is currently selected
@@ -90,14 +92,15 @@ initialState lid1 thN th@(G_theory lid2 sig thSens) pm cms =
                            includedTheorems = OMap.keys gMap,
                            accDiags = [],
                            proverRunning = False,
+                           proofManagementDestroyed = False,
                            selectedProver = if null (Map.keys pm) 
                                             then Nothing
                                             else Just (last $ Map.keys pm)
                          }
 
 
-selectedGoalMap :: ProofGUIState lid sentence 
-              -> ThSens sentence (AnyComorphism,BasicProof)
+selectedGoalMap :: ProofGUIState lid sentence
+                -> ThSens sentence (AnyComorphism,BasicProof)
 selectedGoalMap st = filterMapWithList (selectedGoals st) (goalMap st)
 
 axiomMap :: 
