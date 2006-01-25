@@ -180,12 +180,13 @@ instance PrettyPrint Axiom where
                          Just Transitive ->  
                            parens ((text "forall ((x owl:Thing) (y owl:Thing) (z owl:Thing))") <+>  
                              parens ((text "implies") $+$ 
-                                     (nest 2 (parens ((text "and") <> 
-                                              parens ((printText0 ga iid) <+>
-			                             (text "x y")) $+$ 
-                                               parens ((printText0 ga iid) <+>
+                                     (nest 2 (parens ((text "and") <+> 
+                                       parens ((printText0 ga iid) <+>
+			                       (text "x y")) $+$ 
+                                       (nest 4 $ parens((printText0 ga iid)<+>
 			                             (text "y z"))))) $+$
-                                     (nest 2 $ parens (text "x z"))))
+                                     (nest 4 $ parens ((printText0 ga iid) <+> 
+                                                       (text "x z"))))))
 			 _  -> text "" 
 	u -> text $ show u         -- annotation is not yet instanced
 
@@ -340,7 +341,7 @@ instance PrettyPrint Individual where
                  (if level == -1 then
                      printIntIndiv iid' pid indiv 0
                      else printIntIndiv iid' pid indiv level))
-                   $+$ nest 2 (printIndividual iid' tv 
+                   $+$ (printIndividual iid' tv 
                         (if level < 0 then 0 else level))
                ValueDL pid dl ->
                    parens (printText0 ga pid <+> printText0 ga iid'
@@ -363,20 +364,20 @@ instance PrettyPrint Individual where
                                  -> Int
                                  -> Doc
            printAnonymIndividual iid' ipID typesI valuesI level= 
-               parens ((text ("exists (owl:Thing " ++ choiceName level ++ ")")) $+$ 
-                 (nest 2 $ parens ((text "and") <+> 
+               parens ((text ("exists ("++choiceName level++" owl:Thing)")) 
+                       $+$ (nest 2 $ parens ((text "and") <+> 
                   (foldListToDocV ga 
                    -- className (type)
                    (\x y -> case x of 
                        (QN _ str _) -> 
                         parens ((printDescription ga 0 emptyQN y) <+> 
-                         (text str))) (simpleQN $ choiceName level) typesI) $+$
+                         (text str))) (simpleQN $ choiceName level) 
+                                   (reverse typesI)) $+$
                    -- (propertyID individualID x)
                    (nest 4 $ parens ((printText0 ga ipID) <+> 
                       (printText0 ga iid') <+> (text $ choiceName level))) $+$ 
                    -- values
                   (nest 4 $ printIndividual (Just $ simpleQN $ choiceName level) valuesI (level+1)))))
-           
        
 -- to show restrictions, descriptions and cardinalities need the id of classes
 -- or properties, so those are implemented not in PrettyPrint. 
@@ -608,10 +609,10 @@ form5 :: GlobalAnnos -> URIreference -> RRange -> Doc
 form5 ga _ dl = 
     parens ((printText0 ga dl) <+> (text "y"))
 
--- only for domain (DEBUG)
+-- only for UnionOf (DEBUG)
 form6 :: GlobalAnnos -> Int -> URIreference-> Description -> Doc
 form6 ga level iD des =
-          parens ((printDescription ga level iD des) <+>  (text "u"))
+          parens ((printDescription ga level iD des) <+>  (text $ choiceName level))
 
 emptyQN :: QName
 emptyQN = QN "" "" ""
