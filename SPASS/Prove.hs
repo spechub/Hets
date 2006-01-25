@@ -225,7 +225,8 @@ data State = State { -- | currently selected goal or Nothing
                      goalsList :: [AS_Anno.Named SPTerm],
                      -- | logical part without theorems
                      initialLogicalPart :: SPLogicalPart,
-                     batchModeIsRunning :: Bool
+                     batchModeIsRunning :: Bool,
+                     mainDestroyed :: Bool
                    }
 
 data ThreadState = TSt { batchId :: Maybe Concurrent.ThreadId
@@ -253,7 +254,8 @@ initialState th =
            initialLogicalPart = foldl insertSentence 
                                       (signToSPLogicalPart sign) 
                                       (reverse axioms),
-           batchModeIsRunning = False
+           batchModeIsRunning = False,
+           mainDestroyed = False
           }
     where Theory sign oSens = th
           oSens' = toNamedList oSens
@@ -507,14 +509,14 @@ spassProveGUI :: String -- ^ theory name
               -> Theory Sign Sentence () -- ^ theory consisting of a SPASS.Sign.Sign and a list of Named SPASS.Sign.Sentence
               -> IO([Proof_status ()]) -- ^ proof status for each goal
 spassProveGUI thName th = do
-  -- batch window creates initial backing data structure
+  -- create initial backing data structure
   let initState = initialState th
   stateRef <- newIORef initState
   batchTLimit <- getBatchTimeLimit
 
   -- main window
   main <- createToplevel [text $ thName ++ " - SPASS Prover"]
-
+  
   -- VBox for the whole window
   b <- newVBox main []
   pack b [Expand On, Fill Both]
@@ -705,6 +707,7 @@ spassProveGUI thName th = do
   grid exitButton [GridPos (2,0)]
 
   pack main [Expand On, Fill Both]
+  putWinOnTop main
 
   -- IORef for batch thread
   threadStateRef <- newIORef initialThreadState
@@ -721,6 +724,8 @@ spassProveGUI thName th = do
   help <- clicked helpButton
   saveConfiguration <- clicked saveButton
   exit <- clicked exitButton
+
+  (closeWindow,_) <- bindSimple main Destroy
 
   let goalSpecificWids = [EnW timeEntry, EnW timeSpinner,EnW optionsEntry] ++ 
                          map EnW [proveButton,detailsButton,saveDFGButton]
@@ -794,21 +799,26 @@ spassProveGUI thName th = do
                 disableWids wids
                 (retval, (res, output)) <- 
                     runSpass lp' (getConfig goal (configsMap s')) thName nGoal
-                enableWids wids
-                case retval of
-                  SpassError message -> errorMess message
-                  _ -> return ()
-                let s'' = s'{resultsMap = Map.insert goal (res, output) 
-                                                          (resultsMap s'),
-                             configsMap = 
+                -- check if main is still there
+                curSt <- readIORef stateRef
+                if mainDestroyed curSt 
+                    then done
+                    else do
+                 enableWids wids
+                 case retval of
+                   SpassError message -> errorMess message
+                   _ -> return ()
+                 let s'' = s'{resultsMap = Map.insert goal (res, output) 
+                                                           (resultsMap s'),
+                              configsMap = 
                                  adjustOrSetConfig 
                                       (\ c -> c {timeLimitExceeded = 
                                                    isTimeLimitExceeded retval})
                                       goal (configsMap s')}
-                writeIORef stateRef s''
-                updateDisplay s'' True lb statusLabel timeEntry 
+                 writeIORef stateRef s''
+                 updateDisplay s'' True lb statusLabel timeEntry 
                               optionsEntry axiomsLb
-                done)
+                 done)
             done)
       +> (showDetails >>> do
             s <- readIORef stateRef
@@ -880,7 +890,7 @@ spassProveGUI thName th = do
             batchStatusLabel # text "Batch mode stopped\n\n"
             st <- readIORef stateRef
             writeIORef stateRef 
-                           (st {batchModeIsRunning = True})
+                           (st {batchModeIsRunning = False})
             updateDisplay st True lb statusLabel timeEntry 
                           optionsEntry axiomsLb
             done)
@@ -897,7 +907,12 @@ spassProveGUI thName th = do
                                   (thName ++ ".spcf") cfgText
             done)
       ))
-  sync (exit >>> destroy main)
+  sync ( (exit >>> destroy main)
+      +> (closeWindow >>> do cleanupThread threadStateRef
+                             modifyIORef stateRef 
+                                         (\ s -> s{mainDestroyed = True})
+                             destroy main)
+       )
   s <- readIORef stateRef
   let proof_stats = map (\g -> let res = Map.lookup g (resultsMap s) 
                                    g' = Map.findWithDefault 

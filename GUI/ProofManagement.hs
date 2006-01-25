@@ -561,6 +561,7 @@ proofManagementGUI lid proveF fineGrainedSelectionF
              goalSpecificWids
 
   disableWids goalSpecificWids
+  putWinOnTop main
 
   -- events
   (selectProverPath, _) <- bindSimple pathsLb (ButtonPress (Just 1))
@@ -571,6 +572,7 @@ proofManagementGUI lid proveF fineGrainedSelectionF
   doProve <- clicked proveButton
   showProofDetails <- clicked proofDetailsButton
   close <- clicked closeButton
+  (closeWindow,_) <- bindSimple main Destroy
 
   -- event handlers
   spawnEvent 
@@ -641,6 +643,7 @@ proofManagementGUI lid proveF fineGrainedSelectionF
             disableWids wids
             prState <- (updateStateGetSelectedSens s' lbAxs lbThs >>=
                         (\ si -> updateStateGetSelectedGoals si lb))
+            writeIORef stateRef prState
 	    Result.Result ds ms'' <- fineGrainedSelectionF prState
             s'' <- case ms'' of
                    Nothing -> fail "fineGrainedSelection returned Nothing"
@@ -648,6 +651,7 @@ proofManagementGUI lid proveF fineGrainedSelectionF
 	    let s''' = s'' {proverRunning = False,accDiags = accDiags s'' ++ ds}
             enableWids wids
 	    updateDisplay s''' True lb pathsLb statusLabel
+            putWinOnTop main
 	    writeIORef stateRef s'''
             done)
       +> (doProve >>> do
@@ -659,22 +663,32 @@ proofManagementGUI lid proveF fineGrainedSelectionF
                         (\ si -> updateStateGetSelectedGoals si lb))
             -- putStrLn (show (includedAxioms prState)++
             --                   ' ':show (includedTheorems prState))
+            writeIORef stateRef prState
 	    Result.Result ds ms'' <- proveF prState
-            s'' <- case ms'' of
+            curSt <- readIORef stateRef
+            if proofManagementDestroyed curSt 
+               then done
+               else do
+             s'' <- case ms'' of
                    Nothing -> fail "proveF returned Nothing"
                    Just res -> return res
-	    let s''' = s''{proverRunning = False,accDiags = accDiags s'' ++ ds}
-            enableWids wids
-	    updateDisplay s''' True lb pathsLb statusLabel
-	    writeIORef stateRef s'''
-            done)
+	     let s''' = s''{proverRunning = False,
+                           accDiags = accDiags s'' ++ ds}
+             enableWids wids
+	     updateDisplay s''' True lb pathsLb statusLabel
+             putWinOnTop main
+	     writeIORef stateRef s'''
+             done)
       +> (showProofDetails >>> do
             s <- readIORef stateRef
             s' <- updateStateGetSelectedGoals s lb
 	    doShowProofDetails s'
             done)
       ))
-  sync (close >>> destroy main)
+  sync ( (close >>> destroy main)
+      +> (closeWindow >>> do modifyIORef stateRef 
+                                (\ s -> s {proofManagementDestroyed = True}) 
+                             destroy main))
 
   -- read the global state back in
   s <- readIORef stateRef
