@@ -20,7 +20,8 @@ import qualified CASL.AS_Basic_CASL as ABC
 import Static.DevGraph
 --import qualified Graph as Graph
 import qualified Data.Graph.Inductive.Graph as Graph
-import qualified Data.Graph.Inductive.Tree as Tree
+import qualified Common.Lib.Graph as CLGraph
+--import qualified Data.Graph.Inductive.Tree as Tree
 --import qualified Logic.Grothendieck as Logic.Grothendieck
 import CASL.Amalgamability(CASLSign)
 
@@ -806,6 +807,7 @@ devGraphToXmlCMPIOXmlNamed dg =
 		predswomap = Map.map mapToSetToTupelList $ Hets.getPredMapsWOWithNodeDGNamesWO dg
 		opswomap = Map.map mapToSetToTupelList $ Hets.getOpMapsWOWithNodeDGNamesWO dg
 		senswomap = Hets.getSentencesWOWithNodeDGNamesWO dg
+		importsmap = Hets.getNodeImportsNodeDGNames dg
 		-- sorts
 		(xmlnamedsortswomap, xmlnames_sm) =
 			(processSubContents
@@ -884,7 +886,6 @@ devGraphToXmlCMPIOXmlNamed dg =
 				)
 				xmlnames_om
 				senswomap)::(Map.Map Hets.NODE_NAMEWO (Set.Set (XmlNamed Hets.SentenceWO)), XmlNameList)
-		importsmap = Hets.getNodeImportsNodeDGNames dg
 	in
 		foldl (\xio xnodetupel ->
 			let
@@ -2634,6 +2635,10 @@ findByNameWithAnd proc trans iname icon =
 	case findByNameWith trans iname icon of
 		Nothing -> Nothing
 		(Just i) -> Just (proc i)
+		
+findAllByNameWithAnd::(Container b a)=>(a->d)->(a->XmlNamed c)->String->b->[d]
+findAllByNameWithAnd proc trans iname icon =
+	map proc $ filter (\i -> xnName (trans i) == iname) $ getItems icon
 	
 -- search for a certainly named item and prefer items of specified origin
 -- check result for origin if important
@@ -3063,6 +3068,25 @@ importsFromXmlTheory t =
 				Set.union imps (Set.singleton (from, (Just mm)))
 		) Set.empty imports'
 	
+-- this is currently identical to above function
+importsXNFromXmlTheory::FFXInput->AnnXMLN->Hets.Imports
+importsXNFromXmlTheory ffxi anxml =
+	let
+		imports' = applyXmlFilter (getChildren .> isTag "imports") (axXml anxml)
+	in
+		foldl (\imps i ->
+			let
+				from = drop 1 $ xshow $ applyXmlFilter (getValue "from") [i]
+				mm = foldl (\(mmsm, mmfm, mmpm, mmhs) m ->
+					let
+						(nmmsm, nmmfm, nmmpm, nmmhs) = xmlToMorphismMap [m]
+					in
+						(Map.union mmsm nmmsm, Map.union mmfm nmmfm, Map.union mmpm nmmpm, Set.union mmhs nmmhs)
+					) (Map.empty, Map.empty, Map.empty, Set.empty) $ applyXmlFilter (getChildren .> isTag "morphism") [i]
+			in
+				Set.union imps (Set.singleton (from, (Just mm)))
+		) Set.empty imports'
+		
 importsFromXml::HXT.XmlTrees->Hets.ImportsMap
 importsFromXml t =
 	foldl (\map' theory ->
@@ -3072,8 +3096,23 @@ importsFromXml t =
 			Map.insert name' imports' map'
 		) Map.empty $ applyXmlFilter (isTag "theory") t
 		
+importsXNFromXml::FFXInput->Set.Set AnnXMLN->Map.Map XmlName (Set.Set (XmlName, (Maybe Hets.MorphismMap)))
+importsXNFromXml ffxi anxmlset =
+	Set.fold (\anxml imap ->
+		let
+			theoryname = case getTheoryXmlName (xnTheorySet ffxi) (axAnn anxml) of
+				Nothing -> error "Current theory not found! (?)"
+				(Just tn) -> tn
+		in
+			Map.insert theoryname (importsXNFromXmlTheory ffxi anxml) imap
+			) Map.empty anxmlset
+		
 sensFromXmlTheory::FormulaContext->HXT.XmlTrees->(Set.Set (Ann.Named CASLFORMULA))
 sensFromXmlTheory fc t = Set.fromList $ unwrapFormulas fc $ applyXmlFilter (getChildren .> isTag "axiom") t
+
+sensXNFromXmlTheory::FFXInput->Set.Set AnnXMLN->(Set.Set (Ann.Named CASLFORMULA))
+sensXNFromXmlTheory ffxi anxmlset =
+	Set.fromList $ unwrapFormulasXN ffxi anxmlset
 
 sensFromXml::FormulaContext->HXT.XmlTrees->Hets.SensMap
 sensFromXml fc t = 
@@ -3084,6 +3123,21 @@ sensFromXml fc t =
 		in
 			Map.insert name' (Set.union sens consens) map'
 		) Map.empty $ applyXmlFilter (isTag "theory") t
+
+{- something is not right yet...
+sensXNFromXml::FFXInput->Set.Set AnnXMLN->Hets.SensMap
+sensXNFromXml ffxi anxmlset = 
+	Set.fold (\anxml map' ->
+		let
+			theoryname = case getTheoryXmlName (xnTheorySet ffxi) (axAnn anxml) of
+				Nothing -> error "No theory found!"
+				(Just tn) -> tn
+			sens = sensXNFromXmlTheory ffxi anxmlset
+			consens = conSensFromXmlTheory [theory]
+		in
+			Map.insert name' (Set.union sens consens) map'
+		) Map.empty $ applyXmlFilter (isTag "theory") t
+-}
 		
 conSensFromXmlTheory::HXT.XmlTrees->(Set.Set (Ann.Named CASLFORMULA))
 conSensFromXmlTheory t =
@@ -3401,7 +3455,8 @@ data Source a = S (String, String) a
 instance Show (Source a) where
 	show (S (sn, sf) _) = ("Source \"" ++ sn ++ "\" File : \"" ++ sf ++ "\".");
 
-type ImportGraph a = Tree.Gr (Source a) TheoryImport 
+--type ImportGraph a = Tree.Gr (Source a) TheoryImport 
+type ImportGraph a = CLGraph.Gr (Source a) TheoryImport 
 
 getImportMapFG::String->(IO ((String,HXT.XmlTrees,String), (Map.Map String String)))
 getImportMapFG filename =
@@ -5297,6 +5352,19 @@ lastorempty::[a]->[a]
 lastorempty [] = []
 lastorempty l = [last l]
 
+preprocessXml::HXT.XmlTrees->(FFXInput, Set.Set AnnXMLN)
+preprocessXml t =
+	let
+		axtheoryset = buildAXTheorySet t
+		xntheoryset = nodeNamesXNFromXml axtheoryset
+		xnsortsmap = sortsXNWONFromXml xntheoryset axtheoryset
+		xnsorts = mapSetToSet xnsortsmap
+		xnrelsmap = relsXNWONFromXml xntheoryset xnsorts axtheoryset
+		xnpredsmap = mapListToMapSet $ predsXNWONFromXml xntheoryset xnsorts axtheoryset
+		xnopsmap = mapListToMapSet $ opsXNWONFromXml xntheoryset xnsorts axtheoryset
+	in
+		(FFXInput xntheoryset xnsortsmap xnrelsmap xnpredsmap xnopsmap, axtheoryset)
+
 data FFXInput = FFXInput {
 	xnTheorySet :: TheoryXNSet -- set of theorys (xmlnames + origin in graph)
 	,xnSortSet :: Map.Map XmlName (Set.Set XmlNamedWONSORT) -- theory -> sorts mapping
@@ -5476,7 +5544,7 @@ formulaFromXmlXN ffxi anxml =
 					else
 					if applySym `elem` [caslImplicationS, caslImplication2S] then
 						let
-							boolF = formulaFromXmlXN ffxi (AXML (axAnn anxml) (applyXmlFilter (processChildren (isTag "OMS") .> getChild 1) formTree)) 
+							boolF = formulaFromXmlXN ffxi (AXML (axAnn anxml) (applyXmlFilter (processChildren (isTag "OMS") .> getChild 2) formTree)) 
 						in
 							if (length formulas) < 2
 								then
@@ -5500,10 +5568,10 @@ formulaFromXmlXN ffxi anxml =
 					else
 					if applySym == caslPredicationS then
 						let
-							predxml = applyXmlFilter (processChildren (isTag "OMS" +++ isTag "OMATTR") .> getChild 1) (axXml anxml)
+							predxml = applyXmlFilter (processChildren (isTag "OMS" +++ isTag "OMATTR") .> getChild 2) (axXml anxml)
 							pred' = predicationFromXmlXN ffxi (AXML (axAnn anxml) predxml)
 							termxml = (applyXmlFilter (getChildren .> (isTag "OMATTR" +++ isTag "OMA")) (axXml anxml))
-							predterms = map (\tx -> termFromXmlXN ffxi (AXML (axAnn anxml) [tx])) $ tailorempty termxml
+							predterms = map (\tx -> termFromXmlXN ffxi (AXML (axAnn anxml) [tx])) termxml
 						in
 						if predxml == []
 							then
@@ -5548,7 +5616,21 @@ formulaFromXmlXN ffxi anxml =
 						in
 						Sort_gen_ax constraints freeType
 					else
-					error "Lazy programmer didn't implement this yet..."
+					if applySym /= [] then
+						Debug.Trace.trace ("No matching casl-application found! Trying to find predicate...") $
+							let
+								predterms = map (\n -> termFromXmlXN ffxi (AXML (axAnn anxml) [n])) $ ((applyXmlFilter (getChildren .> (isTag "OMATTR" +++ isTag "OMA")) (axXml anxml))::[XmlTree])
+								possibilities = findAllByNameWithAnd id fst applySym (mapSetToSet (xnPredMap ffxi))
+								withThisOrigin = filter (\i -> (xnWOaToO $ fst i) == (axAnn anxml)) possibilities
+							in
+								case (case withThisOrigin of [] -> possibilities; _ -> withThisOrigin) of
+									(i:_) ->
+										Predication (Qual_pred_name (xnWOaToa (fst i)) (cv_PredTypeToPred_type $ predTypeXNWONToPredType (snd i)) Id.nullRange) predterms Id.nullRange
+									[] ->
+										error ("Could not find predicate for \"" ++ applySym ++ "\"")
+							else
+								error ("Expected a casl application symbol, but \"" ++ applySym ++ "\" was found!")
+								
 --					if applySym /= [] then
 {-						Debug.Trace.trace ("No matching casl-application found! Trying to find predicate...") $
 							let
