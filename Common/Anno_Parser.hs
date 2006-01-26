@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Klaus Lüttich, Christian Maeder and Uni Bremen 2002-2005
+Copyright   :  (c) Klaus Lüttich, Christian Maeder and Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -33,8 +33,9 @@ some_id = mixId keys keys where keys = ([], [])
 
 charOrEof :: Char -> GenParser Char st ()
 charOrEof c = (char c >> return ()) <|> eof
+
 newlineOrEof :: GenParser Char st ()
-newlineOrEof = charOrEof '\n'
+newlineOrEof = lookAhead $ charOrEof '\n'
 
 commentLine :: GenParser Char st Annotation
 commentLine = do
