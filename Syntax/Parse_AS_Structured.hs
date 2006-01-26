@@ -383,7 +383,9 @@ fittingArg l = do s <- asKey viewS
                   return (Fit_spec sp symbit ps)
 
 optEnd :: AParser st (Maybe Token)
-optEnd = option Nothing (fmap Just (asKey endS))
+optEnd = try (addAnnos >> option Nothing
+                           (fmap Just $ pToken $ keyWord $ string endS))
+         << addLineAnnos
 
 generics :: LogicGraph -> AParser AnyLogic GENERICITY
 generics l = do
