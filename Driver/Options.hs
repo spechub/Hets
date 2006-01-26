@@ -444,13 +444,24 @@ existsAnSource opts file = do
 
 -- | should env be written
 hasEnvOut :: HetcatsOpts -> Bool
-hasEnvOut = any ( \ o -> case o of EnvOut -> True
-                                   _ -> False) . outtypes
+hasEnvOut = any ( \ o -> case o of
+                           EnvOut -> True
+                           _ -> False) . outtypes
 
--- | add EnvOut option for imported libraries
-addEnvOut :: HetcatsOpts -> HetcatsOpts
-addEnvOut opts = if hasEnvOut opts then opts else
-                 opts { outtypes = EnvOut : outtypes opts }
+-- | should prf be written
+isPrfOut :: OutType -> Bool
+isPrfOut o = case o of
+             Prf -> True
+             _ -> False
+
+-- | should prf be written
+hasPrfOut :: HetcatsOpts -> Bool
+hasPrfOut = any isPrfOut . outtypes
+
+-- | remove prf writing
+removePrfOut :: HetcatsOpts -> HetcatsOpts
+removePrfOut opts = opts { outtypes = filter (not . isPrfOut)
+                                      $ outtypes opts }
 
 -- |
 -- gets two Paths and checks if the first file is not older than the

@@ -51,7 +51,6 @@ import Static.DevGraph
 import Static.DGToSpec
 import qualified Static.PrintDevGraph as DG
 import Proofs.StatusUtils
-import Proofs.Automatic
 
 import ATC.DevGraph()
 import ATC.GlobalAnnotations()
@@ -137,13 +136,11 @@ writeSpecFiles :: HetcatsOpts -> FilePath -> LibEnv
                -> GlobalAnnos -> (LIB_NAME, GlobalEnv) -> IO()
 writeSpecFiles opt file lenv ga (ln, gctx) = do
     let ns = specNames opt
-        (prfFiles, outTypes) = partition (\ t -> case t of
-            Prf -> True
-            _ -> False) $ outtypes opt
+        outTypes = outtypes opt
         allSpecs = null ns
-    unless (null prfFiles) $ do
-      let f = rmSuffix file ++ "." ++ show (head prfFiles)
-      str <- toShATermString (ln, lookupHistory ln $ automatic ln lenv)
+    when (hasPrfOut opt) $ do
+      let f = rmSuffix file ++ prfSuffix
+      str <- toShATermString (ln, lookupHistory ln lenv)
       writeVerbFile opt f str
     mapM_ ( \ i -> case Map.lookup i gctx of
         Just (SpecEntry (_,_,_, NodeSig n _)) ->

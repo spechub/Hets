@@ -23,6 +23,7 @@ module Static.AnalysisLibrary
     , ana_LIB_DEFN
     ) where
 
+import Proofs.Automatic
 import Logic.Logic
 import Logic.Coerce
 import Logic.Grothendieck
@@ -59,14 +60,14 @@ anaLib opts file = do
                      emptyLibEnv (fileToLibName opts file) file
     showDiags opts ds
     case res of
-        Nothing -> return res
-        Just (ln, lenv) -> case Map.lookup ln lenv of
-              Nothing -> return res
-              Just gctx -> do
-                  let ga = globalAnnos gctx
-                  writeSpecFiles opts file lenv ga (ln, globalEnv gctx)
-                  putIfVerbose opts 3 $ showPretty ga ""
-                  return res
+        Nothing -> return Nothing
+        Just (ln, lenv) -> do
+            let nEnv = if hasPrfOut opts then automatic ln lenv else lenv
+                gctx = lookupGlobalContext ln nEnv
+                ga = globalAnnos gctx
+            writeSpecFiles opts file nEnv ga (ln, globalEnv gctx)
+            putIfVerbose opts 3 $ showPretty ga ""
+            return $ Just (ln, nEnv)
 
 -- | parsing and static analysis for files
 -- Parameters: logic graph, default logic, file name

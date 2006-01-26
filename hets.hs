@@ -61,7 +61,7 @@ processFile opts file =
                  structureAna file opts ontoMap
 #endif
              PrfIn -> do
-               m <- anaLib opts file
+               m <- anaLib (removePrfOut opts) file
                case m of
                  Nothing -> return Nothing
                  Just (ln, libEnv) -> do
@@ -70,7 +70,7 @@ processFile opts file =
              _ -> anaLib opts file
            case gui opts of
              Not -> return ()
-             _  -> 
+             _  ->
 #ifdef UNI_PACKAGE
                    showGraph file opts res
 #else
