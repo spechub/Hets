@@ -18,7 +18,7 @@ module Common.ATerm.AbstractSyntax
      getATerm, toReadonlyATT,
      getTopIndex,
      getATerm', setATerm', getShATerm,
-     Key(..), newATermTable, getKey, setKey, mkKey,
+     Key, newATermTable, getKey, setKey, mkKey,
      getATermByIndex1, str2Char, integer2Int
     ) where
 

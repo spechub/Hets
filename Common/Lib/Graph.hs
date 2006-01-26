@@ -17,7 +17,7 @@ import Data.Graph.Inductive.Graph
 import qualified Common.Lib.Map as Map
 
 -- | the graph type constructor
-newtype Gr a b = Gr { toMap :: GraphRep a b }
+newtype Gr a b = Gr { toMap :: Map.Map Node (Adj b, a, Adj b) }
 
 type GraphRep a b = Map.Map Node (Context' a b)
 type Context' a b = (Adj b, a, Adj b)
