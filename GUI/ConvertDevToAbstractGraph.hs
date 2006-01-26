@@ -38,6 +38,7 @@ import Static.DevGraph
 import Static.DGToSpec
 import Static.AnalysisLibrary
 
+import Proofs.EdgeUtils
 import Proofs.InferBasic
 import Proofs.Automatic
 import Proofs.Global
@@ -427,26 +428,39 @@ saveProofStatus ln file ioRefProofStatus opts = encapsulateWaitTermAct $ do
 openProofStatus :: LIB_NAME -> FilePath -> IORef LibEnv
                 -> IORef ConversionMaps
                 -> HetcatsOpts -> IO (Descr, GraphInfo, ConversionMaps)
-openProofStatus libname file ioRefProofStatus convRef opts =
-  if fileToLibName opts file /= libname then
-      error $ "file name must correspond to library name: "
-                ++ showPretty libname ""
-  else
-  do m <- anaLib opts file
-     case m of
-       Nothing -> error $ "Could not read proof status from file '"
-                  ++ file ++ "'"
-       Just (ln, libEnv) -> do
-            proofStatus <- readPrfFiles opts libEnv
-            writeIORef ioRefProofStatus proofStatus
-            initGraphInfo <- initgraphs
-            graphMem' <- (newIORef GraphMem{nextGraphId = 0,
+openProofStatus ln file ioRefProofStatus convRef opts = do
+    mh <- readVerbose opts ln file
+    case mh of
+      Nothing -> fail
+                 $ "Could not read proof status from file '"
+                       ++ file ++ "'"
+      Just h -> do
+          let libfile = libNameToFile opts ln
+          m <- anaLib opts libfile
+          case m of
+            Nothing -> fail
+                 $ "Could not read original development graph from '"
+                       ++ libfile ++  "'"
+            Just (_, libEnv) -> case Map.lookup ln libEnv of
+                Nothing -> fail
+                 $ "Could not get original development graph for '"
+                       ++ showPretty ln "'"
+                Just gctx -> do
+                    oldEnv <- readIORef ioRefProofStatus
+                    let proofStatus = Map.insert ln gctx
+                                          { devGraph = changesDG
+                                                       (devGraph gctx)
+                                                       $ concatMap snd h
+                                          , proofHistory = h } oldEnv
+                    writeIORef ioRefProofStatus proofStatus
+                    initGraphInfo <- initgraphs
+                    graphMem' <- (newIORef GraphMem{nextGraphId = 0,
                                       graphInfo = initGraphInfo})
-            (gid, actGraphInfo, convMaps)
+                    (gid, actGraphInfo, convMaps)
                           <- convertGraph graphMem' ln proofStatus opts
-            writeIORef convRef convMaps
-            redisplay gid actGraphInfo
-            return (gid, actGraphInfo, convMaps)
+                    writeIORef convRef convMaps
+                    redisplay gid actGraphInfo
+                    return (gid, actGraphInfo, convMaps)
 
 -- | apply a rule of the development graph calculus
 proofMenu :: GInfo
