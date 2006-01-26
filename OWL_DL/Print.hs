@@ -161,7 +161,7 @@ instance PrettyPrint Axiom where
                --         Prelude.Nothing isSymmetric maybeFunc p8 p9))
 	    _ -> if isSymmetric then
                      parens ((text "forall ((x owl:Thing) (y owl:Thing))") 
-                                <+>  parens ((text "implies") <> 
+                                <+>  parens ((text "implies") <+> 
                                              parens ((printText0 ga iid) <+>
 			                             (text "x y")) <+> 
                                              parens ((printText0 ga iid) <+>
@@ -171,7 +171,7 @@ instance PrettyPrint Axiom where
 		         Just InverseFunctional ->
                            parens ((text "forall ((x owl:Thing) (y owl:Thing) (z owl:Thing))") <+>  
                              parens ((text "implies") $+$ 
-                                     (nest 2 (parens ((text "and") <> 
+                                     (nest 2 (parens ((text "and") <+> 
                                               parens ((printText0 ga iid) <+>
 			                             (text "y z")) $+$ 
                                                parens ((printText0 ga iid) <+>
@@ -194,16 +194,17 @@ instance PrettyPrint SignAxiom where
     printText0 ga signAxiom =
 	case signAxiom of
 	Subconcept cid1 cid2 -> 
-	    (text "(forall ((x owl:Thing)) (implies (" <> 
-	             (printText0 ga cid1) <> 
-	             (text " x) (") <> (printText0 ga cid2) <> (text " x)))"))
-	RoleDomain rid rdomains ->
+            parens (text "forall ((x owl:Thing))" <+> 
+                    parens (text "implies" <+>
+                            (parens (printText0 ga cid1 <+> text "x") <+>
+                             parens (printText0 ga cid2) <+> text "x")))
+ 	RoleDomain rid rdomains ->
 	    foldListToDocH ga  
 	    (\x y -> parens ((text "forall ((x owl:Thing) (y owl:Thing))") $+$
-                             (nest 2 $ parens ((text "implies (") <> 
+                             (nest 2 $ parens ((text "implies") <+> 
                                                (parens ((printText0 ga x) <+> 
-                                                        (text "x y)") <+> 
-                                                        (parens (printText0 ga y)))))))
+                                                        (text "x y")) <+> 
+                                                (parens (printText0 ga y))))))
             ) rid rdomains
 	RoleRange rid rranges -> 
  --        if null rranges then text ""
@@ -366,17 +367,17 @@ instance PrettyPrint Individual where
            printAnonymIndividual iid' ipID typesI valuesI level= 
                parens ((text ("exists ("++choiceName level++" owl:Thing)")) 
                        $+$ (nest 2 $ parens ((text "and") <+> 
-                  (foldListToDocV ga 
-                   -- className (type)
+                  -- (propertyID individualID x)
+                  (parens ((printText0 ga ipID) <+> 
+                      (printText0 ga iid') <+> (text $ choiceName level))) $+$ 
+                  -- className (type)
+                  (nest 4 $ (foldListToDocV ga 
                    (\x y -> case x of 
                        (QN _ str _) -> 
                         parens ((printDescription ga 0 emptyQN y) <+> 
                          (text str))) (simpleQN $ choiceName level) 
-                                   (reverse typesI)) $+$
-                   -- (propertyID individualID x)
-                   (nest 4 $ parens ((printText0 ga ipID) <+> 
-                      (printText0 ga iid') <+> (text $ choiceName level))) $+$ 
-                   -- values
+                                   (reverse typesI))) $+$
+                  -- values
                   (nest 4 $ printIndividual (Just $ simpleQN $ choiceName level) valuesI (level+1)))))
        
 -- to show restrictions, descriptions and cardinalities need the id of classes
