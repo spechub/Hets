@@ -81,10 +81,8 @@ printAnnotedFormula_Text0 ga withDot (Annoted i _ las ras) =
         let i'   = -- trace (show i) $
                  (if withDot then (char '.' <+>) else id) $
                  printFORMULA ga i
-            las' = if not $ null las then
-                       ptext "\n" <> printAnnotationList_Text0 ga las
-                   else
-                       empty
+            las' = if null las then empty else
+                       text "" $+$ printAnnotationList_Text0 ga las
             (la,ras') = splitAndPrintRAnnos printText0
                                     printAnnotationList_Text0
                                     (<+>) id empty ga ras
