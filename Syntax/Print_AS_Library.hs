@@ -30,7 +30,7 @@ instance PrettyPrint LIB_DEFN where
         let aa' = printText0 ga aa              -- lib name
             ab' = vsep $ map (printText0 ga) ab -- LIB_ITEMs
             ad' = vcat $ map (printText0 ga) ad -- global ANNOTATIONs
-        in text libraryS <+> aa' $+$ ad' $+$ ab'
+        in text libraryS <+> aa' $++$ ad' $++$ ab'
 
 instance PrettyPrint LIB_ITEM where
     printText0 ga (Spec_defn aa ab ac _) =
