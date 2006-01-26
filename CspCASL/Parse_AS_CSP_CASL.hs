@@ -8,15 +8,14 @@ Stability   :  provisional
 Portability :  portable
 
 parser for CSP-CASL
-
 -}
 
 {- todo:
 
    provide a better name for this module!!!
 
-   equation systems of processes 
-   
+   equation systems of processes
+
    spec hugo =
      data ...
      channel ...
@@ -37,8 +36,6 @@ add line numbers (using Annoted)
 -}
 
 module CspCASL.Parse_AS_CSP_CASL where
-
-import Debug.Trace
 
 import CspCASL.AS_CSP_CASL
 import CASL.AS_Basic_CASL(OP_NAME)
@@ -65,11 +62,11 @@ interim = try ( do { nc <- namedCspCaslCSpec
                    ; eof
                    ; return (Named_c3po nc)
                    }
-              )  
+              )
       <|>       do { c  <- cspCaslCSpec
                    ; eof
                    ; return (C3po c)
-                   } 
+                   }
 
 gimbo :: Parser Char
 gimbo   = do { char '('
@@ -90,10 +87,10 @@ namedCspCaslCSpec = try ( do { ccspecT
                              ; c <- cspCaslCSpec
                              ; endT
                              ; return (Named_csp_casl_spec n c)
-                             }                       
+                             }
 
 specName :: AParser st SPEC_NAME
-specName = var                    
+specName = var
 
 cspCaslCSpec :: AParser st CSP_CASL_C_SPEC
 cspCaslCSpec = do { d <- dataDefn
@@ -117,7 +114,7 @@ basicCspCaslCSpec = do { c <- channelDecl
 ----------------------------------------------------------------------------
 -- Parsers for the rest
 ----------------------------------------------------------------------------
-                     
+
 dataDefn :: AParser st DATA_DEFN
 dataDefn = do { dataT
               ; d  <- basicSpec csp_casl_keywords
@@ -126,23 +123,23 @@ dataDefn = do { dataT
 
 channelDecl :: AParser st CHANNEL_DECL
 channelDecl = do { channelT
-                 ; (cs, ps) <- channelItem `separatedBy` semicolonT
+                 ; (cs, _) <- channelItem `separatedBy` anSemi
                  ; return (Channel_items cs)
                  }
 
 channelItem :: AParser st CHANNEL_ITEM
-channelItem = do { (ns, ps) <- channelName `separatedBy` commaT
+channelItem = do { (ns, _) <- channelName `separatedBy` anComma
                        ; colonT
                        ; s        <- sortId csp_casl_keywords
                        ; return (Channel_decl ns s)
                  }
 
-              
+
 processDefn :: AParser st PROCESS_DEFN
 processDefn = try ( do { processT
                        ; letT
                        ; oSBracketT
-                       ; (pe, ps) <- processEquation `separatedBy` semicolonT
+                       ; (pe, _) <- processEquation `separatedBy` anSemi
                        ; cSBracketT
                        ; inT
                        ; np       <- namedProcess
@@ -151,14 +148,14 @@ processDefn = try ( do { processT
                   )
           <|> try ( do { processT
                        ; letT
-                       ; oSBracketT                       
-                       ; (pe, ps) <- processEquation `separatedBy` semicolonT
-                       ; cSBracketT                       
+                       ; oSBracketT
+                       ; (pe, _) <- processEquation `separatedBy` anSemi
+                       ; cSBracketT
                        ; inT
                        ; gnp      <- genericNamedProcess
                        ; return (Generic_recursive pe gnp)
                        }
-                  )                  
+                  )
           <|>       do { processT
                        ; p  <- process
                        ; return (Basic p)
@@ -175,14 +172,14 @@ processEquation = try ( do { np <- namedProcess
                            ; equalT
                            ; p <- process
                            ; return (Generic_equation ge p)
-                           } 
+                           }
 
 genericEquation :: AParser st GENERIC_EQUATION
 genericEquation = do { pn <- processName
                        ; oRBracketT
                            ; vi <- var
                            ; colonT
-                           ; es <- eventSet             
+                           ; es <- eventSet
                            ; return (Generic pn vi es)
                            -- closing bracket missing!!
                            }
@@ -195,7 +192,7 @@ genericNamedProcess = do { pn <- processName
                                ; cRBracketT
                                ; return (Generic_named pn t)
                                }
-                        
+
 namedProcess :: AParser st NAMED_PROCESS
 namedProcess = do { pn <- processName
                   ; return (Named pn)
@@ -232,7 +229,7 @@ primProcess =      do { skipT
                                   ; p <- process
                                   ; return (Conditional_process f p)
                                   }
-                <|>      do { whenT                    
+                <|>      do { whenT
                                   ; f <- formula csp_casl_keywords
                                   ; thenT
                                   ; p <- process
@@ -247,7 +244,7 @@ primProcess =      do { skipT
                                   ; return (Multiple_prefix v es p)
                               }
                 <|> try ( do { e <- event
-                             ; prefixT 
+                             ; prefixT
                              ; p <- hidRenProcess
                              ; return (Prefix e p)
                              }
@@ -256,16 +253,16 @@ primProcess =      do { skipT
                        ; p <- process
                        ; cRBracketT
                        ; return p
-                       } 
-                <|> try ( do { gnp <- genericNamedProcess 
+                       }
+                <|> try ( do { gnp <- genericNamedProcess
                              ; return (Generic_named_process gnp)
                              }
                         )
           <|>       do { np <- namedProcess
                        ; return (Named_process np)
                        }
-                       
-                       
+
+
 --              <|> do { f <- formula
 --                           ; a <- asKey "&"
 --                           ; p <- process
@@ -275,30 +272,30 @@ primProcess =      do { skipT
 --renamedProcess :: AParser st PROCESS
 --renamedProcess = try (do { p <- primProcess
 --                                   ; oRenamingT
---                                   
+--
 --                                   ; cRenamingT
 --                                   ; return p
 --                                   }
 --                               )
 --                       <|>      do { p <- primProcess
 --                                   ; return p
---                                   } 
+--                                   }
 
 
 seqProcess :: AParser st PROCESS
-seqProcess = try ( do { rp <- hidRenProcess 
-                      ; semicolonT
+seqProcess = try ( do { rp <- hidRenProcess
+                      ; anSemi
                       ; sp <- seqProcess
                       ; return (Sequential [rp, sp])
                       }
                  )
          <|>       do { hrp <- hidRenProcess
                       ; return hrp
-                      }  
+                      }
 
 
 sortRenaming :: AParser st SORT_RENAMING
-sortRenaming = do { (procs, ps) <- opList `separatedBy` commaT
+sortRenaming = do { (procs, _) <- opList `separatedBy` anComma
                   ; return (Op_list procs)
                   }
 
@@ -307,7 +304,7 @@ channelRenaming = do { cn1 <- channelName
                            ; chanRenT
                            ; cn2 <- channelName
                            ; return (Channel_renaming cn1 cn2)
-                           } 
+                           }
 
 hidRenProcess :: AParser st PROCESS
 hidRenProcess = try ( do { pp <- primProcess
@@ -329,11 +326,11 @@ hidRenProcess = try ( do { pp <- primProcess
                          ; cRenamingT
                                ; return (Csp_channel_renaming pp sr)
                                }
-                          )                       
+                          )
             <|>       do { pp <- primProcess
                          ; return pp
-                         }             
-          
+                         }
+
 
 intChoiceProcess :: AParser st PROCESS
 intChoiceProcess = try ( do { sp  <- seqProcess
@@ -344,8 +341,8 @@ intChoiceProcess = try ( do { sp  <- seqProcess
                        )
                <|>       do { sp <- seqProcess
                             ; return sp
-                            }  
- 
+                            }
+
 extChoiceProcess :: AParser st PROCESS
 extChoiceProcess = try ( do { sp  <- seqProcess
                             ; extChoiceT
@@ -355,24 +352,24 @@ extChoiceProcess = try ( do { sp  <- seqProcess
                        )
                <|>       do { sp <- seqProcess
                             ; return sp
-                            }                        
+                            }
 
 choiceProcess :: AParser st PROCESS
-choiceProcess = try ( do { sp  <- seqProcess 
+choiceProcess = try ( do { sp  <- seqProcess
                          ; extChoiceT
-                         ; ecp <- extChoiceProcess 
+                         ; ecp <- extChoiceProcess
                          ; return (External_choice [sp, ecp])
                          }
                     )
-            <|> try ( do { sp  <- seqProcess 
+            <|> try ( do { sp  <- seqProcess
                          ; intChoiceT
-                         ; icp <- intChoiceProcess 
+                         ; icp <- intChoiceProcess
                          ; return (Internal_choice [sp, icp])
                          }
                     )
             <|>       do { sp <- seqProcess
                          ; return sp
-                         }           
+                         }
 
 
 synParaProcess :: AParser st PROCESS
@@ -384,7 +381,7 @@ synParaProcess = try ( do { cp  <- choiceProcess
                      )
              <|>       do { cp <- choiceProcess
                           ; return cp
-                          }                   
+                          }
 
 interParaProcess :: AParser st PROCESS
 interParaProcess = try ( do { cp  <- choiceProcess
@@ -395,7 +392,7 @@ interParaProcess = try ( do { cp  <- choiceProcess
                        )
                <|>       do { cp <- choiceProcess
                             ; return cp
-                            }                   
+                            }
 
 process :: AParser st PROCESS
 process = try ( do { cp  <- choiceProcess
@@ -404,7 +401,7 @@ process = try ( do { cp  <- choiceProcess
                    ; return (Synchronous_parallel [cp, spp])
                    }
                     )
-      <|> try ( do { cp  <- choiceProcess 
+      <|> try ( do { cp  <- choiceProcess
                    ; interParaT
                    ; ipp <- interParaProcess
                    ; return (Interleaving_parallel [cp, ipp])
@@ -414,12 +411,12 @@ process = try ( do { cp  <- choiceProcess
                    ; oGenPaT
                          ; es1 <- eventSet
                    ; mGenPaT
-                         ; es2 <- eventSet                       
+                         ; es2 <- eventSet
                          ; cGenPaT
                          ; cp2 <- choiceProcess
                          ; return (General_parallel cp1 es1 es2 cp2)
                          }
-                    )   
+                    )
       <|> try ( do { cp1 <- choiceProcess
                    ; oAlPaT
                          ; es  <- eventSet
@@ -427,10 +424,10 @@ process = try ( do { cp  <- choiceProcess
                          ; cp2 <- choiceProcess
                          ; return (Alphabet_parallel cp1 es cp2)
                          }
-                    )                                                               
+                    )
       <|>       do { ch <- choiceProcess
                    ; return ch
-                   } 
+                   }
 
 
 opList :: AParser st OP_NAME
@@ -442,22 +439,22 @@ eventSet :: AParser st EVENT_SET
 eventSet = do { si <- sortId csp_casl_keywords
                     ; return (Event_set si)
                     }
-                    
+
 event :: AParser st EVENT
 event = try (do { ci <- channelId
                       ; sendT
                       ; t <- term csp_casl_keywords
                       ; return (Send ci t)
                       }
-                  ) 
+                  )
           <|> try (do { ci <- channelId
                       ; receiveT
                       ; v  <- var
                       ; colonT
-                      ; si <- sortId csp_casl_keywords             
+                      ; si <- sortId csp_casl_keywords
                       ; return (Receive ci v si)
                       }
-                  )     
+                  )
           <|>      do { t <- term csp_casl_keywords
                       ; return (Term t)
                       }
