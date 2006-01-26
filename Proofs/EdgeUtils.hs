@@ -47,8 +47,8 @@ insLEdge e@(v, w, l) g = case match v g of
     _ -> error $ "insLEdge no node for edge: " ++ show e
 
 delLNode :: LNode DGNodeLab -> DGraph -> DGraph
-delLNode n@(v, l) g = case match v g of
-    (Just(_, _, l', _), g') -> g'
+delLNode n@(v, _) g = case match v g of
+    (Just(_p, _, _l', _s), g') -> g'
 --       if l' == l then
 --           if null p && null s then g'
 --           else error $ "delLNode remaining edgges: " ++ show (p ++ s)
