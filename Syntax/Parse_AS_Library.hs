@@ -1,7 +1,6 @@
-{-| 
-   
+{- |
 Module      :  $Header$
-Copyright   :  (c) Maciek Makowski, Uni Bremen 2002-2004
+Copyright   :  (c) Maciek Makowski, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -48,13 +47,13 @@ import Data.Maybe(maybeToList)
 
 -- | Parse a library of specifications
 library :: (AnyLogic,LogicGraph) -> AParser AnyLogic LIB_DEFN
-library (l,lG) = 
+library (l,lG) =
    do setUserState l
       (ps, ln) <- option (nullRange, Lib_id $ Indirect_link libraryS nullRange)
                            (do s1 <- asKey libraryS -- 'library' keyword
                                n <- libName         -- library name
                                return (tokPos s1, n))
-      an <- annos          -- annotations 
+      an <- annos          -- annotations
       ls <- libItems lG     -- library elements
       return (Lib_defn ln ls ps an)
 
@@ -85,25 +84,29 @@ libId = do pos <- getPos
 
 -- | Parse the library elements
 libItems :: LogicGraph -> AParser AnyLogic [Annoted LIB_ITEM]
-libItems l = 
+libItems l =
      (eof >> return [])
     <|> do r <- libItem l
-           an <- annos 
+           la <- lineAnnos
+           an <- annos
            is <- libItems l
-           return ((Annoted r nullRange [] an) : is)
-
+           case is of
+             [] -> return [Annoted r nullRange [] $ la ++ an]
+             Annoted i p nl ra : rs ->
+                 return (Annoted r nullRange [] la :
+                                 Annoted i p (an ++ nl) ra : rs)
 
 -- | Parse an element of the library
 libItem :: LogicGraph -> AParser AnyLogic LIB_ITEM
-libItem l = 
+libItem l =
      -- spec defn
-    do s <- asKey specS 
+    do s <- asKey specS
        n <- simpleId
        g <- generics l
        e <- asKey equalS
        a <- aSpec l
        q <- optEnd
-       return (Syntax.AS_Library.Spec_defn n g a 
+       return (Syntax.AS_Library.Spec_defn n g a
                (catPos ([s, e] ++ maybeToList q)))
   <|> -- view defn
     do s1 <- asKey viewS
@@ -111,12 +114,12 @@ libItem l =
        g <- generics l
        s2 <- asKey ":"
        vt <- viewType l
-       (symbMap,ps) <- option ([],[]) 
-                        (do s <- asKey equalS               
+       (symbMap,ps) <- option ([],[])
+                        (do s <- asKey equalS
                             (m, _) <- parseMapping l
-                            return (m,[s]))          
+                            return (m,[s]))
        q <- optEnd
-       return (Syntax.AS_Library.View_defn vn g vt symbMap 
+       return (Syntax.AS_Library.View_defn vn g vt symbMap
                     (catPos ([s1, s2] ++ ps ++ maybeToList q)))
   <|> -- unit spec
     do kUnit <- asKey unitS
@@ -153,7 +156,7 @@ libItem l =
        s2 <- asKey getS
        (il,ps) <- itemNameOrMap `separatedBy` anComma
        q <- optEnd
-       return (Download_items ln il 
+       return (Download_items ln il
                 (catPos ([s1, s2] ++ ps ++ maybeToList q)))
   <|> -- logic
     do s1 <- asKey logicS
@@ -163,7 +166,7 @@ libItem l =
   <|> -- just a spec (turned into "spec spec = sp")
      do a <- aSpec l
         return (Syntax.AS_Library.Spec_defn (mkSimpleId specS)
-               (Genericity (Params []) (Imported []) nullRange) a nullRange)    
+               (Genericity (Params []) (Imported []) nullRange) a nullRange)
 
 -- | Parse view type
 viewType :: LogicGraph -> AParser AnyLogic VIEW_TYPE
