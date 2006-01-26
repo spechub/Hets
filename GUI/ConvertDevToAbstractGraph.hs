@@ -191,11 +191,11 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts = do
       actGraphInfo = graphInfo graphMem
   let gInfo = (ioRefProofStatus, event, convRef, gid, ln, actGraphInfo
               , showInternalNames, opts, ioRefVisibleNodes)
+  let file = libNameToFile opts ln ++ prfSuffix
   Result descr msg <-
-    makegraph ("Development graph for "++show ln)
+    makegraph ("Development graph for " ++ show ln)
          -- action on "open"
-             (do currentPath <- getCurrentDirectory
-                 evnt <- fileDialogStr "Open..." currentPath
+             (do evnt <- fileDialogStr "Open..." file
                  maybeFilePath <- HTk.sync evnt
                  case maybeFilePath of
                    Just filePath ->
@@ -205,23 +205,17 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts = do
                    Nothing -> fail "Could not open file."
               )
          -- action on "save"
-             (encapsulateWaitTermAct
-               (do proofStatus <- readIORef ioRefProofStatus
-                   let filename = libNameToFile opts ln ++ prfSuffix
-                   writeShATermFile filename (ln, lookupHistory ln proofStatus)
-                   putStrLn ("Wrote "++filename)))
+             (  saveProofStatus ln file
+                                   ioRefProofStatus opts)
          -- action on "save as...:"
-             (encapsulateWaitTermAct
-               (do currentPath <- getCurrentDirectory
-                   evnt <- newFileDialogStr "Save as..." currentPath
+             (  do currentPath <- getCurrentDirectory
+                   evnt <- newFileDialogStr "Save as..." file
                    maybeFilePath <- HTk.sync evnt
                    case maybeFilePath of
-                     Just filePath -> do
-                       proofStatus <- readIORef ioRefProofStatus
-                       writeShATermFile filePath $ lookupHistory ln proofStatus
-                       putStrLn ("Wrote "++filePath)
+                     Just filePath ->
+                       saveProofStatus ln filePath ioRefProofStatus opts
                      Nothing -> fail "Could not save file."
-               ))
+             )
          -- the global menu
              [GlobalMenu (Menu Nothing
                [Menu (Just "Unnamed nodes")
@@ -423,10 +417,16 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts = do
   graphMem'<- readIORef ioRefGraphMem
   return (descr,graphInfo graphMem',convRef)
 
+saveProofStatus :: LIB_NAME -> FilePath -> IORef LibEnv -> HetcatsOpts -> IO ()
+saveProofStatus ln file ioRefProofStatus opts = encapsulateWaitTermAct $ do
+    proofStatus <- readIORef ioRefProofStatus
+    writeShATermFile file (ln, lookupHistory ln proofStatus)
+    putIfVerbose opts 2 $ "Wrote " ++ file
+
 -- | implementation of open menu, read in a proof status
-openProofStatus :: LIB_NAME -> FilePath -> (IORef LibEnv)
-                -> (IORef ConversionMaps)
-                -> HetcatsOpts -> IO(Descr, GraphInfo, ConversionMaps)
+openProofStatus :: LIB_NAME -> FilePath -> IORef LibEnv
+                -> IORef ConversionMaps
+                -> HetcatsOpts -> IO (Descr, GraphInfo, ConversionMaps)
 openProofStatus libname file ioRefProofStatus convRef opts =
   if fileToLibName opts file /= libname then
       error $ "file name must correspond to library name: "
