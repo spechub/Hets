@@ -1050,6 +1050,42 @@ devGraphToXmlCMPIOXmlNamed dg =
 										nodename
 							)
 							
+mapSameIdToSetWith::(Ord b)=>(a->b)->Set.Set (XmlNamedWONId, a)->Map.Map Id.Id (Set.Set b)
+mapSameIdToSetWith conv set =
+	Set.fold (\(xnwonid, a) mapping ->
+		let
+			pureid = xnWOaToa xnwonid
+			idset = Map.findWithDefault Set.empty pureid mapping
+			newset = Set.union idset (Set.singleton $ conv a)
+		in
+			Map.insert pureid newset mapping
+			) Map.empty set
+
+							
+xnMapsToDGNodeLab::
+	NODE_NAME->
+	Set.Set XmlNamedWONId->
+	Rel.Rel XmlNamedWONId->
+	Set.Set (XmlNamedWONId, PredTypeXNWON)->
+	Set.Set (XmlNamedWONId, OpTypeXNWON)->
+	Set.Set (XmlNamed Hets.SentenceWO)->
+	DGNodeLab
+xnMapsToDGNodeLab
+	nn
+	xnsorts
+	xnrels
+	xnpreds
+	xnops
+	xnsens =
+	let
+		sorts = Set.map xnWOaToa xnsorts
+		rels = Rel.fromList $ map (\(a,b) -> (xnWOaToa a, xnWOaToa b)) $ Rel.toList xnrels
+		preds = mapSameIdToSetWith predTypeXNWONToPredType xnpreds
+		ops = mapSameIdToSetWith opTypeXNWONToOpType xnops
+		sens = Set.map xnWOaToa xnsens
+	in
+		mapsNNToDGNodeLab (sorts, rels, preds, ops, sens) nn
+							
 type WithOriginTheory a = Hets.WithOrigin a String
 
 type XmlNamedWO a b = XmlNamed (Hets.WithOrigin a b)
@@ -1417,6 +1453,45 @@ extractConsFromADT t =
 				args = map (\n -> Hets.stringToId $ xshow [n]) $ applyXmlFilter (getChildren .> isTag "argument" .> getValue "sort") t'
 			in
 				(Hets.stringToId name' , OpType Total args sort)
+
+-- i need a back-reference to the theory to get presentations for adt-constructors...				
+extractConsXNWONFromADT::FFXInput->AnnXMLN->AnnXMLN->(XmlNamedWONId, [(XmlNamedWONId, OpTypeXNWON)])
+extractConsXNWONFromADT ffxi anxml anxmltheory =
+	let
+		sortdef = applyXmlFilter (isTag "adt" .> getChildren .> 
+			isTag "sortdef") (axXml anxml)
+		sorts = xshow $ applyXmlFilter (getValue "name") sortdef
+		sortid =
+			case findByNameAndOrigin
+				sorts
+				(axAnn anxml)
+				(mapSetToSet $ xnSortsMap ffxi) of
+					Nothing -> error "No sort for ADT!"
+					(Just si) -> si
+		cons = applyXmlFilter (getChildren .> isTag "constructor") sortdef
+	in
+		(sortid, map (\n -> extractConXNWON [n] sortid) cons)
+		
+	where
+		extractConXNWON::HXT.XmlTrees->XmlNamedWONId->(XmlNamedWONId, OpTypeXNWON) -- empty list on error
+		extractConXNWON conx sortid =
+			let
+				conxname = xshow $ applyXmlFilter (getValue "name") conx
+				conhpress = getPresentationString conxname (axXml anxmltheory)
+				conid = case conhpress of
+					[] -> Hets.stringToId conxname
+					_ -> read conhpress
+				conxnwonid = XmlNamed (Hets.mkWON conid  (axAnn anxml)) conxname
+				args = map (\n -> xshow [n]) $ applyXmlFilter (getChildren .> isTag "argument" .> getValue "sort") conx
+				argsxn = map
+					(\n -> 
+						case findByNameAndOrigin n (axAnn anxml) (mapSetToSet $ xnSortsMap ffxi) of
+							Nothing -> error "Unknown sort in constructor..."
+							(Just x) -> x
+					)
+					args
+			in
+				(conxnwonid, OpTypeXNWON Total argsxn sortid)
 				
 consToSens::Id.Id->[(Id.Id, OpType)]->(Ann.Named CASLFORMULA)
 consToSens sort conlist =
@@ -1437,6 +1512,31 @@ consToSens sort conlist =
 			)
 			True
 		)
+		
+consToSensXN::XmlNamedWONId->[(XmlNamedWONId, OpTypeXNWON)]->XmlNamed Hets.SentenceWO
+consToSensXN sortid conlist =
+	XmlNamed 
+		(Hets.mkWON
+			(Ann.NamedSen
+				("ga_generated_" ++ show (xnItem sortid))
+				True
+				False
+				(Sort_gen_ax
+					(
+					foldl (\constraints (id' , ot) ->
+						constraints ++
+						[ Constraint
+							(xnWOaToa sortid)
+							[(Qual_op_name (xnWOaToa id' ) (cv_OpTypeToOp_type $ opTypeXNWONToOpType ot) Id.nullRange , [0])] 
+							(xnWOaToa sortid)
+						]
+						) [] conlist
+					)
+					True
+				))
+			(xnWOaToO sortid)
+		)
+		("ga_generated_" ++ (xnName sortid))
 		
 -- | creates a xml-representation for a predication
 -- needs a map of imports, sorts, the name of the current theory and the predication
@@ -2640,6 +2740,10 @@ findAllByNameWithAnd::(Container b a)=>(a->d)->(a->XmlNamed c)->String->b->[d]
 findAllByNameWithAnd proc trans iname icon =
 	map proc $ filter (\i -> xnName (trans i) == iname) $ getItems icon
 	
+findByNameAndFilterWith::(Container b a)=>(a->XmlNamed c)->String->(a->Bool)->b->Maybe a
+findByNameAndFilterWith trans iname filterfunc icon =
+	find (\i -> (filterfunc i) && xnName (trans i) == iname) (getItems icon)
+	
 -- search for a certainly named item and prefer items of specified origin
 -- check result for origin if important
 findByNameAndOrigin::(Eq b, Container c (XmlNamedWO a b))=>String->b->c->Maybe (XmlNamedWO a b)
@@ -2654,6 +2758,18 @@ findByNameAndOrigin iname iorig icon =
 					_ -> Nothing
 			i -> i
 
+findByNameAndOriginWith::(Eq b, Container c q)=>(q->XmlNamedWO a b)->String->b->c->Maybe q
+findByNameAndOriginWith trans iname iorig icon =
+	let
+		candidates = filter (\i -> (xnName (trans i)) == iname) (getItems icon)
+	in
+		case find (\i -> (xnWOaToO (trans i)) == iorig) candidates of
+			Nothing ->
+				case candidates of
+					(i:_) -> (Just i)
+					_ -> Nothing
+			i -> i
+			
 relsFromXmlTheory::HXT.XmlTrees->(Rel.Rel SORT)
 relsFromXmlTheory t =
 	let	adts = applyXmlFilter (getChildren .> isTag "adt") t
@@ -3110,9 +3226,9 @@ importsXNFromXml ffxi anxmlset =
 sensFromXmlTheory::FormulaContext->HXT.XmlTrees->(Set.Set (Ann.Named CASLFORMULA))
 sensFromXmlTheory fc t = Set.fromList $ unwrapFormulas fc $ applyXmlFilter (getChildren .> isTag "axiom") t
 
-sensXNFromXmlTheory::FFXInput->Set.Set AnnXMLN->(Set.Set (Ann.Named CASLFORMULA))
-sensXNFromXmlTheory ffxi anxmlset =
-	Set.fromList $ unwrapFormulasXN ffxi anxmlset
+sensXNWONFromXmlTheory::FFXInput->AnnXMLN->(Set.Set (XmlNamed Hets.SentenceWO))
+sensXNWONFromXmlTheory ffxi anxml =
+	Set.fromList $ unwrapFormulasXNWON ffxi anxml
 
 sensFromXml::FormulaContext->HXT.XmlTrees->Hets.SensMap
 sensFromXml fc t = 
@@ -3124,20 +3240,18 @@ sensFromXml fc t =
 			Map.insert name' (Set.union sens consens) map'
 		) Map.empty $ applyXmlFilter (isTag "theory") t
 
-{- something is not right yet...
-sensXNFromXml::FFXInput->Set.Set AnnXMLN->Hets.SensMap
-sensXNFromXml ffxi anxmlset = 
+sensXNWONFromXml::FFXInput->Set.Set AnnXMLN->Map.Map XmlName (Set.Set (XmlNamed Hets.SentenceWO))
+sensXNWONFromXml ffxi anxmlset = 
 	Set.fold (\anxml map' ->
 		let
 			theoryname = case getTheoryXmlName (xnTheorySet ffxi) (axAnn anxml) of
 				Nothing -> error "No theory found!"
 				(Just tn) -> tn
-			sens = sensXNFromXmlTheory ffxi anxmlset
-			consens = conSensFromXmlTheory [theory]
+			sens = sensXNWONFromXmlTheory ffxi anxml
+			consens = conSensXNWONFromXmlTheory ffxi anxml
 		in
-			Map.insert name' (Set.union sens consens) map'
-		) Map.empty $ applyXmlFilter (isTag "theory") t
--}
+			Map.insert theoryname (Set.union sens consens) map'
+		) Map.empty anxmlset
 		
 conSensFromXmlTheory::HXT.XmlTrees->(Set.Set (Ann.Named CASLFORMULA))
 conSensFromXmlTheory t =
@@ -3146,6 +3260,22 @@ conSensFromXmlTheory t =
 	in
 		Set.fromList $ map (\n -> uncurry consToSens $ extractConsFromADT [n]) adts 
 	
+conSensXNWONFromXmlTheory::FFXInput->AnnXMLN->Set.Set (XmlNamed Hets.SentenceWO) 
+conSensXNWONFromXmlTheory ffxi anxml =
+	let
+		adts = applyXmlFilter (getChildren .> isTag "adt") (axXml anxml)
+	in
+		Set.fromList $ foldl
+			(\list n ->
+				let
+					(excon, exconlist) = extractConsXNWONFromADT ffxi (AXML (axAnn anxml) [n]) anxml
+				in
+					if (length exconlist) == 0 -- if only the relation is expressed, no constructors are specified
+						then
+							list
+						else
+							list ++ [consToSensXN excon exconlist] 
+			) [] adts 
 
 -- | recreate non-incremental (full) mappings from the received mappings and the imports-information
 createFullMaps::Hets.SortsMap->Hets.RelsMap->Hets.PredsMap->Hets.OpsMap->Hets.SensMap->Hets.ImportsMap->String->
@@ -3192,6 +3322,17 @@ mapsToDGNodeLab::(Set.Set SORT, Rel.Rel SORT, Map.Map Id.Id (Set.Set PredType), 
 mapsToDGNodeLab maps nodename =
 	DGNode
 		(makeName $ Hets.stringToSimpleId nodename)
+		(mapsToG_theory maps)
+		Nothing
+		Nothing
+		DGBasic
+		None
+		LeftOpen
+		
+mapsNNToDGNodeLab::(Set.Set SORT, Rel.Rel SORT, Map.Map Id.Id (Set.Set PredType), Map.Map Id.Id (Set.Set OpType), Set.Set (Ann.Named CASLFORMULA))->NODE_NAME->DGNodeLab
+mapsNNToDGNodeLab maps nodename =
+	DGNode
+		nodename
 		(mapsToG_theory maps)
 		Nothing
 		Nothing
@@ -3261,7 +3402,54 @@ importGraphToDGNodes ig n =
 				n'
 			)
 			$ Set.toList nodenames) ++ refs
-		
+			
+importGraphToDGNodesXN::(ImportGraph (HXT.XmlTrees, Maybe DGraph))->Graph.Node->[DGNodeLab]
+importGraphToDGNodesXN ig n =
+	let
+		mnode = Graph.lab ig n
+		node = case mnode of
+			Nothing -> error "node error!"
+			(Just n' ) -> n'
+		omdoc = (\(S _ (omdoc' , _)) -> applyXmlFilter (isTag "omdoc" .> getChildren) omdoc' ) node
+		(ffxi, axtheoryset) = preprocessXml $ (\(S _ (omdoc' , _)) -> omdoc) node
+		importsMap' = importsFromXml omdoc
+		(theonames, sortsmap, relsmap, predsmap, opsmap) = (xnTheorySet ffxi, xnSortsMap ffxi, xnRelsMap ffxi, xnPredsMap ffxi, xnOpsMap ffxi)
+		sensmap = sensXNWONFromXml ffxi axtheoryset
+		refimports = filter ( \(_,from,_) -> from /= n) $ Graph.out ig n
+		refs = map ( \(_, from, (TI (theoname, _))) ->
+			let
+				moriginnode = Graph.lab ig from
+				(S (_, ssrc) (_,modg)) = case moriginnode of
+					Nothing -> error "node error (import)!"
+					(Just n' ) -> n'
+					-- the DG should have been created before accessing it
+				odg = case modg of
+					Nothing -> error "dg error"
+					(Just d) -> d
+				onodenum = case filter (\(_,node' ) -> (getDGNodeName node' ) == theoname ) $ Graph.labNodes odg of
+					[] -> error "no such node in origin..."
+					l -> fst $ head l
+			in
+				DGRef
+					(Hets.stringToSimpleId theoname, "", 0)
+					(ASL.Lib_id (ASL.Indirect_link ssrc Id.nullRange))
+					onodenum
+					(G_theory CASL Hets.emptyCASLSign (Prover.toThSens []))
+					Nothing
+					Nothing
+					) refimports
+	in	
+		Set.fold (\xntheory dgnodelist ->
+			let
+				tsorts = Map.findWithDefault Set.empty (xnName xntheory) sortsmap
+				trels = Map.findWithDefault Rel.empty (xnName xntheory) relsmap
+				tpreds = Map.findWithDefault Set.empty (xnName xntheory) predsmap
+				tops = Map.findWithDefault Set.empty (xnName xntheory) opsmap
+				tsens = Map.findWithDefault Set.empty (xnName xntheory) sensmap
+			in
+				dgnodelist ++ [xnMapsToDGNodeLab (snd (xnItem xntheory)) tsorts trels tpreds tops tsens]
+			) [] theonames
+	
 
 cleanNodeName::DGNodeLab->DGNodeLab
 cleanNodeName (node@(DGNode { })) =
@@ -5291,24 +5479,22 @@ isTrueAtom _ = False
 unwrapFormulas::FormulaContext->HXT.XmlTrees->[(Ann.Named CASLFORMULA)]
 unwrapFormulas fc t = map (\n -> unwrapFormula fc [n]) $ ((applyXmlFilter (isTag "axiom") t)::[XmlTree])
 
-unwrapFormulasXN::FFXInput->Set.Set AnnXMLN->[(Ann.Named CASLFORMULA)]
-unwrapFormulasXN ffxi anxmlset =
-	Set.fold (\anxml anfl ->
+unwrapFormulasXNWON::FFXInput->AnnXMLN->[(XmlNamed Hets.SentenceWO)]
+unwrapFormulasXNWON ffxi anxml =
 		let
 			axioms = applyXmlFilter (getChildren .> isTag "axiom") (axXml anxml)
 		in
-			anfl ++ foldl (\unwrapped axxml ->
+			foldl (\unwrapped axxml ->
 				let
-					ansen = unwrapFormulaXN ffxi (AXML (axAnn anxml) [axxml])
+					ansen = unwrapFormulaXNWON ffxi (AXML (axAnn anxml) [axxml])
 					ansenname = Ann.senName ansen
 					anpress = getPresentationString ansenname (axXml anxml)
 					anname = case anpress of
 						[] -> ansenname
 						_ -> anpress
 				in
-					unwrapped ++ [ansen { Ann.senName = anname }]
+					unwrapped ++ [XmlNamed (Hets.mkWON (ansen { Ann.senName = anname }) (axAnn anxml)) ansenname]
 				) [] axioms
-				) [] anxmlset
 		
 
 adjustFormulaName::String->String
@@ -5336,8 +5522,8 @@ unwrapFormula fc t =
 	in
 		Ann.NamedSen (adjustFormulaName name' ) True False (formulaFromXml fc formtree)
 
-unwrapFormulaXN::FFXInput->AnnXMLN->(Ann.Named CASLFORMULA)
-unwrapFormulaXN ffxi anxml =
+unwrapFormulaXNWON::FFXInput->AnnXMLN->(Ann.Named CASLFORMULA)
+unwrapFormulaXNWON ffxi anxml =
 	let
 		axname = xshow $ applyXmlFilter (getQualValue axiomNameXMLNS axiomNameXMLAttr) (axXml anxml)
 		formtree = applyXmlFilter (getChildren .> isTag "FMP" .> getChildren .> isTag "OMOBJ" .> getChildren) (axXml anxml)
@@ -5367,10 +5553,10 @@ preprocessXml t =
 
 data FFXInput = FFXInput {
 	xnTheorySet :: TheoryXNSet -- set of theorys (xmlnames + origin in graph)
-	,xnSortSet :: Map.Map XmlName (Set.Set XmlNamedWONSORT) -- theory -> sorts mapping
-	,xnRelSet :: Map.Map XmlName (Rel.Rel XmlNamedWONSORT) -- theory -> rels
-	,xnPredMap :: Map.Map XmlName (Set.Set (XmlNamedWONId, PredTypeXNWON)) -- theory -> preds
-	,xnOpMap :: Map.Map XmlName (Set.Set (XmlNamedWONId, OpTypeXNWON)) -- theory -> ops
+	,xnSortsMap :: Map.Map XmlName (Set.Set XmlNamedWONSORT) -- theory -> sorts mapping
+	,xnRelsMap :: Map.Map XmlName (Rel.Rel XmlNamedWONSORT) -- theory -> rels
+	,xnPredsMap :: Map.Map XmlName (Set.Set (XmlNamedWONId, PredTypeXNWON)) -- theory -> preds
+	,xnOpsMap :: Map.Map XmlName (Set.Set (XmlNamedWONId, OpTypeXNWON)) -- theory -> ops
 	}
 
 formulaFromXml::FormulaContext->(HXT.XmlTrees)->(FORMULA ())
@@ -5620,7 +5806,7 @@ formulaFromXmlXN ffxi anxml =
 						Debug.Trace.trace ("No matching casl-application found! Trying to find predicate...") $
 							let
 								predterms = map (\n -> termFromXmlXN ffxi (AXML (axAnn anxml) [n])) $ ((applyXmlFilter (getChildren .> (isTag "OMATTR" +++ isTag "OMA")) (axXml anxml))::[XmlTree])
-								possibilities = findAllByNameWithAnd id fst applySym (mapSetToSet (xnPredMap ffxi))
+								possibilities = findAllByNameWithAnd id fst applySym (mapSetToSet (xnPredsMap ffxi))
 								withThisOrigin = filter (\i -> (xnWOaToO $ fst i) == (axAnn anxml)) possibilities
 							in
 								case (case withThisOrigin of [] -> possibilities; _ -> withThisOrigin) of
@@ -5737,7 +5923,7 @@ predicationFromXmlXN ffxi anxml =
 		theoxn = case findByName sxcd (xnTheorySet ffxi) of
 			Nothing -> error ("No Theory for used predicate (Name) !" ++ sxname)
 			(Just theoxn' ) -> theoxn'
-		theopreds = Map.findWithDefault Set.empty (xnName theoxn) (xnPredMap ffxi) 
+		theopreds = Map.findWithDefault Set.empty (xnName theoxn) (xnPredsMap ffxi) 
 		predxnid = case findByName sxname (map fst $ Set.toList theopreds) of
 			Nothing -> error "No such predicate in Theory!"
 			(Just predxnid' ) -> predxnid'
@@ -6278,7 +6464,7 @@ operatorFromXmlXN ffxi anxml =
 		theoxn = case findByName scd (xnTheorySet ffxi) of
 			Nothing -> error "No Theory for used operator!"
 			(Just theoxn' ) -> theoxn'
-		theoops = Map.findWithDefault Set.empty (xnName theoxn) (xnOpMap ffxi) 
+		theoops = Map.findWithDefault Set.empty (xnName theoxn) (xnOpsMap ffxi) 
 		opxnid = case findByName sxname (map fst $ Set.toList theoops) of
 			Nothing -> error "No such predicate in Theory!"
 			(Just opxnid' ) -> opxnid'
