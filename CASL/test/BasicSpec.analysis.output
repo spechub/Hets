@@ -55,6 +55,7 @@ forall m, n, r, s: Nat
 . 8 = suc(7) %(Nat_8_def)%
 . 9 = suc(8) %(Nat_9_def)%
 . m @@ n = m * suc(9) + n %(Nat_decimal_def)%
+
 %% then %def
 sort Pos = {p : Nat . p > 0}
 ops 1 : Pos; %(Nat_1_as_Pos_def)%
@@ -62,6 +63,7 @@ ops 1 : Pos; %(Nat_1_as_Pos_def)%
     __+__ : Pos * Nat -> Pos;
     __+__ : Nat * Pos -> Pos;
     suc : Nat -> Pos
+
 %% then %implies
 ops min, max : Nat * Nat -> Nat, comm, assoc
 forall x, m, n, r, s, t: Nat; p: Pos
@@ -78,6 +80,7 @@ forall x, m, n, r, s, t: Nat; p: Pos
 generated type Int ::= __-__(Nat; Nat)
 forall a, b, c, d: Nat
 . a - b = c - d <=> a + d = c + b %(Int_equality)%
+
 %% then
 sort Nat < Int
 forall a: Nat
@@ -119,6 +122,7 @@ forall m, n, r, s: Int; a, b, c, d: Nat
 . m quot n = sign(m) * sign(n) * (abs(m) quot abs(n))
 %(Int_quot_def)%
 . m rem n = sign(m) * sign(n) * (abs(m) rem abs(n)) %(Int_rem_def)%
+
 %% then %implies
 forall m, n, r: Int; a, b: Nat
 . def a -? b => a -? b = a - b %(Int_Nat_sub_compat)%
@@ -139,6 +143,7 @@ forall i, j: Int; p, q: Pos
 sort Int < Rat
 forall i: Int
 . i / 1 = i %(embeddingIntToRat)%
+
 %% then
 preds __<=__, __<__, __>=__, __>__ : Rat * Rat
 ops 0, 1 : Rat;
@@ -164,6 +169,7 @@ forall p, q: Pos; n: Nat; i, j: Int; x, y, z: Rat
 . x ^ - p = 1 / (x ^ p) %(Rat_power_neg)%
 . min(x, y) = x when x <= y else y %(Rat_min_def)%
 . max(x, y) = y when x <= y else x %(Rat_max_def)%
+
 %% then %implies
 forall i, j: Int; p, q: Pos
 . (i / p) / (j / q) = (i / p) * (q / j) if not j = 0
@@ -196,22 +202,29 @@ generated
               | c(a)
               | c(a; a, b:t; d:t)
               | c(a)? %(bla1)%}
+
 %(sort)%
 sorts %(after-sort)%
       s; %(bla2)%
       t
+
 %(op)%
 ops a : b; %(bla4)%
     c : d %(bla5)%
+
 %(bla6)%
 vars a: t; a, b: s
+
 %(bla8-ignored)%
 %(type)%
-type t ::= %(c)%
+type t ::= 
+           %(c)%
            c %(c)%
          | e %(e)%
          | d %(9)%
+
 %(axiom)%
+
 %(formula)%
 sort s
 sorts s, abcdefghijlklmnopqrstuvwxyz, ABCDEFGHIJKLMONOPQRSTUVWXYZ,
@@ -335,6 +348,7 @@ forall n: Nat; c: Char
 . def chr(n) <=> n <= 255 %(chr_dom)%
 . chr(ord(c)) = c %(chr_def)%
 . ord(chr(n)) = n if n <= 255 %(ord_def)%
+
 %% definition of individual characters:
 ops '\000': Char = chr(0); %(slash_000)%
     '\001': Char = chr(1); %(slash_001)%
@@ -592,6 +606,7 @@ ops '\000': Char = chr(0); %(slash_000)%
     '\253': Char = chr(253); %(slash_253)%
     '\254': Char = chr(254); %(slash_254)%
     '\255': Char = chr(255) %(slash_255)%
+
 %% definition of the printable characters:
 ops ' ': Char = '\032'; %(printable_32)%
     '!': Char = '\033'; %(printable_33)%
@@ -793,6 +808,7 @@ preds isLetter(c :Char) <=> (ord('A') <= ord(c)
       isPrintable(c :Char) <=> (ord(' ') <= ord(c) /\ ord(c) <= ord('~'))
                                \/ (ord(' ') <= ord(c) /\ ord(c) <= ord('ÿ'))
       %(isPrintable_def)%
+
 %% alternative definition of characters as '\o ppp',
 %% where p in {0,1,...,7} :
 ops '\o000': Char = '\000'; %(slash_o000)%
@@ -1051,6 +1067,7 @@ ops '\o000': Char = '\000'; %(slash_o000)%
     '\o375': Char = '\253'; %(slash_o375)%
     '\o376': Char = '\254'; %(slash_o376)%
     '\o377': Char = '\255' %(slash_o377)%
+
 %% alternative definition of characters as '\xhh',
 %% where h in {0,1,..., F} :
 ops '\x00': Char = '\000'; %(slash_x00)%
@@ -1309,6 +1326,7 @@ ops '\x00': Char = '\000'; %(slash_x00)%
     '\xFD': Char = '\253'; %(slash_xFD)%
     '\xFE': Char = '\254'; %(slash_xFE)%
     '\xFF': Char = '\255' %(slash_xFF)%
+
 %% special characters:
 ops NUL: Char = '\000'; %(NUL_def)%
     SOH: Char = '\001'; %(SOH_def)%
@@ -1344,9 +1362,11 @@ ops NUL: Char = '\000'; %(NUL_def)%
     US: Char = '\031'; %(US_def)%
     SP: Char = '\032'; %(SP_def)%
     DEL: Char = '\127' %(DEL_def)%
+
 %% alternative names for special charcters:
 ops NL: Char = LF; %(NL_def)%
     NP: Char = FF %(NP_def)%
+
 %% character constants:
 ops '\n': Char = NL; %(slash_n)%
     '\t': Char = HT; %(slash_t)%
