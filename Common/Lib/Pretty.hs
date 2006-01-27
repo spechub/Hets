@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Hughes, Peyton Jones, Klaus Lüttich 2002/2003
+Copyright   :  (c) Hughes, Peyton Jones, K. Lüttich, C. Maeder 1996-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luettich@tzi.de
@@ -203,13 +203,13 @@ module Common.Lib.Pretty (
         Style(..),
         style,
         renderStyle,
+        renderStyle',
 
         -- ** General rendering
         fullRender,
-        Mode(..), TextDetails(..),
-
-  ) where
-
+        Mode(..), 
+        TextDetails(..)
+                       ) where
 
 import Prelude
 
@@ -315,9 +315,10 @@ data Style
          , ribbonsPerLine :: Float   -- ^ Ratio of ribbon length to line length
          }
 
--- | The default style (@mode=PageMode, lineLength=100, ribbonsPerLine=1.5@)
+-- | The default style (@mode=PageMode, lineLength=80, ribbonsPerLine=1.19@)
 style :: Style
-style = Style { lineLength = 100, ribbonsPerLine = 1.5, mode = PageMode }
+style = Style { lineLength = 80, ribbonsPerLine = 1.19, mode = PageMode }
+-- maximum line length 80 with 67 printable chars (up to 13 indentation chars)
 
 -- | Rendering mode
 data Mode = PageMode            -- ^Normal
@@ -832,17 +833,20 @@ oneLiner _                   = error "Pretty.oneLiner"
 -- ---------------------------------------------------------------------------
 -- Displaying the best layout
 
-renderStyle style' doc
+renderStyle = renderStyle' ""
+
+renderStyle' :: String -> Style -> Doc -> String
+renderStyle' rest style' doc
   = fullRender (mode style')
                (lineLength style')
                (ribbonsPerLine style')
                string_txt
-               ""
+               rest
                doc
 
 render doc       = showDoc doc ""
 showDoc :: Doc -> String -> String
-showDoc doc rest = fullRender PageMode 100 1.5 string_txt rest doc
+showDoc doc rest = renderStyle' rest style doc
 
 string_txt :: TextDetails -> String -> String
 string_txt (Chr c)   s  = c:s

@@ -823,14 +823,16 @@ ops ' ': Char = '\032'; %(printable_32)%
     'ÿ': Char = '\255' %(printable_255)%
 preds isLetter(c :Char) <=> ((ord ('A') <= ord (c))
                              /\ (ord (c) <= ord ('Z')))
-                            \/ ((ord ('a') <= ord (c)) /\ (ord (c) <= ord ('z')));
+                            \/ ((ord ('a') <= ord (c))
+                                /\ (ord (c) <= ord ('z')));
       %(isLetter_def)%
       isDigit(c :Char) <=> (ord ('0') <= ord (c))
                            /\ (ord (c) <= ord ('9'));
       %(isDigit_def)%
       isPrintable(c :Char) <=> ((ord (' ') <= ord (c))
                                 /\ (ord (c) <= ord ('~')))
-                               \/ ((ord (' ') <= ord (c)) /\ (ord (c) <= ord ('ÿ')))
+                               \/ ((ord (' ') <= ord (c))
+                                   /\ (ord (c) <= ord ('ÿ')))
       %(isPrintable_def)%
 
 %% alternative definition of characters as '\o ppp',

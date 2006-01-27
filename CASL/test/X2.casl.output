@@ -27,14 +27,14 @@
                   . not def b(c),  . forall v1: a . not def b(c(v1)),
                   . not def d(c),  . forall v1: a . not def d(c(v1)),
                  generated{sort s; op c : s; op c : a ->? s;
-                                   op c : a * t * t * t -> s; op g__inj : s1 -> s;
-                                   op g__inj : s2 -> s},
+                                   op c : a * t * t * t -> s;
+                                   op g__inj : s1 -> s; op g__inj : s2 -> s},
                   . forall v1: a; v2, v3, v4: t . a(c(v1, v2, v3, v4)) = v2,
                   . forall v1: a; v2, v3, v4: t . b(c(v1, v2, v3, v4)) = v3,
                   . forall v1: a; v2, v3, v4: t . d(c(v1, v2, v3, v4)) = v4,
                  generated{sort s; op c : s; op c : a ->? s;
-                                   op c : a * t * t * t -> s; op g__inj : s1 -> s;
-                                   op g__inj : s2 -> s} ])
+                                   op c : a * t * t * t -> s;
+                                   op g__inj : s1 -> s; op g__inj : s2 -> s} ])
 *** Error 3.30, total selectors 'a : s -> t,b : s -> t,d : s -> t'
   must appear in alternative 'c : s'
 *** Error 3.53, total selectors 'a : s -> t,b : s -> t,d : s -> t'
