@@ -1033,13 +1033,11 @@ ensuresAmalgamability opts diag sink desc =
     getNodeSig _ [] = emptySign () -- this should never be the case
     getNodeSig n ((n1, sig) : nss) = if n == n1 then sig else getNodeSig n nss
     lns = labNodes diag
-    formatOp (idt, t) = renderText Nothing (printText idt)
-                  ++ " :" ++ renderText Nothing (printText t)
-    formatPred (idt, t) = renderText Nothing (printText idt)
-                  ++ " : " ++ renderText Nothing (printText t)
+    formatOp (idt, t) = showPretty idt " :" ++ showPretty t ""
+    formatPred (idt, t) = showPretty idt " : " ++ showPretty t ""
     formatSig n = case find (\(n', d) -> n' == n && d /= "") (labNodes desc) of
                   Just (_, d) -> d
-                  Nothing -> renderText Nothing (printText (getNodeSig n lns))
+                  Nothing -> showPretty (getNodeSig n lns) ""
               -- and now the relevant stuff
     s = {-trace ("Diagram: " ++ showPretty diag "\n Sink: "
                     ++ showPretty sink "")-} simeq diag
@@ -1048,10 +1046,10 @@ ensuresAmalgamability opts diag sink desc =
                  specification is incorrect. -}
     in case subRelation st s of
     Just (ns1, ns2) -> let
-      sortString1 = renderText Nothing (printText (snd ns1)) ++
-                                  " in\n\n" ++ formatSig (fst ns1) ++ "\n\n"
-      sortString2 = renderText Nothing (printText (snd ns2)) ++
-                                  " in\n\n" ++ formatSig (fst ns2) ++ "\n\n"
+      sortString1 = showPretty (snd ns1) " in\n\n" ++ formatSig (fst ns1)
+                    ++ "\n\n"
+      sortString2 = showPretty (snd ns2) " in\n\n" ++ formatSig (fst ns2)
+                    ++ "\n\n"
       in return (NoAmalgamation ("\nsorts " ++ sortString1
                         ++ "and " ++ sortString2 ++ "might be different"))
     Nothing -> let
@@ -1120,8 +1118,8 @@ ensuresAmalgamability opts diag sink desc =
                    Just (w1, w2) -> let
                      rendEmbPath [] = []
                      rendEmbPath (h : w) = foldl (\t -> \srt -> t ++ " < "
-                       ++ renderText Nothing (printText srt))
-                       (renderText Nothing (printText h)) w
+                       ++ showPretty srt "")
+                       (showPretty h "") w
                      word1 = rendEmbPath (wordToEmbPath w1)
                      word2 = rendEmbPath (wordToEmbPath w2)
                      in return (NoAmalgamation ("embedding paths \n    "

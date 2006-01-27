@@ -13,12 +13,10 @@ This classes needs to be instantiated for every datastructure in AS_*
 
 module Common.PrettyPrint
     ( showPretty
-    , renderText
     , PrettyPrint(..)
     , PrintLaTeX(..)
     , printText
     , isChar
-    , textStyle
     )
     where
 
@@ -40,26 +38,7 @@ printText = printText0 emptyGlobalAnnos
 
 -- | a more pretty alternative for shows
 showPretty :: PrettyPrint a => a -> ShowS
-showPretty = shows . printText0 emptyGlobalAnnos
-
-textStyle :: Style
-textStyle = style {lineLength=80, ribbonsPerLine= 1.19}
--- maximum line length 80 with 67 printable chars (up to 13 indentation chars)
-
-renderText :: Maybe Int -> Doc -> String
-renderText mi d = fullRender (mode           textStyle')
-                             (lineLength     textStyle')
-                             (ribbonsPerLine textStyle')
-                             string_txt_comp
-                             ""
-                             d
-
-    where textStyle' = textStyle {lineLength =
-                                        maybe (lineLength textStyle) id mi}
-          string_txt_comp td = case td of
-                               Chr  c -> showChar   c
-                               Str  s -> showString s
-                               PStr s -> showString s
+showPretty = shows . printText
 
 -- moved instance from Id.hs (to avoid cyclic imports via GlobalAnnotations)
 instance PrettyPrint Token where

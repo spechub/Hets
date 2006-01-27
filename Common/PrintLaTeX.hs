@@ -1,17 +1,17 @@
 {- |
-   Module      :  $Header$
-   Copyright   :  (c) Klaus Lüttich, Christian Maeder and Uni Bremen 2002-2003 
-   License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+Module      :  $Header$
+Copyright   :  (c) Klaus Lüttich, Christian Maeder and Uni Bremen 2002-2006
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-   Maintainer  :  luettich@tzi.de
-   Stability   :  provisional
-   Portability :  portable
+Maintainer  :  luettich@tzi.de
+Stability   :  provisional
+Portability :  portable
 
 This class needs to be instantiated for every datastructure in AS_*
-   for LaTeX pretty printing. 
+   for LaTeX pretty printing.
 -}
 
-module Common.PrintLaTeX 
+module Common.PrintLaTeX
     ( renderLatex
     , debugRenderLatex
     , PrintLaTeX(..)
@@ -21,7 +21,7 @@ module Common.PrintLaTeX
     , printToken_latex
     , printDisplayToken_latex
     , printId
-    ) 
+    )
     where
 
 import Data.Char (isSpace,isAlphaNum,isDigit)
@@ -36,21 +36,21 @@ import Common.GlobalAnnotations
 import Common.LaTeX_funs
 
 ----------------------------------------------------------------------
--- two Styles for Formatting (Standard is Style PageMode 100 1.5)
+-- two Styles for Formatting (Standard is Style PageMode 50 1.19)
 
 latexStyle :: Style
-latexStyle = textStyle { ribbonsPerLine = 1.1
-                       , lineLength = calc_line_length "336.0pt"}
+latexStyle = style { ribbonsPerLine = 1.1
+                   , lineLength = calc_line_length "336.0pt"}
 
 -- a LatexRenderingState
 -- field indentTabs : for the number of tab
 --                stops set those need to be rendererd after every newline.
--- field recentlySet : number of setTab makros indentTabs is only 
+-- field recentlySet : number of setTab makros indentTabs is only
 --                 increased if recentlySet is 0
-data LRState = LRS { indentTabs  :: ![Int]  
-                   , recentlySet 
-                   , totalTabStops 
-                   , setTabsThisLine 
+data LRState = LRS { indentTabs  :: ![Int]
+                   , recentlySet
+                   , totalTabStops
+                   , setTabsThisLine
                    , indentTabsWritten :: !Int
                    , onlyTabs :: !Bool
                    , isSetLine :: !Bool
@@ -72,13 +72,13 @@ initialLRState = LRS { indentTabs         = []
                      , insideAnno = False
                      }
 
--- a function that knows how to print LaTeX TextDetails 
+-- a function that knows how to print LaTeX TextDetails
 latex_txt :: TextDetails -> State LRState ShowS -> State LRState ShowS
-latex_txt (Chr c)   cont  
+latex_txt (Chr c)   cont
     | c == '\n' = do annoBrace <- endOfLine
                      indent <- getIndent
                      s <- cont
-                     return (annoBrace . showString "\\\\". 
+                     return (annoBrace . showString "\\\\".
                              showChar c . indent . s)
     | otherwise = do s <- cont
                      return (showChar c . s)
@@ -98,7 +98,7 @@ latex_txt (PStr s1) cont
     | s1 == setTab   = do state <- get
                           setTabStop
                           s2 <- cont
-                          let (eAn,sAn) = if insideAnno state 
+                          let (eAn,sAn) = if insideAnno state
                                           then (showChar '}',
                                                 showString startAnno)
                                           else (id,id)
@@ -116,21 +116,21 @@ latex_txt (PStr s1) cont
     | s1 == "\n"     = do annoBrace <- endOfLine
                           indent <- getIndent
                           s2 <- cont
-                          return (annoBrace . showString "\\\\\n" . 
+                          return (annoBrace . showString "\\\\\n" .
                                   indent . s2)
     | "\\kill\n"
       `isSuffixOf`
       s1             = do indent <- getIndent
                           s2 <- cont
-                          return (showString s1 . 
+                          return (showString s1 .
                                   indent . s2)
     | otherwise      = do setOnlyTabs False
                           s2 <- cont
                           return (showString s1 . s2)
 
--- a function that knows how to print LaTeX TextDetails 
+-- a function that knows how to print LaTeX TextDetails
 debug_latex_txt :: TextDetails -> State LRState String -> State LRState String
-debug_latex_txt (Chr c)   cont  
+debug_latex_txt (Chr c)   cont
     | c == '\n' = do state <- get
                      annoBrace <- endOfLine
                      indent <- getIndent
@@ -156,7 +156,7 @@ debug_latex_txt (PStr s1) cont
     | s1 == setTab   = do state <- get
                           setTabStop
                           s2 <- cont
-                          let (eAn,sAn) = if insideAnno state 
+                          let (eAn,sAn) = if insideAnno state
                                           then (showChar '}',
                                                 showString startAnno)
                                           else (id,id)
@@ -200,19 +200,19 @@ getIndent = do state <- get
                            , onlyTabs = True
                            , totalTabStops = max (totalTabStops state)
                                                  (indentTabsSum +
-                                                  length 
+                                                  length
                                                      (collSpaceIndents state))
                            }
-               let indent_fun = foldl (.) id (replicate indentTabsSum 
+               let indent_fun = foldl (.) id (replicate indentTabsSum
                                                         (showString "\\>"))
-                   new_tab_line = foldl space_format id 
+                   new_tab_line = foldl space_format id
                                           (collSpaceIndents state)
                                           . showString "\\kill\n"
-                   sAnno = (if insideAnno state 
-                            then showString startAnno 
+                   sAnno = (if insideAnno state
+                            then showString startAnno
                             else id)
                return ( (if null (collSpaceIndents state) then
-                            indent_fun 
+                            indent_fun
                          else
                             indent_fun . new_tab_line . indent_fun)
                          . sAnno)
@@ -221,7 +221,7 @@ getIndent = do state <- get
                                . showString "\\="
 
 endOfLine :: State LRState ShowS
-endOfLine = do state <- get 
+endOfLine = do state <- get
                put $ state { isSetLine = False
                            , setTabsThisLine = 0
                            }
@@ -229,13 +229,13 @@ endOfLine = do state <- get
 
 setTabStop :: State LRState ()
 setTabStop = State (\state -> ( ()
-                              , let new_setTabsThisLine = 
+                              , let new_setTabsThisLine =
                                        succ $ setTabsThisLine state
-                                in state 
-                                    { 
+                                in state
+                                    {
                                      recentlySet = succ $ recentlySet state
                                     , setTabsThisLine = new_setTabsThisLine
-                                      , totalTabStops = 
+                                      , totalTabStops =
                                                max (totalTabStops state)
                                                    (new_setTabsThisLine +
                                                     indentTabsWritten state)
@@ -243,13 +243,13 @@ setTabStop = State (\state -> ( ()
                               ))
 
 addTabWithSpaces :: String -> State LRState ()
-addTabWithSpaces s = let delayed_indent :: Int 
-                         delayed_indent = 
+addTabWithSpaces s = let delayed_indent :: Int
+                         delayed_indent =
                              (read . reverse . fst
-                                      . span isDigit . tail . reverse) s 
+                                      . span isDigit . tail . reverse) s
                      in State (\state -> ( ()
-                                         , state { collSpaceIndents = 
-                                                      collSpaceIndents state 
+                                         , state { collSpaceIndents =
+                                                      collSpaceIndents state
                                                         ++ [delayed_indent]
                                                  }
                                          ))
@@ -257,41 +257,41 @@ addTabWithSpaces s = let delayed_indent :: Int
 -- increase the indentTabs in the state by 1
 addTabStop :: State LRState ShowS
 addTabStop = State (\state -> let (new_indentTabs,newTabs) =
-                                     let nT = if isSetLine state 
+                                     let nT = if isSetLine state
                                               then recentlySet state
                                               else 1
                                      in (condAdd_indentTabs nT, nT)
-                                  indentTabsSum = foldl (+) 0 
-                                  condAdd_indentTabs i = 
-                                         if   i + indentTabsSum 
+                                  indentTabsSum = foldl (+) 0
+                                  condAdd_indentTabs i =
+                                         if   i + indentTabsSum
                                                    (indentTabs state)
-                                            > 
-                                              totalTabStops state 
+                                            >
+                                              totalTabStops state
                                          then indentTabs state
                                          else indentTabs state ++ [i]
-                                  new_recentlySet = 
+                                  new_recentlySet =
                                      if isSetLine state
                                      then 0
                                      else recentlySet state
-                                  inTabs nT = foldl (.) id 
+                                  inTabs nT = foldl (.) id
                                         (replicate nT $ showString "\\>")
                                   (indent_fun,
                                    new_indentTabsWritten) =
-                                                if   indentTabsSum 
-                                                            new_indentTabs 
-                                                    > 
-                                                      indentTabsWritten state 
+                                                if   indentTabsSum
+                                                            new_indentTabs
+                                                    >
+                                                      indentTabsWritten state
                                                   && not (isSetLine state)
                                                   && onlyTabs state
                                                 then (inTabs newTabs,
-                                                      newTabs + 
+                                                      newTabs +
                                                        indentTabsWritten state)
                                                 else (id,
                                                       indentTabsWritten state)
                               in (indent_fun
                                  ,state { recentlySet = new_recentlySet
                                         , indentTabs  = new_indentTabs
-                                        , indentTabsWritten = 
+                                        , indentTabsWritten =
                                              new_indentTabsWritten
                                         })
 
@@ -300,11 +300,11 @@ addTabStop = State (\state -> let (new_indentTabs,newTabs) =
 -- decrease the indentTabs in the state by 1
 subTabStop :: State LRState ()
 subTabStop = do state <- get
-                let l_itabs = last itabs 
+                let l_itabs = last itabs
                     itabs = indentTabs state
                     indentTabs' = if null $ indentTabs state
                                   then []
-                                  else if l_itabs == 1 
+                                  else if l_itabs == 1
                                        then init itabs
                                        else init itabs -- ++ [l_itabs -1]
                 put (state {indentTabs = indentTabs'})
@@ -344,7 +344,7 @@ renderLatex mi d = ((showString "\\begin{hetcasl}\n") .
                                            d)
                                initialLRState)) "\n\\end{hetcasl}\n"
     where -- d' = ptext "\\begin{hetcasl}" $+$ d $+$ ptext "\\end{hetcasl}"
-          latexStyle' = latexStyle {lineLength = 
+          latexStyle' = latexStyle {lineLength =
                                      (case mi of
                                       Nothing -> lineLength latexStyle
                                       Just l  -> l) }
@@ -358,7 +358,7 @@ debugRenderLatex mi d = evalState (fullRender (mode           latexStyle')
                                               d')
                                   initialLRState
     where d' = ptext "\\begin{hetcasl}" $+$ d $+$ ptext "\\end{hetcasl}"
-          latexStyle' = latexStyle {lineLength = 
+          latexStyle' = latexStyle {lineLength =
                                      (case mi of
                                       Nothing -> lineLength latexStyle
                                       Just l  -> l) }
@@ -367,37 +367,37 @@ debugRenderLatex mi d = evalState (fullRender (mode           latexStyle')
 
 renderLatexVerb mi d = renderStyle textStyle' d'
     where d' = text "\\begin{verbatim}" $+$ d $+$ text "\\end{verbatim}"
-          textStyle' = textStyle {lineLength = 
+          textStyle' = style {lineLength =
                                      (case mi of
-                                      Nothing -> lineLength textStyle
+                                      Nothing -> lineLength style
                                       Just l  -> l) }
 
 -- moved instance from Id.hs (to avoid cyclic imports via GlobalAnnotations)
 instance PrintLaTeX Token where
     printLatex0 ga t = printToken_latex casl_axiom_latex t'
         where i = Id [t] [] nullRange
-              t' = maybe t (\ ts -> if isMixfix (Id ts [] nullRange) 
-                                    then t 
-                                    else head ts) 
-                         (lookupDisplay ga DF_LATEX i) 
+              t' = maybe t (\ ts -> if isMixfix (Id ts [] nullRange)
+                                    then t
+                                    else head ts)
+                         (lookupDisplay ga DF_LATEX i)
 
 -- | print latex identifier
 printId :: (GlobalAnnos -> Token -> Doc) -- ^ function to print a Token
-           -> GlobalAnnos -> (Maybe Display_format) 
+           -> GlobalAnnos -> (Maybe Display_format)
            -> ([Token] -> Doc)    -- ^ function to join translated tokens
            -> Id -> Doc
 printId pf ga mdf f i =
     let glue_tok pf' = hcat . map pf'
-        print_ (Id tops_p ids_p _) = 
-            if null ids_p then glue_tok (pf ga) tops_p 
+        print_ (Id tops_p ids_p _) =
+            if null ids_p then glue_tok (pf ga) tops_p
             else let (toks, places) = splitMixToken tops_p
-                     comp = pf ga (mkSimpleId "[") <> 
+                     comp = pf ga (mkSimpleId "[") <>
                             fcat (punctuate comma_latex
                                             $ map (printId pf ga mdf f) ids_p)
                             <> pf ga (mkSimpleId "]")
-                 in fcat [glue_tok (pf ga) toks, comp, 
+                 in fcat [glue_tok (pf ga) toks, comp,
                           glue_tok (pf ga) places]
-        in maybe (print_ i) 
+        in maybe (print_ i)
            ( \ df -> maybe (print_ i) f
              $ lookupDisplay ga df i) mdf
 
@@ -405,17 +405,17 @@ printToken_latex :: (String -> Doc) -> Token -> Doc
 printToken_latex strConvDoc_fun t =
     let s = tokStr t
         esc = escape_latex s
-    in if s `elem` map (:[]) "[](),;" 
-       then strConvDoc_fun s 
-       else if isPlace t || s `elem` map (:[]) "{}" 
+    in if s `elem` map (:[]) "[](),;"
+       then strConvDoc_fun s
+       else if isPlace t || s `elem` map (:[]) "{}"
             then strConvDoc_fun esc
-            else if  all isAlphaNum s  
-                     || ('\\' `elem` esc && not ('\\' `elem` s) 
+            else if  all isAlphaNum s
+                     || ('\\' `elem` esc && not ('\\' `elem` s)
                          && not ('~' `elem` s))
                      || isChar t
-                 then (\x -> latex_macro "\\Id{"<>x<>latex_macro "}") 
+                 then (\x -> latex_macro "\\Id{"<>x<>latex_macro "}")
                          $ strConvDoc_fun esc
-                 else (\x -> latex_macro "\\Ax{"<>x<>latex_macro "}") 
+                 else (\x -> latex_macro "\\Ax{"<>x<>latex_macro "}")
                          $ strConvDoc_fun s
 
 printDisplayToken_latex :: (String -> Doc) -> Token -> Doc

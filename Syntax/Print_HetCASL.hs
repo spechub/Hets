@@ -1,18 +1,14 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Klaus Lüttich, Christian Maeder and Uni Bremen 2002-2003 
+Copyright   :  (c) Klaus Lüttich, Christian Maeder and Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luettich@tzi.de
 Stability   :  experimental
-Portability :  non-portable (imports existential types) 
+Portability :  non-portable (imports existential types)
 
 A module to abstract away GlobalAnnos and such things from the
    Write-Module.
-
-   todo:
-     - use optional argument of renderText and renderLatex for line_length.
-
 -}
 
 module Syntax.Print_HetCASL where
@@ -30,12 +26,12 @@ import Syntax.LaTeX_AS_Library()
 data PrintMode = PMtext | PMlatex | PMdebugLatex
 
 printLIB_DEFN_mode :: PrintMode -> GlobalAnnos -> LIB_DEFN -> String
-printLIB_DEFN_mode m ga ld = 
-    let doc = case m of 
+printLIB_DEFN_mode m ga ld =
+    let doc = case m of
               PMtext -> printText0  ga ld
               _      -> printLatex0 ga ld
-        rend = (case m of 
-                PMtext -> renderText Nothing
+        rend = (case m of
+                PMtext -> renderStyle' "\n" style
                 PMlatex -> renderLatex default_latex_line_length
                 PMdebugLatex -> debugRenderLatex default_latex_line_length)
     in rend doc
@@ -48,7 +44,7 @@ default_latex_line_length = -- Nothing
    Just $ calc_line_length "345.0pt"
         -- for svmono you need 336.0pt
 
-printLIB_DEFN_text, printLIB_DEFN_latex, printLIB_DEFN_debugLatex 
+printLIB_DEFN_text, printLIB_DEFN_latex, printLIB_DEFN_debugLatex
     :: GlobalAnnos -> LIB_DEFN -> String
 printLIB_DEFN_text = printLIB_DEFN_mode PMtext
 printLIB_DEFN_latex = printLIB_DEFN_mode PMlatex
