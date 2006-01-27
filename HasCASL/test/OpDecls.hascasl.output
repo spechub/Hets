@@ -1,5 +1,6 @@
 type s, t < t
 op a, b : s
+
 %% op __ + __ : s  -> s -> s, idem, assoc, comm;
 op __+__ : s * s -> s
 op __+__ : t * t -> t

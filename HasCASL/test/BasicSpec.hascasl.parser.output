@@ -24,7 +24,8 @@ program __ or __ (x, y : (? Unit)) : (? Unit) =
             all (\ r : (? Unit) . all (\ x : s . p (x) impl r) impl r);
         ff () : (? Unit) = all (\ r : (? Unit) . r ())
 forall x : t; y : t
-. %(..)%
+. 
+  %(..)%
   x = y
 type s
 op a : (? s)

@@ -16,7 +16,8 @@ program (var fst : s * t ->? s) ((var x : s), (var y : t) : t) : s
 pred eq : s * s
 type s < ? s
 forall x : t; y : t
-. %(..)%
+. 
+  %(..)%
   (var x : t) = (var y : t)
 type s
 op a : (? s)
