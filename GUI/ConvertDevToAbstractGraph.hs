@@ -54,7 +54,6 @@ import GUI.Utils
 import GUI.Taxonomy (displayConceptGraph,displaySubsortGraph)
 
 import FileDialog
-import System.Directory
 import Broadcaster(newSimpleBroadcaster,applySimpleUpdate)
 import Sources(toSimpleSource)
 import DaVinciGraph
@@ -209,8 +208,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts = do
              (  saveProofStatus ln file
                                    ioRefProofStatus opts)
          -- action on "save as...:"
-             (  do currentPath <- getCurrentDirectory
-                   evnt <- newFileDialogStr "Save as..." file
+             (  do evnt <- newFileDialogStr "Save as..." file
                    maybeFilePath <- HTk.sync evnt
                    case maybeFilePath of
                      Just filePath ->
@@ -498,7 +496,12 @@ proofMenuSef gInfo proofFun = proofMenu gInfo (return . return . proofFun)
 -- methods to create the local menus of the different nodetypes
 -- -------------------------------------------------------------
 
+type NodeDescr = (String, Descr, Descr)
+
 -- | local menu for the nodetypes spec and locallyEmpty_spec
+createLocalMenuNodeTypeSpec :: String -> IORef (Map.Map Descr Descr)
+                            -> GraphInfo -> IORef GraphMem -> GInfo
+                            -> DaVinciNodeTypeParms NodeDescr
 createLocalMenuNodeTypeSpec color ioRefSubtreeEvents actGraphInfo
              ioRefGraphMem gInfo@(_,_,convRef,_,_,_,_,_,ioRefVisibleNodes) =
                  Ellipse $$$ Color color
@@ -524,10 +527,10 @@ createLocalMenuNodeTypeSpec color ioRefSubtreeEvents actGraphInfo
                    ]) -- ??? Should be globalized somehow
                   -- >$$$ LocalMenu (Button "xxx" undefined)
                   $$$ emptyNodeTypeParms
-                     :: DaVinciNodeTypeParms (String,Int,Int)
-
 
 -- | local menu for the nodetypes internal and locallyEmpty_internal
+createLocalMenuNodeTypeInternal :: String -> GInfo
+                                -> DaVinciNodeTypeParms NodeDescr
 createLocalMenuNodeTypeInternal color
                           gInfo@(_,_,_,_,_,_,showInternalNames,_,_) =
                  Ellipse $$$ Color color
@@ -552,9 +555,11 @@ createLocalMenuNodeTypeInternal color
                      createLocalMenuButtonCCCAtNode gInfo,
                      createLocalMenuButtonShowNodeOrigin gInfo])
                  $$$ emptyNodeTypeParms
-                     :: DaVinciNodeTypeParms (String,Int,Int)
 
 -- | local menu for the nodetypes dg_ref and locallyEmpty_dg_ref
+createLocalMenuNodeTypeDgRef :: String -> GraphInfo -> IORef GraphMem
+                             -> GraphMem -> GInfo
+                             -> DaVinciNodeTypeParms NodeDescr
 createLocalMenuNodeTypeDgRef color actGraphInfo
                              ioRefGraphMem graphMem
                              gInfo@(_,_,convRef,_,_,_,_,opts,_) =
@@ -582,10 +587,12 @@ createLocalMenuNodeTypeDgRef color actGraphInfo
                            return ()
                      )])
                  $$$ emptyNodeTypeParms
-                     :: DaVinciNodeTypeParms (String,Int,Int)
 
+type ButtonMenu a = MenuPrim (Maybe String) (a -> IO ())
 
 -- | menu button for local menus
+createMenuButton :: String -> (Descr -> AGraphToDGraphNode -> DGraph -> IO ())
+                 -> GInfo -> ButtonMenu NodeDescr
 createMenuButton title menuFun (ioProofStatus,_,convRef,_,ln,_,_,_,_) =
                     (Button title
                       (\ (_, descr, _) ->
@@ -599,22 +606,30 @@ createMenuButton title menuFun (ioProofStatus,_,convRef,_,ln,_,_,_,_) =
                        )
                     )
 
-
+createLocalMenuButtonShowSpec :: GInfo -> ButtonMenu NodeDescr
 createLocalMenuButtonShowSpec = createMenuButton "Show spec" showSpec
+
+createLocalMenuButtonShowSignature :: GInfo -> ButtonMenu NodeDescr
 createLocalMenuButtonShowSignature =
-  createMenuButton "Show signature" getSignatureOfNode
+    createMenuButton "Show signature" getSignatureOfNode
+
+createLocalMenuButtonShowTheory :: GInfo -> ButtonMenu NodeDescr
 createLocalMenuButtonShowTheory gInfo =
-  createMenuButton "Show theory" (getTheoryOfNode gInfo) gInfo
+    createMenuButton "Show theory" (getTheoryOfNode gInfo) gInfo
+
+createLocalMenuButtonShowLocalAx :: GInfo -> ButtonMenu NodeDescr
 createLocalMenuButtonShowLocalAx gInfo =
   createMenuButton "Show local axioms" (getLocalAxOfNode gInfo) gInfo
+
+createLocalMenuButtonTranslateTheory :: GInfo -> ButtonMenu NodeDescr
 createLocalMenuButtonTranslateTheory gInfo =
   createMenuButton "Translate theory" (translateTheoryOfNode gInfo) gInfo
-
 
 {- |
    create a sub Menu for taxonomy visualisation
    (added by KL)
 -}
+createLocalMenuTaxonomy :: GInfo -> ButtonMenu NodeDescr
 createLocalMenuTaxonomy ginfo@(proofStatus,_,_,_,_,_,_,_,_) =
       (Menu (Just "Taxonomy graphs")
        [createMenuButton "Subsort graph"
@@ -630,20 +645,29 @@ createLocalMenuTaxonomy ginfo@(proofStatus,_,_,_,_,_,_,_,_) =
                   Res.Result diags _ ->
                      showDiags defaultHetcatsOpts diags
 
-
-
+createLocalMenuButtonShowSublogic :: GInfo -> ButtonMenu NodeDescr
 createLocalMenuButtonShowSublogic gInfo@(proofStatus,_,_,_,_,_,_,_,_) =
   createMenuButton "Show sublogic" (getSublogicOfNode proofStatus) gInfo
+
+createLocalMenuButtonShowNodeOrigin :: GInfo -> ButtonMenu NodeDescr
 createLocalMenuButtonShowNodeOrigin  =
   createMenuButton "Show origin" showOriginOfNode
+
+createLocalMenuButtonShowProofStatusOfNode :: GInfo -> ButtonMenu NodeDescr
 createLocalMenuButtonShowProofStatusOfNode gInfo =
   createMenuButton "Show proof status" (showProofStatusOfNode gInfo) gInfo
+
+createLocalMenuButtonProveAtNode :: GInfo -> ButtonMenu NodeDescr
 createLocalMenuButtonProveAtNode gInfo =
   createMenuButton "Prove" (proveAtNode False gInfo) gInfo
+
+createLocalMenuButtonCCCAtNode :: GInfo -> ButtonMenu NodeDescr
 createLocalMenuButtonCCCAtNode gInfo =
   createMenuButton "Check consistency" (proveAtNode True gInfo) gInfo
 
-
+createLocalMenuButtonShowJustSubtree :: IORef (Map.Map Descr Descr)
+    -> IORef ConversionMaps -> IORef [[Node]] -> IORef GraphMem -> GraphInfo
+    -> ButtonMenu NodeDescr
 createLocalMenuButtonShowJustSubtree ioRefSubtreeEvents convRef
     ioRefVisibleNodes ioRefGraphMem actGraphInfo =
                     (Button "Show just subtree"
@@ -675,6 +699,8 @@ createLocalMenuButtonShowJustSubtree ioRefSubtreeEvents convRef
                     )
 
 
+createLocalMenuButtonUndoShowJustSubtree :: IORef [[Node]]
+    -> IORef (Map.Map Descr Descr) -> GraphInfo -> ButtonMenu NodeDescr
 createLocalMenuButtonUndoShowJustSubtree ioRefVisibleNodes
                                          ioRefSubtreeEvents actGraphInfo =
                     (Button "Undo show just subtree"
@@ -702,6 +728,7 @@ createLocalMenuButtonUndoShowJustSubtree ioRefVisibleNodes
                     )
 
 -- | for debugging
+createLocalMenuButtonShowNumberOfNode :: ButtonMenu NodeDescr
 createLocalMenuButtonShowNumberOfNode =
   (Button "Show number of node"
     (\ (_, descr, _) ->
@@ -710,6 +737,8 @@ createLocalMenuButtonShowNumberOfNode =
 -- -------------------------------------------------------------
 -- methods to create the local menus for the edges
 -- -------------------------------------------------------------
+
+createLocalEdgeMenu :: GInfo -> LocalMenu EdgeValue
 createLocalEdgeMenu gInfo =
     LocalMenu (Menu (Just "edge menu")
                [createLocalMenuButtonShowMorphismOfEdge gInfo,
@@ -717,6 +746,7 @@ createLocalEdgeMenu gInfo =
                 createLocalMenuButtonCheckconservativityOfEdge gInfo]
               )
 
+createLocalEdgeMenuThmEdge :: GInfo -> LocalMenu EdgeValue
 createLocalEdgeMenuThmEdge gInfo =
    LocalMenu (Menu (Just "thm egde menu")
               [createLocalMenuButtonShowMorphismOfEdge gInfo,
@@ -725,6 +755,7 @@ createLocalEdgeMenuThmEdge gInfo =
                 createLocalMenuButtonCheckconservativityOfEdge gInfo]
               )
 
+createLocalMenuButtonShowMorphismOfEdge :: GInfo -> ButtonMenu EdgeValue
 createLocalMenuButtonShowMorphismOfEdge _ =
   (Button "Show morphism"
                       (\ (_,descr,maybeLEdge)  ->
@@ -732,6 +763,7 @@ createLocalMenuButtonShowMorphismOfEdge _ =
                            return ()
                        ))
 
+createLocalMenuButtonShowOriginOfEdge :: GInfo -> ButtonMenu EdgeValue
 createLocalMenuButtonShowOriginOfEdge _ =
     (Button "Show origin"
          (\ (_,descr,maybeLEdge) ->
@@ -739,13 +771,15 @@ createLocalMenuButtonShowOriginOfEdge _ =
               return ()
           ))
 
+createLocalMenuButtonCheckconservativityOfEdge :: GInfo -> ButtonMenu EdgeValue
 createLocalMenuButtonCheckconservativityOfEdge gInfo =
-  (Button "Check conservativity (preliminary)"
+    (Button "Check conservativity (preliminary)"
                       (\ (_, descr, maybeLEdge)  ->
                         do checkconservativityOfEdge descr gInfo maybeLEdge
                            return ()
                        ))
 
+createLocalMenuButtonShowProofStatusOfThm :: GInfo -> ButtonMenu EdgeValue
 createLocalMenuButtonShowProofStatusOfThm _ =
    (Button "Show proof status"
         (\ (_,descr,maybeLEdge) ->
@@ -753,6 +787,7 @@ createLocalMenuButtonShowProofStatusOfThm _ =
              return ()
          ))
 
+createLocalMenuValueTitleShowConservativity :: ValueTitle EdgeValue
 createLocalMenuValueTitleShowConservativity =
    (ValueTitle
       (\ (_,_,maybeLEdge) ->
@@ -776,6 +811,7 @@ createLocalMenuValueTitleShowConservativity =
 -- end of local menu definitions
 -- ------------------------------
 
+showSpec :: Descr -> AGraphToDGraphNode -> DGraph -> IO ()
 showSpec descr convMap dgraph =
   case Map.lookup descr convMap of
    Nothing -> return ()
@@ -924,8 +960,7 @@ getSublogicOfNode proofStatusRef descr ab2dgNode dgraph = do
                       ++ (show descr)
                       ++ " has no corresponding node in the development graph")
 
-
-{- | prints the origin of the node -}
+-- | prints the origin of the node
 showOriginOfNode :: Descr -> AGraphToDGraphNode -> DGraph -> IO()
 showOriginOfNode descr ab2dgNode dgraph =
   case Map.lookup descr ab2dgNode of
@@ -942,6 +977,7 @@ showOriginOfNode descr ab2dgNode dgraph =
                       ++ " has no corresponding node in the development graph")
 
 -- | Show proof status of a node
+showProofStatusOfNode :: GInfo -> Descr -> AGraphToDGraphNode -> DGraph -> IO()
 showProofStatusOfNode _ descr ab2dgNode dgraph =
   case Map.lookup descr ab2dgNode of
     Just (_, node) ->
@@ -974,7 +1010,6 @@ showStatusAux dgnode =
                       "should be the conservativity status of this node"
              else ""
 
-
 -- | start local theorem proving or consistency checking at a node
 proveAtNode :: Bool -> GInfo -> Descr -> AGraphToDGraphNode -> DGraph -> IO()
 proveAtNode checkCons gInfo@(_,_,_,_,ln,_,_,_,_) descr ab2dgNode _ =
@@ -984,7 +1019,6 @@ proveAtNode checkCons gInfo@(_,_,_,_,ln,_,_,_,_) descr ab2dgNode _ =
     Nothing -> error ("node with descriptor "
                       ++ (show descr)
                       ++ " has no corresponding node in the development graph")
-
 
 -- | print the morphism of the edge
 showMorphismOfEdge :: Descr -> Maybe (LEdge DGLinkLab) -> IO()
@@ -1057,7 +1091,6 @@ checkconservativityOfEdge descr _ Nothing =
       createTextDisplay "Error"
           ("edge " ++ show descr ++ " has no corresponding edge "
                 ++ "in the development graph") [HTk.size(30,10)]
-
 
 getProofStatusOfThm :: (LEdge DGLinkLab) -> ThmLinkStatus
 getProofStatusOfThm (_,_,label) =
@@ -1239,8 +1272,6 @@ showJustSubtree ioRefGraphMem descr abstractGraph convMaps visibleNodes =
                  ++ show descr)
 
     where libname2dgMap = libname2dg convMaps
-
-
 
 getNodeDescriptors :: [Node] -> LIB_NAME -> ConversionMaps -> [Descr]
 getNodeDescriptors [] _ _ = []
