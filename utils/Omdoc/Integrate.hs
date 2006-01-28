@@ -434,8 +434,10 @@ main =
 						do
 						when debug (putStrLn ("Trying to load omdoc-file..."))
 						ig <- makeImportGraph input searchpath
+						when (newoutput && debug)
+							(putStrLn "Loading with new input-methods...")
 						(return $ dGraphGToLibEnv $ hybridGToDGraphG $
-							processImportGraph ig)
+							(if newoutput then processImportGraphXN else processImportGraph) ig)
 				FTCASL->
 						do
 						when debug (putStrLn ("Trying to load casl-file..."))
@@ -920,7 +922,16 @@ devGraphToXmlCMPIOXmlNamed dg =
 				theoimports = Map.findWithDefault Set.empty nodename importsmap
 				theopredsxn = map (\(k,p) -> (k, predTypeToPredTypeXNWON theosorts p)) theopreds
 				theoopsxn = map (\(k,op) -> (k, opTypeToOpTypeXNWON theosorts op)) theoops
-				sensxmlio = wrapFormulasCMPIOXN (PFInput nodexmlnameset theosorts theopredsxn theoopsxn) (Set.toList realtheosens) 
+				sensxmlio =
+					wrapFormulasCMPIOXN
+						(PFInput
+							nodexmlnameset
+							--theosorts
+							(mapSetToSet xmlnamedsortswomap)
+							theopredsxn
+							theoopsxn
+						)
+						(Set.toList realtheosens) 
 			in
 				do
 				x <- xio
@@ -974,12 +985,14 @@ devGraphToXmlCMPIOXmlNamed dg =
 					(foldl (\x' sortwo ->
 						let
 							insortset = Map.findWithDefault Set.empty sortwo insortmap
-							sortxn = case find (\i -> Hets.sameOrigin sortwo (xnItem i) && sortwo == (xnItem i)) (Set.toList theosorts) of
-								Nothing -> error "Sort in relation but not in theory..."
+							--sortxn = case find (\i -> Hets.sameOrigin sortwo (xnItem i) && sortwo == (xnItem i)) (Set.toList theosorts) of
+							sortxn = case findItemPreferOrigin xnItem (Hets.woItem sortwo) (Hets.woOrigin sortwo) (mapSetToSet xmlnamedsortswomap) of
+								Nothing -> error ("Sort in relation but not in theory... (1) (" ++ (show sortwo) ++ ") [ " ++ (show theosorts) ++ "]")
 								(Just sortxn' ) -> xnWOaToXNa sortxn'
 							insortsetxn = Set.map (\i ->
-								case find (\j -> Hets.sameOrigin i (xnItem j) && i == (xnItem j)) (Set.toList theosorts) of
-									Nothing -> error "Sort in relation but not in theory..."
+								--case find (\j -> Hets.sameOrigin i (xnItem j) && i == (xnItem j)) (Set.toList theosorts) of
+								case findItemPreferOrigin xnItem (Hets.woItem i) (Hets.woOrigin i) (mapSetToSet xmlnamedsortswomap) of
+									Nothing -> error ("Sort in relation but not in theory... (2) (" ++ (show i) ++ ") [ " ++ (show theosorts) ++ "]")
 									(Just sortxn' ) -> xnWOaToXNa sortxn'
 								) insortset
 							constructorx = createAllConstructorsXN nodexmlnameset $ Map.toList $ Map.findWithDefault Map.empty (XmlNamed sortwo (xnName sortxn)) constructors
@@ -2603,6 +2616,10 @@ mapSetToSet mapping =
 		Set.union set s
 		) Set.empty (Map.toList mapping)
 		
+mapListToList::Map.Map a [b]->[b]
+mapListToList m =
+	concatMap snd $ Map.toList m
+		
 mapListToMapSet::(Ord b)=>Map.Map a [b]->Map.Map a (Set.Set b)
 mapListToMapSet = Map.map Set.fromList
 
@@ -2758,6 +2775,18 @@ findByNameAndOrigin iname iorig icon =
 					_ -> Nothing
 			i -> i
 
+findItemPreferOrigin::(Eq a, Eq b, Container c q)=>(q->Hets.WithOrigin a b)->a->b->c->Maybe q
+findItemPreferOrigin trans iitem iorig icon =
+	let
+		candidates = filter (\i -> (Hets.woItem (trans i)) == iitem) (getItems icon)
+	in
+		case find (\i -> (Hets.woOrigin $ trans i) == iorig) candidates of
+			Nothing ->
+				case candidates of
+					(i:_) -> (Just i)
+					_ -> Nothing
+			i -> i
+			
 findByNameAndOriginWith::(Eq b, Container c q)=>(q->XmlNamedWO a b)->String->b->c->Maybe q
 findByNameAndOriginWith trans iname iorig icon =
 	let
@@ -3410,9 +3439,9 @@ importGraphToDGNodesXN ig n =
 		node = case mnode of
 			Nothing -> error "node error!"
 			(Just n' ) -> n'
-		omdoc = (\(S _ (omdoc' , _)) -> applyXmlFilter (isTag "omdoc" .> getChildren) omdoc' ) node
-		(ffxi, axtheoryset) = preprocessXml $ (\(S _ (omdoc' , _)) -> omdoc) node
-		importsMap' = importsFromXml omdoc
+		omdocchilds = (\(S _ (omdoc' , _)) -> applyXmlFilter (isTag "omdoc" .> getChildren) omdoc' ) node
+		(ffxi, axtheoryset) = (\(S _ (omdoc' , _)) -> preprocessXml omdoc' ) node
+		importsMap' = importsFromXml omdocchilds
 		(theonames, sortsmap, relsmap, predsmap, opsmap) = (xnTheorySet ffxi, xnSortsMap ffxi, xnRelsMap ffxi, xnPredsMap ffxi, xnOpsMap ffxi)
 		sensmap = sensXNWONFromXml ffxi axtheoryset
 		refimports = filter ( \(_,from,_) -> from /= n) $ Graph.out ig n
@@ -3447,7 +3476,8 @@ importGraphToDGNodesXN ig n =
 				tops = Map.findWithDefault Set.empty (xnName xntheory) opsmap
 				tsens = Map.findWithDefault Set.empty (xnName xntheory) sensmap
 			in
-				dgnodelist ++ [xnMapsToDGNodeLab (snd (xnItem xntheory)) tsorts trels tpreds tops tsens]
+				Debug.Trace.trace ("Creating Node with NODE_NAME " ++ (show (snd (xnItem xntheory))) ++ ", XmlName was " ++ (xnName xntheory))
+					(dgnodelist ++ [xnMapsToDGNodeLab (snd (xnItem xntheory)) tsorts trels tpreds tops tsens])
 			) [] theonames
 	
 
@@ -3526,6 +3556,87 @@ importGraphToDGraph ig n =
 			(Just n' ) -> n'
 		omdoc = (\(S _ (omdoc' , _)) -> applyXmlFilter (isTag "omdoc" .> getChildren) omdoc' ) node
 		nodes = importGraphToDGNodes ig n
+		lnodes = (zip [1..] nodes)::[(Graph.Node, DGNodeLab)]
+		--nodegraph = (Graph.mkGraph lnodes [])::DGraph
+		nameNodeMap = Map.fromList $ map ( \(n' , node' ) -> (getDGNodeName node' , n' ) ) $ lnodes
+		imports' = importsFromXml omdoc
+		importhints = createImportHints omdoc
+		ledges = foldl (
+			\le (nodename, nodeimports) ->
+				let	
+					nodenum = Map.findWithDefault 0 nodename nameNodeMap
+					tnode = case map snd $ filter (\(n' ,_) -> n' == nodenum) lnodes of
+						(l:_) -> l
+						_ -> error "node error!"
+					targetsign = getNodeSignature ig (Just tnode)
+					nodeimporthints = Map.findWithDefault Set.empty nodename importhints
+					importsfrom = map (\(a,_) -> a) $ Set.toList nodeimports
+					-- the omdoc-imports have limited support for the imports
+					-- used in a dgraph. some import-hints have no import-tag in
+					-- the omdoc
+					importhintswithoutimports = Set.filter (\ih -> not $ elem (fromName ih) importsfrom) nodeimporthints 
+				in
+					(foldl (\le' (ni, mmm) ->
+						let
+							importnodenum = case Map.findWithDefault 0 ni nameNodeMap of
+								0 -> Debug.Trace.trace ("Cannot find node for \"" ++ ni ++ "\"!") 0
+								x -> x
+							snode = case map snd $ filter (\(n' ,_) -> n' == importnodenum) lnodes of
+								(l:_) -> l
+								_ -> error "node error!"
+							sourcesign = getNodeSignature ig (Just snode)
+							filteredimporthints = Set.filter (\h -> (fromName h) == ni) nodeimporthints
+							ddgl = case mmm of
+								Nothing -> defaultDGLinkLab
+								(Just mm) -> defaultDGLinkLab { dgl_origin = DGTranslation, dgl_morphism = (Hets.makeCASLGMorphism $ (Hets.morphismMapToMorphism mm) { mtarget=targetsign, msource = sourcesign}) }
+						in	
+							le' ++
+							if Set.null filteredimporthints
+								then
+									[(importnodenum, nodenum, ddgl)]
+								else
+									map (\ih ->
+										let
+											ihlink = getIHLink ih
+											link = case dgl_origin ihlink of
+											-- this is rather ugly, but else morphisms would be lost for now...
+												DGTranslation -> ihlink { dgl_morphism = dgl_morphism ddgl }
+												_ -> ihlink
+										in
+											(importnodenum, nodenum, link)
+										) $ Set.toList filteredimporthints
+						) le $ Set.toList nodeimports)
+						-- add further imports
+						++
+						(map (\ih ->
+							let
+								ni = fromName ih
+								importnodenum = case Map.findWithDefault 0 ni nameNodeMap of
+									0 -> Debug.Trace.trace ("Cannot find node for \"" ++ ni ++ "\"!") 0
+									x -> x
+							in
+								(importnodenum, nodenum, getIHLink ih)
+								) $ Set.toList importhintswithoutimports)
+				) [] $ Map.toList imports'
+		validedges = foldl (\e newe@(n' ,m,_) ->
+			if (n' ==0) || (m==0) then
+				Debug.Trace.trace ("Invalid Edge found from " ++ (show n' ) ++ " to " ++ (show m) ++ "...") e
+				else
+				e++[newe]
+				) [] ledges
+		cleannodes = map (\(n' , node' ) -> (n' , cleanNodeName node' )) lnodes  
+	in
+		Graph.mkGraph cleannodes validedges
+		
+importGraphToDGraphXN::(ImportGraph (HXT.XmlTrees, Maybe DGraph))->Graph.Node->DGraph
+importGraphToDGraphXN ig n =
+	let
+		mnode = Graph.lab ig n
+		node = case mnode of
+			Nothing -> error "node error!"
+			(Just n' ) -> n'
+		omdoc = (\(S _ (omdoc' , _)) -> applyXmlFilter (isTag "omdoc" .> getChildren) omdoc' ) node
+		nodes = importGraphToDGNodesXN ig n
 		lnodes = (zip [1..] nodes)::[(Graph.Node, DGNodeLab)]
 		--nodegraph = (Graph.mkGraph lnodes [])::DGraph
 		nameNodeMap = Map.fromList $ map ( \(n' , node' ) -> (getDGNodeName node' , n' ) ) $ lnodes
@@ -3865,6 +3976,86 @@ processImportGraph ig =
 							process $ Graph.mkGraph
 								(newnode:othernodes)
 								(Graph.labEdges igxmd)
+								
+-- if there is a cycle in the imports this will fail because the algorithm
+-- processes only omdoc's that do import from already processed omdoc's or do
+-- not import at all.
+processImportGraphXN::(ImportGraph HXT.XmlTrees)->(ImportGraph (HXT.XmlTrees, Maybe DGraph))
+processImportGraphXN ig =
+	let
+		-- create hybrid graph containing already processed DGs (none at first)
+		hybrid = Graph.mkGraph
+			(map (\(n, S a b) -> (n, S a (b, Nothing))) $ Graph.labNodes ig)
+			(Graph.labEdges ig) :: (ImportGraph (HXT.XmlTrees, (Maybe DGraph)))
+		-- create all DG's
+		processed = process hybrid
+	in
+		processed
+	where
+		-- transform one node's omdoc-content to a DGraph and proceed until
+		-- no more transformations are possible
+		process ::
+			(ImportGraph (HXT.XmlTrees, (Maybe DGraph))) ->
+			(ImportGraph (HXT.XmlTrees, (Maybe DGraph)))
+		process igxmd =
+			let
+				-- which nodes have no DGraph ?
+				unprocessed = filter (\(_, S _ (_, mdg)) ->
+					case mdg of
+						Nothing -> True
+						_ -> False
+					) $ Graph.labNodes igxmd
+				-- targets are nodes that import only from processed nodes
+				-- or do not import at all
+				targets = filter (\(nodenum, _) ->
+					let
+						-- get the outgoing edges (imports) for this node
+						imports' = Graph.out ig nodenum
+						-- for all these edges, check whether it points
+						-- to an unprocessed node
+						unprocessedimports = filter (\(_,from,_) ->
+							-- but do not count a reference back to current node...
+							if null (filter (\(n,_) -> (n/=nodenum) && (from == n)) unprocessed)
+								then
+									False
+								else
+									True
+								) imports'
+					in
+						-- the filter is just to check, if there
+						-- is something unprocessed 'in the way'
+						null unprocessedimports ) unprocessed
+			in
+				-- okay, have any nodes survived the filter ?
+				if null targets
+					then
+						-- no targets left
+						igxmd
+					else
+						-- okay, process a target
+						let
+							-- does not really matter what target to choose...
+							changednode = head targets
+							-- perform conversion
+							--(dg, name) = omdocToDevGraph $
+							--	(\(_, S _ (omdoc, _)) -> omdoc) changednode
+							changednodenum =
+								(\(nodenum, _) -> nodenum) changednode
+							dg = importGraphToDGraphXN igxmd changednodenum
+							-- name = (\(_, (S (nname,_) _)) -> nname) changednode
+							-- create the altered node
+							newnode = (\(nodenum, S a (omdoc,_)) ->
+								(nodenum, S a (omdoc, Just dg))) changednode
+							-- fetch all other nodes
+							othernodes = filter
+								(\(n,_) -> n /= changednodenum) $
+									Graph.labNodes igxmd
+						in
+							-- start the next round with the new graph
+							process $ Graph.mkGraph
+								(newnode:othernodes)
+								(Graph.labEdges igxmd)
+
 								
 hybridGToDGraphG::(ImportGraph (HXT.XmlTrees, Maybe DGraph))->(ImportGraph DGraph)
 hybridGToDGraphG ig =
