@@ -3467,17 +3467,20 @@ importGraphToDGNodesXN ig n =
 					Nothing
 					Nothing
 					) refimports
+		psorts = mapSetToSet sortsmap
+		ppreds = mapSetToSet predsmap
+		pops = mapSetToSet opsmap
 	in	
 		Set.fold (\xntheory dgnodelist ->
 			let
-				tsorts = Map.findWithDefault Set.empty (xnName xntheory) sortsmap
+				--tsorts = Map.findWithDefault Set.empty (xnName xntheory) sortsmap
 				trels = Map.findWithDefault Rel.empty (xnName xntheory) relsmap
-				tpreds = Map.findWithDefault Set.empty (xnName xntheory) predsmap
-				tops = Map.findWithDefault Set.empty (xnName xntheory) opsmap
+				--tpreds = Map.findWithDefault Set.empty (xnName xntheory) predsmap
+				--tops = Map.findWithDefault Set.empty (xnName xntheory) opsmap
 				tsens = Map.findWithDefault Set.empty (xnName xntheory) sensmap
 			in
 				Debug.Trace.trace ("Creating Node with NODE_NAME " ++ (show (snd (xnItem xntheory))) ++ ", XmlName was " ++ (xnName xntheory))
-					(dgnodelist ++ [xnMapsToDGNodeLab (snd (xnItem xntheory)) tsorts trels tpreds tops tsens])
+					(dgnodelist ++ [xnMapsToDGNodeLab (snd (xnItem xntheory)) psorts trels ppreds pops tsens])
 			) [] theonames
 	
 
@@ -5040,8 +5043,9 @@ createSymbolForSortXN theoryset xnsort =
 createSymbolForSortWithSortXNSet::TheoryXNSet->Set.Set XmlNamedWONSORT->SORT->HXT.XmlFilter
 createSymbolForSortWithSortXNSet theoryset theorysorts sort =
 	let
-		xnsort = case sortToXmlNamedWONSORTSet theorysorts sort of
-			Nothing -> error "Cannot create the Symbol because I cannot find the Sort !"
+--		xnsort = case findByName (show sort) theorysorts of
+		xnsort = case find (\i -> (xnWOaToa i) == sort ) (Set.toList theorysorts) of
+			Nothing -> error ("Cannot create the Symbol because I cannot find the Sort !" ++ "(" ++ (show sort) ++ " , " ++ (show theorysorts) ++ ")")
 			(Just xnsort' ) -> xnsort'
 	in
 		createSymbolForSortXN theoryset xnsort
@@ -5574,7 +5578,7 @@ createSymbolForPredicationXN theoryset theorypreds
 		let
 			(xnpid, _) = case find (\(xnpid' , _) ->
 				(xnWOaToa xnpid' ) == pr ) theorypreds of 
-					Nothing -> error "Cannot find predicate in theory!"
+					Nothing -> error "Cannot find Spredicate in theory!"
 					(Just x' ) -> x'
 		in
 			HXT.etag "OMS" += 
@@ -5589,7 +5593,7 @@ createSymbolForPredicationXN theoryset theorypreds
 			(xnpid, _) = case find (\(xnpid' , xnpt' ) ->
 				(xnWOaToa xnpid' ) == pr &&
 				(cv_PredTypeToPred_type $ predTypeXNWONToPredType xnpt' ) == pt ) theorypreds of
-					Nothing -> error "Cannot find predicate in theory!"
+					Nothing -> error ("Cannot find Qpredicate in theory!" ++ "(" ++ (show pr) ++ ", " ++ (show theorypreds) ++ ")")
 					(Just x' ) -> x'
 		in
 			HXT.etag "OMS" +=
@@ -5729,6 +5733,7 @@ lastorempty::[a]->[a]
 lastorempty [] = []
 lastorempty l = [last l]
 
+-- create FFXInput and a set of annotated theory-fragments. sets deDebug to True.
 preprocessXml::HXT.XmlTrees->(FFXInput, Set.Set AnnXMLN)
 preprocessXml t =
 	let
@@ -5740,7 +5745,7 @@ preprocessXml t =
 		xnpredsmap = mapListToMapSet $ predsXNWONFromXml xntheoryset xnsorts axtheoryset
 		xnopsmap = mapListToMapSet $ opsXNWONFromXml xntheoryset xnsorts axtheoryset
 	in
-		(FFXInput xntheoryset xnsortsmap xnrelsmap xnpredsmap xnopsmap, axtheoryset)
+		(FFXInput xntheoryset xnsortsmap xnrelsmap xnpredsmap xnopsmap True, axtheoryset)
 
 data FFXInput = FFXInput {
 	xnTheorySet :: TheoryXNSet -- set of theorys (xmlnames + origin in graph)
@@ -5748,6 +5753,7 @@ data FFXInput = FFXInput {
 	,xnRelsMap :: Map.Map XmlName (Rel.Rel XmlNamedWONSORT) -- theory -> rels
 	,xnPredsMap :: Map.Map XmlName (Set.Set (XmlNamedWONId, PredTypeXNWON)) -- theory -> preds
 	,xnOpsMap :: Map.Map XmlName (Set.Set (XmlNamedWONId, OpTypeXNWON)) -- theory -> ops
+	,doDebug :: Bool -- emit debugging messages
 	}
 
 formulaFromXml::FormulaContext->(HXT.XmlTrees)->(FORMULA ())
@@ -5974,13 +5980,20 @@ formulaFromXmlXN ffxi anxml =
 								Strong_equation (terms!!0) (terms!!1) Id.nullRange
 					else
 					if applySym == caslMembershipS then
-						let	sort = xshow $ lastorempty (applyXmlFilter (getChildren .> isTag "OMS" .> getValue "name") formTree)
+						let
+							sortxml = lastorempty (applyXmlFilter (getChildren .> isTag "OMS") formTree)
+							sort = xshow $ applyXmlFilter (getValue "name") sortxml
+							sortcd = xshow $ applyXmlFilter (getValue "cd") sortxml
+							theosorts = Map.findWithDefault Set.empty sortcd (xnSortsMap ffxi) 
+							sortxn = case findByName sort theosorts of
+								Nothing -> error ("Sort not found in theory!" ++ "(" ++ sort ++ ", " ++ (show theosorts) ++ ")" )
+								(Just x) -> x
 						in
 						if terms == []
 							then
 								Debug.Trace.trace ("Impossible to create Membership...") (False_atom Id.nullRange)
 							else
-								Membership (head terms) (Hets.stringToId sort) Id.nullRange
+								Membership (head terms) (xnWOaToa sortxn) Id.nullRange
 					else
 					if applySym == caslSort_gen_axS then
 						let	freeType = if (xshow $ applyXmlFilter (getValue "name") [(applyXmlFilter (getChildren .> isTag "OMS") formTree)!!1]) == caslSymbolAtomFalseS then False else True
@@ -6007,32 +6020,6 @@ formulaFromXmlXN ffxi anxml =
 										error ("Could not find predicate for \"" ++ applySym ++ "\"")
 							else
 								error ("Expected a casl application symbol, but \"" ++ applySym ++ "\" was found!")
-								
---					if applySym /= [] then
-{-						Debug.Trace.trace ("No matching casl-application found! Trying to find predicate...") $
-							let
-								-- try to find the node for this predicate
-								mprednodename = Hets.findNodeNameForPredication (imports fc) (preds fc) (Hets.stringToId applySym) (currentName fc)
-								predsMap' = case mprednodename of
-									-- try to get predicate set via CD
-									Nothing -> Map.findWithDefault (Debug.Trace.trace ("No Node found by CD...") Map.empty) applySymCD (preds fc)
-									-- try to get predicate map from the node
-									(Just prednodename) -> Map.findWithDefault (Debug.Trace.trace ("Node should contain predicate, but does not...") Map.empty) prednodename (preds fc)
-								-- try to find the predicate set from the map
-								mptset = Map.lookup (Hets.stringToId applySym) predsMap' :: (Maybe (Set.Set PredType))
-								-- terms to apply predication to...
-								predterms = map (\n -> termFromXml fc [n]) $ tail $ ((applyXmlFilter (getChildren .> (isTag "OMATTR" +++ isTag "OMA")) t)::[XmlTree])
-							in
-								case mptset of
-									Nothing -> Debug.Trace.trace ("Could not find Predication for \"" ++ applySym ++ "\" from \"" ++ applySymCD ++ "\"") (False_atom Id.nullRange) -- error ("Could not find Predication for \"" ++ applySym ++ "\" from \"" ++ applySymCD ++ "\"")
-									(Just ptset) ->
-										if Set.null ptset
-											then
-												error ("Found mapping for predication \"" ++ applySym ++ "\" but no actual values... this is odd!")
-											else
-												Predication (Qual_pred_name (Hets.stringToId applySym) (cv_PredTypeToPred_type $ head $ Set.toList ptset) Id.nullRange) predterms Id.nullRange -}
---					else
---						error ("Expected a casl application symbol, but \"" ++ applySym ++ "\" was found!")
 			  else if (applyXmlFilter (isTag "OMS") (axXml anxml)) /= [] then
 			  	let trueOrFalse = xshow $ singleitem 1 (applyXmlFilter (isTag "OMS" .> withSValue "cd" caslS .> getValue "name") (axXml anxml))
 				in
