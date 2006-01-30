@@ -317,7 +317,7 @@ data Style
 
 -- | The default style (@mode=PageMode, lineLength=80, ribbonsPerLine=1.19@)
 style :: Style
-style = Style { lineLength = 80, ribbonsPerLine = 1.19, mode = PageMode }
+style = Style { lineLength = 8, ribbonsPerLine = 1.19, mode = PageMode }
 -- maximum line length 80 with 67 printable chars (up to 13 indentation chars)
 
 -- | Rendering mode
@@ -432,9 +432,6 @@ braces p        = char '{' <> p <> char '}'
 hcat = foldr (<>)  empty
 hsep = foldr (<+>) empty
 vcat = foldr ($+$)  empty
-
-vcat' :: [Doc] -> Doc
-vcat' = foldr ($$)  empty
 
 hang d1 n d2 = sep [d1, nest n d2]
 
