@@ -895,7 +895,7 @@ devGraphToXmlCMPIOXmlNamed dg =
 				(nodenum, nodename) = xnItem xnodetupel
 				theosorts = Map.findWithDefault Set.empty (Hets.mkWON nodename nodenum) xmlnamedsortswomap
 				realsorts = Set.filter (\i -> (xnWOaToO i) == nodenum) theosorts
-				realsortswo = Set.map (xnItem) realsorts
+				realsortswo = Set.map (xnItem) (Debug.Trace.trace ("Sorts in " ++ (xnName xnodetupel) ++ " - " ++ (show realsorts) ) realsorts)
 				theorels = Map.findWithDefault Rel.empty (Hets.mkWON nodename nodenum) relswomap
 				-- only keep relations that include at least one sort from the
 				-- current theory
@@ -926,8 +926,7 @@ devGraphToXmlCMPIOXmlNamed dg =
 					wrapFormulasCMPIOXN
 						(PFInput
 							nodexmlnameset
-							--theosorts
-							(mapSetToSet xmlnamedsortswomap)
+							theosorts
 							theopredsxn
 							theoopsxn
 						)
@@ -1896,6 +1895,7 @@ processPredicationForMorphism
 			 +++
 			 HXT.sattr "name" (show prid)
 			) 
+		
 
 		
 
@@ -3473,10 +3473,10 @@ importGraphToDGNodesXN ig n =
 	in	
 		Set.fold (\xntheory dgnodelist ->
 			let
-				--tsorts = Map.findWithDefault Set.empty (xnName xntheory) sortsmap
+				tsorts = Map.findWithDefault Set.empty (xnName xntheory) sortsmap
 				trels = Map.findWithDefault Rel.empty (xnName xntheory) relsmap
-				--tpreds = Map.findWithDefault Set.empty (xnName xntheory) predsmap
-				--tops = Map.findWithDefault Set.empty (xnName xntheory) opsmap
+				tpreds = Map.findWithDefault Set.empty (xnName xntheory) predsmap
+				tops = Map.findWithDefault Set.empty (xnName xntheory) opsmap
 				tsens = Map.findWithDefault Set.empty (xnName xntheory) sensmap
 			in
 				Debug.Trace.trace ("Creating Node with NODE_NAME " ++ (show (snd (xnItem xntheory))) ++ ", XmlName was " ++ (xnName xntheory))
@@ -3757,7 +3757,6 @@ data Source a = S (String, String) a
 instance Show (Source a) where
 	show (S (sn, sf) _) = ("Source \"" ++ sn ++ "\" File : \"" ++ sf ++ "\".");
 
---type ImportGraph a = Tree.Gr (Source a) TheoryImport 
 type ImportGraph a = CLGraph.Gr (Source a) TheoryImport 
 
 getImportMapFG::String->(IO ((String,HXT.XmlTrees,String), (Map.Map String String)))
@@ -3842,7 +3841,22 @@ findFile file include =
 				>>= \mfp -> case mfp of
 					Nothing -> return Nothing
 					(Just (f,_)) -> return (Just f)
-
+					
+getDirContentOrFailGracefully::FilePath->IO [FilePath]
+getDirContentOrFailGracefully fp =
+	System.IO.Error.catch
+		(System.Directory.getDirectoryContents fp)
+		(\_ -> return [])
+		
+filterFiles::[FilePath]->IO [FilePath]
+filterFiles list =
+	filterM
+		(\n -> System.IO.Error.catch
+			(System.Directory.doesFileExist n)
+			(\_ -> return False)
+		)
+		list
+					
 -- | creates an import graph for an omdoc-file.
 -- you can specify a list of directories to look for files in
 -- the current directory will automatically be added to this list (and passed
@@ -4091,6 +4105,27 @@ dGraphGToLibEnv ig =
 					) nodes
 	in
 		(ASL.Lib_id (ASL.Indirect_link firstsrc Id.nullRange), firstdg, lenv)
+		
+dGraphGToLibEnvOmdocId::(ImportGraph DGraph)->(ASL.LIB_NAME, DGraph, LibEnv)
+dGraphGToLibEnvOmdocId ig =
+	let
+		nodes = map (\(_,n) -> n) $ Graph.labNodes ig
+		firstnode = case nodes of
+			[] -> error "empty graph..."
+			l -> head l
+		--firstsrc = (\(S (_,src) _) -> src) firstnode
+		firstsrc = (\(S (sn,_) _) -> sn) firstnode
+		firstdg = (\(S _ dg) -> dg) firstnode
+		lenv = Map.fromList $ map ( \(S (_, src) dg) ->
+					(
+						(ASL.Lib_id (ASL.Indirect_link src Id.nullRange)),
+						--(GA.emptyGlobalAnnos, Map.empty, dg)
+						emptyGlobalContext { devGraph = dg }
+					)
+					) nodes
+	in
+		(ASL.Lib_id (ASL.Indirect_link firstsrc Id.nullRange), firstdg, lenv)
+		
 		
 unwrapLinkSource::ASL.LIB_NAME->String
 unwrapLinkSource
@@ -5039,11 +5074,11 @@ createSymbolForSort imports' sorts' sort name' =
 createSymbolForSortXN::TheoryXNSet->XmlNamedWONSORT->(HXT.XmlTree->HXT.XmlTrees)
 createSymbolForSortXN theoryset xnsort =
 	HXT.etag "OMS" += ( HXT.sattr "cd" (fromMaybe "unknown" $ getTheoryXmlName theoryset (xnWOaToO xnsort) ) +++ HXT.sattr "name" (xnName xnsort) )
-	
+
+-- create a xml-representation for a sort, searching for matching sort in set and using xml-name...	
 createSymbolForSortWithSortXNSet::TheoryXNSet->Set.Set XmlNamedWONSORT->SORT->HXT.XmlFilter
 createSymbolForSortWithSortXNSet theoryset theorysorts sort =
 	let
---		xnsort = case findByName (show sort) theorysorts of
 		xnsort = case find (\i -> (xnWOaToa i) == sort ) (Set.toList theorysorts) of
 			Nothing -> error ("Cannot create the Symbol because I cannot find the Sort !" ++ "(" ++ (show sort) ++ " , " ++ (show theorysorts) ++ ")")
 			(Just xnsort' ) -> xnsort'
@@ -5665,6 +5700,15 @@ pairsToWhatIWant = foldl (\i x -> insert x i) [] where
 	insert (a,b) [] = [(a,[b])]
 	insert (a,b) ((a' ,l):r) = if a == a' then (a' , l++[b]):r else (a', l): insert (a,b) r
 	
+
+createQuasiMappedLists::Eq a=>[(a,a)]->[(a,[a])]
+createQuasiMappedLists = foldl (\i x -> insert x i) []
+	where 
+	insert::(Eq a, Eq b)=>(a,b)->[(a,[b])]->[(a,[b])]
+	insert (a,b) [] = [(a,[b])]
+	insert (a,b) ((a' ,l):r) = if a == a' then (a' , l++[b]):r else (a', l): insert (a,b) r
+
+	
 isTrueAtom::(FORMULA ())->Bool
 isTrueAtom (True_atom _) = True
 isTrueAtom _ = False
@@ -5899,14 +5943,46 @@ formulaFromXml fc t = if (applyXmlFilter (isTag "OMBIND") t) /= [] then -- it's 
 formulaFromXmlXN::FFXInput->AnnXMLN->FORMULA ()
 formulaFromXmlXN ffxi anxml =
 	if (applyXmlFilter (isTag "OMBIND") (axXml anxml)) /= [] then -- it's a quantifier...
-			let	quantTree = singleitem 1 (applyXmlFilter (isTag "OMBIND") (axXml anxml))
+			let
+				quantTree = singleitem 1 (applyXmlFilter (isTag "OMBIND") (axXml anxml))
 				quant = quantFromName $ xshow $ applyXmlFilter (getChildren .> isTag "OMS" .> withSValue "cd" caslS .> getValue "name") quantTree
 				-- first element is the quantification-OMS
-				formula = drop 1 ((applyXmlFilter (getChildren .> (isTag "OMA" +++ isTag "OMATTR" +++ isTag "OMBIND" +++ isTag "OMS")) quantTree)::[XmlTree]) 
-				vardeclS = getVarDecls (applyXmlFilter (getChildren .> isTag "OMBVAR") quantTree)
-				vardeclS2 = pairsToWhatIWant vardeclS
+				formula =
+					drop
+						1
+						((applyXmlFilter
+							(getChildren .>	(isTag "OMA" +++ isTag "OMATTR"
+								+++ isTag "OMBIND" +++ isTag "OMS"))
+							quantTree
+						 )::[XmlTree]
+						) 
+				vardeclS =
+					getVarDecls
+						(applyXmlFilter
+							(getChildren .> isTag "OMBVAR")
+							quantTree
+						)
+				vardeclS2 = createQuasiMappedLists vardeclS
 			in
-				Quantification quant (map (\(s, vl) -> Var_decl (map Hets.stringToSimpleId vl) (Hets.stringToId s) Id.nullRange) vardeclS2) (formulaFromXmlXN ffxi (AXML (axAnn anxml) formula)) Id.nullRange
+				Quantification
+					quant
+					(map
+						(\(s, vl) ->
+							Var_decl
+								(map Hets.stringToSimpleId vl)
+								(case findByNameAndOrigin s (axAnn anxml) (mapSetToSet $ xnSortsMap ffxi) of
+									Nothing -> error ("No Sort for " ++ s)
+									(Just x) -> xnWOaToa x)
+								--(Hets.stringToId s)
+								Id.nullRange
+						)
+						vardeclS2
+					)
+					(formulaFromXmlXN
+						ffxi
+						(AXML (axAnn anxml) formula)
+					)
+					Id.nullRange
 			else if (applyXmlFilter (isTag "OMA") (axXml anxml)) /= [] then -- the case begins...
 			  let
 			  	formTree = applyXmlFilter (isTag "OMA") (axXml anxml)
@@ -5993,7 +6069,7 @@ formulaFromXmlXN ffxi anxml =
 							then
 								Debug.Trace.trace ("Impossible to create Membership...") (False_atom Id.nullRange)
 							else
-								Membership (head terms) (xnWOaToa sortxn) Id.nullRange
+								Membership (head terms) ((if (doDebug ffxi) then Debug.Trace.trace ("Making sort for membership " ++ (show $ xnWOaToa sortxn) ++ " from " ++ sort) else id) $ xnWOaToa sortxn) Id.nullRange
 					else
 					if applySym == caslSort_gen_axS then
 						let	freeType = if (xshow $ applyXmlFilter (getValue "name") [(applyXmlFilter (getChildren .> isTag "OMS") formTree)!!1]) == caslSymbolAtomFalseS then False else True
@@ -6154,8 +6230,18 @@ processVarDeclXN theoryset theorysorts vdl =
 -- get var decls
 getVarDecls::XmlTrees->[(String, String)]
 getVarDecls vt = map (\t ->
-		(xshow $ applyXmlFilter (getChildren .> isTag "OMATP" .> getChildren .> isTag "OMS" .> withValue "name" (/=typeS) .> getValue "name") [t],
-		 xshow $ applyXmlFilter (getChildren .> isTag "OMV" .> getValue "name") [t]) ) ((applyXmlFilter (isTag "OMBVAR" .> getChildren .> isTag "OMATTR") vt)::[XmlTree])
+		(
+			xshow $ applyXmlFilter
+				(getChildren .> isTag "OMATP" .> getChildren .>
+					isTag "OMS" .> withValue "name" (/=typeS) .>
+					getValue "name")
+				[t],
+			xshow $ applyXmlFilter
+				(getChildren .> isTag "OMV" .> getValue "name")
+				[t]
+		)
+		)
+		((applyXmlFilter (isTag "OMBVAR" .> getChildren .> isTag "OMATTR") vt)::[XmlTree])
 
 -- reminder : switching to XmlNamed-structures makes use of current theory name obsolete...
 
@@ -6360,7 +6446,7 @@ termFromXmlXN::FFXInput->AnnXMLN->(TERM ())
 termFromXmlXN ffxi anxml =
 	if (applyXmlFilter (isTag "OMV") (axXml anxml)) /= []
 		then
-			Simple_id $ Hets.stringToSimpleId $ xshow $ applyXmlFilter (isTag "OMV" .> getValue "name") (axXml anxml)
+			Debug.Trace.trace ("Warning: Untyped variable (TERM) from \"" ++ (xshow (axXml anxml))) $ Simple_id $ Hets.stringToSimpleId $ xshow $ applyXmlFilter (isTag "OMV" .> getValue "name") (axXml anxml)
 		else
 		if (applyXmlFilter (isTag "OMATTR") (axXml anxml)) /= [] then
 			if applyXmlFilter
@@ -6379,13 +6465,19 @@ termFromXmlXN ffxi anxml =
 									isTag "OMV" .> getValue "name")
 								(axXml anxml)
 						)
-						(Hets.stringToId $ xshow $
-							applyXmlFilter
-								(isTag "OMATTR" .> getChildren .>
-								isTag "OMATP" .> getChildren .>
-								isTag "OMS" .> withValue "name" (/=typeS) .>
-								getValue "name")
-							(axXml anxml)
+						(
+							let
+								varxnsort = xshow $ applyXmlFilter
+												(isTag "OMATTR" .> getChildren .>
+													isTag "OMATP" .> getChildren .>
+													isTag "OMS" .> withValue "name" (/=typeS) .>
+													getValue "name")
+												(axXml anxml)
+								varsort = case findByNameAndOrigin varxnsort (axAnn anxml) (mapSetToSet $ xnSortsMap ffxi) of
+									Nothing -> error ("Cannot find defined sort for \"" ++ varxnsort ++"\"" )
+									(Just x) -> xnWOaToa x
+							in
+								varsort
 						)
 						Id.nullRange
 		else
