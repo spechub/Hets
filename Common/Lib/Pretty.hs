@@ -110,7 +110,7 @@ Relative to John's original paper, there are the following new features:
 
         hcat is a list version of <>
         hsep is a list version of <+>
-        vcat is a list version of $$
+        vcat is a list version of $+$
 
         sep (separate) is either like hsep or like vcat, depending on what fits
 
@@ -207,7 +207,7 @@ module Common.Lib.Pretty (
 
         -- ** General rendering
         fullRender,
-        Mode(..), 
+        Mode(..),
         TextDetails(..)
                        ) where
 
@@ -271,7 +271,7 @@ hsep   :: [Doc] -> Doc;          -- ^List version of '<+>'
 ($$)   :: Doc -> Doc -> Doc;     -- ^Above; if there is no
                                 -- overlap it \"dovetails\" the two
 ($+$)   :: Doc -> Doc -> Doc;    -- ^Above, without dovetailing.
-vcat   :: [Doc] -> Doc;          -- ^List version of '$$'
+vcat   :: [Doc] -> Doc;          -- ^List version of '$+$'
 
 cat    :: [Doc] -> Doc;          -- ^ Either hcat or vcat
 sep    :: [Doc] -> Doc;          -- ^ Either hsep or vcat
@@ -431,7 +431,10 @@ braces p        = char '{' <> p <> char '}'
 
 hcat = foldr (<>)  empty
 hsep = foldr (<+>) empty
-vcat = foldr ($$)  empty
+vcat = foldr ($+$)  empty
+
+vcat' :: [Doc] -> Doc
+vcat' = foldr ($$)  empty
 
 hang d1 n d2 = sep [d1, nest n d2]
 
@@ -930,5 +933,4 @@ indent :: Int -> String
 indent n = multi_ch n ' '
 
 multi_ch :: Int -> Char -> String
-multi_ch 0 _  = ""
-multi_ch n ch = ch : multi_ch (n - 1) ch
+multi_ch = replicate
