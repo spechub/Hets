@@ -124,8 +124,8 @@ readPrfFile opts ps ln = do
           fmap (maybe [emptyHistory] id) $ readVerbose opts ln prfFile
        else return [emptyHistory]
     return $ Map.update ( \ c -> Just c
-                          { devGraph = changesDG (devGraph c)
-                                      $ concatMap snd h
+                          { devGraph = changesDG (devGraph c) $ reverse 
+                                      $ concatMap (reverse . snd) h
                           , proofHistory = h } ) ln ps
 
 readPrfFiles :: HetcatsOpts -> LibEnv -> IO LibEnv
