@@ -758,6 +758,7 @@ spassProveGUI thName th = do
           writeIORef stateRef s''
           when (isJust sel && not (batchModeIsRunning s'')) 
                (enableWids goalSpecificWids)
+          when (isJust sel) $ enableWids [EnW detailsButton,EnW saveDFGButton]
           updateDisplay s'' False lb statusLabel timeEntry optionsEntry axiomsLb
           done)
       +> (saveDFG >>> do
@@ -833,7 +834,8 @@ spassProveGUI thName th = do
                                      "the prover yet."]
                 let detailsText = concatMap ('\n':) output
                 createTextSaveDisplay ("SPASS Output for Goal "++goal) 
-                                      (goal ++ ".spass") detailsText
+                                      (goal ++ ".spass") 
+                                      (seq (length detailsText) detailsText)
                 done)
             done)
       +> (runBatch >>> do
@@ -849,6 +851,10 @@ spassProveGUI thName th = do
             if numGoals > 0 
              then do
               batchStatusLabel # text (batchInfoText tLimit numGoals 0)
+              disableWids wids
+              enable stopBatchButton
+              enableWidsUponSelection lb [EnW detailsButton,EnW saveDFGButton]
+              enable lb
               inclProvedThs <- readTkVariable inclProvedThsTK
               batchProverId <- Concurrent.forkIO 
                    (do spassProveBatch tLimit extOpts inclProvedThs
@@ -873,9 +879,6 @@ spassProveGUI thName th = do
                        return ())
               modifyIORef threadStateRef 
                         (\ ts -> ts{batchId = Just batchProverId})
-              disableWids wids
-              enable lb
-              enable stopBatchButton
               done
              else do
               batchStatusLabel # text ("No further open goals\n\n")
@@ -1141,7 +1144,7 @@ parseSpassOutput spass = parseProtected (parseStart True) (Nothing, [], [])
       let res' = if isJust resMatch then (Just $ head $ fromJust resMatch) else res
       let usedAxsMatch = matchRegex re_ua line
       let usedAxs' = if isJust usedAxsMatch then (words $ head $ fromJust usedAxsMatch) else usedAxs
-      if isJust (matchRegex re_stop line)
+      if seq (length line) $ isJust (matchRegex re_stop line)
         then do
           _ <- waitForChildProcess spass
           return (res', usedAxs', output ++ [line])
