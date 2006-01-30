@@ -69,6 +69,11 @@ changeDG g c = case c of
 changesDG :: DGraph -> [DGChange] -> DGraph
 changesDG = foldl' changeDG
 
+applyProofHistory :: ProofHistory  -> GlobalContext -> GlobalContext
+applyProofHistory h c = c { devGraph = changesDG (devGraph c) $ reverse
+                                      $ concatMap (reverse . snd) h
+                          , proofHistory = h }
+
 -- -------------------------------------
 -- methods to check the type of an edge
 -- -------------------------------------

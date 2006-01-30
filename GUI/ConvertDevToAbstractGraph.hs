@@ -445,11 +445,8 @@ openProofStatus ln file ioRefProofStatus convRef opts = do
                        ++ showPretty ln "'"
                 Just gctx -> do
                     oldEnv <- readIORef ioRefProofStatus
-                    let proofStatus = Map.insert ln gctx
-                                          { devGraph = changesDG
-                                                       (devGraph gctx)
-                                                       $ concatMap snd h
-                                          , proofHistory = h } oldEnv
+                    let proofStatus = Map.insert ln
+                                      (applyProofHistory h gctx) oldEnv
                     writeIORef ioRefProofStatus proofStatus
                     initGraphInfo <- initgraphs
                     graphMem' <- (newIORef GraphMem{nextGraphId = 0,
