@@ -204,12 +204,15 @@ data BaseSig = Main_thy  -- ^ main theory of higher order logic (HOL)
              | HOLCF_thy   -- ^ higher order logic for continuous functions
              | HsHOLCF_thy  -- ^ HOLCF for Haskell
              | HsHOL_thy  -- ^ HOL for Haskell
+             | MHsHOL_thy
+             | MHsHOLCF_thy
                deriving (Eq, Ord, Show)
              {- possibly simply supply a theory like MainHC as string
                 or recursively as Isabelle.Sign -}
 
 data Sign = Sign
-    { baseSig :: BaseSig, -- like Main etc.
+    { theoryName :: String,
+      baseSig :: BaseSig, -- like Main etc.
       tsig :: TypeSig,
       constTab :: ConstTab,  -- value cons with type
       domainTab :: DomainTab,
@@ -230,7 +233,8 @@ type DomainTab = [[DomainEntry]]
 type DomainEntry = (Typ, [(VName, [Typ])])
 
 emptySign :: Sign
-emptySign = Sign { baseSig = Main_thy,
+emptySign = Sign { theoryName = "thy",
+                   baseSig = Main_thy,
                    tsig = emptyTypeSig,
                    constTab = Map.empty,
                    domainTab = [],
