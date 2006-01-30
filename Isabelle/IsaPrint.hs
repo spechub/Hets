@@ -289,12 +289,33 @@ printClassrel = vcat . map ( \ (t, cl) -> case cl of
      Just x -> text axclassS <+> printClass t <+> text "<" <+>
        (if null x  then text pcpoS else printSort x)) . Map.toList
 
-printArities :: Arities -> Doc
-printArities = vcat . map ( \ (t, cl) ->
-                  vcat $ map (printInstance t) cl) . Map.toList
+printArities :: String -> Arities -> Doc
+printArities tn = vcat . map ( \ (t, cl) ->
+                  vcat $ map (printInstance tn t) cl) . Map.toList
 
-printInstance :: TName -> (IsaClass, [(Typ, Sort)]) -> Doc
-printInstance t xs = text instanceS <+> text t <> doubleColon <>
+printInstance :: String -> TName -> (IsaClass, [(Typ, Sort)]) -> Doc
+printInstance tn t xs = case xs of 
+   (IsaClass "Monad", _) -> printMInstance tn t
+   _ -> printNInstance t xs
+
+printMInstance :: String -> TName -> Doc
+printMInstance tn t = let tyNm = text t
+                          thNm = text tn
+                          thMorNm = text (t ++ "_tm")
+                          tArrow = text ("-" ++ "->")   
+ in (text "thymorph" <+> thMorNm <+> colon <+> 
+            text "MonadType" <+> tArrow <+> thNm) 
+    $$ (text " maps [" <> (parens $ (doubleQuotes $ text "MonadType.M") 
+        <+> text "|->" <+> thNm <> text "." <> tyNm) <> text "]") 
+    $$ text "t_instantiate Monad " <+> thMorNm  
+
+{-
+thymorph t : MonadType --> State maps [("MonadType.M" |-> "State.S")]
+t_instantiate Monad t 
+-}
+
+printNInstance :: TName -> (IsaClass, [(Typ, Sort)]) -> Doc
+printNInstance t xs = text instanceS <+> text t <> doubleColon <>
     (case snd xs of
      [] -> empty
      ys -> parens $ hsep $ punctuate comma
@@ -336,7 +357,7 @@ instance PrettyPrint Sign where
     printConstTab (constTab sig) $++$
     (if showLemmas sig then showCaseLemmata (domainTab sig) else empty) $++$
                                    -- this may print an "o"
-    printArities (arities $ tsig sig)
+    printArities (theoryName sig) (arities $ tsig sig)
     where
     printConstTab tab = if Map.null tab then empty else text constsS
                         $$ vcat (map printConst $ Map.toList tab)

@@ -67,11 +67,11 @@ import Isabelle.IsaConsts as IsaConsts
 import Isabelle.Translate as Translate
 
 ------------------------------ Top level function ------------------------------
-transTheory :: Continuity -> 
+transTheory :: Continuity -> Bool -> 
   HatAna.Sign -> [Named PrDecl] -> Result (IsaSign.Sign, [Named IsaSign.Sentence])
-transTheory c sign sens = do 
-  sign' <- transSignature c sign
-  (sign'',sens'') <-  --   trace (show $ arities $ tsig sign') $ 
+transTheory c m sign sens = do 
+  sign' <- transSignature c m sign
+  (sign'',sens'') <-     trace ((show $ arities $ tsig sign') ++ "\n") $ 
           transSentences c sign' (map sentence sens)
   return (sign'', sens'')
 
@@ -169,12 +169,14 @@ transIMatch a sign t s
 
 ------------------------------ Signature translation -----------------------------
 
-transSignature :: Continuity -> HatAna.Sign -> Result IsaSign.Sign
-transSignature c sign = 
+transSignature :: Continuity -> Bool -> HatAna.Sign -> Result IsaSign.Sign
+transSignature c m sign = trace (show $ HatAna.instances sign) $ 
   Result [] $ Just $ IsaSign.emptySign 
-  { baseSig = case c of 
-                   IsCont -> HsHOLCF_thy
-                   NotCont -> HsHOL_thy,
+  { baseSig = case (c,m) of 
+                   (IsCont,False) -> HsHOLCF_thy
+                   (NotCont,False) -> HsHOL_thy
+                   (IsCont,True) -> MHsHOLCF_thy
+                   (NotCont,True) -> MHsHOL_thy,
     tsig = emptyTypeSig 
            { 
              classrel = getClassrel (HatAna.types sign),

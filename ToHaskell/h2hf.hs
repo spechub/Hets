@@ -29,12 +29,12 @@ import Isabelle.IsaSign as IsaSign
 import Haskell.HatAna as HatAna
 import Haskell.HatParser
 
-pickParser :: Continuity -> AParser () (IsaSign.Sign, [Named IsaSign.Sentence])
+pickParser :: (Continuity,Bool) -> AParser () (IsaSign.Sign, [Named IsaSign.Sentence])
 pickParser c = do
    b <- hatParser
    let res@(Result _ m) = do
           (_, _, sig, sens) <- hatAna (b, HatAna.emptySign, emptyGlobalAnnos)
-          transTheory c sig sens
+          transTheory (fst c) (snd c) sig sens
    case m of
       Nothing -> fail $ show res
       Just x -> return x
@@ -42,20 +42,25 @@ pickParser c = do
 main :: IO ()
 main = do
   let err = "command line input error: first argument must be"
-            ++ " either h (HOL) or hc (HOLCF)."
+            ++ " either h (HOL), hc (HOLCF), mh (HOL with theory morphisms)," 
+            ++ " mhc (HOLCF with theory morphisms)."
   l <- getArgs
   case l of
     [] -> putStrLn err
     c : fs -> let elm = elem $ map toLower c in
-        mapM_ (process (if elm ["h", "hol"] then NotCont
-                   else if elm ["hc", "holcf"] then IsCont
+        mapM_ (process (if elm ["h", "hol"] then (NotCont,False)
+                   else if elm ["hc", "holcf"] then (IsCont,False)
+                   else if elm ["mh", "mhol"] then (IsCont,True)
+                   else if elm ["mhc", "mholcf"] then (IsCont,True)
                    else error err)) fs
 
-process :: Continuity -> FilePath -> IO ()
+process :: (Continuity,Bool) -> FilePath -> IO ()
 process c fn = do
   putStrLn $ "translating " ++ show fn ++ " to " ++ case c of
-             IsCont -> "HOLCF"
-             NotCont -> "HOL"
+             (IsCont,False) -> "HOLCF"
+             (NotCont,False) -> "HOL"
+             (IsCont,True) -> "HOLCF with theory morphisms"
+             (NotCont,True) -> "HOL with theory morphisms"
   s <- readFile fn
   ld <- getEnv "HETS_LIB"
   let ds = dropWhile isSpace
@@ -68,9 +73,12 @@ process c fn = do
       let tn = takeWhile (/= '.')
                (reverse . takeWhile ( \ x -> x /= '/') $ reverse fn) ++ "_"
                 ++ case c of
-                     IsCont -> "hc"
-                     NotCont -> "h"
-          doc = printIsaTheory tn ld sig hs
+                     (IsCont,False) -> "hc"
+                     (NotCont,False) -> "h"
+                     (IsCont,True) -> "mhc"
+                     (NotCont,True) -> "mh"
+          nsig = sig {theoryName = tn}
+          doc = printIsaTheory tn ld nsig hs
           thyFile = tn ++ ".thy"
       putStrLn $ "writing " ++ show thyFile
       writeFile thyFile (shows doc "\n")
