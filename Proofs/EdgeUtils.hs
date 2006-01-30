@@ -32,9 +32,9 @@ safeDelLEdge e@(v, w, _) g = case match v g of
         let (ls, rs) = partition (\ (k, n) ->
                                   eqLEdgeDGLinkLab e (n, w, k)) s in
         case ls of
-          [] -> g -- error $ "delLEdge no edge: " ++ show e
-          _ -> (p, v', l', rs) & g'
-          -- _ -> error $ "delLEdge multiplge edges: " ++ show e
+          [] -> error $ "delLEdge no edge: " ++ show e
+          [_] -> (p, v', l', rs) & g'
+          _ -> error $ "delLEdge multiplge edges: " ++ show e
     _ -> error $ "delLEdge no node for edge: " ++ show e
 
 insLEdge :: LEdge DGLinkLab -> DGraph -> DGraph
@@ -43,16 +43,16 @@ insLEdge e@(v, w, l) g = case match v g of
         let ls = filter (\ (k, n) -> eqLEdgeDGLinkLab e (n, w, k)) s in
         case ls of
           [] -> (p, v', l', (l, w) : s) & g'
-          _ -> g -- error $ "insLEdge multiple edge: " ++ show e
+          _ -> error $ "insLEdge multiple edge: " ++ show e
     _ -> error $ "insLEdge no node for edge: " ++ show e
 
 delLNode :: LNode DGNodeLab -> DGraph -> DGraph
-delLNode n@(v, _) g = case match v g of
-    (Just(_p, _, _l', _s), g') -> g'
---       if l' == l then
+delLNode n@(v, l) g = case match v g of
+    (Just(_p, _, l', _s), g') ->
+       if l' == l then g'
 --           if null p && null s then g'
 --           else error $ "delLNode remaining edgges: " ++ show (p ++ s)
---       else error $ "delLNode wrong label: " ++ show n
+       else error $ "delLNode wrong label: " ++ show n
     _ -> error $ "delLNode no such node: " ++ show n
 
 insLNode :: LNode DGNodeLab -> DGraph -> DGraph
