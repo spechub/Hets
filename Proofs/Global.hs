@@ -26,7 +26,6 @@ todo for Jorina:
 
 module Proofs.Global (globSubsume, globDecomp) where
 
-import Data.List(nub)
 import Data.Graph.Inductive.Graph
 
 import Logic.Grothendieck
@@ -173,11 +172,10 @@ globSubsume :: LIB_NAME -> LibEnv -> LibEnv
 globSubsume ln libEnv =
   let dgraph = lookupDGraph ln libEnv
       globalThmEdges = filter isUnprovenGlobalThm (labEdges dgraph)
-    -- the 'nub' is just a workaround, because some of the edges in the graph
-    -- do not differ from each other in this representation - which causes
-    -- problems on deletion
+    {- the previous 'nub' is (probably) not needed, because it is
+       (or should be) checked for duplicate edge insertions -}
       (nextDGraph, nextHistoryElem) =
-          globSubsumeAux libEnv dgraph ([],[]) (nub globalThmEdges)
+          globSubsumeAux libEnv dgraph ([],[]) globalThmEdges
   in mkResultProofStatus ln libEnv nextDGraph nextHistoryElem
 
 {- auxiliary function for globSubsume (above)
