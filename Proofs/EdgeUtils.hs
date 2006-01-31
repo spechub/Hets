@@ -22,25 +22,19 @@ import Data.Graph.Inductive.Graph
 import Data.List
 
 delLEdge :: LEdge DGLinkLab -> DGraph -> DGraph
-delLEdge (v, w, l) g = case match v g of
-    (Just(p, v', l', s), g') -> (p, v', l', filter (/= (l, w)) s) & g'
-    _ -> g
-
-safeDelLEdge :: LEdge DGLinkLab -> DGraph -> DGraph
-safeDelLEdge e@(v, w, _) g = case match v g of
+delLEdge e@(v, _, _) g = case match v g of
     (Just(p, v', l', s), g') ->
-        let (ls, rs) = partition (\ (k, n) ->
-                                  eqLEdgeDGLinkLab e (n, w, k)) s in
+        let (ls, rs) = partition (\ (k, n) -> e == (v, n, k)) s in
         case ls of
           [] -> error $ "delLEdge no edge: " ++ show e
           [_] -> (p, v', l', rs) & g'
-          _ -> error $ "delLEdge multiplge edges: " ++ show e
+          _ -> error $ "delLEdge multiple edges: " ++ show e
     _ -> error $ "delLEdge no node for edge: " ++ show e
 
 insLEdge :: LEdge DGLinkLab -> DGraph -> DGraph
 insLEdge e@(v, w, l) g = case match v g of
     (Just(p, v', l', s), g') ->
-        let ls = filter (\ (k, n) -> eqLEdgeDGLinkLab e (n, w, k)) s in
+        let ls = filter (\ (k, n) -> e == (v, n, k)) s in
         case ls of
           [] -> (p, v', l', (l, w) : s) & g'
           _ -> error $ "insLEdge multiple edge: " ++ show e
@@ -48,10 +42,10 @@ insLEdge e@(v, w, l) g = case match v g of
 
 delLNode :: LNode DGNodeLab -> DGraph -> DGraph
 delLNode n@(v, l) g = case match v g of
-    (Just(_p, _, l', _s), g') ->
-       if l' == l then g'
---           if null p && null s then g'
---           else error $ "delLNode remaining edgges: " ++ show (p ++ s)
+    (Just(p, _, l', s), g') ->
+       if l' == l then
+           if null p && null s then g'
+           else error $ "delLNode remaining edges: " ++ show (p ++ s)
        else error $ "delLNode wrong label: " ++ show n
     _ -> error $ "delLNode no such node: " ++ show n
 
@@ -64,14 +58,14 @@ changeDG g c = case c of
     InsertNode n -> insLNode n g
     DeleteNode n -> delLNode n g
     InsertEdge e -> insLEdge e g
-    DeleteEdge e -> safeDelLEdge e g
+    DeleteEdge e -> delLEdge e g
 
 changesDG :: DGraph -> [DGChange] -> DGraph
 changesDG = foldl' changeDG
 
 applyProofHistory :: ProofHistory  -> GlobalContext -> GlobalContext
-applyProofHistory h c = c { devGraph = changesDG (devGraph c) $ reverse
-                                      $ concatMap (reverse . snd) h
+applyProofHistory h c = c { devGraph = changesDG (devGraph c) $ concatMap snd 
+                                       $ reverse h
                           , proofHistory = h }
 
 -- -------------------------------------
@@ -153,7 +147,7 @@ isUnprovenHidingThm (_,_,edgeLab) =
      marked to be inserted, false otherwise -}
 isDuplicate :: LEdge DGLinkLab -> DGraph -> [DGChange] -> Bool
 isDuplicate newEdge dgraph changes =
-  elem (InsertEdge newEdge) changes || elem newEdge (labEdges dgraph)
+    elem (InsertEdge newEdge) changes || elem newEdge (labEdges dgraph)
 
 {- | returns the DGLinkLab of the given LEdge -}
 getLabelOfEdge :: (LEdge b) -> b
@@ -333,35 +327,26 @@ filterProvenPaths = filter (all isProven)
 {- | adopts the edges of the old node to the new node -}
 adoptEdges :: DGraph -> Node -> Node -> (DGraph, [DGChange])
 adoptEdges dgraph oldNode newNode =
-  let ingoingEdges = inn dgraph oldNode
-      outgoingEdges = [outEdge| outEdge <- out dgraph oldNode,
-                                not (elem outEdge ingoingEdges)]
-      (auxGraph, changes) = adoptEdgesAux dgraph ingoingEdges newNode True
-      (finalGraph, furtherChanges)
-          = adoptEdgesAux auxGraph outgoingEdges newNode False
-  in (finalGraph, changes ++ furtherChanges)
+  if oldNode == newNode then (dgraph, []) else
+  let inEdges = inn dgraph oldNode
+      outEdges = out dgraph oldNode
+      newIn = map (adoptEdgesAux newNode True) inEdges
+      newOut = map (adoptEdgesAux newNode False) outEdges
+      allChanges = map DeleteEdge (inEdges ++ outEdges)
+                   ++ map InsertEdge (newIn ++ newOut)
+  in (changesDG dgraph allChanges, allChanges)
 
 {- | auxiliary method for adoptEdges -}
-adoptEdgesAux :: DGraph -> [LEdge DGLinkLab] -> Node -> Bool
-                     -> (DGraph,[DGChange])
-adoptEdgesAux dgraph [] _ _ = (dgraph,[])
-adoptEdgesAux dgraph (oldEdge@(src,tgt,edgelab):list) node areIngoingEdges =
-  (finalGraph, [DeleteEdge oldEdge,InsertEdge newEdge]++furtherChanges)
-
-  where
-    (newSrc,newTgt) = if src == tgt then (node,node) else (src,tgt)
-    newEdge = if areIngoingEdges then (newSrc,node,edgelab)
-                else (node,newTgt,edgelab)
-    auxGraph = insEdge newEdge (delLEdge oldEdge dgraph)
-    (finalGraph,furtherChanges)
-        = adoptEdgesAux auxGraph list node areIngoingEdges
+adoptEdgesAux :: Node -> Bool -> LEdge DGLinkLab -> LEdge DGLinkLab
+adoptEdgesAux node areIngoingEdges (src,tgt,edgelab) =
+  let (newSrc,newTgt) = if src == tgt then (node, node) else (src, tgt)
+  in if areIngoingEdges then (newSrc, node, edgelab)
+     else (node, newTgt, edgelab)
 
 {- | adjusts a node whose label is changed -}
-adjustNode :: DGraph -> (Node,DGNodeLab) -> DGNodeLab -> (DGraph, [DGChange])
+adjustNode :: DGraph -> (Node, DGNodeLab) -> DGNodeLab -> (DGraph, [DGChange])
 adjustNode dgraph (node,oldLab) newLab =
-  let es = nub (inn dgraph node ++ out dgraph node)
-      changes = map DeleteEdge es ++ [DeleteNode (node,oldLab)]
-                ++ [InsertNode (node,newLab)] ++ map InsertEdge es
-      newDgraph = insEdges es $ insNode (node,newLab) $
-                  delNode node $ dgraph
-   in (newDgraph,changes)
+  let es = inn dgraph node ++ out dgraph node
+      changes = map DeleteEdge es ++ [DeleteNode (node, oldLab),
+                InsertNode (node, newLab)] ++ map InsertEdge es
+   in (changesDG dgraph changes, changes)
