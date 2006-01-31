@@ -41,13 +41,18 @@ instance Graph Gr where
   labEdges  (Gr g) =
       concatMap (\(v,(_,_,s))->map (\(l,w)->(v,w,l)) s) (Map.toList g)
 
+{- self edges are only stored as successors and thus are not
+considered as ingoing edges! -}
+
 instance DynGraph Gr where
   (p,v,l,s) & (Gr g) | Map.member v g =
                          error ("Node Exception, Node: "++show v)
                      | otherwise  = Gr g3
-      where g1 = Map.insert v (p,l,s) g
-            g2 = updAdj g1 p (addSucc v)
-            g3 = updAdj g2 s (addPred v)
+      where s' = filter ((/=v).snd) s
+            p' = filter ((/=v).snd) p
+            g1 = Map.insert v (p', l, s) g
+            g2 = updAdj g1 p' (addSucc v)
+            g3 = updAdj g2 s' (addPred v)
 
 ----------------------------------------------------------------------
 -- UTILITIES
