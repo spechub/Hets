@@ -317,7 +317,7 @@ data Style
 
 -- | The default style (@mode=PageMode, lineLength=80, ribbonsPerLine=1.19@)
 style :: Style
-style = Style { lineLength = 8, ribbonsPerLine = 1.19, mode = PageMode }
+style = Style { lineLength = 80, ribbonsPerLine = 1.19, mode = PageMode }
 -- maximum line length 80 with 67 printable chars (up to 13 indentation chars)
 
 -- | Rendering mode
