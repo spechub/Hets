@@ -41,18 +41,13 @@ instance Graph Gr where
   labEdges  (Gr g) =
       concatMap (\(v,(_,_,s))->map (\(l,w)->(v,w,l)) s) (Map.toList g)
 
-{- self edges are only stored as successors and thus are not
-considered as ingoing edges! -}
-
 instance DynGraph Gr where
   (p,v,l,s) & (Gr g) | Map.member v g =
                          error ("Node Exception, Node: "++show v)
                      | otherwise  = Gr g3
-      where s' = filter ((/=v).snd) s
-            p' = filter ((/=v).snd) p
-            g1 = Map.insert v (p', l, s) g
-            g2 = updAdj g1 p' (addSucc v)
-            g3 = updAdj g2 s' (addPred v)
+      where g1 = Map.insert v (p, l, s) g
+            g2 = updAdj g1 p (addSucc v)
+            g3 = updAdj g2 s (addPred v)
 
 ----------------------------------------------------------------------
 -- UTILITIES
@@ -63,6 +58,9 @@ showGraph gr = unlines $ map (\ (v,(_,l',s)) ->
                            show v ++ ":" ++ show l' ++ " ->" ++ show s)
                 $ Map.toList gr
 
+{- here cyclic edges are omitted as predecessors, thus they only count
+as outgoing and not as ingoing! Therefore it is enough that only
+successors are filtered during deletions. -}
 matchGr :: Node -> Gr a b -> Decomp Gr a b
 matchGr v (Gr g) =
       case Map.lookup v g of
