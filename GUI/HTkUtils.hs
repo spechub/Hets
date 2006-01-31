@@ -160,10 +160,10 @@ populateGoalsListBox lb v = do
 -- | Converts a 'Logic.Prover.Proof_status' into a 'LBStatusIndicator'
 indicatorFromProof_status :: Proof_status a
                           -> LBStatusIndicator
-indicatorFromProof_status st = case st of
-  Proved _ _ _ _ _ -> LBIndicatorProved
-  Disproved _ -> LBIndicatorDisproved
-  _ -> LBIndicatorOpen
+indicatorFromProof_status st = case goalStatus st of
+  Proved    -> LBIndicatorProved
+  Disproved -> LBIndicatorDisproved
+  Open      -> LBIndicatorOpen
 
 -- | Converts a 'BasicProof' into a 'LBStatusIndicator'
 indicatorFromBasicProof :: BasicProof

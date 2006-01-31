@@ -147,7 +147,12 @@ isTimeLimitExceeded _ = False
 type SPASSResult = (Proof_status (), [String])
 
 openResult :: String -> SPASSResult 
-openResult n = (Open n,[])
+openResult n = (openSPASSProof_status n,[])
+
+openSPASSProof_status :: String -> Proof_status ()
+openSPASSProof_status n =
+    ((openProof_status n (prover_name spassProver))::Proof_status ()) 
+    {proofTree = ()}
 
 -- * GUI Prover
 
@@ -262,13 +267,6 @@ initialState th =
           nSens = prepareSenNames transSenName oSens'
           (axioms, goals) = partition AS_Anno.isAxiom nSens
 
-{- |
-  Helper function to check if a goal has been proved.
--}
-isProved :: (Proof_status a) -> Bool
-isProved (Proved _ _ _ _ _) = True
-isProved _ = False
-
 -- ** Defining the view
 
 {- |
@@ -327,12 +325,12 @@ statusRunning = (Blue, "Running")
 toGuiStatus :: SPASSConfig -- ^ current prover configuration
             -> (Proof_status a) -- ^ status to convert
             -> (ProofStatusColour, String)
-toGuiStatus cf st = case st of
-  Proved _ _ _ _ _ -> statusProved
-  Disproved _ -> statusDisproved
-  _ -> if timeLimitExceeded cf
-         then statusOpenTExceeded
-         else statusOpen
+toGuiStatus cf st = case goalStatus st of
+  Proved    -> statusProved
+  Disproved -> statusDisproved
+  _         -> if timeLimitExceeded cf
+               then statusOpenTExceeded
+               else statusOpen
 
 {-| stores widgets of an options frame and the frame itself -}
 data OpFrame = OpFrame { of_Frame :: Frame
@@ -343,9 +341,9 @@ data OpFrame = OpFrame { of_Frame :: Frame
 
 filterOpenGoals :: SPASSResultsMap -> SPASSResultsMap
 filterOpenGoals = Map.filter isOpenGoal 
-    where isOpenGoal (st,_) = case st of
-                              Open _ -> True
-                              _ -> False
+    where isOpenGoal (st,_) = case goalStatus st of
+                              Open -> True
+                              _    -> False
 
 
 {- |
@@ -456,11 +454,7 @@ updateDisplay st updateLb goalsLb statusLabel timeEntry optionsEntry axiomsLb = 
                    (color, label) = maybe statusOpen
                                     ((toGuiStatus cf) . fst)
                                     mprfst
-                   usedAxs = maybe []
-                             (\s -> case (fst s) of
-                                       Proved _ xs _ _ _ -> xs
-                                       _ -> [])
-                             mprfst
+                   usedAxs = maybe [] (usedAxioms . fst) mprfst
 
                in do 
                 statusLabel # text label
@@ -926,7 +920,7 @@ spassProveGUI thName th = do
                                    pStat = fst $ fromJust res
                                in if isJust res 
                                   then transNames (namesMap s) pStat
-                                  else Open g') 
+                                  else openSPASSProof_status g') 
                     (map AS_Anno.senName $ goalsList s)
   return proof_stats
   where
@@ -965,13 +959,10 @@ spassProveGUI thName th = do
                              shows r . (++) ",\n     \"" .
                              (++) (unlines outp) . (++) "\")\n" . resF) id 
                     (Map.toList mp)) "}" 
-    transNames nm pStat = case pStat of
-                          Open x1 -> Open $ trN x1
-                          Disproved x1 -> Disproved $ trN x1
-                          st@(Proved n uas _ _ _) ->     
-                              st { goalName = trN n
-                                 , usedAxioms = foldr (fil (trN n)) [] uas}
-                          _ -> error "No consitency yet"
+    transNames nm pStat = 
+        pStat { goalName = trN $ goalName pStat
+              , usedAxioms = foldr (fil $ trN $ goalName pStat) [] $ 
+                             usedAxioms pStat }
         where trN x' = Map.findWithDefault 
                         (error ("Lookup of name failed: (2) "++
                                 "should not happen \""++x'++"\""))
@@ -1014,7 +1005,7 @@ getBatchTimeLimit = do
 -}
 checkGoal :: SPASSResultsMap -> SPIdentifier -> Bool
 checkGoal resMap goal =
-  isJust g && isProved (fst $ fromJust g)
+  isJust g && isProvedStat (fst $ fromJust g)
   where
     g = Map.lookup goal resMap
 
@@ -1049,7 +1040,7 @@ spassProveBatch tLimit extraOptions inclProvedThs f thName st =
     openGoals = filterOpenGoals (resultsMap st)
 
     addToLP g res lp = 
-        if isProved res && inclProvedThs
+        if isProvedStat res && inclProvedThs
         then insertSentence lp (g{AS_Anno.isAxiom = True})
         else lp
     batchProve _ _ resDone [] = return (reverse resDone)
@@ -1071,7 +1062,8 @@ spassProveBatch tLimit extraOptions inclProvedThs f thName st =
         -- recursion in that case
         case err of
           SpassError _ -> return ((reverse (res:resDone)) ++ 
-                                  (map (Open . AS_Anno.senName) gs))
+                                  (map (openSPASSProof_status . 
+                                         AS_Anno.senName) gs))
           _ -> do
                -- add proved goals as axioms
               let lp' = addToLP g res lp
@@ -1080,7 +1072,8 @@ spassProveBatch tLimit extraOptions inclProvedThs f thName st =
               if cont
                  then batchProve lp' goalsProcessedSoFar' (res:resDone) gs
                  else return ((reverse (res:resDone)) ++ 
-                              (map (Open . AS_Anno.senName) gs))
+                              (map (openSPASSProof_status .
+                                             AS_Anno.senName) gs))
       else batchProve (addToLP g (fst $ 
                                   Map.findWithDefault (openResult gName) 
                                      gName $ resultsMap st)
@@ -1168,7 +1161,7 @@ runSpass :: SPLogicalPart -- ^ logical part containing the input Sign and axioms
 runSpass lp cfg thName nGoal = do
   putStrLn ("running 'SPASS" ++ (concatMap (' ':) allOptions) ++ "'")
   spass <- newChildProcess "SPASS" [ChildProcess.arguments allOptions]
-  Exception.catch (runSpassReal spass nGoal)
+  Exception.catch (runSpassReal spass)
     (\ excep -> do
       -- kill spass process
       destroy spass
@@ -1179,16 +1172,18 @@ runSpass lp cfg thName nGoal = do
                 Exception.IOException e -> 
                     (SpassError ("Internal error communicating "++
                                  "with SPASS.\n"++show e),
-                                (Open (AS_Anno.senName nGoal), []))
+                                (openResult $ AS_Anno.senName nGoal))
                 _ -> (SpassError ("Error running SPASS.\n"++show excep), 
-                        (Open (AS_Anno.senName nGoal), []))))
+                        (openResult $ AS_Anno.senName nGoal))))
 
   where
-    runSpassReal spass namedGoal = do
+    runSpassReal spass = do
       -- check if SPASS is running
       e <- getToolStatus spass
       if isJust e
-        then return (SpassError "Could not start SPASS. Is SPASS in your $PATH?", (Open (AS_Anno.senName namedGoal), []))
+        then return 
+                 (SpassError "Could not start SPASS. Is SPASS in your $PATH?", 
+                  (openResult $ AS_Anno.senName nGoal))
         else do
           prob <- genSPASSProblem thName lp nGoal
           sendMsg spass prob
@@ -1204,17 +1199,25 @@ runSpass lp cfg thName nGoal = do
                -- this is OK. the batch prover always has the time limit set
                else guiDefaultTimeLimit
     allOptions = cleanOptions ++ ["-DocProof", "-Stdin", "-TimeLimit=" ++ (show tLimit)]
+    defaultProof_status opts = 
+        (openSPASSProof_status (AS_Anno.senName nGoal))
+        {tacticScript = Tactic_script $ concatMap (' ':) opts}
 
     proof_status res usedAxs options
       | isJust res && elem (fromJust res) proved =
-          (SpassSuccess, Proved (AS_Anno.senName nGoal) usedAxs "SPASS" () (Tactic_script (concatMap (' ':) options)))
+          (SpassSuccess,
+           (defaultProof_status options)
+           { goalStatus = Proved
+           , goalUsedInProof = elem (AS_Anno.senName nGoal) usedAxs
+           , usedAxioms = filter (/=(AS_Anno.senName nGoal)) usedAxs })
       | isJust res && elem (fromJust res) disproved =
-          (SpassSuccess, Disproved (AS_Anno.senName nGoal))
+          (SpassSuccess,  
+           (defaultProof_status options) { goalStatus = Disproved } )
       | isJust res && elem (fromJust res) timelimit =
-          (SpassTLimitExceeded, Open (AS_Anno.senName nGoal))
+          (SpassTLimitExceeded, defaultProof_status options)
       | isNothing res =
-          (SpassError "Internal error.", Open (AS_Anno.senName nGoal))
-      | otherwise = (SpassSuccess, Open (AS_Anno.senName nGoal))
+          (SpassError "Internal error.", defaultProof_status options)
+      | otherwise = (SpassSuccess, defaultProof_status options)
     proved = ["Proof found."]
     disproved = ["Completion found."]
     timelimit = ["Ran out of time."]

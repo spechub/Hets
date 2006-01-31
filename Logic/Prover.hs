@@ -139,18 +139,43 @@ data TheoryMorphism sign sen mor proof_tree = TheoryMorphism
 -- e.g. the file name, or the script itself, or a configuration string
 data Tactic_script = Tactic_script String deriving (Eq, Ord, Show)
 
-data Proof_status proof_tree =
-                        Open { goalName :: String }
-                      | Disproved { goalName :: String }
-                      | Proved { goalName :: String,
-                                 usedAxioms :: [String],
-                                 -- used axioms or theorems or goals
-                                 proverName :: String, -- name of prover
-                                 proofTree :: proof_tree,
-                                 tacticScript :: Tactic_script }
-                      | Consistent Tactic_script
-     deriving Show
+-- | enumeration type representing the status of a goal
+data GoalStatus = Open 
+                | Disproved
+                | Proved
+     deriving (Show,Eq,Ord)
 
+-- | data type representing the proof status for a goal or 
+data Proof_status proof_tree =
+       Proof_status { goalName :: String
+                    , goalStatus :: GoalStatus
+                    , usedAxioms :: [String] -- ^ used axioms 
+                    , goalUsedInProof :: Bool
+                      -- ^ useful for automated theorem provers like SPASS
+                      -- Isabelle should set it to True
+                    , proverName :: String -- ^ name of prover
+                    , proofTree :: proof_tree
+                    , tacticScript :: Tactic_script }
+     | Consistent Tactic_script
+     deriving (Show,Eq,Ord)
+
+-- | constructs a open proof status with basic information filled in;
+-- make sure to set proofTree to a useful value before you access it, because 
+-- its default value is 'undefined'
+openProof_status :: Ord pt => 
+                    String -- ^ name of the goal
+                 -> String -- ^ name of the prover
+                 -> Proof_status pt
+openProof_status goalname provername =
+    Proof_status { goalName = goalname
+                 , goalStatus = Open
+                 , usedAxioms = []
+                 , goalUsedInProof = False
+                 , proverName = provername
+                 , proofTree = undefined
+                 , tacticScript = Tactic_script "" }
+
+{-
 instance Eq a => Ord (Proof_status a) where
     Open _ <= _ = True
     Disproved _ <= x = case x of
@@ -164,10 +189,12 @@ instance Eq a => Ord (Proof_status a) where
 -- Ord instance must match Eq instance!
 instance Eq a => Eq (Proof_status a) where
     a == b = compare a b == EQ
+-}
 
 isProvedStat :: Proof_status proof_tree -> Bool
-isProvedStat (Proved _ _ _ _ _) = True
-isProvedStat _ = False
+isProvedStat pst = case pst of
+                   Consistent _ -> False
+                   _ -> (== Proved) . goalStatus $ pst
 
 -- | prover or consistency checker
 data ProverTemplate goal proof_tree = Prover

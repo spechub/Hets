@@ -13,6 +13,7 @@ Interface for Isabelle theorem prover.
 {-
   todo: thy files in subdir, check of legal changes in thy file
    consistency check
+   check if goalUsedInProof is can be derived from isabelle's proof tree
 
   Interface between Isabelle and Hets:
    Hets writes Isabelle .thy file and starts Isabelle
@@ -64,6 +65,11 @@ isabelleConsChecker =
               prover_sublogic = isabelleS,
               prove = consCheck }
 
+openIsaProof_status :: String -> Proof_status ()
+openIsaProof_status n =
+    ((openProof_status n (prover_name isabelleProver))::Proof_status ()) 
+    {proofTree = ()}
+
 -- | the name of the inconsistent lemma for consistency checks
 inconsistentS :: String
 inconsistentS = "inconsistent"
@@ -107,10 +113,10 @@ getProofDeps m thName thm = do
     b <- checkInFile file
     if b then do
         s <- readFile file
-        if null s then return $ Open $ mapN thm
+        if null s then return $ openIsaProof_status $ mapN thm
            else let l = filter (not . null) $ map strip $ lines s
                 in return $ mkProved (mapN thm) $ map mapN l
-      else return $ Open $ mapN thm
+      else return $ openIsaProof_status $ mapN thm
 
 getAllProofDeps :: Map.Map String String -> String -> [String]
                 -> IO([Proof_status ()])
@@ -130,11 +136,10 @@ checkFinalThyFile (ho, bo) thyFile = do
     Left err -> putStrLn (show err) >> return False
 
 mkProved :: String -> [String] -> Proof_status ()
-mkProved thm used = Proved
-    { goalName = thm
+mkProved thm used = (openIsaProof_status thm)
+    { goalStatus = Proved
     , usedAxioms = used
-    , proverName = isabelleS
-    , proofTree = ()
+    , goalUsedInProof = True 
     , tacticScript = Tactic_script "unknown isabelle user input"
     }
 

@@ -155,7 +155,7 @@ class (Category lid sign morphism, Ord sentence,
        PrintTypeConv sign, PrintTypeConv morphism,
        PrintTypeConv sentence, PrintTypeConv symbol,
        Eq proof_tree, Show proof_tree, ShATermConvertible proof_tree,
-       Typeable proof_tree)
+       Ord proof_tree, Typeable proof_tree)
     => Sentences lid sentence proof_tree sign morphism symbol
         | lid -> sentence proof_tree sign morphism symbol
       where

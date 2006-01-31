@@ -273,22 +273,18 @@ doShowProofDetails s@(ProofGUIState { theoryName = thName}) =
               Pretty.nest 4 (printBP bp)
           printBP bp = case bp of
                        DevGraph.BasicProof _ ps -> 
-                           case ps of
-                           Open _ -> stat "Open"
-                           Disproved _ -> stat "Disproved"
-                           Proved _ uaxs pr _ _ -> 
-                               stat "Proved" 
-                               Pretty.$$ Pretty.text "Used axioms:" Pretty.<+> 
-                               Pretty.fsep (Pretty.punctuate 
-                                                  Pretty.comma
-                                                  (map (Pretty.text 
-                                                        . show) 
-                                                       uaxs)) 
-                               Pretty.$$ Pretty.text "Prover:" Pretty.<+> 
-                               Pretty.text pr
-                           Consistent _ -> -- has no meaning here and 
-                                           -- is ignored therefore
-                                           Pretty.empty
+                        (case goalStatus ps of
+                         Open -> stat "Open"
+                         Disproved -> stat "Disproved"
+                         Proved -> 
+                           stat "Proved" Pretty.$$ 
+                           Pretty.hang (Pretty.text "Used axioms:") 13
+                                  (Pretty.fsep (Pretty.punctuate 
+                                                     Pretty.comma 
+                                               (map (Pretty.text . show) $
+                                                   usedAxioms ps))))
+                        Pretty.$$ Pretty.text "Prover:" Pretty.<+> 
+                              Pretty.text (proverName ps)
                        otherProof -> stat (show otherProof)
 
 
@@ -589,8 +585,8 @@ proofManagementGUI lid proveF fineGrainedSelectionF
                         then True
                         else case maximum $ map snd $ thst of
                              DevGraph.BasicProof _ pst -> 
-                                 case pst of
-                                 Open _ -> True
+                                 case goalStatus pst of
+                                 Open -> True
                                  _ -> False
                              _ -> False
              mapM_ (\ i -> selection i lb) 

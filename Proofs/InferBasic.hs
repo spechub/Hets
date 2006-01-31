@@ -256,8 +256,8 @@ callProver st (G_prover lid4 p, Comorphism cid) =
                     }
     where provedOrDisproved allSentencesIncluded senStat =
               isProvedStat senStat ||
-             (allSentencesIncluded && case senStat of
-                                      Disproved _ -> True
+             (allSentencesIncluded && case goalStatus senStat of
+                                      Disproved -> True
                                       _ -> False)
 
 proveFineGrainedSelect ::

@@ -619,9 +619,8 @@ type HetSenStatus a = SenStatus a (AnyComorphism,BasicProof)
 
 isProvenSenStatus :: HetSenStatus a -> Bool
 isProvenSenStatus = any isProvenSenStatusAux . thmStatus
-  where isProvenSenStatusAux (_,BasicProof _ (Proved _ _ _ _ _)) = True
+  where isProvenSenStatusAux (_,BasicProof _ pst) = isProvedStat pst
         isProvenSenStatusAux _ = False
-
 -- * Grothendieck theories
 
 -- | Grothendieck theories
