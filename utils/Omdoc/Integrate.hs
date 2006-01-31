@@ -3842,10 +3842,10 @@ findFile file include =
 					Nothing -> return Nothing
 					(Just (f,_)) -> return (Just f)
 					
-getDirContentOrFailGracefully::FilePath->IO [FilePath]
-getDirContentOrFailGracefully fp =
+getDirContentsOrFailGracefully::FilePath->IO [FilePath]
+getDirContentsOrFailGracefully dir =
 	System.IO.Error.catch
-		(System.Directory.getDirectoryContents fp)
+		(System.Directory.getDirectoryContents dir >>= mapM (\n -> return $ dir ++ "/" ++ n))
 		(\_ -> return [])
 		
 filterFiles::[FilePath]->IO [FilePath]
@@ -3856,6 +3856,59 @@ filterFiles list =
 			(\_ -> return False)
 		)
 		list
+
+-- try to find an Omdoc-Lib by Name (xml:id) searchin given paths		
+findOmdocLib::String->[FilePath]->IO (Maybe FilePath)
+findOmdocLib libname [] = return Nothing
+findOmdocLib libname (dir:searchpath) =
+		do
+			files <- getDirContentsOrFailGracefully dir >>= filterFiles
+			targets <- return $
+				filter
+					(\f -> 
+						(Data.List.isSuffixOf ".omdoc" f)
+							|| (Data.List.isSuffixOf ".xml" f)
+					)
+					files
+			res <- findFirstMatch
+					(==libname)
+					(\f ->
+						System.IO.Error.catch
+							(loadOmdoc (f) >>= \omdoc -> return (getOmdocID omdoc))
+							(\_ -> return f)
+					)
+					targets
+			if (res==Nothing)
+				then
+					findOmdocLib libname searchpath
+				else
+					return res
+					
+findOmdocLibExt::String->[FilePath]->IO (Maybe FilePath)
+findOmdocLibExt libname searchpaths =
+	let
+		parts = explode "/" libname
+		subdirs = init parts
+		singlesub = implode "/" subdirs
+		lib = last parts
+		msearch = map (\f -> f ++ "/" ++ singlesub) searchpaths
+	in
+		findOmdocLib lib (Debug.Trace.trace ("msp : " ++ (show msearch)) msearch)
+		
+	
+findFirstMatch::(Monad m)=>(a->Bool)->(b->m a)->[b]->(m (Maybe b))
+findFirstMatch _ _ [] = return Nothing
+findFirstMatch
+	check
+	compute
+	(i:items) =
+		do
+			r <- compute i
+			if check r
+				then
+					return (Just i)
+				else
+					findFirstMatch check compute items
 					
 -- | creates an import graph for an omdoc-file.
 -- you can specify a list of directories to look for files in
