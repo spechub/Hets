@@ -100,9 +100,9 @@ instance PrettyPrint Axiom where
 	DisjointClasses desc1 desc2 _ ->   -- description list is ignored (always empty)
 	   parens ((text "forall ((x owl:Thing))") <+>
                     parens ((text "not") <+> parens ((text "and") <+>
-                    parens ((printDescription ga 0 emptyQN desc1) <+>
-                     (text "x")) <+> 
-                     parens ((printDescription ga 0 emptyQN desc2) <+> (text "x")))))
+                    (printDescription ga 0 emptyQN desc1) <+>
+                     (text "x") <+> 
+                     (printDescription ga 0 emptyQN desc2) <+> (text "x"))))
 
 	EquivalentClasses desc1 descs ->  
          foldListToDocV ga 
@@ -111,9 +111,9 @@ instance PrettyPrint Axiom where
 	  DC cid2 ->
 	    parens ((text "forall ((x owl:Thing))") <+> 
                     parens (text "iff" <> 
-                    parens ((printDescription ga 0 emptyQN x) <+> 
-                    (text "x")) <+> parens ((printText0 ga cid2) <+> 
-                    (text "x"))))	
+                    (printDescription ga 0 emptyQN x) <+> 
+                    (text "x") <+> (printText0 ga cid2) <+> 
+                    (text "x")))
 	  _      -> 
 	      case x of
 	        DC cid1 ->
@@ -125,25 +125,24 @@ instance PrettyPrint Axiom where
 	    printText0 ga dID
 	DEquivalentProperties dpID1 dpID2 _ ->
 	    parens ((text "forall ((x owl:Thing) (y owl:Thing))") <+> 
-                     parens ((text "iff") <> parens ((printText0 ga dpID1) <+>
-                     (text "x y")) <+> parens ((printText0 ga dpID2) <+>
-			                       (text "x y"))))	
+                     parens ((text "iff") <> (printText0 ga dpID1) <+>
+                     (text "x y") <+> (printText0 ga dpID2) <+>
+			                       (text "x y")))	
 	IEquivalentProperties ipID1 ipID2 _ ->
 	    parens ((text "forall ((x owl:Thing) (y owl:Thing))") <+> 
-                    parens ((text "iff") <> parens ((printText0 ga ipID1) <+>
-			(text "x y")) <+> parens ((printText0 ga ipID2) <+>
-			(text "x y"))))	
-
+                    parens ((text "iff") <> (printText0 ga ipID1) <+>
+			(text "x y") <+> (printText0 ga ipID2) <+>
+			(text "x y")))	
 	DSubPropertyOf dpID1 dpID2 ->
 	    parens ((text "forall ((x owl:Thing) (y rdfs:Lilteral))") <+> 
-                    parens ((text "implies") <> 
+                    parens ((text "implies") <+> 
                             parens ((printText0 ga dpID1) <+>
 			            (text "x y")) <+> 
                             parens ((printText0 ga dpID2) <+>
 			            (text "x y"))))	
 	ISubPropertyOf ipID1 ipID2 ->
 	    parens ((text "forall ((x owl:Thing) (y owl:Thing))") <+> 
-                    parens ((text "implies") <> 
+                    parens ((text "implies") <+> 
                             parens ((printText0 ga ipID1) <+>
 			            (text "x y")) <+> 
                             parens ((printText0 ga ipID2) <+>
@@ -151,7 +150,7 @@ instance PrettyPrint Axiom where
 	ObjectProperty iid _ _ _ maybeInverse isSymmetric maybeFunc _ _ ->
 	    case maybeInverse of
 	    Just pid -> parens ((text "forall ((x owl:Thing) (y owl:Thing))") 
-                                <+>  parens ((text "iff") <> 
+                                <+>  parens ((text "iff") <+> 
                                              parens ((printText0 ga iid) <+>
 			                             (text "x y")) <+> 
                                              parens ((printText0 ga pid) <+>
@@ -172,19 +171,19 @@ instance PrettyPrint Axiom where
                            parens ((text "forall ((x owl:Thing) (y owl:Thing) (z owl:Thing))") <+>  
                              parens ((text "implies") $+$ 
                                      (nest 2 (parens ((text "and") <+> 
-                                              parens ((printText0 ga iid) <+>
-			                             (text "y z")) $+$ 
-                                               parens ((printText0 ga iid) <+>
-			                             (text "z x"))))) $+$
+                                              (printText0 ga iid) <+>
+			                             (text "y z") $+$ 
+                                               (printText0 ga iid) <+>
+			                             (text "z x")))) $+$
                                      (nest 2 $ parens (text "= y z"))))
                          Just Transitive ->  
                            parens ((text "forall ((x owl:Thing) (y owl:Thing) (z owl:Thing))") <+>  
                              parens ((text "implies") $+$ 
                                      (nest 2 (parens ((text "and") <+> 
-                                       parens ((printText0 ga iid) <+>
-			                       (text "x y")) $+$ 
-                                       (nest 4 $ parens((printText0 ga iid)<+>
-			                             (text "y z"))))) $+$
+                                       (printText0 ga iid) <+>
+			                       (text "x y") $+$ 
+                                       (nest 4 $ (printText0 ga iid)<+>
+			                             (text "y z")))) $+$
                                      (nest 4 $ parens ((printText0 ga iid) <+> 
                                                        (text "x z"))))))
 			 _  -> text "" 
@@ -196,15 +195,15 @@ instance PrettyPrint SignAxiom where
 	Subconcept cid1 cid2 -> 
             parens (text "forall ((x owl:Thing))" <+> 
                     parens (text "implies" <+>
-                            (parens (printText0 ga cid1 <+> text "x") <+>
-                             parens (printText0 ga cid2) <+> text "x")))
+                            parens (printText0 ga cid1 <+> text "x") <+>
+                            parens (printText0 ga cid2 <+> text "x")))
  	RoleDomain rid rdomains ->
 	    foldListToDocH ga  
 	    (\x y -> parens ((text "forall ((x owl:Thing) (y owl:Thing))") $+$
                              (nest 2 $ parens ((text "implies") <+> 
-                                               (parens ((printText0 ga x) <+> 
+                                               parens ((printText0 ga x) <+> 
                                                         (text "x y")) <+> 
-                                                (parens (printText0 ga y))))))
+                                               parens (printText0 ga y))))
             ) rid rdomains
 	RoleRange rid rranges -> 
  --        if null rranges then text ""
@@ -318,7 +317,7 @@ instance PrettyPrint Fact where
         DifferentIndividuals iid1 iid2 iids -> 
             parens ((text "forall ((x owl:Thing))") $+$
                     (nest 2 $ parens ((text "or") <+> 
-                                      (parens (foldListToDocH ga (form2 ga 0) emptyQN (iid1:iid2:iids)))))) $+$
+                                      (foldListToDocH ga (form2 ga 0) emptyQN (iid1:iid2:iids))))) $+$
             brackets (text "ALLDEFFERENT" <+> (foldListToDocH ga (form3 ga) emptyQN (iid1:iid2:iids)))
         Indiv individual -> printText0 ga individual
 
@@ -338,10 +337,9 @@ instance PrettyPrint Individual where
                    <+> printText0 ga indivID) $+$
                    printIndividual iid' tv level
                ValueIndiv pid indiv ->
-                parens ( 
                  (if level == -1 then
                      printIntIndiv iid' pid indiv 0
-                     else printIntIndiv iid' pid indiv level))
+                     else printIntIndiv iid' pid indiv level)
                    $+$ (printIndividual iid' tv 
                         (if level < 0 then 0 else level))
                ValueDL pid dl ->
@@ -369,7 +367,7 @@ instance PrettyPrint Individual where
                        $+$ (nest 2 $ parens ((text "and") <+> 
                   -- (propertyID individualID x)
                   (parens ((printText0 ga ipID) <+> 
-                      (printText0 ga iid') <+> (text $ choiceName level))) $+$ 
+                      (printText0 ga iid') <+> (text $ choiceName level)) $+$ 
                   -- className (type)
                   (nest 4 $ (foldListToDocV ga 
                    (\x y -> case x of 
@@ -378,7 +376,7 @@ instance PrettyPrint Individual where
                          (text str))) (simpleQN $ choiceName level) 
                                    (reverse typesI))) $+$
                   -- values
-                  (nest 4 $ printIndividual (Just $ simpleQN $ choiceName level) valuesI (level+1)))))
+                  (nest 4 $ printIndividual (Just $ simpleQN $ choiceName level) valuesI (level+1))))))
        
 -- to show restrictions, descriptions and cardinalities need the id of classes
 -- or properties, so those are implemented not in PrettyPrint. 
@@ -433,7 +431,7 @@ printRestriction2 ga ipID (h:r) =
 	-- (text "(forall ((x owl:Thing)) ") $+$
 	-- (nest 2 $ text "(restriction x)") $+$
 	parens ((text "exists (y owl:Thing)") <+> 
-                parens ((text "and") <> parens ((printText0 ga ipID) <+>
+                parens ((text "and") <+> parens ((printText0 ga ipID) <+>
 	                                            (text "x y")) <+> 
                         parens ((printDescription ga 0 ipID desc) <+> 
                                 (text "y")))) $+$
@@ -509,7 +507,7 @@ printCard ga pid card =
 	(nest 4 $ text "(") <> (printText0 ga pid) <+> (text "x z)") $+$
 	(nest 4 $ text "((= z x1))") $+$
 	(nest 2 $ text "))") $+$
-	(text ")))")
+	(text "))")
 
 printDescription :: GlobalAnnos -> Int -> URIreference -> Description -> Doc
 printDescription ga level iD desc =
@@ -518,43 +516,43 @@ printDescription ga level iD desc =
         DR restr -> printText0 ga restr
         UnionOf descs -> 
          if isEmptyQN iD then
-            parens ((text "or (") <> (foldListToDocH ga (form6 ga level) iD descs)
-                                        <> (char ')')) 
+            parens ((text "or") <+> (foldListToDocH ga (form6 ga level) iD descs))
+                                  --      <> (char ')')) 
            else
             -- (text "(forall ((x owl:Thing))") $+$
             (text "(iff (") <> (printText0 ga iD) <+> 
                                 (text (choiceName level ++ ")")) $+$
-            (nest 2 $ text "(or (") <> (foldListToDocH ga (form6 ga level) iD descs)
+            (nest 2 $ text "(or") <+> (foldListToDocH ga (form6 ga level) iD descs)
                                         $+$ -- <> (char ')') $+$
-            (text ")))") 
+            (text "))") 
         IntersectionOf descs -> 
          if isEmptyQN iD then
-            parens ((text "and (") <> 
-                    (foldListToDocH ga (form1 ga level) iD descs) <> (char ')')) 
+            parens ((text "and") <+> 
+                    (foldListToDocH ga (form1 ga level) iD descs)) -- <> (char ')')) 
            else
             -- (text "(forall ((x owl:Thing))") $+$
               (text "(iff (") <> (printText0 ga iD) <+> (text (choiceName level ++ ")"))
-              $+$ (nest 2 $ text "(and (") <> 
-              (foldListToDocH ga (form1 ga level) iD descs) <> (char ')')  $+$
+              $+$ (nest 2 $ text "(and") <+> 
+              (foldListToDocH ga (form1 ga level) iD descs) <> (char ')') $+$
               (text ")")
         ComplementOf desc1 ->
          if isEmptyQN iD then
-            parens ((text "not (") <> (printDescription ga level iD desc1) <+>
-                    (text (choiceName level ++ ")")))
+            parens ((text "not") <+> (printDescription ga level iD desc1) <+>
+                    (text (choiceName level )))
            else
             (text "(iff (") <> (printText0 ga iD) <+>
-                    ((text $ choiceName level) <> (text ") (not (")) <> (printDescription ga level iD desc1) <+>
-                    ((text $ choiceName level) <> (text ")))"))
+                    ((text $ choiceName level) <> (text ") (not")) <+> (printDescription ga level iD desc1) <+>
+                    ((text $ choiceName level) <> (text "))"))
         OneOfDes inds -> 
          if isEmptyQN iD then
-            parens ((text "or (") <> (foldListToDocH ga (form2 ga level) iD inds) 
-                                        <> (char ')'))             
+            parens ((text "or") <> (foldListToDocH ga (form2 ga level) iD inds)) 
+                                    --    <> (char ')'))             
            else
             -- (text "(forall ((x owl:Thing)) ") $+$
             (text "(iff (") <> (printText0 ga iD) <+> ((text $ choiceName level) <> (text ")")) $+$
-            (nest 2 $ text "(or (") <> (foldListToDocH ga (form2 ga level) iD inds) 
+            (nest 2 $ text "(or") <+> (foldListToDocH ga (form2 ga level) iD inds) 
                                         $+$ -- <> (char ')') $+$
-            (text ")))") 
+            (text "))") 
 
 -- form of pretty print 
 foldSetToDoc :: (PrettyPrint a) => GlobalAnnos -> Set.Set a -> Doc
