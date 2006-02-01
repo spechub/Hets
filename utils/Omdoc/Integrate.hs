@@ -192,7 +192,20 @@ writeOmdocDTD dtd' t f = HXT.run' $
 		writeableTreesDTD dtd' t
 
 -- | processing options for getopt		
-data PO = POInput String | POInputType String | POOutput String | POOutputType String | POShowGraph | POLib String | POSandbox String | POHelp | PODTDURI String | PODebug | PONewOutput | PODisableDTD
+data PO =
+	POInput String
+	| POInputType String
+	| POOutput String
+	| POOutputType String
+	| POShowGraph
+	| POLib String
+	| POSandbox String
+	| POHelp
+	| PODTDURI String
+	| PODebug
+	| PONewInput
+	| PONewOutput
+	| PODisableDTD
 		
 processingOptions::[GetOpt.OptDescr PO]
 processingOptions =
@@ -207,7 +220,8 @@ processingOptions =
 	, GetOpt.Option ['h'] ["help"] (GetOpt.NoArg POHelp) "print this info"
 	, GetOpt.Option ['d'] ["dtd-uri"] (GetOpt.ReqArg PODTDURI "DTDURI") "URI for OMDoc-DTD"
 	, GetOpt.Option [] ["debug"] (GetOpt.NoArg PODebug) "enable debugging-messages"
-	, GetOpt.Option ['n'] ["new-output"] (GetOpt.NoArg PONewOutput) "use new output (possibly buggy, no read-in-support yet)"
+	, GetOpt.Option ['n'] ["new-output"] (GetOpt.NoArg PONewOutput) "use new output (possibly buggy)"
+	, GetOpt.Option ['e'] ["new-input"] (GetOpt.NoArg PONewInput) "use new input (possibly buggy)"
 	, GetOpt.Option [] ["disable-dtd"] (GetOpt.NoArg PODisableDTD) "disable putting DTD-location in OMDoc-Output"
 	]
 	
@@ -262,10 +276,10 @@ instance Read FileType where
 type FileTypes = [FileType]
 	
 supportedInput::FileTypes
-supportedInput = [FTCASL, FTOMDoc, FTFullEnv, FTEnv]
+supportedInput = [FTCASL, FTOMDoc, FTEnv]
 
 supportedOutput::FileTypes
-supportedOutput = [FTOMDoc, FTEnv, FTFullEnv, FTNone]
+supportedOutput = [FTOMDoc, FTEnv, FTNone]
 
 -- | tries to determine the type of a file by its extension
 -- "-" and "none" lead to FTNone
@@ -334,6 +348,10 @@ main =
 			(\op -> case op of PODebug -> True; _ -> False)
 			options
 		debug <- return $ (case debugopts of [] -> False; _ -> True)
+		newinputopts <- return $ filter
+			(\op -> case op of PONewInput -> True; _ -> False)
+			options
+		newinput <- return $ (case newinputopts of [] -> False; _ -> True)
 		newoutputopts <- return $ filter
 			(\op -> case op of PONewOutput -> True; _ -> False)
 			options
@@ -434,10 +452,10 @@ main =
 						do
 						when debug (putStrLn ("Trying to load omdoc-file..."))
 						ig <- makeImportGraph input searchpath
-						when (newoutput && debug)
+						when (newinput && debug)
 							(putStrLn "Loading with new input-methods...")
 						(return $ dGraphGToLibEnv $ hybridGToDGraphG $
-							(if newoutput then processImportGraphXN else processImportGraph) ig)
+							(if newinput then processImportGraphXN else processImportGraph) ig)
 				FTCASL->
 						do
 						when debug (putStrLn ("Trying to load casl-file..."))
@@ -454,21 +472,26 @@ main =
 							(Just gc) -> return $ devGraph gc
 						return (ln' ,dg,lenv' )
 				FTEnv ->
-						-- currently environment processing is done in one
+						{- -- currently environment processing is done in one
 						-- section to handle full and non-full environments
-						-- this may change...
+						-- this may change... -}
+						-- disabled FullEnvironment-Support while integrating
+						-- Hets-based environment I/O. Will disappear likely...
 						do
 						when debug (putStrLn "Trying to load env-file...")
 						s <- readFile input
 						-- parse input for both variants (lazy)
-						(Result.Result _ menv) <-
+{-						(Result.Result _ menv) <-
 							return
 								((Hets.fromShATermString s)::(Result.Result (ASL.LIB_NAME, LibEnv)))
 						(Result.Result _ mgc) <-
 							return
-								((Hets.fromShATermString s)::(Result.Result GlobalContext))
+								((Hets.fromShATermString s)::(Result.Result GlobalContext)) -}
+						(Result.Result _ mlngc) <-
+							return
+								((Hets.fromShATermString s)::(Result.Result (ASL.LIB_NAME, GlobalContext)))
 						-- parser will use error if it is not it's type...
-						(Control.Exception.catch
+{-						(Control.Exception.catch
 							(
 								do
 								when
@@ -486,49 +509,50 @@ main =
 							)
 							(\_ ->
 								-- if the first parser triggers this exception
-								-- the next parser tries the other variant
-							  Control.Exception.catch
-								  (
-									do
-									when
-										debug
-										(putStr
-											"failed.\n...as globalcontext...")
-									(return mgc) >>= \x -> case x of
-										(Just gc) ->
-												do
-													lname <-
-														return
-															(fileToLibName Hets.dho input)
-													 -- evaluate to trigger error
-													_ <-
-														return $! Graph.nodes $!
-															(devGraph gc)
-													return
-														(lname,
-														(devGraph gc),
-														(Map.fromList
-															[(lname, gc)]
-															)
-														)
-										Nothing -> error "Error processing environment..."
-									)
-								  (\_ ->
-								  	-- if this exception is triggered, no parser
-									-- was able to process the file...
-								  	when
-										debug
-										(putStrLn "failed.")
-									>> ioError
-										(userError
-											"Unable to process env-file..."
-										)
-									)
-							)) >>= \e -> -- one of the parsers succeeded
+								-- the next parser tries the other variant -}
+						r <- (Control.Exception.catch
+							(
+							do
+{-									when
+								debug
+								(putStr
+									"...as globalcontext...") -}
+							(return mlngc) >>= \x -> case x of
+								(Just (ln,gc)) ->
+										do
+											{-lname <-
+												return
+													(fileToLibName Hets.dho input) -}
+											 -- evaluate to trigger error
+											_ <-
+												return $! Graph.nodes $!
+													(devGraph gc)
+											return
+												(ln, --lname,
+												(devGraph gc),
+												(Map.fromList
+													[(ln, gc)]
+													)
+												)
+								Nothing -> error "Error processing environment..."
+							)
+							(\_ ->
+								-- if this exception is triggered, no parser
+							-- was able to process the file...
+								when
+								debug
+								(putStrLn "failed.")
+							>> ioError
+								(userError
+									"Unable to process env-file..."
+								)
+							)
+							) >>= \e -> -- one of the parsers succeeded
 								when
 									debug
-									(putStrLn "success.")
-								>> return e 
+									(putStrLn "...success.")
+								>> return e
+						return r
 				_ -> -- no input (?)
 						do
 						ioError (userError "No input to process...")
@@ -557,17 +581,17 @@ main =
 									writeXmlG dtduri igx sandbox
 			FTEnv -> -- on output separate functions are used for environment
 				do
-				when debug (putStrLn ("Outputting GlobalContext..."))
+				when debug (putStrLn ("Outputting Environment..."))
 				ga <- case Map.lookup ln lenv of
 					Nothing -> ioError (userError "Lookup failed...")
 					(Just ga' ) -> return ga'
 				case output of
 					"" -> return ()
 					"-" ->
-						Hets.toShATermString ga >>= putStrLn
+						Hets.toShATermString (ln,ga) >>= putStrLn
 					_ ->
-						Hets.writeShATermFile output ga
-			FTFullEnv ->
+						Hets.writeShATermFileSDoc output (ln,ga)
+			{-FTFullEnv ->
 				do
 				when debug (putStrLn ("Outputting Full Environment..."))
 				case output of
@@ -575,7 +599,7 @@ main =
 					"-" ->
 						Hets.toShATermString (ln,lenv) >>= putStrLn
 					_ ->
-						Hets.writeShATermFile output (ln,lenv)
+						Hets.writeShATermFile output (ln,lenv)-}
 			_ ->
 				return ()
 		return ()
