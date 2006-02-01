@@ -93,16 +93,16 @@ instance PrettyPrint Axiom where
     printText0 ga axiom =
 	case axiom of
 	Class cid _ _ _ descs ->       -- descs is here unionOf or complementOf
-          foldListToDocV ga (printDescription ga 0) cid descs
+          foldListToDocV ga (printDescription ga (-1)) cid descs
 	EnumeratedClass cid _ _ iids ->
                   parens ((text "forall ((x owl:Thing))") $+$ 
-	                  (printDescription ga 0 cid $ OneOfDes iids)) 
+	                  (printDescription ga (-1) cid $ OneOfDes iids)) 
 	DisjointClasses desc1 desc2 _ ->   -- description list is ignored (always empty)
 	   parens ((text "forall ((x owl:Thing))") <+>
                     parens ((text "not") <+> parens ((text "and") <+>
-                    (printDescription ga 0 emptyQN desc1) <+>
+                    (printDescription ga (-1) emptyQN desc1) <+>
                      (text "x") <+> 
-                     (printDescription ga 0 emptyQN desc2) <+> (text "x"))))
+                     (printDescription ga (-1) emptyQN desc2) <+> (text "x"))))
 
 	EquivalentClasses desc1 descs ->  
          foldListToDocV ga 
@@ -111,14 +111,14 @@ instance PrettyPrint Axiom where
 	  DC cid2 ->
 	    parens ((text "forall ((x owl:Thing))") <+> 
                     parens (text "iff" <> 
-                    (printDescription ga 0 emptyQN x) <+> 
+                    (printDescription ga (-1) emptyQN x) <+> 
                     (text "x") <+> (printText0 ga cid2) <+> 
                     (text "x")))
 	  _      -> 
 	      case x of
 	        DC cid1 ->
                    parens ((text "forall ((x owl:Thing))") $+$ 
-                            (printDescription ga 0 cid1 y))
+                            (printDescription ga (-1) cid1 y))
 	        _       -> error ("EquivalentClasses Error:" ++ (show axiom))
 	  ) desc1 descs
 	Datatype dID _ _ -> 
@@ -262,7 +262,7 @@ instance PrettyPrint DataRange where
       case dr of
         DID dtID -> printText0 ga dtID
         OneOfData dls ->
-         parens ((text "forall ((x rdfs:Literal))") $+$
+         parens ((text "DEBUG:forall ((x rdfs:Literal))") $+$
              (if allEqTypedLit dls then
                  case head dls of
                  TypedL (_, drType) ->
@@ -295,13 +295,14 @@ instance PrettyPrint DataLiteral where
         RDFSL rdfLit     -> -- (text "rdf_literal") <+> (text rdfLit)
                             text rdfLit
 
+-- default handler of restriction
 instance PrettyPrint Restriction where
     printText0 ga restr =
         case restr of
         DataRestriction dpID drcom drcoms ->
-            printRestriction1 ga dpID (drcom:drcoms)
+            printRestriction1 ga (-1) 0 dpID (drcom:drcoms)
         IndivRestriction ipID ircom ircoms ->
-            printRestriction2 ga ipID (ircom:ircoms)
+            printRestriction2 ga (-1) 0 ipID (ircom:ircoms)
 
 instance PrettyPrint Description where
     printText0 ga desc =
@@ -369,190 +370,240 @@ instance PrettyPrint Individual where
                   (parens ((printText0 ga ipID) <+> 
                       (printText0 ga iid') <+> (text $ choiceName level)) $+$ 
                   -- className (type)
-                  (nest 4 $ (foldListToDocV ga 
+                  ( (foldListToDocV ga 
                    (\x y -> case x of 
                        (QN _ str _) -> 
                         parens ((printDescription ga 0 emptyQN y) <+> 
                          (text str))) (simpleQN $ choiceName level) 
                                    (reverse typesI))) $+$
                   -- values
-                  (nest 4 $ printIndividual (Just $ simpleQN $ choiceName level) valuesI (level+1))))))
-       
+                  ( printIndividual (Just $ simpleQN $ choiceName level) valuesI (level+1))))))
+ 
+printRestriction :: GlobalAnnos -> Int -> Restriction -> Doc   
+printRestriction ga level restr =
+    case restr of
+      DataRestriction dpID drcom drcoms ->
+          printRestriction1 ga level (level+1) dpID (drcom:drcoms)
+      IndivRestriction ipID ircom ircoms ->
+          printRestriction2 ga level (level+1) ipID (ircom:ircoms)
+
+ 
 -- to show restrictions, descriptions and cardinalities need the id of classes
 -- or properties, so those are implemented not in PrettyPrint. 
-printRestriction1 :: GlobalAnnos -> URIreference -> [Drcomponent] -> Doc
-printRestriction1 _ _ [] = empty
-printRestriction1 ga dpID (h:r) =
+printRestriction1 :: GlobalAnnos -> Int -> Int -> URIreference 
+                  -> [Drcomponent] -> Doc
+printRestriction1 _ _ _ _ [] = empty
+printRestriction1 ga origVar tmpVar dpID (h:r) =
     case h of
     DRCAllValuesFrom dataRange -> 
 	-- (text "(forall ((x owl:Thing)) ") $+$
 	-- (nest 2 $ text "(restriction x)") $+$
-	parens ((text "forall (y rdfs:Literal)") <+> 
+	parens (text "forall" <+> parens (text $ (choiceName tmpVar ++ 
+                                                    " rdfs:Literal")) <+> 
                 parens ((text "implies") <> parens ((printText0 ga dpID) <+>
-	                                            (text "x y")) <+> 
-                        parens ((printText0 ga dataRange) <+> (text "y")))) $+$
+	          (text ((choiceName origVar)++" "++(choiceName tmpVar)))) <+> 
+                        (printText0 ga dataRange))) $+$ 
+                        -- <+> (text $ choiceName (level+1)))) $+$
 	-- (text ")") $+$
-	(printRestriction1 ga dpID r)
+	(printRestriction1 ga origVar (tmpVar+1) dpID r)
     DRCSomeValuesFrom dataRange -> 
 	-- (text "(forall ((x owl:Thing)) ") $+$
 	-- (nest 2 $ text "(restriction x)") $+$
-	parens ((text "exists (y rdfs:Literal)") <+> 
+	parens (text "exists" <+> parens (text $ (choiceName tmpVar ++ 
+                                                    " rdfs:Literal")) <+>
                 parens ((text "and") <> parens ((printText0 ga dpID) <+>
-	                                        (text "x y")) <+> 
-                        parens ((printText0 ga dataRange) <+> (text "y")))) $+$
+	          (text ((choiceName origVar)++" "++(choiceName tmpVar)))) <+>
+                       (printText0 ga dataRange))) $+$
 	-- (text ")") $+$
-	(printRestriction1 ga dpID r)
+	(printRestriction1 ga origVar (tmpVar+1) dpID r)
     DRCValue dl -> 
 	-- (text "(forall ((x owl:Thing)) (") <>
-	  (printText0 ga dpID) <+> (text "x") <+>
+	  (printText0 ga dpID) <+> (text $ choiceName origVar ++ "r1") <+>
 	  (printText0 ga dl) $+$
-	(printRestriction1 ga dpID r)
+	(printRestriction1 ga origVar tmpVar dpID r)
     DRCCardinality cardinality -> 
-        (printCard ga dpID cardinality) $+$
-        (printRestriction1 ga dpID r)
+        (printCard ga origVar dpID cardinality) $+$
+        (printRestriction1 ga origVar tmpVar dpID r)
 
 
 -- ToDo: level hierachie
-printRestriction2 :: GlobalAnnos -> URIreference -> [Ircomponent] -> Doc
-printRestriction2 _ _ [] = empty
-printRestriction2 ga ipID (h:r) =
+printRestriction2 :: GlobalAnnos -> Int -> Int -> URIreference 
+                  -> [Ircomponent] -> Doc
+printRestriction2 _ _ _ _ [] = empty
+printRestriction2 ga origVar tmpVar ipID (h:r) =
     case h of
     IRCAllValuesFrom desc -> 
 	-- (text "(forall ((x owl:Thing)) ") $+$
 	-- (nest 2 $ text "(restriction x)") $+$
-	parens ((text "forall ((y owl:Thing))") <+> 
-                parens ((text "implies") <+> parens ((printText0 ga ipID) <+>
-	                                            (text "x y")) <+> 
-                        parens ((printDescription ga 0 ipID desc) <+> 
-                                (text "y")))) $+$
+	-- parens ((text "forall ((y owl:Thing))") <+> 
+        --        parens ((text "implies") <+> parens ((printText0 ga ipID) <+>
+	--                                            (text "x y")) <+> 
+        --                parens ((printDescription ga 0 ipID desc) <+> 
+        --                        (text "y")))) $+$
 	-- (text ")") $+$
-	(printRestriction2 ga ipID r)
+	-- (printRestriction2 ga ipID r)
+	parens (text "forall" <+> parens (text $ (choiceName tmpVar ++ 
+                                                    " owl:Thing")) <+> 
+                parens ((text "implies") <+> parens ((printText0 ga ipID) <+>
+	          (text ((choiceName origVar)++" "++(choiceName tmpVar)))) <+>
+               (case desc of
+                DC _ -> parens ((printDescription ga origVar ipID desc) <+>
+                                (text $ choiceName tmpVar))
+                _    -> printDescription ga origVar ipID desc))) $+$
+	(printRestriction2 ga origVar (tmpVar+1) ipID r)
     IRCSomeValuesFrom desc -> 
 	-- (text "(forall ((x owl:Thing)) ") $+$
 	-- (nest 2 $ text "(restriction x)") $+$
-	parens ((text "exists (y owl:Thing)") <+> 
-                parens ((text "and") <+> parens ((printText0 ga ipID) <+>
-	                                            (text "x y")) <+> 
-                        parens ((printDescription ga 0 ipID desc) <+> 
-                                (text "y")))) $+$
+	-- parens ((text "exists (y owl:Thing)") <+> 
+        --        parens ((text "and") <+> parens ((printText0 ga ipID) <+>
+	--                                            (text "x y")) <+> 
+        --                parens ((printDescription ga 0 ipID desc) <+> 
+        --                        (text "y")))) $+$
 	-- (text ")") $+$
-	(printRestriction2 ga ipID r)
+	-- (printRestriction2 ga ipID r)
+	parens (text "exists" <+> parens (text $ (choiceName tmpVar ++ 
+                                                    " owl:Thing")) <+>
+                parens ((text "and") <> parens ((printText0 ga ipID) <+>
+	          (text ((choiceName origVar)++" "++(choiceName tmpVar)))) <+>
+               (case desc of
+                DC _ -> parens ((printDescription ga origVar ipID desc) <+>
+                                (text $ choiceName tmpVar))
+                _    -> printDescription ga origVar ipID desc))) $+$
+ 	(printRestriction2 ga origVar (tmpVar+1) ipID r)
     IRCValue iid -> 
 	-- (text "(forall ((x owl:Thing)) (") <>
-	  (printText0 ga ipID) <+> (text "x") <+>
+	  (printText0 ga ipID) <+> (text $ choiceName origVar) <+>
 	  (printText0 ga iid) $+$
-	(printRestriction2 ga ipID r)
+	(printRestriction2 ga origVar tmpVar ipID r)
 
     IRCCardinality cardinality -> 
-        (printCard ga ipID cardinality)  $+$
-        (printRestriction2 ga ipID r)
+        (printCard ga origVar ipID cardinality)  $+$
+        (printRestriction2 ga origVar tmpVar ipID r)
 
-printCard :: GlobalAnnos -> URIreference -> Cardinality -> Doc
-printCard ga pid card =
+printCard :: GlobalAnnos -> Int -> URIreference -> Cardinality -> Doc
+printCard ga level pid card =
     case card of
     MinCardinality n -> 
      if n > 1 then
-      parens (-- (text "forall ((x owl:Thing)) ") $+$
+      -- parens (text "forall ((x owl:Thing)) ") $+$
 	-- (nest 2 $ text "(restriction x)") $+$
-	( parens  
-         ((text "exists ((x1 owl:Thing) ... (x") <> (int n) <+>
-                                  (text "owl:Thing)) (and ") $+$
-        (nest 2 $ brackets ((text "ALLDIFFERENT x1 ... x") <> (int n))) $+$ 
-        (nest 2 $ text "(") <> (printText0 ga pid) <+> (text "x x1) ...") <+>
-	   (text "(") <> (printText0 ga pid) <+> (text "x x") <> (int n) <>
-			          (text "))")
-	 )))
+      (text "exists ((x1 owl:Thing) ") <> 
+      (if n==2 then empty else text "... ") <> 
+      (text ("(x" ) <> (int n) <+> (text "owl:Thing)) (and ") $+$
+        (nest 2 $ brackets ((text "ALLDIFFERENT x1 ") <> 
+                            (if n==2 then space else text "... ") <>
+                            (text "x") <> (int n))) $+$ 
+        (nest 2 $ parens ((printText0 ga pid)<+>(text ((choiceName level)++" x1")))
+                  <+> (if n==2 then space else text "... ") <>
+	   parens ((printText0 ga pid)<+>(text ((choiceName level)++" x"))<>
+                   (int n))<>(text ")")
+	))
       else
-       parens (-- (text "forall ((x owl:Thing)) ") $+$
-	       (parens 
-                ((text "exists (x1 owl:Thing)") <+>
-                 (parens ((printText0 ga pid) <+> (text "x x1"))))))
+       -- parens ((text "forall ((x owl:Thing)) ") $+$
+	  (text "exists (x1 owl:Thing)") <+>
+                 (parens ((printText0 ga pid) <+> 
+                          (text ((choiceName level)++" x1"))))
     MaxCardinality n -> 
      if n > 1 then
-      parens ((text "forall ((x1 owl:Thing) ... (x") <> 
+      (text "forall ((x1 owl:Thing)") <> 
+            (if n==2 then space else text "... ") <> (text "(x") <> 
               (int (n+1)) <+> (text "owl:Thing)) (implies") $+$
 	      -- (nest 2 $ text "(and (restriction x)") $+$
 	      (nest 3 $ text "(") <> (printText0 ga pid) <+> 
-              (text "x x1) ...")<+> (text "(") <> (printText0 ga pid) <+> 
-              (text "x x") <> (int (n+1)) <> (text "))") $+$
-	      (nest 2 $ (text "not [ALLDIFFERENT x1 ... x")) <> (int (n+1)) <>
-              (text "])"))
+              (text ((choiceName level) ++ " x1)")) <> 
+               (if n==2 then space else text "... ") <> 
+                                  (text "(") <> (printText0 ga pid) <+> 
+              (text ((choiceName level) ++ " x")) <> (int (n+1)) <> (text "))") $+$
+	      (nest 2 $ (text "not [ALLDIFFERENT x1") <> 
+                        (if n==2 then space else text "... ")<>(text "x"))<> 
+              (int (n+1)) <> (text "])")
       else 
-        parens ((text "forall ((x1 owl:Thing))") <+> 
+        (text "forall ((x1 owl:Thing))") <+> 
                 (parens ((text "implies") $+$
 		         (nest 2 $ parens ((printText0 ga pid) <+> 
-                                           (text "x x1"))))))
+                                           (text ((choiceName level) ++ " x1"))))))
     Cardinality n ->
      if n > 1 then
       -- (text "(forall ((x owl:Thing)) ") $+$
 	-- (nest 2 $ text "(restriction x)") $+$
-	(text "(exists ((x1 owl:Thing) ... (x") <> (int n) <+>
+	(text "exists ((x1 owl:Thing)") <> 
+            (if n==2 then space else text "... ") <> (text "(x") <> (int n) <+>
                                   (text "owl:Thing)) (and ") $+$
-        (nest 2 $ text "[ALLDIFFERENT x1 ... x") <> (int n) <>
+        (nest 2 $ text "[ALLDIFFERENT x1") <> 
+           (if n==2 then space else text "... ") <> (text "x") <> (int n) <>
                                   (text "]") $+$
-	(nest 2 $ text "(") <> (printText0 ga pid) <+> (text "x x1) ...") <+>
-	   (text "(") <> (printText0 ga pid) <+> (text "x x") <> (int n) <>
+	(nest 2 $ text "(") <> (printText0 ga pid) <+> 
+                                (text ((choiceName level) ++ " x1)")) <>
+                                (if n==2 then space else text "... ") <+>
+	   (text "(") <> (printText0 ga pid) <+> 
+                          (text ((choiceName level) ++ " x")) <> (int n) <>
 			          (text ")") $+$
-	(nest 2 $ text "(forall ((z owl:Thing)) (implies") $+$
-	(nest 4 $ text "(") <> (printText0 ga pid) <+> (text "x z)") $+$
-	(nest 4 $ text "(or (= z x1) ... (= z x") <> (int n) <> 
-	           (text "))") $+$
+	(nest 2 $ text ("(forall ((" ++ (choiceName (level+2)) ++
+                                        " owl:Thing)) (implies")) $+$
+	(nest 4 $ text "(") <> (printText0 ga pid) <+> 
+            (text ((choiceName level)++" "++(choiceName (level+2))++")")) $+$
+	(nest 4 $ text ("(or (= " ++ (choiceName (level+2)) ++ " x1) ")) <> 
+           (if n==2 then space else text "... ") <>
+            (text ("(= "++(choiceName level)++" "++(choiceName (level+2)))) <> 
+            (int n) <> (text "))") $+$
 	(nest 2 $ text "))") $+$
-	(text ")))") 
+	(text "))") 
        else 
         -- (text "(forall ((x owl:Thing)) ") $+$
-	(text "(exists ((x1 owl:Thing)) (and ") $+$
-        (nest 2 $ text "(") <> (printText0 ga pid) <+> (text "x x1)") $+$
-	(nest 2 $ text "(forall ((z owl:Thing)) (implies") $+$
-	(nest 4 $ text "(") <> (printText0 ga pid) <+> (text "x z)") $+$
-	(nest 4 $ text "((= z x1))") $+$
+	(text "exists ((x1 owl:Thing)) (and ") $+$
+        (nest 2 $ text "(") <> (printText0 ga pid) <+> 
+        (text (choiceName level ++ " x1)")) $+$
+	(nest 2 $ text ("(forall (("++(choiceName (level+2))++
+                  "owl:Thing)) (implies")) $+$
+	(nest 4 $ text "(") <> (printText0 ga pid) <+> 
+        (text ((choiceName level)++ " "++(choiceName (level+2) ++")"))) $+$
+	(nest 4 $ text ("((= "++(choiceName (level+2))++" x1))")) $+$
 	(nest 2 $ text "))") $+$
-	(text "))")
+	(text ")")
 
 printDescription :: GlobalAnnos -> Int -> URIreference -> Description -> Doc
 printDescription ga level iD desc =
     case desc of
         DC cid -> printText0 ga cid
-        DR restr -> printText0 ga restr
+        DR restr -> printRestriction ga level restr  -- printText0 ga restr
         UnionOf descs -> 
          if isEmptyQN iD then
-            parens ((text "or") <+> (foldListToDocH ga (form6 ga level) iD descs))
+            parens ((text "or") <+> (foldListToDocH ga (form6 ga (level+1)) iD descs))
                                   --      <> (char ')')) 
            else
             -- (text "(forall ((x owl:Thing))") $+$
             (text "(iff (") <> (printText0 ga iD) <+> 
-                                (text (choiceName level ++ ")")) $+$
-            (nest 2 $ text "(or") <+> (foldListToDocH ga (form6 ga level) iD descs)
+                                (text (choiceName (level+1) ++ ")")) $+$
+            (nest 2 $ text "(or") <+> (foldListToDocH ga (form6 ga (level+1)) iD descs)
                                         $+$ -- <> (char ')') $+$
             (text "))") 
         IntersectionOf descs -> 
          if isEmptyQN iD then
             parens ((text "and") <+> 
-                    (foldListToDocH ga (form1 ga level) iD descs)) -- <> (char ')')) 
+                    (foldListToDocH ga (form1 ga (level+1)) iD descs)) -- <> (char ')')) 
            else
             -- (text "(forall ((x owl:Thing))") $+$
-              (text "(iff (") <> (printText0 ga iD) <+> (text (choiceName level ++ ")"))
+              (text "(iff (") <> (printText0 ga iD) <+> (text (choiceName (level+1) ++ ")"))
               $+$ (nest 2 $ text "(and") <+> 
-              (foldListToDocH ga (form1 ga level) iD descs) <> (char ')') $+$
+              (foldListToDocH ga (form1 ga (level+1)) iD descs) <> (char ')') $+$
               (text ")")
         ComplementOf desc1 ->
          if isEmptyQN iD then
-            parens ((text "not") <+> (printDescription ga level iD desc1) <+>
-                    (text (choiceName level )))
+            parens ((text "not") <+> (printDescription ga (level+1) iD desc1) <+>
+                    (text (choiceName (level+1))))
            else
             (text "(iff (") <> (printText0 ga iD) <+>
-                    ((text $ choiceName level) <> (text ") (not")) <+> (printDescription ga level iD desc1) <+>
-                    ((text $ choiceName level) <> (text "))"))
+                    ((text $ choiceName (level+1)) <> (text ") (not")) <+> (printDescription ga (level+1) iD desc1) <+>
+                    ((text $ choiceName (level+1)) <> (text "))"))
         OneOfDes inds -> 
-         if isEmptyQN iD then
-            parens ((text "or") <> (foldListToDocH ga (form2 ga level) iD inds)) 
-                                    --    <> (char ')'))             
-           else
+ --        if isEmptyQN iD then
+            parens ((text "or")<>(foldListToDocH ga (form2 ga (level+1)) iD inds)) 
+ --          else
             -- (text "(forall ((x owl:Thing)) ") $+$
-            (text "(iff (") <> (printText0 ga iD) <+> ((text $ choiceName level) <> (text ")")) $+$
-            (nest 2 $ text "(or") <+> (foldListToDocH ga (form2 ga level) iD inds) 
-                                        $+$ -- <> (char ')') $+$
-            (text "))") 
+--            (text "(iff (") <> (printText0 ga iD) <+> ((text $ choiceName (level+1)) <> (text ")")) $+$
+--            (nest 2 $ text "(or") <+> (foldListToDocH ga (form2 ga (level+1)) iD inds) 
+ --                                       $+$ -- <> (char ')') $+$
+ --           (text "))") 
 
 -- form of pretty print 
 foldSetToDoc :: (PrettyPrint a) => GlobalAnnos -> Set.Set a -> Doc
@@ -625,7 +676,7 @@ simpleQN str = QN "" str ""
                
 choiceName :: Int -> String
 choiceName level 
-    | level == 0 = "x"
+    | level <= 0 = "x"
     | level == 1 = "y"
     | level == 2 = "z"
-    | otherwise = "z" ++ (show (level -2))
+    | otherwise = "u" ++ (show (level -2))
