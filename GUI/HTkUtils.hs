@@ -93,7 +93,7 @@ createTextSaveDisplay :: String -- ^ title of the window
                       -> String -- ^ text to be displayed
                       -> IO()
 createTextSaveDisplay t f txt = 
-    do createTextSaveDisplayExt t f txt [size(100,45)] done; done
+    do createTextSaveDisplayExt t f txt [size(100,44)] done; done
 
 
 --- added by KL
