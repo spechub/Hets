@@ -38,32 +38,17 @@ instance (PrettyPrint b, PrettyPrint s, PrettyPrint f) =>
     PrettyPrint (BASIC_ITEMS b s f) where
     printText0 ga (Sig_items s) = printText0 ga s
     printText0 ga (Free_datatype l _) =
-        hang (ptext freeS <+> ptext typeS<>pluralS_doc l) 4 $
+        hang (text freeS <+> text (typeS ++ pluralS l)) 4 $
              semiAnno_text ga l
-    printText0 ga (Sort_gen l _) =
-        hang (ptext generatedS <+> condTypeS) 4 $
-             condBraces (vcat (map (printText0 ga) l))
-        where condTypeS =
-                  if isOnlyDatatype then ptext typeS<>pluralS_doc l
-                  else empty
-              condBraces d =
-                  if isOnlyDatatype then
-                     case l of
-                     [x] -> case x of
-                            Annoted (Datatype_items l' _) _ lans _ ->
-                                vcat (map (printText0 ga) lans)
-                                         $$ semiAnno_text ga l'
-                            _ -> error "wrong implementation of isOnlyDatatype"
-                     _ -> error "wrong implementation of isOnlyDatatype"
-                  else braces d
-              isOnlyDatatype =
-                  case l of
-                  [x] -> case x of
-                         Annoted (Datatype_items _ _) _ _ _ -> True
-                         _ -> False
-                  _  -> False
+    printText0 ga (Sort_gen l _) = case l of
+        [Annoted (Datatype_items l' _) _ lans _] ->
+            hang (text generatedS <+> text (typeS ++ pluralS l')) 4
+                 (vcat (map (printText0 ga) lans)
+                          $$ semiAnno_text ga l')
+        _ -> hang (text generatedS) 4 $
+             braces $ vcat $ map (printText0 ga) l
     printText0 ga (Var_items l _) =
-        text varS<>pluralS_doc l <+> semiT_text ga l
+        text (varS ++ pluralS l) <+> semiT_text ga l
     printText0 ga (Local_var_axioms l f _) =
         text forallS <+> semiT_text ga l
                  $$ printFormulaAux ga f
@@ -91,13 +76,13 @@ printAnnotedFormula_Text0 ga withDot (Annoted i _ las ras) =
 instance (PrettyPrint s, PrettyPrint f) =>
          PrettyPrint (SIG_ITEMS s f) where
     printText0 ga (Sort_items l _) =
-        text sortS<>pluralS_doc l <+> semiAnno_text ga l
+        text (sortS ++ pluralS l) <+> semiAnno_text ga l
     printText0 ga (Op_items l _) =
-        text opS<>pluralS_doc l <+> semiAnno_text ga l
+        text (opS ++ pluralS l) <+> semiAnno_text ga l
     printText0 ga (Pred_items l _) =
-        text predS<>pluralS_doc l <+> semiAnno_text ga l
+        text (predS ++ pluralS l) <+> semiAnno_text ga l
     printText0 ga (Datatype_items l _) =
-        text typeS<>pluralS_doc l <+> semiAnno_text ga l
+        text (typeS ++ pluralS l) <+> semiAnno_text ga l
     printText0 ga (Ext_SIG_ITEMS s) = printText0 ga s
 
 instance PrettyPrint f =>
@@ -107,7 +92,7 @@ instance PrettyPrint f =>
         hang (commaT_text ga l) 4 $ text lessS <+> printText0 ga t
     printText0 ga (Subsort_defn s v t f _) =
         -- TODO: lannos of f should printed after the equal sign
-        printText0 ga s <+> ptext equalS <+>
+        printText0 ga s <+> text equalS <+>
            braces (hang (printText0 ga v <+> colon <+> printText0 ga t)
                          4 (char '.' <+> printFORMULA ga (item f)))
     printText0 ga (Iso_decl l _) =
@@ -179,7 +164,7 @@ instance PrettyPrint DATATYPE_DECL where
     printText0 ga (Datatype_decl s a _) = case a of
         h : t -> printText0 ga s <+>
             sep ((hang (text defnS) 4 (printText0 ga h)):
-             (map (\x -> nest 2 $ ptext barS <+> nest 2 (printText0 ga x)) t))
+             (map (\x -> nest 2 $ text barS <+> nest 2 (printText0 ga x)) t))
         [] -> error "PrettyPrint CASL.DATATYPE_DECL"
 
 instance PrettyPrint ALTERNATIVE where
@@ -208,29 +193,29 @@ printFORMULA ga (Quantification q l f _) =
         hang (printText0 ga q <+> semiT_text ga l) 4 $
              char '.' <+> printFORMULA ga f
 printFORMULA ga (Conjunction l _) =
-        sep $ prepPunctuate (ptext lAnd <> space) $
+        sep $ prepPunctuate (text lAnd <> space) $
             map (condParensXjunction printFORMULA parens ga) l
 printFORMULA ga (Disjunction  l _) =
-        sep $ prepPunctuate (ptext lOr <> space) $
+        sep $ prepPunctuate (text lOr <> space) $
             map (condParensXjunction printFORMULA parens ga) l
 printFORMULA ga i@(Implication f g isArrow _) =
         if isArrow
         then (
               hang (condParensImplEquiv printFORMULA parens ga i f False
-                    <+> ptext implS) 4 $
+                    <+> text implS) 4 $
               condParensImplEquiv printFORMULA parens ga i g True)
         else (
               hang (condParensImplEquiv printFORMULA parens ga i g False
-                    <+> ptext "if") 4 $
+                    <+> text "if") 4 $
               condParensImplEquiv printFORMULA parens ga i f True)
 printFORMULA ga e@(Equivalence  f g _) =
         hang (condParensImplEquiv printFORMULA parens ga e f False
-              <+> ptext equivS) 4 $
+              <+> text equivS) 4 $
              condParensImplEquiv printFORMULA parens ga e g True
 printFORMULA ga (Negation f _) =
-    ptext "not" <+> condParensNeg f parens (printFORMULA ga f)
-printFORMULA _ (True_atom _)  = ptext trueS
-printFORMULA _ (False_atom _) = ptext falseS
+    text "not" <+> condParensNeg f parens (printFORMULA ga f)
+printFORMULA _ (True_atom _)  = text trueS
+printFORMULA _ (False_atom _) = text falseS
 printFORMULA ga (Predication p l _) =
         let (p_id,isQual) =
                 case p of
@@ -242,11 +227,11 @@ printFORMULA ga (Predication p l _) =
            else condPrint_Mixfix_text ga p_id l
 printFORMULA ga (Definedness f _) = text defS <+> printText0 ga f
 printFORMULA ga (Existl_equation f g _) =
-        hang (printText0 ga f <+> ptext exEqual) 4 $ printText0 ga g
+        hang (printText0 ga f <+> text exEqual) 4 $ printText0 ga g
 printFORMULA ga (Strong_equation f g _) =
-        hang (printText0 ga f <+> ptext equalS) 4 $ printText0 ga g
+        hang (printText0 ga f <+> text equalS) 4 $ printText0 ga g
 printFORMULA ga (Membership f g _) =
-        printText0 ga f <+> ptext inS <+> printText0 ga g
+        printText0 ga f <+> text inS <+> printText0 ga g
 printFORMULA ga (Mixfix_formula t) = {- trace ("Mixfix_formula found: "
                                             ++ showPretty t "") $ -}
                                         printText0 ga t
@@ -260,23 +245,23 @@ printFORMULA ga (Sort_gen_ax constrs _) =
                 <+> fsep (punctuate comma (map printSortMap sortMap)))
         where (sorts,ops,sortMap) = recover_Sort_gen_ax constrs
               printSortMap (s1,s2) =
-                printText0 ga s1 <+> ptext "|->" <+> printText0 ga s2
+                printText0 ga s1 <+> text "|->" <+> printText0 ga s2
 printFORMULA ga (ExtFORMULA f) = printText0 ga f
 
 instance PrettyPrint f => PrettyPrint (FORMULA f) where
     printText0 ga f@(Sort_gen_ax _ _) = printFORMULA ga f
-    printText0 ga f = ptext " . " <> printFORMULA ga f
+    printText0 ga f = text " . " <> printFORMULA ga f
 
 
 instance PrettyPrint QUANTIFIER where
-    printText0 _ (Universal) = ptext forallS
-    printText0 _ (Existential) = ptext existsS
-    printText0 _ (Unique_existential) = ptext (existsS ++ exMark)
+    printText0 _ (Universal) = text forallS
+    printText0 _ (Existential) = text existsS
+    printText0 _ (Unique_existential) = text (existsS ++ exMark)
 
 instance PrettyPrint PRED_SYMB where
     printText0 ga (Pred_name n) = printText0 ga n
     printText0 ga (Qual_pred_name n t _) =
-        parens $ ptext predS <+> printText0 ga n <+> colon <+> printText0 ga t
+        parens $ text predS <+> printText0 ga n <+> colon <+> printText0 ga t
 
 instance PrettyPrint f => PrettyPrint (TERM f) where
     printText0 ga (Simple_id i) = printText0 ga i
@@ -322,19 +307,19 @@ instance PrettyPrint OP_SYMB where
 
 instance PrettyPrint SYMB_ITEMS where
     printText0 ga (Symb_items k l _) =
-        printText0 ga k <> ptext (pluralS_symb_list k l)
+        printText0 ga k <> text (pluralS_symb_list k l)
                         <+> commaT_text ga l
 
 instance PrettyPrint SYMB_MAP_ITEMS where
     printText0 ga (Symb_map_items k l _) =
-        printText0 ga k <> ptext (pluralS_symb_list k l)
+        printText0 ga k <> text (pluralS_symb_list k l)
                         <+> commaT_text ga l
 
 instance PrettyPrint SYMB_KIND where
     printText0 _ Implicit   = empty
-    printText0 _ Sorts_kind = ptext sortS
-    printText0 _ Ops_kind   = ptext opS
-    printText0 _ Preds_kind = ptext predS
+    printText0 _ Sorts_kind = text sortS
+    printText0 _ Ops_kind   = text opS
+    printText0 _ Preds_kind = text predS
 
 instance PrettyPrint SYMB where
     printText0 ga (Symb_id i) = printText0 ga i
@@ -702,33 +687,26 @@ condParensImplEquiv pf parens_fun ga e_i f isRight =
               Conjunction _ _ -> True
               _ -> is_atomic_FORMULA ff
 
-
 ---- instances of ListCheck for various data types of AS_Basic_CASL ---
-instance ListCheck (SIG_ITEMS s f) where
-    (Sort_items l _)     `innerListGT` i = length l > i
-    (Op_items l _)       `innerListGT` i = length l > i
-    (Pred_items l _)     `innerListGT` i = length l > i
-    (Datatype_items l _) `innerListGT` i = length l > i
-    (Ext_SIG_ITEMS _)    `innerListGT` _ = False
 
 instance ListCheck (SORT_ITEM f) where
-    (Sort_decl l _)          `innerListGT` i = length l > i
-    (Subsort_decl l _ _)     `innerListGT` i = length l > i
-    (Subsort_defn _ _ _ _ _) `innerListGT` _ = False
-    (Iso_decl _ _)           `innerListGT` _ = False
+    innerList (Sort_decl l _) = innerList l
+    innerList (Subsort_decl l _ _) = innerList l
+    innerList (Subsort_defn _ _ _ _ _) = [()]
+    innerList (Iso_decl _ _) = [()]
 
 instance ListCheck (OP_ITEM f) where
-    (Op_decl l _ _ _) `innerListGT` i = length l > i
-    (Op_defn _ _ _ _) `innerListGT` _ = False
+    innerList (Op_decl l _ _ _) = innerList l
+    innerList (Op_defn _ _ _ _) = [()]
 
 instance ListCheck (PRED_ITEM f) where
-    (Pred_decl l _ _)   `innerListGT` i = length l > i
-    (Pred_defn _ _ _ _) `innerListGT` _ = False
+    innerList (Pred_decl l _ _) = innerList l
+    innerList (Pred_defn _ _ _ _) = [()]
 
 instance ListCheck DATATYPE_DECL where
-    (Datatype_decl _ _ _) `innerListGT` _ = False
+    innerList (Datatype_decl _ _ _) = [()]
 
 instance ListCheck VAR_DECL where
-    (Var_decl l _ _) `innerListGT` i = length l > i
+    innerList (Var_decl l _ _) = innerList l
 
 -----------------------------------------------------------------------------

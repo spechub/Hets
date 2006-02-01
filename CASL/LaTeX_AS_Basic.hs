@@ -15,7 +15,6 @@ module CASL.LaTeX_AS_Basic
     , optLatexQuMark
     ) where
 
-
 import CASL.AS_Basic_CASL
 import CASL.Print_AS_Basic
 import Common.Id
@@ -44,31 +43,16 @@ instance (PrintLaTeX b, PrintLaTeX s, PrintLaTeX f) =>
                     <~> setTab_latex
                     <> hc_sty_plain_keyword ("type"++ pluralS l)
                    ,tabbed_nest_latex $ semiAnno_latex ga l]
-    printLatex0 ga (Sort_gen l _) =
-        hang_latex (hc_sty_plain_keyword generatedS
-                    <~> setTab_latex<> condTypeS) 9 $
-                   tabbed_nest_latex $ condBraces
-                                  (vcat (map (printLatex0 ga) l))
-        where condTypeS =
-                  if isOnlyDatatype then
-                     hc_sty_plain_keyword (typeS++pluralS l)
-                  else empty
-              condBraces d =
-                  if isOnlyDatatype then
-                     case l of
-                     [x] -> case x of
-                            Annoted (Datatype_items l' _) _ lans _ ->
-                                vcat (map (printLatex0 ga) lans)
-                                         $$ semiAnno_latex ga l'
-                            _ -> error "wrong implementation of isOnlyDatatype"
-                     _ -> error "wrong implementation of isOnlyDatatype"
-                  else braces_latex d
-              isOnlyDatatype =
-                  case l of
-                  [x] -> case x of
-                         Annoted (Datatype_items _ _) _ _ _ -> True
-                         _ -> False
-                  _  -> False
+    printLatex0 ga (Sort_gen l _) = case l of
+        [Annoted (Datatype_items l' _) _ lans _] ->
+            hang_latex (hc_sty_plain_keyword generatedS
+                        <~> setTab_latex <+>
+                        hc_sty_plain_keyword (typeS ++ pluralS l')) 9 $
+                        tabbed_nest_latex (vcat (map (printLatex0 ga) lans)
+                                           $$ semiAnno_latex ga l')
+        _ -> hang_latex (hc_sty_plain_keyword generatedS <~> setTab_latex) 9 $
+               tabbed_nest_latex $ braces
+                   $ vcat $ map (printLatex0 ga) l
     printLatex0 ga (Var_items l _) =
         hc_sty_plain_keyword (varS++pluralS l) <\+>
         semiT_latex ga l
