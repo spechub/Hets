@@ -61,13 +61,13 @@ createTextSaveDisplayExt title fname txt conf upost =
      q   <- newButton b [text "Close", width 12]
      s   <- newButton b [text "Save", width 12]
      (sb, ed) <- newScrollBox b (\p-> newEditor p (state Normal:conf)) []
-     pack b [Side AtTop, Fill X, Expand On]
+     pack b [Side AtTop, Fill Both,Expand On]
      pack t [Side AtTop, Expand Off, PadY 10]
-     pack sb [Side AtTop, Expand On]
-     pack ed [Side AtTop, Expand On, Fill X]
-     pack q [Side AtRight, PadX 5, PadY 5]               
-     pack s [Side AtLeft, PadX 5, PadY 5]                
-
+     pack sb [Side AtTop, Expand On,Fill Both]
+     pack ed [Side AtTop, Expand On, Fill Both]
+     pack q [Side AtRight, PadX 8, PadY 5]
+     pack s [Side AtLeft, PadX 5, PadY 5]
+       
      ed # value txt
      ed # state Disabled
 
@@ -93,7 +93,7 @@ createTextSaveDisplay :: String -- ^ title of the window
                       -> String -- ^ text to be displayed
                       -> IO()
 createTextSaveDisplay t f txt = 
-    do createTextSaveDisplayExt t f txt [size(100,50)] done; done
+    do createTextSaveDisplayExt t f txt [size(100,45)] done; done
 
 
 --- added by KL
