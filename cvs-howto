@@ -17,7 +17,7 @@ Uni Bremen.
 
 Checking out the cvs repository
 -------------------------------
-(note that the lines are sometimes broken by the mal program;
+(note that the lines are sometimes broken by the mail program;
 you have to type them on one line)
 
 cvs -d :pserver:XXX@cvs-agbkb.informatik.uni-bremen.de:/repository login
@@ -75,3 +75,7 @@ You have to delete the conflict markers <<<<<<, ===== and >>>>> and merge
 the two different ways manually into one.
 After you have treated all such conflict markers in all files indicated
 by cvs as having conflicts, go to step 4 again.
+
+CVS user manual
+---------------
+http://www.informatik.uni-bremen.de/cofi/cvs/cvs.ps
