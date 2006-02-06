@@ -206,6 +206,37 @@ data PO =
 	| PONewInput
 	| PONewOutput
 	| PODisableDTD
+	
+data POType =
+	POTInput
+	| POTInputType
+	| POTOutput
+	| POTOutputType
+	| POTShowGraph
+	| POTLib
+	| POTSandbox
+	| POTHelp
+	| POTDTDURI
+	| POTDebug
+	| POTNewInput
+	| POTNewOutput
+	| POTDisableDTD
+	deriving Eq
+	
+poToPOT::PO->POType
+poToPOT (POInput _) = POTInput
+poToPOT (POInputType _) = POTInputType
+poToPOT (POOutput _) = POTOutput
+poToPOT (POOutputType _) = POTOutputType
+poToPOT (POLib _) = POTLib
+poToPOT (POSandbox _) = POTSandbox
+poToPOT (PODTDURI _) = POTDTDURI
+poToPOT POShowGraph = POTShowGraph
+poToPOT POHelp = POTHelp
+poToPOT PODebug = POTDebug
+poToPOT PONewInput = POTNewInput
+poToPOT PONewOutput = POTNewOutput
+poToPOT PODisableDTD = POTDisableDTD
 		
 processingOptions::[GetOpt.OptDescr PO]
 processingOptions =
@@ -292,7 +323,11 @@ fileType s =
 		case parse of
 			[(ft, "")] -> Just ft
 			_ -> Nothing
-
+			
+optFilter::POType->[PO]->[PO]
+optFilter pot =
+	filter (\i -> pot == poToPOT i)
+	
 -- | some basic interface for command-line use... 
 -- you can read in CASL, OMDoc or Environments (ATerm) and ouput OMDoc or
 -- Environments.
@@ -323,43 +358,25 @@ main =
 				putStrLn usageString
 				Exit.exitWith (Exit.ExitSuccess))
 		-- filter out options
-		inputopts <- return $ filter
-			(\op -> case op of POInput _ -> True; _ -> False)
-			options
-		inputtypeopts <- return $ filter
-			(\op -> case op of POInputType _ -> True; _ -> False)
-			options
-		outputopts <- return $ filter
-			(\op -> case op of POOutput _ -> True; _ -> False)
-			options
-		outputtypeopts <- return $ filter
-			(\op -> case op of POOutputType _ -> True; _ -> False)
-			options
-		alloutopts <- return $ filter
-			(\op -> case op of POSandbox _ -> True; _ -> False)
-			options
-		showgraphopts <- return $ filter
-			(\op -> case op of POShowGraph -> True; _ -> False)
-			options
-		dtduriopts <- return $ filter
-			(\op -> case op of PODTDURI _ -> True; _ -> False)
-			options
-		debugopts <- return $ filter
-			(\op -> case op of PODebug -> True; _ -> False)
-			options
-		debug <- return $ (case debugopts of [] -> False; _ -> True)
-		newinputopts <- return $ filter
-			(\op -> case op of PONewInput -> True; _ -> False)
-			options
-		newinput <- return $ (case newinputopts of [] -> False; _ -> True)
-		newoutputopts <- return $ filter
-			(\op -> case op of PONewOutput -> True; _ -> False)
-			options
-		newoutput <- return $ (case newoutputopts of [] -> False; _ -> True)
-		disabledtdopts <- return $ filter
-			(\op -> case op of PODisableDTD -> True; _ -> False)
-			options
-		disabledtd <- return $ (case disabledtdopts of [] -> False; _ -> True)
+--		inputopts <- return $ filter
+--			(\op -> case op of POInput _ -> True; _ -> False)
+--			options
+		inputopts <- return $ optFilter POTInput options
+		inputtypeopts <- return $ optFilter POTInputType options
+		outputopts <- return $ optFilter POTOutput options
+		outputtypeopts <- return $ optFilter POTOutputType options
+		alloutopts <- return $ optFilter POTSandbox options
+		showgraphopts <- return $ optFilter POTShowGraph options
+		dtduriopts <- return $ optFilter POTDTDURI options
+		debugopts <- return $ optFilter POTDebug options
+		newinputopts <- return $ optFilter POTNewInput options
+		newoutputopts <- return $ optFilter POTNewOutput options
+		disabledtdopts <- return $ optFilter POTDisableDTD options
+		
+		debug <- return $ not $ null debugopts
+		newinput <- return $ not $ null newinputopts
+		newoutput <- return $ not $ null newoutputopts
+		disabledtd <- return $ not $ null disabledtdopts
 		input <- return $ case inputopts of
 					[] -> case nonoptions of
 						[] -> "-"
@@ -934,6 +951,62 @@ devGraphToXmlCMPIOXmlNamed dg =
 							(Set.insert b (Map.findWithDefault Set.empty a m))
 							m
 						) Map.empty (Rel.toList insorts)
+				-- imports/morphisms
+				imports = Map.findWithDefault Set.empty nodename importsmap
+				importsxn = Set.map
+					(\(inodename, mmm) ->
+						let
+							((itheonum, itheoname), itheoxmlname) =	case find (\x -> (snd (xnItem x)) == inodename) (Set.toList nodexmlnameset) of
+								Nothing -> error "Unknown Origin of Morphism!"
+								(Just x) -> (xnItem x, xnName x)
+							itheosorts = Map.findWithDefault Set.empty (Hets.mkWON itheoname itheonum) xmlnamedsortswomap
+							itheopreds = (Map.findWithDefault [] (Hets.mkWON itheoname itheonum) xmlnamedpredswomap)
+							itheoops = (Map.findWithDefault [] (Hets.mkWON itheoname itheonum) xmlnamedopswomap)
+							mmapandset = case mmm of
+								Nothing -> Nothing
+								-- order is sort, ops, preds, hiding...
+								(Just (sm,om,pm,hs)) ->
+									let
+										mmsorts = map (\(a,b) ->
+											(
+												case find (\i -> (xnWOaToa i) == a) (Set.toList itheosorts) of
+													Nothing -> error ("Unable to find imported sort " ++ (show a) ++ " in source-sorts : " ++ (show itheosorts)) 
+													(Just x) -> xnName x,
+												case find (\i -> (xnWOaToa i) == b) (Set.toList theosorts) of
+													Nothing -> error ("Unable to find imported sort " ++ (show b) ++ " in target-sorts : " ++ (show theosorts))
+													(Just x) -> xnName x
+											)
+											)
+											(Map.toList sm)
+										mmpreds = map (\((ai,ap), (bi,bp)) ->
+											(
+												case find (\(ii,ip) -> (xnWOaToa ii) == ai) itheopreds of
+													Nothing -> error ("Unable to find import predication " ++ (show ai) ++ " in source-preds : " ++ (show itheopreds)) 
+													(Just (ii,ip)) -> xnName ii,
+												case find (\(ii,ip) -> (xnWOaToa ii) == bi) theopreds of
+													Nothing -> error ("Unable to find import predication " ++ (show bi) ++ " in target-preds : " ++ (show theopreds))
+													(Just (ii,ip)) -> xnName ii
+											)
+											)
+											(Map.toList pm)
+										mmops = map (\((ai,ao), (bi,bo)) ->
+											(
+												case find (\(ii,ip) -> (xnWOaToa ii) == ai) itheoops of
+													Nothing -> error ("Unable to find import operator " ++ (show ai) ++ " in source-ops : " ++ (show itheoops))
+													(Just (ii,ip)) -> xnName ii,
+												case find (\(ii,ip) -> (xnWOaToa ii) == bi) theoops of
+													Nothing -> error ("Unable to find import operator " ++ (show bi) ++ " in target-ops : " ++ (show theoops))
+													(Just (ii,ip)) -> xnName ii
+											)
+											)
+											(Map.toList om)
+									in
+										Just (Map.fromList (mmsorts ++ mmpreds ++ mmops), Set.map show hs)
+									
+						in
+							(itheoxmlname, mmapandset)
+					)
+					imports
 				theopreds = Map.findWithDefault [] (Hets.mkWON nodename nodenum) xmlnamedpredswomap
 				realtheopreds = filter (\(idxnwon, _) -> (xnWOaToO idxnwon) == nodenum) theopreds
 				theoops = Map.findWithDefault [] (Hets.mkWON nodename nodenum) xmlnamedopswomap
@@ -943,7 +1016,7 @@ devGraphToXmlCMPIOXmlNamed dg =
 				(_, sortgenxn) = partitionSensSortGenXN (Set.toList realtheosens)
 				(constructors, xmlnames_cons) = makeConstructorsXN theosorts xmlnames_senm sortgenxn
 				adtsorts = Map.keys insortmap ++ (map (\(a,_) -> xnItem a) (Map.toList constructors))
-				theoimports = Map.findWithDefault Set.empty nodename importsmap
+				--theoimports = Map.findWithDefault Set.empty nodename importsmap
 				theopredsxn = map (\(k,p) -> (k, predTypeToPredTypeXNWON theosorts p)) theopreds
 				theoopsxn = map (\(k,op) -> (k, opTypeToOpTypeXNWON theosorts op)) theoops
 				sensxmlio =
@@ -969,24 +1042,27 @@ devGraphToXmlCMPIOXmlNamed dg =
 					-- imports/morphisms
 					-- I still need to find a way of modelling Hets-libraries
 					-- in Omdoc-Imports...
-					(foldl (\x' (nodename' , mmm) ->
+--					(foldl (\x' (nodename' , mmm) ->
+					(foldl (\x' (nodenamex , mmm) ->
 						let
-							nodenamex = case Set.toList $ Set.filter (\i -> (snd (xnItem i)) == nodename' ) nodexmlnameset of
-								[] -> error "Import from Unknown node..."
-								(l:_) -> xnName l
+							--nodenamex = case Set.toList $ Set.filter (\i -> (snd (xnItem i)) == nodename' ) nodexmlnameset of
+							--	[] -> error "Import from Unknown node..."
+							--	(l:_) -> xnName l
 						in
 							x' +++
 							HXT.etag "imports" += (
 								(HXT.sattr "from" ("#" ++ nodenamex)) +++
 								(
 									case mmm of
-										(Just mm) ->
+{-										(Just mm) ->
 											morphismMapToXml mm nodenamex theoname
+											morphismMapToXml mm nodenamex theoname -}
+										(Just (sm, hs)) -> morphismMapToXmlXN sm hs nodenamex theoname
 										Nothing -> HXT.txt ""
 								)
 								) +++
 							xmlNL
-						) (HXT.txt "") (Set.toList theoimports)
+						) (HXT.txt "") (Set.toList importsxn) --(Set.toList theoimports)
 					) +++
 					-- sorts
 					(Set.fold (\xnwos x' ->
@@ -1844,6 +1920,39 @@ morphismMapToXml (sm, om, pm, hs) source target =
 			xmlNL
 			) +++
 		xmlNL
+		
+-- relying on unique names there is no need for separating sorts, preds, ops, etc
+-- but when naming changes occur (e.g. because the originial cals changed) all documents
+-- have to be updated...
+morphismMapToXmlXN::(Map.Map String String)->Set.Set String->String->String->HXT.XmlFilter
+morphismMapToXmlXN symbolmap hidings source target =
+	HXT.etag "morphism" += (
+		(HXT.sattr "hiding" (implode " " $ Set.toList hidings))
+		+++
+		(foldl
+			(\sx (ss, st) -> 
+				sx +++
+					requation
+						(inOMOBJ (HXT.etag "OMS" += (HXT.sattr "cd" source +++ HXT.sattr "name" ss)))
+						(inOMOBJ (HXT.etag "OMS" += (HXT.sattr "cd" target +++ HXT.sattr "name" st)))
+			)
+			(HXT.txt "")
+			(Map.toList symbolmap)
+		)
+	)	
+	where
+	requation::(HXT.XmlTree->HXT.XmlTrees)->(HXT.XmlTree->HXT.XmlTrees)->(HXT.XmlTree->HXT.XmlTrees)
+	requation p v =
+		HXT.etag "requation" +=
+			(
+			xmlNL +++
+			p +++
+			xmlNL +++
+			v +++
+			xmlNL
+			) +++
+		xmlNL
+
 		
 processOperatorForMorphism::Id.Id->OpType->String->HXT.XmlFilter
 processOperatorForMorphism 
@@ -6437,12 +6546,12 @@ processTermXN pfinput
 				xmlNL
 			else
 				(etag "OMA" +=
-					(xmlNL +++ (HXT.cmt "appl") +++
+					(xmlNL +++
 					( processOperatorXN pfinput op ) +++
 					(foldl (\terms t ->
 						terms +++
 						(processTermXN pfinput t)
-						) (HXT.cmt "terms") termlist
+						) (HXT.txt "") termlist
 					)
 					) ) +++
 					xmlNL
