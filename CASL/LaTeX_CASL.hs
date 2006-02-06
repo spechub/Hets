@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2004
+Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -8,7 +8,6 @@ Stability   :  experimental
 Portability :  portable
 
 latex printing of sign and morphism data types
-
 -}
 
 module CASL.LaTeX_CASL where
@@ -21,7 +20,6 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
 import Common.Lib.Pretty
-import Common.PPUtils
 import Common.LaTeX_utils
 import Common.PrintLaTeX
 
@@ -32,35 +30,36 @@ instance PrintLaTeX PredType where
   printLatex0 ga pt = printLatex0 ga $ toPRED_TYPE pt
 
 instance (PrintLaTeX f, PrintLaTeX e) => PrintLaTeX (Sign f e) where
-    printLatex0 ga s = 
-        casl_keyword_latex sortS <\+> commaT_latex ga (Set.toList $ sortSet s) 
-        $$ 
+    printLatex0 ga s =
+        casl_keyword_latex sortS <\+> commaT_latex ga (Set.toList $ sortSet s)
+        $$
         (if Rel.null (sortRel s) then empty
-            else casl_keyword_latex sortS <\+> 
-             (vcat $ map printRel $ Map.toList $ Rel.toMap $ sortRel s))
-        $$ 
-        vcat (map (\ (i, t) -> 
+            else casl_keyword_latex sortS <\+>
+             (vcat $ map printRel $ Map.toList $ Rel.toMap
+                       $ Rel.transpose $ sortRel s))
+        $$
+        vcat (map (\ (i, t) ->
                    casl_keyword_latex opS <\+>
                    printLatex0 ga i <\+> colon_latex <>
-                   printLatex0 ga t) 
+                   printLatex0 ga t)
               $ concatMap (\ (o, ts) ->
                           map ( \ ty -> (o, ty) ) $ Set.toList ts)
                $ Map.toList $ opMap s)
-        $$ 
-        vcat (map (\ (i, t) -> 
+        $$
+        vcat (map (\ (i, t) ->
                    casl_keyword_latex predS <\+>
                    printLatex0 ga i <\+> colon_latex <\+>
-                   printLatex0 ga (toPRED_TYPE t)) 
+                   printLatex0 ga (toPRED_TYPE t))
              $ concatMap (\ (o, ts) ->
                           map ( \ ty -> (o, ty) ) $ Set.toList ts)
              $ Map.toList $ predMap s)
-     where printRel (subs, supersorts) =
-             printLatex0 ga subs <\+> hc_sty_axiom lessS 
-                             <\+> printSet ga supersorts
+     where printRel (supersort, subsorts) =
+             commaT_latex ga (Set.toList subsorts) <\+> hc_sty_axiom lessS
+                              <\+> printLatex0 ga supersort
 
 instance PrintLaTeX Symbol where
-  printLatex0 ga sy = 
-    printLatex0 ga (symName sy) <> 
+  printLatex0 ga sy =
+    printLatex0 ga (symName sy) <>
     (if isEmpty t then empty
       else colon_latex <> t)
     where
@@ -69,7 +68,7 @@ instance PrintLaTeX Symbol where
 instance PrintLaTeX SymbType where
   printLatex0 ga (OpAsItemType ot) = printLatex0 ga ot
   printLatex0 ga (PredAsItemType pt) = printLatex0 ga pt
-  printLatex0 _ SortAsItemType = empty 
+  printLatex0 _ SortAsItemType = empty
 
 instance PrintLaTeX Kind where
   printLatex0 _ SortKind = casl_keyword_latex sortS
@@ -82,15 +81,15 @@ instance PrintLaTeX RawSymbol where
     AnID i -> printLatex0 ga i
     AKindedId k i -> printLatex0 ga k <\+> printLatex0 ga i
 
-instance (PrintLaTeX f, PrintLaTeX e, PrintLaTeX m) => 
+instance (PrintLaTeX f, PrintLaTeX e, PrintLaTeX m) =>
     PrintLaTeX (Morphism f e m) where
-  printLatex0 ga mor = 
-   let printPair (s1,s2) = printLatex0 ga s1 <\+> hc_sty_axiom "\\mapsto" 
-                               <\+> printLatex0 ga s2 
-   in braces_latex (vcat (map printPair $ Map.toList $ Map.filterWithKey (/=) 
+  printLatex0 ga mor =
+   let printPair (s1,s2) = printLatex0 ga s1 <\+> hc_sty_axiom "\\mapsto"
+                               <\+> printLatex0 ga s2
+   in braces_latex (vcat (map printPair $ Map.toList $ Map.filterWithKey (/=)
                          $ morphismToSymbMap mor))
    $$ printLatex0 ga (extended_map mor)
-   <\+> colon_latex $$ 
-   braces_latex (printLatex0 ga $ msource mor) <\+> 
-   hc_sty_axiom "\\rightarrow" <\+> 
+   <\+> colon_latex $$
+   braces_latex (printLatex0 ga $ msource mor) <\+>
+   hc_sty_axiom "\\rightarrow" <\+>
    braces_latex (printLatex0 ga $ mtarget mor)
