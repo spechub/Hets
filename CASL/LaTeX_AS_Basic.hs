@@ -33,28 +33,29 @@ import Data.Char (toUpper)
 instance (PrintLaTeX b, PrintLaTeX s, PrintLaTeX f)
     => PrintLaTeX (BASIC_SPEC b s f) where
     printLatex0 ga (Basic_spec l) =
-        if null l then braces_latex empty else vcat (map (printLatex0 ga) l)
+        if null l then sp_braces_latex2 empty
+         else vcat (map (printLatex0 ga) l)
 
 instance (PrintLaTeX b, PrintLaTeX s, PrintLaTeX f) =>
          PrintLaTeX (BASIC_ITEMS b s f) where
     printLatex0 ga (Sig_items s) = printLatex0 ga s
     printLatex0 ga (Free_datatype l _) =
-        fsep_latex [hc_sty_plain_keyword "free"
+        fsep_latex [hc_sty_plain_keyword freeS
                     <~> setTab_latex
-                    <> hc_sty_plain_keyword ("type"++ pluralS l)
+                    <> hc_sty_plain_keyword (typeS ++ pluralS l)
                    ,tabbed_nest_latex $ semiAnno_latex ga l]
     printLatex0 ga (Sort_gen l _) = case l of
         [Annoted (Datatype_items l' _) _ lans _] ->
             hang_latex (hc_sty_plain_keyword generatedS
-                        <~> setTab_latex <+>
+                        <~> setTab_latex <\+>
                         hc_sty_plain_keyword (typeS ++ pluralS l')) 9 $
                         tabbed_nest_latex (vcat (map (printLatex0 ga) lans)
                                            $$ semiAnno_latex ga l')
         _ -> hang_latex (hc_sty_plain_keyword generatedS <~> setTab_latex) 9 $
-               tabbed_nest_latex $ braces
+               tabbed_nest_latex $ sp_braces_latex2
                    $ vcat $ map (printLatex0 ga) l
     printLatex0 ga (Var_items l _) =
-        hc_sty_plain_keyword (varS++pluralS l) <\+>
+        hc_sty_plain_keyword (varS ++ pluralS l) <\+>
         semiT_latex ga l
     printLatex0 ga (Local_var_axioms l f _) =
         hc_sty_axiom "\\forall" <\+> semiT_latex ga l
@@ -107,30 +108,22 @@ instance PrintLaTeX f => PrintLaTeX (SORT_ITEM f) where
                    hc_sty_axiom lessS <\+> printLatex0 ga t
     printLatex0 ga (Subsort_defn s v t f _) =
         printLatex0 ga s <\+> equals_latex <\+>
-           braces_latex (set_tabbed_nest_latex $ fsep
+           sp_braces_latex2 (set_tabbed_nest_latex $ fsep
                             [printLatex0 ga v
                              <> colon_latex
                              <\+> printLatex0 ga t,
                              hc_sty_axiom "\\bullet"
                              <\+> set_tabbed_nest_latex (printLatex0 ga f)])
     printLatex0 ga (Iso_decl l _) =
-        fsep_latex $ punctuate  (space_latex<>equals_latex) $
-                   map (printLatex0 ga) l
+        listSep_latex (space_latex <> equals_latex) ga l
 
 instance PrintLaTeX f => PrintLaTeX (OP_ITEM f) where
     printLatex0 ga (Op_decl l t a _) =
-        {-cat [ cat [commaT_latex ga l
-                  ,colon_latex <> printLatex0 ga t <> condComma]
-            , if na then empty
-              else commaT_latex ga a
-            ]-}
         if na then ids_sig
-        else setTabWithSpaces_latex 4
-                 <>
+        else setTabWithSpaces_latex 4 <>
                  fsep [ids_sig,
                        tabbed_nest_latex $ commaT_latex ga a]
-        where ids_sig = -- setTabWithSpaces_latex 6 <>
-                         fsep [commaT_latex ga l<\+>colon_latex,
+        where ids_sig = fsep [commaT_latex ga l<\+>colon_latex,
                                  tabbed_nest_latex (if na then sig
                                         else sig <> comma_latex)]
               sig =  printLatex0 ga t
@@ -150,7 +143,7 @@ instance PrintLaTeX OP_TYPE where
                                          crossT_latex ga l,
                                          hc_sty_axiom "\\rightarrow")
             result_type = printLatex0 ga s
-        in if isEmpty arg_types then result_type
+        in if null l then result_type
            else sep_latex [arg_types,type_arr <\+> result_type]
 
     printLatex0 ga (Op_type Partial l s _) =
@@ -243,44 +236,27 @@ instance PrintLaTeX f => PrintLaTeX (FORMULA f) where
     printLatex0 ga (Conjunction fs _) =
         sep_latex $ punctuate (space_latex <> hc_sty_axiom "\\wedge")
           $ map (condParensXjunction printLatex0 parens_tab_latex ga) fs
-{-      (sep_latex $ prepand_head $
-         prepPunctuate (hc_sty_axiom "\\wedge" <> space_latex) $
-            map (condParensXjunction printLatex0 parens_tab_latex ga) fs)
-        where prepand_head l = case l of
-                               []     -> []
-                               [x]    -> l
-                               (x:xs) -> (hspace_latex "0.375cm"<>x) : xs-}
     printLatex0 ga (Disjunction  fs _) =
         sep_latex $ punctuate (space_latex <> hc_sty_axiom "\\vee")
           $ map (condParensXjunction printLatex0 parens_tab_latex ga) fs
-{-      (sep_latex $ prepand_head $
-       prepPunctuate (hc_sty_axiom "\\vee" <> space_latex) $
-            map (condParensXjunction printLatex0 parens_tab_latex ga) fs)
-        where prepand_head l = case l of
-                               []     -> []
-                               [x]    -> l
-                               (x:xs) ->  (hspace_latex "0.375cm"<>x): xs-}
     printLatex0 ga i@(Implication f g b _) =
-        {-trace pos $ -}
         if not b
         then (
-        hang_latex (condParensImplEquiv printLatex0 parens_tab_latex ga i g False
-                    <\+> hc_sty_id "if") 3 $
+        hang_latex (condParensImplEquiv printLatex0 parens_tab_latex
+                    ga i g False <\+> hc_sty_id ifS) 3 $
              condParensImplEquiv printLatex0 parens_tab_latex ga i f True)
 
         else (
         hang_latex (condParensImplEquiv printLatex0 parens_tab_latex ga i f False
                     <\+> hc_sty_axiom "\\Rightarrow") 3 $
              condParensImplEquiv printLatex0 parens_tab_latex ga i g True)
-{-      where pos = "Implication: \"=>\": "++show p
-                    ++"; left_most_id_of_first_formula: "
-                    ++(show $ left_most_pos f )-}
     printLatex0 ga e@(Equivalence  f g _) =
         sep_latex
              [condParensImplEquiv printLatex0 parens_tab_latex ga e f False
                     <\+> hc_sty_axiom "\\Leftrightarrow",
               condParensImplEquiv printLatex0 parens_tab_latex ga e g True]
-    printLatex0 ga (Negation f _) = hc_sty_axiom "\\neg" <\+> condParensNeg f parens_latex (printLatex0 ga f)
+    printLatex0 ga (Negation f _) = hc_sty_axiom "\\neg" <\+>
+        condParensNeg f parens_latex (printLatex0 ga f)
     printLatex0 _ (True_atom _)  = hc_sty_id trueS
     printLatex0 _ (False_atom _) = hc_sty_id falseS
     printLatex0 ga (Predication p l _) =
@@ -299,23 +275,24 @@ instance PrintLaTeX f => PrintLaTeX (FORMULA f) where
                                  "\\Ax{\\stackrel{e}{=}}") 8
                        $ printLatex0 ga g
     printLatex0 ga (Strong_equation f g _) =
-        hang_latex (printLatex0 ga f <\+> hc_sty_axiom "=") 8
+        hang_latex (printLatex0 ga f <\+> equals_latex) 8
                        $ printLatex0 ga g
     printLatex0 ga (Membership f g _) =
         printLatex0 ga f <\+> hc_sty_axiom "\\in" <\+> printLatex0 ga g
     printLatex0 ga (Mixfix_formula t) = printLatex0 ga t
-    printLatex0 _ (Unparsed_formula s _) = text s
+    printLatex0 _ (Unparsed_formula _ _) = error "Unparsed_formula"
     printLatex0 ga (Sort_gen_ax constrs _) =
         hc_sty_id generatedS <>
-        braces_latex (hc_sty_id sortS <+> commaT_latex ga sorts
-                      <> semi_latex <+> semiT_latex ga ops)
-        <+>(if null sortMap then empty
+        sp_braces_latex2 (hc_sty_id sortS <\+> commaT_latex ga sorts
+                      <> semi_latex <\+> semiT_latex ga ops)
+        <\+>(if null sortMap then empty
              else hc_sty_id withS
-              <+> fsep_latex (punctuate comma_latex (map printSortMap sortMap)))
+              <\+> fsep_latex (punctuate comma_latex
+                               (map printSortMap sortMap)))
         where
         (sorts,ops,sortMap) = recover_Sort_gen_ax constrs
-        printSortMap (s1,s2) = printLatex0 ga s1 <+> hc_sty_axiom "\\mapsto"
-                               <+> printLatex0 ga s2
+        printSortMap (s1,s2) = printLatex0 ga s1 <\+> hc_sty_axiom "\\mapsto"
+                               <\+> printLatex0 ga s2
     printLatex0 ga (ExtFORMULA f) = printLatex0 ga f
 
 instance PrintLaTeX QUANTIFIER where
@@ -355,21 +332,20 @@ instance PrintLaTeX f => PrintLaTeX (TERM f) where
         hang_latex (printLatex0 ga u) 8 $
              sep_latex ((hc_sty_id whenS <\+> printLatex0 ga f):
                      [hc_sty_id elseS <\+> printLatex0 ga v])
-    printLatex0 _ (Unparsed_term s _) = text s
+    printLatex0 _ (Unparsed_term _ _) = error "Unparsed_term"
     printLatex0 ga (Mixfix_qual_pred p) = printLatex0 ga p
-    printLatex0 ga (Mixfix_term l) =
-        cat(punctuate space (map (printLatex0 ga) l))
+    printLatex0 ga (Mixfix_term l) = listSep_latex space_latex ga l
     printLatex0 ga (Mixfix_token t) = printLatex0 ga t
-    printLatex0 ga (Mixfix_sorted_term s _) = colon
+    printLatex0 ga (Mixfix_sorted_term s _) = colon_latex
                                              <> printLatex0 ga s
-    printLatex0 ga (Mixfix_cast s _) = text asS
+    printLatex0 ga (Mixfix_cast s _) = hc_sty_id asS
                                      <\+> printLatex0 ga s
     printLatex0 ga (Mixfix_parenthesized l _) =
         parens_tab_latex (commaT_latex ga l)
     printLatex0 ga (Mixfix_bracketed l _) =
         brackets_latex (commaT_latex ga l)
     printLatex0 ga (Mixfix_braced l _) =
-        braces_latex (commaT_latex ga l)
+        sp_braces_latex2 (commaT_latex ga l)
 
 instance PrintLaTeX OP_SYMB where
     printLatex0 ga (Op_name o) = printLatex0 ga o
