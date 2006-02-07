@@ -60,7 +60,7 @@ instance (PrintLaTeX f, PrintLaTeX e) => PrintLaTeX (Sign f e) where
 instance PrintLaTeX Symbol where
   printLatex0 ga sy =
     printLatex0 ga (symName sy) <>
-    case symbType sy of 
+    case symbType sy of
        SortAsItemType -> empty
        t -> colon_latex <> printLatex0 ga t
 
@@ -85,10 +85,11 @@ instance (PrintLaTeX f, PrintLaTeX e, PrintLaTeX m) =>
   printLatex0 ga mor =
    let printPair (s1,s2) = printLatex0 ga s1 <\+> hc_sty_axiom "\\mapsto"
                                <\+> printLatex0 ga s2
-   in braces_latex (vcat (map printPair $ Map.toList $ Map.filterWithKey (/=)
-                         $ morphismToSymbMap mor))
+   in sp_braces_latex2 (vcat (map printPair $ Map.toList
+                             $ Map.filterWithKey (/=)
+                             $ morphismToSymbMap mor))
    $$ printLatex0 ga (extended_map mor)
    <\+> colon_latex $$
-   braces_latex (printLatex0 ga $ msource mor) <\+>
+   sp_braces_latex2 (printLatex0 ga $ msource mor) <\+>
    hc_sty_axiom "\\rightarrow" <\+>
-   braces_latex (printLatex0 ga $ mtarget mor)
+   sp_braces_latex2 (printLatex0 ga $ mtarget mor)
