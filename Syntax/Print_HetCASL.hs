@@ -16,7 +16,7 @@ module Syntax.Print_HetCASL where
 import Common.Lib.Pretty
 import Common.PrettyPrint
 import Common.PrintLaTeX
-import Common.LaTeX_utils (calc_line_length)
+import Common.LaTeX_funs (calc_line_length)
 import Common.GlobalAnnotations(emptyGlobalAnnos,GlobalAnnos)
 
 import Syntax.AS_Library
