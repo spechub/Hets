@@ -19,7 +19,7 @@ import CASL.Morphism
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
-import Common.Lib.Pretty
+import Common.Lib.Pretty(($$), empty, vcat, (<>))
 import Common.LaTeX_utils
 import Common.PrintLaTeX
 
@@ -60,10 +60,9 @@ instance (PrintLaTeX f, PrintLaTeX e) => PrintLaTeX (Sign f e) where
 instance PrintLaTeX Symbol where
   printLatex0 ga sy =
     printLatex0 ga (symName sy) <>
-    (if isEmpty t then empty
-      else colon_latex <> t)
-    where
-    t = printLatex0 ga (symbType sy)
+    case symbType sy of 
+       SortAsItemType -> empty
+       t -> colon_latex <> printLatex0 ga t
 
 instance PrintLaTeX SymbType where
   printLatex0 ga (OpAsItemType ot) = printLatex0 ga ot
