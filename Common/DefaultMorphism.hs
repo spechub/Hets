@@ -16,7 +16,6 @@ module Common.DefaultMorphism where
 
 import Common.Lib.Pretty
 import Common.LaTeX_utils
-import Common.LaTeX_funs
 import Common.Keywords
 import Common.PrettyPrint
 
