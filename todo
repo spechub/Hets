@@ -23,14 +23,11 @@ Repräsentation ändern:
   Definitionen auszeichnen
 
 ************************************************
-Rene (Klaus)
+NN (NN)
 ************************************************
 
-SPASS inkl. GUI
-allgemeine Hets-GUI für Anzeige von (un)bewiesenen Goals,
-  bewiesene Goals als Axioms mit ausgeben
-wenn Zeit ist: einfaches Merge von lokalen Beweisen eines abgespeichteren DG 
-               in aktuellen DG
+einfaches Merge von lokalen Beweisen eines abgespeichteren DG 
+  in aktuellen DG
 
 ************************************************
 Tina (Till)
@@ -186,7 +183,8 @@ subsort definitions: are conservative if formula is satisfiable
 Heng (Klaus)
 ************************************************
 
-LaTeX: see listings.sty for LaTeX generation (cf. CoSiT paper)
+OWL-DL logic
+OWL-DL -> CASL
 
 emacs mode: 
   highlight does not work properly for HasCASL/Set.het or UserManual/Sbcs.casl
@@ -200,9 +198,7 @@ emacs mode:
 
   should work with parser error messages as well (adapt these?)
 
-OWL-DL logic
-OWL-DL -> CASL
-
+LaTeX: see listings.sty for LaTeX generation (cf. CoSiT paper)
 
 -------------------------------------------------------------------
 
@@ -265,19 +261,62 @@ Proofs in HasCASL
 Case study
 
 ************************************************
+NN (Klaus)
+************************************************
+
+Connecting Hets with MathServ
+ Either use 
+  - haifa (http://www.dcs.shef.ac.uk/~simonf/HAIFA.html) 
+      pros: * relies not on external tool
+      	    * light weight call
+      cons: * code is not well maintained
+      	    * a lot of the deserialization of the answer must be done 
+	      in Haskell
+  - call a java program included in MathServ distrib
+      pros: * works imediately
+      	    * deserilisation is mostly done in java
+      cons: * use of external tool
+ 
+ Use modified dfg2tptp to translate SPASS theories into TPTP problems
+  (ask Klaus for sources)
+
+ Add possibility to choose a prover out of a list of available provers
+   (similar to "More fine grained..." and behind more fine grained)
+ 
+ Adapt Comorphisms.KnownProvers to select a certain prover at the end of a 
+   comorphism automatically
+
+ Adapt existing SPASS GUI to cover call of the MathServ broker
+   by - transforming the grid layout packer into the packer 
+      	used in GUI.ProofManagement (easier to maintain and to extend)
+      - abstraction of certain parts of the GUI into helper functions
+      	forms a new generic Prover-GUI toolkit
+      - on top of this GUI toolkit
+      
+ Write a GUI based on the generic Prover-GUI 
+   to call MathServ's Vampire service directly 
+     with additional parameters
+
+ 
+************************************************
 Klaus
 ************************************************
 
-CASL -> SPASS
-
-Coding of subsorts as unary predicates (for ontologies)
 Translation between Achim's ontology data structure and CASL (in Hets)
 
 visualization of "taxonomy" of CASL signatures
   (subsorts = inheritance, unary preds = concepts, binary preds = relations)
+
+ last two ... partially done
+
+allgemeine Hets-GUI 
+  für Anzeige von (un)bewiesenen Goals, ... done
+  bewiesene Goals als Axioms mit ausgeben ... was ist das ???
+
 Recognize guarded fragment of CASL:
   G ::= forall x . At(x) => G      where At is a conjunction of atoms
       | exists x . At(x) /\ G
+
 Joost Visser wg. ATerms in Haskell => neues Repository
 
 ************************************************
