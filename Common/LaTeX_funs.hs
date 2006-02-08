@@ -38,6 +38,7 @@ module Common.LaTeX_funs (-- module Common.LaTeX_funs,
                    normal_width,
 
                    escape_latex,
+                   hspace_latex,
                    escape_comment_latex,
                    (<\+>),
                    (<~>),
@@ -68,10 +69,10 @@ module Common.LaTeX_funs (-- module Common.LaTeX_funs,
                    casl_structid_latex,
                    casl_normal_latex,
 
-                   hc_sty_keyword,
                    hc_sty_small_keyword,
                    hc_sty_plain_keyword,
                    hc_sty_hetcasl_keyword,
+                   hc_sty_casl_keyword,
 
                    hc_sty_comment,
                    hc_sty_annotation,
@@ -323,61 +324,19 @@ casl_axiom_latex s        = let s' = conv s
 
 casl_normal_latex s       = sp_text (normal_width s)     s
 
-
-hc_sty_keyword :: Maybe String -> String -> Doc
-hc_sty_keyword mfkw kw =
-    latex_macro "\\KW"<>fkw_doc<>latex_macro "{"<>kw_doc<> latex_macro "}"
-    where (fkw_doc,kw_doc) =
-              case mfkw of
-              Just fkw -> (latex_macro "["<>latex_macro fkw<>latex_macro "]",
-                           initial_keyword_latex fkw kw)
-              Nothing  -> (empty,casl_keyword_latex kw)
-
-hc_sty_plain_keyword :: String -> Doc
-hc_sty_plain_keyword str =
-    case str of
-    "library" -> sp_t "\\LIBRARY"
-    "to" -> sp_t "\\TO"
-    "get" -> sp_t "\\GET"
-    "version" -> sp_t "\\VERSION"
-    "end" -> sp_t "\\END"
-    "and" -> sp_t "\\AND"
-    "arch spec" -> sp_t "\\ARCHSPEC"
-    "unit spec" -> sp_t "\\UNITSPEC"
-    "free" -> sp_t "\\FREE"
-    "local" -> sp_t "\\LOCAL"
-    "within" -> sp_t "\\WITHIN"
-    "closed" -> sp_t "\\CLOSED"
-    "with" -> sp_t "\\WITH"
-    "logic" -> sp_t "\\LOGIC"
-    "hide" -> sp_t "\\HIDE"
-    "reveal" -> sp_t "\\REVEAL"
-    "given" -> sp_t "\\GIVEN"
-    "fit" -> sp_t "\\FIT"
-    "view" -> sp_t "\\VIEW"
-    "generated" -> sp_t "\\GENERATED"
-    "vars" -> sp_t "\\VARS"
-    "sort" -> sp_t "\\SORT[KW]"
-    "sorts" -> sp_t "\\SORTS[KW]"
-    "op" -> sp_t "\\OP[KW]"
-    "ops" -> sp_t "\\OPS[KW]"
-    "type" -> sp_t "\\TYPE[KW]"
-    "types" -> sp_t "\\TYPES[KW]"
-    "pred" -> sp_t "\\PRED[KW]"
-    "preds" -> sp_t "\\PREDS[KW]"
-    str' -> hc_sty_keyword Nothing str'
-    where sp_t s = sp_text (keyword_width "") s
-
--- Heng Todo: case Anweisung fortführen und für hc_sty_plain_keyword
+-- | form, spec, view, then
 hc_sty_hetcasl_keyword :: String -> Doc
 hc_sty_hetcasl_keyword str =
-    case str of
-    "then" -> sp_t "\\THEN"
-    "spec" -> sp_t "\\SPEC"
-    "view" -> sp_t "\\VIEW"
-    "from" -> sp_t "\\FROM"
-    str'   -> hc_sty_keyword (Just "view") str'
-    where sp_t s = sp_text (keyword_width "view") s
+    sp_text (keyword_width "view") $ "\\" ++ map toUpper str
+
+-- | sort, op, pred, type and its plurals
+hc_sty_casl_keyword :: String -> Doc
+hc_sty_casl_keyword str =
+    sp_text (keyword_width "preds") $ "\\" ++ map toUpper str
+
+hc_sty_plain_keyword :: String -> Doc
+hc_sty_plain_keyword kw =
+    latex_macro "\\KW{" <> casl_keyword_latex kw <> latex_macro "}"
 
 hc_sty_small_keyword :: String -> Doc
 hc_sty_small_keyword kw =
@@ -407,6 +366,11 @@ cond_punctuate p (doc:docs) = go doc docs
               where cond_predicate = if isEmpty d then d else d<>p
 
 -- |
+-- makes a \hspace*{String} as Doc with appropiate size
+hspace_latex :: String -> Doc
+hspace_latex str = sp_text (calc_line_length str) ("\\hspace*{"++str++"}")
+
+-- |
 -- a constant String for the start of annotations
 startAnno :: String
 startAnno = "{\\small{}"
@@ -422,7 +386,7 @@ endAnno = "%@%small@}"
 escape_latex :: String -> String
 escape_latex "" = ""
 escape_latex (x : xs)
-    | x == '\\' = "\\textbackslash" ++ '{' : '}' : escape_latex xs
+    | x == '\\' = "\\textbackslash{}" ++ escape_latex xs
     | x == '"' = -- something to prevent german.sty from interpreting '"'
              case xs of
              []  -> default_quotes []

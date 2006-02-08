@@ -49,7 +49,6 @@ module Common.LaTeX_utils
     , casl_axiom_latex     -- for printDisplayToken_latex, replaces "~"
     , casl_normal_latex
 
-    , semiAnno_latex
     , semiT_latex
     , commaT_latex
     , crossT_latex
@@ -65,10 +64,7 @@ module Common.LaTeX_utils
     where
 
 import Common.Id
-import Common.AS_Annotation
 import Common.GlobalAnnotations
-import Common.Print_AS_Annotation(splitAndPrintRAnnos)
-import Common.LaTeX_AS_Annotation
 import Common.Lib.Pretty
 import Common.PrintLaTeX
 
@@ -85,29 +81,6 @@ crossT_latex = listSep_latex (space_latex <> hc_sty_axiom "\\times")
 listSep_latex :: PrintLaTeX a => Doc -> GlobalAnnos -> [a] -> Doc
 listSep_latex p ga = fsep_latex . punctuate p . map (printLatex0 ga)
 
-semiAnno_latex :: (PrintLaTeX a) =>
-                  GlobalAnnos -> [Annoted a] -> Doc
-semiAnno_latex ga l = if null l then empty else
-                   (vcat $ map (pf' True)
-                              (init l) ++ [pf' False (last l)])
-    where pfga as = vcat $ map (printLatex0 ga) as
-          pf' printSemi a_item =
-              leftAF (rightAF (
-                 if isEmpty laImpl then item'' else
-                     fsep_latex [item'', laImpl]))
-              where (laImpl,ras) = splitAndPrintRAnnos printLatex0
-                                             printAnnotationList_Latex0
-                                             (<\+>)
-                                             (latex_macro "\\`" <>) empty
-                                             ga (r_annos a_item)
-                    item' = printLatex0 ga (item a_item)
-                    item'' = if printSemi then item'<>semi_latex else item'
-                    leftAF = if null l_annos' then id
-                                              else ($$) (pfga l_annos')
-                    l_annos' = l_annos a_item
-                    rightAF = if isEmpty ras then id
-                                             else (\ x -> x $$ ras)
-
 tabList_latex :: [Doc] -> [Doc]
 tabList_latex [] = []
 tabList_latex [x] = [startTab_latex <> x <> endTab_latex]
@@ -117,20 +90,6 @@ tabList_latex l = let h' = startTab_latex <> head l
                             then []
                             else init $ tail l
                   in h':rema++[l']
-
-hc_sty_casl_keyword :: String -> Doc
-hc_sty_casl_keyword str =
-      case str of
-      "sort" -> sp_t "\\SORT"
-      "sorts" -> sp_t "\\SORTS"
-      "op" -> sp_t "\\OP"
-      "ops" -> sp_t "\\OPS"
-      "pred" -> sp_t "\\PRED"
-      "preds" -> sp_t "\\PREDS"
-      "type" -> sp_t "\\TYPE"
-      "types" -> sp_t "\\TYPES"
-      str' -> hc_sty_keyword (Just "preds") str'
-      where sp_t s = sp_text (keyword_width "preds") s
 
 sp_braces_latex2 :: Doc -> Doc
 sp_braces_latex2 d =
