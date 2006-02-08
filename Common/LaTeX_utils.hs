@@ -132,24 +132,10 @@ hc_sty_casl_keyword str =
       str' -> hc_sty_keyword (Just "preds") str'
       where sp_t s = sp_text (keyword_width "preds") s
 
-sp_hang_latex :: Doc -> Int -> Doc -> Doc
-sp_hang_latex d1 n d2 = cat [d1, nest_latex n d2]
-
-sp_between_latex :: Doc -> Doc -> Doc -> Doc
-sp_between_latex lb rb p = sp_hang_latex (sp_hang_latex lb 1 p) 0 rb
-
-sp_braces_latex :: Doc -> Doc
-sp_braces_latex =
-    sp_between_latex (casl_normal_latex "\\{") (casl_normal_latex "\\}")
-
 sp_braces_latex2 :: Doc -> Doc
 sp_braces_latex2 d =
     fcat [casl_normal_latex "\\{"<>d,
           casl_normal_latex "\\}"]
-
-sp_brackets_latex :: Doc -> Doc
-sp_brackets_latex =
-    sp_between_latex (casl_normal_latex "[") (casl_normal_latex "]")
 
 -- | a horizontal space as wide as the keyword view followed by a space
 view_hspace :: Doc
