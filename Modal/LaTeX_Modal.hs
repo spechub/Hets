@@ -23,6 +23,7 @@ import Common.Lib.Pretty
 import Common.Keywords
 import Common.PPUtils
 import Common.LaTeX_utils
+import Common.LaTeX_AS_Annotation
 import CASL.LaTeX_AS_Basic
 
 instance PrintLaTeX M_BASIC_ITEM where

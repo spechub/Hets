@@ -15,6 +15,7 @@ module Syntax.LaTeX_AS_Structured where
 import Common.Lib.Pretty
 import Common.PrintLaTeX
 import Common.LaTeX_utils
+import Common.LaTeX_AS_Annotation()
 import Common.Keywords
 
 import Syntax.AS_Structured

@@ -22,6 +22,7 @@ import Common.PrintLaTeX
 import Common.LaTeX_utils
 import Common.PPUtils
 import Common.AS_Annotation
+import Common.LaTeX_AS_Annotation
 import CASL.AS_Basic_CASL
 import CASL.LaTeX_AS_Basic
 import Data.Char(toUpper)

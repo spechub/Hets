@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Christian Maeder and Uni Bremen 2004
+Copyright   :  (c) Christian Maeder and Uni Bremen 2004-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -28,6 +28,7 @@ import Common.GlobalAnnotations(GlobalAnnos)
 import Common.AS_Annotation(mapAnM)
 import Common.PrintLaTeX
 import Common.LaTeX_utils
+import Common.LaTeX_AS_Annotation()
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 
