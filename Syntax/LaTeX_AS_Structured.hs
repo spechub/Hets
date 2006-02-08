@@ -7,7 +7,7 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Grothendieck)
 
-LaTeX Printing the Structured part of hetrogenous specifications.
+LaTeX Printing the Structured part of heterogenous specifications.
 -}
 
 module Syntax.LaTeX_AS_Structured where
@@ -70,7 +70,7 @@ instance PrintLaTeX SPEC where
                          Extension _ _ -> spacetab
                          Union _ _ -> spacetab
                          _ -> empty
-            spacetab = latex_space <> setTab_latex
+            spacetab = view_hspace <> setTab_latex
         in tabbed_nest_latex (setTabWithSpaces_latex 3<>
                  fsep [hc_sty_plain_keyword localS,tabbed_nest_latex aa',
                        hc_sty_plain_keyword withinS,tabbed_nest_latex ab'])
@@ -222,11 +222,7 @@ mkMaybeKeywordTuple :: Doc -> Maybe (String,Doc)
 mkMaybeKeywordTuple kw_doc =
     Just (show $ kw_doc<~>setTab_latex, kw_doc <> space_latex)
 
-sp_space_latex :: GlobalAnnos -> (Doc,GlobalAnnos)
+sp_space_latex :: GlobalAnnos -> (Doc, GlobalAnnos)
 sp_space_latex ga = if is_inside_gen_arg ga && is_first_spec_in_param ga
-                    then (latex_space,set_first_spec_in_param False ga)
-                    else (empty,ga)
-
-latex_space :: Doc
-latex_space = hspace_latex $ pt_length
-                  (keyword_width viewS + normal_width "~")
+                    then (view_hspace, set_first_spec_in_param False ga)
+                    else (empty, ga)
