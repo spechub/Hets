@@ -15,7 +15,6 @@ module Common.LaTeX_utils
     , parens_latex
     , brackets_latex
     , hang_latex
-    , nest_latex
     , sep_latex
     , fsep_latex
     , listSep_latex          -- then, and

@@ -30,7 +30,7 @@ instance PrettyPrint a => PrettyPrint (DefaultMorphism a) where
 instance PrintLaTeX a => PrintLaTeX (DefaultMorphism a) where
     printLatex0 ga (MkMorphism s t) =
         sp_braces_latex2 (printLatex0 ga s)
-                    $$ nest_latex 1 (hc_sty_axiom "\\mapsto")
+                    $$ hc_sty_axiom "\\mapsto"
                     <\+> sp_braces_latex2 (printLatex0 ga t)
 
 domOfDefaultMorphism, codOfDefaultMorphism :: DefaultMorphism sign -> sign
