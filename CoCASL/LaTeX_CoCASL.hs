@@ -46,7 +46,7 @@ instance PrintLaTeX COALTERNATIVE where
                             else parens_tab_latex $ semiT_latex ga l)
                             <> optLatexQuMark k)
     printLatex0 ga (CoSubsorts l _) =
-        hc_sty_plain_keyword (sortS ++ pluralS l) <\+> commaT_latex ga l
+        hc_sty_id (sortS ++ pluralS l) <\+> commaT_latex ga l
 
 instance PrintLaTeX COCOMPONENTS where
     printLatex0 ga (CoSelect l s _) =
