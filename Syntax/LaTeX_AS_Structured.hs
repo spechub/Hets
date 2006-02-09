@@ -104,15 +104,12 @@ latexLogicEnc ga a = hc_sty_plain_keyword logicS <\+> printLatex0 ga a
 instance PrintLaTeX RENAMING where
     printLatex0 ga (Renaming aa _) =
        hc_sty_plain_keyword withS <\+>
-          set_tabbed_nest_latex (fsep_latex (map (printLatex0 ga) aa))
-
+          set_tabbed_nest_latex (commaT_latex ga aa)
 
 instance PrintLaTeX RESTRICTION where
     printLatex0 ga (Hidden aa _) =
        hc_sty_plain_keyword hideS <\+>
-          set_tabbed_nest_latex
-                (fsep_latex (condPunct comma_latex
-                                       aa (map (printLatex0 ga) aa)))
+          set_tabbed_nest_latex (commaT_latex ga aa)
     printLatex0 ga (Revealed aa _) =
         hc_sty_plain_keyword revealS <\+>
           set_tabbed_nest_latex (printLatex0 ga aa)

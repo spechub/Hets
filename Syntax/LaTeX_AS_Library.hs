@@ -62,8 +62,7 @@ instance PrintLaTeX LIB_ITEM where
                        AS_Struct.View_type vaa vab _ ->
                             (condGrpSp vaa,
                              condGrpSp vab)
-            ad' = fcat $ punctuate (comma_latex<>space_latex) $
-                         map (printLatex0 ga) ad
+            ad' = commaT_latex ga ad
             eq' = if null ad then empty else equals_latex
             vhead = hc_sty_hetcasl_keyword viewS <\+>
                    setTab_latex <> aa' <\+> ab'
