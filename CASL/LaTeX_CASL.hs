@@ -31,15 +31,16 @@ instance PrintLaTeX PredType where
 
 instance (PrintLaTeX f, PrintLaTeX e) => PrintLaTeX (Sign f e) where
     printLatex0 ga s =
-        casl_keyword_latex sortS <\+> commaT_latex ga (Set.toList $ sortSet s)
+        hc_sty_plain_keyword sortS <\+>
+                             commaT_latex ga (Set.toList $ sortSet s)
         $$
         (if Rel.null (sortRel s) then empty
-            else casl_keyword_latex sortS <\+>
+            else hc_sty_plain_keyword sortS <\+>
              (vcat $ map printRel $ Map.toList $ Rel.toMap
                        $ Rel.transpose $ sortRel s))
         $$
         vcat (map (\ (i, t) ->
-                   casl_keyword_latex opS <\+>
+                   hc_sty_plain_keyword opS <\+>
                    printLatex0 ga i <\+> colon_latex <>
                    printLatex0 ga t)
               $ concatMap (\ (o, ts) ->
@@ -47,7 +48,7 @@ instance (PrintLaTeX f, PrintLaTeX e) => PrintLaTeX (Sign f e) where
                $ Map.toList $ opMap s)
         $$
         vcat (map (\ (i, t) ->
-                   casl_keyword_latex predS <\+>
+                   hc_sty_plain_keyword predS <\+>
                    printLatex0 ga i <\+> colon_latex <\+>
                    printLatex0 ga (toPRED_TYPE t))
              $ concatMap (\ (o, ts) ->
@@ -70,9 +71,9 @@ instance PrintLaTeX SymbType where
   printLatex0 _ SortAsItemType = empty
 
 instance PrintLaTeX Kind where
-  printLatex0 _ SortKind = casl_keyword_latex sortS
-  printLatex0 _ FunKind = casl_keyword_latex opS
-  printLatex0 _ PredKind = casl_keyword_latex predS
+  printLatex0 _ SortKind = hc_sty_plain_keyword sortS
+  printLatex0 _ FunKind = hc_sty_plain_keyword opS
+  printLatex0 _ PredKind = hc_sty_plain_keyword predS
 
 instance PrintLaTeX RawSymbol where
   printLatex0 ga rsym = case rsym of
