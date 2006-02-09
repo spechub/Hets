@@ -307,19 +307,26 @@ instance PrettyPrint OP_SYMB where
 
 instance PrettyPrint SYMB_ITEMS where
     printText0 ga (Symb_items k l _) =
-        printText0 ga k <> text (pluralS_symb_list k l)
-                        <+> commaT_text ga l
+        print_kind_text k l <+> commaT_text ga l
 
 instance PrettyPrint SYMB_MAP_ITEMS where
     printText0 ga (Symb_map_items k l _) =
-        printText0 ga k <> text (pluralS_symb_list k l)
-                        <+> commaT_text ga l
+        print_kind_text k l <+> commaT_text ga l
+
+print_kind_text :: SYMB_KIND -> [a] -> Doc
+print_kind_text k l = case k of
+    Implicit -> empty
+    _ -> text (pluralS_symb_list k l)
+
+pluralS_symb_list :: SYMB_KIND -> [a] -> String
+pluralS_symb_list k l = (case k of
+    Implicit -> error "pluralS_symb_list"
+    Sorts_kind -> sortS
+    Ops_kind   -> opS
+    Preds_kind -> predS) ++ (if isSingle l then "" else "s")
 
 instance PrettyPrint SYMB_KIND where
-    printText0 _ Implicit   = empty
-    printText0 _ Sorts_kind = text sortS
-    printText0 _ Ops_kind   = text opS
-    printText0 _ Preds_kind = text predS
+    printText0 _ k = print_kind_text k [()]
 
 instance PrettyPrint SYMB where
     printText0 ga (Symb_id i) = printText0 ga i
@@ -337,13 +344,6 @@ instance PrettyPrint SYMB_OR_MAP where
         printText0 ga s <+> text mapsTo <+> printText0 ga t
 
 ---- helpers ----------------------------------------------------------------
-
-pluralS_symb_list :: SYMB_KIND -> [a] -> String
-pluralS_symb_list k l = case k of
-                       Implicit -> ""
-                       _        -> if length l > 1
-                                   then "s"
-                                   else ""
 
 condPrint_Mixfix :: (Token -> Doc)
                  -> (Id -> Doc)

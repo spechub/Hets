@@ -355,17 +355,14 @@ instance PrintLaTeX OP_SYMB where
 
 instance PrintLaTeX SYMB_ITEMS where
     printLatex0 ga (Symb_items k l _) =
-        print_kind_latex ga k l <\+> commaT_latex ga l
+        print_kind_latex k l <\+> commaT_latex ga l
 
 instance PrintLaTeX SYMB_MAP_ITEMS where
     printLatex0 ga (Symb_map_items k l _) =
-        print_kind_latex ga k l <\+> commaT_latex ga l
+        print_kind_latex k l <\+> commaT_latex ga l
 
 instance PrintLaTeX SYMB_KIND where
-    printLatex0 _ Implicit   = empty
-    printLatex0 _ Sorts_kind = casl_keyword_latex sortS
-    printLatex0 _ Ops_kind   = casl_keyword_latex opS
-    printLatex0 _ Preds_kind = casl_keyword_latex predS
+    printLatex0 _ k = print_kind_latex k [()]
 
 instance PrintLaTeX SYMB where
     printLatex0 ga (Symb_id i) = printLatex0 ga i
@@ -382,15 +379,11 @@ instance PrintLaTeX SYMB_OR_MAP where
     printLatex0 ga (Symb_map s t _) =
         printLatex0 ga s <\+> hc_sty_axiom "\\mapsto" <\+> printLatex0 ga t
 
-print_kind_latex :: GlobalAnnos -> SYMB_KIND -> [a] -> Doc
-print_kind_latex ga k l =
+print_kind_latex :: SYMB_KIND -> [a] -> Doc
+print_kind_latex k l =
     case k of
     Implicit -> empty
-    _        -> latex_macro "\\KW{"<>kw<>s<>latex_macro "}"
-    where kw = printLatex0 ga k
-          s  = case pluralS_symb_list k l of
-               "" -> empty
-               s' -> casl_keyword_latex s'
+    _        -> hc_sty_plain_keyword $ pluralS_symb_list k l
 
 condPrint_Mixfix_latex :: PrintLaTeX f => GlobalAnnos -> Id -> [TERM f] -> Doc
 condPrint_Mixfix_latex ga =
