@@ -108,9 +108,11 @@ quote l = case l of
 
 showIsaT1 :: (String -> String) -> Id -> String
 showIsaT1 tr ide = let
-    rdru = reverse . dropWhile (== '_')
     str = show ide
-    in if isInfix2 ide then "XX" ++ tr (rdru $ rdru str) else tr str
+    (lus, rstr) = span (== '_') str
+    (rus, str2) = span (== '_') $ reverse rstr
+    fstr = tr $ reverse str2
+    in map (const 'X') lus ++ fstr ++ map (const 'X') rus
 
 showIsaConstT :: Id -> BaseSig -> String
 showIsaConstT ide thy = showIsaT1 (transConstStringT thy) ide
