@@ -14,6 +14,7 @@ LaTeX Pretty Printing heterogenous
 module Syntax.LaTeX_AS_Library where
 
 import Common.Lib.Pretty
+import Common.PPUtils
 import Common.PrintLaTeX
 import Common.LaTeX_utils
 import Common.GlobalAnnotations
@@ -31,12 +32,12 @@ import Syntax.Print_AS_Library
 instance PrintLaTeX LIB_DEFN where
     printLatex0 ga (Lib_defn aa ab _ ad) =
         let aa' = printLatex0 ga' aa              -- lib name
-            ab' = vcat $ map (printLatex0 ga') ab -- LIB_ITEMs
+            ab' = vsep $ map (printLatex0 ga') ab -- LIB_ITEMs
             ad' = vcat $ map (printLatex0 ga') ad -- global ANNOTATIONs
             ga' = set_latex_print True ga
         in hc_sty_plain_keyword libraryS <\+> aa'
-               <> lnl $$ ad'
-               $$ lnl $$ ab'
+               $++$ ad'
+               $++$ ab'
 
 instance PrintLaTeX LIB_ITEM where
     printLatex0 ga (Spec_defn aa ab ac _) =
@@ -107,7 +108,7 @@ instance PrintLaTeX LIB_ITEM where
         in (hang_latex (hc_sty_hetcasl_keyword fromS <\+> setTab_latex <>aa'
                         <\+> hc_sty_plain_keyword getS)
                        8
-                       (tabbed_nest_latex ab')) <> lnl
+                       (tabbed_nest_latex ab'))
     printLatex0 ga (Syntax.AS_Library.Logic_decl aa _) =
         let aa' = printLatex0 ga aa
         in hc_sty_plain_keyword logicS <\+> aa'
@@ -135,8 +136,5 @@ instance PrintLaTeX VERSION_NUMBER where
     printLatex0 _ (Version_number aa _) =
         hcat $ punctuate dot_latex $ map casl_normal_latex aa
 
-lnl :: Doc
-lnl = latex_macro "\n"
-
 latexEnd :: Doc
-latexEnd = hc_sty_plain_keyword endS <> lnl
+latexEnd = hc_sty_plain_keyword endS
