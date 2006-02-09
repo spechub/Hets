@@ -55,7 +55,7 @@ instance (PrintLaTeX f, PrintLaTeX e) => PrintLaTeX (Sign f e) where
                           map ( \ ty -> (o, ty) ) $ Set.toList ts)
              $ Map.toList $ predMap s)
      where printRel (supersort, subsorts) =
-             commaT_latex ga (Set.toList subsorts) <\+> hc_sty_axiom lessS
+             commaT_latex ga (Set.toList subsorts) <\+> less_latex
                               <\+> printLatex0 ga supersort
 
 instance PrintLaTeX Symbol where

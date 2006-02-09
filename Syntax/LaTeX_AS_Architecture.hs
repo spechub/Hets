@@ -60,7 +60,7 @@ instance PrintLaTeX UNIT_SPEC where
             ab' = condBracesGroupSpec printLatex0
                   sp_braces_latex2 Nothing ga ab
         in if null aa then ab' else
-           aa' <\+> hc_sty_axiom "\\rightarrow" <\+> ab'
+           aa' <\+> rightArrow <\+> ab'
     printLatex0 ga (Spec_name aa) =
         let aa' = printLatex0 ga aa
         in aa'
@@ -92,7 +92,7 @@ instance PrintLaTeX UNIT_EXPRESSION where
         in if null aa then ab'
            else hang_latex (hc_sty_plain_keyword lambdaS) 4
                     (hang_latex aa' (-2)
-                     ( hc_sty_axiom "\\bullet" <\+> ab'))
+                     (bullet_latex <\+> ab'))
 
 instance PrintLaTeX UNIT_BINDING where
     printLatex0 ga (Unit_binding aa ab _) =
@@ -129,5 +129,3 @@ instance PrintLaTeX FIT_ARG_UNIT where
         (if null ab then empty else space_latex <>
             hc_sty_plain_keyword fitS <\+>
             set_tabbed_nest_latex (fsep_latex (map (printLatex0 ga) ab)))
-
-

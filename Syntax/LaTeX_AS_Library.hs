@@ -116,7 +116,7 @@ instance PrintLaTeX ITEM_NAME_OR_MAP where
     printLatex0 _ga (Item_name aa) =
         simple_id_latex aa
     printLatex0 _ga (Item_name_map aa ab _) =
-        simple_id_latex aa <\+> hc_sty_axiom "\\mapsto" <\+> simple_id_latex ab
+        simple_id_latex aa <\+> mapsto_latex <\+> simple_id_latex ab
 
 instance PrintLaTeX LIB_NAME where
     printLatex0 ga (Lib_version aa ab) =
@@ -133,7 +133,7 @@ instance PrintLaTeX LIB_ID where
 
 instance PrintLaTeX VERSION_NUMBER where
     printLatex0 _ (Version_number aa _) =
-        hcat $ punctuate (casl_normal_latex ".") $ map casl_normal_latex aa
+        hcat $ punctuate dot_latex $ map casl_normal_latex aa
 
 lnl :: Doc
 lnl = latex_macro "\n"

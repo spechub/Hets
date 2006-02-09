@@ -42,7 +42,7 @@ instance PrintLaTeX a => PrintLaTeX (AnyKind a) where
                           (case k1 of
                                   FunKind _ _ _ _ -> parens
                                   _ -> id) (printLatex0 ga k1)
-                          <\+> hc_sty_axiom "\\rightarrow"
+                          <\+> rightArrow
                           <\+> printLatex0 ga k2
 
 instance PrintLaTeX TypePattern where
@@ -64,15 +64,16 @@ latexBracket b = case b of
 
 -- | print a 'Kind' plus a preceding colon (or nothing for 'star')
 latexKind :: GlobalAnnos -> Kind -> Doc
-latexKind ga k = if k == universe then empty else latexVarKind ga InVar $ VarKind k
+latexKind ga k =
+    if k == universe then empty else latexVarKind ga InVar $ VarKind k
 
 latexVarKind :: GlobalAnnos -> Variance -> VarKind -> Doc
 latexVarKind ga vv vk = case vk of
-                    VarKind k -> space <> colon_latex <\+>
+                    VarKind k -> space_latex <> colon_latex <\+>
                                  printLatex0 ga vv <>
                                  printLatex0 ga k
                     Downset t ->
-                        space <> hc_sty_axiom lessS <\+> printLatex0 ga t
+                        space_latex <> less_latex <\+> printLatex0 ga t
                     _ -> empty
 
 latexType :: GlobalAnnos -> Type -> Doc
@@ -96,11 +97,11 @@ instance PrintLaTeX TypeScheme where
     printLatex0 ga (TypeScheme vs t _) = let tdoc = printLatex0 ga t in
         if null vs then tdoc else
            hang (hc_sty_plain_keyword forallS <\+> semiT_latex ga vs
-                                  <\+> hc_sty_axiom "\\bullet") 2 tdoc
+                                  <\+> bullet_latex) 2 tdoc
 
 instance PrintLaTeX Instance where
     printLatex0 _ i = case i of
-        Instance -> space <> hc_sty_plain_keyword instanceS
+        Instance -> space_latex <> hc_sty_plain_keyword instanceS
         Plain -> empty
 
 instance PrintLaTeX Partiality where
@@ -110,15 +111,15 @@ instance PrintLaTeX Partiality where
 
 instance PrintLaTeX Arrow where
     printLatex0 _ a = case a of
-        FunArr -> hc_sty_axiom "\\rightarrow"
-        PFunArr -> hc_sty_axiom ("\\rightarrow" ++ quMark)
-        ContFunArr -> hc_sty_axiom "\\stackrel{c}{\\rightarrow}"
-        PContFunArr -> hc_sty_axiom ("\\stackrel{c}{\\rightarrow}" ++ quMark)
+        FunArr -> rightArrow
+        PFunArr -> pfun_latex
+        ContFunArr -> cfun_latex
+        PContFunArr -> pcfun_latex
 
 instance PrintLaTeX Quantifier where
-    printLatex0 _ Universal = hc_sty_axiom "\\forall"
-    printLatex0 _ Existential = hc_sty_axiom "\\exists"
-    printLatex0 _ Unique = hc_sty_axiom "\\exists!"
+    printLatex0 _ Universal = forall_latex
+    printLatex0 _ Existential = exists_latex
+    printLatex0 _ Unique = unique_latex
 
 instance PrintLaTeX TypeQual where
     printLatex0 _ q = case q of
@@ -141,7 +142,6 @@ substituteArgs ga (t:ts) (d:ds) =
     then d <\+> substituteArgs ga ts ds
     else printLatex0 ga t <\+>  substituteArgs ga ts (d:ds)
 
-
 findMixfixOp :: Term -> Maybe Id
 findMixfixOp (QualOp _ (InstOpId ident _ _) _ _) =
   if isMixfix ident then Just ident else Nothing
@@ -151,7 +151,7 @@ findMixfixOp _ = Nothing
 latexTerm :: GlobalAnnos -> Bool -> Term -> Doc
 latexTerm ga b trm =
     let ppParen = if b then parens else id
-        commaT = fsep_latex . punctuate comma . map (latexTerm ga False)
+        commaT = fsep_latex . punctuate comma_latex . map (latexTerm ga False)
     in
         (case trm of
                TupleTerm _ _ -> id
@@ -183,7 +183,7 @@ latexTerm ga b trm =
                           4 $ printLatex0 ga typ
         QuantifiedTerm q vs t _ -> printLatex0 ga q
                                           <\+> semiT_latex ga vs
-                                          <\+> hc_sty_axiom "\\bullet"
+                                          <\+> bullet_latex
                                           <\+> printLatex0 ga t
         LambdaTerm ps q t _ -> hang (hc_sty_axiom lamS
                                       <\+> (case ps of
@@ -191,21 +191,22 @@ latexTerm ga b trm =
                                            _ -> fcat $ map
                                               (parens . latexTerm ga False) ps)
                                       <\+> (case q of
-                                           Partial -> hc_sty_axiom "\\bullet"
-                                           Total -> hc_sty_axiom $ "\\bullet"
-                                                    ++ exMark))
+                                           Partial -> bullet_latex
+                                           Total -> bullet_latex <>
+                                                    hc_sty_axiom exMark))
                                       2 $ printLatex0 ga t
         CaseTerm t es _  -> hang (hc_sty_plain_keyword caseS
                                    <\+> printLatex0 ga t
                                    <\+> hc_sty_plain_keyword ofS)
                                    4 $ vcat (punctuate (hc_sty_axiom " | ")
-                                       (map (latexEq0 ga "\\rightarrow") es))
+                                       (map (latexEq0 ga rightArrow) es))
         LetTerm br es t _ ->
             let dt = printLatex0 ga t
                 des = vcat $ punctuate semi $
-                      map (latexEq0 ga equalS) es
+                      map (latexEq0 ga equals_latex) es
                 in case br of
-                Let -> sep [hc_sty_plain_keyword letS <\+> des, hc_sty_plain_keyword inS <\+> dt]
+                Let -> sep [hc_sty_plain_keyword letS <\+> des,
+                            hc_sty_plain_keyword inS <\+> dt]
                 Where -> hang (sep [dt, hc_sty_plain_keyword whereS]) 6 des
                 Program -> des
         TermToken t -> printLatex0 ga t
@@ -217,9 +218,9 @@ latexTerm ga b trm =
                           <\+> printLatex0 ga p
 
 -- | print an equation with different symbols between 'Pattern' and 'Term'
-latexEq0 :: GlobalAnnos -> String -> ProgEq -> Doc
-latexEq0 ga s (ProgEq p t _) = hang (hang (printLatex0 ga p) 2
-                                    $ hc_sty_axiom s) 4 $ printLatex0 ga t
+latexEq0 :: GlobalAnnos -> Doc -> ProgEq -> Doc
+latexEq0 ga d (ProgEq p t _) =
+    hang (hang (printLatex0 ga p) 2 d) 4 $ printLatex0 ga t
 
 instance PrintLaTeX VarDecl where
     printLatex0 ga (VarDecl v t _ _) = printLatex0 ga v <\+> colon_latex
@@ -258,13 +259,13 @@ latexPseudoType ga (TypeScheme l t _) = noPrint (null l)
     (hc_sty_axiom lamS <\+>
      (if null $ tail l then printLatex0 ga $ head l
          else fcat(map (parens . printLatex0 ga) l))
-     <\+> hc_sty_axiom "\\bullet" <> space) <> printLatex0 ga t
+     <\+> bullet_latex <> space_latex) <> printLatex0 ga t
 
 instance PrintLaTeX BasicSpec where
     printLatex0 ga (BasicSpec l) = vcat (map (printLatex0 ga) l)
 
 instance PrintLaTeX ProgEq where
-    printLatex0 ga = latexEq0 ga equalS
+    printLatex0 ga = latexEq0 ga equals_latex
 
 instance PrintLaTeX BasicItem where
     printLatex0 ga bi = case bi of
@@ -280,7 +281,7 @@ instance PrintLaTeX BasicItem where
         AxiomItems vs fs _ ->
             (if null vs then empty
                 else hc_sty_plain_keyword forallS <\+> semiT_latex ga vs)
-            $$ vcat (map (\x -> hc_sty_axiom "\\bullet" <\+> printLatex0 ga x)
+            $$ vcat (map (\x -> bullet_latex <\+> printLatex0 ga x)
                      fs)
         Internal l _ -> hc_sty_plain_keyword internalS
                         <\+> sp_braces_latex2 (semiT_latex ga l)
@@ -304,7 +305,7 @@ instance PrintLaTeX ClassItem where
 
 instance PrintLaTeX ClassDecl where
     printLatex0 ga (ClassDecl l k _) = commaT_latex ga l
-        <\+> hc_sty_axiom lessS <\+> printLatex0 ga k
+        <\+> less_latex <\+> printLatex0 ga k
 
 instance PrintLaTeX Vars where
     printLatex0 ga vd = case vd of
@@ -315,7 +316,7 @@ instance PrintLaTeX TypeItem where
     printLatex0 ga ti = case ti of
         TypeDecl l k _ -> commaT_latex ga l <>
                                   latexKind ga k
-        SubtypeDecl l t _ -> commaT_latex ga l <\+> hc_sty_axiom lessS
+        SubtypeDecl l t _ -> commaT_latex ga l <\+> less_latex
                                         <\+> printLatex0 ga t
         IsoDecl l _ -> cat(punctuate (hc_sty_axiom " = ")
                                       (map (printLatex0 ga) l))
@@ -324,12 +325,13 @@ instance PrintLaTeX TypeItem where
                                <\+> sp_braces_latex2 (printLatex0 ga v
                                            <\+> colon_latex
                                            <\+> printLatex0 ga t
-                                           <\+> hc_sty_axiom "\\bullet"
+                                           <\+> bullet_latex
                                            <\+> printLatex0 ga f)
         AliasType p k t _ ->  (printLatex0 ga p <>
                                           case k of
                                           Nothing -> empty
-                                          Just j -> space <> colon_latex <\+>
+                                          Just j -> space_latex <>
+                                                    colon_latex <\+>
                                                    printLatex0 ga j)
                                        <\+> hc_sty_axiom assignS
                                        <\+> latexPseudoType ga t
@@ -340,7 +342,7 @@ instance PrintLaTeX OpItem where
         OpDecl l t as _ -> commaT_latex ga l <\+> colon_latex
                                    <\+> (printLatex0 ga t
                                         <> (if null as then empty
-                                            else comma <> space)
+                                            else comma_latex <> space_latex)
                                         <> commaT_latex ga as)
         OpDefn n ps s p t _ ->
             printLatex0 ga n <> fcat (map (parens . semiT_latex ga) ps)
@@ -392,7 +394,7 @@ instance PrintLaTeX Symb where
     printLatex0 ga (Symb i mt _) =
         printLatex0 ga i <> (case mt of Nothing -> empty
                                         Just (SymbType t) ->
-                                          empty <\+> colon_latex <\+>
+                                          space_latex <> colon_latex <\+>
                                             printLatex0 ga t)
 
 instance PrintLaTeX SymbItems where
@@ -403,7 +405,7 @@ instance PrintLaTeX SymbOrMap where
     printLatex0 ga (SymbOrMap s mt _) =
         printLatex0 ga s <> (case mt of Nothing -> empty
                                         Just t ->
-                                          empty <\+> hc_sty_axiom "\\mapsto" <\+>
+                                          space_latex <> mapsto_latex <\+>
                                             printLatex0 ga t)
 
 instance PrintLaTeX SymbMapItems where
@@ -414,30 +416,27 @@ instance PrintLaTeX SymbMapItems where
 latexSK :: SymbKind -> Doc
 latexSK k =
     case k of Implicit -> empty
-              _ -> hc_sty_plain_keyword (drop 3 $ show k) <> space
-
-
-
+              _ -> hc_sty_plain_keyword (drop 3 $ show k) <> space_latex
 
 ------------------------------------- Le -----------------------------------
 instance PrintLaTeX ClassInfo where
     printLatex0 ga (ClassInfo _ ks) =
-           space <> hc_sty_axiom lessS <\+> latexList0 ga ks
+           space_latex <> less_latex <\+> latexList0 ga ks
 
 latexGenKind :: GenKind -> Doc
 latexGenKind k = case k of
                 Loose -> empty
-                Free -> hc_sty_plain_keyword freeS <> space
-                Generated -> hc_sty_plain_keyword generatedS <> space
+                Free -> hc_sty_plain_keyword freeS <> space_latex
+                Generated -> hc_sty_plain_keyword generatedS <> space_latex
 
 instance PrintLaTeX TypeDefn where
     printLatex0 _ NoTypeDefn = empty
     printLatex0 _ PreDatatype =
-        space <> hc_sty_comment (hc_sty_plain_keyword dataS)
-    printLatex0 ga (AliasTypeDefn s) = space <> hc_sty_axiom assignS
+        space_latex <> hc_sty_comment (hc_sty_plain_keyword dataS)
+    printLatex0 ga (AliasTypeDefn s) = space_latex <> hc_sty_axiom assignS
                                       <\+> latexPseudoType ga s
     printLatex0 ga (DatatypeDefn de)  =
-        space <> hc_sty_comment (printLatex0 ga de)
+        space_latex <> hc_sty_comment (printLatex0 ga de)
 
 latexAltDefn :: GlobalAnnos -> Id -> [TypeArg] -> RawKind -> AltDefn -> Doc
 latexAltDefn ga dt args rk (Construct mi ts p sels) = case mi of
@@ -448,16 +447,16 @@ latexAltDefn ga dt args rk (Construct mi ts p sels) = case mi of
 
 instance PrintLaTeX Selector where
     printLatex0 ga (Select mi t p) = (case mi of
-        Just i -> printLatex0 ga i <\+> (case p of
-                             Partial -> hc_sty_axiom ":?"
-                             Total -> colon_latex) <> space
+        Just i -> printLatex0 ga i <\+> (colon_latex <> case p of
+                             Partial -> hc_sty_axiom quMark
+                             Total -> empty) <> space_latex
         Nothing -> empty) <> printLatex0 ga t
 
 instance PrintLaTeX TypeInfo where
     printLatex0 ga (TypeInfo _ ks sups defn) =
-        space <> colon_latex <\+> latexList0 ga ks
+        space_latex <> colon_latex <\+> latexList0 ga ks
         <> noPrint (Set.null sups)
-           (space <> hc_sty_axiom lessS <\+> latexList0 ga (Set.toList sups))
+           (space_latex <> less_latex <\+> latexList0 ga (Set.toList sups))
         <> printLatex0 ga defn
 
 instance PrintLaTeX ConstrInfo where
@@ -466,12 +465,12 @@ instance PrintLaTeX ConstrInfo where
 
 instance PrintLaTeX OpDefn where
     printLatex0 ga (NoOpDefn b) =
-        space <> hc_sty_comment (printLatex0 ga b)
+        space_latex <> hc_sty_comment (printLatex0 ga b)
     printLatex0 ga (ConstructData i) =
-        space <> hc_sty_comment (hc_sty_plain_keyword "construct"
+        space_latex <> hc_sty_comment (hc_sty_plain_keyword "construct"
                                  <\+> printLatex0 ga i)
     printLatex0 ga (SelectData c i) =
-        space <> hc_sty_comment
+        space_latex <> hc_sty_comment
         (hc_sty_plain_keyword "selected from"
          <\+> printLatex0 ga i <\+> hc_sty_plain_keyword "constructed by"
          $$ latexList0 ga c)
@@ -479,10 +478,11 @@ instance PrintLaTeX OpDefn where
                                      equals_latex <\+> printLatex0 ga t
 
 instance PrintLaTeX OpInfo where
-    printLatex0 ga o = space <> colon_latex <\+> printLatex0 ga (opType o)
+    printLatex0 ga o = space_latex <> colon_latex <\+>
+                       printLatex0 ga (opType o)
                       <> (case opAttrs o of
                           [] -> empty
-                          l -> comma <> commaT_latex ga l)
+                          l -> comma_latex <> commaT_latex ga l)
                       <>  printLatex0 ga (opDefn o)
 
 instance PrintLaTeX OpInfos where
@@ -496,7 +496,7 @@ instance PrintLaTeX DataEntry where
                  vcat (map (latexAltDefn ga i args rk) alts))
         $$ nest 2 (noPrint (Map.null im)
            (hc_sty_plain_keyword withS <\+> hc_sty_plain_keyword (typeS ++ sS)
-                   <\+> printMap0 ga (hc_sty_axiom mapsTo) im))
+                   <\+> printMap0 ga (mapsto_latex) im))
 
 instance PrintLaTeX Sentence where
     printLatex0 ga s = case s of
@@ -545,9 +545,8 @@ instance PrintLaTeX RawSymbol where
                      <\+> colon_latex <\+> printLatex0 ga t
       ASymbol s -> printLatex0 ga s
 
-
 ------------------------------- Morphism ------------------------------------
 instance PrintLaTeX Morphism where
   printLatex0 ga m = sp_braces_latex2 (printLatex0 ga (msource m))
-                    $$ hc_sty_axiom "\\mapsto"
+                    $$ mapsto_latex
                     <\+> sp_braces_latex2 (printLatex0 ga (mtarget m))

@@ -28,8 +28,6 @@ import Common.PrintLaTeX
 import Common.LaTeX_utils
 import Common.PPUtils
 
-import Data.Char (toUpper)
-
 instance (PrintLaTeX b, PrintLaTeX s, PrintLaTeX f)
     => PrintLaTeX (BASIC_SPEC b s f) where
     printLatex0 ga (Basic_spec l) =
@@ -58,7 +56,7 @@ instance (PrintLaTeX b, PrintLaTeX s, PrintLaTeX f) =>
         hc_sty_plain_keyword (varS ++ pluralS l) <\+>
         semiT_latex ga l
     printLatex0 ga (Local_var_axioms l f _) =
-        hc_sty_axiom "\\forall" <\+> semiT_latex ga l
+        forall_latex <\+> semiT_latex ga l
                  $$ printLatex0Axioms ga f
     printLatex0 ga (Axiom_items f _) =
         printLatex0Axioms ga f
@@ -72,7 +70,7 @@ printLatex0Axioms ga f =
 printAnnotedFormula_Latex0 :: PrintLaTeX f =>
                GlobalAnnos -> Annoted (FORMULA f) -> Doc
 printAnnotedFormula_Latex0 ga (Annoted i _ las ras) =
-        let i'   = hc_sty_axiom "\\bullet"
+        let i'   = bullet_latex
                       <\+> set_tabbed_nest_latex (printLatex0 ga i)
             las' = if not $ null las then
                       sp_text 0 "\n" <> printAnnotationList_Latex0 ga las
@@ -88,16 +86,16 @@ printAnnotedFormula_Latex0 ga (Annoted i _ las ras) =
 instance (PrintLaTeX s, PrintLaTeX f) =>
           PrintLaTeX (SIG_ITEMS s f) where
     printLatex0 ga (Sort_items l _) =
-        hc_sty_sig_item_keyword ga  (sortS++pluralS l) <\+>
+        hc_sty_sig_item_keyword ga  (sortS ++ pluralS l) <\+>
         set_tabbed_nest_latex (semiAnno_latex ga l)
     printLatex0 ga (Op_items l _) =
-        hc_sty_sig_item_keyword ga (opS++pluralS l)   <\+>
+        hc_sty_sig_item_keyword ga (opS ++ pluralS l)   <\+>
         set_tabbed_nest_latex (semiAnno_latex ga l)
     printLatex0 ga (Pred_items l _) =
-        hc_sty_sig_item_keyword ga (predS++pluralS l) <\+>
+        hc_sty_sig_item_keyword ga (predS ++ pluralS l) <\+>
         set_tabbed_nest_latex (semiAnno_latex ga l)
     printLatex0 ga (Datatype_items l _) =
-        hc_sty_sig_item_keyword ga (typeS++pluralS l) <\+>
+        hc_sty_sig_item_keyword ga (typeS ++ pluralS l) <\+>
         set_tabbed_nest_latex (semiAnno_latex ga l)
     printLatex0 ga (Ext_SIG_ITEMS s) = printLatex0 ga s
 
@@ -105,14 +103,14 @@ instance PrintLaTeX f => PrintLaTeX (SORT_ITEM f) where
     printLatex0 ga (Sort_decl l _) = commaT_latex ga l
     printLatex0 ga (Subsort_decl l t _) =
         hang_latex (commaT_latex ga l) 8 $
-                   hc_sty_axiom lessS <\+> printLatex0 ga t
+                   less_latex <\+> printLatex0 ga t
     printLatex0 ga (Subsort_defn s v t f _) =
         printLatex0 ga s <\+> equals_latex <\+>
            sp_braces_latex2 (set_tabbed_nest_latex $ fsep
                             [printLatex0 ga v
                              <> colon_latex
                              <\+> printLatex0 ga t,
-                             hc_sty_axiom "\\bullet"
+                             bullet_latex
                              <\+> set_tabbed_nest_latex (printLatex0 ga f)])
     printLatex0 ga (Iso_decl l _) =
         listSep_latex (space_latex <> equals_latex) ga l
@@ -123,7 +121,7 @@ instance PrintLaTeX f => PrintLaTeX (OP_ITEM f) where
         else setTabWithSpaces_latex 4 <>
                  fsep [ids_sig,
                        tabbed_nest_latex $ commaT_latex ga a]
-        where ids_sig = fsep [commaT_latex ga l<\+>colon_latex,
+        where ids_sig = fsep [commaT_latex ga l <\+> colon_latex,
                                  tabbed_nest_latex (if na then sig
                                         else sig <> comma_latex)]
               sig =  printLatex0 ga t
@@ -141,7 +139,7 @@ instance PrintLaTeX OP_TYPE where
         let (arg_types,type_arr) = if null l then (empty,empty)
                                    else (space_latex <>
                                          crossT_latex ga l,
-                                         hc_sty_axiom "\\rightarrow")
+                                         rightArrow)
             result_type = printLatex0 ga s
         in if null l then result_type
            else sep_latex [arg_types,type_arr <\+> result_type]
@@ -150,7 +148,7 @@ instance PrintLaTeX OP_TYPE where
         (if null l then hc_sty_axiom quMark
          else space_latex
               <> crossT_latex ga l
-               <\+>hc_sty_axiom ("\\rightarrow" ++ quMark))
+               <\+> pfun_latex)
         <\+> printLatex0 ga s
 
 optLatexQuMark :: FunKind -> Doc
@@ -194,16 +192,8 @@ instance PrintLaTeX PRED_HEAD where
 
 instance PrintLaTeX DATATYPE_DECL where
     printLatex0 ga (Datatype_decl s a _) =
-        printLatex0 ga s <\+>
-        sep_latex
-           (defnS'<> setTab_latex<~>
-              (printLatex0 ga $ head a)<>casl_normal_latex "~":
-            (map (\x -> tabbed_nest_latex (latex_macro
-                                                 "\\hspace*{-0.84mm}"<> ---}
-                                           casl_normal_latex "\\textbar")
-                            <~> (printLatex0 ga x)<>casl_normal_latex "~") $
-                 tail a))
-        where defnS' = hc_sty_axiom defnS
+        printLatex0 ga s <\+> barT_latex ga a
+
 instance PrintLaTeX ALTERNATIVE where
     printLatex0 ga (Alt_construct k n l _) = tabbed_nest_latex (
         printLatex0 ga n <> (if null l then case k of
@@ -212,9 +202,7 @@ instance PrintLaTeX ALTERNATIVE where
                             else parens_tab_latex ( semiT_latex ga l))
                             <> optLatexQuMark k)
     printLatex0 ga (Subsorts l _) =
-        sp_text (axiom_width s') s'' <\+> commaT_latex ga l
-        where s'  = sortS ++ pluralS l
-              s'' = '\\':map toUpper s' ++ "[ID]"
+        hc_sty_plain_keyword (sortS ++ pluralS l) <\+> commaT_latex ga l
 
 instance PrintLaTeX COMPONENTS where
     printLatex0 ga (Cons_select k l s _) =
@@ -231,7 +219,7 @@ instance PrintLaTeX f => PrintLaTeX (FORMULA f) where
     printLatex0 ga (Quantification q l f _) =
        set_tabbed_nest_latex $ fsep_latex
            [printLatex0 ga q <\+> semiT_latex ga l ,
-             hc_sty_axiom "\\bullet"
+             bullet_latex
                 <\+> set_tabbed_nest_latex (printLatex0 ga f)]
     printLatex0 ga (Conjunction fs _) =
         sep_latex $ punctuate (space_latex <> hc_sty_axiom "\\wedge")
@@ -247,8 +235,8 @@ instance PrintLaTeX f => PrintLaTeX (FORMULA f) where
              condParensImplEquiv printLatex0 parens_tab_latex ga i f True)
 
         else (
-        hang_latex (condParensImplEquiv printLatex0 parens_tab_latex ga i f False
-                    <\+> hc_sty_axiom "\\Rightarrow") 3 $
+        hang_latex (condParensImplEquiv printLatex0 parens_tab_latex 
+                    ga i f False <\+> hc_sty_axiom "\\Rightarrow") 3 $
              condParensImplEquiv printLatex0 parens_tab_latex ga i g True)
     printLatex0 ga e@(Equivalence  f g _) =
         sep_latex
@@ -270,9 +258,7 @@ instance PrintLaTeX f => PrintLaTeX (FORMULA f) where
            else condPrint_Mixfix_latex ga p_id l
     printLatex0 ga (Definedness f _) = hc_sty_id defS <\+> printLatex0 ga f
     printLatex0 ga (Existl_equation f g _) =
-        hang_latex (printLatex0 ga f
-                    <\+> sp_text (axiom_width "=")
-                                 "\\Ax{\\stackrel{e}{=}}") 8
+        hang_latex (printLatex0 ga f <\+> exequal_latex) 8
                        $ printLatex0 ga g
     printLatex0 ga (Strong_equation f g _) =
         hang_latex (printLatex0 ga f <\+> equals_latex) 8
@@ -291,14 +277,14 @@ instance PrintLaTeX f => PrintLaTeX (FORMULA f) where
                                (map printSortMap sortMap)))
         where
         (sorts,ops,sortMap) = recover_Sort_gen_ax constrs
-        printSortMap (s1,s2) = printLatex0 ga s1 <\+> hc_sty_axiom "\\mapsto"
+        printSortMap (s1,s2) = printLatex0 ga s1 <\+> mapsto_latex
                                <\+> printLatex0 ga s2
     printLatex0 ga (ExtFORMULA f) = printLatex0 ga f
 
 instance PrintLaTeX QUANTIFIER where
-    printLatex0 _ (Universal) = hc_sty_axiom "\\forall"
-    printLatex0 _ (Existential) = hc_sty_axiom "\\exists"
-    printLatex0 _ (Unique_existential) = hc_sty_axiom "\\exists!"
+    printLatex0 _ Universal = forall_latex
+    printLatex0 _ Existential = exists_latex
+    printLatex0 _ Unique_existential = unique_latex
 
 instance PrintLaTeX PRED_SYMB where
     printLatex0 ga (Pred_name n) = printLatex0 ga n
@@ -377,7 +363,7 @@ instance PrintLaTeX TYPE where
 instance PrintLaTeX SYMB_OR_MAP where
     printLatex0 ga (Symb s) = printLatex0 ga s
     printLatex0 ga (Symb_map s t _) =
-        printLatex0 ga s <\+> hc_sty_axiom "\\mapsto" <\+> printLatex0 ga t
+        printLatex0 ga s <\+> mapsto_latex <\+> printLatex0 ga t
 
 print_kind_latex :: SYMB_KIND -> [a] -> Doc
 print_kind_latex k l =
@@ -393,7 +379,8 @@ condPrint_Mixfix_latex ga =
                      (Just $ printDisplayToken_latex casl_axiom_latex)
                      (Just DF_LATEX) ga
 
-print_prefix_appl_latex :: PrintLaTeX f => GlobalAnnos -> Doc -> [TERM f] -> Doc
+print_prefix_appl_latex :: PrintLaTeX f => GlobalAnnos -> Doc -> [TERM f]
+                        -> Doc
 print_prefix_appl_latex ga =
     print_prefix_appl (printLatex0 ga) parens_tab_latex fsep_latex comma_latex
 

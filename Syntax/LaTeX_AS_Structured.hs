@@ -207,17 +207,14 @@ instance PrintLaTeX Logic_code where
     printLatex0 ga (Logic_code Nothing Nothing (Just tar) _) =
         rightArrow <\+> printLatex0 ga tar
     printLatex0 _ (Logic_code Nothing Nothing Nothing _) =
-        casl_normal_latex ":ERROR" -- should not occur
-
-rightArrow :: Doc
-rightArrow = hc_sty_axiom "\\rightarrow"
+        error "PrintLaTeX Logic_code"
 
 instance PrintLaTeX Logic_name where
     printLatex0 ga (Logic_name mlog slog) =
         printLatex0 ga mlog <>
                        (case slog of
                        Nothing -> empty
-                       Just sub -> casl_normal_latex "." <> printLatex0 ga sub)
+                       Just sub -> dot_latex <> printLatex0 ga sub)
 
 mkMaybeKeywordTuple :: Doc -> Maybe (String,Doc)
 mkMaybeKeywordTuple kw_doc =

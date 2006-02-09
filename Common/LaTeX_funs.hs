@@ -45,11 +45,8 @@ module Common.LaTeX_funs (-- module Common.LaTeX_funs,
                    latex_macro,
                    comma_latex,
                    semi_latex,
-                   colon_latex,
-                   equals_latex,
                    space_latex,
 
-                   braces_latex,
                    parens_latex,
                    brackets_latex,
                    quotes_latex,
@@ -58,8 +55,6 @@ module Common.LaTeX_funs (-- module Common.LaTeX_funs,
                    hang_latex,
                    sep_latex,
                    fsep_latex,
-
-                   initial_keyword_latex,
 
                    casl_keyword_latex,
                    casl_annotation_latex,
@@ -250,7 +245,7 @@ d1 <\+> d2 = if isEmpty d1
              else (if isEmpty d2
                    then d1
                    else
-                   d1 <> casl_normal_latex " " <> d2)
+                   d1 <> space_latex <> d2)
 
 (<~>) :: Doc -> Doc -> Doc
 d1 <~> d2 = d1 <> casl_normal_latex "~" <> d2
@@ -263,15 +258,12 @@ d1 <~> d2 = d1 <> casl_normal_latex "~" <> d2
 latex_macro :: String -> Doc
 latex_macro = sp_text 0
 
-comma_latex, semi_latex, space_latex,equals_latex,colon_latex :: Doc
-comma_latex  = let s = "," in sp_text (normal_width s) s
-semi_latex   = let s = ";" in sp_text (normal_width s) s
-colon_latex  = let s = ":" in sp_text (normal_width s) s
-space_latex  = let s = " " in sp_text (normal_width s) s
-equals_latex = hc_sty_axiom "="
+comma_latex, semi_latex, space_latex :: Doc
+comma_latex  = casl_normal_latex ","
+semi_latex   = casl_normal_latex ";"
+space_latex  = casl_normal_latex " "
 
-braces_latex, parens_latex, brackets_latex, quotes_latex :: Doc -> Doc
-braces_latex d   = casl_normal_latex "\\{"<>d<>casl_normal_latex "\\}"
+parens_latex, brackets_latex, quotes_latex :: Doc -> Doc
 parens_latex d   = casl_normal_latex "("<>d<>casl_normal_latex ")"
 brackets_latex d = casl_normal_latex "["<>d<>casl_normal_latex "]"
 quotes_latex d = q <> d <> q
@@ -286,19 +278,10 @@ hang_latex :: Doc -> Int -> Doc -> Doc
 hang_latex d1 n d2 = sep_latex [d1, nest_latex n d2]
 
 sep_latex :: [Doc] -> Doc
-sep_latex = cat . (cond_punctuate (casl_normal_latex " "))
+sep_latex = cat . cond_punctuate space_latex
 
 fsep_latex :: [Doc] -> Doc
-fsep_latex = fcat . (cond_punctuate (casl_normal_latex " "))
-
-initial_keyword_latex :: String -> String -> Doc
-initial_keyword_latex fs kw =
-    let fs_w = keyword_width fs
-        kw_w = keyword_width kw
-    in if kw_w <= fs_w  then
-          sp_text fs_w kw
-       else
-          sp_text kw_w kw
+fsep_latex = fcat . cond_punctuate space_latex
 
 casl_keyword_latex, casl_annotation_latex, casl_annotationbf_latex,
        casl_axiom_latex,

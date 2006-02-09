@@ -25,7 +25,6 @@ import Common.AS_Annotation
 import Common.LaTeX_AS_Annotation
 import CASL.AS_Basic_CASL
 import CASL.LaTeX_AS_Basic
-import Data.Char(toUpper)
 
 instance PrintLaTeX C_FORMULA where
     printLatex0 = printText0
@@ -37,27 +36,17 @@ instance PrintLaTeX C_SIG_ITEM where
 
 instance PrintLaTeX CODATATYPE_DECL where
     printLatex0 ga (CoDatatype_decl s a _) =
-        printLatex0 ga s <\+> case a of
-        [] -> error "PrettyPrint CoCASL.CODATATYPE_DECL"
-        h : t -> sep_latex
-           (hc_sty_axiom defnS <> setTab_latex<~>
-              (printLatex0 ga h)<>casl_normal_latex "~":
-            (map (\x -> tabbed_nest_latex (latex_macro
-                                                 "\\hspace*{-0.84mm}"<> ---}
-                                           casl_normal_latex "\\textbar")
-                            <~> (printLatex0 ga x)<>casl_normal_latex "~") t))
+        printLatex0 ga s <\+> barT_latex ga a
 
 instance PrintLaTeX COALTERNATIVE where
     printLatex0 ga (Co_construct k n l _) = tabbed_nest_latex (
         printLatex0 ga n <> (if null l then case k of
                              Partial -> parens_tab_latex empty
                              _ -> empty
-                            else parens_tab_latex ( semiT_latex ga l))
+                            else parens_tab_latex $ semiT_latex ga l)
                             <> optLatexQuMark k)
     printLatex0 ga (CoSubsorts l _) =
-        sp_text (axiom_width s') s'' <\+> commaT_latex ga l
-        where s'  = sortS ++ pluralS l
-              s'' = '\\':map toUpper s' ++ "[ID]"
+        hc_sty_plain_keyword (sortS ++ pluralS l) <\+> commaT_latex ga l
 
 instance PrintLaTeX COCOMPONENTS where
     printLatex0 ga (CoSelect l s _) =

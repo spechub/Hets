@@ -38,19 +38,31 @@ module Common.LaTeX_utils
 
     , latex_macro
 
-    , equals_latex
     , comma_latex
-    , colon_latex
     , semi_latex
     , space_latex
+    , equals_latex
+    , less_latex
+    , colon_latex
+    , dot_latex
+    , bullet_latex
+    , mapsto_latex
+    , rightArrow
+    , pfun_latex
+    , cfun_latex
+    , pcfun_latex
+    , exequal_latex
+    , forall_latex
+    , exists_latex
+    , unique_latex
 
-    , casl_keyword_latex   -- kinds only
     , casl_axiom_latex     -- for printDisplayToken_latex, replaces "~"
     , casl_normal_latex
 
     , semiT_latex
     , commaT_latex
     , crossT_latex
+    , barT_latex
 
     , setTab_latex
     , tabList_latex          -- IMPORTED
@@ -63,22 +75,53 @@ module Common.LaTeX_utils
     where
 
 import Common.Id
+import Common.Keywords
 import Common.GlobalAnnotations
 import Common.Lib.Pretty
 import Common.PrintLaTeX
 
 import Common.LaTeX_funs hiding (startAnno,endAnno)
 
--- | LaTeX variants
-commaT_latex,semiT_latex,crossT_latex
-    :: PrintLaTeX a => GlobalAnnos -> [a] -> Doc
+listSep_latex :: PrintLaTeX a => Doc -> GlobalAnnos -> [a] -> Doc
+listSep_latex p ga = fsep_latex . punctuate p . map (printLatex0 ga)
 
+-- | LaTeX variants
+commaT_latex, semiT_latex, crossT_latex
+    :: PrintLaTeX a => GlobalAnnos -> [a] -> Doc
 commaT_latex = listSep_latex comma_latex
 semiT_latex = listSep_latex semi_latex
 crossT_latex = listSep_latex (space_latex <> hc_sty_axiom "\\times")
 
-listSep_latex :: PrintLaTeX a => Doc -> GlobalAnnos -> [a] -> Doc
-listSep_latex p ga = fsep_latex . punctuate p . map (printLatex0 ga)
+barT_latex :: PrintLaTeX a => GlobalAnnos -> [a] -> Doc
+barT_latex ga l = case l of
+    [] -> empty
+    h : t -> sep_latex
+           (hc_sty_axiom defnS <> setTab_latex<~>
+              printLatex0 ga h <> casl_normal_latex "~" :
+            map (\x -> tabbed_nest_latex (latex_macro
+                                                 "\\hspace*{-0.84mm}"<> ---}
+                                           casl_normal_latex "\\textbar")
+                            <~> printLatex0 ga x <> casl_normal_latex "~") t)
+
+equals_latex, less_latex, colon_latex, dot_latex,
+    bullet_latex, mapsto_latex, rightArrow, pfun_latex, cfun_latex,
+    pcfun_latex, exequal_latex :: Doc
+equals_latex = hc_sty_axiom "="
+less_latex   = hc_sty_axiom "<"
+colon_latex  = casl_normal_latex ":"
+dot_latex    = casl_normal_latex "."
+bullet_latex = hc_sty_axiom "\\bullet"
+mapsto_latex = hc_sty_axiom "\\mapsto"
+rightArrow   = hc_sty_axiom "\\rightarrow"
+pfun_latex   = hc_sty_axiom "\\rightarrow?"
+cfun_latex   = hc_sty_axiom "\\stackrel{c}{\\rightarrow}"
+pcfun_latex  = hc_sty_axiom "\\stackrel{c}{\\rightarrow}?"
+exequal_latex = sp_text (axiom_width "=") "\\Ax{\\stackrel{e}{=}}"
+
+forall_latex, exists_latex, unique_latex :: Doc
+forall_latex = hc_sty_axiom "\\forall"
+exists_latex = hc_sty_axiom "\\exists"
+unique_latex = hc_sty_axiom "\\exists!"
 
 tabList_latex :: [Doc] -> [Doc]
 tabList_latex [] = []
