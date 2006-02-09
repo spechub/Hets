@@ -117,10 +117,10 @@ instance PrintLaTeX f => PrintLaTeX (SORT_ITEM f) where
 
 instance PrintLaTeX f => PrintLaTeX (OP_ITEM f) where
     printLatex0 ga (Op_decl l t a _) =
-        if na then ids_sig
-        else setTabWithSpaces_latex 4 <>
-                 fsep [ids_sig,
-                       tabbed_nest_latex $ commaT_latex ga a]
+        setTabWithSpaces_latex 4 <>
+        (if na then ids_sig
+        else fsep [ids_sig,
+                       tabbed_nest_latex $ commaT_latex ga a])
         where ids_sig = fsep [commaT_latex ga l <\+> colon_latex,
                                  tabbed_nest_latex (if na then sig
                                         else sig <> comma_latex)]
@@ -235,7 +235,7 @@ instance PrintLaTeX f => PrintLaTeX (FORMULA f) where
              condParensImplEquiv printLatex0 parens_tab_latex ga i f True)
 
         else (
-        hang_latex (condParensImplEquiv printLatex0 parens_tab_latex 
+        hang_latex (condParensImplEquiv printLatex0 parens_tab_latex
                     ga i f False <\+> hc_sty_axiom "\\Rightarrow") 3 $
              condParensImplEquiv printLatex0 parens_tab_latex ga i g True)
     printLatex0 ga e@(Equivalence  f g _) =
