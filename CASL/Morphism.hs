@@ -1,4 +1,3 @@
-
 {- |
 Module      :  $Header$
 Copyright   :  (c) Christian Maeder, Till Mossakowski and Uni Bremen 2002-2004
@@ -15,6 +14,8 @@ Symbols and signature morphisms for the CASL logic
 todo:
 issue warning for symbols lists like __ * __, __ + __: Elem * Elem -> Elem
 the qualification only applies to __+__ !
+
+possibly reuse SYMB_KIND for Kind
 -}
 
 module CASL.Morphism where
@@ -36,7 +37,7 @@ data SymbType = OpAsItemType OpType
                 -- since symbols do not speak about totality, the totality
                 -- information in OpType has to be ignored
               | PredAsItemType PredType
-              | SortAsItemType 
+              | SortAsItemType
                 deriving (Show)
 -- Ordering and equality of symbol types has to ingore totality information
 instance Ord SymbType where
@@ -53,30 +54,30 @@ instance Ord SymbType where
 instance Eq SymbType where
   t1 == t2 = compare t1 t2 == EQ
 
-data Symbol = Symbol {symName :: Id, symbType :: SymbType} 
+data Symbol = Symbol {symName :: Id, symbType :: SymbType}
               deriving (Show, Eq, Ord)
 
-type SymbolSet = Set.Set Symbol 
-type SymbolMap = Map.Map Symbol Symbol 
+type SymbolSet = Set.Set Symbol
+type SymbolMap = Map.Map Symbol Symbol
 
 data RawSymbol = ASymbol Symbol | AnID Id | AKindedId Kind Id
                  deriving (Show, Eq, Ord)
 
-type RawSymbolSet = Set.Set RawSymbol 
-type RawSymbolMap = Map.Map RawSymbol RawSymbol 
+type RawSymbolSet = Set.Set RawSymbol
+type RawSymbolMap = Map.Map RawSymbol RawSymbol
 
 data Kind = SortKind | FunKind | PredKind
             deriving (Show, Eq, Ord)
 
 type Sort_map = Map.Map SORT SORT
--- allways use the partial profile as key! 
+-- allways use the partial profile as key!
 type Fun_map =  Map.Map (Id,OpType) (Id, FunKind)
 type Pred_map = Map.Map (Id,PredType) Id
 
 data Morphism f e m = Morphism {msource :: Sign f e,
                           mtarget :: Sign f e,
-                          sort_map :: Sort_map, 
-                          fun_map :: Fun_map, 
+                          sort_map :: Sort_map,
+                          fun_map :: Fun_map,
                           pred_map :: Pred_map,
                           extended_map :: m}
                          deriving (Eq, Show)
@@ -85,7 +86,7 @@ mapSort :: Sort_map -> SORT -> SORT
 mapSort sorts s = Map.findWithDefault s s sorts
 
 mapOpType :: Sort_map -> OpType -> OpType
-mapOpType sorts t = if Map.null sorts then t else 
+mapOpType sorts t = if Map.null sorts then t else
                     t { opArgs = map (mapSort sorts) $ opArgs t
                       , opRes = mapSort sorts $ opRes t }
 
@@ -97,30 +98,30 @@ makeTotal Total t = t { opKind = Total }
 makeTotal _ t = t
 
 mapOpSym :: Sort_map -> Fun_map -> (Id, OpType) -> (Id, OpType)
-mapOpSym sMap fMap (i, ot) = 
+mapOpSym sMap fMap (i, ot) =
     let mot = mapOpType sMap ot in
-    case Map.lookup (i, ot {opKind = Partial} ) fMap of 
+    case Map.lookup (i, ot {opKind = Partial} ) fMap of
     Nothing -> (i, mot)
     Just (j, k) -> (j, makeTotal k mot)
 
--- | Check if two OpTypes are equal except from totality or partiality
+-- | Check if two OpTypes are equal modulo totality or partiality
 compatibleOpTypes :: OpType -> OpType -> Bool
 compatibleOpTypes ot1 ot2 = opArgs ot1 == opArgs ot2 && opRes ot1 == opRes ot2
 
 mapPredType :: Sort_map -> PredType -> PredType
-mapPredType sorts t = if Map.null sorts then t else 
+mapPredType sorts t = if Map.null sorts then t else
                       t { predArgs = map (mapSort sorts) $ predArgs t }
 
 mapPredSym :: Sort_map -> Pred_map -> (Id, PredType) -> (Id, PredType)
-mapPredSym sMap fMap (i, pt) = 
+mapPredSym sMap fMap (i, pt) =
     (Map.findWithDefault i (i, pt) fMap, mapPredType sMap pt)
 
 type Ext f e m = Sign f e -> Sign f e -> m
 
 embedMorphism :: Ext f e m -> Sign f e -> Sign f e -> Morphism f e m
 embedMorphism extEm a b =
-    Morphism 
-    { msource = a 
+    Morphism
+    { msource = a
     , mtarget = b
     , sort_map = Map.empty
     , fun_map = Map.empty
@@ -154,17 +155,17 @@ rawSymName (AnID i) = i
 rawSymName (AKindedId _ i) = i
 
 symOf ::  Sign f e -> SymbolSet
-symOf sigma = 
+symOf sigma =
     let sorts = Set.map idToSortSymbol $ sortSet sigma
-        ops = Set.fromList $ 
-              concatMap (\ (i, ts) -> map ( \ t -> idToOpSymbol i t) 
-                         $ Set.toList ts) $ 
+        ops = Set.fromList $
+              concatMap (\ (i, ts) -> map ( \ t -> idToOpSymbol i t)
+                         $ Set.toList ts) $
               Map.toList $ opMap sigma
-        preds = Set.fromList $ 
-              concatMap (\ (i, ts) -> map ( \ t -> idToPredSymbol i t) 
-                         $ Set.toList ts) $ 
+        preds = Set.fromList $
+              concatMap (\ (i, ts) -> map ( \ t -> idToPredSymbol i t)
+                         $ Set.toList ts) $
               Map.toList $ predMap sigma
-        in Set.unions [sorts, ops, preds] 
+        in Set.unions [sorts, ops, preds]
 
 statSymbMapItems :: [SYMB_MAP_ITEMS] -> Result RawSymbolMap
 statSymbMapItems sl = do
@@ -176,9 +177,9 @@ statSymbMapItems sl = do
     m1 <- m
     case Map.lookup rsy1 m1 of
       Nothing -> return $ Map.insert rsy1 rsy2 m1
-      Just rsy3 -> 
-        plain_error m1 ("Symbol "++showPretty rsy1 " mapped twice to "
-                ++showPretty rsy2 " and "++showPretty rsy3 "") nullRange
+      Just rsy3 ->
+        plain_error m1 ("Symbol " ++ showPretty rsy1 " mapped twice to "
+                ++ showPretty rsy2 " and " ++ showPretty rsy3 "") nullRange
 
 pairM :: Monad m => (m a,m b) -> m (a,b)
 pairM (x,y) = do
@@ -191,7 +192,7 @@ symbOrMapToRaw k (Symb s) = pairM (symbToRaw k s,symbToRaw k s)
 symbOrMapToRaw k (Symb_map s t _) = pairM (symbToRaw k s,symbToRaw k t)
 
 statSymbItems :: [SYMB_ITEMS] -> Result [RawSymbol]
-statSymbItems sl = 
+statSymbItems sl =
   fmap concat (sequence (map s1 sl))
   where s1 (Symb_items kind l _) = sequence (map (symbToRaw kind) l)
 
@@ -202,23 +203,23 @@ symbToRaw k (Qual_id idt t _) = typedSymbKindToRaw k idt t
 symbKindToRaw :: SYMB_KIND -> Id -> RawSymbol
 symbKindToRaw sk idt = case sk of
     Implicit -> AnID idt
-    _ -> AKindedId (case sk of 
+    _ -> AKindedId (case sk of
          Sorts_kind -> SortKind
          Preds_kind -> PredKind
          _ -> FunKind) idt
 
 typedSymbKindToRaw :: SYMB_KIND -> Id -> TYPE -> Result RawSymbol
-typedSymbKindToRaw k idt t = 
-    let err = plain_error (AnID idt) 
-              (showPretty idt ":" ++ showPretty t 
-               "does not have kind" ++showPretty k "") nullRange
-        aSymb = ASymbol $ case t of 
+typedSymbKindToRaw k idt t =
+    let err = plain_error (AnID idt)
+              (showPretty idt ":" ++ showPretty t
+               "does not have kind" ++ showPretty k "") nullRange
+        aSymb = ASymbol $ case t of
                  O_type ot -> idToOpSymbol idt $ toOpType ot
                  P_type pt -> idToPredSymbol idt $ toPredType pt
              -- in case of ambiguity, return a constant function type
              -- this deviates from the CASL summary !!!
-                 A_type s -> 
-                     let ot = OpType {opKind = Total, opArgs = [], opRes = s} 
+                 A_type s ->
+                     let ot = OpType {opKind = Total, opArgs = [], opRes = s}
                      in idToOpSymbol idt ot
     in case k of
     Implicit -> return aSymb
@@ -228,16 +229,16 @@ typedSymbKindToRaw k idt t =
         _ -> return aSymb
     Preds_kind -> case t of
         O_type _ -> err
-        A_type s -> return $ ASymbol $ 
-                    let pt = PredType {predArgs = [s]} 
+        A_type s -> return $ ASymbol $
+                    let pt = PredType {predArgs = [s]}
                     in idToPredSymbol idt pt
         P_type _ -> return aSymb
 
-symbMapToMorphism :: Ext f e m -> Sign f e -> Sign f e 
+symbMapToMorphism :: Ext f e m -> Sign f e -> Sign f e
                   -> SymbolMap -> Result (Morphism f e m)
 symbMapToMorphism extEm sigma1 sigma2 smap = let
   sort_map1 = Set.fold mapMSort Map.empty (sortSet sigma1)
-  mapMSort s m = 
+  mapMSort s m =
     case Map.lookup (Symbol {symName = s, symbType = SortAsItemType}) smap
     of Just sym -> let t = symName sym in if s == t then m else
                            Map.insert s t m
@@ -245,10 +246,10 @@ symbMapToMorphism extEm sigma1 sigma2 smap = let
   fun_map1 = Map.foldWithKey mapFun Map.empty (opMap sigma1)
   pred_map1 = Map.foldWithKey mapPred Map.empty (predMap sigma1)
   mapFun i ots m = Set.fold (insFun i) m ots
-  insFun i ot m = 
+  insFun i ot m =
     case Map.lookup (Symbol {symName = i, symbType = OpAsItemType ot}) smap
     of Just sym -> let j = symName sym in case symbType sym of
-         OpAsItemType oty -> let k = opKind oty in 
+         OpAsItemType oty -> let k = opKind oty in
             if j == i && opKind ot == k then m
             else Map.insert (i, ot {opKind = Partial}) (j, k) m
          _ -> m
@@ -259,37 +260,36 @@ symbMapToMorphism extEm sigma1 sigma2 smap = let
     of Just sym -> let j = symName sym in  case symbType sym of
          PredAsItemType _ -> if i == j then m else Map.insert (i, pt) j m
          _ -> m
-       _ -> m 
+       _ -> m
   in return (Morphism { msource = sigma1,
              mtarget = sigma2,
              sort_map = sort_map1,
              fun_map = fun_map1,
              pred_map = pred_map1,
              extended_map = extEm sigma1 sigma2})
-      
+
 morphismToSymbMap ::  Morphism f e m -> SymbolMap
 morphismToSymbMap mor =
   let
-    src = msource mor 
+    src = msource mor
     sorts = sort_map mor
     ops = fun_map mor
     preds = pred_map mor
-    sortSymMap =  Set.fold ( \ s -> Map.insert (idToSortSymbol s) $ 
+    sortSymMap =  Set.fold ( \ s -> Map.insert (idToSortSymbol s) $
                              idToSortSymbol $ mapSort sorts s)
                   Map.empty $ sortSet src
     opSymMap = Map.foldWithKey
-               ( \ i s m -> Set.fold 
+               ( \ i s m -> Set.fold
                  ( \ t -> Map.insert (idToOpSymbol i t)
                  $ uncurry idToOpSymbol $ mapOpSym sorts ops (i, t)) m s)
                Map.empty $ opMap src
     predSymMap = Map.foldWithKey
-               ( \ i s m -> Set.fold 
+               ( \ i s m -> Set.fold
                  ( \ t -> Map.insert (idToPredSymbol i t)
                  $ uncurry idToPredSymbol $ mapPredSym sorts preds (i, t)) m s)
                Map.empty $ predMap src
   in
     foldr Map.union sortSymMap [opSymMap,predSymMap]
-
 
 matches :: Symbol -> RawSymbol -> Bool
 matches x@(Symbol idt k) rs = case rs of
@@ -306,39 +306,39 @@ idMor extEm sigma = embedMorphism extEm sigma sigma
 
 compose :: (Eq e, Eq f) => (m -> m -> m)
         -> Morphism f e m -> Morphism f e m -> Result (Morphism f e m)
-compose comp mor1 mor2 = if mtarget mor1 == msource mor2 then return $ 
-  let sMap1 = sort_map mor1 
+compose comp mor1 mor2 = if mtarget mor1 == msource mor2 then return $
+  let sMap1 = sort_map mor1
       src = msource mor1
       tar = mtarget mor2
       fMap1 = fun_map mor1
       pMap1 = pred_map mor1
-      sMap2 = sort_map mor2 
+      sMap2 = sort_map mor2
       fMap2 = fun_map mor2
       pMap2 = pred_map mor2
-      sMap = if Map.null sMap2 then sMap1 else 
+      sMap = if Map.null sMap2 then sMap1 else
              Set.fold ( \ i ->
-                       let j = mapSort sMap2 (mapSort sMap1 i) in 
+                       let j = mapSort sMap2 (mapSort sMap1 i) in
                        if i == j then id else Map.insert i j)
                  Map.empty $ sortSet src
-  in 
+  in
      Morphism {
       msource = src,
       mtarget = tar,
       sort_map = sMap,
-      fun_map  = if Map.null fMap2 then fMap1 else 
+      fun_map  = if Map.null fMap2 then fMap1 else
                  Map.foldWithKey ( \ i t m ->
-                   Set.fold ( \ ot -> 
-                       let (ni, nt) = mapOpSym sMap2 fMap2 $ 
+                   Set.fold ( \ ot ->
+                       let (ni, nt) = mapOpSym sMap2 fMap2 $
                                       mapOpSym sMap1 fMap1 (i, ot)
                            k = opKind nt
-                       in assert (mapOpTypeK sMap k ot == nt) $ 
-                          if i == ni && opKind ot == k then id else 
+                       in assert (mapOpTypeK sMap k ot == nt) $
+                          if i == ni && opKind ot == k then id else
                           Map.insert (i, ot {opKind = Partial }) (ni, k)) m t)
                      Map.empty $ opMap src,
       pred_map = if Map.null pMap2 then pMap1 else
                  Map.foldWithKey ( \ i t m ->
-                   Set.fold ( \ pt -> 
-                       let (ni, nt) = mapPredSym sMap2 pMap2 $ 
+                   Set.fold ( \ pt ->
+                       let (ni, nt) = mapPredSym sMap2 pMap2 $
                                      mapPredSym sMap1 pMap1 (i, pt)
                        in assert (mapPredType sMap pt == nt) $
                        if i == ni then id else Map.insert (i, pt) ni) m t)
@@ -349,46 +349,46 @@ compose comp mor1 mor2 = if mtarget mor1 == msource mor2 then return $
 
 legalSign ::  Sign f e -> Bool
 legalSign sigma =
-  Map.foldWithKey (\s sset b -> b && legalSort s && all legalSort 
+  Map.foldWithKey (\s sset b -> b && legalSort s && all legalSort
                                 (Set.toList sset))
                   True (Rel.toMap (sortRel sigma))
-  && Map.fold (\ts b -> b && all legalOpType (Set.toList ts)) 
+  && Map.fold (\ts b -> b && all legalOpType (Set.toList ts))
               True (opMap sigma)
-  && Map.fold (\ts b -> b && all legalPredType (Set.toList ts)) 
+  && Map.fold (\ts b -> b && all legalPredType (Set.toList ts))
               True (predMap sigma)
   where sorts = sortSet sigma
         legalSort s = Set.member s sorts
-        legalOpType t = legalSort (opRes t) 
-                        && all legalSort (opArgs t) 
-        legalPredType t = all legalSort (predArgs t) 
+        legalOpType t = legalSort (opRes t)
+                        && all legalSort (opArgs t)
+        legalPredType t = all legalSort (predArgs t)
 
 legalMor :: Morphism f e m -> Bool
 legalMor mor =
   let s1 = msource mor
       s2 = mtarget mor
       smap = sort_map mor
-      msorts = Set.map (mapSort smap) $ sortSet s1 
-      mops = Map.foldWithKey ( \ i -> 
+      msorts = Set.map (mapSort smap) $ sortSet s1
+      mops = Map.foldWithKey ( \ i ->
                  flip $ Set.fold ( \ ot ->
                         let (j, nt) = mapOpSym smap (fun_map mor) (i, ot)
                         in Rel.setInsert j nt)) Map.empty $ opMap s1
-      mpreds = Map.foldWithKey ( \ i -> 
+      mpreds = Map.foldWithKey ( \ i ->
                  flip $ Set.fold ( \ pt ->
                         let (j, nt) = mapPredSym smap (pred_map mor) (i, pt)
                         in Rel.setInsert j nt)) Map.empty $ predMap s1
-  in 
+  in
   legalSign s1
   && Set.isSubsetOf msorts (sortSet s2)
   && isSubOpMap mops (opMap s2)
   && isSubMapSet mpreds (predMap s2)
   && legalSign s2
 
-sigInclusion :: (PrettyPrint e, PrettyPrint f) 
-             => Ext f e m -- ^ compute extended morphism 
+sigInclusion :: (PrettyPrint e, PrettyPrint f)
+             => Ext f e m -- ^ compute extended morphism
              -> (e -> e -> Bool) -- ^ subsignature test of extensions
              -> Sign f e -> Sign f e -> Result (Morphism f e m)
-sigInclusion extEm isSubExt sigma1 sigma2 = 
-  assert (isSubSig isSubExt sigma1 sigma2) $  
+sigInclusion extEm isSubExt sigma1 sigma2 =
+  assert (isSubSig isSubExt sigma1 sigma2) $
      return (embedMorphism extEm sigma1 sigma2)
 
 morphismUnion :: (m -> m -> m)  -- ^ join morphism extensions
@@ -461,15 +461,15 @@ morphismUnion uniteM addSigExt mor1 mor2 =
       else Result pds Nothing
 
 isSortInjective :: Morphism f e m -> Bool
-isSortInjective m = 
-   null [() | k1 <- src, k2 <-src, k1 /= k2, 
+isSortInjective m =
+   null [() | k1 <- src, k2 <-src, k1 /= k2,
               (Map.lookup k1 sm::Maybe SORT)==Map.lookup k2 sm]
    where sm = sort_map m
          src = Map.keys sm
 
 instance PrettyPrint Symbol where
-  printText0 ga sy = 
-    printText0 ga (symName sy) <> 
+  printText0 ga sy =
+    printText0 ga (symName sy) <>
     case symbType sy of
     SortAsItemType -> empty
     st -> space <> colon <> printText0 ga st
@@ -478,7 +478,7 @@ instance PrettyPrint SymbType where
   -- op types try to place a question mark immediately after a colon
   printText0 ga (OpAsItemType ot) = printText0 ga ot
   printText0 ga (PredAsItemType pt) = space <> printText0 ga pt
-  printText0 _ SortAsItemType = empty 
+  printText0 _ SortAsItemType = empty
 
 instance PrettyPrint Kind where
   printText0 _ SortKind = text sortS
@@ -491,12 +491,12 @@ instance PrettyPrint RawSymbol where
     AnID i -> printText0 ga i
     AKindedId k i -> printText0 ga k <+> printText0 ga i
 
-instance (PrettyPrint e, PrettyPrint f, PrettyPrint m) => 
+instance (PrettyPrint e, PrettyPrint f, PrettyPrint m) =>
     PrettyPrint (Morphism f e m) where
-  printText0 ga mor = 
+  printText0 ga mor =
    printText0 ga (Map.filterWithKey (/=) $ morphismToSymbMap mor)
    $$ printText0 ga (extended_map mor)
-   $$ nest 1 colon $$ 
+   $$ nest 1 colon $$
    nest 3 (braces (space <> printText0 ga (msource mor) <> space))
-   $$ nest 1 (text funS) 
+   $$ nest 1 (text funS)
    $$ nest 4 (braces (space <>  printText0 ga (mtarget mor) <> space))
