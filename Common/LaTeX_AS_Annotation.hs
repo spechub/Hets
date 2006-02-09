@@ -135,14 +135,8 @@ smallComma_latex :: Doc
 smallComma_latex = casl_comment_latex ","
 
 (<\\+>) :: Doc -> Doc -> Doc
-d1 <\\+> d2 = if isEmpty d1
-             then (if isEmpty d2
-                   then empty
-                   else d2)
-             else (if isEmpty d2
-                   then d1
-                   else
-                   d1 <> smallSpace_latex <> d2)
+d1 <\\+> d2 = if isEmpty d1 then d2 else
+                  if isEmpty d2 then d1 else d1 <> smallSpace_latex <> d2
 
 printSmallId_latex :: GlobalAnnos -> Id -> Doc
 printSmallId_latex ga i@(Id tops ids _) =

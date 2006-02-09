@@ -238,14 +238,8 @@ normal_width       = calc_word_width Normal
 -- space.
 (<\+>) :: Doc -> Doc -> Doc
 -- TODO: did not work correctly !!!
-d1 <\+> d2 = if isEmpty d1
-             then (if isEmpty d2
-                   then empty
-                   else d2)
-             else (if isEmpty d2
-                   then d1
-                   else
-                   d1 <> space_latex <> d2)
+d1 <\+> d2 = if isEmpty d1 then d2 else
+                 if isEmpty d2 then d1 else d1 <> space_latex <> d2
 
 (<~>) :: Doc -> Doc -> Doc
 d1 <~> d2 = d1 <> casl_normal_latex "~" <> d2
