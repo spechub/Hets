@@ -18,7 +18,7 @@ INCLUDE_PATH =
 CLEAN_PATH = . \
     utils utils/DrIFT-src utils/GenerateRules utils/InlineAxioms Common \
     Common/Lib Common/ATerm Logic CASL CASL/CCC CASL/CompositionTable \
-    Syntax Static GUI HasCASL Haskell Modal CoCASL COL \
+    Syntax Static GUI HasCASL Haskell Modal CoCASL COL ConstraintCASL \
     CspCASL ATC ToHaskell Proofs Comorphisms Isabelle Driver \
     Taxonomy CASL_DL SPASS OWL_DL $(PFE_PATHS)
 
@@ -75,7 +75,7 @@ HC_FLAGS = \
 
 HC_INCLUDE = $(addprefix -i, $(INCLUDE_PATH))
 
-logics = CASL HasCASL Isabelle Modal CoCASL COL CspCASL CASL_DL SPASS OWL_DL
+logics = CASL HasCASL Isabelle Modal CoCASL COL CspCASL CASL_DL SPASS OWL_DL ConstraintCASL
 
 TESTTARGETS += test_parser hetpa hetana Test.o wrap isa \
     atermlibtest hatermdiff atctest atctest2
@@ -201,6 +201,7 @@ drifted_files = Syntax/AS_Architecture.hs Syntax/AS_Library.hs \
     Common/AS_Annotation.hs CASL/AS_Basic_CASL.hs Syntax/AS_Structured.hs \
     HasCASL/As.hs ATC/DevGraph.hs \
     Modal/AS_Modal.hs CoCASL/AS_CoCASL.hs COL/AS_COL.hs CASL_DL/AS_CASL_DL.hs\
+    ConstraintCASL/AS_ConstraintCASL.hs\
     $(gendrifted_files)
 
 atc_files = Common/AS_Annotation.der.hs Common/DefaultMorphism.hs \
@@ -246,6 +247,7 @@ HasCASL_files = HasCASL/As.hs HasCASL/Le.hs HasCASL/Sublogic.hs
 Isabelle_files = Isabelle/IsaSign.hs
 
 Modal_files = Modal/AS_Modal.hs Modal/ModalSign.hs
+ConstraintCASL_files = ConstraintCASL/AS_ConstraintCASL.hs
 CoCASL_files = CoCASL/AS_CoCASL.hs CoCASL/CoCASLSign.hs CoCASL/Sublogic.hs
 COL_files = COL/AS_COL.hs COL/COLSign.hs
 CspCASL_files = CspCASL/AS_CSP_CASL.hs CspCASL/SignCSP.hs
@@ -270,7 +272,7 @@ gen_inline_axiom_files = $(patsubst %.hs,%.inline.hs, $(inline_axiom_files))
 
 derived_sources += $(drifted_files) Driver/Version.hs $(happy_files) \
     $(inline_axiom_files) Modal/ModalSystems.hs $(hs_der_files) \
-    OWL_DL/ReadWrite.hs
+    OWL_DL/ReadWrite.hs ConstraintCASL/AS_ConstraintCASL.hs
 
 # sources that have {-# OPTIONS -cpp #-}
 cpp_sources = Common/DynamicUtils.hs \
@@ -468,6 +470,9 @@ Isabelle/ATC_Isabelle.der.hs: $(Isabelle_files) $(GENRULES)
 
 Modal/ATC_Modal.der.hs: $(Modal_files) $(GENRULES)
 	$(GENRULECALL) -i CASL.ATC_CASL -o $@ $(Modal_files)
+
+ConstraintCASL/ATC_ConstraintCASL.der.hs: $(ConstraintCASL_files) $(GENRULES)
+	$(GENRULECALL) -i CASL.ATC_CASL -o $@ $(ConstraintCASL_files)
 
 CASL_DL/ATC_CASL_DL.der.hs: $(CASL_DL_files) $(GENRULES)
 	$(GENRULECALL) -i CASL.ATC_CASL -o $@ $(CASL_DL_files)
