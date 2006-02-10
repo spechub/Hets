@@ -268,14 +268,9 @@ instance PrettyPrint f => PrettyPrint (TERM f) where
     printText0 ga (Qual_var n t _) =
         parens $ text varS <+> printText0 ga n <+> colon <+> printText0 ga t
     printText0 ga (Application o l _) =
-        let (o_id,isQual) =
-                case o of
-                       Op_name i          -> (i,False)
-                       Qual_op_name i _ _ -> (i,True)
-            o' = printText0 ga o
-        in if isQual then
-             print_prefix_appl_text ga (parens o') l
-           else print_Literal_text ga o_id l
+        if isQualOpSy o 
+           then print_prefix_appl_text ga (parens $ printText0 ga o) l
+           else print_Literal_text ga (op_id o) l
     printText0 ga (Sorted_term t s _) =
         condParensSorted_term parens t (printText0 ga t) <>
         colon <+> printText0 ga s

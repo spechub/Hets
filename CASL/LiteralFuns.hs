@@ -47,7 +47,7 @@ isFrac = isGenFrac splitApplM
 
 splitApplM :: TERM f -> Maybe (Id, [TERM f])
 splitApplM t = case t of
-    Application (Op_name _) _ _ -> Just $ splitAppl t 
+    Application _ _ _ -> Just $ splitAppl t 
     _ -> Nothing
 
 splitAppl :: TERM f -> (Id, [TERM f])
@@ -55,10 +55,10 @@ splitAppl t = case t of
               Application oi ts _ -> (op_id oi,ts)
               _ -> error "splitAppl: no Application found"
 
+-- | extract the Id from any OP_SYMB
 op_id :: OP_SYMB -> Id
 op_id op = case op of 
-           Qual_op_name _ _ _ -> 
-               error "cannot literally Print Qual_id" 
+           Qual_op_name x _ _ -> x
            Op_name x          -> x
 
 isQualOpSy :: OP_SYMB -> Bool
