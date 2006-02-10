@@ -137,7 +137,11 @@ MathServ-Anbindung
 Hilfskraft 3
 ************************************************
 
-Uni-Refactoring
+Uni-Refactoring, make modules hierarchical, change scoped type
+variables for ghc-6.5 (and older ghcs), replace deprecated code
+(i.e. FiniteMap, hslibs), use HaXml as a cabalized library, provide
+uni as (one?) cabal package(s), uni used to work under windows as well,
+watch the i.e. FilePath, Process discussions (libraries@haskell.org)
 
 ************************************************
 Hilfskraft 4
@@ -149,13 +153,12 @@ Entwicklungsgraph-Kalkül
 Hilfskraft 5
 ************************************************
 
-LaTeX pretty printer
+refactor pretty printing
 
 eine HetCASL spezifische PP Lib (mit neuem Doc Typ), um Text, Latex
 und andere Formate besser zu unterstützen und einheitlichen PP code
-für die CASL Datentypen zu bekommen.
-
-HasCASL hat auch noch keine Mixfix- und Latex Ausgabe.
+(independent from GlobalAnnos) für die (Het-)CASL (and HasCASL!)
+Datentypen (particularly for HasCASL data types) zu bekommen.
 
 LaTeX: see listings.sty for LaTeX generation (cf. CoSiT paper)
 
