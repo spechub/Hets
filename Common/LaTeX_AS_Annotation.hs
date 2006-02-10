@@ -10,7 +10,11 @@ Portability :  portable
 This module contains all instances of PrintLaTeX for AS_Annotation.hs
 -}
 
-module Common.LaTeX_AS_Annotation where
+module Common.LaTeX_AS_Annotation
+    ( printAnnotationList_Latex0
+    , splitAndPrintRAnnos_latex
+    , semiAnno_latex
+    ) where
 
 import Common.AS_Annotation
 import Common.Print_AS_Annotation
@@ -116,7 +120,7 @@ instance PrintLaTeX Annotation where
         map (printSmallId_latex ga) aa
     printLatex0 _ (Label aa _) =
         let aa' = vcat $ map (casl_annotation_latex . escape_latex) aa
-        in latex_macro "\\`" <>
+        in flushright $ 
            hc_sty_annotation (hc_sty_small_keyword ("\\%(") <>
                               aa' <> hc_sty_small_keyword ")\\%" )
     printLatex0 _ (Semantic_anno sa  _) =
@@ -166,21 +170,20 @@ printLatexLine kw line =
     where kw_d = hc_sty_small_keyword ("\\%"++kw)
 
 printAnnotationList_Latex0 :: GlobalAnnos -> [Annotation] -> Doc
-printAnnotationList_Latex0 ga l = (vcat $ map (printLatex0 ga) l)
+printAnnotationList_Latex0 ga = vcat . map (printLatex0 ga)
 
-instance (PrintLaTeX a) => PrintLaTeX (Annoted a) where
-    printLatex0 ga (Annoted i _ las ras) =
-        let i'   = printLatex0 ga i
-            las' = printAnnotationList_Latex0 ga las
-            (la,ras') = splitAndPrintRAnnos printLatex0
-                                            printAnnotationList_Latex0
-                                            (<\+>)
-                                            (latex_macro "\\`" <>) empty
-                                            ga ras
-            la' = hspace_latex "3mm"<>la
-            leftASF  = if null las then id else ($+$) las'
-            rightASF = if null ras then id else (\x -> x $$ ras')
-        in leftASF ( rightASF (if isEmpty la then i' else fcat [i',la']))
+splitAndPrintRAnnos_latex :: GlobalAnnos -> Doc -> [Annotation] -> Doc
+splitAndPrintRAnnos_latex ga i ras =
+    let (la, ras') = splitAndPrintRAnnos printLatex0
+            printAnnotationList_Latex0 (<\+>) flushright empty ga ras
+        la' = hspace_latex "3mm" <> la
+    in (if isEmpty la then i else fcat [i, la']) $$ ras'
+
+instance PrintLaTeX a => PrintLaTeX (Annoted a) where
+    printLatex0 ga (Annoted i _ las ras) = 
+        let r = splitAndPrintRAnnos_latex ga (printLatex0 ga i) ras
+        in if null las then r else 
+               space_latex $+$ printAnnotationList_Latex0 ga las $+$ r
 
 instance PrintLaTeX s => PrintLaTeX (Named s) where
     printLatex0 ga (NamedSen{senName = label, sentence = s}) =
@@ -188,22 +191,10 @@ instance PrintLaTeX s => PrintLaTeX (Named s) where
 
 semiAnno_latex :: PrintLaTeX a => GlobalAnnos -> [Annoted a] -> Doc
 semiAnno_latex ga l = if null l then empty else
-                   (vcat $ map (pf' True)
-                              (init l) ++ [pf' False (last l)])
-    where pfga as = vcat $ map (printLatex0 ga) as
-          pf' printSemi a_item =
-              leftAF (rightAF (
-                 if isEmpty laImpl then item'' else
-                     fsep_latex [item'', laImpl]))
-              where (laImpl,ras) = splitAndPrintRAnnos printLatex0
-                                             printAnnotationList_Latex0
-                                             (<\+>)
-                                             (latex_macro "\\`" <>) empty
-                                             ga (r_annos a_item)
-                    item' = printLatex0 ga (item a_item)
-                    item'' = if printSemi then item'<>semi_latex else item'
-                    leftAF = if null l_annos' then id
-                                              else ($$) (pfga l_annos')
-                    l_annos' = l_annos a_item
-                    rightAF = if isEmpty ras then id
-                                             else (\ x -> x $$ ras)
+                   vcat (map (pf' True)
+                              (init l) ++ [pf' False $ last l])
+    where pf' printSemi (Annoted i _ las ras) =
+              printAnnotationList_Latex0 ga las $+$
+              splitAndPrintRAnnos_latex ga item'' ras
+              where item' = printLatex0 ga i
+                    item'' = if printSemi then item' <> semi_latex else item'

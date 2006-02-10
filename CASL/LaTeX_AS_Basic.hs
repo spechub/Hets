@@ -19,14 +19,13 @@ import CASL.AS_Basic_CASL
 import CASL.Print_AS_Basic
 import Common.Id
 import Common.AS_Annotation
-import Common.Print_AS_Annotation
 import Common.GlobalAnnotations
 import Common.LaTeX_AS_Annotation
 import Common.Keywords
-import Common.Lib.Pretty
-import Common.PrintLaTeX
+import Common.Lib.Pretty (Doc, empty, (<>), ($$), ($+$), vcat, punctuate)
+import Common.PrintLaTeX (PrintLaTeX(..), printDisplayToken_latex)
 import Common.LaTeX_utils
-import Common.PPUtils
+import Common.PPUtils (pluralS)
 
 instance (PrintLaTeX b, PrintLaTeX s, PrintLaTeX f)
     => PrintLaTeX (BASIC_SPEC b s f) where
@@ -47,7 +46,7 @@ instance (PrintLaTeX b, PrintLaTeX s, PrintLaTeX f) =>
             hang_latex (hc_sty_plain_keyword generatedS
                         <~> setTab_latex <\+>
                         hc_sty_plain_keyword (typeS ++ pluralS l')) 9 $
-                        tabbed_nest_latex (vcat (map (printLatex0 ga) lans)
+                        tabbed_nest_latex (printAnnotationList_Latex0 ga lans
                                            $$ semiAnno_latex ga l')
         _ -> hang_latex (hc_sty_plain_keyword generatedS <~> setTab_latex) 9 $
                tabbed_nest_latex $ sp_braces_latex2
@@ -70,18 +69,10 @@ printLatex0Axioms ga f =
 printAnnotedFormula_Latex0 :: PrintLaTeX f =>
                GlobalAnnos -> Annoted (FORMULA f) -> Doc
 printAnnotedFormula_Latex0 ga (Annoted i _ las ras) =
-        let i'   = bullet_latex
-                      <\+> set_tabbed_nest_latex (printLatex0 ga i)
-            las' = if not $ null las then
-                      sp_text 0 "\n" <> printAnnotationList_Latex0 ga las
-                   else
-                      empty
-            (la,ras') =
-                splitAndPrintRAnnos printLatex0
-                                    printAnnotationList_Latex0
-                                    (<\+>) (latex_macro "\\`" <>)
-                                    empty ga ras
-        in  {-trace (show i)-} (las' $+$ fsep_latex [i',la] $$ ras')
+        let i'   = bullet_latex <\+> set_tabbed_nest_latex (printLatex0 ga i)
+            las' = if null las then empty
+                   else space_latex $+$ printAnnotationList_Latex0 ga las
+        in las' $+$ splitAndPrintRAnnos_latex ga i' ras
 
 instance (PrintLaTeX s, PrintLaTeX f) =>
           PrintLaTeX (SIG_ITEMS s f) where
@@ -106,7 +97,7 @@ instance PrintLaTeX f => PrintLaTeX (SORT_ITEM f) where
                    less_latex <\+> printLatex0 ga t
     printLatex0 ga (Subsort_defn s v t f _) =
         printLatex0 ga s <\+> equals_latex <\+>
-           sp_braces_latex2 (set_tabbed_nest_latex $ fsep
+           sp_braces_latex2 (set_tabbed_nest_latex $ fsep_latex
                             [printLatex0 ga v
                              <> colon_latex
                              <\+> printLatex0 ga t,
@@ -119,9 +110,9 @@ instance PrintLaTeX f => PrintLaTeX (OP_ITEM f) where
     printLatex0 ga (Op_decl l t a _) =
         setTabWithSpaces_latex 4 <>
         (if na then ids_sig
-        else fsep [ids_sig,
+        else fsep_latex [ids_sig,
                        tabbed_nest_latex $ commaT_latex ga a])
-        where ids_sig = fsep [commaT_latex ga l <\+> colon_latex,
+        where ids_sig = fsep_latex [commaT_latex ga l <\+> colon_latex,
                                  tabbed_nest_latex (if na then sig
                                         else sig <> comma_latex)]
               sig =  printLatex0 ga t
