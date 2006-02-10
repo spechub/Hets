@@ -107,7 +107,7 @@ Heng (Klaus)
 ************************************************
 
 OWL-DL logic
-OWL-DL -> CASL
+OWL-DL (<)-> CASL-DL
 
 emacs mode: 
   highlight does not work properly for HasCASL/Set.het or UserManual/Sbcs.casl
@@ -125,16 +125,10 @@ emacs mode:
 Hilfskraft 1
 ************************************************
 
-Modal-CASL <-> CASL-DL <-> OWL-DL
+Modal-CASL <-> CASL-DL
 
 ************************************************
 Hilfskraft 2
-************************************************
-
-MathServ-Anbindung
-
-************************************************
-Hilfskraft 3
 ************************************************
 
 Uni-Refactoring, make modules hierarchical, change scoped type
@@ -144,7 +138,7 @@ uni as (one?) cabal package(s), uni used to work under windows as well,
 watch the i.e. FilePath, Process discussions (libraries@haskell.org)
 
 ************************************************
-Hilfskraft 4
+Hilfskraft 3
 ************************************************
 
 Entwicklungsgraph-Kalkül
