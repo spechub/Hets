@@ -26,59 +26,61 @@ Functions to calculate the length of a given word as it would be
 
 -}
 
-module Common.LaTeX_funs (-- module Common.LaTeX_funs,
-                   space_latex_width,
+module Common.LaTeX_funs
+    (-- module Common.LaTeX_funs,
+     space_latex_width,
 
-                   calc_line_length,
-                   pt_length,
-                   -- calc_word_width,
-                   -- Word_type(..),
-                   keyword_width, axiom_width,
-                   normal_width,
+     calc_line_length,
+     pt_length,
+     -- calc_word_width,
+     -- Word_type(..),
+     keyword_width, axiom_width,
+     normal_width,
 
-                   escape_latex,
-                   hspace_latex,
-                   escape_comment_latex,
-                   (<\+>),
-                   (<~>),
-                   latex_macro,
-                   comma_latex,
-                   semi_latex,
-                   space_latex,
+     escape_latex,
+     hspace_latex,
+     escape_comment_latex,
+     (<\+>),
+     (<~>),
+     latex_macro,
+     comma_latex,
+     semi_latex,
+     space_latex,
 
-                   parens_latex,
-                   brackets_latex,
-                   quotes_latex,
+     parens_latex,
+     brackets_latex,
+     quotes_latex,
 
-                   nest_latex,
-                   hang_latex,
-                   sep_latex,
-                   fsep_latex,
+     nest_latex,
+     hang_latex,
+     sep_latex,
+     fsep_latex,
 
-                   casl_keyword_latex,
-                   casl_annotation_latex,
-                   casl_annotationbf_latex,
-                   casl_axiom_latex,
-                   casl_comment_latex,
-                   casl_structid_latex,
-                   casl_normal_latex,
+     casl_keyword_latex,
+     casl_annotation_latex,
+     casl_annotationbf_latex,
+     casl_axiom_latex,
+     casl_comment_latex,
+     casl_structid_latex,
+     casl_normal_latex,
 
-                   hc_sty_small_keyword,
-                   hc_sty_plain_keyword,
-                   hc_sty_hetcasl_keyword,
-                   hc_sty_casl_keyword,
+     hc_sty_small_keyword,
+     hc_sty_plain_keyword,
+     hc_sty_hetcasl_keyword,
+     hc_sty_casl_keyword,
 
-                   hc_sty_comment,
-                   hc_sty_annotation,
+     hc_sty_comment,
+     hc_sty_annotation,
 
-                   hc_sty_axiom,
-                   hc_sty_structid,
-                   hc_sty_structid_indexed,
-                   hc_sty_id,
+     hc_sty_axiom,
+     hc_sty_structid,
+     hc_sty_structid_indexed,
+     hc_sty_id,
 
-                   startAnno,
-                   endAnno
-) where
+     flushright,
+
+     startAnno,
+     endAnno) where
 
 import qualified Common.Lib.Map as Map
 import Data.Char
@@ -97,7 +99,6 @@ space_latex_width = normal_width " "
    length in LaTeX units
 
    Units per mm found in: Karsten Günther, "Einführung in LaTeX2e" (p.376)
-
 -}
 
 calc_line_length :: String -> Int
@@ -121,13 +122,11 @@ pt_length i = showFFloat (Just 3) pt "pt"
 
 {- functions to calculate a word-width in integer with a given word
    type or purpose
-
 -}
 
-data Word_type = Keyword | StructId | Normal
-               | Comment | Annotation | AnnotationBold
-               | Axiom
-                 deriving (Show,Eq)
+data Word_type =
+    Keyword | StructId | Normal | Comment | Annotation | AnnotationBold | Axiom
+    deriving (Show,Eq)
 
 calc_word_width :: Word_type -> String -> Int
 calc_word_width wt s =
@@ -174,7 +173,6 @@ itCorrection s
           -- lookupWithDefaultFM correction_map def_cor pc
           -- TODO: Build a nice correction map
           def_cor = 610
-
 
 sum_char_width_deb :: (String -> String) -- only used for an hackie debug thing
                    -> Map.Map String Int
@@ -337,6 +335,10 @@ cond_punctuate p (doc:docs) = go doc docs
     where go d []     = [d]
           go d (e:es) = cond_predicate : go e es
               where cond_predicate = if isEmpty d then d else d<>p
+
+-- | flush argument doc to the right
+flushright :: Doc -> Doc
+flushright d = latex_macro "\\`" <> d
 
 -- |
 -- makes a \hspace*{String} as Doc with appropiate size
