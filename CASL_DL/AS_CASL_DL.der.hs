@@ -26,14 +26,18 @@ type AnDLFORM = Annoted (FORMULA DL_FORMULA)
 
 data CardType = CMin | CMax | CExact deriving (Eq, Ord, Show)
 
-data DL_FORMULA = Cardinality CardType PRED_NAME 
-                              (TERM DL_FORMULA) (TERM DL_FORMULA) Range
-               -- the PRED_NAME refers to a declared binary predicate; 
-               -- the first term is restricted to constructors
-               -- denoting a variable;
+-- | for a detailed specification of all the components look into the sources
+data DL_FORMULA = 
+    Cardinality CardType 
+                PRED_NAME -- refers to a declared (binary) predicate 
+                (TERM DL_FORMULA) 
+                -- this term is restricted to constructors
+                -- denoting a (typed) variable
+                (TERM DL_FORMULA) 
                -- the second term is restricted to an Application denoting 
                -- a literal of type nonNegativeInteger (Nat)
-               -- pos: position of keyword, brackets, parens and comma
+                Range
+               -- position of keyword, brackets, parens and comma
              deriving (Eq, Ord, Show)
 
 minCardinalityS,maxCardinalityS,cardinalityS :: String 

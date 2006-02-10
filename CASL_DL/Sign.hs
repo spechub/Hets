@@ -7,7 +7,7 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Signatures for modal logic, as extension of CASL signatures.
+Signatures for DL logics, as extension of CASL signatures.
 -}
 
 module CASL_DL.Sign where

@@ -18,10 +18,10 @@ module CASL_DL.Logic_CASL_DL where
 
 import CASL_DL.AS_CASL_DL
 import CASL_DL.Sign
-import CASL_DL.ATC_CASL_DL
-import CASL_DL.Parse_AS
--- import CASL_DL.StatAna
-import CASL_DL.LaTeX_AS
+import CASL_DL.ATC_CASL_DL ()
+import CASL_DL.Parse_AS ()
+import CASL_DL.StatAna
+import CASL_DL.LaTeX_AS ()
 
 import CASL.Sign
 import CASL.Morphism
@@ -42,13 +42,17 @@ instance Language CASL_DL  where
  description _ = 
   "CASL_DL is at the same time an extension and a restriction of CASL.\n\
   \It additionally provides cardinality restrictions in a description logic\n\
-  \sense. It limits the expressivity of CASL to the description logic SHOIN(D)\n"
+  \sense; and it limits the expressivity of CASL to the description logic\n\
+  \SHOIN(D). Hence it provides the following sublogics: \n\
+  \  * Card -- CASL plus cardinality restrictions on binary relations\n\
+  \  * DL   -- SHOIN(D)\n\
+  \  * SHIQ\n\
+  \  * SHOIQ\n"
 
-type CDSign = Sign DL_FORMULA CASL_DLSign
-type CDMor = Morphism DL_FORMULA CASL_DLSign ()
-type CDFORMULA = FORMULA DL_FORMULA
+type DLMor = Morphism DL_FORMULA CASL_DLSign ()
+type DLFORMULA = FORMULA DL_FORMULA
 
-instance Category CASL_DL CDSign CDMor  
+instance Category CASL_DL DLSign DLMor  
     where
          -- ide :: id -> object -> morphism
          ide CASL_DL = idMor dummy
@@ -74,41 +78,34 @@ instance Syntax CASL_DL DL_BASIC_SPEC
 
 -- CASL_DL logic
 
-map_CD_FORMULA :: MapSen DL_FORMULA CASL_DLSign ()
-map_CD_FORMULA mor = id
-   -- (Cardinality ct pn varT natT r) = 
+map_DL_FORMULA :: MapSen DL_FORMULA CASL_DLSign ()
+map_DL_FORMULA mor (Cardinality ct pn varT natT r) =
+    Cardinality ct pn varT' natT' r
+    where varT' = mapTrm varT
+          natT' = mapTrm natT
+          mapTrm = mapTerm map_DL_FORMULA mor
 
-instance Sentences CASL_DL CDFORMULA () CDSign CDMor Symbol where
-      map_sen CASL_DL m = return . mapSen map_CD_FORMULA m
+instance Sentences CASL_DL DLFORMULA () DLSign DLMor Symbol where
+      map_sen CASL_DL m = return . mapSen map_DL_FORMULA m
       parse_sentence CASL_DL = Nothing
       sym_of CASL_DL = symOf
       symmap_of CASL_DL = morphismToSymbMap
       sym_name CASL_DL = symName
       provers CASL_DL = [] 
       cons_checkers CASL_DL = []
-      simplify_sen CASL_DL _ = id -- simplifySen tCheckCASL_DL simpCASL_DL
+      simplify_sen CASL_DL = simplifySen minDLForm simplifyCD
 
-{-
--- simplifySen for ExtFORMULA   
-simCASL_DL :: Sign M_FORMULA ModalSign -> M_FORMULA -> M_FORMULA
-simCASL_DL sign (BoxOrDiamond b md form pos) =
-    let mod' = case md of
-                        Term_mod term -> Term_mod $ rmTypesT minExpForm 
-                                         simCASL_DL sign term
-                        t -> t
-    in BoxOrDiamond b mod' 
-                 (simplifySen minExpForm simCASL_DL sign form) pos
+simplifyCD :: DLSign -> DL_FORMULA -> DL_FORMULA
+simplifyCD sign (Cardinality ct pn t1 t2 r) =
+    Cardinality ct pn (simp t1) (simp t2) r
+    where simp = rmTypesT minDLForm simplifyCD sign
 
-rmTypesExt :: a -> b -> b
-rmTypesExt _ f = f
-
--}
-instance StaticAnalysis CASL_DL DL_BASIC_SPEC CDFORMULA ()
+instance StaticAnalysis CASL_DL DL_BASIC_SPEC DLFORMULA ()
                SYMB_ITEMS SYMB_MAP_ITEMS
-               CDSign 
-               CDMor 
+               DLSign 
+               DLMor 
                Symbol RawSymbol where
-         basic_analysis CASL_DL = Nothing -- Just $ basicCASL_DLAnalysis
+         basic_analysis CASL_DL = Just $ basicCASL_DLAnalysis
          stat_symb_map_items CASL_DL = statSymbMapItems
          stat_symb_items CASL_DL = statSymbItems
          ensures_amalgamability CASL_DL _ = 
@@ -135,10 +132,11 @@ instance StaticAnalysis CASL_DL DL_BASIC_SPEC CDFORMULA ()
          theory_to_taxonomy CASL_DL = convTaxo
 
 instance Logic CASL_DL ()
-               DL_BASIC_SPEC CDFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
-               CDSign 
-               CDMor
+               DL_BASIC_SPEC DLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
+               DLSign 
+               DLMor
                Symbol RawSymbol () where
+         stability _ = Unstable
          min_sublogic_basic_spec CASL_DL _basic_spec = ()
          min_sublogic_sentence CASL_DL _sentence = ()
          min_sublogic_symb_items CASL_DL _symb_items = ()
