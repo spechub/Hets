@@ -11,12 +11,13 @@ LaTeX Pretty Printing heterogenous
    libraries in HetCASL.
 -}
 
-module Syntax.LaTeX_AS_Library where
+module Syntax.LaTeX_AS_Library() where
 
-import Common.Lib.Pretty
-import Common.PPUtils
-import Common.PrintLaTeX
+import Common.Lib.Pretty (Doc, empty, hcat, (<>), ($$), punctuate)
+import Common.PPUtils (vsep, ($++$))
+import Common.PrintLaTeX (PrintLaTeX(..))
 import Common.LaTeX_utils
+import Common.LaTeX_AS_Annotation
 import Common.GlobalAnnotations
 import Common.Keywords
 
@@ -33,7 +34,7 @@ instance PrintLaTeX LIB_DEFN where
     printLatex0 ga (Lib_defn aa ab _ ad) =
         let aa' = printLatex0 ga' aa              -- lib name
             ab' = vsep $ map (printLatex0 ga') ab -- LIB_ITEMs
-            ad' = vcat $ map (printLatex0 ga') ad -- global ANNOTATIONs
+            ad' = printAnnotationList_Latex0 ga' ad -- global ANNOTATIONs
             ga' = set_latex_print True ga
         in hc_sty_plain_keyword libraryS <\+> aa'
                $++$ ad'
@@ -51,10 +52,7 @@ instance PrintLaTeX LIB_ITEM where
         in ac' $$ latexEnd
     printLatex0 ga (View_defn aa ab ac ad _) =
         let aa' = simple_id_latex aa
-            ab' = case printLatex0 ga ab of
-                  ab_d
-                      | isEmpty ab_d -> empty
-                      | otherwise    -> ab_d
+            ab' = printLatex0 ga ab
             condGrpSp = condBracesGroupSpec4View_defn
                              printLatex0
                              sp_braces_latex2 ga
@@ -66,12 +64,12 @@ instance PrintLaTeX LIB_ITEM where
             eq' = if null ad then empty else equals_latex
             vhead = hc_sty_hetcasl_keyword viewS <\+>
                    setTab_latex <> aa' <\+> ab'
-            to' = if isEmpty eq' then to else to <\+> eq'
+            to' = if null ad then to else to <\+> eq'
             head_with_type =
-                fsep [vhead <\+> colon_latex,
-                      fsep [frm <\+> hc_sty_plain_keyword toS,
+                fsep_latex [vhead <\+> colon_latex,
+                      fsep_latex [frm <\+> hc_sty_plain_keyword toS,
                       to']]
-            in (if isEmpty eq'
+            in (if null ad
                 then head_with_type
                 else head_with_type $$ tabbed_nest_latex ad'
                )
@@ -102,8 +100,7 @@ instance PrintLaTeX LIB_ITEM where
            $$ latexEnd
     printLatex0 ga (Download_items aa ab _) =
         let aa' = printLatex0 ga aa
-            ab' = fsep_latex $ punctuate comma_latex $
-                               map (printLatex0 ga) ab
+            ab' = commaT_latex ga ab
         in (hang_latex (hc_sty_hetcasl_keyword fromS <\+> setTab_latex <>aa'
                         <\+> hc_sty_plain_keyword getS)
                        8

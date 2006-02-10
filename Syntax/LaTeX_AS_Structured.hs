@@ -10,10 +10,10 @@ Portability :  non-portable(Grothendieck)
 LaTeX Printing the Structured part of heterogenous specifications.
 -}
 
-module Syntax.LaTeX_AS_Structured where
+module Syntax.LaTeX_AS_Structured() where
 
-import Common.Lib.Pretty
-import Common.PrintLaTeX
+import Common.Lib.Pretty (Doc, empty, (<>), ($$), punctuate)
+import Common.PrintLaTeX (PrintLaTeX(..))
 import Common.LaTeX_utils
 import Common.LaTeX_AS_Annotation()
 import Common.Keywords
@@ -72,9 +72,11 @@ instance PrintLaTeX SPEC where
                          Union _ _ -> spacetab
                          _ -> empty
             spacetab = view_hspace <> setTab_latex
-        in tabbed_nest_latex (setTabWithSpaces_latex 3<>
-                 fsep [hc_sty_plain_keyword localS,tabbed_nest_latex aa',
-                       hc_sty_plain_keyword withinS,tabbed_nest_latex ab'])
+        in tabbed_nest_latex (setTabWithSpaces_latex 3 <>
+                 fsep_latex [hc_sty_plain_keyword localS,
+                             tabbed_nest_latex aa',
+                             hc_sty_plain_keyword withinS,
+                             tabbed_nest_latex ab'])
     printLatex0 ga (Closed_spec aa _) =
         tabbed_nest_latex (condBracesGroupSpec printLatex0
                                            sp_braces_latex2 mkw ga aa)
@@ -127,15 +129,12 @@ instance PrintLaTeX G_hiding where
     printLatex0 ga (G_logic_projection enc) = latexLogicEnc ga enc
 
 instance PrintLaTeX GENERICITY where
-    printLatex0 ga (Genericity aa ab _) =
+    printLatex0 ga (Genericity aa@(Params al) ab@(Imported bl) _) =
         let aa' = set_tabbed_nest_latex $ printLatex0 ga aa
             ab' = printLatex0 ga ab
-        in if isEmpty aa' && isEmpty ab'
-           then empty
-           else
-              if isEmpty aa'
+        in if null al
               then ab'
-              else if isEmpty ab'
+              else if null bl
                    then aa'
                    else fsep_latex [aa'<~>setTab_latex,
                                     tabbed_nest_latex $ ab']
@@ -192,7 +191,7 @@ instance PrintLaTeX Logic_code where
         printLatex0 ga enc <\+> colon_latex <\+>
         printLatex0 ga src <\+> rightArrow
     printLatex0 ga (Logic_code (Just enc) Nothing (Just tar) _) =
-        printLatex0 ga enc <\+> colon <\+>
+        printLatex0 ga enc <\+> colon_latex <\+>
         rightArrow <\+> printLatex0 ga tar
     printLatex0 ga (Logic_code Nothing (Just src) (Just tar) _) =
         printLatex0 ga src <\+> rightArrow <\+>

@@ -10,10 +10,10 @@ Portability :  non-portable(Grothendieck)
 LaTeX Printing the Architechture stuff of HetCASL.
 -}
 
-module Syntax.LaTeX_AS_Architecture where
+module Syntax.LaTeX_AS_Architecture() where
 
-import Common.Lib.Pretty
-import Common.PrintLaTeX
+import Common.Lib.Pretty (empty, (<>), ($$), punctuate)
+import Common.PrintLaTeX (PrintLaTeX(..))
 import Common.LaTeX_utils
 import Common.Keywords
 import Syntax.AS_Architecture
@@ -54,7 +54,7 @@ instance PrintLaTeX UNIT_DECL_DEFN where
 instance PrintLaTeX UNIT_SPEC where
     printLatex0 ga (Unit_type aa ab _) =
         let aa' = fsep_latex $ punctuate
-                  (space_latex <> hc_sty_axiom "\\times"<> space_latex)
+                  (space_latex <> hc_sty_axiom "\\times")
                   $ map (condBracesGroupSpec printLatex0
                                  sp_braces_latex2 Nothing ga) aa
             ab' = condBracesGroupSpec printLatex0
@@ -108,7 +108,7 @@ instance PrintLaTeX UNIT_TERM where
     printLatex0 ga (Unit_translation aa ab) =
         let aa' = printLatex0 ga aa
             ab' = printLatex0 ga ab
-        in fsep [aa', ab']
+        in fsep_latex [aa', ab']
     printLatex0 ga (Amalgamation aa _) =
         listSep_latex (space_latex <> hc_sty_plain_keyword andS) ga aa
     printLatex0 ga (Local_unit aa ab _) =
