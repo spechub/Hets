@@ -168,47 +168,6 @@ set up default simplifier
 set up default tactics using axioms
   (see DOLCE sample files)
 
-
-in Isabelle/IsaPrint.hs:
-rename variables that conflict with operation syntax
-   (or restrict mixfix decls for consts)
-
-die Mixfix-Deklarationen führen noch zu Problemen.
-Z.B.
-
-consts
-  c::t     ("c")
-
-führt dazu, dass c nicht mehr als Variable verwendet werden kann.
-Könntest du diese Mixfix-Deklarationen auf die notwendigen Fälle
-beschränken, und ggf. die Variablen umbenennen?
-
-Zudem müssen Underscores escaped werden:
-
-consts
-  C_1::t    ("C'_1")
-
-Diplom: Encoding for HasCASL in Isabelle/HOL(CF)
-
-Interface Hets <-> ISabelle
-
-in IsaProve.hs
-  Hets muss eine Pipe als Inode erzeugen
-  und dann auf Beweisterme warten
-  und auf "Ende" warten
-  und dann Proof_status sen proof_tree entsprechend ausfüllen
-    (siehe Logic/Prover.hs)
-
-Isabelle (im .thy file, dass von IsaProve.hs erzeugt wird)
-  Beweisterme (siehe Kapitel im RefMan)
-  ML "proofs := 1" (am Anfang des .thy file)
-  am Ende jedes Theorems: Beweisterm in die Pipe schreiben
-    (Pipenamen direkt angeben, vom thy-file-Namen abgeleitet)
-    mit pretty_proof_of und Pretty.string_of
-    und Start- und Endmarker
-  am Schluss "Ende" ausgeben
-
-
 Funktion basicInferenceNode in Proofs/Proofs.hs:
   Theorem link nur dann grün, wenn alle Goals bewiesen wurden
 
@@ -243,10 +202,7 @@ simplification of HasCASL sentences (omit types)
 
 Logic COL is a ruin (with wrongly qualified module names)
 
-pretty printing mangles trailing and preceding annotations
-
 logic coding from the comand line with printing of results
-(started -v5)
 
 Haskell modules: hiding, renaming
 
@@ -255,7 +211,6 @@ Haskell modules: hiding, renaming
   forall x_1:s_n .... x_n:s_n .       phi =>      f(t_1,...,t_m)=t
   forall x_1:s_n .... x_n:s_n .    phi1  =>      p(t_1,...,t_m)<=>phi
   if there are axioms not being of this form, output error
-
 
 Missing points for heterogeneous WADT 04 example:
 - improve display of HasCASL sigs + mors 
