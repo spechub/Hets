@@ -70,11 +70,14 @@ write_LIB_DEFN ga file opt ld = do
         filename ty = filePrefix ++ "." ++ show ty
         verbMesg ty = putIfVerbose opt 2 $ "Writing file: " ++ filename ty
         printAscii ty = do
-                verbMesg ty
-                write_casl_asc opt ga (filename ty) ld
+          verbMesg ty
+          write_casl_asc opt ga (filename ty) ld
+        showAst ty = do 
+          verbMesg ty
+          writeFile (filename ty) $ show ld         
         write_type :: OutType -> IO ()
         write_type t = case t of
-            HetCASLOut OutASTree OutAscii -> printAscii t
+            HetCASLOut OutASTree OutAscii -> showAst t
             PrettyOut PrettyAscii -> printAscii t
             PrettyOut PrettyLatex -> do
                 verbMesg t
