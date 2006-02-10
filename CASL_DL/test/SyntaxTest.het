@@ -1,0 +1,13 @@
+
+library SyntaxTest
+
+logic CASL_DL
+from CASL_DL/Datatypes get IntegerLiteral
+
+spec X1 = IntegerLiteral 
+then
+     sort T1,T2,T3 < Thing
+     pred R1 : T1 * T2
+     forall x : Thing
+     . x in T3 <=> minCardinality[R1](x,5)
+end
