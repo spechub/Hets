@@ -22,14 +22,17 @@ Repräsentation ändern:
   Isabelles Beweisobjekte einbinden
   Definitionen auszeichnen
 
+
 ************************************************
-NN (NN)
+Florian (Till)
 ************************************************
 
-einfaches Merge von lokalen Beweisen eines abgespeichteren DG 
-  in aktuellen DG
-
-
+abstrakte Syntax für ConstraintCASL (s. CASL-lib/ConstraintCASL/)
+  nach HetCATS/ConstraintCASL/AS_ConstraintCASL.der.hs
+Parser für ConstraintCASL
+  nach HetCATS/ConstraintCASL/Parse_AS_Basic.hs
+beides in HetCATS/ConstraintCASL/Logic_ConstraintCASL.hs einhängen
+  (mit Till)
 
 ************************************************
 Mingyi (Till)
@@ -155,6 +158,13 @@ und andere Formate besser zu unterstützen und einheitlichen PP code
 Datentypen (particularly for HasCASL data types) zu bekommen.
 
 LaTeX: see listings.sty for LaTeX generation (cf. CoSiT paper)
+
+************************************************
+Hilfskraft 6
+************************************************
+
+einfaches Merge von lokalen Beweisen eines abgespeichteren DG 
+  in aktuellen DG
 
 ************************************************
 remaining stuff
