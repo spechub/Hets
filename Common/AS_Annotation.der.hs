@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Klaus Lüttich, Christian Maeder, and Uni Bremen 2002-2005
+Copyright   :  (c) Klaus Lüttich, Christian Maeder, and Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -10,7 +10,6 @@ Portability :  portable
 These datastructures describe the Annotations of (Het)CASL.
    There is also a paramterized data type for an 'Annoted' 'item'.
    See also chapter II.5 of the CASL Reference Manual.
-
 -}
 
 module Common.AS_Annotation where
@@ -80,21 +79,21 @@ data Annotation = -- | constructor for comments or unparsed annotes
                 Unparsed_anno Annote_word Annote_text Range
                 -- | known annotes
                 | Display_anno Id [(Display_format, String)] Range
-                -- postion of anno start, keywords and anno end
+                -- position of anno start, keywords and anno end
                 | List_anno Id Id Id Range
-                -- postion of anno start, commas and anno end
+                -- position of anno start, commas and anno end
                 | Number_anno Id Range
-                -- postion of anno start, commas and anno end
+                -- position of anno start, commas and anno end
                 | Float_anno Id Id Range
-                -- postion of anno start, commas and anno end
+                -- position of anno start, commas and anno end
                 | String_anno Id Id Range
-                -- postion of anno start, commas and anno end
+                -- position of anno start, commas and anno end
                 | Prec_anno PrecRel [Id] [Id] Range
                 --          ^ positions: "{",commas,"}", RecRel, "{",commas,"}"
                 --          | Lower = "< "  BothDirections = "<>"
                 | Assoc_anno AssocEither [Id] Range -- position of commas
                 | Label [String] Range
-                -- postion of anno start and anno end
+                -- position of anno start and anno end
 
                 -- All annotations below are only as annote line allowed
                 | Semantic_anno Semantic_anno Range
