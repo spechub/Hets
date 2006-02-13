@@ -346,6 +346,26 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts = do
                    $$$ createLocalEdgeMenuThmEdge gInfo
                    $$$ createLocalMenuValueTitleShowConservativity
                    $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
+                  ("hetproventhm",
+                   GraphConfigure.Double $$$ Color "Green"
+                   $$$ createLocalEdgeMenuThmEdge gInfo
+                   $$$ createLocalMenuValueTitleShowConservativity
+                   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
+                  ("hetunproventhm",
+                   GraphConfigure.Double $$$ Color "Coral"
+                   $$$ createLocalEdgeMenuThmEdge gInfo
+                   $$$ createLocalMenuValueTitleShowConservativity
+                   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
+                  ("hetlocalproventhm",
+                   GraphConfigure.Double $$$ Color "Green"
+                   $$$ createLocalEdgeMenuThmEdge gInfo
+                   $$$ createLocalMenuValueTitleShowConservativity
+                   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
+                  ("hetlocalunproventhm",
+                   GraphConfigure.Double $$$ Color "Coral"
+                   $$$ createLocalEdgeMenuThmEdge gInfo
+                   $$$ createLocalMenuValueTitleShowConservativity
+                   $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue),
                   ("unprovenhidingthm",
                    Solid $$$ Color "Yellow"
                    $$$ createLocalEdgeMenuThmEdge gInfo
@@ -1156,11 +1176,12 @@ getDGLinkType lnk = case dgl_type lnk of
     if isHomogeneous $ dgl_morphism lnk then "globaldef"
         else "hetdef"
   HidingDef -> "hidingdef"
-  LocalThm thmLnkState _ _ -> "local" ++ getThmType thmLnkState ++ "thm"
-  GlobalThm thmLnkState _ _ -> getThmType thmLnkState ++ "thm"
+  LocalThm thmLnkState _ _ -> het++"local" ++ getThmType thmLnkState ++ "thm"
+  GlobalThm thmLnkState _ _ -> het++getThmType thmLnkState ++ "thm"
   HidingThm _ thmLnkState -> getThmType thmLnkState ++ "hidingthm"
   FreeThm _ bool -> if bool then "proventhm" else "unproventhm"
   _  -> "def" -- LocalDef, FreeDef, CofreeDef
+ where het = if isHomogeneous $ dgl_morphism lnk then "" else "het"
 
 getThmType :: ThmLinkStatus -> String
 getThmType thmLnkState =
