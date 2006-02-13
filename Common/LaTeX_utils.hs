@@ -148,7 +148,7 @@ simple_id_indexed_latex :: SIMPLE_ID -> Doc
 simple_id_indexed_latex = hc_sty_structid_indexed . tokStr
 
 parens_tab_latex :: Doc -> Doc
-parens_tab_latex = parens_latex . set_tabbed_nest_latex
+parens_tab_latex = parens_latex
 
 -- |
 -- constant document to start indentation by a LaTeX tab stop
