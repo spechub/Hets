@@ -57,8 +57,7 @@ instance (PrintLaTeX b, PrintLaTeX s, PrintLaTeX f) =>
     printLatex0 ga (Local_var_axioms l f _) =
         forall_latex <\+> semiT_latex ga l
                  $$ printLatex0Axioms ga f
-    printLatex0 ga (Axiom_items f _) =
-        printLatex0Axioms ga f
+    printLatex0 ga (Axiom_items f _) = printLatex0Axioms ga f
     printLatex0 ga (Ext_BASIC_ITEMS b) = printLatex0 ga b
 
 printLatex0Axioms :: PrintLaTeX f =>
@@ -80,7 +79,7 @@ instance (PrintLaTeX s, PrintLaTeX f) =>
         hc_sty_sig_item_keyword ga  (sortS ++ pluralS l) <\+>
         set_tabbed_nest_latex (semiAnno_latex ga l)
     printLatex0 ga (Op_items l _) =
-        hc_sty_sig_item_keyword ga (opS ++ pluralS l)   <\+>
+        hc_sty_sig_item_keyword ga (opS ++ pluralS l) <\+>
         set_tabbed_nest_latex (semiAnno_latex ga l)
     printLatex0 ga (Pred_items l _) =
         hc_sty_sig_item_keyword ga (predS ++ pluralS l) <\+>
@@ -218,21 +217,20 @@ instance PrintLaTeX f => PrintLaTeX (FORMULA f) where
     printLatex0 ga (Disjunction  fs _) =
         sep_latex $ punctuate (space_latex <> hc_sty_axiom "\\vee")
           $ map (condParensXjunction printLatex0 parens_tab_latex ga) fs
-    printLatex0 ga i@(Implication f g b _) =
+    printLatex0 ga i@(Implication f g b _) = fsep_latex $
         if not b
-        then (
-        hang_latex (condParensImplEquiv printLatex0 parens_tab_latex
-                    ga i g False <\+> hc_sty_id ifS) 3 $
-             condParensImplEquiv printLatex0 parens_tab_latex ga i f True)
-
-        else (
-        hang_latex (condParensImplEquiv printLatex0 parens_tab_latex
-                    ga i f False <\+> hc_sty_axiom "\\Rightarrow") 3 $
-             condParensImplEquiv printLatex0 parens_tab_latex ga i g True)
+        then
+        [condParensImplEquiv printLatex0 parens_tab_latex ga i g False,
+         hc_sty_id ifS,
+         condParensImplEquiv printLatex0 parens_tab_latex ga i f True]
+        else
+        [condParensImplEquiv printLatex0 parens_tab_latex ga i f False,
+         hc_sty_axiom "\\Rightarrow",
+         condParensImplEquiv printLatex0 parens_tab_latex ga i g True]
     printLatex0 ga e@(Equivalence  f g _) =
-        sep_latex
-             [condParensImplEquiv printLatex0 parens_tab_latex ga e f False
-                    <\+> hc_sty_axiom "\\Leftrightarrow",
+        fsep_latex
+             [condParensImplEquiv printLatex0 parens_tab_latex ga e f False,
+              hc_sty_axiom "\\Leftrightarrow",
               condParensImplEquiv printLatex0 parens_tab_latex ga e g True]
     printLatex0 ga (Negation f _) = hc_sty_axiom "\\neg" <\+>
         condParensNeg f parens_latex (printLatex0 ga f)
@@ -249,11 +247,9 @@ instance PrintLaTeX f => PrintLaTeX (FORMULA f) where
            else condPrint_Mixfix_latex ga p_id l
     printLatex0 ga (Definedness f _) = hc_sty_id defS <\+> printLatex0 ga f
     printLatex0 ga (Existl_equation f g _) =
-        hang_latex (printLatex0 ga f <\+> exequal_latex) 8
-                       $ printLatex0 ga g
+        fsep_latex [printLatex0 ga f, exequal_latex, printLatex0 ga g]
     printLatex0 ga (Strong_equation f g _) =
-        hang_latex (printLatex0 ga f <\+> equals_latex) 8
-                       $ printLatex0 ga g
+        fsep_latex [printLatex0 ga f, equals_latex, printLatex0 ga g]
     printLatex0 ga (Membership f g _) =
         printLatex0 ga f <\+> hc_sty_axiom "\\in" <\+> printLatex0 ga g
     printLatex0 ga (Mixfix_formula t) = printLatex0 ga t
@@ -306,9 +302,8 @@ instance PrintLaTeX f => PrintLaTeX (TERM f) where
     printLatex0 ga (Cast  t s _) =
         printLatex0 ga t <\+> hc_sty_id asS <\+> printLatex0 ga s
     printLatex0 ga(Conditional u f v _) =
-        hang_latex (printLatex0 ga u) 8 $
-             sep_latex ((hc_sty_id whenS <\+> printLatex0 ga f):
-                     [hc_sty_id elseS <\+> printLatex0 ga v])
+        fsep_latex [printLatex0 ga u, hc_sty_id whenS, printLatex0 ga f,
+                    hc_sty_id elseS, printLatex0 ga v]
     printLatex0 _ (Unparsed_term _ _) = error "Unparsed_term"
     printLatex0 ga (Mixfix_qual_pred p) = printLatex0 ga p
     printLatex0 ga (Mixfix_term l) = listSep_latex space_latex ga l
