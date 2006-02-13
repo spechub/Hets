@@ -18,6 +18,9 @@ See <http://spass.mpi-sb.mpg.de/> for details on SPASS.
 
       - window opens too small on linux; why? ... maybe fixed
 
+      - keep focus of listboxes if updated (also relevant for 
+        in GUI.ProofManagement)
+
       - check if the theorem is used in the proof; 
         if not, the theory is inconsistent; 
         mark goal as proved and emmit a warning...
