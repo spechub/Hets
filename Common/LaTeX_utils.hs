@@ -19,7 +19,6 @@ module Common.LaTeX_utils
     , fsep_latex
     , listSep_latex          -- then, and
 
-    , axiom_width            -- =e=, sorts in subsorts
     , view_hspace            -- structured specs
 
     , (<~>)
@@ -35,8 +34,6 @@ module Common.LaTeX_utils
 
     , simple_id_latex        -- hc_sty_structid . tokStr
     , simple_id_indexed_latex -- with index
-
-    , latex_macro
 
     , comma_latex
     , semi_latex
@@ -56,7 +53,7 @@ module Common.LaTeX_utils
     , exists_latex
     , unique_latex
 
-    , casl_axiom_latex     -- for printDisplayToken_latex, replaces "~"
+    , casl_axiom_latex     -- for printDisplayToken_latex
     , casl_normal_latex
 
     , semiT_latex
