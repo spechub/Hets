@@ -67,7 +67,7 @@ isabelleConsChecker =
 
 openIsaProof_status :: String -> Proof_status ()
 openIsaProof_status n =
-    ((openProof_status n (prover_name isabelleProver))::Proof_status ()) 
+    ((openProof_status n (prover_name isabelleProver))::Proof_status ())
     {proofTree = ()}
 
 -- | the name of the inconsistent lemma for consistency checks
@@ -113,9 +113,8 @@ getProofDeps m thName thm = do
     b <- checkInFile file
     if b then do
         s <- readFile file
-        if null s then return $ openIsaProof_status $ mapN thm
-           else let l = filter (not . null) $ map strip $ lines s
-                in return $ mkProved (mapN thm) $ map mapN l
+        let l = filter (not . null) $ map strip $ lines s
+        return $ mkProved (mapN thm) $ map mapN l
       else return $ openIsaProof_status $ mapN thm
 
 getAllProofDeps :: Map.Map String String -> String -> [String]
@@ -139,7 +138,7 @@ mkProved :: String -> [String] -> Proof_status ()
 mkProved thm used = (openIsaProof_status thm)
     { goalStatus = Proved
     , usedAxioms = used
-    , goalUsedInProof = True 
+    , goalUsedInProof = True
     , tacticScript = Tactic_script "unknown isabelle user input"
     }
 
