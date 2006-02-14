@@ -108,23 +108,26 @@ instance PrintLaTeX Annotation where
         let aa' = hc_sty_axiom $ showPrecRel pflag
             p_list = (\l -> casl_comment_latex "\\{" <> l
                                 <> casl_comment_latex "\\}")
-                     .fcat
-                     .(punctuate (smallComma_latex<>smallSpace_latex))
-                     .(map (printSmallId_latex ga))
-        in  printLatexGroup "prec" $ p_list ab <\\+> aa' <\\+> p_list ac
+                     . fsep_small
+                     . punctuate smallComma_latex
+                     . map (printSmallId_latex ga)
+        in  printLatexGroup "prec" $ fsep_small [p_list ab, aa', p_list ac]
     printLatex0 ga (Assoc_anno as aa _) =
         printLatexGroup (case as of
                          ALeft -> "left\\_assoc"
-                         ARight -> "right\\_assoc") $ fcat $
-        punctuate (smallComma_latex<>smallSpace_latex) $
+                         ARight -> "right\\_assoc") $ fsep_small $
+        punctuate smallComma_latex $
         map (printSmallId_latex ga) aa
     printLatex0 _ (Label aa _) =
         let aa' = vcat $ map (casl_annotation_latex . escape_latex) aa
-        in flushright $ 
+        in flushright $
            hc_sty_annotation (hc_sty_small_keyword ("\\%(") <>
                               aa' <> hc_sty_small_keyword ")\\%" )
     printLatex0 _ (Semantic_anno sa  _) =
         printLatexLine (lookupSemanticAnno sa)  empty
+
+fsep_small :: [Doc] -> Doc
+fsep_small = fcat . punctuate smallSpace_latex
 
 -- -------------------------------------------------------------------------
 -- utilities
@@ -180,9 +183,9 @@ splitAndPrintRAnnos_latex ga i ras =
     in (if isEmpty la then i else fcat [i, la']) $$ ras'
 
 instance PrintLaTeX a => PrintLaTeX (Annoted a) where
-    printLatex0 ga (Annoted i _ las ras) = 
+    printLatex0 ga (Annoted i _ las ras) =
         let r = splitAndPrintRAnnos_latex ga (printLatex0 ga i) ras
-        in if null las then r else 
+        in if null las then r else
                space_latex $+$ printAnnotationList_Latex0 ga las $+$ r
 
 instance PrintLaTeX s => PrintLaTeX (Named s) where
