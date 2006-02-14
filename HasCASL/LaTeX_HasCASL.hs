@@ -62,7 +62,7 @@ latexBracket b = case b of
        Braces -> sp_braces_latex2
        NoBrackets -> id
 
--- | print a 'Kind' plus a preceding colon (or nothing for 'star')
+-- | print a 'Kind' plus a preceding colon (or nothing)
 latexKind :: GlobalAnnos -> Kind -> Doc
 latexKind ga k =
     if k == universe then empty else latexVarKind ga InVar $ VarKind k

@@ -58,7 +58,7 @@ instance PrettyPrint TypePattern where
 bracket :: BracketKind -> Doc -> Doc
 bracket b t = let (o,c) = getBrackets b in text o <> t <> text c
 
--- | print a 'Kind' plus a preceding colon (or nothing for 'star')
+-- | print a 'Kind' plus a preceding colon (or nothing)
 printKind :: GlobalAnnos -> Kind -> Doc
 printKind ga k = if k == universe then empty else
                  printVarKind ga InVar (VarKind k)
