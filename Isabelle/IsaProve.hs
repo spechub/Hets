@@ -42,6 +42,7 @@ import Text.ParserCombinators.Parsec
 import Driver.Options
 
 import Data.Char
+import Data.List(nub)
 import Control.Monad
 
 import System.Directory
@@ -113,7 +114,7 @@ getProofDeps m thName thm = do
     b <- checkInFile file
     if b then do
         s <- readFile file
-        let l = filter (not . null) $ map strip $ lines s
+        let l = nub $ filter (not . null) $ map strip $ lines s
         return $ mkProved (mapN thm) $ map mapN l
       else return $ openIsaProof_status $ mapN thm
 
