@@ -146,7 +146,13 @@ watch the i.e. FilePath, Process discussions (libraries@haskell.org)
 Hilfskraft 3
 ************************************************
 
-Entwicklungsgraph-Kalkül
+development graph calculus
+(see Sect. IV:4.4 of the CASL Reference Manual)
+
+implement simplified rule Theorem-Hide-Shift
+try out examples
+conservativity calculus
+weakly amalgamable cocones
 
 ************************************************
 Hilfskraft 5
@@ -176,9 +182,6 @@ remaining stuff
 set up default simplifier
 set up default tactics using axioms
   (see DOLCE sample files)
-
-Funktion basicInferenceNode in Proofs/Proofs.hs:
-  Theorem link nur dann grün, wenn alle Goals bewiesen wurden
 
 improve efficiency (e.g. of UserManual/Sbcs.casl), using profiling
 
