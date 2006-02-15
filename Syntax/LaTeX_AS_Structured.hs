@@ -132,10 +132,8 @@ instance PrintLaTeX GENERICITY where
     printLatex0 ga (Genericity aa@(Params al) ab@(Imported bl) _) =
         let aa' = set_tabbed_nest_latex $ printLatex0 ga aa
             ab' = printLatex0 ga ab
-        in if null al
-              then ab'
-              else if null bl
-                   then aa'
+        in if null bl
+                   then aa' -- sets at least a new tab
                    else fsep_latex [aa'<~>setTab_latex,
                                     tabbed_nest_latex $ ab']
 
