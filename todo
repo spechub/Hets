@@ -27,12 +27,15 @@ Repräsentation ändern:
 Florian (Till)
 ************************************************
 
+HetCATS, uni und CASL-lib auschecken
 abstrakte Syntax für ConstraintCASL (s. CASL-lib/ConstraintCASL/)
   nach HetCATS/ConstraintCASL/AS_ConstraintCASL.der.hs
 Parser für ConstraintCASL
   nach HetCATS/ConstraintCASL/Parse_AS_Basic.hs
-beides in HetCATS/ConstraintCASL/Logic_ConstraintCASL.hs einhängen
-  (mit Till)
+Testen mit
+  hets -o ast.het CASL-lib/ConstraintCASL/RCC8.het
+Freiburger Constraint-Solver angucken
+Bremer Constraint-Solver angucken
 
 ************************************************
 Mingyi (Till)
