@@ -140,8 +140,9 @@ anaLibFile lgraph defl opts libenv ln =
         return (ln, libenv)
     Nothing -> do
         putMessageIORes opts 1 $ "Downloading " ++ lnstr ++ " ..."
-        res <- anaLibFileOrGetEnv lgraph defl opts libenv ln
-            $ libNameToFile opts ln
+        res <- anaLibFileOrGetEnv lgraph defl opts 
+                  { outtypes = if hasEnvOut opts then [EnvOut] else [] }
+                  libenv ln $ libNameToFile opts ln
         putMessageIORes opts 1 $ "... loaded " ++ lnstr
         return res
 
