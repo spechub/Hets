@@ -4,7 +4,7 @@
 ####################################################################
 ## Some varibles, which control the compilation
 
-INCLUDE_PATH = ../../ 
+INCLUDE_PATH = ../../ ./hxt/ 
 
 HC = ghc
 
@@ -12,8 +12,9 @@ HC = ghc
 HC_WARN = -Wall -fno-warn-orphans
 HC_FLAGS = $(HC_WARN) -package fgl -fglasgow-exts -fno-monomorphism-restriction \
     -fallow-overlapping-instances -fallow-undecidable-instances \
-	-ignore-package HaXml-1.12 -package hxt-5.3 \
-	-H512m
+	-ignore-package HaXml -ignore-package hxt-5.3 \
+	-ignore-package Crypto-2.0.3 -ignore-package HTTP-2005.5.5 \
+	-ignore-package NewBinary-0.1
 # -ddump-minimal-imports 
 # flags also come in via  ../uni/uni-package.conf
 # but added it here in case of compilation without uni

@@ -456,7 +456,7 @@ main =
 		when
 			(debug && disabledtd)
 			(putStrLn "DTD-Output disabled...")
-		searchpath <- return $ map (\(POLib s) -> s) $ filter (\o' -> case o' of (POLib _) -> True; _ -> False) options
+		searchpath <- return $ map (\(POLib s) -> s) $ optFilter POTLib options
 		when
 			debug
 			(putStrLn
@@ -476,7 +476,7 @@ main =
 				FTCASL->
 						do
 						when debug (putStrLn ("Trying to load casl-file..."))
-						menv <- Hets.run input
+						menv <- Hets.runLib (headorempty searchpath) input
 						(ln' ,lenv' ) <- case menv of
 							Nothing ->
 								ioError
@@ -573,6 +573,8 @@ main =
 				_ -> -- no input (?)
 						do
 						ioError (userError "No input to process...")
+		when debug
+			(putStrLn ("Theories in input : " ++ (show $ Set.map snd $ Hets.getNodeNames dg)))
 		when doshow
 				(when debug (putStrLn "Showing Graph...") >>
 				showdg (ln,lenv))
@@ -982,7 +984,7 @@ devGraphToXmlCMPIOXmlNamed dg =
 											(
 												case find (\(ii,ip) -> (xnWOaToa ii) == ai) itheopreds of
 													Nothing -> error ("Unable to find import predication " ++ (show ai) ++ " in source-preds : " ++ (show itheopreds)) 
-													(Just (ii,ip)) -> xnName ii,
+													(Just (ii,ip)) -> show $ (xnWOaToa ii), -- xnName ii,
 												case find (\(ii,ip) -> (xnWOaToa ii) == bi) theopreds of
 													Nothing -> error ("Unable to find import predication " ++ (show bi) ++ " in target-preds : " ++ (show theopreds))
 													(Just (ii,ip)) -> xnName ii
@@ -2475,9 +2477,9 @@ makeConstructorMapXN sortxnwoset xmlnames sensxnwo =
 		sens = xnWOaToa sensxnwo
 		(Ann.NamedSen senname _ _ (Sort_gen_ax cons _)) = sens
 		origin = xnWOaToO sensxnwo
-		sort = drop (length "ga_generated_") senname
+		sort = (drop (length "ga_generated_") senname)
 		sortxn = case sortToXmlNamedWONSORT (Set.toList sortxnwoset) (Hets.stringToId sort) of
-			Nothing -> error "Cannot find sort to make constructor for!"
+			Nothing -> error ("Cannot find sort to make constructor for! (No \"" ++ sort ++ "\" in " ++ (show sortxnwoset) ++ ")")
 			(Just sortxn' ) -> sortxn'
 		(constructormap, xmlnames' ) =
 			foldl(\(cmap, xmlnames'' ) (Constraint _ symbs _) ->
@@ -5918,7 +5920,7 @@ unwrapFormulasXNWON ffxi anxml =
 						[] -> ansenname
 						_ -> anpress
 				in
-					unwrapped ++ [XmlNamed (Hets.mkWON (ansen { Ann.senName = anname }) (axAnn anxml)) ansenname]
+					(unwrapped ++ [XmlNamed (Hets.mkWON (ansen { Ann.senName = anname }) (axAnn anxml)) ansenname])
 				) [] axioms
 		
 
@@ -6177,7 +6179,7 @@ formulaFromXmlXN ffxi anxml =
 				applySymCD = xshow $ applyXmlFilter (getValue "cd") applySymXml
 			  in
 				let	formulas = map (\n -> formulaFromXmlXN ffxi (AXML (axAnn anxml) [n])) ((applyXmlFilter (getChildren .> (isTag "OMA" +++ isTag "OMATTR" +++ isTag "OMBIND")) formTree)::[XmlTree])
-					terms = map (\n -> termFromXmlXN ffxi (AXML (axAnn anxml) [n])) ((applyXmlFilter (getChildren .> (isTag "OMV" +++ isTag "OMATTR" +++ isTag "OMA")) formTree)::[XmlTree])
+					terms = map (\n -> termFromXmlXN ffxi (AXML (axAnn anxml) [n])) (tail ((applyXmlFilter (getChildren .> (isTag "OMV" +++ isTag "OMATTR" +++ isTag "OMA" +++ isTag "OMS")) formTree)::[XmlTree]))
 				in
 				-- 'case applySym' does not work if case-strings are non fixed (above definition is not fixed enough...) 
 			  	--case applySym of
@@ -6237,7 +6239,7 @@ formulaFromXmlXN ffxi anxml =
 					if applySym == caslStrong_equationS then
 						if (length terms) < 2
 							then
-								Debug.Trace.trace ("Impossible to create strong_equation...") (False_atom Id.nullRange)
+								Debug.Trace.trace ("Impossible to create strong_equation... (" ++ (xshow formTree) ++ ")") (False_atom Id.nullRange)
 							else
 								Strong_equation (terms!!0) (terms!!1) Id.nullRange
 					else
@@ -6689,6 +6691,15 @@ termFromXmlXN ffxi anxml =
 			else
 				Application operator terms Id.nullRange
 		else
+		if (applyXmlFilter (isTag "OMS") (axXml anxml) ) /= []
+			then
+				let
+					operator = operatorFromXmlXN
+						ffxi
+						anxml
+				in
+				Application operator [] Id.nullRange
+		else
 			error ("Impossible to create term from \"" ++ xshow (axXml anxml) ++"\"") 
 			
 cv_Op_typeToOpType::OP_TYPE->OpType
@@ -6915,10 +6926,10 @@ operatorFromXmlXN ffxi anxml =
 		sxname = xshow $ applyXmlFilter (getValue "name") symbolXml
 		scd = xshow $ applyXmlFilter (getValue "cd") symbolXml
 		theonode = case getNodeForTheoryName (xnTheorySet ffxi) scd of
-			Nothing -> error "No Theory for used operator!"
+			Nothing -> error ("No Theory for used operator! (" ++ scd ++ ")")
 			(Just n) -> n
 		theoxn = case findByName scd (xnTheorySet ffxi) of
-			Nothing -> error "No Theory for used operator!"
+			Nothing -> error ("No Theory for used operator! (\"" ++ sxname ++ "\" in \"" ++ scd ++ "\" Context : \"" ++ (take 200 $ xshow (axXml anxml)) ++ "\")")
 			(Just theoxn' ) -> theoxn'
 		theoops = Map.findWithDefault Set.empty (xnName theoxn) (xnOpsMap ffxi) 
 		opxnid = case findByName sxname (map fst $ Set.toList theoops) of
@@ -6928,7 +6939,11 @@ operatorFromXmlXN ffxi anxml =
 			Nothing -> error "Operator not found!"
 			(Just oxnwon) -> oxnwon
 	in
-		Qual_op_name (xnWOaToa opxnid) (cv_OpTypeToOp_type $ opTypeXNWONToOpType opXNWON) Id.nullRange
+		if (scd==caslS) 
+			then -- eventually there should be an aux. casl-theory while processing...
+				Op_name $ Hets.stringToId sxname
+			else
+				Qual_op_name (xnWOaToa opxnid) (cv_OpTypeToOp_type $ opTypeXNWONToOpType opXNWON) Id.nullRange
 		
 getSorts::XmlTrees->[String]
 getSorts st = map (\t -> xshow $ applyXmlFilter (getValue "name") [t]) ((applyXmlFilter (getChildren .> isTag "OMATP" .> getChildren .> isTag "OMS" .> withValue "name" (/=typeS)) st)::[XmlTree])

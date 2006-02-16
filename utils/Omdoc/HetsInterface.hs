@@ -11,7 +11,7 @@ import qualified Data.Graph.Inductive.Graph as Graph --
 import Common.AS_Annotation
 import Common.GlobalAnnotations (emptyGlobalAnnos)
 
-import Syntax.AS_Library (LIB_NAME()) 
+import Syntax.AS_Library --(LIB_NAME(),LIB_DEFN()) 
 
 import Driver.ReadFn
 import Driver.WriteFn
@@ -48,7 +48,6 @@ import qualified Debug.Trace as Debug.Trace
 
 import qualified Data.List as Data.List
 
-
 dtt::String->a->a
 dtt = Debug.Trace.trace
 
@@ -61,6 +60,9 @@ showGraph file opt env =
 
 run :: FilePath -> IO (Maybe (LIB_NAME, LibEnv))
 run file = anaLib dho file
+
+runLib::FilePath->FilePath->IO (Maybe (LIB_NAME, LibEnv))
+runLib lib file = anaLib (dho { libdir = lib }) file
 
 dho::HetcatsOpts
 dho = defaultHetcatsOpts
