@@ -12,5 +12,8 @@ do
 done
       
 (cd $INSTALLDIR/src-distribution; \
- cp -p daily/Het*.t* versions/Hets-src-$VERSION.tgz) 
+ cp -p daily/Het*.t* versions/Hets-src-$VERSION.tgz; \
+ cd versions; rm -rf HetCATS; \
+ tar zxf Hets-src-$VERSION.tgz) 
 
+# also unpack the new release as "recent overview of the modules"
