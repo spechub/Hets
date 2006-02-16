@@ -67,8 +67,8 @@ instance PrintLaTeX Annotation where
                                             . escape_latex) strs
     printLatex0 ga (Display_anno aa ab _) =
         let aa' = printSmallId_orig_latex aa
-            ab' = fsep_small $ map printPair $ filter nullSnd ab
-        in printLatexGroup "display" $ aa' <\\+> ab'
+            ab' = map printPair $ filter nullSnd ab
+        in printLatexGroup "display" $ fsep_small $ aa' : ab'
            where printPair (s1,s2) = la ("%" ++ lookupDisplayFormat s1)
                                      <\\+> maybe (la s2) pr_tops tops
                  tops = lookupDisplay ga DF_LATEX aa
