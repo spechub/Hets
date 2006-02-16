@@ -129,7 +129,7 @@ instance PrintLaTeX G_hiding where
     printLatex0 ga (G_logic_projection enc) = latexLogicEnc ga enc
 
 instance PrintLaTeX GENERICITY where
-    printLatex0 ga (Genericity aa@(Params al) ab@(Imported bl) _) =
+    printLatex0 ga (Genericity aa ab@(Imported bl) _) =
         let aa' = set_tabbed_nest_latex $ printLatex0 ga aa
             ab' = printLatex0 ga ab
         in if null bl
