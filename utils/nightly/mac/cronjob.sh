@@ -14,19 +14,8 @@ cd /local/home/maeder/haskell
 
 . ../cronjob.sh
 
-# cd uni
-# cvs up -dPA
-# make packages
-# cd ..
-
-# cd programatica/tools/base
-# cvs up -dPA
-# cd ../../..
-# cd programatica/tools/property
-# cvs up -dPA
-# cd ../../..
-
 makeHets
+\cp -f HetCATS/utils/nightly/mac/cronjob.sh /local/home/maeder/haskell/
 makeLibCheck
 
 cd CASL-lib
@@ -34,4 +23,3 @@ chmod 775 hets
 chgrp wwwbkb hets
 bzip2 hets
 \cp -fp hets.bz2 /home/www/agbkb/forschung/formal_methods/CoFI/hets/mac/daily/
-

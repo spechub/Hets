@@ -14,15 +14,15 @@ cd /local/home/maeder/haskell
 
 . ../cronjob.sh
 
-#rm -rf uni
-#ln -s /home/cofi/uni/solaris-ghc-6.4.1/uni .
-
-#makeProgramatica
+makeUni
+makeProgramatica
 makeHets
+\cp -f HetCATS/utils/nightly/solaris/cronjob.sh /local/home/maeder/haskell/
 makeLibCheck
 
 cd CASL-lib
 chmod 775 hets
 chgrp wwwbkb hets
 bzip2 hets
-\cp -fp hets.bz2 /home/www/agbkb/forschung/formal_methods/CoFI/hets/solaris/daily/
+\cp -fp hets.bz2 \
+    /home/www/agbkb/forschung/formal_methods/CoFI/hets/solaris/daily/
