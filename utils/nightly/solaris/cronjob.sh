@@ -14,7 +14,6 @@ cd /local/home/maeder/haskell
 
 . ../cronjob.sh
 
-makeUni
 makeProgramatica
 makeHets
 \cp -f HetCATS/utils/nightly/solaris/cronjob.sh /local/home/maeder/haskell/
