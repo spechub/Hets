@@ -8,8 +8,7 @@ cvs -d \
    :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:/repository co $* uni
 cd uni
 ./configure
-$MAKE boot
-\time -v $MAKE packages
+time $MAKE packages
 ./runhaddock.sh
 cd ..
 date
@@ -19,10 +18,8 @@ makeProgramatica ()
 {
 date
 rm -rf programatica
-mkdir programatica
-cd programatica
-lndir /home/cofi/programatica
-cd ..
+cvs -d :pserver:anoncvs@cvs.haskell.org:/cvs co -P programatica/tools/base
+cvs -d :pserver:anoncvs@cvs.haskell.org:/cvs co -P programatica/tools/property
 date
 }
 
@@ -45,19 +42,14 @@ makeLibCheck ()
 {
 rm -rf CASL-lib
 cvs -d \
-   :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:/repository co -P CASL-lib
+   :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:/repository \
+   co -P CASL-lib
 cd CASL-lib
 mv ../HetCATS/HetCATS/hets .
 date
 time ./hets -v5 -o env,thy,th,dfg,pp.het,pp.tex Basic/*.casl
 date
 for i in HasCASL/*.het; do ./hets -v2 -o env,th,pp.het,pp.tex $i; done
-date
-for i in Modal/*.het; do ./hets -v2 -o env,th,pp.het,pp.tex $i; done
-date
-for i in CoCASL/*.het; do ./hets -v2 -o env,th,pp.het,pp.tex $i; done
-date
-for i in TestSuite/Correct/*.casl; do ./hets -v2 -o env,th,pp.het,pp.tex $i; done
 date
 cd ..
 }
