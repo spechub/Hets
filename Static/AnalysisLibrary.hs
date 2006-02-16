@@ -20,6 +20,7 @@ Analysis of libraries
 
 module Static.AnalysisLibrary
     ( anaLib
+    , anaLibExt
     , ana_LIB_DEFN
     ) where
 
@@ -53,11 +54,15 @@ import Control.Monad.Trans
 
 -- | lookup an env or read and analyze a file
 anaLib :: HetcatsOpts -> FilePath -> IO (Maybe (LIB_NAME, LibEnv))
-anaLib opts file = do
+anaLib opts file = anaLibExt opts file emptyLibEnv
+
+-- | read a file and extended the current library environment
+anaLibExt :: HetcatsOpts -> FilePath -> LibEnv -> IO (Maybe (LIB_NAME, LibEnv))
+anaLibExt opts file libEnv = do
     defl <- lookupLogic "logic from command line: "
                   (defLogic opts) logicGraph
     Result ds res <- runResultT $ anaLibFileOrGetEnv logicGraph defl opts
-                     emptyLibEnv (fileToLibName opts file) file
+                     libEnv (fileToLibName opts file) file
     showDiags opts ds
     case res of
         Nothing -> return Nothing
