@@ -18,7 +18,8 @@ module Common.LaTeX_utils
     , sep_latex
     , fsep_latex
     , listSep_latex          -- then, and
-
+    , startTab_latex
+    , endTab_latex
     , view_hspace            -- structured specs
 
     , (<~>)
