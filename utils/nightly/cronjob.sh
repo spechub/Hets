@@ -9,6 +9,7 @@ cvs -d \
 cd uni
 ./configure
 time $MAKE packages
+$MAKE mk/RemoveSplices
 ./runhaddock.sh
 cd ..
 date
