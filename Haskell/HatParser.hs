@@ -56,6 +56,7 @@ import Text.ParserCombinators.Parsec
 import Common.PrettyPrint
 import Common.Lib.Pretty
 import Common.Result
+import Data.Char
 
 instance PrettyPrint HsDecls where
      printText0 _ ds = 
@@ -67,10 +68,12 @@ hatParser :: GenParser Char st HsDecls
 hatParser = do p <- getPosition 
                s <- hStuff
                let (l, c) = (sourceLine p, sourceColumn p)
-                   ts = pLexerPass0 True
-                        (replicate (l-2) '\n' ++
-                         "module Prelude where\n" ++
-                         replicate (c-1) ' ' ++ s)
+                   front = takeWhile (not . isSpace) $ dropWhile isSpace s
+                   s2 = if front == "module" then s else 
+                            (replicate (l-2) '\n' ++
+                             "module Prelude where\n" ++
+                             replicate (c-1) ' ' ++ s)
+                   ts = pLexerPass0 True s2
                case parseTokens P.parse (sourceName p) ts of
                            Result _ (Just (HsModule _ _ _ _ ds)) -> 
                                      return $ HsDecls ds

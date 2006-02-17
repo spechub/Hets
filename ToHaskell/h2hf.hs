@@ -29,7 +29,8 @@ import Isabelle.IsaSign as IsaSign
 import Haskell.HatAna as HatAna
 import Haskell.HatParser
 
-pickParser :: (Continuity,Bool) -> AParser () (IsaSign.Sign, [Named IsaSign.Sentence])
+pickParser :: (Continuity, Bool) 
+           -> AParser () (IsaSign.Sign, [Named IsaSign.Sentence])
 pickParser c = do
    b <- hatParser
    let res@(Result _ m) = do
@@ -63,12 +64,7 @@ process c fn = do
              (NotCont,True) -> "HOL with theory morphisms"
   s <- readFile fn
   ld <- getEnv "HETS_LIB"
-  let ds = dropWhile isSpace
-      s1 = ds s
-      ns = not . isSpace
-      (front, rest) = span ns s1
-      s2 = if front == "module" then dropWhile ns $ ds rest else s1
-  case runParser (pickParser c) (emptyAnnos ()) fn s2 of
+  case runParser (pickParser c) (emptyAnnos ()) fn s of
     Right (sig, hs) -> do
       let tn = takeWhile (/= '.')
                (reverse . takeWhile ( \ x -> x /= '/') $ reverse fn) ++ "_"
