@@ -114,7 +114,8 @@ tar zcf Hets-src.tgz HetCATS
 cd $HETS_LIB
 find . -name \*.pp.het | xargs -r rm
 date
-for i in */*.het */*/*.het ; do ./hets -v2 -o prf,th,pp.het,pp.tex $i; done
+for i in */*.env */*.het */*/*.het */*.casl */*/*.casl; \
+   do ./hets -v2 -o prf,th,pp.het,pp.tex $i; done
 date
-for i in */*.casl */*/*.casl ; do ./hets -v2 -o prf,th,pp.het,pp.tex $i; done
+for i in */*.prf */*/*.prf ; do ./hets -v2 -o th $i; done
 date
