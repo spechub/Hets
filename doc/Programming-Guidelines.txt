@@ -6,7 +6,7 @@ It takes some programming experience to develop something like a
 personal "coding style" and guidelines only serve as rough shape
 for code. Guidelines should be followed by all members working on the
 project even if they prefer (or are already used to) different
-guidelines. 
+guidelines.
 
 In the following I will describe documentation, file format, naming
 conventions and good programming practice (adapted form Matt's C/C++
@@ -21,9 +21,9 @@ Comments are to be written in application terms (i.e. user's point of
 view). Don't use technical terms - that's what the code is for!
 
 Comments should be written using correct spelling and grammar in complete
-sentences with punctation (in English only). 
+sentences with punctation (in English only).
 
-"Generally, you want your comments to tell WHAT your code does, not HOW. 
+"Generally, you want your comments to tell WHAT your code does, not HOW.
 Also, try to avoid putting comments inside a function body: if the
 function is so complex that you need to separately comment parts of it,
 you should probably" (see "Good Programming Practice")
@@ -47,7 +47,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
-    
+
 <module description starting at first column>
 -}
 
@@ -95,15 +95,18 @@ long names write them with underlines and lowercase letters or as
 mixed case words. (but "tmp" is to be preferred over
 "thisVariableIsATemporaryCounter")
 
+Take care when defining your own symbolic identifiers. This should be
+left to library writers only.
+
 
 ---------------------------------------------------------------------------
-Good Programming Practice: 
+Good Programming Practice:
 ---------------------------------------------------------------------------
 
 "Functions should be short and sweet, and do just one thing.  They should
 fit on one or two screenfuls of text (the ISO/ANSI screen size is 80x24,
 as we all know), and do one thing and do that well."
- 
+
 It's not fixed how deep you indent (4 or 8 chars). You can break the
 line after "do", "let", "where", and "case .. of". Make sure that
 renamings don't destroy your layout. (If you get to far to the right,
@@ -115,7 +118,7 @@ Bad:
 Good:
   case <longer expression> of
         Foo -> "Foo"
-        Bar -> "Bar" 
+        Bar -> "Bar"
 
 Avoid the notation with braces and semicolons since the layout rule
 forces you to properly align your alternatives.
@@ -141,7 +144,7 @@ Not always nice:
   longFunctionName (Bar: _) = e2
 
 Better (I think):
-  longFunctionName arg = case arg of 
+  longFunctionName arg = case arg of
         Foo : _ : _ -> e1
         Bar : _ -> e2
         _ -> error "Programming-Guidelines.longFunctionName"
@@ -173,17 +176,17 @@ Many parentheses can be eliminated using the infix application operator "$"
 with lowest priority. Try at least to avoid unnecessary parentheses in
 standard infix expression.
 
-        f x : g x ++ h x 
+        f x : g x ++ h x
 
-        a == 1 && b == 1 || a == 0 && b == 0  
+        a == 1 && b == 1 || a == 0 && b == 0
 
 Rather than putting a large final argument in parentheses (with a
-distant closing one) consider using "$" instead. 
+distant closing one) consider using "$" instead.
 
-"f (g x)" becomes "f $ g x" and consecutive applications 
-"f (g (h x))" can be written as "f $ g $ h x" or "f . g $ h x". 
+"f (g x)" becomes "f $ g x" and consecutive applications
+"f (g (h x))" can be written as "f $ g $ h x" or "f . g $ h x".
 
-A function definition like 
+A function definition like
 "f x = g $ h x" can be abbreviated to "f = g . h".
 
 Note that the final argument may even be an infix- or case expression:
@@ -207,7 +210,7 @@ Ok:
         do y <- g $ l
 
 Last warning: always leave spaces around "$" (and other mixfix
-operators) since a clash with template haskell is possible.  
+operators) since a clash with template haskell is possible.
 
 (Also write "\ t" instead of "\t" in lambda expressions)
 
@@ -224,7 +227,7 @@ Prefer proper data types over type synonyms or tuples even if you have
 to do more constructing and unpacking. This will make it easier to
 supply class instances later on. Don't put class constraints on
 a data type, constraints belong only to the functions that manipulate
-the data. 
+the data.
 
 Using type synonyms consistently is difficult over a longer time,
 because this is not checked by the compiler.
@@ -233,7 +236,7 @@ Take care if your datatype has many variants (unless it is an
 enumeration type.) Don't repeat common parts in every variant since
 this will cause code duplication.
 
-Bad (to handle arguments in sync): 
+Bad (to handle arguments in sync):
 
   data Mode f p = Box f p | Diamond f p
 
@@ -254,7 +257,7 @@ versus:
 
 and using:
 
-   Maybe (Tupel a b) 
+   Maybe (Tupel a b)
 
 whenever an undefined result needs to be propagated
 
@@ -263,7 +266,7 @@ Records
 ---------------------------------------------------------------------------
 
 For (large) records avoid the use of the constructor directly and consider
-that the order and number of fields may change. 
+that the order and number of fields may change.
 
 Take care with depend polymorphic fields:
 
@@ -271,9 +274,9 @@ Take care with depend polymorphic fields:
      VariantWithTwo { field1 :: a
                     , field2 :: a }
 
-The type of a value v can not be changed by only setting field1: 
+The type of a value v can not be changed by only setting field1:
 
-     v { field1 = f } 
+     v { field1 = f }
 
 Better construct a new value:
 
@@ -283,30 +286,30 @@ Or use a polymorphic element that is instantiated by updating:
 
   e = VariantWithTwo { field1 = [], field2 = [] }
 
-    e { field1 = [f] } 
+    e { field1 = [f] }
 
 Several variants with identical fields may avoid some code duplication
 when selecting and updating, though possibly not in a few
 depended polymorphic cases.
 
 However, I doubt if the following is a really good alternative:
- 
-  data Mode f p = Box     { formula :: f,  positions :: p } 
-                | Diamond { formula :: f,  positions :: p } 
+
+  data Mode f p = Box     { formula :: f,  positions :: p }
+                | Diamond { formula :: f,  positions :: p }
 
 
 IO
 ---------------------------------------------------------------------------
 
 Try to strictly separate IO, Monad and pure (without do) function
-programming (possibly via different modules). 
+programming (possibly via different modules).
 
 Bad:
         x <- return y
         ...
 
 Good:
-        let x = y  
+        let x = y
         ...
 
 
@@ -337,7 +340,7 @@ imported by their hierarchical module name (so that haddock finds them):
 
   import Data.List
   import Control.Monad
-  import System.Environment 
+  import System.Environment
 
 The libraries for Set, Map and Rel are to be imported qualified:
 
@@ -357,15 +360,15 @@ instances and then you are "in the wild" (according to SPJ).
 
 
 ---------------------------------------------------------------------------
-Final remarks: 
+Final remarks:
 ---------------------------------------------------------------------------
 
-Despite guidelines writing "correct code" (without formal proof
+Despite guidelines, writing "correct code" (without formal proof
 support yet) still remains the major challenge. As motivation to
-follow these guidelines consider the points that are
-from the "C++ Coding Standard", where I replaced "C++" with "Haskell".
+follow these guidelines consider the points that are from the "C++
+Coding Standard", where I replaced "C++" with "Haskell".
 
-Good Points: 
+Good Points:
 
     * programmers can go into any code and figure out what's going on
 
@@ -379,7 +382,7 @@ Good Points:
 
     * people make fewer mistakes in consistent environments
 
-    * programmers have a common enemy :-) 
+    * programmers have a common enemy :-)
 
 Bad Points:
 
@@ -394,6 +397,6 @@ Bad Points:
 
     * standards enforce too much structure
 
-    * people ignore standards anyway 
+    * people ignore standards anyway
 
 Send comments to the "Maintainer" of this file
