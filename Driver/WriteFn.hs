@@ -118,25 +118,26 @@ writeShATermFileSDoc fp atcon = do
    att <- versionedATermTable atcon
    writeFileSDoc fp $ writeSharedATermSDoc att
 
-writeFileInfo :: HetcatsOpts -> LIB_NAME -> FilePath -> GlobalContext -> IO()
-writeFileInfo opts ln file gctx =
+writeFileInfo :: HetcatsOpts -> LIB_NAME -> FilePath -> LIB_DEFN 
+              -> GlobalContext -> IO ()
+writeFileInfo opts ln file ld gctx =
   let envFile = rmSuffix file ++ ".env" in
   case analysis opts of
   Basic -> do
       putIfVerbose opts 2 ("Writing file: " ++ envFile)
-      catch (writeShATermFileSDoc envFile (ln, gctx)) $ \ err -> do
+      catch (writeShATermFileSDoc envFile (ln, (ld, gctx))) $ \ err -> do
               putIfVerbose opts 2 (envFile ++ " not written")
               putIfVerbose opts 3 ("see following error description:\n"
                                    ++ shows err "\n")
   _ -> putIfVerbose opts 2 ("Not writing " ++ envFile)
 
-writeVerbFile :: HetcatsOpts -> FilePath -> String -> IO()
+writeVerbFile :: HetcatsOpts -> FilePath -> String -> IO ()
 writeVerbFile opt f str = do
     putIfVerbose opt 2 $ "Writing file: " ++ f
     writeFile f str
 
-writeSpecFiles :: HetcatsOpts -> FilePath -> LibEnv
-               -> GlobalAnnos -> (LIB_NAME, GlobalEnv) -> IO()
+writeSpecFiles :: HetcatsOpts -> FilePath -> LibEnv -> GlobalAnnos 
+               -> (LIB_NAME, GlobalEnv) -> IO ()
 writeSpecFiles opt file lenv ga (ln, gctx) = do
     let ns = specNames opt
         outTypes = outtypes opt

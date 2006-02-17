@@ -126,7 +126,7 @@ anaString lgraph defl opts libenv input file =
                       Only -> return ()
                       _ -> write_LIB_DEFN (globalAnnos gctx) file opts ld
                   when (hasEnvOut opts)
-                        (writeFileInfo opts ln file gctx)
+                        (writeFileInfo opts ln file ld gctx)
                   return (ln, lenv)
   Nothing -> liftR $ Result ds Nothing
 
@@ -159,7 +159,8 @@ anaLibFileOrGetEnv lgraph defl opts libenv libname file = ResultT $ do
                  Nothing -> runResultT $ do
                      lift $ putIfVerbose opts 1 $ "Deleting " ++ env_file
                      anaSourceFile lgraph defl opts libenv file
-                 Just gc -> do
+                 Just (ld, gc) -> do
+                     write_LIB_DEFN (globalAnnos gc) file opts ld
                           -- get all DGRefs from DGraph
                      Result ds mEnv <- runResultT $ foldl
                          ( \ ioLibEnv labDG -> case snd labDG of
