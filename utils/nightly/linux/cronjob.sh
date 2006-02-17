@@ -112,30 +112,9 @@ tar zxf HetCATS.tar.gz
 tar zcf Hets-src.tgz HetCATS
 
 cd $HETS_LIB
-find . -name \*.pp.\* | xargs -r rm
+find . -name \*.pp.het | xargs -r rm
 date
-time ./hets -v5 -o prf,thy,th,dfg,pp.het,pp.tex Basic/*.casl
+for i in */*.het */*/*.het ; do ./hets -v2 -o prf,th,pp.het,pp.tex $i; done
 date
-for i in HasCASL/*.het; do ./hets -v2 -o prf,th,pp.het,pp.tex $i; done
-date
-for i in Modal/*.het; do ./hets -v2 -o prf,th,pp.het,pp.tex $i; done
-date
-for i in CoCASL/*.het; do ./hets -v2 -o prf,th,pp.het,pp.tex $i; done
-date
-for i in TestSuite/Correct/*.casl; do ./hets -v2 -o prf,th,pp.het,pp.tex $i; don\
-e
-date
-for i in UserManual/*.casl; do ./hets -v2 -o prf,th,pp.het,pp.tex $i; done
-date
-for i in Examples/*.casl; do ./hets -v2 -o prf,th,pp.het,pp.tex $i; done
-date
-for i in Calculi/*/*.het; do ./hets -v2 -o prf,th,pp.het,pp.tex $i; done
-date
-for i in Calculi/*/*.casl; do ./hets -v2 -o prf,th,pp.het,pp.tex $i; done
-date
-for i in CaseStudies/*.casl; do ./hets -v2 -o prf,th,pp.het,pp.tex $i; done
-date
-for i in CaseStudies/*/*.casl; do ./hets -v2 -o prf,th,pp.het,pp.tex $i; done
-date
-for i in Refinement/*.casl; do ./hets -v2 -o prf,th,pp.het,pp.tex $i; done
+for i in */*.casl */*/*.casl ; do ./hets -v2 -o prf,th,pp.het,pp.tex $i; done
 date
