@@ -14,8 +14,6 @@ module Common.LaTeX_utils
     ( sp_braces_latex2
     , parens_latex
     , brackets_latex
-    , hang_latex
-    , sep_latex
     , fsep_latex
     , listSep_latex          -- then, and
     , startTab_latex
@@ -66,8 +64,6 @@ module Common.LaTeX_utils
     , tabList_latex          -- IMPORTED
     , tabbed_nest_latex
     , set_tabbed_nest_latex  -- with setTab_latex
-    , tab_hang_latex         -- OP_DEFN, Translation, Reduction, view
-    , setTabWithSpaces_latex -- OP_ITEM, Local, View,
     , parens_tab_latex       -- parens_latex.set_tabbed_nest_latex
     )
     where
@@ -166,9 +162,6 @@ endTab_latex = latex_macro endTab
 setTab_latex :: Doc
 setTab_latex = latex_macro setTab
 
-setTabWithSpaces_latex :: Int -> Doc
-setTabWithSpaces_latex = latex_macro . setTabWithSpaces
-
 -- |
 -- function for nice indentation
 tabbed_nest_latex :: Doc -> Doc
@@ -178,9 +171,3 @@ tabbed_nest_latex d = startTab_latex <> d <> endTab_latex
 -- function for nice indentation together with starting
 set_tabbed_nest_latex :: Doc -> Doc
 set_tabbed_nest_latex d = setTab_latex <> tabbed_nest_latex d
-
-tab_nest_latex :: Int -> Doc -> Doc
-tab_nest_latex i d = tabbed_nest_latex (nest_latex i d)
-
-tab_hang_latex :: Doc -> Int -> Doc -> Doc
-tab_hang_latex d1 i d2 = sep_latex [d1, tab_nest_latex i d2]

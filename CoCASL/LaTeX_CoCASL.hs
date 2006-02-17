@@ -16,11 +16,11 @@ import CoCASL.AS_CoCASL
 import CoCASL.CoCASLSign
 import CoCASL.Print_AS()
 import Common.Keywords
-import Common.PrettyPrint -- todo provide real latex printers
-import Common.Lib.Pretty
-import Common.PrintLaTeX
-import Common.LaTeX_utils
-import Common.PPUtils
+import Common.PrettyPrint (printText0)-- todo provide real latex printers
+import Common.Lib.Pretty (Doc, empty, (<>), ($$), vcat)
+import Common.PrintLaTeX (PrintLaTeX(..), printDisplayToken_latex)
+import Common.LaTeX_utils 
+import Common.PPUtils (pluralS)
 import Common.AS_Annotation
 import Common.LaTeX_AS_Annotation
 import CASL.AS_Basic_CASL
@@ -60,14 +60,14 @@ instance PrintLaTeX C_BASIC_ITEM where
                    ,tabbed_nest_latex $ semiAnno_latex ga l]
     printLatex0 ga (CoSort_gen l _) = case l of
         [Annoted (Ext_SIG_ITEMS (CoDatatype_items l' _)) _ lans _] ->
-            hang_latex (hc_sty_plain_keyword cogeneratedS
-                        <~> setTab_latex <+>
-                        hc_sty_plain_keyword (cotypeS ++ pluralS l')) 9 $
-                        tabbed_nest_latex (vcat (map (printLatex0 ga) lans)
-                                           $$ semiAnno_latex ga l')
-        _ -> hang_latex (hc_sty_plain_keyword cogeneratedS <~> setTab_latex) 9
-             $ tabbed_nest_latex $ braces
-                   $ vcat $ map (printLatex0 ga) l
+            fsep_latex [ hc_sty_plain_keyword cogeneratedS
+                         <~> setTab_latex <\+>
+                         hc_sty_plain_keyword (cotypeS ++ pluralS l')
+                       , tabbed_nest_latex (vcat (map (printLatex0 ga) lans)
+                                            $$ semiAnno_latex ga l') ]
+        _ -> fsep_latex [ hc_sty_plain_keyword cogeneratedS <~> setTab_latex
+                        , tabbed_nest_latex $ sp_braces_latex2
+                        $ vcat $ map (printLatex0 ga) l ]
 
 instance PrintLaTeX CoCASLSign where
     printLatex0 = printText0

@@ -43,14 +43,13 @@ instance (PrintLaTeX b, PrintLaTeX s, PrintLaTeX f) =>
                    ,tabbed_nest_latex $ semiAnno_latex ga l]
     printLatex0 ga (Sort_gen l _) = case l of
         [Annoted (Datatype_items l' _) _ lans _] ->
-            hang_latex (hc_sty_plain_keyword generatedS
-                        <~> setTab_latex <\+>
-                        hc_sty_plain_keyword (typeS ++ pluralS l')) 9 $
-                        tabbed_nest_latex (printAnnotationList_Latex0 ga lans
-                                           $$ semiAnno_latex ga l')
-        _ -> hang_latex (hc_sty_plain_keyword generatedS <~> setTab_latex) 9 $
-               tabbed_nest_latex $ sp_braces_latex2
-                   $ vcat $ map (printLatex0 ga) l
+            fsep_latex [ hc_sty_plain_keyword generatedS <~> setTab_latex <\+> 
+                         hc_sty_plain_keyword (typeS ++ pluralS l')
+                       , tabbed_nest_latex (printAnnotationList_Latex0 ga lans
+                                            $$ semiAnno_latex ga l') ]
+        _ -> fsep_latex [ hc_sty_plain_keyword generatedS <~> setTab_latex
+                        , tabbed_nest_latex $ sp_braces_latex2
+                        $ vcat $ map (printLatex0 ga) l ]
     printLatex0 ga (Var_items l _) =
         hc_sty_plain_keyword (varS ++ pluralS l) <\+>
         semiT_latex ga l
@@ -92,8 +91,7 @@ instance (PrintLaTeX s, PrintLaTeX f) =>
 instance PrintLaTeX f => PrintLaTeX (SORT_ITEM f) where
     printLatex0 ga (Sort_decl l _) = commaT_latex ga l
     printLatex0 ga (Subsort_decl l t _) =
-        hang_latex (commaT_latex ga l) 8 $
-                   less_latex <\+> printLatex0 ga t
+        fsep_latex [commaT_latex ga l, less_latex, printLatex0 ga t]
     printLatex0 ga (Subsort_defn s v t f _) =
         printLatex0 ga s <\+> equals_latex <\+>
            sp_braces_latex2 (set_tabbed_nest_latex $ fsep_latex
@@ -129,7 +127,7 @@ instance PrintLaTeX OP_TYPE where
                                          rightArrow)
             result_type = printLatex0 ga s
         in if null l then result_type
-           else sep_latex [arg_types,type_arr <\+> result_type]
+           else fsep_latex [arg_types, type_arr <\+> result_type]
 
     printLatex0 ga (Op_type Partial l s _) =
         (if null l then hc_sty_axiom quMark
@@ -164,7 +162,7 @@ instance PrintLaTeX f => PrintLaTeX (PRED_ITEM f) where
     printLatex0 ga (Pred_decl l t _) = commaT_latex ga l
                                   <\+> colon_latex <\+> printLatex0 ga t
     printLatex0 ga (Pred_defn n h f _) =
-        sep_latex [printLatex0 ga n
+        fsep_latex [printLatex0 ga n
                    <> printLatex0 ga h
                    <\+> hc_sty_axiom "\\Leftrightarrow",
                    printLatex0 ga f]
@@ -209,10 +207,10 @@ instance PrintLaTeX f => PrintLaTeX (FORMULA f) where
              bullet_latex
                 <\+> set_tabbed_nest_latex (printLatex0 ga f)]
     printLatex0 ga (Conjunction fs _) =
-        sep_latex $ punctuate (space_latex <> hc_sty_axiom "\\wedge")
+        fsep_latex $ punctuate (space_latex <> hc_sty_axiom "\\wedge")
           $ map (condParensXjunction printLatex0 parens_tab_latex ga) fs
     printLatex0 ga (Disjunction  fs _) =
-        sep_latex $ punctuate (space_latex <> hc_sty_axiom "\\vee")
+        fsep_latex $ punctuate (space_latex <> hc_sty_axiom "\\vee")
           $ map (condParensXjunction printLatex0 parens_tab_latex ga) fs
     printLatex0 ga i@(Implication f g b _) = fsep_latex $
         if not b

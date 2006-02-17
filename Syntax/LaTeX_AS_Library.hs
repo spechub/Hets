@@ -77,34 +77,30 @@ instance PrintLaTeX LIB_ITEM where
     printLatex0 ga (Arch_spec_defn aa ab _) =
         let aa' = simple_id_latex aa
             ab' = printLatex0 ga ab
-        in (hang_latex
-                (hc_sty_plain_keyword archS <\+>
-                 hc_sty_plain_keyword specS <\+> aa'
-                 <\+> equals_latex)
-                4 ab')
+        in fsep_latex
+                [ hc_sty_plain_keyword archS <\+>
+                  hc_sty_plain_keyword specS
+                , aa' <\+> equals_latex, ab' ]
            $$ latexEnd
     printLatex0 ga (Unit_spec_defn aa ab _) =
         let aa' = hc_sty_id $ tokStr aa
             ab' = printLatex0 ga ab
-        in (hang_latex (hc_sty_plain_keyword unitS <\+>
-                        hc_sty_plain_keyword specS <\+> aa'
-                        <\+> equals_latex)
-                       4 ab')
+        in fsep_latex [ hc_sty_plain_keyword unitS <\+>
+                        hc_sty_plain_keyword specS
+                      , aa' <\+> equals_latex, ab' ]
            $$ latexEnd
     printLatex0 ga (Ref_spec_defn aa ab _) =
         let aa' = hc_sty_id $ tokStr aa
             ab' = printLatex0 ga ab
-        in (hang_latex (hc_sty_plain_keyword refinementS <\+> aa'
-                        <\+> equals_latex)
-                       4 ab')
+        in fsep_latex [ hc_sty_plain_keyword refinementS
+                      , aa' <\+> equals_latex, ab' ]
            $$ latexEnd
     printLatex0 ga (Download_items aa ab _) =
         let aa' = printLatex0 ga aa
             ab' = commaT_latex ga ab
-        in (hang_latex (hc_sty_hetcasl_keyword fromS <\+> setTab_latex <>aa'
-                        <\+> hc_sty_plain_keyword getS)
-                       8
-                       (tabbed_nest_latex ab'))
+        in fsep_latex [ hc_sty_hetcasl_keyword fromS <\+> setTab_latex <> aa'
+                      , hc_sty_plain_keyword getS
+                      , tabbed_nest_latex ab' ]
     printLatex0 ga (Syntax.AS_Library.Logic_decl aa _) =
         let aa' = printLatex0 ga aa
         in hc_sty_plain_keyword logicS <\+> aa'

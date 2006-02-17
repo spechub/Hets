@@ -31,12 +31,12 @@ instance PrintLaTeX SPEC where
         let aa' = condBracesTransReduct printLatex0
                            sp_braces_latex2 ga aa
             ab' = printLatex0 ga ab
-        in tab_hang_latex aa' 8 ab'
+        in fsep_latex [aa', tabbed_nest_latex ab']
     printLatex0 ga (Reduction aa ab) =
         let aa' = condBracesTransReduct printLatex0
                         sp_braces_latex2 ga aa
             ab' = printLatex0 ga ab
-        in tab_hang_latex aa' 8 ab'
+        in fsep_latex [aa', tabbed_nest_latex ab']
     printLatex0 ga (Union aa _) = fsep_latex $ intersperse' aa
         where intersperse' [] = []
               intersperse' (x:xs) =
@@ -72,11 +72,9 @@ instance PrintLaTeX SPEC where
                          Union _ _ -> spacetab
                          _ -> empty
             spacetab = view_hspace <> setTab_latex
-        in tabbed_nest_latex (setTabWithSpaces_latex 3 <>
-                 fsep_latex [hc_sty_plain_keyword localS,
-                             tabbed_nest_latex aa',
-                             hc_sty_plain_keyword withinS,
-                             tabbed_nest_latex ab'])
+        in tabbed_nest_latex $ 
+                 fsep_latex [ hc_sty_plain_keyword localS, aa'
+                            , hc_sty_plain_keyword withinS, ab' ]
     printLatex0 ga (Closed_spec aa _) =
         tabbed_nest_latex (condBracesGroupSpec printLatex0
                                            sp_braces_latex2 mkw ga aa)
@@ -140,7 +138,7 @@ instance PrintLaTeX GENERICITY where
 instance PrintLaTeX PARAMS where
     printLatex0 ga (Params aa) =
         if null aa then empty
-        else sep_latex $
+        else fsep_latex $
                       map (brackets_latex.
                            (\x -> set_tabbed_nest_latex
                                   (printLatex0 ga' x))) aa
@@ -170,11 +168,10 @@ instance PrintLaTeX FIT_ARG where
         let aa' = simple_id_latex aa
             ab' = print_fit_arg_list printLatex0
                                      brackets_latex
-                                     sep_latex
+                                     fsep_latex
                                      ga ab
             view_name = hc_sty_plain_keyword viewS <\+> aa'
-        in if null ab then view_name else
-           setTabWithSpaces_latex 16 <> tab_hang_latex view_name 16 ab'
+        in fsep_latex [view_name, ab']
 
 {- This can be found in Print_AS_Library
 instance PrintLaTeX VIEW_DEFN where

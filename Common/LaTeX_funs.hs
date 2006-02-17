@@ -28,8 +28,6 @@ Functions to calculate the length of a given word as it would be
 
 module Common.LaTeX_funs
     (-- module Common.LaTeX_funs,
-     space_latex_width,
-
      calc_line_length,
      pt_length,
      -- calc_word_width,
@@ -51,8 +49,6 @@ module Common.LaTeX_funs
      brackets_latex,
      quotes_latex,
 
-     nest_latex,
-     hang_latex,
      sep_latex,
      fsep_latex,
 
@@ -92,10 +88,7 @@ import Common.Lib.Pretty
 
 infixl 6 <\+>, <~>
 
-space_latex_width :: Int
-space_latex_width = normal_width " "
-
-{- functions for calculating an interger value according to a given
+{- functions for calculating an integer value according to a given
    length in LaTeX units
 
    Units per mm found in: Karsten Günther, "Einführung in LaTeX2e" (p.376)
@@ -259,14 +252,6 @@ parens_latex d   = casl_normal_latex "("<>d<>casl_normal_latex ")"
 brackets_latex d = casl_normal_latex "["<>d<>casl_normal_latex "]"
 quotes_latex d = q <> d <> q
     where q = casl_normal_latex "{\\tt{}\\textquotedblright}"
-
--- nest and hang that do the obvious thing except that they use
--- multiple spaces for indentation and set tabs with spaces
-nest_latex :: Int -> Doc -> Doc
-nest_latex k = nest (k * space_latex_width)
-
-hang_latex :: Doc -> Int -> Doc -> Doc
-hang_latex d1 n d2 = sep_latex [d1, nest_latex n d2]
 
 sep_latex :: [Doc] -> Doc
 sep_latex = cat . cond_punctuate space_latex
