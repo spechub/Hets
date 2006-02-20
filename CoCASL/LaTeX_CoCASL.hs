@@ -17,9 +17,9 @@ import CoCASL.CoCASLSign
 import CoCASL.Print_AS()
 import Common.Keywords
 import Common.PrettyPrint (printText0)-- todo provide real latex printers
-import Common.Lib.Pretty (Doc, empty, (<>), ($$), vcat)
-import Common.PrintLaTeX (PrintLaTeX(..), printDisplayToken_latex)
-import Common.LaTeX_utils 
+import Common.Lib.Pretty (empty, (<>), ($$), vcat)
+import Common.PrintLaTeX (PrintLaTeX(..))
+import Common.LaTeX_utils
 import Common.PPUtils (pluralS)
 import Common.AS_Annotation
 import Common.LaTeX_AS_Annotation
