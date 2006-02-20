@@ -1,4 +1,4 @@
-module simpleClass
+module simpleClass where
 
 data Color a = Red a | Blue a
 
