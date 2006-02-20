@@ -1,4 +1,4 @@
-module simpleClass where
+module SimpleClass where
 
 data Color a = Red a | Blue a
 
@@ -25,5 +25,3 @@ instance (Joker a, Eq a) => Joker (MyList a) where
  methodTwo x y = if y == True then Red x else Blue x
 
 instance (Joker a, Eq a, Eq b) => Joker (MPList a b)
-
-
