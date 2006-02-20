@@ -1,8 +1,4 @@
-#!/bin/sh --login
-
-PATH=$PATH:/home/linux-bkb/bin
-
-cd /local/home/maeder/haskell/CASL-lib/Basic
+#!/bin/sh -x
 
 for i in *.thy
 do

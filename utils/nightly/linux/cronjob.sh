@@ -40,15 +40,25 @@ pdflatex Basic-Libraries
 cat */*.th > ../th.log
 cat */*.pp.het > ../pp.log
 
-/local/home/maeder/haskell/runisabelle.sh > ../isa.log 2>&1
-fgrep \*\*\* ../isa.log
+cd Basic
+/local/home/maeder/haskell/runisabelle.sh > ../../isa.log 2>&1
+fgrep \*\*\* ../../isa.log
+cd ..
+
 /local/home/maeder/haskell/runSPASS.sh > ../spass.log 2>&1
 
 ./hets -v2 -o thy Calculi/Time/AllenHayesLadkin_TACAS.het
 cd Calculi/Time
-/local/home/maeder/haskell/runHCisabelle.sh > ../../../isaHC.log 2>&1
+/local/home/maeder/haskell/runisabelle.sh > ../../../isaHC.log 2>&1
 fgrep \*\*\* ../../../isaHC.log
 cd ../..
+
+./hets -v2 -o thy Calculi/Space/RCCDagstuhl2.het
+cd Calculi/Space
+/local/home/maeder/haskell/runisabelle.sh > ../../../isaHC2.log 2>&1
+fgrep \*\*\* ../../../isaHC.log
+cd ../..
+
 
 ../HetCATS/hetpa Basic/LinearAlgebra_II.casl
 ../HetCATS/hetana Basic/LinearAlgebra_II.casl
