@@ -110,9 +110,9 @@ Most haskell functions should be at most a few lines, only case
 expression over large data types (that should be avoided, too) may need
 corresponding space.
 
-The code should be succinct, readable and easy to maintain (after
-unforeseeable changes). Don't exploit exotic language features without
-good reason (like code-reuse).
+The code should be succinct (though not obfuscated), readable and easy to
+maintain (after unforeseeable changes). Don't exploit exotic language
+features without good reason.
 
 It's not fixed how deep you indent (4 or 8 chars). You can break the
 line after "do", "let", "where", and "case .. of". Make sure that
@@ -138,8 +138,8 @@ error position (in case the impossible should happen). Don't invest
 time to "show" the offending value, only do this temporarily when
 debugging the code.
 
-Don't leave unused or commented-out code in your files! (Readers don't
-know what to think of it.)
+Don't leave unused or commented-out code in your files! Readers don't
+know what to think of it.
 
 
 Case expressions
@@ -167,6 +167,11 @@ Usually a case statement (and the import of isJust and fromJust from
 Data.Maybe) can be avoided by using the "maybe" function:
 
     maybe (error "<ModuleName>.<function>") id $ Map.lookup key map
+
+Generally we require you to be more explicit about failure
+cases. Surely a missing (or an irrefutable) pattern
+would precisely report the position of a runtime error, but these are
+not so obvious when reading the code.
 
 Do avoid mixing "let" and "where". (I prefer "let" and have auxiliary
 function on the top-level that are not exported.) Export lists also
@@ -308,7 +313,7 @@ However, I doubt if the following is a really good alternative to the
 above data Mode with data BoxOrDiamond.
 
 
-  data Mode f p = 
+  data Mode f p =
        Box     { formula :: f,  positions :: p }
      | Diamond { formula :: f,  positions :: p }
 
