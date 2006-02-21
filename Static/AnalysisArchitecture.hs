@@ -12,6 +12,11 @@ Analysis of architectural specifications.
    of the CASL Reference Manual.
 -}
 
+
+{-  todo:
+       -- EmptyNode undefined should be replaced with local env!
+-}
+
 module Static.AnalysisArchitecture (ana_ARCH_SPEC, ana_UNIT_SPEC)
 where
 
@@ -375,7 +380,9 @@ ana_UNIT_TERM lgraph defl gctx curl opts uctx red@(Unit_reduction ut restr) =
 ana_UNIT_TERM lgraph defl gctx curl opts uctx tr@(Unit_translation ut ren) =
     do (dnsig@(Diag_node_sig p _), diag, gctx1, ut') <- ana_UNIT_TERM lgraph
            defl gctx curl opts uctx (item ut)
-       gMorph <- ana_RENAMING lgraph (getSig (getSigFromDiag dnsig)) opts ren
+       -- EmptyNode undefined should be replaced with local env!
+       gMorph <- ana_RENAMING lgraph (EmptyNode undefined)
+                    (getSig (getSigFromDiag dnsig)) opts ren
        let pos = getPos_UNIT_TERM tr
            sink = [(p, gMorph)]
            dg = devGraph gctx1

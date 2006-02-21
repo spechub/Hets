@@ -184,7 +184,7 @@ ana_SPEC lg gctx nsig name opts sp =
    do let sp1 = item asp
       (sp1', NodeSig n' gsigma, gctx') <-
           ana_SPEC lg gctx nsig (inc name) opts sp1
-      mor <- ana_RENAMING lg gsigma opts ren
+      mor <- ana_RENAMING lg nsig gsigma opts ren
       -- ??? check that mor is identity on local env
       let gsigma' = cod Grothendieck mor
            -- ??? too simplistic for non-comorphism inter-logic translations
@@ -758,17 +758,35 @@ ana_SPEC lg gctx nsig name opts sp =
 
 -- analysis of renamings
 
-ana_ren1 :: LogicGraph -> GMorphism -> G_mapping -> Result GMorphism
-ana_ren1 _ (GMorphism r sigma mor)
+ana_ren1 :: LogicGraph -> MaybeNode -> Range -> GMorphism -> G_mapping 
+             -> Result GMorphism
+ana_ren1 _ lenv pos (GMorphism r sigma mor)
            (G_symb_map (G_symb_map_items_list lid sis)) = do
   let lid2 = targetLogic r
   sis1 <- coerceSymbMapItemsList lid lid2 "Analysis of renaming" sis
   rmap <- stat_symb_map_items lid2 sis1
   mor1 <- induced_from_morphism lid2 rmap (cod lid2 mor)
+  case lenv of 
+    EmptyNode _ -> return ()
+    JustNode (NodeSig _ (G_sign lidLenv sigmaLenv)) -> do
+    -- needs to be changed for logic translations
+      sigmaLenv' <- coerceSign lidLenv lid2 "Analysis of renaming: logic translations not yet properly handeled" sigmaLenv
+      let sysLenv = sym_of lid2 sigmaLenv'
+          m = symmap_of lid2 mor1
+          isChanged sy = case Map.lookup sy m of
+            Just sy' -> sy /= sy'
+            Nothing -> False
+          forbiddenSys = Set.filter isChanged sysLenv
+      return ()
+{-      when (not (forbiddenSys == Set.empty))
+            $ pplain_error () (text
+               "attempt to rename the following symbols from the local environment"
+               $$ printText forbiddenSys) pos
+-}
   mor2 <- comp lid2 mor mor1
   return $ GMorphism r sigma mor2
 
-ana_ren1 lg mor (G_logic_translation (Logic_code tok src tar pos1)) = do
+ana_ren1 lg lenv _ mor (G_logic_translation (Logic_code tok src tar pos1)) = do
   let adj = adjustPos pos1
   G_sign srcLid srcSig <- return (cod Grothendieck mor)
   c <- adj $ case tok of
@@ -794,46 +812,54 @@ ana_ren1 lg mor (G_logic_translation (Logic_code tok src tar pos1)) = do
   adj $ comp Grothendieck mor mor1
   where getLogicStr (Logic_name l _) = tokStr l
 
-ana_ren :: LogicGraph -> Result GMorphism -> G_mapping -> Result GMorphism
-ana_ren lg mor_res ren =
+ana_ren :: LogicGraph -> MaybeNode -> Range -> Result GMorphism -> G_mapping 
+            -> Result GMorphism
+ana_ren lg lenv pos mor_res ren =
   do mor <- mor_res
-     ana_ren1 lg mor ren
+     ana_ren1 lg lenv pos mor ren
 
-ana_RENAMING :: LogicGraph -> G_sign -> HetcatsOpts -> RENAMING
+ana_RENAMING :: LogicGraph -> MaybeNode -> G_sign -> HetcatsOpts -> RENAMING
              -> Result GMorphism
-ana_RENAMING lg gSigma opts (Renaming ren _) =
+ana_RENAMING lg lenv gSigma opts (Renaming ren pos) =
   if isStructured opts
      then return (ide Grothendieck gSigma)
-     else foldl (ana_ren lg) (return (ide Grothendieck gSigma)) ren
+     else foldl (ana_ren lg lenv pos) (return (ide Grothendieck gSigma)) ren
 
 -- analysis of restrictions
 
-ana_restr1 :: DGraph -> G_sign -> GMorphism -> G_hiding -> Result GMorphism
-ana_restr1 _ (G_sign _lid _sigma) (GMorphism cid sigma1 mor)
+ana_restr1 :: DGraph -> G_sign -> Range -> GMorphism -> G_hiding 
+               -> Result GMorphism
+ana_restr1 _ (G_sign lidLenv sigmaLenv) pos (GMorphism cid sigma1 mor)
            (G_symb_list (G_symb_items_list lid' sis')) = do
   let lid1 = sourceLogic cid
       lid2 = targetLogic cid
   sis1 <- coerceSymbItemsList lid' lid1 "Analysis of restriction" sis'
   rsys <- stat_symb_items lid1 sis1
   let sys = sym_of lid1 sigma1
-  let sys' = Set.filter (\sy -> any (\rsy -> matches lid1 sy rsy) rsys)
+      sys' = Set.filter (\sy -> any (\rsy -> matches lid1 sy rsy) rsys)
                         sys
---     if sys' `disjoint` () then return ()
---  else error "attempt to hide symbols from the local environment"
+  -- needs to be changed when logic projections are implemented
+  sigmaLenv' <- coerceSign lidLenv lid1 "Analysis of restriction: logic projections not yet properly handeled" sigmaLenv
+  let sysLenv = sym_of lid1 sigmaLenv'
+      forbiddenSys = sys' `Set.intersection` sysLenv
+  when (not (forbiddenSys == Set.empty))
+        $ pplain_error () (text
+           "attempt to hide the following symbols from the local environment"
+           $$ printText forbiddenSys) pos
   mor1 <- cogenerated_sign lid1 sys' sigma1
   mor1' <- map_morphism cid mor1
   mor2 <- comp lid2 mor1' mor
   return $ GMorphism cid (dom lid1 mor1) mor2
 
-ana_restr1 _dg _gSigma _mor
+ana_restr1 _dg _gSigma _mor _pos
            (G_logic_projection (Logic_code _tok _src _tar pos1)) =
   fatal_error "no analysis of logic projections yet" pos1
 
-ana_restr :: DGraph -> G_sign -> Result GMorphism -> G_hiding
+ana_restr :: DGraph -> G_sign -> Range -> Result GMorphism -> G_hiding
           -> Result GMorphism
-ana_restr dg gSigma mor_res restr =
+ana_restr dg gSigma pos mor_res restr =
   do mor <- mor_res
-     ana_restr1 dg gSigma mor restr
+     ana_restr1 dg gSigma pos mor restr
 
 ana_RESTRICTION :: DGraph -> G_sign -> G_sign -> HetcatsOpts -> RESTRICTION
        -> Result (GMorphism, Maybe GMorphism)
@@ -844,8 +870,8 @@ ana_RESTRICTION' :: DGraph -> G_sign -> G_sign -> Bool -> RESTRICTION
        -> Result (GMorphism, Maybe GMorphism)
 ana_RESTRICTION' _ _ gSigma True _ =
   return (ide Grothendieck gSigma,Nothing)
-ana_RESTRICTION' dg gSigma gSigma' False (Hidden restr _) =
-  do mor <- foldl (ana_restr dg gSigma)
+ana_RESTRICTION' dg gSigma gSigma' False (Hidden restr pos) =
+  do mor <- foldl (ana_restr dg gSigma pos)
                   (return (ide Grothendieck gSigma'))
                   restr
      return (mor,Nothing)
