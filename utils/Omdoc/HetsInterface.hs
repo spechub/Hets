@@ -550,6 +550,12 @@ getNodeDeltaOpMaps dg n = getFromCASLSignDeltaM dg n opMap
 	(Map.differenceWith (\a b -> let diff = Set.difference a b in if Set.null diff then Nothing else Just diff))
 	Map.empty
 	
+getSentencesFromG_theory::G_theory->[Ann.Named CASLFORMULA]
+getSentencesFromG_theory (G_theory _ _ thsens) =
+	let
+		(Just csen) = ((cast thsens)::(Maybe (Prover.ThSens CASLFORMULA (AnyComorphism, BasicProof))))
+	in Prover.toNamedList csen
+
 -- get CASL-formulas from a node
 getNodeSentences::DGNodeLab->[Ann.Named CASLFORMULA]
 getNodeSentences (DGRef {}) = []

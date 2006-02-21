@@ -79,7 +79,50 @@ data ImportContext a = ImportContext {
 						,importGraph :: (ImportGraph a)
 						}
 						
+type DbgKey = String
+data DbgInf = DbgInf { dbgKeys :: [DbgKey], dbgDisabledKeys :: [DbgKey] }
 
+emptyDbgInf::DbgInf
+emptyDbgInf = DbgInf { dbgKeys = [], dbgDisabledKeys = [] }
+
+simpleDebug::[DbgKey]->DbgInf
+simpleDebug keys = emptyDbgInf { dbgKeys = keys }
+
+mkDebug::[DbgKey]->[DbgKey]->DbgInf
+mkDebug keys diskeys = emptyDbgInf { dbgKeys = keys, dbgDisabledKeys = diskeys }
+
+addDbgKey::DbgInf->DbgKey->DbgInf
+addDbgKey dbginf key = dbginf { dbgKeys = (key:(dbgKeys dbginf)) }
+
+addDbgDisKey::DbgInf->DbgKey->DbgInf
+addDbgDisKey dbginf key = dbginf { dbgDisabledKeys = (key:(dbgDisabledKeys dbginf)) }
+
+debug::forall a . DbgInf->DbgKey->String->a->a
+debug dbginf dbgkey msg x =
+	if (elem dbgkey (dbgDisabledKeys dbginf))
+		then
+			x
+		else
+			if ((elem "all" (dbgKeys dbginf)) || (elem dbgkey (dbgKeys dbginf)))
+				then
+					Debug.Trace.trace (dbgkey ++ ": " ++ msg) x
+				else
+					x
+						
+data GlobalOptions =
+	GOpts {
+		dbgInf :: DbgInf
+		}
+		
+debugGO::forall a . GlobalOptions->DbgKey->String->a->a
+debugGO go = debug (dbgInf go)
+		
+emptyGlobalOptions::GlobalOptions
+emptyGlobalOptions =
+	GOpts {
+		dbgInf = (simpleDebug [])
+		}
+			
 omdocNameXMLNS
 	,omdocNameXMLAttr :: String
 omdocNameXMLNS = "xml"
@@ -203,6 +246,8 @@ data PO =
 	| POHelp
 	| PODTDURI String
 	| PODebug
+	| PODebugKey String
+	| PODebugDisKey String
 	| PONewInput
 	| PONewOutput
 	| PODisableDTD
@@ -218,6 +263,8 @@ data POType =
 	| POTHelp
 	| POTDTDURI
 	| POTDebug
+	| POTDebugKey
+	| POTDebugDisKey
 	| POTNewInput
 	| POTNewOutput
 	| POTDisableDTD
@@ -234,6 +281,8 @@ poToPOT (PODTDURI _) = POTDTDURI
 poToPOT POShowGraph = POTShowGraph
 poToPOT POHelp = POTHelp
 poToPOT PODebug = POTDebug
+poToPOT (PODebugKey _) = POTDebugKey
+poToPOT (PODebugDisKey _) = POTDebugDisKey
 poToPOT PONewInput = POTNewInput
 poToPOT PONewOutput = POTNewOutput
 poToPOT PODisableDTD = POTDisableDTD
@@ -251,6 +300,8 @@ processingOptions =
 	, GetOpt.Option ['h'] ["help"] (GetOpt.NoArg POHelp) "print this info"
 	, GetOpt.Option ['d'] ["dtd-uri"] (GetOpt.ReqArg PODTDURI "DTDURI") "URI for OMDoc-DTD"
 	, GetOpt.Option [] ["debug"] (GetOpt.NoArg PODebug) "enable debugging-messages"
+	, GetOpt.Option [] ["debug-key"] (GetOpt.ReqArg PODebugKey "KEY") "add a debugging key (or 'all' for all)"
+	, GetOpt.Option [] ["debug-disable-key"] (GetOpt.ReqArg PODebugDisKey "KEY") "disable a debugging key (from all)"
 	, GetOpt.Option ['n'] ["new-output"] (GetOpt.NoArg PONewOutput) "use new output (possibly buggy)"
 	, GetOpt.Option ['e'] ["new-input"] (GetOpt.NoArg PONewInput) "use new input (possibly buggy)"
 	, GetOpt.Option [] ["disable-dtd"] (GetOpt.NoArg PODisableDTD) "disable putting DTD-location in OMDoc-Output"
@@ -336,6 +387,10 @@ optFilter pot =
 -- with the name of the library that was read in and all related GlobalContexts.
 -- Actually the latter is not really what is wanted and will be removed when
 -- better ways of retrieving related DGraphs are developed.
+--
+-- DebugKeys to disable normaly (huge amount of output) :
+--  iGTDGNXN sXNWONFX mNNTDGNL dGTXCMPIOXN
+
 main::IO ()
 main =
 	do
@@ -363,12 +418,15 @@ main =
 --			options
 		inputopts <- return $ optFilter POTInput options
 		inputtypeopts <- return $ optFilter POTInputType options
+		libopts <- return $ optFilter POTLib options
 		outputopts <- return $ optFilter POTOutput options
 		outputtypeopts <- return $ optFilter POTOutputType options
 		alloutopts <- return $ optFilter POTSandbox options
 		showgraphopts <- return $ optFilter POTShowGraph options
 		dtduriopts <- return $ optFilter POTDTDURI options
 		debugopts <- return $ optFilter POTDebug options
+		debugkeyopts <- return $ optFilter POTDebugKey options
+		debugdiskeyopts <- return $ optFilter POTDebugDisKey options
 		newinputopts <- return $ optFilter POTNewInput options
 		newoutputopts <- return $ optFilter POTNewOutput options
 		disabledtdopts <- return $ optFilter POTDisableDTD options
@@ -377,6 +435,10 @@ main =
 		newinput <- return $ not $ null newinputopts
 		newoutput <- return $ not $ null newoutputopts
 		disabledtd <- return $ not $ null disabledtdopts
+		searchpath <- return $ map (\(POLib s) -> s) libopts
+		debugkeys <- return $ map (\(PODebugKey s) -> s) debugkeyopts
+		debugdiskeys <- return $ map (\(PODebugDisKey s) -> s) debugdiskeyopts
+		globalOptions <- return $ emptyGlobalOptions { dbgInf = (mkDebug debugkeys debugdiskeys) }
 		input <- return $ case inputopts of
 					[] -> case nonoptions of
 						[] -> "-"
@@ -456,7 +518,12 @@ main =
 		when
 			(debug && disabledtd)
 			(putStrLn "DTD-Output disabled...")
-		searchpath <- return $ map (\(POLib s) -> s) $ optFilter POTLib options
+		when
+			debug
+			(
+				(putStrLn ("Debug-Keys : " ++ (implode ", " debugkeys))) >>
+				(putStrLn ("Disabled-Keys : " ++ (implode ", " debugdiskeys)))
+			)
 		when
 			debug
 			(putStrLn
@@ -468,11 +535,11 @@ main =
 				FTOMDoc ->
 						do
 						when debug (putStrLn ("Trying to load omdoc-file..."))
-						ig <- makeImportGraph input searchpath
+						ig <- makeImportGraph globalOptions input searchpath
 						when (newinput && debug)
 							(putStrLn "Loading with new input-methods...")
-						(return $ dGraphGToLibEnv $ hybridGToDGraphG $
-							(if newinput then processImportGraphXN else processImportGraph) ig)
+						(return $ dGraphGToLibEnv globalOptions $ hybridGToDGraphG globalOptions $
+							(if newinput then processImportGraphXN else processImportGraph) globalOptions ig)
 				FTCASL->
 						do
 						when debug (putStrLn ("Trying to load casl-file..."))
@@ -583,7 +650,7 @@ main =
 				do
 				when debug (putStrLn ("Outputting OMDoc..."))
 				when (debug && newoutput) (putStrLn ("using new output (you cannot read this in again yet)"))
-				omdoc <- (if newoutput then devGraphToOmdocCMPIOXN else devGraphToOmdocCMPIO) dg (stripLibName (show ln))
+				omdoc <- (if newoutput then devGraphToOmdocCMPIOXN else devGraphToOmdocCMPIO) globalOptions dg (stripLibName (show ln))
 				case output of
 					"" -> return ()
 						-- show/writeOmdocDTD :: IO XmlTrees --> return ()
@@ -658,8 +725,8 @@ libEnvFromEnvironment ho f =
 		return menv
 			
 		
-libEnvFromOmdocFile::String->[String]->IO (ASL.LIB_NAME, DGraph, LibEnv)
-libEnvFromOmdocFile f l = makeImportGraph f l >>= return . dGraphGToLibEnv . hybridGToDGraphG . processImportGraph
+libEnvFromOmdocFile::GlobalOptions->String->[String]->IO (ASL.LIB_NAME, DGraph, LibEnv)
+libEnvFromOmdocFile go f l = makeImportGraph go f l >>= return . dGraphGToLibEnv go . hybridGToDGraphG go . processImportGraph go
 
 -- | loads an omdoc-file and returns it even if there are errors
 -- fatal errors lead to IOError
@@ -670,7 +737,7 @@ loadOmdoc f =
 			HXT.run' $
 			HXT.parseDocument
 				[
-					(a_source, f)
+					 (a_source, f)
 					,(a_validate, v_0) -- validation is nice, but HXT does not give back even a partial document then...
 					,(a_check_namespaces,v_1) -- needed,really...
 					,(a_issue_errors, v_0)
@@ -698,13 +765,17 @@ loadOmdocForXPath f =
 			,(a_issue_errors, v_0)
 			,(a_check_namespaces,v_1)
 			] emptyRoot
+			
+initorall::forall a . [a]->[a]
+initorall [i] = [i]
+initorall l = init l
 						
 stripLibName::String->String
-stripLibName = last . explode "/"
+stripLibName s = implode "." $ initorall $ explode "."  $ last $ explode "/" s
 
 -- | Convert a DevGraph to OMDoc-XML with given xml:id attribute
-devGraphToOmdocCMPIO::Static.DevGraph.DGraph->String->IO HXT.XmlTrees
-devGraphToOmdocCMPIO dg name' =
+devGraphToOmdocCMPIO::GlobalOptions->Static.DevGraph.DGraph->String->IO HXT.XmlTrees
+devGraphToOmdocCMPIO go dg name' =
 	do
 		dgx <- devGraphToXmlCMPIO dg
 		return (
@@ -713,10 +784,10 @@ devGraphToOmdocCMPIO dg name' =
 			)
 
 -- | Convert a DevGraph to OMDoc-XML with given xml:id attribute
-devGraphToOmdocCMPIOXN::Static.DevGraph.DGraph->String->IO HXT.XmlTrees
-devGraphToOmdocCMPIOXN dg name' =
+devGraphToOmdocCMPIOXN::GlobalOptions->Static.DevGraph.DGraph->String->IO HXT.XmlTrees
+devGraphToOmdocCMPIOXN go dg name' =
 	do
-		dgx <- devGraphToXmlCMPIOXmlNamed dg
+		dgx <- devGraphToXmlCMPIOXmlNamed go dg
 		return (
 			(HXT.etag "omdoc" += ( qualattr omdocNameXMLNS omdocNameXMLAttr name'
 					+++ xmlNL +++ dgx )) emptyRoot
@@ -837,9 +908,17 @@ makePresentationFor xname presstring =
 			)
 		)
 
+showSensWOMap::Map.Map a (Set.Set Hets.SentenceWO)->String
+showSensWOMap mapping =
+	let
+		senssets = Map.elems mapping
+		senslist = concatMap Set.toList senssets
+		sennames = map (Ann.senName . Hets.woItem) senslist
+	in
+		implode ", " sennames
 	
-devGraphToXmlCMPIOXmlNamed::Static.DevGraph.DGraph->IO (HXT.XmlTree->HXT.XmlTrees)
-devGraphToXmlCMPIOXmlNamed dg =
+devGraphToXmlCMPIOXmlNamed::GlobalOptions->Static.DevGraph.DGraph->IO (HXT.XmlTree->HXT.XmlTrees)
+devGraphToXmlCMPIOXmlNamed go dg =
 	let
 		(onlynodenameset, onlyrefnameset) = Hets.getNodeDGNamesNodeRef dg
 		(onlynodexmlnamelist, xmlnames_onxnl) = createXmlNames nodeTupelToNodeName [] (Set.toList onlynodenameset)
@@ -851,7 +930,7 @@ devGraphToXmlCMPIOXmlNamed dg =
 		relswomap= Hets.getRelationsWOWithNodeDGNamesWOSMDGWO dg sortswomap
 		predswomap = Map.map mapToSetToTupelList $ Hets.getPredMapsWOWithNodeDGNamesWO dg
 		opswomap = Map.map mapToSetToTupelList $ Hets.getOpMapsWOWithNodeDGNamesWO dg
-		senswomap = Hets.getSentencesWOWithNodeDGNamesWO dg
+		senswomap = (\smap -> debugGO go "dGTXCMPIOXN" ("Sentences : " ++ (showSensWOMap smap)) smap) $ Hets.getSentencesWOWithNodeDGNamesWO dg
 		importsmap = Hets.getNodeImportsNodeDGNames dg
 		-- sorts
 		(xmlnamedsortswomap, xmlnames_sm) =
@@ -924,7 +1003,7 @@ devGraphToXmlCMPIOXmlNamed dg =
 				(\xmlnames nsensset ->
 					uniqueXmlNamesContainerWONExt
 						xmlnames
-						Ann.senName
+						(\x -> debugGO go "dGTXCMPIOXN"  ("psc: " ++ (take 45 (show x))) $ Ann.senName x)
 						nsensset
 						(pSCStrip id)
 						(\(k, senswo) xname -> (k, XmlNamed senswo xname))
@@ -938,7 +1017,7 @@ devGraphToXmlCMPIOXmlNamed dg =
 				(nodenum, nodename) = xnItem xnodetupel
 				theosorts = Map.findWithDefault Set.empty (Hets.mkWON nodename nodenum) xmlnamedsortswomap
 				realsorts = Set.filter (\i -> (xnWOaToO i) == nodenum) theosorts
-				realsortswo = Set.map (xnItem) (Debug.Trace.trace ("Sorts in " ++ (xnName xnodetupel) ++ " - " ++ (show realsorts) ) realsorts)
+				realsortswo = Set.map (xnItem) (debugGO go "dGTXCMPIOXN" ("Sorts in " ++ (xnName xnodetupel) ++ " - " ++ (show realsorts) ) realsorts)
 				theorels = Map.findWithDefault Rel.empty (Hets.mkWON nodename nodenum) relswomap
 				-- only keep relations that include at least one sort from the
 				-- current theory
@@ -1177,6 +1256,7 @@ mapSameIdToSetWith conv set =
 
 							
 xnMapsToDGNodeLab::
+  GlobalOptions->
 	NODE_NAME->
 	Set.Set XmlNamedWONId->
 	Rel.Rel XmlNamedWONId->
@@ -1185,6 +1265,7 @@ xnMapsToDGNodeLab::
 	Set.Set (XmlNamed Hets.SentenceWO)->
 	DGNodeLab
 xnMapsToDGNodeLab
+	go
 	nn
 	xnsorts
 	xnrels
@@ -1198,7 +1279,7 @@ xnMapsToDGNodeLab
 		ops = mapSameIdToSetWith opTypeXNWONToOpType xnops
 		sens = Set.map xnWOaToa xnsens
 	in
-		mapsNNToDGNodeLab (sorts, rels, preds, ops, sens) nn
+		mapsNNToDGNodeLab go (sorts, rels, preds, ops, sens) nn
 							
 type WithOriginTheory a = Hets.WithOrigin a String
 
@@ -1632,7 +1713,7 @@ consToSensXN sortid conlist =
 	XmlNamed 
 		(Hets.mkWON
 			(Ann.NamedSen
-				("ga_generated_" ++ show (xnItem sortid))
+				("ga_generated_" ++ show (xnWOaToa sortid))
 				True
 				False
 				(Sort_gen_ax
@@ -3404,9 +3485,9 @@ sensFromXml fc t =
 			Map.insert name' (Set.union sens consens) map'
 		) Map.empty $ applyXmlFilter (isTag "theory") t
 
-sensXNWONFromXml::FFXInput->Set.Set AnnXMLN->Map.Map XmlName (Set.Set (XmlNamed Hets.SentenceWO))
-sensXNWONFromXml ffxi anxmlset = 
-	Set.fold (\anxml map' ->
+sensXNWONFromXml::GlobalOptions->FFXInput->Set.Set AnnXMLN->Map.Map XmlName (Set.Set (XmlNamed Hets.SentenceWO))
+sensXNWONFromXml go ffxi anxmlset = 
+	(\smap -> debugGO go "sXNWONFX" ("AllSentences : " ++ (showSenNames smap)) smap) $! Set.fold (\anxml map' ->
 		let
 			theoryname = case getTheoryXmlName (xnTheorySet ffxi) (axAnn anxml) of
 				Nothing -> error "No theory found!"
@@ -3414,7 +3495,7 @@ sensXNWONFromXml ffxi anxmlset =
 			sens = sensXNWONFromXmlTheory ffxi anxml
 			consens = conSensXNWONFromXmlTheory ffxi anxml
 		in
-			Map.insert theoryname (Set.union sens consens) map'
+			(\smap -> debugGO go "sXNWONFX" ("NewSentences : " ++ (showSenSetNames sens) ++ " - ConSentences : " ++ (showSenSetNames consens)) smap) $ Map.insert theoryname (Set.union sens consens) map'
 		) Map.empty anxmlset
 		
 conSensFromXmlTheory::HXT.XmlTrees->(Set.Set (Ann.Named CASLFORMULA))
@@ -3482,6 +3563,8 @@ mapsToG_theory (sortset, rels' , predmap, opmap, sensmap) =
 		(Sign sortset rels' opmap Map.empty predmap Map.empty [] [] GA.emptyGlobalAnnos ()) 
 		(Prover.toThSens $ Set.toList sensmap)
 		
+-- Prover.toThSens creates named sentences on its own... trouble for xml...
+		
 mapsToDGNodeLab::(Set.Set SORT, Rel.Rel SORT, Map.Map Id.Id (Set.Set PredType), Map.Map Id.Id (Set.Set OpType), Set.Set (Ann.Named CASLFORMULA))->String->DGNodeLab
 mapsToDGNodeLab maps nodename =
 	DGNode
@@ -3493,11 +3576,11 @@ mapsToDGNodeLab maps nodename =
 		None
 		LeftOpen
 		
-mapsNNToDGNodeLab::(Set.Set SORT, Rel.Rel SORT, Map.Map Id.Id (Set.Set PredType), Map.Map Id.Id (Set.Set OpType), Set.Set (Ann.Named CASLFORMULA))->NODE_NAME->DGNodeLab
-mapsNNToDGNodeLab maps nodename =
+mapsNNToDGNodeLab::GlobalOptions->(Set.Set SORT, Rel.Rel SORT, Map.Map Id.Id (Set.Set PredType), Map.Map Id.Id (Set.Set OpType), Set.Set (Ann.Named CASLFORMULA))->NODE_NAME->DGNodeLab
+mapsNNToDGNodeLab go maps@(_, _, _, _, sens) nodename =
 	DGNode
 		nodename
-		(mapsToG_theory maps)
+		((\x -> debugGO go "mNNTDGNL" ((show (Set.map Ann.senName sens)) ++ " -> " ++ (show (map Ann.senName (Hets.getSentencesFromG_theory x)))) x) (mapsToG_theory maps))
 		Nothing
 		Nothing
 		DGBasic
@@ -3567,18 +3650,37 @@ importGraphToDGNodes ig n =
 			)
 			$ Set.toList nodenames) ++ refs
 			
-importGraphToDGNodesXN::(ImportGraph (HXT.XmlTrees, Maybe DGraph))->Graph.Node->[DGNodeLab]
-importGraphToDGNodesXN ig n =
+showSenSetNames::Set.Set (XmlNamed Hets.SentenceWO)->String
+showSenSetNames senset =
+	let
+		senlist = Set.toList senset
+		sennamesx = map (\s -> (Ann.senName $ xnWOaToa s, xnName s)) senlist
+		senstrings = map (\(a, b) -> a ++ "(" ++ b ++ ")") sennamesx
+	in
+		implode ",    " senstrings
+		
+showSenNames::Map.Map XmlName (Set.Set (XmlNamed Hets.SentenceWO))->String
+showSenNames mapping =
+	let
+		sensets = Map.elems mapping
+		senlist = concatMap Set.toList sensets
+		sennamesx = map (\s -> (Ann.senName $ xnWOaToa s, xnName s)) senlist
+		senstrings = map (\(a, b) -> a ++ "(" ++ b ++ ")") sennamesx
+	in
+		implode ", " senstrings
+			
+importGraphToDGNodesXN::GlobalOptions->(ImportGraph (HXT.XmlTrees, Maybe DGraph))->Graph.Node->[DGNodeLab]
+importGraphToDGNodesXN go ig n =
 	let
 		mnode = Graph.lab ig n
 		node = case mnode of
 			Nothing -> error "node error!"
 			(Just n' ) -> n'
 		omdocchilds = (\(S _ (omdoc' , _)) -> applyXmlFilter (isTag "omdoc" .> getChildren) omdoc' ) node
-		(ffxi, axtheoryset) = (\(S _ (omdoc' , _)) -> preprocessXml omdoc' ) node
-		importsMap' = importsFromXml omdocchilds
+		(ffxi, axtheoryset) = debugGO go "iGTDGNXN" "Preprocessed XML..." $ (\(S _ (omdoc' , _)) -> preprocessXml go omdoc' ) node
+		importsMap' = debugGO go "iGTDGNXN" "Imports collected..." $ importsFromXml omdocchilds
 		(theonames, sortsmap, relsmap, predsmap, opsmap) = (xnTheorySet ffxi, xnSortsMap ffxi, xnRelsMap ffxi, xnPredsMap ffxi, xnOpsMap ffxi)
-		sensmap = sensXNWONFromXml ffxi axtheoryset
+		sensmap = (\smap -> debugGO go "iGTDGNXN" ("Sentences extracted... : " ++ (showSenNames smap)) smap) $ sensXNWONFromXml go ffxi axtheoryset
 		refimports = filter ( \(_,from,_) -> from /= n) $ Graph.out ig n
 		refs = map ( \(_, from, (TI (theoname, _))) ->
 			let
@@ -3614,8 +3716,8 @@ importGraphToDGNodesXN ig n =
 				tops = Map.findWithDefault Set.empty (xnName xntheory) opsmap
 				tsens = Map.findWithDefault Set.empty (xnName xntheory) sensmap
 			in
-				Debug.Trace.trace ("Creating Node with NODE_NAME " ++ (show (snd (xnItem xntheory))) ++ ", XmlName was " ++ (xnName xntheory))
-					(dgnodelist ++ [xnMapsToDGNodeLab (snd (xnItem xntheory)) psorts trels ppreds pops tsens])
+				debugGO go "iGTDGNXN" ("Creating Node with NODE_NAME " ++ (show (snd (xnItem xntheory))) ++ ", XmlName was " ++ (xnName xntheory))
+					(dgnodelist ++ [xnMapsToDGNodeLab go (snd (xnItem xntheory)) psorts trels ppreds pops tsens])
 			) [] theonames
 	
 
@@ -3766,15 +3868,15 @@ importGraphToDGraph ig n =
 	in
 		Graph.mkGraph cleannodes validedges
 		
-importGraphToDGraphXN::(ImportGraph (HXT.XmlTrees, Maybe DGraph))->Graph.Node->DGraph
-importGraphToDGraphXN ig n =
+importGraphToDGraphXN::GlobalOptions->(ImportGraph (HXT.XmlTrees, Maybe DGraph))->Graph.Node->DGraph
+importGraphToDGraphXN go ig n =
 	let
 		mnode = Graph.lab ig n
 		node = case mnode of
 			Nothing -> error "node error!"
 			(Just n' ) -> n'
 		omdoc = (\(S _ (omdoc' , _)) -> applyXmlFilter (isTag "omdoc" .> getChildren) omdoc' ) node
-		nodes = importGraphToDGNodesXN ig n
+		nodes = importGraphToDGNodesXN go ig n
 		lnodes = (zip [1..] nodes)::[(Graph.Node, DGNodeLab)]
 		--nodegraph = (Graph.mkGraph lnodes [])::DGraph
 		nameNodeMap = Map.fromList $ map ( \(n' , node' ) -> (getDGNodeName node' , n' ) ) $ lnodes
@@ -3798,7 +3900,7 @@ importGraphToDGraphXN ig n =
 					(foldl (\le' (ni, mmm) ->
 						let
 							importnodenum = case Map.findWithDefault 0 ni nameNodeMap of
-								0 -> Debug.Trace.trace ("Cannot find node for \"" ++ ni ++ "\"!") 0
+								0 -> debugGO go "iGTDGXN" ("Cannot find node for \"" ++ ni ++ "\"!") 0
 								x -> x
 							snode = case map snd $ filter (\(n' ,_) -> n' == importnodenum) lnodes of
 								(l:_) -> l
@@ -3831,7 +3933,7 @@ importGraphToDGraphXN ig n =
 							let
 								ni = fromName ih
 								importnodenum = case Map.findWithDefault 0 ni nameNodeMap of
-									0 -> Debug.Trace.trace ("Cannot find node for \"" ++ ni ++ "\"!") 0
+									0 -> debugGO go "iGTDGXN" ("Cannot find node for \"" ++ ni ++ "\"!") 0
 									x -> x
 							in
 								(importnodenum, nodenum, getIHLink ih)
@@ -3839,7 +3941,7 @@ importGraphToDGraphXN ig n =
 				) [] $ Map.toList imports'
 		validedges = foldl (\e newe@(n' ,m,_) ->
 			if (n' ==0) || (m==0) then
-				Debug.Trace.trace ("Invalid Edge found from " ++ (show n' ) ++ " to " ++ (show m) ++ "...") e
+				debugGO go "iGTDGXN" ("Invalid Edge found from " ++ (show n' ) ++ " to " ++ (show m) ++ "...") e
 				else
 				e++[newe]
 				) [] ledges
@@ -3894,8 +3996,8 @@ instance Show (Source a) where
 
 type ImportGraph a = CLGraph.Gr (Source a) TheoryImport 
 
-getImportMapFG::String->(IO ((String,HXT.XmlTrees,String), (Map.Map String String)))
-getImportMapFG filename =
+getImportMapFG::GlobalOptions->String->(IO ((String,HXT.XmlTrees,String), (Map.Map String String)))
+getImportMapFG go filename =
 	do
 		curdir <- System.Directory.getCurrentDirectory
 		cfn <- System.IO.Error.catch
@@ -4049,24 +4151,24 @@ findFirstMatch
 -- you can specify a list of directories to look for files in
 -- the current directory will automatically be added to this list (and passed
 -- to all subsequent file-searches).
-makeImportGraph::String->[String]->(IO (ImportGraph HXT.XmlTrees))
-makeImportGraph filename includes =
+makeImportGraph::GlobalOptions->String->[String]->(IO (ImportGraph HXT.XmlTrees))
+makeImportGraph go filename includes =
 	do
 	fn <- findFile filename includes >>= \mfp -> case mfp of
 		Nothing -> return (error "Cannot find this file : \"" ++ filename ++ "\"")
 		(Just f) -> return f
 	curdir <- System.Directory.getCurrentDirectory
-	((omdocid, omdoc, cfn), imap) <- getImportMapFG fn
+	((omdocid, omdoc, cfn), imap) <- getImportMapFG go fn
 	nodeone <- return (1, S (omdocid, cfn) omdoc)
 	foldl (\gio imp ->
 		do
 			gio >>= \g ->
-				extendImportGraph g 1 (TI imp) (includes++[curdir])
+				extendImportGraph go g 1 (TI imp) (includes++[curdir])
 			) (return (Graph.mkGraph [nodeone] [])) $ Map.toList imap
 		
 	
-extendImportGraph::(ImportGraph HXT.XmlTrees)->Graph.Node->TheoryImport->[String]->(IO (ImportGraph HXT.XmlTrees))
-extendImportGraph ig n (TI (thn, src)) includes =
+extendImportGraph::GlobalOptions->(ImportGraph HXT.XmlTrees)->Graph.Node->TheoryImport->[String]->(IO (ImportGraph HXT.XmlTrees))
+extendImportGraph go ig n (TI (thn, src)) includes =
 	do
 		curdir <- System.Directory.getCurrentDirectory 
 		(S (_ , source) _) <- return ((\(Just a) -> a) $ Graph.lab ig n)
@@ -4082,14 +4184,14 @@ extendImportGraph ig n (TI (thn, src)) includes =
 			Nothing -> putStrLn ("Cannot find this file : \"" ++ src ++ "\"") >> return src
 			(Just f) -> return f
 		nodenum <- return (length $ Graph.nodes ig)
-		((omdocid, omdoc, cfn), imap) <- getImportMapFG srcfp
+		((omdocid, omdoc, cfn), imap) <- getImportMapFG go srcfp
 		matchingNodes <- return (filter (\(_, (S (iname, isrc) _)) -> iname == omdocid && isrc == cfn ) $ Graph.labNodes ig)
 		newnode <- return
 			(if null matchingNodes
 				then
-					Debug.Trace.trace ("Creating new node for \"" ++ omdocid ++ "\"") (nodenum+1, S (omdocid, cfn) omdoc)
+					debugGO go "eIG" ("Creating new node for \"" ++ omdocid ++ "\"") (nodenum+1, S (omdocid, cfn) omdoc)
 				else
-					Debug.Trace.trace ("Using existing node for \"" ++ omdocid ++ "\"") $ head matchingNodes
+					debugGO go "eIG" ("Using existing node for \"" ++ omdocid ++ "\"") $ head matchingNodes
 			)
 		newnodenum <- return ( (\(nn, _) -> nn) newnode )
 		newedge <- return (n, newnodenum, TI (thn, src))
@@ -4097,7 +4199,7 @@ extendImportGraph ig n (TI (thn, src)) includes =
 		newig <- (foldl (\nigio (thname, thsrc) ->
 			do
 				nigio >>= \nig ->
-					extendImportGraph nig newnodenum (TI (thname, thsrc)) includes
+					extendImportGraph go nig newnodenum (TI (thname, thsrc)) includes
 				) (return newgraph) $ Map.toList imap)
 		System.Directory.setCurrentDirectory curdir
 		return newig
@@ -4106,8 +4208,8 @@ extendImportGraph ig n (TI (thn, src)) includes =
 -- if there is a cycle in the imports this will fail because the algorithm
 -- processes only omdoc's that do import from already processed omdoc's or do
 -- not import at all.
-processImportGraph::(ImportGraph HXT.XmlTrees)->(ImportGraph (HXT.XmlTrees, Maybe DGraph))
-processImportGraph ig =
+processImportGraph::GlobalOptions->(ImportGraph HXT.XmlTrees)->(ImportGraph (HXT.XmlTrees, Maybe DGraph))
+processImportGraph go ig =
 	let
 		-- create hybrid graph containing already processed DGs (none at first)
 		hybrid = Graph.mkGraph
@@ -4185,8 +4287,8 @@ processImportGraph ig =
 -- if there is a cycle in the imports this will fail because the algorithm
 -- processes only omdoc's that do import from already processed omdoc's or do
 -- not import at all.
-processImportGraphXN::(ImportGraph HXT.XmlTrees)->(ImportGraph (HXT.XmlTrees, Maybe DGraph))
-processImportGraphXN ig =
+processImportGraphXN::GlobalOptions->(ImportGraph HXT.XmlTrees)->(ImportGraph (HXT.XmlTrees, Maybe DGraph))
+processImportGraphXN go ig =
 	let
 		-- create hybrid graph containing already processed DGs (none at first)
 		hybrid = Graph.mkGraph
@@ -4246,7 +4348,7 @@ processImportGraphXN ig =
 							--	(\(_, S _ (omdoc, _)) -> omdoc) changednode
 							changednodenum =
 								(\(nodenum, _) -> nodenum) changednode
-							dg = importGraphToDGraphXN igxmd changednodenum
+							dg = importGraphToDGraphXN go igxmd changednodenum
 							-- name = (\(_, (S (nname,_) _)) -> nname) changednode
 							-- create the altered node
 							newnode = (\(nodenum, S a (omdoc,_)) ->
@@ -4262,8 +4364,8 @@ processImportGraphXN ig =
 								(Graph.labEdges igxmd)
 
 								
-hybridGToDGraphG::(ImportGraph (HXT.XmlTrees, Maybe DGraph))->(ImportGraph DGraph)
-hybridGToDGraphG ig =
+hybridGToDGraphG::GlobalOptions->(ImportGraph (HXT.XmlTrees, Maybe DGraph))->(ImportGraph DGraph)
+hybridGToDGraphG go ig =
 	Graph.mkGraph
 		( map (\(n, (S a (_,mdg))) ->
 			let
@@ -4275,8 +4377,8 @@ hybridGToDGraphG ig =
 				) $ Graph.labNodes ig)
 		(Graph.labEdges ig)
 		
-dGraphGToLibEnv::(ImportGraph DGraph)->(ASL.LIB_NAME, DGraph, LibEnv)
-dGraphGToLibEnv ig =
+dGraphGToLibEnv::GlobalOptions->(ImportGraph DGraph)->(ASL.LIB_NAME, DGraph, LibEnv)
+dGraphGToLibEnv go ig =
 	let
 		nodes = map (\(_,n) -> n) $ Graph.labNodes ig
 		firstnode = case nodes of
@@ -4294,8 +4396,8 @@ dGraphGToLibEnv ig =
 	in
 		(ASL.Lib_id (ASL.Indirect_link firstsrc Id.nullRange), firstdg, lenv)
 		
-dGraphGToLibEnvOmdocId::(ImportGraph DGraph)->(ASL.LIB_NAME, DGraph, LibEnv)
-dGraphGToLibEnvOmdocId ig =
+dGraphGToLibEnvOmdocId::GlobalOptions->(ImportGraph DGraph)->(ASL.LIB_NAME, DGraph, LibEnv)
+dGraphGToLibEnvOmdocId go ig =
 	let
 		nodes = map (\(_,n) -> n) $ Graph.labNodes ig
 		firstnode = case nodes of
@@ -5917,7 +6019,7 @@ unwrapFormulasXNWON ffxi anxml =
 					ansenname = Ann.senName ansen
 					anpress = getPresentationString ansenname (axXml anxml)
 					anname = case anpress of
-						[] -> ansenname
+						[] -> Debug.Trace.trace ("!!!unwrapFormulasXNWON: " ++ ansenname ++ "!!!") ansenname
 						_ -> anpress
 				in
 					(unwrapped ++ [XmlNamed (Hets.mkWON (ansen { Ann.senName = anname }) (axAnn anxml)) ansenname])
@@ -5966,8 +6068,8 @@ lastorempty [] = []
 lastorempty l = [last l]
 
 -- create FFXInput and a set of annotated theory-fragments. sets deDebug to True.
-preprocessXml::HXT.XmlTrees->(FFXInput, Set.Set AnnXMLN)
-preprocessXml t =
+preprocessXml::GlobalOptions->HXT.XmlTrees->(FFXInput, Set.Set AnnXMLN)
+preprocessXml go t =
 	let
 		axtheoryset = buildAXTheorySet t
 		xntheoryset = nodeNamesXNFromXml axtheoryset
@@ -5977,15 +6079,24 @@ preprocessXml t =
 		xnpredsmap = mapListToMapSet $ predsXNWONFromXml xntheoryset xnsorts axtheoryset
 		xnopsmap = mapListToMapSet $ opsXNWONFromXml xntheoryset xnsorts axtheoryset
 	in
-		(FFXInput xntheoryset xnsortsmap xnrelsmap xnpredsmap xnopsmap True, axtheoryset)
+		(FFXInput
+			{
+				 globalOpts = go
+				,xnTheorySet = xntheoryset
+				,xnSortsMap = xnsortsmap
+				,xnRelsMap = xnrelsmap
+				,xnPredsMap = xnpredsmap
+				,xnOpsMap = xnopsmap 
+			} ,
+		 axtheoryset)
 
 data FFXInput = FFXInput {
-	xnTheorySet :: TheoryXNSet -- set of theorys (xmlnames + origin in graph)
+	 globalOpts :: GlobalOptions
+	,xnTheorySet :: TheoryXNSet -- set of theorys (xmlnames + origin in graph)
 	,xnSortsMap :: Map.Map XmlName (Set.Set XmlNamedWONSORT) -- theory -> sorts mapping
 	,xnRelsMap :: Map.Map XmlName (Rel.Rel XmlNamedWONSORT) -- theory -> rels
 	,xnPredsMap :: Map.Map XmlName (Set.Set (XmlNamedWONId, PredTypeXNWON)) -- theory -> preds
 	,xnOpsMap :: Map.Map XmlName (Set.Set (XmlNamedWONId, OpTypeXNWON)) -- theory -> ops
-	,doDebug :: Bool -- emit debugging messages
 	}
 
 formulaFromXml::FormulaContext->(HXT.XmlTrees)->(FORMULA ())
@@ -6257,7 +6368,15 @@ formulaFromXmlXN ffxi anxml =
 							then
 								Debug.Trace.trace ("Impossible to create Membership...") (False_atom Id.nullRange)
 							else
-								Membership (head terms) ((if (doDebug ffxi) then Debug.Trace.trace ("Making sort for membership " ++ (show $ xnWOaToa sortxn) ++ " from " ++ sort) else id) $ xnWOaToa sortxn) Id.nullRange
+								Membership
+									(head terms)
+									(debugGO
+										(globalOpts ffxi)
+										"fFXXN"
+										("Making sort for membership " ++ (show $ xnWOaToa sortxn) ++ " from " ++ sort)
+										(xnWOaToa sortxn)
+									)
+									Id.nullRange
 					else
 					if applySym == caslSort_gen_axS then
 						let	freeType = if (xshow $ applyXmlFilter (getValue "name") [(applyXmlFilter (getChildren .> isTag "OMS") formTree)!!1]) == caslSymbolAtomFalseS then False else True
