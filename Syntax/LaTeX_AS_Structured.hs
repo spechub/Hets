@@ -72,7 +72,7 @@ instance PrintLaTeX SPEC where
                          Union _ _ -> spacetab
                          _ -> empty
             spacetab = view_hspace <> setTab_latex
-        in tabbed_nest_latex $ 
+        in tabbed_nest_latex $
                  fsep_latex [ hc_sty_plain_keyword localS, aa'
                             , hc_sty_plain_keyword withinS, ab' ]
     printLatex0 ga (Closed_spec aa _) =
@@ -145,16 +145,15 @@ instance PrintLaTeX PARAMS where
         where ga' = set_inside_gen_arg True (set_first_spec_in_param True ga)
 
 instance PrintLaTeX IMPORTED where
-    printLatex0 ga (Imported aa) =
-        let mkw = mkMaybeKeywordTuple $ hc_sty_plain_keyword givenS
-            coBrGrSp = condBracesGroupSpec printLatex0 sp_braces_latex2
-            taa = tail aa
-            taa' = if null taa then []
-                   else punctuate comma_latex $ tabList_latex $
+    printLatex0 ga (Imported aa) = case aa of
+        [] -> empty
+        haa : taa ->
+          let mkw = mkMaybeKeywordTuple $ hc_sty_plain_keyword givenS
+              coBrGrSp = condBracesGroupSpec printLatex0 sp_braces_latex2
+              taa' = punctuate comma_latex $ tabList_latex $
                            map ( coBrGrSp Nothing ga) taa
-            condComma = if null taa then empty else comma_latex
-        in if null aa then empty
-           else  fsep_latex ((coBrGrSp mkw ga (head aa) <> condComma): taa')
+              condComma = if null taa then empty else comma_latex
+           in fsep_latex $ (coBrGrSp mkw ga haa <> condComma) : taa'
 
 instance PrintLaTeX FIT_ARG where
     printLatex0 ga (Fit_spec aa ab _) =
