@@ -11,7 +11,8 @@ Portability :  portable
 -}
 
 {- todo:
-
+    - implement a symbol mapping that forbids mapping of predefined symbols 
+       from emptySign
 -}
 
 module CASL_DL.Logic_CASL_DL where

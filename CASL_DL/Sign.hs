@@ -10,6 +10,13 @@ Portability :  portable
 Signatures for DL logics, as extension of CASL signatures.
 -}
 
+{- 
+  todo:
+  - emptySign should be filled with predefined Datatypes bootstrapped 
+    from CASL_DL/Datatypes.het (via ATerm reading?)
+    and with sort Thing and pred Nothing.
+-}
+
 module CASL_DL.Sign where
 
 import qualified Common.Lib.Map as Map

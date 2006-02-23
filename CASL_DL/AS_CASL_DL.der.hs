@@ -11,6 +11,10 @@ Abstract syntax for CASL_DL logic extension of CASL
   Only the added syntax is specified
 -}
 
+{- todo:
+   - Change the number TERM to an Int field in Cardinality
+-}
+
 module CASL_DL.AS_CASL_DL where
 
 import Common.Id
