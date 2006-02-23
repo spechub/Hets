@@ -278,12 +278,14 @@ initialState th =
 data ProofStatusColour
   -- | Proved
   = Green
+  -- | Proved, but theory is inconsitent
+  | Brown
   -- | Disproved
   | Red
   -- | Open
   | Black
   -- | Running
-  | Blue
+  | Blue  
    deriving (Bounded,Enum,Show)
 
 {- |
@@ -292,6 +294,9 @@ data ProofStatusColour
 -}
 statusProved :: (ProofStatusColour, String)
 statusProved = (Green, "Proved")
+
+statusProvedButInconsistent :: (ProofStatusColour, String)
+statusProvedButInconsistent = (Brown, "Proved (Theory inconsistent!)")
 
 {- |
   Generates a ('ProofStatusColour', 'String') tuple representing a Disproved
@@ -329,7 +334,9 @@ toGuiStatus :: SPASSConfig -- ^ current prover configuration
             -> (Proof_status a) -- ^ status to convert
             -> (ProofStatusColour, String)
 toGuiStatus cf st = case goalStatus st of
-  Proved    -> statusProved
+  Proved    -> if goalUsedInProof st 
+               then statusProved
+               else statusProvedButInconsistent
   Disproved -> statusDisproved
   _         -> if timeLimitExceeded cf
                then statusOpenTExceeded
@@ -1193,6 +1200,7 @@ runSpass lp cfg thName nGoal = do
           (res, usedAxs, output) <- parseSpassOutput spass
           let (err, retval) = proof_status res usedAxs cleanOptions
           return (err, (retval, output))
+
     filterOptions = ["-DocProof", "-Stdin", "-TimeLimit"]
     cleanOptions = filter (\ opt -> not (or (map (flip isPrefixOf opt) 
                                                  filterOptions))) 
