@@ -15,7 +15,7 @@ works for SPASS.
 
 {- ToDo:
 
-  - remove warnings
+   - 
 -}
 
 module GUI.ProofManagement (proofManagementGUI) where
@@ -191,7 +191,7 @@ updateStateGetSelectedSens ::
             sign1 morphism1 symbol1 raw_symbol1 proof_tree1) =>
            ProofGUIState lid1 sentence1
         -> ListBox String -- ^ axioms listbox
-        -> ListBox String --  theorems listbox
+        -> ListBox String -- ^ theorems listbox
         -> IO (ProofGUIState lid1 sentence1)
 updateStateGetSelectedSens s lbAxs lbThs =
     do aM <- axiomMap s
@@ -285,6 +285,9 @@ doShowProofDetails s@(ProofGUIState { theoryName = thName}) =
                                                    usedAxioms ps))))
                         Pretty.$$ Pretty.text "Prover:" Pretty.<+> 
                               Pretty.text (proverName ps)
+                        Pretty.$$ (if not (goalUsedInProof ps) 
+                            then Pretty.text "Warning: Theory is inconsistent!"
+                            else Pretty.empty)
                        otherProof -> stat (show otherProof)
 
 
