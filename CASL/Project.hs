@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Christian Maeder, Uni Bremen 2005
+Copyright   :  (c) Christian Maeder, Uni Bremen 2005-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -12,6 +12,9 @@ This module replaces Cast(s) with explicit projection
    information may be missing 
 
    Membership test are replaced with Definedness formulas
+
+   projection names may be also made unique by appending the source
+   and target sort 
 -}
 
 module CASL.Project where
@@ -46,3 +49,37 @@ projTerm fk = foldTerm . projRecord fk
 
 projFormula :: FunKind -> (f -> f) -> FORMULA f -> FORMULA f
 projFormula fk = foldFormula . projRecord fk
+
+uniqueProjName :: OP_TYPE -> Id
+uniqueProjName t = case t of 
+    Op_type _ [from] to _ -> mkId [mkSimpleId $ showId projName "_" ++
+                                              showId from "_" ++
+                                              showId to ""]
+    _ -> error "CASL.Project.uniqueProjName"
+
+projectUnique :: FunKind -> Range -> TERM f -> SORT -> TERM f
+projectUnique fk pos argument result_type = 
+    let argument_type = term_sort argument in
+    if argument_type == result_type then argument else 
+    Application (uniqueProjOpSymb fk pos argument_type result_type) 
+                    [argument] nullRange
+
+uniqueProjOpSymb :: FunKind -> Range -> SORT -> SORT -> OP_SYMB
+uniqueProjOpSymb fk pos s1 s2 = let t = Op_type fk [s1] s2 pos in
+    Qual_op_name (uniqueProjName t) t pos
+    
+rename :: OP_SYMB -> OP_SYMB
+rename o = case o of
+    Qual_op_name i t  r | i == projName -> Qual_op_name (uniqueProjName t) t r
+    _ -> o 
+
+renameRecord :: (f -> f) -> Record f (FORMULA f) (TERM f)
+renameRecord mf = (mapRecord mf) 
+     { foldApplication = \ _ o args r -> Application (rename o) args r
+     }
+
+renameTerm :: (f -> f) -> TERM f -> TERM f
+renameTerm = foldTerm . renameRecord
+
+renameFormula :: (f -> f) -> FORMULA f -> FORMULA f
+renameFormula = foldFormula . renameRecord

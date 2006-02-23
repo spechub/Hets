@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Zicheng Wang, C.Maeder Uni Bremen 2002-2005
+Copyright   :  (c) Zicheng Wang, C.Maeder Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -8,7 +8,6 @@ Stability   :  provisional
 Portability :  portable
 
 Coding out partiality (SubPCFOL= -> SubCFOL=), 
-
 -}
 
 module Comorphisms.CASL2SubCFOL where
@@ -99,12 +98,13 @@ encodeSig sig = if Set.null bsorts then sig else
    rel = Rel.irreflex $ sortRel sig
    total (s, s') = OpType{opKind = Total, opArgs = [s'], opRes = s}
    setprojOptype = Set.map total $ Rel.toSet rel
-   projOpMap = (if Set.null setprojOptype then id else 
-               Map.insert projName setprojOptype) botOpMap
+   projOpMap = Set.fold ( \ t -> 
+                          Map.insert (uniqueProjName $ toOP_TYPE t)
+                        $ Set.singleton t) botOpMap setprojOptype
 
 generateAxioms :: Sign () e -> [Named (FORMULA ())]
 generateAxioms sig = filter (not . is_True_atom . sentence) $ 
-  map (mapNamed $ simplifyFormula id . rmDefs bsorts id) $
+  map (mapNamed $ simplifyFormula id . rmDefs bsorts id . renameFormula id) $
   concat(
     [inlineAxioms CASL
       " sort s < s'    \
@@ -175,16 +175,18 @@ codeRecord :: Set.Set SORT -> (f -> f) -> Record f (FORMULA f) (TERM f)
 codeRecord bsrts mf = (mapRecord mf)
     { foldQuantification = \  _ q vs qf ps ->
       case q of 
-      Universal -> Quantification q vs (Implication (defVards bsrts vs) qf False ps) ps
+      Universal -> 
+          Quantification q vs (Implication (defVards bsrts vs) qf False ps) ps
       _ -> Quantification q vs (Conjunction [defVards bsrts vs, qf] ps) ps
     , foldDefinedness = \ _ t ps -> defined bsrts t (term_sort t) ps
     , foldExistl_equation = \ _ t1 t2 ps ->
       Conjunction[Strong_equation t1 t2 ps,
                   defined bsrts t1 (term_sort t1) ps] ps
-    , foldMembership = \ _ t s ps -> defined bsrts (project Total ps t s) s ps
+    , foldMembership = \ _ t s ps -> 
+          defined bsrts (projectUnique Total ps t s) s ps
     , foldSort_gen_ax = \ _ cs b -> Sort_gen_ax (map totalizeConstraint cs) b
     , foldApplication = \ _ o args ps -> Application (totalizeOpSymb o) args ps
-    , foldCast = \ _ t s ps -> project Total ps t s
+    , foldCast = \ _ t s ps -> projectUnique Total ps t s
     }
 
 codeFormula :: Set.Set SORT -> FORMULA () -> FORMULA ()
