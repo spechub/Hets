@@ -560,6 +560,11 @@ data GlobalContext = GlobalContext
     , proofHistory :: ProofHistory
     }
 
+{- the fields sigMap, thMap, and morMap are currently unused but will
+be hopefully set by the static analysis in the future. Corresponding
+entries in NodeSig, DGNodeLab, DGLinkLab, and DGLinkType could then be
+replaced by indices. -}
+
 emptyGlobalContext :: GlobalContext
 emptyGlobalContext = GlobalContext
     { globalAnnos = emptyGlobalAnnos
