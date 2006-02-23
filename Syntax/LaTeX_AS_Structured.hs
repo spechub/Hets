@@ -150,8 +150,7 @@ instance PrintLaTeX IMPORTED where
         haa : taa ->
           let mkw = mkMaybeKeywordTuple $ hc_sty_plain_keyword givenS
               coBrGrSp = condBracesGroupSpec printLatex0 sp_braces_latex2
-              taa' = punctuate comma_latex $ tabList_latex $
-                           map ( coBrGrSp Nothing ga) taa
+              taa' = punctuate comma_latex $ map (coBrGrSp Nothing ga) taa
               condComma = if null taa then empty else comma_latex
            in fsep_latex $ (coBrGrSp mkw ga haa <> condComma) : taa'
 

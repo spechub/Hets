@@ -61,7 +61,6 @@ module Common.LaTeX_utils
     , barT_latex
 
     , setTab_latex
-    , tabList_latex          -- IMPORTED
     , tabbed_nest_latex
     , set_tabbed_nest_latex  -- with setTab_latex
     , parens_tab_latex       -- parens_latex.set_tabbed_nest_latex
@@ -116,16 +115,6 @@ forall_latex, exists_latex, unique_latex :: Doc
 forall_latex = hc_sty_axiom "\\forall"
 exists_latex = hc_sty_axiom "\\exists"
 unique_latex = hc_sty_axiom "\\exists!"
-
-tabList_latex :: [Doc] -> [Doc]
-tabList_latex [] = []
-tabList_latex [x] = [startTab_latex <> x <> endTab_latex]
-tabList_latex l = let h' = startTab_latex <> head l
-                      l' = last l <>endTab_latex
-                      rema = if null $ tail l
-                            then []
-                            else init $ tail l
-                  in h':rema++[l']
 
 sp_braces_latex2 :: Doc -> Doc
 sp_braces_latex2 d =
