@@ -4,7 +4,7 @@ Description :  Pretty printing for SPASS signatures.
 Copyright   :  (c) Rene Wagner, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  rwagner@tzi.de
+Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  unknown
 
@@ -26,6 +26,8 @@ import Common.PrettyPrint
 import SPASS.Sign
 import SPASS.Conversions
 
+import System.Time
+
 instance PrintLaTeX Sign where
   printLatex0 = printText0
 
@@ -41,6 +43,9 @@ instance PrintLaTeX SPTerm where
 dot :: Doc
 dot = char '.'
 
+endOfListS :: String
+endOfListS = "end_of_list."
+
 {- |
   Creates a Doc from a SPASS Problem.
 -}
@@ -48,6 +53,7 @@ instance PrettyPrint SPProblem where
   printText0 ga p = text "begin_problem" <> parens (text (identifier p)) <> dot
     $$ printText0 ga (description p)
     $$ printText0 ga (logicalPart p)
+    $$ printSettings ga (settings p)
     $$ text "end_problem."
 
 {- |
@@ -61,7 +67,7 @@ instance PrettyPrint SPLogicalPart where
     where
       printDeclarationList xs = text "list_of_declarations."
         $$ foldl (\d x-> d $$ printText0 ga x) empty xs
-        $$ text "end_of_list."
+        $$ text endOfListS
       printFormulaLists = foldl (\d x-> d $$ printText0 ga x) empty
 
 {- |
@@ -74,7 +80,7 @@ instance PrettyPrint SPSymbolList where
     $$ printSignSymList "sorts" (sorts sl)
     $$ printSignSymList "operators" (operators sl)
     $$ printSignSymList "quantifiers" (quantifiers sl)
-    $$ text "end_of_list."
+    $$ text endOfListS
     where 
       printSignSymList lname list =
         if not $ null list
@@ -112,7 +118,7 @@ instance PrettyPrint SPDeclaration where
 instance PrettyPrint SPFormulaList where
   printText0 ga l = text "list_of_formulae" <> parens (printText0 ga (originType l)) <> dot
     $$ printFormulae (formulae l)
-    $$ text "end_of_list."
+    $$ text endOfListS
     where
       printFormulae = foldl (\fl x-> fl $$ printFormula ga x <> dot) empty
 
@@ -131,7 +137,8 @@ instance PrettyPrint SPOriginType where
 -}
 printFormula :: GlobalAnnos-> SPFormula-> Doc
 printFormula ga f =
-  text "formula" <> parens (printText0 ga (sentence f) <> comma <> text (senName f))
+  text "formula" <> parens (printText0 ga (sentence f) <> comma <> 
+                            text (senName f))
 
 {- |
   Creates a Doc from a SPASS Term.
@@ -182,14 +189,22 @@ instance PrettyPrint SPDescription where
     $$ text "status" <> parens (printText0 ga (status d)) <> dot
     $$ text "description" <> parens (spText (desc d)) <> dot
     $$ (if isJust (date d) then text "date" <> parens (spText (fromJust (date d))) <> dot else empty)
-    $$ text "end_of_list."
+    $$ text endOfListS
 
 {- |
   Helper function. Wraps a String in "{*  *}" as required for some of the
   description fields.
 -}
 spText :: String-> Doc
-spText s = text "{* " <> text s <> text " *}"
+spText s = textBraces $ text s
+
+{- |
+  surrounds  a doc with "{*  *}" as required for some of the
+  description fields and the settings.
+-}
+textBraces :: Doc -> Doc
+textBraces d = text "{* " <> d <> text " *}"
+
 
 {- |
   Creates a Doc from an 'SPLogState'.
@@ -199,3 +214,37 @@ instance PrettyPrint SPLogState where
     SPStateSatisfiable   -> text "satisfiable"
     SPStateUnsatisfiable -> text "unsatisfiable"
     SPStateUnknown       -> text "unknown"
+
+printSettings :: GlobalAnnos -> [SPSetting] -> Doc
+printSettings _ [] = empty
+printSettings ga l = 
+    text "list_of_settings(SPASS)." $$
+    textBraces (vcat (map (printText0 ga) l)) $$
+    text endOfListS
+
+instance PrettyPrint SPSetting where
+    printText0 _ (SPFlag sw v) = 
+        text "set_flag"<>parens(text sw<>comma<>text v)<>dot
+
+{- | generate a SPASS problem with time stamp while maybe adding a goal.-}
+genSPASSProblem :: String -> SPLogicalPart 
+                -> Maybe (Named SPTerm) -> IO SPProblem
+genSPASSProblem thName lp m_nGoal =
+    do d <- getClockTime
+       return $ problem $ show d
+    where
+    problem sd = SPProblem 
+        {identifier = "hets_exported",
+         description = SPDescription 
+                       {name = thName++
+                               (maybe "" 
+                                      (\ nGoal -> '_':senName nGoal)
+                                      m_nGoal),
+                        author = "hets",
+                        SPASS.Sign.version = Nothing,
+                        logic = Nothing,
+                        status = SPStateUnknown,
+                        desc = "",
+                        date = Just sd},
+         logicalPart = maybe lp (insertSentence lp) m_nGoal,
+         settings = []}

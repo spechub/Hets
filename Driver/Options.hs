@@ -73,6 +73,10 @@ naxS = ".nax"
 deltaS = ".delta"
 prfS ="prf"
 
+dfgS, cS :: String
+dfgS = "dfg"
+cS = ".c"
+
 showOpt :: String -> String
 showOpt s = if null s then "" else " --" ++ s
 
@@ -224,6 +228,16 @@ plainInTypes = [CASLIn, HetCASLIn, OWL_DLIn, HaskellIn, PrfIn]
 aInTypes :: [InType]
 aInTypes = [ f x | f <- [ASTreeIn, ATermIn], x <- [BAF, NonBAF] ]
 
+data SPFType = ConsistencyCheck | OnlyAxioms
+
+instance Show SPFType where
+    show x = case x of
+             ConsistencyCheck -> cS 
+             OnlyAxioms  -> ""
+
+spfTypes :: [SPFType]
+spfTypes = [ConsistencyCheck, OnlyAxioms]
+
 -- | 'OutType' describes the type of outputs that we want to generate
 data OutType = PrettyOut PrettyType
              | HetCASLOut HetOutType HetOutFormat
@@ -231,7 +245,7 @@ data OutType = PrettyOut PrettyType
              | Prf
              | EnvOut
              | ThyFile -- isabelle theory file
-             | DfgFile -- SPASS input file
+             | DfgFile SPFType -- SPASS input file
              | ComptableXml
              | SigFile Delta -- signature as text
              | TheoryFile Delta -- signature with sentences as text
@@ -244,13 +258,13 @@ instance Show OutType where
              Prf -> prfS
              EnvOut -> envS
              ThyFile -> "thy"
-             DfgFile -> "dfg"
+             DfgFile t -> dfgS ++ show t
              ComptableXml -> "comptable.xml"
              SigFile d -> "sig" ++ show d
              TheoryFile d -> "th" ++ show d
 
 plainOutTypeList :: [OutType]
-plainOutTypeList = [Prf, EnvOut, ThyFile, DfgFile, ComptableXml]
+plainOutTypeList = [Prf, EnvOut, ThyFile, ComptableXml]
 
 outTypeList :: [OutType]
 outTypeList = let dl = [Delta, Fully] in
@@ -258,6 +272,7 @@ outTypeList = let dl = [Delta, Fully] in
     ++ [ PrettyOut p | p <- prettyList ]
     ++ [ SigFile d | d <- dl ]
     ++ [ TheoryFile d | d <- dl ]
+    ++ [ DfgFile x | x <- spfTypes]
     ++ [ HetCASLOut h f | h <- OutASTree : hetOutTypeList, f <- formatList ]
     ++ [ GraphOut f | f <- graphList ]
 
@@ -381,7 +396,8 @@ options =
        ++ bS ++ ppS ++ joinBar (map show prettyList) ++ crS
        ++ bS ++ graphS ++ joinBar (map show graphList) ++ crS
        ++ bS ++ astS ++ formS ++ crS
-       ++ bS ++ joinBar (map show hetOutTypeList) ++ bracket naxS ++ formS)
+       ++ bS ++ joinBar (map show hetOutTypeList) ++ bracket naxS ++formS++crS
+       ++ bS ++ dfgS ++ bracket cS)
     , Option ['n'] [specS] (ReqArg parseSpecOpts "SPECS")
       ("process specs option " ++ crS ++ listS ++ " SIMPLE-ID")
     , Option ['r'] [rawS] (ReqArg parseRawOpts "RAW")

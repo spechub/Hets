@@ -37,10 +37,11 @@ import SPASS.Sign
 import SPASS.Conversions
 import SPASS.ProveHelp
 import SPASS.Translate
+import SPASS.Print (genSPASSProblem)
 
 import qualified Common.AS_Annotation as AS_Anno
-import Common.PrettyPrint
 import Common.ProofUtils
+import Common.PrettyPrint 
 
 import ChildProcess
 import ProcessClasses
@@ -55,7 +56,6 @@ import qualified Control.Concurrent as Concurrent
 import GHC.Read
 import System
 import System.IO.Error
-import System.Time
 
 import HTk
 import SpinButton
@@ -773,9 +773,10 @@ spassProveGUI thName th = do
                       let (nGoal,lp') = 
                               prepareLP (initialLogicalPart rs) rs 
                                         goal inclProvedThs
-                      prob <- genSPASSProblem thName lp' nGoal
+                      prob <- genSPASSProblem thName lp' (Just nGoal)
                       createTextSaveDisplay ("SPASS Problem for Goal "++goal) 
-                                            (thName++goal++".dfg") prob
+                                            (thName++goal++".dfg") 
+                                            (showPretty prob "")
                   )
                   $ currentGoal rs
             done)
@@ -1195,8 +1196,8 @@ runSpass lp cfg thName nGoal = do
                  (SpassError "Could not start SPASS. Is SPASS in your $PATH?", 
                   (openResult $ AS_Anno.senName nGoal))
         else do
-          prob <- genSPASSProblem thName lp nGoal
-          sendMsg spass prob
+          prob <- genSPASSProblem thName lp (Just nGoal)
+          sendMsg spass (showPretty prob "")
           (res, usedAxs, output) <- parseSpassOutput spass
           let (err, retval) = proof_status res usedAxs cleanOptions
           return (err, (retval, output))
@@ -1233,20 +1234,3 @@ runSpass lp cfg thName nGoal = do
     disproved = ["Completion found."]
     timelimit = ["Ran out of time."]
 
-genSPASSProblem :: String -> SPLogicalPart 
-                -> AS_Anno.Named SPTerm -> IO String
-genSPASSProblem thName lp nGoal =
-    do d <- getClockTime
-       return $ showPretty (problem $ show d) "" 
-    where
-    problem sd = SPProblem 
-        {identifier = "hets_exported",
-         description = SPDescription 
-                       {name = thName++'_':AS_Anno.senName nGoal,
-                        author = "hets",
-                        SPASS.Sign.version = Nothing,
-                        logic = Nothing,
-                        status = SPStateUnknown,
-                        desc = "",
-                        date = Just sd},
-         logicalPart = insertSentence lp nGoal}

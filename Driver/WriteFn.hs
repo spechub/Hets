@@ -162,12 +162,18 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
                                     Just d -> let s = shows d "\n" in
                                         case parseString parseTheory s of
                                           (_, _) -> writeVerbFile opt f s
-                      DfgFile -> case printDFG ln i gTh of
-                                    Nothing -> putIfVerbose opt 0 $
-                                        "could not translate to SPASS " ++
-                                         show i
-                                    Just d -> writeVerbFile opt f $
-                                              shows d "\n"
+                      DfgFile t -> do 
+                            mDoc <- printDFG ln i 
+                                       (case t of 
+                                        ConsistencyCheck -> True 
+                                        OnlyAxioms  -> False)
+                                       gTh
+                            maybe (putIfVerbose opt 0 $
+                                     "could not translate to SPASS " ++
+                                     show i)
+                                  (\ d -> writeVerbFile opt f $ shows d "\n")
+                                  mDoc
+
                       TheoryFile d -> if null $ show d then
                           writeVerbFile opt f $
                               shows (DG.printTh ga i gTh) "\n"

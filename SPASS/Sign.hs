@@ -4,7 +4,7 @@ Description :  Data structures representing SPASS signatures.
 Copyright   :  (c) Rene Wagner, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  rwagner@tzi.de
+Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  unknown
 
@@ -127,8 +127,8 @@ checkSPChar c = isAlphaNum c || '_' == c
 data SPProblem =
         SPProblem { identifier  :: SPIdentifier,
                     description :: SPDescription,
-                    logicalPart :: SPLogicalPart --,
---                    settings    :: [SPSetting],
+                    logicalPart :: SPLogicalPart,
+                    settings    :: [SPSetting]
                     }
       deriving (Eq, Ord, Show)
 
@@ -288,3 +288,13 @@ data SPLogState =
       | SPStateUnsatisfiable
       | SPStateUnknown
       deriving (Eq, Ord, Show)
+
+-- ** SPASS Settings
+
+{- |
+  We only support one of the three types mentioned here:
+  http://spass.mpi-sb.mpg.de/webspass/help/options.html
+-}
+
+data SPSetting = SPFlag String String
+     deriving (Eq,Ord,Show)
