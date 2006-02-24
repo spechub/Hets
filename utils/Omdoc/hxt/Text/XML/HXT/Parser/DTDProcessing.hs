@@ -51,6 +51,7 @@ import Text.XML.HXT.Parser.XmlInput
     ( getXmlContents
     , getXmlEntityContents
     , runInLocalURIContext
+    , runInNewURIContext
     , getBaseURI
     , setBaseURI
     , getAbsolutURI
@@ -124,7 +125,6 @@ checkWellformedDoc
       processGeneralEntities
       .>>
       liftMf transfAllCharRef
-
 
 -- ------------------------------------------------------------
 --
@@ -256,7 +256,9 @@ substPEref' loc env n@(NTree (XDTD PEREF al) _)
 
     | isUndefinedRef	= xerr ("parameter entity " ++ peName' ++ " not found (forward reference?)")
 
-    | otherwise		= [setChildren peContent n]
+    | null baseUri	= [setChildren peContent n]
+
+    | otherwise		= [(NTree (XDTD PEREF ((a_url,baseUri):al)) peContent)]
     where
     peName		= lookup1 a_peref al
     peName'		= show peName
@@ -264,7 +266,10 @@ substPEref' loc env n@(NTree (XDTD PEREF al) _)
     isInternalRef	= loc == Internal
     isUndefinedRef	= isNothing peVal
 
-    peContent		= getChildren $ fromJust peVal
+    (NTree (XDTD PENTITY peAl) peContent) = fromJust peVal
+    baseUri		= lookup1 a_url peAl
+
+    -- peContent		= getChildren $ fromJust peVal
 
 substPEref' _ _ n
     = [n]
@@ -454,6 +459,18 @@ substParamEntity loc n@(NTree xn _cs)
     substRefsInEntityValue  n'
 	= error ("substRefsInEntityValue called with wrong argument" ++ show n')
 
+    runInPeContext	:: DTDStateFilter -> DTDStateFilter
+    runInPeContext f n'@(NTree (XDTD PEREF al) _)
+	| null base
+	    = f n'
+	| otherwise
+	    = runInNewURIContext base f n'
+	where
+	base = lookup1 a_url al
+
+    runInPeContext f n'
+	= f n'
+
     substPeRefsInDTDdecl	:: [String] -> DTDStateFilter
     substPeRefsInDTDdecl recList n'@(NTree (XDTD PEREF al) _cl)
 	= ( if peName `elem` recList
@@ -462,7 +479,8 @@ substParamEntity loc n@(NTree xn _cs)
 		   .>>
 		   traceDTD "substPeRefsInDTDdecl: parseXmlDTDdeclPart"
 		   .>>
-		   ( ( liftF ( parseXmlDTDdeclPart )
+		   ( runInPeContext
+		     ( liftF ( parseXmlDTDdeclPart )
 		       .>>
 		       traceDTD "substPeRefsInDTDdecl: after parseXmlDTDdeclPart"
 		       .>>
@@ -487,11 +505,13 @@ substParamEntity loc n@(NTree xn _cs)
 		   .>>
 		   traceDTD "substPeRefsInDTDpart: parseXmlDTDPart"
 		   .>>
-		   liftF (getChildren .> parseXmlDTDPart ("parameter entity " ++ show peName))
-		   .>>
-		   traceDTD "substPeRefsInDTDdecl: after parseXmlDTDPart"
-		   .>>
-		   substParamEntity loc -- cyclic check not yet done (peName : recList)
+		   runInPeContext
+		   ( liftF (getChildren .> parseXmlDTDPart ("parameter entity " ++ show peName))
+		     .>>
+		     traceDTD "substPeRefsInDTDdecl: after parseXmlDTDPart"
+		     .>>
+		     substParamEntity loc -- cyclic check not yet done (peName : recList)
+		   )
 		 )
 	  ) $ n'
 	where
@@ -508,7 +528,8 @@ substParamEntity loc n@(NTree xn _cs)
 		   .>>
 		   traceDTD "substPeRefsInCondSect: parseXmlDTDdeclPart"
 		   .>>
-		   ( ( liftF ( parseXmlDTDdeclPart )
+		   ( runInPeContext
+		     ( liftF ( parseXmlDTDdeclPart )
 		       .>>
 		       traceDTD "substPeRefsInCondSect: after parseXmlDTDdeclPart"
 		       .>>

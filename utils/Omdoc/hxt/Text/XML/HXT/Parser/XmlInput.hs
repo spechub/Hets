@@ -12,6 +12,7 @@ module Text.XML.HXT.Parser.XmlInput
     , getContentLength
     , guessDocEncoding
     , runInLocalURIContext
+    , runInNewURIContext
     , getBaseURI
     , setBaseURI
     , getAbsolutURI
@@ -155,6 +156,22 @@ runInLocalURIContext f t
       setBaseURI oldContext
       trace 2 ("runInLocalURIContext: restore base URI " ++ show oldContext)
       return res
+
+-- |
+-- filter command for running an action in a new URI context
+
+runInNewURIContext	:: String -> XmlStateFilter a -> XmlStateFilter a
+runInNewURIContext uri f
+    | null uri
+	= f
+    | otherwise
+	= runInLocalURIContext
+	  ( \ t -> ( do
+		     trace 2 ("runInNewURIContext: new base URI " ++ show uri)
+		     setBaseURI uri
+		     f t
+		   )
+	  )
 
 -- ------------------------------------------------------------
 -- |
