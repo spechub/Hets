@@ -128,15 +128,12 @@ ugly "showDiags{,1}" at "IO (Maybe"
 
 
 HasCASL2IsabelleHOL:
-transTotalLambda goes wrong in HasCASL/Functions.het
-and let goes wrong in HasCASL/State.het.
+transTotalLambda went wrong in HasCASL/Functions.het
+let goes wrong in HasCASL/State.het.
 if types of bound variables are printed, 
-type variables are wrongly represented
-
-
-
-Proofs/EdgeUtils, Proofs/StatusUtils:
-delLEdge, removeContraryChanges uses expensive DGraph Eq
+  type variables are wrongly represented
+generated and plain types lead to runtime errors!
+Generate an induction axiom and data type equations
 
 
 
@@ -148,15 +145,4 @@ signatures should be always legal by construction
 
 Design a comand line interface to trigger various outputs and
 translations (without daVinci!) to allow for profiling 
-(started)
 
-
-
-Common/ATerm/AbstractSyntax:
-add Updateable and Readonly IntMaps for creating and using ATT
-
-try to detect sharing earlier via addresses and an address map, 
-add a function to the class to avoid rewriting of all instances.
-
-try show/read of ATT directly,
-maybe write Binary instances for Grothendieck and DevGraph, too
