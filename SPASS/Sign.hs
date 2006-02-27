@@ -6,7 +6,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luettich@tzi.de
 Stability   :  provisional
-Portability :  unknown
+Portability :  portable
 
 Data structures representing SPASS signatures.
    Refer to <http://spass.mpi-sb.mpg.de/webspass/help/syntax/dfgsyntax.html>
@@ -293,7 +293,7 @@ data SPLogState =
 
 {- |
   We only support one of the three types mentioned here:
-  http://spass.mpi-sb.mpg.de/webspass/help/options.html
+  <http://spass.mpi-sb.mpg.de/webspass/help/options.html>
 -}
 
 data SPSetting = SPFlag String String
