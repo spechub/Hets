@@ -30,7 +30,7 @@ latin = single letter <?> "latin"
 
 greek :: Parser String
 greek = string "\\<" <++>
-         option "" (string "^") -- isup or isup
+         option "" (string "^") -- isup
          <++> many1 letter <++> string ">" <?> "greek"
 
 isaLetter :: Parser String
@@ -190,13 +190,8 @@ atom = var <|> typeP -- nameref covers nat and symident keywords
 args :: Parser [Token]
 args = many $ lexP atom
 
-{-
-arg :: Parser [String]
-arg = fmap (:[]) (lexP atom) <|> parensP args <|> bracketsP args
--}
-
 attributes :: Parser ()
-attributes = forget (bracketsP $ commalist namerefP >> args)
+attributes = forget . bracketsP . commalist $ namerefP >> args
 
 lessOrEq :: Parser String
 lessOrEq = lexS "<" <|> lexS "\\<subseteq>"
@@ -234,11 +229,6 @@ arity = fmap (:[]) namerefP <|> do
     ns <- parensP $ commalist namerefP
     n <- namerefP
     return $ n : ns
-
-{-
-arities :: Parser [[String]]
-arities = lexS "arities" >> many1 (namerefP <:> (lexS "::" >> arity))
--}
 
 data Const = Const Token Token
 
@@ -419,7 +409,7 @@ compatibleBodies b1 b2 =
     diffMap "axiom" LT (axiomsF b2) (axiomsF b1)
     ++ diffMap "constant" EQ (constsF b2) (constsF b1)
     ++ diffMap "datatype" EQ (datatypesF b2) (datatypesF b1)
-    ++ diffMap "goal" GT (goalsF b1) (goalsF b2)
+    ++ diffMap "goal" GT (goalsF b2) (goalsF b1)
 
 diffMap :: (Ord a, PrettyPrint a, PosItem a, Eq b, Show b)
           => String -> Ordering -> Map.Map a b -> Map.Map a b -> [Diagnosis]
@@ -442,4 +432,3 @@ diffMap msg o m1 m2 =
                in map ( \ k -> mkDiag Error
                     (msg ++ " entry illegally " ++
                          if b then "added" else "deleted") k) kd
-
