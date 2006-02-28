@@ -3,11 +3,10 @@ Programming guidelines shall help to make the code of a project better
 readable and maintainable by the varying number of contributors.
 
 It takes some programming experience to develop something like a
-personal "coding style" (see
-http://www.haskell.org/hawiki/HaskellStyle) and guidelines only serve
-as rough shape for code. Guidelines should be followed by all members
-working on the project even if they prefer (or are already used to)
-different guidelines.
+personal "coding style" and guidelines only serve as rough shape for
+code. Guidelines should be followed by all members working on the
+project even if they prefer (or are already used to) different
+guidelines.
 
 In the following I will describe documentation, file format, naming
 conventions and good programming practice (adapted form Matt's C/C++
@@ -233,7 +232,37 @@ operators) since a clash with template haskell is possible.
 
 List Comprehensions
 ---------------------------------------------------------------------------
-Use these only when "short and sweet". (I prefer map, filter, and foldr.)
+Use these only when "short and sweet". Prefer map, filter, and foldr!
+
+Instead of:
+
+    [toUpper c | c <- s]
+
+write:
+
+    map toUpper s
+
+
+Consider:
+
+    [toUpper c | s <- strings, c <- s]
+
+Here it takes some time for the reader to find out which value depends
+on what other value and it is not so clear how many times the interim
+values s and c are used. In contrast to that the following can't be clearer:
+
+    map toUpper (concat strings)
+
+
+When using higher order functions you can switch easier to data
+structures different from list. Compare:
+
+    map (1+) list
+
+and:
+
+    Set.map (1+) set
+
 
 
 Types
