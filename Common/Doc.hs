@@ -11,8 +11,10 @@ document data type for displaying (heterogenous) CASL specifications
 at least as plain text and latex (and maybe in html as well)
 
 inspired by John Hughes's and Simon Peyton Jones's Pretty Printer Combinators
-in 'Text.PrettyPrint.HughesPJ' and Thomas Hallgren's
+in 'Text.PrettyPrint.HughesPJ', Thomas Hallgren's
 <http://www.cse.ogi.edu/~hallgren/Programatica/tools/pfe.cgi?PrettyDoc>
+Daan Leijen's PPrint: A prettier printer 2001, Olaf Chiti's
+Pretty printing with lazy Dequeues 2003
 -}
 
 module Common.Doc
@@ -51,6 +53,7 @@ module Common.Doc
     , fsep
     , fcat
     , punctuate
+    , flushRight
     , indentBy
       -- * keywords
     , keyword
@@ -84,10 +87,17 @@ module Common.Doc
     , annoDoc
     , idDoc
     , idApplDoc
+      -- * transforming to existing formats
+    , codeOut
+    , toText
+    , toLatex
     ) where
 
 import Common.Id
 import Common.AS_Annotation
+import Common.GlobalAnnotations
+import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Pretty as Pretty
 
 infixl 6 <>
 infixl 6 <+>
@@ -125,9 +135,9 @@ data Doc
 {-
     | Formatted Format Doc
     | Sized Size Doc
-    | FlushRight Doc
     | UseFont String Doc -- a font named by a string
 -}
+    | FlushRight Doc
     | IndentBy Doc Doc Doc
 
 {-
@@ -188,8 +198,8 @@ lparen = text "("
 rparen = text ")"
 lbrack = text "["
 rbrack = text "]"
-lbrace = text "{"
-rbrace = text "}"
+lbrace = Symbol "{"  -- to allow for latex translations
+rbrace = Symbol "}"
 quote = text "\'"
 doubleQuote = text "\""
 
@@ -290,57 +300,25 @@ idDoc = IdDoc
 idApplDoc :: Id -> [Doc] -> Doc
 idApplDoc = IdApplDoc
 
+-- | put document as far to the right as fits (for annotations)
+flushRight :: Doc -> Doc
+flushRight = FlushRight
+
 {- | print second argument and then indent the last one by the width
 of the first one -}
-
 indentBy :: Doc -> Doc -> Doc -> Doc
 indentBy = IndentBy
 
-{-
+{- | transform document according to a specific display map and other
+global annotations like precedences, associativities, and literal
+annotations. -}
+codeOut :: Map.Map Id [Token] -> GlobalAnnos -> Doc -> Doc
+codeOut = undefined
 
-All key signs:
+-- | convert for outputting latex
+toLatex :: Doc -> Pretty.Doc
+toLatex = undefined
 
-non-formula key signs: : :? ::= . | |-> -> ->? * ? < = <=>
-
-(treat = and <=> in OP- and PRED-DEFN like formulas)
-
-(<, = may appear following sort, = also used for SPEC-DEFN, etc. )
-( : in UNIT- and VIEW-DEFNs)
-
-extra/formula key signs: forall exists exists! in lambda (+, -> in USP)
-
-formula/term identifiers: not__ __=__ __=>__ __=e=__ __<=>__ __/\__ __\/__
-possibly user defined:          < * ? -> ->? ! (and |)
-
-implicit latex display annotation for "not__"? (also for "__in__"?)
-
-
-Keywords:
-
-toplevel basic item keywords:
- sort op pred type free generated var forall axiom .
-
-formula keywords: as in when else if def not false true
-
-attributes: assoc comm idem unit (also in archs)
-
-toplevel spec keywords: free local closed cofree logic data arch( spec) unit(s)
-   behaviourally refined
-infix spec keywords followed by symbols: with hide reveal fit
-infix spec keywords followed by spec: and then within to given result
-
-special: "view" withing fitting Argument, "arch-spec" as USP, "units" as ASP
-    "unit" is also attribute
-
-other: logic lambda
-
-
-lib-items: library (version), from (get |->), spec, view, arch, unit,
-   refinement end
-
-joint keywords: free type, generated type, arch spec, unit spec,
-   behaviourally refined
-
-then followed by cons, mono, def, implies
-
--}
+-- | simple conversion to a standard text document
+toText :: Doc -> Pretty.Doc
+toText = undefined
