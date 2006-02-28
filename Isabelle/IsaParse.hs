@@ -1,13 +1,14 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) C. Maeder and Uni Bremen 2005
+Copyright   :  (c) C. Maeder and Uni Bremen 2005-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-parse the outer syntax of an Isabelle theory file
+parse the outer syntax of an Isabelle theory file. The syntax is taken from
+ <http://isabelle.in.tum.de/dist/Isabelle/doc/isar-ref.pdf> for Isabelle2005.
 -}
 
 module Isabelle.IsaParse
@@ -114,6 +115,7 @@ namerefP = lexP $ reserved isaKeywords nameref
 parname :: Parser Token
 parname = lexS "(" >> lexP name << lexS ")"
 
+-- | the theory part before and including the begin keyword with a context
 data TheoryHead = TheoryHead
    { theoryname :: Token
    , imports :: [Token]
@@ -362,7 +364,7 @@ theoryBody = many $
     <|> ignore (choice (map lexS ignoredKeys) >> skipMany unknown)
     <|> ignore unknown
 
--- | extracted theory information
+-- | The axioms, goals, constants and data types of a theory
 data Body = Body
     { axiomsF :: Map.Map Token Token
     , goalsF :: Map.Map Token [Token]
@@ -399,11 +401,14 @@ concatBodyElems x b = case x of
     Datatype l -> b { datatypesF = foldr addDatatype (datatypesF b) l }
     Ignored -> b
 
+-- | parses a complete isabelle theory file, but skips i.e. proofs
 parseTheory :: Parser (TheoryHead, Body)
 parseTheory = bind (,)
     theoryHead (fmap (foldr concatBodyElems emptyBody) theoryBody)
     << lexS endS << eof
 
+{- | Check that constants and data type are unchanged and that no axioms
+was added and no theorem deleted. -}
 compatibleBodies :: Body -> Body -> [Diagnosis]
 compatibleBodies b1 b2 =
     diffMap "axiom" LT (axiomsF b2) (axiomsF b1)
