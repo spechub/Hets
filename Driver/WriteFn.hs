@@ -72,9 +72,9 @@ write_LIB_DEFN ga file opt ld = do
         printAscii ty = do
           verbMesg ty
           write_casl_asc opt ga (filename ty) ld
-        showAst ty = do 
+        showAst ty = do
           verbMesg ty
-          writeFile (filename ty) $ show ld         
+          writeFile (filename ty) $ show ld
         write_type :: OutType -> IO ()
         write_type t = case t of
             HetCASLOut OutASTree OutAscii -> showAst t
@@ -118,7 +118,7 @@ writeShATermFileSDoc fp atcon = do
    att <- versionedATermTable atcon
    writeFileSDoc fp $ writeSharedATermSDoc att
 
-writeFileInfo :: HetcatsOpts -> LIB_NAME -> FilePath -> LIB_DEFN 
+writeFileInfo :: HetcatsOpts -> LIB_NAME -> FilePath -> LIB_DEFN
               -> GlobalContext -> IO ()
 writeFileInfo opts ln file ld gctx =
   let envFile = rmSuffix file ++ ".env" in
@@ -136,7 +136,7 @@ writeVerbFile opt f str = do
     putIfVerbose opt 2 $ "Writing file: " ++ f
     writeFile f str
 
-writeSpecFiles :: HetcatsOpts -> FilePath -> LibEnv -> GlobalAnnos 
+writeSpecFiles :: HetcatsOpts -> FilePath -> LibEnv -> GlobalAnnos
                -> (LIB_NAME, GlobalEnv) -> IO ()
 writeSpecFiles opt file lenv ga (ln, gctx) = do
     let ns = specNames opt
@@ -152,9 +152,9 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
               Nothing -> putIfVerbose opt 0 $
                               "could not compute theory of spec " ++ show i
               Just gTh@(G_theory lid sign0 sens0) ->
-                  mapM_ ( \ t ->
-                      let f = rmSuffix file ++ "_" ++ show i ++ "." ++ show t
-                      in case t of
+                  mapM_ ( \ ot ->
+                      let f = rmSuffix file ++ "_" ++ show i ++ "." ++ show ot
+                      in case ot of
                       ThyFile -> case printTheory (libdir opt) ln i gTh of
                                     Nothing -> putIfVerbose opt 0 $
                                         "could not translate to Isabelle " ++
@@ -162,10 +162,10 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
                                     Just d -> let s = shows d "\n" in
                                         case parseString parseTheory s of
                                           (_, _) -> writeVerbFile opt f s
-                      DfgFile t -> do 
-                            mDoc <- printDFG ln i 
-                                       (case t of 
-                                        ConsistencyCheck -> True 
+                      DfgFile c -> do
+                            mDoc <- printDFG ln i
+                                       (case c of
+                                        ConsistencyCheck -> True
                                         OnlyAxioms  -> False)
                                        gTh
                             maybe (putIfVerbose opt 0 $
