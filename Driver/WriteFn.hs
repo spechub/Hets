@@ -64,7 +64,7 @@ import Driver.Options
 write_LIB_DEFN :: GlobalAnnos -> FilePath -> HetcatsOpts -> LIB_DEFN -> IO ()
 write_LIB_DEFN ga file opt ld = do
     let odir' = outdir opt
-        (base, path, _) = fileparse downloadExtensions file
+        (base, path, _) = fileparse (envSuffix : downloadExtensions) file
         odir = if null odir' then path else odir'
         filePrefix = pathAndBase odir base
         filename ty = filePrefix ++ "." ++ show ty
