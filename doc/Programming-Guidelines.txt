@@ -316,9 +316,9 @@ remember that the order and number of fields may change.
 
 Take care with (the rare case of) depend polymorphic fields:
 
-  data Fields a =
-     VariantWithTwo { field1 :: a
-                    , field2 :: a }
+  data Fields a = VariantWithTwo 
+      { field1 :: a
+      , field2 :: a }
 
 The type of a value v can not be changed by only setting field1:
 
@@ -330,9 +330,9 @@ Better construct a new value:
 
 Or use a polymorphic element that is instantiated by updating:
 
-  e = VariantWithTwo { field1 = [], field2 = [] }
+    empty = VariantWithTwo { field1 = [], field2 = [] }
 
-    e { field1 = [f] }
+    empty { field1 = [f] }
 
 Several variants with identical fields may avoid some code duplication
 when selecting and updating, though possibly not in a few
