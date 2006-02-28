@@ -13,10 +13,10 @@ cd $HETS_LIB
 #\cp -fp hets /home/linux-bkb/bin/
 
 # check differences of *.pp.het and *.pp.pp.het
-cat Basic/*.pp.het pp1.txt
+cat Basic/*.pp.het > pp1.txt
 \rm -f Basic/*.env
 hets -v2 -o pp.het Basic/*.pp.het
-cat Basic/*.pp.pp.het pp2.txt
+cat Basic/*.pp.pp.het > pp2.txt
 diff pp1.txt pp2.txt
 
 # try consistency check with SPASS
