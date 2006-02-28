@@ -56,7 +56,7 @@ cd ../..
 ./hets -v2 -o thy Calculi/Space/RCCDagstuhl2.het
 cd Calculi/Space
 /local/home/maeder/haskell/runisabelle.sh > ../../../isaHC2.log 2>&1
-fgrep \*\*\* ../../../isaHC.log
+fgrep \*\*\* ../../../isaHC2.log
 cd ../..
 
 
