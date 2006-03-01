@@ -1,1 +1,2 @@
 2 0 * * * nice /local/home/maeder/haskell/cronjob.sh > /local/home/maeder/haskell/cron.log 2>&1
+57 17 * * 3 nice /local/home/maeder/haskell/weekly.sh > /local/home/maeder/haskell/weekly.log 2>&1
