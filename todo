@@ -158,6 +158,20 @@ conservativity calculus
 weakly amalgamable cocones
 
 ************************************************
+Hilfskraft 4
+************************************************
+
+port hets to windows. 
+
+If hets should become successful then requests for support under
+windows will surely follow.
+
+Ghc, uni and uDrawGraph should work under windows. Only Isabelle does
+not exist for windows, but SPASS does. Probably only a few path
+computations need to be adapted (made modular) within hets. Also
+position computations (of Parsec) should be checked under windows.
+
+************************************************
 Hilfskraft 5
 ************************************************
 
