@@ -5,7 +5,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
 Stability   :  provisional
-Portability :  non-portable
+Portability :  non-portable (multiple parameter class, functional dependency)
 
 This module supplies a signature type and a type checking function
 for the Haskell logic.
@@ -205,6 +205,7 @@ preludeEntity d = case d of
     HsTypeDecl _ ty _ -> Set.member (pp $ definedType ty) preludeTypes
     HsDataDecl _ _ ty cs _ -> Set.member (pp $ definedType ty) preludeTypes
                               || any preludeConstr cs
+    HsInstDecl _ _ _ _ _ -> False
     _ -> True -- ignore others
 
 preludeMatch :: Printable i =>
