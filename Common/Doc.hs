@@ -11,7 +11,7 @@ document data type for displaying (heterogenous) CASL specifications
 at least as plain text and latex (and maybe in html as well)
 
 inspired by John Hughes's and Simon Peyton Jones's Pretty Printer Combinators
-in 'Text.PrettyPrint.HughesPJ', Thomas Hallgren's
+in "Text.PrettyPrint.HughesPJ", Thomas Hallgren's
 <http://www.cse.ogi.edu/~hallgren/Programatica/tools/pfe.cgi?PrettyDoc>
 Daan Leijen's PPrint: A prettier printer 2001, Olaf Chiti's
 Pretty printing with lazy Dequeues 2003
@@ -91,6 +91,10 @@ module Common.Doc
     , codeOut
     , toText
     , toLatex
+      -- * implementation details
+    , DocRecord(..)
+    , idRecord
+    , foldDoc
     ) where
 
 import Common.Id
@@ -103,17 +107,7 @@ infixl 6 <>
 infixl 6 <+>
 infixl 5 $+$
 
-{-
-data Format = Proportional | Bold | Italic | SmallCaps | Plain -- Fixed size
-
--- font size
-data Size = Size Int -- 0 = normal, 1 = large, ..., 5 = Huge
-                        -- -1 = small, ..., -4 = tiny
-
-data Justification = FlushLeft | Center | FlushRight
--}
-
-data TextKind = IdKind | Keyword | TopKey | Indexed | StructId
+data TextKind = IdKind | Symbol | Keyword | TopKey | Indexed | StructId
 
 data ComposeKind
     = Vert   -- ($+$) (no support for $$!)
@@ -122,22 +116,13 @@ data ComposeKind
     | Fill
 
 data Doc
-    = Empty -- creates an empty line if composed vertically
+    = Empty          -- creates an empty line if composed vertically
     | AnnoDoc Annotation -- we know how to print annotations
     | IdDoc Id           -- for plain ids outside applications
     | IdApplDoc Id [Doc] -- for mixfix applications and literal terms
-    | Space
-      {- a blank if composed horizontally, ignored in vertical
-      compositions -}
     | Text TextKind String -- non-empty and no white spaces inside
-    | Symbol String        -- CASL symbols
     | Cat ComposeKind [Doc]
-{-
-    | Formatted Format Doc
-    | Sized Size Doc
-    | UseFont String Doc -- a font named by a string
--}
-    | FlushRight Doc
+    | FlushRight Doc       -- for annotations
     | IndentBy Doc Doc Doc
 
 {-
@@ -151,19 +136,6 @@ is: startDoc <> hangDoc if it fits on a single line!
 is: startDoc $+$
        nest refDoc hangDoc
 if refDoc < startDoc
-
-Another indentation mode we might want to have is:
-  hangedFill :: Doc -> [Doc] -> Doc with
-  hangedFill refDoc [d1, ..., dn]
-
-   put as many ds on a line that fit, but indent further lines by the
-   width of refDoc.
-
-Maybe one even wants a negative refDoc, if
-   hangedFill happens to start farther to the right:
-
-   keyw "longone" <+> hangFill (- (text "one")) ds
-   = hangedFill (text "long") $ keyw "longone" <> space) : ds
 -}
 
 isEmpty :: Doc -> Bool
@@ -186,11 +158,15 @@ comma = text ","
 colon :: Doc                 -- ^ A ':' character
 colon = text ":"
 
+-- the only legal white space within Text
 space :: Doc                 -- ^ A horizontal space (omitted at end of line)
-space = Space
+space = text " "
 
 equals :: Doc                 -- ^ A '=' character
 equals = text "="
+
+symbol :: String -> Doc
+symbol = Text Symbol
 
 lparen, rparen, lbrack, rbrack, lbrace, rbrace, quote, doubleQuote :: Doc
 
@@ -198,8 +174,8 @@ lparen = text "("
 rparen = text ")"
 lbrack = text "["
 rbrack = text "]"
-lbrace = Symbol "{"  -- to allow for latex translations
-rbrace = Symbol "}"
+lbrace = symbol "{"  -- to allow for latex translations
+rbrace = symbol "}"
 quote = text "\'"
 doubleQuote = text "\""
 
@@ -266,27 +242,27 @@ dot, bullet, defn, less, lambda, mapsto, rightArrow, pfun, cfun, pcfun,
    orDoc, implies, equiv :: Doc
 
 dot = text "."
-bullet = Symbol "."
-defn = Symbol "::="
+bullet = symbol "."
+defn = symbol "::="
 less = text "<"
-lambda = Symbol "lambda"
-mapsto = Symbol "|->"
-rightArrow = Symbol "->"
-pfun = Symbol "->?"
-cfun = Symbol "-->"
-pcfun = Symbol "-->?"
-exequal = Symbol "=e="
-forallDoc = Symbol "forall"
-exists = Symbol "exists"
-unique = Symbol "exists!"
-cross = Symbol "*"
-bar = Symbol "|"
-notDoc = Symbol "not"
-inDoc = Symbol "in"
-andDoc = Symbol "/\\"
-orDoc = Symbol "\\/"
-implies = Symbol "=>"
-equiv = Symbol "<=>"
+lambda = symbol "lambda"
+mapsto = symbol "|->"
+rightArrow = symbol "->"
+pfun = symbol "->?"
+cfun = symbol "-->"
+pcfun = symbol "-->?"
+exequal = symbol "=e="
+forallDoc = symbol "forall"
+exists = symbol "exists"
+unique = symbol "exists!"
+cross = symbol "*"
+bar = symbol "|"
+notDoc = symbol "not"
+inDoc = symbol "in"
+andDoc = symbol "/\\"
+orDoc = symbol "\\/"
+implies = symbol "=>"
+equiv = symbol "<=>"
 
 -- | we know how to print annotations
 annoDoc :: Annotation -> Doc
@@ -322,3 +298,38 @@ toLatex = undefined
 -- | simple conversion to a standard text document
 toText :: Doc -> Pretty.Doc
 toText = undefined
+
+data DocRecord a = DocRecord
+    { foldEmpty :: Doc -> a
+    , foldAnnoDoc :: Doc -> Annotation -> a
+    , foldIdDoc :: Doc -> Id -> a
+    , foldIdApplDoc :: Doc -> Id -> [a] -> a
+    , foldText :: Doc -> TextKind -> String -> a
+    , foldCat :: Doc -> ComposeKind -> [a] -> a
+    , foldFlushRight :: Doc -> a -> a
+    , foldIndentBy :: Doc -> a -> a -> a -> a
+    }
+
+idRecord :: DocRecord Doc
+idRecord = DocRecord
+    { foldEmpty = \ _ -> Empty
+    , foldAnnoDoc = \ _ -> AnnoDoc
+    , foldIdDoc = \ _ -> IdDoc
+    , foldIdApplDoc = \ _ -> IdApplDoc
+    , foldText = \ _ -> Text
+    , foldCat = \ _ -> Cat
+    , foldFlushRight = \ _ -> FlushRight
+    , foldIndentBy = \ _ -> IndentBy
+    }
+
+foldDoc :: DocRecord a -> Doc -> a
+foldDoc r d = case d of
+    Empty -> foldEmpty r d
+    AnnoDoc a -> foldAnnoDoc r d a
+    IdDoc i -> foldIdDoc r d i
+    IdApplDoc i l -> foldIdApplDoc r d i $ map (foldDoc r) l
+    Text k s -> foldText r d k s
+    Cat k l -> foldCat r d k $ map (foldDoc r) l
+    FlushRight e -> foldFlushRight r d $ foldDoc r e
+    IndentBy e f g ->
+        foldIndentBy r d (foldDoc r e) (foldDoc r f) $ foldDoc r g
