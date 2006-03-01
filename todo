@@ -139,11 +139,17 @@ Modal-CASL <-> CASL-DL
 Hilfskraft 2
 ************************************************
 
-Uni-Refactoring, make modules hierarchical, change scoped type
-variables for ghc-6.5 (and older ghcs), replace deprecated code
-(i.e. FiniteMap, hslibs), use HaXml as a cabalized library, provide
-uni as (one?) cabal package(s), uni used to work under windows as well,
-watch the i.e. FilePath, Process discussions (libraries@haskell.org)
+Uni-Refactoring, 
+
+make modules hierarchical, change scoped type variables for ghc-6.5
+(and older ghcs), replace deprecated code (i.e. FiniteMap, hslibs),
+use HaXml as a cabalized library, provide uni as (one?) cabal
+package(s), uni used to work under windows as well, watch the
+i.e. FilePath, Process discussions (libraries@haskell.org)
+
+possibly switch to a subversion repository, talk to Achim
+(amahnke@tzi.de)
+
 
 ************************************************
 Hilfskraft 3
@@ -195,6 +201,12 @@ einfaches Merge von lokalen Beweisen eines abgespeichteren DG
 remaining stuff
 ************************************************
 
+set up a ticket and tracking systems (for bugs and features) instead
+of this messy todo list
+
+unify GUI/AbstractGraphView.hs and Taxonomy/AbstractGraphView.hs (make
+it really abstract), possibly contact amahnke@tzi.de regarding
+Taxonomy
 
 set up default simplifier
 set up default tactics using axioms
