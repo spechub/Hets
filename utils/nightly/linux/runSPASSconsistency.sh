@@ -1,4 +1,5 @@
-#!/bin/sh -x
+#!/bin/bash
+
 for i in Basic/*.dfg.c
 do 
   echo $i
