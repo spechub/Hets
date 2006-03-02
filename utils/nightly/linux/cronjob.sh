@@ -27,6 +27,18 @@ makeHets
 \cp -f HetCATS/utils/nightly/linux/*.sh /local/home/maeder/haskell/
 makeLibCheck
 
+# remove unoptimized h2hf
+h2hf=HetCATS/ToHaskell/h2hf
+rm $h2hf
+# optimize a bit using optimized programatica stuff
+cd HetCATS
+$MAKE h2hf
+cd ..
+chmod 775 $h2hf
+chgrp wwwbkb $h2hf
+\cp -fp $h2hf $hetsdir/linux/daily/
+
+# install hets binary 
 cd CASL-lib
 chmod 775 hets
 chgrp wwwbkb hets
@@ -34,9 +46,11 @@ chgrp wwwbkb hets
 \rm -f $hetsbin.bz2
 bzip2 $hetsbin
 
+# make latex documentation
 \cp ../HetCATS/utils/hetcasl.sty .
 pdflatex Basic-Libraries
 
+# create some result files
 cat */*.th > ../th.log
 cat */*.pp.het > ../pp.log
 
@@ -59,7 +73,7 @@ cd Calculi/Space
 fgrep \*\*\* ../../../isaHC2.log
 cd ../..
 
-
+# try out other binaries
 ../HetCATS/hetpa Basic/LinearAlgebra_II.casl
 ../HetCATS/hetana Basic/LinearAlgebra_II.casl
 
@@ -73,6 +87,7 @@ cats -input=nobin -output=nobin -spec=gen_aterm Basic/SimpleDatatypes.casl
 ../HetCATS/atctest Basic/SimpleDatatypes.tree.gen_trm
 ./hets -v3 -p -i gen_trm -o pp.het Basic/SimpleDatatypes.tree.gen_trm
 
+# build user guide
 cd ../HetCATS/doc
 latex UserGuide
 bibtex UserGuide
@@ -81,6 +96,7 @@ latex UserGuide
 dvips UserGuide.dvi -o UserGuide.ps
 cd ..
 
+# move docs and release sources to destination
 make doc
 \cp doc/UserGuide.ps docs
 \cp doc/Programming-Guidelines.txt docs
@@ -92,6 +108,7 @@ chmod 664 HetCATS.tar.gz
 chgrp wwwbkb HetCATS.tar.gz
 \cp -fp HetCATS.tar.gz $destdir
 
+# more tests in HetCATS
 Common/test_parser -p casl_id2 Common/test/MixIds.casl
 Haskell/hana ToHaskell/test/*.hascasl.hs
 cd Haskell/test/HOLCF
@@ -100,13 +117,14 @@ cp ../HOL/*.hs .
 /local/home/maeder/haskell/runHsIsabelle.sh > ../../../../isaHs.log 2>&1
 fgrep \*\*\* ../../../../isaHs.log
 
+# build and install locally hets.cgi
 cd ../../../HetCATS
 make hets.cgi
 \cp hets.cgi /home/www/users/maeder/cgi-bin
 cd ..
 
-cd ../..
-cd CASL-lib
+# pack CASL-lib for cofi at fixed location
+cd ../../cofi-libs/CASL-lib
 cvs up -dPA
 cd ..
 tar czvf lib.tgz -C CASL-lib --exclude=CVS --exclude=.cvsignore \
@@ -115,6 +133,7 @@ chmod 664 lib.tgz
 chgrp agcofi lib.tgz
 \cp -fp lib.tgz /home/www/cofi/Libraries/daily/
 
+# repack putting docs into sources on www server
 cd $destdir
 \rm -rf HetCATS
 tar zxf HetCATS.tar.gz
@@ -122,6 +141,7 @@ tar zxf HetCATS.tar.gz
 \rm -f HetCATS.tar.gz
 tar zcf Hets-src.tgz HetCATS
 
+# a few more tests
 cd $HETS_LIB
 date
 for i in */*.env; \
