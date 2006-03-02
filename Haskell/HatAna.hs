@@ -205,7 +205,8 @@ preludeEntity d = case d of
     HsTypeDecl _ ty _ -> Set.member (pp $ definedType ty) preludeTypes
     HsDataDecl _ _ ty cs _ -> Set.member (pp $ definedType ty) preludeTypes
                               || any preludeConstr cs
-    HsInstDecl _ _ _ _ _ -> False
+    HsInstDecl _ _ _ _ _ -> False 
+    HsClassDecl _ _ _ _ _ -> False -- should not be a prelude class
     _ -> True -- ignore others
 
 preludeMatch :: Printable i =>
