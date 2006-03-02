@@ -171,6 +171,9 @@ Zheng (Till)
 ************************************************
 
 look at Static/DevGraph.hs
+look at translation to OMDoc
+
+change management via translation to OMDoc
 
 einfaches Merge von lokalen Beweisen eines abgespeichteren DG 
   in aktuellen DG
@@ -206,10 +209,14 @@ LaTeX: see listings.sty for LaTeX generation (cf. CoSiT paper)
 remaining stuff
 ************************************************
 
-display library graph
-
 set up a ticket and tracking systems (for bugs and features) instead
 of this messy todo list
+--> sourceforge???
+
+refactoring of dgraphs: add unique tags (but no table)
+
+display library graph
+
 
 unify GUI/AbstractGraphView.hs and Taxonomy/AbstractGraphView.hs (make
 it really abstract), possibly contact amahnke@tzi.de regarding
