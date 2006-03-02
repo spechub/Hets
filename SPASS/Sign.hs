@@ -112,9 +112,10 @@ checkIdentifier xs@(x:_) = and ((x /= '_') : map checkSPChar xs)
 {- |
 Allowed SPASS characters are letters, digits, and underscores.
 -}
+-- Warning: 
+-- Data.Char.isAlphaNum includes all kinds of isolatin1 characters!!
 checkSPChar :: Char -> Bool
-checkSPChar c = isAlphaNum c || '_' == c
-
+checkSPChar c = (isAlphaNum c && isAscii c )|| '_' == c
 
 -- * Internal data structures
 
