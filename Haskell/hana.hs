@@ -15,7 +15,6 @@ module Main where
 
 import Haskell.HatParser
 import Haskell.HatAna
-import Haskell.PreludeString
 import ParseMonad
 import PropLexer
 import PropParser as HP
@@ -38,8 +37,7 @@ process fn = do
     let ts = pLexerPass0 True s
         Result ds m = do 
             HsModule _ _ _ _ b <- parseTokens HP.parse fn ts
-            hatAna(HsDecls (preludeDecls ++ b), 
-                                     emptySign, emptyGlobalAnnos) 
+            hatAna(HsDecls b, emptySign, emptyGlobalAnnos) 
     case m of 
         Just (_, _, sig, hs) -> do
             putStrLn $ showPretty sig ""
