@@ -1,18 +1,24 @@
 #!/bin/bash -x
 
 PATH=/bin:/usr/bin:/usr/X11R6/bin:/home/linux-bkb/bin
-HETS_LIB=/local/home/maeder/haskell/CASL-lib
+HETS_LIB=/local/home/maeder/CASL-lib
 
 export PATH
 export HETS_LIB
 
-cd $HETS_LIB
+cd /local/home/maeder
+rm -rf CASL-lib
+cvs -d \
+   :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:/repository \
+   co -P CASL-lib
+cd CASL-lib
 
 # install a newer binary 
 #chgrp linuxbkb hets
 #\cp -fp hets /home/linux-bkb/bin/
 
 # check differences of *.pp.het and *.pp.pp.het
+hets -v2 -o pp.het Basic/*.casl
 cat Basic/*.pp.het > pp1.txt
 \rm -f Basic/*.env
 hets -v2 -o pp.het Basic/*.pp.het
