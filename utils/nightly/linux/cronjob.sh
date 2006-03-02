@@ -109,7 +109,8 @@ cd ../..
 cd CASL-lib
 cvs up -dPA
 cd ..
-tar czvf lib.tgz -C CASL-lib --exclude=CVS --exclude=.cvsignore --exclude=diplom_dw .
+tar czvf lib.tgz -C CASL-lib --exclude=CVS --exclude=.cvsignore \
+    --exclude=diplom_dw .
 chmod 664 lib.tgz
 chgrp agcofi lib.tgz
 \cp -fp lib.tgz /home/www/cofi/Libraries/daily/
@@ -122,10 +123,9 @@ tar zxf HetCATS.tar.gz
 tar zcf Hets-src.tgz HetCATS
 
 cd $HETS_LIB
-find . -name \*.pp.het | xargs -r rm
 date
-for i in */*.env */*.het */*.casl; \
-   do ./hets -v2 -o prf,th,pp.het,pp.tex $i; done
+for i in */*.env; \
+   do ./hets -v2 -o prf $i; done
 date
 for i in */*.prf; do ./hets -v2 -o th $i; done
 date
