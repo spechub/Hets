@@ -152,16 +152,28 @@ possibly switch to a subversion repository, talk to Achim
 
 
 ************************************************
-Hilfskraft 3
+Ken (Till)
 ************************************************
 
 development graph calculus
 (see Sect. IV:4.4 of the CASL Reference Manual)
 
+look at Static/DevGraph.hs
+look at Proofs/EdgeUtils.hs Proofs/StatusUtils.hs Proofs/Global.hs
+
 implement simplified rule Theorem-Hide-Shift
 try out examples
 conservativity calculus
 weakly amalgamable cocones
+
+************************************************
+Zheng (Till)
+************************************************
+
+look at Static/DevGraph.hs
+
+einfaches Merge von lokalen Beweisen eines abgespeichteren DG 
+  in aktuellen DG
 
 ************************************************
 Hilfskraft 4
@@ -191,15 +203,10 @@ Datentypen (particularly for HasCASL data types) zu bekommen.
 LaTeX: see listings.sty for LaTeX generation (cf. CoSiT paper)
 
 ************************************************
-Hilfskraft 6
-************************************************
-
-einfaches Merge von lokalen Beweisen eines abgespeichteren DG 
-  in aktuellen DG
-
-************************************************
 remaining stuff
 ************************************************
+
+display library graph
 
 set up a ticket and tracking systems (for bugs and features) instead
 of this messy todo list
@@ -207,6 +214,7 @@ of this messy todo list
 unify GUI/AbstractGraphView.hs and Taxonomy/AbstractGraphView.hs (make
 it really abstract), possibly contact amahnke@tzi.de regarding
 Taxonomy, possibly use uni/appl/ontologytool instead of Taxonomy!
+
 
 set up default simplifier
 set up default tactics using axioms
@@ -268,7 +276,7 @@ Proofs in HasCASL
 Case study
 
 ************************************************
-NN (Klaus)
+Rainer (Klaus)
 ************************************************
 
 Connecting Hets with MathServ
