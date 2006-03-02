@@ -206,7 +206,7 @@ of this messy todo list
 
 unify GUI/AbstractGraphView.hs and Taxonomy/AbstractGraphView.hs (make
 it really abstract), possibly contact amahnke@tzi.de regarding
-Taxonomy
+Taxonomy, possibly use uni/appl/ontologytool instead of Taxonomy!
 
 set up default simplifier
 set up default tactics using axioms
