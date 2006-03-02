@@ -45,4 +45,4 @@ x = error{-A__s-} "x"
 y :: A__t
 y = error{-A__t-} "y"
 b = a
-c = snd{-A__s A__t-} (x, y)
+c = snd (x, y)

@@ -121,10 +121,8 @@ emptySign = Sign
 hatAna :: (HsDecls, Sign, GlobalAnnos) ->
           Result (HsDecls, Sign, Sign, [Named (TiDecl PNT)])
 hatAna (HsDecls hs, e, ga) = do
-    let (rs, ds) = preludeConflicts hs
-    Result ds $ Just ()
     (decls, diffSig, accSig, sens) <-
-        hatAna2 (HsDecls rs, addSign e preludeSign, ga)
+        hatAna2 (HsDecls hs, addSign e preludeSign, ga)
     return (decls, diffSig, diffSign accSig preludeSign, sens)
 
 preludeSign :: Sign
@@ -205,7 +203,7 @@ preludeEntity d = case d of
     HsTypeDecl _ ty _ -> Set.member (pp $ definedType ty) preludeTypes
     HsDataDecl _ _ ty cs _ -> Set.member (pp $ definedType ty) preludeTypes
                               || any preludeConstr cs
-    HsInstDecl _ _ _ _ _ -> False 
+    HsInstDecl _ _ _ _ _ -> False
     HsClassDecl _ _ _ _ _ -> False -- should not be a prelude class
     _ -> True -- ignore others
 

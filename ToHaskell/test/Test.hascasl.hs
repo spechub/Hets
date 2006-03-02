@@ -15,6 +15,7 @@ s2 :: AT -> B
 A :: (Int, B) -> AT
 B :: B
 C :: C
+Int :: Int
 
 scope:
 Prelude.A |-> Prelude.A, con of AT
@@ -24,6 +25,7 @@ Prelude.B |-> Prelude.B, Type [B] []
 Prelude.B |-> Prelude.B, con of B
 Prelude.C |-> Prelude.C, Type [C] []
 Prelude.C |-> Prelude.C, con of C
+Prelude.Int |-> Prelude.Int, con of Int
 Prelude.a___P |-> Prelude.a___P, Value
 Prelude.f |-> Prelude.f, Value
 Prelude.f_02 |-> Prelude.f_02, Value
@@ -36,6 +38,7 @@ B |-> Prelude.B, Type [B] []
 B |-> Prelude.B, con of B
 C |-> Prelude.C, Type [C] []
 C |-> Prelude.C, con of C
+Int |-> Prelude.Int, con of Int
 a___P |-> Prelude.a___P, Value
 f |-> Prelude.f, Value
 f_02 |-> Prelude.f_02, Value
