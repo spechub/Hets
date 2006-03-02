@@ -91,10 +91,6 @@ module Common.Doc
     , codeOut
     , toText
     , toLatex
-      -- * implementation details
-    , DocRecord(..)
-    , idRecord
-    , foldDoc
     ) where
 
 import Common.Id
@@ -109,6 +105,8 @@ infixl 5 $+$
 
 data TextKind = IdKind | Symbol | Keyword | TopKey | Indexed | StructId
 
+data Format = Small | FlushRight
+
 data ComposeKind
     = Vert   -- ($+$) (no support for $$!)
     | Horiz  -- (<>)
@@ -122,7 +120,7 @@ data Doc
     | IdApplDoc Id [Doc] -- for mixfix applications and literal terms
     | Text TextKind String -- non-empty and no white spaces inside
     | Cat ComposeKind [Doc]
-    | FlushRight Doc       -- for annotations
+    | Attr Format Doc      -- for annotations
     | IndentBy Doc Doc Doc
 
 {-
@@ -278,7 +276,10 @@ idApplDoc = IdApplDoc
 
 -- | put document as far to the right as fits (for annotations)
 flushRight :: Doc -> Doc
-flushRight = FlushRight
+flushRight = Attr FlushRight
+
+small :: Doc -> Doc
+small = Attr Small
 
 {- | print second argument and then indent the last one by the width
 of the first one -}
@@ -289,7 +290,7 @@ indentBy = IndentBy
 global annotations like precedences, associativities, and literal
 annotations. -}
 codeOut :: Map.Map Id [Token] -> GlobalAnnos -> Doc -> Doc
-codeOut = undefined
+codeOut _ _ = foldDoc idRecord { foldAnnoDoc = \ _ -> small . codeOutAnno }
 
 -- | convert for outputting latex
 toLatex :: Doc -> Pretty.Doc
@@ -306,7 +307,7 @@ data DocRecord a = DocRecord
     , foldIdApplDoc :: Doc -> Id -> [a] -> a
     , foldText :: Doc -> TextKind -> String -> a
     , foldCat :: Doc -> ComposeKind -> [a] -> a
-    , foldFlushRight :: Doc -> a -> a
+    , foldAttr :: Doc -> Format -> a -> a
     , foldIndentBy :: Doc -> a -> a -> a -> a
     }
 
@@ -318,7 +319,7 @@ idRecord = DocRecord
     , foldIdApplDoc = \ _ -> IdApplDoc
     , foldText = \ _ -> Text
     , foldCat = \ _ -> Cat
-    , foldFlushRight = \ _ -> FlushRight
+    , foldAttr = \ _ -> Attr
     , foldIndentBy = \ _ -> IndentBy
     }
 
@@ -330,6 +331,26 @@ foldDoc r d = case d of
     IdApplDoc i l -> foldIdApplDoc r d i $ map (foldDoc r) l
     Text k s -> foldText r d k s
     Cat k l -> foldCat r d k $ map (foldDoc r) l
-    FlushRight e -> foldFlushRight r d $ foldDoc r e
+    Attr a e -> foldAttr r d a $ foldDoc r e
     IndentBy e f g ->
         foldIndentBy r d (foldDoc r e) (foldDoc r f) $ foldDoc r g
+
+annoLine :: String -> Doc
+annoLine w = symbol "%" <> text w
+
+annoLines :: String -> Doc -> Doc
+annoLines w c = let d = symbol "%" <> text w <> lparen in 
+                indentBy d d $ c <> rparen
+
+codeOutAnno :: Annotation -> Doc
+codeOutAnno a = case a of 
+    Unparsed_anno aw at _ -> case at of 
+        Line_anno s -> (case aw of 
+            Annote_word w -> annoLine w
+            Comment_start -> symbol "%%") <> symbol s
+        Group_anno l -> let d = vcat $ map symbol l in case aw of
+            Annote_word w -> annoLines w d
+            Comment_start -> let s = symbol "%" <> lbrace in
+                indentBy s s $ d <> rbrace
+    _ -> error "codeOutAnno"
+                                                         
