@@ -163,6 +163,7 @@ space = text " "
 equals :: Doc                 -- ^ A '=' character
 equals = text "="
 
+-- use symbol for strings that need (i.e. latex) escaping
 symbol :: String -> Doc
 symbol = Text Symbol
 
@@ -290,7 +291,7 @@ indentBy = IndentBy
 global annotations like precedences, associativities, and literal
 annotations. -}
 codeOut :: Map.Map Id [Token] -> GlobalAnnos -> Doc -> Doc
-codeOut _ _ = foldDoc idRecord { foldAnnoDoc = \ _ -> small . codeOutAnno }
+codeOut m _ = foldDoc idRecord { foldAnnoDoc = \ _ -> small . codeOutAnno m }
 
 -- | convert for outputting latex
 toLatex :: Doc -> Pretty.Doc
@@ -338,19 +339,36 @@ foldDoc r d = case d of
 annoLine :: String -> Doc
 annoLine w = symbol "%" <> text w
 
-annoLines :: String -> Doc -> Doc
-annoLines w c = let d = symbol "%" <> text w <> lparen in 
-                indentBy d d $ c <> rparen
+annoLparen :: String -> Doc
+annoLparen w = symbol "%" <> text w <> lparen
 
-codeOutAnno :: Annotation -> Doc
-codeOutAnno a = case a of 
-    Unparsed_anno aw at _ -> case at of 
-        Line_anno s -> (case aw of 
+wrapAnnoLines :: Doc -> [Doc] -> Doc -> Doc
+wrapAnnoLines a l b = case l of
+    [] -> a <> b
+    [x] -> fcat [a, x, b]
+    x : r -> vcat $ fcat [a, x] : init r ++ [fcat [last r, b]]
+
+percent :: Doc
+percent = symbol "%"
+
+codeOutAnno :: Map.Map Id [Token] -> Annotation -> Doc
+codeOutAnno m a = case a of
+    Unparsed_anno aw at _ -> case at of
+        Line_anno s -> (case aw of
             Annote_word w -> annoLine w
             Comment_start -> symbol "%%") <> symbol s
-        Group_anno l -> let d = vcat $ map symbol l in case aw of
-            Annote_word w -> annoLines w d
-            Comment_start -> let s = symbol "%" <> lbrace in
-                indentBy s s $ d <> rbrace
+        Group_anno l -> let ds = map symbol l in case aw of
+            Annote_word w -> wrapAnnoLines (annoLparen w) ds rparen
+            Comment_start -> wrapAnnoLines (percent <> lbrace) ds rbrace
+    Display_anno i ds _ -> annoLparen "display" <+> fsep
+        [ codeOutId m i
+        , vcat $ map ( \ (d, s) ->
+                       percent <> text (lookupDisplayFormat d) <+> symbol s) ds
+        , rparen ]
     _ -> error "codeOutAnno"
-                                                         
+
+codeOutId :: Map.Map Id [Token] -> Id -> Doc
+codeOutId m i = fcat $ case Map.lookup i m of
+    Nothing -> map (symbol . tokStr) $ getTokenList place i
+    Just ts -> map (\ t -> let s = tokStr t in
+                           if isPlace t then symbol s else text s) ts
