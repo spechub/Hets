@@ -34,12 +34,11 @@ import Data.Char
 import Data.List
 
 printIsaTheory :: String -> String -> Sign -> [Named Sentence] -> Doc
-printIsaTheory tn libdir sign sens = let
+printIsaTheory tn _ sign sens = let
     b = baseSig sign
     bs = showBaseSig b
-    ld = if null libdir then "" else libdir ++ "/Isabelle/"
-    use = if null ld then empty else text usesS <+>
-           doubleQuotes (text $ ld ++ "prelude")
+    ld = "$HETS_LIB/Isabelle/"
+    use = text usesS <+> doubleQuotes (text $ ld ++ "prelude")
     in text theoryS <+> text tn
     $$ text importsS <+> (if case b of
                           Main_thy -> False
