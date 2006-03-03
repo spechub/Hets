@@ -6,7 +6,7 @@ MAKE=make
 HETS_LIB=/local/home/maeder/haskell/CASL-lib
 GHCRTS='-H300m -M1g'
 
-export PATH 
+export PATH
 export MAKE
 export HETS_LIB
 export GHCRTS
@@ -34,11 +34,12 @@ rm $h2hf
 cd HetCATS
 $MAKE h2hf
 cd ..
+strip $h2hf
 chmod 775 $h2hf
 chgrp wwwbkb $h2hf
 \cp -fp $h2hf $hetsdir/linux/daily/
 
-# install hets binary 
+# install hets binary
 cd CASL-lib
 chmod 775 hets
 chgrp wwwbkb hets
