@@ -227,7 +227,7 @@ printTrm b trm = case trm of
                                <+> printPlainTerm b t) es)
            <+> text "in" <+> printPlainTerm b i, lowPrio)
     IsaEq t1 t2 -> ((case t1 of
---        Const vn y ->  text (new vn) <+> doubleColon <+> printType y
+        Const vn y -> text (new vn) <+> doubleColon <+> printType y
         _ -> printParenTerm b (isaEqPrio + 1) t1) <+> text "=="
                    <+> printParenTerm b isaEqPrio t2, isaEqPrio)
     Tuplex cs c -> ((case c of
@@ -294,7 +294,7 @@ printArities tn = vcat . map ( \ (t, cl) ->
                   vcat $ map (printInstance tn t) cl) . Map.toList
 
 printInstance :: String -> TName -> (IsaClass, [(Typ, Sort)]) -> Doc
-printInstance tn t xs = case xs of 
+printInstance tn t xs = case xs of
    (IsaClass "Monad", _) -> printMInstance tn t
    _ -> printNInstance t xs
 
@@ -302,16 +302,16 @@ printMInstance :: String -> TName -> Doc
 printMInstance tn t = let tyNm = text t
                           thNm = text tn
                           thMorNm = text (t ++ "_tm")
-                          tArrow = text ("-" ++ "->")   
- in (text "thymorph" <+> thMorNm <+> colon <+> 
-            text "MonadType" <+> tArrow <+> thNm) 
-    $$ (text " maps [" <> (parens $ (doubleQuotes $ text "MonadType.M") 
-        <+> text "|->" <+> thNm <> text "." <> tyNm) <> text "]") 
-    $$ text "t_instantiate Monad " <+> thMorNm  
+                          tArrow = text ("-" ++ "->")
+ in (text "thymorph" <+> thMorNm <+> colon <+>
+            text "MonadType" <+> tArrow <+> thNm)
+    $$ (text " maps [" <> (parens $ (doubleQuotes $ text "MonadType.M")
+        <+> text "|->" <+> thNm <> text "." <> tyNm) <> text "]")
+    $$ text "t_instantiate Monad " <+> thMorNm
 
 {-
 thymorph t : MonadType --> State maps [("MonadType.M" |-> "State.S")]
-t_instantiate Monad t 
+t_instantiate Monad t
 -}
 
 printNInstance :: TName -> (IsaClass, [(Typ, Sort)]) -> Doc
