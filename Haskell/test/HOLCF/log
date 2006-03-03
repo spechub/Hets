@@ -24,6 +24,24 @@ Proving isomorphism properties of domain ex_class_hc.Prelude_Color ...
 Proving induction properties of domain ex_class_hc.Prelude_Color ...
 Proving isomorphism properties of domain ex_class_hc.Prelude_MyList ...
 Proving induction properties of domain ex_class_hc.Prelude_MyList ...
+### Specification of constant ex_class_hc.methodOne ::
+###   "'a Prelude_Color -> 'a Prelude_Color -> tr"
+### is strictly less general than the declared type
+### Specification of constant ex_class_hc.methodTwo ::
+###   "'a Prelude_Color -> tr -> 'a Prelude_Color Prelude_Color"
+### is strictly less general than the declared type
+### Specification of constant ex_class_hc.methodOne ::
+###   "'a Prelude_MyList -> 'a Prelude_MyList -> tr"
+### is strictly less general than the declared type
+### Specification of constant ex_class_hc.methodTwo ::
+###   "'a Prelude_MyList -> tr -> 'a Prelude_MyList Prelude_Color"
+### is strictly less general than the declared type
+### Specification of constant ex_class_hc.methodOne ::
+###   "('a, 'b) Prelude_MPList -> ('a, 'b) Prelude_MPList -> tr"
+### is strictly less general than the declared type
+### Specification of constant ex_class_hc.methodTwo ::
+###   "('a, 'b) Prelude_MPList -> tr -> ('a, 'b) Prelude_MPList Prelude_Color"
+### is strictly less general than the declared type
 val it = () : unit
 val it = () : unit
 val it =
@@ -42,6 +60,8 @@ val it =
    [("ex_class_hc.myEqual_def",
          "myEqual ==
             LAM x y. If (LAM x y. Def (x = y))$x$y then TT else FF fi"),
+      ("ex_class_hc.Joker_class.intro",
+         "OFCLASS(?'a, pcpo_class) ==> OFCLASS(?'a, Joker_class)"),
       ("ex_class_hc.Prelude_Color.reach", "fix$Prelude_Color_copy$?x = ?x"),
       ("ex_class_hc.Prelude_MPList.reach",
          "fix$Prelude_MPList_copy$?x = ?x"),
@@ -155,6 +175,9 @@ val it =
          "Prelude_MyList_finite == %x. EX n. Prelude_MyList_take n$x = x"),
       ("ex_class_hc.Prelude_Color.match_Red_def",
          "match_Red == Prelude_Color_when$(LAM a. return$a)$(LAM a. fail)"),
+      ("ex_class_hc.Prelude_Color_methodOne_def", "methodOne == myEqual"),
+      ("ex_class_hc.Prelude_Color_methodTwo_def",
+         "methodTwo == default__methodTwo"),
       ("ex_class_hc.Prelude_MPList.MPCons_1_def",
          "MPCons_1 == Prelude_MPList_when$UU$(LAM a b P'. a)"),
       ("ex_class_hc.Prelude_MPList.MPCons_2_def",
@@ -173,8 +196,17 @@ val it =
          "match_Blue == Prelude_Color_when$(LAM a. fail)$(LAM a. return$a)"),
       ("ex_class_hc.Prelude_MPList.is_MPCons_def",
          "is_MPCons == Prelude_MPList_when$FF$(LAM a b P'. TT)"),
+      ("ex_class_hc.Prelude_MPList_methodOne_def",
+         "methodOne == default__methodOne"),
+      ("ex_class_hc.Prelude_MPList_methodTwo_def",
+         "methodTwo == default__methodTwo"),
       ("ex_class_hc.Prelude_MyList.is_MyCons_def",
          "is_MyCons == Prelude_MyList_when$FF$(LAM a P'. TT)"),
+      ("ex_class_hc.Prelude_MyList_methodOne_def", "methodOne == myEqual"),
+      ("ex_class_hc.Prelude_MyList_methodTwo_def",
+         "methodTwo ==
+            LAM x y.
+               If (LAM x y. Def (x = y))$y$TT then Red$x else Blue$x fi"),
       ("ex_class_hc.Prelude_MPList.match_MPNil_def",
          "match_MPNil ==
             Prelude_MPList_when$(return$())$(LAM a b P'. fail)"),
