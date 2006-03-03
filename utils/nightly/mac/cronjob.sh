@@ -15,7 +15,6 @@ cd /local/home/maeder/haskell
 . ../cronjob.sh
 
 makeHets
-\cp -f HetCATS/utils/nightly/mac/cronjob.sh /local/home/maeder/haskell/
 makeLibCheck
 
 cd CASL-lib
