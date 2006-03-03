@@ -13,10 +13,6 @@ cvs -d \
    co -P CASL-lib
 cd CASL-lib
 
-# install a newer binary 
-#chgrp linuxbkb hets
-#\cp -fp hets /home/linux-bkb/bin/
-
 # check differences of *.pp.het and *.pp.pp.het
 hets -v2 -o pp.het Basic/*.casl
 cat Basic/*.pp.het > pp1.txt
@@ -38,5 +34,3 @@ for i in */*/*.het */*/*.casl; \
 date
 for i in */*/*.prf; do hets -v2 -o th $i; done
 date
-
-
