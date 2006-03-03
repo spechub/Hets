@@ -18,13 +18,7 @@ destdir=$hetsdir/src-distribution/daily
 cd /local/home/maeder/haskell
 . ../cronjob.sh
 
-# set BDBDIR for a full uni installation
-# makeUni
-# makeProgramatica
 makeHets
-# copy cronjob scripts for the next night
-\cp -f HetCATS/utils/nightly/cronjob.sh /home/maeder/haskell/
-\cp -f HetCATS/utils/nightly/linux/*.sh /local/home/maeder/haskell/
 makeLibCheck
 
 # remove unoptimized h2hf
