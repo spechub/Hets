@@ -69,6 +69,8 @@ import Control.Monad
 
 import Char (toLower, isSpace, isAlpha, isAlphaNum, isDigit, isAscii)
 
+import qualified Network.URI as URI
+
 data ImportContext a = ImportContext {
 						 importsMap :: Hets.ImportsMap
 						,sortsMap :: Hets.SortsMap
@@ -79,35 +81,131 @@ data ImportContext a = ImportContext {
 						,importGraph :: (ImportGraph a)
 						}
 						
+						
 type DbgKey = String
-data DbgInf = DbgInf { dbgKeys :: [DbgKey], dbgDisabledKeys :: [DbgKey] }
+
+data DbgKeyPolicy = KPExact | KPPrefix | KPContains
+	deriving (Eq, Ord)
+
+instance Show DbgKeyPolicy where
+	show KPExact = "exact"
+	show KPPrefix = "prefix"
+	show KPContains = "contains"
+
+stringToPolicy::String->Maybe DbgKeyPolicy
+stringToPolicy = _stringToPolicy . (map Char.toLower)
+	where
+	_stringToPolicy::String->Maybe DbgKeyPolicy
+	_stringToPolicy ('e':_) = Just KPExact
+	_stringToPolicy ('p':_) = Just KPPrefix
+	_stringToPolicy ('c':_) = Just KPContains
+	_stringToPolicy _ = Nothing
+	
+keysWithPolicy::DbgKeyPolicy->[DbgKey]->Map.Map DbgKeyPolicy [DbgKey]
+keysWithPolicy _ [] = Map.empty
+keysWithPolicy p keys = Map.singleton p keys
+
+processDbgKeys::String->(Map.Map DbgKeyPolicy [DbgKey], Map.Map DbgKeyPolicy [DbgKey])
+processDbgKeys s =
+	let
+		pkeys = map (reverse . dropWhile (==' ') . reverse . dropWhile (==' ')) $ explode "," s
+		(enkeys, diskeys) = foldl (\(e,d) s -> if (head s) == '!' then (e,d++[drop 1 s]) else (e++[s],d)) ([],[]) pkeys 
+		[enpolsep, dispolsep] = map (map (explode ":")) [enkeys, diskeys]
+		ekwp = map (\ps ->
+			case ps of
+				[] -> error "error in processDbgKeys..."
+				[justakey] -> (KPExact, justakey)
+				(p:ks) -> case stringToPolicy p of
+					Just policy -> (policy, implode ":" ks)
+					Nothing -> (KPExact, implode ":" (p:ks))
+					) enpolsep
+		dkwp = map (\ps ->
+			case ps of
+				[] -> error "error in processDbgKeys..."
+				[justakey] -> (KPExact, justakey)
+				(p:ks) -> case stringToPolicy p of
+					Just policy -> (policy, implode ":" ks)
+					Nothing -> (KPExact, implode ":" (p:ks))
+					) dispolsep
+		[ekmap, dkmap] = map (foldl (\m (p,k) ->
+			Map.insert p ((Map.findWithDefault [] p m) ++ [k]) m
+			) Map.empty) [ekwp, dkwp]
+	in
+		(ekmap, dkmap)
+ 
+data DbgInf =
+	DbgInf
+		{
+			  dbgKeys::Map.Map DbgKeyPolicy [DbgKey]
+			, dbgDisKeys :: Map.Map DbgKeyPolicy [DbgKey]
+		}
+		deriving Show
 
 emptyDbgInf::DbgInf
-emptyDbgInf = DbgInf { dbgKeys = [], dbgDisabledKeys = [] }
+emptyDbgInf = DbgInf { dbgKeys = Map.empty, dbgDisKeys = Map.empty }
 
 simpleDebug::[DbgKey]->DbgInf
-simpleDebug keys = emptyDbgInf { dbgKeys = keys }
+simpleDebug keys = emptyDbgInf { dbgKeys = keysWithPolicy KPExact keys }
 
 mkDebug::[DbgKey]->[DbgKey]->DbgInf
-mkDebug keys diskeys = emptyDbgInf { dbgKeys = keys, dbgDisabledKeys = diskeys }
+mkDebug keys diskeys = emptyDbgInf { dbgKeys = keysWithPolicy KPExact keys, dbgDisKeys = keysWithPolicy KPExact diskeys }
+
+mkDebugExt::[DbgKey]->[DbgKey]->DbgKeyPolicy->DbgKeyPolicy->DbgInf
+mkDebugExt keys diskeys ep dp =
+	emptyDbgInf { dbgKeys = keysWithPolicy ep keys, dbgDisKeys = keysWithPolicy dp diskeys }
+	
+mkDebugKeys::String->DbgInf
+mkDebugKeys s =
+	let
+		(enmap, dismap) = processDbgKeys s
+	in
+		emptyDbgInf { dbgKeys = enmap, dbgDisKeys = dismap }
 
 addDbgKey::DbgInf->DbgKey->DbgInf
-addDbgKey dbginf key = dbginf { dbgKeys = (key:(dbgKeys dbginf)) }
+addDbgKey dbginf key = dbginf { dbgKeys = Map.insertWith (++) KPExact [key] (dbgKeys dbginf) }
 
 addDbgDisKey::DbgInf->DbgKey->DbgInf
-addDbgDisKey dbginf key = dbginf { dbgDisabledKeys = (key:(dbgDisabledKeys dbginf)) }
+addDbgDisKey dbginf key = dbginf { dbgDisKeys = Map.insertWith (++) KPExact [key] (dbgDisKeys dbginf) }
+
+mergeDbgInf::DbgInf->DbgInf->DbgInf
+mergeDbgInf di1 di2 =
+	di1 {
+		 dbgKeys = Map.unionWith (++) (dbgKeys di1) (dbgKeys di2)
+		,dbgDisKeys = Map.unionWith (++) (dbgDisKeys di1) (dbgDisKeys di2)
+		}
+
+policyElem::DbgKeyPolicy->[DbgKey]->DbgKey->Bool
+policyElem KPExact kl k = elem k kl
+policyElem KPPrefix kl k =
+	case (find (\key -> isPrefix key k) kl) of
+		Nothing -> False
+		_ -> True
+policyElem KPContains kl k =
+	case (find (\key -> contains k key) kl) of
+		Nothing -> False
+		_ -> True
+
+isDisabledKey::DbgInf->DbgKey->Bool
+isDisabledKey dbginf key =
+	any (\p -> policyElem p (Map.findWithDefault [] p (dbgDisKeys dbginf)) key) (Map.keys (dbgDisKeys dbginf))
+	
+isEnabledKey::DbgInf->DbgKey->Bool
+isEnabledKey dbginf key =
+	if isDisabledKey dbginf key
+		then
+			False
+		else
+			(elem "all" (Map.findWithDefault [] KPExact (dbgKeys dbginf)))
+			|| any (\p -> policyElem p (Map.findWithDefault [] p (dbgKeys dbginf)) key) (Map.keys (dbgKeys dbginf))
+		
 
 debug::forall a . DbgInf->DbgKey->String->a->a
 debug dbginf dbgkey msg x =
-	if (elem dbgkey (dbgDisabledKeys dbginf))
-		then
-			x
-		else
-			if ((elem "all" (dbgKeys dbginf)) || (elem dbgkey (dbgKeys dbginf)))
-				then
-					Debug.Trace.trace (dbgkey ++ ": " ++ msg) x
-				else
-					x
+	if isEnabledKey dbginf dbgkey
+			then
+				Debug.Trace.trace (dbgkey ++ ": " ++ msg) x
+			else
+				x
 						
 data GlobalOptions =
 	GOpts {
@@ -247,7 +345,10 @@ data PO =
 	| PODTDURI String
 	| PODebug
 	| PODebugKey String
+	| PODebugKeys String
 	| PODebugDisKey String
+	| PODebugKeyPolicy DbgKeyPolicy
+	| PODebugDisKeyPolicy DbgKeyPolicy
 	| PONewInput
 	| PONewOutput
 	| PODisableDTD
@@ -264,7 +365,10 @@ data POType =
 	| POTDTDURI
 	| POTDebug
 	| POTDebugKey
+	| POTDebugKeys
 	| POTDebugDisKey
+	| POTDebugKeyPolicy
+	| POTDebugDisKeyPolicy
 	| POTNewInput
 	| POTNewOutput
 	| POTDisableDTD
@@ -282,7 +386,10 @@ poToPOT POShowGraph = POTShowGraph
 poToPOT POHelp = POTHelp
 poToPOT PODebug = POTDebug
 poToPOT (PODebugKey _) = POTDebugKey
+poToPOT (PODebugKeys _) = POTDebugKeys
 poToPOT (PODebugDisKey _) = POTDebugDisKey
+poToPOT (PODebugKeyPolicy _) = POTDebugKeyPolicy
+poToPOT (PODebugDisKeyPolicy _) = POTDebugDisKeyPolicy
 poToPOT PONewInput = POTNewInput
 poToPOT PONewOutput = POTNewOutput
 poToPOT PODisableDTD = POTDisableDTD
@@ -301,7 +408,10 @@ processingOptions =
 	, GetOpt.Option ['d'] ["dtd-uri"] (GetOpt.ReqArg PODTDURI "DTDURI") "URI for OMDoc-DTD"
 	, GetOpt.Option [] ["debug"] (GetOpt.NoArg PODebug) "enable debugging-messages"
 	, GetOpt.Option [] ["debug-key"] (GetOpt.ReqArg PODebugKey "KEY") "add a debugging key (or 'all' for all)"
+	, GetOpt.Option [] ["debug-keys"] (GetOpt.ReqArg PODebugKeys "KEY") "add debugging keys with policy (or 'all' for all)"
 	, GetOpt.Option [] ["debug-disable-key"] (GetOpt.ReqArg PODebugDisKey "KEY") "disable a debugging key (from all)"
+	, GetOpt.Option [] ["debug-key-policy"] (GetOpt.ReqArg (PODebugKeyPolicy . fromMaybe (error "Invalid policy...") . stringToPolicy) "POLICY") "set key policy"
+	, GetOpt.Option [] ["debug-diskey-policy"] (GetOpt.ReqArg (PODebugDisKeyPolicy . fromMaybe (error "Invalid policy...") . stringToPolicy) "POLICY") "set dis-key policy"
 	, GetOpt.Option ['n'] ["new-output"] (GetOpt.NoArg PONewOutput) "use new output (possibly buggy)"
 	, GetOpt.Option ['e'] ["new-input"] (GetOpt.NoArg PONewInput) "use new input (possibly buggy)"
 	, GetOpt.Option [] ["disable-dtd"] (GetOpt.NoArg PODisableDTD) "disable putting DTD-location in OMDoc-Output"
@@ -426,7 +536,10 @@ main =
 		dtduriopts <- return $ optFilter POTDTDURI options
 		debugopts <- return $ optFilter POTDebug options
 		debugkeyopts <- return $ optFilter POTDebugKey options
+		debugkeysopts <- return $ optFilter POTDebugKeys options
 		debugdiskeyopts <- return $ optFilter POTDebugDisKey options
+		debugkeypolopts <- return $ optFilter POTDebugKeyPolicy options
+		debugdiskeypolopts <- return $ optFilter POTDebugDisKeyPolicy options
 		newinputopts <- return $ optFilter POTNewInput options
 		newoutputopts <- return $ optFilter POTNewOutput options
 		disabledtdopts <- return $ optFilter POTDisableDTD options
@@ -437,8 +550,16 @@ main =
 		disabledtd <- return $ not $ null disabledtdopts
 		searchpath <- return $ map (\(POLib s) -> s) libopts
 		debugkeys <- return $ map (\(PODebugKey s) -> s) debugkeyopts
+		debugkeyslist <- return $ map (\(PODebugKeys s) -> s) debugkeysopts
 		debugdiskeys <- return $ map (\(PODebugDisKey s) -> s) debugdiskeyopts
-		globalOptions <- return $ emptyGlobalOptions { dbgInf = (mkDebug debugkeys debugdiskeys) }
+		debugkeypol <- return $ (\(PODebugKeyPolicy p) -> p) $ head (debugkeypolopts ++ [PODebugKeyPolicy KPExact]) 
+		debugdiskeypol <- return $ (\(PODebugDisKeyPolicy p) -> p) $ head (debugdiskeypolopts  ++ [PODebugDisKeyPolicy KPExact])
+		l1dbginf <- return $ foldl (\dbginf s ->
+			mergeDbgInf dbginf (mkDebugKeys s)
+			) emptyDbgInf debugkeyslist
+		l2dbginf <- return $ mkDebugExt debugkeys debugdiskeys debugkeypol debugdiskeypol
+		finaldbginf <- return $ mergeDbgInf l1dbginf l2dbginf
+		globalOptions <- return $ emptyGlobalOptions { dbgInf = finaldbginf }
 		input <- return $ case inputopts of
 					[] -> case nonoptions of
 						[] -> "-"
@@ -521,8 +642,8 @@ main =
 		when
 			debug
 			(
-				(putStrLn ("Debug-Keys : " ++ (implode ", " debugkeys))) >>
-				(putStrLn ("Disabled-Keys : " ++ (implode ", " debugdiskeys)))
+				(putStrLn ("Debug-Keys : " ++ (show (dbgKeys finaldbginf)))) >>
+				(putStrLn ("Disabled-Keys : " ++ (show (dbgDisKeys finaldbginf))))
 			)
 		when
 			debug
@@ -930,7 +1051,7 @@ devGraphToXmlCMPIOXmlNamed go dg =
 		relswomap= Hets.getRelationsWOWithNodeDGNamesWOSMDGWO dg sortswomap
 		predswomap = Map.map mapToSetToTupelList $ Hets.getPredMapsWOWithNodeDGNamesWO dg
 		opswomap = Map.map mapToSetToTupelList $ Hets.getOpMapsWOWithNodeDGNamesWO dg
-		senswomap = (\smap -> debugGO go "dGTXCMPIOXN" ("Sentences : " ++ (showSensWOMap smap)) smap) $ Hets.getSentencesWOWithNodeDGNamesWO dg
+		senswomap = (\smap -> debugGO go "dGTXCMPIOXNsens" ("Sentences : " ++ (showSensWOMap smap)) smap) $ Hets.getSentencesWOWithNodeDGNamesWO dg
 		importsmap = Hets.getNodeImportsNodeDGNames dg
 		-- sorts
 		(xmlnamedsortswomap, xmlnames_sm) =
@@ -1090,7 +1211,7 @@ devGraphToXmlCMPIOXmlNamed go dg =
 					imports
 				theopreds = Map.findWithDefault [] (Hets.mkWON nodename nodenum) xmlnamedpredswomap
 				realtheopreds = filter (\(idxnwon, _) -> (xnWOaToO idxnwon) == nodenum) theopreds
-				theoops = Map.findWithDefault [] (Hets.mkWON nodename nodenum) xmlnamedopswomap
+				theoops = (\x -> debugGO go "dGTXCMPIOXNo" ("Ops in \"" ++ (show nodename) ++ "\" : " ++ show x) x) $ Map.findWithDefault [] (Hets.mkWON nodename nodenum) xmlnamedopswomap
 				realtheoops = filter (\(idxnwon, _) -> (xnWOaToO idxnwon) == nodenum) theoops
 				theosens = Map.findWithDefault Set.empty (Hets.mkWON nodename nodenum) xmlnamedsenswomap
 				realtheosens = Set.filter (\i -> (xnWOaToO i) == nodenum) theosens
@@ -1103,6 +1224,7 @@ devGraphToXmlCMPIOXmlNamed go dg =
 				sensxmlio =
 					wrapFormulasCMPIOXN
 						(PFInput
+							go
 							nodexmlnameset
 							theosorts
 							theopredsxn
@@ -1113,7 +1235,7 @@ devGraphToXmlCMPIOXmlNamed go dg =
 				do
 				x <- xio
 				sensxml <- sensxmlio
-				return $ x +++ xmlNL +++ HXT.etag "theory" += (
+				return $ (x +++ xmlNL +++ HXT.etag "theory" += (
 					(qualattr "xml" "id" theoname) +++
 					-- presentation
 					makePresentationFor
@@ -1218,10 +1340,10 @@ devGraphToXmlCMPIOXmlNamed go dg =
 						realtheoops
 					) +++
 					-- sentences
-					sensxml +++
-					xmlNL +++
+					sensxml
+					)
 					-- this constructs Hets-internal links as private data (but uses xmlnames for reference)
-					inDGToXmlXN dg nodenum nodexmlnameset
+					+++ xmlNL +++ (inDGToXmlXN dg nodenum nodexmlnameset) +++ xmlNL
 					)
 					-- when constructing the catalogues a reference to the xmlname used in _this_ document is used
 					-- it is very likely possible, that this theory has another name in real life (unless there are no name-collisions)
@@ -3937,7 +4059,7 @@ importGraphToDGraphXN go ig n =
 									x -> x
 							in
 								(importnodenum, nodenum, getIHLink ih)
-								) $ Set.toList importhintswithoutimports)
+								) $ (\x -> debugGO go "iGTDGXNimporthints" ("Importhints: " ++ (show x)) x ) $ Set.toList importhintswithoutimports)
 				) [] $ Map.toList imports'
 		validedges = foldl (\e newe@(n' ,m,_) ->
 			if (n' ==0) || (m==0) then
@@ -4093,6 +4215,71 @@ filterFiles list =
 			(\_ -> return False)
 		)
 		list
+		
+maybeGetXml::String->IO (Maybe HXT.XmlTrees)
+maybeGetXml source =
+	do
+		xml <- HXT.run' $
+			HXT.parseDocument
+				[
+					  (HXT.a_source, source)
+					, (HXT.a_issue_errors, HXT.v_0)
+					, (HXT.a_check_namespaces, HXT.v_1)
+					, (HXT.a_validate, HXT.v_0)
+				]
+				HXT.emptyRoot
+		return
+			(let
+				status = (read $ HXT.xshow $ getValue "status" (head xml))::Int
+				result = if status < HXT.c_err then (Just xml) else Nothing
+			in
+				result)
+				
+maybeFindXml::String->[String]->IO (Maybe HXT.XmlTrees)
+maybeFindXml source includes =
+	let
+		muri = URI.parseURIReference source
+		uri = fromMaybe (error "cannot parse URIReference") muri
+		isFile = (length (URI.uriScheme $ uri)) == 0
+		filePath = URI.uriPath uri
+		isAbsolute = (isFile && ( (head filePath) == '/')) || (URI.isAbsoluteURI source)
+		possibilities = source:(if not isAbsolute then map (++"/"++source) includes else [])
+	in
+		do
+			case muri of
+				Nothing -> return Nothing
+				_ -> firstSuccess (map maybeGetXml possibilities)
+	where
+		firstSuccess::(Monad m)=>[(m (Maybe a))]->(m (Maybe a))
+		firstSuccess [] = return Nothing
+		firstSuccess (l:r) =
+			do
+				res <- l
+				case res of
+					Nothing -> firstSuccess r
+					_ -> return res
+					
+getImportedTheories::HXT.XmlTrees->Map.Map String String
+getImportedTheories xml =
+	let
+		omdoc = applyXmlFilter (getChildren .> isTag "omdoc") xml
+		catmap = getCatalogueInformation omdoc
+		imports = map (\n -> xshow [n]) $ applyXmlFilter (getChildren .> isTag "theory" .> getChildren .> isTag "imports" .> getValue "from") omdoc
+		externalImports = foldl (\eI i ->
+			let
+				muri = URI.parseURIReference i
+				uri = fromMaybe (error "cannot parse URIReference") muri
+				path = URI.uriPath uri
+				fragment = drop 1 $ URI.uriFragment uri
+			in
+				if ((length path) > 0) && ((length fragment) > 0)
+					then
+						Map.insert fragment path eI
+					else
+					 	eI
+						) Map.empty imports
+	in
+		Map.union catmap externalImports
 
 -- try to find an Omdoc-Lib by Name (xml:id) searchin given paths		
 findOmdocLib::String->[FilePath]->IO (Maybe FilePath)
@@ -4165,7 +4352,87 @@ makeImportGraph go filename includes =
 			gio >>= \g ->
 				extendImportGraph go g 1 (TI imp) (includes++[curdir])
 			) (return (Graph.mkGraph [nodeone] [])) $ Map.toList imap
-		
+			
+makeImportGraphFullXml::GlobalOptions->String->[String]->(IO (ImportGraph HXT.XmlTrees))
+makeImportGraphFullXml go source includes =
+	do
+		mdoc <- maybeFindXml source includes
+		case mdoc of
+			Nothing -> ioError $ userError ("Unable to find \"" ++ source ++ "\"")
+			(Just doc) ->
+					(let
+						theoname = xshow $ applyXmlFilter (getChildren .> isTag "omdoc" .> getQualValue "xml" "id") doc
+						mturi = URI.parseURIReference $ xshow $ getValue "transfer-URI" (head doc)
+						turi = fromMaybe (error "Cannot parse URIReference...") mturi
+						docmap = getImportedTheories doc
+						rdocmap = Map.toList $ Map.map (\s -> relativeSource turi s) docmap
+						initialgraph = Graph.mkGraph [(1, S (theoname, (show turi)) doc)] []
+					in
+						foldl
+							(\gio (itname, ituri)  ->
+								gio >>= \g -> buildGraph g 1 (TI (itname, ituri))
+							) (return initialgraph) rdocmap
+					)
+	where
+		buildGraph::ImportGraph HXT.XmlTrees->Graph.Node->TheoryImport->IO (ImportGraph HXT.XmlTrees)
+		buildGraph ig n ti@(TI (theoname, theouri)) =
+			let
+				mimportsource =	find (\(_, (S (_, suri) _)) -> (suri == theouri)) (Graph.labNodes (Debug.Trace.trace ("Already there ?") ig))
+			in
+			do
+				case mimportsource of
+					(Just (inum, isrc@(S (isn,_) _))) ->
+						do
+							return 
+								(if inum == n then
+									debugGO go "mIGFXbG" ("Back-reference in " ++ isn ++ " to " ++ theoname) ig
+								else
+									(Graph.insEdge (n, inum, ti) ig))
+					Nothing ->
+						do
+							mdoc <- maybeFindXml theouri includes
+							(newgraph, nn, importimports) <-
+								return $
+									(
+										let
+											doc =
+												fromMaybe
+													(error ("Unable to import \""++ theoname ++ "\"from \"" ++ theouri ++ "\""))
+													mdoc
+											imturi = URI.parseURIReference $ xshow $ getValue "transfer-URI" (head doc)
+											ituri = fromMaybe (error "Cannot parse URIReference...") imturi
+											iimports = getImportedTheories doc
+											irimports = Map.toList $ Map.map (\s -> relativeSource ituri s) iimports
+											newnodenum = (Graph.noNodes ig) + 1
+											newsource =
+												S
+													(
+															(xshow $ applyXmlFilter (getChildren .> isTag "omdoc" .> getQualValue "xml" "id") doc)
+														, (show ituri)
+													)
+													doc
+											newgraph = Graph.insEdge (n, newnodenum, ti) $ Graph.insNode (newnodenum, newsource) ig
+										in
+											(newgraph, newnodenum, irimports)
+									)
+							foldl (\nigio (itheoname, itheouri) ->
+								nigio >>= \nig -> buildGraph nig nn (TI (itheoname, itheouri))
+								) (return newgraph) importimports
+				
+		relativeSource::URI.URI->String->String
+		relativeSource uri s =
+			let
+				msuri = URI.parseURIReference s
+				suri = fromMaybe (error "Cannot parse URIReference") msuri
+				mreluri = URI.relativeTo suri uri
+				reluri = fromMaybe (error "Cannot create relative URI...") mreluri
+			in
+				case msuri of
+					Nothing -> s
+					_ -> case mreluri of
+						Nothing -> s
+						_ -> URI.uriToString id reluri ""
+	
 	
 extendImportGraph::GlobalOptions->(ImportGraph HXT.XmlTrees)->Graph.Node->TheoryImport->[String]->(IO (ImportGraph HXT.XmlTrees))
 extendImportGraph go ig n (TI (thn, src)) includes =
@@ -5607,11 +5874,24 @@ processFormula _ _ _ _ _
 		HXT.etag unsupportedS +++
 		HXT.txt ( "<-- " ++ "ExtFORMULA" ++ " //-->")
 		
-data PFInput = PFInput 	{	 theorySet::TheoryXNSet
-							,theorySorts::Set.Set XmlNamedWONSORT
-							,theoryPreds::[(XmlNamedWONId, PredTypeXNWON)]
-							,theoryOps::[(XmlNamedWONId, OpTypeXNWON)]
-						}
+data PFInput =
+	PFInput
+		{
+			 pfiGO::GlobalOptions
+			,theorySet::TheoryXNSet
+			,theorySorts::Set.Set XmlNamedWONSORT
+			,theoryPreds::[(XmlNamedWONId, PredTypeXNWON)]
+			,theoryOps::[(XmlNamedWONId, OpTypeXNWON)]
+		}
+		
+emptyPFInput::PFInput
+emptyPFInput =
+	PFInput
+		emptyGlobalOptions
+		Set.empty
+		Set.empty
+		[]
+		[]
 		
 -- | create the xml-representation for a formula (in context of a theory)	
 processFormulaXN ::
@@ -5977,7 +6257,7 @@ processConstraintsXN pfinput ((ABC.Constraint news ops' origs):_) =
 							))
 						))
 					+++ xmlNL
-					+++ processOperatorXN pfinput op
+					+++ processOperatorXN pfinput (debugGO (pfiGO pfinput) "pCXN" ("creating conop for " ++ (show op)) op)
 					) ) +++ xmlNL
 				) (HXT.txt "") ops'
 			) )
@@ -6019,8 +6299,8 @@ unwrapFormulasXNWON ffxi anxml =
 					ansenname = Ann.senName ansen
 					anpress = getPresentationString ansenname (axXml anxml)
 					anname = case anpress of
-						[] -> debugGO (globalOpts ffxi) "uFXNWON" ("F-Name: " ++ ansenname) ansenname
-						_ -> debugGO (globalOpts ffxi) "uFXNWON" ("F-Pres: " ++ anpress) anpress
+						[] -> debugGO (ffxiGO ffxi) "uFXNWON" ("F-Name: " ++ ansenname) ansenname
+						_ -> debugGO (ffxiGO ffxi) "uFXNWON" ("F-Pres: " ++ anpress) anpress
 				in
 					(unwrapped ++ [XmlNamed (Hets.mkWON (ansen { Ann.senName = anname }) (axAnn anxml)) ansenname])
 				) [] axioms
@@ -6081,7 +6361,7 @@ preprocessXml go t =
 	in
 		(emptyFFXInput
 			{
-				 globalOpts = go
+				 ffxiGO = go
 				,xnTheorySet = xntheoryset
 				,xnSortsMap = xnsortsmap
 				,xnRelsMap = xnrelsmap
@@ -6091,8 +6371,7 @@ preprocessXml go t =
 		 axtheoryset)
 
 data FFXInput = FFXInput {
-	 globalOpts :: GlobalOptions
-	,lastWords :: String -- for Exceptions 
+	 ffxiGO :: GlobalOptions
 	,xnTheorySet :: TheoryXNSet -- set of theorys (xmlnames + origin in graph)
 	,xnSortsMap :: Map.Map XmlName (Set.Set XmlNamedWONSORT) -- theory -> sorts mapping
 	,xnRelsMap :: Map.Map XmlName (Rel.Rel XmlNamedWONSORT) -- theory -> rels
@@ -6104,17 +6383,12 @@ emptyFFXInput::FFXInput
 emptyFFXInput =
 	FFXInput
 		emptyGlobalOptions
-		""
 		Set.empty
 		Map.empty
 		Map.empty
 		Map.empty
 		Map.empty
 		
-setLW::String->FFXInput->FFXInput
-setLW lw ffxi = ffxi { lastWords = lw }
-		
-
 formulaFromXml::FormulaContext->(HXT.XmlTrees)->(FORMULA ())
 formulaFromXml fc t = if (applyXmlFilter (isTag "OMBIND") t) /= [] then -- it's a quantifier...
 			let	quantTree = singleitem 1 (applyXmlFilter (isTag "OMBIND") t)
@@ -6316,7 +6590,7 @@ formulaFromXmlXN ffxi anxml =
 				applySymCD = xshow $ applyXmlFilter (getValue "cd") applySymXml
 			  in
 				let	formulas = map (\n -> formulaFromXmlXN ffxi (AXML (axAnn anxml) [n])) ((applyXmlFilter (getChildren .> (isTag "OMA" +++ isTag "OMATTR" +++ isTag "OMBIND")) formTree)::[XmlTree])
-					terms = map (\n -> (\x -> if (contains (show x) "predication") then debugGO (globalOpts ffxi) "fFXXNm3" ("predication from : " ++ (xshow [n]) ++ " LW: " ++ (lastWords ffxi) ++ "FormTree : " ++ (xshow formTree)) x else x) $ termFromXmlXN ffxi (debugGO (globalOpts ffxi) "fFXXN" ("Will create term(0) from : " ++ (take 200 $ xshow [n])) (AXML (axAnn anxml) [n]))) (tail ((applyXmlFilter (getChildren .> (isTag "OMV" +++ isTag "OMATTR" +++ isTag "OMA" +++ isTag "OMS")) formTree)::[XmlTree]))
+					terms = map (\n -> termFromXmlXN ffxi (AXML (axAnn anxml) [n])) (tail ((applyXmlFilter (getChildren .> (isTag "OMV" +++ isTag "OMATTR" +++ isTag "OMA" +++ isTag "OMS")) formTree)::[XmlTree]))
 				in
 				-- 'case applySym' does not work if case-strings are non fixed (above definition is not fixed enough...) 
 			  	--case applySym of
@@ -6354,10 +6628,10 @@ formulaFromXmlXN ffxi anxml =
 						let
 							--predxml = applyXmlFilter (processChildren (isTag "OMS" +++ isTag "OMATTR") .> getChild 2) (axXml anxml)
 							predxml = applyXmlFilter (processChildren (isTag "OMS" +++ isTag "OMATTR") .> getChild 2) formTree
-							pred' = (\x -> if (contains (show x) "predication") then debugGO (globalOpts ffxi) "fFXXNm2" ("predication created! from : " ++ (xshow predxml)) x else x) $ (\x -> debugGO (globalOpts ffxi) "fFXXNm" ("made pred : " ++ show x) x) $ predicationFromXmlXN ffxi (AXML (axAnn anxml) predxml)
+							pred' = (\x -> if (contains (show x) "predication") then debugGO (ffxiGO ffxi) "fFXXNm2" ("predication created! from : " ++ (xshow predxml)) x else x) $ (\x -> debugGO (ffxiGO ffxi) "fFXXNm" ("made pred : " ++ show x) x) $ predicationFromXmlXN ffxi (AXML (axAnn anxml) predxml)
 							--termxml = drop 2 $ (applyXmlFilter (getChildren .> (isTag "OMATTR" +++ isTag "OMA" +++ isTag "OMS")) (axXml anxml))
 							termxml = drop 2 $ (applyXmlFilter (getChildren .> (isTag "OMATTR" +++ isTag "OMA" +++ isTag "OMS")) formTree)
-							predterms = map (\tx -> termFromXmlXN ffxi (debugGO (globalOpts ffxi) "fFXXN" ("will create term(1) from : " ++ (take 200 $ xshow [tx])) (AXML (axAnn anxml) [tx]))) termxml
+							predterms = map (\tx -> termFromXmlXN ffxi (debugGO (ffxiGO ffxi) "fFXXN" ("will create term(1) from : " ++ (take 200 $ xshow [tx])) (AXML (axAnn anxml) [tx]))) termxml
 						in
 						if predxml == []
 							then
@@ -6381,8 +6655,8 @@ formulaFromXmlXN ffxi anxml =
 								Debug.Trace.trace ("Impossible to create strong_equation... (" ++ (xshow formTree) ++ ")") (False_atom Id.nullRange)
 							else
 								Strong_equation
-									((\x -> if (contains (show x) "predication") then debugGO (globalOpts ffxi) "fFXXNse" ("predication created! from : (0)") x else x) (terms!!0))
-									((\x -> if (contains (show x) "predication") then debugGO (globalOpts ffxi) "fFXXNse" ("predication created! from : (1)") x else x)	(terms!!1))
+									((\x -> if (contains (show x) "predication") then debugGO (ffxiGO ffxi) "fFXXNse" ("predication created! from : (0)") x else x) (terms!!0))
+									((\x -> if (contains (show x) "predication") then debugGO (ffxiGO ffxi) "fFXXNse" ("predication created! from : (1)") x else x)	(terms!!1))
 									Id.nullRange
 					else
 					if applySym == caslMembershipS then
@@ -6402,7 +6676,7 @@ formulaFromXmlXN ffxi anxml =
 								Membership
 									(head terms)
 									(debugGO
-										(globalOpts ffxi)
+										(ffxiGO ffxi)
 										"fFXXN"
 										("Making sort for membership " ++ (show $ xnWOaToa sortxn) ++ " from " ++ sort)
 										(xnWOaToa sortxn)
@@ -6416,7 +6690,7 @@ formulaFromXmlXN ffxi anxml =
 								--getChildren .> isTag "OMBVAR" .> -- removed (see generation)
 								getChildren .> isTag "OMBIND"
 								) formTree
-							constraints = xmlToConstraints constraintsx
+							constraints = xmlToConstraintsXN ffxi (AXML (axAnn anxml) constraintsx)
 						in
 						Sort_gen_ax constraints freeType
 					else
@@ -6452,6 +6726,10 @@ xmlToConstraints::HXT.XmlTrees->[ABC.Constraint]
 xmlToConstraints t =
 	map (\n -> xmlToConstraint [n]) $ ((applyXmlFilter (isTag "OMBIND") t)::[XmlTree])
 	
+xmlToConstraintsXN::FFXInput->AnnXMLN->[ABC.Constraint]
+xmlToConstraintsXN ffxi anxml =
+	map (\n -> xmlToConstraintXN ffxi (AXML (axAnn anxml) [n])) $ ((applyXmlFilter (isTag "OMBIND") (axXml anxml))::[XmlTree])
+	
 xmlToConstraint::HXT.XmlTrees->ABC.Constraint
 xmlToConstraint t =
 	let 	sortsx = applyXmlFilter (getChildren .> isTag "OMS" .> getValue "name") t
@@ -6468,6 +6746,22 @@ xmlToConstraint t =
 	in
 		ABC.Constraint newsort conslist origsort
 
+xmlToConstraintXN::FFXInput->AnnXMLN->ABC.Constraint
+xmlToConstraintXN ffxi anxml =
+	let 	sortsx = applyXmlFilter (getChildren .> isTag "OMS" .> getValue "name") (axXml anxml)
+		newsort = Hets.stringToId $ xshow $ [sortsx!!0]
+		origsort = Hets.stringToId $ xshow $ [sortsx!!0]
+		indiopsx = applyXmlFilter (getChildren .> isTag "OMBVAR" .> getChildren .> isTag "OMATTR") (axXml anxml)
+		conslist = foldl (\cl cx ->
+				let	indices = xshow $ applyXmlFilter (getChildren .> isTag "OMATP" .> getChildren .> isTag "OMSTR" .> getChildren) [cx]
+					op = operatorFromXmlXN ffxi $ (\n -> AXML (axAnn anxml) n) $ applyXmlFilter (getChildren .> (isTag "OMBIND" +++ isTag "OMS")) [cx]
+					il = makeIndexList indices
+				in
+					cl ++ [(op, il)]
+				) ([]::[(OP_SYMB,[Int])]) (indiopsx::[XmlTree])
+	in
+		ABC.Constraint newsort conslist origsort
+		
 -- An IndexList is constructed from a String like 'n1|n2|n3...nk|' 		
 makeIndexList::String->[Int]
 makeIndexList [] = []
@@ -6694,12 +6988,12 @@ processTermXN pfinput
 	(Application op termlist _) =
 		if null termlist
 			then
-				(processOperatorXN pfinput op) +++
+				(processOperatorXN pfinput (debugGO (pfiGO pfinput) "pTXN" ("app (n) : calling pOXN for " ++ (show op)) op)) +++
 				xmlNL
 			else
 				(etag "OMA" +=
 					(xmlNL +++
-					( processOperatorXN pfinput op) +++
+					( processOperatorXN pfinput (debugGO (pfiGO pfinput) "pTXN" ("app (nn) : calling pOXN for " ++ (show op)) op)) +++
 					(foldl (\terms t ->
 						terms +++
 						(processTermXN pfinput t)
@@ -6782,7 +7076,6 @@ termFromXml fc t = if (applyXmlFilter (isTag "OMV") t) /= [] then
 
 termFromXmlXN::FFXInput->AnnXMLN->(TERM ())
 termFromXmlXN ffxi anxml =
-	--Debug.Trace.trace ("TermFromXmlXN for ("++ (show (axAnn anxml)) ++") " ++ (take 300 (xshow (axXml anxml))))  $
 	if (applyXmlFilter (isTag "OMV") (axXml anxml)) /= []
 		then
 			Debug.Trace.trace ("Warning: Untyped variable (TERM) from \"" ++ (xshow (axXml anxml))) $ Simple_id $ Hets.stringToSimpleId $ xshow $ applyXmlFilter (isTag "OMV" .> getValue "name") (axXml anxml)
@@ -6795,8 +7088,7 @@ termFromXmlXN ffxi anxml =
 					(axXml anxml)
 				/= []
 				then
-				Debug.Trace.trace ("Creating operator inside Term....(0)") $
-					Application (operatorFromXmlXN (setLW "Creating operator inside Term (0)" ffxi) anxml) [] Id.nullRange
+					Application (operatorFromXmlXN ffxi anxml) [] Id.nullRange
 				else
 					Qual_var
 						(Hets.stringToSimpleId $ xshow $
@@ -6823,14 +7115,12 @@ termFromXmlXN ffxi anxml =
 		else
 		if (applyXmlFilter (isTag "OMA") (axXml anxml) ) /= []
 			then
-				--Debug.Trace.trace ("Creating operator inside Term....(1) ") $
 				let
-					operator = (\op' -> if ( (opName op' ) == "predication" ) then debugGO (globalOpts ffxi) "tFXXN" ("predication made from : " ++ (xshow $ axXml anxml) ++ ("LW: " ++ (lastWords ffxi))) op' else op' ) $ operatorFromXmlXN
-						(setLW "Creating operator inside Term (1)" ffxi)
+					operator = operatorFromXmlXN
+						ffxi
 						(AXML (axAnn anxml) ([head $ applyXmlFilter (getChildren .> isOperatorXml) (axXml anxml)]))
-					terms = map (\n -> (\x -> if (contains (show x) "predication") then debugGO (globalOpts ffxi) "tFXXNc" ("term of : " ++ (xshow [n])) x else x) $ termFromXmlXN (setLW "Greetings from internals..." ffxi) (AXML (axAnn anxml) [n])) $
-						--applyXmlFilter isTermXml $
-						--drop 1 $ -- drop out operator
+					terms = map (\n -> termFromXmlXN ffxi (AXML (axAnn anxml) [n])) $
+						drop 1 $ -- drop out operator
 						applyXmlFilter (getChildren .> isTermXml) (axXml anxml) -- removed 'OrOp'
 				in
 				if (opName operator) == "PROJ" then
@@ -6838,19 +7128,28 @@ termFromXmlXN ffxi anxml =
 			else
 			if (opName operator) == "IfThenElse" then
 				let
-					formula = formulaFromXmlXN (setLW "back to formula-processing" ffxi) ( (\x -> debugGO (globalOpts ffxi) "tFXXN" ("IfThenElseForm : " ++ xshow (axXml x)) x) (AXML (axAnn anxml) [head (applyXmlFilter (getChildren .> (isTag "OMA" +++ isTag "OMBIND")) (axXml anxml))]))
+					iteChildsX = applyXmlFilter (getChildren .> (isTag "OMS" +++ isTag "OMATTR" +++ isTag "OMA" +++ isTag "OMV")) (axXml anxml)
+					iteCondX = singleitem 2 iteChildsX
+					iteThenX = singleitem 3 iteChildsX
+					iteElseX = singleitem 4 iteChildsX
+					iteCond = formulaFromXmlXN ffxi $ debugGO (ffxiGO ffxi) "tFXXNformula" ("Creating Formula for IfThenElse from : " ++ (xshow iteCondX)) (AXML (axAnn anxml) iteCondX)
+					iteThen = termFromXmlXN ffxi (AXML (axAnn anxml) iteThenX)
+					iteElse = termFromXmlXN ffxi (AXML (axAnn anxml) iteElseX)
 				in
-					debugGO (globalOpts ffxi) "tFXXN" ("IfThenElse creation...") $ 
-					Conditional (head $ (if length terms > 2 then drop 1 terms else terms)) formula (head $ (if length terms > 2 then drop 2 terms else drop 1 terms)) Id.nullRange 
+					debugGO (ffxiGO ffxi) "tFXXN" ("IfThenElse creation...") $ 
+					Conditional
+						iteThen
+						iteCond
+						iteElse
+						Id.nullRange 
 			else
 				Application operator terms Id.nullRange
 		else
 		if (applyXmlFilter (isTag "OMS") (axXml anxml) ) /= []
 			then
-				Debug.Trace.trace ("Creating operator insinde Term....(2)") $
 				let
-					operator = operatorFromXmlXN
-						(setLW "Creating operator inside Term (2)" ffxi)
+					operator = (\x -> debugGO (ffxiGO ffxi) "tFXXNo" ("operator : " ++ (show x)) x) $ operatorFromXmlXN
+						ffxi
 						anxml
 				in
 				Application operator [] Id.nullRange
@@ -7081,24 +7380,24 @@ operatorFromXmlXN ffxi anxml =
 		sxname = xshow $ applyXmlFilter (getValue "name") symbolXml
 		scd = xshow $ applyXmlFilter (getValue "cd") symbolXml
 		theonode = case getNodeForTheoryName (xnTheorySet ffxi) scd of
-			Nothing -> error ("No Theory for used operator! (" ++ scd ++ "); Last words :" ++ (lastWords ffxi))
+			Nothing -> error ("No Theory for used operator! (" ++ scd ++ ")")
 			(Just n) -> n
 		theoxn = case findByName scd (xnTheorySet ffxi) of
-			Nothing -> error ("No Theory for used operator! (\"" ++ sxname ++ "\" in \"" ++ scd ++ "\" Context : \"" ++ (take 200 $ xshow (axXml anxml)) ++ "\"); Last words :" ++ (lastWords ffxi))
+			Nothing -> error ("No Theory for used operator! (\"" ++ sxname ++ "\" in \"" ++ scd ++ "\" Context : \"" ++ (take 200 $ xshow (axXml anxml)) ++ "\")")
 			(Just theoxn' ) -> theoxn'
 		theoops = Map.findWithDefault Set.empty (xnName theoxn) (xnOpsMap ffxi) 
 		opxnid = case findByName sxname (map fst $ Set.toList theoops) of
-			Nothing -> error ("No such operator in Theory! (" ++ sxname ++ " in " ++ (show theoops) ++ "); Last words :" ++ (lastWords ffxi))
+			Nothing -> error ("No such operator in Theory! (" ++ sxname ++ " in " ++ (show theoops) ++ ")")
 			(Just opxnid' ) -> opxnid'
 		opXNWON = case lookup opxnid $ Set.toList theoops of
-			Nothing -> error ("Operator not found!; Last words :" ++ (lastWords ffxi))
+			Nothing -> error ("Operator not found!")
 			(Just oxnwon) -> oxnwon
 	in
 		if (scd==caslS) 
 			then -- eventually there should be an aux. casl-theory while processing...
-				Op_name $ Hets.stringToId sxname
+				Op_name $ debugGO (ffxiGO ffxi) "oFXXN" ("creating casl operator for : " ++ sxname) $ Hets.stringToId sxname
 			else
-				Qual_op_name (xnWOaToa opxnid) (cv_OpTypeToOp_type $ opTypeXNWONToOpType opXNWON) Id.nullRange
+				Qual_op_name ((\x -> debugGO (ffxiGO ffxi) "oFXXN" ("creating operator for : " ++ sxname ++ " (" ++ (show x) ++ ")") x) (xnWOaToa opxnid)) (cv_OpTypeToOp_type $ opTypeXNWONToOpType opXNWON) Id.nullRange
 		
 getSorts::XmlTrees->[String]
 getSorts st = map (\t -> xshow $ applyXmlFilter (getValue "name") [t]) ((applyXmlFilter (getChildren .> isTag "OMATP" .> getChildren .> isTag "OMS" .> withValue "name" (/=typeS)) st)::[XmlTree])
