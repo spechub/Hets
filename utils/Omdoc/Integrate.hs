@@ -656,7 +656,7 @@ main =
 				FTOMDoc ->
 						do
 						when debug (putStrLn ("Trying to load omdoc-file..."))
-						ig <- makeImportGraph globalOptions input searchpath
+						ig <- makeImportGraphFullXml globalOptions input searchpath
 						when (newinput && debug)
 							(putStrLn "Loading with new input-methods...")
 						(return $ dGraphGToLibEnv globalOptions $ hybridGToDGraphG globalOptions $
@@ -3540,7 +3540,13 @@ importsFromXmlTheory t =
 	in
 		foldl (\imps i ->
 			let
-				from = drop 1 $ xshow $ applyXmlFilter (getValue "from") [i]
+				from = xshow $ applyXmlFilter (getValue "from") [i]
+				mfromURI = URI.parseURIReference from
+				fromname = case mfromURI of
+					Nothing -> from
+					(Just uri) -> case URI.uriFragment uri of
+						"" -> from
+						f -> drop 1 f
 				mm = foldl (\(mmsm, mmfm, mmpm, mmhs) m ->
 					let
 						(nmmsm, nmmfm, nmmpm, nmmhs) = xmlToMorphismMap [m]
@@ -3548,9 +3554,9 @@ importsFromXmlTheory t =
 						(Map.union mmsm nmmsm, Map.union mmfm nmmfm, Map.union mmpm nmmpm, Set.union mmhs nmmhs)
 					) (Map.empty, Map.empty, Map.empty, Set.empty) $ applyXmlFilter (getChildren .> isTag "morphism") [i]
 			in
-				Set.union imps (Set.singleton (from, (Just mm)))
+				Set.union imps (Set.singleton (fromname, (Just mm)))
 		) Set.empty imports'
-	
+		
 -- this is currently identical to above function
 importsXNFromXmlTheory::FFXInput->AnnXMLN->Hets.Imports
 importsXNFromXmlTheory ffxi anxml =
@@ -3559,7 +3565,13 @@ importsXNFromXmlTheory ffxi anxml =
 	in
 		foldl (\imps i ->
 			let
-				from = drop 1 $ xshow $ applyXmlFilter (getValue "from") [i]
+				from = xshow $ applyXmlFilter (getValue "from") [i]
+				mfromURI = URI.parseURIReference from
+				fromname = case mfromURI of
+					Nothing -> from
+					(Just uri) -> case URI.uriFragment uri of
+						"" -> from
+						f -> drop 1 f
 				mm = foldl (\(mmsm, mmfm, mmpm, mmhs) m ->
 					let
 						(nmmsm, nmmfm, nmmpm, nmmhs) = xmlToMorphismMap [m]
@@ -3567,7 +3579,7 @@ importsXNFromXmlTheory ffxi anxml =
 						(Map.union mmsm nmmsm, Map.union mmfm nmmfm, Map.union mmpm nmmpm, Set.union mmhs nmmhs)
 					) (Map.empty, Map.empty, Map.empty, Set.empty) $ applyXmlFilter (getChildren .> isTag "morphism") [i]
 			in
-				Set.union imps (Set.singleton (from, (Just mm)))
+				Set.union imps (Set.singleton (fromname, (Just mm)))
 		) Set.empty imports'
 		
 importsFromXml::HXT.XmlTrees->Hets.ImportsMap
@@ -3800,10 +3812,9 @@ importGraphToDGNodesXN go ig n =
 			(Just n' ) -> n'
 		omdocchilds = (\(S _ (omdoc' , _)) -> applyXmlFilter (isTag "omdoc" .> getChildren) omdoc' ) node
 		(ffxi, axtheoryset) = debugGO go "iGTDGNXN" "Preprocessed XML..." $ (\(S _ (omdoc' , _)) -> preprocessXml go omdoc' ) node
-		importsMap' = debugGO go "iGTDGNXN" "Imports collected..." $ importsFromXml omdocchilds
 		(theonames, sortsmap, relsmap, predsmap, opsmap) = (xnTheorySet ffxi, xnSortsMap ffxi, xnRelsMap ffxi, xnPredsMap ffxi, xnOpsMap ffxi)
 		sensmap = (\smap -> debugGO go "iGTDGNXN" ("Sentences extracted... : " ++ (showSenNames smap)) smap) $ sensXNWONFromXml go ffxi axtheoryset
-		refimports = filter ( \(_,from,_) -> from /= n) $ Graph.out ig n
+		refimports = (\x -> debugGO go "iGTDGNXN" ("Refimports : " ++ show x) x) $ filter ( \(_,from,_) -> from /= n) $ Graph.out ig n
 		refs = map ( \(_, from, (TI (theoname, _))) ->
 			let
 				moriginnode = Graph.lab ig from
@@ -3840,7 +3851,7 @@ importGraphToDGNodesXN go ig n =
 			in
 				debugGO go "iGTDGNXN" ("Creating Node with NODE_NAME " ++ (show (snd (xnItem xntheory))) ++ ", XmlName was " ++ (xnName xntheory))
 					(dgnodelist ++ [xnMapsToDGNodeLab go (snd (xnItem xntheory)) psorts trels ppreds pops tsens])
-			) [] theonames
+			) refs theonames
 	
 
 cleanNodeName::DGNodeLab->DGNodeLab
@@ -4111,7 +4122,7 @@ instance Show TheoryImport where
 	show (TI (tn, ts)) = ("Import of \"" ++ tn ++ "\" from \"" ++ ts ++ "\".")
 
 -- | source name, source (absolute)
-data Source a = S (String, String) a 
+data Source a = S { nameAndURI::(String, String), sContent::a } 
 
 instance Show (Source a) where
 	show (S (sn, sf) _) = ("Source \"" ++ sn ++ "\" File : \"" ++ sf ++ "\".");
@@ -4264,7 +4275,7 @@ getImportedTheories xml =
 	let
 		omdoc = applyXmlFilter (getChildren .> isTag "omdoc") xml
 		catmap = getCatalogueInformation omdoc
-		imports = map (\n -> xshow [n]) $ applyXmlFilter (getChildren .> isTag "theory" .> getChildren .> isTag "imports" .> getValue "from") omdoc
+		timports = map (\n -> xshow [n]) $ applyXmlFilter (getChildren .> isTag "theory" .> getChildren .> isTag "imports" .> getValue "from") omdoc
 		externalImports = foldl (\eI i ->
 			let
 				muri = URI.parseURIReference i
@@ -4277,7 +4288,7 @@ getImportedTheories xml =
 						Map.insert fragment path eI
 					else
 					 	eI
-						) Map.empty imports
+						) Map.empty timports
 	in
 		Map.union catmap externalImports
 
@@ -4361,12 +4372,13 @@ makeImportGraphFullXml go source includes =
 			Nothing -> ioError $ userError ("Unable to find \"" ++ source ++ "\"")
 			(Just doc) ->
 					(let
-						theoname = xshow $ applyXmlFilter (getChildren .> isTag "omdoc" .> getQualValue "xml" "id") doc
+						omdoc = applyXmlFilter (getChildren .> isTag "omdoc") doc
+						omdocid = xshow $ applyXmlFilter (getQualValue "xml" "id") omdoc
 						mturi = URI.parseURIReference $ xshow $ getValue "transfer-URI" (head doc)
 						turi = fromMaybe (error "Cannot parse URIReference...") mturi
 						docmap = getImportedTheories doc
 						rdocmap = Map.toList $ Map.map (\s -> relativeSource turi s) docmap
-						initialgraph = Graph.mkGraph [(1, S (theoname, (show turi)) doc)] []
+						initialgraph = Graph.mkGraph [(1, S (omdocid, (show turi)) omdoc)] []
 					in
 						foldl
 							(\gio (itname, ituri)  ->
@@ -4377,7 +4389,7 @@ makeImportGraphFullXml go source includes =
 		buildGraph::ImportGraph HXT.XmlTrees->Graph.Node->TheoryImport->IO (ImportGraph HXT.XmlTrees)
 		buildGraph ig n ti@(TI (theoname, theouri)) =
 			let
-				mimportsource =	find (\(_, (S (_, suri) _)) -> (suri == theouri)) (Graph.labNodes (Debug.Trace.trace ("Already there ?") ig))
+				mimportsource =	find (\(_, (S (_, suri) _)) -> (suri == theouri)) (Graph.labNodes ig)
 			in
 			do
 				case mimportsource of
@@ -4399,18 +4411,14 @@ makeImportGraphFullXml go source includes =
 												fromMaybe
 													(error ("Unable to import \""++ theoname ++ "\"from \"" ++ theouri ++ "\""))
 													mdoc
+											omdoc = applyXmlFilter (getChildren .> isTag "omdoc") doc
+											omdocid = xshow $ applyXmlFilter (getQualValue "xml" "id") omdoc
 											imturi = URI.parseURIReference $ xshow $ getValue "transfer-URI" (head doc)
 											ituri = fromMaybe (error "Cannot parse URIReference...") imturi
 											iimports = getImportedTheories doc
 											irimports = Map.toList $ Map.map (\s -> relativeSource ituri s) iimports
 											newnodenum = (Graph.noNodes ig) + 1
-											newsource =
-												S
-													(
-															(xshow $ applyXmlFilter (getChildren .> isTag "omdoc" .> getQualValue "xml" "id") doc)
-														, (show ituri)
-													)
-													doc
+											newsource =	S (omdocid, (show ituri))	omdoc
 											newgraph = Graph.insEdge (n, newnodenum, ti) $ Graph.insNode (newnodenum, newsource) ig
 										in
 											(newgraph, newnodenum, irimports)
