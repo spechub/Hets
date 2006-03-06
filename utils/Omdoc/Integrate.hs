@@ -2999,7 +2999,12 @@ nodeNamesXNFromXml axmlset =
 						isTag "use" .> withSValue "format" "Hets" .>
 						getChildren
 					) (axXml axml)
-				theohetsnodename = idToNodeName $ read theohetsnodenames
+				theohetsnodename =
+					if (theohetsnodenames == "") || (isPrefixOf "AnonNode" theoid) 
+						then
+							idToNodeName $ read ("["++theoid++",,0]")
+						else 
+							idToNodeName $ read theohetsnodenames
 			in
 				txnl ++ [XmlNamed ((axAnn axml), theohetsnodename) theoid]
 		)
