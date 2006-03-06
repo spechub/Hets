@@ -184,19 +184,46 @@ know what to think of it.
 
 ==== Case expressions ====
 
-Prefer case expressions over pattern binding declarations.
+Prefer case expressions over pattern binding declarations with
+multiple equations.
 
 Not always nice:
   longFunctionName (Foo: _ : _) = e1
   longFunctionName (Bar: _) = e2
 
-Better (I think):
+Better:
   longFunctionName arg = case arg of
         Foo : _ : _ -> e1
         Bar : _ -> e2
         _ -> error "ProgrammingGuidelines.longFunctionName"
 
-For partial functions document their preconditions (if not obvious)
+In
+http://research.microsoft.com/~simonpj/papers/haskell-retrospective/
+the first example is said to be written in "declaration style". The
+equations look like written for a rewrite system (although their order
+matters of course).
+
+But this declarative style is only nice for toy examples and annoying
+if functions are renamed or if the number of arguments changes.
+
+The other extreme (according to SPJ) is "expression style":
+  longFunctionName = \ arg -> ...
+
+We don't propose this style either. We propose to use as much pattern
+matching (including as-patterns) on a single left-hand-side as appropriate.
+
+However, the expression style with a lambda term may come in handy, when
+setting record fields of a function type. 
+
+We avoid lambda expressions if this is easily possibly using the
+Prelude functions const, flip, curry, uncurry or section notation or
+plain partial application. We do not indroduce an auxiliary function only to
+avoid the lambda, though.
+
+
+==== Partial functions ====
+
+For partial functions do document their preconditions (if not obvious)
 and make sure that partial functions are only called when
 preconditions are obviously fulfilled (i.e. by a case statement or a
 previous test). Particularly the call of "head" should be used with
@@ -208,13 +235,20 @@ Data.Maybe) can be avoided by using the "maybe" function:
     maybe (error "<ModuleName>.<function>") id $ Map.lookup key map
 
 Generally we require you to be more explicit about failure
-cases. Surely a missing (or an irrefutable) pattern
-would precisely report the position of a runtime error, but these are
-not so obvious when reading the code.
+cases. Surely a missing (or an irrefutable) pattern would precisely
+report the position of a runtime error, but these are not so obvious
+when reading the code.
 
-Do avoid mixing "let" and "where". (I prefer "let" and have auxiliary
-function on the top-level that are not exported.) Export lists also
-support the detection of unused functions.
+
+==== Let or where expressions ====
+
+Do avoid mixing and nesting "let" and "where". (I prefer the
+expression-stylistic "let".) Use auxiliary top-level functions that
+you do not export. Export lists also support the detection of unused
+functions.
+
+
+==== Code reuse ====
 
 If you notice that you're doing the same task again, try to generalize
 it in order to avoid duplicate code. It is frustrating to change the
