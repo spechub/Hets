@@ -99,6 +99,8 @@ import Common.GlobalAnnotations
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Pretty as Pretty
 
+import Data.Char (toLower)
+
 infixl 6 <>
 infixl 6 <+>
 infixl 5 $+$
@@ -290,8 +292,12 @@ indentBy = IndentBy
 {- | transform document according to a specific display map and other
 global annotations like precedences, associativities, and literal
 annotations. -}
-codeOut :: Map.Map Id [Token] -> GlobalAnnos -> Doc -> Doc
-codeOut m _ = foldDoc idRecord { foldAnnoDoc = \ _ -> small . codeOutAnno m }
+codeOut :: GlobalAnnos -> Map.Map Id [Token] -> Doc -> Doc
+codeOut ga m = foldDoc idRecord 
+    { foldAnnoDoc = \ _ -> small . codeOutAnno m
+    , foldIdDoc = \ _ -> codeOutId m
+    , foldIdApplDoc = \ _ -> codeOutAppl ga m 
+    }
 
 -- | convert for outputting latex
 toLatex :: Doc -> Pretty.Doc
@@ -299,7 +305,21 @@ toLatex = undefined
 
 -- | simple conversion to a standard text document
 toText :: Doc -> Pretty.Doc
-toText = undefined
+toText = foldDoc DocRecord
+    { foldEmpty = \ _ -> Pretty.empty
+    , foldAnnoDoc = error "Doc.toText.AnnoDoc"
+    , foldIdDoc = error "Doc.toText.IdDoc"
+    , foldIdApplDoc = error "Doc.toText.IdApplDoc"
+    , foldText = \ _ _ -> Pretty.text
+    , foldCat = \ _ c -> case c of 
+          Vert -> Pretty.vcat
+          Horiz -> Pretty.hcat 
+          HorizOrVert -> Pretty.cat
+          Fill -> Pretty.fcat
+    , foldAttr = \ _ _ -> id
+    , foldIndentBy = \ _ d1 d2 d3 -> 
+          d2 Pretty.$$ Pretty.nest (length $ show d1) d3
+    } . codeOut emptyGlobalAnnos Map.empty
 
 data DocRecord a = DocRecord
     { foldEmpty :: Doc -> a
@@ -351,6 +371,18 @@ wrapAnnoLines a l b = case l of
 percent :: Doc
 percent = symbol "%"
 
+annoRparen :: Doc
+annoRparen = rparen <> percent
+
+cCommaT :: Map.Map Id [Token] -> [Id] -> [Doc]
+cCommaT m = punctuate comma . map (codeOutId m)
+
+hCommaT :: Map.Map Id [Token] -> [Id] -> Doc
+hCommaT m = hsep . cCommaT m
+
+fCommaT :: Map.Map Id [Token] -> [Id] -> Doc
+fCommaT m = fsep . cCommaT m
+
 codeOutAnno :: Map.Map Id [Token] -> Annotation -> Doc
 codeOutAnno m a = case a of
     Unparsed_anno aw at _ -> case at of
@@ -358,17 +390,38 @@ codeOutAnno m a = case a of
             Annote_word w -> annoLine w
             Comment_start -> symbol "%%") <> symbol s
         Group_anno l -> let ds = map symbol l in case aw of
-            Annote_word w -> wrapAnnoLines (annoLparen w) ds rparen
+            Annote_word w -> wrapAnnoLines (annoLparen w) ds annoRparen
             Comment_start -> wrapAnnoLines (percent <> lbrace) ds rbrace
     Display_anno i ds _ -> annoLparen "display" <+> fsep
         [ codeOutId m i
         , vcat $ map ( \ (d, s) ->
                        percent <> text (lookupDisplayFormat d) <+> symbol s) ds
         , rparen ]
-    _ -> error "codeOutAnno"
+    List_anno i1 i2 i3 _ -> annoLine "list" <+> hCommaT m [i1, i2, i3]
+    Number_anno i _ -> annoLine "number" <+> codeOutId m i
+    Float_anno i1 i2 _ -> annoLine "floating" <+> hCommaT m [i1, i2]
+    String_anno i1 i2 _ -> annoLine "string" <+> hCommaT m [i1, i2]
+    Prec_anno p l1 l2 _ -> annoLparen "prec" <+> 
+        fsep [ braces $ fCommaT m l1
+             , symbol $ case p of 
+                          Lower -> "<"
+                          Higher -> ">"
+                          BothDirections -> "<>"
+                          NoDirection -> error "codeOutAnno"
+             , braces $ fCommaT m l2
+             , annoRparen ]
+    Assoc_anno d l _ -> annoLparen "assoc" <> 
+                        symbol "_" <> text (map toLower $ tail $ show d)
+                        <+> fsep (cCommaT m l ++ [annoRparen])
+    Label l _ -> wrapAnnoLines (annoLparen "") (map symbol l) annoRparen
+    Semantic_anno sa _ -> annoLine $ lookupSemanticAnno sa
 
 codeOutId :: Map.Map Id [Token] -> Id -> Doc
 codeOutId m i = fcat $ case Map.lookup i m of
     Nothing -> map (symbol . tokStr) $ getTokenList place i
     Just ts -> map (\ t -> let s = tokStr t in
                            if isPlace t then symbol s else text s) ts
+
+-- print literal terms and mixfix applications
+codeOutAppl :: GlobalAnnos -> Map.Map Id [Token] -> Id -> [Doc] -> Doc
+codeOutAppl _ m i args = codeOutId m i <> parens (fsep $ punctuate comma args)
