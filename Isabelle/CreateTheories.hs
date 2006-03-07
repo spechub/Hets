@@ -35,7 +35,7 @@ import CASL.Logic_CASL
 import HasCASL.Logic_HasCASL
 
 import Comorphisms.CASL2PCFOL
-import Comorphisms.PCFOL2CFOL
+import Comorphisms.CASL2SubCFOL
 import Comorphisms.CFOL2IsabelleHOL
 import Comorphisms.HasCASL2IsabelleHOL
 #ifdef PROGRAMATICA
@@ -49,7 +49,7 @@ printTheory libdir ln sn (G_theory lid sign0 sens0) =
                     r1 = do
                       th0 <- coerceBasicTheory lid CASL "" th
                       th1 <- map_theory CASL2PCFOL th0
-                      th2 <- map_theory PCFOL2CFOL th1
+                      th2 <- map_theory CASL2SubCFOL th1
                       map_theory CFOL2IsabelleHOL th2
 #ifdef PROGRAMATICA
                     r2 = do
