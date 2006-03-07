@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Coding out partiality (SubPCFOL= -> SubCFOL=), 
+Coding out partiality (SubPCFOL= -> SubCFOL=),
 -}
 
 module Comorphisms.CASL2SubCFOL where
@@ -22,10 +22,10 @@ import Common.AS_Annotation
 import Data.List
 
 -- CASL
-import CASL.Logic_CASL 
+import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
 import CASL.Sign
-import CASL.Morphism 
+import CASL.Morphism
 import CASL.Sublogic hiding(bottom)
 import CASL.Overload
 import CASL.Fold
@@ -41,12 +41,12 @@ instance Language CASL2SubCFOL -- default definition is okay
 instance Comorphism CASL2SubCFOL
                CASL CASL_Sublogics
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
-               CASLSign 
+               CASLSign
                CASLMor
                Symbol RawSymbol ()
                CASL CASL_Sublogics
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
-               CASLSign 
+               CASLSign
                CASLMor
                Symbol RawSymbol () where
     sourceLogic CASL2SubCFOL = CASL
@@ -72,11 +72,11 @@ instance Comorphism CASL2SubCFOL
     mapSublogic CASL2SubCFOL sl = sl { has_part    = False
                                      , has_pred    = True
                                      , which_logic = FOL
-                                     , has_eq      = True} 
-    map_theory CASL2SubCFOL = mkTheoryMapping ( \ sig -> 
+                                     , has_eq      = True}
+    map_theory CASL2SubCFOL = mkTheoryMapping ( \ sig ->
       let e = encodeSig sig in return (e, generateAxioms sig))
       (map_sentence CASL2SubCFOL)
-    map_morphism CASL2SubCFOL mor = return 
+    map_morphism CASL2SubCFOL mor = return
       (mor  { msource =  encodeSig $ msource mor,
               mtarget =  encodeSig $ mtarget mor })
       -- other components need not to be adapted!
@@ -85,7 +85,7 @@ instance Comorphism CASL2SubCFOL
 
 -- | Add projections to the signature
 encodeSig :: Sign f e -> Sign f e
-encodeSig sig = if Set.null bsorts then sig else 
+encodeSig sig = if Set.null bsorts then sig else
     sig { opMap = projOpMap, predMap = newpredMap } where
    newTotalMap = Map.map (Set.map $ makeTotal Total) $ opMap sig
    botType x = OpType {opKind = Total, opArgs=[], opRes=x }
@@ -98,38 +98,38 @@ encodeSig sig = if Set.null bsorts then sig else
    rel = Rel.irreflex $ sortRel sig
    total (s, s') = OpType{opKind = Total, opArgs = [s'], opRes = s}
    setprojOptype = Set.map total $ Rel.toSet rel
-   projOpMap = Set.fold ( \ t -> 
+   projOpMap = Set.fold ( \ t ->
                           Map.insert (uniqueProjName $ toOP_TYPE t)
                         $ Set.singleton t) botOpMap setprojOptype
 
 generateAxioms :: Sign () e -> [Named (FORMULA ())]
-generateAxioms sig = filter (not . is_True_atom . sentence) $ 
-  map (mapNamed $ simplifyFormula id . rmDefs bsorts id . renameFormula id) $
-  concat(
+generateAxioms sig = filter (not . is_True_atom . sentence) $
+  map (mapNamed $ simplifyFormula id . rmDefs bsorts id) $
+    map (mapNamed $ renameFormula id) (concat
     [inlineAxioms CASL
       " sort s < s'    \
       \ op pr : s'->s  \
       \ pred d:s       \
       \ forall x,y:s'. d(pr(x)) /\\ d(pr(y)) /\\ pr(x)=pr(y) => x=y \
-      \ %(ga_projection_injectivity)% " 
+      \ %(ga_projection_injectivity)% "
     ++ inlineAxioms CASL
      " sort s < s'     \
       \ op pr : s'->s  \
       \ pred d:s       \
-      \ forall x:s . d(x) => pr(x)=x     %(ga_projection)% " 
+      \ forall x:s . d(x) => pr(x)=x     %(ga_projection)% "
       | s <- sorts, let y =  mkSimpleId "y",
-        s' <- minSupers s] ++
-    [inlineAxioms CASL 
+        s' <- minSupers s])
+    ++ concat([inlineAxioms CASL
       " sort s          \
       \ pred d:s        \
       \ . exists x:s.d(x)            %(ga_nonEmpty)%" ++
-     inlineAxioms CASL 
+     inlineAxioms CASL
       " sort s              \
       \ op bottom:s         \
       \ pred d:s            \
       \ forall x:s . not d(x) <=> x=bottom            %(ga_notDefBottom)%"
         | s <- sortList ] ++
-    [inlineAxioms CASL 
+    [inlineAxioms CASL
       " sort t             \
       \ sorts s_i          \
       \ sorts s_k          \
@@ -138,7 +138,7 @@ generateAxioms sig = filter (not . is_True_atom . sentence) $
       \ forall y_i:s_i . def f(y_i) <=> def y_k /\\ def y_k %(ga_totality)%"
         | (f,typ) <- opList, opKind typ == Total,
           let s=opArgs typ; t=opRes typ; y= mkVars (length s) ] ++
-    [inlineAxioms CASL 
+    [inlineAxioms CASL
       " sort t             \
       \ sorts s_i          \
       \ sorts s_k          \
@@ -147,18 +147,18 @@ generateAxioms sig = filter (not . is_True_atom . sentence) $
       \ forall y_i:s_i . def f(y_i) => def y_k /\\ def y_k %(ga_strictness)%"
         | (f,typ) <- opList, opKind typ == Partial,
           let s=opArgs typ; t=opRes typ; y= mkVars (length s) ] ++
-    [inlineAxioms CASL 
+    [inlineAxioms CASL
       " sorts s_i          \
       \ sorts s_k          \
       \ pred p:s_i     \
       \ var y_k:s_k             \
       \ forall y_i:s_i . p(y_i) => def y_k /\\ def y_k \
       \ %(ga_predicate_strictness)%"
-        | (p,typ) <- predList, let s=predArgs typ; y=mkVars (length s) ] ) 
-    where 
+        | (p,typ) <- predList, let s=predArgs typ; y=mkVars (length s) ] )
+    where
         x = mkSimpleId "x"
         pr = projName
-        minSupers so = keepMinimals sig2 id $ Set.toList $ Set.delete so 
+        minSupers so = keepMinimals sig2 id $ Set.toList $ Set.delete so
                            $ supersortsOf so sig2
         sorts = Set.toList $ sortSet sig
         sig2 = sig { sortRel = Rel.irreflex $ sortRel sig }
@@ -174,15 +174,15 @@ generateAxioms sig = filter (not . is_True_atom . sentence) $
 codeRecord :: Set.Set SORT -> (f -> f) -> Record f (FORMULA f) (TERM f)
 codeRecord bsrts mf = (mapRecord mf)
     { foldQuantification = \  _ q vs qf ps ->
-      case q of 
-      Universal -> 
+      case q of
+      Universal ->
           Quantification q vs (Implication (defVards bsrts vs) qf False ps) ps
       _ -> Quantification q vs (Conjunction [defVards bsrts vs, qf] ps) ps
     , foldDefinedness = \ _ t ps -> defined bsrts t (term_sort t) ps
     , foldExistl_equation = \ _ t1 t2 ps ->
       Conjunction[Strong_equation t1 t2 ps,
                   defined bsrts t1 (term_sort t1) ps] ps
-    , foldMembership = \ _ t s ps -> 
+    , foldMembership = \ _ t s ps ->
           defined bsrts (projectUnique Total ps t s) s ps
     , foldSort_gen_ax = \ _ cs b -> Sort_gen_ax (map totalizeConstraint cs) b
     , foldApplication = \ _ o args ps -> Application (totalizeOpSymb o) args ps
