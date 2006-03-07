@@ -10,7 +10,7 @@ ops __+__, __*__ : Nat * Nat -> Nat;
     __! : Nat -> Nat;
     __-?__ : Nat * Nat ->? Nat;
     __/?__ : Nat * Nat ->? Nat;
-    __div__, __mod__, __quot__, __rem__ : Nat * Nat ->? Nat;
+    __div__, __mod__, __quot__, __rem__ : Nat * Nat ->? Nat; %()%
     %%   Operations to represent natural numbers with digits:
     1, 2, 3, 4, 5, 6, 7, 8, 9 : Nat;
     __@@__ : Nat * Nat -> Nat
@@ -263,9 +263,9 @@ ops 1, 2, 3, 4 : s;
 . true %(The true formula)%
 . true
 %(and this
-             also goes
-             along several lines! 
-             and with special stuff: -*/\&=<>BCDEFGHIJKLM!% )%
+           also goes
+           along several lines! 
+           and with special stuff: -*/\&=<>BCDEFGHIJKLM!% )%
 sort s
 op __and'__ : s
 sort a

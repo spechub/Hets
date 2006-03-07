@@ -18,8 +18,8 @@ sorts a; %(bla)%
       %{bla2}%
 sort a < b %(dafasdf)%
 sorts a, b, c, d < e
-sorts a = b = c = d;
-      b = {a : s . b}
+sorts a = b = c = d; %()%
+      b = {a : s . b} %()%
 sorts a;
       a = d;
       d = b

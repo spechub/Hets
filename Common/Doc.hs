@@ -98,8 +98,8 @@ import Common.AS_Annotation
 import Common.GlobalAnnotations
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Pretty as Pretty
-
 import Data.Char (toLower)
+import Common.LaTeX_funs
 
 infixl 6 <>
 infixl 6 <+>
@@ -289,37 +289,7 @@ of the first one -}
 indentBy :: Doc -> Doc -> Doc -> Doc
 indentBy = IndentBy
 
-{- | transform document according to a specific display map and other
-global annotations like precedences, associativities, and literal
-annotations. -}
-codeOut :: GlobalAnnos -> Map.Map Id [Token] -> Doc -> Doc
-codeOut ga m = foldDoc idRecord 
-    { foldAnnoDoc = \ _ -> small . codeOutAnno m
-    , foldIdDoc = \ _ -> codeOutId m
-    , foldIdApplDoc = \ _ -> codeOutAppl ga m 
-    }
-
--- | convert for outputting latex
-toLatex :: Doc -> Pretty.Doc
-toLatex = undefined
-
--- | simple conversion to a standard text document
-toText :: Doc -> Pretty.Doc
-toText = foldDoc DocRecord
-    { foldEmpty = \ _ -> Pretty.empty
-    , foldAnnoDoc = error "Doc.toText.AnnoDoc"
-    , foldIdDoc = error "Doc.toText.IdDoc"
-    , foldIdApplDoc = error "Doc.toText.IdApplDoc"
-    , foldText = \ _ _ -> Pretty.text
-    , foldCat = \ _ c -> case c of 
-          Vert -> Pretty.vcat
-          Horiz -> Pretty.hcat 
-          HorizOrVert -> Pretty.cat
-          Fill -> Pretty.fcat
-    , foldAttr = \ _ _ -> id
-    , foldIndentBy = \ _ d1 d2 d3 -> 
-          d2 Pretty.$$ Pretty.nest (length $ show d1) d3
-    } . codeOut emptyGlobalAnnos Map.empty
+-- * folding stuff
 
 data DocRecord a = DocRecord
     { foldEmpty :: Doc -> a
@@ -330,18 +300,6 @@ data DocRecord a = DocRecord
     , foldCat :: Doc -> ComposeKind -> [a] -> a
     , foldAttr :: Doc -> Format -> a -> a
     , foldIndentBy :: Doc -> a -> a -> a -> a
-    }
-
-idRecord :: DocRecord Doc
-idRecord = DocRecord
-    { foldEmpty = \ _ -> Empty
-    , foldAnnoDoc = \ _ -> AnnoDoc
-    , foldIdDoc = \ _ -> IdDoc
-    , foldIdApplDoc = \ _ -> IdApplDoc
-    , foldText = \ _ -> Text
-    , foldCat = \ _ -> Cat
-    , foldAttr = \ _ -> Attr
-    , foldIndentBy = \ _ -> IndentBy
     }
 
 foldDoc :: DocRecord a -> Doc -> a
@@ -356,11 +314,115 @@ foldDoc r d = case d of
     IndentBy e f g ->
         foldIndentBy r d (foldDoc r e) (foldDoc r f) $ foldDoc r g
 
+idRecord :: DocRecord Doc
+idRecord = DocRecord
+    { foldEmpty = \ _ -> Empty
+    , foldAnnoDoc = \ _ -> AnnoDoc
+    , foldIdDoc = \ _ -> IdDoc
+    , foldIdApplDoc = \ _ -> IdApplDoc
+    , foldText = \ _ -> Text
+    , foldCat = \ _ -> Cat
+    , foldAttr = \ _ -> Attr
+    , foldIndentBy = \ _ -> IndentBy
+    }
+
+anyRecord :: DocRecord a
+anyRecord = DocRecord
+    { foldEmpty = error "anyRecord.Empty"
+    , foldAnnoDoc = error "anyRecord.AnnoDoc"
+    , foldIdDoc = error "anyRecord.IdDoc"
+    , foldIdApplDoc = error "anyRecord.IdApplDoc"
+    , foldText = error "anyRecord.Text"
+    , foldCat = error "anyRecord.Cat"
+    , foldAttr = error "anyRecord.Attr"
+    , foldIndentBy = error "anyRecord.IndentBy"
+    }
+
+-- * conversions
+
+-- | simple conversion to a standard text document
+toText :: Doc -> Pretty.Doc
+toText = foldDoc anyRecord
+    { foldEmpty = \ _ -> Pretty.empty
+    , foldText = \ _ _ -> Pretty.text
+    , foldCat = \ _ c -> case c of
+          Vert -> Pretty.vcat
+          Horiz -> Pretty.hcat
+          HorizOrVert -> Pretty.cat
+          Fill -> Pretty.fcat
+    , foldAttr = \ _ _ -> id
+    , foldIndentBy = \ _ d1 d2 d3 ->
+          d2 Pretty.$$ Pretty.nest (length $ show d1) d3
+    } . codeOut emptyGlobalAnnos Map.empty
+
+-- | conversion to latex
+toLatex :: GlobalAnnos -> Doc -> Pretty.Doc
+toLatex ga = let dm = Map.map (Map.! DF_LATEX) .
+                      Map.filter (Map.member DF_LATEX) $ display_annos ga
+    in foldDoc anyRecord
+    { foldEmpty = \ _ -> Pretty.empty
+    , foldText = \ _ k s -> textToLatex False k s
+    , foldCat = \ _ c -> case c of
+          Vert -> Pretty.vcat
+          Horiz -> Pretty.hcat
+          HorizOrVert -> Pretty.cat
+          Fill -> Pretty.fcat
+    , foldAttr = \ o k d -> case k of
+          FlushRight -> flushright d
+          Small -> case o of
+              Attr Small (Text j s) -> textToLatex True j s
+              _ -> error "toLatex"
+    , foldIndentBy = \ _ d1 d2 d3 ->
+          d2 Pretty.$$ Pretty.nest (length $ show d1) d3
+    } . makeSmall False . codeOut ga dm
+
+textToLatex :: Bool -> TextKind -> String -> Pretty.Doc
+textToLatex b k s = case k of
+    IdKind -> hc_sty_id s
+    Symbol -> Pretty.text $ escape_latex s
+    Keyword -> (if b then hc_sty_small_keyword else hc_sty_plain_keyword) s
+    TopKey -> hc_sty_casl_keyword s
+    Indexed -> hc_sty_structid_indexed s
+    StructId -> hc_sty_structid s
+
+makeSmall :: Bool -> Doc -> Doc
+makeSmall b = foldDoc idRecord
+    { foldAttr = \ _ k d -> makeSmall (case k of
+                       Small -> True
+                       _ -> b) d
+    , foldCat = \ (Cat c l) _ _ -> Cat c $ map (makeSmall b) l
+    , foldIndentBy = \ (IndentBy d1 d2 d3) _ _ _ ->
+          IndentBy (makeSmall b d1) (makeSmall b d2) $ makeSmall b d3
+    , foldText = \ d _ _ -> if b then Attr Small d else d
+    }
+
+-- * coding out stuff
+
+{- | transform document according to a specific display map and other
+global annotations like precedences, associativities, and literal
+annotations. -}
+codeOut :: GlobalAnnos -> Map.Map Id [Token] -> Doc -> Doc
+codeOut ga m = foldDoc idRecord
+    { foldAnnoDoc = \ _ -> small . codeOutAnno m
+    , foldIdDoc = \ _ -> codeOutId m
+    , foldIdApplDoc = \ _ -> codeOutAppl ga m
+    }
+
+codeOutId :: Map.Map Id [Token] -> Id -> Doc
+codeOutId m i = fcat $ case Map.lookup i m of
+    Nothing -> map (symbol . tokStr) $ getTokenList place i
+    Just ts -> map (\ t -> let s = tokStr t in
+                           if isPlace t then symbol s else text s) ts
+
+-- print literal terms and mixfix applications
+codeOutAppl :: GlobalAnnos -> Map.Map Id [Token] -> Id -> [Doc] -> Doc
+codeOutAppl _ m i args = codeOutId m i <> parens (fsep $ punctuate comma args)
+
 annoLine :: String -> Doc
-annoLine w = symbol "%" <> text w
+annoLine w = percent <> text w
 
 annoLparen :: String -> Doc
-annoLparen w = symbol "%" <> text w <> lparen
+annoLparen w = percent <> text w <> lparen
 
 wrapAnnoLines :: Doc -> [Doc] -> Doc -> Doc
 wrapAnnoLines a l b = case l of
@@ -391,37 +453,27 @@ codeOutAnno m a = case a of
             Comment_start -> symbol "%%") <> symbol s
         Group_anno l -> let ds = map symbol l in case aw of
             Annote_word w -> wrapAnnoLines (annoLparen w) ds annoRparen
-            Comment_start -> wrapAnnoLines (percent <> lbrace) ds rbrace
-    Display_anno i ds _ -> annoLparen "display" <+> fsep
-        [ codeOutId m i
-        , vcat $ map ( \ (d, s) ->
-                       percent <> text (lookupDisplayFormat d) <+> symbol s) ds
-        , rparen ]
+            Comment_start -> wrapAnnoLines (percent <> lbrace) ds
+                             (rbrace <> percent)
+    Display_anno i ds _ -> annoLparen "display" <> fsep
+        ( codeOutId m i :
+          map ( \ (d, s) ->
+                    percent <> text (lookupDisplayFormat d) <+> symbol s) ds
+        ) <> annoRparen
     List_anno i1 i2 i3 _ -> annoLine "list" <+> hCommaT m [i1, i2, i3]
     Number_anno i _ -> annoLine "number" <+> codeOutId m i
     Float_anno i1 i2 _ -> annoLine "floating" <+> hCommaT m [i1, i2]
     String_anno i1 i2 _ -> annoLine "string" <+> hCommaT m [i1, i2]
-    Prec_anno p l1 l2 _ -> annoLparen "prec" <+> 
+    Prec_anno p l1 l2 _ -> annoLparen "prec" <>
         fsep [ braces $ fCommaT m l1
-             , symbol $ case p of 
+             , symbol $ case p of
                           Lower -> "<"
                           Higher -> ">"
                           BothDirections -> "<>"
                           NoDirection -> error "codeOutAnno"
              , braces $ fCommaT m l2
-             , annoRparen ]
-    Assoc_anno d l _ -> annoLparen "assoc" <> 
-                        symbol "_" <> text (map toLower $ tail $ show d)
-                        <+> fsep (cCommaT m l ++ [annoRparen])
+             ] <> annoRparen
+    Assoc_anno d l _ -> percent <> text (map toLower $ tail $ show d)
+         <> symbol "_" <> text "assoc"  <> lparen <> fCommaT m l <> annoRparen
     Label l _ -> wrapAnnoLines (annoLparen "") (map symbol l) annoRparen
     Semantic_anno sa _ -> annoLine $ lookupSemanticAnno sa
-
-codeOutId :: Map.Map Id [Token] -> Id -> Doc
-codeOutId m i = fcat $ case Map.lookup i m of
-    Nothing -> map (symbol . tokStr) $ getTokenList place i
-    Just ts -> map (\ t -> let s = tokStr t in
-                           if isPlace t then symbol s else text s) ts
-
--- print literal terms and mixfix applications
-codeOutAppl :: GlobalAnnos -> Map.Map Id [Token] -> Id -> [Doc] -> Doc
-codeOutAppl _ m i args = codeOutId m i <> parens (fsep $ punctuate comma args)

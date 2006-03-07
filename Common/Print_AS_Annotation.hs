@@ -17,66 +17,11 @@ import Common.GlobalAnnotations
 import Common.Id
 import Common.PrettyPrint
 import Common.Lib.Pretty
-import Common.Lexer(whiteChars)
+import qualified Common.Doc as Doc
 
 instance PrettyPrint Annotation where
-    printText0 _ (Unparsed_anno aw at _) =
-        case at of
-                Line_anno str ->
-                    (case aw of
-                            Comment_start -> ptext "%%"
-                            Annote_word w ->  ptext $ "%" ++ w)
-                    <> (if all (`elem` whiteChars) str
-                        then empty else ptext str)
-                Group_anno strs ->
-                    let docs = map ptext strs
-                        (o, c) = case aw of
-                            Comment_start -> (ptext "%{",  ptext "}%")
-                            Annote_word w -> (ptext ("%" ++ w ++ "("),
-                                              ptext ")%")
-                        in case docs of
-                           [] -> empty
-                           [h] ->  o <> h <> c
-                           h : t -> vcat ((o <> h) : init t ++ [last t <> c])
-    printText0 ga (Display_anno aa ab _) =
-        let aa' = printText0 ga aa
-            ab' = fcat $ punctuate space $ map printPair $ filter nullSnd ab
-        in printGroup (ptext "display") $ aa' <+> ab'
-           where printPair (s1,s2) = ptext ("%" ++ lookupDisplayFormat s1)
-                                     <+> ptext s2
-                 nullSnd (_,s2) = not $ null s2
-    printText0 ga (String_anno aa ab _) =
-        let aa' = printText0 ga aa
-            ab' = printText0 ga ab
-        in printLine (ptext "string") $ aa' <> comma <+> ab'
-    printText0 ga (List_anno aa ab ac _) =
-        let aa' = printText0 ga aa
-            ab' = printText0 ga ab
-            ac' = printText0 ga ac
-        in printLine (ptext "list") $ aa' <> comma <+> ab' <> comma <+> ac'
-    printText0 ga (Number_anno aa _) =
-        let aa' = printText0 ga aa
-        in printLine (ptext "number") aa'
-    printText0 ga (Float_anno aa ab _) =
-        let aa' = printText0 ga aa
-            ab' = printText0 ga ab
-        in printLine (ptext "floating") $ aa' <> comma <+> ab'
-    printText0 ga (Prec_anno pflag ab ac _) =
-        let aa' = ptext $ showPrecRel pflag
-            ab' = fcat $ punctuate (comma <> space) $ map (printText0 ga) ab
-            ac' = fcat $ punctuate (comma <> space) $ map (printText0 ga) ac
-        in  printGroup (ptext "prec") $ braces ab' <+> aa' <+> braces ac'
-    printText0 ga (Assoc_anno as aa _) =
-        printGroup (case as of ARight -> ptext "right_assoc"
-                               ALeft -> ptext "left_assoc") $ fcat $
-                                punctuate (comma <> space) $
-                                          map (printText0 ga) aa
-    printText0 _ (Label [] _) = empty
-    printText0 _ (Label aa _) =
-        let aa' = vcat $ map ptext aa
-        in ptext "%(" <> aa' <> ptext ")%"
-    printText0 _ (Semantic_anno sa _) =
-        printLine (ptext $ lookupSemanticAnno sa) empty
+    printText0 _ = Doc.toText . Doc.annoDoc
+
 -- -------------------------------------------------------------------------
 -- utilies
 -- -------------------------------------------------------------------------
