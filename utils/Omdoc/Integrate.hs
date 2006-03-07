@@ -659,7 +659,7 @@ main =
 						ig <- makeImportGraphFullXml globalOptions input searchpath
 						when (newinput && debug)
 							(putStrLn "Loading with new input-methods...")
-						(return $ dGraphGToLibEnv globalOptions $ hybridGToDGraphG globalOptions $
+						(return $ dGraphGToLibEnvOmdocId globalOptions $ hybridGToDGraphG globalOptions $
 							(if newinput then processImportGraphXN else processImportGraph) globalOptions ig)
 				FTCASL->
 						do
@@ -3823,7 +3823,7 @@ importGraphToDGNodesXN go ig n =
 		refs = map ( \(_, from, (TI (theoname, _))) ->
 			let
 				moriginnode = Graph.lab ig from
-				(S (_, ssrc) (_,modg)) = case moriginnode of
+				(S (slibname, ssrc) (_,modg)) = case moriginnode of
 					Nothing -> error "node error (import)!"
 					(Just n' ) -> n'
 					-- the DG should have been created before accessing it
@@ -3836,7 +3836,7 @@ importGraphToDGNodesXN go ig n =
 			in
 				DGRef
 					(Hets.stringToSimpleId theoname, "", 0)
-					(ASL.Lib_id (ASL.Indirect_link ssrc Id.nullRange))
+					(ASL.Lib_id (ASL.Indirect_link slibname Id.nullRange))
 					onodenum
 					(G_theory CASL Hets.emptyCASLSign (Prover.toThSens []))
 					Nothing
@@ -4686,9 +4686,9 @@ dGraphGToLibEnvOmdocId go ig =
 		--firstsrc = (\(S (_,src) _) -> src) firstnode
 		firstsrc = (\(S (sn,_) _) -> sn) firstnode
 		firstdg = (\(S _ dg) -> dg) firstnode
-		lenv = Map.fromList $ map ( \(S (_, src) dg) ->
+		lenv = Map.fromList $ map ( \(S (sn, src) dg) ->
 					(
-						(ASL.Lib_id (ASL.Indirect_link src Id.nullRange)),
+						(ASL.Lib_id (ASL.Indirect_link sn Id.nullRange)),
 						--(GA.emptyGlobalAnnos, Map.empty, dg)
 						emptyGlobalContext { devGraph = dg }
 					)
@@ -4814,7 +4814,7 @@ writeXmlG dtduri ig sandbox =
 				System.Directory.createDirectoryIfMissing True (snd $ splitPath omfile) >>
 				writeOmdocDTD dtduri x omfile
 			) nodes) >> return ()
-		
+			
 			
 -- | shows a developement-graph and it's environment using the
 -- uniform-workbench			
