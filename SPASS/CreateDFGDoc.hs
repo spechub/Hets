@@ -44,7 +44,7 @@ import SPASS.Sign
 import SPASS.Print (genSPASSProblem)
 
 spassConsTimeLimit :: Int
-spassConsTimeLimit = 500
+spassConsTimeLimit = 1000
 
 printDFG :: LIB_NAME -> SIMPLE_ID 
          -> Bool 
