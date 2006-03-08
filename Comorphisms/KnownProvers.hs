@@ -14,20 +14,23 @@ comorphisms.
 
 -}
 
+{- todo:
+
+-}
 module Comorphisms.KnownProvers (KnownProversMap,
                                  knownProvers,
                                  shrinkKnownProvers,
-                                 showKnownProvers) where
+                                 showKnownProvers,
+                                 showAllKnownProvers) where
 
-import Data.Maybe 
 import Control.Monad
 
 import qualified Common.Lib.Map as Map
 
 import Common.Result
 
-import Logic.Logic hiding (top)
-import Logic.Coerce
+import Logic.Logic () -- hiding (top)
+import Logic.Coerce()
 import Logic.Grothendieck
 import Logic.Comorphism
 
@@ -40,7 +43,7 @@ import Comorphisms.CASL2PCFOL
 #ifdef CASLEXTENSIONS
 import Comorphisms.CoCASL2CoPCFOL
 import Comorphisms.CoPCFOL2CoCFOL
-import Comorphisms.CoCFOL2IsabelleHOL
+-- import Comorphisms.CoCFOL2IsabelleHOL
 import Comorphisms.Modal2CASL
 #endif
 import Comorphisms.HasCASL2IsabelleHOL
