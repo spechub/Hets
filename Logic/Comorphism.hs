@@ -17,6 +17,7 @@ Provides data structures for institution comorphisms.
 {-   References: see Logic.hs
 
    Todo:
+   Flag for model expansion property
    Weak amalgamability, also for comorphisms
    comorphism modifications
    comorphisms out of sublogic relationships
