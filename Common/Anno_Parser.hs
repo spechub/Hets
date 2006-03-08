@@ -23,7 +23,9 @@ import Text.ParserCombinators.Parsec.Pos as Pos
 import Common.Lexer
 import Common.Token
 import Common.Id as Id
+import Common.Keywords
 import Common.AS_Annotation
+import qualified Common.Lib.Map as Map
 
 comment :: GenParser Char st Annotation
 comment = commentLine <|> commentGroup
@@ -40,7 +42,7 @@ newlineOrEof = lookAhead $ charOrEof '\n'
 commentLine :: GenParser Char st Annotation
 commentLine = do
     p <- getPos
-    try $ string "%%"
+    try $ string percents
     line <- manyTill anyChar newlineOrEof
     q <- getPos
     return $ Unparsed_anno Comment_start (Line_anno line) (Range [p, q])
@@ -77,7 +79,7 @@ anno_label = do
     return $ Label (lines label_lines) $ Range [p, dec q]
 
 anno_ident :: GenParser Char st Annote_word
-anno_ident = fmap Annote_word $ string "%" >> casl_words
+anno_ident = fmap Annote_word $ string percentS >> casl_words
 
 annote_group :: Pos -> Annote_word -> GenParser Char st Annotation
 annote_group p s = do
@@ -118,16 +120,16 @@ parse_anno anno sp =
                   mkAssoc dir p = do
                         res <- p
                         return (Assoc_anno dir res qs) in
-                  case kw of
-             "left_assoc"  -> parse_internal (mkAssoc ALeft commaIds) nsp inp
-             "right_assoc" -> parse_internal (mkAssoc ARight commaIds) nsp inp
-             "prec"     -> parse_internal (prec_anno qs)     nsp inp
-             "display"  -> parse_internal (display_anno qs)  nsp inp
-             "number"   -> parse_internal (number_anno qs)   nsp inp
-             "string"   -> parse_internal (string_anno qs)   nsp inp
-             "list"     -> parse_internal (list_anno qs)     nsp inp
-             "floating" -> parse_internal (floating_anno qs) nsp inp
-             _ -> Right anno
+             Map.findWithDefault (Right anno) kw $ Map.map ( \ p ->
+                              parse_internal p nsp inp) $ Map.fromList
+             [ (left_assocS, mkAssoc ALeft commaIds)
+             , (right_assocS, mkAssoc ARight commaIds)
+             , (precS    , prec_anno qs)
+             , (displayS , display_anno qs)
+             , (numberS  , number_anno qs)
+             , (stringS  , string_anno qs)
+             , (listS    , list_anno qs)
+             , (floatingS, floating_anno qs) ]
     _ -> Right anno
 
 fromPos :: Pos -> SourcePos
@@ -206,7 +208,7 @@ display_anno ps = do
     tls <- many $ foldl1 (<|>) $ map disp_symb display_format_table
     return (Display_anno ident tls ps)
     where  disp_symb (df_symb, symb) =
-               do (try $ string $ "%"++symb) << skip
+               do (try $ string $ percentS ++ symb) << skip
                   str <- manyTill anyChar $ lookAhead $ charOrEof '%'
                   return (df_symb, reverse $ dropWhile (`elem` whiteChars)
                          $ reverse str)
