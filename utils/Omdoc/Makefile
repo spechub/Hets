@@ -34,7 +34,7 @@ HCI_OPTS = $(HC_FLAGS) $(HC_INCLUDE) $(HC_PACKAGE) $(PFE_FLAGS)
 ### targets
 
 build: integrate
-integrate: Integrate.hs HetsInterface.hs OmdocDevGraph.hs
+integrate: Integrate.hs HetsInterface.hs
 	$(HC) --make -o $@ Integrate.hs $(HCI_OPTS) -main-is Integrate
 
 ### interactive
