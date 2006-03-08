@@ -24,14 +24,17 @@ import CASL.Formula
 import CASL.Parse_AS_Basic (sigItems)
 import CASL.AS_Basic_CASL
 
+cocasl_reserved_words :: [String]
+cocasl_reserved_words = [diamondS]
+
 cocaslFormula :: AParser st C_FORMULA
-cocaslFormula = 
+cocaslFormula =
     do o <- oBracketT
        m <- modality []
        c <- cBracketT
        f <- formula cocasl_reserved_words
        return (BoxOrDiamond True m f $ toPos o [] c)
-    <|> 
+    <|>
     do o <- asKey lessS
        m <- modality [greaterS] -- do not consume matching ">"!
        c <- asKey greaterS
@@ -39,12 +42,12 @@ cocaslFormula =
        return (BoxOrDiamond False m f $ toPos o [] c)
 
 modality :: [String] -> AParser st MODALITY
-modality ks = 
+modality ks =
     do t <- term (prodS : ks ++ cocasl_reserved_words)
             -- put the term in parens if you need to use "*"
-       option () (asKey prodS >> return ())  
-       -- presence of "*" is not stored yet! 
-       return $ case t of 
+       option () (asKey prodS >> return ())
+       -- presence of "*" is not stored yet!
+       return $ case t of
            Mixfix_token tok -> Simple_mod tok
            _ -> Term_mod t
 
@@ -54,61 +57,61 @@ instance AParsable C_FORMULA where
 
 cBasic :: AParser st C_BASIC_ITEM
 cBasic =  do f <- asKey cofreeS
-             ti <- coSigItems 
+             ti <- coSigItems
              return (codatatypeToCofreetype ti (tokPos f))
       <|> do g <- asKey cogeneratedS
              do t <- sigItems cocasl_reserved_words
                 return (CoSort_gen [Annoted t nullRange [] []] $ tokPos g)
-               <|> 
+               <|>
                do o <- oBraceT
                   is <- annosParser (sigItems cocasl_reserved_words)
                   c <- cBraceT
                   return (CoSort_gen is
-                            (toPos g [o] c)) 
+                            (toPos g [o] c))
 
 coSigItems :: AParser st C_SIG_ITEM
 coSigItems = itemList cocasl_reserved_words cotypeS codatatype CoDatatype_items
 
 codatatype :: [String] -> AParser st CODATATYPE_DECL
-codatatype ks = 
+codatatype ks =
     do s <- sortId ks
        addAnnos
        e <- asKey defnS
        addAnnos
        a <- getAnnos
        (Annoted v _ _ b:as, ps) <- acoAlternative ks `separatedBy` barT
-       return $ CoDatatype_decl s (Annoted v nullRange a b:as) 
+       return $ CoDatatype_decl s (Annoted v nullRange a b:as)
                         $ catPos $ e:ps
 
 acoAlternative :: [String] -> AParser st (Annoted COALTERNATIVE)
-acoAlternative ks = 
+acoAlternative ks =
     do a <- coalternative ks
        an <- annos
        return (Annoted a nullRange [] an)
 
 coalternative :: [String] -> AParser st COALTERNATIVE
-coalternative ks = 
+coalternative ks =
     do s <- pluralKeyword sortS
        (ts, cs) <- sortId ks `separatedBy` anComma
        return (CoSubsorts ts $ catPos $ s:cs)
-    <|> 
+    <|>
     do i <- consId ks
        cocomp (Just i)
     <|>
     do cocomp Nothing
-    where 
+    where
       cocomp i =
        do   o <- oParenT
             (cs, ps) <- cocomponent ks `separatedBy` anSemi
             c <- cParenT
-            let qs = toPos o ps c 
+            let qs = toPos o ps c
             do   q <- quMarkT
                  return (Co_construct Partial i cs (qs `appRange` tokPos q))
               <|> return (Co_construct Total i cs qs)
          <|> return (Co_construct Total i [] nullRange)
 
 cocomponent :: [String] -> AParser st COCOMPONENTS
-cocomponent ks = 
+cocomponent ks =
     do (is, cs) <- parseId ks `separatedBy` anComma
        c <- colonST
        t <- opType ks

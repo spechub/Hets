@@ -19,7 +19,7 @@ module Modal.Logic_Modal where
 import Modal.AS_Modal
 import Modal.ModalSign
 import Modal.ATC_Modal()
-import Modal.Parse_AS()
+import Modal.Parse_AS
 import Modal.StatAna
 import Modal.LaTeX_Modal()
 import CASL.Sign

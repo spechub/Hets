@@ -67,7 +67,7 @@ module Common.Doc
     , less
     , lambda
     , mapsto
-    , rightArrow
+    , funArrow
     , pfun
     , cfun
     , pcfun
@@ -94,6 +94,7 @@ module Common.Doc
     ) where
 
 import Common.Id
+import Common.Keywords
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import qualified Common.Lib.Map as Map
@@ -105,7 +106,9 @@ infixl 6 <>
 infixl 6 <+>
 infixl 5 $+$
 
-data TextKind = IdKind | Symbol | Keyword | TopKey | Indexed | StructId
+data TextKind =
+    IdKind | Symbol | Comment | Keyword | TopKey | Indexed | StructId
+    | Native Display_format
 
 data Format = Small | FlushRight
 
@@ -165,20 +168,30 @@ space = text " "
 equals :: Doc                 -- ^ A '=' character
 equals = text "="
 
--- use symbol for strings that need (i.e. latex) escaping
+-- use symbol for signs that need to be put in mathmode for latex
 symbol :: String -> Doc
 symbol = Text Symbol
 
+
+-- for text within comments
+commentText :: String -> Doc
+commentText = Text Comment
+
+
+-- don't escape this strings since they are interpreted by latex
+native :: Display_format -> String -> Doc
+native = Text . Native
+
 lparen, rparen, lbrack, rbrack, lbrace, rbrace, quote, doubleQuote :: Doc
 
-lparen = text "("
-rparen = text ")"
-lbrack = text "["
-rbrack = text "]"
+lparen = symbol "("
+rparen = symbol ")"
+lbrack = symbol "["
+rbrack = symbol "]"
 lbrace = symbol "{"  -- to allow for latex translations
 rbrace = symbol "}"
-quote = text "\'"
-doubleQuote = text "\""
+quote = symbol "\'"
+doubleQuote = symbol "\""
 
 parens :: Doc -> Doc     -- ^ Wrap document in @(...)@
 parens d = fcat [lparen, d, rparen]
@@ -238,32 +251,32 @@ structId = Text StructId
 topKey = Text TopKey
 
 -- | docs possibly rendered differently for Text or LaTeX
-dot, bullet, defn, less, lambda, mapsto, rightArrow, pfun, cfun, pcfun,
+dot, bullet, defn, less, lambda, mapsto, funArrow, pfun, cfun, pcfun,
    exequal, forallDoc, exists, unique, cross, bar, notDoc, inDoc, andDoc,
    orDoc, implies, equiv :: Doc
 
-dot = text "."
-bullet = symbol "."
-defn = symbol "::="
-less = text "<"
-lambda = symbol "lambda"
-mapsto = symbol "|->"
-rightArrow = symbol "->"
-pfun = symbol "->?"
-cfun = symbol "-->"
-pcfun = symbol "-->?"
-exequal = symbol "=e="
-forallDoc = symbol "forall"
-exists = symbol "exists"
-unique = symbol "exists!"
-cross = symbol "*"
-bar = symbol "|"
-notDoc = symbol "not"
-inDoc = symbol "in"
-andDoc = symbol "/\\"
-orDoc = symbol "\\/"
-implies = symbol "=>"
-equiv = symbol "<=>"
+dot = text dotS
+bullet = symbol dotS
+defn = symbol defnS
+less = symbol lessS
+lambda = symbol lambdaS
+mapsto = symbol mapsTo
+funArrow = symbol funS
+pfun = symbol pFun
+cfun = symbol contFun
+pcfun = symbol pContFun
+exequal = symbol exEqual
+forallDoc = symbol forallS
+exists = symbol existsS
+unique = symbol existsUnique
+cross = symbol prodS
+bar = symbol barS
+notDoc = symbol notS
+inDoc = symbol inS
+andDoc = symbol lAnd
+orDoc = symbol lOr
+implies = symbol implS
+equiv = symbol equivS
 
 -- | we know how to print annotations
 annoDoc :: Annotation -> Doc
@@ -377,13 +390,41 @@ toLatex ga = let dm = Map.map (Map.! DF_LATEX) .
     } . makeSmall False . codeOut ga dm
 
 textToLatex :: Bool -> TextKind -> String -> Pretty.Doc
-textToLatex b k s = case k of
-    IdKind -> hc_sty_id s
-    Symbol -> Pretty.text $ escape_latex s
-    Keyword -> (if b then hc_sty_small_keyword else hc_sty_plain_keyword) s
-    TopKey -> hc_sty_casl_keyword s
-    Indexed -> hc_sty_structid_indexed s
-    StructId -> hc_sty_structid s
+textToLatex b k s = let e = escape_latex s in case k of
+    IdKind -> hc_sty_id e
+    Symbol -> symbolToLatex s
+    Comment -> Pretty.text e
+    Keyword -> (if b then hc_sty_small_keyword else hc_sty_plain_keyword) e
+    TopKey -> hc_sty_casl_keyword e
+    Indexed -> hc_sty_structid_indexed e
+    StructId -> hc_sty_structid e
+    Native _ -> Pretty.text s
+
+symbolToLatex :: String -> Pretty.Doc
+symbolToLatex s = Map.findWithDefault (hc_sty_axiom s) s latexSymbols
+
+latexSymbols :: Map.Map String Pretty.Doc
+latexSymbols = Map.fromList
+    [ (dotS, bullet_latex)
+    , (defnS, hc_sty_axiom defnS)
+    , (lessS, less_latex)
+    , (lambdaS, hc_sty_axiom "\\lambda")
+    , (mapsTo, mapsto_latex)
+    , (funS, rightArrow)
+    , (contFun, cfun_latex)
+    , (pContFun, pcfun_latex)
+    , (exEqual, exequal_latex)
+    , (forallS, forall_latex)
+    , (existsS, exists_latex)
+    , (existsUnique, unique_latex)
+    , (prodS, hc_sty_axiom "\\times")
+    , (barS, casl_normal_latex "\\textbar")
+    , (notS, hc_sty_axiom "\\neg")
+    , (inS, hc_sty_axiom "\\in")
+    , (lAnd, hc_sty_axiom "\\wedge")
+    , (lOr, hc_sty_axiom "\\vee")
+    , (implS, hc_sty_axiom "\\Rightarrow")
+    , (equivS, hc_sty_axiom "\\Leftrightarrow") ]
 
 makeSmall :: Bool -> Doc -> Doc
 makeSmall b = foldDoc idRecord
@@ -419,10 +460,10 @@ codeOutAppl :: GlobalAnnos -> Map.Map Id [Token] -> Id -> [Doc] -> Doc
 codeOutAppl _ m i args = codeOutId m i <> parens (fsep $ punctuate comma args)
 
 annoLine :: String -> Doc
-annoLine w = percent <> text w
+annoLine w = percent <> keyword w
 
 annoLparen :: String -> Doc
-annoLparen w = percent <> text w <> lparen
+annoLparen w = percent <> keyword w <> lparen
 
 wrapAnnoLines :: Doc -> [Doc] -> Doc -> Doc
 wrapAnnoLines a l b = case l of
@@ -450,15 +491,15 @@ codeOutAnno m a = case a of
     Unparsed_anno aw at _ -> case at of
         Line_anno s -> (case aw of
             Annote_word w -> annoLine w
-            Comment_start -> symbol "%%") <> symbol s
-        Group_anno l -> let ds = map symbol l in case aw of
+            Comment_start -> symbol "%%") <> text s
+        Group_anno l -> let ds = map commentText l in case aw of
             Annote_word w -> wrapAnnoLines (annoLparen w) ds annoRparen
             Comment_start -> wrapAnnoLines (percent <> lbrace) ds
                              (rbrace <> percent)
     Display_anno i ds _ -> annoLparen "display" <> fsep
         ( codeOutId m i :
           map ( \ (d, s) ->
-                    percent <> text (lookupDisplayFormat d) <+> symbol s) ds
+                    percent <> text (lookupDisplayFormat d) <+> native d s) ds
         ) <> annoRparen
     List_anno i1 i2 i3 _ -> annoLine "list" <+> hCommaT m [i1, i2, i3]
     Number_anno i _ -> annoLine "number" <+> codeOutId m i
@@ -473,7 +514,7 @@ codeOutAnno m a = case a of
                           NoDirection -> error "codeOutAnno"
              , braces $ fCommaT m l2
              ] <> annoRparen
-    Assoc_anno d l _ -> percent <> text (map toLower $ tail $ show d)
-         <> symbol "_" <> text "assoc"  <> lparen <> fCommaT m l <> annoRparen
-    Label l _ -> wrapAnnoLines (annoLparen "") (map symbol l) annoRparen
+    Assoc_anno d l _ -> annoLparen (map toLower (tail $ show d) ++ "_assoc")
+                        <> fCommaT m l <> annoRparen
+    Label l _ -> wrapAnnoLines (annoLparen "") (map commentText l) annoRparen
     Semantic_anno sa _ -> annoLine $ lookupSemanticAnno sa

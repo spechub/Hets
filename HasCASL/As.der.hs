@@ -10,15 +10,13 @@ Portability :  portable
 abstract syntax for HasCASL,
    more liberal than Concrete-Syntax.txt,
    annotations are almost as for CASL
-
 -}
 
 module HasCASL.As where
 
 import Common.Id
 import Common.Keywords
-import Common.AS_Annotation 
-import HasCASL.HToken
+import Common.AS_Annotation
 
 {-! for VarDecl derive: UpPos !-}
 
@@ -38,11 +36,11 @@ data BasicItem = SigItems SigItems
                -- pos "var", ";"s
                | FreeDatatype [Annoted DatatypeDecl] Range
                -- pos "free", "type", ";"s
-               | GenItems [Annoted SigItems] Range 
+               | GenItems [Annoted SigItems] Range
                -- pos "generated" "{", ";"s, "}"
                -- or "generated" "type" ";"s
                | AxiomItems [GenVarDecl] [Annoted Term] Range
-               -- pos "forall" (if GenVarDecl not empty), dots 
+               -- pos "forall" (if GenVarDecl not empty), dots
                | Internal [Annoted BasicItem] Range
                -- pos "internal" "{", ";"s, "}"
                  deriving Show
@@ -55,7 +53,7 @@ data SigItems = TypeItems Instance [Annoted TypeItem] Range -- including sort
                  deriving Show
 
 -- | indicator for predicate, operation or function
-data OpBrand = Pred | Op | Fun deriving (Eq, Ord) 
+data OpBrand = Pred | Op | Fun deriving (Eq, Ord)
 
 -- | test if the function was declared as predicate
 isPred :: OpBrand -> Bool
@@ -77,7 +75,7 @@ instance Show Instance where
         Plain -> ""
 
 -- | a class item
-data ClassItem = ClassItem ClassDecl [Annoted BasicItem] Range 
+data ClassItem = ClassItem ClassDecl [Annoted BasicItem] Range
                  -- pos "{", ";"s "}"
                  deriving Show
 
@@ -86,25 +84,25 @@ data ClassDecl = ClassDecl [ClassId] Kind Range
                -- pos ","s
                  deriving Show
 
--- | co- or contra- variance indicator                          
+-- | co- or contra- variance indicator
 data Variance = CoVar | ContraVar | InVar deriving (Eq, Ord)
 
 instance Show Variance where
-    show v = case v of 
+    show v = case v of
         CoVar -> plusS
         ContraVar -> minusS
         InVar -> ""
 
 -- | (higher) kinds
 data AnyKind a = ClassKind a
-               | FunKind Variance (AnyKind a) (AnyKind a) Range     
-             -- pos "+" or "-" 
+               | FunKind Variance (AnyKind a) (AnyKind a) Range
+             -- pos "+" or "-"
             deriving (Show, Eq, Ord)
 
 type Kind = AnyKind ClassId
 type RawKind = AnyKind ()
 
--- | the possible type items 
+-- | the possible type items
 data TypeItem  = TypeDecl [TypePattern] Kind Range
                -- pos ","s
                | SubtypeDecl [TypePattern] Type Range
@@ -118,12 +116,12 @@ data TypeItem  = TypeDecl [TypePattern] Kind Range
                | Datatype DatatypeDecl
                  deriving Show
 
--- | a tuple pattern for 'SubtypeDefn' 
+-- | a tuple pattern for 'SubtypeDefn'
 data Vars = Var Var | VarTuple [Vars] Range deriving (Show, Eq)
 
--- | the lhs of most type items 
+-- | the lhs of most type items
 data TypePattern = TypePattern TypeId [TypeArg] Range
-                 -- pos "("s, ")"s 
+                 -- pos "("s, ")"s
                  | TypePatternToken Token
                  | MixfixTypePattern [TypePattern]
                  | BracketTypePattern BracketKind [TypePattern] Range
@@ -133,7 +131,7 @@ data TypePattern = TypePattern TypeId [TypeArg] Range
                    deriving Show
 
 -- | types based on variable or constructor names and applications
-data Type = TypeName TypeId RawKind Int  
+data Type = TypeName TypeId RawKind Int
           -- Int == 0 means constructor, negative are bound variables
           | TypeAppl Type Type
           | ExpandedType Type Type    -- an alias type with its expansion
@@ -143,7 +141,7 @@ data Type = TypeName TypeId RawKind Int
           | TypeToken Token
           | BracketType BracketKind [Type] Range
           -- pos "," (between type arguments)
-          | MixfixType [Type] 
+          | MixfixType [Type]
             deriving Show
 
 -- | change the type within a scheme
@@ -176,7 +174,7 @@ data OpItem = OpDecl [OpId] TypeScheme [OpAttr] Range
                -- pos "("s, ";"s, ")"s, ":" or ":?", "="
               deriving Show
 
--- | attributes without arguments for binary functions 
+-- | attributes without arguments for binary functions
 data BinOpAttr = Assoc | Comm | Idem deriving Eq
 
 instance Show BinOpAttr where
@@ -186,16 +184,16 @@ instance Show BinOpAttr where
         Idem -> idemS
 
 -- | possible function attributes (including a term as a unit element)
-data OpAttr = BinOpAttr BinOpAttr Range 
+data OpAttr = BinOpAttr BinOpAttr Range
             | UnitOpAttr Term Range deriving (Show, Eq)
 
 -- | a polymorphic data type declaration with a deriving clause
-data DatatypeDecl = DatatypeDecl 
-                    TypePattern 
+data DatatypeDecl = DatatypeDecl
+                    TypePattern
                     Kind
-                    [Annoted Alternative] 
+                    [Annoted Alternative]
                     [ClassId]
-                    Range 
+                    Range
                      -- pos "::=", "|"s, "deriving"
                      deriving Show
 
@@ -208,9 +206,9 @@ data Alternative = Constructor UninstOpId [[Component]] Partiality Range
                    -- pos: "type", ","s
                    deriving Show
 
-{- | A component is a type with on optional (only pre- or postfix) 
+{- | A component is a type with on optional (only pre- or postfix)
    selector function. -}
-data Component = Selector UninstOpId Partiality Type SeparatorKind Range 
+data Component = Selector UninstOpId Partiality Type SeparatorKind Range
                 -- pos ",", ":" or ":?"
                 | NoSelector Type
                   deriving Show
@@ -222,8 +220,8 @@ data Quantifier = Universal | Existential | Unique
 instance Show Quantifier where
     show q = case q of
         Universal -> forallS
-        Existential -> existsS 
-        Unique -> existsS ++ exMark
+        Existential -> existsS
+        Unique -> existsUnique
 
 -- | the possibly type annotations of terms
 data TypeQual = OfType | AsType | InType | Inferred deriving (Eq, Ord)
@@ -238,8 +236,8 @@ instance Show TypeQual where
 -- | an indicator of (otherwise equivalent) let or where equations
 data LetBrand = Let | Where | Program deriving (Show, Eq, Ord)
 
--- | the possible kinds of brackets (that should match when parsed) 
-data BracketKind = Parens | Squares | Braces | NoBrackets 
+-- | the possible kinds of brackets (that should match when parsed)
+data BracketKind = Parens | Squares | Braces | NoBrackets
                    deriving (Show, Eq, Ord)
 
 -- | the brackets as strings for printing
@@ -254,22 +252,22 @@ getBrackets b = case b of
 data Term = QualVar VarDecl
           -- pos "(", "var", ":", ")"
           | QualOp OpBrand InstOpId TypeScheme Range
-          -- pos "(", "op", ":", ")" 
+          -- pos "(", "op", ":", ")"
           | ApplTerm Term Term Range  -- analysed
           -- pos?
           | TupleTerm [Term] Range    -- special application
           -- pos "(", ","s, ")"
           | TypedTerm Term TypeQual Type Range
           -- pos ":", "as" or "in"
-          | AsPattern VarDecl Pattern Range          
+          | AsPattern VarDecl Pattern Range
           -- pos "@"
           | QuantifiedTerm Quantifier [GenVarDecl] Term Range
           -- pos quantifier, ";"s, dot
           -- only "forall" may have a TypeVarDecl
           | LambdaTerm [Pattern] Partiality Term Range
-          -- pos "\", dot (plus "!") 
+          -- pos "\", dot (plus "!")
           | CaseTerm Term [ProgEq] Range
-          -- pos "case", "of", "|"s 
+          -- pos "case", "of", "|"s
           | LetTerm LetBrand [ProgEq] Term Range
           -- pos "where", ";"s
           | ResolvedMixTerm Id [Term] Range
@@ -277,13 +275,13 @@ data Term = QualVar VarDecl
           | MixTypeTerm TypeQual Type Range
           | MixfixTerm [Term]
           | BracketTerm BracketKind [Term] Range
-          -- pos brackets, ","s 
+          -- pos brackets, ","s
             deriving (Show, Eq, Ord)
 
 -- | patterns are terms constructed by the first six variants
 type Pattern = Term
 
--- | an equation or a case as pair of a pattern and a term 
+-- | an equation or a case as pair of a pattern and a term
 data ProgEq = ProgEq Pattern Term Range deriving (Show, Eq, Ord)
             -- pos "=" (or "->" following case-of)
 
@@ -294,10 +292,10 @@ data SeparatorKind = Comma | Other deriving Show
 
 -- | a variable with its type
 data VarDecl = VarDecl Var Type SeparatorKind Range deriving Show
-               -- pos "," or ":" 
+               -- pos "," or ":"
 
--- | the kind of a type variable (or a type argument in schemes) 
-data VarKind = VarKind Kind | Downset Type | MissingKind 
+-- | the kind of a type variable (or a type argument in schemes)
+data VarKind = VarKind Kind | Downset Type | MissingKind
                deriving (Show, Eq, Ord)
 
 -- | a (simple) type variable with its kind (or supertype)
@@ -310,17 +308,17 @@ data GenVarDecl = GenVarDecl VarDecl
                 | GenTypeVarDecl TypeArg
                   deriving (Show, Eq, Ord)
 
--- | a polymorphic function identifier with type arguments 
+-- | a polymorphic function identifier with type arguments
 data OpId = OpId UninstOpId [TypeArg] Range deriving (Show, Eq, Ord)
-     -- pos "[", ";"s, "]" 
+     -- pos "[", ";"s, "]"
 
--- | an instantiated function identifiers 
+-- | an instantiated function identifiers
 data InstOpId = InstOpId UninstOpId [Type] Range deriving (Show, Eq, Ord)
 
 -- * synonyms for identifiers
 
-{- | type variables are expected to be simple whereas type constructors may be 
-     mixfix- and compound identifiers -} 
+{- | type variables are expected to be simple whereas type constructors may be
+     mixfix- and compound identifiers -}
 type TypeId = Id
 type UninstOpId = Id
 
@@ -332,23 +330,23 @@ type Var = Id
 type ClassId = Id
 
 -- * symbol data types
--- | symbols 
-data SymbItems = SymbItems SymbKind [Symb] [Annotation] Range 
+-- | symbols
+data SymbItems = SymbItems SymbKind [Symb] [Annotation] Range
                   -- pos: kind, commas
                   deriving (Show, Eq)
 
--- | mapped symbols 
+-- | mapped symbols
 data SymbMapItems = SymbMapItems SymbKind [SymbOrMap] [Annotation] Range
                       -- pos: kind commas
                       deriving (Show, Eq)
 
 -- | kind of symbols
-data SymbKind = Implicit | SK_type | SK_sort | SK_fun | SK_op | SK_pred 
+data SymbKind = Implicit | SK_type | SK_sort | SK_fun | SK_op | SK_pred
               | SK_class
                  deriving (Show, Eq, Ord)
 
 -- | type annotated symbols
-data Symb = Symb Id (Maybe SymbType) Range 
+data Symb = Symb Id (Maybe SymbType) Range
             -- pos: colon (or empty)
             deriving (Show, Eq)
 
@@ -365,8 +363,8 @@ data SymbOrMap = SymbOrMap Symb (Maybe Symb) Range
 -- equality instances ignoring positions
 -- ----------------------------------------------------------------------------
 
-instance Eq Type where 
-    TypeName i1 k1 v1 == TypeName i2 k2 v2 = 
+instance Eq Type where
+    TypeName i1 k1 v1 == TypeName i2 k2 v2 =
         if v1 == 0 && v2 == 0 then (i1, k1) == (i2, k2)
         else (v1, k1) == (v2, k2)
     TypeAppl f1 a1 == TypeAppl f2 a2 = (f1, a1) == (f2, a2)
@@ -379,7 +377,7 @@ instance Eq Type where
     _ == _ = False
 
 instance Ord Type where
-    TypeName i1 k1 v1 <= TypeName i2 k2 v2 = 
+    TypeName i1 k1 v1 <= TypeName i2 k2 v2 =
         if v1 == 0 && v2 == 0 then (i1, k1) <= (i2, k2)
         else (v1, k1) <= (v2, k2)
     TypeAppl f1 a1 <= TypeAppl f2 a2 = (f1, a1) <= (f2, a2)
@@ -391,7 +389,7 @@ instance Ord Type where
     t1 <= ExpandedType _ t2 = t1 <= t2
     TypeName _ _ _ <= _ = True
     _ <= TypeName _ _ _ = False
-    TypeAppl _ _ <= _ = True 
+    TypeAppl _ _ <= _ = True
     _ <= TypeAppl _ _ = False
     TypeToken _ <= _ = True
     _ <= TypeToken _ = False
@@ -402,34 +400,34 @@ instance Ord Type where
 
 -- equality for disambiguation in HasCASL2Haskell
 instance Eq TypeScheme where
-    TypeScheme a1 t1 _ == TypeScheme a2 t2 _ = 
+    TypeScheme a1 t1 _ == TypeScheme a2 t2 _ =
         (length a1, t1) == (length a2, t2)
 
 -- order used within terms
 instance Ord TypeScheme where
-    TypeScheme a1 t1 _ <= TypeScheme a2 t2 _ = 
+    TypeScheme a1 t1 _ <= TypeScheme a2 t2 _ =
         (length a1, t1) <= (length a2, t2)
 
 -- used within quantified formulas
 instance Eq TypeArg where
-    TypeArg i1 _ e1 v1 c1 _ _ == TypeArg i2 _ e2 v2 c2 _ _ = 
+    TypeArg i1 _ e1 v1 c1 _ _ == TypeArg i2 _ e2 v2 c2 _ _ =
         (i1, e1, v1, c1) == (i2, e2, v2, c2)
 instance Ord TypeArg where
-    TypeArg i1 _ e1 v1 c1 _ _ <= TypeArg i2 _ e2 v2 c2 _ _ = 
+    TypeArg i1 _ e1 v1 c1 _ _ <= TypeArg i2 _ e2 v2 c2 _ _ =
         (i1, e1, v1, c1) <= (i2, e2, v2, c2)
 
 instance Eq VarDecl where
-    VarDecl v1 t1 _ _ == VarDecl v2 t2 _ _ = (v1, t1) == (v2, t2) 
+    VarDecl v1 t1 _ _ == VarDecl v2 t2 _ _ = (v1, t1) == (v2, t2)
 instance Ord VarDecl where
-    VarDecl v1 t1 _ _ <= VarDecl v2 t2 _ _ = (v1, t1) <= (v2, t2) 
+    VarDecl v1 t1 _ _ <= VarDecl v2 t2 _ _ = (v1, t1) <= (v2, t2)
 
-instance Eq Component where 
+instance Eq Component where
     Selector i1 p1 t1 _ _ == Selector i2 p2 t2 _ _ =
         (i1, t1, p1) == (i2, t2, p2)
     NoSelector t1 == NoSelector t2 = t1 == t2
     _ == _ = False
 
--- * compute better position 
+-- * compute better position
 
 instance PosItem Type where
   getRange ty = case ty of
@@ -466,4 +464,3 @@ instance PosItem TypePattern where
     MixfixTypePattern ts -> posOf ts
     BracketTypePattern _ ts ps -> firstPos ts ps
     TypePatternArg (TypeArg t _ _ _ _ _ _) ps -> firstPos [t] ps
-

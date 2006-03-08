@@ -14,7 +14,6 @@ module HasCASL.PrintAs where
 
 import HasCASL.As
 import HasCASL.AsUtils
-import HasCASL.HToken
 import HasCASL.MixPrint
 import Common.Lib.Pretty
 import Common.Id

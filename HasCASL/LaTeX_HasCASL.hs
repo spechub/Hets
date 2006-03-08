@@ -17,7 +17,6 @@ import HasCASL.PrintAs
 import HasCASL.AsUtils
 import HasCASL.Le
 import HasCASL.PrintLe()
-import HasCASL.HToken
 
 import Common.PrettyPrint
 import Common.Keywords

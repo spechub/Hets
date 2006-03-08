@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Till Mossakowski, Wiebke Herding, C. Maeder, Uni Bremen 2004
+Copyright   :  (c) T.Mossakowski, W.Herding, C.Maeder, Uni Bremen 2004-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luettich@tzi.de
@@ -14,7 +14,7 @@ Abstract syntax for modal logic extension of CASL
 module Modal.AS_Modal where
 
 import Common.Id
-import Common.AS_Annotation 
+import Common.AS_Annotation
 import CASL.AS_Basic_CASL
 
 -- DrIFT command
@@ -45,16 +45,3 @@ data M_FORMULA = BoxOrDiamond Bool MODALITY (FORMULA M_FORMULA) Range
                -- pos: "[]" or  "<>", True if Box, False if Diamond
              deriving (Eq, Ord, Show)
 
-modalityS, modalitiesS, flexibleS, rigidS, termS, emptyS, diamondS, greaterS 
-    :: String 
-modalityS = "modality"
-modalitiesS = init modalityS ++ "ies"
-flexibleS = "flexible"
-rigidS = "rigid"
-termS = "term"
-emptyS = "empty" 
-diamondS = "<>"
-greaterS = ">"
-
-modal_reserved_words :: [String]
-modal_reserved_words = diamondS:termS:rigidS:flexibleS:modalityS:[modalitiesS]

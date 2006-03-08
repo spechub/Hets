@@ -1,13 +1,13 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Till Mossakowski, C. Maeder, Uni Bremen 2002-2005
+Copyright   :  (c) T.Mossakowski, C.Maeder, K.Luettich, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Preprocessor for sentences or signatures 
+Preprocessor for sentences or signatures
    written in some logic, usually used for
    transforming file.inline.hs into file.hs.  The sentences / signature are
    replaced with corresponding abstract syntax trees in Haskell.  This
@@ -24,26 +24,26 @@ Preprocessor for sentences or signatures
    basic specification in that logic. Only the sentences are extracted from
    the basic specification, but the used identifiers must be declared.
 -}
-{- 
+{-
  * for sentences:
 
    Identifiers are left as Haskell variables, which means that they must
    be bound by the enclosing expression. E.g.
 
 generateAxioms :: Sign f e -> [Named (FORMULA f)]
-generateAxioms sig = 
+generateAxioms sig =
   concat [inlineAxioms CASL
             "  sorts s < s'; op inj : s->s' \
-             \ forall x,y:s . inj(x)=inj(y) => x=y  
+             \ forall x,y:s . inj(x)=inj(y) => x=y
                                   %(ga_embedding_injectivity)% "
            | (s,s') <- Rel.toList (sortRel sig)]
   where x = mkSimpleId "x"
         y = mkSimpleId "y"
         inj = mkId [mkSimpleId "_inj"]
 
- * for signatures the resulting expression is a record update of 
-   CASL.Sign.emptySign with an appropiate argument and 
-   all Maps/Sets/Rels turned into lists, which are transformed back 
+ * for signatures the resulting expression is a record update of
+   CASL.Sign.emptySign with an appropiate argument and
+   all Maps/Sets/Rels turned into lists, which are transformed back
    by *.fromList.
 -}
 
@@ -56,7 +56,7 @@ import Language.Haskell.Parser
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.Set as Set
-import Common.GlobalAnnotations 
+import Common.GlobalAnnotations
 import Common.AnnoState
 import Text.ParserCombinators.Parsec
 import Common.Id (Id(Id),Token(Token))
@@ -72,8 +72,8 @@ import CASL.AS_Basic_CASL(FORMULA)
 import CASL.Parse_AS_Basic(basicSpec)
 import CASL.Sign(emptySign,Sign(..),OpType(..),PredType(..))
 import CASL.StaticAna(basicCASLAnalysis)
-import Modal.AS_Modal(modal_reserved_words,M_FORMULA)
-import Modal.Parse_AS()
+import Modal.AS_Modal(M_FORMULA)
+import Modal.Parse_AS(modal_reserved_words)
 import Modal.ModalSign(emptyModalSign,ModalSign)
 import Modal.StatAna(basicModalAnalysis)
 
@@ -90,13 +90,13 @@ class ToString x where
     toString :: x -> String
     toString _ = error "inlineAxioms: toString not implemented"
 
-showSign :: (ToString e) => Sign f e -> String 
-showSign sig = 
+showSign :: (ToString e) => Sign f e -> String
+showSign sig =
     "(emptySign "++extendedInfoS++"){"++
          concat (intersperse "," [sortSetS,sortRelS,opMapS,
                                   assocOpsS,predMapS])++
     "}"
-    where 
+    where
      sortSetS = "sortSet = Set.fromList "++
                 toString (Set.toList $ sortSet sig)
      sortRelS = "sortRel = Rel.fromList "++
@@ -116,7 +116,7 @@ instance (ToString x,ToString y) => ToString (x,y) where
     toString (x,y) = '(':toString x++',':toString y++")"
 
 instance ToString OpType where
-    toString (OpType k args res) = 
+    toString (OpType k args res) =
         "OpType "++show k++' ': toString args ++" ("++toString res++")"
 
 instance ToString PredType where
@@ -134,7 +134,7 @@ instance (ToString e) => ToString (Sign f e) where
 instance ToString ModalSign where
     toString _ = error "inlineAxioms: toString not implemented for ModalSign"
 
-instance (ToString x) => ToString [x] where 
+instance (ToString x) => ToString [x] where
     toString l = '[': concat (intersperse "," $ map toString l) ++"]"
 
 instance (Show x,ToString x) => ToString (Named x) where
@@ -145,19 +145,19 @@ instance ToString () where
     toString _ = "()"
 instance ToString M_FORMULA
 
-parseAndAnalyse :: (Show sens, Show sign, ToString sens, ToString sign) 
+parseAndAnalyse :: (Show sens, Show sign, ToString sens, ToString sign)
                 => AParser () basic_spec -> sign
                 -> ((basic_spec, sign, GlobalAnnos)
                     -> Result (basic_spec, sign, sign, sens))
                 -> ResType
                 -> String -> String
 parseAndAnalyse pars empt ana resType str =
-  case runParser pars (emptyAnnos ()) "inlineAxioms" str of 
+  case runParser pars (emptyAnnos ()) "inlineAxioms" str of
   Left err -> error (show err)
   Right ast -> let Result ds m = ana (ast, empt, emptyGlobalAnnos) in
             case m of
-              Just (_,s1,_,sens) -> 
-                  case resType of 
+              Just (_,s1,_,sens) ->
+                  case resType of
                     InAxioms -> toString sens
                     InSign ->  toString s1
                               {-in trace ("Sign: \n"++show s1 ++ "\n\n" ++
@@ -182,9 +182,9 @@ deletePos "" = ""
 deletePos cs@(c : s) = case deletePrefixes ["[inlineAxioms", "[(line "] cs of
       Just r -> "nullRange" ++ deletePos r
       _ -> c : deletePos s
-  where 
+  where
    deletePrefixes [] _ = Nothing
-   deletePrefixes (x:xs) str = if isPrefixOf x str then 
+   deletePrefixes (x:xs) str = if isPrefixOf x str then
      let r = dropWhile (/= ']') $ drop (length x) str in
           if null r then error "missing bracket"  else Just $ tail r
      else deletePrefixes xs  str
@@ -193,17 +193,17 @@ deletePos cs@(c : s) = case deletePrefixes ["[inlineAxioms", "[(line "] cs of
 -- We rely on show for Ids giving just strings, such that these are
 -- recognized as Haskell ids
 listComp :: ResType -> String -> HsExp
-listComp rt s = case rt of 
+listComp rt s = case rt of
                 InAxioms -> lcHsExp 0 expr
                 InSign -> expr
   where
   modStr = "module M where\nf="++deletePos s
   expr = case parseModule modStr of
-    ParseOk (HsModule _ _ _ _ [HsPatBind _ _ (HsUnGuardedRhs expr1) _]) 
+    ParseOk (HsModule _ _ _ _ [HsPatBind _ _ (HsUnGuardedRhs expr1) _])
         -> expr1
     err -> error ("inlineAxioms: " ++ show err)
-  
-  
+
+
 -- parse inline for Haskell decls and exps
 
 piHsFieldUpdate :: HsFieldUpdate -> HsFieldUpdate
@@ -229,11 +229,11 @@ piHsAlt (HsAlt loc pat alts decls) =
 piHsExp :: HsExp -> HsExp
 piHsExp (HsInfixApp expr1 qOp expr3) =
   HsInfixApp (piHsExp expr1) qOp (piHsExp expr3)
-piHsExp (HsApp (HsApp (HsVar (UnQual (HsIdent typeStr))) 
-                      (HsCon (UnQual (HsIdent logStr)))) 
+piHsExp (HsApp (HsApp (HsVar (UnQual (HsIdent typeStr)))
+                      (HsCon (UnQual (HsIdent logStr))))
                (HsLit (HsString str))) =
-  listComp (parseResType typeStr) $ 
-           lookupLogic_in_LG (parseResType typeStr) 
+  listComp (parseResType typeStr) $
+           lookupLogic_in_LG (parseResType typeStr)
                              "inlineAxioms: " logStr str
 piHsExp (HsApp expr1 expr2) =
   HsApp (piHsExp expr1) (piHsExp expr2)
@@ -248,21 +248,21 @@ piHsExp (HsIf expr1 expr2 expr3) =
 piHsExp (HsCase expr alts) = HsCase (piHsExp expr) (map piHsAlt alts)
 piHsExp (HsDo stmts) = HsDo (map piHsStmt stmts)
 piHsExp (HsTuple exprs) = HsTuple (map piHsExp exprs)
-piHsExp (HsList exprs) = HsList (map piHsExp exprs) 
+piHsExp (HsList exprs) = HsList (map piHsExp exprs)
 piHsExp (HsParen expr) = HsParen (piHsExp expr)
 piHsExp (HsLeftSection expr1 qOp) = HsLeftSection (piHsExp expr1) qOp
 piHsExp (HsRightSection qOp expr2) =  HsRightSection qOp (piHsExp expr2)
 piHsExp (HsRecConstr qn fields) = HsRecConstr qn (map piHsFieldUpdate fields)
-piHsExp (HsRecUpdate expr fields) = 
+piHsExp (HsRecUpdate expr fields) =
   HsRecUpdate (piHsExp expr) (map piHsFieldUpdate fields)
 piHsExp (HsEnumFrom expr) = HsEnumFrom (piHsExp expr)
-piHsExp (HsEnumFromTo expr1 expr2) = 
+piHsExp (HsEnumFromTo expr1 expr2) =
   HsEnumFromTo (piHsExp expr1) (piHsExp expr2)
-piHsExp (HsEnumFromThen expr1 expr2) = 
+piHsExp (HsEnumFromThen expr1 expr2) =
   HsEnumFromThen (piHsExp expr1) (piHsExp expr2)
-piHsExp (HsEnumFromThenTo expr1 expr2 expr3) = 
+piHsExp (HsEnumFromThenTo expr1 expr2 expr3) =
   HsEnumFromThenTo (piHsExp expr1) (piHsExp expr2) (piHsExp expr3)
-piHsExp (HsListComp expr stmts) = 
+piHsExp (HsListComp expr stmts) =
   HsListComp (piHsExp expr) (map piHsStmt stmts)
 piHsExp (HsExpTypeSig loc expr qt) = HsExpTypeSig loc (piHsExp expr) qt
 piHsExp expr = expr
@@ -281,7 +281,7 @@ piHsMatch (HsMatch loc qn pats rhs decls) =
 
 piHsDecl :: HsDecl -> HsDecl
 piHsDecl (HsFunBind ms) = HsFunBind (map piHsMatch ms)
-piHsDecl (HsPatBind loc pat rhs decls) = 
+piHsDecl (HsPatBind loc pat rhs decls) =
   HsPatBind loc pat (piHsRhs rhs) (map piHsDecl decls)
 piHsDecl decl = decl
 
@@ -312,25 +312,25 @@ lcHsAlt :: HsAlt -> HsAlt
 lcHsAlt (HsAlt loc pat alts decls) =
   HsAlt loc pat (lcHsGuardedAlts alts) (map lcHsDecl decls)
 
--- look for a variable of form x_i or x_..._i and return it as a string, 
+-- look for a variable of form x_i or x_..._i and return it as a string,
 -- if present. Also return the number of underscores
 
 indexVar :: HsExp -> [(String,Int)]
 indexVar (HsVar (UnQual (HsIdent v))) =
   case reverse v of
-    i:'_':_ -> [(v,ord(i)-ord('h'))] 
+    i:'_':_ -> [(v,ord(i)-ord('h'))]
     _ -> []
 -- special treatment of CASL Var_decls, since these should not count
 -- as enumerated lists
 indexVar (HsVar _) = error "inlineAxioms: qualified var"
-indexVar (HsApp (HsCon (UnQual (HsIdent "Var_decl"))) (HsList exprs)) = 
+indexVar (HsApp (HsCon (UnQual (HsIdent "Var_decl"))) (HsList exprs)) =
   concat (map indexVar exprs)
-indexVar (HsApp expr1 expr2) = 
+indexVar (HsApp expr1 expr2) =
   indexVar expr1++indexVar expr2
 indexVar (HsTuple exprs) = concat (map indexVar exprs)
 indexVar (HsParen expr) = indexVar expr
-indexVar (HsList exprs) = 
-  [(v,n-1) | e <- exprs, (v,n) <- indexVar e, n>1]  
+indexVar (HsList exprs) =
+  [(v,n-1) | e <- exprs, (v,n) <- indexVar e, n>1]
 indexVar _ = []
 
 lcHsExp :: Int -> HsExp -> HsExp
@@ -349,28 +349,28 @@ lcHsExp n (HsIf expr1 expr2 expr3) =
 lcHsExp n (HsCase expr alts) = HsCase (lcHsExp n expr) (map lcHsAlt alts)
 lcHsExp _ (HsDo stmts) = HsDo (map lcHsStmt stmts)
 lcHsExp n (HsTuple exprs) = HsTuple (map (lcHsExp n) exprs)
-lcHsExp n (HsList exprs)  
-  | null exprs = HsList [] 
+lcHsExp n (HsList exprs)
+  | null exprs = HsList []
   | n > 0 = HsList $ map (lcHsExp (n-1)) exprs
-  | otherwise = let expr = head exprs in 
+  | otherwise = let expr = head exprs in
   case nub $ indexVar expr of
     [] -> HsList (map (lcHsExp 0) exprs)
-    [(v,k)] -> HsListComp (lcHsExp (max (k-1) 0) expr) [HsGenerator 
-                 (SrcLoc "" 0 0) 
-                 (HsPVar $ HsIdent $ v) 
+    [(v,k)] -> HsListComp (lcHsExp (max (k-1) 0) expr) [HsGenerator
+                 (SrcLoc "" 0 0)
+                 (HsPVar $ HsIdent $ v)
                  (HsVar $ UnQual $ HsIdent $ v0 $ v)
                 ]
-    vs@((_,k):_) -> 
+    vs@((_,k):_) ->
        let vs' = map fst vs
-        in HsListComp (lcHsExp (max (k-1) 0) expr) [HsGenerator 
-              (SrcLoc "" 0 0) 
-              (HsPTuple (map (HsPVar . HsIdent) vs')) 
+        in HsListComp (lcHsExp (max (k-1) 0) expr) [HsGenerator
+              (SrcLoc "" 0 0)
+              (HsPTuple (map (HsPVar . HsIdent) vs'))
               (mkZip (map (HsVar . UnQual . HsIdent . v0) vs'))
             ]
                -- The list variable v0 is just v without index
   where v0 v = reverse $ drop 2 $ reverse v
-        mkZip l = 
-          foldl HsApp (HsVar $ Qual (Module "Data.List") 
+        mkZip l =
+          foldl HsApp (HsVar $ Qual (Module "Data.List")
                                     (HsIdent ("zip"++ext)))
                 l
           where ext = if len == 2 then "" else show len
@@ -379,16 +379,16 @@ lcHsExp n (HsParen expr) = HsParen (lcHsExp n expr)
 lcHsExp n (HsLeftSection expr1 qOp) = HsLeftSection (lcHsExp n expr1) qOp
 lcHsExp n (HsRightSection qOp expr2) =  HsRightSection qOp (lcHsExp n expr2)
 lcHsExp _ (HsRecConstr qn fields) = HsRecConstr qn (map lcHsFieldUpdate fields)
-lcHsExp n (HsRecUpdate expr fields) = 
+lcHsExp n (HsRecUpdate expr fields) =
   HsRecUpdate (lcHsExp n expr) (map lcHsFieldUpdate fields)
 lcHsExp n (HsEnumFrom expr) = HsEnumFrom (lcHsExp n expr)
-lcHsExp n (HsEnumFromTo expr1 expr2) = 
+lcHsExp n (HsEnumFromTo expr1 expr2) =
   HsEnumFromTo (lcHsExp n expr1) (lcHsExp n expr2)
-lcHsExp n (HsEnumFromThen expr1 expr2) = 
+lcHsExp n (HsEnumFromThen expr1 expr2) =
   HsEnumFromThen (lcHsExp n expr1) (lcHsExp n expr2)
-lcHsExp n (HsEnumFromThenTo expr1 expr2 expr3) = 
+lcHsExp n (HsEnumFromThenTo expr1 expr2 expr3) =
   HsEnumFromThenTo (lcHsExp n expr1) (lcHsExp n expr2) (lcHsExp n expr3)
-lcHsExp n (HsListComp expr stmts) = 
+lcHsExp n (HsListComp expr stmts) =
   HsListComp (lcHsExp n expr) (map lcHsStmt stmts)
 lcHsExp n (HsExpTypeSig loc expr qt) = HsExpTypeSig loc (lcHsExp n expr) qt
 lcHsExp _ expr = expr
@@ -407,7 +407,7 @@ lcHsMatch (HsMatch loc qn pats rhs decls) =
 
 lcHsDecl :: HsDecl -> HsDecl
 lcHsDecl (HsFunBind ms) = HsFunBind (map lcHsMatch ms)
-lcHsDecl (HsPatBind loc pat rhs decls) = 
+lcHsDecl (HsPatBind loc pat rhs decls) =
   HsPatBind loc pat (lcHsRhs rhs) (map lcHsDecl decls)
 lcHsDecl decl = decl
 
@@ -418,10 +418,10 @@ processFile prog file = do
   src <- readFile file
   let hsModRes = parseModuleWithMode (ParseMode file) src
       firstLineSrc = takeWhile (/='\n') src
-      firstLine = if isPrefixOf "{-# OPTIONS " firstLineSrc 
+      firstLine = if isPrefixOf "{-# OPTIONS " firstLineSrc
                   then firstLineSrc ++"\n"
                   else ""
-  case hsModRes of 
+  case hsModRes of
        ParseOk hsMod -> putStr $
               firstLine ++
               "{- |\nModule      :  " ++ file ++
@@ -431,12 +431,12 @@ processFile prog file = do
              "\n\nMaintainer  :  maeder@tzi.de" ++
              "\nStability   :  provisional" ++
              "\nPortability :  portable\n" ++
-             "\nModule with inlined inlineAxioms-strings generated by " ++ 
-                prog ++ 
+             "\nModule with inlined inlineAxioms-strings generated by " ++
+                prog ++
              ". Don't touch! Original source follows as comment.\n-}\n\n{- \n"
                ++ src ++ "\n-}\n\n"
-               ++ HP.prettyPrint (parseInline hsMod) 
-       ParseFailed loc err -> fail $ 
+               ++ HP.prettyPrint (parseInline hsMod)
+       ParseFailed loc err -> fail $
            err ++ " in '" ++ file ++ "' line " ++ show (srcLine loc)
 
 main :: IO ()
@@ -445,4 +445,3 @@ main = do args <- getArgs
           case args of
             [file] -> processFile prog file
             _ -> fail $ "Usage: " ++ prog ++ " file"
-

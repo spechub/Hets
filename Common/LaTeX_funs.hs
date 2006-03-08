@@ -73,9 +73,23 @@ module Common.LaTeX_funs
      hc_sty_structid_indexed,
      hc_sty_id,
 
-     flushright,
+     flushright
+    , equals_latex
+    , less_latex
+    , colon_latex
+    , dot_latex
+    , bullet_latex
+    , mapsto_latex
+    , rightArrow
+    , pfun_latex
+    , cfun_latex
+    , pcfun_latex
+    , exequal_latex
+    , forall_latex
+    , exists_latex
+    , unique_latex
 
-     startAnno,
+    , startAnno,
      endAnno) where
 
 import qualified Common.Lib.Map as Map
@@ -370,3 +384,23 @@ escape_comment_latex s
               | x == '<'
                 || x == '>' = "\\Ax{"++x:"}"++ecl xs
               | otherwise   = x: ecl xs
+
+equals_latex, less_latex, colon_latex, dot_latex,
+    bullet_latex, mapsto_latex, rightArrow, pfun_latex, cfun_latex,
+    pcfun_latex, exequal_latex :: Doc
+equals_latex = hc_sty_axiom "="
+less_latex   = hc_sty_axiom "<"
+colon_latex  = casl_normal_latex ":"
+dot_latex    = casl_normal_latex "."
+bullet_latex = hc_sty_axiom "\\bullet"
+mapsto_latex = hc_sty_axiom "\\mapsto"
+rightArrow   = hc_sty_axiom "\\rightarrow"
+pfun_latex   = hc_sty_axiom "\\rightarrow?"
+cfun_latex   = hc_sty_axiom "\\stackrel{c}{\\rightarrow}"
+pcfun_latex  = hc_sty_axiom "\\stackrel{c}{\\rightarrow}?"
+exequal_latex = sp_text (axiom_width "=") "\\Ax{\\stackrel{e}{=}}"
+
+forall_latex, exists_latex, unique_latex :: Doc
+forall_latex = hc_sty_axiom "\\forall"
+exists_latex = hc_sty_axiom "\\exists"
+unique_latex = hc_sty_axiom "\\exists!"

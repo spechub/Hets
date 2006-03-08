@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Till Mossakowski, Uni Bremen 2004
+Copyright   :  (c) T.Mossakowski, C.Maeder, Uni Bremen 2004-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  hausmann@tzi.de
@@ -14,7 +14,7 @@ Abstract syntax for CoCASL, the coalgebraic extension of CASL
 module CoCASL.AS_CoCASL where
 
 import Common.Id
-import Common.AS_Annotation 
+import Common.AS_Annotation
 import CASL.AS_Basic_CASL
 
 -- DrIFT command
@@ -34,7 +34,7 @@ data C_SIG_ITEM = CoDatatype_items [Annoted CODATATYPE_DECL] Range
                  -- type, semi colons
                   deriving Show
 
-data CODATATYPE_DECL = CoDatatype_decl SORT [Annoted COALTERNATIVE] Range 
+data CODATATYPE_DECL = CoDatatype_decl SORT [Annoted COALTERNATIVE] Range
                      -- pos: "::=", "|"s
                        deriving Show
 
@@ -54,13 +54,6 @@ data MODALITY = Simple_mod SIMPLE_ID | Term_mod (TERM C_FORMULA)
 data C_FORMULA = BoxOrDiamond Bool MODALITY (FORMULA C_FORMULA) Range
                -- The identifier and the term specify the kind of the modality
                -- pos: "[]" or  "<>", True if Box, False if Diamond
-               | CoSort_gen_ax [SORT] [OP_SYMB] Bool 
+               | CoSort_gen_ax [SORT] [OP_SYMB] Bool
                -- flag: belongs to a cofree type and hence is cofreeness axiom?
              deriving (Eq, Ord, Show)
-
-diamondS, greaterS :: String 
-diamondS = "<>"
-greaterS = ">"
-
-cocasl_reserved_words :: [String]
-cocasl_reserved_words = [diamondS]

@@ -23,27 +23,30 @@ import Text.ParserCombinators.Parsec
 import CASL.Formula
 import CASL.OpItem
 
+modal_reserved_words :: [String]
+modal_reserved_words = diamondS:termS:rigidS:flexibleS:modalityS:[modalitiesS]
+
 modalFormula :: AParser st M_FORMULA
-modalFormula = 
+modalFormula =
     do o <- oBracketT
        m <- modality []
        c <- cBracketT
        f <- formula modal_reserved_words
        return (BoxOrDiamond True m f $ toPos o [] c)
-    <|> 
+    <|>
     do o <- asKey lessS
        m <- modality [greaterS] -- do not consume matching ">"!
        c <- asKey greaterS
        f <- formula modal_reserved_words
        return (BoxOrDiamond False m f $ toPos o [] c)
-    <|> 
+    <|>
     do d <- asKey diamondS
        f <- formula modal_reserved_words
        let p = tokPos d
        return (BoxOrDiamond False (Simple_mod $ Token emptyS p) f p)
 
 modality :: [String] -> AParser st MODALITY
-modality ks = 
+modality ks =
     do t <- term (ks ++ modal_reserved_words)
        return $ Term_mod t
    <|> return (Simple_mod $ mkSimpleId emptyS)
@@ -52,11 +55,11 @@ instance AParsable M_FORMULA where
   aparser = modalFormula
 
 rigor :: AParser st RIGOR
-rigor = (asKey rigidS >> return Rigid) 
+rigor = (asKey rigidS >> return Rigid)
         <|> (asKey flexibleS >> return Flexible)
 
 rigidSigItems :: AParser st M_SIG_ITEM
-rigidSigItems = 
+rigidSigItems =
     do r <- rigor
        do itemList modal_reserved_words opS opItem (Rigid_op_items r)
          <|> itemList modal_reserved_words predS predItem (Rigid_pred_items r)
@@ -68,7 +71,7 @@ mKey :: AParser st Token
 mKey = asKey modalityS <|> asKey modalitiesS
 
 mBasic :: AParser st M_BASIC_ITEM
-mBasic = 
+mBasic =
     do (as, fs, ps) <- mItem simpleId
        return (Simple_mod_decl as fs ps)
     <|>
@@ -77,7 +80,7 @@ mBasic =
        return (Term_mod_decl as fs (tokPos t `appRange` ps))
 
 mItem :: AParser st a -> AParser st ([Annoted a], [AnModFORM], Range)
-mItem pr = do 
+mItem pr = do
        c <- mKey
        (as, ps) <- auxItemList (modal_reserved_words ++ startKeyword)
                    [c] pr (,)
@@ -87,6 +90,6 @@ mItem pr = do
           p <- cBraceT
           return (as, fs, ps `appRange` toPos o qs p)
         <|>  return (as, [], ps)
-                
+
 instance AParsable M_BASIC_ITEM where
   aparser = mBasic

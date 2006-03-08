@@ -14,9 +14,9 @@ usage.
 
 module CspCASL.CCKeywords where
 
-import Common.Keywords(dataS)
+import Common.Keywords(dataS, letS)
 
-ccspecS, channelS, processS, letS, skipS, stopS, intChoiceS, synParaS
+ccspecS, channelS, processS, skipS, stopS, intChoiceS, synParaS
   , interParaS, hidingS, prefixS, sendS, receiveS, chanRenS :: String
 
 oRBracketS, cRBracketS, oSBracketS, cSBracketS, multiPreS, extChoiceS
@@ -28,7 +28,6 @@ oRBracketS, cRBracketS, oSBracketS, cSBracketS, multiPreS, extChoiceS
 ccspecS    = "ccspec"
 channelS   = "channel"
 processS   = "process"
-letS       = "let"
 skipS      = "skip"
 stopS      = "stop"
 
@@ -37,7 +36,7 @@ oRBracketS = "("
 cRBracketS = ")"
 oSBracketS = "["
 cSBracketS = "]"
-multiPreS  = "[]" 
+multiPreS  = "[]"
 extChoiceS = "[]"
 oAlPaS     = "[|"
 cAlPaS     = "|]"
@@ -57,6 +56,6 @@ receiveS   = "?"
 chanRenS   = "<-"
 
 csp_casl_keywords :: [String]
-csp_casl_keywords = 
+csp_casl_keywords =
  [ccspecS, dataS, channelS, processS, letS, skipS, stopS, intChoiceS, synParaS
            , interParaS, hidingS, prefixS, sendS, receiveS, chanRenS]
