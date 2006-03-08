@@ -252,6 +252,8 @@ CCS example: commutativity of || by coinduction
 Christian
 ************************************************
 
+
+
 collect the patches for programatica (or create a package)
 -    conv (SN i p) = PN i (S p)
 +    conv (SN i p) = PN i (Sn (show i) p)
@@ -328,6 +330,24 @@ Connecting Hets with MathServ
 Klaus
 ************************************************
 
+Consistency checker interface
+  via global interface, accessible from global and node menus
+  use falseSentence from Logic.Logic (property: holds in no model) 
+    proved -> inconsistent
+    disproved -> consistent (assuming completeness)
+  batch mode for automatic provers such as SPASS
+    (use automatic flag for provers)
+
+batch interface for Isabelle
+  each goal is proved separatedly, with a time limit enforced
+    by killing the process
+  the tactic is
+   "using Ax1 ... Axn by auto"
+  where Ax1 ... Axn is the list of all axioms.
+  "auto" could be replaced with "best", "blast" etc. (user selection)
+
+Ignore axiom selection for interactive provers
+
 Translation between Achim's ontology data structure and CASL (in Hets)
 
 visualization of "taxonomy" of CASL signatures
@@ -338,6 +358,7 @@ visualization of "taxonomy" of CASL signatures
 allgemeine Hets-GUI 
   für Anzeige von (un)bewiesenen Goals, ... done
   bewiesene Goals als Axioms mit ausgeben ... was ist das ???
+    das ist schon implementiert ("Theorems to include if proven")
 
 Recognize guarded fragment of CASL:
   G ::= forall x . At(x) => G      where At is a conjunction of atoms
