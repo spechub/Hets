@@ -11,6 +11,16 @@ static analysis of DL parts especially cardinalities, predefined datatypes
 and additional annottations
 -}
 
+{- todo:
+    - check for declaration/definition of illegal sorts, operations 
+      and prediacates (related to the topsort DATA and the predefined symbols)
+    -check for illegal formulas related to DATA and with predefined symbols
+    - check that every new sort, operation and prediacte is related to Thing 
+      in the subject argument position (1st argument),
+      all other arguments can be either below DATA or Thing
+    
+
+-}
 module CASL_DL.StatAna where
 
 import CASL_DL.AS_CASL_DL

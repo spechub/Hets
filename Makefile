@@ -143,6 +143,7 @@ APPENDPRELUDESTRING = utils/appendHaskellPreludeString \
 Haskell/PreludeString.hs: Haskell/PreludeString.append.hs \
     $(APPENDPRELUDESTRING)
 	$(APPENDPRELUDESTRING) < $< > $@
+	chmod 444 $@
 
 Ast_Haskell_files = HsDeclStruct HsExpStruct HsFieldsStruct \
     HsGuardsStruct HsKindStruct HsPatStruct HsTypeStruct HsAssocStruct \
@@ -266,7 +267,7 @@ gendrifted_files = $(patsubst %.der.hs, %.hs, $(generated_rule_files))
 
 inline_axiom_files = Comorphisms/CASL2PCFOL.hs Comorphisms/PCFOL2CFOL.hs \
     Comorphisms/Modal2CASL.hs Comorphisms/CASL2TopSort.hs \
-    Comorphisms/CASL2SubCFOL.hs
+    Comorphisms/CASL2SubCFOL.hs CASL_DL/PredefinedSign.hs
 
 gen_inline_axiom_files = $(patsubst %.hs,%.inline.hs, $(inline_axiom_files))
 
@@ -693,6 +694,24 @@ hets.hs: Driver/Version.hs
 
 %.d : %.lhs
 	$(HC) -M $< $(HC_OPTS) -optdep-f -optdep$@
+
+## generate the inline file for the predefined CASL_DL sign
+# Warning: Don't change the order of the depencies!!
+CASL_DL/PredefinedSign.inline.hs:  \
+     CASL_DL/PredefinedSign.inline.hs.in utils/appendHaskellPreludeString \
+     CASL_DL/PredDatatypes.het
+	$(RM) $@
+	utils/appendHaskellPreludeString CASL_DL/PredDatatypes.het \
+          < CASL_DL/PredefinedSign.inline.hs.in > $@
+	echo "  )" >> $@
+	chmod 444 $@
+
+CASL_DL/PredDatatypes.het: utils/transformLibAsBasicSpec.pl \
+     $(HETS_LIB)/CASL_DL/Datatypes.het
+	$(RM) $@
+	$(PERL) $+ > $@
+	chmod 444 $@
+
 
 ## rule for Modal/ModalSystems.hs needed for ModalLogic Translation
 # uses intransparently utils/outlineAxioms

@@ -19,6 +19,7 @@ module CASL_DL.Logic_CASL_DL where
 
 import CASL_DL.AS_CASL_DL
 import CASL_DL.Sign
+import CASL_DL.PredefinedSign
 import CASL_DL.ATC_CASL_DL ()
 import CASL_DL.Parse_AS ()
 import CASL_DL.StatAna
@@ -118,7 +119,7 @@ instance StaticAnalysis CASL_DL DL_BASIC_SPEC DLFORMULA ()
          id_to_raw CASL_DL = idToRaw
          matches CASL_DL = CASL.Morphism.matches
          
-         empty_signature CASL_DL = emptySign emptyCASL_DLSign
+         empty_signature CASL_DL = dataSign
          signature_union CASL_DL sigma1 sigma2 = 
            return $ addSig addCASL_DLSign sigma1 sigma2
          morphism_union CASL_DL = morphismUnion (const id) addCASL_DLSign

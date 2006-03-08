@@ -15,6 +15,8 @@ Signatures for DL logics, as extension of CASL signatures.
   - emptySign should be filled with predefined Datatypes bootstrapped 
     from CASL_DL/Datatypes.het (via ATerm reading?)
     and with sort Thing and pred Nothing.
+  - PrettyPrinting of CASL_DLSign
+
 -}
 
 module CASL_DL.Sign where
