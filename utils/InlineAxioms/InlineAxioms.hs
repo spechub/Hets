@@ -417,8 +417,13 @@ processFile :: String -> String -> IO ()
 processFile prog file = do
   src <- readFile file
   let hsModRes = parseModuleWithMode (ParseMode file) src
+      firstLineSrc = takeWhile (/='\n') src
+      firstLine = if isPrefixOf "{-# OPTIONS " firstLineSrc 
+                  then firstLineSrc ++"\n"
+                  else ""
   case hsModRes of 
-       ParseOk hsMod -> putStr $ 
+       ParseOk hsMod -> putStr $
+              firstLine ++
               "{- |\nModule      :  " ++ file ++
              "\nDescription :  with inlined axioms" ++
              "\nCopyright   :  (c) Uni Bremen 2005" ++
