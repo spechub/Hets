@@ -427,7 +427,7 @@ annoLparen w = percent <> text w <> lparen
 wrapAnnoLines :: Doc -> [Doc] -> Doc -> Doc
 wrapAnnoLines a l b = case l of
     [] -> a <> b
-    [x] -> fcat [a, x, b]
+    [x] -> hcat [a, x, b]
     x : r -> vcat $ fcat [a, x] : init r ++ [fcat [last r, b]]
 
 percent :: Doc
