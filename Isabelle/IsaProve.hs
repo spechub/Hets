@@ -162,7 +162,7 @@ patchThyFile (ho, bo) origFile thyFile thy = do
       oldFile = thyFile ++ ".old"
       diffCall = "diff -u " ++ origFile ++ " " ++ thyFile
                  ++ " > " ++ patchFile
-      patchCall = "patch -fu " ++ thyFile ++ " " ++ patchFile
+      patchCall = "patch -bfu " ++ thyFile ++ " " ++ patchFile
   callSystem diffCall
   renameFile thyFile oldFile
   removeFile origFile
