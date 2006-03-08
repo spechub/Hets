@@ -7,8 +7,9 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Preprocessor for sentences written in some logic, usually used for
-   transforming file.inline.hs into file.hs.  The sentences are
+Preprocessor for sentences or signatures 
+   written in some logic, usually used for
+   transforming file.inline.hs into file.hs.  The sentences / signature are
    replaced with corresponding abstract syntax trees in Haskell.  This
    frees the programmer from writing AS tree expressions.
 
@@ -16,11 +17,16 @@ Preprocessor for sentences written in some logic, usually used for
 
       inlineAxioms <logic-name> <basic-spec>
 
+   and the syntax for inlining signatures is
+      inlineSign <logic-name> <basic-spec>
+
    where <logic-name> must be a logic in the logic graph, and <basic-spec> a
    basic specification in that logic. Only the sentences are extracted from
    the basic specification, but the used identifiers must be declared.
 -}
-{-
+{- 
+ * for sentences:
+
    Identifiers are left as Haskell variables, which means that they must
    be bound by the enclosing expression. E.g.
 
@@ -35,6 +41,10 @@ generateAxioms sig =
         y = mkSimpleId "y"
         inj = mkId [mkSimpleId "_inj"]
 
+ * for signatures the resulting expression is a record update of 
+   CASL.Sign.emptySign with an appropiate argument and 
+   all Maps/Sets/Rels turned into lists, which are transformed back 
+   by *.fromList.
 -}
 
 module Main where
@@ -43,46 +53,127 @@ import Language.Haskell.Pretty as HP
 import Language.Haskell.Syntax
 import Language.Haskell.Parser
 
+import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Rel as Rel
+import qualified Common.Lib.Set as Set
 import Common.GlobalAnnotations 
 import Common.AnnoState
 import Text.ParserCombinators.Parsec
+import Common.Id (Id(Id),Token(Token))
 import Common.Result
+import Common.AS_Annotation (Named)
 
 import System.Environment
 import Data.Char(ord)
-import Data.List(nub, isPrefixOf)
+import Data.List(nub, isPrefixOf, intersperse)
 
 -- avoid the whole Logic (and uni) overhead
+import CASL.AS_Basic_CASL(FORMULA)
 import CASL.Parse_AS_Basic(basicSpec)
-import CASL.Sign(emptySign)
+import CASL.Sign(emptySign,Sign(..),OpType(..),PredType(..))
 import CASL.StaticAna(basicCASLAnalysis)
-import Modal.AS_Modal(modal_reserved_words)
+import Modal.AS_Modal(modal_reserved_words,M_FORMULA)
 import Modal.Parse_AS()
-import Modal.ModalSign(emptyModalSign)
+import Modal.ModalSign(emptyModalSign,ModalSign)
 import Modal.StatAna(basicModalAnalysis)
 
-parseAndAnalyse :: (Show sens) => AParser () basic_spec -> sign
+-- | selects the requested output
+data ResType = InAxioms | InSign
+
+parseResType :: String -> ResType
+parseResType s = case s of
+                 "inlineAxioms" -> InAxioms
+                 "inlineSign" -> InSign
+                 _ -> error $ "inlineAxioms: unknown result type: "++s
+
+class ToString x where
+    toString :: x -> String
+    toString _ = error "inlineAxioms: toString not implemented"
+
+showSign :: (ToString e) => Sign f e -> String 
+showSign sig = 
+    "(emptySign "++extendedInfoS++"){"++
+         concat (intersperse "," [sortSetS,sortRelS,opMapS,
+                                  assocOpsS,predMapS])++
+    "}"
+    where 
+     sortSetS = "sortSet = Set.fromList "++
+                toString (Set.toList $ sortSet sig)
+     sortRelS = "sortRel = Rel.fromList "++
+                toString (Rel.toList $ sortRel sig)
+     opMapS = "opMap = Map.fromList "++
+              toString (Map.toList $ opMap sig)
+     assocOpsS = "assocOps = Map.fromList "++
+                 toString (Map.toList $ assocOps sig)
+     predMapS = "predMap = Map.fromList "++
+                toString (Map.toList $ predMap sig)
+     extendedInfoS = toString (extendedInfo sig)
+
+instance (ToString x) => ToString (Set.Set x) where
+    toString s = "Set.fromList "++toString (Set.toList s)
+
+instance (ToString x,ToString y) => ToString (x,y) where
+    toString (x,y) = '(':toString x++',':toString y++")"
+
+instance ToString OpType where
+    toString (OpType k args res) = 
+        "OpType "++show k++' ': toString args ++" ("++toString res++")"
+
+instance ToString PredType where
+    toString (PredType args) = "PredType "++ toString args
+
+instance ToString Id where
+    toString (Id ts is _) = "Id "++toString ts++' ':toString is++" nullRange"
+
+instance ToString Token where
+    toString (Token s _) = "Token "++show s++" nullRange"
+
+instance (ToString e) => ToString (Sign f e) where
+    toString = showSign
+
+instance ToString ModalSign where
+    toString _ = error "inlineAxioms: toString not implemented for ModalSign"
+
+instance (ToString x) => ToString [x] where 
+    toString l = '[': concat (intersperse "," $ map toString l) ++"]"
+
+instance (Show x,ToString x) => ToString (Named x) where
+    toString = show
+
+instance (ToString x) => ToString (FORMULA x)
+instance ToString () where
+    toString _ = "()"
+instance ToString M_FORMULA
+
+parseAndAnalyse :: (Show sens, Show sign, ToString sens, ToString sign) 
+                => AParser () basic_spec -> sign
                 -> ((basic_spec, sign, GlobalAnnos)
                     -> Result (basic_spec, sign, sign, sens))
+                -> ResType
                 -> String -> String
-parseAndAnalyse pars empt ana str =
+parseAndAnalyse pars empt ana resType str =
   case runParser pars (emptyAnnos ()) "inlineAxioms" str of 
   Left err -> error (show err)
   Right ast -> let Result ds m = ana (ast, empt, emptyGlobalAnnos) in
             case m of
-              Just (_,_,_,sens) -> show sens
+              Just (_,s1,_,sens) -> 
+                  case resType of 
+                    InAxioms -> toString sens
+                    InSign ->  toString s1
+                              {-in trace ("Sign: \n"++show s1 ++ "\n\n" ++
+                                        rr++"\n\n") rr-}
               _ -> error ("Error during static analysis of inlineAxioms\n" ++
                           unlines (map show ds))
 
-caslAna, modalAna :: String -> String
+caslAna, modalAna :: ResType -> String -> String
 caslAna = parseAndAnalyse (basicSpec []) (emptySign ()) basicCASLAnalysis
 modalAna = parseAndAnalyse (basicSpec modal_reserved_words)
    (emptySign emptyModalSign) basicModalAnalysis
 
 -- currently only logic CASL and Modal are used
-lookupLogic_in_LG :: String -> String -> String -> String
-lookupLogic_in_LG err s = if s == "CASL" then caslAna
-                          else if s == "Modal" then modalAna
+lookupLogic_in_LG :: ResType -> String -> String -> String -> String
+lookupLogic_in_LG rt err s = if s == "CASL" then caslAna rt
+                          else if s == "Modal" then modalAna rt
                           else error (err ++ "unsupported logic " ++ s)
 
 -- hack: delete position info of form "[inlineAxioms ...]", replace with "[]"
@@ -101,8 +192,10 @@ deletePos cs@(c : s) = case deletePrefixes ["[inlineAxioms", "[(line "] cs of
 -- parse Haskell expression and insert list comprehensions for x_i variables
 -- We rely on show for Ids giving just strings, such that these are
 -- recognized as Haskell ids
-listComp :: String -> HsExp
-listComp s = lcHsExp 0 expr
+listComp :: ResType -> String -> HsExp
+listComp rt s = case rt of 
+                InAxioms -> lcHsExp 0 expr
+                InSign -> expr
   where
   modStr = "module M where\nf="++deletePos s
   expr = case parseModule modStr of
@@ -136,10 +229,12 @@ piHsAlt (HsAlt loc pat alts decls) =
 piHsExp :: HsExp -> HsExp
 piHsExp (HsInfixApp expr1 qOp expr3) =
   HsInfixApp (piHsExp expr1) qOp (piHsExp expr3)
-piHsExp (HsApp (HsApp (HsVar (UnQual (HsIdent "inlineAxioms"))) 
+piHsExp (HsApp (HsApp (HsVar (UnQual (HsIdent typeStr))) 
                       (HsCon (UnQual (HsIdent logStr)))) 
                (HsLit (HsString str))) =
-  listComp $ lookupLogic_in_LG "inlineAxioms: " logStr str
+  listComp (parseResType typeStr) $ 
+           lookupLogic_in_LG (parseResType typeStr) 
+                             "inlineAxioms: " logStr str
 piHsExp (HsApp expr1 expr2) =
   HsApp (piHsExp expr1) (piHsExp expr2)
 piHsExp (HsNegApp expr) =
