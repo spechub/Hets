@@ -99,7 +99,6 @@ import Common.AS_Annotation
 import Common.GlobalAnnotations
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Pretty as Pretty
-import Data.Char (toLower)
 import Common.LaTeX_funs
 
 infixl 6 <>
@@ -159,14 +158,14 @@ comma :: Doc                 -- ^ A ',' character
 comma = text ","
 
 colon :: Doc                 -- ^ A ':' character
-colon = text ":"
+colon = text colonS
 
 -- the only legal white space within Text
 space :: Doc                 -- ^ A horizontal space (omitted at end of line)
 space = text " "
 
 equals :: Doc                 -- ^ A '=' character
-equals = text "="
+equals = text equalS
 
 -- use symbol for signs that need to be put in mathmode for latex
 symbol :: String -> Doc
@@ -472,7 +471,7 @@ wrapAnnoLines a l b = case l of
     x : r -> vcat $ fcat [a, x] : init r ++ [fcat [last r, b]]
 
 percent :: Doc
-percent = symbol "%"
+percent = symbol percentS
 
 annoRparen :: Doc
 annoRparen = rparen <> percent
@@ -491,30 +490,32 @@ codeOutAnno m a = case a of
     Unparsed_anno aw at _ -> case at of
         Line_anno s -> (case aw of
             Annote_word w -> annoLine w
-            Comment_start -> symbol "%%") <> text s
+            Comment_start -> symbol percents) <> text s
         Group_anno l -> let ds = map commentText l in case aw of
             Annote_word w -> wrapAnnoLines (annoLparen w) ds annoRparen
             Comment_start -> wrapAnnoLines (percent <> lbrace) ds
                              (rbrace <> percent)
-    Display_anno i ds _ -> annoLparen "display" <> fsep
+    Display_anno i ds _ -> annoLparen displayS <> fsep
         ( codeOutId m i :
           map ( \ (d, s) ->
                     percent <> text (lookupDisplayFormat d) <+> native d s) ds
         ) <> annoRparen
-    List_anno i1 i2 i3 _ -> annoLine "list" <+> hCommaT m [i1, i2, i3]
-    Number_anno i _ -> annoLine "number" <+> codeOutId m i
-    Float_anno i1 i2 _ -> annoLine "floating" <+> hCommaT m [i1, i2]
-    String_anno i1 i2 _ -> annoLine "string" <+> hCommaT m [i1, i2]
-    Prec_anno p l1 l2 _ -> annoLparen "prec" <>
+    List_anno i1 i2 i3 _ -> annoLine listS <+> hCommaT m [i1, i2, i3]
+    Number_anno i _ -> annoLine numberS <+> codeOutId m i
+    Float_anno i1 i2 _ -> annoLine floatingS <+> hCommaT m [i1, i2]
+    String_anno i1 i2 _ -> annoLine stringS <+> hCommaT m [i1, i2]
+    Prec_anno p l1 l2 _ -> annoLparen precS <>
         fsep [ braces $ fCommaT m l1
              , symbol $ case p of
-                          Lower -> "<"
-                          Higher -> ">"
-                          BothDirections -> "<>"
+                          Lower -> lessS
+                          Higher -> greaterS
+                          BothDirections -> diamondS
                           NoDirection -> error "codeOutAnno"
              , braces $ fCommaT m l2
              ] <> annoRparen
-    Assoc_anno d l _ -> annoLparen (map toLower (tail $ show d) ++ "_assoc")
+    Assoc_anno d l _ -> annoLparen (case d of
+                          ALeft -> left_assocS
+                          ARight -> right_assocS)
                         <> fCommaT m l <> annoRparen
     Label l _ -> wrapAnnoLines (annoLparen "") (map commentText l) annoRparen
     Semantic_anno sa _ -> annoLine $ lookupSemanticAnno sa
