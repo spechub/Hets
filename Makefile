@@ -707,11 +707,10 @@ CASL_DL/PredefinedSign.inline.hs:  \
 	chmod 444 $@
 
 CASL_DL/PredDatatypes.het: utils/transformLibAsBasicSpec.pl \
-     $(HETS_LIB)/CASL_DL/Datatypes.het
+     CASL_DL/Datatypes.het
 	$(RM) $@
 	$(PERL) $+ > $@
 	chmod 444 $@
-
 
 ## rule for Modal/ModalSystems.hs needed for ModalLogic Translation
 # uses intransparently utils/outlineAxioms
