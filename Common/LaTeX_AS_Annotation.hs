@@ -21,64 +21,14 @@ import Common.Print_AS_Annotation
 
 import Common.GlobalAnnotations
 
-import Common.Id (Id(..),splitMixToken,Token,nullRange)
+import Common.Id (nullRange)
 import Common.PrintLaTeX
 import Common.Lib.Pretty
-import Common.PPUtils (printToks)
-import Common.Lexer(whiteChars)
 import Common.LaTeX_funs
 import qualified Common.Doc as Doc
 
-infixl 6 <\\+>
-
 instance PrintLaTeX Annotation where
     printLatex0 ga = Doc.toLatex ga . Doc.annoDoc
-
-fsep_small :: [Doc] -> Doc
-fsep_small = fcat . punctuate smallSpace_latex
-
--- -------------------------------------------------------------------------
--- utilities
--- -------------------------------------------------------------------------
-printAnnotationToken_latex :: Token -> Doc
-printAnnotationToken_latex = printDisplayToken_latex casl_annotation_latex
-
-smallSpace_latex :: Doc
-smallSpace_latex = casl_comment_latex " "
-
-smallComma_latex :: Doc
-smallComma_latex = casl_comment_latex ","
-
-(<\\+>) :: Doc -> Doc -> Doc
-d1 <\\+> d2 = if isEmpty d1 then d2 else
-                  if isEmpty d2 then d1 else d1 <> smallSpace_latex <> d2
-
-printSmallId_latex :: GlobalAnnos -> Id -> Doc
-printSmallId_latex ga i@(Id tops ids _) =
-    let ids' = case ids of
-               [] -> empty
-               _  ->  ((\x -> casl_comment_latex "[" <> x
-                                  <> casl_comment_latex "]")
-                       . fcat
-                       . punctuate smallComma_latex
-                       . map (printSmallId_latex ga)) ids
-        (ts,ps) = splitMixToken tops
-        pr_tops = fcat . map (printToken_latex casl_annotation_latex)
-    in maybe (pr_tops ts <> ids' <> pr_tops ps)
-             (fcat . printToks i printAnnotationToken_latex)
-             (lookupDisplay ga DF_LATEX i)
-
-printLatexGroup :: String -> Doc -> Doc
-printLatexGroup kw grp =
-    hc_sty_annotation (hc_sty_small_keyword ("\\%"++kw++"(")
-                       <> latex_macro setTab <> latex_macro startTab
-                       <> grp<> hc_sty_small_keyword ")\\%"
-                       <> latex_macro endTab)
-
-printLatexLine :: String -> Doc -> Doc
-printLatexLine kw line =
-    hc_sty_annotation (if isEmpty line then kw_d else kw_d <\\+> line)
-    where kw_d = hc_sty_small_keyword ("\\%"++kw)
 
 printAnnotationList_Latex0 :: GlobalAnnos -> [Annotation] -> Doc
 printAnnotationList_Latex0 ga = vcat . map (printLatex0 ga)
