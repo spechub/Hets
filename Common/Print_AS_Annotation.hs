@@ -86,14 +86,14 @@ splitAndPrintRAnnos pf pf_list sepF move nil ga ras =
     case ras of
              []     -> (nil,nil)
              r@(l:[])
-                 | isLabel l -> (pf ga l,nil)
+                 | isLabel l -> (move $ pf ga l,nil)
                  | isImplied l -> (move $ pf ga l, nil)
                  | otherwise -> (nil,pf_list ga r)
              r@(l:impl:xs)
                  | isLabel l && not (isImplied impl)
-                     -> (pf ga l, pf_list ga (impl:xs))
+                     -> (move $ pf ga l, pf_list ga (impl:xs))
                  | isLabel l && isImplied impl
-                     -> (pf ga l `sepF` pf ga impl, pf_list ga xs)
+                     -> (move (pf ga l `sepF` pf ga impl), pf_list ga xs)
                  | isImplied l
                      -> (move $ pf ga l, pf_list ga (impl:xs))
                  | otherwise -> (nil,pf_list ga r)
