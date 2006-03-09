@@ -19,5 +19,9 @@ while(<BAS_SPEC>) {
     $collectMode=0,next if(m/%\[--%% Basic Spec End %%--\]%/o);
     $basic_spec .= $_ if $collectMode;
 }
-
+if($basic_spec =~ m/^\s*$/os) {
+    print stderr "transformLibAsBasicSpec.pl: Warning: No content ",
+                 "was collected\n";
+    $basic_spec = "{}";
+}
 print $basic_spec,"\n";
