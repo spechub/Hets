@@ -14,13 +14,15 @@ Suchfunktion für einen Knoten im DG:
 BasicProof in Proofs.Proofs: sind Datenstrukturen für informelle Beweise OK?
 Konfidenzgrade von Beweisen?
 
-von Till/Jorina (jfgerken@tzi.de) zu erledigen:
+von Till/HiWi zu erledigen:
 Repräsentation ändern:
-  Beweisobjekte an DGs, nicht an Regeln
-  Für Theoreme in Theorien an Beweisobjekte
-  BasicProof mit Liste von Beweisobjekten
+  Beweisobjekte an DGs, nicht an Regeln -- done
+  Für Theoreme in Theorien an Beweisobjekte -- done
+  BasicProof mit Liste von Beweisobjekten -- überflüssig
+  Definitionen auszeichnen -- done
+    Für alles siehe G_theory, ThSens und SenStatus.
   Isabelles Beweisobjekte einbinden
-  Definitionen auszeichnen
+
 
 
 ************************************************
@@ -222,8 +224,9 @@ refactoring of dgraphs: add unique tags (but no table)
 display library graph
 
 
-unify GUI/AbstractGraphView.hs and Taxonomy/AbstractGraphView.hs (make
-it really abstract), possibly contact amahnke@tzi.de regarding
+unify GUI/AbstractGraphView.hs and Taxonomy/AbstractGraphView.hs 
+and uni/appl/ontologytool/AbstractGraphView.hs
+(make it really abstract), possibly contact amahnke@tzi.de regarding
 Taxonomy, possibly use uni/appl/ontologytool instead of Taxonomy!
 
 
