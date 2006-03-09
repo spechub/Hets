@@ -27,104 +27,12 @@ import Common.Lib.Pretty
 import Common.PPUtils (printToks)
 import Common.Lexer(whiteChars)
 import Common.LaTeX_funs
+import qualified Common.Doc as Doc
 
 infixl 6 <\\+>
 
 instance PrintLaTeX Annotation where
-    printLatex0 _ (Unparsed_anno aw at _) =
-        case at of
-                Line_anno str ->
-                    case aw of
-                            Comment_start ->
-                                hc_sty_comment
-                                ( hc_sty_small_keyword "\\%\\%"
-                                  <> casl_comment_latex
-                                       (escape_comment_latex str))
-                            Annote_word w -> printLatexLine w $
-                                             if all (`elem` whiteChars) str
-                                                then empty
-                                                else casl_annotation_latex
-                                                     (escape_comment_latex str)
-                Group_anno strs ->
-                    case aw of
-                    Comment_start ->
-                        case strs of
-                        [] -> hc_sty_comment
-                              (hc_sty_small_keyword "\\%\\{" <\\+>
-                                  hc_sty_small_keyword "\\}\\%")
-                        [x] -> hc_sty_comment (hc_sty_small_keyword "\\%\\{" <>
-                                  conv x <> hc_sty_small_keyword "\\}\\%")
-                        xs -> hc_sty_comment
-                                     (hc_sty_small_keyword "\\%\\{" <>
-                                      latex_macro setTab <>
-                                      latex_macro startTab <>
-                                      vcat (map conv xs) <>
-                                      hc_sty_small_keyword "\\}\\%" <>
-                                      latex_macro endTab)
-                        where conv  = casl_comment_latex . escape_comment_latex
-                    Annote_word w -> printLatexGroup w $ vcat
-                                     $ map (casl_annotation_latex
-                                            . escape_latex) strs
-    printLatex0 ga (Display_anno aa ab _) =
-        let aa' = printSmallId_orig_latex aa
-            ab' = map printPair $ filter nullSnd ab
-        in printLatexGroup "display" $ fsep_small $ aa' : ab'
-           where printPair (s1,s2) = la ("%" ++ lookupDisplayFormat s1)
-                                     <\\+> maybe (la s2) pr_tops tops
-                 tops = lookupDisplay ga DF_LATEX aa
-                 la = casl_annotation_latex . escape_latex
-                 pr_tops = fcat . printToks aa printAnnotationToken_latex
-                 nullSnd (_,s2) = not $ null s2
-                 printSmallId_orig_latex (Id toks ids _) =
-                     let ids' = case ids of
-                                [] -> empty
-                                _  ->  ((\x -> casl_comment_latex "[" <> x
-                                         <> casl_comment_latex "]")
-                                        . fcat
-                                        . punctuate smallComma_latex
-                                        . map (printSmallId_latex ga)) ids
-                         (ts,ps) = splitMixToken toks
-                         pr_tops' =
-                           hcat . map (printToken_latex casl_annotation_latex)
-                     in pr_tops' ts <> ids' <> pr_tops' ps
-    printLatex0 ga (String_anno aa ab _) =
-        let aa' = printSmallId_latex ga aa
-            ab' = printSmallId_latex ga ab
-        in printLatexLine "string" $ aa' <> smallComma_latex <\\+> ab'
-    printLatex0 ga (List_anno aa ab ac _) =
-        let aa' = printSmallId_latex ga aa
-            ab' = printSmallId_latex ga ab
-            ac' = printSmallId_latex ga ac
-        in printLatexLine "list" $ aa' <> smallComma_latex <\\+> ab'
-                                  <> smallComma_latex <\\+> ac'
-    printLatex0 ga (Number_anno aa _) =
-        let aa' = printSmallId_latex ga aa
-        in printLatexLine "number" aa'
-    printLatex0 ga (Float_anno aa ab _) =
-        let aa' = printSmallId_latex ga aa
-            ab' = printSmallId_latex ga ab
-        in printLatexLine "floating" $ aa' <> smallComma_latex <\\+> ab'
-    printLatex0 ga (Prec_anno pflag ab ac _) =
-        let aa' = hc_sty_axiom $ showPrecRel pflag
-            p_list = (\l -> casl_comment_latex "\\{" <> l
-                                <> casl_comment_latex "\\}")
-                     . fsep_small
-                     . punctuate smallComma_latex
-                     . map (printSmallId_latex ga)
-        in  printLatexGroup "prec" $ fsep_small [p_list ab, aa', p_list ac]
-    printLatex0 ga (Assoc_anno as aa _) =
-        printLatexGroup (case as of
-                         ALeft -> "left\\_assoc"
-                         ARight -> "right\\_assoc") $ fsep_small $
-        punctuate smallComma_latex $
-        map (printSmallId_latex ga) aa
-    printLatex0 _ (Label aa _) =
-        let aa' = vcat $ map (casl_annotation_latex . escape_latex) aa
-        in flushright $
-           hc_sty_annotation (hc_sty_small_keyword ("\\%(") <>
-                              aa' <> hc_sty_small_keyword ")\\%" )
-    printLatex0 _ (Semantic_anno sa  _) =
-        printLatexLine (lookupSemanticAnno sa)  empty
+    printLatex0 ga = Doc.toLatex ga . Doc.annoDoc
 
 fsep_small :: [Doc] -> Doc
 fsep_small = fcat . punctuate smallSpace_latex

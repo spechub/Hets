@@ -100,6 +100,7 @@ import Common.GlobalAnnotations
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Pretty as Pretty
 import Common.LaTeX_funs
+import Data.Char (isAlphaNum)
 
 infixl 6 <>
 infixl 6 <+>
@@ -107,7 +108,7 @@ infixl 5 $+$
 
 data TextKind =
     IdKind | Symbol | Comment | Keyword | TopKey | Indexed | StructId
-    | Native Display_format
+    | Native
 
 data Format = Small | FlushRight
 
@@ -178,8 +179,8 @@ commentText = Text Comment
 
 
 -- don't escape this strings since they are interpreted by latex
-native :: Display_format -> String -> Doc
-native = Text . Native
+native :: String -> Doc
+native = Text Native
 
 lparen, rparen, lbrack, rbrack, lbrace, rbrace, quote, doubleQuote :: Doc
 
@@ -374,39 +375,57 @@ toLatex ga = let dm = Map.map (Map.! DF_LATEX) .
     in foldDoc anyRecord
     { foldEmpty = \ _ -> Pretty.empty
     , foldText = \ _ k s -> textToLatex False k s
-    , foldCat = \ _ c -> case c of
+    , foldCat = \ _ c l -> case c of
+        Horiz -> Pretty.hcat l
+        _ -> latex_macro setTab Pretty.<>
+             latex_macro startTab Pretty.<> (case c of
           Vert -> Pretty.vcat
-          Horiz -> Pretty.hcat
+          Horiz -> error "toLatex.Horiz"
           HorizOrVert -> Pretty.cat
-          Fill -> Pretty.fcat
+          Fill -> Pretty.fcat) l Pretty.<> latex_macro endTab
     , foldAttr = \ o k d -> case k of
           FlushRight -> flushright d
           Small -> case o of
               Attr Small (Text j s) -> textToLatex True j s
-              _ -> error "toLatex"
+              _ -> error "toLatex.Small"
     , foldIndentBy = \ _ d1 d2 d3 ->
           d2 Pretty.$$ Pretty.nest (length $ show d1) d3
     } . makeSmall False . codeOut ga dm
 
 textToLatex :: Bool -> TextKind -> String -> Pretty.Doc
-textToLatex b k s = let e = escape_latex s in case k of
-    IdKind -> hc_sty_id e
-    Symbol -> symbolToLatex s
-    Comment -> Pretty.text e
-    Keyword -> (if b then hc_sty_small_keyword else hc_sty_plain_keyword) e
+textToLatex b k s = let e = escape_comment_latex s in
+        if elem s $ map (: []) ",;[]() " then casl_normal_latex s
+           else case k of
+    IdKind -> makeSmallLatex b $ hc_sty_id e
+    Symbol -> makeSmallLatex b $ symbolToLatex s
+    Comment -> (if b then makeSmallLatex b . casl_comment_latex
+               else casl_normal_latex) e
+               -- multiple spaces should be replaced by \hspace
+    Keyword -> (if b then makeSmallLatex b . hc_sty_small_keyword
+                else hc_sty_plain_keyword) e
     TopKey -> hc_sty_casl_keyword e
     Indexed -> hc_sty_structid_indexed e
     StructId -> hc_sty_structid e
-    Native _ -> Pretty.text s
+    Native -> makeSmallLatex b $ hc_sty_axiom s
+
+makeSmallLatex :: Bool -> Pretty.Doc -> Pretty.Doc
+makeSmallLatex b d =
+   if b then Pretty.hcat [latex_macro startAnno, d, latex_macro endAnno]
+   else d
 
 symbolToLatex :: String -> Pretty.Doc
-symbolToLatex s = Map.findWithDefault (hc_sty_axiom s) s latexSymbols
+symbolToLatex s = Map.findWithDefault (hc_sty_axiom
+                                       $ escape_latex s) s latexSymbols
 
 latexSymbols :: Map.Map String Pretty.Doc
 latexSymbols = Map.fromList
     [ (dotS, bullet_latex)
-    , (defnS, hc_sty_axiom defnS)
-    , (lessS, less_latex)
+    , (diamondS, hc_sty_axiom "\\Diamond")
+    , (percentS, hc_sty_axiom "\\%")
+    , (percents, hc_sty_axiom "\\%\\%")
+    , ("{", casl_normal_latex "\\{")
+    , ("}", casl_normal_latex "\\}")
+    , ("__", hc_sty_axiom "\\_\\_")
     , (lambdaS, hc_sty_axiom "\\lambda")
     , (mapsTo, mapsto_latex)
     , (funS, rightArrow)
@@ -417,7 +436,6 @@ latexSymbols = Map.fromList
     , (existsS, exists_latex)
     , (existsUnique, unique_latex)
     , (prodS, hc_sty_axiom "\\times")
-    , (barS, casl_normal_latex "\\textbar")
     , (notS, hc_sty_axiom "\\neg")
     , (inS, hc_sty_axiom "\\in")
     , (lAnd, hc_sty_axiom "\\wedge")
@@ -448,11 +466,16 @@ codeOut ga m = foldDoc idRecord
     , foldIdApplDoc = \ _ -> codeOutAppl ga m
     }
 
+codeToken :: String -> Doc
+codeToken s = case s of
+    [] -> empty
+    h : _ -> (if isAlphaNum h || elem h "._'" then text else symbol) s
+
 codeOutId :: Map.Map Id [Token] -> Id -> Doc
 codeOutId m i = fcat $ case Map.lookup i m of
-    Nothing -> map (symbol . tokStr) $ getTokenList place i
+    Nothing -> map (codeToken . tokStr) $ getTokenList place i
     Just ts -> map (\ t -> let s = tokStr t in
-                           if isPlace t then symbol s else text s) ts
+                           if isPlace t then symbol s else native s) ts
 
 -- print literal terms and mixfix applications
 codeOutAppl :: GlobalAnnos -> Map.Map Id [Token] -> Id -> [Doc] -> Doc
@@ -490,16 +513,15 @@ codeOutAnno m a = case a of
     Unparsed_anno aw at _ -> case at of
         Line_anno s -> (case aw of
             Annote_word w -> annoLine w
-            Comment_start -> symbol percents) <> text s
+            Comment_start -> symbol percents) <> commentText s
         Group_anno l -> let ds = map commentText l in case aw of
             Annote_word w -> wrapAnnoLines (annoLparen w) ds annoRparen
             Comment_start -> wrapAnnoLines (percent <> lbrace) ds
                              (rbrace <> percent)
     Display_anno i ds _ -> annoLparen displayS <> fsep
         ( codeOutId m i :
-          map ( \ (d, s) ->
-                    percent <> text (lookupDisplayFormat d) <+> native d s) ds
-        ) <> annoRparen
+          map ( \ (d, s) -> percent <> text (lookupDisplayFormat d)
+                <+> commentText s) ds) <> annoRparen
     List_anno i1 i2 i3 _ -> annoLine listS <+> hCommaT m [i1, i2, i3]
     Number_anno i _ -> annoLine numberS <+> codeOutId m i
     Float_anno i1 i2 _ -> annoLine floatingS <+> hCommaT m [i1, i2]
