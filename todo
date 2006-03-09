@@ -177,6 +177,17 @@ Zheng (Till)
 ************************************************
 
 look at Static/DevGraph.hs
+
+test development grapg GUI: 
+   menu edit - unnamed nodes - hide/show nodes,
+   node menu: show just subtree / undo
+   interaction with edit - proofs - automatic?
+
+fix bug: when lodaing Basic/RelationsAndOrders.casl and
+  doing 4x edit - proofs - Global Decomposition, we get
+    hets: applyChangesAux2: deleted edge from 3 to 15 of type GlobalThm 
+    and origin DGProof of development graph does not exist in abstraction graph
+
 look at translation to OMDoc
 
 change management via translation to OMDoc
@@ -188,7 +199,7 @@ einfaches Merge von lokalen Beweisen eines abgespeichteren DG
 Hilfskraft 4
 ************************************************
 
-port hets to windows. 
+port hets to windows. -- costs too much energy at this stage! Till
 
 If hets should become successful then requests for support under
 windows will surely follow.
@@ -235,14 +246,6 @@ set up default tactics using axioms
   (see DOLCE sample files)
 
 improve efficiency (e.g. of UserManual/Sbcs.casl), using profiling
-
-development graph calculus
-- Stack overflow for "show just subtree"
-- view-test7.casl should be provable with globDecomp + locDecopm
-- fail when doing first globDecomp, then local decomp in RelationsAndOrders
-- correct MAYA: glob decomp: some links are not found (Jorina)
-- Fail: No match in record selector Static.DevGraph.dgn_sign
-  for local subsume in RelationsAndOrders
 
 ************************************************
 Daniel
@@ -385,7 +388,7 @@ Christoph
 ************************************************
 
 CASL consistency checker
-IsaWin: support CASL-libraries
+Integration with generic prover interface?
 
 
 ************************************************
