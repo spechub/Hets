@@ -16,10 +16,9 @@ module Common.PrintLaTeX
     , debugRenderLatex
     , PrintLaTeX(..)
     , renderLatexVerb
-    , startTab, endTab, setTab
-    , setTabWithSpaces
     , printToken_latex
     , printDisplayToken_latex
+    , setTabWithSpaces
     , printId
     )
     where
@@ -308,25 +307,6 @@ subTabStop = do state <- get
                                        then init itabs
                                        else init itabs -- ++ [l_itabs -1]
                 put (state {indentTabs = indentTabs'})
-
--- |
--- a constant String for starting a LaTeX indentation with tab stop
-startTab :: String
-startTab = "\\@begT@"
-
--- |
--- a constant String for releasing a LaTeX indentation with tab stop
-endTab :: String
-endTab = "\\@endT@"
-
--- |
--- a constant String to set a tab stop and enable it
-setTab :: String
-setTab = "\\="
-
--- | a constant String indicating the start of a space based indentation
-setTabWSp :: String
-setTabWSp = "\\@setTS@{"
 
 -- | function to set up a space based indentation macro
 setTabWithSpaces :: Int -> String

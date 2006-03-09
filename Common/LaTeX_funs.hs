@@ -89,6 +89,8 @@ module Common.LaTeX_funs
     , exists_latex
     , unique_latex
 
+    , startTab, endTab, setTab
+    , setTabWSp
     , startAnno,
      endAnno) where
 
@@ -101,6 +103,25 @@ import Common.LaTeX_maps
 import Common.Lib.Pretty
 
 infixl 6 <\+>, <~>
+
+-- |
+-- a constant String for starting a LaTeX indentation with tab stop
+startTab :: String
+startTab = "\\@begT@"
+
+-- |
+-- a constant String for releasing a LaTeX indentation with tab stop
+endTab :: String
+endTab = "\\@endT@"
+
+-- |
+-- a constant String to set a tab stop and enable it
+setTab :: String
+setTab = "\\="
+
+-- | a constant String indicating the start of a space based indentation
+setTabWSp :: String
+setTabWSp = "\\@setTS@{"
 
 {- functions for calculating an integer value according to a given
    length in LaTeX units
@@ -369,7 +390,7 @@ escape_latex (x : xs)
                   | otherwise    -> default_quotes (escape_latex xs)
     | x `elem` "_%$&{}#" = '\\' : x : escape_latex xs
     | x == '~' = "\\Ax{\\sim}" ++ escape_latex xs
-    | x == '^' = '\\' : x : "{}" ++ escape_latex xs
+    | x == '^' = "\\Ax{\\hat{\\ }}" ++ escape_latex xs
     | x == '|' = "\\Ax{|}" ++ escape_latex xs
     | otherwise = x : escape_latex xs
     where default_quotes = ('\'':) . ('\'':)
