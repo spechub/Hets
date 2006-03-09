@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/bin/sh
 
-for i in Basic/*.dfg
-do 
+for i in $*
+do
   echo $i
   SPASS -Auto=0 $i
 done

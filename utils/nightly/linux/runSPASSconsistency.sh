@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/bin/sh
 
-for i in Basic/*.dfg.c
-do 
+for i in $*
+do
   echo $i
   SPASS $i | fgrep -C 4 "SPASS beiseite"
 done

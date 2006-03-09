@@ -22,9 +22,9 @@ cat Basic/*.pp.pp.het > pp2.txt
 diff pp1.txt pp2.txt
 
 # try consistency check with SPASS
-hets -v2 -o dfg.c Basic/*.casl
+hets -v2 -o dfg.c Basic/*.casl UserManual/*.casl
 date
-/local/home/maeder/haskell/runSPASSconsistency.sh
+/local/home/maeder/haskell/runSPASSconsistency.sh */*.dfg.c
 date
 
 # check other examples
