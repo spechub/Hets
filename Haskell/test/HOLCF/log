@@ -1,7 +1,3 @@
-+ for i in '*.thy'
-++ basename ex_class_hc.thy .thy
-+ j=ex_class_hc
-+ isabelle -q -e 'use_thy "ex_class_hc";print_depth 300;theory "ex_class_hc";axioms_of it;quit();' HOLCF
 Poly/ML RTS version I386-4.1.4 (14:18:30 Nov 14 2005)
 Copyright (c) 2002-5 CUTS and contributors.
 Running with heap parameters (h=30000K,ib=6000K,ip=100%,mb=10096K,mp=20%)
@@ -219,10 +215,6 @@ val it =
          "match_MyCons ==
             Prelude_MyList_when$fail$(LAM a P'. return$<a, P'>)")]
 : (string * Thm.thm) list
-+ for i in '*.thy'
-++ basename ex_fibon_hc.thy .thy
-+ j=ex_fibon_hc
-+ isabelle -q -e 'use_thy "ex_fibon_hc";print_depth 300;theory "ex_fibon_hc";axioms_of it;quit();' HOLCF
 Poly/ML RTS version I386-4.1.4 (14:18:30 Nov 14 2005)
 Copyright (c) 2002-5 CUTS and contributors.
 Running with heap parameters (h=30000K,ib=6000K,ip=100%,mb=10096K,mp=20%)
@@ -268,10 +260,6 @@ val it =
                                 1)))$(fibon$(fliftbin
                                    op -$n$(Def 2))) fi fi))")]
 : (string * Thm.thm) list
-+ for i in '*.thy'
-++ basename ex_let_hc.thy .thy
-+ j=ex_let_hc
-+ isabelle -q -e 'use_thy "ex_let_hc";print_depth 300;theory "ex_let_hc";axioms_of it;quit();' HOLCF
 Poly/ML RTS version I386-4.1.4 (14:18:30 Nov 14 2005)
 Copyright (c) 2002-5 CUTS and contributors.
 Running with heap parameters (h=30000K,ib=6000K,ip=100%,mb=10096K,mp=20%)
@@ -312,10 +300,6 @@ val it =
          "myEqual ==
             LAM x y. If (LAM x y. Def (x = y))$x$y then TT else FF fi")]
 : (string * Thm.thm) list
-+ for i in '*.thy'
-++ basename ex_list_hc.thy .thy
-+ j=ex_list_hc
-+ isabelle -q -e 'use_thy "ex_list_hc";print_depth 300;theory "ex_list_hc";axioms_of it;quit();' HOLCF
 Poly/ML RTS version I386-4.1.4 (14:18:30 Nov 14 2005)
 Copyright (c) 2002-5 CUTS and contributors.
 Running with heap parameters (h=30000K,ib=6000K,ip=100%,mb=10096K,mp=20%)
@@ -358,10 +342,6 @@ val it =
             LAM x y.
                If (LAM x y. Def (x = y))$x$(lCons$(lHd$x)$(lTl$y))
                   then TT else FF fi")] : (string * Thm.thm) list
-+ for i in '*.thy'
-++ basename ex_mutrec_hc.thy .thy
-+ j=ex_mutrec_hc
-+ isabelle -q -e 'use_thy "ex_mutrec_hc";print_depth 300;theory "ex_mutrec_hc";axioms_of it;quit();' HOLCF
 Poly/ML RTS version I386-4.1.4 (14:18:30 Nov 14 2005)
 Copyright (c) 2002-5 CUTS and contributors.
 Running with heap parameters (h=30000K,ib=6000K,ip=100%,mb=10096K,mp=20%)
@@ -685,10 +665,6 @@ val it =
                    (EX a. a ~= UU & x2 = Red$a & x2' = Red$a) |
                    (EX P'. P' ~= UU & x2 = Multi$P' & x2' = Multi$P'))")]
 : (string * Thm.thm) list
-+ for i in '*.thy'
-++ basename incmpl_hc.thy .thy
-+ j=incmpl_hc
-+ isabelle -q -e 'use_thy "incmpl_hc";print_depth 300;theory "incmpl_hc";axioms_of it;quit();' HOLCF
 Poly/ML RTS version I386-4.1.4 (14:18:30 Nov 14 2005)
 Copyright (c) 2002-5 CUTS and contributors.
 Running with heap parameters (h=30000K,ib=6000K,ip=100%,mb=10096K,mp=20%)
@@ -830,10 +806,6 @@ val it =
       ("incmpl_hc.Prelude_Boolx.match_Plusx_def",
          "match_Plusx == Prelude_Boolx_when$fail$(return$())")]
 : (string * Thm.thm) list
-+ for i in '*.thy'
-++ basename mrec3_hc.thy .thy
-+ j=mrec3_hc
-+ isabelle -q -e 'use_thy "mrec3_hc";print_depth 300;theory "mrec3_hc";axioms_of it;quit();' HOLCF
 Poly/ML RTS version I386-4.1.4 (14:18:30 Nov 14 2005)
 Copyright (c) 2002-5 CUTS and contributors.
 Running with heap parameters (h=30000K,ib=6000K,ip=100%,mb=10096K,mp=20%)
@@ -994,10 +966,6 @@ val it =
       ("mrec3_hc.Prelude_Boolx.match_Plusx_def",
          "match_Plusx == Prelude_Boolx_when$fail$(return$())")]
 : (string * Thm.thm) list
-+ for i in '*.thy'
-++ basename mrec_hc.thy .thy
-+ j=mrec_hc
-+ isabelle -q -e 'use_thy "mrec_hc";print_depth 300;theory "mrec_hc";axioms_of it;quit();' HOLCF
 Poly/ML RTS version I386-4.1.4 (14:18:30 Nov 14 2005)
 Copyright (c) 2002-5 CUTS and contributors.
 Running with heap parameters (h=30000K,ib=6000K,ip=100%,mb=10096K,mp=20%)
@@ -1100,10 +1068,6 @@ val it =
       ("mrec_hc.Prelude_Natx.match_Zx_def",
          "match_Zx == Prelude_Natx_when$(return$())$(LAM a P'. fail)")]
 : (string * Thm.thm) list
-+ for i in '*.thy'
-++ basename wcard_hc.thy .thy
-+ j=wcard_hc
-+ isabelle -q -e 'use_thy "wcard_hc";print_depth 300;theory "wcard_hc";axioms_of it;quit();' HOLCF
 Poly/ML RTS version I386-4.1.4 (14:18:30 Nov 14 2005)
 Copyright (c) 2002-5 CUTS and contributors.
 Running with heap parameters (h=30000K,ib=6000K,ip=100%,mb=10096K,mp=20%)
