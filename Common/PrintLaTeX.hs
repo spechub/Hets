@@ -19,7 +19,6 @@ module Common.PrintLaTeX
     , printToken_latex
     , printDisplayToken_latex
     , setTabWithSpaces
-    , printId
     )
     where
 
@@ -30,9 +29,8 @@ import Data.List (isPrefixOf,isSuffixOf)
 import Common.Id
 import Common.Lib.Pretty
 import Common.PrettyPrint
-import Common.PPUtils (printToks)
-import Common.GlobalAnnotations
 import Common.LaTeX_funs
+import qualified Common.Doc as Doc
 
 ----------------------------------------------------------------------
 -- two Styles for Formatting (Standard is Style PageMode 50 1.19)
@@ -354,32 +352,7 @@ renderLatexVerb mi d = renderStyle textStyle' d'
 
 -- moved instance from Id.hs (to avoid cyclic imports via GlobalAnnotations)
 instance PrintLaTeX Token where
-    printLatex0 ga t = printToken_latex casl_axiom_latex t'
-        where i = Id [t] [] nullRange
-              t' = maybe t (\ ts -> if isMixfix (Id ts [] nullRange)
-                                    then t
-                                    else head ts)
-                         (lookupDisplay ga DF_LATEX i)
-
--- | print latex identifier
-printId :: (GlobalAnnos -> Token -> Doc) -- ^ function to print a Token
-           -> GlobalAnnos -> (Maybe Display_format)
-           -> ([Token] -> Doc)    -- ^ function to join translated tokens
-           -> Id -> Doc
-printId pf ga mdf f i =
-    let glue_tok pf' = hcat . map pf'
-        print_ (Id tops_p ids_p _) =
-            if null ids_p then glue_tok (pf ga) tops_p
-            else let (toks, places) = splitMixToken tops_p
-                     comp = pf ga (mkSimpleId "[") <>
-                            fcat (punctuate comma_latex
-                                            $ map (printId pf ga mdf f) ids_p)
-                            <> pf ga (mkSimpleId "]")
-                 in fcat [glue_tok (pf ga) toks, comp,
-                          glue_tok (pf ga) places]
-        in maybe (print_ i)
-           ( \ df -> maybe (print_ i) f
-             $ lookupDisplay ga df i) mdf
+    printLatex0 ga t = Doc.toLatex ga $ Doc.idDoc $ Id [t] [] nullRange
 
 printToken_latex :: (String -> Doc) -> Token -> Doc
 printToken_latex strConvDoc_fun t =
@@ -406,6 +379,4 @@ printDisplayToken_latex strConvDoc_fun t =
     where str = tokStr t
 
 instance PrintLaTeX Id where
-    printLatex0 ga i = printId printLatex0 ga (Just DF_LATEX)
-       (fcat . printToks i (printDisplayToken_latex casl_axiom_latex)) i
-
+    printLatex0 ga = Doc.toLatex ga . Doc.idDoc
