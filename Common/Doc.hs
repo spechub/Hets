@@ -101,6 +101,7 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Pretty as Pretty
 import Common.LaTeX_funs
 import Data.Char
+import Data.List (intersperse)
 
 infixl 6 <>
 infixl 6 <+>
@@ -421,6 +422,7 @@ symbolToLatex s = Map.findWithDefault (hc_sty_axiom
 latexSymbols :: Map.Map String Pretty.Doc
 latexSymbols = Map.fromList
     [ (dotS, bullet_latex)
+    , (diamondS, hc_sty_axiom "\\Diamond")
     , (percentS, hc_sty_small_keyword "\\%")
     , (percents, hc_sty_small_keyword "\\%\\%")
     , ("{", casl_normal_latex "\\{")
@@ -472,8 +474,14 @@ codeToken s = case s of
     [] -> empty
     h : _ -> (if isAlphaNum h || elem h "._'" then text else symbol) s
 
-codeOrigId :: Id -> [Doc]
-codeOrigId = map (codeToken . tokStr) . getTokenList place
+codeOrigId :: Map.Map Id [Token] -> Id -> [Doc]
+codeOrigId m (Id ts cs _) = let
+    (toks, places) = splitMixToken ts
+    conv = map (codeToken . tokStr) in
+    if null cs then conv ts
+       else conv toks ++
+            (lbrack : intersperse comma (map (codeOutId m) cs))
+            ++ (rbrack : conv places)
 
 codeIdToks :: [Token] -> [Doc]
 codeIdToks = map (\ t -> let s = tokStr t in
@@ -481,7 +489,7 @@ codeIdToks = map (\ t -> let s = tokStr t in
 
 codeOutId :: Map.Map Id [Token] -> Id -> Doc
 codeOutId m i = hcat $ case Map.lookup i m of
-    Nothing -> codeOrigId i
+    Nothing -> codeOrigId m i
     Just ts -> codeIdToks ts
 
 -- print literal terms and mixfix applications
@@ -529,7 +537,7 @@ codeOutAnno d m a = case a of
             Comment_start -> wrapAnnoLines d (percent <> lbrace) l
                              (rbrace <> percent)
     Display_anno i ds _ -> annoLparen displayS <> fsep
-        ( hcat (codeOrigId i) :
+        ( hcat (codeOrigId m i) :
           map ( \ (df, s) -> percent <> text (lookupDisplayFormat df)
                 <+> maybe (commentText s) (const $ codeOutId m i)
                     (Map.lookup i m)) ds) <> annoRparen
@@ -539,11 +547,11 @@ codeOutAnno d m a = case a of
     String_anno i1 i2 _ -> annoLine stringS <+> hCommaT m [i1, i2]
     Prec_anno p l1 l2 _ -> annoLparen precS <>
         fsep [ braces $ fCommaT m l1
-             , symbol $ case p of
-                          Lower -> lessS
-                          Higher -> greaterS
-                          BothDirections -> diamondS
-                          NoDirection -> error "codeOutAnno"
+             , case p of
+                 Lower -> symbol lessS
+                 Higher -> symbol greaterS
+                 BothDirections -> symbol lessS <> symbol greaterS
+                 NoDirection -> symbol greaterS <> symbol lessS
              , braces $ fCommaT m l2
              ] <> annoRparen
     Assoc_anno s l _ -> annoLparen (case s of
