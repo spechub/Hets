@@ -1,5 +1,12 @@
 {- |
-Stolen from HetCATS/hets.hs
+Module      :  $Header$
+Copyright   :  (c) Hendrik Iben, Uni Bremen 2005-2006
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+
+Maintainer  :  hiben@tzi.de
+Stability   :  provisional
+Portability :  non-portable(Logic)
+
 Interface for accessing Hets-System
 -}
 
@@ -48,9 +55,11 @@ import qualified Debug.Trace as Debug.Trace
 
 import qualified Data.List as Data.List
 
+-- | shortcut to Debug.Trace.trace
 dtt::String->a->a
 dtt = Debug.Trace.trace
 
+-- | "alias" for GUI.showGraph (for export)
 showGraph::FilePath->HetcatsOpts->Maybe (LIB_NAME, LibEnv)->IO ()
 showGraph file opt env =
 	case env of
@@ -58,28 +67,35 @@ showGraph file opt env =
 			GUI.showGraph file opt (Just (ln, libenv))
 		Nothing -> return ()
 
+-- |  run 'anaLib' with default HetcatsOptions 
 run :: FilePath -> IO (Maybe (LIB_NAME, LibEnv))
 run file = anaLib dho file
 
+-- | run 'anaLib' with default HetcatsOptions + include directory 
 runLib::FilePath->FilePath->IO (Maybe (LIB_NAME, LibEnv))
 runLib lib file = anaLib (dho { libdir = lib }) file
 
+-- | "alias" for defaultHetcatsOpts (for export)
 dho::HetcatsOpts
 dho = defaultHetcatsOpts
 
--- isAxiom was added... (a :: Bool)
+-- | transform a list of named sentences to a list with name-sentence-tuples
 transSen::[Ann.Named CASLFORMULA]->[(String, CASLFORMULA)]
 transSen [] = []
 transSen ((Ann.NamedSen n _ _ s):rest) = [(n, s)] ++ transSen rest
 
+-- | transform a list of name-sentence-tuples to a list of named sentences
 transSenBack::[(String, CASLFORMULA)]->[Ann.Named CASLFORMULA]
 transSenBack [] = []
 transSenBack ((n, s):rest) = (Ann.NamedSen n False False s):(transSenBack rest)
 
+-- | strip names from a list of name-formula-tuples
 getPureFormulas::[(String, CASLFORMULA)]->[CASLFORMULA]
 getPureFormulas [] = []
 getPureFormulas ((_, f):rest) = [f] ++ getPureFormulas rest
 
+-- | try to load a DevGraph via Hets and return only the DevGraph for the 
+-- first library
 getDG::FilePath->IO DGraph
 getDG f = do
 	(Just (ln,lenv)) <- run f
@@ -135,6 +151,7 @@ caslSignToStrings cs =
 			  ,predMapStrings = ( getPredTypeStringsList $ predMap cs )
 			 }
 
+-- Create a simple id from a string
 stringToSimpleId::String->Id.SIMPLE_ID
 stringToSimpleId = Id.mkSimpleId
 			 
@@ -937,15 +954,6 @@ findNodeNameForSentence::ImportsMap->SensMap->CASLFORMULA->String->(Maybe String
 findNodeNameForSentence importsMap sensMap s name =
 	findNodeNameFor importsMap sensMap (\n -> not $ Set.null $ Set.filter (\n' -> (sentence n' ) == s) n) name
 	
-
--- | Reduce a DevGraph by backtracking importing links
-createReducedDGraph::DGraph->DGraph
-createReducedDGraph dg =
-	let	lnodes = Graph.labNodes dg
-		ledges = Graph.labEdges dg
-	in Graph.mkGraph (map (createReducedNode dg) lnodes) ledges
-	
-
 buildCASLSentenceDiff::(Prover.ThSens CASLFORMULA (AnyComorphism, BasicProof))->(Prover.ThSens CASLFORMULA (AnyComorphism, BasicProof))->(Prover.ThSens CASLFORMULA (AnyComorphism, BasicProof))
 buildCASLSentenceDiff = OMap.difference
 
@@ -1238,83 +1246,4 @@ applySignHiding
 		envdiags
 		ga
 		ext
-
-createLocalNode::DGraph->(Graph.LNode DGNodeLab)->(Graph.LNode DGNodeLab)
-createLocalNode dg (n, node) =
-	case node of
-		(DGRef {}) -> (n, node) -- this is actually bad 
-			-- there is often a Morphism associated with a DGRef so should
-			-- we strip to morphed symbols from this ?
-		_ ->
-			let	incoming = filter ( \(_,tn,_) -> n == tn ) $ Graph.labEdges dg
-				{-imports = filter ( \(_,_,iedge) ->
-					case iedge of
-						(DGLink _ t _) ->
-							case t of
-								LocalDef -> True
-								GlobalDef -> True
-								HidingDef -> True
-								_ -> False
-					) incoming-}
-				innodes = map ( \(n' ,_,_) -> (\(Just a) -> a) $ Graph.lab dg n' ) incoming
-			in
-				(n, foldl (\lnode inode -> buildCASLNodeDiff lnode inode) node innodes)
-		
-createReducedNode::DGraph->(Graph.LNode DGNodeLab)->(Graph.LNode DGNodeLab)
-createReducedNode dg (n,node) = 
-	case node of
-		(DGRef {}) -> (n, node)
-		_ ->
-			let	incoming = filter ( \(_,tn,_) -> n == tn ) $ Graph.labEdges dg
-				(li,gi,hi) =
-					foldl ( \(nli, ngi, nhi) edge@(_,_,iedge) ->
-					case iedge of
-						(DGLink _ t _) ->
-							case t of
-								LocalDef -> (nli++[edge], ngi, nhi)
-								GlobalDef -> (nli, ngi++[edge], nhi) 
-								HidingDef -> (nli, ngi, nhi++[edge])
-								_ -> (nli, ngi, nhi)
-						) ([],[],[]) incoming
-				localnodes = map ( \(n' ,_,_) -> (\(Just a) -> (n' , a)) $ Graph.lab dg n' ) li
-				globalnodes = map ( \(n' ,_,_) -> (\(Just a) -> (n' , a)) $ Graph.lab dg n' ) gi
-				hidingnodes = map ( \(n' ,_,_) -> (\(Just a) -> (n' , a)) $ Graph.lab dg n' ) hi
-			in
-				stripCASLMorphisms dg (n,
-					foldl (\nnode (inn'' , inode) ->
-						let (_, rnode) = createLocalNode dg (inn'' , inode)
-						in buildCASLNodeDiff nnode rnode
-						)
-					(foldl (\nnode (_, inode) ->
-						buildCASLNodeDiff nnode inode
-						) node (globalnodes ++ hidingnodes)) localnodes
-				)
-				
-{-
-a hiding import is a global import, limited to a subset of the exporting node
-a local import is an import of the local attributes of the exporting node
-a global import imports all attributes from the exporting node (local and imported)
-
-reducing a node:
-to reduce a node, we need to reverse all imports, meaning to remove everything from the
-node that was imported from another node according to the type of the import.
-
-reducing a local import : remove the exporting node's set of attributes from the importing node's set
-	note : the exporting node must be reduced, to remove imported attributes...
-	
-reducing a global import : remove the exporting node's set of attributes from the importing node's set
-	note : we get the nodes in a state, when their sets are fully imported...
-	
-reducing a hiding import : remove the attributes of the exporting node from the importing node
-	note : the imported attributes will[/should] be a subset of the exporting node's set
-	
-how to get the local attributes :
-	just strip all imported attributes from the node (without reducing other nodes).
-	only local attributes can remain...
--}
-
-
-
-
-
 

@@ -1,6 +1,14 @@
 {- |
-	The Integrate-Module aims at glueing together all needed modules
-	for /Hets\<-\>Omdoc/-conversion.
+Module      :  $Header$
+Copyright   :  (c) Hendrik Iben, Uni Bremen 2005-2006
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+
+Maintainer  :  hiben@tzi.de
+Stability   :  provisional
+Portability :  non-portable(Logic)
+
+Aims at glueing together all needed modules
+	for Hets<->Omdoc-conversion.
 -}
 module Integrate where
 
@@ -18,7 +26,7 @@ import qualified Data.Graph.Inductive.Graph as Graph
 import qualified Common.Lib.Graph as CLGraph
 import CASL.Amalgamability(CASLSign)
 
--- Often used symbold from HXT
+-- Often used symbols from HXT
 import Text.XML.HXT.Parser
 	( (+++), (+=), (.>), xshow, isTag, getChildren, processChildren
 	  , hasValue, getValue, hasAttr, a_name, k_public, k_system, emptyRoot
@@ -72,7 +80,7 @@ import qualified Network.URI as URI
 applyXmlFilter::HXT.XmlFilter->HXT.XmlTrees->HXT.XmlTrees
 applyXmlFilter f t = (id .> f) t
 
--- XMLFilter hasValue only gives back the value, not the tree...
+-- XMLFilter 'hasValue' only gives back the value, not the tree...
 -- | filters nodes with a special value
 withValue::String->(String -> Bool)->HXT.XmlFilter
 withValue s f t = if (HXT.hasValue s f t) /= [] then [t] else []
@@ -99,18 +107,6 @@ withSValue a v = withValue a (==v)
 -- | @withSValue for namespaces
 withQualSValue::String->String->String->HXT.XmlFilter
 withQualSValue prefix local v = withQualValue prefix local (==v)
-
--- import context... will vanish soon...
-data ImportContext a = ImportContext {
-						 importsMap :: Hets.ImportsMap
-						,sortsMap :: Hets.SortsMap
-						,relsMap :: Hets.RelsMap
-						,predsMap :: Hets.PredsMap
-						,opsMap :: Hets.OpsMap
-						,sensMap :: Hets.SensMap
-						,importGraph :: (ImportGraph a)
-						}
-						
 						
 -- Debugging-Functions
 
@@ -315,14 +311,17 @@ mkOmdocTypeElem system =
 		,(k_system, system)
 		]
 
+{- |
+	default OMDoc-DTD-URI
+	www.mathweb.org does not provide the dtd anymore (or it is hidden..)
+	defaultDTDURI = "http://www.mathweb.org/src/mathweb/omdoc/dtd/omdoc.dtd"
+	the svn-server does provide the dtd but all my validating software refuses to load it...
+	defaultDTDURI = "https://svn.mathweb.org/repos/mathweb.org/trunk/omdoc/dtd/omdoc.dtd"
+	my private copy of the modular omdoc 1.2 dtd...
+	defaultDTDURI = "/home/hendrik/Dokumente/Studium/Hets/cvs/HetCATScopy/utils/Omdoc/dtd/omdoc.dtd"
+	until dtd-retrieving issues are solved I put the dtd online...
+-}
 defaultDTDURI::String
--- www.mathweb.org does not provide the dtd anymore (or it is hidden..)
--- defaultDTDURI = "http://www.mathweb.org/src/mathweb/omdoc/dtd/omdoc.dtd"
--- the svn-server does provide the dtd but all my validating software refuses to load it...
--- defaultDTDURI = "https://svn.mathweb.org/repos/mathweb.org/trunk/omdoc/dtd/omdoc.dtd"
--- my private copy of the modular omdoc 1.2 dtd...
--- defaultDTDURI = "/home/hendrik/Dokumente/Studium/Hets/cvs/HetCATScopy/utils/Omdoc/dtd/omdoc.dtd"
--- until dtd-retrieving issues are solved I put the dtd online...
 defaultDTDURI = "http://www.tzi.de/~hiben/omdoc/dtd/omdoc.dtd"
 
 -- | generate DOCTYPE-Element with default-DTD-URI 
@@ -897,6 +896,7 @@ stripLibName::String->String
 stripLibName s = implode "." $ initorall $ explode "."  $ last $ explode "/" s
 
 -- | Convert a DevGraph to OMDoc-XML with given xml:id attribute
+-- will also scan used (CASL-)files for CMP-generation
 devGraphToOmdocCMPIOXN::GlobalOptions->Static.DevGraph.DGraph->String->IO HXT.XmlTrees
 devGraphToOmdocCMPIOXN go dg name' =
 	do
@@ -906,6 +906,8 @@ devGraphToOmdocCMPIOXN go dg name' =
 					+++ xmlNL +++ dgx )) emptyRoot
 			)
 
+-- | Converts a map mapping to a Container-type (e.g. Set) to a list of
+-- key,value-tuples for every element in the container and the corresponding key
 mapToSetToTupelList::(Container c b)=>Map.Map a c->[(a,b)]
 mapToSetToTupelList mapping =
 	foldl (\l (a, s) ->
@@ -914,6 +916,7 @@ mapToSetToTupelList mapping =
 			) l (getItems s)
 		) [] (Map.toList mapping)
 		
+-- | creates a xml structure describing a Hets-presentation for a symbol 
 makePresentationFor::XmlName->String->HXT.XmlFilter
 makePresentationFor xname presstring =
 	HXT.etag "presentation" += (
@@ -923,7 +926,8 @@ makePresentationFor xname presstring =
 			+++ (HXT.txt presstring)
 			)
 		)
-
+		
+-- debugging function
 showSensWOMap::Map.Map a (Set.Set Hets.SentenceWO)->String
 showSensWOMap mapping =
 	let
@@ -932,7 +936,11 @@ showSensWOMap mapping =
 		sennames = map (Ann.senName . Hets.woItem) senslist
 	in
 		implode ", " sennames
-	
+
+{- |
+	Converts a DevGraph into a Xml-structure (accessing used (CASL-)files 
+	for CMP-generation)
+-}
 devGraphToXmlCMPIOXmlNamed::GlobalOptions->Static.DevGraph.DGraph->IO (HXT.XmlTree->HXT.XmlTrees)
 devGraphToXmlCMPIOXmlNamed go dg =
 	let
@@ -1302,33 +1310,41 @@ xnMapsToDGNodeLab
 		sens' = Set.map xnWOaToa xnsens
 	in
 		mapsNNToDGNodeLab go (sorts' , rels' , preds' , ops' , sens' ) nn
-							
-type WithOriginTheory a = Hets.WithOrigin a String
 
+-- | describes a value with an xml-name and an origin
 type XmlNamedWO a b = XmlNamed (Hets.WithOrigin a b)
+-- | describes a value with an xml-name and a Graph.Node for origin
 type XmlNamedWON a = XmlNamedWO a Graph.Node
 
+-- | a SORT with an xml-name and a Graph.Node for origin
 type XmlNamedWONSORT = XmlNamedWON SORT
 
+-- | strip origin
 xnWOaToXNa::XmlNamedWO a b->XmlNamed a
 xnWOaToXNa a = XmlNamed (Hets.woItem (xnItem a)) (xnName a)
 
+-- | strip all
 xnWOaToa::XmlNamedWO a b->a
 xnWOaToa a = Hets.woItem (xnItem a)
 
+-- | get origin (strip value and name)
 xnWOaToO::XmlNamedWO a b->b
 xnWOaToO a = Hets.woOrigin (xnItem a)
 
 -- just an alias to complete this
+-- | strip xml-name
 xnWOaToWOa::XmlNamedWO a b->Hets.WithOrigin a b
 xnWOaToWOa a = xnItem a
 
+-- | a predicate with xml-name and origin
 data PredTypeXNWON = PredTypeXNWON {predArgsXNWON :: [XmlNamedWON SORT]}
 	deriving (Show, Eq, Ord)
 	
+-- | an operator with xml-name and origin
 data OpTypeXNWON = OpTypeXNWON { opKind :: FunKind, opArgsXNWON :: [XmlNamedWON SORT], opResXNWON :: (XmlNamedWON SORT) }
 	deriving (Show, Eq, Ord)
-	
+
+-- | tries to find the 'pure' sort among named sorts 	
 sortToXmlNamedWONSORT::[XmlNamedWONSORT]->SORT->(Maybe XmlNamedWONSORT)
 sortToXmlNamedWONSORT list s = find (\i -> s == (xnWOaToa i)) list
 
@@ -1378,6 +1394,8 @@ opTypeXNWONToOpType::OpTypeXNWON->OpType
 opTypeXNWONToOpType (OpTypeXNWON fk xnargs xnres) =
 	OpType fk (map xnWOaToa xnargs) (xnWOaToa xnres)
 
+-- | create catalogue xml-structures for a DevGraph and its theories
+-- theories needed because they have xml-names
 refsToCatalogueXN::DGraph->TheoryXNSet->HXT.XmlFilter
 refsToCatalogueXN dg theoryset =
 	let
@@ -1477,11 +1495,12 @@ createConstructorXN theoryset cidxn (OpTypeXNWON _ opargsxn _) =
 			) (HXT.txt "") opargsxn
 		)
 		
+-- | like init but returns empty list for empty list (init raises exception)
 initOrEmpty::[a]->[a]
 initOrEmpty [] = []
 initOrEmpty l = init l
 
--- i need a back-reference to the theory to get presentations for adt-constructors...				
+-- i need a back-reference to the theory to get presentations for adt-constructors...
 extractConsXNWONFromADT::FFXInput->AnnXMLN->AnnXMLN->(XmlNamedWONId, [(XmlNamedWONId, OpTypeXNWON)])
 extractConsXNWONFromADT ffxi anxml anxmltheory =
 	let
@@ -1545,16 +1564,20 @@ consToSensXN sortid conlist =
 		)
 		("ga_generated_" ++ (xnName sortid))
 		
+-- | A Theory (DevGraph-Node) with an xml-name
 type TheoryXN = XmlNamed (Graph.Node, NODE_NAME)
-	
+
+-- | Set of Theories
 type TheoryXNSet = Set.Set TheoryXN
 	
+-- | name by node
 getTheoryXmlName::TheoryXNSet->Graph.Node->Maybe XmlName
 getTheoryXmlName ts n =
 	case find (\i -> (fst (xnItem i)) == n) $ Set.toList ts of
 		Nothing -> Nothing
 		(Just i) -> Just (xnName i)
 		
+-- | node by name
 getNodeForTheoryName::TheoryXNSet->XmlName->Maybe Graph.Node
 getNodeForTheoryName xntheoryset xname =
 	case find (\i -> (xnName i) == xname) $ Set.toList xntheoryset of
@@ -1672,61 +1695,8 @@ transformMorphOp (id' , ot) = Qual_op_name id' (cv_OpTypeToOp_type ot) Id.nullRa
 transformMorphPred::(Id.Id, PredType)->PRED_SYMB
 transformMorphPred (id' , pt) = Qual_pred_name id' (cv_PredTypeToPred_type pt) Id.nullRange
 
-createHidingString2::(Hets.Sorts, Hets.Rels, Hets.Preds, Hets.Ops)->String
-createHidingString2 (sorts' , _ , preds' , ops' ) =
-	let	hidden = map show (Set.toList sorts' ) ++
-			map show (Map.keys preds' ) ++
-			map show (Map.keys ops' )
-	in implode ", " hidden
-	
-morphismMapToXml::Hets.MorphismMap->String->String->HXT.XmlFilter
-morphismMapToXml (sm, om, pm, hs) source target =
-	HXT.etag "morphism" +=
-		(
-		(HXT.sattr "hiding" (implode ", " $ map show $ Set.toList hs))
-		+++
-		(foldl (\sx (ss,st) ->
-			sx +++
-			requation
-				(inOMOBJ
-					(
-					HXT.etag "OMS" += (HXT.sattr "cd" source +++ HXT.sattr "name" (show ss))
-					))
-				(inOMOBJ
-					(
-					HXT.etag "OMS" += (HXT.sattr "cd" target +++ HXT.sattr "name" (show st))
-					))
-		) (HXT.txt "") $ Map.toList sm)
-		+++
-		(foldl (\sx ((sid, sot),(tid, tot)) ->
-			sx +++
-			requation
-				(inOMOBJ (processOperatorForMorphism sid sot source))
-				(inOMOBJ (processOperatorForMorphism tid tot target))
-		) (HXT.txt "") $ Map.toList om)
-		+++
-		(foldl (\sx ((sid, spt),(tid, tpt)) ->
-			sx +++
-			requation
-				(inOMOBJ (processPredicationForMorphism sid spt source))
-				(inOMOBJ (processPredicationForMorphism tid tpt target))
-		) (HXT.txt "") $ Map.toList pm)
-		)
-	where
-	requation::(HXT.XmlTree->HXT.XmlTrees)->(HXT.XmlTree->HXT.XmlTrees)->(HXT.XmlTree->HXT.XmlTrees)
-	requation p v =
-		HXT.etag "requation" +=
-			(
-			xmlNL +++
-			p +++
-			xmlNL +++
-			v +++
-			xmlNL
-			) +++
-		xmlNL
-		
 -- relying on unique names there is no need for separating sorts, preds, ops, etc
--- but when naming changes occur (e.g. because the originial cals changed) all documents
+-- but when naming changes occur (e.g. because the original casl changed) all documents
 -- have to be updated...
 morphismMapToXmlXN::(Map.Map String String)->Set.Set String->String->String->HXT.XmlFilter
 morphismMapToXmlXN symbolmap hidings source target =
@@ -1756,85 +1726,6 @@ morphismMapToXmlXN symbolmap hidings source target =
 			xmlNL
 			) +++
 		xmlNL
-
-		
-processOperatorForMorphism::Id.Id->OpType->String->HXT.XmlFilter
-processOperatorForMorphism 
-	opid (OpType fk args res) source =
-		HXT.etag "OMATTR" +=
-			(xmlNL +++
-			HXT.etag "OMATP" += -- create attribution for this operator (sign)
-				(xmlNL +++
-				HXT.etag "OMS" += -- type of operator
-					(HXT.sattr "cd" "casl" +++
-					HXT.sattr "name" "funtype"
-					) +++
-				xmlNL +++
-				(HXT.etag "OMSTR" +=
-					(HXT.txt (show fk)) -- 'Partial' or 'Total'
-				) +++
-				xmlNL +++
-				HXT.etag "OMS" += -- signature of operator
-					(HXT.sattr "cd" "casl" +++
-					HXT.sattr "name" "type"
-					) +++
-				xmlNL +++
-				(HXT.etag "OMSTR" += -- create a string t1-\\t2-\\...-\\tn
-					(HXT.txt ( (foldl
-						(\t s -> t ++ (show s) ++ "-\\")
-						-- the function could be easier but we need different
-						-- behaviour for functions without parameters...
-						(if (length args > 0) then
-								(show (head args)) ++ "-\\"
-							else
-								"" )
-						(if (length args) > 0 then tail args else [])
-						) ++ (show res) )
-					)
-				) +++
-				xmlNL
-				) +++
-				xmlNL +++
-				HXT.etag "OMS" += -- finally : the name of the operator
-					(
-					HXT.sattr "cd" source
-					+++
-					HXT.sattr "name" (show opid)
-					)
-			)
-			
-processPredicationForMorphism::Id.Id->PredType->String->HXT.XmlFilter
-processPredicationForMorphism
-	prid (PredType args) source =
-		HXT.etag "OMATTR" +=
-			(xmlNL +++
-			HXT.etag "OMATP" +=
-				(xmlNL +++
-				HXT.etag "OMS" +=
-					(HXT.sattr "cd" "casl" +++ HXT.sattr "name" "type") +++
-				xmlNL +++
-				(HXT.etag "OMSTR" +=
-					HXT.txt
-						( (foldl
-							(\t s -> t ++ "-\\" ++ (show s))
-							(if args == [] then "" else (show $ head args))
-							(drop 1 args)
-						   )
-						)
-				)
-				) +++
-				xmlNL
-			) +++
-		xmlNL +++
-		HXT.etag "OMS" +=
-			(
-			 HXT.sattr "cd" source
-			 +++
-			 HXT.sattr "name" (show prid)
-			) 
-		
-
-		
 
 -- @OldFormat@
 -- need to check if I implemented replacement correctly...
@@ -2216,21 +2107,7 @@ getAll dg =
 		Hets.getOpMapsWithNodeNames dg,
 		Hets.getSentencesWithNodeNames dg
 	)
-			
--- | this function partitions a list of CASLFORMULAS into two lists of
--- 'CASLFORMULA's : the first list contains 'normal' CFs and the second
--- all CFs that generate sorts (constructors)
-partitionSensSortGen::[Ann.Named CASLFORMULA]->([Ann.Named CASLFORMULA],[Ann.Named CASLFORMULA])
-partitionSensSortGen sens =
-	foldl (\(sens' ,sortgen) s@(Ann.NamedSen name' _ _ sentence) ->
-		if isPrefixOf "ga_generated_" name' then
-			case sentence of
-				(Sort_gen_ax _ True) -> (sens' , sortgen++[s])
-				_ -> (sens' ++[s],sortgen)
-		else
-			(sens' ++[s],sortgen)
-		) ([],[]) sens
-
+	
 -- | this function partitions a list of CASLFORMULAS into two lists of
 -- 'CASLFORMULA's : the first list contains 'normal' CFs and the second
 -- all CFs that generate sorts (constructors)
@@ -2247,12 +2124,8 @@ partitionSensSortGenXN sens =
 			else
 				(sens' ++[xnsens],sortgen)
 		) ([],[]) sens
-
+		
 -- | creates constructors from a list of 'CASLFORMULA's (see : 'partitionSensSortGen')
-makeConstructors::[Ann.Named CASLFORMULA]->(Map.Map Id.Id (Map.Map Id.Id (Set.Set OpType)))
-makeConstructors sortgenaxlist =
-	Map.fromList $ map makeConstructorMap sortgenaxlist
-	
 makeConstructorsXN::Set.Set XmlNamedWONSORT->XmlNameList->[XmlNamedWON (Ann.Named CASLFORMULA)]->(Map.Map (XmlNamedWON Id.Id) (Map.Map (XmlNamedWON Id.Id) (Set.Set OpTypeXNWON)), XmlNameList)
 makeConstructorsXN sortxnwoset xmlnames sortgenaxxnlist =
 	foldl (\(mapping, xmlnames' ) sortgenaxxn ->
@@ -2263,20 +2136,7 @@ makeConstructorsXN sortxnwoset xmlnames sortgenaxxnlist =
 			(Map.insertWith (\a b -> Map.union a b) conidxnwo conmap mapping, xmlnames'' )
 			) (Map.empty, xmlnames) sortgenaxxnlist
 					
-		
---	Map.fromList $ map makeConstructorMapXN sortgenaxxnlist
-
 -- | creates constructors from a 'CASLFORMULA'
-makeConstructorMap::(Ann.Named CASLFORMULA)->(Id.Id, (Map.Map Id.Id (Set.Set OpType)))
-makeConstructorMap (Ann.NamedSen senname _ _ (Sort_gen_ax cons _)) =
-	let	sort = drop (length "ga_generated_") senname
-		constructormap = foldl(\cmap (Constraint _ symbs _) ->
-			foldl(\tcmap (Qual_op_name name' ot _) ->
-				Map.insertWith (Set.union) name' (Set.singleton (cv_Op_typeToOpType ot)) tcmap) cmap $ map fst symbs
-				) Map.empty cons
-	in (Hets.stringToId sort, constructormap)
-makeConstructorMap _ = error "Wrong application of makeConstructorMap!"
-
 makeConstructorMapXN::Set.Set XmlNamedWONSORT->XmlNameList->XmlNamedWON (Ann.Named CASLFORMULA)->(XmlNamedWON Id.Id, (Map.Map (XmlNamedWON Id.Id) (Set.Set OpTypeXNWON)), XmlNameList)
 makeConstructorMapXN sortxnwoset xmlnames sensxnwo =
 	let
@@ -2410,6 +2270,7 @@ stringToLEdge nameNodeMap targetnode linkstring =
 		if linklabl == [] then [] else
 		[(sourcenode, targetnode, head linklabl)]
 		
+{-		
 inDGToXml::DGraph->Graph.Node->(Map.Map Graph.Node String)->HXT.XmlFilter
 inDGToXml dg n nodenames =
 	let
@@ -2424,7 +2285,8 @@ inDGToXml dg n nodenames =
 			ins ++ ("From:\""++ from ++ "\" " ++ (linkToString dgl) ++ "\n")
 			) "\n" named)
 		)
-		
+	-}
+	
 inDGToXmlXN::DGraph->Graph.Node->TheoryXNSet->HXT.XmlFilter
 inDGToXmlXN dg n theoryset =
 	let
@@ -2574,11 +2436,7 @@ instance (Eq a)=>Eq (AnnotatedXML a) where
 	
 instance (Ord a)=>Ord (AnnotatedXML a) where
 	compare ax1 ax2 = compare (axAnn ax1) (axAnn ax2)
-	
-nodeNamesFromXml::HXT.XmlTrees->(Set.Set String)
-nodeNamesFromXml t = 
-	Set.fromList $ map (\n -> xshow [n]) $ applyXmlFilter ( isTag "theory" .> theoryNameFilter ) t
-	
+
 buildAXTheorySet::HXT.XmlTrees->Set.Set AnnXMLN
 buildAXTheorySet t =
 	let
@@ -2613,14 +2471,7 @@ nodeNamesXNFromXml axmlset =
 		)
 		[]
 		axmlset
-	
-sortsFromXmlTheory::HXT.XmlTrees->(Set.Set SORT)
-sortsFromXmlTheory t =
-	Set.fromList $ map Hets.stringToId $ map (\n -> xshow [n]) $
-		applyXmlFilter (
-			getChildren .> isTag "symbol" .>
-			withQualSValue symbolTypeXMLNS symbolTypeXMLAttr "sort" .> getQualValue sortNameXMLNS sortNameXMLAttr) t
-			
+		
 sortsXNWONFromXmlTheory::AnnXMLN->(Set.Set XmlNamedWONSORT)
 sortsXNWONFromXmlTheory anxml =
 	let
@@ -2647,16 +2498,6 @@ sortsXNWONFromXmlTheory anxml =
 		in
 			xnss ++ [ XmlNamed (Hets.mkWON hetspres (axAnn anxml)) sn ]
 		) [] sortnames
-		
-	
-sortsFromXml::HXT.XmlTrees->Hets.SortsMap
-sortsFromXml t =
-	foldl (\map' theory ->
-		let	name' = xshow $ applyXmlFilter theoryNameFilter [theory]
-			sorts' = sortsFromXmlTheory [theory]
-		in
-			Map.insert name' sorts' map'
-		) Map.empty $ applyXmlFilter (isTag "theory") t
 		
 -- we need annotated xml to define an origin in term of graph-nodes
 -- xml-theory-fragments are just nodes in the devgraph...
@@ -2744,21 +2585,7 @@ findByNameAndOriginWith trans iname iorig icon =
 					(i:_) -> (Just i)
 					_ -> Nothing
 			i -> i
-			
-relsFromXmlTheory::HXT.XmlTrees->(Rel.Rel SORT)
-relsFromXmlTheory t =
-	let	adts = applyXmlFilter (getChildren .> isTag "adt") t
-		relations = concat $ map relsFromXmlADT adts
-	in
-		Rel.fromList relations
-	where
-	relsFromXmlADT::HXT.XmlTree->[(SORT, SORT)]
-	relsFromXmlADT t' =
-		let	sort = Hets.stringToId $ xshow $ applyXmlFilter (getChildren .> isTag "sortdef" .> withSValue "type" "free" .> getValue "name") [t' ]
-			insorts = map (\n -> Hets.stringToId $ drop 1 $ xshow [n]) $ applyXmlFilter (getChildren .> isTag "sortdef" .> getChildren .> isTag "insort" .> getValue "for") [t' ]
-			-- note that we restore 'CASL-Order' here
-		in	map (\n -> (n, sort)) insorts
-		
+
 relsXNWONFromXmlTheory::Set.Set XmlNamedWONSORT->AnnXMLN->Rel.Rel XmlNamedWONSORT
 relsXNWONFromXmlTheory xnsortset anxml =
 	let
@@ -2790,16 +2617,6 @@ relsXNWONFromXmlTheory xnsortset anxml =
 			-- note that we restore 'CASL-Order' here
 		in	map (\n -> (n, xnsort)) xninsorts
 	
-		
-relsFromXml::HXT.XmlTrees->Hets.RelsMap
-relsFromXml t =
-	foldl (\map' theory ->
-		let	name' = xshow $ applyXmlFilter theoryNameFilter [theory]
-			rels' = relsFromXmlTheory [theory]
-		in
-			Map.insert name' rels' map'
-		) Map.empty $ applyXmlFilter (isTag "theory") t
-		
 relsXNWONFromXml::TheoryXNSet->Set.Set XmlNamedWONSORT->Set.Set AnnXMLN->Map.Map XmlName (Rel.Rel XmlNamedWONSORT)
 relsXNWONFromXml theoryset xnsortset anxnset =
 	Set.fold
@@ -2822,34 +2639,6 @@ relsXNWONFromXml theoryset xnsortset anxnset =
 		Map.empty
 		anxnset
 	
-		
-predsFromXmlTheory::HXT.XmlTrees->(Map.Map Id.Id (Set.Set PredType))
-predsFromXmlTheory t =
-	let	objsymbols = applyXmlFilter (getChildren .> isTag "symbol" .> withQualSValue symbolTypeXMLNS symbolTypeXMLAttr "object") t
-		predsymbols = filter (\n -> applyXmlFilter (
-				getChildren .> isTag "type" .>
-				getChildren .> isTag "OMOBJ" .>
-				getChildren .> isTag "OMA" .>
-				getChildren .> isTag "OMS" .>
-				withSValue "cd" "casl" .>
-				withSValue "name" "predication") [n] /= []) objsymbols
-	in
-		foldl (\map' (p, pt) ->
-			Map.insert p (Set.insert pt $ Map.findWithDefault Set.empty p map' ) map'
-			) Map.empty $ map predFromXmlSymbol predsymbols
-	where
-		predFromXmlSymbol::HXT.XmlTree->(Id.Id, PredType)
-		predFromXmlSymbol t' =
-			let	pId = Hets.stringToId $ xshow $ applyXmlFilter (getQualValue predNameXMLNS predNameXMLAttr) [t' ]
-				args = applyXmlFilter (
-					getChildren .> isTag "type" .> withSValue "system" "casl" .>
-					getChildren .> isTag "OMOBJ" .>
-					getChildren .> isTag "OMA" .>
-					getChildren .> isTag "OMS" .>
-					withValue "name" (/="predication") .>
-					getValue "name" ) [t' ]
-			in	(pId, PredType $ map (\n -> Hets.stringToId $ xshow [n]) args)
-			
 type XmlNamedWONId = XmlNamedWON Id.Id
 
 getPresentationString::String->HXT.XmlTrees->String
@@ -2910,16 +2699,6 @@ predsXNWONFromXmlTheory xntheoryset xnsortset anxml =
 			in	(XmlNamed (Hets.mkWON pid (axAnn anxml)) pidxname, PredTypeXNWON xnargs)
 	
 			
-		
-predsFromXml::HXT.XmlTrees->Hets.PredsMap
-predsFromXml t =
-	foldl (\map' theory ->
-		let	name' = xshow $ applyXmlFilter theoryNameFilter [theory]
-			preds' = predsFromXmlTheory [theory]
-		in
-			Map.insert name' preds' map'
-		) Map.empty $ applyXmlFilter (isTag "theory") t
-		
 predsXNWONFromXml::TheoryXNSet->Set.Set XmlNamedWONSORT->Set.Set AnnXMLN->Map.Map XmlName [(XmlNamedWONId, PredTypeXNWON)]
 predsXNWONFromXml xntheoryset xnsortset anxmlset =
 	Set.fold
@@ -2941,42 +2720,7 @@ predsXNWONFromXml xntheoryset xnsortset anxmlset =
 		)
 		Map.empty
 		anxmlset
-		
-opsFromXmlTheory::HXT.XmlTrees->(Map.Map Id.Id (Set.Set OpType))
-opsFromXmlTheory t =
-	let	objsymbols = applyXmlFilter (getChildren .> isTag "symbol" .> withQualSValue symbolTypeXMLNS symbolTypeXMLAttr "object") t
-		opsymbols = filter (\n -> applyXmlFilter (
-				getChildren .> isTag "type" .>
-				getChildren .> isTag "OMOBJ" .>
-				getChildren .> isTag "OMA" .>
-				getChildren .> isTag "OMS" .>
-				withSValue "cd" "casl" .>
-				withValue "name" (\n' -> n' == "function" || n' == "partial-function") ) [n] /= []) objsymbols
-	in
-		foldl (\map' (p, pt) ->
-			Map.insert p (Set.insert pt $ Map.findWithDefault Set.empty p map' ) map'
-			) Map.empty $ map opFromXmlSymbol opsymbols 
-	where
-		opFromXmlSymbol::HXT.XmlTree->(Id.Id, OpType)
-		opFromXmlSymbol t' =
-			let	oId = Hets.stringToId $ xshow $ applyXmlFilter (getQualValue opNameXMLNS opNameXMLAttr) [t' ]
-				isTotal = applyXmlFilter (
-					getChildren .> isTag "type" .> withSValue "system" "casl" .>
-					getChildren .> isTag "OMOBJ" .>
-					getChildren .> isTag "OMA" .>
-					getChildren .> isTag "OMS" .>
-					withSValue "name" "function") [t' ] /= []
-				argsall = applyXmlFilter (
-					getChildren .> isTag "type" .> withSValue "system" "casl" .>
-					getChildren .> isTag "OMOBJ" .>
-					getChildren .> isTag "OMA" .>
-					getChildren .> isTag "OMS" .>
-					withValue "name" (\n -> n /= "function" && n /= "partial-function") .>
-					getValue "name" ) [t' ]
-				args = take (length(argsall)-1) argsall
-				res = Hets.stringToId $ xshow $ [last (argsall)]
-			in	(oId, OpType (if isTotal then Total else Partial) (map (\n -> Hets.stringToId $ xshow [n]) args) res)
-			
+
 opsXNWONFromXmlTheory::TheoryXNSet->Set.Set XmlNamedWONSORT->AnnXMLN->[(XmlNamedWONId, OpTypeXNWON)]
 opsXNWONFromXmlTheory xntheoryset xnsortset anxml =
 	let
@@ -3045,17 +2789,6 @@ opsXNWONFromXmlTheory xntheoryset xnsortset anxml =
 						xnres
 				)
 	
-			
-	
-opsFromXml::HXT.XmlTrees->Hets.OpsMap
-opsFromXml t =
-	foldl (\map' theory ->
-		let	name' = xshow $ applyXmlFilter theoryNameFilter [theory]
-			ops' = opsFromXmlTheory [theory]
-		in
-			Map.insert name' ops' map'
-		) Map.empty $ applyXmlFilter (isTag "theory") t
-		
 opsXNWONFromXml::TheoryXNSet->Set.Set XmlNamedWONSORT->Set.Set AnnXMLN->Map.Map XmlName [(XmlNamedWONId, OpTypeXNWON)]
 opsXNWONFromXml xntheoryset xnsortset anxmlset =
 	Set.fold
@@ -3555,49 +3288,6 @@ firstM test (l:r) =
 				else
 				firstM test r
 
--- | tries to find a file by first searching for it in the current
--- directory and then in a list of given directories (in the order given)
--- the directory will be taken as they are. If they are relative, they will be
--- searched relative to the current directory
-findFile::FilePath->[FilePath]->(IO (Maybe FilePath))
-findFile file include =
-	let
-		isRelative = (head file) /= '/'
-	in	
-		if not isRelative
-			then
-				do
-				System.Directory.doesFileExist file >>= \r ->
-					if r 
-						then
-							return (Just file)
-						else
-							return Nothing
-			else
-				(firstM snd $
-					map 
-						(\f -> System.Directory.doesFileExist f >>=
-							\r -> return (f,r))
-							(file:(map (++"/"++file) include)))
-				>>= \mfp -> case mfp of
-					Nothing -> return Nothing
-					(Just (f,_)) -> return (Just f)
-					
-getDirContentsOrFailGracefully::FilePath->IO [FilePath]
-getDirContentsOrFailGracefully dir =
-	System.IO.Error.catch
-		(System.Directory.getDirectoryContents dir >>= mapM (\n -> return $ dir ++ "/" ++ n))
-		(\_ -> return [])
-		
-filterFiles::[FilePath]->IO [FilePath]
-filterFiles list =
-	filterM
-		(\n -> System.IO.Error.catch
-			(System.Directory.doesFileExist n)
-			(\_ -> return False)
-		)
-		list
-		
 maybeGetXml::String->IO (Maybe HXT.XmlTrees)
 maybeGetXml source =
 	do
@@ -3666,45 +3356,6 @@ getImportedTheories xml =
 						) Map.empty timports
 	in
 		Map.union catmap externalImports
-
--- try to find an Omdoc-Lib by Name (xml:id) searchin given paths		
-findOmdocLib::String->[FilePath]->IO (Maybe FilePath)
-findOmdocLib _ [] = return Nothing
-findOmdocLib libname (dir:searchpath) =
-		do
-			files <- getDirContentsOrFailGracefully dir >>= filterFiles
-			targets <- return $
-				filter
-					(\f -> 
-						(Data.List.isSuffixOf ".omdoc" f)
-							|| (Data.List.isSuffixOf ".xml" f)
-					)
-					files
-			res <- findFirstMatch
-					(==libname)
-					(\f ->
-						System.IO.Error.catch
-							(loadOmdoc (f) >>= \omdoc -> return (getOmdocID omdoc))
-							(\_ -> return f)
-					)
-					targets
-			if (res==Nothing)
-				then
-					findOmdocLib libname searchpath
-				else
-					return res
-					
-findOmdocLibExt::String->[FilePath]->IO (Maybe FilePath)
-findOmdocLibExt libname searchpaths =
-	let
-		parts = explode "/" libname
-		subdirs = init parts
-		singlesub = implode "/" subdirs
-		lib = last parts
-		msearch = map (\f -> f ++ "/" ++ singlesub) searchpaths
-	in
-		findOmdocLib lib (Debug.Trace.trace ("msp : " ++ (show msearch)) msearch)
-		
 	
 findFirstMatch::(Monad m)=>(a->Bool)->(b->m a)->[b]->(m (Maybe b))
 findFirstMatch _ _ [] = return Nothing
