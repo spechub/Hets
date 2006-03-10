@@ -100,7 +100,7 @@ import Common.GlobalAnnotations
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Pretty as Pretty
 import Common.LaTeX_funs
-import Data.Char (isAlphaNum)
+import Data.Char
 
 infixl 6 <>
 infixl 6 <+>
@@ -366,7 +366,7 @@ toText = foldDoc anyRecord
     , foldAttr = \ _ _ -> id
     , foldIndentBy = \ _ d1 d2 d3 ->
           d2 Pretty.$$ Pretty.nest (length $ show d1) d3
-    } . codeOut emptyGlobalAnnos Map.empty
+    } . codeOut emptyGlobalAnnos Nothing Map.empty
 
 -- | conversion to latex
 toLatex :: GlobalAnnos -> Doc -> Pretty.Doc
@@ -390,12 +390,13 @@ toLatex ga = let dm = Map.map (Map.! DF_LATEX) .
               _ -> error "toLatex.Small"
     , foldIndentBy = \ _ d1 d2 d3 ->
           d2 Pretty.$$ Pretty.nest (length $ show d1) d3
-    } . makeSmall False . codeOut ga dm
+    } . makeSmall False . codeOut ga (Just DF_LATEX) dm
 
 textToLatex :: Bool -> TextKind -> String -> Pretty.Doc
 textToLatex b k s = let e = escape_comment_latex s in
-        if elem s $ map (: []) ",;[]() " then casl_normal_latex s
-           else case k of
+        if elem s $ map (: []) ",;[]() "
+        then makeSmallLatex b $ casl_normal_latex s
+        else case k of
     IdKind -> makeSmallLatex b $ hc_sty_id e
     Symbol -> makeSmallLatex b $ symbolToLatex s
     Comment -> (if b then makeSmallLatex b . casl_comment_latex
@@ -420,9 +421,8 @@ symbolToLatex s = Map.findWithDefault (hc_sty_axiom
 latexSymbols :: Map.Map String Pretty.Doc
 latexSymbols = Map.fromList
     [ (dotS, bullet_latex)
-    , (diamondS, hc_sty_axiom "\\Diamond")
-    , (percentS, hc_sty_axiom "\\%")
-    , (percents, hc_sty_axiom "\\%\\%")
+    , (percentS, hc_sty_small_keyword "\\%")
+    , (percents, hc_sty_small_keyword "\\%\\%")
     , ("{", casl_normal_latex "\\{")
     , ("}", casl_normal_latex "\\}")
     , ("__", hc_sty_axiom "\\_\\_")
@@ -459,9 +459,10 @@ makeSmall b = foldDoc idRecord
 {- | transform document according to a specific display map and other
 global annotations like precedences, associativities, and literal
 annotations. -}
-codeOut :: GlobalAnnos -> Map.Map Id [Token] -> Doc -> Doc
-codeOut ga m = foldDoc idRecord
-    { foldAnnoDoc = \ _ -> small . codeOutAnno m
+codeOut :: GlobalAnnos -> Maybe Display_format -> Map.Map Id [Token] -> Doc
+        -> Doc
+codeOut ga d m = foldDoc idRecord
+    { foldAnnoDoc = \ _ -> small . codeOutAnno d m
     , foldIdDoc = \ _ -> codeOutId m
     , foldIdApplDoc = \ _ -> codeOutAppl ga m
     }
@@ -471,11 +472,17 @@ codeToken s = case s of
     [] -> empty
     h : _ -> (if isAlphaNum h || elem h "._'" then text else symbol) s
 
+codeOrigId :: Id -> [Doc]
+codeOrigId = map (codeToken . tokStr) . getTokenList place
+
+codeIdToks :: [Token] -> [Doc]
+codeIdToks = map (\ t -> let s = tokStr t in
+                         if isPlace t then symbol s else native s)
+
 codeOutId :: Map.Map Id [Token] -> Id -> Doc
-codeOutId m i = fcat $ case Map.lookup i m of
-    Nothing -> map (codeToken . tokStr) $ getTokenList place i
-    Just ts -> map (\ t -> let s = tokStr t in
-                           if isPlace t then symbol s else native s) ts
+codeOutId m i = hcat $ case Map.lookup i m of
+    Nothing -> codeOrigId i
+    Just ts -> codeIdToks ts
 
 -- print literal terms and mixfix applications
 codeOutAppl :: GlobalAnnos -> Map.Map Id [Token] -> Id -> [Doc] -> Doc
@@ -487,11 +494,14 @@ annoLine w = percent <> keyword w
 annoLparen :: String -> Doc
 annoLparen w = percent <> keyword w <> lparen
 
-wrapAnnoLines :: Doc -> [Doc] -> Doc -> Doc
-wrapAnnoLines a l b = case l of
+wrapAnnoLines :: Maybe Display_format -> Doc -> [String] -> Doc -> Doc
+wrapAnnoLines d a l b = case map (commentText .
+          maybe id (const $ dropWhile isSpace) d) l of
     [] -> a <> b
     [x] -> hcat [a, x, b]
-    x : r -> vcat $ fcat [a, x] : init r ++ [fcat [last r, b]]
+    ds@(x : r) -> case d of
+        Nothing -> vcat $ fcat [a, x] : init r ++ [fcat [last r, b]]
+        Just _ -> a <+> vcat ds <> b
 
 percent :: Doc
 percent = symbol percentS
@@ -508,20 +518,21 @@ hCommaT m = hsep . cCommaT m
 fCommaT :: Map.Map Id [Token] -> [Id] -> Doc
 fCommaT m = fsep . cCommaT m
 
-codeOutAnno :: Map.Map Id [Token] -> Annotation -> Doc
-codeOutAnno m a = case a of
+codeOutAnno :: Maybe Display_format -> Map.Map Id [Token] -> Annotation -> Doc
+codeOutAnno d m a = case a of
     Unparsed_anno aw at _ -> case at of
         Line_anno s -> (case aw of
             Annote_word w -> annoLine w
             Comment_start -> symbol percents) <> commentText s
-        Group_anno l -> let ds = map commentText l in case aw of
-            Annote_word w -> wrapAnnoLines (annoLparen w) ds annoRparen
-            Comment_start -> wrapAnnoLines (percent <> lbrace) ds
+        Group_anno l -> case aw of
+            Annote_word w -> wrapAnnoLines d (annoLparen w) l annoRparen
+            Comment_start -> wrapAnnoLines d (percent <> lbrace) l
                              (rbrace <> percent)
     Display_anno i ds _ -> annoLparen displayS <> fsep
-        ( codeOutId m i :
-          map ( \ (d, s) -> percent <> text (lookupDisplayFormat d)
-                <+> commentText s) ds) <> annoRparen
+        ( hcat (codeOrigId i) :
+          map ( \ (df, s) -> percent <> text (lookupDisplayFormat df)
+                <+> maybe (commentText s) (const $ codeOutId m i)
+                    (Map.lookup i m)) ds) <> annoRparen
     List_anno i1 i2 i3 _ -> annoLine listS <+> hCommaT m [i1, i2, i3]
     Number_anno i _ -> annoLine numberS <+> codeOutId m i
     Float_anno i1 i2 _ -> annoLine floatingS <+> hCommaT m [i1, i2]
@@ -535,9 +546,9 @@ codeOutAnno m a = case a of
                           NoDirection -> error "codeOutAnno"
              , braces $ fCommaT m l2
              ] <> annoRparen
-    Assoc_anno d l _ -> annoLparen (case d of
+    Assoc_anno s l _ -> annoLparen (case s of
                           ALeft -> left_assocS
                           ARight -> right_assocS)
                         <> fCommaT m l <> annoRparen
-    Label l _ -> wrapAnnoLines (annoLparen "") (map commentText l) annoRparen
+    Label l _ -> wrapAnnoLines d (annoLparen "") l annoRparen
     Semantic_anno sa _ -> annoLine $ lookupSemanticAnno sa
