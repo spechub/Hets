@@ -268,7 +268,7 @@ data DGRule =
  | GlobSubsumption (LEdge DGLinkLab)
  | Composition [LEdge DGLinkLab]
  | LocalInference
- | BasicInference AnyComorphism BasicProof -- coding and proof tree
+ | BasicInference AnyComorphism BasicProof -- coding and proof tree. obsolete ?!?
  | BasicConsInference Edge BasicConsProof
    deriving (Show, Eq)
 
