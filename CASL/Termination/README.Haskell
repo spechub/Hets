@@ -1,0 +1,12 @@
+Haskell specific notes:
+=======================
+
+The supported Haskell syntax is a subset of Haskell98, with the following
+restrictions:
+	- No labeled fields
+	- No floating point numbers (i.e. Float, Double)
+	- No IO
+	- No Reads and Ix derivings
+	- No bounds on Int
+	- No standard libraries (besides Prelude)
+

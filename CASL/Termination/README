@@ -1,0 +1,97 @@
+0. About
+========
+
+AProVE is a system for automated termination and innermost termination proofs of
+term rewrite systems (TRSs). Moreover, AProVE also handles several other
+formalisms, e.g., logic programs, conditional TRSs, TRSs modulo AC,
+context-sensitive TRSs, etc. The power of AProVE is demonstrated in the annual
+International Competition of Termination Tools, where AProVE was the most
+powerful tool for termination of TRSs in 2004 and 2005.
+
+AProVE is based on the dependency pair framework and offers a wide variety of
+different termination proof techniques. These techniques can be freely
+configured and combined by the user via a graphical user interface. Moreover,
+AProVE also offers a "fully automatic" mode where suitable termination
+techniques are applied in a certain fixed order that often turns out to be
+successful in practice.
+
+
+
+1. GUI Usage
+============
+
+To run AProVE, you need a working copy of Java 1.5 or newer.
+
+In order to start AProVE in GUI mode at the command prompt, simply type
+	$ java -jar aprove.jar
+
+
+
+2. CLI Usage
+============
+
+To use the Command Line Interface (CLI) of AProVE, type
+	$ java -jar aprove.jar -u cli [FURTHER OPTIONS] [FILENAME]
+
+
+FILENAME specifies an input file to be read by AProVE.
+Following is a list of command line options with a short description:
+
+	-u UI          set user interface, possible values are gui and cli
+	               (default: gui)
+
+	-e TYPE        set type of program to TYPE
+	               (default: tes, unless file extension suggests other)
+	
+	-m MODE        set output mode, possible options are aprove, wst
+	               (default: aprove)
+	
+	-p PROOFTYPE   set type of output, possible options: html, fhtml, plain
+	               fhtml stands for HTML with frames and is always written
+		       to the file system
+	               (default: html)
+	
+	-f FILE        write fhtml proof to FILE
+	               (default: proof.html)
+	
+	-s STRATEGY    specify strategy to be used, STRATEGY must point to
+	               a strategy file
+	               (default: none, use automatic strategy)
+	
+	-q STARTTERM   specify start term; when giving multiple start terms
+	               for Haskell, these must be separated by a pipe
+	               symbol (|)
+	               (default: none)
+
+Example:
+--------
+    $ java -jar aprove.jar \
+    >   -u cli -m wst -s ~/Haskell.strategy -q "plus g x y" ~/plusHO.hs
+
+
+
+
+3. Troubleshooting
+==================
+
+Q: On the console or in the System Log, an error message of the Form 
+   "java.lang.OutOfMemoryError: Java heap space" appears.
+
+A: This happens when the java virtual machine does not have enough memory
+   available. Try setting the maximum heap size to something bigger, using
+   the commandline switch -Xmx###m, where ### is a number. Plugged into
+   the example of section 2 and using 512MB, it would read:
+   	$ java -Xmx512m -jar aprove.jar \
+	>    -u cli -m wst -s ~/Haskell.strategy -q "plus g x y" ~/plusHO.hs
+
+
+Q: AProVE does not start, it only displays a message starting with a line
+   "Assertions do not match:"
+
+A: This happens if you called java with assertions enabled but it is
+   assumed that no assertions should be checked, or vice versa.
+   If you started with assertions (-ea) and got the error, start AProVE 
+   either with assertions disabled (-da) or no switch at all.
+   If you started with assertions disabled (-da) or no switch at all, try to
+   start AProVE with enabled assertions (-ea).
+
