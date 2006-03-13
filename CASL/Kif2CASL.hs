@@ -65,8 +65,9 @@ kif2CASLvardeclList = map kif2CASLvardecl
 
 -- | translation of variable declarations
 kif2CASLvardecl :: ListOfList -> VAR_DECL
-kif2CASLvardecl (Literal QWord v) = Var_decl [mkSimpleId (tail v)] universe nullRange
-kif2CASLvardecl _ = error "Kif2CASL.toAnno: wrong format of variable declaration"
+kif2CASLvardecl l = case l of  
+    Literal _ v -> Var_decl [mkSimpleId (tail v)] universe nullRange
+    _ -> error $ "kif2CASLvardecl " ++ show (ppListOfList l)
 
 -- | first pass of translation, just collecting the formulas
 kif2CASLpass1 :: [ListOfList] -> [Annoted CASLFORMULA]
