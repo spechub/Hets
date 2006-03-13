@@ -27,6 +27,7 @@ import Network.URI
     )
 
 import System.IO
+import System.IO.Error
 
 -- ------------------------------------------------------------
 --

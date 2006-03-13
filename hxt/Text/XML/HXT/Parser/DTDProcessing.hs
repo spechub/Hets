@@ -1,9 +1,22 @@
--- |
--- DTD processing function for
--- including external parts of a DTD
--- parameter entity substitution and general entity substitution
---
--- Version : $Id$
+-- ------------------------------------------------------------
+
+{- |
+   Module     : Text.XML.HXT.Parser.DTDProcessing
+   Copyright  : Copyright (C) 2005 Uwe Schmidt
+   License    : MIT
+
+   Maintainer : Uwe Schmidt (uwe\@fh-wedel.de)
+   Stability  : experimental
+   Portability: portable
+   Version    : $Id$
+
+   DTD processing function for
+   including external parts of a DTD
+   parameter entity substitution and general entity substitution
+
+-}
+
+-- ------------------------------------------------------------
 
 module Text.XML.HXT.Parser.DTDProcessing
     ( getWellformedDoc
@@ -24,20 +37,24 @@ import Text.XML.HXT.Parser.XmlOutput
 import Text.XML.HXT.Parser.XmlParser
     ( parseXmlDoc
     , parseXmlDTDPart
-    , parseXmlDTDTokens
-    , parseXmlEntityValue
-    , parseXmlAttrListBody
     , parseXmlAttrValue
-    , parseXmlContentSpec
     , parseXmlGeneralEntityValue
+    )
+
+import Text.XML.HXT.Parser.XmlDTDParser
+    ( parseXmlDTDdecl
+    , parseXmlDTDdeclPart
+    , parseXmlDTDEntityValue
     )
 
 import Text.XML.HXT.Parser.XmlInput
     ( getXmlContents
     , getXmlEntityContents
     , runInLocalURIContext
+    , runInNewURIContext
     , getBaseURI
     , setBaseURI
+    , getAbsolutURI
     , isStandaloneDocument
     )
 
@@ -46,14 +63,17 @@ import Text.XML.HXT.DOM.EditFilters
     , transfAllCharRef
     )
 
-import Text.XML.HXT.DOM.Util
-    ( stringToUpper
-    , stringTrim
-    )
-
 import Text.XML.HXT.DOM.XmlState
 
 import Data.Maybe
+
+import qualified Data.Map as M
+    ( Map
+    , empty
+    , lookup
+    , insert
+    -- , foldWithKey
+    )
 
 -- ------------------------------------------------------------
 --
@@ -106,21 +126,31 @@ checkWellformedDoc
       .>>
       liftMf transfAllCharRef
 
-
 -- ------------------------------------------------------------
 --
 
-type Env		= [(String, XmlTree)]
-
 type RecList		= [String]
 
-type DTDState res	= XState Env res
+type DTDState res	= XState PeEnv res
 
 type DTDStateFilter	= XmlTree -> DTDState XmlTrees
 
 data DTDPart		= Internal
 			| External
 			  deriving (Eq)
+
+-- ------------------------------------------------------------
+
+type PeEnv		= M.Map String XmlTree
+
+emptyPeEnv	:: PeEnv
+emptyPeEnv	= M.empty
+
+lookupPeEnv	:: String -> PeEnv -> Maybe XmlTree
+lookupPeEnv	= M.lookup
+
+addPeEntry	:: String -> XmlTree -> PeEnv -> PeEnv
+addPeEntry	= M.insert
 
 -- ------------------------------------------------------------
 
@@ -185,15 +215,22 @@ substParamEntities
       processParamEntities	:: XmlStateFilter a
       processParamEntities t'
 	  = do
+	    (dtdPre, envPre) <- processPredef
+
 	    -- process internal part of DTD with initial empty env for parameter entities
-	    (dtdInt, envInt) <- processInt [] t'
+	    (dtdInt, envInt) <- processInt envPre t'
 
 	    -- process external part of DTD with resulting env from internal DTD
 	    dtdExt <- runInLocalURIContext (processExt envInt) t'
 
 	    -- merge predefined, internal and external part
 	    trace 2 "substParamEntities: merge internal and external DTD parts"
-	    return (replaceChildren (foldl1 mergeDTDs [predefDTDPart, dtdInt, dtdExt]) t')
+	    return (replaceChildren (foldl1 mergeDTDs [dtdPre, dtdInt, dtdExt]) t')
+
+      processPredef
+	  = do
+	    trace 2 "substParamEntities: substitute predefined entities"
+	    chain' emptyPeEnv (substParamEntity Internal $$< predefDTDPart)
 
       processInt env' n'
 	  = do
@@ -209,331 +246,320 @@ substParamEntities
 
 -- ------------------------------------------------------------
 -- |
--- get the value of a parameter entity
-
-getPEvalue	:: XmlFilter
-
--- external parameter entities must be parsed when
--- accessing the value, not when reading the external document
--- because the interpretation of the content depends
--- on the point where it is inserted
--- internal parameter entity: just take the children
-
-getPEvalue n
-    = ( isExternalParameterEntity
-	.>
-	getValue a_value
-	.>
-	parseXmlEntityValue True ("external parameter entity " ++ valueOfDTD a_name n)
-      )
-      `orElse`
-      ( isInternalParameterEntity
-	.>
-	getChildren
-      )
-      $ n
-
--- ------------------------------------------------------------
-
-getPEvalueText	:: XmlFilter
-getPEvalueText
-    = ( isExternalParameterEntity
-	.>
-	getDTDValue a_value				-- take the value attribute
-      )
-      `orElse`
-      ( xmlTreesToText				-- make text node
-	. ( isInternalParameterEntity
-	    .>
-	    getChildren					-- get pe value
-	    .>
-	    transfCharRef				-- substitute character refs
-	  )
-      )
-
--- ------------------------------------------------------------
--- |
 -- substitute parameter entities
+-- result is the input tree with the list of text nodes as children or an error message
 
-substPEvalue	:: DTDPart -> Env -> RecList -> XmlFilter
+substPEref'	:: DTDPart -> PeEnv -> XmlFilter
 
-substPEvalue loc env rl (NTree (XDTD PEREF al) _)
-    | loc == Internal
-	= xerr ("a parameter entity reference of " ++ peName' ++ " occurs in the internal subset of the DTD")
-    | alreadySubstituted
-	= xerr ("recursive call of parameter entity substitution for: " ++ peName')
-    | isNothing peVal
-	= xerr ("parameter entity " ++ peName' ++ " not found")
-    | otherwise
-	= substPEvalue loc env (peName : rl) `o` getPEvalue $ fromJust peVal
+substPEref' loc env n@(NTree (XDTD PEREF al) _)
+    | isInternalRef	= xerr ("a parameter entity reference of " ++ peName' ++ " occurs in the internal subset of the DTD")
+
+    | isUndefinedRef	= xerr ("parameter entity " ++ peName' ++ " not found (forward reference?)")
+
+    | null baseUri	= [setChildren peContent n]
+
+    | otherwise		= [(NTree (XDTD PEREF ((a_url,baseUri):al)) peContent)]
     where
-    peName
-	= lookup1 a_peref al
-    peName'
-	= show peName
-    peVal
-	= lookup peName env
-    alreadySubstituted
-	= peName `elem` rl
+    peName		= lookup1 a_peref al
+    peName'		= show peName
+    peVal		= lookupPeEnv peName env
+    isInternalRef	= loc == Internal
+    isUndefinedRef	= isNothing peVal
 
-substPEvalue _ _ _ n
+    (NTree (XDTD PENTITY peAl) peContent) = fromJust peVal
+    baseUri		= lookup1 a_url peAl
+
+    -- peContent		= getChildren $ fromJust peVal
+
+substPEref' _ _ n
     = [n]
 
 -- ------------------------------------------------------------
+
+{-
+dumpPE	:: DTDStateFilter
+dumpPE t
+    = do
+      env <- getState
+      ( traceMsg 2 ("dumpPE: parameter entity environment\n" ++ M.foldWithKey showPE "" env)
+	.>>
+	thisM ) t
+    where
+    showPE k v b = k ++ "\t" ++ show v ++ "\n" ++ b
+-}
+
+traceDTD	:: String -> XmlStateFilter a
+traceDTD msg	= traceMsg 4 msg .>> traceTree
+
+-- ------------------------------------------------------------
+
+getExternalParamEntityValue	:: DTDStateFilter
+getExternalParamEntityValue n@(NTree (XDTD PENTITY al) _cl)
+    = do
+      rl <- ( getXmlEntityContents
+	      .>>
+	      liftMf getChildren
+	    )
+	    $ newDocument' ((a_source, sysVal) : al)
+      base <- getBaseURI
+      if null rl
+	 then issueErr ("illegal external parameter entity value for entity %" ++ peName ++";") n
+	 else thisM (NTree (XDTD PENTITY ((a_url, base) : al)) rl)
+    where
+    sysVal = lookup1 k_system al
+    peName = lookup1 a_name   al
+
+getExternalParamEntityValue n
+    = error ("getExternalParamEntityValue: illegal argument: " ++ show n)
+
+-- ------------------------------------------------------------
+
 -- |
 -- the dtd parameter entity substitution filter
---
--- parameter loc determines the context of the substitution: internal or external
 
 substParamEntity	:: DTDPart -> DTDStateFilter
-							-- parameter entity definition
-substParamEntity loc n@(NTree (XDTD PENTITY al) _cs)
-    = do
-      doubleDef <- entityDefined peName
-      if doubleDef
-	 then
-	 issueWarn ("parameter entity " ++ show peName ++ " already defined") n
-	 else
-	 ( ifM isExternalParameterEntity
-	       (runInLocalURIContext substExternalParamEntity)
-               substInternalParamEntity
-	 ) n
-      where
-      peName  = lookup1 a_name al
 
-      substInternalParamEntity	:: DTDStateFilter
-      substInternalParamEntity n'
+substParamEntity loc n@(NTree xn _cs)
+    | isDTDElemNode ENTITY xn					-- ENITITY and parameter ENTITY decl
+	= traceDTD ("ENTITY declaration before DTD declaration parsing")
+	  .>>
+	  processChildrenM (substPeRefsInDTDdecl [])
+          .>>
+	  liftF parseXmlDTDdecl
+          .>>
+	  substRefsInEntityValue
+          .>>
+	  processEntityDecl
+          .>>
+          traceDTD ("ENTITY declaration after DTD declaration parsing")
+          $ n
+
+    | isDTDElemNode PEREF xn					-- parameter entity ref in DTD
+	= substPeRefsInDTDpart [] n
+
+    | isDTDElemNode ELEMENT xn					-- ELEMENT, ATTLIST, NOTATION
+      ||
+      isDTDElemNode ATTLIST xn
+      ||
+      isDTDElemNode NOTATION xn
+	= traceDTD  "DTD declaration before PE substitution"
+	  .>>
+	  processChildrenM (substPeRefsInDTDdecl [])
+          .>>
+	  liftF parseXmlDTDdecl
+          .>>
+	  traceDTD "DTD declaration after DTD declaration parsing"
+	  $ n
+
+    | isDTDElemNode CONDSECT xn					-- conditional section
+      &&
+      loc == Internal
 	  = do
-	    env <- getState
-	    cl' <- liftF (substPEvalue loc env [] `o` getChildren) n'
-	    addParamEntity peName cl' n'
-	    return []
+	    issueErr "conditional sections in internal part of the DTD is not allowed" n
+            return []
 
-      substExternalParamEntity	:: DTDStateFilter
-      substExternalParamEntity (NTree (XDTD PENTITY al') _cs')
+    | isDTDElemNode CONDSECT xn					-- conditional section
+      &&
+      loc == External
 	  = let
-	    sysVal  = lookup1 k_system al'
-	    in do
-								-- create a root node
-	       rl <- getXmlEntityContents			-- add the document source location
-		     $ newDocument' ((a_source, sysVal) : al')	-- and read the content
-								-- process content, if io succeeded
-	       substContent rl
-      substExternalParamEntity _
-	  = error "substExternalParamEntity called with illegal argument"
+	    (XDTD _ al) = xn
+	    content	= mkXTextTree (lookup1 a_value al)
+	    in
+	    traceDTD "substParamEntity: process conditional section"
+	    .>>
+	    processChildrenM (substPeRefsInCondSect [])
+            .>>
+	    liftF parseXmlDTDdecl
+	    .>>
+            evalCond content
+	    $ n
 
-      substContent	:: XmlTrees -> DTDState XmlTrees
-      substContent content
-	  = if null content				-- content not found
-	    then
-	      addParamEntity peName (xtext "") n	-- insert dummy value in env
-	    else
-	      let
-	      val = getChildren $$ content
-	      in
-	      if null (isXText $$ val)
-	      then
-	      issueErr "illegal external parameter entity value" n
-	      else
-	      let
-	      al1 = addEntry a_value (showXText val) al
-	      pe = mkXDTDTree PENTITY al1 []
-	      in
-	      addParamEntity peName [] pe
+    | isXCmtNode xn						-- remove comments
+	= noneM n
 
-								-- parameter entities in entity value
-substParamEntity loc n@(NTree (XDTD ENTITY _al) _)
-    = do
-      env <- getState
-      cs  <- liftF (getChildren .> substPEvalue loc env [] .> transfCharRef) n	-- ???
-      return (replaceChildren cs n)
-
-								-- parameter entity as DTD macro
-substParamEntity loc n@(NTree (XDTD PEREF _al) _cs)
-    = ( substParamEntityRef "DTD part" parseXmlDTDPart
-	.>>
-	substParamEntity loc
-      ) n
-								-- parameter entities in content model
-substParamEntity _loc n@(NTree (XDTD ELEMENT _al) _cs)
-    = substPar'
-      `whenM`
-      deep isPeRef						-- substitute only if PEs in content modell
-      $ n
-      where
-      substPar' n'
-	  = do
-	    trace    2 ("substParamEntity: in content modell of " ++ elemName)
-
-	    cs' <- substpeInContent $$< getChildren n'		-- substitute all pe's
-	    let n2 = head $ replaceChildren cs' n'
-	    let n3 = mkXTextTree . xmlContentModelToString $ n2
-	    r'  <- ( liftF (parseXmlContentSpec context)	-- convert to text and parse again
-		     .>>
-		     liftMf (addDTDAttr a_name elemName)		-- new tree with element name inserted
-		     .>>
-		     traceTree
-		     .>>
-		     traceSource
-		   ) n3					
-	    return r'
-	  where
-	  elemName	= valueOfDTD a_name n'
-	  context	= ( "content model of element "
-                            ++ elemName
-			    ++ " after parameter substitution"
-			  )
-
-substParamEntity _loc n@(NTree (XDTD ATTLIST []) _cs)
-    = do
-      trace    2 "substParamEntity: in ATTLIST decl"
-      attrl <- (traceTree
-		.>>
-		liftMf getChildren
-		.>>
-		substParamEntityRef "proper ATTLIST definition" parseXmlDTDTokens
-	       ) n
-      let n' = mkXTextTree (xshow attrl)
-
-      res <- ( traceTree
-	       .>>
-	       liftF (parseXmlAttrListBody False "in <!ATTLIST ...> declaration after parameter entity substitution")
-	       .>>
-	       traceTree
-	     ) $ n'
-
-      return res
-
-substParamEntity _loc n@(NTree (XDTD ATTLIST _al) _cs)
-    = return [n]
-
-substParamEntity Internal n@(NTree (XDTD CONDSECT _) _)
-    = do
-      issueErr "conditional sections in internal part of the DTD is not allowed" n
-      return []
-
-substParamEntity External n@(NTree (XDTD CONDSECT _) (c1 : cs))
-    = do
-      trace 2 "substParamEntity: process conditional section"
-      traceTree n
-
-      env  <- getState
-      cond <- liftF (substPEvalue External env []) c1	-- substitute parameter entities
-      let strRes = ( stringToUpper			-- and normalize result string
-		     . stringTrim
-		     . xshow
-		   ) cond
-      action strRes
-      where
-      action str
-	  | str == k_ignore				-- IGNORE
-	      = return []
-
-	  | str == k_include				-- INCLUDE
-	      = ( liftF ( parseXmlDTDPart False "INCLUDE part of conditional section"
-			  `when`
-			  isXText
-			)
-		  .>>
-		  substParamEntity External
-		) $$< cs
-
-	  | otherwise					-- error
-	      = issueErr ( "conditional section with bad value: "
-			   ++ show str ++ " ( " ++ xshow [c1]
-			   ++ " ), "   ++ show k_include
-			   ++ " or "   ++ show k_ignore
-			   ++ " expected"
-			 ) n
-
-							-- remove comments from DTD
-substParamEntity _loc n
-    | (not . null . isXCmt) n
-	= return []
-
-substParamEntity _loc n					-- default: keep things unchanged
-    = return [n]
-
-
--- ------------------------------------------------------------
--- |
--- parameter entity ref in attribute enumeration
-
-substParamEntityRef		:: String ->
-				   (Bool -> String -> XmlFilter) ->
-				   DTDStateFilter
-
-substParamEntityRef context parser n@(NTree (XDTD PEREF al) _)
-    = do
-      peEnv   <- getState
-      action (lookup peName peEnv)
-      where
-      peName  = lookup1 k_peref al
-      action Nothing
-	  = issueErr ("parameter entity " ++ show peName ++ " in " ++ context ++ " not found") n
-      action (Just t)
-	  = liftF ( parser isExt (context ++ " defined by parameter entity: " ++ peName)
-		    `o`
-		    getPEvalueText
-		  ) t
-	    where
-	    isExt = satisfies (hasAttr k_system) t
-
-substParamEntityRef _ _ n
-    = return [n]
-
--- ------------------------------------------------------------
--- |
--- substitute parameter entities in content spec for elements
--- extra check is required for validation:
--- the parmeter entitiey must form a legal part of a content modell
-
-substpeInContent	:: DTDStateFilter
-
-substpeInContent n@(NTree (XDTD PEREF al) _cs)
-    = do
-      peEnv <- getState
-      action (lookup peName peEnv)
+    | otherwise							-- default: keep things unchanged (should not occur)
+	= thisM n
     where
-    peName  = lookup1 k_peref al
-    action Nothing
-	= issueErr ("parameter entity " ++ show peName ++ " referenced in element content not found") n
-    action (Just t)
-	  = liftF getPEvalueText t
 
-substpeInContent n@(NTree (XDTD CONTENT _al) cs)
-    = do
-      cs' <- substpeInContent $$< cs
-      return $ replaceChildren cs' n
+    processEntityDecl	:: DTDStateFilter
+    processEntityDecl n'@(NTree (XDTD ENTITY al) cs)	= if isExtern
+	  then ( do
+		 url <- getAbsolutURI sysVal			-- add the absolute URI
+		 return [NTree (XDTD ENTITY ((a_url, url) : al)) cs]
+	       )
+	  else liftMf (substChildren (xmlTreesToText . getChildren)) n'
+	where
+	isExtern = hasEntry k_system al
+	sysVal   = lookup1  k_system al
+      
+    processEntityDecl n'@(NTree (XDTD PENTITY al) _)
+	= do
+	  env <- getState
+	  if (isJust . lookupPeEnv peName) $ env
+	     then
+	     issueWarn ("parameter entity " ++ show peName ++ " already defined") n
+	     else
+	     ( ifM isExternalParameterEntity
+	           ( runInLocalURIContext getExternalParamEntityValue )
+                   ( liftMf (substChildren (xmlTreesToText . getChildren)) )
+	       .>>
+	       addPE peName
+	     ) n'
+	  where
+	  peName = lookup1 a_name al
 
-substpeInContent n
-    = return [n]
+    processEntityDecl n'
+	= error ("processEntityDecl called with wrong argument" ++ show n')
 
--- ------------------------------------------------------------
--- |
--- entity defined test
+    addPE	:: String -> DTDStateFilter
+    addPE name t
+	= do
+	  trace 2 ("substParamEntity: add entity to env: " ++ xshow [t])
+	  changeState $ addPeEntry name t
+	  return []
 
-entityDefined	:: String -> DTDState Bool
-entityDefined name
-    = do
-      env <- getState
-      return (isJust . lookup name $ env)
+    substPEref	:: DTDStateFilter
+    substPEref n'
+	= do
+	  env <- getState
+	  liftF (substPEref' loc env) $ n'
 
--- ------------------------------------------------------------
--- |
--- parse a text node and substitute all parameter entity references
+    substPeRefsInValue	:: [String] -> DTDStateFilter
+    substPeRefsInValue recList n'@(NTree (XDTD PEREF al) _cl)
+	= ( if peName `elem` recList
+	    then issueErr ("recursive call of parameter entity " ++ show peName ++ " in entity value")
+	    else ( substPEref
+		   .>>
+		   liftF parseXmlDTDEntityValue
+		   .>>
+		   liftF transfCharRef
+		   .>>
+		   ( substPeRefsInValue (peName : recList)
+		     `whenM`
+		     isPeRef
+		   )
+		 )
+	  ) $ n'
+	where
+	peName = lookup1 a_peref al
 
-addParamEntity	:: String -> XmlTrees -> DTDStateFilter
-addParamEntity name val t
-    = let
-      val' = head $ replaceChildren val t
-      in
-      do
-      -- env <- getState
-      trace    2 ("addParamEntity: " ++ name)
-      traceTree val'
-      changeState $ addEntry name val'
-      return []
+    substPeRefsInValue _ n'
+	= thisM n'
+
+    substRefsInEntityValue	:: DTDStateFilter
+    substRefsInEntityValue n'@(NTree (XDTD decl al) _cl)
+	| decl `elem` [ENTITY, PENTITY]
+	    = ( if hasEntry k_system al
+		then thisM							-- externals not yet handled ??? really
+		else processChildrenM ( liftF transfCharRef
+					.>>
+					substPeRefsInValue []
+				      )
+	      ) n'
+    substRefsInEntityValue  n'
+	= error ("substRefsInEntityValue called with wrong argument" ++ show n')
+
+    runInPeContext	:: DTDStateFilter -> DTDStateFilter
+    runInPeContext f n'@(NTree (XDTD PEREF al) _)
+	| null base
+	    = f n'
+	| otherwise
+	    = runInNewURIContext base f n'
+	where
+	base = lookup1 a_url al
+
+    runInPeContext f n'
+	= f n'
+
+    substPeRefsInDTDdecl	:: [String] -> DTDStateFilter
+    substPeRefsInDTDdecl recList n'@(NTree (XDTD PEREF al) _cl)
+	= ( if peName `elem` recList
+	    then issueErr ("recursive call of parameter entity " ++ show peName ++ " in DTD declaration")
+	    else ( substPEref
+		   .>>
+		   traceDTD "substPeRefsInDTDdecl: parseXmlDTDdeclPart"
+		   .>>
+		   ( runInPeContext
+		     ( liftF ( parseXmlDTDdeclPart )
+		       .>>
+		       traceDTD "substPeRefsInDTDdecl: after parseXmlDTDdeclPart"
+		       .>>
+		       processChildrenM ( substPeRefsInDTDdecl (peName : recList) )
+		     )
+		     `whenM`
+		     isPeRef
+		   )
+		 )
+	  ) $ n'
+	where
+	peName = lookup1 a_peref al
+
+    substPeRefsInDTDdecl _ n'
+	= thisM n'
+
+    substPeRefsInDTDpart	:: [String] -> DTDStateFilter
+    substPeRefsInDTDpart recList n'@(NTree (XDTD PEREF al) _cl)
+	= ( if peName `elem` recList
+	    then issueErr ("recursive call of parameter entity " ++ show peName ++ " in DTD part")
+	    else ( substPEref
+		   .>>
+		   traceDTD "substPeRefsInDTDpart: parseXmlDTDPart"
+		   .>>
+		   runInPeContext
+		   ( liftF (getChildren .> parseXmlDTDPart ("parameter entity " ++ show peName))
+		     .>>
+		     traceDTD "substPeRefsInDTDdecl: after parseXmlDTDPart"
+		     .>>
+		     substParamEntity loc -- cyclic check not yet done (peName : recList)
+		   )
+		 )
+	  ) $ n'
+	where
+	peName = lookup1 a_peref al
+
+    substPeRefsInDTDpart _ n'
+	= thisM n'
+
+    substPeRefsInCondSect	:: [String] -> DTDStateFilter
+    substPeRefsInCondSect recList n'@(NTree (XDTD PEREF al) _cl)
+	= ( if peName `elem` recList
+	    then issueErr ("recursive call of parameter entity " ++ show peName ++ " in conditional section")
+	    else ( substPEref
+		   .>>
+		   traceDTD "substPeRefsInCondSect: parseXmlDTDdeclPart"
+		   .>>
+		   ( runInPeContext
+		     ( liftF ( parseXmlDTDdeclPart )
+		       .>>
+		       traceDTD "substPeRefsInCondSect: after parseXmlDTDdeclPart"
+		       .>>
+		       processChildrenM ( substPeRefsInCondSect (peName : recList) )
+		     )
+		     `whenM`
+		     isPeRef
+		   )
+		 )
+	  ) $ n'
+	where
+	peName = lookup1 a_peref al
+
+    substPeRefsInCondSect _ n'
+	= thisM n'
+
+
+evalCond :: XmlTree -> DTDStateFilter
+evalCond content (NTree (XText c) _)
+    | c == k_include
+	= liftF (parseXmlDTDPart "conditional section")
+	  .>>
+	  traceDTD "evalCond: DTD part"
+	  .>>
+	  substParamEntity External
+          $ content 
+    | otherwise
+	= return []
+evalCond _ n'
+    = error ("evalCond: illegal argument: " ++ show n')
 
 -- ------------------------------------------------------------
 
@@ -544,13 +570,16 @@ processExternalDTD n@(NTree (XDTD DOCTYPE al) _dtd)
     | otherwise
 	= do
 	  checkStandalone
-	  dtdText    <- getXmlEntityContents $ newDocument sysVal
-
-	  trace    2 ("processExternalDTD: parsing DTD part for " ++ show sysVal)
-
-	  dtdContent <- liftF (parseXmlDTDPart True sysVal `o` getChildren) $$< dtdText
-
-	  trace    2 ("processExternalDTD: parsing DTD part done")
+	  dtdContent <- ( getXmlEntityContents
+			  .>>
+			  traceMsg 2 ("processExternalDTD: parsing DTD part for " ++ show sysVal)
+			  .>>
+			  liftMf getChildren
+			  .>>
+			  liftF (parseXmlDTDPart sysVal)
+			)
+		       $ newDocument sysVal
+	  trace 2 "processExternalDTD: parsing DTD part done"
 	  traceTree $ mkRootTree [] dtdContent
 	  return dtdContent
     where
@@ -567,7 +596,7 @@ processExternalDTD  _
 -- ------------------------------------------------------------
 -- |
 -- merge the external and the internal part of a DTD into one internal part.
--- parameter entity substitution should be made befor applying this filter
+-- parameter entity substitution should be made before applying this filter
 -- internal definitions shadow external ones
 --
 --
@@ -626,11 +655,11 @@ predefinedEntities
 
 predefDTDPart		:: XmlTrees
 predefDTDPart
-    = parseXmlDTDPart False "predefined entities" $ mkXTextTree predefinedEntities
+    = parseXmlDTDPart "predefined entities" $ mkXTextTree predefinedEntities
 
 -- ------------------------------------------------------------
 --
--- 4.4 XML Processor Treatment of Entities and References
+-- 4.4 XML Processor Treatment of General Entities and References
 
 data GeContext
     = ReferenceInContent
@@ -639,15 +668,26 @@ data GeContext
     -- or OccursInAttributeValue				-- not used during substitution but during validation
     -- or ReferenceInDTD					-- not used: syntax check detects errors
 
-newtype GeEnv		= GeEnv [GeEntry]
-
-type GeEntry		= (String, GeFct)
-
 type GeFct		= GeContext -> RecList -> GeStateFilter
 
 type GeState res	= XState GeEnv res
 
 type GeStateFilter	= XmlTree -> GeState XmlTrees
+
+-- ------------------------------------------------------------
+
+newtype GeEnv	= GeEnv (M.Map String GeFct)
+
+emptyGeEnv	:: GeEnv
+emptyGeEnv	= GeEnv M.empty
+
+lookupGeEnv		:: String -> GeEnv -> Maybe GeFct
+lookupGeEnv k (GeEnv env)
+    = M.lookup k env
+
+addGeEntry	:: String -> GeFct -> GeEnv -> GeEnv
+addGeEntry k a (GeEnv env)
+    = GeEnv $ M.insert k a env
 
 -- ------------------------------------------------------------
 
@@ -675,7 +715,7 @@ processGeneralEntities
 	    res <- chain initialEnv (processGeneralEntity ReferenceInContent [] $$< getChildren t')
 	    return $ replaceChildren res t'
 	    where
-	    initialEnv = GeEnv []
+	    initialEnv = emptyGeEnv
 
 -- ------------------------------------------------------------
 
@@ -689,7 +729,7 @@ processGeneralEntity cx rl n@(NTree (XDTD ENTITY al) cl)
     | isIntern
 	= do
 	  trace 2 ("processGeneralEnity: general entity definition for " ++ show name)
-	  value <- liftF (parseXmlGeneralEntityValue False ("general internal entity " ++ show name)) $ mkXTextTree text
+	  value <- liftF (parseXmlGeneralEntityValue ("general internal entity " ++ show name)) $ mkXTextTree (xshow cl)
 	  res   <- processGeneralEntity ReferenceInEntityValue (name:rl) $$< value
 	  insertEntity name (substInternal res)
     | isExtern
@@ -706,45 +746,42 @@ processGeneralEntity cx rl n@(NTree (XDTD ENTITY al) cl)
     isExtern	= not isIntern && not (hasEntry k_ndata al)
     isIntern	= not (hasEntry k_system al)
 
-    name	= lookup1 a_name al
-    sysVal	= lookup1 k_system al
-    context	= addEntry a_source sysVal al
-
-    text  	= xshow . transfCharRef $$ cl
+    name	= lookup1 a_name   al
+    -- sysVal	= lookup1 k_system al
+    url		= lookup1 a_url    al		-- a_url contains absolut url for k_system
+    context	= addEntry a_source url al
 
     processExternalEntityContents	:: XmlTrees -> GeState XmlTrees
     processExternalEntityContents cl'
-	| null cl'					-- reading content did not succeed
+	| null cl'						-- reading content did not succeed
 	    = return []
-	| null txt'					-- something weird in entity content
+	| null txt'						-- something weird in entity content
 	    = do
 	      issueErr ("illegal external parsed entity value for entity " ++ show name) n
 	      return []
-	| otherwise					-- o.k.: parse the contents
+	| otherwise						-- o.k.: parse the contents
 	    = do
-	      res' <- liftF (parseXmlGeneralEntityValue True ("external parsed entity " ++ show name)) $$< txt'
-	      traceSource .>> traceTree $ mkRootTree (fromAttrl context) res'
+	      res' <- liftF (parseXmlGeneralEntityValue ("external parsed entity " ++ show name)) $$< txt'
+	      ( traceSource
+		.>>
+		traceTree ) $ mkRootTree (fromAttrl context) res'
 	      return res'
 	where
-	txt' = (isXText `o` getChildren) $$ cl'
+	txt' = (getChildren .> isXText) $$ cl'
 
     insertEntity	:: String -> GeFct -> GeState XmlTrees
     insertEntity name' fct'
 	= do
-	  (GeEnv env') <- getState
-	  case lookup name' env' of
+	  geEnv' <- getState
+	  case lookupGeEnv name' geEnv' of
 	    Just _fct
 		-> do
 		   issueWarn ("entity " ++ show name ++ " already defined, repeated definition ignored") n
 		   return []
             Nothing
 		-> do
-		   changeState $ addEntity name' fct' 
+		   changeState $ addGeEntry name' fct' 
 		   return $ this n
-
-    addEntity		:: String -> GeFct -> GeEnv -> GeEnv
-    addEntity name' fct' (GeEnv env')
-	= GeEnv (addEntry name' fct' env')
 
     -- --------
     --
@@ -767,15 +804,16 @@ processGeneralEntity cx rl n@(NTree (XDTD ENTITY al) cl)
 	= do
 	  trace 2 ("substExternalParsed1Time: read and parse external parsed entity " ++ show name)
 	  res  <- runInLocalURIContext getContents' $ newDocument' context
-	  res' <- processExternalEntityContents res
-	  changeState $ addEntity name (substExternalParsed res')
-	  substExternalParsed res' cx' rl' n' 
+	  changeState $ addGeEntry name (substExternalParsed res)
+	  substExternalParsed res cx' rl' n' 
 	  where
 	  getContents'	:: GeStateFilter
 	  getContents' t''
 	      = do
 		setBaseURI baseUri'
-		getXmlEntityContents t''
+		rs' <- getXmlEntityContents t''
+		processExternalEntityContents rs'
+
 
     substExternalParsed	:: XmlTrees -> GeContext -> RecList -> GeStateFilter
     substExternalParsed  nl ReferenceInContent rl' _n'
@@ -836,8 +874,8 @@ processGeneralEntity cx rl n@(NTree (XEntityRef name) _)
     = do
       trace 2 ("processGeneralEnity: entity reference for entity " ++ show name)
       trace 3 ("recursion list = " ++ show rl)
-      (GeEnv env) <- getState
-      case lookup name env of
+      geEnv <- getState
+      case lookupGeEnv name geEnv of
         Just fct
 	  -> if name `elem` rl
 	     then do

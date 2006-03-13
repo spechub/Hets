@@ -35,8 +35,8 @@ import Data.Maybe
 -- The error handling method can be controlled by an error handler filter,
 -- the default filter issues the errors on stderr
 
-data SysState			= SysState { sysStateAttrs		:: SysStateAttrs
-					   , sysStateErrorHandler	:: XmlStateFilter ()
+data SysState			= SysState { sysStateAttrs		:: ! SysStateAttrs
+					   , sysStateErrorHandler	:: ! (XmlStateFilter ())
 					   }
 
 type SysStateAttrs		= AssocList String XmlTrees
@@ -45,8 +45,8 @@ type SysStateAttrs		= AssocList String XmlTrees
 -- The State has a system and a user part
 -- the user state is a type parameter
 
-data XmlState state		= XmlState { sysState	:: SysState
-					   , userState	:: state
+data XmlState state		= XmlState { sysState	:: ! SysState
+					   , userState	:: ! state
 					   }
 
 -- |
@@ -535,7 +535,7 @@ errorMsgToStderr
 -- they can be read with @getSysParamTree a_error_log@ or by
 -- applying the filter 'getErrorMsg' to the root node
 
-errorMsgLogging	:: XmlStateFilter state
+errorMsgLogging		:: XmlStateFilter state
 errorMsgLogging
     = performAction
       ( \ t ->
@@ -543,6 +543,9 @@ errorMsgLogging
 	errLog <- getSysParamTree a_error_log
 	setSysParamTree a_error_log (t : errLog)
       )
+
+errorMsgLoggingAndToStderr      :: XmlStateFilter state
+errorMsgLoggingAndToStderr	= errorMsgLogging.>> errorMsgToStderr
 
 -- |
 -- the filter for reading all collected error mesages

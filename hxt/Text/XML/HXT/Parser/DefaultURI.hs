@@ -24,5 +24,16 @@ setDefaultURI	:: XState state ()
 setDefaultURI
     = do
       wd <- io getCurrentDirectory
-      setSysParam transferDefaultURI ("file://localhost" ++ wd ++ "/")
+      setSysParam transferDefaultURI ("file://" ++ editCWD wd ++ "/")
+    where
+    -- under Windows getCurrentDirectory returns something like: "c:\path\to\file"
+    -- backslaches are not allowed in URIs and paths must start with a /
+    -- so this is transformed into "/c:/path/to/file"
 
+    editCWD = addLeadingSlash . map backslash2slash
+
+    addLeadingSlash s@('/' : _) = s
+    addLeadingSlash s           = '/':s
+
+    backslash2slash '\\' = '/'
+    backslash2slash c    = c

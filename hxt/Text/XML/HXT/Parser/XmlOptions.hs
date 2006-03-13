@@ -7,6 +7,7 @@
 
 module Text.XML.HXT.Parser.XmlOptions
     ( inputOptions
+    , relaxOptions
     , outputOptions
     , generalOptions
     , versionOptions
@@ -43,6 +44,7 @@ inputOptions
       , Option ""	[a_use_curl]			(NoArg  (att a_use_curl          v_1))	"HTTP access via external program \"curl\", more functionality, supports HTTP/1.0, less efficient"
       , Option ""	[a_do_not_use_curl]		(NoArg  (att a_use_curl          v_0))	"HTTP access via built in HTTP/1.1 module (default)"
       , Option ""	[a_options_curl]		(ReqArg (att a_options_curl)    "STR")	"additional curl options, e.g. for timeout, ..."
+      , Option ""	[a_default_baseuri]		(ReqArg (att transferURI) 	"URI")	"default base URI, default: \"file:///<cwd>/\""
       , Option "e"	[a_encoding]			(ReqArg (att a_encoding)    "CHARSET")	( "default document encoding (" ++ utf8 ++ ", " ++ isoLatin1 ++ ", " ++ usAscii ++ ", ...)" )
       , Option ""	[a_issue_errors]		(NoArg	(att a_issue_errors      v_1))	"issue all errorr messages on stderr (default)"
       , Option ""	[a_do_not_issue_errors]		(NoArg	(att a_issue_errors      v_0))	"ignore all error messages"
@@ -64,6 +66,30 @@ inputOptions
     where
     att n v	= (n, v)
     trc = att a_trace . show . max 0 . min 9 . (read :: String -> Int) . ('0':) . filter (`elem` "0123456789") . fromMaybe v_1
+
+
+-- | available Relax NG validation options
+--
+-- defines options
+-- 'a_check_restrictions', 'a_validate_externalRef', 'a_validate_include', 'a_do_not_check_restrictions',  
+-- 'a_do_not_validate_externalRef', 'a_do_not_validate_include'
+
+relaxOptions :: [OptDescr (String, String)]
+relaxOptions    
+    = [ Option "X" [a_relax_schema]	        	(ReqArg (att a_relax_schema) "SCHEMA")	"validation with Relax NG, SCHEMA is the URI for the Relax NG schema"
+      , Option ""  [a_check_restrictions]	        (NoArg (a_check_restrictions,    v_1))	"check Relax NG schema restrictions during schema simplification (default)"
+      , Option ""  [a_do_not_check_restrictions]	(NoArg (a_check_restrictions,    v_0))	"do not check Relax NG schema restrictions"
+      , Option ""  [a_validate_externalRef]		(NoArg (a_validate_externalRef,  v_1))	"validate a Relax NG schema referenced by a externalRef-Pattern (default)"
+      , Option ""  [a_do_not_validate_externalRef]	(NoArg (a_validate_externalRef,  v_0))	"do not validate a Relax NG schema referenced by an externalRef-Pattern"
+      , Option ""  [a_validate_include]			(NoArg (a_validate_include,      v_1))	"validate a Relax NG schema referenced by an include-Pattern (default)"
+      , Option ""  [a_do_not_validate_include]		(NoArg (a_validate_include,      v_0))   "do not validate a Relax NG schema referenced by an include-Pattern"
+	{-
+      , Option ""  [a_output_changes]			(NoArg (a_output_changes,        v_1))	"output Pattern transformations in case of an error"    
+      , Option ""  [a_do_not_collect_errors]     	(NoArg (a_do_not_collect_errors, v_1))	"stop Relax NG simplification after the first error has occurred"
+	-}
+      ]
+    where
+    att n v	= (n, v)
 
 -- |
 -- commonly useful options for XML output

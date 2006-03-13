@@ -1,9 +1,9 @@
 
 These are the plain sources of the Haskell XML Toolbox (HXT) with some
-slight modifications over version 4.02. The building of a separate
+slight modifications over version 5.4. The building of a separate
 package is skipped and the whole src tree is used directly.
 
-10.01.2005, Klaus Lüttich
+13.03.2006, Hendrik Iben
 
 Original README follows:
 
@@ -30,14 +30,31 @@ data model.
 The Haskell XML Toolbox is available from:
     http://www.fh-wedel.de/~si/HXmlToolbox/
 
-The current version is 4.02, and is stable quality.
+The current version is 5.3, and is stable quality.
 
 The Haskell XML Toolbox was developed with Hugs Version December 2001 (later with ghci) and with
 Glasgow Haskell Compiler (GHC) 5.04, 6.01 and 6.2 on Linux systems. Testing on Windows systems
 has not been done yet.
+VERSIONS >= 5.01 NEED AT LEAST GHC-6.4.
 
 Please contact us (hxmltoolbox@fh-wedel.de) with any questions, comments, or bug
 reports.
+
+NEW FEATURES in version 5.3
+===========================
+
+- needs ghc-6.4
+- can be installed with Cabal
+- the HTTP module is not longer part of this distribution.
+  it must be installed before the toolbox is build.
+  Please use the lastest version from
+  "http://www.dtek.chalmers.se/~d00bring/haskell-xml-rpc/http.html"
+- an arrow interface with overloading and type classes is available
+  (see documentation: Control.Arrow and Text.XML.HXT.Arrow)
+- examples of using this more flexible interface can be found in the
+  "examples/arrows" subdirectory, this dir contains some old examples rewritten
+  for the arrow interface
+- Relax NG schema validator added
 
 FEATURES
 ========
@@ -49,6 +66,7 @@ FEATURES
 - wellformed document parsing and validation
 - support for namespaces
 - xpath support
+- Relax NG schema validator
 
 MISSING FEATURES AND KNOWN PROBLEMS
 ===================================
@@ -67,14 +85,35 @@ The source code is documented with Haddock
 
 The master's thesis "Design and Implementation of a validating XML parser in
 Haskell" by Martin Schmidt describes the design and motivation of the Haskell
-XML Toolbox
+XML Toolbox. The documentation in the thesis is a bit out of date, the modules
+and module names and some function names have been changed. For details the online
+haddock documentation should be used.
 
 
 INSTALLATION
 ============
 
+Before installing this version, install the HTTP module
+from "http://www.dtek.chalmers.se/~d00bring/haskell-xml-rpc/http.html"
+
+For a quick install with Cabal already installed:
+-------------------------------------------------
+
+  make setup
+  ./setup configure --ghc
+  ./setup build
+  ./setup install		# with root privileges
+
+  # a quick test of the example programs
+  cd examples
+  make all
+  make test
+
+Without Cabal:
+--------------
+
 To compile binary versions of the programs included in the Haskell XML Toolbox
-the "Glasgow Haskell Compiler" >= 6.2 and "GNU make" are needed.
+the "Glasgow Haskell Compiler" >= 6.4 and "GNU make" are needed.
 
 execute in this dir
 
@@ -84,7 +123,7 @@ for testing the distribution with the example programs try
 
 	make test
 
-for installing the software in the ghc package dir run (with root access)
+for installing the software with ghc-pkg run (with root access)
 
 	make install
 
@@ -100,14 +139,13 @@ for using the toolbox include
 	import Text.XML.HXT.Parser
 	...
 
-and compile with
+for using the toolbox with arrows include
 
-	ghc ... -package hxt ...
-
-for using the package with ghci set option
-
-	ghci> :set -package hxt
-
+	module XXX(...)
+	where
+	...
+	import Text.XML.HXT.Arrow
+	...
 
 good luck
 

@@ -24,14 +24,23 @@ lookup1 k	= fromMaybe [] . lookup k
 hasEntry	:: Eq k => k -> AssocList k v -> Bool
 hasEntry k	= isJust . lookup k
 
+-- addEntry is strict
 addEntry	:: Eq k => k -> v -> AssocList k v -> AssocList k v
-addEntry k v l	= (k, v) : delEntry k l
+addEntry k v l	= ( (k,v) : ) $! delEntry k l
+
+ -- let l' = delEntry k l in seq l' ((k, v) : l')
 
 addEntries	:: Eq k => AssocList k v -> AssocList k v -> AssocList k v
 addEntries	= foldr (.) id . map (uncurry addEntry) . reverse
 
-delEntry		:: Eq k => k -> AssocList k v -> AssocList k v
-delEntry k	= filter ((/= k) . fst)
+-- delEntry is strict
+delEntry	:: Eq k => k -> AssocList k v -> AssocList k v
+delEntry _ []	= []
+delEntry k (x@(k1,_) : rest)
+    | k == k1	= rest
+    | otherwise	= ( x : ) $! delEntry k rest
+
+-- delEntry k	= filter ((/= k) . fst)
 
 delEntries	:: Eq k => [k] -> AssocList k v -> AssocList k v
 delEntries	= foldl (.) id . map delEntry

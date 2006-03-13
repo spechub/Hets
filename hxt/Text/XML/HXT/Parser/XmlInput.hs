@@ -12,6 +12,7 @@ module Text.XML.HXT.Parser.XmlInput
     , getContentLength
     , guessDocEncoding
     , runInLocalURIContext
+    , runInNewURIContext
     , getBaseURI
     , setBaseURI
     , getAbsolutURI
@@ -31,10 +32,13 @@ import Text.XML.HXT.Parser.DefaultURI
 import Text.XML.HXT.Parser.XmlParser
     ( parseXmlDocEncodingSpec
     , parseXmlEntityEncodingSpec
+    , removeEncodingSpec
     )
 
 import Text.XML.HXT.DOM.Unicode
     ( getEncodingFct
+    , guessEncoding
+    , normalizeNL
     )
 
 import Text.XML.HXT.Parser.XmlOutput
@@ -52,8 +56,7 @@ import Text.XML.HXT.Parser.ProtocolHandler
 -- URI manipulation
 
 import Network.URI
-    ( URI
-    , parseURI
+    ( parseURIReference
     , relativeTo
     , scheme
     )
@@ -124,6 +127,8 @@ getXmlEntityContents	:: XmlStateFilter a
 getXmlEntityContents
     = getXmlContents' parseXmlEntityEncodingSpec
       .>>
+      liftF (processChildren removeEncodingSpec)	-- remove encoding spec, it's not part of the entity value
+      .>> 
       setBaseURIFilter
 
 -- ------------------------------------------------------------
@@ -151,6 +156,22 @@ runInLocalURIContext f t
       setBaseURI oldContext
       trace 2 ("runInLocalURIContext: restore base URI " ++ show oldContext)
       return res
+
+-- |
+-- filter command for running an action in a new URI context
+
+runInNewURIContext	:: String -> XmlStateFilter a -> XmlStateFilter a
+runInNewURIContext uri f
+    | null uri
+	= f
+    | otherwise
+	= runInLocalURIContext
+	  ( \ t -> ( do
+		     trace 2 ("runInNewURIContext: new base URI " ++ show uri)
+		     setBaseURI uri
+		     f t
+		   )
+	  )
 
 -- ------------------------------------------------------------
 -- |
@@ -188,19 +209,6 @@ guessDocEncoding
 	  encFilter Nothing
 	      = addFatal ("encoding scheme not supported: " ++ show guess)
 
-	  
--- ------------------------------------------------------------
---
--- White Space (2.3)
--- end of line handling (2.11)
--- \#x0D and \#x0D\#x0A are mapped to \#x0A
-
-normalizeNL	:: String -> String
-normalizeNL ('\r' : '\n' : rest)	= '\n' : normalizeNL rest
-normalizeNL ('\r' : rest)		= '\n' : normalizeNL rest
-normalizeNL (c : rest)			= c    : normalizeNL rest
-normalizeNL []				= []
-
 -- ------------------------------------------------------------
 
 getDefaultURI	:: XState state String
@@ -216,7 +224,7 @@ getDefaultURI
 -- |
 -- set the base URI, all other URIs are handled relative to this base URI
 --
--- the default base URI is @file:\/\/localhost\/&lt;current-working-dir&gt;\/@
+-- the default base URI is @file:\/\/\/\<current-working-dir\>\/@
 --
 -- see also : 'getBaseURI'
 
@@ -262,8 +270,8 @@ expandURI uri base
     = fromMaybe "" $ expand
     where
     expand = do
-	     base' <- parseURI base
-	     uri'  <- parseURI uri
+	     base' <- parseURIReference base
+	     uri'  <- parseURIReference uri
 	     abs'  <- relativeTo uri' base'
 	     return $ show abs'
 
@@ -313,7 +321,7 @@ getUrlContents
 	  if null uri
 	     then urlErr ( "illegal URI for input: " ++ show src )
 	     else let
-		  uri'     = fromJust $ parseURI uri
+		  uri'     = fromJust $ parseURIReference uri
 		  proto    = scheme uri'
 		  handler  = getProtocolHandler proto
 		  in
@@ -355,37 +363,5 @@ getContentLength
       getLength			:: XmlFilter
       getLength t
 	  = xtext (show . length . xshow . getChildren $ t)
-
-
--- ------------------------------------------------------------
---
--- gues the encoding scheme by looking at the first few characters
---
--- see XML Standard F.1
-
-guessEncoding		:: String -> String
-
-guessEncoding ('\xFF':'\xFE':'\x00':'\x00':_)	= "UCS-4LE"		-- with byte order mark
-guessEncoding ('\xFF':'\xFE':_)			= "UTF-16LE"		-- with byte order mark
-
-guessEncoding ('\xFE':'\xFF':'\x00':'\x00':_)	= "UCS-4-3421"		-- with byte order mark
-guessEncoding ('\xFE':'\xFF':_)			= "UTF-16BE"		-- with byte order mark
-
-guessEncoding ('\xEF':'\xBB':'\xBF':_)		= utf8			-- with byte order mark
-
-guessEncoding ('\x00':'\x00':'\xFE':'\xFF':_)	= "UCS-4BE"		-- with byte order mark
-guessEncoding ('\x00':'\x00':'\xFF':'\xFE':_)	= "UCS-4-2143"		-- with byte order mark
-
-guessEncoding ('\x00':'\x00':'\x00':'\x3C':_)	= "UCS-4BE"		-- "<" of "<?xml"
-guessEncoding ('\x3C':'\x00':'\x00':'\x00':_)	= "UCS-4LE"		-- "<" of "<?xml"
-guessEncoding ('\x00':'\x00':'\x3C':'\x00':_)	= "UCS-4-2143"		-- "<" of "<?xml"
-guessEncoding ('\x00':'\x3C':'\x00':'\x00':_)	= "UCS-4-3412"		-- "<" of "<?xml"
-
-guessEncoding ('\x00':'\x3C':'\x00':'\x3F':_)	= "UTF-16BE"		-- "<?" of "<?xml"
-guessEncoding ('\x3C':'\x00':'\x3F':'\x00':_)	= "UTF-16LE"		-- "<?" of "<?xml"
-
-guessEncoding ('\x4C':'\x6F':'\xA7':'\x94':_)	= "EBCDIC"		-- "<?xm" of "<?xml"
-
-guessEncoding _					= ""			-- no guess
 
 -- ------------------------------------------------------------

@@ -426,7 +426,10 @@ processDocument userOptions defaultOptions processFilter
       setSystemParams							-- store options in system state
       .>>
       choiceM
-      [ hasOption a_collect_errors
+      [ hasOption a_propagate_errors					-- error handling is set by calling environment
+		:-> thisM
+
+      , hasOption a_collect_errors
 	.>
 	hasOption a_issue_errors
 		:-> performAction (\ _ -> setSysErrorHandler (errorMsgLogging.>> errorMsgToStderr)	)

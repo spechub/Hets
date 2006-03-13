@@ -1,8 +1,21 @@
--- |
--- constants for XML keywords, for special attribute names
--- and special attribute values
---
--- Version : $Id$
+-- ------------------------------------------------------------
+
+{- |
+   Module     : Text.XML.HXT.DOM.XmlKeywords
+   Copyright  : Copyright (C) 2005 Uwe Schmidt
+   License    : MIT
+
+   Maintainer : Uwe Schmidt (uwe\@fh-wedel.de)
+   Stability  : experimental
+   Portability: portable
+   Version    : $Id$
+
+   Constants for XML keywords, for special attribute names
+   and special attribute values
+
+-}
+
+-- ------------------------------------------------------------
 
 module Text.XML.HXT.DOM.XmlKeywords
 where
@@ -19,6 +32,8 @@ a_canonicalize,
  a_check_namespaces,
  a_contentLength,
  a_collect_errors,
+ a_column,
+ a_default_baseuri,
  a_do_not_canonicalize,
  a_do_not_check_namespaces,
  a_do_not_issue_errors,
@@ -35,6 +50,7 @@ a_canonicalize,
  a_issue_errors,
  a_issue_warnings,
  a_kind,
+ a_line,
  a_module,
  a_modifier,
  a_name,
@@ -46,6 +62,7 @@ a_canonicalize,
  a_parse_xml,
  a_peref,
  a_preserve_comment,
+ a_propagate_errors,
  a_proxy,
  a_remove_whitespace,
  a_show_haskell,
@@ -60,7 +77,9 @@ a_canonicalize,
  a_validate,
  a_value,
  a_verbose,
- a_version	:: String
+ a_version,
+ a_xml,
+ a_xmlns	:: String
 
 v_0,				-- attribute values
  v_1,
@@ -110,8 +129,10 @@ t_root		= "/"		-- name of root node tag
 a_canonicalize			= "canonicalize"
 a_check_namespaces		= "check-namespaces"
 a_collect_errors		= "collect-errors"
+a_column			= "column"
 a_contentLength			= "Content-Length"
 a_default			= "default"
+a_default_baseuri		= "default-base-URI"
 a_do_not_canonicalize		= "do-not-canonicalize"
 a_do_not_check_namespaces	= "do-not-check-namespaces"
 a_do_not_issue_errors		= "do-not-issue-errors"
@@ -128,6 +149,7 @@ a_indent			= "indent"
 a_issue_warnings		= "issue-warnings"
 a_issue_errors			= "issue-errors"
 a_kind				= "kind"
+a_line				= "line"
 a_module			= "module"
 a_modifier			= "modifier"
 a_name				= "name"
@@ -139,6 +161,7 @@ a_parse_html			= "parse-html"
 a_parse_xml			= "parse-xml"
 a_peref				= k_peref
 a_preserve_comment 		= "preserve-comment"
+a_propagate_errors		= "propagate-errors"
 a_proxy				= "proxy"
 a_remove_whitespace 		= "remove-whitespace"
 a_show_haskell			= "show-haskell"
@@ -154,6 +177,8 @@ a_validate			= "validate"
 a_value				= "value"
 a_verbose			= "verbose"
 a_version			= "version"
+a_xml				= "xml"
+a_xmlns				= "xmlns"
 
 v_yes		= "yes"
 v_no		= "no"
@@ -246,5 +271,48 @@ utf8		= "UTF-8"
 utf16		= "UTF-16"
 utf16be		= "UTF-16BE"
 utf16le		= "UTF-16LE"
+
+-- ------------------------------------------------------------
+--
+-- known namespaces
+
+-- |
+-- the predefined namespace uri for xml: \"http:\/\/www.w3.org\/XML\/1998\/namespaces\"
+
+xmlNamespace	:: String
+xmlNamespace	= "http://www.w3.org/XML/1998/namespaces"
+
+-- |
+-- the predefined namespace uri for xmlns: \"http:\/\/www.w3.org\/2000\/xmlns\/\"
+
+xmlnsNamespace	:: String
+xmlnsNamespace	= "http://www.w3.org/2000/xmlns/"
+
+-- | Relax NG namespace
+relaxNamespace	:: String
+relaxNamespace	= "http://relaxng.org/ns/structure/1.0"
+
+-- ------------------------------------------------------------
+-- option for Relax NG
+
+a_relax_schema,
+ a_do_not_check_restrictions,  
+ a_check_restrictions,
+ a_do_not_validate_externalRef,
+ a_validate_externalRef,
+ a_do_not_validate_include,
+ a_validate_include,
+ a_output_changes, 
+ a_do_not_collect_errors :: String 
+
+a_relax_schema		      = "relax-schema"
+a_do_not_check_restrictions   = "do-not-check-restrictions"
+a_check_restrictions          = "check-restrictions"
+a_do_not_validate_externalRef = "do-not-validate-externalRef"
+a_validate_externalRef        = "validate-externalRef" 
+a_do_not_validate_include     = "do-not-validate-include"
+a_validate_include            = "validate-include"
+a_output_changes              = "output-pattern-transformations"
+a_do_not_collect_errors       = "do-not-collect-errors"
 
 -- ------------------------------------------------------------

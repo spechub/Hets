@@ -63,6 +63,9 @@ module Text.XML.HXT.DOM.Unicode
 
     , getEncodingFct
     , getOutputEncodingFct
+
+    , normalizeNL
+    , guessEncoding
     )
 where
 
@@ -963,6 +966,20 @@ intToCharRefHex i
 	   else h1
 
 -- ------------------------------------------------------------
+--
+-- | White Space (XML Standard 2.3) and 
+-- end of line handling (2.11)
+--
+-- \#x0D and \#x0D\#x0A are mapped to \#x0A
+
+normalizeNL	:: String -> String
+normalizeNL ('\r' : '\n' : rest)	= '\n' : normalizeNL rest
+normalizeNL ('\r' : rest)		= '\n' : normalizeNL rest
+normalizeNL (c : rest)			= c    : normalizeNL rest
+normalizeNL []				= []
+
+
+-- ------------------------------------------------------------
 
 -- |
 -- the table of supported character encoding schemes and the associated
@@ -983,7 +1000,7 @@ encodingTable
 -- |
 -- the lookup function for selecting the encoding function
 
-getEncodingFct		:: String -> Maybe (String -> UString)
+getEncodingFct		:: String -> Maybe (UString -> String)
 getEncodingFct enc
     = lookup (map toUpper enc) encodingTable
 
@@ -1006,5 +1023,33 @@ outputEncodingTable
 getOutputEncodingFct		:: String -> Maybe (String -> UString)
 getOutputEncodingFct enc
     = lookup (map toUpper enc) outputEncodingTable
+
+-- ------------------------------------------------------------
+--
+
+guessEncoding		:: String -> String
+
+guessEncoding ('\xFF':'\xFE':'\x00':'\x00':_)	= "UCS-4LE"		-- with byte order mark
+guessEncoding ('\xFF':'\xFE':_)			= "UTF-16LE"		-- with byte order mark
+
+guessEncoding ('\xFE':'\xFF':'\x00':'\x00':_)	= "UCS-4-3421"		-- with byte order mark
+guessEncoding ('\xFE':'\xFF':_)			= "UTF-16BE"		-- with byte order mark
+
+guessEncoding ('\xEF':'\xBB':'\xBF':_)		= utf8			-- with byte order mark
+
+guessEncoding ('\x00':'\x00':'\xFE':'\xFF':_)	= "UCS-4BE"		-- with byte order mark
+guessEncoding ('\x00':'\x00':'\xFF':'\xFE':_)	= "UCS-4-2143"		-- with byte order mark
+
+guessEncoding ('\x00':'\x00':'\x00':'\x3C':_)	= "UCS-4BE"		-- "<" of "<?xml"
+guessEncoding ('\x3C':'\x00':'\x00':'\x00':_)	= "UCS-4LE"		-- "<" of "<?xml"
+guessEncoding ('\x00':'\x00':'\x3C':'\x00':_)	= "UCS-4-2143"		-- "<" of "<?xml"
+guessEncoding ('\x00':'\x3C':'\x00':'\x00':_)	= "UCS-4-3412"		-- "<" of "<?xml"
+
+guessEncoding ('\x00':'\x3C':'\x00':'\x3F':_)	= "UTF-16BE"		-- "<?" of "<?xml"
+guessEncoding ('\x3C':'\x00':'\x3F':'\x00':_)	= "UTF-16LE"		-- "<?" of "<?xml"
+
+guessEncoding ('\x4C':'\x6F':'\xA7':'\x94':_)	= "EBCDIC"		-- "<?xm" of "<?xml"
+
+guessEncoding _					= ""			-- no guess
 
 -- ------------------------------------------------------------

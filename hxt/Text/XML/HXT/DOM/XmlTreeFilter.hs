@@ -11,14 +11,10 @@ where
 import Text.XML.HXT.DOM.XmlTreeTypes
 import Text.XML.HXT.DOM.XmlTreeFunctions
 import Text.XML.HXT.DOM.XmlKeywords
+import Text.XML.HXT.DOM.Unicode	( isXmlSpaceChar	)
+import Text.XML.HXT.DOM.Util	( decimalStringToInt	)
 
-import Text.XML.HXT.DOM.Util
-    (decimalStringToInt
-    )
-
-import Data.List
-    ( partition
-    )
+import Data.List		( partition	)
 
 infixl 7 += , ++=
 
@@ -234,7 +230,7 @@ isWhiteSpace		:: XmlFilter
 isWhiteSpace
     = isOfNode isWS
       where
-      isWS (XText s1) = all (`elem` " \t\n") s1
+      isWS (XText s1) = all isXmlSpaceChar s1
       isWS _          = False
 
 -- ------------------------------------------------------------
@@ -266,7 +262,7 @@ isEntity			:: XmlFilter
 isEntity			= isOfNode (isDTDElemNode ENTITY)
 
 -- |
--- test whether the root of a tree contains a parameter ENTITY DTD part.
+-- test whether the root of a tree contains a parameter ENTITY reference.
 
 isPeRef				:: XmlFilter
 isPeRef				= isOfNode (isDTDElemNode PEREF)
@@ -284,7 +280,7 @@ isCondSect			:: XmlFilter
 isCondSect			= isOfNode (isDTDElemNode CONDSECT)
 
 -- |
--- test whether the root of a tree contains a parameter entity reference.
+-- test whether the root of a tree contains a parameter entity declaration.
 
 isParameterEntity		:: XmlFilter
 isParameterEntity		= isOfNode (isDTDElemNode PENTITY)
@@ -399,6 +395,12 @@ mkXTag		:: String -> XmlFilter -> XmlFilter -> XmlFilter
 mkXTag n af cf
     = \ t -> [ mkXTagTree n (af t) (cf t) ]
 
+-- | Version with qualified names of 'mkXTag'
+
+mkQTag		:: QName -> XmlFilter -> XmlFilter -> XmlFilter
+mkQTag q af cf
+    = \ t -> [ mkQTagTree q (af t) (cf t) ]
+
 -- |
 -- constructor filter for a tag node.
 -- a new tree is constructed.
@@ -426,6 +428,12 @@ mkXNsTag n ns af cf
 mkXAttr		:: String -> XmlFilter -> XmlFilter
 mkXAttr n af
     = \ t -> [ mkXAttrTree n (af t) ]
+
+-- | Qualified version 'mkXAttr'
+
+mkQAttr		:: QName -> XmlFilter -> XmlFilter
+mkQAttr q af
+    = \ t -> [ mkQAttrTree q (af t) ]
 
 -- |
 -- filter for attribute construction.
@@ -820,12 +828,23 @@ atag		:: String -> [XmlFilter] -> XmlFilter
 atag n cfs	= mkXTag n (cat cfs) none
 
 -- |
--- short cut for empty tags without attributes
+-- Short cut for empty tags without attributes
 --
 -- see also : 'tag', 'atag', 'stag', 'mkXTag' and '+='
 
 etag		:: String -> XmlFilter
 etag n		= mkXTag n none none
+
+-- | Qualified version of etag
+
+qetag		:: QName -> XmlFilter
+qetag q		= mkQTag q none none
+
+-- | Alias for mkQTag
+
+qtag		:: QName -> XmlFilter -> XmlFilter -> XmlFilter
+qtag = mkQTag
+
 
 -- |
 -- filter for creating a document root node with a list of filters for the attributes and a list of filters for the document.
@@ -836,10 +855,14 @@ rootTag		:: [XmlFilter] -> [XmlFilter] -> XmlFilter
 rootTag afs cfs	= mkXTag t_root (cat afs) (cat cfs)
 
 -- |
--- short cut for 'mkXAttr'
+-- Alias for 'mkXAttr'
 
 attr		:: String -> XmlFilter -> XmlFilter
 attr		= mkXAttr
+
+-- | Alias for mkQAttr
+qattr		:: QName -> XmlFilter -> XmlFilter
+qattr = mkQAttr
 
 -- |
 -- short cut for attribute construction with string constants

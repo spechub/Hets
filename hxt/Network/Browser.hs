@@ -1,14 +1,14 @@
 -----------------------------------------------------------------------------
--- 
--- Module      :  Browser
+-- |
+-- Module      :  Network.Browser
 -- Copyright   :  (c) Warrick Gray 2002
 -- License     :  BSD
 -- 
--- Maintainer  :  oinutter@hotmail.com
+-- Maintainer  :  bjorn@bringert.net
 -- Stability   :  experimental
 -- Portability :  non-portable (not tested)
 --
--- An HTTP/1.1 compatible wrapper for the HTTP module.
+-- An HTTP\/1.1 compatible wrapper for the HTTP module.
 -----------------------------------------------------------------------------
  
 {-
@@ -29,7 +29,7 @@ module Network.Browser (
     BrowserAction,      -- browser monad, effectively a state monad.
     Cookie,
     Form(..),
-    Proxy(..),		-- uwe
+    Proxy(..),
     
     browse,             -- BrowserAction a -> IO a
     request,            -- Request -> BrowserAction Response
@@ -67,13 +67,14 @@ import Network.HTTP
 import Data.Char (toLower,isAlphaNum,isSpace)
 import Data.List (isPrefixOf,isSuffixOf,elemIndex,elemIndices)
 import Data.Maybe
-import Control.Monad (foldM,filterM, {- liftMf -},when)			-- uwe
+import Control.Monad (foldM,filterM,liftM,when)
 import Text.ParserCombinators.Parsec
 import Network.URI
 
 import qualified System.IO
-import qualified Network.MD5
-import qualified Network.Base64
+import qualified Data.Digest.MD5 as MD5
+import qualified Codec.Binary.Base64 as Base64
+import Codec.Utils (Octet)
 
 
 
@@ -90,7 +91,7 @@ quotedstring =
        ; return str
        }
 
-word = many1 (satisfy (\x -> isAlphaNum x || x=='_'))
+word = many1 (satisfy (\x -> isAlphaNum x || x=='_' || x=='.'))
 
 
 -- misc string fns
@@ -130,7 +131,7 @@ uriDefaultTo a b =
 
 
 uriTrimHost :: URI -> URI
-uriTrimHost uri = uri { scheme="", authority="" }
+uriTrimHost uri = uri { uriScheme="", uriAuthority=Nothing }
 
 
 ------------------------------------------------------------------
@@ -529,12 +530,11 @@ challengeToAuthority uri ch =
 -- was to be used then this function might need to
 -- be of type ... -> BrowserAction String
 withAuthority :: Authority -> Request -> String
-withAuthority a@(AuthBasic _ _ user pass) rq = avalue
-    where
-        avalue = "basic " ++ Network.Base64.encode (auUsername a ++ ':' : auPassword a)
-withAuthority a@(AuthDigest _ _ _ _ _ _ _ _) rq = avalue
-    where
-        avalue = "digest username=\"" ++ auUsername a 
+withAuthority a rq = case a of
+        AuthBasic _ _ user pass ->
+	    "basic " ++ base64encode (auUsername a ++ ':' : auPassword a)
+        AuthDigest _ _ _ _ _ _ _ _ ->
+            "digest username=\"" ++ auUsername a 
               ++ "\",realm=\"" ++ auRealm a
               ++ "\",nonce=\"" ++ auNonce a
               ++ "\",uri=\"" ++ digesturi
@@ -544,16 +544,23 @@ withAuthority a@(AuthDigest _ _ _ _ _ _ _ _) rq = avalue
               ++ ( if isJust (auAlgorithm a) then "" else ",algorithm=\"" ++ show (fromJust $ auAlgorithm a) ++ "\"" )
               ++ ( if isJust (auOpaque a) then "" else ",opaque=\"" ++ (fromJust $ auOpaque a) ++ "\"" )
               ++ ( if null (auQop a) then "" else ",qop=auth" )
-       
+    where
         rspdigest = "\"" 
-                 ++ map toLower (kd (h a1) (noncevalue ++ ":" ++ h a2))
+                 ++ map toLower (kd (md5 a1) (noncevalue ++ ":" ++ md5 a2))
                  ++ "\""
 
-        h :: String -> String
-        h x = Network.MD5.md5s (Network.MD5.Str x)
+        -- FIXME: these probably only work right for latin-1 strings
+	stringToOctets :: String -> [Octet]
+	stringToOctets = map (fromIntegral . fromEnum)
+	octetsToString :: [Octet] -> String
+	octetsToString = map (toEnum . fromIntegral)
+	base64encode :: String -> String
+	base64encode = Base64.encode . stringToOctets
+	md5 :: String -> String
+	md5 = octetsToString . MD5.hash . stringToOctets
 
         kd :: String -> String -> String
-        kd a b = h (a ++ ":" ++ b)
+        kd a b = md5 (a ++ ":" ++ b)
 
         a1, a2 :: String
         a1 = auUsername a ++ ":" ++ auRealm a ++ ":" ++ auPassword a
@@ -926,10 +933,10 @@ formToRequest (Form m u vs) =
         GET -> Request { rqMethod=GET
                        , rqHeaders=[ Header HdrContentLength "0" ]
                        , rqBody=""
-                       , rqURI=u { query=enc }  -- What about old query?
+                       , rqURI=u { uriQuery=enc }  -- What about old query?
                        }
         POST -> Request { rqMethod=POST
                         , rqHeaders=[ Header HdrContentLength (show $ length enc) ]
                         , rqBody=enc
-                        , rqURI=u { query=enc }  -- What about old query?
+                        , rqURI=u { uriQuery=enc }  -- What about old query?
                         }

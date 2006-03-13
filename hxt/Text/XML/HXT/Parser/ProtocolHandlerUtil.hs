@@ -10,55 +10,39 @@ module Text.XML.HXT.Parser.ProtocolHandlerUtil
 
 where
 
-import Text.XML.HXT.DOM.XmlTree
+import Text.XML.HXT.DOM.XmlKeywords
 
 import Text.XML.HXT.DOM.Util
     ( stringToUpper
     )
 
-import Text.ParserCombinators.Parsec
-    ( Parser
-    , anyChar
-    , char
-    , many
-    , many1
-    , noneOf
-    , oneOf
-    , string
-    , (<|>)
-    )
-
-
-
-import qualified Text.ParserCombinators.Parsec
-    ( try		-- naming conflicts GHC.Extensions.try and Parsec.try
-    )
+import qualified Text.ParserCombinators.Parsec as P
 
 -- ------------------------------------------------------------
 --
 -- try to extract charset spec from Content-Type header
 -- e.g. "text/html; charset=ISO-8859-1"
 
-parseContentType	:: Parser XmlTrees
+parseContentType	:: P.Parser [(String, String)]
 parseContentType
-    = Text.ParserCombinators.Parsec.try ( do
-		   mimeType <- ( do
-				 mt <- many (noneOf ";")
-				 return (xattr transferMimeType mt)
-			       )
-		   charset  <- ( do
-				 char ';'
-				 many  (oneOf " \t'")
-				 string "charset="
-				 cs <- many1 anyChar
-				 return (xattr transferEncoding (stringToUpper cs))
-			       )
-		   return (mimeType ++ charset)
-		 )
-      <|>
+    = P.try ( do
+	      mimeType <- ( do
+			    mt <- P.many (P.noneOf ";")
+			    return [ (transferMimeType, mt) ]
+			  )
+	      charset  <- ( do
+			    P.char ';'
+			    P.many  (P.oneOf " \t'")
+			    P.string "charset="
+			    cs <- P.many1 P.anyChar
+			    return [ (transferEncoding, stringToUpper cs) ]
+			  )
+	      return (mimeType ++ charset)
+	    )
+      P.<|>
       ( do
-	mimeType <- many anyChar
-	return (xattr transferMimeType mimeType)
+	mimeType <- P.many P.anyChar
+	return [ (transferMimeType, mimeType) ]
       )
 
 -- ------------------------------------------------------------

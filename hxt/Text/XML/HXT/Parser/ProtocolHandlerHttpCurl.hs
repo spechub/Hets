@@ -39,11 +39,11 @@ import qualified Text.ParserCombinators.Parsec
 import Network.URI
     ( URI
     )
-{- requires -package posix and is therefore problematic
-import Posix
+
+import System.PipeOpen
     ( popen
     )
--}
+
 import Data.Char
     ( toLower
     )
@@ -53,9 +53,6 @@ import Data.Char
 -- the http protocol handler implemented by calling external program curl
 
 getHttpContentsWithCurl	:: URI -> XmlStateFilter a
-getHttpContentsWithCurl	_ =
-    addFatal "curl interface not available from hets" 
-{- original code 
 getHttpContentsWithCurl uri n
     = do
       trace 2 ( "getHttpContentWithCurl: reading from URL " ++ show uri )
@@ -67,25 +64,25 @@ getHttpContentsWithCurl uri n
 
       trace 4 ( "getHttpContentWithCurl: running " ++ show (unwords (cmd : allArgs)) )
 
-      (res, errs, pid) <- io $ popen cmd allArgs Nothing
+      (res, errs, rc) <- io $ popen cmd allArgs
 
-      trace 4 ( "getHttpContentWithCurl: PID:    " ++ show pid )
+      trace 4 ( "getHttpContentWithCurl: PID:    " ++ show rc   )
       trace 4 ( "getHttpContentWithCurl: stdin:  " ++ show res  )
       trace 4 ( "getHttpContentWithCurl: stderr: " ++ show errs )
 
-      if null res
-	 then addFatal ( "http error whenrequesting URI "
-			++ show uri
-			++ ": "
-			++ errs
-		      ) n
+      if rc /= 0
+	 then addFatal ( "http error when requesting URI (rc=" ++ show rc ++ ") "
+			 ++ show uri
+			 ++ ": "
+			 ++ errs
+		       ) n
 	 else let
 	      (st, al, contents) = parseResponse res
 	      in
 	      liftMf ( addAttrl (const al)
-		      .>
-		      replaceChildren (xtext contents)
-		    )
+		       .>
+		       replaceChildren (xtext contents)
+		     )
 	      .>> ( if st >= 200 && st < 300
 		    then thisM
 		    else
@@ -178,13 +175,14 @@ parseHttpResponse
 	  let ct = parseCT header value
 	  return $ ct ++ xattr (httpPrefix ++ header) value
 	where
+	parseCT	:: String -> String -> XmlTrees
 	parseCT h v
 	    | map toLower h == "content-type"
 		= ( case (parse parseContentType h v) of
-		    Right res -> res
+		    Right res -> concatMap (uncurry xattr) res
 		    Left  _   -> []
 		  )
 	    | otherwise
 		= []
--}
+
 -- ------------------------------------------------------------

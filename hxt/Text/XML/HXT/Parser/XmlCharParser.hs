@@ -25,37 +25,37 @@ import Text.ParserCombinators.Parsec
 -- |
 -- parse a single Unicode character
 
-xmlChar			:: Parser Unicode
+xmlChar			:: GenParser Char state Unicode
 xmlChar			= satisfy isXmlChar <?> "legal XML character"
 
 -- |
 -- parse a XML name character
 
-xmlNameChar		:: Parser Unicode
+xmlNameChar		:: GenParser Char state Unicode
 xmlNameChar		= satisfy isXmlNameChar <?> "legal XML name character"
  
 -- |
 -- parse a XML name start character
 
-xmlNameStartChar	:: Parser Unicode
+xmlNameStartChar	:: GenParser Char state Unicode
 xmlNameStartChar	= satisfy isXmlNameStartChar <?> "legal XML name start character"
  
 -- |
 -- parse a XML NCName character
 
-xmlNCNameChar		:: Parser Unicode
+xmlNCNameChar		:: GenParser Char state Unicode
 xmlNCNameChar		= satisfy isXmlNCNameChar <?> "legal XML NCName character"
  
 -- |
 -- parse a XML NCName start character
 
-xmlNCNameStartChar	:: Parser Unicode
+xmlNCNameStartChar	:: GenParser Char state Unicode
 xmlNCNameStartChar	= satisfy isXmlNCNameStartChar <?> "legal XML NCName start character"
  
 -- |
 -- parse a XML letter character
 
-xmlLetter		:: Parser Unicode
+xmlLetter		:: GenParser Char state Unicode
 xmlLetter		= satisfy isXmlLetter <?> "legal XML letter"
 
 -- |
@@ -67,7 +67,7 @@ xmlLetter		= satisfy isXmlLetter <?> "legal XML letter"
 -- otherwise \#x0D in internal parsing, e.g. for entities would normalize,
 -- would be transformed
 
-xmlSpaceChar		:: Parser Char
+xmlSpaceChar		:: GenParser Char state Char
 xmlSpaceChar		= satisfy isXmlSpaceChar <?> "white space"
 
 -- ------------------------------------------------------------

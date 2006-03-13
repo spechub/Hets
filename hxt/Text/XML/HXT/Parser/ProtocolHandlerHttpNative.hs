@@ -27,6 +27,7 @@ import Text.ParserCombinators.Parsec
     )
 
 import System.IO
+import System.IO.Error
 
 import Network.URI
     ( URI
@@ -135,7 +136,7 @@ getHttpContentsWithHttp uri n
 	cvResponseHeader (Header name value)
 	    | name == HdrContentType
 		= ( case (parse parseContentType (show HdrContentType) value) of
-		    Right res -> res
+		    Right res -> concatMap (uncurry xattr) res
 		    Left  _   -> []
 		  )
                   ++

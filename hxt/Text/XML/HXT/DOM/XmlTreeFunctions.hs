@@ -103,7 +103,7 @@ isErrorNode _ _  = False
 -- XmlTree constructors
 
 -- |
--- create a tree with a tag node.
+-- Create a tree with a tag node.
 --
 --    * 1.parameter n :  the name of the tag
 --
@@ -117,6 +117,11 @@ isErrorNode _ _  = False
 
 mkXTagTree		:: String -> XmlTrees -> XmlTrees -> XmlTree
 mkXTagTree n al cs	= mkNode (XTag (mkName n) al) cs
+
+-- | Version with qualified name of 'mkXTagTree'
+
+mkQTagTree		:: QName -> XmlTrees -> XmlTrees -> XmlTree
+mkQTagTree q al cs	= mkNode (XTag q al) cs
 
 -- |
 -- create a tree with a namespace aware tag node.
@@ -251,6 +256,12 @@ mkXDTDTree d al	ds	= mkNode (XDTD d al) ds
 
 mkXAttrTree		:: String -> XmlTrees -> XmlTree
 mkXAttrTree an av	= mkNode (XAttr (mkName an)) av
+
+-- | Qualified version of 'mkXAttrTree'
+
+mkQAttrTree		:: QName -> XmlTrees -> XmlTree
+mkQAttrTree aq av	= mkNode (XAttr aq) av
+
 
 -- |
 -- create an attribute tree with a namespace
