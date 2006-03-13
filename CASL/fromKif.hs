@@ -12,6 +12,7 @@ convert .kif to .casl
 module Main where
 
 import CASL.Kif
+import CASL.Kif2CASL
 import CASL.Sign
 import CASL.AS_Basic_CASL
 import CASL.Print_AS_Basic()
@@ -24,10 +25,6 @@ import Common.AS_Annotation
 
 import Text.ParserCombinators.Parsec
 import System.Environment
-
--- import CASL.Kif2CASL
-kif2CASL :: [ListOfList] -> (Sign () (), [Annoted (FORMULA ())])
-kif2CASL = undefined
 
 main :: IO ()
 main = getArgs >>= mapM_ process
