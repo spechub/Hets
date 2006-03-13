@@ -14,6 +14,9 @@ module CASL.Kif2CASL where
 
 import Common.Id
 import Common.AS_Annotation
+import qualified Common.Lib.Set as Set
+import qualified Common.Lib.Rel as Rel
+import qualified Common.Lib.Map as Map
 import qualified Text.PrettyPrint.HughesPJ as Doc
 import CASL.Kif
 import CASL.AS_Basic_CASL
@@ -47,6 +50,9 @@ kif2CASLFormula (List [Literal KToken "forall", List vl, phi]) =
   Quantification Universal (kif2CASLvardeclList vl) (kif2CASLFormula phi) nullRange
 kif2CASLFormula (List (Literal KToken p:rest)) =
   Predication (Pred_name (string2Id p)) (map kif2CASLTerm rest) nullRange
+-- also translate 2nd order applications to 1st order, using holds predicate
+kif2CASLFormula (List l) =
+  Predication (Pred_name (string2Id "holds")) (map kif2CASLTerm l) nullRange
 kif2CASLFormula x = error ("kif2CASLFormula : cannot translate" ++
                        show (ppListOfList x))
 
@@ -97,8 +103,31 @@ skipComments acc l@(x:rest) =
    then skipComments (toAnno x:acc) rest
    else (reverse acc,l)
 
+-- | collect all predicate symbols used in a formula
+collectPreds :: CASLFORMULA -> [PRED_SYMB]
+collectPreds phi = case phi of
+  Conjunction phis _ -> concatMap collectPreds phis
+  Disjunction phis _ -> concatMap collectPreds phis
+  Implication phi1 phi2 _ _ -> collectPreds phi1 ++ collectPreds phi2
+  Equivalence phi1 phi2 _ -> collectPreds phi1 ++ collectPreds phi2
+  Quantification _ _  phi _ -> collectPreds phi
+  Predication (Pred_name p) args _ -> 
+     [Qual_pred_name p (Pred_type (replicate (length args) universe) 
+                                  nullRange) 
+                     nullRange]
+  _ -> []  
+
 -- | main translation function
 kif2CASL :: [ListOfList] -> (Sign () (),[Annoted CASLFORMULA])
-kif2CASL l = (emptySign (),phis)
+kif2CASL l = (sig,phis)
   where (ans,rest) = skipComments [] l
         phis = kif2CASLpass1 rest
+        preds = concatMap collectPreds (map item phis)
+        pMap = foldl insertPred Map.empty preds
+        sig = (emptySign ()) { sortSet = Set.singleton universe
+                             , predMap = pMap}
+
+insertPred :: Map.Map Id (Set.Set PredType) -> PRED_SYMB 
+               -> Map.Map Id (Set.Set PredType)
+insertPred m (Qual_pred_name p (Pred_type t _) _) =
+  Map.insertWith Set.union p (Set.singleton (PredType t)) m
