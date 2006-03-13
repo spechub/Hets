@@ -20,12 +20,12 @@ import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Logic_CASL
 
--- data StringKind = Quoted | KToken | QWord
--- data ListOfList = Literal StringKind String | List [ListOfList]
+string2Id :: String -> Id
+string2Id s = mkId [mkSimpleId s]
 
 -- | the universal sort
 universe :: SORT
-universe = mkId [mkSimpleId "U"]
+universe = string2Id "U"
 
 -- | translation of formulas
 kif2CASLFormula :: ListOfList -> CASLFORMULA
@@ -45,6 +45,19 @@ kif2CASLFormula (List [Literal KToken "exists", List vl, phi]) =
   Quantification Existential (kif2CASLvardeclList vl) (kif2CASLFormula phi) nullRange
 kif2CASLFormula (List [Literal KToken "forall", List vl, phi]) =
   Quantification Universal (kif2CASLvardeclList vl) (kif2CASLFormula phi) nullRange
+kif2CASLFormula (List (Literal KToken p:rest)) =
+  Predication (Pred_name (string2Id p)) (map kif2CASLTerm rest) nullRange
+kif2CASLFormula x = error ("kif2CASLFormula : cannot translate" ++
+                       show (ppListOfList x))
+
+kif2CASLTerm :: ListOfList -> TERM ()
+kif2CASLTerm (Literal QWord v) = Simple_id (mkSimpleId v)
+kif2CASLTerm (Literal _ s) = Simple_id (mkSimpleId s)
+kif2CASLTerm (List (Literal _ f:args)) =
+  Application (Op_name (string2Id f)) (map kif2CASLTerm args) nullRange
+kif2CASLTerm x = error ("kif2CASLTerm : cannot translate" ++
+                       show (ppListOfList x))
+
 
 -- | translation of variable declaration lists
 kif2CASLvardeclList :: [ListOfList] -> [VAR_DECL]
