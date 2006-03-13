@@ -16,7 +16,7 @@ import Text.ParserCombinators.Parsec
 import qualified Text.PrettyPrint.HughesPJ as Doc
 import Data.Char
 
-data StringKind = Quoted | Token 
+data StringKind = Quoted | Token | QWord
 
 data ListOfList = Literal StringKind String | List [ListOfList]
 
@@ -35,8 +35,10 @@ scanString = do
 isTokenChar :: Char -> Bool
 isTokenChar c = isPrint c && not (elem c "()\";" || isSpace c)
 
-scanLiteral :: CharParser st String
-scanLiteral =  many1 (satisfy isTokenChar)
+scanLiteral :: CharParser st ListOfList
+scanLiteral = do 
+  s@(c : _) <- many1 (satisfy isTokenChar)
+  return $ Literal (if c == '?' then QWord else Token) s
 
 eolOrEof :: GenParser Char st ()
 eolOrEof = (oneOf "\n\r" >> return ()) <|> eof
@@ -59,8 +61,8 @@ nestedList = do
     l <- many nestedList
     lexem $ char ')'
     return $ List l
- <|> fmap (Literal Token) (lexem scanLiteral)
  <|> fmap (Literal Quoted) (lexem scanString)
+ <|> lexem scanLiteral
 
 kifProg :: CharParser st [ListOfList]
 kifProg = do
