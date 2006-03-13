@@ -38,6 +38,13 @@ import Common.Result
 import Common.Id
 import Maybe
 import Debug.Trace
+import System.Cmd
+import System.IO.Unsafe
+import Logic.Comorphism
+import Logic.Logic
+import Comorphisms.CASL2HasCASL
+import Comorphisms.HasCASL2HasCASL
+import Comorphisms.HasCASL2Haskell 
 
 {-
    function checkFreeType:
@@ -63,9 +70,9 @@ import Debug.Trace
                               constructor in each group
   - return (Just True)
 -}
-checkFreeType :: (PosItem f, PrettyPrint f, Eq f) => 
-                 (Sign f e,[Named (FORMULA f)]) -> Morphism f e m 
-                 -> [Named (FORMULA f)] -> Result (Maybe (Bool,[FORMULA f]))
+checkFreeType :: -- (PosItem f, PrettyPrint f, Eq f) => 
+                 (Sign () (),[Named (FORMULA ())]) -> Morphism () () () 
+                 -> [Named (FORMULA ())] -> Result (Maybe (Bool,[FORMULA ()]))
 checkFreeType (osig,osens) m fsn      
     | not $ null notSubSorts =
         let (Id ts _ pos) = head notSubSorts
@@ -98,7 +105,8 @@ checkFreeType (osig,osens) m fsn
                 head $ filter (\t->not $ checkVar_App t) leadingTerms
         in warning Nothing ("a variable occurs twice in a leading term of " ++
                             opSymStr os) pos 
-    | (not $ null fs_terminalProof) && (terminationProof $ (osens ++ fsn)) =
+ --   | (not $ null fs_terminalProof) && (terminationProof $ (osens ++ fsn)) =
+    | (not $ null fs_terminalProof) && (not $ proof) =
         warning Nothing "not terminating" nullRange
     | not $ ((null (overlap_query ++ ex_axioms)) &&
              (null subSortsF)) = 
@@ -314,7 +322,19 @@ checkFreeType (osig,osens) m fsn
                    _ -> error "pattern overlap"
     ex_axioms = filter is_ex_quanti $ 
                 map sentence (filter is_user_or_sort_gen (osens ++ fsn))
-
+{- Termination Proof
+-}
+    ipath = "/tmp/Input.hs"
+    opath = "/tmp/Result.txt"
+    s3= showPretty (map_theory 
+                  (CompComorphism (CompComorphism CASL2HasCASL HasCASL2HasCASL)
+                   HasCASL2Haskell) (mtarget m,fsn)) ""
+    proof = unsafePerformIO (do
+                writeFile ipath $ s3      
+                system ("java -jar CASL/Termination/AProVE.jar -u cli " ++
+                        "-m wst -p plain " ++ ipath ++ " > " ++ opath)
+                res <- readFile opath
+                return (subStr "YES" res))
 
 
 {- group the axioms according to their leading symbol
