@@ -34,7 +34,7 @@ import CASL.Morphism
 import CASL.SymbolMapAnalysis
 import CASL.Taxonomy
 import CASL.SimplifySen
-import CASL.CCC.FreeTypes
+import {-# SOURCE #-} CASL.CCC.FreeTypes
 import CASL.CCC.OnePoint -- currently unused
 
 data CASL = CASL deriving Show
