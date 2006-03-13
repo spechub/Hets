@@ -16,7 +16,7 @@ import Text.ParserCombinators.Parsec
 import qualified Text.PrettyPrint.HughesPJ as Doc
 import Data.Char
 
-data StringKind = Quoted | Token | QWord
+data StringKind = Quoted | KToken | QWord
 
 data ListOfList = Literal StringKind String | List [ListOfList]
 
@@ -32,13 +32,13 @@ scanString = do
   c <- char dq
   return $ o : concat s ++ [c]
 
-isTokenChar :: Char -> Bool
-isTokenChar c = isPrint c && not (elem c "()\";" || isSpace c)
+isKTokenChar :: Char -> Bool
+isKTokenChar c = isPrint c && not (elem c "()\";" || isSpace c)
 
 scanLiteral :: CharParser st ListOfList
 scanLiteral = do 
-  s@(c : _) <- many1 (satisfy isTokenChar)
-  return $ Literal (if c == '?' then QWord else Token) s
+  s@(c : _) <- many1 (satisfy isKTokenChar)
+  return $ Literal (if c == '?' then QWord else KToken) s
 
 eolOrEof :: GenParser Char st ()
 eolOrEof = (oneOf "\n\r" >> return ()) <|> eof
