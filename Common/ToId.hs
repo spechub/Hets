@@ -16,14 +16,16 @@ import Common.Id
 import Common.ProofUtils
 import Common.Token
 import Common.Lexer
-import qualified Common.Lib.Map as Map 
+import qualified Common.Lib.Map as Map
 import Text.ParserCombinators.Parsec
 
 -- | convert a string to a legal simple CASL identifier
 toSimpleId :: String -> Token
-toSimpleId s = mkSimpleId $ 
-    case parse (reserved casl_reserved_words scanAnyWords) "Common.ToId" s of
-    Left _ -> 'a' : concatMap ( \ c -> '_' : Map.findWithDefault [c] c 
+toSimpleId s = mkSimpleId $
+    case parse (reserved (casl_reserved_words
+                          ++ formula_words) scanAnyWords >> eof)
+             "Common.ToId" s of
+    Left _ -> 'a' : concatMap ( \ c -> '_' : Map.findWithDefault [c] c
                               (Map.insert '_' "U" charMap)) s
     Right _ -> s
 
