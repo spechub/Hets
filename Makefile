@@ -77,7 +77,7 @@ HC_INCLUDE = $(addprefix -i, $(INCLUDE_PATH))
 
 logics = CASL HasCASL Isabelle Modal CoCASL COL CspCASL CASL_DL SPASS OWL_DL ConstraintCASL
 
-TESTTARGETS += test_parser hetpa hetana Test.o wrap isa \
+TESTTARGETS += test_parser hetpa hetana Test.o wrap isa fromKif \
     atermlibtest hatermdiff atctest atctest2
 
 UNI_PACKAGE_CONF = $(wildcard ../uni/uni-package.conf)
@@ -312,7 +312,7 @@ tax_objects = $(patsubst %.hs, %.o, $(tax_sources))
 
 .PHONY : all hets-opt hets-optimized clean o_clean real_clean bin_clean \
     distclean check capa hacapa wrap isa h2h h2hf clean_genRules genRules \
-    taxonomy count doc apache_doc post_doc4apache \
+    taxonomy count doc apache_doc post_doc4apache fromKif \
     derivedSources install_hets install release cgi patch ghci
 
 .SECONDARY : %.hs %.d $(generated_rule_files) $(gen_inline_axiom_files)
@@ -513,6 +513,7 @@ bin_clean:
 	$(RM) hets
 	$(RM) hets.cgi
 	$(RM) test_parser
+	$(RM) CASL/fromKif
 	$(RM) CASL/capa
 	$(RM) HasCASL/hacapa
 	$(RM) Haskell/hana
@@ -557,6 +558,12 @@ ghci: $(derived_sources)
 	$(HC)i $(HC_OPTS)
 
 ### christian's target
+### CASL parser
+fromKif: CASL/fromKif
+
+CASL/fromKif: CASL/fromKif.hs Common/*.hs CASL/*.hs
+	$(HC) --make -o $@ $< $(HC_OPTS)
+
 ### CASL parser
 capa: CASL/capa
 
