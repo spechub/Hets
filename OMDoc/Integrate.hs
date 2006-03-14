@@ -650,6 +650,9 @@ main =
 		unless
 			(elem outputtype supportedOutput)
 			(ioError (userError "Unsupported type of output..."))
+		when
+			dodebug
+			(putStrLn ("Include-Paths: " ++ (show searchpath)))
 		sandbox <- return $ case alloutopts of
 			[] -> ""
 			((POSandbox s):_) -> s
@@ -3383,17 +3386,17 @@ makeImportGraphFullXml go source includes =
 						mturi = URI.parseURIReference $ xshow $ getValue "transfer-URI" (head doc)
 						turi = fromMaybe (error "Cannot parse URIReference...") mturi
 						docmap = getImportedTheories doc
-						rdocmap = Map.toList $ Map.map (\s -> relativeSource turi s) docmap
+						rdocmap = Map.toList $ Map.map show docmap -- Map.toList $ Map.map (\s -> relativeSource turi s) docmap
 						initialgraph = Graph.mkGraph [(1, S (omdocid, (show turi)) omdoc)] []
 					in
 						foldl
 							(\gio (itname, ituri)  ->
-								gio >>= \g -> buildGraph g 1 (TI (itname, ituri))
+								gio >>= \g -> buildGraph g 1 turi (TI (itname, ituri))
 							) (return initialgraph) rdocmap
 					)
 	where
-		buildGraph::ImportGraph HXT.XmlTrees->Graph.Node->TheoryImport->IO (ImportGraph HXT.XmlTrees)
-		buildGraph ig n ti@(TI (theoname, theouri)) =
+		buildGraph::ImportGraph HXT.XmlTrees->Graph.Node->URI.URI->TheoryImport->IO (ImportGraph HXT.XmlTrees)
+		buildGraph ig n ouri ti@(TI (theoname, theouri)) =
 			let
 				mimportsource =	find (\(_, (S (_, suri) _)) -> (suri == theouri)) (Graph.labNodes ig)
 			in
@@ -3408,8 +3411,12 @@ makeImportGraphFullXml go source includes =
 									(Graph.insEdge (n, inum, ti) ig))
 					Nothing ->
 						do
-							mdoc <- maybeFindXml theouri includes
-							(newgraph, nn, importimports) <-
+							mdocR <- maybeFindXml (relativeSource ouri theouri) []
+							mdoc <- case mdocR of
+								Nothing ->
+									maybeFindXml theouri includes
+								_ -> return mdocR
+							(newgraph, nn, importimports, newbase) <-
 								return $
 									(
 										let
@@ -3422,15 +3429,15 @@ makeImportGraphFullXml go source includes =
 											imturi = URI.parseURIReference $ xshow $ getValue "transfer-URI" (head doc)
 											ituri = fromMaybe (error "Cannot parse URIReference...") imturi
 											iimports = getImportedTheories doc
-											irimports = Map.toList $ Map.map (\s -> relativeSource ituri s) iimports
+											irimports = Map.toList $ Map.map show iimports -- Map.toList $ Map.map (\s -> relativeSource ituri s) iimports
 											newnodenum = (Graph.noNodes ig) + 1
 											newsource =	S (omdocid, (show ituri))	omdoc
 											newgraph = Graph.insEdge (n, newnodenum, ti) $ Graph.insNode (newnodenum, newsource) ig
 										in
-											(newgraph, newnodenum, irimports)
+											(newgraph, newnodenum, irimports, ituri)
 									)
 							foldl (\nigio (itheoname, itheouri) ->
-								nigio >>= \nig -> buildGraph nig nn (TI (itheoname, itheouri))
+								nigio >>= \nig -> buildGraph nig nn newbase (TI (itheoname, itheouri))
 								) (return newgraph) importimports
 				
 		relativeSource::URI.URI->String->String
