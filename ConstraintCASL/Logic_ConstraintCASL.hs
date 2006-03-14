@@ -85,13 +85,13 @@ instance Syntax ConstraintCASL ConstraintCASLBasicSpec
 
 -- lattices (for sublogics)
 
-instance LatticeWithTop CASL_Sublogics where
+{-instance LatticeWithTop CASL_Sublogics where
     -- meet, join :: l -> l -> l
     meet = CASL.Sublogic.sublogics_min
     join = CASL.Sublogic.sublogics_max
     -- top :: l
     top = CASL.Sublogic.top
-
+-}
 -- ConstraintCASL logic
 
 instance Sentences ConstraintCASL ConstraintCASLFORMULA () ConstraintCASLSign CASLMor Symbol where
