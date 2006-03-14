@@ -40,6 +40,7 @@ import CASL.CCC.FreeTypes
 import CASL.CCC.OnePoint -- currently unused
 import ConstraintCASL.Print_AS
 import ConstraintCASL.LaTeX_AS
+import ConstraintCASL.Formula
 
 data ConstraintCASL = ConstraintCASL deriving Show
 
@@ -79,7 +80,7 @@ instance Category ConstraintCASL ConstraintCASLSign CASLMor
 instance Syntax ConstraintCASL ConstraintCASLBasicSpec
                 SYMB_ITEMS SYMB_MAP_ITEMS
       where
-         parse_basic_spec ConstraintCASL = Just $ basicSpec []
+         parse_basic_spec ConstraintCASL = Just $ basicSpec constraintKeywords
          parse_symb_items ConstraintCASL = Just $ symbItems []
          parse_symb_map_items ConstraintCASL = Just $ symbMapItems []
 

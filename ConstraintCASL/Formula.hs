@@ -147,6 +147,9 @@ equivalent = "-||-"
 equivalentT :: GenParser Char st Token
 equivalentT = pToken $ toKey equivalent
 
+constraintKeywords :: [String]
+constraintKeywords = (equivalent:implies:[])
+
 instance AParsable ConstraintFORMULA where
-  aparser = cformula (equivalent:implies:[])
+  aparser = cformula []
 
