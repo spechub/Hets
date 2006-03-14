@@ -30,7 +30,7 @@ import Syntax.Parse_AS_Structured
 
 cformula :: [String] -> AParser st ConstraintFORMULA
 cformula k = 
-      trace ("parsing formula! ") $
+      trace ("parsing formula! " ++ show(k)) $
     do  c1 <- conjunction k	     
         impliesT
         c2 <- conjunction k 	 
@@ -86,14 +86,27 @@ relation k =
     do inverseT 
        r <- relation k 
        return (Inverse_Relation r)  
+   -- <|>
+     -- do rels <- relationlist k
+     --   return (Relation_Disjunction rels)
+
+relationlist :: [String] -> AParser st [RELATION]
+relationlist k = 
+    try(do r <- relation k
+           commaT 
+           rl <- relationlist k
+           return (r:rl))
    <|>
-    do rels <- many1 (relation k)
-       return (Relation_Disjunction rels)
+    do r <- relation k
+       return (r:[])
+   
+   
+       
 
 constraintterm :: [String] -> AParser st ConstraintTERM
 constraintterm k =
      trace ("parsing constraintterm! ") $
-    do id <- parseId k 
+    do id <-  trace ("parsing constraintterm2!  " ++ show(k)) $ parseId k 
        return (Atomar_Term id)
    <|>
     do id <- parseId k 
@@ -135,5 +148,5 @@ equivalentT :: GenParser Char st Token
 equivalentT = pToken $ toKey equivalent
 
 instance AParsable ConstraintFORMULA where
-  aparser = cformula []
+  aparser = cformula (equivalent:implies:[])
 
