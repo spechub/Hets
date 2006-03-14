@@ -67,8 +67,8 @@ kif2CASLFormula (Literal QWord v) =
 kif2CASLFormula x = error ("kif2CASLFormula : cannot translate" ++
                        show (ppListOfList x))
 
-trueTerm = Application (Op_name $ toId "TRUE") [] nullRange
-falseTerm = Application (Op_name $ toId "FALSE") [] nullRange
+trueTerm = Application (Op_name $ toId "True") [] nullRange
+falseTerm = Application (Op_name $ toId "False") [] nullRange
 
 kif2CASLTerm :: ListOfList -> TERM ()
 kif2CASLTerm ll = case ll of
@@ -189,8 +189,7 @@ kif2CASL l = Basic_spec $ filter nonEmpty
         sorts = Sig_items $ Sort_items [emptyAnno sortdecl] nullRange
         sortdecl = Sort_decl [universe] nullRange
         ops = Sig_items $ Op_items opdecls nullRange
-        opsyms = Opsym 0 (toId "TRUE"):Opsym 0 (toId "FALSE"):
-                  (Set.toList $ Set.unions $ map (collectOps . item) phis)
+        opsyms = Set.toList $ Set.unions $ map (collectOps . item) phis
         opdecls = map (emptyAnno . mkOpdecl) (List.groupBy sameOpArity opsyms)
         mkOpdecl [] = error "kif2CASL: this cannot happen"
         mkOpdecl opsyms@(Opsym arity _:_) = 
