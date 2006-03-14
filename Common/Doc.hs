@@ -100,6 +100,7 @@ import Common.GlobalAnnotations
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Pretty as Pretty
 import Common.LaTeX_funs
+import Common.ConvertLiteral
 import Data.Char
 import Data.List (intersperse)
 
@@ -108,7 +109,7 @@ infixl 6 <+>
 infixl 5 $+$
 
 data TextKind =
-    IdKind | Symbol | Comment | Keyword | TopKey | Indexed | StructId
+    IdKind | IdSymb | Symbol | Comment | Keyword | TopKey | Indexed | StructId
     | Native
 
 data Format = Small | FlushRight
@@ -356,7 +357,11 @@ anyRecord = DocRecord
 
 -- | simple conversion to a standard text document
 toText :: Doc -> Pretty.Doc
-toText = foldDoc anyRecord
+toText = toHPJDoc emptyGlobalAnnos
+
+-- | simple conversion to a standard text document
+toHPJDoc :: GlobalAnnos -> Doc -> Pretty.Doc
+toHPJDoc ga = foldDoc anyRecord
     { foldEmpty = \ _ -> Pretty.empty
     , foldText = \ _ _ -> Pretty.text
     , foldCat = \ _ c -> case c of
@@ -367,7 +372,7 @@ toText = foldDoc anyRecord
     , foldAttr = \ _ _ -> id
     , foldIndentBy = \ _ d1 d2 d3 ->
           d2 Pretty.$$ Pretty.nest (length $ show d1) d3
-    } . codeOut emptyGlobalAnnos Nothing Map.empty
+    } . codeOut ga Nothing Map.empty
 
 -- | conversion to latex
 toLatex :: GlobalAnnos -> Doc -> Pretty.Doc
@@ -399,6 +404,7 @@ textToLatex b k s = let e = escape_comment_latex s in
         then makeSmallLatex b $ casl_normal_latex s
         else case k of
     IdKind -> makeSmallLatex b $ hc_sty_id e
+    IdSymb -> makeSmallLatex b $ hc_sty_axiom e
     Symbol -> makeSmallLatex b $ symbolToLatex s
     Comment -> (if b then makeSmallLatex b . casl_comment_latex
                else casl_normal_latex) e
@@ -466,13 +472,13 @@ codeOut :: GlobalAnnos -> Maybe Display_format -> Map.Map Id [Token] -> Doc
 codeOut ga d m = foldDoc idRecord
     { foldAnnoDoc = \ _ -> small . codeOutAnno d m
     , foldIdDoc = \ _ -> codeOutId m
-    , foldIdApplDoc = \ _ -> codeOutAppl ga m
+    , foldIdApplDoc = codeOutAppl ga m
     }
 
 codeToken :: String -> Doc
 codeToken s = case s of
     [] -> empty
-    h : _ -> (if isAlphaNum h || elem h "._'" then text else symbol) s
+    h : _ -> (if isAlphaNum h || elem h "._'" then text else Text IdSymb) s
 
 codeOrigId :: Map.Map Id [Token] -> Id -> [Doc]
 codeOrigId m (Id ts cs _) = let
@@ -491,10 +497,6 @@ codeOutId :: Map.Map Id [Token] -> Id -> Doc
 codeOutId m i = hcat $ case Map.lookup i m of
     Nothing -> codeOrigId m i
     Just ts -> codeIdToks ts
-
--- print literal terms and mixfix applications
-codeOutAppl :: GlobalAnnos -> Map.Map Id [Token] -> Id -> [Doc] -> Doc
-codeOutAppl _ m i args = codeOutId m i <> parens (fsep $ punctuate comma args)
 
 annoLine :: String -> Doc
 annoLine w = percent <> keyword w
@@ -560,3 +562,31 @@ codeOutAnno d m a = case a of
                         <> fCommaT m l <> annoRparen
     Label l _ -> wrapAnnoLines d (annoLparen "") l annoRparen
     Semantic_anno sa _ -> annoLine $ lookupSemanticAnno sa
+
+
+splitDoc :: Doc -> Maybe (Id, [Doc])
+splitDoc d = case d of
+    IdApplDoc i l -> Just (i, l)
+    _ -> Nothing
+
+-- print literal terms and mixfix applications
+codeOutAppl :: GlobalAnnos -> Map.Map Id [Token] -> Doc -> Id -> [Doc] -> Doc
+codeOutAppl ga m origDoc _ args = case origDoc of
+  IdApplDoc i aas -> 
+    let mk = codeToken . tokStr
+        doSplit = maybe (error "doSplit") id . splitDoc
+        mkList op largs cl = fsep $ codeOutId m op : punctuate comma largs
+                             ++ [codeOutId m cl]
+    in if isGenNumber splitDoc ga i aas then
+             mk $ toNumber doSplit i aas
+         else if isGenFrac splitDoc ga i aas then
+             mk $ toFrac doSplit aas
+         else if isGenFloat splitDoc ga i aas then
+             mk $ toFloat doSplit ga aas
+         else if isGenString splitDoc ga i aas then
+             mk $ toString doSplit ga i aas
+         else if isGenList splitDoc ga i aas then
+             toMixfixList mkList doSplit ga i aas
+         else codeOutId m i <> parens (fsep $ punctuate comma args)
+  _ -> error "codeOutAppl"
+
