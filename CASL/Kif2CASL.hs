@@ -76,7 +76,7 @@ kif2CASLTerm ll = case ll of
     Literal _ s -> Application (Op_name $ toId s) [] nullRange
     -- a formula in place of a term; coerce to Booleans
     List (Literal l f : args) ->
-      if f `elem` ["forall","exists","and","or","=>","<=>","not"]
+      if f `elem` ["forall","exists"] -- ,"and","or","=>","<=>","not"]
        then Conditional trueTerm 
                 (kif2CASLFormula (List (Literal l f : args))) falseTerm nullRange
         else Application (Op_name $ toId f) (map kif2CASLTerm args) nullRange
@@ -156,9 +156,10 @@ collectOps :: CASLFORMULA -> Set.Set Opsym
 collectOps = foldFormula
     (constRecord (error "Kif2CASL.collectConsts") Set.unions Set.empty)
     { foldApplication = \ _ o l _ -> 
-          Set.singleton $ Opsym (length l) (case o of
+          Set.insert (Opsym (length l) (case o of
             Op_name i -> i
-            Qual_op_name i _ _ -> i) }
+            Qual_op_name i _ _ -> i) )
+            (Set.unions l) }
 
 nonEmpty :: Annoted (BASIC_ITEMS () () ()) -> Bool
 nonEmpty bi = case item bi of
