@@ -623,27 +623,26 @@ main =
 					((POOutput s):_) -> s
 					_ -> error "wierd entry for output..."
 		-- determine output type from parameter or filename
-		outputtype <- if output /= []
-			then
-				case outputtypeopts of
-					[] ->
-						do
-						when
-							dodebug
-							(putStrLn
-								"No Output-Type given. Trying to find out..."
-							)
-						mft <- return $ fileType output
-						case mft of
-							(Just ft) -> return ft
-							Nothing ->
-								ioError
-									(userError "Cannot determine Output-Type!")
-					((POOutputType s):_) -> return $ read s
-					_ -> error "wierd entry for outputtype..."
-
-			else
-				return FTNone
+		outputtype <-
+			case outputtypeopts of
+				[] ->
+					do
+					when
+						dodebug
+						(putStrLn
+							"No Output-Type given. Trying to find out..."
+						)
+					mft <- return $ fileType output
+					case mft of
+						(Just ft) -> return ft
+						Nothing ->
+							if (length output) == 0 then
+									return FTNone
+								else
+									ioError
+										(userError "Cannot determine Output-Type!")
+				((POOutputType s):_) -> return $ read s
+				_ -> error "wierd entry for outputtype..."
 		when
 			dodebug
 			(putStrLn ("Output-Type is : " ++ (show outputtype)))
@@ -5435,6 +5434,7 @@ opName::OP_SYMB->String
 opName (Op_name op) = (show op)
 opName (Qual_op_name op _ _) = (show op)
 
+-- | creates a parseable representation of an Id (see Read-instance)
 idToString::Id.Id->String
 idToString (Id.Id toks ids _) =
 		"[" ++
@@ -5450,7 +5450,7 @@ nodeNameToId (s,e,n) = Id.mkId [s,(Hets.stringToSimpleId e),(Hets.stringToSimple
 idToNodeName::Id.Id->NODE_NAME
 idToNodeName (Id.Id toks _ _) = (toks!!0, show (toks!!1), read (show (toks!!2)))
 	
-		
+-- | Instance of Read for IdS		
 instance Read Id.Id where
 	readsPrec _ s =
 		let
