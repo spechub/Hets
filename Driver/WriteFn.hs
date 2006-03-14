@@ -57,16 +57,21 @@ import ATC.GlobalAnnotations()
 
 import Driver.Options
 
+-- | compute the prefix for files to be written out
+getFilePrefix :: HetcatsOpts -> FilePath -> (FilePath, FilePath)
+getFilePrefix opt file = 
+    let odir' = outdir opt
+        (base, path, _) = fileparse (envSuffix : downloadExtensions) file
+        odir = if null odir' then path else odir'
+    in (odir, pathAndBase odir base)
+
 {- |
   Write the given LIB_DEFN in every format that HetcatsOpts includes.
   Filenames are determined by the output formats.
 -}
 write_LIB_DEFN :: GlobalAnnos -> FilePath -> HetcatsOpts -> LIB_DEFN -> IO ()
 write_LIB_DEFN ga file opt ld = do
-    let odir' = outdir opt
-        (base, path, _) = fileparse (envSuffix : downloadExtensions) file
-        odir = if null odir' then path else odir'
-        filePrefix = pathAndBase odir base
+    let (odir, filePrefix) = getFilePrefix opt file
         filename ty = filePrefix ++ "." ++ show ty
         verbMesg ty = putIfVerbose opt 2 $ "Writing file: " ++ filename ty
         printAscii ty = do
@@ -121,7 +126,7 @@ writeShATermFileSDoc fp atcon = do
 writeFileInfo :: HetcatsOpts -> LIB_NAME -> FilePath -> LIB_DEFN
               -> GlobalContext -> IO ()
 writeFileInfo opts ln file ld gctx =
-  let envFile = rmSuffix file ++ ".env" in
+  let envFile = snd (getFilePrefix opts file) ++ ".env" in
   case analysis opts of
   Basic -> do
       putIfVerbose opts 2 ("Writing file: " ++ envFile)
@@ -140,10 +145,11 @@ writeSpecFiles :: HetcatsOpts -> FilePath -> LibEnv -> GlobalAnnos
                -> (LIB_NAME, GlobalEnv) -> IO ()
 writeSpecFiles opt file lenv ga (ln, gctx) = do
     let ns = specNames opt
+        filePrefix = snd $ getFilePrefix opt file
         outTypes = outtypes opt
         allSpecs = null ns
     when (hasPrfOut opt) $ do
-      let f = rmSuffix file ++ prfSuffix
+      let f = filePrefix ++ prfSuffix
       str <- toShATermString (ln, lookupHistory ln lenv)
       writeVerbFile opt f str
     mapM_ ( \ i -> case Map.lookup i gctx of
@@ -153,7 +159,7 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
                               "could not compute theory of spec " ++ show i
               Just gTh@(G_theory lid sign0 sens0) ->
                   mapM_ ( \ ot ->
-                      let f = rmSuffix file ++ "_" ++ show i ++ "." ++ show ot
+                      let f = filePrefix ++ "_" ++ show i ++ "." ++ show ot
                       in case ot of
                       ThyFile -> case printTheory (libdir opt) ln i gTh of
                                     Nothing -> putIfVerbose opt 0 $
