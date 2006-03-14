@@ -30,14 +30,15 @@ import Syntax.Parse_AS_Structured
 
 cformula :: [String] -> AParser st ConstraintFORMULA
 cformula k = 
-    do  c1 <- conjunction k
+      trace ("parsing formula! ") $
+    do  c1 <- conjunction k	     
         impliesT
-        c2 <- conjunction k 
+        c2 <- conjunction k 	 
         return (Implication_ConstraintFormula c1 c2)
   <|> 
     do c1 <- conjunction k 
        equivalentT
-       c2 <- conjunction k 
+       c2 <-  trace ("conjucntion1: "++show (c1)) $ conjunction k 
        return (Equivalence_ConstraintFormula c1 c2) 
   <|> 
     do impliesT 
@@ -46,10 +47,13 @@ cformula k =
 
 conjunction :: [String] -> AParser st ATOMCONJUNCTION
 conjunction k = 
-    do {atoms <- many1 (atom k); return (Atom_Conjunction atoms)}
+    trace ("parsing conjucntion! ") $
+    do atoms <- many1 (atom k) 
+       return (Atom_Conjunction atoms)
 
 atom :: [String] -> AParser st ATOM
 atom k =
+    trace ("parsing atom! ") $
     try (do r <- relation k
             oParenT
             terms <- many1 (constraintterm k)
@@ -63,7 +67,8 @@ atom k =
        return (Infix_Atom t1 r t2)
 
 relation :: [String] -> AParser st RELATION
-relation k =  
+relation k =
+   trace ("parsing relation! ") $   
     do emptyRelationT 
        return Empty_Relation 
    <|>
@@ -80,11 +85,14 @@ relation k =
    <|> 
     do inverseT 
        r <- relation k 
-       return (Inverse_Relation r) -- <|>
-    --do {rels <- many1 (relation k); return (Relation_Disjunction rels)}
+       return (Inverse_Relation r)  
+   <|>
+    do rels <- many1 (relation k)
+       return (Relation_Disjunction rels)
 
 constraintterm :: [String] -> AParser st ConstraintTERM
 constraintterm k =
+     trace ("parsing constraintterm! ") $
     do id <- parseId k 
        return (Atomar_Term id)
    <|>
@@ -93,8 +101,8 @@ constraintterm k =
        return (Composite_Term id terms)  
 
 formula :: [String] -> AParser st ConstraintCASLFORMULA
-formula k = do x <- cformula k
-               return (ExtFORMULA x)
+formula k =  do x <- cformula k
+                return (ExtFORMULA x)
 
 emptyRelation :: String
 emptyRelation = "{}"
