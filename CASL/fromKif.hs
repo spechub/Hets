@@ -33,8 +33,8 @@ process s = do
     Left err -> putStrLn $ show err
     Right l -> do
         let f = fst (stripSuffix [".kif"] s) ++ ".casl"
-            (sign, sens) = kif2CASL l
+            bspec = kif2CASL l
             pp :: PrettyPrint a => a -> Doc
             pp = printText0 emptyGlobalAnnos
-            d = pp sign $+$ vcat (map pp sens)
+            d = pp bspec
         writeFile f $ shows d "\n"

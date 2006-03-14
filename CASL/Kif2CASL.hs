@@ -12,9 +12,11 @@ Parsing lists of lists being MILO (MId-Level Ontology) .kif files
 
 module CASL.Kif2CASL where
 
+import Debug.Trace
 import Common.Id
 import Common.AS_Annotation
 import Common.ToId
+import qualified Data.List as List
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 import qualified Text.PrettyPrint.HughesPJ as Doc
@@ -47,13 +49,11 @@ kif2CASLFormula (List [Literal KToken "exists", List vl, phi]) =
 kif2CASLFormula (List [Literal KToken "forall", List vl, phi]) =
   Quantification Universal (kif2CASLvardeclList vl) (kif2CASLFormula phi) nullRange
 kif2CASLFormula (List (Literal KToken p:rest)) =
-  Predication (Qual_pred_name (toId p)
-               (Pred_type (map (const universe) rest) nullRange) nullRange)
+  Predication (Pred_name (toId p))
                   (map kif2CASLTerm rest) nullRange
 -- also translate 2nd order applications to 1st order, using holds predicate
 kif2CASLFormula (List l) =
-  Predication (Qual_pred_name (toId "holds")
-               (Pred_type (map (const universe) l) nullRange) nullRange)
+  Predication (Pred_name (toId "holds"))
                   (map kif2CASLTerm l) nullRange
 kif2CASLFormula x = error ("kif2CASLFormula : cannot translate" ++
                        show (ppListOfList x))
@@ -103,38 +103,85 @@ skipComments acc l@(x:rest) =
    then skipComments (toAnno x:acc) rest
    else (reverse acc,l)
 
+data Predsym = Predsym Int PRED_NAME
+                deriving (Eq, Ord, Show)
+
+sameArity :: Predsym -> Predsym -> Bool
+sameArity (Predsym m _) (Predsym n _) = m==n
+
+getName :: Predsym -> PRED_NAME
+getName (Predsym _ p) = p
+
 -- | collect all predicate symbols used in a formula
-collectPreds :: CASLFORMULA -> Set.Set PRED_ITEM
+collectPreds :: CASLFORMULA -> Set.Set Predsym
 collectPreds = foldFormula
     (constRecord (error "Kif2CASL.collectPreds") Set.unions Set.empty)
-    { foldPredication = \ _ p l _ -> Set.singleton p }
+    { foldPredication = \ _ p args _ -> Set.singleton 
+               (Predsym (length args) 
+                        (case p of
+                          Pred_name pn -> pn
+                          Qual_pred_name pn _ _ -> pn)) }
 
 collectVars :: CASLFORMULA -> Set.Set Token
 collectVars = foldFormula
     (constRecord (error "Kif2CASL.collectVars") Set.unions Set.empty)
     { foldQual_var = \ _ v _ _ -> Set.singleton v }
 
-collectConsts :: CASLFORMULA -> Set.Set Id
-collectConsts = foldFormula
+data Opsym = Opsym Int OP_NAME
+                deriving (Eq, Ord, Show)
+
+sameOpArity :: Opsym -> Opsym -> Bool
+sameOpArity (Opsym m _) (Opsym n _) = m==n
+
+getOpName :: Opsym -> OP_NAME
+getOpName (Opsym _ p) = p
+
+collectOps :: CASLFORMULA -> Set.Set Opsym
+collectOps = foldFormula
     (constRecord (error "Kif2CASL.collectConsts") Set.unions Set.empty)
-    { foldApplication = \ _ o l _ -> if null l then
-          Set.singleton $ case o of
+    { foldApplication = \ _ o l _ -> 
+          Set.singleton $ Opsym (length l) (case o of
             Op_name i -> i
-            Qual_op_name i _ _ -> i else Set.unions l }
+            Qual_op_name i _ _ -> i) }
+
+nonEmpty :: Annoted (BASIC_ITEMS () () ()) -> Bool
+nonEmpty bi = case item bi of
+  Sig_items (Sort_items l _) -> not (null l)
+  Sig_items (Op_items l _) -> not (null l)
+  Sig_items (Pred_items l _) -> not (null l)
+  Var_items l _ -> not (null l)
+  Axiom_items l _ -> not (null l)
+  _ -> True
 
 -- | main translation function
 kif2CASL :: [ListOfList] -> BASIC_SPEC () () ()
-kif2CASL l = Basic_spec [empty_anno sorts, ops, preds, vars, axs]
+kif2CASL l = Basic_spec $ filter nonEmpty 
+                           [(emptyAnno sorts) { l_annos = ans }, 
+                            emptyAnno ops, emptyAnno preds, 
+                            emptyAnno vars, emptyAnno axs]
   where (ans,rest) = skipComments [] l
         phis = kif2CASLpass1 rest
         axs = Axiom_items phis nullRange
         preds = Sig_items $ Pred_items preddecls nullRange
-        preddecls = Set.toList $ Set.unions $ map (collectPreds . item) phis
-        pMap = foldl insertPred Map.empty preds
-        sig = (emptySign ()) { sortSet = Set.singleton universe
-                             , predMap = pMap}
+        predsyms = Set.toList $ Set.unions $ map (collectPreds . item) phis
+        preddecls = map (emptyAnno . mkPreddecl) (List.groupBy sameArity predsyms)
+        mkPreddecl [] = error "kif2CASL: this cannot happen"
+        mkPreddecl psyms@(Predsym arity _:_) = 
+           Pred_decl (map getName psyms) 
+                     (Pred_type (replicate arity universe) nullRange)
+                     nullRange
+        sorts = Sig_items $ Sort_items [emptyAnno sortdecl] nullRange
+        sortdecl = Sort_decl [universe] nullRange
+        ops = Sig_items $ Op_items opdecls nullRange
+        opsyms = Set.toList $ Set.unions $ map (collectOps . item) phis
+        opdecls = map (emptyAnno . mkOpdecl) (List.groupBy sameOpArity opsyms)
+        mkOpdecl [] = error "kif2CASL: this cannot happen"
+        mkOpdecl opsyms@(Opsym arity _:_) = 
+           Op_decl (map getOpName opsyms) 
+                   (Op_type Total (replicate arity universe) universe nullRange)
+                   [] nullRange
+        usedVars = Set.toList $ Set.unions $ map (collectVars . item) phis
+        vars = Var_items (if null usedVars then []
+                           else [Var_decl usedVars universe nullRange])
+                         nullRange
 
-insertPred :: Map.Map Id (Set.Set PredType) -> PRED_SYMB
-               -> Map.Map Id (Set.Set PredType)
-insertPred m (Qual_pred_name p (Pred_type t _) _) =
-  Map.insertWith Set.union p (Set.singleton (PredType t)) m
