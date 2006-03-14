@@ -1,24 +1,23 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) Mingyi Liu and Till Mossakowski and Uni Bremen 2004-2006
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+
+Maintainer  :  xinga@tzi.de
+Stability   :  provisional
+Portability :  non-portable (mutual recursive module)
+
+an interface file for resolving recursive modules
+-}
+
 module CASL.CCC.FreeTypes where
 
-import CASL.Sign                -- Sign, OpType
-import CASL.Morphism              
-import CASL.AS_Basic_CASL       -- FORMULA, OP_{NAME,SYMB}, TERM, SORT, VAR
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
-import CASL.CCC.SignFuns
-import CASL.CCC.TermFormula
-import CASL.CCC.TerminationProof
-import Common.AS_Annotation
-import Common.PrettyPrint
-import Common.Result
-import Common.Id
-import Maybe
-import Debug.Trace
-import System.Cmd
-import System.IO.Unsafe
-import Logic.Comorphism
-import Logic.Logic
-import Comorphisms.HasCASL2Haskell 
+import CASL.Sign
+import CASL.Morphism
+import CASL.AS_Basic_CASL -- FORMULA
 
-checkFreeType ::  (Sign () (),[Named (FORMULA ())]) -> Morphism () () () 
-                 -> [Named (FORMULA ())] -> Result (Maybe (Bool,[FORMULA ()]))
+import Common.AS_Annotation
+import Common.Result
+
+checkFreeType :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
+              -> [Named (FORMULA ())] -> Result (Maybe (Bool,[FORMULA ()]))

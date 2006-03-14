@@ -1,31 +1,31 @@
-{- | 
+{-# OPTIONS -cpp #-}
+{- |
+Module      :  $Header$
+Copyright   :  (c) Mingyi Liu and Till Mossakowski and Uni Bremen 2004-2005
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-    Module      :  $Header$
-    Copyright   :  (c) Mingyi Liu and Till Mossakowski and Uni Bremen 2004-2005
-    License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+Maintainer  :  xinga@tzi.de
+Stability   :  provisional
+Portability :  non-portable (imports Logic.Logic)
 
-    Maintainer  :  hets@tzi.de
-    Stability   :  provisional
-    Portability :  portable
-
+consistency checking of free types
 -}
 
-{-  
+{-
 "free datatypes and recursive equations are consistent"
 
-checkFreeType :: (PrettyPrint f, Eq f) => 
-                 (Sign f e,[Named (FORMULA f)]) -> Morphism f e m 
+checkFreeType :: (PrettyPrint f, Eq f) =>
+                 (Sign f e,[Named (FORMULA f)]) -> Morphism f e m
                  -> [Named (FORMULA f)] -> Result (Maybe (Bool,[FORMULA f]))
 Just (Just True) => Yes, is consistent
 Just (Just False) => No, is inconsistent
 Just Nothing => don't know
 -}
 
-
 module CASL.CCC.FreeTypes where
 
 import CASL.Sign                -- Sign, OpType
-import CASL.Morphism              
+import CASL.Morphism
 import CASL.AS_Basic_CASL       -- FORMULA, OP_{NAME,SYMB}, TERM, SORT, VAR
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
@@ -44,73 +44,76 @@ import Logic.Comorphism
 import Logic.Logic
 import Comorphisms.CASL2HasCASL
 import Comorphisms.HasCASL2HasCASL
-import Comorphisms.HasCASL2Haskell 
+#ifdef PROGRAMATICA
+import Comorphisms.HasCASL2Haskell
+#endif
 
 {-
    function checkFreeType:
-   - check if leading symbols are new (not in the image of morphism), 
+   - check if leading symbols are new (not in the image of morphism),
            if not, return Nothing
-   - the leading terms consist of variables and constructors only, 
+   - the leading terms consist of variables and constructors only,
            if not, return Nothing
-     - split function leading_Symb into 
+     - split function leading_Symb into
        leading_Term_Predication
-       and 
+       and
        extract_leading_symb
-     - collect all operation symbols from recover_Sort_gen_ax fconstrs 
+     - collect all operation symbols from recover_Sort_gen_ax fconstrs
                                                        (= constructors)
    - no variable occurs twice in a leading term, if not, return Nothing
    - check that patterns do not overlap, if not, return Nothing This means:
        in each group of the grouped axioms:
        all patterns of leading terms/formulas are disjoint
-       this means: either leading symbol is a variable, 
+       this means: either leading symbol is a variable,
                            and there is just one axiom
                    otherwise, group axioms according to leading symbol
                               no symbol may be a variable
-                              check recursively the arguments of 
+                              check recursively the arguments of
                               constructor in each group
   - return (Just True)
 -}
-checkFreeType :: -- (PosItem f, PrettyPrint f, Eq f) => 
-                 (Sign () (),[Named (FORMULA ())]) -> Morphism () () () 
+checkFreeType :: -- (PosItem f, PrettyPrint f, Eq f) =>
+                 (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
                  -> [Named (FORMULA ())] -> Result (Maybe (Bool,[FORMULA ()]))
-checkFreeType (osig,osens) m fsn      
+#ifdef PROGRAMATICA
+checkFreeType (osig,osens) m fsn
     | not $ null notSubSorts =
         let (Id ts _ pos) = head notSubSorts
-            sname = concat $ map tokStr ts 
+            sname = concat $ map tokStr ts
         in warning Nothing (sname ++ " is not freely generated") pos
     | any (\s->not $ elem s f_Inhabited) $ diffList nSorts subSorts =
         let (Id ts _ pos) = head $ filter (\s->not $ elem s f_Inhabited) nSorts
-            sname = concat $ map tokStr ts 
+            sname = concat $ map tokStr ts
         in warning (Just (False,[])) (sname ++ " is not inhabited") pos
     | elem Nothing l_Syms =
-        let pos = snd $ head $ filter (\f'-> (fst f') == Nothing) $ 
+        let pos = snd $ head $ filter (\f'-> (fst f') == Nothing) $
                   map leadingSymPos _axioms
         in warning Nothing "axiom is not definitional" pos
-    | not $ null $ p_t_axioms ++ pcheck = 
+    | not $ null $ p_t_axioms ++ pcheck =
         let pos = posOf $ (take 1 (p_t_axioms ++ pcheck))
         in warning Nothing "partial axiom is not definitional" pos
-    | any id $ map find_ot id_ots =    
+    | any id $ map find_ot id_ots =
         let pos = old_op_ps
         in warning Nothing ("Op: " ++ old_op_id ++ " is not new") pos
     | any id $ map find_pt id_pts =
         let pos = old_pred_ps
         in warning Nothing ("Predication: " ++old_pred_id++ " is not new") pos
     | not $ and $ map (checkTerm constructors) leadingTerms=
-        let (Application os _ pos) = 
+        let (Application os _ pos) =
                 head $ filter (\t->not $ checkTerm constructors t) leadingTerms
         in warning Nothing ("a leading term of " ++ (opSymStr os) ++
            " consist of not only variables and constructors") pos
     | not $ and $ map checkVar_App leadingTerms =
-        let (Application os _ pos) = 
+        let (Application os _ pos) =
                 head $ filter (\t->not $ checkVar_App t) leadingTerms
         in warning Nothing ("a variable occurs twice in a leading term of " ++
-                            opSymStr os) pos 
+                            opSymStr os) pos
  --   | (not $ null fs_terminalProof) && (terminationProof $ (osens ++ fsn)) =
     | (not $ null fs_terminalProof) && (not $ proof) =
         warning Nothing "not terminating" nullRange
     | not $ ((null (overlap_query ++ ex_axioms)) &&
-             (null subSortsF)) = 
-        return (Just (True,(overlap_query ++ 
+             (null subSortsF)) =
+        return (Just (True,(overlap_query ++
                             ex_axioms ++
                             (concat $ map snd subSortsF))))
   --  | not $ null subSortsF = return (Just (True,concat $ map snd subSortsF))
@@ -122,7 +125,7 @@ checkFreeType (osig,osens) m fsn
 - each new sort must be a free type,
   i.e. it must occur in a sort generation constraint that is marked as free
     (Sort_gen_ax constrs True)
-    such that the sort is in srts, 
+    such that the sort is in srts,
         where (srts,ops,_)=recover_Sort_gen_ax constrs
     if not, output "don't know"
   and there must be one term of that sort (inhabited)
@@ -157,21 +160,21 @@ checkFreeType (osig,osens) m fsn
     newSorts = trace (showPretty newSorts1 "new sorts") newSorts1
     nSorts = Set.toList newSorts
     oldOpMap = opMap sig
-    oldPredMap = predMap sig 
+    oldPredMap = predMap sig
     fconstrs = concat $ map constraintOfAxiom (ofs ++ fs)
     (srts1,constructors1,_) = recover_Sort_gen_ax fconstrs
     srts = trace (showPretty srts1 "srts") srts1      --   srts
-    constructors = trace (showPretty constructors1 "constrs") constructors1   
+    constructors = trace (showPretty constructors1 "constrs") constructors1
                                                            -- constructors
     f_Inhabited1 = inhabited oSorts fconstrs
-    f_Inhabited = trace (showPretty f_Inhabited1 "f_inhabited" ) f_Inhabited1 
+    f_Inhabited = trace (showPretty f_Inhabited1 "f_inhabited" ) f_Inhabited1
                                                              --  f_inhabited
     axioms1 = filter (\f-> (not $ is_Sort_gen_ax f) &&
                            (not $ is_Membership f)) fs
     axioms = trace (showPretty axioms1 "axioms") axioms1         --  axioms
     _axioms = map quanti axioms
-    l_Syms1 = map leadingSym axioms                                    
-    l_Syms = trace (showPretty l_Syms1 "leading_Symbol") l_Syms1  
+    l_Syms1 = map leadingSym axioms
+    l_Syms = trace (showPretty l_Syms1 "leading_Symbol") l_Syms1
                                                       -- leading_Symbol
     spSrts = filter (\s->not $ elem s srts) nSorts
     notSubSorts = filter (\s-> (fst $ isSubSort s oSorts fs) == False) spSrts
@@ -181,8 +184,8 @@ checkFreeType (osig,osens) m fsn
   check all partial axiom
 -}
     p_axioms = filter partialAxiom _axioms           -- all partial axioms
-    t_axioms = filter (not.partialAxiom) _axioms     -- all total axioms 
-    p_t_axioms = filter (\f-> case (opTyp_Axiom f) of            
+    t_axioms = filter (not.partialAxiom) _axioms     -- all total axioms
+    p_t_axioms = filter (\f-> case (opTyp_Axiom f) of
                       -- exist partial axioms in total axioms?
                                 Just False -> True
                                 _ -> False) t_axioms
@@ -192,12 +195,12 @@ checkFreeType (osig,osens) m fsn
     opSyms_p = map (\os-> case os of
                             (Just (Left opS)) -> opS
                             _ -> error "CASL.CCC.FreeTypes.<partial axiom>") $
-               map leadingSym equi_p_axioms 
+               map leadingSym equi_p_axioms
     impl_p_axioms = filter (\f-> case f of
                                    Equivalence _ _ _ -> False
                                    Negation _ _ -> False
                                    _ -> True) p_axioms
-    pcheck = foldl (\im os-> filter (\im'-> 
+    pcheck = foldl (\im os-> filter (\im'->
                                      case leadingSym im' of
                                        (Just (Left opS)) -> opS /= os
                                        _ -> False) im) impl_p_axioms opSyms_p
@@ -207,21 +210,21 @@ checkFreeType (osig,osens) m fsn
 -}
     op_fs = filter (\f-> case leadingSym f of
                            Just (Left _) -> True
-                           _ -> False) _axioms 
+                           _ -> False) _axioms
     pred_fs = filter (\f-> case leadingSym f of
                              Just (Right _) -> True
-                             _ -> False) _axioms  
-    id_ots = concat $ map filterOp $ l_Syms 
+                             _ -> False) _axioms
+    id_ots = concat $ map filterOp $ l_Syms
     id_pts = concat $ map filterPred $ l_Syms
     old_op_id= idStr $ fst $ head $ filter (\ot->find_ot ot) $ id_ots
     old_pred_id = idStr $ fst $ head $ filter (\pt->find_pt pt) $ id_pts
-    old_op_ps = case head $ map leading_Term_Predication $       
-                     filter (\f-> find_ot $ head $ filterOp $ 
+    old_op_ps = case head $ map leading_Term_Predication $
+                     filter (\f-> find_ot $ head $ filterOp $
                                   leadingSym f) op_fs of
                   Just (Left (Application _ _ p)) -> p
                   _ -> nullRange
-    old_pred_ps = case head $ map leading_Term_Predication $ 
-                       filter (\f->find_pt $ head $ filterPred $ 
+    old_pred_ps = case head $ map leading_Term_Predication $
+                       filter (\f->find_pt $ head $ filterPred $
                                    leadingSym f) pred_fs of
                     Just (Right (Predication _ _ p)) -> p
                     _ -> nullRange
@@ -232,13 +235,13 @@ checkFreeType (osig,osens) m fsn
                            Nothing -> False
                            Just pts -> Set.member pt pts
 {-
-   the leading terms consist of variables and constructors only, 
+   the leading terms consist of variables and constructors only,
    if not, return Nothing
-   - split function leading_Symb into 
+   - split function leading_Symb into
       leading_Term_Predication::FORMULA f -> Maybe(Either Term (Formula f))
-       and 
+       and
       extract_leading_symb::Either Term (Formula f) -> Either OP_SYMB PRED_SYMB
-   - collect all operation symbols from 
+   - collect all operation symbols from
         recover_Sort_gen_ax fconstrs (= constructors)
 -}
     ltp1 = map leading_Term_Predication (t_axioms ++ impl_p_axioms)
@@ -249,18 +252,18 @@ checkFreeType (osig,osens) m fsn
                                          _ -> []) $ ltp
     leadingTerms = trace (showPretty leadingTerms1 "leadingTerm") leadingTerms1
                                                                -- leading Term
-{-  
+{-
    check that patterns do not overlap, if not, return Nothing This means:
        in each group of the grouped axioms:
        all patterns of leading terms/formulas are disjoint
-       this means: either leading symbol is a variable, 
+       this means: either leading symbol is a variable,
                            and there is just one axiom
                    otherwise, group axioms according to leading symbol
                               no symbol may be a variable
-                              check recursively the arguments of constructor 
+                              check recursively the arguments of constructor
                               in each group
--}   
-    leadingSymPatterns = 
+-}
+    leadingSymPatterns =
         case (groupAxioms (t_axioms ++ impl_p_axioms)) of
           Just sym_fs ->
               zip (fst $ unzip sym_fs) $
@@ -270,26 +273,26 @@ checkFreeType (osig,osens) m fsn
                                 _ -> [])).
                     (map leading_Term_Predication)) $ map snd sym_fs)
           Nothing -> error "CASL.CCC.FreeTypes.<leadingSymPatterns>"
-    overlapSym1 = map fst $ 
+    overlapSym1 = map fst $
                   filter (\sp->not $ checkPatterns $ snd sp) leadingSymPatterns
-    overlapSym = trace (showPretty overlapSym1 "OverlapSym") overlapSym1 
+    overlapSym = trace (showPretty overlapSym1 "OverlapSym") overlapSym1
     overlap_Axioms fos
         | length fos <= 1 = [[]]
         | length fos == 2 = if not $ checkPatterns $ map patternsOfAxiom fos
                             then [fos]
                             else [[]]
-        | otherwise = (concat $ map overlap_Axioms $ 
+        | otherwise = (concat $ map overlap_Axioms $
                        map (\f->[(head fos),f]) $ (tail fos)) ++
                       (overlap_Axioms $ tail fos)
-    overlapAxioms1 = filter (\p-> not $ null p) $ 
+    overlapAxioms1 = filter (\p-> not $ null p) $
                      concat $ map overlap_Axioms $ map snd $
-                     filter (\a-> (fst a) `elem` overlapSym) $ 
+                     filter (\a-> (fst a) `elem` overlapSym) $
                      fromJust $ groupAxioms (t_axioms ++ impl_p_axioms)
     overlapAxioms = trace (showPretty overlapAxioms1 "OverlapA") overlapAxioms1
     numOfImpl fos = length $ filter is_impli fos
-    overlapQuery fos = 
+    overlapQuery fos =
         case (checkPatterns2 $ map patternsOfAxiom fos) of
-          Just True -> error "overlapQuery:not overlap" 
+          Just True -> error "overlapQuery:not overlap"
           Just False -> overlapQuery1 fos
           Nothing -> overlapQuery2 fos
     overlapQuery1 fos =
@@ -298,43 +301,46 @@ checkFreeType (osig,osens) m fsn
           1 -> Negation (head cond) nullRange
           _ -> Negation (Conjunction cond nullRange) nullRange
       where cond= everyOnce $ concat $ map conditionAxiom fos
-    overlapQuery2 fos = 
+    overlapQuery2 fos =
         case numOfImpl fos of
           0 -> resQ
           1 -> Implication (head cond) resQ True nullRange
           _ -> Implication (Conjunction cond nullRange) resQ True nullRange
       where cond= everyOnce $ concat $ map conditionAxiom fos
             res= concat $ map resultAxiom fos
-            resQ 
+            resQ
               | null res = Negation (Conjunction cond nullRange) nullRange
               | length res == 1 = Negation (head cond) nullRange
               | otherwise = Strong_equation (head res) (last res) nullRange
     overlap_query1 = map overlapQuery overlapAxioms
     overlap_query = trace (showPretty overlap_query1 "OverlapQ") overlap_query1
     pattern_Pos [] = error "pattern overlap"
-    pattern_Pos sym_ps = 
-        if not $ checkPatterns $ snd $ head sym_ps then symPos $ fst $ 
+    pattern_Pos sym_ps =
+        if not $ checkPatterns $ snd $ head sym_ps then symPos $ fst $
                                                         head sym_ps
         else pattern_Pos $ tail sym_ps
     symPos sym = case sym of
                    Left (Qual_op_name on _ ps) -> (idStr on,ps)
                    Right (Qual_pred_name pn _ ps) -> (idStr pn,ps)
                    _ -> error "pattern overlap"
-    ex_axioms = filter is_ex_quanti $ 
+    ex_axioms = filter is_ex_quanti $
                 map sentence (filter is_user_or_sort_gen (osens ++ fsn))
 {- Termination Proof
 -}
     ipath = "/tmp/Input.hs"
     opath = "/tmp/Result.txt"
-    s3= showPretty (map_theory 
+    s3= showPretty (map_theory
                   (CompComorphism (CompComorphism CASL2HasCASL HasCASL2HasCASL)
                    HasCASL2Haskell) (mtarget m,fsn)) ""
     proof = unsafePerformIO (do
-                writeFile ipath $ s3      
+                writeFile ipath $ s3
                 system ("java -jar CASL/Termination/AProVE.jar -u cli " ++
                         "-m wst -p plain " ++ ipath ++ " > " ++ opath)
                 res <- readFile opath
                 return (subStr "YES" res))
+#else
+checkFreeType = error "CASL.CCC.FreeTypes.checkFreeType"
+#endif
 
 
 {- group the axioms according to their leading symbol
@@ -355,13 +361,13 @@ groupAxioms phis = do
 
 isSubSort :: SORT -> [SORT] -> [FORMULA f] -> (Bool,[FORMULA f])
 isSubSort _ _ [] = (False,[])
-isSubSort s sts (f:fs) = 
+isSubSort s sts (f:fs) =
     case f of
       Quantification Universal [vd] f1 _ ->
-          if elem (sortOfVar_Decl vd) sts 
+          if elem (sortOfVar_Decl vd) sts
           then case f1 of
                  Equivalence (Membership _ s1 _) f2 _ ->
-                     if s1==s 
+                     if s1==s
                      then (True,
                            [(Quantification Existential [vd] f2 nullRange)])
                      else isSubSort s sts fs
@@ -385,10 +391,10 @@ filterPred :: Maybe (Either OP_SYMB PRED_SYMB) -> [(OP_NAME,PredType)]
 filterPred symb = case symb of
                     Just (Right (Qual_pred_name ident (Pred_type s _) _)) ->
                         [(ident, PredType {predArgs=s})]
-                    _ -> []    
+                    _ -> []
 
 
--- the leading terms consist of variables and constructors only 
+-- the leading terms consist of variables and constructors only
 checkTerm :: [OP_SYMB] -> TERM f -> Bool
 checkTerm cons t =
     case t of
@@ -399,14 +405,14 @@ checkTerm cons t =
   where checkT (Sorted_term tt _ _) = checkT tt
         checkT (Qual_var _ _ _) = True
         checkT (Application subop subts _) = (elem subop cons) &&
-                                             (all id $ map checkT subts)  
+                                             (all id $ map checkT subts)
         checkT _ = False
 
 
 {-
-   no variable occurs twice in a leading term, 
+   no variable occurs twice in a leading term,
       if not, return Nothing
--} 
+-}
 checkVar_App :: (Eq f) => TERM f -> Bool
 checkVar_App (Application _ ts _) = notOverlap $ concat $ map allVarOfTerm ts
 checkVar_App _ = error "CASL.CCC.FreeTypes<checkVar_App>"
@@ -420,7 +426,7 @@ notOverlap :: (Eq a) => [a] -> Bool
 notOverlap [] = True
 notOverlap (p:ps) = if elem p ps then False
                     else notOverlap ps
-                   
+
 
 patternsOfTerm :: TERM f -> [TERM f]
 patternsOfTerm t = case t of
@@ -437,7 +443,7 @@ patternsOfAxiom f = case f of
                       Negation f' _ -> patternsOfAxiom f'
                       Implication _ f' _ _ -> patternsOfAxiom f'
                       Equivalence f' _ _ -> patternsOfAxiom f'
-                      Predication _ ts _ -> ts 
+                      Predication _ ts _ -> ts
                       Existl_equation t _ _ -> patternsOfTerm t
                       Strong_equation t _ _ -> patternsOfTerm t
                       _ -> []
@@ -445,7 +451,7 @@ patternsOfAxiom f = case f of
 
 sameOps_App :: TERM f -> TERM f -> Bool
 sameOps_App app1 app2 = case (term app1) of               -- eq of app
-                          Application ops1 _ _ -> 
+                          Application ops1 _ _ ->
                               case (term app2) of
                                 Application ops2 _ _ -> ops1==ops2
                                 _ -> False
@@ -455,33 +461,33 @@ sameOps_App app1 app2 = case (term app1) of               -- eq of app
 group_App :: [[TERM f]] -> [[[TERM f]]]
 group_App [] = []
 group_App ps = (filter (\p1-> sameOps_App (head p1) (head (head ps))) ps):
-               (group_App $ filter (\p2-> not $ 
+               (group_App $ filter (\p2-> not $
                                    sameOps_App (head p2) (head (head ps))) ps)
 
 
--- it examines whether it is overlap 
+-- it examines whether it is overlap
 checkPatterns :: (Eq f) => [[TERM f]] -> Bool
-checkPatterns ps 
+checkPatterns ps
         | length ps <=1 = True
         | allIdentic ps = False
-        | all isVar $ map head ps = 
+        | all isVar $ map head ps =
             if allIdentic $ map head ps then checkPatterns $ map tail ps
             else False
-        | all (\p-> sameOps_App p (head (head ps))) $ map head ps = 
+        | all (\p-> sameOps_App p (head (head ps))) $ map head ps =
             checkPatterns $ map (\p'->(patternsOfTerm $ head p')++(tail p')) ps
         | all isApp $ map head ps = all id $ map checkPatterns $ group_App ps
         | otherwise = False
 
 
 checkPatterns2 :: (Eq f) => [[TERM f]] -> Maybe Bool
-checkPatterns2 ps  
+checkPatterns2 ps
         | length ps <=1 = Just True
         | allIdentic ps = Nothing
-        | all isVar $ map head ps = 
+        | all isVar $ map head ps =
             if allIdentic $ map head ps then checkPatterns2 $ map tail ps
             else Just False
-        | all (\p-> sameOps_App p (head (head ps))) $ map head ps = 
-            checkPatterns2 $ 
+        | all (\p-> sameOps_App p (head (head ps))) $ map head ps =
+            checkPatterns2 $
             map (\p'->(patternsOfTerm $ head p')++(tail p')) ps
         | all isApp $ map head ps = Nothing
         | otherwise = Just False
