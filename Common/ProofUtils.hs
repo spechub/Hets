@@ -81,7 +81,10 @@ collectNameMapping n o = Map.fromList (zipWith toPair n o)
 -- | a separate Map speeds up lookup
 charMap :: Map.Map Char String
 charMap = Map.fromList
- [('!' , "Exclam"),
+ [(' ' , "Space"),
+  ('\n', "Newline"),
+  ('\t', "Tab"),
+  ('!' , "Exclam"),
   ('"' , "Quot"),
   ('#' , "Hash"),
   ('$' , "Dollar"),

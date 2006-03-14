@@ -61,7 +61,7 @@ kif2CASLFormula (List l) =
                   (map kif2CASLTerm l) nullRange
 -- a variable in place of a formula; coerce from Booleans
 kif2CASLFormula (Literal QWord v) =
-  Strong_equation (Simple_id (toSimpleId $ tail v))
+  Strong_equation (Simple_id (toVar v))
                   trueTerm
                   nullRange
 kif2CASLFormula x = error ("kif2CASLFormula : cannot translate" ++
@@ -70,9 +70,11 @@ kif2CASLFormula x = error ("kif2CASLFormula : cannot translate" ++
 trueTerm = Application (Op_name $ toId "True") [] nullRange
 falseTerm = Application (Op_name $ toId "False") [] nullRange
 
+toVar v = toSimpleId ('v':tail v)
+
 kif2CASLTerm :: ListOfList -> TERM ()
 kif2CASLTerm ll = case ll of
-    Literal QWord v -> Simple_id $ toSimpleId $ tail v
+    Literal QWord v -> Simple_id $ toVar v
     Literal _ s -> Application (Op_name $ toId s) [] nullRange
     -- a formula in place of a term; coerce to Booleans
     List (Literal l f : args) ->
@@ -89,7 +91,7 @@ kif2CASLvardeclList = map kif2CASLvardecl
 -- | translation of variable declarations
 kif2CASLvardecl :: ListOfList -> VAR_DECL
 kif2CASLvardecl l = case l of
-    Literal _ v -> Var_decl [toSimpleId $ tail v] universe nullRange
+    Literal _ v -> Var_decl [toVar v] universe nullRange
     _ -> error $ "kif2CASLvardecl " ++ show (ppListOfList l)
 
 -- | first pass of translation, just collecting the formulas
@@ -132,11 +134,12 @@ getName (Predsym _ p) = p
 collectPreds :: CASLFORMULA -> Set.Set Predsym
 collectPreds = foldFormula
     (constRecord (error "Kif2CASL.collectPreds") Set.unions Set.empty)
-    { foldPredication = \ _ p args _ -> Set.singleton 
+    { foldPredication = \ _ p args _ -> Set.insert 
                (Predsym (length args) 
                         (case p of
                           Pred_name pn -> pn
-                          Qual_pred_name pn _ _ -> pn)) }
+                          Qual_pred_name pn _ _ -> pn))
+               (Set.unions args) }
 
 collectVars :: CASLFORMULA -> Set.Set Token
 collectVars = foldFormula
