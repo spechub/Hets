@@ -1,0 +1,151 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) Christian Maeder and Uni Bremen 2006
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+
+Maintainer  :  maeder@tzi.de
+Stability   :  experimental
+Portability :  portable
+
+pretty printing data types of 'BASIC_SPEC'
+-}
+
+module CASL.ToDoc where
+
+import Common.Id
+import Common.Keywords
+import Common.Doc as Doc
+
+import CASL.AS_Basic_CASL
+import CASL.Fold
+
+sidDoc :: Token -> Doc
+sidDoc = idDoc . simpleIdToId
+
+printQuant :: QUANTIFIER -> Doc
+printQuant q = case q of
+    Universal -> forallDoc
+    Existential -> exists
+    Unique_existential -> unique
+
+printVarDecl :: VAR_DECL -> Doc
+printVarDecl (Var_decl l s _) =
+      fcat $ (punctuate (comma <> space) $ map sidDoc l)
+           ++ [ colon, space, idDoc s]
+
+printOpType :: OP_TYPE -> Doc
+printOpType (Op_type p l r _) =
+    case l of
+      [] -> case p of
+          Partial -> text quMark <+> idDoc r
+          Total -> space <> idDoc r
+      _ -> fcat $ space :
+             punctuate (space <> cross <> space) (map idDoc l)
+             ++ [space, case p of
+                Partial -> pfun
+                Total -> funArrow,
+                 space, idDoc r]
+
+printOpSymb :: OP_SYMB -> Doc
+printOpSymb o = case o of
+    Op_name i -> idDoc i
+    Qual_op_name i t _ ->
+        parens $ fcat [text opS, space, idDoc i, colon <> printOpType t]
+
+printPredType :: PRED_TYPE -> Doc
+printPredType (Pred_type l _) = case l of
+    [] -> parens empty
+    _ -> fsep $ punctuate (space <> cross) $ map idDoc l
+
+printPredSymb :: PRED_SYMB -> Doc
+printPredSymb p = case p of
+    Pred_name i -> idDoc i
+    Qual_pred_name i t _ ->
+        parens $ fsep [text predS, idDoc i, colon, printPredType t]
+
+printRecord :: (f -> Doc) -> Record f Doc Doc
+printRecord mf = Record
+    { foldQuantification = \ _ q l r _ ->
+          printQuant q <+> fsep (punctuate semi (map printVarDecl l)
+                                ++ [bullet, r])
+    , foldConjunction = \ (Conjunction ol _) l _ ->
+          fsep $ punctuate (space <> andDoc) $ zipWith
+                   ( \ o d -> if isJunct o then parens d else d) ol l
+    , foldDisjunction = \ (Disjunction ol _) l _ ->
+          fsep $ punctuate (space <> orDoc) $ zipWith
+                   ( \ o d -> if isJunct o then parens d else d) ol l
+    , foldImplication = \ (Implication oL oR b _) l r _ _ ->
+          let nl = if isImpl oL then parens l else l
+              nr = if isEquiv oR then parens r else r
+          in if b then fsep [nl, implies, nr]
+             else fsep [nr, text ifS, nl]
+    , foldEquivalence = \ (Equivalence oL oR _) l r _ ->
+          let nl = if isEquiv oL then parens l else l
+              nr = if isEquiv oR then parens r else r
+          in fsep [nl, equiv, nr]
+    , foldNegation = \ _ r _ -> fsep [notDoc, r]
+    , foldTrue_atom = \ _ _ -> text trueS
+    , foldFalse_atom = \ _ _ -> text falseS
+    , foldPredication = \ _ p l _ -> case p of
+          Pred_name i -> idApplDoc i l
+          Qual_pred_name _ _ _ -> if null l then printPredSymb p else
+              fcat [printPredSymb p, parens $ fsep $ punctuate comma l]
+    , foldDefinedness = \ _ r _ -> fsep [text defS, r]
+    , foldExistl_equation = \ _ l r _ -> fsep [l, exequal, r]
+    , foldStrong_equation = \ _ l r _ -> fsep [l, equals, r]
+    , foldMembership = \ _ r t _ -> fsep [r, inDoc, idDoc t]
+    , foldMixfix_formula = \ _ r -> r
+    , foldSort_gen_ax = \ (Sort_gen_ax constrs _) _ _ ->
+        let (sorts, ops, sortMap) = recover_Sort_gen_ax constrs
+            printSortMap (s1, s2) = fsep [idDoc s1, mapsto, idDoc s2]
+        in text generatedS <> braces(
+                fsep (text sortS : punctuate comma (map idDoc sorts))
+                <> semi <+>
+                fsep (punctuate semi (map printOpSymb ops))
+                <> if null sortMap then empty else
+                   space <> text withS
+                    <+> fsep (punctuate comma (map printSortMap sortMap)))
+    , foldExtFORMULA = \ _ f -> mf f
+    , foldSimpleId = \ _ -> sidDoc
+    , foldQual_var = \ _ v s _ ->
+          parens $ fsep [text varS, sidDoc v, colon, idDoc s]
+    , foldApplication = \ _ o l _ -> case o of
+          Op_name i -> idApplDoc i l
+          Qual_op_name _ _ _ -> if null l then printOpSymb o else
+              fcat [printOpSymb o, parens $ fsep $ punctuate comma l]
+    , foldSorted_term = \ _ r t _ -> fsep [r, colon, idDoc t]
+    , foldCast = \ _ r t _ -> fsep [r, text asS, idDoc t]
+    , foldConditional = \ (Conditional ol _ _ _) l f r _ ->
+          fsep [if isCond ol then parens l else l,
+                text whenS, f, text elseS, r]
+    , foldMixfix_qual_pred = \ _ p -> printPredSymb p
+    , foldMixfix_term = \ _ l -> fsep l
+    , foldMixfix_token = \ _ -> sidDoc
+    , foldMixfix_sorted_term = \ _ s _ -> colon <+> idDoc s
+    , foldMixfix_cast = \ _ s _ -> text asS <+> idDoc s
+    , foldMixfix_parenthesized = \ _ l _ -> parens $ fsep $ punctuate comma l
+    , foldMixfix_bracketed = \ _ l _ -> brackets $ fsep $ punctuate comma l
+    , foldMixfix_braced = \ _ l _ -> braces $ fsep $ punctuate comma l
+    }
+
+printFormula :: FORMULA f -> Doc
+printFormula = foldFormula $ printRecord (error "printFormula")
+
+isEquiv, isImpl, isJunct :: FORMULA f -> Bool
+isEquiv f = case f of
+    Equivalence _ _ _ -> True
+    _ -> False
+
+isImpl f = case f of
+    Implication _ _ _ _ -> True
+    _ -> isEquiv f
+
+isJunct f = case f of
+    Conjunction _ _ -> True
+    Disjunction _ _ -> True
+    _ -> isImpl f
+
+isCond :: TERM f -> Bool
+isCond t = case t of
+    Conditional _ _ _ _ -> True
+    _ -> False
