@@ -50,7 +50,7 @@ printOpSymb :: OP_SYMB -> Doc
 printOpSymb o = case o of
     Op_name i -> idDoc i
     Qual_op_name i t _ ->
-        parens $ fcat [text opS, space, idDoc i, colon <> printOpType t]
+        parens $ fsep [text opS, idDoc i, colon <> printOpType t]
 
 printPredType :: PRED_TYPE -> Doc
 printPredType (Pred_type l _) = case l of
@@ -131,10 +131,14 @@ printRecord mf = Record
 printFormula :: FORMULA f -> Doc
 printFormula = foldFormula $ printRecord (error "printFormula")
 
-isEquiv, isImpl, isJunct :: FORMULA f -> Bool
+isQuant, isEquiv, isImpl, isJunct :: FORMULA f -> Bool
+isQuant f = case f of
+    Quantification _ _ _ _ -> True
+    _ -> False
+
 isEquiv f = case f of
     Equivalence _ _ _ -> True
-    _ -> False
+    _ -> isQuant f
 
 isImpl f = case f of
     Implication _ _ _ _ -> True
