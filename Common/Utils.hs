@@ -22,6 +22,11 @@ import Data.Graph.Inductive.Graph
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 
+import System.Posix.Process
+import System.Time
+import System.Random
+import System.IO
+
 {- |
   A function inspired by perls join function. It joins a list of
   lists of elements by seperating them with a seperator element.
@@ -210,3 +215,29 @@ filterMapWithSet s = Map.filterWithKey selected
 -}
 comparing :: (Ord b) => (a -> b) -> a -> a -> Ordering
 comparing selector x y = compare (selector x) (selector y)
+
+{- |
+  create a temp file.
+-}
+createTempFile :: FilePath      -- ^ parent path, but no separator (/)
+	       -> FilePath     -- ^ name of file (prefix)
+	       -> FilePath     -- ^ suffix of file (no point)
+	       -> IO Handle
+createTempFile parent preName sufName =
+    do random <- getRandom
+       pid <- getProcessID
+       time <- getClockTime
+       ctime <- toCalendarTime time
+       let outTime = (show $ ctDay ctime) ++ (show $ ctHour ctime) 
+                     ++ (show $ ctMin ctime) ++ (show $ ctSec ctime)
+           parentPath = (if length parent == 0 
+	   		  then "/tmp/tmp" ++ (show random)
+	   		  else parent)
+	   separator = "/"
+	   randomName = (show pid) ++ outTime ++ (show random) 
+	   abPath = parentPath ++ separator ++ preName ++ randomName ++ 
+                    (if length sufName == 0 then "" else "." ++ sufName) 
+       openFile abPath WriteMode
+    where getRandom :: IO Int
+          getRandom = getStdRandom (randomR (10000, 99999))
+	
