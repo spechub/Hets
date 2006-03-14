@@ -90,7 +90,7 @@ constraintterm k =
    <|>
     do id <- parseId k 
        terms <- many1 (constraintterm k)
-       return Composite_Term id terms  
+       return (Composite_Term id terms)  
 
 formula :: [String] -> AParser st ConstraintCASLFORMULA
 formula k = do x <- cformula k
