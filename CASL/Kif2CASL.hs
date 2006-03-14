@@ -40,6 +40,8 @@ kif2CASLFormula (List [Literal KToken "=>", phi1, phi2]) =
   Implication (kif2CASLFormula phi1) (kif2CASLFormula phi2) True nullRange
 kif2CASLFormula (List [Literal KToken "<=>", phi1, phi2]) =
   Equivalence (kif2CASLFormula phi1) (kif2CASLFormula phi2) nullRange
+kif2CASLFormula (List [Literal KToken "not", phi]) =
+  Negation (kif2CASLFormula phi) nullRange
 kif2CASLFormula (List [Literal KToken "True"]) =
   True_atom nullRange
 kif2CASLFormula (List [Literal KToken "False"]) =
@@ -48,6 +50,8 @@ kif2CASLFormula (List [Literal KToken "exists", List vl, phi]) =
   Quantification Existential (kif2CASLvardeclList vl) (kif2CASLFormula phi) nullRange
 kif2CASLFormula (List [Literal KToken "forall", List vl, phi]) =
   Quantification Universal (kif2CASLvardeclList vl) (kif2CASLFormula phi) nullRange
+kif2CASLFormula (List [Literal KToken "equal",t1,t2]) =
+  Strong_equation (kif2CASLTerm t1) (kif2CASLTerm t2) nullRange
 kif2CASLFormula (List (Literal KToken p:rest)) =
   Predication (Pred_name (toId p))
                   (map kif2CASLTerm rest) nullRange
@@ -55,15 +59,27 @@ kif2CASLFormula (List (Literal KToken p:rest)) =
 kif2CASLFormula (List l) =
   Predication (Pred_name (toId "holds"))
                   (map kif2CASLTerm l) nullRange
+-- a variable in place of a formula; coerce from Booleans
+kif2CASLFormula (Literal QWord v) =
+  Strong_equation (Simple_id (toSimpleId $ tail v))
+                  trueTerm
+                  nullRange
 kif2CASLFormula x = error ("kif2CASLFormula : cannot translate" ++
                        show (ppListOfList x))
 
+trueTerm = Application (Op_name $ toId "TRUE") [] nullRange
+falseTerm = Application (Op_name $ toId "FALSE") [] nullRange
+
 kif2CASLTerm :: ListOfList -> TERM ()
 kif2CASLTerm ll = case ll of
-    Literal QWord v -> Qual_var (toSimpleId $ tail v) universe nullRange
+    Literal QWord v -> Simple_id $ toSimpleId $ tail v
     Literal _ s -> Application (Op_name $ toId s) [] nullRange
-    List (Literal _ f : args) ->
-        Application (Op_name $ toId f) (map kif2CASLTerm args) nullRange
+    -- a formula in place of a term; coerce to Booleans
+    List (Literal l f : args) ->
+      if f `elem` ["forall","exists","and","or","=>","<=>","not"]
+       then Conditional trueTerm 
+                (kif2CASLFormula (List (Literal l f : args))) falseTerm nullRange
+        else Application (Op_name $ toId f) (map kif2CASLTerm args) nullRange
     _ -> error $ "kif2CASLTerm : cannot translate " ++ show (ppListOfList ll)
 
 -- | translation of variable declaration lists
@@ -125,7 +141,7 @@ collectPreds = foldFormula
 collectVars :: CASLFORMULA -> Set.Set Token
 collectVars = foldFormula
     (constRecord (error "Kif2CASL.collectVars") Set.unions Set.empty)
-    { foldQual_var = \ _ v _ _ -> Set.singleton v }
+    { foldSimpleId = \ _ v -> Set.singleton v }
 
 data Opsym = Opsym Int OP_NAME
                 deriving (Eq, Ord, Show)
@@ -173,7 +189,8 @@ kif2CASL l = Basic_spec $ filter nonEmpty
         sorts = Sig_items $ Sort_items [emptyAnno sortdecl] nullRange
         sortdecl = Sort_decl [universe] nullRange
         ops = Sig_items $ Op_items opdecls nullRange
-        opsyms = Set.toList $ Set.unions $ map (collectOps . item) phis
+        opsyms = Opsym 0 (toId "TRUE"):Opsym 0 (toId "FALSE"):
+                  (Set.toList $ Set.unions $ map (collectOps . item) phis)
         opdecls = map (emptyAnno . mkOpdecl) (List.groupBy sameOpArity opsyms)
         mkOpdecl [] = error "kif2CASL: this cannot happen"
         mkOpdecl opsyms@(Opsym arity _:_) = 
