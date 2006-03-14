@@ -80,8 +80,7 @@ kif2CASLvardecl l = case l of
 kif2CASLpass1 :: [ListOfList] -> [Annoted CASLFORMULA]
 kif2CASLpass1 [] = []
 kif2CASLpass1 (phi:rest) =
-  Annoted { item = phi', opt_pos = nullRange, l_annos = [], r_annos = annos }
-    : kif2CASLpass1 rest'
+  (emptyAnno phi') { r_annos = annos } : kif2CASLpass1 rest'
   where phi' = kif2CASLFormula phi
         (annos,rest') = skipComments [] rest
 
@@ -105,7 +104,7 @@ skipComments acc l@(x:rest) =
    else (reverse acc,l)
 
 -- | collect all predicate symbols used in a formula
-collectPreds :: CASLFORMULA -> Set.Set PRED_SYMB
+collectPreds :: CASLFORMULA -> Set.Set PRED_ITEM
 collectPreds = foldFormula
     (constRecord (error "Kif2CASL.collectPreds") Set.unions Set.empty)
     { foldPredication = \ _ p l _ -> Set.singleton p }
@@ -124,11 +123,13 @@ collectConsts = foldFormula
             Qual_op_name i _ _ -> i else Set.unions l }
 
 -- | main translation function
-kif2CASL :: [ListOfList] -> (Sign () (),[Annoted CASLFORMULA])
-kif2CASL l = (sig,phis)
+kif2CASL :: [ListOfList] -> BASIC_SPEC () () ()
+kif2CASL l = Basic_spec [empty_anno sorts, ops, preds, vars, axs]
   where (ans,rest) = skipComments [] l
         phis = kif2CASLpass1 rest
-        preds = Set.toList $ Set.unions $ map (collectPreds . item) phis
+        axs = Axiom_items phis nullRange
+        preds = Sig_items $ Pred_items preddecls nullRange
+        preddecls = Set.toList $ Set.unions $ map (collectPreds . item) phis
         pMap = foldl insertPred Map.empty preds
         sig = (emptySign ()) { sortSet = Set.singleton universe
                              , predMap = pMap}
