@@ -38,7 +38,7 @@ cformula k =
     do c1 <- conjunction k 
        equivalentT
        c2 <- conjunction k 
-       return (Equivalence_ConstraintFormula c1 c2)} 
+       return (Equivalence_ConstraintFormula c1 c2) 
   <|> 
     do impliesT 
        c <- conjunction k
@@ -60,7 +60,7 @@ atom k =
     do t1 <- constraintterm k 
        r <- trace ("atom2:"++show t1) $ relation k
        t2 <- constraintterm k
-       return (Infix_Atom t1 r t2)} 
+       return (Infix_Atom t1 r t2)
 
 relation :: [String] -> AParser st RELATION
 relation k =  
@@ -80,7 +80,7 @@ relation k =
    <|> 
     do inverseT 
        r <- relation k 
-       return (Inverse_Relation r)} -- <|>
+       return (Inverse_Relation r) -- <|>
     --do {rels <- many1 (relation k); return (Relation_Disjunction rels)}
 
 constraintterm :: [String] -> AParser st ConstraintTERM
