@@ -294,6 +294,7 @@ nondoc_sources = $(wildcard utils/DrIFT-src/*.hs) \
     $(genrule_header_files) $(generated_rule_files) \
     $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hspp \
     Modal/GeneratePatterns.inline.hs \
+    CASL/CCC/FreeTypes.hs \
     Haskell/PreludeString.append.hs Haskell/ProgramaticaPrelude.hs \
     $(patsubst %.hs, %.der.hs, $(drifted_files))
 
