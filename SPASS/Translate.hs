@@ -37,7 +37,8 @@ reservedWords = Set.fromList (map ((flip showPretty) "") [SPEqual
                                           , SPNot
                                           , SPImplies
                                           , SPImplied
-                                          ,SPEquiv])
+                                          ,SPEquiv] ++ 
+    words "date name author status description")
 
 transSenName :: String -> String
 transSenName = transId . simpleIdToId . mkSimpleId
