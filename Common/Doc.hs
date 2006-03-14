@@ -90,6 +90,7 @@ module Common.Doc
       -- * transforming to existing formats
     , codeOut
     , toText
+    , toHPJDoc
     , toLatex
     ) where
 
@@ -369,7 +370,10 @@ toHPJDoc ga = foldDoc anyRecord
           Horiz -> Pretty.hcat
           HorizOrVert -> Pretty.cat
           Fill -> Pretty.fcat
-    , foldAttr = \ _ _ -> id
+    , foldAttr = \ _ k d -> case k of
+          FlushRight -> let l = length $ show d in
+            if l < 80 then Pretty.nest (80 - l) d else d
+          _ -> d
     , foldIndentBy = \ _ d1 d2 d3 ->
           d2 Pretty.$$ Pretty.nest (length $ show d1) d3
     } . codeOut ga Nothing Map.empty
@@ -472,7 +476,7 @@ codeOut :: GlobalAnnos -> Maybe Display_format -> Map.Map Id [Token] -> Doc
 codeOut ga d m = foldDoc idRecord
     { foldAnnoDoc = \ _ -> small . codeOutAnno d m
     , foldIdDoc = \ _ -> codeOutId m
-    , foldIdApplDoc = codeOutAppl ga m
+    , foldIdApplDoc = codeOutAppl ga d m
     }
 
 codeToken :: String -> Doc
@@ -570,12 +574,14 @@ splitDoc d = case d of
     _ -> Nothing
 
 -- print literal terms and mixfix applications
-codeOutAppl :: GlobalAnnos -> Map.Map Id [Token] -> Doc -> Id -> [Doc] -> Doc
-codeOutAppl ga m origDoc _ args = case origDoc of
-  IdApplDoc i aas -> 
+codeOutAppl :: GlobalAnnos -> Maybe Display_format -> Map.Map Id [Token]
+            -> Doc -> Id -> [Doc] -> Doc
+codeOutAppl ga d m origDoc _ args = case origDoc of
+  IdApplDoc i aas ->
     let mk = codeToken . tokStr
         doSplit = maybe (error "doSplit") id . splitDoc
-        mkList op largs cl = fsep $ codeOutId m op : punctuate comma largs
+        mkList op largs cl = fsep $ codeOutId m op : punctuate comma
+                             (map (codeOut ga d m) largs)
                              ++ [codeOutId m cl]
     in if isGenNumber splitDoc ga i aas then
              mk $ toNumber doSplit i aas
@@ -587,6 +593,7 @@ codeOutAppl ga m origDoc _ args = case origDoc of
              mk $ toString doSplit ga i aas
          else if isGenList splitDoc ga i aas then
              toMixfixList mkList doSplit ga i aas
-         else codeOutId m i <> parens (fsep $ punctuate comma args)
+         else codeOutId m i <> if null args then empty else
+                                   parens (fsep $ punctuate comma args)
   _ -> error "codeOutAppl"
 
