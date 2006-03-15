@@ -12,16 +12,14 @@ generic mixfix analysis
 
 module Common.Earley (Rule, Rules, partitionRules
                      -- * special tokens for special ids
-                     , varTok, exprTok, typeTok, placeTok
-                     , applId, parenId, typeId, exprId, varId
+                     , varTok, exprTok
+                     , parenId, exprId, varId
                      , tupleId, unitId
                      , protect, listRules, mixRule
                      , getTokenPlaceList
                      -- * resolution chart
                      , Chart, mixDiags, ToExpr, rules, addRules
-                     , initChart, nextChart, getResolved
-                     -- * printing
-                     , joinPlace, isLeftArg, isRightArg)
+                     , initChart, nextChart, getResolved)
     where
 
 import Common.Id
@@ -88,10 +86,9 @@ data Item a = Item
 termStr :: String
 termStr = "(__)"
 -- | builtin terminals
-commaTok, termTok, oParenTok, cParenTok, placeTok :: Token
+commaTok, termTok, oParenTok, cParenTok :: Token
 commaTok = mkSimpleId "," -- for list elements
 termTok = mkSimpleId termStr
-placeTok = mkSimpleId place
 oParenTok = mkSimpleId "("
 cParenTok = mkSimpleId ")"
 listTok :: Token
@@ -99,35 +96,30 @@ listTok = mkSimpleId "[]" -- impossible token
 protectTok :: Token
 protectTok = mkSimpleId "()" -- impossible token
 
--- | token for type annotations
-typeTok :: Token
-typeTok = mkSimpleId ":"
-
 -- | token for a fixed (or recursively resolved) operator expression
 exprTok :: Token
 exprTok = mkSimpleId "(op )"
+
 -- | token for a fixed (or recursively resolved) argument expression
 varTok :: Token
 varTok = mkSimpleId "(var )"
 
--- | the invisible application rule with two places
-applId :: Id
-applId = mkId [placeTok, placeTok]
 -- | parenthesis around one place
 parenId :: Id
 parenId = mkId [oParenTok, placeTok, cParenTok]
+
 -- | id for tuples with at least two arguments
 tupleId :: Id
 tupleId = mkId [oParenTok, placeTok, commaTok, placeTok, cParenTok]
+
 -- | id for the emtpy tuple
 unitId :: Id
 unitId = mkId [oParenTok, cParenTok]
--- | see 'typeTok'
-typeId :: Id
-typeId = mkId [placeTok, typeTok]
+
 -- | see 'exprTok'
 exprId :: Id
 exprId = mkId [exprTok]
+
 -- | see 'varTok'
 varId :: Id
 varId = mkId [varTok]

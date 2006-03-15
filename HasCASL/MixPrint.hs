@@ -17,12 +17,9 @@ import Common.AS_Annotation
 import Common.Id
 import Common.ConvertLiteral
 import Common.Prec
-import Common.Earley (applId)
-import qualified Common.Lib.Map as Map
 
 import HasCASL.As
 import HasCASL.FoldTerm
-import HasCASL.Le
 import HasCASL.Builtin
 
 import Data.List (mapAccumL)
@@ -42,12 +39,6 @@ data ConvFuns a = ConvFuns
     , convId :: Id -> a
     }
 
-getSimpleIdPrec :: PrecMap -> Id -> Int
-getSimpleIdPrec (pm, _, m) i =  if i == applId then m + 1
-    else Map.findWithDefault
-    (if begPlace i || endPlace i then m
-     else m + 2) i pm
-
 toMixWeight :: GlobalAnnos
          -> SplitM a
          -> ConvFuns a
@@ -58,7 +49,8 @@ toMixWeight ga splt convFuns trm =
     Just (i@(Id ts cs _), aas) -> let
         newGa = addBuiltins ga
         pa = prec_annos newGa
-        precs@(_, _, m) = mkPrecIntMap pa
+        precs = mkPrecIntMap pa
+        m = maxWeight precs
         p = getSimpleIdPrec precs i
         dw = Just $ mkTrivWeight i p
         doSplit = maybe (error "doSplit") id . splt

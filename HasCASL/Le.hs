@@ -5,7 +5,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
 Stability   :  experimental
-Portability :  portable 
+Portability :  portable
 
 abstract syntax during static analysis
 -}
@@ -19,11 +19,12 @@ import qualified Common.Lib.Set as Set
 import qualified Common.Lib.State as State
 import Common.Result
 import Common.Id
-import Common.AS_Annotation(Named)
+import Common.AS_Annotation (Named)
+import Common.Prec
 
 -- * class info
 
--- | store the raw kind and all superclasses of a class identifier 
+-- | store the raw kind and all superclasses of a class identifier
 data ClassInfo = ClassInfo { rawKind :: RawKind
                            , classKinds :: [Kind]
                            } deriving (Show, Eq)
@@ -32,19 +33,19 @@ type ClassMap = Map.Map ClassId ClassInfo
 
 -- * type info
 
--- | data type generatedness indicator 
-data GenKind = Free | Generated | Loose deriving (Show, Eq, Ord) 
+-- | data type generatedness indicator
+data GenKind = Free | Generated | Loose deriving (Show, Eq, Ord)
 
--- | an analysed alternative with a list of (product) types 
-data AltDefn = Construct (Maybe UninstOpId) [Type] Partiality [[Selector]] 
+-- | an analysed alternative with a list of (product) types
+data AltDefn = Construct (Maybe UninstOpId) [Type] Partiality [[Selector]]
                -- only argument types
-               deriving (Show, Eq, Ord) 
+               deriving (Show, Eq, Ord)
 
 -- | an analysed component
 data Selector = Select (Maybe UninstOpId) Type Partiality -- only result type
-                deriving (Show, Eq, Ord) 
+                deriving (Show, Eq, Ord)
 
--- | a mapping of type (and disjoint class) identifiers 
+-- | a mapping of type (and disjoint class) identifiers
 type IdMap = Map.Map TypeId TypeId
 
 -- | for data types the morphism needs to be kept as well
@@ -71,7 +72,7 @@ type TypeMap = Map.Map TypeId TypeInfo
 starTypeInfo :: TypeInfo
 starTypeInfo = TypeInfo rStar [universe] Set.empty NoTypeDefn
 
--- | recursively substitute type names within a type 
+-- | recursively substitute type names within a type
 rename :: (TypeId -> RawKind -> Int -> Type) -> Type -> Type
 rename m t = case t of
            TypeName i k n -> m i k n
@@ -80,16 +81,16 @@ rename m t = case t of
            TypeToken _ -> t
            BracketType b l ps ->
                BracketType b (map (rename m) l) ps
-           KindedType tk k ps -> 
+           KindedType tk k ps ->
                KindedType (rename m tk) k ps
            MixfixType l -> MixfixType $ map (rename m) l
 
 -- | rename the type according to identifier map (for comorphisms)
 mapType :: IdMap -> Type -> Type
-mapType m ty = if Map.null m then ty else 
+mapType m ty = if Map.null m then ty else
               rename ( \ i k n ->
                let t = TypeName i k n in
-               if n == 0 then 
+               if n == 0 then
                   case Map.lookup i m of
                   Just j -> TypeName j k 0
                   _ -> t
@@ -97,12 +98,12 @@ mapType m ty = if Map.null m then ty else
 
 -- * sentences
 
--- | data types are also special sentences because of their properties 
+-- | data types are also special sentences because of their properties
 data Sentence = Formula Term
               | DatatypeSen [DataEntry]
               | ProgEqSen UninstOpId TypeScheme ProgEq
                 deriving (Show, Eq, Ord)
- 
+
 -- * variables
 
 -- | type variable are kept separately
@@ -117,10 +118,10 @@ data VarDefn = VarDefn Type deriving Show
 
 -- | name and scheme of a constructor
 data ConstrInfo = ConstrInfo { constrId :: UninstOpId
-                             , constrType :: TypeScheme 
+                             , constrType :: TypeScheme
                              } deriving (Show, Eq)
 
--- | possible definitions of functions 
+-- | possible definitions of functions
 data OpDefn = NoOpDefn OpBrand
             | ConstructData TypeId     -- target type
             | SelectData [ConstrInfo] TypeId   -- constructors of source type
@@ -144,10 +145,7 @@ data OpInfos = OpInfos { opInfos :: [OpInfo] } deriving (Show, Eq)
 
 type Assumps = Map.Map UninstOpId OpInfos
 
--- * the local environment and final signature 
-
--- | the precedence map
-type PrecMap = (Map.Map Id Int, Int, Int)
+-- * the local environment and final signature
 
 -- | the signature is established by the classes, types and assumptions
 data Env = Env { classMap :: ClassMap
@@ -155,7 +153,7 @@ data Env = Env { classMap :: ClassMap
                , localTypeVars :: LocalTypeVars
                , assumps :: Assumps
                , localVars :: Map.Map Id VarDefn
-               , sentences :: [Named Sentence]       
+               , sentences :: [Named Sentence]
                , envDiags :: [Diagnosis]
                , preIds :: (PrecMap, Set.Set Id)
                , counter :: Int
@@ -163,12 +161,12 @@ data Env = Env { classMap :: ClassMap
 
 -- | the empty environment (fresh variables start with 1)
 initialEnv :: Env
-initialEnv = Env Map.empty Map.empty Map.empty Map.empty Map.empty [] [] 
-             ((Map.empty, 0, 0), Set.empty) 1
+initialEnv = Env Map.empty Map.empty Map.empty Map.empty Map.empty [] []
+             (emptyPrecMap, Set.empty) 1
 
 -- * accessing the environment
 
--- | add diagnostic messages 
+-- | add diagnostic messages
 addDiags :: [Diagnosis] -> State.State Env ()
 addDiags ds =
     do e <- State.get
@@ -182,19 +180,19 @@ appendSentences fs =
 
 -- | store a class map
 putClassMap :: ClassMap -> State.State Env ()
-putClassMap ce = do 
-    e <- State.get 
+putClassMap ce = do
+    e <- State.get
     State.put e { classMap = ce }
 
 -- | store local assumptions
 putLocalVars :: Map.Map Id VarDefn -> State.State Env ()
-putLocalVars vs =  do 
-    e <- State.get 
+putLocalVars vs =  do
+    e <- State.get
     State.put e { localVars = vs }
 
 -- | converting a result to a state computation
 fromResult :: (Env -> Result a) -> State.State Env (Maybe a)
-fromResult f = do 
+fromResult f = do
    e <- State.get
    let Result ds mr = f e
    addDiags ds
@@ -202,19 +200,19 @@ fromResult f = do
 
 -- | store local type variables
 putLocalTypeVars :: LocalTypeVars -> State.State Env ()
-putLocalTypeVars tvs = do 
-    e <- State.get 
+putLocalTypeVars tvs = do
+    e <- State.get
     State.put e { localTypeVars = tvs }
 
 -- | store a complete type map
 putTypeMap :: TypeMap -> State.State Env ()
-putTypeMap tm = do 
-    e <- State.get 
+putTypeMap tm = do
+    e <- State.get
     State.put e { typeMap = tm }
 
 -- | store assumptions
 putAssumps :: Assumps -> State.State Env ()
-putAssumps ops = do 
+putAssumps ops = do
     e <- State.get
     State.put e { assumps = ops }
 
@@ -222,7 +220,7 @@ putAssumps ops = do
 getVar :: VarDecl -> Id
 getVar(VarDecl v _ _ _) = v
 
--- | check uniqueness of variables 
+-- | check uniqueness of variables
 checkUniqueVars :: [VarDecl] -> State.State Env ()
 checkUniqueVars = addDiags . checkUniqueness . map getVar
 
@@ -233,11 +231,11 @@ type FunMap = Map.Map (Id, TypeScheme) (Id, TypeScheme)
 -- | keep types and class disjoint and use a single identifier map for both
 data Morphism = Morphism { msource :: Env
                          , mtarget :: Env
-                         , typeIdMap :: IdMap 
-                         , funMap :: FunMap } 
+                         , typeIdMap :: IdMap
+                         , funMap :: FunMap }
                          deriving Show
 
--- | construct morphism for subsignatures 
+-- | construct morphism for subsignatures
 mkMorphism :: Env -> Env -> Morphism
 mkMorphism e1 e2 = Morphism e1 e2 Map.empty Map.empty
 
@@ -250,7 +248,7 @@ data SymbolType a = OpAsItemType TypeScheme
                   deriving (Show, Eq, Ord)
 
 -- symbols (may) need the env to look up type aliases
-data Symbol = Symbol {symName :: Id, symType :: SymbolType (), symEnv :: Env} 
+data Symbol = Symbol {symName :: Id, symType :: SymbolType (), symEnv :: Env}
               deriving Show
 
 instance Eq Symbol where
@@ -260,8 +258,8 @@ instance Ord Symbol where
     s1 <= s2 = (symName s1, symType s1) <= (symName s2, symType s2)
 
 
-type SymbolMap = Map.Map Symbol Symbol 
-type SymbolSet = Set.Set Symbol 
+type SymbolMap = Map.Map Symbol Symbol
+type SymbolSet = Set.Set Symbol
 
 idToTypeSymbol :: Env -> Id -> RawKind -> Symbol
 idToTypeSymbol e idt k = Symbol idt (TypeAsItemType k) e
@@ -273,7 +271,7 @@ idToOpSymbol :: Env -> Id -> TypeScheme -> Symbol
 idToOpSymbol e idt typ = Symbol idt (OpAsItemType typ) e
 
 -- note that the type of a qualified raw symbol is not analysed!
-data RawSymbol = AnID Id | AKindedId SymbKind Id 
+data RawSymbol = AnID Id | AKindedId SymbKind Id
                | AQualId Id (SymbolType ClassId)
                | ASymbol Symbol
                  deriving (Show, Eq, Ord)
@@ -298,8 +296,8 @@ symbolToRaw :: Symbol -> RawSymbol
 symbolToRaw sym = ASymbol sym
 
 symbKindToRaw :: SymbKind -> Id -> RawSymbol
-symbKindToRaw Implicit = AnID 
-symbKindToRaw sk = AKindedId $ case sk of 
+symbKindToRaw Implicit = AnID
+symbKindToRaw sk = AKindedId $ case sk of
                    SK_pred -> SK_op
                    SK_fun -> SK_op
                    SK_sort -> SK_type

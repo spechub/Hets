@@ -1,5 +1,4 @@
 {- |
-
 Module      :  $Header$
 Copyright   :  (c) Pascal Schmidt, Christian Maeder, and Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -12,7 +11,6 @@ This module provides the sublogic functions (as required by Logic.hs) for
   HasCASL. The functions allow to compute the minimal sublogics needed by a
   given element, to check whether an item is part of a given sublogic, and --
   not yet -- to project an element into a given sublogic.
-
 -}
 
 module HasCASL.Sublogic ( -- * datatypes
@@ -25,10 +23,10 @@ module HasCASL.Sublogic ( -- * datatypes
                    sublogics_min,
 
                    -- * functions for Logic instance
-                   
+
                    -- * sublogic to string converstion
                    sublogics_name,
-                   
+
                    -- * list of all sublogics
                    sublogics_all,
 
@@ -49,12 +47,14 @@ module HasCASL.Sublogic ( -- * datatypes
                    sl_env,
                    sl_morphism,
                    sl_symbol,
-                   
+
                  ) where
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.AS_Annotation
+import Common.Id
+
 import HasCASL.As
 import HasCASL.AsUtils
 import HasCASL.Le
@@ -161,7 +161,7 @@ need_hol = bottom { which_logic = HOL }
 
 sublogics_all :: [HasCASL_Sublogics]
 sublogics_all = [HasCASL_SL {has_sub = sub,
-                             has_part = part, 
+                             has_part = part,
                              has_eq = eq,
                              has_pred = pre,
                              has_ho = ho,
@@ -207,7 +207,7 @@ formulas_name False True  Atomic = "HO-Eq"
 formulas_name False False Atomic = "Eq"
 
 sublogics_name :: HasCASL_Sublogics -> [String]
-sublogics_name x = [ 
+sublogics_name x = [
      ( if (has_sub  x) then "Sub" else "")
   ++ ( if (has_part x) then "P"   else "")
   ++ ( if (has_type_classes x) then "TyCl"   else "")
@@ -227,7 +227,7 @@ formulas_min :: HasCASL_Formulas -> HasCASL_Formulas -> HasCASL_Formulas
 formulas_min x y = if (x<y) then x else y
 
 sublogics_max :: HasCASL_Sublogics -> HasCASL_Sublogics -> HasCASL_Sublogics
-sublogics_max a b = HasCASL_SL 
+sublogics_max a b = HasCASL_SL
                       (has_sub a               || has_sub  b)
                       (has_part a              || has_part b)
                       (has_eq a                || has_eq b)
@@ -239,7 +239,7 @@ sublogics_max a b = HasCASL_SL
                       (formulas_max (which_logic a) (which_logic b))
 
 sublogics_min :: HasCASL_Sublogics -> HasCASL_Sublogics -> HasCASL_Sublogics
-sublogics_min a b = HasCASL_SL 
+sublogics_min a b = HasCASL_SL
                       (has_sub a               && has_sub  b)
                       (has_part a              && has_part b)
                       (has_eq a                && has_eq   b)
@@ -282,12 +282,12 @@ is_atomic_t :: Term -> Bool
 is_atomic_t (QuantifiedTerm q _ t _) = (is_atomic_q q) && (is_atomic_t t)
 is_atomic_t (ApplTerm (QualOp Fun (InstOpId i _ _) t _) (TupleTerm ts _) _) =
  -- P-Conjunction and ExEq
-      (((i == andId) 
+      (((i == andId)
          && (and $ map is_atomic_t ts))
        || (i == exEq))
-   && (t == logType) 
-   && (not (null ts)) 
-is_atomic_t (QualOp Fun  (InstOpId i _ _) t _) = 
+   && (t == logType)
+   && (not (null ts))
+is_atomic_t (QualOp Fun  (InstOpId i _ _) t _) =
      (i == trueId)
   && (t == logType)
 --is_atomic_t (Predication _ _ _) = True
@@ -307,10 +307,10 @@ is_atomic_q _           = False
 -- FORMULA
 --
 is_horn_t :: Term -> Bool
-is_horn_t (QuantifiedTerm q _ f _) = 
+is_horn_t (QuantifiedTerm q _ f _) =
      (is_atomic_q q)
   && (is_horn_t f)
-is_horn_t (ApplTerm (QualOp Fun  (InstOpId i _ _) t _) (TupleTerm f _) _) = 
+is_horn_t (ApplTerm (QualOp Fun  (InstOpId i _ _) t _) (TupleTerm f _) _) =
      (i == implId)
   && (t == logType)
   && (is_horn_p_conj (head f))
@@ -322,8 +322,8 @@ is_horn_t _ = False
 is_horn_p_conj :: Term -> Bool
 is_horn_p_conj (ApplTerm (QualOp Fun  (InstOpId i _ _) t _) (TupleTerm ts _) _) =
       (i == andId)
-   && (t == logType) 
-   && (not (null ts)) 
+   && (t == logType)
+   && (not (null ts))
    && (and $ map is_horn_a ts)
 is_horn_p_conj _ = False
 
@@ -349,7 +349,7 @@ is_horn_p_a (QualOp Fun  (InstOpId i _ _) t _) =
      (i == trueId)
   && (t == logType)
 -- is_horn_p_a (Predication _ _ _) = True
-is_horn_p_a (ApplTerm (QualOp Fun  (InstOpId i _ _) t _) _ _) = 
+is_horn_p_a (ApplTerm (QualOp Fun  (InstOpId i _ _) t _) _ _) =
      ((i == defId)
        || (i == exEq))
   && (t == logType)
@@ -362,7 +362,7 @@ is_horn_p_a _ = False
 --
 is_ghorn_t :: Term -> Bool
 is_ghorn_t (QuantifiedTerm q _ t _) = (is_atomic_q q) && (is_ghorn_t t)
-is_ghorn_t (ApplTerm (QualOp Fun  (InstOpId i _ _) t _) (TupleTerm f _) _) = 
+is_ghorn_t (ApplTerm (QualOp Fun  (InstOpId i _ _) t _) (TupleTerm f _) _) =
      (t == logType)
   && (((i == andId) && (not (null f)) &&  ((is_ghorn_c_conj f) || (is_ghorn_f_conj f)))
       ||
@@ -373,9 +373,9 @@ is_ghorn_t (QualOp Fun  (InstOpId i _ _) t _) =
      (i == trueId)
   && (t == logType)
 -- is_ghorn_t (Predication _ _ _) = True
-is_ghorn_t (ApplTerm (QualOp Fun  (InstOpId i _ _) t _) _ _) = 
+is_ghorn_t (ApplTerm (QualOp Fun  (InstOpId i _ _) t _) _ _) =
      ((i == defId)
-       || (i == exEq) 
+       || (i == exEq)
        || (i == eqId))
   && (t == logType)
 -- is_ghorn_t (Membership _ _ _) = True
@@ -401,8 +401,8 @@ is_ghorn_p_conj t = (not(null t)) && (and (map is_ghorn_prem t))
 is_ghorn_prem :: Term -> Bool
 is_ghorn_prem (ApplTerm (QualOp Fun  (InstOpId i _ _) t _) (TupleTerm ts _) _) =
      (i == andId)
-  && (t == logType) 
-  && (not (null ts)) 
+  && (t == logType)
+  && (not (null ts))
   && (is_ghorn_p_conj ts)
 is_ghorn_prem x = is_horn_p_a x
 
@@ -411,8 +411,8 @@ is_ghorn_prem x = is_horn_p_a x
 is_ghorn_conc :: Term -> Bool
 is_ghorn_conc (ApplTerm (QualOp Fun  (InstOpId i _ _) t _) (TupleTerm ts _) _) =
      (i == andId)
-  && (t == logType) 
-  && (not (null ts)) 
+  && (t == logType)
+  && (not (null ts))
   && (is_ghorn_c_conj ts)
 is_ghorn_conc x = is_horn_a x
 
@@ -422,7 +422,7 @@ is_fol_t (CaseTerm _ _ _) = False
 is_fol_t (LetTerm _ _ _ _) = False
 is_fol_t _ = True
 {- FOL:
-  no lambda/let/case, 
+  no lambda/let/case,
   no higher types (i.e. all types are basic, tuples, or tuple -> basic)
 -}
 -- compute logic of a formula by checking all logics in turn
@@ -461,7 +461,7 @@ sl_basicItem (AxiomItems l m _) = sublogics_max
                                      (comp_list $ map sl_genVarDecl l)
                                      (comp_list $ map sl_term
                                                 $ map item m)
-sl_basicItem (Internal l _) = comp_list $ map sl_basicItem 
+sl_basicItem (Internal l _) = comp_list $ map sl_basicItem
                                         $ map item l
 
 
@@ -470,7 +470,7 @@ sl_sigItems (TypeItems i l _) = sublogics_max (sl_instance i)
                                   (comp_list $ map sl_typeItem
                                              $ map item l)
 sl_sigItems (OpItems b l _) = sublogics_max (sl_opBrand b)
-                                (comp_list $ map sl_opItem 
+                                (comp_list $ map sl_opItem
                                            $ map item l)
 
 
@@ -486,7 +486,7 @@ sl_instance _ = bottom
 
 sl_classItem :: ClassItem -> HasCASL_Sublogics
 sl_classItem (ClassItem c l _) = sublogics_max (sl_classDecl c)
-                                   (comp_list $ map sl_basicItem 
+                                   (comp_list $ map sl_basicItem
                                               $ map item l)
 
 
@@ -502,16 +502,16 @@ sl_kind (ClassKind i) = if i == universeId then bottom else need_type_classes
 sl_kind (FunKind _ k1 k2 _) = comp_list [need_hol, (sl_kind k1), (sl_kind k2)]
 
 sl_typeItem :: TypeItem -> HasCASL_Sublogics
-sl_typeItem (TypeDecl l k _) = sublogics_max (sl_kind k) 
+sl_typeItem (TypeDecl l k _) = sublogics_max (sl_kind k)
                                  (comp_list $ map sl_typePattern l)
 sl_typeItem (SubtypeDecl l _ _) = sublogics_max need_sub
                                     (comp_list $ map sl_typePattern l)
 sl_typeItem (IsoDecl l _) = sublogics_max need_sub
                               (comp_list $ map sl_typePattern l)
-sl_typeItem (SubtypeDefn tp _ t term _) = 
-  comp_list [need_sub, 
-             (sl_typePattern tp), 
-             (sl_type t), 
+sl_typeItem (SubtypeDefn tp _ t term _) =
+  comp_list [need_sub,
+             (sl_typePattern tp),
+             (sl_type t),
              (sl_term (item term))]
 sl_typeItem (AliasType tp (Just k) ts _) = comp_list [(sl_kind k), (sl_typePattern tp),
                                              (sl_typeScheme ts)]
@@ -521,7 +521,7 @@ sl_typeItem (Datatype dDecl) = sl_datatypeDecl dDecl
 
 
 sl_typePattern :: TypePattern -> HasCASL_Sublogics
-sl_typePattern (TypePattern _ l _) = comp_list $ map sl_typeArg l 
+sl_typePattern (TypePattern _ l _) = comp_list $ map sl_typeArg l
 -- non-empty args --> type constructor!
 sl_typePattern (MixfixTypePattern l) = comp_list $ map sl_typePattern l
 sl_typePattern (BracketTypePattern _ l _) = comp_list $ map sl_typePattern l
@@ -532,9 +532,9 @@ sl_type :: Type -> HasCASL_Sublogics
 sl_type = sl_BasicFun
 
 sl_Basictype :: Type -> HasCASL_Sublogics
-sl_Basictype ty = case ty of 
-    TypeName _ k v -> sublogics_max 
-        (if v /= 0 then need_polymorphism else bottom) $ sl_Rawkind k 
+sl_Basictype ty = case ty of
+    TypeName _ k v -> sublogics_max
+        (if v /= 0 then need_polymorphism else bottom) $ sl_Rawkind k
     KindedType t k _ -> sublogics_max (sl_Basictype t) $ sl_kind k
     ExpandedType _ t -> sl_Basictype t
     BracketType Parens [t] _ -> sl_Basictype t
@@ -543,37 +543,37 @@ sl_Basictype ty = case ty of
             sublogics_max need_ho $ sl_BasicFun ty
          (TypeName ide _ _, [arg]) | ide == lazyTypeId ->
             sublogics_max need_hol $ sl_Basictype arg
-         (_, args) -> comp_list $ need_type_constructors : 
+         (_, args) -> comp_list $ need_type_constructors :
                       map sl_Basictype args
 
 sl_BasicProd :: Type -> HasCASL_Sublogics
 sl_BasicProd ty = case getTypeAppl ty of
     (TypeName ide _ _, tyArgs@(_:_:_)) | ide == productId (length tyArgs)
         -> comp_list $ map sl_Basictype tyArgs
-    _ -> sl_Basictype ty 
+    _ -> sl_Basictype ty
 
 sl_BasicFun :: Type -> HasCASL_Sublogics
 sl_BasicFun ty = case getTypeAppl ty of
-    (TypeName ide _ _, [arg, res]) | isArrow ide -> 
+    (TypeName ide _ _, [arg, res]) | isArrow ide ->
            comp_list [if isPartialArrow ide then need_part else bottom,
               sl_BasicProd arg, sl_Basictype res]
     _ -> sl_Basictype ty
 
 -- FOL i.e. no higher types (i.e. all types are basic, tuples, or tuple -> basic)
 sl_typeScheme :: TypeScheme -> HasCASL_Sublogics
-sl_typeScheme (TypeScheme l t _) = 
+sl_typeScheme (TypeScheme l t _) =
   comp_list $ sl_type t : map sl_typeArg l
 
 sl_opItem :: OpItem -> HasCASL_Sublogics
-sl_opItem (OpDecl l t m _) = 
+sl_opItem (OpDecl l t m _) =
   comp_list [(comp_list $ map sl_opId l),
-             (sl_typeScheme t), 
+             (sl_typeScheme t),
              (comp_list $ map sl_opAttr m)]
 sl_opItem (OpDefn i v ts p t _) =
-  comp_list [(sl_opId i), 
+  comp_list [(sl_opId i),
              (comp_list $ map sl_varDecl (concat v)),
-             (sl_typeScheme ts), 
-             (sl_partiality p), 
+             (sl_typeScheme ts),
+             (sl_partiality p),
              (sl_term t)]
 
 
@@ -591,7 +591,7 @@ sl_datatypeDecl :: DatatypeDecl -> HasCASL_Sublogics
 sl_datatypeDecl (DatatypeDecl t k l c _) =
   let sl = comp_list [(sl_typePattern t),
                       (sl_kind k),
-                      (comp_list $ map sl_alternative 
+                      (comp_list $ map sl_alternative
                                  $ map item l)]
   in
     if (null c) then sl
@@ -600,14 +600,14 @@ sl_datatypeDecl (DatatypeDecl t k l c _) =
 
 sl_alternative :: Alternative -> HasCASL_Sublogics
 sl_alternative (Constructor _ l p _) =  sublogics_max (sl_partiality p)
-                                          (comp_list $ map sl_component 
+                                          (comp_list $ map sl_component
                                                             (concat l))
 sl_alternative (Subtype l _) = sublogics_max need_sub
                                  (comp_list $ map sl_type l)
 
 
 sl_component :: Component -> HasCASL_Sublogics
-sl_component (Selector _ p t _ _) = 
+sl_component (Selector _ p t _ _) =
    sublogics_max (sl_partiality p) (sl_type t)
 sl_component (NoSelector t) = sl_type t
 
@@ -628,7 +628,7 @@ sl_t (TupleTerm l _) = comp_list $ map sl_t l
 sl_t (TypedTerm t _ ty _) = sublogics_max (sl_t t) (sl_type ty)
 sl_t (QuantifiedTerm _ l t _) = sublogics_max (sl_t t)
                                  (comp_list $ map sl_genVarDecl l)
-sl_t (LambdaTerm l p t _) = 
+sl_t (LambdaTerm l p t _) =
   comp_list [(comp_list $ map sl_pattern l),
              (sl_partiality p),
              (sl_t t)]
@@ -661,7 +661,7 @@ sl_varKind vk = case vk of
    _ -> bottom
 
 sl_typeArg :: TypeArg -> HasCASL_Sublogics
-sl_typeArg (TypeArg _ _ k _ _ _ _) = 
+sl_typeArg (TypeArg _ _ k _ _ _ _) =
     sublogics_max need_polymorphism (sl_varKind k)
 
 
@@ -707,7 +707,7 @@ sl_symbType (SymbType t) = sl_typeScheme t
 
 sl_symbOrMap :: SymbOrMap -> HasCASL_Sublogics
 sl_symbOrMap (SymbOrMap s Nothing _) = sl_symb s
-sl_symbOrMap (SymbOrMap s (Just t) _) = 
+sl_symbOrMap (SymbOrMap s (Just t) _) =
   sublogics_max (sl_symb s) (sl_symb t)
 
 
@@ -717,8 +717,8 @@ sl_symbOrMap (SymbOrMap s (Just t) _) =
 --
 
 sl_env :: Env -> HasCASL_Sublogics
-sl_env e = 
-    let classes = if Map.null $ classMap e 
+sl_env e =
+    let classes = if Map.null $ classMap e
                     then bottom else need_type_classes
         types = comp_list $ map sl_typeInfo (Map.elems (typeMap e))
         ops = comp_list $ map sl_opInfos (Map.elems (assumps e))
@@ -736,7 +736,7 @@ sl_typeDefn _ = bottom
 
 
 sl_dataEntry :: DataEntry -> HasCASL_Sublogics
-sl_dataEntry (DataEntry _ _ _ l _ m) = 
+sl_dataEntry (DataEntry _ _ _ l _ m) =
   sublogics_max (comp_list $ map sl_typeArg l)
                 (comp_list $ map sl_altDefn m)
 
@@ -765,7 +765,7 @@ sl_constrInfo c = sl_typeScheme (constrType c)
 
 sl_sentence :: Sentence -> HasCASL_Sublogics
 sl_sentence (Formula t) = sl_term t
-sl_sentence (ProgEqSen _ ts pq) = 
+sl_sentence (ProgEqSen _ ts pq) =
   sublogics_max (sl_typeScheme ts) (sl_progEq pq)
 sl_sentence (DatatypeSen l) = comp_list $ map sl_dataEntry l
 
@@ -786,7 +786,7 @@ sl_morphism m = sublogics_max (sl_env $ msource m) (sl_env $ mtarget m)
 
 
 sl_symbol :: Symbol -> HasCASL_Sublogics
-sl_symbol (Symbol _ t e) = 
+sl_symbol (Symbol _ t e) =
   sublogics_max (sl_symbolType t) (sl_env e)
 
 
@@ -815,12 +815,12 @@ sl_in given new = (nimpl (has_sub  given) (has_sub  new)) &&
                   (nimpl (has_part given) (has_part new)) &&
                   (nimpl (has_eq   given) (has_eq   new)) &&
                   (nimpl (has_pred given) (has_pred new)) &&
-                  (nimpl (has_polymorphism given) 
+                  (nimpl (has_polymorphism given)
                                   (has_polymorphism new)) &&
                   (nimpl (has_ho   given) (has_ho   new)) &&
-                  (nimpl (has_type_classes given) 
+                  (nimpl (has_type_classes given)
                                   (has_type_classes new)) &&
-                  (nimpl (has_type_constructors given) 
+                  (nimpl (has_type_constructors given)
                              (has_type_constructors new)) &&
                   ((which_logic given) >= (which_logic new))
 

@@ -102,6 +102,7 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Pretty as Pretty
 import Common.LaTeX_funs
 import Common.ConvertLiteral
+import Common.Prec
 import Data.Char
 import Data.List (intersperse)
 
@@ -476,7 +477,7 @@ codeOut :: GlobalAnnos -> Maybe Display_format -> Map.Map Id [Token] -> Doc
 codeOut ga d m = foldDoc idRecord
     { foldAnnoDoc = \ _ -> small . codeOutAnno d m
     , foldIdDoc = \ _ -> codeOutId m
-    , foldIdApplDoc = codeOutAppl ga d m
+    , foldIdApplDoc = \ o i -> fst . codeOutAppl ga d m o i
     }
 
 codeToken :: String -> Doc
@@ -573,12 +574,17 @@ splitDoc d = case d of
     IdApplDoc i l -> Just (i, l)
     _ -> Nothing
 
+data Weight = Weight Int Id Id Id -- top, left, right
+
+mkTrivWeight :: Id -> Int -> Weight
+mkTrivWeight i n = Weight n i i i
+
 -- print literal terms and mixfix applications
 codeOutAppl :: GlobalAnnos -> Maybe Display_format -> Map.Map Id [Token]
-            -> Doc -> Id -> [Doc] -> Doc
+            -> Doc -> Id -> [Doc] -> (Doc, Maybe Weight)
 codeOutAppl ga d m origDoc _ args = case origDoc of
   IdApplDoc i aas ->
-    let mk = codeToken . tokStr
+    let mk t = (codeToken $ tokStr t, Nothing)
         doSplit = maybe (error "doSplit") id . splitDoc
         mkList op largs cl = fsep $ codeOutId m op : punctuate comma
                              (map (codeOut ga d m) largs)
@@ -592,8 +598,10 @@ codeOutAppl ga d m origDoc _ args = case origDoc of
          else if isGenString splitDoc ga i aas then
              mk $ toString doSplit ga i aas
          else if isGenList splitDoc ga i aas then
-             toMixfixList mkList doSplit ga i aas
-         else codeOutId m i <> if null args then empty else
-                                   parens (fsep $ punctuate comma args)
-  _ -> error "codeOutAppl"
-
+             (toMixfixList mkList doSplit ga i aas, Nothing)
+         else if null args || length args /= placeCount i then
+             (codeOutId m i <> if null args then empty else
+                             parens (fsep $ punctuate comma args), Nothing)
+         else (codeOutId m i <> if null args then empty else
+                             parens (fsep $ punctuate comma args), Nothing)
+  _ -> error "Common.Doc.codeOutAppl"

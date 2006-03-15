@@ -12,17 +12,19 @@ HasCASL's builtin types and functions
 
 module HasCASL.Builtin where
 
-import Common.GlobalAnnotations
-import Common.AS_Annotation
 import Common.Id
 import Common.Keywords
+import Common.GlobalAnnotations
+import Common.AS_Annotation
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
-import Common.Earley
+
 import HasCASL.As
 import HasCASL.AsUtils
 import HasCASL.Le
+
+-- * buitln identifiers
 
 trueId :: Id
 trueId = mkId [mkSimpleId trueS]
@@ -36,70 +38,65 @@ ifThenElse = mkId (map mkSimpleId [ifS, place, thenS, place, elseS, place])
 whenElse :: Id
 whenElse = mkId (map mkSimpleId [place, whenS, place, elseS, place])
 
-mkInfix :: String -> Id
-mkInfix s = mkId $ map mkSimpleId [place, s, place]
-
-infixIf :: Id 
+infixIf :: Id
 infixIf = mkInfix ifS
 
-exEq :: Id 
+exEq :: Id
 exEq = mkInfix exEqual
 
-eqId :: Id 
-eqId = mkInfix equalS
-
-andId :: Id 
+andId :: Id
 andId = mkInfix lAnd
 
-orId :: Id 
+orId :: Id
 orId = mkInfix lOr
 
-implId :: Id 
+implId :: Id
 implId = mkInfix implS
 
-eqvId :: Id 
+eqvId :: Id
 eqvId = mkInfix equivS
 
-{- 
+{-
     make these prefix identifier to allow "not def x" to be recognized
-    as "not (def x)" by giving def__ higher precedence then not__. 
-    Simple identifiers usually have higher precedence then ____, 
-    otherwise "def x" would be rejected. But with simple identifiers 
+    as "not (def x)" by giving def__ higher precedence then not__.
+    Simple identifiers usually have higher precedence then ____,
+    otherwise "def x" would be rejected. But with simple identifiers
     "not def x" would be parsed as "(not def) x" because ____ is left
     associative.
--}   
+-}
 
-defId :: Id 
-defId = mkId $ map mkSimpleId [defS, place]
+defId :: Id
+defId = mkId [mkSimpleId defS, placeTok]
 
-notId :: Id 
-notId = mkId $ map mkSimpleId [notS, place]
+notId :: Id
+notId = mkId [mkSimpleId notS, placeTok]
 
-negId :: Id 
-negId = mkId $ map mkSimpleId [negS, place]
+negId :: Id
+negId = mkId [mkSimpleId negS, placeTok]
 
-builtinRelIds :: Set.Set Id 
+builtinRelIds :: Set.Set Id
 builtinRelIds = Set.fromList [typeId, eqId, exEq, defId]
 
-builtinLogIds :: Set.Set Id 
-builtinLogIds = Set.fromList 
-                 [andId, eqvId, implId, orId, infixIf, notId] 
+builtinLogIds :: Set.Set Id
+builtinLogIds = Set.fromList
+                 [andId, eqvId, implId, orId, infixIf, notId]
 
+-- | add builtin identifiers
 addBuiltins :: GlobalAnnos -> GlobalAnnos
-addBuiltins ga = 
+addBuiltins ga =
     let ass = assoc_annos ga
-        newAss = Map.union ass $ Map.fromList 
-                 [(applId, ALeft), (andId, ALeft), (orId, ALeft), 
-                  (implId, ARight), (infixIf, ALeft), 
+        newAss = Map.union ass $ Map.fromList
+                 [(applId, ALeft), (andId, ALeft), (orId, ALeft),
+                  (implId, ARight), (infixIf, ALeft),
                   (whenElse, ARight)]
         precs = prec_annos ga
-        pMap = Rel.toMap precs          
+        pMap = Rel.toMap precs
         opIds = Set.unions (Rel.keysSet pMap : Map.elems pMap)
         opIs = Set.toList ((((Set.filter isInfix opIds)
-                Set.\\ builtinRelIds) Set.\\ builtinLogIds) 
+                Set.\\ builtinRelIds) Set.\\ builtinLogIds)
                 Set.\\ Set.fromList [applId, whenElse])
 
-        logs = [(eqvId, implId), (implId, andId), (implId, orId), 
+        logs = [(eqvId, implId), (implId, andId), (implId, orId),
                 (eqvId, infixIf), (infixIf, andId), (infixIf, orId),
                  (andId, notId), (orId, notId),
                 (andId, negId), (orId, negId)]
@@ -109,16 +106,11 @@ addBuiltins ga =
         rels2 = map ( \ i -> (i, whenElse)) $ Set.toList builtinRelIds
         ops1 = map ( \ i -> (whenElse, i)) (applId : opIs)
         ops2 = map ( \ i -> (i, applId)) (whenElse : opIs)
-        newPrecs = foldr (\ (a, b) p -> if Rel.path b a p then p else 
-                         Rel.insert a b p) precs $  
+        newPrecs = foldr (\ (a, b) p -> if Rel.path b a p then p else
+                         Rel.insert a b p) precs $
                   concat [logs, rels1, rels1b, rels2, ops1, ops2]
     in ga { assoc_annos = newAss
           , prec_annos = Rel.transClosure newPrecs }
-
-mkPrecIntMap :: Rel.Rel Id -> PrecMap
-mkPrecIntMap r = 
-    let (m, t) = Rel.toPrecMap r
-        in (m, m Map.! eqId, t)
 
 aVar :: Id
 aVar = simpleIdToId $ mkSimpleId "a"
@@ -130,25 +122,25 @@ aType :: Type
 aType = aTypeWithKind universe
 
 aBindWithKind :: Variance -> Kind -> Type -> TypeScheme
-aBindWithKind v k ty = TypeScheme [TypeArg aVar v (VarKind k) 
+aBindWithKind v k ty = TypeScheme [TypeArg aVar v (VarKind k)
     (toRaw k) (-1) Other nullRange] ty nullRange
 
 bindA :: Type -> TypeScheme
 bindA = aBindWithKind InVar universe
 
-lazyLog :: Type 
+lazyLog :: Type
 lazyLog = mkLazyType unitType
 
 aToUnitType :: Variance -> Kind -> TypeScheme
-aToUnitType v k = 
+aToUnitType v k =
     aBindWithKind v k $ mkFunArrType (aTypeWithKind k) PFunArr unitType
 
 eqType, logType, notType, whenType, unitTypeScheme :: TypeScheme
 eqType = bindA $ mkFunArrType (mkProductType [aType, aType]) PFunArr unitType
-logType = simpleTypeScheme $ 
+logType = simpleTypeScheme $
           mkFunArrType (mkProductType [lazyLog, lazyLog]) PFunArr unitType
 notType = simpleTypeScheme $ mkFunArrType lazyLog PFunArr unitType
-whenType = 
+whenType =
     bindA $ mkFunArrType (mkProductType [aType, lazyLog, aType]) PFunArr aType
 unitTypeScheme = simpleTypeScheme unitType
 
@@ -168,39 +160,39 @@ defType :: TypeScheme
 defType = aToUnitType InVar universe
 
 bList :: [(Id, TypeScheme)]
-bList = (botId, botType) : (defId, defType) : (notId, notType) : 
+bList = (botId, botType) : (defId, defType) : (notId, notType) :
         (negId, notType) : (whenElse, whenType) :
         (trueId, unitTypeScheme) : (falseId, unitTypeScheme) :
         (eqId, eqType) : (exEq, eqType) :
         map ( \ o -> (o, logType)) [andId, orId, eqvId, implId, infixIf]
 
 funSupertypes :: [(Arrow, [Arrow])]
-funSupertypes = [(PFunArr,[]), (FunArr, [PFunArr]), (PContFunArr, [PFunArr]), 
+funSupertypes = [(PFunArr,[]), (FunArr, [PFunArr]), (PContFunArr, [PFunArr]),
                  (ContFunArr, [PContFunArr, FunArr])]
 
 addUnit :: TypeMap -> TypeMap
-addUnit tm = foldr ( \ (i, k, s, d) m -> 
+addUnit tm = foldr ( \ (i, k, s, d) m ->
                  Map.insertWith ( \ _ old -> old) i
                          (TypeInfo (toRaw k) [k] (Set.fromList s) d) m) tm $
               (unitTypeId, universe, [], NoTypeDefn)
               : (predTypeId, FunKind ContraVar universe universe nullRange, [],
                            AliasTypeDefn $ aToUnitType ContraVar universe)
               : (lazyTypeId, lazyKind, [], NoTypeDefn)
-              : (logId, universe, [], AliasTypeDefn $ simpleTypeScheme $ 
+              : (logId, universe, [], AliasTypeDefn $ simpleTypeScheme $
                  mkLazyType unitType)
               : map ( \ n -> (productId n , prodKind n, [], NoTypeDefn))
                 [2 .. 5]
-              ++ map ( \ (a, l) -> (arrowId a, funKind, 
+              ++ map ( \ (a, l) -> (arrowId a, funKind,
                         map ( \ b -> arrowId b) l,
-                                   NoTypeDefn)) 
+                                   NoTypeDefn))
                 funSupertypes
 
 addOps :: Assumps -> Assumps
-addOps as = foldr ( \ (i, sc) m -> 
+addOps as = foldr ( \ (i, sc) m ->
                  Map.insertWith ( \ _ old -> old) i
                  (OpInfos [OpInfo sc [] (NoOpDefn Fun)]) m) as bList
 
-mkQualOp :: Id -> TypeScheme -> Range -> Term 
+mkQualOp :: Id -> TypeScheme -> Range -> Term
 mkQualOp i sc ps = QualOp Fun (InstOpId i [] ps) sc ps
 
 mkTerm :: Id -> TypeScheme -> Range -> Term  -> Term
@@ -222,8 +214,5 @@ toBinJunctor :: Id -> [Term] -> Range -> Term
 toBinJunctor i ts ps = case ts of
     [] -> error "toBinJunctor"
     [t] -> t
-    t:rs -> mkLogTerm i ps t 
+    t:rs -> mkLogTerm i ps t
             (toBinJunctor i rs ps)
-
-
-

@@ -15,6 +15,43 @@ module Common.Prec where
 import Common.Id
 import Common.GlobalAnnotations
 import Common.AS_Annotation
+import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
+import qualified Common.Lib.Rel as Rel
+
+-- | a precedence map using numbers for faster lookup
+data PrecMap = PrecMap
+    { precMap :: Map.Map Id Int
+    , relWeight :: Int
+    , maxWeight :: Int
+    } deriving Show
+
+emptyPrecMap :: PrecMap
+emptyPrecMap = PrecMap
+    { precMap = Map.empty
+    , relWeight = 0
+    , maxWeight = maxBound
+    }
+
+mkPrecIntMap :: Rel.Rel Id -> PrecMap
+mkPrecIntMap r =
+    let (m, t) = Rel.toPrecMap r
+        in emptyPrecMap
+               { precMap = m
+               , relWeight = Map.findWithDefault (div t 2) eqId m
+               , maxWeight = t
+               }
+
+getIdPrec :: PrecMap -> Set.Set Id -> Id -> Int
+getIdPrec p ps i = let m = maxWeight p in
+    if i == applId then m + 1
+    else Map.findWithDefault
+    (if begPlace i || endPlace i then
+         if Set.member i ps then relWeight p else m
+     else m + 2) i $ precMap p
+
+getSimpleIdPrec :: PrecMap -> Id -> Int
+getSimpleIdPrec p = getIdPrec p Set.empty
 
 -- | drop as many elements as are in the first list
 dropPrefix :: [a] -> [b] -> [b]

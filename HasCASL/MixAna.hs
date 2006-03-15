@@ -16,10 +16,10 @@ import Common.GlobalAnnotations
 import Common.Result
 import Common.Id
 import Common.Earley
+import Common.Prec
 import Common.ConvertLiteral
 import Common.Lib.State
 import qualified Common.Lib.Rel as Rel
-import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 
 import HasCASL.As
@@ -31,12 +31,6 @@ import HasCASL.Le
 
 import Data.Maybe
 import Control.Exception(assert)
-
-getIdPrec :: PrecMap -> Set.Set Id -> Id -> Int
-getIdPrec (pm, r, m) ps i =  if i == applId then m + 1
-    else Map.findWithDefault
-    (if begPlace i || endPlace i then if Set.member i ps then r else m
-     else m + 2) i pm
 
 addType :: Term -> Term -> Term
 addType (MixTypeTerm q ty ps) t = TypedTerm t q ty ps
@@ -204,14 +198,14 @@ resolver isPat ga trm =
     do ass <- gets assumps
        vs <- gets localVars
        ps <- gets preIds
-       let (addRule, ruleS, sIds) = makeRules ga ps 
+       let (addRule, ruleS, sIds) = makeRules ga ps
                  $ Set.union (Rel.keysSet ass) $ Rel.keysSet vs
        chart <- iterateCharts ga [trm] $ initChart addRule ruleS
        let Result ds mr = getResolved
               (shows . printTerm emptyGlobalAnnos . parenTerm) (getRange trm)
                           toMixTerm chart
        addDiags ds
-       if isPat then case mr of 
+       if isPat then case mr of
            Nothing -> return mr
            Just pat -> fmap Just $ anaPattern sIds pat
            else return mr
@@ -222,26 +216,26 @@ uTok = mkSimpleId "_"
 builtinIds :: [Id]
 builtinIds = [unitId, parenId, tupleId, exprId, typeId, applId]
 
-makeRules :: GlobalAnnos -> (PrecMap, Set.Set Id) -> Set.Set Id 
+makeRules :: GlobalAnnos -> (PrecMap, Set.Set Id) -> Set.Set Id
           -> (Token -> [Rule], Rules, Set.Set Id)
-makeRules ga ps@((_, _, m), _) aIds = 
+makeRules ga ps@(p, _) aIds =
     let (sIds, ids) = Set.partition isSimpleId aIds
         ks = Set.fold (Set.union . getKnowns) Set.empty ids
         rIds = Set.union ids $ Set.intersection sIds $ Set.map simpleIdToId ks
-        m2 = m + 2
+        m2 = maxWeight p + 2
     in ( \ tok -> if isSimpleToken tok
                      && not (Set.member tok ks)
-                         || tok == uTok then 
+                         || tok == uTok then
                      [(simpleIdToId tok, m2, [tok])] else []
        , partitionRules $ listRules m2 ga ++
                         initRules ps builtinIds (Set.toList rIds)
        , sIds)
 
 initRules :: (PrecMap, Set.Set Id) -> [Id] -> [Id] -> [Rule]
-initRules (pm@(_, _, m), ps) bs is =
-    map ( \ i -> mixRule (getIdPrec pm ps i) i)
+initRules (p, ps) bs is =
+    map ( \ i -> mixRule (getIdPrec p ps i) i)
             (bs ++ is) ++
-    map ( \ i -> (protect i, m + 3, getPlainTokenList i))
+    map ( \ i -> (protect i, maxWeight p + 3, getPlainTokenList i))
             (filter isMixfix is)
 
 -- create fresh type vars for unknown ids tagged with type MixfixType [].
@@ -250,9 +244,9 @@ anaPattern s pat =
     case pat of
     QualVar vd -> do newVd <- checkVarDecl vd
                      return $ QualVar newVd
-    ResolvedMixTerm i pats ps | null pats && 
-        (isSimpleId i || i == simpleIdToId uTok) && 
-        not (Set.member i s) -> do 
+    ResolvedMixTerm i pats ps | null pats &&
+        (isSimpleId i || i == simpleIdToId uTok) &&
+        not (Set.member i s) -> do
             (tvar, c) <- toEnvState $ freshVar $ posOfId i
             return $ QualVar $ VarDecl i (TypeName tvar rStar c) Other ps
         | otherwise -> do

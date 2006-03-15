@@ -136,6 +136,17 @@ place = "__"
 isPlace :: Token -> Bool
 isPlace (Token t _) = t == place
 
+placeTok :: Token
+placeTok = mkSimpleId place
+
+-- | also a definition indicator
+equalS :: String
+equalS  = "="
+
+-- | token for type annotations
+typeTok :: Token
+typeTok = mkSimpleId ":"
+
 -- * identifiers with positions (usually ignored) of compound lists
 
 -- | mixfix and compound identifiers
@@ -150,6 +161,9 @@ instance Show Id where
 mkId :: [Token] -> Id
 mkId toks = Id toks [] (Range [])
 
+mkInfix :: String -> Id
+mkInfix s = mkId [placeTok, mkSimpleId s, placeTok]
+
 -- ignore positions
 instance Eq Id where
     Id tops1 ids1 _ == Id tops2 ids2 _ = (tops1, ids1) == (tops2, ids2)
@@ -157,6 +171,18 @@ instance Eq Id where
 -- ignore positions
 instance Ord Id where
     Id tops1 ids1 _ <= Id tops2 ids2 _ = (tops1, ids1) <= (tops2, ids2)
+
+-- | the postfix type identifier
+typeId :: Id
+typeId = mkId [placeTok, typeTok]
+
+-- | the invisible application rule with two places
+applId :: Id
+applId = mkId [placeTok, placeTok]
+
+-- | the infix equality identifier
+eqId :: Id
+eqId = mkInfix equalS
 
 -- ** show stuff
 
@@ -267,7 +293,6 @@ isSimpleId (Id ts cs _) = null cs && case ts of
 -- ** fixity stuff
 
 -- | number of 'place' in 'Id'
-
 placeCount :: Id -> Int
 placeCount (Id tops _ _) = length $ filter isPlace tops
 

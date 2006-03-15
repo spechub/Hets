@@ -75,10 +75,6 @@ floatingS = "floating"
 exEqual :: String
 exEqual  = "=e="
 
--- | also a definition indicator
-equalS :: String
-equalS  = "="
-
 -- ** formula symbols
 lOr,
   lAnd,
