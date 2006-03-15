@@ -75,8 +75,8 @@ printRecord mf = Record
           fsep $ punctuate (space <> orDoc) $ zipWith
                    ( \ o d -> if isJunct o then parens d else d) ol l
     , foldImplication = \ (Implication oL oR b _) l r _ _ ->
-          let nl = if isImpl oL then parens l else l
-              nr = if isEquiv oR then parens r else r
+          let nl = if isAnyImpl oL then parens l else l
+              nr = if isImpl b oR then parens r else r
           in if b then fsep [nl, implies, nr]
              else fsep [nr, text ifS, nl]
     , foldEquivalence = \ (Equivalence oL oR _) l r _ ->
@@ -119,7 +119,9 @@ printRecord mf = Record
           fsep [if isCond ol then parens l else l,
                 text whenS, f, text elseS, r]
     , foldMixfix_qual_pred = \ _ p -> printPredSymb p
-    , foldMixfix_term = \ _ l -> fsep l
+    , foldMixfix_term = \ (Mixfix_term ol) l -> case ol of 
+          [_, Mixfix_parenthesized _ _] -> fcat l 
+          _ -> fsep l
     , foldMixfix_token = \ _ -> sidDoc
     , foldMixfix_sorted_term = \ _ s _ -> colon <+> idDoc s
     , foldMixfix_cast = \ _ s _ -> text asS <+> idDoc s
@@ -131,7 +133,7 @@ printRecord mf = Record
 printFormula :: FORMULA f -> Doc
 printFormula = foldFormula $ printRecord (error "printFormula")
 
-isQuant, isEquiv, isImpl, isJunct :: FORMULA f -> Bool
+isQuant, isEquiv, isAnyImpl, isJunct :: FORMULA f -> Bool
 isQuant f = case f of
     Quantification _ _ _ _ -> True
     _ -> False
@@ -140,14 +142,17 @@ isEquiv f = case f of
     Equivalence _ _ _ -> True
     _ -> isQuant f
 
-isImpl f = case f of
-    Implication _ _ _ _ -> True
-    _ -> isEquiv f
+isAnyImpl f = isImpl True f || isImpl False f
 
 isJunct f = case f of
     Conjunction _ _ -> True
     Disjunction _ _ -> True
-    _ -> isImpl f
+    _ -> isAnyImpl f
+
+isImpl :: Bool -> FORMULA f -> Bool
+isImpl a f = case f of
+    Implication _ _ b _ -> a /= b
+    _ -> isEquiv f
 
 isCond :: TERM f -> Bool
 isCond t = case t of
