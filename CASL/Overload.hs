@@ -55,7 +55,8 @@ minExpFORMULA :: PrettyPrint f => Min f e -> Sign f e -> FORMULA f
 minExpFORMULA mef sign formula = case formula of
     Quantification q vars f pos -> do
         -- add 'vars' to signature
-        let (_, sign') = runState (mapM_ addVars vars) sign
+        let (_, sign') = runState (mapM_ addVars vars) sign { envDiags = [] }
+        Result (envDiags sign') $ Just ()
         -- expand subformula
         f' <- minExpFORMULA mef sign' f
         return (Quantification q vars f' pos)
