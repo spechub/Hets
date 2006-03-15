@@ -28,7 +28,7 @@ makeHets ()
 date
 rm -rf HetCATS
 cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:/repository \
-    co -P HetCATS 
+    co -P HetCATS
 cd HetCATS
 time $MAKE
 time $MAKE check
@@ -47,7 +47,7 @@ cvs -d \
 cd CASL-lib
 mv ../HetCATS/HetCATS/hets .
 date
-time ./hets -v5 -o env,thy,th,dfg,pp.het,pp.tex Basic/*.casl
+for i in Basic/*.casl; do ./hets -v2 -o env,thy,th,dfg,pp.het,pp.tex $i; done
 date
 for i in HasCASL/*.het; do ./hets -v2 -o env,th,pp.het,pp.tex $i; done
 date
