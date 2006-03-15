@@ -18,3 +18,4 @@ a=>b<=>c
 a if b <=> v
 a /\ b \/ c
 a if b => c
+a => b if c
