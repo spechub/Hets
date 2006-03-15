@@ -3,4 +3,4 @@ Analyzing library ParameterSpecTest
 Analyzing spec X
 Analyzing spec Sym
 Analyzing spec X_inv
-Writing file: ParameterSpecTest_X_inv.th
+Writing file: ./ParameterSpecTest_X_inv.th
