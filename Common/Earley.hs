@@ -28,14 +28,9 @@ import Common.Id
 import Common.Result
 import Common.GlobalAnnotations
 import Common.AS_Annotation
+import Common.Prec
 import qualified Common.Lib.Map as Map
 import Data.List
-
--- | drop as many elements as are in the first list
-dropPrefix :: [a] -> [b] -> [b]
-dropPrefix [] l = l
-dropPrefix _ [] = []
-dropPrefix (_ : xs) (_ : ys) = dropPrefix xs ys
 
 -- | take the difference of the two input lists take (length l2 - length l1) l2
 takeDiff :: [a] -> [b] -> [b]
@@ -283,66 +278,19 @@ reduce ga table toExpr itm =
         $ filter (checkPrecs ga itm)
         $ lookUp table $ index itm
 
--- | check if a left argument will be added.
--- (The 'Int' is the number of current arguments.)
-isLeftArg :: Id -> [a] -> Bool
-isLeftArg op nArgs = null nArgs && begPlace op
--- | check if a right argument will be added.
-isRightArg :: Id -> [a] -> Bool
-isRightArg op@(Id toks _ _) nArgs = endPlace op &&
-    (isSingle $ dropPrefix nArgs $ filter isPlace toks)
-
 getWeight :: AssocEither -> Item a -> Id
 getWeight side = case side of
     ALeft -> lWeight
     ARight -> rWeight
 
-joinPlace :: AssocEither -> Id -> Bool
-joinPlace side = case side of
-    ALeft -> begPlace
-    ARight -> endPlace
-
 getNewWeight :: AssocEither -> GlobalAnnos -> Item a -> Id -> Id
-getNewWeight side ga argItem op =
-    let arg = getWeight side argItem
-    in if joinPlace side arg then
-          case precRel (prec_annos ga) op arg of
-            Higher -> arg
-            _ -> op
-       else op
-
-checkArg :: AssocEither -> GlobalAnnos -> Item a -> Item a -> Bool
-checkArg side ga argItem@Item{ rule = arg, info = argPrec }
-         Item{ rule = op, info = opPrec } =
-    let precs = prec_annos ga
-        assocs = assoc_annos ga
-        weight = getWeight side argItem
-    in if argPrec <= 0 then False
-       else case compare argPrec opPrec of
-           LT -> False
-           GT -> True
-           EQ -> if joinPlace side arg then
-               case precRel precs op weight of
-               Lower -> True
-               Higher -> False
-               BothDirections -> False
-               NoDirection ->
-                   case (isInfix arg, joinPlace side op) of
-                        (True, True) -> if arg == op
-                                        then not $ isAssoc side assocs op
-                                        else True
-                        (False, True) -> True
-                        (True, False) -> False
-                        _ -> side == ALeft
-            else True
+getNewWeight side ga argItem = nextWeight side ga (getWeight side argItem)
 
 -- | check precedences of an argument and a top-level operator.
--- (The 'Int' is the number of current arguments of the operator.)
 checkPrecs :: GlobalAnnos -> Item a -> Item a -> Bool
-checkPrecs ga argItem opItem@Item{ rule = op, args = oArgs } =
-    if isLeftArg op oArgs then checkArg ARight ga argItem opItem
-    else if isRightArg op oArgs then checkArg ALeft ga argItem opItem
-    else True
+checkPrecs ga argItem@Item { rule = arg, info = argPrec }
+              Item { rule = op, info = opPrec, args = oArgs } =
+    checkPrec ga (op, opPrec) (arg, argPrec) oArgs (flip getWeight argItem)
 
 reduceCompleted :: GlobalAnnos -> Table a -> ToExpr a -> [Item a] -> [Item a]
 reduceCompleted ga table toExpr =

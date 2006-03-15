@@ -16,7 +16,8 @@ import Common.GlobalAnnotations
 import Common.AS_Annotation
 import Common.Id
 import Common.ConvertLiteral
-import Common.Earley
+import Common.Prec
+import Common.Earley (applId)
 import qualified Common.Lib.Map as Map
 
 import HasCASL.As
@@ -24,8 +25,7 @@ import HasCASL.FoldTerm
 import HasCASL.Le
 import HasCASL.Builtin
 
-import Data.Maybe
-import Data.List
+import Data.List (mapAccumL)
 
 data Weight = Weight Int Id Id Id -- top, left, right
 
@@ -41,30 +41,6 @@ data ConvFuns a = ConvFuns
     , convertTerm :: GlobalAnnos -> a -> a
     , convId :: Id -> a
     }
-
-checkMyArg :: AssocEither -> GlobalAnnos -> (Id, Int)
-           -> (Id, Int) -> Id -> Bool
-checkMyArg side ga (op, opPrec) (arg, argPrec) weight =
-    let precs = prec_annos ga
-        assocs = assoc_annos ga
-    in if argPrec <= 0 then False
-       else case compare argPrec opPrec of
-           LT -> False
-           GT -> True
-           EQ -> if joinPlace side arg then
-               case precRel precs op weight of
-               Lower -> True
-               Higher -> False
-               BothDirections -> False
-               NoDirection ->
-                   case (isInfix arg, joinPlace side op) of
-                        (True, True) -> if arg == op
-                                        then not $ isAssoc side assocs op
-                                        else True
-                        (False, True) -> True
-                        (True, False) -> False
-                        _ -> side == ALeft
-            else True
 
 getSimpleIdPrec :: PrecMap -> Id -> Int
 getSimpleIdPrec (pm, _, m) i =  if i == applId then m + 1
@@ -117,28 +93,20 @@ toMixWeight ga splt convFuns trm =
                 in case itm of
                 Nothing -> pArg : l
                 Just (Weight q ta la ra) -> (if isLeftArg i l then
-                       if checkMyArg ARight newGa (i, p) (ta, q) ra
+                       if checkArg ARight newGa (i, p) (ta, q) ra
                        then arg else pArg
                     else if isRightArg i l then
-                       if checkMyArg ALeft newGa (i, p) (ta, q) la
+                       if checkArg ALeft newGa (i, p) (ta, q) la
                        then arg else pArg
                     else arg) : l) [] newArgs
              leftW = if isLeftArg i [] then
                   case snd $ head newArgs of
-                  Just (Weight  _ _ l _) -> if begPlace l then
-                        case precRel pa i l of
-                        Higher -> l
-                        _ -> i
-                        else i
+                  Just (Weight  _ _ l _) -> nextWeight ALeft newGa i l
                   _ -> i
                   else i
              rightW = if isRightArg i $ tail newArgs then
                   case snd $ last newArgs of
-                  Just (Weight _ _ _ r) -> if endPlace r then
-                        case precRel pa i r of
-                        Higher -> r
-                        _ -> i
-                        else i
+                  Just (Weight _ _ _ r) -> nextWeight ARight newGa i r
                   _ -> i
                   else i
              fts = fst $ splitMixToken ts
