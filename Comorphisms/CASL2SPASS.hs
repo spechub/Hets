@@ -16,7 +16,7 @@ The translating comorphism from CASL to SPASS.
      (s. below for a sketch)
 -}
 
-module Comorphisms.CASL2SPASS where
+module Comorphisms.CASL2SPASS (CASL2SPASS(..)) where
 
 -- Debuging and Warning
 import Debug.Trace
@@ -83,6 +83,16 @@ insertSPId i t spid m =
     where err = error ("CASL2SPASS: for Id \""++show i ++
                        "\" the type \""++ show t ++ 
                        "\" can't be mapped to different SPASS identifiers")
+
+deleteSPId :: Id -> CType ->
+              IdType_SPId_Map ->
+              IdType_SPId_Map
+deleteSPId i t m =
+    maybe m (\ m2 -> let m2' = Map.delete t m2
+                     in if Map.null m2' 
+                           then Map.delete i m 
+                           else Map.insert i m2' m) $ 
+          Map.lookup i m
 
 -- | specialized elems into a set for IdType_SPId_Map
 elemsSPId_Set :: IdType_SPId_Map -> Set.Set SPIdentifier
@@ -520,7 +530,8 @@ transVarTup :: (Set.Set SPIdentifier,IdType_SPId_Map) ->
                ((Set.Set SPIdentifier,IdType_SPId_Map),
                 (SPIdentifier,SPIdentifier)) -- ^ ((new set of used Ids,new map of Ids to original Ids),(var as sp_Id,sort as sp_Id))
 transVarTup (usedIds,idMap) (v,s) = 
-    ((Set.insert sid usedIds,insertSPId vi (CVar s) sid idMap)
+    ((Set.insert sid usedIds,
+      insertSPId vi (CVar s) sid $ deleteSPId vi (CVar s) idMap)
     , (sid,spSort)) 
     where spSort = maybe (error ("CASL2SPASS: translation of sort \""++
                                 showPretty s "\" not found"))
