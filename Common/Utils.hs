@@ -7,9 +7,10 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Useful functions that can't be found in the libraries.
-   But should shared across Hets.
-
+utility functions that can't be found in the libraries,
+   but should be shared across Hets.
+-}
+{-
    Todo:
      - Add your own functions.
 -}
@@ -34,7 +35,7 @@ import System.IO
 joinWith :: a -- ^ seperator element
          -> [[a]] -- ^ list of lists of elements
          -> [a]
-joinWith sep = concat . intersperse (sep:[])
+joinWith sep = concat . intersperse [sep]
 
 {- |
   A function inspired by the perl function split. A list is splitted
@@ -186,31 +187,31 @@ notUnique (h:t) = let
                                          False -> rest
 
 -- safe context for graphs
-safeContext :: (Show a, Show b,Graph gr) => String -> gr a b -> Node 
+safeContext :: (Show a, Show b,Graph gr) => String -> gr a b -> Node
             -> Context a b
 safeContext err g v =
   case match v g of
     (Nothing,_) -> error (err++": Match Exception, Node: "++show v++
                           " not present in graph with nodes:\n"++
                           show (nodes g)++"\nand edges:\n"++show (edges g))
-    (Just c,_)  -> c 
+    (Just c,_)  -> c
 
 {- |
    filter a map according to a given list of keys (it dosen't hurt if a key is not present in the map)
 -}
 filterMapWithList :: Ord k => [k] -> Map.Map k e -> Map.Map k e
-filterMapWithList l = filterMapWithSet sl 
+filterMapWithList l = filterMapWithSet sl
     where sl = Set.fromList l
 
 {- |
    filter a map according to a given set of keys (it dosen't hurt if a key is not present in the map)
 -}
 filterMapWithSet :: Ord k => Set.Set k -> Map.Map k e -> Map.Map k e
-filterMapWithSet s = Map.filterWithKey selected 
+filterMapWithSet s = Map.filterWithKey selected
     where selected k _ = Set.member k s
 
 {- |
-  advice from <http://haskell.org/hawiki/ThingsToAvoid> use this instead of 
+  advice from <http://haskell.org/hawiki/ThingsToAvoid> use this instead of
   direct application of selector function
 -}
 comparing :: (Ord b) => (a -> b) -> a -> a -> Ordering
@@ -219,7 +220,7 @@ comparing selector x y = compare (selector x) (selector y)
 {- |
   create a temp file.
 -}
-createTempFile :: FilePath      -- ^ parent path, but no separator (/)
+createTempFile :: FilePath      -- ^ parent path, but no separator (\/)
 	       -> FilePath     -- ^ name of file (prefix)
 	       -> FilePath     -- ^ suffix of file (no point)
 	       -> IO Handle
@@ -228,15 +229,15 @@ createTempFile parent preName sufName =
        pid <- getProcessID
        time <- getClockTime
        ctime <- toCalendarTime time
-       let outTime = (show $ ctDay ctime) ++ (show $ ctHour ctime) 
+       let outTime = (show $ ctDay ctime) ++ (show $ ctHour ctime)
                      ++ (show $ ctMin ctime) ++ (show $ ctSec ctime)
-           parentPath = (if length parent == 0 
+           parentPath = (if length parent == 0
 	   		  then "/tmp/tmp" ++ (show random)
 	   		  else parent)
 	   separator = "/"
-	   randomName = (show pid) ++ outTime ++ (show random) 
-	   abPath = parentPath ++ separator ++ preName ++ randomName ++ 
-                    (if length sufName == 0 then "" else "." ++ sufName) 
+	   randomName = (show pid) ++ outTime ++ (show random)
+	   abPath = parentPath ++ separator ++ preName ++ randomName ++
+                    (if length sufName == 0 then "" else "." ++ sufName)
        openFile abPath WriteMode
     where getRandom :: IO Int
           getRandom = getStdRandom (randomR (10000, 99999))
