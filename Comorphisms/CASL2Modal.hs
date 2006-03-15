@@ -11,7 +11,7 @@ The embedding comorphism from CASL to ModalCASL.
 
 -}
 
-module Comorphisms.CASL2Modal where
+module Comorphisms.CASL2Modal (CASL2Modal(..)) where
 
 import Logic.Logic
 import Logic.Comorphism

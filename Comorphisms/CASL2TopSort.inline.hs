@@ -11,7 +11,7 @@ Coding out subsorting into unary predicates.
    New concept for proving Ontologies.
 -}
 
-module Comorphisms.CASL2TopSort where
+module Comorphisms.CASL2TopSort (CASL2TopSort(..)) where
 
 import Control.Exception (assert)
 
