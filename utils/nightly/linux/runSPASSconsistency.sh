@@ -3,5 +3,5 @@
 for i in $*
 do
   echo $i
-  SPASS $i | fgrep -C 4 "SPASS beiseite"
+  SPASS $i | egrep -B 1 -A 6 -f spass_consistency_patterns.txt
 done
