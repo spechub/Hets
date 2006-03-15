@@ -1816,6 +1816,8 @@
                . (b || b) || b = b ])
 ### Hint 17.9, redeclared as total 'min'
 ### Hint 17.14, redeclared as total 'max'
+### Warning 70.16, known variable shadowed 's'
+### Warning 72.16, known variable shadowed 'r'
 *** Error 90.19, no typing for: suc(0): Pos
 ### Hint 98.10, redeclared op 'min'
 ### Hint 98.15, redeclared op 'max'
@@ -2021,6 +2023,9 @@
 ### Warning 395.9, added subsort cycle by 's < t'
 ### Warning 404.7, known variable shadowed 'x'
 ### Warning 410.10, known variable shadowed 'x'
+### Warning 411.16, known variable shadowed 'x'
+### Warning 411.60, known variable shadowed 'x'
+### Warning 426.22, known variable shadowed 'x'
 *** Error 426.26, no predicate with 0 arguments found for 'e'
 ### Warning 427.8, known variable shadowed 'x'
 *** Error 427.12, no predicate with 0 arguments found for 'e'
