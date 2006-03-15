@@ -14,14 +14,10 @@ Predefined signature part of CASL_DL.
 {- 
 
  todo:
-    - add bootstrapped globalAnnos parsed in the same way as 
-      Haskell/PreludeString.append.hs does it
-    - add all datatypes as one string with Perl-script, read from a copy 
-      of $HETS_LIB/CASL_DL/Datatypes.het
 
 -}
 
-module CASL_DL.PredefinedSign(dataSign) where
+module CASL_DL.PredefinedSign(predefinedSign) where
 
 import CASL_DL.AS_CASL_DL
 import CASL_DL.Sign
@@ -35,10 +31,10 @@ import qualified Common.Lib.Set as Set
 import CASL.AS_Basic_CASL
 import CASL.Sign
 
-dataSign :: Sign DL_FORMULA CASL_DLSign
-dataSign = toCASL_DL_Sign $ dataSig_CASL
-   -- foldl (addSig (\ _ _ -> ())) (emptySign ()) 
-   --        [booleanSign,integerSig] 
+predefinedSign :: Sign DL_FORMULA CASL_DLSign
+predefinedSign = toCASL_DL_Sign $
+   foldl (addSig (\ _ _ -> ())) (emptySign ()) 
+           [dataSig_CASL,predefined_symbols] 
 
 toCASL_DL_Sign :: Sign (FORMULA ()) () 
                -> Sign DL_FORMULA CASL_DLSign
@@ -50,6 +46,19 @@ toCASL_DL_Sign sig =
       , assocOps = assocOps sig
       , predMap = predMap sig
       }
+
+predefined_symbols :: Sign (FORMULA ()) ()
+predefined_symbols = 
+    ((emptySign ()){ sortSet =
+                      Set.singleton
+                        (Id [Token "Thing" nullRange] [] nullRange)
+                   , predMap = 
+                       Map.singleton (Id [Token "Nothing" nullRange] [] 
+                                         nullRange) 
+                           (Set.singleton
+                              (PredType  [Id [Token "Thing" nullRange] [] 
+                                             nullRange]))
+                   })
 
 dataSig_CASL :: Sign (FORMULA ()) ()
 dataSig_CASL = 

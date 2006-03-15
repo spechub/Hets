@@ -26,6 +26,7 @@ module CASL_DL.StatAna where
 import CASL_DL.AS_CASL_DL
 import CASL_DL.Print_AS
 import CASL_DL.Sign
+import CASL_DL.PredefinedGlobalAnnos
 
 import CASL.Sign
 import CASL.MixfixParser
@@ -39,6 +40,7 @@ import CASL.LiteralFuns
 
 import Common.AS_Annotation
 import Common.GlobalAnnotations
+import Common.AnalyseAnnos
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.Lib.State
@@ -54,8 +56,9 @@ basicCASL_DLAnalysis :: (BASIC_SPEC () () DL_FORMULA,
 			      Sign DL_FORMULA CASL_DLSign,
 			      [Named (FORMULA DL_FORMULA)])
 basicCASL_DLAnalysis inp@(bs,sig,ga) = 
-    basicAnalysis minDLForm (const return) 
-             (const return) ana_Mix diffCASL_DLSign inp
+    do ga' <- addGlobalAnnos ga caslDLGlobalAnnos
+       basicAnalysis minDLForm (const return) 
+             (const return) ana_Mix diffCASL_DLSign (bs,sig,ga')
  {-   case basicAnalysis minDLForm (const return) 
              (const return) diffCASL_DLSign inp of
     Result ds1 mr -> maybe (Result ds1 Nothing) callAna mr

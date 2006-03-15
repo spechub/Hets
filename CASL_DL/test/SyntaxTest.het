@@ -1,9 +1,9 @@
 
 library SyntaxTest
-%number __@@__
-%string emptyString, __:@:__
 
 logic CASL_DL
+
+spec X0 = {}
 
 spec X1 = 
      sort T1,T2,T3 < Thing
