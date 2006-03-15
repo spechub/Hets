@@ -14,13 +14,13 @@ all: patch hets
 ####################################################################
 ## Some varibles, which control the compilation
 
-INCLUDE_PATH = 
+INCLUDE_PATH = hxt
 CLEAN_PATH = . \
     utils utils/DrIFT-src utils/GenerateRules utils/InlineAxioms Common \
     Common/Lib Common/ATerm Logic CASL CASL/CCC CASL/CompositionTable \
     Syntax Static GUI HasCASL Haskell Modal CoCASL COL ConstraintCASL \
     CspCASL ATC ToHaskell Proofs Comorphisms Isabelle Driver \
-    Taxonomy CASL_DL SPASS OWL_DL $(PFE_PATHS)
+    Taxonomy CASL_DL SPASS OWL_DL OMDoc $(PFE_PATHS)
 
 # the 'replacing spaces' example was taken from the (GNU) Make info manual
 empty =
