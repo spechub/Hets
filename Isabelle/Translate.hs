@@ -13,7 +13,7 @@ translate 'Id' to Isabelle strings
 
 module Isabelle.Translate
     ( showIsaConstT, showIsaConstIT, showIsaTypeT, transConstStringT
-    , mkIsaConstT, mkIsaConstIT, transString, isaPrelude
+    , mkIsaConstT, mkIsaConstIT, transString, isaPrelude, IsaPreludes
     ) where
 
 import Common.Id
