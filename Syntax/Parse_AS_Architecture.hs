@@ -1,4 +1,4 @@
-{- |
+<{- |
    Module      :  $Header$
    Copyright   :  (c) Maciek Makowski, Warsaw University 2003-2004, C. Maeder
    License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -44,8 +44,8 @@ annotedArchSpec l = annoParser2 (archSpec l)
 -- ARCH-SPEC ::= BASIC-ARCH-SPEC | GROUP-ARCH-SPEC
 -- @
 archSpec :: LogicGraph -> AParser AnyLogic (Annoted ARCH_SPEC)
-archSpec l = 
-    do asp <- basicArchSpec l 
+archSpec l =
+    do asp <- basicArchSpec l
        return asp
     <|>
     do asp <- groupArchSpec l
@@ -61,9 +61,9 @@ groupArchSpec l =
     do kOpBr <- oBraceT
        asp <- annoParser $ archSpec l
        kClBr <- cBraceT
-       return (replaceAnnoted 
+       return (replaceAnnoted
                (Group_arch_spec (item asp) $ toPos kOpBr [] kClBr) asp)
-    <|>  
+    <|>
     do name <- simpleId
        return (emptyAnno $ Arch_spec_name name)
 
@@ -74,13 +74,13 @@ groupArchSpec l =
 --                                result UNIT-EXPRESSION ;/
 -- @
 basicArchSpec :: LogicGraph -> AParser AnyLogic (Annoted ARCH_SPEC)
-basicArchSpec l = 
+basicArchSpec l =
     do kUnit <- pluralKeyword unitS
        (declDefn, ps) <- auxItemList [resultS] [] (unitDeclDefn l) (,)
        kResult <- asKey resultS
        expr <- annoParser2 $ unitExpr l
        (m, an) <- optSemi
-       return (emptyAnno $ Basic_arch_spec declDefn (appendAnno expr an) 
+       return (emptyAnno $ Basic_arch_spec declDefn (appendAnno expr an)
                      (tokPos kUnit `appRange` ps `appRange` catPos (kResult:m)))
 
 -- | Parse unit declaration or definition
@@ -88,15 +88,15 @@ basicArchSpec l =
 -- UNIT-DECL-DEFN ::= UNIT-DECL | UNIT-DEFN
 -- @
 unitDeclDefn :: LogicGraph -> AParser AnyLogic UNIT_DECL_DEFN
-unitDeclDefn l = do 
+unitDeclDefn l = do
     name <- simpleId
-    do c <- colonT     -- unit declaration 
+    do c <- colonT     -- unit declaration
        decl <- refSpec l
        (gs, ps) <- option ([], []) $
          do kGiven <- asKey givenS
             (guts, qs) <- groupUnitTerm l `separatedBy` anComma
             return (guts, kGiven:qs)
-       return (Unit_decl name decl gs $ catPos (c:ps)) 
+       return (Unit_decl name decl gs $ catPos (c:ps))
      <|> -- unit definition
      unitDefn' l name
 
@@ -105,7 +105,7 @@ unitDeclDefn l = do
 -- UNIT-REF ::= UNIT-NAME : REF-SPEC
 -- @
 unitRef :: LogicGraph -> AParser AnyLogic UNIT_REF
-unitRef l = 
+unitRef l =
         do name <- simpleId
            sep1 <- asKey toS
            usp <- refSpec l
@@ -124,27 +124,27 @@ unitSpec l =
     do kClosed <- asKey closedS
        uSpec <- unitSpec l
        return (Closed_unit_spec uSpec $ tokPos kClosed)
-    <|> -- unit type 
-{- NOTE: this can also be a spec name. If this is the case, this unit spec 
+    <|> -- unit type
+{- NOTE: this can also be a spec name. If this is the case, this unit spec
            will be converted on the static analysis stage.
            See Static.AnalysisArchitecture.ana_UNIT_SPEC. -}
     do gps@(gs:gss, _) <- annoParser (groupSpec l) `separatedBy` crossT
        let rest = unitRestType l gps
        if null gss then do
-            option ( {- case item gs of 
+            option ( {- case item gs of
                     Spec_inst sn [] _ -> Spec_name sn -- annotations are lost
                     _ -> -} Unit_type [] gs nullRange) rest
             else rest
 
-unitRestType :: LogicGraph -> ([Annoted SPEC], [Token]) 
+unitRestType :: LogicGraph -> ([Annoted SPEC], [Token])
              -> AParser AnyLogic UNIT_SPEC
-unitRestType l (gs, ps) = do 
+unitRestType l (gs, ps) = do
     a <- asKey funS
     g <- annoParser $ groupSpec l
     return (Unit_type gs g $ catPos (ps ++ [a]))
 
 refSpec :: LogicGraph -> AParser AnyLogic REF_SPEC
-refSpec l = do 
+refSpec l = do
       (rs, ps) <- basicRefSpec l `separatedBy` (asKey thenS)
       return $ if isSingle rs then head rs
          else Compose_ref rs $ catPos ps
@@ -174,11 +174,11 @@ basicRefSpec l = -- component spec
 
 refinedRestSpec :: LogicGraph -> UNIT_SPEC -> AParser AnyLogic REF_SPEC
 refinedRestSpec l u = do
-      b <- asKey behaviourallyS 
+      b <- asKey behaviourallyS
       onlyRefinedRestSpec l (tokPos b) u
     <|> onlyRefinedRestSpec l nullRange u
 
-onlyRefinedRestSpec :: LogicGraph -> Range -> UNIT_SPEC -> 
+onlyRefinedRestSpec :: LogicGraph -> Range -> UNIT_SPEC ->
                        AParser AnyLogic REF_SPEC
 onlyRefinedRestSpec l b u = do
     r <- asKey refinedS
@@ -188,7 +188,7 @@ onlyRefinedRestSpec l b u = do
                  return (m, v : ts)
     t <- asKey toS
     rsp <- refSpec l
-    return $ Refinement (isNullRange b) u ms rsp (b `appRange` toPos r ps t)           
+    return $ Refinement (isNullRange b) u ms rsp (b `appRange` toPos r ps t)
 
 -- | Parse group unit term
 -- @
@@ -245,7 +245,7 @@ unitTerm l = unitTermAmalgamation l
 -- UNIT-TERM-AMALGAMATION ::= UNIT-TERM-LOCAL and ... and UNIT-TERM-LOCAL
 -- @
 unitTermAmalgamation :: LogicGraph -> AParser AnyLogic (Annoted UNIT_TERM)
-unitTermAmalgamation l = 
+unitTermAmalgamation l =
     do (uts, toks) <- annoParser2 (unitTermLocal l) `separatedBy` (asKey andS)
        return (case uts of
                [ut] -> ut
@@ -264,7 +264,7 @@ unitTermLocal l =
        (uDefns, ps) <- auxItemList [withinS] [] (unitDefn l) (,)
        kWithin <- asKey withinS
        uTerm <- unitTermLocal l
-       return (emptyAnno $ Local_unit uDefns uTerm  
+       return (emptyAnno $ Local_unit uDefns uTerm
                          (tokPos kLocal `appRange` ps `appRange` tokPos kWithin))
     <|> -- translation/reduction
     do ut <- unitTermTransRed l
@@ -276,24 +276,24 @@ unitTermLocal l =
 -- @
 -- UNIT-TERM-TRANS-RED ::= UNIT-TERM-TRANS-RED RENAMING
 --                       | UNIT-TERM-TRANS-RED RESTRICTION
---                       | GROUP-UNIT-TERM 
+--                       | GROUP-UNIT-TERM
 -- @
 
 unitTermTransRed :: LogicGraph -> AParser AnyLogic (Annoted UNIT_TERM)
-unitTermTransRed l = groupUnitTerm l >>=  
+unitTermTransRed l = groupUnitTerm l >>=
     translation_list l Unit_translation Unit_reduction
 
 -- | Parse unit expression
 -- @
 -- UNIT-EXPRESSION ::= lambda UNIT-BINDINGS "." UNIT-TERM
---                   | UNIT-TERM 
+--                   | UNIT-TERM
 -- @
 unitExpr :: LogicGraph -> AParser AnyLogic (Annoted UNIT_EXPRESSION)
 unitExpr l =
          do (bindings, poss) <- option ([], nullRange)
              (do kLambda <- asKey lambdaS
                  (bindings, poss) <- unitBinding l `separatedBy` anSemi
-                 kDot <- asKey dotS
+                 kDot <- dotT
                  return (bindings, toPos kLambda poss kDot))
             ut <- unitTerm l
             return (emptyAnno $ Unit_expression bindings ut poss)
@@ -318,6 +318,6 @@ unitDefn l = simpleId >>= unitDefn' l
 
 unitDefn' :: LogicGraph -> SIMPLE_ID -> AParser AnyLogic UNIT_DECL_DEFN
 unitDefn' l name = do
-       kEqu <- asKey equalS
+       kEqu <- equalT
        expr <- annoParser2 $ unitExpr l
        return (Unit_defn name (item expr) $ tokPos kEqu)

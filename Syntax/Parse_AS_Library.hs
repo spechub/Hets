@@ -40,10 +40,7 @@ import Text.ParserCombinators.Parsec
 import Data.List(intersperse)
 import Data.Maybe(maybeToList)
 
-
-------------------------------------------------------------------------
 -- * Parsing functions
-
 
 -- | Parse a library of specifications
 library :: (AnyLogic,LogicGraph) -> AParser AnyLogic LIB_DEFN
@@ -72,7 +69,6 @@ version = do s <- asKey versionS
              n <- many1 digit `sepBy1` (string ".")
              skip
              return (Version_number n (tokPos s `appRange` Range [pos]))
-
 
 -- | Parse library ID
 libId :: AParser st LIB_ID
@@ -103,7 +99,7 @@ libItem l =
     do s <- asKey specS
        n <- simpleId
        g <- generics l
-       e <- asKey equalS
+       e <- equalT
        a <- aSpec l
        q <- optEnd
        return (Syntax.AS_Library.Spec_defn n g a
@@ -115,7 +111,7 @@ libItem l =
        s2 <- asKey ":"
        vt <- viewType l
        (symbMap,ps) <- option ([],[])
-                        (do s <- asKey equalS
+                        (do s <- equalT
                             (m, _) <- parseMapping l
                             return (m,[s]))
        q <- optEnd
@@ -125,31 +121,28 @@ libItem l =
     do kUnit <- asKey unitS
        kSpec <- asKey specS
        name <- simpleId
-       kEqu <- asKey equalS
+       kEqu <- equalT
        usp <- unitSpec l
        kEnd <- optEnd
        return (Syntax.AS_Library.Unit_spec_defn name usp
-                (catPos ([kUnit, kSpec, kEqu] ++ maybeToList kEnd))
-               )
+                (catPos ([kUnit, kSpec, kEqu] ++ maybeToList kEnd)))
   <|> -- ref spec
     do kRef <- asKey refinementS
        name <- simpleId
-       kEqu <- asKey equalS
+       kEqu <- equalT
        rsp <- refSpec l
        kEnd <- optEnd
        return (Syntax.AS_Library.Ref_spec_defn name rsp
-                   (catPos ([kRef, kEqu] ++ maybeToList kEnd))
-               )
+                   (catPos ([kRef, kEqu] ++ maybeToList kEnd)))
   <|> -- arch spec
     do kArch <- asKey archS
        kSpec <- asKey specS
        name <- simpleId
-       kEqu <- asKey equalS
+       kEqu <- equalT
        asp <- annotedArchSpec l
        kEnd <- optEnd
        return (Syntax.AS_Library.Arch_spec_defn name asp
-                (catPos ([kArch, kSpec, kEqu] ++ maybeToList kEnd))
-               )
+                (catPos ([kArch, kSpec, kEqu] ++ maybeToList kEnd)))
   <|> -- download
     do s1 <- asKey fromS
        ln <- libName
@@ -175,7 +168,6 @@ viewType l = do sp1 <- annoParser (groupSpec l)
                 sp2 <- annoParser (groupSpec l)
                 return (View_type sp1 sp2 $ tokPos s)
 
-
 -- | Parse item name or name map
 itemNameOrMap :: AParser st ITEM_NAME_OR_MAP
 itemNameOrMap = do i1 <- simpleId
@@ -186,4 +178,3 @@ itemNameOrMap = do i1 <- simpleId
                    return (case i' of
                       Nothing -> Item_name i1
                       Just (i2,s) -> Item_name_map i1 i2 $ tokPos s)
-
