@@ -84,7 +84,7 @@ instance PrettyPrint OpDefn where
         SelectData c i -> text ("%(select from " ++ showId i " constructed by")
                           $$ printList0 ga c <> text ")%"
         Definition b t -> hang (printText0 ga $ NoOpDefn b)
-                          2 (text equalS <+> printText0 ga t)
+                          2 (equals <+> printText0 ga t)
 
 instance PrettyPrint OpInfo where
     printText0 ga o = hang (colon <+> printText0 ga (opType o)

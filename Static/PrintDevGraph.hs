@@ -41,5 +41,5 @@ printTheory le ln ga sn ge = case ge of
     _ -> P.empty
 
 printTh :: GlobalAnnos -> SIMPLE_ID -> G_theory -> Doc
-printTh ga sn g = text specS <+> printText0 ga sn <+> text equalS
+printTh ga sn g = text specS <+> printText0 ga sn <+> equals
                     $$ printText0 ga g

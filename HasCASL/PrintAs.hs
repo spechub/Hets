@@ -200,10 +200,11 @@ printTerm ga trm =
                 Partial -> text dotS
                 Total -> text $ dotS ++ exMark) <+> printTerm ga t
         CaseTerm t es _  -> hang (fsep [text caseS, printText0 ga t, text ofS])
-            4 $ vcat (punctuate (text " | ") $ map (printEq0 ga funS) es)
+            4 $ vcat (punctuate (text " | ") $ 
+                                map (printEq0 ga $ text funS) es)
         LetTerm br es t _ ->
             let dt = printTerm ga t
-                des = vcat $ punctuate semi $ map (printEq0 ga equalS) es
+                des = vcat $ punctuate semi $ map (printEq0 ga equals) es
                 in case br of
                 Let -> hang (sep [text letS <+> des, text inS]) 3 dt
                 Where -> hang (sep [dt, text whereS]) 6 des
@@ -216,9 +217,9 @@ printTerm ga trm =
             printText0 ga v <+> text asP <+> printTerm ga p
 
 -- | print an equation with different symbols between 'Pattern' and 'Term'
-printEq0 :: GlobalAnnos -> String -> ProgEq -> Doc
+printEq0 :: GlobalAnnos -> Doc -> ProgEq -> Doc
 printEq0 ga s (ProgEq p t _) =
-    hang (hang (printTerm ga p) 2 $ text s) 4 $ printTerm ga t
+    hang (hang (printTerm ga p) 2 s) 4 $ printTerm ga t
 
 instance PrettyPrint VarDecl where
     printText0 ga (VarDecl v t _ _) = printText0 ga v <>
@@ -258,7 +259,7 @@ instance PrettyPrint BasicSpec where
 
 instance PrettyPrint ProgEq where
     printText0 ga (ProgEq p q ps) =
-        printEq0 ga equalS $ ProgEq (convTerm ga p) (convTerm ga q) ps
+        printEq0 ga equals $ ProgEq (convTerm ga p) (convTerm ga q) ps
 
 instance PrettyPrint BasicItem where
     printText0 ga bi = case bi of
@@ -312,7 +313,7 @@ instance PrettyPrint TypeItem where
         IsoDecl l _ -> cat(punctuate (text " = ")
                                       (map (printText0 ga) l))
         SubtypeDefn p v t f _ -> printText0 ga p
-                               <+> text equalS
+                               <+> equals
                                <+> braces (printText0 ga v
                                            <+> colon
                                            <+> printText0 ga t
@@ -342,7 +343,7 @@ instance PrettyPrint OpItem where
             (hang (printText0 ga n <> fcat (map (parens . semiT_text ga) ps))
                             2 (colon <> printText0 ga p
                             <+> printText0 ga s))
-                            2 (text equalS
+                            2 (equals
                                <+> printText0 ga t)
 
 instance PrettyPrint BinOpAttr where
