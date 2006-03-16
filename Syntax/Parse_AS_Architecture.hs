@@ -1,4 +1,4 @@
-<{- |
+{- |
    Module      :  $Header$
    Copyright   :  (c) Maciek Makowski, Warsaw University 2003-2004, C. Maeder
    License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
