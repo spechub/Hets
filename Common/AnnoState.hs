@@ -27,7 +27,6 @@ import Common.Anno_Parser
 import Text.ParserCombinators.Parsec
 import Data.List(delete)
 
-
 -- | parsers that can collect annotations via side effects
 type AParser st a = GenParser Char (AnnoState st) a
 
@@ -115,8 +114,6 @@ tryItemEnd l =
                                <|> many scanLPD))
             if null c || c `elem` l then return () else unexpected c)
 
-
-
 -- | keywords that indicate a new item for 'tryItemEnd'.
 -- the quantifier exists does not start a new item.
 startKeyword :: [String]
@@ -188,10 +185,9 @@ equalT = wrapAnnos $ pToken $
 
 colonT = asKey colonS
 lessT = asKey lessS
-dotT = try(asKey dotS <|> asKey cDot) <?> "dot"
+dotT = asKey dotS <|> asKey cDot <?> "dot"
 
 asT, barT, forallT :: AParser st Token
 asT = asKey asS
 barT = asKey barS
 forallT = asKey forallS
-
