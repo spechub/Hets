@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Sonja Groening, Christian Maeder, Uni Bremen 2004-2005
+Copyright   :  (c) Sonja Groening, Christian Maeder, Uni Bremen 2004-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -8,7 +8,6 @@ Stability   :  provisional
 Portability :  portable
 
 constants for Isabelle
-
 -}
 
 -- possibly differentiate between HOL and HOLCF
@@ -121,7 +120,7 @@ con s = Const s noType
 
 conDouble :: String -> Term
 conDouble = con . mkVName
-	
+
 -- * some stuff for HasCASL
 
 -- | Some string
