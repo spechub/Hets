@@ -12,7 +12,6 @@ export HETS_LIB
 export GHCRTS
 
 hetsdir=/home/www/agbkb/forschung/formal_methods/CoFI/hets
-hetsbin=$hetsdir/linux/daily/
 destdir=$hetsdir/src-distribution/daily
 
 cd /local/home/maeder/haskell
@@ -38,7 +37,9 @@ cd CASL-lib
 chmod 775 hets
 chgrp wwwbkb hets
 bzip2 -k hets
-\cp -fp hets.bz2 $hetsbin
+\cp -fp hets.bz2 $hetsdir/linux/daily/
+chgrp linuxbkb hets
+# \cp -fp hets /home/linux-bkb/bin/
 
 # make latex documentation
 \cp ../HetCATS/utils/hetcasl.sty .
