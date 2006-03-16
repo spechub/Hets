@@ -104,7 +104,7 @@ import Common.LaTeX_funs
 import Common.ConvertLiteral
 import Common.Prec
 import Data.Char
-import Data.List (intersperse)
+import Data.List
 
 infixl 6 <>
 infixl 6 <+>
@@ -477,7 +477,7 @@ codeOut :: GlobalAnnos -> Maybe Display_format -> Map.Map Id [Token] -> Doc
 codeOut ga d m = foldDoc idRecord
     { foldAnnoDoc = \ _ -> small . codeOutAnno d m
     , foldIdDoc = \ _ -> codeOutId m
-    , foldIdApplDoc = \ o i -> fst . codeOutAppl ga d m o i
+    , foldIdApplDoc = codeOutAppl ga d m
     }
 
 codeToken :: String -> Doc
@@ -490,9 +490,11 @@ codeOrigId m (Id ts cs _) = let
     (toks, places) = splitMixToken ts
     conv = map (codeToken . tokStr) in
     if null cs then conv ts
-       else conv toks ++
-            (lbrack : intersperse comma (map (codeOutId m) cs))
-            ++ (rbrack : conv places)
+       else conv toks ++ codeCompIds m cs : conv places
+
+codeCompIds :: Map.Map Id [Token] -> [Id] -> Doc
+codeCompIds m cs =
+    hcat $ lbrack : intersperse comma (map (codeOutId m) cs) ++ [rbrack]
 
 codeIdToks :: [Token] -> [Doc]
 codeIdToks = map (\ t -> let s = tokStr t in
@@ -576,18 +578,18 @@ splitDoc d = case d of
 
 data Weight = Weight Int Id Id Id -- top, left, right
 
-mkTrivWeight :: Id -> Int -> Weight
-mkTrivWeight i n = Weight n i i i
-
 -- print literal terms and mixfix applications
 codeOutAppl :: GlobalAnnos -> Maybe Display_format -> Map.Map Id [Token]
-            -> Doc -> Id -> [Doc] -> (Doc, Maybe Weight)
-codeOutAppl ga d m origDoc _ args = case origDoc of
-  IdApplDoc i aas ->
-    let mk t = (codeToken $ tokStr t, Nothing)
+            -> Doc -> Id -> [Doc] -> Doc
+codeOutAppl ga md m origDoc _ args = case origDoc of
+  IdApplDoc i@(Id ts cs _) aas ->
+    let mk t = codeToken $ tokStr t
+        pa = prec_annos ga
+        precs = mkPrecIntMap pa
+        p = getSimpleIdPrec precs i
         doSplit = maybe (error "doSplit") id . splitDoc
         mkList op largs cl = fsep $ codeOutId m op : punctuate comma
-                             (map (codeOut ga d m) largs)
+                             (map (codeOut ga md m) largs)
                              ++ [codeOutId m cl]
     in if isGenNumber splitDoc ga i aas then
              mk $ toNumber doSplit i aas
@@ -598,10 +600,49 @@ codeOutAppl ga d m origDoc _ args = case origDoc of
          else if isGenString splitDoc ga i aas then
              mk $ toString doSplit ga i aas
          else if isGenList splitDoc ga i aas then
-             (toMixfixList mkList doSplit ga i aas, Nothing)
+             toMixfixList mkList doSplit ga i aas
          else if null args || length args /= placeCount i then
-             (codeOutId m i <> if null args then empty else
-                             parens (fsep $ punctuate comma args), Nothing)
-         else (codeOutId m i <> if null args then empty else
-                             parens (fsep $ punctuate comma args), Nothing)
+             codeOutId m i <> if null args then empty else
+                             parens (fsep $ punctuate comma args)
+         else let
+             parArgs = reverse $ foldl ( \ l (arg, d) ->
+                let pArg = parens d
+                in case getWeight ga arg of
+                Nothing -> d : l
+                Just (Weight q ta la ra) -> (if isLeftArg i l then
+                       if checkArg ARight ga (i, p) (ta, q) ra
+                       then d else pArg
+                    else if isRightArg i l then
+                       if checkArg ALeft ga (i, p) (ta, q) la
+                       then d else pArg
+                    else d) : l) [] $ zip aas args
+             fts = fst $ splitMixToken ts
+             (rArgs, fArgs) = mapAccumL ( \ ac t ->
+               if isPlace t then case ac of
+                 hd : tl -> (tl, hd)
+                 _ -> error "addPlainArg"
+                 else (ac, codeToken $ tokStr t)) parArgs fts
+            in fsep $ fArgs ++ (if null cs then [] else [codeCompIds m cs])
+                                                 ++ rArgs
   _ -> error "Common.Doc.codeOutAppl"
+
+mkTrivWeight :: Id -> Int -> Weight
+mkTrivWeight i n = Weight n i i i
+
+getWeight :: GlobalAnnos -> Doc -> Maybe Weight
+getWeight ga d = let
+    pa = prec_annos ga
+    precs = mkPrecIntMap pa
+    in case d of 
+    IdApplDoc i aas -> let p = getSimpleIdPrec precs i in case aas of 
+      [] -> Just $ mkTrivWeight i p
+      hd : _ ->  
+        if isGenLiteral splitDoc ga i aas then Nothing else
+        let lw = case getWeight ga hd of 
+                   Just (Weight _ _ l _) -> nextWeight ALeft ga i l
+                   Nothing -> i
+            rw = case getWeight ga $ last aas of 
+                   Just (Weight _ _ _ r) -> nextWeight ARight ga i r
+                   Nothing -> i
+            in Just $ Weight p i lw rw
+    _ -> Nothing 
