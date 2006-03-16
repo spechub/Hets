@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Sonja Groening, C. Maeder, Uni Bremen 2003-2005
+Copyright   :  (c) Sonja Groening, C. Maeder, Uni Bremen 2003-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -8,7 +8,6 @@ Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
 The embedding comorphism from HasCASL to Isabelle-HOL.
-
 -}
 
 module Comorphisms.HasCASL2IsabelleHOL where
@@ -77,13 +76,11 @@ instance Comorphism HasCASL2IsabelleHOL
          Just (ts) -> return $ mkSen ts
     map_symbol HasCASL2IsabelleHOL _ = error "HasCASL2IsabelleHOL.map_symbol"
 
-
--- ============================ Signature ================================== --
+-- * Signature
 baseSign :: BaseSig
 baseSign = MainHC_thy
 
-transSignature :: Env
-                   -> Result (IsaSign.Sign,[Named IsaSign.Sentence])
+transSignature :: Env -> Result (IsaSign.Sign,[Named IsaSign.Sentence])
 transSignature sign =
   return (IsaSign.emptySign {
     baseSig = baseSign,
@@ -114,7 +111,7 @@ transSignature sign =
             let transOp = transOpInfo (head infos)
             in case transOp of
                  Just op ->
-		     Map.insert (mkVName $ showIsaConstT name baseSign) op m
+                     Map.insert (mkVName $ showIsaConstT name baseSign) op m
                  Nothing -> m
           else
             let transOps = map transOpInfo infos
@@ -126,8 +123,7 @@ transSignature sign =
                              Nothing   -> m')
                       m (zip transOps [1::Int ..])
 
-
----------- translation of a type in an operation declaration ----------
+-- * translation of a type in an operation declaration
 
 -- extract type from OpInfo
 -- omit datatype constructors
@@ -162,7 +158,7 @@ transType t = case getTypeAppl t of
             -- type arguments are not allowed here!
    _ -> error $ "transType " ++ showPretty t "\n" ++ show t
 
----------- translation of a datatype declaration ----------
+-- * translation of a datatype declaration
 
 transDatatype :: TypeMap -> DomainTab
 transDatatype tm = map transDataEntry (Map.fold extractDataypes [] tm)
@@ -191,7 +187,7 @@ transAltDefn (Construct opId ts Total _) =
         Nothing  -> (mkVName "", ts')
 transAltDefn _ = error "HasCASL2IsabelleHOL.transAltDefn"
 
------------------------------- Formulas ------------------------------
+-- * Formulas
 
 -- simple variables
 transVar :: Var -> VName
@@ -320,7 +316,7 @@ transLog sign opId opTerm t = case t of
    | opId == defId  -> termAppl defOp (transTerm sign t)
    | otherwise -> termAppl (transTerm sign opTerm) (transTerm sign t)
 
--- when else statement
+-- | when else statement
 transWhenElse :: Env -> As.Term -> IsaSign.Term
 transWhenElse sign t =
     case t of
@@ -331,8 +327,7 @@ transWhenElse sign t =
            _ -> error "HasCASL2IsabelleHOL.transWhenElse.tuple"
       _ -> error "HasCASL2IsabelleHOL.transWhenElse"
 
-
---translation of lambda abstractions
+-- * translation of lambda abstractions
 
 -- form Abs(pattern term)
 abstraction :: Env -> As.Term -> IsaSign.Term -> IsaSign.Term
@@ -390,7 +385,7 @@ transTotalLambda sign (CaseTerm t pEqs _) =
                 (transPat sign pat, transTotalLambda sign trm)
 transTotalLambda sign t = transTerm sign t
 
------------------ translation of case alternatives ------------------
+-- * translation of case alternatives
 
 {- Annotation concerning Patterns:
      Following the HasCASL-Summary and the limits of the encoding
@@ -454,7 +449,6 @@ getTypeName p =
                  else tyId
              _ -> error "HasCASL2IsabelleHOL.name (of type)"
 
-
 -- Input: Case alternatives and name of one constructor
 -- Functionality: Filters case alternatives by constructor's name
 groupCons :: [ProgEq] -> UninstOpId -> [ProgEq]
@@ -469,8 +463,6 @@ groupCons peqs name = filter hasSameName peqs
             TupleTerm _ _                 -> True
             _                             -> False
 
-
-
 -- Input: List of case alternatives with same leading constructor
 -- Functionality: Tests whether the constructor has no arguments, if so
 --                translates case alternatives
@@ -482,7 +474,6 @@ flattenPattern sign peqs = case peqs of
   -- or the 'TypedTerm' variant of one of them
   _ -> let m = concentrate (matricize peqs) sign in
               transCaseAlt sign (ProgEq (shrinkPat m) (term m) nullRange)
-
 
 data CaseMatrix = CaseMatrix { patBrand :: PatBrand,
                                cons     :: Maybe As.Term,
@@ -513,7 +504,6 @@ instance Eq CaseMatrix where
 -- Functionality: turns ProgEq into CaseMatrix
 matricize :: [ProgEq] -> [CaseMatrix]
 matricize =  map matriPEq
-
 
 matriPEq :: ProgEq -> CaseMatrix
 matriPEq (ProgEq pat altTerm _) = matriArg pat altTerm
@@ -573,14 +563,12 @@ concentrate cmxs sign = case map (redArgs sign) $
   [h] -> h
   l -> concentrate l sign
 
-
 groupByArgs :: [CaseMatrix] -> Int -> [CaseMatrix]
 groupByArgs cmxs i
   | and (map null (map args cmxs)) = cmxs
   | otherwise                      = (filter equalPat cmxs)
   where patE = init (args (cmxs !! i))
         equalPat cmx = isSingle (args cmx) || init (args cmx) == patE
-
 
 redArgs :: Env -> [CaseMatrix] -> CaseMatrix
 redArgs sign cmxs
@@ -663,7 +651,6 @@ shrinkPat cmx =
     QuOp  -> head (args cmx)
     _     -> head (newArgs cmx)
   where mkApplT t1 t2 = ApplTerm t1 t2 nullRange
-
 
 patIsVar :: ProgEq -> Bool
 patIsVar (ProgEq pat _ _) = termIsVar pat
