@@ -94,13 +94,13 @@ import Modal.Utils
 
 transSchemaMFormula :: ([VAR] -> TERM M_FORMULA -> TERM ())
                     -> SORT -> PRED_NAME -> [VAR] 
-		    -> AnModFORM -> Maybe (Named CASLFORMULA)
+                    -> AnModFORM -> Maybe (Named CASLFORMULA)
 
 ',
 'transSchemaMFormula mapT world rel vars anMF =
    let '.
-	  join("\n       ",map {'w'.$_.' = vars !! '.($_-1);} (1,2,3,4,5)).
-	  ' in
+          join("\n       ",map {'w'.$_.' = vars !! '.($_-1);} (1,2,3,4,5)).
+          ' in
     case (getRLabel anMF,item anMF) of
 ';
 
@@ -148,8 +148,8 @@ foreach my $pair (@input) {
     $list = "[$list";
     $list =~ s/,$/]/o;
     unless ($result =~ m/^\s*Nothing\s*$/o) {
-	$result = "Just \$ ".$result;
-    }	
+        $result = "Just \$ ".$result;
+    }   
     print OUT
 '      ('.$pattern.") -> \n".
 '         addTerm mapT rel (map modToTerm '.$list.') vars ('.$result.")\n";
