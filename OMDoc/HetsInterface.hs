@@ -55,6 +55,10 @@ import qualified Debug.Trace as Debug.Trace
 
 import qualified Data.List as Data.List
 
+import Char (isSpace)
+
+import OMDoc.Util 
+
 -- | shortcut to Debug.Trace.trace
 dtt::String->a->a
 dtt = Debug.Trace.trace
@@ -1058,11 +1062,6 @@ type MorphismMapWO = (
 		,(Set.Set SORTWO)
 		)
 		
-implode::[a]->[[a]]->[a]
-implode _ [] = []
-implode _ [last' ] = last'
-implode with (item' :rest) = item' ++ with ++ (implode with rest)
-
 createHidingString::CASLSign->String
 createHidingString (Sign sortset _ opmap _ predmap _ _ _ _ _) =
 	let hidden = map show (Set.toList sortset) ++
@@ -1246,4 +1245,46 @@ applySignHiding
 		envdiags
 		ga
 		ext
+
+-- | Instance of Read for IdS           
+instance Read Id.Id where
+        readsPrec _ s =
+                let
+                        (_,r) = (\s' -> (takeWhile Char.isSpace s' , dropWhile Char.isSpace s' )) s
+                in
+                        case r of
+                                ('[':t) ->
+                                        let
+                                                tokens = takeWhile (not . (flip elem [']','['])) t
+                                                token = map (\str -> Id.Token (trimString str) Id.nullRange) (explode "," tokens)
+                                                rest = drop (length tokens) t
+                                                (ids, newrest) = until
+                                                        (\(_,sr' ) -> case sr' of (h:_) -> h==']'; _ -> True )
+                                                        (\(ids' , sr' ) ->
+                                                                case (readsPrec 0 sr' )::([(Id.Id, String)]) of
+                                                                        [] -> error ("Error parsing Id from \" " ++ sr' ++ "\"") 
+                                                                        ((id' , nr):_) -> (ids' ++ [id' ], nr )
+                                                        )
+                                                        ([], rest) 
+                                        in
+                                                case newrest of
+                                                (']':_) -> [(Id.Id token ids Id.nullRange, drop 1 newrest)]
+                                                _ -> []
+                                _ -> []
+    
+-- | creates a parseable representation of an Id (see Read-instance)
+idToString::Id.Id->String
+idToString (Id.Id toks ids _) =
+                "[" ++
+                (implode "," (map (\(Id.Token s _) -> s) toks)) ++
+                (implode "," (map idToString ids)) ++
+                "]"
+                
+-- this encapsulates a node_name in an id
+nodeNameToId::NODE_NAME->Id.Id
+nodeNameToId (s,e,n) = Id.mkId [s,(stringToSimpleId e),(stringToSimpleId (show n))]
+
+-- this reads back an encapsulated node_name
+idToNodeName::Id.Id->NODE_NAME
+idToNodeName (Id.Id toks _ _) = (toks!!0, show (toks!!1), read (show (toks!!2)))
 
