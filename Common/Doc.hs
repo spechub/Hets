@@ -585,6 +585,7 @@ codeOutAppl ga md m origDoc _ args = case origDoc of
   IdApplDoc i@(Id ts cs _) aas ->
     let mk t = codeToken $ tokStr t
         pa = prec_annos ga
+        assocs = assoc_annos ga
         precs = mkPrecIntMap pa
         p = getSimpleIdPrec precs i
         doSplit = maybe (error "doSplit") id . splitDoc
@@ -609,13 +610,16 @@ codeOutAppl ga md m origDoc _ args = case origDoc of
                 let pArg = parens d
                 in case getWeight ga arg of
                 Nothing -> d : l
-                Just (Weight q ta la ra) -> (if isLeftArg i l then
+                Just (Weight q ta la ra) -> 
+                  (if isKnownArg assocs precs i ta then
+                    if isLeftArg i l then
                        if checkArg ARight ga (i, p) (ta, q) ra
                        then d else pArg
                     else if isRightArg i l then
                        if checkArg ALeft ga (i, p) (ta, q) la
                        then d else pArg
-                    else d) : l) [] $ zip aas args
+                    else d
+                  else pArg) : l) [] $ zip aas args
              fts = fst $ splitMixToken ts
              (rArgs, fArgs) = mapAccumL ( \ ac t ->
                if isPlace t then case ac of
@@ -626,17 +630,12 @@ codeOutAppl ga md m origDoc _ args = case origDoc of
                                                  ++ rArgs
   _ -> error "Common.Doc.codeOutAppl"
 
-mkTrivWeight :: Id -> Int -> Weight
-mkTrivWeight i n = Weight n i i i
-
 getWeight :: GlobalAnnos -> Doc -> Maybe Weight
 getWeight ga d = let
     pa = prec_annos ga
     precs = mkPrecIntMap pa
     in case d of 
-    IdApplDoc i aas -> let p = getSimpleIdPrec precs i in case aas of 
-      [] -> Just $ mkTrivWeight i p
-      hd : _ ->  
+    IdApplDoc i aas@(hd : _) -> let p = getSimpleIdPrec precs i in
         if isGenLiteral splitDoc ga i aas then Nothing else
         let lw = case getWeight ga hd of 
                    Just (Weight _ _ l _) -> nextWeight ALeft ga i l
@@ -645,4 +644,11 @@ getWeight ga d = let
                    Just (Weight _ _ _ r) -> nextWeight ARight ga i r
                    Nothing -> i
             in Just $ Weight p i lw rw
-    _ -> Nothing 
+    _ -> Nothing
+
+isKnownArg :: AssocMap -> PrecMap -> Id -> Id -> Bool
+isKnownArg assocs p op arg = let m = precMap p in 
+    if isInfix arg then
+     Map.member op m && Map.member arg m || 
+        op == arg && Map.member op assocs 
+    else True 
