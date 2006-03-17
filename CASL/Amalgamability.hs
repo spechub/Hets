@@ -14,6 +14,7 @@ Amalgamability analysis for CASL.
 -}
 {-
 TODO:
+* generalize for CASL extensions (at least for formulas. this is easy)
 
 * optimisations in congruenceClosure (Nelson-Oppen algorithm?)
 * optimisation in colimitIsThin (fixUpdRule)
