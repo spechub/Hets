@@ -182,6 +182,8 @@ fix bug: when lodaing Basic/RelationsAndOrders.casl and
     and origin DGProof of development graph does not exist in abstraction graph
   look at Proofs/Global.hs, GUI/ConvertAbstractToDevgraph,
     function applyChanges
+  Hint: first try to cut down the example (find out the minimal
+    subpart that still leads to the error)
 
 test development grapg GUI: 
    menu edit - unnamed nodes - hide/show nodes,
