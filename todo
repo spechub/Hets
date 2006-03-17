@@ -44,6 +44,15 @@ Freiburger Constraint-Solver angucken
 Bremer Constraint-Solver angucken
 
 ************************************************
+Hendrik (Till)
+************************************************
+werden Links in der richtigen Reihenfolge geschrieben (S. 183 OMDoc)?
+Hiding: unterschiedlich in OMDoc und Hets
+Logiken: über verschiedene OMDoc-Theorien mit URI
+  Hets                      OMDoc
+  
+
+************************************************
 Mingyi (Till)
 ************************************************
 
@@ -167,6 +176,18 @@ development graph calculus
 look at Static/DevGraph.hs
 look at Proofs/EdgeUtils.hs Proofs/StatusUtils.hs Proofs/Global.hs
 
+fix bug: when lodaing Basic/RelationsAndOrders.casl and
+  doing 4x edit - proofs - Global Decomposition, we get
+    hets: applyChangesAux2: deleted edge from 3 to 15 of type GlobalThm 
+    and origin DGProof of development graph does not exist in abstraction graph
+  look at Proofs/Global.hs, GUI/ConvertAbstractToDevgraph,
+    function applyChanges
+
+test development grapg GUI: 
+   menu edit - unnamed nodes - hide/show nodes,
+   node menu: show just subtree / undo
+   interaction with edit - proofs - automatic?
+
 implement simplified rule Theorem-Hide-Shift
 try out examples
 conservativity calculus
@@ -176,21 +197,20 @@ weakly amalgamable cocones
 Zheng (Till)
 ************************************************
 
+look fgl/Data/Graph/Inductive/Graph.hs
 look at Static/DevGraph.hs
 
-test development grapg GUI: 
-   menu edit - unnamed nodes - hide/show nodes,
-   node menu: show just subtree / undo
-   interaction with edit - proofs - automatic?
-
-fix bug: when lodaing Basic/RelationsAndOrders.casl and
-  doing 4x edit - proofs - Global Decomposition, we get
-    hets: applyChangesAux2: deleted edge from 3 to 15 of type GlobalThm 
-    and origin DGProof of development graph does not exist in abstraction graph
-
-look at translation to OMDoc
-
-change management via translation to OMDoc
+change management
+  reload button im Edit-Menü hinzufügen (GUI/ConvertAbstractToDevgraph.hs)
+  reload macht folgendes:
+    lade CASL-Datei neu ==> neuer Entwicklungsgraph
+    vergleiche alten+neuen Entwicklungsgraph, konstruiere eine
+      Abbildung (Common/Lib/Map.hs) von alt nach neu
+      (jeweils eine Abblidung für Knoten und eine für Kanten)
+   Kriterien für Finden der Knotenabbildung:
+   - Namen
+   - DGOrigin
+   - Signatur
 
 einfaches Merge von lokalen Beweisen eines abgespeichteren DG 
   in aktuellen DG
