@@ -11,7 +11,11 @@ Here is the place where the class Logic is instantiated for CASL.
    Also the instances for Syntax an Category.
 -}
 
-module ConstraintCASL.Logic_ConstraintCASL(module ConstraintCASL.Logic_ConstraintCASL, CASLSign, CASLMor) where
+{- | todo:
+  real implementation for map_sen
+-}
+
+module ConstraintCASL.Logic_ConstraintCASL(module ConstraintCASL.Logic_ConstraintCASL, CASLSign, ConstraintCASLMor) where
 
 import Common.AS_Annotation
 import Common.Result
@@ -21,14 +25,19 @@ import Text.ParserCombinators.Parsec
 import Logic.Logic
 
 import ConstraintCASL.AS_ConstraintCASL
+import ConstraintCASL.Parse_AS_Basic
+import ConstraintCASL.Formula
+import ConstraintCASL.StaticAna
+import ConstraintCASL.ATC_ConstraintCASL()
+import ConstraintCASL.Print_AS
+import ConstraintCASL.LaTeX_AS
+
 import CASL.AS_Basic_CASL
 import CASL.LaTeX_CASL()
-import ConstraintCASL.Parse_AS_Basic
 import CASL.SymbolParser
 import CASL.MapSentence
 import CASL.Amalgamability
 import CASL.ATC_CASL()
-import ConstraintCASL.ATC_ConstraintCASL()
 import CASL.Sublogic
 import CASL.Sign
 import CASL.StaticAna
@@ -36,32 +45,22 @@ import CASL.Morphism
 import CASL.SymbolMapAnalysis
 import CASL.Taxonomy
 import CASL.SimplifySen
+import CASL.Logic_CASL
 import CASL.CCC.FreeTypes
 import CASL.CCC.OnePoint -- currently unused
-import ConstraintCASL.Print_AS
-import ConstraintCASL.LaTeX_AS
-import ConstraintCASL.Formula
 
 data ConstraintCASL = ConstraintCASL deriving Show
-
-type ConstraintCASLSign = Sign () () 
 
 instance Language ConstraintCASL where
  description _ =
   "ConstraintCASL - a restriction of CASL to constraint\ 
    \formulas over predicates"
 
-dummy :: a -> b -> ()
-dummy _ _ = ()
-
 -- dummy of "Min f e"
 dummyMin :: b -> c -> Result ()
 dummyMin _ _ = Result {diags = [], maybeResult = Just ()}
 
-trueC :: a -> b -> Bool
-trueC _ _ = True
-
-instance Category ConstraintCASL ConstraintCASLSign CASLMor
+instance Category ConstraintCASL ConstraintCASLSign ConstraintCASLMor
     where
          -- ide :: id -> object -> morphism
          ide ConstraintCASL = idMor dummy
@@ -95,8 +94,8 @@ instance Syntax ConstraintCASL ConstraintCASLBasicSpec
 -}
 -- ConstraintCASL logic
 
-instance Sentences ConstraintCASL ConstraintCASLFORMULA () ConstraintCASLSign CASLMor Symbol where
-      map_sen ConstraintCASL m = error "map_sen ConstraintCAS nyi" -- return . mapSen (\ _ -> id) m
+instance Sentences ConstraintCASL ConstraintCASLFORMULA () ConstraintCASLSign ConstraintCASLMor Symbol where
+      map_sen ConstraintCASL m = return . mapSen (\ _ -> id) m
       parse_sentence ConstraintCASL = Just (fmap item (aFormula [] << eof))
       sym_of ConstraintCASL = symOf
       symmap_of ConstraintCASL = morphismToSymbMap
@@ -110,13 +109,14 @@ instance Sentences ConstraintCASL ConstraintCASLFORMULA () ConstraintCASLSign CA
 instance StaticAnalysis ConstraintCASL ConstraintCASLBasicSpec ConstraintCASLFORMULA ()
                SYMB_ITEMS SYMB_MAP_ITEMS
                ConstraintCASLSign
-               CASLMor
+               ConstraintCASLMor
                Symbol RawSymbol where
-         basic_analysis ConstraintCASL = Nothing -- Just $ basicConstraintCASLAnalysis
+         basic_analysis ConstraintCASL = Just basicConstraintCASLAnalysis
          stat_symb_map_items ConstraintCASL = statSymbMapItems
          stat_symb_items ConstraintCASL = statSymbItems
          ensures_amalgamability ConstraintCASL (opts, diag, sink, desc) =
-             ensuresAmalgamability opts diag sink desc
+            error "ConstraintCASL.ensures_amalgamability not yet implemented"
+             --ensuresAmalgamability opts diag sink desc
 
          sign_to_basic_spec ConstraintCASL _sigma _sens = Basic_spec [] -- ???
 
@@ -143,7 +143,7 @@ instance StaticAnalysis ConstraintCASL ConstraintCASLBasicSpec ConstraintCASLFOR
 instance Logic ConstraintCASL CASL.Sublogic.CASL_Sublogics
                ConstraintCASLBasicSpec ConstraintCASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                ConstraintCASLSign
-               CASLMor
+               ConstraintCASLMor
                Symbol RawSymbol () where
 
          stability _ = Experimental
