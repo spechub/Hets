@@ -14,7 +14,7 @@ module OMDoc.Container
      Container(..)
     ,con_convert
     ,con_map
-    ,processSubContents,
+    ,processSubContents
     ,pSCStrip
   )
   where
