@@ -127,8 +127,8 @@ printRecord mf = Record
     , foldMixfix_braced = \ _ l _ -> braces $ fsep $ punctuate comma l
     }
 
-printFormula :: FORMULA f -> Doc
-printFormula = foldFormula $ printRecord (error "printFormula")
+printFormula :: (f -> Doc) -> FORMULA f -> Doc
+printFormula mf = foldFormula $ printRecord mf
 
 mkSimpleDoc :: TERM f -> Doc -> Doc
 mkSimpleDoc t = if isSimpleTerm t then id else parens
