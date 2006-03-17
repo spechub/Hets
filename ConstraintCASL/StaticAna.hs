@@ -1,18 +1,17 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2005
+Copyright   :  (c) Uni Bremen 2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  maeder@tzi.de
+Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  portable
 
 static analysis for ConstraintCASL specifications
-Follows Chaps. III:2 and III:3 of the CASL Reference Manual.
-
+ Follows Chaps. III:2 and III:3 of the CASL Reference Manual.
 -}
 
-{- | todo: check formulas -}
+{- todo: check formulas -}
 
 module ConstraintCASL.StaticAna where
 

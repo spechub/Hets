@@ -11,7 +11,7 @@ Here is the place where the class Logic is instantiated for CASL.
    Also the instances for Syntax an Category.
 -}
 
-{- | todo:
+{- todo:
   real implementation for map_sen
 -}
 
