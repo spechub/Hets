@@ -587,7 +587,7 @@ codeOutAppl ga md m origDoc _ args = case origDoc of
         pa = prec_annos ga
         assocs = assoc_annos ga
         precs = mkPrecIntMap pa
-        p = getSimpleIdPrec precs i
+        p = Map.findWithDefault maxBound i $ precMap precs
         doSplit = maybe (error "doSplit") id . splitDoc
         mkList op largs cl = fsep $ codeOutId m op : punctuate comma
                              (map (codeOut ga md m) largs)
@@ -606,20 +606,20 @@ codeOutAppl ga md m origDoc _ args = case origDoc of
              codeOutId m i <> if null args then empty else
                              parens (fsep $ punctuate comma args)
          else let
-             parArgs = reverse $ foldl ( \ l (arg, d) ->
-                let pArg = parens d
-                in case getWeight ga arg of
-                Nothing -> d : l
-                Just (Weight q ta la ra) -> 
-                  (if isKnownArg assocs precs i ta then
-                    if isLeftArg i l then
+             parArgs = reverse $ foldl ( \ l (arg, dc) ->
+                case getWeight ga arg of
+                Nothing -> dc : l
+                Just (Weight q ta la ra) ->
+                    let pArg = parens dc
+                        d = if isBoth pa i ta then pArg else dc
+                        oArg = if isDiffAssoc assocs pa i ta then pArg else d
+                    in (if isLeftArg i l then
                        if checkArg ARight ga (i, p) (ta, q) ra
-                       then d else pArg
+                       then oArg else if isSafeLhs i ta then d else pArg
                     else if isRightArg i l then
                        if checkArg ALeft ga (i, p) (ta, q) la
-                       then d else pArg
-                    else d
-                  else pArg) : l) [] $ zip aas args
+                       then oArg else if isInfix ta then pArg else d
+                    else d) : l) [] $ zip aas args
              fts = fst $ splitMixToken ts
              (rArgs, fArgs) = mapAccumL ( \ ac t ->
                if isPlace t then case ac of
@@ -634,21 +634,33 @@ getWeight :: GlobalAnnos -> Doc -> Maybe Weight
 getWeight ga d = let
     pa = prec_annos ga
     precs = mkPrecIntMap pa
-    in case d of 
-    IdApplDoc i aas@(hd : _) -> let p = getSimpleIdPrec precs i in
+    m = precMap precs
+    in case d of
+    IdApplDoc i aas@(hd : _) ->
+        let p = Map.findWithDefault
+              (if begPlace i || endPlace i then 0 else maxBound) i m in
         if isGenLiteral splitDoc ga i aas then Nothing else
-        let lw = case getWeight ga hd of 
+        let lw = case getWeight ga hd of
                    Just (Weight _ _ l _) -> nextWeight ALeft ga i l
                    Nothing -> i
-            rw = case getWeight ga $ last aas of 
+            rw = case getWeight ga $ last aas of
                    Just (Weight _ _ _ r) -> nextWeight ARight ga i r
                    Nothing -> i
             in Just $ Weight p i lw rw
     _ -> Nothing
 
-isKnownArg :: AssocMap -> PrecMap -> Id -> Id -> Bool
-isKnownArg assocs p op arg = let m = precMap p in 
-    if isInfix arg then
-     Map.member op m && Map.member arg m || 
-        op == arg && Map.member op assocs 
-    else True 
+isDiffAssoc :: AssocMap -> PrecedenceGraph -> Id -> Id -> Bool
+isDiffAssoc assocs precs op arg =
+    isInfix op && isInfix arg &&
+           case precRel precs op arg of
+               Lower -> False
+               _ -> op /= arg || not (Map.member arg assocs)
+
+isSafeLhs :: Id -> Id -> Bool
+isSafeLhs op arg = endPlace op && not (isInfix arg)
+
+isBoth :: PrecedenceGraph -> Id -> Id -> Bool
+isBoth precs op arg = case precRel precs op arg of
+                    BothDirections -> True
+                    _ -> False
+
