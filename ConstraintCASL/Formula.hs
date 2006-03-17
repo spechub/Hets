@@ -30,16 +30,18 @@ import Syntax.Parse_AS_Structured
 
 cformula :: [String] -> AParser st ConstraintFORMULA
 cformula k = 
-      trace ("parsing formula! " ++ show(k)) $
+    --  trace ("parsing formula! " ++ show(k)) $
+    try(
     do  c1 <- conjunction k	     
         impliesT
         c2 <- conjunction k 	 
-        return (Implication_ConstraintFormula c1 c2)
+        return (Implication_ConstraintFormula c1 c2))
   <|> 
+    try(
     do c1 <- conjunction k 
        equivalentT
        c2 <-  trace ("conjucntion1: "++show (c1)) $ conjunction k 
-       return (Equivalence_ConstraintFormula c1 c2) 
+       return (Equivalence_ConstraintFormula c1 c2)) 
   <|> 
     do impliesT 
        c <- conjunction k
@@ -47,28 +49,27 @@ cformula k =
 
 conjunction :: [String] -> AParser st ATOMCONJUNCTION
 conjunction k = 
-    trace ("parsing conjucntion! ") $
-    do atoms <- many1 (atom k) 
+  --  trace ("parsing conjucntion! ") $
+    do (atoms,_) <- atom k `separatedBy` anComma  
        return (Atom_Conjunction atoms)
 
 atom :: [String] -> AParser st ATOM
 atom k =
-    trace ("parsing atom! ") $
+   -- trace ("parsing atom! ") $
     try (do r <- relation k
             oParenT
-            terms <- many1 (constraintterm k)
-            cParenT `notFollowedWith` (relation k)
-            trace ("atom1: "++show (Prefix_Atom r terms)) $
-             return (Prefix_Atom r terms))
+            (terms,_) <- constraintterm k `separatedBy` anComma
+            cParenT `notFollowedWith` (relation k) 
+            return (Prefix_Atom r terms))
   <|>
     do t1 <- constraintterm k 
-       r <- trace ("atom2:"++show t1) $ relation k
+       r <- relation k
        t2 <- constraintterm k
        return (Infix_Atom t1 r t2)
 
-relation :: [String] -> AParser st RELATION
-relation k =
-   trace ("parsing relation! ") $   
+simplerelation :: [String] -> AParser st RELATION
+simplerelation k =
+   --trace ("parsing simple relation! ") $   
     do emptyRelationT 
        return Empty_Relation 
    <|>
@@ -86,31 +87,26 @@ relation k =
     do inverseT 
        r <- relation k 
        return (Inverse_Relation r)  
-   -- <|>
-     -- do rels <- relationlist k
-     --   return (Relation_Disjunction rels)
 
-relationlist :: [String] -> AParser st [RELATION]
-relationlist k = 
-    try(do r <- relation k
-           commaT 
-           rl <- relationlist k
-           return (r:rl))
+relation :: [String] -> AParser st RELATION
+relation k = 
+   -- trace ("parsing relation list! ") $   
+    try ( do (rels,_) <- simplerelation k `separatedBy` anComma
+             return (Relation_Disjunction rels))
    <|>
-    do r <- relation k
-       return (r:[])
+    do r <- simplerelation k
+       return r
    
-   
-       
-
 constraintterm :: [String] -> AParser st ConstraintTERM
 constraintterm k =
-     trace ("parsing constraintterm! ") $
-    do id <-  trace ("parsing constraintterm2!  " ++ show(k)) $ parseId k 
-       return (Atomar_Term id)
+   --  trace ("parsing constraintterm! ") $
+    try(do id <-  parseId k 
+           return (Atomar_Term id))
    <|>
     do id <- parseId k 
-       terms <- many1 (constraintterm k)
+       oParenT
+       (terms,_) <- constraintterm k `separatedBy` anComma
+       cParenT
        return (Composite_Term id terms)  
 
 formula :: [String] -> AParser st ConstraintCASLFORMULA
