@@ -46,11 +46,11 @@ goal3 = NamedSen "Go2" False False (SPQuantTerm SPForall [term_x] (SPComplexTerm
 
 
 theory1 :: Theory SPASS.Sign.Sign SPTerm ()
-theory1 = (Theory sign1 [axiom1,-- axiom2,
+theory1 = (Theory sign1 $ toThSens [axiom1,-- axiom2,
                          goal1,goal2])
 
 theory2 :: Theory SPASS.Sign.Sign SPTerm ()
-theory2 = (Theory sign1 [axiom1,axiom2,axiom3,
+theory2 = (Theory sign1 $ toThSens [axiom1,axiom2,axiom3,
                          goal1,goal2,goal3])
 
 runTest :: IO a -> IO a
