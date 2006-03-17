@@ -8,9 +8,9 @@ sort a = {x : b . (pred y : b)}
 sort a = {a : b . a =e= b}
 sort a = {x : b . ys as b}
 sort a = {x : b . (pred y : ba)}
-sort a = {x : b . (predy y :ba)}
-sort a = {x : b . (predy :ba)}
-sort a = {x : b . (predy :ba)}
+sort a = {x : b . (predy y : ba)}
+sort a = {x : b . (predy : ba)}
+sort a = {x : b . (predy : ba)}
 sort a = {x : b . exists1(predy :: b __ a)}
 sort a = {x : b . exists predy: ba . a}
 sorts a; %(bla)%

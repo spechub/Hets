@@ -5,15 +5,15 @@
  op c : s
  op c : a -> s
  op c : a * t * t * t -> s
- op d : s -> t,[  . forall v1: a; v2, v3, v4: t
-                        . a(c(v1, v2, v3, v4)) = v2,
+ op d : s -> t,[  . forall v1: a; v2, v3, v4: t . 
+                    a(c(v1, v2, v3, v4)) = v2,
                   . forall v1: a; v2, v3, v4: t . b(c(v1, v2, v3, v4)) = v3,
                   . forall v1: a; v2, v3, v4: t . d(c(v1, v2, v3, v4)) = v4,
-                  . forall v1: a; v2, v3, v4: t; v5: a; v6, v7, v8: t
-                        . c(v1, v2, v3, v4) = c(v5, v6, v7, v8) <=>
-                              v1 = v5 /\ v2 = v6 /\ v3 = v7 /\ v4 = v8,
+                  . forall v1: a; v2, v3, v4: t; v5: a; v6, v7, v8: t . 
+                    c(v1, v2, v3, v4) = c(v5, v6, v7, v8) <=> 
+                    v1 = v5 /\ v2 = v6 /\ v3 = v7 /\ v4 = v8,
                   . forall v1, v2: a . c(v1) = c(v2) <=> v1 = v2,
-                  . forall v1: s . not (v1 in s2 /\ v1 in s1),  . not c in s2,
+                  . forall v1: s . not v1 in s2 /\ v1 in s1,  . not c in s2,
                   . not c in s1,
                   . forall v1: a; v2, v3, v4: t . not c(v1, v2, v3, v4) in s2,
                   . forall v1: a; v2, v3, v4: t . not c(v1, v2, v3, v4) in s1,
@@ -21,20 +21,22 @@
                   . forall v1: a . not c(v1) in s1,
                   . forall v1: a; v2, v3, v4: t . not c = c(v1, v2, v3, v4),
                   . forall v1: a . not c = c(v1),
-                  . forall v1: a; v2, v3, v4: t; v5: a
-                        . not c(v1, v2, v3, v4) = c(v5),
+                  . forall v1: a; v2, v3, v4: t; v5: a . 
+                    not c(v1, v2, v3, v4) = c(v5),
                   . not def a(c),  . forall v1: a . not def a(c(v1)),
                   . not def b(c),  . forall v1: a . not def b(c(v1)),
                   . not def d(c),  . forall v1: a . not def d(c(v1)),
-                 generated{sort s; op c : s; op c : a ->? s;
-                                   op c : a * t * t * t -> s;
-                                   op g__inj : s1 -> s; op g__inj : s2 -> s},
+                 generated{sort s; op c : s; op c : a ->? s; 
+                                   op c : a * t * t * t -> s; 
+                                   op g__inj : s1 -> s; op g__inj : s2 -> s
+                          },
                   . forall v1: a; v2, v3, v4: t . a(c(v1, v2, v3, v4)) = v2,
                   . forall v1: a; v2, v3, v4: t . b(c(v1, v2, v3, v4)) = v3,
                   . forall v1: a; v2, v3, v4: t . d(c(v1, v2, v3, v4)) = v4,
-                 generated{sort s; op c : s; op c : a ->? s;
-                                   op c : a * t * t * t -> s;
-                                   op g__inj : s1 -> s; op g__inj : s2 -> s} ])
+                 generated{sort s; op c : s; op c : a ->? s; 
+                                   op c : a * t * t * t -> s; 
+                                   op g__inj : s1 -> s; op g__inj : s2 -> s
+                          } ])
 *** Error 3.30, total selectors 'a : s -> t,b : s -> t,d : s -> t'
   must appear in alternative 'c : s'
 *** Error 3.53, total selectors 'a : s -> t,b : s -> t,d : s -> t'

@@ -16,11 +16,11 @@ ops __+__, __*__ : Nat * Nat -> Nat;
     __@@__ : Nat * Nat -> Nat
 forall m, n, r, s: Nat
 . 0 <= n %(Nat_leq_def1)%
-. not ((suc (n) <= 0)) %(Nat_leq_def2)%
-. (suc (m) <= suc (n)) <=> (m <= n) %(Nat_leq_def3)%
-. (m >= n) <=> (n <= m) %(Nat_geq_def)%
-. (m < n) <=> (m <= n) /\ not m = n %(Nat_less_def)%
-. (m > n) <=> (m < n) %(Nat_greater_def)%
+. not (suc (n) <= 0) %(Nat_leq_def2)%
+. suc (m) <= suc (n) <=> m <= n %(Nat_leq_def3)%
+. m >= n <=> n <= m %(Nat_geq_def)%
+. m < n <=> m <= n /\ not m = n %(Nat_less_def)%
+. m > n <=> m < n %(Nat_greater_def)%
 . 0 + m = m %(Nat_add_0)%
 . suc (n) + m = suc(n + m) %(Nat_add_suc)%
 . 0 * m = 0 %(Nat_mult_0)%
@@ -31,17 +31,17 @@ forall m, n, r, s: Nat
 . max(m, n) = n when m <= n else m %(Nat_max_def)%
 . + m = m %(plus_def)%
 . abs(n) = n %(Nat_abs)%
-. (odd(m)) <=> not (even(m)) %(Nat_odd_def)%
+. odd(m) <=> not even(m) %(Nat_odd_def)%
 . even(0) %(Nat_even_0)%
-. (even(suc(m))) <=> (odd(m)) %(Nat_even_suc)%
+. even(suc(m)) <=> odd(m) %(Nat_even_suc)%
 . 0 ! = 1 %(Nat_factorial_0)%
 . suc (n) ! = suc (n) * n ! %(Nat_factorial_suc)%
 . m -? n = r <=> m = r + n %(Nat_sub_def)%
 . not def (m /? 0) %(Nat_divide_0)%
-. (m /? n = r <=> m = r * n) if (n > 0) %(Nat_divide_Pos)%
-. m div n = r <=> (exists s: Nat . m = n * r + s /\ (s < n))
+. (m /? n = r <=> m = r * n) if n > 0 %(Nat_divide_Pos)%
+. m div n = r <=> (exists s: Nat . m = n * r + s /\ s < n)
 %(Nat_div)%
-. m mod n = s <=> (exists r: Nat . m = n * r + s /\ (s < n))
+. m mod n = s <=> (exists r: Nat . m = n * r + s /\ s < n)
 %(Nat_mod)%
 . m quot n = m div n %(Nat_quot)%
 . m rem n = m mod n %(Nat_rem)%
@@ -67,7 +67,7 @@ ops 1: Pos = suc(0); %(Nat_1_as_Pos_def)%
 %% then %implies
 ops min, max : Nat * Nat -> Nat, comm, assoc
 forall x, m, n, r, s, t: Nat; p: Pos
-. def (m -? n) <=> (m >= n) %(Nat_sub_dom)%
+. def (m -? n) <=> m >= n %(Nat_sub_dom)%
 . def (m /? n) <=> m mod n = 0 %(Nat_divide_dom)%
 . def (m div n) <=> not n = 0 %(Nat_div_dom)%
 . def (m mod n) <=> not n = 0 %(Nat_mod_dom)%
@@ -104,20 +104,20 @@ forall m, n, r, s: Int; a, b, c, d: Nat
 . -(a - b) = b - a %(Int_neg_def)%
 . sign(m) = 0 when m = 0 else (1 when m > 0 else - 1)
 %(Int_sign_def)%
-. (m <= n) <=> n - m in Nat %(Int_leq_def)%
-. (m >= n) <=> (n <= m) %(Int_geq_def)%
-. (m < n) <=> (m <= n) /\ not m = n %(Int_less_def)%
-. (m > n) <=> (m < n) %(Int_greater_def)%
+. m <= n <=> n - m in Nat %(Int_leq_def)%
+. m >= n <=> n <= m %(Int_geq_def)%
+. m < n <=> m <= n /\ not m = n %(Int_less_def)%
+. m > n <=> m < n %(Int_greater_def)%
 . min(m, n) = m when m <= n else n %(Int_min_def)%
 . max(m, n) = n when m <= n else m %(Int_max_def)%
-. abs(m) = - m if (m < 0) %(Int_abs_def)%
+. abs(m) = - m if m < 0 %(Int_abs_def)%
 . (- 1) ^ a = 1 when even(a) else - 1 %(Int_neg1_power_def)%
 . m ^ a = sign (m) ^ a * abs (m) ^ a %(Int_power_def)%
-. (even(m)) <=> (even(abs(m))) %(Int_even_def)%
-. (odd(m)) <=> not ((even(m))) %(Int_odd_def)%
+. even(m) <=> even(abs(m)) %(Int_even_def)%
+. odd(m) <=> not (even(m)) %(Int_odd_def)%
 . m /? n = sign (m) * sign (n) * (abs (m) /? abs (n))
 %(Int_divide)%
-. (m mod n < abs (n)) if not n = 0 %(Int_mod_range)%
+. m mod n < abs (n) if not n = 0 %(Int_mod_range)%
 . m = (m div n) * n + (m mod n) if not n = 0 %(Int_mod__div_def)%
 . not def m mod 0 %(Int_mod_zero)%
 . not def m div 0 %(Int_div_zero)%
@@ -130,7 +130,7 @@ forall m, n, r, s: Int; a, b, c, d: Nat
 forall m, n, r: Int; a, b: Nat
 . def (a -? b) => a -? b = a - b %(Int_Nat_sub_compat)%
 . m = sign (m) * abs (m) %(Int_abs_decomp)%
-. (odd(m)) <=> (odd(abs(m))) %(Int_odd_alt)%
+. odd(m) <=> odd(abs(m)) %(Int_odd_alt)%
 . m /? n = r <=> not n = 0 /\ n * r = n %(Int_divide_dom1)%
 . def (m /? n) <=> m mod n = 0 %(Int_divide_dom2)%
 . def (m mod n) <=> not n = 0 %(Int_mod_dom)%
@@ -156,10 +156,10 @@ ops 0, 1 : Rat;
     __^__ : Rat * Int -> Rat;
     min, max : Rat * Rat -> Rat
 forall p, q: Pos; n: Nat; i, j: Int; x, y, z: Rat
-. (i / p <= j / q) <=> (i * q <= j * p) %(Rat_leq_def)%
-. (x >= y) <=> (y <= x) %(Rat_geq_def)%
-. (x < y) <=> (x <= y) /\ not x = y %(Rat_less_def)%
-. (x > y) <=> (y < x) %(Rat_greater_def)%
+. i / p <= j / q <=> i * q <= j * p %(Rat_leq_def)%
+. x >= y <=> y <= x %(Rat_geq_def)%
+. x < y <=> x <= y /\ not x = y %(Rat_less_def)%
+. x > y <=> y < x %(Rat_greater_def)%
 . (i / p) + (j / q) = (i * q + j * p) / (p * q) %(Rat_add_def)%
 . x - y = x + (- y) %(Rat_sub_def)%
 . (i / p) * (j / q) = (i * j) / (p * q) %(Rat_mult_def)%
@@ -323,23 +323,24 @@ vars x, y, z: s; r1, r2: t
 . false
 var x: s
 . true
-. not (p) /\ not (q(x)) /\ (q(x))
-. not (p) \/ not (q(x)) \/ (q(x))
-. not (p) /\ not (q(x)) /\ (q(x)) =>
-      not (p) \/ not (q(x)) \/ (q(x)) => not (p) /\ not (q(x)) /\ (q(x))
-. not (p) /\ not (q(x)) /\ (q(x)) if
-      not (p) \/ not (q(x)) \/ (q(x)) if
-      not (p) /\ not (q(x)) /\ (q(x))
+. not p /\ not q(x) /\ q(x)
+. not p \/ not q(x) \/ q(x)
+. not p /\ not q(x) /\ q(x) => 
+  not p \/ not q(x) \/ q(x) => not p /\ not q(x) /\ q(x)
+. not p /\ not q(x) /\ q(x) if not p \/ not q(x) \/ q(x) if 
+  not p /\ not q(x) /\ q(x)
 forall x: s
-. not (p) /\ not (q(x)) /\ (q(x)) <=>
-      (exists x: s
-           . not (p) \/ not (q(x)) \/ (q(x)) <=>
-                 (exists! x: s . not (p) /\ not (q(x)) /\ (q(x))))
+. not p /\ not q(x) /\ q(x) <=> 
+  (
+  exists x: s . 
+  not p \/ not q(x) \/ q(x) <=> 
+  (exists! x: s . not p /\ not q(x) /\ q(x))
+  )
 . def f(x)
 . f(x) =e= g(x)
 . f(x) = g(x)
 . r1 in s
-. def g (x) :t
+. def g (x) : t
 . def g (x) as s
 . def (op f : s ->? s)(x)
 . def (op g : s -> t)(x)
@@ -367,9 +368,9 @@ sort Char
 ops chr : Nat ->? Char;
     ord : Char -> Nat
 forall n: Nat; c: Char
-. def chr(n) <=> (n <= 255) %(chr_dom)%
+. def chr(n) <=> n <= 255 %(chr_dom)%
 . chr(ord(c)) = c %(chr_def)%
-. ord(chr(n)) = n if (n <= 255) %(ord_def)%
+. ord(chr(n)) = n if n <= 255 %(ord_def)%
 
 %% definition of individual characters:
 ops '\000': Char = chr(0); %(slash_000)%
@@ -821,18 +822,15 @@ ops ' ': Char = '\032'; %(printable_32)%
     'ý': Char = '\253'; %(printable_253)%
     'þ': Char = '\254'; %(printable_254)%
     'ÿ': Char = '\255' %(printable_255)%
-preds isLetter(c :Char) <=> ((ord ('A') <= ord (c))
-                             /\ (ord (c) <= ord ('Z')))
-                            \/ ((ord ('a') <= ord (c))
-                                /\ (ord (c) <= ord ('z')));
+preds isLetter(c :Char) <=> (
+                            ord ('A') <= ord (c) /\ ord (c) <= ord ('Z')) \/ 
+                            (ord ('a') <= ord (c) /\ ord (c) <= ord ('z'));
       %(isLetter_def)%
-      isDigit(c :Char) <=> (ord ('0') <= ord (c))
-                           /\ (ord (c) <= ord ('9'));
+      isDigit(c :Char) <=> ord ('0') <= ord (c) /\ ord (c) <= ord ('9');
       %(isDigit_def)%
-      isPrintable(c :Char) <=> ((ord (' ') <= ord (c))
-                                /\ (ord (c) <= ord ('~')))
-                               \/ ((ord (' ') <= ord (c))
-                                   /\ (ord (c) <= ord ('ÿ')))
+      isPrintable(c :Char) <=> (
+                               ord (' ') <= ord (c) /\ ord (c) <= ord ('~')) \/ 
+                               (ord (' ') <= ord (c) /\ ord (c) <= ord ('ÿ'))
       %(isPrintable_def)%
 
 %% alternative definition of characters as '\o ppp',

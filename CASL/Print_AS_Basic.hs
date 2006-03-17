@@ -23,9 +23,11 @@ import Common.Keywords
 import Common.Lib.Pretty
 import Common.PrettyPrint
 import Common.PPUtils
+import qualified Common.Doc as Doc
 
 import CASL.AS_Basic_CASL
 import CASL.LiteralFuns
+import qualified CASL.ToDoc as ToDoc
 
 import Data.List (mapAccumL)
 
@@ -189,64 +191,7 @@ instance PrettyPrint VAR_DECL where
                                 <+> printText0 ga s
 
 printFORMULA :: PrettyPrint f => GlobalAnnos -> FORMULA f -> Doc
-printFORMULA ga (Quantification q l f _) =
-        hang (printText0 ga q <+> semiT_text ga l) 4 $
-             char '.' <+> printFORMULA ga f
-printFORMULA ga (Conjunction l _) =
-        sep $ prepPunctuate (text lAnd <> space) $
-            map (condParensXjunction printFORMULA parens ga) l
-printFORMULA ga (Disjunction  l _) =
-        sep $ prepPunctuate (text lOr <> space) $
-            map (condParensXjunction printFORMULA parens ga) l
-printFORMULA ga i@(Implication f g isArrow _) =
-        if isArrow
-        then (
-              hang (condParensImplEquiv printFORMULA parens ga i f False
-                    <+> text implS) 4 $
-              condParensImplEquiv printFORMULA parens ga i g True)
-        else (
-              hang (condParensImplEquiv printFORMULA parens ga i g False
-                    <+> text "if") 4 $
-              condParensImplEquiv printFORMULA parens ga i f True)
-printFORMULA ga e@(Equivalence  f g _) =
-        hang (condParensImplEquiv printFORMULA parens ga e f False
-              <+> text equivS) 4 $
-             condParensImplEquiv printFORMULA parens ga e g True
-printFORMULA ga (Negation f _) =
-    text "not" <+> condParensNeg f parens (printFORMULA ga f)
-printFORMULA _ (True_atom _)  = text trueS
-printFORMULA _ (False_atom _) = text falseS
-printFORMULA ga (Predication p l _) =
-        let (p_id,isQual) =
-                case p of
-                       Pred_name i          -> (i,False)
-                       Qual_pred_name i _ _ -> (i,True)
-            p' = printText0 ga p
-        in if isQual then
-             print_prefix_appl_text ga p' l
-           else condPrint_Mixfix_text ga p_id l
-printFORMULA ga (Definedness f _) = text defS <+> printText0 ga f
-printFORMULA ga (Existl_equation f g _) =
-        hang (printText0 ga f <+> text exEqual) 4 $ printText0 ga g
-printFORMULA ga (Strong_equation f g _) =
-        hang (printText0 ga f <+> text equalS) 4 $ printText0 ga g
-printFORMULA ga (Membership f g _) =
-        printText0 ga f <+> text inS <+> printText0 ga g
-printFORMULA ga (Mixfix_formula t) = {- trace ("Mixfix_formula found: "
-                                            ++ showPretty t "") $ -}
-                                        printText0 ga t
-printFORMULA _ (Unparsed_formula s _) = text s
-printFORMULA ga (Sort_gen_ax constrs _) =
-        text generatedS <>
-        braces (text sortS <+> commaT_text ga sorts
-                <> semi <+> semiT_text ga ops)
-         <+> (if null sortMap then empty
-               else text withS
-                <+> fsep (punctuate comma (map printSortMap sortMap)))
-        where (sorts,ops,sortMap) = recover_Sort_gen_ax constrs
-              printSortMap (s1,s2) =
-                printText0 ga s1 <+> text "|->" <+> printText0 ga s2
-printFORMULA ga (ExtFORMULA f) = printText0 ga f
+printFORMULA ga = Doc.toHPJDoc ga . ToDoc.printFormula
 
 instance PrettyPrint f => PrettyPrint (FORMULA f) where
     printText0 ga f@(Sort_gen_ax _ _) = printFORMULA ga f
