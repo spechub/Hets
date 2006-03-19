@@ -14,9 +14,8 @@ consistency checking of free types
 {-
 "free datatypes and recursive equations are consistent"
 
-checkFreeType :: (PrettyPrint f, Eq f) =>
-                 (Sign f e,[Named (FORMULA f)]) -> Morphism f e m
-                 -> [Named (FORMULA f)] -> Result (Maybe (Bool,[FORMULA f]))
+checkFreeType :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
+                 -> [Named (FORMULA ())] -> Result (Maybe (Bool,[FORMULA ()]))
 Just (Just True) => Yes, is consistent
 Just (Just False) => No, is inconsistent
 Just Nothing => don't know
@@ -72,8 +71,7 @@ import Comorphisms.HasCASL2Haskell
                               constructor in each group
   - return (Just True)
 -}
-checkFreeType :: -- (PosItem f, PrettyPrint f, Eq f) =>
-                 (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
+checkFreeType :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
                  -> [Named (FORMULA ())] -> Result (Maybe (Bool,[FORMULA ()]))
 #ifdef PROGRAMATICA
 checkFreeType (osig,osens) m fsn
@@ -108,15 +106,15 @@ checkFreeType (osig,osens) m fsn
                 head $ filter (\t->not $ checkVar_App t) leadingTerms
         in warning Nothing ("a variable occurs twice in a leading term of " ++
                             opSymStr os) pos
- --   | (not $ null fs_terminalProof) && (terminationProof $ (osens ++ fsn)) =
-    | (not $ null fs_terminalProof) && (not $ proof) =
+    | (not $ null fs_terminalProof) && (proof == "NO") =
         warning Nothing "not terminating" nullRange
+    | (not $ null fs_terminalProof) && (proof == "MAYBE") =
+        warning Nothing "cannot prove termination" nullRange
     | not $ ((null (overlap_query ++ ex_axioms)) &&
              (null subSortsF)) =
         return (Just (True,(overlap_query ++
                             ex_axioms ++
                             (concat $ map snd subSortsF))))
-  --  | not $ null subSortsF = return (Just (True,concat $ map snd subSortsF))
     | otherwise = return (Just (True,[]))
 
 {-
@@ -329,15 +327,18 @@ checkFreeType (osig,osens) m fsn
 -}
     ipath = "/tmp/Input.hs"
     opath = "/tmp/Result.txt"
-    s3= showPretty (map_theory
+    casl2hs = map_theory
                   (CompComorphism (CompComorphism CASL2HasCASL HasCASL2HasCASL)
-                   HasCASL2Haskell) (mtarget m,fsn)) ""
+                   HasCASL2Haskell) (mtarget m,(osens++fsn))
+    hsdiag = concat $ map (\a->showPretty a "") $ diags casl2hs
     proof = unsafePerformIO (do
-                writeFile ipath $ s3
-                system ("java -jar CASL/Termination/AProVE.jar -u cli " ++
-                        "-m wst -p plain " ++ ipath ++ " > " ++ opath)
+                writeFile ipath $ ("module Dummy where\n -- " ++ hsdiag)
+                system ("java -jar CASL/Termination/AProVE.jar -u cli -m " ++
+                        "wst -p plain " ++ 
+                        ipath ++ " > " ++ opath)
                 res <- readFile opath
-                return (subStr "YES" res))
+                return (head $ words res))
+       --         return (subStr "YES" res))
 #else
 checkFreeType = error "CASL.CCC.FreeTypes.checkFreeType"
 #endif
