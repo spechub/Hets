@@ -31,9 +31,10 @@ import OMDoc.KeyDebug
 -- Global-Options (for debugging currently)
 
 data GlobalOptions =
-        GOpts {
-                dbgInf :: DbgInf
-                }
+  GOpts
+    {
+      dbgInf :: DbgInf
+    }
                 
 debugGO::forall a . GlobalOptions->DbgKey->String->a->a
 debugGO go = debug (dbgInf go)
@@ -43,68 +44,69 @@ debugGOIO go = debugIO (dbgInf go)
                 
 emptyGlobalOptions::GlobalOptions
 emptyGlobalOptions =
-        GOpts {
-                dbgInf = (simpleDebug [])
-                }
+  GOpts
+    {
+      dbgInf = (simpleDebug [])
+    }
                         
 -- OMDoc definitions
 
 omdocNameXMLNS
-        ,omdocNameXMLAttr :: String
+  ,omdocNameXMLAttr :: String
 omdocNameXMLNS = "xml"
 omdocNameXMLAttr = "id"
                                                 
 theoryNameXMLNS
-        ,theoryNameXMLAttr :: String
+  ,theoryNameXMLAttr :: String
 theoryNameXMLNS = "xml"
 theoryNameXMLAttr = "id"
 
 axiomNameXMLNS
-        ,axiomNameXMLAttr :: String
+  ,axiomNameXMLAttr :: String
 axiomNameXMLNS = ""
 axiomNameXMLAttr = "name"
                                                 
 sortNameXMLNS
-        ,sortNameXMLAttr :: String
+  ,sortNameXMLAttr :: String
 sortNameXMLNS = ""
 sortNameXMLAttr = "name"
 
 symbolTypeXMLNS
-        ,symbolTypeXMLAttr :: String
+  ,symbolTypeXMLAttr :: String
         
 symbolTypeXMLNS = ""
 symbolTypeXMLAttr = "role"
 
 predNameXMLNS
-        ,predNameXMLAttr :: String
+  ,predNameXMLAttr :: String
 predNameXMLNS = ""
 predNameXMLAttr = "name"
 
 opNameXMLNS
-        ,opNameXMLAttr :: String
+  ,opNameXMLAttr :: String
 opNameXMLNS = ""
 opNameXMLAttr = "name"
 
 --caslQuantificationS
 caslConjunctionS
-        ,caslDisjunctionS
-        ,caslImplicationS
-        ,caslImplication2S
-        ,caslEquivalenceS
-        ,caslEquivalence2S
-        ,caslNegationS
-        ,caslPredicationS
-        ,caslDefinednessS
-        ,caslExistl_equationS
-        ,caslStrong_equationS
-        ,caslMembershipS
-        ,caslSort_gen_axS :: String
+  ,caslDisjunctionS
+  ,caslImplicationS
+  ,caslImplication2S
+  ,caslEquivalenceS
+  ,caslEquivalence2S
+  ,caslNegationS
+  ,caslPredicationS
+  ,caslDefinednessS
+  ,caslExistl_equationS
+  ,caslStrong_equationS
+  ,caslMembershipS
+  ,caslSort_gen_axS :: String
 
 caslSymbolQuantUniversalS
-        ,caslSymbolQuantExistentialS
-        ,caslSymbolQuantUnique_existentialS
-        ,caslSymbolAtomFalseS
-        ,caslSymbolAtomTrueS :: String
+  ,caslSymbolQuantExistentialS
+  ,caslSymbolQuantUnique_existentialS
+  ,caslSymbolAtomFalseS
+  ,caslSymbolAtomTrueS :: String
 
 
 unsupportedS :: String
@@ -166,11 +168,11 @@ xnWOaToWOa a = xnItem a
 
 -- | a predicate with xml-name and origin
 data PredTypeXNWON = PredTypeXNWON {predArgsXNWON :: [XmlNamedWON SORT]}
-        deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord)
         
 -- | an operator with xml-name and origin
 data OpTypeXNWON = OpTypeXNWON { opKind :: FunKind, opArgsXNWON :: [XmlNamedWON SORT], opResXNWON :: (XmlNamedWON SORT) }
-        deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord)
 
 -- | tries to find the 'pure' sort among named sorts    
 sortToXmlNamedWONSORT::[XmlNamedWONSORT]->SORT->(Maybe XmlNamedWONSORT)
@@ -178,49 +180,49 @@ sortToXmlNamedWONSORT list s = find (\i -> s == (xnWOaToa i)) list
 
 sortToXmlNamedWONSORTSet::Set.Set XmlNamedWONSORT->SORT->(Maybe XmlNamedWONSORT)
 sortToXmlNamedWONSORTSet sortset sort =
-        case Set.toList $ Set.filter (\i -> sort == (xnWOaToa i)) sortset of
-                [] -> Nothing
-                (i:_) -> (Just i)
+  case Set.toList $ Set.filter (\i -> sort == (xnWOaToa i)) sortset of
+    [] -> Nothing
+    (i:_) -> (Just i)
                 
 aToXmlNamedWONa::(Eq a)=>[XmlNamedWON a]->a->(Maybe (XmlNamedWON a))
 aToXmlNamedWONa xnlist a = find (\i -> a == (xnWOaToa i)) xnlist
 
 aToXmlNamedWONaSet::(Eq a, Ord a)=>Set.Set (XmlNamedWON a)->a->(Maybe (XmlNamedWON a))
 aToXmlNamedWONaSet xnset a =
-        case Set.toList $ Set.filter (\i -> a == (xnWOaToa i)) xnset of
-                [] -> Nothing
-                (i:_) -> (Just i)
+  case Set.toList $ Set.filter (\i -> a == (xnWOaToa i)) xnset of
+    [] -> Nothing
+    (i:_) -> (Just i)
         
 predTypeToPredTypeXNWON::Set.Set (XmlNamedWON SORT)->PredType->PredTypeXNWON
 predTypeToPredTypeXNWON sortwoset (PredType {predArgs = pA}) =
-        let
-                xnwonsorts = Set.toList sortwoset
-                xnwonargs = map (\a -> case (sortToXmlNamedWONSORT xnwonsorts a) of
-                        Nothing -> error "Unable to find xml-named sort for predicate argument!"
-                        (Just xnsort) -> xnsort) pA
-        in
-                PredTypeXNWON xnwonargs
+  let
+    xnwonsorts = Set.toList sortwoset
+    xnwonargs = map (\a -> case (sortToXmlNamedWONSORT xnwonsorts a) of
+      Nothing -> error "Unable to find xml-named sort for predicate argument!"
+      (Just xnsort) -> xnsort) pA
+  in
+    PredTypeXNWON xnwonargs
                 
 predTypeXNWONToPredType::PredTypeXNWON->PredType
 predTypeXNWONToPredType (PredTypeXNWON xnargs) =
-        PredType $ map xnWOaToa xnargs
+  PredType $ map xnWOaToa xnargs
                 
 opTypeToOpTypeXNWON::Set.Set (XmlNamedWON SORT)->OpType->OpTypeXNWON
 opTypeToOpTypeXNWON sortwoset (OpType {CASL.Sign.opKind = oK, opArgs = oA, opRes = oR}) =
-        let
-                xnwonsorts = Set.toList sortwoset
-                xnwonargs = map (\a -> case (sortToXmlNamedWONSORT xnwonsorts a) of
-                        Nothing -> error "Unable to find xml-named sort for operator argument!"
-                        (Just xnsort) -> xnsort) oA
-                xnwonres = case sortToXmlNamedWONSORT xnwonsorts oR of
-                        Nothing -> error "Unable to find xml-named sort for operator result!"
-                        (Just xnsort) -> xnsort
-        in
-                OpTypeXNWON oK xnwonargs xnwonres
+  let
+    xnwonsorts = Set.toList sortwoset
+    xnwonargs = map (\a -> case (sortToXmlNamedWONSORT xnwonsorts a) of
+      Nothing -> error "Unable to find xml-named sort for operator argument!"
+      (Just xnsort) -> xnsort) oA
+    xnwonres = case sortToXmlNamedWONSORT xnwonsorts oR of
+      Nothing -> error "Unable to find xml-named sort for operator result!"
+      (Just xnsort) -> xnsort
+  in
+    OpTypeXNWON oK xnwonargs xnwonres
                 
 opTypeXNWONToOpType::OpTypeXNWON->OpType
 opTypeXNWONToOpType (OpTypeXNWON fk xnargs xnres) =
-        OpType fk (map xnWOaToa xnargs) (xnWOaToa xnres)
+  OpType fk (map xnWOaToa xnargs) (xnWOaToa xnres)
         
 type XmlNamedWONId = XmlNamedWON Id.Id
 
@@ -233,16 +235,16 @@ type TheoryXNSet = Set.Set TheoryXN
 -- | name by node
 getTheoryXmlName::TheoryXNSet->Graph.Node->Maybe XmlName
 getTheoryXmlName ts n =
-        case find (\i -> (fst (xnItem i)) == n) $ Set.toList ts of
-                Nothing -> Nothing
-                (Just i) -> Just (xnName i)
+  case find (\i -> (fst (xnItem i)) == n) $ Set.toList ts of
+    Nothing -> Nothing
+    (Just i) -> Just (xnName i)
                 
 -- | node by name
 getNodeForTheoryName::TheoryXNSet->XmlName->Maybe Graph.Node
 getNodeForTheoryName xntheoryset xname =
-        case find (\i -> (xnName i) == xname) $ Set.toList xntheoryset of
-                Nothing -> Nothing
-                (Just i) -> Just (fst (xnItem i))
+  case find (\i -> (xnName i) == xname) $ Set.toList xntheoryset of
+    Nothing -> Nothing
+    (Just i) -> Just (fst (xnItem i))
 
 cv_Op_typeToOpType::OP_TYPE->OpType
 cv_Op_typeToOpType (Op_type fk args res _) = OpType fk args res

@@ -11,11 +11,11 @@ Portability :  non-portable(Logic)
 -}
 module OMDoc.OMDocOutput
   (
-     showOmdoc
-    ,showOmdocDTD
-    ,writeOmdoc
-    ,writeOmdocDTD
-    ,devGraphToOmdocCMPIOXN
+     showOMDoc
+    ,showOMDocDTD
+    ,writeOMDoc
+    ,writeOMDocDTD
+    ,devGraphToOMDocCMPIOXN
     ,dGraphGToXmlGXN
     ,writeXmlG
     ,defaultDTDURI
@@ -73,10 +73,10 @@ import OMDoc.XmlHandling
 import OMDoc.OMDocDefs
 
 -- | generate a DOCTYPE-Element for output
-mkOmdocTypeElem::
+mkOMDocTypeElem::
         String -- ^ URI for DTD
         ->HXTT.XNode -- ^ DOCTYPE-Element
-mkOmdocTypeElem system =
+mkOMDocTypeElem system =
         HXTT.XDTD HXTT.DOCTYPE [
                  (a_name, "omdoc")
                 ,(k_public, "-//OMDoc//DTD OMDoc V1.2//EN")
@@ -109,44 +109,44 @@ writeableTreesDTD::String->HXT.XmlTrees->HXT.XmlTree
 writeableTreesDTD dtd' t =
                 (HXT.NTree
                         ((\(HXT.NTree a _) -> a) emptyRoot)
-                        ((HXT.NTree (mkOmdocTypeElem dtd' ) [])
+                        ((HXT.NTree (mkOMDocTypeElem dtd' ) [])
                                 :(HXT.NTree (HXT.XText "\n")[])
                                 :t)
                         
                 )
                 
 -- | this function shows Xml with indention
-showOmdoc::HXT.XmlTrees->IO HXT.XmlTrees
-showOmdoc t = HXT.run' $
+showOMDoc::HXT.XmlTrees->IO HXT.XmlTrees
+showOMDoc t = HXT.run' $
         HXT.writeDocument
                 [(a_indent, v_1), (a_issue_errors, v_1)] $
                 writeableTrees t
                 
 -- | this function shows Xml with indention
-showOmdocDTD::String->HXT.XmlTrees->IO HXT.XmlTrees
-showOmdocDTD dtd' t = HXT.run' $
+showOMDocDTD::String->HXT.XmlTrees->IO HXT.XmlTrees
+showOMDocDTD dtd' t = HXT.run' $
         HXT.writeDocument
                 [(a_indent, v_1), (a_issue_errors, v_1)] $
                 writeableTreesDTD dtd' t
 
 -- | this function writes Xml with indention to a file
-writeOmdoc::HXT.XmlTrees->String->IO HXT.XmlTrees
-writeOmdoc t f = HXT.run' $
+writeOMDoc::HXT.XmlTrees->String->IO HXT.XmlTrees
+writeOMDoc t f = HXT.run' $
         HXT.writeDocument
                 [(a_indent, v_1), (a_output_file, f)] $
                 writeableTrees t
                 
 -- | this function writes Xml with indention to a file
-writeOmdocDTD::String->HXT.XmlTrees->String->IO HXT.XmlTrees
-writeOmdocDTD dtd' t f = HXT.run' $
+writeOMDocDTD::String->HXT.XmlTrees->String->IO HXT.XmlTrees
+writeOMDocDTD dtd' t f = HXT.run' $
         HXT.writeDocument
                 [(a_indent, v_1), (a_output_file, f)] $
                 writeableTreesDTD dtd' t
 
 -- | Convert a DevGraph to OMDoc-XML with given xml:id attribute
 -- will also scan used (CASL-)files for CMP-generation
-devGraphToOmdocCMPIOXN::GlobalOptions->Static.DevGraph.DGraph->String->IO HXT.XmlTrees
-devGraphToOmdocCMPIOXN go dg name' =
+devGraphToOMDocCMPIOXN::GlobalOptions->Static.DevGraph.DGraph->String->IO HXT.XmlTrees
+devGraphToOMDocCMPIOXN go dg name' =
         do
                 dgx <- devGraphToXmlCMPIOXmlNamed go dg
                 return (
@@ -400,7 +400,7 @@ devGraphToXmlCMPIOXmlNamed go dg =
                                         xmlNL +++
                                         -- imports/morphisms
                                         -- I still need to find a way of modelling Hets-libraries
-                                        -- in Omdoc-Imports...
+                                        -- in OMDoc-Imports...
 --                                      (foldl (\x' (nodename' , mmm) ->
                                         (foldl (\x' (nodenamex , mmm) ->
                                                 let
@@ -538,7 +538,7 @@ refsToCatalogueXN dg theoryset =
                                                         Nothing -> error "No Theory for Reference!"
                                                         (Just xnname' ) -> xnname' )
                                                 +++
-                                        HXT.sattr "omdoc" (asOmdocFile (unwrapLinkSource $ dgn_libname node))
+                                        HXT.sattr "omdoc" (asOMDocFile (unwrapLinkSource $ dgn_libname node))
                                         ) +++
                                         xmlNL
                                 ) (HXT.txt "") refs
@@ -1153,8 +1153,8 @@ splitFile file =
                         _ -> joinWith '.' $ init filenameparts 
         
 -- | returns an 'omdoc-version' of a filename (e.g. test.env -> test.omdoc)
-asOmdocFile::String->String
-asOmdocFile file =
+asOMDocFile::String->String
+asOMDocFile file =
         let
                 parts = splitFile' file
                 fullfilename = last parts
@@ -1185,7 +1185,7 @@ dGraphGToXmlGXN ig =
         do
                 nodes <- mapM (\(n, (S i@(name' ,_) dg)) ->
                         do
-                                omdoc <- devGraphToOmdocCMPIOXN emptyGlobalOptions dg name'
+                                omdoc <- devGraphToOMDocCMPIOXN emptyGlobalOptions dg name'
                                 return (n, S i omdoc ) ) $ Graph.labNodes ig
                 return (Graph.mkGraph nodes $ Graph.labEdges ig)
 
@@ -1205,11 +1205,11 @@ writeXmlG dtduri ig sandbox =
         in
                 (mapM (\(S (name' ,file) x) ->
                         let
-                                omfile = fileSandbox sandbox $ asOmdocFile file
+                                omfile = fileSandbox sandbox $ asOMDocFile file
                         in
                                 putStrLn ("Writing \"" ++ name' ++ "\" to \"" ++ omfile ++ "\"") >>
                                 System.Directory.createDirectoryIfMissing True (snd $ splitPath omfile) >>
-                                writeOmdocDTD dtduri x omfile
+                                writeOMDocDTD dtduri x omfile
                         ) nodes) >> return ()
                         
                         

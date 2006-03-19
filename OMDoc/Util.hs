@@ -38,14 +38,18 @@ implode with (item:rest) = item ++ with ++ (implode with rest)
 -- TODO : this looks very slow...
 explode::forall a . Eq a => [a]->[a]->[[a]]
 explode by list =
-        (\(p,q) -> p++[q]) $ foldl (\(exploded, current) newchar ->
-                let newcurrent = current ++ [newchar]
-                in
-                if isSuffixOf by newcurrent then
-                        (exploded ++ [ take ((length newcurrent)-length(by)) newcurrent ], [])
-                else
-                        (exploded, newcurrent)
-                        ) ([],[]) list
+  (\(p,q) -> p++[q]) $ foldl (\(exploded, current) newchar ->
+    let
+      newcurrent = current ++ [newchar]
+    in
+      if isSuffixOf by newcurrent
+        then
+          (exploded ++ [ take ((length newcurrent)-length(by)) newcurrent ], [])
+        else
+          (exploded, newcurrent)
+  )
+    ([],[])
+    list
 
 initorall::forall a . [a]->[a]
 initorall [i] = [i]
