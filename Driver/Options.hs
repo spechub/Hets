@@ -38,7 +38,7 @@ bracket s = "[" ++ s ++ "]"
 
 -- use the same strings for parsing and printing!
 verboseS, intypeS, outtypesS, rawS, skipS, structS,
-     guiS, onlyGuiS, libdirS, outdirS, amalgS, specS :: String
+     guiS, onlyGuiS, libdirS, outdirS, amalgS, specS, recursiveS :: String
 
 verboseS = "verbose"
 intypeS = "input-type"
@@ -51,7 +51,8 @@ onlyGuiS = "only-gui"
 libdirS = "hets-libdir"
 outdirS = "output-dir"
 amalgS = "casl-amalg"
-specS = "spec"
+specS = "named-specs"
+recursiveS = "recursive"
 
 asciiS, latexS, textS, texS :: String
 asciiS = "ascii"
@@ -96,6 +97,7 @@ data HetcatsOpts =        -- for comments see usage info
           , libdir   :: FilePath
           , outdir   :: FilePath
           , outtypes :: [OutType]
+          , recurse  :: Bool
           , rawopts  :: [RawOpt]
           , verbose  :: Int
           , defLogic :: String
@@ -111,6 +113,7 @@ instance Show HetcatsOpts where
                 ++ showEqOpt intypeS (show $ intype opts)
                 ++ showEqOpt outdirS (outdir opts)
                 ++ showEqOpt outtypesS (showOutTypes $ outtypes opts)
+                ++ (if recurse opts then showOpt recursiveS else "")
                 ++ showEqOpt specS (joinWith ',' $ map show $ specNames opts)
                 ++ showRaw (rawopts opts)
                 ++ showEqOpt amalgS ( tail $ init $ show $
@@ -132,6 +135,7 @@ makeOpts opts flg = case flg of
     LibDir x   -> opts { libdir = x }
     OutDir x   -> opts { outdir = x }
     OutTypes x -> opts { outtypes = x }
+    Recurse    -> opts { recurse = True }    
     Specs x    -> opts { specNames = x }
     Raw x      -> opts { rawopts = x }
     Verbose x  -> opts { verbose = x }
@@ -153,6 +157,7 @@ defaultHetcatsOpts =
           , libdir   = ""
           , outdir   = ""
           , outtypes = [] -- no default
+          , recurse  = False
           , rawopts  = []
           , defLogic = "CASL"
           , verbose  = 1
@@ -164,6 +169,7 @@ defaultHetcatsOpts =
 data Flag = Verbose  Int
           | Quiet
           | Version
+          | Recurse
           | Help
           | Gui      GuiType
           | Analysis AnaType
@@ -402,7 +408,9 @@ options =
        ++ bS ++ astS ++ formS ++ crS
        ++ bS ++ joinBar (map show hetOutTypeList) ++ bracket naxS ++formS++crS
        ++ bS ++ dfgS ++ bracket cS)
-    , Option ['n'] [specS] (ReqArg parseSpecOpts "SPECS")
+    , Option ['R'] [recursiveS] (NoArg Recurse)
+      "output also imported libraries"
+    , Option ['n'] [specS] (ReqArg parseSpecOpts "NSPECS")
       ("process specs option " ++ crS ++ listS ++ " SIMPLE-ID")
     , Option ['r'] [rawS] (ReqArg parseRawOpts "RAW")
       ("raw options for pretty printing" ++ crS ++ "RAW is "
