@@ -3,10 +3,10 @@
 .PHONY: check
 
 check: h2h hacapa
-	./runcheck.sh ../h2h
+	./runcheck.sh ../../Haskell/h2h
 
 output: h2h hacapa
-	./runcheck.sh ../h2h set
+	./runcheck.sh ../../Haskell/h2h set
 
 %: 
 	(cd ../..; $(MAKE) $@)

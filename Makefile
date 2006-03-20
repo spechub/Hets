@@ -26,7 +26,7 @@ CLEAN_PATH = . \
     utils utils/DrIFT-src utils/GenerateRules utils/InlineAxioms Common \
     Common/Lib Common/ATerm Logic CASL CASL/CCC CASL/CompositionTable \
     Syntax Static GUI HasCASL Haskell Modal CoCASL COL ConstraintCASL \
-    CspCASL ATC ToHaskell Proofs Comorphisms Isabelle Driver \
+    CspCASL ATC Proofs Comorphisms Isabelle Driver \
     Taxonomy CASL_DL SPASS OWL_DL OMDoc $(PFE_PATHS) $(HXT_PATHS)
 
 # the 'replacing spaces' example was taken from the (GNU) Make info manual
@@ -527,8 +527,8 @@ bin_clean:
 	$(RM) Haskell/hana
 	$(RM) Haskell/wrap
 	$(RM) Isabelle/isa
-	$(RM) ToHaskell/h2h
-	$(RM) ToHaskell/h2hf
+	$(RM) Haskell/h2h
+	$(RM) Haskell/h2hf
 	$(RM) Syntax/hetpa
 	$(RM) Static/hetana
 	$(RM) GUI/hetdg
@@ -603,16 +603,16 @@ Haskell/hana: Haskell/hana.hs Haskell/HatAna.hs Haskell/PreludeString.hs
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### Haskell to Isabelle-HOLCF translation
-h2hf: ToHaskell/h2hf
+h2hf: Haskell/h2hf
 
-ToHaskell/h2hf: ToHaskell/h2hf.hs ToHaskell/*.hs Haskell/*.hs \
+Haskell/h2hf: Haskell/h2hf.hs Haskell/*.hs \
     HasCASL/*.hs Isabelle/*.hs Common/*.hs
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### HasCASL to Haskell translation
-h2h: ToHaskell/h2h
+h2h: Haskell/h2h
 
-ToHaskell/h2h: ToHaskell/h2h.hs ToHaskell/*.hs Haskell/*.hs HasCASL/*.hs
+Haskell/h2h: Haskell/h2h.hs Haskell/*.hs HasCASL/*.hs
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### HetCASL parser

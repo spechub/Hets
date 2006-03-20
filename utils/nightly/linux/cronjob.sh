@@ -21,7 +21,7 @@ makeHets
 makeLibCheck
 
 # remove unoptimized h2hf
-h2hf=HetCATS/ToHaskell/h2hf
+h2hf=HetCATS/Haskell/h2hf
 rm $h2hf
 # optimize a bit using optimized programatica stuff
 cd HetCATS
@@ -108,7 +108,7 @@ Common/test_parser -p casl_id2 Common/test/MixIds.casl
 Haskell/hana ToHaskell/test/*.hascasl.hs
 cd Haskell/test/HOLCF
 cp ../HOL/*.hs .
-../../../ToHaskell/h2hf hc *.hs
+../../../Haskell/h2hf hc *.hs
 /local/home/maeder/haskell/runHsIsabelle.sh *.thy > ../../../../isaHs.log 2>&1
 fgrep \*\*\* ../../../../isaHs.log
 
