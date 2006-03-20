@@ -17,6 +17,7 @@ module OMDoc.OMDocInput
     ,hybridGToDGraphG
     ,dGraphGToLibEnv
     ,dGraphGToLibEnvOMDocId
+		,mLibEnvFromOMDocFile
     ,libEnvFromOMDocFile
     ,loadOMDoc
   )
@@ -64,7 +65,10 @@ import Debug.Trace (trace)
 
 import qualified System.IO.Error as System.IO.Error
 
+import Driver.Options
+
 import Control.Monad
+import Control.Exception as Control.Exception
 
 import Char (isSpace)
 
@@ -75,6 +79,19 @@ import OMDoc.Container
 import OMDoc.XmlHandling
 
 import OMDoc.OMDocDefs
+
+mLibEnvFromOMDocFile::
+	HetcatsOpts
+	->FilePath
+	->IO (Maybe (ASL.LIB_NAME, LibEnv))
+mLibEnvFromOMDocFile hco file =
+	Control.Exception.catch
+		(
+			do
+				(ln, _, lenv) <- libEnvFromOMDocFile (emptyGlobalOptions { hetsOpts = hco }) file [libdir hco]
+				return (Just (ln, lenv))
+		)
+		(\_ -> return Nothing)
 
 -- not used in program (for ghci)               
 libEnvFromOMDocFile::
