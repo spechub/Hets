@@ -24,6 +24,7 @@ diff pp1.txt pp2.txt
 # try consistency check with SPASS
 hets -v2 -o dfg.c Basic/*.casl UserManual/*.casl
 date
+cp /local/home/maeder/haskell/spass_consistency_patterns.txt .
 /local/home/maeder/haskell/runSPASSconsistency.sh */*.dfg.c
 date
 
