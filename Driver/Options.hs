@@ -65,13 +65,14 @@ treeS = "tree."
 bafS = ".baf"
 astS = "ast"
 
-graphS, ppS, envS, naxS, deltaS, prfS :: String
+graphS, ppS, envS, naxS, deltaS, prfS, omdocS :: String
 graphS = "graph."
 ppS = "pp."
 envS = "env"
 naxS = ".nax"
 deltaS = ".delta"
-prfS ="prf"
+prfS = "prf"
+omdocS = "omdoc"
 
 dfgS, cS :: String
 dfgS = "dfg"
@@ -195,7 +196,7 @@ instance Show GuiType where
 
 -- | 'InType' describes the type of input the infile contains
 data InType = ATermIn ATType | ASTreeIn ATType | CASLIn | HetCASLIn | OWL_DLIn
-            | HaskellIn | PrfIn | GuessIn
+            | HaskellIn | PrfIn | OmdocIn | GuessIn
 
 instance Show InType where
     show i = case i of
@@ -206,6 +207,7 @@ instance Show InType where
              OWL_DLIn -> "owl"
              HaskellIn -> "hs"
              PrfIn -> prfS
+             OmdocIn -> omdocS
              GuessIn -> ""
 
 -- maybe this optional tree prefix can be omitted
@@ -223,7 +225,7 @@ instance Show ATType where
                        NonBAF -> ""
 
 plainInTypes :: [InType]
-plainInTypes = [CASLIn, HetCASLIn, OWL_DLIn, HaskellIn, PrfIn]
+plainInTypes = [CASLIn, HetCASLIn, OWL_DLIn, HaskellIn, PrfIn, OmdocIn]
 
 aInTypes :: [InType]
 aInTypes = [ f x | f <- [ASTreeIn, ATermIn], x <- [BAF, NonBAF] ]
@@ -244,6 +246,7 @@ data OutType = PrettyOut PrettyType
              | GraphOut GraphType
              | Prf
              | EnvOut
+             | OmdocOut
              | ThyFile -- isabelle theory file
              | DfgFile SPFType -- SPASS input file
              | ComptableXml
@@ -257,6 +260,7 @@ instance Show OutType where
              GraphOut f -> graphS ++ show f
              Prf -> prfS
              EnvOut -> envS
+             OmdocOut -> omdocS
              ThyFile -> "thy"
              DfgFile t -> dfgS ++ show t
              ComptableXml -> "comptable.xml"
@@ -264,7 +268,7 @@ instance Show OutType where
              TheoryFile d -> "th" ++ show d
 
 plainOutTypeList :: [OutType]
-plainOutTypeList = [Prf, EnvOut, ThyFile, ComptableXml]
+plainOutTypeList = [Prf, EnvOut, OmdocOut, ThyFile, ComptableXml]
 
 outTypeList :: [OutType]
 outTypeList = let dl = [Delta, Fully] in
