@@ -66,7 +66,7 @@ treeS = "tree."
 bafS = ".baf"
 astS = "ast"
 
-graphS, ppS, envS, naxS, deltaS, prfS, omdocS :: String
+graphS, ppS, envS, naxS, deltaS, prfS, omdocS, hsS :: String
 graphS = "graph."
 ppS = "pp."
 envS = "env"
@@ -74,6 +74,7 @@ naxS = ".nax"
 deltaS = ".delta"
 prfS = "prf"
 omdocS = "omdoc"
+hsS = "hs"
 
 dfgS, cS :: String
 dfgS = "dfg"
@@ -211,7 +212,7 @@ instance Show InType where
              CASLIn -> "casl"
              HetCASLIn -> "het"
              OWL_DLIn -> "owl"
-             HaskellIn -> "hs"
+             HaskellIn -> hsS
              PrfIn -> prfS
              OmdocIn -> omdocS
              GuessIn -> ""
@@ -253,6 +254,7 @@ data OutType = PrettyOut PrettyType
              | Prf
              | EnvOut
              | OmdocOut
+             | HaskellOut
              | ThyFile -- isabelle theory file
              | DfgFile SPFType -- SPASS input file
              | ComptableXml
@@ -267,6 +269,7 @@ instance Show OutType where
              Prf -> prfS
              EnvOut -> envS
              OmdocOut -> omdocS
+             HaskellOut -> hsS
              ThyFile -> "thy"
              DfgFile t -> dfgS ++ show t
              ComptableXml -> "comptable.xml"
@@ -274,7 +277,7 @@ instance Show OutType where
              TheoryFile d -> "th" ++ show d
 
 plainOutTypeList :: [OutType]
-plainOutTypeList = [Prf, EnvOut, OmdocOut, ThyFile, ComptableXml]
+plainOutTypeList = [Prf, EnvOut, OmdocOut, HaskellOut, ThyFile, ComptableXml]
 
 outTypeList :: [OutType]
 outTypeList = let dl = [Delta, Fully] in
