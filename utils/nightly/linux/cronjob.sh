@@ -39,7 +39,7 @@ chgrp wwwbkb hets
 bzip2 -k hets
 \cp -fp hets.bz2 $hetsdir/linux/daily/
 chgrp linuxbkb hets
-# \cp -fp hets /home/linux-bkb/bin/
+\cp -fp hets /home/linux-bkb/bin/
 
 # make latex documentation
 \cp ../HetCATS/utils/hetcasl.sty .
