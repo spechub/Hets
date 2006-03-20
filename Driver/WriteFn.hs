@@ -45,6 +45,7 @@ import CASL.CompositionTable.CompositionTable
 import Isabelle.CreateTheories
 import Isabelle.IsaParse
 import SPASS.CreateDFGDoc
+--import OMDoc.OMDocOutput
 
 import Logic.Prover
 import Static.DevGraph
@@ -148,10 +149,14 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
         filePrefix = snd $ getFilePrefix opt file
         outTypes = outtypes opt
         allSpecs = null ns
-    when (hasPrfOut opt) $ do
-      let f = filePrefix ++ prfSuffix
-      str <- toShATermString (ln, lookupHistory ln lenv)
-      writeVerbFile opt f str
+    mapM_ ( \ ot -> let f = filePrefix ++ show ot in 
+        case ot of
+          Prf -> do 
+              str <- toShATermString (ln, lookupHistory ln lenv)
+              writeVerbFile opt f str
+          OmdocOut -> return ()
+          _ -> return () -- treat others below
+          ) outTypes
     mapM_ ( \ i -> case Map.lookup i gctx of
         Just (SpecEntry (_,_,_, NodeSig n _)) ->
             case maybeResult $ computeTheory lenv ln n of
