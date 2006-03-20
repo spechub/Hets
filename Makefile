@@ -15,12 +15,19 @@ all: patch hets
 ## Some varibles, which control the compilation
 
 INCLUDE_PATH = hxt
+HXT_PATHS = Data Data/Tree Data/Tree/NTree Data/Digest Text Text/XML \
+    Text/XML/HXT Text/XML/HXT/IO Text/XML/HXT/DOM Text/XML/HXT/Arrow \
+    Text/XML/HXT/XPath Text/XML/HXT/Validator Text/XML/HXT/Parser \
+    Text/XML/HXT/RelaxNG Text/XML/HXT/ProtocolHandler Codec Codec/ASN1 \
+    Codec/Binary Codec/Encryption Codec/Encryption/RSA System Control \
+    Control/Arrow Control/Monad Network
+
 CLEAN_PATH = . \
     utils utils/DrIFT-src utils/GenerateRules utils/InlineAxioms Common \
     Common/Lib Common/ATerm Logic CASL CASL/CCC CASL/CompositionTable \
     Syntax Static GUI HasCASL Haskell Modal CoCASL COL ConstraintCASL \
     CspCASL ATC ToHaskell Proofs Comorphisms Isabelle Driver \
-    Taxonomy CASL_DL SPASS OWL_DL OMDoc $(PFE_PATHS)
+    Taxonomy CASL_DL SPASS OWL_DL OMDoc $(PFE_PATHS) $(HXT_PATHS)
 
 # the 'replacing spaces' example was taken from the (GNU) Make info manual
 empty =
