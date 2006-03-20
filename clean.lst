@@ -53,6 +53,7 @@ Haskell/Language.hs
 Haskell/Logical.hs
 Haskell/ghc-call
 Haskell/hana.hs
+Haskell/h2h.hs
 Haskell/questions
 Haskell/test
 Haskell/todo
