@@ -49,7 +49,8 @@ emptyGlobalOptions::GlobalOptions
 emptyGlobalOptions =
   GOpts
     {
-      dbgInf = (simpleDebug [])
+       dbgInf = (simpleDebug [])
+			,hetsOpts = defaultHetcatsOpts
     }
                         
 -- OMDoc definitions

@@ -17,6 +17,7 @@ module OMDoc.OMDocOutput
     ,writeOMDocDTD
     ,devGraphToOMDocCMPIOXN
     ,dGraphGToXmlGXN
+		,devGraphToOMDoc
     ,writeXmlG
     ,defaultDTDURI
     ,libEnvToDGraphG
@@ -30,6 +31,8 @@ import CASL.AS_Basic_CASL
 import qualified Common.Id as Id
 import qualified Syntax.AS_Library as ASL
 import qualified CASL.AS_Basic_CASL as ABC
+
+import Driver.Options
 
 import Common.Utils (joinWith)
 
@@ -143,6 +146,14 @@ writeOMDocDTD dtd' t f = HXT.run' $
                 [(a_indent, v_1), (a_output_file, f)] $
                 writeableTreesDTD dtd' t
 
+devGraphToOMDoc::HetcatsOpts->(ASL.LIB_NAME, GlobalContext)->FilePath->IO ()
+devGraphToOMDoc hco (ln, ge) file =
+	devGraphToOMDocCMPIOXN
+		(emptyGlobalOptions { hetsOpts = hco })
+		(devGraph ge)
+		(show ln)
+	>>= \omdoc -> writeOMDocDTD defaultDTDURI omdoc file >> return ()
+								
 -- | Convert a DevGraph to OMDoc-XML with given xml:id attribute
 -- will also scan used (CASL-)files for CMP-generation
 devGraphToOMDocCMPIOXN::GlobalOptions->Static.DevGraph.DGraph->String->IO HXT.XmlTrees

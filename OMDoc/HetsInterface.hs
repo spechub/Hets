@@ -10,7 +10,7 @@ Portability :  non-portable(Logic)
 Interface for accessing Hets-System
 -}
 
-module OMDoc.HetsInterface (module OMDoc.HetsInterface, module Driver.ReadFn, module Driver.WriteFn, module Static.AnalysisLibrary) where
+module OMDoc.HetsInterface (module OMDoc.HetsInterface, module Driver.ReadFn, module Driver.WriteFn) where
 
 import Data.Graph.Inductive.Graph
 import qualified Data.Graph.Inductive.Graph as Graph --
