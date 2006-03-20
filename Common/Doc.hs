@@ -620,13 +620,15 @@ codeOutAppl ga md m origDoc _ args = case origDoc of
                        if checkArg ALeft ga (i, p) (ta, q) la
                        then oArg else if isInfix ta then pArg else d
                     else d) : l) [] $ zip aas args
-             fts = fst $ splitMixToken ts
+             (fts, ncs, cfun) = case Map.lookup i m of
+                            Nothing -> (fst $ splitMixToken ts, cs, codeToken)
+                            Just nts -> (nts, [], native)
              (rArgs, fArgs) = mapAccumL ( \ ac t ->
                if isPlace t then case ac of
                  hd : tl -> (tl, hd)
                  _ -> error "addPlainArg"
-                 else (ac, codeToken $ tokStr t)) parArgs fts
-            in fsep $ fArgs ++ (if null cs then [] else [codeCompIds m cs])
+                 else (ac, cfun $ tokStr t)) parArgs fts
+            in fsep $ fArgs ++ (if null ncs then [] else [codeCompIds m cs])
                                                  ++ rArgs
   _ -> error "Common.Doc.codeOutAppl"
 
