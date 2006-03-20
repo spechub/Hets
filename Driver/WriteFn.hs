@@ -41,7 +41,9 @@ import CASL.Logic_CASL
 import CASL.CompositionTable.ComputeTable
 import CASL.CompositionTable.CompositionTable
 #endif
-
+#ifdef PROGRAMATICA
+import Haskell.CreateModules
+#endif
 import Isabelle.CreateTheories
 import Isabelle.IsaParse
 import SPASS.CreateDFGDoc
@@ -197,6 +199,14 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
                               shows (printText0 ga $ signOf gTh) "\n"
                           else putIfVerbose opt 0
                                  "printing signature delta is not implemented"
+#ifdef PROGRAMATICA
+                      HaskellOut -> case printModule gTh of
+                                    Nothing -> putIfVerbose opt 0 $
+                                        "could not translate to Haskell " ++
+                                         show i
+                                    Just d -> 
+                                        writeVerbFile opt f $ shows d "\n"
+#endif
 #ifdef UNI_PACKAGE
                       ComptableXml -> let
                                     th = (sign0, toNamedList sens0)
