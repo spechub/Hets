@@ -26,6 +26,7 @@ import Driver.ReadFn
 import OWL_DL.OWLAnalysis
 #endif
 
+import OMDoc.OMDocInput
 import Static.AnalysisLibrary
 
 #ifdef UNI_PACKAGE
@@ -60,6 +61,8 @@ processFile opts file =
                  ontoMap <- parseOWL file
                  structureAna file opts ontoMap
 #endif
+             OmdocIn -> do
+               mLibEnvFromOMDocFile opts file
              PrfIn -> do
                m <- anaLib (removePrfOut opts) file
                case m of
