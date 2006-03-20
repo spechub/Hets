@@ -157,7 +157,9 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
             case maybeResult $ computeTheory lenv ln n of
               Nothing -> putIfVerbose opt 0 $
                               "could not compute theory of spec " ++ show i
-              Just gTh@(G_theory lid sign0 sens0) ->
+              Just raw_gTh ->
+               case theoremsToAxioms raw_gTh of
+                gTh@(G_theory lid sign0 sens0) ->
                   mapM_ ( \ ot ->
                       let f = filePrefix ++ "_" ++ show i ++ "." ++ show ot
                       in case ot of
@@ -182,7 +184,7 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
 
                       TheoryFile d -> if null $ show d then
                           writeVerbFile opt f $
-                              shows (DG.printTh ga i gTh) "\n"
+                              shows (DG.printTh ga i raw_gTh) "\n"
                           else putIfVerbose opt 0
                                    "printing theory delta is not implemented"
                       SigFile d -> if null $ show d then
