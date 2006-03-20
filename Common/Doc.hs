@@ -198,10 +198,10 @@ quote = symbol "\'"
 doubleQuote = symbol "\""
 
 parens :: Doc -> Doc     -- ^ Wrap document in @(...)@
-parens d = fcat [lparen, d, rparen]
+parens d = hcat [lparen, d, rparen]
 
 brackets :: Doc -> Doc     -- ^ Wrap document in @[...]@
-brackets d = fcat [lbrack, d, rbrack]
+brackets d = hcat [lbrack, d, rbrack]
 
 braces :: Doc -> Doc     -- ^ Wrap document in @{...}@
 braces d = cat [lbrace <> d, rbrace]
@@ -620,15 +620,15 @@ codeOutAppl ga md m origDoc _ args = case origDoc of
                        if checkArg ALeft ga (i, p) (ta, q) la
                        then oArg else if isInfix ta then pArg else d
                     else d) : l) [] $ zip aas args
-             (fts, ncs, cfun) = case Map.lookup i m of
+             (fts, ncs, cFun) = case Map.lookup i m of
                             Nothing -> (fst $ splitMixToken ts, cs, codeToken)
                             Just nts -> (nts, [], native)
              (rArgs, fArgs) = mapAccumL ( \ ac t ->
                if isPlace t then case ac of
                  hd : tl -> (tl, hd)
                  _ -> error "addPlainArg"
-                 else (ac, cfun $ tokStr t)) parArgs fts
-            in fsep $ fArgs ++ (if null ncs then [] else [codeCompIds m cs])
+                 else (ac, cFun $ tokStr t)) parArgs fts
+            in hsep $ fArgs ++ (if null ncs then [] else [codeCompIds m cs])
                                                  ++ rArgs
   _ -> error "Common.Doc.codeOutAppl"
 
