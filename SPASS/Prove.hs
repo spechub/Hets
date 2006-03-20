@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Description :  Interface for the SPASS theorem prover.
-Copyright   :  (c) Rene Wagner, Klaus Lüttich, Uni Bremen 2005-2006
+Copyright   :  (c) Rene Wagner, Klaus Lttich, Uni Bremen 2005-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luettich@tzi.de
@@ -17,6 +17,8 @@ See <http://spass.mpi-sb.mpg.de/> for details on SPASS.
     todo:
 
       - window opens too small on linux; why? ... maybe fixed
+      --> failure still there, opens sometimes too small (using KDE),
+          but not twice in a row
 
       - keep focus of listboxes if updated (also relevant for 
         in GUI.ProofManagement)
@@ -483,21 +485,40 @@ newOptionsFrame :: Container par =>
 newOptionsFrame con updateFn = do
   right <- newFrame con []
 
-  spacer <- newLabel right [text "   "]
-  grid spacer [GridPos (0,1), Sticky W, Sticky W]
+  -- contents of newOptionsFrame
   l1 <- newLabel right [text "Options:"]
-  grid l1 [GridPos (0,0), Columnspan 2, Sticky W]
-  l2 <- newLabel right [text "TimeLimit"]
-  grid l2 [GridPos (1,1), Sticky W]
-  (timeEntry :: Entry Int) <- newEntry right [width 18, 
+  pack l1 [Anchor NorthWest]
+  opFrame <- newFrame right []
+  pack opFrame [Expand On, Fill X, Anchor North]
+
+  spacer <- newLabel opFrame [text "   "]
+  pack spacer [Side AtLeft]
+
+  opFrame2 <- newVBox opFrame []
+  pack opFrame2 [Expand On, Fill X, Anchor NorthWest]
+
+  timeLimitFrame <- newFrame opFrame2 []
+  pack timeLimitFrame [Expand On, Fill X, Anchor West]
+
+  l2 <- newLabel timeLimitFrame [text "TimeLimit"]
+  pack l2 [Side AtLeft]
+
+  -- extra HBox for time limit display
+  timeLimitLine <- newHBox timeLimitFrame []
+  pack timeLimitLine [Expand On, Side AtRight, Anchor East]
+
+  (timeEntry :: Entry Int) <- newEntry timeLimitLine [width 18, 
                                               HTk.value guiDefaultTimeLimit]
-  grid timeEntry [GridPos (3,1), Sticky W]
-  timeSpinner <- newSpinButton right (updateFn timeEntry) []
-  grid timeSpinner [GridPos (3,1), Sticky E]
-  l3 <- newLabel right [text "Extra Options:"]
-  grid l3 [GridPos (1,2), Sticky W]
-  (optionsEntry :: Entry String) <- newEntry right [width 37]
-  grid optionsEntry [GridPos (1,3), Columnspan 3, Sticky W]
+  pack timeEntry []
+
+  timeSpinner <- newSpinButton timeLimitLine (updateFn timeEntry) []
+  pack timeSpinner []
+
+  l3 <- newLabel opFrame2 [text "Extra Options:"]
+  pack l3 [Anchor West]
+  (optionsEntry :: Entry String) <- newEntry opFrame2 [width 37]
+  pack optionsEntry [Fill X, PadX (cm 0.1)]
+
   return $ OpFrame { of_Frame = right                     
                    , of_timeSpinner = timeSpinner
                    , of_timeEntry = timeEntry
@@ -520,6 +541,7 @@ spassProveGUI thName th = do
 
   -- main window
   main <- createToplevel [text $ thName ++ " - SPASS Prover"]
+  pack main [Expand On, Fill Both]
   
   -- VBox for the whole window
   b <- newVBox main []
@@ -547,7 +569,7 @@ spassProveGUI thName th = do
   populateGoalsListBox lb (goalsView initState)
   pack lb [Expand On, Side AtLeft, Fill Both]
   sb <- newScrollBar lbFrame []
-  pack sb [Expand On, Side AtRight, Fill Y]
+  pack sb [Expand On, Side AtRight, Fill Y, Anchor West]
   lb # scrollbar Vertical sb
 
   -- right frame (options/results)
@@ -590,32 +612,55 @@ spassProveGUI thName th = do
                      (currentGoal s)))
   pack right [Expand On, Fill Both, Anchor NorthWest]
 
-  proveButton <- newButton right [text "Prove"]
-  grid proveButton [GridPos (2,4), Columnspan 2, Sticky E]
-  
-  saveDFGButton <- newButton right [text "Save DFG File"]
-  grid saveDFGButton [GridPos (2,4),Columnspan 2,Sticky W] 
+  -- buttons for options
+  buttonsHb1 <- newHBox right []
+  pack buttonsHb1 [Anchor NorthEast]
 
-  l4 <- newLabel right [text "Results:"]
-  grid l4 [GridPos (0,5), Columnspan 2, Sticky W]
-  l5 <- newLabel right [text "Status"]
-  grid l5 [GridPos (1,6), Sticky W]
-  statusLabel <- newLabel right [text " -- "]
-  grid statusLabel [GridPos (2,6), Columnspan 2, Sticky W]
-  l6 <- newLabel right [text "Used Axioms"]
-  grid l6 [GridPos (1,7), Sticky NW]
-  axiomsFrame <- newFrame right []
-  grid axiomsFrame [GridPos (2,7), Columnspan 2]
+  saveDFGButton <- newButton buttonsHb1 [text "Save DFG File"]
+  pack saveDFGButton [Side AtLeft]
+  proveButton <- newButton buttonsHb1 [text "Prove"]
+  pack proveButton [Side AtRight]
+
+  -- result frame
+  resultFrame <- newFrame right []
+  pack resultFrame [Expand On, Fill Both]
+
+  l4 <- newLabel resultFrame [text "Results:"]
+  pack l4 [Anchor NorthWest]
+
+  spacer <- newLabel resultFrame [text "   "]
+  pack spacer [Side AtLeft]
+
+  resultContentBox <- newHBox resultFrame []
+  pack resultContentBox [Expand On, Anchor West, Fill Both]
+
+  -- labels on the left side
+  rc1 <- newVBox resultContentBox []
+  pack rc1 [Expand Off, Anchor North]
+  l5 <- newLabel rc1 [text "Status"]
+  pack l5 [Anchor West]
+  l6 <- newLabel rc1 [text "Used Axioms"]
+  pack l6 [Anchor West]
+
+  -- contents on the right side
+  rc2 <- newVBox resultContentBox []
+  pack rc2 [Expand On, Fill Both, Anchor North]
+
+  statusLabel <- newLabel rc2 [text " -- "]
+  pack statusLabel [Anchor West]
+  axiomsFrame <- newFrame rc2 []
+  pack axiomsFrame [Expand On, Anchor West, Fill Both]
   axiomsLb <- newListBox axiomsFrame [HTk.value $ ([]::[String]), 
                                       bg "white",exportSelection False,
                                       selectMode Browse, 
-                                      height 6, width 20] :: IO (ListBox String)
-  pack axiomsLb [Side AtLeft, Fill Y]
+                                      height 6, width 19] :: IO (ListBox String)
+  pack axiomsLb [Side AtLeft, Expand On, Fill Both]
   axiomsSb <- newScrollBar axiomsFrame []
-  pack axiomsSb [Side AtRight, Fill Y]
+  pack axiomsSb [Side AtRight, Fill Y, Anchor West]
   axiomsLb # scrollbar Vertical axiomsSb
-  detailsButton <- newButton right [text "Show Details"]
-  grid detailsButton [GridPos (2,8), Columnspan 2, Sticky E]
+
+  detailsButton <- newButton resultFrame [text "Show Details"]
+  pack detailsButton [Anchor NorthEast]
 
   -- separator
   sp1 <- newSpace b (cm 0.15) []
@@ -700,17 +745,16 @@ spassProveGUI thName th = do
   pack sp2_3 [Expand Off, Fill X, Side AtBottom]
 
   -- bottom frame (help/save/exit buttons)
-  bottom <- newFrame b []
+  bottom <- newHBox b []
   pack bottom [Expand Off, Fill Both]
-  
-  helpButton <- newButton bottom [text "Help"]
-  grid helpButton [GridPos (0,0)]
-  saveButton <- newButton bottom [text "Save Prover Configuration"]
-  grid saveButton [GridPos (1,0)]
-  exitButton <- newButton bottom [text "Exit Prover"]
-  grid exitButton [GridPos (2,0)]
 
-  pack main [Expand On, Fill Both]
+  helpButton <- newButton bottom [text "Help"]
+  pack helpButton [PadX (cm 0.3), IPadX (cm 0.1)]  -- wider "Help" button
+  saveButton <- newButton bottom [text "Save Prover Configuration"]
+  pack saveButton [PadX (cm 0.3)]
+  exitButton <- newButton bottom [text "Exit Prover"]
+  pack exitButton [PadX (cm 0.3)]
+  
   putWinOnTop main
 
   -- IORef for batch thread
