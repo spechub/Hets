@@ -19,6 +19,8 @@ import qualified CASL.AS_Basic_CASL as ABC
 import Static.DevGraph
 import qualified Data.Graph.Inductive.Graph as Graph
 
+import Driver.Options
+
 import qualified Common.Lib.Set as Set
 
 import Data.List (find)
@@ -33,7 +35,8 @@ import OMDoc.KeyDebug
 data GlobalOptions =
   GOpts
     {
-      dbgInf :: DbgInf
+       dbgInf :: DbgInf
+			,hetsOpts :: HetcatsOpts
     }
                 
 debugGO::forall a . GlobalOptions->DbgKey->String->a->a
