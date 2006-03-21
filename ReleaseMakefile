@@ -37,7 +37,7 @@ endif
 HC_OPTS1 = -fglasgow-exts -fallow-overlapping-instances \
     $(PFE_FLAGS) -DCASLEXTENSIONS
 
-HC_OPTS = -i hxt $(HC_OPTS1) $(HC_PACKAGE)
+HC_OPTS = -ihxt $(HC_OPTS1) $(HC_PACKAGE)
 
 ####################################################################
 ### targets
