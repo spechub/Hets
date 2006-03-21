@@ -27,7 +27,8 @@ CLEAN_PATH = . \
     Common/Lib Common/ATerm Logic CASL CASL/CCC CASL/CompositionTable \
     Syntax Static GUI HasCASL Haskell Modal CoCASL COL ConstraintCASL \
     CspCASL ATC Proofs Comorphisms Isabelle Driver \
-    Taxonomy CASL_DL SPASS OWL_DL OMDoc $(PFE_PATHS) $(HXT_PATHS)
+    Taxonomy CASL_DL SPASS OWL_DL OMDoc $(PFE_PATHS) \
+    $(addprefix hxt/, $(HXT_PATHS))
 
 # the 'replacing spaces' example was taken from the (GNU) Make info manual
 empty =
@@ -288,7 +289,8 @@ cpp_sources = Common/DynamicUtils.hs \
     Isabelle/CreateTheories.hs \
     SPASS/Logic_SPASS.hs GUI/Utils.hs Driver/WriteFn.hs \
     Comorphisms/LogicList.hs Comorphisms/LogicGraph.hs \
-    Comorphisms/KnownProvers.hs hets.hs $(happy_files)
+    Comorphisms/KnownProvers.hs hets.hs $(happy_files) \
+    hxt/Text/XML/HXT/ProtocolHandler/ProtocolHandler.hs
 
 # unused, remove when header files are gone
 genrule_header_files = $(wildcard ATC/*.header.hs)
