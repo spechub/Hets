@@ -1415,11 +1415,9 @@
                  not p /\ not q(v1) /\ q(v1),
                . forall v1: s . 
                  not p /\ not q(v1) /\ q(v1) <=> 
-                 (
-                 exists v2: s . 
-                 not p \/ not q(v2) \/ q(v2) <=> 
-                 (exists! v3: s . not p /\ not q(v3) /\ q(v3))
-                 ),
+                 (exists v2: s . 
+                  not p \/ not q(v2) \/ q(v2) <=> 
+                  (exists! v3: s . not p /\ not q(v3) /\ q(v3))),
                . forall v1: s . def f(v1),  . forall v1: s . f(v1) =e= g(v1),
                . forall v1: s . f(v1) = g(v1),  . forall v1: t . v1 in s,
                . forall v1: s . def g(v1),  . forall v1: s . def g(v1),
