@@ -100,7 +100,8 @@ import Data.List (isPrefixOf)
 import Numeric
 
 import Common.LaTeX_maps
-import Common.Lib.Pretty
+import Common.Lib.Pretty as Pretty
+import Text.ParserCombinators.Parsec as Parsec
 
 infixl 6 <\+>, <~>
 
@@ -253,9 +254,9 @@ annotation_width   = calc_word_width Annotation
 annotationbf_width = calc_word_width AnnotationBold
 keyword_width      = calc_word_width Keyword
 structid_width     = calc_word_width StructId
-axiom_width        = calc_word_width Axiom
 comment_width      = calc_word_width Comment
 normal_width       = calc_word_width Normal
+axiom_width        = sum . map (calc_word_width Axiom) . parseAxiomString 
 
 -- |
 -- LaTeX version of '<+>' with enough space counted.  It's choosen the
@@ -425,3 +426,34 @@ forall_latex, exists_latex, unique_latex :: Doc
 forall_latex = hc_sty_axiom "\\forall"
 exists_latex = hc_sty_axiom "\\exists"
 unique_latex = hc_sty_axiom "\\exists!"
+
+parseAxiomString :: String -> [String]
+parseAxiomString s = case parse axiomString "" s of 
+    Left err -> fail $ show err
+    Right l -> l
+
+axiomString :: CharParser st [String]
+axiomString = do 
+  l <- many parseAtom
+  eof
+  return $ concat l
+    
+parseAtom :: CharParser st [String]  
+parseAtom = do
+    try (string "\\Ax{") <|> string "{"
+    l <- axiomString
+    Parsec.char '}' 
+    return l
+ <|> do 
+    b <- Parsec.char '\\'
+    s <- fmap (: []) (satisfy (\ c -> isSpace c || elem c "_~^|\'\",;\\{}[]"))
+         <|> many1 (satisfy isAlpha)
+    return [b : s]
+ <|> do
+    s <- many1 (satisfy isAlpha)
+    return [s]
+ <|> do
+    c <- satisfy (const True)
+    return [[c]]
+
+             
