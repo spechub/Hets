@@ -1,0 +1,34 @@
+\documentclass[a4paper]{article}
+
+<set-font>
+
+\usepackage{isolatin1}
+\usepackage{german}
+\usepackage{calc}
+\usepackage{longtable}
+\usepackage{multicol}
+%\usepackage{printlen}
+
+\newlength{\widthofword}
+%\setlength{\textwidth}{18cm}
+\setlength{\parindent}{0cm}
+%\uselengthunit{mm}
+\newcommand{\wordline}[1]%
+{#1 & wl: \setlength{\widthofword}{\widthof{#1}}\the\widthofword\\}
+
+\title{Useful Widths for Typesetting-CASL}
+\author{Klaus Lüttich}
+
+\begin{document}
+\maketitle
+\verb.\textwidth. = \the\textwidth
+
+<no-columns>\begin{multicols}{2}
+\begin{tabular}{l|l}
+\hline
+\input{generated_words}
+\end{tabular}
+<no-columns>\end{multicols}
+
+
+\end{document}

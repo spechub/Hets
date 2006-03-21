@@ -1,0 +1,13 @@
+\usepackage{avant} ::: avant
+\usepackage{bookman} ::: bookman
+\usepackage{chancery} ::: chancery
+\usepackage{charter} ::: charter
+\usepackage{courier} ::: courier
+\usepackage{helvet} ::: helvet
+\usepackage{mathpple} ::: mathpple
+\usepackage{mathptm} ::: mathptm
+\usepackage{mathptmx} ::: mathptmx
+\usepackage{newcent} ::: newcent
+\usepackage{palatino} ::: palatino
+\usepackage{pifont} ::: pifont
+\usepackage{times} ::: times

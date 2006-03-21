@@ -1,0 +1,95 @@
+nand arch as assoc axiom axioms closed comm def else end
+exists false fit forall free from generated get given
+hide idem if in lambda library local not op ops pred preds
+result reveal sort sorts spec then to true type types
+unit units var vars version view when with within ~
+%section: keyword
+%pattern: \textbf{%s}
+and arch as assoc axiom axioms closed comm def else end
+exists false fit forall free from generated get given
+hide idem if in lambda library local not op ops pred preds
+result reveal sort sorts spec then to true type types
+unit units var vars version view when with within ~
+
+a b c d e f g h i j k l m n o p q r s t u v w x y z
+A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+\_ \% ( )
+%section: normal
+%pattern: %s
+a b c d e f g h i j k l m n o p q r s t u v w x y z ä ö ü ß
+
+ff fi fl ll Wo Wi Wa We Wu Po it Yo Ye Ya Yu Vo Ve Va Vi Vu ~ \_
+
+A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+Ä Ö Ü
+
+1 2 3 4 5 6 7 8 9 0 . "` "' `` '' ! , ; ? \textbar \textbackslash{} : ' / `
+{\tt{}\textquotedblright}
+
+[ ] \{ \} ( ) \^{} \~{} \$
+%section: comment
+%pattern: {\small %s}
+a b c d e f g h i j k l m n o p q r s t u v w x y z ä ö ü ß
+
+ff fi fl ll Wo Wi Wa We Wu Po it Yo Ye Ya Yu Vo Ve Va Vi Vu ~ \_
+
+A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+Ä Ö Ü
+
+1 2 3 4 5 6 7 8 9 0 . "` "' `` '' ! , ; ? : ` '
+
+[ ] \{ \} ( ) \^{} \~{} @ - = \{ \} | > < \textbackslash{} \$ * 
+{\tt{}\textquotedblright}
+%section: structid
+%pattern: \textsc{%s}
+a b c d e f g h i j k l m n o p q r s t u v w x y z ä ö ü ß
+
+pi ff fi fl ll Wo ~ \_ Po ow
+
+A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+Ä Ö Ü
+
+1 2 3 4 5 6 7 8 9 0 . /
+%section: annotation
+%pattern: {\small \textit{%s}}
+a b c d e f g h i j k l m n o p q r s t u v w x y z ä ö ü ß \_ , ; ? !
+
+pi ff fi fl ll Wo Wi Wa We Wu Po it Yo Ye Ya Yu Vo Ve Va Vi Vu Mo
+
+A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+Ä Ö Ü 
+
+\^{} \~{} / \% @ \textbackslash{} \$ :
+%pattern: {\small $%s$}
+1 2 3 4 5 6 7 8 9 0 . "` "' `` '' ~ 
+
+[ ] \{ \} ( ) 
+
+\times * + - / < <> = > 
+%section: annotationbf
+%pattern: {\small \textbf{%s}}
+a b c d e f g h i j k l m n o p q r s t u v w x y z ä ö ü ß \_ , ; ? !
+
+pi ff fi fl ll Wo Wi Wa We Wu Po it Yo Ye Ya Yu Vo Ve Va Vi Vu Mo
+
+A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+Ä Ö Ü \% ( ) \{ \} 
+%section: axiom
+%pattern: $%s$
+1 2 3 4 5 6 7 8 9 0 . `` '' ~ \_ \# | , : ; ? ! + - * / = < > 
+
+[ ] \{ \} ( ) ` ' @ 
+
+\bullet \Leftrightarrow \Rightarrow \forall \exists \exists!
+\rightarrow \rightarrow? \neg \vee \wedge \in \mapsto \times
+\leq \geq \cap \cup \subseteq \sim \sqcup \sqcap \bot \sharp
+\epsilon ^{-1}
+
+%pattern: \textit{%s}
+a b c d e f g h i j k l m n o p q r s t u v w x y z 
+
+A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+
+"` "' Ä Ö Ü ä ö ü ß 
+
+\^{} \~{} \textbackslash{} \$ \% \&
