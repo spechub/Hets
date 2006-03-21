@@ -22,7 +22,7 @@ HXT_PATHS = Data Data/Tree Data/Tree/NTree Data/Digest Text Text/XML \
     Codec/Binary Codec/Encryption Codec/Encryption/RSA System Control \
     Control/Arrow Control/Monad Network
 
-CLEAN_PATH = . \
+CLEAN_PATH = . utils/itcor \
     utils utils/DrIFT-src utils/GenerateRules utils/InlineAxioms Common \
     Common/Lib Common/ATerm Logic CASL CASL/CCC CASL/CompositionTable \
     Syntax Static GUI HasCASL Haskell Modal CoCASL COL ConstraintCASL \
@@ -47,6 +47,8 @@ INSTALLDIR = \
 
 DRIFT_deps = utils/DrIFT-src/*hs
 GENERATERULES_deps = utils/GenerateRules/*hs $(DRIFT_deps) Common/Utils.hs
+GENITCORRECTIONS_deps = utils/itcor/GenItCorrections.hs Common/Utils.hs \
+    Common/Lib/Map.hs Common/Lib/Set.hs
 INLINEAXIOMS_deps = utils/InlineAxioms/InlineAxioms.hs \
     Common/Lib/Pretty.hs Common/Keywords.hs Common/Lib/Set.hs \
     Common/Lib/Map.hs Common/Lib/Rel.hs Common/Lib/State.hs Common/Id.hs \
@@ -320,8 +322,9 @@ tax_objects = $(patsubst %.hs, %.o, $(tax_sources))
 ####################################################################
 ### targets
 
-.PHONY : all hets-opt hets-optimized clean o_clean real_clean bin_clean \
-    distclean check capa hacapa wrap isa h2h h2hf clean_genRules genRules \
+.PHONY : all hets-opt hets-optimized clean o_clean clean_pretty \
+    real_clean bin_clean distclean \
+    check capa hacapa wrap isa h2h h2hf clean_genRules genRules \
     taxonomy count doc apache_doc post_doc4apache fromKif \
     derivedSources install_hets install release cgi patch ghci
 
@@ -465,6 +468,22 @@ install-hets:
 
 install: hets-opt install-hets
 
+###################################
+### Common/LaTeX_maps.hs generation
+
+utils/genItCorrections: $(GENITCORRECTIONS_deps)
+	$(HC) --make -o $@ $<
+	strip $@
+
+pretty/LaTeX_maps.hs: utils/words.pl utils/genItCorrections \
+    pretty/words.input pretty/fonts.input pretty/width-table.tex.templ
+	@echo -n "Generating pretty/LaTeX_maps.hs ... "
+	@(cd pretty >/dev/null; $(PERL) ../utils/words.pl > words.pl.log)
+	@(cd pretty >/dev/null; ../utils/genItCorrections \
+            gen_it_characters gen_it_words >> LaTeX_maps.hs)
+	@echo "ready"
+	@echo "please copy the file manually to Common"
+
 #############################
 ### ATC DrIFT-rule generation
 
@@ -511,7 +530,7 @@ clean_genRules:
 ###############
 ### clean up
 
-clean: bin_clean o_clean
+clean: bin_clean o_clean clean_pretty
 
 ### removes *.hi and *.o in all include directories
 o_clean:
@@ -544,6 +563,10 @@ bin_clean:
 	$(RM) Taxonomy/taxonomyTool
 	$(RM) OWL_DL/readAStest
 
+clean_pretty: 
+	$(RM) pretty/*.c.* pretty/*.h.* pretty/gen_it_* \
+               pretty/generated_words.tex
+
 ### additionally removes the library files
 real_clean: clean
 
@@ -552,6 +575,7 @@ distclean: clean clean_genRules
 	$(RM) $(derived_sources)
 	$(RM) Modal/GeneratePatterns.inline.hs utils/appendHaskellPreludeString
 	$(RM) utils/DrIFT utils/genRules $(INLINEAXIOMS)
+	$(RM) utils/genItCorrections pretty/LaTeX_maps.hs pretty/words.pl.log
 
 ####################################################################
 ### test targets
