@@ -1,7 +1,7 @@
 {-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
-Copyright   :  (c) Klaus Lüttich, C.Maeder, Uni Bremen 2002-2006
+Copyright   :  (c) Klaus Lï¿½ttich, C.Maeder, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -59,6 +59,8 @@ import ATC.DevGraph()
 import ATC.GlobalAnnotations()
 
 import Driver.Options
+
+import OMDoc.OMDocOutput
 
 -- | compute the prefix for files to be written out
 getFilePrefix :: HetcatsOpts -> FilePath -> (FilePath, FilePath)
@@ -156,7 +158,9 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
           Prf -> do 
               str <- toShATermString (ln, lookupHistory ln lenv)
               writeVerbFile opt f str
-          OmdocOut -> return ()
+          OmdocOut ->
+            -- 'f' does not separate 'omdoc' from prefix with a '.'
+            devGraphToOMDoc opt (ln, lenv) (filePrefix ++ ".omdoc")
           _ -> return () -- treat others below
           ) outTypes
     mapM_ ( \ i -> case Map.lookup i gctx of
