@@ -386,8 +386,11 @@ toLatex ga = let dm = Map.map (Map.! DF_LATEX) .
     in foldDoc anyRecord
     { foldEmpty = \ _ -> Pretty.empty
     , foldText = \ _ k s -> textToLatex False k s
-    , foldCat = \ _ c l -> case c of
-        Horiz -> Pretty.hcat l
+    , foldCat = \ (Cat _ os) c l -> case c of
+        Horiz -> if any isNative os then Pretty.hcat $
+                 latex_macro "{\\Ax{" : map (toLatex ga . toMathMode) os
+                                 ++ [latex_macro "}}"]
+                 else Pretty.hcat l
         _ -> latex_macro setTab Pretty.<>
              latex_macro startTab Pretty.<> (case c of
           Vert -> Pretty.vcat
@@ -398,10 +401,20 @@ toLatex ga = let dm = Map.map (Map.! DF_LATEX) .
           FlushRight -> flushright d
           Small -> case o of
               Attr Small (Text j s) -> textToLatex True j s
-              _ -> error "toLatex.Small"
+              _ -> makeSmallLatex True d
     , foldIndentBy = \ _ d1 d2 d3 ->
           d2 Pretty.$$ Pretty.nest (length $ show d1) d3
     } . makeSmall False . codeOut ga (Just DF_LATEX) dm
+
+
+toMathMode :: Doc -> Doc
+toMathMode = foldDoc idRecord
+    { foldCat = \ _ _ l -> hcat l
+    , foldText = \ _ k s -> case k of
+                     IdKind | s == " " -> native "~"
+                     _ -> Text k s
+    }
+
 
 textToLatex :: Bool -> TextKind -> String -> Pretty.Doc
 textToLatex b k s = let e = escape_comment_latex s in
@@ -419,7 +432,7 @@ textToLatex b k s = let e = escape_comment_latex s in
     TopKey -> hc_sty_casl_keyword e
     Indexed -> hc_sty_structid_indexed e
     StructId -> hc_sty_structid e
-    Native -> makeSmallLatex b $ hc_sty_axiom s
+    Native -> Pretty.sp_text (axiom_width s) s
 
 makeSmallLatex :: Bool -> Pretty.Doc -> Pretty.Doc
 makeSmallLatex b d =
@@ -456,12 +469,19 @@ latexSymbols = Map.fromList
     , (implS, hc_sty_axiom "\\Rightarrow")
     , (equivS, hc_sty_axiom "\\Leftrightarrow") ]
 
+isNative :: Doc -> Bool
+isNative d = case d of
+               Text Native _ -> True
+               _ -> False
+
 makeSmall :: Bool -> Doc -> Doc
 makeSmall b = foldDoc idRecord
     { foldAttr = \ _ k d -> makeSmall (case k of
                        Small -> True
                        _ -> b) d
-    , foldCat = \ (Cat c l) _ _ -> Cat c $ map (makeSmall b) l
+    , foldCat = \ o@(Cat c l) _ _ -> case c of
+                    Horiz | any isNative l -> if b then Attr Small o else o
+                    _ -> Cat c $ map (makeSmall b) l
     , foldIndentBy = \ (IndentBy d1 d2 d3) _ _ _ ->
           IndentBy (makeSmall b d1) (makeSmall b d2) $ makeSmall b d3
     , foldText = \ d _ _ -> if b then Attr Small d else d
@@ -483,7 +503,7 @@ codeOut ga d m = foldDoc idRecord
 codeToken :: String -> Doc
 codeToken s = case s of
     [] -> empty
-    h : _ -> (if isAlphaNum h || elem h "._'" then text else Text IdSymb) s
+    h : _ -> (if isAlpha h || elem h "._'" then text else Text IdSymb) s
 
 codeOrigId :: Map.Map Id [Token] -> Id -> [Doc]
 codeOrigId m (Id ts cs _) = let
@@ -620,15 +640,16 @@ codeOutAppl ga md m origDoc _ args = case origDoc of
                        if checkArg ALeft ga (i, p) (ta, q) la
                        then oArg else if isInfix ta then pArg else d
                     else d) : l) [] $ zip aas args
-             (fts, ncs, cFun) = case Map.lookup i m of
-                            Nothing -> (fst $ splitMixToken ts, cs, codeToken)
-                            Just nts -> (nts, [], native)
+             (fts, ncs, cFun, hFun) = case Map.lookup i m of
+                            Nothing ->
+                                (fst $ splitMixToken ts, cs, codeToken, hsep)
+                            Just nts -> (nts, [], native, hcat)
              (rArgs, fArgs) = mapAccumL ( \ ac t ->
                if isPlace t then case ac of
                  hd : tl -> (tl, hd)
                  _ -> error "addPlainArg"
                  else (ac, cFun $ tokStr t)) parArgs fts
-            in hsep $ fArgs ++ (if null ncs then [] else [codeCompIds m cs])
+            in hFun $ fArgs ++ (if null ncs then [] else [codeCompIds m cs])
                                                  ++ rArgs
   _ -> error "Common.Doc.codeOutAppl"
 
