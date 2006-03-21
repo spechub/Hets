@@ -19,7 +19,7 @@ use File::Basename;
 # conf #
 ########
 
-my $PDFLATEX_BIN = '/usr/bin/pdflatex';
+my $PDFLATEX_BIN = 'pdflatex';
 my $PDFTOTEXT_BIN = 'pdftotext';
 
 my $DO_PDFLATEX = 1;  # 1 = do it

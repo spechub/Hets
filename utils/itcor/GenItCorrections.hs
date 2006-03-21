@@ -141,5 +141,5 @@ writeTexTable strl = (concat [ "\\wordline{\\textit{" ++ str ++ "}}\n\\hline\n" 
 
 
 tex_file :: String -> String
-tex_file str = "\\documentclass[a4paper]{article}\n\\usepackage{bookman}\n\\usepackage{isolatin1}\n\\usepackage{german}\n\\usepackage{calc}\n\\usepackage{longtable}\n\\newlength{\\widthofword}\n\\setlength{\\parindent}{0cm}\n\\newcommand{\\wordline}[1]%\n{#1 & wl: \\setlength{\\widthofword}{\\widthof{#1}}\\the\\widthofword\\\\}\n\\title{Useful Widths for Typesetting-CASL}\n\\author{Klaus Lüttich}\n\\begin{document}\n\\maketitle\n\\begin{tabular}{l|l}\n\\hline\n" 
+tex_file str = "\\documentclass[a4paper]{article}\n\\usepackage{bookman}\n\\usepackage[latin1]{inputenc}\n\\usepackage{german}\n\\usepackage{calc}\n\\usepackage{longtable}\n\\newlength{\\widthofword}\n\\setlength{\\parindent}{0cm}\n\\newcommand{\\wordline}[1]%\n{#1 & wl: \\setlength{\\widthofword}{\\widthof{#1}}\\the\\widthofword\\\\}\n\\title{Useful Widths for Typesetting-CASL}\n\\author{Klaus Lüttich}\n\\begin{document}\n\\maketitle\n\\begin{tabular}{l|l}\n\\hline\n" 
   ++ str ++ "\n\\end{tabular}\n\\end{document}"
