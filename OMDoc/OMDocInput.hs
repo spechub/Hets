@@ -23,7 +23,7 @@ module OMDoc.OMDocInput
   )
   where
 
-import qualified OMDoc.HetsInterface as Hets
+import qualified OMDoc.HetsDefs as Hets
 import CASL.Sign
 import CASL.Morphism
 import CASL.Logic_CASL

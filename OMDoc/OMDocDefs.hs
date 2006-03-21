@@ -25,7 +25,7 @@ import qualified Common.Lib.Set as Set
 
 import Data.List (find)
 
-import qualified OMDoc.HetsInterface as Hets
+import qualified OMDoc.HetsDefs as Hets
 
 import OMDoc.XmlHandling
 import OMDoc.KeyDebug

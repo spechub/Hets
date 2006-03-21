@@ -24,7 +24,7 @@ module OMDoc.OMDocOutput
   )
   where
 
-import qualified OMDoc.HetsInterface as Hets
+import qualified OMDoc.HetsDefs as Hets
 import CASL.Sign
 import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
@@ -146,11 +146,11 @@ writeOMDocDTD dtd' t f = HXT.run' $
                 [(a_indent, v_1), (a_output_file, f)] $
                 writeableTreesDTD dtd' t
 
-devGraphToOMDoc::HetcatsOpts->(ASL.LIB_NAME, GlobalContext)->FilePath->IO ()
-devGraphToOMDoc hco (ln, ge) file =
+devGraphToOMDoc::HetcatsOpts->(ASL.LIB_NAME, LibEnv)->FilePath->IO ()
+devGraphToOMDoc hco (ln, le) file =
 	devGraphToOMDocCMPIOXN
 		(emptyGlobalOptions { hetsOpts = hco })
-		(devGraph ge)
+		(devGraph $ Map.findWithDefault (error "?") ln le)
 		(show ln)
 	>>= \omdoc -> writeOMDocDTD defaultDTDURI omdoc file >> return ()
 								
