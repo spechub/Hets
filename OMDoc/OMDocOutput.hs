@@ -42,10 +42,10 @@ import qualified Common.Lib.Graph as CLGraph
 
 -- Often used symbols from HXT
 import Text.XML.HXT.Parser
-        ( (+++), (+=)
-          , a_name, k_public, k_system, emptyRoot
-                , v_1, a_indent, a_issue_errors, a_output_file
-        )
+  ( (+++), (+=)
+    , a_name, k_public, k_system, emptyRoot
+    , v_1, a_indent, a_issue_errors, a_output_file
+  )
         
 import qualified Text.XML.HXT.Parser as HXT hiding (run, trace, when)
 import qualified Text.XML.HXT.DOM.XmlTreeTypes as HXTT hiding (when)
@@ -77,14 +77,16 @@ import OMDoc.OMDocDefs
 
 -- | generate a DOCTYPE-Element for output
 mkOMDocTypeElem::
-        String -- ^ URI for DTD
-        ->HXTT.XNode -- ^ DOCTYPE-Element
+  String -- ^ URI for DTD
+  ->HXTT.XNode -- ^ DOCTYPE-Element
 mkOMDocTypeElem system =
-        HXTT.XDTD HXTT.DOCTYPE [
-                 (a_name, "omdoc")
-                ,(k_public, "-//OMDoc//DTD OMDoc V1.2//EN")
-                ,(k_system, system)
-                ]
+  HXTT.XDTD
+    HXTT.DOCTYPE
+      [
+         (a_name, "omdoc")
+        ,(k_public, "-//OMDoc//DTD OMDoc V1.2//EN")
+        ,(k_system, system)
+      ]
 
 {- |
         default OMDoc-DTD-URI
@@ -102,57 +104,66 @@ defaultDTDURI = "http://www.tzi.de/~hiben/omdoc/dtd/omdoc.dtd"
 -- | this function wraps trees into a form that can be written by HXT
 writeableTrees::HXT.XmlTrees->HXT.XmlTree
 writeableTrees t =
-                (HXT.NTree
-                        ((\(HXT.NTree a _) -> a) emptyRoot)
-                        t
-                )
+  (HXT.NTree
+    ((\(HXT.NTree a _) -> a) emptyRoot)
+    t
+  )
                 
 -- | this function wraps trees into a form that can be written by HXT
 writeableTreesDTD::String->HXT.XmlTrees->HXT.XmlTree
 writeableTreesDTD dtd' t =
-                (HXT.NTree
-                        ((\(HXT.NTree a _) -> a) emptyRoot)
-                        ((HXT.NTree (mkOMDocTypeElem dtd' ) [])
-                                :(HXT.NTree (HXT.XText "\n")[])
-                                :t)
-                        
-                )
+  (HXT.NTree
+    ((\(HXT.NTree a _) -> a) emptyRoot)
+    ((HXT.NTree (mkOMDocTypeElem dtd' ) [])
+      :(HXT.NTree (HXT.XText "\n")[])
+      :t)
+  )
                 
 -- | this function shows Xml with indention
 showOMDoc::HXT.XmlTrees->IO HXT.XmlTrees
 showOMDoc t = HXT.run' $
-        HXT.writeDocument
-                [(a_indent, v_1), (a_issue_errors, v_1)] $
-                writeableTrees t
+  HXT.writeDocument
+    [(a_indent, v_1), (a_issue_errors, v_1)] $
+    writeableTrees t
                 
 -- | this function shows Xml with indention
 showOMDocDTD::String->HXT.XmlTrees->IO HXT.XmlTrees
 showOMDocDTD dtd' t = HXT.run' $
-        HXT.writeDocument
-                [(a_indent, v_1), (a_issue_errors, v_1)] $
-                writeableTreesDTD dtd' t
+  HXT.writeDocument
+    [(a_indent, v_1), (a_issue_errors, v_1)] $
+    writeableTreesDTD dtd' t
 
 -- | this function writes Xml with indention to a file
 writeOMDoc::HXT.XmlTrees->String->IO HXT.XmlTrees
 writeOMDoc t f = HXT.run' $
-        HXT.writeDocument
-                [(a_indent, v_1), (a_output_file, f)] $
-                writeableTrees t
+  HXT.writeDocument
+    [(a_indent, v_1), (a_output_file, f)] $
+    writeableTrees t
                 
 -- | this function writes Xml with indention to a file
 writeOMDocDTD::String->HXT.XmlTrees->String->IO HXT.XmlTrees
 writeOMDocDTD dtd' t f = HXT.run' $
-        HXT.writeDocument
-                [(a_indent, v_1), (a_output_file, f)] $
-                writeableTreesDTD dtd' t
+  HXT.writeDocument
+    [(a_indent, v_1), (a_output_file, f)] $
+    writeableTreesDTD dtd' t
 
 devGraphToOMDoc::HetcatsOpts->(ASL.LIB_NAME, LibEnv)->FilePath->IO ()
 devGraphToOMDoc hco (ln, le) file =
-	devGraphToOMDocCMPIOXN
-		(emptyGlobalOptions { hetsOpts = hco })
-		(devGraph $ Map.findWithDefault (error "?") ln le)
-		(show ln)
-	>>= \omdoc -> writeOMDocDTD defaultDTDURI omdoc file >> return ()
+  case (recurse hco) of
+    False ->
+      devGraphToOMDocCMPIOXN
+        (emptyGlobalOptions { hetsOpts = hco })
+        (devGraph $ Map.findWithDefault (error "?") ln le)
+        (show ln)
+      >>= \omdoc -> writeOMDocDTD defaultDTDURI omdoc file >> return ()
+    True ->
+      let
+        dg = (devGraph $ Map.findWithDefault (error "?") ln le)
+        igdg = libEnvToDGraphG (ln, dg, le)
+      in
+        do
+          xmlg <- dGraphGToXmlGXN igdg
+          writeXmlG defaultDTDURI xmlg (outdir hco) >> return ()
 								
 -- | Convert a DevGraph to OMDoc-XML with given xml:id attribute
 -- will also scan used (CASL-)files for CMP-generation
@@ -1217,13 +1228,13 @@ writeXmlG dtduri ig sandbox =
     nodes = map snd $ Graph.labNodes ig
   in
     (mapM (\(S (name' ,file) x) ->
-            let
-                    omfile = fileSandbox sandbox $ asOMDocFile file
-            in
-                    putStrLn ("Writing \"" ++ name' ++ "\" to \"" ++ omfile ++ "\"") >>
-                    System.Directory.createDirectoryIfMissing True (snd $ splitPath omfile) >>
-                    writeOMDocDTD dtduri x omfile
-            ) nodes) >> return ()
+      let
+        omfile = fileSandbox sandbox $ asOMDocFile file
+      in
+        -- putStrLn ("Writing \"" ++ name' ++ "\" to \"" ++ omfile ++ "\"") >>
+        System.Directory.createDirectoryIfMissing True (snd $ splitPath omfile) >>
+        writeOMDocDTD dtduri x omfile
+      ) nodes) >> return ()
                         
                         
 {-
