@@ -153,7 +153,7 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
         filePrefix = snd $ getFilePrefix opt file
         outTypes = outtypes opt
         allSpecs = null ns
-    mapM_ ( \ ot -> let f = filePrefix ++ show ot in 
+    mapM_ ( \ ot -> let f = filePrefix ++ "." ++ show ot in 
         case ot of
           Prf -> do 
               str <- toShATermString (ln, lookupHistory ln lenv)
