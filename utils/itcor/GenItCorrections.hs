@@ -40,8 +40,7 @@ main = do
 
 convert_to_txt :: FilePath -> FilePath -> IO ()
 convert_to_txt tex_name pdf_name = do
-  rawSystem "echo" ["-n","-- "]
-  rawSystem "pdflatex" ["-interaction=batchmode",tex_name] >>= 
+  system ("pdflatex -interaction=batchmode "++tex_name++" >/dev/null") >>= 
           \ ec -> when (isFail ec) (fail "pdflatex went wrong")
   rawSystem "pdftotext" ["-raw","-q",pdf_name] >>= 
           \ ec -> when (isFail ec) (fail "pdftotext went wrong")
