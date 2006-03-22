@@ -319,7 +319,7 @@ forall x: s
 . f(x) =e= g(x)
 . f(x) = g(x)
 . r1 in s
-. def g(x): t
+. def g(x) : t
 . def g(x) as s
 . def (op f : s ->? s)(x)
 . def (op g : s -> t)(x)

@@ -33,12 +33,14 @@ module Common.Doc
     , rbrack
     , lbrace
     , rbrace
-      -- * Converting values into documents
+      -- * Converting strings into documents
     , text
+    , native
       -- * Wrapping documents in delimiters
     , parens
     , brackets
     , braces
+    , specBraces
     , quotes
     , doubleQuotes
       -- * Combining documents
@@ -88,10 +90,10 @@ module Common.Doc
     , idDoc
     , idApplDoc
       -- * transforming to existing formats
-    , codeOut
     , toText
-    , toHPJDoc
     , toLatex
+      -- * a class
+    , Pretty(..)
     ) where
 
 import Common.Id
@@ -109,6 +111,8 @@ import Data.List
 infixl 6 <>
 infixl 6 <+>
 infixl 5 $+$
+
+-- * the data type
 
 data TextKind =
     IdKind | IdSymb | Symbol | Comment | Keyword | TopKey | Indexed | StructId
@@ -150,6 +154,8 @@ isEmpty d = case d of
               Empty -> True
               _ -> False
 
+-- * the visible interface
+
 empty :: Doc                 -- ^ An empty document
 empty = Empty
 
@@ -170,17 +176,15 @@ space :: Doc                 -- ^ A horizontal space (omitted at end of line)
 space = text " "
 
 equals :: Doc                 -- ^ A '=' character
-equals = text equalS
+equals = symbol equalS
 
 -- use symbol for signs that need to be put in mathmode for latex
 symbol :: String -> Doc
 symbol = Text Symbol
 
-
 -- for text within comments
 commentText :: String -> Doc
 commentText = Text Comment
-
 
 -- don't escape this strings since they are interpreted by latex
 native :: String -> Doc
@@ -204,7 +208,10 @@ brackets :: Doc -> Doc     -- ^ Wrap document in @[...]@
 brackets d = hcat [lbrack, d, rbrack]
 
 braces :: Doc -> Doc     -- ^ Wrap document in @{...}@
-braces d = cat [lbrace <> d, rbrace]
+braces d = hcat [lbrace, d, rbrace]
+
+specBraces :: Doc -> Doc     -- ^ Wrap document in @{...}@
+specBraces d = cat [lbrace <> d, rbrace]
 
 quotes :: Doc -> Doc     -- ^ Wrap document in @\'...\'@
 quotes d = hcat [quote, d, quote]
@@ -355,15 +362,11 @@ anyRecord = DocRecord
     , foldIndentBy = error "anyRecord.IndentBy"
     }
 
--- * conversions
+-- * conversion to plain text
 
 -- | simple conversion to a standard text document
-toText :: Doc -> Pretty.Doc
-toText = toHPJDoc emptyGlobalAnnos
-
--- | simple conversion to a standard text document
-toHPJDoc :: GlobalAnnos -> Doc -> Pretty.Doc
-toHPJDoc ga = foldDoc anyRecord
+toText :: GlobalAnnos -> Doc -> Pretty.Doc
+toText ga = foldDoc anyRecord
     { foldEmpty = \ _ -> Pretty.empty
     , foldText = \ _ _ -> Pretty.text
     , foldCat = \ _ c -> case c of
@@ -379,24 +382,48 @@ toHPJDoc ga = foldDoc anyRecord
           d2 Pretty.$$ Pretty.nest (length $ show d1) d3
     } . codeOut ga Nothing Map.empty
 
--- | conversion to latex
+-- * conversion to latex
+
 toLatex :: GlobalAnnos -> Doc -> Pretty.Doc
 toLatex ga = let dm = Map.map (Map.! DF_LATEX) .
                       Map.filter (Map.member DF_LATEX) $ display_annos ga
-    in foldDoc anyRecord
+    in foldDoc (toLatexRecord True) 
+           . makeSmallMath False False . codeOut ga (Just DF_LATEX) dm
+
+toLatexRecord :: Bool -> DocRecord Pretty.Doc
+toLatexRecord tab = anyRecord
     { foldEmpty = \ _ -> Pretty.empty
     , foldText = \ _ k s -> textToLatex False k s
-    , foldCat = \ (Cat _ os) c l -> case c of
-        Horiz -> if any isNative os then Pretty.hcat $
-                 latex_macro "{\\Ax{" : map (toLatex ga . toMathMode) os
-                                 ++ [latex_macro "}}"]
-                 else Pretty.hcat l
-        _ -> latex_macro setTab Pretty.<>
-             latex_macro startTab Pretty.<> (case c of
-          Vert -> Pretty.vcat
-          Horiz -> error "toLatex.Horiz"
-          HorizOrVert -> Pretty.cat
-          Fill -> Pretty.fcat) l Pretty.<> latex_macro endTab
+    , foldCat = \ (Cat _ os) c l -> 
+          if any isNative os then Pretty.hcat $
+             latex_macro "{\\Ax{" 
+             : map (foldDoc (toLatexRecord False) 
+                       { foldText = \ _ k s ->
+                          case k of
+                            Native -> Pretty.sp_text (axiom_width s) s
+                            IdKind | s == " " ->
+                                Pretty.sp_text (axiom_width s) "\\,"
+                            _ -> textToLatex False k s
+                        }) os
+              ++ [latex_macro "}}"]
+          else case c of
+        Horiz -> Pretty.hcat l
+        _ -> case os of
+               [] -> Pretty.empty
+               [_] -> head l
+               d : _ -> (if tab then 
+                             (latex_macro setTab Pretty.<>)
+                         . (latex_macro startTab Pretty.<>)
+                         . (Pretty.<> latex_macro endTab)
+                        else id)
+                        $ (case c of
+                                     Vert -> Pretty.vcat
+                                     Horiz -> error "toLatex.Horiz"
+                                     HorizOrVert -> Pretty.cat
+                                     Fill -> Pretty.fcat) 
+                        $ if hasTab d then 
+                              foldDoc (toLatexRecord False) d : tail l
+                              else l
     , foldAttr = \ o k d -> case k of
           FlushRight -> flushright d
           Small -> case o of
@@ -404,17 +431,85 @@ toLatex ga = let dm = Map.map (Map.! DF_LATEX) .
               _ -> makeSmallLatex True d
     , foldIndentBy = \ _ d1 d2 d3 ->
           d2 Pretty.$$ Pretty.nest (length $ show d1) d3
-    } . makeSmall False . codeOut ga (Just DF_LATEX) dm
-
-
-toMathMode :: Doc -> Doc
-toMathMode = foldDoc idRecord
-    { foldCat = \ _ _ l -> hcat l
-    , foldText = \ _ k s -> case k of
-                     IdKind | s == " " -> native "~"
-                     _ -> Text k s
     }
 
+-- | move a small attribute inwards but not into mathmode bits
+makeSmallMath :: Bool -> Bool -> Doc -> Doc
+makeSmallMath smll math = let rec = makeSmallMath smll math in
+    foldDoc idRecord
+    { foldAttr = \ _ k d -> makeSmallMath (case k of
+                       Small -> True
+                       _ -> smll ) math d
+    , foldCat = \ o@(Cat c l) _ _ -> 
+                    if any isNative l then 
+                        (if smll then Attr Small else id)  
+                        -- flatten math mode bits
+                           $ Cat Horiz $ map 
+                                 (makeSmallMath False True . rmSpace) l
+                    else if math then Cat Horiz 
+                         $ map (makeSmallMath False True) l
+                    else if smll && allHoriz o then
+                    -- produce fewer small blocks with wrong size though
+                             Attr Small $ Cat Horiz $ 
+                              map (makeSmallMath False math) l
+                         else Cat c $ map rec l
+    , foldIndentBy = \ (IndentBy d1 d2 d3) _ _ _ -> 
+                     IndentBy (rec d1) (rec d2) $ rec d3
+    , foldText = \ d _ _ -> if smll then Attr Small d else d
+    }
+
+-- | avoid too deep nesting of tabulators by suppressing setTab repetitions
+hasTab :: Doc -> Bool
+hasTab d = case d of 
+    Cat k l -> case l of 
+        [] -> False
+        e : r -> case k of 
+                   Horiz -> hasTab e
+                   _ -> if null r then hasTab e else True
+    _ -> False 
+
+-- | check for unbalanced braces
+needsMathMode :: Int -> String -> Bool
+needsMathMode i s = case s of 
+    [] -> i > 0
+    c : r -> if c == '{' then needsMathMode (i + 1) r else
+             if c == '}' then if i == 0 then True else 
+                                  needsMathMode (i - 1) r
+             else needsMathMode i r
+
+isMathLatex :: Doc -> Bool
+isMathLatex d = case d of
+               Text Native s -> needsMathMode 0 s
+               Attr Small f -> isMathLatex f
+               _ -> False
+
+isNative :: Doc -> Bool
+isNative d = case d of
+               Cat Horiz [t, _] -> isMathLatex t
+               _ -> isMathLatex d
+
+-- | remove the spaces inserted by punctuate for latex macros
+rmSpace :: Doc -> Doc
+rmSpace d = case d of
+              Cat Horiz [t, Text IdKind s] | s == " " -> t
+              _ -> d
+
+allHoriz :: Doc -> Bool
+allHoriz d = case d of
+               Text _ _ -> True
+               Cat Horiz l -> and $ map allHoriz l
+               Attr _ f -> allHoriz f
+               Empty -> True
+               _ -> False
+
+makeSmallLatex :: Bool -> Pretty.Doc -> Pretty.Doc
+makeSmallLatex b d =
+   if b then Pretty.hcat [latex_macro startAnno, d, latex_macro endAnno]
+   else d
+
+symbolToLatex :: String -> Pretty.Doc
+symbolToLatex s = Map.findWithDefault (hc_sty_axiom
+                                       $ escape_latex s) s latexSymbols
 
 textToLatex :: Bool -> TextKind -> String -> Pretty.Doc
 textToLatex b k s = let e = escape_comment_latex s in
@@ -432,16 +527,7 @@ textToLatex b k s = let e = escape_comment_latex s in
     TopKey -> hc_sty_casl_keyword e
     Indexed -> hc_sty_structid_indexed e
     StructId -> hc_sty_structid e
-    Native -> Pretty.sp_text (axiom_width s) s
-
-makeSmallLatex :: Bool -> Pretty.Doc -> Pretty.Doc
-makeSmallLatex b d =
-   if b then Pretty.hcat [latex_macro startAnno, d, latex_macro endAnno]
-   else d
-
-symbolToLatex :: String -> Pretty.Doc
-symbolToLatex s = Map.findWithDefault (hc_sty_axiom
-                                       $ escape_latex s) s latexSymbols
+    Native -> hc_sty_axiom s
 
 latexSymbols :: Map.Map String Pretty.Doc
 latexSymbols = Map.fromList
@@ -469,24 +555,6 @@ latexSymbols = Map.fromList
     , (implS, hc_sty_axiom "\\Rightarrow")
     , (equivS, hc_sty_axiom "\\Leftrightarrow") ]
 
-isNative :: Doc -> Bool
-isNative d = case d of
-               Text Native _ -> True
-               _ -> False
-
-makeSmall :: Bool -> Doc -> Doc
-makeSmall b = foldDoc idRecord
-    { foldAttr = \ _ k d -> makeSmall (case k of
-                       Small -> True
-                       _ -> b) d
-    , foldCat = \ o@(Cat c l) _ _ -> case c of
-                    Horiz | any isNative l -> if b then Attr Small o else o
-                    _ -> Cat c $ map (makeSmall b) l
-    , foldIndentBy = \ (IndentBy d1 d2 d3) _ _ _ ->
-          IndentBy (makeSmall b d1) (makeSmall b d2) $ makeSmall b d3
-    , foldText = \ d _ _ -> if b then Attr Small d else d
-    }
-
 -- * coding out stuff
 
 {- | transform document according to a specific display map and other
@@ -513,15 +581,14 @@ codeOrigId m (Id ts cs _) = let
        else conv toks ++ codeCompIds m cs : conv places
 
 codeCompIds :: Map.Map Id [Token] -> [Id] -> Doc
-codeCompIds m cs =
-    hcat $ lbrack : intersperse comma (map (codeOutId m) cs) ++ [rbrack]
+codeCompIds m cs = brackets $ fcat $ punctuate comma $ map (codeOutId m) cs
 
 codeIdToks :: [Token] -> [Doc]
 codeIdToks = map (\ t -> let s = tokStr t in
                          if isPlace t then symbol s else native s)
 
 codeOutId :: Map.Map Id [Token] -> Id -> Doc
-codeOutId m i = hcat $ case Map.lookup i m of
+codeOutId m i = fcat $ case Map.lookup i m of
     Nothing -> codeOrigId m i
     Just ts -> codeIdToks ts
 
@@ -642,8 +709,8 @@ codeOutAppl ga md m origDoc _ args = case origDoc of
                     else d) : l) [] $ zip aas args
              (fts, ncs, cFun, hFun) = case Map.lookup i m of
                             Nothing ->
-                                (fst $ splitMixToken ts, cs, codeToken, hsep)
-                            Just nts -> (nts, [], native, hcat)
+                                (fst $ splitMixToken ts, cs, codeToken, fsep)
+                            Just nts -> (nts, [], native, fsep)
              (rArgs, fArgs) = mapAccumL ( \ ac t ->
                if isPlace t then case ac of
                  hd : tl -> (tl, hd)
@@ -687,3 +754,18 @@ isBoth precs op arg = case precRel precs op arg of
                     BothDirections -> True
                     _ -> False
 
+-- * the class stuff
+class Pretty a where
+    pretty :: a -> Doc
+
+instance Pretty () where
+    pretty () = empty
+
+instance Pretty Id where
+    pretty = idDoc
+
+instance Pretty Annotation where
+    pretty = annoDoc
+
+instance Pretty Token where
+   pretty = idDoc . simpleIdToId

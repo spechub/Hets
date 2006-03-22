@@ -191,13 +191,12 @@ instance PrettyPrint VAR_DECL where
                                 <+> printText0 ga s
 
 printFORMULA :: PrettyPrint f => GlobalAnnos -> FORMULA f -> Doc
-printFORMULA ga = Doc.toHPJDoc ga . ToDoc.printFormula 
+printFORMULA ga = Doc.toText ga . ToDoc.printFormula 
                   (Doc.text . show . printText0 ga) 
 
 instance PrettyPrint f => PrettyPrint (FORMULA f) where
     printText0 ga f@(Sort_gen_ax _ _) = printFORMULA ga f
     printText0 ga f = text " . " <> printFORMULA ga f
-
 
 instance PrettyPrint QUANTIFIER where
     printText0 _ (Universal) = text forallS

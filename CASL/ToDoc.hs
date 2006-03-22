@@ -78,14 +78,14 @@ printRecord mf = Record
              else fsep [nr, text ifS, nl]
     , foldEquivalence = \ (Equivalence oL oR _) l r _ ->
           fsep [mkEquivDoc oL l, equiv, mkEquivDoc oR r]
-    , foldNegation = \ _ r _ -> fsep [notDoc, r]
+    , foldNegation = \ _ r _ -> hsep [notDoc, r]
     , foldTrue_atom = \ _ _ -> text trueS
     , foldFalse_atom = \ _ _ -> text falseS
     , foldPredication = \ _ p l _ -> case p of
           Pred_name i -> idApplDoc i l
           Qual_pred_name _ _ _ -> if null l then printPredSymb p else
               fcat [printPredSymb p, parens $ fsep $ punctuate comma l]
-    , foldDefinedness = \ _ r _ -> fsep [text defS, r]
+    , foldDefinedness = \ _ r _ -> hsep [text defS, r]
     , foldExistl_equation = \ _ l r _ -> fsep [l, exequal, r]
     , foldStrong_equation = \ _ l r _ -> fsep [l, equals, r]
     , foldMembership = \ _ r t _ -> fsep [r, inDoc, idDoc t]
@@ -93,7 +93,7 @@ printRecord mf = Record
     , foldSort_gen_ax = \ (Sort_gen_ax constrs _) _ _ ->
         let (sorts, ops, sortMap) = recover_Sort_gen_ax constrs
             printSortMap (s1, s2) = fsep [idDoc s1, mapsto, idDoc s2]
-        in text generatedS <> braces(
+        in text generatedS <> specBraces(
                 fsep (text sortS : punctuate comma (map idDoc sorts))
                 <> semi <+>
                 fsep (punctuate semi (map printOpSymb ops))
@@ -109,7 +109,7 @@ printRecord mf = Record
           Qual_op_name _ _ _ -> let d = parens $ printOpSymb o in 
               if null l then d else fcat [d, parens $ fsep $ punctuate comma l]
     , foldSorted_term = \ (Sorted_term o _ _) r t _ -> 
-          fsep [mkSimpleDoc o r <> colon, idDoc t]
+          fsep [mkSimpleDoc o r, colon, idDoc t]
     , foldCast = \ (Cast o _ _) r t _ -> 
           fsep [mkSimpleDoc o r, text asS, idDoc t]
     , foldConditional = \ (Conditional ol _ _ _) l f r _ ->

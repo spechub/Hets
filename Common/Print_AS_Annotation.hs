@@ -20,7 +20,7 @@ import Common.Lib.Pretty
 import qualified Common.Doc as Doc
 
 instance PrettyPrint Annotation where
-    printText0 _ = Doc.toText . Doc.annoDoc
+    printText0 ga = Doc.toText ga . Doc.annoDoc
 
 -- -------------------------------------------------------------------------
 -- utilies
