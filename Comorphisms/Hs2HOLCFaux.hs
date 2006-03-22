@@ -97,7 +97,7 @@ type IsaTypeInsts = (TName, [(IsaClass, [(IsaType, [IsaClass])])])
 
 ----------------------------- GENERIC auxiliary functions ---------------------
 
-showL ls = concat $ map (\x -> (show x) ++ "\n") ls
+showL ls = concat $ map (\x -> "\n" ++ (show x) ++ "\n") ls
 
 traceL ls = trace (concat $ map (\x -> "\n" ++ x ++ "\n") ls)
 
@@ -517,10 +517,14 @@ termMAbs c ts t =
 
 termMAppl :: Continuity -> Term -> [Term] -> Term
 termMAppl c t ts = 
-  let prelTest vn = elem (IsaSign.orig vn) 
-               [ "inst__Prelude_Num_Int"
+  let prelTest vn = genOr (\x -> isPrefixOf x $ IsaSign.orig vn) 
+               [ "inst__Prelude_"
                , "fromInteger"
-               , "derived__Prelude_Eq_Bool"]
+               , "derived__Prelude_"]  
+--                    elem (IsaSign.orig vn) 
+--               [ "inst__Prelude_Num_Int"
+--               , "fromInteger"
+--               , "derived__Prelude_Eq_Bool"]  
  in case (t, ts) of   
    (Const vn _, [a]) | isDicConst t || prelTest vn -> a
    (_,[]) -> t
@@ -597,15 +601,20 @@ elPos n ls x = case (listEnum ls) of
 
 -------------------- subterm extraction -------------------------------------
 
-extFBody :: Term -> (Term, [Term])
-extFBody t = extFB t []
+extFBody :: Term -> (Term, [Term]) 
+extFBody t = let (x,ys) = extFBodyR t
+  in (x, reverse ys)
+
+extFBodyR :: Term -> (Term, [Term]) -- returns the reversed list of abs vars
+extFBodyR t = extFB t []
  where 
   extFB t as = case t of
      IsaSign.Abs x _ b _ -> extFB b (x:as) 
-     _ -> (t, reverse as)
+     _ -> (t, as)
 
 extTBody :: Term -> (Term, [Term])
-extTBody t = extTB t []
+extTBody t = let (x,ys) = extTB t []
+  in (x, reverse ys)
  where 
   extTB t as = case t of
      IsaSign.App a x _ -> extTB a (x:as) 
@@ -613,8 +622,17 @@ extTBody t = extTB t []
 
 ------------------- eliminating case expressions ---------------------------
 
-destCaseS :: Continuity -> IsaTerm -> IsaTerm -> [IsaTerm]
-destCaseS c d t = [holEq (App d x c) y | (x,y) <- destCase t id]
+destCaseS :: Continuity -> IsaTerm -> IsaTerm -> [IsaTerm] -- t is def rh
+-- destCaseS c d t = [holEq (App d x c) y | (x,y) <- destCase t id]
+destCaseS c d t = [holEq (termMAppl c d xs) y | (xs,y) <- 
+                                          destCaseU (extFBody t,[])] -- destCase t id]
+
+destCaseU :: ((IsaTerm,[IsaPattern]),[IsaPattern]) -> [([IsaPattern],IsaTerm)]
+destCaseU ((t,rs),ks) = case (t,rs) of 
+    (Case v ls, vv:vs) -> if v == vv 
+          then [(ks ++ [l], termMAbs NotCont vs m) | (l,m) <- ls]
+          else destCaseU ((t,vs), ks ++ [vv])
+    _ -> error "Hs2HOLCFaux, destCase"
 
 destCase :: IsaTerm -> (VName -> VName) -> [(IsaPattern,IsaTerm)]
 destCase t f = let w = (extFBody t) in case w of 
