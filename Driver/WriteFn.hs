@@ -159,8 +159,7 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
               str <- toShATermString (ln, lookupHistory ln lenv)
               writeVerbFile opt f str
           OmdocOut ->
-            -- 'f' does not separate 'omdoc' from prefix with a '.'
-            devGraphToOMDoc opt (ln, lenv) (filePrefix ++ ".omdoc")
+            devGraphToOMDoc opt (ln, lenv) f
           _ -> return () -- treat others below
           ) outTypes
     mapM_ ( \ i -> case Map.lookup i gctx of
