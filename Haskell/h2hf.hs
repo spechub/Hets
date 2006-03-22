@@ -51,7 +51,7 @@ main = do
     c : fs -> let elm = elem $ map toLower c in
         mapM_ (process (if elm ["h", "hol"] then (NotCont,False)
                    else if elm ["hc", "holcf"] then (IsCont,False)
-                   else if elm ["mh", "mhol"] then (IsCont,True)
+                   else if elm ["mh", "mhol"] then (NotCont,True)
                    else if elm ["mhc", "mholcf"] then (IsCont,True)
                    else error err)) fs
 
