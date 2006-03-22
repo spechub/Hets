@@ -226,7 +226,11 @@ printTrm b trm = case trm of
                                <+> printPlainTerm b t) es)
            <+> text "in" <+> printPlainTerm b i, lowPrio)
     IsaEq t1 t2 -> ((case t1 of
+-- <<<<<<< IsaPrint.hs
+-- --       Const vn y ->  text (new vn) <+> doubleColon <+> printType y
+-- =======
         Const vn y -> text (new vn) <+> doubleColon <+> printType y
+-- >>>>>>> 1.90
         _ -> printParenTerm b (isaEqPrio + 1) t1) <+> text "=="
                    <+> printParenTerm b isaEqPrio t2, isaEqPrio)
     Tuplex cs c -> ((case c of
@@ -285,16 +289,19 @@ replaceUnderlines str l = case str of
 printClassrel :: Classrel -> Doc
 printClassrel = vcat . map ( \ (t, cl) -> case cl of
      Nothing -> empty
-     Just x -> text axclassS <+> printClass t <+> text "<" <+>
-       (if null x  then text pcpoS else printSort x)) . Map.toList
+     Just x -> text axclassS <+> printClass t <+> text "<" <+> 
+                                           printSort x) . Map.toList
 
 printArities :: String -> Arities -> Doc
 printArities tn = vcat . map ( \ (t, cl) ->
                   vcat $ map (printInstance tn t) cl) . Map.toList
 
 printInstance :: String -> TName -> (IsaClass, [(Typ, Sort)]) -> Doc
-printInstance tn t xs = case xs of
-   (IsaClass "Monad", _) -> printMInstance tn t
+printInstance tn t xs = case xs of 
+   (IsaClass "Monad", _) -> 
+      if (isSuffixOf "_mh" tn) || (isSuffixOf "_mhc" tn) 
+      then printMInstance tn t 
+      else error "IsaPrint, printInstance: monads not supported"
    _ -> printNInstance t xs
 
 printMInstance :: String -> TName -> Doc
@@ -365,6 +372,7 @@ instance PrettyPrint Sign where
     isDomain = case baseSig sig of
                HOLCF_thy -> True
                HsHOLCF_thy -> True
+               MHsHOLCF_thy -> True
                _ -> False
     printDomainDefs dtDefs = vcat $ map printDomainDef dtDefs
     printDomainDef dts = if null dts then empty else
