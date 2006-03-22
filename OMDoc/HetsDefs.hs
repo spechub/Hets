@@ -9,7 +9,12 @@ Portability :  non-portable(Logic)
 
   Additional definitions for interfacing Hets
 -}
-module OMDoc.HetsDefs where
+module OMDoc.HetsDefs
+  (
+      module Driver.Options
+    , module OMDoc.HetsDefs
+  )
+  where
 
 import Data.Graph.Inductive.Graph
 import qualified Data.Graph.Inductive.Graph as Graph 

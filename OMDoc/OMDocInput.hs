@@ -91,7 +91,7 @@ mLibEnvFromOMDocFile hco file =
 				(ln, _, lenv) <- libEnvFromOMDocFile (emptyGlobalOptions { hetsOpts = hco }) file [libdir hco]
 				return (Just (ln, lenv))
 		)
-		(\_ -> return Nothing)
+		(\_ -> putIfVerbose hco 0 "Error loading OMDoc!" >> return Nothing)
 
 -- not used in program (for ghci)               
 libEnvFromOMDocFile::
@@ -1464,6 +1464,7 @@ getImportedTheories xml =
 makeImportGraphFullXml::GlobalOptions->String->[String]->(IO (ImportGraph HXT.XmlTrees))
 makeImportGraphFullXml go source includes =
         do
+                putIfVerbose (hetsOpts go) 0 ("Loading " ++ source ++ "...") 
                 mdoc <- maybeFindXml source includes
                 case mdoc of
                         Nothing -> ioError $ userError ("Unable to find \"" ++ source ++ "\"")
@@ -1474,7 +1475,7 @@ makeImportGraphFullXml go source includes =
                                                 mturi = URI.parseURIReference $ xshow $ getValue "transfer-URI" (head doc)
                                                 turi = fromMaybe (error "Cannot parse URIReference...") mturi
                                                 docmap = getImportedTheories doc
-                                                rdocmap = Map.toList $ Map.map show docmap -- Map.toList $ Map.map (\s -> relativeSource turi s) docmap
+                                                rdocmap = Map.toList $ Map.map id docmap -- Map.toList $ Map.map (\s -> relativeSource turi s) docmap
                                                 initialgraph = Graph.mkGraph [(1, S (omdocid, (show turi)) omdoc)] []
                                         in
                                                 foldl
@@ -1499,7 +1500,9 @@ makeImportGraphFullXml go source includes =
                                                                         (Graph.insEdge (n, inum, ti) ig))
                                         Nothing ->
                                                 do
-                                                        mdocR <- maybeFindXml (relativeSource ouri theouri) []
+                                                        relsourcefromlibdir <- return $ (relativeSource (fromMaybe (error "!") $ URI.parseURIReference $ libdir (hetsOpts go)) theouri)
+                                                        putIfVerbose (hetsOpts go) 0 ("Loading " ++ relsourcefromlibdir ++ "...")
+                                                        mdocR <- maybeFindXml relsourcefromlibdir []
                                                         mdoc <- case mdocR of
                                                                 Nothing ->
                                                                         maybeFindXml theouri includes

@@ -147,6 +147,9 @@ writeOMDocDTD dtd' t f = HXT.run' $
     [(a_indent, v_1), (a_output_file, f)] $
     writeableTreesDTD dtd' t
 
+-- | converts DevGraphs to OMDoc
+-- depending on 'recurse'-option only the DevGraph specified by the libname
+-- or all DevGraphs in libenv are written (to outdir)
 devGraphToOMDoc::HetcatsOpts->(ASL.LIB_NAME, LibEnv)->FilePath->IO ()
 devGraphToOMDoc hco (ln, le) file =
   case (recurse hco) of
@@ -163,7 +166,7 @@ devGraphToOMDoc hco (ln, le) file =
       in
         do
           xmlg <- dGraphGToXmlGXN igdg
-          writeXmlG defaultDTDURI xmlg (outdir hco) >> return ()
+          writeXmlG hco defaultDTDURI xmlg >> return ()
 								
 -- | Convert a DevGraph to OMDoc-XML with given xml:id attribute
 -- will also scan used (CASL-)files for CMP-generation
@@ -292,6 +295,7 @@ devGraphToXmlCMPIOXmlNamed go dg =
             (\(k,(oidwo,oset)) xname -> (k, (XmlNamed oidwo xname, oset)))
         )
         xmlnames_pm
+        
         opswomap)::(Map.Map Hets.NODE_NAMEWO [(XmlNamedWONId, OpType)], XmlNameList)
     --    opswomap)::(Map.Map Hets.NODE_NAMEWO (Map.Map (XmlNamed Hets.IdWO) (Set.Set OpType)), XmlNameList)
     -- sentences
@@ -1222,15 +1226,16 @@ fileSandbox sb file =
 
 -- | writes an XmlTrees-Graph to disk relative to a given directory
 -- will create directory-structures from libnames
-writeXmlG::String->(ImportGraph (HXT.XmlTrees))->String->IO ()
-writeXmlG dtduri ig sandbox =
+writeXmlG::HetcatsOpts->String->(ImportGraph (HXT.XmlTrees))->IO ()
+writeXmlG hco dtduri ig =
   let
     nodes = map snd $ Graph.labNodes ig
   in
     (mapM (\(S (name' ,file) x) ->
       let
-        omfile = fileSandbox sandbox $ asOMDocFile file
+        omfile = fileSandbox (outdir hco) $ asOMDocFile file
       in
+        putIfVerbose hco 0 ("Writing \"" ++ name' ++ "\" to \"" ++ omfile ++ "\"") >>
         -- putStrLn ("Writing \"" ++ name' ++ "\" to \"" ++ omfile ++ "\"") >>
         System.Directory.createDirectoryIfMissing True (snd $ splitPath omfile) >>
         writeOMDocDTD dtduri x omfile

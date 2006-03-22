@@ -483,7 +483,7 @@ main =
               in
                 do
                   igx <- dGraphGToXmlGXN igdg
-                  writeXmlG dtduri igx sandbox
+                  writeXmlG (Hets.dho { Hets.outdir = sandbox }) dtduri igx
       FTEnv ->
         do
           when dodebug (putStrLn ("Outputting Environment..."))
