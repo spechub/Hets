@@ -191,12 +191,11 @@ instance PrettyPrint VAR_DECL where
                                 <+> printText0 ga s
 
 printFORMULA :: PrettyPrint f => GlobalAnnos -> FORMULA f -> Doc
-printFORMULA ga = Doc.toText ga . ToDoc.printFormula 
-                  (Doc.text . show . printText0 ga) 
+printFORMULA ga = Doc.toText ga . ToDoc.printFormula
+                  (Doc.text . show . printText0 ga)
 
 instance PrettyPrint f => PrettyPrint (FORMULA f) where
-    printText0 ga f@(Sort_gen_ax _ _) = printFORMULA ga f
-    printText0 ga f = text " . " <> printFORMULA ga f
+    printText0 = printFORMULA
 
 instance PrettyPrint QUANTIFIER where
     printText0 _ (Universal) = text forallS
@@ -213,7 +212,7 @@ instance PrettyPrint f => PrettyPrint (TERM f) where
     printText0 ga (Qual_var n t _) =
         parens $ text varS <+> printText0 ga n <+> colon <+> printText0 ga t
     printText0 ga (Application o l _) =
-        if isQualOpSy o 
+        if isQualOpSy o
            then print_prefix_appl_text ga (parens $ printText0 ga o) l
            else print_Literal_text ga (op_id o) l
     printText0 ga (Sorted_term t s _) =

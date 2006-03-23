@@ -64,7 +64,7 @@ instance PrettyPrint s => PrettyPrint (Named s) where
 -- | print sentence with label and non-axioms with implied annotation
 printLabelledSen :: PrettyPrint s => GlobalAnnos -> Named s -> Doc
 printLabelledSen ga s@NamedSen{senName = label, isAxiom = isAx} =
-    printText0 ga s <> (if null label then empty else
+    text " . " <> printText0 ga s <> (if null label then empty else
            space <> printText0 ga (Label [label] nullRange))
         <> if isAx then empty else
         space <> printText0 ga (Semantic_anno SA_implied nullRange)

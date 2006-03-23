@@ -1261,17 +1261,17 @@ pred q : s
 *** Error 304.6, unknown sort 'b'
 *** Error 305.6, unknown sort 'd'
 *** Error 316.3, ambiguous term
-   . (op a : b) = (op a : b)
-   . (var a : s) = (var a : s)
+  (op a : b) = (op a : b)
+  (var a : s) = (var a : s)
 *** Error 317.3, ambiguous term
-   . (op a : b) = (op a : b)
-   . (var a : s) = (var a : s)
+  (op a : b) = (op a : b)
+  (var a : s) = (var a : s)
 *** Error 320.5, ambiguous term
-   . (op a : b) = (op a : b)
-   . (var a : s) = (var a : s)
+  (op a : b) = (op a : b)
+  (var a : s) = (var a : s)
 *** Error 321.5, ambiguous term
-   . (op a : b) = (op a : b)
-   . (var a : s) = (var a : s)
+  (op a : b) = (op a : b)
+  (var a : s) = (var a : s)
 *** Error, ambiguous term
   (op __@@__ : Nat * Nat -> Nat)((op 1 : Pos), (op 2 : Nat))
   (op __@@__ : s * s -> s)((op 1 : s), (op 2 : s))

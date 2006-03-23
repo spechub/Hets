@@ -1510,17 +1510,17 @@ op b : a
 ### Warning 309.11, also known as operation 'b'
 ### Hint 312.6, redeclared sort 't'
 *** Error 316.3, ambiguous term
-   . (op a : b) = (op a : b)
-   . (var a : s) = (var a : s)
+  (op a : b) = (op a : b)
+  (var a : s) = (var a : s)
 *** Error 317.3, ambiguous term
-   . (op a : b) = (op a : b)
-   . (var a : s) = (var a : s)
+  (op a : b) = (op a : b)
+  (var a : s) = (var a : s)
 *** Error 320.5, ambiguous term
-   . (op a : b) = (op a : b)
-   . (var a : s) = (var a : s)
+  (op a : b) = (op a : b)
+  (var a : s) = (var a : s)
 *** Error 321.5, ambiguous term
-   . (op a : b) = (op a : b)
-   . (var a : s) = (var a : s)
+  (op a : b) = (op a : b)
+  (var a : s) = (var a : s)
 ### Hint 323.6, redeclared sort 's'
 ### Hint 325.9, redeclared sort 's'
 ### Hint 336.47, redeclared op ''\\''

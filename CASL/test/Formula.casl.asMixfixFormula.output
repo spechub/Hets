@@ -1,35 +1,35 @@
- . (pred y : bb)
- . (pred y : bb * bb)
- . (pred y : bb * bb)(a, b)
+(pred y : bb)
+(pred y : bb * bb)
+(pred y : bb * bb)(a, b)
 *** Error 4.18-4.20, expected further mixfix token: ["!","*","+","-","-->"]
- . a =e= b
+a =e= b
 *** Error 6.3, unexpected mixfix token: #=
- . exists1(predy :: bb)
- . exists predy: bb . a
- . exists! a: v . x
- . exists! a: v . x
- . exists! a: v . x
- . forall a: v . x
- . a if b
- . def x
+exists1(predy :: bb)
+exists predy: bb . a
+exists! a: v . x
+exists! a: v . x
+exists! a: v . x
+forall a: v . x
+a if b
+def x
 
 *** Error 16.2, unexpected mixfix token: }
 *** Error 16.3-16.9, not a formula: {} when [] else {}
- . a /\ b /\ c
- . a \/ b \/ c
- . a => b
- . a <=> b
- . true
- . false
- . b in s
- . a =e= b
- . a = b
- . a => b => c => d
- . a if b if c if d
- . a <=> b
- . a /\ b if b \/ c if not c if def d
- . m div n = r <=> (exists s: Nat . m = n * r + s /\ s < n)
- . a => (b if c)
- . a if (b => c)
- . (a => b) if c
- . (a if b) => c
+a /\ b /\ c
+a \/ b \/ c
+a => b
+a <=> b
+true
+false
+b in s
+a =e= b
+a = b
+a => b => c => d
+a if b if c if d
+a <=> b
+a /\ b if b \/ c if not c if def d
+m div n = r <=> (exists s: Nat . m = n * r + s /\ s < n)
+a => (b if c)
+a if (b => c)
+(a => b) if c
+(a if b) => c
