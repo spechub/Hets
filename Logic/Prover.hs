@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2005
+Copyright   :  (c) Till Mossakowski, Klaus Lüttich, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  till@tzi.de
@@ -9,6 +9,11 @@ Portability :  portable
 
 Provide prover stuff for class Logic.Sentences
 
+-}
+{- todo:
+  - separate GoalStatus into its own Module 
+    and specifify the whole SZS Ontology with appropiate types and functions
+    (http://www.cs.miami.edu/~tptp/cgi-bin/DVTPTP2WWW/view_file.pl?Category=Documents&File=SZSOntology)
 -}
 
 module Logic.Prover where
@@ -142,17 +147,27 @@ data Tactic_script = Tactic_script String deriving (Eq, Ord, Show)
 -- | enumeration type representing the status of a goal
 data GoalStatus = Open 
                 | Disproved
-                | Proved
-     deriving (Show,Eq,Ord)
+                | Proved (Maybe Bool) -- ^ Just True means consistent; 
+                                      -- Nothing means don't know
+                      -- 
+                      -- needed for automated theorem provers like SPASS;
+                      -- provers like Isabelle set it to Nothing
+     deriving (Eq,Ord)
+
+instance Show GoalStatus where
+    show gs = case gs of
+              Open -> "Open"
+              Disproved -> "Disproved"
+              Proved mc -> "Proved (" ++ 
+                           maybe "unknown" (\ c -> (if c then "" else "in") ++ 
+                                                   "consistent") mc ++ 
+                           ")"
 
 -- | data type representing the proof status for a goal or 
 data Proof_status proof_tree =
        Proof_status { goalName :: String
                     , goalStatus :: GoalStatus
                     , usedAxioms :: [String] -- ^ used axioms 
-                    , goalUsedInProof :: Bool
-                      -- ^ useful for automated theorem provers like SPASS
-                      -- Isabelle should set it to True
                     , proverName :: String -- ^ name of prover
                     , proofTree :: proof_tree
                     , tacticScript :: Tactic_script }
@@ -170,7 +185,6 @@ openProof_status goalname provername =
     Proof_status { goalName = goalname
                  , goalStatus = Open
                  , usedAxioms = []
-                 , goalUsedInProof = False
                  , proverName = provername
                  , proofTree = undefined
                  , tacticScript = Tactic_script "" }
@@ -194,14 +208,25 @@ instance Eq a => Eq (Proof_status a) where
 isProvedStat :: Proof_status proof_tree -> Bool
 isProvedStat pst = case pst of
                    Consistent _ -> False
-                   _ -> (== Proved) . goalStatus $ pst
+                   _ -> isProvedGStat . goalStatus $ pst
+
+isProvedGStat :: GoalStatus -> Bool
+isProvedGStat gs = case gs of
+                   Proved _ -> True
+                   _ -> False
+
+goalUsedInProof :: Monad m => Proof_status proof_tree -> m Bool
+goalUsedInProof pst = 
+    case goalStatus pst of
+    Proved m -> maybe (fail "don't know if goal was used") return m
+    _ -> fail "not a proof"
 
 -- | prover or consistency checker
-data ProverTemplate goal proof_tree = Prover
+data ProverTemplate theory proof_tree = Prover
     { prover_name :: String,
       prover_sublogic :: String,
-      prove :: String -> goal -> IO([Proof_status proof_tree])
-      -- input: theory name, theory, goals
+      prove :: String -> theory -> IO([Proof_status proof_tree])
+      -- input: theory name, theory (incl. goals)
       -- output: proof status for goals and lemmas
     }
 

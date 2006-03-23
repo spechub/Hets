@@ -336,9 +336,11 @@ toGuiStatus :: SPASSConfig -- ^ current prover configuration
             -> (Proof_status a) -- ^ status to convert
             -> (ProofStatusColour, String)
 toGuiStatus cf st = case goalStatus st of
-  Proved    -> if goalUsedInProof st 
-               then statusProved
-               else statusProvedButInconsistent
+  Proved mc -> maybe (statusProved)
+                     ( \ c -> if c
+                              then statusProved
+                              else statusProvedButInconsistent)
+                     mc
   Disproved -> statusDisproved
   _         -> if timeLimitExceeded cf
                then statusOpenTExceeded
@@ -1263,8 +1265,9 @@ runSpass lp cfg thName nGoal = do
       | isJust res && elem (fromJust res) proved =
           (SpassSuccess,
            (defaultProof_status options)
-           { goalStatus = Proved
-           , goalUsedInProof = elem (AS_Anno.senName nGoal) usedAxs
+           { goalStatus = Proved $ if elem (AS_Anno.senName nGoal) usedAxs
+                                   then Nothing
+                                   else Just False
            , usedAxioms = filter (/=(AS_Anno.senName nGoal)) usedAxs })
       | isJust res && elem (fromJust res) disproved =
           (SpassSuccess,  

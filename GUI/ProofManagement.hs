@@ -273,21 +273,17 @@ doShowProofDetails s@(ProofGUIState { theoryName = thName}) =
               Pretty.nest 4 (printBP bp)
           printBP bp = case bp of
                        DevGraph.BasicProof _ ps -> 
+                        stat (show $ goalStatus ps) Pretty.$$ 
                         (case goalStatus ps of
-                         Open -> stat "Open"
-                         Disproved -> stat "Disproved"
-                         Proved -> 
-                           stat "Proved" Pretty.$$ 
+                         Proved _ -> 
                            Pretty.hang (Pretty.text "Used axioms:") 13
                                   (Pretty.fsep (Pretty.punctuate 
                                                      Pretty.comma 
                                                (map (Pretty.text . show) $
-                                                   usedAxioms ps))))
+                                                   usedAxioms ps)))
+                         _ -> Pretty.empty)
                         Pretty.$$ Pretty.text "Prover:" Pretty.<+> 
                               Pretty.text (proverName ps)
-                        Pretty.$$ (if not (goalUsedInProof ps) 
-                            then Pretty.text "Warning: Theory is inconsistent!"
-                            else Pretty.empty)
                        otherProof -> stat (show otherProof)
 
 

@@ -115,6 +115,7 @@ askFileNameAndSave defFN txt =
 Represents the state of a goal in a 'ListBox' that uses 'populateGoalsListBox'
 -}
 data LBStatusIndicator = LBIndicatorProved
+                       | LBIndicatorProvedInconsistent
                        | LBIndicatorDisproved
                        | LBIndicatorOpen
                        | LBIndicatorGuessed
@@ -128,6 +129,7 @@ indicatorString :: LBStatusIndicator
                 -> String
 indicatorString i = case i of
   LBIndicatorProved      -> "[+]"
+  LBIndicatorProvedInconsistent -> "[\215]"
   LBIndicatorDisproved   -> "[-]"
   LBIndicatorOpen        -> "[ ]"
   LBIndicatorGuessed     -> "[.]"
@@ -161,7 +163,10 @@ populateGoalsListBox lb v = do
 indicatorFromProof_status :: Proof_status a
                           -> LBStatusIndicator
 indicatorFromProof_status st = case goalStatus st of
-  Proved    -> LBIndicatorProved
+  Proved mc -> maybe LBIndicatorProved 
+                     (\ c -> if c then LBIndicatorProved
+                                  else LBIndicatorProvedInconsistent) 
+                     mc
   Disproved -> LBIndicatorDisproved
   Open      -> LBIndicatorOpen
 

@@ -13,7 +13,8 @@ Interface for Isabelle theorem prover.
 {-
   todo: thy files in subdir, check of legal changes in thy file
    consistency check
-   check if goalUsedInProof is can be derived from isabelle's proof tree
+   check if (goalStatus = Proved (Just True)) (was goalUsedInProof) 
+    can be derived from isabelle's proof tree
 
   Interface between Isabelle and Hets:
    Hets writes Isabelle .thy file and starts Isabelle
@@ -137,9 +138,8 @@ checkFinalThyFile (ho, bo) thyFile = do
 
 mkProved :: String -> [String] -> Proof_status ()
 mkProved thm used = (openIsaProof_status thm)
-    { goalStatus = Proved
+    { goalStatus = Proved Nothing
     , usedAxioms = used
-    , goalUsedInProof = True
     , tacticScript = Tactic_script "unknown isabelle user input"
     }
 
