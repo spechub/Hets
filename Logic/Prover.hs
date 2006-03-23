@@ -174,7 +174,7 @@ data Proof_status proof_tree =
      | Consistent Tactic_script
      deriving (Show,Eq,Ord)
 
--- | constructs a open proof status with basic information filled in;
+-- | constructs an open proof status with basic information filled in;
 -- make sure to set proofTree to a useful value before you access it, because 
 -- its default value is 'undefined'
 openProof_status :: Ord pt => 
