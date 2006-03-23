@@ -25,21 +25,6 @@ instance PrettyPrint Annotation where
 -- -------------------------------------------------------------------------
 -- utilies
 -- -------------------------------------------------------------------------
-showPrecRel :: PrecRel -> String
-showPrecRel p = case p of Lower -> "<"
-                          Higher -> ">"
-                          BothDirections -> "<>"
-                          NoDirection -> error "showPrecRel"
-
-printCommaIds :: GlobalAnnos -> [Id] -> Doc
-printCommaIds ga = fcat . punctuate (comma <> space) . map (printText0 ga)
-
-printGroup :: Doc -> Doc -> Doc
-printGroup key grp = ptext "%" <> key <> ptext "(" <> grp <> ptext ")%"
-
-printLine :: Doc -> Doc -> Doc
-printLine key line = if isEmpty line then pkey else pkey <+> line
-    where pkey = ptext "%" <> key
 
 printAnnotationList_Text0 :: GlobalAnnos -> [Annotation] -> Doc
 printAnnotationList_Text0 ga l = (vcat $ map (printText0 ga) l)
