@@ -94,6 +94,11 @@ module Common.Doc
     , toLatex
       -- * a class
     , Pretty(..)
+      -- * annotation utilities
+    , printAnnotationList
+    , splitAndPrintRAnnos
+    , printLabelledSen
+    , semiAnnos
     ) where
 
 import Common.Id
@@ -774,3 +779,61 @@ instance Pretty Annotation where
 
 instance Pretty Token where
    pretty = idDoc . simpleIdToId
+
+-- | print several annotations vertically (each in a new line)
+printAnnotationList :: [Annotation] -> Doc
+printAnnotationList = vcat . map annoDoc
+
+printTrailer :: [Annotation] -> Doc
+printTrailer = flushRight . hsep . map annoDoc
+
+-- | add trailing annotation to a document
+splitAndPrintRAnnos :: Doc -> [Annotation] -> Doc
+splitAndPrintRAnnos i ras =
+    let (r, s) = splitRAnnos ras
+    in (if null s then id else ($+$ printAnnotationList s))
+       $ if null r then i else fcat [i, printTrailer r]
+
+printSemiAnno :: Pretty a => Bool -> Annoted a -> Doc
+printSemiAnno addSemi (Annoted i _ las ras) =
+    let r = splitAndPrintRAnnos
+            ((if addSemi then (<> semi) else id) $ pretty i) ras
+    in if null las then r else space $+$ printAnnotationList las $+$ r
+
+-- | print annoted items with trailing semicolons except for the last item
+semiAnnos :: Pretty a => [Annoted a] -> Doc
+semiAnnos l = if null l then empty else
+           vcat $ map (printSemiAnno True) (init l)
+                ++ [printSemiAnno False $ last l]
+
+instance (Pretty a) => Pretty (Annoted a) where
+    pretty = printSemiAnno False
+
+instance Pretty s => Pretty (Named s) where
+    pretty = pretty . sentence
+-- other stuff must be printed logic dependent
+
+-- | print sentence with label and non-axioms with implied annotation
+printLabelledSen :: Pretty s => Named s -> Doc
+printLabelledSen s@NamedSen{senName = label} =
+    (if isAxiom s then id else
+        (<+> annoDoc (Semantic_anno SA_implied nullRange)))
+    $ (if null label then id else
+           (<+> annoDoc (Label [label] nullRange)))
+          $ space <> bullet <+> pretty s
+
+-- | function to split the annotation to the right of an item
+-- * fst contains printed label and implied annotion
+--   if any at the begining of the list of annotations
+-- * snd contains the remaining annos
+splitRAnnos :: [Annotation] -> ([Annotation], [Annotation])
+splitRAnnos r = case r of
+    [] -> ([],[])
+    [l] -> if isLabel l || isImplied l then (r, [])
+             else ([], r)
+    l : s@(i : t) ->
+        if isLabel l then
+            if isImplied i then ([l, i], t)
+            else ([l], s)
+        else if isImplied l then ([l], s)
+             else ([], r)
