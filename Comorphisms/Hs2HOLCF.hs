@@ -154,7 +154,7 @@ transMMatch c sign ds = case ds of
       df = mkVName $ showIsaName $ fst a1 
       ls = map (snd . extInfo) ds
       ww = transMultiDef c cs ls
-      tx = trace ("transMultiDef output " ++ showL ww) $ 
+      tx = -- trace ("transMultiDef output " ++ showL ww) $ 
            formCaseExp c ww 
       y = maybe (noType) id $ Map.lookup df cs  
       bs = fst $ snd a1
