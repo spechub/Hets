@@ -813,6 +813,50 @@ Mapping /local/mirror/linux-bkb/Isabelle/Isabelle2005/heaps/polyml-4.1.4_x86-lin
 Mapping /home/linux-bkb/Isabelle/polyml-4.1.4/x86-linux/ML_dbase
 Poly/ML 4.2.0 Release
 > val it = () : unit
+Loading theory "HsHOLCF" (required by "Map2_hc")
+constants
+  fliftbin :: "('a => 'b => 'c) => 'a lift -> 'b lift -> 'c lift"
+Proving isomorphism properties of domain HsHOLCF.llist ...
+Proving induction properties of domain HsHOLCF.llist ...
+Loading theory "Map2_hc"
+structure Header :
+  sig val initialize : string list -> unit val record : string -> unit end
+val it = () : unit
+val it = () : unit
+val it = () : unit
+val it =
+   {ProtoPure, Pure, CPure, HOL, Lattice_Locales, Orderings, LOrder, Set,
+     Typedef, Fun, Product_Type, FixedPoint, Sum_Type, Relation, Record,
+     Inductive, Transitive_Closure, Wellfounded_Recursion, OrderedGroup,
+     Ring_and_Field, Nat, NatArith, Datatype_Universe, Datatype, Divides,
+     Power, Finite_Set, Wellfounded_Relations, Equiv_Relations, IntDef,
+     Numeral, IntArith, SetInterval, Recdef, IntDiv, NatBin, NatSimprocs,
+     Presburger, Relation_Power, Parity, GCD, Binomial, PreList, List, Map,
+     Refute, SAT, Hilbert_Choice, Infinite_Set, Extraction, Reconstruction,
+     Main, Porder, Pcpo, Ffun, Cont, Adm, Pcpodef, Cfun, Cprod, Sprod, Ssum,
+     Up, Discrete, Lift, One, Tr, Fix, Fixrec, Domain, HOLCF, HsHOLCF,
+     Map2_hc} : Theory.theory
+val it =
+   [("Map2_hc.map1_def",
+         "map1 ==
+            FIX map1.
+               run$(return$(LAM qX1 qX2.
+                    case qX2 of lNil => lNil
+                    | lCons$pX1$pX2 => lCons$(qX1$pX1)$(map1$qX1$pX2)))"),
+      ("Map2_hc.map2_def",
+         "map2 ==
+            FIX map2.
+               run$(return$(LAM f l.
+                    case l of lNil => lNil
+                    | lCons$pX1$pX2 => lCons$(f$pX1)$(map2$f$pX2)))")]
+: (string * Thm.thm) list
+Poly/ML RTS version I386-4.1.4 (14:18:30 Nov 14 2005)
+Copyright (c) 2002-5 CUTS and contributors.
+Running with heap parameters (h=30000K,ib=6000K,ip=100%,mb=10096K,mp=20%)
+Mapping /local/mirror/linux-bkb/Isabelle/Isabelle2005/heaps/polyml-4.1.4_x86-linux/HOLCF
+Mapping /home/linux-bkb/Isabelle/polyml-4.1.4/x86-linux/ML_dbase
+Poly/ML 4.2.0 Release
+> val it = () : unit
 Loading theory "HsHOLCF" (required by "mrec3_hc")
 constants
   fliftbin :: "('a => 'b => 'c) => 'a lift -> 'b lift -> 'c lift"
