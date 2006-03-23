@@ -16,6 +16,7 @@ module Common.PrintLaTeX
     , debugRenderLatex
     , PrintLaTeX(..)
     , renderLatexVerb
+    , renderInternalLatex
     , printToken_latex
     , printDisplayToken_latex
     , setTabWithSpaces
@@ -311,18 +312,23 @@ setTabWithSpaces :: Int -> String
 setTabWithSpaces i = (showString setTabWSp . shows i) "}"
 
 -- functions for producing IO printable Strings
+
+renderInternalLatex :: Doc -> String
+renderInternalLatex d = renderLatexCore latexStyle d ""
+
+renderLatexCore :: Style -> Doc -> ShowS
+renderLatexCore latexStyle' d =
+    evalState (fullRender
+               (mode           latexStyle')
+               (lineLength     latexStyle')
+               (ribbonsPerLine latexStyle')
+               latex_txt (return id) d) initialLRState
+
 renderLatex, renderLatexVerb :: Maybe Int -> Doc -> String
 
-renderLatex mi d = ((showString "\\begin{hetcasl}\n") .
-                    (evalState (fullRender (mode           latexStyle')
-                                           (lineLength     latexStyle')
-                                           (ribbonsPerLine latexStyle')
-                                           latex_txt
-                                           (return id)
-                                           d)
-                               initialLRState)) "\n\\end{hetcasl}\n"
-    where -- d' = ptext "\\begin{hetcasl}" $+$ d $+$ ptext "\\end{hetcasl}"
-          latexStyle' = latexStyle {lineLength =
+renderLatex mi d = showString "\\begin{hetcasl}\n" $
+                    renderLatexCore latexStyle' d "\n\\end{hetcasl}\n"
+    where latexStyle' = latexStyle {lineLength =
                                      (case mi of
                                       Nothing -> lineLength latexStyle
                                       Just l  -> l) }

@@ -17,13 +17,16 @@ module CASL.LaTeX_AS_Basic
 
 import CASL.AS_Basic_CASL
 import CASL.Print_AS_Basic
+import CASL.ToDoc
+import qualified Common.Doc as Doc
 import Common.Id
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.LaTeX_AS_Annotation
 import Common.Keywords
-import Common.Lib.Pretty (Doc, empty, (<>), ($$), ($+$), vcat, punctuate)
-import Common.PrintLaTeX (PrintLaTeX(..), printDisplayToken_latex)
+import Common.Lib.Pretty (Doc, empty, (<>), ($$), ($+$), fcat, vcat)
+import Common.PrintLaTeX (PrintLaTeX(..), printDisplayToken_latex
+                         , renderInternalLatex)
 import Common.LaTeX_utils
 import Common.PPUtils (pluralS)
 
@@ -43,7 +46,7 @@ instance (PrintLaTeX b, PrintLaTeX s, PrintLaTeX f) =>
                    ,tabbed_nest_latex $ semiAnno_latex ga l]
     printLatex0 ga (Sort_gen l _) = case l of
         [Annoted (Datatype_items l' _) _ lans _] ->
-            fsep_latex [ hc_sty_plain_keyword generatedS <~> setTab_latex <\+> 
+            fsep_latex [ hc_sty_plain_keyword generatedS <~> setTab_latex <\+>
                          hc_sty_plain_keyword (typeS ++ pluralS l')
                        , tabbed_nest_latex (printAnnotationList_Latex0 ga lans
                                             $$ semiAnno_latex ga l') ]
@@ -181,11 +184,11 @@ instance PrintLaTeX DATATYPE_DECL where
 
 instance PrintLaTeX ALTERNATIVE where
     printLatex0 ga (Alt_construct k n l _) = tabbed_nest_latex (
-        printLatex0 ga n <> (if null l then case k of
+        fcat [printLatex0 ga n, (if null l then case k of
                              Partial -> parens_tab_latex empty
                              _ -> empty
                             else parens_tab_latex ( semiT_latex ga l))
-                            <> optLatexQuMark k)
+                            <> optLatexQuMark k])
     printLatex0 ga (Subsorts l _) =
         hc_sty_id (sortS ++ pluralS l) <\+> commaT_latex ga l
 
@@ -201,67 +204,8 @@ instance PrintLaTeX VAR_DECL where
                                 <\+> printLatex0 ga s
 
 instance PrintLaTeX f => PrintLaTeX (FORMULA f) where
-    printLatex0 ga (Quantification q l f _) =
-       set_tabbed_nest_latex $ fsep_latex
-           [printLatex0 ga q <\+> semiT_latex ga l ,
-             bullet_latex
-                <\+> set_tabbed_nest_latex (printLatex0 ga f)]
-    printLatex0 ga (Conjunction fs _) =
-        fsep_latex $ punctuate (space_latex <> hc_sty_axiom "\\wedge")
-          $ map (condParensXjunction printLatex0 parens_tab_latex ga) fs
-    printLatex0 ga (Disjunction  fs _) =
-        fsep_latex $ punctuate (space_latex <> hc_sty_axiom "\\vee")
-          $ map (condParensXjunction printLatex0 parens_tab_latex ga) fs
-    printLatex0 ga i@(Implication f g b _) = fsep_latex $
-        if not b
-        then
-        [condParensImplEquiv printLatex0 parens_tab_latex ga i g False,
-         hc_sty_id ifS,
-         condParensImplEquiv printLatex0 parens_tab_latex ga i f True]
-        else
-        [condParensImplEquiv printLatex0 parens_tab_latex ga i f False,
-         hc_sty_axiom "\\Rightarrow",
-         condParensImplEquiv printLatex0 parens_tab_latex ga i g True]
-    printLatex0 ga e@(Equivalence  f g _) =
-        fsep_latex
-             [condParensImplEquiv printLatex0 parens_tab_latex ga e f False,
-              hc_sty_axiom "\\Leftrightarrow",
-              condParensImplEquiv printLatex0 parens_tab_latex ga e g True]
-    printLatex0 ga (Negation f _) = hc_sty_axiom "\\neg" <\+>
-        condParensNeg f parens_latex (printLatex0 ga f)
-    printLatex0 _ (True_atom _)  = hc_sty_id trueS
-    printLatex0 _ (False_atom _) = hc_sty_id falseS
-    printLatex0 ga (Predication p l _) =
-        let (p_id,isQual) =
-                case p of
-                       Pred_name i          -> (i,False)
-                       Qual_pred_name i _ _ -> (i,True)
-            p' = printLatex0 ga p
-        in if isQual then
-             print_prefix_appl_latex ga p' l
-           else condPrint_Mixfix_latex ga p_id l
-    printLatex0 ga (Definedness f _) = hc_sty_id defS <\+> printLatex0 ga f
-    printLatex0 ga (Existl_equation f g _) =
-        fsep_latex [printLatex0 ga f, exequal_latex, printLatex0 ga g]
-    printLatex0 ga (Strong_equation f g _) =
-        fsep_latex [printLatex0 ga f, equals_latex, printLatex0 ga g]
-    printLatex0 ga (Membership f g _) =
-        printLatex0 ga f <\+> hc_sty_axiom "\\in" <\+> printLatex0 ga g
-    printLatex0 ga (Mixfix_formula t) = printLatex0 ga t
-    printLatex0 _ (Unparsed_formula _ _) = error "Unparsed_formula"
-    printLatex0 ga (Sort_gen_ax constrs _) =
-        hc_sty_id generatedS <>
-        sp_braces_latex2 (hc_sty_id sortS <\+> commaT_latex ga sorts
-                      <> semi_latex <\+> semiT_latex ga ops)
-        <\+>(if null sortMap then empty
-             else hc_sty_id withS
-              <\+> fsep_latex (punctuate comma_latex
-                               (map printSortMap sortMap)))
-        where
-        (sorts,ops,sortMap) = recover_Sort_gen_ax constrs
-        printSortMap (s1,s2) = printLatex0 ga s1 <\+> mapsto_latex
-                               <\+> printLatex0 ga s2
-    printLatex0 ga (ExtFORMULA f) = printLatex0 ga f
+    printLatex0 ga = Doc.toLatex ga . printFormula
+        (Doc.literalDoc . renderInternalLatex . printLatex0 ga)
 
 instance PrintLaTeX QUANTIFIER where
     printLatex0 _ Universal = forall_latex
@@ -351,14 +295,6 @@ print_kind_latex k l =
     case k of
     Implicit -> empty
     _        -> hc_sty_plain_keyword $ pluralS_symb_list k l
-
-condPrint_Mixfix_latex :: PrintLaTeX f => GlobalAnnos -> Id -> [TERM f] -> Doc
-condPrint_Mixfix_latex ga =
-    condPrint_Mixfix (printLatex0 ga) (printLatex0 ga) (printLatex0 ga)
-                     parens_tab_latex
-                     (<\+>) fsep_latex comma_latex
-                     (Just $ printDisplayToken_latex casl_axiom_latex)
-                     (Just DF_LATEX) ga
 
 print_prefix_appl_latex :: PrintLaTeX f => GlobalAnnos -> Doc -> [TERM f]
                         -> Doc
