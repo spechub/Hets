@@ -33,6 +33,9 @@ printVarDecl (Var_decl l s _) =
       fcat $ (punctuate (comma <> space) $ map sidDoc l)
            ++ [ colon, space, idDoc s]
 
+instance Pretty VAR_DECL where
+    pretty = printVarDecl
+
 printOpType :: OP_TYPE -> Doc
 printOpType (Op_type p l r _) =
     case l of
@@ -46,21 +49,33 @@ printOpType (Op_type p l r _) =
                 Total -> funArrow,
                  space, idDoc r]
 
+instance Pretty OP_TYPE where
+    pretty = printOpType
+
 printOpSymb :: OP_SYMB -> Doc
 printOpSymb o = case o of
     Op_name i -> idDoc i
     Qual_op_name i t _ -> fsep [text opS, idDoc i, colon <> printOpType t]
+
+instance Pretty OP_SYMB where
+    pretty = printOpSymb
 
 printPredType :: PRED_TYPE -> Doc
 printPredType (Pred_type l _) = case l of
     [] -> parens empty
     _ -> fsep $ punctuate (space <> cross) $ map idDoc l
 
+instance Pretty PRED_TYPE where
+    pretty = printPredType
+
 printPredSymb :: PRED_SYMB -> Doc
 printPredSymb p = case p of
     Pred_name i -> idDoc i
     Qual_pred_name i t _ ->
         parens $ fsep [text predS, idDoc i, colon, printPredType t]
+
+instance Pretty PRED_SYMB where
+    pretty = printPredSymb
 
 printRecord :: (f -> Doc) -> Record f Doc Doc
 printRecord mf = Record
@@ -106,18 +121,18 @@ printRecord mf = Record
           parens $ fsep [text varS, sidDoc v, colon, idDoc s]
     , foldApplication = \ _ o l _ -> case o of
           Op_name i -> idApplDoc i l
-          Qual_op_name _ _ _ -> let d = parens $ printOpSymb o in 
+          Qual_op_name _ _ _ -> let d = parens $ printOpSymb o in
               if null l then d else fcat [d, parens $ fsep $ punctuate comma l]
-    , foldSorted_term = \ (Sorted_term o _ _) r t _ -> 
+    , foldSorted_term = \ (Sorted_term o _ _) r t _ ->
           fsep [mkSimpleDoc o r, colon, idDoc t]
-    , foldCast = \ (Cast o _ _) r t _ -> 
+    , foldCast = \ (Cast o _ _) r t _ ->
           fsep [mkSimpleDoc o r, text asS, idDoc t]
     , foldConditional = \ (Conditional ol _ _ _) l f r _ ->
           fsep [if isCond ol then parens l else l,
                 text whenS, f, text elseS, r]
     , foldMixfix_qual_pred = \ _ p -> printPredSymb p
-    , foldMixfix_term = \ (Mixfix_term ol) l -> case ol of 
-          [_, Mixfix_parenthesized _ _] -> fcat l 
+    , foldMixfix_term = \ (Mixfix_term ol) l -> case ol of
+          [_, Mixfix_parenthesized _ _] -> fcat l
           _ -> fsep l
     , foldMixfix_token = \ _ -> sidDoc
     , foldMixfix_sorted_term = \ _ s _ -> colon <+> idDoc s
@@ -129,6 +144,12 @@ printRecord mf = Record
 
 printFormula :: (f -> Doc) -> FORMULA f -> Doc
 printFormula mf = foldFormula $ printRecord mf
+
+instance Pretty f => Pretty (FORMULA f) where
+    pretty = printFormula pretty
+
+instance Pretty f => Pretty (TERM f) where
+    pretty = foldTerm $ printRecord pretty
 
 mkSimpleDoc :: TERM f -> Doc -> Doc
 mkSimpleDoc t = if isSimpleTerm t then id else parens
