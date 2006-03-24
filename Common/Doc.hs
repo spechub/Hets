@@ -121,7 +121,7 @@ infixl 5 $+$
 
 data TextKind =
     IdKind | IdSymb | Symbol | Comment | Keyword | TopKey | Indexed | StructId
-    | Native | LiteralDoc
+    | Native
 
 data Format = Small | FlushRight
 
@@ -140,6 +140,7 @@ data Doc
     | Cat ComposeKind [Doc]
     | Attr Format Doc      -- for annotations
     | IndentBy Doc Doc Doc
+    | LiteralDoc Pretty.Doc  -- for backward compatibility only
 
 {-
 IdentBy refDoc startDoc hangDoc
@@ -196,8 +197,8 @@ native :: String -> Doc
 native = Text Native
 
 -- leave this string entirely untouched for old latex bits
-literalDoc :: String -> Doc
-literalDoc = Text LiteralDoc
+literalDoc :: Pretty.Doc -> Doc
+literalDoc = LiteralDoc
 
 lparen, rparen, lbrack, rbrack, lbrace, rbrace, quote, doubleQuote :: Doc
 
@@ -333,6 +334,7 @@ data DocRecord a = DocRecord
     , foldCat :: Doc -> ComposeKind -> [a] -> a
     , foldAttr :: Doc -> Format -> a -> a
     , foldIndentBy :: Doc -> a -> a -> a -> a
+    , foldLiteralDoc :: Doc -> Pretty.Doc -> a
     }
 
 foldDoc :: DocRecord a -> Doc -> a
@@ -346,6 +348,7 @@ foldDoc r d = case d of
     Attr a e -> foldAttr r d a $ foldDoc r e
     IndentBy e f g ->
         foldIndentBy r d (foldDoc r e) (foldDoc r f) $ foldDoc r g
+    LiteralDoc o -> foldLiteralDoc r d o
 
 idRecord :: DocRecord Doc
 idRecord = DocRecord
@@ -357,6 +360,7 @@ idRecord = DocRecord
     , foldCat = \ _ -> Cat
     , foldAttr = \ _ -> Attr
     , foldIndentBy = \ _ -> IndentBy
+    , foldLiteralDoc = \ _ -> LiteralDoc
     }
 
 anyRecord :: DocRecord a
@@ -369,6 +373,7 @@ anyRecord = DocRecord
     , foldCat = error "anyRecord.Cat"
     , foldAttr = error "anyRecord.Attr"
     , foldIndentBy = error "anyRecord.IndentBy"
+    , foldLiteralDoc = error "anyRecord.LiteralDoc"
     }
 
 -- * conversion to plain text
@@ -389,6 +394,7 @@ toText ga = foldDoc anyRecord
           _ -> d
     , foldIndentBy = \ _ d1 d2 d3 ->
           d2 Pretty.$$ Pretty.nest (length $ show d1) d3
+    , foldLiteralDoc = \ _ d -> d
     } . codeOut ga Nothing Map.empty
 
 -- * conversion to latex
@@ -440,6 +446,7 @@ toLatexRecord tab = anyRecord
               _ -> makeSmallLatex True d
     , foldIndentBy = \ _ d1 d2 d3 ->
           d2 Pretty.$$ Pretty.nest (length $ show d1) d3
+    , foldLiteralDoc = \ _ d -> d
     }
 
 -- | move a small attribute inwards but not into mathmode bits
@@ -537,7 +544,6 @@ textToLatex b k s = let e = escape_comment_latex s in
     Indexed -> hc_sty_structid_indexed e
     StructId -> hc_sty_structid e
     Native -> hc_sty_axiom s
-    LiteralDoc -> Pretty.sp_text (axiom_width s) s
 
 latexSymbols :: Map.Map String Pretty.Doc
 latexSymbols = Map.fromList
@@ -794,33 +800,33 @@ splitAndPrintRAnnos i ras =
     in (if null s then id else ($+$ printAnnotationList s))
        $ if null r then i else fcat [i, printTrailer r]
 
-printSemiAnno :: Pretty a => Bool -> Annoted a -> Doc
-printSemiAnno addSemi (Annoted i _ las ras) =
+printSemiAnno :: (a -> Doc) -> Bool -> Annoted a -> Doc
+printSemiAnno pp addSemi (Annoted i _ las ras) =
     let r = splitAndPrintRAnnos
-            ((if addSemi then (<> semi) else id) $ pretty i) ras
+            ((if addSemi then (<> semi) else id) $ pp i) ras
     in if null las then r else space $+$ printAnnotationList las $+$ r
 
 -- | print annoted items with trailing semicolons except for the last item
-semiAnnos :: Pretty a => [Annoted a] -> Doc
-semiAnnos l = if null l then empty else
-           vcat $ map (printSemiAnno True) (init l)
-                ++ [printSemiAnno False $ last l]
+semiAnnos :: (a -> Doc) -> [Annoted a] -> Doc
+semiAnnos pp l = if null l then empty else
+           vcat $ map (printSemiAnno pp True) (init l)
+                ++ [printSemiAnno pp False $ last l]
 
 instance (Pretty a) => Pretty (Annoted a) where
-    pretty = printSemiAnno False
+    pretty = printSemiAnno pretty False
 
 instance Pretty s => Pretty (Named s) where
     pretty = pretty . sentence
 -- other stuff must be printed logic dependent
 
 -- | print sentence with label and non-axioms with implied annotation
-printLabelledSen :: Pretty s => Named s -> Doc
-printLabelledSen s@NamedSen{senName = label} =
+printLabelledSen :: (s -> Doc) -> Named s -> Doc
+printLabelledSen pp s = let label = senName s in
     (if isAxiom s then id else
         (<+> annoDoc (Semantic_anno SA_implied nullRange)))
     $ (if null label then id else
            (<+> annoDoc (Label [label] nullRange)))
-          $ space <> bullet <+> pretty s
+          $ pp $ sentence s
 
 -- | function to split the annotation to the right of an item
 -- * fst contains printed label and implied annotion

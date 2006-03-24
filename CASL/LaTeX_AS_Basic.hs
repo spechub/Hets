@@ -19,14 +19,12 @@ import CASL.AS_Basic_CASL
 import CASL.Print_AS_Basic
 import CASL.ToDoc
 import qualified Common.Doc as Doc
-import Common.Id
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.LaTeX_AS_Annotation
 import Common.Keywords
 import Common.Lib.Pretty (Doc, empty, (<>), ($$), ($+$), fcat, vcat)
-import Common.PrintLaTeX (PrintLaTeX(..), printDisplayToken_latex
-                         , renderInternalLatex)
+import Common.PrintLaTeX (PrintLaTeX(..))
 import Common.LaTeX_utils
 import Common.PPUtils (pluralS)
 
@@ -123,21 +121,7 @@ instance PrintLaTeX f => PrintLaTeX (OP_ITEM f) where
                    , printLatex0 ga term]
 
 instance PrintLaTeX OP_TYPE where
-    printLatex0 ga (Op_type Total l s _) =
-        let (arg_types,type_arr) = if null l then (empty,empty)
-                                   else (space_latex <>
-                                         crossT_latex ga l,
-                                         rightArrow)
-            result_type = printLatex0 ga s
-        in if null l then result_type
-           else fsep_latex [arg_types, type_arr <\+> result_type]
-
-    printLatex0 ga (Op_type Partial l s _) =
-        (if null l then hc_sty_axiom quMark
-         else space_latex
-              <> crossT_latex ga l
-               <\+> pfun_latex)
-        <\+> printLatex0 ga s
+    printLatex0 = toLatex
 
 optLatexQuMark :: FunKind -> Doc
 optLatexQuMark Partial = hc_sty_axiom quMark
@@ -171,8 +155,7 @@ instance PrintLaTeX f => PrintLaTeX (PRED_ITEM f) where
                    printLatex0 ga f]
 
 instance PrintLaTeX PRED_TYPE where
-    printLatex0 _ (Pred_type [] _) = parens_latex empty
-    printLatex0 ga (Pred_type l _) = crossT_latex ga l
+    printLatex0 = toLatex
 
 instance PrintLaTeX PRED_HEAD where
     printLatex0 ga (Pred_head l _) =
@@ -199,70 +182,25 @@ instance PrintLaTeX COMPONENTS where
     printLatex0 ga (Sort s) = printLatex0 ga s
 
 instance PrintLaTeX VAR_DECL where
-    printLatex0 ga (Var_decl l s _) = commaT_latex ga l
-                                <> colon_latex
-                                <\+> printLatex0 ga s
+    printLatex0 = toLatex
 
 instance PrintLaTeX f => PrintLaTeX (FORMULA f) where
-    printLatex0 ga = Doc.toLatex ga . printFormula
-        (Doc.literalDoc . renderInternalLatex . printLatex0 ga)
+    printLatex0 ga = Doc.toLatex ga . printFormula (fromLatex ga)
 
-instance PrintLaTeX QUANTIFIER where
-    printLatex0 _ Universal = forall_latex
-    printLatex0 _ Existential = exists_latex
-    printLatex0 _ Unique_existential = unique_latex
+fromLatex :: PrintLaTeX a => GlobalAnnos -> a -> Doc.Doc
+fromLatex ga = Doc.literalDoc . printLatex0 ga
+
+toLatex :: Doc.Pretty a => GlobalAnnos -> a -> Doc
+toLatex ga = Doc.toLatex ga . Doc.pretty
 
 instance PrintLaTeX PRED_SYMB where
-    printLatex0 ga (Pred_name n) = printLatex0 ga n
-    printLatex0 ga (Qual_pred_name n t _) =
-        parens_latex $ hc_sty_id predS
-                         <\+> printLatex0 ga n
-                         <\+> colon_latex <\+> printLatex0 ga t
+    printLatex0 = toLatex
 
 instance PrintLaTeX f => PrintLaTeX (TERM f) where
-    printLatex0 ga (Simple_id i) = printLatex0 ga i
-    printLatex0 ga (Qual_var n t _) = -- HERE
-        parens_latex $ hc_sty_id varS
-                         <\+> printLatex0 ga n
-                         <\+> colon_latex <\+> printLatex0 ga t
-    printLatex0 ga (Application o l _) =
-        let (o_id,isQual) =
-                case o of
-                       Op_name i          -> (i,False)
-                       Qual_op_name i _ _ -> (i,True)
-            o' = printLatex0 ga o
-        in if isQual then
-             print_prefix_appl_latex ga (parens_latex o') l
-           else
-               print_Literal_latex ga o_id l
-    printLatex0 ga (Sorted_term t s _) =
-        condParensSorted_term parens_latex t (printLatex0 ga t) <>
-        colon_latex <\+> printLatex0 ga s
-    printLatex0 ga (Cast  t s _) =
-        printLatex0 ga t <\+> hc_sty_id asS <\+> printLatex0 ga s
-    printLatex0 ga(Conditional u f v _) =
-        fsep_latex [printLatex0 ga u, hc_sty_id whenS, printLatex0 ga f,
-                    hc_sty_id elseS, printLatex0 ga v]
-    printLatex0 _ (Unparsed_term _ _) = error "Unparsed_term"
-    printLatex0 ga (Mixfix_qual_pred p) = printLatex0 ga p
-    printLatex0 ga (Mixfix_term l) = listSep_latex space_latex ga l
-    printLatex0 ga (Mixfix_token t) = printLatex0 ga t
-    printLatex0 ga (Mixfix_sorted_term s _) = colon_latex
-                                             <> printLatex0 ga s
-    printLatex0 ga (Mixfix_cast s _) = hc_sty_id asS
-                                     <\+> printLatex0 ga s
-    printLatex0 ga (Mixfix_parenthesized l _) =
-        parens_tab_latex (commaT_latex ga l)
-    printLatex0 ga (Mixfix_bracketed l _) =
-        brackets_latex (commaT_latex ga l)
-    printLatex0 ga (Mixfix_braced l _) =
-        sp_braces_latex2 (commaT_latex ga l)
+    printLatex0 ga = Doc.toLatex ga . printTerm (fromLatex ga)
 
 instance PrintLaTeX OP_SYMB where
-    printLatex0 ga (Op_name o) = printLatex0 ga o
-    printLatex0 ga (Qual_op_name o t _) =
-          hc_sty_id opS
-           <\+> printLatex0 ga o <\+> colon_latex <> printLatex0 ga t
+    printLatex0 = toLatex
 
 instance PrintLaTeX SYMB_ITEMS where
     printLatex0 ga (Symb_items k l _) =
@@ -295,19 +233,6 @@ print_kind_latex k l =
     case k of
     Implicit -> empty
     _        -> hc_sty_plain_keyword $ pluralS_symb_list k l
-
-print_prefix_appl_latex :: PrintLaTeX f => GlobalAnnos -> Doc -> [TERM f]
-                        -> Doc
-print_prefix_appl_latex ga =
-    print_prefix_appl (printLatex0 ga) parens_tab_latex fsep_latex comma_latex
-
-print_Literal_latex :: PrintLaTeX f => GlobalAnnos -> Id -> [TERM f] -> Doc
-print_Literal_latex ga =
-    print_Literal (printLatex0 ga) (printLatex0 ga) (printLatex0 ga)
-                  parens_tab_latex
-                  (<\+>) fsep_latex comma_latex
-                  (Just $ printDisplayToken_latex casl_axiom_latex)
-                  (Just DF_LATEX) ga
 
 hc_sty_sig_item_keyword :: GlobalAnnos -> String -> Doc
 hc_sty_sig_item_keyword ga str =

@@ -14,7 +14,7 @@ module CASL.ToDoc where
 
 import Common.Id
 import Common.Keywords
-import Common.Doc as Doc
+import Common.Doc
 
 import CASL.AS_Basic_CASL
 import CASL.Fold
@@ -148,8 +148,11 @@ printFormula mf = foldFormula $ printRecord mf
 instance Pretty f => Pretty (FORMULA f) where
     pretty = printFormula pretty
 
+printTerm :: (f -> Doc) -> TERM f -> Doc
+printTerm mf = foldTerm $ printRecord mf
+
 instance Pretty f => Pretty (TERM f) where
-    pretty = foldTerm $ printRecord pretty
+    pretty = printTerm pretty
 
 mkSimpleDoc :: TERM f -> Doc -> Doc
 mkSimpleDoc t = if isSimpleTerm t then id else parens
