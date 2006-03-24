@@ -17,7 +17,6 @@ module CASL.Print_AS_Basic where
 import Common.Id
 import Common.AS_Annotation
 import Common.GlobalAnnotations
-import Common.ConvertLiteral
 import Common.Print_AS_Annotation
 import Common.Keywords
 import Common.Lib.Pretty
@@ -26,10 +25,7 @@ import Common.PPUtils
 import qualified Common.Doc as Doc
 
 import CASL.AS_Basic_CASL
-import CASL.LiteralFuns
 import qualified CASL.ToDoc as ToDoc
-
-import Data.List (mapAccumL)
 
 instance (PrettyPrint b, PrettyPrint s, PrettyPrint f) =>
     PrettyPrint (BASIC_SPEC b s f) where
@@ -63,17 +59,9 @@ printFormulaAux ga f =
   vcat $ map (printAnnotedFormula_Text0 ga True) f
 
 printAnnotedFormula_Text0 :: PrettyPrint f =>
-                             GlobalAnnos -> Bool ->  Annoted (FORMULA f) -> Doc
-printAnnotedFormula_Text0 ga withDot (Annoted i _ las ras) =
-        let i'   = -- trace (show i) $
-                 (if withDot then (char '.' <+>) else id) $
-                 printFORMULA ga i
-            las' = if null las then empty else
-                       text "" $+$ printAnnotationList_Text0 ga las
-            (la,ras') = splitAndPrintRAnnos printText0
-                                    printAnnotationList_Text0
-                                    (<+>) id empty ga ras
-        in las' $+$ (hang i' 0 la) $$ ras'
+                             GlobalAnnos -> Bool -> Annoted (FORMULA f) -> Doc
+printAnnotedFormula_Text0 ga withDot = Doc.toText ga . Doc.printAnnoted 
+           ((if withDot then (Doc.bullet Doc.<+>) else id) . fromText ga)
 
 instance (PrettyPrint s, PrettyPrint f) =>
          PrettyPrint (SIG_ITEMS s f) where
@@ -99,7 +87,6 @@ instance PrettyPrint f =>
                          4 (char '.' <+> printFORMULA ga (item f)))
     printText0 ga (Iso_decl l _) =
         fsep $ punctuate  (space <>text equalS) $ map (printText0 ga) l
-
 
 instance PrettyPrint f => PrettyPrint (OP_ITEM f) where
     printText0 ga (Op_decl l t a _) =
@@ -179,9 +166,6 @@ instance PrettyPrint COMPONENTS where
                                 <> printText0 ga s
     printText0 ga (Sort s) = printText0 ga s
 
-fromText :: PrettyPrint a => GlobalAnnos -> a -> Doc.Doc
-fromText ga = Doc.literalDoc . printText0 ga
-
 toText :: Doc.Pretty a => GlobalAnnos -> a -> Doc
 toText ga = Doc.toText ga . Doc.pretty
 
@@ -190,6 +174,13 @@ instance PrettyPrint VAR_DECL where
 
 printFORMULA :: PrettyPrint f => GlobalAnnos -> FORMULA f -> Doc
 printFORMULA ga = Doc.toText ga . ToDoc.printFormula (fromText ga)
+
+printTheoryFormula :: PrettyPrint f => GlobalAnnos -> Named (FORMULA f) -> Doc
+printTheoryFormula ga f = printAnnotedFormula_Text0 ga
+    (case sentence f of
+    Quantification Universal _ _ _ -> False
+    Sort_gen_ax _ _ -> False
+    _ -> True) $ Doc.fromLabelledSen f 
 
 instance PrettyPrint f => PrettyPrint (FORMULA f) where
     printText0 = printFORMULA
@@ -240,350 +231,6 @@ instance PrettyPrint SYMB_OR_MAP where
     printText0 ga (Symb s) = printText0 ga s
     printText0 ga (Symb_map s t _) =
         printText0 ga s <+> text mapsTo <+> printText0 ga t
-
----- helpers ----------------------------------------------------------------
-
-condPrint_Mixfix :: (Token -> Doc)
-                 -> (Id -> Doc)
-                 -> (TERM f -> Doc)
-                 -> (Doc -> Doc)    -- ^ a function that surrounds
-                                    -- the given Doc with appropiate
-                                    -- parens
-                 -> (Doc -> Doc -> Doc) -- ^ a beside with space
-                                        -- like <+> or <\+>
-                 -> ([Doc] -> Doc)    -- ^ a list concat with space and
-                                      -- fill the line policy  like
-                                      -- fsep or fsep_latex
-                 -> Doc -- comma doc
-                 -> Maybe (Token -> Doc) -- ^ this function should be
-                                         -- given to print a Token in a
-                                         -- special way
-                 -> (Maybe Display_format)
-                 ->  GlobalAnnos -> Id -> [TERM f] -> Doc
-condPrint_Mixfix pTok pId pTrm parens_fun
-                 beside_fun fsep_fun comma_doc mpt_fun mdf
-                 ga i l =
-    if isMixfix dispId
-    then
-       if placeCount dispId == length l
-       then
-          print_mixfix_appl pTok pId pTrm parens_fun
-                            beside_fun fsep_fun mpt_fun
-                            (not $ null dispToks) ga dispId l
-       else
-          print_prefix_appl pTrm parens_fun fsep_fun comma_doc o' l
-    else print_prefix_appl pTrm parens_fun fsep_fun comma_doc (pId i) l
-    where o' = if null dispToks then pId i else dispIdDoc
-          dispIdDoc =
-              fsep_fun $ (maybe (map pTok) (\f -> map f) (mpt_fun)) dispToks
-          dispToks = maybe [] (\x -> maybe [] id (lookupDisplay ga x i)) mdf
-             -- null if no display entry is available
-          dispId = if null dispToks then i else Id dispToks [] nullRange
-{- TODO: consider string-, number-, list- and floating-annotations -}
-
--- |
--- isMixfixTerm checks the 'TERM' f for Mixfix_*,
--- but performs no recusive lookup
-isMixfixTerm :: TERM f -> Bool
-isMixfixTerm term =
-    case term of
-    Simple_id _ -> False -- error "CASL.Utils.isMixfixTerm"
-    Qual_var _ _ _ -> False
-    Application _ _ _ -> False
-    Sorted_term _ _ _  -> False
-    Cast _ _ _ -> False
-    Conditional _ _ _ _ -> False
-    Unparsed_term s _ ->
-        error $ "CASL.Utils.isMixfixTerm: should not occur: " ++ s
-    _ -> True
-
-condPrint_Mixfix_text :: PrettyPrint f => GlobalAnnos -> Id -> [TERM f] -> Doc
-condPrint_Mixfix_text ga =
-    condPrint_Mixfix (printText0 ga) (printText0 ga)
-                  (printText0 ga) parens
-                     (<+>) fsep comma Nothing Nothing ga
-
--- printing consitent mixfix application or predication
-{- TODO: consider string-, number-, list- and floating-annotations -}
-print_mixfix_appl :: (Token -> Doc)  -- ^ print a Token
-                  -> (Id -> Doc)     -- ^ print an Id
-                  -> (TERM f -> Doc)   -- ^ print TERM recursively
-                  -> (Doc -> Doc)   -- ^ a function that surrounds
-                                     -- the given Doc with appropiate
-                                     -- parens
-                  -> (Doc -> Doc -> Doc)    -- ^ a beside with space
-                                            -- like <+> or <\+>
-                  -> ([Doc] -> Doc)    -- ^ a list concat with space and
-                                       -- fill the line policy  like
-                                       -- fsep or fsep_latex
-                  -> Maybe (Token -> Doc) -- ^ this function should be
-                                          -- given to print a Token in a
-                                          -- special way if Nothing is given
-                                          -- pf is used
-                  -> Bool -- ^ True if a display_annotation
-                          -- has generated this Id
-                  -> GlobalAnnos -> Id -> [TERM f] -> Doc
-print_mixfix_appl pTok pId pTrm parens_fun
-                  beside_fun fsep_fun
-                  mpt_fun isDisplayAnnoModi
-                  ga oid terms =
-                      d_terms_b_comp <> c `beside_fun` d_terms_a_comp
-    where (tops,cs) = case oid of Id x1 x2 _ -> (x1,x2)
-          c = if null cs then text "" -- an empty String works for ASCII
-                                      -- and LaTeX ensuring a space after
-                                      -- the last token of the identifier
-                                      -- if the compound is empty
-              else pId (Id [] cs nullRange)
-          (tps_b_comp,places) = splitMixToken tops
-          nr_places = length $ filter isPlace tps_b_comp
-          (terms_b_comp,terms_a_comp) = splitAt nr_places terms
-          d_terms_b_comp = fsep_fun (first_term
-                                     : fillIn tps_b_comp' terms_b_comp')
-          d_terms_a_comp = fsep_fun (fillIn places' terms_a_comp'
-                                     ++ [last_term])
-          -- tps_b_comp' :: [Token]
-          -- terms_b_comp' :: PrettyPrint f => [TERM f]
-          -- first_term  :: Doc
-          (tps_b_comp',terms_b_comp',first_term) =
-              if null tps_b_comp then -- invisible Id
-                ([], terms_b_comp, empty)
-              else if (isPlace $ head tps_b_comp)
-              then
-                 (tail tps_b_comp,
-                  tail terms_b_comp,
-                  condParensAppl pTrm parens_fun
-                                 ga oid (head terms_b_comp)
-                                 (Just ALeft))
-              else
-                 (tps_b_comp,terms_b_comp,empty)
-          (places',terms_a_comp',last_term) =
-              if (not $ null places)
-              then
-                 (init places,init terms_a_comp,
-                  condParensAppl pTrm parens_fun
-                                 ga oid (last terms_a_comp)
-                                 (Just ARight))
-              else
-                 (places,terms_a_comp,empty)
-          -- fillIn :: PrettyPrint f => [Token] -> [TERM f] -> [Doc]
-          fillIn tps ts = if isDisplayAnnoModi
-                          then {- WARNING HACK!! -}
-                               -- trace "Dangerous hack!!" $
-                                      fillPlaces oid pf' pTrm tps ts
-                          else let (_,nl) = mapAccumL pr ts tps in nl
-          -- pr :: PrettyPrint f => [TERM f] -> Token -> ([TERM f],Doc)
-          pr [] top = ([], pf' top)
-          pr tS@(t:ts) top
-              | isPlace top = (ts, pTrm t)
-              | otherwise   = (tS,pf' top)
-          pf' = maybe pTok
-                      (\ f -> if isDisplayAnnoModi
-                              then f
-                              else pTok)
-                      mpt_fun
-
-{- | fillPlaces fills pretty printed Terms into the places;
-   but it also considers if tokens end with any paren, in this case it
-   searches for a closing paren of the same kind and prints the term within
-   these parens
--}
-fillPlaces :: Id -- ^ original id for the error message
-           -> (Token -> Doc) -- ^ for printing tokens and places
-           -> (TERM f -> Doc) -- ^ for printing a term
-           -> [Token] -- ^ tokens and places of this application
-           -> [TERM f] -- ^ terms to fill in to the places
-           -> [Doc]
-fillPlaces oid tpf pTrm tps ts = fillPlaces' True oid tpf pTrm tps ts
-
--- printing consistent prefix application and predication
-print_prefix_appl :: (TERM f -> Doc)   -- ^ print TERM recursively
-                  -> (Doc -> Doc)    -- ^ a function that surrounds
-                                     -- the given Doc with appropiate
-                                     -- parens
-                  -> ([Doc] -> Doc)    -- ^ a list concat without space and
-                                   -- fill the line policy  like
-                                   -- fsep or fsep_latex
-                  -> Doc -- ^ comma
-                  -> Doc -> [TERM f] -> Doc
-print_prefix_appl pTrm parens_fun fsep_fun comma_doc po' l = po' <>
-            (if null l then empty
-             else parens_fun $ fsep_fun $ punctuate comma_doc $ map pTrm l)
-
-print_prefix_appl_text :: PrettyPrint f => GlobalAnnos -> Doc -> [TERM f] -> Doc
-print_prefix_appl_text ga =
-    print_prefix_appl (printText0 ga) parens fsep comma
-
-print_Literal :: (Token -> Doc)  -- ^ print a Token
-              -> (Id -> Doc)     -- ^ print an Id
-              -> (TERM f -> Doc)   -- ^ print TERM recursively
-              -> (Doc -> Doc)    -- ^ a function that surrounds
-                                 -- the given Doc with appropiate
-                                 -- parens
-              -> (Doc -> Doc -> Doc)    -- ^ a beside with space
-                                        -- like <+> or <\+>
-              -> ([Doc] -> Doc)    -- ^ a list concat without space and
-                                   -- fill the line policy  like
-                                   -- fsep or fsep_latex
-              -> Doc   -- ^ a comma
-              -> Maybe (Token -> Doc) -- ^ this function should be
-                                      -- given to print a Token in a
-                                      -- special way
-              -> (Maybe Display_format)
-              -> GlobalAnnos -> Id -> [TERM f] -> Doc
-print_Literal pTok pId pTrm parens_fun
-              beside_fun fsep_fun comma_doc mpt_fun mdf
-              ga i ts =
-    if isList ga i ts then
-       let mkList op l cl = pId op <+>
-               fsep_fun (punctuate comma_doc $ map pTrm l)
-               <+> pId cl
-       in toMixfixList mkList splitAppl ga i ts
-    else if isNumber ga i ts then
-         pTok $ toNumber splitAppl i ts
-    else if isFrac ga i ts then
-         pTok $ toFrac splitAppl ts
-    else if isFloat ga i ts then
-         pTok $ toFloat splitAppl ga ts
-    else if isString ga i ts then
-        pTok $ toString splitAppl ga i ts
-    else condPrint_Mixfix pTok pId pTrm parens_fun
-              beside_fun fsep_fun comma_doc mpt_fun mdf ga i ts
-
-print_Literal_text :: PrettyPrint f => GlobalAnnos -> Id -> [TERM f] -> Doc
-print_Literal_text ga = print_Literal (printText0 ga) (printText0 ga)
-    (printText0 ga) parens (<+>) fsep comma Nothing Nothing ga
-
-condParensAppl :: (TERM f -> Doc)
-               -> (Doc -> Doc)    -- ^ a function that surrounds
-                                  -- the given Doc with appropiate
-                                  -- parens
-               -> GlobalAnnos -> Id -> TERM f -> Maybe AssocEither -> Doc
-condParensAppl pf parens_fun ga o_i t mdir =
-    case t of
-    Simple_id _ -> t'
-    Application _ [] _ -> t'
-    Application o it _
-        | isLiteral ga i_i it -> t'
-        -- ordinary appl (no place)
-        | isOrdAppl i_i -> t'
-        -- postfix appl
-        | isOrdAppl o_i && isPostfix i_i -> t'
-        -- prefix appl w/o parens
-        | isOrdAppl o_i && isPrefix  i_i -> t'
-        -- both mixfix and in <> prec relation so parens
-        | isMixfix o_i && isMixfix i_i
-          && explicitGrouping o_i i_i    -> parens_fun t'
-        | isPostfix o_i && isPrefix  i_i -> parens_fun t'
-        | isPrefix  o_i && isPostfix i_i -> t'
-        | isPrefix  o_i && isInfix   i_i -> parens_fun t'
-        | isInfix   o_i && isPrefix  i_i -> t'
-        | isInfix   o_i && isPostfix i_i -> t'
-        -- infix appl (left and right arg/place)
-        |    (isInfix i_i && isSurround o_i)
-          || (isInfix o_i && isSurround i_i) -> t'
-        | isInfix i_i && o_i == i_i ->
-            case mdir of
-                      Nothing -> condParensPrec
-                      Just ass | isAssoc ass amap o_i -> t'
-                               | otherwise -> parens_fun t'
-        | otherwise -> condParensPrec
-        where i_i = op_id o
-              condParensPrec = case precRel (prec_annos ga) o_i i_i of
-                               Lower -> t'
-                               _     -> parens_fun t'
-              amap = assoc_annos ga
-              explicitGrouping :: Id -> Id -> Bool
-              explicitGrouping i1 i2 =
-                  case precRel (prec_annos ga) i1 i2 of
-                  BothDirections -> True
-                  _              -> False
-    Sorted_term _ _ _ -> t'
-    Cast _ _ _ -> t'
-    _ -> parens_fun t'
-    where t' = pf t
-
-condParensSorted_term :: (Doc -> Doc)
-                         -- ^ a function that surrounds
-                         -- the given Doc with appropiate
-                         -- parens
-                      -> TERM f -> Doc -> Doc
-condParensSorted_term  parens_fun t =
-    case t of
-    Application osy l _
-        | null l     -> id
-        | isQualOpSy osy -> id
-        | not (isMixfix (op_id osy)) -> id
-        | otherwise -> parens_fun
-    _
-        | isMixfixTerm t -> parens_fun
-        | otherwise      -> id
-
-is_atomic_FORMULA :: FORMULA f -> Bool
-is_atomic_FORMULA f =
-    case f of
-           True_atom _  -> True
-           False_atom _ -> True
-           Predication _ _ _ -> True
-           Existl_equation _ _ _ -> True
-           Definedness _ _ -> True
-           Strong_equation _ _ _ -> True
-           Membership _ _ _ -> True
-           _ -> False
-
-condParensNeg :: FORMULA f -> (Doc -> Doc) -> Doc -> Doc
-condParensNeg f parens_fun =
-    if is_atomic_FORMULA f then id else parens_fun
-
-
-condParensXjunction :: (GlobalAnnos -> FORMULA f -> Doc)
-                    -> (Doc -> Doc)    -- ^ a function that surrounds
-                                       -- the given Doc with appropiate
-                                       -- parens
-                    -> GlobalAnnos -> FORMULA f -> Doc
-condParensXjunction pf parens_fun ga x =
-    case x of
-           Negation _ _ -> x'
-           ExtFORMULA _ -> x'
-           _ | is_atomic_FORMULA x -> x'
-             | otherwise -> parens_fun x'
-    where x' = pf ga x
-
-
-condParensImplEquiv :: (GlobalAnnos -> FORMULA f -> Doc)
-                    -> (Doc -> Doc)    -- ^ a function that surrounds
-                                       -- the given Doc with appropiate
-                                       -- parens
-                    -> GlobalAnnos -> FORMULA f
-                    -> FORMULA f
-                    -> Bool -- ^ True if second FORMULA f arg is
-                            -- right of the connective in the first
-                            -- FORMULA f arg
-                    -> Doc
-condParensImplEquiv pf parens_fun ga e_i f isRight =
-    case e_i of
-    Implication _ _ isArrow1 _ ->
-        case f of
-        Implication _ _ isArrow2 _
-            | isArrow1 == isArrow2 -> f'
-            | otherwise -> parens_fun f'
-        Quantification _ _ _ _
-            | isRight   -> f'
-            | otherwise -> parens_fun f'
-        _ | has_higher_prec f -> f'
-          | otherwise -> parens_fun f'
-    Equivalence _ _ _   ->
-        case f of
-        _ | has_higher_prec f -> f'
-          | otherwise -> parens_fun f'
-    _ ->  error "Wrong call: condParensImplEquiv"
-    where f' = pf ga f
-          has_higher_prec ff =
-              case ff of
-              Negation _ _ -> True
-              ExtFORMULA _ -> True
-              Disjunction _ _ -> True
-              Conjunction _ _ -> True
-              _ -> is_atomic_FORMULA ff
 
 ---- instances of ListCheck for various data types of AS_Basic_CASL ---
 

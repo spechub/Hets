@@ -97,7 +97,9 @@ module Common.Doc
       -- * annotation utilities
     , printAnnotationList
     , splitAndPrintRAnnos
-    , printLabelledSen
+    , fromLabelledSen
+    , printAnnoted
+    , printSemiAnno
     , semiAnnos
     ) where
 
@@ -390,7 +392,7 @@ toText ga = foldDoc anyRecord
           Fill -> Pretty.fcat
     , foldAttr = \ _ k d -> case k of
           FlushRight -> let l = length $ show d in
-            if l < 80 then Pretty.nest (80 - l) d else d
+            if l < 66 then Pretty.nest (66 - l) d else d
           _ -> d
     , foldIndentBy = \ _ d1 d2 d3 ->
           d2 Pretty.$$ Pretty.nest (length $ show d1) d3
@@ -453,9 +455,9 @@ toLatexRecord tab = anyRecord
 makeSmallMath :: Bool -> Bool -> Doc -> Doc
 makeSmallMath smll math = let rec = makeSmallMath smll math in
     foldDoc idRecord
-    { foldAttr = \ _ k d -> makeSmallMath (case k of
-                       Small -> True
-                       _ -> smll ) math d
+    { foldAttr = \ (Attr k d) _ _ -> case k of
+                       Small -> makeSmallMath True math d
+                       _ -> Attr k $ makeSmallMath smll math d
     , foldCat = \ o@(Cat c l) _ _ ->
                     if any isNative l then
                         (if smll then Attr Small else id)
@@ -528,7 +530,7 @@ symbolToLatex s = Map.findWithDefault (hc_sty_axiom
                                        $ escape_latex s) s latexSymbols
 
 textToLatex :: Bool -> TextKind -> String -> Pretty.Doc
-textToLatex b k s = let e = escape_comment_latex s in
+textToLatex b k s = let e = escape_latex s in
         if elem s $ map (: []) ",;[]() "
         then makeSmallLatex b $ casl_normal_latex s
         else case k of
@@ -536,7 +538,7 @@ textToLatex b k s = let e = escape_comment_latex s in
     IdSymb -> makeSmallLatex b $ hc_sty_axiom e
     Symbol -> makeSmallLatex b $ symbolToLatex s
     Comment -> (if b then makeSmallLatex b . casl_comment_latex
-               else casl_normal_latex) e
+               else casl_normal_latex) $ escape_comment_latex s
                -- multiple spaces should be replaced by \hspace
     Keyword -> (if b then makeSmallLatex b . hc_sty_small_keyword
                 else hc_sty_plain_keyword) e
@@ -557,6 +559,7 @@ latexSymbols = Map.fromList
     , (lambdaS, hc_sty_axiom "\\lambda")
     , (mapsTo, mapsto_latex)
     , (funS, rightArrow)
+    , (pFun, hc_sty_axiom "\\rightarrow?")
     , (contFun, cfun_latex)
     , (pContFun, pcfun_latex)
     , (exEqual, exequal_latex)
@@ -798,35 +801,36 @@ splitAndPrintRAnnos :: Doc -> [Annotation] -> Doc
 splitAndPrintRAnnos i ras =
     let (r, s) = splitRAnnos ras
     in (if null s then id else ($+$ printAnnotationList s))
-       $ if null r then i else fcat [i, printTrailer r]
+       $ if null r then i else fsep [i, printTrailer r]
 
 printSemiAnno :: (a -> Doc) -> Bool -> Annoted a -> Doc
 printSemiAnno pp addSemi (Annoted i _ las ras) =
     let r = splitAndPrintRAnnos
             ((if addSemi then (<> semi) else id) $ pp i) ras
-    in if null las then r else space $+$ printAnnotationList las $+$ r
+    in if null las then r else text "" $+$ printAnnotationList las $+$ r
 
 -- | print annoted items with trailing semicolons except for the last item
 semiAnnos :: (a -> Doc) -> [Annoted a] -> Doc
 semiAnnos pp l = if null l then empty else
            vcat $ map (printSemiAnno pp True) (init l)
-                ++ [printSemiAnno pp False $ last l]
-
-instance (Pretty a) => Pretty (Annoted a) where
-    pretty = printSemiAnno pretty False
-
-instance Pretty s => Pretty (Named s) where
-    pretty = pretty . sentence
--- other stuff must be printed logic dependent
+                ++ [printAnnoted pp $ last l]
 
 -- | print sentence with label and non-axioms with implied annotation
-printLabelledSen :: (s -> Doc) -> Named s -> Doc
-printLabelledSen pp s = let label = senName s in
-    (if isAxiom s then id else
-        (<+> annoDoc (Semantic_anno SA_implied nullRange)))
-    $ (if null label then id else
-           (<+> annoDoc (Label [label] nullRange)))
-          $ pp $ sentence s
+printAnnoted :: (a -> Doc) -> Annoted a -> Doc
+printAnnoted pp = printSemiAnno pp False
+
+instance (Pretty a) => Pretty (Annoted a) where
+    pretty = printAnnoted pretty
+
+-- | convert a named sentence into an annoted one
+fromLabelledSen :: Named s -> Annoted s
+fromLabelledSen s = let label = senName s in
+    appendAnno (emptyAnno $ sentence s) $ 
+    (if null label then [] else [Label [label] nullRange])
+    ++ if isAxiom s then [] else [Semantic_anno SA_implied nullRange]
+
+instance Pretty s => Pretty (Named s) where
+    pretty = pretty . fromLabelledSen
 
 -- | function to split the annotation to the right of an item
 -- * fst contains printed label and implied annotion

@@ -11,6 +11,7 @@ ops __+__, __*__ : Nat * Nat -> Nat;
     __-?__ : Nat * Nat ->? Nat;
     __/?__ : Nat * Nat ->? Nat;
     __div__, __mod__, __quot__, __rem__ : Nat * Nat ->? Nat; %()%
+    
     %%   Operations to represent natural numbers with digits:
     1, 2, 3, 4, 5, 6, 7, 8, 9 : Nat;
     __@@__ : Nat * Nat -> Nat
@@ -39,10 +40,10 @@ forall m, n, r, s: Nat
 . m -? n = r <=> m = r + n %(Nat_sub_def)%
 . not def m /? 0 %(Nat_divide_0)%
 . (m /? n = r <=> m = r * n) if n > 0 %(Nat_divide_Pos)%
-. m div n = r <=> (exists s: Nat . m = n * r + s /\ s < n)
-%(Nat_div)%
-. m mod n = s <=> (exists r: Nat . m = n * r + s /\ s < n)
-%(Nat_mod)%
+. m div n = r <=> (exists s: Nat . m = n * r + s /\ s < n) 
+                                                       %(Nat_div)%
+. m mod n = s <=> (exists r: Nat . m = n * r + s /\ s < n) 
+                                                       %(Nat_mod)%
 . m quot n = m div n %(Nat_quot)%
 . m rem n = m mod n %(Nat_rem)%
 . 1 = suc(0) %(Nat_1_def)%
@@ -97,12 +98,12 @@ ops 0, 1 : Int;
     __mod__ : Int * Int ->? Nat
 forall m, n, r, s: Int; a, b, c, d: Nat
 . (a - b) + (c - d) = (a + c) - (b + d) %(Int_add_def)%
-. (a - b) * (c - d) = (a * c + b * d) - (b * c + a * d)
-%(Int_mult_def)%
+. (a - b) * (c - d) = (a * c + b * d) - (b * c + a * d) 
+                                                  %(Int_mult_def)%
 . m - n = m + - n %(Int_sub_def)%
 . + m = m %(Int_pos_def)%
-. sign(m) = 0 when m = 0 else 1 when m > 0 else - 1
-%(Int_sign_def)%
+. sign(m) = 0 when m = 0 else 1 when m > 0 else - 1 
+                                                  %(Int_sign_def)%
 . m <= n <=> n - m in Nat %(Int_leq_def)%
 . m >= n <=> n <= m %(Int_geq_def)%
 . m < n <=> m <= n /\ not m = n %(Int_less_def)%
@@ -119,8 +120,8 @@ forall m, n, r, s: Int; a, b, c, d: Nat
 . m = (m div n) * n + (m mod n) if not n = 0 %(Int_mod__div_def)%
 . not def m mod 0 %(Int_mod_zero)%
 . not def m div 0 %(Int_div_zero)%
-. m quot n = sign(m) * sign(n) * (abs(m) quot abs(n))
-%(Int_quot_def)%
+. m quot n = sign(m) * sign(n) * (abs(m) quot abs(n)) 
+                                                  %(Int_quot_def)%
 . m rem n = sign(m) * sign(n) * (abs(m) rem abs(n)) %(Int_rem_def)%
 
 %% then %implies
@@ -172,8 +173,8 @@ forall p, q: Pos; n: Nat; i, j: Int; x, y, z: Rat
 
 %% then %implies
 forall i, j: Int; p, q: Pos
-. (i / p) / (j / q) = (i / p) * (q / j) if not j = 0
-%(Rat_divide_rule)%
+. (i / p) / (j / q) = (i / p) * (q / j) if not j = 0 
+                                               %(Rat_divide_rule)%
 pred __<__ : a * a
 ops __a : b;
     c : b
@@ -204,7 +205,8 @@ generated
               | c(a)? %(bla1)%}
 
 %(sort)%
-sorts %(after-sort)%
+sorts 
+      %(after-sort)%
       s; %(bla2)%
       t
 
@@ -242,7 +244,7 @@ ops 1, 2, 3, 4 : s;
     - : s -> s;
     __@@__, __exp__, __frac__ : s * s -> s
 . true %(The true formula)%
-. true
+. true 
 %(and this
            also goes
            along several lines! 
@@ -801,14 +803,14 @@ ops ' ': Char = '\032'; %(printable_32)%
     'ÿ': Char = '\255' %(printable_255)%
 preds isLetter(c :Char) <=> (ord('A') <= ord(c) /\ 
                              ord(c) <= ord('Z')) \/ 
-                            (ord('a') <= ord(c) /\ ord(c) <= ord('z'));
-      %(isLetter_def)%
-      isDigit(c :Char) <=> ord('0') <= ord(c) /\ ord(c) <= ord('9');
-      %(isDigit_def)%
+                            (ord('a') <= ord(c) /\ ord(c) <= ord('z')); 
+                                                        %(isLetter_def)%
+      isDigit(c :Char) <=> ord('0') <= ord(c) /\ ord(c) <= ord('9'); 
+                                                         %(isDigit_def)%
       isPrintable(c :Char) <=> (ord(' ') <= ord(c) /\ 
                                 ord(c) <= ord('~')) \/ 
-                               (ord(' ') <= ord(c) /\ ord(c) <= ord('ÿ'))
-      %(isPrintable_def)%
+                               (ord(' ') <= ord(c) /\ ord(c) <= ord('ÿ')) 
+                                                     %(isPrintable_def)%
 
 %% alternative definition of characters as '\o ppp',
 %% where p in {0,1,...,7} :

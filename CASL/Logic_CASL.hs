@@ -23,6 +23,7 @@ import Logic.Logic
 import CASL.AS_Basic_CASL
 import CASL.LaTeX_CASL()
 import CASL.Parse_AS_Basic
+import CASL.Print_AS_Basic
 import CASL.SymbolParser
 import CASL.MapSentence
 import CASL.Amalgamability
@@ -104,8 +105,10 @@ instance Sentences CASL CASLFORMULA () CASLSign CASLMor Symbol where
       sym_of CASL = symOf
       symmap_of CASL = morphismToSymbMap
       sym_name CASL = symName
-      conservativityCheck CASL th mor phis = fmap (fmap fst) (checkFreeType th mor phis)
+      conservativityCheck CASL th mor phis = 
+          fmap (fmap fst) (checkFreeType th mor phis)
       simplify_sen CASL = simplifySen dummyMin dummy
+      print_named CASL = printTheoryFormula
 
 instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA ()
                SYMB_ITEMS SYMB_MAP_ITEMS

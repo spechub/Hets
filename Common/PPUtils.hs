@@ -20,6 +20,7 @@ module Common.PPUtils where
 import Common.Id
 import Common.AS_Annotation
 import Common.GlobalAnnotations
+import qualified Common.Doc as Doc 
 
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
@@ -120,22 +121,8 @@ crossT_text = listSep_text (space<>char '*')
 listSep_text :: PrettyPrint a => Doc -> GlobalAnnos -> [a] -> Doc
 listSep_text separator ga = fsep . punctuate separator . map (printText0 ga)
 
-semiAnno_text :: PrettyPrint a =>
-                 GlobalAnnos -> [Annoted a] -> Doc
-semiAnno_text ga l = if null l then empty else
-                     (vcat $ map (pf' True)
-                      (init l) ++ [pf' False (last l)])
-    where pfga as = vcat $ map (printText0 ga) as
-          pf' printSemi a_item =
-                 pfga (l_annos a_item)
-                        $$ hang (printText0 ga (item a_item)
-                                 <> (if printSemi then semi else empty))
-                               0 laImpl
-                        $$ ras
-              where (laImpl,ras) = splitAndPrintRAnnos printText0
-                                             printAnnotationList_Text0
-                                             (<+>) id empty
-                                             ga (r_annos a_item)
+semiAnno_text :: PrettyPrint a => GlobalAnnos -> [Annoted a] -> Doc
+semiAnno_text ga = Doc.toText ga . Doc.semiAnnos (fromText ga)
 
 {--------------------------------------------------------------------
   Lists
@@ -165,7 +152,6 @@ printListSet ga showBra (x:xs)
     <+> commaT_text ga (x:xs)
     <+> (if showBra then ptext "}" else empty)
 
-
 {--------------------------------------------------------------------
   Maps
 --------------------------------------------------------------------}
@@ -179,73 +165,6 @@ printMap ga (x:xs)
   = ptext "{" <+> (fsep . punctuate comma . map printElem) (x:xs) <+>  ptext "}"
     where
     printElem (k,v)  = printText0 ga k <+> ptext "|->" <+> printText0 ga v
-
-{-
-  detect tokens with opening and closing parens of various kinds for
-  display-annotations.
--}
-hasOParen :: Token -> Bool
-hasOParen t
-    | length s == 1 = last s `elem` "([{"
-    | length s >= 2 = last s `elem` "([{" &&
-                      not (last (init s) == '\\')
-    | otherwise = False
-    where s = tokStr t
-
-hasMatchCParen :: Token -> Token -> Bool
-hasMatchCParen oPt t
-    | not (null s) = case (last oP,head s) of
-                     ('(',')') -> True
-                     ('{','}') -> True
-                     ('[',']') -> True
-                     _         -> False
-    | otherwise = False
-    where s  = tokStr t
-          oP = tokStr oPt
-
-printToks :: Id -- ^ original id for the error message
-          -> (Token -> Doc) -- ^ for printing tokens and places
-          -> [Token] -- ^ tokens and places of this application
-          -> [Doc]
-printToks oid tpf tps =
-    fillPlaces' False oid tpf (sp_text 0) tps
-                (replicate (placeCount oid) "\\textrm{\\_\\_}")
-
-fillPlaces' :: Bool -- ^ True means print Terms; False means print the Place
-            -> Id -- ^ original id for the error message
-            -> (Token -> Doc) -- ^ for printing tokens and places
-            -> (x -> Doc) -- ^ for printing a term
-            -> [Token] -- ^ tokens and places of this application
-            -> [x] -- ^ things to fill in to the places
-            -> [Doc]
-fillPlaces' _ _ tpf _ tps [] = map tpf tps
-fillPlaces' _ _ _ _ [] (_:_) = error "print_mixfix_appl: too many terms"
-fillPlaces' withTerms oid tpf pTrm (top:tps) (t:ts)
-    | hasOParen top &&
-      length tps >= 2 && isPlace (head tps) =
-      case tps of
-      [] -> error "Never happens"
-      [_] -> error "Never happens"
-      (_:top2:tps')
-          | not (null $ tokStr top2) &&
-            hasMatchCParen top top2 ->
-                let oT = tpf top
-                    cT = tpf top2
-                in (sp_text 0 (init $ show oT) <> pTrm t <>
-                   sp_text 0 (drop 4 $ show cT))
-                   : fillPlaces' withTerms oid tpf pTrm tps' ts
-          | null $ tokStr top2 ->
-              error ("print_mixfix_appl: "++
-                     "emtpy token found in id \""++
-                     show oid++"\"")
-          | otherwise -> error ("print_mixfix_appl: "++
-                                "no closing paren found for \""++
-                                show top++"\"")
-    | isPlace top = (if withTerms then pTrm t else tpf top)
-                    : fillPlaces' withTerms oid tpf pTrm tps ts
-    | otherwise = tpf top : fillPlaces' withTerms oid tpf pTrm tps (t:ts)
-
-{- TODO: allow more than one place between the parens-}
 
 {--------------------------------------------------------------------
   Pairs, triples

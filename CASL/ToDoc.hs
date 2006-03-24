@@ -28,10 +28,54 @@ printQuant q = case q of
     Existential -> exists
     Unique_existential -> unique
 
+printSortedVars :: [VAR] -> SORT -> Doc
+printSortedVars l s = 
+    fcat $ (punctuate (comma <> space) $ 
+            map sidDoc l) ++ [ colon, space, idDoc s]
+
 printVarDecl :: VAR_DECL -> Doc
-printVarDecl (Var_decl l s _) =
-      fcat $ (punctuate (comma <> space) $ map sidDoc l)
-           ++ [ colon, space, idDoc s]
+printVarDecl (Var_decl l s _) = printSortedVars l s
+
+printArgDecl :: ARG_DECL -> Doc
+printArgDecl (Arg_decl l s _) = printSortedVars l s
+
+printArgDecls :: [ARG_DECL] -> Doc
+printArgDecls = parens . fsep . punctuate semi . map printArgDecl
+
+printPredHead :: PRED_HEAD -> Doc
+printPredHead (Pred_head l _) = printArgDecls l
+
+printPredItem :: (f -> Doc) -> PRED_ITEM f -> Doc
+printPredItem mf p = case p of
+    Pred_decl l t _ -> fsep $ (punctuate comma $ map idDoc l)
+                       ++ [colon, printPredType t]
+    Pred_defn i h f _ -> 
+        fcat [idDoc i, printPredHead h, space, equiv, space, 
+              printAnnoted (printFormula mf) f] 
+
+printAttr :: (f -> Doc) -> OP_ATTR f -> Doc
+printAttr mf a = case a of
+    Assoc_op_attr -> text assocS
+    Comm_op_attr -> text commS
+    Idem_op_attr -> text idemS
+    Unit_op_attr t -> text unitS <+> printTerm mf t
+
+printOpHead :: OP_HEAD -> Doc
+printOpHead (Op_head k l r _) =
+    fcat [if null l then space else printArgDecls l
+         , case k of
+             Total -> colon
+             Partial -> text ":?"
+         , space, idDoc r]
+
+printOpItem :: (f -> Doc) -> OP_ITEM f -> Doc
+printOpItem mf p = case p of
+    Op_decl l t a _ -> fsep $ (punctuate comma $ map idDoc l)
+        ++ [colon, (if null a then id else (<> comma)) $ printOpType t]
+        ++ punctuate comma (map (printAttr mf) a) 
+    Op_defn i h t _ -> 
+        fcat [idDoc i, printOpHead h, space, equals, space, 
+              printAnnoted (printTerm mf) t] 
 
 instance Pretty VAR_DECL where
     pretty = printVarDecl

@@ -12,6 +12,7 @@ op __+__, __*__ : Nat * Nat -> Nat;
    __-?__ : Nat * Nat ->? Nat;
    __/?__ : Nat * Nat ->? Nat;
    __div__, __mod__, __quot__, __rem__ : Nat * Nat ->? Nat; %()%
+   
    %%   Operations to represent natural numbers with digits:
    1, 2, 3, 4, 5, 6, 7, 8, 9 : Nat;
    __@@__ : Nat * Nat -> Nat
@@ -40,10 +41,10 @@ forall m : Nat; n : Nat; r : Nat; s : Nat
 . m -? n = r <=> m = r + n %(Nat_sub_def)%
 . not def (m /? 0) %(Nat_divide_0)%
 . (m /? n = r <=> m = r * n) if n > 0 %(Nat_divide_Pos)%
-. m div n = r <=> (exists s : Nat . m = n * r + s /\ s < n)
-  %(Nat_div)%
-. m mod n = s <=> (exists r : Nat . m = n * r + s /\ s < n)
-  %(Nat_mod)%
+. m div n = r <=> (exists s : Nat . m = n * r + s /\ s < n) 
+                                                         %(Nat_div)%
+. m mod n = s <=> (exists r : Nat . m = n * r + s /\ s < n) 
+                                                         %(Nat_mod)%
 . m quot n = m div n %(Nat_quot)%
 . m rem n = m mod n %(Nat_rem)%
 . 1 = suc (0) %(Nat_1_def)%
@@ -100,13 +101,13 @@ op 0, 1 : Int;
 forall m : Int; n : Int; r : Int; s : Int; a : Nat; b : Nat;
        c : Nat; d : Nat
 . (a - b) + (c - d) = (a + c) - (b + d) %(Int_add_def)%
-. (a - b) * (c - d) = (a * c + b * d) - (b * c + a * d)
-  %(Int_mult_def)%
+. (a - b) * (c - d) = (a * c + b * d) - (b * c + a * d) 
+                                                    %(Int_mult_def)%
 . m - n = m + (- n) %(Int_sub_def)%
 . + m = m %(Int_pos_def)%
 . - (a - b) = b - a %(Int_neg_def)%
-. sign (m) = 0 when m = 0 else (1 when m > 0 else - 1)
-  %(Int_sign_def)%
+. sign (m) = 0 when m = 0 else (1 when m > 0 else - 1) 
+                                                    %(Int_sign_def)%
 . m <= n <=> n - m in Nat %(Int_leq_def)%
 . m >= n <=> n <= m %(Int_geq_def)%
 . m < n <=> (m <= n /\ not (m = n)) %(Int_less_def)%
@@ -118,18 +119,17 @@ forall m : Int; n : Int; r : Int; s : Int; a : Nat; b : Nat;
 . m ^ a = sign (m) ^ a * abs (m) ^ a %(Int_power_def)%
 . even (m) <=> even (abs (m)) %(Int_even_def)%
 . odd (m) <=> not (even (m)) %(Int_odd_def)%
-. m /? n = sign (m) * sign (n) * (abs (m) /? abs (n))
-  %(Int_divide)%
+. m /? n = sign (m) * sign (n) * (abs (m) /? abs (n)) 
+                                                      %(Int_divide)%
 . m mod n < abs (n) if not n = 0 %(Int_mod_range)%
 . m = (m div n) * n + (m mod n) if not n = 0 %(Int_mod__div_def)%
 . not def m mod 0 %(Int_mod_zero)%
 . not def m div 0 %(Int_div_zero)%
-. m quot n = sign (m) * sign (n) * (abs (m) quot abs (n))
-  %(Int_quot_def)%
+. m quot n = sign (m) * sign (n) * (abs (m) quot abs (n)) 
+                                                    %(Int_quot_def)%
 . m rem n = sign (m) * sign (n) * (abs (m) rem abs (n))
   forall m : Int; n : Int; r : Int; a : Nat; b : Nat
-    . def (a -? b) => a -? b = a - b
-  %(Int_rem_def)%
+    . def (a -? b) => a -? b = a - b                 %(Int_rem_def)%
   %% then %implies
   %(Int_Nat_sub_compat)%
 . m = sign (m) * abs (m) %(Int_abs_decomp)%
@@ -180,12 +180,11 @@ forall p : Pos; q : Pos; n : Nat; i : Int; j : Int; x : Rat;
   when x <= y else
   x
   forall i : Int; j : Int; p : Pos; q : Pos
-    . (i / p) - (j / q) = (i * q - j * p) / (p * q)
-  %(Rat_max_def)%
+    . (i / p) - (j / q) = (i * q - j * p) / (p * q)  %(Rat_max_def)%
   %% then %implies
   %(Rat_sub_rule)%
-. (i / p) / (j / q) = (i / p) * (q / j) if not j = 0
-  %(Rat_divide_rule)%
+. (i / p) / (j / q) = (i / p) * (q / j) if not j = 0 
+                                                 %(Rat_divide_rule)%
 pred __<__ : a * a
 op __a : b;
    c : b
@@ -223,7 +222,8 @@ generated {pred __<__ : a * a;
                       c (a)? %(bla1)%}
 
 %(sort)%
-type %(after-sort)%
+type 
+     %(after-sort)%
      s; %(bla2)%
      t
 
@@ -272,7 +272,7 @@ op 1, 2, 3, 4 : s;
 . def 12.34E-34
   %%fractions
 . true %(The true formula)%
-. true
+. true 
   %(and this
              also goes
              along several lines! 
@@ -843,15 +843,14 @@ op ' ' : Char = '\032'; %(printable_32)%
    'ÿ' : Char = '\255' %(printable_255)%
 pred isLetter(c : Char) :? Unit
        = ((ord ('A') <= ord (c) /\ ord (c) <= ord ('Z')) \/
-          (ord ('a') <= ord (c) /\ ord (c) <= ord ('z')));
-     %(isLetter_def)%
+          (ord ('a') <= ord (c) /\ ord (c) <= ord ('z'))); 
+                                                       %(isLetter_def)%
      isDigit(c : Char) :? Unit
-       = ord ('0') <= ord (c) /\ ord (c) <= ord ('9');
-     %(isDigit_def)%
+       = ord ('0') <= ord (c) /\ ord (c) <= ord ('9');  %(isDigit_def)%
      isPrintable(c : Char) :? Unit
        = ((ord (' ') <= ord (c) /\ ord (c) <= ord ('~')) \/
-          (ord (' ') <= ord (c) /\ ord (c) <= ord ('ÿ')))
-     %(isPrintable_def)%
+          (ord (' ') <= ord (c) /\ ord (c) <= ord ('ÿ'))) 
+                                                    %(isPrintable_def)%
 
 %% alternative definition of characters as '\o ppp',
 %% where p in {0,1,...,7} :
