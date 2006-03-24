@@ -122,12 +122,7 @@ optQuMark Partial = text quMark
 optQuMark Total = empty
 
 instance PrettyPrint OP_TYPE where
-    printText0 ga (Op_type k l s _) = (if null l then empty
-                                           else space
-                                                <> crossT_text ga l
-                                                <+> text funS)
-                                           <> optQuMark k
-                                           <> space <> printText0 ga s
+    printText0 = toText
 
 instance PrettyPrint OP_HEAD where
     printText0 ga (Op_head k l s _) =
@@ -156,8 +151,7 @@ instance PrettyPrint f => PrettyPrint (PRED_ITEM f) where
                                         <+> printFORMULA ga (item f)
 
 instance PrettyPrint PRED_TYPE where
-    printText0 _ (Pred_type [] _) = parens empty
-    printText0 ga (Pred_type l _) = crossT_text ga l
+    printText0 = toText
 
 instance PrettyPrint PRED_HEAD where
     printText0 ga (Pred_head l _) = parens (semiT_text ga l)
@@ -185,64 +179,29 @@ instance PrettyPrint COMPONENTS where
                                 <> printText0 ga s
     printText0 ga (Sort s) = printText0 ga s
 
+fromText :: PrettyPrint a => GlobalAnnos -> a -> Doc.Doc
+fromText ga = Doc.literalDoc . printText0 ga
+
+toText :: Doc.Pretty a => GlobalAnnos -> a -> Doc
+toText ga = Doc.toText ga . Doc.pretty
+
 instance PrettyPrint VAR_DECL where
-    printText0 ga (Var_decl l s _) = commaT_text ga l
-                                <> colon
-                                <+> printText0 ga s
+    printText0 = toText
 
 printFORMULA :: PrettyPrint f => GlobalAnnos -> FORMULA f -> Doc
-printFORMULA ga = Doc.toText ga . ToDoc.printFormula
-                  (Doc.text . show . printText0 ga)
+printFORMULA ga = Doc.toText ga . ToDoc.printFormula (fromText ga)
 
 instance PrettyPrint f => PrettyPrint (FORMULA f) where
     printText0 = printFORMULA
 
-instance PrettyPrint QUANTIFIER where
-    printText0 _ (Universal) = text forallS
-    printText0 _ (Existential) = text existsS
-    printText0 _ (Unique_existential) = text (existsS ++ exMark)
-
 instance PrettyPrint PRED_SYMB where
-    printText0 ga (Pred_name n) = printText0 ga n
-    printText0 ga (Qual_pred_name n t _) =
-        parens $ text predS <+> printText0 ga n <+> colon <+> printText0 ga t
+    printText0 = toText
 
 instance PrettyPrint f => PrettyPrint (TERM f) where
-    printText0 ga (Simple_id i) = printText0 ga i
-    printText0 ga (Qual_var n t _) =
-        parens $ text varS <+> printText0 ga n <+> colon <+> printText0 ga t
-    printText0 ga (Application o l _) =
-        if isQualOpSy o
-           then print_prefix_appl_text ga (parens $ printText0 ga o) l
-           else print_Literal_text ga (op_id o) l
-    printText0 ga (Sorted_term t s _) =
-        condParensSorted_term parens t (printText0 ga t) <>
-        colon <+> printText0 ga s
-    printText0 ga (Cast t s _) =
-        printText0 ga t <+> text asS <+> printText0 ga s
-    printText0 ga(Conditional u f v _) =
-        hang (printText0 ga u) 4 $
-             sep ((text whenS <+> printFORMULA ga f):
-                     [text elseS <+> printText0 ga v])
-    printText0 _ (Unparsed_term s _) = text s
-    printText0 ga (Mixfix_qual_pred p) = printText0 ga p
-    printText0 ga (Mixfix_term [o, a@(Mixfix_parenthesized _ _)]) =
-        printText0 ga o <> printText0 ga a
-    printText0 ga (Mixfix_term l) =
-        cat(punctuate space (map (printText0 ga) l))
-    printText0 ga (Mixfix_token t) = printText0 ga t
-    printText0 ga (Mixfix_sorted_term s _) = colon
-                                             <> printText0 ga s
-    printText0 ga (Mixfix_cast s _) = text asS
-                                     <+> printText0 ga s
-    printText0 ga (Mixfix_parenthesized l _) = parens (commaT_text ga l)
-    printText0 ga (Mixfix_bracketed l _) =   brackets (commaT_text ga l)
-    printText0 ga (Mixfix_braced l _) =        braces (commaT_text ga l)
+    printText0 ga = Doc.toText ga . ToDoc.printTerm (fromText ga)
 
 instance PrettyPrint OP_SYMB where
-    printText0 ga (Op_name o) = printText0 ga o
-    printText0 ga (Qual_op_name o t _) =
-        text opS <+> printText0 ga o <+> colon <> printText0 ga t
+    printText0 = toText
 
 instance PrettyPrint SYMB_ITEMS where
     printText0 ga (Symb_items k l _) =

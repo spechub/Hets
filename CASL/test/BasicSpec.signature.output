@@ -1200,7 +1200,7 @@ pred odd : Int
 pred odd : Nat
 pred p : ()
 pred q : s
-*** Error 90.19, no typing for: suc(0): Pos
+*** Error 90.19, no typing for: suc(0) : Pos
 *** Error 147.8-147.16, ambiguous mixfix term
   -__(__-__(a, b))
   -(__-__(a, b))

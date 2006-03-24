@@ -49,8 +49,8 @@ a_a
 (op __<__ : a)
 ys as b
 *** Error 49.2-49.10, expected further mixfix token: ["p","x"]
-predy: bb
-predy: bb
+predy : bb
+predy : bb
 a when b else c
 
 *** Error 54.1-54.3, expected further mixfix token: ["p","x"]

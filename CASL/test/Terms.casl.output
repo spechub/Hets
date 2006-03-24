@@ -46,9 +46,9 @@ b [a __ b] a
 (op __<__ : a)
 (op __<__ : a)
 ys as b
-(predy y :bb)
-(predy :bb)
-(predy :bb)
+(predy y : bb)
+(predy : bb)
+(predy : bb)
 a when b else c
 # as b
 a b when b c else a f g when f a f else f a f g when f a f else f

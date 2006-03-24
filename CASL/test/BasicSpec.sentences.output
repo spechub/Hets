@@ -1786,7 +1786,7 @@
 ### Hint 17.14, redeclared as total 'max'
 ### Hint 70.16, known variable shadowed 's'
 ### Hint 72.16, known variable shadowed 'r'
-*** Error 90.19, no typing for: suc(0): Pos
+*** Error 90.19, no typing for: suc(0) : Pos
 ### Hint 98.10, redeclared op 'min'
 ### Hint 98.15, redeclared op 'max'
 ### Hint 121.18, redeclared sort 'Int'
