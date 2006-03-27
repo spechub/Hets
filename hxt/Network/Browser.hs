@@ -100,7 +100,7 @@ trim = let dropspace = dropWhile isSpace in
        reverse . dropspace . reverse . dropspace
 
 
--- Split a list into two parts, the delimiter occurs
+-- | Splits a list into two parts, the delimiter occurs
 -- at the head of the second list.  Nothing is returned
 -- when no occurance of the delimiter is found.
 split :: Eq a => a -> [a] -> Maybe ([a],[a])
@@ -110,7 +110,7 @@ split delim list = case delim `elemIndex` list of
     
 
 
--- removes delimiters
+-- | Removes delimiters.
 splitMany :: Eq a => a -> [a] -> [[a]]
 splitMany delim str = fn str ixs
     where
@@ -119,7 +119,7 @@ splitMany delim str = fn str ixs
         fn ls (h:t) = let (a,b) = splitAt h ls in a : fn b t
 
 
--- Returns a URI that is consistent with the first
+-- | Returns a URI that is consistent with the first
 -- argument uri when read in the context of a second.
 -- If second argument is not sufficient context for
 -- determining a full URI then anarchy reins.
@@ -180,7 +180,7 @@ userCookieFilter url cky =
        
 
 
--- Serialise a Cookie for inclusion in a request.
+-- | Serialise a Cookie for inclusion in a request.
 cookieToHeader :: Cookie -> Header
 cookieToHeader ck = Header HdrCookie text
     where
@@ -243,7 +243,7 @@ headerToCookies dom (Header HdrSetCookie val) =
 
       
 
--- Adds a cookie to the browser state, removing duplicates.
+-- | Adds a cookie to the browser state, removing duplicates.
 addCookie :: Cookie -> BrowserAction ()
 addCookie c = alterBS (\b -> b { bsCookies=c : fn (bsCookies b) })
     where
@@ -339,7 +339,7 @@ data Challenge = ChalBasic  { chRealm   :: String }
                             , chQop     :: [Qop]
                             }
 
--- Convert WWW-Authenticate header into a Challenge object
+-- | Convert WWW-Authenticate header into a Challenge object
 headerToChallenge :: URI -> Header -> Maybe Challenge
 headerToChallenge baseURI (Header _ str) =
     case parse challenge "" str of
@@ -432,7 +432,7 @@ data Authority = AuthBasic { auRealm    :: String
                             }
 
 
--- Return authorities for a given domain and path.
+-- | Return authorities for a given domain and path.
 -- Assumes "dom" is lower case
 getAuthFor :: String -> String -> BrowserAction [Authority]
 getAuthFor dom pth =
@@ -448,7 +448,7 @@ getAuthFor dom pth =
         matchURI s = (authority s == dom) && (path s `isPrefixOf` pth)
     
 
--- Interacting with browser state:
+-- | Interacting with browser state:
 getAuthorities :: BrowserAction [Authority]
 getAuthorities = getBS bsAuthorities
 
@@ -476,7 +476,7 @@ pickChallenge = listToMaybe
 
 
 
--- Retrieve a likely looking authority for a Request.
+-- | Retrieve a likely looking authority for a Request.
 anticipateChallenge :: Request -> BrowserAction (Maybe Authority)
 anticipateChallenge rq =
     let uri = rqURI rq in
@@ -485,7 +485,7 @@ anticipateChallenge rq =
        }
 
 
--- Asking the user to respond to a challenge
+-- | Asking the user to respond to a challenge
 challengeToAuthority :: URI -> Challenge -> BrowserAction (Maybe Authority)
 challengeToAuthority uri ch =
     -- prompt user for authority
@@ -525,7 +525,7 @@ challengeToAuthority uri ch =
                        }
 
 
--- Generating a credentials value from an Authority, in
+-- | Generating a credentials value from an Authority, in
 -- the context of a specific request.  If a client nonce
 -- was to be used then this function might need to
 -- be of type ... -> BrowserAction String
@@ -618,8 +618,11 @@ instance Monad BrowserAction where
     a >>= f  =  BA (\b -> do { (nb,v) <- lift a b ; lift (f v) nb})
     return x =  BA (\b -> return (b,x))
 
+instance Functor BrowserAction where
+    fmap f   = liftM f
 
--- Apply a browser action to a state.
+
+-- | Apply a browser action to a state.
 browse :: BrowserAction a -> IO a
 browse act = do x <- lift act defaultBrowserState
                 return (snd x)
@@ -639,14 +642,14 @@ browse act = do x <- lift act defaultBrowserState
                , bsDebug            = Nothing 
                }
 
--- Alter browser state
+-- | Alter browser state
 alterBS :: (BrowserState -> BrowserState) -> BrowserAction ()
 alterBS f = BA (\b -> return (f b,()))
 
 getBS :: (BrowserState -> a) -> BrowserAction a
 getBS f = BA (\b -> return (b,f b))
 
--- Do an io action
+-- | Do an io action
 ioAction :: IO a -> BrowserAction a
 ioAction a = BA (\b -> a >>= \v -> return (b,v))
 
@@ -720,12 +723,12 @@ request' (denycount,redirectcount,retrycount,preempt) rq =
 
        out ("Sending:\n" ++ show rq'') 
        e_rsp <- case p of
-            NoProxy -> dorequest (authority $ rqURI rq'') rq''
+            NoProxy -> dorequest (uriAuth $ rqURI rq'') rq''
             Proxy str ath ->
                 let rq''' = case ath of 
                                 Nothing -> rq''
                                 Just x  -> insertHeader HdrProxyAuthorization (withAuthority x rq'') rq''
-                in dorequest str rq'''
+                in dorequest (URIAuth "" str "") rq'''
 
        case e_rsp of
            Left v -> if (retrycount < 4) && (v == ErrorReset || v == ErrorClosed)
@@ -801,7 +804,7 @@ request' (denycount,redirectcount,retrycount,preempt) rq =
                           ; rd <- getAllowRedirects
                           ; if not rd || redirectcount > 4 then return (uri,rsp) else
                             case retrieveHeaders HdrLocation rsp of
-                                (Header _ u:_) -> case parseURI u of
+                                (Header _ u:_) -> case parseURIReference u of
                                     Just newuri ->
                                         let newuri' = case newuri `relativeTo` uri of
                                                         Nothing -> newuri
@@ -822,7 +825,7 @@ request' (denycount,redirectcount,retrycount,preempt) rq =
                         
                    (3,0,5) ->
                         case retrieveHeaders HdrLocation rsp of
-                            (Header _ u:_) -> case parseURI u of
+                            (Header _ u:_) -> case parseURIReference u of
                                 Just newuri ->
                                     do { out ("Retrying with proxy " ++ show newuri ++ "...")
                                        ; setProxy (Proxy (authority newuri) Nothing)
@@ -837,51 +840,51 @@ request' (denycount,redirectcount,retrycount,preempt) rq =
                                      }
                    
 
-                   (3,_,_) ->  -- Redirection
-                       do { rd <- getAllowRedirects
-                          ; if not rd || redirectcount > 4 then return (uri,rsp) else
-                            case retrieveHeaders HdrLocation rsp of
-                                (Header _ u:_) -> case parseURI u of
-                                    Just newuri ->
-                                        let newuri' = case newuri `relativeTo` uri of
-                                                        Nothing -> newuri
-                                                        Just x  -> x
-                                        in do { out ("Redirecting to " ++ show newuri' ++ " ...") 
-                                              ; request' (0,redirectcount+1,retrycount,True)
-                                                         (rq { rqURI=newuri' }) 
-                                              }
-                                    Nothing ->
-                                        do { err ("Parse of Location header in a redirect response failed: " ++ u)
-                                           ; return (uri,rsp)
-                                           }
-                                [] -> do { err "No Location header in redirect response."
-                                         ; return (uri,rsp)
-                                         }
-                          }
-
-                   _      -> return (uri,rsp)
+                   (3,_,_) ->  redirect uri rsp
+                   _       -> return (uri,rsp)
 
     where      
         spaceappend :: String -> String -> String
         spaceappend x y = x ++ ' ' : y
 
-        dorequest :: String -> Request -> BrowserAction (Either ConnError Response)
+        redirect uri rsp = do
+            rd <- getAllowRedirects
+            if not rd || redirectcount > 4 then return (uri,rsp) else do
+            case retrieveHeaders HdrLocation rsp of
+              (Header _ u:_) -> case parseURIReference u of
+                                  Just newuri -> do
+                                      let newuri' = case newuri `relativeTo` uri of
+                                                      Nothing -> newuri
+                                                      Just x  -> x
+                                      out ("Redirecting to " ++ show newuri' ++ " ...") 
+                                      request' (0,redirectcount+1,retrycount,True) (rq { rqURI=newuri' }) 
+                                  Nothing -> do
+                                      err ("Parse of Location header in a redirect response failed: " ++ u)
+                                      return (uri,rsp)
+              [] -> do err "No Location header in redirect response."
+                       return (uri,rsp)
+
+
+        dorequest :: URIAuth -> Request -> BrowserAction (Either ConnError Response)
         dorequest hst rqst = 
             do { pool <- getBS bsConnectionPool
-               ; conn <- ioAction $ filterM (\c -> c `isConnectedTo` hst) pool
+               ; conn <- ioAction $ filterM (\c -> c `isConnectedTo` uriAuthToString hst) pool
                ; rsp <- case conn of
-                    [] -> do { out ("Creating new connection to " ++ hst)
-                             ; c <- ioAction $ openTCP hst
+                    [] -> do { out ("Creating new connection to " ++ uriAuthToString hst)
+                             ; let port = case uriPort hst of
+                                            (':':s) -> read s
+                                            _       -> 80
+                             ; c <- ioAction $ openTCPPort (uriRegName hst) port
                              ; let pool' = if length pool > 5
                                            then init pool
                                            else pool
                              ; when (length pool > 5)
                                     (ioAction $ close (last pool))
                              ; alterBS (\b -> b { bsConnectionPool=c:pool' })
-                             ; dorequest2 hst c rqst 
+                             ; dorequest2 hst c rqst
                              }
                     (c:_) ->
-                        do { out ("Recovering connection to " ++ hst)
+                        do { out ("Recovering connection to " ++ uriAuthToString hst)
                            ; dorequest2 hst c rqst
                            }
                ; 
@@ -893,11 +896,24 @@ request' (denycount,redirectcount,retrycount,preempt) rq =
                ; ioAction $ case dbg of
                  Nothing -> sendHTTP c r
                  Just f  ->
-                    debugStream (f++'-':hst) c 
+                    debugStream (f++'-': uriAuthToString hst) c 
                     >>= \c' -> sendHTTP c' r  
                }
  
 
+
+uriAuth x = case uriAuthority x of
+              Just ua -> ua
+              _       -> error ("No uri authority for: "++show x)
+
+uriAuthToString :: URIAuth -> String
+uriAuthToString URIAuth { uriUserInfo = uinfo
+                        , uriRegName  = regname
+                        , uriPort     = port
+                        } =
+                    ((if null uinfo then id else (uinfo++))
+                     . (regname++)
+                     . (port++)) ""
 
 
 
@@ -933,10 +949,10 @@ formToRequest (Form m u vs) =
         GET -> Request { rqMethod=GET
                        , rqHeaders=[ Header HdrContentLength "0" ]
                        , rqBody=""
-                       , rqURI=u { uriQuery=enc }  -- What about old query?
+                       , rqURI=u { uriQuery= '?' : enc }  -- What about old query?
                        }
         POST -> Request { rqMethod=POST
                         , rqHeaders=[ Header HdrContentLength (show $ length enc) ]
                         , rqBody=enc
-                        , rqURI=u { uriQuery=enc }  -- What about old query?
+                        , rqURI=u
                         }

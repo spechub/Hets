@@ -1,94 +1,92 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Network.HTTP
--- Copyright   :  (c) Warrick Gray 2002, Bjorn Bringert 2003-2004, Simon Foster 2004
+-- Copyright   :  (c) Warrick Gray 2002, Bjorn Bringert 2003-2005
 -- License     :  BSD
---
+-- 
 -- Maintainer  :  bjorn@bringert.net
 -- Stability   :  experimental
 -- Portability :  non-portable (not tested)
 --
--- An easy HTTP interface, version 0.2, enjoy.
+-- An easy HTTP interface enjoy.
 --
--- ** Changes by Simon Foster:
+-- * Changes by Simon Foster:
 --      - Split module up into to sepearate Network.[Stream,TCP,HTTP] modules
 --      - Created functions receiveHTTP and responseHTTP to allow server side interactions
 --        (although 100-continue is unsupported and I haven't checked for standard compliancy).
 --      - Pulled the transfer functions from sendHTTP to global scope to allow access by
 --        above functions.
---      - Updated functions using Network.URI to the new GHC 6.4 version.
---      
--- ** Changes by Graham Klyne:
+--
+-- * Changes by Graham Klyne:
 --      - export httpVersion
 --      - use new URI module (similar to old, but uses revised URI datatype)
 --
--- ** Changes by Bjorn Bringert:
+-- * Changes by Bjorn Bringert:
 --
 --      - handle URIs with a port number
 --      - added debugging toggle
 --      - disabled 100-continue transfers to get HTTP\/1.0 compatibility
 --      - change 'ioError' to 'throw'
+--      - Added simpleHTTP_, which takes a stream argument.
 --
--- ** Changes from 0.1
---      - change "openHTTP" to "openTCP", removed "closeTCP" - use "close" from Stream class.
+-- * Changes from 0.1
+--      - change 'openHTTP' to 'openTCP', removed 'closeTCP' - use 'close' from 'Stream' class.
 --      - added use of inet_addr to openHTTP, allowing use of IP "dot" notation addresses.
 --      - reworking of the use of Stream, including alterations to make 'sendHTTP' generic
 --        and the addition of a debugging stream.
 --      - simplified error handling.
---
--- ** TODO
+-- 
+-- * TODO
 --     - request pipelining
---     - https upgrade (includes full TLS, ie SSL, implementation)
+--     - https upgrade (includes full TLS, i.e. SSL, implementation)
 --         - use of Stream classes will pay off
 --         - consider C implementation of encryption\/decryption
 --     - comm timeouts
 --     - MIME & entity stuff (happening in separate module)
---     - support "*" uri-request-string for OPTIONS request method
+--     - support \"*\" uri-request-string for OPTIONS request method
+-- 
+-- 
+-- * Header notes:
 --
---
--- ** Header notes:
--- [
---     Host         Required by HTTP\/1.1, if not supplied as part
+--     [@Host@]
+--                  Required by HTTP\/1.1, if not supplied as part
 --                  of a request a default Host value is extracted
 --                  from the request-uri.
---
---     Connection   If this header is present in any request or
+-- 
+--     [@Connection@] 
+--                  If this header is present in any request or
 --                  response, and it's value is "close", then
---                  the current request\/response is the last
+--                  the current request\/response is the last 
 --                  to be allowed on that connection.
---
---     Expect       Should a request contain a body, an Expect
+-- 
+--     [@Expect@]
+--                  Should a request contain a body, an Expect
 --                  header will be added to the request.  The added
---                  header has the value "100-continue".  After
---                  a 417 "Expectation Failed" response the request
+--                  header has the value \"100-continue\".  After
+--                  a 417 \"Expectation Failed\" response the request
 --                  is attempted again without this added Expect
 --                  header.
---
---
---     TransferEncoding
---     ContentLength
---     ...etc
+--                  
+--     [@TransferEncoding,ContentLength,...@]
 --                  if request is inconsistent with any of these
 --                  header values then you may not receive any response
 --                  or will generate an error response (probably 4xx).
--- ]
 --
--- ** Response code notes
+--
+-- * Response code notes
 -- Some response codes induce special behaviour:
--- [
---     1xx     "100 Continue" will cause any unsent request body to be sent.
---             "101 Upgrade" will be returned.
---             Other 1xx responses are ignored.
 --
---     417     The reason for this code is "Expectation failed", indicating
---             that the server did not like the Expect "100-continue" header
+--   [@1xx@]   \"100 Continue\" will cause any unsent request body to be sent.
+--             \"101 Upgrade\" will be returned.
+--             Other 1xx responses are ignored.
+-- 
+--   [@417@]   The reason for this code is \"Expectation failed\", indicating
+--             that the server did not like the Expect \"100-continue\" header
 --             added to a request.  Receipt of 417 will induce another
 --             request attempt (without Expect header), unless no Expect header
 --             had been added (in which case 417 response is returned).
--- ]
+--
 -----------------------------------------------------------------------------
-
-
 module Network.HTTP (
     module Network.Stream,
     module Network.TCP,
@@ -100,8 +98,10 @@ module Network.HTTP (
     Request(..),
     Response(..),
     RequestMethod(..),
-    simpleHTTP,
+    simpleHTTP, simpleHTTP_,
     sendHTTP,
+    receiveHTTP,
+    respondHTTP,
 
     -- ** Header Functions
     HasHeaders,
@@ -121,11 +121,7 @@ module Network.HTTP (
 
     -- ** URI authority parsing
     URIAuthority(..),
-    parseURIAuthority,
-
-    receiveHTTP,
-    respondHTTP
-
+    parseURIAuthority
 ) where
 
 
@@ -144,6 +140,7 @@ import Network.Socket
 import Network.Stream
 import Network.TCP
 
+
 -- Util
 import Data.Bits ((.&.))
 import Data.Char
@@ -156,8 +153,10 @@ import Control.Monad (when,liftM,guard)
 import Control.Monad.ST (ST,stToIO)
 import Numeric (readHex)
 import Text.ParserCombinators.ReadP
-import Text.Read.Lex
+import Text.Read.Lex 
 import System.IO
+import System.IO.Error (isEOFError)
+import qualified System.IO.Error
 
 import Foreign.C.Error
 
@@ -187,7 +186,7 @@ split :: Eq a => a -> [a] -> Maybe ([a],[a])
 split delim list = case delim `elemIndex` list of
     Nothing -> Nothing
     Just x  -> Just $ splitAt x list
-
+    
 
 
 crlf = "\r\n"
@@ -197,37 +196,37 @@ sp   = " "
 ------------------ URI Authority parsing ------------------------
 -----------------------------------------------------------------
 
-data URIAuthority = URIAuthority { user :: Maybe String,
-                                   password :: Maybe String,
-                                   host :: String,
-                                   port :: Maybe Int
-                                 } deriving (Eq,Show)
+data URIAuthority = URIAuthority { user :: Maybe String, 
+				   password :: Maybe String,
+				   host :: String,
+				   port :: Maybe Int
+				 } deriving (Eq,Show)
 
 -- | Parse the authority part of a URL.
 --
 -- > RFC 1732, section 3.1:
 -- >
--- >       \/\/<user>:<password>@<host>:<port>\/<url-path>
+-- >       //<user>:<password>@<host>:<port>/<url-path>
 -- >  Some or all of the parts "<user>:<password>@", ":<password>",
--- >  ":<port>", and "\/<url-path>" may be excluded.
+-- >  ":<port>", and "/<url-path>" may be excluded.
 parseURIAuthority :: String -> Maybe URIAuthority
 parseURIAuthority s = listToMaybe (map fst (readP_to_S pURIAuthority s))
 
 
 pURIAuthority :: ReadP URIAuthority
 pURIAuthority = do
-                (u,pw) <- (pUserInfo `before` char '@')
-                          <++ return (Nothing, Nothing)
-                h <- munch (/=':')
-                p <- orNothing (char ':' >> readDecP)
-                look >>= guard . null
-                return URIAuthority{ user=u, password=pw, host=h, port=p }
+		(u,pw) <- (pUserInfo `before` char '@') 
+			  <++ return (Nothing, Nothing)
+		h <- munch (/=':')
+		p <- orNothing (char ':' >> readDecP)
+		look >>= guard . null 
+		return URIAuthority{ user=u, password=pw, host=h, port=p }
 
 pUserInfo :: ReadP (Maybe String, Maybe String)
 pUserInfo = do
-            u <- orNothing (munch (`notElem` ":@"))
-            p <- orNothing (char ':' >> munch (/='@'))
-            return (u,p)
+	    u <- orNothing (munch (`notElem` ":@"))
+	    p <- orNothing (char ':' >> munch (/='@'))
+	    return (u,p)
 
 before :: Monad m => m a -> m b -> m a
 before a b = a >>= \x -> b >> return x
@@ -258,14 +257,14 @@ instance Show Header where
 --   1) makes customising header names laborious
 --   2) increases code volume.
 --
-data HeaderName =
+data HeaderName = 
                  -- Generic Headers --
                   HdrCacheControl
                 | HdrConnection
                 | HdrDate
                 | HdrPragma
-                | HdrTransferEncoding
-                | HdrUpgrade
+                | HdrTransferEncoding        
+                | HdrUpgrade                
                 | HdrVia
 
                 -- Request Headers --
@@ -326,54 +325,54 @@ data HeaderName =
 -- Translation between header names and values,
 -- good candidate for improvement.
 headerMap :: [ (String,HeaderName) ]
-headerMap
+headerMap 
  = [  ("Cache-Control"        ,HdrCacheControl      )
-        , ("Connection"           ,HdrConnection        )
-        , ("Date"                 ,HdrDate              )
-        , ("Pragma"               ,HdrPragma            )
-        , ("Transfer-Encoding"    ,HdrTransferEncoding  )
-        , ("Upgrade"              ,HdrUpgrade           )
-        , ("Via"                  ,HdrVia               )
-        , ("Accept"               ,HdrAccept            )
-        , ("Accept-Charset"       ,HdrAcceptCharset     )
-        , ("Accept-Encoding"      ,HdrAcceptEncoding    )
-        , ("Accept-Language"      ,HdrAcceptLanguage    )
-        , ("Authorization"        ,HdrAuthorization     )
-        , ("From"                 ,HdrFrom              )
-        , ("Host"                 ,HdrHost              )
-        , ("If-Modified-Since"    ,HdrIfModifiedSince   )
-        , ("If-Match"             ,HdrIfMatch           )
-        , ("If-None-Match"        ,HdrIfNoneMatch       )
-        , ("If-Range"             ,HdrIfRange           )
-        , ("If-Unmodified-Since"  ,HdrIfUnmodifiedSince )
-        , ("Max-Forwards"         ,HdrMaxForwards       )
-        , ("Proxy-Authorization"  ,HdrProxyAuthorization)
-        , ("Range"                ,HdrRange             )
-        , ("Referer"              ,HdrReferer           )
-        , ("User-Agent"           ,HdrUserAgent         )
-        , ("Age"                  ,HdrAge               )
-        , ("Location"             ,HdrLocation          )
-        , ("Proxy-Authenticate"   ,HdrProxyAuthenticate )
-        , ("Public"               ,HdrPublic            )
-        , ("Retry-After"          ,HdrRetryAfter        )
-        , ("Server"               ,HdrServer            )
-        , ("Vary"                 ,HdrVary              )
-        , ("Warning"              ,HdrWarning           )
-        , ("WWW-Authenticate"     ,HdrWWWAuthenticate   )
-        , ("Allow"                ,HdrAllow             )
-        , ("Content-Base"         ,HdrContentBase       )
-        , ("Content-Encoding"     ,HdrContentEncoding   )
-        , ("Content-Language"     ,HdrContentLanguage   )
-        , ("Content-Length"       ,HdrContentLength     )
-        , ("Content-Location"     ,HdrContentLocation   )
-        , ("Content-MD5"          ,HdrContentMD5        )
-        , ("Content-Range"        ,HdrContentRange      )
-        , ("Content-Type"         ,HdrContentType       )
-        , ("ETag"                 ,HdrETag              )
-        , ("Expires"              ,HdrExpires           )
-        , ("Last-Modified"        ,HdrLastModified      )
-        , ("Set-Cookie"           ,HdrSetCookie         )
-        , ("Cookie"               ,HdrCookie            )
+	, ("Connection"           ,HdrConnection        )
+	, ("Date"                 ,HdrDate              )    
+	, ("Pragma"               ,HdrPragma            )
+	, ("Transfer-Encoding"    ,HdrTransferEncoding  )        
+	, ("Upgrade"              ,HdrUpgrade           )                
+	, ("Via"                  ,HdrVia               )
+	, ("Accept"               ,HdrAccept            )
+	, ("Accept-Charset"       ,HdrAcceptCharset     )
+	, ("Accept-Encoding"      ,HdrAcceptEncoding    )
+	, ("Accept-Language"      ,HdrAcceptLanguage    )
+	, ("Authorization"        ,HdrAuthorization     )
+	, ("From"                 ,HdrFrom              )
+	, ("Host"                 ,HdrHost              )
+	, ("If-Modified-Since"    ,HdrIfModifiedSince   )
+	, ("If-Match"             ,HdrIfMatch           )
+	, ("If-None-Match"        ,HdrIfNoneMatch       )
+	, ("If-Range"             ,HdrIfRange           ) 
+	, ("If-Unmodified-Since"  ,HdrIfUnmodifiedSince )
+	, ("Max-Forwards"         ,HdrMaxForwards       )
+	, ("Proxy-Authorization"  ,HdrProxyAuthorization)
+	, ("Range"                ,HdrRange             )   
+	, ("Referer"              ,HdrReferer           )
+	, ("User-Agent"           ,HdrUserAgent         )
+	, ("Age"                  ,HdrAge               )
+	, ("Location"             ,HdrLocation          )
+	, ("Proxy-Authenticate"   ,HdrProxyAuthenticate )
+	, ("Public"               ,HdrPublic            )
+	, ("Retry-After"          ,HdrRetryAfter        )
+	, ("Server"               ,HdrServer            )
+	, ("Vary"                 ,HdrVary              )
+	, ("Warning"              ,HdrWarning           )
+	, ("WWW-Authenticate"     ,HdrWWWAuthenticate   )
+	, ("Allow"                ,HdrAllow             )
+	, ("Content-Base"         ,HdrContentBase       )
+	, ("Content-Encoding"     ,HdrContentEncoding   )
+	, ("Content-Language"     ,HdrContentLanguage   )
+	, ("Content-Length"       ,HdrContentLength     )
+	, ("Content-Location"     ,HdrContentLocation   )
+	, ("Content-MD5"          ,HdrContentMD5        )
+	, ("Content-Range"        ,HdrContentRange      )
+	, ("Content-Type"         ,HdrContentType       )
+	, ("ETag"                 ,HdrETag              )
+	, ("Expires"              ,HdrExpires           )
+	, ("Last-Modified"        ,HdrLastModified      )
+   	, ("Set-Cookie"           ,HdrSetCookie         )
+	, ("Cookie"               ,HdrCookie            )
     , ("Expect"               ,HdrExpect            ) ]
 
 
@@ -416,13 +415,13 @@ insertHeaderIfMissing name value x = setHeaders x (newHeaders $ getHeaders x)
             | otherwise  = h : newHeaders rest
         newHeaders [] = [Header name value]
 
-
+            
 
 -- | Removes old headers with duplicate name.
 replaceHeader name value x = setHeaders x newHeaders
     where
         newHeaders = Header name value : [ x | x@(Header n v) <- getHeaders x, name /= n ]
-
+          
 
 -- | Inserts multiple headers.
 insertHeaders :: HasHeaders a => [Header] -> a -> a
@@ -481,7 +480,6 @@ rqMethodMap = [("HEAD",    HEAD),
 	       ("OPTIONS", OPTIONS),
 	       ("TRACE",   TRACE)]
 
-
 -- | An HTTP Request.
 -- The 'Show' instance of this type is used for message serialisation,
 -- which means no body data is output.
@@ -491,7 +489,7 @@ data Request =
                                     --  2) transparent support for both relative
                                     --     & absolute uris, although this should
                                     --     already work (leave scheme & host parts empty).
-             , rqMethod    :: RequestMethod
+             , rqMethod    :: RequestMethod             
              , rqHeaders   :: [Header]
              , rqBody      :: String
              }
@@ -526,7 +524,6 @@ type ResponseCode  = (Int,Int,Int)
 type ResponseData  = (ResponseCode,String,[Header])
 type RequestData   = (RequestMethod,URI,[Header])
 
-
 -- | An HTTP Response.
 -- The 'Show' instance of this type is used for message serialisation,
 -- which means no body data is output, additionally the output will
@@ -538,11 +535,11 @@ data Response =
              , rspHeaders  :: [Header]
              , rspBody     :: String
              }
+                   
 
 
-
--- This is an invalid representation of a received response,
--- since we have made the assumption that all responses are HTTP\/1.1
+-- This is an invalid representation of a received response, 
+-- since we have made the assumption that all responses are HTTP/1.1
 instance Show Response where
     show (Response (a,b,c) reason headers _) =
         httpVersion ++ ' ' : map intToDigit [a,b,c] ++ ' ' : reason ++ crlf
@@ -553,7 +550,6 @@ instance Show Response where
 instance HasHeaders Response where
     getHeaders = rspHeaders
     setHeaders rsp hdrs = rsp { rspHeaders=hdrs }
-
 
 -----------------------------------------------------------------
 ------------------ Parsing --------------------------------------
@@ -571,7 +567,7 @@ parseHeader str =
 
         match :: String -> String -> Bool
         match s1 s2 = map toLower s1 == map toLower s2
-
+    
 
 parseHeaders :: [String] -> Result [Header]
 parseHeaders = catRslts [] . map (parseHeader . clean) . joinExtended ""
@@ -592,11 +588,12 @@ parseHeaders = catRslts [] . map (parseHeader . clean) . joinExtended ""
         -- errors here be reported or ignored?
         -- currently ignored.
         catRslts :: [a] -> [Result a] -> Result [a]
-        catRslts list (h:t) =
+        catRslts list (h:t) = 
             case h of
                 Left _ -> catRslts list t
                 Right v -> catRslts (v:list) t
-        catRslts list [] = Right $ reverse list
+        catRslts list [] = Right $ reverse list            
+        
 
 -- Parsing a request
 parseRequestHead :: [String] -> Result RequestData
@@ -618,7 +615,7 @@ parseRequestHead (com:hdrs) =
 -- Parsing a response
 parseResponseHead :: [String] -> Result ResponseData
 parseResponseHead [] = Left ErrorClosed
-parseResponseHead (sts:hdrs) =
+parseResponseHead (sts:hdrs) = 
     responseStatus sts `bindE` \(version,code,reason) ->
     parseHeaders hdrs `bindE` \hdrs' ->
     Right (code,reason,hdrs')
@@ -627,7 +624,7 @@ parseResponseHead (sts:hdrs) =
         responseStatus line
             =  case words line of
                 yes@(version:code:reason) -> Right (version,match code,concatMap (++" ") reason)
-                no -> if null line
+                no -> if null line 
                     then Left ErrorClosed  -- an assumption
                     else Left (ErrorParse $ "Response status line parse failure: " ++ line)
 
@@ -638,7 +635,7 @@ parseResponseHead (sts:hdrs) =
         match _ = (-1,-1,-1)  -- will create appropriate behaviour
 
 
-
+        
 
 -----------------------------------------------------------------
 ------------------ HTTP Send / Recv ----------------------------------
@@ -673,7 +670,7 @@ matchResponse rqst rsp =
     where
         ans | rqst == HEAD = Done
             | otherwise    = ExpectEntity
-
+        
 
 -- | Simple way to get a resource across a non-persistant connection.
 -- Headers that may be altered:
@@ -682,18 +679,25 @@ matchResponse rqst rsp =
 --  Connection  Where no allowance is made for persistant connections
 --              the Connection header will be set to "close"
 simpleHTTP :: Request -> IO (Result Response)
-simpleHTTP r =
-    do
+simpleHTTP r = 
+    do 
        auth <- getAuth r
-       let r' = fixReq auth r
        c <- openTCPPort (host auth) (fromMaybe 80 (port auth))
+       simpleHTTP_ c r
+
+-- | Like 'simpleHTTP', but acting on an already opened stream.
+simpleHTTP_ :: Stream s => s -> Request -> IO (Result Response)
+simpleHTTP_ s r =
+    do 
+       auth <- getAuth r
+       let r' = fixReq auth r 
        rsp <- if debug then do
-                c' <- debugStream httpLogFile c
-                sendHTTP c' r'
-               else
-                sendHTTP c r'
+	        s' <- debugStream httpLogFile s
+	        sendHTTP s' r'
+	       else
+	        sendHTTP s r'
        -- already done by sendHTTP because of "Connection: close" header
-       --; close c
+       --; close s 
        return rsp
        where
   {- RFC 2616, section 5.1.2:
@@ -710,10 +714,11 @@ simpleHTTP r =
 	     fixReq URIAuthority{host=h} r = 
 		 replaceHeader HdrConnection "close" $
 		 insertHeaderIfMissing HdrHost h $
-		 r { rqURI = (rqURI r){ uriScheme = "", uriAuthority = Nothing } }	       
+		 r { rqURI = (rqURI r){ uriScheme = "", 
+					uriAuthority = Nothing } }	       
 
-	     getAuth :: Monad m => Request -> m URIAuthority
-	     getAuth r = case parseURIAuthority auth of
+getAuth :: Monad m => Request -> m URIAuthority
+getAuth r = case parseURIAuthority auth of
 			 Just x -> return x 
 			 Nothing -> fail $ "Error parsing URI authority '"
 				           ++ auth ++ "'"
@@ -722,7 +727,7 @@ simpleHTTP r =
 			      Nothing -> authority (rqURI r)
 
 sendHTTP :: Stream s => s -> Request -> IO (Result Response)
-sendHTTP conn rq =
+sendHTTP conn rq = 
     do { let a_rq = fixHostHeader rq
        ; rsp <- Exception.catch (main a_rq)
                       (\e -> do { close conn; throw e })
@@ -733,7 +738,7 @@ sendHTTP conn rq =
                 rsp
        ; return rsp
        }
-    where
+    where       
 -- From RFC 2616, section 8.2.3:
 -- 'Because of the presence of older implementations, the protocol allows
 -- ambiguous situations in which a client may send "Expect: 100-
@@ -746,16 +751,16 @@ sendHTTP conn rq =
 -- Since we would wait forever, I have disabled use of 100-continue for now.
         main :: Request -> IO (Result Response)
         main rqst =
-            do
-               --let str = if null (rqBody rqst)
+            do 
+	       --let str = if null (rqBody rqst)
                --              then show rqst
                --              else show (insertHeader HdrExpect "100-continue" rqst)
                writeBlock conn (show rqst)
-               -- write body immediately, don't wait for 100 CONTINUE
-               writeBlock conn (rqBody rqst)
-               rsp <- getResponseHead
+	       -- write body immediately, don't wait for 100 CONTINUE
+	       writeBlock conn (rqBody rqst)
+               rsp <- getResponseHead               
                switchResponse True False rsp rqst
-
+        
         -- reads and parses headers
         getResponseHead :: IO (Result ResponseData)
         getResponseHead =
@@ -771,7 +776,7 @@ sendHTTP conn rq =
                        -> Result ResponseData
                        -> Request
                        -> IO (Result Response)
-
+            
         switchResponse _ _ (Left e) _ = return (Left e)
                 -- retry on connreset?
                 -- if we attempt to use the same socket then there is an excellent
@@ -791,7 +796,7 @@ sendHTTP conn rq =
                            }
                     | otherwise -> {- keep waiting -}
                         do { rsp <- getResponseHead
-                           ; switchResponse allow_retry bdy_sent rsp rqst
+                           ; switchResponse allow_retry bdy_sent rsp rqst                           
                            }
 
                 Retry -> {- Request with "Expect" header failed.
@@ -800,8 +805,8 @@ sendHTTP conn rq =
                     do { writeBlock conn (show rqst ++ rqBody rqst)
                        ; rsp <- getResponseHead
                        ; switchResponse False bdy_sent rsp rqst
-                       }
-
+                       }   
+                     
                 Done ->
                     return (Right $ Response cd rn hdrs "")
 
@@ -813,26 +818,25 @@ sendHTTP conn rq =
                         cl = lookupHeader HdrContentLength hdrs
                     in
                     do { rslt <- case tc of
-                          Nothing ->
+                          Nothing -> 
                               case cl of
                                   Just x  -> linearTransfer conn (read x :: Int)
                                   Nothing -> hopefulTransfer conn ""
-                          Just x  ->
+                          Just x  -> 
                               case map toLower (trim x) of
                                   "chunked" -> chunkedTransfer conn
                                   _         -> uglyDeathTransfer conn
-                       ; return $ rslt `bindE` \(ftrs,bdy) -> Right (Response cd rn (hdrs++ftrs) bdy)
+                       ; return $ rslt `bindE` \(ftrs,bdy) -> Right (Response cd rn (hdrs++ftrs) bdy) 
                        }
 
-
+        
         -- Adds a Host header if one is NOT ALREADY PRESENT
         fixHostHeader :: Request -> Request
         fixHostHeader rq =
             let uri = rqURI rq
                 host = authority uri
             in insertHeaderIfMissing HdrHost host rq
-
-
+                                     
         -- Looks for a "Connection" header with the value "close".
         -- Returns True when this is found.
         findConnClose :: [Header] -> Bool
@@ -841,8 +845,8 @@ sendHTTP conn rq =
                 Nothing -> False
                 Just x  -> map toLower (trim x) == "close"
 
--- Receive and parse a HTTP request from the given Stream. Should be used for server side
--- interactions.
+-- | Receive and parse a HTTP request from the given Stream. Should be used 
+--   for server side interactions.
 receiveHTTP :: Stream s => s -> IO (Result Request)
 receiveHTTP conn = do rq <- getRequestHead
 		      processRequest rq	    
@@ -872,15 +876,14 @@ receiveHTTP conn = do rq <- getRequestHead
                return $ rslt `bindE` \(ftrs,bdy) -> Right (Request uri rm (hdrs++ftrs) bdy)
 
 
--- Very simple function, send a HTTP response over the given stream. This could be improved
--- on to use different transfer types.
+-- | Very simple function, send a HTTP response over the given stream. This 
+--   could be improved on to use different transfer types.
 respondHTTP :: Stream s => s -> Response -> IO ()
 respondHTTP conn rsp = do writeBlock conn (show rsp)
                           -- write body immediately, don't wait for 100 CONTINUE
                           writeBlock conn (rspBody rsp)
 			  return ()
 
-		       
 -- The following functions were in the where clause of sendHTTP, they have
 -- been moved to global scope so other functions can access them.		       
 
@@ -896,12 +899,11 @@ linearTransfer conn n
 --   take data once and give up the rest.
 hopefulTransfer :: Stream s => s -> String -> IO (Result ([Header],String))
 hopefulTransfer conn str
-    = readLine conn >>=
+    = readLine conn >>= 
       either (\v -> return $ Left v)
-             (\more -> if null more
-                then return (Right ([],str))
-                else hopefulTransfer conn (str++more))
-
+             (\more -> if null more 
+                         then return (Right ([],str)) 
+                         else hopefulTransfer conn (str++more))
 -- | A necessary feature of HTTP\/1.1
 --   Also the only transfer variety likely to
 --   return any footers.
@@ -909,56 +911,54 @@ chunkedTransfer :: Stream s => s -> IO (Result ([Header],String))
 chunkedTransfer conn
     =  chunkedTransferC conn 0 >>= \v ->
        return $ v `bindE` \(ftrs,count,info) ->
-                let myftrs = Header HdrContentLength (show count) : ftrs
+                let myftrs = Header HdrContentLength (show count) : ftrs              
                 in Right (myftrs,info)
 
 chunkedTransferC :: Stream s => s -> Int -> IO (Result ([Header],Int,String))
 chunkedTransferC conn n
     =  readLine conn >>= \v -> case v of
-          Left e -> return (Left e)
-          Right line ->
-              let size = ( if null line || (head line) == '0'
-                             then 0
-                             else case readHex line of
-                                (n,_):_ -> n
-                                _       -> 0
-                             )
-              in if size == 0
-                   then do { rs <- readTillEmpty2 conn []
-                           ; return $
-                                rs `bindE` \strs ->
-                                parseHeaders strs `bindE` \ftrs ->
-                                Right (ftrs,n,"")
-                           }
-                   else do { some <- readBlock conn size
-                           ; readLine conn
-                           ; more <- chunkedTransferC conn (n+size)
-                           ; return $
-                                some `bindE` \cdata ->
-                                more `bindE` \(ftrs,m,mdata) ->
-                                Right (ftrs,m,cdata++mdata)
-                           }
+                  Left e -> return (Left e)
+                  Right line ->
+                      let size = ( if null line || (head line) == '0'
+                                     then 0
+                                     else case readHex line of
+                                        (n,_):_ -> n
+                                        _       -> 0
+                                     )
+                      in if size == 0
+                           then do { rs <- readTillEmpty2 conn []
+                                   ; return $
+                                        rs `bindE` \strs ->
+                                        parseHeaders strs `bindE` \ftrs ->
+                                        Right (ftrs,n,"")
+                                   }
+                           else do { some <- readBlock conn size
+                                   ; readLine conn
+                                   ; more <- chunkedTransferC conn (n+size)
+                                   ; return $ 
+                                        some `bindE` \cdata ->
+                                        more `bindE` \(ftrs,m,mdata) -> 
+                                        Right (ftrs,m,cdata++mdata) 
+                                   }                   
 
 -- | Maybe in the future we will have a sensible thing
 --   to do here, at that time we might want to change
 --   the name.
 uglyDeathTransfer :: Stream s => s -> IO (Result ([Header],String))
-uglyDeathTransfer s
+uglyDeathTransfer conn
     = return $ Left $ ErrorParse "Unknown Transfer-Encoding"
-
 
 -- | Remove leading crlfs then call readTillEmpty2 (not required by RFC)
 readTillEmpty1 :: Stream s => s -> IO (Result [String])
 readTillEmpty1 conn =
     do { line <- readLine conn
        ; case line of
-            Left e -> return $ Left e
-            Right s ->
-                if s == crlf
-                  then readTillEmpty1 conn
-                  else readTillEmpty2 conn [s]
+           Left e -> return $ Left e
+           Right s ->
+               if s == crlf
+                 then readTillEmpty1 conn
+                 else readTillEmpty2 conn [s]
        }
-
 
 -- | Read lines until an empty line (CRLF),
 --   also accepts a connection close as end of
@@ -969,14 +969,14 @@ readTillEmpty2 :: Stream s => s -> [String] -> IO (Result [String])
 readTillEmpty2 conn list =
     do { line <- readLine conn
        ; case line of
-            Left e -> return $ Left e
-            Right s ->
-                if s == crlf || null s
-                  then return (Right $ reverse (s:list))
-                  else readTillEmpty2 conn (s:list)
+           Left e -> return $ Left e
+           Right s ->
+               if s == crlf || null s
+                 then return (Right $ reverse (s:list))
+                 else readTillEmpty2 conn (s:list)
        }
 
-
+        
 -----------------------------------------------------------------
 ------------------ A little friendly funtionality ---------------
 -----------------------------------------------------------------
@@ -1023,12 +1023,12 @@ urlEncode (h:t) =
         -- wouldn't it be nice if the compiler
         -- optimised the above for us?
 
-        escape x =
-            let y = ord x
+        escape x = 
+            let y = ord x 
             in [ '%', intToDigit ((y `div` 16) .&. 0xf), intToDigit (y .&. 0xf) ]
 
 urlEncode [] = []
-
+            
 
 
 -- Encode form variables, useable in either the
@@ -1043,4 +1043,3 @@ urlEncodeVars ((n,v):t) =
        where urlEncodeRest [] = []
              urlEncodeRest diff = '&' : urlEncodeVars diff
 urlEncodeVars [] = []
-
