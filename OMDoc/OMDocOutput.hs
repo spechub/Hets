@@ -431,13 +431,24 @@ devGraphToXmlCMPIOXmlNamed go dg =
   --                                      (foldl (\x' (nodename' , mmm) ->
             (foldl (\x' (nodenamex , mmm) ->
               let
+                refs = filter (\(_, node) -> isDGRef node) $ Graph.labNodes dg
+                isexternal = find (\xref -> (xnName xref) == nodenamex) onlyrefxmlnamelist
+                liburl = case isexternal of
+                  (Just xnode) ->
+                    case find (\(_, node) -> (dgn_name node) == (snd (xnItem xnode))) refs of
+                      Nothing ->
+                        "unknown"
+                      (Just (_, node)) -> 
+                        (asOMDocFile (unwrapLinkSource $ dgn_libname node))
+                  _ ->
+                    ""
                 --nodenamex = case Set.toList $ Set.filter (\i -> (snd (xnItem i)) == nodename' ) nodexmlnameset of
                 --      [] -> error "Import from Unknown node..."
                 --      (l:_) -> xnName l
               in
                 x' +++
                 HXT.etag "imports" += (
-                  (HXT.sattr "from" ("#" ++ nodenamex)) +++
+                  (HXT.sattr "from" (liburl++"#" ++ nodenamex)) +++
                   (
                     case mmm of
                       {- (Just mm) ->
@@ -530,7 +541,9 @@ devGraphToXmlCMPIOXmlNamed go dg =
             )
             -- when constructing the catalogues a reference to the xmlname used in _this_ document is used
             -- it is very likely possible, that this theory has another name in real life (unless there are no name-collisions)
-    ) (return $ refsToCatalogueXN dg nodexmlnameset +++ xmlNL) onlynodexmlnamelist 
+-- catalogue-support is gone...
+--    ) (return $ refsToCatalogueXN dg nodexmlnameset +++ xmlNL) onlynodexmlnamelist 
+    ) (return $ (HXT.txt "")) onlynodexmlnamelist 
   where
   nodeTupelToNodeName::(a, NODE_NAME)->String
   nodeTupelToNodeName = nodeToNodeName . snd
