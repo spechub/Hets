@@ -1,0 +1,20 @@
+#!/bin/bash
+
+### author: Klaus Lüttich <luettich@tzi.de>
+
+### a script that sets all HETS_*- and UNI*-variables according to the
+### installation directory or according binaries found during the
+### installation;
+### it is post processed by some IzPack variables starting with %
+
+HETS_LIB=%INSTALL_PATH/CASL-lib
+HETS_ISABELLE=
+HETS_OWL_PARSER=
+UNIWISH=/usr/bin/wish
+UNIDAVINCI=/Users/luettich/uDrawGraph-3.1/bin/uDrawGraph
+
+HETS=%INSTALL_PATH/lib/hets
+
+export HETS_LIB HETS_ISABELLE HETS_OWL_PARSER UNIWISH UNIDAVINCI
+
+exec $HETS $@
