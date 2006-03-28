@@ -8,7 +8,7 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  non-protable(Logic)
 
-Dumping a G_theory to DFG Doc.
+Printing a (G_theory CASL _) into a DFG Doc.
 
 -}
 
@@ -20,9 +20,9 @@ import Logic.Prover
 import Logic.Grothendieck
 import Logic.Comorphism
 import Logic.Coerce
+
 import Static.DevGraph
 
-import qualified Common.Lib.Map as Map
 import Common.Lib.Pretty
 import Common.Id
 import Common.PrettyPrint
@@ -30,14 +30,16 @@ import Common.Result
 import Common.GlobalAnnotations
 import Common.AS_Annotation as AS_Anno
 import Common.ProofUtils
+
 import Syntax.AS_Library
 import Syntax.Print_AS_Library ()
 
 import CASL.Logic_CASL
 import CASL.Sublogic
-import Comorphisms.KnownProvers
 
-import SPASS.Logic_SPASS
+import Comorphisms.CASL2SubCFOL
+import Comorphisms.CASL2SPASS
+
 import SPASS.Conversions
 import SPASS.Translate
 import SPASS.Sign
@@ -49,9 +51,9 @@ spassConsTimeLimit = 500
 printDFG :: LIB_NAME -> SIMPLE_ID 
          -> Bool 
             -- ^ if True a conjecture false is added otherwise 
-            -- its a theory without conjecture.
+            -- its a theory without a conjecture.
          -> G_theory -> IO (Maybe Doc)
-printDFG ln sn checkConsistency (G_theory lid sign thSens) =
+printDFG ln sn checkConsistency gth@(G_theory lid sign thSens) = 
     maybe (return Nothing)
           (\ (sign1,sens1) ->
                do prob <- genSPASSProblem 
@@ -63,29 +65,35 @@ printDFG ln sn checkConsistency (G_theory lid sign thSens) =
                   return $ Just $ printText0 emptyGlobalAnnos $ 
                          (prob {settings = flags}))
  
-      (case spassCMS of 
-       Comorphism cid -> 
-        do th <- coerceBasicTheory lid (sourceLogic cid) "" (sign,sens)
-           th1 <- resultToMaybe $ map_theory cid th
-           coerceBasicTheory (targetLogic cid) SPASS "" th1)
+      (if lessSublogicComor (sublogicOfTh gth) $ Comorphism idCASL
+       then resultToMaybe  
+             (coerceBasicTheory lid CASL "" (sign,sens)
+              >>= map_theory idCASL
+              >>= map_theory CASL2SubCFOL
+              >>= map_theory CASL2SPASS)
+       else Nothing)
+
 
   where sens = toNamedList thSens
         thName = showPretty (getLIB_ID ln) "_" ++ showPretty sn ""
+
         spLogicalPart sig sen = 
                             foldl insertSentence 
                                   (signToSPLogicalPart sig) 
                                   (reverse $ 
                                    prepareSenNames transSenName sen)
+
         flags = if checkConsistency
                 then [SPFlag "TimeLimit" (show spassConsTimeLimit)
                      ,SPFlag "DocProof" "1"]
                 else []
+
         falseConj = (emptyName falseSen) { senName = "consistent"
                                          , AS_Anno.isAxiom = False}
+
         falseSen = SPSimpleTerm SPFalse
-        max_sub_SPASS = top {sub_features = LocFilSub}
-        spassCMS = fromJust $ findComorphism (G_sublogics CASL max_sub_SPASS)
-                                             knSPASSCms
-        knSPASSCms = fromJust $ do knProvers <- resultToMaybe $ knownProvers
-                                   Map.lookup "SPASS" knProvers
-        
+
+        max_sub_SPASS = top { sub_features = LocFilSub
+                               , cons_features = 
+                                   (cons_features top) {onlyInjConstrs=False}}
+        idCASL = IdComorphism CASL max_sub_SPASS
