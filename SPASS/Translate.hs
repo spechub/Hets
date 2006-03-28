@@ -41,7 +41,13 @@ reservedWords = Set.fromList (map ((flip showPretty) "") [SPEqual
     words "date name author status description")
 
 transSenName :: String -> String
-transSenName = transId . simpleIdToId . mkSimpleId
+transSenName = lowerFirstChar . transId . simpleIdToId . mkSimpleId
+    where lowerFirstChar s = 
+              case s of
+              "" -> error $ "SPASS.Translate.transSenName: each sentence "++
+                            "must have non empty string as name here"
+              (x:xs) -> toLower x : xs
+
 
 transId :: Id -> SPIdentifier
 transId iden 
