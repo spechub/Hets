@@ -17,7 +17,7 @@ module OMDoc.OMDocInput
     ,hybridGToDGraphG
     ,dGraphGToLibEnv
     ,dGraphGToLibEnvOMDocId
-		,mLibEnvFromOMDocFile
+    ,mLibEnvFromOMDocFile
     ,libEnvFromOMDocFile
     ,loadOMDoc
   )
@@ -85,23 +85,24 @@ mLibEnvFromOMDocFile::
 	->FilePath
 	->IO (Maybe (ASL.LIB_NAME, LibEnv))
 mLibEnvFromOMDocFile hco file =
-	Control.Exception.catch
-		(
-			do
-				(ln, _, lenv) <- libEnvFromOMDocFile (emptyGlobalOptions { hetsOpts = hco }) file [libdir hco]
-				return (Just (ln, lenv))
-		)
-		(\_ -> putIfVerbose hco 0 "Error loading OMDoc!" >> return Nothing)
+  Control.Exception.catch
+    (
+      do
+        (ln, _, lenv) <- libEnvFromOMDocFile
+          (emptyGlobalOptions { hetsOpts = hco })
+          file
+        return (Just (ln, lenv))
+    )
+    (\_ -> putIfVerbose hco 0 "Error loading OMDoc!" >> return Nothing)
 
 -- not used in program (for ghci)               
 libEnvFromOMDocFile::
   GlobalOptions
   ->String
-  ->[String]
   ->IO (ASL.LIB_NAME, DGraph, LibEnv)
-libEnvFromOMDocFile go f l =
-  makeImportGraphFullXml go f l >>=
-    return . dGraphGToLibEnv go . hybridGToDGraphG go . processImportGraphXN go
+libEnvFromOMDocFile go f =
+  makeImportGraphFullXml go f >>=
+    return . dGraphGToLibEnvOMDocId go . hybridGToDGraphG go . processImportGraphXN go
 
 -- not used in program (for ghci)
 -- | loads an omdoc-file and returns it even if there are errors
@@ -1146,7 +1147,10 @@ showSenNames mapping =
     implode ", " senstrings
                 
                         
-importGraphToDGNodesXN::GlobalOptions->(ImportGraph (HXT.XmlTrees, Maybe DGraph))->Graph.Node->[DGNodeLab]
+importGraphToDGNodesXN::
+  GlobalOptions
+  ->(ImportGraph (HXT.XmlTrees, Maybe DGraph))
+  ->Graph.Node->[DGNodeLab]
 importGraphToDGNodesXN go ig n =
   let
     mnode = Graph.lab ig n
@@ -1461,89 +1465,94 @@ getImportedTheories xml =
     Map.union catmap externalImports
         
                                         
-makeImportGraphFullXml::GlobalOptions->String->[String]->(IO (ImportGraph HXT.XmlTrees))
-makeImportGraphFullXml go source includes =
-        do
-                putIfVerbose (hetsOpts go) 0 ("Loading " ++ source ++ "...") 
-                mdoc <- maybeFindXml source includes
-                case mdoc of
-                        Nothing -> ioError $ userError ("Unable to find \"" ++ source ++ "\"")
-                        (Just doc) ->
-                                        (let
-                                                omdoc = applyXmlFilter (getChildren .> isTag "omdoc") doc
-                                                omdocid = xshow $ applyXmlFilter (getQualValue "xml" "id") omdoc
-                                                mturi = URI.parseURIReference $ xshow $ getValue "transfer-URI" (head doc)
-                                                turi = fromMaybe (error "Cannot parse URIReference...") mturi
-                                                docmap = getImportedTheories doc
-                                                rdocmap = Map.toList $ Map.map id docmap -- Map.toList $ Map.map (\s -> relativeSource turi s) docmap
-                                                initialgraph = Graph.mkGraph [(1, S (omdocid, (show turi)) omdoc)] []
-                                        in
-                                                foldl
-                                                        (\gio (itname, ituri)  ->
-                                                                gio >>= \g -> buildGraph g 1 turi (TI (itname, ituri))
-                                                        ) (return initialgraph) rdocmap
-                                        )
-        where
-                buildGraph::ImportGraph HXT.XmlTrees->Graph.Node->URI.URI->TheoryImport->IO (ImportGraph HXT.XmlTrees)
-                buildGraph ig n ouri ti@(TI (theoname, theouri)) =
-                        let
-                                mimportsource = find (\(_, (S (_, suri) _)) -> (suri == theouri)) (Graph.labNodes ig)
-                        in
-                        do
-                                case mimportsource of
-                                        (Just (inum, (S (isn,_) _))) ->
-                                                do
-                                                        return 
-                                                                (if inum == n then
-                                                                        debugGO go "mIGFXbG" ("Back-reference in " ++ isn ++ " to " ++ theoname) ig
-                                                                else
-                                                                        (Graph.insEdge (n, inum, ti) ig))
-                                        Nothing ->
-                                                do
-                                                        relsourcefromlibdir <- return $ (relativeSource (fromMaybe (error "!") $ URI.parseURIReference $ libdir (hetsOpts go)) theouri)
-                                                        putIfVerbose (hetsOpts go) 0 ("Loading " ++ relsourcefromlibdir ++ "...")
-                                                        mdocR <- maybeFindXml relsourcefromlibdir []
-                                                        mdoc <- case mdocR of
-                                                                Nothing ->
-                                                                        maybeFindXml theouri includes
-                                                                _ -> return mdocR
-                                                        (newgraph, nn, importimports, newbase) <-
-                                                                return $
-                                                                        (
-                                                                                let
-                                                                                        doc =
-                                                                                                fromMaybe
-                                                                                                        (error ("Unable to import \""++ theoname ++ "\"from \"" ++ theouri ++ "\""))
-                                                                                                        mdoc
-                                                                                        omdoc = applyXmlFilter (getChildren .> isTag "omdoc") doc
-                                                                                        omdocid = xshow $ applyXmlFilter (getQualValue "xml" "id") omdoc
-                                                                                        imturi = URI.parseURIReference $ xshow $ getValue "transfer-URI" (head doc)
-                                                                                        ituri = fromMaybe (error "Cannot parse URIReference...") imturi
-                                                                                        iimports = getImportedTheories doc
-                                                                                        irimports = Map.toList $ Map.map show iimports -- Map.toList $ Map.map (\s -> relativeSource ituri s) iimports
-                                                                                        newnodenum = (Graph.noNodes ig) + 1
-                                                                                        newsource =     S (omdocid, (show ituri))       omdoc
-                                                                                        newgraph = Graph.insEdge (n, newnodenum, ti) $ Graph.insNode (newnodenum, newsource) ig
-                                                                                in
-                                                                                        (newgraph, newnodenum, irimports, ituri)
-                                                                        )
-                                                        foldl (\nigio (itheoname, itheouri) ->
-                                                                nigio >>= \nig -> buildGraph nig nn newbase (TI (itheoname, itheouri))
-                                                                ) (return newgraph) importimports
-                                
-                relativeSource::URI.URI->String->String
-                relativeSource uri s =
-                        let
-                                msuri = URI.parseURIReference s
-                                suri = fromMaybe (error "Cannot parse URIReference") msuri
-                                mreluri = URI.relativeTo suri uri
-                                reluri = fromMaybe (error "Cannot create relative URI...") mreluri
-                        in
-                                case msuri of
-                                        Nothing -> s
-                                        _ -> case mreluri of
-                                                Nothing -> s
-                                                _ -> URI.uriToString id reluri ""
+makeImportGraphFullXml::GlobalOptions->String->(IO (ImportGraph HXT.XmlTrees))
+makeImportGraphFullXml go source =
+  do
+    putIfVerbose (hetsOpts go) 0 ("Loading " ++ source ++ "...") 
+    mdoc <- maybeFindXml source [(libdir (hetsOpts go))]
+    case mdoc of
+      Nothing -> ioError $ userError ("Unable to find \"" ++ source ++ "\"")
+      (Just doc) ->
+        (let
+          omdoc = applyXmlFilter (getChildren .> isTag "omdoc") doc
+          omdocid = xshow $ applyXmlFilter (getQualValue "xml" "id") omdoc
+          mturi = URI.parseURIReference $ xshow $ getValue "transfer-URI" (head doc)
+          turi = fromMaybe (error "Cannot parse URIReference...") mturi
+          muriwithoutdoc = URI.parseURIReference $ (reverse $ dropWhile (/='/') $ reverse (show turi))
+          uriwithoutdoc = fromMaybe (error "Cannot create path to document...") muriwithoutdoc
+          docmap = getImportedTheories doc
+          rdocmap = Map.toList docmap -- Map.toList $ Map.map (\s -> relativeSource turi s) docmap
+          initialgraph = Graph.mkGraph [(1, S (omdocid, (show turi)) omdoc)] []
+        in
+          foldl
+            (\gio (itname, ituri)  ->
+              gio >>= \g -> buildGraph g 1 uriwithoutdoc (TI (itname, ituri))
+            ) (return initialgraph) rdocmap
+        )
+  where
+  buildGraph::ImportGraph HXT.XmlTrees->Graph.Node->URI.URI->TheoryImport->IO (ImportGraph HXT.XmlTrees)
+  buildGraph ig n frompath ti@(TI (theoname, theouri)) =
+    let
+      mimportsource = find (\(_, (S (_, suri) _)) -> (suri == theouri)) (Graph.labNodes ig)
+      includes = [(libdir (hetsOpts go)), (show frompath)]
+    in
+    do
+      case mimportsource of
+        (Just (inum, (S (isn,_) _))) ->
+            do
+              return 
+                (if inum == n then
+                   debugGO go "mIGFXbG" ("Back-reference in " ++ isn ++ " to " ++ theoname) ig
+                 else
+                   (Graph.insEdge (n, inum, ti) ig)
+                )
+        Nothing ->
+          do
+            -- relsourcefromlibdir <- return $ (relativeSource (fromMaybe (error "!") $ URI.parseURIReference $ libdir (hetsOpts go)) theouri)
+            putIfVerbose (hetsOpts go) 0 ("Loading " ++ theouri ++ "...")
+            mdocR <- maybeFindXml theouri includes
+            mdoc <- case mdocR of
+              Nothing ->
+                ioError $ userError ("Unable to find \"" ++ theouri ++ "\" (looked in " ++ (show includes) ++ ")")
+              _ -> return mdocR
+            (newgraph, nn, importimports, newbase) <-
+              return $
+                (
+                  let
+                    doc =
+                      fromMaybe
+                        (error ("Unable to import \""++ theoname ++ "\"from \"" ++ theouri ++ "\""))
+                        mdoc
+                    omdoc = applyXmlFilter (getChildren .> isTag "omdoc") doc
+                    omdocid = xshow $ applyXmlFilter (getQualValue "xml" "id") omdoc
+                    imturi = URI.parseURIReference $ xshow $ getValue "transfer-URI" (head doc)
+                    ituri = fromMaybe (error "Cannot parse URIReference...") imturi
+                    miuriwithoutdoc = URI.parseURIReference $ (reverse $ dropWhile (/='/') $ reverse (show ituri))
+                    iuriwithoutdoc = fromMaybe (error "Cannot create path to document...") miuriwithoutdoc
+                    iimports = getImportedTheories doc
+                    irimports = Map.toList iimports -- Map.toList $ Map.map (\s -> relativeSource ituri s) iimports
+                    newnodenum = (Graph.noNodes ig) + 1
+                    newsource =     S (omdocid, (show ituri))       omdoc
+                    newgraph = Graph.insEdge (n, newnodenum, ti) $ Graph.insNode (newnodenum, newsource) ig
+                  in
+                    (newgraph, newnodenum, irimports, iuriwithoutdoc)
+                )
+            foldl (\nigio (itheoname, itheouri) ->
+              nigio >>= \nig -> buildGraph nig nn newbase (TI (itheoname, itheouri))
+              ) (return newgraph) importimports
+  relativeSource::URI.URI->String->String
+  relativeSource uri s =
+    let
+      msuri = URI.parseURIReference s
+      suri = fromMaybe (error "Cannot parse URIReference") msuri
+      mreluri = URI.relativeTo suri uri
+      reluri = fromMaybe (error "Cannot create relative URI...") mreluri
+    in
+      case msuri of
+        Nothing -> s
+        _ -> case mreluri of
+          Nothing -> s
+          _ -> URI.uriToString id reluri ""
                                                 
                                                 
         
@@ -1552,79 +1561,79 @@ makeImportGraphFullXml go source includes =
 -- not import at all.
 processImportGraphXN::GlobalOptions->(ImportGraph HXT.XmlTrees)->(ImportGraph (HXT.XmlTrees, Maybe DGraph))
 processImportGraphXN go ig =
-        let
-                -- create hybrid graph containing already processed DGs (none at first)
-                hybrid = Graph.mkGraph
-                        (map (\(n, S a b) -> (n, S a (b, Nothing))) $ Graph.labNodes ig)
-                        (Graph.labEdges ig) :: (ImportGraph (HXT.XmlTrees, (Maybe DGraph)))
-                -- create all DG's
-                processed = process hybrid
-        in
-                processed
-        where
-                -- transform one node's omdoc-content to a DGraph and proceed until
-                -- no more transformations are possible
-                process ::
-                        (ImportGraph (HXT.XmlTrees, (Maybe DGraph))) ->
-                        (ImportGraph (HXT.XmlTrees, (Maybe DGraph)))
-                process igxmd =
-                        let
-                                -- which nodes have no DGraph ?
-                                unprocessed = filter (\(_, S _ (_, mdg)) ->
-                                        case mdg of
-                                                Nothing -> True
-                                                _ -> False
-                                        ) $ Graph.labNodes igxmd
-                                -- targets are nodes that import only from processed nodes
-                                -- or do not import at all
-                                targets = filter (\(nodenum, _) ->
-                                        let
-                                                -- get the outgoing edges (imports) for this node
-                                                imports' = Graph.out ig nodenum
-                                                -- for all these edges, check whether it points
-                                                -- to an unprocessed node
-                                                unprocessedimports = filter (\(_,from,_) ->
-                                                        -- but do not count a reference back to current node...
-                                                        if null (filter (\(n,_) -> (n/=nodenum) && (from == n)) unprocessed)
-                                                                then
-                                                                        False
-                                                                else
-                                                                        True
-                                                                ) imports'
-                                        in
-                                                -- the filter is just to check, if there
-                                                -- is something unprocessed 'in the way'
-                                                null unprocessedimports ) unprocessed
-                        in
-                                -- okay, have any nodes survived the filter ?
-                                if null targets
-                                        then
-                                                -- no targets left
-                                                igxmd
-                                        else
-                                                -- okay, process a target
-                                                let
-                                                        -- does not really matter what target to choose...
-                                                        changednode = head targets
-                                                        -- perform conversion
-                                                        --(dg, name) = omdocToDevGraph $
-                                                        --      (\(_, S _ (omdoc, _)) -> omdoc) changednode
-                                                        changednodenum =
-                                                                (\(nodenum, _) -> nodenum) changednode
-                                                        dg = importGraphToDGraphXN go igxmd changednodenum
-                                                        -- name = (\(_, (S (nname,_) _)) -> nname) changednode
-                                                        -- create the altered node
-                                                        newnode = (\(nodenum, S a (omdoc,_)) ->
-                                                                (nodenum, S a (omdoc, Just dg))) changednode
-                                                        -- fetch all other nodes
-                                                        othernodes = filter
-                                                                (\(n,_) -> n /= changednodenum) $
-                                                                        Graph.labNodes igxmd
-                                                in
-                                                        -- start the next round with the new graph
-                                                        process $ Graph.mkGraph
-                                                                (newnode:othernodes)
-                                                                (Graph.labEdges igxmd)
+  let
+    -- create hybrid graph containing already processed DGs (none at first)
+    hybrid = Graph.mkGraph
+            (map (\(n, S a b) -> (n, S a (b, Nothing))) $ Graph.labNodes ig)
+            (Graph.labEdges ig) :: (ImportGraph (HXT.XmlTrees, (Maybe DGraph)))
+    -- create all DG's
+    processed = process hybrid
+  in
+    processed
+  where
+    -- transform one node's omdoc-content to a DGraph and proceed until
+    -- no more transformations are possible
+    process ::
+      (ImportGraph (HXT.XmlTrees, (Maybe DGraph))) ->
+      (ImportGraph (HXT.XmlTrees, (Maybe DGraph)))
+    process igxmd =
+      let
+        -- which nodes have no DGraph ?
+        unprocessed = filter (\(_, S _ (_, mdg)) ->
+          case mdg of
+            Nothing -> True
+            _ -> False
+          ) $ Graph.labNodes igxmd
+        -- targets are nodes that import only from processed nodes
+        -- or do not import at all
+        targets = filter (\(nodenum, _) ->
+          let
+            -- get the outgoing edges (imports) for this node
+            imports' = Graph.out ig nodenum
+            -- for all these edges, check whether it points
+            -- to an unprocessed node
+            unprocessedimports = filter (\(_,from,_) ->
+              -- but do not count a reference back to current node...
+              if null (filter (\(n,_) -> (n/=nodenum) && (from == n)) unprocessed)
+                then
+                  False
+                else
+                  True
+                ) imports'
+          in
+            -- the filter is just to check, if there
+            -- is something unprocessed 'in the way'
+            null unprocessedimports ) unprocessed
+      in
+        -- okay, have any nodes survived the filter ?
+        if null targets
+          then
+            -- no targets left
+            igxmd
+          else
+            -- okay, process a target
+            let
+              -- does not really matter what target to choose...
+              changednode = head targets
+              -- perform conversion
+              --(dg, name) = omdocToDevGraph $
+              --      (\(_, S _ (omdoc, _)) -> omdoc) changednode
+              changednodenum =
+                (\(nodenum, _) -> nodenum) changednode
+              dg = importGraphToDGraphXN go igxmd changednodenum
+              -- name = (\(_, (S (nname,_) _)) -> nname) changednode
+              -- create the altered node
+              newnode = (\(nodenum, S a (omdoc,_)) ->
+                (nodenum, S a (omdoc, Just dg))) changednode
+              -- fetch all other nodes
+              othernodes = filter
+                (\(n,_) -> n /= changednodenum) $
+                  Graph.labNodes igxmd
+            in
+              -- start the next round with the new graph
+              process $ Graph.mkGraph
+                (newnode:othernodes)
+                (Graph.labEdges igxmd)
 
                                                                 
 hybridGToDGraphG::GlobalOptions->(ImportGraph (HXT.XmlTrees, Maybe DGraph))->(ImportGraph DGraph)
