@@ -169,10 +169,12 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
                               "could not compute theory of spec " ++ show i
               Just raw_gTh ->
                case theoremsToAxioms raw_gTh of
-                gTh@(G_theory lid sign0 sens0) ->
-                  mapM_ ( \ ot ->
-                      let f = filePrefix ++ "_" ++ show i ++ "." ++ show ot
-                      in case ot of
+                gTh@(G_theory lid sign0 sens0) -> do
+                  putIfVerbose opt 4 $ "Sublogic of " ++ show i ++ ": " ++
+                          (show $ sublogicOfTh gTh)
+                  mapM_ ( \ ot -> 
+                     let f = filePrefix ++ "_" ++ show i ++ "." ++ show ot
+                     in case ot of
                       ThyFile -> case printTheory (libdir opt) ln i gTh of
                                     Nothing -> putIfVerbose opt 0 $
                                         "could not translate to Isabelle " ++
@@ -187,7 +189,7 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
                                         OnlyAxioms  -> False)
                                        gTh
                             maybe (putIfVerbose opt 0 $
-                                     "could not translate to SPASS " ++
+                                     "could not translate to SPASS: " ++
                                      show i)
                                   (\ d -> writeVerbFile opt f $ shows d "\n")
                                   mDoc
