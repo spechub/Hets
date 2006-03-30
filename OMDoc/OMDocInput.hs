@@ -11,14 +11,28 @@ Portability :  non-portable(Logic)
 -}
 module OMDoc.OMDocInput
   (
+    -- options currently for debugging, stores HetcatsOptions
      GlobalOptions(..)
+    -- reads an OMDoc-File and builds a graph of the files imported
     ,makeImportGraphFullXml
+    -- transforms an import graph into a graph holding a DevGraph for
+    -- each OMDoc-File (+ document)
     ,processImportGraphXN
+    -- strips documents from processed import graph creating a graph of
+    -- DevGraphs
     ,hybridGToDGraphG
+    -- converts a graph of DevGraphs into a LibEnv (using file names for
+    -- library names)
     ,dGraphGToLibEnv
+    -- same as above but using the documents id (name) for library name
     ,dGraphGToLibEnvOMDocId
+    -- wrapper for Hets that tries to create a LibEnv from an OMDoc file
+    -- and returns Nothing on error
     ,mLibEnvFromOMDocFile
+    -- executes a sequence of the above functions to create a LibEnv from
+    -- an OMDoc file
     ,libEnvFromOMDocFile
+    -- loads an xml file via HXT and returns the 'omdoc'-tree
     ,loadOMDoc
   )
   where
@@ -80,9 +94,15 @@ import OMDoc.XmlHandling
 
 import OMDoc.OMDocDefs
 
+{- |
+  A wrapper-function for Hets.
+  Tries to load an OMDoc file and to create a LibEnv.
+  Uses library-path specified in HetcatsOpts to search for imported files.
+  On (IO-)error Nothing is returned
+-}
 mLibEnvFromOMDocFile::
-	HetcatsOpts
-	->FilePath
+	HetcatsOpts -- ^ setup libdir to search for files
+	->FilePath -- ^ the file to load
 	->IO (Maybe (ASL.LIB_NAME, LibEnv))
 mLibEnvFromOMDocFile hco file =
   Control.Exception.catch
@@ -95,19 +115,26 @@ mLibEnvFromOMDocFile hco file =
     )
     (\_ -> putIfVerbose hco 0 "Error loading OMDoc!" >> return Nothing)
 
--- not used in program (for ghci)               
+{- |
+  Tries to load an OMDoc file an to create a LibEnv.
+  Uses @dGraphGToLibEnvOMDocId@ to create library names.
+-}
 libEnvFromOMDocFile::
-  GlobalOptions
-  ->String
+  GlobalOptions -- ^ library path setup with hetsOpts + debugging options
+  ->String -- ^ URI \/ File to load
   ->IO (ASL.LIB_NAME, DGraph, LibEnv)
 libEnvFromOMDocFile go f =
   makeImportGraphFullXml go f >>=
     return . dGraphGToLibEnvOMDocId go . hybridGToDGraphG go . processImportGraphXN go
 
 -- not used in program (for ghci)
--- | loads an omdoc-file and returns it even if there are errors
--- fatal errors lead to IOError
-loadOMDoc ::String->(IO HXT.XmlTrees)
+{- |
+  loads an OMDoc file and returns it even if there are errors
+  fatal errors lead to IOError
+-}
+loadOMDoc ::
+  String -- ^ URI \/ File to load
+  ->(IO HXT.XmlTrees)
 loadOMDoc f =
   do
     tree <- (
@@ -132,10 +159,16 @@ loadOMDoc f =
       else
         ioError $ userError ("Error loading \"" ++ f ++ "\"")
 
+{- |
+  maps a set of (XmlNamedWONIdS, a) tuples to a map using the IdS
+  as key and combining a's into sets if they have the same Id
+  (ignoring xmlname and origin). A conversion function can be specified to 
+  transform a to b where b has to provide an instance of Ord.
+-}
 mapSameIdToSetWith::
   (Ord b)=>
-  (a->b)
-  ->Set.Set (XmlNamedWONId, a)
+  (a->b) -- ^ conversion function
+  ->Set.Set (XmlNamedWONId, a) -- ^ set to make map of
   ->Map.Map Id.Id (Set.Set b)
 mapSameIdToSetWith conv set =
   Set.fold (\(xnwonid, a) mapping ->
@@ -147,14 +180,18 @@ mapSameIdToSetWith conv set =
       Map.insert pureid newset mapping
       ) Map.empty set
 
+{- |
+  creates a DGNodLab from sorts, relations, predicates, operators and
+  sentences
+-}
 xnMapsToDGNodeLab::
-  GlobalOptions
-  ->NODE_NAME
-  ->Set.Set XmlNamedWONId
-  ->Rel.Rel XmlNamedWONId
-  ->Set.Set (XmlNamedWONId, PredTypeXNWON)
-  ->Set.Set (XmlNamedWONId, OpTypeXNWON)
-  ->Set.Set (XmlNamed Hets.SentenceWO)
+  GlobalOptions -- ^ for debugging
+  ->NODE_NAME  -- ^ name for created DGNodeLab
+  ->Set.Set XmlNamedWONId -- ^ sorts for this node
+  ->Rel.Rel XmlNamedWONId -- ^ sort-relations for this node
+  ->Set.Set (XmlNamedWONId, PredTypeXNWON) -- ^ predicates 
+  ->Set.Set (XmlNamedWONId, OpTypeXNWON) -- ^ operators
+  ->Set.Set (XmlNamed Hets.SentenceWO) -- ^ sentences
   ->DGNodeLab
 xnMapsToDGNodeLab
   go
@@ -175,11 +212,14 @@ xnMapsToDGNodeLab
     mapsNNToDGNodeLab go (sorts' , rels' , preds' , ops' , sens' ) nn
 
 
+{- |
+  extracts constructors from adt-structures
+-}
 -- i need a back-reference to the theory to get presentations for adt-constructors...
 extractConsXNWONFromADT::
-  FFXInput
-  ->AnnXMLN
-  ->AnnXMLN
+  FFXInput -- ^ current input settings
+  ->AnnXMLN -- ^ wrapped adt 
+  ->AnnXMLN -- ^ wrapped theory containing adt
   ->(XmlNamedWONId, [(XmlNamedWONId, OpTypeXNWON)])
 extractConsXNWONFromADT ffxi anxml anxmltheory =
   let
@@ -225,10 +265,12 @@ extractConsXNWONFromADT ffxi anxml anxmltheory =
       in
         (conxnwonid, OpTypeXNWON Total argsxn sortid)
 
-                                
+{- |
+  creates sentences from adt-constructors
+-}
 consToSensXN::
-  XmlNamedWONId
-  ->[(XmlNamedWONId, OpTypeXNWON)]
+  XmlNamedWONId -- ^ name of the constructed sort
+  ->[(XmlNamedWONId, OpTypeXNWON)] -- ^ constructors
   ->XmlNamed Hets.SentenceWO
 consToSensXN sortid conlist =
   XmlNamed 
@@ -257,6 +299,9 @@ consToSensXN sortid conlist =
     )
     ("ga_generated_" ++ (xnName sortid))
 
+{- |
+  extracts morphisms from xml
+-}
 xmlToMorphismMap::
   HXT.XmlTrees->
   Hets.MorphismMap
@@ -538,24 +583,35 @@ mapSetToSet mapping =
       Set.union set s
     ) Set.empty (Map.toList mapping)
                 
-
+-- | convert a map to lists to a map to sets
 mapListToMapSet::(Ord b)=>Map.Map a [b]->Map.Map a (Set.Set b)
 mapListToMapSet = Map.map Set.fromList
 
 
+{- |
+  AnnotatedXML is a structure containing xml-trees and and annotation
+  to these trees.
+  Used to have a reference when processing these trees.
+-}
 data AnnotatedXML a = AXML { axAnn::a, axXml::HXT.XmlTrees }
   deriving Show
         
-
+-- | xml-trees with Graph.Node annotation
 type AnnXMLN = AnnotatedXML Graph.Node
 
+-- | equality for AnnotatedXML is determined by equality of annotations
 instance (Eq a)=>Eq (AnnotatedXML a) where
   ax1 == ax2 = (axAnn ax1) == (axAnn ax2)
-        
+
+-- | ordering of AnnotatedXML is determined by order of annotations
 instance (Ord a)=>Ord (AnnotatedXML a) where
   compare ax1 ax2 = compare (axAnn ax1) (axAnn ax2)
 
-
+{- |
+  An annotated theory set is a set of AnnotatedXML where
+  each element in the set contains one theory-tree and is annotated by the
+  number of the theory (appearance in file) (pseudo-graph-nodes)
+-}
 buildAXTheorySet::HXT.XmlTrees->Set.Set AnnXMLN
 buildAXTheorySet t =
   let
@@ -566,7 +622,10 @@ buildAXTheorySet t =
       [1..]
       theories
                         
-
+{- |
+  creates a set of theory names by examining the name of the theory and
+  searching for presentation elements.
+-}
 nodeNamesXNFromXml::Set.Set AnnXMLN->TheoryXNSet
 nodeNamesXNFromXml axmlset =
   Set.fromList $ Set.fold
