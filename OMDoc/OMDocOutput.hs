@@ -986,7 +986,8 @@ makeConstructorMapXN sortxnwoset xmlnames sensxnwo =
     origin = xnWOaToO sensxnwo
     sort = (drop (length "ga_generated_") senname)
     sortxn = case sortToXmlNamedWONSORT (Set.toList sortxnwoset) (Hets.stringToId sort) of
-      Nothing -> error ("Cannot find sort to make constructor for! (No \"" ++ sort ++ "\" in " ++ (show sortxnwoset) ++ ")")
+      Nothing -> error ("Cannot find sort to make constructor for! (No \"" ++ sort ++ "\" in "
+        ++ (show sortxnwoset) ++ ")")
       (Just sortxn' ) -> sortxn'
     (constructormap, xmlnames' ) =
       foldl(\(cmap, xmlnames'' ) (Constraint _ symbs _) ->

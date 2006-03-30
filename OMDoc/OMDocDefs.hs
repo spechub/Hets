@@ -180,7 +180,7 @@ data OpTypeXNWON = OpTypeXNWON { opKind :: FunKind, opArgsXNWON :: [XmlNamedWON 
 
 -- | tries to find the 'pure' sort among named sorts    
 sortToXmlNamedWONSORT::[XmlNamedWONSORT]->SORT->(Maybe XmlNamedWONSORT)
-sortToXmlNamedWONSORT list s = find (\i -> s == (xnWOaToa i)) list
+sortToXmlNamedWONSORT list s = find (\i -> (Hets.idToString s) == (Hets.idToString (xnWOaToa i))) list
 
 sortToXmlNamedWONSORTSet::Set.Set XmlNamedWONSORT->SORT->(Maybe XmlNamedWONSORT)
 sortToXmlNamedWONSORTSet sortset sort =
