@@ -1138,8 +1138,14 @@ type ImportGraph a = CLGraph.Gr (Source a) TheoryImport
 
 unwrapLinkSource::ASL.LIB_NAME->String
 unwrapLinkSource
-  (ASL.Lib_id (ASL.Indirect_link src _)) = src
+  (ASL.Lib_id lid) = unwrapLID lid
+unwrapLinkSource
+  (ASL.Lib_version lid _) = unwrapLID lid
 unwrapLinkSource _ = error "Wrong application of unwrapLinkSource!"
+
+unwrapLID::ASL.LIB_ID->String
+unwrapLID (ASL.Indirect_link url _) = url
+unwrapLID (ASL.Direct_link path _) = path
                 
 libEnvToDGraphG::(ASL.LIB_NAME, DGraph, LibEnv)->(ImportGraph DGraph)
 libEnvToDGraphG (ln,dg,lenv) =
