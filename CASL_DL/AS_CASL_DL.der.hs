@@ -33,7 +33,7 @@ data CardType = CMin | CMax | CExact deriving (Eq, Ord, Show)
 -- | for a detailed specification of all the components look into the sources
 data DL_FORMULA = 
     Cardinality CardType 
-                PRED_NAME -- refers to a declared (binary) predicate 
+                PRED_SYMB -- refers to a declared (binary) predicate 
                 (TERM DL_FORMULA) 
                 -- this term is restricted to constructors
                 -- denoting a (typed) variable
