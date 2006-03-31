@@ -24,12 +24,14 @@ and additional annottations
 module CASL_DL.StatAna where
 
 import CASL_DL.AS_CASL_DL
-import CASL_DL.Print_AS
+import CASL_DL.Print_AS ()
 import CASL_DL.Sign
+import CASL_DL.PredefinedSign
 import CASL_DL.PredefinedGlobalAnnos
 
 import CASL.Sign
 import CASL.MixfixParser
+import CASL.Morphism
 import CASL.StaticAna
 import CASL.Utils
 import CASL.AS_Basic_CASL
@@ -38,14 +40,17 @@ import CASL.Overload
 import CASL.Inject
 import CASL.LiteralFuns
 
+import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
+
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.AnalyseAnnos
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
-import Common.Lib.State
+import Common.PrettyPrint
 import Common.Id
 import Common.Result
+
+import Data.List
 
 import Debug.Trace
 
@@ -104,10 +109,10 @@ mapDL_FORMULA (Cardinality ct pn varTerm natTerm ps) =
     where mapT = mapTerm mapDL_FORMULA
 
 resolveDL_FORMULA :: MixResolve DL_FORMULA
-resolveDL_FORMULA ga ids (Cardinality ct pn varTerm natTerm ps) =
+resolveDL_FORMULA ga ids (Cardinality ct ps varTerm natTerm ran) =
     do vt <- resMixTerm varTerm
        nt <- resMixTerm natTerm
-       return $ Cardinality ct pn vt nt ps 
+       return $ Cardinality ct ps vt nt ran 
     where resMixTerm = resolveMixTrm mapDL_FORMULA 
                                      resolveDL_FORMULA ga ids
 
@@ -120,7 +125,9 @@ noExtMixfixDL f =
 minDLForm :: Min DL_FORMULA CASL_DLSign
 minDLForm sign form = 
     case form of
-    Cardinality ct pn varTerm natTerm ps ->
+    Cardinality ct ps varTerm natTerm ran ->
+     case predName ps of
+     pn ->
         case Map.findWithDefault Set.empty pn (predMap sign) of
         pn_typeSet 
             | Set.null pn_typeSet -> 
@@ -139,34 +146,110 @@ minDLForm sign form =
                    let v_sort = term_sort v2
                    n2 <- oneExpTerm minDLForm sign natTerm
                    let n_sort = term_sort n2
-                       isRelSort = 
-                           if v_sort `super_sort_of_subj` pn_RelTypes 
-                           then [] 
-                           else [Diag Error 
-                                    ("Variable in cardinality constraint "++
-                                     "has wrong type for predicate \""++
-                                     show pn++"\"") 
-                                    ps]
-                       isNatTerm = 
-                           if -- n_sort == "nonNegativeInteger" &&
-                              isNumberTerm (globAnnos sign) n2
+                   ps' <- case sub_sort_of_subj pn v_sort pn_RelTypes of
+                          Result ds mts ->
+                            let ds' = 
+                                 if null ds 
+                                 then [mkDiag Error 
+                                       ("Variable in cardinality constraint\n"++
+                                        "    has wrong type")
+                                       varTerm]
+                                 else ds
+                                amigDs ts = 
+                                 [Diag Error 
+                                  ("Ambigous types found for\n    pred '"++
+                                   showPretty pn "' in cardinalty "++
+                                   "constraint: (showing only two of them)\n"++
+                                   "    '"++ showPretty (head ts) "', '"++
+                                   showPretty (head $ tail ts) "'") ran]
+                             in maybe (Result ds' Nothing) 
+                              (\ ts -> case ts of
+                                [] -> error "CASL_DL.StatAna: Internal error"
+                                [x] -> maybe 
+                                         (return $ 
+                                            Qual_pred_name pn x nullRange)
+                                         (\ pt -> if x == pt 
+                                                  then return ps
+                                                  else noPredTypeErr ps)
+                                         (getType ps)
+                                _ -> maybe (Result (amigDs ts) Nothing) 
+                                           (\ pt -> if pt `elem` ts
+                                                    then return ps
+                                                    else noPredTypeErr ps)
+                                           (getType ps))
+                              mts
+                   let isNatTerm = 
+                           if isNumberTerm (globAnnos sign) n2 && 
+                              (show n_sort == "nonNegativeInteger" || 
+                               trace (show n_sort) True)
                            then []
-                           else [Diag Error
-                                    ("The second argument of a "++
+                           else [mkDiag Error
+                                    ("The second argument of a\n    "++
                                      "cardinality constrain must be a "++
-                                     "number literal typeable as "++
-                                     "nonNegativeInteger\n"++show n2)
-                                    ps]
-                       ds = isRelSort ++ isNatTerm
+                                     "number literal\n    typeable as "++
+                                     "nonNegativeInteger")
+                                    natTerm]
+                       ds = isNatTerm
                    appendDiags ds
                    if null ds
-                    then return (Cardinality ct pn v2 n2 ps)
+                    then return (Cardinality ct ps' v2 n2 ran)
                     else Result [] Nothing
-    where isNumberTerm ga t = 
+    where predName ps = case ps of
+                        Pred_name pn -> pn
+                        Qual_pred_name pn _pType _ -> pn
+          getType ps = case ps of
+                        Pred_name _ -> Nothing
+                        Qual_pred_name _ pType _ -> Just pType
+          isNumberTerm ga t = 
               maybe False (uncurry (isNumber ga)) (splitApplM t)
-          super_sort_of_subj v_sort typeSet =
-              any (\ pt -> case predArgs pt of 
-                           (s:_) -> s == v_sort || 
-                                    Set.member v_sort (supersortsOf s sign)
-                           _ -> error "CASL_DL.StatAna: false predicate"
-                  ) $ Set.toList typeSet
+
+          noPredTypeErr ps = Result 
+              [mkDiag Error "no predicate with \n    given type found" ps]
+              Nothing
+
+          sub_sort_of_subj pn v_sort typeSet =
+              foldl (\ (Result ds mv) pt -> 
+                         case predArgs pt of 
+                         (s:_) 
+                             | leq_SORT sign v_sort s ->
+                                 maybe (Result ds $ Just [toPRED_TYPE pt])
+                                       (\ l -> Result ds $ 
+                                                   Just $ l++[toPRED_TYPE pt])
+                                       mv
+                             | otherwise ->
+                                 Result ds mv 
+                         _ -> Result (ds++[mkDiag Error 
+                                                  ("no propositional "++
+                                                   "symbols are allowed\n    "++
+                                                   "within cardinality "++
+                                                   "constraints")
+                                                  pn]) mv 
+                  ) (Result [] Nothing) $ Set.toList typeSet
+
+-- | symbol map analysis
+checkSymbolMapDL ::  RawSymbolMap -> Result RawSymbolMap
+{-    - implement a symbol mapping that forbids mapping of predefined symbols 
+       from emptySign
+       use from Logic.Logic.Logic and from CASL: 
+          matches, symOf, statSymbMapItems
+-}
+checkSymbolMapDL rsm = 
+    let syms = Map.foldWithKey checkSourceSymbol [] rsm 
+    in if null syms 
+       then return rsm
+       else Result (ds syms) Nothing
+    where checkSourceSymbol sSym _ syms = 
+              if Set.fold (\ ps -> (||) $ matches ps sSym) False 
+                          symOfPredefinedSign
+              then syms ++ [sSym]
+              else syms
+          -- ds :: [RawSymbol] -> [Diagnosis]
+          ds syms = [Diag Error 
+                     ("Predefined CASL_DL symbols\n    cannot be mapped: "++
+                      concat (intersperse ", " $ 
+                              map (\x -> showPretty x "") syms))
+                     (minimum $ map getRange syms)]
+                          
+
+symOfPredefinedSign :: SymbolSet
+symOfPredefinedSign = symOf predefinedSign
