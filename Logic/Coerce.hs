@@ -64,7 +64,17 @@ coerceBasicTheory ::
             -> (sign1, [Named sentence1]) -> m (sign2, [Named sentence2])
 coerceBasicTheory l1 l2 msg t1 = primCoerce l1 l2 msg t1
 
-coerceMorphism ::
+coerceTheory :: 
+  (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+               sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
+   Logic  lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
+               sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
+   Monad m) => lid1 -> lid2 -> String 
+            -> Theory sign1 sentence1 proof_tree1
+            -> m (Theory sign2 sentence2 proof_tree2)
+coerceTheory l1 l2 msg t1 = primCoerce l1 l2 msg t1
+
+coerceMorphism ::    
   (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
    Logic  lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
