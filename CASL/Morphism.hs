@@ -57,11 +57,21 @@ instance Eq SymbType where
 data Symbol = Symbol {symName :: Id, symbType :: SymbType}
               deriving (Show, Eq, Ord)
 
+instance PosItem Symbol where
+    getRange = getRange . symName
+
 type SymbolSet = Set.Set Symbol
 type SymbolMap = Map.Map Symbol Symbol
 
 data RawSymbol = ASymbol Symbol | AnID Id | AKindedId Kind Id
                  deriving (Show, Eq, Ord)
+
+instance PosItem RawSymbol where
+    getRange rs = 
+        case rs of
+        ASymbol s -> getRange s
+        AnID i -> getRange i
+        AKindedId _ i -> getRange i
 
 type RawSymbolSet = Set.Set RawSymbol
 type RawSymbolMap = Map.Map RawSymbol RawSymbol

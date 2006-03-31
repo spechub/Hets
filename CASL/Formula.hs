@@ -44,7 +44,8 @@ parse terms and formulae
 -}
 
 module CASL.Formula (term, formula, restrictedTerm, restrictedFormula, anColon
-               , varDecl, opSort, opFunSort, opType, predType, predUnitType)
+               , varDecl, opSort, opFunSort, opType, predType, predUnitType
+               , qualPredName)
     where
 
 import Common.AnnoState
@@ -155,7 +156,7 @@ opType k =
 parenTerm, braceTerm, bracketTerm :: AParsable f => AParser st (TERM f)
 parenTerm =
     do o <- wrapAnnos oParenT
-       qualVarName o <|> qualOpName o <|> qualPredName o <|>
+       qualVarName o <|> qualOpName o <|> qualPredName [] o <|>
           do (ts, ps) <- terms []
              c <- addAnnos >> cParenT
              return (Mixfix_parenthesized ts $ toPos o ps c)
@@ -210,19 +211,19 @@ predUnitType = do o <- oParenT
                   c <- cParenT
                   return $ Pred_type [] (tokPos o `appRange` tokPos c)
 
-qualPredName :: Token -> AParser st (TERM f)
-qualPredName o =
+qualPredName :: [String] -> Token -> AParser st (TERM f)
+qualPredName k o =
     do v <- asKey predS
-       i <- parseId []
+       i <- parseId k
        c <- colonT
-       s <- predType [] << addAnnos
+       s <- predType k << addAnnos
        p <- cParenT
        return $ Mixfix_qual_pred $ Qual_pred_name i s $ toPos o [v, c] p
 
 parenFormula :: AParsable f => [String] -> AParser st (FORMULA f)
 parenFormula k =
     do o <- oParenT << addAnnos
-       do q <- qualPredName o <|> qualVarName o <|> qualOpName o
+       do q <- qualPredName [] o <|> qualVarName o <|> qualOpName o
           l <- restTerms []  -- optional arguments
           termFormula k (if null l then q else
                                       Mixfix_term (q:l))
