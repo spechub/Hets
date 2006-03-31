@@ -3,7 +3,7 @@ Module      :  $Header$
 Copyright   :  (c) T.Mossakowski, W.Herding, C.Maeder, Uni Bremen 2004-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  luettich@tzi.de
+Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  portable
 
