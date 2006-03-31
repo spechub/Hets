@@ -8,7 +8,12 @@ spec X0 = {}
 spec X1 = 
      sort T1,T2,T3 < Thing
      pred R1 : T1 * T2
-     forall x : Thing
-     . x in T3 <=> minCardinality[R1](x,10)
+     pred R1 : Thing * Thing
+     op i1 : T2
+     forall x : T1
+     . x in T3 <=> minCardinality[(pred R1: T1 * T2)](x,10)
+     . forall x : Thing
+       . x in T3 <=> minCardinality[R1](x,3)
+     . R1(x as T1,i1)
 end
 
