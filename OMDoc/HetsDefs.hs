@@ -717,15 +717,63 @@ getRelationsWOWithNodeDGNamesWOSMDGWO dg sm =
 getPredMapsWithNodeNames::DGraph->PredsMap
 getPredMapsWithNodeNames dg = getNodeNameMapping dg getNodeDeltaPredMaps Map.null
 
+--debugging-function
+findPredsByName::PredsMap->String->[(String, (Id.Id, Set.Set PredType))]
+findPredsByName pm name =
+  let
+    nameid = stringToId name
+  in
+    foldl (\l (k, v) ->
+      foldl (\l' (pid, v') ->
+        if pid == nameid
+          then
+            l' ++ [(k, (pid, v'))]
+          else
+            l'
+      ) l (Map.toList v)
+    ) [] (Map.toList pm)
+
 getPredMapsWithNodeDGNames::DGraph->Map.Map NODE_NAME Preds
 getPredMapsWithNodeDGNames dg = getNodeDGNameMapping dg getNodeDeltaPredMaps Map.null
 
 getPredMapsWOWithNodeDGNamesWO::DGraph->PredsMapDGWO
 getPredMapsWOWithNodeDGNamesWO dg = getNodeDGNameMappingWO dg getPredsMapFromNodeWithOrigins Map.null 
 
+--debugging-function
+findPredsWODGByName::PredsMapDGWO->String->[(NODE_NAMEWO, (IdWO, Set.Set PredType))]
+findPredsWODGByName pm name =
+  let
+    nameid = stringToId name
+  in
+    foldl (\l (k, v) ->
+      foldl (\l' (pid, v') ->
+        if (wonItem pid) == nameid
+          then
+            l' ++ [(k, (pid, v'))]
+          else
+            l'
+      ) l (Map.toList v)
+    ) [] (Map.toList pm)
+    
 -- create a mapping of node-name -> Operand-Mapping (OpName -> Set of OpType)
 getOpMapsWithNodeNames::DGraph->OpsMap
 getOpMapsWithNodeNames dg = getNodeNameMapping dg getNodeDeltaOpMaps Map.null
+
+--debugging-function
+findOpsByName::OpsMap->String->[(String, (Id.Id, Set.Set OpType))]
+findOpsByName om name =
+  let
+    nameid = stringToId name
+  in
+    foldl (\l (k, v) ->
+      foldl (\l' (oid, v') ->
+        if oid == nameid
+          then
+            l' ++ [(k, (oid, v'))]
+          else
+            l'
+      ) l (Map.toList v)
+    ) [] (Map.toList om)
 
 getOpMapsWithNodeDGNames::DGraph->Map.Map NODE_NAME Ops
 getOpMapsWithNodeDGNames dg = getNodeDGNameMapping dg getNodeDeltaOpMaps Map.null

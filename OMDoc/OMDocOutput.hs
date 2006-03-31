@@ -8,6 +8,10 @@ Stability   :  provisional
 Portability :  non-portable(Logic)
 
   Output-methods for writing OMDoc
+
+  BUGS/TODO:
+  - Morphism-generation currently fails for many theories because the symbols
+    cannot be found (but they are there...).
 -}
 module OMDoc.OMDocOutput
   (
@@ -17,7 +21,7 @@ module OMDoc.OMDocOutput
     ,writeOMDocDTD
     ,devGraphToOMDocCMPIOXN
     ,dGraphGToXmlGXN
-		,devGraphToOMDoc
+    ,devGraphToOMDoc
     ,writeXmlG
     ,defaultDTDURI
     ,libEnvToDGraphG
@@ -340,7 +344,17 @@ devGraphToXmlCMPIOXmlNamed go dg =
             let
               ((itheonum, itheoname), itheoxmlname) = case find (\x -> (snd (xnItem x)) == inodename) (Set.toList nodexmlnameset) of
                 Nothing -> error "Unknown Origin of Morphism!"
-                (Just x) -> (xnItem x, xnName x)
+--                (Just x) -> (xnItem x, xnName x)
+                (Just x) ->
+                  let
+                    (itheonum', itheoname') = xnItem x
+                  in
+                    if (itheonum' == nodenum)
+                      then
+                        -- this is my fault, but I don't know why yet...
+                        error "Wierd... morphism from node to itself... (fatal error)"
+                      else
+                        (xnItem x, xnName x)
               itheosorts = Map.findWithDefault Set.empty (Hets.mkWON itheoname itheonum) xmlnamedsortswomap
               itheopreds = (Map.findWithDefault [] (Hets.mkWON itheoname itheonum) xmlnamedpredswomap)
               itheoops = (Map.findWithDefault [] (Hets.mkWON itheoname itheonum) xmlnamedopswomap)
@@ -352,10 +366,10 @@ devGraphToXmlCMPIOXmlNamed go dg =
                     mmsorts = map (\(a,b) ->
                       (
                         case find (\i -> (xnWOaToa i) == a) (Set.toList itheosorts) of
-                          Nothing -> error ("Unable to find imported sort " ++ (show a) ++ " in source-sorts : " ++ (show itheosorts)) 
+                          Nothing -> error ("(In : "++ theoname ++", from " ++ itheoxmlname ++ ") Unable to find imported sort " ++ (show a) ++ " in source-sorts : " ++ (show itheosorts)) 
                           (Just x) -> xnName x,
                         case find (\i -> (xnWOaToa i) == b) (Set.toList theosorts) of
-                          Nothing -> error ("Unable to find imported sort " ++ (show b) ++ " in target-sorts : " ++ (show theosorts))
+                          Nothing -> error ("(In :"++ theoname  ++") Unable to find imported sort " ++ (show b) ++ " in target-sorts : " ++ (show theosorts))
                           (Just x) -> xnName x
                       )
                       )
@@ -364,10 +378,10 @@ devGraphToXmlCMPIOXmlNamed go dg =
                     mmpreds = map (\((ai,_), (bi,_)) ->
                       (
                         case find (\(ii,_) -> (xnWOaToa ii) == ai) itheopreds of
-                          Nothing -> error ("Unable to find import predication " ++ (show ai) ++ " in source-preds : " ++ (show itheopreds)) 
+                          Nothing -> error ("(In : "++ theoname ++"(" ++ (show nodenum) ++ "), from " ++ itheoxmlname ++ "(" ++ (show itheonum) ++ ") Unable to find import predication " ++ (show ai) ++ " in source-preds : " ++ (show itheopreds) ++ " theories : " ++ (show nodexmlnameset)) 
                           (Just (ii,_)) -> show $ (xnWOaToa ii), -- xnName ii,
                         case find (\(ii,_) -> (xnWOaToa ii) == bi) theopreds of
-                          Nothing -> error ("Unable to find import predication " ++ (show bi) ++ " in target-preds : " ++ (show theopreds))
+                          Nothing -> error ("(In :"++ theoname  ++") Unable to find import predication " ++ (show bi) ++ " in target-preds : " ++ (show theopreds))
                           (Just (ii,_)) -> xnName ii
                       )
                       )
@@ -376,10 +390,10 @@ devGraphToXmlCMPIOXmlNamed go dg =
                     mmops = map (\((ai,_), (bi,_)) ->
                       (
                         case find (\(ii,_) -> (xnWOaToa ii) == ai) itheoops of
-                          Nothing -> error ("Unable to find import operator " ++ (show ai) ++ " in source-ops : " ++ (show itheoops))
+                          Nothing -> error ("(In : "++ theoname ++", from " ++ itheoxmlname ++ ") Unable to find import operator " ++ (show ai) ++ " in source-ops : " ++ (show itheoops))
                           (Just (ii,_)) -> xnName ii,
                         case find (\(ii,_) -> (xnWOaToa ii) == bi) theoops of
-                          Nothing -> error ("Unable to find import operator " ++ (show bi) ++ " in target-ops : " ++ (show theoops))
+                          Nothing -> error ("(In :"++ theoname  ++") Unable to find import operator " ++ (show bi) ++ " in target-ops : " ++ (show theoops))
                           (Just (ii,_)) -> xnName ii
                       )
                       )
