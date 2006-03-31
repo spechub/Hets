@@ -11,11 +11,11 @@ Instance of class Logic for CASL DL.
 -}
 
 {- todo:
-    - implement a symbol mapping that forbids mapping of predefined symbols 
-       from emptySign
 -}
 
 module CASL_DL.Logic_CASL_DL (CASL_DL(..)) where
+
+import Common.Result
 
 import CASL_DL.AS_CASL_DL
 import CASL_DL.Sign
@@ -82,8 +82,9 @@ instance Syntax CASL_DL DL_BASIC_SPEC
 
 map_DL_FORMULA :: MapSen DL_FORMULA CASL_DLSign ()
 map_DL_FORMULA mor (Cardinality ct pn varT natT r) =
-    Cardinality ct pn varT' natT' r
-    where varT' = mapTrm varT
+    Cardinality ct pn' varT' natT' r
+    where pn' = mapPrSymb mor pn
+          varT' = mapTrm varT
           natT' = mapTrm natT
           mapTrm = mapTerm map_DL_FORMULA mor
 
@@ -98,9 +99,20 @@ instance Sentences CASL_DL DLFORMULA () DLSign DLMor Symbol where
       simplify_sen CASL_DL = simplifySen minDLForm simplifyCD
 
 simplifyCD :: DLSign -> DL_FORMULA -> DL_FORMULA
-simplifyCD sign (Cardinality ct pn t1 t2 r) =
-    Cardinality ct pn (simp t1) (simp t2) r
-    where simp = rmTypesT minDLForm simplifyCD sign
+simplifyCD sign (Cardinality ct ps t1 t2 r) = simpCard
+    where simpCard = maybe (card ps)
+                           (const $ card $ Pred_name pn)
+                           (resultToMaybe $
+                            minDLForm sign $ card $ Pred_name pn)
+
+          simp = rmTypesT minDLForm simplifyCD sign
+
+          card psy = Cardinality ct psy (simp t1) (simp t2) r
+
+          pn = case ps of
+               Pred_name n -> n
+               Qual_pred_name n _pType _ -> n
+
 
 instance StaticAnalysis CASL_DL DL_BASIC_SPEC DLFORMULA ()
                SYMB_ITEMS SYMB_MAP_ITEMS
@@ -108,7 +120,8 @@ instance StaticAnalysis CASL_DL DL_BASIC_SPEC DLFORMULA ()
                DLMor 
                Symbol RawSymbol where
          basic_analysis CASL_DL = Just $ basicCASL_DLAnalysis
-         stat_symb_map_items CASL_DL = statSymbMapItems
+         stat_symb_map_items CASL_DL sml = 
+             statSymbMapItems sml >>= checkSymbolMapDL 
          stat_symb_items CASL_DL = statSymbItems
          ensures_amalgamability CASL_DL _ = 
              fail "CASL_DL: ensures_amalgamability nyi" -- ???
