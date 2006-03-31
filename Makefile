@@ -14,7 +14,7 @@ all: patch hets
 ####################################################################
 ## Some varibles, which control the compilation
 
-INCLUDE_PATH = hxt
+INCLUDE_PATH = hxt syb-generics-2.9-2 haifa-lite/src HCl-0.2/src
 HXT_PATHS = Data Data/Tree Data/Tree/NTree Data/Digest Text Text/XML \
     Text/XML/HXT Text/XML/HXT/IO Text/XML/HXT/DOM Text/XML/HXT/Arrow \
     Text/XML/HXT/XPath Text/XML/HXT/Validator Text/XML/HXT/Parser \
@@ -83,8 +83,6 @@ HC_FLAGS = \
 # flags also come in via  ../uni/uni-package.conf
 # but added it here in case of compilation without uni
 
-HC_INCLUDE = $(addprefix -i, $(INCLUDE_PATH))
-
 logics = CASL HasCASL Isabelle Modal CoCASL COL CspCASL CASL_DL SPASS OWL_DL ConstraintCASL
 
 TESTTARGETS += test_parser hetpa hetana Test.o wrap isa fromKif \
@@ -94,6 +92,7 @@ UNI_PACKAGE_CONF = $(wildcard ../uni/uni-package.conf)
 ifneq ($(strip $(UNI_PACKAGE_CONF)),)
 HC_PACKAGE = -package-conf $(UNI_PACKAGE_CONF) -package uni-davinci \
     -package uni-server -DUNI_PACKAGE
+
 
 # some modules from uni for haddock
 # if uni/server is included also HaXml sources are needed
@@ -191,7 +190,41 @@ endif
 #HC_PROF = -prof -auto-all -fignore-asserts
 
 HC_OPTS = $(HC_FLAGS) $(HC_INCLUDE) $(HC_PACKAGE) $(PFE_FLAGS) $(HC_PROF) \
-    -DCASLEXTENSIONS
+    -DCASLEXTENSIONS $(THIRD_PARTY_CODE) $(EXT_HC_OPTS)
+
+####################################################################
+## third party code as package or from source
+
+THIRD_PARTY_DIR = $(PWD)/thirdParty
+PACKAGE_PATH = hxt HCl-0.2 syb-generics-2.9-2 haifa-lite
+
+packages: hxt-ext-package HCl-package syb-generics-package haifa-lite-package
+	touch .use-packages
+export THIRD_PARTY_DIR HC
+
+no-packages:
+	$(RM) .use-packages
+
+hxt-ext-package: hxt/hxt.cabal
+	$(MAKE) -C hxt hxt-ext
+
+HCl-package: HCl-0.2/HCl.cabal
+	$(MAKE) -C HCl-0.2 HCl
+
+syb-generics-package: syb-generics-2.9-2/syb-generics.cabal
+	$(MAKE) -C syb-generics-2.9-2 syb-generics
+
+haifa-lite-package: haifa-lite/haifa.cabal
+	$(MAKE) -C haifa-lite haifa-lite
+
+HAS_PACKAGES = $(wildcard .use-packages)
+
+ifneq "$(HAS_PACKAGES)" ""
+THIRD_PARTY_CODE = -package-conf $(THIRD_PARTY_DIR)/package.conf \
+    -package hxt-ext -package HCl -package syb-generics -package HAIFA
+else
+HC_INCLUDE = $(addprefix -i, $(INCLUDE_PATH)) 
+endif
 
 ####################################################################
 ## sources for hets
@@ -305,6 +338,7 @@ nondoc_sources = $(wildcard utils/DrIFT-src/*.hs) \
     $(genrule_header_files) $(generated_rule_files) \
     $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hspp \
     Modal/GeneratePatterns.inline.hs \
+    ./Setup.lhs \
     CASL/CCC/FreeTypes.hs \
     Haskell/PreludeString.append.hs Haskell/ProgramaticaPrelude.hs \
     $(patsubst %.hs, %.der.hs, $(drifted_files))
@@ -468,6 +502,11 @@ install-hets:
 
 install: hets-opt install-hets
 
+pack/install-%.jar: pack/install-%.xml pack/UserInputSpec-%.xml hets.in hets 
+       ## TODO: add more dependencies and use hets-opt
+	compile $< -b . -k standard -o $@
+#	compile $< -b . -k web -o $@
+
 ###################################
 ### Common/LaTeX_maps.hs generation
 
@@ -478,7 +517,7 @@ utils/genItCorrections: $(GENITCORRECTIONS_deps)
 pretty/LaTeX_maps.hs: utils/words.pl utils/genItCorrections \
     pretty/words.input pretty/fonts.input pretty/width-table.tex.templ
 	@echo -n "Generating pretty/LaTeX_maps.hs ... "
-	@(cd pretty >/dev/null; $(PERL) ../utils/words.pl > words.pl.log)
+#@(cd pretty >/dev/null; $(PERL) ../utils/words.pl > words.pl.log)
 	@(cd pretty >/dev/null; ../utils/genItCorrections \
             gen_it_characters gen_it_words >> LaTeX_maps.hs)
 	@echo "ready"
@@ -567,11 +606,18 @@ clean_pretty:
 	$(RM) pretty/*.c.* pretty/*.h.* pretty/gen_it_* \
                pretty/generated_words.tex
 
+clean_packages:
+	$(RM) -r $(THIRD_PARTY_DIR)/*
+	echo [] > $(THIRD_PARTY_DIR)/package.conf
+	$(RM) .use-packages
+	for p in $(PACKAGE_PATH) ; do \
+	    ($(MAKE) -C $$p clean) ; done
+
 ### additionally removes the library files
-real_clean: clean
+real_clean: clean clean_packages
 
 ### additionally removes generated files not in the CVS tree
-distclean: clean clean_genRules
+distclean: real_clean clean_genRules
 	$(RM) $(derived_sources)
 	$(RM) Modal/GeneratePatterns.inline.hs utils/appendHaskellPreludeString
 	$(RM) utils/DrIFT utils/genRules $(INLINEAXIOMS)
@@ -674,6 +720,10 @@ OWL_DL/readAStest: OWL_DL/ToHaskellAS.hs Common/ATerm/*.hs \
 ### HetCASL with dev graph
 hetdg: GUI/hetdg.hs $(drifted_files) *.hs
 	$(HC) --make -o $@ $< $(HC_OPTS)
+
+### HAIFA test
+SPASS/tests/soapTest: SPASS/tests/soapTest.hs
+	$(HC) --make -o $@ $< $(HC_OPTS) -fth -fallow-undecidable-instances -fcontext-stack200
 
 taxonomy: Taxonomy/taxonomyTool
 
