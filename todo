@@ -252,7 +252,9 @@ set up a ticket and tracking systems (for bugs and features) instead
 of this messy todo list
 --> sourceforge???
 
-refactoring of dgraphs: add unique tags (but no table)
+refactoring of dgraphs: add unique tags + hashes (but no table)
+  how to compare complex datastructures:
+     tag x1==tag x2 || (hash x1==hash x2 && x1==x2)
 
 display library graph
 
