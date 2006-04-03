@@ -1,4 +1,4 @@
-forall aa, ab: s . aa <= ab => p
+forall aa, ab : s . aa <= ab => p
 not s(n) <= 0
 not s(n) <= 0
 s(n) <= 0
