@@ -2,4 +2,4 @@ spec X_inv =
 sorts sX
 pred A : sX * sX
 
- . forall x, y: sX . A(x, y) <=> A(y, x) %(Ax1)%
+forall x, y: sX . A(x, y) <=> A(y, x) %(Ax1)%
