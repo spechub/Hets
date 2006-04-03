@@ -838,6 +838,24 @@ getNodeImportsNodeNames dg = getNodeNameMapping dg (
 			((adjustNodeName ("AnonNode_"++(show from)) $ getDGNodeName node), mmm):names
 		) [] $ inputLNodes dgr n ) Set.null
 	
+getNodeImportsNodeDGNamesWO::DGraph->Map.Map NODE_NAMEWO (Set.Set (NODE_NAMEWO, Maybe MorphismMap))
+getNodeImportsNodeDGNamesWO dg = getNodeDGNameMappingWO dg (
+	\dgr n -> Set.fromList $ 
+	 foldl (\names (from,node) ->
+	 	let
+			edges' = filter (\(a,b,_) -> (a == from) && (b==n)) $ Graph.labEdges dgr
+			caslmorph = case edges' of
+				[] -> emptyCASLMorphism
+				(l:_) -> getCASLMorph l
+			mmm = if isEmptyMorphism caslmorph
+				then
+					Nothing
+				else
+					(Just (makeMorphismMap caslmorph))
+		in
+			((mkWON (dgn_name node) from), mmm):names
+		) [] $ inputLNodes dgr n ) Set.null
+		
 getNodeImportsNodeDGNames::DGraph->Map.Map NODE_NAME (Set.Set (NODE_NAME, Maybe MorphismMap))
 getNodeImportsNodeDGNames dg = getNodeDGNameMapping dg (
 	\dgr n -> Set.fromList $ 
@@ -855,7 +873,7 @@ getNodeImportsNodeDGNames dg = getNodeDGNameMapping dg (
 		in
 			((dgn_name node), mmm):names
 		) [] $ inputLNodes dgr n ) Set.null
-		
+                
 adjustNodeName::String->String->String
 adjustNodeName def [] = def
 adjustNodeName _ name = name

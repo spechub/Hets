@@ -233,7 +233,7 @@ devGraphToXmlCMPIOXmlNamed go dg =
     predswomap = Map.map mapToSetToTupelList $ Hets.getPredMapsWOWithNodeDGNamesWO dg
     opswomap = Map.map mapToSetToTupelList $ Hets.getOpMapsWOWithNodeDGNamesWO dg
     senswomap = (\smap -> debugGO go "dGTXCMPIOXNsens" ("Sentences : " ++ (showSensWOMap smap)) smap) $ Hets.getSentencesWOWithNodeDGNamesWO dg
-    importsmap = Hets.getNodeImportsNodeDGNames dg
+    importsmapwo = Hets.getNodeImportsNodeDGNamesWO dg
     -- sorts
     -- (xmlnamedsortswomap, xmlnames_sm) =
     (xmlnamedsortswomap, _) =
@@ -338,23 +338,16 @@ devGraphToXmlCMPIOXmlNamed go dg =
               m
             ) Map.empty (Rel.toList insorts)
         -- imports/morphisms
-        timports = Map.findWithDefault Set.empty nodename importsmap
+        timports = Map.findWithDefault
+          Set.empty
+          (Hets.mkWON nodename nodenum)
+          importsmapwo
         importsxn = Set.map
-          (\(inodename, mmm) ->
+          (\(inodenamewo, mmm) ->
             let
-              ((itheonum, itheoname), itheoxmlname) = case find (\x -> (snd (xnItem x)) == inodename) (Set.toList nodexmlnameset) of
+              ((itheonum, itheoname), itheoxmlname) = case find (\x -> (fst (xnItem x)) == (Hets.woOrigin inodenamewo)) (Set.toList nodexmlnameset) of
                 Nothing -> error "Unknown Origin of Morphism!"
---                (Just x) -> (xnItem x, xnName x)
-                (Just x) ->
-                  let
-                    (itheonum', itheoname') = xnItem x
-                  in
-                    if (itheonum' == nodenum)
-                      then
-                        -- this is my fault, but I don't know why yet...
-                        error "Wierd... morphism from node to itself... (fatal error)"
-                      else
-                        (xnItem x, xnName x)
+                (Just x) -> (xnItem x, xnName x)
               itheosorts = Map.findWithDefault Set.empty (Hets.mkWON itheoname itheonum) xmlnamedsortswomap
               itheopreds = (Map.findWithDefault [] (Hets.mkWON itheoname itheonum) xmlnamedpredswomap)
               itheoops = (Map.findWithDefault [] (Hets.mkWON itheoname itheonum) xmlnamedopswomap)
