@@ -167,10 +167,9 @@ printRecord mf = Record
           Op_name i -> idApplDoc i l
           Qual_op_name _ _ _ -> let d = parens $ printOpSymb o in
               if null l then d else fcat [d, parens $ fsep $ punctuate comma l]
-    , foldSorted_term = \ (Sorted_term o _ _) r t _ ->
-          fsep [mkSimpleDoc o r, colon, idDoc t]
-    , foldCast = \ (Cast o _ _) r t _ ->
-          fsep [mkSimpleDoc o r, text asS, idDoc t]
+    , foldSorted_term = \ _ r t _ -> fsep[idApplDoc typeId [r], idDoc t] 
+    , foldCast = \ _ r t _ -> 
+          fsep[idApplDoc (mkId [placeTok, mkSimpleId asS]) [r], idDoc t]
     , foldConditional = \ (Conditional ol _ _ _) l f r _ ->
           fsep [if isCond ol then parens l else l,
                 text whenS, f, text elseS, r]
@@ -197,15 +196,6 @@ printTerm mf = foldTerm $ printRecord mf
 
 instance Pretty f => Pretty (TERM f) where
     pretty = printTerm pretty
-
-mkSimpleDoc :: TERM f -> Doc -> Doc
-mkSimpleDoc t = if isSimpleTerm t then id else parens
-
-isSimpleTerm :: TERM f -> Bool
-isSimpleTerm t = case t of
-    Application (Op_name i) (_ : _) _ -> not $ isMixfix i
-    Mixfix_term _ -> False
-    _ -> True
 
 isQuant, isEquiv, isAnyImpl, isJunct :: FORMULA f -> Bool
 isQuant f = case f of
