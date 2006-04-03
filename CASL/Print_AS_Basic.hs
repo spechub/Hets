@@ -25,7 +25,7 @@ import Common.PPUtils
 import qualified Common.Doc as Doc
 
 import CASL.AS_Basic_CASL
-import qualified CASL.ToDoc as ToDoc
+import CASL.ToDoc
 
 instance (PrettyPrint b, PrettyPrint s, PrettyPrint f) =>
     PrettyPrint (BASIC_SPEC b s f) where
@@ -67,10 +67,10 @@ instance (PrettyPrint s, PrettyPrint f) =>
          PrettyPrint (SIG_ITEMS s f) where
     printText0 ga (Sort_items l _) =
         text (sortS ++ pluralS l) <+> semiAnno_text ga l
-    printText0 ga (Op_items l _) =
-        text (opS ++ pluralS l) <+> semiAnno_text ga l
-    printText0 ga (Pred_items l _) =
-        text (predS ++ pluralS l) <+> semiAnno_text ga l
+    printText0 ga (Op_items l _) = text (opS ++ pluralS l) <+>
+             Doc.toText ga (Doc.semiAnnos (printOpItem (fromText ga)) l)
+    printText0 ga (Pred_items l _) = text (predS ++ pluralS l) <+>
+             Doc.toText ga (Doc.semiAnnos (printPredItem (fromText ga)) l)
     printText0 ga (Datatype_items l _) =
         text (typeS ++ pluralS l) <+> semiAnno_text ga l
     printText0 ga (Ext_SIG_ITEMS s) = printText0 ga s
@@ -89,20 +89,7 @@ instance PrettyPrint f =>
         fsep $ punctuate  (space <>text equalS) $ map (printText0 ga) l
 
 instance PrettyPrint f => PrettyPrint (OP_ITEM f) where
-    printText0 ga (Op_decl l t a _) =
-        hang (hang (commaT_text ga l)
-                    4
-                    (colon <> printText0 ga t <> condComma))
-             4 $
-               if na then empty
-               else commaT_text ga a
-        where na = null a
-              condComma = if na then empty
-                          else comma
-    printText0 ga (Op_defn n h t _) = printText0 ga n
-                                  <> printText0 ga h
-                                  <+> text equalS
-                                  <+> printText0 ga t
+    printText0 ga = Doc.toText ga . printOpItem (fromText ga)
 
 optQuMark :: FunKind -> Doc
 optQuMark Partial = text quMark
@@ -112,36 +99,22 @@ instance PrettyPrint OP_TYPE where
     printText0 = toText
 
 instance PrettyPrint OP_HEAD where
-    printText0 ga (Op_head k l s _) =
-        (if null l then empty
-         else parens(semiT_text ga l))
-        <> colon <> optQuMark k
-        <+> printText0 ga s
+    printText0 ga = Doc.toText ga . printOpHead
 
 instance PrettyPrint ARG_DECL where
-    printText0 ga (Arg_decl l s _) = commaT_text ga l
-                              <+> colon
-                              <> printText0 ga s
+    printText0 ga = Doc.toText ga . printArgDecl
 
 instance PrettyPrint f => PrettyPrint (OP_ATTR f) where
-    printText0 _ (Assoc_op_attr)   = text assocS
-    printText0 _ (Comm_op_attr)    = text commS
-    printText0 _ (Idem_op_attr)    = text idemS
-    printText0 ga (Unit_op_attr t) = text unitS <+> printText0 ga t
+    printText0 ga = Doc.toText ga . printAttr (fromText ga)
 
 instance PrettyPrint f => PrettyPrint (PRED_ITEM f) where
-    printText0 ga (Pred_decl l t _) = commaT_text ga l
-                                  <+> colon <+> printText0 ga t
-    printText0 ga (Pred_defn n h f _) = printText0 ga n
-                                        <> printText0 ga h
-                                        <+> text equivS
-                                        <+> printFORMULA ga (item f)
+    printText0 ga = Doc.toText ga . printPredItem (fromText ga)
 
 instance PrettyPrint PRED_TYPE where
     printText0 = toText
 
 instance PrettyPrint PRED_HEAD where
-    printText0 ga (Pred_head l _) = parens (semiT_text ga l)
+    printText0 ga = Doc.toText ga . printPredHead
 
 instance PrettyPrint DATATYPE_DECL where
     printText0 ga (Datatype_decl s a _) = case a of
@@ -173,7 +146,7 @@ instance PrettyPrint VAR_DECL where
     printText0 = toText
 
 printFORMULA :: PrettyPrint f => GlobalAnnos -> FORMULA f -> Doc
-printFORMULA ga = Doc.toText ga . ToDoc.printFormula (fromText ga)
+printFORMULA ga = Doc.toText ga . printFormula (fromText ga)
 
 printTheoryFormula :: PrettyPrint f => GlobalAnnos -> Named (FORMULA f) -> Doc
 printTheoryFormula ga f = printAnnotedFormula_Text0 ga
@@ -189,7 +162,7 @@ instance PrettyPrint PRED_SYMB where
     printText0 = toText
 
 instance PrettyPrint f => PrettyPrint (TERM f) where
-    printText0 ga = Doc.toText ga . ToDoc.printTerm (fromText ga)
+    printText0 ga = Doc.toText ga . printTerm (fromText ga)
 
 instance PrettyPrint OP_SYMB where
     printText0 = toText
