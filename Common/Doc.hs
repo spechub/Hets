@@ -766,7 +766,7 @@ isDiffAssoc assocs precs op arg =
                _ -> op /= arg || not (Map.member arg assocs)
 
 isSafeLhs :: Id -> Id -> Bool
-isSafeLhs op arg = endPlace op && not (isInfix arg)
+isSafeLhs op arg = isPostfix arg || endPlace op && not (isInfix arg)
 
 isBoth :: PrecedenceGraph -> Id -> Id -> Bool
 isBoth precs op arg = case precRel precs op arg of
