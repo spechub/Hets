@@ -29,9 +29,8 @@ printQuant q = case q of
     Unique_existential -> unique
 
 printSortedVars :: [VAR] -> SORT -> Doc
-printSortedVars l s = 
-    fcat $ (punctuate (comma <> space) $ 
-            map sidDoc l) ++ [ colon, space, idDoc s]
+printSortedVars l s =
+    fsep $ (punctuate comma $ map sidDoc l) ++ [colon, idDoc s]
 
 printVarDecl :: VAR_DECL -> Doc
 printVarDecl (Var_decl l s _) = printSortedVars l s
@@ -49,9 +48,9 @@ printPredItem :: (f -> Doc) -> PRED_ITEM f -> Doc
 printPredItem mf p = case p of
     Pred_decl l t _ -> fsep $ (punctuate comma $ map idDoc l)
                        ++ [colon, printPredType t]
-    Pred_defn i h f _ -> 
-        fcat [idDoc i, printPredHead h, space, equiv, space, 
-              printAnnoted (printFormula mf) f] 
+    Pred_defn i h f _ ->
+        fcat [idDoc i, printPredHead h, space, equiv, space,
+              printAnnoted (printFormula mf) f]
 
 printAttr :: (f -> Doc) -> OP_ATTR f -> Doc
 printAttr mf a = case a of
@@ -62,7 +61,8 @@ printAttr mf a = case a of
 
 printOpHead :: OP_HEAD -> Doc
 printOpHead (Op_head k l r _) =
-    fcat [if null l then space else printArgDecls l
+    fcat [if null l then empty else printArgDecls l
+         , space
          , case k of
              Total -> colon
              Partial -> text ":?"
@@ -71,11 +71,11 @@ printOpHead (Op_head k l r _) =
 printOpItem :: (f -> Doc) -> OP_ITEM f -> Doc
 printOpItem mf p = case p of
     Op_decl l t a _ -> fsep $ (punctuate comma $ map idDoc l)
-        ++ [colon, (if null a then id else (<> comma)) $ printOpType t]
-        ++ punctuate comma (map (printAttr mf) a) 
-    Op_defn i h t _ -> 
-        fcat [idDoc i, printOpHead h, space, equals, space, 
-              printAnnoted (printTerm mf) t] 
+        ++ [colon <> (if null a then id else (<> comma))(printOpType t)]
+        ++ punctuate comma (map (printAttr mf) a)
+    Op_defn i h t _ ->
+        fcat [idDoc i, printOpHead h, space, equals, space,
+              printAnnoted (printTerm mf) t]
 
 instance Pretty VAR_DECL where
     pretty = printVarDecl
@@ -137,7 +137,7 @@ printRecord mf = Record
              else fsep [nr, text ifS, nl]
     , foldEquivalence = \ (Equivalence oL oR _) l r _ ->
           fsep [mkEquivDoc oL l, equiv, mkEquivDoc oR r]
-    , foldNegation = \ _ r _ -> hsep [notDoc, r]
+    , foldNegation = \ (Negation o _) r _ -> hsep [notDoc, mkJunctDoc o r]
     , foldTrue_atom = \ _ _ -> text trueS
     , foldFalse_atom = \ _ _ -> text falseS
     , foldPredication = \ _ p l _ -> case p of
@@ -167,8 +167,8 @@ printRecord mf = Record
           Op_name i -> idApplDoc i l
           Qual_op_name _ _ _ -> let d = parens $ printOpSymb o in
               if null l then d else fcat [d, parens $ fsep $ punctuate comma l]
-    , foldSorted_term = \ _ r t _ -> fsep[idApplDoc typeId [r], idDoc t] 
-    , foldCast = \ _ r t _ -> 
+    , foldSorted_term = \ _ r t _ -> fsep[idApplDoc typeId [r], idDoc t]
+    , foldCast = \ _ r t _ ->
           fsep[idApplDoc (mkId [placeTok, mkSimpleId asS]) [r], idDoc t]
     , foldConditional = \ (Conditional ol _ _ _) l f r _ ->
           fsep [if isCond ol then parens l else l,
