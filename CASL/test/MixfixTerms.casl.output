@@ -33,7 +33,7 @@ while while a do b od do while c do d od od
 A A 0 B B
 b + A 0 B + b
 - A 0 B
-((a !) !) !
+a ! ! !
 Pl7 { nicht_wenden } -- folge_dem_Gang --> { nicht_wenden } Pl3 
 --> RS3 
 --> RS6

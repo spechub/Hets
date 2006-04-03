@@ -63,3 +63,8 @@ a when b else c
 - 12.23E34
 - 1
 + 2
+12.23E34 : a as a : a
+(- - a) : a
+a ! ! : a
+(a + b) : c
+- (op f__ : a -> a)(a) ! : a
