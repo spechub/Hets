@@ -67,10 +67,12 @@ instance (PrettyPrint s, PrettyPrint f) =>
          PrettyPrint (SIG_ITEMS s f) where
     printText0 ga (Sort_items l _) =
         text (sortS ++ pluralS l) <+> semiAnno_text ga l
-    printText0 ga (Op_items l _) = text (opS ++ pluralS l) <+>
-             Doc.toText ga (Doc.semiAnnos (printOpItem (fromText ga)) l)
-    printText0 ga (Pred_items l _) = text (predS ++ pluralS l) <+>
-             Doc.toText ga (Doc.semiAnnos (printPredItem (fromText ga)) l)
+    printText0 ga (Op_items l _) =
+        Doc.toText ga $ Doc.topKey (opS ++ pluralS l) Doc.<+> 
+             Doc.semiAnnos (printOpItem $ fromText ga) l
+    printText0 ga (Pred_items l _) = 
+        Doc.toText ga $ Doc.topKey (predS ++ pluralS l) Doc.<+>
+             Doc.semiAnnos (printPredItem $ fromText ga) l
     printText0 ga (Datatype_items l _) =
         text (typeS ++ pluralS l) <+> semiAnno_text ga l
     printText0 ga (Ext_SIG_ITEMS s) = printText0 ga s

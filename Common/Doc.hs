@@ -384,7 +384,9 @@ anyRecord = DocRecord
 toText :: GlobalAnnos -> Doc -> Pretty.Doc
 toText ga = foldDoc anyRecord
     { foldEmpty = \ _ -> Pretty.empty
-    , foldText = \ _ _ -> Pretty.text
+    , foldText = \ _ k s -> case k of 
+          TopKey -> Pretty.text $ s ++ replicate (5 - length s) ' '
+          _ -> Pretty.text s 
     , foldCat = \ _ c -> case c of
           Vert -> Pretty.vcat
           Horiz -> Pretty.hcat

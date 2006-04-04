@@ -76,11 +76,11 @@ instance (PrintLaTeX s, PrintLaTeX f) =>
         hc_sty_sig_item_keyword ga  (sortS ++ pluralS l) <\+>
         set_tabbed_nest_latex (semiAnno_latex ga l)
     printLatex0 ga (Op_items l _) =
-        hc_sty_sig_item_keyword ga (opS ++ pluralS l) <\+>
-        Doc.toLatex ga (Doc.semiAnnos (printOpItem (fromLatex ga)) l)
+        Doc.toLatex ga $ Doc.topKey (opS ++ pluralS l) Doc.<+> 
+             Doc.semiAnnos (printOpItem $ fromLatex ga) l
     printLatex0 ga (Pred_items l _) =
-        hc_sty_sig_item_keyword ga (predS ++ pluralS l) <\+>
-        Doc.toLatex ga (Doc.semiAnnos (printPredItem (fromLatex ga)) l)
+        Doc.toLatex ga $ Doc.topKey (predS ++ pluralS l) Doc.<+>
+             Doc.semiAnnos (printPredItem $ fromLatex ga) l
     printLatex0 ga (Datatype_items l _) =
         hc_sty_sig_item_keyword ga (typeS ++ pluralS l) <\+>
         set_tabbed_nest_latex (semiAnno_latex ga l)
