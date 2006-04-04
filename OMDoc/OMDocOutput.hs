@@ -10,8 +10,10 @@ Portability :  non-portable(Logic)
   Output-methods for writing OMDoc
 
   BUGS/TODO:
-  - Morphism-generation currently fails for many theories because the symbols
-    cannot be found (but they are there...).
+    - better interpretation of imports
+    - existings files should not be overwritten everytime...
+    - there is a problem with finding constructors that use tricky names,
+      currently working on debuggin this
 -}
 module OMDoc.OMDocOutput
   (

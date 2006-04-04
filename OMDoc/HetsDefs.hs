@@ -1302,7 +1302,7 @@ instance Read Id.Id where
 idToString::Id.Id->String
 idToString (Id.Id toks ids _) =
                 "[" ++
-                (implode "," (map (\(Id.Token s _) -> s) toks)) ++
+                (implode "," (map (\t -> Id.tokStr t) toks)) ++
                 (implode "," (map idToString ids)) ++
                 "]"
                 

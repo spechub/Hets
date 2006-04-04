@@ -394,7 +394,11 @@ main =
         FTOMDoc ->
           do
           when dodebug (putStrLn ("Trying to load omdoc-file..."))
-          ig <- makeImportGraphFullXml globalOptions input searchpath
+          ig <- makeImportGraphFullXml
+            (globalOptions { hetsOpts =
+              ((hetsOpts globalOptions) { Hets.libdir = (headorempty searchpath) })
+              })
+            input
           (return $ dGraphGToLibEnvOMDocId globalOptions $
             hybridGToDGraphG globalOptions $
               processImportGraphXN globalOptions ig)
