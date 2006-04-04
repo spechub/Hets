@@ -86,12 +86,12 @@ printOpType (Op_type p l r _) =
       [] -> case p of
           Partial -> text quMark <+> idDoc r
           Total -> space <> idDoc r
-      _ -> fcat $ space :
-             punctuate (space <> cross <> space) (map idDoc l)
-             ++ [space, case p of
+      _ -> space <> fsep 
+             (punctuate (space <> cross) (map idDoc l)
+             ++ [case p of
                 Partial -> pfun
                 Total -> funArrow,
-                 space, idDoc r]
+                 idDoc r])
 
 instance Pretty OP_TYPE where
     pretty = printOpType
