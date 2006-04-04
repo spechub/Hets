@@ -221,8 +221,6 @@ type SPASSGoalNameMap = Map.Map String String
 -}
 data State = State { -- | currently selected goal or Nothing
                      currentGoal :: Maybe SPIdentifier,
-                     -- | theory to work on
-                     theory :: Theory Sign Sentence (),
                      -- | stores the prover configurations for each goal
                      configsMap :: SPASSConfigsMap,
                      -- | stores the results retrieved by running 
@@ -253,7 +251,6 @@ initialThreadState = TSt { batchId = Nothing
 initialState :: Theory Sign Sentence () -> SPASS.Prove.State
 initialState th = 
     State {currentGoal = Nothing,
-           theory = th,
            configsMap = Map.fromList (map (\ g -> (AS_Anno.senName g, 
                                                    emptyConfig)) goals),
            resultsMap = Map.fromList $ 
