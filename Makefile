@@ -50,18 +50,8 @@ GENERATERULES_deps = utils/GenerateRules/*hs $(DRIFT_deps) Common/Utils.hs
 GENITCORRECTIONS_deps = utils/itcor/GenItCorrections.hs Common/Utils.hs \
     Common/Lib/Map.hs Common/Lib/Set.hs
 INLINEAXIOMS_deps = utils/InlineAxioms/InlineAxioms.hs \
-    Common/Lib/Pretty.hs Common/Keywords.hs Common/Lib/Set.hs \
-    Common/Lib/Map.hs Common/Lib/Rel.hs Common/Lib/State.hs Common/Id.hs \
-    Common/AS_Annotation.hs CASL/AS_Basic_CASL.hs CASL/ShowMixfix.hs \
-    CASL/Utils.hs Common/Lexer.hs Common/Token.hs Common/Anno_Parser.hs \
-    Common/GlobalAnnotations.hs Common/PrettyPrint.hs Common/Partial.hs \
-    Common/Print_AS_Annotation.hs Common/PPUtils.hs CASL/LiteralFuns.hs \
-    CASL/Print_AS_Basic.hs Common/AnnoState.hs CASL/Formula.hs \
-    CASL/OpItem.hs CASL/SortItem.hs CASL/Inject.hs Common/Result.hs \
-    Common/ConvertLiteral.hs Common/Earley.hs CASL/MixfixParser.hs \
-    CASL/Parse_AS_Basic.hs CASL/Sign.hs CASL/Overload.hs \
-    CASL/StaticAna.hs Modal/AS_Modal.hs Modal/Parse_AS.hs \
-    Modal/ModalSign.hs Modal/Print_AS.hs Modal/StatAna.hs
+    Common/Lib/*.hs Common/*.hs CASL/*.hs Modal/AS_Modal.hs \
+    Modal/Parse_AS.hs Modal/ModalSign.hs Modal/Print_AS.hs Modal/StatAna.hs
 
 HC = ghc
 PERL = perl
