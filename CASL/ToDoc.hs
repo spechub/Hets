@@ -49,7 +49,7 @@ printPredItem mf p = case p of
     Pred_decl l t _ -> fsep $ (punctuate comma $ map idDoc l)
                        ++ [colon, printPredType t]
     Pred_defn i h f _ ->
-        fcat [idDoc i, printPredHead h, space, equiv, space,
+        fcat [idDoc i, printPredHead h <> space, equiv <> space,
               printAnnoted (printFormula mf) f]
 
 printAttr :: (f -> Doc) -> OP_ATTR f -> Doc
@@ -61,21 +61,21 @@ printAttr mf a = case a of
 
 printOpHead :: OP_HEAD -> Doc
 printOpHead (Op_head k l r _) =
-    fcat [if null l then empty else printArgDecls l
-         , space
-         , case k of
+    fcat $ (if null l then [] else [printArgDecls l <> space]) ++
+         [ (case k of
              Total -> colon
-             Partial -> text ":?"
-         , space, idDoc r]
+             Partial -> text ":?") <> space
+         , idDoc r]
 
 printOpItem :: (f -> Doc) -> OP_ITEM f -> Doc
 printOpItem mf p = case p of
     Op_decl l t a _ -> fsep $ (punctuate comma $ map idDoc l)
         ++ [colon <> (if null a then id else (<> comma))(printOpType t)]
         ++ punctuate comma (map (printAttr mf) a)
-    Op_defn i h t _ ->
-        fcat [idDoc i, printOpHead h, space, equals, space,
-              printAnnoted (printTerm mf) t]
+    Op_defn i h@(Op_head _ l _ _) t _ ->
+        fcat [(if null l then (<> space) else id) $ idDoc i
+             , printOpHead h <> space, equals <> space
+             , printAnnoted (printTerm mf) t]
 
 instance Pretty VAR_DECL where
     pretty = printVarDecl
