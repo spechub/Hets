@@ -58,7 +58,7 @@ forall m, n, r, s : Nat
 . m @@ n = (m * suc (9)) + n %(Nat_decimal_def)%
 
 %% then %def
-sort Pos = {p : Nat . p > 0}
+sort  Pos = {p : Nat . p > 0}
 ops   1 : Pos = suc(0); %(Nat_1_as_Pos_def)%
       __*__ : Pos * Pos -> Pos;
       __+__ : Pos * Nat -> Pos;
@@ -83,7 +83,7 @@ forall a, b, c, d : Nat
 . a - b = c - d <=> a + d = c + b %(Int_equality)%
 
 %% then
-sort Nat < Int
+sort  Nat < Int
 forall a : Nat
 . a = a - 0 %(Int_Nat_embedding)%
 preds __<=__, __<__, __>=__, __>__ : Int * Int;
@@ -144,7 +144,7 @@ forall m, n, r : Int; a, b : Nat
 generated type Rat ::= __/__(Int; Pos)
 forall i, j : Int; p, q : Pos
 . i / p = j / q <=> i * q = j * p %(Rat_equality)%
-sort Int < Rat
+sort  Int < Rat
 forall i : Int
 . i / 1 = i %(embeddingIntToRat)%
 
@@ -238,10 +238,10 @@ type t ::=
 %(formula)%
 . a = a %(f1)%
 . a = a %(f1)%
-sort s
-sorts s, abcdefghijlklmnopqrstuvwxyz, ABCDEFGHIJKLMONOPQRSTUVWXYZ,
-      x0123456789,
-      ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÑÒÓÔÕÖØÙÚÛÜÝßàáâãäåæçèéêëìíîïñòóôõöøùúûüýÿ, abc,
+sort  s
+sorts s, abcdefghijlklmnopqrstuvwxyz, ABCDEFGHIJKLMONOPQRSTUVWXYZ, 
+      x0123456789, 
+      ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÑÒÓÔÕÖØÙÚÛÜÝßàáâãäåæçèéêëìíîïñòóôõöøùúûüýÿ, abc, 
       a_b_c, ab2, ab_2_3_a, a', a'b''2
 op    __+-*/\&=<>!?:.$@#^~¡¿×÷£©±¶§¹²³·¢¬°µ|__ : s * s -> s
       %% NO-BRACKET-SIGNs
@@ -268,14 +268,14 @@ ops   1, 2, 3, 4 : s;
            also goes
            along several lines! 
            and with special stuff: -*/\&=<>BCDEFGHIJKLM!% )%
-sort s
+sort  s
 op    __and'__ : s
-sort a
+sort  a
 sorts a, b, c
-sort a < b
+sort  a < b
 sorts a, b, c, d < e
-sort a = b = c = d = e
-sort a = {x : b . true}
+sort  a = b = c = d = e
+sort  a = {x : b . true}
 sorts s, t
 op    a : s
 op    b : s -> s
@@ -310,10 +310,10 @@ free type List ::= Nil | Cons(Data1; List)
 generated type Set ::= Mt | Add(Data1; Set)
 generated type Set ::= Mt | Add(Data1; Set)
 generated
-    {sort nat
+    {sort  nat
      ops   0 : nat;
            succ : nat -> nat}
-sort s < t
+sort  s < t
 ops   f, g : s ->? s;
       g : s -> t;
       __+__, __-__, __*__, __/__ : s * s -> s;
@@ -364,7 +364,7 @@ forall x, y, z : Boolean
 . True And False = False %(And_def3)%
 . True And True = True %(And_def4)%
 . x Or y = Not(Not (x) And Not (y)) %(Or_def)%
-sort Char
+sort  Char
 ops   chr : Nat ->? Char;
       ord : Char -> Nat
 forall n : Nat; c : Char
@@ -1399,7 +1399,7 @@ ops   '\n' : Char = NL; %(slash_n)%
       '\f' : Char = FF; %(slash_f)%
       '\a' : Char = BEL; %(slash_a)%
       '\?' : Char = '?' %(slash_quest)%
-sort a
+sort  a
 op    __||__ : a * a -> a, assoc
 op    b : a
 . b || b || b = b

@@ -66,7 +66,8 @@ printAnnotedFormula_Text0 ga withDot = Doc.toText ga . Doc.printAnnoted
 instance (PrettyPrint s, PrettyPrint f) =>
          PrettyPrint (SIG_ITEMS s f) where
     printText0 ga (Sort_items l _) =
-        text (sortS ++ pluralS l) <+> semiAnno_text ga l
+        Doc.toText ga $ Doc.topKey (sortS ++ pluralS l) Doc.<+> 
+             Doc.semiAnnos (printSortItem $ fromText ga) l
     printText0 ga (Op_items l _) =
         Doc.toText ga $ Doc.topKey (opS ++ pluralS l) Doc.<+> 
              Doc.semiAnnos (printOpItem $ fromText ga) l
@@ -77,18 +78,8 @@ instance (PrettyPrint s, PrettyPrint f) =>
         text (typeS ++ pluralS l) <+> semiAnno_text ga l
     printText0 ga (Ext_SIG_ITEMS s) = printText0 ga s
 
-instance PrettyPrint f =>
-         PrettyPrint (SORT_ITEM f) where
-    printText0 ga (Sort_decl l _) = commaT_text ga l
-    printText0 ga (Subsort_decl l t _) =
-        hang (commaT_text ga l) 4 $ text lessS <+> printText0 ga t
-    printText0 ga (Subsort_defn s v t f _) =
-        -- TODO: lannos of f should printed after the equal sign
-        printText0 ga s <+> text equalS <+>
-           braces (hang (printText0 ga v <+> colon <+> printText0 ga t)
-                         4 (char '.' <+> printFORMULA ga (item f)))
-    printText0 ga (Iso_decl l _) =
-        fsep $ punctuate  (space <>text equalS) $ map (printText0 ga) l
+instance PrettyPrint f => PrettyPrint (SORT_ITEM f) where
+    printText0 ga = Doc.toText ga . printSortItem (fromText ga)
 
 instance PrettyPrint f => PrettyPrint (OP_ITEM f) where
     printText0 ga = Doc.toText ga . printOpItem (fromText ga)
@@ -101,7 +92,7 @@ instance PrettyPrint OP_TYPE where
     printText0 = toText
 
 instance PrettyPrint OP_HEAD where
-    printText0 ga = Doc.toText ga . printOpHead
+    printText0 = toText
 
 instance PrettyPrint ARG_DECL where
     printText0 ga = Doc.toText ga . printArgDecl

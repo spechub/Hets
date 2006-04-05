@@ -73,8 +73,8 @@ printAnnotedFormula_Latex0 ga =
 instance (PrintLaTeX s, PrintLaTeX f) =>
           PrintLaTeX (SIG_ITEMS s f) where
     printLatex0 ga (Sort_items l _) =
-        hc_sty_sig_item_keyword ga  (sortS ++ pluralS l) <\+>
-        set_tabbed_nest_latex (semiAnno_latex ga l)
+        Doc.toLatex ga $ Doc.topKey (sortS ++ pluralS l) Doc.<+> 
+             Doc.semiAnnos (printSortItem $ fromLatex ga) l
     printLatex0 ga (Op_items l _) =
         Doc.toLatex ga $ Doc.topKey (opS ++ pluralS l) Doc.<+> 
              Doc.semiAnnos (printOpItem $ fromLatex ga) l
@@ -87,19 +87,7 @@ instance (PrintLaTeX s, PrintLaTeX f) =>
     printLatex0 ga (Ext_SIG_ITEMS s) = printLatex0 ga s
 
 instance PrintLaTeX f => PrintLaTeX (SORT_ITEM f) where
-    printLatex0 ga (Sort_decl l _) = commaT_latex ga l
-    printLatex0 ga (Subsort_decl l t _) =
-        fsep_latex [commaT_latex ga l, less_latex, printLatex0 ga t]
-    printLatex0 ga (Subsort_defn s v t f _) =
-        printLatex0 ga s <\+> equals_latex <\+>
-           sp_braces_latex2 (set_tabbed_nest_latex $ fsep_latex
-                            [printLatex0 ga v
-                             <> colon_latex
-                             <\+> printLatex0 ga t,
-                             bullet_latex
-                             <\+> set_tabbed_nest_latex (printLatex0 ga f)])
-    printLatex0 ga (Iso_decl l _) =
-        listSep_latex (space_latex <> equals_latex) ga l
+    printLatex0 ga = Doc.toLatex ga . printSortItem (fromLatex ga)
 
 instance PrintLaTeX f => PrintLaTeX (OP_ITEM f) where
     printLatex0 ga = Doc.toLatex ga . printOpItem (fromLatex ga)
@@ -112,7 +100,7 @@ optLatexQuMark Partial = hc_sty_axiom quMark
 optLatexQuMark Total = empty
 
 instance PrintLaTeX OP_HEAD where
-    printLatex0 ga = Doc.toLatex ga . printOpHead
+    printLatex0 = toLatex
 
 instance PrintLaTeX ARG_DECL where
     printLatex0 ga = Doc.toLatex ga . printArgDecl

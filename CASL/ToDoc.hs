@@ -19,6 +19,16 @@ import Common.Doc
 import CASL.AS_Basic_CASL
 import CASL.Fold
 
+printSortItem :: (f -> Doc) -> SORT_ITEM f -> Doc
+printSortItem mf si = case si of
+    Sort_decl sl _ -> fsep $ punctuate comma $ map idDoc sl
+    Subsort_decl sl sup _ -> fsep $ (punctuate comma $ map idDoc sl)
+                                     ++ [less, idDoc sup] 
+    Subsort_defn s v sup af _ -> fsep [idDoc s, equals, 
+              specBraces $ fsep [sidDoc v, colon, idDoc sup, bullet,
+                             printAnnoted (printFormula mf) af]]
+    Iso_decl sl _ -> fsep $ punctuate (space <> equals) $ map idDoc sl
+
 sidDoc :: Token -> Doc
 sidDoc = idDoc . simpleIdToId
 
@@ -59,13 +69,19 @@ printAttr mf a = case a of
     Idem_op_attr -> text idemS
     Unit_op_attr t -> text unitS <+> printTerm mf t
 
+instance Pretty f => Pretty (OP_ATTR f) where
+    pretty = printAttr pretty
+
 printOpHead :: OP_HEAD -> Doc
 printOpHead (Op_head k l r _) =
     fcat $ (if null l then [] else [printArgDecls l <> space]) ++
          [ (case k of
              Total -> colon
-             Partial -> text ":?") <> space
+             Partial -> idDoc $ mkId [mkSimpleId ":?"]) <> space
          , idDoc r]
+
+instance Pretty OP_HEAD where
+    pretty = printOpHead
 
 printOpItem :: (f -> Doc) -> OP_ITEM f -> Doc
 printOpItem mf p = case p of
@@ -182,7 +198,7 @@ printRecord mf = Record
     , foldMixfix_cast = \ _ s _ -> text asS <+> idDoc s
     , foldMixfix_parenthesized = \ _ l _ -> parens $ fsep $ punctuate comma l
     , foldMixfix_bracketed = \ _ l _ -> brackets $ fsep $ punctuate comma l
-    , foldMixfix_braced = \ _ l _ -> braces $ fsep $ punctuate comma l
+    , foldMixfix_braced = \ _ l _ -> specBraces $ fsep $ punctuate comma l
     }
 
 printFormula :: (f -> Doc) -> FORMULA f -> Doc

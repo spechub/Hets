@@ -1,22 +1,22 @@
-sort a = {a : b . a =e= b}
-sort a = {a : b . a = e}
-sort a = {x : b . a = b}
-sort a = {x : b . a p}
-sort a = {x : b . (var y : b) a}
-sort a = {x : b . (op y : b) b}
-sort a = {x : b . (pred y : b)}
-sort a = {a : b . a =e= b}
-sort a = {x : b . ys as b}
-sort a = {x : b . (pred y : ba)}
-sort a = {x : b . (predy y : ba)}
-sort a = {x : b . (predy : ba)}
-sort a = {x : b . (predy : ba)}
-sort a = {x : b . exists1(predy :: b __ a)}
-sort a = {x : b . exists predy : ba . a}
+sort  a = {a : b . a =e= b}
+sort  a = {a : b . a = e}
+sort  a = {x : b . a = b}
+sort  a = {x : b . a p}
+sort  a = {x : b . (var y : b) a}
+sort  a = {x : b . (op y : b) b}
+sort  a = {x : b . (pred y : b)}
+sort  a = {a : b . a =e= b}
+sort  a = {x : b . ys as b}
+sort  a = {x : b . (pred y : ba)}
+sort  a = {x : b . (predy y : ba)}
+sort  a = {x : b . (predy : ba)}
+sort  a = {x : b . (predy : ba)}
+sort  a = {x : b . exists1(predy :: b __ a)}
+sort  a = {x : b . exists predy : ba . a}
 sorts a; %(bla)%
       c
       %{bla2}%
-sort a < b %(dafasdf)%
+sort  a < b %(dafasdf)%
 sorts a, b, c, d < e
 sorts a = b = c = d; %()%
       b = {a : s . b} %()%
