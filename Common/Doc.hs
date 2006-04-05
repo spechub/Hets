@@ -39,7 +39,6 @@ module Common.Doc
       -- * Wrapping documents in delimiters
     , parens
     , brackets
-    , braces
     , specBraces
     , quotes
     , doubleQuotes
@@ -177,7 +176,7 @@ comma :: Doc                 -- ^ A ',' character
 comma = text ","
 
 colon :: Doc                 -- ^ A ':' character
-colon = text colonS
+colon = symbol colonS
 
 -- the only legal white space within Text
 space :: Doc                 -- ^ A horizontal space (omitted at end of line)
