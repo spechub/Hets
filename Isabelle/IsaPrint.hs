@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
 Copyright   :  (c) University of Cambridge, Cambridge, England
-               adaption (c) Till Mossakowski, Uni Bremen 2002-2005
+               adaption (c) Till Mossakowski, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -226,11 +226,7 @@ printTrm b trm = case trm of
                                <+> printPlainTerm b t) es)
            <+> text "in" <+> printPlainTerm b i, lowPrio)
     IsaEq t1 t2 -> ((case t1 of
--- <<<<<<< IsaPrint.hs
--- --       Const vn y ->  text (new vn) <+> doubleColon <+> printType y
--- =======
         Const vn y -> text (new vn) <+> doubleColon <+> printType y
--- >>>>>>> 1.90
         _ -> printParenTerm b (isaEqPrio + 1) t1) <+> text "=="
                    <+> printParenTerm b isaEqPrio t2, isaEqPrio)
     Tuplex cs c -> ((case c of
@@ -289,7 +285,7 @@ replaceUnderlines str l = case str of
 printClassrel :: Classrel -> Doc
 printClassrel = vcat . map ( \ (t, cl) -> case cl of
      Nothing -> empty
-     Just x -> text axclassS <+> printClass t <+> text "<" <+> 
+     Just x -> text axclassS <+> printClass t <+> text "<" <+>
                                            printSort x) . Map.toList
 
 printArities :: String -> Arities -> Doc
@@ -297,28 +293,27 @@ printArities tn = vcat . map ( \ (t, cl) ->
                   vcat $ map (printInstance tn t) cl) . Map.toList
 
 printInstance :: String -> TName -> (IsaClass, [(Typ, Sort)]) -> Doc
-printInstance tn t xs = case xs of 
-   (IsaClass "Monad", _) -> 
-      if (isSuffixOf "_mh" tn) || (isSuffixOf "_mhc" tn) 
-      then printMInstance tn t 
+printInstance tn t xs = case xs of
+   (IsaClass "Monad", _) ->
+      if (isSuffixOf "_mh" tn) || (isSuffixOf "_mhc" tn)
+      then printMInstance tn t
       else error "IsaPrint, printInstance: monads not supported"
    _ -> printNInstance t xs
 
 printMInstance :: String -> TName -> Doc
-printMInstance tn t = let tyNm = text t
-                          thNm = text tn
+printMInstance tn t = let thNm = text tn
                           thMorNm = text (t ++ "_tm")
                           tArrow = text ("-" ++ "->")
  in (text "thymorph" <+> thMorNm <+> colon <+>
             text "MonadType" <+> tArrow <+> thNm)
-    $$ (text " maps [" <> (parens $ (doubleQuotes $ text "MonadType.M")
-        <+> text "|->" <+> (doubleQuotes $ thNm <> text "." <> tyNm)) 
-         <> text "]")
-    $$ text "t_instantiate Monad " <+> thMorNm
+    $$ text "  maps" <+> brackets
+                 (parens $ (doubleQuotes $ text "MonadType.M")
+                  <+> text "|->" <+> doubleQuotes (text $ tn ++ "." ++ t))
+    $$ text "t_instantiate Monad mapping" <+> thMorNm
 
 {-
 thymorph t : MonadType --> State maps [("MonadType.M" |-> "State.S")]
-t_instantiate Monad t
+t_instantiate Monad mapping t
 -}
 
 printNInstance :: TName -> (IsaClass, [(Typ, Sort)]) -> Doc
