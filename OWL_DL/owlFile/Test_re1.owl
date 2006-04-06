@@ -7,7 +7,7 @@
   xml:base="http://www.owl-ontologies.com/unnamed.owl">
 
   <owl:Ontology rdf:about="">
-	<owl:imports rdf:resource="file:///Users/luettich/CASL/HetCTAS/OWL_DL/owlFile/Test_re2.owl"/>
+	<owl:imports rdf:resource="file:///home/cofi/jiang/HetCTAS/OWL_DL/owlFile/Test_re2.owl"/>
   </owl:Ontology>
   <owl:Class rdf:ID="CC">
     <owl:disjointWith>

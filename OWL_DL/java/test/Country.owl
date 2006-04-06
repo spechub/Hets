@@ -27,9 +27,7 @@ this problem has been resolved.
   <rdfs:label>Country</rdfs:label>
 </owl:Class>
 
-<owl:Class rdf:ID="EGAL"/>
 <Country rdf:ID="UnitedStates">
 </Country>
-<EGAL rdf:ID="UnitedStates"/>
 
 </rdf:RDF>

@@ -10,7 +10,7 @@
     <owl:imports rdf:resource="http://www.informatik.uni-bremen.de/~luettich/test1.xml"/>
   </owl:Ontology>
   <owl:Class rdf:ID="Foo">
-    <rdfs:subClassOf rdf:resource="http://www.informatik.uni-bremen.de/~luettich/test1.xml#DD"/>
+    <rdfs:subClassOf rdf:resource="http://www.informatik.uni-bremen.de/~luettich/test1.xml#D"/>
   </owl:Class>
 </rdf:RDF>
 
