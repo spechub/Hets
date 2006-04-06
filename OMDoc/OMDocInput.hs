@@ -94,6 +94,8 @@ import OMDoc.XmlHandling
 
 import OMDoc.OMDocDefs
 
+import qualified System.Directory as System.Directory
+
 {- |
   A wrapper-function for Hets.
   Tries to load an OMDoc file and to create a LibEnv.
@@ -1527,8 +1529,14 @@ getImportedTheories xml =
 makeImportGraphFullXml::GlobalOptions->String->(IO (ImportGraph HXT.XmlTrees))
 makeImportGraphFullXml go source =
   do
+    curdirs <- System.Directory.getCurrentDirectory
+    -- trick the uri parser into faking a document to make a relative path later
+    mcduri <- return $ URI.parseURIReference ("file://"++curdirs++"/a")
+    alibdir <- return $ case mcduri of
+      Nothing -> (libdir (hetsOpts go))
+      (Just cduri) -> relativeSource cduri (libdir (hetsOpts go))
     putIfVerbose (hetsOpts go) 0 ("Loading " ++ source ++ "...") 
-    mdoc <- maybeFindXml source [(libdir (hetsOpts go))]
+    mdoc <- maybeFindXml source [alibdir]
     case mdoc of
       Nothing -> ioError $ userError ("Unable to find \"" ++ source ++ "\"")
       (Just doc) ->
@@ -1545,15 +1553,19 @@ makeImportGraphFullXml go source =
         in
           foldl
             (\gio (itname, ituri)  ->
-              gio >>= \g -> buildGraph g 1 uriwithoutdoc (TI (itname, ituri))
+              gio >>= \g -> buildGraph g 1 uriwithoutdoc (TI (itname, ituri)) alibdir
             ) (return initialgraph) rdocmap
         )
   where
-  buildGraph::ImportGraph HXT.XmlTrees->Graph.Node->URI.URI->TheoryImport->IO (ImportGraph HXT.XmlTrees)
-  buildGraph ig n frompath ti@(TI (theoname, theouri)) =
+  buildGraph::ImportGraph HXT.XmlTrees->Graph.Node->URI.URI->TheoryImport->String->IO (ImportGraph HXT.XmlTrees)
+  buildGraph ig n frompath ti@(TI (theoname, theouri)) alibdir =
     let
-      mimportsource = find (\(_, (S (_, suri) _)) -> (suri == theouri)) (Graph.labNodes ig)
-      includes = [(libdir (hetsOpts go)), (show frompath)]
+      includes = [alibdir, (show frompath)]
+      possources = theouri:(map (\s -> s ++ (if (last s)=='/' then "" else "/") ++ theouri) includes)
+      mimportsource =
+        find
+          (\(_, (S (_, suri) _)) -> any (\s -> suri == s) possources)
+          (Graph.labNodes ig)
     in
     do
       case mimportsource of
@@ -1568,11 +1580,13 @@ makeImportGraphFullXml go source =
         Nothing ->
           do
             -- relsourcefromlibdir <- return $ (relativeSource (fromMaybe (error "!") $ URI.parseURIReference $ libdir (hetsOpts go)) theouri)
-            putIfVerbose (hetsOpts go) 0 ("Loading " ++ theouri ++ "...")
+            putIfVerbose (hetsOpts go) 0 ("Loading " ++ theoname ++ " from " ++ theouri ++ "...")
             mdocR <- maybeFindXml theouri includes
             mdoc <- case mdocR of
               Nothing ->
-                ioError $ userError ("Unable to find \"" ++ theouri ++ "\" (looked in " ++ (show includes) ++ ")")
+                do
+                  putIfVerbose (hetsOpts go) 0 ("error at loading from " ++ (show includes))
+                  ioError $ userError ("Unable to find \"" ++ theouri ++ "\" (looked in " ++ (show includes) ++ ")")
               _ -> return mdocR
             (newgraph, nn, importimports, newbase) <-
               return $
@@ -1597,7 +1611,7 @@ makeImportGraphFullXml go source =
                     (newgraph, newnodenum, irimports, iuriwithoutdoc)
                 )
             foldl (\nigio (itheoname, itheouri) ->
-              nigio >>= \nig -> buildGraph nig nn newbase (TI (itheoname, itheouri))
+              nigio >>= \nig -> buildGraph nig nn newbase (TI (itheoname, itheouri)) alibdir
               ) (return newgraph) importimports
   relativeSource::URI.URI->String->String
   relativeSource uri s =
