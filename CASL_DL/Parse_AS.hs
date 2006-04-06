@@ -50,7 +50,7 @@ parsePredSymb =
    (do o <- oParenT << addAnnos
        Mixfix_qual_pred qpred <- qualPredName casl_DL_reserved_words o
        return qpred)
-   <?> "Expecting a PRED_SYMB"
+   <?> "a PRED_SYMB"
 
 
 cardKeyword :: AParser st (CardType,Range)
