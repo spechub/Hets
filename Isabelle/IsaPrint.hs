@@ -312,7 +312,8 @@ printMInstance tn t = let tyNm = text t
  in (text "thymorph" <+> thMorNm <+> colon <+>
             text "MonadType" <+> tArrow <+> thNm)
     $$ (text " maps [" <> (parens $ (doubleQuotes $ text "MonadType.M")
-        <+> text "|->" <+> thNm <> text "." <> tyNm) <> text "]")
+        <+> text "|->" <+> (doubleQuotes $ thNm <> text "." <> tyNm)) 
+         <> text "]")
     $$ text "t_instantiate Monad " <+> thMorNm
 
 {-
