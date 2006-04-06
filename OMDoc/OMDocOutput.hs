@@ -993,10 +993,12 @@ makeConstructorMapXN sortxnwoset xmlnames sensxnwo =
     sens = xnWOaToa sensxnwo
     (Ann.NamedSen senname _ _ (Sort_gen_ax cons _)) = sens
     origin = xnWOaToO sensxnwo
-    sort = (drop (length "ga_generated_") senname)
-    sortxn = case sortToXmlNamedWONSORT (Set.toList sortxnwoset) (Hets.stringToId sort) of
-      Nothing -> error ("Cannot find sort to make constructor for! (No \"" ++ sort ++ "\" in "
-        ++ (show sortxnwoset) ++ ")")
+    sort = case cons of
+      [] -> read ("[" ++ (drop (length "ga_generated_") senname) ++ "]")
+      (c:_) -> newSort c
+    sortxn = case sortToXmlNamedWONSORT (Set.toList sortxnwoset) (sort) of
+      Nothing -> error ("Cannot find sort to make constructor for! (No \"" ++ (Hets.idToString sort) ++ "\" in "
+        ++ (show $ Set.map (\x -> Hets.idToString (xnWOaToa x)) sortxnwoset) ++ ")")
       (Just sortxn' ) -> sortxn'
     (constructormap, xmlnames' ) =
       foldl(\(cmap, xmlnames'' ) (Constraint _ symbs _) ->
@@ -1963,12 +1965,17 @@ processOperatorXN pfinput
           (\(xnid, _) -> (xnWOaToa xnid) == op)
           (theoryOps pfinput)
             of
-              Nothing -> error ("Operator is unknown! (" ++ (show op) ++ " in "++ (show (theoryOps pfinput)) ++")")
+              Nothing ->
+                if (show op == "PROJ")
+                  then
+                    (XmlNamed (Hets.mkWON op (-1)) "PROJ", undefined)
+                  else
+                    error ("Operator is unknown! (" ++ (show op) ++ " in "++ (show (theoryOps pfinput)) ++")")
               (Just x' ) -> x'
     in
       HXT.etag "OMS" +=
         (HXT.sattr "cd" 
-          (fromMaybe "unknown" $
+          (fromMaybe "casl" $
             getTheoryXmlName (theorySet pfinput) (xnWOaToO xnopid)) +++
           HXT.sattr "name" (xnName xnopid)
         )
@@ -1989,7 +1996,7 @@ processOperatorXN pfinput
     in
       HXT.etag "OMS" +=
         ( HXT.sattr "cd"
-          ( fromMaybe "unknown" $
+          ( fromMaybe "casl" $
             getTheoryXmlName (theorySet pfinput) (xnWOaToO xnopid)
           ) +++
           HXT.sattr "name" (xnName xnopid)
