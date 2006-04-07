@@ -1276,14 +1276,13 @@ applySignHiding
 instance Read Id.Id where
         readsPrec _ s =
                 let
-                        (_,r) = (\s' -> (takeWhile Char.isSpace s' , dropWhile Char.isSpace s' )) s
+                        (_,r) = span Char.isSpace s
                 in
                         case r of
                                 ('[':t) ->
                                         let
-                                                tokens = takeWhile (not . (flip elem [']','['])) t
-                                                token = map (\str -> Id.Token (trimString str) Id.nullRange) (explode "," tokens)
-                                                rest = drop (length tokens) t
+                                                (tokens, rest) = spanEsc (not . (flip elem [']','['])) t
+                                                token = map (\str -> Id.Token (trimString str) Id.nullRange) (map unesc $ explodeNonEsc "," tokens)
                                                 (ids, newrest) = until
                                                         (\(_,sr' ) -> case sr' of (h:_) -> h==']'; _ -> True )
                                                         (\(ids' , sr' ) ->
@@ -1297,12 +1296,19 @@ instance Read Id.Id where
                                                 (']':_) -> [(Id.Id token ids Id.nullRange, drop 1 newrest)]
                                                 _ -> []
                                 _ -> []
-    
+
+escapeForId::String->String
+escapeForId [] = []
+escapeForId ('[':r) = "\\[" ++ escapeForId r
+escapeForId (']':r) = "\\]" ++ escapeForId r
+escapeForId (',':r) = "\\," ++ escapeForId r
+escapeForId (c:r) = c:escapeForId r
+
 -- | creates a parseable representation of an Id (see Read-instance)
 idToString::Id.Id->String
 idToString (Id.Id toks ids _) =
                 "[" ++
-                (implode "," (map (\t -> Id.tokStr t) toks)) ++
+                (implode "," (map (\t -> escapeForId $ Id.tokStr t) toks)) ++
                 (implode "," (map idToString ids)) ++
                 "]"
                 

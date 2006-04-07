@@ -51,6 +51,91 @@ explode by list =
     ([],[])
     list
 
+explodeNonEsc::String->String->[String]
+explodeNonEsc _ [] = []
+explodeNonEsc by s =
+  let
+    (i,r) = spanToNonEsc by s
+  in
+    [i] ++ explodeNonEsc by (drop (length by) r)
+
+
+spanTo::forall a . Eq a => [a]->[a]->([a],[a])
+spanTo _ [] = ([],[])
+spanTo by list =
+  if listStart list by
+    then
+      ([], list)
+    else
+      let
+        (linit, lrest) = spanTo by (drop 1 list)
+      in
+        ((head list):linit, lrest)
+
+spanToNonEsc::String->String->(String, String)
+spanToNonEsc by s =
+  let
+    (maybeinit, mayberest) = spanTo by s
+  in
+    if (length maybeinit) == 0
+      then
+        (maybeinit, mayberest)
+      else
+        case mayberest of
+          [] -> (maybeinit, mayberest)
+          _ -> case (last maybeinit) of
+            '\\' ->
+              let
+                (ni, nr) = spanToNonEsc by (drop 1 mayberest)
+              in
+                (maybeinit ++ (take 1 mayberest) ++ ni, nr)
+            _ -> (maybeinit ,mayberest)
+      
+breakIf::forall a . (a->a->(Bool,Bool,Bool))->[a]->[[a]]
+breakIf brkC l = _breakIf [] l
+  where
+  _breakIf::[a]->[a]->[[a]]
+  _breakIf _ [] = []
+  _breakIf i [a] = [i++[a]]
+  _breakIf i (c:r) =
+    let
+      (doBreak, discardC1, discardC2) = brkC c (head r)
+    in
+      if doBreak
+        then
+          ([i ++ (if discardC1 then [] else [c])])
+            ++ (_breakIf [] (if discardC2 then (drop 1 r) else r))
+        else
+          _breakIf (i++[c]) r
+
+-- breaks if not escaped and removes char that caused break
+breakIfNonEsc::[Char]->String->[String]
+breakIfNonEsc chars =
+  breakIf
+    (\c1 c2 -> ((c1 /= '\\') && (elem c2 chars), False, True))
+
+breakOnce::forall a . (a->a->(Bool, Bool, Bool))->[a]->([a],[a]) 
+breakOnce _ [] = ([],[])
+breakOnce _ [a] = ([a], [])
+breakOnce brkC (c:r) =
+  let
+    (doBreak, discardC1, discardC2) = brkC c (head r)
+  in
+    if doBreak
+      then
+        ( if discardC1 then [] else [c], if discardC2 then (drop 1 r) else r)
+      else
+        let
+          (linit, lrest) = breakOnce brkC r
+        in
+          (c:linit, lrest)
+
+-- breaks at first occurence and removes breaking char...
+breakOnceNonEsc::[Char]->String->(String, String)
+breakOnceNonEsc chars =
+  breakOnce
+    (\c1 c2 -> ((c1/='\\') && (elem c2 chars), False, True) )
+    
 initorall::forall a . [a]->[a]
 initorall [i] = [i]
 initorall l = init l
@@ -84,4 +169,32 @@ trim test list = dropWhile test (reverse (dropWhile test (reverse list)))
 trimString::String->String
 trimString = trim (Char.isSpace)
 
+spanEsc::(Char->Bool)->String->(String, String)
+spanEsc _  [] = ([],[])
+spanEsc test s =
+  fst $
+  until
+    (\(_, rest) ->
+      (length rest) == 0
+    )
+    (\((oks, bads), rest) ->
+      let
+        (unesced, esced) = span (/='\\') rest
+        (newok, newbad) = span test unesced
+      in
+        if (length newbad) > 0
+          then
+            ( (oks++newok, newbad ++ esced), "" )
+          else
+            ( (oks++newok++(take 2 esced), bads), drop 2 esced )
+    )
+    (("",""), s)
+    
+unesc::String->String
+unesc [] = []
+unesc s =
+  let
+    (shead, stail) = span (/='\\') s
+  in
+    shead ++ (take 1 $ drop 1 stail) ++ unesc (drop 2 stail)
 

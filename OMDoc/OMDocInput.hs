@@ -1571,6 +1571,7 @@ makeImportGraphFullXml go source =
       case mimportsource of
         (Just (inum, (S (isn,_) _))) ->
             do
+              putIfVerbose (hetsOpts go) 0 ("Loading " ++ theoname ++ " from " ++ theouri ++ " (cached)..." )
               return 
                 (if inum == n then
                    debugGO go "mIGFXbG" ("Back-reference in " ++ isn ++ " to " ++ theoname) ig
