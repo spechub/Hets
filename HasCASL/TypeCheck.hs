@@ -14,7 +14,6 @@ type inference based on
 Principal Type Schemes for Functional Programs with Overloading and
 Subtyping, Geoffrey S. Smith, Science of Computer Programming 23(2-3),
 pp. 197-226, December 1994
-
 -}
 
 module HasCASL.TypeCheck where
@@ -37,7 +36,6 @@ import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
 import Common.Id
 import Common.Result
-import Common.PrettyPrint
 import Common.GlobalAnnotations
 import Common.Lib.State
 

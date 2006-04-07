@@ -16,7 +16,9 @@ module HasCASL.AsUtils where
 import HasCASL.As
 import Common.Id
 import Common.Keywords
-import Common.PrettyPrint
+import Common.Doc
+import qualified Common.Lib.Pretty as Pretty
+import Common.GlobalAnnotations
 import qualified Common.Lib.Set as Set
 
 -- | the string for the universe type
@@ -304,8 +306,14 @@ toKind vk = case vk of
         _ -> error "toKind: Downset"
     MissingKind -> error "toKind: Missing"
 
+showPretty :: Pretty a => a -> ShowS
+showPretty = shows . toOldDoc . pretty
+
+toOldDoc :: Doc -> Pretty.Doc
+toOldDoc = toText emptyGlobalAnnos
+
 -- | generate a comparison string
-expected :: PrettyPrint a => a -> a -> String
+expected :: Pretty a => a -> a -> String
 expected a b =
     "\n  expected: " ++ showPretty a
     "\n     found: " ++ showPretty b "\n"

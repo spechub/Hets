@@ -24,7 +24,7 @@ import qualified Common.Lib.Set as Set
 
 import HasCASL.As
 import HasCASL.AsUtils
-import HasCASL.PrintAs
+import HasCASL.PrintAs()
 import HasCASL.Unify
 import HasCASL.VarDecl
 import HasCASL.Le
@@ -202,7 +202,7 @@ resolver isPat ga trm =
                  $ Set.union (Rel.keysSet ass) $ Rel.keysSet vs
        chart <- iterateCharts ga [trm] $ initChart addRule ruleS
        let Result ds mr = getResolved
-              (shows . printTerm emptyGlobalAnnos . parenTerm) (getRange trm)
+              (showPretty . parenTerm) (getRange trm)
                           toMixTerm chart
        addDiags ds
        if isPat then case mr of

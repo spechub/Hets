@@ -18,7 +18,6 @@ import HasCASL.AsUtils
 import HasCASL.PrintAs()
 import Common.Id
 import Common.Result
-import Common.PrettyPrint
 
 -- | resolve parsed mixfix type to type applications with dummy kinds
 mkTypeConstrAppl :: Type -> Result Type

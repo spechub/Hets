@@ -23,7 +23,6 @@ import HasCASL.Symbol
 import HasCASL.ParseItem
 import HasCASL.Morphism
 import HasCASL.ATC_HasCASL()
-import HasCASL.LaTeX_HasCASL()
 import HasCASL.SymbolMapAnalysis
 import HasCASL.Sublogic
 import HasCASL.SimplifyTerm

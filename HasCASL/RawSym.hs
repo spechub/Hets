@@ -21,7 +21,6 @@ import HasCASL.VarDecl
 import HasCASL.Builtin
 import Common.Id
 import Common.Result
-import Common.PrettyPrint
 import Common.Lib.State
 import qualified Common.Lib.Map as Map
 

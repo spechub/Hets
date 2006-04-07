@@ -15,163 +15,234 @@ import HasCASL.As
 import HasCASL.AsUtils
 import HasCASL.PrintAs
 import HasCASL.Le
+import HasCASL.Builtin
 
 import Common.Id
-import Common.GlobalAnnotations
-import Common.PrettyPrint
-import Common.PPUtils
-import Common.Lib.Pretty as Pretty
+import Common.Doc
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.Keywords
+import Common.PrettyPrint
+import Common.Result
 
-instance PrettyPrint ClassInfo where
-    printText0 ga (ClassInfo rk ks) = case ks of
-           [] -> colon <+> printText0 ga rk
-           _ -> text lessS <+> printList0 ga ks
+import Data.List
+
+instance PrettyPrint Morphism where
+    printText0 ga = toText ga . pretty
+
+instance PrettyPrint Env where
+    printText0 ga = toText (addBuiltins ga) . pretty
+
+instance PrettyPrint Sentence where
+    printText0 ga = toText (addBuiltins ga) . pretty
+
+instance PrettyPrint SymbMapItems where
+    printText0 ga = toText ga . pretty
+
+instance PrettyPrint SymbItems where
+    printText0 ga = toText ga . pretty
+
+instance PrettyPrint RawSymbol where
+    printText0 ga = toText ga . pretty
+
+instance PrettyPrint Symbol where
+    printText0 ga = toText ga . pretty
+
+instance PrintLaTeX Morphism where
+    printLatex0 ga = toLatex ga . pretty
+
+instance PrintLaTeX Env where
+    printLatex0 ga = toLatex (addBuiltins ga) . pretty
+
+instance PrintLaTeX Sentence where
+    printLatex0 ga = toLatex (addBuiltins ga) . pretty
+
+instance PrintLaTeX SymbMapItems where
+    printLatex0 ga = toLatex ga . pretty
+
+instance PrintLaTeX SymbItems where
+    printLatex0 ga = toLatex ga . pretty
+
+instance PrintLaTeX RawSymbol where
+    printLatex0 ga = toLatex ga . pretty
+
+instance PrintLaTeX Symbol where
+    printLatex0 ga = toLatex ga . pretty
+
+instance Pretty ClassInfo where
+    pretty (ClassInfo rk ks) = case ks of
+           [] -> colon <+> pretty rk
+           _ -> text lessS <+> printList0 ks
 
 printGenKind :: GenKind -> Doc
 printGenKind k = case k of
                 Loose -> empty
-                Free -> text freeS <> space
-                Generated -> text generatedS <> space
+                Free -> text freeS
+                Generated -> text generatedS
 
-instance PrettyPrint TypeDefn where
-    printText0 ga td = case td of
+instance Pretty TypeDefn where
+    pretty td = case td of
         NoTypeDefn -> empty
         PreDatatype -> text "%(data type)%"
-        AliasTypeDefn s -> text assignS <+> printPseudoType ga s
-        DatatypeDefn dd -> text " %[" <> printText0 ga dd <> text "]%"
+        AliasTypeDefn s -> text assignS <+> printPseudoType s
+        DatatypeDefn dd -> text " %[" <> pretty dd <> text "]%"
 
-printAltDefn :: GlobalAnnos -> Id -> [TypeArg] -> RawKind -> AltDefn -> Doc
-printAltDefn ga dt tArgs rk (Construct mi ts p sels) = case mi of
-        Just i -> hang (printText0 ga i <+> colon
-                        <+> printText0 ga (createConstrType dt tArgs rk p ts))
-                  2 $ fcat (map (parens . semiT_text ga) sels)
-        Nothing -> text (typeS ++ sS) <+> commaT_text ga ts
+printAltDefn :: Id -> [TypeArg] -> RawKind -> AltDefn -> Doc
+printAltDefn dt tArgs rk (Construct mi ts p sels) = case mi of
+        Just i -> fcat $ [pretty i <> space, colon <> space,
+                          pretty (createConstrType dt tArgs rk p ts)]
+                         ++ map (parens . semiDs) sels
+        Nothing -> text (typeS ++ sS) <+> commaDs ts
 
-instance PrettyPrint Selector where
-    printText0 ga (Select mi t p) =
+instance Pretty Selector where
+    pretty (Select mi t p) =
         (case mi of
-        Just i -> printText0 ga i <+> (case p of
+        Just i -> pretty i <+> (case p of
                              Partial -> text (colonS++quMark)
                              Total -> colon) <> space
-        Nothing -> empty) <> printText0 ga t
+        Nothing -> empty) <> pretty t
 
-instance PrettyPrint TypeInfo where
-    printText0 ga (TypeInfo _ ks sups defn) =
-        hang (colon <+> printList0 ga ks
-        <> noPrint (Set.null sups)
-           (space <> text lessS <+> printList0 ga (Set.toList sups)))
-        2 $ printText0 ga defn
+instance Pretty TypeInfo where
+    pretty (TypeInfo _ ks sups def) =
+        fsep $ [colon, printList0 ks]
+             ++ (if Set.null sups then []
+                 else [less, printList0 $ Set.toList sups])
+             ++ case def of 
+                  NoTypeDefn -> [] 
+                  _ -> [pretty def]
 
-instance PrettyPrint TypeVarDefn where
-    printText0 ga (TypeVarDefn v vk _ i) =
-        printVarKind ga v vk <+> text ("%(var_" ++ shows i ")%")
+instance Pretty TypeVarDefn where
+    pretty (TypeVarDefn v vk _ i) =
+        printVarKind v vk <+> text ("%(var_" ++ shows i ")%")
 
-instance PrettyPrint VarDefn where
-    printText0 ga (VarDefn ty) =
-        colon <+> printText0 ga ty
+instance Pretty VarDefn where
+    pretty (VarDefn ty) =
+        colon <+> pretty ty
 
-instance PrettyPrint ConstrInfo where
-    printText0 ga (ConstrInfo i t) =
-        printText0 ga i <+> colon <+> printText0 ga t
+instance Pretty ConstrInfo where
+    pretty (ConstrInfo i t) =
+        pretty i <+> colon <+> pretty t
 
-instance PrettyPrint OpDefn where
-    printText0 ga od = case od of
+instance Pretty OpDefn where
+    pretty od = case od of
         NoOpDefn b -> text $ "%(" ++ shows b ")%"
         ConstructData i -> text $ "%(construct " ++ showId i ")%"
         SelectData c i -> text ("%(select from " ++ showId i " constructed by")
-                          $$ printList0 ga c <> text ")%"
-        Definition b t -> hang (printText0 ga $ NoOpDefn b)
-                          2 (equals <+> printText0 ga t)
+                          $+$ printList0 c <> text ")%"
+        Definition b t -> fsep [pretty $ NoOpDefn b, equals, pretty t]
 
-instance PrettyPrint OpInfo where
-    printText0 ga o = hang (colon <+> printText0 ga (opType o)
-                      <> (case opAttrs o of
-                          [] -> empty
-                          l -> comma <> commaT_text ga l))
-                      2 $ printText0 ga (opDefn o)
+instance Pretty OpInfo where
+    pretty o = let l = opAttrs o in
+               fsep $ [ colon
+                      , pretty (opType o) <> if null l then empty else comma]
+                      ++ punctuate comma (map pretty l)
+                      ++ [pretty $ opDefn o]
 
-instance PrettyPrint OpInfos where
-    printText0 ga (OpInfos l) = vcat $ map (printText0 ga) l
+instance Pretty OpInfos where
+    pretty (OpInfos l) = vcat $ map pretty l
 
-instance PrettyPrint DataEntry where
-    printText0 ga (DataEntry im i k args rk alts) = hang
-        (printGenKind k <> text typeS <+> printText0 ga i
-                  <> hcat (map (parens . printText0 ga) args))
-          2 (text defnS <+> vcat (map (printAltDefn ga i args rk) alts))
-        $$ nest 2 (noPrint (Map.null im)
-           (text withS <+> text (typeS ++ sS) <+> printText0 ga im))
+instance Pretty DataEntry where
+    pretty (DataEntry im i k args rk alts) =
+        printGenKind k <+> keyword typeS <+>
+        fsep ([fcat $ pretty i : map (parens . pretty) args
+              , defn, vcat $ map (printAltDefn i args rk) alts]
+             ++ if Map.null im then [] 
+                else [text withS, text (typeS ++ sS), printMap0 im])
 
-instance PrettyPrint Sentence where
-    printText0 ga s = case s of
-        Formula t -> printText0 ga t
-        DatatypeSen ls -> vcat (map (printText0 ga) ls)
-        ProgEqSen _ _ pe -> text programS <+> printText0 ga pe
+instance Pretty Sentence where
+    pretty s = case s of
+        Formula t -> pretty t
+        DatatypeSen ls -> vcat (map pretty ls)
+        ProgEqSen _ _ pe -> keyword programS <+> pretty pe
 
-instance PrettyPrint Env where
-    printText0 ga (Env{classMap=cm, typeMap=tm, localTypeVars=tvs,
+instance Pretty Env where
+    pretty (Env{classMap=cm, typeMap=tm, localTypeVars=tvs,
                        assumps=ops, localVars=vs,
                        sentences=se, envDiags=ds}) =
         noPrint (Map.null cm) (header "Classes")
-        $$ printMap0 ga cm
-        $$ noPrint (Map.null tm) (header "Type Constructors")
-        $$ printMap0 ga tm
-        $$ noPrint (Map.null tvs) (header "Type Variables")
-        $$ printMap0 ga tvs
-        $$ noPrint (Map.null ops) (header "Assumptions")
-        $$ printMap0 ga ops
-        $$ noPrint (Map.null vs) (header "Variables")
-        $$ printMap0 ga vs
-        $$ noPrint (null se) (header "Sentences")
-        $$ vcat (map (printText0 ga) $ reverse se)
-        $$ noPrint (null ds) (header "Diagnostics")
-        $$ vcat (map (printText0 ga) $ reverse ds)
+        $+$ printMap0 cm
+        $+$ noPrint (Map.null tm) (header "Type Constructors")
+        $+$ printMap0 tm
+        $+$ noPrint (Map.null tvs) (header "Type Variables")
+        $+$ printMap0 tvs
+        $+$ noPrint (Map.null ops) (header "Assumptions")
+        $+$ printMap0 ops
+        $+$ noPrint (Map.null vs) (header "Variables")
+        $+$ printMap0 vs
+        $+$ noPrint (null se) (header "Sentences")
+        $+$ vcat (map pretty $ reverse se)
+        $+$ noPrint (null ds) (header "Diagnostics")
+        $+$ vcat (map pretty $ reverse ds)
         where header s =  text "%%" <+> text s
                           <+> text (replicate (70 - length s) '-')
-              printMap0 :: (PrettyPrint a, Ord a, PrettyPrint b)
-                           => GlobalAnnos -> Map.Map a b -> Doc
-              printMap0 g m =
-                  let l = Map.toList m in
-                          vcat(map (\ (a, b) -> hang (printText0 g a)
-                                    2 $ printText0 g b) l)
 
-instance PrettyPrint Morphism where
-  printText0 ga m =
+printMap0 :: (Pretty a, Ord a, Pretty b) => Map.Map a b -> Doc
+printMap0 = printMap []
+
+printMap1 :: (Pretty a, Ord a, Pretty b) => Map.Map a b -> Doc
+printMap1 = printMap [mapsto]
+
+printMap :: (Pretty a, Ord a, Pretty b) => [Doc] -> Map.Map a b -> Doc
+printMap d m = vcat $ map (\ (a, b) -> fsep $ 
+                      pretty a : d ++ [pretty b]) $ Map.toList m
+
+instance Pretty Diagnosis where
+    pretty (Diag k s (Range sp)) =
+        (if isMessageW
+            then empty
+            else text (case k of
+                  Error -> "***"
+                  _ -> "###") <+> text (show k))
+        <> (case sp of
+             [] | isMessageW -> empty
+                | otherwise  -> comma
+             _ -> space <> let
+                      mi = minimumBy comparePos sp
+                      ma = maximumBy comparePos sp
+                  in case comparePos mi ma of
+                     EQ -> text (showPos ma ",")
+                     _ -> text $ showPos mi "-"
+                          ++ showPos ma {sourceName = ""} "," )
+        <+> text s
+        where isMessageW = case k of
+                           MessageW -> True
+                           _        -> False
+
+instance Pretty Morphism where
+  pretty m =
       let tm = typeIdMap m
           fm = funMap m
           ds = Map.foldWithKey ( \ (i, s) (j, t) l ->
-                (printText0 ga i <+> colon <+> printText0 ga s
-                <+> text mapsTo <+>
-                printText0 ga j <+> colon <+> printText0 ga t) : l)
+                (pretty i <+> colon <+> pretty s
+                <+> mapsto <+>
+                pretty j <+> colon <+> pretty t) : l)
                [] fm
       in (if Map.null tm then empty
-         else text (typeS ++ sS) <+> printText0 ga tm)
-         $$ (if Map.null fm then empty
-             else text (opS ++ sS) <+> fsep (punctuate comma ds))
-         $$ nest 1 colon <+> braces (printText0 ga $ msource m)
-                    $$ nest 1 (text mapsTo)
-                    <+> braces (printText0 ga $ mtarget m)
+         else keyword (typeS ++ sS) <+> printMap0 tm)
+         $+$ (if Map.null fm then empty
+             else keyword (opS ++ sS) <+> fsep (punctuate comma ds))
+         $+$ colon <+> specBraces (pretty $ msource m)
+                    $+$ mapsto
+                    <+> specBraces (pretty $ mtarget m)
 
-instance PrettyPrint a => PrettyPrint (SymbolType a) where
-    printText0 ga t = case t of
-      OpAsItemType sc -> printText0 ga sc
-      TypeAsItemType k -> printText0 ga k
-      ClassAsItemType k -> printText0 ga k
+instance Pretty a => Pretty (SymbolType a) where
+    pretty t = case t of
+      OpAsItemType sc -> pretty sc
+      TypeAsItemType k -> pretty k
+      ClassAsItemType k -> pretty k
 
-instance PrettyPrint Symbol where
-    printText0 ga s = text (case symType s of
+instance Pretty Symbol where
+    pretty s = keyword (case symType s of
                             OpAsItemType _ -> opS
                             TypeAsItemType _ -> typeS
                             ClassAsItemType _ -> classS) <+>
-                    printText0 ga (symName s) <+> text colonS <+>
-                    printText0 ga (symType s)
+                    pretty (symName s) <+> colon <+>
+                    pretty (symType s)
 
-instance PrettyPrint RawSymbol where
-  printText0 ga rs = case rs of
-      AnID i -> printText0 ga i
-      AKindedId k i -> printSK k <> printText0 ga i
-      AQualId i t -> printSK (symbTypeToKind t) <> printText0 ga i <+> colon
-                       <+> printText0 ga t
-      ASymbol s -> printText0 ga s
+instance Pretty RawSymbol where
+  pretty rs = case rs of
+      AnID i -> pretty i
+      AKindedId k i -> printSK k <> pretty i
+      AQualId i t -> printSK (symbTypeToKind t) <> pretty i <+> colon
+                       <+> pretty t
+      ASymbol s -> pretty s

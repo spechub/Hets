@@ -1,17 +1,18 @@
 type s, t
 op snd : s * t -> t
-program (op snd : s * t -> t) ((var x : s), (var y : t)) : t =
-            (var y : t)
-program (op snd : s * t -> t) ((var x : s), (var y : t)) : t =
-            (var y : t)
-program (op snd : s * t -> t) ((var x : s), (var y : t)) : t =
-            (var y : t) : t
-program (op snd : s * t -> t) ((var x : s), (var y : t)) : t =
-            (var y : t)
-program (op snd : s * t -> t) ((var x : s), (var y : t)) : t =
-            (var y : t)
-program (op snd : s * t -> t) ((var x : s) : s, (var y : t) : t) :
-        t = (var y : t)
+program (op snd : s * t -> t) ((var x : s), (var y : t)) : t = 
+        (var y : t)
+program (op snd : s * t -> t) ((var x : s), (var y : t)) : t = 
+        (var y : t)
+program (op snd : s * t -> t) ((var x : s), (var y : t)) : t = 
+        (var y : t) : t
+program (op snd : s * t -> t) ((var x : s), (var y : t)) : t = 
+        (var y : t)
+program (op snd : s * t -> t) ((var x : s), (var y : t)) : t = 
+        (var y : t)
+program (op snd : s * t -> t) ((var x : s) : s, (var y : t) : t) : 
+        t 
+        = (var y : t)
 op a : s
 program (var b : s) : s = (op a : s)
 op b : s
@@ -56,15 +57,17 @@ x : s %(op)%
 y : t %(op)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-program snd ((var x : s), (var y : t)) : t = (var y : t)
-program snd ((var x : s), (var y : t)) : t = (var y : t)
-program snd ((var x : s), (var y : t)) : t = (var y : t) : t
-program snd ((var x : s), (var y : t)) : t = (var y : t)
-program snd ((var x : s), (var y : t)) : t = (var y : t)
-program snd ((var x : s) : s, (var y : t) : t) : t = (var y : t)
-program (var b : s) : s = a
-program b = a
-c = (snd (x, y) as t)
+program snd((var x : s), (var y : t)) : t = (var y : t) %(pe_snd)%
+program snd((var x : s), (var y : t)) : t = (var y : t) %(pe_snd)%
+program snd((var x : s), (var y : t)) : t = (var y : t) : t 
+                                                        %(pe_snd)%
+program snd((var x : s), (var y : t)) : t = (var y : t) %(pe_snd)%
+program snd((var x : s), (var y : t)) : t = (var y : t) %(pe_snd)%
+program snd(((var x : s) : s), ((var y : t) : t)) : t = 
+        (var y : t)                                     %(pe_snd)%
+program (var b : s) : s = a %(pe_b)%
+program b = a %(pe_b)%
+c = (snd(x, y) as t) %(def_c)%
 %% Diagnostics -----------------------------------------------------------
 *** Error 14.11-14.18, illegal toplevel pattern '((var x : s), (var y : s))'
 ### Warning 17.10, illegal lhs pattern '(var b : s)'

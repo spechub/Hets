@@ -17,10 +17,10 @@ import HasCASL.AsUtils
 import HasCASL.PrintAs()
 import Common.Id
 import HasCASL.Le
-import Common.PrettyPrint
 import qualified Common.Lib.Map as Map
 import Common.Lib.State
 import Common.Result
+import Common.Doc
 
 -- * analyse kinds
 
@@ -104,7 +104,7 @@ invertVariance v = case v of
 -- * diagnostic messages
 
 -- | create message for different kinds 
-diffKindDiag :: (PosItem a, PrettyPrint a) => 
+diffKindDiag :: (PosItem a, Pretty a) => 
                  a -> RawKind -> RawKind -> [Diagnosis]
 diffKindDiag a k1 k2 = 
            [ Diag Error
@@ -112,7 +112,7 @@ diffKindDiag a k1 k2 =
             $ getRange a ]
 
 -- | check if raw kinds are equal
-checkKinds :: (PosItem a, PrettyPrint a) => 
+checkKinds :: (PosItem a, Pretty a) => 
               a -> RawKind -> RawKind -> [Diagnosis]
 checkKinds p k1 k2 =
        if k1 == k2 then []

@@ -8,7 +8,6 @@ Stability   :  experimental
 Portability :  portable 
 
 substitution and unification of types
-
 -}
 
 module HasCASL.Unify where
@@ -21,7 +20,6 @@ import HasCASL.Le
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
-import Common.PrettyPrint
 import Common.Id
 import Common.Lib.State
 import Common.Result

@@ -16,9 +16,11 @@ __*__ : +Type -> +Type -> Type
 __*__*__ : +Type -> +Type -> +Type -> Type
 __*__*__*__ : +Type -> +Type -> +Type -> +Type -> Type
 __*__*__*__*__ : +Type -> +Type -> +Type -> +Type -> +Type -> Type
-__-->__
-  : (-Cpo -> +Cppo -> Cppo, -Cpo -> +Cpo -> Cpo,
-     -Type -> +Type -> Type) < (__-->?__, __->__)
+__-->__ 
+: 
+(-Cpo -> +Cppo -> Cppo, -Cpo -> +Cpo -> Cpo, 
+ -Type -> +Type -> Type) 
+< (__-->?__, __->__)
 __-->?__ : -Type -> +Type -> Type < __->?__
 __->__ : -Type -> +Type -> Type < __->?__
 __->?__ : -Type -> +Type -> Type

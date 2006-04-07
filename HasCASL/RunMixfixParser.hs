@@ -27,6 +27,7 @@ import Common.Anno_Parser
 import Common.Result
 import Common.Lexer
 import Common.Lib.State
+import Common.Doc
 import qualified Common.Lib.Set as Set
 
 -- start testing
@@ -69,6 +70,6 @@ resolveTerm ga = do
            chart = evalState (iterateCharts newGa [trm]
                              $ initChart addRule ruleS)
                    initialEnv { preIds = ps }
-       return $ getResolved (shows . printTerm emptyGlobalAnnos . parenTerm)
+       return $ getResolved (shows . toText newGa . printTerm . parenTerm)
                   (getRange trm) toMixTerm chart
 

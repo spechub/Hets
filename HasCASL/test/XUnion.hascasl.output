@@ -1,20 +1,19 @@
 var S : Type; N : Type; E : Type
 type Set : Type -> Type := \ S : Type . S ->? Unit
-type Graph : Type -> Type -> Type := \ (N : Type)(E : Type) . Set N
-                                                              * (E ->? N) *
-                                                              (E ->? N)
+type Graph : Type -> Type -> Type := 
+     \ (N : Type)(E : Type) . Set N * (E ->? N) * (E ->? N)
 op __union__ : Graph N E * Graph N E -> Graph N E;
    __union__, __intersection__, __\\__ : Set S * Set S -> Set S
 forall g : Graph N E; g' : Graph N E
-. (op __union__[N; E] :
-   forall N : Type; E : Type . Graph N E * Graph N E -> Graph N E)
-  ((var g : Graph N E), (var g' : Graph N E))
+. (op __union__[N; E] : 
+   forall N : Type; E : Type . Graph N E * Graph N E -> Graph N E) 
+  ((var g : Graph N E), (var g' : Graph N E)) 
   = (var g : Graph N E)
 %% Type Constructors -----------------------------------------------------
 ? : +Type -> Type
-Graph
-  : Type -> Type -> Type
-    := \ (N : Type)(E : Type) . Set N * (E ->? N) * (E ->? N)
+Graph 
+: Type -> Type -> Type 
+:= \ (N : Type)(E : Type) . Set N * (E ->? N) * (E ->? N)
 Logical : Type := ? Unit
 Pred : -Type -> Type := \ a : -Type . a ->? Unit
 Set : Type -> Type := \ S : Type . S ->? Unit
@@ -41,10 +40,10 @@ __\/__ : ? Unit * ? Unit ->? Unit %(fun)%
 __\\__ : forall S : Type . Set S * Set S -> Set S %(op)%
 __if__ : ? Unit * ? Unit ->? Unit %(fun)%
 __intersection__ : forall S : Type . Set S * Set S -> Set S %(op)%
-__union__
-  : forall S : Type . Set S * Set S -> Set S %(op)%
-  : forall N : Type; E : Type . Graph N E * Graph N E -> Graph N E
-    %(op)%
+__union__ 
+: forall S : Type . Set S * Set S -> Set S %(op)%
+: forall N : Type; E : Type . Graph N E * Graph N E -> Graph N E 
+%(op)%
 __when__else__ : forall a : Type . a * ? Unit * a ->? a %(fun)%
 bottom : forall a : Type . a %(fun)%
 def__ : forall a : Type . a ->? Unit %(fun)%

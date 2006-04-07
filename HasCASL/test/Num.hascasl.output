@@ -21,8 +21,9 @@ __-->?__ : -Type -> +Type -> Type < __->?__
 __->__ : -Type -> +Type -> Type < __->?__
 __->?__ : -Type -> +Type -> Type
 %% Assumptions -----------------------------------------------------------
-0 : Rat %(op)%
-  : Nat %(op)%
+0 
+: Rat %(op)%
+: Nat %(op)%
 __/\__ : ? Unit * ? Unit ->? Unit %(fun)%
 __<=>__ : ? Unit * ? Unit ->? Unit %(fun)%
 __=__ : forall a : Type . a * a ->? Unit %(fun)%
@@ -40,7 +41,7 @@ true : Unit %(fun)%
 %% Variables -------------------------------------------------------------
 y : Rat
 %% Sentences -------------------------------------------------------------
-y = (op 0 : Nat)
+y = (op 0 : Nat) %(divide_def2_Rat)%
 %% Diagnostics -----------------------------------------------------------
 ### Hint 1.17, redeclared type 'Int'
 ### Hint 6.14, not a class 'Rat'

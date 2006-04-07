@@ -22,7 +22,7 @@ import qualified Common.Lib.Set as Set
 import Common.Id
 import Common.Lib.State
 import Common.Result
-import Common.PrettyPrint
+import qualified Common.PrettyPrint as PP
 import Common.Lexer
 import Common.AnnoState
 import Text.ParserCombinators.Parsec (runParser, eof)
@@ -148,7 +148,7 @@ addTypeKind warn d i rk k =
                 else do addDiags $ diffKindDiag i ok rk 
                         return False
 
-nonUniqueKind :: (PosItem a, PrettyPrint a) => [Kind] -> a -> 
+nonUniqueKind :: (PosItem a, PP.PrettyPrint a) => [Kind] -> a -> 
                  (Kind -> State Env (Maybe b)) -> State Env (Maybe b)
 nonUniqueKind ks a f = case ks of
     [k] -> f k

@@ -21,7 +21,6 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.Id
 import Common.Result
-import Common.PrettyPrint
 import Data.List as List
 import Data.Maybe
 import Control.Exception(assert)

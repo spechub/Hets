@@ -1,7 +1,7 @@
 type s
 op a : s
 op __=[s]__ : forall a . a * a -> Unit
-. (op __=[s]__[s] : forall a : Type . a * a -> Unit)
+. (op __=[s]__[s] : forall a : Type . a * a -> Unit) 
   ((op a : s), (op a : s))
 %% Type Constructors -----------------------------------------------------
 ? : +Type -> Type

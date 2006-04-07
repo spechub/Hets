@@ -14,15 +14,36 @@ module HasCASL.PrintAs where
 
 import HasCASL.As
 import HasCASL.AsUtils
-import HasCASL.MixPrint
-import Common.Lib.Pretty
+import HasCASL.FoldTerm
+import HasCASL.Builtin
+import Common.PrettyPrint
+import Common.PPUtils()
 import Common.Id
 import Common.Keywords
-import Common.PPUtils
-import Common.PrettyPrint
-import Common.GlobalAnnotations(GlobalAnnos)
-import Common.AS_Annotation(mapAnM)
+import Common.Doc
+import Common.AS_Annotation
 import Data.List
+
+instance PrettyPrint BasicSpec where
+    printText0 ga = toText (addBuiltins ga) . rmTopKey . pretty
+
+instance PrintLaTeX BasicSpec where
+    printLatex0 ga = toLatex (addBuiltins ga) . pretty
+
+instance PrettyPrint BasicItem where
+    printText0 ga = toText ga . rmTopKey . pretty
+
+instance PrettyPrint Type where
+    printText0 ga = toText ga . pretty
+
+instance PrettyPrint TypePattern where
+    printText0 ga = toText ga . pretty
+
+instance PrettyPrint Term where
+    printText0 ga = toText (addBuiltins ga) . pretty
+
+instance Pretty a => PrettyPrint (AnyKind a) where
+    printText0 ga = toText ga . pretty
 
 -- | short cut for: if b then empty else d
 noPrint :: Bool -> Doc -> Doc
@@ -31,44 +52,57 @@ noPrint b d = if b then empty else d
 noNullPrint :: [a] -> Doc -> Doc
 noNullPrint = noPrint . null
 
-instance PrettyPrint Variance where
-    printText0 _ = text . show
+commaDs :: Pretty a => [a] -> Doc
+commaDs = fsep . punctuate comma . map pretty
 
-instance PrettyPrint a => PrettyPrint (AnyKind a) where
-    printText0 ga knd = case knd of
-        ClassKind ci -> printText0 ga ci
-        FunKind v k1 k2 _ -> printText0 ga v <>
+semiDs :: Pretty a => [a] -> Doc
+semiDs = fsep . punctuate semi . map pretty
+
+semiAnnoted :: Pretty a => [Annoted a] -> Doc
+semiAnnoted = semiAnnos pretty
+
+instance Pretty Variance where
+    pretty = idDoc . simpleIdToId . mkSimpleId . show
+
+instance Pretty a => Pretty (AnyKind a) where
+    pretty knd = case knd of
+        ClassKind ci -> pretty ci
+        FunKind v k1 k2 _ -> pretty v <>
                           (case k1 of
                                   FunKind _ _ _ _ -> parens
-                                  _ -> id) (printText0 ga k1)
-                          <+> text funS
-                          <+> printText0 ga k2
+                                  _ -> id) (pretty k1)
+                          <+> funArrow
+                          <+> pretty k2
 
-instance PrettyPrint TypePattern where
-    printText0 ga tp = case tp of
-        TypePattern name args _ -> printText0 ga name
-                                 <> fcat (map (parens . printText0 ga) args)
-        TypePatternToken t -> printText0 ga t
-        MixfixTypePattern ts -> fsep (map (printText0 ga) ts)
-        BracketTypePattern k l _ -> bracket k $ commaT_text ga l
-        TypePatternArg t _ -> parens $ printText0 ga t
+instance Pretty TypePattern where
+    pretty tp = case tp of
+        TypePattern name args _ -> pretty name
+                                 <> fcat (map (parens . pretty) args)
+        TypePatternToken t -> pretty t
+        MixfixTypePattern ts -> fsep (map (pretty) ts)
+        BracketTypePattern k l _ -> bracket k $ commaDs l
+        TypePatternArg t _ -> parens $ pretty t
 
 -- | put proper brackets around a document
 bracket :: BracketKind -> Doc -> Doc
-bracket b t = let (o,c) = getBrackets b in text o <> t <> text c
+bracket b = case b of
+              Parens -> parens
+              Squares -> brackets
+              Braces -> specBraces
+              NoBrackets -> id
 
 -- | print a 'Kind' plus a preceding colon (or nothing)
-printKind :: GlobalAnnos -> Kind -> Doc
-printKind ga k = if k == universe then empty else
-                 printVarKind ga InVar (VarKind k)
+printKind :: Kind -> Doc
+printKind k = if k == universe then empty else
+                 printVarKind InVar (VarKind k)
 
 -- | print the kind of a variable with its variance and a preceding colon
-printVarKind :: GlobalAnnos -> Variance -> VarKind -> Doc
-printVarKind ga e vk = case vk of
+printVarKind :: Variance -> VarKind -> Doc
+printVarKind e vk = case vk of
                     Downset t ->
-                        space <> text lessS <+> printText0 ga t
+                        space <> less <+> pretty t
                     VarKind k -> space <> colon <+>
-                                 printText0 ga e <> printText0 ga k
+                                 pretty e <> pretty k
                     MissingKind -> empty
 
 data TypePrec = Outfix | Prefix | ProdInfix | FunInfix deriving (Eq, Ord)
@@ -121,292 +155,320 @@ toMixType typ = case typ of
       _ -> (Prefix, MixfixType $ parenPrec ProdInfix (toMixType topTy)
          : map (parenPrec Prefix . toMixType) tyArgs)
 
-printType :: GlobalAnnos -> Type -> Doc
-printType ga ty = case ty of
-        TypeName name _ _ -> printText0 ga name
+printType :: Type -> Doc
+printType ty = case ty of
+        TypeName name _ _ -> pretty name
           -- if i == 0 then empty else text ("_v"++ show i)
-        TypeAppl t1 t2 -> parens (printType ga t1) <>
-                          parens (printType ga t2)
-        ExpandedType t1 t2 -> printType ga t1 <> text asP <> printType ga t2
-        TypeToken t -> printText0 ga t
+        TypeAppl t1 t2 -> parens (printType t1) <>
+                          parens (printType t2)
+        ExpandedType t1 t2 -> printType t1 <> text asP <> printType t2
+        TypeToken t -> pretty t
         BracketType k l _ -> bracket k $ fsep $
-                             punctuate comma $ map (printType ga) l
-        KindedType t kind _ -> printType ga t
-                                       <+> colon <+> printText0 ga kind
-        MixfixType ts -> fsep $ map (printType ga) ts
+                             punctuate comma $ map (printType) l
+        KindedType t kind _ -> printType t
+                                       <+> colon <+> pretty kind
+        MixfixType ts -> fsep $ map printType ts
 
-instance PrettyPrint Type where
-    printText0 ga = printType ga . snd . toMixType
+instance Pretty Type where
+    pretty = printType . snd . toMixType
 
 -- no curried notation for bound variables
-instance PrettyPrint TypeScheme where
-    printText0 ga (TypeScheme vs t _) = let tdoc = printText0 ga t in
+instance Pretty TypeScheme where
+    pretty (TypeScheme vs t _) = let tdoc = pretty t in
         if null vs then tdoc else
-           hang (text forallS <+> semiT_text ga vs <+> text dotS) 2 tdoc
+           fsep [forallDoc, semiDs vs, bullet, tdoc]
 
-instance PrettyPrint Instance where
-    printText0 _ i = case i of
-        Instance -> space <> text instanceS
+instance Pretty Instance where
+    pretty i = case i of
+        Instance -> space <> keyword instanceS
         Plain -> empty
 
-instance PrettyPrint Partiality where
-    printText0 _ p = case p of
+instance Pretty Partiality where
+    pretty p = case p of
         Partial -> text quMark
         Total -> empty
 
-instance PrettyPrint Arrow where
-    printText0 _ a = text $ show a
+instance Pretty Arrow where
+    pretty a = case a of
+        FunArr -> funArrow
+        PFunArr -> pfun
+        ContFunArr -> cfun
+        PContFunArr -> pcfun
 
-instance PrettyPrint Quantifier where
-    printText0 _ q = text $ show q
+instance Pretty Quantifier where
+    pretty q = case q of
+        Universal -> forallDoc
+        Existential -> exists
+        Unique -> unique
 
-instance PrettyPrint TypeQual where
-    printText0 _ q = text $ show q
+instance Pretty TypeQual where
+    pretty q = case q of
+        OfType -> colon
+        AsType -> text asS
+        InType -> inDoc
+        Inferred -> colon
 
-instance PrettyPrint Term where
-    printText0 ga t = printTerm ga $ convTerm ga $ rmSomeTypes t
+instance Pretty Term where
+    pretty t = printTerm $ rmSomeTypes t
 
-printTerm :: GlobalAnnos -> Term -> Doc
-printTerm ga trm =
-    let commaT = fsep . punctuate comma . map (printTerm ga)
-    in case trm of
-        QualVar vd -> parens $ text varS <+> printText0 ga vd
-        QualOp br n t _ -> parens $ fsep [printText0 ga br, printText0 ga n,
-                                colon, printText0 ga $
-                                if isPred br then unPredTypeScheme t else t]
-        ResolvedMixTerm n ts _ ->
-            case ts of
-            [] ->  printText0 ga n
-            [t] -> printText0 ga n <> (case t of
-                   TupleTerm _ _ -> id
-                   BracketTerm _ _ _ -> id
-                   QualVar _ -> id
-                   QualOp _ _ _ _ -> id
-                   ResolvedMixTerm _ [] _ -> (space <>)
-                   TermToken _ -> (space <>)
-                   _ -> parens) (printTerm ga t)
-            _ -> printText0 ga n <> parens (commaT ts)
-        ApplTerm t1 t2 _ ->
-            hang (printTerm ga t1) 2 $ printTerm ga t2
-        TupleTerm ts _ -> parens (commaT ts)
-        TypedTerm t q typ _ ->
-            fsep [printTerm ga t, printText0 ga q, printText0 ga typ]
-        QuantifiedTerm q vs t _ -> hang (printText0 ga q <+> semiT_text ga vs)
-                                   2 (text dotS <+> printTerm ga t)
-        LambdaTerm ps q t _ -> hang (text lamS <+> (case ps of
-            [p] -> printTerm ga p
-            _ -> fcat $ map (parens . printTerm ga) ps))
-            2 $ (case q of
-                Partial -> text dotS
-                Total -> text $ dotS ++ exMark) <+> printTerm ga t
-        CaseTerm t es _  -> hang (fsep [text caseS, printText0 ga t, text ofS])
-            4 $ vcat (punctuate (text " | ") $ 
-                                map (printEq0 ga $ text funS) es)
-        LetTerm br es t _ ->
-            let dt = printTerm ga t
-                des = vcat $ punctuate semi $ map (printEq0 ga equals) es
+isSimpleTerm :: Term -> Bool
+isSimpleTerm trm = case trm of
+    QualVar _ -> True
+    QualOp _ _ _ _ -> True
+    ResolvedMixTerm _ _ _ -> True
+    ApplTerm _ _ _ -> True
+    TupleTerm _ _ -> True
+    TermToken _ -> True
+    BracketTerm _ _ _ -> True
+    _ -> False 
+
+parenTermDoc :: Term -> Doc -> Doc
+parenTermDoc trm = if isSimpleTerm trm then id else parens 
+
+printTermRec :: FoldRec Doc (Doc, Doc)
+printTermRec = let commaT = fsep . punctuate comma in FoldRec 
+    { foldQualVar = \ _ vd -> parens $ keyword varS <+> pretty vd
+    , foldQualOp = \ _ br n t _ -> 
+          parens $ fsep [pretty br, pretty n, colon, pretty $
+                         if isPred br then unPredTypeScheme t else t]
+    , foldResolvedMixTerm = \ (ResolvedMixTerm _ os _) n ts _ ->
+          idApplDoc n $ zipWith parenTermDoc os ts
+    , foldApplTerm = \ (ApplTerm o1 o2 _) t1 t2 _ ->
+        case (o1, o2) of
+          (ResolvedMixTerm n [] _, TupleTerm ts _) -> 
+              idApplDoc n $ zipWith parenTermDoc ts $ map printTerm ts
+          (ResolvedMixTerm n [] _, _) | placeCount n == 1 -> 
+              idApplDoc n [parenTermDoc o2 t2]
+          _ -> idApplDoc applId [parenTermDoc o1 t1, parenTermDoc o2 t2]
+     , foldTupleTerm = \ _ ts _ -> parens $ commaT ts
+     , foldTypedTerm = \ _ t q typ _ -> fsep [t, pretty q, pretty typ]
+     , foldQuantifiedTerm = \ _ q vs t _ -> 
+           fsep [pretty q, semiDs vs, bullet, t]
+     , foldLambdaTerm = \ _ ps q t _ -> 
+            fsep [ lambda
+                 , case ps of
+                      [p] -> p
+                      _ -> fcat $ map parens ps
+                 , case q of
+                     Partial -> bullet
+                     Total -> bullet <> text exMark
+                 , t]
+     , foldCaseTerm = \ _ t es _  -> 
+            fsep [text caseS, t, text ofS,
+                  vcat $ punctuate (space <> bar <> space) $ 
+                       map (printEq0 funArrow) es]
+     , foldLetTerm = \ _ br es t _ ->
+            let des = vcat $ punctuate semi $ map (printEq0 equals) es
                 in case br of
-                Let -> hang (sep [text letS <+> des, text inS]) 3 dt
-                Where -> hang (sep [dt, text whereS]) 6 des
+                Let -> fsep [sep [text letS <+> des, text inS], t]
+                Where -> fsep [sep [t, text whereS], des]
                 Program -> text programS <+> des
-        TermToken t -> printText0 ga t
-        MixTypeTerm q t _ -> printText0 ga q <+> printText0 ga t
-        MixfixTerm ts -> fsep $ map (printTerm ga) ts
-        BracketTerm k l _ -> bracket k $ commaT l
-        AsPattern (VarDecl v _ _ _) p _ ->
-            printText0 ga v <+> text asP <+> printTerm ga p
+     , foldTermToken = \ _ t -> pretty t
+     , foldMixTypeTerm = \ _ q t _ -> pretty q <+> pretty t
+     , foldMixfixTerm = \ _ ts -> fsep ts
+     , foldBracketTerm = \ _ k l _ -> bracket k $ commaT l
+     , foldAsPattern = \ _ (VarDecl v _ _ _) p _ -> pretty v <+> text asP <+> p
+     , foldProgEq = \ _ p t _ -> (p, t)
+    } 
+
+printTerm :: Term -> Doc
+printTerm = foldTerm printTermRec
+
+rmTypeRec :: MapRec
+rmTypeRec = mapRec
+    { foldQualOp = \ t _ (InstOpId i _ _) _ ps ->
+                 if elem i $ map fst bList then
+                    ResolvedMixTerm i [] ps else t
+    , foldTypedTerm = \ _ nt q ty ps ->
+           case q of
+           Inferred -> nt
+           _ -> case nt of
+               TypedTerm _ oq oty _ | oty == ty || oq == InType -> nt
+               QualVar (VarDecl _ oty _ _) | oty == ty -> nt
+               _ -> TypedTerm nt q ty ps
+    }
+
+rmSomeTypes :: Term -> Term
+rmSomeTypes = foldTerm rmTypeRec
 
 -- | print an equation with different symbols between 'Pattern' and 'Term'
-printEq0 :: GlobalAnnos -> Doc -> ProgEq -> Doc
-printEq0 ga s (ProgEq p t _) =
-    hang (hang (printTerm ga p) 2 s) 4 $ printTerm ga t
+printEq0 :: Doc -> (Doc, Doc) -> Doc
+printEq0 s (p, t) = fsep [p, s, t]
 
-instance PrettyPrint VarDecl where
-    printText0 ga (VarDecl v t _ _) = printText0 ga v <>
+instance Pretty VarDecl where
+    pretty (VarDecl v t _ _) = pretty v <>
        case t of
        MixfixType [] -> empty
-       _ -> space <> colon <+> printText0 ga t
+       _ -> space <> colon <+> pretty t
 
-instance PrettyPrint GenVarDecl where
-    printText0 ga gvd = case gvd of
-        GenVarDecl v -> printText0 ga v
-        GenTypeVarDecl tv -> printText0 ga tv
+instance Pretty GenVarDecl where
+    pretty gvd = case gvd of
+        GenVarDecl v -> pretty v
+        GenTypeVarDecl tv -> pretty tv
 
-instance PrettyPrint TypeArg where
-    printText0 ga (TypeArg v e c _ _ _ _) =
-        printText0 ga v <> printVarKind ga e c
+instance Pretty TypeArg where
+    pretty (TypeArg v e c _ _ _ _) =
+        pretty v <> printVarKind e c
 
 -- | don't print an empty list and put parens around longer lists
-printList0 :: (PrettyPrint a) => GlobalAnnos -> [a] -> Doc
-printList0 ga l =  case l of
+printList0 :: (Pretty a) => [a] -> Doc
+printList0 l =  case l of
     []  -> empty
-    [x] -> printText0 ga x
-    _   -> parens $ commaT_text ga l
+    [x] -> pretty x
+    _   -> parens $ commaDs l
 
-instance PrettyPrint InstOpId where
-    printText0 ga (InstOpId n l _) = printText0 ga n <> noNullPrint l
-                                     (brackets $ semiT_text ga l)
+instance Pretty InstOpId where
+    pretty (InstOpId n l _) = pretty n <> noNullPrint l
+                                     (brackets $ semiDs l)
 
 -- | print a 'TypeScheme' as a pseudo type
-printPseudoType :: GlobalAnnos -> TypeScheme -> Doc
-printPseudoType ga (TypeScheme l t _) = noNullPrint l (text lamS
-    <+> (if null $ tail l then printText0 ga $ head l
-         else fcat(map (parens . printText0 ga) l))
-            <+> text dotS <> space) <> printText0 ga t
+printPseudoType :: TypeScheme -> Doc
+printPseudoType (TypeScheme l t _) = noNullPrint l (lambda
+    <+> (if null $ tail l then pretty $ head l
+         else fcat(map (parens . pretty) l))
+            <+> bullet <> space) <> pretty t
 
-instance PrettyPrint BasicSpec where
-    printText0 ga (BasicSpec l) = vcat (map (printText0 ga) l)
+instance Pretty BasicSpec where
+    pretty (BasicSpec l) = vcat (map (pretty) l)
 
-instance PrettyPrint ProgEq where
-    printText0 ga (ProgEq p q ps) =
-        printEq0 ga equals $ ProgEq (convTerm ga p) (convTerm ga q) ps
+instance Pretty ProgEq where
+    pretty = printEq0 equals . foldEq printTermRec
 
-instance PrettyPrint BasicItem where
-    printText0 ga bi = case bi of
-        SigItems s -> printText0 ga s
-        ProgItems l _ -> noNullPrint l $ text programS <+> semiAnno_text ga l
-        ClassItems i l _ -> noNullPrint l $ text classS <> printText0 ga i
-                            <+> semiAnno_text ga l
-        GenVarItems l _ -> noNullPrint l $ text varS <+> semiT_text ga l
-        FreeDatatype l _ -> noNullPrint l $ text freeS <+> text typeS
-                            <+> semiAnno_text ga l
-        GenItems l _ -> noNullPrint l $ text generatedS
-                        <+> braces (semiAnno_text ga l)
-        AxiomItems vs fs _ -> (noNullPrint vs $ text forallS
-                               <+> semiT_text ga vs)
-                              $$ vcat (map ( \ x -> text dotS
-                                             <+> printText0 ga x) fs)
-        Internal l _ -> noNullPrint l $ text internalS
-                        <+> braces (semiAnno_text ga l)
+instance Pretty BasicItem where
+    pretty bi = case bi of
+        SigItems s -> pretty s
+        ProgItems l _ -> noNullPrint l $ keyword programS <+> semiAnnoted l
+        ClassItems i l _ -> noNullPrint l $ topKey classS <> pretty i
+                            <+> semiAnnoted l
+        GenVarItems l _ -> noNullPrint l $ topKey varS <+> semiDs l
+        FreeDatatype l _ -> noNullPrint l $ keyword freeS <+> keyword typeS
+                            <+> semiAnnoted l
+        GenItems l _ -> noNullPrint l $ keyword generatedS
+                        <+> specBraces (semiAnnoted l)
+        AxiomItems vs fs _ ->
+            vcat $ (if null vs then [] else 
+                    [forallDoc <+> semiDs vs])
+                  ++ (map ( \ x -> bullet <+> pretty x) fs)
+        Internal l _ -> noNullPrint l $ keyword internalS
+                        <+> specBraces (semiAnnoted l)
 
-instance PrettyPrint OpBrand where
-    printText0 _ b = text $ show b
+instance Pretty OpBrand where
+    pretty b = keyword $ show b
 
-instance PrettyPrint SigItems where
-    printText0 ga si = case si of
-        TypeItems i l _ -> noNullPrint l $ text typeS <> printText0 ga i
-                           <+> semiAnno_text ga l
-        OpItems b l _ -> noNullPrint l $ printText0 ga b <+> semiAnno_text ga
+instance Pretty SigItems where
+    pretty si = case si of
+        TypeItems i l _ -> noNullPrint l $ topKey typeS <> pretty i
+                           <+> semiAnnoted l
+        OpItems b l _ -> noNullPrint l $ topKey (show b) <+> semiAnnoted
                          (if isPred b then concat $
                           mapAnM ((:[]) . mapOpItem) l else l)
 
-instance PrettyPrint ClassItem where
-    printText0 ga (ClassItem d l _) = printText0 ga d $$
+instance Pretty ClassItem where
+    pretty (ClassItem d l _) = pretty d $+$
                                    if null l then empty
-                                      else braces (semiAnno_text ga l)
+                                      else specBraces (semiAnnoted l)
 
-instance PrettyPrint ClassDecl where
-    printText0 ga (ClassDecl l k _) = commaT_text ga l
-                                      <+> text lessS <+> printText0 ga k
+instance Pretty ClassDecl where
+    pretty (ClassDecl l k _) = fsep [commaDs l, less, pretty k]
 
-instance PrettyPrint Vars where
-    printText0 ga vd = case vd of
-        Var v -> printText0 ga v
-        VarTuple vs _ -> parens $ commaT_text ga vs
+instance Pretty Vars where
+    pretty vd = case vd of
+        Var v -> pretty v
+        VarTuple vs _ -> parens $ commaDs vs
 
-instance PrettyPrint TypeItem where
-    printText0 ga ti = case ti of
-        TypeDecl l k _ -> if null l then error "printText0 TypeDecl" else
-                          commaT_text ga l <> printKind ga k
-        SubtypeDecl l t _ -> if null l then error "printText0 SubtypeDecl"
-            else commaT_text ga l <+> text lessS <+> printText0 ga t
-        IsoDecl l _ -> cat(punctuate (text " = ")
-                                      (map (printText0 ga) l))
-        SubtypeDefn p v t f _ -> printText0 ga p
-                               <+> equals
-                               <+> braces (printText0 ga v
-                                           <+> colon
-                                           <+> printText0 ga t
-                                           <+> text dotS
-                                           <+> printText0 ga f)
-        AliasType p k t _ ->  (printText0 ga p <>
-                                          case k of
-                                          Nothing -> empty
-                                          Just j -> space <> colon <+>
-                                                   printText0 ga j)
-                                       <+> text assignS
-                                       <+> printPseudoType ga t
-        Datatype t -> printText0 ga t
+instance Pretty TypeItem where
+    pretty ti = case ti of
+        TypeDecl l k _ -> if null l then error "pretty TypeDecl" else
+                          commaDs l <> printKind k
+        SubtypeDecl l t _ -> if null l then error "pretty SubtypeDecl"
+            else fsep [commaDs l, less, pretty t]
+        IsoDecl l _ -> fsep $ punctuate (space <> equals) $ map pretty l
+        SubtypeDefn p v t f _ -> 
+            fsep [pretty p, equals,
+                  specBraces $ fsep 
+                  [pretty v, colon, pretty t, bullet, pretty f]]
+        AliasType p k t _ -> 
+            fsep $ pretty p : (case k of
+                     Nothing -> []
+                     Just j -> [colon, pretty j])
+                  ++ [text assignS, printPseudoType t]
+        Datatype t -> pretty t
 
 mapOpItem :: OpItem -> OpItem
 mapOpItem oi = case oi of
     OpDecl l t as ps -> OpDecl l (unPredTypeScheme t) as ps
     OpDefn n ps s p t qs -> OpDefn n ps (unPredTypeScheme s) p t qs
 
-instance PrettyPrint OpItem where
-    printText0 ga oi = case oi of
-        OpDecl l t attrs _ -> if null l then error "printText0 OpDecl" else
-            commaT_text ga l <+> colon <+> (printText0 ga t
+instance Pretty OpItem where
+    pretty oi = case oi of
+        OpDecl l t attrs _ -> if null l then error "pretty OpDecl" else
+            commaDs l <+> colon <+> (pretty t
                  <> (if null attrs then empty else comma <> space)
-                 <> commaT_text ga attrs)
-        OpDefn n ps s p t _ -> hang
-            (hang (printText0 ga n <> fcat (map (parens . semiT_text ga) ps))
-                            2 (colon <> printText0 ga p
-                            <+> printText0 ga s))
-                            2 (equals
-                               <+> printText0 ga t)
+                 <> commaDs attrs)
+        OpDefn n ps s p t _ ->
+            fsep [fcat $ pretty n : (map (parens . semiDs) ps)
+                 , colon <> pretty p, pretty s, equals, pretty t]
 
-instance PrettyPrint BinOpAttr where
-    printText0 _ a = text $ case a of
+instance Pretty BinOpAttr where
+    pretty a = text $ case a of
         Assoc -> assocS
         Comm -> commS
         Idem -> idemS
 
-instance PrettyPrint OpAttr where
-    printText0 ga oa = case oa of
-        BinOpAttr a _ -> printText0 ga a
-        UnitOpAttr t _ -> text unitS <+> printText0 ga t
+instance Pretty OpAttr where
+    pretty oa = case oa of
+        BinOpAttr a _ -> pretty a
+        UnitOpAttr t _ -> text unitS <+> pretty t
 
-instance PrettyPrint DatatypeDecl where
-    printText0 ga (DatatypeDecl p k alts d _) = (printText0 ga p <>
-                                               printKind ga k)
-                                  <+> text defnS
-                                  <+> vcat(punctuate (text " | ")
-                                           (map (printText0 ga) alts))
+instance Pretty DatatypeDecl where
+    pretty (DatatypeDecl p k alts d _) = (pretty p <> printKind k)
+                                  <+> defn
+                                  <+> vcat(punctuate (space <> bar <> space)
+                                           $ map pretty alts)
                                   <+> case d of [] -> empty
-                                                _ -> text derivingS
-                                                          <+> commaT_text ga d
+                                                _ -> keyword derivingS
+                                                          <+> commaDs d
 
-instance PrettyPrint Alternative where
-    printText0 ga alt = case alt of
+instance Pretty Alternative where
+    pretty alt = case alt of
         Constructor n cs p _ ->
-            printText0 ga n <+> fsep (map (parens . semiT_text ga) cs)
-                       <> printText0 ga p
-        Subtype l _ -> noNullPrint l $ text typeS <+> commaT_text ga l
+            pretty n <+> fsep (map (parens . semiDs) cs)
+                       <> pretty p
+        Subtype l _ -> noNullPrint l $ text typeS <+> commaDs l
 
-instance PrettyPrint Component where
-    printText0 ga sel = case sel of
-        Selector n p t _ _ -> printText0 ga n
-                              <+> colon <> printText0 ga p
-                                      <+> printText0 ga t
-        NoSelector t -> printText0 ga t
+instance Pretty Component where
+    pretty sel = case sel of
+        Selector n p t _ _ -> pretty n
+                              <+> colon <> pretty p
+                                      <+> pretty t
+        NoSelector t -> pretty t
 
-instance PrettyPrint OpId where
-    printText0 ga (OpId n ts _) = printText0 ga n
+instance Pretty OpId where
+    pretty (OpId n ts _) = pretty n
                                   <+> noNullPrint ts
-                                      (brackets $ commaT_text ga ts)
+                                      (brackets $ commaDs ts)
 
-instance PrettyPrint Symb where
-    printText0 ga (Symb i mt _) =
-        printText0 ga i <> (case mt of Nothing -> empty
-                                       Just (SymbType t) ->
-                                          empty <+> colon <+>
-                                            printText0 ga t)
+instance Pretty Symb where
+    pretty (Symb i mt _) =
+        pretty i <> (case mt of 
+                       Nothing -> empty
+                       Just (SymbType t) ->
+                           empty <+> colon <+> pretty t)
 
-instance PrettyPrint SymbItems where
-    printText0 ga (SymbItems k syms _ _) =
-        printSK k <> commaT_text ga syms
+instance Pretty SymbItems where
+    pretty (SymbItems k syms _ _) =
+        printSK k <> commaDs syms
 
-instance PrettyPrint SymbOrMap where
-    printText0 ga (SymbOrMap s mt _) =
-        printText0 ga s <> (case mt of Nothing -> empty
-                                       Just t ->
-                                          empty <+> text mapsTo <+>
-                                            printText0 ga t)
+instance Pretty SymbOrMap where
+    pretty (SymbOrMap s mt _) =
+        pretty s <> (case mt of 
+                       Nothing -> empty
+                       Just t ->
+                           empty <+> mapsto <+> pretty t)
 
-instance PrettyPrint SymbMapItems where
-    printText0 ga (SymbMapItems k syms _ _) =
-        printSK k <> commaT_text ga syms
+instance Pretty SymbMapItems where
+    pretty (SymbMapItems k syms _ _) =
+        printSK k <> commaDs syms
 
 -- | print symbol kind
 printSK :: SymbKind -> Doc

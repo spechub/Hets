@@ -19,7 +19,7 @@ parse error at 15.7:
 unexpected "as" or "a"
 expecting "[", "%", "->", cross, ->, "=e=", "=", id/literal, "{", "(", "if", "when", "forall", exists, "\\", "case", "let", "where" or end of input
 
-[  ]
+[ ]
 + a
 a + b
 a when a < b else b
@@ -27,42 +27,42 @@ a when (pred a : b) else b
 { a b }
 *** Error 22.1-22.5, ambiguous mixfix term
   a b p
-  ____p(a, b)
-  __p(a b)
+  a b p
+  (a b) p
 *** Error 23.1-23.5, ambiguous mixfix term
   q a b
-  q____(a, b)
+  q a b
 *** Error 24.1-24.4, ambiguous mixfix term
-  B ([__] b)
-  __[__](B, b)
+  B([ b ])
+  B [ b ]
 *** Error 25.1-25.11, ambiguous mixfix term
-  B (__::__(a (__::__(c, __::__(d, []))), __::__(b, [])))
+  B([ a([ c, d ]), b ])
   B[a[c,d],b]
 [ a, [ c, d ], b ]
 *** Error 27.1-27.10, ambiguous mixfix term
-  __::__(a (__::__(c, __::__(d, []))), __::__(b, []))
-  __::__(a[c,d], __::__(b, []))
-a B [a[c,d], b] b
+  [ a([ c, d ]), b ]
+  [ a[c,d], b ]
+a B [a[c,d],b] b
 while while a do b od do c od
 while while a do b od do while c do d od od
 { a { b c } }
 *** Error 32.1-32.10, ambiguous mixfix term
-  __::__(a, __::__(A__(0 B), []))
-  __::__(a, __::__(A 0 B, []))
+  [ a, A (0 B) ]
+  [ a, A 0 B ]
 *** Error 33.1-33.9, ambiguous mixfix term
-  A (A__B(0 B))
-  A__(A__(0 B B))
-  A (A__B 0) B
-  A__B(A__(0 B))
+  A(A 0 B B)
+  A A (0 B B)
+  A(A 0 B) B
+  A A (0 B) B
 *** Error 34.1-34.13, ambiguous mixfix term
-  __+__(__+__(b, A__(0 B)), b)
-  __+__(__+__(b, A 0 B), b)
+  b + A (0 B) + b
+  b + A 0 B + b
 *** Error 35.1-35.7, ambiguous mixfix term
-  -__(A__(0 B))
-  -__(A 0 B)
+  - A (0 B)
+  - (A 0 B)
 a ! ! !
-Pl7 { nicht_wenden } -- folge_dem_Gang --> { nicht_wenden } Pl3 -->
-RS3
+Pl7 { nicht_wenden } -- folge_dem_Gang --> { nicht_wenden } Pl3 
+--> RS3 
 --> RS6
 (a + b) * c
 a * (b * c)

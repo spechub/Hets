@@ -8,7 +8,6 @@ Stability   :  experimental
 Portability :  portable 
 
 constraint resolution
-
 -}
 
 module HasCASL.Constrain where
@@ -24,11 +23,10 @@ import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Rel as Rel
 import Common.Lib.State
-import Common.PrettyPrint
-import Common.Lib.Pretty
-import Common.Keywords
+import qualified Common.PrettyPrint as PP
 import Common.Id
 import Common.Result
+import Common.Doc
 
 import Control.Exception(assert)
 
@@ -39,12 +37,13 @@ data Constrain = Kinding Type Kind
                | Subtyping Type Type 
                  deriving (Eq, Ord, Show)
 
-instance PrettyPrint Constrain where
-    printText0 ga c = case c of 
-       Kinding ty k -> printText0 ga ty <+> colon 
-                                      <+> printText0 ga k
-       Subtyping t1 t2 -> printText0 ga t1 <+> text lessS
-                                      <+> printText0 ga t2
+instance PP.PrettyPrint Constrain where
+    printText0 ga = toText ga . pretty 
+
+instance Pretty Constrain where
+    pretty c = case c of 
+       Kinding ty k -> fsep [pretty ty, colon, pretty k]
+       Subtyping t1 t2 -> fsep [pretty t1, less, pretty t2]
 
 instance PosItem Constrain where
   getRange c = case c of 
@@ -86,7 +85,8 @@ entail te p =
 
 byInst :: Monad m => TypeEnv -> Constrain -> m Constraints
 byInst te c = let cm = classMap te in case c of 
-    Kinding ty k -> if k == universe then assert (rawKindOfType ty == ClassKind ())
+    Kinding ty k -> if k == universe then 
+                        assert (rawKindOfType ty == ClassKind ())
                     $ return noC else 
       let Result _ds mk = inferKinds (Just True) ty te in
                    case mk of 
@@ -97,7 +97,8 @@ byInst te c = let cm = classMap te in case c of
                              else fail $ "constrain '" ++ 
                                   showPretty c "' is unprovable"
                                   ++ "\n  known kinds are: " ++
-                                  showPretty ks ""
+                                  concat (intersperse ", " $ 
+                                          map (flip showPretty "") ks) 
     Subtyping t1 t2 -> if lesserType te t1 t2 then return noC
                        else fail ("unable to prove: " ++ showPretty t1 " < " 
                                   ++ showPretty t2 "")
@@ -326,5 +327,4 @@ fromTypeMap :: TypeMap -> Rel.Rel Type
 fromTypeMap = Map.foldWithKey (\ t ti r -> let k = typeKind ti in
                     Set.fold ( \ j -> Rel.insert (TypeName t k 0)
                                 $ TypeName j k 0) r
-                                    $ superTypes ti) Rel.empty 
-
+                                    $ superTypes ti) Rel.empty

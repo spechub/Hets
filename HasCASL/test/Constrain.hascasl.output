@@ -3,8 +3,8 @@ class Ord < Eq
 type a : Ord
 op f : forall e : Ord . e -> e
 op c : a
-. (op f[a] : forall e : Ord . e -> e)
-  ((op f[a] : forall e : Ord . e -> e) (op c : a))
+. (op f[a] : forall e : Ord . e -> e) 
+  ((op f[a] : forall e : Ord . e -> e) (op c : a)) 
   = (op c : a)
 type t : Eq
 op b : t
@@ -50,6 +50,6 @@ f (f c) = c
 f b = b
 %% Diagnostics -----------------------------------------------------------
 ### Hint 16.3, constrain 't : Ord' is unprovable
-  known kinds are: [ Eq ]
-*** Error 16.3, in term '(op f[t] : forall e : Ord . e -> e) (op b : t) = (op b : t)' of type 'Unit'
+  known kinds are: Eq
+*** Error 16.3, in term '((op f[t] : forall e : Ord . e -> e) (op b : t)) = (op b : t)' of type 'Unit'
  unresolved constraints '{ t : Ord }'

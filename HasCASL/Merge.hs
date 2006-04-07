@@ -13,7 +13,7 @@ merging parts of local environment
 module HasCASL.Merge where
 
 import Common.Id
-import Common.PrettyPrint
+import Common.Doc
 import Common.Result
 
 import HasCASL.As
@@ -34,17 +34,17 @@ import Data.List
 class Mergeable a where
     merge :: a -> a -> Result a 
 
-instance (Ord a, PosItem a, PrettyPrint a, Mergeable b) 
+instance (Ord a, PosItem a, Pretty a, Mergeable b) 
     => Mergeable (Map.Map a b) where
     merge = mergeMap id merge
 
-improveDiag :: (PosItem a, PrettyPrint a) => a -> Diagnosis -> Diagnosis
+improveDiag :: (PosItem a, Pretty a) => a -> Diagnosis -> Diagnosis
 improveDiag v d = d { diagString = let f:l = lines $ diagString d in 
                       unlines $ (f ++ " of '" ++ showPretty v "'") : l
                     , diagPos = getRange v
                     }
 
-mergeMap :: (Ord a, PosItem a, PrettyPrint a) => 
+mergeMap :: (Ord a, PosItem a, Pretty a) => 
             (b -> b) -> (b -> b -> Result b) 
          -> Map.Map a b -> Map.Map a b -> Result  (Map.Map a b)
 mergeMap e f m1 m2 = foldM ( \ m (k, v) -> 
@@ -69,7 +69,7 @@ instance Mergeable a => Mergeable (Maybe a) where
 instance Mergeable ClassInfo where
     merge = mergeA "super classes"
 
-instance (PrettyPrint a, Eq a) => Mergeable (AnyKind a) where
+instance (Pretty a, Eq a) => Mergeable (AnyKind a) where
     merge = mergeA "super kinds" 
 
 mergeTypeInfo :: TypeInfo -> TypeInfo -> Result TypeInfo 
@@ -191,7 +191,7 @@ instance Mergeable Env where
                              , typeMap = tMap
                              , assumps = as }
 
-mergeA :: (PrettyPrint a, Eq a) => String -> a -> a -> Result a
+mergeA :: (Pretty a, Eq a) => String -> a -> a -> Result a
 mergeA str t1 t2 = if t1 == t2 then return t1 else 
     fail ("different " ++ str ++ expected t1 t2)
 

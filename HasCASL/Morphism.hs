@@ -23,7 +23,6 @@ import HasCASL.Merge
 
 import Common.Id
 import Common.Result
-import Common.PrettyPrint
 import qualified Common.Lib.Map as Map
 import Data.List as List
 

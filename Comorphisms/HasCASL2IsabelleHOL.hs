@@ -20,7 +20,6 @@ import qualified Common.Lib.Map as Map
 import Data.List
 import Data.Maybe
 import Common.AS_Annotation (Named(..))
-import Common.PrettyPrint
 
 -- HasCASL
 import HasCASL.Logic_HasCASL

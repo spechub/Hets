@@ -10,32 +10,32 @@ op fmap : (a -> b) -> f a -> f b
 op empty : List a
 type Set : Functor
 op emptySet : Set a
-. (op fail[_v12; Set] : forall a : Type; m : Monad . m a) =
+. (op fail[_v12; Set] : forall a : Type; m : Monad . m a) = 
   (op emptySet[_v12] : forall a : Type . Set a)
-. (op fail[_v27; List] : forall a : Type; m : Monad . m a) =
+. (op fail[_v27; List] : forall a : Type; m : Monad . m a) = 
   (op empty[_v27] : forall a : Type . List a)
 op map : (a -> b) -> List a -> List b
 op __bind__ : m a * (a -> m b) -> m b
 var g : a -> b
 var x : m a
-. (op fmap[a; b; List] :
-   forall a : Type; b : Type; f : Functor . (a -> b) -> f a -> f b)
+. (op fmap[a; b; List] : 
+   forall a : Type; b : Type; f : Functor . (a -> b) -> f a -> f b) 
+  (var g : a -> b) 
+  = 
+  (op map[a; b] : 
+   forall a : Type; b : Type . (a -> b) -> List a -> List b) 
   (var g : a -> b)
-  =
-  (op map[a; b] :
-   forall a : Type; b : Type . (a -> b) -> List a -> List b)
-  (var g : a -> b)
-. (op fmap[a; b; m] :
-   forall a : Type; b : Type; f : Functor . (a -> b) -> f a -> f b)
-  (var g : a -> b)
-  (var x : m a)
-  =
-  (op __bind__[a; b; m] :
-   forall a : Type; b : Type; m : Monad . m a * (a -> m b) -> m b)
-  ((var x : m a),
-   \ (var y : a)
-     .! (op return[b; m] : forall a : Type; m : Monad . a -> m a)
-        ((var g : a -> b) (var y : a)))
+. (op fmap[a; b; m] : 
+   forall a : Type; b : Type; f : Functor . (a -> b) -> f a -> f b) 
+  (var g : a -> b) 
+  (var x : m a) 
+  = 
+  (op __bind__[a; b; m] : 
+   forall a : Type; b : Type; m : Monad . m a * (a -> m b) -> m b) 
+  ((var x : m a), 
+   \ (var y : a) .! 
+   (op return[b; m] : forall a : Type; m : Monad . a -> m a) 
+   ((var g : a -> b) (var y : a)))
 %% Classes ---------------------------------------------------------------
 Functor < Type -> Type
 Monad < Functor
@@ -66,9 +66,9 @@ __=__ : forall a : Type . a * a ->? Unit %(fun)%
 __=>__ : ? Unit * ? Unit ->? Unit %(fun)%
 __=e=__ : forall a : Type . a * a ->? Unit %(fun)%
 __\/__ : ? Unit * ? Unit ->? Unit %(fun)%
-__bind__
-  : forall a : Type; b : Type; m : Monad . m a * (a -> m b) -> m b
-    %(op)%
+__bind__ 
+: forall a : Type; b : Type; m : Monad . m a * (a -> m b) -> m b 
+%(op)%
 __if__ : ? Unit * ? Unit ->? Unit %(fun)%
 __when__else__ : forall a : Type . a * ? Unit * a ->? a %(fun)%
 bottom : forall a : Type . a %(fun)%
@@ -77,11 +77,11 @@ empty : forall a : Type . List a %(op)%
 emptySet : forall a : Type . Set a %(op)%
 fail : forall a : Type; m : Monad . m a %(op)%
 false : Unit %(fun)%
-fmap
-  : forall a : Type; b : Type; f : Functor . (a -> b) -> f a -> f b
-    %(op)%
-map
-  : forall a : Type; b : Type . (a -> b) -> List a -> List b %(op)%
+fmap 
+: forall a : Type; b : Type; f : Functor . (a -> b) -> f a -> f b 
+%(op)%
+map 
+: forall a : Type; b : Type . (a -> b) -> List a -> List b %(op)%
 not__ : ? Unit ->? Unit %(fun)%
 return : forall a : Type; m : Monad . a -> m a %(op)%
 true : Unit %(fun)%
@@ -93,15 +93,15 @@ x : m a
 fail = emptySet
 fail = ""
 fmap g = map g
-fmap g x = x bind (\ y : a .! return (g y))
+fmap g x = (x bind (\ y : a .! return (g y)))
 %% Diagnostics -----------------------------------------------------------
 ### Hint 7.5, is type variable 'a'
 ### Hint 7.8, is type variable 'b'
 ### Hint 9.5, is type variable 'm'
 ### Hint 15.5, is type variable 'f'
 ### Hint 25.8, constrain 'Set : Monad' is unprovable
-  known kinds are: [ Functor ]
-*** Error 25.8, in term '(op fail[_v12; Set] : forall a : Type; m : Monad . m a) =
+  known kinds are: Functor
+*** Error 25.8, in term '(op fail[_v12; Set] : forall a : Type; m : Monad . m a) = 
 (op emptySet[_v12] : forall a : Type . Set a)' of type 'Unit'
  unresolved constraints '{ Set : Monad }'
 ### Hint 33.7, not a class 'a'

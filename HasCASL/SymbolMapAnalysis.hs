@@ -18,7 +18,9 @@ module HasCASL.SymbolMapAnalysis
     )  where
 
 import HasCASL.As
+import HasCASL.AsUtils
 import HasCASL.Le
+import HasCASL.PrintLe
 import HasCASL.Builtin
 import HasCASL.AsToLe
 import HasCASL.Symbol
@@ -30,7 +32,7 @@ import Common.Result
 import Common.Lib.State
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
-import Common.PrettyPrint
+import Data.List
 
 inducedFromMorphism :: RawSymbolMap -> Env -> Result Morphism
 inducedFromMorphism rmap1 sigma = do
@@ -78,7 +80,9 @@ inducedFromMorphism rmap1 sigma = do
                  { typeIdMap = myTypeIdMap
                  , funMap = op_Map }
       else Result [Diag Error 
-           ("the following symbols: " ++ showPretty wrongRsyms 
+           ("the following symbols: " ++ 
+            concat (intersperse ", " $ map (flip showPretty "") 
+                   $ Set.toList wrongRsyms) ++ 
             "\nare already mapped directly or do not match with signature\n"
             ++ showPretty sigma "") nullRange] Nothing
 
@@ -214,7 +218,7 @@ inducedFromToMorphism rmap1 sigma1 sigma2 = do
               && symbTypeToKind t2 == SK_type then
           return mor1 { typeIdMap = Map.singleton n1 n2 } 
           else Result [Diag Error ("No symbol mapping found for:\n"
-           ++ showPretty rmap "\nOrignal Signature1:\n"
+           ++ shows (toOldDoc $ printMap1 rmap) "\nOrignal Signature1:\n"
            ++ showPretty sigma1 "\nInduced "
            ++ showEnvDiff (mtarget mor1) sigma2) nullRange] Nothing
 

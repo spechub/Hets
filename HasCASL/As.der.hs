@@ -215,23 +215,10 @@ data Component = Selector UninstOpId Partiality Type SeparatorKind Range
 
 -- | the possible quantifiers
 data Quantifier = Universal | Existential | Unique
-                  deriving (Eq, Ord)
-
-instance Show Quantifier where
-    show q = case q of
-        Universal -> forallS
-        Existential -> existsS
-        Unique -> existsUnique
+                  deriving (Eq, Ord, Show)
 
 -- | the possibly type annotations of terms
-data TypeQual = OfType | AsType | InType | Inferred deriving (Eq, Ord)
-
-instance Show TypeQual where
-    show q = case q of
-        OfType -> colonS
-        AsType -> asS
-        InType -> inS
-        Inferred -> colonS
+data TypeQual = OfType | AsType | InType | Inferred deriving (Eq, Ord, Show)
 
 -- | an indicator of (otherwise equivalent) let or where equations
 data LetBrand = Let | Where | Program deriving (Show, Eq, Ord)
