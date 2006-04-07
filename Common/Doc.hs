@@ -100,6 +100,8 @@ module Common.Doc
     , printAnnoted
     , printSemiAnno
     , semiAnnos
+      -- * manipulating documents
+    , rmTopKey
     ) where
 
 import Common.Id
@@ -159,6 +161,7 @@ if refDoc < startDoc
 isEmpty :: Doc -> Bool
 isEmpty d = case d of
               Empty -> True
+              Cat _ [] -> True
               _ -> False
 
 -- * the visible interface
@@ -231,14 +234,16 @@ doubleQuotes :: Doc -> Doc     -- ^ Wrap document in @\"...\"@
 doubleQuotes d = hcat [doubleQuote, d, doubleQuote]
 
 (<>) :: Doc -> Doc -> Doc      -- ^Beside
-a <> b = Cat Horiz [a, b]
+a <> b = hcat [a, b]
+
+rmEmpties :: [Doc] -> [Doc]
+rmEmpties = filter (not . isEmpty)
 
 hcat :: [Doc] -> Doc          -- ^List version of '<>'
-hcat = Cat Horiz
+hcat = Cat Horiz . rmEmpties
 
 (<+>) :: Doc -> Doc -> Doc     -- ^Beside, separated by space
-a <+> b = if isEmpty a then b else
-          if isEmpty b then a else Cat Horiz [a, space, b]
+a <+> b = hsep [a, b]
 
 punctuate :: Doc -> [Doc] -> [Doc]
 punctuate d l = case l of
@@ -246,31 +251,34 @@ punctuate d l = case l of
      _ -> l
 
 hsep :: [Doc] -> Doc         -- ^List version of '<+>'
-hsep = hcat . punctuate space
+hsep = Cat Horiz . punctuate space . rmEmpties
 
 ($+$) :: Doc -> Doc -> Doc;    -- ^Above, without dovetailing.
-a $+$ b = Cat Vert [a, b]
+a $+$ b = vcat [a, b]
 
 vcat :: [Doc] -> Doc          -- ^List version of '$+$'
-vcat = Cat Vert
+vcat = Cat Vert . rmEmpties 
 
 cat    :: [Doc] -> Doc          -- ^ Either hcat or vcat
-cat = Cat HorizOrVert
+cat = Cat HorizOrVert . rmEmpties 
 
 sep    :: [Doc] -> Doc          -- ^ Either hsep or vcat
-sep = cat . punctuate space
+sep = Cat HorizOrVert . punctuate space . rmEmpties 
 
 fcat   :: [Doc] -> Doc          -- ^ \"Paragraph fill\" version of cat
-fcat = Cat Fill
+fcat = Cat Fill . rmEmpties
 
 fsep   :: [Doc] -> Doc          -- ^ \"Paragraph fill\" version of sep
-fsep = fcat . punctuate space
+fsep = Cat Fill . punctuate space . rmEmpties
 
 keyword, topKey, indexed, structId :: String -> Doc
 keyword = Text Keyword
 indexed = Text Indexed
 structId = Text StructId
 topKey = Text TopKey
+
+lambdaSymb :: String
+lambdaSymb = "\\"
 
 -- | docs possibly rendered differently for Text or LaTeX
 dot, bullet, defn, less, lambda, mapsto, funArrow, pfun, cfun, pcfun,
@@ -281,7 +289,7 @@ dot = text dotS
 bullet = symbol dotS
 defn = symbol defnS
 less = symbol lessS
-lambda = symbol lambdaS
+lambda = symbol lambdaSymb
 mapsto = symbol mapsTo
 funArrow = symbol funS
 pfun = symbol pFun
@@ -557,7 +565,7 @@ latexSymbols = Map.fromList
     , ("{", casl_normal_latex "\\{")
     , ("}", casl_normal_latex "\\}")
     , ("__", hc_sty_axiom "\\_\\_")
-    , (lambdaS, hc_sty_axiom "\\lambda")
+    , (lambdaSymb, hc_sty_axiom "\\lambda")
     , (mapsTo, mapsto_latex)
     , (funS, rightArrow)
     , (pFun, hc_sty_axiom "\\rightarrow?")
@@ -848,3 +856,11 @@ splitRAnnos r = case r of
             else ([l], s)
         else if isImplied l then ([l], s)
              else ([], r)
+
+-- | change top-level to plain keywords
+rmTopKey :: Doc -> Doc
+rmTopKey = foldDoc idRecord 
+    { foldText = \ d k s -> case k of
+          TopKey -> Text Keyword s
+          _ -> d
+    }
