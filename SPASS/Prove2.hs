@@ -218,11 +218,6 @@ getConfig spid m = if (isJust lookupId)
     lookupId = Map.lookup spid m
 
 {- |
-  Store one result per goal.
--}
-type SPASSResultsMap = Map.Map SPIdentifier SPASSResult
-
-{- |
   Map to SPASS compliant identifiers
 -}
 type SPASSGoalNameMap = Map.Map String String
@@ -235,10 +230,10 @@ data State = State { -- | currently selected goal or Nothing
                      -- | theory to work on
                      theory :: Theory Sign Sentence (),
                      -- | stores the prover configurations for each goal
-                     configsMap :: SPASSConfigsMap,
-                     -- | stores the results retrieved by running 
+                     -- and the results retrieved by running 
                      -- SPASS for each goal
-                     resultsMap :: SPASSResultsMap,
+                     configsMap :: SPASSConfigsMap,
+--                     resultsMap :: SPASSResultsMap,
                      -- | stores a mapping to SPASS compliant 
                      -- identifiers for all goals
                      namesMap :: SPASSGoalNameMap,
@@ -376,10 +371,10 @@ filterOpenGoals = Map.filter isOpenGoal
 goalsView :: SPASS.Prove2.State  -- ^ current global prover state
           -> [LBGoalView] -- ^ resulting ['LBGoalView'] list
 goalsView s = map (\ g ->
-                       let res = Map.lookup g (resultsMap s)
+                       let cfg = Map.lookup g (configsMap s)
                            statind = maybe LBIndicatorOpen
-                                       (indicatorFromProof_status . fst)
-                                       res
+                                       (indicatorFromProof_status . proof_status)
+                                       cfg
                         in
                           LBGoalView {statIndicator = statind, 
                                       goalDescription = g})
@@ -432,16 +427,17 @@ goalProcessed :: IORef SPASS.Prove2.State
               -> (SpassProverRetval, SPASSConfig)
               -> IO Bool
 goalProcessed stateRef tLimit numGoals label 
-              processedGoalsSoFar nGoal (retval, res) = do
+              processedGoalsSoFar nGoal (retval, res_cfg) = do
   s <- readIORef stateRef
-  let s' = s{resultsMap = Map.insert (AS_Anno.senName nGoal) 
-                                     res (resultsMap s),
-             configsMap = adjustOrSetConfig 
-                             (\ c -> c{timeLimitExceeded = 
-                                           isTimeLimitExceeded retval,
-                                       timeLimit = Just tLimit}) 
-                             (AS_Anno.senName nGoal) 
-                             (configsMap s)}
+  let s' = s{
+      configsMap = adjustOrSetConfig 
+                      (\ c -> c{timeLimitExceeded = 
+                                    isTimeLimitExceeded retval,
+                                timeLimit = Just tLimit,
+                                proof_status = proof_status res_cfg,
+                                resultOutput = resultOutput res_cfg})
+                      (AS_Anno.senName nGoal) 
+                      (configsMap s)}
   writeIORef stateRef s'
 
   let notReady = numGoals - processedGoalsSoFar > 0
@@ -467,7 +463,7 @@ updateDisplay st updateLb goalsLb statusLabel timeEntry optionsEntry axiomsLb = 
          (populateGoalsListBox goalsLb (goalsView st))
     maybe (return ())
           (\ go -> 
-               let mprfst = Map.lookup go (resultsMap st)
+               let mprfst = Map.lookup go (configsMap st)
                    cf = Map.findWithDefault 
                         (error "updateDisplay: configsMap \
                                \was not initialised!!") 
@@ -475,9 +471,9 @@ updateDisplay st updateLb goalsLb statusLabel timeEntry optionsEntry axiomsLb = 
                    t' = maybe guiDefaultTimeLimit id (timeLimit cf)
                    opts' = unwords (extraOpts cf)
                    (color, label) = maybe statusOpen
-                                    ((toGuiStatus cf) . fst)
+                                    ((toGuiStatus cf) . proof_status)
                                     mprfst
-                   usedAxs = maybe [] (usedAxioms . fst) mprfst
+                   usedAxs = maybe [] (usedAxioms . proof_status) mprfst
 
                in do 
                 statusLabel # text label
@@ -887,9 +883,9 @@ spassProveGUI thName th = do
               then noGoalSelected
               else (do
                 let goal = fromJust $ currentGoal s
-                let result = Map.lookup goal (resultsMap s)
+                let result = Map.lookup goal (configsMap s)
                 let output = if isJust result
-                               then snd (fromJust result)
+                               then resultOutput (fromJust result)
                                else ["This goal hasn't been run through "++
                                      "the prover yet."]
                 let detailsText = concatMap ('\n':) output
@@ -962,10 +958,12 @@ spassProveGUI thName th = do
             done)
       +> (saveConfiguration >>> do
             s <- readIORef stateRef
-            let cfgText = concatMap ((++"\n")) ["Configuration:\n", 
-                                                show $ configsMap s, 
+            let cfgText = concatMap ((++"\n")) ["Configuration / Results:\n", 
+                                                show $ configsMap s] 
+{-- * has to be reworked
                                                 "\nResults:\n", 
                                                 showResMap (resultsMap s)]
+--}
             createTextSaveDisplay ("SPASS Configuration for Theory " ++ thName)
                                   (thName ++ ".spcf") cfgText
             done)
@@ -977,13 +975,13 @@ spassProveGUI thName th = do
                              destroy main)
        )
   s <- readIORef stateRef
-  let proof_stats = map (\g -> let res = Map.lookup g (resultsMap s) 
+  let proof_stats = map (\g -> let res = Map.lookup g (configsMap s) 
                                    g' = Map.findWithDefault 
                                         (error ("Lookup of name failed: (1) "
                                                 ++"should not happen \""
                                                 ++g++"\""))
                                         g (namesMap s)
-                                   pStat = fst $ fromJust res
+                                   pStat = proof_status $ fromJust res
                                in if isJust res 
                                   then transNames (namesMap s) pStat
                                   else openSPASSProof_status g') 
@@ -1006,7 +1004,7 @@ spassProveGUI thName th = do
                         findIndex (\sen -> AS_Anno.senName sen == goal) 
                                   (goalsList s)) 
                        (goalsList s)
-           proved = filter (\sen-> checkGoal (resultsMap s) 
+           proved = filter (\sen-> checkGoal (configsMap s) 
                                        (AS_Anno.senName sen)) beforeThis
        in if inclProvedThs 
              then (head afterThis,
@@ -1018,6 +1016,7 @@ spassProveGUI thName th = do
                                  " not found!!"))
                          id (find ((==goal) . AS_Anno.senName) (goalsList s)),
                    iLP)
+-- * has to be reworked (together with spawnEvent +> saveConfiguration...)
     showResMap mp = 
         '{':(foldr  (\ (k,(r,outp)) resF -> 
                              shows k . 
@@ -1069,11 +1068,11 @@ getBatchTimeLimit = do
 {- |
   Checks whether a goal in the results map is marked as proved.
 -}
-checkGoal :: SPASSResultsMap -> SPIdentifier -> Bool
-checkGoal resMap goal =
-  isJust g && isProvedStat (fst $ fromJust g)
+checkGoal :: SPASSConfigsMap -> SPIdentifier -> Bool
+checkGoal cfgMap goal =
+  isJust g && isProvedStat (proof_status $ fromJust g)
   where
-    g = Map.lookup goal resMap
+    g = Map.lookup goal cfgMap
 
 -- ** Implementation
 
