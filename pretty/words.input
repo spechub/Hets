@@ -83,7 +83,7 @@ A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
 \bullet \Leftrightarrow \Rightarrow \Leftarrow \forall \exists \exists!
 \rightarrow \rightarrow? \leftarrow \neg \vee \wedge \in \mapsto \times
 \leq \geq \cap \cup \subseteq \sim \sqcup \sqcap \bot \sharp
-\epsilon \longrightarrow \longleftarrow ^{-1}
+\epsilon \longrightarrow \longleftarrow \setminus ^{-1}
 
 %pattern: \textit{%s}
 a b c d e f g h i j k l m n o p q r s t u v w x y z 
