@@ -382,7 +382,7 @@ endAnno = "%@%small@}"
 escape_latex :: String -> String
 escape_latex "" = ""
 escape_latex (x : xs)
-    | x == '\\' = "\\textbackslash{}" ++ escape_latex xs
+    | x == '\\' = "\\Ax{\\setminus}" ++ escape_latex xs
     | x == '"' = -- something to prevent german.sty from interpreting '"'
              case xs of
              []  -> default_quotes []
