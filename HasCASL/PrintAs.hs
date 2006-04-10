@@ -107,60 +107,60 @@ printVarKind e vk = case vk of
 
 data TypePrec = Outfix | Prefix | ProdInfix | FunInfix deriving (Eq, Ord)
 
-parenPrec :: TypePrec -> (TypePrec, Type) -> Type
-parenPrec p1 (p2, d) = if p2 < p1 then d else BracketType Parens [d] nullRange
+parenPrec :: TypePrec -> (TypePrec, Doc) -> Doc
+parenPrec p1 (p2, d) = if p2 < p1 then d else parens d
 
-toMixType :: Type -> (TypePrec, Type)
+toMixType :: Type -> (TypePrec, Doc)
 toMixType typ = case typ of
     ExpandedType t1 _ -> toMixType t1
     {- (Prefix, ExpandedType
                       (parenPrec Prefix $ toMixType t1)
                          $ parenPrec Prefix $ toMixType t2) -}
-    BracketType k l ps -> (Outfix, BracketType k (map
-                             (snd . toMixType) l) ps)
-    KindedType t kind ps -> (Prefix, KindedType
-                             (parenPrec Prefix $ toMixType t) kind ps)
-    MixfixType ts -> (Prefix, MixfixType $ map (snd . toMixType) ts)
+    BracketType k l _ -> (Outfix, bracket k $ fsep $ punctuate comma $ map
+                             (snd . toMixType) l)
+    KindedType t kind _ -> (Prefix, 
+               fsep [parenPrec Prefix $ toMixType t, colon, pretty kind])
+    MixfixType ts -> (Prefix, fsep $ map (snd . toMixType) ts)
     _ -> let (topTy, tyArgs) = getTypeAppl typ in
       case topTy of
-      TypeName name@(Id ts cs _) _k _i -> case tyArgs of
-          [] -> (Outfix, topTy)
+      TypeName name@(Id ts cs _) _k _i -> let topDoc = pretty name in
+        case tyArgs of
+          [] -> (Outfix, pretty name)
           [arg] -> let dArg = toMixType arg in
                case ts of
                [e1, e2, e3] | not (isPlace e1) && isPlace e2
                               && not (isPlace e3) && null cs ->
-                   (Outfix, MixfixType [TypeToken e1, snd dArg, TypeToken e3])
-               _ -> (Prefix, MixfixType [topTy, parenPrec Prefix dArg])
+                   (Outfix, fsep [pretty e1, snd dArg, pretty e3])
+               _ -> (Prefix, fsep [topDoc, parenPrec Prefix dArg])
           [arg1, arg2] -> let dArg1 = toMixType arg1
                               dArg2 = toMixType arg2 in
                case ts of
                [e1, e2, e3] | isPlace e1 && not (isPlace e2)
                               && isPlace e3 && null cs ->
                     if tokStr e2 == prodS then
-                      (ProdInfix, MixfixType [
-                       parenPrec ProdInfix dArg1, TypeToken e2,
+                      (ProdInfix, fsep [
+                       parenPrec ProdInfix dArg1, cross,
                        parenPrec ProdInfix dArg2])
                     else -- assume fun type
-                      (FunInfix, MixfixType [
-                       parenPrec FunInfix dArg1, TypeToken e2, snd dArg2])
-               _ -> (Prefix, MixfixType [topTy, parenPrec Prefix dArg1,
+                      (FunInfix, fsep [
+                       parenPrec FunInfix dArg1, pretty e2, snd dArg2])
+               _ -> (Prefix, fsep [topDoc, parenPrec Prefix dArg1,
                                parenPrec Prefix dArg2])
           _ -> if name == productId (length tyArgs) then
-                (ProdInfix, MixfixType $ intersperse
-                 (TypeToken $ mkSimpleId prodS) $
+                (ProdInfix, fsep $ punctuate (space <> cross) $
                           map (parenPrec ProdInfix . toMixType) tyArgs)
-                else (Prefix, MixfixType $ topTy :
+                else (Prefix, fsep $ topDoc :
                             map (parenPrec Prefix . toMixType) tyArgs)
-      _ | null tyArgs -> (Outfix, topTy)
-      _ -> (Prefix, MixfixType $ parenPrec ProdInfix (toMixType topTy)
+      _ | null tyArgs -> (Outfix, printType topTy)
+      _ -> (Prefix, fsep $ parenPrec ProdInfix (toMixType topTy)
          : map (parenPrec Prefix . toMixType) tyArgs)
 
 printType :: Type -> Doc
 printType ty = case ty of
         TypeName name _ _ -> pretty name
           -- if i == 0 then empty else text ("_v"++ show i)
-        TypeAppl t1 t2 -> parens (printType t1) <>
-                          parens (printType t2)
+        TypeAppl t1 t2 -> fcat [parens (printType t1),
+                                parens (printType t2)]
         ExpandedType t1 t2 -> printType t1 <> text asP <> printType t2
         TypeToken t -> pretty t
         BracketType k l _ -> bracket k $ fsep $
@@ -170,7 +170,7 @@ printType ty = case ty of
         MixfixType ts -> fsep $ map printType ts
 
 instance Pretty Type where
-    pretty = printType . snd . toMixType
+    pretty = snd . toMixType
 
 -- no curried notation for bound variables
 instance Pretty TypeScheme where
@@ -187,13 +187,6 @@ instance Pretty Partiality where
     pretty p = case p of
         Partial -> text quMark
         Total -> empty
-
-instance Pretty Arrow where
-    pretty a = case a of
-        FunArr -> funArrow
-        PFunArr -> pfun
-        ContFunArr -> cfun
-        PContFunArr -> pcfun
 
 instance Pretty Quantifier where
     pretty q = case q of
@@ -232,11 +225,14 @@ printTermRec = let commaT = fsep . punctuate comma in FoldRec
           parens $ fsep [pretty br, pretty n, colon, pretty $
                          if isPred br then unPredTypeScheme t else t]
     , foldResolvedMixTerm = \ (ResolvedMixTerm _ os _) n ts _ ->
+          if placeCount n == length ts || null ts then 
           idApplDoc n $ zipWith parenTermDoc os ts
+          else idApplDoc applId [idDoc n, parens $ commaT ts]
     , foldApplTerm = \ (ApplTerm o1 o2 _) t1 t2 _ ->
         case (o1, o2) of
-          (ResolvedMixTerm n [] _, TupleTerm ts _) -> 
-              idApplDoc n $ zipWith parenTermDoc ts $ map printTerm ts
+          (ResolvedMixTerm n [] _, TupleTerm ts _) 
+              | placeCount n == length ts -> 
+                  idApplDoc n $ zipWith parenTermDoc ts $ map printTerm ts
           (ResolvedMixTerm n [] _, _) | placeCount n == 1 -> 
               idApplDoc n [parenTermDoc o2 t2]
           _ -> idApplDoc applId [parenTermDoc o1 t1, parenTermDoc o2 t2]
@@ -276,9 +272,10 @@ printTerm = foldTerm printTermRec
 
 rmTypeRec :: MapRec
 rmTypeRec = mapRec
-    { foldQualOp = \ t _ (InstOpId i _ _) _ ps ->
-                 if elem i $ map fst bList then
-                    ResolvedMixTerm i [] ps else t
+    { -- foldQualVar = \ _ (VarDecl v _ _ ps) -> ResolvedMixTerm v [] ps
+      foldQualOp = \ t _ (InstOpId i _ _) _ ps -> 
+                   if elem i $ map fst bList then
+                     ResolvedMixTerm i [] ps else t
     , foldTypedTerm = \ _ nt q ty ps ->
            case q of
            Inferred -> nt

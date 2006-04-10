@@ -120,10 +120,11 @@ true : Unit %(fun)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
 forall a : +Type; x_1_1 : a; x_1_2 : List a . 
-(op head : forall a : +Type . List a -> a) Cons(x_1_1, x_1_2) = 
+(op head : forall a : +Type . List a -> a) (Cons (x_1_1, x_1_2)) = 
 x_1_1                                           %(ga_select_head)%
 forall a : +Type; x_1_1 : a; x_1_2 : List a . 
-(op tail : forall a : +Type . List a -> List a) Cons(x_1_1, x_1_2) 
+(op tail : forall a : +Type . List a -> List a) 
+(Cons (x_1_1, x_1_2)) 
 = x_1_2                                         %(ga_select_tail)%
 free type List(a : +Type) ::= 
           Nil : List a

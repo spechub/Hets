@@ -57,17 +57,17 @@ x : s %(op)%
 y : t %(op)%
 ¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
-program snd((var x : s), (var y : t)) : t = (var y : t) %(pe_snd)%
-program snd((var x : s), (var y : t)) : t = (var y : t) %(pe_snd)%
-program snd((var x : s), (var y : t)) : t = (var y : t) : t 
+program snd ((var x : s), (var y : t)) : t = (var y : t) %(pe_snd)%
+program snd ((var x : s), (var y : t)) : t = (var y : t) %(pe_snd)%
+program snd ((var x : s), (var y : t)) : t = (var y : t) : t 
                                                         %(pe_snd)%
-program snd((var x : s), (var y : t)) : t = (var y : t) %(pe_snd)%
-program snd((var x : s), (var y : t)) : t = (var y : t) %(pe_snd)%
-program snd(((var x : s) : s), ((var y : t) : t)) : t = 
-        (var y : t)                                     %(pe_snd)%
+program snd ((var x : s), (var y : t)) : t = (var y : t) %(pe_snd)%
+program snd ((var x : s), (var y : t)) : t = (var y : t) %(pe_snd)%
+program snd ((var x : s) : s, (var y : t) : t) : t = (var y : t) 
+                                                        %(pe_snd)%
 program (var b : s) : s = a %(pe_b)%
 program b = a %(pe_b)%
-c = (snd(x, y) as t) %(def_c)%
+c = (snd (x, y) as t) %(def_c)%
 %% Diagnostics -----------------------------------------------------------
 *** Error 14.11-14.18, illegal toplevel pattern '((var x : s), (var y : s))'
 ### Warning 17.10, illegal lhs pattern '(var b : s)'

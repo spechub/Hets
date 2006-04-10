@@ -230,13 +230,14 @@ y2 : d
 program def : Pred s = \ x . () : s ->? Unit %(pe_def)%
 program tt : Pred s = \ x . () : s ->? Unit %(pe_tt)%
 forall x : s; y : t . (x res y) = (x as s) %(def___res__)%
-forall x : s; y : t . fst(x, y) = (x as s) %(def_fst)%
+forall x : s; y : t . fst (x, y) = (x as s) %(def_fst)%
 program (var snd : s * t ->? t) (x, y : t) : t = y %(pe_snd)%
 (\ (x, y : t) . def (x res y)) = 
 (\ (x, y : t) . (def y) und (def x))
 fst = __res__
-(\ x . eq(x, x)) = tt
-(\ (x, y : s) . x res eq(x, y)) = (\ (x, y : s) . y res eq(x, y))
+(\ x . eq (x, x)) = tt
+(\ (x, y : s) . x res (eq (x, y))) = 
+(\ (x, y : s) . y res (eq (x, y)))
 f (Y f) = Y f
 f x = x => ((Y f) <<= x)
 undefined = 
@@ -280,7 +281,7 @@ free type bool ::=
 ### Hint 60.14, rebound variable 'x'
 ### Warning 60.13-60.24, illegal lhs pattern '(var snd : s * t ->? t) ((var x : s), (var y : t))'
 *** Error 65.18-65.30, ambiguous mixfix term
-  def(x res y)
+  def (x res y)
   def (x res y)
 *** Error 65.51-65.69, ambiguous mixfix term
   def y und
@@ -299,9 +300,9 @@ free type bool ::=
   is not unifiable with type 'Unit ->? Unit' (87.33)
 
 ### Hint 87.40-87.46, untypable application (with result type: Pred Unit)
- 'eq(p, tt)'
+ 'eq (p, tt)'
 *** Error 87.38, no typing for 'program (var all : _v206) ((var p : _v207) : Pred s) : Pred Unit 
-          = eq(p, tt)'
+          = eq (p, tt)'
 ### Hint 90.14, rebound variable 'x'
 ### Hint 90.45, no type match for: t1
   with (maximal) type: _v265 ->? _v264 ->? _v263 ->? _v262 ->? Pred Unit
@@ -359,10 +360,10 @@ free type bool ::=
 ### Hint 108.3-108.63, untypable application (with result type: Unit)
  'all 
   (\ ((var f : _v337), (var g : _v338)) : s ->? t . 
-   all (\ x : s . eq((\ () . f x), g x) impl eq (f, g)))'
+   all (\ x : s . eq (\ () . f x, g x) impl eq (f, g)))'
 *** Error 108.3-108.63, no typing for 'all 
   (\ ((var f : _v337), (var g : _v338)) : s ->? t . 
-   all (\ x : s . eq((\ () . f x), g x) impl eq (f, g)))'
+   all (\ x : s . eq (\ () . f x, g x) impl eq (f, g)))'
 ### Hint 117.5, is type variable 'c'
 ### Hint 121.3, no type match for: all
   with (maximal) type: _v341 ->? Unit
@@ -409,11 +410,11 @@ free type bool ::=
 *** Error 130.21-131.74, ambiguous mixfix term
   def 
 (((sup s) impl) 
- (((isBound(sup s, s) und) all) 
-  (\ x : c . (((isBound(x, s) impl) sup) s) <<= x)))
-  (def(sup s) impl) 
-(((isBound(sup s, s) und) all) 
- (\ x : c . (((isBound(x, s) impl) sup) s) <<= x))
+ ((((isBound (sup s, s)) und) all) 
+  (\ x : c . ((((isBound (x, s)) impl) sup) s) <<= x)))
+  ((def (sup s)) impl) 
+((((isBound (sup s, s)) und) all) 
+ (\ x : c . ((((isBound (x, s)) impl) sup) s) <<= x))
 ### Hint 130.3, no type match for: all
   with (maximal) type: _v357 ->? Unit
   known types:
@@ -473,19 +474,19 @@ free type bool ::=
 ### Hint, repeated supertype '__->?__'
 *** Error 171.24-171.61, ambiguous mixfix term
   def (((f x) und) x) <<= y
-  ((def(f x) und) x) <<= y
+  (((def (f x)) und) x) <<= y
 *** Error 174.45, unexpected mixfix token: +
 *** Error 173.28-174.61, ambiguous mixfix term
   def 
-(((f(s m) und) eq) 
- (sup((\ (var n : _v392) : nat .! f (s (n + m)))), f(sup s)))
+((((f (s m)) und) eq) 
+ (sup (\ (var n : _v392) : nat .! f (s (n + m))), f (sup s)))
   ((((def f) (s m)) und) eq) 
-(sup((\ (var n : _v392) : nat .! f (s (n + m)))), f(sup s))
+(sup (\ (var n : _v392) : nat .! f (s (n + m))), f (sup s))
 *** Error 170.7, unexpected mixfix token: :
 *** Error 176.19, unexpected mixfix token: -->?
 *** Error 176.41-176.68, ambiguous mixfix term
   def ((((f x) impl) f) x) <<= (g x)
-  (((def(f x) impl) f) x) <<= (g x)
+  ((((def (f x)) impl) f) x) <<= (g x)
 *** Error 181.9, non-unique kind for '__-->__'
 *** Error 182.46-182.53, ambiguous mixfix term
   def (f x)
@@ -501,10 +502,12 @@ free type bool ::=
 ### Hint 192.3-193.47, untypable application (with result type: Unit)
  'all 
   (\ f : p -->? p . 
-   eq(f (Y f), Y f) und all (\ x : p . (eq(f x, x) impl Y f) <<= x))'
+   eq (f (Y f), Y f) und all 
+   (\ x : p . (eq (f x, x) impl Y f) <<= x))'
 *** Error 192.3-193.47, no typing for 'all 
   (\ f : p -->? p . 
-   eq(f (Y f), Y f) und all (\ x : p . (eq(f x, x) impl Y f) <<= x))'
+   eq (f (Y f), Y f) und all 
+   (\ x : p . (eq (f x, x) impl Y f) <<= x))'
 ### Hint 195.7, not a kind 'p --> p'
 ### Hint 195.5, rebound variable 'f'
 ### Hint 195.20, not a class 'p'
