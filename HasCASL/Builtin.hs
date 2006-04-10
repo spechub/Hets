@@ -16,6 +16,9 @@ import Common.Id
 import Common.Keywords
 import Common.GlobalAnnotations
 import Common.AS_Annotation
+import Common.Anno_Parser
+import Common.AnalyseAnnos
+import Common.Result
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
@@ -23,6 +26,8 @@ import qualified Common.Lib.Rel as Rel
 import HasCASL.As
 import HasCASL.AsUtils
 import HasCASL.Le
+
+import Text.ParserCombinators.Parsec
 
 -- * buitln identifiers
 
@@ -109,8 +114,25 @@ addBuiltins ga =
         newPrecs = foldr (\ (a, b) p -> if Rel.path b a p then p else
                          Rel.insert a b p) precs $
                   concat [logs, rels1, rels1b, rels2, ops1, ops2]
-    in ga { assoc_annos = newAss
-          , prec_annos = Rel.transClosure newPrecs }
+    in case addGlobalAnnos ga { assoc_annos = newAss
+          , prec_annos = Rel.transClosure newPrecs } $ 
+            map parseDAnno displayStrings of 
+         Result _ (Just newGa) -> newGa
+         _ -> error "addBuiltins"
+
+displayStrings :: [String]
+displayStrings = 
+  [ "%display __\\/__ %LATEX __\\vee__" 
+  , "%display __/\\__ %LATEX __\\wedge__"
+  , "%display __=>__ %LATEX __\\Rightarrow__"
+  , "%display __<=>__ %LATEX __\\Leftrightarrow__"
+  , "%display not__ %LATEX \\neg__"
+  ] 
+
+parseDAnno :: String -> Annotation
+parseDAnno str = case parse annotationL "" str of
+                   Left _ -> error "parseDAnno"
+                   Right a -> a 
 
 aVar :: Id
 aVar = simpleIdToId $ mkSimpleId "a"
