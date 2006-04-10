@@ -1,20 +1,24 @@
 {- |
-Module      :  $Header$
+Module      :  Prove.hs
 Description :  Interface for the SPASS theorem prover.
-Copyright   :  (c) Rene Wagner, Klaus Lttich, Uni Bremen 2005-2006
+Copyright   :  (c) Rene Wagner, Klaus Lüttich, Rainer Grabbe, Uni Bremen 2005-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  luettich@tzi.de
+Maintainer  :  rainer25@tzi.de
 Stability   :  provisional
 Portability :  needs POSIX
 
-Interface for the SPASS theorem prover.
+Interface for the SPASS theorem prover, uses GUI.GenericATP.
 See <http://spass.mpi-sb.mpg.de/> for details on SPASS.
 
 -}
 
 {- 
     todo:
+
+      - exclude graphical interface into genericATP
+      
+      - rework output of saveConfiguration
 
       - window opens too small on linux; why? ... maybe fixed
       --> failure still there, opens sometimes too small (using KDE),
@@ -68,6 +72,7 @@ import XSelection
 import Space
 
 import GUI.HTkUtils
+import GUI.GenericATP
 
 import qualified Common.Lib.Map as Map
 
@@ -100,16 +105,28 @@ data SPASSConfig = SPASSConfig {
     timeLimitExceeded :: Bool,
     -- | extra options passed verbatimely to SPASS. 
     -- -DocProof, -Stdin, and -TimeLimit will be overridden.
-    extraOpts :: [String]
+    extraOpts :: [String],
+    -- | Represents the result of a prover run.
+    proof_status :: Proof_status (),
+    resultOutput :: [String]
                                } deriving (Eq, Ord, Show)
 
 {- |
-  Creates an empty SPASSConfig. Default time limit and no extra options.
+  Creates an empty SPASSConfig with a given goal name.
+  Default time limit, no resultOutput and no extra options.
 -}
-emptyConfig :: SPASSConfig
-emptyConfig = SPASSConfig {timeLimit = Nothing,
-                           timeLimitExceeded = False,
-                           extraOpts = []}
+emptyConfig :: String -> SPASSConfig
+emptyConfig n = SPASSConfig {timeLimit = Nothing,
+                             timeLimitExceeded = False,
+                             extraOpts = [],
+                             proof_status = openSPASSProof_status n,
+                             resultOutput = []
+                            }
+
+openSPASSProof_status :: String -> Proof_status ()
+openSPASSProof_status n =
+    ((openProof_status n (prover_name spassProver))::Proof_status ()) 
+    {proofTree = ()}
 
 {- |
   Utility function to set the time limit of a SPASSConfig.
@@ -145,20 +162,6 @@ isTimeLimitExceeded :: SpassProverRetval -> Bool
 isTimeLimitExceeded SpassTLimitExceeded = True
 isTimeLimitExceeded _ = False
 
-{- |
-  Represents the result of a prover run.
-  (Proof_status, full output)
--}
-type SPASSResult = (Proof_status (), [String])
-
-openResult :: String -> SPASSResult 
-openResult n = (openSPASSProof_status n,[])
-
-openSPASSProof_status :: String -> Proof_status ()
-openSPASSProof_status n =
-    ((openProof_status n (prover_name spassProver))::Proof_status ()) 
-    {proofTree = ()}
-
 -- * GUI Prover
 
 -- ** Constants
@@ -193,7 +196,8 @@ adjustOrSetConfig :: (SPASSConfig -> SPASSConfig)
                   -- ^ resulting SPASSConfigsMap with the changes applied
 adjustOrSetConfig f k m = if (Map.member k m)
                             then Map.adjust f k m
-                            else Map.insert k (f emptyConfig) m
+-- * changed, check it! *
+                            else Map.insert k (f $ emptyConfig k) m
 
 {- |
   Performs a lookup on the ConfigsMap. Returns the config for the goal or an
@@ -202,14 +206,10 @@ adjustOrSetConfig f k m = if (Map.member k m)
 getConfig :: SPIdentifier -> SPASSConfigsMap -> SPASSConfig
 getConfig spid m = if (isJust lookupId)
                      then fromJust lookupId
-                     else emptyConfig
+-- * changed, check it! *
+                     else emptyConfig spid
   where
     lookupId = Map.lookup spid m
-
-{- |
-  Store one result per goal.
--}
-type SPASSResultsMap = Map.Map SPIdentifier SPASSResult
 
 {- |
   Map to SPASS compliant identifiers
@@ -221,11 +221,12 @@ type SPASSGoalNameMap = Map.Map String String
 -}
 data State = State { -- | currently selected goal or Nothing
                      currentGoal :: Maybe SPIdentifier,
+                     -- | theory to work on
+                     theory :: Theory Sign Sentence (),
                      -- | stores the prover configurations for each goal
-                     configsMap :: SPASSConfigsMap,
-                     -- | stores the results retrieved by running 
+                     -- and the results retrieved by running 
                      -- SPASS for each goal
-                     resultsMap :: SPASSResultsMap,
+                     configsMap :: SPASSConfigsMap,
                      -- | stores a mapping to SPASS compliant 
                      -- identifiers for all goals
                      namesMap :: SPASSGoalNameMap,
@@ -251,11 +252,10 @@ initialThreadState = TSt { batchId = Nothing
 initialState :: Theory Sign Sentence () -> SPASS.Prove.State
 initialState th = 
     State {currentGoal = Nothing,
-           configsMap = Map.fromList (map (\ g -> (AS_Anno.senName g, 
-                                                   emptyConfig)) goals),
-           resultsMap = Map.fromList $ 
-                        map (\ g -> let gName = AS_Anno.senName g 
-                                    in (gName,openResult gName)) goals,
+           theory = th,
+           configsMap = Map.fromList $
+                        map (\ g -> let gName = AS_Anno.senName g
+                                    in (gName, emptyConfig gName)) goals,
            namesMap = collectNameMapping nSens oSens',
            goalsList = goals,
            initialLogicalPart = foldl insertSentence 
@@ -350,9 +350,9 @@ data OpFrame = OpFrame { of_Frame :: Frame
                        , of_optionsEntry :: Entry String
                        }
 
-filterOpenGoals :: SPASSResultsMap -> SPASSResultsMap
+filterOpenGoals :: SPASSConfigsMap -> SPASSConfigsMap
 filterOpenGoals = Map.filter isOpenGoal 
-    where isOpenGoal (st,_) = case goalStatus st of
+    where isOpenGoal cf = case (goalStatus $ proof_status cf) of
                               Open -> True
                               _    -> False
 
@@ -364,10 +364,10 @@ filterOpenGoals = Map.filter isOpenGoal
 goalsView :: SPASS.Prove.State  -- ^ current global prover state
           -> [LBGoalView] -- ^ resulting ['LBGoalView'] list
 goalsView s = map (\ g ->
-                       let res = Map.lookup g (resultsMap s)
+                       let cfg = Map.lookup g (configsMap s)
                            statind = maybe LBIndicatorOpen
-                                       (indicatorFromProof_status . fst)
-                                       res
+                                       (indicatorFromProof_status . proof_status)
+                                       cfg
                         in
                           LBGoalView {statIndicator = statind, 
                                       goalDescription = g})
@@ -417,19 +417,20 @@ goalProcessed :: IORef SPASS.Prove.State
               -> Label -- ^ info label
               -> Int -- ^ number of goals processed so far
               -> AS_Anno.Named SPTerm -- ^ goal that has just been processed
-              -> (SpassProverRetval, SPASSResult)
+              -> (SpassProverRetval, SPASSConfig)
               -> IO Bool
 goalProcessed stateRef tLimit numGoals label 
-              processedGoalsSoFar nGoal (retval, res) = do
+              processedGoalsSoFar nGoal (retval, res_cfg) = do
   s <- readIORef stateRef
-  let s' = s{resultsMap = Map.insert (AS_Anno.senName nGoal) 
-                                     res (resultsMap s),
-             configsMap = adjustOrSetConfig 
-                             (\ c -> c{timeLimitExceeded = 
-                                           isTimeLimitExceeded retval,
-                                       timeLimit = Just tLimit}) 
-                             (AS_Anno.senName nGoal) 
-                             (configsMap s)}
+  let s' = s{
+      configsMap = adjustOrSetConfig 
+                      (\ c -> c{timeLimitExceeded = 
+                                    isTimeLimitExceeded retval,
+                                timeLimit = Just tLimit,
+                                proof_status = proof_status res_cfg,
+                                resultOutput = resultOutput res_cfg})
+                      (AS_Anno.senName nGoal) 
+                      (configsMap s)}
   writeIORef stateRef s'
 
   let notReady = numGoals - processedGoalsSoFar > 0
@@ -455,7 +456,7 @@ updateDisplay st updateLb goalsLb statusLabel timeEntry optionsEntry axiomsLb = 
          (populateGoalsListBox goalsLb (goalsView st))
     maybe (return ())
           (\ go -> 
-               let mprfst = Map.lookup go (resultsMap st)
+               let mprfst = Map.lookup go (configsMap st)
                    cf = Map.findWithDefault 
                         (error "updateDisplay: configsMap \
                                \was not initialised!!") 
@@ -463,9 +464,9 @@ updateDisplay st updateLb goalsLb statusLabel timeEntry optionsEntry axiomsLb = 
                    t' = maybe guiDefaultTimeLimit id (timeLimit cf)
                    opts' = unwords (extraOpts cf)
                    (color, label) = maybe statusOpen
-                                    ((toGuiStatus cf) . fst)
+                                    ((toGuiStatus cf) . proof_status)
                                     mprfst
-                   usedAxs = maybe [] (usedAxioms . fst) mprfst
+                   usedAxs = maybe [] (usedAxioms . proof_status) mprfst
 
                in do 
                 statusLabel # text label
@@ -846,7 +847,7 @@ spassProveGUI thName th = do
                 statusLabel # text (snd statusRunning)
                 statusLabel # foreground (show $ fst statusRunning)
                 disableWids wids
-                (retval, (res, output)) <- 
+                (retval, cfg) <- 
                     runSpass lp' (getConfig goal (configsMap s')) thName nGoal
                 -- check if main is still there
                 curSt <- readIORef stateRef
@@ -857,13 +858,13 @@ spassProveGUI thName th = do
                  case retval of
                    SpassError message -> errorMess message
                    _ -> return ()
-                 let s'' = s'{resultsMap = Map.insert goal (res, output) 
-                                                           (resultsMap s'),
-                              configsMap = 
-                                 adjustOrSetConfig 
-                                      (\ c -> c {timeLimitExceeded = 
-                                                   isTimeLimitExceeded retval})
-                                      goal (configsMap s')}
+                 let s'' = s'{
+                     configsMap =
+                        adjustOrSetConfig 
+                           (\ c -> c {timeLimitExceeded = isTimeLimitExceeded retval,
+                                      proof_status = proof_status cfg,
+                                      resultOutput = resultOutput cfg})
+                           goal (configsMap s')}
                  writeIORef stateRef s''
                  updateDisplay s'' True lb statusLabel timeEntry 
                               optionsEntry axiomsLb
@@ -875,9 +876,9 @@ spassProveGUI thName th = do
               then noGoalSelected
               else (do
                 let goal = fromJust $ currentGoal s
-                let result = Map.lookup goal (resultsMap s)
+                let result = Map.lookup goal (configsMap s)
                 let output = if isJust result
-                               then snd (fromJust result)
+                               then resultOutput (fromJust result)
                                else ["This goal hasn't been run through "++
                                      "the prover yet."]
                 let detailsText = concatMap ('\n':) output
@@ -895,7 +896,7 @@ spassProveGUI thName th = do
             batchTimeEntry # HTk.value tLimit
             extOpts <- (getValue batchOptionsEntry) :: IO String
             writeIORef stateRef (s {batchModeIsRunning = True})
-            let numGoals = Map.size $ filterOpenGoals $ resultsMap s
+            let numGoals = Map.size $ filterOpenGoals $ configsMap s
             if numGoals > 0 
              then do
               batchStatusLabel # text (batchInfoText tLimit numGoals 0)
@@ -906,10 +907,10 @@ spassProveGUI thName th = do
               inclProvedThs <- readTkVariable inclProvedThsTK
               batchProverId <- Concurrent.forkIO 
                    (do spassProveBatch tLimit extOpts inclProvedThs
-                          (\ gPSF nSen res -> do 
+                          (\ gPSF nSen cfg -> do 
                               cont <- goalProcessed stateRef tLimit numGoals 
                                                     batchStatusLabel 
-                                                    gPSF nSen res
+                                                    gPSF nSen cfg
                               st <- readIORef stateRef
                               updateDisplay st True lb statusLabel timeEntry 
                                             optionsEntry axiomsLb
@@ -950,10 +951,12 @@ spassProveGUI thName th = do
             done)
       +> (saveConfiguration >>> do
             s <- readIORef stateRef
-            let cfgText = concatMap ((++"\n")) ["Configuration:\n", 
-                                                show $ configsMap s, 
+            let cfgText = concatMap ((++"\n")) ["Configuration / Results:\n", 
+                                                show $ configsMap s] 
+{-- * has to be reworked
                                                 "\nResults:\n", 
                                                 showResMap (resultsMap s)]
+--}
             createTextSaveDisplay ("SPASS Configuration for Theory " ++ thName)
                                   (thName ++ ".spcf") cfgText
             done)
@@ -965,13 +968,13 @@ spassProveGUI thName th = do
                              destroy main)
        )
   s <- readIORef stateRef
-  let proof_stats = map (\g -> let res = Map.lookup g (resultsMap s) 
+  let proof_stats = map (\g -> let res = Map.lookup g (configsMap s) 
                                    g' = Map.findWithDefault 
                                         (error ("Lookup of name failed: (1) "
                                                 ++"should not happen \""
                                                 ++g++"\""))
                                         g (namesMap s)
-                                   pStat = fst $ fromJust res
+                                   pStat = proof_status $ fromJust res
                                in if isJust res 
                                   then transNames (namesMap s) pStat
                                   else openSPASSProof_status g') 
@@ -994,7 +997,7 @@ spassProveGUI thName th = do
                         findIndex (\sen -> AS_Anno.senName sen == goal) 
                                   (goalsList s)) 
                        (goalsList s)
-           proved = filter (\sen-> checkGoal (resultsMap s) 
+           proved = filter (\sen-> checkGoal (configsMap s) 
                                        (AS_Anno.senName sen)) beforeThis
        in if inclProvedThs 
              then (head afterThis,
@@ -1006,6 +1009,7 @@ spassProveGUI thName th = do
                                  " not found!!"))
                          id (find ((==goal) . AS_Anno.senName) (goalsList s)),
                    iLP)
+-- * has to be reworked (together with spawnEvent +> saveConfiguration...)
     showResMap mp = 
         '{':(foldr  (\ (k,(r,outp)) resF -> 
                              shows k . 
@@ -1057,11 +1061,11 @@ getBatchTimeLimit = do
 {- |
   Checks whether a goal in the results map is marked as proved.
 -}
-checkGoal :: SPASSResultsMap -> SPIdentifier -> Bool
-checkGoal resMap goal =
-  isJust g && isProvedStat (fst $ fromJust g)
+checkGoal :: SPASSConfigsMap -> SPIdentifier -> Bool
+checkGoal cfgMap goal =
+  isJust g && isProvedStat (proof_status $ fromJust g)
   where
-    g = Map.lookup goal resMap
+    g = Map.lookup goal cfgMap
 
 -- ** Implementation
 
@@ -1075,7 +1079,7 @@ spassProveBatch :: Int -- ^ batch time limit
                 -> Bool -- ^ True means include proved theorems
                 -> (Int 
                     -> AS_Anno.Named SPTerm 
-                    -> (SpassProverRetval, SPASSResult) 
+                    -> (SpassProverRetval, SPASSConfig) 
                     -> IO Bool) 
                     -- ^ called after every prover run. 
                     -- return True if you want the prover to continue.
@@ -1091,7 +1095,7 @@ spassProveBatch tLimit extraOptions inclProvedThs f thName st =
      -- putStrLn ("Outcome of proofs:\n" ++ unlines (map show pstl) ++ "\n")
      return pstl -}
   where
-    openGoals = filterOpenGoals (resultsMap st)
+    openGoals = filterOpenGoals (configsMap st)
 
     addToLP g res lp = 
         if isProvedStat res && inclProvedThs
@@ -1105,10 +1109,11 @@ spassProveBatch tLimit extraOptions inclProvedThs f thName st =
       then do
         putStrLn $ "Trying to prove goal: " ++ gName
         -- putStrLn $ show g
-        (err, (res, full)) <- 
-              runSpass lp (emptyConfig { timeLimit = Just tLimit
-                                       , extraOpts = words extraOptions }) 
+        (err, res_cfg) <- 
+              runSpass lp ((emptyConfig gName) { timeLimit = Just tLimit
+                                               , extraOpts = words extraOptions }) 
                        thName g
+        let res = proof_status res_cfg
         putStrLn $ "SPASS returned: " ++ (show err)
         -- if the batch prover runs in a separate thread 
         -- that's killed via killThread
@@ -1122,17 +1127,18 @@ spassProveBatch tLimit extraOptions inclProvedThs f thName st =
                -- add proved goals as axioms
               let lp' = addToLP g res lp
                   goalsProcessedSoFar' = goalsProcessedSoFar+1
-              cont <- f goalsProcessedSoFar' g (err, (res, full))
+              cont <- f goalsProcessedSoFar' g (err, res_cfg)
               if cont
                  then batchProve lp' goalsProcessedSoFar' (res:resDone) gs
                  else return ((reverse (res:resDone)) ++ 
                               (map (openSPASSProof_status .
                                              AS_Anno.senName) gs))
-      else batchProve (addToLP g (fst $ 
-                                  Map.findWithDefault (openResult gName) 
-                                     gName $ resultsMap st)
+      else batchProve (addToLP g (proof_status $ 
+                                  Map.findWithDefault (emptyConfig gName)
+                                     gName $ configsMap st)
                                lp)
                       goalsProcessedSoFar resDone gs
+                                  
 
 -- * SPASS Interfacing Code
 
@@ -1211,7 +1217,7 @@ runSpass :: SPLogicalPart -- ^ logical part containing the input Sign and axioms
          -> SPASSConfig -- ^ configuration to use
          -> String -- ^ name of the theory in the DevGraph
          -> AS_Anno.Named SPTerm -- ^ goal to prove
-         -> IO (SpassProverRetval, SPASSResult) -- ^ (retval, (proof status, complete output))
+         -> IO (SpassProverRetval, SPASSConfig) -- ^ (retval, configuration with proof status and complete output)
 runSpass lp cfg thName nGoal = do
   putStrLn ("running 'SPASS" ++ (concatMap (' ':) allOptions) ++ "'")
   spass <- newChildProcess "SPASS" [ChildProcess.arguments allOptions]
@@ -1226,9 +1232,10 @@ runSpass lp cfg thName nGoal = do
                 Exception.IOException e -> 
                     (SpassError ("Internal error communicating "++
                                  "with SPASS.\n"++show e),
-                                (openResult $ AS_Anno.senName nGoal))
+                                emptyConfig $ AS_Anno.senName nGoal)
                 _ -> (SpassError ("Error running SPASS.\n"++show excep), 
-                        (openResult $ AS_Anno.senName nGoal))))
+                        emptyConfig $ AS_Anno.senName nGoal)
+             ))
 
   where
     runSpassReal spass = do
@@ -1237,13 +1244,15 @@ runSpass lp cfg thName nGoal = do
       if isJust e
         then return 
                  (SpassError "Could not start SPASS. Is SPASS in your $PATH?", 
-                  (openResult $ AS_Anno.senName nGoal))
+                  emptyConfig $ AS_Anno.senName nGoal)
         else do
           prob <- genSPASSProblem thName lp (Just nGoal)
           sendMsg spass (showPretty prob "")
           (res, usedAxs, output) <- parseSpassOutput spass
           let (err, retval) = proof_status res usedAxs cleanOptions
-          return (err, (retval, output))
+          return (err,
+                  cfg{proof_status = retval,
+                      resultOutput = output})
 
     filterOptions = ["-DocProof", "-Stdin", "-TimeLimit"]
     cleanOptions = filter (\ opt -> not (or (map (flip isPrefixOf opt) 
