@@ -196,7 +196,7 @@ adjustOrSetConfig :: (SPASSConfig -> SPASSConfig)
                   -- ^ resulting SPASSConfigsMap with the changes applied
 adjustOrSetConfig f k m = if (Map.member k m)
                             then Map.adjust f k m
--- * changed, check it! *
+-- changed, check it!!
                             else Map.insert k (f $ emptyConfig k) m
 
 {- |
@@ -206,7 +206,7 @@ adjustOrSetConfig f k m = if (Map.member k m)
 getConfig :: SPIdentifier -> SPASSConfigsMap -> SPASSConfig
 getConfig spid m = if (isJust lookupId)
                      then fromJust lookupId
--- * changed, check it! *
+-- changed, check it!!
                      else emptyConfig spid
   where
     lookupId = Map.lookup spid m
@@ -1009,7 +1009,7 @@ spassProveGUI thName th = do
                                  " not found!!"))
                          id (find ((==goal) . AS_Anno.senName) (goalsList s)),
                    iLP)
--- * has to be reworked (together with spawnEvent +> saveConfiguration...)
+-- has to be reworked (together with spawnEvent +> saveConfiguration...)
     showResMap mp = 
         '{':(foldr  (\ (k,(r,outp)) resF -> 
                              shows k . 

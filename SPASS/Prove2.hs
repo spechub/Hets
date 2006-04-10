@@ -1016,7 +1016,7 @@ spassProveGUI thName th = do
                                  " not found!!"))
                          id (find ((==goal) . AS_Anno.senName) (goalsList s)),
                    iLP)
--- * has to be reworked (together with spawnEvent +> saveConfiguration...)
+-- has to be reworked (together with spawnEvent +> saveConfiguration...)
     showResMap mp = 
         '{':(foldr  (\ (k,(r,outp)) resF -> 
                              shows k . 
