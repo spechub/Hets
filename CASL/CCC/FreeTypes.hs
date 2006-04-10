@@ -1,5 +1,5 @@
-{-# OPTIONS -cpp #-}
 {- |
+
 Module      :  $Header$
 Copyright   :  (c) Mingyi Liu and Till Mossakowski and Uni Bremen 2004-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -39,13 +39,13 @@ import Maybe
 import Debug.Trace
 import System.Cmd
 import System.IO.Unsafe
-import Logic.Comorphism
-import Logic.Logic
-import Comorphisms.CASL2HasCASL
-import Comorphisms.HasCASL2HasCASL
-#ifdef PROGRAMATICA
-import Comorphisms.HasCASL2Haskell
-#endif
+-- import Logic.Comorphism
+-- import Logic.Logic
+-- import Comorphisms.CASL2HasCASL
+-- import Comorphisms.HasCASL2HasCASL
+-- #ifdef PROGRAMATICA
+-- import Comorphisms.HasCASL2Haskell
+-- #endif
 
 {-
    function checkFreeType:
@@ -73,7 +73,7 @@ import Comorphisms.HasCASL2Haskell
 -}
 checkFreeType :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
                  -> [Named (FORMULA ())] -> Result (Maybe (Bool,[FORMULA ()]))
-#ifdef PROGRAMATICA
+-- #ifdef PROGRAMATICA
 checkFreeType (osig,osens) m fsn
     | not $ null notSubSorts =
         let (Id ts _ pos) = head notSubSorts
@@ -106,10 +106,10 @@ checkFreeType (osig,osens) m fsn
                 head $ filter (\t->not $ checkVar_App t) leadingTerms
         in warning Nothing ("a variable occurs twice in a leading term of " ++
                             opSymStr os) pos
-    | (not $ null fs_terminalProof) && (proof == "NO") =
-        warning Nothing "not terminating" nullRange
-    | (not $ null fs_terminalProof) && (proof == "MAYBE") =
-        warning Nothing "cannot prove termination" nullRange
+ --   | (not $ null fs_terminalProof) && (proof == "NO") =
+ --       warning Nothing "not terminating" nullRange
+ --   | (not $ null fs_terminalProof) && (proof == "MAYBE") =
+ --       warning Nothing "cannot prove termination" nullRange
     | not $ ((null (overlap_query ++ ex_axioms)) &&
              (null subSortsF)) =
         return (Just (True,(overlap_query ++
@@ -325,6 +325,7 @@ checkFreeType (osig,osens) m fsn
                 map sentence (filter is_user_or_sort_gen (osens ++ fsn))
 {- Termination Proof
 -}
+{-
     ipath = "/tmp/Input.hs"
     opath = "/tmp/Result.txt"
     casl2hs = map_theory
@@ -339,9 +340,10 @@ checkFreeType (osig,osens) m fsn
                 res <- readFile opath
                 return (head $ words res))
        --         return (subStr "YES" res))
-#else
-checkFreeType = error "CASL.CCC.FreeTypes.checkFreeType"
-#endif
+-}
+-- #else
+-- checkFreeType = error "CASL.CCC.FreeTypes.checkFreeType"
+-- #endif
 
 
 {- group the axioms according to their leading symbol

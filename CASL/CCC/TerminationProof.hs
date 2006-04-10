@@ -130,6 +130,14 @@ terminationProof fsn = (not $ null all_axioms) && (not $ proof)
                "h_termination axioms;\n" ++
                "#quit;")
     proof = unsafePerformIO (do
+{-
+                writeFile ipath $ showPret
+                system ("java -jar ../Termination/aprove.jar -u cli -m wst " ++
+                        "-p plain " ++ ipath ++ " > " ++ opath)
+                res <- readFile opath
+                -- system ("rm ./CASL/CCC/*.cime")
+                return (subStr "YES" res))
+-}
                 writeFile ipath (c_sigs ++ c_vars ++ c_axms ++ c_proof)
                 system ("cime < " ++ ipath ++ " | cat > " ++ opath)
                 res <- readFile opath
