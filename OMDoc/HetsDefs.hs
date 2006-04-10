@@ -1274,34 +1274,30 @@ applySignHiding
 
 -- | Instance of Read for IdS           
 instance Read Id.Id where
-        readsPrec _ s =
-                let
-                        (_,r) = span Char.isSpace s
-                in
-                        case r of
-                                ('[':t) ->
-                                        let
-                                                (tokens, rest) = spanEsc (not . (flip elem [']','['])) t
-                                                token = map (\str -> Id.Token (trimString str) Id.nullRange) (map unesc $ explodeNonEsc "," tokens)
-                                                (ids, newrest) = until
-                                                        (\(_,sr' ) -> case sr' of (h:_) -> h==']'; _ -> True )
-                                                        (\(ids' , sr' ) ->
-                                                                case (readsPrec 0 sr' )::([(Id.Id, String)]) of
-                                                                        [] -> error ("Error parsing Id from \" " ++ sr' ++ "\"") 
-                                                                        ((id' , nr):_) -> (ids' ++ [id' ], nr )
-                                                        )
-                                                        ([], rest) 
-                                        in
-                                                case newrest of
-                                                (']':_) -> [(Id.Id token ids Id.nullRange, drop 1 newrest)]
-                                                _ -> []
-                                _ -> []
+  readsPrec _ ('[':s) =
+    let
+      (tokens, rest) = spanEsc (not . (flip elem "[]")) s
+      tokenl = breakIfNonEsc "," tokens
+      token = map (\str -> Id.Token (trimString str) Id.nullRange) tokenl
+      idl = breakIfNonEsc "," rest
+      ids = foldl (\ids' str ->
+        case ((readsPrec 0 (trimString str))::[(Id.Id, String)]) of
+          [] -> error ("Unable to parse \"" ++ str ++ "\"")
+          ((newid,_):_) -> ids' ++ [newid]
+          ) [] idl
+    in
+      case (trimString rest) of
+        (']':_) -> [(Id.Id token [] Id.nullRange, "")]
+        _ -> [(Id.Id token ids Id.nullRange, "")]
+      
+  readsPrec _ _ = []
 
 escapeForId::String->String
 escapeForId [] = []
 escapeForId ('[':r) = "\\[" ++ escapeForId r
 escapeForId (']':r) = "\\]" ++ escapeForId r
 escapeForId (',':r) = "\\," ++ escapeForId r
+escapeForId (' ':r) = "\\ " ++ escapeForId r
 escapeForId (c:r) = c:escapeForId r
 
 -- | creates a parseable representation of an Id (see Read-instance)
