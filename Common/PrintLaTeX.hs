@@ -17,13 +17,11 @@ module Common.PrintLaTeX
     , PrintLaTeX(..)
     , renderLatexVerb
     , renderInternalLatex
-    , printToken_latex
-    , printDisplayToken_latex
     , setTabWithSpaces
     )
     where
 
-import Data.Char (isSpace,isAlphaNum,isDigit)
+import Data.Char (isSpace, isDigit)
 import Common.Lib.State (State(..),evalState,get,put)
 import Data.List (isPrefixOf,isSuffixOf)
 
@@ -359,30 +357,6 @@ renderLatexVerb mi d = renderStyle textStyle' d'
 -- moved instance from Id.hs (to avoid cyclic imports via GlobalAnnotations)
 instance PrintLaTeX Token where
     printLatex0 ga t = Doc.toLatex ga $ Doc.idDoc $ Id [t] [] nullRange
-
-printToken_latex :: (String -> Doc) -> Token -> Doc
-printToken_latex strConvDoc_fun t =
-    let s = tokStr t
-        esc = escape_latex s
-    in if s `elem` map (:[]) "[](),;"
-       then strConvDoc_fun s
-       else if isPlace t || s `elem` map (:[]) "{}"
-            then strConvDoc_fun esc
-            else if  all isAlphaNum s
-                     || ('\\' `elem` esc && not ('\\' `elem` s)
-                         && not ('~' `elem` s))
-                     || isChar t
-                 then (\x -> latex_macro "\\Id{"<>x<>latex_macro "}")
-                         $ strConvDoc_fun esc
-                 else (\x -> latex_macro "\\Ax{"<>x<>latex_macro "}")
-                         $ strConvDoc_fun s
-
-printDisplayToken_latex :: (String -> Doc) -> Token -> Doc
-printDisplayToken_latex strConvDoc_fun t =
-    if not (isPlace t)
-       then latex_macro "\\Ax{"<>strConvDoc_fun str<>latex_macro "}"
-       else printToken_latex strConvDoc_fun t
-    where str = tokStr t
 
 instance PrintLaTeX Id where
     printLatex0 ga = Doc.toLatex ga . Doc.idDoc
