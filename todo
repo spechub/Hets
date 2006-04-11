@@ -318,6 +318,20 @@ Automatic generation of Haskell (for a HasCASL subset)
 Proofs in HasCASL
 Case study
 
+
+Coding HasCASL -> Isabelle with definedness axioms
+  only strict functions are defined
+
+Isabelle interface
+  One emacs with spec and proof buffer
+  Reload button should rebuild buffers while keeping as much as possible
+  keep structuring of Hets theories
+
+Integration with PGIP
+  display specs + proofs in one buffer
+  when stepping through the specs, dg calculus generates proof obligations,
+    which then can be discharged by Isabelle
+
 ************************************************
 Rainer (Klaus)
 ************************************************
