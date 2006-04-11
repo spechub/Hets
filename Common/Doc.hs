@@ -536,10 +536,10 @@ makeSmallLatex b d =
 
 symbolToLatex :: String -> Pretty.Doc
 symbolToLatex s = Map.findWithDefault (hc_sty_axiom
-                                       $ escape_latex s) s latexSymbols
+                                       $ escapeLatex s) s latexSymbols
 
 textToLatex :: Bool -> TextKind -> String -> Pretty.Doc
-textToLatex b k s = let e = escape_latex s in
+textToLatex b k s = let e = escapeLatex s in
         if elem s $ map (: []) ",;[]() "
         then makeSmallLatex b $ casl_normal_latex s
         else case k of
@@ -547,7 +547,7 @@ textToLatex b k s = let e = escape_latex s in
     IdSymb -> makeSmallLatex b $ hc_sty_axiom e
     Symbol -> makeSmallLatex b $ symbolToLatex s
     Comment -> (if b then makeSmallLatex b . casl_comment_latex
-               else casl_normal_latex) $ escape_comment_latex s
+               else casl_normal_latex) e
                -- multiple spaces should be replaced by \hspace
     Keyword -> (if b then makeSmallLatex b . hc_sty_small_keyword
                 else hc_sty_plain_keyword) e

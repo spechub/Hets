@@ -35,9 +35,7 @@ module Common.LaTeX_funs
      keyword_width, axiom_width,
      normal_width,
 
-     escape_latex,
      hspace_latex,
-     escape_comment_latex,
      (<\+>),
      (<~>),
      latex_macro,
@@ -91,8 +89,10 @@ module Common.LaTeX_funs
 
     , startTab, endTab, setTab
     , setTabWSp
-    , startAnno,
-     endAnno) where
+    , startAnno
+    , endAnno
+    , escapeLatex 
+    ) where
 
 import qualified Common.Lib.Map as Map
 import Data.Char
@@ -341,10 +341,10 @@ hc_sty_annotation = hc_sty_comment
 hc_sty_axiom, hc_sty_structid, hc_sty_id,hc_sty_structid_indexed
     :: String -> Doc
 hc_sty_structid sid = latex_macro "\\SId{"<>sid_doc<>latex_macro "}"
-    where sid_doc = casl_structid_latex (escape_latex sid)
+    where sid_doc = casl_structid_latex (escapeLatex sid)
 hc_sty_structid_indexed sid =
     latex_macro "\\SIdIndex{"<>sid_doc<>latex_macro "}"
-    where sid_doc = casl_structid_latex (escape_latex sid)
+    where sid_doc = casl_structid_latex (escapeLatex sid)
 hc_sty_id i        = latex_macro "\\Id{"<>id_doc<>latex_macro "}"
     where id_doc = casl_axiom_latex i
 hc_sty_axiom ax = latex_macro "\\Ax{"<>ax_doc<>latex_macro "}"
@@ -376,36 +376,11 @@ startAnno = "{\\small{}"
 endAnno :: String
 endAnno = "%@%small@}"
 
--- moved from PPUtils (used for String instance of PrettyPrint and
--- various other functions that print Strings with special stuff
--- inside)
-escape_latex :: String -> String
-escape_latex "" = ""
-escape_latex (x : xs)
-    | x == '\\' = "\\Ax{\\setminus}" ++ escape_latex xs
-    | x == '"' = -- something to prevent german.sty from interpreting '"'
-             case xs of
-             []  -> default_quotes []
-             y:ys | isAlphaNum y -> '`' : '`' : y : escape_latex ys
-                  | isSpace    y -> default_quotes (y : escape_latex ys)
-                  | otherwise    -> default_quotes (escape_latex xs)
-    | x `elem` "_%$&{}#" = '\\' : x : escape_latex xs
-    | x == '~' = "\\Ax{\\sim}" ++ escape_latex xs
-    | x == '^' = "\\Ax{\\hat{\\ }}" ++ escape_latex xs
-    | x == '|' = "\\Ax{|}" ++ escape_latex xs
-    | otherwise = x : escape_latex xs
-    where default_quotes = ('\'':) . ('\'':)
-
-escape_comment_latex :: String -> String
-escape_comment_latex s
-    |  or $ map (`elem` s) "<>" = ecl s'
-    | otherwise = s'
-    where s' = escape_latex s
-          ecl "" = ""
-          ecl (x:xs)
-              | x == '<'
-                || x == '>' = "\\Ax{"++x:"}"++ecl xs
-              | otherwise   = x: ecl xs
+escapeLatex :: String -> String
+escapeLatex = concatMap ( \ c -> 
+     if c `elem` "_%$&{}#" then '\\' : [c]
+     else if c `elem` "<|>=-" then "\\Ax{" ++ c : "}"
+     else Map.findWithDefault [c] c escapeMap)
 
 equals_latex, less_latex, colon_latex, dot_latex,
     bullet_latex, mapsto_latex, rightArrow, pfun_latex, cfun_latex,
@@ -456,4 +431,55 @@ parseAtom = do
     c <- satisfy (const True)
     return [[c]]
 
-             
+-- | a character map for special latex characters
+escapeMap :: Map.Map Char String
+escapeMap = Map.fromList
+ [('\\' , "\\Ax{\\setminus}"),
+  ('^' , "\\Ax{\\hat{\\ }}"),
+  ('\"' , "\'\'"),
+  ('~' , "\\Ax{\\sim}"),
+  ('\160', "\\ "),
+  ('¢' , "\\Id{\\textcent}"),
+  ('¤' , "\\Id{\\textcurrency}"),
+  ('¥' , "\\Id{\\textyen}"),
+  ('¦' , "\\Id{\\textbrokenbar}"),
+  ('ª' , "\\Id{\\textordfeminine}"),
+  ('«' , "\\Id{\\guillemotleft}"),
+  ('¬' , "\\Ax{\\neg}"),
+  ('­' , "-"),
+  ('®' , "\\Id{\\textregistered}"),
+  ('\175', "\\Ax{\\bar{\\ }}"),
+  ('°' , "\\Id{\\textdegree}"),
+  ('´' , "\\Ax{\\acute{\\ }}"),
+  ('º' , "\\Id{\\textordmasculine}"),
+  ('»' , "\\Id{\\guillemotright}"),
+  ('À' , "\\Ax{\\grave{A}}"),
+  ('Á' , "\\Ax{\\acute{A}}"),
+  ('È' , "\\Ax{\\grave{E}}"),
+  ('É' , "\\Ax{\\acute{E}}"),
+  ('Ì' , "\\Ax{\\grave{I}}"),
+  ('Í' , "\\Ax{\\acute{I}}"),
+  ('Ò' , "\\Ax{\\grave{O}}"),
+  ('Ó' , "\\Ax{\\acute{O}}"),
+  ('Ù' , "\\Ax{\\grave{U}}"),
+  ('Ú' , "\\Ax{\\acute{U}}"),
+  ('Ý' , "\\Ax{\\acute{Y}}"),
+  ('Þ' , "\\Id{\\TH}"),
+  ('à' , "\\Ax{\\grave{a}}"),
+  ('á' , "\\Ax{\\acute{a}}"),
+  ('è' , "\\Ax{\\grave{e}}"),
+  ('é' , "\\Ax{\\acute{e}}"),
+  ('ì' , "\\Ax{\\grave{\\Id{\\i}}}"),
+  ('í' , "\\Ax{\\acute{\\Id{\\i}}}"),
+  ('ò' , "\\Ax{\\grave{o}}"),
+  ('ó' , "\\Ax{\\acute{o}}"),
+  ('ù' , "\\Ax{\\grave{u}}"),
+  ('ú' , "\\Ax{\\acute{u}}"),
+  ('ý' , "\\Ax{\\acute{y}}"),
+  ('þ' , "\\Id{\\th}")]
+
+{- acute and grave characters don't work in a tabbing environment
+   \textcent requires \usepackage{textcomp}
+    and \guillemot \usepackage[T1]{fontenc}
+-}
+
