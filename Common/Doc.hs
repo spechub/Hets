@@ -536,24 +536,24 @@ makeSmallLatex b d =
 
 symbolToLatex :: String -> Pretty.Doc
 symbolToLatex s = Map.findWithDefault (hc_sty_axiom
-                                       $ escapeLatex s) s latexSymbols
+                                       $ escapeLatex False s) s latexSymbols
 
 textToLatex :: Bool -> TextKind -> String -> Pretty.Doc
-textToLatex b k s = let e = escapeLatex s in
+textToLatex b k s = let e = escapeLatex True s in
         if elem s $ map (: []) ",;[]() "
         then makeSmallLatex b $ casl_normal_latex s
         else case k of
     IdKind -> makeSmallLatex b $ hc_sty_id e
-    IdSymb -> makeSmallLatex b $ hc_sty_axiom e
+    IdSymb -> makeSmallLatex b $ hc_sty_axiom $ escapeLatex False s 
     Symbol -> makeSmallLatex b $ symbolToLatex s
     Comment -> (if b then makeSmallLatex b . casl_comment_latex
                else casl_normal_latex) e
                -- multiple spaces should be replaced by \hspace
     Keyword -> (if b then makeSmallLatex b . hc_sty_small_keyword
-                else hc_sty_plain_keyword) e
-    TopKey -> hc_sty_casl_keyword e
-    Indexed -> hc_sty_structid_indexed e
-    StructId -> hc_sty_structid e
+                else hc_sty_plain_keyword) s
+    TopKey -> hc_sty_casl_keyword s
+    Indexed -> hc_sty_structid_indexed s
+    StructId -> hc_sty_structid s
     Native -> hc_sty_axiom s
 
 latexSymbols :: Map.Map String Pretty.Doc
@@ -599,7 +599,8 @@ codeOut ga d m = foldDoc idRecord
 codeToken :: String -> Doc
 codeToken s = case s of
     [] -> empty
-    h : _ -> (if isAlpha h || elem h "._'" then text else Text IdSymb) s
+    h : _ -> (if s /= "__" && (isAlpha h || elem h "._'") 
+              then text else Text IdSymb) s
 
 codeOrigId :: Map.Map Id [Token] -> Id -> [Doc]
 codeOrigId m (Id ts cs _) = let

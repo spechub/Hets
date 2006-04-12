@@ -319,11 +319,13 @@ hc_sty_casl_keyword str =
 
 hc_sty_plain_keyword :: String -> Doc
 hc_sty_plain_keyword kw =
-    latex_macro "\\KW{" <> casl_keyword_latex kw <> latex_macro "}"
+    latex_macro "\\KW{" <> casl_keyword_latex (escapeUnderline kw) 
+                    <> latex_macro "}"
 
 hc_sty_small_keyword :: String -> Doc
 hc_sty_small_keyword kw =
-    latex_macro "\\KW{" <> casl_annotationbf_latex kw <> latex_macro "}"
+    latex_macro "\\KW{" <> casl_annotationbf_latex (escapeUnderline kw) 
+                    <> latex_macro "}"
 
 hc_sty_comment, hc_sty_annotation :: Doc -> Doc
 hc_sty_comment cm = latex_macro startAnno <> cm <> latex_macro endAnno
@@ -332,10 +334,10 @@ hc_sty_annotation = hc_sty_comment
 hc_sty_axiom, hc_sty_structid, hc_sty_id,hc_sty_structid_indexed
     :: String -> Doc
 hc_sty_structid sid = latex_macro "\\SId{"<>sid_doc<>latex_macro "}"
-    where sid_doc = casl_structid_latex (escapeLatex sid)
+    where sid_doc = casl_structid_latex (escapeUnderline sid)
 hc_sty_structid_indexed sid =
     latex_macro "\\SIdIndex{"<>sid_doc<>latex_macro "}"
-    where sid_doc = casl_structid_latex (escapeLatex sid)
+    where sid_doc = casl_structid_latex (escapeUnderline sid)
 hc_sty_id i        = latex_macro "\\Id{"<>id_doc<>latex_macro "}"
     where id_doc = casl_axiom_latex i
 hc_sty_axiom ax = latex_macro "\\Ax{"<>ax_doc<>latex_macro "}"
@@ -367,10 +369,15 @@ startAnno = "{\\small{}"
 endAnno :: String
 endAnno = "%@%small@}"
 
-escapeLatex :: String -> String
-escapeLatex = concatMap ( \ c ->
-     if c `elem` "_%$&{}#" then "\\Ax{\\" ++ c : "}"
-     else if c `elem` "<|>=-!()[]?:;,./*+@" then "\\Ax{" ++ c : "}"
+escapeUnderline :: String -> String
+escapeUnderline = concatMap ( \ c -> if c == '_' then "\\_" else [c]) 
+
+escapeLatex :: Bool -> String -> String
+escapeLatex addAx = concatMap ( \ c ->
+     if c `elem` "_%$&{}#" then 
+         if addAx then "\\Ax{\\" ++ c : "}"
+         else '\\' : [c]               
+     else if addAx && c `elem` "<|>=-!()[]?:;,./*+@" then "\\Ax{" ++ c : "}"
      else Map.findWithDefault [c] c escapeMap)
 
 equals_latex, less_latex, colon_latex, dot_latex,
