@@ -75,7 +75,8 @@ instance (PrettyPrint s, PrettyPrint f) =>
         Doc.toText ga $ Doc.topKey (predS ++ pluralS l) Doc.<+>
              Doc.semiAnnos (printPredItem $ fromText ga) l
     printText0 ga (Datatype_items l _) =
-        text (typeS ++ pluralS l) <+> semiAnno_text ga l
+         Doc.toText ga $ Doc.topKey (typeS ++ pluralS l) Doc.<+>
+             Doc.semiAnnos printDATATYPE_DECL l
     printText0 ga (Ext_SIG_ITEMS s) = printText0 ga s
 
 instance PrettyPrint f => PrettyPrint (SORT_ITEM f) where

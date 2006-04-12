@@ -82,8 +82,8 @@ instance (PrintLaTeX s, PrintLaTeX f) =>
         Doc.toLatex ga $ Doc.topKey (predS ++ pluralS l) Doc.<+>
              Doc.semiAnnos (printPredItem $ fromLatex ga) l
     printLatex0 ga (Datatype_items l _) =
-        hc_sty_sig_item_keyword ga (typeS ++ pluralS l) <\+>
-        set_tabbed_nest_latex (semiAnno_latex ga l)
+        Doc.toLatex ga $ Doc.topKey (typeS ++ pluralS l) Doc.<+>
+             Doc.semiAnnos printDATATYPE_DECL l
     printLatex0 ga (Ext_SIG_ITEMS s) = printLatex0 ga s
 
 instance PrintLaTeX f => PrintLaTeX (SORT_ITEM f) where
