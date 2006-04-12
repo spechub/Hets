@@ -48,8 +48,22 @@ Hendrik (Till)
 ************************************************
 werden Links in der richtigen Reihenfolge geschrieben (S. 183 OMDoc)?
 Hiding: unterschiedlich in OMDoc und Hets
+ein Hets-Hiding-Link mit einer Inklusion Sigma_1->Sigma_2 als 
+  Signaturmorphismus
+  wird übersetzt in einen OMDoc-Theoriemorphismus
+  mit leerer/identischer Abbildung, bei dem die Symbole aus
+  Sigma_2 \ Sigma_1 versteckt werden
+  Wenn der Signaturmorphismus keine Inklusion ist, ist keine
+   Übersetzung möglich -> Fehler
+ein OMDoc-Theoriemorphismus mit Hiding, der eine Inklusion ist
+   (also leere bzw. identische Abbildung) wird übersetzt
+   in einen Hets-Hiding-Link, mit Inklusion als Signaturmorphismus
+  falls der OMDoc-Theoriemorphismus keine Inklusion ist, muss
+  ein Hets-Hiding-Link, gefolgt von einem normalen (globalen) Link,
+  der dann die Umbenennung macht, erzeugt werden
+
 Logiken: über verschiedene OMDoc-Theorien mit URI
-  Hets                      OMDoc
+
   
 
 ************************************************
