@@ -25,8 +25,6 @@ printDATATYPE_DECL (Datatype_decl s a _) = case a of
     _  -> idDoc s <+> defn <+>
            sep ( punctuate (space <> bar) $ 
                  map (printAnnoted printALTERNATIVE) a)
-    
-         
 
 instance Pretty DATATYPE_DECL where
     pretty = printDATATYPE_DECL
@@ -42,20 +40,17 @@ printCOMPONENTS (Sort s) = idDoc s
 instance Pretty COMPONENTS  where
     pretty = printCOMPONENTS
 
-
-
 printALTERNATIVE :: ALTERNATIVE ->Doc
-printALTERNATIVE (Alt_construct k n l _) = case l of
+printALTERNATIVE a = case a of 
+  Alt_construct k n l _ -> case l of
     [] -> idDoc n
     _ ->  idDoc n <> 
-       parens ( sep $ punctuate semi $ 
-                    map printCOMPONENTS l)
+       parens ( sep $ punctuate semi $ map printCOMPONENTS l)
        <> case k of
                Total -> empty
                Partial -> text "?"         
-    
-    
-printALTERNATIVE (Subsorts l _) =sep $ punctuate comma $ map idDoc l
+  Subsorts l _ -> fsep $ text (sortS ++ if isSingle l then "" else "s") 
+                            : punctuate comma (map idDoc l)
 
 instance Pretty ALTERNATIVE where
     pretty = printALTERNATIVE
