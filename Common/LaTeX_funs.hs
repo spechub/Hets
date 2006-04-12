@@ -23,15 +23,11 @@ Functions to calculate the length of a given word as it would be
    TODO:
      - itCorrection should be based on a map of character pairs to
        corrections and not on one fixed value for every pair
-
 -}
 
 module Common.LaTeX_funs
-    (-- module Common.LaTeX_funs,
-     calc_line_length,
+    ( calc_line_length,
      pt_length,
-     -- calc_word_width,
-     -- Word_type(..),
      keyword_width, axiom_width,
      normal_width,
 
@@ -91,7 +87,7 @@ module Common.LaTeX_funs
     , setTabWSp
     , startAnno
     , endAnno
-    , escapeLatex 
+    , escapeLatex
     ) where
 
 import qualified Common.Lib.Map as Map
@@ -181,7 +177,7 @@ calc_word_width wt s =
 itCorrection :: String -> Int
 itCorrection [] = 0
 itCorrection s
-    | length s < 2 = 0
+    | length s < 2 || head s == '\\' = 0
     | otherwise    = itCorrection' 0 s
     where itCorrection' :: Int -> String -> Int
           itCorrection' _ [] = error "itCorrection' applied to empty List"
@@ -223,7 +219,11 @@ sum_char_width_deb _pref_fun cFM key_cFM s = sum_char_width' s 0
                             Just key -> sum_char_width'
                                         (drop (length key) full)
                                         $ r + (cFM Map.! key)
-                            Nothing -> sum_char_width' rest nl
+                            Nothing -> if c1 == '\\' then
+                                        sum_char_width'
+                                        (dropWhile isAlpha rest)
+                                         $ r + lookupWithDefault_cFM "~"
+                                        else sum_char_width' rest nl
               where nl = r + lookupWithDefault_cFM (c1:[])
           lookupWithDefault_cFM s' = case Map.lookup s' cFM of
                                      Nothing -> {- trace
@@ -256,7 +256,7 @@ keyword_width      = calc_word_width Keyword
 structid_width     = calc_word_width StructId
 comment_width      = calc_word_width Comment
 normal_width       = calc_word_width Normal
-axiom_width        = sum . map (calc_word_width Axiom) . parseAxiomString 
+axiom_width        = sum . map (calc_word_width Axiom) . parseAxiomString
 
 -- |
 -- LaTeX version of '<+>' with enough space counted.  It's choosen the
@@ -299,22 +299,13 @@ casl_keyword_latex, casl_annotation_latex, casl_annotationbf_latex,
        casl_axiom_latex,
        casl_comment_latex, casl_structid_latex,
        casl_normal_latex :: String -> Doc
-casl_keyword_latex s      = sp_text (keyword_width s)    s
-casl_annotation_latex s   = let s' = conv_tilde s
-                            in sp_text (annotation_width s) s'
-
-conv_tilde :: String -> String
-conv_tilde s = case s of
-    [] -> []
-    x : xs -> (if x == '~' then "\\Ax{\\sim}" else [x]) ++ conv_tilde xs
-
 casl_annotationbf_latex s = sp_text (annotationbf_width s) s
-casl_comment_latex s      = sp_text (comment_width s)    s
-casl_structid_latex s     = sp_text (structid_width s)   s
-casl_axiom_latex s        = let s' = conv_tilde s
-                            in sp_text (axiom_width s') s'
-
-casl_normal_latex s       = sp_text (normal_width s)     s
+casl_annotation_latex s   = sp_text (annotation_width s) s
+casl_structid_latex s     = sp_text (structid_width s) s
+casl_comment_latex s      = sp_text (comment_width s) s
+casl_keyword_latex s      = sp_text (keyword_width s) s
+casl_normal_latex s       = sp_text (normal_width s) s
+casl_axiom_latex s        = sp_text (axiom_width s) s
 
 -- | form, spec, view, then
 hc_sty_hetcasl_keyword :: String -> Doc
@@ -377,9 +368,9 @@ endAnno :: String
 endAnno = "%@%small@}"
 
 escapeLatex :: String -> String
-escapeLatex = concatMap ( \ c -> 
-     if c `elem` "_%$&{}#" then '\\' : [c]
-     else if c `elem` "<|>=-" then "\\Ax{" ++ c : "}"
+escapeLatex = concatMap ( \ c ->
+     if c `elem` "_%$&{}#" then "\\Ax{\\" ++ c : "}"
+     else if c `elem` "<|>=-!()[]?:;,./*+@" then "\\Ax{" ++ c : "}"
      else Map.findWithDefault [c] c escapeMap)
 
 equals_latex, less_latex, colon_latex, dot_latex,
@@ -403,32 +394,33 @@ exists_latex = hc_sty_axiom "\\exists"
 unique_latex = hc_sty_axiom "\\exists!"
 
 parseAxiomString :: String -> [String]
-parseAxiomString s = case parse axiomString "" s of 
-    Left err -> fail $ show err
+parseAxiomString s = case parse axiomString "" s of
+    Left _ -> [s]
     Right l -> l
 
 axiomString :: CharParser st [String]
-axiomString = do 
+axiomString = do
   l <- many parseAtom
   eof
   return $ concat l
-    
-parseAtom :: CharParser st [String]  
+
+parseAtom :: CharParser st [String]
 parseAtom = do
-    try (string "\\Ax{") <|> string "{"
-    l <- axiomString
-    Parsec.char '}' 
-    return l
- <|> do 
+    try (string "\\Ax{") <|> try (string "\\Id{") <|> string "{"
+    l <- many parseAtom
+    Parsec.char '}'
+    return (concat l)
+ <|> do
     b <- Parsec.char '\\'
-    s <- fmap (: []) (satisfy (\ c -> isSpace c || elem c "_~^|\'\",;\\{}[]"))
+    s <- fmap (: []) (satisfy (\ c -> isSpace c
+                                      || elem c "_~^|\'\",;:.`\\{}[]%$&#()"))
          <|> many1 (satisfy isAlpha)
     return [b : s]
  <|> do
     s <- many1 (satisfy isAlpha)
     return [s]
  <|> do
-    c <- satisfy (const True)
+    c <- satisfy (/= '}')
     return [[c]]
 
 -- | a character map for special latex characters
@@ -482,4 +474,3 @@ escapeMap = Map.fromList
    \textcent requires \usepackage{textcomp}
     and \guillemot \usepackage[T1]{fontenc}
 -}
-
