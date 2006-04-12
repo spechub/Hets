@@ -19,6 +19,47 @@ import Common.Doc
 import CASL.AS_Basic_CASL
 import CASL.Fold
 
+printDATATYPE_DECL :: DATATYPE_DECL ->Doc
+printDATATYPE_DECL (Datatype_decl s a _) = case a of
+    [] -> error "Pretty CASL.DATATYPE_DECL"
+    _  -> idDoc s <+> defn <+>
+           sep ( punctuate (space <> bar) $ 
+                 map (printAnnoted printALTERNATIVE) a)
+    
+         
+
+instance Pretty DATATYPE_DECL where
+    pretty = printDATATYPE_DECL
+
+printCOMPONENTS :: COMPONENTS ->Doc
+printCOMPONENTS (Cons_select k l s _) =
+  fsep $ punctuate comma (map idDoc l) 
+           ++ [case k of
+           Total -> colon
+           Partial -> colon <> text "?", idDoc s]
+printCOMPONENTS (Sort s) = idDoc s
+
+instance Pretty COMPONENTS  where
+    pretty = printCOMPONENTS
+
+
+
+printALTERNATIVE :: ALTERNATIVE ->Doc
+printALTERNATIVE (Alt_construct k n l _) = case l of
+    [] -> idDoc n
+    _ ->  idDoc n <> 
+       parens ( sep $ punctuate semi $ 
+                    map printCOMPONENTS l)
+       <> case k of
+               Total -> empty
+               Partial -> text "?"         
+    
+    
+printALTERNATIVE (Subsorts l _) =sep $ punctuate comma $ map idDoc l
+
+instance Pretty ALTERNATIVE where
+    pretty = printALTERNATIVE
+
 printSortItem :: (f -> Doc) -> SORT_ITEM f -> Doc
 printSortItem mf si = case si of
     Sort_decl sl _ -> fsep $ punctuate comma $ map idDoc sl

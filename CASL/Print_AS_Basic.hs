@@ -110,27 +110,14 @@ instance PrettyPrint PRED_HEAD where
     printText0 ga = Doc.toText ga . printPredHead
 
 instance PrettyPrint DATATYPE_DECL where
-    printText0 ga (Datatype_decl s a _) = case a of
-        h : t -> printText0 ga s <+>
-            sep ((hang (text defnS) 4 (printText0 ga h)):
-             (map (\x -> nest 2 $ text barS <+> nest 2 (printText0 ga x)) t))
-        [] -> error "PrettyPrint CASL.DATATYPE_DECL"
+    printText0 = toText
 
 instance PrettyPrint ALTERNATIVE where
-    printText0 ga (Alt_construct k n l _) = printText0 ga n
-                                 <> (if null l then case k of
-                                                   Partial -> parens empty
-                                                   _ -> empty
-                                    else parens(semiT_text ga l))
-                                 <> optQuMark k
-    printText0 ga (Subsorts l _) =
-        text (sortS++pluralS l) <+> commaT_text ga l
+    printText0 = toText
 
 instance PrettyPrint COMPONENTS where
-    printText0 ga (Cons_select k l s _) = commaT_text ga l
-                                <> colon <> optQuMark k
-                                <> printText0 ga s
-    printText0 ga (Sort s) = printText0 ga s
+    printText0 = toText
+
 
 toText :: Doc.Pretty a => GlobalAnnos -> a -> Doc
 toText ga = Doc.toText ga . Doc.pretty

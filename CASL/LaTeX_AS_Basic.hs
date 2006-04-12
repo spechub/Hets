@@ -118,24 +118,14 @@ instance PrintLaTeX PRED_HEAD where
     printLatex0 ga = Doc.toLatex ga . printPredHead
 
 instance PrintLaTeX DATATYPE_DECL where
-    printLatex0 ga (Datatype_decl s a _) =
-        printLatex0 ga s <\+> barT_latex ga a
+    printLatex0 = toLatex
 
 instance PrintLaTeX ALTERNATIVE where
-    printLatex0 ga (Alt_construct k n l _) = tabbed_nest_latex (
-        fcat [printLatex0 ga n, (if null l then case k of
-                             Partial -> parens_tab_latex empty
-                             _ -> empty
-                            else parens_tab_latex ( semiT_latex ga l))
-                            <> optLatexQuMark k])
-    printLatex0 ga (Subsorts l _) =
-        hc_sty_id (sortS ++ pluralS l) <\+> commaT_latex ga l
+    printLatex0 = toLatex
 
 instance PrintLaTeX COMPONENTS where
-    printLatex0 ga (Cons_select k l s _) =
-        commaT_latex ga l <> colon_latex <> optLatexQuMark k
-                         <> printLatex0 ga s
-    printLatex0 ga (Sort s) = printLatex0 ga s
+    printLatex0 = toLatex
+
 
 instance PrintLaTeX VAR_DECL where
     printLatex0 = toLatex
