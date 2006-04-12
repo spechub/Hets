@@ -1,0 +1,41 @@
+12-April-2006
+
+General format of SPASS output
+- input clauses
+- reduced clauses
+- clauses selected by the "given clause" algorithm
+   (usable clauses are successively processed an marked as worked off.
+    If the set of usable clauses is empty, a completion has been found)
+- proof
+
+Format of clauses
+Clause[split level]justification.literal number
+(the split level denotes a specific branch in a tableaux proof)
+*  literal is maximal in the ordering
+** ... and additionally it is an equation, oriented from left to right
++ (negative) literal has been selected
+
+MPI:
+- cache CNF computations for optimized skolemization
+  (workaround until this is fixed: disable optimized skolemization)
+- allow U as predicate name
+- CNF translation shuold output info 
+    about relation between input axioms and clauses
+- treatment of sorted equations
+- does it help to mark theorems (that follow from the rest)?
+- send SPASS 2.7
+
+Bremen:
+- adapt CASL2SPASS translation
+  - exists! x. phi(x) should become 
+    (exists x. phi(x)) /\ (forall x,y . phi(x) /\ phi(y) => x=y)
+  - in case of a conjunctive goal, send conjuncts individually
+  - eliminate user defined equality predicates
+  - eliminate (some?) subsort definitions, like in RRCDagstuhl.het
+  - if there is only one sort, eliminate it
+- send interesting example with a modular theory 
+   -> could be saturated per module
+   -> research paper
+- send example with a finite sort
+- send example with a single sort (e.g. optimized RCCDagsthul)
+- send ontology example (DOLCE)
