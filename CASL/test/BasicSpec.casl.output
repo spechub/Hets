@@ -196,19 +196,17 @@ forall a : t; a, b : s
 . a = a
 . a = a
 . a = a
-type s ::= s2, s1 | c | c(a; a, b : t; a, d : t) | c(a)?
-free type s ::= s2, s1 | c | c(a; a, b : t; d : t) | c(a)?
-generated type s ::= s2, s1 | c | c(a; a, b : t; d : t) | c(a)?
+type  s ::= sorts s2, s1 | c | c(a; a, b : t; a, d : t) | c(a)?
+free type s ::= sorts s2, s1 | c | c(a; a, b : t; d : t) | c(a)?
+generated type
+    s ::= sorts s2, s1 | c | c(a; a, b : t; d : t) | c(a)?
 generated
     {pred  __<__ : a * a
      ops   a : b;
            c : b
      sorts s, t < s
-     type s ::= s2, s1 | 
-                c | 
-                c(a) | 
-                c(a; a, b : t; d : t) | 
-                c(a)? %(bla1)%}
+     type  s ::= 
+           sorts s2, s1 | c | c(a) | c(a; a, b : t; d : t) | c(a)? %(bla1)%}
 
 %(sort)%
 sorts 
@@ -225,11 +223,12 @@ vars a : t; a, b : s
 
 %(bla8-ignored)%
 %(type)%
-type t ::= 
-           %(c)%
-           c %(c)% | 
-           e %(e)% | 
-           d %(9)%
+type  t ::= 
+      
+      %(c)%
+      c %(c)% | 
+      e %(e)% | 
+      d %(9)%
 
 %(axiom)%
 . a = a %(a1)%
@@ -295,12 +294,15 @@ pred  b : s
 preds c : s * s;
       c : s * s * s
 pred  c(x, y : s; z : t) <=> false
-type Data1 ::= a | b | c
-type Data2 ::= Cons21(Data1; Data2) | Cons22(Data2; Data1) | Data1
-type Data3 ::= Cons31(sel1 :? Data1; sel2 :? Data2) | 
-               Cons32(sel2 :? Data2; sel1 :? Data1)
-type Data4 ::= Cons41(sel1 :? Data1; sel2 :? Data2)? | 
-               Cons42(sel2 :? Data2; sel1 :? Data1)?
+type  Data1 ::= a | b | c
+type  Data2 ::= 
+      Cons21(Data1; Data2) | Cons22(Data2; Data1) | sort Data1
+type  Data3 ::= 
+      Cons31(sel1 :? Data1; sel2 :? Data2) | 
+      Cons32(sel2 :? Data2; sel1 :? Data1)
+type  Data4 ::= 
+      Cons41(sel1 :? Data1; sel2 :? Data2)? | 
+      Cons42(sel2 :? Data2; sel1 :? Data1)?
 sorts Data1, Data2, Data3
 types Tree ::= Leaf(Data1) | Forest;
       Forest ::= Nil | Cons(Tree; Forest)
