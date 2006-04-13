@@ -8,7 +8,6 @@ Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
 translate HasCASL formulas to HasCASL program equations
-
 -}
 
 module Comorphisms.HasCASL2HasCASL where
@@ -17,6 +16,7 @@ import Logic.Logic
 import Logic.Comorphism
 
 import HasCASL.Logic_HasCASL
+import HasCASL.Sublogic
 import HasCASL.As
 import HasCASL.Le
 import HasCASL.ProgEq
@@ -30,10 +30,10 @@ data HasCASL2HasCASL = HasCASL2HasCASL deriving Show
 instance Language HasCASL2HasCASL -- default definition is okay
 
 instance Comorphism HasCASL2HasCASL
-               HasCASL HasCASL_Sublogics
+               HasCASL Sublogic
                BasicSpec Sentence SymbItems SymbMapItems
                Env Morphism Symbol RawSymbol ()
-               HasCASL HasCASL_Sublogics
+               HasCASL Sublogic
                BasicSpec Sentence SymbItems SymbMapItems
                Env Morphism Symbol RawSymbol () where
     sourceLogic HasCASL2HasCASL = HasCASL
@@ -42,7 +42,6 @@ instance Comorphism HasCASL2HasCASL
     targetSublogic HasCASL2HasCASL = top
     map_morphism HasCASL2HasCASL = return
     map_sentence HasCASL2HasCASL env = return . translateSen env
-    map_symbol HasCASL2HasCASL = Set.singleton 
-    map_theory HasCASL2HasCASL (sig, sen) = return 
+    map_symbol HasCASL2HasCASL = Set.singleton
+    map_theory HasCASL2HasCASL (sig, sen) = return
       (sig, map  (mapNamed (translateSen sig)) sen)
-

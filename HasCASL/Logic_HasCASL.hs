@@ -12,7 +12,7 @@ Here is the place where the class Logic is instantiated for HasCASL.
 
 -}
 
-module HasCASL.Logic_HasCASL(HasCASL(HasCASL), HasCASL_Sublogics) where
+module HasCASL.Logic_HasCASL(HasCASL(HasCASL)) where
 
 import HasCASL.As
 import HasCASL.Le
@@ -90,35 +90,35 @@ instance StaticAnalysis HasCASL BasicSpec Sentence ()
 
     final_union HasCASL = merge
 
-instance LatticeWithTop HasCASL_Sublogics where
-    meet = HasCASL.Sublogic.sublogics_min
-    join = HasCASL.Sublogic.sublogics_max
-    top = HasCASL.Sublogic.top
+instance LatticeWithTop Sublogic where
+    meet = sublogic_min
+    join = sublogic_max
+    top = topLogic
 
-instance Logic HasCASL HasCASL_Sublogics
+instance Logic HasCASL Sublogic
                BasicSpec Sentence SymbItems SymbMapItems
                Env
                Morphism
                Symbol RawSymbol () where
          stability _ = Testing
 
-         sublogic_names HasCASL = HasCASL.Sublogic.sublogics_name
-         all_sublogics HasCASL = HasCASL.Sublogic.sublogics_all
+         sublogic_names HasCASL = sublogic_name
+         all_sublogics HasCASL = sublogics_all
 
          data_logic HasCASL = Nothing
 
-         is_in_basic_spec HasCASL = HasCASL.Sublogic.in_basicSpec
-         is_in_sentence HasCASL = HasCASL.Sublogic.in_sentence
-         is_in_symb_items HasCASL = HasCASL.Sublogic.in_symbItems
-         is_in_symb_map_items HasCASL = HasCASL.Sublogic.in_symbMapItems
-         is_in_sign HasCASL = HasCASL.Sublogic.in_env
-         is_in_morphism HasCASL = HasCASL.Sublogic.in_morphism
-         is_in_symbol HasCASL = HasCASL.Sublogic.in_symbol
+         is_in_basic_spec HasCASL = in_basicSpec
+         is_in_sentence HasCASL = in_sentence
+         is_in_symb_items HasCASL = in_symbItems
+         is_in_symb_map_items HasCASL = in_symbMapItems
+         is_in_sign HasCASL = in_env
+         is_in_morphism HasCASL = in_morphism
+         is_in_symbol HasCASL = in_symbol
 
-         min_sublogic_basic_spec HasCASL = HasCASL.Sublogic.sl_basicSpec
-         min_sublogic_sentence HasCASL = HasCASL.Sublogic.sl_sentence
-         min_sublogic_symb_items HasCASL = HasCASL.Sublogic.sl_symbItems
-         min_sublogic_symb_map_items HasCASL = HasCASL.Sublogic.sl_symbMapItems
-         min_sublogic_sign HasCASL = HasCASL.Sublogic.sl_env
-         min_sublogic_morphism HasCASL = HasCASL.Sublogic.sl_morphism
-         min_sublogic_symbol HasCASL = HasCASL.Sublogic.sl_symbol
+         min_sublogic_basic_spec HasCASL = sl_basicSpec
+         min_sublogic_sentence HasCASL = sl_sentence
+         min_sublogic_symb_items HasCASL = sl_symbItems
+         min_sublogic_symb_map_items HasCASL = sl_symbMapItems
+         min_sublogic_sign HasCASL = sl_env
+         min_sublogic_morphism HasCASL = sl_morphism
+         min_sublogic_symbol HasCASL = sl_symbol

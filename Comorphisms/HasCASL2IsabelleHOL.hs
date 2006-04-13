@@ -17,11 +17,11 @@ import Logic.Comorphism
 import Common.Id
 import Common.Result
 import qualified Common.Lib.Map as Map
-import Data.List
-import Data.Maybe
 import Common.AS_Annotation (Named(..))
 
--- HasCASL
+import Data.List
+import Data.Maybe
+
 import HasCASL.Logic_HasCASL
 import HasCASL.Sublogic
 import HasCASL.Le as Le
@@ -29,7 +29,6 @@ import HasCASL.As as As
 import HasCASL.AsUtils
 import HasCASL.Builtin
 
--- Isabelle
 import Isabelle.IsaSign as IsaSign
 import Isabelle.IsaConsts
 import Isabelle.Logic_Isabelle
@@ -41,7 +40,7 @@ data HasCASL2IsabelleHOL = HasCASL2IsabelleHOL deriving Show
 instance Language HasCASL2IsabelleHOL -- default definition is okay
 
 instance Comorphism HasCASL2IsabelleHOL
-               HasCASL HasCASL_Sublogics
+               HasCASL Sublogic
                BasicSpec Le.Sentence SymbItems SymbMapItems
                Env Morphism
                Symbol RawSymbol ()
@@ -49,17 +48,7 @@ instance Comorphism HasCASL2IsabelleHOL
                IsaSign.Sign
                IsabelleMorphism () () ()  where
     sourceLogic HasCASL2IsabelleHOL = HasCASL
-    sourceSublogic HasCASL2IsabelleHOL = HasCASL_SL
-                       { has_sub = False,   -- subsorting
-                         has_part = True,   -- partiality
-                         has_eq = True,     -- equality
-                         has_pred = True,   -- predicates
-                         has_ho = True,     -- higher order
-                         has_type_classes = False,
-                         has_polymorphism = True,
-                         has_type_constructors = True,
-                         which_logic = HOL
-                       }
+    sourceSublogic HasCASL2IsabelleHOL = sublogic_min noSubtypes noClasses
     targetLogic HasCASL2IsabelleHOL = Isabelle
     targetSublogic HasCASL2IsabelleHOL = ()
     map_theory HasCASL2IsabelleHOL = mkTheoryMapping transSignature

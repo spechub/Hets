@@ -20,7 +20,7 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 
 -- CASL
-import CASL.Logic_CASL 
+import CASL.Logic_CASL
 import CASL.Sublogic as CasSub
 import CASL.Sign
 import qualified CASL.AS_Basic_CASL as Cas
@@ -42,18 +42,18 @@ instance Language CASL2HasCASL -- default definition is okay
 instance Comorphism CASL2HasCASL
                CASL CASL_Sublogics
                CASLBasicSpec CASLFORMULA Cas.SYMB_ITEMS Cas.SYMB_MAP_ITEMS
-               CASLSign 
+               CASLSign
                CASLMor
                CasM.Symbol CasM.RawSymbol ()
-               HasCASL HasCASL_Sublogics
+               HasCASL Sublogic
                BasicSpec Sentence SymbItems SymbMapItems
                Env Morphism Symbol RawSymbol () where
     sourceLogic CASL2HasCASL = CASL
     sourceSublogic CASL2HasCASL = CASL_SL
-                      { CasSub.sub_features = CasSub.Sub, 
+                      { CasSub.sub_features = CasSub.Sub,
                          -- simple subsorting in HasCASL
                         CasSub.has_part = True,
-                        CasSub.cons_features = 
+                        CasSub.cons_features =
                             CasSub.SortGen { CasSub.emptyMapping = False,
                                              CasSub.onlyInjConstrs = False},
                         CasSub.has_eq = True,
@@ -61,182 +61,182 @@ instance Comorphism CASL2HasCASL
                         CasSub.which_logic = CasSub.FOL
                       }
     targetLogic CASL2HasCASL = HasCASL
-    targetSublogic CASL2HasCASL = HasSub.top
+    targetSublogic CASL2HasCASL = caslLogic
     map_morphism CASL2HasCASL = return . mapMor
     map_sentence CASL2HasCASL sig = return . toSentence sig
     map_symbol CASL2HasCASL = Set.singleton . mapSym
     map_theory CASL2HasCASL = return . mapTheory
 
 fromOpType :: OpType -> Cas.FunKind -> TypeScheme
-fromOpType ot ok = 
+fromOpType ot ok =
     let args = map toType $ opArgs ot
         arg = mkProductType args
         res = toType $ opRes ot
-    in simpleTypeScheme $ 
-      if null args then case ok of 
+    in simpleTypeScheme $
+      if null args then case ok of
                 Cas.Total -> res
                 Cas.Partial -> mkLazyType res
        else mkFunArrType arg (case ok of
-                Cas.Total -> FunArr 
+                Cas.Total -> FunArr
                 Cas.Partial -> PFunArr) res
 
 fromPredType :: PredType -> TypeScheme
-fromPredType pt = 
+fromPredType pt =
     let args = map toType $ predArgs pt
         arg = mkProductType args
     in simpleTypeScheme $ if null args then unitType else predType arg
 
 mapTheory :: (Sign f e, [Named (Cas.FORMULA f)]) -> (Env, [Named Sentence])
-mapTheory (sig, sents) = 
+mapTheory (sig, sents) =
     let constr = foldr getConstructors Set.empty sents
         env = mapSig constr sig
-        newSents = map (mapNamed (toSentence sig)) sents 
+        newSents = map (mapNamed (toSentence sig)) sents
         in (env, newSents)
 
-getConstructors :: Named (Cas.FORMULA f) -> Set.Set (Id, OpType) 
+getConstructors :: Named (Cas.FORMULA f) -> Set.Set (Id, OpType)
                 -> Set.Set (Id, OpType)
 getConstructors f s = case sentence f of
-   Cas.Sort_gen_ax cs _ -> let 
+   Cas.Sort_gen_ax cs _ -> let
        (_, ops, _) = Cas.recover_Sort_gen_ax cs
        in foldr ( \ (Cas.Qual_op_name i t _) ->
                       Set.insert (i, (toOpType t) { opKind = Cas.Partial }))
                          s ops
-   _ -> s 
+   _ -> s
 
 mapSig :: Set.Set (Id, OpType) -> Sign f e -> Env
-mapSig constr sign = 
-    let f1 = concatMap ( \ (i, s) -> 
-                   map ( \ ty -> (i, fromOpType ty $ opKind ty, 
-                            if Set.member (i, ty {opKind = Cas.Partial }) 
+mapSig constr sign =
+    let f1 = concatMap ( \ (i, s) ->
+                   map ( \ ty -> (i, fromOpType ty $ opKind ty,
+                            if Set.member (i, ty {opKind = Cas.Partial })
                                constr then ConstructData $ opRes ty
                                else NoOpDefn Op))
                          $ Set.toList s) $ Map.toList $ opMap sign
-        f2 = concatMap ( \ (i, s) -> 
+        f2 = concatMap ( \ (i, s) ->
                    map ( \ ty -> (i, fromPredType ty, NoOpDefn Pred))
                          $ Set.toList s) $ Map.toList $ predMap sign
-        insF (i, ty, defn) m = 
+        insF (i, ty, defn) m =
             let OpInfos os = Map.findWithDefault (OpInfos []) i m
-                in Map.insert i (OpInfos $ OpInfo ty [] defn : os) m 
-     in initialEnv 
+                in Map.insert i (OpInfos $ OpInfo ty [] defn : os) m
+     in initialEnv
      { classMap = Map.empty,
-       typeMap = Map.fromList $ map 
-                 ( \ s -> (s, starTypeInfo 
+       typeMap = Map.fromList $ map
+                 ( \ s -> (s, starTypeInfo
                            { superTypes = Set.delete s $ supersortsOf s sign
                            })) $ Set.toList $ sortSet sign,
        assumps = foldr insF Map.empty (f1 ++ f2)}
 
 mapMor :: CasM.Morphism f e m -> Morphism
-mapMor m = let tm = CasM.sort_map m 
-               f1 = map ( \ ((i, ot), (j, t)) -> 
+mapMor m = let tm = CasM.sort_map m
+               f1 = map ( \ ((i, ot), (j, t)) ->
                           ((i, fromOpType ot (opKind ot)),
-                           (j, mapTypeScheme tm 
+                           (j, mapTypeScheme tm
                                     $ fromOpType ot t)))
                     $ Map.toList $ CasM.fun_map m
-               f2 = map ( \ ((i, pt), j) -> 
+               f2 = map ( \ ((i, pt), j) ->
                           let sc = fromPredType pt
-                          in ((i, sc), (j, mapTypeScheme tm sc))) 
+                          in ((i, sc), (j, mapTypeScheme tm sc)))
                     $ Map.toList $ CasM.pred_map m
-            in (mkMorphism (mapSig Set.empty $ CasM.msource m) 
+            in (mkMorphism (mapSig Set.empty $ CasM.msource m)
                                (mapSig Set.empty $ CasM.mtarget m))
            { typeIdMap = tm , funMap = Map.fromList (f2 ++ f1) }
 
 mapSym :: CasM.Symbol -> Symbol
-mapSym s = let i = CasM.symName s in 
+mapSym s = let i = CasM.symName s in
     case CasM.symbType s of
-    CasM.OpAsItemType ot -> 
+    CasM.OpAsItemType ot ->
         idToOpSymbol initialEnv i $ fromOpType ot $ opKind ot
     CasM.PredAsItemType pt -> idToOpSymbol initialEnv i $ fromPredType pt
     CasM.SortAsItemType -> idToTypeSymbol initialEnv i rStar
 toQuant :: Cas.QUANTIFIER -> Quantifier
-toQuant Cas.Universal = Universal 
+toQuant Cas.Universal = Universal
 toQuant Cas.Existential = Existential
 toQuant Cas.Unique_existential = Unique
 
 toVarDecl :: Cas.VAR_DECL -> [GenVarDecl]
-toVarDecl (Cas.Var_decl vs s ps) =  
-           map ( \ i -> GenVarDecl $ 
+toVarDecl (Cas.Var_decl vs s ps) =
+           map ( \ i -> GenVarDecl $
                  VarDecl (simpleIdToId i) (toType s) Other ps) vs
 
-toSentence :: Sign f e -> Cas.FORMULA f -> Sentence 
-toSentence sig f = case f of 
-   Cas.Sort_gen_ax cs b -> let 
+toSentence :: Sign f e -> Cas.FORMULA f -> Sentence
+toSentence sig f = case f of
+   Cas.Sort_gen_ax cs b -> let
        (sorts, ops, smap) = Cas.recover_Sort_gen_ax cs
        genKind = if b then Free else Generated
        mapPart :: Cas.FunKind -> Partiality
        mapPart cp = case cp of
                 Cas.Total -> HasCASL.As.Total
                 Cas.Partial -> HasCASL.As.Partial
-       in DatatypeSen 
+       in DatatypeSen
           $ map ( \ s -> DataEntry (Map.fromList smap) s genKind [] rStar
-                          (map ( \ (i, t) -> 
-                               let args = opArgs t in 
-                               Construct (Just i) 
+                          (map ( \ (i, t) ->
+                               let args = opArgs t in
+                               Construct (Just i)
                                  (if null args then []
                                   else [mkProductType $ map toType args])
                                (mapPart $ opKind t) [])
-                          $ filter ( \ (_, t) -> opRes t == s) 
-                                $ map ( \ (Cas.Qual_op_name i t _) -> 
+                          $ filter ( \ (_, t) -> opRes t == s)
+                                $ map ( \ (Cas.Qual_op_name i t _) ->
                                       (i, toOpType t)) ops)) sorts
    _ -> Formula $ toTerm sig f
 
-toTerm :: Sign f e -> Cas.FORMULA f -> Term 
-toTerm s f = case f of 
+toTerm :: Sign f e -> Cas.FORMULA f -> Term
+toTerm s f = case f of
     Cas.Quantification q vs frm ps ->
-        QuantifiedTerm  (toQuant q) 
+        QuantifiedTerm  (toQuant q)
                         (concatMap toVarDecl vs) (toTerm s frm) ps
-    Cas.Conjunction fs ps -> 
+    Cas.Conjunction fs ps ->
         case map (toTerm s) fs of
                 [] -> unitTerm trueId ps
                 ts -> toBinJunctor andId ts ps
-    Cas.Disjunction fs ps -> 
+    Cas.Disjunction fs ps ->
         case map (toTerm s) fs of
-                [] -> unitTerm falseId ps 
+                [] -> unitTerm falseId ps
                 ts -> toBinJunctor orId ts ps
     Cas.Implication f1 f2 b ps ->
         let t1 = toTerm s f1
-            t2 = toTerm s f2 
+            t2 = toTerm s f2
             in if b then mkLogTerm implId ps t1 t2
                else mkLogTerm infixIf ps t2 t1
-    Cas.Equivalence f1 f2 ps -> 
+    Cas.Equivalence f1 f2 ps ->
         mkLogTerm eqvId ps (toTerm s f1) $ toTerm s f2
     Cas.Negation frm ps -> mkTerm notId notType ps $ toTerm s frm
     Cas.True_atom ps -> unitTerm trueId ps
     Cas.False_atom ps -> unitTerm falseId ps
-    Cas.Existl_equation t1 t2 ps -> 
+    Cas.Existl_equation t1 t2 ps ->
         mkEqTerm exEq ps (fromTERM s t1) $ fromTERM s t2
-    Cas.Strong_equation t1 t2 ps -> 
+    Cas.Strong_equation t1 t2 ps ->
         mkEqTerm eqId ps (fromTERM s t1) $ fromTERM s t2
     Cas.Predication (Cas.Qual_pred_name i (Cas.Pred_type ts _) ps) args qs ->
         let sc = simpleTypeScheme $ if null ts then unitType
-                 else predType $ mkProductType $ map toType ts 
+                 else predType $ mkProductType $ map toType ts
             p = QualOp Pred (InstOpId i [] ps) sc ps
-            in if null args then p else 
-               ApplTerm p (mkTupleTerm (map (fromTERM s) args) qs) qs 
-    Cas.Definedness t ps -> mkTerm defId defType ps $ fromTERM s t 
+            in if null args then p else
+               ApplTerm p (mkTupleTerm (map (fromTERM s) args) qs) qs
+    Cas.Definedness t ps -> mkTerm defId defType ps $ fromTERM s t
     Cas.Membership t ty ps -> TypedTerm (fromTERM s t) InType (toType ty) ps
     _ -> error "fromTERM"
 
 fromOP_TYPE :: Cas.OP_TYPE -> TypeScheme
-fromOP_TYPE ot = 
-    let (args, res, total, arr) = case ot of 
-                   Cas.Op_type Cas.Total ars rs _ -> 
+fromOP_TYPE ot =
+    let (args, res, total, arr) = case ot of
+                   Cas.Op_type Cas.Total ars rs _ ->
                        (ars, rs, True, FunArr)
-                   Cas.Op_type Cas.Partial ars rs _ -> 
+                   Cas.Op_type Cas.Partial ars rs _ ->
                        (ars, rs, False, PFunArr)
         resType = toType res
-        in simpleTypeScheme $ if null args then 
+        in simpleTypeScheme $ if null args then
            if total then resType else mkLazyType resType
            else mkFunArrType (mkProductType $ map toType args) arr resType
 
 fromTERM :: Sign f e -> Cas.TERM f -> Term
 fromTERM s t = case t of
-    Cas.Qual_var v ty ps -> 
+    Cas.Qual_var v ty ps ->
         QualVar $ VarDecl (simpleIdToId v) (toType ty) Other ps
     Cas.Application (Cas.Qual_op_name i ot ps) args qs  ->
         let o = QualOp Op (InstOpId i [] ps) (fromOP_TYPE ot) ps in
         if null args then o else
-        ApplTerm o (mkTupleTerm (map (fromTERM s) args) qs) qs 
-    Cas.Sorted_term trm ty ps -> 
+        ApplTerm o (mkTupleTerm (map (fromTERM s) args) qs) qs
+    Cas.Sorted_term trm ty ps ->
         TypedTerm (fromTERM s trm) OfType (toType ty) ps
     Cas.Cast trm ty ps -> TypedTerm (fromTERM s trm) AsType (toType ty) ps
     Cas.Conditional t1 f t2 ps -> mkTerm whenElse whenType ps $
