@@ -17,7 +17,7 @@ This module provides the sublogic functions (as required by Logic.hs) for
 
 module HasCASL.Sublogic
     ( -- * datatypes
-    , Sublogic(..)
+      Sublogic(..)
     , Formulas(..)
     , Classes(..)
       -- * functions for LatticeWithTop instance
