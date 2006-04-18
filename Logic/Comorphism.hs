@@ -1,7 +1,6 @@
-{-|
-
+{- |
 Module      :  $Header$
-Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2004
+Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  till@tzi.de
@@ -11,7 +10,6 @@ Portability :  non-portable (via Logic)
 Provides data structures for institution comorphisms.
    These are just collections of
    functions between (some of) the types of logics.
-
 -}
 
 {-   References: see Logic.hs
@@ -83,6 +81,30 @@ map_sign :: Comorphism cid
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2
          => cid -> sign1 -> Result (sign2,[Named sentence2])
 map_sign cid sign = map_theory cid (sign,[])
+
+wrapMapTheory ::  Comorphism cid
+            lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
+            lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
+                sign2 morphism2 symbol2 raw_symbol2 proof_tree2
+            => cid -> (sign1, [Named sentence1])
+                   -> Result (sign2, [Named sentence2])
+wrapMapTheory cid (sign, sens) =
+    case sourceLogic cid of
+      lid -> case sourceSublogic cid of
+          sub -> let
+              sigLog = min_sublogic_sign lid sign
+              senLog = foldl join sigLog $
+                       map (min_sublogic_sentence lid . sentence) sens
+              in if join sub senLog == sub
+                 then map_theory cid (sign, sens)
+                 else fail $ "for '" ++ language_name cid ++
+                           "' expected sublogic '" ++
+                           concat (sublogic_names lid sub) ++
+                           "'\n but found sublogic '" ++
+                           concat (sublogic_names lid senLog) ++
+                           "' with signature sublogic '" ++
+                           concat (sublogic_names lid sigLog) ++ "'"
 
 simpleTheoryMapping :: (sign1 -> sign2) -> (sentence1 -> sentence2)
                     -> (sign1, [Named sentence1])
@@ -193,7 +215,7 @@ instance (Comorphism cid1
          do ti2 <- map_theory cid1 ti1
             ti2' <- coerceBasicTheory (targetLogic cid1) (sourceLogic cid2)
                         "Mapping theory along comorphism" ti2
-            map_theory cid2 ti2'
+            wrapMapTheory cid2 ti2'
 
    map_morphism (CompComorphism cid1 cid2) = \ m1 ->
        do m2 <- map_morphism cid1 m1

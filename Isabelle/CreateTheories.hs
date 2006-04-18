@@ -48,19 +48,19 @@ printTheory libdir ln sn (G_theory lid sign0 sens0) =
                 let th = (sign0, toNamedList sens0)
                     r1 = do
                       th0 <- coerceBasicTheory lid CASL "" th
-                      th1 <- map_theory CASL2PCFOL th0
-                      th2 <- map_theory CASL2SubCFOL th1
-                      map_theory CFOL2IsabelleHOL th2
+                      th1 <- wrapMapTheory CASL2PCFOL th0
+                      th2 <- wrapMapTheory CASL2SubCFOL th1
+                      wrapMapTheory CFOL2IsabelleHOL th2
 #ifdef PROGRAMATICA
                     r2 = do
                       th0 <- coerceBasicTheory lid Haskell "" th
-                      map_theory Haskell2IsabelleHOLCF th0
+                      wrapMapTheory Haskell2IsabelleHOLCF th0
 #else
                     r2 = r1
 #endif
                     r4 = do
                       th0 <- coerceBasicTheory lid HasCASL "" th
-                      map_theory HasCASL2IsabelleHOL th0
+                      wrapMapTheory HasCASL2IsabelleHOL th0
                     r3 = case maybeResult r1 of
                          Nothing -> case maybeResult r2 of
                              Nothing -> r4
