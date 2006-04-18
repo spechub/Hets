@@ -82,7 +82,6 @@ data Sublogic = Sublogic
     , has_part :: Bool  -- ^ partiality
     , has_eq :: Bool    -- ^ equality
     , has_pred :: Bool  -- ^ predicates
-    , has_ho :: Bool    -- ^ higher order
     , type_classes :: Classes
     , has_polymorphism :: Bool
     , has_type_constructors :: Bool
@@ -98,7 +97,6 @@ topLogic = Sublogic
     , has_part = True
     , has_eq = True
     , has_pred = True
-    , has_ho = True
     , type_classes = ConstructorClasses
     , has_polymorphism = True
     , has_type_constructors = True
@@ -119,8 +117,7 @@ totalFuns = topLogic { has_part = False }
 
 caslLogic :: Sublogic
 caslLogic = noClasses
-    { has_ho = False
-    , has_polymorphism = False
+    { has_polymorphism = False
     , has_type_constructors = False
     , which_logic = FOL
     }
@@ -132,7 +129,6 @@ bottom = Sublogic
     , has_part = False
     , has_eq = False
     , has_pred = False
-    , has_ho = False
     , type_classes = NoClasses
     , has_polymorphism = False
     , has_type_constructors = False
@@ -143,10 +139,6 @@ bottom = Sublogic
 -- sublogic via sublogic_max, i.e. (sublogic_max given needs_part)
 -- will force partiality in addition to what features given already
 -- has included
-
--- | minimal sublogic with subsorting
-need_sub :: Sublogic
-need_sub = bottom { has_sub = True }
 
 -- | minimal sublogic with partiality
 need_part :: Sublogic
@@ -160,21 +152,21 @@ need_eq = bottom { has_eq = True }
 need_pred :: Sublogic
 need_pred = bottom { has_pred = True }
 
--- | minimal sublogic with higher order
-need_ho :: Sublogic
-need_ho = bottom { has_ho = True }
-
--- | minimal sublogic with simple type classes
-simpleTypeClasses :: Sublogic
-simpleTypeClasses = bottom { type_classes = SimpleTypeClasses }
-
--- | minimal sublogic with constructor classes
-constructorClasses :: Sublogic
-constructorClasses = bottom { type_classes = ConstructorClasses }
+-- | minimal sublogic with subsorting
+need_sub :: Sublogic
+need_sub = need_pred { has_sub = True }
 
 -- | minimal sublogic with polymorhism
 need_polymorphism :: Sublogic
 need_polymorphism = bottom { has_polymorphism = True }
+
+-- | minimal sublogic with simple type classes
+simpleTypeClasses :: Sublogic
+simpleTypeClasses = need_polymorphism { type_classes = SimpleTypeClasses }
+
+-- | minimal sublogic with constructor classes
+constructorClasses :: Sublogic
+constructorClasses = need_polymorphism { type_classes = ConstructorClasses }
 
 -- | minimal sublogic with type constructors
 need_type_constructors :: Sublogic
@@ -200,31 +192,26 @@ sublogics_all = let bools = [False,True] in
     , has_part = part
     , has_eq = eq
     , has_pred = pre
-    , has_ho = ho
     , type_classes = tyCl
     , has_polymorphism = poly
     , has_type_constructors = tyCon
     , which_logic = logic
     }
-    | sub <- bools
+    | (sub, pre) <- [(False, True), (False, False), (True, True)]
     , part <- bools
     , eq <- bools
-    , pre <- bools
-    , ho <- bools
-    , tyCl <- [NoClasses, SimpleTypeClasses, ConstructorClasses]
-    , poly <- bools
+    , (tyCl, poly) <- [(NoClasses, False), (NoClasses, True),
+                       (SimpleTypeClasses, True), (ConstructorClasses, True)]
     , tyCon <- bools
     , logic <- [Atomic, Horn, GHorn, FOL, HOL]
     ]
 
 -- | conversion functions to String
-formulas_name :: Bool -> Bool -> Formulas -> String
-formulas_name hasPred hasHo f =
-    let addHo = if hasHo then ("HO-" ++) else id in case f of
+formulas_name :: Bool -> Formulas -> String
+formulas_name hasPred f = case f of
     HOL -> "HOL"
-    FOL -> if hasPred then if hasHo then "HOL" else "FOL"
-           else addHo "FOAlg"
-    _ -> addHo $ case f of
+    FOL -> if hasPred then "FOL" else "FOAlg"
+    _ -> case f of
          Atomic -> if hasPred then "Atom" else "Eq"
          _ -> (case f of
                 GHorn -> ("G" ++)
@@ -236,13 +223,11 @@ sublogic_name x = [
      (if has_sub x then "Sub" else "")
   ++ (if has_part x then "P" else "")
   ++ (case type_classes x of
-         NoClasses -> ""
+         NoClasses -> if has_polymorphism x then "Poly" else ""
          SimpleTypeClasses -> "TyCl"
          ConstructorClasses -> "CoCl")
-  ++ (if has_polymorphism x then "Poly" else "")
-  ++ (if has_type_constructors x && not (has_polymorphism x)
-       then "TyCons" else "")
-  ++ formulas_name (has_pred x) (has_ho x) (which_logic x)
+  ++ (if has_type_constructors x then "TyCons" else "")
+  ++ formulas_name (has_pred x) (which_logic x)
   ++ (if has_eq x then "=" else "")]
 
 -- * join functions
@@ -255,7 +240,6 @@ sublogic_join joinB joinC joinF a b = Sublogic
     , has_part = joinB (has_part a) $ has_part b
     , has_eq = joinB (has_eq a) $ has_eq b
     , has_pred = joinB (has_pred a) $ has_pred b
-    , has_ho = joinB (has_ho a) $ has_ho b
     , type_classes = joinC (type_classes a) $ type_classes b
     , has_polymorphism = joinB (has_polymorphism a) $ has_polymorphism b
     , has_type_constructors =
@@ -500,13 +484,25 @@ sl_classDecl (ClassDecl _ k _) = case k of
     ClassKind _ -> simpleTypeClasses
     FunKind _ _ _ _ -> constructorClasses
 
+
+-- don't check the variance or kind of builtin type constructors
+sl_Variance :: Variance -> Sublogic
+sl_Variance v = case v of
+    InVar -> bottom
+    _ -> need_sub
+
+sl_AnyKind :: (a -> Sublogic) -> AnyKind a -> Sublogic
+sl_AnyKind f k = case k of
+   ClassKind i -> f i
+   FunKind v k1 k2 _ ->
+       comp_list [sl_Variance v, sl_AnyKind f k1, sl_AnyKind f k2]
+
 sl_Rawkind :: RawKind -> Sublogic
-sl_Rawkind (ClassKind _) = bottom
-sl_Rawkind (FunKind _ _ _ _) = need_hol
+sl_Rawkind = sl_AnyKind (const bottom)
 
 sl_kind :: Kind -> Sublogic
-sl_kind (ClassKind i) = if i == universeId then bottom else simpleTypeClasses
-sl_kind (FunKind _ k1 k2 _) = comp_list [need_hol, (sl_kind k1), (sl_kind k2)]
+sl_kind = sl_AnyKind $
+          \ i -> if i == universeId then bottom else simpleTypeClasses
 
 sl_typeItem :: TypeItem -> Sublogic
 sl_typeItem tyIt = case tyIt of
@@ -547,12 +543,10 @@ sl_Basictype ty = case ty of
     ExpandedType _ t -> sl_Basictype t
     BracketType Parens [t] _ -> sl_Basictype t
     _ -> case getTypeAppl ty of
-         (TypeName ide _ _, [_, _]) | isArrow ide ->
-            sublogic_max need_ho $ sl_BasicFun ty
-         (TypeName ide _ _, [arg]) | ide == lazyTypeId ->
-            sublogic_max need_hol $ sl_Basictype arg
-         (_, args) -> comp_list $ need_type_constructors :
-                      map sl_Basictype args
+         (TypeName ide _ _, args) -> comp_list $
+            (if isArrow ide || ide == lazyTypeId then need_hol else
+                need_type_constructors) : map sl_Basictype args
+         _ -> error "sl_Basictype"
 
 sl_BasicProd :: Type -> Sublogic
 sl_BasicProd ty = case getTypeAppl ty of
