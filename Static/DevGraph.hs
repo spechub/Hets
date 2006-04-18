@@ -46,7 +46,6 @@ import qualified Common.Lib.Graph as Tree
 
 import qualified Common.Lib.Map as Map
 import qualified Common.OrderedMap as OMap
-import qualified Common.Lib.Set as Set
 
 import Common.AS_Annotation
 import Common.GlobalAnnotations
@@ -665,9 +664,9 @@ instance PrettyPrint G_theory where
 -- | compute sublogic of a theory
 sublogicOfTh :: G_theory -> G_sublogics
 sublogicOfTh (G_theory lid sigma sens) =
-  let sub = Set.fold Logic.Logic.join
+  let sub = foldl Logic.Logic.join
                   (min_sublogic_sign lid sigma)
-                  (Set.fromList $ map snd $ OMap.toList $
+                  (map snd $ OMap.toList $
                    OMap.map (min_sublogic_sentence lid . value)
                        sens)
    in G_sublogics lid sub
