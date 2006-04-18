@@ -86,7 +86,21 @@ data Sublogic = Sublogic
     , has_polymorphism :: Bool
     , has_type_constructors :: Bool
     , which_logic :: Formulas
-    } deriving (Show, Eq, Ord)
+    } deriving (Show, Eq)
+
+{-
+instance Ord Sublogic where
+-- this is only a partial order! 
+    a <= b = sublogic_max a b == b
+    a < b = a <= b && a /= b
+    a >= b = sublogic_max a b == a
+    a > b = a >= b && a /= b
+    compare a b = let c = sublogic_max a b in
+         if a == b then EQ
+         else if a == c then GT
+         else if b == c then LT
+         else error "instance Ord HasCASL.Sublogic"
+-}
 
 -- * special sublogic elements
 
@@ -182,7 +196,7 @@ need_fol :: Sublogic
 need_fol = bottom { which_logic = FOL }
 
 need_hol :: Sublogic
-need_hol = bottom { which_logic = HOL }
+need_hol = need_pred { which_logic = HOL }
 
 -- | generate a list of all sublogics for HasCASL
 sublogics_all :: [Sublogic]
@@ -197,13 +211,15 @@ sublogics_all = let bools = [False,True] in
     , has_type_constructors = tyCon
     , which_logic = logic
     }
-    | (sub, pre) <- [(False, True), (False, False), (True, True)]
-    , part <- bools
-    , eq <- bools
-    , (tyCl, poly) <- [(NoClasses, False), (NoClasses, True),
+    | (tyCl, poly) <- [(NoClasses, False), (NoClasses, True),
                        (SimpleTypeClasses, True), (ConstructorClasses, True)]
     , tyCon <- bools
+    , sub <- bools
+    , part <- bools
+    , eq <- bools
+    , pre <- bools
     , logic <- [Atomic, Horn, GHorn, FOL, HOL]
+    , pre || logic /= HOL && not sub
     ]
 
 -- | conversion functions to String

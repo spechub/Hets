@@ -56,7 +56,7 @@ import Common.Utils
 import Common.DynamicUtils
 import qualified Data.List as List
 import Data.Maybe
-import Control.Monad
+import Control.Monad (foldM, unless)
 
 ------------------------------------------------------------------
 --"Grothendieck" versions of the various parts of type class Logic
@@ -231,9 +231,9 @@ instance Eq G_sublogics where
        language_name lid1 == language_name lid2
           && coerceSublogic lid1 lid2 l1 == l2
 
-instance Ord G_sublogics where
-    compare (G_sublogics lid1 l1) (G_sublogics lid2 l2) =
-        compare (coerceSublogic lid1 lid2 l1) l2
+isProperSublogic :: G_sublogics -> G_sublogics -> Bool
+isProperSublogic a@(G_sublogics lid1 l1) b@(G_sublogics lid2 l2) =
+    isSubElem (coerceSublogic lid1 lid2 l1) l2 && a /= b
 
 -- | Homogeneous Grothendieck signature morphisms
 data G_morphism = forall lid sublogics
@@ -300,7 +300,8 @@ compComorphism (Comorphism cid1) (Comorphism cid2) =
    let l1 = targetLogic cid1
        l2 = sourceLogic cid2 in
    if language_name l1 == language_name l2 then
-      if coerceSublogic l1 l2 (targetSublogic cid1) <= sourceSublogic cid2
+      if isSubElem (coerceSublogic l1 l2 $ targetSublogic cid1)
+            $ sourceSublogic cid2
        then {- case (isIdComorphism cm1,isIdComorphism cm2) of
          (True,_) -> return cm2
          (_,True) -> return cm1
@@ -315,7 +316,7 @@ lessSublogicComor :: G_sublogics -> AnyComorphism -> Bool
 lessSublogicComor (G_sublogics lid1 sub1) (Comorphism cid) =
     let lid2 = sourceLogic cid
     in language_name lid2 == language_name lid1
-           && coerceSublogic lid1 lid2 sub1 <= sourceSublogic cid
+           && isSubElem (coerceSublogic lid1 lid2 sub1) (sourceSublogic cid)
 
 --- Morphisms ---
 
@@ -607,7 +608,7 @@ findComorphism gsl@(G_sublogics lid sub) ((Comorphism cid):rest) =
     let l2 = sourceLogic cid
         rec = findComorphism gsl rest in
    if language_name lid == language_name l2
-      then if coerceSublogic lid l2 sub <= sourceSublogic cid
+      then if isSubElem (coerceSublogic lid l2 sub) $ sourceSublogic cid
               then return $ Comorphism cid
               else rec
       else rec
