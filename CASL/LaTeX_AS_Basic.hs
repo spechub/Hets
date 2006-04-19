@@ -30,14 +30,35 @@ import Common.PPUtils (pluralS)
 
 instance (PrintLaTeX b, PrintLaTeX s, PrintLaTeX f)
     => PrintLaTeX (BASIC_SPEC b s f) where
-    printLatex0 ga = Doc.toLatex ga . 
-        printBASIC_SPEC (fromLatex ga) (fromLatex ga) (fromLatex ga)
-        
+    printLatex0 ga (Basic_spec l) =
+        if null l then sp_braces_latex2 empty
+         else vcat (map (printLatex0 ga) l)
 
 instance (PrintLaTeX b, PrintLaTeX s, PrintLaTeX f) =>
          PrintLaTeX (BASIC_ITEMS b s f) where
-    printLatex0 ga = Doc.toLatex ga . 
-        printBASIC_ITEMS (fromLatex ga) (fromLatex ga) (fromLatex ga) 
+    printLatex0 ga (Sig_items s) = printLatex0 ga s
+    printLatex0 ga (Free_datatype l _) =
+        fsep_latex [hc_sty_plain_keyword freeS
+                    <~> setTab_latex
+                    <> hc_sty_plain_keyword (typeS ++ pluralS l)
+                   ,tabbed_nest_latex $ semiAnno_latex ga l]
+    printLatex0 ga (Sort_gen l _) = case l of
+        [Annoted (Datatype_items l' _) _ lans _] ->
+            fsep_latex [ hc_sty_plain_keyword generatedS <~> setTab_latex <\+>
+                         hc_sty_plain_keyword (typeS ++ pluralS l')
+                       , tabbed_nest_latex (printAnnotationList_Latex0 ga lans
+                                            $$ semiAnno_latex ga l') ]
+        _ -> fsep_latex [ hc_sty_plain_keyword generatedS <~> setTab_latex
+                        , tabbed_nest_latex $ sp_braces_latex2
+                        $ vcat $ map (printLatex0 ga) l ]
+    printLatex0 ga (Var_items l _) =
+        hc_sty_plain_keyword (varS ++ pluralS l) <\+>
+        semiT_latex ga l
+    printLatex0 ga (Local_var_axioms l f _) =
+        forall_latex <\+> semiT_latex ga l
+                 $$ printLatex0Axioms ga f
+    printLatex0 ga (Axiom_items f _) = printLatex0Axioms ga f
+    printLatex0 ga (Ext_BASIC_ITEMS b) = printLatex0 ga b
 
 printLatex0Axioms :: PrintLaTeX f =>
                GlobalAnnos -> [Annoted (FORMULA f)] -> Doc
@@ -51,8 +72,19 @@ printAnnotedFormula_Latex0 ga =
 
 instance (PrintLaTeX s, PrintLaTeX f) =>
           PrintLaTeX (SIG_ITEMS s f) where
-    printLatex0 ga = Doc.toLatex ga .
-        printSIG_ITEMS (fromLatex ga) (fromLatex ga) 
+    printLatex0 ga (Sort_items l _) =
+        Doc.toLatex ga $ Doc.topKey (sortS ++ pluralS l) Doc.<+> 
+             Doc.semiAnnos (printSortItem $ fromLatex ga) l
+    printLatex0 ga (Op_items l _) =
+        Doc.toLatex ga $ Doc.topKey (opS ++ pluralS l) Doc.<+> 
+             Doc.semiAnnos (printOpItem $ fromLatex ga) l
+    printLatex0 ga (Pred_items l _) =
+        Doc.toLatex ga $ Doc.topKey (predS ++ pluralS l) Doc.<+>
+             Doc.semiAnnos (printPredItem $ fromLatex ga) l
+    printLatex0 ga (Datatype_items l _) =
+        Doc.toLatex ga $ Doc.topKey (typeS ++ pluralS l) Doc.<+>
+             Doc.semiAnnos printDATATYPE_DECL l
+    printLatex0 ga (Ext_SIG_ITEMS s) = printLatex0 ga s
 
 instance PrintLaTeX f => PrintLaTeX (SORT_ITEM f) where
     printLatex0 ga = Doc.toLatex ga . printSortItem (fromLatex ga)
