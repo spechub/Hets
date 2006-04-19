@@ -164,10 +164,12 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
           ) outTypes
     mapM_ ( \ i -> case Map.lookup i gctx of
         Just (SpecEntry (_,_,_, NodeSig n _)) ->
-            case maybeResult $ computeTheory lenv ln n of
-              Nothing -> putIfVerbose opt 0 $
-                              "could not compute theory of spec " ++ show i
-              Just raw_gTh ->
+            case computeTheory lenv ln n of
+              Result ds Nothing -> do 
+                 putIfVerbose opt 0 $ "could not compute theory of spec " 
+                                  ++ show i
+                 putIfVerbose opt 0 $ unlines $ map show ds
+              Result _ (Just raw_gTh) ->
                case theoremsToAxioms raw_gTh of
                 gTh@(G_theory lid sign0 sens0) -> do
                   putIfVerbose opt 4 $ "Sublogic of " ++ show i ++ ": " ++
