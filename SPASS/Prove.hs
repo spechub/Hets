@@ -124,9 +124,7 @@ emptyConfig n = SPASSConfig {timeLimit = Nothing,
                             }
 
 openSPASSProof_status :: String -> Proof_status ()
-openSPASSProof_status n =
-    ((openProof_status n (prover_name spassProver))::Proof_status ()) 
-    {proofTree = ()}
+openSPASSProof_status n = openProof_status n (prover_name spassProver) () 
 
 {- |
   Utility function to set the time limit of a SPASSConfig.

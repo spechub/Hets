@@ -180,13 +180,14 @@ data Proof_status proof_tree =
 openProof_status :: Ord pt => 
                     String -- ^ name of the goal
                  -> String -- ^ name of the prover
+                 -> pt
                  -> Proof_status pt
-openProof_status goalname provername =
+openProof_status goalname provername proof_tree =
     Proof_status { goalName = goalname
                  , goalStatus = Open
                  , usedAxioms = []
                  , proverName = provername
-                 , proofTree = undefined
+                 , proofTree = proof_tree
                  , tacticScript = Tactic_script "" }
 
 {-

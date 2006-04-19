@@ -68,9 +68,7 @@ isabelleConsChecker =
               prove = consCheck }
 
 openIsaProof_status :: String -> Proof_status ()
-openIsaProof_status n =
-    ((openProof_status n (prover_name isabelleProver))::Proof_status ())
-    {proofTree = ()}
+openIsaProof_status n = openProof_status n (prover_name isabelleProver) ()
 
 -- | the name of the inconsistent lemma for consistency checks
 inconsistentS :: String
