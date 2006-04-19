@@ -4,7 +4,7 @@ General format of SPASS output
 - input clauses
 - reduced clauses
 - clauses selected by the "given clause" algorithm
-   (usable clauses are successively processed an marked as worked off.
+   (usable clauses are successively processed and marked as worked off.
     If the set of usable clauses is empty, a completion has been found)
 - proof
 
@@ -14,6 +14,11 @@ Clause[split level]justification.literal number
 *  literal is maximal in the ordering
 ** ... and additionally it is an equation, oriented from left to right
 + (negative) literal has been selected
+
+A proof of a toplevel conjunction is easier if the conjunction is
+split into its conjuncts and each conjunct is proved separately; this
+can be implemented in Hets, but the housekeeping is difficult and the
+proof reconstruction is difficult.
 
 MPI:
 - cache CNF computations for optimized skolemization
