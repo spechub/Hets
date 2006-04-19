@@ -60,9 +60,12 @@ printSortItem mf si = case si of
     Subsort_decl sl sup _ -> fsep $ (punctuate comma $ map idDoc sl)
                                      ++ [less, idDoc sup] 
     Subsort_defn s v sup af _ -> fsep [idDoc s, equals, 
-              specBraces $ fsep [sidDoc v, colon, idDoc sup, bullet,
-                             printAnnoted (printFormula mf) af]]
+              specBraces $ fsep [sidDoc v, colon, idDoc sup,
+                             printAnnoted (addBullet . printFormula mf) af]]
     Iso_decl sl _ -> fsep $ punctuate (space <> equals) $ map idDoc sl
+
+addBullet :: Doc -> Doc
+addBullet = (bullet <+>)
 
 sidDoc :: Token -> Doc
 sidDoc = idDoc . simpleIdToId
@@ -176,7 +179,7 @@ printRecord :: (f -> Doc) -> Record f Doc Doc
 printRecord mf = Record
     { foldQuantification = \ _ q l r _ ->
           fsep $ printQuant q : punctuate semi (map printVarDecl l)
-                                ++ [bullet, r]
+                                ++ [addBullet r]
     , foldConjunction = \ (Conjunction ol _) l _ ->
           fsep $ punctuate (space <> andDoc) $ zipWith mkJunctDoc ol l
     , foldDisjunction = \ (Disjunction ol _) l _ ->
