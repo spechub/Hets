@@ -99,12 +99,12 @@ data CASL_Formulas = Atomic  -- ^ atomic logic
                    | Horn    -- ^ positive conditional logic
                    | GHorn   -- ^ generalized positive conditional logic
                    | FOL     -- ^ first-order logic
-                   deriving (Show,Ord,Eq)
+                   deriving (Show, Eq, Ord)
 
 data SubsortingFeatures = NoSub
                         | LocFilSub
                         | Sub
-                          deriving (Show,Ord,Eq)
+                          deriving (Show, Eq, Ord)
 
 data SortGenerationFeatures =
           NoSortGen
@@ -112,51 +112,26 @@ data SortGenerationFeatures =
                     -- ^ Mapping of indexed sorts is empty
                   , onlyInjConstrs :: Bool
                     -- ^ only injective constructors
-                  } deriving (Show,Eq)
+                  } deriving (Show, Eq)
 
-instance Ord SortGenerationFeatures where
-  {-   NoSortGen False False > NoSortGen True False
-     > NoSortGen False True  > NoSortGen True True -}
-    compare x y =
-        case x of
-        NoSortGen -> case y of
-                     NoSortGen -> EQ
-                     _         -> LT
-        SortGen em_x ojc_x ->
-            case y of
-            NoSortGen -> GT
-            SortGen em_y ojc_y ->
-                case (em_x,ojc_x,em_y,ojc_y) of
-                -- False means more expressive / more features used
-                (True,True,True,True)    -> EQ
-                (True,True,False,True)   -> LT
-                (True,True,True,False)   -> LT
-                (True,True,False,False)  -> LT
-
-                (True,False,True,True)   -> GT
-                (True,False,True,False)  -> EQ
-                (True,False,False,True)  -> GT
-                (True,False,False,False) -> LT
-
-                (False,True,True,True)   -> GT
-                (False,True,True,False)  -> LT
-                (False,True,False,False) -> LT
-                (False,True,False,True)  -> EQ
-
-                (False,False,True,True)  -> GT
-                (False,False,True,False) -> GT
-                (False,False,False,True) -> GT
-                (False,False,False,False)-> EQ
+joinSortGenFeature :: (Bool -> Bool -> Bool)
+                   -> SortGenerationFeatures -> SortGenerationFeatures
+                   -> SortGenerationFeatures
+joinSortGenFeature f x y =
+    case x of
+      NoSortGen -> y
+      SortGen em_x ojc_x -> case y of
+          NoSortGen -> x
+          SortGen em_y ojc_y -> SortGen (f em_x em_y) (f ojc_x ojc_y)
 
 data CASL_Sublogics = CASL_SL
-                      { sub_features :: SubsortingFeatures, -- ^ subsorting
-                        has_part::Bool,  -- ^ partiality
-                        cons_features :: SortGenerationFeatures,
-                            -- ^ sort generation constraints
-                        has_eq::Bool,    -- ^ equality
-                        has_pred::Bool,  -- ^ predicates
-                        which_logic::CASL_Formulas
-                      } deriving (Show,Eq)
+    { sub_features :: SubsortingFeatures, -- ^ subsorting
+      has_part :: Bool,  -- ^ partiality
+      cons_features :: SortGenerationFeatures, -- ^ sort generation constraints
+      has_eq :: Bool,    -- ^ equality
+      has_pred :: Bool,  -- ^ predicates
+      which_logic :: CASL_Formulas
+    } deriving (Show, Eq)
 -------------------------
 -- old selector functions
 -------------------------
@@ -177,7 +152,7 @@ has_cons sl = case cons_features sl of
 -- top element
 --
 top :: CASL_Sublogics
-top = (CASL_SL LocFilSub True (SortGen True True) True True FOL)
+top = (CASL_SL LocFilSub True (SortGen False False) True True FOL)
 
 -- bottom element
 --
@@ -192,10 +167,10 @@ bottom = (CASL_SL NoSub False (NoSortGen) False False Atomic)
 -- minimal sublogics with subsorting
 --
 need_sub :: CASL_Sublogics
-need_sub = bottom { sub_features = Sub, which_logic = Horn }
+need_sub = need_horn { sub_features = Sub }
 
 need_sul :: CASL_Sublogics
-need_sul = bottom { sub_features = LocFilSub, which_logic = Horn }
+need_sul = need_horn { sub_features = LocFilSub }
 
 -- minimal sublogic with partiality
 --
@@ -245,16 +220,22 @@ need_fol = bottom { which_logic = FOL }
 -- feature combinations and then filtering illegal ones out
 --
 sublogics_all :: [CASL_Sublogics]
-sublogics_all =
-    filter (not . adjust_check)
-           [ CASL_SL s_f pa_b c_f e_b pr_b fo
-                       | s_f <- [NoSub,LocFilSub,Sub ],
-                         pa_b <- [True,False],
-                         pr_b <- [True,False],
-                         e_b <- [True,False],
-                         fo <- [FOL,GHorn,Horn,Atomic],
-                         c_f <- (NoSortGen:[SortGen m s | m <- [True,False],
-                                                          s <- [True,False]])]
+sublogics_all = let bools = [True, False] in
+    [ CASL_SL
+    { sub_features = s_f
+    , has_part = pa_b
+    , cons_features = c_f
+    , has_eq = e_b
+    , has_pred = pr_b
+    , which_logic = fo
+    }
+    | s_f <- [NoSub, LocFilSub, Sub]
+    , pa_b <- bools
+    , pr_b <- bools
+    , e_b <- bools
+    , fo <- [FOL, GHorn, Horn, Atomic]
+    , c_f <- NoSortGen : [ SortGen m s | m <- bools, s <- bools]
+    , s_f == NoSub || fo /= Atomic]
 ------------------------------------------------------------------------------
 -- Conversion functions (to String)
 ------------------------------------------------------------------------------
@@ -289,24 +270,27 @@ sublogics_name x = [   ( case sub_features x of
 -- min/join and max/meet functions
 ------------------------------------------------------------------------------
 
+sublogics_join :: (Bool -> Bool -> Bool)
+               -> (SubsortingFeatures -> SubsortingFeatures
+                   -> SubsortingFeatures)
+               -> (SortGenerationFeatures -> SortGenerationFeatures
+                   -> SortGenerationFeatures)
+               -> (CASL_Formulas -> CASL_Formulas -> CASL_Formulas)
+               -> CASL_Sublogics -> CASL_Sublogics -> CASL_Sublogics
+sublogics_join jB jS jC jF a b = CASL_SL
+    { sub_features = jS (sub_features a) (sub_features b)
+    , has_part = jB (has_part a) $ has_part b
+    , cons_features = jC (cons_features a) (cons_features b)
+    , has_eq = jB (has_eq a) $ has_eq b
+    , has_pred = jB (has_pred a) $ has_pred b
+    , which_logic = jF (which_logic a) (which_logic b)
+    }
+
 sublogics_max :: CASL_Sublogics -> CASL_Sublogics -> CASL_Sublogics
-sublogics_max a b = CASL_SL (max (sub_features a) (sub_features b))
-                            (has_part a || has_part b)
-                            (max (cons_features a) (cons_features b))
-                            (has_eq   a || has_eq   b)
-                            (has_pred a || has_pred b)
-                            (max (which_logic a) (which_logic b))
+sublogics_max = sublogics_join max max (joinSortGenFeature min) max
 
 sublogics_min :: CASL_Sublogics -> CASL_Sublogics -> CASL_Sublogics
-sublogics_min a b = CASL_SL (min (sub_features a) (sub_features b))
-                            (has_part a && has_part b)
-                            (min (cons_features a) (cons_features b))
-                            (has_eq   a && has_eq   b)
-                            (has_pred a && has_pred b)
-                            (min (which_logic a) (which_logic b))
-
-instance Ord CASL_Sublogics where
-  x <= y = sublogics_min x y == x
+sublogics_min = sublogics_join min min (joinSortGenFeature max) min
 
 ------------------------------------------------------------------------------
 -- Helper functions
@@ -628,23 +612,11 @@ sl_funkind _ = bottom
 -- comparison functions
 ------------------------------------------------------------------------------
 
--- negated implication
---
-nimpl :: Bool -> Bool -> Bool
-nimpl True _      = True
-nimpl False False = True
-nimpl False True  = False
-
 -- check if a "new" sublogic is contained in/equal to a given
 -- sublogic
 --
 sl_in :: CASL_Sublogics -> CASL_Sublogics -> Bool
-sl_in given new = (nimpl (has_sub  given) (has_sub  new)) &&
-                  (nimpl (has_part given) (has_part new)) &&
-                  (nimpl (has_cons given) (has_cons new)) &&
-                  (nimpl (has_eq   given) (has_eq   new)) &&
-                  (nimpl (has_pred given) (has_pred new)) &&
-                  ((which_logic given) >= (which_logic new))
+sl_in given new = sublogics_max given new == given
 
 in_x :: CASL_Sublogics -> a -> (a -> CASL_Sublogics) -> Bool
 in_x l x f = sl_in l (f x)
