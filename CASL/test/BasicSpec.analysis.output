@@ -15,7 +15,7 @@ ops   __+__, __*__ : Nat * Nat -> Nat;
       %%   Operations to represent natural numbers with digits:
       1, 2, 3, 4, 5, 6, 7, 8, 9 : Nat;
       __@@__ : Nat * Nat -> Nat
-forall m, n, r, s : Nat
+forall m, n, r, s : Nat 
 . 0 <= n %(Nat_leq_def1)%
 . not suc(n) <= 0 %(Nat_leq_def2)%
 . suc(m) <= suc(n) <=> m <= n %(Nat_leq_def3)%
@@ -67,7 +67,7 @@ ops   1 : Pos; %(Nat_1_as_Pos_def)%
 
 %% then %implies
 ops   min, max : Nat * Nat -> Nat, comm, assoc
-forall x, m, n, r, s, t : Nat; p : Pos
+forall x, m, n, r, s, t : Nat; p : Pos 
 . def m -? n <=> m >= n %(Nat_sub_dom)%
 . def m /? n <=> m mod n = 0 %(Nat_divide_dom)%
 . def m div n <=> not n = 0 %(Nat_div_dom)%
@@ -79,13 +79,12 @@ forall x, m, n, r, s, t : Nat; p : Pos
 . min(m, 0) = 0 %(Nat_min_0)%
 %% end
 generated type Int ::= __-__(Nat; Nat)
-forall a, b, c, d : Nat
+forall a, b, c, d : Nat 
 . a - b = c - d <=> a + d = c + b %(Int_equality)%
 
 %% then
 sort  Nat < Int
-forall a : Nat
-. a = a - 0 %(Int_Nat_embedding)%
+forall a : Nat . a = a - 0 %(Int_Nat_embedding)%
 preds __<=__, __<__, __>=__, __>__ : Int * Int;
       odd, even : Int
 ops   0, 1 : Int;
@@ -96,7 +95,7 @@ ops   0, 1 : Int;
       abs : Int -> Nat;
       __/?__, __div__, __quot__, __rem__ : Int * Int ->? Int;
       __mod__ : Int * Int ->? Nat
-forall m, n, r, s : Int; a, b, c, d : Nat
+forall m, n, r, s : Int; a, b, c, d : Nat 
 . (a - b) + (c - d) = (a + c) - (b + d) %(Int_add_def)%
 . (a - b) * (c - d) = (a * c + b * d) - (b * c + a * d) 
                                                   %(Int_mult_def)%
@@ -125,7 +124,7 @@ forall m, n, r, s : Int; a, b, c, d : Nat
 . m rem n = sign(m) * sign(n) * (abs(m) rem abs(n)) %(Int_rem_def)%
 
 %% then %implies
-forall m, n, r : Int; a, b : Nat
+forall m, n, r : Int; a, b : Nat 
 . def a -? b => a -? b = a - b %(Int_Nat_sub_compat)%
 . m = sign(m) * abs(m) %(Int_abs_decomp)%
 . odd(m) <=> odd(abs(m)) %(Int_odd_alt)%
@@ -139,11 +138,10 @@ forall m, n, r : Int; a, b : Nat
 . m = (m quot n) * n + (m rem n) if not n = 0 %(Int_quot_rem)%
 %% end
 generated type Rat ::= __/__(Int; Pos)
-forall i, j : Int; p, q : Pos
+forall i, j : Int; p, q : Pos 
 . i / p = j / q <=> i * q = j * p %(Rat_equality)%
 sort  Int < Rat
-forall i : Int
-. i / 1 = i %(embeddingIntToRat)%
+forall i : Int . i / 1 = i %(embeddingIntToRat)%
 
 %% then
 preds __<=__, __<__, __>=__, __>__ : Rat * Rat
@@ -153,7 +151,7 @@ ops   0, 1 : Rat;
       +__, -__, abs : Rat -> Rat;
       __^__ : Rat * Int -> Rat;
       min, max : Rat * Rat -> Rat
-forall p, q : Pos; n : Nat; i, j : Int; x, y, z : Rat
+forall p, q : Pos; n : Nat; i, j : Int; x, y, z : Rat 
 . (i / p) <= (j / q) <=> (i * q) <= (j * p) %(Rat_leq_def)%
 . x >= y <=> y <= x %(Rat_geq_def)%
 . x < y <=> x <= y /\ not x = y %(Rat_less_def)%
@@ -172,7 +170,7 @@ forall p, q : Pos; n : Nat; i, j : Int; x, y, z : Rat
 . max(x, y) = y when x <= y else x %(Rat_max_def)%
 
 %% then %implies
-forall i, j : Int; p, q : Pos
+forall i, j : Int; p, q : Pos 
 . (i / p) / (j / q) = (i / p) * (q / j) if not j = 0 
                                                %(Rat_divide_rule)%
 pred  __<__ : a * a
@@ -183,7 +181,7 @@ vars a : t; a, b : s
 vars a : t; a, b : s
 . a = a
 . a = a
-forall a : t; a, b : s
+forall a : t; a, b : s 
 . a = a
 . a = a
 . a = a
@@ -192,15 +190,19 @@ forall a : t; a, b : s
 . a = a
 type  s ::= sorts s2, s1 | c | c(a; a, b : t; a, d : t) | c(a)?
 free type s ::= sorts s2, s1 | c | c(a; a, b : t; d : t) | c(a)?
-generated type
-    s ::= sorts s2, s1 | c | c(a; a, b : t; d : t) | c(a)?
-generated
-    {pred  __<__ : a * a
-     ops   a : b;
-           c : b
-     sorts s, t < s
-     type  s ::= 
-           sorts s2, s1 | c | c(a) | c(a; a, b : t; d : t) | c(a)? %(bla1)%}
+generated type s ::= 
+               sorts s2, s1 | c | c(a; a, b : t; d : t) | c(a)?
+generated {pred  __<__ : a * a
+           ops   a : b;
+                 c : b
+           sorts s, t < s
+           type  s ::= 
+                 sorts s2, s1 | 
+                 c | 
+                 c(a) | 
+                 c(a; a, b : t; d : t) | 
+                 c(a)? %(bla1)%
+          }
 
 %(sort)%
 sorts 
@@ -290,10 +292,10 @@ types Tree ::= Leaf(Data1) | Forest;
 free type List ::= Nil | Cons(Data1; List)
 generated type Set ::= Mt | Add(Data1; Set)
 generated type Set ::= Mt | Add(Data1; Set)
-generated
-    {sort  nat
-     ops   0 : nat;
-           succ : nat -> nat}
+generated {sort  nat
+           ops   0 : nat;
+                 succ : nat -> nat
+          }
 sort  s < t
 ops   f, g : s ->? s;
       g : s -> t;
@@ -312,11 +314,11 @@ var x : s
   not p \/ not q(x) \/ q(x) => not p /\ not q(x) /\ q(x)
 . not p /\ not q(x) /\ q(x) if not p \/ not q(x) \/ q(x) if 
   not p /\ not q(x) /\ q(x)
-forall x : s
+forall x : s 
 . not p /\ not q(x) /\ q(x) <=> 
-  (exists x : s . 
-   not p \/ not q(x) \/ q(x) <=> 
-   (exists! x : s . not p /\ not q(x) /\ q(x)))
+  (exists x : s 
+   . not p \/ not q(x) \/ q(x) <=> 
+     (exists! x : s . not p /\ not q(x) /\ q(x)))
 . def f(x)
 . f(x) =e= g(x)
 . f(x) = g(x)
@@ -335,7 +337,7 @@ forall x : s
 free type Boolean ::= True | False
 ops   Not__ : Boolean -> Boolean;
       __And__, __Or__ : Boolean * Boolean -> Boolean
-forall x, y, z : Boolean
+forall x, y, z : Boolean 
 . Not False = True %(Not_False)%
 . Not True = False %(Not_True)%
 . False And False = False %(And_def1)%
@@ -346,7 +348,7 @@ forall x, y, z : Boolean
 sort  Char
 ops   chr : Nat ->? Char;
       ord : Char -> Nat
-forall n : Nat; c : Char
+forall n : Nat; c : Char 
 . def chr(n) <=> n <= 255 %(chr_dom)%
 . chr(ord(c)) = c %(chr_def)%
 . ord(chr(n)) = n if n <= 255 %(ord_def)%

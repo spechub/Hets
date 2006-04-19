@@ -29,30 +29,14 @@ import CASL.ToDoc
 
 instance (PrettyPrint b, PrettyPrint s, PrettyPrint f) =>
     PrettyPrint (BASIC_SPEC b s f) where
-    printText0 ga (Basic_spec l) =
-        if null l then braces empty else vcat (map (printText0 ga) l)
+    printText0 ga = Doc.toText ga . 
+         printBASIC_SPEC (fromText ga) (fromText ga) (fromText ga)
 
 instance (PrettyPrint b, PrettyPrint s, PrettyPrint f) =>
     PrettyPrint (BASIC_ITEMS b s f) where
-    printText0 ga (Sig_items s) = printText0 ga s
-    printText0 ga (Free_datatype l _) =
-        hang (text freeS <+> text (typeS ++ pluralS l)) 4 $
-             semiAnno_text ga l
-    printText0 ga (Sort_gen l _) = case l of
-        [Annoted (Datatype_items l' _) _ lans _] ->
-            hang (text generatedS <+> text (typeS ++ pluralS l')) 4
-                 (vcat (map (printText0 ga) lans)
-                          $$ semiAnno_text ga l')
-        _ -> hang (text generatedS) 4 $
-             braces $ vcat $ map (printText0 ga) l
-    printText0 ga (Var_items l _) =
-        text (varS ++ pluralS l) <+> semiT_text ga l
-    printText0 ga (Local_var_axioms l f _) =
-        text forallS <+> semiT_text ga l
-                 $$ printFormulaAux ga f
-    printText0 ga (Axiom_items f _) =
-        printFormulaAux ga f
-    printText0 ga (Ext_BASIC_ITEMS b) = printText0 ga b
+    printText0 ga = Doc.toText ga . 
+         printBASIC_ITEMS (fromText ga) (fromText ga) (fromText ga)
+
 
 printFormulaAux :: PrettyPrint f => GlobalAnnos -> [Annoted (FORMULA f)] -> Doc
 printFormulaAux ga f =
@@ -63,21 +47,9 @@ printAnnotedFormula_Text0 :: PrettyPrint f =>
 printAnnotedFormula_Text0 ga withDot = Doc.toText ga . Doc.printAnnoted 
            ((if withDot then (Doc.bullet Doc.<+>) else id) . fromText ga)
 
-instance (PrettyPrint s, PrettyPrint f) =>
-         PrettyPrint (SIG_ITEMS s f) where
-    printText0 ga (Sort_items l _) =
-        Doc.toText ga $ Doc.topKey (sortS ++ pluralS l) Doc.<+> 
-             Doc.semiAnnos (printSortItem $ fromText ga) l
-    printText0 ga (Op_items l _) =
-        Doc.toText ga $ Doc.topKey (opS ++ pluralS l) Doc.<+> 
-             Doc.semiAnnos (printOpItem $ fromText ga) l
-    printText0 ga (Pred_items l _) = 
-        Doc.toText ga $ Doc.topKey (predS ++ pluralS l) Doc.<+>
-             Doc.semiAnnos (printPredItem $ fromText ga) l
-    printText0 ga (Datatype_items l _) =
-         Doc.toText ga $ Doc.topKey (typeS ++ pluralS l) Doc.<+>
-             Doc.semiAnnos printDATATYPE_DECL l
-    printText0 ga (Ext_SIG_ITEMS s) = printText0 ga s
+instance (PrettyPrint s, PrettyPrint f) => PrettyPrint (SIG_ITEMS s f) where
+    printText0 ga = Doc.toText ga . printSIG_ITEMS (fromText ga) (fromText ga) 
+
 
 instance PrettyPrint f => PrettyPrint (SORT_ITEM f) where
     printText0 ga = Doc.toText ga . printSortItem (fromText ga)
@@ -186,26 +158,4 @@ instance PrettyPrint SYMB_OR_MAP where
     printText0 ga (Symb_map s t _) =
         printText0 ga s <+> text mapsTo <+> printText0 ga t
 
----- instances of ListCheck for various data types of AS_Basic_CASL ---
 
-instance ListCheck (SORT_ITEM f) where
-    innerList (Sort_decl l _) = innerList l
-    innerList (Subsort_decl l _ _) = innerList l
-    innerList (Subsort_defn _ _ _ _ _) = [()]
-    innerList (Iso_decl _ _) = [()]
-
-instance ListCheck (OP_ITEM f) where
-    innerList (Op_decl l _ _ _) = innerList l
-    innerList (Op_defn _ _ _ _) = [()]
-
-instance ListCheck (PRED_ITEM f) where
-    innerList (Pred_decl l _ _) = innerList l
-    innerList (Pred_defn _ _ _ _) = [()]
-
-instance ListCheck DATATYPE_DECL where
-    innerList (Datatype_decl _ _ _) = [()]
-
-instance ListCheck VAR_DECL where
-    innerList (Var_decl l _ _) = innerList l
-
------------------------------------------------------------------------------

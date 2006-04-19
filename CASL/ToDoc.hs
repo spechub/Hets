@@ -15,9 +15,70 @@ module CASL.ToDoc where
 import Common.Id
 import Common.Keywords
 import Common.Doc
+import Common.PPUtils
+
+import Common.AS_Annotation
+
 
 import CASL.AS_Basic_CASL
 import CASL.Fold
+
+
+instance (Pretty b,Pretty s,Pretty f) => Pretty (BASIC_SPEC b s f) where
+    pretty  = printBASIC_SPEC pretty pretty pretty 
+                             
+printBASIC_SPEC :: (b ->Doc) -> (s ->Doc) -> (f->Doc) ->
+                    BASIC_SPEC b s f -> Doc
+printBASIC_SPEC fB fS fF (Basic_spec l) = case l of
+    [] -> specBraces empty
+    _ -> vcat $ map (printAnnoted ( printBASIC_ITEMS fB fS fF)) l
+
+instance (Pretty b, Pretty s, Pretty f) => Pretty (BASIC_ITEMS b s f) where
+    pretty = printBASIC_ITEMS pretty pretty pretty
+        
+
+printBASIC_ITEMS :: (b -> Doc) -> (s -> Doc) -> (f -> Doc) 
+                      -> BASIC_ITEMS b s f -> Doc
+printBASIC_ITEMS fB fS fF sis = case sis of
+    Sig_items s -> printSIG_ITEMS fS fF s
+    Free_datatype l _ -> keyword freeS <+> keyword (typeS ++ pluralS l) <+>
+         semiAnnos printDATATYPE_DECL l
+    Sort_gen l _ -> case l of
+         [Annoted (Datatype_items l' _) _ _ _] -> keyword generatedS <+>
+                 keyword (typeS ++ pluralS l') <+> 
+                  semiAnnos printDATATYPE_DECL l'
+         _ -> keyword generatedS <+> (specBraces $ vcat $ map
+              (printAnnoted ((if isSingle l then rmTopKey else id) . 
+                     printSIG_ITEMS fS fF)) l)
+    Var_items l _ -> keyword (varS ++ pluralS l) <+>
+                           fsep (punctuate semi $ map printVarDecl l)
+    Local_var_axioms l f _  -> 
+            sep [ forallDoc <+> fsep (punctuate semi $ map printVarDecl l)
+                , printAnnotedBulletFormulas fF f]
+    Axiom_items f _ -> printAnnotedBulletFormulas fF f
+    Ext_BASIC_ITEMS b -> fB b
+
+
+printAnnotedBulletFormulas :: (f -> Doc) -> [Annoted (FORMULA f)] -> Doc
+printAnnotedBulletFormulas fF = vcat . map 
+    (printAnnoted (addBullet . (printFormula fF)))
+
+instance (Pretty s,Pretty f) => Pretty (SIG_ITEMS s f) where
+    pretty = printSIG_ITEMS pretty pretty
+        
+
+printSIG_ITEMS :: (s -> Doc) -> (f -> Doc) -> SIG_ITEMS s f -> Doc
+printSIG_ITEMS fS fF sis = case sis of
+    Sort_items l _ ->  topKey (sortS ++ pluralS l) <+>
+         semiAnnos (printSortItem fF) l
+    Op_items l _  -> topKey (opS ++ pluralS l) <+> 
+             semiAnnos (printOpItem fF) l
+    Pred_items l _ -> topKey (predS ++ pluralS l) <+>
+             semiAnnos (printPredItem fF) l
+    Datatype_items l _ -> topKey (typeS ++ pluralS l) <+>
+             semiAnnos printDATATYPE_DECL l
+    Ext_SIG_ITEMS s -> fS s 
+
 
 printDATATYPE_DECL :: DATATYPE_DECL ->Doc
 printDATATYPE_DECL (Datatype_decl s a _) = case a of
@@ -64,6 +125,9 @@ printSortItem mf si = case si of
                              printAnnoted (addBullet . printFormula mf) af]]
     Iso_decl sl _ -> fsep $ punctuate (space <> equals) $ map idDoc sl
 
+instance Pretty f => Pretty (SORT_ITEM f) where
+    pretty = printSortItem pretty 
+
 addBullet :: Doc -> Doc
 addBullet = (bullet <+>)
 
@@ -100,6 +164,10 @@ printPredItem mf p = case p of
         fcat [idDoc i, printPredHead h <> space, equiv <> space,
               printAnnoted (printFormula mf) f]
 
+instance Pretty f => Pretty (PRED_ITEM f) where
+    pretty = printPredItem pretty
+
+
 printAttr :: (f -> Doc) -> OP_ATTR f -> Doc
 printAttr mf a = case a of
     Assoc_op_attr -> text assocS
@@ -130,6 +198,10 @@ printOpItem mf p = case p of
         fcat [(if null l then (<> space) else id) $ idDoc i
              , printOpHead h <> space, equals <> space
              , printAnnoted (printTerm mf) t]
+
+instance Pretty f => Pretty (OP_ITEM f) where
+    pretty = printOpItem pretty
+
 
 instance Pretty VAR_DECL where
     pretty = printVarDecl
@@ -174,6 +246,7 @@ printPredSymb p = case p of
 
 instance Pretty PRED_SYMB where
     pretty = printPredSymb
+
 
 printRecord :: (f -> Doc) -> Record f Doc Doc
 printRecord mf = Record
@@ -239,6 +312,7 @@ printRecord mf = Record
     , foldMixfix_braced = \ _ l _ -> specBraces $ fsep $ punctuate comma l
     }
 
+
 printFormula :: (f -> Doc) -> FORMULA f -> Doc
 printFormula mf = foldFormula $ printRecord mf
 
@@ -259,6 +333,7 @@ isQuant f = case f of
 isEquiv f = case f of
     Equivalence _ _ _ -> True
     _ -> isQuant f
+
 
 isAnyImpl f = isImpl True f || isImpl False f
 
@@ -282,3 +357,27 @@ isCond :: TERM f -> Bool
 isCond t = case t of
     Conditional _ _ _ _ -> True
     _ -> False
+
+---- instances of ListCheck for various data types of AS_Basic_CASL ---
+
+instance ListCheck (SORT_ITEM f) where
+    innerList (Sort_decl l _) = innerList l
+    innerList (Subsort_decl l _ _) = innerList l
+    innerList (Subsort_defn _ _ _ _ _) = [()]
+    innerList (Iso_decl _ _) = [()]
+
+instance ListCheck (OP_ITEM f) where
+    innerList (Op_decl l _ _ _) = innerList l
+    innerList (Op_defn _ _ _ _) = [()]
+
+instance ListCheck (PRED_ITEM f) where
+    innerList (Pred_decl l _ _) = innerList l
+    innerList (Pred_defn _ _ _ _) = [()]
+
+instance ListCheck DATATYPE_DECL where
+    innerList (Datatype_decl _ _ _) = [()]
+
+instance ListCheck VAR_DECL where
+    innerList (Var_decl l _ _) = innerList l
+
+-----------------------------------------------------------------------------
