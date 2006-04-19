@@ -16,19 +16,16 @@ import Common.Id
 import Common.Keywords
 import Common.Doc
 import Common.PPUtils
-
 import Common.AS_Annotation
-
 
 import CASL.AS_Basic_CASL
 import CASL.Fold
 
-
-instance (Pretty b,Pretty s,Pretty f) => Pretty (BASIC_SPEC b s f) where
-    pretty  = printBASIC_SPEC pretty pretty pretty 
+instance (Pretty b, Pretty s, Pretty f) => Pretty (BASIC_SPEC b s f) where
+    pretty = printBASIC_SPEC pretty pretty pretty 
                              
-printBASIC_SPEC :: (b ->Doc) -> (s ->Doc) -> (f->Doc) ->
-                    BASIC_SPEC b s f -> Doc
+printBASIC_SPEC :: (b -> Doc) -> (s -> Doc) -> (f -> Doc) 
+                -> BASIC_SPEC b s f -> Doc
 printBASIC_SPEC fB fS fF (Basic_spec l) = case l of
     [] -> specBraces empty
     _ -> vcat $ map (printAnnoted ( printBASIC_ITEMS fB fS fF)) l
@@ -36,9 +33,8 @@ printBASIC_SPEC fB fS fF (Basic_spec l) = case l of
 instance (Pretty b, Pretty s, Pretty f) => Pretty (BASIC_ITEMS b s f) where
     pretty = printBASIC_ITEMS pretty pretty pretty
         
-
 printBASIC_ITEMS :: (b -> Doc) -> (s -> Doc) -> (f -> Doc) 
-                      -> BASIC_ITEMS b s f -> Doc
+                 -> BASIC_ITEMS b s f -> Doc
 printBASIC_ITEMS fB fS fF sis = case sis of
     Sig_items s -> printSIG_ITEMS fS fF s
     Free_datatype l _ -> keyword freeS <+> keyword (typeS ++ pluralS l) <+>
@@ -53,23 +49,21 @@ printBASIC_ITEMS fB fS fF sis = case sis of
     Var_items l _ -> keyword (varS ++ pluralS l) <+>
                            fsep (punctuate semi $ map printVarDecl l)
     Local_var_axioms l f _  -> 
-            sep [ forallDoc <+> fsep (punctuate semi $ map printVarDecl l)
-                , printAnnotedBulletFormulas fF f]
+            fsep [fsep $ forallDoc : punctuate semi (map printVarDecl l)
+                 , printAnnotedBulletFormulas fF f]
     Axiom_items f _ -> printAnnotedBulletFormulas fF f
     Ext_BASIC_ITEMS b -> fB b
 
-
 printAnnotedBulletFormulas :: (f -> Doc) -> [Annoted (FORMULA f)] -> Doc
 printAnnotedBulletFormulas fF = vcat . map 
-    (printAnnoted (addBullet . (printFormula fF)))
+    (printAnnoted $ addBullet . printFormula fF)
 
-instance (Pretty s,Pretty f) => Pretty (SIG_ITEMS s f) where
+instance (Pretty s, Pretty f) => Pretty (SIG_ITEMS s f) where
     pretty = printSIG_ITEMS pretty pretty
-        
 
 printSIG_ITEMS :: (s -> Doc) -> (f -> Doc) -> SIG_ITEMS s f -> Doc
 printSIG_ITEMS fS fF sis = case sis of
-    Sort_items l _ ->  topKey (sortS ++ pluralS l) <+>
+    Sort_items l _ -> topKey (sortS ++ pluralS l) <+>
          semiAnnos (printSortItem fF) l
     Op_items l _  -> topKey (opS ++ pluralS l) <+> 
              semiAnnos (printOpItem fF) l
@@ -78,7 +72,6 @@ printSIG_ITEMS fS fF sis = case sis of
     Datatype_items l _ -> topKey (typeS ++ pluralS l) <+>
              semiAnnos printDATATYPE_DECL l
     Ext_SIG_ITEMS s -> fS s 
-
 
 printDATATYPE_DECL :: DATATYPE_DECL ->Doc
 printDATATYPE_DECL (Datatype_decl s a _) = case a of
