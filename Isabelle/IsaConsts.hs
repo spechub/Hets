@@ -18,8 +18,8 @@ import Isabelle.IsaSign
 
 -- * predefined sorts
 
-holType :: Sort
-holType = [IsaClass "hol_type"]
+hskClass :: IsaClass
+hskClass = IsaClass "hskTerm"
 
 isaTerm :: IsaClass
 isaTerm = IsaClass "type"
@@ -29,6 +29,9 @@ pcpoS = "pcpo"
 
 pcpo :: IsaClass
 pcpo = IsaClass pcpoS
+
+holType :: Sort
+holType = [isaTerm]
 
 dom :: Sort
 dom = [pcpo]

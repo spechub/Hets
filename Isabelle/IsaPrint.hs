@@ -226,7 +226,10 @@ printTrm b trm = case trm of
                                <+> printPlainTerm b t) es)
            <+> text "in" <+> printPlainTerm b i, lowPrio)
     IsaEq t1 t2 -> ((case t1 of
-        Const vn y -> text (new vn) <+> doubleColon <+> printType y
+        Const vn y -> let 
+            vv = text (new vn) 
+            tt = printType y 
+          in if y == noType then vv else (vv <+> doubleColon <+> tt)
         _ -> printParenTerm b (isaEqPrio + 1) t1) <+> text "=="
                    <+> printParenTerm b isaEqPrio t2, isaEqPrio)
     Tuplex cs c -> ((case c of
@@ -322,7 +325,7 @@ printNInstance t xs = text instanceS <+> text t <> doubleColon <>
      [] -> empty
      ys -> parens $ hsep $ punctuate comma
            $ map (doubleQuotes . printSort . snd) ys)
-    <> printClass (fst xs) $$ text "by intro_classes"
+    <+> printClass (fst xs) $$ text "by intro_classes"
 
 printTypeDecls :: Sign -> Doc
 printTypeDecls sig =
