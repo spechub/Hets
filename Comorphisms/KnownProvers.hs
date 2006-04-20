@@ -95,8 +95,8 @@ spassComorphisms :: Result [AnyComorphism]
 spassComorphisms = 
     do let max_sub_SPASS = top { sub_features = LocFilSub
                                , cons_features = 
-                                   (cons_features top) {onlyInjConstrs=False} }
-           idCASL =  Comorphism (IdComorphism CASL max_sub_SPASS)
+                                   (cons_features top) {emptyMapping = True} }
+           idCASL = Comorphism (IdComorphism CASL max_sub_SPASS)
        partOut <- (compComorphism idCASL (Comorphism CASL2SubCFOL) 
                    >>= (\x -> compComorphism x (Comorphism CASL2SPASS)))
        -- mod2SPASS <- compComorphism (Comorphism Modal2CASL) partOut
