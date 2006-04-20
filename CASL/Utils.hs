@@ -120,7 +120,11 @@ codeOutUniqueRecord rf mf = (mapRecord mf)
             eqFor s v1 v2 = Strong_equation (toSortTerm (toVarTerm v1 s))
                                           (toSortTerm (toVarTerm v2 s))
                                           nullRange
-            fresh_vars = snd . mapAccumL fresh_var Set.empty
+            -- fresh_vars produces new variables based on a list 
+            -- of defined variables 
+            -- args: (1) set of already used variable names 
+            --       (2) list of variables 
+            fresh_vars = mapAccumL fresh_var 
             fresh_var accSet (Var_decl vars sor _) = 
               let accSet' = Set.union (Set.fromList vars) accSet
                   (accSet'',vars') = mapAccumL nVar accSet' vars
@@ -130,23 +134,31 @@ codeOutUniqueRecord rf mf = (mapRecord mf)
               let v' = fromJust (find (not . flip Set.member aSet) 
                                  ([genVar v (i :: Int) | i<-[1..]]))
               in (Set.insert v' aSet,v')
-            vDecl' = fresh_vars vDecl
-            f'_rep = replace_varsF (build_vMap vDecl vDecl') rf f'
-            allForm = Quantification Universal vDecl' 
-                           (Implication f'_rep implForm True ps) ps
+            (vSet', vDecl')  = fresh_vars Set.empty vDecl
+            (_vSet'', vDecl'')  = fresh_vars vSet' vDecl
+            f'_rep_x = replace_varsF (build_vMap vDecl vDecl') rf f'
+            f'_rep_y = replace_varsF (build_vMap vDecl vDecl'') rf f'
+            allForm = Quantification Universal (vDecl'++vDecl'') 
+                           (Implication 
+                              (Conjunction [f'_rep_x,f'_rep_y] nullRange) 
+                              implForm True ps) nullRange
             implForm = assert (not (null vDecl))
-                       (let fs = concat (zipWith eqForms vDecl vDecl')
+                       (let fs = concat (zipWith eqForms vDecl' vDecl'')
                         in (if length fs == 1 
                                then head fs
-                               else Conjunction fs ps))
-            in Quantification Existential 
-                   vDecl (Conjunction [f',allForm] ps) ps
+                               else Conjunction fs nullRange))
+            in Conjunction 
+                   [Quantification Existential vDecl f' ps, 
+                    allForm] ps
          _ -> Quantification q vDecl f' ps 
     }
 
 -- | codeOutUniqueExtF compiles every unique_existential quantification
 -- to simple quantifications. It works recursively through the whole
 -- formula and only touches Unique_existential quantifications
+-- 
+-- exists! x . phi(x) ==>
+-- (exists x. phi(x)) /\ (forall x,y . phi(x) /\ phi(y) => x=y)
 codeOutUniqueExtF :: (f -> f) 
                   -- ^ this function replaces Qual_var in ExtFORMULA 
                   -> (f -> f) 
