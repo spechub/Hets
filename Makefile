@@ -295,6 +295,7 @@ nondoc_sources = $(wildcard utils/DrIFT-src/*.hs) \
     $(genrule_header_files) $(generated_rule_files) \
     $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hspp \
     Modal/GeneratePatterns.inline.hs \
+    Comorphisms/test/showKP.hs \
     CASL/CCC/FreeTypes.hs \
     Haskell/PreludeString.append.hs Haskell/ProgramaticaPrelude.hs \
     $(patsubst %.hs, %.der.hs, $(drifted_files))
@@ -637,6 +638,10 @@ hetpa: Syntax/hetpa.hs Syntax/*.hs
 
 ### HetCASL parser
 hetana: Static/hetana.hs Static/*.hs
+	$(HC) --make -o $@ $< $(HC_OPTS)
+
+### test program to check the known provers
+showKP: Comorphisms/test/showKP.hs Comorphisms/*.hs Common/*.hs Logic/*.hs
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### ATC test system
