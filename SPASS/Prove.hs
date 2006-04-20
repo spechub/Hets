@@ -72,7 +72,7 @@ import XSelection
 import Space
 
 import GUI.HTkUtils
-import GUI.GenericATP
+-- import GUI.GenericATP
 
 import qualified Common.Lib.Map as Map
 
@@ -194,7 +194,6 @@ adjustOrSetConfig :: (SPASSConfig -> SPASSConfig)
                   -- ^ resulting SPASSConfigsMap with the changes applied
 adjustOrSetConfig f k m = if (Map.member k m)
                             then Map.adjust f k m
--- changed, check it!!
                             else Map.insert k (f $ emptyConfig k) m
 
 {- |
@@ -204,7 +203,6 @@ adjustOrSetConfig f k m = if (Map.member k m)
 getConfig :: SPIdentifier -> SPASSConfigsMap -> SPASSConfig
 getConfig spid m = if (isJust lookupId)
                      then fromJust lookupId
--- changed, check it!!
                      else emptyConfig spid
   where
     lookupId = Map.lookup spid m
@@ -949,12 +947,9 @@ spassProveGUI thName th = do
             done)
       +> (saveConfiguration >>> do
             s <- readIORef stateRef
-            let cfgText = concatMap ((++"\n")) ["Configuration / Results:\n", 
-                                                show $ configsMap s] 
-{-- * has to be reworked
-                                                "\nResults:\n", 
-                                                showResMap (resultsMap s)]
---}
+            let (cfgList, resList) = getCfgText $ configsMap s
+                cfgText = unlines $ ("Configuration:\n":cfgList)
+                                    ++ ("\nResults:\n":resList)
             createTextSaveDisplay ("SPASS Configuration for Theory " ++ thName)
                                   (thName ++ ".spcf") cfgText
             done)
@@ -1007,14 +1002,26 @@ spassProveGUI thName th = do
                                  " not found!!"))
                          id (find ((==goal) . AS_Anno.senName) (goalsList s)),
                    iLP)
--- has to be reworked (together with spawnEvent +> saveConfiguration...)
-    showResMap mp = 
-        '{':(foldr  (\ (k,(r,outp)) resF -> 
-                             shows k . 
-                             (++) ":=\n    (" .  
-                             shows r . (++) ",\n     \"" .
-                             (++) (unlines outp) . (++) "\")\n" . resF) id 
-                    (Map.toList mp)) "}" 
+    getCfgText mp = ("{":lc, "{":lr)
+      where
+      (lc, lr) = 
+        Map.foldWithKey (\ k cfg (lCfg,lRes) ->
+                           let r = proof_status cfg
+                               outp = resultOutput cfg
+                           in
+                           ((show k
+                             ++ ":=GenericConfig {"
+                             ++ "timeLimit = " ++ show (timeLimit cfg)
+                             ++ ", timeLimitExceeded = "
+                             ++ show (timeLimitExceeded cfg)
+                             ++ ", extraOpts = "
+                             ++ show (extraOpts cfg)
+                             ++ "}," ):lCfg,
+                            (show k
+                             ++ ":=\n    ("
+                             ++ show r ++ ",\n     \""
+                             ++ (unlines outp) ++ "\")"):lRes))
+                        (["}"],["}"]) mp
     transNames nm pStat = 
         pStat { goalName = trN $ goalName pStat
               , usedAxioms = foldr (fil $ trN $ goalName pStat) [] $ 
