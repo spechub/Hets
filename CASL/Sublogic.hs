@@ -235,7 +235,7 @@ sublogics_all = let bools = [True, False] in
     , e_b <- bools
     , fo <- [FOL, GHorn, Horn, Atomic]
     , c_f <- NoSortGen : [ SortGen m s | m <- bools, s <- bools]
-    , s_f == NoSub || fo /= Atomic]
+    ]
 ------------------------------------------------------------------------------
 -- Conversion functions (to String)
 ------------------------------------------------------------------------------
@@ -300,19 +300,6 @@ sublogics_min = sublogics_join min min (joinSortGenFeature max) min
 --
 comp_list :: [CASL_Sublogics] -> CASL_Sublogics
 comp_list l = foldl sublogics_max bottom l
-
--- adjust illegal combination "subsorting with atomic logic"
---
-adjust_logic :: CASL_Sublogics -> CASL_Sublogics
-adjust_logic x = if (adjust_check x) then
-                   x { which_logic = Horn }
-                 else
-                   x
-
--- check for illegal combination "subsorting with atomic logic"
---
-adjust_check :: CASL_Sublogics -> Bool
-adjust_check x = (has_sub x) && (which_logic x == Atomic)
 
 -- map a function returning Maybe over a list of arguments
 -- . a list of Pos is maintained by removing an element if the
@@ -703,7 +690,7 @@ pr_make_sorts s =
 pr_basic_spec :: CASL_Sublogics -> BASIC_SPEC b s f -> BASIC_SPEC b s f
 pr_basic_spec l (Basic_spec s) =
   let
-    res   = map (pr_annoted_dt (adjust_logic l) pr_basic_items) s
+    res   = map (pr_annoted_dt l pr_basic_items) s
     items = catMaybes $ map fst res
     toAdd = concat $ map snd res
     ret   = if (toAdd==[]) then
@@ -885,10 +872,7 @@ pr_sort_item l (Subsort_defn s1 v s2 f p) =
 pr_sort_item _ (Iso_decl s p) = Just (Iso_decl s p)
 
 pr_symb_items :: CASL_Sublogics -> SYMB_ITEMS -> Maybe SYMB_ITEMS
-pr_symb_items l1 (Symb_items k s p) =
-            let
-              l = adjust_logic l1
-            in
+pr_symb_items l (Symb_items k s p) =
               if (in_x l k sl_symb_kind) then
                 let
                   (res,pos) = mapPos 1 p (pr_symb l) s
@@ -901,10 +885,7 @@ pr_symb_items l1 (Symb_items k s p) =
                 Nothing
 
 pr_symb_map_items :: CASL_Sublogics -> SYMB_MAP_ITEMS -> Maybe SYMB_MAP_ITEMS
-pr_symb_map_items l1 (Symb_map_items k s p) =
-                let
-                  l = adjust_logic l1
-                in
+pr_symb_map_items l (Symb_map_items k s p) =
                   if (in_x l k sl_symb_kind) then
                     let
                       (res,pos) = mapPos 1 p (pr_symb_or_map l) s
@@ -947,10 +928,8 @@ pr_sign :: CASL_Sublogics -> Sign f e -> Sign f e
 pr_sign _sl s = s -- do something here
 
 pr_morphism :: CASL_Sublogics -> Morphism f e m -> Morphism f e m
-pr_morphism l1 m =
-  let
-    l = adjust_logic l1
-  in m { msource = pr_sign l $ msource m
+pr_morphism l m =
+     m { msource = pr_sign l $ msource m
        , mtarget = pr_sign l $ mtarget m
        , fun_map = pr_fun_map l $ fun_map m
        , pred_map = pr_pred_map l $ pred_map m }
@@ -973,8 +952,7 @@ pr_fun_map_entry l (_,t) (_,b) =
 -- and the projected signature
 --
 pr_epsilon :: Ext f e m -> CASL_Sublogics -> Sign f e -> Morphism f e m
-pr_epsilon extEm l1 s = let
-                    l = adjust_logic l1
+pr_epsilon extEm l s = let
                     new = pr_sign l s
                   in
                     embedMorphism extEm new s
