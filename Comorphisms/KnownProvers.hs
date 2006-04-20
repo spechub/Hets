@@ -1,6 +1,5 @@
 {-# OPTIONS -cpp #-}
-{-| 
-   
+{- |
 Module      :  $Header$
 Copyright   :  (c) Klaus Lüttich, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -11,7 +10,6 @@ Portability :  non-portable(Logic)
 
 This module provides a map of provers to their most useful composed
 comorphisms.
-
 -}
 
 {- todo:
@@ -22,8 +20,6 @@ module Comorphisms.KnownProvers (KnownProversMap,
                                  shrinkKnownProvers,
                                  showKnownProvers,
                                  showAllKnownProvers) where
-
-import Control.Monad
 
 import qualified Common.Lib.Map as Map
 
@@ -57,25 +53,25 @@ type KnownProversMap = Map.Map String [AnyComorphism]
 
 -- | a map of known prover names to a list of simple (composed) comorphisms
 knownProvers :: Result KnownProversMap
-knownProvers = 
+knownProvers =
     do isaCs <- isaComorphisms
        spassCs <- spassComorphisms
        return (Map.fromList [("Isabelle", isaCs),
                              ("SPASS", spassCs)])
 
 shrinkKnownProvers :: G_sublogics -> KnownProversMap -> KnownProversMap
-shrinkKnownProvers sub = Map.filter (not . null) . 
+shrinkKnownProvers sub = Map.filter (not . null) .
                          Map.map (filter (lessSublogicComor sub))
 
 isaComorphisms :: Result [AnyComorphism]
 isaComorphisms = do
        -- CASL
-       pc2IHOL <- compComorphism (Comorphism PCFOL2CFOL) 
+       pc2IHOL <- compComorphism (Comorphism PCFOL2CFOL)
                                  (Comorphism CFOL2IsabelleHOL)
        subpc2IHOL <- compComorphism (Comorphism CASL2PCFOL) pc2IHOL
 #ifdef CASLEXTENSIONS
        -- CoCASL
-       co2IHOL <- 
+       co2IHOL <-
            (compComorphism (Comorphism CoCASL2CoPCFOL)
                            (Comorphism CoPCFOL2CoCFOL)
             >>= (\x -> compComorphism x (Comorphism CoPCFOL2CoCFOL)))
@@ -92,20 +88,20 @@ isaComorphisms = do
                Comorphism HasCASL2IsabelleHOL]
 
 spassComorphisms :: Result [AnyComorphism]
-spassComorphisms = 
+spassComorphisms =
     do let max_sub_SPASS = top { sub_features = LocFilSub
-                               , cons_features = 
+                               , cons_features =
                                    (cons_features top) {emptyMapping = True} }
            idCASL = Comorphism (IdComorphism CASL max_sub_SPASS)
-       partOut <- (compComorphism idCASL (Comorphism CASL2SubCFOL) 
+       partOut <- (compComorphism idCASL (Comorphism CASL2SubCFOL)
                    >>= (\x -> compComorphism x (Comorphism CASL2SPASS)))
        -- mod2SPASS <- compComorphism (Comorphism Modal2CASL) partOut
        return [Comorphism CASL2SPASS,partOut]
 
 showAllKnownProvers :: IO ()
-showAllKnownProvers = 
+showAllKnownProvers =
     do let Result ds mkpMap = knownProvers
-       putStrLn "Diagnosises:"
+       putStrLn "Diagnostics:"
        putStrLn $ unlines $ map show ds
        maybe (return ()) showKnownProvers mkpMap
 
@@ -115,4 +111,3 @@ showKnownProvers km =
        putStrLn $ unlines $ map form $ Map.toList $ km
     where form (name,cl) =
               name ++ concatMap (\c -> "\n       "++show c) cl
-
