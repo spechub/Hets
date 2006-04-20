@@ -23,6 +23,8 @@ module Comorphisms.KnownProvers (KnownProversMap,
 
 import qualified Common.Lib.Map as Map
 
+import System.Exit (exitFailure)
+
 import Common.Result
 
 import Logic.Logic () -- hiding (top)
@@ -103,7 +105,7 @@ showAllKnownProvers =
     do let Result ds mkpMap = knownProvers
        putStrLn "Diagnostics:"
        putStrLn $ unlines $ map show ds
-       maybe (return ()) showKnownProvers mkpMap
+       maybe exitFailure showKnownProvers mkpMap
 
 showKnownProvers :: KnownProversMap -> IO ()
 showKnownProvers km =
