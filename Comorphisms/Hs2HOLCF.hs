@@ -70,7 +70,8 @@ import Isabelle.Translate as Translate
 transTheory :: Continuity -> Bool -> 
   HatAna.Sign -> [Named PrDecl] -> Result (IsaSign.Sign, [Named IsaSign.Sentence])
 transTheory c m sign sens = do 
-  sign' <- transSignature c m sign
+  sign' <- -- trace (showL (HatAna.instances sign)) $ 
+             transSignature c m sign
   (sign'',sens'') <- transSentences c sign' (map sentence sens)
   return (sign'', sens'')
 
@@ -82,20 +83,24 @@ data ExpRole = FunDef | InstDef | PLogic
 
 transSentences :: Continuity -> 
     IsaSign.Sign -> [PrDecl] -> Result (IsaSign.Sign, [Named IsaSign.Sentence])
-transSentences c sign ls =  do
+transSentences c sign ls =  do 
                             xx0 <- mapM (transSentence c sign FunDef) ls
                             xx <- return $ removeEL xx0 
                             xs <- return [[s] | [s] <- xx, extAxType s /= noType]
                             ys <- return $ fixMRec c xs
                             ac <- return $ newConstTab c ys
                             nc <- return $ Map.union (constTab sign) ac
-                            nsig <- return $ sign {constTab = nc}
-                            zz0 <- mapM (transSentence c nsig InstDef) ls
+                            nsig <- -- trace (showL $ Map.toList nc) $ 
+                                    -- trace (showL ls) $ 
+                                     return $ sign {constTab = nc}
+                            zz0 <- trace (showL $ Map.toList $ arities $ tsig nsig) $ mapM (transSentence c nsig InstDef) ls
                             zz <- return $ removeEL zz0
                             zw <- return $ concat zz
-                            zs <- return [s | s <- zw, extAxType s /= noType]
+                            zs <- return [s | s <- zw, not $ 
+                                   elem (getTermName $ extRightH s)
+                                    ["DollarXMinusXMinusXSlashXEqX",
+                                      "DollarXMinusXMinusXEqXEqX"]]
                             return (nsig, ys ++ zs) 
-
 
 transSentence :: Continuity -> 
       IsaSign.Sign -> ExpRole -> PrDecl -> Result [Named IsaSign.Sentence]
@@ -258,7 +263,9 @@ transIMatch a sign t s
   (HsDeclStruct.HsMatch _ nm ps (HsGuardsStruct.HsBody ex) _,
    ct) -> 
          let tx = transExp a ct ex
-             df = mkVName $ showIsaName nm
+             df = if pp nm == "==" then mkVName "hEq" 
+                  else if pp nm == "/=" then mkVName "hNEq"
+                  else mkVName $ showIsaName nm
              c = transClass $ getInstClass t           -- instantiated class
              x = transType a [] $ getInstType t          -- instatiating type
              w = maybe [] id $ Map.lookup (typeId x) (arities $ tsig sign)  
@@ -271,15 +278,17 @@ transIMatch a sign t s
              qs = map (transPat a ct) ps
                         -- in ty, replaces the variable of class c with type x,
                         -- constraining variables in x with cs
-             in return $ makeSentence a ndf nty df qs tx 
+             tst = makeSentence a ndf nty df qs tx 
+             in return tst 
   _ -> fail "Haskell2IsabelleHOLCF.transIMatch, case not supported"
 
 
 ------------------------------ Signature translation -----------------------------
 
 transSignature :: Continuity -> Bool -> HatAna.Sign -> Result IsaSign.Sign
-transSignature c m sign =  -- trace ("HatAna instances " ++ showL $ HatAna.instances sign) $ 
-  Result [] $ Just $ IsaSign.emptySign 
+transSignature c m sign =  let -- trace ("HatAna instances " ++ showL $ HatAna.instances sign) $ 
+ xx = getDomainTab c (HatAna.values sign)
+ in Result [] $ Just $ IsaSign.emptySign 
   { baseSig = case (c,m) of 
                    (IsCont,False) -> HsHOLCF_thy
                    (NotCont,False) -> HsHOL_thy
@@ -289,10 +298,10 @@ transSignature c m sign =  -- trace ("HatAna instances " ++ showL $ HatAna.insta
            { 
              classrel = getClassrel c (HatAna.types sign),
              abbrs = getAbbrs c (HatAna.types sign),
-             arities = getArities c (HatAna.instances sign) 
+             arities = getArities c xx (HatAna.instances sign) 
            },
-    constTab = getConstTab c (HatAna.values sign),
-    domainTab = getDomainTab c (HatAna.values sign)
+    constTab =  getConstTab c (HatAna.values sign),
+    domainTab = xx
   }
 
 ------------------------------ translation of types -------------------------------
@@ -326,7 +335,7 @@ getSort :: Continuity -> [HsType] -> PNT -> IsaSort
 getSort r c t = case c of 
    [] -> case r of 
              IsCont -> dom
-             NotCont -> [isaTerm]
+             NotCont -> holType
    x:cs -> let a = getInstType x 
                b = getInstClass x
                d = getLitName a
@@ -450,8 +459,8 @@ transClassInfo :: Continuity -> (Kind, HsTypeInfo) -> Maybe [IsaClass]
 transClassInfo c p = case snd p of 
   TiTypes.Class _ _ _ _ -> 
     Just $ remove_duplicates $ (case c of 
-                       IsCont -> pcpo 
-                       NotCont -> isaTerm) : (map transClass (extClassInfo $ snd p))
+                       IsCont -> dom 
+                       NotCont -> holType) ++ (map transClass (extClassInfo $ snd p))
   _ -> Nothing 
 
 ------------------------- translation of Abbrs (from KEnv) -----------------------
@@ -472,18 +481,22 @@ transAbbrsInfo c p = case (snd p) of
 
 ---------------------------- translation of arities --------------------------------
 
-getArities :: Continuity -> HsInstances -> IsaSign.Arities
-getArities c db = 
-      Map.fromList (groupInst $ getTypeInsts c db) -- \$ getIsaInsts db  
+getArities :: Continuity -> DomainTab -> HsInstances -> IsaSign.Arities
+getArities c dt db = trace (showL db) $ 
+      Map.fromList (groupInst $ getTypeInsts c dt db) -- \$ getIsaInsts db  
 
-getTypeInsts :: Continuity -> HsInstances -> [IsaTypeInsts]
-getTypeInsts c db = 
-  [(typeId $ transType c [] $ getMainInstType x, [transInst c x]) | x <- db]
+getTypeInsts :: Continuity -> DomainTab -> HsInstances -> [IsaTypeInsts]
+getTypeInsts c dt db = [(typeId $ transType c [] $ getMainInstType x, 
+                          [transInst c x]) | x <- db]
+                         ++ [(u,[(IsaClass "Eq", [])]) | [(IsaSign.Type u v [],_)] <- dt]
 
 transInst :: Continuity -> HsInstance -> (IsaClass, [(IsaType, [IsaClass])])
-transInst c i = let x = prepInst i in 
-  (transClass $ fst x, 
-     reverse [(transType c [] a, map transClass b) | (a,b) <- snd x])
+transInst c i = let x = prepInst i 
+                    w = case c of 
+                         IsCont -> pcpo
+                         NotCont -> isaTerm
+  in (transClass $ fst x, 
+     reverse [(transType c [] a, w:map transClass b) | (a,b) <- snd x])
 
 ------------------------------ translation of domaintab ---------------------------
 
@@ -523,10 +536,10 @@ transMExp a cs t = case t of
                      (IsaSign.Type "int" [] [])
        HsLit _ (HsFloatPrim n) -> return $ case a of
            IsCont -> 
-              Const (mkVName $ "(Def (" ++ show n ++ "::int))") 
+              Const (mkVName $ "(Def (" ++ show n ++ "::Rat))") 
                      (IsaSign.Type "dRat" [] [])
            NotCont -> 
-              Const (mkVName $ "(" ++ show n ++ "::int)") 
+              Const (mkVName $ "(" ++ show n ++ "::Rat)") 
                      (IsaSign.Type "Rat" [] [])
        HsList xs -> return $ case xs of 
           [] -> case a of 
@@ -714,11 +727,13 @@ transHV a s x = let
       flist = [mFree "x", mFree "y"]
    in if qq == "error" then Nothing else return $
    case qq of  
-   "==" -> if tag == False then mkVConst eqV
-           else 
-     (termMAbs IsCont flist
-        (termLift $ termMAppl NotCont (mkVConst eqV)
-           flist))
+   "==" -> mkConst "hEq"
+   "/=" -> mkConst "hNEq"
+--   "==" -> if tag == False then mkVConst "eqV"
+--           else 
+--     (termMAbs IsCont flist
+--        (termLift $ termMAppl NotCont (mkVConst eqV)
+--           flist))
    "&&" -> if tag == False then mkVConst conjV
             else mkConst "trand" 
    "||" -> if tag == False then mkVConst disjV

@@ -259,6 +259,12 @@ xDummy = conDouble "dummy"
 holEq :: IsaTerm -> IsaTerm -> IsaTerm
 holEq t1 t2 = termMAppl NotCont (con eqV) [t1, t2]
 
+getTermName :: Term -> String
+getTermName a = case a of 
+  Const x y -> new x
+  Free x y -> new x
+  _ -> "_"
+
 -------------------------------- Name translation ----------------------------------
 -- Translating to strings compatible with Isabelle
 
@@ -323,12 +329,14 @@ transTN :: Continuity -> String -> String -> String
 transTN c s1 s2 = case (c,s1,s2) of 
    (IsCont,"Prelude","Bool") -> "tr"
    (IsCont,"Prelude","Int") -> "dInt"
+   (IsCont,"Prelude","Integer") -> "dInt"
    (IsCont,"Prelude","Rational") -> "dRat"
    (IsCont,"Prelude","[]") -> "llist"
    (IsCont,"Prelude","(,)") -> "*"
    (NotCont,"Prelude","Bool") -> "bool"
    (NotCont,"Prelude","Int") -> "int"
-   (IsCont,"Prelude","Rational") -> "Rat"
+   (NotCont,"Prelude","Integer") -> "int"
+   (NotCont,"Prelude","Rational") -> "Rat"
    (NotCont,"Prelude","[]") -> "list"
    (NotCont,"Prelude","(,)") -> "*"
    _ -> transPath s1 s2 
