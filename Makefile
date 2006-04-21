@@ -75,10 +75,13 @@ HC_FLAGS = \
 
 HC_INCLUDE = $(addprefix -i, $(INCLUDE_PATH))
 
-logics = CASL HasCASL Isabelle Modal CoCASL COL CspCASL CASL_DL SPASS OWL_DL ConstraintCASL
+logics = CASL HasCASL Isabelle Modal CoCASL COL CspCASL CASL_DL SPASS \
+    OWL_DL ConstraintCASL
 
-TESTTARGETS += test_parser hetpa hetana Test.o wrap isa fromKif \
-    atermlibtest hatermdiff atctest atctest2
+TESTTARGETFILES += CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
+    Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs Static/hetana.hs \
+    ATC/ATCTest.hs ATC/ATCTest2.hs Common/ATerm/ATermLibTest.hs \
+    Common/ATerm/ATermDiffMain.hs Common/annos.hs Common/test_parser.hs
 
 UNI_PACKAGE_CONF = $(wildcard ../uni/uni-package.conf)
 ifneq ($(strip $(UNI_PACKAGE_CONF)),)
@@ -92,7 +95,7 @@ uni_dirs = ../uni/davinci ../uni/graphs ../uni/events \
 
 uni_sources = $(wildcard $(addsuffix /haddock/*.hs, $(uni_dirs))) \
     $(wildcard ../uni/htk/haddock/*/*.hs)
-TESTTARGETS += hetdg OWL_DL/readAStest taxonomy
+TESTTARGETFILES += GUI/hetdg.hs OWL_DL/ToHaskellAS.hs Taxonomy/taxonomyTool.hs
 endif
 
 ### list of directories to run checks in
@@ -136,6 +139,9 @@ logics += Haskell
 derived_sources += Haskell/PreludeString.hs $(LEX_DIR)/HsLex.hs \
     $(LEX_DIR)Gen/HsLexerGen
 
+utils/appendHaskellPreludeString: utils/appendHaskellPreludeString.hs
+	$(HC) --make -o $@ $<
+
 APPENDPRELUDESTRING = utils/appendHaskellPreludeString \
     Haskell/ProgramaticaPrelude.hs
 
@@ -170,8 +176,10 @@ Haskell/ATC_Haskell.der.hs: $(Haskell_files) $(GENRULES)
 hs_der_files += Haskell/TiATC.hs Haskell/TiDecorateATC.hs Haskell/TiPropATC.hs
 
 TESTDIRS += ToHaskell Haskell/test
-TESTTARGETS += hana h2hf
+TESTTARGETFILES += Haskell/hana.hs Haskell/h2h.hs Haskell/h2hf.hs
 endif
+
+TESTTARGETS = Test.o $(subst .hs,,$(TESTTARGETFILES))
 
 ### Profiling (only for debugging)
 ### Attention every module must be compiled with profiling or the linker
@@ -315,16 +323,13 @@ tax_objects = $(patsubst %.hs, %.o, $(tax_sources))
 
 .PHONY : all hets-opt hets-optimized clean o_clean clean_pretty \
     real_clean bin_clean distclean \
-    check capa hacapa wrap isa h2h h2hf clean_genRules genRules \
-    taxonomy count doc apache_doc post_doc4apache fromKif \
+    check capa hacapa h2h h2hf clean_genRules genRules \
+    count doc apache_doc post_doc4apache fromKif \
     derivedSources install_hets install release cgi patch ghci
 
 .SECONDARY : %.hs %.d $(generated_rule_files) $(gen_inline_axiom_files)
 
 patch:
-
-hets: $(sources) $(derived_sources)
-	$(HC) --make -o $@ hets.hs $(HC_OPTS)
 
 hets-opt:
 	$(MAKE) distclean
@@ -532,27 +537,7 @@ o_clean:
 bin_clean:
 	$(RM) hets
 	$(RM) hets.cgi
-	$(RM) test_parser
-	$(RM) CASL/fromKif
-	$(RM) CASL/capa
-	$(RM) HasCASL/hacapa
-	$(RM) Haskell/hana
-	$(RM) Haskell/wrap
-	$(RM) Isabelle/isa
-	$(RM) Haskell/h2h
-	$(RM) Haskell/h2hf
-	$(RM) Syntax/hetpa
-	$(RM) Static/hetana
-	$(RM) GUI/hetdg
-	$(RM) hetpa
-	$(RM) hetana
-	$(RM) hetdg
-	$(RM) atctest2
-	$(RM) atctest
-	$(RM) Common/annos
-	$(RM) Common/test_parser
-	$(RM) Taxonomy/taxonomyTool
-	$(RM) OWL_DL/readAStest
+	$(RM) $(TESTTARGETS)
 
 clean_pretty: 
 	$(RM) pretty/*.c.* pretty/*.h.* pretty/gen_it_* \
@@ -586,38 +571,14 @@ ghci: $(derived_sources)
 ### CASL parser
 fromKif: CASL/fromKif
 
-CASL/fromKif: CASL/fromKif.hs Common/*.hs CASL/*.hs
-	$(HC) --make -o $@ $< $(HC_OPTS)
-
 ### CASL parser
 capa: CASL/capa
-
-CASL/capa: CASL/capa.hs Common/*.hs CASL/*.hs
-	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### HasCASL parser
 hacapa: HasCASL/hacapa
 
-HasCASL/hacapa: HasCASL/hacapa.hs Common/*.hs HasCASL/*.hs
-	$(HC) --make -o $@ $< $(HC_OPTS)
-
-### Haskell wrapper parser
-wrap: Haskell/wrap
-
-Haskell/wrap: Haskell/wrap.hs Common/*.hs Haskell/Wrapper.hs
-	$(HC) --make -o $@ $< $(HC_OPTS)
-
-### Isar parser
-isa: Isabelle/isa
-
-Isabelle/isa: Isabelle/isa.hs Common/*.hs Isabelle/*.hs
-	$(HC) --make -o $@ $< $(HC_OPTS)
-
 ### Haskell analysis
 hana: Haskell/hana
-
-Haskell/hana: Haskell/hana.hs Haskell/HatAna.hs Haskell/PreludeString.hs
-	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### Haskell to Isabelle-HOLCF translation
 h2hf: Haskell/h2hf
@@ -629,50 +590,8 @@ Haskell/h2hf: Haskell/h2hf.hs Haskell/*.hs Isabelle/*.hs Common/*.hs \
 ### HasCASL to Haskell translation
 h2h: Haskell/h2h
 
-Haskell/h2h: Haskell/h2h.hs Haskell/*.hs HasCASL/*.hs
-	$(HC) --make -o $@ $< $(HC_OPTS)
-
-### HetCASL parser
-hetpa: Syntax/hetpa.hs Syntax/*.hs
-	$(HC) --make -o $@ $< $(HC_OPTS)
-
-### HetCASL parser
-hetana: Static/hetana.hs Static/*.hs
-	$(HC) --make -o $@ $< $(HC_OPTS)
-
 ### test program to check the known provers
 showKP: Comorphisms/test/showKP.hs Comorphisms/*.hs Common/*.hs Logic/*.hs
-	$(HC) --make -o $@ $< $(HC_OPTS)
-
-### ATC test system
-atctest: ATC/ATCTest.hs ATC/*.hs
-	$(HC) --make -o $@ $< $(HC_OPTS)
-
-atctest2: ATC/ATCTest2.hs Common/SimpPretty.hs Common/ATerm/*.hs \
-    Common/Lib/*.hs
-	$(HC) --make -o $@ $< $(HC_OPTS)
-
-### ATerm.Lib test system
-atermlibtest: Common/ATerm/ATermLibTest.hs Common/SimpPretty.hs \
-    Common/ATerm/*.hs Common/Lib/*.hs
-	$(HC) --make -o $@ $< $(HC_OPTS)
-
-hatermdiff: Common/ATerm/ATermDiffMain.hs Common/SimpPretty.hs \
-    Common/ATerm/*.hs Common/Lib/*.hs
-	$(HC) --make -o $@ $< $(HC_OPTS)
-
-### OWL_DL test target
-OWL_DL/readAStest: OWL_DL/ToHaskellAS.hs Common/ATerm/*.hs \
-   Common/Lib/*.hs OWL_DL/*.hs
-	$(HC) --make -o $@ $< $(HC_OPTS)
-
-### HetCASL with dev graph
-hetdg: GUI/hetdg.hs $(drifted_files) *.hs
-	$(HC) --make -o $@ $< $(HC_OPTS)
-
-taxonomy: Taxonomy/taxonomyTool
-
-Taxonomy/taxonomyTool: Taxonomy/taxonomyTool.hs $(tax_sources)
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### run tests in other directories
@@ -693,8 +612,8 @@ hets.hs: Driver/Version.hs
 ## rules for DrIFT
 .SUFFIXES:
 
-%: %.hs
-	$(HC) --make -o $@ $<
+%: %.hs $(sources) $(derived_sources)
+	$(HC) --make -o $@ $< $(HC_OPTS)
 
 %.hs: %.y
 	$(HAPPY) -o $@.tmp $<
@@ -715,7 +634,7 @@ hets.hs: Driver/Version.hs
 
 ## rule for cpp and haddock
 %.hspp: %.hs
-	$(HC) -E -cpp -DUNI_PACKAGE -optP -P $<
+	$(HC) -E -cpp -DUNI_PACKAGE -DCASLEXTENSIONS -DPROGRAMATICA -optP -P $<
 
 ## compiling rules for object and interface files
 %.o %.hi: %.hs
@@ -755,4 +674,3 @@ Modal/ModalSystems.hs: Modal/GeneratePatterns.inline.hs.in \
 	$(RM) $@
 	$(PERL) utils/genTransMFormFunc.pl $< $@
 	chmod 444 $@
-
