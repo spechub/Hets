@@ -2,7 +2,7 @@
 
 .PHONY: check
 
-check: hets
+check: hets showKP
 	./runcheck.sh
 
 %:
