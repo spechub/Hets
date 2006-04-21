@@ -1,0 +1,51 @@
+\documentclass[11pt,a4paper,twoside]{article}
+
+\usepackage{ngerman}
+\usepackage[latin1]{inputenc}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{moreverb}
+
+\begin{document}
+
+Modul: \texttt{GUI/GenericATP.hs} stellt \texttt{genericATPgui} zur Verf"ugung.
+
+\section*{State}
+Festhalten in eigenem Model \texttt{GUI/GenericATPState.hs}.
+
+\begin{itemize}
+\item GenericConfig, dabei \texttt{configsMap} und \texttt{resultsMap} zusammenfassen, \texttt{SPASSResult} in \texttt{SPASSConfig} aufgehen lassen als Felder
+\item Typ-Parameter:
+    \begin{itemize}
+    \item Signatur
+    \item Formeltyp (z.B. \texttt{SPTerm})
+    \item ProofTree (z.B. \texttt{()})
+    \item Beweiserspezifischer Zustand (sollte LogicalPart enthalten) \texttt{pst}
+    \end{itemize}
+\item Theoriename und Beweisername als Parameter zur Funktion \texttt{genericATPgui}.
+\end{itemize}
+
+
+\begin{verbatim}
+genericATPgui :: ATPFunctions
+              -> String -- ^ Prover name
+              -> String -- ^ Theory name
+              -> Theory sign sentence proof_tree
+              -> IO (Proof_status proof_tree)
+
+ATPFunctions = ATPFunctions
+    { initialProverState :: String -- ^ Theory name
+                         -> [Named sentence]
+                         -> pst,
+      ...
+      prepareSenNames,
+      runProver,
+      prepareLP, -- soll ersetzt werden durch addToLP
+      addToLP :: pst -> Named sentence -> pst
+    }
+\end{verbatim}
+
+
+
+
+\end{document}
