@@ -85,8 +85,8 @@ indexsuffix =  option "" (char '.' <:> nat)
 typevar :: Parser String
 typevar = try (string "?'") <++> ident <++> option "" (char '.' <:> nat)
 
-typeP :: Parser String
-typeP = typefree <|> typevar <|> nameref
+typeP :: Parser Token
+typeP = lexP typefree <|> lexP typevar <|> namerefP
 
 var :: Parser String
 var = try (char '?' <:> isaLetter) <++> restident <++> indexsuffix
@@ -187,7 +187,8 @@ mixfix = lexS "(" >>
      <|> (forget $ lexS "structure")) << lexS ")"
 
 atom :: Parser String
-atom = var <|> typeP -- nameref covers nat and symident keywords
+atom = var <|> typefree <|> typevar <|> nameref 
+        -- nameref covers nat and symident keywords
 
 args :: Parser [Token]
 args = many $ lexP atom
@@ -221,7 +222,7 @@ optinfix :: Parser ()
 optinfix = option () $ parensP infixP
 
 types :: Parser [Typespec]
-types = lexS typesS >> many1 (typespec << (lexS "=" >> lexP typeP >> optinfix))
+types = lexS typesS >> many1 (typespec << (lexS "=" >> typeP >> optinfix))
 
 typedecl :: Parser [Typespec]
 typedecl = lexS typedeclS >> many1 (typespec << optinfix)
@@ -235,7 +236,7 @@ arity = fmap (:[]) namerefP <|> do
 data Const = Const Token Token
 
 consts :: Parser [Const]
-consts = lexS constsS >> many1 (bind Const nameP (lexS "::" >> lexP typeP
+consts = lexS constsS >> many1 (bind Const nameP (lexS "::" >> typeP
                                           << option () mixfix))
 
 axmdecl :: Parser Token
@@ -308,7 +309,7 @@ mltext :: Parser Token
 mltext = lexS mlS >> lexP isaText
 
 cons :: Parser [Token]
-cons = bind (:) nameP (many $ lexP typeP) << option () mixfix
+cons = bind (:) nameP (many typeP) << option () mixfix
 
 data Dtspec = Dtspec Typespec [[Token]]
 
