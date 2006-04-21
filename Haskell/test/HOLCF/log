@@ -10,6 +10,10 @@ constants
   fliftbin :: "('a => 'b => 'c) => 'a lift -> 'b lift -> 'c lift"
 Proving isomorphism properties of domain HsHOLCF.llist ...
 Proving induction properties of domain HsHOLCF.llist ...
+### Specification of constant HsHOLCF.hEq :: "tr -> tr -> tr"
+### is strictly less general than the declared type
+### Specification of constant HsHOLCF.hEq :: "int lift -> int lift -> tr"
+### is strictly less general than the declared type
 Loading theory "ex_class_hc"
 structure Header :
   sig val initialize : string list -> unit val record : string -> unit end
@@ -54,8 +58,7 @@ val it =
      ex_class_hc} : Theory.theory
 val it =
    [("ex_class_hc.myEqual_def",
-         "myEqual ==
-            LAM x y. If (LAM x y. Def (x = y))$x$y then TT else FF fi"),
+         "myEqual == LAM x y. If hEq$x$y then TT else FF fi"),
       ("ex_class_hc.Joker_class.intro",
          "OFCLASS(?'a, pcpo_class) ==> OFCLASS(?'a, Joker_class)"),
       ("ex_class_hc.Prelude_Color.reach", "fix$Prelude_Color_copy$?x = ?x"),
@@ -200,9 +203,7 @@ val it =
          "is_MyCons == Prelude_MyList_when$FF$(LAM a P'. TT)"),
       ("ex_class_hc.Prelude_MyList_methodOne_def", "methodOne == myEqual"),
       ("ex_class_hc.Prelude_MyList_methodTwo_def",
-         "methodTwo ==
-            LAM x y.
-               If (LAM x y. Def (x = y))$y$TT then Red$x else Blue$x fi"),
+         "methodTwo == LAM x y. If hEq$y$TT then Red$x else Blue$x fi"),
       ("ex_class_hc.Prelude_MPList.match_MPNil_def",
          "match_MPNil ==
             Prelude_MPList_when$(return$())$(LAM a b P'. fail)"),
@@ -227,6 +228,10 @@ constants
   fliftbin :: "('a => 'b => 'c) => 'a lift -> 'b lift -> 'c lift"
 Proving isomorphism properties of domain HsHOLCF.llist ...
 Proving induction properties of domain HsHOLCF.llist ...
+### Specification of constant HsHOLCF.hEq :: "tr -> tr -> tr"
+### is strictly less general than the declared type
+### Specification of constant HsHOLCF.hEq :: "int lift -> int lift -> tr"
+### is strictly less general than the declared type
 Loading theory "ex_fibon_hc"
 structure Header :
   sig val initialize : string list -> unit val record : string -> unit end
@@ -250,9 +255,9 @@ val it =
          "fibon ==
             FIX fibon.
                run$(return$(LAM n.
-                    If (LAM x y. Def (x = y))$n$(Def 0)
+                    If hEq$n$(Def 0)
                        then Def 1
-                       else If (LAM x y. Def (x = y))$n$(Def 1)
+                       else If hEq$n$(Def 1)
                           then Def 1
                           else fliftbin
                            op +$(fibon$(fliftbin
@@ -272,6 +277,10 @@ constants
   fliftbin :: "('a => 'b => 'c) => 'a lift -> 'b lift -> 'c lift"
 Proving isomorphism properties of domain HsHOLCF.llist ...
 Proving induction properties of domain HsHOLCF.llist ...
+### Specification of constant HsHOLCF.hEq :: "tr -> tr -> tr"
+### is strictly less general than the declared type
+### Specification of constant HsHOLCF.hEq :: "int lift -> int lift -> tr"
+### is strictly less general than the declared type
 Loading theory "ex_let_hc"
 structure Header :
   sig val initialize : string list -> unit val record : string -> unit end
@@ -297,8 +306,7 @@ val it =
                let testName1 >>= myEqual$a$b
                in Let (myEqual$b$c) (Rep_CFun (trand$testName1))"),
       ("ex_let_hc.myEqual_def",
-         "myEqual ==
-            LAM x y. If (LAM x y. Def (x = y))$x$y then TT else FF fi")]
+         "myEqual == LAM x y. If hEq$x$y then TT else FF fi")]
 : (string * Thm.thm) list
 Poly/ML RTS version I386-4.1.4 (14:18:30 Nov 14 2005)
 Copyright (c) 2002-5 CUTS and contributors.
@@ -312,6 +320,10 @@ constants
   fliftbin :: "('a => 'b => 'c) => 'a lift -> 'b lift -> 'c lift"
 Proving isomorphism properties of domain HsHOLCF.llist ...
 Proving induction properties of domain HsHOLCF.llist ...
+### Specification of constant HsHOLCF.hEq :: "tr -> tr -> tr"
+### is strictly less general than the declared type
+### Specification of constant HsHOLCF.hEq :: "int lift -> int lift -> tr"
+### is strictly less general than the declared type
 Loading theory "ex_list_hc"
 structure Header :
   sig val initialize : string list -> unit val record : string -> unit end
@@ -339,9 +351,8 @@ val it =
                     | lCons$pX1$pX2 => lCons$(f$pX1)$(myMap$pX2$f)))"),
       ("ex_list_hc.funOne_def",
          "funOne ==
-            LAM x y.
-               If (LAM x y. Def (x = y))$x$(lCons$(lHd$x)$(lTl$y))
-                  then TT else FF fi")] : (string * Thm.thm) list
+            LAM x y. If hEq$x$(lCons$(lHd$x)$(lTl$y)) then TT else FF fi")]
+: (string * Thm.thm) list
 Poly/ML RTS version I386-4.1.4 (14:18:30 Nov 14 2005)
 Copyright (c) 2002-5 CUTS and contributors.
 Running with heap parameters (h=30000K,ib=6000K,ip=100%,mb=10096K,mp=20%)
@@ -354,6 +365,10 @@ constants
   fliftbin :: "('a => 'b => 'c) => 'a lift -> 'b lift -> 'c lift"
 Proving isomorphism properties of domain HsHOLCF.llist ...
 Proving induction properties of domain HsHOLCF.llist ...
+### Specification of constant HsHOLCF.hEq :: "tr -> tr -> tr"
+### is strictly less general than the declared type
+### Specification of constant HsHOLCF.hEq :: "int lift -> int lift -> tr"
+### is strictly less general than the declared type
 Loading theory "ex_mutrec_hc"
 structure Header :
   sig val initialize : string list -> unit val record : string -> unit end
@@ -384,9 +399,9 @@ val it =
          "fibon ==
             FIX fibon.
                run$(return$(LAM n.
-                    If (LAM x y. Def (x = y))$n$(Def 0)
+                    If hEq$n$(Def 0)
                        then Def 1
-                       else If (LAM x y. Def (x = y))$n$(Def 1)
+                       else If hEq$n$(Def 1)
                           then Def 1
                           else fliftbin
                            op +$(fibon$(fliftbin
@@ -394,8 +409,7 @@ val it =
                                 1)))$(fibon$(fliftbin
                                    op -$n$(Def 2))) fi fi))"),
       ("ex_mutrec_hc.myEqual_def",
-         "myEqual ==
-            LAM x y. If (LAM x y. Def (x = y))$x$y then TT else FF fi"),
+         "myEqual == LAM x y. If hEq$x$y then TT else FF fi"),
       ("ex_mutrec_hc.hasColor_def",
          "hasColor ==
             LAM x y.
@@ -406,9 +420,9 @@ val it =
          "mRecFun1 ==
             cfst$(FIX <mRecFun1, mRecFun2>.
                 <run$(return$(LAM n.
-                      If (LAM x y. Def (x = y))$n$(Def 0)
+                      If hEq$n$(Def 0)
                          then Def 0
-                         else If (LAM x y. Def (x = y))$n$(Def 1)
+                         else If hEq$n$(Def 1)
                             then Def 2
                             else fliftbin
                              op +$(mRecFun1$(fliftbin
@@ -416,9 +430,9 @@ val it =
                                   1)))$(mRecFun2$(fliftbin
                                      op -$n$(Def 2))) fi fi)),
                  run$(return$(LAM n.
-                      If (LAM x y. Def (x = y))$n$(Def 0)
+                      If hEq$n$(Def 0)
                          then Def 0
-                         else If (LAM x y. Def (x = y))$n$(Def 1)
+                         else If hEq$n$(Def 1)
                             then Def 0
                             else fliftbin
                              op +$(mRecFun1$(fliftbin
@@ -429,9 +443,9 @@ val it =
          "mRecFun2 ==
             csnd$(FIX <mRecFun1, mRecFun2>.
                 <run$(return$(LAM n.
-                      If (LAM x y. Def (x = y))$n$(Def 0)
+                      If hEq$n$(Def 0)
                          then Def 0
-                         else If (LAM x y. Def (x = y))$n$(Def 1)
+                         else If hEq$n$(Def 1)
                             then Def 2
                             else fliftbin
                              op +$(mRecFun1$(fliftbin
@@ -439,9 +453,9 @@ val it =
                                   1)))$(mRecFun2$(fliftbin
                                      op -$n$(Def 2))) fi fi)),
                  run$(return$(LAM n.
-                      If (LAM x y. Def (x = y))$n$(Def 0)
+                      If hEq$n$(Def 0)
                          then Def 0
-                         else If (LAM x y. Def (x = y))$n$(Def 1)
+                         else If hEq$n$(Def 1)
                             then Def 0
                             else fliftbin
                              op +$(mRecFun1$(fliftbin
@@ -677,6 +691,10 @@ constants
   fliftbin :: "('a => 'b => 'c) => 'a lift -> 'b lift -> 'c lift"
 Proving isomorphism properties of domain HsHOLCF.llist ...
 Proving induction properties of domain HsHOLCF.llist ...
+### Specification of constant HsHOLCF.hEq :: "tr -> tr -> tr"
+### is strictly less general than the declared type
+### Specification of constant HsHOLCF.hEq :: "int lift -> int lift -> tr"
+### is strictly less general than the declared type
 Loading theory "incmpl_hc"
 structure Header :
   sig val initialize : string list -> unit val record : string -> unit end
@@ -818,6 +836,10 @@ constants
   fliftbin :: "('a => 'b => 'c) => 'a lift -> 'b lift -> 'c lift"
 Proving isomorphism properties of domain HsHOLCF.llist ...
 Proving induction properties of domain HsHOLCF.llist ...
+### Specification of constant HsHOLCF.hEq :: "tr -> tr -> tr"
+### is strictly less general than the declared type
+### Specification of constant HsHOLCF.hEq :: "int lift -> int lift -> tr"
+### is strictly less general than the declared type
 Loading theory "Map2_hc"
 structure Header :
   sig val initialize : string list -> unit val record : string -> unit end
@@ -862,6 +884,10 @@ constants
   fliftbin :: "('a => 'b => 'c) => 'a lift -> 'b lift -> 'c lift"
 Proving isomorphism properties of domain HsHOLCF.llist ...
 Proving induction properties of domain HsHOLCF.llist ...
+### Specification of constant HsHOLCF.hEq :: "tr -> tr -> tr"
+### is strictly less general than the declared type
+### Specification of constant HsHOLCF.hEq :: "int lift -> int lift -> tr"
+### is strictly less general than the declared type
 Loading theory "mrec3_hc"
 structure Header :
   sig val initialize : string list -> unit val record : string -> unit end
@@ -895,7 +921,7 @@ val it =
                       case x of Zx => Zx
                       | Sx$pX1 => Sx$(fliftbin op +$pX1$(Def 1))
                       | SSx$pX1$pX2 =>
-                        If (LAM x y. Def (x = y))$pX2$Minx
+                        If hEq$pX2$Minx
                            then SSx$pX1$w else map1$pX1$f fi))>)"),
       ("mrec3_hc.map2_def",
          "map2 ==
@@ -907,7 +933,7 @@ val it =
                       case x of Zx => Zx
                       | Sx$pX1 => Sx$(fliftbin op +$pX1$(Def 1))
                       | SSx$pX1$pX2 =>
-                        If (LAM x y. Def (x = y))$pX2$Minx
+                        If hEq$pX2$Minx
                            then SSx$pX1$w else map1$pX1$f fi))>)"),
       ("mrec3_hc.Prelude_Natx.reach", "fix$Prelude_Natx_copy$?x = ?x"),
       ("mrec3_hc.Prelude_Boolx.reach", "fix$Prelude_Boolx_copy$?x = ?x"),
@@ -1022,6 +1048,10 @@ constants
   fliftbin :: "('a => 'b => 'c) => 'a lift -> 'b lift -> 'c lift"
 Proving isomorphism properties of domain HsHOLCF.llist ...
 Proving induction properties of domain HsHOLCF.llist ...
+### Specification of constant HsHOLCF.hEq :: "tr -> tr -> tr"
+### is strictly less general than the declared type
+### Specification of constant HsHOLCF.hEq :: "int lift -> int lift -> tr"
+### is strictly less general than the declared type
 Loading theory "mrec_hc"
 structure Header :
   sig val initialize : string list -> unit val record : string -> unit end
@@ -1124,6 +1154,10 @@ constants
   fliftbin :: "('a => 'b => 'c) => 'a lift -> 'b lift -> 'c lift"
 Proving isomorphism properties of domain HsHOLCF.llist ...
 Proving induction properties of domain HsHOLCF.llist ...
+### Specification of constant HsHOLCF.hEq :: "tr -> tr -> tr"
+### is strictly less general than the declared type
+### Specification of constant HsHOLCF.hEq :: "int lift -> int lift -> tr"
+### is strictly less general than the declared type
 Loading theory "wcard_hc"
 structure Header :
   sig val initialize : string list -> unit val record : string -> unit end
