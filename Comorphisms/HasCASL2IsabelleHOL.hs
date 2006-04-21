@@ -210,8 +210,8 @@ transTerm sign trm = case trm of
         in termAppl (conSomeT ot) $ IsaSign.Free (transVar var) t'
 
     QualOp _ (InstOpId opId _ _) ts _ ->
-        if opId == trueId then  conDouble "True"
-        else if opId == falseId then conDouble "False"
+        if opId == trueId then true
+        else if opId == falseId then false
         else termAppl conSome (conDouble (transOpId sign opId ts))
 
     QuantifiedTerm quan varDecls phi _ ->
@@ -297,7 +297,7 @@ transLog sign opId opTerm t = case t of
   | opId == exEq   -> binConj (binEq l r) $
                       binConj (termAppl defOp l) $
                       termAppl defOp r
-  | opId == eqId -> binConst eq l r
+  | opId == eqId -> binEq l r
   where l = transTerm sign l'
         r = transTerm sign r'
  _ | opId == notId  -> termAppl notOp (transTerm sign t)
