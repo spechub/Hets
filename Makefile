@@ -622,9 +622,9 @@ Haskell/hana: Haskell/hana.hs Haskell/HatAna.hs Haskell/PreludeString.hs
 ### Haskell to Isabelle-HOLCF translation
 h2hf: Haskell/h2hf
 
-Haskell/h2hf: Haskell/h2hf.hs Haskell/*.hs \
-    HasCASL/*.hs Isabelle/*.hs Common/*.hs
-	$(HC) --make -o $@ $< $(HC_OPTS)
+Haskell/h2hf: Haskell/h2hf.hs Haskell/*.hs Isabelle/*.hs Common/*.hs \
+    Common/Lib/*.hs Comorphisms/*.hs
+	$(HC) -O --make -o $@ $< $(HC_FLAGS) $(PFE_FLAGS)
 
 ### HasCASL to Haskell translation
 h2h: Haskell/h2h
