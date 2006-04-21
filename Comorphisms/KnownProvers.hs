@@ -13,7 +13,7 @@ comorphisms.
 -}
 
 {- todo:
-
+    - add more known paths to SPASS; the commented out versions don't work
 -}
 module Comorphisms.KnownProvers (KnownProversMap,
                                  knownProvers,
@@ -91,12 +91,19 @@ isaComorphisms = do
 
 spassComorphisms :: Result [AnyComorphism]
 spassComorphisms =
-    do let max_sub_SPASS = top { sub_features = LocFilSub
-                               , cons_features =
-                                   (cons_features top) {emptyMapping = True} }
-           idCASL = Comorphism (IdComorphism CASL max_sub_SPASS)
-       partOut <- (compComorphism idCASL (Comorphism CASL2SubCFOL)
-                   >>= (\x -> compComorphism x (Comorphism CASL2SPASS)))
+    do let max_nosub_SPASS = 
+               top {cons_features =
+                        (cons_features top) {emptyMapping = True} }
+           max_sub_SPASS = max_nosub_SPASS { sub_features = LocFilSub }
+           idCASL_sub = Comorphism (IdComorphism CASL max_sub_SPASS)
+           -- idCASL_nosub = Comorphism (IdComorphism CASL max_nosub_SPASS)
+           compSPASS x = compComorphism x (Comorphism CASL2SPASS)
+       partOut <- (compComorphism idCASL_sub (Comorphism CASL2SubCFOL)
+                   >>= compSPASS)
+{-       partSubOut <- (compComorphism (Comorphism CASL2PCFOL) 
+                                     (Comorphism PCFOL2CFOL)
+                      >>= (compComorphism idCASL_nosub)
+                      >>= compSPASS)-}
        -- mod2SPASS <- compComorphism (Comorphism Modal2CASL) partOut
        return [Comorphism CASL2SPASS,partOut]
 
