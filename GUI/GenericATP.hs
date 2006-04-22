@@ -17,10 +17,10 @@ Generic GUI for theorem provers. Based upon former SPASS Prover GUI.
    - ATPFunctions in genericATPgui richtig verwenden
    - state initialisieren
    - kleine GUI mit Exit-Button lauffaehig aufbauen
-   
+
    - import graphical functions from old SPASS/Prove.hs
    - generalize graphical functions
-   
+
 -}
 
 module GUI.GenericATP where
@@ -29,7 +29,7 @@ import Logic.Prover
 
 import qualified Common.AS_Annotation as AS_Anno
 -- import Common.ProofUtils
-import Common.PrettyPrint 
+import Common.PrettyPrint
 import qualified Common.Lib.Map as Map
 -- import qualified Common.OrderedMap as OMap
 
@@ -45,11 +45,11 @@ import System.IO.Error
 
 import HTk
 import SpinButton
--- import Messages
--- import TextDisplay
--- import Separator
--- import XSelection
--- import Space
+import Messages
+import TextDisplay
+import Separator
+import XSelection
+import Space
 
 import GUI.HTkUtils
 
@@ -80,7 +80,7 @@ initialThreadState = TSt { batchId = Nothing
   For values <= 0 a default value is used.
 -}
 setTimeLimit :: Int -> GenericConfig proof_tree -> GenericConfig proof_tree
-setTimeLimit n c = if n > 0 then c{timeLimit = Just n} 
+setTimeLimit n c = if n > 0 then c{timeLimit = Just n}
                    else c{timeLimit = Nothing}
 
 {- |
@@ -107,8 +107,8 @@ isTimeLimitExceeded _ = False
   internally.
 -}
 adjustOrSetConfig :: (Ord proof_tree) =>
-                     (GenericConfig proof_tree -> GenericConfig proof_tree) 
-                     -- ^ function to be applied against the current 
+                     (GenericConfig proof_tree -> GenericConfig proof_tree)
+                     -- ^ function to be applied against the current
                      -- configuration or a new emptyConfig
                   -> String -- ^ name of the prover
                   -> ATPIdentifier -- ^ name of the goal
@@ -137,7 +137,7 @@ getConfig prName genid pt m = maybe (emptyConfig prName genid pt)
     lookupId = Map.lookup genid m
 
 filterOpenGoals :: GenericConfigsMap proof_tree -> GenericConfigsMap proof_tree
-filterOpenGoals = Map.filter isOpenGoal 
+filterOpenGoals = Map.filter isOpenGoal
     where isOpenGoal cf = case (goalStatus $ proof_status cf) of
                               Open -> True
                               _    -> False
@@ -166,7 +166,7 @@ data ProofStatusColour
   -- | Open
   | Black
   -- | Running
-  | Blue  
+  | Blue
    deriving (Bounded,Enum,Show)
 
 {- |
@@ -244,7 +244,7 @@ goalsView s = map (\ g ->
                                        (indicatorFromProof_status . proof_status)
                                        cfg
                         in
-                          LBGoalView {statIndicator = statind, 
+                          LBGoalView {statIndicator = statind,
                                       goalDescription = g})
                    (map AS_Anno.senName (goalsList s))
 
@@ -259,8 +259,8 @@ getValueSafe :: Int -- ^ default time limt
              -> Entry Int -- ^ time limit 'Entry'
              -> IO Int -- ^ user-requested time limit or default in case of a parse error
 getValueSafe defaultTimeLimit timeEntry =
-    Exception.catchJust Exception.userErrors ((getValue timeEntry) :: IO Int) 
-                  (\ s -> trace ("Warning: Error "++show s++" was ignored") 
+    Exception.catchJust Exception.userErrors ((getValue timeEntry) :: IO Int)
+                  (\ s -> trace ("Warning: Error "++show s++" was ignored")
                                 (return defaultTimeLimit))
 
 {- |
@@ -274,7 +274,7 @@ batchInfoText tl gTotal gDone =
   let totalSecs = (gTotal - gDone) * tl
       (remMins,secs) = divMod totalSecs 60
       (hours,mins) = divMod remMins 60
-  in 
+  in
   "Batch mode runnig\n"++
   show gDone ++ "/" ++ show gTotal ++ " goals processed.\n" ++
   "At most "++show hours++"h "++show mins++"m "++show secs++"s remaining."
@@ -285,8 +285,7 @@ batchInfoText tl gTotal gDone =
   Called every time a goal has been processed in the batch mode gui.
 -}
 goalProcessed :: (Ord proof_tree) =>
-                 IORef (GUI.GenericATPState.GenericState
-                         sign sentence proof_tree pst)
+                 IORef (GenericState sign sentence proof_tree pst)
                -- ^ IORef pointing to the backing State data structure
               -> Int -- ^ batch time limit
               -- -> String -- ^ extra options
@@ -301,13 +300,13 @@ goalProcessed stateRef tLimit numGoals label prName
               processedGoalsSoFar nGoal (retval, res_cfg) = do
   s <- readIORef stateRef
   let s' = s{
-      configsMap = adjustOrSetConfig 
-                      (\ c -> c{timeLimitExceeded = 
+      configsMap = adjustOrSetConfig
+                      (\ c -> c{timeLimitExceeded =
                                     isTimeLimitExceeded retval,
                                 timeLimit = Just tLimit,
                                 proof_status = proof_status res_cfg,
                                 resultOutput = resultOutput res_cfg})
-                      prName (AS_Anno.senName nGoal) 
+                      prName (AS_Anno.senName nGoal)
                       (proof_tree s)
                       (configsMap s)}
   writeIORef stateRef s'
@@ -322,7 +321,7 @@ goalProcessed stateRef tLimit numGoals label prName
 {- |
    Updates the display of the status of the current goal.
 -}
-updateDisplay :: GUI.GenericATPState.GenericState sign sentence proof_tree pst
+updateDisplay :: GenericState sign sentence proof_tree pst
                  -- ^ current global prover state
               -> Bool -- ^ set to 'True' if you want the 'ListBox' to be updated
               -> ListBox String -- ^ 'ListBox' displaying the status of all goals (see 'goalsView')
@@ -335,11 +334,11 @@ updateDisplay st updateLb goalsLb statusLabel timeEntry optionsEntry axiomsLb = 
     when updateLb
          (populateGoalsListBox goalsLb (goalsView st))
     maybe (return ())
-          (\ go -> 
+          (\ go ->
                let mprfst = Map.lookup go (configsMap st)
-                   cf = Map.findWithDefault 
+                   cf = Map.findWithDefault
                         (error "updateDisplay: configsMap \
-                               \was not initialised!!") 
+                               \was not initialised!!")
                         go (configsMap st)
                    t' = maybe guiDefaultTimeLimit id (timeLimit cf)
                    opts' = unwords (extraOpts cf)
@@ -348,19 +347,19 @@ updateDisplay st updateLb goalsLb statusLabel timeEntry optionsEntry axiomsLb = 
                                     mprfst
                    usedAxs = maybe [] (usedAxioms . proof_status) mprfst
 
-               in do 
+               in do
                 statusLabel # text label
                 statusLabel # foreground (show color)
                 timeEntry # HTk.value t'
                 optionsEntry # HTk.value opts'
                 axiomsLb # HTk.value (usedAxs::[String])
-                return ()) 
+                return ())
           (currentGoal st)
 
-newOptionsFrame :: Container par => 
+newOptionsFrame :: Container par =>
                 par -- ^ the parent container
-             -> (Entry Int -> Spin -> IO a) 
-             -- ^ Function called by pressing one spin button 
+             -> (Entry Int -> Spin -> IO a)
+             -- ^ Function called by pressing one spin button
              -> IO OpFrame
 newOptionsFrame con updateFn = do
   right <- newFrame con []
@@ -387,7 +386,7 @@ newOptionsFrame con updateFn = do
   timeLimitLine <- newHBox timeLimitFrame []
   pack timeLimitLine [Expand On, Side AtRight, Anchor East]
 
-  (timeEntry :: Entry Int) <- newEntry timeLimitLine [width 18, 
+  (timeEntry :: Entry Int) <- newEntry timeLimitLine [width 18,
                                               HTk.value guiDefaultTimeLimit]
   pack timeEntry []
 
@@ -399,7 +398,7 @@ newOptionsFrame con updateFn = do
   (optionsEntry :: Entry String) <- newEntry opFrame2 [width 37]
   pack optionsEntry [Fill X, PadX (cm 0.1)]
 
-  return $ OpFrame { of_Frame = right                     
+  return $ OpFrame { of_Frame = right
                    , of_timeSpinner = timeSpinner
                    , of_timeEntry = timeEntry
                    , of_optionsEntry = optionsEntry}
@@ -411,9 +410,7 @@ newOptionsFrame con updateFn = do
   Invokes the prover GUI. First runs the batch prover on all goals,
   then drops the user into a detailed GUI.
 -}
-
-
-genericATPgui :: (Ord proof_tree, Ord sentence, Show sentence) =>
+genericATPgui :: (Ord proof_tree, Ord sentence, Show proof_tree, Show sentence) =>
                  ATPFunctions sign sentence proof_tree pst -- ^ prover specific functions
               -> String -- ^ prover name
               -> String -- ^ theory name
@@ -427,13 +424,14 @@ genericATPgui atpFun prName thName th pt = do
                     (atpTransSenName atpFun) th pt
   stateRef <- newIORef initState
 -- !! read ENV from ATPFunctions or pst
---  batchTLimit <- getBatchTimeLimit $ "HETS_SPASS_BATCH_TIME_LIMIT"
+  batchTLimit <- getBatchTimeLimit $ batchTimeEnv atpFun
 
   -- main window
   main <- createToplevel [text $ thName ++ " - " ++ prName ++ " Prover"]
   pack main [Expand On, Fill Both]
 
--- !! just for having a running window
+-- !! for just having a running window with exit button
+{-
   exitButton <- newButton main [text "Exit Prover"]
   pack exitButton []
 
@@ -446,48 +444,518 @@ genericATPgui atpFun prName thName th pt = do
   exit <- clicked exitButton
 
   (closeWindow,_) <- bindSimple main Destroy
+-}
+
+  -- VBox for the whole window
+  b <- newVBox main []
+  pack b [Expand On, Fill Both]
+
+  -- HBox for the upper part (goals on the left, options/results on the right)
+  b2 <- newHBox b []
+  pack b2 [Expand On, Fill Both]
+
+  -- left frame (goals)
+  left <- newFrame b2 []
+  pack left [Expand On, Fill Both]
+
+  b3 <- newVBox left []
+  pack b3 [Expand On, Fill Both]
+
+  l0 <- newLabel b3 [text "Goals:"]
+  pack l0 [Anchor NorthWest]
+
+  lbFrame <- newFrame b3 []
+  pack lbFrame [Expand On, Fill Both]
+
+  lb <- newListBox lbFrame [bg "white",exportSelection False,
+                            selectMode Single, height 15] :: IO (ListBox String)
+  populateGoalsListBox lb (goalsView initState)
+  pack lb [Expand On, Side AtLeft, Fill Both]
+  sb <- newScrollBar lbFrame []
+  pack sb [Expand On, Side AtRight, Fill Y, Anchor West]
+  lb # scrollbar Vertical sb
+
+  -- right frame (options/results)
+  OpFrame { of_Frame = right
+          , of_timeSpinner = timeSpinner
+          , of_timeEntry = timeEntry
+          , of_optionsEntry = optionsEntry}
+      <- newOptionsFrame b2
+                 (\ timeEntry sp -> synchronize main
+                   (do
+               s <- readIORef stateRef
+               maybe noGoalSelected
+                     (\ goal ->
+                      do
+                      curEntTL <- getValueSafe guiDefaultTimeLimit timeEntry
+                      let sEnt = s {configsMap =
+                                        adjustOrSetConfig
+                                             (setTimeLimit curEntTL)
+                                             prName goal pt (configsMap s)}
+                          cfg = getConfig prName goal pt (configsMap sEnt)
+                          t = timeLimit cfg
+                          t' = (case sp of
+                                Up -> maybe (guiDefaultTimeLimit + 10)
+                                            (+10)
+                                            t
+                                _ -> maybe (guiDefaultTimeLimit - 10)
+                                            (\ t1 -> t1-10)
+                                            t)
+                          s' = sEnt {configsMap =
+                                         adjustOrSetConfig
+                                              (setTimeLimit t')
+                                              prName goal pt (configsMap sEnt)}
+                      writeIORef stateRef s'
+                      timeEntry # HTk.value
+                                    (maybe guiDefaultTimeLimit
+                                           id
+                                           (timeLimit $
+                                              getConfig prName goal pt $
+                                                configsMap s'))
+                      done)
+                     (currentGoal s)))
+  pack right [Expand On, Fill Both, Anchor NorthWest]
+
+  -- buttons for options
+  buttonsHb1 <- newHBox right []
+  pack buttonsHb1 [Anchor NorthEast]
+
+  saveDFGButton <- newButton buttonsHb1 [text "Save DFG File"]
+  pack saveDFGButton [Side AtLeft]
+  proveButton <- newButton buttonsHb1 [text "Prove"]
+  pack proveButton [Side AtRight]
+
+  -- result frame
+  resultFrame <- newFrame right []
+  pack resultFrame [Expand On, Fill Both]
+
+  l4 <- newLabel resultFrame [text "Results:"]
+  pack l4 [Anchor NorthWest]
+
+  spacer <- newLabel resultFrame [text "   "]
+  pack spacer [Side AtLeft]
+
+  resultContentBox <- newHBox resultFrame []
+  pack resultContentBox [Expand On, Anchor West, Fill Both]
+
+  -- labels on the left side
+  rc1 <- newVBox resultContentBox []
+  pack rc1 [Expand Off, Anchor North]
+  l5 <- newLabel rc1 [text "Status"]
+  pack l5 [Anchor West]
+  l6 <- newLabel rc1 [text "Used Axioms"]
+  pack l6 [Anchor West]
+
+  -- contents on the right side
+  rc2 <- newVBox resultContentBox []
+  pack rc2 [Expand On, Fill Both, Anchor North]
+
+  statusLabel <- newLabel rc2 [text " -- "]
+  pack statusLabel [Anchor West]
+  axiomsFrame <- newFrame rc2 []
+  pack axiomsFrame [Expand On, Anchor West, Fill Both]
+  axiomsLb <- newListBox axiomsFrame [HTk.value $ ([]::[String]),
+                                      bg "white",exportSelection False,
+                                      selectMode Browse,
+                                      height 6, width 19] :: IO (ListBox String)
+  pack axiomsLb [Side AtLeft, Expand On, Fill Both]
+  axiomsSb <- newScrollBar axiomsFrame []
+  pack axiomsSb [Side AtRight, Fill Y, Anchor West]
+  axiomsLb # scrollbar Vertical axiomsSb
+
+  detailsButton <- newButton resultFrame [text "Show Details"]
+  pack detailsButton [Anchor NorthEast]
+
+  -- separator
+  sp1 <- newSpace b (cm 0.15) []
+  pack sp1 [Expand Off, Fill X, Side AtBottom]
+
+  newHSeparator b
+
+  sp2 <- newSpace b (cm 0.15) []
+  pack sp2 [Expand Off, Fill X, Side AtBottom]
+
+  -- batch mode frame
+  batch <- newFrame b []
+  pack batch [Expand Off, Fill X]
+
+  batchTitle <- newLabel batch [text $ (prName)++" Batch Mode:"]
+  pack batchTitle [Side AtTop]
+
+  batchLeft <- newVBox batch []
+  pack batchLeft [Expand On, Fill X, Side AtLeft]
+
+  batchBtnBox <- newHBox batchLeft []
+  pack batchBtnBox [Expand On, Fill X, Side AtLeft]
+  stopBatchButton <- newButton batchBtnBox [text "Stop"]
+  pack stopBatchButton []
+  runBatchButton <- newButton batchBtnBox [text "Run"]
+  pack runBatchButton []
+
+  batchSpacer <- newSpace batchLeft (pp 150) [orient Horizontal]
+  pack batchSpacer [Side AtLeft]
+  batchStatusLabel <- newLabel batchLeft [text "\n\n"]
+  pack batchStatusLabel []
+
+  OpFrame { of_Frame = batchRight
+          , of_timeSpinner = batchTimeSpinner
+          , of_timeEntry = batchTimeEntry
+          , of_optionsEntry = batchOptionsEntry}
+      <- newOptionsFrame batch
+                 (\ tEntry sp -> synchronize main
+                   (do
+                    curEntTL <- getValueSafe batchTLimit tEntry
+                    let t' = case sp of
+                              Up -> curEntTL+10
+                              _ -> max batchTLimit (curEntTL-10)
+                    tEntry # HTk.value t'
+                    done))
+
+  pack batchRight [Expand On, Fill X, Anchor NorthWest,Side AtRight]
+
+  batchTimeEntry # HTk.value batchTLimit
+
+  -- separator 2
+  sp1_2 <- newSpace b (cm 0.15) []
+  pack sp1_2 [Expand Off, Fill X, Side AtBottom]
+
+  newHSeparator b
+
+  sp2_2 <- newSpace b (cm 0.15) []
+  pack sp2_2 [Expand Off, Fill X, Side AtBottom]
+
+  -- global options frame
+  globalOptsFr <- newFrame b []
+  pack globalOptsFr [Expand Off, Fill Both]
+
+  gOptsTitle <- newLabel globalOptsFr [text "Global Options:"]
+  pack gOptsTitle [Side AtTop]
+
+  inclProvedThsTK <- createTkVariable True
+  inclProvedThsCheckButton <-
+         newCheckButton globalOptsFr
+                        [variable inclProvedThsTK,
+                         text ("include preceeding proven therorems"++
+                               " in next proof attempt")]
+  pack inclProvedThsCheckButton [Side AtLeft]
+
+  -- separator 3
+  sp1_3 <- newSpace b (cm 0.15) []
+  pack sp1_3 [Expand Off, Fill X, Side AtBottom]
+
+  newHSeparator b
+
+  sp2_3 <- newSpace b (cm 0.15) []
+  pack sp2_3 [Expand Off, Fill X, Side AtBottom]
+
+  -- bottom frame (help/save/exit buttons)
+  bottom <- newHBox b []
+  pack bottom [Expand Off, Fill Both]
+
+  helpButton <- newButton bottom [text "Help"]
+  pack helpButton [PadX (cm 0.3), IPadX (cm 0.1)]  -- wider "Help" button
+  saveButton <- newButton bottom [text "Save Prover Configuration"]
+  pack saveButton [PadX (cm 0.3)]
+  exitButton <- newButton bottom [text "Exit Prover"]
+  pack exitButton [PadX (cm 0.3)]
+
+  putWinOnTop main
+
+  -- IORef for batch thread
+  threadStateRef <- newIORef initialThreadState
+
+  -- events
+  (selectGoal, _) <- bindSimple lb (ButtonPress (Just 1))
+  doProve <- clicked proveButton
+  saveDFG <- clicked saveDFGButton
+  showDetails <- clicked detailsButton
+
+  runBatch <- clicked runBatchButton
+  stopBatch <- clicked stopBatchButton
+
+  help <- clicked helpButton
+  saveConfiguration <- clicked saveButton
+  exit <- clicked exitButton
+
+  (closeWindow,_) <- bindSimple main Destroy
+
+  let goalSpecificWids = [EnW timeEntry, EnW timeSpinner,EnW optionsEntry] ++
+                         map EnW [proveButton,detailsButton,saveDFGButton]
+      wids = EnW lb : goalSpecificWids ++
+             [EnW batchTimeEntry, EnW batchTimeSpinner,
+              EnW batchOptionsEntry,EnW inclProvedThsCheckButton] ++
+             map EnW [helpButton,saveButton,exitButton,runBatchButton]
+
+  disableWids goalSpecificWids
+  disable stopBatchButton
 
   -- event handlers
+  spawnEvent
+    (forever
+      ((selectGoal >>> do
+          s <- readIORef stateRef
+          let oldGoal = currentGoal s
+          curEntTL <- (getValueSafe guiDefaultTimeLimit timeEntry) :: IO Int
+          let s' = maybe s
+                         (\ og -> s
+                             {configsMap =
+                                  adjustOrSetConfig (setTimeLimit curEntTL)
+                                                    prName og pt
+                                                    (configsMap s)})
+                         oldGoal
+          sel <- (getSelection lb) :: IO (Maybe [Int])
+          let s'' = maybe s' (\ sg -> s' {currentGoal =
+                                              Just $ AS_Anno.senName
+                                               (goalsList s' !! head sg)})
+                             sel
+          writeIORef stateRef s''
+          when (isJust sel && not (batchModeIsRunning s''))
+               (enableWids goalSpecificWids)
+          when (isJust sel) $ enableWids [EnW detailsButton,EnW saveDFGButton]
+          updateDisplay s'' False lb statusLabel timeEntry optionsEntry axiomsLb
+          done)
+-- !! solve problem with genProverProblem (formerly genSPASSProblem)
+{-
+      +> (saveDFG >>> do
+            rs <- readIORef stateRef
+            inclProvedThs <- readTkVariable inclProvedThsTK
+            maybe (return ())
+                  (\ goal -> do
+-- !! changed, check it!
+                      let (nGoal,lp') =
+                              prepareLP (proverState rs)
+                                        rs goal inclProvedThs
+-- !! changed, check it!
+                      prob <- (genProverProblem atpFun) thName lp' (Just nGoal)
+                      createTextSaveDisplay (prName ++ " Problem for Goal "++goal)
+                                            (thName++goal++".dfg")
+                                            (showPretty prob "")
+                  )
+                  $ currentGoal rs
+            done)
+-}
+      +> (doProve >>> do
+            rs <- readIORef stateRef
+            if isNothing $ currentGoal rs
+              then noGoalSelected
+              else (do
+                curEntTL <- (getValueSafe guiDefaultTimeLimit
+                                          timeEntry) :: IO Int
+                inclProvedThs <- readTkVariable inclProvedThsTK
+                let goal = fromJust $ currentGoal rs
+                    s = rs {configsMap = adjustOrSetConfig
+                                            (setTimeLimit curEntTL)
+                                            prName goal pt
+                                            (configsMap rs)}
+-- !! changed, check it!
+                    (nGoal,lp') = prepareLP (proverState rs)
+                                        rs goal inclProvedThs
+                extraOptions <- (getValue optionsEntry) :: IO String
+                let s' = s {configsMap = adjustOrSetConfig
+                                            (setExtraOpts (words extraOptions))
+                                            prName goal pt
+                                            (configsMap s)}
+                statusLabel # text (snd statusRunning)
+                statusLabel # foreground (show $ fst statusRunning)
+                disableWids wids
+                (retval, cfg) <-
+-- !! changed, check it!
+                    (runProver atpFun) lp'
+                          (getConfig prName goal pt $ configsMap s')
+                          thName nGoal
+                -- check if main is still there
+                curSt <- readIORef stateRef
+                if mainDestroyed curSt
+                    then done
+                    else do
+                 enableWids wids
+                 case retval of
+                   ATPError message -> errorMess message
+                   _ -> return ()
+                 let s'' = s'{
+                     configsMap =
+                        adjustOrSetConfig
+                           (\ c -> c {timeLimitExceeded = isTimeLimitExceeded retval,
+                                      proof_status = proof_status cfg,
+                                      resultOutput = resultOutput cfg})
+                           prName goal pt (configsMap s')}
+                 writeIORef stateRef s''
+                 updateDisplay s'' True lb statusLabel timeEntry
+                              optionsEntry axiomsLb
+                 done)
+            done)
+      +> (showDetails >>> do
+            s <- readIORef stateRef
+            if isNothing $ currentGoal s
+              then noGoalSelected
+              else (do
+                let goal = fromJust $ currentGoal s
+                let result = Map.lookup goal (configsMap s)
+                let output = if isJust result
+                               then resultOutput (fromJust result)
+                               else ["This goal hasn't been run through "++
+                                     "the prover yet."]
+                let detailsText = concatMap ('\n':) output
+                createTextSaveDisplay (prName ++ " Output for Goal "++goal)
+                                      (goal ++ (fst $ fileExtensions atpFun))
+                                      (seq (length detailsText) detailsText)
+                done)
+            done)
+      +> (runBatch >>> do
+            cleanupThread threadStateRef
+            s <- readIORef stateRef
+            -- get options for this batch run
+            curEntTL <- (getValueSafe batchTLimit batchTimeEntry) :: IO Int
+            let tLimit = if curEntTL > 0 then curEntTL else batchTLimit
+            batchTimeEntry # HTk.value tLimit
+            extOpts <- (getValue batchOptionsEntry) :: IO String
+            writeIORef stateRef (s {batchModeIsRunning = True})
+            let numGoals = Map.size $ filterOpenGoals $ configsMap s
+            if numGoals > 0
+             then do
+              batchStatusLabel # text (batchInfoText tLimit numGoals 0)
+              disableWids wids
+              enable stopBatchButton
+              enableWidsUponSelection lb [EnW detailsButton,EnW saveDFGButton]
+              enable lb
+              inclProvedThs <- readTkVariable inclProvedThsTK
+              batchProverId <- Concurrent.forkIO
+                   (do genericProveBatch tLimit extOpts inclProvedThs
+                          (\ gPSF nSen cfg -> do
+                              cont <- goalProcessed stateRef tLimit numGoals
+                                                    batchStatusLabel
+                                                    prName gPSF nSen cfg
+                              st <- readIORef stateRef
+                              updateDisplay st True lb statusLabel timeEntry
+                                            optionsEntry axiomsLb
+                              when (not cont)
+                                   (do
+                                    -- putStrLn "Batch ended"
+                                    disable stopBatchButton
+                                    enableWids wids
+                                    enableWidsUponSelection lb goalSpecificWids
+                                    writeIORef stateRef
+                                            (st {batchModeIsRunning = False})
+                                    cleanupThread threadStateRef)
+                              return cont)
+                          (atpInsertSentence atpFun) (runProver atpFun)
+                          prName thName s
+                       return ())
+              modifyIORef threadStateRef
+                        (\ ts -> ts{batchId = Just batchProverId})
+              done
+             else do
+              batchStatusLabel # text ("No further open goals\n\n")
+              done)
+      +> (stopBatch >>> do
+            cleanupThread threadStateRef
+            modifyIORef threadStateRef (\ s -> s {batchStopped = True})
+            -- putStrLn "Batch stopped"
+            disable stopBatchButton
+            enableWids wids
+            enableWidsUponSelection lb goalSpecificWids
+            batchStatusLabel # text "Batch mode stopped\n\n"
+            st <- readIORef stateRef
+            writeIORef stateRef
+                           (st {batchModeIsRunning = False})
+            updateDisplay st True lb statusLabel timeEntry
+                          optionsEntry axiomsLb
+            done)
+      +> (help >>> do
+            createTextDisplay (prName ++ " Help")
+                              (proverHelpText atpFun)
+                              [size (80, 30)]
+            done)
+      +> (saveConfiguration >>> do
+            s <- readIORef stateRef
+            let (cfgList, resList) = getCfgText $ configsMap s
+                cfgText = unlines $ ("Configuration:\n":cfgList)
+                                    ++ ("\nResults:\n":resList)
+            createTextSaveDisplay (prName ++ " Configuration for Theory " ++ thName)
+                                  (thName ++ (snd $ fileExtensions atpFun)) cfgText
+            done)
+      ))
   sync ( (exit >>> destroy main)
       +> (closeWindow >>> do cleanupThread threadStateRef
-                             modifyIORef stateRef 
+                             modifyIORef stateRef
                                          (\ s -> s{mainDestroyed = True})
                              destroy main)
        )
   s <- readIORef stateRef
-  let proof_stats = map (\g -> let res = Map.lookup g (configsMap s) 
-                                   g' = Map.findWithDefault 
+  let proof_stats = map (\g -> let res = Map.lookup g (configsMap s)
+                                   g' = Map.findWithDefault
                                         (error ("Lookup of name failed: (1) "
                                                 ++"should not happen \""
                                                 ++g++"\""))
                                         g (namesMap s)
                                    pStat = proof_status $ fromJust res
-                               in if isJust res 
+                               in if isJust res
                                   then transNames (namesMap s) pStat
-                                  else openProof_status g' (prName) $
-                                       proof_tree s) 
+                                  else openProof_status g' prName $
+                                       proof_tree s)
                     (map AS_Anno.senName $ goalsList s)
   return proof_stats
-  
+
   where
     cleanupThread tRef = do
          st <- readIORef tRef
          -- cleaning up
          maybe (return ())
-               (\ tId -> do 
+               (\ tId -> do
                    Concurrent.killThread tId
                    writeIORef tRef initialThreadState)
                (batchId st)
-    transNames nm pStat = 
+
+    noGoalSelected = errorMess "Please select a goal first."
+    prepareLP prS s goal inclProvedThs =
+       let (beforeThis, afterThis) =
+               splitAt (fromJust $
+                        findIndex (\sen -> AS_Anno.senName sen == goal)
+                                  (goalsList s))
+                       (goalsList s)
+           proved = filter (\sen-> checkGoal (configsMap s)
+                                       (AS_Anno.senName sen)) beforeThis
+       in if inclProvedThs
+             then (head afterThis,
+                   foldl (\lp provedGoal ->
+                     (atpInsertSentence atpFun)
+                       lp (provedGoal{AS_Anno.isAxiom = True}))
+                         prS
+                         (reverse proved))
+             else (maybe (error ("GUI.GenericATP.prepareLP: Goal "++goal++
+                                 " not found!!"))
+                         id (find ((==goal) . AS_Anno.senName) (goalsList s)),
+                   prS)
+    getCfgText mp = ("{":lc, "{":lr)
+      where
+      (lc, lr) =
+        Map.foldWithKey (\ k cfg (lCfg,lRes) ->
+                           let r = proof_status cfg
+                               outp = resultOutput cfg
+                           in
+                           ((show k
+                             ++ ":=GenericConfig {"
+                             ++ "timeLimit = " ++ show (timeLimit cfg)
+                             ++ ", timeLimitExceeded = "
+                             ++ show (timeLimitExceeded cfg)
+                             ++ ", extraOpts = "
+                             ++ show (extraOpts cfg)
+                             ++ "}," ):lCfg,
+                            (show k
+                             ++ ":=\n    ("
+                             ++ show r ++ ",\n     \""
+                             ++ (unlines outp) ++ "\")"):lRes))
+                        (["}"],["}"]) mp
+    transNames nm pStat =
       pStat { goalName = trN $ goalName pStat
-            , usedAxioms = foldr (fil $ trN $ goalName pStat) [] $ 
+            , usedAxioms = foldr (fil $ trN $ goalName pStat) [] $
                            usedAxioms pStat }
-      where trN x' = Map.findWithDefault 
+      where trN x' = Map.findWithDefault
                       (error ("Lookup of name failed: (2) "++
                               "should not happen \""++x'++"\""))
                       x' nm
-            fil g ax axs = 
-                maybe (trace ("*** SPASS Warning: unknown axiom \""++
+            fil g ax axs =
+                maybe (trace ("*** "++prName++" Warning: unknown axiom \""++
                               ax++"\" omitted from list of used\n"++
                               "      axioms of goal \""++g++"\"")
                                 axs) (:axs) (Map.lookup ax nm)
@@ -513,8 +981,8 @@ getBatchTimeLimit :: String -- ^ ENV-variable containing batch time limit
                   -> IO Int
 getBatchTimeLimit env = do
    is <- Exception.catch (getEnv env)
-               (\e -> case e of 
-                      Exception.IOException ie -> 
+               (\e -> case e of
+                      Exception.IOException ie ->
                           if isDoesNotExistError ie -- == NoSuchThing
                           then return $ show batchTimeLimit
                           else Exception.throwIO e
@@ -530,48 +998,48 @@ checkGoal cfgMap goal =
   where
     g = Map.lookup goal cfgMap
 
+
 -- ** Implementation
 
 {- |
-  A non-GUI batch mode prover. Uses default configuration for SPASS.
-  The list of goals is processed sequentially. Proved goals are inserted
-  as axioms.
+  A non-GUI batch mode prover. The list of goals is processed sequentially.
+  Proved goals are inserted as axioms.
 -}
-
-{-
-genericProveBatch :: Int -- ^ batch time limit
+genericProveBatch :: (Ord proof_tree) =>
+                     Int -- ^ batch time limit
                   -> String -- ^ extra options passed
                   -> Bool -- ^ True means include proved theorems
-                  -> (Int 
+                  -> (Int
                       -> AS_Anno.Named sentence
                       -> (ATPRetval, GenericConfig proof_tree)
-                      -> IO Bool) 
-                      -- ^ called after every prover run. 
+                      -> IO Bool)
+                      -- ^ called after every prover run.
                       -- return True if you want the prover to continue.
                   -> (pst -> AS_Anno.Named sentence -> pst)
                       -- ^ inserts a Namend sentence into a logicalPart
+                  -> RunProver sentence proof_tree pst -- prover to run batch
                   -> String -- ^ prover name
                   -> String -- ^ theory name
                   -> GenericState sign sentence proof_tree pst
                   -> IO ([Proof_status proof_tree]) -- ^ proof status for each goal
-genericProveBatch tLimit extraOptions inclProvedThs f inSen
+genericProveBatch tLimit extraOptions inclProvedThs f inSen runProver
                   prName thName st =
-    batchProve (initialLogicalPart $ proverState st) 0 [] (goalsList st)
+    batchProve (proverState st) 0 [] (goalsList st)
   {- do -- putStrLn $ showPretty initialLogicalPart ""
      -- read batchTimeLimit from ENV variable if set otherwise use constant
-     pstl <- {- trace (showPretty initialLogicalPart (show goals)) -} 
+     pstl <- {- trace (showPretty initialLogicalPart (show goals)) -}
              batchProve (initialLogicalPart st) [] (goalsList st)
      -- putStrLn ("Outcome of proofs:\n" ++ unlines (map show pstl) ++ "\n")
      return pstl -}
   where
     openGoals = filterOpenGoals (configsMap st)
 
-    addToLP g res lp =
+    addToLP g res pst =
         if isProvedStat res && inclProvedThs
-        then inSen lp (g{AS_Anno.isAxiom = True})
-        else lp
+        then inSen pst (g{AS_Anno.isAxiom = True})
+        else pst
     batchProve _ _ resDone [] = return (reverse resDone)
-    batchProve lp goalsProcessedSoFar resDone (g:gs) =
+    batchProve pst goalsProcessedSoFar resDone (g:gs) =
      let gName = AS_Anno.senName g
          pt    = proof_tree st
      in
@@ -580,35 +1048,34 @@ genericProveBatch tLimit extraOptions inclProvedThs f inSen
         putStrLn $ "Trying to prove goal: " ++ gName
         -- putStrLn $ show g
         (err, res_cfg) <-
-              runProver lp ((emptyConfig prName gName pt)
-                             { timeLimit = Just tLimit
-                             , extraOpts = words extraOptions })
+              runProver pst ((emptyConfig prName gName pt)
+                              { timeLimit = Just tLimit
+                              , extraOpts = words extraOptions })
                         thName g
         let res = proof_status res_cfg
         putStrLn $ prName ++ " returned: " ++ (show err)
         -- if the batch prover runs in a separate thread
         -- that's killed via killThread
-        -- runSpass will return GenericError. we have to stop the
+        -- runProver will return ATPError. We have to stop the
         -- recursion in that case
         case err of
-          ATPError _ -> return ((reverse (res:resDone)) ++ 
+          ATPError _ -> return ((reverse (res:resDone)) ++
                                 (map (\ gl -> openProof_status
                                                 (AS_Anno.senName gl) prName pt)
                                      gs))
           _ -> do
                -- add proved goals as axioms
-              let lp' = addToLP g res lp
+              let pst' = addToLP g res pst
                   goalsProcessedSoFar' = goalsProcessedSoFar+1
               cont <- f goalsProcessedSoFar' g (err, res_cfg)
               if cont
-                 then batchProve lp' goalsProcessedSoFar' (res:resDone) gs
-                 else return ((reverse (res:resDone)) ++ 
+                 then batchProve pst' goalsProcessedSoFar' (res:resDone) gs
+                 else return ((reverse (res:resDone)) ++
                                 (map (\ gl -> openProof_status
                                                 (AS_Anno.senName gl) prName pt)
                                      gs))
-      else batchProve (addToLP g (proof_status $ 
+      else batchProve (addToLP g (proof_status $
                                   Map.findWithDefault (emptyConfig prName gName pt)
                                      gName $ configsMap st)
-                               lp)
+                               pst)
                       goalsProcessedSoFar resDone gs
--}
