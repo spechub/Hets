@@ -1,30 +1,34 @@
 {- |
-Module      :  GenericATPState.hs
+Module      :  $Header$
 Description :  Help functions for GUI.GenericATP
 Copyright   :  (c) Klaus Lüttich, Rainer Grabbe, Uni Bremen 2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  rainer25@tzi.de
-Stability   :  not yet runnable
+Stability   :  provisional
 Portability :  ?
 
-Help functions for GUI.GenericATP
-
+Data structures and initialising functions for Prover state and configurations.
+Used by GUI.GenericATP.
 
 -}
 
 module GUI.GenericATPState where
 
 
-
--- importing some modules...
-import qualified Common.AS_Annotation as AS_Anno
-import qualified Common.Lib.Map as Map
-
 import Logic.Prover
 
+import qualified Common.AS_Annotation as AS_Anno
+import Common.ProofUtils
+
+import Data.List
+
+import qualified Common.Lib.Map as Map
 
 
+-- * Data Structures
+
+type ATPIdentifier = String
 
 data GenericConfig proof_tree = GenericConfig { 
     -- | time limit in seconds passed 
@@ -40,72 +44,121 @@ data GenericConfig proof_tree = GenericConfig {
     resultOutput :: [String]
                                } deriving (Eq, Ord, Show)
 
+{- |
+  Creates an empty GenericConfig with a given goal name.
+  Default time limit, no resultOutput and no extra options.
+-}
+emptyConfig :: (Ord proof_tree) =>
+               String -- ^ name of the prover
+            -> String -- ^ name of the goal
+            -> proof_tree -- ^ initial empty proof_tree
+            -> GenericConfig proof_tree
+emptyConfig prName n proof_tree =
+    GenericConfig {timeLimit = Nothing,
+                   timeLimitExceeded = False,
+                   extraOpts = [],
+                   proof_status = openProof_status n prName proof_tree,
+                   resultOutput = []
+                  }
+
+{- |
+  We need to store one GenericConfig per goal.
+-}
 -- type SPASSConfigsMap = Map.Map SPIdentifier SPASSConfig
-type GenericConfigsMap proof_tree = Map.Map String (GenericConfig proof_tree)
+type GenericConfigsMap proof_tree = Map.Map ATPIdentifier
+                                            (GenericConfig proof_tree)
 
-
+{- |
+  Map to identifiers
+-}
 -- type SPASSGoalNameMap = Map.Map String String
 type GenericGoalNameMap = Map.Map String String
 
 
-{--
--- experimental
 data GenericState sign sentence proof_tree pst = GenericState {
--- ? just a string? or better type parameter?
-    currentGoal :: Maybe String,
-    -- | theory to work on
-    theory :: Theory sign sentence proof_tree,
+    currentGoal :: Maybe ATPIdentifier,
+-- !!? store empty proof_tree?
+    proof_tree :: proof_tree,
     -- | stores the prover configurations for each goal
     -- and the results retrieved by running prover for each goal
     configsMap :: GenericConfigsMap proof_tree,
     -- | stores a mapping to SPASS compliant 
     -- identifiers for all goals
--- ? just two strings in GenericGoalNameMap?
+-- !!? just two strings in GenericGoalNameMap?
     namesMap :: GenericGoalNameMap,
     -- | list of all goals
--- ? is sentence always a term? In SPASS it is.
+-- !!? is sentence always a term? In SPASS it is.
     goalsList :: [AS_Anno.Named sentence],
     -- | logical part without theorems
     proverState :: pst,
     batchModeIsRunning :: Bool,
     mainDestroyed :: Bool
   }
---}
+
 
 
 type InitialProverState sign sentence pst =
       String -- ^ Theory name
       -> sign -> [AS_Anno.Named sentence] -> pst
+type TransSenName = String -> String
 
 {- |
   Creates an initial GenericState around a Theory.
 -}
-{--
-initialGenericState :: InitialProverState sign sentence pst
-                     -> sign -> [AS_Anno.Named sentence]
--- ???
-                     -> GenericState sign sentence proof_tree pst
---}    
-
-{--
-initialState :: Theory Sign Sentence () -> SPASS.Prove2.State
-initialState th = 
-    State {currentGoal = Nothing,
-           theory = th,
-           configsMap = Map.fromList $
-                        map (\ g -> let gName = AS_Anno.senName g
-                                    in (gName, emptyConfig gName)) goals,
-           namesMap = collectNameMapping nSens oSens',
-           goalsList = goals,
-           initialLogicalPart = foldl insertSentence 
-                                      (signToSPLogicalPart sign) 
-                                      (reverse axioms),
-           batchModeIsRunning = False,
-           mainDestroyed = False
-          }
+initialGenericState :: (Show sentence, Ord sentence, Ord proof_tree) =>
+                       String -- ^ name of the prover
+                    -> String -- ^ theory name
+                    -> InitialProverState sign sentence pst
+                    -> TransSenName
+                    -> Theory sign sentence proof_tree
+                    -> proof_tree
+                    -> GenericState sign sentence proof_tree pst
+initialGenericState proverName tName ips tsn th pt =
+    GenericState {currentGoal = Nothing,
+                  proof_tree = pt,
+                  configsMap = Map.fromList $
+                               map (\ g ->
+                                        let gName = AS_Anno.senName g
+                                        in (gName,
+                                            emptyConfig proverName gName pt))
+                                   goals,
+                  namesMap = collectNameMapping nSens oSens',
+                  goalsList = goals,
+                  proverState = ips tName sign oSens',
+                  batchModeIsRunning = False,
+                  mainDestroyed = False
+                 }
     where Theory sign oSens = th
           oSens' = toNamedList oSens
-          nSens = prepareSenNames transSenName oSens'
+          nSens = prepareSenNames tsn oSens'
           (axioms, goals) = partition AS_Anno.isAxiom nSens
 
---}
+{- |
+  Represents the general return value of a prover run.
+-}
+data ATPRetval
+  -- | prover completed successfully
+  = ATPSuccess
+  -- | prover did not terminate before the time limit exceeded
+  | ATPTLimitExceeded
+  -- | an error occured while running the prover
+  | ATPError String
+  deriving (Eq, Show)
+
+{- |
+  Prover specific functions
+-}
+data ATPFunctions sign sentence proof_tree pst = ATPFunctions {
+    initialProverState :: InitialProverState sign sentence pst,
+    atpTransSenName :: TransSenName,
+--    prepareLP :: -- !! to be replaced with addToLP
+--    addToLP :: pst -> AS_Anno.Named sentence -> pst,
+    atpInsertSentence :: pst -> AS_Anno.Named sentence -> pst,
+    proverHelpText :: String,
+    batchTimeEnv :: String, -- ^ environment variable containing time limit for batch time
+    runProver :: pst -- ^ prover state containing logical part
+              -> GenericConfig proof_tree -- ^ configuration to use
+              -> String -- ^ name of the theory in the DevGraph
+              -> AS_Anno.Named sentence -- ^ goal to prove
+              -> IO (ATPRetval, GenericConfig proof_tree) -- ^ (retval, configuration with proof_status and complete output)
+  }
