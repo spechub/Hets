@@ -5,6 +5,16 @@
 
 -- Module: $Id$
 
+{-
+  The Unicode-Module uses sorted lists when matching characters but
+  does not take advantage of this. I improved this by splitting two large lists
+  into smaller lists and using some more intelligent search.
+  The next step is to use a tree-like structure to replace the lists and
+  further improve performance.
+  Splitting the lists saved about 1/3 of time and 2/3 of memory in
+  profiling. - Hendrik
+-}
+
 module Text.XML.HXT.DOM.Unicode
     (
      -- * Unicode Type declarations
@@ -33,6 +43,7 @@ module Text.XML.HXT.DOM.Unicode
     , isXmlPubidChar
     , isXmlLetter
     , isXmlBaseChar
+    , isXmlBaseCharChunked
     , isXmlIdeographicChar
     , isXmlCombiningChar
     , isXmlDigit
@@ -66,6 +77,8 @@ module Text.XML.HXT.DOM.Unicode
 
     , normalizeNL
     , guessEncoding
+    , chunkList
+    , chunkListTo
     )
 where
 
@@ -369,9 +382,8 @@ isXmlLetter c
 -- |
 -- checking for XML base charater
 
-isXmlBaseChar		:: Unicode -> Bool
-isXmlBaseChar c
-    = isInList c
+baseCharList::[(Unicode, Unicode)]
+baseCharList =
       [ ('\x0041', '\x005A')
       , ('\x0061', '\x007A')
       , ('\x00C0', '\x00D6')
@@ -575,6 +587,48 @@ isXmlBaseChar c
       , ('\xAC00', '\xD7A3')
       ]
 
+-- intersects a list into sublists of same length (except on end)
+chunkList::forall a . Int->[a]->[[a]]
+chunkList _ [] = []
+chunkList 0 _ = error "Impossible to chunk to zero-length-chunks!"
+chunkList n l =
+  let
+    (chunk, rest) = splitAt n l
+  in
+    chunk:(chunkList n rest)
+
+-- try to create a specific number of chunks (of same length) from a list
+chunkListTo::forall a . Int->[a]->[[a]]
+chunkListTo 0 _ = error "Impossible to chunk to zero chunks!"
+chunkListTo chunks l =
+  let
+    listlen = length l
+    -- this could be calculated via logarithm but
+    -- it would require casting the number and the precision
+    -- is not needed anyway...
+    chunklen =
+      until
+        (\cl -> (cl * chunks) >= listlen)
+        (+ 1)
+        1
+  in
+    chunkList chunklen l
+
+isXmlBaseChar		:: Unicode -> Bool
+isXmlBaseChar c
+--    = isInList c baseCharList
+  = isXmlBaseCharChunked c
+
+-- I tried reducing search-overhead by separating the list
+-- into 10 pieces. Optimum value remains to be found... (or other structure)
+baseCharListChunked::[[(Unicode, Unicode)]]
+baseCharListChunked = chunkListTo 10 baseCharList
+
+-- like isXmlBaseChar, but use chunked list
+isXmlBaseCharChunked :: Unicode -> Bool
+isXmlBaseCharChunked c
+  = isInChunkedList c baseCharListChunked
+
 -- |
 -- checking for XML ideographic charater
 
@@ -589,9 +643,8 @@ isXmlIdeographicChar c
 -- |
 -- checking for XML combining charater
 
-isXmlCombiningChar	:: Unicode -> Bool
-isXmlCombiningChar c
-    = isInList c
+combiningCharList::[(Unicode, Unicode)]
+combiningCharList =
       [ ('\x0300', '\x0345')
       , ('\x0360', '\x0361')
       , ('\x0483', '\x0486')
@@ -689,6 +742,19 @@ isXmlCombiningChar c
       , ('\x309A', '\x309A')
       ]
 
+combiningCharListChunked::[[(Unicode, Unicode)]]
+combiningCharListChunked =
+  chunkListTo 10 combiningCharList
+
+isXmlCombiningCharChunked :: Unicode -> Bool
+isXmlCombiningCharChunked c =
+  isInChunkedList c combiningCharListChunked
+
+isXmlCombiningChar	:: Unicode -> Bool
+isXmlCombiningChar c
+--  = isInList c combiningCharList
+  = isXmlCombiningCharChunked c
+
 -- |
 -- checking for XML digit
 
@@ -776,6 +842,22 @@ isInList i ((lb, ub) : l)
 
 isInList _ []
     = False
+
+listFor:: Unicode-> [[(Unicode, Unicode)]] -> [(Unicode, Unicode)]
+listFor _ [] = []
+listFor i cl =
+  foldl (\(oldlist@((clb, _):_)) (newlist@((lb, _):_)) ->
+    if (lb <= i) && (lb > clb)
+      then
+        newlist
+      else
+        oldlist
+    )
+    (head cl)
+    (tail cl)
+
+isInChunkedList :: Unicode -> [[(Unicode, Unicode)]] -> Bool
+isInChunkedList i cl = isInList i (listFor i cl)
 
 -- ------------------------------------------------------------
 
