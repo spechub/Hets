@@ -15,28 +15,26 @@ Used by GUI.GenericATP.
 
 module GUI.GenericATPState where
 
-
 import Logic.Prover
 
 import qualified Common.AS_Annotation as AS_Anno
+import qualified Common.Lib.Map as Map
 import Common.ProofUtils
 
 import Data.List
-
-import qualified Common.Lib.Map as Map
 
 
 -- * Data Structures
 
 type ATPIdentifier = String
 
-data GenericConfig proof_tree = GenericConfig { 
-    -- | time limit in seconds passed 
-    -- to SPASS via -TimeLimit. Default will be used if Nothing.
+data GenericConfig proof_tree = GenericConfig {
+    -- | Time limit in seconds passed
+    -- to prover via extra option. Default will be used if Nothing.
     timeLimit :: Maybe Int,
-    -- | True if timelimit exceed during last prover run
+    -- | True if timelimit exceeded during last prover run.
     timeLimitExceeded :: Bool,
-    -- | extra options passed verbatimely to SPASS. 
+    -- | Extra options passed verbatimely to prover.
     -- -DocProof, -Stdin, and -TimeLimit will be overridden.
     extraOpts :: [String],
     -- | Represents the result of a prover run.
@@ -64,17 +62,17 @@ emptyConfig prName n proof_tree =
 {- |
   We need to store one GenericConfig per goal.
 -}
--- type SPASSConfigsMap = Map.Map SPIdentifier SPASSConfig
 type GenericConfigsMap proof_tree = Map.Map ATPIdentifier
                                             (GenericConfig proof_tree)
 
 {- |
   Map to identifiers
 -}
--- type SPASSGoalNameMap = Map.Map String String
 type GenericGoalNameMap = Map.Map String String
 
-
+{- |
+  Represents the global state of the prover GUI.
+-}
 data GenericState sign sentence proof_tree pst = GenericState {
     currentGoal :: Maybe ATPIdentifier,
 -- !!? store empty proof_tree?
@@ -82,7 +80,7 @@ data GenericState sign sentence proof_tree pst = GenericState {
     -- | stores the prover configurations for each goal
     -- and the results retrieved by running prover for each goal
     configsMap :: GenericConfigsMap proof_tree,
-    -- | stores a mapping to SPASS compliant 
+    -- | stores a mapping to SPASS compliant
     -- identifiers for all goals
 -- !!? just two strings in GenericGoalNameMap?
     namesMap :: GenericGoalNameMap,
@@ -95,11 +93,12 @@ data GenericState sign sentence proof_tree pst = GenericState {
     mainDestroyed :: Bool
   }
 
-
-
+{- |
+  Initialising the specific prover state containing logical part.
+-}
 type InitialProverState sign sentence pst =
-      String -- ^ Theory name
-      -> sign -> [AS_Anno.Named sentence] -> pst
+        String -- ^ Theory name
+        -> sign -> [AS_Anno.Named sentence] -> pst
 type TransSenName = String -> String
 
 {- |
@@ -145,20 +144,22 @@ data ATPRetval
   | ATPError String
   deriving (Eq, Show)
 
+type RunProver sentence proof_tree pst =
+        pst -- ^ prover state containing logical part
+        -> GenericConfig proof_tree -- ^ configuration to use
+        -> String -- ^ name of the theory in the DevGraph
+        -> AS_Anno.Named sentence -- ^ goal to prove
+        -> IO (ATPRetval, GenericConfig proof_tree) -- ^ (retval, configuration with proof_status and complete output)
+
 {- |
   Prover specific functions
 -}
 data ATPFunctions sign sentence proof_tree pst = ATPFunctions {
     initialProverState :: InitialProverState sign sentence pst,
     atpTransSenName :: TransSenName,
---    prepareLP :: -- !! to be replaced with addToLP
---    addToLP :: pst -> AS_Anno.Named sentence -> pst,
     atpInsertSentence :: pst -> AS_Anno.Named sentence -> pst,
     proverHelpText :: String,
     batchTimeEnv :: String, -- ^ environment variable containing time limit for batch time
-    runProver :: pst -- ^ prover state containing logical part
-              -> GenericConfig proof_tree -- ^ configuration to use
-              -> String -- ^ name of the theory in the DevGraph
-              -> AS_Anno.Named sentence -- ^ goal to prove
-              -> IO (ATPRetval, GenericConfig proof_tree) -- ^ (retval, configuration with proof_status and complete output)
+    fileExtensions :: (String, String), -- ^ file extensions for both prover output and configuration
+    runProver :: RunProver sentence proof_tree pst
   }
