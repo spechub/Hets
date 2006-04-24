@@ -17,3 +17,9 @@ spec X1 =
      . R1(x as T1,i1)
 end
 
+spec X2 =
+     sort S1 < Thing
+     pred R : S1 * Thing
+     forall x : S1
+     . x in S1 <=> cardinality[R](x,2)
+
