@@ -537,6 +537,7 @@ o_clean:
 bin_clean:
 	$(RM) hets
 	$(RM) hets.cgi
+	$(RM) showKP
 	$(RM) $(TESTTARGETS)
 
 clean_pretty: 
@@ -556,12 +557,6 @@ distclean: clean clean_genRules
 ####################################################################
 ### test targets
 ####################################################################
-
-### a parser to test annotation parser and Id parsers
-test_parser: Common/test_parser
-
-Common/test_parser: Common/test_parser.hs Common/AS_Annotation.der.hs
-	$(HC) --make -o $@ $< $(HC_OPTS)
 
 ### interactive
 ghci: $(derived_sources)
