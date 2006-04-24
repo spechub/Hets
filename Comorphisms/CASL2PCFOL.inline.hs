@@ -27,7 +27,7 @@ import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Morphism 
-import CASL.Sublogic
+import CASL.Sublogic as Sublogic
 import CASL.Inject
 import CASL.Project
 import CASL.Overload
@@ -50,27 +50,20 @@ instance Comorphism CASL2PCFOL
                CASLMor
                Symbol RawSymbol () where
     sourceLogic CASL2PCFOL = CASL
-    sourceSublogic CASL2PCFOL = CASL_SL
-                      { sub_features = Sub,
-                        has_part = True,
-                        cons_features = SortGen { emptyMapping = False,
-                                                  onlyInjConstrs = False},
-                        has_eq = True,
-                        has_pred = True,
-                        which_logic = FOL
-                      }
+    sourceSublogic CASL2PCFOL = Sublogic.top
     targetLogic CASL2PCFOL = CASL
-    targetSublogic CASL2PCFOL = CASL_SL
-                      { sub_features = NoSub, -- subsorting is coded out
-                        has_part = True,
-                        cons_features = SortGen { emptyMapping = False,
-                                                  onlyInjConstrs = False},
-                        has_eq = True,
-                        has_pred = True,
-                        which_logic = FOL
-                      }
+    targetSublogic CASL2PCFOL = 
+        mapSublogic CASL2PCFOL $ sourceSublogic CASL2PCFOL
+    mapSublogic CASL2PCFOL sl = if has_sub sl then -- subsorting is coded out
+                                      sl { sub_features = NoSub
+                                         , has_part    = True
+                                         , which_logic = max Horn 
+                                                         $ which_logic sl 
+                                         , has_eq      = True}
+                                  else sl
     map_theory CASL2PCFOL = mkTheoryMapping ( \ sig -> 
-      let e = encodeSig sig in return (e, monotonicities sig ++ generateAxioms sig))
+      let e = encodeSig sig in 
+      return (e, monotonicities sig ++ generateAxioms sig))
       (map_sentence CASL2PCFOL)
     map_morphism CASL2PCFOL mor = return 
       (mor  { msource =  encodeSig $ msource mor,
@@ -178,14 +171,17 @@ makeEquivMonoRs o o1 o2 rs args = map (makeEquivMonoR o o1 o2 args) rs
 makeEquivMonoR :: Id -> OpType -> OpType -> 
                   [SORT] -> SORT -> Named (FORMULA f)
 makeEquivMonoR o o1 o2 args res = 
-    let vds = zipWith (\ s n -> Var_decl [mkSelVar "x" n] s nullRange) args [1..]
+    let vds = zipWith (\ s n -> Var_decl [mkSelVar "x" n] s nullRange) 
+              args [1..]
         a1 = zipWith (\ v s -> 
                       inject nullRange (toQualVar v) s) vds $ opArgs o1
         a2 = zipWith (\ v s -> 
                       inject nullRange (toQualVar v) s) vds $ opArgs o2
-        t1 = inject nullRange (Application (Qual_op_name o (toOP_TYPE o1) nullRange) a1 nullRange)
+        t1 = inject nullRange (Application (Qual_op_name o (toOP_TYPE o1) 
+                                            nullRange) a1 nullRange)
              res
-        t2 = inject nullRange (Application (Qual_op_name o (toOP_TYPE o2) nullRange) a2 nullRange) 
+        t2 = inject nullRange (Application (Qual_op_name o (toOP_TYPE o2)
+                                            nullRange) a2 nullRange) 
              res
      in NamedSen "ga_function_monotonicity" True False
          $ mkForall vds (Existl_equation t1 t2 nullRange) nullRange
@@ -202,13 +198,16 @@ makeEquivPredMono o sig o1 o2 =
 
 makeEquivPred :: Id -> PredType -> PredType -> [SORT] -> Named (FORMULA f)
 makeEquivPred o o1 o2 args = 
-    let vds = zipWith (\ s n -> Var_decl [mkSelVar "x" n] s nullRange) args [1..]
+    let vds = zipWith (\ s n -> Var_decl [mkSelVar "x" n] s nullRange) 
+              args [1..]
         a1 = zipWith (\ v s -> 
                       inject nullRange (toQualVar v) s) vds $ predArgs o1
         a2 = zipWith (\ v s -> 
                       inject nullRange (toQualVar v) s) vds $ predArgs o2
-        t1 = Predication (Qual_pred_name o (toPRED_TYPE o1) nullRange) a1 nullRange
-        t2 = Predication (Qual_pred_name o (toPRED_TYPE o2) nullRange) a2 nullRange
+        t1 = Predication (Qual_pred_name o (toPRED_TYPE o1) nullRange) a1
+             nullRange
+        t2 = Predication (Qual_pred_name o (toPRED_TYPE o2) nullRange) a2
+             nullRange
     in NamedSen "ga_predicate_monotonicity" True False
         $ mkForall vds (Equivalence t1 t2 nullRange) nullRange
 
