@@ -152,7 +152,7 @@ has_cons sl = case cons_features sl of
 -- top element
 --
 top :: CASL_Sublogics
-top = (CASL_SL LocFilSub True (SortGen False False) True True FOL)
+top = (CASL_SL Sub True (SortGen False False) True True FOL)
 
 -- bottom element
 --
