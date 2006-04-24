@@ -96,21 +96,21 @@ spassComorphisms =
                         (cons_features top) {emptyMapping = True} }
            max_sub_SPASS = max_nosub_SPASS { sub_features = LocFilSub }
            idCASL_sub = Comorphism (IdComorphism CASL max_sub_SPASS)
-           -- idCASL_nosub = Comorphism (IdComorphism CASL max_nosub_SPASS)
+           idCASL_nosub = Comorphism (IdComorphism CASL max_nosub_SPASS)
            compSPASS x = compComorphism x (Comorphism CASL2SPASS)
        partOut <- (compComorphism idCASL_sub (Comorphism CASL2SubCFOL)
                    >>= compSPASS)
-{-       partSubOut <- (compComorphism (Comorphism CASL2PCFOL) 
-                                     (Comorphism PCFOL2CFOL)
+       partSubOut <- (compComorphism (Comorphism CASL2PCFOL) 
+                                     (Comorphism CASL2SubCFOL)
                       >>= (compComorphism idCASL_nosub)
-                      >>= compSPASS)-}
+                      >>= compSPASS)
        -- mod2SPASS <- compComorphism (Comorphism Modal2CASL) partOut
-       return [Comorphism CASL2SPASS,partOut]
+       return [Comorphism CASL2SPASS,partOut,partSubOut]
 
 showAllKnownProvers :: IO ()
 showAllKnownProvers =
     do let Result ds mkpMap = knownProvers
-       putStrLn "Diagnostics:"
+       putStrLn "Diagnoses:"
        putStrLn $ unlines $ map show ds
        maybe exitFailure showKnownProvers mkpMap
 
