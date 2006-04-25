@@ -1,10 +1,9 @@
 #!/bin/bash -x
 
-PATH=/bin:/usr/bin:/usr/X11R6/bin:/home/linux-bkb/bin
+PATH=/local/home/maeder/ghc-6.4.2/bin:/bin:/usr/bin:/usr/X11R6/bin:/home/linux-bkb/bin
 UDG_HOME=/home/linux-bkb/uDrawGraph-3.1
 MAKE=make
 HETS_LIB=/local/home/maeder/haskell/CASL-lib
-GHCRTS='-H300m -M1g'
 
 export PATH
 export MAKE
@@ -25,6 +24,9 @@ h2hf=HetCATS/Haskell/h2hf
 rm $h2hf
 # optimize a bit using optimized programatica stuff
 cd HetCATS
+rm Haskell/*.o
+rm Comorphisms/*.o
+rm Isabelle/*.o
 $MAKE h2hf
 cd ..
 strip $h2hf
@@ -69,17 +71,16 @@ fgrep \*\*\* ../../../isaHC2.log
 cd ../..
 
 # try out other binaries
-../HetCATS/hetpa Basic/LinearAlgebra_II.casl
-../HetCATS/hetana Basic/LinearAlgebra_II.casl
+../HetCATS/Syntax/hetpa Basic/LinearAlgebra_II.casl
 
-../HetCATS/atermlibtest Basic/*.env
+../HetCATS/Common/ATerm/ATermLibTest Basic/*.env
 diff Basic/LinearAlgebra_II.env Basic/LinearAlgebra_II.env.ttttt
 
-time ../HetCATS/hatermdiff Basic/LinearAlgebra_II.env \
+time ../HetCATS/Common/ATerm/ATermDiffMain Basic/LinearAlgebra_II.env \
     Basic/LinearAlgebra_II.env.ttttt
 
 cats -input=nobin -output=nobin -spec=gen_aterm Basic/SimpleDatatypes.casl
-../HetCATS/atctest Basic/SimpleDatatypes.tree.gen_trm
+../HetCATS/ATC/ATCTest Basic/SimpleDatatypes.tree.gen_trm
 ./hets -v3 -p -i gen_trm -o pp.het Basic/SimpleDatatypes.tree.gen_trm
 
 # build user guide
