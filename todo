@@ -47,6 +47,10 @@ Bremer Constraint-Solver angucken
 Hendrik (Till)
 ************************************************
 werden Links in der richtigen Reihenfolge geschrieben (S. 183 OMDoc)?
+
+werden Signatur-Symbole in OMDoc mit der Theorie versehen, in der
+  sie als erstes eingeführt wurden?
+
 Hiding: unterschiedlich in OMDoc und Hets
 ein Hets-Hiding-Link mit einer Inklusion Sigma_1->Sigma_2 als 
   Signaturmorphismus
@@ -163,6 +167,9 @@ Hilfskraft 1
 Modal-CASL <-> CASL-DL
   see Chapter 4 of "The Description Logic Handbook"
       and ask Klaus for a print out of it
+
+improve Modal-CASL
+  possibly also modal logic in CoCASL
 
 ************************************************
 Hilfskraft 2
@@ -296,7 +303,13 @@ CCS example: commutativity of || by coinduction
 Christian
 ************************************************
 
+correct CASL2Isabelle 
+  (inconsistency due to coding of free datatypes)
 
+graph of Haskell module dependencies
+  using .import files
+
+more abstract datatypes?
 
 collect the patches for programatica (or create a package)
 -    conv (SN i p) = PN i (S p)
@@ -598,6 +611,7 @@ Remove warnings
 Different types of logic translations
 Improve Static analysis of structured specs
 Development graph calculus, Strategies for DG rules
+  use graph grammars to model rules? transformation units?
 Management of change
 
 Integrate provers
