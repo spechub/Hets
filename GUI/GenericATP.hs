@@ -13,13 +13,14 @@ Generic GUI for theorem provers. Based upon former SPASS Prover GUI.
 -}
 
 {- ToDo:
+      - combine functions prepareLP and addToLP
 
-   - ATPFunctions in genericATPgui richtig verwenden
-   - state initialisieren
-   - kleine GUI mit Exit-Button lauffaehig aufbauen
+      - window opens too small on linux; why? ... maybe fixed
+      --> failure still there, opens sometimes too small (using KDE),
+          but not twice in a row
 
-   - import graphical functions from old SPASS/Prove.hs
-   - generalize graphical functions
+      - keep focus of listboxes if updated (also relevant for
+        in GUI.ProofManagement)
 
 -}
 
@@ -28,10 +29,7 @@ module GUI.GenericATP where
 import Logic.Prover
 
 import qualified Common.AS_Annotation as AS_Anno
--- import Common.ProofUtils
-import Common.PrettyPrint
 import qualified Common.Lib.Map as Map
--- import qualified Common.OrderedMap as OMap
 
 import Data.List
 import Data.Maybe
@@ -52,13 +50,6 @@ import XSelection
 import Space
 
 import GUI.HTkUtils
-
--- import Proofs.GUIState
--- import Logic.Logic
--- import Logic.Grothendieck
--- import qualified Comorphisms.KnownProvers as KnownProvers
--- import qualified Static.DevGraph as DevGraph
-
 import GUI.GenericATPState
 
 -- debugging
@@ -112,7 +103,7 @@ adjustOrSetConfig :: (Ord proof_tree) =>
                      -- configuration or a new emptyConfig
                   -> String -- ^ name of the prover
                   -> ATPIdentifier -- ^ name of the goal
-                  -> proof_tree
+                  -> proof_tree -- ^ initial empty proof_tree
                   -> GenericConfigsMap proof_tree -- ^ current GenericConfigsMap
                   -> GenericConfigsMap proof_tree
                   -- ^ resulting GenericConfigsMap with the changes applied
@@ -128,7 +119,7 @@ adjustOrSetConfig f prName k pt m = if (Map.member k m)
 getConfig :: (Ord proof_tree) =>
              String -- ^ name of the prover
           -> ATPIdentifier -- ^ name of the goal
-          -> proof_tree
+          -> proof_tree -- ^ initial empty proof_tree
           -> GenericConfigsMap proof_tree
           -> GenericConfig proof_tree
 getConfig prName genid pt m = maybe (emptyConfig prName genid pt)
@@ -187,14 +178,14 @@ statusDisproved :: (ProofStatusColour, String)
 statusDisproved = (Red, "Disproved")
 
 {- |
-  Generates a ('ProofStatusColour', 'String') tuple representing a Open proof
+  Generates a ('ProofStatusColour', 'String') tuple representing an Open proof
   status.
 -}
 statusOpen :: (ProofStatusColour, String)
 statusOpen = (Black, "Open")
 
 {- |
-  Generates a ('ProofStatusColour', 'String') tuple representing a Open proof
+  Generates a ('ProofStatusColour', 'String') tuple representing an Open proof
   status in case the time limit has been exceeded.
 -}
 statusOpenTExceeded :: (ProofStatusColour, String)
@@ -248,9 +239,9 @@ goalsView s = map (\ g ->
                                       goalDescription = g})
                    (map AS_Anno.senName (goalsList s))
 
--- ** GUI Implementation
+-- * GUI Implementation
 
--- *** Utility Functions
+-- ** Utility Functions
 
 {- |
   Retrieves the value of the time limit 'Entry'. Ignores invalid input.
@@ -279,7 +270,7 @@ batchInfoText tl gTotal gDone =
   show gDone ++ "/" ++ show gTotal ++ " goals processed.\n" ++
   "At most "++show hours++"h "++show mins++"m "++show secs++"s remaining."
 
--- *** Callbacks
+-- ** Callbacks
 
 {- |
   Called every time a goal has been processed in the batch mode gui.
@@ -403,7 +394,7 @@ newOptionsFrame con updateFn = do
                    , of_timeEntry = timeEntry
                    , of_optionsEntry = optionsEntry}
 
--- *** Main GUI
+-- ** Main GUI
 
 -- !! rewrite haddock comment
 {- |
@@ -423,28 +414,11 @@ genericATPgui atpFun prName thName th pt = do
                     (initialProverState atpFun)
                     (atpTransSenName atpFun) th pt
   stateRef <- newIORef initState
--- !! read ENV from ATPFunctions or pst
   batchTLimit <- getBatchTimeLimit $ batchTimeEnv atpFun
 
   -- main window
   main <- createToplevel [text $ thName ++ " - " ++ prName ++ " Prover"]
   pack main [Expand On, Fill Both]
-
--- !! for just having a running window with exit button
-{-
-  exitButton <- newButton main [text "Exit Prover"]
-  pack exitButton []
-
-  putWinOnTop main
-
-  -- IORef for batch thread
-  threadStateRef <- newIORef initialThreadState
-
-  -- events
-  exit <- clicked exitButton
-
-  (closeWindow,_) <- bindSimple main Destroy
--}
 
   -- VBox for the whole window
   b <- newVBox main []
@@ -714,26 +688,21 @@ genericATPgui atpFun prName thName th pt = do
           when (isJust sel) $ enableWids [EnW detailsButton,EnW saveDFGButton]
           updateDisplay s'' False lb statusLabel timeEntry optionsEntry axiomsLb
           done)
--- !! solve problem with genProverProblem (formerly genSPASSProblem)
-{-
       +> (saveDFG >>> do
             rs <- readIORef stateRef
             inclProvedThs <- readTkVariable inclProvedThsTK
             maybe (return ())
                   (\ goal -> do
--- !! changed, check it!
                       let (nGoal,lp') =
                               prepareLP (proverState rs)
                                         rs goal inclProvedThs
--- !! changed, check it!
-                      prob <- (genProverProblem atpFun) thName lp' (Just nGoal)
-                      createTextSaveDisplay (prName ++ " Problem for Goal "++goal)
+                      prob <- (dfgOutput atpFun) lp' nGoal
+                      createTextSaveDisplay (prName++" Problem for Goal "++goal)
                                             (thName++goal++".dfg")
-                                            (showPretty prob "")
+                                            (prob)
                   )
                   $ currentGoal rs
             done)
--}
       +> (doProve >>> do
             rs <- readIORef stateRef
             if isNothing $ currentGoal rs
@@ -747,7 +716,6 @@ genericATPgui atpFun prName thName th pt = do
                                             (setTimeLimit curEntTL)
                                             prName goal pt
                                             (configsMap rs)}
--- !! changed, check it!
                     (nGoal,lp') = prepareLP (proverState rs)
                                         rs goal inclProvedThs
                 extraOptions <- (getValue optionsEntry) :: IO String
@@ -759,7 +727,6 @@ genericATPgui atpFun prName thName th pt = do
                 statusLabel # foreground (show $ fst statusRunning)
                 disableWids wids
                 (retval, cfg) <-
--- !! changed, check it!
                     (runProver atpFun) lp'
                           (getConfig prName goal pt $ configsMap s')
                           thName nGoal
@@ -1022,7 +989,7 @@ genericProveBatch :: (Ord proof_tree) =>
                   -> String -- ^ theory name
                   -> GenericState sign sentence proof_tree pst
                   -> IO ([Proof_status proof_tree]) -- ^ proof status for each goal
-genericProveBatch tLimit extraOptions inclProvedThs f inSen runProver
+genericProveBatch tLimit extraOptions inclProvedThs f inSen runGivenProver
                   prName thName st =
     batchProve (proverState st) 0 [] (goalsList st)
   {- do -- putStrLn $ showPretty initialLogicalPart ""
@@ -1048,15 +1015,15 @@ genericProveBatch tLimit extraOptions inclProvedThs f inSen runProver
         putStrLn $ "Trying to prove goal: " ++ gName
         -- putStrLn $ show g
         (err, res_cfg) <-
-              runProver pst ((emptyConfig prName gName pt)
-                              { timeLimit = Just tLimit
-                              , extraOpts = words extraOptions })
-                        thName g
+              runGivenProver pst ((emptyConfig prName gName pt)
+                                   { timeLimit = Just tLimit
+                                   , extraOpts = words extraOptions })
+                             thName g
         let res = proof_status res_cfg
         putStrLn $ prName ++ " returned: " ++ (show err)
         -- if the batch prover runs in a separate thread
         -- that's killed via killThread
-        -- runProver will return ATPError. We have to stop the
+        -- runGivenProver will return ATPError. We have to stop the
         -- recursion in that case
         case err of
           ATPError _ -> return ((reverse (res:resDone)) ++
