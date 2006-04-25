@@ -47,10 +47,10 @@ import Haskell.CreateModules
 import Isabelle.CreateTheories
 import Isabelle.IsaParse
 import SPASS.CreateDFGDoc
---import OMDoc.OMDocOutput
 
 import Logic.Prover
 import Static.DevGraph
+import Static.DotGraph
 import Static.DGToSpec
 import qualified Static.PrintDevGraph as DG
 import Proofs.StatusUtils
@@ -160,6 +160,9 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
               writeVerbFile opt f str
           OmdocOut ->
             devGraphToOMDoc opt (ln, lenv) f
+          GraphOut Dot ->
+            writeVerbFile opt f . concat . dot . devGraph $ 
+                          lookupGlobalContext ln lenv
           _ -> return () -- treat others below
           ) outTypes
     mapM_ ( \ i -> case Map.lookup i gctx of
