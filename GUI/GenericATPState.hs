@@ -51,11 +51,11 @@ emptyConfig :: (Ord proof_tree) =>
             -> String -- ^ name of the goal
             -> proof_tree -- ^ initial empty proof_tree
             -> GenericConfig proof_tree
-emptyConfig prName n proof_tree =
+emptyConfig prName n pt =
     GenericConfig {timeLimit = Nothing,
                    timeLimitExceeded = False,
                    extraOpts = [],
-                   proof_status = openProof_status n prName proof_tree,
+                   proof_status = openProof_status n prName pt,
                    resultOutput = []
                   }
 
@@ -112,14 +112,14 @@ initialGenericState :: (Show sentence, Ord sentence, Ord proof_tree) =>
                     -> Theory sign sentence proof_tree
                     -> proof_tree
                     -> GenericState sign sentence proof_tree pst
-initialGenericState proverName tName ips tsn th pt =
+initialGenericState prName tName ips trSenName th pt =
     GenericState {currentGoal = Nothing,
                   proof_tree = pt,
                   configsMap = Map.fromList $
                                map (\ g ->
                                         let gName = AS_Anno.senName g
                                         in (gName,
-                                            emptyConfig proverName gName pt))
+                                            emptyConfig prName gName pt))
                                    goals,
                   namesMap = collectNameMapping nSens oSens',
                   goalsList = goals,
@@ -129,8 +129,8 @@ initialGenericState proverName tName ips tsn th pt =
                  }
     where Theory sign oSens = th
           oSens' = toNamedList oSens
-          nSens = prepareSenNames tsn oSens'
-          (axioms, goals) = partition AS_Anno.isAxiom nSens
+          nSens = prepareSenNames trSenName oSens'
+          (_, goals) = partition AS_Anno.isAxiom nSens
 
 {- |
   Represents the general return value of a prover run.
@@ -158,6 +158,7 @@ data ATPFunctions sign sentence proof_tree pst = ATPFunctions {
     initialProverState :: InitialProverState sign sentence pst,
     atpTransSenName :: TransSenName,
     atpInsertSentence :: pst -> AS_Anno.Named sentence -> pst,
+    dfgOutput :: pst -> AS_Anno.Named sentence-> IO String,
     proverHelpText :: String,
     batchTimeEnv :: String, -- ^ environment variable containing time limit for batch time
     fileExtensions :: (String, String), -- ^ file extensions for both prover output and configuration
