@@ -13,28 +13,12 @@ See <http://spass.mpi-sb.mpg.de/> for details on SPASS.
 
 -}
 
-{- 
-    todo:
-
-      - (done) rework output of saveConfiguration
-
-      - (work in progress) exclude graphical interface into genericATP
-        - create help functions for connecting GUI.GenericATP with Spass
-          specific functions. Use ATPFunctions for this.
-
-      - window opens too small on linux; why? ... maybe fixed
-      --> failure still there, opens sometimes too small (using KDE),
-          but not twice in a row
-
-      - keep focus of listboxes if updated (also relevant for 
-        in GUI.ProofManagement)
-
-      - check if the theorem is used in the proof; 
-        if not, the theory is inconsistent; 
+{-
+      - check if the theorem is used in the proof;
+        if not, the theory is inconsistent;
         mark goal as proved and emmit a warning...
 
       - Implement a consistency checker based on GUI
-
 -}
 
 module SPASS.Prove2 (spassProver,spassProveGUI) where
@@ -49,7 +33,7 @@ import SPASS.Print (genSPASSProblem)
 
 import qualified Common.AS_Annotation as AS_Anno
 import Common.ProofUtils
-import Common.PrettyPrint 
+import Common.PrettyPrint
 
 import ChildProcess
 import ProcessClasses
@@ -61,7 +45,6 @@ import qualified Control.Exception as Exception
 
 import System
 
--- !! used? where?
 import HTk
 
 import GUI.GenericATP
@@ -88,36 +71,39 @@ data SPASSProverState = SPASSProverState
 
 -- * Main GUI
 
--- !! rewrite haddock comment
 {- |
-  Invokes the prover GUI. First runs the batch prover on all goals,
-  then drops the user into a detailed GUI.
+  Invokes the generic prover GUI. Specific SPASS functions are omitted by
+  data type ATPFunctions.
 -}
 spassProveGUI :: String -- ^ theory name
               -> Theory Sign Sentence () -- ^ theory consisting of a SPASS.Sign.Sign and a list of Named SPASS.Sign.Sentence
               -> IO([Proof_status ()]) -- ^ proof status for each goal
--- !! missing here: spassProverState, addToSpassLP and adapt runSpass
 spassProveGUI thName th =
     genericATPgui atpFun (prover_name spassProver) thName th ()
-    where
-        insertSentenceGen pst s = pst{
-          initialLogicalPart = insertSentence (initialLogicalPart pst) s}
-        spassProverState thName sign oSens' = SPASSProverState
-          { initialLogicalPart = foldl insertSentence
-                                       (signToSPLogicalPart sign) 
-                                       (reverse axioms)
-          }
-          where nSens = prepareSenNames transSenName oSens'
-                (axioms, _) = partition AS_Anno.isAxiom nSens
 
-        atpFun = ATPFunctions
-          { initialProverState = spassProverState,
-            atpTransSenName = transSenName,
-            atpInsertSentence = insertSentenceGen,
-            proverHelpText = spassHelpText,
-            batchTimeEnv = "HETS_SPASS_BATCH_TIME_LIMIT",
-            fileExtensions = (".spass", ".spcf"),
-            runProver = runSpass}
+    where
+      insertSentenceGen pst s = pst{initialLogicalPart =
+                                      insertSentence (initialLogicalPart pst) s}
+      spassProverState _ sign oSens' = SPASSProverState
+        { initialLogicalPart = foldl insertSentence
+                                     (signToSPLogicalPart sign)
+                                     (reverse axioms)
+        }
+        where nSens = prepareSenNames transSenName oSens'
+              (axioms, _) = partition AS_Anno.isAxiom nSens
+
+      showPrettyProblem pst nGoal = do
+        prob <- genSPASSProblem thName (initialLogicalPart pst) $ Just nGoal
+        return $ showPretty prob ""
+      atpFun = ATPFunctions
+        { initialProverState = spassProverState,
+          atpTransSenName = transSenName,
+          atpInsertSentence = insertSentenceGen,
+          dfgOutput = showPrettyProblem,
+          proverHelpText = spassHelpText,
+          batchTimeEnv = "HETS_SPASS_BATCH_TIME_LIMIT",
+          fileExtensions = (".spass", ".spcf"),
+          runProver = runSpass}
 
 
 -- * SPASS Interfacing Code
@@ -169,7 +155,7 @@ parseSpassOutput spass = parseProtected (parseStart True) (Nothing, [], [])
                   return (Nothing, [], output ++ [line, "", "SPASS has been terminated."])
                 ChildExited retval ->
                   return (Nothing, [], output ++ [line, "", "SPASS returned error: "++(show retval)])
-          
+
     -- actual parsing. tries to read from SPASS until ".*SPASS-STOP.*" matches.
     parseIt (res, usedAxs, output) = do
       line <- readMsg spass
@@ -210,7 +196,7 @@ runSpass sps cfg thName nGoal = do
       return (case excep of
                 -- this is supposed to distinguish "fd ... vanished"
                 -- errors from other exceptions
-                Exception.IOException e -> 
+                Exception.IOException e ->
                     (ATPError ("Internal error communicating "++
                                "with SPASS.\n"++show e),
                               emptyConfig (prover_name spassProver)
@@ -225,8 +211,8 @@ runSpass sps cfg thName nGoal = do
       -- check if SPASS is running
       e <- getToolStatus spass
       if isJust e
-        then return 
-                 (ATPError "Could not start SPASS. Is SPASS in your $PATH?", 
+        then return
+                 (ATPError "Could not start SPASS. Is SPASS in your $PATH?",
                   emptyConfig (prover_name spassProver)
                               (AS_Anno.senName nGoal) ())
         else do
@@ -234,25 +220,25 @@ runSpass sps cfg thName nGoal = do
           prob <- genSPASSProblem thName lp (Just nGoal)
           sendMsg spass (showPretty prob "")
           (res, usedAxs, output) <- parseSpassOutput spass
-          let (err, retval) = proof_status res usedAxs cleanOptions
+          let (err, retval) = proof_stat res usedAxs cleanOptions
           return (err,
                   cfg{proof_status = retval,
                       resultOutput = output})
 
     filterOptions = ["-DocProof", "-Stdin", "-TimeLimit"]
-    cleanOptions = filter (\ opt -> not (or (map (flip isPrefixOf opt) 
-                                                 filterOptions))) 
+    cleanOptions = filter (\ opt -> not (or (map (flip isPrefixOf opt)
+                                                 filterOptions)))
                           (extraOpts cfg)
     tLimit = if isJust (timeLimit cfg)
                then fromJust (timeLimit cfg)
                -- this is OK. the batch prover always has the time limit set
                else guiDefaultTimeLimit
     allOptions = cleanOptions ++ ["-DocProof", "-Stdin", "-TimeLimit=" ++ (show tLimit)]
-    defaultProof_status opts = 
+    defaultProof_status opts =
         (openProof_status (AS_Anno.senName nGoal) (prover_name spassProver) ())
         {tacticScript = Tactic_script $ concatMap (' ':) opts}
 
-    proof_status res usedAxs options
+    proof_stat res usedAxs options
       | isJust res && elem (fromJust res) proved =
           (ATPSuccess,
            (defaultProof_status options)
@@ -261,7 +247,7 @@ runSpass sps cfg thName nGoal = do
                                    else Just False
            , usedAxioms = filter (/=(AS_Anno.senName nGoal)) usedAxs })
       | isJust res && elem (fromJust res) disproved =
-          (ATPSuccess,  
+          (ATPSuccess,
            (defaultProof_status options) { goalStatus = Disproved } )
       | isJust res && elem (fromJust res) timelimit =
           (ATPTLimitExceeded, defaultProof_status options)
