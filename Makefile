@@ -79,7 +79,7 @@ logics = CASL HasCASL Isabelle Modal CoCASL COL CspCASL CASL_DL SPASS \
     OWL_DL ConstraintCASL
 
 TESTTARGETFILES += CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
-    Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs Static/hetana.hs \
+    Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
     ATC/ATCTest.hs ATC/ATCTest2.hs Common/ATerm/ATermLibTest.hs \
     Common/ATerm/ATermDiffMain.hs Common/annos.hs Common/test_parser.hs
 
@@ -95,7 +95,7 @@ uni_dirs = ../uni/davinci ../uni/graphs ../uni/events \
 
 uni_sources = $(wildcard $(addsuffix /haddock/*.hs, $(uni_dirs))) \
     $(wildcard ../uni/htk/haddock/*/*.hs)
-TESTTARGETFILES += GUI/hetdg.hs OWL_DL/ToHaskellAS.hs Taxonomy/taxonomyTool.hs
+TESTTARGETFILES += OWL_DL/ToHaskellAS.hs Taxonomy/taxonomyTool.hs
 endif
 
 ### list of directories to run checks in
