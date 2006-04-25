@@ -132,7 +132,8 @@ data ComposeKind
     = Vert   -- ($+$) (no support for $$!)
     | Horiz  -- (<>)
     | HorizOrVert -- either Horiz or Vert
-    | Fill
+    | Fill 
+      deriving Eq
 
 data Doc
     = Empty          -- creates an empty line if composed vertically
@@ -413,14 +414,15 @@ toText ga = foldDoc anyRecord
 toLatex :: GlobalAnnos -> Doc -> Pretty.Doc
 toLatex ga = let dm = Map.map (Map.! DF_LATEX) .
                       Map.filter (Map.member DF_LATEX) $ display_annos ga
-    in foldDoc (toLatexRecord True)
+    in foldDoc (toLatexRecord False)
            . makeSmallMath False False . codeOut ga (Just DF_LATEX) dm
 
+-- avoid too many tabs
 toLatexRecord :: Bool -> DocRecord Pretty.Doc
 toLatexRecord tab = anyRecord
     { foldEmpty = \ _ -> Pretty.empty
     , foldText = \ _ k s -> textToLatex False k s
-    , foldCat = \ (Cat _ os) c l ->
+    , foldCat = \ (Cat c os) _ _ ->
           if any isNative os then Pretty.hcat $
              latex_macro "{\\Ax{"
              : map (foldDoc (toLatexRecord False)
@@ -432,24 +434,23 @@ toLatexRecord tab = anyRecord
                             _ -> textToLatex False k s
                         }) os
               ++ [latex_macro "}}"]
-          else case c of
-        Horiz -> Pretty.hcat l
-        _ -> case os of
+          else case os of
                [] -> Pretty.empty
-               [_] -> head l
-               d : _ -> (if tab then
+               [d] -> foldDoc (toLatexRecord tab) d
+               d : r -> (if tab && c /= Horiz then
                              (latex_macro setTab Pretty.<>)
                          . (latex_macro startTab Pretty.<>)
                          . (Pretty.<> latex_macro endTab)
                         else id)
                         $ (case c of
-                                     Vert -> Pretty.vcat
-                                     Horiz -> error "toLatex.Horiz"
-                                     HorizOrVert -> Pretty.cat
-                                     Fill -> Pretty.fcat)
-                        $ if hasTab d then
-                              foldDoc (toLatexRecord False) d : tail l
-                              else l
+                             Vert -> Pretty.vcat
+                             Horiz -> Pretty.hcat
+                             HorizOrVert -> Pretty.cat
+                             Fill -> Pretty.fcat)
+                        $ case c of
+                            Vert -> map (foldDoc $ toLatexRecord False) os
+                            _ -> foldDoc (toLatexRecord False) d : 
+                                     map (foldDoc $ toLatexRecord True) r
     , foldAttr = \ o k d -> case k of
           FlushRight -> flushright d
           Small -> case o of
@@ -484,16 +485,6 @@ makeSmallMath smll math = let rec = makeSmallMath smll math in
                      IndentBy (rec d1) (rec d2) $ rec d3
     , foldText = \ d _ _ -> if smll then Attr Small d else d
     }
-
--- | avoid too deep nesting of tabulators by suppressing setTab repetitions
-hasTab :: Doc -> Bool
-hasTab d = case d of
-    Cat k l -> case l of
-        [] -> False
-        e : r -> case k of
-                   Horiz -> hasTab e
-                   _ -> if null r then hasTab e else True
-    _ -> False
 
 -- | check for unbalanced braces
 needsMathMode :: Int -> String -> Bool
