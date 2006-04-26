@@ -1,0 +1,92 @@
+$Header$
+This document describes in short how the conversion between development graphs
+and OMDoc is performed.
+
+TODO:
+  describe recursive behaviour of devGraphToOMDoc
+  describe OMDoc->Hets
+  clarify *why* things are done this way
+
+Hets->OMDoc (not recursive)
+-----------
+
+A development graph is read by Hets and passed to the devGraphToOMDoc-function
+for output generation.
+
+devGraphToOMDoc (LIB_NAME, LibEnv)
+  devGraphToOMDocCMPIOXN
+   devGraphToXmlCMPIOXN (DevGraph, Name)
+    1.  Create node-names (Knoten, Refs) :
+        determine as tuples (Graph.Node, NODE_NAME)
+    2.  Create (unique) xml-names :
+        create as XmlNamed(Graph.Node, NODE_NAME)
+    3.  For Sorts, Relations, Predicates, Operators, Sentences :
+        determine as Map of
+        (NODE_NAMEWO, Set SORTWO | Rel SORTWO | Map IdWO (Set PredType)
+          | Map IdWO (Set OpType) | Set SentenceWO) where SORTWO is a
+        sort-identifier (SORT), annotated by it's node of origin*1 (Graph.Node).
+        IdWO is (syntactical) identic to SORTWO and denotes here the names of
+        predicates and operators.
+        SentenceWO is a Sentence with it's origin-node.
+    4.  Create import-maps :
+        Selection of incoming links for creation of imports.
+        The corrent selection and processing of nodes needs to be improved.
+    5.  Create (unique) xml-names
+    6.  For all nodes that are not references :
+      6.1 Find elements belonding to this node (sorts, predicates, etc)
+      6.2 Create insorts from sort-relations :
+        Insorts in OMDoc are defined inverse to their definition in Hets
+          (a contains b -> b in a)
+      6.3 Adjust identifiers in all imports (to match xml-naming)
+      6.4 Create adt-constructors from sort_gen-axioms
+      6.5 Transform Sentences to xml (->Sentence translation)
+      6.6 Create theory-xml-element :
+          id-attribute is the xml-name of the node; the original name is
+          preserved in a presentation-element (presentation for theory)
+          
+          create import-elements (with morphisms) for each import (where
+          the existence of each referenced document is assumed)
+          
+          create sort-definitions
+
+          create adts for a) constructors and b) sort-relations
+
+          create predication/operator-definitions
+
+          include previously created xml-presentation for sentences
+
+          append private data (inexpressible imports)
+  >> writeOMDocDTD
+
+*1 determined by back-tracking, maybe incorrect
+
+Sentence translation
+--------------------
+Sentences are transformed to OMDoc-axioms per theory.
+In addition to the transformation, the source creating the specific formula
+is extracted and inserted as a CMP-element.
+
+wrapFormulasCMPIOXN (PFInput, [SentenceXNWON])
+  extract source then
+  wrapFormulaCMLXN (PFInput, SentenceXNWON, "PosLineMap")
+    create axiom-element; id=xml-name of sentence; embed source in CMP;
+    embed (processFormulaXN (PFInput, Sentence)) in FMP/OMOBJ
+    create a presentation for the axiom (preserves Hets-name)
+
+SentenceXNWON is a Sentence annotated with a xml-name and it's origin-node
+PFInput holds information about the theories defined elements (sorts,
+predicates, etc).
+
+processFormulaXN is defined for all concstructors of CASL-formulas and
+creates appropriate OMDoc-structures for them. This conversion is 
+performed recursive; TERMs are processed by processTermXN, again 
+transforming the structure recursive.
+When symbols are outputted, their 'cd'-attribute is set to the xml-name
+of their origin-node (theory-id in xml).
+For special CASL-constructs such as 'if-then-else' or 'cast' corresponding
+'operators' with 'cd' 'casl' are created*2.
+
+*2 but there is no import to the casl-document so this is currently not correct.
+
+
+
