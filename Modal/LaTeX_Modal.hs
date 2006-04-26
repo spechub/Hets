@@ -14,35 +14,16 @@ module Modal.LaTeX_Modal where
 
 import Modal.AS_Modal
 import Modal.ModalSign
-import Modal.Print_AS
-
-import Common.Id
-import Common.PrettyPrint (printText0)
+import Modal.Print_AS()
 import Common.PrintLaTeX
-import Common.Lib.Pretty
 import Common.Keywords
-import Common.PPUtils
-import Common.LaTeX_utils
-import Common.LaTeX_AS_Annotation
-import CASL.LaTeX_AS_Basic
+import Common.Doc
 
 instance PrintLaTeX M_BASIC_ITEM where
-    printLatex0 ga (Simple_mod_decl is fs _) =
-        -- Warning: very bad hacking!!!
---      sp_text 0 "\\\\\n\\SPEC~\\=\\PREDS~\\=\\kill\n\\>"<>
-        hc_sty_plain_keyword (pl_modalityS is) <\+>
-        tabbed_nest_latex (semiAnno_latex ga is) <\+>
-        tabbed_nest_latex (sp_braces_latex2 (semiAnno_latex ga fs))
-    printLatex0 ga (Term_mod_decl ss fs _) =
---      sp_text 0 "\\\\\n\\SPEC~\\=\\PREDS~\\=\\kill\n\\>"<>
-        hc_sty_plain_keyword termS <\+>
-        hc_sty_plain_keyword (pl_modalityS ss) <\+>
-        tabbed_nest_latex (semiAnno_latex ga ss) <\+>
-        tabbed_nest_latex (sp_braces_latex2 (semiAnno_latex ga fs))
+    printLatex0 ga = toLatex ga . pretty
 
 instance PrintLaTeX RIGOR where
-    printLatex0 _ Rigid = hc_sty_plain_keyword rigidS
-    printLatex0 _ Flexible = hc_sty_plain_keyword flexibleS
+    printLatex0 ga = toLatex ga . pretty
 
 {-
         hc_sty_sig_item_keyword ga (opS++pluralS l)   <\+>
@@ -50,35 +31,16 @@ instance PrintLaTeX RIGOR where
 -}
 
 instance PrintLaTeX M_SIG_ITEM where
-    printLatex0 ga (Rigid_op_items r ls _) =
-       printLatex0 ga r <\+> hc_sty_sig_item_keyword ga (opS++pluralS ls)
-        <\+> set_tabbed_nest_latex (semiAnno_latex ga ls)
-    printLatex0 ga (Rigid_pred_items r ls _) =
-       printLatex0 ga r <\+> hc_sty_sig_item_keyword ga (predS++pluralS ls)
-        <\+> set_tabbed_nest_latex (semiAnno_latex ga ls)
+    printLatex0 ga = toLatex ga . pretty
 
 instance PrintLaTeX M_FORMULA where
-    printLatex0 ga (BoxOrDiamond b t f _) =
-       let t' = printLatex0 ga t
-           f' = condParensInnerF (printLatex0 ga) parens_tab_latex f
-           sp = case t of
-                         Simple_mod _ -> (<>)
-                         _ -> (<\+>)
-       in if isEmpty t' then
-          if b then hc_sty_axiom "\\Box" <> f'
-             else hc_sty_axiom "\\Diamond"  <\+> f'
-          else if b then brackets_latex t' <> f'
-               else hc_sty_axiom lessS `sp` t' `sp` hc_sty_axiom greaterS
-                        <\+> f'
+    printLatex0 ga = toLatex ga . pretty 
 
 instance PrintLaTeX MODALITY where
-    printLatex0 ga (Simple_mod ident) =
-        if tokStr ident == emptyS then empty
-           else printLatex0 ga ident
-    printLatex0 ga (Term_mod t) = printLatex0 ga t
+    printLatex0 ga = toLatex ga . pretty 
 
 instance PrintLaTeX ModalSign where
-    printLatex0 = printText0
+    printLatex0 ga = toLatex ga . pretty 
 
 pl_modalityS :: [a] -> String
 pl_modalityS l = if length l > 1 then modalitiesS else modalityS

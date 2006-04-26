@@ -20,13 +20,14 @@ import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.State as State
 import Common.PrettyPrint
-import Common.PPUtils
-import Common.Lib.Pretty
 import Common.Keywords
 import Common.Id
 import Common.Result
 import Common.AS_Annotation
 import Common.GlobalAnnotations
+import Common.Print_AS_Annotation
+import Common.Doc
+import CASL.ToDoc
 
 -- constants have empty argument lists
 data OpType = OpType {opKind :: FunKind, opArgs :: [SORT], opRes :: SORT}
@@ -91,35 +92,59 @@ toPredType :: PRED_TYPE -> PredType
 toPredType (Pred_type args _) = PredType args
 
 instance PrettyPrint OpType where
-  printText0 ga ot = printText0 ga $ toOP_TYPE ot
+  printText0 ga = toText ga . pretty
+
+instance Pretty OpType where
+  pretty = printOpType . toOP_TYPE
 
 instance PrettyPrint PredType where
-  printText0 ga pt = printText0 ga $ toPRED_TYPE pt
+  printText0 ga = toText ga . pretty
+
+instance Pretty PredType where
+  pretty = printPredType . toPRED_TYPE
 
 instance (PrettyPrint f, PrettyPrint e) => PrettyPrint (Sign f e) where
-    printText0 ga s =
-        ptext (sortS++sS) <+> commaT_text ga (Set.toList $ sortSet s)
-        $$
-        (if Rel.null (sortRel s) then empty
-            else ptext (sortS++sS) <+>
-             (fsep . punctuate semi $ map printRel $ Map.toList
-                       $ Rel.toMap $ Rel.transpose $ sortRel s))
-        $$ printSetMap (ptext opS) empty ga (opMap s)
-        $$ printSetMap (ptext predS) space ga (predMap s)
-        $$ printText0 ga (extendedInfo s)
-     where printRel (supersort, subsorts) =
-             printSet ga subsorts <+> ptext lessS <+> printText0 ga supersort
+    printText0 ga = toText ga . printSign (fromText ga) (fromText ga)
 
-printSetMap :: (PrettyPrint k, PrettyPrint a, Ord k, Ord a) => Doc
-            -> Doc -> GlobalAnnos -> Map.Map k (Set.Set a) -> Doc
-printSetMap header sepa ga m =
-    vcat $ map (\ (i, t) ->
-               header <+>
-               printText0 ga i <+> colon <> sepa <>
-               printText0 ga t)
-             $ concatMap (\ (o, ts) ->
+instance (Pretty f, Pretty e) => Pretty (Sign f e) where
+    pretty = printSign pretty pretty
+
+printSign :: (f->Doc) -> (e->Doc) -> Sign f e ->Doc
+printSign _ fE s = text (sortS++sS) <+>
+    (fsep $ punctuate comma $ map idDoc (Set.toList $ sortSet s)) $+$ 
+    (if Rel.null (sortRel s) then empty 
+      else text (sortS++sS) <+>
+       (fsep $ punctuate semi $ map printRel $ Map.toList
+                       $ Rel.toMap $ Rel.transpose $ sortRel s))
+    $+$ printSetMap (text opS) empty (opMap s)
+    $+$ printSetMap (text predS) space (predMap s)
+    $+$ fE (extendedInfo s)
+    where printRel (supersort, subsorts) =
+            printSetWithComma subsorts <+> text lessS <+>
+               idDoc supersort 
+
+printSetMap :: (Pretty k,Pretty a,Ord a,Ord k) => Doc -> Doc
+                 -> Map.Map k (Set.Set a) -> Doc
+printSetMap header sepa m = vcat $ map (\ (i, t) ->
+           header <+>
+           pretty i <+> colon <> sepa <>
+           pretty t)
+           $ concatMap (\ (o, ts) ->
                           map ( \ ty -> (o, ty) ) $ Set.toList ts)
                    $ Map.toList m
+
+
+printSetWithComma ::  (Pretty a) => Set.Set a -> Doc
+printSetWithComma = CASL.Sign.printSet id (fsep . punctuate comma)
+
+
+printList :: (Doc->Doc) -> ([Doc]->Doc) -> [Doc] -> Doc
+printList brace inter = brace . inter
+
+printSet :: (Pretty a) => (Doc->Doc) -> ([Doc]->Doc) -> Set.Set a -> Doc
+printSet brace inter s = printList brace inter $ map pretty $ Set.toList s
+
+
 
 -- working with Sign
 

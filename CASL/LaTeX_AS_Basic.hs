@@ -16,7 +16,6 @@ module CASL.LaTeX_AS_Basic
     ) where
 
 import CASL.AS_Basic_CASL
-import CASL.Print_AS_Basic
 import CASL.ToDoc
 import qualified Common.Doc as Doc
 import Common.GlobalAnnotations
@@ -100,36 +99,24 @@ instance PrintLaTeX OP_SYMB where
     printLatex0 = toLatex
 
 instance PrintLaTeX SYMB_ITEMS where
-    printLatex0 ga (Symb_items k l _) =
-        print_kind_latex k l <\+> commaT_latex ga l
+    printLatex0 = toLatex
 
 instance PrintLaTeX SYMB_MAP_ITEMS where
-    printLatex0 ga (Symb_map_items k l _) =
-        print_kind_latex k l <\+> commaT_latex ga l
+    printLatex0 = toLatex
 
 instance PrintLaTeX SYMB_KIND where
-    printLatex0 _ k = print_kind_latex k [()]
+    printLatex0 = toLatex
 
 instance PrintLaTeX SYMB where
-    printLatex0 ga (Symb_id i) = printLatex0 ga i
-    printLatex0 ga (Qual_id i t _) =
-        printLatex0 ga i <\+> colon_latex <\+> printLatex0 ga t
+    printLatex0 = toLatex
 
 instance PrintLaTeX TYPE where
-    printLatex0 ga (O_type t) = printLatex0 ga t
-    printLatex0 ga (P_type t) = printLatex0 ga t
-    printLatex0 ga (A_type t) = printLatex0 ga t
+    printLatex0 = toLatex
 
 instance PrintLaTeX SYMB_OR_MAP where
-    printLatex0 ga (Symb s) = printLatex0 ga s
-    printLatex0 ga (Symb_map s t _) =
-        printLatex0 ga s <\+> mapsto_latex <\+> printLatex0 ga t
+    printLatex0 = toLatex
 
-print_kind_latex :: SYMB_KIND -> [a] -> Doc
-print_kind_latex k l =
-    case k of
-    Implicit -> empty
-    _        -> hc_sty_plain_keyword $ pluralS_symb_list k l
+
 
 hc_sty_sig_item_keyword :: GlobalAnnos -> String -> Doc
 hc_sty_sig_item_keyword ga str =

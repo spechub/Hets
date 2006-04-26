@@ -241,6 +241,74 @@ instance Pretty PRED_SYMB where
     pretty = printPredSymb
 
 
+instance Pretty SYMB_ITEMS where
+    pretty = printSymbItems
+
+printSymbItems :: SYMB_ITEMS -> Doc
+printSymbItems (Symb_items k l _) = 
+    print_kind_text k l <+> (fsep $ punctuate comma $ map printSymb l)
+
+instance Pretty SYMB where
+    pretty = printSymb
+
+printSymb :: SYMB -> Doc
+printSymb s = case s of
+    Symb_id i -> idDoc i
+    Qual_id i t _ -> idDoc i <+>colon <+> printType t
+
+
+instance Pretty TYPE where
+    pretty = printType
+
+printType :: TYPE -> Doc
+printType t = case t of
+    O_type ot -> printOpType ot
+    P_type pt -> printPredType pt
+    A_type s  -> idDoc s
+
+
+
+print_kind_text :: SYMB_KIND -> [a] -> Doc
+print_kind_text k l = case k of
+    Implicit -> empty
+    _ -> text (pluralS_symb_list k l)
+
+pluralS_symb_list :: SYMB_KIND -> [a] -> String
+pluralS_symb_list k l = (case k of
+    Implicit -> error "pluralS_symb_list"
+    Sorts_kind -> sortS
+    Ops_kind   -> opS
+    Preds_kind -> predS) ++ (if isSingle l then "" else "s")
+
+instance Pretty SYMB_OR_MAP where
+    pretty = printSymbOrMap
+
+printSymbOrMap :: SYMB_OR_MAP -> Doc
+printSymbOrMap som = case som of
+    Symb s -> printSymb s
+    Symb_map s t _ -> printSymb s <+> mapsto <+> printSymb t
+
+
+instance Pretty SYMB_KIND where
+    pretty = printSymbKind
+
+printSymbKind :: SYMB_KIND -> Doc
+printSymbKind sk = print_kind_text sk [()]
+
+instance Pretty SYMB_MAP_ITEMS where
+    pretty = printSymbMapItems
+  
+printSymbMapItems :: SYMB_MAP_ITEMS -> Doc
+printSymbMapItems (Symb_map_items k l _) = 
+    print_kind_text k l <+> (fsep $ punctuate comma $ map printSymbOrMap l)
+  
+
+
+
+
+
+
+
 printRecord :: (f -> Doc) -> Record f Doc Doc
 printRecord mf = Record
     { foldQuantification = \ _ q l r _ ->

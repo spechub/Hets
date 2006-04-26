@@ -15,78 +15,103 @@ module Modal.Print_AS where
 import Common.Id
 import Common.Keywords
 import qualified Common.Lib.Map as Map
-import Common.Lib.Pretty
 import Common.PrettyPrint
 import Common.PPUtils
-import Common.GlobalAnnotations
 import Common.AS_Annotation
+import Common.Doc 
 import CASL.Print_AS_Basic
 import CASL.Sign
 import Modal.AS_Modal
 import Modal.ModalSign
 import CASL.AS_Basic_CASL (FORMULA(..))
+import CASL.ToDoc
 
-printFormulaOfModalSign :: PrettyPrint f => GlobalAnnos
-                        -> [[Annoted (FORMULA f)]] -> Doc
-printFormulaOfModalSign ga f =
+printFormulaOfModalSign :: Pretty f => [[Annoted (FORMULA f)]] -> Doc
+printFormulaOfModalSign f =
     vcat $ map rekuPF f
-        where rekuPF ::PrettyPrint f =>  [Annoted (FORMULA f)] -> Doc
+        where rekuPF :: Pretty f => [Annoted (FORMULA f)] -> Doc
               rekuPF tf = fsep $ punctuate semi
-                          $ map (printAnnotedFormula_Text0 ga False) tf
+                          $ map (printAnnoted pretty) tf
 
 instance PrettyPrint M_BASIC_ITEM where
-    printText0 ga (Simple_mod_decl is fs _) =
-        text modalityS <+> semiAnno_text ga is
-              <> braces (semiAnno_text ga fs)
-    printText0 ga (Term_mod_decl ss fs _) =
-        text termS <+> text modalityS <+> semiAnno_text ga  ss
-              <> braces (semiAnno_text ga fs)
+    printText0 ga = Common.Doc.toText ga . pretty
+
+instance Pretty M_BASIC_ITEM where
+    pretty (Simple_mod_decl is fs _) =
+        keyword modalityS <+> semiAnnos pretty is
+              <> specBraces (semiAnnos pretty fs)
+    pretty (Term_mod_decl ss fs _) =
+        keyword termS <+> keyword modalityS <+> semiAnnos pretty  ss
+              <> specBraces (semiAnnos pretty fs)
 
 instance PrettyPrint RIGOR where
-    printText0 _ Rigid = text rigidS
-    printText0 _ Flexible = text flexibleS
+    printText0 = CASL.Print_AS_Basic.toText
+
+instance Pretty RIGOR where
+    pretty Rigid = keyword rigidS
+    pretty Flexible = keyword flexibleS
 
 instance PrettyPrint M_SIG_ITEM where
-    printText0 ga (Rigid_op_items r ls _) =
-        hang (printText0 ga r <+> text (opS ++ pluralS ls)) 4 $
-             semiAnno_text ga ls
-    printText0 ga (Rigid_pred_items r ls _) =
-        hang (printText0 ga r <+> text (predS ++ pluralS ls)) 4 $
-             semiAnno_text ga ls
+    printText0 = CASL.Print_AS_Basic.toText
+
+instance Pretty M_SIG_ITEM where
+    pretty (Rigid_op_items r ls _) =
+        pretty r <+> text (opS ++ pluralS ls) <+>
+             semiAnnos pretty ls
+    pretty (Rigid_pred_items r ls _) =
+        pretty r <+> text (predS ++ pluralS ls) <+>
+             semiAnnos pretty ls
 
 instance PrettyPrint M_FORMULA where
-    printText0 ga (BoxOrDiamond b t f _) =
+    printText0 = CASL.Print_AS_Basic.toText
+
+instance Pretty M_FORMULA where
+    pretty (BoxOrDiamond b t f _) =
         let sp = case t of
                          Simple_mod _ -> (<>)
                          _ -> (<+>)
-            td = printText0 ga t
-            fd = condParensInnerF (printFORMULA ga) parens f
+            td = pretty t
+            fd = condParensInnerF (printFormula pretty) parens f
         in if b then brackets td <> fd
            else text lessS `sp` td `sp` text greaterS <+> fd
 
 instance PrettyPrint MODALITY where
-    printText0 ga (Simple_mod ident) =
+    printText0 = CASL.Print_AS_Basic.toText
+
+instance Pretty MODALITY where
+    pretty (Simple_mod ident) =
         if tokStr ident == emptyS then empty
-           else printText0 ga ident
-    printText0 ga (Term_mod t) = printText0 ga t
+           else pretty ident
+    pretty (Term_mod t) = pretty t
+
 
 instance PrettyPrint ModalSign where
-    printText0 ga s =
-        let ms = modies s
-            tms = termModies s in       -- Map Id [Annoted (FORMULA M_FORMULA)]
-        printSetMap (text rigidS <+> text opS) empty ga (rigidOps s)
-        $$
-        printSetMap (text rigidS <+> text predS) space ga (rigidPreds s)
-        $$ (if Map.null ms then empty else
-        text modalitiesS <+> semiT_text ga (Map.keys ms)
-            <> braces (printFormulaOfModalSign ga $ Map.elems ms))
-        $$ (if Map.null tms then empty else
-        text termS <+> text modalityS <+> semiT_text ga (Map.keys tms)
-            <> braces (printFormulaOfModalSign ga (Map.elems tms)))
+    printText0 = CASL.Print_AS_Basic.toText
+
+instance Pretty ModalSign where
+    pretty = printModalSign
+
+printModalSign :: ModalSign -> Doc
+printModalSign s = 
+    let ms = modies s
+        tms = termModies s in
+    printSetMap (text rigidS <+> text opS) empty (rigidOps s)      
+    $+$ 
+    printSetMap (text rigidS <+> text predS) space (rigidPreds s)
+    $+$ (if Map.null ms then empty else
+        text modalitiesS <+> (fsep $ punctuate semi $ 
+            map sidDoc (Map.keys ms))
+            <> specBraces (printFormulaOfModalSign $ Map.elems ms))
+    $+$ (if Map.null tms then empty else
+        text termS <+> text modalityS <+> (fsep $ punctuate semi $
+                map idDoc (Map.keys tms))
+            <> specBraces (printFormulaOfModalSign $ Map.elems tms))
+    
 
 
 
-condParensInnerF :: PrettyPrint f => (FORMULA f -> Doc)
+
+condParensInnerF :: Pretty f => (FORMULA f -> Doc)
                     -> (Doc -> Doc)    -- ^ a function that surrounds
                                        -- the given Doc with appropiate
                                        -- parens

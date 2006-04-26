@@ -1,3 +1,5 @@
+
+
 {- |
 Module      :  $Header$
 Copyright   :  (c) Christian Maeder, Till Mossakowski and Uni Bremen 2002-2004
@@ -30,8 +32,10 @@ import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
 import Control.Monad
 import Common.PrettyPrint
-import Common.Lib.Pretty
 import Control.Exception (assert)
+import Common.Doc
+import Common.Print_AS_Annotation
+
 
 data SymbType = OpAsItemType OpType
                 -- since symbols do not speak about totality, the totality
@@ -478,35 +482,69 @@ isSortInjective m =
          src = Map.keys sm
 
 instance PrettyPrint Symbol where
-  printText0 ga sy =
-    printText0 ga (symName sy) <>
+    printText0 ga = toText ga . pretty
+
+instance Pretty Symbol where
+  pretty sy = pretty (symName sy) <>
     case symbType sy of
-    SortAsItemType -> empty
-    st -> space <> colon <> printText0 ga st
+       SortAsItemType -> empty
+       st -> space <> colon <> pretty st
+    
 
 instance PrettyPrint SymbType where
   -- op types try to place a question mark immediately after a colon
-  printText0 ga (OpAsItemType ot) = printText0 ga ot
-  printText0 ga (PredAsItemType pt) = space <> printText0 ga pt
-  printText0 _ SortAsItemType = empty
+  printText0 ga = toText ga . pretty
 
+instance Pretty SymbType where
+  pretty st = case st of
+     OpAsItemType ot -> pretty ot
+     PredAsItemType pt -> space <> pretty pt
+     SortAsItemType -> empty
+ 
 instance PrettyPrint Kind where
-  printText0 _ SortKind = text sortS
-  printText0 _ FunKind = text opS
-  printText0 _ PredKind = text predS
+    printText0 ga = toText ga . pretty
+
+instance Pretty Kind where
+  pretty k = keyword $ case k of 
+      SortKind -> sortS
+      FunKind -> opS
+      PredKind -> predS
 
 instance PrettyPrint RawSymbol where
-  printText0 ga rsym = case rsym of
-    ASymbol sy -> printText0 ga sy
-    AnID i -> printText0 ga i
-    AKindedId k i -> printText0 ga k <+> printText0 ga i
+    printText0 ga = toText ga . pretty
+
+instance Pretty RawSymbol where
+  pretty rsym = case rsym of
+    ASymbol sy -> pretty sy
+    AnID i -> pretty i
+    AKindedId k i -> pretty k <+> pretty i
 
 instance (PrettyPrint e, PrettyPrint f, PrettyPrint m) =>
     PrettyPrint (Morphism f e m) where
-  printText0 ga mor =
-   printText0 ga (Map.filterWithKey (/=) $ morphismToSymbMap mor)
-   $$ printText0 ga (extended_map mor)
-   $$ nest 1 colon $$
-   nest 3 (braces (space <> printText0 ga (msource mor) <> space))
-   $$ nest 1 (text funS)
-   $$ nest 4 (braces (space <>  printText0 ga (mtarget mor) <> space))
+        printText0 ga = toText ga . 
+          printMorphism (fromText ga) (fromText ga) (fromText ga)
+
+
+
+printMorphism :: (f->Doc) -> (e->Doc) -> (m->Doc) -> Morphism f e m -> Doc
+printMorphism fF fE fM mor =
+    printSymbolMap (Map.filterWithKey (/=) $ morphismToSymbMap mor)
+    $+$ fM (extended_map mor) $+$ colon $+$
+    specBraces (space <> printSign fF fE (msource mor) <> space)
+    $+$ text funS $+$ 
+    specBraces (space <> printSign fF fE (mtarget mor) <> space)
+
+instance (Pretty e, Pretty f, Pretty m) =>
+    Pretty (Morphism f e m) where
+       pretty = printMorphism pretty pretty pretty
+
+printSymbolMap :: SymbolMap -> Doc
+printSymbolMap = printMap specBraces (fsep . punctuate comma) 
+    (\ a b -> a <+> mapsto <+> b)
+                   
+
+printMap :: (Pretty a,Ord a,Pretty b) => (Doc->Doc) -> ([Doc]->Doc)
+               -> (Doc->Doc->Doc) ->Map.Map a b -> Doc
+printMap brace inter pairDoc m = printList brace inter 
+     $ map ( \ (a, b) -> pairDoc (pretty a) (pretty b))
+     $ Map.toList m 

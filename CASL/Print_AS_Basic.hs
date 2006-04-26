@@ -14,14 +14,13 @@ pretty printing data types of 'BASIC_SPEC'
 
 module CASL.Print_AS_Basic where
 
-import Common.Id
+
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Print_AS_Annotation
 import Common.Keywords
 import Common.Lib.Pretty
 import Common.PrettyPrint
-import Common.PPUtils
 import qualified Common.Doc as Doc
 
 import CASL.AS_Basic_CASL
@@ -121,41 +120,21 @@ instance PrettyPrint OP_SYMB where
     printText0 = toText
 
 instance PrettyPrint SYMB_ITEMS where
-    printText0 ga (Symb_items k l _) =
-        print_kind_text k l <+> commaT_text ga l
+    printText0 = toText
 
 instance PrettyPrint SYMB_MAP_ITEMS where
-    printText0 ga (Symb_map_items k l _) =
-        print_kind_text k l <+> commaT_text ga l
-
-print_kind_text :: SYMB_KIND -> [a] -> Doc
-print_kind_text k l = case k of
-    Implicit -> empty
-    _ -> text (pluralS_symb_list k l)
-
-pluralS_symb_list :: SYMB_KIND -> [a] -> String
-pluralS_symb_list k l = (case k of
-    Implicit -> error "pluralS_symb_list"
-    Sorts_kind -> sortS
-    Ops_kind   -> opS
-    Preds_kind -> predS) ++ (if isSingle l then "" else "s")
+    printText0 = toText
 
 instance PrettyPrint SYMB_KIND where
-    printText0 _ k = print_kind_text k [()]
+    printText0 = toText
 
 instance PrettyPrint SYMB where
-    printText0 ga (Symb_id i) = printText0 ga i
-    printText0 ga (Qual_id i t _) =
-        printText0 ga i <+> colon <+> printText0 ga t
+    printText0 = toText
 
 instance PrettyPrint TYPE where
-    printText0 ga (O_type t) = printText0 ga t
-    printText0 ga (P_type t) = printText0 ga t
-    printText0 ga (A_type t) = printText0 ga t
+    printText0 = toText
 
 instance PrettyPrint SYMB_OR_MAP where
-    printText0 ga (Symb s) = printText0 ga s
-    printText0 ga (Symb_map s t _) =
-        printText0 ga s <+> text mapsTo <+> printText0 ga t
+    printText0 = toText
 
 
