@@ -1,3 +1,4 @@
+{-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) Hendrik Iben, Uni Bremen 2005-2006
@@ -34,15 +35,21 @@ import Static.DevGraph
 
 import qualified Common.Lib.Map as Map
 
+#ifdef UNI_PACKAGE
 import qualified GUI.ShowGraph as GUI
+#endif
 
 -- | "alias" for GUI.showGraph (for export)
 showGraph::FilePath->HetcatsOpts->Maybe (LIB_NAME, LibEnv)->IO ()
 showGraph file opt env =
-        case env of
-                Just (ln, libenv) -> do
-                        GUI.showGraph file opt (Just (ln, libenv))
-                Nothing -> return ()
+#ifdef UNI_PACKAGE
+    case env of
+      Just (ln, libenv) -> do
+        GUI.showGraph file opt (Just (ln, libenv))
+      Nothing -> return ()
+#else
+    putStrLn "Compiled without UNI_PACKAGE. Graph-Output not possible."
+#endif
 
 -- |  run 'anaLib' with default HetcatsOptions
 run :: FilePath -> IO (Maybe (LIB_NAME, LibEnv))
