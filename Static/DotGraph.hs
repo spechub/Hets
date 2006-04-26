@@ -14,7 +14,6 @@ module Static.DotGraph where
 
 import Data.Graph.Inductive.Graph
 import Static.DevGraph
-import Common.PrettyPrint
 
 edgeAttribute :: DGLinkType -> String
 edgeAttribute LocalDef = " [style=bold]"
