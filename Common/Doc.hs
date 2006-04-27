@@ -66,6 +66,7 @@ module Common.Doc
     , bullet
     , defn
     , less
+    , greater
     , lambda
     , mapsto
     , funArrow
@@ -282,7 +283,7 @@ lambdaSymb :: String
 lambdaSymb = "\\"
 
 -- | docs possibly rendered differently for Text or LaTeX
-dot, bullet, defn, less, lambda, mapsto, funArrow, pfun, cfun, pcfun,
+dot, bullet, defn, less, greater, lambda, mapsto, funArrow, pfun, cfun, pcfun,
    exequal, forallDoc, exists, unique, cross, bar, notDoc, inDoc, andDoc,
    orDoc, implies, equiv :: Doc
 
@@ -290,6 +291,7 @@ dot = text dotS
 bullet = symbol dotS
 defn = symbol defnS
 less = symbol lessS
+greater = symbol greaterS
 lambda = symbol lambdaSymb
 mapsto = symbol mapsTo
 funArrow = symbol funS
@@ -664,10 +666,10 @@ codeOutAnno d m a = case a of
     Prec_anno p l1 l2 _ -> annoLparen precS <>
         fsep [ braces $ fCommaT m l1
              , case p of
-                 Lower -> symbol lessS
-                 Higher -> symbol greaterS
-                 BothDirections -> symbol lessS <> symbol greaterS
-                 NoDirection -> symbol greaterS <> symbol lessS
+                 Lower -> less
+                 Higher -> greater
+                 BothDirections -> less <> greater
+                 NoDirection -> greater <> less
              , braces $ fCommaT m l2
              ] <> annoRparen
     Assoc_anno s l _ -> annoLparen (case s of
