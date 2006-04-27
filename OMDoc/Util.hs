@@ -108,10 +108,42 @@ breakIf brkC l = _breakIf [] l
         else
           _breakIf (i++[c]) r
 
+
+breakIfExt::forall a . (a->(Bool,Bool))->(a->a->(Bool,Bool,Bool))->[a]->[[a]]
+breakIfExt brkS brkC l = _breakIfFst l
+  where
+  _breakIf::[a]->[a]->[[a]]
+  _breakIf _ [] = []
+  _breakIf i [c] = [i ++ [c]]
+  _breakIf i (c:r) =
+    let
+      (doBreak, discardC1, discardC2) = brkC c (head r)
+    in
+      if doBreak
+        then
+          ([i ++ (if discardC1 then [] else [c])])
+            ++ (_breakIfFst (if discardC2 then (drop 1 r) else r))
+        else
+          _breakIf (i++[c]) r
+
+  _breakIfFst::[a]->[[a]]
+  _breakIfFst [] = []
+  _breakIfFst (c:r) =
+    let
+      (doBreak, discardS) = brkS c
+    in
+      if doBreak
+        then
+          (if discardS then [[]] else [[c]])
+            ++ _breakIf [] r
+        else
+          _breakIf [] (c:r)
+
 -- breaks if not escaped and removes char that caused break
 breakIfNonEsc::[Char]->String->[String]
 breakIfNonEsc chars =
-  breakIf
+  breakIfExt
+    (\c -> (elem c chars, True))
     (\c1 c2 -> ((c1 /= '\\') && (elem c2 chars), False, True))
 
 breakOnce::forall a . (a->a->(Bool, Bool, Bool))->[a]->([a],[a]) 

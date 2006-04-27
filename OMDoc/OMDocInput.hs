@@ -211,7 +211,8 @@ xnMapsToDGNodeLab
     ops' = mapSameIdToSetWith opTypeXNWONToOpType xnops
     sens' = Set.map xnWOaToa xnsens
   in
-    mapsNNToDGNodeLab go (sorts' , rels' , preds' , ops' , sens' ) nn
+    debugGO go "xMTDGNL" "mapsNNToDGNodelab" $
+      mapsNNToDGNodeLab go (sorts' , rels' , preds' , ops' , sens' ) nn
 
 
 {- |
@@ -644,9 +645,9 @@ nodeNamesXNFromXml axmlset =
         theohetsnodename =
           if (theohetsnodenames == "") || (isPrefixOf "AnonNode" theoid) 
             then
-              idToNodeName $ read ("["++theoid++",,0]")
+              idToNodeName $ Debug.Trace.trace ("Calling idToNodeName with " ++ "[" ++ theoid ++ ",,0]") $ read ("["++theoid++",,0]")
             else 
-              idToNodeName $ read theohetsnodenames
+              idToNodeName $ Debug.Trace.trace ("Calling idToNodeName with " ++ theohetsnodenames) $ read theohetsnodenames
       in
         txnl ++ [XmlNamed ((axAnn axml), theohetsnodename) theoid]
     )
@@ -1259,10 +1260,10 @@ importGraphToDGNodesXN go ig n =
             (G_theory CASL Hets.emptyCASLSign (Prover.toThSens []))
             Nothing
             Nothing
-          ) refimports
-    psorts = mapSetToSet sortsmap
-    ppreds = mapSetToSet predsmap
-    pops = mapSetToSet opsmap
+          ) (debugGO go "iGTDGNXN" "about to created DGRefs" refimports)
+    psorts = mapSetToSet (debugGO go "iGTDGNXN" "at mapSetToSet(sortsmap)" sortsmap)
+    ppreds = mapSetToSet (debugGO go "iGTDGNXN" "at mapSetToSet(predsmap)" predsmap)
+    pops = mapSetToSet (debugGO go "iGTDGNXN" "at mapSetToSet(opsmap)" opsmap)
   in      
     Set.fold (\xntheory dgnodelist ->
       let
@@ -1281,7 +1282,7 @@ importGraphToDGNodesXN go ig n =
                     go
                     (snd (xnItem xntheory)) psorts trels ppreds pops tsens
                ])
-      ) refs theonames
+      ) refs (debugGO go "iGTDGNXN" "at Set.fold" theonames)
   
 
 cleanNodeName::DGNodeLab->DGNodeLab
@@ -1854,13 +1855,13 @@ unwrapFormulaXNWON ffxi anxml =
 preprocessXml::GlobalOptions->HXT.XmlTrees->(FFXInput, Set.Set AnnXMLN)
 preprocessXml go t =
         let
-                axtheoryset = buildAXTheorySet t
-                xntheoryset = nodeNamesXNFromXml axtheoryset
-                xnsortsmap = sortsXNWONFromXml xntheoryset axtheoryset
-                xnsorts = mapSetToSet xnsortsmap
-                xnrelsmap = relsXNWONFromXml xntheoryset xnsorts axtheoryset
-                xnpredsmap = mapListToMapSet $ predsXNWONFromXml xntheoryset xnsorts axtheoryset
-                xnopsmap = mapListToMapSet $ opsXNWONFromXml xntheoryset xnsorts axtheoryset
+                axtheoryset = buildAXTheorySet (debugGO go "pX" "at buildAXTheorySet" t)
+                xntheoryset = nodeNamesXNFromXml (debugGO go "pX" "at nodeNamedXNFromXml" axtheoryset)
+                xnsortsmap = sortsXNWONFromXml xntheoryset (debugGO go "pX" "at sortsXNWONFromXml" axtheoryset)
+                xnsorts =  mapSetToSet (debugGO go "pX" "at mapToSet" xnsortsmap)
+                xnrelsmap = relsXNWONFromXml xntheoryset xnsorts (debugGO go "pX" "at relsXNWONFromXML" axtheoryset)
+                xnpredsmap = mapListToMapSet $ predsXNWONFromXml xntheoryset xnsorts (debugGO go "pX" "at predsXNWONFromXml" axtheoryset)
+                xnopsmap = mapListToMapSet $ opsXNWONFromXml xntheoryset xnsorts (debugGO go "pX" "at opsXNWONFromXml" axtheoryset)
         in
                 (emptyFFXInput
                         {
@@ -2290,5 +2291,10 @@ opName (Qual_op_name op _ _) = (show op)
 
 -- this reads back an encapsulated node_name
 idToNodeName::Id.Id->NODE_NAME
-idToNodeName (Id.Id toks _ _) = (toks!!0, show (toks!!1), read (show (toks!!2)))
+idToNodeName (Id.Id toks _ _) =
+  if (length toks) < 3
+    then
+      error ("Malformed NODE_NAME-Id : " ++ (show toks))
+    else
+      (toks!!0, show (toks!!1), read (show (toks!!2)))
 
