@@ -31,17 +31,17 @@ modalFormula =
     do o <- oBracketT
        m <- modality []
        c <- cBracketT
-       f <- formula modal_reserved_words
+       f <- primFormula modal_reserved_words
        return (BoxOrDiamond True m f $ toPos o [] c)
     <|>
     do o <- asKey lessS
        m <- modality [greaterS] -- do not consume matching ">"!
        c <- asKey greaterS
-       f <- formula modal_reserved_words
+       f <- primFormula modal_reserved_words
        return (BoxOrDiamond False m f $ toPos o [] c)
     <|>
     do d <- asKey diamondS
-       f <- formula modal_reserved_words
+       f <- primFormula modal_reserved_words
        let p = tokPos d
        return (BoxOrDiamond False (Simple_mod $ Token emptyS p) f p)
 
