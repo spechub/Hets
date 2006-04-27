@@ -43,7 +43,7 @@ parse terms and formulae
    keywords
 -}
 
-module CASL.Formula (term, formula, restrictedTerm, restrictedFormula, anColon
+module CASL.Formula (term, primFormula, formula, restrictedTerm, anColon
                , varDecl, opSort, opFunSort, opType, predType, predUnitType
                , qualPredName)
     where
@@ -320,6 +320,3 @@ impFormula k =
 
 formula :: AParsable f => [String] -> AParser st (FORMULA f)
 formula = impFormula
-
-restrictedFormula :: AParsable f => [String] -> AParser st (FORMULA f)
-restrictedFormula = impFormula
