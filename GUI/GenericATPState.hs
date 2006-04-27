@@ -75,17 +75,14 @@ type GenericGoalNameMap = Map.Map String String
 -}
 data GenericState sign sentence proof_tree pst = GenericState {
     currentGoal :: Maybe ATPIdentifier,
--- !!? store empty proof_tree?
     proof_tree :: proof_tree,
     -- | stores the prover configurations for each goal
     -- and the results retrieved by running prover for each goal
     configsMap :: GenericConfigsMap proof_tree,
     -- | stores a mapping to SPASS compliant
     -- identifiers for all goals
--- !!? just two strings in GenericGoalNameMap?
     namesMap :: GenericGoalNameMap,
     -- | list of all goals
--- !!? is sentence always a term? In SPASS it is.
     goalsList :: [AS_Anno.Named sentence],
     -- | logical part without theorems
     proverState :: pst,
@@ -97,8 +94,7 @@ data GenericState sign sentence proof_tree pst = GenericState {
   Initialising the specific prover state containing logical part.
 -}
 type InitialProverState sign sentence pst =
-        String -- ^ Theory name
-        -> sign -> [AS_Anno.Named sentence] -> pst
+        sign -> [AS_Anno.Named sentence] -> pst
 type TransSenName = String -> String
 
 {- |
@@ -106,13 +102,12 @@ type TransSenName = String -> String
 -}
 initialGenericState :: (Show sentence, Ord sentence, Ord proof_tree) =>
                        String -- ^ name of the prover
-                    -> String -- ^ theory name
                     -> InitialProverState sign sentence pst
                     -> TransSenName
                     -> Theory sign sentence proof_tree
                     -> proof_tree
                     -> GenericState sign sentence proof_tree pst
-initialGenericState prName tName ips trSenName th pt =
+initialGenericState prName ips trSenName th pt =
     GenericState {currentGoal = Nothing,
                   proof_tree = pt,
                   configsMap = Map.fromList $
@@ -123,7 +118,7 @@ initialGenericState prName tName ips trSenName th pt =
                                    goals,
                   namesMap = collectNameMapping nSens oSens',
                   goalsList = goals,
-                  proverState = ips tName sign oSens',
+                  proverState = ips sign oSens',
                   batchModeIsRunning = False,
                   mainDestroyed = False
                  }
