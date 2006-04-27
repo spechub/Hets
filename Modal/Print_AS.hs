@@ -38,11 +38,11 @@ instance PrettyPrint M_BASIC_ITEM where
 
 instance Pretty M_BASIC_ITEM where
     pretty (Simple_mod_decl is fs _) =
-        keyword modalityS <+> semiAnnos pretty is
-              <> specBraces (semiAnnos pretty fs)
+        cat [keyword modalityS <+> semiAnnos pretty is
+            , specBraces $ semiAnnos pretty fs]
     pretty (Term_mod_decl ss fs _) =
-        keyword termS <+> keyword modalityS <+> semiAnnos pretty  ss
-              <> specBraces (semiAnnos pretty fs)
+        cat [keyword termS <+> keyword modalityS <+> semiAnnos pretty ss
+            , specBraces $ semiAnnos pretty fs]
 
 instance PrettyPrint RIGOR where
     printText0 = CASL.Print_AS_Basic.toText
@@ -56,10 +56,10 @@ instance PrettyPrint M_SIG_ITEM where
 
 instance Pretty M_SIG_ITEM where
     pretty (Rigid_op_items r ls _) =
-        pretty r <+> text (opS ++ pluralS ls) <+>
+        pretty r <+> keyword (opS ++ pluralS ls) <+>
              semiAnnos pretty ls
     pretty (Rigid_pred_items r ls _) =
-        pretty r <+> text (predS ++ pluralS ls) <+>
+        pretty r <+> keyword (predS ++ pluralS ls) <+>
              semiAnnos pretty ls
 
 instance PrettyPrint M_FORMULA where
@@ -73,7 +73,7 @@ instance Pretty M_FORMULA where
             td = pretty t
             fd = condParensInnerF (printFormula pretty) parens f
         in if b then brackets td <> fd
-           else text lessS `sp` td `sp` text greaterS <+> fd
+           else less `sp` td `sp` greater <+> fd
 
 instance PrettyPrint MODALITY where
     printText0 = CASL.Print_AS_Basic.toText
@@ -83,7 +83,6 @@ instance Pretty MODALITY where
         if tokStr ident == emptyS then empty
            else pretty ident
     pretty (Term_mod t) = pretty t
-
 
 instance PrettyPrint ModalSign where
     printText0 = CASL.Print_AS_Basic.toText
@@ -95,22 +94,18 @@ printModalSign :: ModalSign -> Doc
 printModalSign s = 
     let ms = modies s
         tms = termModies s in
-    printSetMap (text rigidS <+> text opS) empty (rigidOps s)      
+    printSetMap (keyword rigidS <+> keyword opS) empty (rigidOps s)      
     $+$ 
-    printSetMap (text rigidS <+> text predS) space (rigidPreds s)
+    printSetMap (keyword rigidS <+> keyword predS) space (rigidPreds s)
     $+$ (if Map.null ms then empty else
-        text modalitiesS <+> (fsep $ punctuate semi $ 
+        cat [keyword modalitiesS <+> (fsep $ punctuate semi $ 
             map sidDoc (Map.keys ms))
-            <> specBraces (printFormulaOfModalSign $ Map.elems ms))
+            , specBraces (printFormulaOfModalSign $ Map.elems ms)])
     $+$ (if Map.null tms then empty else
-        text termS <+> text modalityS <+> (fsep $ punctuate semi $
+        cat [keyword termS <+> keyword modalityS <+> (fsep $ punctuate semi $
                 map idDoc (Map.keys tms))
-            <> specBraces (printFormulaOfModalSign $ Map.elems tms))
+            , specBraces (printFormulaOfModalSign $ Map.elems tms)])
     
-
-
-
-
 condParensInnerF :: Pretty f => (FORMULA f -> Doc)
                     -> (Doc -> Doc)    -- ^ a function that surrounds
                                        -- the given Doc with appropiate
