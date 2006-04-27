@@ -22,9 +22,9 @@ import CASL.AS_Basic_CASL
 import CASL.Fold
 
 instance (Pretty b, Pretty s, Pretty f) => Pretty (BASIC_SPEC b s f) where
-    pretty = printBASIC_SPEC pretty pretty pretty 
-                             
-printBASIC_SPEC :: (b -> Doc) -> (s -> Doc) -> (f -> Doc) 
+    pretty = printBASIC_SPEC pretty pretty pretty
+
+printBASIC_SPEC :: (b -> Doc) -> (s -> Doc) -> (f -> Doc)
                 -> BASIC_SPEC b s f -> Doc
 printBASIC_SPEC fB fS fF (Basic_spec l) = case l of
     [] -> specBraces empty
@@ -32,8 +32,8 @@ printBASIC_SPEC fB fS fF (Basic_spec l) = case l of
 
 instance (Pretty b, Pretty s, Pretty f) => Pretty (BASIC_ITEMS b s f) where
     pretty = printBASIC_ITEMS pretty pretty pretty
-        
-printBASIC_ITEMS :: (b -> Doc) -> (s -> Doc) -> (f -> Doc) 
+
+printBASIC_ITEMS :: (b -> Doc) -> (s -> Doc) -> (f -> Doc)
                  -> BASIC_ITEMS b s f -> Doc
 printBASIC_ITEMS fB fS fF sis = case sis of
     Sig_items s -> printSIG_ITEMS fS fF s
@@ -41,21 +41,21 @@ printBASIC_ITEMS fB fS fF sis = case sis of
          semiAnnos printDATATYPE_DECL l
     Sort_gen l _ -> case l of
          [Annoted (Datatype_items l' _) _ _ _] -> keyword generatedS <+>
-                 keyword (typeS ++ pluralS l') <+> 
+                 keyword (typeS ++ pluralS l') <+>
                   semiAnnos printDATATYPE_DECL l'
          _ -> keyword generatedS <+> (specBraces $ vcat $ map
-              (printAnnoted ((if isSingle l then rmTopKey else id) . 
+              (printAnnoted ((if isSingle l then rmTopKey else id) .
                      printSIG_ITEMS fS fF)) l)
     Var_items l _ -> keyword (varS ++ pluralS l) <+>
                            fsep (punctuate semi $ map printVarDecl l)
-    Local_var_axioms l f _  -> 
+    Local_var_axioms l f _  ->
             fsep [fsep $ forallDoc : punctuate semi (map printVarDecl l)
                  , printAnnotedBulletFormulas fF f]
     Axiom_items f _ -> printAnnotedBulletFormulas fF f
     Ext_BASIC_ITEMS b -> fB b
 
 printAnnotedBulletFormulas :: (f -> Doc) -> [Annoted (FORMULA f)] -> Doc
-printAnnotedBulletFormulas fF = vcat . map 
+printAnnotedBulletFormulas fF = vcat . map
     (printAnnoted $ addBullet . printFormula fF)
 
 instance (Pretty s, Pretty f) => Pretty (SIG_ITEMS s f) where
@@ -65,18 +65,18 @@ printSIG_ITEMS :: (s -> Doc) -> (f -> Doc) -> SIG_ITEMS s f -> Doc
 printSIG_ITEMS fS fF sis = case sis of
     Sort_items l _ -> topKey (sortS ++ pluralS l) <+>
          semiAnnos (printSortItem fF) l
-    Op_items l _  -> topKey (opS ++ pluralS l) <+> 
+    Op_items l _  -> topKey (opS ++ pluralS l) <+>
              semiAnnos (printOpItem fF) l
     Pred_items l _ -> topKey (predS ++ pluralS l) <+>
              semiAnnos (printPredItem fF) l
     Datatype_items l _ -> topKey (typeS ++ pluralS l) <+>
              semiAnnos printDATATYPE_DECL l
-    Ext_SIG_ITEMS s -> fS s 
+    Ext_SIG_ITEMS s -> fS s
 
 printDATATYPE_DECL :: DATATYPE_DECL ->Doc
 printDATATYPE_DECL (Datatype_decl s a _) = case a of
     [] -> idDoc s
-    _  -> fsep [idDoc s, defn, sep $ punctuate (space <> bar) $ 
+    _  -> fsep [idDoc s, defn, sep $ punctuate (space <> bar) $
                       map (printAnnoted printALTERNATIVE) a]
 
 instance Pretty DATATYPE_DECL where
@@ -84,7 +84,7 @@ instance Pretty DATATYPE_DECL where
 
 printCOMPONENTS :: COMPONENTS ->Doc
 printCOMPONENTS c = case c of
-    Cons_select k l s _ -> fsep $ punctuate comma (map idDoc l) 
+    Cons_select k l s _ -> fsep $ punctuate comma (map idDoc l)
            ++ [case k of
            Total -> colon
            Partial -> colon <> text "?", idDoc s]
@@ -94,15 +94,15 @@ instance Pretty COMPONENTS  where
     pretty = printCOMPONENTS
 
 printALTERNATIVE :: ALTERNATIVE ->Doc
-printALTERNATIVE a = case a of 
+printALTERNATIVE a = case a of
   Alt_construct k n l _ -> case l of
     [] -> idDoc n
-    _ ->  idDoc n <> 
+    _ ->  idDoc n <>
        parens ( sep $ punctuate semi $ map printCOMPONENTS l)
        <> case k of
                Total -> empty
-               Partial -> text "?"         
-  Subsorts l _ -> fsep $ text (sortS ++ if isSingle l then "" else "s") 
+               Partial -> text "?"
+  Subsorts l _ -> fsep $ text (sortS ++ if isSingle l then "" else "s")
                             : punctuate comma (map idDoc l)
 
 instance Pretty ALTERNATIVE where
@@ -112,14 +112,14 @@ printSortItem :: (f -> Doc) -> SORT_ITEM f -> Doc
 printSortItem mf si = case si of
     Sort_decl sl _ -> fsep $ punctuate comma $ map idDoc sl
     Subsort_decl sl sup _ -> fsep $ (punctuate comma $ map idDoc sl)
-                                     ++ [less, idDoc sup] 
-    Subsort_defn s v sup af _ -> fsep [idDoc s, equals, 
+                                     ++ [less, idDoc sup]
+    Subsort_defn s v sup af _ -> fsep [idDoc s, equals,
               specBraces $ fsep [sidDoc v, colon, idDoc sup,
                              printAnnoted (addBullet . printFormula mf) af]]
     Iso_decl sl _ -> fsep $ punctuate (space <> equals) $ map idDoc sl
 
 instance Pretty f => Pretty (SORT_ITEM f) where
-    pretty = printSortItem pretty 
+    pretty = printSortItem pretty
 
 addBullet :: Doc -> Doc
 addBullet = (bullet <+>)
@@ -205,7 +205,7 @@ printOpType (Op_type p l r _) =
       [] -> case p of
           Partial -> text quMark <+> idDoc r
           Total -> space <> idDoc r
-      _ -> space <> fsep 
+      _ -> space <> fsep
              (punctuate (space <> cross) (map idDoc l)
              ++ [case p of
                 Partial -> pfun
@@ -235,17 +235,16 @@ printPredSymb :: PRED_SYMB -> Doc
 printPredSymb p = case p of
     Pred_name i -> idDoc i
     Qual_pred_name i t _ ->
-        parens $ fsep [text predS, idDoc i, colon, printPredType t]
+        parens $ fsep [text predS, idDoc i, colon <+> printPredType t]
 
 instance Pretty PRED_SYMB where
     pretty = printPredSymb
-
 
 instance Pretty SYMB_ITEMS where
     pretty = printSymbItems
 
 printSymbItems :: SYMB_ITEMS -> Doc
-printSymbItems (Symb_items k l _) = 
+printSymbItems (Symb_items k l _) =
     print_kind_text k l <+> (fsep $ punctuate comma $ map printSymb l)
 
 instance Pretty SYMB where
@@ -254,8 +253,7 @@ instance Pretty SYMB where
 printSymb :: SYMB -> Doc
 printSymb s = case s of
     Symb_id i -> idDoc i
-    Qual_id i t _ -> idDoc i <+>colon <+> printType t
-
+    Qual_id i t _ -> fsep [idDoc i, colon <+> printType t]
 
 instance Pretty TYPE where
     pretty = printType
@@ -266,12 +264,10 @@ printType t = case t of
     P_type pt -> printPredType pt
     A_type s  -> idDoc s
 
-
-
 print_kind_text :: SYMB_KIND -> [a] -> Doc
 print_kind_text k l = case k of
     Implicit -> empty
-    _ -> text (pluralS_symb_list k l)
+    _ -> keyword (pluralS_symb_list k l)
 
 pluralS_symb_list :: SYMB_KIND -> [a] -> String
 pluralS_symb_list k l = (case k of
@@ -286,8 +282,7 @@ instance Pretty SYMB_OR_MAP where
 printSymbOrMap :: SYMB_OR_MAP -> Doc
 printSymbOrMap som = case som of
     Symb s -> printSymb s
-    Symb_map s t _ -> printSymb s <+> mapsto <+> printSymb t
-
+    Symb_map s t _ -> fsep [printSymb s, mapsto <+> printSymb t]
 
 instance Pretty SYMB_KIND where
     pretty = printSymbKind
@@ -297,17 +292,10 @@ printSymbKind sk = print_kind_text sk [()]
 
 instance Pretty SYMB_MAP_ITEMS where
     pretty = printSymbMapItems
-  
+
 printSymbMapItems :: SYMB_MAP_ITEMS -> Doc
-printSymbMapItems (Symb_map_items k l _) = 
+printSymbMapItems (Symb_map_items k l _) =
     print_kind_text k l <+> (fsep $ punctuate comma $ map printSymbOrMap l)
-  
-
-
-
-
-
-
 
 printRecord :: (f -> Doc) -> Record f Doc Doc
 printRecord mf = Record
