@@ -290,7 +290,8 @@ cpp_sources = Common/DynamicUtils.hs \
     SPASS/Logic_SPASS.hs GUI/Utils.hs Driver/WriteFn.hs \
     Comorphisms/LogicList.hs Comorphisms/LogicGraph.hs \
     Comorphisms/KnownProvers.hs hets.hs $(happy_files) \
-    hxt/Text/XML/HXT/ProtocolHandler/ProtocolHandler.hs
+    hxt/Text/XML/HXT/ProtocolHandler/ProtocolHandler.hs \
+    OMDoc/HetsInterface.hs
 
 # unused, remove when header files are gone
 genrule_header_files = $(wildcard ATC/*.header.hs)
