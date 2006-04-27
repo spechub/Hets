@@ -15,10 +15,6 @@ Clause[split level]justification.literal number
 ** ... and additionally it is an equation, oriented from left to right
 + (negative) literal has been selected
 
-A proof of a toplevel conjunction is easier if the conjunction is
-split into its conjuncts and each conjunct is proved separately; this
-can be implemented in Hets, but the housekeeping is difficult and the
-proof reconstruction is difficult.
 
 MPI:
 - cache CNF computations for optimized skolemization
@@ -34,13 +30,21 @@ Bremen:
 - adapt CASL2SPASS translation
   - exists! x. phi(x) should become 
     (exists x. phi(x)) /\ (forall x,y . phi(x) /\ phi(y) => x=y)
+    done
   - in case of a conjunctive goal, send conjuncts individually
+     A proof of a toplevel conjunction is easier if the conjunction is
+     split into its conjuncts and each conjunct is proved separately; this
+     can be implemented in Hets, but the housekeeping is difficult and the
+     proof reconstruction is difficult.
+    What to do with proofs of individual conjuncts?
   - eliminate user defined equality predicates
-  - eliminate (some?) subsort definitions, like in RRCDagstuhl.het
+  - eliminate (some?) subsort definitions, like in RCCDagstuhl.het
   - if there is only one sort, eliminate it
-- send interesting example with a modular theory 
+- send interesting example with a modular theory   -> RCCDagstuhl.het
    -> could be saturated per module
    -> research paper
-- send example with a finite sort
-- send example with a single sort (e.g. optimized RCCDagsthul)
+- send example with a finite sort -> RCC5.het
+    translate sort generation constraints with constants only
+      to a first-order disjunction
+- send example with a single sort -> RCCDagstuhl2.het
 - send ontology example (DOLCE)
