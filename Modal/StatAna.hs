@@ -217,7 +217,8 @@ ana_FORMULA b mix f =
            e <- get
            phi <- case m of
                Nothing -> return f
-               Just r -> resultToState (minExpFORMULA minExpForm e) r
+               Just r -> do resultToState (minExpFORMULA minExpForm e) r
+                            return r
            e2 <- get
            put e2 {predMap = pm}
            return phi
