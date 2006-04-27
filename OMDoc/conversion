@@ -16,7 +16,7 @@ for output generation.
 devGraphToOMDoc (LIB_NAME, LibEnv)
   devGraphToOMDocCMPIOXN
    devGraphToXmlCMPIOXN (DevGraph, Name)
-    1.  Create node-names (Knoten, Refs) :
+    1.  Create node-names (Nodes, Refs) :
         determine as tuples (Graph.Node, NODE_NAME)
     2.  Create (unique) xml-names :
         create as XmlNamed(Graph.Node, NODE_NAME)
@@ -30,10 +30,10 @@ devGraphToOMDoc (LIB_NAME, LibEnv)
         SentenceWO is a Sentence with it's origin-node.
     4.  Create import-maps :
         Selection of incoming links for creation of imports.
-        The corrent selection and processing of nodes needs to be improved.
+        The correct selection and processing of nodes needs to be improved.
     5.  Create (unique) xml-names
     6.  For all nodes that are not references :
-      6.1 Find elements belonding to this node (sorts, predicates, etc)
+      6.1 Find elements belonging to this node (sorts, predicates, etc)
       6.2 Create insorts from sort-relations :
         Insorts in OMDoc are defined inverse to their definition in Hets
           (a contains b -> b in a)
@@ -49,7 +49,7 @@ devGraphToOMDoc (LIB_NAME, LibEnv)
           
           create sort-definitions
 
-          create adts for a) constructors and b) sort-relations
+          create ADTs for a) constructors and b) sort-relations
 
           create predication/operator-definitions
 
