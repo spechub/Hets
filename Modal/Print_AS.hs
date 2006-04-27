@@ -18,7 +18,7 @@ import qualified Common.Lib.Map as Map
 import Common.PrettyPrint
 import Common.PPUtils
 import Common.AS_Annotation
-import Common.Doc 
+import Common.Doc
 import CASL.Print_AS_Basic
 import CASL.Sign
 import Modal.AS_Modal
@@ -39,10 +39,10 @@ instance PrettyPrint M_BASIC_ITEM where
 instance Pretty M_BASIC_ITEM where
     pretty (Simple_mod_decl is fs _) =
         cat [keyword modalityS <+> semiAnnos pretty is
-            , specBraces $ semiAnnos pretty fs]
+            , space <> specBraces (semiAnnos pretty fs)]
     pretty (Term_mod_decl ss fs _) =
         cat [keyword termS <+> keyword modalityS <+> semiAnnos pretty ss
-            , specBraces $ semiAnnos pretty fs]
+            , space <> specBraces (semiAnnos pretty fs)]
 
 instance PrettyPrint RIGOR where
     printText0 = CASL.Print_AS_Basic.toText
@@ -56,11 +56,11 @@ instance PrettyPrint M_SIG_ITEM where
 
 instance Pretty M_SIG_ITEM where
     pretty (Rigid_op_items r ls _) =
-        pretty r <+> keyword (opS ++ pluralS ls) <+>
-             semiAnnos pretty ls
+        cat [pretty r <+> keyword (opS ++ pluralS ls),
+             space <> semiAnnos pretty ls]
     pretty (Rigid_pred_items r ls _) =
-        pretty r <+> keyword (predS ++ pluralS ls) <+>
-             semiAnnos pretty ls
+        cat [pretty r <+> keyword (predS ++ pluralS ls),
+             space <> semiAnnos pretty ls]
 
 instance PrettyPrint M_FORMULA where
     printText0 = CASL.Print_AS_Basic.toText
@@ -71,9 +71,9 @@ instance Pretty M_FORMULA where
                          Simple_mod _ -> (<>)
                          _ -> (<+>)
             td = pretty t
-            fd = condParensInnerF (printFormula pretty) parens f
-        in if b then brackets td <> fd
-           else less `sp` td `sp` greater <+> fd
+        in sep $ (if b then brackets td
+                  else less `sp` td `sp` greater)
+               : [condParensInnerF (printFormula pretty) parens f]
 
 instance PrettyPrint MODALITY where
     printText0 = CASL.Print_AS_Basic.toText
@@ -91,21 +91,21 @@ instance Pretty ModalSign where
     pretty = printModalSign
 
 printModalSign :: ModalSign -> Doc
-printModalSign s = 
+printModalSign s =
     let ms = modies s
         tms = termModies s in
-    printSetMap (keyword rigidS <+> keyword opS) empty (rigidOps s)      
-    $+$ 
+    printSetMap (keyword rigidS <+> keyword opS) empty (rigidOps s)
+    $+$
     printSetMap (keyword rigidS <+> keyword predS) space (rigidPreds s)
     $+$ (if Map.null ms then empty else
-        cat [keyword modalitiesS <+> (fsep $ punctuate semi $ 
+        cat [keyword modalitiesS <+> (fsep $ punctuate semi $
             map sidDoc (Map.keys ms))
             , specBraces (printFormulaOfModalSign $ Map.elems ms)])
     $+$ (if Map.null tms then empty else
         cat [keyword termS <+> keyword modalityS <+> (fsep $ punctuate semi $
                 map idDoc (Map.keys tms))
             , specBraces (printFormulaOfModalSign $ Map.elems tms)])
-    
+
 condParensInnerF :: Pretty f => (FORMULA f -> Doc)
                     -> (Doc -> Doc)    -- ^ a function that surrounds
                                        -- the given Doc with appropiate
@@ -121,5 +121,6 @@ condParensInnerF pf parens_fun f =
     Existl_equation _ _ _  -> f'
     Strong_equation _ _ _  -> f'
     Membership _ _ _       -> f'
+    ExtFORMULA _           -> f'
     _                      -> parens_fun f'
     where f' = pf f
