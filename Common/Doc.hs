@@ -55,7 +55,6 @@ module Common.Doc
     , fcat
     , punctuate
     , flushRight
-    , indentBy
       -- * keywords
     , keyword
     , topKey
@@ -144,21 +143,7 @@ data Doc
     | Text TextKind String -- non-empty and no white spaces inside
     | Cat ComposeKind [Doc]
     | Attr Format Doc      -- for annotations
-    | IndentBy Doc Doc Doc
     | LiteralDoc Pretty.Doc  -- for backward compatibility only
-
-{-
-IdentBy refDoc startDoc hangDoc
-
-is: startDoc <> (length refDoc - length startDoc) <> hangDoc
-if refDoc >= startDoc
-    (i.e indent hangBlock by refDoc and put it beside startDoc)
-
-is: startDoc <> hangDoc if it fits on a single line!
-is: startDoc $+$
-       nest refDoc hangDoc
-if refDoc < startDoc
--}
 
 isEmpty :: Doc -> Bool
 isEmpty d = case d of
@@ -330,11 +315,6 @@ flushRight = Attr FlushRight
 small :: Doc -> Doc
 small = Attr Small
 
-{- | print second argument and then indent the last one by the width
-of the first one -}
-indentBy :: Doc -> Doc -> Doc -> Doc
-indentBy = IndentBy
-
 -- * folding stuff
 
 data DocRecord a = DocRecord
@@ -345,7 +325,6 @@ data DocRecord a = DocRecord
     , foldText :: Doc -> TextKind -> String -> a
     , foldCat :: Doc -> ComposeKind -> [a] -> a
     , foldAttr :: Doc -> Format -> a -> a
-    , foldIndentBy :: Doc -> a -> a -> a -> a
     , foldLiteralDoc :: Doc -> Pretty.Doc -> a
     }
 
@@ -358,8 +337,6 @@ foldDoc r d = case d of
     Text k s -> foldText r d k s
     Cat k l -> foldCat r d k $ map (foldDoc r) l
     Attr a e -> foldAttr r d a $ foldDoc r e
-    IndentBy e f g ->
-        foldIndentBy r d (foldDoc r e) (foldDoc r f) $ foldDoc r g
     LiteralDoc o -> foldLiteralDoc r d o
 
 idRecord :: DocRecord Doc
@@ -371,7 +348,6 @@ idRecord = DocRecord
     , foldText = \ _ -> Text
     , foldCat = \ _ -> Cat
     , foldAttr = \ _ -> Attr
-    , foldIndentBy = \ _ -> IndentBy
     , foldLiteralDoc = \ _ -> LiteralDoc
     }
 
@@ -384,7 +360,6 @@ anyRecord = DocRecord
     , foldText = error "anyRecord.Text"
     , foldCat = error "anyRecord.Cat"
     , foldAttr = error "anyRecord.Attr"
-    , foldIndentBy = error "anyRecord.IndentBy"
     , foldLiteralDoc = error "anyRecord.LiteralDoc"
     }
 
@@ -406,8 +381,6 @@ toText ga = foldDoc anyRecord
           FlushRight -> let l = length $ show d in
             if l < 66 then Pretty.nest (66 - l) d else d
           _ -> d
-    , foldIndentBy = \ _ d1 d2 d3 ->
-          d2 Pretty.$$ Pretty.nest (length $ show d1) d3
     , foldLiteralDoc = \ _ d -> d
     } . codeOut ga Nothing Map.empty
 
@@ -458,8 +431,6 @@ toLatexRecord tab = anyRecord
           Small -> case o of
               Attr Small (Text j s) -> textToLatex True j s
               _ -> makeSmallLatex True d
-    , foldIndentBy = \ _ d1 d2 d3 ->
-          d2 Pretty.$$ Pretty.nest (length $ show d1) d3
     , foldLiteralDoc = \ _ d -> d
     }
 
@@ -483,8 +454,6 @@ makeSmallMath smll math = let rec = makeSmallMath smll math in
                              Attr Small $ Cat Horiz $
                               map (makeSmallMath False math) l
                          else Cat c $ map rec l
-    , foldIndentBy = \ (IndentBy d1 d2 d3) _ _ _ ->
-                     IndentBy (rec d1) (rec d2) $ rec d3
     , foldText = \ d _ _ -> if smll then Attr Small d else d
     }
 
