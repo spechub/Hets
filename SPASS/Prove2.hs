@@ -84,7 +84,7 @@ spassProveGUI thName th =
     where
       insertSentenceGen pst s = pst{initialLogicalPart =
                                       insertSentence (initialLogicalPart pst) s}
-      spassProverState _ sign oSens' = SPASSProverState
+      spassProverState sign oSens' = SPASSProverState
         { initialLogicalPart = foldl insertSentence
                                      (signToSPLogicalPart sign)
                                      (reverse axioms)
