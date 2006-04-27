@@ -8,13 +8,11 @@ Maintainer  :  rainer25@tzi.de
 Stability   :  provisional
 Portability :  needs POSIX
 
-Generic GUI for theorem provers. Based upon former SPASS Prover GUI.
+Generic GUI for automatic theorem provers. Based upon former SPASS Prover GUI.
 
 -}
 
 {- ToDo:
-      - combine functions prepareLP and addToLP
-
       - window opens too small on linux; why? ... maybe fixed
       --> failure still there, opens sometimes too small (using KDE),
           but not twice in a row
@@ -396,10 +394,9 @@ newOptionsFrame con updateFn = do
 
 -- ** Main GUI
 
--- !! rewrite haddock comment
 {- |
-  Invokes the prover GUI. First runs the batch prover on all goals,
-  then drops the user into a detailed GUI.
+  Invokes the prover GUI. Users may start the batch prover run on all goals,
+  or use a detailed GUI for proving each goal manually.
 -}
 genericATPgui :: (Ord proof_tree, Ord sentence, Show proof_tree, Show sentence) =>
                  ATPFunctions sign sentence proof_tree pst -- ^ prover specific functions
@@ -410,9 +407,9 @@ genericATPgui :: (Ord proof_tree, Ord sentence, Show proof_tree, Show sentence) 
               -> IO([Proof_status proof_tree]) -- ^ proof status for each goal
 genericATPgui atpFun prName thName th pt = do
   -- create initial backing data structure
-  let initState = initialGenericState prName thName
-                    (initialProverState atpFun)
-                    (atpTransSenName atpFun) th pt
+  let initState = initialGenericState prName
+                                      (initialProverState atpFun)
+                                      (atpTransSenName atpFun) th pt
   stateRef <- newIORef initState
   batchTLimit <- getBatchTimeLimit $ batchTimeEnv atpFun
 
