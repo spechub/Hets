@@ -253,7 +253,7 @@ instance Pretty SYMB where
 printSymb :: SYMB -> Doc
 printSymb s = case s of
     Symb_id i -> idDoc i
-    Qual_id i t _ -> fsep [idDoc i, colon <+> printType t]
+    Qual_id i t _ -> fsep [idDoc i, colon <> printType t]
 
 instance Pretty TYPE where
     pretty = printType
@@ -261,7 +261,7 @@ instance Pretty TYPE where
 printType :: TYPE -> Doc
 printType t = case t of
     O_type ot -> printOpType ot
-    P_type pt -> printPredType pt
+    P_type pt -> space <> printPredType pt
     A_type s  -> idDoc s
 
 print_kind_text :: SYMB_KIND -> [a] -> Doc
