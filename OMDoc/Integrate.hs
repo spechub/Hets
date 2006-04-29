@@ -458,7 +458,11 @@ main =
           ioError (userError "No input to process...")
     when
       dodebug
-      (putStrLn ("Theories in input : " ++ (show $ Set.map snd $ Hets.getNodeNames dg)))
+      (
+      do
+        putStrLn ("Theories in input : " ++ (show $ Hets.getNodeNames dg))
+        putStrLn ("Links in input :\n" ++ (showLinks dg))      
+      )
     when
       doshow
       (when dodebug (putStrLn "Showing Graph...") >> showdg (ln,lenv))
@@ -522,4 +526,38 @@ showdg::(ASL.LIB_NAME, LibEnv)->IO ()
 showdg (ln,lenv) =
   -- dho is 'defaultHetcatsOpts' (not visible here)...
   Hets.showGraph "" Hets.dho (Just (ln, lenv))
+
+-- debugging
+showLinks::DGraph->String
+showLinks dg = 
+  foldl
+    (\r nodenum ->
+      let
+        inLEdges = Graph.inn dg nodenum
+        outLEdges = Graph.out dg nodenum
+      in
+        r
+          ++ getNodeString nodenum ++ " (" ++ (show nodenum) ++ ") :\n"
+          ++ concatMap
+            (\(f,_,e) ->
+              "\t<- "
+                ++ (linkTypeToString $ dgl_type e) ++ " <- "
+                  ++ getNodeString f ++ " (" ++ (show f) ++")\n")
+            inLEdges
+          ++ concatMap
+            (\(_,t,e) ->
+              "\t-> "
+                ++ (linkTypeToString $ dgl_type e) ++ " -> "
+                  ++ getNodeString t ++ " (" ++ (show t) ++ ")\n")
+            outLEdges
+    )
+    ""
+    (Graph.nodes dg)
+  where
+  getNodeString::Graph.Node->String
+  getNodeString n =
+    case Graph.lab dg n of
+      Nothing -> "unknown Node!"
+      (Just node) -> getDGNodeName node
+
 

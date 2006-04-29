@@ -27,6 +27,7 @@ module OMDoc.OMDocOutput
     ,writeXmlG
     ,defaultDTDURI
     ,libEnvToDGraphG
+    ,linkTypeToString
   )
   where
 

@@ -8,6 +8,9 @@ Stability   :  provisional
 Portability :  non-portable(Logic)
 
   Input-methods for reading OMDoc
+
+TODO:
+  Support for axiom-inclusion/theory-inclusion-constructs
 -}
 module OMDoc.OMDocInput
   (
@@ -34,6 +37,7 @@ module OMDoc.OMDocInput
     ,libEnvFromOMDocFile
     -- loads an xml file via HXT and returns the 'omdoc'-tree
     ,loadOMDoc
+    ,getImportedTheories
   )
   where
 
@@ -645,9 +649,9 @@ nodeNamesXNFromXml axmlset =
         theohetsnodename =
           if (theohetsnodenames == "") || (isPrefixOf "AnonNode" theoid) 
             then
-              idToNodeName $ Debug.Trace.trace ("Calling idToNodeName with " ++ "[" ++ theoid ++ ",,0]") $ read ("["++theoid++",,0]")
+              idToNodeName $ read ("["++theoid++",,0]")
             else 
-              idToNodeName $ Debug.Trace.trace ("Calling idToNodeName with " ++ theohetsnodenames) $ read theohetsnodenames
+              idToNodeName $ read theohetsnodenames
       in
         txnl ++ [XmlNamed ((axAnn axml), theohetsnodename) theoid]
     )
@@ -1212,7 +1216,7 @@ showSenNames mapping =
 importGraphToDGNodesXN::
   GlobalOptions
   ->(ImportGraph (HXT.XmlTrees, Maybe DGraph))
-  ->Graph.Node->[DGNodeLab]
+  ->Graph.Node->[XmlNamed DGNodeLab]
 importGraphToDGNodesXN go ig n =
   let
     mnode = Graph.lab ig n
@@ -1253,14 +1257,16 @@ importGraphToDGNodesXN go ig n =
                   [] -> error "no such node in origin..."
                   l -> fst $ head l
         in
-          DGRef
-            (Hets.stringToSimpleId theoname, "", 0)
-            (ASL.Lib_id (ASL.Indirect_link slibname Id.nullRange))
-            onodenum
-            (G_theory CASL Hets.emptyCASLSign (Prover.toThSens []))
-            Nothing
-            Nothing
-          ) (debugGO go "iGTDGNXN" "about to created DGRefs" refimports)
+          XmlNamed
+            (DGRef
+              (Hets.stringToSimpleId theoname, "", 0)
+              (ASL.Lib_id (ASL.Indirect_link slibname Id.nullRange))
+              onodenum
+              (G_theory CASL Hets.emptyCASLSign (Prover.toThSens []))
+              Nothing
+              Nothing)
+            theoname
+          ) refimports
     psorts = mapSetToSet (debugGO go "iGTDGNXN" "at mapSetToSet(sortsmap)" sortsmap)
     ppreds = mapSetToSet (debugGO go "iGTDGNXN" "at mapSetToSet(predsmap)" predsmap)
     pops = mapSetToSet (debugGO go "iGTDGNXN" "at mapSetToSet(opsmap)" opsmap)
@@ -1277,10 +1283,11 @@ importGraphToDGNodesXN go ig n =
           ++ (show (snd (xnItem xntheory))) ++ ", XmlName was "
             ++ (xnName xntheory))
           (dgnodelist
-            ++ [
-                  xnMapsToDGNodeLab
+            ++ [XmlNamed
+                  (xnMapsToDGNodeLab
                     go
-                    (snd (xnItem xntheory)) psorts trels ppreds pops tsens
+                    (snd (xnItem xntheory)) psorts trels ppreds pops tsens)
+                  (xnName xntheory)
                ])
       ) refs (debugGO go "iGTDGNXN" "at Set.fold" theonames)
   
@@ -1332,19 +1339,23 @@ importGraphToDGraphXN go ig n =
       (Just n' ) -> n'
     omdoc = (\(S _ (omdoc' , _)) ->
       applyXmlFilter (isTag "omdoc" .> getChildren) omdoc' ) node
-    nodes = importGraphToDGNodesXN go ig n
-    lnodes = (zip [1..] nodes)::[(Graph.Node, DGNodeLab)]
+    -- I have not yet found the source for the initial reversion...
+    -- Output is a candidate...
+    nodes = reverse $ importGraphToDGNodesXN go ig n
+    lnodes = (zip [0..] nodes)::[(Graph.Node, (XmlNamed DGNodeLab))]
     --nodegraph = (Graph.mkGraph lnodes [])::DGraph
     nameNodeMap = Map.fromList $
-      map ( \(n' , node' ) -> (getDGNodeName node' , n' ) ) $ lnodes
+      map ( \(n' , xnnode' ) -> (getDGNodeName (xnItem xnnode' ) , n' ) ) $ lnodes
+    xmlnameNodeMap = Map.fromList $
+      map ( \(n' , xnnode' ) -> (xnName xnnode', n' ) ) $ lnodes
     imports' = importsFromXml omdoc
     importhints = createImportHints omdoc
     ledges =
       foldl
         (\le (nodename, nodeimports) ->
           let     
-            nodenum = Map.findWithDefault 0 nodename nameNodeMap
-            tnode = case map snd $ filter (\(n' ,_) -> n' == nodenum) lnodes of
+            nodenum = Map.findWithDefault (-1) nodename xmlnameNodeMap
+            tnode = case map (xnItem . snd) $ filter (\(n' ,_) -> n' == nodenum) lnodes of
                     (l:_) -> l
                     _ -> error "node error!"
             targetsign = getNodeSignature ig (Just tnode)
@@ -1360,10 +1371,10 @@ importGraphToDGraphXN go ig n =
           in
             (foldl (\le' (ni, mmm) ->
               let
-                importnodenum = case Map.findWithDefault 0 ni nameNodeMap of
-                  0 -> debugGO go "iGTDGXN" ("Cannot find node for \"" ++ ni ++ "\"!") 0
+                importnodenum = case Map.findWithDefault (-1) ni xmlnameNodeMap of
+                  (-1) -> debugGO go "iGTDGXN" ("Cannot find node for \"" ++ ni ++ "\"!") (-1)
                   x -> x
-                snode = case map snd $
+                snode = case map (xnItem . snd) $
                   filter (\(n' ,_) -> n' == importnodenum) lnodes
                     of
                       (l:_) -> l
@@ -1399,8 +1410,8 @@ importGraphToDGraphXN go ig n =
               (\ih ->
                 let
                   ni = fromName ih
-                  importnodenum = case Map.findWithDefault 0 ni nameNodeMap of
-                          0 -> debugGO go "iGTDGXN" ("Cannot find node for \"" ++ ni ++ "\"!") 0
+                  importnodenum = case Map.findWithDefault (-1) ni xmlnameNodeMap of
+                          (-1) -> debugGO go "iGTDGXN" ("Cannot find node for \"" ++ ni ++ "\"!") (-1)
                           x -> x
                 in
                   (importnodenum, nodenum, getIHLink ih)
@@ -1412,7 +1423,7 @@ importGraphToDGraphXN go ig n =
             )
         ) [] $ Map.toList imports'
     validedges = foldl (\e newe@(n' ,m,_) ->
-      if (n' ==0) || (m==0)
+      if (n' ==(-1)) || (m==(-1))
         then
           debugGO go "iGTDGXN"
             ("Invalid Edge found from " ++ (show n' )
@@ -1421,7 +1432,7 @@ importGraphToDGraphXN go ig n =
         else
           e++[newe]
         ) [] ledges
-    cleannodes = map (\(n' , node' ) -> (n' , cleanNodeName node' )) lnodes  
+    cleannodes = map (\(n' , xnnode' ) -> (n' , cleanNodeName (xnItem xnnode' ) )) lnodes  
   in
     Graph.mkGraph cleannodes validedges
                 
