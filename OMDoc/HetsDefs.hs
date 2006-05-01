@@ -54,6 +54,7 @@ import qualified Debug.Trace as Debug.Trace
 import qualified Data.List as Data.List
 
 import Char (isSpace)
+import Data.Maybe (fromMaybe)
 
 import OMDoc.Util 
 
@@ -203,9 +204,17 @@ inputNodeLabs dg n = map (\(Just a) -> a) $ map (\(m,_,_) -> Graph.lab dg m) $ l
 
 inputLNodes::DGraph->Graph.Node->[Graph.LNode DGNodeLab]
 inputLNodes dg n = map (\(m,_,_) -> (m, (\(Just a) -> a) $ Graph.lab dg m) ) $ linkFilter $ Graph.inn dg n
-    
+
 inputNodes::DGraph->Graph.Node->[Graph.Node]
 inputNodes dg n = map (\(m,_,_) -> m) $ linkFilter $ Graph.inn dg n
+
+innNodes::DGraph->Graph.Node->[Graph.LNode DGNodeLab]
+innNodes dg n =
+  map
+    (\(m,_,_) ->
+      (m, fromMaybe (error "corrupt graph!") (Graph.lab dg m))
+    )
+    (Graph.inn dg n)
 
 getCASLMorph::(Graph.LEdge DGLinkLab)->(CASL.Morphism.Morphism () () ())
 getCASLMorph (_,_,edge) = (\(Just a) -> a) $ (\(Logic.Grothendieck.GMorphism _ _ morph) -> Data.Typeable.cast morph :: (Maybe (CASL.Morphism.Morphism () () ()))) $ dgl_morphism edge
@@ -857,6 +866,33 @@ getNodeImportsNodeDGNamesWO dg = getNodeDGNameMappingWO dg (
     in
       ((mkWON (dgn_name node) from), mmm):names
     ) [] $ inputLNodes dgr n ) Set.null
+
+getNodeAllImportsNodeDGNamesWOLL::
+  DGraph
+  ->Map.Map NODE_NAMEWO [(NODE_NAMEWO, Maybe DGLinkLab, Maybe MorphismMap)]
+getNodeAllImportsNodeDGNamesWOLL dg = getNodeDGNameMappingWO dg (
+  \dgr n -> 
+    foldl (\names (from,node) ->
+      let
+        edges' = filter (\(a,b,_) -> (a == from) && (b==n)) $ Graph.labEdges dgr
+        mfirstedge = case edges' of
+          (l:_) -> Just l
+          _ -> Nothing
+        mfirstll = case mfirstedge of
+          Nothing -> Nothing
+          (Just (_,_,ll)) -> Just ll
+        caslmorph = case mfirstedge of
+          Nothing -> emptyCASLMorphism
+          (Just l) -> getCASLMorph l
+        mmm = if isEmptyMorphism caslmorph
+          then
+            Nothing
+          else
+            (Just (makeMorphismMap caslmorph))
+      in
+        ((mkWON (dgn_name node) from), mfirstll, mmm):names
+    ) [] (innNodes dgr n) )
+    null
     
 getNodeImportsNodeDGNames::DGraph->Map.Map NODE_NAME (Set.Set (NODE_NAME, Maybe MorphismMap))
 getNodeImportsNodeDGNames dg = getNodeDGNameMapping dg (

@@ -218,6 +218,70 @@ showSensWOMap mapping =
   in
     implode ", " sennames
 
+createGlobalLocalTheoremLinks::
+  GlobalOptions
+  ->Static.DevGraph.DGraph
+  ->Set.Set (XmlNamed (Graph.Node, NODE_NAME))
+  ->Graph.Node
+  ->HXT.XmlFilter
+createGlobalLocalTheoremLinks go dg nameset nodenum =
+  let
+    inlabedges = Graph.inn dg nodenum
+    inthmlinks = filter
+      (\(_,_,lablink) ->
+        case (Static.DevGraph.dgl_type lablink) of
+          (LocalThm {}) -> True
+          (GlobalThm {}) -> True
+          _ -> False
+      )
+      inlabedges
+    thisxmlname =
+      case Set.toList $ Set.filter (\i -> (fst (xnItem i)) == nodenum) nameset of
+        [] ->
+          debugGO
+            go
+            "cGLTL"
+            ("Cannot find a name for node " ++ show nodenum)
+            "unknownNode"
+        (i:_) -> xnName i
+    in
+      foldl
+        (\xmllinks anedge@(fromnum,_,ll) ->
+          let
+            fromxmlname =
+              case Set.toList $ Set.filter (\i -> (fst (xnItem i)) == nodenum) nameset of
+                [] ->
+                  debugGO
+                    go
+                    "cGLTL"
+                    ("Cannot find a name for node " ++ show fromnum)
+                    "unknownNode"
+                (i:_) -> xnName i
+            tagname = case Static.DevGraph.dgl_type ll of
+              (LocalThm {}) -> "axiom-inclusion"
+              (GlobalThm {}) -> "theory-inclusion"
+            mcaslmorph = Hets.getMCASLMorph anedge
+            caslmorph = fromMaybe Hets.emptyCASLMorphism mcaslmorph
+            (smm, pmm, omm, hs) = Hets.makeMorphismMap caslmorph
+          in
+            xmllinks
+            +++ xmlNL
+            +++ HXT.etag tagname += (
+              qualattr "" "from" ("#" ++ fromxmlname)
+              +++ qualattr "" "to" ("#" ++ thisxmlname)
+              +++ (if Hets.isEmptyMorphism caslmorph
+                then
+                  HXT.txt ""
+                else
+                  (morphismMapToXmlXN (Map.fromList $ map (\(a,b) -> (show a, show b)) $ Map.toList smm) (Set.singleton "") thisxmlname fromxmlname)
+                )
+              )
+        )
+        (HXT.txt "")
+        inthmlinks
+                
+            
+
 {- |
         Converts a DevGraph into a Xml-structure (accessing used (CASL-)files 
         for CMP-generation)
@@ -236,7 +300,25 @@ devGraphToXmlCMPIOXmlNamed go dg =
     predswomap = Map.map mapToSetToTupelList $ Hets.getPredMapsWOWithNodeDGNamesWO dg
     opswomap = Map.map mapToSetToTupelList $ Hets.getOpMapsWOWithNodeDGNamesWO dg
     senswomap = (\smap -> debugGO go "dGTXCMPIOXNsens" ("Sentences : " ++ (showSensWOMap smap)) smap) $ Hets.getSentencesWOWithNodeDGNamesWO dg
-    importsmapwo = Hets.getNodeImportsNodeDGNamesWO dg
+    -- importsmapwo = Hets.getNodeImportsNodeDGNamesWO dg
+    inputmapwofull = Hets.getNodeAllImportsNodeDGNamesWOLL dg
+    importsmapwo =
+      Map.map
+        (\inputlist ->
+          Set.fromList $
+            map (\(a,_,b) -> (a,b)) $
+            filter (\(nn,mll,mmm) ->
+              case mll of
+                Nothing -> True
+                (Just ll) ->
+                  case Static.DevGraph.dgl_type ll of
+                    Static.DevGraph.LocalDef -> True
+                    Static.DevGraph.GlobalDef -> True
+                    _ -> False
+              )
+              inputlist
+        )
+        inputmapwofull
     -- sorts
     -- (xmlnamedsortswomap, xmlnames_sm) =
     (xmlnamedsortswomap, _) =
@@ -341,10 +423,17 @@ devGraphToXmlCMPIOXmlNamed go dg =
               m
             ) Map.empty (Rel.toList insorts)
         -- imports/morphisms
+        {-
         timports = Map.findWithDefault
           Set.empty
           (Hets.mkWON nodename nodenum)
           importsmapwo
+          -}
+        tinputs = Map.findWithDefault
+          []
+          (Hets.mkWON nodename nodenum)
+          inputmapwofull
+          {-
         importsxn = Set.map
           (\(inodenamewo, mmm) ->
             let
@@ -401,6 +490,86 @@ devGraphToXmlCMPIOXmlNamed go dg =
               (itheoxmlname, mmapandset)
           )
           timports
+          -}
+        inputsxn = map
+          (\(inodenamewo, mll, mmm) ->
+            let
+              ((itheonum, itheoname), itheoxmlname) = case find (\x -> (fst (xnItem x)) == (Hets.woOrigin inodenamewo)) (Set.toList nodexmlnameset) of
+                Nothing -> error "Unknown Origin of Morphism!"
+                (Just x) -> (xnItem x, xnName x)
+              itheosorts = Map.findWithDefault Set.empty (Hets.mkWON itheoname itheonum) xmlnamedsortswomap
+              itheopreds = (Map.findWithDefault [] (Hets.mkWON itheoname itheonum) xmlnamedpredswomap)
+              itheoops = (Map.findWithDefault [] (Hets.mkWON itheoname itheonum) xmlnamedopswomap)
+              mmapandset = case mmm of
+                Nothing -> Nothing
+                -- order is sort, ops, preds, hiding...
+                (Just (sm,om,pm,hs)) ->
+                  let
+                    mmsorts = map (\(a,b) ->
+                      (
+                        case find (\i -> (xnWOaToa i) == a) (Set.toList itheosorts) of
+                          Nothing -> error ("(In : "++ theoname ++", from " ++ itheoxmlname ++ ") Unable to find imported sort " ++ (show a) ++ " in source-sorts : " ++ (show itheosorts)) 
+                          (Just x) -> xnName x,
+                        case find (\i -> (xnWOaToa i) == b) (Set.toList theosorts) of
+                          Nothing -> error ("(In :"++ theoname  ++") Unable to find imported sort " ++ (show b) ++ " in target-sorts : " ++ (show theosorts))
+                          (Just x) -> xnName x
+                      )
+                      )
+                      (Map.toList sm)
+--                                                                              mmpreds = map (\((ai,ap), (bi,bp)) ->
+                    mmpreds = map (\((ai,_), (bi,_)) ->
+                      (
+                        case find (\(ii,_) -> (xnWOaToa ii) == ai) itheopreds of
+                          Nothing -> error ("(In : "++ theoname ++"(" ++ (show nodenum) ++ "), from " ++ itheoxmlname ++ "(" ++ (show itheonum) ++ ") Unable to find import predication " ++ (show ai) ++ " in source-preds : " ++ (show itheopreds) ++ " theories : " ++ (show nodexmlnameset)) 
+                          (Just (ii,_)) -> show $ (xnWOaToa ii), -- xnName ii,
+                        case find (\(ii,_) -> (xnWOaToa ii) == bi) theopreds of
+                          Nothing -> error ("(In :"++ theoname  ++") Unable to find import predication " ++ (show bi) ++ " in target-preds : " ++ (show theopreds))
+                          (Just (ii,_)) -> xnName ii
+                      )
+                      )
+                      (Map.toList pm)
+--                                                                              mmops = map (\((ai,ao), (bi,bo)) ->
+                    mmops = map (\((ai,_), (bi,_)) ->
+                      (
+                        case find (\(ii,_) -> (xnWOaToa ii) == ai) itheoops of
+                          Nothing -> error ("(In : "++ theoname ++", from " ++ itheoxmlname ++ ") Unable to find import operator " ++ (show ai) ++ " in source-ops : " ++ (show itheoops))
+                          (Just (ii,_)) -> xnName ii,
+                        case find (\(ii,_) -> (xnWOaToa ii) == bi) theoops of
+                          Nothing -> error ("(In :"++ theoname  ++") Unable to find import operator " ++ (show bi) ++ " in target-ops : " ++ (show theoops))
+                          (Just (ii,_)) -> xnName ii
+                      )
+                      )
+                      (Map.toList om)
+                  in
+                    Just (Map.fromList (mmsorts ++ mmpreds ++ mmops), Set.map show hs)
+                        
+            in
+              (itheoxmlname, mll, mmapandset)
+          )
+          tinputs
+        importsxn =
+          Set.fromList $ map (\(a,_,b) -> (a,b)) $
+            filter (\(_,mll,_) ->
+              case mll of
+                Nothing -> True
+                (Just ll) ->
+                  case Static.DevGraph.dgl_type ll of
+                    Static.DevGraph.GlobalDef -> True
+                    Static.DevGraph.LocalDef -> True
+                    _ -> False
+              )
+              inputsxn
+        glThmLinksxn =
+            filter (\(_,mll,_) ->
+              case mll of
+                Nothing -> False
+                (Just ll) ->
+                  case Static.DevGraph.dgl_type ll of
+                    (Static.DevGraph.GlobalThm _ _ _) -> True
+                    (Static.DevGraph.LocalThm _ _ _) -> True
+                    _ -> False
+              )
+              inputsxn
         theopreds = Map.findWithDefault [] (Hets.mkWON nodename nodenum) xmlnamedpredswomap
         realtheopreds = filter (\(idxnwon, _) -> (xnWOaToO idxnwon) == nodenum) theopreds
         theoops = (\x -> debugGO go "dGTXCMPIOXNo" ("Ops in \"" ++ (show nodename) ++ "\" : " ++ show x) x) $ Map.findWithDefault [] (Hets.mkWON nodename nodenum) xmlnamedopswomap
@@ -547,7 +716,30 @@ devGraphToXmlCMPIOXmlNamed go dg =
             sensxml
             )
             -- this constructs Hets-internal links as private data (but uses xmlnames for reference)
-            +++ xmlNL +++ (inDGToXmlXN dg nodenum nodexmlnameset) +++ xmlNL
+            +++ xmlNL +++ (inDGToXmlXN dg nodenum nodexmlnameset) +++ xmlNL 
+            +++
+              (foldl (\xml (fromxn, mll, mmm) ->
+                let
+                  tagname =
+                    case mll of
+                      Nothing -> error "corrupt data"
+                      (Just ll) ->
+                        case Static.DevGraph.dgl_type ll of
+                          (Static.DevGraph.GlobalThm _ _ _) -> "theory-inclusion"
+                          (Static.DevGraph.LocalThm _ _ _) -> "axiom-inclusion"
+                          _ -> error "corrupt data"
+                in
+                  xml +++ xmlNL +++
+                    HXT.etag tagname += (
+                      HXT.sattr "from" ("#"++fromxn) 
+                      +++ HXT.sattr "to" ("#" ++ theoname)
+                      +++ case mmm of
+                        Nothing -> HXT.txt ""
+                        (Just (sm,hs)) -> morphismMapToXmlXN sm hs fromxn theoname
+                      )
+              )
+              (HXT.txt "")
+              glThmLinksxn)
             )
             -- when constructing the catalogues a reference to the xmlname used in _this_ document is used
             -- it is very likely possible, that this theory has another name in real life (unless there are no name-collisions)

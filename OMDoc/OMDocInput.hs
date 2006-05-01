@@ -1070,7 +1070,49 @@ createImportHints t =
                 ldata
       ) Map.empty theonames
 
-
+-- | extracts global and local theorem links from axiom- and theory-inclusion
+-- tags. Returns a list of (inclusion-id, from, to, DGLinkLab).
+glThmsFromXml::HXT.XmlTrees->[(XmlName, XmlName, XmlName, DGLinkLab)]
+glThmsFromXml t =
+  let
+    inclusions =
+      applyXmlFilter (isTag "theory-inclusion" +++ isTag "axiom-inclusion") t
+  in
+    foldl (\glts inx ->
+      let
+        islocal = null $ applyXmlFilter (isTag "theory-inclusion") [inx]
+        inid = xshow $ applyXmlFilter (getQualValue "xml" "id") [inx]
+        infrom = xshow $ applyXmlFilter (getQualValue "" "from") [inx]
+        into = xshow $ applyXmlFilter (getQualValue "" "to") [inx]
+        inmorphx = applyXmlFilter (getChildren .> isTag "morphism") [inx]
+        inmorph = case inmorphx of [] -> []; _ -> [xmlToMorphismMap inmorphx]
+        caslGMorph = case inmorph of
+          [morphismMap] ->
+            Hets.makeCASLGMorphism $ Hets.morphismMapToMorphism morphismMap
+          _ ->
+            Hets.emptyCASLGMorphism
+      in
+        glts ++
+          [
+            (  inid
+              ,infrom
+              ,into
+              ,DGLink
+                {
+                   dgl_morphism = caslGMorph
+                  ,dgl_type =
+                    (if islocal then LocalThm else GlobalThm)
+                      LeftOpen
+                      None
+                      LeftOpen
+                  ,dgl_origin = DGBasic
+                }
+            )
+          ]
+      )
+      []
+      inclusions
+      
 -- used by new format (for import graph)
 importsFromXmlTheory::HXT.XmlTrees->Hets.Imports
 importsFromXmlTheory t =
@@ -1326,6 +1368,7 @@ getNodeSignature igdg mnode =
               _ -> Hets.emptyCASLSign
           _ -> Hets.emptyCASLSign
 
+
 importGraphToDGraphXN::
   GlobalOptions
   ->(ImportGraph (HXT.XmlTrees, Maybe DGraph))
@@ -1350,6 +1393,20 @@ importGraphToDGraphXN go ig n =
       map ( \(n' , xnnode' ) -> (xnName xnnode', n' ) ) $ lnodes
     imports' = importsFromXml omdoc
     importhints = createImportHints omdoc
+    glTheoIncs = glThmsFromXml omdoc
+    glThmLEdges =
+      foldl
+        (\gltle (eid, efrom, eto, lnk) ->
+          let
+            fromname = getFragmentOrWarnAndString efrom
+            toname = getFragmentOrWarnAndString eto
+            fromnum = Map.findWithDefault (-1) fromname xmlnameNodeMap
+            tonum = Map.findWithDefault (-1) toname xmlnameNodeMap
+          in
+            gltle ++ [ (fromnum, tonum, lnk) ]
+        )
+        []
+        glTheoIncs
     ledges =
       foldl
         (\le (nodename, nodeimports) ->
@@ -1366,7 +1423,15 @@ importGraphToDGraphXN go ig n =
             -- the omdoc
             importhintswithoutimports =
               Set.filter
-                (\ih -> not $ elem (fromName ih) importsfrom)
+                (\ih ->
+                  (not $ elem (fromName ih) importsfrom)
+                    &&
+                      (case (Static.DevGraph.dgl_type (getIHLink ih)) of
+                        (LocalThm {}) -> False
+                        (GlobalThm {}) -> False
+                        _ -> True
+                      )
+                )
                 nodeimporthints 
           in
             (foldl (\le' (ni, mmm) ->
@@ -1431,10 +1496,33 @@ importGraphToDGraphXN go ig n =
             e
         else
           e++[newe]
-        ) [] ledges
+        ) [] (ledges ++ glThmLEdges)
     cleannodes = map (\(n' , xnnode' ) -> (n' , cleanNodeName (xnItem xnnode' ) )) lnodes  
   in
     Graph.mkGraph cleannodes validedges
+  where
+  getFragmentOrWarnAndString::String->String
+  getFragmentOrWarnAndString s =
+    case URI.parseURIReference s of
+      Nothing ->
+        Debug.Trace.trace
+          ("Please use valid URIs for local or global theorem inclusions."
+            ++ "Using \"" ++ s ++ "\".")
+          s
+      (Just anuri) ->
+        let
+          frag = URI.uriFragment anuri
+        in
+          if (length frag < 2 )
+            then
+              Debug.Trace.trace
+                ("Please specify a fragment referencing the theory for "
+                  ++ "local or global theorem inclusions. Using \""
+                    ++ s ++ "\".")
+                s
+            else
+              drop 1 frag
+  
                 
                 
 getCatalogueInformation::HXT.XmlTrees->(Map.Map String String)

@@ -26,7 +26,7 @@ HC_INCLUDE = $(addprefix -i, $(INCLUDE_PATH))
 
 UNI_PACKAGE_CONF = $(wildcard ../../uni/uni-package.conf)
 ifneq ($(strip $(UNI_PACKAGE_CONF)),)
-#HC_PACKAGE = -package-conf $(UNI_PACKAGE_CONF) -package uni-davinci \
+HC_PACKAGE = -package-conf $(UNI_PACKAGE_CONF) -package uni-davinci \
     -package uni-server -DUNI_PACKAGE
 
 endif
@@ -36,7 +36,7 @@ HCI_OPTS = $(HC_FLAGS) $(HC_INCLUDE) $(HC_PACKAGE) $(PFE_FLAGS)
 ####################################################################
 ### targets
 
-.PHONY : profiling
+.PHONY : build integrate profiling
 
 build: integrate
 integrate: Integrate.hs HetsInterface.hs XmlHandling.hs OMDocInput.hs Util.hs OMDocDefs.hs Container.hs KeyDebug.hs
