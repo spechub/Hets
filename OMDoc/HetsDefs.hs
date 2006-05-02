@@ -621,7 +621,7 @@ getNodeDGNameMappingWONP dg mapper dispose =
       Map.insert thisname mapped mapping
     ) Map.empty $ Graph.labNodes dg
     
-type Imports = Set.Set (String, (Maybe MorphismMap))
+type Imports = Set.Set (String, (Maybe MorphismMap), Bool)
 type Sorts = Set.Set SORT
 type Rels = Rel.Rel SORT
 type Preds = Map.Map Id.Id (Set.Set PredType)
@@ -840,13 +840,18 @@ getNodeImportsNodeNames dg = getNodeNameMapping dg (
       caslmorph = case edges' of
         [] -> emptyCASLMorphism
         (l:_) -> getCASLMorph l
+      isglobal = case edges' of
+        [] -> True
+        ((_,_,e):_) -> case dgl_type e of
+          (LocalDef) -> False
+          _ -> True
       mmm = if isEmptyMorphism caslmorph
         then
           Nothing
         else
           (Just (makeMorphismMap caslmorph))
     in
-      ((adjustNodeName ("AnonNode_"++(show from)) $ getDGNodeName node), mmm):names
+      ((adjustNodeName ("AnonNode_"++(show from)) $ getDGNodeName node), mmm, isglobal):names
     ) [] $ inputLNodes dgr n ) Set.null
   
 getNodeImportsNodeDGNamesWO::DGraph->Map.Map NODE_NAMEWO (Set.Set (NODE_NAMEWO, Maybe MorphismMap))
@@ -962,7 +967,7 @@ findNodeNameFor::ImportsMap->(Map.Map String a)->(a->Bool)->String->(Maybe Strin
 findNodeNameFor importsMap attribMap finder name =
   let
     m_currentAttrib = Map.lookup name attribMap
-    currentImports = Set.map fst $ Map.findWithDefault Set.empty name importsMap
+    currentImports = Set.map (\(a,_,_) -> a) $ Map.findWithDefault Set.empty name importsMap
   in
     if (
       case m_currentAttrib of

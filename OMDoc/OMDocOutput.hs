@@ -548,7 +548,7 @@ devGraphToXmlCMPIOXmlNamed go dg =
           )
           tinputs
         importsxn =
-          Set.fromList $ map (\(a,_,b) -> (a,b)) $
+--          Set.fromList $ map (\(a,_,b) -> (a,b)) $
             filter (\(_,mll,_) ->
               case mll of
                 Nothing -> True
@@ -608,8 +608,13 @@ devGraphToXmlCMPIOXmlNamed go dg =
             -- I still need to find a way of modelling Hets-libraries
             -- in OMDoc-Imports...
   --                                      (foldl (\x' (nodename' , mmm) ->
-            (foldl (\x' (nodenamex , mmm) ->
+            (foldl (\x' (nodenamex , mll,  mmm) ->
               let
+                isglobal = case mll of
+                  (Just ll) -> case Static.DevGraph.dgl_type ll of
+                    (Static.DevGraph.LocalDef) -> False
+                    _ -> True
+                  _ -> True
                 refs = filter (\(_, node) -> isDGRef node) $ Graph.labNodes dg
                 isexternal = find (\xref -> (xnName xref) == nodenamex) onlyrefxmlnamelist
                 liburl = case isexternal of
@@ -627,7 +632,10 @@ devGraphToXmlCMPIOXmlNamed go dg =
               in
                 x' +++
                 HXT.etag "imports" += (
-                  (HXT.sattr "from" (liburl++"#" ++ nodenamex)) +++
+                  (
+                    HXT.sattr "from" (liburl++"#" ++ nodenamex)
+                    +++ (if isglobal then HXT.txt "" else HXT.sattr "type" "local")
+                  ) +++
                   (
                     case mmm of
                       {- (Just mm) ->
@@ -638,7 +646,7 @@ devGraphToXmlCMPIOXmlNamed go dg =
                   )
                 ) +++
                 xmlNL
-              ) (HXT.txt "") (Set.toList importsxn) --(Set.toList theoimports)
+              ) (HXT.txt "") importsxn --(Set.toList importsxn) --(Set.toList theoimports)
             ) +++
             -- sorts
             (Set.fold (\xnwos x' ->

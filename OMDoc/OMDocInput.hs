@@ -1139,7 +1139,7 @@ importsFromXmlTheory t =
             ) (Map.empty, Map.empty, Map.empty, Set.empty) $
               applyXmlFilter (getChildren .> isTag "morphism") [i]
         in
-          Set.union imps (Set.singleton (fromname, (Just mm)))
+          Set.union imps (Set.singleton (fromname, (Just mm), True))
       ) Set.empty imports'
                 
                 
@@ -1417,7 +1417,7 @@ importGraphToDGraphXN go ig n =
                     _ -> error "node error!"
             targetsign = getNodeSignature ig (Just tnode)
             nodeimporthints = Map.findWithDefault Set.empty nodename importhints
-            importsfrom = map (\(a,_) -> a) $ Set.toList nodeimports
+            importsfrom = map (\(a,_,_) -> a) $ Set.toList nodeimports
             -- the omdoc-imports have limited support for the imports
             -- used in a dgraph. some import-hints have no import-tag in
             -- the omdoc
@@ -1434,7 +1434,7 @@ importGraphToDGraphXN go ig n =
                 )
                 nodeimporthints 
           in
-            (foldl (\le' (ni, mmm) ->
+            (foldl (\le' (ni, mmm, isGlobal) ->
               let
                 importnodenum = case Map.findWithDefault (-1) ni xmlnameNodeMap of
                   (-1) -> debugGO go "iGTDGXN" ("Cannot find node for \"" ++ ni ++ "\"!") (-1)
@@ -1447,9 +1447,14 @@ importGraphToDGraphXN go ig n =
                 sourcesign = getNodeSignature ig (Just snode)
                 filteredimporthints =
                   Set.filter (\h -> (fromName h) == ni) nodeimporthints
+                thislinklab = if isGlobal 
+                  then
+                    defaultDGLinkLab
+                  else
+                    defaultDGLinkLab { dgl_type = Static.DevGraph.LocalDef }
                 ddgl = case mmm of
-                  Nothing -> defaultDGLinkLab
-                  (Just mm) -> defaultDGLinkLab { dgl_origin = DGTranslation, dgl_morphism = (Hets.makeCASLGMorphism $ (Hets.morphismMapToMorphism mm) { mtarget=targetsign, msource = sourcesign}) }
+                  Nothing -> thislinklab
+                  (Just mm) -> thislinklab { dgl_origin = DGTranslation, dgl_morphism = (Hets.makeCASLGMorphism $ (Hets.morphismMapToMorphism mm) { mtarget=targetsign, msource = sourcesign}) }
               in      
                 le' ++
                 if Set.null filteredimporthints
