@@ -7,8 +7,9 @@ Maintainer  :  hiben@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-  Input-methods for reading OMDoc
-
+Input-methods for reading OMDoc
+-}
+{-
 TODO:
   Support for axiom-inclusion/theory-inclusion-constructs
 -}
