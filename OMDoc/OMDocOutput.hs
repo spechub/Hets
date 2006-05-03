@@ -736,11 +736,21 @@ devGraphToXmlCMPIOXmlNamed go dg =
                           (Static.DevGraph.GlobalThm _ _ _) -> "theory-inclusion"
                           (Static.DevGraph.LocalThm _ _ _) -> "axiom-inclusion"
                           _ -> error "corrupt data"
+                  consattr =
+                    case mll of
+                      Nothing -> error "corrupt data"
+                      (Just ll) ->
+                        case Static.DevGraph.dgl_type ll of
+                          (Static.DevGraph.GlobalThm _ c _) -> consAttr c
+                          (Static.DevGraph.LocalThm _ c _) -> consAttr c
+                          _ -> error "corrupt data"
+                          
                 in
                   xml +++ xmlNL +++
                     HXT.etag tagname += (
                       HXT.sattr "from" ("#"++fromxn) 
                       +++ HXT.sattr "to" ("#" ++ theoname)
+                      +++ consattr
                       +++ case mmm of
                         Nothing -> HXT.txt ""
                         (Just (sm,hs)) -> morphismMapToXmlXN sm hs fromxn theoname
@@ -769,6 +779,11 @@ devGraphToXmlCMPIOXmlNamed go dg =
           else
             nodename
     )
+  consAttr::Static.DevGraph.Conservativity->HXT.XmlFilter
+  consAttr Static.DevGraph.None = \_ -> []
+  consAttr Static.DevGraph.Mono = HXT.sattr "conservativity" "monomorphism"
+  consAttr Static.DevGraph.Cons = HXT.sattr "conservativity" "conservative"
+  consAttr Static.DevGraph.Def = HXT.sattr "conservativity" "definitional"
                                                   
 -- | create catalogue xml-structures for a DevGraph and its theories
 -- theories needed because they have xml-names

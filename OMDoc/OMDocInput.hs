@@ -1082,6 +1082,7 @@ glThmsFromXml t =
     foldl (\glts inx ->
       let
         islocal = null $ applyXmlFilter (isTag "theory-inclusion") [inx]
+        incons = consFromAttr [inx]
         inid = xshow $ applyXmlFilter (getQualValue "xml" "id") [inx]
         infrom = xshow $ applyXmlFilter (getQualValue "" "from") [inx]
         into = xshow $ applyXmlFilter (getQualValue "" "to") [inx]
@@ -1104,7 +1105,7 @@ glThmsFromXml t =
                   ,dgl_type =
                     (if islocal then LocalThm else GlobalThm)
                       LeftOpen
-                      None
+                      incons
                       LeftOpen
                   ,dgl_origin = DGBasic
                 }
@@ -1113,6 +1114,17 @@ glThmsFromXml t =
       )
       []
       inclusions
+  where
+  consFromAttr::HXT.XmlTrees->Conservativity
+  consFromAttr t =
+    let
+      consattr = xshow $ applyXmlFilter (getValue "conservativity") t
+    in
+      case consattr of
+        "monomorphism" -> Mono
+        "conservative" -> Cons
+        "definitional" -> Def
+        _ -> None
       
 -- used by new format (for import graph)
 importsFromXmlTheory::HXT.XmlTrees->Hets.Imports
