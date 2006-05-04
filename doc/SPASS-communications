@@ -15,7 +15,6 @@ Clause[split level]justification.literal number
 ** ... and additionally it is an equation, oriented from left to right
 + (negative) literal has been selected
 
-
 MPI:
 - cache CNF computations for optimized skolemization
   (workaround until this is fixed: disable optimized skolemization)
@@ -48,3 +47,6 @@ Bremen:
       to a first-order disjunction
 - send example with a single sort -> RCCDagstuhl2.het
 - send ontology example (DOLCE)
+
+Questions for next meeting:
+ - does "implied" make any difference versus "implies"?
