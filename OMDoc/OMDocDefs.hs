@@ -118,6 +118,9 @@ unsupportedS :: String
 typeS :: String
 caslS :: String
 
+axiomInclusionS
+  ,theoryInclusionS :: String
+
 --caslQuantificationS = "quantification"
 caslConjunctionS = "conjunction"
 caslDisjunctionS = "disjunction"
@@ -144,6 +147,9 @@ unsupportedS = "unsupported-formula"
 
 typeS = "type"
 caslS = "casl"
+
+axiomInclusionS = "axiom-inclusion"
+theoryInclusionS = "theory-inclusion"
 
 -- | describes a value with an xml-name and an origin
 type XmlNamedWO a b = XmlNamed (Hets.WithOrigin a b)

@@ -22,6 +22,7 @@ module OMDoc.XmlHandling
     ,XmlNameList
     ,XmlNamed(..)
     ,xmlNL
+    ,xmlNullFilter
     ,getChild
     ,adjustStringForXmlName
     ,createUniqueName
@@ -56,6 +57,9 @@ applyXmlFilter f t = (id .> f) t
 -- | newline in XML
 xmlNL::(HXT.XmlTree->HXT.XmlTrees)
 xmlNL = HXT.txt "\n"
+
+xmlNullFilter::HXT.XmlFilter
+xmlNullFilter = \_ -> []
 
 -- XMLFilter 'hasValue' only gives back the value, not the tree...
 -- | filters nodes with a special value

@@ -218,69 +218,6 @@ showSensWOMap mapping =
   in
     implode ", " sennames
 
-createGlobalLocalTheoremLinks::
-  GlobalOptions
-  ->Static.DevGraph.DGraph
-  ->Set.Set (XmlNamed (Graph.Node, NODE_NAME))
-  ->Graph.Node
-  ->HXT.XmlFilter
-createGlobalLocalTheoremLinks go dg nameset nodenum =
-  let
-    inlabedges = Graph.inn dg nodenum
-    inthmlinks = filter
-      (\(_,_,lablink) ->
-        case (Static.DevGraph.dgl_type lablink) of
-          (LocalThm {}) -> True
-          (GlobalThm {}) -> True
-          _ -> False
-      )
-      inlabedges
-    thisxmlname =
-      case Set.toList $ Set.filter (\i -> (fst (xnItem i)) == nodenum) nameset of
-        [] ->
-          debugGO
-            go
-            "cGLTL"
-            ("Cannot find a name for node " ++ show nodenum)
-            "unknownNode"
-        (i:_) -> xnName i
-    in
-      foldl
-        (\xmllinks anedge@(fromnum,_,ll) ->
-          let
-            fromxmlname =
-              case Set.toList $ Set.filter (\i -> (fst (xnItem i)) == nodenum) nameset of
-                [] ->
-                  debugGO
-                    go
-                    "cGLTL"
-                    ("Cannot find a name for node " ++ show fromnum)
-                    "unknownNode"
-                (i:_) -> xnName i
-            tagname = case Static.DevGraph.dgl_type ll of
-              (LocalThm {}) -> "axiom-inclusion"
-              (GlobalThm {}) -> "theory-inclusion"
-            mcaslmorph = Hets.getMCASLMorph anedge
-            caslmorph = fromMaybe Hets.emptyCASLMorphism mcaslmorph
-            (smm, pmm, omm, hs) = Hets.makeMorphismMap caslmorph
-          in
-            xmllinks
-            +++ xmlNL
-            +++ HXT.etag tagname += (
-              qualattr "" "from" ("#" ++ fromxmlname)
-              +++ qualattr "" "to" ("#" ++ thisxmlname)
-              +++ (if Hets.isEmptyMorphism caslmorph
-                then
-                  HXT.txt ""
-                else
-                  (morphismMapToXmlXN (Map.fromList $ map (\(a,b) -> (show a, show b)) $ Map.toList smm) (Set.singleton "") thisxmlname fromxmlname)
-                )
-              )
-        )
-        (HXT.txt "")
-        inthmlinks
-                
-            
 
 {- |
         Converts a DevGraph into a Xml-structure (accessing used (CASL-)files 
@@ -633,8 +570,15 @@ devGraphToXmlCMPIOXmlNamed go dg =
                 x' +++
                 HXT.etag "imports" += (
                   (
-                    HXT.sattr "from" (liburl++"#" ++ nodenamex)
-                    +++ (if isglobal then HXT.txt "" else HXT.sattr "type" "local")
+                    qualattr
+                      "xml"
+                      "id"
+                      (
+                        (if isglobal then "ig" else "il")
+                        ++ "." ++ theoname ++ "." ++ nodenamex
+                      )
+                    +++ HXT.sattr "from" (liburl++"#" ++ nodenamex)
+                    +++ (if isglobal then xmlNullFilter else HXT.sattr "type" "local")
                   ) +++
                   (
                     case mmm of
@@ -642,11 +586,11 @@ devGraphToXmlCMPIOXmlNamed go dg =
                               morphismMapToXml mm nodenamex theoname
                               morphismMapToXml mm nodenamex theoname -}
                       (Just (sm, hs)) -> morphismMapToXmlXN sm hs nodenamex theoname
-                      Nothing -> HXT.txt ""
+                      Nothing -> xmlNullFilter
                   )
                 ) +++
                 xmlNL
-              ) (HXT.txt "") importsxn --(Set.toList importsxn) --(Set.toList theoimports)
+              ) (xmlNullFilter) importsxn --(Set.toList importsxn) --(Set.toList theoimports)
             ) +++
             -- sorts
             (Set.fold (\xnwos x' ->
@@ -698,7 +642,7 @@ devGraphToXmlCMPIOXmlNamed go dg =
                     (Hets.idToString $ xnWOaToa pxnid) +++
                   xmlNL
               )
-              (HXT.txt "")
+              (xmlNullFilter)
               realtheopreds
             ) +++
             -- operators
@@ -717,7 +661,7 @@ devGraphToXmlCMPIOXmlNamed go dg =
                     (Hets.idToString $ xnWOaToa oxnid) +++
                   xmlNL
               )
-              (HXT.txt "")
+              (xmlNullFilter)
               realtheoops
             ) +++
             -- sentences
@@ -733,8 +677,8 @@ devGraphToXmlCMPIOXmlNamed go dg =
                       Nothing -> error "corrupt data"
                       (Just ll) ->
                         case Static.DevGraph.dgl_type ll of
-                          (Static.DevGraph.GlobalThm _ _ _) -> "theory-inclusion"
-                          (Static.DevGraph.LocalThm _ _ _) -> "axiom-inclusion"
+                          (Static.DevGraph.GlobalThm _ _ _) -> theoryInclusionS
+                          (Static.DevGraph.LocalThm _ _ _) -> axiomInclusionS
                           _ -> error "corrupt data"
                   consattr =
                     case mll of
@@ -748,22 +692,28 @@ devGraphToXmlCMPIOXmlNamed go dg =
                 in
                   xml +++ xmlNL +++
                     HXT.etag tagname += (
-                      HXT.sattr "from" ("#"++fromxn) 
+                      qualattr
+                        "xml"
+                        "id"
+                        ( (if tagname == axiomInclusionS then "ai" else "ti")
+                          ++ "." ++ theoname ++ "." ++ fromxn
+                        )
+                      +++ HXT.sattr "from" ("#"++fromxn) 
                       +++ HXT.sattr "to" ("#" ++ theoname)
                       +++ consattr
                       +++ case mmm of
-                        Nothing -> HXT.txt ""
+                        Nothing -> xmlNullFilter
                         (Just (sm,hs)) -> morphismMapToXmlXN sm hs fromxn theoname
                       )
               )
-              (HXT.txt "")
+              (xmlNullFilter)
               glThmLinksxn)
             )
             -- when constructing the catalogues a reference to the xmlname used in _this_ document is used
             -- it is very likely possible, that this theory has another name in real life (unless there are no name-collisions)
 -- catalogue-support is gone...
 --    ) (return $ refsToCatalogueXN dg nodexmlnameset +++ xmlNL) onlynodexmlnamelist 
-    ) (return $ (HXT.txt "")) onlynodexmlnamelist 
+    ) (return $ (xmlNullFilter)) onlynodexmlnamelist 
   where
   nodeTupelToNodeName::(a, NODE_NAME)->String
   nodeTupelToNodeName = nodeToNodeName . snd
@@ -780,7 +730,7 @@ devGraphToXmlCMPIOXmlNamed go dg =
             nodename
     )
   consAttr::Static.DevGraph.Conservativity->HXT.XmlFilter
-  consAttr Static.DevGraph.None = \_ -> []
+  consAttr Static.DevGraph.None = xmlNullFilter
   consAttr Static.DevGraph.Mono = HXT.sattr "conservativity" "monomorphism"
   consAttr Static.DevGraph.Cons = HXT.sattr "conservativity" "conservative"
   consAttr Static.DevGraph.Def = HXT.sattr "conservativity" "definitional"
@@ -806,7 +756,7 @@ refsToCatalogueXN dg theoryset =
           HXT.sattr "omdoc" (asOMDocFile (unwrapLinkSource $ dgn_libname node))
           ) +++
           xmlNL
-        ) (HXT.txt "") refs
+        ) (xmlNullFilter) refs
       )
                 
 sortToXmlXN::XmlNamed SORT->HXT.XmlFilter
@@ -837,7 +787,7 @@ createADTXN (s,ss) constructors =
       constructors +++
       (foldl (\isx is ->
               isx +++ xmlNL +++ (HXT.etag "insort" += (HXT.sattr "for" ("#" ++ (xnName is))))
-      ) (HXT.txt "") $ Set.toList ss)
+      ) (xmlNullFilter) $ Set.toList ss)
       +++ xmlNL
       ) +++ xmlNL
     )
@@ -845,11 +795,11 @@ createADTXN (s,ss) constructors =
         
 createAllConstructorsXN::TheoryXNSet->[(XmlNamedWON Id.Id, Set.Set OpTypeXNWON)]->HXT.XmlFilter
 createAllConstructorsXN theoryset cs = foldl (\cx c ->  
-  cx +++ createConstructorsXN theoryset c +++ xmlNL ) (HXT.txt "") cs
+  cx +++ createConstructorsXN theoryset c +++ xmlNL ) (xmlNullFilter) cs
                 
 createConstructorsXN::TheoryXNSet->(XmlNamedWON Id.Id, Set.Set OpTypeXNWON)->HXT.XmlFilter
 createConstructorsXN theoryset (cidxn, opxnset) =
-  foldl (\cx opxn -> cx +++ createConstructorXN theoryset cidxn opxn +++ xmlNL) (HXT.txt "") $ Set.toList opxnset
+  foldl (\cx opxn -> cx +++ createConstructorXN theoryset cidxn opxn +++ xmlNL) (xmlNullFilter) $ Set.toList opxnset
                 
 createConstructorXN::TheoryXNSet->(XmlNamedWON Id.Id)->OpTypeXNWON->HXT.XmlFilter
 createConstructorXN theoryset cidxn (OpTypeXNWON _ opargsxn _) =
@@ -876,7 +826,7 @@ createConstructorXN theoryset cidxn (OpTypeXNWON _ opargsxn _) =
           )
         )
       )
-      ) (HXT.txt "") opargsxn
+      ) (xmlNullFilter) opargsxn
     )
           
 -- | creates a xml-representation for a predication
@@ -917,7 +867,7 @@ predicationToXmlXN theoryset (pIdXN, (PredTypeXNWON predArgsXN)) =
                   +++ HXT.sattr "name" (xnName sxn)
                 )
               )
-            ) (HXT.txt "") predArgsXN )
+            ) (xmlNullFilter) predArgsXN )
             +++ xmlNL
           )
           +++ xmlNL
@@ -952,7 +902,7 @@ operatorToXmlXN theoryset (opIdXN, (OpTypeXNWON fk opArgsXN opResXN)) =
             px +++ xmlNL
             +++
             createSymbolForSortXN theoryset sxn
-            ) (HXT.txt "") opArgsXN )
+            ) (xmlNullFilter) opArgsXN )
           +++ xmlNL +++
           createSymbolForSortXN theoryset opResXN
           +++ xmlNL
@@ -989,7 +939,7 @@ morphismMapToXmlXN symbolmap hidings source target =
             (inOMOBJ (HXT.etag "OMS" += (HXT.sattr "cd" source +++ HXT.sattr "name" ss)))
             (inOMOBJ (HXT.etag "OMS" += (HXT.sattr "cd" target +++ HXT.sattr "name" st)))
       )
-      (HXT.txt "")
+      (xmlNullFilter)
       (Map.toList symbolmap)
     )
   )       
@@ -1025,7 +975,7 @@ caslMorphismToXml imports' sorts' preds' ops' sourcename targetname (CASL.Morphi
                                 (if (length hides) /= 0 then
                                         HXT.sattr "hiding" hides
                                 else
-                                        HXT.txt "") +++
+                                        xmlNullFilter) +++
                                 (foldl (\mx (ss,st) ->
                                         mx +++
                                         HXT.etag "requation" +=
@@ -1140,7 +1090,7 @@ caslMorphismToXml imports' sorts' preds' ops' sourcename targetname (CASL.Morphi
                                                 xmlNL
                                                 )
                                         +++ xmlNL
-                                        ) (HXT.txt "") $ Map.toList funmap)
+                                        ) (xmlNullFilter) $ Map.toList funmap)
                                 +++ 
                                 (foldl (\mx ((ids, pts), idt) ->
                                         mx +++
@@ -1168,7 +1118,7 @@ caslMorphismToXml imports' sorts' preds' ops' sourcename targetname (CASL.Morphi
                                                 xmlNL
                                                 )
                                         +++ xmlNL
-                                        ) (HXT.txt "") $ Map.toList predmap)
+                                        ) (xmlNullFilter) $ Map.toList predmap)
                                 )
                         in
                                 morphx -- maybe some postprocessing ?
@@ -1291,7 +1241,7 @@ inDGToXmlXN dg n theoryset =
       Nothing -> error "Origin unknown!"
       (Just xnodename' ) -> xnodename'
   in
-  if length inLinks == 0 then HXT.txt "" else
+  if length inLinks == 0 then xmlNullFilter else
   (HXT.etag "private" += (HXT.sattr "for" xnodename))
   += ((HXT.etag "data" += (HXT.sattr "format" "Hets-Imports" +++ HXT.sattr "pto" "Hets"))
     += HXT.cdata (
@@ -1306,7 +1256,7 @@ inDGToXmlForPrivate dg n nodenames =
                 inLinks = map (\ (from,_,a) -> (from, a) ) $ Graph.inn dg n
                 named = map ( \ (from, a) -> (Map.findWithDefault "unknownNode" from nodenames, a)) inLinks  
         in
-        if length inLinks == 0 then HXT.txt "" else
+        if length inLinks == 0 then xmlNullFilter else
         ((HXT.etag "data" += (HXT.sattr "format" "Hets-Imports" +++ HXT.sattr "pto" "Hets"))
                 += HXT.cdata (
                 foldl (\ins (from, dgl) ->
@@ -1511,11 +1461,11 @@ fetchProofSteps dg t = let      theories = applyXmlFilter (isTag "theory") t
 fetchProofStepsFor::Static.DevGraph.DGraph->HXT.XmlTrees->Static.DevGraph.DGraph
 fetchProofStepsFor dg t = let   tnameS = xshow $ applyXmlFilter (getValue "id") t
                                 toNodeN = nodeNameToNodeNum (Graph.labNodes dg) tnameS
-                                importswithproofsteps = applyXmlFilter (getChildren .> (isTag "axiom-inclusion" +++ isTag "theory-inclusion")) t
+                                importswithproofsteps = applyXmlFilter (getChildren .> (isTag axiomInclusionS +++ isTag theoryInclusionS)) t
                                 proofsteps = applyXmlFilter (getChildren .> isTag "proof-object") t
                           in
                             foldl (\newdg importx ->
-                                        let     isLocalThm = applyXmlFilter (isTag "axiom-inclusion") [importx] /= []
+                                        let     isLocalThm = applyXmlFilter (isTag axiomInclusionS) [importx] /= []
                                                 fromNameS = xshow $ applyXmlFilter (getValue "from") [importx]
                                                 fromNodeN = nodeNameToNodeNum (Graph.labNodes dg) fromNameS
                                                 (n, m, myedge) = getSpecialEdge (Graph.labEdges newdg) fromNodeN toNodeN (if isLocalThm then isLocalThmEdge else isGlobalThmEdge)
@@ -1623,7 +1573,7 @@ xmlToConservativity t = if applyXmlFilter (isTag "OMSTR") t /= [] then
 {- not used yet         
 -- to clear the code a bit      
 validImports::HXT.XmlFilter
-validImports = (isTag "imports" +++ isTag "axiom-inclusion" +++ isTag "theory-inclusion")
+validImports = (isTag "imports" +++ isTag axiomInclusionS +++ isTag theoryInclusionS)
 
 -- to clear the code a bit      
 validProofs::HXT.XmlFilter
@@ -1693,7 +1643,7 @@ wrapFormulasCMPIOXN pfinput fs =
   in
   do
     poslinemap <- posLines posLists
-    return $ foldl (\wrapped f -> wrapped +++ (wrapFormulaCMPXN pfinput f poslinemap) ) (HXT.txt "") fs
+    return $ foldl (\wrapped f -> wrapped +++ (wrapFormulaCMPXN pfinput f poslinemap) ) (xmlNullFilter) fs
                 
 wrapFormulaCMPXN::
   PFInput->
@@ -1885,7 +1835,7 @@ processFormulaXN pfinput
         term +++
         (processTermXN pfinput t) +++
         xmlNL
-        ) (HXT.txt "") tl
+        ) (xmlNullFilter) tl
       ) +++
       (xmlNL)
     ) ) +++
@@ -2055,7 +2005,7 @@ quantName Unique_existential = caslSymbolQuantUnique_existentialS
                 
 -- need to check if this is correct with Xml --
 processConstraintsXN::PFInput->[ABC.Constraint]->(HXT.XmlTree->HXT.XmlTrees)
-processConstraintsXN _ [] = HXT.txt ""
+processConstraintsXN _ [] = xmlNullFilter
 processConstraintsXN pfinput ((ABC.Constraint news ops' origs):_) =
   (HXT.etag "OMBIND" += (
     (HXT.etag "OMS" += (HXT.sattr "cd" caslS +++ HXT.sattr "name" (show news)))
@@ -2072,7 +2022,7 @@ processConstraintsXN pfinput ((ABC.Constraint news ops' origs):_) =
           +++ xmlNL
           +++ processOperatorXN pfinput (debugGO (pfiGO pfinput) "pCXN" ("creating conop for " ++ (show op)) op)
           ) ) +++ xmlNL
-        ) (HXT.txt "") ops'
+        ) (xmlNullFilter) ops'
       ) )
     +++ xmlNL
     +++ (HXT.etag "OMS" += (HXT.sattr "cd" caslS +++ HXT.sattr "name" (show origs))))) +++ xmlNL
@@ -2083,12 +2033,12 @@ processVarDeclXN theoryset theorysorts vdl =
   (HXT.etag "OMBVAR" += (xmlNL +++ (processVarDecls theoryset theorysorts vdl)) ) +++ xmlNL
   where
   processVarDecls :: TheoryXNSet -> Set.Set XmlNamedWONSORT -> [VAR_DECL] -> (HXT.XmlTree->HXT.XmlTrees)
-  processVarDecls _ _ [] = HXT.txt ""
+  processVarDecls _ _ [] = xmlNullFilter
   processVarDecls theoryset' theorysorts' ((Var_decl vl s _):vdl' ) = (foldl (\decls vd -> decls +++
   -- <ombattr><omatp><oms>+</omatp><omv></ombattr>
     ( createTypedVarXN theoryset theorysorts' s (show vd) )
       +++ xmlNL)
-      (HXT.txt "") vl ) -- end fold
+      (xmlNullFilter) vl ) -- end fold
       +++ (processVarDecls theoryset' theorysorts' vdl' )
 
 createATPXN::TheoryXNSet -> Set.Set XmlNamedWONSORT -> SORT ->(HXT.XmlTree->HXT.XmlTrees)
@@ -2132,7 +2082,7 @@ processTermXN pfinput
           (foldl (\terms t ->
             terms +++
             (processTermXN pfinput t)
-            ) (HXT.txt "") termlist
+            ) (xmlNullFilter) termlist
           )
           ) ) +++
           xmlNL

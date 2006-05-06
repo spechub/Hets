@@ -108,9 +108,9 @@ import qualified System.Directory as System.Directory
   On (IO-)error Nothing is returned
 -}
 mLibEnvFromOMDocFile::
-	HetcatsOpts -- ^ setup libdir to search for files
-	->FilePath -- ^ the file to load
-	->IO (Maybe (ASL.LIB_NAME, LibEnv))
+  HetcatsOpts -- ^ setup libdir to search for files
+  ->FilePath -- ^ the file to load
+  ->IO (Maybe (ASL.LIB_NAME, LibEnv))
 mLibEnvFromOMDocFile hco file =
   Control.Exception.catch
     (
@@ -2014,185 +2014,407 @@ emptyFFXInput =
                 
 formulaFromXmlXN::FFXInput->AnnXMLN->FORMULA ()
 formulaFromXmlXN ffxi anxml =
-        if (applyXmlFilter (isTag "OMBIND") (axXml anxml)) /= [] then -- it's a quantifier...
-                        let
-                                quantTree = singleitem 1 (applyXmlFilter (isTag "OMBIND") (axXml anxml))
-                                quant = quantFromName $ xshow $ applyXmlFilter (getChildren .> isTag "OMS" .> withSValue "cd" caslS .> getValue "name") quantTree
-                                -- first element is the quantification-OMS
-                                formula =
-                                        drop
-                                                1
-                                                ((applyXmlFilter
-                                                        (getChildren .> (isTag "OMA" +++ isTag "OMATTR"
-                                                                +++ isTag "OMBIND" +++ isTag "OMS"))
-                                                        quantTree
-                                                 )::[HXT.XmlTree]
-                                                ) 
-                                vardeclS =
-                                        getVarDecls
-                                                (applyXmlFilter
-                                                        (getChildren .> isTag "OMBVAR")
-                                                        quantTree
-                                                )
-                                vardeclS2 = createQuasiMappedLists vardeclS
-                        in
-                                Quantification
-                                        quant
-                                        (map
-                                                (\(s, vl) ->
-                                                        Var_decl
-                                                                (map Hets.stringToSimpleId vl)
-                                                                (case findByNameAndOrigin s (axAnn anxml) (mapSetToSet $ xnSortsMap ffxi) of
-                                                                        Nothing -> error ("No Sort for " ++ s)
-                                                                        (Just x) -> xnWOaToa x)
-                                                                --(Hets.stringToId s)
-                                                                Id.nullRange
-                                                )
-                                                vardeclS2
-                                        )
-                                        (formulaFromXmlXN
-                                                ffxi
-                                                (AXML (axAnn anxml) formula)
-                                        )
-                                        Id.nullRange
-                        else if (applyXmlFilter (isTag "OMA") (axXml anxml)) /= [] then -- the case begins...
-                          let
-                                formTree = applyXmlFilter (isTag "OMA") (axXml anxml)
-                                applySymXml = singleitem 1 (applyXmlFilter (getChildren .> isTag "OMS") formTree)
-                                applySym = xshow $ applyXmlFilter (getValue "name") applySymXml
-                                --applySymCD = xshow $ applyXmlFilter (getValue "cd") applySymXml
-                          in
-                                let     formulas = map (\n -> formulaFromXmlXN ffxi (AXML (axAnn anxml) [n])) ((applyXmlFilter (getChildren .> (isTag "OMA" +++ isTag "OMATTR" +++ isTag "OMBIND")) formTree)::[HXT.XmlTree])
-                                        terms = map (\n -> termFromXmlXN ffxi (AXML (axAnn anxml) [n])) (tail ((applyXmlFilter (getChildren .> (isTag "OMV" +++ isTag "OMATTR" +++ isTag "OMA" +++ isTag "OMS")) formTree)::[HXT.XmlTree]))
-                                in
-                                -- 'case applySym' does not work if case-strings are non fixed (above definition is not fixed enough...) 
-                                --case applySym of
-                                        if applySym == caslConjunctionS then
-                                                Conjunction formulas Id.nullRange
-                                        else
-                                        if applySym == caslDisjunctionS then
-                                                Disjunction formulas Id.nullRange
-                                        else
-                                        if applySym `elem` [caslImplicationS, caslImplication2S] then
-                                                let
-                                                        boolF = formulaFromXmlXN ffxi (AXML (axAnn anxml) (applyXmlFilter (processChildren (isTag "OMS") .> getChild 2) formTree)) 
-                                                in
-                                                        if (length formulas) < 2
-                                                                then
-                                                                        Debug.Trace.trace ("Impossible to create implication...") (False_atom Id.nullRange)
-                                                                else
-                                                                        Implication (formulas!!0) (formulas!!1) (isTrueAtom(boolF)) Id.nullRange
-                                        else
-                                        if applySym `elem` [caslEquivalenceS, caslEquivalence2S] then
-                                                if (length formulas) < 2
-                                                        then
-                                                                Debug.Trace.trace ("Impossible to create equivalence...") (False_atom Id.nullRange)
-                                                        else
-                                                                Equivalence (formulas!!0) (formulas!!1) Id.nullRange
-                                        else
-                                        if applySym == caslNegationS then
-                                                if formulas == []
-                                                        then
-                                                                Debug.Trace.trace ("Impossible to create negation...") (False_atom Id.nullRange)
-                                                        else
-                                                                Negation (formulas!!0) Id.nullRange
-                                        else
-                                        if applySym == caslPredicationS then
-                                                let
-                                                        --predxml = applyXmlFilter (processChildren (isTag "OMS" +++ isTag "OMATTR") .> getChild 2) (axXml anxml)
-                                                        predxml = applyXmlFilter (processChildren (isTag "OMS" +++ isTag "OMATTR") .> getChild 2) formTree
-                                                        pred' = (\x -> if (contains (show x) "predication") then debugGO (ffxiGO ffxi) "fFXXNm2" ("predication created! from : " ++ (xshow predxml)) x else x) $ (\x -> debugGO (ffxiGO ffxi) "fFXXNm" ("made pred : " ++ show x) x) $ predicationFromXmlXN ffxi (AXML (axAnn anxml) predxml)
-                                                        --termxml = drop 2 $ (applyXmlFilter (getChildren .> (isTag "OMATTR" +++ isTag "OMA" +++ isTag "OMS")) (axXml anxml))
-                                                        termxml = drop 2 $ (applyXmlFilter (getChildren .> (isTag "OMATTR" +++ isTag "OMA" +++ isTag "OMS")) formTree)
-                                                        predterms = map (\tx -> termFromXmlXN ffxi (debugGO (ffxiGO ffxi) "fFXXN" ("will create term(1) from : " ++ (take 200 $ xshow [tx])) (AXML (axAnn anxml) [tx]))) termxml
-                                                in
-                                                if predxml == []
-                                                        then
-                                                                Debug.Trace.trace ("Impossible to create predication...") (False_atom Id.nullRange)
-                                                        else
-                                                                Predication pred' predterms Id.nullRange 
-                                        else
-                                        if applySym == caslDefinednessS then
-                                                Definedness (termFromXmlXN ffxi (AXML (axAnn anxml) (applyXmlFilter (getChildren .> (isTag "OMV" +++ isTag "OMATTR" +++ isTag "OMA" )) (axXml anxml)))) Id.nullRange
-                                        else
-                                        if applySym == caslExistl_equationS then
-                                                if (length terms) < 2
-                                                        then
-                                                                Debug.Trace.trace ("Impossible to create existl_equation...") (False_atom Id.nullRange)
-                                                        else
-                                                                Existl_equation (terms!!0) (terms!!1) Id.nullRange
-                                        else
-                                        if applySym == caslStrong_equationS then
-                                                if (length terms) < 2
-                                                        then
-                                                                Debug.Trace.trace ("Impossible to create strong_equation... (" ++ (xshow formTree) ++ ")") (False_atom Id.nullRange)
-                                                        else
-                                                                Strong_equation
-                                                                        ((\x -> if (contains (show x) "predication") then debugGO (ffxiGO ffxi) "fFXXNse" ("predication created! from : (0)") x else x) (terms!!0))
-                                                                        ((\x -> if (contains (show x) "predication") then debugGO (ffxiGO ffxi) "fFXXNse" ("predication created! from : (1)") x else x) (terms!!1))
-                                                                        Id.nullRange
-                                        else
-                                        if applySym == caslMembershipS then
-                                                let
-                                                        sortxml = lastorempty (applyXmlFilter (getChildren .> isTag "OMS") formTree)
-                                                        sort = xshow $ applyXmlFilter (getValue "name") sortxml
-                                                        sortcd = xshow $ applyXmlFilter (getValue "cd") sortxml
-                                                        theosorts = Map.findWithDefault Set.empty sortcd (xnSortsMap ffxi) 
-                                                        sortxn = case findByName sort theosorts of
-                                                                Nothing -> error ("Sort not found in theory!" ++ "(" ++ sort ++ ", " ++ (show theosorts) ++ ")" )
-                                                                (Just x) -> x
-                                                in
-                                                if terms == []
-                                                        then
-                                                                Debug.Trace.trace ("Impossible to create Membership...") (False_atom Id.nullRange)
-                                                        else
-                                                                Membership
-                                                                        (head terms)
-                                                                        (debugGO
-                                                                                (ffxiGO ffxi)
-                                                                                "fFXXN"
-                                                                                ("Making sort for membership " ++ (show $ xnWOaToa sortxn) ++ " from " ++ sort)
-                                                                                (xnWOaToa sortxn)
-                                                                        )
-                                                                        Id.nullRange
-                                        else
-                                        if applySym == caslSort_gen_axS then
-                                                let     freeType = if (xshow $ applyXmlFilter (getValue "name") [(applyXmlFilter (getChildren .> isTag "OMS") formTree)!!1]) == caslSymbolAtomFalseS then False else True
-                                                        constraintsx = applyXmlFilter
-                                                                (
-                                                                --getChildren .> isTag "OMBVAR" .> -- removed (see generation)
-                                                                getChildren .> isTag "OMBIND"
-                                                                ) formTree
-                                                        constraints = xmlToConstraintsXN ffxi (AXML (axAnn anxml) constraintsx)
-                                                in
-                                                Sort_gen_ax constraints freeType
-                                        else
-                                        if applySym /= [] then
-                                                Debug.Trace.trace ("No matching casl-application found! Trying to find predicate...") $
-                                                        let
-                                                                predterms = map (\n -> termFromXmlXN ffxi (AXML (axAnn anxml) [n])) $ ((applyXmlFilter (getChildren .> (isTag "OMATTR" +++ isTag "OMA")) (axXml anxml))::[HXT.XmlTree])
-                                                                possibilities = findAllByNameWithAnd id fst applySym (mapSetToSet (xnPredsMap ffxi))
-                                                                withThisOrigin = filter (\i -> (xnWOaToO $ fst i) == (axAnn anxml)) possibilities
-                                                        in
-                                                                case (case withThisOrigin of [] -> possibilities; _ -> withThisOrigin) of
-                                                                        (i:_) ->
-                                                                                Predication (Qual_pred_name (xnWOaToa (fst i)) (cv_PredTypeToPred_type $ predTypeXNWONToPredType (snd i)) Id.nullRange) predterms Id.nullRange
-                                                                        [] ->
-                                                                                error ("Could not find predicate for \"" ++ applySym ++ "\"")
-                                                        else
-                                                                error ("Expected a casl application symbol, but \"" ++ applySym ++ "\" was found!")
-                          else if (applyXmlFilter (isTag "OMS") (axXml anxml)) /= [] then
-                                let trueOrFalse = xshow $ singleitem 1 (applyXmlFilter (isTag "OMS" .> withSValue "cd" caslS .> getValue "name") (axXml anxml))
-                                in
-                                if trueOrFalse == caslSymbolAtomTrueS then
-                                        True_atom Id.nullRange
-                                        else
-                                                if trueOrFalse == caslSymbolAtomFalseS then
-                                                        False_atom Id.nullRange
-                                                        else
-                                                                Debug.Trace.trace (caslSymbolAtomTrueS ++ " or " ++ caslSymbolAtomFalseS ++ " expected, but \"" ++ trueOrFalse ++ "\" found!") (False_atom Id.nullRange)
+  if (applyXmlFilter (isTag "OMBIND") (axXml anxml)) /= [] then -- it's a quantifier...
+    let
+      quantTree = singleitem 1 (applyXmlFilter (isTag "OMBIND") (axXml anxml))
+      quant =
+        quantFromName $ xshow $
+          applyXmlFilter
+            (getChildren .> isTag "OMS" .> withSValue "cd" caslS .>
+              getValue "name")
+            quantTree
+      -- first element is the quantification-OMS
+      formula =
+        drop
+          1
+          ((applyXmlFilter
+            (getChildren .> (isTag "OMA" +++ isTag "OMATTR"
+              +++ isTag "OMBIND" +++ isTag "OMS"))
+            quantTree)::[HXT.XmlTree]
+          ) 
+      vardeclS =
+        getVarDecls
+          (applyXmlFilter
+            (getChildren .> isTag "OMBVAR")
+            quantTree
+          )
+      vardeclS2 = createQuasiMappedLists vardeclS
+    in
+      Quantification
+        quant
+        (map
+          (\(s, vl) ->
+            Var_decl
+              (map Hets.stringToSimpleId vl)
+              (case findByNameAndOrigin
+                      s
+                      (axAnn anxml)
+                      (mapSetToSet $ xnSortsMap ffxi) of
+                 Nothing -> error ("No Sort for " ++ s)
+                 (Just x) -> xnWOaToa x
+              )
+              --(Hets.stringToId s)
+              Id.nullRange
+          )
+          vardeclS2
+        )
+        (formulaFromXmlXN
+          ffxi
+          (AXML (axAnn anxml) formula)
+        )
+        Id.nullRange
+  else if (applyXmlFilter (isTag "OMA") (axXml anxml)) /= [] then -- the case begins...
+    let
+      formTree = applyXmlFilter (isTag "OMA") (axXml anxml)
+      applySymXml =
+        singleitem 1 (applyXmlFilter (getChildren .> isTag "OMS") formTree)
+      applySym = xshow $ applyXmlFilter (getValue "name") applySymXml
+      --applySymCD = xshow $ applyXmlFilter (getValue "cd") applySymXml
+    in
+      let
+        formulas =
+          map
+            (\n -> formulaFromXmlXN ffxi (AXML (axAnn anxml) [n]))
+            (
+              (applyXmlFilter
+                (getChildren .>
+                  (isTag "OMA" +++ isTag "OMATTR" +++ isTag "OMBIND")
+                )
+                formTree
+              )::[HXT.XmlTree]
+            )
+        terms =
+          map
+            (\n -> termFromXmlXN ffxi (AXML (axAnn anxml) [n]))
+            (tail
+              (
+                (applyXmlFilter
+                  (getChildren .>
+                    (isTag "OMV" +++ isTag "OMATTR" +++ isTag "OMA"
+                      +++ isTag "OMS")
+                  )
+                  formTree
+                )::[HXT.XmlTree]
+              )
+            )
+      in
+        -- 'case applySym' does not work if case-strings are non fixed
+        -- (above definition is not fixed enough...) 
+        --case applySym of
+        if applySym == caslConjunctionS then
+          Conjunction formulas Id.nullRange
+          else
+            if applySym == caslDisjunctionS then
+              Disjunction formulas Id.nullRange
+              else
+                if applySym `elem` [caslImplicationS, caslImplication2S] then
+                  let
+                    boolF =
+                      formulaFromXmlXN
+                        ffxi
+                        (AXML
+                          (axAnn anxml)
+                          (applyXmlFilter
+                            (processChildren (isTag "OMS") .> getChild 2)
+                            formTree)
+                          ) 
+                  in
+                    if (length formulas) < 2
+                      then
+                        Debug.Trace.trace
+                          ("Impossible to create implication...")
+                          (False_atom Id.nullRange)
+                      else
+                        Implication
+                          (formulas!!0)
+                          (formulas!!1)
+                          (isTrueAtom(boolF))
+                          Id.nullRange
+                  else
+                    if applySym `elem` [caslEquivalenceS, caslEquivalence2S]
+                      then
+                        if (length formulas) < 2
+                          then
+                            Debug.Trace.trace
+                              ("Impossible to create equivalence...")
+                              (False_atom Id.nullRange)
                           else
-                                error ("Impossible to create formula from \"" ++ xshow (axXml anxml)++ "\"") 
+                            Equivalence
+                              (formulas!!0)
+                              (formulas!!1)
+                              Id.nullRange
+                      else
+                        if applySym == caslNegationS
+                          then
+                            if formulas == []
+                              then
+                                Debug.Trace.trace
+                                  ("Impossible to create negation...")
+                                  (False_atom Id.nullRange)
+                              else
+                                Negation
+                                  (formulas!!0)
+                                  Id.nullRange
+                          else
+                            if applySym == caslPredicationS
+                              then
+                                let
+                                   --predxml = applyXmlFilter (processChildren (isTag "OMS" +++ isTag "OMATTR") .> getChild 2) (axXml anxml)
+                                  predxml =
+                                    applyXmlFilter
+                                      (processChildren
+                                        (isTag "OMS" +++ isTag "OMATTR") .>
+                                          getChild 2
+                                      )
+                                      formTree
+                                  pred' =
+                                    (\x ->
+                                      if (contains (show x) "predication")
+                                        then
+                                          debugGO
+                                            (ffxiGO ffxi)
+                                            "fFXXNm2"
+                                            ("predication created! from : "
+                                              ++ (xshow predxml)) x
+                                        else
+                                          x
+                                    ) $
+                                      (\x ->
+                                        debugGO
+                                          (ffxiGO ffxi)
+                                          "fFXXNm"
+                                          ("made pred : " ++ show x)
+                                          x
+                                      ) $
+                                        predicationFromXmlXN
+                                          ffxi
+                                          (AXML (axAnn anxml) predxml)
+                                  --termxml = drop 2 $ (applyXmlFilter (getChildren .> (isTag "OMATTR" +++ isTag "OMA" +++ isTag "OMS")) (axXml anxml))
+                                  termxml =
+                                    drop 2 $
+                                      (applyXmlFilter
+                                        (getChildren .>
+                                          (isTag "OMATTR" +++ isTag "OMA"
+                                            +++ isTag "OMS")
+                                        )
+                                        formTree
+                                      )
+                                  predterms =
+                                    map
+                                      (\tx ->
+                                        termFromXmlXN
+                                          ffxi
+                                          (debugGO
+                                            (ffxiGO ffxi)
+                                            "fFXXN"
+                                            ("will create term(1) from : "
+                                              ++ (take 200 $ xshow [tx])
+                                            )
+                                            (AXML (axAnn anxml) [tx])
+                                          )
+                                      )
+                                      termxml
+                                in
+                                  if predxml == []
+                                    then
+                                      Debug.Trace.trace
+                                        ("Impossible to create predication...")
+                                          (False_atom Id.nullRange)
+                                    else
+                                      Predication
+                                        pred'
+                                        predterms
+                                        Id.nullRange 
+                              else
+                                if applySym == caslDefinednessS
+                                  then
+                                    Definedness
+                                      (termFromXmlXN
+                                        ffxi
+                                        (AXML
+                                          (axAnn anxml)
+                                          (applyXmlFilter
+                                            (getChildren .>
+                                              (isTag "OMV" +++ isTag "OMATTR"
+                                                +++ isTag "OMA" )
+                                              )
+                                            (axXml anxml)
+                                          )
+                                        )
+                                      )
+                                      Id.nullRange
+                                  else
+                                    if applySym == caslExistl_equationS
+                                      then
+                                        if (length terms) < 2
+                                          then
+                                            Debug.Trace.trace
+                                              ("Impossible to create existl_equation...")
+                                              (False_atom Id.nullRange)
+                                          else
+                                            Existl_equation
+                                              (terms!!0)
+                                              (terms!!1)
+                                              Id.nullRange
+                                      else
+                                        if applySym == caslStrong_equationS
+                                          then
+                                            if (length terms) < 2
+                                              then
+                                                Debug.Trace.trace
+                                                  ("Impossible to create strong_equation... ("
+                                                    ++ (xshow formTree) ++ ")"
+                                                  )
+                                                  (False_atom Id.nullRange)
+                                              else
+                                                Strong_equation
+                                                  ((\x ->
+                                                    if (contains (show x) "predication")
+                                                      then
+                                                        debugGO
+                                                          (ffxiGO ffxi)
+                                                          "fFXXNse"
+                                                          ("predication created! from : (0)")
+                                                          x
+                                                      else
+                                                        x
+                                                    ) (terms!!0)
+                                                  )
+                                                  ((\x ->
+                                                    if (contains (show x) "predication")
+                                                      then
+                                                        debugGO
+                                                          (ffxiGO ffxi)
+                                                          "fFXXNse"
+                                                          ("predication created! from : (1)")
+                                                          x
+                                                      else
+                                                        x
+                                                      ) (terms!!1)
+                                                  )
+                                                  Id.nullRange
+                                          else
+                                            if applySym == caslMembershipS
+                                              then
+                                                let
+                                                  sortxml =
+                                                    lastorempty
+                                                      (applyXmlFilter
+                                                        (getChildren .> isTag "OMS")
+                                                        formTree
+                                                      )
+                                                  sort = xshow $ applyXmlFilter (getValue "name") sortxml
+                                                  sortcd = xshow $ applyXmlFilter (getValue "cd") sortxml
+                                                  theosorts =
+                                                    Map.findWithDefault
+                                                      Set.empty
+                                                      sortcd
+                                                      (xnSortsMap ffxi) 
+                                                  sortxn =
+                                                    case findByName sort theosorts of
+                                                      Nothing ->
+                                                        error
+                                                          ("Sort not found in theory!"
+                                                            ++ "(" ++ sort ++ ", "
+                                                              ++ (show theosorts) ++ ")" 
+                                                          )
+                                                      (Just x) -> x
+                                                in
+                                                  if terms == []
+                                                    then
+                                                      Debug.Trace.trace
+                                                        ("Impossible to create Membership...")
+                                                        (False_atom Id.nullRange)
+                                                    else
+                                                      Membership
+                                                        (head terms)
+                                                        (debugGO
+                                                           (ffxiGO ffxi)
+                                                           "fFXXN"
+                                                           ("Making sort for membership "
+                                                            ++ (show $ xnWOaToa sortxn)
+                                                            ++ " from " ++ sort
+                                                           )
+                                                           (xnWOaToa sortxn)
+                                                        )
+                                                        Id.nullRange
+                                              else
+                                                if applySym == caslSort_gen_axS
+                                                  then
+                                                    let
+                                                      freeType =
+                                                        if (xshow $
+                                                          applyXmlFilter
+                                                            (getValue "name")
+                                                            [(applyXmlFilter
+                                                              (getChildren .> isTag "OMS")
+                                                              formTree)!!1
+                                                            ]
+                                                            ) == caslSymbolAtomFalseS
+                                                          then
+                                                            False
+                                                          else
+                                                            True
+                                                      constraintsx =
+                                                        applyXmlFilter
+                                                          (
+                                                          --getChildren .> isTag "OMBVAR" .> -- removed (see generation)
+                                                          getChildren .> isTag "OMBIND"
+                                                          )
+                                                          formTree
+                                                      constraints =
+                                                        xmlToConstraintsXN
+                                                          ffxi
+                                                          (AXML (axAnn anxml) constraintsx)
+                                                    in
+                                                      Sort_gen_ax constraints freeType
+                                                  else
+                                                    if applySym /= []
+                                                      then
+                                                        Debug.Trace.trace
+                                                          ("No matching casl-application found! Trying to find predicate...") $ let
+                         predterms =
+                          map (\n -> termFromXmlXN ffxi (AXML (axAnn anxml) [n])) $ ((applyXmlFilter (getChildren .> (isTag "OMATTR" +++ isTag "OMA")) (axXml anxml))::[HXT.XmlTree])
+                         possibilities = findAllByNameWithAnd id fst applySym (mapSetToSet (xnPredsMap ffxi))
+                         withThisOrigin = filter (\i -> (xnWOaToO $ fst i) == (axAnn anxml)) possibilities
+                      in
+                        case (case withThisOrigin of [] -> possibilities; _ -> withThisOrigin) of
+                          (i:_) ->
+                            Predication (Qual_pred_name (xnWOaToa (fst i)) (cv_PredTypeToPred_type $ predTypeXNWONToPredType (snd i)) Id.nullRange) predterms Id.nullRange
+                          [] ->
+                            error ("Could not find predicate for \"" ++ applySym ++ "\"")
+                                                      else
+                                                        error ("Expected a casl application symbol, but \"" ++ applySym ++ "\" was found!")
+  else if (applyXmlFilter (isTag "OMS") (axXml anxml)) /= []
+    then
+      let
+        trueOrFalse =
+          xshow $
+            singleitem
+              1
+              (applyXmlFilter
+                (isTag "OMS" .> withSValue "cd" caslS .>
+                  getValue "name"
+                )
+                (axXml anxml)
+              )
+      in
+        if trueOrFalse == caslSymbolAtomTrueS
+          then
+            True_atom Id.nullRange
+          else
+            if trueOrFalse == caslSymbolAtomFalseS
+              then
+                False_atom Id.nullRange
+              else
+                Debug.Trace.trace
+                  (caslSymbolAtomTrueS ++ " or "
+                    ++ caslSymbolAtomFalseS ++ " expected, but \""
+                    ++ trueOrFalse ++ "\" found!"
+                  )
+                  (False_atom Id.nullRange)
+  else
+    error ("Impossible to create formula from \"" ++ xshow (axXml anxml)++ "\"") 
 
 
 xmlToConstraintsXN::FFXInput->AnnXMLN->[ABC.Constraint]
