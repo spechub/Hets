@@ -11,7 +11,9 @@ Input-methods for reading OMDoc
 -}
 {-
 TODO:
-  Support for axiom-inclusion/theory-inclusion-constructs
+  bug:
+    When referencing over several imports, sorts are disappearing.
+    (e.g. Basic/Graphs.casl can be converted to OMDoc but not back)
 -}
 module OMDoc.OMDocInput
   (
@@ -854,7 +856,11 @@ predsXNWONFromXmlTheory xntheoryset xnsortset anxml =
                   (Just n) -> n
               in
                 case findByNameAndOrigin axname theonode xnsortset of
-                  Nothing -> error "Unknown type of argument!"
+                  Nothing ->
+                    error
+                      ((++) "Unknown type of argument! From (p) : "
+                        $ take 300 $ xshow $ axXml panxml
+                      )
                   (Just xnarg) ->
                     if (xnWOaToO xnarg) /= theonode
                       then
@@ -951,7 +957,14 @@ opsXNWONFromXmlTheory xntheoryset xnsortset anxml =
                   (Just n) -> n
               in
                 case findByNameAndOrigin axname theonode xnsortset of
-                  Nothing -> error "Unknown type of argument!"
+                  Nothing ->
+                    error
+                      ("Unknown type of argument! From (o) : "
+                        ++ (axname ++ "\n")
+                          ++ (take 300 $ xshow $ axXml oanxml)
+                            ++
+                              (" in " ++ (show xnsortset))
+                      )
                   (Just xnarg) -> if (xnWOaToO xnarg) /= theonode
                     then
                       error "Found Argument but in wrong Theory!"
@@ -2231,14 +2244,23 @@ formulaFromXmlXN ffxi anxml =
                                     Definedness
                                       (termFromXmlXN
                                         ffxi
-                                        (AXML
-                                          (axAnn anxml)
-                                          (applyXmlFilter
-                                            (getChildren .>
-                                              (isTag "OMV" +++ isTag "OMATTR"
-                                                +++ isTag "OMA" )
+                                        (debugGO
+                                          (ffxiGO ffxi)
+                                          "fXXN"
+                                          ((++) "About to create Definedness from "
+                                            $ take 300 $ xshow $ axXml anxml
+                                          )
+                                          (AXML
+                                            (axAnn anxml)
+                                            (drop 1 $
+                                              (applyXmlFilter
+                                                (getChildren .>
+                                                  (isTag "OMV" +++ isTag "OMATTR"
+                                                    +++ isTag "OMA" +++ isTag "OMS" )
+                                                )
+                                                (axXml anxml)
                                               )
-                                            (axXml anxml)
+                                            )
                                           )
                                         )
                                       )
