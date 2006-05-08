@@ -403,7 +403,7 @@ genericATPgui :: (Ord proof_tree, Ord sentence, Show proof_tree, Show sentence) 
               -> String -- ^ prover name
               -> String -- ^ theory name
               -> Theory sign sentence proof_tree -- ^ theory consisting of a signature and a list of Named sentence
-              -> proof_tree
+              -> proof_tree -- ^ initial empty proof_tree
               -> IO([Proof_status proof_tree]) -- ^ proof status for each goal
 genericATPgui atpFun prName thName th pt = do
   -- create initial backing data structure
@@ -491,8 +491,14 @@ genericATPgui atpFun prName thName th pt = do
   buttonsHb1 <- newHBox right []
   pack buttonsHb1 [Anchor NorthEast]
 
-  saveDFGButton <- newButton buttonsHb1 [text "Save DFG File"]
-  pack saveDFGButton [Side AtLeft]
+  saveProbButton <- newButton buttonsHb1 [text $ "Save "
+      -- remove first dot if existing
+      ++ (let ext = (problemOutput $ fileExtensions atpFun)
+          in case head ext of
+               '.' -> tail ext
+               _   -> ext)
+      ++ " File"]
+  pack saveProbButton [Side AtLeft]
   proveButton <- newButton buttonsHb1 [text "Prove"]
   pack proveButton [Side AtRight]
 
@@ -638,7 +644,7 @@ genericATPgui atpFun prName thName th pt = do
   -- events
   (selectGoal, _) <- bindSimple lb (ButtonPress (Just 1))
   doProve <- clicked proveButton
-  saveDFG <- clicked saveDFGButton
+  saveProb <- clicked saveProbButton
   showDetails <- clicked detailsButton
 
   runBatch <- clicked runBatchButton
@@ -651,7 +657,7 @@ genericATPgui atpFun prName thName th pt = do
   (closeWindow,_) <- bindSimple main Destroy
 
   let goalSpecificWids = [EnW timeEntry, EnW timeSpinner,EnW optionsEntry] ++
-                         map EnW [proveButton,detailsButton,saveDFGButton]
+                         map EnW [proveButton,detailsButton,saveProbButton]
       wids = EnW lb : goalSpecificWids ++
              [EnW batchTimeEntry, EnW batchTimeSpinner,
               EnW batchOptionsEntry,EnW inclProvedThsCheckButton] ++
@@ -682,10 +688,10 @@ genericATPgui atpFun prName thName th pt = do
           writeIORef stateRef s''
           when (isJust sel && not (batchModeIsRunning s''))
                (enableWids goalSpecificWids)
-          when (isJust sel) $ enableWids [EnW detailsButton,EnW saveDFGButton]
+          when (isJust sel) $ enableWids [EnW detailsButton,EnW saveProbButton]
           updateDisplay s'' False lb statusLabel timeEntry optionsEntry axiomsLb
           done)
-      +> (saveDFG >>> do
+      +> (saveProb >>> do
             rs <- readIORef stateRef
             inclProvedThs <- readTkVariable inclProvedThsTK
             maybe (return ())
@@ -693,10 +699,11 @@ genericATPgui atpFun prName thName th pt = do
                       let (nGoal,lp') =
                               prepareLP (proverState rs)
                                         rs goal inclProvedThs
-                      prob <- (dfgOutput atpFun) lp' nGoal
-                      createTextSaveDisplay (prName++" Problem for Goal "++goal)
-                                            (thName++goal++".dfg")
-                                            (prob)
+                      prob <- (goalOutput atpFun) lp' nGoal
+                      createTextSaveDisplay
+                        (prName++" Problem for Goal "++goal)
+                        (thName++goal++(problemOutput $ fileExtensions atpFun))
+                        (prob)
                   )
                   $ currentGoal rs
             done)
@@ -761,8 +768,8 @@ genericATPgui atpFun prName thName th pt = do
                                      "the prover yet."]
                 let detailsText = concatMap ('\n':) output
                 createTextSaveDisplay (prName ++ " Output for Goal "++goal)
-                                      (goal ++ (fst $ fileExtensions atpFun))
-                                      (seq (length detailsText) detailsText)
+                        (goal ++ (proverOutput $ fileExtensions atpFun))
+                        (seq (length detailsText) detailsText)
                 done)
             done)
       +> (runBatch >>> do
@@ -780,7 +787,7 @@ genericATPgui atpFun prName thName th pt = do
               batchStatusLabel # text (batchInfoText tLimit numGoals 0)
               disableWids wids
               enable stopBatchButton
-              enableWidsUponSelection lb [EnW detailsButton,EnW saveDFGButton]
+              enableWidsUponSelection lb [EnW detailsButton,EnW saveProbButton]
               enable lb
               inclProvedThs <- readTkVariable inclProvedThsTK
               batchProverId <- Concurrent.forkIO
@@ -835,8 +842,10 @@ genericATPgui atpFun prName thName th pt = do
             let (cfgList, resList) = getCfgText $ configsMap s
                 cfgText = unlines $ ("Configuration:\n":cfgList)
                                     ++ ("\nResults:\n":resList)
-            createTextSaveDisplay (prName ++ " Configuration for Theory " ++ thName)
-                                  (thName ++ (snd $ fileExtensions atpFun)) cfgText
+            createTextSaveDisplay
+                (prName ++ " Configuration for Theory " ++ thName)
+                (thName ++ (theoryConfiguration $ fileExtensions atpFun))
+                cfgText
             done)
       ))
   sync ( (exit >>> destroy main)
