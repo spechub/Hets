@@ -127,8 +127,6 @@ initialGenericState prName ips trSenName th pt =
     where Theory sign oSens = th
           oSens' = toNamedList oSens
           nSens = prepareSenNames trSenName oSens'
--- !! test, then remove
---          (_, goals) = partition AS_Anno.isAxiom nSens
           goals = filter (not . AS_Anno.isAxiom) nSens
 
 
@@ -168,7 +166,6 @@ data ATPFunctions sign sentence proof_tree pst = ATPFunctions {
     -- | environment variable containing time limit for batch time
     batchTimeEnv :: String,
     -- | file extensions for all output formats
--- !! replace extensions with record type
     fileExtensions :: FileExtensions,
     -- | runs the prover
     runProver :: RunProver sentence proof_tree pst
