@@ -74,7 +74,9 @@ type GenericGoalNameMap = Map.Map String String
   Represents the global state of the prover GUI.
 -}
 data GenericState sign sentence proof_tree pst = GenericState {
+    -- | currently selected goal or Nothing
     currentGoal :: Maybe ATPIdentifier,
+    -- | initial empty proof_tree
     proof_tree :: proof_tree,
     -- | stores the prover configurations for each goal
     -- and the results retrieved by running prover for each goal
@@ -105,7 +107,7 @@ initialGenericState :: (Show sentence, Ord sentence, Ord proof_tree) =>
                     -> InitialProverState sign sentence pst
                     -> TransSenName
                     -> Theory sign sentence proof_tree
-                    -> proof_tree
+                    -> proof_tree -- ^ initial empty proof_tree
                     -> GenericState sign sentence proof_tree pst
 initialGenericState prName ips trSenName th pt =
     GenericState {currentGoal = Nothing,
@@ -125,7 +127,10 @@ initialGenericState prName ips trSenName th pt =
     where Theory sign oSens = th
           oSens' = toNamedList oSens
           nSens = prepareSenNames trSenName oSens'
-          (_, goals) = partition AS_Anno.isAxiom nSens
+-- !! test, then remove
+--          (_, goals) = partition AS_Anno.isAxiom nSens
+          goals = filter (not . AS_Anno.isAxiom) nSens
+
 
 {- |
   Represents the general return value of a prover run.
@@ -150,12 +155,34 @@ type RunProver sentence proof_tree pst =
   Prover specific functions
 -}
 data ATPFunctions sign sentence proof_tree pst = ATPFunctions {
+    -- | initial prover specific state
     initialProverState :: InitialProverState sign sentence pst,
+    -- | prover specific translation of goal name
     atpTransSenName :: TransSenName,
+    -- | inserts a goal into prover state
     atpInsertSentence :: pst -> AS_Anno.Named sentence -> pst,
-    dfgOutput :: pst -> AS_Anno.Named sentence-> IO String,
+    -- | output of a goal in a prover specific format
+    goalOutput :: pst -> AS_Anno.Named sentence-> IO String,
+    -- | help text
     proverHelpText :: String,
-    batchTimeEnv :: String, -- ^ environment variable containing time limit for batch time
-    fileExtensions :: (String, String), -- ^ file extensions for both prover output and configuration
+    -- | environment variable containing time limit for batch time
+    batchTimeEnv :: String,
+    -- | file extensions for all output formats
+-- !! replace extensions with record type
+    fileExtensions :: FileExtensions,
+    -- | runs the prover
     runProver :: RunProver sentence proof_tree pst
+  }
+
+{- |
+  File extensions for all prover specific output formats.
+  Given extensions should begin with a dot.
+-}
+data FileExtensions = FileExtensions {
+    -- | file extension for saving problem
+    problemOutput :: String,
+    -- | file extension for saving goal
+    proverOutput :: String,
+    -- | file extension for saving theory configuration
+    theoryConfiguration :: String
   }
