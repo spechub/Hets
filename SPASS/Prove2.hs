@@ -69,10 +69,48 @@ data SPASSProverState = SPASSProverState
     { initialLogicalPart :: SPLogicalPart}
 
 
+-- ** SPASS specific functions for prover GUI
+
+{- |
+  Creates an initial SPASS prover state with logical part.
+-}
+spassProverState :: Sign -- ^ SPASS signature
+                 -> [AS_Anno.Named SPTerm] -- ^ list of named SPASS terms containing axioms
+                 -> SPASSProverState
+spassProverState sign oSens' = SPASSProverState{
+    initialLogicalPart = foldl insertSentence
+                               (signToSPLogicalPart sign)
+                               (reverse axioms)}
+  where nSens = prepareSenNames transSenName oSens'
+-- !! test, then remove
+--        (axioms, _) = partition AS_Anno.isAxiom nSens
+        axioms = filter AS_Anno.isAxiom nSens
+
+{- |
+  Inserts a named SPASS term into SPASS prover state.
+-}
+insertSentenceGen :: SPASSProverState -- ^ prover state containing initial logical part
+                  -> AS_Anno.Named SPTerm -- ^ goal to add
+                  -> SPASSProverState
+insertSentenceGen pst s = pst{initialLogicalPart =
+                                insertSentence (initialLogicalPart pst) s}
+
+{- |
+  Pretty printing SPASS goal in DFG format.
+-}
+showPrettyProblem :: String -- ^ theory name
+                  -> SPASSProverState -- ^ prover state containing initial logical part
+                  -> AS_Anno.Named SPTerm -- ^ goal to print
+                  -> IO String -- ^ formatted output of the goal
+showPrettyProblem thName pst nGoal = do
+  prob <- genSPASSProblem thName (initialLogicalPart pst) $ Just nGoal
+  return $ showPretty prob ""
+
+
 -- * Main GUI
 
 {- |
-  Invokes the generic prover GUI. Specific SPASS functions are omitted by
+  Invokes the generic prover GUI. SPASS specific functions are omitted by
   data type ATPFunctions.
 -}
 spassProveGUI :: String -- ^ theory name
@@ -82,27 +120,16 @@ spassProveGUI thName th =
     genericATPgui atpFun (prover_name spassProver) thName th ()
 
     where
-      insertSentenceGen pst s = pst{initialLogicalPart =
-                                      insertSentence (initialLogicalPart pst) s}
-      spassProverState sign oSens' = SPASSProverState
-        { initialLogicalPart = foldl insertSentence
-                                     (signToSPLogicalPart sign)
-                                     (reverse axioms)
-        }
-        where nSens = prepareSenNames transSenName oSens'
-              (axioms, _) = partition AS_Anno.isAxiom nSens
-
-      showPrettyProblem pst nGoal = do
-        prob <- genSPASSProblem thName (initialLogicalPart pst) $ Just nGoal
-        return $ showPretty prob ""
       atpFun = ATPFunctions
         { initialProverState = spassProverState,
           atpTransSenName = transSenName,
           atpInsertSentence = insertSentenceGen,
-          dfgOutput = showPrettyProblem,
+          goalOutput = showPrettyProblem thName,
           proverHelpText = spassHelpText,
           batchTimeEnv = "HETS_SPASS_BATCH_TIME_LIMIT",
-          fileExtensions = (".spass", ".spcf"),
+          fileExtensions = FileExtensions{problemOutput = ".dfg",
+                                          proverOutput = ".spass",
+                                          theoryConfiguration = ".spcf"},
           runProver = runSpass}
 
 
