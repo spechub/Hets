@@ -592,9 +592,12 @@ transFORMULA sign idMap tr (Conjunction phis _) =
 transFORMULA sign idMap tr (Disjunction phis _) =
   if null phis then SPSimpleTerm SPFalse
   else foldl1 mkDisj (map (transFORMULA sign idMap tr) phis)
-transFORMULA sign idMap tr (Implication phi1 phi2 _ _) =
-  compTerm SPImplies [transFORMULA sign idMap tr phi1,
-                      transFORMULA sign idMap tr phi2]
+transFORMULA sign idMap tr (Implication phi1 phi2 wasImplies _) =
+  if wasImplies
+  then compTerm SPImplies [transFORMULA sign idMap tr phi1,
+                           transFORMULA sign idMap tr phi2]
+  else compTerm SPImplied [transFORMULA sign idMap tr phi2,
+                           transFORMULA sign idMap tr phi1]
 transFORMULA sign idMap tr (Equivalence phi1 phi2 _) =
   compTerm SPEquiv [transFORMULA sign idMap tr phi1,
                     transFORMULA sign idMap tr phi2]
