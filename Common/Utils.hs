@@ -27,6 +27,10 @@ import System.Posix.Process
 import System.Time
 import System.Random
 import System.IO
+import System
+import System.IO.Error
+
+import qualified Control.Exception as Exception
 
 {- |
   A function inspired by perls join function. It joins a list of
@@ -216,6 +220,25 @@ filterMapWithSet s = Map.filterWithKey selected
 -}
 comparing :: (Ord b) => (a -> b) -> a -> a -> Ordering
 comparing selector x y = compare (selector x) (selector y)
+
+{- | get, parse and check an environment variable; provide the default
+  value, only if the envionment variable is not set or the
+  parse-check-function returns a Left value 
+-}
+getEnvSave :: a -- ^ default value
+           -> String -- ^ name of environment variable
+           -> (String -> Either b a) -- ^ parse and check value of variable; 
+                         -- for every b the default value is returned
+           -> IO a
+getEnvSave defValue envVar readFun = do
+   is <- Exception.catch (getEnv envVar >>= (return . Right))
+               (\e -> case e of 
+                      Exception.IOException ie -> 
+                          if isDoesNotExistError ie -- == NoSuchThing
+                          then return $ Left defValue
+                          else Exception.throwIO e
+                      _ -> Exception.throwIO e)
+   return (either id (\s -> (either (const defValue) id (readFun s))) is)
 
 {- |
   create a temp file.
