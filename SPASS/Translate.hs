@@ -24,6 +24,7 @@ import qualified Common.Lib.Map as Map
 
 import SPASS.Sign
 import SPASS.Print ()
+import SPASS.Utils
 
 import Common.ProofUtils
 
@@ -41,22 +42,37 @@ reservedWords = Set.fromList (map ((flip showPretty) "") [SPEqual
     words "date name author status description")
 
 transSenName :: String -> String
-transSenName = lowerFirstChar . transId . simpleIdToId . mkSimpleId
-    where lowerFirstChar s = 
-              case s of
-              "" -> error $ "SPASS.Translate.transSenName: each sentence "++
-                            "must have non empty string as name here"
-              (x:xs) -> toLower x : xs
+transSenName = transId CSort . simpleIdToId . mkSimpleId
 
 
-transId :: Id -> SPIdentifier
-transId iden 
-    | checkIdentifier str = substDigits $
+transId :: CType -> Id -> SPIdentifier
+transId t iden 
+    | checkIdentifier t str = changeFirstChar $ substDigits $
                             if Set.member str reservedWords 
                             then "X_"++str
                             else str
-    | otherwise = substDigits $ concatMap transToSPChar (dropWhile (=='_') str)
+    | otherwise = changeFirstChar $ 
+                  substDigits $ concatMap transToSPChar $ 
+                  addChar str
     where str = show iden
+          addChar s =
+              case s of
+              "" -> error "SPASS.Translate.transId: empty string not allowed"
+              ('_':_) -> case t of
+                         COp _ -> 'o':s
+                         CPred _ -> 'p':s
+                         _ -> error $ "SPASS.Translate.transId: Variables "++
+                                      "and Sorts don't start with '_'"
+              _ -> s                         
+          changeFirstChar s = 
+              case s of
+              "" -> error $ "SPASS.Translate.transId: each identifier "++
+                            "must be non empty here"
+              (x:xs) -> toValidChar x : xs
+          toValidChar =
+              case t of
+              CVar _ -> toUpper
+              _ -> toLower
 
 charMap_SP :: Map.Map Char String
 charMap_SP = Map.union charMap 

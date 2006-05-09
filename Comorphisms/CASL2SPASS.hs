@@ -52,6 +52,7 @@ import CASL.Inject
 import SPASS.Sign as SPSign
 import SPASS.Logic_SPASS
 import SPASS.Translate
+import SPASS.Utils
 
 -- | The identity of the comorphism
 data CASL2SPASS = CASL2SPASS deriving (Show)
@@ -59,12 +60,6 @@ data CASL2SPASS = CASL2SPASS deriving (Show)
 -- | SPASS theories
 type SPASSTheory = (SPSign.Sign,[Named SPTerm])
 
--- | A data type for storing the type of a CASL Id
-data CType = CSort
-           | CVar SORT
-           | CPred CSign.PredType
-           | COp   CSign.OpType
-             deriving (Eq,Ord,Show)
 -- | CASL Ids with Types mapped to SPIdentifier
 type IdType_SPId_Map = Map.Map Id (Map.Map CType SPIdentifier)
 
@@ -79,6 +74,7 @@ insertSPId :: Id -> CType ->
               IdType_SPId_Map ->
               IdType_SPId_Map
 insertSPId i t spid m = 
+    assert (checkIdentifier t spid) $
     Map.insertWith (Map.unionWith err) i (Map.insert t spid Map.empty) m
     where err = error ("CASL2SPASS: for Id \""++show i ++
                        "\" the type \""++ show t ++ 
@@ -190,7 +186,7 @@ transFuncMap idMap sign =
                             Set.fold (\ x y -> 
                                           insertSPId iden (COp x) sid' y)
                                      im' tset)
-                    sid fma t = disSPOId (COp t) (transId iden) 
+                    sid fma t = disSPOId (COp t) (transId (COp t) iden) 
                                        (uType (transOpType t))
                                        (Set.union (Rel.keysSet fma)
                                            (elemsSPId_Set idMap))
@@ -258,7 +254,7 @@ transPredMap idMap sign =
                             Set.fold (\ x y -> 
                                           insertSPId iden (CPred x) sid' y)
                                      im' tset)
-                    sid fma t = disSPOId (CPred t) (transId iden) 
+                    sid fma t = disSPOId (CPred t) (transId (CPred t) iden) 
                                        (transPredType t)
                                        (Set.union (Rel.keysSet fma)
                                            (elemsSPId_Set idMap))
@@ -266,8 +262,9 @@ transPredMap idMap sign =
 disSPOId :: CType -> SPIdentifier -> [SPIdentifier] -> 
             Set.Set SPIdentifier -> SPIdentifier
 disSPOId cType sid ty idSet
-    | checkIdentifier sid && not (lkup sid) = sid
-    | otherwise = disSPOId' (dropWhile (=='_') sid)  
+    | checkIdentifier cType sid && not (lkup sid) = sid
+    | otherwise = let nSid = disSPOId' sid  
+                  in assert (checkIdentifier cType nSid) nSid 
     where disSPOId' sid' 
               | not (lkup asid) = asid
               | otherwise = addType asid 1
@@ -301,10 +298,15 @@ disSPOId cType sid ty idSet
           fc n = concatMap (take n) ty
 
 transOpType :: CSign.OpType -> ([SPIdentifier],SPIdentifier)
-transOpType ot = (map transId (CSign.opArgs ot), transId (CSign.opRes ot))
+transOpType ot = (map transIdSort (CSign.opArgs ot), 
+                  transIdSort (CSign.opRes ot))
 
 transPredType :: CSign.PredType -> [SPIdentifier]
-transPredType pt = map transId (CSign.predArgs pt)
+transPredType pt = map transIdSort (CSign.predArgs pt)
+
+-- | translate every Id as Sort
+transIdSort :: Id -> String
+transIdSort = transId CSort
 
 integrateGenerated :: (PrettyPrint f, PosItem f) =>
                       IdType_SPId_Map -> [Named (FORMULA f)] -> 
@@ -409,7 +411,7 @@ mkInjOp (opMap,idMap) qo@(Qual_op_name i ot _) =
        else ((opMap,idMap),
              (maybe err id lsid,
               transOpType ot'))
-    where i' = disSPOId (COp ot') (transId i) 
+    where i' = disSPOId (COp ot') (transId (COp ot') i) 
                         (utype (transOpType ot')) usedNames
           ot' = CSign.toOpType ot
           lsid = lookupSPId i (COp ot') idMap
@@ -441,14 +443,14 @@ mkInjSentences idMap = Map.foldWithKey genInjs []
 transSign :: CSign.Sign f e -> 
              (SPSign.Sign,IdType_SPId_Map)
 transSign sign = (SPSign.emptySign { sortRel = 
-                                 Rel.map transId (CSign.sortRel sign) 
+                                 Rel.map transIdSort (CSign.sortRel sign) 
                            , sortMap = spSortMap
                            , funcMap = fMap
                            , predMap = pMap
                            },idMap'')
     where (spSortMap,idMap) = 
             Set.fold (\ i (sm,im) -> 
-                          let sid = disSPOId CSort (transId i) 
+                          let sid = disSPOId CSort (transIdSort i) 
                                        [take 20 (cycle "So")]
                                        (Rel.keysSet sm)
                           in (Map.insert sid Nothing sm,
@@ -467,7 +469,7 @@ nonEmptySortSens =
               {senName = "ga_non_empty_sort_"++s}
               where varTerm = simpTerm (spSym (newVar s))
           newVar s = fromJust (find (\ x -> x /= s) 
-                          ("x":["x"++show i | i <- [(1::Int)..]]))
+                          ("X":["X"++show i | i <- [(1::Int)..]]))
 
 
 transTheory :: (PrettyPrint f, PosItem f,Eq f) => 
@@ -537,7 +539,7 @@ transVarTup (usedIds,idMap) (v,s) =
                                 showPretty s "\" not found"))
                          id (lookupSPId s CSort idMap) 
           vi = simpleIdToId v
-          sid = disSPOId (CVar s) (transId vi) 
+          sid = disSPOId (CVar s) (transId (CVar s) vi) 
                     ["_Va_"++ showPretty s "_Va"]
                     usedIds
 
@@ -592,12 +594,9 @@ transFORMULA sign idMap tr (Conjunction phis _) =
 transFORMULA sign idMap tr (Disjunction phis _) =
   if null phis then SPSimpleTerm SPFalse
   else foldl1 mkDisj (map (transFORMULA sign idMap tr) phis)
-transFORMULA sign idMap tr (Implication phi1 phi2 wasImplies _) =
-  if wasImplies
-  then compTerm SPImplies [transFORMULA sign idMap tr phi1,
+transFORMULA sign idMap tr (Implication phi1 phi2 _ _) =
+  compTerm SPImplies [transFORMULA sign idMap tr phi1,
                            transFORMULA sign idMap tr phi2]
-  else compTerm SPImplied [transFORMULA sign idMap tr phi2,
-                           transFORMULA sign idMap tr phi1]
 transFORMULA sign idMap tr (Equivalence phi1 phi2 _) =
   compTerm SPEquiv [transFORMULA sign idMap tr phi1,
                     transFORMULA sign idMap tr phi2]

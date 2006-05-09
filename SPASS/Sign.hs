@@ -21,6 +21,8 @@ import Char
 import Common.AS_Annotation
 import Common.DefaultMorphism
 
+import SPASS.Utils
+
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
@@ -103,11 +105,21 @@ type SPASSMorphism = DefaultMorphism Sign
 type SPIdentifier = String
 
 {- |
-  SPASS Identifiers may contain letters, digits, and underscores only.
+  SPASS Identifiers may contain letters, digits, and underscores only; but 
+  for TPTP the allowed starting letters are different for each sort of 
+  identifier.
 -}
-checkIdentifier :: String-> Bool
-checkIdentifier "" = False
-checkIdentifier xs@(x:_) = and ((x /= '_') : map checkSPChar xs)
+checkIdentifier :: CType -> String -> Bool
+checkIdentifier _ "" = False
+checkIdentifier t xs@(x:_) = and ((checkFirstChar t x) : map checkSPChar xs)
+
+{- |
+  important for TPTP format
+-}
+checkFirstChar :: CType -> Char -> Bool
+checkFirstChar t = case t of
+                     CVar _ -> isUpper
+                     _ -> isLower
 
 {- |
 Allowed SPASS characters are letters, digits, and underscores.
@@ -299,3 +311,4 @@ data SPLogState =
 
 data SPSetting = SPFlag String String
      deriving (Eq,Ord,Show)
+
