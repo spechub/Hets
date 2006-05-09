@@ -48,6 +48,7 @@ import SPASS.Print (genSPASSProblem)
 import qualified Common.AS_Annotation as AS_Anno
 import Common.ProofUtils
 import Common.PrettyPrint 
+import Common.Utils (getEnvSave)
 
 import ChildProcess
 import ProcessClasses
@@ -61,7 +62,6 @@ import qualified Control.Concurrent as Concurrent
 
 import GHC.Read
 import System
-import System.IO.Error
 
 import HTk
 import SpinButton
@@ -702,7 +702,14 @@ spassProveGUI thName th = do
                               _ -> max batchTLimit (curEntTL-10)
                     tEntry # HTk.value t'
                     done)) 
-
+  saveDFG_batch <- createTkVariable False
+  saveDFG_batch_checkBox <- 
+         newCheckButton batchRight 
+                        [variable saveDFG_batch,
+                         text ("save DFG")]
+  enableSaveCheckBox <- getEnvSave False "HETS_ENABLE_BATCH_SAVE" readEither
+  when enableSaveCheckBox $ 
+       pack saveDFG_batch_checkBox [Expand Off, Fill None, Side AtBottom]
   pack batchRight [Expand On, Fill X, Anchor NorthWest,Side AtRight]
 
   batchTimeEntry # HTk.value batchTLimit
@@ -775,6 +782,7 @@ spassProveGUI thName th = do
                          map EnW [proveButton,detailsButton,saveDFGButton]
       wids = EnW lb : goalSpecificWids ++
              [EnW batchTimeEntry, EnW batchTimeSpinner,
+              EnW saveDFG_batch_checkBox,
               EnW batchOptionsEntry,EnW inclProvedThsCheckButton] ++
              map EnW [helpButton,saveButton,exitButton,runBatchButton]
 
@@ -815,7 +823,7 @@ spassProveGUI thName th = do
                                         goal inclProvedThs
                       prob <- genSPASSProblem thName lp' (Just nGoal)
                       createTextSaveDisplay ("SPASS Problem for Goal "++goal) 
-                                            (thName++goal++".dfg") 
+                                            (thName++'_':goal++".dfg") 
                                             (showPretty prob "")
                   )
                   $ currentGoal rs
@@ -844,7 +852,8 @@ spassProveGUI thName th = do
                 statusLabel # foreground (show $ fst statusRunning)
                 disableWids wids
                 (retval, cfg) <- 
-                    runSpass lp' (getConfig goal (configsMap s')) thName nGoal
+                    runSpass lp' (getConfig goal (configsMap s')) False 
+                             thName nGoal
                 -- check if main is still there
                 curSt <- readIORef stateRef
                 if mainDestroyed curSt 
@@ -901,8 +910,10 @@ spassProveGUI thName th = do
               enableWidsUponSelection lb [EnW detailsButton,EnW saveDFGButton]
               enable lb
               inclProvedThs <- readTkVariable inclProvedThsTK
+              saveDFG_F <- readTkVariable saveDFG_batch
               batchProverId <- Concurrent.forkIO 
                    (do spassProveBatch tLimit extOpts inclProvedThs
+                                       saveDFG_F
                           (\ gPSF nSen cfg -> do 
                               cont <- goalProcessed stateRef tLimit numGoals 
                                                     batchStatusLabel 
@@ -1053,15 +1064,8 @@ batchTimeLimit = 20
 -}
 
 getBatchTimeLimit :: IO Int
-getBatchTimeLimit = do
-   is <- Exception.catch (getEnv "HETS_SPASS_BATCH_TIME_LIMIT")
-               (\e -> case e of 
-                      Exception.IOException ie -> 
-                          if isDoesNotExistError ie -- == NoSuchThing
-                          then return $ show batchTimeLimit
-                          else Exception.throwIO e
-                      _ -> Exception.throwIO e)
-   return (either (const batchTimeLimit) id (readEither is))
+getBatchTimeLimit = 
+    getEnvSave batchTimeLimit "HETS_SPASS_BATCH_TIME_LIMIT" readEither 
 
 {- |
   Checks whether a goal in the results map is marked as proved.
@@ -1082,6 +1086,7 @@ checkGoal cfgMap goal =
 spassProveBatch :: Int -- ^ batch time limit
                 -> String -- ^ extra options passed
                 -> Bool -- ^ True means include proved theorems
+                -> Bool -- True means save DFG file
                 -> (Int 
                     -> AS_Anno.Named SPTerm 
                     -> (SpassProverRetval, SPASSConfig) 
@@ -1091,7 +1096,7 @@ spassProveBatch :: Int -- ^ batch time limit
                 -> String -- ^ theory name
                 -> SPASS.Prove.State
                 -> IO ([Proof_status ()]) -- ^ proof status for each goal
-spassProveBatch tLimit extraOptions inclProvedThs f thName st =
+spassProveBatch tLimit extraOptions inclProvedThs saveDFG_batch f thName st =
     batchProve (initialLogicalPart st) 0 [] (goalsList st)
   {- do -- putStrLn $ showPretty initialLogicalPart ""
      -- read batchTimeLimit from ENV variable if set otherwise use constant
@@ -1117,7 +1122,7 @@ spassProveBatch tLimit extraOptions inclProvedThs f thName st =
         (err, res_cfg) <- 
               runSpass lp ((emptyConfig gName) { timeLimit = Just tLimit
                                                , extraOpts = words extraOptions }) 
-                       thName g
+                       saveDFG_batch thName g
         let res = proof_status res_cfg
         putStrLn $ "SPASS returned: " ++ (show err)
         -- if the batch prover runs in a separate thread 
@@ -1220,10 +1225,11 @@ parseSpassOutput spass = parseProtected (parseStart True) (Nothing, [], [])
 -}
 runSpass :: SPLogicalPart -- ^ logical part containing the input Sign and axioms and possibly goals that have been proved earlier as additional axioms
          -> SPASSConfig -- ^ configuration to use
+         -> Bool -- ^ True means save DFG file
          -> String -- ^ name of the theory in the DevGraph
          -> AS_Anno.Named SPTerm -- ^ goal to prove
          -> IO (SpassProverRetval, SPASSConfig) -- ^ (retval, configuration with proof status and complete output)
-runSpass lp cfg thName nGoal = do
+runSpass lp cfg saveDFG thName nGoal = do
   putStrLn ("running 'SPASS" ++ (concatMap (' ':) allOptions) ++ "'")
   spass <- newChildProcess "SPASS" [ChildProcess.arguments allOptions]
   Exception.catch (runSpassReal spass)
@@ -1252,6 +1258,9 @@ runSpass lp cfg thName nGoal = do
                   emptyConfig $ AS_Anno.senName nGoal)
         else do
           prob <- genSPASSProblem thName lp (Just nGoal)
+          when saveDFG 
+               (writeFile (thName++'_':AS_Anno.senName nGoal++".dfg") 
+                          (showPretty prob ""))
           sendMsg spass (showPretty prob "")
           (res, usedAxs, output) <- parseSpassOutput spass
           let (err, retval) = proof_status res usedAxs cleanOptions
