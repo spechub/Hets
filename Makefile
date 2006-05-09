@@ -14,7 +14,7 @@ all: patch hets
 ####################################################################
 ## Some varibles, which control the compilation
 
-INCLUDE_PATH = hxt
+INCLUDE_PATH = hxt syb-generics-2.9-2 haifa-lite/src HCl-0.2/src
 HXT_PATHS = Data Data/Tree Data/Tree/NTree Data/Digest Text Text/XML \
     Text/XML/HXT Text/XML/HXT/IO Text/XML/HXT/DOM Text/XML/HXT/Arrow \
     Text/XML/HXT/XPath Text/XML/HXT/Validator Text/XML/HXT/Parser \
@@ -46,7 +46,7 @@ INSTALLDIR = \
     /home/www/agbkb/forschung/formal_methods/CoFI/hets/`utils/sysname.sh`
 
 DRIFT_deps = utils/DrIFT-src/*hs
-GENERATERULES_deps = utils/GenerateRules/*hs $(DRIFT_deps) Common/Utils.hs
+GENERATERULES_deps = utils/GenerateRules/*hs $(DRIFT_deps) 
 GENITCORRECTIONS_deps = utils/itcor/GenItCorrections.hs Common/Utils.hs \
     Common/Lib/Map.hs Common/Lib/Set.hs
 INLINEAXIOMS_deps = utils/InlineAxioms/InlineAxioms.hs \
@@ -465,6 +465,11 @@ install-hets:
 
 install: hets-opt install-hets
 
+pack/install-%.jar: pack/install-%.xml pack/UserInputSpec-%.xml hets.in hets 
+       ## TODO: add more dependencies and use hets-opt
+	compile $< -b . -k standard -o $@
+#	compile $< -b . -k web -o $@
+
 ###################################
 ### Common/LaTeX_maps.hs generation
 
@@ -604,11 +609,19 @@ Driver/Version.hs: Driver/Version.in version_nr
 ## two hardcoded dependencies for a correct generation of Version.hs
 Driver/Options.hs Driver/WriteFn.hs Driver/ReadFn.hs: Driver/Version.hs
 hets.hs: Driver/Version.hs
+
+## two dependencies for avoidence of circular prerequisites
+CASL_DEPENDENT_BINARIES= hets CASL/capa CASL/fromKif \
+   Common/annos Common/test_parser Comorphisms/test/showKP \
+   CspCASL/print_csp HasCASL/hacapa Haskell/h2h Haskell/h2hf \
+   Haskell/hana Haskell/wrap Isabelle/isa Syntax/hetpa
+$(CASL_DEPENDENT_BINARIES): $(sources) $(derived_sources)
+# CASL_DL/Logic.hs: CASL_DL/PredefinedSign.hs
 ####################################################################
 ## rules for DrIFT
 .SUFFIXES:
 
-%: %.hs $(sources) $(derived_sources)
+%: %.hs
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 %.hs: %.y
@@ -670,3 +683,4 @@ Modal/ModalSystems.hs: Modal/GeneratePatterns.inline.hs.in \
 	$(RM) $@
 	$(PERL) utils/genTransMFormFunc.pl $< $@
 	chmod 444 $@
+
