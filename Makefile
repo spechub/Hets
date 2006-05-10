@@ -14,13 +14,17 @@ all: patch hets
 ####################################################################
 ## Some varibles, which control the compilation
 
-INCLUDE_PATH = hxt syb-generics-2.9-2 haifa-lite/src HCl-0.2/src
+INCLUDE_PATH = hxt syb-generics haifa-lite/src hcl/src
 HXT_PATHS = Data Data/Tree Data/Tree/NTree Data/Digest Text Text/XML \
     Text/XML/HXT Text/XML/HXT/IO Text/XML/HXT/DOM Text/XML/HXT/Arrow \
     Text/XML/HXT/XPath Text/XML/HXT/Validator Text/XML/HXT/Parser \
     Text/XML/HXT/RelaxNG Text/XML/HXT/ProtocolHandler Codec Codec/ASN1 \
     Codec/Binary Codec/Encryption Codec/Encryption/RSA System Control \
     Control/Arrow Control/Monad Network
+HAIFA_PATHS = Network Network/Server Org Org/W3 Org/W3/N2001 \
+    Org/Xmlsoap Org/Xmlsoap/Schemas Org/Xmlsoap/Schemas/Soap \
+    Text Text/XML Text/XML/HXT Text/XML/Schema Text/XML/Schema/TypeMapper \
+    Text/XML/Serializer
 
 CLEAN_PATH = . utils/itcor \
     utils utils/DrIFT-src utils/GenerateRules utils/InlineAxioms Common \
@@ -28,7 +32,9 @@ CLEAN_PATH = . utils/itcor \
     Syntax Static GUI HasCASL Haskell Modal CoCASL COL ConstraintCASL \
     CspCASL ATC Proofs Comorphisms Isabelle Driver \
     Taxonomy CASL_DL SPASS OWL_DL OMDoc $(PFE_PATHS) \
-    $(addprefix hxt/, $(HXT_PATHS))
+    $(addprefix hxt/, $(HXT_PATHS)) \
+    hcl/src/Data syb-generics/Data syb-generics/Data/Generics2 \
+    $(addprefix haifa-lite/src/, $(HAIFA_PATHS))
 
 # the 'replacing spaces' example was taken from the (GNU) Make info manual
 empty =
