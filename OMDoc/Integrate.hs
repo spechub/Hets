@@ -461,7 +461,29 @@ main =
       (
       do
         putStrLn ("Theories in input : " ++ (show $ Hets.getNodeNames dg))
-        putStrLn ("Links in input :\n" ++ (showLinks dg))      
+        putStrLn ("Links in input :\n" ++ (showLinks dg))     
+        if isEnabledKey finaldbginf "theory-symbols"
+          then
+            let
+              (_,sorts,_,preds,ops,_) = Hets.getAll dg
+            in
+              do
+                putStrLn $
+                  ("Sorts : " ++ show sorts ++ "\n")
+                  ++ ("Preds : " ++ show (Map.map Map.keys preds) ++ "\n")
+                  ++ ("Ops : " ++ show (Map.map Map.keys ops) ++ "\n")
+                putStrLn $
+                  foldl
+                    (\s (n,dgnl) ->
+                      s ++ (show $ dgn_name dgnl)
+                        ++ (show $ Hets.getSortSet dg n)
+                        ++ "\n"
+                    )
+                    ""
+                    (Graph.labNodes dg)
+          else
+            return ()
+
       )
     when
       doshow

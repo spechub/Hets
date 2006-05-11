@@ -1317,20 +1317,21 @@ importGraphToDGNodesXN go ig n =
                   Nothing -> error ("dg error (DevelopmentGraph for "
                     ++ slibname ++ " not found)!")
                   (Just d) -> d
-          onodenum =
+          (onodenum, onodedgnl) =
             case filter
               (\(_,node' ) -> (getDGNodeName node' ) == theoname ) $
               Graph.labNodes odg
                 of
                   [] -> error "no such node in origin..."
-                  l -> fst $ head l
+                  l -> head l
         in
           XmlNamed
             (DGRef
               (Hets.stringToSimpleId theoname, "", 0)
               (ASL.Lib_id (ASL.Indirect_link slibname Id.nullRange))
               onodenum
-              (G_theory CASL Hets.emptyCASLSign (Prover.toThSens []))
+              --(G_theory CASL Hets.emptyCASLSign (Prover.toThSens []))
+              (dgn_theory onodedgnl)
               Nothing
               Nothing)
             theoname
@@ -1341,10 +1342,10 @@ importGraphToDGNodesXN go ig n =
   in      
     Set.fold (\xntheory dgnodelist ->
       let
-        --tsorts = Map.findWithDefault Set.empty (xnName xntheory) sortsmap
+        tsorts = Map.findWithDefault Set.empty (xnName xntheory) sortsmap
         trels = Map.findWithDefault Rel.empty (xnName xntheory) relsmap
-        --tpreds = Map.findWithDefault Set.empty (xnName xntheory) predsmap
-        --tops = Map.findWithDefault Set.empty (xnName xntheory) opsmap
+        tpreds = Map.findWithDefault Set.empty (xnName xntheory) predsmap
+        tops = Map.findWithDefault Set.empty (xnName xntheory) opsmap
         tsens = Map.findWithDefault Set.empty (xnName xntheory) sensmap
       in
         debugGO go "iGTDGNXN" ("Creating Node with NODE_NAME "
@@ -1354,7 +1355,7 @@ importGraphToDGNodesXN go ig n =
             ++ [XmlNamed
                   (xnMapsToDGNodeLab
                     go
-                    (snd (xnItem xntheory)) psorts trels ppreds pops tsens)
+                    (snd (xnItem xntheory)) tsorts trels tpreds tops tsens)
                   (xnName xntheory)
                ])
       ) refs (debugGO go "iGTDGNXN" "at Set.fold" theonames)
@@ -1553,8 +1554,89 @@ importGraphToDGraphXN go ig n =
                 s
             else
               drop 1 frag
-  
-                
+ 
+applyLocalImports::DGraph->DGraph
+applyLocalImports dg =
+  let
+    localimports =
+      filter
+        (\(_,_,dgle) -> 
+          case dgl_type dgle of
+            LocalDef -> True
+            _ -> False
+        )
+        $ Graph.labEdges dg
+  in
+    foldl
+      (\dg' (m,n,_) ->
+        let
+          -- save edges from and to this node,
+          -- because the node gets deleted when updating
+          -- it's signature (and so the links)
+          theseedges = 
+            (Graph.out dg' n) ++ (Graph.inn dg' n)
+        in
+          Graph.insEdges theseedges
+            $ Hets.addSigns dg m n
+      )
+      dg
+      localimports
+
+applyGlobalImports::DGraph->DGraph
+applyGlobalImports dg =
+  let
+    globalimports =
+      map (\(a, b, _) -> (a,b)) $
+      filter
+        (\(_,_,dgle) -> 
+          case dgl_type dgle of
+            GlobalDef -> True
+            _ -> False
+        )
+        $ Graph.labEdges dg
+    (newdg, finaledges) =
+      until
+        (\(_, edges) -> null edges)
+        (\(dg', edges) ->
+          let
+            ((m, n), redges) = singleEdge edges
+            theseedges =
+              (Graph.out dg' n) ++ (Graph.inn dg' n)
+          in
+            (Graph.insEdges theseedges $ Hets.addSigns dg' m n, redges)
+        )
+        (dg, globalimports)
+  in
+    newdg
+  where
+  singleEdge::[Graph.Edge]->(Graph.Edge, [Graph.Edge])
+  singleEdge edgelist =
+    let
+      (maybeEdge, newEdges, count) =
+        until
+          (\(me, _, c) ->
+            case me of
+              Nothing -> False
+              _ -> True
+              -- counter to prevent hanging on cyclic structures...
+              || (c>1000)
+          )
+          (\( _, ((m,n):el), c ) ->
+            if null $ linksIn el m
+              then
+                (Just (m,n), el, c-1)
+              else
+                (Nothing, el++[(m,n)], c+1)
+          )
+          (Nothing, edgelist, 0)
+    in
+      case maybeEdge of
+        (Just x) -> (x, newEdges)
+        _ -> error ("singleEdge: break after " ++ show count)
+  linksIn::[Graph.Edge]->Graph.Node->[Graph.Edge]
+  linksIn edgelist n = filter (\(_,q) -> q == n) edgelist
+
+      
                 
 getCatalogueInformation::HXT.XmlTrees->(Map.Map String String)
 getCatalogueInformation t =
@@ -1825,7 +1907,9 @@ processImportGraphXN go ig =
               --      (\(_, S _ (omdoc, _)) -> omdoc) changednode
               changednodenum =
                 (\(nodenum, _) -> nodenum) changednode
-              dg = importGraphToDGraphXN go igxmd changednodenum
+              dg = applyGlobalImports
+                $ applyLocalImports
+                  $ importGraphToDGraphXN go igxmd changednodenum
               -- name = (\(_, (S (nname,_) _)) -> nname) changednode
               -- create the altered node
               newnode = (\(nodenum, S a (omdoc,_)) ->

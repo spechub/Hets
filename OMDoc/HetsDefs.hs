@@ -489,7 +489,8 @@ getFromCASLSignM dg n get' =
   let
     node = (\(Just a) -> a) $ Graph.lab dg n
     caslsign = if isDGRef node
-          then signViaMorphism dg n
+          --then signViaMorphism dg n
+          then getJustCASLSign $ getCASLSign (dgn_sign node)
           else getJustCASLSign $ getCASLSign (dgn_sign node)
   in  get' caslsign
       
@@ -1368,4 +1369,30 @@ nodeNameToId (s,e,n) = Id.mkId [s,(stringToSimpleId e),(stringToSimpleId (show n
 -- this reads back an encapsulated node_name
 idToNodeName::Id.Id->NODE_NAME
 idToNodeName (Id.Id toks _ _) = (toks!!0, show (toks!!1), read (show (toks!!2)))
+
+getSortSet::DGraph->Node->Set.Set SORT
+getSortSet dg n =
+  getFromCASLSignM dg n sortSet
+
+addSigns::DGraph->Node->Node->DGraph
+addSigns dg n1 n2 =
+  let
+    n1dgnl = case Graph.lab dg n1 of
+      Nothing -> error ("No such Node! " ++ (show n1))
+      (Just x) -> x
+    n2dgnl = case Graph.lab dg n2 of
+      Nothing -> error ("No such Node! " ++ (show n2))
+      (Just x) -> x
+    sign1 =  getJustCASLSign $ getCASLSign (dgn_sign n1dgnl)
+    sign2 =  getJustCASLSign $ getCASLSign (dgn_sign n2dgnl)
+    asign = CASL.Sign.addSig (\_ _ -> ()) sign1 sign2
+    newnodel = n2dgnl {
+      dgn_theory =
+        (\(G_theory _ _ thsens) -> G_theory CASL asign (Prover.toThSens [])) (dgn_theory n2dgnl)
+      }
+      
+  in
+    Graph.insNode (n2, newnodel) (Graph.delNode n2 dg)
+
+
 
