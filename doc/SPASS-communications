@@ -51,3 +51,5 @@ Bremen:
 Questions for next meeting:
  - does "implied" make any difference versus "implies"?
  - does "-interactive" works? and does it work?
+ - how are declarations numbered? and how can we trace them back, hence 
+   they are present in "used formulae"-list?
