@@ -13,7 +13,7 @@ Portability :  portable
  valid SPASS identifiers 
 -}
 
-module SPASS.Translate where 
+module SPASS.Translate (reservedWords, transId, transSenName) where 
 
 import Data.Char
 
@@ -75,9 +75,10 @@ transId t iden
               _ -> toLower
 
 charMap_SP :: Map.Map Char String
-charMap_SP = Map.union charMap 
+charMap_SP = Map.union  
              (Map.fromList [('\'',"Prime")
                            ,(' ',"_")])
+             charMap
 
 transToSPChar :: Char -> SPIdentifier
 transToSPChar c
