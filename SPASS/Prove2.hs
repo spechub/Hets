@@ -82,8 +82,6 @@ spassProverState sign oSens' = SPASSProverState{
                                (signToSPLogicalPart sign)
                                (reverse axioms)}
   where nSens = prepareSenNames transSenName oSens'
--- !! test, then remove
---        (axioms, _) = partition AS_Anno.isAxiom nSens
         axioms = filter AS_Anno.isAxiom nSens
 
 {- |
@@ -117,7 +115,7 @@ spassProveGUI :: String -- ^ theory name
               -> Theory Sign Sentence () -- ^ theory consisting of a SPASS.Sign.Sign and a list of Named SPASS.Sign.Sentence
               -> IO([Proof_status ()]) -- ^ proof status for each goal
 spassProveGUI thName th =
-    genericATPgui atpFun (prover_name spassProver) thName th ()
+    genericATPgui atpFun True (prover_name spassProver) thName th ()
 
     where
       atpFun = ATPFunctions
@@ -209,10 +207,11 @@ parseSpassOutput spass = parseProtected (parseStart True) (Nothing, [], [])
 -}
 runSpass :: SPASSProverState -- ^ logical part containing the input Sign and axioms and possibly goals that have been proved earlier as additional axioms
          -> GenericConfig () -- ^ configuration to use
+         -> Bool -- ^ True means save DFG file
          -> String -- ^ name of the theory in the DevGraph
          -> AS_Anno.Named SPTerm -- ^ goal to prove
          -> IO (ATPRetval, GenericConfig ()) -- ^ (retval, configuration with proof status and complete output)
-runSpass sps cfg thName nGoal = do
+runSpass sps cfg saveDFG thName nGoal = do
   putStrLn ("running 'SPASS" ++ (concatMap (' ':) allOptions) ++ "'")
   spass <- newChildProcess "SPASS" [ChildProcess.arguments allOptions]
   Exception.catch (runSpassReal spass)
@@ -245,6 +244,9 @@ runSpass sps cfg thName nGoal = do
         else do
           let lp = initialLogicalPart sps
           prob <- genSPASSProblem thName lp (Just nGoal)
+          when saveDFG
+               (writeFile (thName++'_':AS_Anno.senName nGoal++".dfg")
+                          (showPretty prob ""))
           sendMsg spass (showPretty prob "")
           (res, usedAxs, output) <- parseSpassOutput spass
           let (err, retval) = proof_stat res usedAxs cleanOptions
