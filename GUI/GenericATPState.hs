@@ -145,6 +145,7 @@ data ATPRetval
 type RunProver sentence proof_tree pst =
         pst -- ^ prover state containing logical part
         -> GenericConfig proof_tree -- ^ configuration to use
+        -> Bool -- ^ True means save problem file
         -> String -- ^ name of the theory in the DevGraph
         -> AS_Anno.Named sentence -- ^ goal to prove
         -> IO (ATPRetval, GenericConfig proof_tree) -- ^ (retval, configuration with proof_status and complete output)
@@ -178,7 +179,7 @@ data ATPFunctions sign sentence proof_tree pst = ATPFunctions {
 data FileExtensions = FileExtensions {
     -- | file extension for saving problem
     problemOutput :: String,
-    -- | file extension for saving goal
+    -- | file extension for saving prover output
     proverOutput :: String,
     -- | file extension for saving theory configuration
     theoryConfiguration :: String
