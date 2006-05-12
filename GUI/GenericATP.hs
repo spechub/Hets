@@ -28,6 +28,7 @@ import Logic.Prover
 
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Lib.Map as Map
+import Common.Utils (getEnvSave)
 
 import Data.List
 import Data.Maybe
@@ -36,8 +37,6 @@ import qualified Control.Exception as Exception
 import qualified Control.Concurrent as Concurrent
 
 import GHC.Read
-import System
-import System.IO.Error
 
 import HTk
 import SpinButton
@@ -349,8 +348,9 @@ newOptionsFrame :: Container par =>
                 par -- ^ the parent container
              -> (Entry Int -> Spin -> IO a)
              -- ^ Function called by pressing one spin button
+             -> Bool -- ^ extra options input line
              -> IO OpFrame
-newOptionsFrame con updateFn = do
+newOptionsFrame con updateFn isExtraOps = do
   right <- newFrame con []
 
   -- contents of newOptionsFrame
@@ -383,9 +383,11 @@ newOptionsFrame con updateFn = do
   pack timeSpinner []
 
   l3 <- newLabel opFrame2 [text "Extra Options:"]
-  pack l3 [Anchor West]
+  when isExtraOps $ 
+       pack l3 [Anchor West]
   (optionsEntry :: Entry String) <- newEntry opFrame2 [width 37]
-  pack optionsEntry [Fill X, PadX (cm 0.1)]
+  when isExtraOps $ 
+       pack optionsEntry [Fill X, PadX (cm 0.1)]
 
   return $ OpFrame { of_Frame = right
                    , of_timeSpinner = timeSpinner
@@ -400,12 +402,13 @@ newOptionsFrame con updateFn = do
 -}
 genericATPgui :: (Ord proof_tree, Ord sentence, Show proof_tree, Show sentence) =>
                  ATPFunctions sign sentence proof_tree pst -- ^ prover specific functions
+              -> Bool -- ^ prover supports extra options
               -> String -- ^ prover name
               -> String -- ^ theory name
               -> Theory sign sentence proof_tree -- ^ theory consisting of a signature and a list of Named sentence
               -> proof_tree -- ^ initial empty proof_tree
               -> IO([Proof_status proof_tree]) -- ^ proof status for each goal
-genericATPgui atpFun prName thName th pt = do
+genericATPgui atpFun isExtraOptions prName thName th pt = do
   -- create initial backing data structure
   let initState = initialGenericState prName
                                       (initialProverState atpFun)
@@ -485,6 +488,7 @@ genericATPgui atpFun prName thName th pt = do
                                                 configsMap s'))
                       done)
                      (currentGoal s)))
+                 isExtraOptions    
   pack right [Expand On, Fill Both, Anchor NorthWest]
 
   -- buttons for options
@@ -492,11 +496,7 @@ genericATPgui atpFun prName thName th pt = do
   pack buttonsHb1 [Anchor NorthEast]
 
   saveProbButton <- newButton buttonsHb1 [text $ "Save "
-      -- remove first dot if existing
-      ++ (let ext = (problemOutput $ fileExtensions atpFun)
-          in case head ext of
-               '.' -> tail ext
-               _   -> ext)
+      ++ (removeFirstDot $ problemOutput $ fileExtensions atpFun)
       ++ " File"]
   pack saveProbButton [Side AtLeft]
   proveButton <- newButton buttonsHb1 [text "Prove"]
@@ -587,6 +587,18 @@ genericATPgui atpFun prName thName th pt = do
                               _ -> max batchTLimit (curEntTL-10)
                     tEntry # HTk.value t'
                     done))
+                 isExtraOptions
+
+  saveProblem_batch <- createTkVariable False
+  saveProblem_batch_checkBox <-
+         newCheckButton batchRight
+                        [variable saveProblem_batch,
+                         text $ "Save "
+                     ++ (removeFirstDot $ problemOutput $ fileExtensions atpFun)]
+
+  enableSaveCheckBox <- getEnvSave False "HETS_ENABLE_BATCH_SAVE" readEither
+  when enableSaveCheckBox $
+       pack saveProblem_batch_checkBox [Expand Off, Fill None, Side AtBottom]
 
   pack batchRight [Expand On, Fill X, Anchor NorthWest,Side AtRight]
 
@@ -660,6 +672,7 @@ genericATPgui atpFun prName thName th pt = do
                          map EnW [proveButton,detailsButton,saveProbButton]
       wids = EnW lb : goalSpecificWids ++
              [EnW batchTimeEntry, EnW batchTimeSpinner,
+              EnW saveProblem_batch_checkBox,
               EnW batchOptionsEntry,EnW inclProvedThsCheckButton] ++
              map EnW [helpButton,saveButton,exitButton,runBatchButton]
 
@@ -702,7 +715,8 @@ genericATPgui atpFun prName thName th pt = do
                       prob <- (goalOutput atpFun) lp' nGoal
                       createTextSaveDisplay
                         (prName++" Problem for Goal "++goal)
-                        (thName++goal++(problemOutput $ fileExtensions atpFun))
+                        (thName++'_':goal
+                               ++(problemOutput $ fileExtensions atpFun))
                         (prob)
                   )
                   $ currentGoal rs
@@ -732,7 +746,7 @@ genericATPgui atpFun prName thName th pt = do
                 disableWids wids
                 (retval, cfg) <-
                     (runProver atpFun) lp'
-                          (getConfig prName goal pt $ configsMap s')
+                          (getConfig prName goal pt $ configsMap s') False
                           thName nGoal
                 -- check if main is still there
                 curSt <- readIORef stateRef
@@ -790,8 +804,10 @@ genericATPgui atpFun prName thName th pt = do
               enableWidsUponSelection lb [EnW detailsButton,EnW saveProbButton]
               enable lb
               inclProvedThs <- readTkVariable inclProvedThsTK
+              saveProblem_F <- readTkVariable saveProblem_batch
               batchProverId <- Concurrent.forkIO
                    (do genericProveBatch tLimit extOpts inclProvedThs
+                                       saveProblem_F
                           (\ gPSF nSen cfg -> do
                               cont <- goalProcessed stateRef tLimit numGoals
                                                     batchStatusLabel
@@ -932,7 +948,10 @@ genericATPgui atpFun prName thName th pt = do
                               ax++"\" omitted from list of used\n"++
                               "      axioms of goal \""++g++"\"")
                                 axs) (:axs) (Map.lookup ax nm)
-
+    removeFirstDot ext =
+       case head ext of
+            '.' -> tail ext
+            _   -> ext
 
 -- * Non-interactive Batch Prover
 
@@ -952,15 +971,8 @@ batchTimeLimit = 20
 
 getBatchTimeLimit :: String -- ^ ENV-variable containing batch time limit
                   -> IO Int
-getBatchTimeLimit env = do
-   is <- Exception.catch (getEnv env)
-               (\e -> case e of
-                      Exception.IOException ie ->
-                          if isDoesNotExistError ie -- == NoSuchThing
-                          then return $ show batchTimeLimit
-                          else Exception.throwIO e
-                      _ -> Exception.throwIO e)
-   return (either (const batchTimeLimit) id (readEither is))
+getBatchTimeLimit env =
+    getEnvSave batchTimeLimit env readEither
 
 {- |
   Checks whether a goal in the results map is marked as proved.
@@ -982,6 +994,7 @@ genericProveBatch :: (Ord proof_tree) =>
                      Int -- ^ batch time limit
                   -> String -- ^ extra options passed
                   -> Bool -- ^ True means include proved theorems
+                  -> Bool -- True means save problem file
                   -> (Int
                       -> AS_Anno.Named sentence
                       -> (ATPRetval, GenericConfig proof_tree)
@@ -995,8 +1008,8 @@ genericProveBatch :: (Ord proof_tree) =>
                   -> String -- ^ theory name
                   -> GenericState sign sentence proof_tree pst
                   -> IO ([Proof_status proof_tree]) -- ^ proof status for each goal
-genericProveBatch tLimit extraOptions inclProvedThs f inSen runGivenProver
-                  prName thName st =
+genericProveBatch tLimit extraOptions inclProvedThs saveProblem_batch f inSen
+                  runGivenProver prName thName st =
     batchProve (proverState st) 0 [] (goalsList st)
   {- do -- putStrLn $ showPretty initialLogicalPart ""
      -- read batchTimeLimit from ENV variable if set otherwise use constant
@@ -1024,7 +1037,7 @@ genericProveBatch tLimit extraOptions inclProvedThs f inSen runGivenProver
               runGivenProver pst ((emptyConfig prName gName pt)
                                    { timeLimit = Just tLimit
                                    , extraOpts = words extraOptions })
-                             thName g
+                             saveProblem_batch thName g
         let res = proof_status res_cfg
         putStrLn $ prName ++ " returned: " ++ (show err)
         -- if the batch prover runs in a separate thread
