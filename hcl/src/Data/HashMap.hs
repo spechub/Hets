@@ -11,7 +11,7 @@
 --
 -- An inefficient, incomplete implementation of HashMaps. Feel free to hack.
 -- This implementation has been translated verbatim from the GNU Classpath version.
--- See http://www.gnu.org/software/classpath/
+-- See <http://www.gnu.org/software/classpath/>
 ----------------------------------------------------------------------------
 -- @This file is part of HCl.@
 --
