@@ -56,8 +56,8 @@ sokratesAxiomFormulae = SPFormulaList {originType= SPOriginAxioms,
     f2 = NamedSen { senName  = "f2",
                     isAxiom  = True,
                     sentence = SPQuantTerm {quantSym= SPForall, 
-                                            termTermList= [SPSimpleTerm (SPCustomSymbol "x")],
-                                            termTerm= SPComplexTerm { symbol= SPImplies,
+                                            variableList= [SPSimpleTerm (SPCustomSymbol "x")],
+                                            qFormula= SPComplexTerm { symbol= SPImplies,
                                                                       arguments= [SPComplexTerm {symbol= SPCustomSymbol "Human", arguments= [SPSimpleTerm (SPCustomSymbol "x")]},
                                                                                   SPComplexTerm {symbol= SPCustomSymbol "Mortal", arguments= [SPSimpleTerm (SPCustomSymbol "x")]}] } } }
 

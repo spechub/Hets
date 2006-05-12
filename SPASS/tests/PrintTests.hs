@@ -73,8 +73,8 @@ printFormulaTest = TestList [
 
 printTermTest = TestList [
   -- empty term list not allowed!
-  TestLabel "quant_term1" (TestCase (assertEqual "" "forall([a],equal(a,a))" (showPretty (SPQuantTerm {quantSym= SPForall, termTermList= [SPSimpleTerm (SPCustomSymbol "a")], termTerm= SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}}) ""))),
-  TestLabel "quant_term2" (TestCase (assertEqual "" "forall([a,a],equal(a,a))" (showPretty (SPQuantTerm {quantSym= SPForall, termTermList= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")], termTerm= SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}}) ""))),
+  TestLabel "quant_term1" (TestCase (assertEqual "" "forall([a],equal(a,a))" (showPretty (SPQuantTerm {quantSym= SPForall, variableList= [SPSimpleTerm (SPCustomSymbol "a")], qFormula= SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}}) ""))),
+  TestLabel "quant_term2" (TestCase (assertEqual "" "forall([a,a],equal(a,a))" (showPretty (SPQuantTerm {quantSym= SPForall, variableList= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")], qFormula= SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}}) ""))),
   TestLabel "simple_term" (TestCase (assertEqual "" "testsymbol" (showPretty (SPSimpleTerm (SPCustomSymbol "testsymbol")) ""))),
   -- empty arguments list not allowed!
   TestLabel "complex_term1" (TestCase (assertEqual "" "test(a)" (showPretty (SPComplexTerm {symbol= SPCustomSymbol "test", arguments=[SPSimpleTerm (SPCustomSymbol "a")]}) ""))),

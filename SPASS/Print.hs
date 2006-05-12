@@ -102,7 +102,7 @@ instance PrettyPrint SPDeclaration where
     SPSubsortDecl {sortSymA= a, sortSymB= b} ->
       text "subsort" <> parens (text a <> comma <> text b) <> dot
     SPTermDecl {termDeclTermList= l, termDeclTerm= t} ->
-      printText0 ga (SPQuantTerm {quantSym= SPForall, termTermList= l, termTerm= t}) <> dot
+      printText0 ga (SPQuantTerm {quantSym= SPForall, variableList= l, qFormula= t}) <> dot
     SPSimpleTermDecl t ->
       printText0 ga t <> dot
     SPPredDecl {predSym= p, sortSyms= slist} ->
@@ -145,7 +145,7 @@ printFormula ga f =
 -}
 instance PrettyPrint SPTerm where
   printText0 ga t = case t of
-    SPQuantTerm{quantSym= qsym, termTermList= tlist, termTerm= tt} -> printText0 ga qsym <> parens (brackets (printTermList tlist) <> comma <> printText0 ga tt)
+    SPQuantTerm{quantSym= qsym, variableList= tlist, qFormula= tt} -> printText0 ga qsym <> parens (brackets (printTermList tlist) <> comma <> printText0 ga tt)
     SPSimpleTerm stsym -> printText0 ga stsym
     SPComplexTerm{symbol= ctsym, arguments= args} -> printText0 ga ctsym <> if null args then empty else parens (printTermList args)
     where

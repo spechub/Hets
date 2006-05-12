@@ -43,35 +43,35 @@ spSimpleTermTest1 :: SPSymbol
 spSimpleTermTest1 = SPCustomSymbol "testsymbol"
 
 spQuantTermTest1 :: SPTerm
-spQuantTermTest1 = SPQuantTerm {quantSym= SPForall, termTermList= [SPSimpleTerm (SPCustomSymbol "a")], termTerm= SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}}
+spQuantTermTest1 = SPQuantTerm {quantSym= SPForall, variableList= [SPSimpleTerm (SPCustomSymbol "a")], qFormula= SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}}
 
 spQuantTermTest2 :: SPTerm
-spQuantTermTest2 = SPQuantTerm {quantSym= SPForall, termTermList= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "b")], termTerm= SPComplexTerm {symbol= SPEqual, arguments= [
+spQuantTermTest2 = SPQuantTerm {quantSym= SPForall, variableList= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "b")], qFormula= SPComplexTerm {symbol= SPEqual, arguments= [
   SPComplexTerm {symbol=SPCustomSymbol "Elem", arguments=[SPSimpleTerm (SPCustomSymbol "a")]},
   SPComplexTerm {symbol=SPCustomSymbol "Elem", arguments=[SPSimpleTerm (SPCustomSymbol "b")]}
 ]}}
 
 spQuantTermTest3 :: SPTerm
-spQuantTermTest3 = SPQuantTerm {quantSym= SPExists, termTermList= [SPComplexTerm {symbol=SPCustomSymbol "Klein", arguments=[SPSimpleTerm (SPCustomSymbol "pi")]}, SPComplexTerm {symbol=SPCustomSymbol "Elem", arguments=[SPSimpleTerm (SPCustomSymbol "y")]}],
-termTerm= SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "pi"), SPSimpleTerm (SPCustomSymbol "y")]}}
+spQuantTermTest3 = SPQuantTerm {quantSym= SPExists, variableList= [SPComplexTerm {symbol=SPCustomSymbol "Klein", arguments=[SPSimpleTerm (SPCustomSymbol "pi")]}, SPComplexTerm {symbol=SPCustomSymbol "Elem", arguments=[SPSimpleTerm (SPCustomSymbol "y")]}],
+qFormula= SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "pi"), SPSimpleTerm (SPCustomSymbol "y")]}}
 
 spQuantTermTest4 :: SPTerm
-spQuantTermTest4 = SPQuantTerm {quantSym= SPForall, termTermList= [
+spQuantTermTest4 = SPQuantTerm {quantSym= SPForall, variableList= [
  SPComplexTerm {symbol=SPCustomSymbol "Elem", arguments=[SPSimpleTerm (SPCustomSymbol "y")]},
  SPComplexTerm {symbol=SPCustomSymbol "Elem", arguments=[SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "b"), SPSimpleTerm (SPCustomSymbol "c")]}
 ],
-termTerm= SPComplexTerm {symbol= SPOr, arguments= [
+qFormula= SPComplexTerm {symbol= SPOr, arguments= [
  SPComplexTerm {symbol=SPCustomSymbol "Elem", arguments=[SPSimpleTerm (SPCustomSymbol "y")]},
  SPComplexTerm {symbol=SPCustomSymbol "Elem", arguments=[SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "b"), SPSimpleTerm (SPCustomSymbol "c")]}
 ]}}
 
 spQuantTermTest5 :: SPTerm
-spQuantTermTest5 = SPQuantTerm {quantSym= SPCustomQuantSym "T", termTermList = [
+spQuantTermTest5 = SPQuantTerm {quantSym= SPCustomQuantSym "T", variableList = [
  SPComplexTerm {symbol=SPCustomSymbol "Elem", arguments=[SPSimpleTerm (SPCustomSymbol "y")]},
  SPComplexTerm {symbol=SPCustomSymbol "Elem", arguments=[SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "b"), SPSimpleTerm (SPCustomSymbol "c")]},
  SPComplexTerm {symbol=SPNot, arguments=[SPSimpleTerm (SPCustomSymbol "blue")]}
 ],
-termTerm=
+qFormula=
 SPComplexTerm {symbol=SPEqual, arguments=[
   SPComplexTerm {symbol= SPOr, arguments=[
     SPComplexTerm {symbol=SPCustomSymbol "Elem", arguments=[SPSimpleTerm (SPCustomSymbol "y")]},

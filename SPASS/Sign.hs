@@ -244,8 +244,8 @@ type SPFormula = Named SPTerm
 -}
 data SPTerm = 
         SPQuantTerm { quantSym     :: SPQuantSym,
-                      termTermList :: [SPTerm],
-                      termTerm     :: SPTerm }
+                      variableList :: [SPTerm],
+                      qFormula     :: SPTerm }
       | SPSimpleTerm SPSymbol
       | SPComplexTerm { symbol    :: SPSymbol,
                         arguments :: [SPTerm]}

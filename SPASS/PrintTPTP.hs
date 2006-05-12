@@ -104,7 +104,7 @@ printFormula ot f =
 -}
 instance PrintTPTP SPTerm where
     printTPTP t = case t of
-      SPQuantTerm{quantSym= qsym, termTermList= tlist, termTerm= tt}
+      SPQuantTerm{quantSym= qsym, variableList= tlist, qFormula= tt}
         -> printTPTP qsym
            <+> brackets (printCommaSeparated $ getVariables tlist)
            <+> colon
@@ -112,7 +112,7 @@ instance PrintTPTP SPTerm where
            <+> if (filter isSimpleTerm tlist == tlist) then printTPTP tt
                -- or there are none simple terms
                else assert (null $ filter isSimpleTerm tlist)
-               -- construct premiss for implication out of termTermList
+               -- construct premiss for implication out of variableList
                            printTermList SPImplies [SPComplexTerm{
                                                       symbol=SPAnd,
                                                       arguments=tlist}, tt]
