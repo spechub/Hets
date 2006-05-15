@@ -1,6 +1,6 @@
 #!/bin/bash -x
 
-PATH=/local/home/maeder/ghc-6.4.2/bin:/bin:/usr/bin:/usr/X11R6/bin:/home/linux-bkb/bin
+PATH=/bin:/usr/bin:/usr/X11R6/bin:/home/linux-bkb/bin
 UDG_HOME=/home/linux-bkb/uDrawGraph-3.1
 MAKE=make
 HETS_LIB=/local/home/maeder/haskell/CASL-lib
