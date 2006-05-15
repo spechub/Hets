@@ -158,7 +158,7 @@ parseSpassOutput spass = parseProtected (parseStart True) (Nothing, [], [])
           -- completed successfully. read remaining output.
           -> f (res, usedAxs, output)
 
-    -- the first line of SPASS output it always empty.
+    -- the first line of SPASS output is always empty.
     -- the second contains SPASS-START in the usual case
     -- and an error message in case of an error
     parseStart firstline (res, usedAxs, output) = do
@@ -184,16 +184,20 @@ parseSpassOutput spass = parseProtected (parseStart True) (Nothing, [], [])
     -- actual parsing. tries to read from SPASS until ".*SPASS-STOP.*" matches.
     parseIt (res, usedAxs, output) = do
       line <- readMsg spass
-      let resMatch = matchRegex re_sb line
+      -- replace tabulators with each 8 spaces
+      let line' = foldr (\ch li -> if ch == '\x9'
+                                   then "        "++li
+                                   else ch:li) "" line
+      let resMatch = matchRegex re_sb line'
       let res' = if isJust resMatch then (Just $ head $ fromJust resMatch) else res
-      let usedAxsMatch = matchRegex re_ua line
+      let usedAxsMatch = matchRegex re_ua line'
       let usedAxs' = if isJust usedAxsMatch then (words $ head $ fromJust usedAxsMatch) else usedAxs
-      if seq (length line) $ isJust (matchRegex re_stop line)
+      if seq (length line) $ isJust (matchRegex re_stop line')
         then do
           _ <- waitForChildProcess spass
-          return (res', usedAxs', output ++ [line])
+          return (res', usedAxs', output ++ [line'])
         else
-          parseProtected parseIt (res', usedAxs', output ++ [line])
+          parseProtected parseIt (res', usedAxs', output ++ [line'])
 
     -- regular expressions used for parsing
     re_start = mkRegex ".*SPASS-START.*"
