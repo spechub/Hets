@@ -37,7 +37,7 @@ bracket :: String -> String
 bracket s = "[" ++ s ++ "]"
 
 -- use the same strings for parsing and printing!
-verboseS, intypeS, outtypesS, rawS, skipS, structS,
+verboseS, intypeS, outtypesS, rawS, skipS, structS, transS,
      guiS, onlyGuiS, libdirS, outdirS, amalgS, specS, recursiveS :: String
 
 verboseS = "verbose"
@@ -52,6 +52,7 @@ libdirS = "hets-libdir"
 outdirS = "output-dir"
 amalgS = "casl-amalg"
 specS = "named-specs"
+transS = "translation"
 recursiveS = "recursive"
 
 asciiS, latexS, textS, texS :: String
@@ -94,6 +95,7 @@ data HetcatsOpts =        -- for comments see usage info
           , gui      :: GuiType
           , infiles  :: [FilePath] -- files to be read
           , specNames :: [SIMPLE_ID] -- specs to be processed
+          , transNames :: [SIMPLE_ID] -- comorphism to be processed
           , intype   :: InType
           , libdir   :: FilePath
           , outdir   :: FilePath
@@ -113,9 +115,10 @@ instance Show HetcatsOpts where
                 ++ showEqOpt libdirS (libdir opts)
                 ++ showEqOpt intypeS (show $ intype opts)
                 ++ showEqOpt outdirS (outdir opts)
-                ++ showEqOpt outtypesS (showOutTypes $ outtypes opts)
+                ++ showEqOpt outtypesS (showOutFiles $ outtypes opts)
                 ++ (if recurse opts then showOpt recursiveS else "")
-                ++ showEqOpt specS (joinWith ',' $ map show $ specNames opts)
+                ++ showEqOpt specS (joinWith ':' $ map show $ specNames opts)
+                ++ showEqOpt specS (joinWith ':' $ map show $ transNames opts)
                 ++ showRaw (rawopts opts)
                 ++ showEqOpt amalgS ( tail $ init $ show $
                                       case caslAmalg opts of
@@ -124,7 +127,7 @@ instance Show HetcatsOpts where
                 ++ " " ++ showInFiles (infiles opts)
         where
         showInFiles  = joinWith ' '
-        showOutTypes = joinWith ',' . map show
+        showOutFiles = joinWith ',' . map show
         showRaw = joinWith ' ' . map show
 
 -- | 'makeOpts' includes a parsed Flag in a set of HetcatsOpts
@@ -136,8 +139,9 @@ makeOpts opts flg = case flg of
     LibDir x   -> opts { libdir = x }
     OutDir x   -> opts { outdir = x }
     OutTypes x -> opts { outtypes = x }
-    Recurse    -> opts { recurse = True }    
+    Recurse    -> opts { recurse = True }
     Specs x    -> opts { specNames = x }
+    Trans x    -> opts { transNames = x }
     Raw x      -> opts { rawopts = x }
     Verbose x  -> opts { verbose = x }
     DefaultLogic x -> opts { defLogic = x }
@@ -154,6 +158,7 @@ defaultHetcatsOpts =
           , gui      = Not
           , infiles  = []
           , specNames = []
+          , transNames = []
           , intype   = GuessIn
           , libdir   = ""
           , outdir   = ""
@@ -180,6 +185,7 @@ data Flag = Verbose  Int
           | OutDir   FilePath
           | OutTypes [OutType]
           | Specs    [SIMPLE_ID]
+          | Trans    [SIMPLE_ID]
           | Raw      [RawOpt]
           | CASLAmalg [CASLAmalgOpt]
 
@@ -241,7 +247,7 @@ data SPFType = ConsistencyCheck | OnlyAxioms
 
 instance Show SPFType where
     show x = case x of
-             ConsistencyCheck -> cS 
+             ConsistencyCheck -> cS
              OnlyAxioms  -> ""
 
 spfTypes :: [SPFType]
@@ -415,6 +421,10 @@ options =
       "output also imported libraries"
     , Option ['n'] [specS] (ReqArg parseSpecOpts "NSPECS")
       ("process specs option " ++ crS ++ listS ++ " SIMPLE-ID")
+    , Option ['t'] [transS] (ReqArg parseTransOpt "TRANS")
+      ("translation option " ++ crS ++
+          "is a colon-separated list without blanks" ++
+          crS ++ "of one or more from: SIMPLE-ID")
     , Option ['r'] [rawS] (ReqArg parseRawOpts "RAW")
       ("raw options for pretty printing" ++ crS ++ "RAW is "
        ++ joinBar [asciiS, textS, latexS, texS]
@@ -531,6 +541,10 @@ parseOutTypes str = case reads $ bracket str of
 -- | 'parseSpecOpts' parses a 'Specs' Flag from user input
 parseSpecOpts :: String -> Flag
 parseSpecOpts s = Specs $ map mkSimpleId $ splitOn ',' s
+
+-- | 'parseSpecOpts' parses a 'Specs' Flag from user input
+parseTransOpt :: String -> Flag
+parseTransOpt s = Trans $ map mkSimpleId $ splitOn ':' s
 
 -- | 'parseRawOpts' parses a 'Raw' Flag from user input
 parseRawOpts :: String -> Flag
