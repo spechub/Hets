@@ -7,7 +7,7 @@ Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Coding out subsorting, lifted tot eh level of CoCASL 
+Coding out subsorting, lifted tot eh level of CoCASL
 -}
 
 module Comorphisms.CoCASL2CoPCFOL where
@@ -21,7 +21,7 @@ import Common.AS_Annotation
 import CoCASL.Logic_CoCASL
 import CoCASL.AS_CoCASL
 import CoCASL.StatAna
-import qualified CoCASL.Sublogic
+import qualified CoCASL.Sublogic as SL
 import CASL.AS_Basic_CASL
 import CASL.Morphism
 import CASL.Sublogic
@@ -36,48 +36,31 @@ data CoCASL2CoPCFOL = CoCASL2CoPCFOL deriving (Show)
 instance Language CoCASL2CoPCFOL -- default definition is okay
 
 instance Comorphism CoCASL2CoPCFOL
-               CoCASL CoCASL.Sublogic.CoCASL_Sublogics
+               CoCASL SL.CoCASL_Sublogics
                C_BASIC_SPEC CoCASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
-               CSign 
+               CSign
                CoCASLMor
                CASL.Morphism.Symbol CASL.Morphism.RawSymbol ()
-               CoCASL CoCASL.Sublogic.CoCASL_Sublogics
+               CoCASL SL.CoCASL_Sublogics
                C_BASIC_SPEC CoCASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
-               CSign 
+               CSign
                CoCASLMor
                CASL.Morphism.Symbol CASL.Morphism.RawSymbol () where
     sourceLogic CoCASL2CoPCFOL = CoCASL
-    sourceSublogic CoCASL2CoPCFOL = 
-      CoCASL.Sublogic.CoCASL_SL 
-          { CoCASL.Sublogic.has_co = True,
-            CoCASL.Sublogic.casl = 
-             CASL_SL  { sub_features = Sub, 
-                        has_part = True, 
-                        cons_features = SortGen { emptyMapping = False,
-                                                  onlyInjConstrs = False},
-                        has_eq = True,
-                        has_pred = True,
-                        which_logic = FOL
-                      }
-          } 
+    sourceSublogic CoCASL2CoPCFOL = SL.top
     targetLogic CoCASL2CoPCFOL = CoCASL
-    targetSublogic CoCASL2CoPCFOL = 
-      CoCASL.Sublogic.CoCASL_SL 
-          { CoCASL.Sublogic.has_co = True,
-            CoCASL.Sublogic.casl = 
-             CASL_SL  { sub_features = NoSub,  -- subsorting is coded out
-                        has_part = True, 
-                        cons_features = SortGen { emptyMapping = False,
-                                                  onlyInjConstrs = False},
-                        has_eq = True,
-                        has_pred = True,
-                        which_logic = FOL
-                      }
-          } 
-    map_theory CoCASL2CoPCFOL = mkTheoryMapping ( \ sig -> 
-      let e = encodeSig sig in return (e, monotonicities sig ++ map (mapNamed mapSen) (generateAxioms sig)))
+    mapSublogic CoCASL2CoPCFOL sl = sl
+          { SL.casl = sublogics_max need_horn (SL.casl sl)
+            { sub_features = NoSub  -- subsorting is coded out
+            , has_part = True
+            , has_eq = True
+            }
+          }
+    map_theory CoCASL2CoPCFOL = mkTheoryMapping ( \ sig ->
+      let e = encodeSig sig in return (e, monotonicities sig
+                ++ map (mapNamed mapSen) (generateAxioms sig)))
       (map_sentence CoCASL2CoPCFOL)
-    map_morphism CoCASL2CoPCFOL mor = return 
+    map_morphism CoCASL2CoPCFOL mor = return
       (mor  { msource =  encodeSig $ msource mor,
               mtarget =  encodeSig $ mtarget mor })
       -- other components need not to be adapted!
@@ -85,7 +68,7 @@ instance Comorphism CoCASL2CoPCFOL
     map_symbol CoCASL2CoPCFOL = Set.singleton . id
 
 cf2CFormula :: FORMULA C_FORMULA -> FORMULA C_FORMULA
-cf2CFormula = projFormula Partial projC_Formula . injFormula injC_Formula 
+cf2CFormula = projFormula Partial projC_Formula . injFormula injC_Formula
 
 projC_Formula, injC_Formula :: C_FORMULA -> C_FORMULA
 projC_Formula = foldC_Formula (projRecord Partial projC_Formula) mapCoRecord

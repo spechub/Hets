@@ -79,15 +79,12 @@ instance Comorphism CFOL2IsabelleHOL
                         which_logic = FOL
                       }
     targetLogic _ = Isabelle
-    targetSublogic _ = ()
+    mapSublogic _ _ = ()
     map_theory _ = transTheory sigTrCASL formTrCASL
-    map_morphism CFOL2IsabelleHOL mor = do
-       (sig1,_) <- map_sign CFOL2IsabelleHOL (Logic.dom CASL mor)
-       (sig2,_) <- map_sign CFOL2IsabelleHOL (cod CASL mor)
-       inclusion Isabelle sig1 sig2
+    map_morphism = mapDefaultMorphism
     map_sentence _ sign =
       return . mapSen formTrCASL sign
-    map_symbol _ _ = error "CASL2Isabelle.map_symbol"
+    map_symbol = errMapSymbol
 
 ---------------------------- Signature -----------------------------
 baseSign :: BaseSig
@@ -326,7 +323,7 @@ transPRED_SYMB sign (Qual_pred_name p pt@(Pred_type args _) _) = let
   ga = globAnnos sign
   l = length args in
   case (do pts <- Map.lookup p (predMap sign)
-           if Set.isSingleton pts 
+           if Set.isSingleton pts
              then return $ mkIsaConstT True ga l p baseSign
              else do
                    i <- elemIndex (toPredType pt) (Set.toList pts)

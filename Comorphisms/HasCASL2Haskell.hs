@@ -55,13 +55,10 @@ instance Comorphism HasCASL2Haskell
     sourceLogic HasCASL2Haskell = HasCASL
     sourceSublogic HasCASL2Haskell = noSubtypes
     targetLogic HasCASL2Haskell = Haskell
-    targetSublogic HasCASL2Haskell = ()
-    map_morphism HasCASL2Haskell mor = do
-       (sig1,_) <- map_sign HasCASL2Haskell (dom HasCASL mor)
-       (sig2,_) <- map_sign HasCASL2Haskell (cod HasCASL mor)
-       inclusion Haskell sig1 sig2
+    mapSublogic HasCASL2Haskell _ = ()
+    map_morphism = mapDefaultMorphism
     map_sentence HasCASL2Haskell = mapSingleSentence
-    map_symbol HasCASL2Haskell _ = error "HasCASL2Haskell.map_symbol"
+    map_symbol = errMapSymbol
     map_theory HasCASL2Haskell = mapTheory
 
 -- former FromHasCASL file
@@ -190,7 +187,7 @@ translateAltDefn env dt args rk im (Construct muid origTs p _) =
     let ts = map (mapType im) origTs in
     case muid of
     Just uid -> let loc = toProgPos $ posOfId uid
-                    sc = TypeScheme args (createConstrType dt args rk p ts) 
+                    sc = TypeScheme args (createConstrType dt args rk p ts)
                          nullRange
                     -- resolve overloading
                     (c, ui) = translateId env uid sc

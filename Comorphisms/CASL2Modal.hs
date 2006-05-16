@@ -18,7 +18,7 @@ import Logic.Comorphism
 import qualified Common.Lib.Set as Set
 
 -- CASL
-import CASL.Logic_CASL 
+import CASL.Logic_CASL
 import CASL.Sublogic
 import CASL.Sign
 import CASL.AS_Basic_CASL
@@ -37,17 +37,17 @@ instance Language CASL2Modal -- default definition is okay
 instance Comorphism CASL2Modal
                CASL CASL_Sublogics
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
-               CASLSign 
+               CASLSign
                CASLMor
                Symbol RawSymbol ()
                Modal ()
                M_BASIC_SPEC ModalFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
-               MSign 
+               MSign
                ModalMor
                Symbol RawSymbol () where
     sourceLogic CASL2Modal = CASL
     sourceSublogic CASL2Modal = CASL_SL
-                      { sub_features = Sub, 
+                      { sub_features = Sub,
                         has_part = True,
                         cons_features = SortGen { emptyMapping = False,
                                                   onlyInjConstrs = False},
@@ -56,14 +56,14 @@ instance Comorphism CASL2Modal
                         which_logic = FOL
                       }
     targetLogic CASL2Modal = Modal
-    targetSublogic CASL2Modal = ()
+    mapSublogic CASL2Modal _ = ()
     map_theory CASL2Modal = return . simpleTheoryMapping mapSig mapSen
     map_morphism CASL2Modal = return . mapMor
     map_sentence CASL2Modal _ = return . mapSen
     map_symbol CASL2Modal = Set.singleton . mapSym
 
 mapSig :: CASLSign -> MSign
-mapSig sign = 
+mapSig sign =
      (emptySign emptyModalSign) {sortSet = sortSet sign
                , sortRel = sortRel sign
                , opMap = opMap sign
@@ -84,23 +84,23 @@ mapSym = id  -- needs to be changed once modal symbols are added
 
 
 mapSen :: CASLFORMULA -> ModalFORMULA
-mapSen f = case f of 
+mapSen f = case f of
     Quantification q vs frm ps ->
         Quantification q vs (mapSen frm) ps
-    Conjunction fs ps -> 
-        Conjunction (map mapSen fs) ps 
-    Disjunction fs ps -> 
+    Conjunction fs ps ->
+        Conjunction (map mapSen fs) ps
+    Disjunction fs ps ->
         Disjunction (map mapSen fs) ps
     Implication f1 f2 b ps ->
         Implication (mapSen f1) (mapSen f2) b ps
-    Equivalence f1 f2 ps -> 
+    Equivalence f1 f2 ps ->
         Equivalence (mapSen f1) (mapSen f2) ps
     Negation frm ps -> Negation (mapSen frm) ps
     True_atom ps -> True_atom ps
     False_atom ps -> False_atom ps
-    Existl_equation t1 t2 ps -> 
+    Existl_equation t1 t2 ps ->
         Existl_equation (mapTERM t1) (mapTERM t2) ps
-    Strong_equation t1 t2 ps -> 
+    Strong_equation t1 t2 ps ->
         Strong_equation (mapTERM t1) (mapTERM t2) ps
     Predication pn as qs ->
         Predication pn (map mapTERM as) qs
@@ -113,8 +113,8 @@ mapTERM :: TERM () -> TERM M_FORMULA
 mapTERM t = case t of
     Qual_var v ty ps -> Qual_var v ty ps
     Application opsym as qs  -> Application opsym (map mapTERM as) qs
-    Sorted_term trm ty ps -> Sorted_term (mapTERM trm) ty ps 
-    Cast trm ty ps -> Cast (mapTERM trm) ty ps 
-    Conditional t1 f t2 ps -> 
+    Sorted_term trm ty ps -> Sorted_term (mapTERM trm) ty ps
+    Cast trm ty ps -> Cast (mapTERM trm) ty ps
+    Conditional t1 f t2 ps ->
        Conditional (mapTERM t1) (mapSen f) (mapTERM t2) ps
     _ -> error "CASL2Modal.mapTERM"

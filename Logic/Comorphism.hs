@@ -49,15 +49,11 @@ class (Language cid,
   where
     -- source and target logic and sublogic
     -- the source sublogic is the maximal one for which the comorphism works
-    -- the target sublogic is the resulting one
     sourceLogic :: cid -> lid1
     sourceSublogic :: cid -> sublogics1
     targetLogic :: cid -> lid2
-    targetSublogic :: cid -> sublogics2
     -- finer information of target sublogics corresponding to source sublogics
     mapSublogic :: cid -> sublogics1 -> sublogics2
-    -- default implementation
-    mapSublogic cid _ = targetSublogic cid
     -- the translation functions are partial
     -- because the target may be a sublanguage
     -- map_basic_spec :: cid -> basic_spec1 -> Result basic_spec2
@@ -74,6 +70,14 @@ class (Language cid,
     -- default implementation
     constituents cid = [language_name cid]
 
+targetSublogic :: Comorphism cid
+            lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
+            lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
+                sign2 morphism2 symbol2 raw_symbol2 proof_tree2
+         => cid -> sublogics2
+targetSublogic cid = mapSublogic cid $ sourceSublogic cid
+
 map_sign :: Comorphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
@@ -81,6 +85,35 @@ map_sign :: Comorphism cid
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2
          => cid -> sign1 -> Result (sign2,[Named sentence2])
 map_sign cid sign = map_theory cid (sign,[])
+
+mapDefaultMorphism :: Comorphism cid
+            lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
+            lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
+                sign2 morphism2 symbol2 raw_symbol2 proof_tree2
+         => cid -> morphism1 -> Result morphism2
+mapDefaultMorphism cid mor = do
+  let src = sourceLogic cid
+  (sig1, _) <- map_sign cid $ dom src mor
+  (sig2, _) <- map_sign cid $ cod src mor
+  inclusion (targetLogic cid) sig1 sig2
+
+failMapSentence :: Comorphism cid
+            lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
+            lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
+                sign2 morphism2 symbol2 raw_symbol2 proof_tree2
+         => cid -> sign1 -> sentence1 -> Result sentence2
+failMapSentence cid _ _ =
+    fail $ "Unsupported sentence translation " ++ show cid
+
+errMapSymbol :: Comorphism cid
+            lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
+            lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
+                sign2 morphism2 symbol2 raw_symbol2 proof_tree2
+         => cid -> symbol1 -> Set.Set symbol2
+errMapSymbol cid _ = error $ "no symbol mapping for " ++ show cid
 
 wrapMapTheory ::  Comorphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -154,7 +187,6 @@ instance Logic lid sublogics
            sourceLogic (IdComorphism lid _sub) = lid
            targetLogic (IdComorphism lid _sub) = lid
            sourceSublogic (IdComorphism _lid sub) = sub
-           targetSublogic (IdComorphism _lid sub) = sub
            mapSublogic _ = id
            map_theory _ = return
            map_morphism _ = return
@@ -191,10 +223,6 @@ instance (Comorphism cid1
      targetLogic cid2
    sourceSublogic (CompComorphism cid1 _) =
      sourceSublogic cid1
-   targetSublogic (CompComorphism cid1 cid2) =
-     mapSublogic cid2
-      (coerceSublogic (targetLogic cid1) (sourceLogic cid2)
-        (targetSublogic cid1))
    mapSublogic (CompComorphism cid1 cid2) =
      mapSublogic cid2
      . coerceSublogic (targetLogic cid1) (sourceLogic cid2)

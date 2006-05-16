@@ -18,7 +18,7 @@ import Logic.Comorphism
 import qualified Common.Lib.Set as Set
 
 -- CASL
-import CASL.Logic_CASL 
+import CASL.Logic_CASL
 import CASL.Sublogic
 import CASL.Sign
 import CASL.AS_Basic_CASL
@@ -40,17 +40,17 @@ instance Language CASL2CoCASL -- default definition is okay
 instance Comorphism CASL2CoCASL
                CASL CASL_Sublogics
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
-               CASLSign 
+               CASLSign
                CASLMor
                Symbol RawSymbol ()
                CoCASL CoCASL.Sublogic.CoCASL_Sublogics
                C_BASIC_SPEC CoCASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
-               CSign 
+               CSign
                CoCASLMor
                Symbol RawSymbol () where
     sourceLogic CASL2CoCASL = CASL
     sourceSublogic CASL2CoCASL = CASL_SL
-                      { sub_features = Sub, 
+                      { sub_features = Sub,
                         has_part = True,
                         cons_features = SortGen { emptyMapping = False,
                                                   onlyInjConstrs = False},
@@ -59,17 +59,17 @@ instance Comorphism CASL2CoCASL
                         which_logic = FOL
                       }
     targetLogic CASL2CoCASL = CoCASL
-    targetSublogic CASL2CoCASL = 
-        CoCASL.Sublogic.CoCASL_SL 
-          { CoCASL.Sublogic.has_co = False, 
-            CoCASL.Sublogic.casl = CASL.Sublogic.top }
+    mapSublogic CASL2CoCASL s =
+        CoCASL.Sublogic.CoCASL_SL
+          { CoCASL.Sublogic.has_co = False,
+            CoCASL.Sublogic.casl = s }
     map_theory CASL2CoCASL = return . simpleTheoryMapping mapSig mapSen
     map_morphism CASL2CoCASL = return . mapMor
     map_sentence CASL2CoCASL _ = return . mapSen
     map_symbol CASL2CoCASL = Set.singleton . mapSym
 
 mapSig :: CASLSign -> CSign
-mapSig sign = 
+mapSig sign =
      (emptySign emptyCoCASLSign) {sortSet = sortSet sign
                , sortRel = sortRel sign
                , opMap = opMap sign

@@ -26,7 +26,7 @@ import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Morphism
-import CASL.Sublogic hiding(bottom)
+import CASL.Sublogic as SL hiding(bottom)
 import CASL.Overload
 import CASL.Fold
 import CASL.Project
@@ -50,29 +50,13 @@ instance Comorphism CASL2SubCFOL
                CASLMor
                Symbol RawSymbol () where
     sourceLogic CASL2SubCFOL = CASL
-    sourceSublogic CASL2SubCFOL = CASL_SL
-                      { sub_features = Sub,
-                        has_part = True,
-                        cons_features = SortGen { emptyMapping = False,
-                                                  onlyInjConstrs = False},
-                        has_eq = True,
-                        has_pred = True,
-                        which_logic = FOL
-                      }
+    sourceSublogic CASL2SubCFOL = SL.top
     targetLogic CASL2SubCFOL = CASL
-    targetSublogic CASL2SubCFOL = CASL_SL
-                      { sub_features = Sub,
-                        has_part = False,  -- partiality is coded out
-                        cons_features = SortGen { emptyMapping = False,
-                                                  onlyInjConstrs = False},
-                        has_eq = True,
-                        has_pred = True,
-                        which_logic = FOL
-                      }
-    mapSublogic CASL2SubCFOL sl = sl { has_part    = False
-                                     , has_pred    = True
-                                     , which_logic = FOL
-                                     , has_eq      = True}
+    mapSublogic CASL2SubCFOL sl = if has_part sl then sl
+        { has_part    = False -- partiality is coded out
+        , has_pred    = True
+        , which_logic = max Horn $ which_logic sl
+        , has_eq      = True} else sl
     map_theory CASL2SubCFOL = mkTheoryMapping ( \ sig ->
       let e = encodeSig sig in return (e, generateAxioms sig))
       (map_sentence CASL2SubCFOL)

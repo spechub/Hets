@@ -50,19 +50,16 @@ instance Comorphism HasCASL2IsabelleHOL
     sourceLogic HasCASL2IsabelleHOL = HasCASL
     sourceSublogic HasCASL2IsabelleHOL = sublogic_min noSubtypes noClasses
     targetLogic HasCASL2IsabelleHOL = Isabelle
-    targetSublogic HasCASL2IsabelleHOL = ()
+    mapSublogic HasCASL2IsabelleHOL _ = ()
     map_theory HasCASL2IsabelleHOL = mkTheoryMapping transSignature
                    (map_sentence HasCASL2IsabelleHOL)
-    map_morphism HasCASL2IsabelleHOL mor = do
-       (sig1,_) <- map_sign HasCASL2IsabelleHOL (Logic.dom HasCASL mor)
-       (sig2,_) <- map_sign HasCASL2IsabelleHOL (cod HasCASL mor)
-       inclusion Isabelle sig1 sig2
+    map_morphism = mapDefaultMorphism
     map_sentence HasCASL2IsabelleHOL sign phi =
        case transSentence sign phi of
          Nothing   -> warning (mkSen true)
                            "translation of sentence not implemented" nullRange
          Just (ts) -> return $ mkSen ts
-    map_symbol HasCASL2IsabelleHOL _ = error "HasCASL2IsabelleHOL.map_symbol"
+    map_symbol = errMapSymbol
 
 -- * Signature
 baseSign :: BaseSig

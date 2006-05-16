@@ -61,7 +61,17 @@ instance Comorphism CASL2HasCASL
                         CasSub.which_logic = CasSub.FOL
                       }
     targetLogic CASL2HasCASL = HasCASL
-    targetSublogic CASL2HasCASL = caslLogic
+    mapSublogic CASL2HasCASL sl = caslLogic
+        { HasSub.has_sub = CasSub.has_sub sl
+        , HasSub.has_part = CasSub.has_part sl
+        , HasSub.has_eq = CasSub.has_eq sl
+        , HasSub.has_pred = CasSub.has_pred sl
+        , HasSub.which_logic = case CasSub.which_logic sl of
+             CasSub.Atomic -> HasSub.Atomic
+             CasSub.Horn -> HasSub.Horn
+             CasSub.GHorn -> HasSub.GHorn
+             CasSub.FOL -> HasSub.FOL
+        }
     map_morphism CASL2HasCASL = return . mapMor
     map_sentence CASL2HasCASL sig = return . toSentence sig
     map_symbol CASL2HasCASL = Set.singleton . mapSym
