@@ -30,6 +30,7 @@ module OMDoc.OMDocOutput
     ,libEnvToDGraphG
     ,linkTypeToString
     ,xmlTagLibEnv
+    ,createXmlNameMap
   )
   where
 
@@ -239,21 +240,171 @@ correctXmlNames::
     ASL.LIB_NAME
     (Map.Map
       (XmlNamed Hets.NODE_NAMEWO)
-      (XmlNamedWONSorts, XmlNamedWONRels, XmlNamedWONPreds, XmlNamedWONOps)
+      (XmlNamedWONSorts, XmlNamedWONPreds, XmlNamedWONOps)
     )
   ->
     (Map.Map -- possible wrong-named mapping
       (XmlNamed Hets.NODE_NAMEWO)
-      (XmlNamedWONSorts, XmlNamedWONRels, XmlNamedWONPreds, XmlNamedWONOps)
+      (XmlNamedWONSorts, XmlNamedWONPreds, XmlNamedWONOps)
     )
   -> -- imports from mappings
     [(ASL.LIB_NAME, NODE_NAME, XmlNamed Hets.NODE_NAMEWO)]
   -> -- currected mapping
     (Map.Map
       (XmlNamed Hets.NODE_NAMEWO)
-      (XmlNamedWONSorts, XmlNamedWONRels, XmlNamedWONPreds, XmlNamedWONOps)
+      (XmlNamedWONSorts, XmlNamedWONPreds, XmlNamedWONOps)
     )
-correctXmlNames _ _ _ = undefined
+correctXmlNames cm wm im =
+  foldl
+    (\pwm (ln, nn, xnnnwo) ->
+      let
+        cmap = case Map.lookup ln cm of
+          Nothing -> error ("Cannot process import from unprocessed DG!")
+          (Just x) -> x
+      in
+        pwm
+    )
+    wm
+    im
+
+createXmlNameMap::
+  Static.DevGraph.DGraph
+  ->
+    (Map.Map
+      (XmlNamed Hets.NODE_NAMEWO)
+      (Set.Set XmlNamedWONSORT, Map.Map XmlNamedWONId PredType, Map.Map XmlNamedWONId OpType)
+    )
+createXmlNameMap dg =
+  let
+    (onlynodenameset, onlyrefnameset) =
+      Hets.getNodeDGNamesNodeRef dg
+    (onlynodexmlnamelist, xmlnames_onxnl) =
+      createXmlNames
+        nodeTupelToNodeName
+        []
+        (Set.toList onlynodenameset)
+    (onlyrefxmlnamelist, xmlnames_orxnl) =
+      createXmlNames
+        nodeTupelToNodeName
+        xmlnames_onxnl
+        (Set.toList onlyrefnameset)
+    nodexmlnameset = Set.fromList (onlynodexmlnamelist ++ onlyrefxmlnamelist)
+    sortswomap = Hets.getSortsWOWithNodeDGNamesWO dg
+    predswomap = Map.map mapToSetToTupelList $ Hets.getPredMapsWOWithNodeDGNamesWO dg
+    opswomap = Map.map mapToSetToTupelList $ Hets.getOpMapsWOWithNodeDGNamesWO dg
+    -- sorts
+    -- processSubContents was not build for this, so this is a bit clumsy...
+    (xmlnamedsortswomap, _) =
+      processSubContents 
+        (\_ kswol ->
+          (
+            map
+              (\(k, swo) ->
+                (k, XmlNamed
+                      swo
+                      (createUniqueName
+                        xmlnames_orxnl
+                        (adjustStringForXmlName $ show $ Hets.woItem swo)
+                      )
+                )
+              )
+              kswol
+            , undefined
+          )
+        )
+        undefined
+        sortswomap
+    -- predicates
+    (xmlnamedpredswomap, _) =
+      processSubContents
+        (\_ kpwol ->
+          (
+            map
+              (\(k, (pidwo, pset)) ->
+                (k,
+                  (XmlNamed
+                      pidwo
+                      (createUniqueName
+                        xmlnames_orxnl
+                        (adjustStringForXmlName $ show $ Hets.woItem pidwo)
+                      )
+                    , pset
+                  )
+                )
+              )
+              kpwol
+            , undefined
+          )
+        )
+        undefined
+        predswomap
+    -- operators
+    (xmlnamedopswomap, _) =
+      processSubContents
+        (\_ kowol ->
+          (
+            map
+              (\(k, (oidwo, oset)) ->
+                (k,
+                  (XmlNamed
+                      oidwo
+                      (createUniqueName
+                        xmlnames_orxnl
+                        (adjustStringForXmlName $ show $ Hets.woItem oidwo)
+                      )
+                    , oset
+                  )
+                )
+              )
+              kowol
+            , undefined
+          )
+        )
+        undefined
+        opswomap
+    xnwonames =
+      map
+        (\xn ->
+          let
+            (nnum, nnam) = xnItem xn
+          in
+            XmlNamed (Hets.mkWON nnam nnum) (xnName xn)
+        )
+        (Set.toList nodexmlnameset)
+        
+  in
+    Map.fromList $
+      map
+        (\nx ->
+          let
+            sorts = case Map.lookup (xnItem nx) xmlnamedsortswomap of
+              Nothing -> Set.empty
+              (Just s) -> s
+            preds = case Map.lookup (xnItem nx) xmlnamedpredswomap of
+              Nothing -> Map.empty
+              (Just p) -> Map.fromList p
+            ops = case Map.lookup (xnItem nx) xmlnamedopswomap of
+              Nothing -> Map.empty
+              (Just o) -> Map.fromList o
+          in
+            (nx, (sorts, preds, ops))
+        )
+        xnwonames
+  where
+  nodeTupelToNodeName::(a, NODE_NAME)->String
+  nodeTupelToNodeName = nodeToNodeName . snd
+  nodeToNodeName::NODE_NAME->String
+  nodeToNodeName =
+    (\nn ->
+      let
+        nodename = showName nn
+      in
+        if (length nodename) == 0
+          then
+            "AnonNode_"
+          else
+            nodename
+    )
 
 -- renaming should be done by 1) create names/origins for DGs but remember where
 -- imports occured and 2) correct xml-names via import-information (and 
@@ -265,7 +416,7 @@ xmlTagLibEnv::
       ASL.LIB_NAME
       (Map.Map
         (XmlNamed Hets.NODE_NAMEWO)
-        (XmlNamedWONSorts, XmlNamedWONRels, XmlNamedWONPreds, XmlNamedWONOps)
+        (Set.Set XmlNamedWONSORT, Map.Map XmlNamedWONId PredType, Map.Map XmlNamedWONId OpType)
       )
 xmlTagLibEnv go libenv =
   let
@@ -287,12 +438,21 @@ xmlTagLibEnv go libenv =
         )
         ([],[])
         libnames
+    basicNameMap =
+      foldl
+        (\bNM ln ->
+         case Map.lookup ln libenv of
+          Nothing -> error ("No GlobalContext for \"" ++ show ln ++ "\"!")
+          (Just gc) ->
+            let
+              dg = Static.DevGraph.devGraph gc
+            in
+              Map.insert ln (createXmlNameMap dg) bNM
+        )
+        Map.empty
+        libnames
   in
-    Debug.Trace.trace
-      (
-        "WNR : " ++ (show libsWithNoRefs) ++ " , WR : " ++ (show libsWithRefs)
-      )
-      Map.empty
+    basicNameMap
 
 
 {- |
@@ -2276,7 +2436,7 @@ createIdFromPresentation t =
   in
     read idString
 -}
- 
+
 uniqueXmlNamesContainerWONExt::(Container c i, Container d j, Eq a)=>
   XmlNameList
   -> (a->String) -- ^ how to find an initial name for a converted item
