@@ -634,7 +634,7 @@ data G_theory = forall lid sublogics
         Logic lid sublogics
          basic_spec sentence symb_items symb_map_items
           sign morphism symbol raw_symbol proof_tree =>
-  G_theory lid sign (ThSens sentence (AnyComorphism,BasicProof))
+  G_theory lid sign (ThSens sentence (AnyComorphism, BasicProof))
 
 coerceThSens ::
    (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -675,6 +675,14 @@ sublogicOfTh (G_theory lid sigma sens) =
 simplifyTh :: G_theory -> G_theory
 simplifyTh (G_theory lid sigma sens) = G_theory lid sigma $
       OMap.map (mapValue $ simplify_sen lid sigma) sens
+
+-- | apply a comorphism to a theory
+mapG_theory :: AnyComorphism -> G_theory -> Result G_theory
+mapG_theory (Comorphism cid) (G_theory lid sign sens) = do
+  bTh <- coerceBasicTheory lid (sourceLogic cid)
+                    "mapG_theory" (sign, toNamedList sens)
+  (sign', sens') <- wrapMapTheory cid bTh
+  return $ G_theory (targetLogic cid) sign' $ toThSens sens'
 
 -- | Translation of a G_theory along a GMorphism
 translateG_theory :: GMorphism -> G_theory -> Result G_theory
