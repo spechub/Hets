@@ -30,6 +30,7 @@ import Logic.Prover
 import Common.ProofUtils
 import Isabelle.IsaPrint
 import Isabelle.Translate
+import Isabelle.Logic_Isabelle
 
 import CASL.Logic_CASL
 import HasCASL.Logic_HasCASL
@@ -61,9 +62,12 @@ printTheory libdir ln sn (G_theory lid sign0 sens0) =
                     r4 = do
                       th0 <- coerceBasicTheory lid HasCASL "" th
                       wrapMapTheory HasCASL2IsabelleHOL th0
+                    r5 = coerceBasicTheory lid Isabelle "" th
                     r3 = case maybeResult r1 of
                          Nothing -> case maybeResult r2 of
-                             Nothing -> r4
+                             Nothing -> case maybeResult r4 of
+                                 Nothing -> r5
+                                 _ -> r4
                              _ -> r2
                          _ -> r1
                 in case maybeResult r3 of
