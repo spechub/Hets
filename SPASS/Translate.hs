@@ -8,7 +8,7 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  portable
 
- collection of functions used by Comorphisms.CASL2SPASS and SPASS.Prove
+collection of functions used by Comorphisms.CASL2SPASS and SPASS.Prove
  for the translation of CASL identifiers and axiom labels into
  valid SPASS identifiers 
 -}
@@ -47,14 +47,14 @@ transSenName = transId CSort . simpleIdToId . mkSimpleId
 
 transId :: CType -> Id -> SPIdentifier
 transId t iden 
-    | checkIdentifier t str = changeFirstChar $ substDigits $
+    | checkIdentifier t str = 
                             if Set.member str reservedWords 
-                            then "X_"++str
+                            then changeFirstChar $ "X_"++str
                             else str
     | otherwise = changeFirstChar $ 
-                  substDigits $ concatMap transToSPChar $ 
+                  concatMap transToSPChar $ 
                   addChar str
-    where str = show iden
+    where str = changeFirstChar $ substDigits $ show iden
           addChar s =
               case s of
               "" -> error "SPASS.Translate.transId: empty string not allowed"
