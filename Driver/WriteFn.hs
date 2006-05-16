@@ -20,6 +20,7 @@ import Data.List
 
 import Text.PrettyPrint.HughesPJ(render)
 import Common.Utils
+import Common.Id
 import Common.Lexer
 import Common.PrettyPrint
 import Common.Result
@@ -32,6 +33,8 @@ import Common.ATerm.Lib
 import Common.ATerm.ReadWrite
 
 import Logic.Coerce
+import Logic.Grothendieck
+import Comorphisms.LogicGraph
 
 import Syntax.Print_HetCASL
 import Syntax.AS_Library (LIB_DEFN(), LIB_NAME())
@@ -64,7 +67,7 @@ import OMDoc.OMDocOutput
 
 -- | compute the prefix for files to be written out
 getFilePrefix :: HetcatsOpts -> FilePath -> (FilePath, FilePath)
-getFilePrefix opt file = 
+getFilePrefix opt file =
     let odir' = outdir opt
         (base, path, _) = fileparse (envSuffix : downloadExtensions) file
         odir = if null odir' then path else odir'
@@ -153,31 +156,43 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
         filePrefix = snd $ getFilePrefix opt file
         outTypes = outtypes opt
         allSpecs = null ns
-    mapM_ ( \ ot -> let f = filePrefix ++ "." ++ show ot in 
+    mapM_ ( \ ot -> let f = filePrefix ++ "." ++ show ot in
         case ot of
-          Prf -> do 
+          Prf -> do
               str <- toShATermString (ln, lookupHistory ln lenv)
               writeVerbFile opt f str
           OmdocOut ->
             devGraphToOMDoc opt (ln, lenv) f
           GraphOut Dot ->
-            writeVerbFile opt f . concat . dot . devGraph $ 
+            writeVerbFile opt f . concat . dot . devGraph $
                           lookupGlobalContext ln lenv
           _ -> return () -- treat others below
           ) outTypes
     mapM_ ( \ i -> case Map.lookup i gctx of
         Just (SpecEntry (_,_,_, NodeSig n _)) ->
-            case computeTheory lenv ln n of
-              Result ds Nothing -> do 
-                 putIfVerbose opt 0 $ "could not compute theory of spec " 
+         case computeTheory lenv ln n of
+          Result ds Nothing -> do
+                 putIfVerbose opt 0 $ "could not compute theory of spec "
                                   ++ show i
                  putIfVerbose opt 0 $ unlines $ map show ds
-              Result _ (Just raw_gTh) ->
-               case theoremsToAxioms raw_gTh of
+          Result _ (Just raw_gTh0) -> do
+            let tr = transNames opt
+                resTh = if null tr then return (raw_gTh0, "") else do
+                   comor <- lookupCompComorphism (map tokStr tr) logicGraph
+                   tTh <- mapG_theory comor raw_gTh0
+                   return (tTh, show comor)
+            case resTh of
+             Result es Nothing -> do
+                   putIfVerbose opt 0 "could not translate theory"
+                   putIfVerbose opt 0 $ unlines $ map show es
+             Result _ (Just (raw_gTh, tStr)) ->
+              case theoremsToAxioms raw_gTh of
                 gTh@(G_theory lid sign0 sens0) -> do
+                  putIfVerbose opt 2 $ "Translated using comorphism '" ++
+                               tStr ++ "'"
                   putIfVerbose opt 4 $ "Sublogic of " ++ show i ++ ": " ++
                           (show $ sublogicOfTh gTh)
-                  mapM_ ( \ ot -> 
+                  mapM_ ( \ ot ->
                      let f = filePrefix ++ "_" ++ show i ++ "." ++ show ot
                      in case ot of
                       ThyFile -> case printTheory (libdir opt) ln i gTh of
@@ -214,7 +229,7 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
                                     Nothing -> putIfVerbose opt 0 $
                                         "could not translate to Haskell " ++
                                          show i
-                                    Just d -> 
+                                    Just d ->
                                         writeVerbFile opt f $ shows d "\n"
 #endif
 #ifdef UNI_PACKAGE
