@@ -341,28 +341,26 @@ instance Eq AnyMorphism where
   Morphism cid1 == Morphism cid2 =
      constituents cid1 == constituents cid2
   -- need to be refined, using morphism translations !!!
-
+-}
 
 instance Show AnyMorphism where
   show (Morphism cid) =
     language_name cid
-    ++" : "++language_name (sourceLogic cid)
-    ++" -> "++language_name (targetLogic cid)
--}
+    ++" : "++language_name (morSourceLogic cid)
+    ++" -> "++language_name (morTargetLogic cid)
 
 tyconAnyMorphism :: TyCon
 tyconAnyMorphism = mkTyCon "Logic.Grothendieck.AnyMorphism"
 instance Typeable AnyMorphism where
   typeOf _ = mkTyConApp tyconAnyMorphism []
 
-
 -- | Logic graph
-data LogicGraph = LogicGraph {
-                    logics :: Map.Map String AnyLogic,
-                    comorphisms :: Map.Map String AnyComorphism,
-                    inclusions :: Map.Map (String,String) AnyComorphism,
-                    unions :: Map.Map (String,String) (AnyComorphism,AnyComorphism)
-                  }
+data LogicGraph = LogicGraph
+    { logics :: Map.Map String AnyLogic
+    , comorphisms :: Map.Map String AnyComorphism
+    , inclusions :: Map.Map (String,String) AnyComorphism
+    , unions :: Map.Map (String, String) (AnyComorphism, AnyComorphism)
+    }
 
 emptyLogicGraph :: LogicGraph
 emptyLogicGraph = LogicGraph Map.empty Map.empty Map.empty Map.empty
@@ -376,7 +374,8 @@ lookupLogic error_prefix logname logicGraph =
     Just lid -> return lid
 
 -- | union to two logics
-logicUnion :: LogicGraph -> AnyLogic -> AnyLogic -> Result (AnyComorphism,AnyComorphism)
+logicUnion :: LogicGraph -> AnyLogic -> AnyLogic
+           -> Result (AnyComorphism, AnyComorphism)
 logicUnion lg l1@(Logic lid1) l2@(Logic lid2) =
   case logicInclusion lg l1 l2 of
     Result _ (Just c) -> return (c,idComorphism l2)
@@ -386,18 +385,18 @@ logicUnion lg l1@(Logic lid1) l2@(Logic lid2) =
         Just u -> return u
         Nothing -> case Map.lookup (ln2,ln1) (unions lg) of
           Just (c2,c1) -> return (c1,c2)
-          Nothing -> fail ("Union of logics "++ln1++" and "++ln2++" does not exist")
+          Nothing -> fail $ "Union of logics " ++ ln1 ++
+                     " and " ++ ln2 ++ " does not exist"
    where ln1 = language_name lid1
          ln2 = language_name lid2
 
--- | find a comorphism in a logic graph
-lookupComorphism :: Monad m => String -> LogicGraph -> m AnyComorphism
-lookupComorphism coname logicGraph = do
-  let nameList = splitOn ';' coname
+-- | find a comorphism composition in a logic graph
+lookupCompComorphism :: Monad m => [String] -> LogicGraph -> m AnyComorphism
+lookupCompComorphism nameList logicGraph = do
   cs <- sequence $ map lookupN nameList
   case cs of
     c:cs1 -> foldM compComorphism c cs1
-    _ -> fail ("Illgegal comorphism name: "++coname)
+    _ -> fail "Illegal empty comorphism composition"
   where
   lookupN name =
     case name of
@@ -408,6 +407,10 @@ lookupComorphism coname logicGraph = do
          return $ idComorphism l
       _ -> maybe (fail ("Cannot find logic comorphism "++name)) return
              $ Map.lookup name (comorphisms logicGraph)
+
+-- | find a comorphism in a logic graph
+lookupComorphism :: Monad m => String -> LogicGraph -> m AnyComorphism
+lookupComorphism coname = lookupCompComorphism $ splitOn ';' coname
 
 ------------------------------------------------------------------
 -- The Grothendieck signature category
@@ -503,7 +506,8 @@ gsigUnion lg gsig1@(G_sign lid1 sigma1) gsig2@(G_sign lid2 sigma2) =
   if language_name lid1 == language_name lid2
      then homogeneousGsigUnion gsig1 gsig2
      else do
-      (Comorphism cid1,Comorphism cid2) <- logicUnion lg (Logic lid1) (Logic lid2)
+      (Comorphism cid1, Comorphism cid2) <-
+            logicUnion lg (Logic lid1) (Logic lid2)
       let lidS1 = sourceLogic cid1
           lidS2 = sourceLogic cid2
           lidT1 = targetLogic cid1
@@ -515,7 +519,6 @@ gsigUnion lg gsig1@(G_sign lid1 sigma1) gsig2@(G_sign lid2 sigma2) =
       sigma2''' <- coerceSign lidT2 lidT1 "Union of signaturesc" sigma2''
       sigma3 <- signature_union lidT1 sigma1'' sigma2'''
       return (G_sign lidT1 sigma3)
-
 
 -- | homogeneous Union of two Grothendieck signatures
 homogeneousGsigUnion :: G_sign -> G_sign -> Result G_sign
@@ -618,7 +621,6 @@ findComorphism gsl@(G_sublogics lid sub) ((Comorphism cid):rest) =
 isTransportable :: GMorphism -> Bool
 isTransportable (GMorphism cid _ mor) =
   isIdComorphism (Comorphism cid) && is_transportable (targetLogic cid) mor
-
 
 ------------------------------------------------------------------
 -- Provers
