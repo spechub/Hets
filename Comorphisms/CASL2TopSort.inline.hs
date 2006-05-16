@@ -63,6 +63,7 @@ instance Comorphism CASL2TopSort
                         has_pred = True,
                         which_logic = FOL
                       }
+    targetLogic CASL2TopSort = CASL
     mapSublogic CASL2TopSort sub =
          sub { sub_features = NoSub      -- subsorting is coded out
              , cons_features = NoSortGen -- special Sort_gen_ax is coded out
