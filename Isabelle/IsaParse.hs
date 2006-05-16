@@ -315,7 +315,7 @@ data Dtspec = Dtspec Typespec [[Token]]
 
 dtspec :: Parser Dtspec
 dtspec = do
-    option () $ forget parname
+    option () $ forget $ try parname
     t <- typespec
     optinfix
     lexS "="
