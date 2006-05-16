@@ -33,11 +33,9 @@ import Static.AnalysisLibrary
 import GUI.ShowGraph
 #endif
 
-{-
 #ifdef PROGRAMATICA
 import Haskell.Haskell2DG
 #endif
--}
 
 main :: IO ()
 main = do
@@ -51,11 +49,11 @@ processFile opts file =
        case guess file (intype opts) of
          s -> do
            res <- case s of
-{-
+
 #ifdef PROGRAMATICA
              HaskellIn -> anaHaskellFile opts file
 #endif
--}
+
 #ifdef CASLEXTENSIONS
              OWL_DLIn -> do
                  ontoMap <- parseOWL file
