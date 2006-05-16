@@ -93,6 +93,9 @@ inclusionList = [Comorphism CASL2HasCASL, Comorphism HasCASL2HasCASL,
 #ifdef PROGRAMATICA
                  Comorphism HasCASL2Haskell,
                  Comorphism Haskell2IsabelleHOLCF,
+                 Comorphism Haskell2IsabelleHOL,
+                 Comorphism Haskell2MorHOLCF,
+                 Comorphism Haskell2MorHOL,
 #endif
 #ifdef CASLEXTENSIONS
                  Comorphism CASL2Modal, 

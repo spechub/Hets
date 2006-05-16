@@ -14,9 +14,6 @@ module Comorphisms.Haskell2IsabelleHOLCF where
 
 import Comorphisms.Hs2HOLCF as Hs2HOLCF
 
-import Common.Result
-import qualified Common.Lib.Set as Set
-
 import Logic.Logic as Logic
 import Logic.Comorphism
 
@@ -56,4 +53,70 @@ instance Comorphism Haskell2IsabelleHOLCF
     map_morphism = mapDefaultMorphism
     map_theory _ (sign, sens) =
         Hs2HOLCF.transTheory IsCont False sign sens
+    map_symbol = errMapSymbol
+
+data Haskell2IsabelleHOL = Haskell2IsabelleHOL deriving (Show)
+
+instance Language Haskell2IsabelleHOL
+
+instance Comorphism Haskell2IsabelleHOL
+               Haskell ()
+               HsDecls (TiDecl PNT) () ()
+               HatAna.Sign HaskellMorphism
+               () () ()
+               Isabelle () () IsaSign.Sentence () ()
+               IsaSign.Sign
+               IsabelleMorphism () () ()  where
+    sourceLogic _ = Haskell
+    sourceSublogic _ = ()
+    targetLogic _ = Isabelle
+    mapSublogic _ _ = ()
+    map_sentence = failMapSentence
+    map_morphism = mapDefaultMorphism
+    map_theory _ (sign, sens) =
+        Hs2HOLCF.transTheory NotCont False sign sens
+    map_symbol = errMapSymbol
+
+data Haskell2MorHOLCF = Haskell2MorHOLCF deriving (Show)
+
+instance Language Haskell2MorHOLCF
+
+instance Comorphism Haskell2MorHOLCF
+               Haskell ()
+               HsDecls (TiDecl PNT) () ()
+               HatAna.Sign HaskellMorphism
+               () () ()
+               Isabelle () () IsaSign.Sentence () ()
+               IsaSign.Sign
+               IsabelleMorphism () () ()  where
+    sourceLogic _ = Haskell
+    sourceSublogic _ = ()
+    targetLogic _ = Isabelle
+    mapSublogic _ _ = ()
+    map_sentence = failMapSentence
+    map_morphism = mapDefaultMorphism
+    map_theory _ (sign, sens) =
+        Hs2HOLCF.transTheory IsCont True sign sens
+    map_symbol = errMapSymbol
+
+data Haskell2MorHOL = Haskell2MorHOL deriving (Show)
+
+instance Language Haskell2MorHOL
+
+instance Comorphism Haskell2MorHOL
+               Haskell ()
+               HsDecls (TiDecl PNT) () ()
+               HatAna.Sign HaskellMorphism
+               () () ()
+               Isabelle () () IsaSign.Sentence () ()
+               IsaSign.Sign
+               IsabelleMorphism () () ()  where
+    sourceLogic _ = Haskell
+    sourceSublogic _ = ()
+    targetLogic _ = Isabelle
+    mapSublogic _ _ = ()
+    map_sentence = failMapSentence
+    map_morphism = mapDefaultMorphism
+    map_theory _ (sign, sens) =
+        Hs2HOLCF.transTheory NotCont True sign sens
     map_symbol = errMapSymbol
