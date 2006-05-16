@@ -14,6 +14,7 @@ Portability :  non-portable(Logic)
     - existings files should not be overwritten everytime...
     - there is a problem with finding constructors that use tricky names,
       currently working on debuggin this
+    - DevGraph->OMDoc conversion should be done on LibEnv-Level (for names)
 -}
 module OMDoc.OMDocOutput
   (
@@ -28,6 +29,7 @@ module OMDoc.OMDocOutput
     ,defaultDTDURI
     ,libEnvToDGraphG
     ,linkTypeToString
+    ,xmlTagLibEnv
   )
   where
 
@@ -218,6 +220,80 @@ showSensWOMap mapping =
   in
     implode ", " sennames
 
+{-
+  To create consistent xml-names the whole libenv has to be processed
+  so that references to other libraries use the correct names.
+  this implies to process the libenv with respect to references.
+
+  this functionality is currently experimental
+-}
+type XmlNamedWONSorts = Set.Set XmlNamedWONSORT
+type XmlNamedWONRels = Rel.Rel XmlNamedWONSORT
+type XmlNamedWONPreds = Set.Set (XmlNamedWONId, PredTypeXNWON)
+type XmlNamedWONOps = Set.Set (XmlNamedWONId, OpTypeXNWON)
+
+
+-- this is a _sketch_ of how I want to implement renaming
+correctXmlNames::
+ Map.Map -- current mappings (all processed)
+    ASL.LIB_NAME
+    (Map.Map
+      (XmlNamed Hets.NODE_NAMEWO)
+      (XmlNamedWONSorts, XmlNamedWONRels, XmlNamedWONPreds, XmlNamedWONOps)
+    )
+  ->
+    (Map.Map -- possible wrong-named mapping
+      (XmlNamed Hets.NODE_NAMEWO)
+      (XmlNamedWONSorts, XmlNamedWONRels, XmlNamedWONPreds, XmlNamedWONOps)
+    )
+  -> -- imports from mappings
+    [(ASL.LIB_NAME, NODE_NAME, XmlNamed Hets.NODE_NAMEWO)]
+  -> -- currected mapping
+    (Map.Map
+      (XmlNamed Hets.NODE_NAMEWO)
+      (XmlNamedWONSorts, XmlNamedWONRels, XmlNamedWONPreds, XmlNamedWONOps)
+    )
+correctXmlNames _ _ _ = undefined
+
+-- renaming should be done by 1) create names/origins for DGs but remember where
+-- imports occured and 2) correct xml-names via import-information (and 
+-- benefit from the unambigous xml-naming/origin-information)
+xmlTagLibEnv::
+  GlobalOptions
+  ->Static.DevGraph.LibEnv
+  ->Map.Map
+      ASL.LIB_NAME
+      (Map.Map
+        (XmlNamed Hets.NODE_NAMEWO)
+        (XmlNamedWONSorts, XmlNamedWONRels, XmlNamedWONPreds, XmlNamedWONOps)
+      )
+xmlTagLibEnv go libenv =
+  let
+    libnames = Map.keys libenv
+    (libsWithNoRefs, libsWithRefs) =
+      foldl
+        (\(lwnr, lwr) ln ->
+          case Map.lookup ln libenv of
+            Nothing -> error ("No GlobalContext for \"" ++ show ln ++ "\"!")
+            (Just gc) ->
+              let
+                dg = Static.DevGraph.devGraph gc
+              in
+                if any (\(_,dgnl) -> Static.DevGraph.isDGRef dgnl) $ Graph.labNodes dg
+                  then
+                    (lwnr, lwr++[ln])
+                  else
+                    (lwnr++[ln], lwr)
+        )
+        ([],[])
+        libnames
+  in
+    Debug.Trace.trace
+      (
+        "WNR : " ++ (show libsWithNoRefs) ++ " , WR : " ++ (show libsWithRefs)
+      )
+      Map.empty
+
 
 {- |
         Converts a DevGraph into a Xml-structure (accessing used (CASL-)files 
@@ -260,8 +336,10 @@ devGraphToXmlCMPIOXmlNamed go dg =
     -- (xmlnamedsortswomap, xmlnames_sm) =
     (xmlnamedsortswomap, _) =
       (processSubContents
-        (\xmlnames c -> uniqueXmlNamesContainerWONExt
-          xmlnames
+        --(\xmlnames c -> uniqueXmlNamesContainerWONExt
+        --  xmlnames
+        (\_ c -> uniqueXmlNamesContainerWONExt
+          []
           show
           c
           (pSCStrip id)
