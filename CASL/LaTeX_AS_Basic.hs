@@ -13,6 +13,7 @@ latex printing data types of 'BASIC_SPEC'
 module CASL.LaTeX_AS_Basic
     ( hc_sty_sig_item_keyword
     , optLatexQuMark
+    , toLatex
     ) where
 
 import CASL.AS_Basic_CASL

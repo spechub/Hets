@@ -21,13 +21,14 @@ import Common.Id(Pos(..),Range(..))
 import Common.Result
 import Common.GlobalAnnotations
 import Common.PrettyPrint
-import Common.Lib.Pretty
+--import Common.Lib.Pretty
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
-
+import Common.Doc
 import Data.List
 import Data.Char
 import qualified Data.Set as DSet
+import CASL.Print_AS_Basic
 
 type Scope = Rel (SN HsName) (Ent (SN String))
 
@@ -70,7 +71,13 @@ instance Ord (TiDecl PNT) where
     s1 <= s2 = show s1 <= show s2
 
 instance PrettyPrint (TiDecl PNT) where
-     printText0 _ = text . pp
+     printText0 = CASL.Print_AS_Basic.toText
+
+instance Pretty (TiDecl PNT) where
+    pretty = printTiDecl 
+
+printTiDecl :: (TiDecl PNT) -> Doc
+printTiDecl = text . pp
 
 instance PrettyPrint Sign where
     printText0 _ Sign { instances = is, types = ts,
@@ -94,6 +101,15 @@ instance PrettyPrint Sign where
           text (pp sc) $$
           text "-}" $$
           text "module Dummy where"
+
+instance Pretty Sign where
+    pretty = printSign
+
+printSign :: Sign -> Doc
+printSign  Sign { instances = is, types = ts,
+                        values = vs, fixities = fs, scope = sc }
+    = text "{-" $+$ (if null is then empty else
+              text "instances:" $+$
 
 extendSign :: Sign -> [Instance PNT]
             -> [TAssump PNT]

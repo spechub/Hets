@@ -14,25 +14,47 @@ module CspCASL.Print_AS_CSP_CASL where
 
 import CspCASL.AS_CSP_CASL
 import Common.PrettyPrint
-import Common.Lib.Pretty
 import CASL.Print_AS_Basic
+import Common.Doc
+import CASL.ToDoc
 
 instance PrettyPrint C3PO where
-    printText0 ga (Named_c3po x) = printText0 ga x
-    printText0 ga (C3po x) = printText0 ga x
+    printText0 = CASL.Print_AS_Basic.toText
 
+instance Pretty C3PO where
+    pretty c3p = case c3p of
+      Named_c3po x -> printNAMED_CSP_CASL_C_SPEC x
+      C3po x -> printCSP_CASL_C_SPEC x
 
 instance PrettyPrint NAMED_CSP_CASL_C_SPEC where
-    printText0 ga (Named_csp_casl_spec sn c3spec) =
-        ptext "ccspec"  <+> printText0 ga sn <+> equals $$
-        nest 2 (printText0 ga c3spec) $$
-        ptext "end"
+    printText0 = CASL.Print_AS_Basic.toText
+
+instance Pretty NAMED_CSP_CASL_C_SPEC where
+    pretty = printNAMED_CSP_CASL_C_SPEC
+
+printNAMED_CSP_CASL_C_SPEC :: NAMED_CSP_CASL_C_SPEC -> Doc
+printNAMED_CSP_CASL_C_SPEC (Named_csp_casl_spec sn c3spec) =
+    text "ccspec"  <+> sidDoc sn <+> equals $+$
+    printCSP_CASL_C_SPEC c3spec $+$
+    text "end"
 
 instance PrettyPrint CSP_CASL_C_SPEC where
-    printText0 ga (Csp_casl_c_spec dd _cd _pd) =
-        ptext "data" $$
-        nest 2 (printText0 ga dd)
+    printText0 = CASL.Print_AS_Basic.toText
+
+instance Pretty CSP_CASL_C_SPEC where
+    pretty = printCSP_CASL_C_SPEC
+
+printCSP_CASL_C_SPEC :: CSP_CASL_C_SPEC -> Doc
+printCSP_CASL_C_SPEC (Csp_casl_c_spec dd _cd _pd) =
+    text "data" $+$
+    printBASIC_SPEC pretty pretty pretty dd
 
 instance PrettyPrint Basic_CSP_CASL_C_SPEC where
-    printText0 ga (Basic_csp_casl_c_spec _cd _pd) =
-        ptext "<not printable yet>"
+    printText0 = CASL.Print_AS_Basic.toText
+
+instance Pretty Basic_CSP_CASL_C_SPEC where
+    pretty = printBasic_CSP_CASL_C_SPEC
+
+printBasic_CSP_CASL_C_SPEC :: Basic_CSP_CASL_C_SPEC -> Doc
+printBasic_CSP_CASL_C_SPEC (Basic_csp_casl_c_spec _cd _pd) =
+    text "<not printable yet>"

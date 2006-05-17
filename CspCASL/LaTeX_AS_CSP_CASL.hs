@@ -17,23 +17,18 @@ import CspCASL.Print_AS_CSP_CASL
 import Common.Lib.Pretty
 import Common.PrintLaTeX
 import Common.LaTeX_utils
-import CASL.LaTeX_AS_Basic
+import CASL.LaTeX_AS_Basic 
+
+
 
 instance PrintLaTeX C3PO where
-    printLatex0 ga (Named_c3po x) = printLatex0 ga x
-    printLatex0 ga (C3po x) = printLatex0 ga x
+    printLatex0 = toLatex
 
 instance PrintLaTeX NAMED_CSP_CASL_C_SPEC where
-    printLatex0 ga (Named_csp_casl_spec sn c3spec) =
-        ptext "ccspec"  <\+> printLatex0 ga sn <\+> equals $$
-        nest 2 (printLatex0 ga c3spec) $$
-        ptext "end"
+    printLatex0 = toLatex
 
 instance PrintLaTeX CSP_CASL_C_SPEC where
-    printLatex0 ga (Csp_casl_c_spec dd _cd _pd) =
-        ptext "data" $$
-        nest 2 (printLatex0 ga dd)
+    printLatex0 = toLatex
 
 instance PrintLaTeX Basic_CSP_CASL_C_SPEC where
-    printLatex0 _ga (Basic_csp_casl_c_spec _cd _pd) =
-        ptext "<not printable yet>"
+    printLatex0 = toLatex

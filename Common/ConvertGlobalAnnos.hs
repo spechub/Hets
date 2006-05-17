@@ -23,10 +23,17 @@ import Common.AnalyseAnnos
 import Common.PrettyPrint
 import Common.Result
 import Common.Print_AS_Annotation()
-import Common.Lib.Pretty
+import Common.Doc
+import CASL.Print_AS_Basic
 
 instance PrettyPrint GlobalAnnos where
-    printText0 ga = vcat . map (printText0 ga) . convertGlobalAnnos
+    printText0  = CASL.Print_AS_Basic.toText
+
+instance Pretty GlobalAnnos where
+    pretty = printGlobalAnnos
+
+printGlobalAnnos :: GlobalAnnos -> Doc
+printGlobalAnnos = printAnnotationList . convertGlobalAnnos
 
 convertGlobalAnnos::GlobalAnnos->[Annotation]
 convertGlobalAnnos ga = c_prec (prec_annos ga) 
