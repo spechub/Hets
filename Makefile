@@ -449,10 +449,12 @@ $(INLINEAXIOMS): $(INLINEAXIOMS_deps)
             -package hssource -i../.. -o $(INLINEAXIOMS)
 	strip $(INLINEAXIOMS)
 
+RELEASENR = release-0-60
+
 release:
 	$(RM) -r HetCATS
 	cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:/repository\
-            co -P HetCATS
+            co -P -r $(RELEASENR) HetCATS
 	$(RM) -r uni
 	if [ -d ../uni ] ; then ln -s ../uni uni ; fi
 	$(RM) -r programatica
