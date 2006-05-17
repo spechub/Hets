@@ -88,7 +88,7 @@ printDFG ln sn checkConsistency gth@(G_theory lid sign thSens) =
                      ,SPFlag "DocProof" "1"]
                 else []
 
-        falseConj = (emptyName falseSen) { senName = "consistent"
+        falseConj = (emptyName falseSen) { senName = "inconsistent"
                                          , AS_Anno.isAxiom = False}
 
         falseSen = SPSimpleTerm SPFalse
