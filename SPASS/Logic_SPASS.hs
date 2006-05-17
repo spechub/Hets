@@ -17,9 +17,9 @@ module SPASS.Logic_SPASS where
 
 import Common.DefaultMorphism
 
-import SPASS.ATC_SPASS
 import Logic.Logic
 
+import SPASS.ATC_SPASS ()
 import SPASS.Sign
 import SPASS.Print
 
@@ -59,7 +59,8 @@ instance Sentences SPASS Sentence () Sign SPASSMorphism ()  where
         printFormula ga formula
 -- the prover uses HTk and IO functions from uni
 #ifdef UNI_PACKAGE
-      provers SPASS = [spassProver] 
+      provers SPASS = [spassProver
+                       {-insert MathServ prover here-} ] 
       cons_checkers SPASS = []
 #endif
     -- other default implementations are fine
