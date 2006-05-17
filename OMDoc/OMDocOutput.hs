@@ -240,19 +240,19 @@ correctXmlNames::
     ASL.LIB_NAME
     (Map.Map
       (XmlNamed Hets.NODE_NAMEWO)
-      (XmlNamedWONSorts, XmlNamedWONPreds, XmlNamedWONOps)
+      (Set.Set XmlNamedWONSORT, Map.Map XmlNamedWONId PredType, Map.Map XmlNamedWONId OpType)
     )
   ->
     (Map.Map -- possible wrong-named mapping
       (XmlNamed Hets.NODE_NAMEWO)
-      (XmlNamedWONSorts, XmlNamedWONPreds, XmlNamedWONOps)
+      (Set.Set XmlNamedWONSORT, Map.Map XmlNamedWONId PredType, Map.Map XmlNamedWONId OpType)
     )
   -> -- imports from mappings
     [(ASL.LIB_NAME, NODE_NAME, XmlNamed Hets.NODE_NAMEWO)]
   -> -- currected mapping
     (Map.Map
       (XmlNamed Hets.NODE_NAMEWO)
-      (XmlNamedWONSorts, XmlNamedWONPreds, XmlNamedWONOps)
+      (Set.Set XmlNamedWONSORT, Map.Map XmlNamedWONId PredType, Map.Map XmlNamedWONId OpType)
     )
 correctXmlNames cm wm im =
   foldl
@@ -261,11 +261,83 @@ correctXmlNames cm wm im =
         cmap = case Map.lookup ln cm of
           Nothing -> error ("Cannot process import from unprocessed DG!")
           (Just x) -> x
+        (xnsourcenodewo, (xnsorts, xnpreds, xnops)) =
+          case
+            Map.toList $ Map.filterWithKey
+              (\xnw _ -> (Hets.wonItem $ xnItem xnw) == nn)
+              cmap of
+            [] -> error ("SourceNode not found for \"" ++ show nn ++ "\"!")
+            [i] -> i
+            (i:_) ->
+              Debug.Trace.trace
+                ("Confused: more than one matching node for \"" ++ show nn ++ "\"!")
+                i
+        originInTarget = Hets.wonOrigin $ xnItem xnnnwo
+        xnsortslist = Set.toList xnsorts
+        xnpredslist = Map.toList xnpreds
+        xnopslist = Map.toList xnops
       in
-        pwm
+        Map.map
+          (\(pwms, pwmp, pwmo) ->
+            (
+                Set.map
+                  (correctItem
+                    xnsortslist
+                    (==)
+                  )
+                  pwms
+              , Map.fromList $
+                  map
+                    (\(k, s) ->
+                      (correctItem
+                        (map fst xnpredslist)
+                        (==)
+                        k , s
+                      )
+                    )
+                    (Map.toList pwmp)
+              , Map.fromList $
+                  map
+                    (\(k, s) ->
+                      (correctItem
+                        (map fst xnopslist)
+                        (==)
+                        k , s
+                      )
+                    )
+                    (Map.toList pwmo)
+            )
+          )
+          pwm
     )
     wm
     im
+  where
+  correctItem::forall a b .
+    [XmlNamed a]
+    ->(b->a->Bool)
+    ->XmlNamed b
+    ->XmlNamed b
+  correctItem
+    reference
+    match
+    tobecorrected =
+      case find (match (xnItem tobecorrected) . xnItem) reference of
+        Nothing -> tobecorrected
+        (Just amatch) -> tobecorrected { xnName = xnName amatch }
+
+  correctList::forall a b .
+      [XmlNamed a]
+    ->(b->a->Bool)
+    ->[XmlNamed b]
+    ->[XmlNamed b]
+  correctList
+    reference
+    match
+    tobecorrected =
+    map
+      (correctItem reference match)
+      tobecorrected
 
 createXmlNameMap::
   Static.DevGraph.DGraph
@@ -438,7 +510,7 @@ xmlTagLibEnv go libenv =
         )
         ([],[])
         libnames
-    basicNameMap =
+    basicNameAndImportMap =
       foldl
         (\bNM ln ->
          case Map.lookup ln libenv of
@@ -446,13 +518,70 @@ xmlTagLibEnv go libenv =
           (Just gc) ->
             let
               dg = Static.DevGraph.devGraph gc
+              refs =
+                filter
+                  (\(_,dgnl) -> Static.DevGraph.isDGRef dgnl)
+                  (Graph.labNodes dg)
+              reflookup =
+                map
+                  (\(nn,DGRef { dgn_node = lnn, dgn_libname = lln  }) ->
+                    case Map.lookup lln libenv of
+                      Nothing -> error ("No GlobalContext for \"" ++ show lln ++ "\"!")
+                      (Just lgc) ->
+                        case Graph.lab (Static.DevGraph.devGraph lgc) lnn of
+                          Nothing -> error ("No such node in \"" ++ show lln ++ "\" : " ++ show lnn)
+                          (Just anode) -> (nn, lln, dgn_name anode)  
+                  )
+                  refs
+              xmlnamemap = createXmlNameMap dg
+              imports =
+                map
+                  (\(nn, iln, inname) ->
+                    case filter (\k -> (==) nn $ Hets.wonOrigin $ xnItem k) $ Map.keys xmlnamemap of
+                      [] -> error ("Importing node is not in the map!")
+                      [i] -> (iln, inname, i)
+                      (i:_) ->
+                        Debug.Trace.trace
+                          ("Confused: more than one matching node for import!")
+                          (iln, inname, i)
+                  ) 
+                  reflookup
             in
-              Map.insert ln (createXmlNameMap dg) bNM
+              Map.insert ln (xmlnamemap, imports) bNM
         )
         Map.empty
         libnames
+    (initialCorrectI, initialIncorrect) =
+      Map.partition
+        (null . snd)
+        basicNameAndImportMap
+    initialCorrect = Map.map fst initialCorrectI
+    (correctMap, _) =
+      until
+        (Map.null . snd)
+        (\(cm, icm) ->
+          let
+            correctlibs = Map.keys cm
+            candidatemap =
+              Map.filter
+                (\(_,imports) ->
+                  all
+                    (\(iln,_,_) -> elem iln correctlibs)
+                    imports
+                )
+                icm
+            (cln, (cmap, cimps)) = head $ Map.toList candidatemap 
+            corrected = correctXmlNames cm cmap cimps
+          in
+            if Map.null candidatemap
+              then
+                error ("Cannot correct names! (Must be cyclic import or missing library)")
+              else
+                (Map.insert cln corrected cm, Map.delete cln icm) 
+        )
+        (initialCorrect, initialIncorrect)
   in
-    basicNameMap
+    correctMap
 
 
 {- |
