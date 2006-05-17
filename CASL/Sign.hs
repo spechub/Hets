@@ -27,6 +27,7 @@ import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Print_AS_Annotation
 import Common.Doc
+import Common.DocUtils
 import CASL.ToDoc
 
 -- constants have empty argument lists
@@ -132,19 +133,6 @@ printSetMap header sepa m = vcat $ map (\ (i, t) ->
            $ concatMap (\ (o, ts) ->
                           map ( \ ty -> (o, ty) ) $ Set.toList ts)
                    $ Map.toList m
-
-
-printSetWithComma ::  (Pretty a) => Set.Set a -> Doc
-printSetWithComma = CASL.Sign.printSet id (fsep . punctuate comma)
-
-
-printList :: (Doc->Doc) -> ([Doc]->Doc) -> [Doc] -> Doc
-printList brace inter = brace . inter
-
-printSet :: (Pretty a) => (Doc->Doc) -> ([Doc]->Doc) -> Set.Set a -> Doc
-printSet brace inter s = printList brace inter $ map pretty $ Set.toList s
-
-
 
 -- working with Sign
 

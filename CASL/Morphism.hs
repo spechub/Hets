@@ -1,5 +1,3 @@
-
-
 {- |
 Module      :  $Header$
 Copyright   :  (c) Christian Maeder, Till Mossakowski and Uni Bremen 2002-2004
@@ -34,8 +32,8 @@ import Control.Monad
 import Common.PrettyPrint
 import Control.Exception (assert)
 import Common.Doc
+import Common.DocUtils
 import Common.Print_AS_Annotation
-
 
 data SymbType = OpAsItemType OpType
                 -- since symbols do not speak about totality, the totality
@@ -524,8 +522,6 @@ instance (PrettyPrint e, PrettyPrint f, PrettyPrint m) =>
         printText0 ga = toText ga . 
           printMorphism (fromText ga) (fromText ga) (fromText ga)
 
-
-
 printMorphism :: (f->Doc) -> (e->Doc) -> (m->Doc) -> Morphism f e m -> Doc
 printMorphism fF fE fM mor =
     printSymbolMap (Map.filterWithKey (/=) $ morphismToSymbMap mor)
@@ -541,10 +537,3 @@ instance (Pretty e, Pretty f, Pretty m) =>
 printSymbolMap :: SymbolMap -> Doc
 printSymbolMap = printMap specBraces (fsep . punctuate comma) 
     (\ a b -> a <+> mapsto <+> b)
-                   
-
-printMap :: (Pretty a,Ord a,Pretty b) => (Doc->Doc) -> ([Doc]->Doc)
-               -> (Doc->Doc->Doc) ->Map.Map a b -> Doc
-printMap brace inter pairDoc m = printList brace inter 
-     $ map ( \ (a, b) -> pairDoc (pretty a) (pretty b))
-     $ Map.toList m 
