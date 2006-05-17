@@ -45,6 +45,7 @@ import Common.Result
 import Common.ResultT
 import Common.PrettyPrint
 import Common.Utils
+
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.OrderedMap as OMap
@@ -74,25 +75,45 @@ getGoals libEnv ln (n,_,edge) = do
   th <- computeLocalTheory libEnv ln n
   translateG_theory (dgl_morphism edge) th
 
-getProvers :: [AnyComorphism] -> [(G_prover, AnyComorphism)]
-getProvers cms =
-     [(G_prover (targetLogic cid) p, cm) |
+class GetPName a where
+    getPName :: a -> String
+
+instance GetPName G_prover where
+    getPName (G_prover _ p) = prover_name p
+
+instance GetPName G_cons_checker where
+    getPName (G_cons_checker _ p) = prover_name p
+
+-- | Pairs each target prover of these comorphisms with its comorphism
+getProvers ::[AnyComorphism] -> [(G_prover, AnyComorphism)]
+getProvers = foldl addProvers []
+    where addProvers acc cm = 
+              case cm of 
+              Comorphism cid -> acc ++ 
+                  map (\p -> (G_prover (targetLogic cid) p,cm)) 
+                      (provers $ targetLogic cid) 
+           
+
+{-     [(G_prover (targetLogic cid) p, cm) |
         cm@(Comorphism cid) <- cms,
         p <- provers (targetLogic cid)]
-
+-}
 getConsCheckers :: [AnyComorphism] -> [(G_cons_checker, AnyComorphism)]
-getConsCheckers cms =
-     [(G_cons_checker (targetLogic cid) p, cm) |
-        cm@(Comorphism cid) <- cms,
-        p <- cons_checkers (targetLogic cid)]
+getConsCheckers = foldl addCCs []
+    where addCCs acc cm = 
+              case cm of 
+              Comorphism cid -> acc ++ 
+                  map (\p -> (G_cons_checker (targetLogic cid) p,cm)) 
+                      (cons_checkers $ targetLogic cid) 
 
-selectProver :: [(a,AnyComorphism)] -> ResultT IO (a,AnyComorphism)
+selectProver :: GetPName a => 
+                [(a,AnyComorphism)] -> ResultT IO (a,AnyComorphism)
 selectProver [p] = return p
 selectProver [] = liftR $ fatal_error "No prover available" nullRange
 selectProver ps = do
    sel <- lift $ listBox
                 "Choose a translation to a prover-supported logic"
-                $ map (show.snd) ps
+                $ map (\ (aGN,cm) -> show cm ++" ("++getPName aGN++")") ps
    i <- case sel of
            Just j -> return j
            _ -> liftR $ fail "Proofs.Proofs: selection"
