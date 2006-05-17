@@ -188,8 +188,9 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
              Result _ (Just (raw_gTh, tStr)) ->
               case theoremsToAxioms raw_gTh of
                 gTh@(G_theory lid sign0 sens0) -> do
-                  putIfVerbose opt 2 $ "Translated using comorphism '" ++
-                               tStr ++ "'"
+                  if null tStr then return () else 
+                     putIfVerbose opt 2 $ 
+                        "Translated using comorphism " ++ tStr 
                   putIfVerbose opt 4 $ "Sublogic of " ++ show i ++ ": " ++
                           (show $ sublogicOfTh gTh)
                   mapM_ ( \ ot ->
