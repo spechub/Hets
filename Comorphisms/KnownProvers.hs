@@ -27,10 +27,11 @@ import System.Exit (exitFailure)
 
 import Common.Result
 
-import Logic.Logic () -- hiding (top)
+import Logic.Logic (provers) -- hiding (top)
 import Logic.Coerce()
 import Logic.Grothendieck
 import Logic.Comorphism
+import Logic.Prover (prover_name)
 
 import CASL.Logic_CASL
 import CASL.Sublogic
@@ -58,8 +59,15 @@ knownProvers :: Result KnownProversMap
 knownProvers =
     do isaCs <- isaComorphisms
        spassCs <- spassComorphisms
-       return (Map.fromList [("Isabelle", isaCs),
-                             ("SPASS", spassCs)])
+       return $ foldl insProvers Map.empty (isaCs++spassCs)
+       where insProvers kpm cm =
+              case cm of
+              (Comorphism cid) -> 
+                 let prs = provers (targetLogic cid)
+                 in foldl (\ m p -> Map.insertWith mergeLists 
+                                          (prover_name p) [cm] m) kpm prs
+             mergeLists xs ys = ys++xs
+
 
 shrinkKnownProvers :: G_sublogics -> KnownProversMap -> KnownProversMap
 shrinkKnownProvers sub = Map.filter (not . null) .
