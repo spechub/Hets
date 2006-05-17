@@ -460,6 +460,9 @@ Integration with generic prover interface?
 Till
 ************************************************
 
+paper with Paolo
+  semantic adequecy of HOL translation
+
 Regulate concurrent proving
 .dg files: store only current library; import .dg files for other libraries
 
