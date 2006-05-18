@@ -152,7 +152,6 @@ showLogicGraph
     where
         (nullNodeParms :: nodeTypeParms AnyLogic) = emptyNodeTypeParms
         (nullArcTypeParms :: arcTypeParms AnyComorphism) = emptyArcTypeParms
-        (nullSubNodeParms) = emptyNodeTypeParms
         (nullSubArcTypeParms:: arcTypeParms [Char]) = emptyArcTypeParms
         showSublogic l =
             case l of
@@ -221,7 +220,7 @@ showLogicGraph
                            (\gsl -> return (unwords $ sublogic_names
                                                       sublid gsl)) $$$
                          Color "yellow" $$$
-                         nullSubNodeParms
+                         emptyNodeTypeParms
                  subNodeType <- newNodeType subLogicG subNodeTypeParms
                  subNodeList <- mapM (newNode subLogicG subNodeType)
                                 listG_Sublogics
