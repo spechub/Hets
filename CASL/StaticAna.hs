@@ -795,6 +795,8 @@ basicAnalysis :: PrettyPrint f
               -> (e -> e -> e) -- ^ difference of signature extension e
               -> (BASIC_SPEC b s f, Sign f e, GlobalAnnos)
          -> Result (BASIC_SPEC b s f, Sign f e, Sign f e, [Named (FORMULA f)])
+            -- ^ (BS with analysed mixfix formulas for pretty printing,
+            -- differences to input Sig,accumulated Sig,analysed Sentences)
 basicAnalysis mef anab anas mix dif (bs, inSig, ga) =
     let allIds = unite $ ids_BASIC_SPEC (getBaseIds mix) (getSigIds mix) bs
                  : getExtIds mix (extendedInfo inSig) :
