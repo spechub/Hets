@@ -21,7 +21,10 @@ and additional annottations
     
 
 -}
-module CASL_DL.StatAna where
+module CASL_DL.StatAna ( basicCASL_DLAnalysis
+                       , minDLForm
+                       , checkSymbolMapDL
+                       , DLSign) where
 
 import CASL_DL.AS_CASL_DL
 import CASL_DL.Print_AS ()
@@ -42,6 +45,7 @@ import CASL.LiteralFuns
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
+import qualified Common.Lib.Rel as Rel
 
 import Common.AS_Annotation
 import Common.GlobalAnnotations
@@ -55,18 +59,101 @@ import Data.List
 import Debug.Trace
 
 basicCASL_DLAnalysis :: (BASIC_SPEC () () DL_FORMULA,
-		       Sign DL_FORMULA CASL_DLSign, GlobalAnnos)
-		   -> Result (BASIC_SPEC () () DL_FORMULA,
-			      Sign DL_FORMULA CASL_DLSign,
-			      Sign DL_FORMULA CASL_DLSign,
-			      [Named (FORMULA DL_FORMULA)])
-basicCASL_DLAnalysis inp@(bs,sig,ga) = 
+		         Sign DL_FORMULA CASL_DLSign, GlobalAnnos)
+		     -> Result (BASIC_SPEC () () DL_FORMULA,
+			        Sign DL_FORMULA CASL_DLSign,
+			        Sign DL_FORMULA CASL_DLSign,
+			        [Named (FORMULA DL_FORMULA)])
+basicCASL_DLAnalysis (bs,sig,ga) = 
     do ga' <- addGlobalAnnos ga caslDLGlobalAnnos
-       basicAnalysis minDLForm (const return) 
-             (const return) ana_Mix diffCASL_DLSign (bs,sig,ga')
- {-   case basicAnalysis minDLForm (const return) 
-             (const return) diffCASL_DLSign inp of
-    Result ds1 mr -> maybe (Result ds1 Nothing) callAna mr
+       --basicAnalysis minDLForm (const return) 
+       --      (const return) ana_Mix diffCASL_DLSign (bs,sig,ga')
+       case basicAnalysis minDLForm (const return) 
+             (const return) ana_Mix diffCASL_DLSign (bs,sig,ga') of
+        r@(Result ds1 mr) -> maybe r (postAna ds1) mr
+
+{- |
+  postAna checks the Signature for
+
+  * all new sorts must be a proper subsort of Thing and 
+    must not be related to DATA
+
+  * no new subsort relations with DATA
+
+  * all new predicates must have a subsort of Thing as subject (1st argument)
+
+  * all new operations must have a subsort of Thing as 1st argument
+
+-}
+postAna :: [Diagnosis] 
+        -> (BASIC_SPEC () () DL_FORMULA,
+	    Sign DL_FORMULA CASL_DLSign,
+	    Sign DL_FORMULA CASL_DLSign,
+	    [Named (FORMULA DL_FORMULA)]) 
+        -> Result (BASIC_SPEC () () DL_FORMULA,
+		   Sign DL_FORMULA CASL_DLSign,
+		   Sign DL_FORMULA CASL_DLSign,
+		   [Named (FORMULA DL_FORMULA)])
+postAna ds1 i@(bs,diff_sig,acc_sig,sens) =
+    Result (ds1++ds_sig) $ if null ds_sig then Just i else Nothing
+    where ds_sig = checkSorts ++ checkPreds ++ checkOps
+
+          checkSorts = Set.fold chSort [] (sortSet diff_sig) ++
+             (if Set.member topSortD (supersortsOf topSort acc_sig) ||
+                 Set.member topSortD (subsortsOf topSort acc_sig) ||
+                 (supersortsOf topSortD predefinedSign /= 
+                  supersortsOf topSortD acc_sig) ||
+                 (selectDATAKernel (sortRel predefinedSign)  
+                  /= 
+                  selectDATAKernel (sortRel acc_sig))
+               then [Diag Error 
+                        ("\n     new subsort relations with data "++
+                         "topsort are not allowed") nullRange]
+                  else []) 
+
+          chSort s ds = ds ++ 
+              (if Set.member topSort (supersortsOf s acc_sig) 
+                  then []
+                  else [mkDiag Error 
+                        ("\n     new sort is not a subsort of '"++ 
+                         showPretty topSort "':") s]) ++
+              (if Set.member topSort (subsortsOf s acc_sig) 
+                  then [mkDiag Error 
+                        ("\n     new sort must not be a supersort of '"++ 
+                         showPretty topSort "':") s]
+                  else [])
+
+          selectDATAKernel rel =
+              Rel.intransKernel $ Rel.restrict rel $
+                 Set.insert topSortD 
+                        (subsortsOf topSortD predefinedSign)
+          
+          checkPreds = Map.foldWithKey chPred [] (predMap diff_sig)
+          chPred p ts ds = ds ++
+              Set.fold (\ t -> chArgs "pred" p $ predArgs t) [] ts
+
+          checkOps = Map.foldWithKey chOp [] (opMap diff_sig)
+          chOp o ts ds = ds ++
+              Set.fold (\ t -> chArgs "op" o $ opArgs t) [] ts
+
+          chArgs kstr sym args ds = ds ++
+              case args of
+              [] -> if kstr == "op" 
+                    then [] 
+                    else [mkDiag Error 
+                        ("\n     propositional symbols are not allowed") sym]
+              (s:_) -> 
+                  if s == topSort ||
+                     Set.member topSort (supersortsOf s acc_sig)
+                  then []
+                  else [mkDiag Error 
+                        ("\n     the first argument sort of this "++kstr++
+                        " is not a subsort of '"++ showPretty topSort "':") 
+                        sym]
+                               
+
+{- sketch of Annotation analysis:
+
     where callAna bsRes =
               case analyseAnnos ga acc_sig bs of
               Result ds2 mESig -> 
