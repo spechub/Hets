@@ -28,7 +28,8 @@ import Logic.Logic
 import Logic.Comorphism
 import Logic.Prover
 import qualified Common.Lib.Map as Map
-import Maybe
+import qualified Common.Lib.Rel as Rel
+
 
 showLogicGraph ::
    (GraphAllConfig graph graphParms node nodeType nodeTypeParms
@@ -89,8 +90,10 @@ showLogicGraph
        -- build the map with the node's name and the node.
        let namesAndNodes = Map.fromList (zip (Map.keys(logics logicGraph))
                                              nodeList)
-           lookupLogi(Logic lid) = fromJust (Map.lookup (language_name lid)
-                                                 namesAndNodes)
+           lookupLogi (Logic lid) = 
+               Map.findWithDefault (error "lookupLogi: Logic not found") 
+                                   (language_name lid)
+                                   namesAndNodes
            {- each edge can also show the informations (the
              description of comorphism and names of
              source/target-Logic as well as the sublogics). -}
@@ -149,7 +152,6 @@ showLogicGraph
     where
         (nullNodeParms :: nodeTypeParms AnyLogic) = emptyNodeTypeParms
         (nullArcTypeParms :: arcTypeParms AnyComorphism) = emptyArcTypeParms
-        (nullSubNodeParms :: nodeTypeParms G_sublogics) = emptyNodeTypeParms
         (nullSubArcTypeParms:: arcTypeParms [Char]) = emptyArcTypeParms
         showSublogic l =
             case l of
@@ -208,38 +210,45 @@ showLogicGraph
                                              AllowClose (return True) $$
                                              emptyGraphParms
                  subLogicG <- newGraph displaySort' graphParms
-                 let listG_Sublogics = map (\sbl -> G_sublogics sublid sbl)
+                 let listG_Sublogics = -- map (\sbl -> G_sublogics sublid sbl)
                                        (all_sublogics sublid)
                      subNodeMenu = LocalMenu (Menu Nothing [])
                      subNodeTypeParms =
                          subNodeMenu $$$
                          Ellipse $$$
                          ValueTitle
-                           (\gsl -> case gsl of
-                                      G_sublogics lid sls' ->
-                                        return (unwords $ sublogic_names
-                                                        lid sls')) $$$
+                           (\gsl -> return (unwords $ sublogic_names
+                                                      sublid gsl)) $$$
                          Color "yellow" $$$
-                         nullSubNodeParms
+                         emptyNodeTypeParms
                  subNodeType <- newNodeType subLogicG subNodeTypeParms
                  subNodeList <- mapM (newNode subLogicG subNodeType)
                                 listG_Sublogics
-                 let slAndNodes = zip listG_Sublogics subNodeList
-                     lookupSublogic(g_sl) = fromJust (lookup (g_sl) slAndNodes)
+                 let slAndNodes = Map.fromList $ 
+                                  zip (map (sublogic_names sublid) 
+                                           listG_Sublogics) 
+                                      subNodeList
+                     lookupSublogic g_sl = 
+                         Map.findWithDefault 
+                              (error "lookupSublogic: node not found") 
+                              g_sl slAndNodes
                      subArcMenu = LocalMenu( Menu Nothing [])
                      subArcTypeParms = subArcMenu $$$
                                        Color "green" $$$
                                        nullSubArcTypeParms
                  subArcType <- newArcType subLogicG subArcTypeParms
                  let insertSubArc = \ (node1, node2) ->
-                           newArc subLogicG subArcType "" node1 node2
-                 mapM_ insertSubArc
-                     [ (lookupSublogic g1, lookupSublogic g2)
+                           newArc subLogicG subArcType "" 
+                                  (lookupSublogic node1) 
+                                  (lookupSublogic node2)
+                 mapM_ insertSubArc $ 
+                     Rel.toList $ Rel.intransKernel $ Rel.fromList
+                     [ (sublogic_names sublid g1,sublogic_names sublid g2)
                      | g1 <- listG_Sublogics
                      , g2 <- listG_Sublogics
-                     , isProperSublogic g1 g2
-                     , not $ any (\g -> isProperSublogic g1 g
-                                 && isProperSublogic g g2) listG_Sublogics]
+                     , isSubElem g1 g2
+                     , g1 /= g2
+                     ]
                  redraw subLogicG
 
 showLG :: IO ()

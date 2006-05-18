@@ -1,5 +1,0 @@
-spec hugo =
-sort s < t
-sort t < u
-sort m < t
-end
