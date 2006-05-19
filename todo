@@ -46,10 +46,12 @@ Bremer Constraint-Solver angucken
 ************************************************
 Hendrik (Till)
 ************************************************
-werden Links in der richtigen Reihenfolge geschrieben (S. 183 OMDoc)?
 
 werden Signatur-Symbole in OMDoc mit der Theorie versehen, in der
   sie als erstes eingeführt wurden?
+   checken für Library-Importe
+
+OMDoc/OpenMath-Formeln als Haskell-Datentyp formulieren; diesen als Zwischendatentyp verwenden
 
 Hiding: unterschiedlich in OMDoc und Hets
 ein Hets-Hiding-Link mit einer Inklusion Sigma_1->Sigma_2 als 
@@ -459,6 +461,12 @@ Integration with generic prover interface?
 ************************************************
 Till
 ************************************************
+
+Fragen an Michael:
+werden Links in der richtigen Reihenfolge geschrieben (S. 183 OMDoc)?
+  was ist dort eigentlich das Problem?
+Codierung von Subsorten?
+
 
 paper with Paolo
   semantic adequecy of HOL translation
