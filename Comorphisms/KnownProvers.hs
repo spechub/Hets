@@ -105,7 +105,7 @@ spassComorphisms =
            max_sub_SPASS = max_nosub_SPASS { sub_features = LocFilSub }
            idCASL_sub = Comorphism (IdComorphism CASL max_sub_SPASS)
            idCASL_nosub = Comorphism (IdComorphism CASL max_nosub_SPASS)
-           compSPASS x = compComorphism x (Comorphism CASL2SPASS)
+           compSPASS x = compComorphism x (Comorphism SuleCFOL2SoftFOL)
        partOut <- (compComorphism idCASL_sub (Comorphism CASL2SubCFOL)
                    >>= compSPASS)
        partSubOut <- (compComorphism (Comorphism CASL2PCFOL) 
@@ -113,7 +113,7 @@ spassComorphisms =
                       >>= (compComorphism idCASL_nosub)
                       >>= compSPASS)
        -- mod2SPASS <- compComorphism (Comorphism Modal2CASL) partOut
-       return [Comorphism CASL2SPASS,partOut,partSubOut]
+       return [Comorphism SuleCFOL2SoftFOL,partOut,partSubOut]
 
 showAllKnownProvers :: IO ()
 showAllKnownProvers =

@@ -96,7 +96,7 @@ type Sentence = SPTerm
 {- |
   We use the DefaultMorphism for SPASS.
 -}
-type SPASSMorphism = DefaultMorphism Sign
+type SoftFOLMorphism = DefaultMorphism Sign
 
 {- |
   A SPASS Identifier is a String for now. See also 'checkIdentifier' function

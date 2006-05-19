@@ -70,7 +70,7 @@ printDFG ln sn checkConsistency gth@(G_theory lid sign thSens) =
              (coerceBasicTheory lid CASL "" (sign,sens)
               >>= map_theory idCASL
               >>= map_theory CASL2SubCFOL
-              >>= map_theory CASL2SPASS)
+              >>= map_theory SuleCFOL2SoftFOL)
        else Nothing)
 
 

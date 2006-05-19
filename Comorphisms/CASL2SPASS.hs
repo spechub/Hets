@@ -16,7 +16,7 @@ The translating comorphism from CASL to SPASS.
      (s. below for a sketch)
 -}
 
-module Comorphisms.CASL2SPASS (CASL2SPASS(..)) where
+module Comorphisms.CASL2SPASS (SuleCFOL2SoftFOL(..)) where
 
 -- Debuging and Warning
 import Debug.Trace
@@ -48,17 +48,17 @@ import CASL.Overload
 import CASL.Utils
 import CASL.Inject
 
--- SPASS
+-- SoftFOL
 import SPASS.Sign as SPSign
 import SPASS.Logic_SPASS
 import SPASS.Translate
 import SPASS.Utils
 
 -- | The identity of the comorphism
-data CASL2SPASS = CASL2SPASS deriving (Show)
+data SuleCFOL2SoftFOL = SuleCFOL2SoftFOL deriving (Show)
 
--- | SPASS theories
-type SPASSTheory = (SPSign.Sign,[Named SPTerm])
+-- | SoftFOL theories
+type SoftFOLTheory = (SPSign.Sign,[Named SPTerm])
 
 -- | CASL Ids with Types mapped to SPIdentifier
 type IdType_SPId_Map = Map.Map Id (Map.Map CType SPIdentifier)
@@ -76,9 +76,9 @@ insertSPId :: Id -> CType ->
 insertSPId i t spid m =
     assert (checkIdentifier t spid) $
     Map.insertWith (Map.unionWith err) i (Map.insert t spid Map.empty) m
-    where err = error ("CASL2SPASS: for Id \""++show i ++
+    where err = error ("SuleCFOL2SoftFOL: for Id \""++show i ++
                        "\" the type \""++ show t ++
-                       "\" can't be mapped to different SPASS identifiers")
+                       "\" can't be mapped to different SoftFOL identifiers")
 
 deleteSPId :: Id -> CType ->
               IdType_SPId_Map ->
@@ -99,7 +99,7 @@ elemsSPId_Set = Map.fold (\ m res -> Set.union res
 
 
 -- extended signature translation
-type SignTranslator f e = CSign.Sign f e -> e -> SPASSTheory -> SPASSTheory
+type SignTranslator f e = CSign.Sign f e -> e -> SoftFOLTheory -> SoftFOLTheory
 
 -- extended signature translation for CASL
 sigTrCASL :: SignTranslator () ()
@@ -111,19 +111,19 @@ type FormulaTranslator f e =
 
 -- extended formula translation for CASL
 formTrCASL :: FormulaTranslator () ()
-formTrCASL _ _ = error "CASL2SPASS: No extended formulas allowed in CASL"
+formTrCASL _ _ = error "SuleCFOL2SoftFOL: No extended formulas allowed in CASL"
 
-instance Language CASL2SPASS -- default definition is okay
+instance Language SuleCFOL2SoftFOL -- default definition is okay
 
-instance Comorphism CASL2SPASS
+instance Comorphism SuleCFOL2SoftFOL
                CASL CASL.Sublogic.CASL_Sublogics
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign
                CASLMor
                CASL.Morphism.Symbol CASL.Morphism.RawSymbol ()
-               SPASS () () SPTerm () ()
+               SoftFOL () () SPTerm () ()
                SPSign.Sign
-               SPASSMorphism () () ()  where
+               SoftFOLMorphism () () ()  where
     sourceLogic _ = CASL
     sourceSublogic _ = CASL_SL
                       { sub_features = LocFilSub,
@@ -134,7 +134,7 @@ instance Comorphism CASL2SPASS
                         has_pred = True,
                         which_logic = FOL
                       }
-    targetLogic _ = SPASS
+    targetLogic _ = SoftFOL
     mapSublogic _ _ = ()
     map_theory _ = transTheory sigTrCASL formTrCASL
     map_morphism = mapDefaultMorphism
@@ -151,7 +151,7 @@ transFuncMap idMap sign =
     Map.foldWithKey toSPOpType (Map.empty,idMap) (CSign.opMap sign)
     where toSPOpType iden typeSet (fm,im) =
               if Set.null typeSet then
-                  error ("CASL2SPASS: empty sets are not allowed in OpMaps: "
+                  error ("SuleCFOL2SoftFOL: empty sets are not allowed in OpMaps: "
                          ++ show iden)
               else case Set.lookupSingleton typeSet of
               Just oType ->
@@ -225,7 +225,7 @@ transPredMap idMap sign =
     Map.foldWithKey toSPPredType (Map.empty,idMap) (CSign.predMap sign)
     where toSPPredType iden typeSet (fm,im) =
               if Set.null typeSet then
-                  error ("CASL2SPASS: empty sets are not allowed in PredMaps: "
+                  error ("SuleCFOL2SoftFOL: empty sets are not allowed in PredMaps: "
                          ++ show iden)
               else case Set.lookupSingleton typeSet of
               Just pType ->
@@ -276,7 +276,7 @@ disSPOId cType sid ty idSet
                             nres' = nres ++ '_':show n
                         in if nres == res
                            then if nres' == res
-                                then error ("CASL2SPASS: cannot calculate "
+                                then error ("SuleCFOL2SoftFOL: cannot calculate "
                                             ++ "unambigous id for "
                                             ++ sid ++ " with type " ++ show ty
                                             ++ " and nres = "++ nres
@@ -343,7 +343,7 @@ makeGenGoals :: IdType_SPId_Map -> [Named (FORMULA f)]
 makeGenGoals idMap nfs
     | null nfs = (Map.empty,idMap,[])
     | otherwise =
-        trace "CASL2SPASS: Warning: Sort_gen_ax as goals not implemented, yet."
+        trace "SuleCFOL2SoftFOL: Warning: Sort_gen_ax as goals not implemented, yet."
                   (Map.empty,idMap,[])
 {- implementation sketch:
    - invent new predicate P that is supposed to hold on
@@ -381,17 +381,17 @@ makeGen r@(Result ods omv) nf = maybe (Result ods Nothing) process omv where
                        ((oMap',iMap'),genPairs) ->
                           Result ods (Just (oMap',iMap',rList++genPairs)))
                  else mkError "Non injective sort mappings cannot \
-                              \be translated to SPASS" (sentence nf)
+                              \be translated to SoftFOL" (sentence nf)
       where (srts,ops,mp) = recover_Sort_gen_ax constrs
             hasTheSort s (Qual_op_name _ ot _) = s == res_OP_TYPE ot
-            hasTheSort _ _ = error "CASL2SPASS.hasTheSort"
+            hasTheSort _ _ = error "SuleCFOL2SoftFOL.hasTheSort"
             mkGen = Just . Generated free . map fst
             makeGenP (opMap,idMap) s = ((newOpMap, newIdMap),
                                         (s', mkGen cons))
                 where ((newOpMap,newIdMap),cons) =
                           mapAccumL mkInjOp (opMap,idMap) ops_of_s
                       ops_of_s = List.filter (hasTheSort s) ops
-                      s' = maybe (error "CASL2SPASS.makeGen: No mapping \
+                      s' = maybe (error "SuleCFOL2SoftFOL.makeGen: No mapping \
                                         \found for '"++show s++"'") id
                                  (lookupSPId s CSort idMap)
   _ -> r
@@ -413,10 +413,10 @@ mkInjOp (opMap,idMap) qo@(Qual_op_name i ot _) =
           ot' = CSign.toOpType ot
           lsid = lookupSPId i (COp ot') idMap
           usedNames = Rel.keysSet opMap
-          err = error ("CASL2SPASS.mkInjOp: Cannot find SPId for '"++
+          err = error ("SuleCFOL2SoftFOL.mkInjOp: Cannot find SPId for '"++
                        show qo++"'")
           utype t = fst t ++ [snd t]
-mkInjOp _ _ = error "CASL2SPASS.mkInjOp: Wrong constructor!!"
+mkInjOp _ _ = error "SuleCFOL2SoftFOL.mkInjOp: Wrong constructor!!"
 
 mkInjSentences :: IdType_SPId_Map
                -> FuncMap
@@ -473,7 +473,7 @@ transTheory :: (PrettyPrint f, PosItem f,Eq f) =>
                SignTranslator f e
             -> FormulaTranslator f e
             -> (CSign.Sign f e, [Named (FORMULA f)])
-            -> Result SPASSTheory
+            -> Result SoftFOLTheory
 transTheory trSig trForm (sign,sens) =
   fmap (trSig sign (CSign.extendedInfo sign))
     (case transSign (foldl insInjOps sign genAxs) of
@@ -504,15 +504,15 @@ transTheory trSig trForm (sign,sens) =
 
 transOP_SYMB :: IdType_SPId_Map -> OP_SYMB -> SPIdentifier
 transOP_SYMB idMap qo@(Qual_op_name op ot _) =
-    maybe (error ("CASL2SPASS.transOP_SYMB: unknown op: " ++ show qo))
+    maybe (error ("SuleCFOL2SoftFOL.transOP_SYMB: unknown op: " ++ show qo))
           id (lookupSPId op (COp (CSign.toOpType ot)) idMap)
-transOP_SYMB _ (Op_name _) = error "CASL2SPASS: unqualified operation"
+transOP_SYMB _ (Op_name _) = error "SuleCFOL2SoftFOL: unqualified operation"
 
 transPRED_SYMB :: IdType_SPId_Map -> PRED_SYMB -> SPIdentifier
 transPRED_SYMB idMap qp@(Qual_pred_name p pt _) =
-    maybe (error ("CASL2SPASS.transPRED_SYMB: unknown pred: " ++ show qp))
+    maybe (error ("SuleCFOL2SoftFOL.transPRED_SYMB: unknown pred: " ++ show qp))
           id (lookupSPId p (CPred (CSign.toPredType pt)) idMap)
-transPRED_SYMB _ (Pred_name _) = error "CASL2SPASS: unqualified predicate"
+transPRED_SYMB _ (Pred_name _) = error "SuleCFOL2SoftFOL: unqualified predicate"
 
 -- |
 -- Translate the quantifier
@@ -522,7 +522,7 @@ quantify q =
     Universal -> SPForall
     Existential -> SPExists
     Unique_existential ->
-        error "CASL2SPASS: no translation for existential quantification."
+        error "SuleCFOL2SoftFOL: no translation for existential quantification."
 
 transVarTup :: (Set.Set SPIdentifier,IdType_SPId_Map) ->
                (VAR,SORT) ->
@@ -532,7 +532,7 @@ transVarTup (usedIds,idMap) (v,s) =
     ((Set.insert sid usedIds,
       insertSPId vi (CVar s) sid $ deleteSPId vi (CVar s) idMap)
     , (sid,spSort))
-    where spSort = maybe (error ("CASL2SPASS: translation of sort \""++
+    where spSort = maybe (error ("SuleCFOL2SoftFOL: translation of sort \""++
                                 showPretty s "\" not found"))
                          id (lookupSPId s CSort idMap)
           vi = simpleIdToId v
@@ -613,15 +613,15 @@ transFORMULA sign idMap tr (Strong_equation t1 t2 _)
 transFORMULA sign idMap tr (ExtFORMULA phi) = tr sign idMap phi
 transFORMULA _ _ _ (Definedness _ _) = SPSimpleTerm SPTrue -- totality assumed
 transFORMULA sign idMap tr (Membership t s _) =
-    maybe (error ("CASL2SPASS.tF: no SPASS Id found for \""++
+    maybe (error ("SuleCFOL2SoftFOL.tF: no SoftFOL Id found for \""++
                   showPretty s "\""))
           (\si -> compTerm (spSym si) [transTERM sign idMap tr t])
           (lookupSPId s CSort idMap)
 transFORMULA _ _ _ (Sort_gen_ax _ _) =
-    error "CASL2SPASS.transFORMULA: Sort generation constraints not\
+    error "SuleCFOL2SoftFOL.transFORMULA: Sort generation constraints not\
           \ supported at this point!"
 transFORMULA _ _ _ f =
-    error ("CASL2SPASS.transFORMULA: unknown FORMULA '"++showPretty f "'")
+    error ("SuleCFOL2SoftFOL.transFORMULA: unknown FORMULA '"++showPretty f "'")
 
 
 transTERM :: (PrettyPrint f) =>
@@ -629,14 +629,14 @@ transTERM :: (PrettyPrint f) =>
              IdType_SPId_Map -> FormulaTranslator f e
           -> TERM f -> SPTerm
 transTERM _sign idMap _tr (Qual_var v s _) =
-  maybe (error ("CASL2SPASS.tT: no SPASS Id found for \""++showPretty v "\""))
+  maybe (error ("SuleCFOL2SoftFOL.tT: no SoftFOL Id found for \""++showPretty v "\""))
         (simpTerm . spSym) (lookupSPId (simpleIdToId v) (CVar s) idMap)
 transTERM sign idMap tr (Application opsymb args _) =
     compTerm (spSym (transOP_SYMB idMap opsymb))
              (map (transTERM sign idMap tr) args)
 
 transTERM _sign _idMap _tr (Conditional _t1 _phi _t2 _) =
-    error "CASL2SPASS.transTERM: Conditional terms must be coded out."
+    error "SuleCFOL2SoftFOL.transTERM: Conditional terms must be coded out."
 transTERM sign idMap tr t'@(Sorted_term t s _)
     | term_sort t == s = recRes
     | otherwise =
@@ -656,6 +656,6 @@ transTERM sign idMap tr t'@(Cast t s _)
                  recRes
     where recRes = transTERM sign idMap tr t
 transTERM _sign _idMap _tr t =
-  error ("CASL2SPASS.transTERM: unknown TERM '"++showPretty t "'")
+  error ("SuleCFOL2SoftFOL.transTERM: unknown TERM '"++showPretty t "'")
 
 

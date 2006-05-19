@@ -9,7 +9,7 @@ Maintainer  :  rwagner@tzi.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic)
 
-Instance of class Logic for SPASS.
+Instance of class Logic for SoftFOL.
 -}
 
 
@@ -32,50 +32,53 @@ import SPASS.Prove
   A dummy datatype for the LogicGraph and for identifying the right
   instances
 -}
-data SPASS = SPASS deriving (Show)
-instance Language SPASS where
- description _ = 
-  "SPASS - an automated theorem prover\n" ++
-  "This logic corresponds to the logic of SPASS.\n" ++
-  "See http://spass.mpi-sb.mpg.de/"
+data SoftFOL = SoftFOL deriving (Show)
 
-instance Category SPASS Sign SPASSMorphism where
-  dom SPASS = domOfDefaultMorphism
-  cod SPASS = codOfDefaultMorphism
-  ide SPASS = ideOfDefaultMorphism
-  comp SPASS = compOfDefaultMorphism
-  legal_obj SPASS = const True
-  legal_mor SPASS = legalDefaultMorphism (legal_obj SPASS)
+instance Language SoftFOL where
+ description _ = 
+  "SoftFOL - Soft typed First Order Logic for Automatic Theorem Provers\n\n" ++
+  "This logic corresponds to the logic of SPASS, \n"++
+  "but the generation of TPTP is also possible.\n" ++
+  "See http://spass.mpi-sb.mpg.de/\n"++
+  "and http://www.cs.miami.edu/~tptp/TPTP/SyntaxBNF.html"
+
+instance Category SoftFOL Sign SoftFOLMorphism where
+  dom SoftFOL = domOfDefaultMorphism
+  cod SoftFOL = codOfDefaultMorphism
+  ide SoftFOL = ideOfDefaultMorphism
+  comp SoftFOL = compOfDefaultMorphism
+  legal_obj SoftFOL = const True
+  legal_mor SoftFOL = legalDefaultMorphism (legal_obj SoftFOL)
 
 -- abstract syntax, parsing (and printing)
 
-instance Logic.Logic.Syntax SPASS () () ()
+instance Logic.Logic.Syntax SoftFOL () () ()
     -- default implementation is fine!
 
 
-instance Sentences SPASS Sentence () Sign SPASSMorphism ()  where
-      map_sen SPASS _ s = return s
-      print_named SPASS ga formula = 
+instance Sentences SoftFOL Sentence () Sign SoftFOLMorphism ()  where
+      map_sen SoftFOL _ s = return s
+      print_named SoftFOL ga formula = 
         printFormula ga formula
 -- the prover uses HTk and IO functions from uni
 #ifdef UNI_PACKAGE
-      provers SPASS = [spassProver
+      provers SoftFOL = [spassProver
                        {-insert MathServ prover here-} ] 
-      cons_checkers SPASS = []
+      cons_checkers SoftFOL = []
 #endif
     -- other default implementations are fine
 
-instance StaticAnalysis SPASS () Sentence ()
+instance StaticAnalysis SoftFOL () Sentence ()
                () ()
                Sign 
-               SPASSMorphism () ()  where
-         sign_to_basic_spec SPASS _sigma _sens = ()
-         empty_signature SPASS = emptySign
-         inclusion SPASS = defaultInclusion (is_subsig SPASS)
-         is_subsig SPASS = const $ const True -- TODO!!
+               SoftFOLMorphism () ()  where
+         sign_to_basic_spec SoftFOL _sigma _sens = ()
+         empty_signature SoftFOL = emptySign
+         inclusion SoftFOL = defaultInclusion (is_subsig SoftFOL)
+         is_subsig SoftFOL = const $ const True -- TODO!!
 
-instance Logic SPASS () () Sentence () ()
+instance Logic SoftFOL () () Sentence () ()
                Sign 
-               SPASSMorphism () () () where
+               SoftFOLMorphism () () () where
          stability _ = Testing
     -- again default implementations are fine

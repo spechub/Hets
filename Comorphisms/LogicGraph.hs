@@ -89,7 +89,7 @@ addUnionNames (c1@(Comorphism cid1),  c2@(Comorphism cid2)) =
 inclusionList :: [AnyComorphism]
 inclusionList = [Comorphism CASL2HasCASL, Comorphism HasCASL2HasCASL, 
                  Comorphism CFOL2IsabelleHOL,
-                 Comorphism CASL2SPASS, Comorphism CASL2SubCFOL,
+                 Comorphism SuleCFOL2SoftFOL, Comorphism CASL2SubCFOL,
 #ifdef PROGRAMATICA
                  Comorphism HasCASL2Haskell,
                  Comorphism Haskell2IsabelleHOLCF,
