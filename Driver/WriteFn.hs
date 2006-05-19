@@ -18,10 +18,10 @@ import Control.Monad
 import Data.Maybe
 import Data.List
 
+import Text.ParserCombinators.Parsec
 import Text.PrettyPrint.HughesPJ(render)
 import Common.Utils
 import Common.Id
-import Common.Lexer
 import Common.PrettyPrint
 import Common.Result
 import Common.GlobalAnnotations (GlobalAnnos)
@@ -200,9 +200,13 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
                                     Nothing -> putIfVerbose opt 0 $
                                         "could not translate to Isabelle " ++
                                          show i
-                                    Just d -> let s = shows d "\n" in
-                                        case parseString parseTheory s of
-                                          (_, _) -> writeVerbFile opt f s
+                                    Just d -> do 
+                                      let s = shows d "\n"
+                                      case parse parseTheory f s of
+                                          Left err -> putIfVerbose opt 0 $ 
+                                                      show err
+                                          _ -> return ()
+                                      writeVerbFile opt f s
                       DfgFile c -> do
                             mDoc <- printDFG ln i
                                        (case c of
