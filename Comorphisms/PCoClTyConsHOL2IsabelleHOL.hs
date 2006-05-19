@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Sonja Groening, C. Maeder, Uni Bremen 2003-2006
+Copyright   :  (c) C. Maeder, DFKI 2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -249,16 +249,39 @@ transProgEq sign (ProgEq pat trm _) =
 someTerm :: Option Isa.Term -> Isa.Term
 someTerm o = (if isPartial o then id else termAppl conSome) $ val o 
 
+ifImplOp :: Isa.Term
+ifImplOp = conDouble "ifImplOp"
+
+exEqualOp :: Isa.Term
+exEqualOp = conDouble "exEqualOp"
+
+ifThenElseOp :: Isa.Term
+ifThenElseOp = conDouble "ifThenElseOp"
+
+uncurryOp :: Isa.Term
+uncurryOp = conDouble "uncurryOp"
+
 -- terms
 transTerm :: Env -> As.Term -> (FunType, Isa.Term)
 transTerm sign trm = case trm of
     QualVar (VarDecl var t _ _) -> (funType t,  
         Isa.Free (transVar var) $ transType t)
-    QualOp _ (InstOpId opId _ _) ts@(TypeScheme _ ty _) _ ->
-        if opId == trueId then (BoolVal, true)
-        else if opId == falseId then (BoolVal, false)
-             else (funType ty, 
-                   conDouble $ transOpId sign opId ts)
+    QualOp _ (InstOpId opId _ _) ts@(TypeScheme _ ty _) _ 
+      | opId == trueId -> (fTy, true)
+      | opId == falseId -> (fTy, false)
+      | opId == andId -> unCurry conjV
+      | opId == orId -> unCurry disjV
+      | opId == implId -> unCurry implV
+      | opId == infixIf -> (fTy, ifImplOp)
+      | opId == eqvId -> unCurry eqV
+      | opId == exEq -> (fTy, exEqualOp) 
+      | opId == eqId -> unCurry eqV
+      | opId == notId -> (fTy, notOp)
+      | opId == defId -> (fTy, defOp)
+      | opId == whenElse -> (fTy, ifThenElseOp)
+      | otherwise -> (fTy, conDouble $ transOpId sign opId ts)
+       where fTy = funType ty
+             unCurry f = (fTy, termAppl uncurryOp $ con f) 
     QuantifiedTerm quan varDecls phi _ ->
         let quantify q gvd phi' = case gvd of
                 GenVarDecl (VarDecl var typ _ _) ->
