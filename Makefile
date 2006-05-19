@@ -449,12 +449,13 @@ $(INLINEAXIOMS): $(INLINEAXIOMS_deps)
             -package hssource -i../.. -o $(INLINEAXIOMS)
 	strip $(INLINEAXIOMS)
 
-RELEASENR = release-0-60
+# set this variable from the command line to i,e. RELEASETAG='-r release-0-60'
+RELEASETAG =
 
 release:
 	$(RM) -r HetCATS
 	cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:/repository\
-            co -P -r $(RELEASENR) HetCATS
+            co -P $(RELEASETAG) HetCATS
 	$(RM) -r uni
 	if [ -d ../uni ] ; then ln -s ../uni uni ; fi
 	$(RM) -r programatica
