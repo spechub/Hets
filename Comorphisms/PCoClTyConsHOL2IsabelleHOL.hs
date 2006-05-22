@@ -283,9 +283,15 @@ transTerm sign trm = case trm of
         let (bTy, bTrm) = transTerm sign body
         in (bTy, Isa.Let (map (transProgEq sign) peqs) bTrm)
     TupleTerm ts@(_ : _)  _ -> 
-        let (tys, tts) = unzip $ map (transTerm sign) ts
-        in (if any isPartialVal tys then PartialVal NoFun else NoFun,
-            foldl1 (binConst pairC) tts)
+        foldl1 ( \ (s, p) (t, e) -> let pv = PartialVal NoFun in 
+                                        case (s, t) of 
+                 (PartialVal _, PartialVal _) -> 
+                     (pv, binConst pairC p e)
+                 (PartialVal _, _) -> 
+                     (pv, binConst "pairL" p e)
+                 (_, PartialVal _) -> 
+                     (pv, binConst "pairR" p e)
+                 _ -> (NoFun, Tuplex [p, e] NotCont)) $ map (transTerm sign) ts
     ApplTerm t1 t2 _ -> mkApp sign t1 t2 -- transAppl sign Nothing t1 t2
     _ -> error $ "PCoClTyConsHOL2IsabelleHOL.transTerm " ++ showPretty trm "\n"
                 ++ show trm
