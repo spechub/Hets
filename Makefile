@@ -318,6 +318,7 @@ nondoc_sources = $(wildcard utils/DrIFT-src/*.hs) \
     Comorphisms/test/showKP.hs \
     CASL/CCC/FreeTypes.hs \
     Haskell/PreludeString.append.hs Haskell/ProgramaticaPrelude.hs \
+    SPASS/MathServCommunication.hs \
     $(patsubst %.hs, %.der.hs, $(drifted_files))
 
 hspp_sources = $(patsubst %.hs, %.hspp, $(cpp_sources))
