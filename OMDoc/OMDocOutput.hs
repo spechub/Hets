@@ -1096,7 +1096,7 @@ devGraphToXmlCMPIOXmlNamed go dg =
     senswomap = (\smap -> debugGO go "dGTXCMPIOXNsens" ("Sentences : " ++ (showSensWOMap smap)) smap) $ Hets.getSentencesWOWithNodeDGNamesWO dg
     -- importsmapwo = Hets.getNodeImportsNodeDGNamesWO dg
     inputmapwofull = Hets.getNodeAllImportsNodeDGNamesWOLL dg
-    importsmapwo =
+    {-importsmapwo =
       Map.map
         (\inputlist ->
           Set.fromList $
@@ -1112,7 +1112,7 @@ devGraphToXmlCMPIOXmlNamed go dg =
               )
               inputlist
         )
-        inputmapwofull
+        inputmapwofull-}
     -- sorts
     -- (xmlnamedsortswomap, xmlnames_sm) =
     (xmlnamedsortswomap, _) =
@@ -1352,6 +1352,7 @@ devGraphToXmlCMPIOXmlNamed go dg =
                   case Static.DevGraph.dgl_type ll of
                     Static.DevGraph.GlobalDef -> True
                     Static.DevGraph.LocalDef -> True
+                    Static.DevGraph.HidingDef -> True
                     _ -> False
               )
               inputsxn

@@ -9,10 +9,10 @@ Portability :  portable
 
   some utility functions
 -}
-module OMDoc.Util where
+module OMDoc.Util (module OMDoc.Util, module Data.List) where
 
 import Char (isSpace)
-import Data.List (isSuffixOf)
+import Data.List (isSuffixOf, partition)
 
 listStart::forall a . Eq a => [a]->[a]->Bool
 listStart _ [] = True
@@ -33,7 +33,7 @@ implode::forall a . [a]->[[a]]->[a]
 implode _ [] = []
 implode _ [last' ] = last'
 implode with (item:rest) = item ++ with ++ (implode with rest)
-                        
+
 -- explode byWhat list
 -- TODO : this looks very slow...
 explode::forall a . Eq a => [a]->[a]->[[a]]

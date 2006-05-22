@@ -1129,9 +1129,9 @@ glThmsFromXml t =
       inclusions
   where
   consFromAttr::HXT.XmlTrees->Conservativity
-  consFromAttr t =
+  consFromAttr t' =
     let
-      consattr = xshow $ applyXmlFilter (getValue "conservativity") t
+      consattr = xshow $ applyXmlFilter (getValue "conservativity") t'
     in
       case consattr of
         "monomorphism" -> Mono
@@ -1169,7 +1169,7 @@ importsFromXmlTheory t =
       ) Set.empty imports'
                 
                 
--- used by new format (import graph)
+-- used in edge contstruction
 importsFromXml::HXT.XmlTrees->Hets.ImportsMap
 importsFromXml t =
   foldl (\map' theory ->
@@ -1396,6 +1396,7 @@ getNodeSignature igdg mnode =
           _ -> Hets.emptyCASLSign
 
 
+-- build a DGraph-'skeleton' and attach hiding-information
 importGraphToDGraphXN::
   GlobalOptions
   ->(ImportGraph (HXT.XmlTrees, Maybe DGraph))
@@ -1442,7 +1443,7 @@ importGraphToDGraphXN go ig n =
             tnode = case map (xnItem . snd) $ filter (\(n' ,_) -> n' == nodenum) lnodes of
                     (l:_) -> l
                     _ -> error "node error!"
-            targetsign = getNodeSignature ig (Just tnode)
+            -- targetsign = getNodeSignature ig (Just tnode)
             nodeimporthints = Map.findWithDefault Set.empty nodename importhints
             importsfrom = map (\(a,_,_) -> a) $ Set.toList nodeimports
             -- the omdoc-imports have limited support for the imports
@@ -1454,8 +1455,12 @@ importGraphToDGraphXN go ig n =
                   (not $ elem (fromName ih) importsfrom)
                     &&
                       (case (Static.DevGraph.dgl_type (getIHLink ih)) of
+                        (LocalDef {}) -> False
+                        (GlobalDef {}) -> False
+                        (HidingDef {}) -> False
                         (LocalThm {}) -> False
                         (GlobalThm {}) -> False
+                        (HidingThm {}) -> False
                         _ -> True
                       )
                 )
@@ -1471,17 +1476,40 @@ importGraphToDGraphXN go ig n =
                     of
                       (l:_) -> l
                       _ -> error "node error!"
-                sourcesign = getNodeSignature ig (Just snode)
+                --sourcesign = getNodeSignature ig (Just snode)
                 filteredimporthints =
-                  Set.filter (\h -> (fromName h) == ni) nodeimporthints
-                thislinklab = if isGlobal 
-                  then
-                    defaultDGLinkLab
-                  else
-                    defaultDGLinkLab { dgl_type = Static.DevGraph.LocalDef }
+                  Set.filter (\h -> (fromName h) == ni) importhintswithoutimports
+                hidingSet = case mmm of
+                  Nothing -> Set.empty
+                  (Just (_,_,_,hs)) -> hs
+                isHiding = not $ Set.null hidingSet
+                thislinklab =
+                  if isGlobal
+                    then 
+                      if isHiding
+                        then
+                          defaultDGLinkLab { dgl_type = Static.DevGraph.HidingDef }
+                        else
+                          defaultDGLinkLab
+                    else
+                      defaultDGLinkLab { dgl_type = Static.DevGraph.LocalDef }
+                -- process hiding here !
                 ddgl = case mmm of
                   Nothing -> thislinklab
-                  (Just mm) -> thislinklab { dgl_origin = DGTranslation, dgl_morphism = (Hets.makeCASLGMorphism $ (Hets.morphismMapToMorphism mm) { mtarget=targetsign, msource = sourcesign}) }
+                  (Just mm) ->
+                    thislinklab
+                      {
+                          dgl_origin = DGTranslation
+                        , dgl_morphism =
+                            (Hets.makeCASLGMorphism
+                              (Hets.morphismMapToMorphism mm)
+                              -- msource contains sortSet with hidden Symbols
+                              {-  {
+                                    mtarget=targetsign
+                                  , msource = sourcesign
+                                } -}
+                            )
+                      }
               in      
                 le' ++
                 if Set.null filteredimporthints
@@ -1495,6 +1523,8 @@ importGraphToDGraphXN go ig n =
                           link = case dgl_origin ihlink of
                           -- this is rather ugly, but else morphisms would be lost for now...
                             DGTranslation ->
+                              ihlink { dgl_morphism = dgl_morphism ddgl }
+                            DGHiding ->
                               ihlink { dgl_morphism = dgl_morphism ddgl }
                             _ -> ihlink
                         in
@@ -1519,7 +1549,7 @@ importGraphToDGraphXN go ig n =
                   Set.toList importhintswithoutimports
             )
         ) [] $ Map.toList imports'
-    validedges = foldl (\e newe@(n' ,m,_) ->
+    validedges = foldl (\e newe@(n', m, _) ->
       if (n' ==(-1)) || (m==(-1))
         then
           debugGO go "iGTDGXN"
@@ -1555,61 +1585,111 @@ importGraphToDGraphXN go ig n =
             else
               drop 1 frag
  
-applyLocalImports::DGraph->DGraph
-applyLocalImports dg =
+applyLocalImportsAndHiding::DGraph->DGraph
+applyLocalImportsAndHiding dg =
   let
-    localimports =
-      filter
-        (\(_,_,dgle) -> 
-          case dgl_type dgle of
-            LocalDef -> True
+    labnodes = Graph.labNodes dg
+    labedges = Graph.labEdges dg
+    (toProcess, toIgnore) =
+      partition
+        (\(_,_,ll) ->
+          case dgl_type ll of
+            (LocalDef {}) -> True
             _ -> False
         )
-        $ Graph.labEdges dg
+        labedges
+    initialDG = (Graph.mkGraph labnodes toIgnore)
   in
     foldl
-      (\dg' (m,n,_) ->
+      (\dg' (sedge@(fromn,ton,ll)) ->
         let
-          -- save edges from and to this node,
-          -- because the node gets deleted when updating
-          -- it's signature (and so the links)
-          theseedges = 
-            (Graph.out dg' n) ++ (Graph.inn dg' n)
+          caslmorph = Hets.getCASLMorph sedge
+          newNode =
+            Hets.addSignsAndHideSet
+              dg -- use original graph
+              (sortSet (msource caslmorph))
+              fromn 
+              ton
+          savedEdges = (Graph.inn dg' ton) ++ (Graph.out dg' ton)
+          dgWithNewNode = Graph.insNode (ton, newNode) $ Graph.delNode ton dg'
+          dgWithNewNodeAndOldEdges = Graph.insEdges savedEdges dgWithNewNode
+          newEdge =
+            (
+                fromn
+              , ton
+              , ll
+                  {
+                    dgl_morphism =
+                      Hets.makeCASLGMorphism
+                        caslmorph
+                          {
+                              msource = getSign dgWithNewNodeAndOldEdges fromn
+                            , mtarget = getSign dgWithNewNodeAndOldEdges ton
+                          }
+                  }
+            )
         in
-          Graph.insEdges theseedges
-            $ Hets.addSigns dg m n
+          (Graph.insEdge newEdge dgWithNewNodeAndOldEdges)
       )
-      dg
-      localimports
+      initialDG
+      toProcess
 
-applyGlobalImports::DGraph->DGraph
-applyGlobalImports dg =
+applyGlobalImportsAndHiding::DGraph->DGraph
+applyGlobalImportsAndHiding dg =
   let
-    globalimports =
-      map (\(a, b, _) -> (a,b)) $
-      filter
-        (\(_,_,dgle) -> 
-          case dgl_type dgle of
-            GlobalDef -> True
+    labnodes = Graph.labNodes dg
+    labedges = Graph.labEdges dg
+    (toProcess, toIgnore) =
+      partition
+        (\(_,_,ll) ->
+          case dgl_type ll of
+            (GlobalDef {}) -> True
+            (HidingDef {}) -> True
             _ -> False
         )
-        $ Graph.labEdges dg
-    (newdg, finaledges) =
+        labedges
+    initialDG = (Graph.mkGraph labnodes toIgnore)
+    (newdg, _) =
       until
-        (\(_, edges) -> null edges)
+        (\(_, redges) -> null redges)
         (\(dg', edges) ->
           let
-            ((m, n), redges) = singleEdge edges
-            theseedges =
-              (Graph.out dg' n) ++ (Graph.inn dg' n)
+            ((sedge@(fromn, ton, ll)), redges) = singleEdge edges
+            caslmorph = Hets.getCASLMorph sedge
+            newNode =
+              Hets.addSignsAndHideSet
+                dg -- use original graph
+                (sortSet (msource caslmorph))
+                fromn 
+                ton
+            savedEdges = (Graph.inn dg' ton) ++ (Graph.out dg' ton)
+            dgWithNewNode = Graph.insNode (ton, newNode) $ Graph.delNode ton dg'
+            dgWithNewNodeAndOldEdges = Graph.insEdges savedEdges dgWithNewNode
+            newEdge =
+              (
+                  fromn
+                , ton
+                , ll
+                    {
+                      dgl_morphism =
+                        Hets.makeCASLGMorphism
+                          caslmorph
+                            {
+                                msource = getSign dgWithNewNodeAndOldEdges fromn
+                              , mtarget = getSign dgWithNewNodeAndOldEdges ton
+                            }
+                    }
+              )
           in
-            (Graph.insEdges theseedges $ Hets.addSigns dg' m n, redges)
+            (Graph.insEdge newEdge dgWithNewNodeAndOldEdges, redges)
         )
-        (dg, globalimports)
+        (initialDG, toProcess)
   in
     newdg
   where
-  singleEdge::[Graph.Edge]->(Graph.Edge, [Graph.Edge])
+  singleEdge::
+    [Graph.LEdge DGLinkLab]
+    ->(Graph.LEdge DGLinkLab, [Graph.LEdge DGLinkLab])
   singleEdge edgelist =
     let
       (maybeEdge, newEdges, count) =
@@ -1619,25 +1699,33 @@ applyGlobalImports dg =
               Nothing -> False
               _ -> True
               -- counter to prevent hanging on cyclic structures...
-              || (c>1000)
+              || (c>(1000::Int))
           )
-          (\( _, ((m,n):el), c ) ->
+          (\( _, ((m,n,ll):el), c ) ->
             if null $ linksIn el m
               then
-                (Just (m,n), el, c-1)
+                (Just (m,n,ll), el, c-1)
               else
-                (Nothing, el++[(m,n)], c+1)
+                (Nothing, el++[(m,n,ll)], c+1)
           )
-          (Nothing, edgelist, 0)
+          (Nothing, edgelist, (0::Int))
     in
       case maybeEdge of
         (Just x) -> (x, newEdges)
         _ -> error ("singleEdge: break after " ++ show count)
-  linksIn::[Graph.Edge]->Graph.Node->[Graph.Edge]
-  linksIn edgelist n = filter (\(_,q) -> q == n) edgelist
+  linksIn::forall a . [Graph.LEdge a]->Graph.Node->[Graph.LEdge a]
+  linksIn edgelist n = filter (\(_,q,_) -> q == n) edgelist
 
-      
-                
+getSign::DGraph->Graph.Node->CASLSign
+getSign dgs sn =
+  let
+    snode =
+      fromMaybe
+        (error ("No such node in Graph : \"" ++ show sn ++ "\""))
+        (Graph.lab dgs sn)
+  in
+    Hets.getJustCASLSign $ Hets.getCASLSign (dgn_sign snode)
+
 getCatalogueInformation::HXT.XmlTrees->(Map.Map String String)
 getCatalogueInformation t =
   let
@@ -1907,8 +1995,8 @@ processImportGraphXN go ig =
               --      (\(_, S _ (omdoc, _)) -> omdoc) changednode
               changednodenum =
                 (\(nodenum, _) -> nodenum) changednode
-              dg = applyGlobalImports
-                $ applyLocalImports
+              dg = applyGlobalImportsAndHiding
+                $ applyLocalImportsAndHiding
                   $ importGraphToDGraphXN go igxmd changednodenum
               -- name = (\(_, (S (nname,_) _)) -> nname) changednode
               -- create the altered node

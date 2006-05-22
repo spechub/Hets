@@ -192,6 +192,7 @@ linkFilter ((l@(_,_,link)):rest) =
   (case dgl_type link of
     LocalDef -> [l]
     GlobalDef -> [l]
+    HidingDef -> [l]
     -- LocalThm's with 'Mono' cons tend to link back to their 
     -- origin, effectively wiping out the sorts, etc...
     (LocalThm _ c _) -> case c of Def -> [l]; _ -> []
@@ -217,7 +218,8 @@ innNodes dg n =
     (Graph.inn dg n)
 
 getCASLMorph::(Graph.LEdge DGLinkLab)->(CASL.Morphism.Morphism () () ())
-getCASLMorph (_,_,edge) = (\(Just a) -> a) $ (\(Logic.Grothendieck.GMorphism _ _ morph) -> Data.Typeable.cast morph :: (Maybe (CASL.Morphism.Morphism () () ()))) $ dgl_morphism edge
+getCASLMorph (_,_,edge) =
+  fromMaybe (error "cannot cast morphism to CASL.Morphism")  $ (\(Logic.Grothendieck.GMorphism _ _ morph) -> Data.Typeable.cast morph :: (Maybe (CASL.Morphism.Morphism () () ()))) $ dgl_morphism edge
 
 getMCASLMorph::(Graph.LEdge DGLinkLab)->(Maybe (CASL.Morphism.Morphism () () ()))
 getMCASLMorph (_,_,edge) = (\(Logic.Grothendieck.GMorphism _ _ morph) -> Data.Typeable.cast morph :: (Maybe (CASL.Morphism.Morphism () () ()))) $ dgl_morphism edge
@@ -826,8 +828,11 @@ getNonAxioms::[Ann.Named a]->[Ann.Named a]
 getNonAxioms l = filter (\(NamedSen {isAxiom = iA}) -> not iA) l
 
 isEmptyMorphism::(Morphism a b c)->Bool
-isEmptyMorphism (Morphism _ _ sm fm pm _) =
+isEmptyMorphism (Morphism ss ts sm fm pm _) =
   Map.null sm && Map.null fm && Map.null pm
+
+isEmptyCASLMorphism::CASL.Morphism.Morphism () () ()->Bool
+isEmptyCASLMorphism m = CASL.Sign.isSubSig (\_ _ -> True) (msource m) (mtarget m)
 
 -- fetch the names of all nodes from wich sorts,rels, etc. are imported
 -- this does not list all imports in the DGraph, just the ones that cause
@@ -873,10 +878,51 @@ getNodeImportsNodeDGNamesWO dg = getNodeDGNameMappingWO dg (
       ((mkWON (dgn_name node) from), mmm):names
     ) [] $ inputLNodes dgr n ) Set.null
 
+switchTargetSourceMorph::Morphism () () ()->Morphism () () ()
+switchTargetSourceMorph m =
+  m { mtarget = msource m, msource = mtarget m }
+
 getNodeAllImportsNodeDGNamesWOLL::
   DGraph
   ->Map.Map NODE_NAMEWO [(NODE_NAMEWO, Maybe DGLinkLab, Maybe MorphismMap)]
 getNodeAllImportsNodeDGNamesWOLL dg = getNodeDGNameMappingWO dg (
+  \dgr n -> 
+    let
+      incomming =
+        (filter (\(_, tn, _) -> tn == n)) $ Graph.labEdges dgr
+      incommingWN =
+        map
+          (\(fn,tn,iedge) ->
+            case Graph.lab dgr fn of
+              Nothing -> error "Corrupt Graph!"
+              (Just inode) -> (fn,tn,iedge,inode)
+          )
+          incomming
+    in
+      foldl
+        (\imports (fn, _, iedge, inode) ->
+          let
+            icaslmorph = getCASLMorph (undefined, undefined, iedge)
+            caslmorph = case dgl_type iedge of 
+              HidingDef -> switchTargetSourceMorph icaslmorph
+              _ -> icaslmorph
+            mmm = if isEmptyCASLMorphism caslmorph
+              then
+                Nothing
+              else
+                (Just (makeMorphismMap caslmorph))        
+          in
+            imports ++ [ ((mkWON (dgn_name inode) fn), Just iedge, mmm) ]
+        )
+        []
+        incommingWN
+  )
+  null
+
+getNodeAllImportsNodeDGNamesWOLLo::
+  DGraph
+  ->Map.Map NODE_NAMEWO [(NODE_NAMEWO, Maybe DGLinkLab, Maybe MorphismMap)]
+getNodeAllImportsNodeDGNamesWOLLo dg = getNodeDGNameMappingWO dg (
   \dgr n -> 
     foldl (\names (from,node) ->
       let
@@ -888,8 +934,8 @@ getNodeAllImportsNodeDGNamesWOLL dg = getNodeDGNameMappingWO dg (
           Nothing -> Nothing
           (Just (_,_,ll)) -> Just ll
         caslmorph = case mfirstedge of
-          Nothing -> emptyCASLMorphism
           (Just l) -> getCASLMorph l
+          _ -> emptyCASLMorphism
         mmm = if isEmptyMorphism caslmorph
           then
             Nothing
@@ -928,10 +974,6 @@ getNodeNames dg =
   fst $ foldl (\(ns, num) (n, node) ->
     (Set.insert (n, adjustNodeName ("AnonNode_"++(show num)) $ getDGNodeName node) ns, (num+1)::Integer)
     ) (Set.empty, 1) $ Graph.labNodes dg
-    
-partition::(a->Bool)->[a]->([a], [a])
-partition left =
-  foldl (\(rl, rr) a -> if left a then (a:rl, rr) else (rl, a:rr)) ([],[]) 
     
 -- | get two sets of node nums and names. first set are nodes, second are refs
 getNodeNamesNodeRef::DGraph->(Set.Set (Graph.Node, String), Set.Set (Graph.Node, String))
@@ -1231,15 +1273,26 @@ addMorphismPreds (_,_,pm,_) preds =
         )
         newmap
       ) preds mpreds 
-    
+ 
+-- create a Morphism from a MorphismMap (stores hidden symbols in source-sign -> sortSet 
 morphismMapToMorphism::MorphismMap->(Morphism () () ())
-morphismMapToMorphism (sortmap, funmap, predmap,_) =
+morphismMapToMorphism (sortmap, funmap, predmap, hs) =
   let
     mfunmap = Map.fromList $ map (\((sid, sot),t) -> ((sid, sot { opKind = Partial }),t)) $ Map.toList $ Map.map (\(tid,(OpType fk _ _)) ->
       (tid, fk) ) funmap
     mpredmap = Map.map (\(tid,_) -> tid ) predmap
+    -- this is just a workaround to store the hiding-set
+    sourceSignForHiding = emptyCASLSign { sortSet = hs }
   in
-    Morphism (emptySign ()) (emptySign ()) sortmap mfunmap mpredmap ()
+    Morphism
+      {
+          msource = sourceSignForHiding
+        , mtarget = (emptySign ())
+        , sort_map = sortmap
+        , fun_map = mfunmap
+        , pred_map = mpredmap
+        , extended_map = ()
+      }
     
 applyMorphHiding::MorphismMap->[Id.Id]->MorphismMap
 applyMorphHiding mm [] = mm
@@ -1373,6 +1426,97 @@ idToNodeName (Id.Id toks _ _) = (toks!!0, show (toks!!1), read (show (toks!!2)))
 getSortSet::DGraph->Node->Set.Set SORT
 getSortSet dg n =
   getFromCASLSignM dg n sortSet
+
+-- map every node to a map of every input node to a set of symbols *hidden*
+-- when importing from the input node
+type HidingMap = Map.Map Graph.Node (Map.Map Graph.Node (Set.Set SORT))
+
+-- add node 1 to node 2
+addSignsAndHideSet::DGraph->Set.Set SORT->Node->Node->DGNodeLab
+addSignsAndHideSet dg hidingSetForSource n1 n2 =
+  let
+    n1dgnl = case Graph.lab dg n1 of
+      Nothing -> error ("No such Node! " ++ (show n1))
+      (Just x) -> x
+    n2dgnl = case Graph.lab dg n2 of
+      Nothing -> error ("No such Node! " ++ (show n2))
+      (Just x) -> x
+    sign1 =  getJustCASLSign $ getCASLSign (dgn_sign n1dgnl)
+    sign2 =  getJustCASLSign $ getCASLSign (dgn_sign n2dgnl)
+    asign = CASL.Sign.addSig (\_ _ -> ()) sign1 sign2
+    sortshide = Set.filter (\x -> not $ Set.member x hidingSetForSource) (sortSet asign)
+    relhide =
+      Rel.fromList $
+        filter
+          (\(a,b) ->
+            (not $ Set.member a hidingSetForSource) && (not $ Set.member b hidingSetForSource)
+          )
+          (Rel.toList (sortRel asign))
+    predshide = Map.filterWithKey (\k _ -> not $ Set.member k hidingSetForSource) (predMap asign)
+    opshide = Map.filterWithKey (\k _ -> not $ Set.member k hidingSetForSource) (opMap asign)
+    assocshide = Map.filterWithKey (\k _ -> not $ Set.member k hidingSetForSource) (assocOps asign)
+    signhide =
+      asign
+        {
+            sortSet = sortshide
+          , sortRel = relhide
+          , predMap = predshide
+          , opMap = opshide
+          , assocOps = assocshide
+        }
+    newnodel =
+      n2dgnl
+        {
+          dgn_theory = G_theory CASL signhide (Prover.toThSens [])
+        }
+  in
+    newnodel
+
+-- add node 1 to node 2
+addSignsAndHide::DGraph->HidingMap->Node->Node->DGraph
+addSignsAndHide dg hidingMap n1 n2 =
+  let
+    n1dgnl = case Graph.lab dg n1 of
+      Nothing -> error ("No such Node! " ++ (show n1))
+      (Just x) -> x
+    n2dgnl = case Graph.lab dg n2 of
+      Nothing -> error ("No such Node! " ++ (show n2))
+      (Just x) -> x
+    -- n2 is the target
+    hidingMapForNode = Map.findWithDefault Map.empty n2 hidingMap
+    -- n1 is the source
+    hidingSetForSource = Map.findWithDefault Set.empty n1 hidingMapForNode
+    sign1 =  getJustCASLSign $ getCASLSign (dgn_sign n1dgnl)
+    sign2 =  getJustCASLSign $ getCASLSign (dgn_sign n2dgnl)
+    asign = CASL.Sign.addSig (\_ _ -> ()) sign1 sign2
+    sortshide = Set.filter (\x -> not $ Set.member x hidingSetForSource) (sortSet asign)
+    relhide =
+      Rel.fromList $
+        filter
+          (\(a,b) ->
+            (not $ Set.member a hidingSetForSource) && (not $ Set.member b hidingSetForSource)
+          )
+          (Rel.toList (sortRel asign))
+    predshide = Map.filterWithKey (\k _ -> not $ Set.member k hidingSetForSource) (predMap asign)
+    opshide = Map.filterWithKey (\k _ -> not $ Set.member k hidingSetForSource) (opMap asign)
+    assocshide = Map.filterWithKey (\k _ -> not $ Set.member k hidingSetForSource) (assocOps asign)
+    signhide =
+      asign
+        {
+            sortSet = sortshide
+          , sortRel = relhide
+          , predMap = predshide
+          , opMap = opshide
+          , assocOps = assocshide
+        }
+    newnodel =
+      n2dgnl
+        {
+          dgn_theory = G_theory CASL signhide (Prover.toThSens [])
+        }
+  in
+    Debug.Trace.trace ("HidingSet for " ++ show n1 ++ " -> "  ++ show n2 ++ " : " ++ show hidingSetForSource) $ Graph.insNode (n2, newnodel) (Graph.delNode n2 dg)
+
 
 addSigns::DGraph->Node->Node->DGraph
 addSigns dg n1 n2 =
