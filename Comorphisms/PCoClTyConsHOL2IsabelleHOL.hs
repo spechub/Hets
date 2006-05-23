@@ -240,6 +240,9 @@ ifThenElseOp = conDouble "ifThenElseOp"
 uncurryOp :: Isa.Term
 uncurryOp = conDouble "uncurryOp"
 
+defOp1 :: Isa.Term
+defOp1 = conDouble "defOp1"
+
 -- terms
 transTerm :: Env -> As.Term -> (FunType, Isa.Term)
 transTerm sign trm = case trm of
@@ -256,7 +259,7 @@ transTerm sign trm = case trm of
       | opId == exEq -> (fTy, exEqualOp) 
       | opId == eqId -> unCurry eqV
       | opId == notId -> (fTy, notOp)
-      | opId == defId -> (fTy, defOp)
+      | opId == defId -> (fTy, defOp1)
       | opId == whenElse -> (fTy, ifThenElseOp)
       | otherwise -> (fTy, conDouble $ transOpId sign opId ts)
        where fTy = funType ty
@@ -302,17 +305,23 @@ mkApp sg tt tt' =
         (aTy, aTrm) = transTerm sg tt'
     in case fTy of
          FunType _ r@(PartialVal _) ->
-            (r, termAppl (termAppl (conDouble 
-                (if isPartialVal aTy then "appl1" else "appl2")) fTrm) aTrm)
+            (r, termAppl (if isPartialVal aTy then 
+                      termAppl (conDouble "appl1") fTrm else fTrm) aTrm)
+         FunType _ r@BoolVal ->
+            (r, termAppl (if isPartialVal aTy then 
+                      termAppl (conDouble "pApp2") fTrm else fTrm) aTrm)
          FunType _ r -> if isPartialVal aTy then
             (PartialVal r, termAppl (termAppl (conDouble "appl3") fTrm) aTrm)
              else (r, termAppl fTrm aTrm)
          PartialVal (FunType _ r@(PartialVal _)) ->
             (r, termAppl (termAppl (conDouble 
-                (if isPartialVal aTy then "appl4" else "appl5")) fTrm) aTrm)
+                (if isPartialVal aTy then "app" else "appl5")) fTrm) aTrm)
+         PartialVal (FunType _ r@BoolVal) ->
+            (r, termAppl (termAppl (conDouble 
+                (if isPartialVal aTy then "pApp" else "pApp1")) fTrm) aTrm)
          PartialVal (FunType _ r) ->
             (PartialVal r, termAppl (termAppl (conDouble 
-                (if isPartialVal aTy then "appl6" else "appl7")) fTrm) aTrm)
+                (if isPartialVal aTy then "apt" else "appl7")) fTrm) aTrm)
          _ -> error "not a function type"
 
 -- * translation of lambda abstractions
