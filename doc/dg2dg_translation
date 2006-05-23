@@ -1,0 +1,31 @@
+
+This file describes the implementation task: 
+ how to translate a development graph along a comorphism into an
+ isomorphic development graph 
+
+But unfortunately in German
+
+Die Grundidee findet sich im CASL Reference Manual (LNCS 2960) auf 
+Seite 297-298 (Liegt hier als LNCS2960_297-298.pdf) 
+
+Hier nun eine Beschreibung auf Deutsch, die wir (Till und Klaus) um
+notwendige Details anreichern werden:
+
+ - der übersetzte Graph hat die gleiche Anzahl Knoten und Kanten wie
+   das Original, so dass jedem Originalknoten n ein Knoten R(n) im
+   übersetzten Graph zugeordnet ist. Das gleiche gilt für Kanten.
+
+ - zu beachten ist das manch ein Comorphism Signaturen in Theorien
+   übersetzt; dadurch kann es passieren, dass einige Sätze doppelt
+   erzeugt werden. Deshalb müssen aus den neu erzeugten Sätze noch die
+   ausgefiltert werden, die schon über andere Kanten importiert werden
+
+ - der übersetzte Graph wird dann in einem neuen uDrawGraph Fenster
+   angezeigt.
+
+Später brauchen wir noch dies:
+
+ - für die Übersetzung nach OWL-DL brauchen wir eine Möglichkeit die
+   Kantentypen zu beschränken. Denn OWL-DL kennt nur "import"-Kanten.
+   Also brauchen wir für diese Richtung auch eine Übersetzung von
+   Hiding/Renaming-Kanten in import-Kanten.
