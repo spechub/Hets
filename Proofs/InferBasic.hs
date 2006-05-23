@@ -85,7 +85,7 @@ instance GetPName G_cons_checker where
     getPName (G_cons_checker _ p) = prover_name p
 
 -- | Pairs each target prover of these comorphisms with its comorphism
-getProvers ::[AnyComorphism] -> [(G_prover, AnyComorphism)]
+getProvers :: [AnyComorphism] -> [(G_prover, AnyComorphism)]
 getProvers = foldl addProvers []
     where addProvers acc cm = 
               case cm of 
@@ -215,12 +215,23 @@ proveKnownPMap :: (Logic lid sublogics1
                proof_tree1) =>
        ProofGUIState lid sentence -> IO (Result (ProofGUIState lid sentence))
 proveKnownPMap st =
-    let mpr = do pr_s <- selectedProver st
-                 ps <- Map.lookup pr_s (proversMap st)
-                 find (lessSublogicComor (sublogicOfTheory st)) ps
-    in case mpr of
+    let mt = do
+           pr_s <- selectedProver st
+           ps <- Map.lookup pr_s (proversMap st)
+           cm <- find (lessSublogicComor (sublogicOfTheory st)) ps
+           return (pr_s,cm)
+        matchingPr s (gp,_) = case gp of
+                               G_prover _ p -> prover_name p == s
+    in case mt of
        Nothing -> proveFineGrainedSelect st
-       Just pr -> callProver st (head $ getProvers [pr])
+       Just (pr_n,cm) -> 
+           callProver st 
+                      (case filter (matchingPr pr_n) $ 
+                            getProvers [cm] of
+                       [] -> error "Proofs.InferBasic: no prover found"
+                       [p] -> p
+                       _ -> error $ "Proofs.InferBasic: more than one"++
+                                    " matching prover found")
 
 callProver :: (Logic lid sublogics1
                basic_spec1
