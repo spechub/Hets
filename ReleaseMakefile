@@ -35,7 +35,8 @@ endif
 
 # OPTS without uni packages
 HC_OPTS1 = -fglasgow-exts -fallow-overlapping-instances \
-    $(PFE_FLAGS) -DCASLEXTENSIONS -ihxt
+    $(PFE_FLAGS) -DCASLEXTENSIONS -ihxt -isyb-generics -ihaifa-lite/src \
+    -ihcl/src
 
 HC_OPTS = $(HC_OPTS1) $(HC_PACKAGE)
 

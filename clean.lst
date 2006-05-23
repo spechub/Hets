@@ -92,9 +92,6 @@ parsec
 pretty
 test
 todo
-hcl
-syb-generics
-haifa-lite
 
 utils/appendHaskellPreludeString
 utils/outlineAxioms
