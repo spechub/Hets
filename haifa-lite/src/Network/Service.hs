@@ -52,7 +52,7 @@ import Debug.Trace as DB
 data PubFunc m = forall s . Service s m => PubFunc (s m)
 
 soapTraceOn :: Bool
-soapTraceOn = True
+soapTraceOn = False
 
 soapTrace x = (if soapTraceOn then putStrLn x else return ())
 
