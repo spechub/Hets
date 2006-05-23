@@ -29,3 +29,21 @@ Später brauchen wir noch dies:
    Kantentypen zu beschränken. Denn OWL-DL kennt nur "import"-Kanten.
    Also brauchen wir für diese Richtung auch eine Übersetzung von
    Hiding/Renaming-Kanten in import-Kanten.
+
+Datenstrukturen
+  siehe Static/DevGraph.hs
+  Der zu übersetzende Typ ist GlobalContext, mittels rekursivem Abstieg.
+  Die eigentliche Übersetzung findet dann bei den Typen G_sign, G_theory,
+  G_morphism und GMorphism statt (dies sind Typen, die beim rekursiven
+  Abstieg vorkommen). Diese Typen müssen mit einem case ausgepeckt werden,
+  und Signatur der G_sign (bzw. der Morphismus des G_morphism etc.) muss
+  mittles coerceSign (bzw. coerceMorphism) aus Logic.Coerce der
+  Quell-Logik des Comorphismus angepasst werden. Dazu muss der coerce-
+  Funktion die ausgepackte lid sowie die lid, die sich mittels
+  sourceLogic (siehe Logic.Comorphism) aus dem Comorphismus ergibt,
+  übergeben werden. Nach Aufruf der Coerce-Funktion kann dann der
+  Comorphismus angewendet werden (map_sign, map_theory, map_morphism),
+  und das Resultat (zusammen mit der lid, die sich aus der targetLogic
+  des Comorphismus ergibt) in den neuen Entwicklungsgraphen eingetragen werden.
+
+   
