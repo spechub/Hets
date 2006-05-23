@@ -55,6 +55,7 @@ import Comorphisms.CASL2CoCASL
 import Comorphisms.CASL2CspCASL
 import Comorphisms.CspCASL2Modal
 #endif
+import Comorphisms.PCoClTyConsHOL2IsabelleHOL
 import Comorphisms.HasCASL2IsabelleHOL
 import Comorphisms.CASL2TopSort
 #ifdef PROGRAMATICA
@@ -102,7 +103,8 @@ inclusionList = [Comorphism CASL2HasCASL, Comorphism HasCASL2HasCASL,
                  Comorphism CASL2CspCASL,
                  Comorphism CspCASL2Modal,
 #endif
-                 Comorphism HasCASL2IsabelleHOL]
+                 Comorphism HasCASL2IsabelleHOL,
+                 Comorphism PCoClTyConsHOL2IsabelleHOL]
 
 normalList :: [AnyComorphism]
 normalList = [
