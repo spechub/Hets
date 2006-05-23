@@ -41,6 +41,7 @@ import Comorphisms.CASL2SubCFOL
 import Comorphisms.CASL2PCFOL
 import Comorphisms.CASL2SPASS
 
+import SPASS.Logic_SPASS
 import SPASS.Conversions
 import SPASS.Translate
 import SPASS.Sign
@@ -80,7 +81,8 @@ printDFG ln sn checkConsistency gth@(G_theory lid sign thSens) =
                       >>= map_theory CASL2PCFOL
                       >>= map_theory CASL2SubCFOL
                       >>= map_theory SuleCFOL2SoftFOL)
-            else Nothing)
+            else resultToMaybe $
+                 coerceBasicTheory lid SoftFOL "" (sign,sens))
 
 
   where sens = toNamedList thSens
