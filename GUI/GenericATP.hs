@@ -506,7 +506,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
   resultFrame <- newFrame right []
   pack resultFrame [Expand On, Fill Both]
 
-  l4 <- newLabel resultFrame [text "Results:"]
+  l4 <- newLabel resultFrame [text ("Results:"++replicate 70 ' ')]
   pack l4 [Anchor NorthWest]
 
   spacer <- newLabel resultFrame [text "   "]
