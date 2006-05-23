@@ -38,6 +38,7 @@ import CASL.Logic_CASL
 import CASL.Sublogic
 
 import Comorphisms.CASL2SubCFOL
+import Comorphisms.CASL2PCFOL
 import Comorphisms.CASL2SPASS
 
 import SPASS.Conversions
@@ -71,7 +72,15 @@ printDFG ln sn checkConsistency gth@(G_theory lid sign thSens) =
               >>= map_theory idCASL
               >>= map_theory CASL2SubCFOL
               >>= map_theory SuleCFOL2SoftFOL)
-       else Nothing)
+       else if lessSublogicComor (sublogicOfTh gth) $ 
+                Comorphism idCASL_nosub
+            then resultToMaybe  
+                     (coerceBasicTheory lid CASL "" (sign,sens)
+                      >>= map_theory idCASL_nosub
+                      >>= map_theory CASL2PCFOL
+                      >>= map_theory CASL2SubCFOL
+                      >>= map_theory SuleCFOL2SoftFOL)
+            else Nothing)
 
 
   where sens = toNamedList thSens
@@ -93,7 +102,11 @@ printDFG ln sn checkConsistency gth@(G_theory lid sign thSens) =
 
         falseSen = SPSimpleTerm SPFalse
 
+        max_nosub_SPASS = 
+               top {cons_features =
+                        (cons_features top) {emptyMapping = True} }
         max_sub_SPASS = top { sub_features = LocFilSub
                                , cons_features = 
                                    (cons_features top) {onlyInjConstrs=False}}
         idCASL = IdComorphism CASL max_sub_SPASS
+        idCASL_nosub = IdComorphism CASL max_nosub_SPASS
