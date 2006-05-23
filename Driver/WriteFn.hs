@@ -214,7 +214,7 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
                                         OnlyAxioms  -> False)
                                        gTh
                             maybe (putIfVerbose opt 0 $
-                                     "could not translate to SPASS: " ++
+                                     "could not translate to DFG: " ++
                                      show i)
                                   (\ d -> writeVerbFile opt f $ shows d "\n")
                                   mDoc
