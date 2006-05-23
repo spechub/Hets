@@ -24,6 +24,7 @@ import Common.Keywords
 import Common.Lib.Pretty as P
 import Static.DevGraph
 import Static.DGToSpec
+import Common.ConvertGlobalAnnos()
 
 printLibrary :: LibEnv -> (LIB_NAME, GlobalContext) -> Doc
 printLibrary le (ln, GlobalContext { globalAnnos = ga, globalEnv = ge }) =
@@ -41,5 +42,6 @@ printTheory le ln ga sn ge = case ge of
     _ -> P.empty
 
 printTh :: GlobalAnnos -> SIMPLE_ID -> G_theory -> Doc
-printTh ga sn g = text specS <+> printText0 ga sn <+> equals
+printTh ga sn g = printText0 ga ga $+$
+                  text specS <+> printText0 ga sn <+> equals
                     $$ printText0 ga g
