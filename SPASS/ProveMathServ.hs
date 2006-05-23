@@ -66,7 +66,7 @@ import GUI.GenericATPState
 mathServBroker :: Prover Sign Sentence ()
 mathServBroker =
   Prover { prover_name = "MSBroker (Exp)",
-           prover_sublogic = "SPASS",
+           prover_sublogic = "SoftFOL",
            prove = mathServBrokerGUI
          }
 

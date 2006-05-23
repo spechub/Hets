@@ -59,7 +59,7 @@ import GUI.GenericATPState
 spassProver :: Prover Sign Sentence ()
 spassProver =
   Prover { prover_name = "SPASS",
-           prover_sublogic = "SPASS",
+           prover_sublogic = "SoftFOL",
            prove = spassProveGUI
          }
 
