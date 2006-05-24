@@ -34,7 +34,7 @@ PFE_FLAGS = -package data -package text $(PFE_PATH) -DPROGRAMATICA \
 endif
 
 # OPTS without uni packages
-HC_OPTS1 = -fglasgow-exts -fallow-overlapping-instances \
+HC_OPTS1 = -fglasgow-exts -fallow-overlapping-instances -fcontext-stack60 \
     $(PFE_FLAGS) -DCASLEXTENSIONS -ihxt -isyb-generics -ihaifa-lite/src \
     -ihcl/src
 
