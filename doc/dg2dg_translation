@@ -23,19 +23,12 @@ notwendige Details anreichern werden:
  - der übersetzte Graph wird dann in einem neuen uDrawGraph Fenster
    angezeigt.
 
-Später brauchen wir noch dies:
-
- - für die Übersetzung nach OWL-DL brauchen wir eine Möglichkeit die
-   Kantentypen zu beschränken. Denn OWL-DL kennt nur "import"-Kanten.
-   Also brauchen wir für diese Richtung auch eine Übersetzung von
-   Hiding/Renaming-Kanten in import-Kanten.
-
 Datenstrukturen
   siehe Static/DevGraph.hs
   Der zu übersetzende Typ ist GlobalContext, mittels rekursivem Abstieg.
   Die eigentliche Übersetzung findet dann bei den Typen G_sign, G_theory,
   G_morphism und GMorphism statt (dies sind Typen, die beim rekursiven
-  Abstieg vorkommen). Diese Typen müssen mit einem case ausgepeckt werden,
+  Abstieg vorkommen). Diese Typen müssen mit einem case ausgepackt werden,
   und Signatur der G_sign (bzw. der Morphismus des G_morphism etc.) muss
   mittles coerceSign (bzw. coerceMorphism) aus Logic.Coerce der
   Quell-Logik des Comorphismus angepasst werden. Dazu muss der coerce-
@@ -46,4 +39,10 @@ Datenstrukturen
   und das Resultat (zusammen mit der lid, die sich aus der targetLogic
   des Comorphismus ergibt) in den neuen Entwicklungsgraphen eingetragen werden.
 
+Später brauchen wir noch dies:
+
+ - für die Übersetzung nach OWL-DL brauchen wir eine Möglichkeit die
+   Kantentypen zu beschränken. Denn OWL-DL kennt nur "import"-Kanten.
+   Also brauchen wir für diese Richtung auch eine Übersetzung von
+   Hiding/Renaming-Kanten in import-Kanten.
    
