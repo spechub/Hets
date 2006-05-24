@@ -14,6 +14,27 @@ Pretty printing for SPASS signatures in TPTP syntax.
 
 -}
 
+{- todo:
+
+  all these fomulas are named declaration and will be numbered
+   - output typing for operations as sentences with name 
+     * a conjunction of sorted variables for each parameter 
+       forms the premise of an implication if there are any parameters
+     * the sorted function application is the conclusion or the sentence is 
+       just the sorted constant 
+    examples:
+     1. 
+       DFG: forall([a(x1),list_A(x2)],list_A(cons(x1,x2))).
+
+       TPTP: fof(ax4,declaration0,(! [U,V] : ((a(U) &
+                          list_A(V)) => list_A(cons(U,V))))).
+
+     2.
+      DFG: list_A(nil).
+      TPTP: fof(ax7,declaration1,(list_A(nil))).
+   - output subsorting information as implication
+       sortSymA => sortSymB
+-}
 module SPASS.PrintTPTP where
 
 import Maybe
