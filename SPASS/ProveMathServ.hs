@@ -242,34 +242,13 @@ runMSBroker sps cfg saveDFG thName nGoal = do
                     (showPretty prob ""))
     mathServOut <- callMathServ (show $ printTPTP prob) tLimit
    
-
     -- put XML parser in here 
     
-    -- !! some test values, assuming XML parsing is already done:
-    let res = Just Open -- Nothing stands for error in MathServ or prover
+    -- some fast results using RegExp
+    let res = parseMSOutput mathServOut
+
     let timeout = False
-    let output = [
-         "SPASS V 2.2 "
-         ,"SPASS beiseite: Proof found."
-         ,"Problem: Read from stdin. "
-         ,"SPASS derived 2 clauses, backtracked 0 clauses and kept 5 clauses."
-         ,"SPASS allocated 542 KBytes."
-         ,"SPASS spent        0:00:00.03 on the problem."
-         ,"                0:00:00.00 for the input."
-         ,"                0:00:00.00 for the FLOTTER CNF translation."
-         ,"                0:00:00.00 for inferences."
-         ,"                0:00:00.00 for the backtracking."
-         ,"                0:00:00.00 for the reduction."
-         ,""
-         ,""
-         ,"Here is a proof with depth 1, length 5 :"
-         ,"1[0:Inp] ||  -> Q(skc1)*."
-         ,"2[0:Inp] || P(skc1)* -> ."
-         ,"4[0:Inp] Q(U) ||  -> P(U)*."
-         ,"5[0:Res:1.0,4.0] ||  -> P(skc1)*."
-         ,"7[0:MRR:5.0,2.0] ||  -> ."
-         ,"Formulae used in the proof : go ax"
-         ]
+    let output = []
 
       -- replace tabulators occuring in output with each 8 spaces
     let output' = lines $ foldr (\ch li ->
@@ -286,6 +265,19 @@ runMSBroker sps cfg saveDFG thName nGoal = do
     where
       tLimit = maybe (guiDefaultTimeLimit) id $ timeLimit cfg
       defaultPrStat = defaultProof_status nGoal tLimit
+      
+
+parseMSOutput :: String  -- ^ MathServ Output
+              -> Maybe GoalStatus -- ^ final parsed goal status
+parseMSOutput out =
+    let matchTheorem = matchRegex re_theorem out
+        matchCounter = matchRegex re_counter out
+    in if isJust matchTheorem then Just $ Proved Nothing
+          else if isJust matchCounter then Just Disproved
+            else Just Open
+    where
+      re_theorem = mkRegex "status.owl#Theorem"
+      re_counter = mkRegex "status.owl#Counter"
 
 
 -- !! check the states, is defaultProof_status sufficient?
