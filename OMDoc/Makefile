@@ -4,7 +4,7 @@
 ####################################################################
 ## Some varibles, which control the compilation
 
-INCLUDE_PATH = ../. ../hxt
+INCLUDE_PATH = ../. ../hxt ../syb-generics ../haifa-lite/src ../hcl/src
 
 HC = ghc
 

@@ -28,6 +28,8 @@ import Data.List (find)
 import qualified OMDoc.HetsDefs as Hets
 
 import OMDoc.XmlHandling
+import qualified Text.XML.HXT.Parser as HXT
+import Text.XML.HXT.Parser ((+++),(+=))
 import OMDoc.KeyDebug
 
 -- Global-Options (for debugging currently)
@@ -267,3 +269,5 @@ cv_Pred_typeToPredType (Pred_type args _) = PredType args
 
 cv_PredTypeToPred_type::PredType->PRED_TYPE
 cv_PredTypeToPred_type (PredType args) = Pred_type args Id.nullRange
+
+

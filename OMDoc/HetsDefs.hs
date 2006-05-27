@@ -193,6 +193,8 @@ linkFilter ((l@(_,_,link)):rest) =
     LocalDef -> [l]
     GlobalDef -> [l]
     HidingDef -> [l]
+    (FreeDef {}) -> [l]
+    (CofreeDef {}) -> [l]
     -- LocalThm's with 'Mono' cons tend to link back to their 
     -- origin, effectively wiping out the sorts, etc...
     (LocalThm _ c _) -> case c of Def -> [l]; _ -> []
@@ -1304,8 +1306,8 @@ applyMorphHiding (sortmap, funmap, predmap, hidingset) hidings =
     ,hidingset
   )
   
-buildMorphismSign::MorphismMap->[Id.Id]->CASLSign->CASLSign
-buildMorphismSign
+buildMorphismSignO::MorphismMap->[Id.Id]->CASLSign->CASLSign
+buildMorphismSignO
   (mmsm, mmfm, mmpm, _) 
   hidings
   sourcesign =
@@ -1362,6 +1364,139 @@ buildMorphismSign
       envdiags
       ga
       ext
+
+buildMorphismSign::Morphism () () ()->Set.Set SORT->CASLSign->CASLSign
+buildMorphismSign morphism hidingSet sign =
+  let
+    sortshide = Set.filter (\x -> not $ Set.member x hidingSet) (sortSet sign)
+    relhide =
+      Rel.fromList $
+        filter
+          (\(a,b) ->
+            (not $ Set.member a hidingSet) && (not $ Set.member b hidingSet)
+          )
+          (Rel.toList (sortRel sign))
+    predshide = Map.filterWithKey (\k _ -> not $ Set.member k hidingSet) (predMap sign)
+    opshide =
+      Map.filterWithKey
+        (\k _ ->
+            not $ Set.member k hidingSet
+        )
+      (opMap sign)
+    assocshide = Map.filterWithKey (\k _ -> not $ Set.member k hidingSet) (assocOps sign)
+    msorts =  
+      Set.map
+        (\s ->
+          case Map.lookup s (sort_map morphism) of
+            Nothing -> s
+            (Just ms) -> ms
+        )
+        sortshide
+    mrel =
+     Rel.fromList $
+      map
+        (\(a, b) ->
+          let
+            na = case Map.lookup a (sort_map morphism) of
+              Nothing -> a
+              (Just ma) -> ma
+            nb = case Map.lookup b (sort_map morphism) of
+              Nothing -> b
+              (Just mb) -> mb
+         in
+          (na, nb)
+        )
+        (Rel.toList relhide)
+    mpreds =
+      Map.foldWithKey
+        (\pid ps mpm ->
+          let
+            mpreds' =
+              map
+                (\pt ->
+                  case Map.lookup (pid, pt) (pred_map morphism) of
+                    (Just mpid) -> (mpid, pt)
+                    _ -> (pid, pt)
+                )
+                (Set.toList ps)
+          in
+            foldl
+              (\mpm' (mpid, pt) ->
+                let
+                  oldset = Map.findWithDefault Set.empty mpid mpm'
+                  newset = Set.union oldset (Set.singleton pt)
+                in
+                  Map.insert mpid newset mpm'
+              )
+              mpm
+              mpreds'
+        )
+        (Map.empty)
+        predshide
+    mops =
+      Map.foldWithKey
+        (\oid os mom ->
+          let
+            mops' =
+              map
+                (\ot ->
+                  case Map.lookup (oid, ot) (fun_map morphism) of
+                    (Just (moid, fk)) -> (moid, ot { opKind = fk})
+                    _ -> (oid, ot)
+                )
+                (Set.toList os)
+          in
+            foldl
+              (\mom' (moid, ot) ->
+                let
+                  oldset = Map.findWithDefault Set.empty moid mom'
+                  newset = Set.union oldset (Set.singleton ot)
+                in
+                  Map.insert moid newset mom'
+              )
+              mom
+              mops'
+        )
+        (Map.empty)
+        opshide
+    mass =
+      Map.foldWithKey
+        (\oid os mam ->
+          let
+            mass' =
+              map
+                (\ot ->
+                  case Map.lookup (oid, ot) (fun_map morphism) of
+                    (Just (moid, fk)) -> (moid, ot { opKind = fk})
+                    _ -> (oid, ot)
+                )
+                (Set.toList os)
+          in
+            foldl
+              (\mam' (moid, ot) ->
+                let
+                  oldset = Map.findWithDefault Set.empty moid mam'
+                  newset = Set.union oldset (Set.singleton ot)
+                in
+                  Map.insert moid newset mam'
+              )
+              mam
+              mass'
+        )
+        (Map.empty)
+        assocshide
+    msign =
+      sign
+        {
+            sortSet = msorts
+          , sortRel = mrel
+          , predMap = mpreds
+          , opMap = mops
+          , assocOps = mass
+        }
+  in
+      msign
+
   
 applySignHiding::CASLSign->[Id.Id]->CASLSign
 applySignHiding 
@@ -1470,7 +1605,38 @@ addSignsAndHideSet dg hidingSetForSource n1 n2 =
           dgn_theory = G_theory CASL signhide (Prover.toThSens [])
         }
   in
-    newnodel
+{-    Debug.Trace.trace
+      ("--==!! Created new node from " ++ (show sign1) ++ " --==!! and !!==-- " ++ (show sign2) ++ " --==!! -> !!==-- " ++ (show asign) ++ " !!==-- ") -}
+      newnodel
+
+addSignsAndHideWithMorphism::DGraph->Set.Set SORT->Morphism () () ()->Node->Node->DGNodeLab
+addSignsAndHideWithMorphism dg hiding mm n1 n2 =
+  let
+    n1dgnl = case Graph.lab dg n1 of
+      Nothing -> error ("No such Node! " ++ (show n1))
+      (Just x) -> x
+    n2dgnl = case Graph.lab dg n2 of
+      Nothing -> error ("No such Node! " ++ (show n2))
+      (Just x) -> x
+    sign1 =  getJustCASLSign $ getCASLSign (dgn_sign n1dgnl)
+
+    sign2 =  getJustCASLSign $ getCASLSign (dgn_sign n2dgnl)
+
+    msign = buildMorphismSign mm hiding sign1
+
+    asign = CASL.Sign.addSig (\_ _ -> ()) msign sign2
+
+    newnodel =
+      n2dgnl
+        {
+          dgn_theory = G_theory CASL asign (Prover.toThSens [])
+        }
+  in
+{-    Debug.Trace.trace
+      ("--==!! Created new node from " ++ (show (dgn_name n1dgnl)) ++ " " ++ (show sign1) ++ " --==!! ##and## !!==-- " ++ (show (dgn_name n2dgnl)) ++ " " ++ (show sign2) ++ " --==!! ##--## !!==-- " ++ (show hiding) ++ " --==!! ##++## !!==-- " ++ (show msign) ++ " --==!! ##->## !!==-- " ++ (show asign) ++ " !!==-- ") -}
+      newnodel
+
+
 
 -- add node 1 to node 2
 addSignsAndHide::DGraph->HidingMap->Node->Node->DGraph

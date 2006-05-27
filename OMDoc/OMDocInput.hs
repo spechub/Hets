@@ -320,7 +320,7 @@ xmlToMorphismMap
   =
   let
     hides = xshow $ applyXmlFilter (isTag "morphism" .> getQualValue "" "hiding") t
-    hiddensyms = map Hets.stringToId $ map trimString $ explode "," hides
+    hiddensyms = map Hets.stringToId $ breakSepSpace hides
     pattern = isTag "requation" .> processChildren (isTag "OMOBJ") .> getChild 1
     value = isTag "requation" .> processChildren (isTag "OMOBJ") .> getChild 2
     vsymbol = value .> getChildren .> isTag "OMS" .> getQualValue "" "name" 
@@ -1605,9 +1605,10 @@ applyLocalImportsAndHiding dg =
         let
           caslmorph = Hets.getCASLMorph sedge
           newNode =
-            Hets.addSignsAndHideSet
-              dg -- use original graph
+            Hets.addSignsAndHideWithMorphism
+              dg'
               (sortSet (msource caslmorph))
+              caslmorph
               fromn 
               ton
           savedEdges = (Graph.inn dg' ton) ++ (Graph.out dg' ton)
@@ -1645,6 +1646,8 @@ applyGlobalImportsAndHiding dg =
           case dgl_type ll of
             (GlobalDef {}) -> True
             (HidingDef {}) -> True
+            (FreeDef {}) -> True
+            (CofreeDef {}) -> True
             _ -> False
         )
         labedges
@@ -1657,14 +1660,28 @@ applyGlobalImportsAndHiding dg =
             ((sedge@(fromn, ton, ll)), redges) = singleEdge edges
             caslmorph = Hets.getCASLMorph sedge
             newNode =
-              Hets.addSignsAndHideSet
-                dg -- use original graph
+              Hets.addSignsAndHideWithMorphism
+                dg'
                 (sortSet (msource caslmorph))
+                caslmorph
                 fromn 
                 ton
             savedEdges = (Graph.inn dg' ton) ++ (Graph.out dg' ton)
             dgWithNewNode = Graph.insNode (ton, newNode) $ Graph.delNode ton dg'
             dgWithNewNodeAndOldEdges = Graph.insEdges savedEdges dgWithNewNode
+            newmorph = case dgl_type ll of
+              (HidingDef {}) ->
+                caslmorph
+                  {
+                      msource = getSign dgWithNewNodeAndOldEdges ton
+                    , mtarget = getSign dgWithNewNodeAndOldEdges fromn
+                  }
+              _ ->
+                caslmorph
+                  {
+                      msource = getSign dgWithNewNodeAndOldEdges fromn
+                    , mtarget = getSign dgWithNewNodeAndOldEdges ton
+                  }
             newEdge =
               (
                   fromn
@@ -1673,11 +1690,7 @@ applyGlobalImportsAndHiding dg =
                     {
                       dgl_morphism =
                         Hets.makeCASLGMorphism
-                          caslmorph
-                            {
-                                msource = getSign dgWithNewNodeAndOldEdges fromn
-                              , mtarget = getSign dgWithNewNodeAndOldEdges ton
-                            }
+                          newmorph
                     }
               )
           in

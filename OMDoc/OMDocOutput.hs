@@ -1353,6 +1353,8 @@ devGraphToXmlCMPIOXmlNamed go dg =
                     Static.DevGraph.GlobalDef -> True
                     Static.DevGraph.LocalDef -> True
                     Static.DevGraph.HidingDef -> True
+                    (Static.DevGraph.FreeDef {}) -> True
+                    (Static.DevGraph.CofreeDef {}) -> True
                     _ -> False
               )
               inputsxn

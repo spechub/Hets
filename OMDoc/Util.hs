@@ -146,6 +146,13 @@ breakIfNonEsc chars =
     (\c -> (elem c chars, True))
     (\c1 c2 -> ((c1 /= '\\') && (elem c2 chars), False, True))
 
+breakSepSpace::String->[String]
+breakSepSpace =
+  filter (not .null) . map trimString .
+      breakIfExt
+        (\c -> (Char.isSpace c, True))
+        (\c1 c2 -> ((c1 /= '\\') && (Char.isSpace c2), False, True))
+
 breakOnce::forall a . (a->a->(Bool, Bool, Bool))->[a]->([a],[a]) 
 breakOnce _ [] = ([],[])
 breakOnce _ [a] = ([a], [])
@@ -229,6 +236,4 @@ unesc s =
     (shead, stail) = span (/='\\') s
   in
     shead ++ (take 1 $ drop 1 stail) ++ unesc (drop 2 stail)
-  
-
 

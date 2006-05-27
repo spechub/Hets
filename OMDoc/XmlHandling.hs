@@ -36,6 +36,7 @@ module OMDoc.XmlHandling
     ,qualattr
     ,createAttributed
     ,createQAttributed
+    ,module Text.XML.HXT.Parser
   )
   where
   
