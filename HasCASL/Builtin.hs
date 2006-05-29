@@ -176,7 +176,7 @@ logId :: Id
 logId = mkId [mkSimpleId "Logical"]
 
 botType :: TypeScheme
-botType = bindA aType
+botType = bindA $ mkLazyType aType
 
 defType :: TypeScheme
 defType = aToUnitType InVar universe
