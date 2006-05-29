@@ -7,7 +7,7 @@ Maintainer  :  paolot@tzi.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
-   The embedding comorphism from Haskell to Isabelle-HOLCF.
+The embedding comorphism from Haskell to Isabelle-HOLCF.
 -}
 
 module Comorphisms.Hs2HOLCFaux where
@@ -17,45 +17,22 @@ import Debug.Trace
 import Data.List
 import Data.Maybe
 import qualified Common.Lib.Map as Map
-import Common.Result as Result
 import Common.AS_Annotation
 
--- Haskell
-import Haskell.HatParser as HatParser hiding (HsType)
-import Haskell.HatAna as HatAna
-
--- Programatica
-import HsTypeStruct  
-import HsKindStruct
-import HsTypeMaps 
-import HsName 
-import HsIdent 
-import TypedIds
-import OrigTiMonad 
-
+-- Haskell (Programatica)
+import SourceNames
 import TiTypes
 import TiKinds
 import TiInstanceDB -- as TiInst
  
-import TiTEnv
-import TiKEnv
-import TiEnvFM
-
 import PNT 
 import PosName
 import UniqueNames
 
-import PropSyntaxRec 
-import HsExpStruct
-import HsPatStruct
-import HsExpMaps
-import HsPatMaps
-
 import SyntaxRec
 import TiPropDecorate
-import PropSyntaxStruct
-import HsDeclStruct
-import HsGuardsStruct
+import PropSyntaxStruct as HsName
+
 import TiDecorate
 
 -- Isabelle
@@ -64,8 +41,8 @@ import Isabelle.IsaConsts as IsaConsts
 import Isabelle.Translate as Translate
 
 
-------------------------------- TYPE synonims --------------------------------------
------------------- Haskell ----------------------------------------------------------
+------------------------------- TYPE synonyms ---------------------------------
+------------------ Haskell ----------------------------------------------------
 
 type HsInstance = TiInstanceDB.Instance PNT
 type HsInstances = [TiInstanceDB.Instance PNT]
@@ -85,15 +62,13 @@ type HPat = SyntaxRec.HsPatI
 type VaMap = Map.Map HsId HsScheme 
 type TyMap = Map.Map HsId (Kind, HsTypeInfo)
 
------------------- Isabelle ----------------------------------------------------
+------------------ Isabelle ---------------------------------------------------
 
 type IsaSort = IsaSign.Sort
 type IsaType = IsaSign.Typ
 type IsaTerm = IsaSign.Term
 type IsaPattern = IsaSign.Term
-type IsaExKind = IsaSign.ExKind
 type IsaTypeInsts = (TName, [(IsaClass, [(IsaType, [IsaClass])])])
-
 
 ----------------------------- GENERIC auxiliary functions ---------------------
 
@@ -130,12 +105,12 @@ genOr f ys = case ys of
                x:xs -> if (f x) then True 
                            else (genOr f xs)
 
----------------------------------- filters -----------------------------------------
+---------------------------------- filters -----------------------------------
 
 nothingFiOut :: [(a,(Maybe b,c))] -> [(a,(b,c))]
 nothingFiOut ls = [(x,(y,w)) | (x,(Just y,w)) <- ls]
 
---------------------------------- lifting function ----------------------------------
+--------------------------------- lifting function ---------------------------
 
 liftMapByList :: (x -> [(a,b)]) -> ([(c,d)] -> y) -> 
                                      (a -> c) -> (b -> d) -> x -> y
@@ -150,16 +125,18 @@ liftMapByListF ::
                                                     (a -> Bool) -> x -> y
 liftMapByListF ma mb h k cs f = mb [(h a, k b) | (a, b) <- ma f, cs a] 
 
---------------------------- generic checking of mutual dependencies ---------------
+--------------------------- generic checking of mutual dependencies ----------
 
 abGetDep :: Eq a => (a -> a -> Bool) -> [[a]] -> [[a]]
 abGetDep f ls = case ls of 
  x:xs -> 
    remove_duplicates $ 
-      removeEL (map remove_duplicates (checkDep (abCheckDep (mutRel f)) (xs) [x] []))
+      removeEL (map remove_duplicates (checkDep (abCheckDep (mutRel f)) 
+                                                    (xs) [x] []))
  [] -> []
 
--- called to check whether, given two lists of elements, one depends on the other. 
+{- called to check whether, given two lists of elements, one depends
+on the other. -}
 abCheckDep :: (a -> a -> Bool) -> [a] -> [a] -> Bool
 abCheckDep f as bs = genOr (\x -> genOr (f x) bs) as  
 
@@ -181,7 +158,7 @@ depOn f g h x y = genOr (f (g x)) (h y)
 
 
 ------------------------ HASKELL representation -------------------------------
---------------------------- check functions -------------------------------------
+--------------------------- check functions -----------------------------------
 
 checkTyCons :: HsId -> Bool
 checkTyCons d = case d of 
@@ -195,9 +172,9 @@ getLitName :: HsType -> PNT
 getLitName (Typ t) = case t of 
    HsTyVar x -> x
    HsTyCon x -> x
-   _ -> error "Type is not a literal (Haskell2IsabelleHOLCF.getLitName)"         
+   _ -> error "Type is not a literal (Haskell2IsabelleHOLCF.getLitName)"
 
------------------------- getting class and type ouf of predicate ---------------
+------------------------ getting class and type ouf of predicate --------------
 
 getInstType :: HsPred -> HsType
 getInstType x = case x of (Typ (HsTyApp _ t)) -> t
@@ -207,21 +184,21 @@ getInstClass :: HsPred -> HsType
 getInstClass x = case x of (Typ (HsTyApp c _)) -> c
                            _ -> error "error, getInstClass"
 
------------------------------ getting type schemes --------------------------------
+----------------------------- getting type schemes ---------------------------
  
 getHsType :: VaMap -> HsId -> HsScheme
 getHsType f n = case Map.lookup n f of 
     Just t -> t
     _ -> error "Haskell2IsabelleHOLCF.getHsType"
 
----------------------------- getting class information ----------------------------
+---------------------------- getting class information -----------------------
 
 extClassInfo :: HsTypeInfo -> [HsClass]
 extClassInfo p = case p of 
         TiTypes.Class a _ _ _ -> map getInstType a 
         _ -> error "error Haskell2IsabelleHOLCF.extClassInfo"     
 
---------------------------- getting info on type syns -----------------------------
+--------------------------- getting info on type syns ------------------------
 
 extAbbrsInfo :: HsTypeInfo -> ([PNT], HsType)
 extAbbrsInfo p = case p of 
@@ -229,7 +206,7 @@ extAbbrsInfo p = case p of
            _ -> error "extAbbrsInfo"
 
 
------------ getting arity information from Haskell instances ----------------------
+----------- getting arity information from Haskell instances -----------------
 
 getInstPrems :: HsInstance -> [HsPred]
 getInstPrems (_, IE _ _ ps) = ps
@@ -250,8 +227,8 @@ prepInst1 i =
                | x <- remove_duplicates $ map getInstType (getInstPrems i)] 
 
 
--------------------------- ISABELLE representation ---------------------------------
--------------------------------- constants ------------------------------------------
+-------------------------- ISABELLE representation ---------------------------
+-------------------------------- constants -----------------------------------
 
 xDummy :: IsaTerm
 xDummy = conDouble "dummy"
@@ -265,7 +242,7 @@ getTermName a = case a of
   Free x y -> new x
   _ -> "_"
 
--------------------------------- Name translation ----------------------------------
+-------------------------------- Name translation ----------------------------
 -- Translating to strings compatible with Isabelle
 
 class IsaName a where
@@ -320,7 +297,7 @@ instance IsaName a => IsaName (TiTypes.Type a) where
   HsTyCon x -> showIsaString x
   HsTyForall _ _ x -> showIsaString x
 
------------ auxiliary name functions (inessentially) depending on IsaSign ------
+----------- auxiliary name functions (inessentially) depending on IsaSign ----
 
 joinNames :: [String] -> String
 joinNames = concatMap (++ "_X")
@@ -346,7 +323,7 @@ transPath s1 s2 = (showIsaName s1)++"_"++(showIsaName s2)
 
 
 -------------------------- TYPES ----------------------------------------------
------------------------- tuples, lifting ----------------------------------------
+------------------------ tuples, lifting --------------------------------------
 
 typTuple :: Continuity -> [Typ] -> Typ
 typTuple c ts = case ts of 
@@ -371,7 +348,7 @@ typeLift2 t = case t of
                   [typeLift t1, typeLift t2]
    _ -> error "Hs2HOLCFaux, typeLift2"
 
------------------------------ equivalence of types modulo variables name ----------
+----------------------------- equivalence of types modulo variables name ------
 
 typEq :: Typ -> Typ -> Bool     --make some distinction for case noType??
 typEq t1 t2 = if (t1 == noType || t2 == noType) then True
@@ -416,7 +393,7 @@ typeVarsRep f ls t = case t of
  IsaSign.TFree n s -> maybe t id $ f ls n s
  IsaSign.TVar i s -> t
 
------------------- more extraction and replacement functions -------------------
+------------------ more extraction and replacement functions ------------------
 
 unifyTVars :: [IsaType] -> (IsaType,[IsaType])
 unifyTVars ls = case chkTHead ls of
@@ -446,16 +423,17 @@ renTVars ls =  [renTVar b a | (a, b) <- listEnum ls]
       IsaSign.Type a b cs -> IsaSign.Type a b (map (renTVar n) cs)
       _ -> t
 
----------------------------- Instances -----------------------------------------
+---------------------------- Instances ----------------------------------------
 
 groupInst :: [IsaTypeInsts] -> [IsaTypeInsts]
 groupInst db = 
   remove_duplicates [(fst y, 
-        remove_duplicates $ concat [snd x | x <- db, fst x == fst y]) | y <- db]
+        remove_duplicates $ concat 
+                      [snd x | x <- db, fst x == fst y]) | y <- db]
 
 
-------------------------- DATATYPES ---------------------------------------------
------------------------ getting mutually recursive domains in Isabelle ------------
+------------------------- DATATYPES -------------------------------------------
+----------------------- getting mutually recursive domains in Isabelle --------
 
 getDepDoms :: [[IsaSign.DomainEntry]] -> IsaSign.DomainTab
 getDepDoms ls = abGetDep deDepOn ls   
@@ -471,7 +449,7 @@ subTypForm t1 t2 = case t2 of
                   else genOr (subTypForm t1) cs
       _ -> False   
 
------------------------- getting info about domaintab ----------------------------
+------------------------ getting info about domaintab -------------------------
 
 type AConstTab = Map.Map VName (Typ,IsaVT)
 data IsaVT = IsaConst | IsaVal deriving (Eq, Show)
@@ -501,8 +479,8 @@ argTypes a = case a of
     _ -> [] 
 
 
--------------------------- TERMS -----------------------------------------------
--------- lifting, tuples, multiple abstractions and applications, fixpoints ----
+-------------------------- TERMS ----------------------------------------------
+-------- lifting, tuples, multiple abstractions and applications, fixpoints ---
 
 termLift :: Term -> Term
 termLift t = App (conDouble "Def") t NotCont
@@ -540,7 +518,7 @@ termMAppl c t ts =
          Const vn _ | isDicConst v || prelTest vn -> termMAppl c t vs
          _ -> termMAppl c (App t v c) vs 
 
------------------------ connectives --------------------------------------------
+----------------------- connectives -------------------------------------------
 
 isaAnd :: Continuity -> Term -> Term -> Term
 isaAnd c t1 t2 = termMAppl c (case c of 
@@ -571,16 +549,20 @@ tupleSelector mx n t c
   | n == 0 = error "Haskell2IsabelleHOLCF, tupleSelector - error 2"
   | mx < n = error "Haskell2IsabelleHOLCF, tupleSelector - error 3"
   | n == mx = tupleSelect (n - 1) t c
-  | True = termMAppl c (conDouble (case c of IsCont -> "cfst"; NotCont -> "fst")) 
+  | True = termMAppl c (conDouble (case c of 
+                                     IsCont -> "cfst"
+                                     NotCont -> "fst")) 
                               $ [tupleSelect (n - 1) t c]
 
 tupleSelect :: Int -> Term -> Continuity -> Term
 tupleSelect n t c = case n of
   0 -> t
   _ -> tupleSelect (n - 1) 
-     (termMAppl c (conDouble (case c of IsCont -> "csnd"; NotCont -> "snd")) [t]) c
+     (termMAppl c (conDouble (case c of 
+                                IsCont -> "csnd"
+                                NotCont -> "snd")) [t]) c
 
-------------------------------------- term filters -----------------------------
+------------------------------------- term filters ----------------------------
 
 isDicConst :: Term -> Bool
 isDicConst t = case t of 
@@ -633,7 +615,7 @@ extTBody t = let (x,ys) = extTB t []
 destCaseS :: Continuity -> IsaTerm -> IsaTerm -> [IsaTerm] -- t is def rh
 -- destCaseS c d t = [holEq (App d x c) y | (x,y) <- destCase t id]
 destCaseS c d t = [holEq (termMAppl c d xs) y | (xs,y) <- 
-                                          destCaseU (extFBody t,[])] -- destCase t id]
+                   destCaseU (extFBody t,[])] -- destCase t id]
 
 destCaseU :: ((IsaTerm,[IsaPattern]),[IsaPattern]) -> [([IsaPattern],IsaTerm)]
 destCaseU ((t,rs),ks) = case (t,rs) of 
@@ -645,20 +627,23 @@ destCaseU ((t,rs),ks) = case (t,rs) of
 destCase :: IsaTerm -> (VName -> VName) -> [(IsaPattern,IsaTerm)]
 destCase t f = let w = (extFBody t) in case w of 
     (Case v ls, vv:vs) -> case v of   
-          Free n tt -> [(renVars (Free (f n) tt) [l] l, -- repl. l if l is a var.
+          Free n tt -> [(renVars (Free (f n) tt) [l] l, 
+                         -- repl. l if l is a var.
                   renVars (Free (f n) tt)  
                          [l] (termMAbs NotCont vs m)) | (l,m) <- ls] 
           _ -> [(l,termMAbs NotCont vs m) | (l,m) <- ls]
     _ -> error "Hs2HOLCFaux, destCase"
 
------------------------------ equivalence on terms ------------------------------
+----------------------------- equivalence on terms ---------------------------
 
 constEq :: Term -> Term -> Bool
 constEq t1 t2 = case (t1,t2) of
   (Const m x, Const n y) -> if n == m && typEq x y then True else False
   _ -> False
 
-{- this functions was actually meant to compare only constructors - check out, there might be bugs -} 
+{- this functions was actually meant to compare only constructors -
+check out, there might be bugs -}
+
 simTerms :: Term -> Term -> Bool
 simTerms t1 t2 = case (t1, t2) of
  (IsaSign.Const x _,  IsaSign.Const y _) -> if x == y then True else False
@@ -678,7 +663,7 @@ simTerms t1 t2 = case (t1, t2) of
  (Wildcard, Wildcard) -> True
  _ -> False
 
------------------------- replacement functions -----------------------------------
+------------------------ replacement functions -------------------------------
 
 {- in term t, replaces variable f for variables in ls     -} 
 renVars ::  Term -> [Term] -> Term -> Term
@@ -718,8 +703,8 @@ renFuns f t = case t of
  _ -> t  
 
 
----------------------- SENTENCES -----------------------------------------------
---------------------- getting info from sentences ------------------------------
+---------------------- SENTENCES ---------------------------------------------
+--------------------- getting info from sentences ----------------------------
 
 newConstTab :: Continuity -> [Named IsaSign.Sentence] -> ConstTab
 newConstTab c ls = case c of 
@@ -758,14 +743,15 @@ sentAna :: Named Sentence -> (Term, [Term])
 sentAna s = case s of
   NamedSen _ True _ (ConstDef (IsaEq l r)) -> (l, constFilter r)
 
------------------- checking for mutually recursive function defs ---------------
+------------------ checking for mutually recursive function defs -------------
 
 getDepSent :: [[Named Sentence]] -> [[Named Sentence]]
 getDepSent ls = abGetDep sentDepOn ls   
 
 sentDepOn :: Named Sentence -> Named Sentence -> Bool
 sentDepOn x y = 
-  depOn (\x y -> simTerms x y && typEq (termType x) (termType y)) (fst . sentAna) (snd . sentAna) x y 
+  depOn (\x y -> simTerms x y && typEq (termType x) (termType y)) 
+            (fst . sentAna) (snd . sentAna) x y 
 
 ------------------- adding fixpoints ---------------------------------------
 
@@ -839,11 +825,7 @@ newFCons t ls k = case k of
  _ -> Nothing
  
 
-
-
-
-
--------------------------- unused ----------------------------------------------
+-------------------------- unused ---------------------------------------------
 
 litEq :: Term -> Term -> Bool
 litEq t1 t2 = case (t1,t2) of
@@ -937,4 +919,3 @@ ntElem mx vn ty ls x tx = let r = [(t,n) | (y,(t,n)) <- remove_duplicates ls, x 
   _ -> error "Haskell2IsabelleHOLCF, tElem"
 
 -}
-  

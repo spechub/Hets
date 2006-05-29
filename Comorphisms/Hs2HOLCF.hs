@@ -28,31 +28,13 @@ import Haskell.HatAna as HatAna
 -- Programatica
 import Monad
 
-import HsTypeStruct  
-import HsKindStruct
-import HsTypeMaps 
-import HsName 
-import HsIdent 
 import TypedIds
-import OrigTiMonad 
 
 import TiTypes
 import TiKinds
-import TiInstanceDB -- as TiInst
  
-import TiTEnv
-import TiKEnv
-import TiEnvFM
-
 import PNT 
-import PosName
 import UniqueNames
-
-import PropSyntaxRec 
-import HsExpStruct
-import HsPatStruct
-import HsExpMaps
-import HsPatMaps
 
 import SyntaxRec
 import TiPropDecorate
@@ -64,7 +46,6 @@ import TiDecorate
 -- Isabelle
 import Isabelle.IsaSign as IsaSign
 import Isabelle.IsaConsts as IsaConsts
-import Isabelle.Translate as Translate
 
 ------------------------------ Top level function ------------------------------
 transTheory :: Continuity -> Bool -> 
@@ -317,7 +298,7 @@ transMType a c (Typ t) = transT a
 
 transT :: Show d => Continuity -> (PNT -> Maybe IsaType) -> 
                (PNT -> Maybe IsaType) -> (d -> Maybe IsaType) -> 
-                    HsTypeStruct.TI PNT d -> Maybe IsaType
+                    TI PNT d -> Maybe IsaType
 transT c trIdV trIdC trT t =
  case mapTI3 trIdV trIdC trT t of    
     Just (HsTyFun t1 t2) -> return $ (case c of 
@@ -410,18 +391,26 @@ transClass x = case x of
 
 ------------------------------- Kind translation ------------------------------
 
+----------- Kinds
+
+data IsaExKind = IKind IsaKind | IClass | IsaPLogic
+
+data IsaKind  = Star
+              | IsaKfun IsaKind IsaKind
+                deriving (Ord, Eq, Show)
+
 kindTrans :: Kind -> IsaKind
 kindTrans x = case x of 
-                 K HsKindStruct.Kstar -> IsaSign.Star
-                 K (HsKindStruct.Kfun a b) -> IsaSign.Kfun (kindTrans a) (kindTrans b)
+                 K Kstar -> Star
+                 K (Kfun a b) -> IsaKfun (kindTrans a) (kindTrans b)
                  _ -> error "error, Hs2HOLCF.kindTrans,"
 
 kindExTrans :: Kind -> IsaExKind
 kindExTrans x = case x of 
-                 K HsKindStruct.Kstar -> IKind IsaSign.Star
-                 K (HsKindStruct.Kfun a b) -> IKind (IsaSign.Kfun (kindTrans a) (kindTrans b))
-                 K HsKindStruct.Kpred -> IClass
-                 K HsKindStruct.Kprop -> IsaSign.PLogic
+                 K Kstar -> IKind Star
+                 K (Kfun a b) -> IKind (IsaKfun (kindTrans a) (kindTrans b))
+                 K Kpred -> IClass
+                 K Kprop -> IsaPLogic
                  _ -> error "Hs2HOLCF.kindExTrans, kind variables not supported"
 
 ------------------------------- SIGN fields translation ----------------------------
@@ -664,7 +653,7 @@ transMPat a cs t = case t of
 
 transE :: Continuity -> 
      (PNT -> VName) -> (e -> Maybe IsaTerm) -> (p -> Maybe IsaPattern) -> 
-            (HsExpStruct.EI PNT e p j h k) -> Maybe IsaTerm
+            (EI PNT e p j h k) -> Maybe IsaTerm
 transE c trId trE trP e =
  case (mapEI5 trId trE trP e) of 
    Just (HsId (HsVar _))              -> return $ conDouble "DIC"
@@ -681,7 +670,7 @@ transE c trId trE trP e =
 --   HsCase e ds                 -> Case e ds 
  
 transP :: IsaName i => Continuity -> (i -> VName) -> (p -> Maybe IsaPattern) -> 
-            (HsPatStruct.PI i p) -> Maybe IsaPattern
+            (PI i p) -> Maybe IsaPattern
 transP a trId trP p =
  case mapPI3 trId trP p of
    Just (HsPId (HsVar _))  -> return $ conDouble "DIC"
@@ -777,7 +766,7 @@ mapEI5 :: (i1 -> i2) ->
           Maybe (EI i2 e2 p2 d t c)
 mapEI5 vf ef pf exp =
   case exp of
-    HsId n                 -> return $ HsId (HsIdent.mapHsIdent2 vf vf n)
+    HsId n                 -> return $ HsId (mapHsIdent2 vf vf n)
     HsApp x y              -> do a <- ef x
                                  b <- ef y
                                  return $ HsApp a b
@@ -829,7 +818,7 @@ mapPI3 :: (i1 -> i2) ->
           PI i1 p1 -> Maybe (PI i2 p2)
 mapPI3 vf pf pat =
   case pat of
-    HsPId n                -> return $ HsPId (HsIdent.mapHsIdent2 vf vf n)
+    HsPId n                -> return $ HsPId (mapHsIdent2 vf vf n)
     HsPLit s l             -> return $ HsPLit s l
     HsPTuple s ps          -> do bs <- mapM pf ps
                                  return $ HsPTuple s bs
