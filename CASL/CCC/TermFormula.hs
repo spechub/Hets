@@ -1,12 +1,11 @@
 {- | 
+Module      :  $Header$
+Copyright   :  (c) Mingyi Liu and Till Mossakowski and Uni Bremen 2004-2005
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-    Module      :  $Header$
-    Copyright   :  (c) Mingyi Liu and Till Mossakowski and Uni Bremen 2004-2005
-    License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
-
-    Maintainer  :  hets@tzi.de
-    Stability   :  provisional
-    Portability :  portable
+Maintainer  :  xinga@tzi.de
+Stability   :  provisional
+Portability :  portable
 
 -}
 
@@ -17,14 +16,14 @@ import Common.AS_Annotation
 import Common.Id
 
 
--- Sorted_term is always ignored
+-- | Sorted_term is always ignored
 term :: TERM f -> TERM f
 term t = case t of
            Sorted_term t' _ _ ->term t'
            _ -> t
 
 
--- Quantifier is always ignored
+-- | Quantifier is always ignored
 quanti :: FORMULA f -> FORMULA f
 quanti f = case f of
              Quantification _ _ f' _ -> quanti f'
@@ -156,7 +155,7 @@ allArguOfTerm t = case t of
                     _ -> [] 
 
 
--- It filters all variables of a axiom
+-- | It filters all variables of a axiom
 varOfAxiom :: FORMULA f -> [VAR]
 varOfAxiom f = 
   case f of
@@ -297,9 +296,9 @@ extract_leading_symb lead = case lead of
                               _ -> error "CASL.CCC.FreeTypes"
 
 
--- leadingTerm is total operation : Just True
--- leadingTerm is partial operation : Just False
--- others : Nothing
+-- | leadingTerm is total operation : Just True
+--   leadingTerm is partial operation : Just False
+--   others : Nothing
 opTyp_Axiom :: FORMULA f -> Maybe Bool
 opTyp_Axiom f = 
   case (leadingSym f) of

@@ -1,5 +1,4 @@
 {- |
-
 Module      :  $Header$
 Copyright   :  (c) Mingyi Liu and Till Mossakowski and Uni Bremen 2004-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -11,7 +10,8 @@ Portability :  non-portable (imports Logic.Logic)
 consistency checking of free types
 -}
 
-{-
+
+{------------------------------------------------------------------------
 "free datatypes and recursive equations are consistent"
 
 checkFreeType :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
@@ -19,7 +19,7 @@ checkFreeType :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
 Just (Just True) => Yes, is consistent
 Just (Just False) => No, is inconsistent
 Just Nothing => don't know
--}
+------------------------------------------------------------------------}
 
 module CASL.CCC.FreeTypes where
 
@@ -39,15 +39,9 @@ import Maybe
 import Debug.Trace
 import System.Cmd
 import System.IO.Unsafe
--- import Logic.Comorphism
--- import Logic.Logic
--- import Comorphisms.CASL2HasCASL
--- import Comorphisms.HasCASL2HasCASL
--- #ifdef PROGRAMATICA
--- import Comorphisms.HasCASL2Haskell
--- #endif
 
-{-
+
+{------------------------------------------------------------------------
    function checkFreeType:
    - check if leading symbols are new (not in the image of morphism),
            if not, return Nothing
@@ -69,11 +63,12 @@ import System.IO.Unsafe
                               no symbol may be a variable
                               check recursively the arguments of
                               constructor in each group
+  - termination proof
   - return (Just True)
--}
+-------------------------------------------------------------------------}
+
 checkFreeType :: (Sign () (),[Named (FORMULA ())]) -> Morphism () () ()
                  -> [Named (FORMULA ())] -> Result (Maybe (Bool,[FORMULA ()]))
--- #ifdef PROGRAMATICA
 checkFreeType (osig,osens) m fsn
     | not $ null notSubSorts =
         let (Id ts _ pos) = head notSubSorts
@@ -106,10 +101,10 @@ checkFreeType (osig,osens) m fsn
                 head $ filter (\t->not $ checkVar_App t) leadingTerms
         in warning Nothing ("a variable occurs twice in a leading term of " ++
                             opSymStr os) pos
- --   | (not $ null fs_terminalProof) && (proof == "NO") =
- --       warning Nothing "not terminating" nullRange
- --   | (not $ null fs_terminalProof) && (proof == "MAYBE") =
- --       warning Nothing "cannot prove termination" nullRange
+    | (not $ null fs_terminalProof) && (proof == Just False) =
+        warning Nothing "not terminating" nullRange
+    | (not $ null fs_terminalProof) && (proof == Nothing) =
+        warning Nothing "cannot prove termination" nullRange
     | not $ ((null (overlap_query ++ ex_axioms)) &&
              (null subSortsF)) =
         return (Just (True,(overlap_query ++
@@ -179,7 +174,7 @@ checkFreeType (osig,osens) m fsn
     subSorts = filter (\s-> (fst $ isSubSort s oSorts fs) == True) spSrts
     subSortsF = map (\s->isSubSort s oSorts fs) subSorts
 {-
-  check all partial axiom
+   check all partial axiom
 -}
     p_axioms = filter partialAxiom _axioms           -- all partial axioms
     t_axioms = filter (not.partialAxiom) _axioms     -- all total axioms
@@ -341,9 +336,7 @@ checkFreeType (osig,osens) m fsn
                 return (head $ words res))
        --         return (subStr "YES" res))
 -}
--- #else
--- checkFreeType = error "CASL.CCC.FreeTypes.checkFreeType"
--- #endif
+    proof = terminationProof (osens ++ fsn)
 
 
 {- group the axioms according to their leading symbol
@@ -397,7 +390,7 @@ filterPred symb = case symb of
                     _ -> []
 
 
--- the leading terms consist of variables and constructors only
+-- | the leading terms consist of variables and constructors only
 checkTerm :: [OP_SYMB] -> TERM f -> Bool
 checkTerm cons t =
     case t of
@@ -412,10 +405,10 @@ checkTerm cons t =
         checkT _ = False
 
 
-{-
-   no variable occurs twice in a leading term,
-      if not, return Nothing
--}
+
+-- |  no variable occurs twice in a leading term,
+--      if not, return Nothing
+
 checkVar_App :: (Eq f) => TERM f -> Bool
 checkVar_App (Application _ ts _) = notOverlap $ concat $ map allVarOfTerm ts
 checkVar_App _ = error "CASL.CCC.FreeTypes<checkVar_App>"
@@ -468,7 +461,7 @@ group_App ps = (filter (\p1-> sameOps_App (head p1) (head (head ps))) ps):
                                    sameOps_App (head p2) (head (head ps))) ps)
 
 
--- it examines whether it is overlap
+-- | it examines whether it is overlap
 checkPatterns :: (Eq f) => [[TERM f]] -> Bool
 checkPatterns ps
         | length ps <=1 = True
