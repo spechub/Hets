@@ -10,8 +10,6 @@ Portability :  portable
 
 Data structures for Isabelle signatures and theories.
    Adapted from Isabelle.
-
-
 -}
 
 module Isabelle.IsaSign where
@@ -52,23 +50,12 @@ data Indexname = Indexname
     , indexOffset :: Int
     } deriving (Ord, Eq, Show)
 
---------- Classes
 {- Types are classified by sorts. -}
 
 data IsaClass  = IsaClass String
                  deriving (Ord, Eq, Show)
 
 type Sort  = [IsaClass]
-
------------ Kinds
-
-data ExKind = IKind IsaKind | IClass | PLogic
-
-data IsaKind  = Star
-              | Kfun IsaKind IsaKind
-                deriving (Ord, Eq, Show)
-
-------------------------------------------------------------------------------
 
 {- The sorts attached to TFrees and TVars specify the sort of that variable -}
 data Typ = Type  { typeId    :: TName,
@@ -79,7 +66,6 @@ data Typ = Type  { typeId    :: TName,
          | TVar  { indexname :: Indexname,
                    typeSort  :: Sort }
          deriving (Eq, Ord, Show)
-
 
 {-Terms.  Bound variables are indicated by depth number.
   Free variables, (scheme) variables and constants have names.
