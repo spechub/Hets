@@ -86,8 +86,13 @@ transSignature sign =
    where
     extractTypeName tyId typeInfo m =
         if isDatatypeDefn typeInfo then m
-           else Map.insert (showIsaTypeT tyId baseSign) [(isaTerm, [])] m
-                -- translate the kind here!
+           else let getTypeArgs n k = case k of
+                        ClassKind _ -> []
+                        FunKind _ _ r _ -> 
+                            (TFree ("'a" ++ show n) [], [isaTerm]) 
+                                           : getTypeArgs (n + 1) r
+                in Map.insert (showIsaTypeT tyId baseSign) 
+                  [(isaTerm, getTypeArgs (1 :: Int) $ typeKind typeInfo)] m
     isDatatypeDefn t = case typeDefn t of
                          DatatypeDefn _ -> True
                          _              -> False
@@ -251,6 +256,7 @@ transTerm sign trm = case trm of
     QualOp _ (InstOpId opId _ _) ts@(TypeScheme _ ty _) _ 
       | opId == trueId -> (fTy, true)
       | opId == falseId -> (fTy, false)
+      | opId == botId -> (PartialVal NoFun, conDouble "None")
       | opId == andId -> unCurry conjV
       | opId == orId -> unCurry disjV
       | opId == implId -> unCurry implV
@@ -285,7 +291,7 @@ transTerm sign trm = case trm of
     LetTerm As.Let peqs body _ -> 
         let (bTy, bTrm) = transTerm sign body
         in (bTy, Isa.Let (map (transProgEq sign) peqs) bTrm)
-    TupleTerm ts@(_ : _)  _ -> 
+    TupleTerm ts@(_ : _) _ -> 
         foldl1 ( \ (s, p) (t, e) -> let pv = PartialVal NoFun in 
                                         case (s, t) of 
                  (PartialVal _, PartialVal _) -> 
@@ -295,6 +301,7 @@ transTerm sign trm = case trm of
                  (_, PartialVal _) -> 
                      (pv, binConst "pairR" p e)
                  _ -> (NoFun, Tuplex [p, e] NotCont)) $ map (transTerm sign) ts
+    TupleTerm [] _ -> (BoolVal, true)
     ApplTerm t1 t2 _ -> mkApp sign t1 t2 -- transAppl sign Nothing t1 t2
     _ -> error $ "PCoClTyConsHOL2IsabelleHOL.transTerm " ++ showPretty trm "\n"
                 ++ show trm
