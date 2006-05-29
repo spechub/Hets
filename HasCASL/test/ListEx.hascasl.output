@@ -14,14 +14,11 @@ free type even(a : +Type) ::= rek (odd a);
           odd(a : +Type) ::= rek (even a)
 free type odd2(a : +Type) ::= rek (even2 a)
 %% Type Constructors -----------------------------------------------------
-? : +Type -> Type
 List 
 : +Type -> Type 
  %[free type List(a : +Type) ::= 
              Nil : List a
              Cons : a * List a -> List a(head : a; tail : List a)]%
-Logical : Type := ? Unit
-Pred : -Type -> Type := \ a : -Type . a ->? Unit
 Tree 
 : +Type -> Type 
  %[free type Tree(a : +Type) ::= 
@@ -39,15 +36,6 @@ Tree2
         Leaf : Tree2 a
         Branch : Tree a * Tree2 a -> Tree2 a
         (head : Tree a; tail : Tree2 a)]%
-Unit : Type
-__*__ : +Type -> +Type -> Type
-__*__*__ : +Type -> +Type -> +Type -> Type
-__*__*__*__ : +Type -> +Type -> +Type -> +Type -> Type
-__*__*__*__*__ : +Type -> +Type -> +Type -> +Type -> +Type -> Type
-__-->__ : -Type -> +Type -> Type < (__-->?__, __->__)
-__-->?__ : -Type -> +Type -> Type < __->?__
-__->__ : -Type -> +Type -> Type < __->?__
-__->?__ : -Type -> +Type -> Type
 even 
 : +Type -> Type 
  %[free type even(a : +Type) ::= rek : odd a -> even a(odd a)]%
@@ -74,17 +62,6 @@ Leaf
 : forall a : +Type . Tree1 a %(construct Tree1)%
 : forall a : +Type . Tree a %(construct Tree)%
 Nil : forall a : +Type . List a %(construct List)%
-__/\__ : ? Unit * ? Unit ->? Unit %(fun)%
-__<=>__ : ? Unit * ? Unit ->? Unit %(fun)%
-__=__ : forall a : Type . a * a ->? Unit %(fun)%
-__=>__ : ? Unit * ? Unit ->? Unit %(fun)%
-__=e=__ : forall a : Type . a * a ->? Unit %(fun)%
-__\/__ : ? Unit * ? Unit ->? Unit %(fun)%
-__if__ : ? Unit * ? Unit ->? Unit %(fun)%
-__when__else__ : forall a : Type . a * ? Unit * a ->? a %(fun)%
-bottom : forall a : Type . a %(fun)%
-def__ : forall a : Type . a ->? Unit %(fun)%
-false : Unit %(fun)%
 head 
 : forall a : +Type . Tree2 a -> Tree a 
 %(select from Tree2 constructed by
@@ -98,7 +75,6 @@ Branch : forall a : +Type . Tree a * Tree a -> Tree a)%
 : forall a : +Type . List a -> a 
 %(select from List constructed by
 Cons : forall a : +Type . a * List a -> List a)%
-not__ : ? Unit ->? Unit %(fun)%
 rek 
 : forall a : +Type . even2 a -> odd2 a %(construct odd2)%
 : forall a : +Type . even a -> odd a %(construct odd)%
@@ -116,8 +92,6 @@ Branch : forall a : +Type . Tree a * Tree a -> Tree a)%
 : forall a : +Type . List a -> List a 
 %(select from List constructed by
 Cons : forall a : +Type . a * List a -> List a)%
-true : Unit %(fun)%
-¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
 forall a : +Type; x_1_1 : a; x_1_2 : List a . 
 (op head : forall a : +Type . List a -> a) (Cons (x_1_1, x_1_2)) = 

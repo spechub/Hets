@@ -40,7 +40,6 @@ a < b
 b < Type
 c < Type
 %% Type Constructors -----------------------------------------------------
-? : +Type -> Type
 Data1 
 : Type < Data2 
  %[type Data1 ::= 
@@ -63,17 +62,6 @@ Data4
  %[type Data4 ::= 
         Cons41 : Data1 * Data2 ->? Data4(sel1 :? Data1; sel2 :? Data2)
         Cons42 : Data2 * Data1 ->? Data4(sel2 :? Data2; sel1 :? Data1)]%
-Logical : Type := ? Unit
-Pred : -Type -> Type := \ a : -Type . a ->? Unit
-Unit : (TYPE, Type)
-__*__ : +Type -> +Type -> Type
-__*__*__ : +Type -> +Type -> +Type -> Type
-__*__*__*__ : +Type -> +Type -> +Type -> +Type -> Type
-__*__*__*__*__ : +Type -> +Type -> +Type -> +Type -> +Type -> Type
-__-->__ : -Type -> +Type -> Type < (__-->?__, __->__)
-__-->?__ : -Type -> +Type -> Type < __->?__
-__->__ : -Type -> +Type -> Type < __->?__
-__->?__ : -Type -> +Type -> Type
 s : (Type, c)
 %% Type Variables --------------------------------------------------------
 t  : Type %(var_1)%
@@ -84,25 +72,13 @@ Cons31 : Data1 * Data2 -> Data3 %(construct Data3)%
 Cons32 : Data2 * Data1 -> Data3 %(construct Data3)%
 Cons41 : Data1 * Data2 ->? Data4 %(construct Data4)%
 Cons42 : Data2 * Data1 ->? Data4 %(construct Data4)%
-__/\__ : ? Unit * ? Unit ->? Unit %(fun)%
-__<=>__ : ? Unit * ? Unit ->? Unit %(fun)%
-__=__ : forall a : Type . a * a ->? Unit %(fun)%
-__=>__ : ? Unit * ? Unit ->? Unit %(fun)%
-__=e=__ : forall a : Type . a * a ->? Unit %(fun)%
-__\/__ : ? Unit * ? Unit ->? Unit %(fun)%
-__if__ : ? Unit * ? Unit ->? Unit %(fun)%
-__when__else__ : forall a : Type . a * ? Unit * a ->? a %(fun)%
 a 
 : Data1 %(construct Data1)%
 : ? s %(op)%
 b : Data1 %(construct Data1)%
-bottom : forall a : Type . a %(fun)%
 c : Data1 %(construct Data1)%
-def__ : forall a : Type . a ->? Unit %(fun)%
 eq : s * s ->? Unit %(pred)%
-false : Unit %(fun)%
 fst : s * t ->? s %(op)%
-not__ : ? Unit ->? Unit %(fun)%
 sel1 
 : Data4 ->? Data1 
 %(select from Data4 constructed by
@@ -122,9 +98,7 @@ sel2
 (Cons32 : Data2 * Data1 -> Data3, 
  Cons31 : Data1 * Data2 -> Data3))%
 snd : s * t ->? t %(op)%
-true : Unit %(fun)%
 tt : s ->? Unit %(pred)%
-¬__ : ? Unit ->? Unit %(fun)%
 %% Variables -------------------------------------------------------------
 x : s
 y : t

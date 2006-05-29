@@ -159,22 +159,24 @@ instance Pretty Env where
     pretty (Env{classMap=cm, typeMap=tm, localTypeVars=tvs,
                        assumps=ops, localVars=vs,
                        sentences=se, envDiags=ds}) =
-        noPrint (Map.null cm) (header "Classes")
+      let oops = foldr Map.delete ops $ map fst bList
+          otm = Map.difference tm $ addUnit Map.empty
+          header s =  text "%%" <+> text s
+                      <+> text (replicate (70 - length s) '-')      
+      in noPrint (Map.null cm) (header "Classes")
         $+$ printMap0 cm
-        $+$ noPrint (Map.null tm) (header "Type Constructors")
-        $+$ printMap0 tm
+        $+$ noPrint (Map.null otm) (header "Type Constructors")
+        $+$ printMap0 otm
         $+$ noPrint (Map.null tvs) (header "Type Variables")
         $+$ printMap0 tvs
-        $+$ noPrint (Map.null ops) (header "Assumptions")
-        $+$ printMap0 ops
+        $+$ noPrint (Map.null oops) (header "Assumptions")
+        $+$ printMap0 oops
         $+$ noPrint (Map.null vs) (header "Variables")
         $+$ printMap0 vs
         $+$ noPrint (null se) (header "Sentences")
         $+$ vcat (map pretty $ reverse se)
         $+$ noPrint (null ds) (header "Diagnostics")
         $+$ vcat (map pretty $ reverse ds)
-        where header s =  text "%%" <+> text s
-                          <+> text (replicate (70 - length s) '-')
 
 printMap0 :: (Pretty a, Ord a, Pretty b) => Map.Map a b -> Doc
 printMap0 = printMap []

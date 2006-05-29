@@ -5,39 +5,13 @@ op 0 : Rat
 forall y : Rat
 . (var y : Rat) = (op 0 : Nat) %(divide_def2_Rat)%
 %% Type Constructors -----------------------------------------------------
-? : +Type -> Type
 Int : Type < Rat
-Logical : Type := ? Unit
 Nat : Type < Int
-Pred : -Type -> Type := \ a : -Type . a ->? Unit
 Rat : Type
-Unit : Type
-__*__ : +Type -> +Type -> Type
-__*__*__ : +Type -> +Type -> +Type -> Type
-__*__*__*__ : +Type -> +Type -> +Type -> +Type -> Type
-__*__*__*__*__ : +Type -> +Type -> +Type -> +Type -> +Type -> Type
-__-->__ : -Type -> +Type -> Type < (__-->?__, __->__)
-__-->?__ : -Type -> +Type -> Type < __->?__
-__->__ : -Type -> +Type -> Type < __->?__
-__->?__ : -Type -> +Type -> Type
 %% Assumptions -----------------------------------------------------------
 0 
 : Rat %(op)%
 : Nat %(op)%
-__/\__ : ? Unit * ? Unit ->? Unit %(fun)%
-__<=>__ : ? Unit * ? Unit ->? Unit %(fun)%
-__=__ : forall a : Type . a * a ->? Unit %(fun)%
-__=>__ : ? Unit * ? Unit ->? Unit %(fun)%
-__=e=__ : forall a : Type . a * a ->? Unit %(fun)%
-__\/__ : ? Unit * ? Unit ->? Unit %(fun)%
-__if__ : ? Unit * ? Unit ->? Unit %(fun)%
-__when__else__ : forall a : Type . a * ? Unit * a ->? a %(fun)%
-bottom : forall a : Type . a %(fun)%
-def__ : forall a : Type . a ->? Unit %(fun)%
-false : Unit %(fun)%
-not__ : ? Unit ->? Unit %(fun)%
-true : Unit %(fun)%
-¬__ : ? Unit ->? Unit %(fun)%
 %% Variables -------------------------------------------------------------
 y : Rat
 %% Sentences -------------------------------------------------------------

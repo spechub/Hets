@@ -16,36 +16,10 @@ var f : a ->? b; x : a
   (var f : a ->? b) 
   (var x : a) 
   = (var f : a ->? b) ((var f : a ->? b) (var x : a))
-%% Type Constructors -----------------------------------------------------
-? : +Type -> Type
-Logical : Type := ? Unit
-Pred : -Type -> Type := \ a : -Type . a ->? Unit
-Unit : Type
-__*__ : +Type -> +Type -> Type
-__*__*__ : +Type -> +Type -> +Type -> Type
-__*__*__*__ : +Type -> +Type -> +Type -> +Type -> Type
-__*__*__*__*__ : +Type -> +Type -> +Type -> +Type -> +Type -> Type
-__-->__ : -Type -> +Type -> Type < (__-->?__, __->__)
-__-->?__ : -Type -> +Type -> Type < __->?__
-__->__ : -Type -> +Type -> Type < __->?__
-__->?__ : -Type -> +Type -> Type
 %% Type Variables --------------------------------------------------------
 a  : Type %(var_1)%
 b  < a : Type %(var_2)%
 %% Assumptions -----------------------------------------------------------
-__/\__ : ? Unit * ? Unit ->? Unit %(fun)%
-__<=>__ : ? Unit * ? Unit ->? Unit %(fun)%
-__=__ : forall a : Type . a * a ->? Unit %(fun)%
-__=>__ : ? Unit * ? Unit ->? Unit %(fun)%
-__=e=__ : forall a : Type . a * a ->? Unit %(fun)%
-__\/__ : ? Unit * ? Unit ->? Unit %(fun)%
-__if__ : ? Unit * ? Unit ->? Unit %(fun)%
-__when__else__ : forall a : Type . a * ? Unit * a ->? a %(fun)%
-bottom : forall a : Type . a %(fun)%
-def__ : forall a : Type . a ->? Unit %(fun)%
-false : Unit %(fun)%
-not__ : ? Unit ->? Unit %(fun)%
-true : Unit %(fun)%
 twice 
 : forall a : Type; b < a : Type . (a ->? b) -> a ->? b 
 %(op)% = 
@@ -63,7 +37,6 @@ twice3
 \ ((var f : a ->? b), (var x : a)) . 
 (var f : a ->? b) ((var f : a ->? b) (var x : a)) 
 as (a ->? b) * a ->? b
-¬__ : ? Unit ->? Unit %(fun)%
 %% Variables -------------------------------------------------------------
 f : a ->? b
 x : a

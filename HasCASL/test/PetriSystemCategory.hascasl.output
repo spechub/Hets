@@ -217,7 +217,6 @@ forall h1 : HomSys; h2 : HomSys
     (op cod : HomSys -> System) (var h2 : HomSys)) 
    as HomSys)
 %% Type Constructors -----------------------------------------------------
-? : +Type -> Type
 Boolean 
 : Type 
  %[free type Boolean ::= 
@@ -225,7 +224,6 @@ Boolean
              False : Boolean]%
 HomNet : Type := _t1018 Net (P ->? P) (T ->? T) Net
 HomSys : Type := _t1516 System (P ->? P) (T ->? T) System
-Logical : Type := ? Unit
 Map : Type -> Type := \ S : Type . S ->? S
 MapMultiSet 
 : Type -> Type := \ S : Type . MultiSet S ->? MultiSet S
@@ -234,19 +232,9 @@ MultiSet : Type -> Type := \ Elem : Type . Elem ->? Nat
 Nat : Type
 Net : Type := _t366 (Set P) (T ->? MultiSet P) (T ->? MultiSet P)
 P : Type
-Pred : -Type -> Type := \ a : -Type . a ->? Unit
 Set : Type -> Type := \ S : Type . S ->? Unit
 System : Type := _t1088 Net Marking
 T : Type
-Unit : Type
-__*__ : +Type -> +Type -> Type
-__*__*__ : +Type -> +Type -> +Type -> Type
-__*__*__*__ : +Type -> +Type -> +Type -> +Type -> Type
-__*__*__*__*__ : +Type -> +Type -> +Type -> +Type -> +Type -> Type
-__-->__ : -Type -> +Type -> Type < (__-->?__, __->__)
-__-->?__ : -Type -> +Type -> Type < __->?__
-__->__ : -Type -> +Type -> Type < __->?__
-__->?__ : -Type -> +Type -> Type
 _t1015 : +Type -> Type := _t1018 Net (P ->? P) (T ->? T)
 _t1016 : +Type -> +Type -> Type := _t1018 Net (P ->? P)
 _t1017 : +Type -> +Type -> +Type -> Type := _t1018 Net
@@ -288,7 +276,6 @@ forall Elem : Type .
 MultiSet Elem * MultiSet Elem -> MultiSet Elem 
 %(op)%
 : Nat * Nat -> Nat %(op)%
-__/\__ : ? Unit * ? Unit ->? Unit %(fun)%
 __::__-->__ 
 : 
 forall S : Type; V : Type . 
@@ -299,20 +286,14 @@ Pred ((S ->? MultiSet V) * Set S * Set V)
 __<=__ 
 : forall Elem : Type . Pred (MultiSet Elem * MultiSet Elem) %(op)%
 : Nat * Nat ->? Unit %(pred)%
-__<=>__ : ? Unit * ? Unit ->? Unit %(fun)%
-__=__ : forall a : Type . a * a ->? Unit %(fun)%
-__=>__ : ? Unit * ? Unit ->? Unit %(fun)%
-__=e=__ : forall a : Type . a * a ->? Unit %(fun)%
 __>__ : Nat * Nat ->? Unit %(pred)%
 __>=__ : Nat * Nat ->? Unit %(pred)%
 __[__/__] 
 : forall S : Type; V : Type . (S ->? V) * S * V -> S ->? V %(op)%
-__\/__ : ? Unit * ? Unit ->? Unit %(fun)%
 __\\__ : forall S : Type . Set S * Set S -> Set S %(op)%
 __disjoint__ : forall S : Type . Pred (Set S * Set S) %(op)%
 __disjointUnion__ 
 : forall S : Type . Set S * Set S -> Set (S * Boolean) %(op)%
-__if__ : ? Unit * ? Unit ->? Unit %(fun)%
 __intersection__ 
 : 
 forall Elem : Type . 
@@ -339,17 +320,14 @@ __union__ : forall S : Type . Set S * Set S -> Set S %(op)%
 __unionMap__ 
 : forall S : Type; V : Type . (S ->? V) * (S ->? V) -> S ->? V 
 %(op)%
-__when__else__ : forall a : Type . a * ? Unit * a ->? a %(fun)%
 __|<__> 
 : System * MultiSet T ->? System %(op)%
 : System * T -> System %(op)%
 __||__ 
 : forall S : Type; V : Type . (S ->? V) * Set S -> S ->? V %(op)%
-bottom : forall a : Type . a %(fun)%
 cod 
 : HomSys -> System %(op)%
 : HomNet -> Net %(op)%
-def__ : forall a : Type . a ->? Unit %(fun)%
 dom 
 : HomSys -> System %(op)%
 : HomNet -> Net %(op)%
@@ -357,7 +335,6 @@ dom
 empty : Marking %(op)%
 emptyMap : forall S : Type; V : Type . S ->? V %(op)%
 emptySet : forall S : Type . Set S %(op)%
-false : Unit %(fun)%
 freeMap : forall S : Type . Map S -> MapMultiSet S %(op)%
 freq : forall Elem : Type . Elem * MultiSet Elem -> Nat %(op)%
 id 
@@ -380,7 +357,6 @@ forall S : Type; V : Type .
 marking : System -> Marking %(op)%
 min : Nat * Nat -> Nat %(op)%
 net : System -> Net %(op)%
-not__ : ? Unit ->? Unit %(fun)%
 places : Net -> Set P %(op)%
 placesMap 
 : HomSys -> P ->? P %(op)%
@@ -397,13 +373,11 @@ transitions : Net -> Set T %(op)%
 transitionsMap 
 : HomSys -> T ->? T %(op)%
 : HomNet -> T ->? T %(op)%
-true : Unit %(fun)%
 undef__ : forall S : Type; V : Type . S ->? V %(op)%
 {__} 
 : forall Elem : Type . Elem -> MultiSet Elem %(op)%
 : forall S : Type . S -> Set S %(op)%
 {} : forall Elem : Type . MultiSet Elem %(op)%
-¬__ : ? Unit ->? Unit %(fun)%
 %% Variables -------------------------------------------------------------
 B : MultiSet Elem
 S : Set Elem

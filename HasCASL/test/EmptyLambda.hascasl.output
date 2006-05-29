@@ -1,31 +1,3 @@
 . (\ () . ()) ()
-%% Type Constructors -----------------------------------------------------
-? : +Type -> Type
-Logical : Type := ? Unit
-Pred : -Type -> Type := \ a : -Type . a ->? Unit
-Unit : Type
-__*__ : +Type -> +Type -> Type
-__*__*__ : +Type -> +Type -> +Type -> Type
-__*__*__*__ : +Type -> +Type -> +Type -> +Type -> Type
-__*__*__*__*__ : +Type -> +Type -> +Type -> +Type -> +Type -> Type
-__-->__ : -Type -> +Type -> Type < (__-->?__, __->__)
-__-->?__ : -Type -> +Type -> Type < __->?__
-__->__ : -Type -> +Type -> Type < __->?__
-__->?__ : -Type -> +Type -> Type
-%% Assumptions -----------------------------------------------------------
-__/\__ : ? Unit * ? Unit ->? Unit %(fun)%
-__<=>__ : ? Unit * ? Unit ->? Unit %(fun)%
-__=__ : forall a : Type . a * a ->? Unit %(fun)%
-__=>__ : ? Unit * ? Unit ->? Unit %(fun)%
-__=e=__ : forall a : Type . a * a ->? Unit %(fun)%
-__\/__ : ? Unit * ? Unit ->? Unit %(fun)%
-__if__ : ? Unit * ? Unit ->? Unit %(fun)%
-__when__else__ : forall a : Type . a * ? Unit * a ->? a %(fun)%
-bottom : forall a : Type . a %(fun)%
-def__ : forall a : Type . a ->? Unit %(fun)%
-false : Unit %(fun)%
-not__ : ? Unit ->? Unit %(fun)%
-true : Unit %(fun)%
-¬__ : ? Unit ->? Unit %(fun)%
 %% Sentences -------------------------------------------------------------
 (\ () . ()) ()

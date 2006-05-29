@@ -142,25 +142,6 @@ Cpo < Type
 Flatcpo < Cpo
 Pcpo < Cpo
 %% Type Constructors -----------------------------------------------------
-? : +Type -> Type
-Logical : Type := ? Unit
-Pred : -Type -> Type := \ a : -Type . a ->? Unit
-Unit : (Pcpo, Type)
-__*__ 
-: 
-(+Pcpo -> +Pcpo -> Pcpo, +Cpo -> +Cpo -> Cpo, 
- +Type -> +Type -> Type)
-__*__*__ : +Type -> +Type -> +Type -> Type
-__*__*__*__ : +Type -> +Type -> +Type -> +Type -> Type
-__*__*__*__*__ : +Type -> +Type -> +Type -> +Type -> +Type -> Type
-__-->__ 
-: 
-(-Cpo -> +Pcpo -> Pcpo, -Cpo -> +Cpo -> Cpo, 
- -Type -> +Type -> Type) 
-< (__-->?__, __->__)
-__-->?__ : (-Cpo -> +Cpo -> Pcpo, -Type -> +Type -> Type) < __->?__
-__->__ : -Type -> +Type -> Type < __->?__
-__->?__ : -Type -> +Type -> Type
 bool 
 : (Flatcpo, Type) 
  %[free type bool ::= 
@@ -176,39 +157,20 @@ p  : Pcpo %(var_360)%
 t  : Type %(var_2)%
 %% Assumptions -----------------------------------------------------------
 Y : forall p : Pcpo . (p --> p) --> p %(fun)%
-__/\__ : Unit * Unit ->? Unit %(fun)%
 __<<=__ : forall c : Cpo . c * c ->? Unit %(pred)%
-__<=>__ : Unit * Unit ->? Unit %(fun)%
-__=__ : forall s : Type . s * s ->? Unit %(fun)%
-__=>__ : Unit * Unit ->? Unit %(fun)%
-__=e=__ : forall a : Type . a * a ->? Unit %(fun)%
-__\/__ : Unit * Unit ->? Unit %(fun)%
-__if__ : Unit * Unit ->? Unit %(fun)%
 __res__ 
 : forall s : Type; t : Type . s * t -> s 
 %(op)% = \ ((var x : s), (var y : t)) .! (var x : s) as s
-__when__else__ : forall a : Type . a * ? Unit * a ->? a %(fun)%
-bottom : forall p : Pcpo . p %(fun)%
 def : forall s : Type . Pred s %(op)%
-def__ : forall a : Type . a ->? Unit %(fun)%
 eq : forall s : Type . s * s ->? Unit %(pred)%
-false 
-: bool %(construct bool)%
-: Unit ->? Unit %(pred)%
-: Unit %(fun)%
 fst 
 : forall s : Type; t : Type . s * t -> s 
 %(op)% = \ ((var x : s), (var y : t)) .! (var x : s) as s
 isBound : forall c : Cpo . c * (nat -> c) ->? Unit %(pred)%
 isChain : forall c : Cpo . (nat -> c) ->? Unit %(pred)%
 not : Unit ->? Unit %(pred)%
-not__ : ? Unit ->? Unit %(fun)%
 snd : s * t ->? t %(op)%
 sup : forall c : Cpo . (nat -> c) ->? c %(op)%
-true 
-: bool %(construct bool)%
-: Unit ->? Unit %(pred)%
-: Unit %(fun)%
 tt : forall s : Type . Pred s %(op)%
 undefined 
 : forall p : Pcpo; c : Cpo . c --> p 
@@ -217,7 +179,6 @@ undefined
 (\ (var x' : c --> p) . (var x' : c --> p) as 
  (c --> p) --> c --> p) 
 as c --> p
-¬__ : ? Unit ->? Unit %(fun)%
 %% Variables -------------------------------------------------------------
 f : p --> p
 g : c --> d
