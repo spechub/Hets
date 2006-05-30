@@ -23,6 +23,20 @@ notwendige Details anreichern werden:
  - der übersetzte Graph wird dann in einem neuen uDrawGraph Fenster
    angezeigt.
 
+ - minimale Sublogic bezüglich aller Knoten für die Auswahl des 
+   Comorphismus. (lessThanSublogic s. SPASS.CreateDFG)
+
+ - erstmal eine Fehlermeldung, wenn sich Links entlang
+   Comorphismus-Übersetzungen im DevGraph finden.
+
+ - Modul-Namen: Static.DGTranslation
+                GUI.DGTranslation
+                Static/test/dgTrans.hs
+                  - statische Analyse bis zum DG
+                  - minimale Sublogik
+                  - Übersetzung mit PCFOL2CFOL
+                  - Anzeige des Ergebnis in uDrawGraph
+
 Datenstrukturen
   siehe Static/DevGraph.hs
   Der zu übersetzende Typ ist GlobalContext, mittels rekursivem Abstieg.
