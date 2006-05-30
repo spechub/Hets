@@ -305,16 +305,18 @@ defaultProof_status nGoal tl =
     
 
 {- |
-  Returns the value of a prover run used in GUI (Success, Error or TLimitExceeded),
-  and the proof_status containing all prove information available.
+  Returns the value of a prover run used in GUI (Success, Error or
+  TLimitExceeded), and the proof_status containing all prove
+  information available.
 -}
 proof_stat :: AS_Anno.Named SPTerm -- ^ goal to prove
            -> Maybe GoalStatus -- ^ Nothing stands for prove error
            -> [String] -- ^ Used axioms in the proof
            -> Bool -- ^ Timeout status
            -> Proof_status () -- ^ default proof status
-           -> (ATPRetval, Proof_status ()) -- ^ General return value of a prover run, used in GUI.
-                                           --   Detailed proof status if information is available.
+           -> (ATPRetval, Proof_status ()) 
+           -- ^ General return value of a prover run, used in GUI.
+           --   Detailed proof status if information is available.
 proof_stat nGoal res usedAxs timeOut defaultPrStat
   | isNothing res =
       (ATPError "Internal error.", defaultPrStat)
