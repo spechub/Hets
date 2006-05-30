@@ -125,8 +125,7 @@ happy_files += $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs
 LEX_DIR = $(PFE_TOOLDIR)/base/parse2/Lexer
 
 patch: Haskell/Programatica.patch
-	patch -usNlp0 -d $(PFE_TOOLDIR) -i `pwd`/$< \
-	    base/parse2/NumberNames.hs || exit 0
+	patch -usNlp0 -d $(PFE_TOOLDIR) -i `pwd`/$< || exit 0
 
 $(LEX_DIR)/HsLex.hs: $(LEX_DIR)Gen/HsLexerGen
 	echo "{-# OPTIONS -w #-}" > $@
@@ -315,8 +314,6 @@ nondoc_sources = $(wildcard utils/DrIFT-src/*.hs) \
     $(genrule_header_files) $(generated_rule_files) \
     $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hspp \
     Modal/GeneratePatterns.inline.hs \
-    Comorphisms/test/showKP.hs \
-    CASL/CCC/FreeTypes.hs \
     Haskell/PreludeString.append.hs Haskell/ProgramaticaPrelude.hs \
     SPASS/MathServCommunication.hs \
     $(patsubst %.hs, %.der.hs, $(drifted_files))
