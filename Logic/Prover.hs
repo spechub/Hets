@@ -158,10 +158,10 @@ instance Show GoalStatus where
     show gs = case gs of
               Open -> "Open"
               Disproved -> "Disproved"
-              Proved mc -> "Proved (" ++ 
-                           maybe "unknown" (\ c -> (if c then "" else "in") ++ 
-                                                   "consistent") mc ++ 
-                           ")"
+              Proved mc -> "Proved" ++ 
+                           maybe "" (\ c -> "("++
+                                            (if c then "" else "in") ++ 
+                                            "consistent)") mc
 
 -- | data type representing the proof status for a goal or 
 data Proof_status proof_tree =
