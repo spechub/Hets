@@ -63,3 +63,13 @@ printMap :: (Pretty a, Ord a, Pretty b) => (Doc -> Doc) -> ([Doc] -> Doc)
 printMap brace inter pairDoc = printList brace inter
      . map ( \ (a, b) -> pairDoc (pretty a) (pretty b))
      . Map.toList
+
+
+
+-- |
+-- like punctuate from Pretty, but prepends symbol to every element
+-- omitting the first element
+prepPunctuate :: Doc -> [Doc] -> [Doc]
+prepPunctuate _ [] = []
+prepPunctuate symb (x:xs) = x:map (\e -> symb <> e) xs
+

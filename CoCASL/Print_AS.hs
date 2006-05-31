@@ -13,7 +13,6 @@ printing AS_CoCASL and CoCASLSign data types
 module CoCASL.Print_AS where
 
 import Common.Keywords
---import Common.Lib.Pretty
 import Common.PrettyPrint
 import Common.PPUtils
 import CASL.Print_AS_Basic

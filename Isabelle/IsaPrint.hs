@@ -24,14 +24,18 @@ module Isabelle.IsaPrint
 
 import Isabelle.IsaSign
 import Isabelle.IsaConsts
-import Common.Lib.Pretty
+
 import Common.AS_Annotation
 import Common.PrettyPrint
-import Common.PPUtils
-import qualified Common.Lib.Map as Map
 
+import qualified Common.Lib.Map as Map
+import Common.Doc hiding (toText,toLatex,bar)
+import CASL.Print_AS_Basic
+import CASL.LaTeX_AS_Basic
+import Common.DocUtils
 import Data.Char
 import Data.List
+
 
 printIsaTheory :: String -> String -> Sign -> [Named Sentence] -> Doc
 printIsaTheory tn _ sign sens = let
@@ -40,13 +44,13 @@ printIsaTheory tn _ sign sens = let
     ld = "$HETS_LIB/Isabelle/"
     use = text usesS <+> doubleQuotes (text $ ld ++ "prelude")
     in text theoryS <+> text tn
-    $$ text importsS <+> (if case b of
+    $+$ text importsS <+> (if case b of
                           Main_thy -> False
                           HOLCF_thy -> False
                           _ -> True then doubleQuotes
                                     $ text $ ld ++ bs else text bs)
-    $$ use
-    $$ text beginS
+    $+$ use
+    $+$ text beginS
     $++$ printTheoryBody sign sens
     $++$ text endS
 
@@ -58,15 +62,15 @@ printTheoryBody sig sens =
         tNames = map senName $ ts ++ axs
     in
     callML "initialize" (text $ show $ map Quote tNames) $++$
-    printText sig $++$
-    (if null axs then empty else text axiomsS $$
+    printSign sig $++$
+    (if null axs then empty else text axiomsS $+$
         vsep (map printNamedSen axs)) $++$
-    (if null defs then empty else text defsS $$
+    (if null defs then empty else text defsS $+$
         vsep (map printNamedSen defs)) $++$
     (if null rdefs then empty else
         vsep (map printNamedSen rdefs)) $++$
     (if null ts then empty else
-        vsep (map ( \ t -> printNamedSen t $$
+        vsep (map ( \ t -> printNamedSen t $+$
                    text (case sentence t of
                          Sentence { thmProof = Just s } -> s
                          _ -> oopsS)
@@ -106,7 +110,7 @@ printClass (IsaClass x) = text x
 printSort :: Sort -> Doc
 printSort l = case l of
     [c] -> printClass c
-    _ -> braces . hsep . punctuate comma $ map printClass l
+    _ -> specBraces . hsep . punctuate comma $ map printClass l
 
 data SynFlag = Quoted | Unquoted | Null
 
@@ -169,7 +173,7 @@ printNamedSen NamedSen { senName = lab, sentence = s, isAxiom = b } =
   RecDef {} -> d
   _ -> let dd = doubleQuotes d in
        if isRefute s then text lemmaS <+> text lab <+> colon
-              <+> dd $$ text refuteS
+              <+> dd $+$ text refuteS
        else if null lab then dd else (case s of
     ConstDef {} -> text $ lab ++ "_def"
     Sentence {isSimp = c} ->
@@ -217,7 +221,7 @@ printTrm b trm = case trm of
         NotCont -> (text "if" <+> d, lowPrio)
         IsCont -> (text "If" <+> d <+> text "fi", maxPrio)
     Case e ps -> (text "case" <+> printPlainTerm b e <+> text "of"
-                  $$ vcat (bar $
+                  $+$ vcat (bar $
                          map (\ (p, t) -> printPlainTerm b p <+> text "=>"
                                        <+> printPlainTerm b t) ps), lowPrio)
     Let es i -> (text "let" <+>
@@ -309,10 +313,10 @@ printMInstance tn t = let thNm = text tn
                           tArrow = text ("-" ++ "->")
  in (text "thymorph" <+> thMorNm <+> colon <+>
             text "MonadType" <+> tArrow <+> thNm)
-    $$ text "  maps" <+> brackets
+    $+$ text "  maps" <+> brackets
                  (parens $ (doubleQuotes $ text "MonadType.M")
                   <+> text "|->" <+> doubleQuotes (text $ tn ++ "." ++ t))
-    $$ text "t_instantiate Monad mapping" <+> thMorNm
+    $+$ text "t_instantiate Monad mapping" <+> thMorNm
 
 {-
 thymorph t : MonadType --> State maps [("MonadType.M" |-> "State.S")]
@@ -325,7 +329,7 @@ printNInstance t xs = text instanceS <+> text t <> doubleColon <>
      [] -> empty
      ys -> parens $ hsep $ punctuate comma
            $ map (doubleQuotes . printSort . snd) ys)
-    <+> printClass (fst xs) $$ text "by intro_classes"
+    <+> printClass (fst xs) $+$ text "by intro_classes"
 
 printTypeDecls :: Sign -> Doc
 printTypeDecls sig =
@@ -340,7 +344,7 @@ printTycon sig t arity' rest =
             text typedeclS <+>
             (if arity > 0
              then parens $ hsep (map (text . ("'a"++) . show) [1..arity])
-             else empty) <+> text t $$ rest
+             else empty) <+> text t $+$ rest
 
 dtyp :: Sign -> TName -> Bool
 dtyp sig t = elem t $
@@ -355,17 +359,22 @@ printAlt (VName _ altV) = case altV of
             if i == maxPrio then empty else text (show i)
 
 instance PrettyPrint Sign where
-  printText0 _ sig =
+  printText0 = toText
+    
+instance Pretty Sign where
+    pretty = printSign
+
+printSign :: Sign -> Doc
+printSign sig =
     printTypeDecls sig $++$
     printClassrel (classrel $ tsig sig) $++$
     printDomainDefs (domainTab sig) $++$
     printConstTab (constTab sig) $++$
     (if showLemmas sig then showCaseLemmata (domainTab sig) else empty) $++$
-                                   -- this may print an "o"
     printArities (theoryName sig) (arities $ tsig sig)
     where
     printConstTab tab = if Map.null tab then empty else text constsS
-                        $$ vcat (map printConst $ Map.toList tab)
+                        $+$ vcat (map printConst $ Map.toList tab)
     printConst (vn, t) = text (new vn) <+> doubleColon <+>
                           doubleQuotes (printType t) <+> printAlt vn
     isDomain = case baseSig sig of
@@ -429,13 +438,16 @@ instance PrettyPrint Sign where
                 ++ proof
 
 instance PrintLaTeX Sign where
-    printLatex0 = printText0
+    printLatex0 = toLatex
 
 instance PrintLaTeX Sentence where
-  printLatex0 = printText0
+  printLatex0 = toLatex
 
 instance PrettyPrint Sentence where
-      printText0 _ = printSentence
+      printText0 = toText 
+
+instance Pretty Sentence where
+    pretty = printSentence
 
 sp :: String
 sp = " "

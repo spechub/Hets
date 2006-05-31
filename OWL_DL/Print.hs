@@ -19,9 +19,11 @@ Pretty printing for OWL DL theories.
 
 module OWL_DL.Print where
 
-import Common.GlobalAnnotations
-import Common.Lib.Pretty
 import Common.PrettyPrint
+import Common.Doc
+import CASL.Print_AS_Basic
+import CASL.LaTeX_AS_Basic
+import Common.DocUtils
 
 import OWL_DL.Sign
 import OWL_DL.AS
@@ -30,643 +32,624 @@ import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 
 instance PrintLaTeX Sign where
-  printLatex0 = printText0
+  printLatex0 = CASL.LaTeX_AS_Basic.toLatex
 
 instance PrettyPrint Sign where
-  printText0 ga (Sign _ p2 p3 p4 p5 p6 _ p8 p9 p10) =
-    (text "namespaces ") $+$ (printText0 ga p10) $+$
-    ((text "concepts ") <> (foldSetToDoc ga p2)) $+$
-    ((text "primaryConcepts ") <> (foldSetToDoc ga p3)) $+$
-    ((text "datatypes ") <> (foldSetToDoc ga p4)) $+$
-    ((text "indvidual_valued_roles ") 
-                         <> (foldSetToDoc ga p5)) $+$
-    ((text "data_valued_roles ") <> (foldSetToDoc ga p6)) $+$
-    ((text "individuals ") <> (foldSetToDoc ga p8)) $+$
-    ((text "sign_axioms") $+$ (foldSetToDoc2 ga p9)) $+$ 
+  printText0 = CASL.Print_AS_Basic.toText
+
+instance Pretty Sign where
+    pretty = printSign
+
+printSign :: Sign -> Doc
+printSign (Sign _ p2 p3 p4 p5 p6 _ p8 p9 p10) =
+    (text "namespaces ") $+$ (printNamespace p10) $+$
+    ((text "concepts") <+> (printSetWithComma p2)) $+$
+    ((text "primaryConcepts ") <+> (printSetWithComma p3)) $+$
+    ((text "datatypes ") <+> (printSetWithComma p4)) $+$
+    ((text "indvidual_valued_roles ") <+> (printSetWithComma p5)) $+$
+    ((text "data_valued_roles ") <+> (printSetWithComma p6)) $+$
+    ((text "individuals ") <+> (printSetWithComma p8)) $+$
+    ((text "sign_axioms") $+$ (foldSetToDoc2 p9)) $+$ 
     empty
 
 instance PrettyPrint URIreference where
-    printText0 _ (QN prefix localpart uri)
-        | localpart == "_" = text $ show "_"
-        | null prefix = if null uri then
+    printText0 = CASL.Print_AS_Basic.toText 
+
+instance Pretty URIreference where
+    pretty = printURIreference
+
+printURIreference :: URIreference -> Doc
+printURIreference (QN prefix localpart uri)
+    | localpart == "_" = text $ show "_"
+    | null prefix = if null uri then
                            text localpart
                            else text $ show (uri ++ ":" ++ localpart)
-        | otherwise =   text $ show ( prefix ++ ":" ++ localpart) 
+    | otherwise =   text $ show ( prefix ++ ":" ++ localpart)
 
 instance PrettyPrint Namespace where
-    printText0 _ nsMap = 
-        text $ pp (Map.toList nsMap) "" 
-       where pp :: [(String, String)] -> String ->  String
-             pp [] str = str ++ "\n"
-             pp ((pre, uri):rest) str 
-                 | null str = pp rest (pre ++ " ::= " ++ uri)
-                 | otherwise =         
-                     pp rest (str ++ "\n" ++ pre ++ " ::= " ++ uri) 
-           
+    printText0 =  CASL.Print_AS_Basic.toText
+
+instance Pretty Namespace where
+    pretty = printNamespace
+
+printNamespace :: Namespace -> Doc
+printNamespace nsMap =
+    vcat $ map pp (Map.toList nsMap)  
+       where pp :: (String, String) -> Doc
+             pp (s1,s2) = text s1 <> defn <> text s2
+
 instance PrintLaTeX Sentence where
-  printLatex0 = printText0
+    printLatex0 = CASL.LaTeX_AS_Basic.toLatex
 
 instance PrettyPrint Sentence where
-    printText0 ga sent = 
-        case sent of
-          OWLAxiom axiom -> printText0 ga axiom
-          OWLFact fact   -> printText0 ga fact
+    printText0 = CASL.Print_AS_Basic.toText
+
+instance Pretty Sentence where
+    pretty = printSentence
+
+printSentence :: Sentence -> Doc
+printSentence sent = case sent of
+    OWLAxiom axiom -> printAxiom axiom
+    OWLFact fact   -> printFact fact
 
 -- not necessary
 instance PrettyPrint Ontology where
-    printText0 ga (Ontology maybeID directives ns) =
-        (text "Ontology") <+> 
-            (case maybeID of
-             Just oid -> printText0 ga oid
+    printText0 = CASL.Print_AS_Basic.toText
+
+instance Pretty Ontology where
+    pretty = printOntology
+
+printOntology :: Ontology -> Doc
+printOntology (Ontology maybeID directives ns) =
+    text "Ontology" <+> 
+          (case maybeID of
+             Just oid -> printURIreference oid
              _        -> text "anomie"
             ) $+$
-        (text $ show $ map (printText0 ga) directives) $+$
-        (printText0 ga ns)
+    (fsep $ map printDirective directives) $+$
+    printNamespace ns
 
 instance PrintLaTeX Ontology where
- printLatex0 = printText0
+    printLatex0 = CASL.LaTeX_AS_Basic.toLatex
 
 instance PrettyPrint Directive where
-    printText0 _ = text . show
+    printText0 = CASL.Print_AS_Basic.toText
 
-instance PrettyPrint Axiom where
-    printText0 ga axiom =
-	case axiom of
-	Class cid _ _ _ descs ->       -- descs is here unionOf or complementOf
-          foldListToDocV ga (printDescription ga (-1)) cid descs
-	EnumeratedClass cid _ _ iids ->
-                  parens ((text "forall ((x owl:Thing))") $+$ 
-	                  (printDescription ga (-1) cid $ OneOfDes iids)) 
-	DisjointClasses desc1 desc2 _ ->   -- description list is ignored (always empty)
-	   parens ((text "forall ((x owl:Thing))") <+>
-                    parens ((text "not") <+> parens ((text "and") <+>
-                    (printDescription ga (-1) emptyQN desc1) <+>
-                     (text "x") <+> 
-                     (printDescription ga (-1) emptyQN desc2) <+> (text "x"))))
+instance Pretty Directive where
+    pretty = printDirective
 
-	EquivalentClasses desc1 descs ->  
-         foldListToDocV ga 
+printDirective :: Directive -> Doc
+printDirective = text . show
+
+instance Pretty Axiom where
+    pretty = printAxiom
+
+printAxiom :: Axiom -> Doc
+printAxiom axiom = case axiom of
+    Class cid _ _ _ descs ->
+      foldListToDocV (printDescription (-1)) cid descs 
+    EnumeratedClass cid _ _ iids ->
+      parens (text "forall ((x owl:Thing))" $+$ 
+	                  (printDescription (-1) cid $ OneOfDes iids))
+    DisjointClasses desc1 desc2 _ ->
+      parens (text "forall ((x owl:Thing))" <+>
+              parens (text "not" <+> parens (text "and" <+>
+                 printDescription (-1) emptyQN desc1 <+>
+                 text "x" <+> 
+                 printDescription (-1) emptyQN desc2 <+> text "x")))
+    EquivalentClasses desc1 descs ->  
+      foldListToDocV  
 	  (\x y -> 
           case y of
 	  DC cid2 ->
-	    parens ((text "forall ((x owl:Thing))") <+> 
+	    parens (text "forall ((x owl:Thing))" <+> 
                     parens (text "iff" <> 
-                    (printDescription ga (-1) emptyQN x) <+> 
-                    (text "x") <+> (printText0 ga cid2) <+> 
-                    (text "x")))
+                    printDescription (-1) emptyQN x <+> 
+                    text "x" <+> printURIreference cid2 <+> 
+                    text "x"))
 	  _      -> 
 	      case x of
 	        DC cid1 ->
-                   parens ((text "forall ((x owl:Thing))") $+$ 
-                            (printDescription ga (-1) cid1 y))
+                   parens (text "forall ((x owl:Thing))" $+$ 
+                           printDescription (-1) cid1 y)
 	        _       -> error ("EquivalentClasses Error:" ++ (show axiom))
 	  ) desc1 descs
-	Datatype dID _ _ -> 
-	    printText0 ga dID
-	DEquivalentProperties dpID1 dpID2 _ ->
-	    parens ((text "forall ((x owl:Thing) (y owl:Thing))") <+> 
-                     parens ((text "iff") <> (printText0 ga dpID1) <+>
-                     (text "x y") <+> (printText0 ga dpID2) <+>
-			                       (text "x y")))	
-	IEquivalentProperties ipID1 ipID2 _ ->
-	    parens ((text "forall ((x owl:Thing) (y owl:Thing))") <+> 
-                    parens ((text "iff") <> (printText0 ga ipID1) <+>
-			(text "x y") <+> (printText0 ga ipID2) <+>
-			(text "x y")))	
-	DSubPropertyOf dpID1 dpID2 ->
-	    parens ((text "forall ((x owl:Thing) (y rdfs:Lilteral))") <+> 
-                    parens ((text "implies") <+> 
-                            parens ((printText0 ga dpID1) <+>
-			            (text "x y")) <+> 
-                            parens ((printText0 ga dpID2) <+>
-			            (text "x y"))))	
-	ISubPropertyOf ipID1 ipID2 ->
-	    parens ((text "forall ((x owl:Thing) (y owl:Thing))") <+> 
-                    parens ((text "implies") <+> 
-                            parens ((printText0 ga ipID1) <+>
-			            (text "x y")) <+> 
-                            parens ((printText0 ga ipID2) <+>
-			            (text "x y"))))
-	ObjectProperty iid _ _ _ maybeInverse isSymmetric maybeFunc _ _ ->
-	    case maybeInverse of
-	    Just pid -> parens ((text "forall ((x owl:Thing) (y owl:Thing))") 
-                                <+>  parens ((text "iff") <+> 
-                                             parens ((printText0 ga iid) <+>
-			                             (text "x y")) <+> 
-                                             parens ((printText0 ga pid) <+>
-			                             (text "y x"))))  
-               -- inverse and transitive properties are separated. 
-  	       -- 	(printText0 ga (ObjectProperty iid p2 p3 p4 
-               --         Prelude.Nothing isSymmetric maybeFunc p8 p9))
-	    _ -> if isSymmetric then
-                     parens ((text "forall ((x owl:Thing) (y owl:Thing))") 
-                                <+>  parens ((text "implies") <+> 
-                                             parens ((printText0 ga iid) <+>
-			                             (text "x y")) <+> 
-                                             parens ((printText0 ga iid) <+>
-			                             (text "y x"))))  
-		    else 
-		      case maybeFunc of
-		         Just InverseFunctional ->
-                           parens ((text "forall ((x owl:Thing) (y owl:Thing) (z owl:Thing))") <+>  
-                             parens ((text "implies") $+$ 
-                                     (nest 2 (parens ((text "and") <+> 
-                                              (printText0 ga iid) <+>
-			                             (text "y z") $+$ 
-                                               (printText0 ga iid) <+>
-			                             (text "z x")))) $+$
-                                     (nest 2 $ parens (text "= y z"))))
-                         Just Transitive ->  
-                           parens ((text "forall ((x owl:Thing) (y owl:Thing) (z owl:Thing))") <+>  
-                             parens ((text "implies") $+$ 
-                                     (nest 2 (parens ((text "and") <+> 
-                                       (printText0 ga iid) <+>
-			                       (text "x y") $+$ 
-                                       (nest 4 $ (printText0 ga iid)<+>
-			                             (text "y z")))) $+$
-                                     (nest 4 $ parens ((printText0 ga iid) <+> 
-                                                       (text "x z"))))))
-			 _  -> text "" 
-	u -> text $ show u         -- annotation is not yet instanced
+    Datatype dID _ _ -> 
+      printURIreference dID
+    DEquivalentProperties dpID1 dpID2 _ ->
+	    parens (text "forall ((x owl:Thing) (y owl:Thing))" <+> 
+                     parens (text "iff" <> printURIreference dpID1 <+>
+                     text "x y" <+> printURIreference dpID2 <+>
+	             text "x y"))
+    IEquivalentProperties ipID1 ipID2 _ ->
+	    parens (text "forall ((x owl:Thing) (y owl:Thing))" <+> 
+                    parens (text "iff" <> printURIreference ipID1 <+>
+	            text "x y" <+> printURIreference ipID2 <+>
+		    text "x y"))
+    DSubPropertyOf dpID1 dpID2 ->
+	    parens (text "forall ((x owl:Thing) (y rdfs:Lilteral))" <+> 
+                    parens (text "implies" <+> 
+                            parens (printURIreference dpID1 <+>
+			            text "x y") <+> 
+                            parens (printURIreference dpID2 <+>
+			            text "x y")))
+    ISubPropertyOf ipID1 ipID2 ->
+	    parens (text "forall ((x owl:Thing) (y owl:Thing))" <+> 
+                    parens (text "implies" <+> 
+                            parens (printURIreference ipID1 <+>
+			            text "x y") <+> 
+                            parens (printURIreference ipID2 <+>
+			            text "x y")))
+    ObjectProperty iid _ _ _ maybeInverse isSymmetric maybeFunc _ _ ->
+      case maybeInverse of
+	Just pid -> parens (text "forall ((x owl:Thing) (y owl:Thing))" 
+                            <+>  parens (text "iff" <+> 
+                                         parens (printURIreference iid <+>
+			                         text "x y") <+> 
+                                         parens (printURIreference pid <+>
+			                         text "y x")))
+        _ -> if isSymmetric then
+                parens (text "forall ((x owl:Thing) (y owl:Thing))" 
+                        <+>  parens (text "implies" <+> 
+                                     parens (printURIreference iid <+>
+			                     text "x y") <+> 
+                                     parens (printURIreference iid <+>
+			                     text "y x")))
+               else 
+                 case maybeFunc of
+                   Just InverseFunctional ->
+                     parens (text ("forall ((x owl:Thing)" ++ 
+                              "(y owl:Thing) (z owl:Thing))") <+>  
+                             parens (text "implies" $+$ 
+                                     parens (text "and" <+> 
+                                              printURIreference iid <+>
+			                      text "y z" $+$ 
+                                              printURIreference iid <+>
+			                      text "z x") $+$
+                                     (parens $ text "= y z")))
+                   Just Transitive ->  
+                     parens (text ("forall ((x owl:Thing)" ++ 
+                              "(y owl:Thing) (z owl:Thing))") <+>  
+                             parens (text "implies" $+$ 
+                                     parens (text "and" <+> 
+                                             printURIreference iid <+>
+			                     text "x y" $+$ 
+                                             printURIreference iid<+>
+			                     text "y z") $+$
+                                     parens (printURIreference iid <+> 
+                                             text "x z")))
+	           _  -> text "" 
+    u -> text $ show u
+    
+instance PrettyPrint Axiom where
+    printText0 = CASL.Print_AS_Basic.toText
+	      	
+instance Pretty SignAxiom where	 
+    pretty = printSignAxiom
+
+printSignAxiom :: SignAxiom -> Doc
+printSignAxiom signAxiom = case signAxiom of
+    Subconcept cid1 cid2 -> 
+      parens (text "forall ((x owl:Thing))" <+> 
+              parens (text "implies" <+>
+                      parens (printURIreference cid1 <+> text "x") <+>
+                      parens (printURIreference cid2 <+> text "x")))
+    RoleDomain rid rdomains ->
+      foldListToDocH   
+	(\x y -> parens (text "forall ((x owl:Thing) (y owl:Thing))" $+$
+                         parens (text "implies" <+> 
+                                 parens (printURIreference x <+> 
+                                         text "x y") <+> 
+                                 (parens $ printRDomain y)))
+        ) rid rdomains
+    RoleRange rid rranges -> case head rranges of
+      RDRange _ ->
+        text "(forall ((x owl:Thing) (y rdfs:Literal))" $+$
+        text "(implies (" <> printURIreference rid <+> text "x y)" $+$
+        (if (length rranges > 1) then
+           text "(or "
+         else lparen) <> 
+        foldListToDocH form5 rid rranges $+$ text ")))"
+      _         ->
+	foldListToDocV   
+	  (\x y -> text "(forall ((x owl:Thing) (y owl:Thing))" $+$ 
+                   text "(implies (" <> printURIreference x <+> 
+	           text "x y) (" <> printRRange y <> text " y)" $+$
+	           text "))")
+	  rid rranges
+    FuncRole (rtype, rid) ->
+      case rtype of
+	IRole -> 
+	  text "(forall ((x owl:Thing) (y owl:Thing) (z owl:Thing))" $+$ 
+          text "(implies" $+$
+	  text "(and (" <> printURIreference rid <+> 
+	  text "x y) (" <+> printURIreference rid <+> text "x z))" $+$
+	  text "(= y z)" $+$ text "))"
+        DRole ->
+	  text "(forall ((x owl:Thing) (y rdfs:Literal) (z rdfs:Literal))" $+$ 
+          text "(implies" $+$
+	  text "(and (" <> printURIreference rid <+> 
+	  text "x y) (" <+> printURIreference rid <+> text "x z))" $+$
+	  text "(= y z)" $+$ text "))"
+    Conceptmembership iID desc ->
+      parens (printDescription 0 iID desc <+> printURIreference iID)    
 
 instance PrettyPrint SignAxiom where
-    printText0 ga signAxiom =
-	case signAxiom of
-	Subconcept cid1 cid2 -> 
-            parens (text "forall ((x owl:Thing))" <+> 
-                    parens (text "implies" <+>
-                            parens (printText0 ga cid1 <+> text "x") <+>
-                            parens (printText0 ga cid2 <+> text "x")))
- 	RoleDomain rid rdomains ->
-	    foldListToDocH ga  
-	    (\x y -> parens ((text "forall ((x owl:Thing) (y owl:Thing))") $+$
-                             (nest 2 $ parens ((text "implies") <+> 
-                                               parens ((printText0 ga x) <+> 
-                                                        (text "x y")) <+> 
-                                               parens (printText0 ga y))))
-            ) rid rdomains
-	RoleRange rid rranges -> 
- --        if null rranges then text ""
- --          else
-            case head rranges of
-	    RDRange _ ->          -- range (dataRange) of datatype property
-	     (text "(forall ((x owl:Thing) (y rdfs:Literal))") $+$
-                (nest 2 $ text "(implies (") <> (printText0 ga rid) <+>
-		(text "x y)") $+$
-                (if (length rranges > 1) then
-		    (nest 4 $ text "(or ") 
-                   else (nest 4 $ lparen))
-		<> (foldListToDocH ga (form5 ga) rid rranges)
-                $+$ (text ")))")
-	    _         ->
-	      foldListToDocV ga  
-	        (\x y -> (text "(forall ((x owl:Thing) (y owl:Thing))")
-                     $+$ (nest 2 $ text "(implies (") <> (printText0 ga x) <+> 
-	             (text "x y) (") <> (printText0 ga y) <> (text " y)") $+$
-	             (text "))"))
-	           rid rranges
-	FuncRole (rtype, rid) ->
-	    case rtype of
-	    IRole -> 
-		(text "(forall ((x owl:Thing) (y owl:Thing) (z owl:Thing))")
-	        $+$ (nest 2 $ text "(implies") $+$
-	        ((nest 4 $ text "(and (") <> (printText0 ga rid) <+> 
-	        (text "x y) (") <+> (printText0 ga rid) <+> (text "x z))")) $+$
-	        (nest 4 $ text "(= y z)") $+$
-	        (text "))") 
-	    DRole ->
-	     (text "(forall ((x owl:Thing) (y rdfs:Literal) (z rdfs:Literal))")
-	      $+$ (nest 2 $ text "(implies") $+$
-	      ((nest 4 $ text "(and (") <> (printText0 ga rid) <+> 
-	      (text "x y) (") <+> (printText0 ga rid) <+> (text "x z))")) $+$
-	      (nest 4 $ text "(= y z)") $+$
-	      (text "))")
-	Conceptmembership iID desc ->
-	    parens ((printDescription ga 0 iID desc) 
-		     <+> (printText0 ga iID))
-
+    printText0 = CASL.Print_AS_Basic.toText
+             
 instance PrettyPrint RDomain where
-    printText0 ga (RDomain desc) =
-      case desc of
-        DC cid -> printText0 ga cid <+> (text "x")
-        _      -> printDescription ga 0 emptyQN desc   -- ToDo: level hierachie
+    printText0 = CASL.Print_AS_Basic.toText
+
+instance Pretty RDomain where
+    pretty = printRDomain
+
+printRDomain :: RDomain -> Doc
+printRDomain (RDomain desc) =
+    case desc of
+      DC cid -> printURIreference cid <+> text "x"
+      _      -> printDescription 0 emptyQN desc  -- ToDo: level hierachie
 
 instance PrettyPrint RRange where
-    printText0 ga rRange =
-        case rRange of
-        RIRange desc -> printDescription ga 0 emptyQN desc -- ToDo: level hierachie
-        RDRange dataRange -> printText0 ga dataRange 
+    printText0 = CASL.Print_AS_Basic.toText
+
+instance Pretty RRange where 
+    pretty = printRRange
+
+printRRange :: RRange -> Doc
+printRRange rRange = case rRange of
+    RIRange desc -> printDescription 0 emptyQN desc -- ToDo: level hierachie
+    RDRange dataRange -> printDataRange dataRange
 
 instance PrettyPrint DataRange where
-    printText0 ga dr =
-      case dr of
-        DID dtID -> printText0 ga dtID
-        OneOfData dls ->
-         parens ((text "DEBUG:forall ((x rdfs:Literal))") $+$
-             (if allEqTypedLit dls then
-                 case head dls of
+    printText0 = CASL.Print_AS_Basic.toText
+
+instance Pretty DataRange where               
+    pretty = printDataRange
+
+printDataRange :: DataRange -> Doc
+printDataRange dr = case dr of
+    DID dtID -> printURIreference dtID
+    OneOfData dls ->
+      parens ((text "DEBUG:forall ((x rdfs:Literal))") $+$
+      (if allEqTypedLit dls then
+             case head dls of
                  TypedL (_, drType) ->
-                    (nest 2 $ text "(iff (") <> (printText0 ga drType) <+> 
+                    (text "(iff (") <> (printURIreference drType) <+> 
                     (text "x)") 
                  _  -> error "false check datarange."
-                else empty) $+$ 
-              (nest 3 $ parens (text "or") <> 
-               parens (foldListToDocH ga (form4 ga) emptyQN dls)) <> 
-              (if allEqTypedLit dls then rparen else empty))
-        RLit rdfLit   -> (text "rdf_literal") <+> (text rdfLit)
-      where allEqTypedLit :: [DataLiteral] -> Bool
-            allEqTypedLit [] = False
-            allEqTypedLit (TypedL (_, ty):dls') = all check dls'
+          else empty) $+$ (parens (text "or") <>
+           parens (foldListToDocH form4 emptyQN dls)) <>
+           (if allEqTypedLit dls then rparen else empty))
+    RLit rdfLit   -> (text "rdf_literal") <+> (text rdfLit)
+  where allEqTypedLit :: [DataLiteral] -> Bool
+        allEqTypedLit [] = False
+        allEqTypedLit (TypedL (_, ty):dls') = all check dls'
                 where check :: DataLiteral -> Bool
                       check dl = case dl of
                           TypedL (_, t) -> if t == ty then True 
                                            else False
                           _             -> False
-            allEqTypedLit _ = False
-               
-    
+        allEqTypedLit _ = False
+
 instance PrettyPrint DataLiteral where
-    printText0 ga dl =
-        case dl of
-        TypedL (lf, uri) -> parens (text (lf ++ ":") <+> 
-                                     printText0 ga uri)
-        PlainL (lf, lt)  -> parens (text ("stringInLang '"++lf++" : "++lt))
-        Plain lf         -> text lf 
-        RDFSL rdfLit     -> -- (text "rdf_literal") <+> (text rdfLit)
-                            text rdfLit
+    printText0 = CASL.Print_AS_Basic.toText
+
+instance Pretty DataLiteral where
+    pretty = printDataLiteral
+
+printDataLiteral :: DataLiteral -> Doc
+printDataLiteral dl = case dl of
+    TypedL (lf, uri) -> parens (text (lf ++ ":") <+> 
+                                     printURIreference uri)
+    PlainL (lf, lt)  -> parens (text ("stringInLang '"++lf++" : "++lt))
+    Plain lf         -> text lf 
+    RDFSL rdfLit     -> text rdfLit
 
 -- default handler of restriction
 instance PrettyPrint Restriction where
-    printText0 ga restr =
-        case restr of
-        DataRestriction dpID drcom drcoms ->
-            printRestriction1 ga (-1) 0 dpID (drcom:drcoms)
-        IndivRestriction ipID ircom ircoms ->
-            printRestriction2 ga (-1) 0 ipID (ircom:ircoms)
+    printText0 = CASL.Print_AS_Basic.toText
+
+instance Pretty Restriction where
+    pretty = printRestriction
+
+printRestriction :: Restriction -> Doc
+printRestriction restr = case restr of
+    DataRestriction dpID drcom drcoms ->
+            printRestriction1 (-1) 0 dpID (drcom:drcoms)
+    IndivRestriction ipID ircom ircoms ->
+            printRestriction2 (-1) 0 ipID (ircom:ircoms)
+
+printRestriction1 :: Int -> Int -> URIreference -> [Drcomponent] -> Doc
+printRestriction1 _ _ _ [] = empty
+printRestriction1  origVar tmpVar dpID (h:r) = case h of
+    DRCAllValuesFrom dataRange ->
+      parens (text "forall" <+> parens (text (choiceName tmpVar ++ 
+                                                    " rdfs:Literal")) <+> 
+           parens ((text "implies") <> parens ((printURIreference dpID) <+>
+	          (text ((choiceName origVar)++" "++(choiceName tmpVar)))) <+> 
+                        (printDataRange dataRange))) $+$
+      (printRestriction1 origVar (tmpVar+1) dpID r)
+    DRCSomeValuesFrom dataRange -> 
+      parens (text "exists" <+> parens (text (choiceName tmpVar ++ 
+                                                    " rdfs:Literal")) <+>
+          parens ((text "and") <> parens ((printURIreference dpID) <+>
+	          (text ((choiceName origVar)++" "++(choiceName tmpVar)))) <+>
+                       (printDataRange dataRange))) $+$ 
+      (printRestriction1 origVar (tmpVar+1) dpID r)
+    DRCValue dl ->
+      (printURIreference dpID) <+> (text $ choiceName origVar ++ "r1") <+>
+	  (printDataLiteral dl) $+$
+	(printRestriction1 origVar tmpVar dpID r) 
+    DRCCardinality cardinality -> 
+        (printCard origVar dpID cardinality) $+$
+        (printRestriction1 origVar tmpVar dpID r)
+
+printRestriction2 :: Int -> Int -> URIreference 
+                  -> [Ircomponent] -> Doc
+printRestriction2 _ _ _ [] = empty
+printRestriction2 origVar tmpVar ipID (h:r) = case h of
+    IRCAllValuesFrom desc -> 
+      parens (text "forall" <+> parens (text $ (choiceName tmpVar ++ 
+                                                    " owl:Thing")) <+> 
+           parens ((text "implies") <+> parens ((printURIreference ipID) <+>
+	          (text ((choiceName origVar)++" "++(choiceName tmpVar)))) <+>
+               (case desc of
+                DC _ -> parens ((printDescription origVar ipID desc) <+>
+                                (text $ choiceName tmpVar))
+                _    -> printDescription origVar ipID desc))) $+$
+	(printRestriction2 origVar (tmpVar+1) ipID r)
+    IRCSomeValuesFrom desc ->
+      parens (text "exists" <+> parens (text $ (choiceName tmpVar ++ 
+                                                    " owl:Thing")) <+>
+           parens ((text "and") <> parens ((printURIreference ipID) <+>
+	          (text ((choiceName origVar)++" "++(choiceName tmpVar)))) <+>
+               (case desc of
+                DC _ -> parens ((printDescription origVar ipID desc) <+>
+                                (text $ choiceName tmpVar))
+                _    -> printDescription origVar ipID desc))) $+$
+ 	(printRestriction2 origVar (tmpVar+1) ipID r)
+    IRCValue iid ->
+      (printURIreference ipID) <+> (text $ choiceName origVar) <+>
+	  (printURIreference iid) $+$
+      (printRestriction2 origVar tmpVar ipID r) 
+    IRCCardinality cardinality -> 
+        (printCard origVar ipID cardinality)  $+$
+        (printRestriction2 origVar tmpVar ipID r)      
+   
 
 instance PrettyPrint Description where
-    printText0 ga desc =
-        printDescription ga 0 emptyQN desc -- ToDo: level hierachie
+    printText0 = CASL.Print_AS_Basic.toText
+
+instance Pretty Description where
+    pretty = printDescription 0 emptyQN
+
+printDescription :: Int -> URIreference -> Description -> Doc
+printDescription level iD desc = case desc of
+    DC cid -> printURIreference cid
+    DR restr -> printRestriction0 level restr
+    UnionOf descs ->
+      if isEmptyQN iD then
+         parens (text "or" <+> (foldListToDocH (form6 (level+1)) iD descs))
+       else
+         text "(iff (" <> printURIreference iD <+> 
+         text (choiceName (level+1) ++ ")") $+$
+         text "(or" <+> foldListToDocH (form6 $ level+1) iD descs
+         $+$ text "))"
+    IntersectionOf descs -> 
+      if isEmptyQN iD then
+         parens (text "and" <+> 
+                    foldListToDocH (form1 $ level+1) iD descs)
+       else
+         text "(iff (" <> printURIreference iD <+> 
+         text (choiceName (level+1) ++ ")")
+         $+$ text "(and" <+> 
+         foldListToDocH (form1 $ level+1) iD descs <> rparen 
+          $+$ text ")"
+    ComplementOf desc1 ->
+      if isEmptyQN iD then
+         parens (text "not" <+> printDescription (level+1) iD desc1 <+>
+                    text (choiceName $ level+1))
+       else
+         text "(iff (" <> printURIreference iD <+>
+         (text $ choiceName $ level+1) <> text ") (not" <+> 
+         printDescription (level+1) iD desc1 <+>
+         (text $ choiceName $ level+1) <> text "))"
+    OneOfDes inds -> 
+      parens (text "or" <> foldListToDocH (form2 $ level+1) iD inds) 
+      
+printRestriction0 :: Int -> Restriction -> Doc   
+printRestriction0 level restr =
+    case restr of
+      DataRestriction dpID drcom drcoms ->
+          printRestriction1 level (level+1) dpID (drcom:drcoms)
+      IndivRestriction ipID ircom ircoms ->
+          printRestriction2 level (level+1) ipID (ircom:ircoms)
+
+printCard :: Int -> URIreference -> Cardinality -> Doc
+printCard level pid card = case card of
+    MinCardinality n -> 
+     if n > 1 then text "exists ((x1 owl:Thing) " <>
+        (if n==2 then empty else text "... ") <>
+        (text "(x" <> (text $ show  n) <+> text "owl:Thing)) (and " $+$
+        brackets (text "ALLDIFFERENT x1 " <>
+                     (if n==2 then space else text "... ") <>
+                     text "x" <> (text $ show n)) $+$
+        parens (printURIreference pid <+> text (choiceName level ++" x1"))
+                  <+> (if n==2 then space else text "... ") <>
+	   parens (printURIreference pid <+> text (choiceName level ++" x") <>
+                   (text $ show n)) <> text ")" )
+        else
+          text "exists (x1 owl:Thing)" <+>
+          parens (printURIreference pid <+> 
+                  text (choiceName level ++" x1"))
+    MaxCardinality n -> 
+     if n > 1 then text "forall ((x1 owl:Thing)" <> 
+        (if n==2 then space else text "... ") <> text "(x" <>
+        (text $ show $ n+1) <+> text "owl:Thing)) (implies" $+$
+        text "(" <> printURIreference pid <+>
+        text (choiceName level ++ " x1)") <>
+        (if n==2 then space else text "... ") <>
+        text "(" <> printURIreference pid <+> 
+        text (choiceName level ++ " x") <> (text $ show $ n+1) <> text "))" $+$
+        text "not [ALLDIFFERENT x1" <>
+        (if n==2 then space else text "... ") <> text "x" <>
+        (text $ show $ n+1) <> text "])"
+      else 
+        text "forall ((x1 owl:Thing))" <+> 
+        parens (text "implies" $+$
+		 parens (printURIreference pid <+> 
+                          text (choiceName level ++ " x1"))) 
+
+    Cardinality n ->
+     if n > 1 then text "exists ((x1 owl:Thing)" <>
+        (if n==2 then space else text "... ") <> text "(x" <> (text $ show n) 
+        <+> text "owl:Thing)) (and " $+$
+        text "[ALLDIFFERENT x1" <>
+        (if n==2 then space else text "... ") <> text "x" <> (text $ show n) 
+        <> text "]" $+$
+        text "(" <> printURIreference pid <+> 
+        text (choiceName level ++ " x1)") <>
+        (if n==2 then space else text "... ") <+>
+        text "(" <> printURIreference pid <+>
+        text (choiceName level ++ " x") <> (text $ show n) <>
+        text ")" $+$
+        text ("(forall ((" ++ (choiceName $ level+2) ++
+                                        " owl:Thing)) (implies") $+$
+        text "(" <> printURIreference pid <+> 
+        text (choiceName level ++" "++ (choiceName $ level+2) ++ ")" ) $+$
+        text ("(or (= " ++ (choiceName $ level+2) ++ " x1) ") <>
+        (if n==2 then space else text "... ") <>
+        text ("(= " ++ choiceName level ++ " " ++ (choiceName $ level+2)) <>
+        (text $ show n) <> text "))" $+$ 
+        text "))" $+$ text "))"
+      else 
+        text "exists ((x1 owl:Thing)) (and " $+$
+        text "(" <> printURIreference pid <+> 
+        text (choiceName level ++ " x1)") $+$
+	text ("(forall ((" ++ (choiceName $ level+2) ++
+                  "owl:Thing)) (implies") $+$
+	text "(" <> printURIreference pid <+> 
+        text (choiceName level ++ " " ++ choiceName (level+2) ++ ")") $+$
+	text ("((= " ++ choiceName (level+2) ++ " x1))") $+$
+	text "))" $+$
+	text ")" 
 
 instance PrettyPrint Fact where
-    printText0 ga fact =
-        case fact of
-        SameIndividual iid1 iid2 iids -> 
-            foldListToDocV ga (\x y -> parens ((text "=") <+> (printText0 ga x)
-                               <+> (printText0 ga y)))
-                           iid1 (iid2:iids)
-        DifferentIndividuals iid1 iid2 iids -> 
-            parens ((text "forall ((x owl:Thing))") $+$
-                    (nest 2 $ parens ((text "or") <+> 
-                                      (foldListToDocH ga (form2 ga 0) emptyQN (iid1:iid2:iids))))) $+$
-            brackets (text "ALLDEFFERENT" <+> (foldListToDocH ga (form3 ga) emptyQN (iid1:iid2:iids)))
-        Indiv individual -> printText0 ga individual
+    printText0 = CASL.Print_AS_Basic.toText
 
-instance PrettyPrint Individual where
-   printText0 ga (Individual iid _ _ values) =
-       printIndividual iid values (-1)
+instance Pretty Fact where
+    pretty = printFact
 
-     where printIndividual :: (Maybe IndividualID) 
-                           -> [Value]
-                           -> Int 
-                           -> Doc
-           printIndividual _ [] _ = empty
-           printIndividual iid' (hv:tv) level =
-               case hv of
-               ValueID pid indivID -> 
-                   parens (printText0 ga pid <+> printText0 ga iid'
-                   <+> printText0 ga indivID) $+$
-                   printIndividual iid' tv level
-               ValueIndiv pid indiv ->
-                 (if level == -1 then
-                     printIntIndiv iid' pid indiv 0
-                     else printIntIndiv iid' pid indiv level)
-                   $+$ (printIndividual iid' tv 
-                        (if level < 0 then 0 else level))
-               ValueDL pid dl ->
-                   parens (printText0 ga pid <+> printText0 ga iid'
-                           <+> printText0 ga dl) $+$
-                   printIndividual iid' tv level
-           printIntIndiv :: (Maybe IndividualID)
+printFact :: Fact -> Doc
+printFact fact = case fact of
+    Indiv individual -> printIndividual individual
+    SameIndividual iid1 iid2 iids -> 
+      foldListToDocV  (\x y -> parens (text "=" <+> pretty x <+> pretty y))
+                        iid1 (iid2:iids)
+    DifferentIndividuals iid1 iid2 iids -> 
+      parens (text "forall ((x owl:Thing))" $+$
+              parens (text "or" <+> 
+                foldListToDocH (form2 0) emptyQN (iid1:iid2:iids))) $+$
+      brackets (text "ALLDEFFERENT" <+> 
+                foldListToDocH form3 emptyQN (iid1:iid2:iids))
+
+instance Pretty Individual where
+    pretty = printIndividual
+
+printIndividual :: Individual -> Doc
+printIndividual (Individual iid _ _ values) =
+    printIndividual1 iid values (-1)
+
+printIndividual1 :: (Maybe IndividualID)  -> [Value] -> Int -> Doc
+printIndividual1 _ [] _ = empty
+printIndividual1 iid' (hv:tv) level = case hv of
+    ValueID pid indivID ->
+      parens (printURIreference pid <+> pretty iid'
+               <+> printURIreference indivID) $+$
+      printIndividual1 iid' tv level
+    ValueIndiv pid indiv ->
+      (if level == -1 then
+          printIntIndiv iid' pid indiv 0
+        else printIntIndiv iid' pid indiv level)
+      $+$ printIndividual1 iid' tv (if level < 0 then 0 else level)
+    ValueDL pid dl ->
+      parens (printURIreference pid <+> pretty iid' <+> printDataLiteral dl) 
+      $+$ printIndividual1 iid' tv level
+
+printIntIndiv :: (Maybe IndividualID)
                          -> IndividualvaluedPropertyID 
                          -> Individual
                          -> Int
                          -> Doc
-           printIntIndiv iid' pid ind@(Individual iidI _ typesI valuesI) level
-             = case iidI of
-               Just _ -> printText0 ga ind
-               _      -> printAnonymIndividual iid' pid typesI valuesI level
-                         
-           printAnonymIndividual :: (Maybe IndividualID)
+printIntIndiv iid' pid ind@(Individual iidI _ typesI valuesI) level =
+    case iidI of
+      Just _ -> printIndividual ind
+      _      -> printAnonymIndividual iid' pid typesI valuesI level
+
+printAnonymIndividual :: (Maybe IndividualID)
                                  -> IndividualvaluedPropertyID
                                  -> [Type]
                                  -> [Value]
                                  -> Int
                                  -> Doc
-           printAnonymIndividual iid' ipID typesI valuesI level= 
-               parens ((text ("exists ("++choiceName level++" owl:Thing)")) 
-                       $+$ (nest 2 $ parens ((text "and") <+> 
-                  -- (propertyID individualID x)
-                  (parens ((printText0 ga ipID) <+> 
-                      (printText0 ga iid') <+> (text $ choiceName level)) $+$ 
-                  -- className (type)
-                  ( (foldListToDocV ga 
-                   (\x y -> case x of 
-                       (QN _ str _) -> 
-                        parens ((printDescription ga 0 emptyQN y) <+> 
-                         (text str))) (simpleQN $ choiceName level) 
-                                   (reverse typesI))) $+$
-                  -- values
-                  ( printIndividual (Just $ simpleQN $ choiceName level) valuesI (level+1))))))
- 
-printRestriction :: GlobalAnnos -> Int -> Restriction -> Doc   
-printRestriction ga level restr =
-    case restr of
-      DataRestriction dpID drcom drcoms ->
-          printRestriction1 ga level (level+1) dpID (drcom:drcoms)
-      IndivRestriction ipID ircom ircoms ->
-          printRestriction2 ga level (level+1) ipID (ircom:ircoms)
+printAnonymIndividual iid' ipID typesI valuesI level=
+    parens (text ("exists (" ++ choiceName level ++ " owl:Thing)") 
+            $+$ (parens (text "and" <+>
+            (parens (printURIreference ipID <+>
+               pretty iid' <+> (text $ choiceName level)) $+$
+            (foldListToDocV  
+               (\x y -> case x of 
+                   (QN _ str _) -> 
+                       parens (printDescription 0 emptyQN y <+> 
+                         text str)) (simpleQN $ choiceName level) 
+                                   (reverse typesI)) $+$
+       printIndividual1 (Just $ simpleQN $ choiceName level) 
+                         valuesI (level+1)))))
 
- 
--- to show restrictions, descriptions and cardinalities need the id of classes
--- or properties, so those are implemented not in PrettyPrint. 
-printRestriction1 :: GlobalAnnos -> Int -> Int -> URIreference 
-                  -> [Drcomponent] -> Doc
-printRestriction1 _ _ _ _ [] = empty
-printRestriction1 ga origVar tmpVar dpID (h:r) =
-    case h of
-    DRCAllValuesFrom dataRange -> 
-	-- (text "(forall ((x owl:Thing)) ") $+$
-	-- (nest 2 $ text "(restriction x)") $+$
-	parens (text "forall" <+> parens (text $ (choiceName tmpVar ++ 
-                                                    " rdfs:Literal")) <+> 
-                parens ((text "implies") <> parens ((printText0 ga dpID) <+>
-	          (text ((choiceName origVar)++" "++(choiceName tmpVar)))) <+> 
-                        (printText0 ga dataRange))) $+$ 
-                        -- <+> (text $ choiceName (level+1)))) $+$
-	-- (text ")") $+$
-	(printRestriction1 ga origVar (tmpVar+1) dpID r)
-    DRCSomeValuesFrom dataRange -> 
-	-- (text "(forall ((x owl:Thing)) ") $+$
-	-- (nest 2 $ text "(restriction x)") $+$
-	parens (text "exists" <+> parens (text $ (choiceName tmpVar ++ 
-                                                    " rdfs:Literal")) <+>
-                parens ((text "and") <> parens ((printText0 ga dpID) <+>
-	          (text ((choiceName origVar)++" "++(choiceName tmpVar)))) <+>
-                       (printText0 ga dataRange))) $+$
-	-- (text ")") $+$
-	(printRestriction1 ga origVar (tmpVar+1) dpID r)
-    DRCValue dl -> 
-	-- (text "(forall ((x owl:Thing)) (") <>
-	  (printText0 ga dpID) <+> (text $ choiceName origVar ++ "r1") <+>
-	  (printText0 ga dl) $+$
-	(printRestriction1 ga origVar tmpVar dpID r)
-    DRCCardinality cardinality -> 
-        (printCard ga origVar dpID cardinality) $+$
-        (printRestriction1 ga origVar tmpVar dpID r)
-
-
--- ToDo: level hierachie
-printRestriction2 :: GlobalAnnos -> Int -> Int -> URIreference 
-                  -> [Ircomponent] -> Doc
-printRestriction2 _ _ _ _ [] = empty
-printRestriction2 ga origVar tmpVar ipID (h:r) =
-    case h of
-    IRCAllValuesFrom desc -> 
-	-- (text "(forall ((x owl:Thing)) ") $+$
-	-- (nest 2 $ text "(restriction x)") $+$
-	-- parens ((text "forall ((y owl:Thing))") <+> 
-        --        parens ((text "implies") <+> parens ((printText0 ga ipID) <+>
-	--                                            (text "x y")) <+> 
-        --                parens ((printDescription ga 0 ipID desc) <+> 
-        --                        (text "y")))) $+$
-	-- (text ")") $+$
-	-- (printRestriction2 ga ipID r)
-	parens (text "forall" <+> parens (text $ (choiceName tmpVar ++ 
-                                                    " owl:Thing")) <+> 
-                parens ((text "implies") <+> parens ((printText0 ga ipID) <+>
-	          (text ((choiceName origVar)++" "++(choiceName tmpVar)))) <+>
-               (case desc of
-                DC _ -> parens ((printDescription ga origVar ipID desc) <+>
-                                (text $ choiceName tmpVar))
-                _    -> printDescription ga origVar ipID desc))) $+$
-	(printRestriction2 ga origVar (tmpVar+1) ipID r)
-    IRCSomeValuesFrom desc -> 
-	-- (text "(forall ((x owl:Thing)) ") $+$
-	-- (nest 2 $ text "(restriction x)") $+$
-	-- parens ((text "exists (y owl:Thing)") <+> 
-        --        parens ((text "and") <+> parens ((printText0 ga ipID) <+>
-	--                                            (text "x y")) <+> 
-        --                parens ((printDescription ga 0 ipID desc) <+> 
-        --                        (text "y")))) $+$
-	-- (text ")") $+$
-	-- (printRestriction2 ga ipID r)
-	parens (text "exists" <+> parens (text $ (choiceName tmpVar ++ 
-                                                    " owl:Thing")) <+>
-                parens ((text "and") <> parens ((printText0 ga ipID) <+>
-	          (text ((choiceName origVar)++" "++(choiceName tmpVar)))) <+>
-               (case desc of
-                DC _ -> parens ((printDescription ga origVar ipID desc) <+>
-                                (text $ choiceName tmpVar))
-                _    -> printDescription ga origVar ipID desc))) $+$
- 	(printRestriction2 ga origVar (tmpVar+1) ipID r)
-    IRCValue iid -> 
-	-- (text "(forall ((x owl:Thing)) (") <>
-	  (printText0 ga ipID) <+> (text $ choiceName origVar) <+>
-	  (printText0 ga iid) $+$
-	(printRestriction2 ga origVar tmpVar ipID r)
-
-    IRCCardinality cardinality -> 
-        (printCard ga origVar ipID cardinality)  $+$
-        (printRestriction2 ga origVar tmpVar ipID r)
-
-printCard :: GlobalAnnos -> Int -> URIreference -> Cardinality -> Doc
-printCard ga level pid card =
-    case card of
-    MinCardinality n -> 
-     if n > 1 then
-      -- parens (text "forall ((x owl:Thing)) ") $+$
-	-- (nest 2 $ text "(restriction x)") $+$
-      (text "exists ((x1 owl:Thing) ") <> 
-      (if n==2 then empty else text "... ") <> 
-      (text ("(x" ) <> (int n) <+> (text "owl:Thing)) (and ") $+$
-        (nest 2 $ brackets ((text "ALLDIFFERENT x1 ") <> 
-                            (if n==2 then space else text "... ") <>
-                            (text "x") <> (int n))) $+$ 
-        (nest 2 $ parens ((printText0 ga pid)<+>(text ((choiceName level)++" x1")))
-                  <+> (if n==2 then space else text "... ") <>
-	   parens ((printText0 ga pid)<+>(text ((choiceName level)++" x"))<>
-                   (int n))<>(text ")")
-	))
-      else
-       -- parens ((text "forall ((x owl:Thing)) ") $+$
-	  (text "exists (x1 owl:Thing)") <+>
-                 (parens ((printText0 ga pid) <+> 
-                          (text ((choiceName level)++" x1"))))
-    MaxCardinality n -> 
-     if n > 1 then
-      (text "forall ((x1 owl:Thing)") <> 
-            (if n==2 then space else text "... ") <> (text "(x") <> 
-              (int (n+1)) <+> (text "owl:Thing)) (implies") $+$
-	      -- (nest 2 $ text "(and (restriction x)") $+$
-	      (nest 3 $ text "(") <> (printText0 ga pid) <+> 
-              (text ((choiceName level) ++ " x1)")) <> 
-               (if n==2 then space else text "... ") <> 
-                                  (text "(") <> (printText0 ga pid) <+> 
-              (text ((choiceName level) ++ " x")) <> (int (n+1)) <> (text "))") $+$
-	      (nest 2 $ (text "not [ALLDIFFERENT x1") <> 
-                        (if n==2 then space else text "... ")<>(text "x"))<> 
-              (int (n+1)) <> (text "])")
-      else 
-        (text "forall ((x1 owl:Thing))") <+> 
-                (parens ((text "implies") $+$
-		         (nest 2 $ parens ((printText0 ga pid) <+> 
-                                           (text ((choiceName level) ++ " x1"))))))
-    Cardinality n ->
-     if n > 1 then
-      -- (text "(forall ((x owl:Thing)) ") $+$
-	-- (nest 2 $ text "(restriction x)") $+$
-	(text "exists ((x1 owl:Thing)") <> 
-            (if n==2 then space else text "... ") <> (text "(x") <> (int n) <+>
-                                  (text "owl:Thing)) (and ") $+$
-        (nest 2 $ text "[ALLDIFFERENT x1") <> 
-           (if n==2 then space else text "... ") <> (text "x") <> (int n) <>
-                                  (text "]") $+$
-	(nest 2 $ text "(") <> (printText0 ga pid) <+> 
-                                (text ((choiceName level) ++ " x1)")) <>
-                                (if n==2 then space else text "... ") <+>
-	   (text "(") <> (printText0 ga pid) <+> 
-                          (text ((choiceName level) ++ " x")) <> (int n) <>
-			          (text ")") $+$
-	(nest 2 $ text ("(forall ((" ++ (choiceName (level+2)) ++
-                                        " owl:Thing)) (implies")) $+$
-	(nest 4 $ text "(") <> (printText0 ga pid) <+> 
-            (text ((choiceName level)++" "++(choiceName (level+2))++")")) $+$
-	(nest 4 $ text ("(or (= " ++ (choiceName (level+2)) ++ " x1) ")) <> 
-           (if n==2 then space else text "... ") <>
-            (text ("(= "++(choiceName level)++" "++(choiceName (level+2)))) <> 
-            (int n) <> (text "))") $+$
-	(nest 2 $ text "))") $+$
-	(text "))") 
-       else 
-        -- (text "(forall ((x owl:Thing)) ") $+$
-	(text "exists ((x1 owl:Thing)) (and ") $+$
-        (nest 2 $ text "(") <> (printText0 ga pid) <+> 
-        (text (choiceName level ++ " x1)")) $+$
-	(nest 2 $ text ("(forall (("++(choiceName (level+2))++
-                  "owl:Thing)) (implies")) $+$
-	(nest 4 $ text "(") <> (printText0 ga pid) <+> 
-        (text ((choiceName level)++ " "++(choiceName (level+2) ++")"))) $+$
-	(nest 4 $ text ("((= "++(choiceName (level+2))++" x1))")) $+$
-	(nest 2 $ text "))") $+$
-	(text ")")
-
-printDescription :: GlobalAnnos -> Int -> URIreference -> Description -> Doc
-printDescription ga level iD desc =
-    case desc of
-        DC cid -> printText0 ga cid
-        DR restr -> printRestriction ga level restr  -- printText0 ga restr
-        UnionOf descs -> 
-         if isEmptyQN iD then
-            parens ((text "or") <+> (foldListToDocH ga (form6 ga (level+1)) iD descs))
-                                  --      <> (char ')')) 
-           else
-            -- (text "(forall ((x owl:Thing))") $+$
-            (text "(iff (") <> (printText0 ga iD) <+> 
-                                (text (choiceName (level+1) ++ ")")) $+$
-            (nest 2 $ text "(or") <+> (foldListToDocH ga (form6 ga (level+1)) iD descs)
-                                        $+$ -- <> (char ')') $+$
-            (text "))") 
-        IntersectionOf descs -> 
-         if isEmptyQN iD then
-            parens ((text "and") <+> 
-                    (foldListToDocH ga (form1 ga (level+1)) iD descs)) -- <> (char ')')) 
-           else
-            -- (text "(forall ((x owl:Thing))") $+$
-              (text "(iff (") <> (printText0 ga iD) <+> (text (choiceName (level+1) ++ ")"))
-              $+$ (nest 2 $ text "(and") <+> 
-              (foldListToDocH ga (form1 ga (level+1)) iD descs) <> (char ')') $+$
-              (text ")")
-        ComplementOf desc1 ->
-         if isEmptyQN iD then
-            parens ((text "not") <+> (printDescription ga (level+1) iD desc1) <+>
-                    (text (choiceName (level+1))))
-           else
-            (text "(iff (") <> (printText0 ga iD) <+>
-                    ((text $ choiceName (level+1)) <> (text ") (not")) <+> (printDescription ga (level+1) iD desc1) <+>
-                    ((text $ choiceName (level+1)) <> (text "))"))
-        OneOfDes inds -> 
- --        if isEmptyQN iD then
-            parens ((text "or")<>(foldListToDocH ga (form2 ga (level+1)) iD inds)) 
- --          else
-            -- (text "(forall ((x owl:Thing)) ") $+$
---            (text "(iff (") <> (printText0 ga iD) <+> ((text $ choiceName (level+1)) <> (text ")")) $+$
---            (nest 2 $ text "(or") <+> (foldListToDocH ga (form2 ga (level+1)) iD inds) 
- --                                       $+$ -- <> (char ')') $+$
- --           (text "))") 
-
--- form of pretty print 
-foldSetToDoc :: (PrettyPrint a) => GlobalAnnos -> Set.Set a -> Doc
-foldSetToDoc ga idSet =
-    foldr addDoc empty $ map (printText0 ga) (Set.toList idSet)
-   where addDoc :: Doc -> Doc -> Doc
-         addDoc d1 d2
-             | isEmpty d2 = d1
-             | otherwise = d1 <> (text ", ") <> d2
-
-foldSetToDoc2 :: (PrettyPrint a) => GlobalAnnos -> Set.Set a -> Doc
-foldSetToDoc2 ga idSet =
-    foldr addDoc empty $ map (printText0 ga) (Set.toList idSet)
-   where addDoc :: Doc -> Doc -> Doc
-         addDoc d1 d2
-             | (isEmpty d1) && (isEmpty d2) = empty     
-             | isEmpty d1 = d2  
-             | isEmpty d2 = d1
-             | otherwise = d1 <> (char ',') $+$ d2
+instance PrettyPrint Individual where
+   printText0 = CASL.Print_AS_Basic.toText
+           
+foldSetToDoc2 :: (Pretty a) => Set.Set a -> Doc
+foldSetToDoc2 = printSet id (vcat . punctuate comma)
 
 -- output a list in vertikal direction
-foldListToDocV :: (PrettyPrint a, PrettyPrint b) 
-                 => GlobalAnnos -> (a -> b -> Doc) -> a -> [b] -> Doc
-foldListToDocV _ _ _ [] = empty
-foldListToDocV ga printForm iD (h:r) =
-    (printForm iD h) $+$ (foldListToDocV ga printForm iD r) 
+foldListToDocV :: (Pretty a, Pretty b) 
+                  => (a -> b -> Doc) -> a -> [b] -> Doc
+foldListToDocV printForm iD = printList id vcat . map (printForm iD) 
 
 -- output a list in horizonal direction
-foldListToDocH :: (PrettyPrint a, PrettyPrint b) 
-                 => GlobalAnnos -> (a -> b -> Doc) -> a -> [b] -> Doc
-foldListToDocH _ _ _ [] = empty
-foldListToDocH ga printForm iD (h:r) =
-    (printForm iD h) <+> (foldListToDocH ga printForm iD r)
+foldListToDocH :: (Pretty a, Pretty b) 
+                  =>  (a -> b -> Doc) -> a -> [b] -> Doc
+foldListToDocH printForm iD = printList id hsep . map (printForm iD) 
 
 -- output form with different demands
-form1 :: GlobalAnnos -> Int -> URIreference-> Description -> Doc
-form1 ga level iD des =
+form1 :: Int -> URIreference-> Description -> Doc
+form1 level iD des =
    case des of
      DC _ ->
-          parens ((printDescription ga level iD des) <+>  (text $ choiceName level))
-     _ -> parens (printDescription ga level iD des)
+          parens (printDescription level iD des <+> (text $ choiceName level))
+     _ -> parens (printDescription level iD des)
 
-form2 :: GlobalAnnos -> Int -> URIreference -> IndividualID -> Doc
-form2 ga level _ ind = 
-    parens ((text "=") <+> (printText0 ga ind) <+> 
+form2 :: Int -> URIreference -> IndividualID -> Doc
+form2 level _ ind = 
+    parens (text "=" <+> printURIreference ind <+> 
                     (text $ choiceName level))
 
-form3 :: GlobalAnnos -> URIreference -> IndividualID -> Doc
-form3 ga _ iid =  printText0 ga iid
+form3 :: URIreference -> IndividualID -> Doc
+form3 _ iid = printURIreference iid
 
-form4 :: GlobalAnnos -> URIreference -> DataLiteral -> Doc
-form4 ga _ dl = 
-    parens ((text "=") <+> (printText0 ga dl) <+> 
-                    (text "x"))
+form4 :: URIreference -> DataLiteral -> Doc
+form4  _ dl = 
+    parens (equals <+> printDataLiteral dl <+> text "x")
 
-form5 :: GlobalAnnos -> URIreference -> RRange -> Doc
-form5 ga _ dl = 
-    parens ((printText0 ga dl) <+> (text "y"))
+form5 :: URIreference -> RRange -> Doc
+form5 _ dl = 
+    parens (printRRange dl <+> text "y")
 
 -- only for UnionOf (DEBUG)
-form6 :: GlobalAnnos -> Int -> URIreference-> Description -> Doc
-form6 ga level iD des =
-          parens ((printDescription ga level iD des) <+>  (text $ choiceName level))
+form6 :: Int -> URIreference-> Description -> Doc
+form6 level iD des =
+      parens (printDescription level iD des <+>  (text $ choiceName level))
 
 emptyQN :: QName
 emptyQN = QN "" "" ""

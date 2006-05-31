@@ -27,6 +27,8 @@ import qualified Common.OrderedMap as OMap
 import qualified Common.Lib.Map as Map (toList,fromList)
 import qualified Common.Lib.Set as Set
 
+import Common.Print_AS_Annotation
+import Common.Doc
 import Data.List
 
 -- * sentence packing
@@ -39,7 +41,13 @@ data SenStatus a tStatus = SenStatus
      } deriving Show
 
 instance PrettyPrint a => PrettyPrint (SenStatus a b) where
-  printText0 ga x = printText0 ga (value x)
+  printText0 ga = toText ga . printSenStatus (fromText ga)
+
+instance Pretty a => Pretty (SenStatus a b) where
+    pretty = printSenStatus pretty
+
+printSenStatus :: (a -> Doc) -> SenStatus a b  -> Doc
+printSenStatus fA = fA . value 
 
 emptySenStatus :: SenStatus a b
 emptySenStatus = SenStatus
@@ -57,7 +65,13 @@ instance Ord a => Ord (SenStatus a b) where
                (value d2, isAxiom d2, isDef d2)
 
 instance PrettyPrint a => PrettyPrint (OMap.ElemWOrd a) where
-    printText0 ga e = printText0 ga (OMap.ele e)
+    printText0 ga = toText ga . printOMapElemWOrd (fromText ga) 
+
+instance Pretty a => Pretty (OMap.ElemWOrd a) where
+    pretty = printOMapElemWOrd pretty
+
+printOMapElemWOrd :: (a -> Doc) -> OMap.ElemWOrd a -> Doc
+printOMapElemWOrd fA = fA . OMap.ele
 
 type ThSens a b = OMap.OMap String (SenStatus a b)
 

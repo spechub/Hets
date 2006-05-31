@@ -16,8 +16,8 @@ module Isabelle.CreateTheories where
 import Common.Id
 import Common.PrettyPrint
 import Common.Result
-import Common.Lib.Pretty
 
+import Common.Doc
 import Logic.Coerce
 import Logic.Comorphism
 
