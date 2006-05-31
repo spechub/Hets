@@ -48,7 +48,9 @@ module Common.Doc
     , hcat
     , hsep
     , ($+$)
+    , ($++$)
     , vcat
+    , vsep
     , sep
     , cat
     , fsep
@@ -119,6 +121,7 @@ import Data.List
 infixl 6 <>
 infixl 6 <+>
 infixl 5 $+$
+infixl 5 $++$
 
 -- * the data type
 
@@ -242,6 +245,20 @@ hsep = Cat Horiz . punctuate space . rmEmpties
 
 ($+$) :: Doc -> Doc -> Doc;    -- ^Above, without dovetailing.
 a $+$ b = vcat [a, b]
+
+-- | vertical composition with a specified number of blank lines
+aboveWithNLs :: Int -> Doc -> Doc -> Doc
+aboveWithNLs n d1 d2 = if isEmpty d2 then d1 else
+             if isEmpty d1 then d2 else
+             d1 $+$ foldr ($+$) d2 (replicate n $ text "")
+
+-- | vertical composition with one blank line
+($++$) :: Doc -> Doc -> Doc
+($++$) = aboveWithNLs 1
+
+-- | list version of '($++$)'
+vsep :: [Doc] -> Doc
+vsep = foldr ($++$) empty
 
 vcat :: [Doc] -> Doc          -- ^List version of '$+$'
 vcat = Cat Vert . rmEmpties 
