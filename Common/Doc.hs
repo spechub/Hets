@@ -148,6 +148,10 @@ data Doc
     | Attr Format Doc      -- for annotations
     | LiteralDoc Pretty.Doc  -- for backward compatibility only
 
+instance Show Doc where
+    showsPrec _ doc cont = 
+        Pretty.renderStyle' cont Pretty.style $ toText emptyGlobalAnnos doc
+
 isEmpty :: Doc -> Bool
 isEmpty d = case d of
               Empty -> True
