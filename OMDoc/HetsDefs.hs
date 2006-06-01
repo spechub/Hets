@@ -1169,8 +1169,43 @@ stripCASLMorphisms dg (n, node) =
             (Just caslmorph) -> stripCASLMorphism newnode caslmorph
             _ -> newnode
             ) node morphisms)
-            
-            
+   
+-- Morphism-presentation with Strings (from xml)
+-- Strings need to be looked up from their representation
+-- to create an Id
+type MorphismMapS = (
+    Map.Map String String
+  , Map.Map (String,OpType) (String,OpType)
+  , Map.Map (String,PredType) (String,PredType)
+  , Set.Set String
+  )
+  
+morphismMapToMMS::MorphismMap->MorphismMapS
+morphismMapToMMS (sm, om, pm, hs) =
+  (
+      Map.fromList
+        (
+          map
+            (\(a,b) -> (show a, show b))
+            (Map.toList sm)
+        )
+    , Map.fromList
+        (
+          map
+            (\((a,at),(b,bt)) -> ((show a, at), (show b, bt)))
+            (Map.toList om)
+        )
+    , Map.fromList
+        (
+          map
+            (\((a,at),(b,bt)) -> ((show a, at), (show b, bt)))
+            (Map.toList pm)
+        )
+    , Set.map
+        show
+        hs
+  )
+
 type MorphismMap = (
     (Map.Map SORT SORT)
     ,(Map.Map (Id.Id,OpType) (Id.Id,OpType))
@@ -1196,7 +1231,9 @@ createHidingString (Sign sortset _ opmap _ predmap _ _ _ _ _) =
 getSymbols::CASLSign->[Id.Id]
 getSymbols (Sign sortset _ opmap _ predmap _ _ _ _ _) =
   (Set.toList sortset) ++ (Map.keys opmap) ++ (Map.keys predmap)
-  
+
+-- hiding is currently wrong because this function does only check 
+-- if any symbols dissappear in the target - this happens also when renaming...
 makeMorphismMap::(Morphism () () ())->MorphismMap
 makeMorphismMap (Morphism ssource starget sortmap funmap predmap _) =
   let

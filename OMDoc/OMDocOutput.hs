@@ -819,8 +819,23 @@ libToXmlCMPIOXmlNamed go lenv xmlnamemap ln =
                       )
                       )
                       (Map.toList om)
+                    -- hiding
+                    mmhidden =
+                      Set.map
+                        (\h ->
+                          case find (\i -> (xnWOaToa i) == h) itheosorts of
+                            (Just  x) -> Debug.Trace.trace ("Using from Sort : " ++ xnName x) (xnName x)
+                            Nothing ->
+                              case find (\(ii,_) -> (xnWOaToa ii) == h) itheopreds of
+                                (Just (x,_)) -> Debug.Trace.trace ("Using from Pred : " ++ xnName x) (xnName x)
+                                Nothing ->
+                                  case find (\(ii,_) -> (xnWOaToa ii) == h) itheoops of
+                                    (Just (x,_)) -> Debug.Trace.trace ("Using from Op : " ++ (xnName x)) (xnName x)
+                                    Nothing -> Debug.Trace.trace ("Using : " ++ show h) (show h)
+                        )
+                        hs
                   in
-                    Just (Map.fromList (mmsorts ++ mmpreds ++ mmops), Set.map show hs)
+                    Just (Map.fromList (mmsorts ++ mmpreds ++ mmops), mmhidden)
                         
             in
               (xnName xmlNamedImportOriginWO, mll, mmapandset)
@@ -1046,35 +1061,35 @@ libToXmlCMPIOXmlNamed go lenv xmlnamemap ln =
                         Nothing -> xmlNullFilter
                         (Just (sm,hs)) -> morphismMapToXmlXN sm hs fromxn theoname
                       )
+                )
+                (xmlNullFilter)
+                glThmLinksxn)
               )
-              (xmlNullFilter)
-              glThmLinksxn)
-            )
-            -- when constructing the catalogues a reference to the xmlname used in _this_ document is used
-            -- it is very likely possible, that this theory has another name in real life (unless there are no name-collisions)
--- catalogue-support is gone...
---    ) (return $ refsToCatalogueXN dg nodexmlnameset +++ xmlNL) onlynodexmlnamelist 
-    ) (return $ (xmlNullFilter)) onlynodexmlnamelist 
-  where
-  nodeTupelToNodeName::(a, NODE_NAME)->String
-  nodeTupelToNodeName = nodeToNodeName . snd
-  nodeToNodeName::NODE_NAME->String
-  nodeToNodeName =
-    (\nn ->
-      let
-        nodename = showName nn
-      in
-        if (length nodename) == 0
-          then
-            "AnonNode_"
-          else
-            nodename
-    )
-  consAttr::Static.DevGraph.Conservativity->HXT.XmlFilter
-  consAttr Static.DevGraph.None = xmlNullFilter
-  consAttr Static.DevGraph.Mono = HXT.sattr "conservativity" "monomorphism"
-  consAttr Static.DevGraph.Cons = HXT.sattr "conservativity" "conservative"
-  consAttr Static.DevGraph.Def = HXT.sattr "conservativity" "definitional"
+              -- when constructing the catalogues a reference to the xmlname used in _this_ document is used
+              -- it is very likely possible, that this theory has another name in real life (unless there are no name-collisions)
+  -- catalogue-support is gone...
+  --    ) (return $ refsToCatalogueXN dg nodexmlnameset +++ xmlNL) onlynodexmlnamelist 
+      ) (return $ (xmlNullFilter)) onlynodexmlnamelist 
+    where
+    nodeTupelToNodeName::(a, NODE_NAME)->String
+    nodeTupelToNodeName = nodeToNodeName . snd
+    nodeToNodeName::NODE_NAME->String
+    nodeToNodeName =
+      (\nn ->
+        let
+          nodename = showName nn
+        in
+          if (length nodename) == 0
+            then
+              "AnonNode_"
+            else
+              nodename
+      )
+    consAttr::Static.DevGraph.Conservativity->HXT.XmlFilter
+    consAttr Static.DevGraph.None = xmlNullFilter
+    consAttr Static.DevGraph.Mono = HXT.sattr "conservativity" "monomorphism"
+    consAttr Static.DevGraph.Cons = HXT.sattr "conservativity" "conservative"
+    consAttr Static.DevGraph.Def = HXT.sattr "conservativity" "definitional"
 
 {- |
         Converts a DevGraph into a Xml-structure (accessing used (CASL-)files 
@@ -1336,8 +1351,23 @@ devGraphToXmlCMPIOXmlNamed go dg =
                       )
                       )
                       (Map.toList om)
+                    -- hiding
+                    mmhidden =
+                      Set.map
+                        (\h ->
+                          case find (\i -> (xnWOaToa i) == h) (Set.toList itheosorts) of
+                            (Just  x) -> (xnName x)
+                            Nothing ->
+                              case find (\(ii,_) -> (xnWOaToa ii) == h) itheopreds of
+                                (Just (x,_)) -> (xnName x)
+                                Nothing ->
+                                  case find (\(ii,_) -> (xnWOaToa ii) == h) itheoops of
+                                    (Just (x,_)) -> (xnName x)
+                                    Nothing -> (show h) -- last resort...
+                        )
+                        hs
                   in
-                    Just (Map.fromList (mmsorts ++ mmpreds ++ mmops), Set.map show hs)
+                    Just (Map.fromList (mmsorts ++ mmpreds ++ mmops), mmhidden)
                         
             in
               (itheoxmlname, mll, mmapandset)
@@ -1391,7 +1421,11 @@ devGraphToXmlCMPIOXmlNamed go dg =
               theopredsxn
               theoopsxn
             )
-            axiomxn 
+            axiomxn
+        theorysymbols =
+          (Set.toList theosorts)
+          ++ (map fst theopreds)
+          ++ (map fst theoops)
       in
         do
           x <- xio
@@ -1596,7 +1630,7 @@ devGraphToXmlCMPIOXmlNamed go dg =
   consAttr Static.DevGraph.Mono = HXT.sattr "conservativity" "monomorphism"
   consAttr Static.DevGraph.Cons = HXT.sattr "conservativity" "conservative"
   consAttr Static.DevGraph.Def = HXT.sattr "conservativity" "definitional"
-                                                  
+                                                    
 -- | create catalogue xml-structures for a DevGraph and its theories
 -- theories needed because they have xml-names
 refsToCatalogueXN::DGraph->TheoryXNSet->HXT.XmlFilter
@@ -1654,7 +1688,7 @@ createADTXN (s,ss) constructors =
       ) +++ xmlNL
     )
   )
-        
+          
 createAllConstructorsXN::TheoryXNSet->[(XmlNamedWON Id.Id, Set.Set OpTypeXNWON)]->HXT.XmlFilter
 createAllConstructorsXN theoryset cs = foldl (\cx c ->  
   cx +++ createConstructorsXN theoryset c +++ xmlNL ) (xmlNullFilter) cs
@@ -1690,7 +1724,7 @@ createConstructorXN theoryset cidxn (OpTypeXNWON _ opargsxn _) =
       )
       ) (xmlNullFilter) opargsxn
     )
-          
+            
 -- | creates a xml-representation for a predication
 -- needs a map of imports, sorts, the name of the current theory and the predication
 predicationToXmlXN::TheoryXNSet->(XmlNamedWON Id.Id, PredTypeXNWON)->(HXT.XmlTree->HXT.XmlTrees)
@@ -1738,7 +1772,7 @@ predicationToXmlXN theoryset (pIdXN, (PredTypeXNWON predArgsXN)) =
       )
       +++ xmlNL
     )
-        
+          
 -- | creates a xml-representation for an operator
 -- needs a map of imports, sorts, the name of the current theory and the operator
 operatorToXmlXN::TheoryXNSet->(XmlNamedWON Id.Id, OpTypeXNWON)->(HXT.XmlTree->HXT.XmlTrees)
@@ -1775,7 +1809,7 @@ operatorToXmlXN theoryset (opIdXN, (OpTypeXNWON fk opArgsXN opResXN)) =
     )
     +++ xmlNL
   )
-        
+          
 inOMOBJ::HXT.XmlFilter->(HXT.XmlTree->HXT.XmlTrees)
 inOMOBJ x = HXT.etag "OMOBJ" += x
 {-
@@ -1818,174 +1852,225 @@ morphismMapToXmlXN symbolmap hidings source target =
       ) +++
     xmlNL
 
--- @OldFormat@
--- need to check if I implemented replacement correctly...
-{-
-caslMorphismToXml::Hets.ImportsMap->Hets.SortsMap->Hets.PredsMap->Hets.OpsMap->String->String->(CASL.Morphism.Morphism () () ())->HXT.XmlFilter
-caslMorphismToXml imports' sorts' preds' ops' sourcename targetname (CASL.Morphism.Morphism ssource starget sortmap funmap predmap _) =
+-- use xml-names instead
+morphismMapToXmlXNR::
+  (Map.Map String String) -- renamed symbols
+  ->Set.Set String -- hidden symbols
+  ->[XmlNamedWON Id.Id] -- symbols in source with xmlnames
+  ->[XmlNamedWON Id.Id] -- symbols in target "
+  ->String -- name of source (xml-reference)
+  ->String -- name of target "
+  ->HXT.XmlFilter
+morphismMapToXmlXNR symbolmap hidings ssymsl tsymsl source target =
+  HXT.etag "morphism" += (
+    (HXT.sattr "hiding" (implode " " $ Set.toList hidings))
+    +++
+    (foldl
+      (\sx (ss, st) -> 
         let
-                hides = Hets.createHidingString $ diffSig ssource starget -} -- comment placement because of jEdit...
-{-              hides = createHidingString2 $ (\(a,b,c,d,_) -> (a,b,c,d)) $
-                        Hets.diffMaps
-                                (Hets.lookupMaps sorts Map.empty preds ops Map.empty sourcename)
-                                (Hets.lookupMaps sorts Map.empty preds ops Map.empty targetname) -}
-                
-                {-
-                morphx =
-                        HXT.etag "morphism" +=
-                                (
-                                (if (length hides) /= 0 then
-                                        HXT.sattr "hiding" hides
-                                else
-                                        xmlNullFilter) +++
-                                (foldl (\mx (ss,st) ->
-                                        mx +++
-                                        HXT.etag "requation" +=
-                                                (
-                                                xmlNL +++
-                                                HXT.etag "pattern" +=
-                                                        (
-                                                        xmlNL +++
-                                                        (inOMOBJ $ sortToOM imports' sorts' sourcename ss)
-                                                        )
-                                                 +++
-                                                HXT.etag "value" +=
-                                                        (
-                                                        xmlNL +++
-                                                        (inOMOBJ $ sortToOM imports' sorts' targetname st)
-                                                        )
-                                                )
-                                        +++ xmlNL
-                                        ) (xmlNL) $ Map.toList sortmap)
-                                +++ 
-                                (foldl (\mx ((ids, ots), (idt, fkt)) ->
-                                        mx +++
-                                        HXT.etag "requation" +=
-                                                (
-                                                xmlNL +++
-                                                HXT.etag "pattern" +=
-                                                        (
-                                                        xmlNL +++
-                                                        (inOMOBJ $
-                                                                (processOperator
-                                                                        imports'
-                                                                        ops'
-                                                                        sourcename
-                -- using a qualified OP_SYMB does not work correctly.
-                -- for example the reference to Sample/Simple in 
-                -- Advancend/Architectural has a morphism with a
-                -- Partial Operator while the Operator is defined as Total...
-                --                                                      (transformMorphOp
-                --                                                              (ids, ots)
-                -- workaround :
-                -- try both variants for function kind...
-                                                                (
-                                                                        let     op = transformMorphOp (ids, ots)
-                                                                                -- get cd for original optype
-                                                                                cd = Hets.findNodeNameForOperatorWithSorts
-                                                                                                imports'
-                                                                                                ops'
-                                                                                                (ids, ots)
-                                                                                                sourcename
-                                                                                -- optype with flipped function kind
-                                                                                ots' = (\(OpType fk args res) ->
-                                                                                        OpType 
-                                                                                                (case fk of
-                                                                                                        Partial -> Total
-                                                                                                        Total -> Partial)
-                                                                                                args
-                                                                                                res ) ots
-                                                                                -- operator with flipped fk
-                                                                                op' = transformMorphOp (ids, ots' )
-                                                                                -- get cd for 'flipped' optype
-                                                                                cd' = Hets.findNodeNameForOperatorWithSorts
-                                                                                                imports'
-                                                                                                ops'
-                                                                                                (ids, ots' )
-                                                                                                sourcename
-                                                                                -- check if a cd was found for the original op
-                                                                                -- if not, check if there was one for the flipped
-                                                                                -- if this fails use the original op again
-                                                                                -- (in this case something else is wrong...)
-                                                                                op'' = if cd == Nothing then
-                                                                                                        if cd' == Nothing then
-                                                                                                                op
-                                                                                                        else
-                                                                                                                op'
-                                                                                                else
-                                                                                                        op
-                                                                        -- actually this leads into generating output that
-                                                                        -- in turn will lead to an input with this morphism
-                                                                        -- wich may be different to the intended morphism...
-                                                                        in op''
-                                                                )
-                
-                                                                )
-                                                                
-                                                        ) +++
-                                                        xmlNL
-                                                        )
-                                                +++
-                                                xmlNL +++
-                                                HXT.etag "value" +=
-                                                        ( xmlNL +++
-                                                        ( let   otset = Set.filter (\(OpType fk _ _) -> fk == fkt) $
-                                                                                Map.findWithDefault Set.empty idt $
-                                                                                        Map.findWithDefault Map.empty targetname ops'
-                                                                ott = if Set.null otset
-                                                                        then
-                                                                                error "Cannot find Operator for Morphism..."
-                                                                        else
-                                                                                head $ Set.toList otset
-                                                          in 
-                                                                inOMOBJ $
-                                                                        processOperator
-                                                                                imports'
-                                                                                ops'
-                                                                                targetname
-                                                                                (transformMorphOp
-                                                                                        (idt, ott)
-                                                                                )
-                                                        ) +++
-                                                        xmlNL
-                                                ) +++
-                                                xmlNL
-                                                )
-                                        +++ xmlNL
-                                        ) (xmlNullFilter) $ Map.toList funmap)
-                                +++ 
-                                (foldl (\mx ((ids, pts), idt) ->
-                                        mx +++
-                                        HXT.etag "requation" +=
-                                                (
-                                                HXT.etag "pattern" +=
-                                                        ( inOMOBJ $
-                                                                createSymbolForPredication imports' preds' sourcename
-                                                                        (transformMorphPred (ids, pts))
-                                                        ) +++
-                                                HXT.etag "value" +=
-                                                        ( let   ptset = Map.findWithDefault Set.empty idt $
-                                                                                Map.findWithDefault Map.empty targetname preds'
-                                                        
-                                                                ptt = if Set.null ptset
-                                                                                then
-                                                                                        error "Cannot find Predication for Morphism..."
-                                                                                else
-                                                                                        head $ Set.toList ptset
-                                                          in
-                                                                inOMOBJ $
-                                                                        createSymbolForPredication imports' preds' targetname
-                                                                                (transformMorphPred (idt, ptt))
-                                                        ) +++
-                                                xmlNL
-                                                )
-                                        +++ xmlNL
-                                        ) (xmlNullFilter) $ Map.toList predmap)
-                                )
-                        in
-                                morphx -- maybe some postprocessing ?
--}      
-                        
+          ssx = case find (\x -> show (xnItem x) == ss) ssymsl of
+            Nothing ->
+              Debug.Trace.trace
+                ("No symbol for \"" ++ ss ++ "\" in source")
+                ss
+            (Just x) -> xnName x
+          stx = case find (\x -> show (xnItem x) == st) tsymsl of
+            Nothing ->
+              Debug.Trace.trace
+                ("No symbol for \"" ++ st ++ "\" in source")
+                st
+            (Just x) -> xnName x
+        in
+          sx +++
+            requation
+              (inOMOBJ (HXT.etag "OMS" += (HXT.sattr "cd" source +++ HXT.sattr "name" ssx)))
+              (inOMOBJ (HXT.etag "OMS" += (HXT.sattr "cd" target +++ HXT.sattr "name" stx)))
+      )
+      (xmlNullFilter)
+      (Map.toList symbolmap)
+    )
+  )       
+  where
+  requation::(HXT.XmlTree->HXT.XmlTrees)->(HXT.XmlTree->HXT.XmlTrees)->(HXT.XmlTree->HXT.XmlTrees)
+  requation p v =
+    HXT.etag "requation" +=
+      (
+      xmlNL +++
+      p +++
+      xmlNL +++
+      v +++
+      xmlNL
+      ) +++
+    xmlNL
+
+  -- @OldFormat@
+  -- need to check if I implemented replacement correctly...
+  {-
+  caslMorphismToXml::Hets.ImportsMap->Hets.SortsMap->Hets.PredsMap->Hets.OpsMap->String->String->(CASL.Morphism.Morphism () () ())->HXT.XmlFilter
+  caslMorphismToXml imports' sorts' preds' ops' sourcename targetname (CASL.Morphism.Morphism ssource starget sortmap funmap predmap _) =
+          let
+                  hides = Hets.createHidingString $ diffSig ssource starget -} -- comment placement because of jEdit...
+  {-              hides = createHidingString2 $ (\(a,b,c,d,_) -> (a,b,c,d)) $
+                          Hets.diffMaps
+                                  (Hets.lookupMaps sorts Map.empty preds ops Map.empty sourcename)
+                                  (Hets.lookupMaps sorts Map.empty preds ops Map.empty targetname) -}
+                  
+                  {-
+                  morphx =
+                          HXT.etag "morphism" +=
+                                  (
+                                  (if (length hides) /= 0 then
+                                          HXT.sattr "hiding" hides
+                                  else
+                                          xmlNullFilter) +++
+                                  (foldl (\mx (ss,st) ->
+                                          mx +++
+                                          HXT.etag "requation" +=
+                                                  (
+                                                  xmlNL +++
+                                                  HXT.etag "pattern" +=
+                                                          (
+                                                          xmlNL +++
+                                                          (inOMOBJ $ sortToOM imports' sorts' sourcename ss)
+                                                          )
+                                                   +++
+                                                  HXT.etag "value" +=
+                                                          (
+                                                          xmlNL +++
+                                                          (inOMOBJ $ sortToOM imports' sorts' targetname st)
+                                                          )
+                                                  )
+                                          +++ xmlNL
+                                          ) (xmlNL) $ Map.toList sortmap)
+                                  +++ 
+                                  (foldl (\mx ((ids, ots), (idt, fkt)) ->
+                                          mx +++
+                                          HXT.etag "requation" +=
+                                                  (
+                                                  xmlNL +++
+                                                  HXT.etag "pattern" +=
+                                                          (
+                                                          xmlNL +++
+                                                          (inOMOBJ $
+                                                                  (processOperator
+                                                                          imports'
+                                                                          ops'
+                                                                          sourcename
+                  -- using a qualified OP_SYMB does not work correctly.
+                  -- for example the reference to Sample/Simple in 
+                  -- Advancend/Architectural has a morphism with a
+                  -- Partial Operator while the Operator is defined as Total...
+                  --                                                      (transformMorphOp
+                  --                                                              (ids, ots)
+                  -- workaround :
+                  -- try both variants for function kind...
+                                                                  (
+                                                                          let     op = transformMorphOp (ids, ots)
+                                                                                  -- get cd for original optype
+                                                                                  cd = Hets.findNodeNameForOperatorWithSorts
+                                                                                                  imports'
+                                                                                                  ops'
+                                                                                                  (ids, ots)
+                                                                                                  sourcename
+                                                                                  -- optype with flipped function kind
+                                                                                  ots' = (\(OpType fk args res) ->
+                                                                                          OpType 
+                                                                                                  (case fk of
+                                                                                                          Partial -> Total
+                                                                                                          Total -> Partial)
+                                                                                                  args
+                                                                                                  res ) ots
+                                                                                  -- operator with flipped fk
+                                                                                  op' = transformMorphOp (ids, ots' )
+                                                                                  -- get cd for 'flipped' optype
+                                                                                  cd' = Hets.findNodeNameForOperatorWithSorts
+                                                                                                  imports'
+                                                                                                  ops'
+                                                                                                  (ids, ots' )
+                                                                                                  sourcename
+                                                                                  -- check if a cd was found for the original op
+                                                                                  -- if not, check if there was one for the flipped
+                                                                                  -- if this fails use the original op again
+                                                                                  -- (in this case something else is wrong...)
+                                                                                  op'' = if cd == Nothing then
+                                                                                                          if cd' == Nothing then
+                                                                                                                  op
+                                                                                                          else
+                                                                                                                  op'
+                                                                                                  else
+                                                                                                          op
+                                                                          -- actually this leads into generating output that
+                                                                          -- in turn will lead to an input with this morphism
+                                                                          -- wich may be different to the intended morphism...
+                                                                          in op''
+                                                                  )
+                  
+                                                                  )
+                                                                  
+                                                          ) +++
+                                                          xmlNL
+                                                          )
+                                                  +++
+                                                  xmlNL +++
+                                                  HXT.etag "value" +=
+                                                          ( xmlNL +++
+                                                          ( let   otset = Set.filter (\(OpType fk _ _) -> fk == fkt) $
+                                                                                  Map.findWithDefault Set.empty idt $
+                                                                                          Map.findWithDefault Map.empty targetname ops'
+                                                                  ott = if Set.null otset
+                                                                          then
+                                                                                  error "Cannot find Operator for Morphism..."
+                                                                          else
+                                                                                  head $ Set.toList otset
+                                                            in 
+                                                                  inOMOBJ $
+                                                                          processOperator
+                                                                                  imports'
+                                                                                  ops'
+                                                                                  targetname
+                                                                                  (transformMorphOp
+                                                                                          (idt, ott)
+                                                                                  )
+                                                          ) +++
+                                                          xmlNL
+                                                  ) +++
+                                                  xmlNL
+                                                  )
+                                          +++ xmlNL
+                                          ) (xmlNullFilter) $ Map.toList funmap)
+                                  +++ 
+                                  (foldl (\mx ((ids, pts), idt) ->
+                                          mx +++
+                                          HXT.etag "requation" +=
+                                                  (
+                                                  HXT.etag "pattern" +=
+                                                          ( inOMOBJ $
+                                                                  createSymbolForPredication imports' preds' sourcename
+                                                                          (transformMorphPred (ids, pts))
+                                                          ) +++
+                                                  HXT.etag "value" +=
+                                                          ( let   ptset = Map.findWithDefault Set.empty idt $
+                                                                                  Map.findWithDefault Map.empty targetname preds'
+                                                          
+                                                                  ptt = if Set.null ptset
+                                                                                  then
+                                                                                          error "Cannot find Predication for Morphism..."
+                                                                                  else
+                                                                                          head $ Set.toList ptset
+                                                            in
+                                                                  inOMOBJ $
+                                                                          createSymbolForPredication imports' preds' targetname
+                                                                                  (transformMorphPred (idt, ptt))
+                                                          ) +++
+                                                  xmlNL
+                                                  )
+                                          +++ xmlNL
+                                          ) (xmlNullFilter) $ Map.toList predmap)
+                                  )
+                          in
+                                  morphx -- maybe some postprocessing ?
+  -}      
+                          
 -- | this function partitions a list of CASLFORMULAS into two lists of
 -- 'CASLFORMULA's : the first list contains 'normal' CFs and the second
 -- all CFs that generate sorts (constructors)
@@ -2002,7 +2087,7 @@ partitionSensSortGenXN sens =
       else
         (sens' ++[xnsens],sortgen)
     ) ([],[]) sens
-                
+                  
 -- | creates constructors from a list of 'CASLFORMULA's (see : 'partitionSensSortGen')
 makeConstructorsXN::Set.Set XmlNamedWONSORT->XmlNameList->[XmlNamedWON (Ann.Named CASLFORMULA)]->(Map.Map (XmlNamedWON Id.Id) (Map.Map (XmlNamedWON Id.Id) (Set.Set OpTypeXNWON)), XmlNameList)
 makeConstructorsXN sortxnwoset xmlnames sortgenaxxnlist =
@@ -2039,7 +2124,7 @@ makeConstructorMapXN sortxnwoset xmlnames sensxnwo =
         ) (Map.empty, xmlnames) cons
   in
     (sortxn, constructormap, xmlnames' )
-                
+                  
 
 -- | creates a String-representation of a DGLinkType    
 linkTypeToString::DGLinkType->String
