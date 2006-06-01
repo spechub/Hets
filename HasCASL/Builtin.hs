@@ -153,9 +153,9 @@ bindA = aBindWithKind InVar universe
 lazyLog :: Type
 lazyLog = mkLazyType unitType
 
-aToUnitType :: Variance -> Kind -> TypeScheme
-aToUnitType v k =
-    aBindWithKind v k $ mkFunArrType (aTypeWithKind k) PFunArr unitType
+aPredType :: TypeScheme
+aPredType =
+    aBindWithKind ContraVar universe $ mkFunArrType aType PFunArr unitType
 
 eqType, logType, notType, whenType, unitTypeScheme :: TypeScheme
 eqType = bindA $ mkFunArrType (mkProductType [aType, aType]) PFunArr unitType
@@ -179,7 +179,7 @@ botType :: TypeScheme
 botType = bindA $ mkLazyType aType
 
 defType :: TypeScheme
-defType = aToUnitType InVar universe
+defType = bindA $ mkFunArrType (mkLazyType aType) PFunArr unitType
 
 bList :: [(Id, TypeScheme)]
 bList = (botId, botType) : (defId, defType) : (notId, notType) :
@@ -198,7 +198,7 @@ addUnit tm = foldr ( \ (i, k, s, d) m ->
                          (TypeInfo (toRaw k) [k] (Set.fromList s) d) m) tm $
               (unitTypeId, universe, [], NoTypeDefn)
               : (predTypeId, FunKind ContraVar universe universe nullRange, [],
-                           AliasTypeDefn $ aToUnitType ContraVar universe)
+                           AliasTypeDefn aPredType)
               : (lazyTypeId, lazyKind, [], NoTypeDefn)
               : (logId, universe, [], AliasTypeDefn $ simpleTypeScheme $
                  mkLazyType unitType)
