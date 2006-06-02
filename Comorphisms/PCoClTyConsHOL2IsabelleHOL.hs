@@ -109,8 +109,7 @@ transSignature sign =
             in  foldl (\ m' (transOp,i) ->
                            case transOp of
                              Just typ -> Map.insert
-                                 (mkVName $ showIsaConstIT name i baseSign)
-                                 typ m'
+                                 (mkVName $ showIsaConstIT name i baseSign)                                 typ m'
                              Nothing   -> m')
                       m (zip transOps [1::Int ..])
 
@@ -119,8 +118,7 @@ transSignature sign =
 -- extract type from OpInfo
 -- omit datatype constructors
 transOpInfo :: OpInfo -> Maybe Typ
-transOpInfo (OpInfo t _ opDef) =
-  case opDef of
+transOpInfo (OpInfo t _ opDef) =  case opDef of
     ConstructData _ -> Nothing
     _  -> Just (transOpType t)
 
@@ -128,51 +126,74 @@ transOpInfo (OpInfo t _ opDef) =
 transOpType :: TypeScheme -> Typ
 transOpType (TypeScheme _ op _) = transType op
 
+unitTyp :: Typ
+unitTyp = Type "unit" holType []
 -- types
 transType :: Type -> Typ
-transType t = case getTypeAppl t of
-   (TypeName tid _ n, tyArgs) -> let num = length tyArgs in
-      if n == 0 then
-          if tid == unitTypeId && null tyArgs then boolType
-          else if tid == lazyTypeId && num == 1 then
-             transType $ head tyArgs
-          else if isArrow tid && num == 2 then
-             let [t1, t2] = tyArgs
-                 p = isPartialArrow tid
-             in mkFunType (transType t1) $
-                    if isPredType t then boolType
-                       else (if p
-                             then mkOptionType
-                             else id) $ transType t2
-          else if isProductId tid && num > 1 then
-             foldl1 prodType $ map transType tyArgs
-          else Type (showIsaTypeT tid baseSign) [] 
-                   $ map transType tyArgs
-       else TFree (showIsaTypeT tid baseSign) []
-            -- type arguments are not allowed here!
-   _ -> error $ "transType " ++ showPretty t "\n" ++ show t
+transType = transFunType . funType 
 
-data FunType = NoFun | BoolVal | FunType FunType FunType | PartialVal FunType
-             deriving Eq
+transFunType :: FunType -> Typ
+transFunType fty = case fty of
+    UnitType -> unitTyp
+    BoolType -> boolType
+    FunType f a -> mkFunType (transFunType f) $ transFunType a
+    PartialVal a -> mkOptionType $ transFunType a
+    PairType a b -> prodType (transFunType a) $ transFunType b
+    ApplType tid args -> Type (showIsaTypeT tid baseSign) []
+                       $ map transFunType args
+    TypeVar tid -> TFree (showIsaTypeT tid baseSign) []
+
+data FunType = UnitType | BoolType | FunType FunType FunType 
+             | PartialVal FunType | PairType FunType FunType
+             | ApplType Id [FunType] | TypeVar Id
+               deriving Eq
+
+{-
+mkPairType :: FunType -> FunType -> FunType 
+mkPairType a b = case (a, b) of 
+    (PartialVal c, PartialVal d) -> PartialVal $ PairType c d
+    (PartialVal c, _) -> PartialVal $ PairType c b
+    (_, PartialVal d) -> PartialVal $ PairType a d
+    _ -> PairType a b
+
+makeFunType :: FunType -> FunType -> FunType 
+makeFunType a b = case a of 
+    PartialVal e@(FunType _ (PartialVal _)) -> FunType e b
+    PartialVal (FunType c d) -> FunType (FunType c (PartialVal d)) b
+    FunType _ (PartialVal _) -> FunType a b
+    FunType c d -> FunType (FunType c (PartialVal d)) b
+    _ -> FunType a b
+-}
 
 isPartialVal :: FunType -> Bool
 isPartialVal t = case t of 
     PartialVal _ -> True
+    BoolType -> True
     _ -> False
+
+makePartialVal :: FunType -> FunType 
+makePartialVal t = if isPartialVal t then t else 
+                       case t of 
+                         UnitType -> BoolType 
+                         _ -> PartialVal t
 
 funType :: Type -> FunType
 funType t = case getTypeAppl t of
-   (TypeName tid _ n, tyArgs) | n == 0 ->
-       if tid == unitTypeId && null tyArgs then BoolVal
-       else case tyArgs of 
-              [arg, res] | isArrow tid ->
-                let tArg = funType arg
-                    tRes = funType res
-                in FunType tArg $ 
-                   (if tRes /= BoolVal && isPartialArrow tid then PartialVal
-                    else id) tRes
-              _ -> NoFun 
-   _ -> NoFun
+   (TypeName tid _ n, tys) -> 
+       if n == 0 then 
+           case map funType tys of 
+           [] | tid == unitTypeId -> UnitType
+           [ty] | tid == lazyTypeId -> makePartialVal ty
+           [t1, t2] | isArrow tid -> FunType (case t1 of 
+                 FunType t3 t4 -> FunType t3 $ makePartialVal t4
+                 PartialVal (FunType t3 t4) -> FunType t3 $ makePartialVal t4
+                 _ -> t1) $
+              (if isPartialArrow tid then makePartialVal else id) t2
+           ftys@(_ : _ : _) | isProductId tid -> foldl1 PairType ftys
+           ftys -> ApplType tid ftys
+       else if null tys then TypeVar tid 
+            else error "funType: no higher kinds" 
+   _ -> error "funType: no type appl"
 
 -- * translation of a datatype declaration
 
@@ -205,13 +226,19 @@ transAltDefn _ = error "PCoClTyConsHOL2IsabelleHOL.transAltDefn"
 
 -- * Formulas
 
+option2bool :: Isa.Term
+option2bool = conDouble "option2bool"
+
 -- simple variables
 transVar :: Var -> VName
 transVar v = mkVName $ showIsaConstT v baseSign
 
 transSentence :: Env -> Le.Sentence -> Maybe Isa.Term
 transSentence sign s = case s of
-    Le.Formula t      -> Just (snd $ transTerm sign t)
+    Le.Formula t      -> Just $ case transTerm sign t of 
+                                 (UnitType, _) -> true
+                                 (BoolType, t) -> t
+                                 _ -> error "transSentence"
     DatatypeSen _     -> Nothing
     ProgEqSen _ _ _pe -> Nothing
 
@@ -236,6 +263,9 @@ transProgEq sign (ProgEq pat trm _) =
 ifImplOp :: Isa.Term
 ifImplOp = conDouble "ifImplOp"
 
+unitOp :: Isa.Term
+unitOp = Tuplex [] NotCont
+
 exEqualOp :: Isa.Term
 exEqualOp = conDouble "exEqualOp"
 
@@ -245,8 +275,14 @@ ifThenElseOp = conDouble "ifThenElseOp"
 uncurryOp :: Isa.Term
 uncurryOp = conDouble "uncurryOp"
 
+wrapLogOp :: Isa.Term
+wrapLogOp = conDouble "wrapLogOp"
+
 defOp1 :: Isa.Term
 defOp1 = conDouble "defOp1"
+
+notOp1 :: Isa.Term
+notOp1 = conDouble "notOp1"
 
 -- terms
 transTerm :: Env -> As.Term -> (FunType, Isa.Term)
@@ -256,7 +292,7 @@ transTerm sign trm = case trm of
     QualOp _ (InstOpId opId _ _) ts@(TypeScheme _ ty _) _ 
       | opId == trueId -> (fTy, true)
       | opId == falseId -> (fTy, false)
-      | opId == botId -> (PartialVal NoFun, conDouble "None")
+      | opId == botId -> (fTy, conDouble "None")
       | opId == andId -> unCurry conjV
       | opId == orId -> unCurry disjV
       | opId == implId -> unCurry implV
@@ -265,7 +301,7 @@ transTerm sign trm = case trm of
       | opId == exEq -> (fTy, exEqualOp) 
       | opId == eqId -> unCurry eqV
       | opId == notId -> (fTy, notOp)
-      | opId == defId -> (fTy, defOp1)
+      | opId == defId -> (fTy, defOp)
       | opId == whenElse -> (fTy, ifThenElseOp)
       | otherwise -> (fTy, conDouble $ transOpId sign opId ts)
        where fTy = funType ty
@@ -281,7 +317,7 @@ transTerm sign trm = case trm of
             qname Existential = exS
             qname Unique      = ex1S
             (_, psi) = transTerm sign phi
-        in (BoolVal, foldr (quantify quan) psi varDecls)
+        in (BoolType, foldr (quantify quan) psi varDecls)
     TypedTerm t _ _ _ -> transTerm sign t
     LambdaTerm pats _ body _ ->
         let tPats = map (fst . transTerm sign) pats 
@@ -292,44 +328,116 @@ transTerm sign trm = case trm of
         let (bTy, bTrm) = transTerm sign body
         in (bTy, Isa.Let (map (transProgEq sign) peqs) bTrm)
     TupleTerm ts@(_ : _) _ -> 
-        foldl1 ( \ (s, p) (t, e) -> let pv = PartialVal NoFun in 
-                                        case (s, t) of 
-                 (PartialVal _, PartialVal _) -> 
-                     (pv, binConst pairC p e)
-                 (PartialVal _, _) -> 
-                     (pv, binConst "pairL" p e)
-                 (_, PartialVal _) -> 
-                     (pv, binConst "pairR" p e)
-                 _ -> (NoFun, Tuplex [p, e] NotCont)) $ map (transTerm sign) ts
-    TupleTerm [] _ -> (BoolVal, true)
+        foldl1 ( \ (s, p) (t, e) -> (PairType s t, {- case (s, t) of
+                  (PartialVal _, PartialVal _) -> binConst pairC p e
+                  (PartialVal _, _) -> binConst "pairL" p e
+                  (_, PartialVal _) -> binConst "pairR" p e
+                  _ -> -} Tuplex [p, e] NotCont)) $ map (transTerm sign) ts
+    TupleTerm [] _ -> (UnitType, unitOp)
     ApplTerm t1 t2 _ -> mkApp sign t1 t2 -- transAppl sign Nothing t1 t2
     _ -> error $ "PCoClTyConsHOL2IsabelleHOL.transTerm " ++ showPretty trm "\n"
                 ++ show trm
 
+data MapFun = MapFst | MapSnd | MapSome
+
+data LiftFun = Lift | LiftFst | LiftSnd 
+
+data ConvFun = IdOp | CompFun ConvFun ConvFun | ConstNil | ConstTrue | SomeOp 
+             | MapFun MapFun ConvFun | LiftFun LiftFun ConvFun | LiftUnit
+             | ResFun ConvFun | ArgFun ConvFun | Bool2Option | Option2Bool
+
+liftFun :: LiftFun -> Isa.Term
+liftFun lf = case lf of
+    Lift -> liftToSome
+    LiftFst -> liftFst
+    LiftSnd -> liftSnd
+
+mapFun :: MapFun -> Isa.Term
+mapFun mf = case mf of
+    MapFst -> mapFst
+    MapSnd -> mapSnd
+    MapSome -> mapSome
+
+convFun :: ConvFun -> Isa.Term
+convFun cvf = case cvf of 
+    IdOp -> idOp
+    Bool2Option -> bool2option
+    Option2Bool -> option2bool
+    LiftUnit -> liftUnit
+    CompFun IdOp f2 -> convFun f2
+    CompFun f1 IdOp -> convFun f1
+    CompFun f1 f2 -> termAppl (termAppl compFun $ convFun f1) $ convFun f2
+    ConstNil -> constNil
+    ConstTrue -> constTrue
+    SomeOp -> conSome
+    MapFun mf IdOp -> idOp
+    MapFun mf cv -> termAppl (mapFun mf) $ convFun cv
+    LiftFun lf cv -> termAppl (liftFun lf) $ convFun cv
+    ArgFun cv -> termAppl argFunOp $ convFun cv
+    ResFun cv -> termAppl resFunOp $ convFun cv
+
+liftToSome = conDouble "liftToSome"
+liftFst = conDouble "liftFst"
+liftSnd = conDouble "liftSnd"
+mapFst = conDouble "mapFst"
+mapSnd = conDouble "mapSnd"
+mapSome = conDouble "mapSome"
+idOp = conDouble "idOp"
+bool2option = conDouble "bool2option"
+liftUnit = conDouble "liftUnit"
+compFun = conDouble "compFun"
+constNil = conDouble "constNil"
+constTrue = conDouble "constTrue"
+argFunOp = conDouble "argFunOp"
+resFunOp = conDouble "resFunOp"
+
+adjustTypes :: FunType -> FunType -> (ConvFun, ConvFun)
+adjustTypes aTy ty = case (aTy, ty) of 
+   (BoolType, BoolType) -> (IdOp, IdOp)
+   (UnitType, UnitType) -> (IdOp, IdOp)
+   (PartialVal _, BoolType) -> (IdOp, Bool2Option)
+   (BoolType, PartialVal _) -> (IdOp, Option2Bool)
+   (UnitType, BoolType) -> (LiftUnit, IdOp)
+   (BoolType, UnitType) -> (IdOp, ConstTrue)
+   (PartialVal a, PartialVal b) -> case adjustTypes a b of
+       (fTrm, aTrm) -> (fTrm, MapFun MapSome aTrm)
+   (PartialVal a, b) -> case adjustTypes a b of
+       (fTrm, aTrm) -> (fTrm, CompFun SomeOp aTrm)
+   (a, PartialVal b) -> case adjustTypes a b of
+       (fTrm, aTrm) -> (LiftFun Lift fTrm, aTrm)
+   (PairType a c, PairType b d) -> 
+       let (aC, bC) = adjustTypes a b 
+           (cC, dC) = adjustTypes c d
+       in (case (aC, cC) of
+             (IdOp, IdOp) -> IdOp
+             (IdOp, _) -> LiftFun LiftSnd cC
+             (_, IdOp) -> LiftFun LiftFst aC
+             _ -> CompFun (LiftFun LiftSnd cC) $ LiftFun LiftFst aC,
+           CompFun (MapFun MapSnd dC) $ MapFun MapFst bC)
+   (FunType a c, FunType b d) -> 
+       let (_, aC) = adjustTypes b a 
+           (_, dC) = adjustTypes c d
+       in (IdOp, CompFun (ResFun dC) (ArgFun aC))
+   _ -> (IdOp, IdOp)
+
 mkApp :: Env -> As.Term -> As.Term -> (FunType, Isa.Term)
-mkApp sg tt tt' = 
-    let (fTy, fTrm) = transTerm sg tt
-        (aTy, aTrm) = transTerm sg tt'
-    in case fTy of
-         FunType _ r@(PartialVal _) ->
-            (r, termAppl (if isPartialVal aTy then 
-                      termAppl (conDouble "appl1") fTrm else fTrm) aTrm)
-         FunType _ r@BoolVal ->
-            (r, termAppl (if isPartialVal aTy then 
-                      termAppl (conDouble "pApp2") fTrm else fTrm) aTrm)
-         FunType _ r -> if isPartialVal aTy then
-            (PartialVal r, termAppl (termAppl (conDouble "appl3") fTrm) aTrm)
-             else (r, termAppl fTrm aTrm)
-         PartialVal (FunType _ r@(PartialVal _)) ->
-            (r, termAppl (termAppl (conDouble 
-                (if isPartialVal aTy then "app" else "appl5")) fTrm) aTrm)
-         PartialVal (FunType _ r@BoolVal) ->
-            (r, termAppl (termAppl (conDouble 
-                (if isPartialVal aTy then "pApp" else "pApp1")) fTrm) aTrm)
-         PartialVal (FunType _ r) ->
-            (PartialVal r, termAppl (termAppl (conDouble 
-                (if isPartialVal aTy then "apt" else "appl7")) fTrm) aTrm)
+mkApp sg f arg = 
+    let (fTy, fTrm) = transTerm sg f
+        (aTy, aTrm) = transTerm sg arg
+    in case fTy of 
+         FunType a r -> let (fConv, aConv) = adjustTypes a aTy
+            in (case fConv of 
+                  IdOp -> r
+                  _ -> makePartialVal r, 
+                termAppl (termAppl (convFun fConv) fTrm)
+                  $ termAppl (convFun aConv) aTrm)
+         PartialVal (FunType a r) -> let (fConv, aConv) = adjustTypes a aTy
+            in (makePartialVal r, 
+                termAppl (termAppl (termAppl unpackOp $ convFun fConv) fTrm)
+                  $ termAppl (convFun aConv) aTrm)
          _ -> error "not a function type"
+
+unpackOp = conDouble "unpackOp"
 
 -- * translation of lambda abstractions
 
