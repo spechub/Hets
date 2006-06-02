@@ -15,51 +15,6 @@ Pretty printing for SPASS signatures in TPTP syntax.
 -}
 
 {- todo:
-
-  all these fomulas are named declaration and will be numbered
-   - output typing for operations as sentences with name 
-     * a conjunction of sorted variables for each parameter 
-       forms the premise of an implication if there are any parameters
-
-       Eine Kunjunktion (&) von Typapplikationen, für jedes Argument und
-       davor eine Variable für jedes Argument. Kann einfach X1,X2,... sein. 
-
-     * the sorted function application is the conclusion or the sentence is 
-       just the sorted constant 
-
-       Und als rechte Seite der Implikation bzw. wenn es keine Argumente gibt, 
-       wird die Funktion noch mit dem Ergebnistyp als Funktionsapplikation 
-       ausgegeben.
-
-    examples:
-     1. 
-       DFG: forall([a(x1),list_A(x2)],list_A(cons(x1,x2))).
-
-       TPTP: fof(declaration0,axiom,(! [U,V] : ((a(U) &
-                          list_A(V)) => list_A(cons(U,V))))).
-
-     2.
-      DFG: list_A(nil).
-      TPTP: fof(declaration1,axiom,(list_A(nil))).
-
-   - output subsorting information as implication
-       sortSymA => sortSymB
-
-   Anders beschrieben:
-     Nimm die declarationList aus dem LogicalPart und erzeuge eine Formel 
-     aus jeder SPTermDecl und aus jeder SPSubsortDecl nach den beiden 
-     Schemata, die oben im Englischen Teil der Aufgabenbeschreibung als 
-     Beispiele angegeben sind:
-     - Also eine Implikation mit Typinformationen für die Typen jeder 
-       Funktion gegeben, die schon fast die fertige Formel ist: Argumente 
-       (termDeclTermList) ohne Typen als Variablen Deklaration. 
-       (Wiederverwenden Deiner Funktion, die die Deklaration von Variablen 
-       zu einem Quantifier in eine Implikation umsetzt.) Das Ergebnis 
-       (termDeclTerm) wird einfach so als rechte Seite der Implikation 
-       genutzt.
-     - Eine Implikation zu jeder SPSubsortDecl:
-       ! [X]  : sortSymA (X) => sortSymB(X)
- 
 -}
 module SPASS.PrintTPTP where
 
@@ -116,20 +71,64 @@ instance PrintTPTP SPProblem where
   Creates a Doc from a SPASS Logical Part.
 -}
 instance PrintTPTP SPLogicalPart where
-    printTPTP lp =
-      (if not $ null $ formulaLists lp
-        then foldl (\d x-> d $$ printTPTP x) empty $ formulaLists lp
-        else empty)
+    printTPTP lp = (numberDeclaration 0 $ declarationList lp)
+      $$ foldl (\d x -> d $$ printTPTP x) empty (formulaLists lp)
 
 {- |
-  Creates a Doc from a SPASS Formula List
+  Recursive function for creating a Doc from a list of SPASS Declaration.
+-}
+numberDeclaration :: Integer -- ^ number of declaration, should start with 0
+                  -> [SPDeclaration] -- ^ list of remaining SPDeclaration terms
+                  -> Doc
+numberDeclaration nr declList = case declList of
+    [] -> empty
+    _  -> text "fof" <> parens (text ("declaration" ++ show nr) <> comma
+                          <> printTPTP SPOriginAxioms <> comma
+                          $$ parens (printTPTP $ head declList)) <> dot
+          $$ numberDeclaration (nr + 1) (tail declList)
+
+{- |
+  Standard variable term to be used in subsort declaration.
+-}
+subsortVar :: SPTerm
+subsortVar = SPSimpleTerm $ SPCustomSymbol "X"
+
+{- |
+ Creates a Doc from a SPASS Declaration.
+ A subsort declaration will be rewritten as a special SPQuantTerm.
+-}
+instance PrintTPTP SPDeclaration where
+    printTPTP decl = case decl of
+      SPSubsortDecl{sortSymA= sortA, sortSymB= sortB}
+        -> printTPTP SPQuantTerm{
+                       quantSym=SPForall,
+                       variableList=[subsortVar],
+                       qFormula=SPComplexTerm{
+                                  symbol=SPImplies,
+                                  arguments=[SPComplexTerm{
+                                               symbol=SPCustomSymbol sortA,
+                                               arguments=[subsortVar]},
+                                             SPComplexTerm{
+                                               symbol=SPCustomSymbol sortB,
+                                               arguments=[subsortVar]}]
+                                }}
+      SPTermDecl{termDeclTermList= tlist, termDeclTerm= tt}
+        -> printTPTP SPQuantTerm{
+                       quantSym=SPForall,
+                       variableList=tlist,
+                       qFormula=tt}
+      SPSimpleTermDecl stsym -> printTPTP stsym
+      _ -> empty
+
+{- |
+  Creates a Doc from a SPASS Formula List.
 -}
 instance PrintTPTP SPFormulaList where
     printTPTP l = foldl (\fl x-> fl $$ printFormula (originType l) x)
                         empty $ formulae l
 
 {- |
-  Creates a Doc from a SPASS Origin Type
+  Creates a Doc from a SPASS Origin Type.
 -}
 instance PrintTPTP SPOriginType where
     printTPTP t = case t of
@@ -142,9 +141,25 @@ instance PrintTPTP SPOriginType where
   possible.
 -}
 printFormula :: SPOriginType -> SPFormula -> Doc
+-- printFormula ot f = printFormulaText ot (senName f) (sentence f)
 printFormula ot f =
-    text "fof" <> parens (text (senName f) <> comma <> printTPTP ot <> comma <>
-                          parens (printTPTP (sentence f))) <> dot
+    text "fof" <> parens (text (senName f) <> comma <> (printTPTP ot) <> comma $$
+                          parens (printTPTP $ sentence f)) <> dot
+
+{- |
+  Creates a Doc from a formula consisting of an origin type, name and SPASS
+  Term. Origin type is already formatted as a Doc.
+  Needed for creating Doc from both SPASS Formula and SPASS Declaration.
+-}
+{-
+printFormulaText :: SPOriginType
+                 -> String -- ^ name of formula
+                 -> SPTerm -- ^ term of formula
+                 -> Doc
+printFormulaText ot fname fterm =
+    text "fof" <> parens (text fname <> comma <> (printTPTP ot) <> comma $$
+                          parens (printTPTP fterm)) <> dot
+-}
 
 {- |
   Creates a Doc from a SPASS Term.
@@ -169,7 +184,7 @@ instance PrintTPTP SPTerm where
            then printTPTP ctsym
            else printTermList ctsym args
       where
-        isSimpleTerm tm = case tm of 
+        isSimpleTerm tm = case tm of
             SPSimpleTerm _ -> True
             _              -> False
 
@@ -196,7 +211,7 @@ printTermList symb terms = case symb of
     SPNot              -> assert (length terms == 1) $ applicate SPNot
     SPImplies          -> assert (length terms == 2) $ associate SPImplies
     SPImplied          -> assert (length terms == 2) $ associate SPImplied
-    SPEquiv            -> assert (length terms == 2) $ associate SPEquiv   
+    SPEquiv            -> assert (length terms == 2) $ associate SPEquiv
     SPCustomSymbol cst -> applicate $ SPCustomSymbol cst
     where
       associate sb = case terms of

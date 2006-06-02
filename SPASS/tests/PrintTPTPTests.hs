@@ -35,7 +35,10 @@ main = do
   putStr $ showPretty2 spDescTest2 "\n\n"
   
   putStr "--- Problem-Test ---\n"
-  putStr $ showPretty2 spProblemTest "\n"
+  putStr $ showPretty2 spProblemTest "\n\n"
+  
+  putStr "--- Declaration-Test ---\n"
+  putStr $ showPretty2 spDeclTest "\n\n"
   return ()
   
 
@@ -106,5 +109,19 @@ spProblemTest :: SPProblem
 spProblemTest = SPProblem {identifier= "testproblem", description= descr, logicalPart= logical_part, settings= []}
   where
   descr = SPDescription {name="testdesc", author="testauthor", version=Nothing, logic=Nothing, status=SPStateUnknown, desc="Just a test.", date=Nothing}
-  logical_part = SPLogicalPart {symbolList= Nothing, declarationList= [], formulaLists= [SPFormulaList {originType= SPOriginAxioms, formulae= [(emptyName SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}) {senName= "testformula"}]},SPFormulaList {originType= SPOriginConjectures, formulae= [(emptyName SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}) {senName= "testformula"}, (emptyName SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}) {senName= "testformula"}]}]}
+  logical_part = SPLogicalPart {symbolList= Nothing,
+    declarationList= [spDeclTest, spDeclTest2],
+    formulaLists= [SPFormulaList {originType= SPOriginAxioms, formulae= [(emptyName SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}) {senName= "testformula"}]},SPFormulaList {originType= SPOriginConjectures, formulae= [(emptyName SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}) {senName= "testformula"}, (emptyName SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}) {senName= "testformula"}]}]}
 
+spDeclTest :: SPDeclaration
+spDeclTest = SPSubsortDecl {sortSymA = "sortSymA", sortSymB = "sortSymB"}
+
+spDeclTest2 :: SPDeclaration
+spDeclTest2 = SPTermDecl {termDeclTermList = [
+ SPComplexTerm {symbol=SPCustomSymbol "Elem", arguments=[SPSimpleTerm (SPCustomSymbol "y")]},
+ SPComplexTerm {symbol=SPCustomSymbol "Elem", arguments=[SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "b"), SPSimpleTerm (SPCustomSymbol "c")]}
+],
+termDeclTerm= SPComplexTerm {symbol= SPOr, arguments= [
+ SPComplexTerm {symbol=SPCustomSymbol "Elem", arguments=[SPSimpleTerm (SPCustomSymbol "y")]},
+ SPComplexTerm {symbol=SPCustomSymbol "Elem", arguments=[SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "b"), SPSimpleTerm (SPCustomSymbol "c")]}
+]}}
