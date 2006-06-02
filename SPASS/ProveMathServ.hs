@@ -16,7 +16,7 @@ See <http://spass.mpi-sb.mpg.de/> for details on SPASS.
 {-
     To do:
       - update to do list and module description
-      
+
       - check if the theorem is used in the proof;
         if not, the theory is inconsistent;
         mark goal as proved and emmit a warning...
@@ -38,7 +38,6 @@ import SPASS.MathServCommunication
 
 import qualified Common.AS_Annotation as AS_Anno
 import Common.ProofUtils
-import Common.PrettyPrint
 
 import Network.URI
 import Network.Service
@@ -81,7 +80,8 @@ data SPASSProverState = SPASSProverState
   Creates an initial SPASS prover state with logical part.
 -}
 spassProverState :: Sign -- ^ SPASS signature
-                 -> [AS_Anno.Named SPTerm] -- ^ list of named SPASS terms containing axioms
+                 -> [AS_Anno.Named SPTerm] -- ^ list of named SPASS terms 
+                                           --   containing axioms
                  -> SPASSProverState
 spassProverState sign oSens' = SPASSProverState{
     initialLogicalPart = foldl insertSentence
@@ -93,22 +93,24 @@ spassProverState sign oSens' = SPASSProverState{
 {- |
   Inserts a named SPASS term into SPASS prover state.
 -}
-insertSentenceGen :: SPASSProverState -- ^ prover state containing initial logical part
+insertSentenceGen :: SPASSProverState -- ^ prover state containing
+                                      --   initial logical part
                   -> AS_Anno.Named SPTerm -- ^ goal to add
                   -> SPASSProverState
 insertSentenceGen pst s = pst{initialLogicalPart =
                                 insertSentence (initialLogicalPart pst) s}
 
 {- |
-  Pretty printing SPASS goal in DFG format.
+  Pretty printing SPASS goal in TPTP format.
 -}
 showPrettyProblem :: String -- ^ theory name
-                  -> SPASSProverState -- ^ prover state containing initial logical part
+                  -> SPASSProverState -- ^ prover state containing
+                                      --   initial logical part
                   -> AS_Anno.Named SPTerm -- ^ goal to print
                   -> IO String -- ^ formatted output of the goal
 showPrettyProblem thName pst nGoal = do
   prob <- genSPASSProblem thName (initialLogicalPart pst) $ Just nGoal
-  return $ showPretty prob ""
+  return $ show $ printTPTP prob
 
 
 -- * Main GUI
@@ -118,7 +120,9 @@ showPrettyProblem thName pst nGoal = do
   data type ATPFunctions.
 -}
 mathServBrokerGUI :: String -- ^ theory name
-                  -> Theory Sign Sentence () -- ^ theory consisting of a SPASS.Sign.Sign and a list of Named SPASS.Sign.Sentence
+                  -> Theory Sign Sentence ()
+                  -- ^ theory consisting of a SPASS.Sign.Sign
+                  --   and a list of Named SPASS.Sign.Sentence
                   -> IO([Proof_status ()]) -- ^ proof status for each goal
 mathServBrokerGUI thName th =
     genericATPgui atpFun False (prover_name mathServBroker) thName th ()
@@ -131,7 +135,7 @@ mathServBrokerGUI thName th =
           goalOutput = showPrettyProblem thName,
           proverHelpText = spassHelpText,
           batchTimeEnv = "HETS_SPASS_BATCH_TIME_LIMIT",
-          fileExtensions = FileExtensions{problemOutput = ".dfg",
+          fileExtensions = FileExtensions{problemOutput = ".tptp",
                                           proverOutput = ".spass",
                                           theoryConfiguration = ".spcf"},
           runProver = runMSBroker}
@@ -140,8 +144,8 @@ mathServBrokerGUI thName th =
 -- * MathServ Interfacing Code
 
 makeEndPoint :: String -> Maybe HTTPTransport
-makeEndPoint uriStr = maybe Nothing 
-                            (\ uri -> Just $ HTTPTransport 
+makeEndPoint uriStr = maybe Nothing
+                            (\ uri -> Just $ HTTPTransport
                                       { httpEndpoint = uri
                                       , httpSOAPAction = Just nullURI})
                             (parseURI uriStr)
@@ -154,20 +158,20 @@ callMathServ :: String -- ^ Problem to prove in TPTP format
              -> Int -- ^ Time limit
              -> IO String -- ^ MathServ output or error message
 callMathServ problem timeout =
-    do 
+    do
        maybe (do
                 return "Could not start MathServ.")
              (\ endPoint -> do
-                 (res::Either SimpleFault MathServOutput) 
-                     <- soapCall endPoint $
-                        mkProveProblem Nothing service operation problem timeout
+                 (res::Either SimpleFault MathServOutput)
+                    <- soapCall endPoint $
+                       mkProveProblem Nothing service operation problem timeout
                  case res of
                   Left mErr -> do
                     return $ show mErr
                   Right resp -> do
                     return $ getResponse resp
              )
-             (makeEndPoint $ 
+             (makeEndPoint $
                 "http://"++server++':':port++"/axis/services/"++service)
     where
     -- server data
@@ -177,7 +181,8 @@ callMathServ problem timeout =
         operation = "ProveProblemOpt"
 
 {- |
-  Verifies if the used prover was SPASS. This is done by parsing the prover output.
+  Verifies if the used prover was SPASS.This is done by parsing the prover 
+  output.
 -}
 isSPASSOutput :: [String] -- ^ the prover output (maybe SPASS)
               -> Bool
@@ -187,12 +192,13 @@ isSPASSOutput out =
       re_spass = mkRegex "SPASS V.*$"
 
 {- |
-  Reads and parses the output of SPASS. The goal status will be updated (if possible),
-  used axioms will be filtered and added.
+  Reads and parses the output of SPASS. The goal status will be updated (if 
+  possible), used axioms will be filtered and added.
 -}
 parseSPASSOutput :: [String] -- ^ SPASS output, beginning with result line
                  -> (Maybe GoalStatus, [String])
-                 -> (Maybe GoalStatus, [String]) -- ^ (current goal status, currently used axioms)
+                 -> (Maybe GoalStatus, [String])
+                    -- ^ (current goal status, currently used axioms)
 parseSPASSOutput [] result = result
 parseSPASSOutput (line:ls) (res, usedAxs) =
     if null ls then (res', usedAxs') else parseSPASSOutput ls (res', usedAxs')
@@ -206,7 +212,8 @@ parseSPASSOutput (line:ls) (res, usedAxs) =
         | elem timelimit resMatch = Just Open
         | otherwise = res
       usedAxsMatch = matchRegex re_ua line
-      usedAxs' = if isJust usedAxsMatch then (words $ head $ fromJust usedAxsMatch) else usedAxs
+      usedAxs' = if isJust usedAxsMatch
+                 then (words $ head $ fromJust usedAxsMatch) else usedAxs
 
       re_sb = mkRegex "SPASS beiseite: (.*)$"
       re_ua = mkRegex "Formulae used in the proof.*:(.*)$"
@@ -218,35 +225,36 @@ parseSPASSOutput (line:ls) (res, usedAxs) =
 {- |
   Runs the MathServ broker.
 -}
-runMSBroker :: SPASSProverState -- ^ logical part containing the input Sign and axioms and possibly goals that have been proved earlier as additional axioms
+runMSBroker :: SPASSProverState
+            -- ^ logical part containing the input Sign and axioms and possibly
+            --   goals that have been proved earlier as additional axioms
             -> GenericConfig () -- ^ configuration to use
-            -> Bool -- ^ True means save DFG file
+            -> Bool -- ^ True means save TPTP file
             -> String -- ^ name of the theory in the DevGraph
             -> AS_Anno.Named SPTerm -- ^ goal to prove
-            -> IO (ATPRetval, GenericConfig ()) -- ^ (retval, configuration with proof status and complete output)
-runMSBroker sps cfg saveDFG thName nGoal = do
+            -> IO (ATPRetval, GenericConfig ())
+            -- ^ (retval, configuration with proof status and complete output)
+runMSBroker sps cfg saveTPTP thName nGoal = do
     putStrLn ("running MathServ...")
-    let lp = initialLogicalPart sps
-    prob <- genSPASSProblem thName lp (Just nGoal)
-    when saveDFG
-        (writeFile (thName++'_':AS_Anno.senName nGoal++".dfg")
-                   (showPretty prob ""))
+    prob <- showPrettyProblem thName sps nGoal
+    when saveTPTP
+        (writeFile (thName++'_':AS_Anno.senName nGoal++".tptp") prob)
 
-    mathServOut <- callMathServ (show $ printTPTP prob) tLimit
+    mathServOut <- callMathServ prob tLimit
     mtrees <- parseXML mathServOut
 
     let rdfTree = maybe emptyRoot head mtrees
-    let res = mapToGoalStatus $ getXTextValue $ getXPath resultXPath rdfTree
-    let output = maybe (lines mathServOut) (lines . unTab) $
+        res = mapToGoalStatus $ getXTextValue $ getXPath resultXPath rdfTree
+        output = maybe (lines mathServOut) (lines . unTab) $
                        getXTextValue $ getXPath outputXPath rdfTree
-    let timeout = isJust $ matchRegex re_timeout $ unlines output
+        timeout = isJust $ matchRegex re_timeout $ unlines output
 
     -- get some more infos if SPASS was used
-    let (res', usedAxs) = if isSPASSOutput output
-                             then parseSPASSOutput output (res, []) 
+        (res', usedAxs) = if isSPASSOutput output
+                             then parseSPASSOutput output (res, [])
                              -- the goal itself was used as an axiom
                              else (res, [AS_Anno.senName nGoal])
-    let (atpErr, retval) = proof_stat nGoal res' usedAxs timeout defaultPrStat
+        (atpErr, retval) = proof_stat nGoal res' usedAxs timeout defaultPrStat
     return (atpErr,
             cfg{proof_status = retval,
                 resultOutput = output})
@@ -257,12 +265,13 @@ runMSBroker sps cfg saveDFG thName nGoal = do
       unTab = foldr (\ch li ->
                         if ch == '\x9' then "        "++li
                                        else ch:li) ""
-      outputXPath = "/mw:*[local-name()='FoAtpResult']/mw:*[local-name()='output']/text()"
+      outputXPath = "/mw:*[local-name()='FoAtpResult']/mw:*[local-"
+                     ++ "name()='output']/text()"
       resultXPath = "/mw:*[local-name()='FoAtpResult']/mw:*[local-"
                      ++ "name()='status']/attribute::rdf:*/text()"
       re_timeout = mkRegex "Terminated by signal."
-      
-      
+
+
 {- |
   Maps the status message from MathServ results to GoalStatus.
   RegExp are used.
@@ -277,7 +286,7 @@ mapToGoalStatus stat = case stat of
     where
       re_theorem = mkRegex "Theorem$"
       re_counter = mkRegex "Counter$"
-    
+
 {- |
   Helper function. Given a one-elemented [XmlTree], containing an XText element
   in first node, the function returns value of this XText element, if existing.
@@ -302,7 +311,7 @@ defaultProof_status nGoal tl =
   (openProof_status (AS_Anno.senName nGoal)
                     (prover_name mathServBroker) ())
   {tacticScript = Tactic_script $ show tl}
-    
+
 
 {- |
   Returns the value of a prover run used in GUI (Success, Error or
@@ -314,7 +323,7 @@ proof_stat :: AS_Anno.Named SPTerm -- ^ goal to prove
            -> [String] -- ^ Used axioms in the proof
            -> Bool -- ^ Timeout status
            -> Proof_status () -- ^ default proof status
-           -> (ATPRetval, Proof_status ()) 
+           -> (ATPRetval, Proof_status ())
            -- ^ General return value of a prover run, used in GUI.
            --   Detailed proof status if information is available.
 proof_stat nGoal res usedAxs timeOut defaultPrStat
