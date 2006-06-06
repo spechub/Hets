@@ -7,7 +7,7 @@ Central data structure for development graphs.
    Follows Sect. IV:4.2 of the CASL Reference Manual.
 -}
 
-module Static.DGTranslation where
+module Static.DGTranslation (dg_translation) where
 
 import Logic.Logic
 import Logic.Coerce
@@ -19,18 +19,20 @@ import Static.DevGraph
 import qualified Common.Lib.Map as Map
 import Common.Result
 
-translation :: (Comorphism cid lid1 sublogics1 basic_spec1 sentence1 
+dg_translation :: {-(Comorphism cid lid1 sublogics1 basic_spec1 sentence1 
                 symb_items1 symb_map_items1 sign1 morphism1 symbol1 
                 raw_symbol1 proof_tree1 lid2 sublogics2 basic_spec2 
                 sentence2 symb_items2 symb_map_items2 sign2 morphism2 
-                symbol2 raw_symbol2 proof_tree2Comorphism) => 
-               GlobalContext -> cid -> GlobalContext
-translation gc cidMor =
+                symbol2 raw_symbol2 proof_tree2Comorphism) => -}
+               GlobalContext -> AnyComorphism -> GlobalContext
+dg_translation gc cm@(Comorphism cid) =
     let slid = sourceLogic cidMor
         tlid = targetLogic cidMor
-    in  gc { sigMap = transSig slid (sigMap gc) 
-                  , thMap  = transTh  slid (thMap gc)
-                  , morMap = transMor slid (morMap gc)
+        sublogic = sublogicOfTh thForProof
+                   if lessSublogicComor subLogic cm
+    in  gc { sigMap = transSig cid (sigMap gc) 
+                  , thMap  = transTh  cid (thMap gc)
+                  , morMap = transMor cid (morMap gc)
                   }
 {-
     in  gc' { morMap = transMor2 cidMor (morMap gc')
@@ -42,7 +44,7 @@ translation gc cidMor =
 transSig :: (Logic lid sublogics basic_spec sentence symb_items
                  symb_map_items sign1 morphism symbol
                  raw_symbol proof_tree) => 
-            lid -> Map.Map Int G_sign -> Map.Map Int G_sign
+            cid -> Map.Map Int G_sign -> Map.Map Int (G_sign,sens)
 transSig slid gSignMap1 =
     transSig' (Map.keys gSignMap1) gSignMap1  Map.empty
   where
