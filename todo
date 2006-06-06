@@ -24,6 +24,17 @@ Repräsentation ändern:
   Isabelles Beweisobjekte einbinden
 
 
+************************************************
+Razvan (Till)
+************************************************
+Proofs with Isabelle and SPASS
+CASL basic datatypes
+HasCASL examples
+
+************************************************
+Anton (Till)
+************************************************
+
 
 ************************************************
 Florian (Till)
@@ -161,33 +172,6 @@ emacs mode:
   should work with parser error messages as well (adapt these?)
 
 ************************************************
-Hilfskraft 1
-************************************************
-
-Modal-CASL <-> CASL-DL
-  see Chapter 4 of "The Description Logic Handbook"
-      and ask Klaus for a print out of it
-
-improve Modal-CASL
-  possibly also modal logic in CoCASL
-
-************************************************
-Hilfskraft 2
-************************************************
-
-Uni-Refactoring, 
-
-make modules hierarchical, change scoped type variables for ghc-6.5
-(and older ghcs), replace deprecated code (i.e. FiniteMap, hslibs),
-use HaXml as a cabalized library, provide uni as (one?) cabal
-package(s), uni used to work under windows as well, watch the
-i.e. FilePath, Process discussions (libraries@haskell.org)
-
-possibly switch to a subversion repository, talk to Achim
-(amahnke@tzi.de)
-
-
-************************************************
 Ken (Till)
 ************************************************
 
@@ -216,10 +200,36 @@ try out examples
 conservativity calculus
 weakly amalgamable cocones
 
+
 ************************************************
-Zheng (Till)
+further task 1
 ************************************************
 
+Modal-CASL <-> CASL-DL
+  see Chapter 4 of "The Description Logic Handbook"
+      and ask Klaus for a print out of it
+
+improve Modal-CASL
+  possibly also modal logic in CoCASL
+
+************************************************
+further task 2
+************************************************
+
+Uni-Refactoring, 
+
+make modules hierarchical, change scoped type variables for ghc-6.5
+(and older ghcs), replace deprecated code (i.e. FiniteMap, hslibs),
+use HaXml as a cabalized library, provide uni as (one?) cabal
+package(s), uni used to work under windows as well, watch the
+i.e. FilePath, Process discussions (libraries@haskell.org)
+
+possibly switch to a subversion repository, talk to Achim
+(amahnke@tzi.de)
+
+************************************************
+further task 3
+************************************************
 look fgl/Data/Graph/Inductive/Graph.hs
 look at Static/DevGraph.hs
 
@@ -239,7 +249,14 @@ einfaches Merge von lokalen Beweisen eines abgespeichteren DG
   in aktuellen DG
 
 ************************************************
-Hilfskraft 4
+further task 4
+************************************************
+
+graph of Haskell module dependencies
+  using .import files
+
+************************************************
+further task 5
 ************************************************
 
 port hets to windows. -- costs too much energy at this stage! Till
@@ -253,7 +270,7 @@ computations need to be adapted (made modular) within hets. Also
 position computations (of Parsec) should be checked under windows.
 
 ************************************************
-Hilfskraft 5
+further task 6
 ************************************************
 
 refactor pretty printing
@@ -303,11 +320,14 @@ CCS example: commutativity of || by coinduction
 Christian
 ************************************************
 
-correct CASL2Isabelle 
+Isabelle coding
+- improve display syntax in HasCASL-Isabelle coding
+- improve simplifier for partiality in HasCASL-Isabelle coding
+  program interaction between solver, subgoaler and simplifier in such a way
+  that proofs of definedness conditions are postponed
+- correct CASL2Isabelle 
   (inconsistency due to coding of free datatypes)
 
-graph of Haskell module dependencies
-  using .import files
 
 more abstract datatypes?
 
@@ -331,8 +351,6 @@ Haskell modules: hiding, renaming
   forall x_1:s_n .... x_n:s_n .    phi1  =>      p(t_1,...,t_m)<=>phi
   if there are axioms not being of this form, output error
 
-Missing points for heterogeneous WADT 04 example:
-- improve display of HasCASL sigs + mors 
 
 Static analysis for HasCASL
   pattern analysis for program equations 
@@ -401,6 +419,9 @@ Connecting Hets with MathServ
 Klaus
 ************************************************
 
+for consistency checking with Isabelle, look at the following SAT-Solvers: 
+MChaff, ZChaff, Berkmin
+
 Consistency checker interface
   via global interface, accessible from global and node menus
   use falseSentence from Logic.Logic (property: holds in no model) 
@@ -459,6 +480,7 @@ Integration with generic prover interface?
 ************************************************
 Till
 ************************************************
+
 
 Fragen an Michael:
 werden Links in der richtigen Reihenfolge geschrieben (S. 183 OMDoc)?
@@ -766,3 +788,4 @@ Aufbau des Graphen selbst
 ------------------------
 addnode
 addlink
+
