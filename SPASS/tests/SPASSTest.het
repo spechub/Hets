@@ -1,0 +1,167 @@
+
+library SPASSTest
+
+spec Bar = 
+     sorts A < B; C < B
+     sorts alone[1],lone[$$]
+end
+
+spec Bar_Ops =
+     Bar
+then
+     op a : B * B -> alone[1];
+     	a : B * A -> alone[1];
+	c1,c2,c3 : alone[1];
+        __+*__ : B * B -> lone[$$];
+	b1,b2,b3: B
+     pred PR: alone[1] * B
+     forall x,y : B 
+     . a(x,y) = c1 when x in A else (c2 when x in C else c3) %(++)%
+then
+     forall x,y : B 
+     .  b1 = 
+        b2 when a(x,y) = (c1 when x in B else c3) else b3
+then
+     forall x,y : B 
+     . b1 when a(x,y) = c1 else b2 = b2 when a(x,y) = c3 else b3
+then
+     forall x,y : B 
+     . PR(a(x,y) when true else a(y,x), 
+	  b1 when (true <=> false) else b2)
+then %implies
+     forall x : A; y : B 
+     . a(x,y) = c1  %(G1)%
+     forall x,y : B 
+     . PR(a(x,y),b2) %(G3)% 
+     . false %(is_consistent)%
+end
+
+spec Bar_Preds =
+     Bar
+then
+     preds P1 : A * B;
+     	   P1 : alone[1] * A;
+	   __elem__ : A * lone[$$]
+end
+
+spec Bar_union =
+     Bar_Ops and Bar_Preds
+end
+
+spec Overload_Test =
+     Bar_union
+then
+     pred a : A * C
+     sort a
+end
+
+spec EmptySort =
+     sort s
+then %implies
+     . exists x:s . x in s %(trivial_non_empty_test)%
+end
+
+spec PredicateLogic =
+     preds A,B,C : ()
+     . A => B %(ax1)%
+     . B <=> C %(ax2)%
+then %implies
+     . A => C %(g1)%
+end
+
+spec OverloadTest =
+     sort A < B; C
+     free type BC ::= sorts B,C
+     ops g_in : A -> B;
+	 g_in : B -> BC;
+	 g_in : C -> BC
+end
+
+spec Sokrates =
+     sort Top
+     pred Mortal : Top;
+     	  Human : Top
+     op sokrates : Top
+     forall x : Top 
+     . Human(x) => Mortal(x)   %(all_humans_are_mortal)%
+     . Human(sokrates)         %(sokrates_is_a_human)%
+then %implies
+     . Mortal(sokrates)        %(sokrates_is_mortal)%
+     . false   %(is_consistent)%
+then %implies
+     forall x,y:Top
+     . Mortal(x) => Human(x) %(  )%
+end
+
+spec Inconsistent =
+     sorts A,B
+     free type C ::= sorts A,B
+     sorts ill < A; ill < B
+     ops a1 : A;
+	 b1 : B
+then %implies
+     . false %(is_consistent)%
+     . not a1 in ill %(a1_in_ill)%
+     . not b1 in ill %(b1_in_ill)%
+     . forall x : C . not x in ill %(x_C_in)%
+end
+
+spec GenTest =
+     sort A,B
+     generated type Foo ::= sorts A,B | c1 
+     free type List_A ::= cons(A;List_A) | nil
+then %implies
+     forall x : A; l : List_A 
+     . not (cons(x,l) = nil)         %(disjoint_constructors)%
+     . false %(is_consistent)%
+end
+
+spec GenTest2 =
+     sorts A,B
+     free type Foo ::= sorts A,B | c1
+     free type Maybe[Foo] ::= sort Foo | Nothing
+then %implies
+     forall x : A; y : B
+     . not x = c1   %(free1)%
+     . not x in B   %(free2)%
+     . not c1 = Nothing %(free3)%
+     . not x = Nothing %(free4)%
+     . not y = Nothing %(free5)%
+     . x in Maybe[Foo] %(injection1)%
+     . y in Maybe[Foo] %(injection2)%
+end
+
+spec GenTest2a =
+     GenTest2
+then 
+     op a1: A
+then %implies
+     . not a1 in B %(wrong_sort_test)%
+     . not a1 = c1 %(equal_test5)%
+     . a1 = c1 %(equal_test5a)%
+then %implies
+     . not (a1 as B) in B %(cast_test1)%
+then %implies
+     . not (a1 : Foo as B) in B %(cast_test2)%
+     . not (a1 as B) in B %(cast_test3)%
+     . not def (a1 as B) %(cast_test4)%
+end
+
+spec UniqueExt =
+     sort s
+     pred UC : s
+     op c:s
+
+     . UC(c) %(c is in UC)%
+     . exists! x: s . UC(x) %(only one element in UC)%
+then %implies
+     forall x : s
+     . UC(x) <=> x = c %(everything in UC is equal to c)%
+end
+
+spec Keywords =
+     preds False,True: ()
+     sort s
+     op status : s
+
+spec small = {}
