@@ -29,7 +29,8 @@ import SPASS.Sign
 import SPASS.Conversions
 
 
--- | This type class allows pretty printing in TPTP syntax of instantiated data types
+-- | This type class allows pretty printing in TPTP syntax of instantiated data
+--   types
 class PrintTPTP a where
     printTPTP :: a -> Doc
 
@@ -71,8 +72,14 @@ instance PrintTPTP SPProblem where
   Creates a Doc from a SPASS Logical Part.
 -}
 instance PrintTPTP SPLogicalPart where
-    printTPTP lp = (numberDeclaration 0 $ declarationList lp)
-      $$ foldl (\d x -> d $$ printTPTP x) empty (formulaLists lp)
+    printTPTP lp =
+      let validDeclarations = filter (\ decl -> case decl of
+              SPSubsortDecl{}    -> True
+              SPTermDecl{}       -> True
+              SPSimpleTermDecl _ -> True
+              _                  -> False) $ declarationList lp
+      in (numberDeclaration 0 $ validDeclarations)
+         $$ foldl (\d x -> d $$ printTPTP x) empty (formulaLists lp)
 
 {- |
   Recursive function for creating a Doc from a list of SPASS Declaration.
