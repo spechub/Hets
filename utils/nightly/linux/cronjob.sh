@@ -19,21 +19,6 @@ cd /local/home/maeder/haskell
 makeHets
 makeLibCheck
 
-# remove unoptimized h2hf
-h2hf=HetCATS/Haskell/h2hf
-rm $h2hf
-# optimize a bit using optimized programatica stuff
-cd HetCATS
-rm Haskell/*.o
-rm Comorphisms/*.o
-rm Isabelle/*.o
-$MAKE h2hf
-cd ..
-strip $h2hf
-chmod 775 $h2hf
-chgrp wwwbkb $h2hf
-\cp -fp $h2hf $hetsdir/linux/daily/
-
 # install hets binary
 cd CASL-lib
 chmod 775 hets
