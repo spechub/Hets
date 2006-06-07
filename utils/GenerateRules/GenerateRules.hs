@@ -55,8 +55,8 @@ genRules flags files =
            (datas, imports) = (( \ (x,y) -> (concat x,concat y)) . unzip) ids
            ds = datas \\ excs
            rule = concat $ intersperse ", " rules
-           fileHead =
-             "{-# OPTIONS -fvia-C -O0 -fno-warn-unused-imports #-}" ++
+           fileHead = -- add -fvia-C -O0 to reduce *.o sizes for macs
+             "{-# OPTIONS -fno-warn-unused-imports #-}" ++
              "\n{- |\nModule      :  " ++ outf ++
              "\nDescription :  generated " ++ rule ++ " instances" ++
              "\nCopyright   :  (c) Uni Bremen 2005" ++
