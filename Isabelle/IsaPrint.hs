@@ -269,7 +269,7 @@ printTrm b trm = case trm of
 printApp :: Bool -> Continuity -> Term -> [Term] -> (Doc, Int)
 printApp b c t l = case l of
      [] -> printTrm b t
-     _ -> (hsep $ (case c of
+     _ -> (fsep $ (case c of
           NotCont -> id
           IsCont -> punctuate $ text " $")
           $ printParenTerm b (maxPrio - 1) t : map (printParenTerm b maxPrio) l
