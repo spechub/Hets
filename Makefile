@@ -201,6 +201,7 @@ HC_OPTS = $(HC_FLAGS) $(HC_INCLUDE) $(HC_PACKAGE) $(PFE_FLAGS) $(HC_PROF) \
 
 non_sources = Common/LaTeX_maps.svmono.hs CspCASL/Main.hs \
     Common/CaslLanguage.hs ./Test.hs Static/LogicStructured.hs \
+    Static/DGTranslation.hs \
     $(wildcard syb-generics/Data/Generics2/*.hs) \
     haifa-lite/src/Network/Server/HTTP.hs \
     $(wildcard haifa-lite/src/Org/W3/N2001/*.hs) \
