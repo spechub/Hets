@@ -164,7 +164,7 @@ logType = simpleTypeScheme $
 notType = simpleTypeScheme $ mkFunArrType lazyLog PFunArr unitType
 whenType =
     bindA $ mkFunArrType (mkProductType [aType, lazyLog, aType]) PFunArr aType
-unitTypeScheme = simpleTypeScheme unitType
+unitTypeScheme = simpleTypeScheme lazyLog
 
 botId :: Id
 botId = mkId [mkSimpleId "bottom"]
