@@ -27,13 +27,23 @@ Repräsentation ändern:
 ************************************************
 Razvan (Till)
 ************************************************
-Proofs with Isabelle and SPASS
-CASL basic datatypes
-HasCASL examples
 
 ************************************************
 Anton (Till)
 ************************************************
+
+**************** task A ************************
+
+Proofs with Isabelle and SPASS
+CASL basic datatypes
+HasCASL examples
+
+**************** task B ************************
+
+Integration with PGIP
+  display specs + proofs in one buffer
+  when stepping through the specs, dg calculus generates proof obligations,
+    which then can be discharged by Isabelle
 
 
 ************************************************
@@ -372,10 +382,6 @@ Isabelle interface
   Reload button should rebuild buffers while keeping as much as possible
   keep structuring of Hets theories
 
-Integration with PGIP
-  display specs + proofs in one buffer
-  when stepping through the specs, dg calculus generates proof obligations,
-    which then can be discharged by Isabelle
 
 ************************************************
 Rainer (Klaus)
