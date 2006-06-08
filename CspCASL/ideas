@@ -1,0 +1,39 @@
+Csp institution
+---------------
+new idea:
+- allow for arbitrary alphabet translations, using extra alphabet interpretation component
+  in the models? This would be consistent with CspCASL.
+  That is, for a signature (N,A) (A=syntactic alphabet), a model M=(S,f,T)  consists of
+  - a semantic alphabet S
+  - a map f:A->S
+  - for each n\in N, a prefix-closed set T(n) of traces over S
+  The reduct of M along (\nu,\alpha):(N',A')->(N,A) is given by (S,f\circ\alpha,T\circ\nu) 
+  The satisfaction condition holds trivially
+
+This is basically the extension semantics of the WADT 04 polymorphism paper,
+  restricted to signature morphisms that map process names identically
+  that is, in terms of that paper, if we take PI = plain Csp, that is, with
+  arbitrary alpha, but without the extra f component in the models, then the
+  about institution is Ext(PI). Note that plain Csp is neither rps (see Markus' example), nor
+  eps: a->skip ||_a b->skip = stop does not hold iff a=b.
+
+Lutz' idea:
+add mu to process language, and use modal logic
+... but this is probably most useful with the LTS semantics for CSP
+-> develop CSP and CCS and extensions, using Markus' alphabet construction, with LTS semantics,
+   but this is a project on its own...
+
+CspCASL institution
+-------------------
+- we can allow for arbitrary (also non-injective) signature morphisms, because:
+  if sigma maps a,b:s to c:s and M |= c.skip=c.skip, then M|_\sigma |= a.skip=b.skip,
+  because a and b are equal in M|_\sigma.
+- this probably leads to a very natural definition of the CspCASL institution in terms
+  of the Csp institution:
+  Csp-alphabet A = CASL data terms (of any sort)
+  for a model, the semantic alphabet S = \biguplus_{s\in S} M_s \uplus \{\bot\} / ~
+  f = interpretation of CASL terms
+
+channels are typed in CspCASL -> hence we can statically check that the
+  sort of a term matches with the sort of the channel over which it is communicated ?!?
+  
