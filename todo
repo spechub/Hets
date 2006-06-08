@@ -37,14 +37,25 @@ Anton (Till)
 Proofs with Isabelle and SPASS
 CASL basic datatypes
 HasCASL examples
+- improve simplifier for partiality in Isabelle coding
+  program interaction between solver, subgoaler and simplifier in such a way
+  that proofs of definedness conditions are postponed
 
 **************** task B ************************
 
 Integration with PGIP
-  display specs + proofs in one buffer
-  when stepping through the specs, dg calculus generates proof obligations,
-    which then can be discharged by Isabelle
-
+  Hets needs to be equipped with a command-line interface that reads in
+    specification libraries and proof commands
+  Proof commands are special annotations in the libraries
+  All menu commands of the development graph interface (GUI/...) should become (proof) commands
+  when stepping through the specs, dg calculus generates proof obligations
+    (for the current dg node only),
+    which then can be discharged by Isabelle, SPASS etc.
+    That is, the proof commands always occur at the position in the text
+      that generates the dg node?!? or should they occur after each specification?
+  needs incremental parsing and static analysis for Hets libraries
+    easy: parse and analyse one specification at a time, and then process it with proof commands
+    more challenging: incrementally parse and analyse also individual specifications
 
 ************************************************
 Florian (Till)
@@ -332,9 +343,6 @@ Christian
 
 Isabelle coding
 - improve display syntax in HasCASL-Isabelle coding
-- improve simplifier for partiality in HasCASL-Isabelle coding
-  program interaction between solver, subgoaler and simplifier in such a way
-  that proofs of definedness conditions are postponed
 - correct CASL2Isabelle 
   (inconsistency due to coding of free datatypes)
 
