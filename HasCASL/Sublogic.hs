@@ -20,9 +20,10 @@ module HasCASL.Sublogic
       Sublogic(..)
     , Formulas(..)
     , Classes(..)
-      -- * functions for LatticeWithTop instance
+      -- * functions for SemiLatticeWithTop instance
     , topLogic
     , sublogic_max
+      -- * combining sublogics restrictions
     , sublogic_min
       -- * further sublogic constants
     , bottom

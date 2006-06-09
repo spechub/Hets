@@ -276,14 +276,14 @@ class ( Syntax lid basic_spec symb_items symb_map_items
 
 -- sublogics
 
-class (Eq l, Show l) => LatticeWithTop l where
-  meet, join :: l -> l -> l
+class (Eq l, Show l) => SemiLatticeWithTop l where
+  join :: l -> l -> l
   top :: l
-  isSubElem :: l -> l -> Bool
-  isSubElem a b = join a b == b
 
-instance LatticeWithTop () where
-  meet _ _ = ()
+isSubElem :: SemiLatticeWithTop l => l -> l -> Bool
+isSubElem a b = join a b == b
+
+instance SemiLatticeWithTop () where
   join _ _ = ()
   top = ()
 
@@ -292,7 +292,7 @@ instance LatticeWithTop () where
 class (StaticAnalysis lid
         basic_spec sentence proof_tree symb_items symb_map_items
         sign morphism symbol raw_symbol,
-       LatticeWithTop sublogics, ShATermConvertible sublogics,
+       SemiLatticeWithTop sublogics, ShATermConvertible sublogics,
        Typeable sublogics)
     => Logic lid sublogics
         basic_spec sentence symb_items symb_map_items

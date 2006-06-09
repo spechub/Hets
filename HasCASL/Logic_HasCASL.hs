@@ -90,8 +90,7 @@ instance StaticAnalysis HasCASL BasicSpec Sentence ()
 
     final_union HasCASL = merge
 
-instance LatticeWithTop Sublogic where
-    meet = sublogic_min
+instance SemiLatticeWithTop Sublogic where
     join = sublogic_max
     top = topLogic
 

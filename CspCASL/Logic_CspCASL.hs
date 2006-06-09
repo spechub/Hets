@@ -25,7 +25,7 @@ Here is the place where the class Logic is instantiated for CspCASL.
        und unten für basic_analysis einhängen
 
     Kür:
-     - Teillogiken (instance LatticeWithTop ...)
+     - Teillogiken (instance SemiLatticeWithTop ...)
 
 -}
 

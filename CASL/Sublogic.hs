@@ -25,10 +25,9 @@ module CASL.Sublogic ( -- * datatypes
                    has_sub,
                    has_cons,
 
-                   -- * functions for LatticeWithTop instance
+                   -- * functions for SemiLatticeWithTop instance
                    top,
                    sublogics_max,
-                   sublogics_min,
 
                    -- * functions for the creation of minimal sublogics
                    bottom,
@@ -267,7 +266,7 @@ sublogics_name x = [   ( case sub_features x of
                     ++ ( if (has_eq   x) then "=" else "")]
 
 ------------------------------------------------------------------------------
--- min/join and max/meet functions
+-- join or max functions
 ------------------------------------------------------------------------------
 
 sublogics_join :: (Bool -> Bool -> Bool)
@@ -288,9 +287,6 @@ sublogics_join jB jS jC jF a b = CASL_SL
 
 sublogics_max :: CASL_Sublogics -> CASL_Sublogics -> CASL_Sublogics
 sublogics_max = sublogics_join max max (joinSortGenFeature min) max
-
-sublogics_min :: CASL_Sublogics -> CASL_Sublogics -> CASL_Sublogics
-sublogics_min = sublogics_join min min (joinSortGenFeature max) min
 
 ------------------------------------------------------------------------------
 -- Helper functions

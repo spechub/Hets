@@ -18,10 +18,9 @@ Todo: extend this to the coalgebraic features.
 module CoCASL.Sublogic ( -- * datatypes
                    CoCASL_Sublogics(..),
 
-                   -- * functions for LatticeWithTop instance
+                   -- * functions for SemiLatticeWithTop instance
                    top,
                    sublogics_max,
-                   sublogics_min,
 
                    -- * functions for the creation of minimal sublogics
                    bottom,
@@ -122,16 +121,6 @@ sublogics_max a b =
   CoCASL_SL { has_co = has_co  a || has_co  b,
               casl   = casl a `CASL.Sublogic.sublogics_max` casl b
             }
-
-sublogics_min :: CoCASL_Sublogics -> CoCASL_Sublogics -> CoCASL_Sublogics
-sublogics_min a b = 
-  CoCASL_SL { has_co = has_co  a && has_co  b,
-              casl   = casl a `CASL.Sublogic.sublogics_min` casl b
-            }
-
-instance Ord CoCASL_Sublogics where
-  x <= y = sublogics_min x y == x
-  
 
 ------------------------------------------------------------------------------
 -- Functions to compute minimal sublogic for a given element, these work

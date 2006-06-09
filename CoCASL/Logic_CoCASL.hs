@@ -119,11 +119,8 @@ instance StaticAnalysis CoCASL C_BASIC_SPEC CoCASLFORMULA ()
 
 -- lattices (for sublogics)
 
-instance LatticeWithTop CoCASL_Sublogics where
-    -- meet, join :: l -> l -> l
-    meet = CoCASL.Sublogic.sublogics_min
+instance SemiLatticeWithTop CoCASL_Sublogics where
     join = CoCASL.Sublogic.sublogics_max
-    -- top :: l
     top = CoCASL.Sublogic.top
 
 instance Logic CoCASL CoCASL_Sublogics

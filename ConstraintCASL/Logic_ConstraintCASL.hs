@@ -83,16 +83,7 @@ instance Syntax ConstraintCASL ConstraintCASLBasicSpec
          parse_symb_items ConstraintCASL = Just $ symbItems []
          parse_symb_map_items ConstraintCASL = Just $ symbMapItems []
 
--- lattices (for sublogics)
-
-{-instance LatticeWithTop CASL_Sublogics where
-    -- meet, join :: l -> l -> l
-    meet = CASL.Sublogic.sublogics_min
-    join = CASL.Sublogic.sublogics_max
-    -- top :: l
-    top = CASL.Sublogic.top
--}
--- ConstraintCASL logic
+-- lattices (for sublogics) is missing
 
 instance Sentences ConstraintCASL ConstraintCASLFORMULA () ConstraintCASLSign ConstraintCASLMor Symbol where
       map_sen ConstraintCASL m = return . mapSen (\ _ -> id) m

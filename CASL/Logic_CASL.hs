@@ -90,11 +90,8 @@ instance Syntax CASL CASLBasicSpec
 
 -- lattices (for sublogics)
 
-instance LatticeWithTop CASL_Sublogics where
-    -- meet, join :: l -> l -> l
-    meet = CASL.Sublogic.sublogics_min
+instance SemiLatticeWithTop CASL_Sublogics where
     join = CASL.Sublogic.sublogics_max
-    -- top :: l
     top = CASL.Sublogic.top
 
 -- CASL logic
