@@ -1,0 +1,174 @@
+library Pairs
+
+logic HasCASL
+
+spec S =
+  type t;
+  var a;
+  op p1 : a * a -> Unit
+  op p2 : a * a ->? Unit
+  op p3 : ?a * a ->? Unit
+  op p4 : a * ?a ->? Unit
+  op p5 : ?a * ?a ->? Unit
+  op p6 : ?a * a -> Unit
+  op p7 : a * ?a -> Unit
+  op p8 : ?a * ?a -> Unit
+  op f1 : a * a -> a
+  op f2 : a * a ->? a
+  op f3 : ?a * a ->? a
+  op f4 : a * ?a ->? a
+  op f5 : ?a * ?a ->? a
+  op f6 : ?a * a -> a
+  op f7 : a * ?a -> a
+  op f8 : ?a * ?a -> a
+
+  op c : Unit
+  op b : ? Unit
+  op o : t
+  op p : ?t 
+ 
+   . p1 (c, b)
+   . p1 (b, c)
+   . p1 (c, c)
+   . p1 (b, b)
+   . p1 (o, p)
+   . p1 (p, o)
+   . p1 (o, o)
+   . p1 (p, p)
+
+   . p2 (c, b)
+   . p2 (b, c)
+   . p2 (c, c)
+   . p2 (b, b)
+   . p2 (o, p)
+   . p2 (p, o)
+   . p2 (o, o)
+   . p2 (p, p)
+
+   . p3 (c, b)
+   . p3 (b, c)
+   . p3 (c, c)
+   . p3 (b, b)
+   . p3 (o, p)
+   . p3 (p, o)
+   . p3 (o, o)
+   . p3 (p, p)
+
+   . p4 (c, b)
+   . p4 (b, c)
+   . p4 (c, c)
+   . p4 (b, b)
+   . p4 (o, p)
+   . p4 (p, o)
+   . p4 (o, o)
+   . p4 (p, p)
+
+   . p5 (c, b)
+   . p5 (b, c)
+   . p5 (c, c)
+   . p5 (b, b)
+   . p5 (o, p)
+   . p5 (p, o)
+   . p5 (o, o)
+   . p5 (p, p)
+
+   . p6 (c, b)
+   . p6 (b, c)
+   . p6 (c, c)
+   . p6 (b, b)
+   . p6 (o, p)
+   . p6 (p, o)
+   . p6 (o, o)
+   . p6 (p, p)
+
+   . p7 (c, b)
+   . p7 (b, c)
+   . p7 (c, c)
+   . p7 (b, b)
+   . p7 (o, p)
+   . p7 (p, o)
+   . p7 (o, o)
+   . p7 (p, p)
+
+   . p8 (c, b)
+   . p8 (b, c)
+   . p8 (c, c)
+   . p8 (b, b)
+   . p8 (o, p)
+   . p8 (p, o)
+   . p8 (o, o)
+   . p8 (p, p)
+
+ 
+   . def f1 (c, b)
+   . def f1 (b, c)
+   . def f1 (c, c)
+   . def f1 (b, b)
+   . def f1 (o, p)
+   . def f1 (p, o)
+   . def f1 (o, o)
+   . def f1 (p, p)
+
+   . def f2 (c, b)
+   . def f2 (b, c)
+   . def f2 (c, c)
+   . def f2 (b, b)
+   . def f2 (o, p)
+   . def f2 (p, o)
+   . def f2 (o, o)
+   . def f2 (p, p)
+
+   . def f3 (c, b)
+   . def f3 (b, c)
+   . def f3 (c, c)
+   . def f3 (b, b)
+   . def f3 (o, p)
+   . def f3 (p, o)
+   . def f3 (o, o)
+   . def f3 (p, p)
+
+   . def f4 (c, b)
+   . def f4 (b, c)
+   . def f4 (c, c)
+   . def f4 (b, b)
+   . def f4 (o, p)
+   . def f4 (p, o)
+   . def f4 (o, o)
+   . def f4 (p, p)
+
+   . def f5 (c, b)
+   . def f5 (b, c)
+   . def f5 (c, c)
+   . def f5 (b, b)
+   . def f5 (o, p)
+   . def f5 (p, o)
+   . def f5 (o, o)
+   . def f5 (p, p)
+
+   . def f6 (c, b)
+   . def f6 (b, c)
+   . def f6 (c, c)
+   . def f6 (b, b)
+   . def f6 (o, p)
+   . def f6 (p, o)
+   . def f6 (o, o)
+   . def f6 (p, p)
+
+   . def f7 (c, b)
+   . def f7 (b, c)
+   . def f7 (c, c)
+   . def f7 (b, b)
+   . def f7 (o, p)
+   . def f7 (p, o)
+   . def f7 (o, o)
+   . def f7 (p, p)
+
+   . def f8 (c, b)
+   . def f8 (b, c)
+   . def f8 (c, c)
+   . def f8 (b, b)
+   . def f8 (o, p)
+   . def f8 (p, o)
+   . def f8 (o, o)
+   . def f8 (p, p)
+
