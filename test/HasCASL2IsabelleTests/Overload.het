@@ -1,0 +1,12 @@
+library Overload
+
+logic HasCASL
+
+spec S =
+op f : (Unit * Unit) * Unit ->? Unit
+op f : Unit * Unit * Unit ->? Unit
+op f : Unit * (Unit * Unit) ->? Unit
+
+. f(true, true, true)
+. f((true, true), true)
+. f(true, (true, true))
