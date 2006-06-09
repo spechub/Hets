@@ -6,7 +6,7 @@ spec S =
 
 %%  sorts A,B, R
   type t;
-  var a;
+  var a : Type;
   op test : a ->? Unit
   op id : a -> a
   op id2 : a -> Unit

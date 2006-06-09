@@ -4,7 +4,7 @@ logic HasCASL
 
 spec S =
   type t;
-  var a;
+  var a : Type;
   op p1 : a * a -> Unit
   op p2 : a * a ->? Unit
   op p3 : ?a * a ->? Unit
