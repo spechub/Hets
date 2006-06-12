@@ -77,5 +77,3 @@ showTPTPProblem :: String -- ^ theory name
 showTPTPProblem thName pst nGoal = do
   prob <- genSPASSProblem thName (initialLogicalPart pst) $ Just nGoal
   return $ show $ printTPTP prob
-
-
