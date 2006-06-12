@@ -26,14 +26,11 @@ module SPASS.Prove (spassProver,spassProveGUI) where
 import Logic.Prover
 
 import SPASS.Sign
-import SPASS.Conversions
 import SPASS.ProveHelp
 import SPASS.Translate
-import SPASS.Print (genSPASSProblem)
+import SPASS.ProverState
 
 import qualified Common.AS_Annotation as AS_Anno
-import Common.ProofUtils
-import Common.PrettyPrint
 
 import ChildProcess
 import ProcessClasses
@@ -62,48 +59,6 @@ spassProver =
            prover_sublogic = "SoftFOL",
            prove = spassProveGUI
          }
-
--- ** Data structures
-
-data SPASSProverState = SPASSProverState
-    { initialLogicalPart :: SPLogicalPart}
-
-
--- ** SPASS specific functions for prover GUI
-
-{- |
-  Creates an initial SPASS prover state with logical part.
--}
-spassProverState :: Sign -- ^ SPASS signature
-                 -> [AS_Anno.Named SPTerm] -- ^ list of named SPASS terms containing axioms
-                 -> SPASSProverState
-spassProverState sign oSens' = SPASSProverState{
-    initialLogicalPart = foldl insertSentence
-                               (signToSPLogicalPart sign)
-                               (reverse axioms)}
-  where nSens = prepareSenNames transSenName oSens'
-        axioms = filter AS_Anno.isAxiom nSens
-
-{- |
-  Inserts a named SPASS term into SPASS prover state.
--}
-insertSentenceGen :: SPASSProverState -- ^ prover state containing initial logical part
-                  -> AS_Anno.Named SPTerm -- ^ goal to add
-                  -> SPASSProverState
-insertSentenceGen pst s = pst{initialLogicalPart =
-                                insertSentence (initialLogicalPart pst) s}
-
-{- |
-  Pretty printing SPASS goal in DFG format.
--}
-showPrettyProblem :: String -- ^ theory name
-                  -> SPASSProverState -- ^ prover state containing initial logical part
-                  -> AS_Anno.Named SPTerm -- ^ goal to print
-                  -> IO String -- ^ formatted output of the goal
-showPrettyProblem thName pst nGoal = do
-  prob <- genSPASSProblem thName (initialLogicalPart pst) $ Just nGoal
-  return $ showPretty prob ""
-
 
 -- * Main GUI
 
@@ -246,12 +201,10 @@ runSpass sps cfg saveDFG thName nGoal = do
                   emptyConfig (prover_name spassProver)
                               (AS_Anno.senName nGoal) ())
         else do
-          let lp = initialLogicalPart sps
-          prob <- genSPASSProblem thName lp (Just nGoal)
+          prob <- showPrettyProblem thName sps nGoal
           when saveDFG
-               (writeFile (thName++'_':AS_Anno.senName nGoal++".dfg")
-                          (showPretty prob ""))
-          sendMsg spass (showPretty prob "")
+               (writeFile (thName++'_':AS_Anno.senName nGoal++".dfg") prob)
+          sendMsg spass prob
           (res, usedAxs, output) <- parseSpassOutput spass
           let (err, retval) = proof_stat res usedAxs cleanOptions
           return (err,
