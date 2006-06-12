@@ -390,13 +390,13 @@ convFun cvf = case cvf of
     ConstNil -> constNil
     ConstTrue -> constTrue
     SomeOp -> conSome
-    MapFun mf cv -> termAppl (mapFun mf) $ convFun cv
+    MapFun mf cv -> mkTermAppl (mapFun mf) $ convFun cv
     LiftFun lf cv -> termAppl (liftFun lf) $ convFun cv
     ArgFun cv -> termAppl argFunOp $ convFun cv
-    ResFun cv -> termAppl resFunOp $ convFun cv
+    ResFun cv -> termAppl compFun $ convFun cv
 
 liftFst, liftSnd, mapFst, mapSnd, mapSome, idOp, bool2option, 
-    option2bool, compFun, constNil, constTrue, argFunOp, resFunOp,
+    option2bool, compFun, constNil, constTrue, argFunOp,
     liftUnit2unit, liftUnit2bool, liftUnit2option, liftUnit, lift2unit,
     lift2bool, lift2option, lift :: Isa.Term
 
@@ -412,7 +412,6 @@ compFun = conDouble "comp"
 constNil = conDouble "constNil"
 constTrue = conDouble "constTrue"
 argFunOp = conDouble "argFunOp"
-resFunOp = conDouble "resFunOp"
 liftUnit2unit = conDouble "liftUnit2unit"
 liftUnit2bool = conDouble "liftUnit2bool"
 liftUnit2option = conDouble "liftUnit2option"
@@ -455,24 +454,43 @@ adjustTypes aTy rTy ty = case (aTy, ty) of
              mkCompFun (mkLiftFun LiftFst f1) $ mkLiftFun LiftSnd f2),
            (PairType arg1Ty arg2Ty,  
            mkCompFun (mkMapFun MapSnd a2) $ mkMapFun MapFst a1))
-{-   (FunType a c, FunType b d) -> 
-       let (_, aC) = adjustTypes b rTy a 
-           (_, dC) = adjustTypes c rTy d
-       in ((resIdOp, mkCompFun (ResFun dC) (ArgFun aC))
--}
+    (FunType a c, FunType b d) -> 
+       let (_, (aT, aC)) = adjustTypes b c a 
+           (_, (dT, dC)) = adjustTypes c rTy d
+       in ((False, IdOp), 
+           (FunType aT dT, mkCompFun (mkResFun dC) (mkArgFun aC)))
     _ -> ((False, IdOp), (aTy, IdOp))
 
 applConv :: ConvFun -> Isa.Term -> Isa.Term
 applConv cnv t = case cnv of
     IdOp -> t 
-    _ -> termAppl (convFun cnv) t
+    _ -> mkTermAppl (convFun cnv) t
+
+mkArgFun :: ConvFun -> ConvFun
+mkArgFun c = case c of
+    IdOp -> c
+    _ -> ArgFun c
+
+mkResFun :: ConvFun -> ConvFun
+mkResFun c = case c of
+    IdOp -> c
+    _ -> ResFun c
 
 mkTermAppl :: Isa.Term -> Isa.Term -> Isa.Term
 mkTermAppl fun arg = case (fun, arg) of 
-      (MixfixApp (Const uc _) [b@(Const bin _)] NotCont, 
-       Tuplex a@[_, _] NotCont) | new uc == uncurryOpS && 
+      (MixfixApp (Const uc _) [b@(Const bin _)] c, 
+       Tuplex a@[_, _] _) | new uc == uncurryOpS && 
                                      elem (new bin) [eq, conj, disj, impl]
-                                     -> MixfixApp b a NotCont
+                                     -> MixfixApp b a c
+      (MixfixApp (Const mp _) [f] _,
+       Tuplex [a, b] c) 
+          | new mp == "mapFst" -> Tuplex [mkTermAppl f a, b] c
+          | new mp == "mapSnd" -> Tuplex [a, mkTermAppl f b] c
+      (MixfixApp (MixfixApp (Const cmp _) [f] _) [g] _, _)
+          | new cmp == "comp" -> mkTermAppl f $ mkTermAppl g arg
+      (Const d _, MixfixApp (Const sm _) [_] _) 
+          | new d == "defOp" && new sm == someS -> true 
+          | new d == "option2bool" && new sm == someS -> true
       _ -> termAppl fun arg
 
 mkApp :: Env -> As.Term -> As.Term -> (FunType, Isa.Term)
