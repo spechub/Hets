@@ -1,0 +1,41 @@
+library Hofs
+
+logic HasCASL
+
+spec S = 
+type s;
+
+op f : s ->? s
+
+op g : s -> s
+
+op h : ?s -> s
+
+op i : ?s ->? s
+
+op h1 : (s -> s) ->? s
+op h2 : (s ->? s) ->? s
+op h3 : (?s ->? s) ->? s
+op h4 : (?s -> s) ->? s
+op h5 : ?(?s -> s) ->? s
+
+. g = f
+
+%% . g = h
+
+. f = i
+
+%[
+
+. h1 = h2
+. h1 = h3 
+. h1 = h4
+. h1 = h5
+. h2 = h3
+. h2 = h4
+. h2 = h5
+. h3 = h4
+. h3 = h5
+. h4 = h5
+
+]%

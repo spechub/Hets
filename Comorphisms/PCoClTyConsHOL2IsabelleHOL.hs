@@ -130,7 +130,7 @@ unitTyp :: Typ
 unitTyp = Type "unit" holType []
 -- types
 transType :: Type -> Typ
-transType = transFunType . funType 
+transType = transFunType . funType False False
 
 transFunType :: FunType -> Typ
 transFunType fty = case fty of
@@ -148,23 +148,6 @@ data FunType = UnitType | BoolType | FunType FunType FunType
              | ApplType Id [FunType] | TypeVar Id
                deriving Eq
 
-{-
-mkPairType :: FunType -> FunType -> FunType 
-mkPairType a b = case (a, b) of 
-    (PartialVal c, PartialVal d) -> PartialVal $ PairType c d
-    (PartialVal c, _) -> PartialVal $ PairType c b
-    (_, PartialVal d) -> PartialVal $ PairType a d
-    _ -> PairType a b
-
-makeFunType :: FunType -> FunType -> FunType 
-makeFunType a b = case a of 
-    PartialVal e@(FunType _ (PartialVal _)) -> FunType e b
-    PartialVal (FunType c d) -> FunType (FunType c (PartialVal d)) b
-    FunType _ (PartialVal _) -> FunType a b
-    FunType c d -> FunType (FunType c (PartialVal d)) b
-    _ -> FunType a b
--}
-
 isPartialVal :: FunType -> Bool
 isPartialVal t = case t of 
     PartialVal _ -> True
@@ -177,20 +160,23 @@ makePartialVal t = if isPartialVal t then t else
                          UnitType -> BoolType 
                          _ -> PartialVal t
 
-funType :: Type -> FunType
-funType t = case getTypeAppl t of
+funType :: Bool -> Bool -> Type -> FunType
+funType makeResPartial makeArgTotal t = case getTypeAppl t of
    (TypeName tid _ n, tys) -> 
        if n == 0 then 
-           case map funType tys of 
+           case tys of 
            [] | tid == unitTypeId -> UnitType
-           [ty] | tid == lazyTypeId -> makePartialVal ty
-           [t1, t2] | isArrow tid -> FunType (case t1 of 
-                 FunType t3 t4 -> FunType t3 $ makePartialVal t4
-                 PartialVal (FunType t3 t4) -> FunType t3 $ makePartialVal t4
-                 _ -> t1) $
-              (if isPartialArrow tid then makePartialVal else id) t2
-           ftys@(_ : _ : _) | isProductId tid -> foldl1 PairType ftys
-           ftys -> ApplType tid ftys
+           [ty] | tid == lazyTypeId -> if makeArgTotal then
+               funType True True ty else makePartialVal 
+                       $ funType makeResPartial makeArgTotal ty
+           [t1, t2] | isArrow tid -> 
+                FunType (funType True makeArgTotal t1) $
+              (if isPartialArrow tid || makeResPartial 
+               then makePartialVal else id)
+                 $ funType makeResPartial makeArgTotal t2
+           ftys@(_ : _ : _) | isProductId tid -> foldl1 PairType 
+                $ map (funType makeResPartial makeArgTotal) ftys
+           ftys -> ApplType tid $ map (funType True True) ftys
        else if null tys then TypeVar tid 
             else error "funType: no higher kinds" 
    _ -> error "funType: no type appl"
@@ -281,7 +267,7 @@ uncurryOp = conDouble uncurryOpS
 -- terms
 transTerm :: Env -> As.Term -> (FunType, Isa.Term)
 transTerm sign trm = case trm of
-    QualVar (VarDecl var t _ _) -> (funType t,  
+    QualVar (VarDecl var t _ _) -> (funType False False t,  
         Isa.Free (transVar var) $ transType t)
     QualOp _ (InstOpId opId _ _) ts@(TypeScheme _ ty _) _ 
       | opId == trueId -> (fTy, true)
@@ -298,7 +284,7 @@ transTerm sign trm = case trm of
       | opId == defId -> (fTy, defOp)
       | opId == whenElse -> (fTy, ifThenElseOp)
       | otherwise -> (fTy, conDouble $ transOpId sign opId ts)
-       where fTy = funType ty
+       where fTy = funType False False ty
              unCurry f = (fTy, termAppl uncurryOp $ con f) 
     QuantifiedTerm quan varDecls phi _ ->
         let quantify q gvd phi' = case gvd of
@@ -322,11 +308,8 @@ transTerm sign trm = case trm of
         let (bTy, bTrm) = transTerm sign body
         in (bTy, Isa.Let (map (transProgEq sign) peqs) bTrm)
     TupleTerm ts@(_ : _) _ -> 
-        foldl1 ( \ (s, p) (t, e) -> (PairType s t, {- case (s, t) of
-                  (PartialVal _, PartialVal _) -> binConst pairC p e
-                  (PartialVal _, _) -> binConst "pairL" p e
-                  (_, PartialVal _) -> binConst "pairR" p e
-                  _ -> -} Tuplex [p, e] NotCont)) $ map (transTerm sign) ts
+        foldl1 ( \ (s, p) (t, e) -> (PairType s t, Tuplex [p, e] NotCont)) 
+                   $ map (transTerm sign) ts
     TupleTerm [] _ -> (UnitType, unitOp)
     ApplTerm t1 t2 _ -> mkApp sign t1 t2 -- transAppl sign Nothing t1 t2
     _ -> error $ "PCoClTyConsHOL2IsabelleHOL.transTerm " ++ showPretty trm "\n"
@@ -341,6 +324,11 @@ data ConvFun = IdOp | CompFun ConvFun ConvFun | ConstNil | ConstTrue | SomeOp
              | LiftUnit FunType
              | LiftSome FunType
              | ResFun ConvFun | ArgFun ConvFun | Bool2option | Option2bool
+
+isNotIdOp :: ConvFun -> Bool
+isNotIdOp f = case f of
+    IdOp -> False
+    _ -> True
 
 mkCompFun :: ConvFun -> ConvFun -> ConvFun
 mkCompFun f1 f2 = case f1 of 
@@ -455,11 +443,25 @@ adjustTypes aTy rTy ty = case (aTy, ty) of
            (PairType arg1Ty arg2Ty,  
            mkCompFun (mkMapFun MapSnd a2) $ mkMapFun MapFst a1))
     (FunType a c, FunType b d) -> 
-       let (_, (aT, aC)) = adjustTypes b c a 
-           (_, (dT, dC)) = adjustTypes c rTy d
-       in ((False, IdOp), 
+       let ((aB, aF), (aT, aC)) = adjustTypes b c a 
+           ((cB, cF), (dT, dC)) = adjustTypes c rTy d
+       in if aB || cB || isNotIdOp aF || isNotIdOp cF 
+          then error "adjustTypes.FunTypes" else ((False, IdOp), 
            (FunType aT dT, mkCompFun (mkResFun dC) (mkArgFun aC)))
-    _ -> ((False, IdOp), (aTy, IdOp))
+    (TypeVar _, FunType b d) -> 
+       let r = makePartialVal d
+           (_, (dT, dC)) = adjustTypes r rTy d
+       in ((False, IdOp), 
+           (FunType b dT, mkResFun dC))
+    (TypeVar _, _) -> ((False, IdOp), (ty, IdOp))
+    (_,  TypeVar _) -> ((False, IdOp), (aTy, IdOp))
+    (ApplType i1 l1, ApplType i2 l2) | i1 == i2 && length l1 == length l2 
+        -> let l = zipWith (\ a b -> adjustTypes a rTy b) l1 l2 
+           in if or (map (fst . fst) l) || or 
+                 (map (isNotIdOp . snd . snd) l)  
+              then error "adjustTypes.ApplType"
+              else ((False, IdOp), (ApplType i1 $ map (fst . snd) l, IdOp))
+    _ -> error "adjustTypes"
 
 applConv :: ConvFun -> Isa.Term -> Isa.Term
 applConv cnv t = case cnv of
@@ -504,7 +506,7 @@ mkApp sg f arg =
                              $ applConv aConv aTrm)
          PartialVal (FunType a r) -> 
              let ((rTy, fConv), (_, aConv)) = adjustTypes a r aTy
-                 resTy = if rTy then makePartialVal r else r
+                 resTy = makePartialVal r
              in (resTy, 
                 mkTermAppl (termAppl (termAppl 
                               (unpackOp resTy) $ convFun fConv) fTrm)
