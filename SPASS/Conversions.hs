@@ -70,10 +70,10 @@ signToSPLogicalPart s =
                              map (\(t, i) -> 
                                       SPComplexTerm {symbol = SPCustomSymbol t,
                                                      arguments = 
-                                                         [SPSimpleTerm (SPCustomSymbol ('x' : (show i)))]}) (zip args [(1::Int)..]),
+                                                         [SPSimpleTerm (SPCustomSymbol ('X' : (show i)))]}) (zip args [(1::Int)..]),
                        termDeclTerm = SPComplexTerm {symbol = SPCustomSymbol ret, 
                                                      arguments = [SPComplexTerm {symbol = SPCustomSymbol fsym,
-                                                                                 arguments = map (SPSimpleTerm . SPCustomSymbol . ('x':) . show . snd) (zip args [(1::Int)..])}]}}
+                                                                                 arguments = map (SPSimpleTerm . SPCustomSymbol . ('X':) . show . snd) (zip args [(1::Int)..])}]}}
 
     predDecl = concatMap predDecls (Map.toList (predMap s))
 
