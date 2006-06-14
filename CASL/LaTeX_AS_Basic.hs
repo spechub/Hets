@@ -13,12 +13,12 @@ latex printing data types of 'BASIC_SPEC'
 module CASL.LaTeX_AS_Basic
     ( hc_sty_sig_item_keyword
     , optLatexQuMark
-    , toLatex
     ) where
 
 import CASL.AS_Basic_CASL
 import CASL.ToDoc
 import qualified Common.Doc as Doc
+import Common.DocUtils
 import Common.GlobalAnnotations
 import Common.LaTeX_AS_Annotation
 import Common.Keywords
@@ -48,14 +48,14 @@ instance PrintLaTeX f => PrintLaTeX (OP_ITEM f) where
     printLatex0 ga = Doc.toLatex ga . printOpItem (fromLatex ga)
 
 instance PrintLaTeX OP_TYPE where
-    printLatex0 = toLatex
+    printLatex0 = toOldLatex
 
 optLatexQuMark :: FunKind -> Doc
 optLatexQuMark Partial = hc_sty_axiom quMark
 optLatexQuMark Total = empty
 
 instance PrintLaTeX OP_HEAD where
-    printLatex0 = toLatex
+    printLatex0 = toOldLatex
 
 instance PrintLaTeX ARG_DECL where
     printLatex0 ga = Doc.toLatex ga . printArgDecl
@@ -67,57 +67,52 @@ instance PrintLaTeX f => PrintLaTeX (PRED_ITEM f) where
     printLatex0 ga = Doc.toLatex ga . printPredItem (fromLatex ga)
 
 instance PrintLaTeX PRED_TYPE where
-    printLatex0 = toLatex
+    printLatex0 = toOldLatex
 
 instance PrintLaTeX PRED_HEAD where
     printLatex0 ga = Doc.toLatex ga . printPredHead
 
 instance PrintLaTeX DATATYPE_DECL where
-    printLatex0 = toLatex
+    printLatex0 = toOldLatex
 
 instance PrintLaTeX ALTERNATIVE where
-    printLatex0 = toLatex
+    printLatex0 = toOldLatex
 
 instance PrintLaTeX COMPONENTS where
-    printLatex0 = toLatex
+    printLatex0 = toOldLatex
 
 instance PrintLaTeX VAR_DECL where
-    printLatex0 = toLatex
+    printLatex0 = toOldLatex
 
 instance PrintLaTeX f => PrintLaTeX (FORMULA f) where
     printLatex0 ga = Doc.toLatex ga . printFormula (fromLatex ga)
 
-toLatex :: Doc.Pretty a => GlobalAnnos -> a -> Doc
-toLatex ga = Doc.toLatex ga . Doc.pretty
-
 instance PrintLaTeX PRED_SYMB where
-    printLatex0 = toLatex
+    printLatex0 = toOldLatex
 
 instance PrintLaTeX f => PrintLaTeX (TERM f) where
     printLatex0 ga = Doc.toLatex ga . printTerm (fromLatex ga)
 
 instance PrintLaTeX OP_SYMB where
-    printLatex0 = toLatex
+    printLatex0 = toOldLatex
 
 instance PrintLaTeX SYMB_ITEMS where
-    printLatex0 = toLatex
+    printLatex0 = toOldLatex
 
 instance PrintLaTeX SYMB_MAP_ITEMS where
-    printLatex0 = toLatex
+    printLatex0 = toOldLatex
 
 instance PrintLaTeX SYMB_KIND where
-    printLatex0 = toLatex
+    printLatex0 = toOldLatex
 
 instance PrintLaTeX SYMB where
-    printLatex0 = toLatex
+    printLatex0 = toOldLatex
 
 instance PrintLaTeX TYPE where
-    printLatex0 = toLatex
+    printLatex0 = toOldLatex
 
 instance PrintLaTeX SYMB_OR_MAP where
-    printLatex0 = toLatex
-
-
+    printLatex0 = toOldLatex
 
 hc_sty_sig_item_keyword :: GlobalAnnos -> String -> Doc
 hc_sty_sig_item_keyword ga str =

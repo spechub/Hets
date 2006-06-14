@@ -13,22 +13,18 @@ latex abstract syntax of CSP-CASL
 module CspCASL.LaTeX_AS_CSP_CASL where
 
 import CspCASL.AS_CSP_CASL
-import CspCASL.Print_AS_CSP_CASL
-import Common.Lib.Pretty
+import CspCASL.Print_AS_CSP_CASL()
 import Common.PrintLaTeX
-import Common.LaTeX_utils
-import CASL.LaTeX_AS_Basic 
-
-
+import Common.DocUtils
 
 instance PrintLaTeX C3PO where
-    printLatex0 = toLatex
+    printLatex0 = toOldLatex
 
 instance PrintLaTeX NAMED_CSP_CASL_C_SPEC where
-    printLatex0 = toLatex
+    printLatex0 = toOldLatex
 
 instance PrintLaTeX CSP_CASL_C_SPEC where
-    printLatex0 = toLatex
+    printLatex0 = toOldLatex
 
 instance PrintLaTeX Basic_CSP_CASL_C_SPEC where
-    printLatex0 = toLatex
+    printLatex0 = toOldLatex

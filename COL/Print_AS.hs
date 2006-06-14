@@ -19,11 +19,10 @@ import Common.PPUtils
 import COL.AS_COL
 import COL.COLSign
 import Common.Doc
-import CASL.Print_AS_Basic
 import Common.DocUtils
 
 instance PrettyPrint COL_SIG_ITEM where
-    printText0 = CASL.Print_AS_Basic.toText
+    printText0 = toOldText
 
 instance Pretty COL_SIG_ITEM where
     pretty = printCOL_SIG_ITEM
@@ -36,7 +35,7 @@ printCOL_SIG_ITEM csi = case csi of
         semiAnnos (printPair idDoc (printMaybe pretty)) ls
 
 instance PrettyPrint COLSign where
-    printText0 = CASL.Print_AS_Basic.toText
+    printText0 = toOldText
 
 instance Pretty COLSign where
     pretty = printCOLSign

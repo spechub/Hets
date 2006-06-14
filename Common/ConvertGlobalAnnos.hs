@@ -1,4 +1,3 @@
-
 {- |
 Module      :  $Header$
 Copyright   :  (c) Carsten Fischer and Uni Bremen 2003
@@ -9,7 +8,6 @@ Stability   :  provisional
 Portability :  portable
 
 convert global annotations to a list of annotations
-
 -}
 
 module Common.ConvertGlobalAnnos where
@@ -24,10 +22,10 @@ import Common.PrettyPrint
 import Common.Result
 import Common.Print_AS_Annotation()
 import Common.Doc
-import CASL.Print_AS_Basic
+import Common.DocUtils
 
 instance PrettyPrint GlobalAnnos where
-    printText0  = CASL.Print_AS_Basic.toText
+    printText0 = toOldText
 
 instance Pretty GlobalAnnos where
     pretty = printGlobalAnnos

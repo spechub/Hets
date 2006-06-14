@@ -19,7 +19,7 @@ import Common.PrettyPrint
 import Common.PPUtils
 import Common.AS_Annotation
 import Common.Doc
-import CASL.Print_AS_Basic
+import Common.DocUtils
 import CASL.Sign
 import Modal.AS_Modal
 import Modal.ModalSign
@@ -34,7 +34,7 @@ printFormulaOfModalSign f =
                           $ map (printAnnoted pretty) tf
 
 instance PrettyPrint M_BASIC_ITEM where
-    printText0 ga = Common.Doc.toText ga . pretty
+    printText0 = toOldText
 
 instance Pretty M_BASIC_ITEM where
     pretty (Simple_mod_decl is fs _) =
@@ -45,14 +45,14 @@ instance Pretty M_BASIC_ITEM where
             , space <> specBraces (semiAnnos pretty fs)]
 
 instance PrettyPrint RIGOR where
-    printText0 = CASL.Print_AS_Basic.toText
+    printText0 = toOldText
 
 instance Pretty RIGOR where
     pretty Rigid = keyword rigidS
     pretty Flexible = keyword flexibleS
 
 instance PrettyPrint M_SIG_ITEM where
-    printText0 = CASL.Print_AS_Basic.toText
+    printText0 = toOldText
 
 instance Pretty M_SIG_ITEM where
     pretty (Rigid_op_items r ls _) =
@@ -63,7 +63,7 @@ instance Pretty M_SIG_ITEM where
              space <> semiAnnos pretty ls]
 
 instance PrettyPrint M_FORMULA where
-    printText0 = CASL.Print_AS_Basic.toText
+    printText0 = toOldText
 
 instance Pretty M_FORMULA where
     pretty (BoxOrDiamond b t f _) =
@@ -76,7 +76,7 @@ instance Pretty M_FORMULA where
                : [condParensInnerF (printFormula pretty) parens f]
 
 instance PrettyPrint MODALITY where
-    printText0 = CASL.Print_AS_Basic.toText
+    printText0 = toOldText
 
 instance Pretty MODALITY where
     pretty (Simple_mod ident) =
@@ -85,7 +85,7 @@ instance Pretty MODALITY where
     pretty (Term_mod t) = pretty t
 
 instance PrettyPrint ModalSign where
-    printText0 = CASL.Print_AS_Basic.toText
+    printText0 = toOldText
 
 instance Pretty ModalSign where
     pretty = printModalSign

@@ -16,10 +16,10 @@ import COL.AS_COL
 import COL.COLSign
 import COL.Print_AS()
 import Common.PrettyPrint
-import CASL.LaTeX_AS_Basic 
+import Common.DocUtils
 
 instance PrintLaTeX COL_SIG_ITEM where 
-    printLatex0 = toLatex
+    printLatex0 = toOldLatex
 
 instance PrintLaTeX COLSign where 
-    printLatex0 = toLatex
+    printLatex0 = toOldLatex

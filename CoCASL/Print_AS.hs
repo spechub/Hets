@@ -15,17 +15,19 @@ module CoCASL.Print_AS where
 import Common.Keywords
 import Common.PrettyPrint
 import Common.PPUtils
-import CASL.Print_AS_Basic
-import CoCASL.AS_CoCASL
-import CoCASL.CoCASLSign
 import Common.AS_Annotation
-import CASL.AS_Basic_CASL
 import Common.Doc
-import CASL.ToDoc
+import Common.DocUtils
 import Common.Id
 
+import CASL.AS_Basic_CASL
+import CASL.ToDoc
+
+import CoCASL.AS_CoCASL
+import CoCASL.CoCASLSign
+
 instance PrettyPrint C_BASIC_ITEM where
-    printText0 = CASL.Print_AS_Basic.toText
+    printText0 = toOldText
 
 instance Pretty C_BASIC_ITEM where
     pretty = printC_BASIC_ITEM
@@ -42,7 +44,7 @@ printC_BASIC_ITEM cb = case cb of
            (specBraces $ vcat $ map pretty l)
 
 instance PrettyPrint C_SIG_ITEM where
-    printText0 = CASL.Print_AS_Basic.toText
+    printText0 = toOldText
 
 instance Pretty C_SIG_ITEM where
     pretty = printC_SIG_ITEM
@@ -53,7 +55,7 @@ printC_SIG_ITEM (CoDatatype_items l _) =
      (fsep $ punctuate semi $ map (printAnnoted printCODATATYPE_DECL) l)
 
 instance PrettyPrint CODATATYPE_DECL where
-    printText0 = CASL.Print_AS_Basic.toText
+    printText0 = toOldText
 
 instance Pretty CODATATYPE_DECL where
     pretty = printCODATATYPE_DECL
@@ -65,7 +67,7 @@ printCODATATYPE_DECL (CoDatatype_decl s a _) = case a of
                       map (printAnnoted printCOALTERNATIVE) a]
 
 instance PrettyPrint COALTERNATIVE where
-    printText0 = CASL.Print_AS_Basic.toText
+    printText0 = toOldText
 
 instance Pretty COALTERNATIVE where
     pretty = printCOALTERNATIVE
@@ -89,7 +91,7 @@ printCOALTERNATIVE coal = case coal of
       
 
 instance PrettyPrint COCOMPONENTS where
-    printText0 = CASL.Print_AS_Basic.toText
+    printText0 = toOldText
 
 instance Pretty COCOMPONENTS where
     pretty = printCOCOMPONENTS
@@ -102,7 +104,7 @@ printCOCOMPONENTS (CoSelect l s _) =
     <> printOpType s
 
 instance PrettyPrint C_FORMULA where
-    printText0 = CASL.Print_AS_Basic.toText
+    printText0 = toOldText
 
 instance Pretty C_FORMULA where
     pretty = printC_FORMULA
@@ -123,18 +125,18 @@ printC_FORMULA cf = case cf of
     
 
 instance PrettyPrint MODALITY where
-    printText0 = CASL.Print_AS_Basic.toText
+    printText0 = toOldText
 
 instance Pretty MODALITY where
     pretty = printMODALITY
 
 printMODALITY :: MODALITY -> Doc
-printMODALITY mod = case mod of
+printMODALITY md = case md of
     Simple_mod ident -> sidDoc ident
     Term_mod t -> printTerm printC_FORMULA t
 
 instance PrettyPrint CoCASLSign where
-    printText0 = CASL.Print_AS_Basic.toText
+    printText0 = toOldText
 
 instance Pretty CoCASLSign where
     pretty = printCoCASLSign

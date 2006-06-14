@@ -21,8 +21,6 @@ module OWL_DL.Print where
 
 import Common.PrettyPrint
 import Common.Doc
-import CASL.Print_AS_Basic
-import CASL.LaTeX_AS_Basic
 import Common.DocUtils
 
 import OWL_DL.Sign
@@ -32,10 +30,10 @@ import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 
 instance PrintLaTeX Sign where
-  printLatex0 = CASL.LaTeX_AS_Basic.toLatex
+  printLatex0 = toOldLatex
 
 instance PrettyPrint Sign where
-  printText0 = CASL.Print_AS_Basic.toText
+  printText0 = toOldText
 
 instance Pretty Sign where
     pretty = printSign
@@ -53,7 +51,7 @@ printSign (Sign _ p2 p3 p4 p5 p6 _ p8 p9 p10) =
     empty
 
 instance PrettyPrint URIreference where
-    printText0 = CASL.Print_AS_Basic.toText 
+    printText0 = toOldText 
 
 instance Pretty URIreference where
     pretty = printURIreference
@@ -67,7 +65,7 @@ printURIreference (QN prefix localpart uri)
     | otherwise =   text $ show ( prefix ++ ":" ++ localpart)
 
 instance PrettyPrint Namespace where
-    printText0 =  CASL.Print_AS_Basic.toText
+    printText0 =  toOldText
 
 instance Pretty Namespace where
     pretty = printNamespace
@@ -79,10 +77,10 @@ printNamespace nsMap =
              pp (s1,s2) = text s1 <> defn <> text s2
 
 instance PrintLaTeX Sentence where
-    printLatex0 = CASL.LaTeX_AS_Basic.toLatex
+    printLatex0 = toOldLatex
 
 instance PrettyPrint Sentence where
-    printText0 = CASL.Print_AS_Basic.toText
+    printText0 = toOldText
 
 instance Pretty Sentence where
     pretty = printSentence
@@ -94,7 +92,7 @@ printSentence sent = case sent of
 
 -- not necessary
 instance PrettyPrint Ontology where
-    printText0 = CASL.Print_AS_Basic.toText
+    printText0 = toOldText
 
 instance Pretty Ontology where
     pretty = printOntology
@@ -110,10 +108,10 @@ printOntology (Ontology maybeID directives ns) =
     printNamespace ns
 
 instance PrintLaTeX Ontology where
-    printLatex0 = CASL.LaTeX_AS_Basic.toLatex
+    printLatex0 = toOldLatex
 
 instance PrettyPrint Directive where
-    printText0 = CASL.Print_AS_Basic.toText
+    printText0 = toOldText
 
 instance Pretty Directive where
     pretty = printDirective
@@ -222,7 +220,7 @@ printAxiom axiom = case axiom of
     u -> text $ show u
     
 instance PrettyPrint Axiom where
-    printText0 = CASL.Print_AS_Basic.toText
+    printText0 = toOldText
 	      	
 instance Pretty SignAxiom where	 
     pretty = printSignAxiom
@@ -275,10 +273,10 @@ printSignAxiom signAxiom = case signAxiom of
       parens (printDescription 0 iID desc <+> printURIreference iID)    
 
 instance PrettyPrint SignAxiom where
-    printText0 = CASL.Print_AS_Basic.toText
+    printText0 = toOldText
              
 instance PrettyPrint RDomain where
-    printText0 = CASL.Print_AS_Basic.toText
+    printText0 = toOldText
 
 instance Pretty RDomain where
     pretty = printRDomain
@@ -290,7 +288,7 @@ printRDomain (RDomain desc) =
       _      -> printDescription 0 emptyQN desc  -- ToDo: level hierachie
 
 instance PrettyPrint RRange where
-    printText0 = CASL.Print_AS_Basic.toText
+    printText0 = toOldText
 
 instance Pretty RRange where 
     pretty = printRRange
@@ -301,7 +299,7 @@ printRRange rRange = case rRange of
     RDRange dataRange -> printDataRange dataRange
 
 instance PrettyPrint DataRange where
-    printText0 = CASL.Print_AS_Basic.toText
+    printText0 = toOldText
 
 instance Pretty DataRange where               
     pretty = printDataRange
@@ -332,7 +330,7 @@ printDataRange dr = case dr of
         allEqTypedLit _ = False
 
 instance PrettyPrint DataLiteral where
-    printText0 = CASL.Print_AS_Basic.toText
+    printText0 = toOldText
 
 instance Pretty DataLiteral where
     pretty = printDataLiteral
@@ -347,7 +345,7 @@ printDataLiteral dl = case dl of
 
 -- default handler of restriction
 instance PrettyPrint Restriction where
-    printText0 = CASL.Print_AS_Basic.toText
+    printText0 = toOldText
 
 instance Pretty Restriction where
     pretty = printRestriction
@@ -418,7 +416,7 @@ printRestriction2 origVar tmpVar ipID (h:r) = case h of
    
 
 instance PrettyPrint Description where
-    printText0 = CASL.Print_AS_Basic.toText
+    printText0 = toOldText
 
 instance Pretty Description where
     pretty = printDescription 0 emptyQN
@@ -535,7 +533,7 @@ printCard level pid card = case card of
 	text ")" 
 
 instance PrettyPrint Fact where
-    printText0 = CASL.Print_AS_Basic.toText
+    printText0 = toOldText
 
 instance Pretty Fact where
     pretty = printFact
@@ -607,7 +605,7 @@ printAnonymIndividual iid' ipID typesI valuesI level=
                          valuesI (level+1)))))
 
 instance PrettyPrint Individual where
-   printText0 = CASL.Print_AS_Basic.toText
+   printText0 = toOldText
            
 foldSetToDoc2 :: (Pretty a) => Set.Set a -> Doc
 foldSetToDoc2 = printSet id (vcat . punctuate comma)

@@ -14,7 +14,6 @@ pretty printing data types of 'BASIC_SPEC'
 
 module CASL.Print_AS_Basic where
 
-
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Print_AS_Annotation
@@ -22,6 +21,7 @@ import Common.Keywords
 import Common.Lib.Pretty
 import Common.PrettyPrint
 import qualified Common.Doc as Doc
+import Common.DocUtils
 
 import CASL.AS_Basic_CASL
 import CASL.ToDoc
@@ -61,10 +61,10 @@ optQuMark Partial = text quMark
 optQuMark Total = empty
 
 instance PrettyPrint OP_TYPE where
-    printText0 = toText
+    printText0 = toOldText
 
 instance PrettyPrint OP_HEAD where
-    printText0 = toText
+    printText0 = toOldText
 
 instance PrettyPrint ARG_DECL where
     printText0 ga = Doc.toText ga . printArgDecl
@@ -76,26 +76,22 @@ instance PrettyPrint f => PrettyPrint (PRED_ITEM f) where
     printText0 ga = Doc.toText ga . printPredItem (fromText ga)
 
 instance PrettyPrint PRED_TYPE where
-    printText0 = toText
+    printText0 = toOldText
 
 instance PrettyPrint PRED_HEAD where
     printText0 ga = Doc.toText ga . printPredHead
 
 instance PrettyPrint DATATYPE_DECL where
-    printText0 = toText
+    printText0 = toOldText
 
 instance PrettyPrint ALTERNATIVE where
-    printText0 = toText
+    printText0 = toOldText
 
 instance PrettyPrint COMPONENTS where
-    printText0 = toText
-
-
-toText :: Doc.Pretty a => GlobalAnnos -> a -> Doc
-toText ga = Doc.toText ga . Doc.pretty
+    printText0 = toOldText
 
 instance PrettyPrint VAR_DECL where
-    printText0 = toText
+    printText0 = toOldText
 
 printFORMULA :: PrettyPrint f => GlobalAnnos -> FORMULA f -> Doc
 printFORMULA ga = Doc.toText ga . printFormula (fromText ga)
@@ -111,30 +107,30 @@ instance PrettyPrint f => PrettyPrint (FORMULA f) where
     printText0 = printFORMULA
 
 instance PrettyPrint PRED_SYMB where
-    printText0 = toText
+    printText0 = toOldText
 
 instance PrettyPrint f => PrettyPrint (TERM f) where
     printText0 ga = Doc.toText ga . printTerm (fromText ga)
 
 instance PrettyPrint OP_SYMB where
-    printText0 = toText
+    printText0 = toOldText
 
 instance PrettyPrint SYMB_ITEMS where
-    printText0 = toText
+    printText0 = toOldText
 
 instance PrettyPrint SYMB_MAP_ITEMS where
-    printText0 = toText
+    printText0 = toOldText
 
 instance PrettyPrint SYMB_KIND where
-    printText0 = toText
+    printText0 = toOldText
 
 instance PrettyPrint SYMB where
-    printText0 = toText
+    printText0 = toOldText
 
 instance PrettyPrint TYPE where
-    printText0 = toText
+    printText0 = toOldText
 
 instance PrettyPrint SYMB_OR_MAP where
-    printText0 = toText
+    printText0 = toOldText
 
 
