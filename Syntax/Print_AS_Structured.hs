@@ -12,29 +12,16 @@ Printing the Structured part of hetrogenous specifications.
 
 module Syntax.Print_AS_Structured where
 
---import Common.Lib.Pretty
+import Common.Lib.Pretty
 import Common.PrettyPrint
 import Common.PPUtils
 import Common.Keywords
-import Common.Doc hiding (toText,toLatex)
 
-import CASL.Print_AS_Basic
 import Logic.Grothendieck()
 
 import Syntax.AS_Structured
 import Common.AS_Annotation
 import Common.GlobalAnnotations
-
-instance Pretty SPEC where
-    pretty = printSPEC
-
-printSPEC :: (G_basic_spec -> Doc)
-   -> (G_symb_map_items_list -> Doc)
-   -> (G_symb_items_list -> Doc)
-   -> SPEC -> Doc
-printSPEC fGBS fGSMIL fGSIL spec = case spec of
-    Basic_spec aa -> fGBS aa
-    Translation aa ab ->  
 
 instance PrettyPrint SPEC where
     --- This implementation doesn't use the grouping information
