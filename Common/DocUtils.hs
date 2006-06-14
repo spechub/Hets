@@ -12,9 +12,17 @@ some instances for the class Pretty
 
 module Common.DocUtils where
 
-import Common.Doc
+import Common.Doc 
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Pretty as Pretty
+import Common.GlobalAnnotations
+
+toOldText :: Pretty a => GlobalAnnos -> a -> Pretty.Doc
+toOldText ga = toText ga . pretty
+
+toOldLatex :: Pretty a => GlobalAnnos -> a -> Pretty.Doc
+toOldLatex ga = toLatex ga . pretty
 
 instance (Pretty a, Pretty b) => Pretty (Either a b) where
     pretty = printEither pretty pretty

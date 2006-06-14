@@ -24,24 +24,26 @@ module Haskell.Logic_Haskell
      RawSymbol) where
 
 import Common.PrettyPrint
-import Common.Lib.Pretty
+--import Common.Lib.Pretty
 import Common.AS_Annotation
 import Common.DefaultMorphism
 
 import Haskell.TiPropATC()
 import Haskell.HatParser
 import Haskell.HatAna
+import Common.DocUtils
+import Common.Doc
 
 import Logic.Logic
 
 instance PrintLaTeX HsDecls where
-  printLatex0 = printText0
+  printLatex0 = toOldLatex
 
 instance PrintLaTeX Sign where
-     printLatex0 = printText0
+     printLatex0 = toOldLatex
 
 instance PrintLaTeX (TiDecl PNT) where
-     printLatex0 = printText0
+     printLatex0 = toOldLatex
 
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances
@@ -85,9 +87,9 @@ type RawSymbol = ()
 instance Sentences Haskell (TiDecl PNT) () Sign HaskellMorphism Symbol where
     map_sen Haskell _m s = return s
     print_named Haskell ga NamedSen{senName = lab, sentence = sen} =
-        printText0 ga sen <>
+        toText ga (pretty sen <>
         if null lab then empty
-        else space <> text "{-" <+> text lab <+> text "-}"
+        else space <> text "{-" <+> text lab <+> text "-}")
     provers Haskell = []
     cons_checkers Haskell = []
 

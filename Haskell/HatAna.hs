@@ -21,9 +21,11 @@ import Common.Id(Pos(..),Range(..))
 import Common.Result
 import Common.GlobalAnnotations
 import Common.PrettyPrint
-import Common.Lib.Pretty
+--import Common.Lib.Pretty
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
+import Common.DocUtils
+import Common.Doc
 
 import Data.List
 import Data.Char
@@ -69,31 +71,40 @@ instance Eq (TiDecl PNT) where
 instance Ord (TiDecl PNT) where
     s1 <= s2 = show s1 <= show s2
 
+instance Pretty (TiDecl PNT) where
+    pretty = text . pp
+
 instance PrettyPrint (TiDecl PNT) where
-     printText0 _ = text . pp
+     printText0 = toOldText 
+
+instance Pretty Sign where
+    pretty = printSign
+
+printSign :: Sign -> Doc
+printSign Sign { instances = is, types = ts,
+                        values = vs, fixities = fs, scope = sc } =
+    text "{-" $+$ (if null is then empty else
+              text "instances:" $+$
+                   vcat (map (text . pp . fst) is)) $+$
+    (if Map.null ts then empty else
+              text "\ntypes:" $+$
+                   vcat (map (text . pp)
+                         [ a :>: b | (a, b) <- Map.toList ts ])) $+$
+    (if Map.null vs then empty else
+              text "\nvalues:" $+$
+                   vcat (map (text . pp)
+                         [ a :>: b | (a, b) <- Map.toList vs ])) $+$
+    (if Map.null fs then empty else
+              text "\nfixities:" $+$
+                   vcat [ text (pp b) <+> text (pp a)
+                              | (a, b) <- Map.toList fs ]) $+$
+    text "\nscope:" $+$
+          text (pp sc) $+$
+          text "-}" $+$
+          text "module Dummy where"
 
 instance PrettyPrint Sign where
-    printText0 _ Sign { instances = is, types = ts,
-                        values = vs, fixities = fs, scope = sc }
-        = text "{-" $$ (if null is then empty else
-              text "instances:" $$
-                   vcat (map (text . pp . fst) is)) $$
-          (if Map.null ts then empty else
-              text "\ntypes:" $$
-                   vcat (map (text . pp)
-                         [ a :>: b | (a, b) <- Map.toList ts ])) $$
-          (if Map.null vs then empty else
-              text "\nvalues:" $$
-                   vcat (map (text . pp)
-                         [ a :>: b | (a, b) <- Map.toList vs ])) $$
-          (if Map.null fs then empty else
-              text "\nfixities:" $$
-                   vcat [ text (pp b) <+> text (pp a)
-                              | (a, b) <- Map.toList fs ]) $$
-          text "\nscope:" $$
-          text (pp sc) $$
-          text "-}" $$
-          text "module Dummy where"
+    printText0 = toOldText
 
 extendSign :: Sign -> [Instance PNT]
             -> [TAssump PNT]

@@ -29,7 +29,7 @@ import Common.AS_Annotation
 import Common.PrettyPrint
 
 import qualified Common.Lib.Map as Map
-import Common.Doc hiding (toText,toLatex,bar)
+import Common.Doc hiding (bar)
 import CASL.Print_AS_Basic
 import CASL.LaTeX_AS_Basic
 import Common.DocUtils
@@ -359,7 +359,7 @@ printAlt (VName _ altV) = case altV of
             if i == maxPrio then empty else text (show i)
 
 instance PrettyPrint Sign where
-  printText0 = toText
+  printText0 = toOldText
     
 instance Pretty Sign where
     pretty = printSign
@@ -438,13 +438,13 @@ printSign sig =
                 ++ proof
 
 instance PrintLaTeX Sign where
-    printLatex0 = toLatex
+    printLatex0 = toOldLatex
 
 instance PrintLaTeX Sentence where
-  printLatex0 = toLatex
+  printLatex0 = toOldLatex
 
 instance PrettyPrint Sentence where
-      printText0 = toText 
+      printText0 = toOldText 
 
 instance Pretty Sentence where
     pretty = printSentence

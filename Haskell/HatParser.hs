@@ -54,13 +54,23 @@ import WorkModule as P(mkWM, WorkModuleI)
 import Haskell.Wrapper
 import Text.ParserCombinators.Parsec
 import Common.PrettyPrint
-import Common.Lib.Pretty
+--import Common.Lib.Pretty
 import Common.Result
 import Data.Char
+import Common.DocUtils
+import Common.Doc
+
 
 instance PrettyPrint HsDecls where
-     printText0 _ ds = 
-         vcat (map (text . ((++) "\n") . pp) $ hsDecls ds)
+     printText0 = toOldText
+
+instance Pretty HsDecls where
+    pretty = printHsDecls
+
+printHsDecls :: HsDecls -> Doc
+printHsDecls ds =
+    vcat (map (text . ((++) "\n") . pp) $ hsDecls ds)
+
 
 data HsDecls = HsDecls { hsDecls :: [HsDeclI (SN HsName)] } deriving (Show, Eq)
 
