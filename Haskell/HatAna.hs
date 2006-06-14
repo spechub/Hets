@@ -21,7 +21,6 @@ import Common.Id(Pos(..),Range(..))
 import Common.Result
 import Common.GlobalAnnotations
 import Common.PrettyPrint
---import Common.Lib.Pretty
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.DocUtils

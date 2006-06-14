@@ -24,7 +24,6 @@ module Haskell.Logic_Haskell
      RawSymbol) where
 
 import Common.PrettyPrint
---import Common.Lib.Pretty
 import Common.AS_Annotation
 import Common.DefaultMorphism
 

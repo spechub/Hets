@@ -54,7 +54,6 @@ import WorkModule as P(mkWM, WorkModuleI)
 import Haskell.Wrapper
 import Text.ParserCombinators.Parsec
 import Common.PrettyPrint
---import Common.Lib.Pretty
 import Common.Result
 import Data.Char
 import Common.DocUtils
