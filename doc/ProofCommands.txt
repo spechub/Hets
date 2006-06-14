@@ -1,0 +1,35 @@
+Language for the Hets command line interface
+
+
+
+SCRIPT ::= COMMAND*
+COMMAND ::= 
+       -- commands for development graph mode
+            use PATH            -- open a file with a HetCASL library
+                                -- this will compute a development graph
+                                -- and a list of open proof obligations
+          | dg DG-COMMAND GOAL* -- apply a proof step of the dg calculus
+                                -- if no goal is specified, all goals are tried
+          | show                -- display list of open dg goals
+       -- commands for theory mode
+          | show                -- display list of theory goals
+          | show theory         -- show current theory and proof goals
+          | translate COMORPHISM -- translate theory goals along comorphism
+          | start PROVER        -- start a prover
+          | <prover-specific commands>  -- e.g. Isabelle, SPASS
+
+DG-COMMAND ::= auto        -- automatic tactic
+             | globSubsume -- global subsumption
+             | globDecomp  -- global decomposition
+             | locInfer    -- local inference
+             | locDecomp   -- local decomposition
+             | comp        -- composition
+             | compNew     -- composition with speculation of new egdes
+             | hideThm     -- Hide-Theorem-Shift
+             | thmHide     -- Theorem-Hide-Shift
+             | basicInfer  -- prove at a particular node,
+                           -- i.e. start local proving in a theory
+
+GOAL ::= DIGIT*                 -- specify goals by their number
+COMORPHISM ::= ID ; ... ; ID    -- composite of basic comorphisms
+PROVER ::= ID                   -- name of prover
