@@ -130,7 +130,7 @@ unitTyp :: Typ
 unitTyp = Type "unit" holType []
 -- types
 transType :: Type -> Typ
-transType = transFunType . funType False False
+transType = transFunType . funType False
 
 transFunType :: FunType -> Typ
 transFunType fty = case fty of
@@ -157,26 +157,27 @@ isPartialVal t = case t of
 makePartialVal :: FunType -> FunType 
 makePartialVal t = if isPartialVal t then t else 
                        case t of 
-                         UnitType -> BoolType 
+                         UnitType -> BoolType
                          _ -> PartialVal t
 
-funType :: Bool -> Bool -> Type -> FunType
-funType makeResPartial makeArgTotal t = case getTypeAppl t of
+funType :: Bool -> Type -> FunType
+funType makeResPartial t = case getTypeAppl t of
    (TypeName tid _ n, tys) -> 
        if n == 0 then 
            case tys of 
            [] | tid == unitTypeId -> UnitType
-           [ty] | tid == lazyTypeId -> if makeArgTotal then
-               funType True True ty else makePartialVal 
-                       $ funType makeResPartial makeArgTotal ty
-           [t1, t2] | isArrow tid -> 
-                FunType (funType True makeArgTotal t1) $
+           [ty] | tid == lazyTypeId -> makePartialVal 
+                       $ funType makeResPartial ty
+           [t1, t2] | isArrow tid -> FunType 
+                (case funType True t1 of 
+                   FunType t3 t4 -> FunType (makePartialVal t3) t4
+                   ft -> ft) $
               (if isPartialArrow tid || makeResPartial 
                then makePartialVal else id)
-                 $ funType makeResPartial makeArgTotal t2
+                 $ funType makeResPartial t2
            ftys@(_ : _ : _) | isProductId tid -> foldl1 PairType 
-                $ map (funType makeResPartial makeArgTotal) ftys
-           ftys -> ApplType tid $ map (funType True True) ftys
+                $ map (funType True) ftys
+           ftys -> ApplType tid $ map (funType True) ftys
        else if null tys then TypeVar tid 
             else error "funType: no higher kinds" 
    _ -> error "funType: no type appl"
@@ -267,7 +268,7 @@ uncurryOp = conDouble uncurryOpS
 -- terms
 transTerm :: Env -> As.Term -> (FunType, Isa.Term)
 transTerm sign trm = case trm of
-    QualVar (VarDecl var t _ _) -> (funType False False t,  
+    QualVar (VarDecl var t _ _) -> (funType False t,  
         Isa.Free (transVar var) $ transType t)
     QualOp _ (InstOpId opId _ _) ts@(TypeScheme _ ty _) _ 
       | opId == trueId -> (fTy, true)
@@ -284,7 +285,7 @@ transTerm sign trm = case trm of
       | opId == defId -> (fTy, defOp)
       | opId == whenElse -> (fTy, ifThenElseOp)
       | otherwise -> (fTy, conDouble $ transOpId sign opId ts)
-       where fTy = funType False False ty
+       where fTy = funType False ty
              unCurry f = (fTy, termAppl uncurryOp $ con f) 
     QuantifiedTerm quan varDecls phi _ ->
         let quantify q gvd phi' = case gvd of
@@ -399,7 +400,7 @@ option2bool = conDouble "option2bool"
 compFun = conDouble "comp"
 constNil = conDouble "constNil"
 constTrue = conDouble "constTrue"
-argFunOp = conDouble "argFunOp"
+argFunOp = conDouble "flipComp"
 liftUnit2unit = conDouble "liftUnit2unit"
 liftUnit2bool = conDouble "liftUnit2bool"
 liftUnit2option = conDouble "liftUnit2option"
@@ -443,16 +444,21 @@ adjustTypes aTy rTy ty = case (aTy, ty) of
            (PairType arg1Ty arg2Ty,  
            mkCompFun (mkMapFun MapSnd a2) $ mkMapFun MapFst a1))
     (FunType a c, FunType b d) -> 
-       let ((aB, aF), (aT, aC)) = adjustTypes b c a 
+       let ((_, aF), (aT, aC)) = adjustTypes b c a 
            ((cB, cF), (dT, dC)) = adjustTypes c rTy d
-       in if aB || cB || isNotIdOp aF || isNotIdOp cF 
+       in if cB || isNotIdOp cF 
           then error "adjustTypes.FunTypes" else ((False, IdOp), 
-           (FunType aT dT, mkCompFun (mkResFun dC) (mkArgFun aC)))
+           (FunType aT dT, 
+                    mkCompFun aF $ mkCompFun (mkResFun dC) $ mkArgFun aC))
     (TypeVar _, FunType b d) -> 
        let r = makePartialVal d
-           (_, (dT, dC)) = adjustTypes r rTy d
-       in ((False, IdOp), 
-           (FunType b dT, mkResFun dC))
+           a = makePartialVal b
+           ((cB, cF), (dT, dC)) = adjustTypes r rTy d
+           ((_, aF), (aT, aC)) = adjustTypes b r a 
+       in if cB || isNotIdOp cF 
+           then error "adjustTypes.TypeVar-FunTypes" else ((False, IdOp),
+           (FunType aT dT, mkCompFun aF $ 
+                    mkCompFun (mkResFun dC) $ mkArgFun aC))
     (TypeVar _, _) -> ((False, IdOp), (ty, IdOp))
     (_,  TypeVar _) -> ((False, IdOp), (aTy, IdOp))
     (ApplType i1 l1, ApplType i2 l2) | i1 == i2 && length l1 == length l2 
@@ -505,7 +511,7 @@ mkApp sg f arg =
                 mkTermAppl (applConv fConv fTrm)
                              $ applConv aConv aTrm)
          PartialVal (FunType a r) -> 
-             let ((rTy, fConv), (_, aConv)) = adjustTypes a r aTy
+             let ((_, fConv), (_, aConv)) = adjustTypes a r aTy
                  resTy = makePartialVal r
              in (resTy, 
                 mkTermAppl (termAppl (termAppl 
