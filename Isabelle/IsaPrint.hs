@@ -30,12 +30,9 @@ import Common.PrettyPrint
 
 import qualified Common.Lib.Map as Map
 import Common.Doc hiding (bar)
-import CASL.Print_AS_Basic
-import CASL.LaTeX_AS_Basic
 import Common.DocUtils
 import Data.Char
 import Data.List
-
 
 printIsaTheory :: String -> String -> Sign -> [Named Sentence] -> Doc
 printIsaTheory tn _ sign sens = let
