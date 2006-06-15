@@ -8,16 +8,23 @@ COMMAND ::=
             use PATH            -- open a file with a HetCASL library
                                 -- this will compute a development graph
                                 -- and a list of open proof obligations
-          | dg DG-COMMAND GOAL, .., GOAL -- apply a proof step of the dg calculus
+          | dg DG-COMMAND GOAL* -- apply a proof step of the dg calculus
                                 -- if no goal is specified, all goals are tried
           | show                -- display list of open dg goals
        -- commands for theory mode
           | show                -- display list of theory goals
-          | show theory         -- show current theory and proof goals
+          | show-theory         -- show current theory and proof goals
           | translate COMORPHISM -- translate theory goals along comorphism
-          | proof-script PROVER <prover-specific commands> end-script
+          | proof-script PROVER PROOF-SCRIPT end-script
                                  -- process proof script, e.g. Isabelle, SPASS,... 
-          | prover PROVER        -- start a prover, with Hets inserting initial proof script
+          | prover PROVER FORMULA* 
+          | prover PROVER FORMULA* axioms FORMULA+
+                -- start a prover, with Hets inserting initial proof script
+                -- insert only the specified formulas as goals (all if none is specified) 
+                -- insert only the specified axioms
+
+PROOF-SCRIPT                  -- can be anything (prover specific)
+                              -- the end is recognized with "end-script"
 
 DG-COMMAND ::= auto        -- automatic tactic
              | glob-subsume -- global subsumption
@@ -37,3 +44,4 @@ GOAL ::= NODE             -- select local goals at a node
 NODE       ::= ID         -- specify nodes with their names
 COMORPHISM ::= ID ; ... ; ID    -- composite of basic comorphisms
 PROVER ::= ID                   -- name of prover
+FORMULA ::= ID                  -- label of formula
