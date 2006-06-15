@@ -1,7 +1,5 @@
 Language for the Hets command line interface
 
-
-
 SCRIPT ::= COMMAND*
 COMMAND ::= 
        -- commands for development graph mode
@@ -11,43 +9,54 @@ COMMAND ::=
                                 -- also all referenced libraries need to be loaded
                                 -- (and this needs to be communicated to PGIP)
           | dg DG-COMMAND GOAL* -- apply a proof step of the dg calculus
-                                -- if no goal is specified, all goals are tried
-          | show                -- display list of open dg goals
+                                -- if no goal is specified, the first goals is tried
+          | dg-all DG-COMMAN    -- same, but for all open goals
+          | show-dg-goals       -- display list of open dg goals
        -- commands for theory mode
-          | show                -- display list of theory goals
+          | show-theory-goals   -- display list of theory goals
           | show-theory         -- show current theory and proof goals
+          | node-info           -- show info about current dg node (name, origin, sublogic)
+          | show-taxonomy       -- show taxonomy graph
+          | show-concepts       -- show conecpt graph
           | translate COMORPHISM -- translate theory goals along comorphism
           | prover PROVER        -- select a prover
           | proof-script FORMULA PROOF-SCRIPT end-script
                                  -- process proof script for one goal
-          | prove FORMULA* 
-          | prove FORMULA* axioms FORMULA+
+          | cons-check PROVER    -- check consistency
+       -- interactive commands for theory mode
+          | prove FORMULA* AXIOM-SELECTION?
                 -- insert initial proof script
                 -- insert only the specified formulas as goals (top goal if none is specified) 
-                -- insert only the specified axioms
-          | prove-all FORMULA* 
-          | prove-all FORMULA* axioms FORMULA+
+                -- insert only the specified axioms (otherwise, insert all axioms)
+          | prove-all AXIOM-SELECTION?
                 -- same for all goals
+
+AXIOM-SELECTION ::=
+            with FORMULA+                        -- include only specified axioms
+          | exlcuding FORMULA+                   -- exlcude specified axioms
 
 PROOF-SCRIPT                  -- can be anything (prover specific)
                               -- the end is recognized with "end-script"
 
-DG-COMMAND ::= auto        -- automatic tactic
+DG-COMMAND ::= auto         -- automatic tactic
              | glob-subsume -- global subsumption
              | glob-decomp  -- global decomposition
              | loc-infer    -- local inference
              | loc-decomp   -- local decomposition
-             | comp        -- composition
+             | comp         -- composition
              | comp-new     -- composition with speculation of new egdes
              | hide-thm     -- Hide-Theorem-Shift
              | thm-hide     -- Theorem-Hide-Shift
-             | basic        -- prove at a particular node,
+             | basic        -- start proving at a particular node,
                             -- i.e. start local proving in a theory
 
 GOAL ::= NODE             -- select local goals at a node
        | NODE -> NODE     -- select all edges between two given nodes
        | NODE - DIGIT* -> NODE  -- select specific edge between two nodes
-NODE       ::= ID         -- specify nodes with their names
+NODE       ::= ID         -- specify nodes with their names 
 COMORPHISM ::= ID ; ... ; ID    -- composite of basic comorphisms
+                                -- if jsut one logic name is given, the default is used
 PROVER ::= ID                   -- name of prover
 FORMULA ::= ID                  -- label of formula
+PATH ::=                        -- path name (look at CASL syntax)
+ID ::=                          -- identifier (look at CASL syntax)
