@@ -8,6 +8,8 @@ COMMAND ::=
             use PATH            -- open a file with a HetCASL library
                                 -- this will compute a development graph
                                 -- and a list of open proof obligations
+                                -- also all referenced libraries need to be loaded
+                                -- (and this needs to be communicated to PGIP)
           | dg DG-COMMAND GOAL* -- apply a proof step of the dg calculus
                                 -- if no goal is specified, all goals are tried
           | show                -- display list of open dg goals
@@ -15,13 +17,17 @@ COMMAND ::=
           | show                -- display list of theory goals
           | show-theory         -- show current theory and proof goals
           | translate COMORPHISM -- translate theory goals along comorphism
-          | proof-script PROVER PROOF-SCRIPT end-script
-                                 -- process proof script, e.g. Isabelle, SPASS,... 
-          | prover PROVER FORMULA* 
-          | prover PROVER FORMULA* axioms FORMULA+
-                -- start a prover, with Hets inserting initial proof script
-                -- insert only the specified formulas as goals (all if none is specified) 
+          | prover PROVER        -- select a prover
+          | proof-script FORMULA PROOF-SCRIPT end-script
+                                 -- process proof script for one goal
+          | prove FORMULA* 
+          | prove FORMULA* axioms FORMULA+
+                -- insert initial proof script
+                -- insert only the specified formulas as goals (top goal if none is specified) 
                 -- insert only the specified axioms
+          | prove-all FORMULA* 
+          | prove-all FORMULA* axioms FORMULA+
+                -- same for all goals
 
 PROOF-SCRIPT                  -- can be anything (prover specific)
                               -- the end is recognized with "end-script"
