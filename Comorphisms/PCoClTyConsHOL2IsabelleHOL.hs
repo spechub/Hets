@@ -411,7 +411,11 @@ lift2option = conDouble "lift2option"
 lift = conDouble "mapSome"
 
 unpackOp :: FunType -> Isa.Term
-unpackOp _ = conDouble "unpackOp"
+unpackOp ft = case ft of
+    UnitType -> conDouble "unpack2bool"
+    BoolType -> conDouble "unpackBool"
+    PartialVal _ -> conDouble "unpackOption"
+    _ ->  conDouble "unpack2option"
 
 -- True means require result type to be partial
 adjustTypes :: FunType -> FunType -> FunType 
@@ -515,7 +519,7 @@ mkApp sg f arg =
                  resTy = makePartialVal r
              in (resTy, 
                 mkTermAppl (termAppl (termAppl 
-                              (unpackOp resTy) $ convFun fConv) fTrm)
+                              (unpackOp r) $ convFun fConv) fTrm)
                   $ applConv aConv aTrm)
          _ -> error "not a function type"
 
