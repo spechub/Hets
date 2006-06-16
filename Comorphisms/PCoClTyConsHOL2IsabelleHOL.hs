@@ -161,20 +161,20 @@ makePartialVal t = if isPartialVal t then t else
                          _ -> PartialVal t
 
 funType :: Bool -> Type -> FunType
-funType makeResPartial t = case getTypeAppl t of
+funType makeFunArgsPartial t = case getTypeAppl t of
    (TypeName tid _ n, tys) -> 
        if n == 0 then 
            case tys of 
            [] | tid == unitTypeId -> UnitType
            [ty] | tid == lazyTypeId -> makePartialVal 
-                       $ funType makeResPartial ty
+                       $ funType makeFunArgsPartial ty
            [t1, t2] | isArrow tid -> FunType 
                 (case funType True t1 of 
                    FunType t3 t4 -> FunType (makePartialVal t3) t4
-                   ft -> ft) $
-              (if isPartialArrow tid || makeResPartial 
-               then makePartialVal else id)
-                 $ funType makeResPartial t2
+                   ft -> if makeFunArgsPartial then makePartialVal ft else ft)
+                $ (if isPartialArrow tid || makeFunArgsPartial 
+                   then makePartialVal else id)
+                      $ funType makeFunArgsPartial t2
            ftys@(_ : _ : _) | isProductId tid -> foldl1 PairType 
                 $ map (funType True) ftys
            ftys -> ApplType tid $ map (funType True) ftys
@@ -301,10 +301,7 @@ transTerm sign trm = case trm of
         in (BoolType, foldr (quantify quan) psi varDecls)
     TypedTerm t _ _ _ -> transTerm sign t
     LambdaTerm pats _ body _ ->
-        let tPats = map (fst . transTerm sign) pats 
-            (bodyTy, bodyTrm) = transTerm sign body
-        in ( foldr FunType bodyTy tPats
-           , foldr (abstraction sign) bodyTrm pats )
+        foldr (abstraction sign) (transTerm sign body) pats
     LetTerm As.Let peqs body _ -> 
         let (bTy, bTrm) = transTerm sign body
         in (bTy, Isa.Let (map (transProgEq sign) peqs) bTrm)
@@ -432,7 +429,7 @@ adjustTypes aTy rTy ty = case (aTy, ty) of
             PartialVal _ -> q
             _ -> (fp, (PartialVal argTy, mkMapFun MapSome aTrm))
     (a, PartialVal b) -> case adjustTypes a rTy b of
-        q@(_, ap@(argTy, _)) -> case argTy of
+        q@((_, f), ap@(argTy, _)) -> case argTy of
             PartialVal _ -> q
             _ -> ((True, LiftSome rTy), ap)
     (PartialVal a, b) -> case adjustTypes a rTy b of
@@ -526,15 +523,16 @@ mkApp sg f arg =
 -- * translation of lambda abstractions
 
 -- form Abs(pattern term)
-abstraction :: Env -> As.Term -> Isa.Term -> Isa.Term
-abstraction sign pat body =
-    Abs (snd $ transTerm sign pat) (getType pat) body NotCont
-    where
+abstraction :: Env -> As.Term -> (FunType, Isa.Term) -> (FunType, Isa.Term)
+abstraction sign pat (ty, body) = let
     getType t =
       case t of
-        QualVar (VarDecl _ typ _ _) -> transType typ
-        TypedTerm _ _ typ _         -> transType typ
+        QualVar (VarDecl _ typ _ _) -> funType True typ
+        TypedTerm _ _ typ _         -> funType True typ
         TupleTerm terms _           -> evalTupleType terms
         _                           ->
           error "PCoClTyConsHOL2IsabelleHOL.abstraction"
-    evalTupleType t = foldr1 prodType (map getType t)
+    evalTupleType t = foldr1 PairType (map getType t)
+    pTy = getType pat
+    in (FunType pTy ty, Abs (snd $ transTerm sign pat) 
+                        (transFunType pTy) body NotCont)
