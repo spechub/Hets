@@ -1366,8 +1366,6 @@ devGraphToXmlCMPIOXmlNamed go dg =
         xmlnames_om
         senswomap)::(Map.Map Hets.NODE_NAMEWO (Set.Set (XmlNamed Hets.SentenceWO)), XmlNameList)
   in
-    -- Debug.Trace.trace ("AdjustedMorphisms : " ++ show (Map.map (map snd) ammap))
-    -- $
     foldl (\xio xnodetupel ->
       let
         theoname = xnName xnodetupel
