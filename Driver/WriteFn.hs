@@ -162,7 +162,7 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
               str <- toShATermString (ln, lookupHistory ln lenv)
               writeVerbFile opt f str
           OmdocOut ->
-            devGraphToOMDoc opt (ln, lenv) f
+            hetsToOMDoc opt (ln, lenv) f
           GraphOut Dot ->
             writeVerbFile opt f . concat . dot . devGraph $
                           lookupGlobalContext ln lenv
