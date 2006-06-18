@@ -836,6 +836,10 @@ isEmptyMorphism (Morphism ss ts sm fm pm _) =
 isEmptyCASLMorphism::CASL.Morphism.Morphism () () ()->Bool
 isEmptyCASLMorphism m = CASL.Sign.isSubSig (\_ _ -> True) (msource m) (mtarget m)
 
+isEmptyMorphismMap::MorphismMap->Bool
+isEmptyMorphismMap (sm,om,pm,hs) =
+  (Map.null sm && Map.null om && Map.null pm && Set.null hs)
+
 -- fetch the names of all nodes from wich sorts,rels, etc. are imported
 -- this does not list all imports in the DGraph, just the ones that cause
 -- sorts,rels, etc. to dissappear from a node
@@ -903,18 +907,19 @@ getNodeAllImportsNodeDGNamesWOLL dg = getNodeDGNameMappingWO dg (
     in
       foldl
         (\imports (fn, _, iedge, inode) ->
-          let
+{-          let
             icaslmorph = getCASLMorph (undefined, undefined, iedge)
             caslmorph = case dgl_type iedge of 
               HidingDef -> switchTargetSourceMorph icaslmorph
               _ -> icaslmorph
-            mmm = if isEmptyCASLMorphism caslmorph
+            mm = makeMorphismMap caslmorph
+            mmm = if isEmptyMorphismMap mm
               then
                 Nothing
               else
-                (Just (makeMorphismMap caslmorph))        
-          in
-            imports ++ [ ((mkWON (dgn_name inode) fn), Just iedge, mmm) ]
+                (Just mm) 
+          in -}
+            imports ++ [ ((mkWON (dgn_name inode) fn), Just iedge, Nothing) ]
         )
         []
         incommingWN
@@ -1234,8 +1239,8 @@ getSymbols (Sign sortset _ opmap _ predmap _ _ _ _ _) =
 
 -- hiding is currently wrong because this function does only check 
 -- if any symbols dissappear in the target - this happens also when renaming...
-makeMorphismMap::(Morphism () () ())->MorphismMap
-makeMorphismMap (Morphism ssource starget sortmap funmap predmap _) =
+makeMorphismMap_o::(Morphism () () ())->MorphismMap
+makeMorphismMap_o (Morphism ssource starget sortmap funmap predmap _) =
   let
     newfunmap = Map.fromList $ map (
       \((sid,sot),(tid,tfk)) ->
@@ -1254,6 +1259,195 @@ makeMorphismMap (Morphism ssource starget sortmap funmap predmap _) =
         ) ) ) $ Map.toList predmap
   in
     (sortmap, newfunmap, newpredmap, Set.fromList $ getSymbols $ diffSig ssource starget)
+
+makeMorphismMap::(Morphism () () ())->MorphismMap
+makeMorphismMap m =
+  let
+    ssign = msource m
+    tsign = mtarget m
+    sortmap = sort_map m
+    predmap = pred_map m
+    opmap = fun_map m
+    hiddeninit = getSymbols ssign
+    -- all (translated) symbols from the source (
+    (sms, hiddens) =
+      Set.fold
+        (\s (sms', hs) ->
+          let
+            newsort = Map.findWithDefault s s sortmap
+          in
+            -- check whether the translated sort appears in the target
+            if Set.member newsort (sortSet tsign)
+              then
+--                Debug.Trace.trace ("Found Sort in Target : " ++ show newsort)
+                -- if it does, it is not hidden
+                (sms'
+                  {
+                    -- delete original sort
+                    sortSet = Set.delete s (sortSet sms')
+                  }, Data.List.delete s hs)
+              else
+--                Debug.Trace.trace ("Sort is hidden : " ++ show newsort)
+                (sms', hs)
+        )
+        (ssign, hiddeninit)
+        (sortSet ssign)
+    (smp, hiddenp) =
+     Map.foldWithKey
+      (\pid ps (smp', hp) ->
+        Set.fold
+          (\pt (smp'', hp') ->
+            case Map.lookup (pid, pt) predmap of
+              Nothing ->
+                (smp'', hp')
+              (Just newpid) ->
+                let
+                  currentsourcepts = Map.findWithDefault Set.empty pid (predMap smp'')
+                  currentpts = Map.findWithDefault Set.empty newpid (predMap tsign)
+                  conpt = convertPredType pt
+                in
+                  if
+                    Set.member
+                      conpt
+                      currentpts
+                    then
+ --                     Debug.Trace.trace ("Found Predicate in Target : " ++ show newpid) $
+                      (smp''
+                        {
+                          predMap =
+                            Map.insert
+                              pid
+                              (Set.delete pt currentsourcepts)
+                              (predMap smp'')
+                        }, Data.List.delete pid hp')
+                    else
+--                      Debug.Trace.trace ("Predicate is hidden : " ++ show newpid) $
+                      (smp'', hp')
+          )
+          (smp', hp)
+          ps
+      )
+      (sms, hiddens)
+      (predMap ssign)
+    (smo, hiddeno) =
+     Map.foldWithKey
+      (\oid os (smo', ho) ->
+        Set.fold
+          (\ot (smo'', ho') ->
+            let
+              (newoid, newfk) =
+                case lookupOp (oid, ot) of
+                  Nothing ->
+                    (oid, opKind ot)
+                  (Just x) -> x
+              currentsourceots = Map.findWithDefault Set.empty oid (opMap smo'')
+              currentots = Map.findWithDefault Set.empty newoid (opMap tsign)
+              conot = (convertOpType ot) { opKind = newfk }
+            in
+              if
+                Set.member
+                  conot
+                  currentots
+                then
+--                  Debug.Trace.trace ("Found Operator in Target : " ++ show newoid ++ " was ( " ++ show oid ++ ")" ++ show opmap) $
+                  (smo''
+                    {
+                      opMap =
+                        Map.insert
+                          oid
+                          (Set.delete ot currentsourceots)
+                          (Map.delete oid (opMap smo''))
+                    }, Data.List.delete oid ho')
+                else
+--                  Debug.Trace.trace ("Operator is hidden : " ++ show newoid) $
+                  (smo'', ho')
+          )
+          (smo', ho)
+          os
+      )
+      (smp, hiddenp)
+      (opMap ssign)
+    sma =
+     Map.foldWithKey
+      (\oid os sma' ->
+        Set.fold
+          (\ot sma'' ->
+            case lookupOp (oid, ot) of
+              Nothing ->
+                sma''
+              (Just (newoid, newfk)) ->
+                let
+                  currentsourceots = Map.findWithDefault Set.empty oid (opMap sma'')
+                  currentots = Map.findWithDefault Set.empty newoid (assocOps tsign)
+                  conot = (convertOpType ot) { opKind = newfk }
+                in
+                  if
+                    Set.member
+                      conot
+                      currentots
+                    then
+     --                 Debug.Trace.trace ("Found Operator in Target (A) : " ++ show newoid) $
+                      sma''
+                        {
+                          assocOps =
+                            Map.insert
+                              oid
+                              (Set.delete ot currentsourceots)
+                              (assocOps sma'')
+                        }
+                    else
+--                      Debug.Trace.trace ("Operator is hidden (A) : " ++ show newoid) $
+                      sma''
+          )
+          sma'
+          os
+      )
+      smo
+      (assocOps ssign)
+    newopmap =
+      Map.fromList $
+        map
+          (\((sid,sot),(tid,tfk)) ->
+          -- Hets sets opKind to Partial on morphism... why ?
+          -- resulting signatures have Total operators...
+            ( (sid, (sot { opKind = Total }) ), (tid, (convertOpType sot  { opKind = tfk }) ) )
+          )
+          (Map.toList opmap)
+    newpredmap =
+      Map.fromList $
+        map
+          ( \( (sid, spt), tid ) -> ( (sid, spt), (tid, convertPredType spt) ) ) 
+          (Map.toList predmap)
+  in
+--    Debug.Trace.trace ("Making MM by " ++ (show opmap) ++ " from " ++ (show ssign) ++ " -> " ++ (show tsign) ++ "...")
+--    $
+--    Debug.Trace.trace ("Hiding : " ++ (show $ getSymbols sma) ++ " or " ++ show hiddeno)
+      (sortmap, newopmap, newpredmap, Set.fromList hiddeno)
+  where
+    convertArgs::[SORT]->[SORT]
+    convertArgs = map (\x -> Map.findWithDefault x x (sort_map m))
+    convertPredType::PredType->PredType
+    convertPredType p = p { predArgs = convertArgs (predArgs p) }
+    convertOpType::OpType->OpType
+    convertOpType o =
+      o
+        {
+            opArgs = convertArgs (opArgs o)
+          , opRes = Map.findWithDefault (opRes o) (opRes o) (sort_map m)
+        }
+    lookupOp::(Id.Id, OpType)->Maybe (Id.Id, FunKind)
+    lookupOp (oid, ot) =
+      case Map.lookup (oid, ot) (fun_map m) of
+        (Just x) -> (Just x)
+        Nothing ->
+          case
+            Map.lookup
+              (oid, ot { opKind = (if (opKind ot) == Total then Partial else Total) })
+              (fun_map m)
+            of
+              (Just x) -> (Just x)
+              Nothing -> Nothing
+          
     
 removeMorphismSorts::MorphismMap->Sorts->Sorts
 removeMorphismSorts (sm,_,_,_) sorts =

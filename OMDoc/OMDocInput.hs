@@ -766,7 +766,7 @@ relsXNWONFromXmlTheory xnsortset anxml =
         Nothing -> error "Relation for unknown sort!"
         (Just xnsort' ) -> xnsort'
       xninsorts = map (\s -> case findByNameAndOrigin s (axAnn anxml) xnsortset of
-        Nothing -> error "Relation with unknown sort!"
+        Nothing -> error ("Relation with unknown sort!" ++ (show s))
         (Just xs' ) -> xs'
         ) xninsortss
       -- note that we restore 'CASL-Order' here

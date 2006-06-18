@@ -237,3 +237,14 @@ unesc s =
   in
     shead ++ (take 1 $ drop 1 stail) ++ unesc (drop 2 stail)
 
+
+anything::forall a . [Maybe a]->Maybe a
+anything [] = Nothing
+anything ((Just a):_) = Just a
+anything (Nothing:r) = anything r
+
+anythingOr::forall a . a->[Maybe a]->a
+anythingOr a l =
+  case anything l of
+    Nothing -> a
+    (Just x) -> x

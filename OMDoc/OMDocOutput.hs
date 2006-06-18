@@ -14,7 +14,7 @@ Portability :  non-portable(Logic)
     - existings files should not be overwritten everytime...
     - there is a problem with finding constructors that use tricky names,
       currently working on debuggin this
-    - DevGraph->OMDoc conversion should be done on LibEnv-Level (for names)
+    - DevGraph->OMDoc conversion should be done on LibEnv-Level (for names) (done)
 -}
 module OMDoc.OMDocOutput
   (
@@ -24,7 +24,9 @@ module OMDoc.OMDocOutput
     ,writeOMDocDTD
     ,devGraphToOMDocCMPIOXN
     ,dGraphGToXmlGXN
+    ,hetsToOMDoc
     ,devGraphToOMDoc
+    ,libToOMDoc
     ,writeXmlG
     ,defaultDTDURI
     ,libEnvToDGraphG
@@ -38,6 +40,7 @@ import qualified OMDoc.HetsDefs as Hets
 import CASL.Sign
 import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
+import qualified CASL.Morphism as Morphism
 import qualified Common.Id as Id
 import qualified Syntax.AS_Library as ASL
 import qualified CASL.AS_Basic_CASL as ABC
@@ -70,7 +73,7 @@ import qualified Common.AS_Annotation as Ann
 --import qualified Logic.Logic as Logic
 
 import Data.Maybe (fromMaybe)
-import Data.List (isPrefixOf, find)
+import Data.List (isPrefixOf, find, delete)
 
 import Debug.Trace (trace)
 
@@ -110,6 +113,22 @@ mkOMDocTypeElem system =
 -}
 defaultDTDURI::String
 defaultDTDURI = "http://www.tzi.de/~hiben/omdoc/dtd/omdoc.dtd"
+
+envDTDURI::IO String
+envDTDURI = getEnvDef "OMDOC_DTD_URI" defaultDTDURI
+
+useLibWrite::IO Bool
+useLibWrite =
+  do
+    me <- mGetEnv "OMDOC_USE_LIB_WRITE"
+    return
+      (
+      case me of
+        Nothing -> True -- use as default
+        (Just s) ->
+          elem (map toLower s) ["", "1", "yes", "y", "t", "true"]
+      )
+        
 
 -- | this function wraps trees into a form that can be written by HXT
 writeableTrees::HXT.XmlTrees->HXT.XmlTree
@@ -157,27 +176,67 @@ writeOMDocDTD dtd' t f = HXT.run' $
     [(a_indent, v_1), (a_output_file, f)] $
     writeableTreesDTD dtd' t
 
+hetsToOMDoc::HetcatsOpts->(ASL.LIB_NAME, LibEnv)->FilePath->IO ()
+hetsToOMDoc hco lnle file =
+  do
+    ulw <- useLibWrite
+    if ulw
+      then
+        libToOMDoc hco lnle file
+      else
+        devGraphToOMDoc hco lnle file
+
 -- | converts DevGraphs to OMDoc
 -- depending on 'recurse'-option only the DevGraph specified by the libname
 -- or all DevGraphs in libenv are written (to outdir)
+-- uses OMDOC_DTD_URI environment variable for dtd or default dtd
 devGraphToOMDoc::HetcatsOpts->(ASL.LIB_NAME, LibEnv)->FilePath->IO ()
 devGraphToOMDoc hco (ln, le) file =
-  case (recurse hco) of
-    False ->
-      devGraphToOMDocCMPIOXN
-        (emptyGlobalOptions { hetsOpts = hco })
-        (devGraph $ Map.findWithDefault (error "?") ln le)
-        (show ln)
-      >>= \omdoc -> writeOMDocDTD defaultDTDURI omdoc file >> return ()
-    True ->
-      let
-        dg = (devGraph $ Map.findWithDefault (error "?") ln le)
-        igdg = libEnvToDGraphG (ln, dg, le)
-      in
+  do
+    dtduri <- envDTDURI
+    case (recurse hco) of
+      False ->
         do
-          xmlg <- dGraphGToXmlGXN igdg
-          writeXmlG hco defaultDTDURI xmlg >> return ()
+          omdoc <- devGraphToOMDocCMPIOXN
+            (emptyGlobalOptions { hetsOpts = hco })
+            (devGraph $ Map.findWithDefault (error "?") ln le)
+            (show ln)
+          writeOMDocDTD dtduri omdoc file
+          return ()
+      True ->
+        let
+          dg = (devGraph $ Map.findWithDefault (error "?") ln le)
+          igdg = libEnvToDGraphG (ln, dg, le)
+        in
+          do
+            xmlg <- dGraphGToXmlGXN igdg
+            writeXmlG hco dtduri xmlg
+            return ()
+    return ()
 								
+libToOMDoc::HetcatsOpts->(ASL.LIB_NAME, LibEnv)->FilePath->IO ()
+libToOMDoc hco (ln, le) file =
+  let
+    xtagle = xmlTagLibEnv emptyGlobalOptions le
+  in
+    case (recurse hco) of
+      False ->
+        libToOMDocCMPIOXN
+          (emptyGlobalOptions { hetsOpts = hco })
+          le
+          xtagle
+          ln
+          (show ln)
+        >>= \omdoc -> writeOMDocDTD defaultDTDURI omdoc file >> return ()
+      True ->
+        let
+          dg = (devGraph $ Map.findWithDefault (error "?") ln le)
+          igdg = libEnvXToDGraphG (ln, dg, le)
+        in
+          do
+            xmlg <- dGraphGXLEToXmlGXN igdg le xtagle
+            writeXmlG hco defaultDTDURI xmlg >> return ()
+
 -- | Convert a DevGraph to OMDoc-XML with given xml:id attribute
 -- will also scan used (CASL-)files for CMP-generation
 devGraphToOMDocCMPIOXN::GlobalOptions->Static.DevGraph.DGraph->String->IO HXT.XmlTrees
@@ -189,6 +248,17 @@ devGraphToOMDocCMPIOXN go dg name' =
         (HXT.etag "omdoc" += ( qualattr omdocNameXMLNS omdocNameXMLAttr name'
           +++ xmlNL +++ dgx )) emptyRoot
       )
+
+libToOMDocCMPIOXN::GlobalOptions->Static.DevGraph.LibEnv->XmlTaggedLibEnv->ASL.LIB_NAME->String->IO HXT.XmlTrees
+libToOMDocCMPIOXN go lenv xtagln ln name' =
+  do
+    dgx <- libToXmlCMPIOXmlNamed go lenv xtagln ln
+    return
+      (
+        (HXT.etag "omdoc" += ( qualattr omdocNameXMLNS omdocNameXMLAttr name'
+          +++ xmlNL +++ dgx )) emptyRoot
+      )
+
 
 -- | Converts a map mapping to a Container-type (e.g. Set) to a list of
 -- key,value-tuples for every element in the container and the corresponding key
@@ -234,26 +304,15 @@ type XmlNamedWONPreds = Set.Set (XmlNamedWONId, PredTypeXNWON)
 type XmlNamedWONOps = Set.Set (XmlNamedWONId, OpTypeXNWON)
 
 
--- this is a _sketch_ of how I want to implement renaming
-correctXmlNames::
- Map.Map -- current mappings (all processed)
-    ASL.LIB_NAME
-    (Map.Map
-      (XmlNamed Hets.NODE_NAMEWO)
-      (Set.Set XmlNamedWONSORT, Map.Map XmlNamedWONId PredType, Map.Map XmlNamedWONId OpType)
-    )
-  ->
-    (Map.Map -- possible wrong-named mapping
-      (XmlNamed Hets.NODE_NAMEWO)
-      (Set.Set XmlNamedWONSORT, Map.Map XmlNamedWONId PredType, Map.Map XmlNamedWONId OpType)
-    )
+-- this seems to swallow some symbols that should be preserved...
+correctXmlNames ::
+  XmlTaggedLibEnv
+  -> -- possible wrong-named mapping
+  XmlTaggedDevGraph
   -> -- imports from mappings
     [(ASL.LIB_NAME, NODE_NAME, XmlNamed Hets.NODE_NAMEWO)]
-  -> -- currected mapping
-    (Map.Map
-      (XmlNamed Hets.NODE_NAMEWO)
-      (Set.Set XmlNamedWONSORT, Map.Map XmlNamedWONId PredType, Map.Map XmlNamedWONId OpType)
-    )
+  -> -- corrected mapping
+  XmlTaggedDevGraph
 correctXmlNames cm wm im =
   foldl
     (\pwm (ln, nn, xnnnwo) ->
@@ -261,7 +320,7 @@ correctXmlNames cm wm im =
         cmap = case Map.lookup ln cm of
           Nothing -> error ("Cannot process import from unprocessed DG!")
           (Just x) -> x
-        (xnsourcenodewo, (xnsorts, xnpreds, xnops)) =
+        (xnsourcenodewo, (xnsorts, xnrels, xnpreds, xnops, _)) =
           case
             Map.toList $ Map.filterWithKey
               (\xnw _ -> (Hets.wonItem $ xnItem xnw) == nn)
@@ -274,11 +333,10 @@ correctXmlNames cm wm im =
                 i
         originInTarget = Hets.wonOrigin $ xnItem xnnnwo
         xnsortslist = Set.toList xnsorts
-        xnpredslist = Map.toList xnpreds
-        xnopslist = Map.toList xnops
+        xnrelslist = Rel.toList xnrels
       in
         Map.map
-          (\(pwms, pwmp, pwmo) ->
+          (\(pwms, pwmr, pwmp, pwmo, pwme) ->
             (
                 Set.map
                   (correctItem
@@ -286,26 +344,28 @@ correctXmlNames cm wm im =
                     (==)
                   )
                   pwms
-              , Map.fromList $
-                  map
-                    (\(k, s) ->
-                      (correctItem
-                        (map fst xnpredslist)
-                        (==)
-                        k , s
-                      )
-                    )
-                    (Map.toList pwmp)
-              , Map.fromList $
-                  map
-                    (\(k, s) ->
-                      (correctItem
-                        (map fst xnopslist)
-                        (==)
-                        k , s
-                      )
-                    )
-                    (Map.toList pwmo)
+              ,  Rel.fromList
+                   (
+                    map
+                      (\(a,b) -> (correctItem xnsortslist (==) a, correctItem xnsortslist (==) b))
+                      xnrelslist
+                   )
+              , map
+                  (
+                  correctComplexItem
+                    xnpreds
+                    (==)
+                  )
+                  pwmp
+              , map
+                  (
+                  correctComplexItem
+                    xnops
+                    (==)
+                  )
+                  pwmo
+              ,
+                pwme
             )
           )
           pwm
@@ -313,7 +373,7 @@ correctXmlNames cm wm im =
     wm
     im
   where
-  correctItem::forall a b .
+  correctItem:: forall a b .
     [XmlNamed a]
     ->(b->a->Bool)
     ->XmlNamed b
@@ -326,7 +386,20 @@ correctXmlNames cm wm im =
         Nothing -> tobecorrected
         (Just amatch) -> tobecorrected { xnName = xnName amatch }
 
-  correctList::forall a b .
+  correctComplexItem:: forall a b c .
+    [(XmlNamed a, c)]
+    ->((b,c)->(a,c)->Bool)
+    ->(XmlNamed b, c)
+    ->(XmlNamed b, c)
+  correctComplexItem
+    reference
+    match
+    (tobecorrected@(xtb, tbc)) =
+      case find (\(xa, ac) -> match (xnItem xtb, tbc) (xnItem xa, ac)) reference of
+        Nothing -> tobecorrected
+        (Just (xmatch, _)) -> (xtb { xnName = xnName xmatch }, tbc)
+
+{-  correctList::forall a b .
       [XmlNamed a]
     ->(b->a->Bool)
     ->[XmlNamed b]
@@ -337,15 +410,9 @@ correctXmlNames cm wm im =
     tobecorrected =
     map
       (correctItem reference match)
-      tobecorrected
+      tobecorrected-}
 
-createXmlNameMap::
-  Static.DevGraph.DGraph
-  ->
-    (Map.Map
-      (XmlNamed Hets.NODE_NAMEWO)
-      (Set.Set XmlNamedWONSORT, Map.Map XmlNamedWONId PredType, Map.Map XmlNamedWONId OpType)
-    )
+createXmlNameMap::Static.DevGraph.DGraph->XmlTaggedDevGraph
 createXmlNameMap dg =
   let
     (onlynodenameset, onlyrefnameset) =
@@ -362,8 +429,10 @@ createXmlNameMap dg =
         (Set.toList onlyrefnameset)
     nodexmlnameset = Set.fromList (onlynodexmlnamelist ++ onlyrefxmlnamelist)
     sortswomap = Hets.getSortsWOWithNodeDGNamesWO dg
+    relswomap= Hets.getRelationsWOWithNodeDGNamesWOSMDGWO dg sortswomap
     predswomap = Map.map mapToSetToTupelList $ Hets.getPredMapsWOWithNodeDGNamesWO dg
     opswomap = Map.map mapToSetToTupelList $ Hets.getOpMapsWOWithNodeDGNamesWO dg
+    senswomap = Hets.getSentencesWOWithNodeDGNamesWO dg
     -- sorts
     -- processSubContents was not build for this, so this is a bit clumsy...
     (xmlnamedsortswomap, _) =
@@ -386,54 +455,70 @@ createXmlNameMap dg =
         )
         undefined
         sortswomap
+    -- rels
+    xmlnamedrelswomap =
+      foldl
+        (\relmap' theory ->
+          let
+            theorysorts = Map.findWithDefault Set.empty theory xmlnamedsortswomap
+          in
+            Map.insert
+              theory
+              (Rel.fromList
+                (map (\(a,b) ->
+                  let
+                    a' = case Set.toList (Set.filter (\i -> (xnItem i) == a) theorysorts) of
+                      [] -> error "No such sort in theory..."
+                      (i:_) -> XmlNamed a (xnName i)
+                    b' = case Set.toList (Set.filter (\i -> (xnItem i) == b) theorysorts) of
+                      [] -> error "No such sort in theory..."
+                      (i:_) -> XmlNamed b (xnName i)
+                  in
+                    (a' , b' )
+                  ) (Rel.toList (Map.findWithDefault Rel.empty theory relswomap))))
+              relmap' 
+        )
+        Map.empty
+        (Map.keys relswomap)
     -- predicates
-    (xmlnamedpredswomap, _) =
-      processSubContents
-        (\_ kpwol ->
-          (
-            map
-              (\(k, (pidwo, pset)) ->
-                (k,
-                  (XmlNamed
-                      pidwo
-                      (createUniqueName
-                        xmlnames_orxnl
-                        (adjustStringForXmlName $ show $ Hets.woItem pidwo)
-                      )
-                    , pset
-                  )
-                )
-              )
-              kpwol
-            , undefined
-          )
+    (xmlnamedpredswomap, xmlnames_pm) =
+      (processSubContents
+        (\xmlnames c -> uniqueXmlNamesContainerWONExt
+          xmlnames
+          show
+          c
+          (pSCStrip (\(pidwo,_) -> pidwo))
+          (\(k, (pidwo, pset)) xname -> (k, (XmlNamed pidwo xname, pset)))
         )
-        undefined
-        predswomap
+        []
+        predswomap)::(Map.Map Hets.NODE_NAMEWO [(XmlNamedWONId, PredType)], XmlNameList)
+        --predswomap)::(Map.Map Hets.NODE_NAMEWO (Map.Map (XmlNamed Hets.IdWO) (Set.Set PredType)), XmlNameList)
     -- operators
-    (xmlnamedopswomap, _) =
-      processSubContents
-        (\_ kowol ->
-          (
-            map
-              (\(k, (oidwo, oset)) ->
-                (k,
-                  (XmlNamed
-                      oidwo
-                      (createUniqueName
-                        xmlnames_orxnl
-                        (adjustStringForXmlName $ show $ Hets.woItem oidwo)
-                      )
-                    , oset
-                  )
-                )
-              )
-              kowol
-            , undefined
-          )
+    (xmlnamedopswomap, xmlnames_om) =
+      (processSubContents
+        (\xmlnames c ->
+          uniqueXmlNamesContainerWONExt
+            xmlnames
+            show
+            c
+            (pSCStrip (\(oidwo,_) -> oidwo))
+            (\(k,(oidwo,oset)) xname -> (k, (XmlNamed oidwo xname, oset)))
         )
-        undefined
-        opswomap
+        xmlnames_pm
+        opswomap)::(Map.Map Hets.NODE_NAMEWO [(XmlNamedWONId, OpType)], XmlNameList)
+    -- sentences
+    (xmlnamedsenswomap, xmlnames_senm) =
+      (processSubContents
+        (\xmlnames nsensset ->
+          uniqueXmlNamesContainerWONExt
+            xmlnames
+            (\x -> Ann.senName x)
+            nsensset
+            (pSCStrip id)
+            (\(k, senswo) xname -> (k, XmlNamed senswo xname))
+        )
+        [] --xmlnames_om
+        senswomap)::(Map.Map Hets.NODE_NAMEWO (Set.Set (XmlNamed Hets.SentenceWO)), XmlNameList)
     xnwonames =
       map
         (\xn ->
@@ -452,14 +537,20 @@ createXmlNameMap dg =
             sorts = case Map.lookup (xnItem nx) xmlnamedsortswomap of
               Nothing -> Set.empty
               (Just s) -> s
+            rels = case Map.lookup (xnItem nx) xmlnamedrelswomap of
+              Nothing -> Rel.empty
+              (Just r) -> r
             preds = case Map.lookup (xnItem nx) xmlnamedpredswomap of
-              Nothing -> Map.empty
-              (Just p) -> Map.fromList p
+              Nothing -> []
+              (Just p) -> p
             ops = case Map.lookup (xnItem nx) xmlnamedopswomap of
-              Nothing -> Map.empty
-              (Just o) -> Map.fromList o
+              Nothing -> []
+              (Just o) -> o
+            sens = case Map.lookup (xnItem nx) xmlnamedsenswomap of
+              Nothing -> []
+              (Just s) -> (Set.toList s)
           in
-            (nx, (sorts, preds, ops))
+            (nx, (sorts, rels, preds, ops, sens))
         )
         xnwonames
   where
@@ -478,18 +569,29 @@ createXmlNameMap dg =
             nodename
     )
 
+type XmlTaggedDevGraph =
+  Map.Map
+    (XmlNamed Hets.NODE_NAMEWO)
+    (
+        Set.Set XmlNamedWONSORT
+      , Rel.Rel XmlNamedWONSORT
+      , [(XmlNamedWONId, PredType)]
+      , [(XmlNamedWONId, OpType)]
+      , [(XmlNamed Hets.SentenceWO)]
+    )
+
+type XmlTaggedLibEnv = 
+  Map.Map
+      ASL.LIB_NAME
+      XmlTaggedDevGraph
+
 -- renaming should be done by 1) create names/origins for DGs but remember where
 -- imports occured and 2) correct xml-names via import-information (and 
 -- benefit from the unambigous xml-naming/origin-information)
 xmlTagLibEnv::
   GlobalOptions
   ->Static.DevGraph.LibEnv
-  ->Map.Map
-      ASL.LIB_NAME
-      (Map.Map
-        (XmlNamed Hets.NODE_NAMEWO)
-        (Set.Set XmlNamedWONSORT, Map.Map XmlNamedWONId PredType, Map.Map XmlNamedWONId OpType)
-      )
+  ->XmlTaggedLibEnv
 xmlTagLibEnv go libenv =
   let
     libnames = Map.keys libenv
@@ -583,17 +685,32 @@ xmlTagLibEnv go libenv =
   in
     correctMap
 
-{- |
+usedXTNames::XmlTaggedLibEnv->[XmlName]
+usedXTNames xtagln =
+  let
+    liblist = Map.toList xtagln
+    taggeddgs = map snd liblist
+    namedmaps = map snd (concatMap Map.toList taggeddgs)
+    names =
+      map
+        (\(ss,_,pl,ol,el) ->
+          (map xnName (Set.toList ss))
+            ++ map (xnName . fst) pl
+            ++ map (xnName . fst) ol
+            ++ map xnName el
+        )
+        namedmaps
+  in
+    concat names
+
+
+{-
+  symbols are filtered to restrictive... (abs::Int->Nat, abs::Rat->Rat...)
 -}
 libToXmlCMPIOXmlNamed::
   GlobalOptions
   ->Static.DevGraph.LibEnv
-  ->Map.Map
-    ASL.LIB_NAME
-    (Map.Map
-      (XmlNamed Hets.NODE_NAMEWO)
-      (Set.Set XmlNamedWONSORT, Map.Map XmlNamedWONId PredType, Map.Map XmlNamedWONId OpType)
-    )
+  ->XmlTaggedLibEnv
   ->ASL.LIB_NAME
   ->IO (HXT.XmlTree->HXT.XmlTrees)
 libToXmlCMPIOXmlNamed go lenv xmlnamemap ln =
@@ -604,15 +721,9 @@ libToXmlCMPIOXmlNamed go lenv xmlnamemap ln =
     (onlynodenameset, onlyrefnameset) = Hets.getNodeDGNamesNodeRef dg
     (onlynodexmlnamelist, xmlnames_onxnl) = createXmlNames nodeTupelToNodeName [] (Set.toList onlynodenameset)
     (onlyrefxmlnamelist, xmlnames_orxnl) = createXmlNames nodeTupelToNodeName xmlnames_onxnl (Set.toList onlyrefnameset)
-    --nodenameset = Set.union onlynodenameset onlyrefnameset
     nodexmlnameset = Set.fromList (onlynodexmlnamelist ++ onlyrefxmlnamelist)
-    --nodenamemap = Map.fromList $ Set.toList nodenameset
-    sortswomap = Hets.getSortsWOWithNodeDGNamesWO dg
---    relswomap= Hets.getRelationsWOWithNodeDGNamesWOSMDGWO dg sortswomap
-    predswomap = Map.map mapToSetToTupelList $ Hets.getPredMapsWOWithNodeDGNamesWO dg
-    opswomap = Map.map mapToSetToTupelList $ Hets.getOpMapsWOWithNodeDGNamesWO dg
-    senswomap = (\smap -> debugGO go "dGTXCMPIOXNsens" ("Sentences : " ++ (showSensWOMap smap)) smap) $ Hets.getSentencesWOWithNodeDGNamesWO dg
-    inputmapwofull = Hets.getNodeAllImportsNodeDGNamesWOLL dg
+    
+    inputmapwofull = Hets.getNodeAllImportsNodeDGNamesWOLL dg 
     importsmapwo =
       Map.map
         (\inputlist ->
@@ -629,125 +740,27 @@ libToXmlCMPIOXmlNamed go lenv xmlnamemap ln =
               )
               inputlist
         )
-        inputmapwofull
-    -- sorts
-    -- (xmlnamedsortswomap, xmlnames_sm) =
+        inputmapwofull 
+    
     xmlNamedSymbolsWOMap = Map.findWithDefault Map.empty ln xmlnamemap
-    (xmlnamedsortswomap, _) =
-      (processSubContents
-        --(\xmlnames c -> uniqueXmlNamesContainerWONExt
-        --  xmlnames
-        (\_ c -> uniqueXmlNamesContainerWONExt
-          []
-          show
-          c
-          (pSCStrip id)
-          (\(k, swo) xname -> (k,XmlNamed swo xname))
-        )
-        xmlnames_orxnl
-        sortswomap)::(Map.Map Hets.NODE_NAMEWO (Set.Set (XmlNamed Hets.SORTWO)), XmlNameList)
-    -- relations -- maybe not needed with xmlnames...
-    --xmlnames_rm = xmlnames_sm
-    {- xmlnamedrelswomap =
-      foldl
-        (\relmap' theory ->
-          let
-            theorysorts = Map.findWithDefault Set.empty theory xmlnamedsortswomap
-          in
-            Map.insert
-              theory
-              (Rel.fromList
-                (map (\(a,b) ->
-                  let
-                    a' = case Set.toList (Set.filter (\i -> (xnItem i) == a) theorysorts) of
-                      [] -> error "No such sort in theory..."
-                      (i:_) -> XmlNamed a (xnName i)
-                    b' = case Set.toList (Set.filter (\i -> (xnItem i) == b) theorysorts) of
-                      [] -> error "No such sort in theory..."
-                      (i:_) -> XmlNamed b (xnName i)
-                  in
-                    (a' , b' )
-                  ) (Rel.toList (Map.findWithDefault Rel.empty theory relswomap))))
-              relmap' 
-        )
-        Map.empty
-        (Map.keys relswomap)
-      -}
-    -- predicates
-    (xmlnamedpredswomap, xmlnames_pm) =
-      (processSubContents
-        (\xmlnames c -> uniqueXmlNamesContainerWONExt
-          xmlnames
-          show
-          c
-          (pSCStrip (\(pidwo,_) -> pidwo))
-          (\(k, (pidwo, pset)) xname -> (k, (XmlNamed pidwo xname, pset)))
-        )
-        xmlnames_orxnl
-        predswomap)::(Map.Map Hets.NODE_NAMEWO [(XmlNamedWONId, PredType)], XmlNameList)
-        --predswomap)::(Map.Map Hets.NODE_NAMEWO (Map.Map (XmlNamed Hets.IdWO) (Set.Set PredType)), XmlNameList)
-    -- operators
-    (xmlnamedopswomap, xmlnames_om) =
-      (processSubContents
-        (\xmlnames c ->
-          uniqueXmlNamesContainerWONExt
-            xmlnames
-            show
-            c
-            (pSCStrip (\(oidwo,_) -> oidwo))
-            (\(k,(oidwo,oset)) xname -> (k, (XmlNamed oidwo xname, oset)))
-        )
-        xmlnames_pm
-        
-        opswomap)::(Map.Map Hets.NODE_NAMEWO [(XmlNamedWONId, OpType)], XmlNameList)
-    --    opswomap)::(Map.Map Hets.NODE_NAMEWO (Map.Map (XmlNamed Hets.IdWO) (Set.Set OpType)), XmlNameList)
-    -- sentences
-    (xmlnamedsenswomap, xmlnames_senm) =
-      (processSubContents
-        (\xmlnames nsensset ->
-          uniqueXmlNamesContainerWONExt
-            xmlnames
-            (\x -> debugGO go "dGTXCMPIOXN"  ("psc: " ++ (take 45 (show x))) $ Ann.senName x)
-            nsensset
-            (pSCStrip id)
-            (\(k, senswo) xname -> (k, XmlNamed senswo xname))
-        )
-        xmlnames_om
-        senswomap)::(Map.Map Hets.NODE_NAMEWO (Set.Set (XmlNamed Hets.SentenceWO)), XmlNameList)
+    
   in
     foldl (\xio xnodetupel ->
       let
         theoname = xnName xnodetupel
         (nodenum, nodename) = xnItem xnodetupel
-        theosorts = Map.findWithDefault Set.empty (Hets.mkWON nodename nodenum) xmlnamedsortswomap
-        (theosorts2, theopreds2, theoops2) =
-          (\(a,b,c) -> (Set.toList a, Map.toList b, Map.toList c)) $
+        (theosorts, theorels, theopreds, theoops, theosens) =
+          (\(a,b,c,d, e) -> (Set.toList a, b, c, d, e)) $
           Map.findWithDefault
-            (Set.empty, Map.empty, Map.empty)
+            (Set.empty, Rel.empty, [], [], [])
             (XmlNamed (Hets.mkWON nodename nodenum) theoname)
             xmlNamedSymbolsWOMap
-        realsorts2 = filter (\i -> (xnWOaToO i) == nodenum) theosorts2
-        realsorts = Set.filter (\i -> (xnWOaToO i) == nodenum) theosorts
-        realsortswo = Set.map (xnItem) (debugGO go "dGTXCMPIOXN" ("Sorts in " ++ (xnName xnodetupel) ++ " - " ++ (show realsorts) ) realsorts)
-        realsortswo2 = map xnItem realsorts2
-        relswomap =
-          Hets.getRelationsWOWithNodeDGNamesWOSMDGWO
-            dg
-            (Map.fromList 
-              (map
-                (\(xnnode, (xnsortset,_,_)) ->
-                  (xnItem xnnode, Set.map xnWOaToWOa xnsortset)
-                )
-                (Map.toList xmlNamedSymbolsWOMap)
-              )
-            )
-        theorels = Map.findWithDefault Rel.empty (Hets.mkWON nodename nodenum) relswomap
-        -- only keep relations that include at least one sort from the
-        -- current theory
+        realsorts = filter (\i -> (xnWOaToO i) == nodenum) theosorts
+        realsortswo = map xnItem realsorts
         realrels = Rel.fromList $ filter (\(a,b) ->
-          (Set.member a realsortswo) || (Set.member b realsortswo)
+          (elem a realsorts) || (elem b realsorts)
           ) (Rel.toList theorels)
-        insorts = Rel.transpose realrels 
+        insorts = Rel.transpose realrels
         insortmap =
           foldl (\m (a,b) ->
             Map.insert
@@ -755,90 +768,64 @@ libToXmlCMPIOXmlNamed go lenv xmlnamemap ln =
               (Set.insert b (Map.findWithDefault Set.empty a m))
               m
             ) Map.empty (Rel.toList insorts)
-        -- imports/morphisms
-        {-
-        timports = Map.findWithDefault
-          Set.empty
-          (Hets.mkWON nodename nodenum)
-          importsmapwo
-          -}
         tinputs = Map.findWithDefault
           []
           (Hets.mkWON nodename nodenum)
           inputmapwofull
         inputsxn = map
-          (\(inodenamewo, mll, mmm) ->
+          (\(inodenamewo, mll, _) ->
             let
-              xmlNamedImportOriginWO =
-                case find (\x -> (xnWOaToO x) == (Hets.woOrigin inodenamewo)) $ Map.keys xmlNamedSymbolsWOMap of
-                  Nothing -> error "Unknown Origin of Morphism (2)!"
-                  (Just x) -> x
-              (itheosorts, itheopreds, itheoops) =
-                (\(a,b,c) -> (Set.toList a, Map.toList b, Map.toList c)) $
-                case Map.lookup xmlNamedImportOriginWO xmlNamedSymbolsWOMap of
-                  Nothing -> error "No Set/Maps for import!"
-                  (Just x) -> x
-              mmapandset = case mmm of
-                Nothing -> Nothing
-                -- order is sort, ops, preds, hiding...
-                (Just (sm,om,pm,hs)) ->
-                  let
-                    -- sorts
-                    mmsorts = map (\(a,b) ->
+              ((itheonum, itheoname), itheoxmlname) = case find (\x -> (fst (xnItem x)) == (Hets.woOrigin inodenamewo)) (Set.toList nodexmlnameset) of
+                Nothing -> error "Unknown Origin of Morphism!"
+                (Just x) -> (xnItem x, xnName x)
+              (itheosorts, _, itheopreds, itheoops, _) =
+                (\(a,b,c,d,e) -> (Set.toList a, b, c, d, e)) $
+                  Map.findWithDefault
+                    (Set.empty, Rel.empty, [], [], [])
+                    (XmlNamed (Hets.mkWON itheoname itheonum) itheoxmlname)
+                    xmlNamedSymbolsWOMap
+              mmapandset =
+                let
+                  (caslmorph, isHiding) = case mll of
+                    Nothing -> (Hets.emptyCASLMorphism, False)
+                    (Just ll) ->
                       (
-                        case find (\i -> (xnWOaToa i) == a) itheosorts of
-                          Nothing -> error ("(In : "++ theoname ++", from " ++ xnName xmlNamedImportOriginWO ++ ") Unable to find imported sort " ++ (show a) ++ " in source-sorts : " ++ (show itheosorts)) 
-                          (Just x) -> xnName x,
-                        case find (\i -> (xnWOaToa i) == b) theosorts2 of
-                          Nothing -> error ("(In :"++ theoname  ++") Unable to find imported sort " ++ (show b) ++ " in target-sorts : " ++ (show theosorts))
-                          (Just x) -> xnName x
+                          Hets.getCASLMorph (undefined, undefined, ll)
+                        , case (dgl_type ll) of
+                          (Static.DevGraph.HidingDef {}) -> True
+                          (Static.DevGraph.HidingThm {}) -> True
+                          _ -> False
                       )
-                      )
-                      (Map.toList sm)
-                    -- predicates
-                    mmpreds = map (\((ai,_), (bi,_)) ->
+                  ((asm, apm, aom), ahid) =
+                    createMorphismMapAndHiding
+                      caslmorph
+                      isHiding
+                      itheosorts
+                      itheopreds
+                      itheoops
+                      theosorts
+                      theopreds
+                      theoops
+                  xnnamemap =
+                    Map.fromList
                       (
-                        case find (\(ii,_) -> (xnWOaToa ii) == ai) itheopreds of
-                          Nothing -> error ("(In : "++ theoname ++"(" ++ (show nodenum) ++ "), from " ++ xnName xmlNamedImportOriginWO ++ "(" ++ (show $ xnWOaToO xmlNamedImportOriginWO) ++ ") Unable to find import predication " ++ (show ai) ++ " in source-preds : " ++ (show itheopreds) ++ " theories : " ++ (show nodexmlnameset)) 
-                          (Just (ii,_)) -> show $ (xnWOaToa ii), -- xnName ii,
-                        case find (\(ii,_) -> (xnWOaToa ii) == bi) theopreds2 of
-                          Nothing -> error ("(In :"++ theoname  ++") Unable to find import predication " ++ (show bi) ++ " in target-preds : " ++ (show theopreds2))
-                          (Just (ii,_)) -> xnName ii
-                      )
-                      )
-                      (Map.toList pm)
-                    -- operators
-                    mmops = map (\((ai,_), (bi,_)) ->
-                      (
-                        case find (\(ii,_) -> (xnWOaToa ii) == ai) itheoops of
-                          Nothing -> error ("(In : "++ theoname ++", from " ++ xnName xmlNamedImportOriginWO ++ ") Unable to find import operator " ++ (show ai) ++ " in source-ops : " ++ (show itheoops))
-                          (Just (ii,_)) -> xnName ii,
-                        case find (\(ii,_) -> (xnWOaToa ii) == bi) theoops2 of
-                          Nothing -> error ("(In :"++ theoname  ++") Unable to find import operator " ++ (show bi) ++ " in target-ops : " ++ (show theoops2))
-                          (Just (ii,_)) -> xnName ii
-                      )
-                      )
-                      (Map.toList om)
-                    -- hiding
-                    mmhidden =
-                      Set.map
-                        (\h ->
-                          case find (\i -> (xnWOaToa i) == h) itheosorts of
-                            (Just  x) -> Debug.Trace.trace ("Using from Sort : " ++ xnName x) (xnName x)
-                            Nothing ->
-                              case find (\(ii,_) -> (xnWOaToa ii) == h) itheopreds of
-                                (Just (x,_)) -> Debug.Trace.trace ("Using from Pred : " ++ xnName x) (xnName x)
-                                Nothing ->
-                                  case find (\(ii,_) -> (xnWOaToa ii) == h) itheoops of
-                                    (Just (x,_)) -> Debug.Trace.trace ("Using from Op : " ++ (xnName x)) (xnName x)
-                                    Nothing -> Debug.Trace.trace ("Using : " ++ show h) (show h)
+                      map
+                        (\(a, b) -> (xnName a, xnName b) ) 
+                        (
+                          (Map.toList asm)
+                          ++ (Map.toList apm)
+                          ++ (Map.toList aom)
                         )
-                        hs
-                  in
-                    Just (Map.fromList (mmsorts ++ mmpreds ++ mmops), mmhidden)
-                        
+                      )
+                  xnnameset = Set.fromList $ map xnName $ fromMaybe [] ahid
+                in
+                  if (Map.null xnnamemap) && (Set.null xnnameset)
+                    then
+                      Nothing
+                    else
+                      Just (xnnamemap, xnnameset)
             in
-              (xnName xmlNamedImportOriginWO, mll, mmapandset)
+              (itheoxmlname, mll, mmapandset)
           )
           tinputs
         importsxn =
@@ -849,6 +836,9 @@ libToXmlCMPIOXmlNamed go lenv xmlnamemap ln =
                   case Static.DevGraph.dgl_type ll of
                     Static.DevGraph.GlobalDef -> True
                     Static.DevGraph.LocalDef -> True
+                    Static.DevGraph.HidingDef -> True
+                    (Static.DevGraph.FreeDef {}) -> True
+                    (Static.DevGraph.CofreeDef {}) -> True
                     _ -> False
               )
               inputsxn
@@ -863,35 +853,32 @@ libToXmlCMPIOXmlNamed go lenv xmlnamemap ln =
                     _ -> False
               )
               inputsxn
-        theopreds = Map.findWithDefault [] (Hets.mkWON nodename nodenum) xmlnamedpredswomap
         realtheopreds = filter (\(idxnwon, _) -> (xnWOaToO idxnwon) == nodenum) theopreds
-        realtheopreds2 = filter (\(idxnwon, _) -> (xnWOaToO idxnwon) == nodenum) theopreds2
-        theoops = (\x -> debugGO go "dGTXCMPIOXNo" ("Ops in \"" ++ (show nodename) ++ "\" : " ++ show x) x) $ Map.findWithDefault [] (Hets.mkWON nodename nodenum) xmlnamedopswomap
         realtheoops = filter (\(idxnwon, _) -> (xnWOaToO idxnwon) == nodenum) theoops
-        realtheoops2 = filter (\(idxnwon, _) -> (xnWOaToO idxnwon) == nodenum) theoops2
-        theosens = Map.findWithDefault Set.empty (Hets.mkWON nodename nodenum) xmlnamedsenswomap
-        realtheosens = Set.filter (\i -> (xnWOaToO i) == nodenum) theosens
-        (axiomxn, sortgenxn) = partitionSensSortGenXN (Set.toList realtheosens)
---                              (constructors, xmlnames_cons)
-        (constructors, _) = makeConstructorsXN (Set.fromList theosorts2) xmlnames_senm sortgenxn
-        adtsorts = Map.keys insortmap ++ (map (\(a,_) -> xnItem a) (Map.toList constructors))
-        --theoimports = Map.findWithDefault Set.empty nodename importsmap
-        theopredsxn = map (\(k,p) -> (k, predTypeToPredTypeXNWON (Set.fromList theosorts2) p)) theopreds2
-        theoopsxn = map (\(k,op) -> (k, opTypeToOpTypeXNWON (Set.fromList theosorts2) op)) theoops2
+        
+        realtheosens = filter (\i -> (xnWOaToO i) == nodenum) theosens
+        
+        (axiomxn, sortgenxn) = partitionSensSortGenXN realtheosens
+        
+        (constructors, _) = makeConstructorsXN theosorts (usedXTNames xmlnamemap) sortgenxn
+        
+        adtsorts = Map.keys insortmap ++ (map (\(a,_) -> a) (Map.toList constructors))
+        
+        theopredsxn = map (\(k,p) -> (k, predTypeToPredTypeXNWON theosorts p)) theopreds
+        theoopsxn = map (\(k,op) -> (k, opTypeToOpTypeXNWON theosorts op)) theoops
+        
         sensxmlio =
           wrapFormulasCMPIOXN
             (PFInput
-              go
---              nodexmlnameset
-              (Set.fromList
-                (map
-                  (\x -> XmlNamed (xnWOaToO x, xnWOaToa x) (xnName x))
-                  (Map.keys xmlNamedSymbolsWOMap)
-                )
-              )
-              (Set.fromList theosorts2)
-              theopredsxn
-              theoopsxn
+              {
+                  pfiGO = go
+                , theorySet = nodexmlnameset
+                , theorySorts = (Set.fromList theosorts)
+                , theoryRel = theorels
+                , theoryPreds = theopredsxn
+                , theoryOps = theoopsxn
+                , debugInfo = (show (nodename, nodenum))
+              }
             )
             axiomxn 
       in
@@ -906,9 +893,6 @@ libToXmlCMPIOXmlNamed go lenv xmlnamemap ln =
               (Hets.idToString $ Hets.nodeNameToId (snd (xnItem xnodetupel))) +++
             xmlNL +++
             -- imports/morphisms
-            -- I still need to find a way of modelling Hets-libraries
-            -- in OMDoc-Imports...
-  --                                      (foldl (\x' (nodename' , mmm) ->
             (foldl (\x' (nodenamex , mll,  mmm) ->
               let
                 isglobal = case mll of
@@ -959,7 +943,7 @@ libToXmlCMPIOXmlNamed go lenv xmlnamemap ln =
                 (xnName xnwos)
                 (Hets.idToString (xnWOaToa xnwos)) +++
               xmlNL
-              ) xmlNL realsorts2) +++
+              ) xmlNL realsorts) +++
             -- adts
             {- 
                no presentation needed for adts as they are 
@@ -967,21 +951,13 @@ libToXmlCMPIOXmlNamed go lenv xmlnamemap ln =
                relations have their presentation via sort-definition
                and sentences get their own presentation tags.
             -}
-            (foldl (\x' sortwo ->
+            (foldl (\x' sortx ->
               let
-                insortset = Map.findWithDefault Set.empty sortwo insortmap
-                sortxn = case findItemPreferOrigin xnItem (Hets.woItem sortwo) (Hets.woOrigin sortwo) (mapSetToSet xmlnamedsortswomap) of
-                  Nothing -> error ("Sort in relation but not in theory... (1) (" ++ (show sortwo) ++ ") [ " ++ (show theosorts) ++ "]")
-                  (Just sortxn' ) -> xnWOaToXNa sortxn'
-                insortsetxn = Set.map (\i ->
-                  case findItemPreferOrigin xnItem (Hets.woItem i) (Hets.woOrigin i) (mapSetToSet xmlnamedsortswomap) of
-                          Nothing -> error ("Sort in relation but not in theory... (2) (" ++ (show i) ++ ") [ " ++ (show theosorts) ++ "]")
-                          (Just sortxn' ) -> xnWOaToXNa sortxn'
-                  ) insortset
-                constructorx = createAllConstructorsXN nodexmlnameset $ Map.toList $ Map.findWithDefault Map.empty (XmlNamed sortwo (xnName sortxn)) constructors
+                insortsetx = Map.findWithDefault Set.empty sortx insortmap
+                constructorx = createAllConstructorsXN nodexmlnameset $ Map.toList $ Map.findWithDefault Map.empty sortx constructors
               in
-                x' +++ createADTXN (sortxn, insortsetxn) constructorx +++ xmlNL
-              ) xmlNL adtsorts) +++
+                x' +++ createADTXN (xnWOaToXNa sortx, Set.map xnWOaToXNa insortsetx) constructorx +++ xmlNL
+              ) xmlNL adtsorts) +++ 
             -- predicates
             (foldl
               (\x' (pxnid, p) ->
@@ -1091,6 +1067,201 @@ libToXmlCMPIOXmlNamed go lenv xmlnamemap ln =
     consAttr Static.DevGraph.Cons = HXT.sattr "conservativity" "conservative"
     consAttr Static.DevGraph.Def = HXT.sattr "conservativity" "definitional"
 
+    createMorphismMapAndHiding::
+      Morphism.Morphism () () ()
+      ->Bool
+      ->[XmlNamedWONSORT]
+      ->[(XmlNamedWONId, PredType)]
+      ->[(XmlNamedWONId, OpType)]
+      ->[XmlNamedWONSORT]
+      ->[(XmlNamedWONId, PredType)]
+      ->[(XmlNamedWONId, OpType)]
+      ->(
+         (Map.Map XmlNamedWONSORT XmlNamedWONSORT
+        , Map.Map XmlNamedWONId XmlNamedWONId
+        , Map.Map XmlNamedWONId XmlNamedWONId)
+        , Maybe [XmlNamedWONId]
+        )
+    createMorphismMapAndHiding
+      caslmorph
+      isHiding
+      ssorts
+      spreds
+      sops
+      tsorts
+      tpreds
+      tops =
+      let
+        adjmorph =
+          adjustMorphismSymbols
+            ssorts
+            spreds
+            sops
+            tsorts
+            tpreds
+            tops
+            caslmorph
+        mhl =
+          if isHiding
+            then
+              let
+                hl =
+                  checkHidden
+                   adjmorph
+                   ssorts -- source node is target in hiding morphism
+                   spreds
+                   sops 
+                   tsorts -- target node is source in hiding morphism
+                   tpreds
+                   tops
+              in
+                case hl of
+                  [] -> Nothing
+                  _ -> Just hl
+            else
+              Nothing
+      in
+        (adjmorph, mhl)
+
+-- create a representation of a morphism using xmlnamed symbols with their
+-- origins
+adjustMorphismSymbols::
+  -- source
+    [XmlNamedWONSORT]
+  ->[(XmlNamedWONId, PredType)]
+  ->[(XmlNamedWONId, OpType)]
+  -- target
+  ->[XmlNamedWONSORT]
+  ->[(XmlNamedWONId, PredType)]
+  ->[(XmlNamedWONId, OpType)]
+  ->Morphism.Morphism () () ()
+  ->(
+      Map.Map XmlNamedWONSORT XmlNamedWONSORT
+    , Map.Map XmlNamedWONId XmlNamedWONId
+    , Map.Map XmlNamedWONId XmlNamedWONId
+    )
+adjustMorphismSymbols
+  ssorts
+  spreds
+  sops
+  tsorts
+  tpreds
+  tops
+  m =
+    let
+      sortmap = Morphism.sort_map m
+      predmap = Morphism.pred_map m
+      opmap = Morphism.fun_map m
+    in
+--      Debug.Trace.trace ("Original Morphism : " ++ show sortmap)
+      (
+          Map.fromList
+            $ map
+              (\(a,b) -> (mapToXId ssorts a, mapToXId tsorts b))
+              $ Map.toList sortmap
+        , Map.fromList
+            $ map
+              (\((spid,spt),(tpid)) ->
+                (
+                    (mapTToXId spreds (==) (spid, spt))
+                  , (mapTToXId tpreds (\_ _ -> True) (tpid, undefined::PredType))
+                )
+              )
+              $ Map.toList predmap
+        , Map.fromList
+            $ map
+              (\((soid,sot),(toid, tfk)) ->
+                (
+                    (mapTToXId sops (\pt tpt -> (tpt { opKind = opKind pt }) == pt ) (soid, sot))
+                  , (mapTToXId tops (\ot tfk -> (opKind ot) == tfk ) (toid, tfk))
+                )
+              )
+              $ Map.toList opmap
+
+      )
+  where
+    mapToXId::[XmlNamedWONSORT]->SORT->XmlNamedWONSORT
+    mapToXId l s =
+      case find (\x -> (xnWOaToa x) == s ) l of
+        (Just x) -> x
+        Nothing -> error ("Symbol not found : " ++ show s ++ " in " ++ show l)
+    mapTToXId::(Show a, Show b)=>[(XmlNamedWONSORT, a)]->(a->b->Bool)->(SORT, b)->XmlNamedWONSORT
+    mapTToXId l check (s,b) =
+      case find (\(x,a) -> ((xnWOaToa x) == s) && (check a b)) l of
+        (Just (x,_)) -> x
+        Nothing -> error ("Symbol not found : " ++ show (s,b) ++ " in " ++ show l)
+
+checkHidden::
+  (
+      Map.Map XmlNamedWONSORT XmlNamedWONSORT
+    , Map.Map XmlNamedWONId XmlNamedWONId
+    , Map.Map XmlNamedWONId XmlNamedWONId
+  )
+  -- source
+  ->[XmlNamedWONSORT]
+  ->[(XmlNamedWONId, PredType)]
+  ->[(XmlNamedWONId, OpType)]
+  -- target
+  ->[XmlNamedWONSORT]
+  ->[(XmlNamedWONId, PredType)]
+  ->[(XmlNamedWONId, OpType)]
+  ->[XmlNamedWONId]
+checkHidden
+  (sortmap, predmap, opmap)
+  ssorts
+  spreds
+  sops
+  tsorts
+  tpreds
+  tops
+  =
+  let
+    rsortmap = Map.fromList $ map (\(a,b) -> (b,a)) $ Map.toList sortmap
+    rpredmap = Map.fromList $ map (\(a,b) -> (b,a)) $ Map.toList predmap
+    ropmap = Map.fromList $ map (\(a,b) -> (b,a)) $ Map.toList opmap
+    hiddensorts =
+      foldl
+        (\hs ts ->
+          case Map.lookup ts rsortmap of
+            Nothing -> 
+              if elem ts hs
+                then
+                  delete ts hs
+                else
+                  hs
+            (Just xs) -> delete xs hs
+        )
+        ssorts
+        tsorts
+    hiddenpreds =
+      foldl
+        (\hp (tp,_) ->
+          case Map.lookup tp rpredmap of
+            Nothing ->
+              case lookup tp hp of
+                Nothing -> hp
+                _ -> filter (\(xhp,_) -> xhp /= tp) hp
+            (Just xp) -> filter (\(xhp,_) -> xhp /= xp) hp
+        )
+        spreds
+        tpreds
+    hiddenops =
+      foldl
+        (\ho (to,_) ->
+          case Map.lookup to ropmap of
+            Nothing ->
+              case lookup to ho of
+                Nothing -> ho
+                _ -> filter (\(xho,_) -> xho /= to) ho
+            (Just xo) -> filter (\(xho,_) -> xho /= xo) ho
+        )
+        sops
+        tops
+  in
+    (hiddensorts ++ (map fst hiddenpreds) ++ (map fst hiddenops))
+    
+  
+    
 {- |
         Converts a DevGraph into a Xml-structure (accessing used (CASL-)files 
         for CMP-generation)
@@ -1102,7 +1273,8 @@ devGraphToXmlCMPIOXmlNamed go dg =
     (onlynodexmlnamelist, xmlnames_onxnl) = createXmlNames nodeTupelToNodeName [] (Set.toList onlynodenameset)
     (onlyrefxmlnamelist, xmlnames_orxnl) = createXmlNames nodeTupelToNodeName xmlnames_onxnl (Set.toList onlyrefnameset)
     --nodenameset = Set.union onlynodenameset onlyrefnameset
-    nodexmlnameset = Set.fromList (onlynodexmlnamelist ++ onlyrefxmlnamelist)
+    nodexmlnamelist = (onlynodexmlnamelist ++ onlyrefxmlnamelist)
+    nodexmlnameset = Set.fromList nodexmlnamelist
     --nodenamemap = Map.fromList $ Set.toList nodenameset
     sortswomap = Hets.getSortsWOWithNodeDGNamesWO dg
     relswomap= Hets.getRelationsWOWithNodeDGNamesWOSMDGWO dg sortswomap
@@ -1111,23 +1283,6 @@ devGraphToXmlCMPIOXmlNamed go dg =
     senswomap = (\smap -> debugGO go "dGTXCMPIOXNsens" ("Sentences : " ++ (showSensWOMap smap)) smap) $ Hets.getSentencesWOWithNodeDGNamesWO dg
     -- importsmapwo = Hets.getNodeImportsNodeDGNamesWO dg
     inputmapwofull = Hets.getNodeAllImportsNodeDGNamesWOLL dg
-    {-importsmapwo =
-      Map.map
-        (\inputlist ->
-          Set.fromList $
-            map (\(a,_,b) -> (a,b)) $
-            filter (\(nn,mll,mmm) ->
-              case mll of
-                Nothing -> True
-                (Just ll) ->
-                  case Static.DevGraph.dgl_type ll of
-                    Static.DevGraph.LocalDef -> True
-                    Static.DevGraph.GlobalDef -> True
-                    _ -> False
-              )
-              inputlist
-        )
-        inputmapwofull-}
     -- sorts
     -- (xmlnamedsortswomap, xmlnames_sm) =
     (xmlnamedsortswomap, _) =
@@ -1145,7 +1300,7 @@ devGraphToXmlCMPIOXmlNamed go dg =
         sortswomap)::(Map.Map Hets.NODE_NAMEWO (Set.Set (XmlNamed Hets.SORTWO)), XmlNameList)
     -- relations -- maybe not needed with xmlnames...
     --xmlnames_rm = xmlnames_sm
-    {- xmlnamedrelswomap =
+    xmlnamedrelswomap =
       foldl
         (\relmap' theory ->
           let
@@ -1169,7 +1324,6 @@ devGraphToXmlCMPIOXmlNamed go dg =
         )
         Map.empty
         (Map.keys relswomap)
-      -}
     -- predicates
     (xmlnamedpredswomap, xmlnames_pm) =
       (processSubContents
@@ -1212,6 +1366,8 @@ devGraphToXmlCMPIOXmlNamed go dg =
         xmlnames_om
         senswomap)::(Map.Map Hets.NODE_NAMEWO (Set.Set (XmlNamed Hets.SentenceWO)), XmlNameList)
   in
+    -- Debug.Trace.trace ("AdjustedMorphisms : " ++ show (Map.map (map snd) ammap))
+    -- $
     foldl (\xio xnodetupel ->
       let
         theoname = xnName xnodetupel
@@ -1220,6 +1376,7 @@ devGraphToXmlCMPIOXmlNamed go dg =
         realsorts = Set.filter (\i -> (xnWOaToO i) == nodenum) theosorts
         realsortswo = Set.map (xnItem) (debugGO go "dGTXCMPIOXN" ("Sorts in " ++ (xnName xnodetupel) ++ " - " ++ (show realsorts) ) realsorts)
         theorels = Map.findWithDefault Rel.empty (Hets.mkWON nodename nodenum) relswomap
+        theoxrels = Map.findWithDefault Rel.empty (Hets.mkWON nodename nodenum) xmlnamedrelswomap
         -- only keep relations that include at least one sort from the
         -- current theory
         realrels = Rel.fromList $ filter (\(a,b) ->
@@ -1233,77 +1390,12 @@ devGraphToXmlCMPIOXmlNamed go dg =
               (Set.insert b (Map.findWithDefault Set.empty a m))
               m
             ) Map.empty (Rel.toList insorts)
-        -- imports/morphisms
-        {-
-        timports = Map.findWithDefault
-          Set.empty
-          (Hets.mkWON nodename nodenum)
-          importsmapwo
-          -}
         tinputs = Map.findWithDefault
           []
           (Hets.mkWON nodename nodenum)
           inputmapwofull
-          {-
-        importsxn = Set.map
-          (\(inodenamewo, mmm) ->
-            let
-              ((itheonum, itheoname), itheoxmlname) = case find (\x -> (fst (xnItem x)) == (Hets.woOrigin inodenamewo)) (Set.toList nodexmlnameset) of
-                Nothing -> error "Unknown Origin of Morphism!"
-                (Just x) -> (xnItem x, xnName x)
-              itheosorts = Map.findWithDefault Set.empty (Hets.mkWON itheoname itheonum) xmlnamedsortswomap
-              itheopreds = (Map.findWithDefault [] (Hets.mkWON itheoname itheonum) xmlnamedpredswomap)
-              itheoops = (Map.findWithDefault [] (Hets.mkWON itheoname itheonum) xmlnamedopswomap)
-              mmapandset = case mmm of
-                Nothing -> Nothing
-                -- order is sort, ops, preds, hiding...
-                (Just (sm,om,pm,hs)) ->
-                  let
-                    mmsorts = map (\(a,b) ->
-                      (
-                        case find (\i -> (xnWOaToa i) == a) (Set.toList itheosorts) of
-                          Nothing -> error ("(In : "++ theoname ++", from " ++ itheoxmlname ++ ") Unable to find imported sort " ++ (show a) ++ " in source-sorts : " ++ (show itheosorts)) 
-                          (Just x) -> xnName x,
-                        case find (\i -> (xnWOaToa i) == b) (Set.toList theosorts) of
-                          Nothing -> error ("(In :"++ theoname  ++") Unable to find imported sort " ++ (show b) ++ " in target-sorts : " ++ (show theosorts))
-                          (Just x) -> xnName x
-                      )
-                      )
-                      (Map.toList sm)
---                                                                              mmpreds = map (\((ai,ap), (bi,bp)) ->
-                    mmpreds = map (\((ai,_), (bi,_)) ->
-                      (
-                        case find (\(ii,_) -> (xnWOaToa ii) == ai) itheopreds of
-                          Nothing -> error ("(In : "++ theoname ++"(" ++ (show nodenum) ++ "), from " ++ itheoxmlname ++ "(" ++ (show itheonum) ++ ") Unable to find import predication " ++ (show ai) ++ " in source-preds : " ++ (show itheopreds) ++ " theories : " ++ (show nodexmlnameset)) 
-                          (Just (ii,_)) -> show $ (xnWOaToa ii), -- xnName ii,
-                        case find (\(ii,_) -> (xnWOaToa ii) == bi) theopreds of
-                          Nothing -> error ("(In :"++ theoname  ++") Unable to find import predication " ++ (show bi) ++ " in target-preds : " ++ (show theopreds))
-                          (Just (ii,_)) -> xnName ii
-                      )
-                      )
-                      (Map.toList pm)
---                                                                              mmops = map (\((ai,ao), (bi,bo)) ->
-                    mmops = map (\((ai,_), (bi,_)) ->
-                      (
-                        case find (\(ii,_) -> (xnWOaToa ii) == ai) itheoops of
-                          Nothing -> error ("(In : "++ theoname ++", from " ++ itheoxmlname ++ ") Unable to find import operator " ++ (show ai) ++ " in source-ops : " ++ (show itheoops))
-                          (Just (ii,_)) -> xnName ii,
-                        case find (\(ii,_) -> (xnWOaToa ii) == bi) theoops of
-                          Nothing -> error ("(In :"++ theoname  ++") Unable to find import operator " ++ (show bi) ++ " in target-ops : " ++ (show theoops))
-                          (Just (ii,_)) -> xnName ii
-                      )
-                      )
-                      (Map.toList om)
-                  in
-                    Just (Map.fromList (mmsorts ++ mmpreds ++ mmops), Set.map show hs)
-                        
-            in
-              (itheoxmlname, mmapandset)
-          )
-          timports
-          -}
         inputsxn = map
-          (\(inodenamewo, mll, mmm) ->
+          (\(inodenamewo, mll, _) ->
             let
               ((itheonum, itheoname), itheoxmlname) = case find (\x -> (fst (xnItem x)) == (Hets.woOrigin inodenamewo)) (Set.toList nodexmlnameset) of
                 Nothing -> error "Unknown Origin of Morphism!"
@@ -1311,64 +1403,46 @@ devGraphToXmlCMPIOXmlNamed go dg =
               itheosorts = Map.findWithDefault Set.empty (Hets.mkWON itheoname itheonum) xmlnamedsortswomap
               itheopreds = (Map.findWithDefault [] (Hets.mkWON itheoname itheonum) xmlnamedpredswomap)
               itheoops = (Map.findWithDefault [] (Hets.mkWON itheoname itheonum) xmlnamedopswomap)
-              mmapandset = case mmm of
-                Nothing -> Nothing
-                -- order is sort, ops, preds, hiding...
-                (Just (sm,om,pm,hs)) ->
-                  let
-                    mmsorts = map (\(a,b) ->
+              mmapandset =
+                let
+                  (caslmorph, isHiding) = case mll of
+                    Nothing -> (Hets.emptyCASLMorphism, False)
+                    (Just ll) ->
                       (
-                        case find (\i -> (xnWOaToa i) == a) (Set.toList itheosorts) of
-                          Nothing -> error ("(In : "++ theoname ++", from " ++ itheoxmlname ++ ") Unable to find imported sort " ++ (show a) ++ " in source-sorts : " ++ (show itheosorts)) 
-                          (Just x) -> xnName x,
-                        case find (\i -> (xnWOaToa i) == b) (Set.toList theosorts) of
-                          Nothing -> error ("(In :"++ theoname  ++") Unable to find imported sort " ++ (show b) ++ " in target-sorts : " ++ (show theosorts))
-                          (Just x) -> xnName x
+                          Hets.getCASLMorph (undefined, undefined, ll)
+                        , case (dgl_type ll) of
+                          (Static.DevGraph.HidingDef {}) -> True
+                          (Static.DevGraph.HidingThm {}) -> True
+                          _ -> False
                       )
-                      )
-                      (Map.toList sm)
---                                                                              mmpreds = map (\((ai,ap), (bi,bp)) ->
-                    mmpreds = map (\((ai,_), (bi,_)) ->
+                  ((asm, apm, aom), ahid) =
+                    createMorphismMapAndHiding
+                      caslmorph
+                      isHiding
+                      (Set.toList itheosorts)
+                      itheopreds
+                      itheoops
+                      (Set.toList theosorts)
+                      theopreds
+                      theoops
+                  xnnamemap =
+                    Map.fromList
                       (
-                        case find (\(ii,_) -> (xnWOaToa ii) == ai) itheopreds of
-                          Nothing -> error ("(In : "++ theoname ++"(" ++ (show nodenum) ++ "), from " ++ itheoxmlname ++ "(" ++ (show itheonum) ++ ") Unable to find import predication " ++ (show ai) ++ " in source-preds : " ++ (show itheopreds) ++ " theories : " ++ (show nodexmlnameset)) 
-                          (Just (ii,_)) -> show $ (xnWOaToa ii), -- xnName ii,
-                        case find (\(ii,_) -> (xnWOaToa ii) == bi) theopreds of
-                          Nothing -> error ("(In :"++ theoname  ++") Unable to find import predication " ++ (show bi) ++ " in target-preds : " ++ (show theopreds))
-                          (Just (ii,_)) -> xnName ii
-                      )
-                      )
-                      (Map.toList pm)
---                                                                              mmops = map (\((ai,ao), (bi,bo)) ->
-                    mmops = map (\((ai,_), (bi,_)) ->
-                      (
-                        case find (\(ii,_) -> (xnWOaToa ii) == ai) itheoops of
-                          Nothing -> error ("(In : "++ theoname ++", from " ++ itheoxmlname ++ ") Unable to find import operator " ++ (show ai) ++ " in source-ops : " ++ (show itheoops))
-                          (Just (ii,_)) -> xnName ii,
-                        case find (\(ii,_) -> (xnWOaToa ii) == bi) theoops of
-                          Nothing -> error ("(In :"++ theoname  ++") Unable to find import operator " ++ (show bi) ++ " in target-ops : " ++ (show theoops))
-                          (Just (ii,_)) -> xnName ii
-                      )
-                      )
-                      (Map.toList om)
-                    -- hiding
-                    mmhidden =
-                      Set.map
-                        (\h ->
-                          case find (\i -> (xnWOaToa i) == h) (Set.toList itheosorts) of
-                            (Just  x) -> (xnName x)
-                            Nothing ->
-                              case find (\(ii,_) -> (xnWOaToa ii) == h) itheopreds of
-                                (Just (x,_)) -> (xnName x)
-                                Nothing ->
-                                  case find (\(ii,_) -> (xnWOaToa ii) == h) itheoops of
-                                    (Just (x,_)) -> (xnName x)
-                                    Nothing -> (show h) -- last resort...
+                      map
+                        (\(a, b) -> (xnName a, xnName b) ) 
+                        (
+                          (Map.toList asm)
+                          ++ (Map.toList apm)
+                          ++ (Map.toList aom)
                         )
-                        hs
-                  in
-                    Just (Map.fromList (mmsorts ++ mmpreds ++ mmops), mmhidden)
-                        
+                      )
+                  xnnameset = Set.fromList $ map xnName $ fromMaybe [] ahid
+                in
+                  if (Map.null xnnamemap) && (Set.null xnnameset)
+                    then
+                      Nothing
+                    else
+                      Just (xnnamemap, xnnameset)
             in
               (itheoxmlname, mll, mmapandset)
           )
@@ -1407,19 +1481,23 @@ devGraphToXmlCMPIOXmlNamed go dg =
         realtheosens = Set.filter (\i -> (xnWOaToO i) == nodenum) theosens
         (axiomxn, sortgenxn) = partitionSensSortGenXN (Set.toList realtheosens)
 --                              (constructors, xmlnames_cons)
-        (constructors, _) = makeConstructorsXN theosorts xmlnames_senm sortgenxn
+        (constructors, _) = makeConstructorsXN (Set.toList theosorts) xmlnames_senm sortgenxn
         adtsorts = Map.keys insortmap ++ (map (\(a,_) -> xnItem a) (Map.toList constructors))
         --theoimports = Map.findWithDefault Set.empty nodename importsmap
-        theopredsxn = map (\(k,p) -> (k, predTypeToPredTypeXNWON theosorts p)) theopreds
-        theoopsxn = map (\(k,op) -> (k, opTypeToOpTypeXNWON theosorts op)) theoops
+        theopredsxn = map (\(k,p) -> (k, predTypeToPredTypeXNWON (Set.toList theosorts) p)) theopreds
+        theoopsxn = map (\(k,op) -> (k, opTypeToOpTypeXNWON (Set.toList theosorts) op)) theoops
         sensxmlio =
           wrapFormulasCMPIOXN
             (PFInput
-              go
-              nodexmlnameset
-              theosorts
-              theopredsxn
-              theoopsxn
+              {
+                  pfiGO = go
+                , theorySet = nodexmlnameset
+                , theorySorts = theosorts
+                , theoryRel = theoxrels
+                , theoryPreds = theopredsxn
+                , theoryOps = theoopsxn
+                , debugInfo = (show (nodename, nodenum))
+              }
             )
             axiomxn
         theorysymbols =
@@ -1428,6 +1506,7 @@ devGraphToXmlCMPIOXmlNamed go dg =
           ++ (map fst theoops)
       in
         do
+          putStrLn ("Operators for " ++ show (nodename, nodenum) ++ " : " ++ show theoops ++ "\n")
           x <- xio
           sensxml <- sensxmlio
           return $ (x +++ xmlNL +++ HXT.etag "theory" += (
@@ -1478,9 +1557,6 @@ devGraphToXmlCMPIOXmlNamed go dg =
                   ) +++
                   (
                     case mmm of
-                      {- (Just mm) ->
-                              morphismMapToXml mm nodenamex theoname
-                              morphismMapToXml mm nodenamex theoname -}
                       (Just (sm, hs)) -> morphismMapToXmlXN sm hs nodenamex theoname
                       Nothing -> xmlNullFilter
                   )
@@ -1526,7 +1602,7 @@ devGraphToXmlCMPIOXmlNamed go dg =
             (foldl
               (\x' (pxnid, p) ->
                 let
-                  px = predTypeToPredTypeXNWON theosorts p 
+                  px = predTypeToPredTypeXNWON (Set.toList theosorts) p 
                 in
                   x' +++
                   predicationToXmlXN
@@ -1545,7 +1621,7 @@ devGraphToXmlCMPIOXmlNamed go dg =
             (foldl
               (\x' (oxnid, op) ->
                 let
-                  ox = opTypeToOpTypeXNWON theosorts op 
+                  ox = opTypeToOpTypeXNWON (Set.toList theosorts) op 
                 in
                   x' +++ 
                   operatorToXmlXN
@@ -1630,6 +1706,62 @@ devGraphToXmlCMPIOXmlNamed go dg =
   consAttr Static.DevGraph.Mono = HXT.sattr "conservativity" "monomorphism"
   consAttr Static.DevGraph.Cons = HXT.sattr "conservativity" "conservative"
   consAttr Static.DevGraph.Def = HXT.sattr "conservativity" "definitional"
+
+  createMorphismMapAndHiding::
+    Morphism.Morphism () () ()
+    ->Bool
+    ->[XmlNamedWONSORT]
+    ->[(XmlNamedWONId, PredType)]
+    ->[(XmlNamedWONId, OpType)]
+    ->[XmlNamedWONSORT]
+    ->[(XmlNamedWONId, PredType)]
+    ->[(XmlNamedWONId, OpType)]
+    ->(
+       (Map.Map XmlNamedWONSORT XmlNamedWONSORT
+      , Map.Map XmlNamedWONId XmlNamedWONId
+      , Map.Map XmlNamedWONId XmlNamedWONId)
+      , Maybe [XmlNamedWONId]
+      )
+  createMorphismMapAndHiding
+    caslmorph
+    isHiding
+    ssorts
+    spreds
+    sops
+    tsorts
+    tpreds
+    tops =
+    let
+      adjmorph =
+        adjustMorphismSymbols
+          ssorts
+          spreds
+          sops
+          tsorts
+          tpreds
+          tops
+          caslmorph
+      mhl =
+        if isHiding
+          then
+            let
+              hl =
+                checkHidden
+                 adjmorph
+                 ssorts -- source node is target in hiding morphism
+                 spreds
+                 sops 
+                 tsorts -- target node is source in hiding morphism
+                 tpreds
+                 tops
+            in
+              case hl of
+                [] -> Nothing
+                _ -> Just hl
+          else
+            Nothing
+    in
+      (adjmorph, mhl)
                                                     
 -- | create catalogue xml-structures for a DevGraph and its theories
 -- theories needed because they have xml-names
@@ -1825,32 +1957,41 @@ transformMorphPred (id' , pt) = Qual_pred_name id' (cv_PredTypeToPred_type pt) I
 -- have to be updated...
 morphismMapToXmlXN::(Map.Map String String)->Set.Set String->String->String->HXT.XmlFilter
 morphismMapToXmlXN symbolmap hidings source target =
-  HXT.etag "morphism" += (
-    (HXT.sattr "hiding" (implode " " $ Set.toList hidings))
-    +++
-    (foldl
-      (\sx (ss, st) -> 
-        sx +++
-          requation
-            (inOMOBJ (HXT.etag "OMS" += (HXT.sattr "cd" source +++ HXT.sattr "name" ss)))
-            (inOMOBJ (HXT.etag "OMS" += (HXT.sattr "cd" target +++ HXT.sattr "name" st)))
-      )
-      (xmlNullFilter)
-      (Map.toList symbolmap)
-    )
-  )       
-  where
-  requation::(HXT.XmlTree->HXT.XmlTrees)->(HXT.XmlTree->HXT.XmlTrees)->(HXT.XmlTree->HXT.XmlTrees)
-  requation p v =
-    HXT.etag "requation" +=
-      (
-      xmlNL +++
-      p +++
-      xmlNL +++
-      v +++
-      xmlNL
-      ) +++
-    xmlNL
+  if (Map.null symbolmap) && (Set.null hidings)
+    then
+      xmlNullFilter
+    else
+      HXT.etag "morphism" += (
+        (if Set.null hidings
+          then
+            xmlNullFilter
+          else
+            (HXT.sattr "hiding" (implode " " $ Set.toList hidings))
+        )
+        +++
+        (foldl
+          (\sx (ss, st) -> 
+            sx +++
+              requation
+                (inOMOBJ (HXT.etag "OMS" += (HXT.sattr "cd" source +++ HXT.sattr "name" ss)))
+                (inOMOBJ (HXT.etag "OMS" += (HXT.sattr "cd" target +++ HXT.sattr "name" st)))
+          )
+          (xmlNullFilter)
+          (Map.toList symbolmap)
+        )
+      )       
+      where
+      requation::(HXT.XmlTree->HXT.XmlTrees)->(HXT.XmlTree->HXT.XmlTrees)->(HXT.XmlTree->HXT.XmlTrees)
+      requation p v =
+        HXT.etag "requation" +=
+          (
+          xmlNL +++
+          p +++
+          xmlNL +++
+          v +++
+          xmlNL
+          ) +++
+        xmlNL
 
 -- use xml-names instead
 morphismMapToXmlXNR::
@@ -2089,19 +2230,19 @@ partitionSensSortGenXN sens =
     ) ([],[]) sens
                   
 -- | creates constructors from a list of 'CASLFORMULA's (see : 'partitionSensSortGen')
-makeConstructorsXN::Set.Set XmlNamedWONSORT->XmlNameList->[XmlNamedWON (Ann.Named CASLFORMULA)]->(Map.Map (XmlNamedWON Id.Id) (Map.Map (XmlNamedWON Id.Id) (Set.Set OpTypeXNWON)), XmlNameList)
-makeConstructorsXN sortxnwoset xmlnames sortgenaxxnlist =
+makeConstructorsXN::[XmlNamedWONSORT]->XmlNameList->[XmlNamedWON (Ann.Named CASLFORMULA)]->(Map.Map (XmlNamedWON Id.Id) (Map.Map (XmlNamedWON Id.Id) (Set.Set OpTypeXNWON)), XmlNameList)
+makeConstructorsXN sortsxnwo xmlnames sortgenaxxnlist =
   foldl (\(mapping, xmlnames' ) sortgenaxxn ->
     let
       (conidxnwo, conmap, xmlnames'' ) =
-        makeConstructorMapXN sortxnwoset xmlnames' sortgenaxxn
+        makeConstructorMapXN sortsxnwo xmlnames' sortgenaxxn
     in
       (Map.insertWith (\a b -> Map.union a b) conidxnwo conmap mapping, xmlnames'' )
       ) (Map.empty, xmlnames) sortgenaxxnlist
                                         
 -- | creates constructors from a 'CASLFORMULA'
-makeConstructorMapXN::Set.Set XmlNamedWONSORT->XmlNameList->XmlNamedWON (Ann.Named CASLFORMULA)->(XmlNamedWON Id.Id, (Map.Map (XmlNamedWON Id.Id) (Set.Set OpTypeXNWON)), XmlNameList)
-makeConstructorMapXN sortxnwoset xmlnames sensxnwo =
+makeConstructorMapXN::[XmlNamedWONSORT]->XmlNameList->XmlNamedWON (Ann.Named CASLFORMULA)->(XmlNamedWON Id.Id, (Map.Map (XmlNamedWON Id.Id) (Set.Set OpTypeXNWON)), XmlNameList)
+makeConstructorMapXN sortsxnwo xmlnames sensxnwo =
   let
     sens = xnWOaToa sensxnwo
     (Ann.NamedSen senname _ _ (Sort_gen_ax cons _)) = sens
@@ -2109,9 +2250,9 @@ makeConstructorMapXN sortxnwoset xmlnames sensxnwo =
     sort = case cons of
       [] -> read ("[" ++ (drop (length "ga_generated_") senname) ++ "]")
       (c:_) -> newSort c
-    sortxn = case sortToXmlNamedWONSORT (Set.toList sortxnwoset) (sort) of
+    sortxn = case sortToXmlNamedWONSORT sortsxnwo (sort) of
       Nothing -> error ("Cannot find sort to make constructor for! (No \"" ++ (Hets.idToString sort) ++ "\" in "
-        ++ (show $ Set.map (\x -> Hets.idToString (xnWOaToa x)) sortxnwoset) ++ ")")
+        ++ (show $ map (\x -> Hets.idToString (xnWOaToa x)) sortsxnwo) ++ ")")
       (Just sortxn' ) -> sortxn'
     (constructormap, xmlnames' ) =
       foldl(\(cmap, xmlnames'' ) (Constraint _ symbs _) ->
@@ -2119,7 +2260,7 @@ makeConstructorMapXN sortxnwoset xmlnames sensxnwo =
           let
             opxmlname = createUniqueName xmlnames''' (adjustStringForXmlName (show name' ))
           in
-            (Map.insertWith (Set.union) (XmlNamed (Hets.mkWON name' origin) opxmlname) (Set.singleton (opTypeToOpTypeXNWON sortxnwoset (cv_Op_typeToOpType ot))) tcmap, xmlnames''' )
+            (Map.insertWith (Set.union) (XmlNamed (Hets.mkWON name' origin) opxmlname) (Set.singleton (opTypeToOpTypeXNWON sortsxnwo (cv_Op_typeToOpType ot))) tcmap, xmlnames''' )
           ) (cmap, xmlnames'' ) $ map fst symbs
         ) (Map.empty, xmlnames) cons
   in
@@ -2303,6 +2444,38 @@ libEnvToDGraphG (ln,dg,lenv) =
           ) [] edges
     in
       Graph.mkGraph lnodes ledges
+
+libEnvXToDGraphG::(ASL.LIB_NAME, DGraph, LibEnv)->(ImportGraph (DGraph, ASL.LIB_NAME))
+libEnvXToDGraphG (ln,dg,lenv) =
+  let
+    input = (:) (ln,dg) $ map (\(ln' , gc) -> (ln', (devGraph gc) )) .
+      filter (\(ln' ,_) -> ln' /= ln) $
+      Map.toList lenv
+  in
+    makeIG input
+  where
+  makeIG::[(ASL.LIB_NAME, DGraph)]->(ImportGraph (DGraph, ASL.LIB_NAME))
+  makeIG input =
+    let
+      (lnodes, edges) = foldl (\(lnodes' , edges' ) (libname, dg' ) ->
+        let
+          nodenum = (+) 1 $ length lnodes'
+          node = (nodenum, S (splitFile . fst . splitPath $ unwrapLinkSource libname, unwrapLinkSource libname) (dg', libname) )
+          refs = filter isDGRef . map snd $ Graph.labNodes dg'
+          imports' = map (\n -> (nodenum, (getDGNodeName n, unwrapLinkSource $ dgn_libname n))) refs
+        in
+          (lnodes' ++ [node], edges' ++ imports' )
+          ) ([],[]) input
+      ledges = foldl (\ledges' (target, (thname, libname)) ->
+        let
+          source = case filter (\(_, S (_,ssrc) _) -> ssrc == libname) lnodes of
+            [] -> Debug.Trace.trace ("No source found for " ++ libname ++ " in " ++ (show $ map (\(S (_,src) _) -> src) $ map snd lnodes)) 0
+            sourcelist -> fst $ head sourcelist
+        in
+          (source, target, TI (thname, libname)):ledges'
+          ) [] edges
+    in
+      Graph.mkGraph lnodes ledges
                                 
 -- | separates the path and filename part from a filename, first element is the
 -- name, second the path (without last delimiter)
@@ -2360,6 +2533,20 @@ dGraphGToXmlGXN ig =
         omdoc <- devGraphToOMDocCMPIOXN emptyGlobalOptions dg name'
         return (n, S i omdoc ) ) $ Graph.labNodes ig
     return (Graph.mkGraph nodes $ Graph.labEdges ig)
+
+dGraphGXLEToXmlGXN::
+  (ImportGraph (DGraph, ASL.LIB_NAME))
+  ->LibEnv
+  ->XmlTaggedLibEnv
+  ->IO (ImportGraph (HXT.XmlTrees))
+dGraphGXLEToXmlGXN ig le xtagle =
+  do
+    nodes <- mapM (\(n, (S i@(name' ,_) (dg, ln))) ->
+      do
+        omdoc <- libToOMDocCMPIOXN emptyGlobalOptions le xtagle ln name'
+        return (n, S i omdoc ) ) $ Graph.labNodes ig
+    return (Graph.mkGraph nodes $ Graph.labEdges ig)
+  
 
 fileSandbox::String->String->String
 fileSandbox [] file = file
@@ -2660,8 +2847,10 @@ data PFInput =
        pfiGO::GlobalOptions
       ,theorySet::TheoryXNSet
       ,theorySorts::Set.Set XmlNamedWONSORT
+      ,theoryRel::Rel.Rel XmlNamedWONSORT
       ,theoryPreds::[(XmlNamedWONId, PredTypeXNWON)]
       ,theoryOps::[(XmlNamedWONId, OpTypeXNWON)]
+      ,debugInfo::String
     }
 {-                
 emptyPFInput::PFInput
@@ -2777,7 +2966,7 @@ processFormulaXN pfinput
       ) +++
       xmlNL +++
       (xmlNL) +++
-      (createSymbolForPredicationXN (theorySet pfinput) (theoryPreds pfinput) p) +++
+      (createSymbolForPredicationXN pfinput p) +++
       (foldl (\term t ->
         term +++
         (processTermXN pfinput t) +++
@@ -2904,38 +3093,54 @@ processFormulaXN _
 
 -- | create an xml-representation for a predication
 createSymbolForPredicationXN::
-  TheoryXNSet
-  -> [(XmlNamedWONId, PredTypeXNWON)]
+--  TheoryXNSet
+--  -> [(XmlNamedWONId, PredTypeXNWON)] 
+  PFInput
   -> PRED_SYMB -- ^ the predication to process
   -> (HXT.XmlTree -> HXT.XmlTrees) 
        -- ^ a xml-representation of the predication
 -- Pred_name
-createSymbolForPredicationXN theoryset theorypreds
+createSymbolForPredicationXN pfinput -- theoryset theorypreds
   (Pred_name pr) =
     let
-      (xnpid, _) = case find (\(xnpid' , _) ->
-        (xnWOaToa xnpid' ) == pr ) theorypreds of 
+      (xnpid, _) =
+        case
+          find
+            (\(xnpid' , _) ->
+              (xnWOaToa xnpid' ) == pr ) (theoryPreds pfinput)
+        of 
           Nothing -> error "Cannot find Spredicate in theory!"
           (Just x' ) -> x'
     in
       HXT.etag "OMS" += 
         (HXT.sattr "cd" (fromMaybe "unknown" $
-          getTheoryXmlName theoryset (xnWOaToO xnpid)) +++
+          getTheoryXmlName (theorySet pfinput) (xnWOaToO xnpid)) +++
         HXT.sattr "name" (xnName xnpid)
         )
 -- Qual_pred_name
-createSymbolForPredicationXN theoryset theorypreds
+createSymbolForPredicationXN pfinput -- theoryset theorypreds
   (Qual_pred_name pr pt _) =
     let
-      (xnpid, _) = case find (\(xnpid' , xnpt' ) ->
-        (xnWOaToa xnpid' ) == pr &&
-        (cv_PredTypeToPred_type $ predTypeXNWONToPredType xnpt' ) == pt ) theorypreds of
-          Nothing -> error ("Cannot find Qpredicate in theory!" ++ "(" ++ (show pr) ++ ", " ++ (show theorypreds) ++ ")")
-          (Just x' ) -> x'
+      (xnpid, _) =
+        case
+          findCompatiblePredicate
+            (theoryRel pfinput)
+            (theoryPreds pfinput)
+            pr
+            (cv_Pred_typeToPredType pt)
+        of
+          Nothing ->
+            error
+              (
+                "Cannot find Qpredicate in theory!"
+                  ++ "(" ++ (show pr) ++ ", "
+                  ++ (show (theoryPreds pfinput)) ++ ")"
+              )
+          (Just x) -> x
     in
       HXT.etag "OMS" +=
         ( HXT.sattr "cd" ( fromMaybe "unknown" $
-          getTheoryXmlName theoryset (xnWOaToO xnpid)
+          getTheoryXmlName (theorySet pfinput) (xnWOaToO xnpid)
           ) +++
         HXT.sattr "name" (xnName xnpid)
         ) +++
@@ -3074,17 +3279,21 @@ processOperatorXN pfinput
   (Op_name op) =
     let
       (xnopid, _) =
-        case find
-          (\(xnid, _) -> (xnWOaToa xnid) == op)
-          (theoryOps pfinput)
-            of
-              Nothing ->
-                if (show op == "PROJ")
-                  then
-                    (XmlNamed (Hets.mkWON op (-1)) "PROJ", undefined)
-                  else
-                    error ("Operator is unknown! (" ++ (show op) ++ " in "++ (show (theoryOps pfinput)) ++")")
-              (Just x' ) -> x'
+        case
+          find
+            (\(xnid, _) -> (xnWOaToa xnid) == op)
+            (theoryOps pfinput)
+        of
+          Nothing ->
+            if (show op == "PROJ")
+              then
+                (XmlNamed (Hets.mkWON op (-1)) "PROJ", undefined)
+              else
+                error
+                  (
+                    "Operator is unknown! (" ++ (show op)
+                      ++ " in "++ (show (theoryOps pfinput)) ++")")
+          (Just x' ) -> x'
     in
       HXT.etag "OMS" +=
         (HXT.sattr "cd" 
@@ -3097,15 +3306,25 @@ processOperatorXN pfinput
   (Qual_op_name op ot _) =
     let
       (xnopid, _) =
-        case find
-          (\(xnid, xnopt) ->
-            (xnWOaToa xnid) == op
-            && (cv_OpTypeToOp_type $ opTypeXNWONToOpType xnopt) == ot
-          )
-          (theoryOps pfinput)
-            of
-              Nothing -> error ("Operator is unknown! (" ++ (show op) ++ "("++ (show ot) ++ ") in "++ (show (theoryOps pfinput)) ++")")
-              (Just x' ) -> x' 
+        case
+          findCompatibleOperator
+            (theoryRel pfinput)
+            (theoryOps pfinput)
+            op
+            (cv_Op_typeToOpType ot)
+        of
+          Nothing ->
+            error
+              (
+                "No compatible Operator for ("
+                  ++ (show op) ++ "( "++ (show ot) ++ " ) in "
+                  ++ (show (theoryOps pfinput)) ++
+                  ") where the sort relation is " 
+                  ++ (show (theoryRel pfinput))
+                  ++ "OpsShort : " ++ (show (map (show . xnWOaToa . fst) (theoryOps pfinput)))
+                  ++ " DebugInfo : " ++ (debugInfo pfinput)
+              )
+          (Just x) -> x
     in
       HXT.etag "OMS" +=
         ( HXT.sattr "cd"
@@ -3114,6 +3333,103 @@ processOperatorXN pfinput
           ) +++
           HXT.sattr "name" (xnName xnopid)
         )
+
+
+-- find a compatible predicate
+-- compatible predicates have a more generic type than the actual
+-- predicate, that is, their parameter types are supersorts
+findCompatiblePredicate::
+  Rel.Rel XmlNamedWONSORT
+  ->[(XmlNamedWONId, PredTypeXNWON)]
+  ->Id.Id
+  ->PredType
+  ->Maybe (XmlNamedWONId, PredTypeXNWON)
+findCompatiblePredicate
+  sortrel
+  predicates
+  predname
+  predtype =
+  let
+    srel = xmlRelToRel sortrel
+  in
+    find
+      (\(xnid, xnprt) ->
+        ((xnWOaToa xnid) == predname)
+          && (
+            compatiblePredicate
+              srel
+              predtype -- optype is checked to be compatible with one
+                     -- from the list
+              (predTypeXNWONToPredType xnprt)
+            )
+      )
+      predicates
+
+-- find a compatible operator
+-- compatible operators have a more generic type than the actual
+-- operator, that is, their parameter types are supersorts
+findCompatibleOperator::
+  Rel.Rel XmlNamedWONSORT
+  ->[(XmlNamedWONId, OpTypeXNWON)]
+  ->Id.Id
+  ->OpType
+  ->Maybe (XmlNamedWONId, OpTypeXNWON)
+findCompatibleOperator
+  sortrel
+  operators
+  opname
+  optype =
+  let
+    srel = xmlRelToRel sortrel
+  in
+    find
+      (\(xnid, xnopt) ->
+        ((xnWOaToa xnid) == opname)
+          && (
+            compatibleOperator
+              srel
+              optype -- optype is checked to be compatible with one
+                     -- from the list
+              (opTypeXNWONToOpType xnopt)
+            )
+      )
+      operators
+        
+
+-- strip xmlnames and origins from a relation
+xmlRelToRel::Rel.Rel XmlNamedWONSORT->Rel.Rel SORT
+xmlRelToRel xrel =
+  Rel.fromList $ map (\(a,b) -> (xnWOaToa a, xnWOaToa b)) $ Rel.toList xrel
+
+-- check if a type t1 is a subtype of a type t2
+isTypeOrSubType::Rel.Rel SORT->SORT->SORT->Bool
+isTypeOrSubType sortrel givensort neededsort =
+  (givensort == neededsort)
+    || (Rel.path givensort neededsort sortrel)
+
+-- check for type compatibility
+-- a type t1 is compatible to a type t2 if
+-- a) t1 == t2 or b) t1 is a subtype of t2
+compatibleTypes::Rel.Rel SORT->[SORT]->[SORT]->Bool
+compatibleTypes _ [] [] = True
+compatibleTypes _ [] _ = False
+compatibleTypes _ _ [] = False
+compatibleTypes sortrel (s1:r1) (s2:r2) =
+  (isTypeOrSubType sortrel s1 s2) && (compatibleTypes sortrel r1 r2)
+
+-- check type compatibility for two predicates
+compatiblePredicate::Rel.Rel SORT->PredType->PredType->Bool
+compatiblePredicate sortrel pt1 pt2 =
+  compatibleTypes sortrel (predArgs pt1) (predArgs pt2)
+
+-- check type compatibility for two operators
+compatibleOperator::Rel.Rel SORT->OpType->OpType->Bool
+compatibleOperator sortrel ot1 ot2 =
+--  (\x -> Debug.Trace.trace ("Comparing " ++ show ot1 ++ " to " ++ show ot2 ++ " -> " ++ show x) x)
+--  $
+  (isTypeOrSubType sortrel (opRes ot1) (opRes ot2))
+  &&
+  (compatibleTypes sortrel (opArgs ot1) (opArgs ot2))
 
 {-
 idToXml::Id.Id->(HXT.XmlTree->HXT.XmlTrees)

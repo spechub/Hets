@@ -32,6 +32,23 @@ import qualified Text.XML.HXT.Parser as HXT
 import Text.XML.HXT.Parser ((+++),(+=))
 import OMDoc.KeyDebug
 
+import qualified System.Environment as SysEnv
+--import qualified System.IO as SysIO
+
+mGetEnv::String->IO (Maybe String)
+mGetEnv env = catch (SysEnv.getEnv env >>= \v -> return (Just v)) (\_ -> return Nothing)
+
+getEnvDef::String->String->IO String
+getEnvDef env def =
+  do
+    mv <- mGetEnv env
+    return
+      (
+      case mv of
+        Nothing -> def
+        (Just v) -> v
+      )
+
 -- Global-Options (for debugging currently)
 
 data GlobalOptions =
@@ -205,10 +222,9 @@ aToXmlNamedWONaSet xnset a =
     [] -> Nothing
     (i:_) -> (Just i)
         
-predTypeToPredTypeXNWON::Set.Set (XmlNamedWON SORT)->PredType->PredTypeXNWON
-predTypeToPredTypeXNWON sortwoset (PredType {predArgs = pA}) =
+predTypeToPredTypeXNWON::[XmlNamedWON SORT]->PredType->PredTypeXNWON
+predTypeToPredTypeXNWON xnwonsorts (PredType {predArgs = pA}) =
   let
-    xnwonsorts = Set.toList sortwoset
     xnwonargs = map (\a -> case (sortToXmlNamedWONSORT xnwonsorts a) of
       Nothing -> error "Unable to find xml-named sort for predicate argument!"
       (Just xnsort) -> xnsort) pA
@@ -219,10 +235,9 @@ predTypeXNWONToPredType::PredTypeXNWON->PredType
 predTypeXNWONToPredType (PredTypeXNWON xnargs) =
   PredType $ map xnWOaToa xnargs
                 
-opTypeToOpTypeXNWON::Set.Set (XmlNamedWON SORT)->OpType->OpTypeXNWON
-opTypeToOpTypeXNWON sortwoset (OpType {CASL.Sign.opKind = oK, opArgs = oA, opRes = oR}) =
+opTypeToOpTypeXNWON::[XmlNamedWON SORT]->OpType->OpTypeXNWON
+opTypeToOpTypeXNWON xnwonsorts (OpType {CASL.Sign.opKind = oK, opArgs = oA, opRes = oR}) =
   let
-    xnwonsorts = Set.toList sortwoset
     xnwonargs = map (\a -> case (sortToXmlNamedWONSORT xnwonsorts a) of
       Nothing -> error "Unable to find xml-named sort for operator argument!"
       (Just xnsort) -> xnsort) oA
