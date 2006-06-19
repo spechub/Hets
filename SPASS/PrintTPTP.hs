@@ -78,21 +78,15 @@ instance PrintTPTP SPLogicalPart where
               SPTermDecl{}       -> True
               SPSimpleTermDecl _ -> True
               _                  -> False) $ declarationList lp
-      in (numberDeclaration 0 $ validDeclarations)
+      in (foldl (\declList (decl, i) ->
+                    declList
+                    $$ text "fof" <>
+                    parens (text ("declaration" ++ show i) <> comma <>
+                    printTPTP SPOriginAxioms <> comma
+                    $$ parens (printTPTP decl)) <> dot)
+                empty $
+                zip validDeclarations [(1::Int)..])
          $$ foldl (\d x -> d $$ printTPTP x) empty (formulaLists lp)
-
-{- |
-  Recursive function for creating a Doc from a list of SPASS Declaration.
--}
-numberDeclaration :: Integer -- ^ number of declaration, should start with 0
-                  -> [SPDeclaration] -- ^ list of remaining SPDeclaration terms
-                  -> Doc
-numberDeclaration nr declList = case declList of
-    [] -> empty
-    _  -> text "fof" <> parens (text ("declaration" ++ show nr) <> comma
-                          <> printTPTP SPOriginAxioms <> comma
-                          $$ parens (printTPTP $ head declList)) <> dot
-          $$ numberDeclaration (nr + 1) (tail declList)
 
 {- |
   Standard variable term to be used in subsort declaration.
