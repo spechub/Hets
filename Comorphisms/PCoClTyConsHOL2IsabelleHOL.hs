@@ -109,7 +109,8 @@ transSignature sign =
             in  foldl (\ m' (transOp,i) ->
                            case transOp of
                              Just typ -> Map.insert
-                                 (mkVName $ showIsaConstIT name i baseSign)                                 typ m'
+                                 (mkVName $ showIsaConstIT name i baseSign)
+                                 typ m'
                              Nothing   -> m')
                       m (zip transOps [1::Int ..])
 
@@ -130,7 +131,7 @@ unitTyp :: Typ
 unitTyp = Type "unit" holType []
 -- types
 transType :: Type -> Typ
-transType = transFunType . funType False
+transType = transFunType . funType
 
 transFunType :: FunType -> Typ
 transFunType fty = case fty of
@@ -155,29 +156,21 @@ isPartialVal t = case t of
     _ -> False
 
 makePartialVal :: FunType -> FunType 
-makePartialVal t = if isPartialVal t then t else 
-                       case t of 
-                         UnitType -> BoolType
-                         _ -> PartialVal t
+makePartialVal t = if isPartialVal t then t else case t of 
+    UnitType -> BoolType
+    _ -> PartialVal t
 
-funType :: Bool -> Type -> FunType
-funType makeFunArgsPartial t = case getTypeAppl t of
+funType :: Type -> FunType
+funType t = case getTypeAppl t of
    (TypeName tid _ n, tys) -> 
        if n == 0 then 
-           case tys of 
+           case map funType tys of 
            [] | tid == unitTypeId -> UnitType
-           [ty] | tid == lazyTypeId -> makePartialVal 
-                       $ funType makeFunArgsPartial ty
-           [t1, t2] | isArrow tid -> FunType 
-                (case funType True t1 of 
-                   FunType t3 t4 -> FunType (makePartialVal t3) t4
-                   ft -> if makeFunArgsPartial then makePartialVal ft else ft)
-                $ (if isPartialArrow tid || makeFunArgsPartial 
-                   then makePartialVal else id)
-                      $ funType makeFunArgsPartial t2
-           ftys@(_ : _ : _) | isProductId tid -> foldl1 PairType 
-                $ map (funType True) ftys
-           ftys -> ApplType tid $ map (funType True) ftys
+           [ty] | tid == lazyTypeId -> makePartialVal ty
+           [t1, t2] | isArrow tid -> FunType t1 $ if isPartialArrow tid then
+                                               makePartialVal t2 else t2
+           ftys@(_ : _ : _) | isProductId tid -> foldl1 PairType ftys
+           ftys -> ApplType tid ftys
        else if null tys then TypeVar tid 
             else error "funType: no higher kinds" 
    _ -> error "funType: no type appl"
@@ -268,7 +261,7 @@ uncurryOp = conDouble uncurryOpS
 -- terms
 transTerm :: Env -> As.Term -> (FunType, Isa.Term)
 transTerm sign trm = case trm of
-    QualVar (VarDecl var t _ _) -> (funType False t,  
+    QualVar (VarDecl var t _ _) -> (funType t,  
         Isa.Free (transVar var) $ transType t)
     QualOp _ (InstOpId opId _ _) ts@(TypeScheme _ ty _) _ 
       | opId == trueId -> (fTy, true)
@@ -285,7 +278,7 @@ transTerm sign trm = case trm of
       | opId == defId -> (fTy, defOp)
       | opId == whenElse -> (fTy, ifThenElseOp)
       | otherwise -> (fTy, conDouble $ transOpId sign opId ts)
-       where fTy = funType False ty
+       where fTy = funType ty
              unCurry f = (fTy, termAppl uncurryOp $ con f) 
     QuantifiedTerm quan varDecls phi _ ->
         let quantify q gvd phi' = case gvd of
@@ -299,9 +292,12 @@ transTerm sign trm = case trm of
             qname Unique      = ex1S
             (_, psi) = transTerm sign phi
         in (BoolType, foldr (quantify quan) psi varDecls)
-    TypedTerm t _ _ _ -> transTerm sign t
-    LambdaTerm pats _ body _ ->
-        foldr (abstraction sign) (transTerm sign body) pats
+    TypedTerm t q ty _ -> transTerm sign t
+    LambdaTerm pats q body _ ->
+        let (ty, t) = transTerm sign body in
+        foldr (abstraction sign) (case q of
+                                    Partial -> makePartialVal ty
+                                    Total -> ty, t) pats
     LetTerm As.Let peqs body _ -> 
         let (bTy, bTrm) = transTerm sign body
         in (bTy, Isa.Let (map (transProgEq sign) peqs) bTrm)
@@ -429,7 +425,7 @@ adjustTypes aTy rTy ty = case (aTy, ty) of
             PartialVal _ -> q
             _ -> (fp, (PartialVal argTy, mkMapFun MapSome aTrm))
     (a, PartialVal b) -> case adjustTypes a rTy b of
-        q@((_, f), ap@(argTy, _)) -> case argTy of
+        q@(_, ap@(argTy, _)) -> case argTy of
             PartialVal _ -> q
             _ -> ((True, LiftSome rTy), ap)
     (PartialVal a, b) -> case adjustTypes a rTy b of
@@ -527,8 +523,8 @@ abstraction :: Env -> As.Term -> (FunType, Isa.Term) -> (FunType, Isa.Term)
 abstraction sign pat (ty, body) = let
     getType t =
       case t of
-        QualVar (VarDecl _ typ _ _) -> funType True typ
-        TypedTerm _ _ typ _         -> funType True typ
+        QualVar (VarDecl _ typ _ _) -> funType typ
+        TypedTerm _ _ typ _         -> funType typ
         TupleTerm terms _           -> evalTupleType terms
         _                           ->
           error "PCoClTyConsHOL2IsabelleHOL.abstraction"
