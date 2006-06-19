@@ -143,6 +143,9 @@ aTypeWithKind k = TypeName aVar (toRaw k) (-1)
 aType :: Type
 aType = aTypeWithKind universe
 
+lazyAType :: Type
+lazyAType = mkLazyType aType
+
 aBindWithKind :: Variance -> Kind -> Type -> TypeScheme
 aBindWithKind v k ty = TypeScheme [TypeArg aVar v (VarKind k)
     (toRaw k) (-1) Other nullRange] ty nullRange
@@ -158,12 +161,14 @@ aPredType =
     aBindWithKind ContraVar universe $ mkFunArrType aType PFunArr unitType
 
 eqType, logType, notType, whenType, unitTypeScheme :: TypeScheme
-eqType = bindA $ mkFunArrType (mkProductType [aType, aType]) PFunArr unitType
+eqType = bindA $ mkFunArrType (mkProductType [lazyAType, lazyAType]) 
+         PFunArr unitType
 logType = simpleTypeScheme $
           mkFunArrType (mkProductType [lazyLog, lazyLog]) PFunArr unitType
 notType = simpleTypeScheme $ mkFunArrType lazyLog PFunArr unitType
 whenType =
-    bindA $ mkFunArrType (mkProductType [aType, lazyLog, aType]) PFunArr aType
+    bindA $ mkFunArrType (mkProductType [lazyAType, lazyLog, lazyAType]) 
+          PFunArr aType
 unitTypeScheme = simpleTypeScheme lazyLog
 
 botId :: Id
@@ -176,10 +181,10 @@ logId :: Id
 logId = mkId [mkSimpleId "Logical"]
 
 botType :: TypeScheme
-botType = bindA $ mkLazyType aType
+botType = bindA $ lazyAType
 
 defType :: TypeScheme
-defType = bindA $ mkFunArrType (mkLazyType aType) PFunArr unitType
+defType = bindA $ mkFunArrType lazyAType PFunArr unitType
 
 bList :: [(Id, TypeScheme)]
 bList = (botId, botType) : (defId, defType) : (notId, notType) :
