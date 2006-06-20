@@ -28,21 +28,6 @@ Repräsentation ändern:
 Razvan (Till)
 ************************************************
 
-************************************************
-Anton (Till)
-************************************************
-
-**************** task A ************************
-
-Proofs with Isabelle and SPASS
-CASL basic datatypes
-HasCASL examples
-- improve simplifier for partiality in Isabelle coding
-  program interaction between solver, subgoaler and simplifier in such a way
-  that proofs of definedness conditions are postponed
-
-**************** task B ************************
-
 Integration with PGIP
   Hets needs to be equipped with a command-line interface that reads in
     specification libraries and proof commands
@@ -56,6 +41,29 @@ Integration with PGIP
   needs incremental parsing and static analysis for Hets libraries
     easy: parse and analyse one specification at a time, and then process it with proof commands
     more challenging: incrementally parse and analyse also individual specifications
+
+************************************************
+Anton (Till)
+************************************************
+
+Modal-CASL <-> CASL-DL
+  see Chapter 4 of "The Description Logic Handbook"
+      and ask Klaus for a print out of it
+
+improve Modal-CASL
+  possibly also modal logic in CoCASL
+
+**************** task A ************************
+
+Proofs with Isabelle and SPASS
+CASL basic datatypes
+HasCASL examples
+- improve simplifier for partiality in Isabelle coding
+  program interaction between solver, subgoaler and simplifier in such a way
+  that proofs of definedness conditions are postponed
+
+
+
 
 ************************************************
 Florian (Till)
@@ -232,12 +240,6 @@ weakly amalgamable cocones
 further task 1
 ************************************************
 
-Modal-CASL <-> CASL-DL
-  see Chapter 4 of "The Description Logic Handbook"
-      and ask Klaus for a print out of it
-
-improve Modal-CASL
-  possibly also modal logic in CoCASL
 
 ************************************************
 further task 2
