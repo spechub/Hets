@@ -520,11 +520,23 @@ mkTermAppl fun arg = case (fun, arg) of
           | new mp == "mapSnd" -> Tuplex [a, mkTermAppl f b] c
       (MixfixApp (MixfixApp (Const cmp _) [f] _) [g] _, _)
           | new cmp == "comp" -> mkTermAppl f $ mkTermAppl g arg
-      (Const d _, MixfixApp (Const sm _) [_] _) 
+          | new cmp == "flipComp" -> mkTermAppl g $ mkTermAppl f arg
+      (Const d _, MixfixApp (Const sm _) [a] _) 
           | new d == "defOp" && new sm == someS -> true 
           | new d == "option2bool" && new sm == someS -> true
+          | new d == "option2bool" && new sm == "bool2option"
+            || new d == "bool2option" && new sm == "option2bool" -> a
+      (Const i _, Const j _)
+          | new i == "bool2option" && new j == "True" ->
+              termAppl conSome $ unitOp
+          | new i == "bool2option" && new j == "False" ->
+              conDouble "None"
+      (Const i _, Tuplex [] _)
+          | new i == "option2bool" -> false
       (Const i _, _)
           | new i == "id" -> arg
+          | new i == "constTrue" -> true
+          | new i == "constNil" -> unitOp
       _ -> termAppl fun arg
 
 mkApp :: Env -> As.Term -> As.Term -> (FunType, Isa.Term)
