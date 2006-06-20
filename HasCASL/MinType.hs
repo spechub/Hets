@@ -15,7 +15,6 @@ choose a minimal type
 module HasCASL.MinType where
 
 import HasCASL.As
-import HasCASL.AsUtils
 import HasCASL.TypeAna
 
 q2p :: (a, b, c, d) -> (c, d)
@@ -29,7 +28,7 @@ typeNub te f l = case l of
     where
     comp :: (Type, Term) -> (Type, Term) -> Bool
     comp (ty1, t1) (ty2, t2) = eqTerm t1 t2 && 
-         (lesserType te ty1 ty2 || mkLazyType ty1 == ty2)
+                               lesserType te ty1 ty2
 
 eqTerm :: Term -> Term -> Bool
 eqTerm t1 t2 = case (t1, t2) of
