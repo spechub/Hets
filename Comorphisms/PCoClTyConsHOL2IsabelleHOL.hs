@@ -29,6 +29,7 @@ import HasCASL.Le as Le
 import HasCASL.As as As
 import HasCASL.AsUtils
 import HasCASL.Builtin
+import HasCASL.Unify
 
 import Isabelle.IsaSign as Isa
 import Isabelle.IsaConsts
@@ -263,7 +264,7 @@ transTerm :: Env -> As.Term -> (FunType, Isa.Term)
 transTerm sign trm = case trm of
     QualVar (VarDecl var t _ _) -> (funType t,  
         Isa.Free (transVar var) $ transType t)
-    QualOp _ (InstOpId opId _ _) ts@(TypeScheme _ ty _) _ 
+    QualOp _ (InstOpId opId is _) ts@(TypeScheme targs ty _) _ 
       | opId == trueId -> (fTy, true)
       | opId == falseId -> (fTy, false)
       | opId == botId -> (fTy, conDouble "None")
@@ -273,12 +274,16 @@ transTerm sign trm = case trm of
       | opId == infixIf -> (fTy, ifImplOp)
       | opId == eqvId -> unCurry eqV
       | opId == exEq -> (fTy, exEqualOp) 
-      | opId == eqId -> unCurry eqV
+      | opId == eqId -> (instfTy, cf $ termAppl uncurryOp $ con eqV)
       | opId == notId -> (fTy, notOp)
-      | opId == defId -> (fTy, defOp)
+      | opId == defId -> (instfTy, cf $ defOp)
       | opId == whenElse -> (fTy, ifThenElseOp)
-      | otherwise -> (fTy, conDouble $ transOpId sign opId ts)
-       where fTy = funType ty
+      | otherwise -> (instfTy, cf $ conDouble $ transOpId sign opId ts)
+       where instfTy = funType $ subst (if null is then Map.empty else
+                    Map.fromList $ zipWith (\ (TypeArg _ _ _ _ i _ _) t
+                          -> (i, t)) targs is) ty
+             fTy = funType ty
+             cf = mkTermAppl (convFun $ instType fTy instfTy)
              unCurry f = (fTy, termAppl uncurryOp $ con f) 
     QuantifiedTerm quan varDecls phi _ ->
         let quantify q gvd phi' = case gvd of
@@ -290,9 +295,9 @@ transTerm sign trm = case trm of
             qname Universal   = allS
             qname Existential = exS
             qname Unique      = ex1S
-            (_, psi) = transTerm sign phi
-        in (BoolType, foldr (quantify quan) psi varDecls)
-    TypedTerm t q ty _ -> transTerm sign t
+            (ty, psi) = transTerm sign phi
+        in (ty, foldr (quantify quan) psi varDecls)
+    TypedTerm t _q _ty _ -> transTerm sign t
     LambdaTerm pats q body _ ->
         let (ty, t) = transTerm sign body in
         foldr (abstraction sign) (case q of
@@ -308,6 +313,28 @@ transTerm sign trm = case trm of
     ApplTerm t1 t2 _ -> mkApp sign t1 t2 -- transAppl sign Nothing t1 t2
     _ -> error $ "PCoClTyConsHOL2IsabelleHOL.transTerm " ++ showPretty trm "\n"
                 ++ show trm
+
+instType :: FunType -> FunType -> ConvFun
+instType f1 f2 = case (f1, f2) of
+    (PartialVal (TypeVar _), BoolType) -> Option2bool
+    (PairType a c, PairType b d) -> 
+        let c2 = instType c d 
+            c1 = instType a b
+        in mkCompFun (mkMapFun MapSnd c2) $ mkMapFun MapFst c1
+    (FunType a c, FunType b d) ->
+         let c2 = instType c d 
+             c1 = instType a b
+        in  mkCompFun (mkResFun c2) $ mkArgFun $ invertConv c1
+    _ -> IdOp
+
+invertConv :: ConvFun -> ConvFun
+invertConv c = case c of
+    Option2bool -> Bool2option
+    MapFun mv cf -> MapFun mv $ invertConv cf
+    ResFun cf -> ResFun $ invertConv cf
+    ArgFun cf -> ArgFun $ invertConv cf
+    CompFun c1 c2 -> CompFun (invertConv c2) (invertConv c1)
+    _ -> IdOp
 
 data MapFun = MapFst | MapSnd | MapSome
 
@@ -496,6 +523,8 @@ mkTermAppl fun arg = case (fun, arg) of
       (Const d _, MixfixApp (Const sm _) [_] _) 
           | new d == "defOp" && new sm == someS -> true 
           | new d == "option2bool" && new sm == someS -> true
+      (Const i _, _)
+          | new i == "id" -> arg
       _ -> termAppl fun arg
 
 mkApp :: Env -> As.Term -> As.Term -> (FunType, Isa.Term)
