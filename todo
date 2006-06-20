@@ -67,10 +67,16 @@ Literatur über DCC und RCC8 lesen bis Mitte Juni
 Mitte/Ende Juni: Outline der Diplomarbeit
 Übersetzungen bis 30.Juni
   ConstraintCASL -> Bremer Solver
+     CASL/ComputeTable
   Bremer Solver -> ConstraintCASL
+     Parser (mit Parsec), der Kompositionstabelle des Bremer Solvers
+      parsiert und ConstraintCASL-Spec (abstrakte Syntax) zurückgibt
+      Das kann das als Option in Hets eingebunden werden (Christian Maeder)
 Freiburger Constraint-Solver angucken im Juli
 Übersetzungen bis 31. Juli
   ConstraintCASL -> Freibuger Solver/XML-Format
+     CASL/ComputeTable
+     Option: comptable.xml
   Freibuger Solver/XML-Format -> ConstraintCASL
 
 ************************************************
