@@ -19,7 +19,6 @@ import CASL.Sign
 import CASL.Morphism
 import Common.Id
 import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
 import Common.PrettyPrint
 import Common.Doc
 import Common.DocUtils
