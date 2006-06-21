@@ -22,20 +22,28 @@ import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Lib.Pretty
 import Common.PrettyPrint
+import qualified Common.Doc as Doc
+import Common.DocUtils
 
 import SPASS.Sign
 import SPASS.Conversions
 
 import System.Time
 
+instance Doc.Pretty Sign where
+    pretty = Doc.literalDoc . printText0 emptyGlobalAnnos 
+
 instance PrintLaTeX Sign where
-  printLatex0 = printText0
+  printLatex0 = toOldLatex
 
 instance PrettyPrint Sign where
   printText0 ga = printText0 ga . signToSPLogicalPart
 
+instance Doc.Pretty SPTerm where
+    pretty = Doc.literalDoc . printText0 emptyGlobalAnnos 
+
 instance PrintLaTeX SPTerm where
-  printLatex0 = printText0
+  printLatex0 = toOldLatex
 
 {- |
   Helper function. Generates a '.' as a Doc.

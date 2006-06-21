@@ -8,12 +8,9 @@ Stability   :  provisional
 Portability :  portable
 
 signatures for CSP-CASL
-
 -}
 
-{- todo:  implement isInclusion, computeExt
- 
--}
+-- todo:  implement isInclusion, computeExt
 
 module CspCASL.SignCSP where
 
@@ -23,9 +20,9 @@ import CASL.Morphism
 import Common.Id
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
-import Common.Lib.Pretty
 import Common.PrettyPrint
-import Common.PrintLaTeX
+import Common.Doc
+import Common.DocUtils
 
 data CSPAddSign = CSPAddSign { channelNames :: Map.Map Id SORT
                              , processNames :: Map.Map Id (Maybe SORT)}
@@ -61,7 +58,6 @@ data CSPAddMorphism =
                     }
      deriving (Eq, Show)
 
-
 type CSPMorphism = Morphism () CSPAddSign CSPAddMorphism
 
 computeExt :: Ext () CSPAddSign CSPAddMorphism
@@ -71,11 +67,18 @@ computeExt _ _  =
                  }
 
 -- dummy instances, need to be elaborated!
+instance Pretty CSPAddSign where
+  pretty = text . show
+instance Pretty CSPAddMorphism where
+  pretty = text . show
+
 instance PrettyPrint CSPAddSign where
-  printText0 _ x = ptext $ show x
+  printText0 = toOldText
 instance PrettyPrint CSPAddMorphism where
-  printText0 _ x = ptext $ show x
+  printText0 = toOldText
+
 instance PrintLaTeX CSPAddSign where
-  printLatex0 _ x = ptext $ show x
+  printLatex0 = toOldLatex
 instance PrintLaTeX CSPAddMorphism where
-  printLatex0 _ x = ptext $ show x
+  printLatex0 = toOldLatex
+

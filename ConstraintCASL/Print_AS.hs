@@ -12,17 +12,14 @@ printing AS_ConstraintCASL ConstraintCASLSign data types
 
 module ConstraintCASL.Print_AS where
 
-import Common.Id
-import Common.Keywords
-import Common.Lib.Pretty
 import Common.PrettyPrint
-import Common.PPUtils
-import Common.GlobalAnnotations
-import Common.AS_Annotation
-import CASL.Print_AS_Basic
+import Common.Doc
+import Common.DocUtils
 import ConstraintCASL.AS_ConstraintCASL
-import CASL.AS_Basic_CASL (FORMULA(..))
+import CASL.AS_Basic_CASL ()
 
+instance Pretty ConstraintFORMULA where
+   pretty = text . show
 
 instance PrettyPrint ConstraintFORMULA where
-   printText0 ga s = ptext $ show s
+   printText0 = toOldText

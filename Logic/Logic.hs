@@ -82,6 +82,7 @@ import Common.AnnoState
 import Common.Result
 import Common.AS_Annotation
 import Common.Print_AS_Annotation
+import qualified Common.Doc as Doc
 import Logic.Prover -- for one half of class Sentences
 
 import Common.PrettyPrint
@@ -97,14 +98,15 @@ data Stability = Stable | Testing | Unstable | Experimental
      deriving (Eq,Show)
 
 -- | shortcut for class constraints
-class (Show a, PrettyPrint a, PrintLaTeX a, Typeable a, ShATermConvertible a)
+class (Show a, PrettyPrint a, PrintLaTeX a, Doc.Pretty a, Typeable a, 
+       ShATermConvertible a)
     => PrintTypeConv a
 
 -- | shortcut for class constraints with equality
 class (Eq a, PrintTypeConv a) => EqPrintTypeConv a
 
-instance (Show a, PrettyPrint a, PrintLaTeX a, Typeable a,
-               ShATermConvertible a) => PrintTypeConv a
+instance (Show a, PrettyPrint a, PrintLaTeX a, Doc.Pretty a, Typeable a,
+          ShATermConvertible a) => PrintTypeConv a
 instance (Eq a, PrintTypeConv a) => EqPrintTypeConv a
 
 type EndoMap a = Map.Map a a

@@ -24,9 +24,9 @@ module CASL_DL.Sign where
 import qualified Common.Lib.Map as Map
 import Common.Id
 import Common.Utils
-import Common.Lib.Pretty
 import Common.PrettyPrint
-import Common.PrintLaTeX
+import Common.Doc
+import Common.DocUtils
 
 import CASL.AS_Basic_CASL
 import CASL_DL.AS_CASL_DL
@@ -81,8 +81,11 @@ isSubCASL_DLSign a b =
     Map.isSubmapOf (annoProperties a) (annoProperties b) &&
     (annoPopertySens a `isSublistOf` annoPopertySens b)
 
+instance Pretty CASL_DLSign where
+    pretty = text . show
+
 instance PrettyPrint CASL_DLSign where
-    printText0 _ = text . show
+    printText0 = toOldText
 
 instance PrintLaTeX CASL_DLSign where
-    printLatex0 = printText0
+    printLatex0 = toOldLatex
