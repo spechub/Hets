@@ -22,6 +22,8 @@ import qualified Data.Graph.Inductive.Graph as Graph
 import Driver.Options
 
 import qualified Common.Lib.Set as Set
+import qualified Common.Lib.Rel as Rel
+import qualified Common.Lib.Map as Map
 
 import Data.List (find)
 
@@ -54,9 +56,10 @@ getEnvDef env def =
 data GlobalOptions =
   GOpts
     {
-       dbgInf :: DbgInf
-			,hetsOpts :: HetcatsOpts
+        dbgInf :: DbgInf
+      , hetsOpts :: HetcatsOpts
     }
+  deriving Show
                 
 debugGO::forall a . GlobalOptions->DbgKey->String->a->a
 debugGO go = debug (dbgInf go)
@@ -284,5 +287,21 @@ cv_Pred_typeToPredType (Pred_type args _) = PredType args
 
 cv_PredTypeToPred_type::PredType->PRED_TYPE
 cv_PredTypeToPred_type (PredType args) = Pred_type args Id.nullRange
+
+type XmlTaggedDevGraph =
+  Map.Map
+    (XmlNamed Hets.NODE_NAMEWO)
+    (
+        Set.Set XmlNamedWONSORT
+      , Rel.Rel XmlNamedWONSORT
+      , [(XmlNamedWONId, PredType)]
+      , [(XmlNamedWONId, OpType)]
+      , [(XmlNamed Hets.SentenceWO)]
+    )
+
+type XmlTaggedLibEnv = 
+  Map.Map
+      Hets.LIB_NAME
+      XmlTaggedDevGraph
 
 

@@ -13,6 +13,7 @@ module OMDoc.HetsDefs
   (
       module Driver.Options
     , module OMDoc.HetsDefs
+    , module Syntax.AS_Library
   )
   where
 

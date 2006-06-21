@@ -569,22 +569,6 @@ createXmlNameMap dg =
             nodename
     )
 
-type XmlTaggedDevGraph =
-  Map.Map
-    (XmlNamed Hets.NODE_NAMEWO)
-    (
-        Set.Set XmlNamedWONSORT
-      , Rel.Rel XmlNamedWONSORT
-      , [(XmlNamedWONId, PredType)]
-      , [(XmlNamedWONId, OpType)]
-      , [(XmlNamed Hets.SentenceWO)]
-    )
-
-type XmlTaggedLibEnv = 
-  Map.Map
-      ASL.LIB_NAME
-      XmlTaggedDevGraph
-
 -- renaming should be done by 1) create names/origins for DGs but remember where
 -- imports occured and 2) correct xml-names via import-information (and 
 -- benefit from the unambigous xml-naming/origin-information)

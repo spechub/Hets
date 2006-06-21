@@ -805,8 +805,15 @@ getPresentationString for t =
       getChildren) t
         
 
-predsXNWONFromXmlTheory::TheoryXNSet->Set.Set XmlNamedWONSORT->AnnXMLN->[(XmlNamedWONId, PredTypeXNWON)]
-predsXNWONFromXmlTheory xntheoryset xnsortset anxml =
+predsXNWONFromXmlTheory::
+  Map.Map
+    XmlName
+    FFXInput
+  ->TheoryXNSet
+  ->Set.Set XmlNamedWONSORT
+  ->AnnXMLN
+  ->[(XmlNamedWONId, PredTypeXNWON)]
+predsXNWONFromXmlTheory cdmap xntheoryset xnsortset anxml =
   let
     objsymbols = applyXmlFilter (getChildren .> isTag "symbol" .> withQualSValue symbolTypeXMLNS symbolTypeXMLAttr "object") (axXml anxml)
     predsymbols = filter (\n -> applyXmlFilter (
@@ -857,10 +864,26 @@ predsXNWONFromXmlTheory xntheoryset xnsortset anxml =
               in
                 case findByNameAndOrigin axname theonode xnsortset of
                   Nothing ->
-                    error
-                      ((++) "Unknown type of argument! From (p) : "
-                        $ take 300 $ xshow $ axXml panxml
-                      )
+                    let
+                      allffxis = Map.elems cdmap
+                      allsortmaps = map xnSortsMap allffxis
+                      allsortsets = concat (map Map.elems allsortmaps)
+                      allsorts = concat (map Set.toList allsortsets)
+                    in
+                      case
+                        find
+                          (\x -> (xnName x) == axname)
+                          allsorts
+                      of
+                        Nothing ->
+                          error
+                            ("Sort " ++ axname ++ " not in FFXI..." ++ show (map xnName allsorts)
+                             ++ " at : " ++ (take 300 (xshow (axXml panxml)))
+                            )
+                        (Just s) ->
+--                          Debug.Trace.trace
+--                            ("Found sort " ++ axname  ++ " in FFXI...")
+                            s
                   (Just xnarg) ->
                     if (xnWOaToO xnarg) /= theonode
                       then
@@ -873,12 +896,19 @@ predsXNWONFromXmlTheory xntheoryset xnsortset anxml =
         (XmlNamed (Hets.mkWON pid (axAnn anxml)) pidxname, PredTypeXNWON xnargs)
         
                         
-predsXNWONFromXml::TheoryXNSet->Set.Set XmlNamedWONSORT->Set.Set AnnXMLN->Map.Map XmlName [(XmlNamedWONId, PredTypeXNWON)]
-predsXNWONFromXml xntheoryset xnsortset anxmlset =
+predsXNWONFromXml::
+  Map.Map
+    XmlName
+    FFXInput
+  ->TheoryXNSet
+  ->Set.Set XmlNamedWONSORT
+  ->Set.Set AnnXMLN
+  ->Map.Map XmlName [(XmlNamedWONId, PredTypeXNWON)]
+predsXNWONFromXml cdmap xntheoryset xnsortset anxmlset =
   Set.fold
     (\anxml mapping ->
       let
-        theopreds = predsXNWONFromXmlTheory xntheoryset xnsortset anxml
+        theopreds = predsXNWONFromXmlTheory cdmap xntheoryset xnsortset anxml
       in
         if null theopreds
           then
@@ -896,8 +926,15 @@ predsXNWONFromXml xntheoryset xnsortset anxmlset =
     anxmlset
                 
 
-opsXNWONFromXmlTheory::TheoryXNSet->Set.Set XmlNamedWONSORT->AnnXMLN->[(XmlNamedWONId, OpTypeXNWON)]
-opsXNWONFromXmlTheory xntheoryset xnsortset anxml =
+opsXNWONFromXmlTheory::
+  Map.Map
+    XmlName
+    FFXInput
+  ->TheoryXNSet
+  ->Set.Set XmlNamedWONSORT
+  ->AnnXMLN
+  ->[(XmlNamedWONId, OpTypeXNWON)]
+opsXNWONFromXmlTheory cdmap xntheoryset xnsortset anxml =
   let
     objsymbols = applyXmlFilter (getChildren .> isTag "symbol" .> withQualSValue symbolTypeXMLNS symbolTypeXMLAttr "object") (axXml anxml)
     opsymbols =
@@ -958,13 +995,26 @@ opsXNWONFromXmlTheory xntheoryset xnsortset anxml =
               in
                 case findByNameAndOrigin axname theonode xnsortset of
                   Nothing ->
-                    error
-                      ("Unknown type of argument! From (o) : "
-                        ++ (axname ++ "\n")
-                          ++ (take 300 $ xshow $ axXml oanxml)
-                            ++
-                              (" in " ++ (show xnsortset))
-                      )
+                    let
+                      allffxis = Map.elems cdmap
+                      allsortmaps = map xnSortsMap allffxis
+                      allsortsets = concat (map Map.elems allsortmaps)
+                      allsorts = concat (map Set.toList allsortsets)
+                    in
+                      case
+                        find
+                          (\x -> (xnName x) == axname)
+                          allsorts
+                      of
+                        Nothing ->
+                          error
+                            ("Sort " ++ axname ++ " not in FFXI..." ++ show (map xnName allsorts)
+                             ++ " at : " ++ (take 300 (xshow (axXml oanxml)))
+                            )
+                        (Just s) ->
+--                          Debug.Trace.trace
+--                            ("Found sort " ++ axname  ++ " in FFXI...")
+                            s
                   (Just xnarg) -> if (xnWOaToO xnarg) /= theonode
                     then
                       error "Found Argument but in wrong Theory!"
@@ -984,12 +1034,19 @@ opsXNWONFromXmlTheory xntheoryset xnsortset anxml =
         )
 
 
-opsXNWONFromXml::TheoryXNSet->Set.Set XmlNamedWONSORT->Set.Set AnnXMLN->Map.Map XmlName [(XmlNamedWONId, OpTypeXNWON)]
-opsXNWONFromXml xntheoryset xnsortset anxmlset =
+opsXNWONFromXml::
+  Map.Map
+    XmlName
+    FFXInput
+  ->TheoryXNSet
+  ->Set.Set XmlNamedWONSORT
+  ->Set.Set AnnXMLN
+  ->Map.Map XmlName [(XmlNamedWONId, OpTypeXNWON)]
+opsXNWONFromXml cdmap xntheoryset xnsortset anxmlset =
   Set.fold
     (\anxml mapping ->
       let
-        theoops = opsXNWONFromXmlTheory xntheoryset xnsortset anxml
+        theoops = opsXNWONFromXmlTheory cdmap xntheoryset xnsortset anxml
       in
         if null theoops
           then
@@ -1279,12 +1336,52 @@ showSenNames mapping =
     senstrings = map (\(a, b) -> a ++ "(" ++ b ++ ")") sennamesx
   in
     implode ", " senstrings
-                
+
+-- I don't know, if this needs to be more global...
+-- this function is not used currently
+ffxiSToXmlTaggedDevGraph::
+  FFXInput
+  ->Map.Map XmlName [(XmlNamed Hets.SentenceWO)]
+  ->XmlTaggedDevGraph
+ffxiSToXmlTaggedDevGraph
+  ffxi
+  sx =
+    Set.fold
+      (\xnnnn xtdg ->
+        let
+          theoxname = xnName xnnnn
+          (nodenum, nodename) = xnItem xnnnn
+          sorts = Map.findWithDefault Set.empty theoxname (xnSortsMap ffxi)
+          rels = Map.findWithDefault Rel.empty theoxname (xnRelsMap ffxi)
+          preds =
+            map (\(a,b) -> (a, predTypeXNWONToPredType b))
+              $ Set.toList
+              $ Map.findWithDefault Set.empty theoxname (xnPredsMap ffxi)
+          ops =
+            map (\(a,b) -> (a, opTypeXNWONToOpType b))
+              $ Set.toList
+              $ Map.findWithDefault Set.empty theoxname (xnOpsMap ffxi)
+          sens = Map.findWithDefault [] theoxname sx
+          xnwonnode = XmlNamed (Hets.mkWON nodename nodenum) theoxname
+        in
+          Map.insert
+            xnwonnode 
+            (
+                sorts
+              , rels
+              , preds
+              , ops
+              , sens 
+            )
+            xtdg
+      )
+      Map.empty
+      (xnTheorySet ffxi)
                         
 importGraphToDGNodesXN::
   GlobalOptions
   ->(ImportGraph (HXT.XmlTrees, Maybe (DGraph, FFXInput)))
-  ->Graph.Node->([XmlNamed DGNodeLab], FFXInput)
+  ->Graph.Node->([XmlNamed DGNodeLab], Set.Set AnnXMLN, FFXInput)
 importGraphToDGNodesXN go ig n =
   let
     mnode = Graph.lab ig n
@@ -1292,18 +1389,61 @@ importGraphToDGNodesXN go ig n =
       Nothing -> error "node error!"
       (Just n') -> n'
     --omdocchilds = (\(S _ (omdoc' , _)) -> applyXmlFilter (isTag "omdoc" .> getChildren) omdoc' ) node
-    (ffxi, axtheoryset) =
-      debugGO go "iGTDGNXN" "Preprocessed XML..." $
-        (\(S _ (omdoc' , _)) -> preprocessXml go omdoc' ) node
-    (theonames, sortsmap, relsmap, predsmap, opsmap) =
-      (xnTheorySet ffxi, xnSortsMap ffxi,
-        xnRelsMap ffxi, xnPredsMap ffxi, xnOpsMap ffxi)
-    sensmap = (\smap ->
-      debugGO go "iGTDGNXN" ("Sentences extracted... : "
-        ++ (showSenNames smap)) smap) $ sensXNWONFromXml go ffxi axtheoryset
     refimports = (\x ->
       debugGO go "iGTDGNXN" ("Refimports : " ++ show x) x) $
         filter ( \(_,from,_) -> from /= n) $ Graph.out ig n
+    cdmap =
+      foldl (\cm (_, from, (TI (theoname, _))) ->
+        let
+          moriginnode = Graph.lab ig from
+          (S (slibname, ssrc) (_,modg)) = case moriginnode of
+            Nothing -> error ("node error (Import of "
+              ++ slibname ++ " from " ++ ssrc ++ " )!")
+            (Just n' ) -> n'
+            -- the DG should have been created before accessing it (should work)
+          (odg, offxi) = case modg of
+                  Nothing -> error ("dg error (DevelopmentGraph for "
+                    ++ slibname ++ " not found)!")
+                  (Just o) -> o
+          (onodenum, onodedgnl) =
+            case filter
+              (\(_,node' ) -> (getDGNodeName node' ) == theoname ) $
+              Graph.labNodes odg
+                of
+                  [] -> error "no such node in origin..."
+                  l -> head l
+          otxn =
+            case
+              find
+                (\xno -> (snd $ xnItem xno) == (dgn_name onodedgnl))
+                  $ Set.toList (xnTheorySet offxi)
+                of
+              Nothing -> error ("No Entry for this node in the theories ffxi!")
+              (Just xno) -> xno
+          oxn = xnName otxn
+{-          otss = Map.findWithDefault Set.empty oxn (xnSortsMap offxi)
+          otsr = Map.findWithDefault Rel.empty oxn (xnRelsMap offxi)
+          otps = Map.findWithDefault Set.empty oxn (xnPredsMap offxi)
+          otos = Map.findWithDefault Set.empty oxn (xnOpsMap offxi)
+          cmv = (otss, otsr, otps, otos) -}
+        in
+{-          (if (oxn == "Nat")
+            then
+              Debug.Trace.trace
+                ("NAT-FFXI-Sorts : " ++ (show $ xnSortsMap offxi)
+                  ++ "Sorts in node " ++
+                    (show (sortSet (Hets.getJustCASLSign $ Hets.getCASLSign (dgn_sign onodedgnl))))
+                )
+            else
+              id) -}
+          (Map.insert oxn offxi cm)
+        ) Map.empty refimports
+    (ffxi, axtheoryset) =
+      debugGO go "iGTDGNXN" "Preprocessed XML..." $
+        (\(S _ (omdoc' , _)) -> preprocessXml go cdmap omdoc' ) node
+    (theonames, sortsmap, relsmap, predsmap, opsmap) =
+      (xnTheorySet ffxi, xnSortsMap ffxi,
+        xnRelsMap ffxi, xnPredsMap ffxi, xnOpsMap ffxi)
     (refs, newffxi) =
       foldl (\(r, nf) (_, from, (TI (theoname, _))) ->
         let
@@ -1312,7 +1452,7 @@ importGraphToDGNodesXN go ig n =
             Nothing -> error ("node error (Import of "
               ++ slibname ++ " from " ++ ssrc ++ " )!")
             (Just n' ) -> n'
-            -- the DG should have been created before accessing it
+            -- the DG should have been created before accessing it (should work)
           (odg, offxi) = case modg of
                   Nothing -> error ("dg error (DevelopmentGraph for "
                     ++ slibname ++ " not found)!")
@@ -1364,11 +1504,16 @@ importGraphToDGNodesXN go ig n =
             , nf'
           )
         ) ([],ffxi) refimports
+    -- before extracting sentences, we need to make sure, they are 
+    -- available... (not yet done)
+    sensmap = (\smap ->
+      debugGO go "iGTDGNXN" ("Sentences extracted... : "
+        ++ (showSenNames smap)) smap) $ sensXNWONFromXml go newffxi axtheoryset
     psorts = mapSetToSet (debugGO go "iGTDGNXN" "at mapSetToSet(sortsmap)" sortsmap)
     ppreds = mapSetToSet (debugGO go "iGTDGNXN" "at mapSetToSet(predsmap)" predsmap)
     pops = mapSetToSet (debugGO go "iGTDGNXN" "at mapSetToSet(opsmap)" opsmap)
   in   
-    (\a -> (a, newffxi)) $
+    (\a -> (a, axtheoryset, newffxi)) $
     Set.fold (\xntheory dgnodelist ->
       let
         tsorts = Map.findWithDefault Set.empty (xnName xntheory) sortsmap
@@ -1443,7 +1588,7 @@ importGraphToDGraphXN go ig n =
     -- Output is a candidate...
     -- FFXInput was intended to rename symbols in formulas but this needs to
     -- be done for morphisms also (and the structure is created anyway)
-    (nodes, ffxi) = (\(a, b) -> (reverse a, b)) $ importGraphToDGNodesXN go ig n
+    (nodes, axtheoryset, ffxi) = (\(a, b, c) -> (reverse a, b, c)) $ importGraphToDGNodesXN go ig n
     lnodes = (zip [0..] nodes)::[(Graph.Node, (XmlNamed DGNodeLab))]
     --nodegraph = (Graph.mkGraph lnodes [])::DGraph
     nameNodeMap = Map.fromList $
@@ -2477,16 +2622,22 @@ unwrapFormulaXNWON ffxi anxml =
                   
 
 -- create FFXInput and a set of annotated theory-fragments.
-preprocessXml::GlobalOptions->HXT.XmlTrees->(FFXInput, Set.Set AnnXMLN)
-preprocessXml go t =
+preprocessXml::
+  GlobalOptions
+  ->Map.Map
+      XmlName
+      FFXInput
+  ->HXT.XmlTrees
+  ->(FFXInput, Set.Set AnnXMLN)
+preprocessXml go cdmap t =
         let
                 axtheoryset = buildAXTheorySet (debugGO go "pX" "at buildAXTheorySet" t)
                 xntheoryset = nodeNamesXNFromXml (debugGO go "pX" "at nodeNamedXNFromXml" axtheoryset)
                 xnsortsmap = sortsXNWONFromXml xntheoryset (debugGO go "pX" "at sortsXNWONFromXml" axtheoryset)
                 xnsorts =  mapSetToSet (debugGO go "pX" "at mapToSet" xnsortsmap)
                 xnrelsmap = relsXNWONFromXml xntheoryset xnsorts (debugGO go "pX" "at relsXNWONFromXML" axtheoryset)
-                xnpredsmap = mapListToMapSet $ predsXNWONFromXml xntheoryset xnsorts (debugGO go "pX" "at predsXNWONFromXml" axtheoryset)
-                xnopsmap = mapListToMapSet $ opsXNWONFromXml xntheoryset xnsorts (debugGO go "pX" "at opsXNWONFromXml" axtheoryset)
+                xnpredsmap = mapListToMapSet $ predsXNWONFromXml cdmap xntheoryset xnsorts (debugGO go "pX" "at predsXNWONFromXml" axtheoryset)
+                xnopsmap = mapListToMapSet $ opsXNWONFromXml cdmap xntheoryset xnsorts (debugGO go "pX" "at opsXNWONFromXml" axtheoryset)
         in
                 (emptyFFXInput
                         {
@@ -2507,6 +2658,7 @@ data FFXInput = FFXInput {
         ,xnPredsMap :: Map.Map XmlName (Set.Set (XmlNamedWONId, PredTypeXNWON)) -- theory -> preds
         ,xnOpsMap :: Map.Map XmlName (Set.Set (XmlNamedWONId, OpTypeXNWON)) -- theory -> ops
         }
+  deriving Show
         
         
 emptyFFXInput::FFXInput
