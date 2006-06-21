@@ -12,7 +12,7 @@ Printing a (G_theory CASL _) into a DFG Doc.
 
 -}
 
-module SPASS.CreateDFGDoc where
+module SPASS.CreateDFGDoc (printTheoryAsDFG) where
 
 import Data.Maybe
 
@@ -45,17 +45,17 @@ import SPASS.Logic_SPASS
 import SPASS.Conversions
 import SPASS.Translate
 import SPASS.Sign
-import SPASS.Print (genSPASSProblem)
+import SPASS.PrintDFG
 
 spassConsTimeLimit :: Int
 spassConsTimeLimit = 500
 
-printDFG :: LIB_NAME -> SIMPLE_ID 
+printTheoryAsDFG :: LIB_NAME -> SIMPLE_ID 
          -> Bool 
             -- ^ if True a conjecture false is added otherwise 
             -- its a theory without a conjecture.
          -> G_theory -> IO (Maybe Doc)
-printDFG ln sn checkConsistency gth@(G_theory lid sign thSens) = 
+printTheoryAsDFG ln sn checkConsistency gth@(G_theory lid sign thSens) = 
     maybe (return Nothing)
           (\ (sign1,sens1) ->
                do prob <- genSPASSProblem 

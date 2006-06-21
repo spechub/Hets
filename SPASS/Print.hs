@@ -28,8 +28,6 @@ import Common.DocUtils
 import SPASS.Sign
 import SPASS.Conversions
 
-import System.Time
-
 instance Doc.Pretty Sign where
     pretty = Doc.literalDoc . printText0 emptyGlobalAnnos 
 
@@ -233,26 +231,3 @@ printSettings ga l =
 instance PrettyPrint SPSetting where
     printText0 _ (SPFlag sw v) = 
         text "set_flag"<>parens(text sw<>comma<>text v)<>dot
-
-{- | generate a SPASS problem with time stamp while maybe adding a goal.-}
-genSPASSProblem :: String -> SPLogicalPart 
-                -> Maybe (Named SPTerm) -> IO SPProblem
-genSPASSProblem thName lp m_nGoal =
-    do d <- getClockTime
-       return $ problem $ show d
-    where
-    problem sd = SPProblem 
-        {identifier = "hets_exported",
-         description = SPDescription 
-                       {name = thName++
-                               (maybe "" 
-                                      (\ nGoal -> '_':senName nGoal)
-                                      m_nGoal),
-                        author = "hets",
-                        SPASS.Sign.version = Nothing,
-                        logic = Nothing,
-                        status = SPStateUnknown,
-                        desc = "",
-                        date = Just sd},
-         logicalPart = maybe lp (insertSentence lp) m_nGoal,
-         settings = []}

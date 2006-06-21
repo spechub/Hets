@@ -208,7 +208,7 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
                                           _ -> return ()
                                       writeVerbFile opt f s
                       DfgFile c -> do
-                            mDoc <- printDFG ln i
+                            mDoc <- printTheoryAsDFG ln i
                                        (case c of
                                         ConsistencyCheck -> True
                                         OnlyAxioms  -> False)

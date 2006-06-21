@@ -17,8 +17,8 @@ module SPASS.ProverState where
 import SPASS.Sign
 import SPASS.Conversions
 import SPASS.Translate
-import SPASS.Print (genSPASSProblem)
 import SPASS.PrintTPTP
+import SPASS.PrintDFG
 
 import qualified Common.AS_Annotation as AS_Anno
 import Common.ProofUtils
@@ -58,13 +58,13 @@ insertSentenceGen pst s = pst{initialLogicalPart =
 {- |
   Pretty printing SPASS goal in DFG format.
 -}
-showPrettyProblem :: String -- ^ theory name
+showDFGProblem :: String -- ^ theory name
                   -> SPASSProverState -- ^ prover state containing initial logical part
                   -> AS_Anno.Named SPTerm -- ^ goal to print
                   -> IO String -- ^ formatted output of the goal
-showPrettyProblem thName pst nGoal = do
+showDFGProblem thName pst nGoal = do
   prob <- genSPASSProblem thName (initialLogicalPart pst) $ Just nGoal
-  return $ showPretty prob ""
+  return $ show $ printDFG prob
 
 {- |
   Pretty printing SPASS goal in TPTP format.

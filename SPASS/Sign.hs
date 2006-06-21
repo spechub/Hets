@@ -16,7 +16,7 @@ Data structures representing SPASS signatures.
 
 module SPASS.Sign where
 
-import Char
+import Data.Char
 
 import Common.AS_Annotation
 import Common.DefaultMorphism

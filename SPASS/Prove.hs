@@ -77,7 +77,7 @@ spassProveGUI thName th =
         { initialProverState = spassProverState,
           atpTransSenName = transSenName,
           atpInsertSentence = insertSentenceGen,
-          goalOutput = showPrettyProblem thName,
+          goalOutput = showDFGProblem thName,
           proverHelpText = spassHelpText,
           batchTimeEnv = "HETS_SPASS_BATCH_TIME_LIMIT",
           fileExtensions = FileExtensions{problemOutput = ".dfg",
@@ -201,7 +201,7 @@ runSpass sps cfg saveDFG thName nGoal = do
                   emptyConfig (prover_name spassProver)
                               (AS_Anno.senName nGoal) ())
         else do
-          prob <- showPrettyProblem thName sps nGoal
+          prob <- showDFGProblem thName sps nGoal
           when saveDFG
                (writeFile (thName++'_':AS_Anno.senName nGoal++".dfg") prob)
           sendMsg spass prob

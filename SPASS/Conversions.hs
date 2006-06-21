@@ -15,7 +15,7 @@ Functions to convert to internal SP* data structures.
 module SPASS.Conversions where
 
 import Control.Exception
-
+import System.Time
 import Data.Maybe
 
 import qualified Common.Lib.Map as Map
@@ -101,3 +101,25 @@ insertSentence lp nSen = lp {formulaLists = fLists'}
                 else insertFormula SPOriginConjectures nSen fLists
     fLists = formulaLists lp
 
+{- | generate a SPASS problem with time stamp while maybe adding a goal.-}
+genSPASSProblem :: String -> SPLogicalPart 
+                -> Maybe (Named SPTerm) -> IO SPProblem
+genSPASSProblem thName lp m_nGoal =
+    do d <- getClockTime
+       return $ problem $ show d
+    where
+    problem sd = SPProblem 
+        {identifier = "hets_exported",
+         description = SPDescription 
+                       {name = thName++
+                               (maybe "" 
+                                      (\ nGoal -> '_':senName nGoal)
+                                      m_nGoal),
+                        author = "hets",
+                        SPASS.Sign.version = Nothing,
+                        logic = Nothing,
+                        status = SPStateUnknown,
+                        desc = "",
+                        date = Just sd},
+         logicalPart = maybe lp (insertSentence lp) m_nGoal,
+         settings = []}
