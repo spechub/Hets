@@ -46,8 +46,9 @@ import Logic.Prover
 import Logic.Comorphism
 import Logic.Morphism
 import Logic.Coerce
+import Common.Doc
+import Common.DocUtils
 import Common.PrettyPrint
-import Common.Lib.Pretty
 import qualified Common.Lib.Graph as Tree
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
@@ -76,6 +77,9 @@ instance Show G_basic_spec where
 
 instance PrettyPrint G_basic_spec where
     printText0 ga (G_basic_spec _ s) = printText0 ga s
+
+instance Pretty G_basic_spec where
+    pretty (G_basic_spec _ s) = pretty s
 
 -- | Grothendieck signatures
 data G_sign = forall lid sublogics
@@ -171,8 +175,11 @@ instance Show G_symb_items_list where
     show (G_symb_items_list _ l) = show l
 
 instance PrettyPrint G_symb_items_list where
-    printText0 ga (G_symb_items_list _ l) =
-        fsep $ punctuate comma $ map (printText0 ga) l
+    printText0 = toOldText
+
+instance Pretty G_symb_items_list where
+    pretty (G_symb_items_list _ l) =
+        fsep $ punctuate comma $ map pretty l
 
 instance Eq G_symb_items_list where
   (G_symb_items_list i1 s1) == (G_symb_items_list i2 s2) =
@@ -191,8 +198,11 @@ instance Show G_symb_map_items_list where
     show (G_symb_map_items_list _ l) = show l
 
 instance PrettyPrint G_symb_map_items_list where
-    printText0 ga (G_symb_map_items_list _ l) =
-        fsep $ punctuate comma $ map (printText0 ga) l
+    printText0 = toOldText
+
+instance Pretty G_symb_map_items_list where
+    pretty (G_symb_map_items_list _ l) =
+        fsep $ punctuate comma $ map pretty l
 
 instance Eq G_symb_map_items_list where
   (G_symb_map_items_list i1 s1) == (G_symb_map_items_list i2 s2) =
@@ -452,13 +462,15 @@ instance Show GMorphism where
     show (GMorphism cid s m) = show cid ++ "(" ++ show s ++ ")" ++ show m
 
 instance PrettyPrint GMorphism where
-    printText0 ga (GMorphism cid s m) =
-      ptext (show cid)
-      <+> -- ptext ":" <+> ptext (show (sourceLogic cid)) <+>
-      -- ptext "->" <+> ptext (show (targetLogic cid)) <+>
-      ptext "(" <+> printText0 ga s <+> ptext ")"
-      $$
-      printText0 ga m
+    printText0 = toOldText
+
+instance Pretty GMorphism where
+    pretty (GMorphism cid s m) =
+      text (show cid)
+      <+>
+      parens (space <> pretty s <> space)
+      $+$
+      pretty m
 
 instance Category Grothendieck G_sign GMorphism where
   ide _ (G_sign lid sigma) =
