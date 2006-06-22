@@ -145,7 +145,7 @@ mguList tm l1 l2 = case (l1, l2) of
        s1 <- mgu tm h1 h2
        s2 <- mguList tm (map (subst s1) t1) $ map (subst s1) t2
        return $ compSubst s1 s2
-    _ -> mkError "no unification with empty list" (l1 ++ l2)
+    _ -> mkError "no unification with empty list" (head $ l1 ++ l2)
 
 shapeMatch :: TypeMap -> Type -> Type -> Result Subst
 shapeMatch tm a b = match tm (const $ const True) (True, a) (True, b)

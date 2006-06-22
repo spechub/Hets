@@ -210,11 +210,12 @@ partitionOpId e i sc =
     in partition (isUnifiable (typeMap e) (counter e) sc . opType) $ opInfos l
 
 checkUnusedTypevars :: TypeScheme -> State Env TypeScheme
-checkUnusedTypevars sc@(TypeScheme tArgs t _) = do
+checkUnusedTypevars sc@(TypeScheme tArgs t ps) = do
     let ls = map (fst . snd) $ leaves (< 0) t -- generic vars
         rest = map getTypeVar tArgs List.\\ ls
     if null rest then return ()
-      else addDiags [mkDiag Warning "unused type variables" rest]
+      else addDiags [Diag Warning ("unused type variables: "
+               ++ show(fsep $ punctuate comma $ map pretty rest)) ps]
     return sc
 
 -- | storing an operation

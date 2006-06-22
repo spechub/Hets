@@ -76,9 +76,9 @@ instance Pretty Diag where
         let gs (n, dn) =
                 (n, getSig $ dn_sig dn)
         in text "nodes:"
-           <+> pretty (map gs $ labNodes diag)
+           <+> fsep (punctuate comma $ map (pretty . gs) $ labNodes diag)
            $+$ text "edges:"
-           <+> pretty (edges diag)
+           <+> fsep (punctuate comma $ map pretty $ edges diag)
 
 
 -- * Functions
