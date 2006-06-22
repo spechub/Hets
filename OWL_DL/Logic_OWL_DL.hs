@@ -21,7 +21,6 @@ module OWL_DL.Logic_OWL_DL where
 import Common.AS_Annotation
 import Common.DefaultMorphism
 import Common.Doc
-import Common.PrettyPrint
 
 import Logic.Logic
 
@@ -29,7 +28,6 @@ import OWL_DL.AS
 import OWL_DL.Print
 import OWL_DL.ATC_OWL_DL
 import OWL_DL.Sign
--- import Logic.Comorphism
 import OWL_DL.StaticAna
 
 data OWL_DL = OWL_DL deriving Show
