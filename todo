@@ -73,6 +73,23 @@ Bremer Constraint-Solver angucken
 Shi Hui wegen Anwendungen kontaktieren 1. Juni
 Literatur über DCC und RCC8 lesen bis Mitte Juni
 Mitte/Ende Juni: Outline der Diplomarbeit
+  Qualitative Constraint-Kalküle (siehe Thomas)
+  CASL (siehe Paper   T. Mossakowski: Relating CASL with Other Specification Languages:
+        the Institution Level Theoretical Computer Science 286, p. 367-475, 2002.)
+  ConstraintCASL
+    Signaturen, Signaturmorphismen (aus CASL)
+    Modelle (aus CASL)
+    Formeln
+    Erfülltheit von Formeln
+    optional: Erfülltheitsbedingung
+        M |= sigma(phi)  <=>  M|_sigma |= phi
+      für Signaturmorphismus sigma:Sigma_1->Sigma_2
+      M \in Mod(Sigma_2), phi\in Sen(Sigma_1)
+  Formalisierung von Kalkülen in ConstraintCASL
+  Constraint-Solver (auch in ihren Eigenheiten)
+  Übersetzungen zwischen den verschieden Formaten
+  praktischer Vergleich
+  Anwendung
 Übersetzungen bis 30.Juni
   ConstraintCASL -> Bremer Solver
      CASL/ComputeTable
