@@ -155,8 +155,7 @@ updateDisplay st updateLb goalsLb pathsLb statusLabel = do
               then findIndex (==(fromJust $ selectedProver st))
                        $ Map.keys (proversMap st)
               else Nothing
-    when (isJust ind)
-         (selection (fromJust ind) pathsLb >> return ())
+    maybe (return ()) (\i -> selection i pathsLb >> return ()) ind
     -- update status label
     let (color, label) = toGuiStatus st
     statusLabel # text label
