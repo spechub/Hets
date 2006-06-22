@@ -17,12 +17,12 @@ Generic GUI for automatic theorem provers. Based upon former SPASS Prover GUI.
       --> failure still there, opens sometimes too small (using KDE),
           but not twice in a row
 
-      - keep focus of listboxes if updated (also relevant for
+      - keep focus of listboxes if updated (also relevant
         in GUI.ProofManagement)
 
 -}
 
-module GUI.GenericATP where
+module GUI.GenericATP (genericATPgui,guiDefaultTimeLimit) where
 
 import Logic.Prover
 
@@ -808,13 +808,16 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
               batchProverId <- Concurrent.forkIO
                    (do genericProveBatch tLimit extOpts inclProvedThs
                                        saveProblem_F
-                          (\ gPSF nSen cfg -> do
+                          (\ gPSF nSen cfg@(retval,_) -> do
                               cont <- goalProcessed stateRef tLimit numGoals
                                                     batchStatusLabel
                                                     prName gPSF nSen cfg
                               st <- readIORef stateRef
                               updateDisplay st True lb statusLabel timeEntry
                                             optionsEntry axiomsLb
+                              case retval of
+                                ATPError message -> errorMess message
+                                _ -> return ()
                               when (not cont)
                                    (do
                                     -- putStrLn "Batch ended"
@@ -979,9 +982,7 @@ getBatchTimeLimit env =
 -}
 checkGoal :: GenericConfigsMap proof_tree -> ATPIdentifier -> Bool
 checkGoal cfgMap goal =
-  isJust g && isProvedStat (proof_status $ fromJust g)
-  where
-    g = Map.lookup goal cfgMap
+  maybe False (isProvedStat . proof_status) $ Map.lookup goal cfgMap
 
 
 -- ** Implementation
@@ -1007,7 +1008,8 @@ genericProveBatch :: (Ord proof_tree) =>
                   -> String -- ^ prover name
                   -> String -- ^ theory name
                   -> GenericState sign sentence proof_tree pst
-                  -> IO ([Proof_status proof_tree]) -- ^ proof status for each goal
+                  -> IO ([Proof_status proof_tree]) 
+                  -- ^ proof status for each goal
 genericProveBatch tLimit extraOptions inclProvedThs saveProblem_batch f inSen
                   runGivenProver prName thName st =
     batchProve (proverState st) 0 [] (goalsList st)
@@ -1038,30 +1040,25 @@ genericProveBatch tLimit extraOptions inclProvedThs saveProblem_batch f inSen
                                    { timeLimit = Just tLimit
                                    , extraOpts = words extraOptions })
                              saveProblem_batch thName g
-        let res = proof_status res_cfg
         putStrLn $ prName ++ " returned: " ++ (show err)
         -- if the batch prover runs in a separate thread
         -- that's killed via killThread
         -- runGivenProver will return ATPError. We have to stop the
         -- recursion in that case
-        case err of
-          ATPError _ -> return ((reverse (res:resDone)) ++
-                                (map (\ gl -> openProof_status
-                                                (AS_Anno.senName gl) prName pt)
-                                     gs))
-          _ -> do
-               -- add proved goals as axioms
-              let pst' = addToLP g res pst
-                  goalsProcessedSoFar' = goalsProcessedSoFar+1
-              cont <- f goalsProcessedSoFar' g (err, res_cfg)
-              if cont
-                 then batchProve pst' goalsProcessedSoFar' (res:resDone) gs
-                 else return ((reverse (res:resDone)) ++
-                                (map (\ gl -> openProof_status
-                                                (AS_Anno.senName gl) prName pt)
+        -- add proved goals as axioms
+        let res = proof_status res_cfg
+            pst' = addToLP g res pst
+            goalsProcessedSoFar' = goalsProcessedSoFar+1
+        cont <- f goalsProcessedSoFar' g (err, res_cfg)
+        if cont
+           then batchProve pst' goalsProcessedSoFar' (res:resDone) gs
+           else return ((reverse (res:resDone)) ++
+                             (map (\ gl -> openProof_status
+                                           (AS_Anno.senName gl) prName pt)
                                      gs))
       else batchProve (addToLP g (proof_status $
-                                  Map.findWithDefault (emptyConfig prName gName pt)
-                                     gName $ configsMap st)
+                                  Map.findWithDefault 
+                                         (emptyConfig prName gName pt)
+                                         gName $ configsMap st)
                                pst)
                       goalsProcessedSoFar resDone gs
