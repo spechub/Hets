@@ -1,25 +1,25 @@
 class a, b, c, d < Type
-type r : a;
-     s : a;
-     s : b;
-     t : c
-type [__], {__} : a -> b
-var u : [ r ]; v : { s }
-type tuple3 : a -> b -> c -> d
-var x : tuple3 r s t
-var y : tuple3 r s
-type tuple1 : b -> a
-type m : (a -> b) -> c
-type List : a -> b
-var w : m List
-var o1 : m
-var o2 : m tuple1
-var o3 : m tuple3
-var nt : a -> (b -> c) -> c -> d
-var o4 : nt r List s
-type s1, r1, t1 < t
-type s2 = r2 = t2
-type s3 = {x : t . (var x : t) = (var x : t)}
+type  r : a;
+      s : a;
+      s : b;
+      t : c
+type  [__], {__} : a -> b
+var   u : [ r ]; v : { s }
+type  tuple3 : a -> b -> c -> d
+var   x : tuple3 r s t
+var   y : tuple3 r s
+type  tuple1 : b -> a
+type  m : (a -> b) -> c
+type  List : a -> b
+var   w : m List
+var   o1 : m
+var   o2 : m tuple1
+var   o3 : m tuple3
+var   nt : a -> (b -> c) -> c -> d
+var   o4 : nt r List s
+type  s1, r1, t1 < t
+type  s2 = r2 = t2
+type  s3 = {x : t . (var x : t) = (var x : t)}
 %% Classes ---------------------------------------------------------------
 a < Type
 b < Type

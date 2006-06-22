@@ -155,7 +155,7 @@ anaBasicSpec ga b@(BasicSpec l) = do
         rels = Set.union preds newPreds
         newGa = addBuiltins ga
         precs = mkPrecIntMap $ prec_annos newGa
-    put (addPreDefs e) { preIds = (precs, rels) }
+    put (addPreDefs e) { preIds = (precs, rels), globAnnos = newGa }
     ul <- mapAnM (anaBasicItem newGa) l
     return $ BasicSpec ul
 

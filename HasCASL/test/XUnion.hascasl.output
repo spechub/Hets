@@ -1,9 +1,9 @@
-var S : Type; N : Type; E : Type
-type Set : Type -> Type := \ S : Type . S ->? Unit
-type Graph : Type -> Type -> Type := 
-     \ (N : Type)(E : Type) . Set N * (E ->? N) * (E ->? N)
-op __union__ : Graph N E * Graph N E -> Graph N E;
-   __union__, __intersection__, __\\__ : Set S * Set S -> Set S
+var   S : Type; N : Type; E : Type
+type  Set : Type -> Type := \ S : Type . S ->? Unit
+type  Graph : Type -> Type -> Type := 
+      \ (N : Type)(E : Type) . Set N * (E ->? N) * (E ->? N)
+op    __union__ : Graph N E * Graph N E -> Graph N E;
+      __union__, __intersection__, __\\__ : Set S * Set S -> Set S
 forall g : Graph N E; g' : Graph N E
 . (op __union__[N; E] : 
    forall N : Type; E : Type . Graph N E * Graph N E -> Graph N E) 

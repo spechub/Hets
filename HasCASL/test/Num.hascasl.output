@@ -1,7 +1,7 @@
-type Nat < Int;
-     Int < Rat
-op 0 : Nat
-op 0 : Rat
+type  Nat < Int;
+      Int < Rat
+op    0 : Nat
+op    0 : Rat
 forall y : Rat
 . (var y : Rat) = (op 0 : Nat) %(divide_def2_Rat)%
 %% Type Constructors -----------------------------------------------------

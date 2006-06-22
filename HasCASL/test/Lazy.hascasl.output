@@ -1,8 +1,8 @@
-type t
-op f : ? t -> t
-op g : t -> (? t)
-op a, b : t
-op c, d : ? t
+type  t
+op    f : ? t -> t
+op    g : t -> (? t)
+op    a, b : t
+op    c, d : ? t
 . (op f : ? t -> t) (op a : t) = (op g : t -> ? t) (op c : ? t)
 %% Type Constructors -----------------------------------------------------
 t : Type

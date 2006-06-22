@@ -15,6 +15,7 @@ module HasCASL.MixAna where
 import Common.GlobalAnnotations
 import Common.Result
 import Common.Id
+import Common.DocUtils
 import Common.Earley
 import Common.Prec
 import Common.ConvertMixfixToken
@@ -202,7 +203,7 @@ resolver isPat ga trm =
                  $ Set.union (Rel.keysSet ass) $ Rel.keysSet vs
        chart <- iterateCharts ga [trm] $ initChart addRule ruleS
        let Result ds mr = getResolved
-              (showPretty . parenTerm) (getRange trm)
+              (showDoc . parenTerm) (getRange trm)
                           toMixTerm chart
        addDiags ds
        if isPat then case mr of

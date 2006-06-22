@@ -1,23 +1,23 @@
 class Functor < Type -> Type
 class Monad < Functor
-type List : Monad
-var a : Type; b : Type
-var m : Monad
-op fail : m a
-op return : a -> m a
-var f : Functor
-op fmap : (a -> b) -> f a -> f b
-op empty : List a
-type Set : Functor
-op emptySet : Set a
+type  List : Monad
+var   a : Type; b : Type
+var   m : Monad
+op    fail : m a
+op    return : a -> m a
+var   f : Functor
+op    fmap : (a -> b) -> f a -> f b
+op    empty : List a
+type  Set : Functor
+op    emptySet : Set a
 . (op fail[_v12; Set] : forall a : Type; m : Monad . m a) = 
   (op emptySet[_v12] : forall a : Type . Set a)
 . (op fail[_v27; List] : forall a : Type; m : Monad . m a) = 
   (op empty[_v27] : forall a : Type . List a)
-op map : (a -> b) -> List a -> List b
-op __bind__ : m a * (a -> m b) -> m b
-var g : a -> b
-var x : m a
+op    map : (a -> b) -> List a -> List b
+op    __bind__ : m a * (a -> m b) -> m b
+var   g : a -> b
+var   x : m a
 . (op fmap[a; b; List] : 
    forall a : Type; b : Type; f : Functor . (a -> b) -> f a -> f b) 
   (var g : a -> b) 
@@ -77,7 +77,7 @@ fmap g x = (x bind (\ y : a .! return (g y)))
   known kinds are: Functor
 *** Error 25.8, in term '(op fail[_v12; Set] : forall a : Type; m : Monad . m a) = 
 (op emptySet[_v12] : forall a : Type . Set a)' of type 'Unit'
- unresolved constraints '{ Set : Monad }'
+ unresolved constraints '{Set : Monad}'
 ### Hint 33.7, not a class 'a'
 ### Hint 33.7, not a class 'b'
 ### Hint 33.23, not a kind 'm a'

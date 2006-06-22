@@ -1,5 +1,5 @@
-type a
-op f : a -> a
+type  a
+op    f : a -> a
 program (op f : a -> a) (v @ (var _ : a) : a) : a = (var v : a)
 %% Type Constructors -----------------------------------------------------
 a : Type

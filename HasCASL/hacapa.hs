@@ -5,7 +5,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
 Stability   :  experimental
-Portability :  portable 
+Portability :  portable
 
 test some parsers (and printers)
 -}
@@ -28,7 +28,7 @@ lineParser = [
  ("Kinds", fromAParser kind),
  ("Types", fromAParser parseType),
  ("Terms", fromAParser term),
- ("MixfixTerms", toStringParser resolveTerm),
+ ("MixfixTerms", toMyStringParser resolveTerm),
  ("Typepattern", fromAParser typePattern),
  ("Pattern", fromAParser pattern),
  ("BasicItems", fromAParser basicItems),

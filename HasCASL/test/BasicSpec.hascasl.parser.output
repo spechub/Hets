@@ -1,20 +1,20 @@
 class Type < Type
-var t : Type
+var   t : Type
 class TYPE < Type
-type Pred __ : -Type -> Type;
-     Unit : TYPE
+type  Pred __ : -Type -> Type;
+      Unit : TYPE
 class a, b, c < Type
 class a, b, c < d;
       a < b
-type s : c
-pred tt : s
-var x : s
+type  s : c
+pred  tt : s
+var   x : s
 program tt = \ x : s . ()
 program __ res __ (x : s, y : t) : s = x;
         fst (x : s, y : t) : s = x;
         snd (x : s, y : t) : t = y
-pred eq : s * s
-type s < ? s
+pred  eq : s * s
+type  s < ? s
 program all (p : (? s)) : (? Unit) = eq (p, tt)
 program And (x, y : (? Unit)) : (? Unit) = t1 () res t2 ()
 program __ impl __ (x, y : (? Unit)) = eq (x, x And y)
@@ -27,18 +27,18 @@ forall x : t; y : t
 . 
   %(..)%
   x = y
-type s
-op a : (? s)
-type Data1 ::= a | 
-               b | 
-               c
-type Data2 ::= Cons21 (Data1; Data2) | 
-               Cons22 (Data2; Data1) | 
-               type Data1
-type Data3 ::= Cons31 (sel1 :? Data1; sel2 :? Data2) | 
-               Cons32 (sel2 :? Data2; sel1 :? Data1)
-type Data4 ::= Cons41 (sel1 :? Data1; sel2 :? Data2)? | 
-               Cons42 (sel2 :? Data2; sel1 :? Data1)?
+type  s
+op    a : (? s)
+type  Data1 ::= a | 
+                b | 
+                c
+type  Data2 ::= Cons21 (Data1; Data2) | 
+                Cons22 (Data2; Data1) | 
+                type Data1
+type  Data3 ::= Cons31 (sel1 :? Data1; sel2 :? Data2) | 
+                Cons32 (sel2 :? Data2; sel1 :? Data1)
+type  Data4 ::= Cons41 (sel1 :? Data1; sel2 :? Data2)? | 
+                Cons42 (sel2 :? Data2; sel1 :? Data1)?
 . true
 forall x : s
 . e

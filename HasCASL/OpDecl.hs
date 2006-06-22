@@ -5,7 +5,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
 Stability   :  experimental
-Portability :  portable 
+Portability :  portable
 
 analyse operation declarations
 -}
@@ -30,10 +30,10 @@ import HasCASL.TypeCheck
 import HasCASL.ProgEq
 
 anaAttr :: GlobalAnnos -> TypeScheme -> OpAttr -> State Env (Maybe OpAttr)
-anaAttr ga (TypeScheme tvs ty _) (UnitOpAttr trm ps) = 
+anaAttr ga (TypeScheme tvs ty _) (UnitOpAttr trm ps) =
     do e <- get
        let mTy = let (fty, fArgs) = getTypeAppl ty in case fArgs of
-                   [arg, t3] | lesserType e fty (toType $ arrowId PFunArr) 
+                   [arg, t3] | lesserType e fty (toType $ arrowId PFunArr)
                        -> let (pty, ts) = getTypeAppl arg in case ts of
                           [t1, t2] | lesserType e pty (toType $ productId 2)
                                        -> Just (t1,t2,t3)
@@ -41,18 +41,18 @@ anaAttr ga (TypeScheme tvs ty _) (UnitOpAttr trm ps) =
                    _ -> Nothing
        let tm = typeMap e
        mapM_ (addTypeVarDecl False) tvs
-       case mTy of 
-             Nothing -> do addDiags [mkDiag Error 
+       case mTy of
+             Nothing -> do addDiags [mkDiag Error
                                      "unexpected type of operation" ty]
                            mt <- resolveTerm ga Nothing trm
                            putTypeMap tm
-                           case mt of 
+                           case mt of
                                    Nothing -> return Nothing
                                    Just t  -> return $ Just $ UnitOpAttr t ps
-             Just (t1, t2, t3) -> 
+             Just (t1, t2, t3) ->
                  do if t1 == t2 && t2 == t3 then
                        return ()
-                       else addDiags [mkDiag Error 
+                       else addDiags [mkDiag Error
                                  "unexpected type components of operation" ty]
                     mt <- resolveTerm ga (Just t3) trm
                     putTypeMap tm
@@ -65,18 +65,18 @@ tuplePatternToType vds = mkProductType (map ( \ (VarDecl _ t _ _) -> t) vds)
 
 getUninstOpId :: TypeScheme -> OpId -> (OpId, TypeScheme)
 getUninstOpId (TypeScheme tvs q ps) (OpId i args qs) =
-      (OpId i [] qs, TypeScheme (args ++ tvs) q ps)  
+      (OpId i [] qs, TypeScheme (args ++ tvs) q ps)
 
-anaOpId :: GlobalAnnos -> OpBrand -> TypeScheme -> [OpAttr] -> OpId 
+anaOpId :: GlobalAnnos -> OpBrand -> TypeScheme -> [OpAttr] -> OpId
         -> State Env Bool
 anaOpId ga br partSc attrs o =
     do let (OpId i _ _, sc) = getUninstOpId partSc o
-       mSc <- anaTypeScheme sc 
-       case mSc of 
+       mSc <- anaTypeScheme sc
+       case mSc of
            Nothing -> return False
            Just newSc -> do
                mAttrs <- mapM (anaAttr ga newSc) attrs
-               addOpId i newSc (catMaybes mAttrs) $ NoOpDefn br 
+               addOpId i newSc (catMaybes mAttrs) $ NoOpDefn br
 
 anaOpItem :: GlobalAnnos -> OpBrand -> OpItem -> State Env (Maybe OpItem)
 anaOpItem ga br (OpDecl is sc attr ps) = do
@@ -85,8 +85,8 @@ anaOpItem ga br (OpDecl is sc attr ps) = do
         return $ if null us then Nothing else
             Just $ OpDecl us sc attr ps
 
-anaOpItem ga br (OpDefn o oldPats sc partial trm ps) = 
-    do let (op@(OpId i _ _), TypeScheme tArgs scTy qs) = 
+anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
+    do let (op@(OpId i _ _), TypeScheme tArgs scTy qs) =
                getUninstOpId sc o
        checkUniqueVars $ concat oldPats
        tvs <- gets localTypeVars
@@ -97,76 +97,76 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
            pats = map (\ l -> mkTupleTerm (map QualVar l) nullRange) monoPats
        vs <- gets localVars
        mapM (mapM $ addLocalVar True) monoPats
-       let newArgs = catMaybes mArgs  
+       let newArgs = catMaybes mArgs
        mty <- anaStarType scTy
-       case mty of 
-           Just ty -> do 
+       case mty of
+           Just ty -> do
                mt <- resolveTerm ga Nothing $ TypedTerm trm AsType ty ps
-               newSc <- generalizeS $ TypeScheme newArgs 
-                      (getFunType ty partial 
+               newSc <- generalizeS $ TypeScheme newArgs
+                      (getFunType ty partial
                        $ map tuplePatternToType newPats) qs
                putLocalVars vs
                putLocalTypeVars tvs
-               case mt of 
-                   Just lastTrm -> do 
-                       let lamTrm = case (pats, partial) of 
+               case mt of
+                   Just lastTrm -> do
+                       let lamTrm = case (pats, partial) of
                                     ([], Total) -> lastTrm
                                     _ -> LambdaTerm pats partial lastTrm ps
                            ot = QualOp br (InstOpId i [] nullRange) newSc nullRange
                            lhs = mkApplTerm ot pats
                            ef = mkEqTerm eqId ps lhs lastTrm
                            f = mkForall (map GenTypeVarDecl newArgs
-                                          ++ (map GenVarDecl $ 
+                                          ++ (map GenVarDecl $
                                               concatMap extractVars pats)) ef
                        addOpId i newSc [] $ Definition br lamTrm
-                       appendSentences [NamedSen 
+                       appendSentences [NamedSen
                                         ("def_" ++ showId i "")
-                                        True False $ Formula f] 
+                                        True False $ Formula f]
                        return $ Just $ OpDefn op [] newSc Total lamTrm ps
-                   Nothing -> do 
+                   Nothing -> do
                        addOpId i newSc [] $ NoOpDefn br
                        return $ Just $ OpDecl [OpId i [] ps] newSc [] ps
-           Nothing -> do 
+           Nothing -> do
                resolveTerm ga Nothing trm -- get a view more diags
                putLocalVars vs
                putLocalTypeVars tvs
                return Nothing
-                                                          
+
 -- ----------------------------------------------------------------------------
 -- ProgEq
 -- ----------------------------------------------------------------------------
 
 anaProgEq :: GlobalAnnos -> ProgEq -> State Env (Maybe ProgEq)
 anaProgEq ga pe@(ProgEq _ _ q) =
-    do mp <- resolveTerm ga Nothing (LetTerm Program [pe] 
+    do mp <- resolveTerm ga Nothing (LetTerm Program [pe]
                                      (BracketTerm Parens [] q) q)
-       case mp of 
-           Just (LetTerm _ (newPrg@(ProgEq newPat _ _) : _) _ _) -> 
+       case mp of
+           Just (LetTerm _ (newPrg@(ProgEq newPat _ _) : _) _ _) ->
                case getAppl newPat of
-               Just (i, sc, _) -> do 
+               Just (i, sc, _) -> do
                            addOpId i sc [] $ NoOpDefn Op
                            appendSentences [NamedSen ("pe_" ++ showId i "")
                                             True True $ ProgEqSen i sc newPrg]
                            e <- get
-                           if isLHS e newPat then return () 
-                              else addDiags [mkDiag Warning
+                           if isLHS e newPat then return ()
+                              else addDiags [mkNiceDiag ga Warning
                                          "illegal lhs pattern"
                                          newPat]
                            return $ Just newPrg
-               Nothing -> do addDiags [mkDiag Error 
+               Nothing -> do addDiags [mkNiceDiag ga Error
                                          "illegal toplevel pattern"
                                          newPat]
                              return Nothing
            _ -> return Nothing
 
 getApplConstr :: Pattern -> (Pattern, [Pattern])
-getApplConstr pat = 
-    case pat of 
-    ApplTerm p1 p2 _ -> 
+getApplConstr pat =
+    case pat of
+    ApplTerm p1 p2 _ ->
         let (tp, args) = getApplConstr p1 in (tp, p2:args)
     TypedTerm tp _ _ _ -> getApplConstr tp
     _ -> (pat, [])
-                           
+
 
 
 

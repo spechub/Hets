@@ -1,5 +1,5 @@
-type s
-op f : s --> s
+type  s
+op    f : s --> s
 . (op f : s --> s) = (\ (var x : s) . (var x : s) as s --> s)
 %% Type Constructors -----------------------------------------------------
 s : Type

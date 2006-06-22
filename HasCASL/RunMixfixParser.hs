@@ -28,6 +28,8 @@ import Common.Result
 import Common.Lexer
 import Common.Lib.State
 import Common.Doc
+import Common.DocUtils
+import Common.RunParsers
 import qualified Common.Lib.Set as Set
 
 -- start testing
@@ -69,7 +71,11 @@ resolveTerm ga = do
            (addRule, ruleS, _) = makeRules newGa ps ids
            chart = evalState (iterateCharts newGa [trm]
                              $ initChart addRule ruleS)
-                   initialEnv { preIds = ps }
+                   initialEnv { preIds = ps, globAnnos = newGa }
        return $ getResolved (shows . toText newGa . printTerm . parenTerm)
                   (getRange trm) toMixTerm chart
 
+toMyStringParser :: Pretty a => (GlobalAnnos -> AParser () a)
+                 -> StringParser
+toMyStringParser p ga =
+    fmap (\ a -> showGlobalDoc (addBuiltins ga) a "") $ p ga

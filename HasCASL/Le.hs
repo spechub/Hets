@@ -20,6 +20,7 @@ import qualified Common.Lib.State as State
 import Common.Result
 import Common.Id
 import Common.AS_Annotation (Named)
+import Common.GlobalAnnotations
 import Common.Prec
 
 -- * class info
@@ -156,13 +157,14 @@ data Env = Env { classMap :: ClassMap
                , sentences :: [Named Sentence]
                , envDiags :: [Diagnosis]
                , preIds :: (PrecMap, Set.Set Id)
+               , globAnnos :: GlobalAnnos
                , counter :: Int
                } deriving Show
 
 -- | the empty environment (fresh variables start with 1)
 initialEnv :: Env
 initialEnv = Env Map.empty Map.empty Map.empty Map.empty Map.empty [] []
-             (emptyPrecMap, Set.empty) 1
+             (emptyPrecMap, Set.empty) emptyGlobalAnnos 1
 
 -- * accessing the environment
 

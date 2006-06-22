@@ -5,7 +5,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
 Stability   :  experimental
-Portability :  portable 
+Portability :  portable
 
 parse and call static analysis
 -}
@@ -18,10 +18,10 @@ import HasCASL.AsToLe(anaBasicSpec)
 import HasCASL.ParseItem(basicSpec)
 import HasCASL.ProgEq
 import HasCASL.SimplifyTerm
+import HasCASL.Builtin
 
 import Common.Lib.State
-import Common.Lib.Pretty
-import Common.PrettyPrint
+import Common.Doc
 import Common.RunParsers
 import Common.AS_Annotation
 import Common.GlobalAnnotations
@@ -35,7 +35,8 @@ anaParser :: StringParser
 anaParser ga = do (a, e) <- bParser ga
                   let ne = e { sentences = map
                          (mapNamed $ simplifySentence e) $ sentences e }
-                  return $ show (printText0 ga a $$ printText0 ga ne)
+                  return $ show $ toText (addBuiltins ga)
+                             $ pretty a $+$ pretty ne
 
 type SenParser = GlobalAnnos -> AParser () [Named Sentence]
 
@@ -47,4 +48,5 @@ transParser = fmap ( ( \ e -> map (mapNamed (translateSen e)) $ reverse $
                        sentences e) . snd) . bParser
 
 printSen :: SenParser -> StringParser
-printSen p ga = fmap (show . vcat . map (printText0 ga)) $ p ga
+printSen p ga =
+    fmap (show . toText (addBuiltins ga) . vcat . map pretty) $ p ga

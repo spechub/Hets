@@ -1,11 +1,11 @@
-var a : Type; b : Type
+var   a : Type; b : Type
 free type Pair(a : Type)(b : Type) ::= Pair (fst : a; snd : b)
-op f : forall a : Type; b : Type . a * b -> Pair a b = 
-   \ ((var a : a), (var b : b)) .! 
-   (op Pair[a; b] : forall a : Type; b : Type . a * b -> Pair a b) 
-   ((var a : a), (var b : b)) 
-   as Pair a b
-op g : Pair a b ->? a
+op    f : forall a : Type; b : Type . a * b -> Pair a b = 
+      \ ((var a : a), (var b : b)) .! 
+      (op Pair[a; b] : forall a : Type; b : Type . a * b -> Pair a b) 
+      ((var a : a), (var b : b)) 
+      as Pair a b
+op    g : Pair a b ->? a
 program ((op g[_v25; _v27] : 
           forall a : Type; b : Type . Pair a b ->? a) 
          : Pair _v25 _v27 ->? _v25) 

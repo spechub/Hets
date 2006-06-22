@@ -2,33 +2,33 @@
 %% predefined universe containing all types, 
 %% superclass of all other classes
 class Type < Type
-var s : Type; t : Type
+var   s : Type; t : Type
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% invisible type "Unit" for formulae
-type Unit
-     %% flat cpo with bottom
+type  Unit
+      %% flat cpo with bottom
 
 %% type aliases
-pred true, false : Unit
-pred __/\__, __\/__, __=>__, __if__, __<=>__ : Unit * Unit
-pred not : Unit
-pred __=__ : s * s
-     %% =e=
+pred  true, false : Unit
+pred  __/\__, __\/__, __=>__, __if__, __<=>__ : Unit * Unit
+pred  not : Unit
+pred  __=__ : s * s
+      %% =e=
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% (builtin) type (constructors)
-type __->?__ : -Type -> +Type -> Type
+type  __->?__ : -Type -> +Type -> Type
 
 %% nested pairs are different from n-tupels (n > 2)
-type __*__ : +Type -> +Type -> Type
+type  __*__ : +Type -> +Type -> Type
 
 %% ...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% "pred p args = e" abbreviates "op p args :? unit = e"  
 %% CASL requires "<=>" for pred-defn and disallows "()" as result
-op def, tt : Pred s
-var x : s
+op    def, tt : Pred s
+var   x : s
 program (op def[s] : forall s : Type . Pred s) : Pred s = 
         \ (var x : s) . () : s ->? Unit
         %% def is also total (identical to tt) 
@@ -37,14 +37,14 @@ program (op tt[s] : forall s : Type . Pred s) : Pred s =
         %% tt is total "op tt(x: s): unit = ()"
 
 %% total function type
-type __->__ : -Type -> +Type -> Type
-type __->__ < __->?__
+type  __->__ : -Type -> +Type -> Type
+type  __->__ < __->?__
 
 %% total functions
-op __res__ : forall s : Type; t : Type . s * t -> s = 
-   \ ((var x : s), (var y : t)) .! (var x : s) as s
-op fst : forall s : Type; t : Type . s * t -> s = 
-   \ ((var x : s), (var y : t)) .! (var x : s) as s
+op    __res__ : forall s : Type; t : Type . s * t -> s = 
+      \ ((var x : s), (var y : t)) .! (var x : s) as s
+op    fst : forall s : Type; t : Type . s * t -> s = 
+      \ ((var x : s), (var y : t)) .! (var x : s) as s
 program (var snd : s * t ->? t) ((var x : s), (var y : t) : t) : t 
         = (var y : t)
 
@@ -56,7 +56,7 @@ program (var snd : s * t ->? t) ((var x : s), (var y : t) : t) : t
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal Logic
-pred eq : s * s
+pred  eq : s * s
 . (\ (var x : s) . 
    (pred eq[s] : forall s : Type . s * s) ((var x : s), (var x : s))) 
   = (op tt[s] : forall s : Type . Pred s)
@@ -76,7 +76,7 @@ pred eq : s * s
 %% where "bla" is never used, but only "()" instead
 %% for type inference 
 %% an implicit cast from s to ?s of a term "e" yields the term "\ . e"
-type s < ? s
+type  s < ? s
 
 %% the cast from ?s to s is still done manually here (for the strict "und")
 
@@ -87,37 +87,37 @@ type s < ? s
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Recursion (requires "free type nat ::= 0 | Suc(nat)" and "+"  
-type nat
+type  nat
 class Cpo < Type
-      {var c : Cpo;
-       pred __<<=__ : c * c;
+      {var   c : Cpo;
+       pred  __<<=__ : c * c;
        ;
-       pred isChain : forall c : Cpo . nat -> c;
-       pred isBound : forall c : Cpo . c * (nat -> c);
-       op sup : (nat -> c) ->? c;
+       pred  isChain : forall c : Cpo . nat -> c;
+       pred  isBound : forall c : Cpo . c * (nat -> c);
+       op    sup : (nat -> c) ->? c;
       }
 class Pcpo < Cpo
-      {var p : Pcpo;
-       op bottom : p;
+      {var   p : Pcpo;
+       op    bottom : p;
       }
 class instance Flatcpo < Cpo
-               {var f : Flatcpo;}
-var c : Cpo; d : Cpo
-type instance __*__ : +Cpo -> +Cpo -> Cpo
-var x1 : c; x2 : c; y1 : d; y2 : d
-type instance __*__ : +Pcpo -> +Pcpo -> Pcpo
-type Unit : Pcpo
+               {var   f : Flatcpo;}
+var   c : Cpo; d : Cpo
+type  instance __*__ : +Cpo -> +Cpo -> Cpo
+var   x1 : c; x2 : c; y1 : d; y2 : d
+type  instance __*__ : +Pcpo -> +Pcpo -> Pcpo
+type  Unit : Pcpo
 
 %% Pcont
-type instance __-->?__ : -Cpo -> +Cpo -> Pcpo
-type __-->?__ < __->?__
+type  instance __-->?__ : -Cpo -> +Cpo -> Pcpo
+type  __-->?__ < __->?__
 
 %% Tcont
-type instance __-->__ : -Cpo -> +Cpo -> Cpo
-var f : c --> d; g : c --> d
-type instance __-->__ : -Cpo -> +Pcpo -> Pcpo
-fun Y : (p --> p) --> p
-var f : p --> p; x : p
+type  instance __-->__ : -Cpo -> +Cpo -> Cpo
+var   f : c --> d; g : c --> d
+type  instance __-->__ : -Cpo -> +Pcpo -> Pcpo
+fun   Y : (p --> p) --> p
+var   f : p --> p; x : p
 . (var f : p --> p) 
   ((fun Y[p] : forall p : Pcpo . (p --> p) --> p) (var f : p --> p)) 
   = (fun Y[p] : forall p : Pcpo . (p --> p) --> p) (var f : p --> p)
@@ -125,18 +125,18 @@ var f : p --> p; x : p
   (pred __<<=__[p] : forall c : Cpo . c * c) 
   ((fun Y[p] : forall p : Pcpo . (p --> p) --> p) (var f : p --> p), 
    (var x : p))
-op undefined : forall p : Pcpo; c : Cpo . c --> p = 
-   (fun Y[c --> p] : forall p : Pcpo . (p --> p) --> p) 
-   (\ (var x' : c --> p) . (var x' : c --> p) as 
-    (c --> p) --> c --> p) 
-   as c --> p
+op    undefined : forall p : Pcpo; c : Cpo . c --> p = 
+      (fun Y[c --> p] : forall p : Pcpo . (p --> p) --> p) 
+      (\ (var x' : c --> p) . (var x' : c --> p) as 
+       (c --> p) --> c --> p) 
+      as c --> p
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% user stuff
 free type bool ::= true | 
                    false
-type bool : Flatcpo
-type nat : Flatcpo
+type  bool : Flatcpo
+type  nat : Flatcpo
 %% Classes ---------------------------------------------------------------
 Cpo < Type
 Flatcpo < Cpo

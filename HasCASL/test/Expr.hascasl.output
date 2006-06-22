@@ -1,20 +1,20 @@
-type bool ::= True | 
-              False
-op a : bool = (op True : bool) as bool
-op notA : bool = 
-   case (op a : bool) of 
-   (op True : bool) -> (op False : bool) | 
-   (op False : bool) -> (op True : bool) 
-   as bool
-op b : bool = 
-   let (var x : bool) = (op True : bool);
-       (var y : bool) = (op False : bool);
-       (var z : bool) = (var x : bool) 
-   in 
-   (op True : bool) 
-   as bool
-op b : bool -> bool = 
-   \ (var x : bool) .! (var x : bool) as bool -> bool
+type  bool ::= True | 
+               False
+op    a : bool = (op True : bool) as bool
+op    notA : bool = 
+      case (op a : bool) of 
+      (op True : bool) -> (op False : bool) | 
+      (op False : bool) -> (op True : bool) 
+      as bool
+op    b : bool = 
+      let (var x : bool) = (op True : bool);
+          (var y : bool) = (op False : bool);
+          (var z : bool) = (var x : bool) 
+      in 
+      (op True : bool) 
+      as bool
+op    b : bool -> bool = 
+      \ (var x : bool) .! (var x : bool) as bool -> bool
 %% Type Constructors -----------------------------------------------------
 bool 
 : Type 

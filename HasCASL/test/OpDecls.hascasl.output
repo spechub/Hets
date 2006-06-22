@@ -1,46 +1,46 @@
-type s, t < t
-op a, b : s
+type  s, t < t
+op    a, b : s
 
 %% op __ + __ : s  -> s -> s, idem, assoc, comm;
-op __+__ : s * s -> s
-op __+__ : t * t -> t
-op a, b : t
-op c : s = (op __+__ : s * s -> s) ((op a : s), (op b : s)) as s
-op d : s = (op __+__ : s * s -> s) ((op a : s), (op a : s)) as s
-op e : s * s -> s = (op __+__ : s * s -> s) as s * s -> s
-op f : s * s -> s = (op __+__ : s * s -> s) as s * s -> s
-op g : s * s = ((op a : s), (op b : s)) as s * s
-op h : s = (op __+__ : s * s -> s) ((op a : s), (op b : s)) as s
-op i : s = (op __+__ : s * s -> s) ((op a : s), (op b : s)) as s
-op incr : s -> s
-op i1 : s = (op incr : s -> s) (op a : s) as s
-op i2 : s = (op incr : s -> s) (op a : s) as s
-op i3 : s = (op incr : s -> s) (op a : s) as s
-op __<=__<=__ : s * s * s -> s
-op l1 : s = 
-   (op __<=__<=__ : s * s * s -> s) 
-   ((op a : s), (op b : s), (op c : s)) 
-   as s
-op l2 : s * s * s -> s = 
-   (op __<=__<=__ : s * s * s -> s) as s * s * s -> s
-op l3 : s = 
-   (op __<=__<=__ : s * s * s -> s) 
-   ((op a : s), (op b : s), (op c : s)) 
-   as s
-op l4 : s = 
-   (op __<=__<=__ : s * s * s -> s) 
-   ((op a : s), (op b : s), (op c : s)) 
-   as s
-op l5 : s * s * s = 
-   ((op a : s), (op b : s), (op c : s)) as s * s * s
-op x : s
-op y : s = 
-   (op __<=__<=__ : s * s * s -> s) 
-   ((op a : s), (var x : s), (op a : s)) 
-   as s
-op z : s = 
-   (op __+__ : s * s -> s) ((op x : s) as s, (op x : s) as t as s) as 
-   s
+op    __+__ : s * s -> s
+op    __+__ : t * t -> t
+op    a, b : t
+op    c : s = (op __+__ : s * s -> s) ((op a : s), (op b : s)) as s
+op    d : s = (op __+__ : s * s -> s) ((op a : s), (op a : s)) as s
+op    e : s * s -> s = (op __+__ : s * s -> s) as s * s -> s
+op    f : s * s -> s = (op __+__ : s * s -> s) as s * s -> s
+op    g : s * s = ((op a : s), (op b : s)) as s * s
+op    h : s = (op __+__ : s * s -> s) ((op a : s), (op b : s)) as s
+op    i : s = (op __+__ : s * s -> s) ((op a : s), (op b : s)) as s
+op    incr : s -> s
+op    i1 : s = (op incr : s -> s) (op a : s) as s
+op    i2 : s = (op incr : s -> s) (op a : s) as s
+op    i3 : s = (op incr : s -> s) (op a : s) as s
+op    __<=__<=__ : s * s * s -> s
+op    l1 : s = 
+      (op __<=__<=__ : s * s * s -> s) 
+      ((op a : s), (op b : s), (op c : s)) 
+      as s
+op    l2 : s * s * s -> s = 
+      (op __<=__<=__ : s * s * s -> s) as s * s * s -> s
+op    l3 : s = 
+      (op __<=__<=__ : s * s * s -> s) 
+      ((op a : s), (op b : s), (op c : s)) 
+      as s
+op    l4 : s = 
+      (op __<=__<=__ : s * s * s -> s) 
+      ((op a : s), (op b : s), (op c : s)) 
+      as s
+op    l5 : s * s * s = 
+      ((op a : s), (op b : s), (op c : s)) as s * s * s
+op    x : s
+op    y : s = 
+      (op __<=__<=__ : s * s * s -> s) 
+      ((op a : s), (var x : s), (op a : s)) 
+      as s
+op    z : s = 
+      (op __+__ : s * s -> s) ((op x : s) as s, (op x : s) as t as s) as 
+      s
 . (op x : s) in s %(bla_label)%
 . (op x : s) in t
 %% Type Constructors -----------------------------------------------------

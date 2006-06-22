@@ -1,5 +1,5 @@
-type s, t
-op snd : s * t -> t
+type  s, t
+op    snd : s * t -> t
 program (op snd : s * t -> t) ((var x : s), (var y : t)) : t = 
         (var y : t)
 program (op snd : s * t -> t) ((var x : s), (var y : t)) : t = 
@@ -13,13 +13,13 @@ program (op snd : s * t -> t) ((var x : s), (var y : t)) : t =
 program (op snd : s * t -> t) ((var x : s) : s, (var y : t) : t) : 
         t 
         = (var y : t)
-op a : s
+op    a : s
 program (var b : s) : s = (op a : s)
-op b : s
+op    b : s
 program (op b : s) = (op a : s)
-op x : s;
-   y : t
-op c : t = (op snd : s * t -> t) ((op x : s), (op y : t)) as t
+op    x : s;
+      y : t
+op    c : t = (op snd : s * t -> t) ((op x : s), (op y : t)) as t
 %% Type Constructors -----------------------------------------------------
 s : Type
 t : Type
