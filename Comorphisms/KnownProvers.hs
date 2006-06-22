@@ -16,6 +16,7 @@ comorphisms.
     - add more known paths to SPASS; the commented out versions don't work
 -}
 module Comorphisms.KnownProvers (KnownProversMap,
+                                 defaultGUIProver,
                                  knownProvers,
                                  shrinkKnownProvers,
                                  showKnownProvers,
@@ -53,6 +54,10 @@ import Comorphisms.CASL2SubCFOL
 import Comorphisms.CASL2SPASS
 
 type KnownProversMap = Map.Map String [AnyComorphism]
+
+-- | the default prover selected in the GUI
+defaultGUIProver :: String
+defaultGUIProver = "SPASS"
 
 -- | a map of known prover names to a list of simple (composed) comorphisms
 knownProvers :: Result KnownProversMap

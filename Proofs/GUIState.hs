@@ -93,9 +93,14 @@ initialState lid1 thN th@(G_theory lid2 sig thSens) pm cms =
                            accDiags = [],
                            proverRunning = False,
                            proofManagementDestroyed = False,
-                           selectedProver = if null (Map.keys pm) 
-                                            then Nothing
-                                            else Just (last $ Map.keys pm)
+                           selectedProver =
+                               let prvs = Map.keys pm
+                               in if null prvs
+                                  then Nothing
+                                  else 
+                                    if defaultGUIProver `elem` prvs
+                                       then Just defaultGUIProver
+                                       else Nothing
                          }
 
 
