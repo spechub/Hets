@@ -21,7 +21,7 @@ import Common.Result
 import Maybe
 
 
-dg_translation :: GlobalContext -> AnyComorphism -> GlobalContext
+dg_translation :: GlobalContext -> AnyComorphism -> {-Result-} GlobalContext
 dg_translation gc cm@(Comorphism cidMor) =
     mainTrans (Map.keys $ thMap gc) gc
   where 
@@ -32,7 +32,7 @@ dg_translation gc cm@(Comorphism cidMor) =
                                then mainTrans r $ updateNode h gc cm
                                else mainTrans r gc
 
-updateNode :: Int -> GlobalContext -> AnyComorphism -> GlobalContext
+updateNode :: Int -> GlobalContext -> AnyComorphism -> {-Result-} GlobalContext
 updateNode index gc cm@(Comorphism cidMor) =
     gc { sigMap = Map.update 
                   transSig 
@@ -67,7 +67,7 @@ updateNode index gc cm@(Comorphism cidMor) =
           Just mor' -> 
               case map_morphism cidMor mor' of
                 Result diags maybeResult ->
-                    maybeResult
+                    maybe Nothing (Just . G_morphism (targetLogic cidMor)) maybeResult
           Nothing   -> Nothing    
 
 {-
