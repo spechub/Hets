@@ -25,8 +25,9 @@ import Common.Id
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 import Common.Earley
-import Common.ConvertLiteral
-import Common.PrettyPrint
+import Common.ConvertMixfixToken
+import Common.Doc
+import Common.DocUtils
 import Common.AS_Annotation
 import CASL.ShowMixfix
 import CASL.Print_AS_Basic()
@@ -234,7 +235,7 @@ addType tt t =
 -- | the type for mixfix resolution
 type MixResolve f = GlobalAnnos -> (Token -> [Rule], Rules) -> f -> Result f
 
-iterateCharts :: PrettyPrint f => (f -> f)
+iterateCharts :: Pretty f => (f -> f)
               -> MixResolve f -> GlobalAnnos -> [TERM f]
               -> Chart (TERM f) -> Chart (TERM f)
 iterateCharts par extR g terms c =
@@ -303,31 +304,31 @@ mkIdSets ops preds =
     in (f ops, f preds)
 
 -- | top-level resolution like 'resolveMixTrm' that fails in case of diags
-resolveMixfix :: PrettyPrint f => (f -> f)
+resolveMixfix :: Pretty f => (f -> f)
               -> MixResolve f -> MixResolve (TERM f)
 resolveMixfix par extR g ruleS t =
     let r@(Result ds _) = resolveMixTrm par extR g ruleS t
         in if null ds then r else Result ds Nothing
 
 -- | basic term resolution that supports recursion without failure
-resolveMixTrm :: PrettyPrint f => (f -> f)
+resolveMixTrm :: Pretty f => (f -> f)
               -> MixResolve f -> MixResolve (TERM f)
 resolveMixTrm par extR ga (adder, ruleS) trm =
         getResolved (showTerm par ga) (posOfTerm trm) toAppl
            $ iterateCharts par extR ga [trm] $ initChart adder ruleS
 
-showTerm :: PrettyPrint f => (f -> f) -> GlobalAnnos -> TERM f -> ShowS
-showTerm par ga = shows . printText0 ga . mapTerm par
+showTerm :: Pretty f => (f -> f) -> GlobalAnnos -> TERM f -> ShowS
+showTerm par ga = showGlobalDoc ga . mapTerm par
 
 -- | top-level resolution like 'resolveMixFrm' that fails in case of diags
-resolveFormula :: PrettyPrint f => (f -> f)
+resolveFormula :: Pretty f => (f -> f)
                -> MixResolve f -> MixResolve (FORMULA f)
 resolveFormula par extR g ruleS f =
     let r@(Result ds _) = resolveMixFrm par extR g ruleS f
         in if null ds then r else Result ds Nothing
 
 -- | basic formula resolution that supports recursion without failure
-resolveMixFrm :: PrettyPrint f => (f -> f)
+resolveMixFrm :: Pretty f => (f -> f)
               -> MixResolve f -> MixResolve (FORMULA f)
 resolveMixFrm par extR g ids frm =
     let self = resolveMixFrm par extR g ids

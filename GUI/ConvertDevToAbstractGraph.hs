@@ -65,9 +65,10 @@ import InfoBus (encapsulateWaitTermAct)
 
 import qualified Common.Lib.Map as Map
 import qualified Common.OrderedMap as OMap
-import Common.Lib.Pretty as Pretty hiding (isEmpty)
 import Common.Id
 import Common.PrettyPrint
+import Common.DocUtils
+import qualified Common.Doc as Doc
 import qualified Common.Result as Res
 import Common.ResultT
 
@@ -93,19 +94,19 @@ data ConversionMaps = ConversionMaps {
                         abstr2dgEdge :: AGraphToDGraphEdge,
                         libname2dg :: LibEnv}
 
-instance PrettyPrint String where -- overlapping !
-    printText0 _ c = text (take 25 c)
+instance Doc.Pretty String where -- overlapping !
+    pretty c = Doc.text (take 25 c)
 
-instance  Common.PrettyPrint.PrettyPrint ConversionMaps where
-  printText0 ga convMaps =
-       ptext "dg2abstrNode"
-    Pretty.$$ (printText0 ga $ dg2abstrNode convMaps)
-    Pretty.$$ ptext "dg2abstrEdge"
-    Pretty.$$ (printText0 ga $ dg2abstrEdge convMaps)
-    Pretty.$$ ptext "abstr2dgNode"
-    Pretty.$$ (printText0 ga $ abstr2dgNode convMaps)
-    Pretty.$$ ptext "abstr2dgEdge"
-    Pretty.$$ (printText0 ga $ abstr2dgEdge convMaps)
+instance Doc.Pretty ConversionMaps where
+  pretty convMaps =
+       Doc.text "dg2abstrNode"
+    Doc.$+$ (Doc.pretty $ dg2abstrNode convMaps)
+    Doc.$+$ Doc.text "dg2abstrEdge"
+    Doc.$+$ (Doc.pretty $ dg2abstrEdge convMaps)
+    Doc.$+$ Doc.text "abstr2dgNode"
+    Doc.$+$ (Doc.pretty $ abstr2dgNode convMaps)
+    Doc.$+$ Doc.text "abstr2dgEdge"
+    Doc.$+$ (Doc.pretty $ abstr2dgEdge convMaps)
 
 data GraphMem = GraphMem {
                   graphInfo :: GraphInfo,
@@ -462,7 +463,7 @@ openProofStatus ln file ioRefProofStatus convRef opts = do
             Just (_, libEnv) -> case Map.lookup ln libEnv of
                 Nothing -> fail
                  $ "Could not get original development graph for '"
-                       ++ showPretty ln "'"
+                       ++ showDoc ln "'"
                 Just gctx -> do
                     oldEnv <- readIORef ioRefProofStatus
                     let proofStatus = Map.insert ln
@@ -658,7 +659,7 @@ createLocalMenuTaxonomy ginfo@(proofStatus,_,_,_,_,_,_,_,_) =
                                          descr ab2dgNode dgraph
                  case r of
                   Res.Result [] (Just (n, gth)) ->
-                      displayFun (showPretty n "") gth
+                      displayFun (showDoc n "") gth
                   Res.Result diags _ ->
                      showDiags defaultHetcatsOpts diags
 
@@ -834,14 +835,16 @@ showSpec descr convMap dgraph =
    Nothing -> return ()
    Just (_, node) -> do
       let sp = dgToSpec dgraph node
-      putStrLn (showPretty sp "")
+      putStrLn $ case sp of
+            Res.Result ds Nothing -> show $ Doc.vcat $ map Doc.pretty ds
+            Res.Result _ m -> showPretty m ""
 
 {- | auxiliary method for debugging. shows the number of the given node
      in the abstraction graph -}
 getNumberOfNode :: Descr -> IO()
 getNumberOfNode descr =
   let title = "Number of node"
-    in createTextDisplay title (showPretty descr "") [HTk.size(10,10)]
+    in createTextDisplay title (showDoc descr "") [HTk.size(10,10)]
 
 {- | outputs the signature of a node in a window;
 used by the node menu defined in initializeGraph -}
@@ -851,7 +854,7 @@ getSignatureOfNode descr ab2dgNode dgraph =
     Just (_, node) ->
       let dgnode = lab' (context dgraph node)
           title = "Signature of "++showName (dgn_name dgnode)
-       in createTextDisplay title (showPretty (dgn_sign dgnode) "")
+       in createTextDisplay title (showDoc (dgn_sign dgnode) "")
                             [HTk.size(80,50)]
     Nothing -> error ("node with descriptor "
                       ++ (show descr)
@@ -908,7 +911,7 @@ displayTheory :: String -> Node -> DGraph -> G_theory
               -> IO ()
 displayTheory ext node dgraph gth =
     let dgnode = lab' (context dgraph node)
-        str = showPretty gth "\n"
+        str = showDoc gth "\n"
         thname = showName (dgn_name dgnode)
         title = ext ++ " of " ++ thname
      in createTextSaveDisplay title (thname++".het") str
@@ -987,7 +990,7 @@ showOriginOfNode descr ab2dgNode dgraph =
            DGNode name _ _ _ orig _ _ ->
               let title =  "Origin of node "++showName name
                in createTextDisplay title
-                    (showPretty orig "") [HTk.size(30,10)]
+                    (showDoc orig "") [HTk.size(30,10)]
            DGRef _ _ _ _ _ _ -> error "showOriginOfNode: no DGNode"
     Nothing -> error ("node with descriptor "
                       ++ (show descr)
@@ -1013,17 +1016,17 @@ showStatusAux dgnode =
      let goals = OMap.filter (not . isAxiom) sens
          (proven,open) = OMap.partition isProvenSenStatus goals
       in "Proven proof goals:\n"
-         ++ showPretty proven ""
+         ++ showDoc proven ""
          ++ if not (isRefNode dgnode) && dgn_cons dgnode /= None
                 && dgn_cons_status dgnode /= LeftOpen
-             then showPretty (dgn_cons_status dgnode)
+             then showDoc (dgn_cons_status dgnode)
                       "is the conservativity status of this node"
              else ""
          ++ "\nOpen proof goals:\n"
-         ++ showPretty open ""
+         ++ showDoc open ""
          ++ if not (isRefNode dgnode) && dgn_cons dgnode /= None
                 && dgn_cons_status dgnode == LeftOpen
-             then showPretty (dgn_cons_status dgnode)
+             then showDoc (dgn_cons_status dgnode)
                       "should be the conservativity status of this node"
              else ""
 
@@ -1041,12 +1044,12 @@ proveAtNode checkCons gInfo@(_,_,_,_,ln,_,_,_,_) descr ab2dgNode _ =
 showMorphismOfEdge :: Descr -> Maybe (LEdge DGLinkLab) -> IO()
 showMorphismOfEdge _ (Just (_,_,linklab)) =
       createTextDisplay "Signature morphism"
-           ((showPretty (dgl_morphism linklab) "")++hidingMorph)
+           ((showDoc (dgl_morphism linklab) "")++hidingMorph)
            [HTk.size(150,50)]
   where
     hidingMorph = case (dgl_type linklab) of
                     (HidingThm morph _) -> "\n ++++++ \n"
-                                           ++ (showPretty morph "")
+                                           ++ (showDoc morph "")
                     _ -> ""
 showMorphismOfEdge descr Nothing =
       createTextDisplay "Error"
@@ -1058,7 +1061,7 @@ showMorphismOfEdge descr Nothing =
 showOriginOfEdge :: Descr -> Maybe (LEdge DGLinkLab) -> IO()
 showOriginOfEdge _ (Just (_,_,linklab)) =
       createTextDisplay "Origin of link"
-        (showPretty (dgl_origin linklab) "")  [HTk.size(30,10)]
+        (showDoc (dgl_origin linklab) "")  [HTk.size(30,10)]
 showOriginOfEdge descr Nothing =
       createTextDisplay "Error"
          ("edge "++(show descr)++" has no corresponding edge"
@@ -1068,7 +1071,7 @@ showOriginOfEdge descr Nothing =
 showProofStatusOfThm :: Descr -> Maybe (LEdge DGLinkLab) -> IO()
 showProofStatusOfThm _ (Just ledge) =
     createTextSaveDisplay "Proof Status" "proofstatus.txt"
-         (showPretty (getProofStatusOfThm ledge) "\n")
+         (showDoc (getProofStatusOfThm ledge) "\n")
 showProofStatusOfThm descr Nothing =
     putStrLn ("edge "++(show descr)++" has no corresponding edge"
                 ++ "in the development graph")
@@ -1218,11 +1221,11 @@ convertEdgesAux convMaps descr grInfo (ledge@(src,tar,edgelab) : lEdges)
           Just err -> fail err
         newConvMaps <- (convertEdgesAux
                        convMaps {dg2abstrEdge = Map.insert
-                                     (libname, (src,tar,showPretty edgelab ""))
+                                     (libname, (src,tar,showDoc edgelab ""))
                                      newDescr
                                      (dg2abstrEdge convMaps),
                                  abstr2dgEdge = Map.insert newDescr
-                                     (libname, (src,tar,showPretty edgelab ""))
+                                     (libname, (src,tar,showDoc edgelab ""))
                                      (abstr2dgEdge convMaps)}
                                          descr grInfo lEdges libname)
         return newConvMaps
@@ -1410,7 +1413,7 @@ applyChangesAux2 gid libname grInfo visibleNodes _ convMaps (change:changes) =
          case (Map.lookup (libname,src) dg2abstrNodeMap,
                Map.lookup (libname,tgt) dg2abstrNodeMap) of
            (Just abstrSrc, Just abstrTgt) ->
-             do let dgEdge = (libname, (src,tgt,showPretty edgelab ""))
+             do let dgEdge = (libname, (src,tgt,showDoc edgelab ""))
                 (Result descr err) <-
                    addlink gid (getDGLinkType edgelab)
                               "" (Just ledge) abstrSrc abstrTgt grInfo
@@ -1433,7 +1436,7 @@ applyChangesAux2 gid libname grInfo visibleNodes _ convMaps (change:changes) =
 
 
     DeleteEdge (src,tgt,edgelab) ->
-      do let dgEdge = (libname, (src,tgt,showPretty edgelab ""))
+      do let dgEdge = (libname, (src,tgt,showDoc edgelab ""))
              dg2abstrEdgeMap = dg2abstrEdge convMaps
          case Map.lookup dgEdge dg2abstrEdgeMap of
             Just abstrEdge ->
@@ -1454,7 +1457,7 @@ applyChangesAux2 gid libname grInfo visibleNodes _ convMaps (change:changes) =
 
             Nothing -> error ("applyChangesAux2: deleted edge from "
                               ++ (show src) ++ " to " ++ (show tgt)
-                              ++ " of type " ++ showPretty (dgl_type edgelab)
+                              ++ " of type " ++ showDoc (dgl_type edgelab)
                               " and origin " ++ (show (dgl_origin edgelab))
                               ++ " of development "
                          ++ "graph does not exist in abstraction graph")

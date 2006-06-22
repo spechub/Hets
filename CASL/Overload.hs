@@ -30,7 +30,8 @@ import Common.Lib.State
 
 import Common.Id
 import Common.GlobalAnnotations
-import Common.PrettyPrint
+import Common.Doc
+import Common.DocUtils
 import Common.Result
 import Common.Partial
 
@@ -50,7 +51,7 @@ type Min f e = Sign f e -> f -> Result f
     + Definedness is handled by expanding the subterm.
     + Membership is handled like Cast
 -----------------------------------------------------------}
-minExpFORMULA :: PrettyPrint f => Min f e -> Sign f e -> FORMULA f
+minExpFORMULA :: Pretty f => Min f e -> Sign f e -> FORMULA f
               -> Result (FORMULA f)
 minExpFORMULA mef sign formula = case formula of
     Quantification q vars f pos -> do
@@ -101,7 +102,7 @@ minExpFORMULA mef sign formula = case formula of
     _ -> return formula -- do not fail even for unresolved cases
 
 -- | test if a term can be uniquely resolved
-oneExpTerm :: PrettyPrint f => Min f e -> Sign f e
+oneExpTerm :: Pretty f => Min f e -> Sign f e
            -> TERM f -> Result (TERM f)
 oneExpTerm minF sign term = do
     ts <- minExpTerm minF sign term
@@ -111,7 +112,7 @@ oneExpTerm minF sign term = do
     - Minimal expansion of an equation formula -
   see minExpTerm_cond
 -----------------------------------------------------------}
-minExpFORMULA_eq :: PrettyPrint f => Min f e -> Sign f e
+minExpFORMULA_eq :: Pretty f => Min f e -> Sign f e
                  -> (TERM f -> TERM f -> Range -> FORMULA f)
                  -> TERM f -> TERM f -> Range -> Result (FORMULA f)
 minExpFORMULA_eq mef sign eq term1 term2 pos = do
@@ -120,23 +121,23 @@ minExpFORMULA_eq mef sign eq term1 term2 pos = do
     is_unambiguous (globAnnos sign) (eq term1 term2 pos) ps pos
 
 -- | check if there is at least one solution
-hasSolutions :: PrettyPrint f => GlobalAnnos -> f -> [[f]] -> Range
+hasSolutions :: Pretty f => GlobalAnnos -> f -> [[f]] -> Range
              -> Result [[f]]
 hasSolutions ga topterm ts pos = let terms = filter (not . null) ts in
    if null terms then Result
-    [Diag Error ("no typing for: " ++ show (printText0 ga topterm))
+    [Diag Error ("no typing for: " ++ showGlobalDoc ga topterm "")
           pos] Nothing
     else return terms
 
 -- | check if there is a unique equivalence class
-is_unambiguous :: PrettyPrint f => GlobalAnnos -> f -> [[f]] -> Range
+is_unambiguous :: Pretty f => GlobalAnnos -> f -> [[f]] -> Range
                -> Result f
 is_unambiguous ga topterm ts pos = do
     terms <- hasSolutions ga topterm ts pos
     case terms of
         [ term : _ ] -> return term
         _ -> Result [Diag Error ("ambiguous term\n  " ++
-                showSepList (showString "\n  ") (shows . printText0 ga)
+                showSepList (showString "\n  ") (showGlobalDoc ga)
                 (take 5 $ map head terms) "") pos] Nothing
 
 checkIdAndArgs :: Id -> [a] -> Range -> Result Int
@@ -146,30 +147,30 @@ checkIdAndArgs ide args poss =
     in if isMixfix ide && pargs /= nargs then
     Result [Diag Error
        ("expected " ++ shows pargs " argument(s) of mixfix identifier '"
-         ++ showPretty ide "' but found " ++ shows nargs " argument(s)")
+         ++ showDoc ide "' but found " ++ shows nargs " argument(s)")
        poss] Nothing
     else return nargs
 
 
-noOpOrPred :: PrettyPrint t => [a] -> String -> Maybe t -> Id -> Range
+noOpOrPred :: Pretty t => [a] -> String -> Maybe t -> Id -> Range
            -> Int -> Result ()
 noOpOrPred ops str mty ide pos nargs =
     if null ops then case mty of
            Nothing -> Result [Diag Error
              ("no " ++ str ++ " with " ++ shows nargs " argument"
               ++ (if nargs == 1 then "" else "s") ++ " found for '"
-              ++ showPretty ide "'") pos] Nothing
+              ++ showDoc ide "'") pos] Nothing
            Just ty -> Result [Diag Error
              ("no " ++ str ++ " with profile '"
-              ++ showPretty ty "' found for '"
-              ++ showPretty ide "'") pos] Nothing
+              ++ showDoc ty "' found for '"
+              ++ showDoc ide "'") pos] Nothing
        else return ()
 
 {-----------------------------------------------------------
     - Minimal expansion of a predication formula -
     see minExpTerm_appl
 -----------------------------------------------------------}
-minExpFORMULA_pred :: PrettyPrint f => Min f e -> Sign f e -> Id
+minExpFORMULA_pred :: Pretty f => Min f e -> Sign f e -> Id
                    -> Maybe PredType -> [TERM f] -> Range
                    -> Result (FORMULA f)
 minExpFORMULA_pred mef sign ide mty args pos = do
@@ -208,7 +209,7 @@ qualify_pred ide pos (pred', terms') =
     Predication (Qual_pred_name ide (toPRED_TYPE pred') pos) terms' pos
 
 -- | expansions of an equation formula or a conditional
-minExpTerm_eq :: PrettyPrint f =>  Min f e -> Sign f e -> TERM f -> TERM f
+minExpTerm_eq :: Pretty f =>  Min f e -> Sign f e -> TERM f -> TERM f
               -> Result [[(TERM f, TERM f)]]
 minExpTerm_eq mef sign term1 term2 = do
     exps1 <- minExpTerm mef sign term1
@@ -231,7 +232,7 @@ minimize_eq s l = keepMinimals s (term_sort . snd) $
   * 'Application' terms are handled by 'minExpTerm_op'.
   * 'Conditional' terms are handled by 'minExpTerm_cond'.
 -----------------------------------------------------------}
-minExpTerm :: PrettyPrint f => Min f e -> Sign f e -> TERM f
+minExpTerm :: Pretty f => Min f e -> Sign f e -> TERM f
            -> Result [[TERM f]]
 minExpTerm mef sign top = let ga = globAnnos sign in case top of
     Qual_var var sort _ -> let ts = minExpTerm_var sign var (Just sort) in
@@ -273,7 +274,7 @@ minExpTerm_var sign tok ms = case Map.lookup tok $ varMap sign of
               Just s2 -> if s == s2 then qv else []
 
 -- | minimal expansion of an (possibly qualified) operator application
-minExpTerm_appl :: PrettyPrint f => Min f e -> Sign f e -> Id
+minExpTerm_appl :: Pretty f => Min f e -> Sign f e -> Id
                 -> Maybe OpType -> [TERM f] -> Range -> Result [[TERM f]]
 minExpTerm_appl mef sign ide mty args pos = do
     nargs <- checkIdAndArgs ide args pos
@@ -330,7 +331,7 @@ qualify_op ide pos (op', terms') =
   7. Transform each term in the minimized set into a qualified function
     application term.
 -----------------------------------------------------------}
-minExpTerm_op :: PrettyPrint f => Min f e -> Sign f e -> OP_SYMB -> [TERM f]
+minExpTerm_op :: Pretty f => Min f e -> Sign f e -> OP_SYMB -> [TERM f]
               -> Range -> Result [[TERM f]]
 minExpTerm_op mef sign (Op_name ide@(Id (tok:_) _ _)) args pos =
     let res = minExpTerm_appl mef sign ide Nothing args pos in
@@ -358,7 +359,7 @@ minExpTerm_op _ _ _ _ _ = error "minExpTerm_op"
   Finally transform the eq. classes into lists of
   conditionals with equally sorted terms.
 -----------------------------------------------------------}
-minExpTerm_cond :: PrettyPrint f => Min f e -> Sign f e
+minExpTerm_cond :: Pretty f => Min f e -> Sign f e
                 -> (TERM f -> TERM f -> a) -> TERM f -> TERM f -> Range
                 -> Result [[a]]
 minExpTerm_cond mef sign f term1 term2 pos = do

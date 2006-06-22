@@ -20,7 +20,7 @@ module OWL_DL.Logic_OWL_DL where
 
 import Common.AS_Annotation
 import Common.DefaultMorphism
-import Common.Lib.Pretty
+import Common.Doc
 import Common.PrettyPrint
 
 import Logic.Logic
@@ -35,12 +35,12 @@ import OWL_DL.StaticAna
 data OWL_DL = OWL_DL deriving Show
 
 instance Language OWL_DL where
- description _ = 
+ description _ =
   "OWL DL -- Web Ontology Language Description Logic http://wwww.w3c.org/"
 
 type OWL_DLMorphism = DefaultMorphism Sign
 
-instance Category OWL_DL Sign OWL_DLMorphism  
+instance Category OWL_DL Sign OWL_DLMorphism
     where
   dom OWL_DL = domOfDefaultMorphism
   cod OWL_DL = codOfDefaultMorphism
@@ -58,20 +58,20 @@ instance Syntax OWL_DL Ontology () ()
 
 instance Sentences OWL_DL Sentence () Sign OWL_DLMorphism () where
     map_sen OWL_DL _ s = return s
-    print_named OWL_DL ga namedSen = 
-        printText0 ga (sentence namedSen) <>
-           if null (senName namedSen) then empty 
-        else space <> text "%%" <+> text (senName namedSen) 
-    provers OWL_DL = [] 
+    print_named OWL_DL namedSen =
+        pretty (sentence namedSen) <>
+           if null (senName namedSen) then empty
+        else space <> text "%%" <+> text (senName namedSen)
+    provers OWL_DL = []
     cons_checkers OWL_DL = []
 
 instance StaticAnalysis OWL_DL Ontology Sentence ()
                () ()
-               Sign 
-               OWL_DLMorphism 
+               Sign
+               OWL_DLMorphism
                () ()   where
-{- these functions will be implemented in OWL_DL.StaticAna and OWL_DL.Sign: -} 
-      basic_analysis OWL_DL = Just basicOWL_DLAnalysis 
+{- these functions will be implemented in OWL_DL.StaticAna and OWL_DL.Sign: -}
+      basic_analysis OWL_DL = Just basicOWL_DLAnalysis
       empty_signature OWL_DL = emptySign
       signature_union OWL_DL s = return . addSign s
       final_union OWL_DL = signature_union OWL_DL
@@ -85,9 +85,9 @@ instance StaticAnalysis OWL_DL Ontology Sentence ()
 
 instance Logic OWL_DL ()
                Ontology Sentence () ()
-               Sign 
+               Sign
                OWL_DLMorphism
-               () () () 
+               () () ()
 
 {-
 instance Comorphism OWL_DL

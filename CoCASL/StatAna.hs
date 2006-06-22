@@ -41,7 +41,7 @@ import qualified Common.Lib.Rel as Rel
 import Common.Lib.State
 import Common.Id
 import Common.Result
-import Common.PrettyPrint
+import Common.DocUtils
 
 import Data.Maybe
 import Data.List
@@ -213,7 +213,7 @@ ana_CODATATYPE_DECL gk (CoDatatype_decl s al _) =
                       wrongConstr = filter ((totalSels /=) . snd) constr
                   addDiags $ map ( \ (c, _) -> mkDiag Error
                       ("total selectors '" ++ showSepList (showString ",")
-                       showPretty (Set.toList totalSels)
+                       showDoc (Set.toList totalSels)
                        "'\n  must appear in alternative") c) wrongConstr
        case gk of
          Free -> do

@@ -13,7 +13,6 @@ Instance of class Logic for Isabelle (including Pure, HOL etc.).
 module Isabelle.Logic_Isabelle where
 
 import Common.DefaultMorphism
-import qualified Common.Doc as Doc
 import Logic.Logic
 
 import Isabelle.ATC_Isabelle()
@@ -50,7 +49,7 @@ instance Logic.Logic.Syntax Isabelle () () ()
 
 instance Sentences Isabelle Sentence () Sign IsabelleMorphism ()  where
       map_sen Isabelle _ s = return s
-      print_named Isabelle ga = Doc.toText ga . printNamedSen
+      print_named Isabelle = printNamedSen
       provers Isabelle = [isabelleProver]
       cons_checkers Isabelle = [isabelleConsChecker]
     -- other default implementations are fine

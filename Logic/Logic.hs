@@ -77,12 +77,11 @@ import Common.GlobalAnnotations
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 import Common.Lib.Graph as Tree
-import Common.Lib.Pretty
 import Common.AnnoState
 import Common.Result
 import Common.AS_Annotation
-import Common.Print_AS_Annotation
-import qualified Common.Doc as Doc
+import Common.Doc as Doc
+import Common.DocUtils
 import Logic.Prover -- for one half of class Sentences
 
 import Common.PrettyPrint
@@ -98,14 +97,13 @@ data Stability = Stable | Testing | Unstable | Experimental
      deriving (Eq,Show)
 
 -- | shortcut for class constraints
-class (Show a, PrettyPrint a, PrintLaTeX a, Doc.Pretty a, Typeable a, 
-       ShATermConvertible a)
+class (Show a, Doc.Pretty a, Typeable a, ShATermConvertible a)
     => PrintTypeConv a
 
 -- | shortcut for class constraints with equality
 class (Eq a, PrintTypeConv a) => EqPrintTypeConv a
 
-instance (Show a, PrettyPrint a, PrintLaTeX a, Doc.Pretty a, Typeable a,
+instance (Show a, Doc.Pretty a, Typeable a,
           ShATermConvertible a) => PrintTypeConv a
 instance (Eq a, PrintTypeConv a) => EqPrintTypeConv a
 
@@ -171,8 +169,8 @@ class (Category lid sign morphism, Ord sentence,
       parse_sentence :: lid -> Maybe (AParser st sentence)
       parse_sentence _ = Nothing
            -- print a sentence with comments
-      print_named :: lid -> GlobalAnnos -> Named sentence -> Doc
-      print_named _ = printLabelledSen
+      print_named :: lid -> Named sentence -> Doc
+      print_named _ = printAnnoted (addBullet . pretty) . fromLabelledSen
       sym_of :: lid -> sign -> Set.Set symbol
       symmap_of :: lid -> morphism -> EndoMap symbol
       sym_name :: lid -> symbol -> Id

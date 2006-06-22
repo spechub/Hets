@@ -23,7 +23,7 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.Keywords
 import Common.PrettyPrint
-import Common.Result
+import Common.Result ()
 
 import Data.List
 
@@ -107,8 +107,8 @@ instance Pretty TypeInfo where
         fsep $ [colon, printList0 ks]
              ++ (if Set.null sups then []
                  else [less, printList0 $ Set.toList sups])
-             ++ case def of 
-                  NoTypeDefn -> [] 
+             ++ case def of
+                  NoTypeDefn -> []
                   _ -> [pretty def]
 
 instance Pretty TypeVarDefn where
@@ -146,7 +146,7 @@ instance Pretty DataEntry where
         printGenKind k <+> keyword typeS <+>
         fsep ([fcat $ pretty i : map (parens . pretty) args
               , defn, vcat $ map (printAltDefn i args rk) alts]
-             ++ if Map.null im then [] 
+             ++ if Map.null im then []
                 else [text withS, text (typeS ++ sS), printMap0 im])
 
 instance Pretty Sentence where
@@ -162,7 +162,7 @@ instance Pretty Env where
       let oops = foldr Map.delete ops $ map fst bList
           otm = Map.difference tm $ addUnit Map.empty
           header s =  text "%%" <+> text s
-                      <+> text (replicate (70 - length s) '-')      
+                      <+> text (replicate (70 - length s) '-')
       in noPrint (Map.null cm) (header "Classes")
         $+$ printMap0 cm
         $+$ noPrint (Map.null otm) (header "Type Constructors")
@@ -185,30 +185,8 @@ printMap1 :: (Pretty a, Ord a, Pretty b) => Map.Map a b -> Doc
 printMap1 = printMap [mapsto]
 
 printMap :: (Pretty a, Ord a, Pretty b) => [Doc] -> Map.Map a b -> Doc
-printMap d m = vcat $ map (\ (a, b) -> fsep $ 
+printMap d m = vcat $ map (\ (a, b) -> fsep $
                       pretty a : d ++ [pretty b]) $ Map.toList m
-
-instance Pretty Diagnosis where
-    pretty (Diag k s (Range sp)) =
-        (if isMessageW
-            then empty
-            else text (case k of
-                  Error -> "***"
-                  _ -> "###") <+> text (show k))
-        <> (case sp of
-             [] | isMessageW -> empty
-                | otherwise  -> comma
-             _ -> space <> let
-                      mi = minimumBy comparePos sp
-                      ma = maximumBy comparePos sp
-                  in case comparePos mi ma of
-                     EQ -> text (showPos ma ",")
-                     _ -> text $ showPos mi "-"
-                          ++ showPos ma {sourceName = ""} "," )
-        <+> text s
-        where isMessageW = case k of
-                           MessageW -> True
-                           _        -> False
 
 instance Pretty Morphism where
   pretty m =

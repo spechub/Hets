@@ -13,29 +13,20 @@ latex printing
 module Logic.LaTeX_Grothendieck where
 
 import Logic.Grothendieck
-import Common.PrintLaTeX
-import Common.Lib.Pretty
-import Common.LaTeX_utils 
+import Common.PrettyPrint
+import Common.DocUtils
 
 instance PrintLaTeX G_basic_spec where
-    printLatex0 ga (G_basic_spec _ s) = printLatex0 ga s
+    printLatex0 = toOldLatex
 
 instance PrintLaTeX G_sign where
-    printLatex0 ga (G_sign _ s) = printLatex0 ga s
+    printLatex0 = toOldLatex
 
 instance PrintLaTeX G_symb_items_list where
-    printLatex0 ga (G_symb_items_list _ l) = 
-        commaT_latex ga l
+    printLatex0 = toOldLatex
 
 instance PrintLaTeX G_symb_map_items_list where
-    printLatex0 ga (G_symb_map_items_list _ l) = 
-        commaT_latex ga l
- 
+    printLatex0 = toOldLatex
+
 instance PrintLaTeX GMorphism where
-    printLatex0 ga (GMorphism cid s m) = 
-      ptext (show cid) 
-      <+> -- ptext ":" <+> ptext (show (sourceLogic cid)) <+>
-      -- ptext "->" <+> ptext (show (targetLogic cid)) <+>
-      ptext "(" <+> printLatex0 ga s <+> ptext ")" 
-      $$
-      printLatex0 ga m
+    printLatex0 = toOldLatex

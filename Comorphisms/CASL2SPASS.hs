@@ -28,7 +28,8 @@ import Logic.Comorphism
 import Common.AS_Annotation
 import Common.Id
 import Common.Result
-import Common.PrettyPrint
+import Common.Doc
+import Common.DocUtils
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
@@ -305,7 +306,7 @@ transPredType pt = map transIdSort (CSign.predArgs pt)
 transIdSort :: Id -> String
 transIdSort = transId CSort
 
-integrateGenerated :: (PrettyPrint f, PosItem f) =>
+integrateGenerated :: (Pretty f, PosItem f) =>
                       IdType_SPId_Map -> [Named (FORMULA f)] ->
                       SPSign.Sign ->
                       Result (IdType_SPId_Map, SPSign.Sign, [Named SPTerm])
@@ -356,7 +357,7 @@ makeGenGoals idMap nfs
 only one goal, but additional symbols, axioms and a goal
  -}
 
-makeGens :: (PrettyPrint f, PosItem f) =>
+makeGens :: (Pretty f, PosItem f) =>
             IdType_SPId_Map -> [Named (FORMULA f)]
          -> Result (SortMap, FuncMap, IdType_SPId_Map)
 makeGens idMap fs =
@@ -370,7 +371,7 @@ makeGens idMap fs =
                              opMap,idMap')))
               mv
 
-makeGen :: (PrettyPrint f, PosItem f) =>
+makeGen :: (Pretty f, PosItem f) =>
            Result (FuncMap, IdType_SPId_Map, [(SPIdentifier,Maybe Generated)])
         -> Named (FORMULA f)
         -> Result (FuncMap, IdType_SPId_Map, [(SPIdentifier,Maybe Generated)])
@@ -437,8 +438,7 @@ mkInjSentences idMap = Map.foldWithKey genInjs []
           newName o a r = "ga_"++o++'_':a++'_':r++"_id"
           usedIds = elemsSPId_Set idMap
 
-transSign :: CSign.Sign f e ->
-             (SPSign.Sign,IdType_SPId_Map)
+transSign :: CSign.Sign f e -> (SPSign.Sign, IdType_SPId_Map)
 transSign sign = (SPSign.emptySign { sortRel =
                                  Rel.map transIdSort (CSign.sortRel sign)
                            , sortMap = spSortMap
@@ -469,7 +469,7 @@ nonEmptySortSens =
                           ("X":["X"++show i | i <- [(1::Int)..]]))
 
 
-transTheory :: (PrettyPrint f, PosItem f,Eq f) =>
+transTheory :: (Pretty f, PosItem f, Eq f) =>
                SignTranslator f e
             -> FormulaTranslator f e
             -> (CSign.Sign f e, [Named (FORMULA f)])
@@ -495,7 +495,7 @@ transTheory trSig trForm (sign,sens) =
                  case recover_Sort_gen_ax constrs of
                  (_,ops,mp) -> assert (null mp) (insertInjOps sig ops)
               f -> assert (trace ("CASL.Inject.insertInjOps: Formula: \""
-                                  ++showPretty f "\" slipped throug filter.")
+                                  ++showDoc f "\" slipped throug filter.")
                                  True) sig
 
 
@@ -533,11 +533,11 @@ transVarTup (usedIds,idMap) (v,s) =
       insertSPId vi (CVar s) sid $ deleteSPId vi (CVar s) idMap)
     , (sid,spSort))
     where spSort = maybe (error ("SuleCFOL2SoftFOL: translation of sort \""++
-                                showPretty s "\" not found"))
+                                showDoc s "\" not found"))
                          id (lookupSPId s CSort idMap)
           vi = simpleIdToId v
           sid = disSPOId (CVar s) (transId (CVar s) vi)
-                    ["_Va_"++ showPretty s "_Va"]
+                    ["_Va_"++ showDoc s "_Va"]
                     usedIds
 
 typedVarTerm :: SPIdentifier -> SPIdentifier -> SPTerm
@@ -561,21 +561,19 @@ mkDisj t1 t2 = compTerm SPOr [t1,t2]
 mkEq :: SPTerm -> SPTerm -> SPTerm
 mkEq t1 t2 = compTerm SPEqual [t1,t2]
 
-mapSen :: (Eq f,PrettyPrint f) => FormulaTranslator f e
+mapSen :: (Eq f, Pretty f) => FormulaTranslator f e
        -> CSign.Sign f e -> FORMULA f -> SPTerm
 mapSen trForm sign phi = transFORM sign (snd (transSign sign)) trForm phi
 
-transFORM :: (Eq f,PrettyPrint f) => CSign.Sign f e
+transFORM :: (Eq f, Pretty f) => CSign.Sign f e
           -> IdType_SPId_Map -> FormulaTranslator f e
           -> FORMULA f -> SPTerm
 transFORM sign i tr phi = transFORMULA sign i tr phi'
     where phi' = codeOutConditionalF id
                         (codeOutUniqueExtF id id phi)
 
-transFORMULA :: (PrettyPrint f) =>
-                CSign.Sign f e ->
-                IdType_SPId_Map -> FormulaTranslator f e
-                -> FORMULA f -> SPTerm
+transFORMULA :: Pretty f => CSign.Sign f e -> IdType_SPId_Map
+             -> FormulaTranslator f e -> FORMULA f -> SPTerm
 transFORMULA sign idMap tr (Quantification qu vdecl phi _) =
     SPQuantTerm (quantify qu)
                     vList
@@ -614,22 +612,20 @@ transFORMULA sign idMap tr (ExtFORMULA phi) = tr sign idMap phi
 transFORMULA _ _ _ (Definedness _ _) = SPSimpleTerm SPTrue -- totality assumed
 transFORMULA sign idMap tr (Membership t s _) =
     maybe (error ("SuleCFOL2SoftFOL.tF: no SoftFOL Id found for \""++
-                  showPretty s "\""))
+                  showDoc s "\""))
           (\si -> compTerm (spSym si) [transTERM sign idMap tr t])
           (lookupSPId s CSort idMap)
 transFORMULA _ _ _ (Sort_gen_ax _ _) =
     error "SuleCFOL2SoftFOL.transFORMULA: Sort generation constraints not\
           \ supported at this point!"
 transFORMULA _ _ _ f =
-    error ("SuleCFOL2SoftFOL.transFORMULA: unknown FORMULA '"++showPretty f "'")
+    error ("SuleCFOL2SoftFOL.transFORMULA: unknown FORMULA '"++showDoc f "'")
 
 
-transTERM :: (PrettyPrint f) =>
-             CSign.Sign f e ->
-             IdType_SPId_Map -> FormulaTranslator f e
-          -> TERM f -> SPTerm
+transTERM :: Pretty f => CSign.Sign f e -> IdType_SPId_Map
+          -> FormulaTranslator f e -> TERM f -> SPTerm
 transTERM _sign idMap _tr (Qual_var v s _) =
-  maybe (error ("SuleCFOL2SoftFOL.tT: no SoftFOL Id found for \""++showPretty v "\""))
+  maybe (error ("SuleCFOL2SoftFOL.tT: no SoftFOL Id found for \""++showDoc v "\""))
         (simpTerm . spSym) (lookupSPId (simpleIdToId v) (CVar s) idMap)
 transTERM sign idMap tr (Application opsymb args _) =
     compTerm (spSym (transOP_SYMB idMap opsymb))
@@ -640,7 +636,7 @@ transTERM _sign _idMap _tr (Conditional _t1 _phi _t2 _) =
 transTERM sign idMap tr t'@(Sorted_term t s _)
     | term_sort t == s = recRes
     | otherwise =
-        assert (trace ("Please check sorted term: '"++showPretty t' ""++
+        assert (trace ("Please check sorted term: '"++showDoc t' ""++
                        "' with sorts '"++show (term_sort t)++
                        "' <= '"++show s++"'")
                       (Set.member (term_sort t) (CSign.subsortsOf s sign)))
@@ -649,13 +645,13 @@ transTERM sign idMap tr t'@(Sorted_term t s _)
 transTERM sign idMap tr t'@(Cast t s _)
     | term_sort t == s = recRes
     | otherwise =
-          assert (trace ("Please check cast term: '"++showPretty t' ""++
+          assert (trace ("Please check cast term: '"++showDoc t' ""++
                          "' with sorts '"++show s++
                          "' <= '"++show (term_sort t)++"'")
                         (Set.member s (CSign.subsortsOf (term_sort t) sign)))
                  recRes
     where recRes = transTERM sign idMap tr t
 transTERM _sign _idMap _tr t =
-  error ("SuleCFOL2SoftFOL.transTERM: unknown TERM '"++showPretty t "'")
+  error ("SuleCFOL2SoftFOL.transTERM: unknown TERM '"++showDoc t "'")
 
 

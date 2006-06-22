@@ -12,7 +12,8 @@ some instances for the class Pretty
 
 module Common.DocUtils where
 
-import Common.Doc 
+import Common.Id
+import Common.Doc
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Pretty as Pretty
@@ -63,8 +64,14 @@ printSetWithComma = printSet id (fsep . punctuate comma)
 printList :: (Doc -> Doc) -> ([Doc] -> Doc) -> [Doc] -> Doc
 printList brace inter = brace . inter
 
+instance Pretty a => Pretty [a] where
+    pretty = printList brackets (fsep . punctuate comma) . map pretty
+
 printSet :: Pretty a => (Doc -> Doc) -> ([Doc] -> Doc) -> Set.Set a -> Doc
 printSet brace inter = printList brace inter . map pretty . Set.toList
+
+instance Pretty a => Pretty (Set.Set a) where
+    pretty = printSet specBraces (fsep . punctuate comma)
 
 printMap :: (Pretty a, Ord a, Pretty b) => (Doc -> Doc) -> ([Doc] -> Doc)
          -> (Doc -> Doc -> Doc) -> Map.Map a b -> Doc
@@ -72,7 +79,21 @@ printMap brace inter pairDoc = printList brace inter
      . map ( \ (a, b) -> pairDoc (pretty a) (pretty b))
      . Map.toList
 
+instance (Ord a, Pretty a, Pretty b) => Pretty (Map.Map a b) where
+    pretty = printMap specBraces (fsep . punctuate comma)
+             (\ a b -> a <+> mapsto <+> b)
 
+addBullet :: Doc -> Doc
+addBullet = (bullet <+>)
+
+sidDoc :: Token -> Doc
+sidDoc = idDoc . simpleIdToId
+
+showDoc :: Pretty a => a -> ShowS
+showDoc = shows . pretty
+
+showGlobalDoc :: Pretty a => GlobalAnnos -> a -> ShowS
+showGlobalDoc ga = shows . toOldText ga
 
 -- |
 -- like punctuate from Pretty, but prepends symbol to every element
@@ -80,4 +101,3 @@ printMap brace inter pairDoc = printList brace inter
 prepPunctuate :: Doc -> [Doc] -> [Doc]
 prepPunctuate _ [] = []
 prepPunctuate symb (x:xs) = x:map (\e -> symb <> e) xs
-

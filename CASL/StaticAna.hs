@@ -22,8 +22,8 @@ import CASL.Inject
 import CASL.Quantification
 import CASL.Utils
 import Common.Lib.State
-import Common.PrettyPrint
-import Common.Lib.Pretty
+import Common.Doc
+import Common.DocUtils
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
@@ -127,7 +127,7 @@ addSentences ds =
 
 -- * traversing all data types of the abstract syntax
 
-ana_BASIC_SPEC :: PrettyPrint f => Min f e
+ana_BASIC_SPEC :: Pretty f => Min f e
                -> Ana b b s f e -> Ana s b s f e -> Mix b s f e
                -> BASIC_SPEC b s f -> State (Sign f e) (BASIC_SPEC b s f)
 ana_BASIC_SPEC mef ab anas mix (Basic_spec al) = fmap Basic_spec $
@@ -146,7 +146,7 @@ unionGenAx = foldr ( \ (s1, r1, f1) (s2, r2, f2) ->
                          Rel.union r1 r2,
                          Set.union f1 f2)) emptyGenAx
 
-ana_BASIC_ITEMS :: PrettyPrint f => Min f e -> Ana b b s f e -> Ana s b s f e
+ana_BASIC_ITEMS :: Pretty f => Min f e -> Ana b b s f e -> Ana s b s f e
                 -> Mix b s f e -> BASIC_ITEMS b s f
                 -> State (Sign f e) (BASIC_ITEMS b s f)
 ana_BASIC_ITEMS mef ab anas mix bi =
@@ -252,7 +252,7 @@ toSortGenAx ps isFree (sorts, rel, ops) = do
                    showSepList (showString "_") showId sortList "")
                   True False f]
 
-ana_SIG_ITEMS :: PrettyPrint f => Min f e -> Ana s b s f e -> Mix b s f e
+ana_SIG_ITEMS :: Pretty f => Min f e -> Ana s b s f e -> Mix b s f e
               -> GenKind -> SIG_ITEMS s f -> State (Sign f e) (SIG_ITEMS s f)
 ana_SIG_ITEMS mef anas mix gk si =
     case si of
@@ -275,7 +275,7 @@ ana_SIG_ITEMS mef anas mix gk si =
     Ext_SIG_ITEMS s -> fmap Ext_SIG_ITEMS $ anas mix s
 
 -- helper
-ana_Generated :: PrettyPrint f => Min f e -> Ana s b s f e -> Mix b s f e
+ana_Generated :: Pretty f => Min f e -> Ana s b s f e -> Mix b s f e
               -> [Annoted (SIG_ITEMS s f)]
               -> State (Sign f e) ([GenAx], [Annoted (SIG_ITEMS s f)])
 ana_Generated mef anas mix  al = do
@@ -331,7 +331,7 @@ getOps oi = case oi of
     Op_defn i par _ _ ->
         Set.singleton $ Component i $ toOpType $ headToType par
 
-ana_SORT_ITEM :: PrettyPrint f => Min f e -> Mix b s f e
+ana_SORT_ITEM :: Pretty f => Min f e -> Mix b s f e
               -> Annoted (SORT_ITEM  f)
               -> State (Sign f e) (Annoted (SORT_ITEM f))
 ana_SORT_ITEM mef mix asi =
@@ -375,7 +375,7 @@ ana_SORT_ITEM mef mix asi =
                          $ zip tl il
            return asi
 
-ana_OP_ITEM :: PrettyPrint f => Min f e -> Mix b s f e -> Annoted (OP_ITEM f)
+ana_OP_ITEM :: Pretty f => Min f e -> Mix b s f e -> Annoted (OP_ITEM f)
             -> State (Sign f e) (Annoted (OP_ITEM f))
 ana_OP_ITEM mef mix aoi =
     case item aoi of
@@ -424,7 +424,7 @@ headToType (Op_head k args r ps) = Op_type k (sortsOfArgs args) r ps
 sortsOfArgs :: [ARG_DECL] -> [SORT]
 sortsOfArgs = concatMap ( \ (Arg_decl l s _) -> map (const s) l)
 
-ana_OP_ATTR :: PrettyPrint f => Min f e -> Mix b s f e -> OpType -> Bool -> [Id]
+ana_OP_ATTR :: Pretty f => Min f e -> Mix b s f e -> OpType -> Bool -> [Id]
             -> (OP_ATTR f) -> State (Sign f e) (Maybe (OP_ATTR f))
 ana_OP_ATTR mef mix ty ni ois oa = do
   let   sty = toOP_TYPE ty
@@ -508,7 +508,7 @@ makeUnit b t ty ni i =
                       (Application (Qual_op_name i (toOP_TYPE ty) p) rargs p)
                       qv p) p
 
-ana_PRED_ITEM :: PrettyPrint f => Min f e -> Mix b s f e
+ana_PRED_ITEM :: Pretty f => Min f e -> Mix b s f e
               -> Annoted (PRED_ITEM f)
               -> State (Sign f e) (Annoted (PRED_ITEM f))
 ana_PRED_ITEM mef mix ap =
@@ -553,9 +553,9 @@ instance Ord Component where
     Component i1 t1 <=  Component i2 t2 =
         (i1, opArgs t1, opRes t1) <= (i2, opArgs t2, opRes t2)
 
-instance PrettyPrint Component where
-    printText0 ga (Component i ty) =
-        printText0 ga i <+> colon <> printText0 ga ty
+instance Pretty Component where
+    pretty (Component i ty) =
+        pretty i <+> colon <> pretty ty
 
 instance PosItem Component where
     getRange = getRange . compId
@@ -572,7 +572,7 @@ ana_DATATYPE_DECL gk (Datatype_decl s al _) =
                       wrongConstr = filter ((totalSels /=) . snd) constr
                   addDiags $ map ( \ (c, _) -> mkDiag Error
                       ("total selectors '" ++ showSepList (showString ",")
-                       showPretty (Set.toList totalSels)
+                       showDoc (Set.toList totalSels)
                        "'\n  must appear in alternative") c) wrongConstr
        case gk of
          Free -> do
@@ -769,7 +769,7 @@ resultToState f a = do
 
 type Ana a b s f e = Mix b s f e -> a -> State (Sign f e) a
 
-anaForm :: PrettyPrint f => Min f e -> Mix b s f e -> Sign f e -> FORMULA f
+anaForm :: Pretty f => Min f e -> Mix b s f e -> Sign f e -> FORMULA f
         -> Result (FORMULA f, FORMULA f)
 anaForm mef mix sign f = do
     resF <- resolveFormula (putParen mix) (mixResolve mix)
@@ -778,7 +778,7 @@ anaForm mef mix sign f = do
          $ assert (noMixfixF (checkMix mix) resF) resF
     return (resF, anaF)
 
-anaTerm :: PrettyPrint f => Min f e -> Mix b s f e -> Sign f e -> SORT -> Range
+anaTerm :: Pretty f => Min f e -> Mix b s f e -> Sign f e -> SORT -> Range
         -> TERM f -> Result (TERM f, TERM f)
 anaTerm mef mix sign srt pos t = do
     resT <- resolveMixfix (putParen mix) (mixResolve mix)
@@ -787,7 +787,7 @@ anaTerm mef mix sign srt pos t = do
          $ assert (noMixfixT (checkMix mix) resT) $ Sorted_term resT srt pos
     return (resT, anaT)
 
-basicAnalysis :: PrettyPrint f
+basicAnalysis :: Pretty f
               => Min f e -- ^ type analysis of f
               -> Ana b b s f e  -- ^ static analysis of basic item b
               -> Ana s b s f e  -- ^ static analysis of signature item s
@@ -807,7 +807,7 @@ basicAnalysis mef anab anas mix dif (bs, inSig, ga) =
         ds = reverse $ envDiags accSig
         sents = reverse $ sentences accSig
         cleanSig = accSig { envDiags = [], sentences = []
-                          , varMap = Map.empty 
+                          , varMap = Map.empty
                           , globAnnos = ga } -- ignore assoc declarations
         diff = diffSig cleanSig inSig
             { extendedInfo = dif (extendedInfo accSig) $ extendedInfo inSig }

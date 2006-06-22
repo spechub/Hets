@@ -14,6 +14,8 @@ module Syntax.Print_AS_Library where
 
 import Common.Lib.Pretty
 import Common.PrettyPrint
+import qualified Common.Doc as Doc
+import Common.DocUtils
 import Common.PPUtils
 import Common.GlobalAnnotations
 import Common.Keywords
@@ -109,20 +111,26 @@ instance PrettyPrint ITEM_NAME_OR_MAP where
             ab' = printText0 ga ab
         in aa' <+> text mapsTo <+> ab'
 
+instance Doc.Pretty LIB_NAME where
+    pretty l = case l of
+        Lib_version i v ->
+            Doc.pretty i Doc.<+> Doc.keyword versionS Doc.<+> Doc.pretty v
+        Lib_id i -> Doc.pretty i
+
 instance PrettyPrint LIB_NAME where
-    printText0 ga (Lib_version aa ab) =
-        let aa' = printText0 ga aa
-            ab' = printText0 ga ab
-        in aa' <+> text versionS <+> ab'
-    printText0 ga (Lib_id aa) =
-        printText0 ga aa
+    printText0 = toOldText
+
+instance Doc.Pretty LIB_ID where
+    pretty l = Doc.text $ case l of
+        Direct_link u _ -> u
+        Indirect_link p _ -> p
 
 instance PrettyPrint LIB_ID where
-    printText0 _ (Direct_link aa _) =
-        text aa
-    printText0 _ (Indirect_link aa _) =
-        text aa
+    printText0 = toOldText
+
+instance Doc.Pretty VERSION_NUMBER where
+    pretty (Version_number aa _) =
+        Doc.hcat $ Doc.punctuate Doc.dot $ map Doc.text aa
 
 instance PrettyPrint VERSION_NUMBER where
-    printText0 _ (Version_number aa _) =
-        hcat $ punctuate (char '.') $ map text aa
+    printText0 = toOldText

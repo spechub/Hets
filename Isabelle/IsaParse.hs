@@ -24,7 +24,7 @@ import qualified Common.Lib.Map as Map
 import Isabelle.IsaConsts
 import Common.Id
 import Common.Result
-import Common.PrettyPrint
+import Common.Doc hiding (space)
 
 latin :: Parser String
 latin = single letter <?> "latin"
@@ -187,7 +187,7 @@ mixfix = lexS "(" >>
      <|> (forget $ lexS "structure")) << lexS ")"
 
 atom :: Parser String
-atom = var <|> typefree <|> typevar <|> nameref 
+atom = var <|> typefree <|> typevar <|> nameref
         -- nameref covers nat and symident keywords
 
 args :: Parser [Token]
@@ -417,7 +417,7 @@ compatibleBodies b1 b2 =
     ++ diffMap "datatype" EQ (datatypesF b2) (datatypesF b1)
     ++ diffMap "goal" GT (goalsF b2) (goalsF b1)
 
-diffMap :: (Ord a, PrettyPrint a, PosItem a, Eq b, Show b)
+diffMap :: (Ord a, Pretty a, PosItem a, Eq b, Show b)
           => String -> Ordering -> Map.Map a b -> Map.Map a b -> [Diagnosis]
 diffMap msg o m1 m2 =
     let k1 = Map.keys m1

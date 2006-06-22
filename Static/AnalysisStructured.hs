@@ -126,7 +126,7 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Rel as Rel(image, setInsert)
 import Data.List hiding (union)
 import Common.PrettyPrint
-import Common.Lib.Pretty
+import Common.Doc
 import Control.Monad
 
 insEdgeNub :: LEdge DGLinkLab -> DGraph -> DGraph
@@ -471,7 +471,7 @@ ana_SPEC lg gctx nsig name opts sp =
                  sys2 `Set.difference` sys1 `Set.isSubsetOf` sys3))
         $ pplain_error () (text
           "attempt to hide the following symbols from the local environment"
-          $$ printText ((sys2 `Set.difference` sys1) `Set.difference` sys3))
+          $+$ pretty ((sys2 `Set.difference` sys1) `Set.difference` sys3))
          pos
       let node_contents = DGNode {
             dgn_name = name,
@@ -770,7 +770,9 @@ ana_ren1 _ lenv pos (GMorphism r sigma mor)
     EmptyNode _ -> return ()
     JustNode (NodeSig _ (G_sign lidLenv sigmaLenv)) -> do
     -- needs to be changed for logic translations
-      sigmaLenv' <- coerceSign lidLenv lid2 "Analysis of renaming: logic translations not yet properly handeled" sigmaLenv
+      sigmaLenv' <- coerceSign lidLenv lid2 
+        "Analysis of renaming: logic translations not yet properly handeled"
+            sigmaLenv
       let sysLenv = sym_of lid2 sigmaLenv'
           m = symmap_of lid2 mor1
           isChanged sy = case Map.lookup sy m of
@@ -778,10 +780,9 @@ ana_ren1 _ lenv pos (GMorphism r sigma mor)
             Nothing -> False
           forbiddenSys = Set.filter isChanged sysLenv
       return ()
-{-      when (not (forbiddenSys == Set.empty))
-            $ pplain_error () (text
-               "attempt to rename the following symbols from the local environment"
-               $$ printText forbiddenSys) pos
+{-      when (not (forbiddenSys == Set.empty)) $ pplain_error () (text
+          "attempt to rename the following symbols from the local environment"
+             $+$ pretty forbiddenSys) pos
 -}
   mor2 <- comp lid2 mor mor1
   return $ GMorphism r sigma mor2
@@ -845,7 +846,7 @@ ana_restr1 _ (G_sign lidLenv sigmaLenv) pos (GMorphism cid sigma1 mor)
   when (not (forbiddenSys == Set.empty))
         $ pplain_error () (text
            "attempt to hide the following symbols from the local environment"
-           $$ printText forbiddenSys) pos
+           $+$ pretty forbiddenSys) pos
   mor1 <- cogenerated_sign lid1 sys' sigma1
   mor1' <- map_morphism cid mor1
   mor2 <- comp lid2 mor1' mor
@@ -986,10 +987,10 @@ ana_FIT_ARG lg gctx spname nsigI (NodeSig nP gsigmaP)
            when (not (isSubGsign lg gsigmaP gsigmaIS))
              (pplain_error ()
               (text "Parameter does not match source of fittig view."
-               $$ text "Parameter signature:"
-               $$ printText gsigmaP
-               $$ text "Source signature of fitting view (united with import):"
-               $$ printText gsigmaIS) pos)
+               $+$ text "Parameter signature:"
+               $+$ pretty gsigmaP
+               $+$ text "Source signature of fitting view (united with import):"
+               $+$ pretty gsigmaIS) pos)
            G_sign lidI sigI1 <- return gsigmaI
            sigI <- adj $ coerceSign lidI lid
                     "Analysis of instantiation with import" sigI1
@@ -1160,9 +1161,9 @@ mapID idmap i@(Id toks comps pos1) =
       case Set.lookupSingleton ids of
         Just j -> return j
         Nothing -> pplain_error i
-             (text "Identifier component " <+> printText i
+             (text "Identifier component " <+> pretty i
               <+> text "can be mapped in various ways:"
-              <+> printText ids) nullRange
+              <+> pretty ids) nullRange
 
 extID1 :: Map.Map Id (Set.Set Id) -> Id
               -> Result (EndoMap Id) -> Result (EndoMap Id)
@@ -1214,8 +1215,8 @@ extendMorphism (G_sign lid sigmaP) (G_sign lidB sigmaB1)
                    Set.\\ Rel.image h symsP
   when (not (Set.null illShared))
    (pplain_error () (text "Symbols shared between actual parameter and body"
-                     $$ text "must be in formal parameter:"
-                     $$ printText illShared ) nullRange)
+                     $+$ text "must be in formal parameter:"
+                     $+$ pretty illShared ) nullRange)
   let myKernel m = Set.fromDistinctAscList $ comb1 $ Map.toList m
       comb1 [] = []
       comb1 (p : qs) =
@@ -1227,7 +1228,7 @@ extendMorphism (G_sign lid sigmaP) (G_sign lidB sigmaB1)
   when (not (Set.null newIdentifications))
    (pplain_error () (text
      "Fitting morphism leads to forbidden identifications"
-     $$ printText newIdentifications) nullRange)
+     $+$ pretty newIdentifications) nullRange)
   incl <- inclusion lid sigmaAD sigma
   mor1 <- comp lid mor incl
   return (G_sign lid sigma, G_morphism lid mor1)

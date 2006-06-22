@@ -15,6 +15,7 @@ module CASL.ToDoc where
 import Common.Id
 import Common.Keywords
 import Common.Doc
+import Common.DocUtils
 import Common.PPUtils
 import Common.AS_Annotation
 
@@ -121,12 +122,6 @@ printSortItem mf si = case si of
 instance Pretty f => Pretty (SORT_ITEM f) where
     pretty = printSortItem pretty
 
-addBullet :: Doc -> Doc
-addBullet = (bullet <+>)
-
-sidDoc :: Token -> Doc
-sidDoc = idDoc . simpleIdToId
-
 printQuant :: QUANTIFIER -> Doc
 printQuant q = case q of
     Universal -> forallDoc
@@ -194,7 +189,6 @@ printOpItem mf p = case p of
 
 instance Pretty f => Pretty (OP_ITEM f) where
     pretty = printOpItem pretty
-
 
 instance Pretty VAR_DECL where
     pretty = printVarDecl
@@ -361,7 +355,6 @@ printRecord mf = Record
     , foldMixfix_braced = \ _ l _ -> specBraces $ fsep $ punctuate comma l
     }
 
-
 printFormula :: (f -> Doc) -> FORMULA f -> Doc
 printFormula mf = foldFormula $ printRecord mf
 
@@ -382,7 +375,6 @@ isQuant f = case f of
 isEquiv f = case f of
     Equivalence _ _ _ -> True
     _ -> isQuant f
-
 
 isAnyImpl f = isImpl True f || isImpl False f
 

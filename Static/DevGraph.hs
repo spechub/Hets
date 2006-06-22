@@ -50,9 +50,9 @@ import qualified Common.OrderedMap as OMap
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Id
-import Common.Lib.Pretty
+import Common.Doc
+import Common.DocUtils
 import Common.PrettyPrint
-import Common.PPUtils
 import Common.Result
 import Common.DynamicUtils
 
@@ -160,9 +160,12 @@ data DGLinkLab = DGLink {
               deriving (Show, Eq)
 
 instance PrettyPrint DGLinkLab where
-  printText0 ga l = printText0 ga (dgl_morphism l)
-                    <+> printText0 ga (dgl_type l)
-                    <+> printText0 ga (dgl_origin l)
+  printText0 = toOldText
+
+instance Pretty DGLinkLab where
+  pretty l = fsep [ pretty (dgl_morphism l)
+                  , pretty (dgl_type l)
+                  , pretty (dgl_origin l)]
 
 -- | coarser equality, ignoring the proof status
 eqDGLinkLab :: DGLinkLab -> DGLinkLab -> Bool
@@ -225,9 +228,11 @@ HidingThm m1 _ `eqDGLinkType` HidingThm m2 _ = m1 == m2
 FreeThm m1 _ `eqDGLinkType` FreeThm m2 _ = m1 == m2
 _ `eqDGLinkType` _ = False
 
-
 instance PrettyPrint DGLinkType where
-    printText0 _ t = text $ case t of
+    printText0 = toOldText
+
+instance Pretty DGLinkType where
+    pretty t = text $ case t of
         LocalDef -> "LocalDef"
         GlobalDef -> "GlobalDef"
         HidingDef -> "HidingDef"
@@ -272,10 +277,13 @@ data DGRule =
    deriving (Show, Eq)
 
 instance PrettyPrint DGRule where
-  printText0 ga r = case r of
+  printText0 = toOldText
+
+instance Pretty DGRule where
+  pretty r = case r of
    TheoremHideShift -> text "Theorem-Hide-Shift"
    HideTheoremShift l -> text "Hide-Theorem-Shift; resulting link:"
-                         <+> printLEdgeInProof ga l
+                         <+> printLEdgeInProof l
    Borrowing -> text "Borrowing"
    ConsShift -> text "Cons-Shift"
    DefShift  -> text "Def-Shift"
@@ -285,34 +293,34 @@ instance PrettyPrint DGRule where
    FreeIsMono -> text "FreeIsMono"
    MonoIsFree -> text "MonoIsFree"
    GlobDecomp l -> text "Global Decomposition; resulting link:"
-                   <+> printLEdgeInProof ga l
+                   <+> printLEdgeInProof l
    LocDecomp l -> text "Local Decomposition; resulting link:"
-                  <+> printLEdgeInProof ga l
+                  <+> printLEdgeInProof l
    LocInference l -> text "Local Inference; resulting link:"
-                     <+> printLEdgeInProof ga l
+                     <+> printLEdgeInProof l
    GlobSubsumption l -> text "Global Subsumption; resulting link:"
-                           <+> printLEdgeInProof ga l
+                           <+> printLEdgeInProof l
    Composition ls ->
-       text "Composition" <+> vcat (map (printLEdgeInProof ga) ls)
+       text "Composition" <+> vcat (map printLEdgeInProof ls)
    LocalInference -> text "Local Inference"
    BasicInference c bp -> text "Basic Inference using:"
        <+> text ("Comorphism: "++show c ++ "Proof tree: "++show bp)
    BasicConsInference _ bp -> text "Basic Cons-Inference using:"
        <+> text (show bp)
 
-printLEdgeInProof :: GlobalAnnos -> LEdge DGLinkLab -> Doc
-printLEdgeInProof ga (s,t,l) =
-  printText0 ga s <> text "-->" <> printText0 ga t <> text ":"
-  <+> printLabInProof ga l
+printLEdgeInProof :: LEdge DGLinkLab -> Doc
+printLEdgeInProof (s,t,l) =
+  pretty s <> text "-->" <> pretty t <> text ":"
+  <+> printLabInProof l
 
-printLabInProof :: GlobalAnnos -> DGLinkLab -> Doc
-printLabInProof ga l =
-  hang(
-    printText0 ga (dgl_type l)
-    <+> text "with origin: "
-    <> printText0 ga (dgl_origin l)
-    <> text ", and morphism: " )
-   2 (printText0 ga (dgl_morphism l))
+printLabInProof :: DGLinkLab -> Doc
+printLabInProof l =
+  fsep [ pretty (dgl_type l)
+       , text "with origin:"
+       , pretty (dgl_origin l) <> comma
+       , text "and morphism:"
+       , pretty (dgl_morphism l)
+       ]
 
 data BasicProof =
   forall lid sublogics
@@ -373,11 +381,15 @@ data ThmLinkStatus = LeftOpen
                      deriving (Show, Eq)
 
 instance PrettyPrint ThmLinkStatus where
-    printText0 ga tls = case tls of
+    printText0 = toOldText
+
+instance Pretty ThmLinkStatus where
+    pretty tls = case tls of
         LeftOpen -> text "Open"
-        Proven r ls -> hang (text "Proven with rule" <+> printText0 ga r
-                             $$ text "Proof based on links:")
-                       2 (vcat (map (printLEdgeInProof ga) ls))
+        Proven r ls -> fsep [ text "Proven with rule"
+                            , pretty r
+                            , text "Proof based on links:"
+                            ] $+$ vcat(map printLEdgeInProof ls)
 
 -- | Data type indicating the origin of nodes and edges in the input language
 -- | This is not used in the DG calculus, only may be used in the future
@@ -407,8 +419,11 @@ data NodeSig = NodeSig Node G_sign deriving (Show, Eq)
 data MaybeNode = JustNode NodeSig | EmptyNode AnyLogic deriving (Show, Eq)
 
 instance PrettyPrint NodeSig where
-  printText0 ga (NodeSig n sig) =
-    text "node" <+> printText0 ga n <> colon <> printText0 ga sig
+  printText0 = toOldText
+
+instance Pretty NodeSig where
+  pretty (NodeSig n sig) =
+    text "node" <+> pretty n <> colon <> pretty sig
 
 emptyG_sign :: AnyLogic -> G_sign
 emptyG_sign (Logic lid) = G_sign lid (empty_signature lid)
@@ -591,7 +606,10 @@ lookupDGraph :: LIB_NAME -> LibEnv -> DGraph
 lookupDGraph ln = devGraph . lookupGlobalContext ln
 
 instance PrettyPrint DGOrigin where
-  printText0 _ origin = text $ case origin of
+  printText0 = toOldText
+
+instance Pretty DGOrigin where
+  pretty origin = text $ case origin of
      DGBasic -> "basic specification"
      DGExtension -> "extension"
      DGTranslation -> "translation"
@@ -613,7 +631,7 @@ instance PrettyPrint DGOrigin where
      DGFitViewImp n -> "fitting view (imports) " ++ showPretty n ""
      DGFitViewA n -> "fitting view (actual parameters) "++ showPretty n ""
      DGFitViewAImp n -> "fitting view (imports and actual parameters) "
-                        ++showPretty n ""
+                        ++ showPretty n ""
      DGProof -> "constructed within a proof"
      _ -> show origin
 
@@ -656,9 +674,12 @@ instance Show G_theory where
      show sign ++ "\n" ++ show sens
 
 instance PrettyPrint G_theory where
-  printText0 ga g = case simplifyTh g of
+  printText0 = toOldText
+
+instance Pretty G_theory where
+  pretty g = case simplifyTh g of
      G_theory lid sign sens ->
-         printText0 ga sign $++$ vsep (map (print_named lid ga)
+         pretty sign $++$ vsep (map (print_named lid)
                                            $ toNamedList sens)
 
 -- | compute sublogic of a theory

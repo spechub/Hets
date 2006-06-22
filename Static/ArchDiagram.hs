@@ -22,8 +22,7 @@ import Data.Graph.Inductive.Graph as Graph
 import qualified Common.Lib.Graph as Tree
 
 import qualified Common.Lib.Map as Map
-import Common.Lib.Pretty
-import Common.PrettyPrint
+import Common.Doc
 import Common.Result
 import Common.Id
 
@@ -72,14 +71,14 @@ emptyExtStUnitCtx = (emptyStBasedUnitCtx, emptyDiag)
 -- * Instances
 
 -- PrettyPrint
-instance PrettyPrint Diag where
-    printText0 ga diag =
+instance Pretty Diag where
+    pretty diag =
         let gs (n, dn) =
                 (n, getSig $ dn_sig dn)
-        in ptext "nodes: "
-           <+> (printText0 ga (map gs (labNodes diag)))
-           <+> ptext "\nedges: "
-           <+> (printText0 ga (edges diag))
+        in text "nodes:"
+           <+> pretty (map gs $ labNodes diag)
+           $+$ text "edges:"
+           <+> pretty (edges diag)
 
 
 -- * Functions

@@ -16,6 +16,8 @@ Instance of class Logic for SoftFOL.
 module SPASS.Logic_SPASS where
 
 import Common.DefaultMorphism
+import Common.GlobalAnnotations
+import Common.Doc
 
 import Logic.Logic
 
@@ -36,7 +38,7 @@ import SPASS.ProveMathServ
 data SoftFOL = SoftFOL deriving (Show)
 
 instance Language SoftFOL where
- description _ = 
+ description _ =
   "SoftFOL - Soft typed First Order Logic for Automatic Theorem Provers\n\n" ++
   "This logic corresponds to the logic of SPASS, \n"++
   "but the generation of TPTP is also possible.\n" ++
@@ -59,8 +61,8 @@ instance Logic.Logic.Syntax SoftFOL () () ()
 
 instance Sentences SoftFOL Sentence () Sign SoftFOLMorphism ()  where
       map_sen SoftFOL _ s = return s
-      print_named SoftFOL ga formula = 
-        printFormula ga formula
+      print_named SoftFOL formula = literalDoc $
+        printFormula emptyGlobalAnnos formula
 -- the prover uses HTk and IO functions from uni
 #ifdef UNI_PACKAGE
       provers SoftFOL = [spassProver
@@ -71,7 +73,7 @@ instance Sentences SoftFOL Sentence () Sign SoftFOLMorphism ()  where
 
 instance StaticAnalysis SoftFOL () Sentence ()
                () ()
-               Sign 
+               Sign
                SoftFOLMorphism () ()  where
          sign_to_basic_spec SoftFOL _sigma _sens = ()
          empty_signature SoftFOL = emptySign
@@ -79,7 +81,7 @@ instance StaticAnalysis SoftFOL () Sentence ()
          is_subsig SoftFOL = const $ const True -- TODO!!
 
 instance Logic SoftFOL () () Sentence () ()
-               Sign 
+               Sign
                SoftFOLMorphism () () () where
          stability _ = Testing
     -- again default implementations are fine

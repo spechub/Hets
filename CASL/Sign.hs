@@ -8,7 +8,7 @@ Stability   :  provisional
 Portability :  portable
 
 This module provides CASL signatures that also serve as local
-  environments for the basic static analysis.  
+  environments for the basic static analysis.
 -}
 
 module CASL.Sign where
@@ -112,8 +112,8 @@ instance (Pretty f, Pretty e) => Pretty (Sign f e) where
 
 printSign :: (f->Doc) -> (e->Doc) -> Sign f e ->Doc
 printSign _ fE s = text (sortS++sS) <+>
-    (fsep $ punctuate comma $ map idDoc (Set.toList $ sortSet s)) $+$ 
-    (if Rel.null (sortRel s) then empty 
+    (fsep $ punctuate comma $ map idDoc (Set.toList $ sortSet s)) $+$
+    (if Rel.null (sortRel s) then empty
       else text (sortS++sS) <+>
        (fsep $ punctuate semi $ map printRel $ Map.toList
                        $ Rel.toMap $ Rel.transpose $ sortRel s))
@@ -122,7 +122,7 @@ printSign _ fE s = text (sortS++sS) <+>
     $+$ fE (extendedInfo s)
     where printRel (supersort, subsorts) =
             printSetWithComma subsorts <+> text lessS <+>
-               idDoc supersort 
+               idDoc supersort
 
 printSetMap :: (Pretty k,Pretty a,Ord a,Ord k) => Doc -> Doc
                  -> Map.Map k (Set.Set a) -> Doc
@@ -188,8 +188,7 @@ isSubOpMap a b = Map.isSubmapOfBy ( \ s t ->
                          Partial -> Set.member e {opKind = Total} t
                          Total -> False)) True s) a b
 
-isSubSig :: (PrettyPrint e, PrettyPrint f) =>
-            (e -> e -> Bool) -> Sign f e -> Sign f e -> Bool
+isSubSig :: (e -> e -> Bool) -> Sign f e -> Sign f e -> Bool
 isSubSig isSubExt a b =
   Set.isSubsetOf (sortSet a) (sortSet b)
           && Rel.isSubrelOf (sortRel a) (sortRel b)
@@ -242,8 +241,8 @@ addSubsortOrIso b super sub =
        State.put e { sortRel = (if b then id else
                          Rel.insert super sub) $ Rel.insert sub super r }
        let p = posOfId sub
-           rel = " '" ++ showPretty sub (if b then " < "
-                                         else " = ") ++ showPretty super "'"
+           rel = " '" ++ showDoc sub (if b then " < "
+                                         else " = ") ++ showDoc super "'"
        if super == sub then
           addDiags [mkDiag Warning
                     "void reflexive subsort" sub]
@@ -262,12 +261,12 @@ addSubsortOrIso b super sub =
                        addDiags [Diag Hint
                                  ("redeclared isomoprhic sorts" ++ rel) p]
                   else addDiags [Diag Warning
-                                 ("subsort '" ++ showPretty super
+                                 ("subsort '" ++ showDoc super
                                   "' made isomorphic by" ++ rel)
                                  $ posOfId super]
                else if Rel.path sub super r then
                   addDiags [Diag Warning
-                            ("subsort  '" ++ showPretty sub
+                            ("subsort  '" ++ showDoc sub
                              "' made isomorphic by" ++ rel) p]
                   else return()
 

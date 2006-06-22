@@ -13,7 +13,7 @@ Interface for Isabelle theorem prover.
 {-
   todo: thy files in subdir, check of legal changes in thy file
    consistency check
-   check if (goalStatus = Proved (Just True)) (was goalUsedInProof) 
+   check if (goalStatus = Proved (Just True)) (was goalUsedInProof)
     can be derived from isabelle's proof tree
 
   Interface between Isabelle and Hets:
@@ -33,9 +33,9 @@ import Isabelle.IsaParse
 import Isabelle.Translate
 
 import Common.AS_Annotation
+import Common.DocUtils
 import Common.DefaultMorphism
 import Common.ProofUtils
-import Common.PrettyPrint
 import qualified Common.Lib.Map as Map
 
 import Text.ParserCombinators.Parsec
@@ -127,7 +127,7 @@ checkFinalThyFile (ho, bo) thyFile = do
   case parse parseTheory thyFile s of
     Right (hb, b) -> do
             let ds = compatibleBodies bo b
-            mapM_ (\ d -> putStrLn $ showPretty d "") ds
+            mapM_ (\ d -> putStrLn $ showDoc d "") ds
             if hb /= ho then do
                   putStrLn "illegal change of theory header"
                   return False
@@ -172,7 +172,7 @@ patchThyFile (ho, bo) origFile thyFile thy = do
     Right (hb, b) -> do
             let ds = compatibleBodies bo b
                 h = hb == ho
-            mapM_ (\ d -> putStrLn $ showPretty d "") ds
+            mapM_ (\ d -> putStrLn $ showDoc d "") ds
             unless h $ putStrLn "theory header is corrupt"
             unless (h && null ds) $ revertThyFile thyFile thy
     Left err -> do

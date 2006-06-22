@@ -17,7 +17,7 @@ import Common.Result
 import Common.Id
 import Common.Earley
 import Common.Prec
-import Common.ConvertLiteral
+import Common.ConvertMixfixToken
 import Common.Lib.State
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.Set as Set

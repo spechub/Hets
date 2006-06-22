@@ -14,8 +14,7 @@ This module provides a 'Result' type and some monadic functions
 module Common.Result where
 
 import Common.Id
-import Common.PrettyPrint
-import Common.Lib.Pretty
+import Common.Doc
 import Data.List
 import Text.ParserCombinators.Parsec.Error
 import Common.Lexer (fromSourcePos)
@@ -32,9 +31,9 @@ data Diagnosis = Diag { diagKind :: DiagKind
                       } deriving Eq
 
 -- | construct a message for a printable item that carries a position
-mkDiag :: (PosItem a, PrettyPrint a) => DiagKind -> String -> a -> Diagnosis
-mkDiag k s a = let q = char '\'' in
-    Diag k (s ++ show (space <> q <> nest 2 (printText a) <> q)) $ getRange a
+mkDiag :: (PosItem a, Pretty a) => DiagKind -> String -> a -> Diagnosis
+mkDiag k s a = let q = text "'" in
+    Diag k (s ++ show (space <> q <> pretty a <> q)) $ getRange a
 
 -- | check whether a diagnosis is an error
 isErrorDiag :: Diagnosis -> Bool
@@ -51,7 +50,7 @@ adjustDiagPos :: Range -> Diagnosis -> Diagnosis
 adjustDiagPos r d = d { diagPos = appRange r $ diagPos d }
 
 -- | A uniqueness check yields errors for duplicates in a given list.
-checkUniqueness :: (PrettyPrint a, PosItem a, Ord a) => [a] -> [Diagnosis]
+checkUniqueness :: (Pretty a, PosItem a, Ord a) => [a] -> [Diagnosis]
 checkUniqueness l =
     let vd = filter ( not . null . tail) $ group $ sort l
     in map ( \ vs -> mkDiag Error ("duplicates at '" ++
@@ -106,11 +105,11 @@ pfatal_error :: Doc -> Range -> Result a
 pfatal_error s p = fatal_error (show s) p
 
 -- | a failing result constructing a message from a type
-mkError :: (PosItem a, PrettyPrint a) => String -> a -> Result b
+mkError :: (PosItem a, Pretty a) => String -> a -> Result b
 mkError s c = Result [mkDiag Error s c] Nothing
 
 -- | add a debug point
-debug :: (PosItem a, PrettyPrint a) => Int -> (String, a) -> Result ()
+debug :: (PosItem a, Pretty a) => Int -> (String, a) -> Result ()
 debug n (s, a) = Result [mkDiag Debug
                          (" point " ++ show n ++ "\nVariable "++s++":\n") a ]
                  $ Just ()
@@ -185,10 +184,10 @@ showErr err
                        (errorMessages err)
 
 instance Show Diagnosis where
-    showsPrec _ = showPretty
+    showsPrec _ = shows . pretty
 
-instance PrettyPrint Diagnosis where
-    printText0 _ (Diag k s (Range sp)) =
+instance Pretty Diagnosis where
+    pretty (Diag k s (Range sp)) =
         (if isMessageW
             then empty
             else text (case k of
@@ -212,8 +211,8 @@ instance PrettyPrint Diagnosis where
 instance PosItem Diagnosis where
     getRange d = diagPos d
 
-instance PrettyPrint a => PrettyPrint (Result a) where
-    printText0 g (Result ds m) = vcat ((case m of
+instance Pretty a => Pretty (Result a) where
+    pretty (Result ds m) = vcat ((case m of
                                        Nothing -> empty
-                                       Just x -> printText0 g x) :
-                                           map (printText0 g) ds)
+                                       Just x -> pretty x) :
+                                 map pretty ds)

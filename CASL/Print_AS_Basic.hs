@@ -28,26 +28,20 @@ import CASL.ToDoc
 
 instance (PrettyPrint b, PrettyPrint s, PrettyPrint f) =>
     PrettyPrint (BASIC_SPEC b s f) where
-    printText0 ga = Doc.toText ga . 
+    printText0 ga = Doc.toText ga .
          printBASIC_SPEC (fromText ga) (fromText ga) (fromText ga)
 
 instance (PrettyPrint b, PrettyPrint s, PrettyPrint f) =>
     PrettyPrint (BASIC_ITEMS b s f) where
-    printText0 ga = Doc.toText ga . 
+    printText0 ga = Doc.toText ga .
          printBASIC_ITEMS (fromText ga) (fromText ga) (fromText ga)
 
-
-printFormulaAux :: PrettyPrint f => GlobalAnnos -> [Annoted (FORMULA f)] -> Doc
-printFormulaAux ga f =
-  vcat $ map (printAnnotedFormula_Text0 ga True) f
-
-printAnnotedFormula_Text0 :: PrettyPrint f =>
-                             GlobalAnnos -> Bool -> Annoted (FORMULA f) -> Doc
-printAnnotedFormula_Text0 ga withDot = Doc.toText ga . Doc.printAnnoted 
-           ((if withDot then (Doc.bullet Doc.<+>) else id) . fromText ga)
+printAnnotedFormula :: Doc.Pretty f => Bool -> Annoted (FORMULA f) -> Doc.Doc
+printAnnotedFormula withDot = Doc.printAnnoted
+           ((if withDot then (Doc.bullet Doc.<+>) else id) . Doc.pretty)
 
 instance (PrettyPrint s, PrettyPrint f) => PrettyPrint (SIG_ITEMS s f) where
-    printText0 ga = Doc.toText ga . printSIG_ITEMS (fromText ga) (fromText ga) 
+    printText0 ga = Doc.toText ga . printSIG_ITEMS (fromText ga) (fromText ga)
 
 
 instance PrettyPrint f => PrettyPrint (SORT_ITEM f) where
@@ -96,12 +90,12 @@ instance PrettyPrint VAR_DECL where
 printFORMULA :: PrettyPrint f => GlobalAnnos -> FORMULA f -> Doc
 printFORMULA ga = Doc.toText ga . printFormula (fromText ga)
 
-printTheoryFormula :: PrettyPrint f => GlobalAnnos -> Named (FORMULA f) -> Doc
-printTheoryFormula ga f = printAnnotedFormula_Text0 ga
+printTheoryFormula :: Doc.Pretty f => Named (FORMULA f) -> Doc.Doc
+printTheoryFormula f = printAnnotedFormula
     (case sentence f of
     Quantification Universal _ _ _ -> False
     Sort_gen_ax _ _ -> False
-    _ -> True) $ Doc.fromLabelledSen f 
+    _ -> True) $ Doc.fromLabelledSen f
 
 instance PrettyPrint f => PrettyPrint (FORMULA f) where
     printText0 = printFORMULA

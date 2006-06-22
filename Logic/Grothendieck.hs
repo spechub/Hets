@@ -76,7 +76,7 @@ instance Show G_basic_spec where
     show (G_basic_spec _ s) = show s
 
 instance PrettyPrint G_basic_spec where
-    printText0 ga (G_basic_spec _ s) = printText0 ga s
+    printText0 = toOldText
 
 instance Pretty G_basic_spec where
     pretty (G_basic_spec _ s) = pretty s
@@ -120,7 +120,10 @@ instance Show G_sign where
     show (G_sign _ s) = show s
 
 instance PrettyPrint G_sign where
-    printText0 ga (G_sign _ s) = printText0 ga s
+    printText0 = toOldText
+
+instance Pretty G_sign where
+    pretty (G_sign _ s) = pretty s
 
 langNameSig :: G_sign -> String
 langNameSig (G_sign lid _) = language_name lid
@@ -156,7 +159,10 @@ instance Show G_symbol where
     show (G_symbol _ s) = show s
 
 instance PrettyPrint G_symbol where
-    printText0 ga (G_symbol _ s) = printText0 ga s
+    printText0 = toOldText
+
+instance Pretty G_symbol where
+    pretty (G_symbol _ s) = pretty s
 
 instance Eq G_symbol where
   (G_symbol i1 s1) == (G_symbol i2 s2) =

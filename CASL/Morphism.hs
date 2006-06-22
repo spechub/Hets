@@ -32,7 +32,7 @@ import Control.Monad
 import Common.PrettyPrint
 import Control.Exception (assert)
 import Common.Doc
-import Common.DocUtils
+import Common.DocUtils ()
 import Common.Print_AS_Annotation
 
 data SymbType = OpAsItemType OpType
@@ -69,7 +69,7 @@ data RawSymbol = ASymbol Symbol | AnID Id | AKindedId Kind Id
                  deriving (Show, Eq, Ord)
 
 instance PosItem RawSymbol where
-    getRange rs = 
+    getRange rs =
         case rs of
         ASymbol s -> getRange s
         AnID i -> getRange i
@@ -395,8 +395,7 @@ legalMor mor =
   && isSubMapSet mpreds (predMap s2)
   && legalSign s2
 
-sigInclusion :: (PrettyPrint e, PrettyPrint f)
-             => Ext f e m -- ^ compute extended morphism
+sigInclusion :: Ext f e m -- ^ compute extended morphism
              -> (e -> e -> Bool) -- ^ subsignature test of extensions
              -> Sign f e -> Sign f e -> Result (Morphism f e m)
 sigInclusion extEm isSubExt sigma1 sigma2 =
@@ -487,7 +486,7 @@ instance Pretty Symbol where
     case symbType sy of
        SortAsItemType -> empty
        st -> space <> colon <> pretty st
-    
+
 
 instance PrettyPrint SymbType where
   -- op types try to place a question mark immediately after a colon
@@ -498,12 +497,12 @@ instance Pretty SymbType where
      OpAsItemType ot -> pretty ot
      PredAsItemType pt -> space <> pretty pt
      SortAsItemType -> empty
- 
+
 instance PrettyPrint Kind where
     printText0 ga = toText ga . pretty
 
 instance Pretty Kind where
-  pretty k = keyword $ case k of 
+  pretty k = keyword $ case k of
       SortKind -> sortS
       FunKind -> opS
       PredKind -> predS
@@ -519,21 +518,17 @@ instance Pretty RawSymbol where
 
 instance (PrettyPrint e, PrettyPrint f, PrettyPrint m) =>
     PrettyPrint (Morphism f e m) where
-        printText0 ga = toText ga . 
+        printText0 ga = toText ga .
           printMorphism (fromText ga) (fromText ga) (fromText ga)
 
 printMorphism :: (f->Doc) -> (e->Doc) -> (m->Doc) -> Morphism f e m -> Doc
 printMorphism fF fE fM mor =
-    printSymbolMap (Map.filterWithKey (/=) $ morphismToSymbMap mor)
+    pretty (Map.filterWithKey (/=) $ morphismToSymbMap mor)
     $+$ fM (extended_map mor) $+$ colon $+$
     specBraces (space <> printSign fF fE (msource mor) <> space)
-    $+$ text funS $+$ 
+    $+$ text funS $+$
     specBraces (space <> printSign fF fE (mtarget mor) <> space)
 
 instance (Pretty e, Pretty f, Pretty m) =>
     Pretty (Morphism f e m) where
        pretty = printMorphism pretty pretty pretty
-
-printSymbolMap :: SymbolMap -> Doc
-printSymbolMap = printMap specBraces (fsep . punctuate comma) 
-    (\ a b -> a <+> mapsto <+> b)

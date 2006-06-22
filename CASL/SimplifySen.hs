@@ -15,7 +15,7 @@ module CASL.SimplifySen(simplifySen, rmTypesT) where
 
 import Common.Id
 import Common.Result
-import Common.PrettyPrint
+import Common.Doc
 import Common.Lib.State
 import CASL.Sign
 import CASL.AS_Basic_CASL
@@ -23,7 +23,7 @@ import CASL.Overload
 
 {- | simplifies formula\/term informations for 'show theory' of
    HETS-graph representation.  -}
-simplifySen :: PrettyPrint f =>
+simplifySen :: Pretty f =>
                (Min f e) -- ^ extension type analysis
             -> (Sign f e -> f -> f) -- ^ simplifySen for ExtFORMULA
             -> Sign f e -> FORMULA f -> FORMULA f
@@ -65,7 +65,7 @@ rmSort term = case term of
    simplifies the term and removes its type-information as far as the signature
    allows
 -}
-rmTypesT :: PrettyPrint f =>
+rmTypesT :: Pretty f =>
             Min f e
          -> (Sign f e -> f -> f)
          -> Sign f e -> TERM f -> TERM f
@@ -79,7 +79,7 @@ rmTypesT minF simpF sign term =
 {- |
    simplify the TERM and keep its typing information if it had one
 -}
-simplifyTerm :: PrettyPrint f => Min f e -> (Sign f e -> f -> f)
+simplifyTerm :: Pretty f => Min f e -> (Sign f e -> f -> f)
         -> Sign f e -> TERM f -> TERM f
 simplifyTerm minF simpF sign term =
     let simplifyTermC = simplifyTerm minF simpF sign
@@ -127,7 +127,7 @@ simplifyTerm minF simpF sign term =
 {- |
    simplify the TERM with given sort and attach sort if necessary
 -}
-simplifyTermWithSort :: PrettyPrint f => Min f e -> (Sign f e -> f -> f)
+simplifyTermWithSort :: Pretty f => Min f e -> (Sign f e -> f -> f)
         -> Sign f e -> SORT -> Range -> TERM f -> TERM f
 simplifyTermWithSort minF simpF sign gSort poss term =
     let simplifyTermCS = simplifyTermWithSort minF simpF sign gSort poss
@@ -177,7 +177,7 @@ simplifyTermWithSort minF simpF sign gSort poss term =
 {- |
     analyzes the formula if it is the minimal expansions.
 -}
-anaFormula :: PrettyPrint f => Min f e -> (Sign f e -> f -> f)
+anaFormula :: Pretty f => Min f e -> (Sign f e -> f -> f)
            -> Sign f e -> FORMULA f -> FORMULA f
 anaFormula minF simpF sign form1 =
     let minForm = maybeResult . minExpFORMULA minF sign
