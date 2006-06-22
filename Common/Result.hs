@@ -15,6 +15,7 @@ module Common.Result where
 
 import Common.Id
 import Common.Doc
+import Common.GlobalAnnotations
 import Data.List
 import Text.ParserCombinators.Parsec.Error
 import Common.Lexer (fromSourcePos)
@@ -34,6 +35,12 @@ data Diagnosis = Diag { diagKind :: DiagKind
 mkDiag :: (PosItem a, Pretty a) => DiagKind -> String -> a -> Diagnosis
 mkDiag k s a = let q = text "'" in
     Diag k (s ++ show (space <> q <> pretty a <> q)) $ getRange a
+
+-- | construct a message for a printable item that carries a position
+mkNiceDiag :: (PosItem a, Pretty a) => GlobalAnnos
+       -> DiagKind -> String -> a -> Diagnosis
+mkNiceDiag ga k s a = let q = text "'" in
+    Diag k (s ++ show (toText ga $ space <> q <> pretty a <> q)) $ getRange a
 
 -- | check whether a diagnosis is an error
 isErrorDiag :: Diagnosis -> Bool
@@ -108,6 +115,10 @@ pfatal_error s p = fatal_error (show s) p
 mkError :: (PosItem a, Pretty a) => String -> a -> Result b
 mkError s c = Result [mkDiag Error s c] Nothing
 
+-- | a failing result constructing a message from a type
+mkNiceError :: (PosItem a, Pretty a) => GlobalAnnos -> String -> a -> Result b
+mkNiceError ga s c = Result [mkNiceDiag ga Error s c] Nothing
+
 -- | add a debug point
 debug :: (PosItem a, Pretty a) => Int -> (String, a) -> Result ()
 debug n (s, a) = Result [mkDiag Debug
@@ -126,17 +137,9 @@ pplain_error x s p = plain_error x (show s) p
 warning :: a -> String -> Range -> Result a
 warning x s p = Result [Diag Warning s p] $ Just x
 
--- | add a warning using a pretty printed 'Doc'
-pwarning :: a -> Doc -> Range -> Result a
-pwarning x s p = warning x (show s) p
-
 -- | add a hint
 hint :: a -> String -> Range -> Result a
 hint x s p = Result [Diag Hint s p] $ Just x
-
--- | add a hint using a pretty printed 'Doc'
-phint :: a -> Doc -> Range -> Result a
-phint x s p = hint x (show s) p
 
 -- | add a (web interface) message
 message :: a -> String -> Result a
