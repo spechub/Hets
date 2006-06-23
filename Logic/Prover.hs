@@ -11,7 +11,7 @@ Provide prover stuff for class Logic.Sentences
 
 -}
 {- todo:
-  - separate GoalStatus into its own Module 
+  - separate GoalStatus into its own Module
     and specifify the whole SZS Ontology with appropiate types and functions
     (http://www.cs.miami.edu/~tptp/cgi-bin/DVTPTP2WWW/view_file.pl?Category=Documents&File=SZSOntology)
 -}
@@ -19,12 +19,11 @@ Provide prover stuff for class Logic.Sentences
 module Logic.Prover where
 
 import qualified Common.AS_Annotation as AS_Anno
-import Common.PrettyPrint
 import Common.Utils
 import Common.ProofUtils
 import Common.DynamicUtils
 import qualified Common.OrderedMap as OMap
-import qualified Common.Lib.Map as Map (toList,fromList)
+import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 
 import Common.Print_AS_Annotation
@@ -40,14 +39,11 @@ data SenStatus a tStatus = SenStatus
      , thmStatus :: [tStatus]
      } deriving Show
 
-instance PrettyPrint a => PrettyPrint (SenStatus a b) where
-  printText0 ga = toText ga . printSenStatus (fromText ga)
-
 instance Pretty a => Pretty (SenStatus a b) where
     pretty = printSenStatus pretty
 
 printSenStatus :: (a -> Doc) -> SenStatus a b  -> Doc
-printSenStatus fA = fA . value 
+printSenStatus fA = fA . value
 
 emptySenStatus :: SenStatus a b
 emptySenStatus = SenStatus
@@ -63,9 +59,6 @@ instance Eq a => Eq (SenStatus a b) where
 instance Ord a => Ord (SenStatus a b) where
     d1 <= d2 = (value d1, isAxiom d1, isDef d1) <=
                (value d2, isAxiom d2, isDef d2)
-
-instance PrettyPrint a => PrettyPrint (OMap.ElemWOrd a) where
-    printText0 ga = toText ga . printOMapElemWOrd (fromText ga) 
 
 instance Pretty a => Pretty (OMap.ElemWOrd a) where
     pretty = printOMapElemWOrd pretty
@@ -159,11 +152,11 @@ data TheoryMorphism sign sen mor proof_tree = TheoryMorphism
 data Tactic_script = Tactic_script String deriving (Eq, Ord, Show)
 
 -- | enumeration type representing the status of a goal
-data GoalStatus = Open 
+data GoalStatus = Open
                 | Disproved
-                | Proved (Maybe Bool) -- ^ Just True means consistent; 
+                | Proved (Maybe Bool) -- ^ Just True means consistent;
                                       -- Nothing means don't know
-                      -- 
+                      --
                       -- needed for automated theorem provers like SPASS;
                       -- provers like Isabelle set it to Nothing
      deriving (Eq,Ord)
@@ -172,16 +165,16 @@ instance Show GoalStatus where
     show gs = case gs of
               Open -> "Open"
               Disproved -> "Disproved"
-              Proved mc -> "Proved" ++ 
+              Proved mc -> "Proved" ++
                            maybe "" (\ c -> "("++
-                                            (if c then "" else "in") ++ 
+                                            (if c then "" else "in") ++
                                             "consistent)") mc
 
--- | data type representing the proof status for a goal or 
+-- | data type representing the proof status for a goal or
 data Proof_status proof_tree =
        Proof_status { goalName :: String
                     , goalStatus :: GoalStatus
-                    , usedAxioms :: [String] -- ^ used axioms 
+                    , usedAxioms :: [String] -- ^ used axioms
                     , proverName :: String -- ^ name of prover
                     , proofTree :: proof_tree
                     , tacticScript :: Tactic_script }
@@ -189,9 +182,9 @@ data Proof_status proof_tree =
      deriving (Show,Eq,Ord)
 
 -- | constructs an open proof status with basic information filled in;
--- make sure to set proofTree to a useful value before you access it, because 
+-- make sure to set proofTree to a useful value before you access it, because
 -- its default value is 'undefined'
-openProof_status :: Ord pt => 
+openProof_status :: Ord pt =>
                     String -- ^ name of the goal
                  -> String -- ^ name of the prover
                  -> pt
@@ -231,7 +224,7 @@ isProvedGStat gs = case gs of
                    _ -> False
 
 goalUsedInProof :: Monad m => Proof_status proof_tree -> m Bool
-goalUsedInProof pst = 
+goalUsedInProof pst =
     case goalStatus pst of
     Proved m -> maybe (fail "don't know if goal was used") return m
     _ -> fail "not a proof"
@@ -258,4 +251,3 @@ instance (Typeable a, Typeable b) => Typeable (ProverTemplate a b) where
     typeOf p = mkTyConApp proverTc
                [typeOf ((undefined :: ProverTemplate a b -> a) p),
                 typeOf ((undefined :: ProverTemplate a b -> b) p)]
-
