@@ -1,11 +1,11 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Klaus Lüttich, Christian Maeder and Uni Bremen 2002-2003 
+Copyright   :  (c) Klaus Lüttich, Christian Maeder and Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
 Stability   :  experimental
-Portability :  portable 
+Portability :  portable
 
 data structures for global annotations
 -}
@@ -14,20 +14,19 @@ module Common.GlobalAnnotations (module Common.GlobalAnnotations,
                                  Display_format(..))
     where
 
-import Common.Id
-
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Rel as Rel
 import Common.AS_Annotation
+import Common.Id
 
--- | all global annotations and a field for PrettyPrint stuff
+-- | all global annotations and a field for pretty printing stuff
 data GlobalAnnos = GA { prec_annos     :: PrecedenceGraph -- ^ precedences
                       , assoc_annos    :: AssocMap  -- ^ associativity
                       , display_annos  :: DisplayMap -- ^ display annotations
                       , literal_annos  :: LiteralAnnos -- ^ literal annotations
-                      , literal_map    :: LiteralMap -- ^ redundant 
+                      , literal_map    :: LiteralMap -- ^ redundant
                         -- representation of the previous literal annotations
-                      , print_conf     :: PrintConfig -- ^ gives the 
+                      , print_conf     :: PrintConfig -- ^ gives the
                         -- possibility to print things upon position in AST
                       } deriving (Show,Eq)
 
@@ -39,7 +38,7 @@ emptyGlobalAnnos = GA { prec_annos    = Rel.empty
                       , literal_annos = emptyLiteralAnnos
                       , literal_map   = Map.empty
                       , print_conf = default_print_conf
-                      } 
+                      }
 
 -- | literal annotations for string, lists, number and floating
 data LiteralAnnos = LA { string_lit :: Maybe (Id,Id)
@@ -59,21 +58,21 @@ emptyLiteralAnnos = LA { string_lit  = Nothing
 -- | ids to be displayed according to a format
 type DisplayMap = Map.Map Id (Map.Map Display_format [Token])
 
--- | Options that can be set and used during PrettyPrinting
-data PrintConfig = PrC { prc_inside_gen_arg :: Bool -- ^ set to True 
+-- | Options that can be set and used during pretty printing
+data PrintConfig = PrC { prc_inside_gen_arg :: Bool -- ^ set to True
                          -- if inside of PARAMS or FIT_ARG
-                       , prc_first_spec_in_param :: Bool 
-                         -- ^ set to True when prc_inside_gen_arg is 
-                         -- set to True; set to False if first spec 
+                       , prc_first_spec_in_param :: Bool
+                         -- ^ set to True when prc_inside_gen_arg is
+                         -- set to True; set to False if first spec
                          -- is crossed
                        , prc_latex_print :: Bool
                          -- ^ True if printLatex0 is invoked
-                         -- used in functions that decide on the same things 
+                         -- used in functions that decide on the same things
                          -- but do different things
                        } deriving (Show,Eq)
 
 default_print_conf :: PrintConfig
-default_print_conf = PrC { prc_inside_gen_arg = False 
+default_print_conf = PrC { prc_inside_gen_arg = False
                          , prc_first_spec_in_param = False
                          , prc_latex_print = False
                          }
@@ -99,27 +98,27 @@ set_first_spec_in_param :: Bool -> GlobalAnnos -> GlobalAnnos
 set_first_spec_in_param b ga = ga {print_conf = print_conf'}
     where print_conf' = (print_conf ga) {prc_first_spec_in_param = b}
 
--- | a redundant map for 'LiteralAnnos' 
+-- | a redundant map for 'LiteralAnnos'
 type LiteralMap = Map.Map Id LiteralType
 
--- | description of the type of a literal for a given 'Id' in 'LiteralMap' 
-data LiteralType = StringCons Id  -- ^ refer to the 'Id' of the null string 
+-- | description of the type of a literal for a given 'Id' in 'LiteralMap'
+data LiteralType = StringCons Id  -- ^ refer to the 'Id' of the null string
                  | StringNull
-                 | ListCons Id Id  -- ^ brackets (as 'Id') and the 'Id' of the 
+                 | ListCons Id Id  -- ^ brackets (as 'Id') and the 'Id' of the
                                    -- matching null list
                  | ListNull Id -- ^ brackets (as 'Id') for the empty list
                  | Number
-                 | Fraction 
+                 | Fraction
                  | Floating
                  | NoLiteral -- ^ and error value for a 'getLiteralType'
                    deriving (Show,Eq)
 
 -- | the 'LiteralType' of an 'Id' (possibly 'NoLiteral')
 getLiteralType ::  GlobalAnnos -> Id -> LiteralType
-getLiteralType ga i = 
+getLiteralType ga i =
     Map.findWithDefault NoLiteral i $ literal_map ga
 
--- | a map of associative ids 
+-- | a map of associative ids
 type AssocMap = Map.Map Id AssocEither
 
 -- | check if 'Id' has a given associativity
@@ -127,17 +126,17 @@ isAssoc :: AssocEither -> AssocMap -> Id -> Bool
 isAssoc ae amap i =
     case Map.lookup i amap of
     Nothing  -> False
-    Just ae' -> ae' == ae 
+    Just ae' -> ae' == ae
 
 -- | a binary relation over ids as precedence graph
 type PrecedenceGraph = Rel.Rel Id
 
--- | return precedence relation of two ids 
+-- | return precedence relation of two ids
 precRel :: PrecedenceGraph -- ^ Graph describing the precedences
         -> Id -- ^ x oID (y iid z) -- outer id
         -> Id -- ^ x oid (y iID z) -- inner id
         -> PrecRel
--- a 'Lower' corresponds to %prec {out_id} < {in_id} 
+-- a 'Lower' corresponds to %prec {out_id} < {in_id}
 -- BothDirections means <> was given (or derived by transitive closure)
 precRel pg out_id in_id =
     case (Rel.member in_id out_id pg, Rel.member out_id in_id pg) of
@@ -152,8 +151,8 @@ lookupDisplay ga df i =
     case Map.lookup i (display_annos ga) of
     Nothing -> Nothing
     Just df_map -> case Map.lookup df df_map of
-                   Nothing -> Nothing 
-                   r@(Just disp_toks) -> 
+                   Nothing -> Nothing
+                   r@(Just disp_toks) ->
                        if null disp_toks then Nothing else r
 
 
