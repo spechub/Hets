@@ -104,6 +104,7 @@ module Common.Doc
     , semiAnnos
       -- * manipulating documents
     , useGlobalAnnos
+    , changeGlobalAnnos
     , rmTopKey
     ) where
 
@@ -148,7 +149,7 @@ data Doc
     | Cat ComposeKind [Doc]
     | Attr Format Doc      -- for annotations
     | LiteralDoc Pretty.Doc  -- for backward compatibility only
-    | UseGlobalAnnos GlobalAnnos Doc
+    | ChangeGlobalAnnos (GlobalAnnos -> GlobalAnnos) Doc
 
 instance Show Doc where
     showsPrec _ doc cont =
@@ -349,7 +350,7 @@ data DocRecord a = DocRecord
     , foldCat :: Doc -> ComposeKind -> [a] -> a
     , foldAttr :: Doc -> Format -> a -> a
     , foldLiteralDoc :: Doc -> Pretty.Doc -> a
-    , foldUseGlobalAnnos :: Doc -> GlobalAnnos -> a -> a
+    , foldChangeGlobalAnnos :: Doc -> (GlobalAnnos -> GlobalAnnos) -> a -> a
     }
 
 foldDoc :: DocRecord a -> Doc -> a
@@ -362,7 +363,7 @@ foldDoc r d = case d of
     Cat k l -> foldCat r d k $ map (foldDoc r) l
     Attr a e -> foldAttr r d a $ foldDoc r e
     LiteralDoc o -> foldLiteralDoc r d o
-    UseGlobalAnnos f e -> foldUseGlobalAnnos r d f $ foldDoc r e
+    ChangeGlobalAnnos f e -> foldChangeGlobalAnnos r d f $ foldDoc r e
 
 idRecord :: DocRecord Doc
 idRecord = DocRecord
@@ -374,7 +375,7 @@ idRecord = DocRecord
     , foldCat = \ _ -> Cat
     , foldAttr = \ _ -> Attr
     , foldLiteralDoc = \ _ -> LiteralDoc
-    , foldUseGlobalAnnos = \ _ -> UseGlobalAnnos
+    , foldChangeGlobalAnnos = \ _ -> ChangeGlobalAnnos
     }
 
 anyRecord :: DocRecord a
@@ -387,7 +388,7 @@ anyRecord = DocRecord
     , foldCat = error "anyRecord.Cat"
     , foldAttr = error "anyRecord.Attr"
     , foldLiteralDoc = error "anyRecord.LiteralDoc"
-    , foldUseGlobalAnnos = error "anyRecord.UseGlobalAnnos"
+    , foldChangeGlobalAnnos = error "anyRecord.ChangeGlobalAnnos"
     }
 
 -- * conversion to plain text
@@ -409,7 +410,7 @@ toText ga = foldDoc anyRecord
             if l < 66 then Pretty.nest (66 - l) d else d
           _ -> d
     , foldLiteralDoc = \ _ d -> d
-    , foldUseGlobalAnnos = \ _ _ d -> d
+    , foldChangeGlobalAnnos = \ _ _ d -> d
     } . codeOut ga Nothing Map.empty
 
 -- * conversion to latex
@@ -460,7 +461,7 @@ toLatexRecord tab = anyRecord
               Attr Small (Text j s) -> textToLatex True j s
               _ -> makeSmallLatex True d
     , foldLiteralDoc = \ _ d -> d
-    , foldUseGlobalAnnos = \ _ _ d -> d
+    , foldChangeGlobalAnnos = \ _ _ d -> d
     }
 
 -- | move a small attribute inwards but not into mathmode bits
@@ -585,7 +586,8 @@ codeOut ga d m = foldDoc idRecord
     { foldAnnoDoc = \ _ -> small . codeOutAnno d m
     , foldIdDoc = \ _ -> codeOutId m
     , foldIdApplDoc = codeOutAppl ga d m
-    , foldUseGlobalAnnos = \ (UseGlobalAnnos ng e) _ _ -> codeOut ng d
+    , foldChangeGlobalAnnos = \ (ChangeGlobalAnnos fg e) _ _ ->
+          let ng = fg ga in codeOut ng d
              (maybe m (\ f -> Map.map (Map.! f) .
                       Map.filter (Map.member f) $ display_annos ng) d) e
     }
@@ -862,4 +864,8 @@ rmTopKey = foldDoc idRecord
 
 -- | add global annotations for proper mixfix printing
 useGlobalAnnos :: GlobalAnnos -> Doc -> Doc
-useGlobalAnnos = UseGlobalAnnos
+useGlobalAnnos ga = changeGlobalAnnos (const ga)
+
+-- | add global annotations for proper mixfix printing
+changeGlobalAnnos :: (GlobalAnnos -> GlobalAnnos) -> Doc -> Doc
+changeGlobalAnnos = ChangeGlobalAnnos
