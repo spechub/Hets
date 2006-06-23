@@ -23,7 +23,6 @@ import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Rel as Rel
 import Common.Lib.State
-import qualified Common.PrettyPrint as PP
 import Common.Id
 import Common.Result
 import Common.Doc
@@ -36,9 +35,6 @@ import Data.Maybe
 data Constrain = Kinding Type Kind
                | Subtyping Type Type 
                  deriving (Eq, Ord, Show)
-
-instance PP.PrettyPrint Constrain where
-    printText0 ga = toText ga . pretty 
 
 instance Pretty Constrain where
     pretty c = case c of 
@@ -314,7 +310,6 @@ monoSubst te r t =
                 (i, Set.findMin $ Rel.succs r $ 
                   TypeName n rk i)) antis
        
-
 monoSubsts :: TypeEnv -> Rel.Rel Type -> Type -> Subst
 monoSubsts te r t = 
     let s = monoSubst te (Rel.transReduce $ Rel.irreflex r) t in

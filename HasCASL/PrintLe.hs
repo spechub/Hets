@@ -22,52 +22,8 @@ import Common.Doc
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.Keywords
-import Common.PrettyPrint
-import Common.Result ()
 
 import Data.List
-
-instance PrettyPrint Morphism where
-    printText0 ga = toText ga . pretty
-
-instance PrettyPrint Env where
-    printText0 ga = toText (addBuiltins ga) . pretty
-
-instance PrettyPrint Sentence where
-    printText0 ga = toText (addBuiltins ga) . pretty
-
-instance PrettyPrint SymbMapItems where
-    printText0 ga = toText ga . pretty
-
-instance PrettyPrint SymbItems where
-    printText0 ga = toText ga . pretty
-
-instance PrettyPrint RawSymbol where
-    printText0 ga = toText ga . pretty
-
-instance PrettyPrint Symbol where
-    printText0 ga = toText ga . pretty
-
-instance PrintLaTeX Morphism where
-    printLatex0 ga = toLatex ga . pretty
-
-instance PrintLaTeX Env where
-    printLatex0 ga = toLatex (addBuiltins ga) . pretty
-
-instance PrintLaTeX Sentence where
-    printLatex0 ga = toLatex (addBuiltins ga) . pretty
-
-instance PrintLaTeX SymbMapItems where
-    printLatex0 ga = toLatex ga . pretty
-
-instance PrintLaTeX SymbItems where
-    printLatex0 ga = toLatex ga . pretty
-
-instance PrintLaTeX RawSymbol where
-    printLatex0 ga = toLatex ga . pretty
-
-instance PrintLaTeX Symbol where
-    printLatex0 ga = toLatex ga . pretty
 
 instance Pretty ClassInfo where
     pretty (ClassInfo rk ks) = case ks of

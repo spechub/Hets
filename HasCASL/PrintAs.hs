@@ -16,34 +16,11 @@ import HasCASL.As
 import HasCASL.AsUtils
 import HasCASL.FoldTerm
 import HasCASL.Builtin
-import Common.PrettyPrint
-import Common.PPUtils()
 import Common.Id
 import Common.Keywords
 import Common.Doc
 import Common.AS_Annotation
 import Data.List
-
-instance PrettyPrint BasicSpec where
-    printText0 ga = toText (addBuiltins ga) . rmTopKey . pretty
-
-instance PrintLaTeX BasicSpec where
-    printLatex0 ga = toLatex (addBuiltins ga) . pretty
-
-instance PrettyPrint BasicItem where
-    printText0 ga = toText ga . rmTopKey . pretty
-
-instance PrettyPrint Type where
-    printText0 ga = toText ga . pretty
-
-instance PrettyPrint TypePattern where
-    printText0 ga = toText ga . pretty
-
-instance PrettyPrint Term where
-    printText0 ga = toText (addBuiltins ga) . pretty
-
-instance Pretty a => PrettyPrint (AnyKind a) where
-    printText0 ga = toText ga . pretty
 
 -- | short cut for: if b then empty else d
 noPrint :: Bool -> Doc -> Doc
