@@ -23,26 +23,15 @@ module Haskell.Logic_Haskell
      Symbol,
      RawSymbol) where
 
-import Common.PrettyPrint
 import Common.AS_Annotation
 import Common.DefaultMorphism
 
 import Haskell.TiPropATC()
 import Haskell.HatParser
 import Haskell.HatAna
-import Common.DocUtils
 import Common.Doc
 
 import Logic.Logic
-
-instance PrintLaTeX HsDecls where
-  printLatex0 = toOldLatex
-
-instance PrintLaTeX Sign where
-     printLatex0 = toOldLatex
-
-instance PrintLaTeX (TiDecl PNT) where
-     printLatex0 = toOldLatex
 
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances

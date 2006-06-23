@@ -20,10 +20,8 @@ import Common.AS_Annotation
 import Common.Id(Pos(..),Range(..))
 import Common.Result
 import Common.GlobalAnnotations
-import Common.PrettyPrint
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
-import Common.DocUtils
 import Common.Doc
 
 import Data.List
@@ -73,9 +71,6 @@ instance Ord (TiDecl PNT) where
 instance Pretty (TiDecl PNT) where
     pretty = text . pp
 
-instance PrettyPrint (TiDecl PNT) where
-     printText0 = toOldText 
-
 instance Pretty Sign where
     pretty = printSign
 
@@ -101,9 +96,6 @@ printSign Sign { instances = is, types = ts,
           text (pp sc) $+$
           text "-}" $+$
           text "module Dummy where"
-
-instance PrettyPrint Sign where
-    printText0 = toOldText
 
 extendSign :: Sign -> [Instance PNT]
             -> [TAssump PNT]

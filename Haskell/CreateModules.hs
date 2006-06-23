@@ -12,9 +12,8 @@ dumping a LibEnv to a Haskell module
 
 module Haskell.CreateModules where
 
-import Common.PrettyPrint
 import Common.Result
-import Common.Lib.Pretty
+import Common.Doc
 
 import Logic.Coerce
 import Logic.Comorphism
@@ -46,6 +45,6 @@ printModule (G_theory lid sign0 sens0) =
                          _ -> r1
                 in case maybeResult r3 of
                    Nothing -> Nothing
-                   Just (_, sens) -> Just $ 
-                       vcat $ map printText $ toNamedList $ toThSens sens
+                   Just (_, sens) -> Just $
+                       vcat $ map pretty $ toNamedList $ toThSens sens
 

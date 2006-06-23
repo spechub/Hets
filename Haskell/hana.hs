@@ -5,7 +5,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
 Stability   :  experimental
-Portability :  non-portable 
+Portability :  non-portable
 
 test the programatica parser and (HatAna) analysis
 
@@ -25,22 +25,22 @@ import System.Environment
 import Common.Result
 import Common.Print_AS_Annotation()
 import Common.GlobalAnnotations
-import Common.PrettyPrint
+import Common.DocUtils
 
 main :: IO ()
 main = getArgs >>= mapM_ process
-          
+
 -- try with files ToHaskell/test/*.hascasl.hs
-process :: FilePath -> IO () 
+process :: FilePath -> IO ()
 process fn = do
     s <- readFile fn
     let ts = pLexerPass0 True s
-        Result ds m = do 
+        Result ds m = do
             HsModule _ _ _ _ b <- parseTokens HP.parse fn ts
-            hatAna(HsDecls b, emptySign, emptyGlobalAnnos) 
-    case m of 
+            hatAna(HsDecls b, emptySign, emptyGlobalAnnos)
+    case m of
         Just (_, _, sig, hs) -> do
-            putStrLn $ showPretty sig ""
-            mapM_ (putStrLn . flip showPretty "") hs
+            putStrLn $ showDoc sig ""
+            mapM_ (putStrLn . flip showDoc "") hs
         _ -> mapM_ (putStrLn . show) ds
 

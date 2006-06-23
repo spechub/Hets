@@ -1,4 +1,4 @@
-{-| 
+{-|
 Module      :  $Header$
 Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -27,7 +27,7 @@ import Modules as P(inscope)
 import MUtils as P(mapFst)
 import Names as P(QualNames(getQualified), QName)
 import NewPrettyPrint as P(pp)
-import OrigTiMonad as P(withStdNames, inModule, extendts, 
+import OrigTiMonad as P(withStdNames, inModule, extendts,
                         extendkts, extendIEnv)
 import ParseMonad as P(parseTokens)
 import PNT as P(PNT(PNT))
@@ -53,15 +53,9 @@ import WorkModule as P(mkWM, WorkModuleI)
 
 import Haskell.Wrapper
 import Text.ParserCombinators.Parsec
-import Common.PrettyPrint
 import Common.Result
 import Data.Char
-import Common.DocUtils
 import Common.Doc
-
-
-instance PrettyPrint HsDecls where
-     printText0 = toOldText
 
 instance Pretty HsDecls where
     pretty = printHsDecls
@@ -70,22 +64,21 @@ printHsDecls :: HsDecls -> Doc
 printHsDecls ds =
     vcat (map (text . ((++) "\n") . pp) $ hsDecls ds)
 
-
 data HsDecls = HsDecls { hsDecls :: [HsDeclI (SN HsName)] } deriving (Show, Eq)
 
 hatParser :: GenParser Char st HsDecls
-hatParser = do p <- getPosition 
+hatParser = do p <- getPosition
                s <- hStuff
                let (l, c) = (sourceLine p, sourceColumn p)
                    front = takeWhile (not . isSpace) $ dropWhile isSpace s
-                   s2 = if front == "module" then s else 
+                   s2 = if front == "module" then s else
                             (replicate (l-2) '\n' ++
                              "module Prelude where\n" ++
                              replicate (c-1) ' ' ++ s)
                    ts = pLexerPass0 True s2
                case parseTokens P.parse (sourceName p) ts of
-                           Result _ (Just (HsModule _ _ _ _ ds)) -> 
+                           Result _ (Just (HsModule _ _ _ _ ds)) ->
                                      return $ HsDecls ds
-                           Result ds Nothing -> unexpected 
+                           Result ds Nothing -> unexpected
                                ('\n' : unlines (map diagString ds)
                                  ++ "(in Haskell code after " ++ shows p ")")
