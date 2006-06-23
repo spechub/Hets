@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Carsten Fischer and Uni Bremen 2003
+Copyright   :  (c) Carsten Fischer and Uni Bremen 2003-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -12,7 +12,7 @@ convert global annotations to a list of annotations
 
 module Common.ConvertGlobalAnnos where
 
-import Common.Id (tokStr, nullRange)
+import Common.Id
 import Common.GlobalAnnotations
 import Common.AS_Annotation
 import qualified Common.Lib.Map as Map
@@ -20,7 +20,6 @@ import qualified Common.Lib.Rel as Rel
 import Common.AnalyseAnnos
 import Common.Result
 import Common.Doc
-import Common.DocUtils
 
 instance Pretty GlobalAnnos where
     pretty = printGlobalAnnos
@@ -71,5 +70,3 @@ c_lit_an la = let str = case (string_lit la) of
                                  Just (a,b) -> [Float_anno a b nullRange]
                                  _ -> []
               in str++lis++number++flo
-
-
