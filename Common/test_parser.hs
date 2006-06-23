@@ -8,10 +8,7 @@ import qualified Common.CaslLanguage as L(casl_id, semi, whiteSpace)
 import Common.Anno_Parser
 import Common.Doc
 import Common.AS_Annotation
-import Common.Print_AS_Annotation()
-
 import Common.Id
-
 import Common.Token(parseId)
 
 testP f p n s =  case parse p n s of
