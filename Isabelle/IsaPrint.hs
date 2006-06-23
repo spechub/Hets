@@ -26,11 +26,10 @@ import Isabelle.IsaSign
 import Isabelle.IsaConsts
 
 import Common.AS_Annotation
-import Common.PrettyPrint
-
 import qualified Common.Lib.Map as Map
 import Common.Doc hiding (bar)
 import Common.DocUtils
+
 import Data.Char
 import Data.List
 
@@ -227,9 +226,9 @@ printTrm b trm = case trm of
                                <+> printPlainTerm b t) es)
            <+> text "in" <+> printPlainTerm b i, lowPrio)
     IsaEq t1 t2 -> ((case t1 of
-        Const vn y -> let 
-            vv = text (new vn) 
-            tt = printType y 
+        Const vn y -> let
+            vv = text (new vn)
+            tt = printType y
           in if y == noType then vv else (vv <+> doubleColon <+> tt)
         _ -> printParenTerm b (isaEqPrio + 1) t1) <+> text "=="
                    <+> printParenTerm b isaEqPrio t2, isaEqPrio)
@@ -355,9 +354,6 @@ printAlt (VName _ altV) = case altV of
         <+> if null is then empty else text (show is) <+>
             if i == maxPrio then empty else text (show i)
 
-instance PrettyPrint Sign where
-  printText0 = toOldText
-    
 instance Pretty Sign where
     pretty = printSign
 
@@ -433,15 +429,6 @@ printSign sig =
                 ++ "[simp]:\"" ++ sp ++ lb ++ cs ++ clSome ++ rb ++ sp
                 ++ "=\n" ++ "Some" ++ sp ++ lb ++ cs ++ cl ++ rb ++ "\"\n"
                 ++ proof
-
-instance PrintLaTeX Sign where
-    printLatex0 = toOldLatex
-
-instance PrintLaTeX Sentence where
-  printLatex0 = toOldLatex
-
-instance PrettyPrint Sentence where
-      printText0 = toOldText 
 
 instance Pretty Sentence where
     pretty = printSentence

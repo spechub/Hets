@@ -14,15 +14,12 @@ dumping a LibEnv to Isabelle theory files
 module Isabelle.CreateTheories where
 
 import Common.Id
-import Common.PrettyPrint
 import Common.Result
-
 import Common.Doc
 import Logic.Coerce
 import Logic.Comorphism
 
 import Syntax.AS_Library
-import Syntax.Print_AS_Library()
 
 import Static.DevGraph
 import Logic.Prover
@@ -74,7 +71,7 @@ printTheory libdir ln sn (G_theory lid sign0 sens0) =
                    Nothing -> Nothing
                    Just (sign, sens) -> let
                      tn = reverse (takeWhile (/= '/') $ reverse $ show ln)
-                          ++ "_" ++ showPretty sn ""
+                          ++ "_" ++ tokStr sn
                      in Just $ printIsaTheory tn libdir sign
                         $ prepareSenNames transString
                               $ toNamedList $ toThSens sens
