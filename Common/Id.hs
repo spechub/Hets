@@ -208,7 +208,6 @@ showId (Id ts is _) =
         let (toks, places) = splitMixToken ts
             showToks = showSepList id showTok
         in  showToks toks . showIds is . showToks places
--- for pretty printing see PrettyPrint.hs
 
 -- ** splitting identifiers
 
