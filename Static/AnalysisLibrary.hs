@@ -40,11 +40,11 @@ import Common.AS_Annotation hiding (isAxiom, isDef)
 import Common.GlobalAnnotations
 import Common.ConvertGlobalAnnos
 import Common.AnalyseAnnos
+import Common.DocUtils
 import Common.Result
 import Common.ResultT
 import Common.Id
 import qualified Common.Lib.Map as Map
-import Common.PrettyPrint
 import Driver.Options
 import Driver.ReadFn
 import Driver.WriteFn
@@ -71,7 +71,7 @@ anaLibExt opts file libEnv = do
                 gctx = lookupGlobalContext ln nEnv
                 ga = globalAnnos gctx
             writeSpecFiles opts file nEnv ga (ln, globalEnv gctx)
-            putIfVerbose opts 3 $ showPretty ga ""
+            putIfVerbose opts 3 $ showGlobalDoc ga ga ""
             return $ Just (ln, nEnv)
 
 -- | parsing and static analysis for files
@@ -134,7 +134,7 @@ anaString lgraph defl opts libenv input file =
 anaLibFile :: LogicGraph -> AnyLogic -> HetcatsOpts -> LibEnv -> LIB_NAME
               -> ResultT IO (LIB_NAME, LibEnv)
 anaLibFile lgraph defl opts libenv ln =
-    let lnstr = showPretty ln "" in case Map.lookup ln libenv of
+    let lnstr = showDoc ln "" in case Map.lookup ln libenv of
     Just _ -> do
         putMessageIORes opts 1 $ "Analyzing from " ++ lnstr
         return (ln, libenv)
@@ -244,7 +244,7 @@ ana_LIB_ITEM :: LogicGraph -> AnyLogic -> HetcatsOpts
                  -> ResultT IO (LIB_ITEM,GlobalContext,AnyLogic,LibEnv)
 ana_LIB_ITEM lgraph _defl opts libenv gctx l
              (Spec_defn spn gen asp pos) = do
-  putMessageIORes opts 1 $ "Analyzing spec " ++ showPretty spn ""
+  putMessageIORes opts 1 $ "Analyzing spec " ++ showDoc spn ""
   (gen',(imp,params,allparams),dg') <-
      liftR (ana_GENERICITY lgraph gctx l opts
                  (extName "P" (makeName spn)) gen)
@@ -255,7 +255,7 @@ ana_LIB_ITEM lgraph _defl opts libenv gctx l
       genv = globalEnv gctx
   if Map.member spn genv
    then liftR (plain_error (libItem', dg'', l, libenv)
-                                ("Name "++ showPretty spn " already defined")
+                                ("Name "++ showDoc spn " already defined")
                                 pos)
    else return (libItem',
                 dg'' { globalEnv = Map.insert spn (SpecEntry
@@ -264,14 +264,14 @@ ana_LIB_ITEM lgraph _defl opts libenv gctx l
 
 ana_LIB_ITEM lgraph defl opts libenv gctx l
              (View_defn vn gen vt gsis pos) = do
-  putMessageIORes opts 1 $ "Analyzing view " ++ showPretty vn ""
+  putMessageIORes opts 1 $ "Analyzing view " ++ showDoc vn ""
   liftR (ana_VIEW_DEFN lgraph defl libenv gctx l opts
                             vn gen vt gsis pos)
 
 -- architectural specification
 ana_LIB_ITEM lgraph defl opts libenv gctx l
              (Arch_spec_defn asn asp pos) = do
-  putMessageIORes opts 1 $ "Analyzing arch spec " ++ showPretty asn ""
+  putMessageIORes opts 1 $ "Analyzing arch spec " ++ showDoc asn ""
   (archSig, gctx', asp') <- liftR (ana_ARCH_SPEC lgraph defl gctx l opts
                                       (item asp))
   let asd' = Arch_spec_defn asn (replaceAnnoted asp' asp) pos
@@ -279,7 +279,7 @@ ana_LIB_ITEM lgraph defl opts libenv gctx l
   if Map.member asn genv
      then
      liftR (plain_error (asd', gctx', l, libenv)
-                             ("Name " ++ showPretty asn " already defined")
+                             ("Name " ++ showDoc asn " already defined")
                              pos)
      else
      return (asd', gctx'
@@ -289,7 +289,7 @@ ana_LIB_ITEM lgraph defl opts libenv gctx l
 -- unit specification
 ana_LIB_ITEM lgraph defl opts libenv gctx l
              usd@(Unit_spec_defn usn usp pos) = do
-  putMessageIORes opts 1 $ "Analyzing unit spec " ++ showPretty usn ""
+  putMessageIORes opts 1 $ "Analyzing unit spec " ++ showDoc usn ""
   (unitSig, gctx', usp') <- liftR (ana_UNIT_SPEC lgraph defl gctx l opts
                                       (EmptyNode defl) usp)
   let usd' = Unit_spec_defn usn usp' pos
@@ -297,7 +297,7 @@ ana_LIB_ITEM lgraph defl opts libenv gctx l
   if Map.member usn genv
      then
      liftR (plain_error (usd, gctx', l, libenv)
-                             ("Name " ++ showPretty usn " already defined")
+                             ("Name " ++ showDoc usn " already defined")
                              pos)
      else
      return (usd', gctx'
@@ -308,13 +308,13 @@ ana_LIB_ITEM lgraph defl opts libenv gctx l
 ana_LIB_ITEM _lgraph _defl opts libenv gctx l
              rd@(Ref_spec_defn rn _ pos) = do
   putMessageIORes opts 1 $ "Analyzing refinement "
-      ++ showPretty rn "\n  (refinement analysis not implemented yet)"
+      ++ showDoc rn "\n  (refinement analysis not implemented yet)"
   let rd' = rd
       genv = globalEnv gctx
   if Map.member rn genv
      then
      liftR (plain_error (rd, gctx, l, libenv)
-                             ("Name " ++ showPretty rn " already defined")
+                             ("Name " ++ showDoc rn " already defined")
                              pos)
      else
      return (rd', gctx { globalEnv = Map.insert rn (RefEntry) genv }
@@ -387,7 +387,7 @@ ana_VIEW_DEFN lgraph _defl libenv gctx l opts
       genv = globalEnv gctx''
   if Map.member vn genv
    then plain_error (View_defn vn gen' vt' gsis pos, gctx'', l, libenv)
-                    ("Name "++showPretty vn " already defined")
+                    ("Name "++showDoc vn " already defined")
                     pos
    else return (View_defn vn gen' vt' gsis pos,
                 gctx'' { globalEnv = Map.insert vn (ViewEntry vsig) genv
@@ -406,10 +406,10 @@ ana_ITEM_NAME_OR_MAP1 :: LIB_NAME -> GlobalEnv -> Result (GlobalEnv, DGraph)
 ana_ITEM_NAME_OR_MAP1 ln genv' res old new = do
   (genv,dg) <- res
   entry <- maybeToResult nullRange
-            (showPretty old " not found") (Map.lookup old genv')
+            (showDoc old " not found") (Map.lookup old genv')
   case Map.lookup new genv of
     Nothing -> return ()
-    Just _ -> fail (showPretty new " already used")
+    Just _ -> fail (showDoc new " already used")
   case entry of
     SpecEntry extsig ->
       let (dg1,extsig1) = refExtsig ln dg (Just new) extsig

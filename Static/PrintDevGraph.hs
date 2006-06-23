@@ -17,19 +17,18 @@ import Syntax.Print_AS_Library()
 import Common.GlobalAnnotations
 import qualified Common.Lib.Map as Map
 import Common.Id
-import Common.PrettyPrint
-import Common.PPUtils
+import Common.Doc as Doc
+import Common.DocUtils
 import Common.Result
 import Common.Keywords
-import Common.Lib.Pretty as P
 import Static.DevGraph
 import Static.DGToSpec
 import Common.ConvertGlobalAnnos()
 
 printLibrary :: LibEnv -> (LIB_NAME, GlobalContext) -> Doc
 printLibrary le (ln, GlobalContext { globalAnnos = ga, globalEnv = ge }) =
-    text libraryS <+> printText0 ga ln $$
-         foldr (aboveWithNLs 2) P.empty
+    keyword libraryS <+> pretty ln $+$
+         foldr ($++$) Doc.empty
                    (map (uncurry $ printTheory le ln ga) $ Map.toList ge)
 
 printTheory :: LibEnv -> LIB_NAME -> GlobalAnnos
@@ -37,11 +36,11 @@ printTheory :: LibEnv -> LIB_NAME -> GlobalAnnos
 printTheory le ln ga sn ge = case ge of
     SpecEntry (_,_,_, NodeSig n _) ->
         case maybeResult $ computeTheory le ln n of
-            Nothing -> P.empty
+            Nothing -> Doc.empty
             Just g -> printTh ga sn g
-    _ -> P.empty
+    _ -> Doc.empty
 
 printTh :: GlobalAnnos -> SIMPLE_ID -> G_theory -> Doc
-printTh ga sn g = printText0 ga ga $+$
-                  text specS <+> printText0 ga sn <+> equals
-                    $$ printText0 ga g
+printTh ga sn g = useGlobalAnnos ga $ pretty ga $+$
+                  keyword specS <+> sidDoc sn <+> equals
+                    $+$ pretty g
