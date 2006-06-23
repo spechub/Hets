@@ -135,8 +135,9 @@ import qualified Common.Lib.Map as Map
 
 data InjMap a b = InjMap (Map.Map a b) (Map.Map b a)
 
-insert
+insert :: (Ord a, Ord b) => a -> b -> InjMap a b -> InjMap a b
+insert a b (InjMap n m) = InjMap (Map.insert a b n) (Map.insert b a m)
 
-transpose
-
+transpose :: InjMap a b -> InjMap b a
+transpose (InjMap n m) = (InjMap m n)
 
