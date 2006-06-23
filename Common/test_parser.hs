@@ -6,11 +6,9 @@ import Data.List
 import Text.ParserCombinators.Parsec
 import qualified Common.CaslLanguage as L(casl_id, semi, whiteSpace)
 import Common.Anno_Parser
-import Common.Lib.Pretty
-import Common.PrettyPrint
+import Common.Doc
 import Common.AS_Annotation
 import Common.Print_AS_Annotation()
-import Common.GlobalAnnotations
 
 import Common.Id
 
@@ -26,7 +24,7 @@ testPL par inp = testP id (cleanP par) "" inp
 
 parseFile par name = do
     inp <- readFile name
-    testP (printText0 emptyGlobalAnnos) (cleanP par) name inp
+    testP pretty (cleanP par) name inp
 
 testFile par name = do
     inp <- readFile name
@@ -110,8 +108,8 @@ main = do
                          "casl_id2"    -> testFileCS
                          _             -> error ("*** unknown parser " ++ s)
 
-instance PrettyPrint [Annotation] where
-    printText0 ga = vcat . map (printText0 ga)
+instance Pretty [Annotation] where
+    pretty = vcat . map pretty
 
 testId = testPL (sepBy L.casl_id L.semi)
          "__++__ ; __+*[y__,a_l'__,4]__ ; {__}[__] ; __a__b[__z]"
