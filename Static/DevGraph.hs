@@ -28,7 +28,7 @@ todo:
 
 Integrate stuff from Saarbrücken
 Should AS be stored in GloblaContext as well?
-simplifyTh should be removed from instance PrettyPrint G_theory
+simplifyTh should be removed from instance Pretty G_theory
 -}
 
 module Static.DevGraph where
@@ -51,8 +51,6 @@ import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Id
 import Common.Doc
-import Common.DocUtils
-import Common.PrettyPrint
 import Common.Result
 import Common.DynamicUtils
 
@@ -159,9 +157,6 @@ data DGLinkLab = DGLink {
               dgl_origin :: DGOrigin }    -- origin in input language
               deriving (Show, Eq)
 
-instance PrettyPrint DGLinkLab where
-  printText0 = toOldText
-
 instance Pretty DGLinkLab where
   pretty l = fsep [ pretty (dgl_morphism l)
                   , pretty (dgl_type l)
@@ -228,9 +223,6 @@ HidingThm m1 _ `eqDGLinkType` HidingThm m2 _ = m1 == m2
 FreeThm m1 _ `eqDGLinkType` FreeThm m2 _ = m1 == m2
 _ `eqDGLinkType` _ = False
 
-instance PrettyPrint DGLinkType where
-    printText0 = toOldText
-
 instance Pretty DGLinkType where
     pretty t = text $ case t of
         LocalDef -> "LocalDef"
@@ -275,9 +267,6 @@ data DGRule =
  | BasicInference AnyComorphism BasicProof -- coding and proof tree. obsolete ?!?
  | BasicConsInference Edge BasicConsProof
    deriving (Show, Eq)
-
-instance PrettyPrint DGRule where
-  printText0 = toOldText
 
 instance Pretty DGRule where
   pretty r = case r of
@@ -380,9 +369,6 @@ data ThmLinkStatus = LeftOpen
                    | Proven DGRule [LEdge DGLinkLab]  -- Proven DGRule Int
                      deriving (Show, Eq)
 
-instance PrettyPrint ThmLinkStatus where
-    printText0 = toOldText
-
 instance Pretty ThmLinkStatus where
     pretty tls = case tls of
         LeftOpen -> text "Open"
@@ -417,9 +403,6 @@ data NodeSig = NodeSig Node G_sign deriving (Show, Eq)
 -- | (but since we want to avoid lots of vacuous nodes with empty sig,
 -- |  we do not assign a real node in the DG here)
 data MaybeNode = JustNode NodeSig | EmptyNode AnyLogic deriving (Show, Eq)
-
-instance PrettyPrint NodeSig where
-  printText0 = toOldText
 
 instance Pretty NodeSig where
   pretty (NodeSig n sig) =
@@ -605,9 +588,6 @@ lookupGlobalContext ln =
 lookupDGraph :: LIB_NAME -> LibEnv -> DGraph
 lookupDGraph ln = devGraph . lookupGlobalContext ln
 
-instance PrettyPrint DGOrigin where
-  printText0 = toOldText
-
 instance Pretty DGOrigin where
   pretty origin = text $ case origin of
      DGBasic -> "basic specification"
@@ -624,14 +604,14 @@ instance Pretty DGOrigin where
      DGClosedLenv -> "closed specification (inclusion of local environment)"
      DGFormalParams -> "formal parameters of a generic specification"
      DGImports -> "imports of a generic specification"
-     DGSpecInst n -> "instantiation of " ++ showPretty n ""
+     DGSpecInst n -> "instantiation of " ++ tokStr n
      DGFitSpec -> "fittig specification"
-     DGView n -> "view " ++ showPretty n ""
-     DGFitView n -> "fitting view " ++ showPretty n ""
-     DGFitViewImp n -> "fitting view (imports) " ++ showPretty n ""
-     DGFitViewA n -> "fitting view (actual parameters) "++ showPretty n ""
+     DGView n -> "view " ++ tokStr n
+     DGFitView n -> "fitting view " ++ tokStr n
+     DGFitViewImp n -> "fitting view (imports) " ++ tokStr n
+     DGFitViewA n -> "fitting view (actual parameters) "++ tokStr n
      DGFitViewAImp n -> "fitting view (imports and actual parameters) "
-                        ++ showPretty n ""
+                        ++ tokStr n
      DGProof -> "constructed within a proof"
      _ -> show origin
 
@@ -672,9 +652,6 @@ instance Eq G_theory where
 instance Show G_theory where
   show (G_theory _ sign sens) =
      show sign ++ "\n" ++ show sens
-
-instance PrettyPrint G_theory where
-  printText0 = toOldText
 
 instance Pretty G_theory where
   pretty g = case simplifyTh g of
