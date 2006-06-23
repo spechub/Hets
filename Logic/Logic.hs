@@ -84,7 +84,6 @@ import Common.Doc as Doc
 import Common.DocUtils
 import Logic.Prover -- for one half of class Sentences
 
-import Common.PrettyPrint
 import Common.DynamicUtils
 import Common.ATerm.Lib -- (ShATermConvertible)
 import ATC.DefaultMorphism()
@@ -194,7 +193,7 @@ statErr lid str = fail ("Logic." ++ str ++ " nyi for: " ++ language_name lid)
 
 class ( Syntax lid basic_spec symb_items symb_map_items
       , Sentences lid sentence proof_tree sign morphism symbol
-      , Ord raw_symbol, PrintLaTeX raw_symbol, Typeable raw_symbol)
+      , Ord raw_symbol, Pretty raw_symbol, Typeable raw_symbol)
     => StaticAnalysis lid
         basic_spec sentence proof_tree symb_items symb_map_items
         sign morphism symbol raw_symbol
