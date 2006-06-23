@@ -52,7 +52,8 @@ mapOpSymb :: Morphism f e m -> OP_SYMB -> OP_SYMB
 mapOpSymb m (Qual_op_name i t ps) =
    let (j, ty) = mapOpSym (sort_map m) (fun_map m) (i, toOpType t)
    in Qual_op_name j (toOP_TYPE ty) ps
-mapOpSymb _ os = error "mapOpSymb: unexpected op symb: "
+mapOpSymb _ (Op_name os) =
+    error $ "mapOpSymb: unexpected op symb: " ++ show os
 
 mapVars :: Morphism f e m -> VAR_DECL -> VAR_DECL
 mapVars m (Var_decl vs s ps) = Var_decl vs (mapSrt m s) ps
@@ -72,4 +73,5 @@ mapPrSymb :: Morphism f e m -> PRED_SYMB -> PRED_SYMB
 mapPrSymb m (Qual_pred_name i t ps) =
    let (j, ty) = mapPredSym (sort_map m) (pred_map m) (i, toPredType t)
    in Qual_pred_name j (toPRED_TYPE ty) ps
-mapPrSymb _ p = error "mapPrSymb: unexpected pred symb: "
+mapPrSymb _ (Pred_name p) =
+    error $ "mapPrSymb: unexpected pred symb: " ++ show p
