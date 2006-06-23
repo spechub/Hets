@@ -15,15 +15,9 @@ supply a default morphism for a given signature
 module Common.DefaultMorphism where
 
 import Common.Keywords
-import Common.PrettyPrint
 import Common.Doc
-import Common.Print_AS_Annotation
-import Common.LaTeX_AS_Annotation
 
 data DefaultMorphism sign = MkMorphism sign sign deriving (Show, Eq)
-
-instance PrettyPrint a => PrettyPrint (DefaultMorphism a) where
-    printText0 ga = Common.Doc.toText ga . printDefaultMorphism (fromText ga)
 
 instance Pretty a => Pretty (DefaultMorphism a) where
     pretty = printDefaultMorphism pretty
@@ -31,10 +25,6 @@ instance Pretty a => Pretty (DefaultMorphism a) where
 printDefaultMorphism :: (a -> Doc) -> DefaultMorphism a -> Doc
 printDefaultMorphism fA (MkMorphism s t) =
     specBraces (fA s) $+$ (text mapsTo) <+> specBraces (fA t)
-
-instance PrintLaTeX a => PrintLaTeX (DefaultMorphism a) where
-    printLatex0 ga =
-      Common.Doc.toLatex ga . printDefaultMorphism (fromLatex ga)
 
 domOfDefaultMorphism, codOfDefaultMorphism :: DefaultMorphism sign -> sign
 domOfDefaultMorphism (MkMorphism s _) = s
