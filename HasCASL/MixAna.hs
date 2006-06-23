@@ -282,16 +282,9 @@ anaPattern s pat =
 parenTerm :: Term -> Term
 parenTerm trm = case trm of
     ResolvedMixTerm n ts ps ->
-        ResolvedMixTerm n (map parenTerm ts) ps
-    ApplTerm t1 t2' ps -> let t2 = parenTerm t2' in
-        ApplTerm (addParAppl t1) (case t2 of
-           ResolvedMixTerm _ [] _ -> t2
-           QualVar _ -> t2
-           QualOp _ _ _ _ -> t2
-           TermToken _ -> t1
-           BracketTerm _ _ _ -> t2
-           TupleTerm _ _ -> t2
-           _ -> addPar t2) ps
+        ResolvedMixTerm n (map addParAppl ts) ps
+    ApplTerm t1 t2 ps ->
+        ApplTerm (addParAppl t1) (addParAppl t2) ps
     TupleTerm ts ps -> TupleTerm (map parenTerm ts) ps
     TypedTerm t q typ ps ->
         TypedTerm (addParAppl t) q typ ps
@@ -310,8 +303,7 @@ parenTerm trm = case trm of
     QualOp _ _ _ _ -> trm
     where addPar t = TupleTerm [t] nullRange
           addParAppl t' = let t = parenTerm t' in case t of
-           ApplTerm _ _ _ -> t
-           ResolvedMixTerm _ _ _ -> t
+           ResolvedMixTerm _ [] _ -> t
            QualVar _ -> t
            QualOp _ _ _ _ -> t
            TermToken _ -> t
