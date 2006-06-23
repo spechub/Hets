@@ -118,7 +118,7 @@ toMixType typ = case typ of
                          $ parenPrec Prefix $ toMixType t2) -}
     BracketType k l _ -> (Outfix, bracket k $ fsep $ punctuate comma $ map
                              (snd . toMixType) l)
-    KindedType t kind _ -> (Prefix, 
+    KindedType t kind _ -> (Prefix,
                fsep [parenPrec Prefix $ toMixType t, colon, pretty kind])
     MixfixType ts -> (Prefix, fsep $ map (snd . toMixType) ts)
     _ -> let (topTy, tyArgs) = getTypeAppl typ in
@@ -202,7 +202,7 @@ instance Pretty TypeQual where
         Inferred -> colon
 
 instance Pretty Term where
-    pretty t = printTerm $ rmSomeTypes t
+    pretty = changeGlobalAnnos addBuiltins . printTerm . rmSomeTypes
 
 isSimpleTerm :: Term -> Bool
 isSimpleTerm trm = case trm of
@@ -213,34 +213,34 @@ isSimpleTerm trm = case trm of
     TupleTerm _ _ -> True
     TermToken _ -> True
     BracketTerm _ _ _ -> True
-    _ -> False 
+    _ -> False
 
 parenTermDoc :: Term -> Doc -> Doc
-parenTermDoc trm = if isSimpleTerm trm then id else parens 
+parenTermDoc trm = if isSimpleTerm trm then id else parens
 
 printTermRec :: FoldRec Doc (Doc, Doc)
-printTermRec = let commaT = fsep . punctuate comma in FoldRec 
+printTermRec = let commaT = fsep . punctuate comma in FoldRec
     { foldQualVar = \ _ vd -> parens $ keyword varS <+> pretty vd
-    , foldQualOp = \ _ br n t _ -> 
+    , foldQualOp = \ _ br n t _ ->
           parens $ fsep [pretty br, pretty n, colon, pretty $
                          if isPred br then unPredTypeScheme t else t]
     , foldResolvedMixTerm = \ (ResolvedMixTerm _ os _) n ts _ ->
-          if placeCount n == length ts || null ts then 
+          if placeCount n == length ts || null ts then
           idApplDoc n $ zipWith parenTermDoc os ts
           else idApplDoc applId [idDoc n, parens $ commaT ts]
     , foldApplTerm = \ (ApplTerm o1 o2 _) t1 t2 _ ->
         case (o1, o2) of
-          (ResolvedMixTerm n [] _, TupleTerm ts _) 
-              | placeCount n == length ts -> 
+          (ResolvedMixTerm n [] _, TupleTerm ts _)
+              | placeCount n == length ts ->
                   idApplDoc n $ zipWith parenTermDoc ts $ map printTerm ts
-          (ResolvedMixTerm n [] _, _) | placeCount n == 1 -> 
+          (ResolvedMixTerm n [] _, _) | placeCount n == 1 ->
               idApplDoc n [parenTermDoc o2 t2]
           _ -> idApplDoc applId [parenTermDoc o1 t1, parenTermDoc o2 t2]
      , foldTupleTerm = \ _ ts _ -> parens $ commaT ts
      , foldTypedTerm = \ _ t q typ _ -> fsep [t, pretty q, pretty typ]
-     , foldQuantifiedTerm = \ _ q vs t _ -> 
+     , foldQuantifiedTerm = \ _ q vs t _ ->
            fsep [pretty q, semiDs vs, bullet, t]
-     , foldLambdaTerm = \ _ ps q t _ -> 
+     , foldLambdaTerm = \ _ ps q t _ ->
             fsep [ lambda
                  , case ps of
                       [p] -> p
@@ -249,9 +249,9 @@ printTermRec = let commaT = fsep . punctuate comma in FoldRec
                      Partial -> bullet
                      Total -> bullet <> text exMark
                  , t]
-     , foldCaseTerm = \ _ t es _  -> 
+     , foldCaseTerm = \ _ t es _  ->
             fsep [text caseS, t, text ofS,
-                  vcat $ punctuate (space <> bar <> space) $ 
+                  vcat $ punctuate (space <> bar <> space) $
                        map (printEq0 funArrow) es]
      , foldLetTerm = \ _ br es t _ ->
             let des = vcat $ punctuate semi $ map (printEq0 equals) es
@@ -265,7 +265,7 @@ printTermRec = let commaT = fsep . punctuate comma in FoldRec
      , foldBracketTerm = \ _ k l _ -> bracket k $ commaT l
      , foldAsPattern = \ _ (VarDecl v _ _ _) p _ -> pretty v <+> text asP <+> p
      , foldProgEq = \ _ p t _ -> (p, t)
-    } 
+    }
 
 printTerm :: Term -> Doc
 printTerm = foldTerm printTermRec
@@ -273,7 +273,7 @@ printTerm = foldTerm printTermRec
 rmTypeRec :: MapRec
 rmTypeRec = mapRec
     { -- foldQualVar = \ _ (VarDecl v _ _ ps) -> ResolvedMixTerm v [] ps
-      foldQualOp = \ t _ (InstOpId i _ _) _ ps -> 
+      foldQualOp = \ t _ (InstOpId i _ _) _ ps ->
                    if elem i $ map fst bList then
                      ResolvedMixTerm i [] ps else t
     , foldTypedTerm = \ _ nt q ty ps ->
@@ -343,7 +343,7 @@ instance Pretty BasicItem where
         GenItems l _ -> noNullPrint l $ keyword generatedS
                         <+> specBraces (semiAnnoted l)
         AxiomItems vs fs _ ->
-            vcat $ (if null vs then [] else 
+            vcat $ (if null vs then [] else
                     [forallDoc <+> semiDs vs])
                   ++ (map ( \ x -> bullet <+> pretty x) fs)
         Internal l _ -> noNullPrint l $ keyword internalS
@@ -380,11 +380,11 @@ instance Pretty TypeItem where
         SubtypeDecl l t _ -> if null l then error "pretty SubtypeDecl"
             else fsep [commaDs l, less, pretty t]
         IsoDecl l _ -> fsep $ punctuate (space <> equals) $ map pretty l
-        SubtypeDefn p v t f _ -> 
+        SubtypeDefn p v t f _ ->
             fsep [pretty p, equals,
-                  specBraces $ fsep 
+                  specBraces $ fsep
                   [pretty v, colon, pretty t, bullet, pretty f]]
-        AliasType p k t _ -> 
+        AliasType p k t _ ->
             fsep $ pretty p : (case k of
                      Nothing -> []
                      Just j -> [colon, pretty j])
@@ -447,7 +447,7 @@ instance Pretty OpId where
 
 instance Pretty Symb where
     pretty (Symb i mt _) =
-        pretty i <> (case mt of 
+        pretty i <> (case mt of
                        Nothing -> empty
                        Just (SymbType t) ->
                            empty <+> colon <+> pretty t)
@@ -458,7 +458,7 @@ instance Pretty SymbItems where
 
 instance Pretty SymbOrMap where
     pretty (SymbOrMap s mt _) =
-        pretty s <> (case mt of 
+        pretty s <> (case mt of
                        Nothing -> empty
                        Just t ->
                            empty <+> mapsto <+> pretty t)

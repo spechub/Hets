@@ -5,19 +5,19 @@
   (a < a) < a
 *** Error 4.1-4.40, ambiguous mixfix term
   ((i div p) <= (j div q)) <=> ((i * q) <= (j * p))
-  (i div p) <= (j div q) <=> i * q <= (j * p)
+  (i div p) <= ((j div q) <=> (i * q)) <= (j * p)
 *** Error 5.1-5.19, ambiguous mixfix term
-  L --> [ x ]
-  L --> [ x ]
+  L --> ([ x ])
+  L --> ([ x ])
 *** Error 6.5-6.9, expected further mixfix token: ["!=","/=","/\\","<","<="]
 *** Error 7.1-7.17, ambiguous mixfix term
   (f a) <= ((f a) <= (f a))
   ((f a) <= (f a)) <= (f a)
-  (f a) <= f a <= (f a)
+  (f a) <= (f a) <= (f a)
 *** Error 8.1-8.5, ambiguous mixfix term
-  m # #
-  m # #
+  (m #) #
+  (m #) #
   (m #) #
 *** Error 9.1-9.5, ambiguous mixfix term
   D (A b)
-  D A b
+  (D A) b

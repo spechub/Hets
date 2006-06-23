@@ -245,7 +245,7 @@ free type bool ::=
   def (x res y)
   def (x res y)
 *** Error 65.51-65.69, ambiguous mixfix term
-  def y und
+  (def y) und
   (def y) und
 ### Hint 65.7, rebound variable 'x'
 *** Error 65.18-65.30, unexpected term 'def (x res y)'
@@ -434,7 +434,7 @@ free type bool ::=
 ### Hint 169.9, redeclared type '__-->?__'
 ### Hint, repeated supertype '__->?__'
 *** Error 171.24-171.61, ambiguous mixfix term
-  def (((f x) und) x) <<= y
+  (def (((f x) und) x)) <<= y
   (((def (f x)) und) x) <<= y
 *** Error 174.45, unexpected mixfix token: +
 *** Error 173.28-174.61, ambiguous mixfix term
@@ -446,7 +446,7 @@ free type bool ::=
 *** Error 170.7, unexpected mixfix token: :
 *** Error 176.19, unexpected mixfix token: -->?
 *** Error 176.41-176.68, ambiguous mixfix term
-  def ((((f x) impl) f) x) <<= (g x)
+  (def ((((f x) impl) f) x)) <<= (g x)
   ((((def (f x)) impl) f) x) <<= (g x)
 *** Error 181.9, non-unique kind for '__-->__'
 *** Error 182.46-182.53, ambiguous mixfix term

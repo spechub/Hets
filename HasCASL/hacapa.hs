@@ -28,7 +28,7 @@ lineParser = [
  ("Kinds", fromAParser kind),
  ("Types", fromAParser parseType),
  ("Terms", fromAParser term),
- ("MixfixTerms", toMyStringParser resolveTerm),
+ ("MixfixTerms", toStringParser resolveTerm),
  ("Typepattern", fromAParser typePattern),
  ("Pattern", fromAParser pattern),
  ("BasicItems", fromAParser basicItems),
