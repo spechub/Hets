@@ -103,6 +103,7 @@ module Common.Doc
     , printSemiAnno
     , semiAnnos
       -- * manipulating documents
+    , useGlobalAnnos
     , rmTopKey
     ) where
 
@@ -135,7 +136,7 @@ data ComposeKind
     = Vert   -- ($+$) (no support for $$!)
     | Horiz  -- (<>)
     | HorizOrVert -- either Horiz or Vert
-    | Fill 
+    | Fill
       deriving Eq
 
 data Doc
@@ -147,9 +148,10 @@ data Doc
     | Cat ComposeKind [Doc]
     | Attr Format Doc      -- for annotations
     | LiteralDoc Pretty.Doc  -- for backward compatibility only
+    | UseGlobalAnnos GlobalAnnos Doc
 
 instance Show Doc where
-    showsPrec _ doc cont = 
+    showsPrec _ doc cont =
         Pretty.renderStyle' cont Pretty.style $ toText emptyGlobalAnnos doc
 
 isEmpty :: Doc -> Bool
@@ -265,13 +267,13 @@ vsep :: [Doc] -> Doc
 vsep = foldr ($++$) empty
 
 vcat :: [Doc] -> Doc          -- ^List version of '$+$'
-vcat = Cat Vert . rmEmpties 
+vcat = Cat Vert . rmEmpties
 
 cat    :: [Doc] -> Doc          -- ^ Either hcat or vcat
-cat = Cat HorizOrVert . rmEmpties 
+cat = Cat HorizOrVert . rmEmpties
 
 sep    :: [Doc] -> Doc          -- ^ Either hsep or vcat
-sep = Cat HorizOrVert . punctuate space . rmEmpties 
+sep = Cat HorizOrVert . punctuate space . rmEmpties
 
 fcat   :: [Doc] -> Doc          -- ^ \"Paragraph fill\" version of cat
 fcat = Cat Fill . rmEmpties
@@ -347,6 +349,7 @@ data DocRecord a = DocRecord
     , foldCat :: Doc -> ComposeKind -> [a] -> a
     , foldAttr :: Doc -> Format -> a -> a
     , foldLiteralDoc :: Doc -> Pretty.Doc -> a
+    , foldUseGlobalAnnos :: Doc -> GlobalAnnos -> a -> a
     }
 
 foldDoc :: DocRecord a -> Doc -> a
@@ -359,6 +362,7 @@ foldDoc r d = case d of
     Cat k l -> foldCat r d k $ map (foldDoc r) l
     Attr a e -> foldAttr r d a $ foldDoc r e
     LiteralDoc o -> foldLiteralDoc r d o
+    UseGlobalAnnos f e -> foldUseGlobalAnnos r d f $ foldDoc r e
 
 idRecord :: DocRecord Doc
 idRecord = DocRecord
@@ -370,6 +374,7 @@ idRecord = DocRecord
     , foldCat = \ _ -> Cat
     , foldAttr = \ _ -> Attr
     , foldLiteralDoc = \ _ -> LiteralDoc
+    , foldUseGlobalAnnos = \ _ -> UseGlobalAnnos
     }
 
 anyRecord :: DocRecord a
@@ -382,6 +387,7 @@ anyRecord = DocRecord
     , foldCat = error "anyRecord.Cat"
     , foldAttr = error "anyRecord.Attr"
     , foldLiteralDoc = error "anyRecord.LiteralDoc"
+    , foldUseGlobalAnnos = error "anyRecord.UseGlobalAnnos"
     }
 
 -- * conversion to plain text
@@ -390,9 +396,9 @@ anyRecord = DocRecord
 toText :: GlobalAnnos -> Doc -> Pretty.Doc
 toText ga = foldDoc anyRecord
     { foldEmpty = \ _ -> Pretty.empty
-    , foldText = \ _ k s -> case k of 
+    , foldText = \ _ k s -> case k of
           TopKey -> Pretty.text $ s ++ replicate (5 - length s) ' '
-          _ -> Pretty.text s 
+          _ -> Pretty.text s
     , foldCat = \ _ c -> case c of
           Vert -> Pretty.vcat
           Horiz -> Pretty.hcat
@@ -403,6 +409,7 @@ toText ga = foldDoc anyRecord
             if l < 66 then Pretty.nest (66 - l) d else d
           _ -> d
     , foldLiteralDoc = \ _ d -> d
+    , foldUseGlobalAnnos = \ _ _ d -> d
     } . codeOut ga Nothing Map.empty
 
 -- * conversion to latex
@@ -445,7 +452,7 @@ toLatexRecord tab = anyRecord
                              Fill -> Pretty.fcat)
                         $ case c of
                             Vert -> map (foldDoc $ toLatexRecord False) os
-                            _ -> foldDoc (toLatexRecord False) d : 
+                            _ -> foldDoc (toLatexRecord False) d :
                                      map (foldDoc $ toLatexRecord True) r
     , foldAttr = \ o k d -> case k of
           FlushRight -> flushright d
@@ -453,6 +460,7 @@ toLatexRecord tab = anyRecord
               Attr Small (Text j s) -> textToLatex True j s
               _ -> makeSmallLatex True d
     , foldLiteralDoc = \ _ d -> d
+    , foldUseGlobalAnnos = \ _ _ d -> d
     }
 
 -- | move a small attribute inwards but not into mathmode bits
@@ -527,7 +535,7 @@ textToLatex b k s = let e = escapeLatex True s in
         then makeSmallLatex b $ casl_normal_latex s
         else case k of
     IdKind -> makeSmallLatex b $ hc_sty_id e
-    IdSymb -> makeSmallLatex b $ hc_sty_axiom $ escapeLatex False s 
+    IdSymb -> makeSmallLatex b $ hc_sty_axiom $ escapeLatex False s
     Symbol -> makeSmallLatex b $ symbolToLatex s
     Comment -> (if b then makeSmallLatex b . casl_comment_latex
                else casl_normal_latex) e
@@ -577,12 +585,15 @@ codeOut ga d m = foldDoc idRecord
     { foldAnnoDoc = \ _ -> small . codeOutAnno d m
     , foldIdDoc = \ _ -> codeOutId m
     , foldIdApplDoc = codeOutAppl ga d m
+    , foldUseGlobalAnnos = \ (UseGlobalAnnos ng e) _ _ -> codeOut ng d
+             (maybe m (\ f -> Map.map (Map.! f) .
+                      Map.filter (Map.member f) $ display_annos ng) d) e
     }
 
 codeToken :: String -> Doc
 codeToken s = case s of
     [] -> empty
-    h : _ -> (if s /= "__" && (isAlpha h || elem h "._'") 
+    h : _ -> (if s /= "__" && (isAlpha h || elem h "._'")
               then text else Text IdSymb) s
 
 codeOrigId :: Map.Map Id [Token] -> Id -> [Doc]
@@ -818,7 +829,7 @@ instance (Pretty a) => Pretty (Annoted a) where
 -- | convert a named sentence into an annoted one
 fromLabelledSen :: Named s -> Annoted s
 fromLabelledSen s = let label = senName s in
-    appendAnno (emptyAnno $ sentence s) $ 
+    appendAnno (emptyAnno $ sentence s) $
     (if null label then [] else [Label [label] nullRange])
     ++ if isAxiom s then [] else [Semantic_anno SA_implied nullRange]
 
@@ -843,8 +854,12 @@ splitRAnnos r = case r of
 
 -- | change top-level to plain keywords
 rmTopKey :: Doc -> Doc
-rmTopKey = foldDoc idRecord 
+rmTopKey = foldDoc idRecord
     { foldText = \ d k s -> case k of
           TopKey -> Text Keyword s
           _ -> d
     }
+
+-- | add global annotations for proper mixfix printing
+useGlobalAnnos :: GlobalAnnos -> Doc -> Doc
+useGlobalAnnos = UseGlobalAnnos
