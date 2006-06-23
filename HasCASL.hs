@@ -26,9 +26,9 @@ This folder contains the files for HasCASL basic specs
 
  * "HasCASL.DataAna"            analyse data types
 
- * "HasCASL.HToken"             extended lexical HasCASL tokens 
+ * "HasCASL.FoldTerm"           folding over terms
 
- * "HasCASL.LaTeX_HasCASL"      (still dummy) instances for printing latex
+ * "HasCASL.HToken"             extended lexical HasCASL tokens
 
  * "HasCASL.Le"                 the local environment, i.e. signature
 
@@ -38,17 +38,17 @@ This folder contains the files for HasCASL basic specs
 
  * "HasCASL.Merge"              merging repeated declarations
 
- * "HasCASL.MinType"            choose a term with minimal type 
+ * "HasCASL.MinType"            choose a term with minimal type
 
- * "HasCASL.MixAna"             mixfix analysis 
+ * "HasCASL.MixAna"             mixfix analysis
 
  * "HasCASL.Morphism"           morphisms (without class translations)
 
- * "HasCASL.OpDecl"             analyse operation declarations 
+ * "HasCASL.OpDecl"             analyse operation declarations
 
  * "HasCASL.ParseItem"          parse any items except terms
 
- * "HasCASL.ParseTerm"          parse terms and formulas 
+ * "HasCASL.ParseTerm"          parse terms and formulas
 
  * "HasCASL.PrintAs"            pretty print instances for "HasCASL.As"
 
@@ -56,17 +56,21 @@ This folder contains the files for HasCASL basic specs
 
  * "HasCASL.ProgEq"             interpret special formulas as programs
 
- * "HasCASL.RawSym"             raw, i.e. only parsed, symbols and maps 
+ * "HasCASL.RawSym"             raw, i.e. only parsed, symbols and maps
 
  * "HasCASL.RunMixfixParser"    test utility for mixfix terms
 
- * "HasCASL.RunStaticAna"       test utility for the whole static analysis 
+ * "HasCASL.RunStaticAna"       test utility for the whole static analysis
+
+ * "HasCASL.SimplifyTerm"       simplifying terms
 
  * "HasCASL.Sublogic"           sublogic stuff
 
+ * "HasCASL.SubtypeDecl"        analyse subtype declarations
+
  * "HasCASL.SymbItem"           syntactic symbols and symbol maps
 
- * "HasCASL.Symbol"             semantic, i.e. analysed, symbols 
+ * "HasCASL.Symbol"             semantic, i.e. analysed, symbols
 
  * "HasCASL.SymbolMapAnalysis"  see "CASL.SymbolMapAnalysis"
 
@@ -74,11 +78,13 @@ This folder contains the files for HasCASL basic specs
 
  * "HasCASL.TypeCheck"          type inference of terms
 
- * "HasCASL.TypeDecl"           analyse type declarations 
+ * "HasCASL.TypeDecl"           analyse type declarations
+
+ * "HasCASL.TypeMixAna"         mixfix analysis for types
 
  * "HasCASL.Unify"              unification algorithm for types
 
- * "HasCASL.VarDecl"            analyse declarations of variables 
+ * "HasCASL.VarDecl"            analyse declarations of variables
 
 -}
 module HasCASL where
