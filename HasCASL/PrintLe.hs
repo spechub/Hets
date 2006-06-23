@@ -19,6 +19,7 @@ import HasCASL.Builtin
 
 import Common.Id
 import Common.Doc
+import Common.DocUtils
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.Keywords
@@ -135,14 +136,13 @@ instance Pretty Env where
         $+$ vcat (map pretty $ reverse ds)
 
 printMap0 :: (Pretty a, Ord a, Pretty b) => Map.Map a b -> Doc
-printMap0 = printMap []
+printMap0 = printMyMap []
 
 printMap1 :: (Pretty a, Ord a, Pretty b) => Map.Map a b -> Doc
-printMap1 = printMap [mapsto]
+printMap1 = printMyMap [mapsto]
 
-printMap :: (Pretty a, Ord a, Pretty b) => [Doc] -> Map.Map a b -> Doc
-printMap d m = vcat $ map (\ (a, b) -> fsep $
-                      pretty a : d ++ [pretty b]) $ Map.toList m
+printMyMap :: (Pretty a, Ord a, Pretty b) => [Doc] -> Map.Map a b -> Doc
+printMyMap d = printMap id vcat ( \ a b -> fsep $ a : d ++ [b])
 
 instance Pretty Morphism where
   pretty m =
