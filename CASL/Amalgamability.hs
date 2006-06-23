@@ -35,8 +35,8 @@ import qualified Common.Lib.Graph as Tree
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.Set as Set
-import Common.PrettyPrint
-import Common.Lib.Pretty
+import Common.Doc
+import Common.DocUtils
 import Common.Result
 import Common.Amalgamate
 import CASL.Sign
@@ -61,13 +61,13 @@ type EquivRel a = [EquivClass a]
 -- | or, sometimes, as lists of pairs (element, equiv. class tag)
 type EquivRelTagged a b = [(a, b)]
 
--- PrettyPrint instance (for diagnostic output)
-instance (PrettyPrint a,  PrettyPrint b) => PrettyPrint (Tree.Gr a b) where
-    printText0 ga diag =
-        ptext "nodes: "
-        <+> (printText0 ga (labNodes diag))
-        <+> ptext "\nedges: "
-        <+> (printText0 ga (labEdges diag))
+-- Pretty instance (for diagnostic output)
+instance (Pretty a, Pretty b) => Pretty (Tree.Gr a b) where
+    pretty diag =
+        text "nodes:"
+        <+> pretty (labNodes diag)
+        $+$ text "edges:"
+        <+> pretty (labEdges diag)
 
 -- | find in Map
 findInMap :: Ord k => k -> Map.Map k a -> a
@@ -1034,22 +1034,22 @@ ensuresAmalgamability opts diag sink desc =
     getNodeSig _ [] = emptySign () -- this should never be the case
     getNodeSig n ((n1, sig) : nss) = if n == n1 then sig else getNodeSig n nss
     lns = labNodes diag
-    formatOp (idt, t) = showPretty idt " :" ++ showPretty t ""
-    formatPred (idt, t) = showPretty idt " : " ++ showPretty t ""
+    formatOp (idt, t) = showDoc idt " :" ++ showDoc t ""
+    formatPred (idt, t) = showDoc idt " : " ++ showDoc t ""
     formatSig n = case find (\(n', d) -> n' == n && d /= "") (labNodes desc) of
                   Just (_, d) -> d
-                  Nothing -> showPretty (getNodeSig n lns) ""
+                  Nothing -> showDoc (getNodeSig n lns) ""
               -- and now the relevant stuff
-    s = {-trace ("Diagram: " ++ showPretty diag "\n Sink: "
-                    ++ showPretty sink "")-} simeq diag
+    s = {-trace ("Diagram: " ++ showDoc diag "\n Sink: "
+                    ++ showDoc sink "")-} simeq diag
     st = simeq_tau sink
               {- 1. Check the inclusion (*). If it doesn't hold, the
                  specification is incorrect. -}
     in case subRelation st s of
     Just (ns1, ns2) -> let
-      sortString1 = showPretty (snd ns1) " in\n\n" ++ formatSig (fst ns1)
+      sortString1 = showDoc (snd ns1) " in\n\n" ++ formatSig (fst ns1)
                     ++ "\n\n"
-      sortString2 = showPretty (snd ns2) " in\n\n" ++ formatSig (fst ns2)
+      sortString2 = showDoc (snd ns2) " in\n\n" ++ formatSig (fst ns2)
                     ++ "\n\n"
       in return (NoAmalgamation ("\nsorts " ++ sortString1
                         ++ "and " ++ sortString2 ++ "might be different"))
@@ -1119,8 +1119,8 @@ ensuresAmalgamability opts diag sink desc =
                    Just (w1, w2) -> let
                      rendEmbPath [] = []
                      rendEmbPath (h : w) = foldl (\t -> \srt -> t ++ " < "
-                       ++ showPretty srt "")
-                       (showPretty h "") w
+                       ++ showDoc srt "")
+                       (showDoc h "") w
                      word1 = rendEmbPath (wordToEmbPath w1)
                      word2 = rendEmbPath (wordToEmbPath w2)
                      in return (NoAmalgamation ("embedding paths \n    "

@@ -1,7 +1,6 @@
-
 {- |
 Module      :  $Header$
-Copyright   :  (c) Christian Maeder, Till Mossakowski and Uni Bremen 2002-2004
+Copyright   :  (c) Christian Maeder, Till Mossakowski and Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -9,7 +8,6 @@ Stability   :  provisional
 Portability :  portable
 
 rename symbols of sentences according to a signature morphisms
-
 -}
 
 module CASL.MapSentence where
@@ -18,22 +16,21 @@ import CASL.Sign
 import CASL.Morphism
 import CASL.AS_Basic_CASL
 import CASL.Fold
-import Common.PrettyPrint
 import qualified Common.Lib.Map as Map
 
 mapSrt :: Morphism f e m -> SORT -> SORT
 mapSrt m = mapSort (sort_map m)
 
-type MapSen f e m = Morphism f e m -> f -> f 
+type MapSen f e m = Morphism f e m -> f -> f
 
-mapMorphism :: MapSen f e m -> Morphism f e m 
+mapMorphism :: MapSen f e m -> Morphism f e m
           -> Record f (FORMULA f) (TERM f)
 mapMorphism mf m = (mapRecord $ mf m)
      { foldQual_var = \ _ v s ps -> Qual_var v (mapSrt m s) ps
      , foldApplication = \ _ o ts ps -> Application (mapOpSymb m o) ts ps
      , foldSorted_term = \ _ st s ps -> Sorted_term st (mapSrt m s) ps
      , foldCast = \ _ st s ps -> Cast st (mapSrt m s) ps
-     , foldQuantification = \ _ q vs f ps -> 
+     , foldQuantification = \ _ q vs f ps ->
            Quantification q (map (mapVars m) vs) f ps
      , foldPredication = \ _ p ts ps -> Predication (mapPrSymb m p) ts ps
      , foldMembership = \ _ t s ps -> Membership t (mapSrt m s) ps
@@ -42,9 +39,9 @@ mapMorphism mf m = (mapRecord $ mf m)
      }
 
 nullMor :: Morphism f e m -> Bool
-nullMor m = 
+nullMor m =
     Map.null (sort_map m) && Map.null (fun_map m) && Map.null (pred_map m)
-         
+
 mapTerm :: MapSen f e m -> Morphism f e m -> TERM f -> TERM f
 mapTerm mf = foldTerm . mapMorphism mf
 
@@ -52,10 +49,10 @@ mapSen :: MapSen f e m -> Morphism f e m -> FORMULA f -> FORMULA f
 mapSen mf m = if nullMor m then id else foldFormula $ mapMorphism mf m
 
 mapOpSymb :: Morphism f e m -> OP_SYMB -> OP_SYMB
-mapOpSymb m (Qual_op_name i t ps) =  
+mapOpSymb m (Qual_op_name i t ps) =
    let (j, ty) = mapOpSym (sort_map m) (fun_map m) (i, toOpType t)
    in Qual_op_name j (toOP_TYPE ty) ps
-mapOpSymb _ os = error ("mapOpSymb: unexpected op symb: "++ showPretty os "")
+mapOpSymb _ os = error "mapOpSymb: unexpected op symb: "
 
 mapVars :: Morphism f e m -> VAR_DECL -> VAR_DECL
 mapVars m (Var_decl vs s ps) = Var_decl vs (mapSrt m s) ps
@@ -66,13 +63,13 @@ mapDecoratedOpSymb m (os,indices) = let
    in (newOs,indices)
 
 mapConstr :: Morphism f e m -> Constraint -> Constraint
-mapConstr m constr = 
+mapConstr m constr =
    let newS = mapSrt m (newSort constr)
        newOps = map (mapDecoratedOpSymb m) (opSymbs constr)
    in (constr {newSort = newS, opSymbs = newOps})
 
 mapPrSymb :: Morphism f e m -> PRED_SYMB -> PRED_SYMB
-mapPrSymb m (Qual_pred_name i t ps) =  
+mapPrSymb m (Qual_pred_name i t ps) =
    let (j, ty) = mapPredSym (sort_map m) (pred_map m) (i, toPredType t)
    in Qual_pred_name j (toPRED_TYPE ty) ps
-mapPrSymb _ p = error ("mapPrSymb: unexpected pred symb: "++ showPretty p "")
+mapPrSymb _ p = error "mapPrSymb: unexpected pred symb: "
