@@ -32,7 +32,7 @@ import qualified Common.Lib.Map as Map
 import Common.AnnoState
 import Common.Id
 import Common.Result
-import Common.PrettyPrint
+import Common.DocUtils
 import Text.ParserCombinators.Parsec
 
 import Driver.Options
@@ -90,8 +90,8 @@ readVerbose opts ln file = do
       Just (ln2, a) -> do
         unless (ln2 == ln) $
                putIfVerbose opts 0 $ "incompatible library names: "
-               ++ showPretty ln " (requested) vs. "
-               ++ showPretty ln2 " (found)"
+               ++ showDoc ln " (requested) vs. "
+               ++ showDoc ln2 " (found)"
         return $ Just a
 
 -- | create a file name without suffix from a library name

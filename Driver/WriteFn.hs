@@ -22,7 +22,7 @@ import Text.ParserCombinators.Parsec
 import Text.PrettyPrint.HughesPJ(render)
 import Common.Utils
 import Common.Id
-import Common.PrettyPrint
+import Common.Doc (pretty)
 import Common.Result
 import Common.GlobalAnnotations (GlobalAnnos)
 import Common.ConvertGlobalAnnos()
@@ -188,9 +188,9 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
              Result _ (Just (raw_gTh, tStr)) ->
               case theoremsToAxioms raw_gTh of
                 gTh@(G_theory lid sign0 sens0) -> do
-                  if null tStr then return () else 
-                     putIfVerbose opt 2 $ 
-                        "Translated using comorphism " ++ tStr 
+                  if null tStr then return () else
+                     putIfVerbose opt 2 $
+                        "Translated using comorphism " ++ tStr
                   putIfVerbose opt 4 $ "Sublogic of " ++ show i ++ ": " ++
                           (show $ sublogicOfTh gTh)
                   mapM_ ( \ ot ->
@@ -200,10 +200,10 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
                                     Nothing -> putIfVerbose opt 0 $
                                         "could not translate to Isabelle " ++
                                          show i
-                                    Just d -> do 
+                                    Just d -> do
                                       let s = shows d "\n"
                                       case parse parseTheory f s of
-                                          Left err -> putIfVerbose opt 0 $ 
+                                          Left err -> putIfVerbose opt 0 $
                                                       show err
                                           _ -> return ()
                                       writeVerbFile opt f s
@@ -226,7 +226,7 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
                                    "printing theory delta is not implemented"
                       SigFile d -> if null $ show d then
                           writeVerbFile opt f $
-                              shows (printText0 ga $ signOf gTh) "\n"
+                              shows (pretty $ signOf gTh) "\n"
                           else putIfVerbose opt 0
                                  "printing signature delta is not implemented"
 #ifdef PROGRAMATICA
