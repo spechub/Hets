@@ -4,14 +4,14 @@ import Static.DevGraph
 import Static.PrintDevGraph
 import Driver.Options
 import qualified Common.Lib.Map as Map
-import Common.Lib.Pretty
+import Common.Doc
 import System.Environment
 
 process :: FilePath -> IO (Maybe (LIB_NAME, LibEnv))
 process = anaLib defaultHetcatsOpts
 
 printLibEnv :: LibEnv -> Doc
-printLibEnv le = vcat $ map (printLibrary le) $ Map.toList le
+printLibEnv le = vsep $ map (printLibrary le) $ Map.toList le
 
 {- Call this function as follows
 make
