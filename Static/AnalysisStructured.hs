@@ -125,8 +125,7 @@ import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Rel as Rel(image, setInsert)
 import Data.List hiding (union)
-import Common.PrettyPrint
-import Common.Doc
+import Common.DocUtils
 import Control.Monad
 
 insEdgeNub :: LEdge DGLinkLab -> DGraph -> DGraph
@@ -152,7 +151,7 @@ ana_SPEC lg gctx nsig name opts sp =
            then return (bspec,empty_signature lid, empty_signature lid,[])
            else do b <- maybeToMonad
                           ("no basic analysis for logic "
-                                         ++language_name lid)
+                                         ++ language_name lid)
                           (basic_analysis lid)
                    b (bspec,sigma, globalAnnos gctx)
        incl <- ginclusion lg
@@ -179,7 +178,6 @@ ana_SPEC lg gctx nsig name opts sp =
        return (Basic_spec (G_basic_spec lid bspec'),
                NodeSig node $ G_sign lid sigma_complete,
                gctx { devGraph = dg'' })
-
   Translation asp ren ->
    do let sp1 = item asp
       (sp1', NodeSig n' gsigma, gctx') <-
@@ -207,7 +205,6 @@ ana_SPEC lg gctx nsig name opts sp =
               NodeSig node gsigma',
               gctx' { devGraph = insEdgeNub link $
               insNode (node,node_contents) dg' })
-
   Reduction asp restr ->
    do let sp1 = item asp
       (sp1', NodeSig n' gsigma', gctx') <-
@@ -297,7 +294,6 @@ ana_SPEC lg gctx nsig name opts sp =
                    insNode (node'',node_contents'') $
                    insEdgeNub link1 $
                    insNode (node1,node_contents1) dg' })
-
   Union [] pos -> adjustPos pos $ fail $ "empty union"
   Union asps pos ->
    do let sps = map item asps
@@ -335,7 +331,6 @@ ana_SPEC lg gctx nsig name opts sp =
                     pos,
               NodeSig node gbigSigma,
               gctx' { devGraph = dg'' })
-
   Extension asps pos -> do
    (sps',nsig1',dg1) <- foldl ana (return ([], nsig, gctx)) namedSps
    case nsig1' of
@@ -360,16 +355,16 @@ ana_SPEC lg gctx nsig name opts sp =
        (Just anno0@(Semantic_anno anno1 _), JustNode (NodeSig n' sig')) -> do
          -- any other semantic annotation? that's an error
          when (any (\an -> isSemanticAnno an && an/=anno0) $ l_annos asp')
-              (pplain_error () (text "Conflicting semantic annotations")
+              (plain_error () "Conflicting semantic annotations"
                 pos)
          -- %implied should not occur here
          when (anno1==SA_implied)
-              (pplain_error () (text
-               "Annotation %implied should come after a BASIC-ITEM")
+              (plain_error ()
+               "Annotation %implied should come after a BASIC-ITEM"
                 pos)
          if anno1==SA_implies then do
-           when (not (isHomSubGsign sig1 sig')) (pplain_error ()
-             (text "Signature must not be extended in presence of %implies")
+           when (not (isHomSubGsign sig1 sig')) (plain_error ()
+             "Signature must not be extended in presence of %implies"
              pos)
    -- insert a theorem link according to p. 319 of the CASL Reference Manual
            return $ insEdgeNub (n1,n',DGLink {
@@ -393,7 +388,6 @@ ana_SPEC lg gctx nsig name opts sp =
              dgl_origin = DGExtension }) dg1
        _ -> return dg1
      return (sp1':sps', JustNode nsig1, gctx1 { devGraph = dg2 })
-
   Free_spec asp poss ->
    do let sp1 = item asp
       (sp', NodeSig n' gsigma'@(G_sign lid' gsig), gctx') <-
@@ -418,7 +412,6 @@ ana_SPEC lg gctx nsig name opts sp =
               NodeSig node gsigma',
               gctx' { devGraph = insEdgeNub link $
               insNode (node,node_contents) dg' })
-
   Cofree_spec asp poss ->
    do let sp1 = item asp
       (sp', NodeSig n' gsigma'@(G_sign lid' gsig), gctx') <-
@@ -443,7 +436,6 @@ ana_SPEC lg gctx nsig name opts sp =
               NodeSig node gsigma',
               gctx' { devGraph = insEdgeNub link $
               insNode (node,node_contents) dg' })
-
   Local_spec asp asp' poss ->
    do let sp1 = item asp
           sp1' = item asp'
@@ -469,9 +461,9 @@ ana_SPEC lg gctx nsig name opts sp =
           sys3 = sym_of lid sigma3
       when (not( isStructured opts ||
                  sys2 `Set.difference` sys1 `Set.isSubsetOf` sys3))
-        $ pplain_error () (text
-          "attempt to hide the following symbols from the local environment"
-          $+$ pretty ((sys2 `Set.difference` sys1) `Set.difference` sys3))
+        $ plain_error () (
+          "attempt to hide the following symbols from the local environment:\n"
+          ++ showDoc ((sys2 `Set.difference` sys1) `Set.difference` sys3) "")
          pos
       let node_contents = DGNode {
             dgn_name = name,
@@ -492,7 +484,6 @@ ana_SPEC lg gctx nsig name opts sp =
               NodeSig node gsigma3,
               gctx'' { devGraph = insEdgeNub link $
               insNode (node,node_contents) dg'' })
-
   Closed_spec asp pos ->
    do let sp1 = item asp
           l = getLogic nsig
@@ -531,7 +522,6 @@ ana_SPEC lg gctx nsig name opts sp =
               gctx' { devGraph = insLink1 $
               insEdgeNub link2 $
               insNode (node,node_contents) dg' })
-
   Qualified_spec (Logic_name ln sublog) asp pos -> do
       l <- lookupLogic "Static analysis: " (tokStr ln) lg
       -- analyse spec with empty local env
@@ -571,30 +561,29 @@ ana_SPEC lg gctx nsig name opts sp =
               gctx' { devGraph = insLink1 $
               insEdgeNub link2 $
               insNode (node,node_contents) dg' })
-
   Group asp pos -> do
    (sp',nsig',dg') <- ana_SPEC lg gctx nsig name opts (item asp)
    return (Group (replaceAnnoted sp' asp) pos,nsig',dg')
-
   Spec_inst spname afitargs pos -> do
    let adj = adjustPos pos
+       spstr = tokStr spname
    case Map.lookup spname $ globalEnv gctx of
     Nothing -> fatal_error
-                 ("Specification "++ showPretty spname " not found") pos
+                 ("Specification " ++ spstr ++ " not found") pos
     Just (ViewEntry _) ->
      fatal_error
-      (showPretty spname " is a view, not a specification") pos
+      (spstr ++ " is a view, not a specification") pos
     Just (ArchEntry _) ->
      fatal_error
-      (showPretty spname
+      (spstr ++
        " is an architectural, not a structured specification") pos
     Just (UnitEntry _) ->
      fatal_error
-      (showPretty spname
+      (spstr ++
        " is a unit specification, not a structured specification") pos
     Just (RefEntry) ->
      fatal_error
-      (showPretty spname
+      (spstr ++
        " is a refinement specification, not a structured specification") pos
     Just (SpecEntry gs@(imps,params,_,body@(NodeSig nB gsigmaB))) ->
      case (\x y -> (x,x-y)) (length afitargs) (length params) of
@@ -715,9 +704,8 @@ ana_SPEC lg gctx nsig name opts sp =
  -- finally the case with conflicting numbers of formal and actual parameters
       _ ->
         fatal_error
-          (showPretty spname " expects "++show (length params)++" arguments"
-           ++" but was given "++show (length afitargs)) pos
-
+          (spstr ++ " expects " ++ show (length params) ++ " arguments"
+           ++ " but was given " ++ show (length afitargs)) pos
   Data (Logic lidD) (Logic lidP) asp1 asp2 pos ->
    do let sp1 = item asp1
           sp2 = item asp2
@@ -753,14 +741,13 @@ ana_SPEC lg gctx nsig name opts sp =
                    (replaceAnnoted sp1' asp1)
                    (replaceAnnoted sp2' asp2)
                    pos,
-              nsig3,
-              dg3)
+              nsig3, dg3)
 
 -- analysis of renamings
 
 ana_ren1 :: LogicGraph -> MaybeNode -> Range -> GMorphism -> G_mapping 
              -> Result GMorphism
-ana_ren1 _ lenv pos (GMorphism r sigma mor)
+ana_ren1 _ lenv _pos (GMorphism r sigma mor)
            (G_symb_map (G_symb_map_items_list lid sis)) = do
   let lid2 = targetLogic r
   sis1 <- coerceSymbMapItemsList lid lid2 "Analysis of renaming" sis
@@ -778,16 +765,16 @@ ana_ren1 _ lenv pos (GMorphism r sigma mor)
           isChanged sy = case Map.lookup sy m of
             Just sy' -> sy /= sy'
             Nothing -> False
-          forbiddenSys = Set.filter isChanged sysLenv
+          _forbiddenSys = Set.filter isChanged sysLenv
       return ()
-{-      when (not (forbiddenSys == Set.empty)) $ pplain_error () (text
-          "attempt to rename the following symbols from the local environment"
-             $+$ pretty forbiddenSys) pos
+{-      when (not (forbiddenSys == Set.empty)) $ plain_error () (
+        "attempt to rename the following symbols from the local environment:\n"
+             ++ showDoc forbiddenSys "") pos
 -}
   mor2 <- comp lid2 mor mor1
   return $ GMorphism r sigma mor2
 
-ana_ren1 lg lenv _ mor (G_logic_translation (Logic_code tok src tar pos1)) = do
+ana_ren1 lg _ _ mor (G_logic_translation (Logic_code tok src tar pos1)) = do
   let adj = adjustPos pos1
   G_sign srcLid srcSig <- return (cod Grothendieck mor)
   c <- adj $ case tok of
@@ -840,13 +827,15 @@ ana_restr1 _ (G_sign lidLenv sigmaLenv) pos (GMorphism cid sigma1 mor)
       sys' = Set.filter (\sy -> any (\rsy -> matches lid1 sy rsy) rsys)
                         sys
   -- needs to be changed when logic projections are implemented
-  sigmaLenv' <- coerceSign lidLenv lid1 "Analysis of restriction: logic projections not yet properly handeled" sigmaLenv
+  sigmaLenv' <- coerceSign lidLenv lid1 
+    "Analysis of restriction: logic projections not yet properly handeled"
+    sigmaLenv
   let sysLenv = sym_of lid1 sigmaLenv'
       forbiddenSys = sys' `Set.intersection` sysLenv
   when (not (forbiddenSys == Set.empty))
-        $ pplain_error () (text
-           "attempt to hide the following symbols from the local environment"
-           $+$ pretty forbiddenSys) pos
+        $ plain_error () (
+         "attempt to hide the following symbols from the local environment:\n"
+         ++ showDoc forbiddenSys "") pos
   mor1 <- cogenerated_sign lid1 sys' sigma1
   mor1' <- map_morphism cid mor1
   mor2 <- comp lid2 mor1' mor
@@ -924,7 +913,7 @@ ana_FIT_ARG lg gctx spname nsigI
    -- are symbols of the imports left untouched?
    if Set.all (\sy -> lookupFM symmap_mor sy == Just sy) symI
     then return ()
-    else plain_error () "Fitting morphism must not affect import" ( pos)
+    else plain_error () "Fitting morphism must not affect import" pos
    -} -- ??? does not work
       -- ??? also output some symbol that is affected
    let link = (nP,nA,DGLink {
@@ -940,23 +929,24 @@ ana_FIT_ARG lg gctx spname nsigI (NodeSig nP gsigmaP)
             opts name fv@(Fit_view vn afitargs pos) = do
    let adj = adjustPos pos
        dg = devGraph gctx
+       spstr = tokStr spname
    case Map.lookup vn $ globalEnv gctx of
     Nothing -> fatal_error
-                 ("View "++ showPretty vn " not found") pos
+                 ("View " ++ tokStr vn ++ " not found") pos
     Just (SpecEntry _) ->
      fatal_error
-      (showPretty spname " is a specification, not a view") pos
+      (spstr ++ " is a specification, not a view") pos
     Just (ArchEntry _) ->
      fatal_error
-      (showPretty spname
+      (spstr ++
        " is an architectural specification, not a view ") pos
     Just (UnitEntry _) ->
      fatal_error
-      (showPretty spname
+      (spstr ++
        " is a unit specification, not a view") pos
     Just (RefEntry) ->
      fatal_error
-      (showPretty spname
+      (spstr ++
        " is a refinement specification, not a view") pos
     Just (ViewEntry (src,mor,gs@(imps,params,_,target))) -> do
      let nSrc = getNode src
@@ -985,12 +975,12 @@ ana_FIT_ARG lg gctx spname nsigI (NodeSig nP gsigmaP)
          JustNode (NodeSig nI _) -> do
            gsigmaIS <- adj $ gsigUnion lg gsigmaI gsigmaS
            when (not (isSubGsign lg gsigmaP gsigmaIS))
-             (pplain_error ()
-              (text "Parameter does not match source of fittig view."
-               $+$ text "Parameter signature:"
-               $+$ pretty gsigmaP
-               $+$ text "Source signature of fitting view (united with import):"
-               $+$ pretty gsigmaIS) pos)
+             (plain_error ()
+              ("Parameter does not match source of fittig view. "
+               ++ "Parameter signature:\n"
+               ++ showDoc gsigmaP
+               "\nSource signature of fitting view (united with import):\n"
+               ++ showDoc gsigmaIS "") pos)
            G_sign lidI sigI1 <- return gsigmaI
            sigI <- adj $ coerceSign lidI lid
                     "Analysis of instantiation with import" sigI1
@@ -1126,7 +1116,7 @@ ana_FIT_ARG lg gctx spname nsigI (NodeSig nP gsigmaP)
                gctx' { devGraph = foldr insEdgeNub
                  (insNode (nA,node_contentsA) $
                   insNode (n',node_contents') dg')
-                 (fitLinks++parLinks) },
+                 (fitLinks ++ parLinks) },
                (G_morphism lid1 theta, NodeSig nA gsigmaRes))
        where
        anaFitArg res (nsig',fa) = do
@@ -1145,8 +1135,8 @@ ana_FIT_ARG lg gctx spname nsigI (NodeSig nP gsigmaP)
 -- finally the case with conflicting numbers of formal and actual parameters
       _ ->
         fatal_error
-          (showPretty spname " expects "++show (length params)++" arguments"
-           ++" but was given "++show (length afitargs)) pos
+          (spstr ++ " expects " ++ show (length params) ++ " arguments"
+           ++ " but was given " ++ show (length afitargs)) pos
 
 -- Extension of signature morphisms (for instantitations)
 -- first some auxiliary functions
@@ -1160,10 +1150,10 @@ mapID idmap i@(Id toks comps pos1) =
     Just ids -> if Set.null ids then return i else 
       case Set.lookupSingleton ids of
         Just j -> return j
-        Nothing -> pplain_error i
-             (text "Identifier component " <+> pretty i
-              <+> text "can be mapped in various ways:"
-              <+> pretty ids) nullRange
+        Nothing -> plain_error i
+             ("Identifier component " ++ showId i
+              " can be mapped in various ways:\n"
+              ++ showDoc ids "") $ getRange i
 
 extID1 :: Map.Map Id (Set.Set Id) -> Id
               -> Result (EndoMap Id) -> Result (EndoMap Id)
@@ -1214,9 +1204,9 @@ extendMorphism (G_sign lid sigmaP) (G_sign lidB sigmaB1)
   let illShared = (sym_of lid sigmaA `Set.intersection` sym_of lid sigmaAD )
                    Set.\\ Rel.image h symsP
   when (not (Set.null illShared))
-   (pplain_error () (text "Symbols shared between actual parameter and body"
-                     $+$ text "must be in formal parameter:"
-                     $+$ pretty illShared ) nullRange)
+   (plain_error () ("Symbols shared between actual parameter and body"
+                     ++ "\nmust be in formal parameter:\n"
+                     ++ showDoc illShared "") nullRange)
   let myKernel m = Set.fromDistinctAscList $ comb1 $ Map.toList m
       comb1 [] = []
       comb1 (p : qs) =
@@ -1226,9 +1216,9 @@ extendMorphism (G_sign lid sigmaP) (G_sign lidB sigmaB1)
           comb2 p qs $ if b == d then (a, c) : rs else rs
       newIdentifications = myKernel hmor Set.\\ myKernel h
   when (not (Set.null newIdentifications))
-   (pplain_error () (text
-     "Fitting morphism leads to forbidden identifications"
-     $+$ pretty newIdentifications) nullRange)
+   (plain_error () (
+     "Fitting morphism leads to forbidden identifications:\n"
+     ++ showDoc newIdentifications "") nullRange)
   incl <- inclusion lid sigmaAD sigma
   mor1 <- comp lid mor incl
   return (G_sign lid sigma, G_morphism lid mor1)
@@ -1251,7 +1241,6 @@ apply_GS lg (nsigI,_params,gsigmaP,nsigB) args = do
 ana_GENERICITY :: LogicGraph -> GlobalContext -> AnyLogic -> HetcatsOpts
                     -> NODE_NAME -> GENERICITY
                     -> Result (GENERICITY, GenericitySig, GlobalContext)
-
 -- zero parameters,
 ana_GENERICITY _ gctx l _ _
                gen@(Genericity (Params []) (Imported imps) pos) = do
@@ -1259,7 +1248,6 @@ ana_GENERICITY _ gctx l _ _
    (plain_error () "Parameterless specifications must not have imports"
      pos)
   return (gen,(EmptyNode l, [], EmptyNode l), gctx)
-
 -- one parameter ...
 ana_GENERICITY lg gctx l opts name
                (Genericity (Params [asp]) imps pos) = do
@@ -1267,9 +1255,7 @@ ana_GENERICITY lg gctx l opts name
   (sp',nsigP,dg'') <- ana_SPEC lg dg' nsigI
                       name opts (item asp)
   return (Genericity (Params [replaceAnnoted sp' asp]) imps' pos,
-          (nsigI, [nsigP], JustNode nsigP),
-          dg'')
-
+          (nsigI, [nsigP], JustNode nsigP), dg'')
 -- ... and more parameters
 ana_GENERICITY lg gctx l opts name
                (Genericity params imps pos) = do
@@ -1310,8 +1296,7 @@ ana_PARAMS lg gctx _ nsigI opts name (Params asps) = do
                        $ map item asps
   return (Params (map (uncurry replaceAnnoted)
                       (zip (reverse sps') asps)),
-          reverse pars,
-          dg')
+          reverse pars, dg')
   where
   ana res sp = do
     (sps',pars,dg1,n) <- res
@@ -1349,8 +1334,7 @@ ana_VIEW_TYPE lg gctx l parSig opts name
   return (View_type (replaceAnnoted spSrc' aspSrc)
                     (replaceAnnoted spTar' aspTar)
                     pos,
-          (srcNsig,tarNsig),
-          dg'')
+          (srcNsig, tarNsig), dg'')
 
 homogenizeGM :: AnyLogic -> [Syntax.AS_Structured.G_mapping]
              -> Result G_symb_map_items_list
@@ -1361,7 +1345,7 @@ homogenizeGM (Logic lid) gsis =
        (Syntax.AS_Structured.G_symb_map (G_symb_map_items_list lid1 sis1)) = do
     (G_symb_map_items_list lid2 sis) <- res
     sis1' <- coerceSymbMapItemsList lid1 lid2 "" sis1
-    return (G_symb_map_items_list lid2 (sis++sis1'))
+    return $ G_symb_map_items_list lid2 $ sis ++ sis1'
   homogenize1 res _ = res
 
 -- | check if structured analysis should be performed

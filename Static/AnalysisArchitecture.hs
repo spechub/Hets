@@ -12,7 +12,6 @@ Analysis of architectural specifications.
    of the CASL Reference Manual.
 -}
 
-
 {-  todo:
        -- EmptyNode undefined should be replaced with local env!
 -}
@@ -66,12 +65,12 @@ ana_ARCH_SPEC lgraph defl gctx curl opts (Basic_arch_spec udd uexpr pos) =
 ana_ARCH_SPEC lgraph defl gctx curl opts (Group_arch_spec asp _) =
     ana_ARCH_SPEC lgraph defl gctx curl opts (item asp)
 -- ARCH-SPEC-NAME
-ana_ARCH_SPEC _ _ gctx _ _ asp@(Arch_spec_name asn@(Token _ pos)) =
+ana_ARCH_SPEC _ _ gctx _ _ asp@(Arch_spec_name asn@(Token astr pos)) =
     do case Map.lookup asn $ globalEnv gctx of
             Nothing -> fatal_error ("Undefined architectural specification "
-                                    ++ showPretty asn "") pos
+                                    ++ astr) pos
             Just (ArchEntry asig) -> return (asig, gctx, asp)
-            _ -> fatal_error (showPretty asn
+            _ -> fatal_error (astr ++ 
                               " is not an architectural specification") pos
 
 -- | Analyse a list of unit declarations and definitions
@@ -96,6 +95,9 @@ ana_UNIT_DECL_DEFNS' lgraph defl gctx curl opts uctx (udd : udds) =
                                 dg' curl opts uctx' udds
        return (uctx'', dg'', (replaceAnnoted udd' udd) : udds')
 
+alreadyDefinedUnit :: SIMPLE_ID -> String
+alreadyDefinedUnit u = "Unit " ++ tokStr u ++ " already declared/defined"
+
 -- | Analyse unit refs
 ana_UNIT_REF :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic
              -> HetcatsOpts -> ExtStUnitCtx -> UNIT_REF
@@ -105,7 +107,7 @@ development graph 3. possibly modified UNIT_DECL_DEFN -}
 
 -- unit declaration
 ana_UNIT_REF lgraph defl gctx curl opts
-                   uctx@(buc, _) (Unit_ref un@(Token _ unpos) usp pos) =
+                   uctx@(buc, _) (Unit_ref un@(Token ustr unpos) usp pos) =
     do (dns, diag', dg', _) <- ana_UNIT_IMPORTED lgraph defl
                                gctx curl opts uctx pos []
        let impSig = toMaybeNode dns
@@ -115,9 +117,7 @@ ana_UNIT_REF lgraph defl gctx curl opts
            dg'' = devGraph gctx''
        if Map.member un buc
           then
-          plain_error (uctx, gctx'', ud')
-                      ("Unit " ++ showPretty un " already declared/defined")
-                      unpos
+          plain_error (uctx, gctx'', ud') (alreadyDefinedUnit un) unpos
           else
           case usig of
                Par_unit_sig argSigs resultSig ->
@@ -131,7 +131,7 @@ ana_UNIT_REF lgraph defl gctx curl opts
                    do (nsig', dg''') <- nodeSigUnion lgraph dg''
                                         (impSig : [JustNode nsig]) DGImports
                       (dn', diag'') <- extendDiagramIncl lgraph diag' []
-                             nsig' $ showPretty un ""
+                             nsig' ustr
                       return ((Map.insert un (Based_unit_sig dn') buc, diag'')
                              , gctx'' { devGraph = dg''' }, ud')
 
@@ -143,8 +143,8 @@ ana_UNIT_DECL_DEFN :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic
 development graph 3. possibly modified UNIT_DECL_DEFN -}
 
 -- unit declaration
-ana_UNIT_DECL_DEFN lgraph defl gctx curl opts
-                   uctx@(buc, _) (Unit_decl un@(Token _ unpos) usp uts pos) =
+ana_UNIT_DECL_DEFN lgraph defl gctx curl opts uctx@(buc, _) 
+                       (Unit_decl un@(Token ustr unpos) usp uts pos) =
     do (dns, diag', dg', uts') <- ana_UNIT_IMPORTED lgraph defl
                                   gctx curl opts uctx pos uts
        let impSig = toMaybeNode dns
@@ -154,9 +154,7 @@ ana_UNIT_DECL_DEFN lgraph defl gctx curl opts
            dg'' = devGraph gctx''
        if Map.member un buc
           then
-          plain_error (uctx, gctx'', ud')
-                      ("Unit " ++ showPretty un " already declared/defined")
-                      unpos
+          plain_error (uctx, gctx'', ud') (alreadyDefinedUnit un) unpos
           else
           case usig of
                Par_unit_sig argSigs resultSig ->
@@ -172,12 +170,12 @@ ana_UNIT_DECL_DEFN lgraph defl gctx curl opts
                       (dn', diag'') <- extendDiagramIncl lgraph diag'
                          (case dns of
                           JustDiagNode dn -> [dn]
-                          _ -> []) nsig' $ showPretty un ""
+                          _ -> []) nsig' ustr
                       return ((Map.insert un (Based_unit_sig dn') buc, diag'')
                              , gctx'' { devGraph = dg''' }, ud')
 -- unit definition
 ana_UNIT_DECL_DEFN lgraph defl gctx curl opts uctx@(buc, _)
-                   (Unit_defn un@(Token _ unpos) uexp poss) =
+                   (Unit_defn un uexp poss) =
     do (p, usig, diag, dg', uexp') <- ana_UNIT_EXPRESSION lgraph defl
                                       gctx curl opts uctx uexp
        let ud' = Unit_defn un uexp' poss
@@ -186,9 +184,7 @@ ana_UNIT_DECL_DEFN lgraph defl gctx curl opts uctx@(buc, _)
           domain will be preserved -}
        if Map.member un buc
           then
-          plain_error (uctx, dg', ud')
-                      ("Unit " ++ showPretty un " already defined/declared")
-                      unpos
+          plain_error (uctx, dg', ud') (alreadyDefinedUnit un) $ tokPos un
           else
           case usig of
                {- we can use Map.insert as there are no mappings for
@@ -300,28 +296,25 @@ ana_UNIT_BINDINGS :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic
 ana_UNIT_BINDINGS _ _ gctx _ _ _ [] =
     do return ([], gctx, [])
 ana_UNIT_BINDINGS lgraph defl gctx curl opts uctx@(buc, _)
-                  ((Unit_binding un@(Token _ unpos) usp poss) : ubs) =
+                  ((Unit_binding un@(Token ustr unpos) usp poss) : ubs) =
     do (usig, dg', usp') <- ana_UNIT_SPEC lgraph defl
                             gctx curl opts (EmptyNode curl) usp
        let ub' = Unit_binding un usp' poss
        case usig of
             Par_unit_sig _ _ -> plain_error ([], dg', [])
                      ("An argument unit " ++
-                      showPretty un " must not be parameterized") unpos
+                      ustr ++ " must not be parameterized") unpos
             Unit_sig nsig ->
                 do (args, dg'', ubs') <- ana_UNIT_BINDINGS lgraph defl
                        dg' curl opts uctx ubs
                    let args' = (un, nsig) : args
                    if Map.member un buc
                       then plain_error (args', dg'', ub' : ubs')
-                           ("Unit " ++
-                            showPretty un " already declared/defined") unpos
+                           (alreadyDefinedUnit un) unpos
                       else
                       case lookup un args of
                            Just _ -> plain_error (args', dg'', ub' : ubs')
-                               ("Unit " ++
-                                showPretty un " already declared/defined")
-                               unpos
+                                     (alreadyDefinedUnit un) unpos
                            Nothing -> return (args', dg'', ub' : ubs')
 
 -- | Analyse a list of unit terms
@@ -419,6 +412,7 @@ ana_UNIT_TERM lgraph defl gctx curl opts uctx@(buc, diag)
               uappl@(Unit_appl un fargus _) =
     do let pos = getPos_UNIT_TERM uappl
            dg = devGraph gctx
+           ustr = tokStr un
        case Map.lookup un buc of
             Just (Based_unit_sig dnsig) ->
                 do case fargus of
@@ -426,7 +420,7 @@ ana_UNIT_TERM lgraph defl gctx curl opts uctx@(buc, diag)
                         _ ->
                     -- arguments have been given for a parameterless unit
                              do plain_error (dnsig, diag, gctx, uappl)
-                                  (showPretty un " is a parameterless unit, "
+                                  (ustr ++ " is a parameterless unit, "
                                    ++ "but arguments have been given: " ++
                                       showPretty fargus "") pos
             Just (Based_par_unit_sig pI (Par_unit_sig argSigs resultSig)) ->
@@ -483,7 +477,7 @@ ana_UNIT_TERM lgraph defl gctx curl opts uctx@(buc, diag)
                    diag4 <- insInclusionEdges lgraph diag'''
                             (map third morphSigs) q
                    return (q, diag4, gctx'' { devGraph = dg5 }, uappl)
-            _ -> fatal_error ("Undefined unit " ++ showPretty un "") pos
+            _ -> fatal_error ("Undefined unit " ++ ustr) pos
 -- group unit term
 ana_UNIT_TERM lgraph defl gctx curl opts uctx (Group_unit_term ut poss) =
     do (dnsig, diag, dg, ut') <- ana_UNIT_TERM lgraph defl
@@ -587,12 +581,12 @@ ana_UNIT_SPEC lgraph defl gctx _ opts impSig
        return (Par_unit_sig argSigs resultSig, dg3, Unit_type argSpecs'
                                 (replaceAnnoted resultSpec' resultSpec) poss)
 -- SPEC-NAME (an alias)
-ana_UNIT_SPEC _ _ gctx _ _ _impsig usp@(Spec_name usn@(Token _ pos)) =
+ana_UNIT_SPEC _ _ gctx _ _ _impsig usp@(Spec_name usn@(Token ustr pos)) =
     do case Map.lookup usn $ globalEnv gctx of
             Nothing -> fatal_error ("Undefined unit specification "
-                       ++ showPretty usn "") pos
+                       ++ ustr) pos
             Just (UnitEntry usig) -> return (usig, gctx, usp)
-            _ -> fatal_error (showPretty usn " is not an unit specification")
+            _ -> fatal_error (ustr ++ " is not an unit specification")
                  pos
 -- CLOSED-UNIT-SPEC
 ana_UNIT_SPEC lgraph defl gctx curl just_struct _ (Closed_unit_spec usp' _) =
@@ -648,7 +642,7 @@ assertAmalgamability opts pos diag sink =
                      DontKnow msg -> warning () msg pos
 
 -- | Check the amalgamability assuming common logic for whole diagram
-homogeneousEnsuresAmalgamability :: HetcatsOpts         -- ^ the program options
+homogeneousEnsuresAmalgamability :: HetcatsOpts  -- ^ the program options
                                  -> Range  -- ^ the position (for diagnostics)
                                  -> Diag   -- ^ the diagram to be checked
                                  -> [(Node, GMorphism)] -- ^ the sink
@@ -683,8 +677,8 @@ getPos_UNIT_TERM (Amalgamation _ poss) =
 getPos_UNIT_TERM (Local_unit _ _ poss) =
     poss
 -- UNIT-APPLICATION
-getPos_UNIT_TERM (Unit_appl (Token _ unpos) _ _) =
-    unpos
+getPos_UNIT_TERM (Unit_appl u _ poss) =
+    appRange (tokPos u) poss
 -- GROUP-UNIT-TERM
 getPos_UNIT_TERM (Group_unit_term _ poss) =
     poss
