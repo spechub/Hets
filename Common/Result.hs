@@ -107,10 +107,6 @@ mapR ana = foldr (joinResultWith (:)) (Result [] $ Just []) . map ana
 fatal_error :: String -> Range -> Result a
 fatal_error s p = Result [Diag Error s p] Nothing
 
--- | a failing result using pretty printed 'Doc'
-pfatal_error :: Doc -> Range -> Result a
-pfatal_error s p = fatal_error (show s) p
-
 -- | a failing result constructing a message from a type
 mkError :: (PosItem a, Pretty a) => String -> a -> Result b
 mkError s c = Result [mkDiag Error s c] Nothing
@@ -128,10 +124,6 @@ debug n (s, a) = Result [mkDiag Debug
 -- | add an error message but don't fail
 plain_error :: a -> String -> Range -> Result a
 plain_error x s p = Result [Diag Error s p] $ Just x
-
--- | add an error message using a pretty printed 'Doc' but don't fail
-pplain_error :: a -> Doc -> Range -> Result a
-pplain_error x s p = plain_error x (show s) p
 
 -- | add a warning
 warning :: a -> String -> Range -> Result a

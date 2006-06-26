@@ -42,7 +42,7 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
 import Common.Doc
-import Common.DocUtils ()
+import Common.DocUtils
 import Control.Monad
 import Data.Maybe
 
@@ -133,12 +133,12 @@ inducedFromMorphism extEm rmap sigma = do
           _ -> Map.lookup (ASymbol sy) rmap == Nothing
   -- ... if not, generate an error
   when (not (Set.null incorrectRsyms))
-    (pfatal_error
-       (text "the following symbols:"
-        <+> pretty incorrectRsyms
-        $+$ text "are already mapped directly or do not match with signature"
-        $+$ pretty sigma)
-       nullRange)
+    $ fail $
+       "the following symbols: "
+        ++ showDoc incorrectRsyms
+        "\nare already mapped directly or do not match with signature\n"
+        ++ showDoc sigma ""
+
   -- compute the sort map (as a Map)
   sort_Map <- Set.fold
               (\s m -> do s' <- sortFun rmap s
@@ -181,10 +181,10 @@ sortFun rmap s =
     if Set.null rsys then return s -- use default = identity mapping
     else case Set.lookupSingleton rsys of
           Just rsy -> return $ rawSymName rsy -- take the unique rsy
-          Nothing -> pplain_error s  -- ambiguity! generate an error
-                 (text "Sort" <+> pretty s
-                  <+> text "mapped ambiguously:" <+> pretty rsys)
-                 nullRange
+          Nothing -> plain_error s  -- ambiguity! generate an error
+                 ("Sort " ++ showId s
+                  " is mapped ambiguously: "  ++ showDoc rsys "")
+                 $ posOfId s
     where
     -- get all raw symbols to which s is mapped to
     rsys = Set.unions $ map ( \ x -> case Map.lookup x rmap of
@@ -204,12 +204,10 @@ opFun rmap sort_Map ide ots m =
                 Map.lookup (AnID ide) rmap) of
        (Just rsy1, Just rsy2) ->
           do m' <- m
-             pplain_error m'
-               (text "Operation" <+> pretty ide
-                <+> text "is mapped twice:"
-                <+> pretty rsy1 <+> text "," <+> pretty rsy2
-               )
-               nullRange
+             plain_error m'
+               ("Operation " ++ showId ide
+                " is mapped twice: "
+                ++ showDoc (rsy1, rsy2) "") $ posOfId ide
        (Just rsy, Nothing) ->
           Set.fold (insertmapOpSym sort_Map ide rsy) m1 ots1
        (Nothing, Just rsy) ->
@@ -230,24 +228,22 @@ directOpMap rmap sort_Map ide' ot (ots',m') =
 
     -- map op symbol (ide,ot) to raw symbol rsy
 mappedOpSym :: Sort_map -> Id -> OpType -> RawSymbol -> Result (Id,FunKind)
-mappedOpSym sort_Map ide ot rsy = case rsy of
+mappedOpSym sort_Map ide ot rsy =
+    let opSym = "Operation symbol " ++ showDoc (idToOpSymbol ide ot)
+                " is mapped to "
+    in case rsy of
       ASymbol (Symbol ide' (OpAsItemType ot')) ->
         if compatibleOpTypes (mapOpType sort_Map ot) ot'
            then return (ide',opKind ot')
-           else pplain_error (ide,opKind ot)
-             (text "Operation symbol " <+> pretty (idToOpSymbol ide ot)
-              <+> text "is mapped to type" <+> pretty ot'
-              <+> text "but should be mapped to type" <+>
-              pretty (mapOpType sort_Map ot)
-             )
-             nullRange
+           else plain_error (ide, opKind ot)
+             (opSym ++ "type " ++ showDoc ot'
+              " but should be mapped to type " ++
+              showDoc (mapOpType sort_Map ot)"") $ posOfId ide
       AnID ide' -> return (ide',opKind ot)
       AKindedId FunKind ide' -> return (ide',opKind ot)
-      _ -> pplain_error (ide,opKind ot)
-               (text "Operation symbol " <+> pretty (idToOpSymbol ide ot)
-                <+> text" is mapped to symbol of wrong kind:"
-                <+> pretty rsy)
-               nullRange
+      _ -> plain_error (ide,opKind ot)
+               (opSym ++ "symbol of wrong kind: " ++ showDoc rsy "")
+               $ posOfId ide
 
     -- insert mapping of op symbol (ide,ot) to raw symbol rsy into m
 insertmapOpSym :: Sort_map -> Id -> RawSymbol -> OpType
@@ -280,11 +276,10 @@ predFun rmap sort_Map ide pts m =
                 Map.lookup (AnID ide) rmap) of
        (Just rsy1, Just rsy2) ->
           do m' <- m
-             pplain_error m'
-               (text "Predicate" <+> pretty ide
-                <+> text "is mapped twice:"
-                <+> pretty rsy1 <+> text "," <+> pretty rsy2)
-               nullRange
+             plain_error m'
+               ("Predicate " ++ showId ide
+                " is mapped twice: " ++
+                showDoc (rsy1, rsy2) "") $ posOfId ide
        (Just rsy, Nothing) ->
           Set.fold (insertmapPredSym sort_Map ide rsy) m1 pts1
        (Nothing, Just rsy) ->
@@ -305,25 +300,22 @@ directPredMap rmap sort_Map ide pt (pts,m) =
 
     -- map pred symbol (ide,pt) to raw symbol rsy
 mappedPredSym :: Sort_map -> Id -> PredType -> RawSymbol -> Result Id
-mappedPredSym sort_Map ide pt rsy = case rsy of
+mappedPredSym sort_Map ide pt rsy =
+    let predSym = "Predicate symbol " ++ showDoc (idToPredSymbol ide pt)
+                  " is mapped to "
+    in case rsy of
       ASymbol (Symbol ide' (PredAsItemType pt')) ->
         if mapPredType sort_Map pt == pt'
            then return ide'
-           else pplain_error ide
-             (text "Predicate symbol " <+> pretty (idToPredSymbol ide pt)
-              <+> text "is mapped to type" <+> pretty pt'
-              <+> text "but should be mapped to type"
-              <+> pretty (mapPredType sort_Map pt)
-             )
-             nullRange
+           else plain_error ide
+             (predSym ++ "type " ++ showDoc pt'
+              " but should be mapped to type " ++
+              showDoc (mapPredType sort_Map pt) "") $ posOfId ide
       AnID ide' -> return ide'
       AKindedId PredKind ide' -> return ide'
-      _ -> pplain_error ide
-               (text "Predicate symbol" <+> pretty (idToPredSymbol ide pt)
-                <+> text "is mapped to symbol of wrong kind: "
-                <+> pretty rsy
-               )
-               nullRange
+      _ -> plain_error ide
+               (predSym ++ "symbol of wrong kind: " ++ showDoc rsy "")
+               $ posOfId ide
 
     -- insert mapping of pred symbol (ide,pt) to raw symbol rsy into m
 insertmapPredSym :: Sort_map -> Id -> RawSymbol -> PredType
@@ -622,9 +614,8 @@ inducedFromToMorphism extEm isSubExt  rmap sigma1 sigma2 = do
      --trace ("posmap1= "++showPretty posmap1 "") (return ())
      case Map.lookup (True,0) posmap2 of
        Nothing -> return ()
-       Just syms -> pfatal_error
-         (text "No symbol mapping for "
-           <+> pretty (Set.fromList $ map fst syms)) nullRange
+       Just syms -> fail $ "No symbol mapping for "
+                    ++ showDoc (map fst syms) ""
      -- 3. call recursive function with empty akmap and initial posmap
      smap <- tryToInduce sigma1 sigma2 Map.empty posmap
      smap1 <- case smap of
@@ -734,12 +725,10 @@ Output: signature "Sigma1"<=Sigma.
 -}
 
 generatedSign :: Ext f e m -> SymbolSet -> Sign f e -> Result (Morphism f e m)
-generatedSign extEm sys sigma = do
+generatedSign extEm sys sigma =
   if not (sys `Set.isSubsetOf` symset)   -- 2.
-   then pfatal_error
-         (text "Revealing: The following symbols"
-          <+> pretty(sys Set.\\ symset)
-          <+> text "are not in the signature") nullRange
+   then fail $ "Revealing: The following symbols "
+           ++ showDoc (sys Set.\\ symset) " are not in the signature"
    else return $ embedMorphism extEm sigma2 sigma    -- 7.
   where
   symset = symOf sigma   -- 1.
@@ -785,13 +774,11 @@ Output: signature "Sigma1"<=Sigma.
 
 cogeneratedSign :: Ext f e m -> SymbolSet -> Sign f e
                 -> Result (Morphism f e m)
-cogeneratedSign extEm symset sigma = do
+cogeneratedSign extEm symset sigma =
   if {-trace ("symset "++show symset++"\nsymset0 "++show symset0)-}
            (not (symset `Set.isSubsetOf` symset0))   -- 2.
-   then pfatal_error
-         (text "Hiding: The following symbols"
-          <+> pretty(symset Set.\\ symset0)
-          <+> text "are not in the signature") nullRange
+   then fail $ "Hiding: The following symbols "
+            ++ showDoc (symset Set.\\ symset0) " are not in the signature"
    else generatedSign extEm symset1 sigma -- 4./5.
   where
   symset0 = symOf sigma   -- 1.
@@ -816,4 +803,3 @@ finalUnion addSigExt sigma1 sigma2 = return $ addSig addSigExt sigma1 sigma2
 -- | Insert into a list of values
 listInsert :: Ord k => k -> a -> Map.Map k [a] -> Map.Map k [a]
 listInsert kx x t = Map.insert kx (x : Map.findWithDefault [] kx t) t
-
