@@ -21,6 +21,14 @@ import Static.AnalysisLibrary
 import Static.DevGraph
 import Driver.Options
 import Common.Utils
+import Proofs.Automatic
+import Proofs.Global
+import Proofs.Local
+import Proofs.Composition
+import Proofs.HideTheoremShift
+import Proofs.TheoremHideShift
+--import Proofs.InferBasic
+
 
 data GOAL = 
    Node         LIB_ID
@@ -53,9 +61,10 @@ data CmdInterpreterStatusID =
    EnvID
  
 data CommandFunctionsAndParameters=
-   CommandIO             ([ScriptCommandParameters]->IO CmdInterpreterStatus) [ScriptCommandParameters] 
- | CommandIOParam        (([ScriptCommandParameters],CmdInterpreterStatus)-> IO CmdInterpreterStatus) [ScriptCommandParameters] CmdInterpreterStatusID 
- | CommandTest           ([ScriptCommandParameters]->IO())  [ScriptCommandParameters]
+   CommandParam        ([ScriptCommandParameters]->IO CmdInterpreterStatus) [ScriptCommandParameters] 
+ | CommandParamStatus  (([ScriptCommandParameters],CmdInterpreterStatus)-> IO CmdInterpreterStatus) [ScriptCommandParameters] CmdInterpreterStatusID 
+ | CommandStatus       (CmdInterpreterStatus -> CmdInterpreterStatus) CmdInterpreterStatusID
+ | CommandTest         ([ScriptCommandParameters]->IO())  [ScriptCommandParameters]
  | CommandError
 
 
@@ -76,8 +85,69 @@ commandUse ls
                                       Nothing ->  return (OutputErr "Couldn't load the file specified")
                 _ -> return (OutputErr "Wrong parameter") 
 
---commandDgAuto::([ScriptCommandParameters],CmdInterpreterStatus) -> IO CmdInterpreterStatus
---commandDgAuto ls x
---                 = case ls of 
-                        
-           
+commandDgAllAuto::CmdInterpreterStatus -> CmdInterpreterStatus
+commandDgAllAuto arg
+                 = case arg of
+                      (Env x y) -> let result= (automatic x) y in
+                                       (Env x result)
+                      _ -> (OutputErr "Wrong parameter")
+
+
+commandDgAllGlobSubsume::CmdInterpreterStatus -> CmdInterpreterStatus
+commandDgAllGlobSubsume arg
+                          = case arg of
+                               (Env x y) -> let result =(globSubsume x) y in
+                                                (Env x result)
+                               _ -> (OutputErr "Wrong parameters")
+
+commandDgAllGlobDecomp::CmdInterpreterStatus -> CmdInterpreterStatus
+commandDgAllGlobDecomp arg 
+                          = case arg of 
+                               (Env x y) -> let result= (globDecomp x) y in
+                                                (Env x result)
+                               _ -> (OutputErr "Wrong parameters")
+
+commandDgAllLocInfer::CmdInterpreterStatus -> CmdInterpreterStatus                        
+commandDgAllLocInfer arg
+                        = case arg of
+                             (Env x y) -> let result= (localInference x) y in
+                                              (Env x result)
+                             _ -> (OutputErr "Wrong parameters")
+
+commandDgAllLocDecomp::CmdInterpreterStatus -> CmdInterpreterStatus
+commandDgAllLocDecomp arg
+                         = case arg of 
+                               (Env x y) -> let result= (locDecomp x) y in
+                                                (Env x result)
+                               _-> (OutputErr "Wrong parameters")
+
+commandDgAllComp::CmdInterpreterStatus -> CmdInterpreterStatus
+commandDgAllComp arg 
+                    = case arg of
+                           (Env x y) -> let result= (composition x) y in
+                                            (Env x result)
+                           _ -> (OutputErr "Wrong parameters")
+
+commandDgAllCompNew::CmdInterpreterStatus -> CmdInterpreterStatus
+commandDgAllCompNew arg
+                      = case arg of
+                             (Env x y) -> let result=(compositionCreatingEdges x) y in
+                                              (Env x result)
+                             _ -> (OutputErr "Wrong parameters")
+
+commandDgAllHideThm::CmdInterpreterStatus -> CmdInterpreterStatus
+commandDgAllHideThm arg
+                      = case arg of
+                             (Env x y) -> let result= (automaticHideTheoremShift x) y in
+                                              (Env x result)
+                             _-> (OutputErr "Wrong parameters")
+
+commandDgAllThmHide::CmdInterpreterStatus -> CmdInterpreterStatus
+commandDgAllThmHide arg
+                       = case arg of
+                              (Env x y) -> let result=(theoremHideShift x) y in
+                                               (Env x result)
+                              _-> (OutputErr "Wrong parameters")
+
+  
+

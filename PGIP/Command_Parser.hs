@@ -10,7 +10,6 @@ Parsing the comand line script.
 
   TODO :
           - add comments to the code
-          - treat error messages
           - delete the test functions
 
 -} 
@@ -26,6 +25,8 @@ import Text.ParserCombinators.Parsec
 import PGIP.Parser_Syntax
 import PGIP.Commands
 import PGIP.Common
+
+-- |the 'getPath' function read a path as a a list of words
 getPath::AParser st [String]
 getPath 
         = try ( do  v<-scanAnyWords `sepBy1` (string "/")
@@ -38,7 +39,7 @@ getPath
               )
       <?> 
           "path"
-
+-- |the 'getKeyWord' function accepts a string as argument and tries to read it
 getKeyWord::String -> AParser st String
 getKeyWord wd 
               =  try ( string wd
@@ -47,6 +48,7 @@ getKeyWord wd
                  try ( do  skip 
                            string wd
                      )
+              <?> ("keyword "++wd)
                        
 getGoal::AParser st GOAL
 getGoal        
@@ -99,7 +101,9 @@ getComorphism
             <|>
                try ( do  v<-libId
                          return [ v]
-		   )
+                   )
+            <?>
+               " list of ID's separated by semicolon"
 
 scanCommand::[String] -> AParser st [ScriptCommandParameters]
 scanCommand arg 
@@ -160,19 +164,27 @@ scanCommand arg
 checkCommand::[([String], CommandFunctionsAndParameters)]->AParser st CommandFunctionsAndParameters
 checkCommand arg
                 = case arg of 
-                        (command_description, (CommandIOParam x _ cmdID)):command_list ->  do
+                        (command_description, (CommandParamStatus x _ cmdID)):command_list ->  do
                                       try ( do 
                                                ls<-scanCommand command_description 
                                                try (skip) <|> try (eof)
-                                               return (CommandIOParam x ls cmdID)
+                                               return (CommandParamStatus x ls cmdID)
                                           )
                                    <|>
                                       checkCommand command_list
-                        (command_description, (CommandIO x _)):command_list ->  do
+                        (command_description, (CommandParam x _)):command_list ->  do
                                       try ( do
                                                ls<-scanCommand command_description
                                                try (skip) <|> try (eof)
-                                               return (CommandIO x ls)
+                                               return (CommandParam x ls)
+                                          )
+                                   <|>
+                                      checkCommand command_list
+                        (command_description, (CommandStatus x cmdID)):command_list -> do
+                                      try ( do 
+                                               scanCommand command_description
+                                               try (skip) <|> try     (eof)
+                                               return (CommandStatus x cmdID)
                                           )
                                    <|>
                                       checkCommand command_list
@@ -203,11 +215,11 @@ runScriptCommands::([CommandFunctionsAndParameters],[CmdInterpreterStatus]) -> I
 runScriptCommands (arg,status)
                      = case arg of
                               [] -> return (Just ())
-                              (CommandIO fn x):ls -> do 
+                              (CommandParam fn x):ls -> do 
                                                        val<- fn x
                                                        let newStatus= addOrReplace (val,status)
                                                        runScriptCommands (ls,newStatus)
-                              (CommandIOParam fn x cmdID):ls -> do
+                              (CommandParamStatus fn x cmdID):ls -> do
                                                        let tmp = extractFrom (status,cmdID)
                                                        case tmp of
                                                             Nothing -> return Nothing
@@ -215,6 +227,14 @@ runScriptCommands (arg,status)
                                                                         val <- fn (x,xx)
                                                                         let newStatus= addOrReplace (val,status)
                                                                         runScriptCommands (ls,newStatus)
+                              (CommandStatus fn cmdID):ls -> do
+                                                       let tmp = extractFrom (status,cmdID)
+                                                       case tmp of 
+                                                            Nothing -> return Nothing
+                                                            Just xx -> do
+                                                                         let val= fn xx
+                                                                         let newStatus= addOrReplace(val,status)
+                                                                         runScriptCommands (ls, newStatus)
                               (CommandTest fn x):ls -> do
                                                        fn x
                                                        runScriptCommands (ls,status)
@@ -234,23 +254,23 @@ parseScriptFile fileName
 
 
 -------------------------------------------------------------------------- test function	
-myPrint [] = putStrLn " ."
-myPrint ((CommandIOParam x y _):ls) = do myPrint ls
-                                         putStrLn $ show y 
-myPrint ((CommandIO x y):ls) = do myPrint ls
-                                  putStrLn $ show y
-myPrint ((CommandTest x y):ls) = do myPrint ls
-                                    putStrLn $ show y
+----------  myPrint [] = putStrLn " ."
+---------myPrint ((CommandIOParam x y _):ls) = do myPrint ls
+----------                                         putStrLn $ show y 
+----------myPrint ((CommandIO x y):ls) = do myPrint ls
+-----------                                  putStrLn $ show y
+------------myPrint ((CommandTest x y):ls) = do myPrint ls
+---------                                    putStrLn $ show y
 --myPrint CommandError:ls = do myPrint ls
 --                             putStrLn "error ..!"
-parseScriptString input
-                       = do 
-			   let r=runParser parseScript (emptyAnnos())  "" input
-			   case r of
-                                Right out->  
-                                         myPrint out 
-                                Left err ->
-                                         putStrLn "error" 
+-----parseScriptString input
+-------                       = do 
+----------			   let r=runParser parseScript (emptyAnnos())  "" input
+-------			   case r of
+--                                Right out->  
+-----                                         myPrint out 
+-----                                Left err ->
+-------                                         putStrLn "error" 
 		
 						 					 
 

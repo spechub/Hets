@@ -6,11 +6,20 @@ Maintainer  : r.pascanu@iu-bremen.de
 Stability   : provisional
 Portability : portable
 
-Definition of the command line script syntax
+Definition of the command line script syntax. Any command from the script is defined by a list of strings and keywords (PATH, GOALS, COMORPHISM,PROVER,
+FORMULA, PROOF-SCRIPT, FORMULA-STAR, FORMULA-PLUS) and a function toghether with a list of parameters. If the parser manages to parse in the given 
+order all the indicatad words it will execute the corresponding function passing as argument a list of parameters. The parameters are determined
+by the keywords enumarated above. The meaning of each is
+PATH - the parser expects to read a path
+GOALS - the parser expects to read none or more goals
+COMORPHISM - the parser expects to read one or more ID separated by semicolon
+PROVER - the parser expects to read a prover ID
+FORMULA - the parser expects to read a formula ID
+PROOF-SCRIPT - the parser expects to read some strings ended with the keyword end-script 
+FORMULA-STAR - the parser expects to read none or more formulaes separated by blanks
+FURMULA-PLUS - the parser expects to read one or more formulaes separated by blanks
+If the parser meaneage to parse in the given order all the indicated words
 
-   TODO
-        - add comments
-        
 -} 
 
 
@@ -22,7 +31,7 @@ import PGIP.Commands
         -- basic datastructures: see Static.DevGraph, Logic.Prover 
 
 commands::[ ([String], CommandFunctionsAndParameters)]
-commands =     [(["use","PATH"],                                       (CommandIO commandUse [])), -- Static.AnalysisLibrary, Driver.ReadFn
+commands =     [(["use","PATH"],                                       (CommandParam commandUse [])), -- Static.AnalysisLibrary, Driver.ReadFn
                 (["dg","auto","GOALS"],                                (CommandTest test [])), -- Proofs.Auto
                 (["dg","glob-subsume","GOALS"],                        (CommandTest test [])), -- Proofs.Global
                 (["dg","glob-decomp","GOALS"],                         (CommandTest test [])), -- Proofs.Global
@@ -33,15 +42,15 @@ commands =     [(["use","PATH"],                                       (CommandI
                 (["dg","hide-thm","GOALS"],                            (CommandTest test [])), -- Proofs.HideThmShift
                 (["dg","thm-hide","GOALS"],                            (CommandTest test [])), -- Proofs.ThmHideShift
                 (["dg","basic","GOALS"],                               (CommandTest test [])), -- Proofs.InferBasic
-                (["dg-all","auto"],                                    (CommandTest test [])), -- dto.
-                (["dg-all","glob-subsume"],                            (CommandTest test [])),
-                (["dg-all","glob-decomp"],                             (CommandTest test [])),
-                (["dg-all","loc-infer"],                               (CommandTest test [])),
-                (["dg-all","loc-decomp"],                              (CommandTest test [])),
-                (["dg-all","comp"],                                    (CommandTest test [])),
-                (["dg-all","comp-new"],                                (CommandTest test [])),
-                (["dg-all","hide-thm"],                                (CommandTest test [])),
-                (["dg-all","thm-hide"],                                (CommandTest test [])),
+                (["dg-all","auto"],                                    (CommandStatus commandDgAllAuto EnvID)), -- dto.
+                (["dg-all","glob-subsume"],                            (CommandStatus commandDgAllGlobSubsume EnvID)),
+                (["dg-all","glob-decomp"],                             (CommandStatus commandDgAllGlobDecomp EnvID)),
+                (["dg-all","loc-infer"],                               (CommandStatus commandDgAllLocInfer EnvID)),
+                (["dg-all","loc-decomp"],                              (CommandStatus commandDgAllLocDecomp EnvID)),
+                (["dg-all","comp"],                                    (CommandStatus commandDgAllComp EnvID)),
+                (["dg-all","comp-new"],                                (CommandStatus commandDgAllCompNew EnvID)),
+                (["dg-all","hide-thm"],                                (CommandStatus commandDgAllHideThm EnvID)),
+                (["dg-all","thm-hide"],                                (CommandStatus commandDgAllThmHide EnvID)),
                 (["dg-all","basic"],                                   (CommandTest test [])),
                 (["show-dg-goals"],                                    (CommandTest test [])), -- new function
                 (["show-theory-goals"],                                (CommandTest test [])), -- showTheory in GUI.ConvertAbstractToDevGraph

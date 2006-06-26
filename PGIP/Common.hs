@@ -18,7 +18,8 @@ module PGIP.Common where
                       
 
 import PGIP.Commands
-
+-- | The 'addOrReplace' function,given a CmdInterpeterStatus and a list of such CmdInterpeterStatus, replaces any occurance of that type
+-- of CmdInterpeterStatus with the given one, and if none found it adds one to the list
 addOrReplace::(CmdInterpreterStatus,[CmdInterpreterStatus])->[CmdInterpreterStatus]
 addOrReplace (val,status)
                       = case val of
@@ -31,7 +32,8 @@ addOrReplace (val,status)
                                   OutputErr x -> (OutputErr x):[]
                                   CmdInitialState -> status
 
-
+-- | The 'extractFrom' function, given a list of CmdInterpeterStatus and a CmdInterpreterStatusID, it returns the first occurance of 
+-- that type of CmdInterpreterStatus from the list 
 extractFrom::([CmdInterpreterStatus],CmdInterpreterStatusID) -> Maybe CmdInterpreterStatus
 extractFrom (status,cmdID)
                           = case cmdID of
