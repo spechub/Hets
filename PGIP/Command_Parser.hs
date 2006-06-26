@@ -220,17 +220,17 @@ runScriptCommands (arg,status)
                                                        runScriptCommands (ls,status)
                               CommandError:_ -> return Nothing
 
-parseScriptFile:: FilePath-> IO ()
+parseScriptFile:: FilePath-> IO (Maybe())
 parseScriptFile fileName
                         = do 
                             input<- readFile fileName
                             let r=runParser parseScript (emptyAnnos()) "" input
                             case r of
-                               Right _-> do 
-                                           runScriptCommands (r,[])
+                               Right out-> do 
+                                           runScriptCommands (out,[])
                                              
-                               Left err -> 
-                                           putStrLn $ show err
+                               Left _ -> 
+                                          return Nothing 
 
 
 -------------------------------------------------------------------------- test function	

@@ -76,8 +76,8 @@ commandUse ls
                                       Nothing ->  return (OutputErr "Couldn't load the file specified")
                 _ -> return (OutputErr "Wrong parameter") 
 
-commandDgAuto::([ScriptCommandParameters],CmdInterpreterStatus) -> IO CmdInterpreterStatus
-commandDgAuto ls x
-                 = case ls of 
+--commandDgAuto::([ScriptCommandParameters],CmdInterpreterStatus) -> IO CmdInterpreterStatus
+--commandDgAuto ls x
+--                 = case ls of 
                         
            
