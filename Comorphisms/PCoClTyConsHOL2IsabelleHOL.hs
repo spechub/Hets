@@ -235,11 +235,10 @@ transOpId sign op ts =
 
 transProgEq :: Env -> ProgEq -> (Isa.Term, Isa.Term)
 transProgEq sign (ProgEq pat trm _) =
-    let op = transTerm sign pat
-        ot = transTerm sign trm
-    in {- if isPartial op || isPartial ot then
-           (someTerm op, someTerm ot)
-       else -} (snd op, snd ot)
+    let op = transPattern sign pat
+        (ty, ot) = transTerm sign trm
+    in if isPartialVal ty then error "transProgEq"
+       else (op, ot)
 
 ifImplOp :: Isa.Term
 ifImplOp = conDouble "ifImplOp"
@@ -301,8 +300,12 @@ transTerm sign trm = case trm of
     LambdaTerm pats q body _ ->
         let (ty, t) = transTerm sign body in
         foldr (abstraction sign) (case q of
-                                    Partial -> makePartialVal ty
-                                    Total -> ty, t) pats
+            Partial -> -- if isPartialVal ty then 
+                           (ty, t)
+                       -- else (makePartialVal ty, termAppl conSome t)
+            Total -> if isPartialVal ty 
+                     then error "PCoClTyConsHOL2IsabelleHOL.totalLambda"
+                     else (ty, t)) pats
     LetTerm As.Let peqs body _ -> 
         let (bTy, bTrm) = transTerm sign body
         in (bTy, Isa.Let (map (transProgEq sign) peqs) bTrm)
@@ -470,19 +473,10 @@ adjustTypes aTy rTy ty = case (aTy, ty) of
     (FunType a c, FunType b d) -> 
        let ((_, aF), (aT, aC)) = adjustTypes b c a 
            ((cB, cF), (dT, dC)) = adjustTypes c rTy d
-       in if cB || isNotIdOp cF 
+       in if cB || isNotIdOp cF
           then error "adjustTypes.FunTypes" else ((False, IdOp), 
            (FunType aT dT, 
                     mkCompFun aF $ mkCompFun (mkResFun dC) $ mkArgFun aC))
-    (TypeVar _, FunType b d) -> 
-       let r = makePartialVal d
-           a = makePartialVal b
-           ((cB, cF), (dT, dC)) = adjustTypes r rTy d
-           ((_, aF), (aT, aC)) = adjustTypes b r a 
-       in if cB || isNotIdOp cF 
-           then error "adjustTypes.TypeVar-FunTypes" else ((False, IdOp),
-           (FunType aT dT, mkCompFun aF $ 
-                    mkCompFun (mkResFun dC) $ mkArgFun aC))
     (TypeVar _, _) -> ((False, IdOp), (ty, IdOp))
     (_,  TypeVar _) -> ((False, IdOp), (aTy, IdOp))
     (ApplType i1 l1, ApplType i2 l2) | i1 == i2 && length l1 == length l2 
@@ -559,17 +553,22 @@ mkApp sg f arg =
 
 -- * translation of lambda abstractions
 
--- form Abs(pattern term)
-abstraction :: Env -> As.Term -> (FunType, Isa.Term) -> (FunType, Isa.Term)
-abstraction sign pat (ty, body) = let
-    getType t =
+getPatternType :: As.Term -> FunType
+getPatternType t =
       case t of
         QualVar (VarDecl _ typ _ _) -> funType typ
         TypedTerm _ _ typ _         -> funType typ
-        TupleTerm terms _           -> evalTupleType terms
-        _                           ->
-          error "PCoClTyConsHOL2IsabelleHOL.abstraction"
-    evalTupleType t = foldr1 PairType (map getType t)
-    pTy = getType pat
-    in (FunType pTy ty, Abs (snd $ transTerm sign pat) 
-                        (transFunType pTy) body NotCont)
+        TupleTerm ts _           -> foldr1 PairType $ map getPatternType ts
+        _ -> error "PCoClTyConsHOL2IsabelleHOL.getPatternType"
+
+transPattern :: Env -> As.Term -> Isa.Term
+transPattern sign pat = 
+    let (ty, trm) = transTerm sign pat
+    in if isPartialVal ty then error "transPattern"
+       else trm
+
+-- form Abs(pattern term)
+abstraction :: Env -> As.Term -> (FunType, Isa.Term) -> (FunType, Isa.Term)
+abstraction sign pat (ty, body) = let pTy = getPatternType pat in 
+    (FunType pTy ty, 
+     Abs (transPattern sign pat) (transFunType pTy) body NotCont)
