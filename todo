@@ -420,40 +420,39 @@ Isabelle interface
 Rainer (Klaus)
 ************************************************
 
-Connecting Hets with MathServ
- Either use 
-  - haifa (http://www.dcs.shef.ac.uk/~simonf/HAIFA.html) 
-      pros: * relies not on external tool
-      	    * light weight call
-      cons: * code is not well maintained
-      	    * a lot of the deserialization of the answer must be done 
-	      in Haskell
-  - call a java program included in MathServ distrib
-      pros: * works imediately
-      	    * deserilisation is mostly done in java
-      cons: * use of external tool
- 
- Use modified dfg2tptp to translate SPASS theories into TPTP problems
-  (ask Klaus for sources)
+(read documentation for XPath)
 
- Add possibility to choose a prover out of a list of available provers
-   (similar to "More fine grained..." and behind more fine grained)
- 
- Adapt Comorphisms.KnownProvers to select a certain prover at the end of a 
-   comorphism automatically
+use either XPath or Haifas xmlify stuff for
+  full parsing of rdf-objects returned by MathServ
+  putting this stuff into a data-structure: MathServResponse
+  map/transform MathServResponse into Proof_status
+   (intermediate datastructure makes parser independent from Proof_status)
 
- Adapt existing SPASS GUI to cover call of the MathServ broker
-   by - transforming the grid layout packer into the packer 
-      	used in GUI.ProofManagement (easier to maintain and to extend)
-      - abstraction of certain parts of the GUI into helper functions
-      	forms a new generic Prover-GUI toolkit
-      - on top of this GUI toolkit
-      
- Write a GUI based on the generic Prover-GUI 
-   to call MathServ's Vampire service directly 
-     with additional parameters
+SPASS/Logic_SPASS
+  change proof_tree to String and save TSTP to it
+  SPASS Proof must be parsed and translated to TSTP 
+    (Klaus checks for this functionallity in MathServ)
 
- 
+SPASS/MathServCommunications
+  types for Service and Soap Operation instead of Strings
+
+tactic_script activities
+  parser for SPASS commandline 
+    parsed into [SPASS.Sign.SPSetting]
+  format of tactic_script and parser for MathServBroker and 
+    individual MathServ reasoners
+  include current options into saved DFG file (saved from GUI) 
+    (s. SPASS.CreateDFG)
+  include current options as comment into saved TPTP file (saved from GUI)
+    and also the requested prover or "[via Broker]"
+
+Name of the real prover should be in the prover_name of Proof_status 
+  if the Broker was used but "<name> [via MathServBroker]" should be 
+  the end of the prover name
+
+display of tactic_scripts in GUI.ProofManagement 
+
+
 ************************************************
 Klaus
 ************************************************
@@ -485,11 +484,6 @@ visualization of "taxonomy" of CASL signatures
   (subsorts = inheritance, unary preds = concepts, binary preds = relations)
 
  last two ... partially done
-
-allgemeine Hets-GUI 
-  für Anzeige von (un)bewiesenen Goals, ... done
-  bewiesene Goals als Axioms mit ausgeben ... was ist das ???
-    das ist schon implementiert ("Theorems to include if proven")
 
 Recognize guarded fragment of CASL:
   G ::= forall x . At(x) => G      where At is a conjunction of atoms
