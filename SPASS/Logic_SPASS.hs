@@ -28,6 +28,7 @@ import SPASS.Print
 #ifdef UNI_PACKAGE
 import SPASS.Prove
 import SPASS.ProveMathServ
+import SPASS.ProveVampire
 #endif
 
 
@@ -66,7 +67,7 @@ instance Sentences SoftFOL Sentence () Sign SoftFOLMorphism ()  where
 -- the prover uses HTk and IO functions from uni
 #ifdef UNI_PACKAGE
       provers SoftFOL = [spassProver
-                         ,mathServBroker]
+                         ,mathServBroker,vampire]
       cons_checkers SoftFOL = []
 #endif
     -- other default implementations are fine
