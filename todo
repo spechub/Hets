@@ -76,6 +76,7 @@ Mitte/Ende Juni: Outline der Diplomarbeit
   Qualitative Constraint-Kalküle (siehe Thomas)
   CASL (siehe Paper   T. Mossakowski: Relating CASL with Other Specification Languages:
         the Institution Level Theoretical Computer Science 286, p. 367-475, 2002.)
+     CASL-Formeln nur ganz kurz
   ConstraintCASL
     Signaturen, Signaturmorphismen (aus CASL)
     Modelle (aus CASL)
