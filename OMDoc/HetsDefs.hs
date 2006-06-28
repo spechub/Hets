@@ -220,9 +220,12 @@ innNodes dg n =
     )
     (Graph.inn dg n)
 
-getCASLMorph::(Graph.LEdge DGLinkLab)->(CASL.Morphism.Morphism () () ())
-getCASLMorph (_,_,edge) =
+getCASLMorphLL::DGLinkLab->(CASL.Morphism.Morphism () () ())
+getCASLMorphLL edge =
   fromMaybe (error "cannot cast morphism to CASL.Morphism")  $ (\(Logic.Grothendieck.GMorphism _ _ morph) -> Data.Typeable.cast morph :: (Maybe (CASL.Morphism.Morphism () () ()))) $ dgl_morphism edge
+
+getCASLMorph::(Graph.LEdge DGLinkLab)->(CASL.Morphism.Morphism () () ())
+getCASLMorph (_,_,edge) = getCASLMorphLL edge
 
 getMCASLMorph::(Graph.LEdge DGLinkLab)->(Maybe (CASL.Morphism.Morphism () () ()))
 getMCASLMorph (_,_,edge) = (\(Logic.Grothendieck.GMorphism _ _ morph) -> Data.Typeable.cast morph :: (Maybe (CASL.Morphism.Morphism () () ()))) $ dgl_morphism edge
@@ -387,9 +390,9 @@ getOpsMapFromNodeWithOrigins dg n =
     n
     opMap
     Map.toList
-    (\(mid, _) om -> case Map.lookup mid om of
+    (\(mid, mtype) om -> case Map.lookup mid om of
       Nothing -> False
-      (Just _) -> True)
+      (Just (mtype')) -> mtype == mtype')
     (Map.fromList . (map (\mewo ->
       (mkWON (fst (wonItem mewo)) (wonOrigin mewo), snd (wonItem mewo)))))
       
@@ -401,9 +404,9 @@ getAssocOpsMapFromNodeWithOrigins dg n =
     n
     assocOps
     Map.toList
-    (\(mid, _) om -> case Map.lookup mid om of
+    (\(mid, mtype) om -> case Map.lookup mid om of
       Nothing -> False
-      (Just _) -> True)
+      (Just (mtype')) -> mtype == mtype')
     (Map.fromList . (map (\mewo ->
       (mkWON (fst (wonItem mewo)) (wonOrigin mewo), snd (wonItem mewo)))))
       
@@ -415,9 +418,9 @@ getPredsMapFromNodeWithOrigins dg n =
     n
     predMap
     Map.toList
-    (\(mid, _) om -> case Map.lookup mid om of
+    (\(mid, mtype) om -> case Map.lookup mid om of
       Nothing -> False
-      (Just _) -> True)
+      (Just (mtype')) -> mtype == mtype')
     (Map.fromList . (map (\mewo ->
       (mkWON (fst (wonItem mewo)) (wonOrigin mewo), snd (wonItem mewo)))))
       
@@ -627,7 +630,7 @@ getNodeDGNameMappingWONP dg mapper dispose =
       Map.insert thisname mapped mapping
     ) Map.empty $ Graph.labNodes dg
     
-type Imports = Set.Set (String, (Maybe MorphismMap), Bool)
+type Imports = Set.Set (String, (Maybe MorphismMap), HidingAndRequationList, Bool)
 type Sorts = Set.Set SORT
 type Rels = Rel.Rel SORT
 type Preds = Map.Map Id.Id (Set.Set PredType)
@@ -640,7 +643,7 @@ type IdWO = WithOriginNode Id.Id
 type SentenceWO = WithOriginNode (Ann.Named CASLFORMULA)
 
 
-type ImportsWO = Set.Set (NODE_NAMEWO, (Maybe MorphismMap))
+type ImportsWO = Set.Set (NODE_NAMEWO, (Maybe MorphismMap), HidingAndRequationList)
 type SortsWO = Set.Set SORTWO
 type RelsWO = Rel.Rel SORTWO
 type PredsWO = Map.Map IdWO (Set.Set PredType)
@@ -864,10 +867,10 @@ getNodeImportsNodeNames dg = getNodeNameMapping dg (
         else
           (Just (makeMorphismMap caslmorph))
     in
-      ((adjustNodeName ("AnonNode_"++(show from)) $ getDGNodeName node), mmm, isglobal):names
+      ((adjustNodeName ("AnonNode_"++(show from)) $ getDGNodeName node), mmm, ([],[]), isglobal):names
     ) [] $ inputLNodes dgr n ) Set.null
   
-getNodeImportsNodeDGNamesWO::DGraph->Map.Map NODE_NAMEWO (Set.Set (NODE_NAMEWO, Maybe MorphismMap))
+getNodeImportsNodeDGNamesWO::DGraph->ImportsMapDGWO --Map.Map NODE_NAMEWO (Set.Set (NODE_NAMEWO, Maybe MorphismMap))
 getNodeImportsNodeDGNamesWO dg = getNodeDGNameMappingWO dg (
   \dgr n -> Set.fromList $ 
    foldl (\names (from,node) ->
@@ -882,7 +885,7 @@ getNodeImportsNodeDGNamesWO dg = getNodeDGNameMappingWO dg (
         else
           (Just (makeMorphismMap caslmorph))
     in
-      ((mkWON (dgn_name node) from), mmm):names
+      ((mkWON (dgn_name node) from), mmm, ([],[])):names
     ) [] $ inputLNodes dgr n ) Set.null
 
 switchTargetSourceMorph::Morphism () () ()->Morphism () () ()
@@ -1018,7 +1021,7 @@ findNodeNameFor::ImportsMap->(Map.Map String a)->(a->Bool)->String->(Maybe Strin
 findNodeNameFor importsMap attribMap finder name =
   let
     m_currentAttrib = Map.lookup name attribMap
-    currentImports = Set.map (\(a,_,_) -> a) $ Map.findWithDefault Set.empty name importsMap
+    currentImports = Set.map (\(a,_,_,_) -> a) $ Map.findWithDefault Set.empty name importsMap
   in
     if (
       case m_currentAttrib of
@@ -1224,6 +1227,29 @@ type MorphismMapWO = (
     ,(Map.Map (IdWO,OpType) (IdWO, OpType))
     ,(Map.Map (IdWO,PredType) (IdWO,PredType))
     ,(Set.Set SORTWO)
+    )
+
+
+type RequationList = [ ( (String, String), (String, String) ) ]
+
+type HidingAndRequationList = ([String], RequationList)
+
+-- string is 'from'
+type RequationListList = [(String, HidingAndRequationList)]
+
+-- string is 'where'
+type RequationMap = Map.Map String RequationListList
+
+hidingAndRequationListToMorphismMap::
+  HidingAndRequationList
+  ->MorphismMap
+hidingAndRequationListToMorphismMap
+  (hidden, requationlist) =
+    (
+        Map.fromList (map (\((_,a),(_,b)) -> (stringToId a, stringToId b)) requationlist)
+      , Map.empty
+      , Map.empty
+      , Set.fromList (map stringToId hidden)
     )
     
 createHidingString::CASLSign->String
@@ -1935,6 +1961,157 @@ addSigns dg n1 n2 =
       
   in
     Graph.insNode (n2, newnodel) (Graph.delNode n2 dg)
+
+data SortTrace =
+    SortNotFound
+  | ST
+    {
+        st_sort :: SORT
+      , st_lib_name :: LIB_NAME
+      , st_node :: Graph.Node
+      , st_branches :: [SortTrace]
+    }
+
+displaySortTrace::String->SortTrace->String
+displaySortTrace p SortNotFound = p ++ "_|_"
+displaySortTrace
+  p
+  (ST { st_sort = s, st_lib_name = ln, st_node = n, st_branches = b }) =
+  p ++ (show s) ++ " in " ++ (show ln) ++ ":" ++ (show n) 
+    ++ 
+    (if null b
+      then
+        ""
+      else
+        (concat
+          (map
+            (\branch -> "\n" ++ (displaySortTrace (p++"  ") branch) ) 
+            b
+          )
+        )
+    )
+
+instance Show SortTrace where
+  show = displaySortTrace ""
+
+buildSortTraceFor::
+  LibEnv
+  ->LIB_NAME
+  ->[(LIB_NAME, Graph.Node)]
+  ->SORT
+  ->Graph.Node
+  ->SortTrace
+buildSortTraceFor
+  lenv
+  ln
+  visited
+  s
+  n =
+  let
+    dg =
+      devGraph
+        $ Map.findWithDefault
+          (error ((show ln) ++ ": no such Library in Environment!"))
+          ln
+          lenv
+    node =
+      fromMaybe
+        (error ( (show n) ++ "No such node in DevGraph!") )
+        (Graph.lab dg n)
+    caslsign = getJustCASLSign $ getCASLSign (dgn_sign node)
+    sorts = sortSet caslsign
+    newvisited = (ln, n):visited
+    incoming =
+      filter
+        (\(from,_) ->
+          (not (elem from (map snd (filter (\(ln',_) -> ln' == ln ) newvisited))))
+        )
+        $ map (\(from,_,ll) -> (from, ll)) $ Graph.inn dg n
+    incoming_sorttrans =
+      map
+        (\(from, ll) ->
+          let
+            caslmorph = getCASLMorphLL ll
+            newsort = sortBeforeMorphism caslmorph s
+          in
+            (from, newsort)
+        )
+        incoming
+    reflib = dgn_libname node
+    refnode = dgn_node node
+    nexttraces =
+      if
+        isDGRef node
+          then
+            [(buildSortTraceFor lenv reflib newvisited s refnode)]
+          else
+            map
+              (\(nodenum, newsort) ->
+                buildSortTraceFor lenv ln newvisited newsort nodenum
+              )
+              incoming_sorttrans
+  in
+    if Set.member s sorts
+      then
+        ST
+          {
+              st_sort = s
+            , st_lib_name = ln
+            , st_node = n
+            , st_branches = nexttraces
+          }
+      else
+        SortNotFound
+
+sortBeforeMorphism::Morphism a b c->SORT->SORT
+sortBeforeMorphism m s =
+  let
+    maplist = Map.toList (sort_map m)
+    previous_sort =
+      case
+        Data.List.find (\(a,b) -> b == s) maplist
+      of
+        Nothing -> s
+        (Just (a,_)) -> a
+  in
+    previous_sort
+
+buildAllSortTracesFor::
+  LibEnv
+  ->LIB_NAME
+  ->Graph.Node
+  ->[SortTrace]
+buildAllSortTracesFor
+  lenv
+  ln
+  n =
+  let
+    dg =
+      devGraph
+        $ Map.findWithDefault
+          (error ((show ln) ++ ": no such Library in Environment!"))
+          ln
+          lenv
+    node =
+      fromMaybe
+        (error ( (show n) ++ "No such node in DevGraph!") )
+        (Graph.lab dg n)
+    caslsign = getJustCASLSign $ getCASLSign (dgn_sign node)
+    sorts = Set.toList $ sortSet caslsign
+  in
+    map
+      (\s -> 
+        buildSortTraceFor
+          lenv
+          ln
+          []
+          s
+          n
+      )
+      sorts
+
+instance Show [SortTrace] where
+  show = concat . map (\st -> (show st) ++ "\n")
 
 
 

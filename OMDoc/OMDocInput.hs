@@ -41,6 +41,12 @@ module OMDoc.OMDocInput
     -- loads an xml file via HXT and returns the 'omdoc'-tree
     ,loadOMDoc
     ,getImportedTheories
+    ,xmlToMorphismMap
+    ,fetchRequationSymbols
+    ,requationSymbolsToMorphismMap
+    ,preprocessXml
+    ,requationsFromXml
+    ,extractFFXInputs
   )
   where
 
@@ -308,6 +314,156 @@ consToSensXN sortid conlist =
       (xnWOaToO sortid)
     )
     ("ga_generated_" ++ (xnName sortid))
+
+
+fetchRequationSymbols::HXT.XmlTrees->([String], Hets.RequationList)
+fetchRequationSymbols t =
+  let
+    hides = xshow $ applyXmlFilter (isTag "morphism" .> getQualValue "" "hiding") t
+    hiddensyms = breakSepSpace hides
+    pattern = isTag "requation" .> processChildren (isTag "OMOBJ") .> getChild 1
+    value = isTag "requation" .> processChildren (isTag "OMOBJ") .> getChild 2
+    vsymbol = value .> getChildren .> isTag "OMS" .> getQualValue "" "name" 
+    psymbol = pattern .> getChildren .> isTag "OMS" .> getQualValue "" "name" 
+    vcd = value .> getChildren .> isTag "OMS" .> getQualValue "" "cd" 
+    pcd = pattern .> getChildren .> isTag "OMS" .> getQualValue "" "cd" 
+    requations = applyXmlFilter (isTag "morphism" .> getChildren .> isTag "requation") t
+    reqlist = foldl (\rl ts ->
+      let
+        psymbolname = xshow $ applyXmlFilter psymbol [ts]
+        vsymbolname = xshow $ applyXmlFilter vsymbol [ts]
+        pcdname = xshow $ applyXmlFilter pcd [ts]
+        vcdname = xshow $ applyXmlFilter vcd [ts]
+      in
+        if (psymbolname /= []) && (vsymbolname /= [])
+          then
+            rl ++ [( (pcdname, psymbolname), (vcdname, vsymbolname) )]
+          else
+            rl
+      ) [] requations
+  in
+    (hiddensyms, reqlist)
+ 
+requationSymbolsToMorphismMap::
+    [XmlNamedWONSORT]
+  ->[(XmlNamedWONId, PredTypeXNWON)]
+  ->[(XmlNamedWONId, OpTypeXNWON)]
+  ->[XmlNamedWONSORT]
+  ->[(XmlNamedWONId, PredTypeXNWON)]
+  ->[(XmlNamedWONId, OpTypeXNWON)]
+  ->String
+  ->String
+  ->Hets.HidingAndRequationList
+  ->Hets.MorphismMap
+requationSymbolsToMorphismMap
+  fromsortlist
+  frompredlist
+  fromoplist
+  tosortlist
+  topredlist
+  tooplist
+  from
+  to
+  (hiddens, reqlist) =
+  let
+    hiddenmapped =
+      map
+        (\s ->
+          let
+            (ms, mp, mo) = findSymbol fromsortlist frompredlist fromoplist s
+          in
+            case ms of
+              (Just s) -> s
+              Nothing ->
+                case mp of
+                  (Just (p,_)) -> p
+                  Nothing ->
+                    case mo of
+                      (Just (o,_)) -> o
+                      Nothing ->
+                        error ("No such symbol " ++ s ++ " in " ++ from)
+        )
+        hiddens
+    (sm, pm, om) =
+      foldl
+        (\(sm', pm', om') ( (_, fromsymbol), (_, tosymbol) ) ->
+          let
+            (mfs, mfp, mfo) = findSymbol fromsortlist frompredlist fromoplist fromsymbol
+            (mts, mtp, mto) = findSymbol tosortlist topredlist tooplist tosymbol
+          in
+            case mfs of
+              (Just fs) ->
+                case getSort (mts, mtp, mto) of
+                  (Just ts) ->
+                    ( Map.insert fs ts sm', pm', om' )
+                  Nothing ->
+                    error ("No such sort " ++ tosymbol ++ " in " ++ to)
+              Nothing ->
+                case mfp of
+                  (Just fp) ->
+                    case getPred (mts, mtp, mto) of
+                      (Just tp) ->
+                        (sm', Map.insert fp tp pm', om' )
+                      Nothing ->
+                        error ("No such predicate " ++ tosymbol ++ " in " ++ to)
+                  Nothing ->
+                    case mfo of
+                      (Just fo) ->
+                        case getOp (mts, mtp, mto) of
+                          (Just to) ->
+                            (sm', pm' , Map.insert fo to om' )
+                          Nothing ->
+                            error ("No such operator " ++ tosymbol ++ " in " ++ to)
+                      Nothing ->
+                        error ("No such symbol " ++ fromsymbol ++ " in " ++ from ++ " ( " ++ show fromsortlist ++ " ) ")
+        )
+        (Map.empty, Map.empty, Map.empty)
+        reqlist
+  in
+    (sm, om, pm, Set.fromList hiddenmapped)
+  where
+  findSymbol:: forall a b .
+    [XmlNamedWONSORT]
+    ->[(XmlNamedWONSORT, PredTypeXNWON)]
+    ->[(XmlNamedWONSORT, OpTypeXNWON)]
+    ->String
+    ->(Maybe SORT, Maybe (Id.Id, PredType), Maybe (Id.Id, OpType))
+  findSymbol
+    sortlist
+    predlist
+    oplist
+    s =
+    case
+      find
+        (\fss -> xnName fss == s)
+        sortlist
+    of
+      (Just x) -> (Just (xnWOaToa x), Nothing, Nothing)
+      Nothing ->
+        case 
+          find
+            (\(fpi,_) -> xnName fpi == s)
+            predlist
+        of
+          (Just (fpi,px)) -> (Nothing, Just (xnWOaToa fpi, predTypeXNWONToPredType px), Nothing)
+          Nothing ->
+            case
+              find
+                (\(foi,_) -> xnName foi == s)
+                oplist
+            of
+              (Just (foi,ox)) -> (Nothing, Nothing, Just (xnWOaToa foi, opTypeXNWONToOpType ox))
+              Nothing -> (Nothing, Nothing, Nothing)
+  getSort::forall a b . (Maybe SORT, a, b)->Maybe SORT
+  getSort (Just s, _, _) = Just s
+  getSort _ = Nothing
+  getPred::forall a b . (a, Maybe (Id.Id, PredType), b)->Maybe (Id.Id, PredType)
+  getPred (_, Just p, _) = Just p
+  getPred _ = Nothing
+  getOp::forall a b . (a, b, Maybe (Id.Id, OpType))->Maybe (Id.Id, OpType)
+  getOp (_, _, Just o) = Just o
+  getOp _ = Nothing
+
 
 {- |
   extracts morphisms from xml
@@ -1195,7 +1351,39 @@ glThmsFromXml t =
         "conservative" -> Cons
         "definitional" -> Def
         _ -> None
-      
+
+
+requationsFromXmlTheory::HXT.XmlTrees->Hets.RequationListList
+requationsFromXmlTheory t =
+  let
+    imports' = applyXmlFilter (getChildren .> isTag "imports") t
+  in
+    foldl
+      (\rll i ->
+        let
+          from = xshow $ applyXmlFilter (getValue "from") [i]
+          mfromURI = URI.parseURIReference from
+          fromname = case mfromURI of
+            Nothing -> from
+            (Just uri) -> case URI.uriFragment uri of
+                    "" -> from
+                    f -> drop 1 f
+          newrll =
+            foldl
+              (\rll' m ->
+                let
+                  (hiddensyms, requations) = fetchRequationSymbols [m]
+                in
+                  rll' ++ [(fromname, (hiddensyms, requations))]
+              )
+              rll
+              (applyXmlFilter (getChildren .> isTag "morphism") [i])
+        in
+          newrll
+      )
+      []
+      imports'
+
 -- used by new format (for import graph)
 importsFromXmlTheory::HXT.XmlTrees->Hets.Imports
 importsFromXmlTheory t =
@@ -1212,20 +1400,35 @@ importsFromXmlTheory t =
             (Just uri) -> case URI.uriFragment uri of
                     "" -> from
                     f -> drop 1 f
-          mm = foldl (\(mmsm, mmfm, mmpm, mmhs) m ->
+          xmorph = applyXmlFilter (getChildren .> isTag "morphism") [i]
+          hreq = fetchRequationSymbols xmorph
+          mm = xmlToMorphismMap xmorph
+          -- there is at most one morphism for each import...
+{-          mm = foldl (\(mmsm, mmfm, mmpm, mmhs) m ->
               let
                 (nmmsm, nmmfm, nmmpm, nmmhs) = xmlToMorphismMap [m]
+                hreq = fetchRequationsSymbols [m]
               in
                 (Map.union mmsm nmmsm,
                   Map.union mmfm nmmfm, Map.union mmpm nmmpm,
                     Set.union mmhs nmmhs)
             ) (Map.empty, Map.empty, Map.empty, Set.empty) $
-              applyXmlFilter (getChildren .> isTag "morphism") [i]
+              applyXmlFilter (getChildren .> isTag "morphism") [i] -}
         in
-          Set.union imps (Set.singleton (fromname, (Just mm), True))
+          Set.union imps (Set.singleton (fromname, (Just mm), hreq, True))
       ) Set.empty imports'
-                
-                
+       
+
+requationsFromXml::HXT.XmlTrees->Hets.RequationMap
+requationsFromXml t =
+  foldl (\map' theory ->
+    let
+      name' = xshow $ applyXmlFilter (getQualValue "xml" "id") [theory]
+      imports' = requationsFromXmlTheory [theory]
+    in
+      Map.insert name' imports' map'
+    ) Map.empty $ applyXmlFilter (isTag "theory") t
+
 -- used in edge contstruction
 importsFromXml::HXT.XmlTrees->Hets.ImportsMap
 importsFromXml t =
@@ -1595,6 +1798,7 @@ importGraphToDGraphXN go ig n =
       map ( \(n' , xnnode' ) -> (getDGNodeName (xnItem xnnode' ) , n' ) ) $ lnodes
     xmlnameNodeMap = Map.fromList $
       map ( \(n' , xnnode' ) -> (xnName xnnode', n' ) ) $ lnodes
+    -- this is terribly broken (morphisms are not handled correct)!
     imports' = importsFromXml omdoc
     importhints = createImportHints omdoc
     glTheoIncs = glThmsFromXml omdoc
@@ -1615,13 +1819,29 @@ importGraphToDGraphXN go ig n =
       foldl
         (\le (nodename, nodeimports) ->
           let     
+            nodesorts = Set.toList $
+              Map.findWithDefault
+                (Set.empty)
+                nodename
+                (xnSortsMap ffxi)
+            nodepreds = Set.toList $
+              Map.findWithDefault
+                (Set.empty)
+                nodename
+                (xnPredsMap ffxi)
+            nodeops = Set.toList $
+              Map.findWithDefault
+                (Set.empty)
+                nodename
+                (xnOpsMap ffxi)
+            --
             nodenum = Map.findWithDefault (-1) nodename xmlnameNodeMap
             tnode = case map (xnItem . snd) $ filter (\(n' ,_) -> n' == nodenum) lnodes of
                     (l:_) -> l
                     _ -> error "node error!"
             -- targetsign = getNodeSignature ig (Just tnode)
             nodeimporthints = Map.findWithDefault Set.empty nodename importhints
-            importsfrom = map (\(a,_,_) -> a) $ Set.toList nodeimports
+            importsfrom = map (\(a,_,_,_) -> a) $ Set.toList nodeimports
             -- the omdoc-imports have limited support for the imports
             -- used in a dgraph. some import-hints have no import-tag in
             -- the omdoc
@@ -1644,8 +1864,35 @@ importGraphToDGraphXN go ig n =
                 )
                 nodeimporthints 
           in
-            (foldl (\le' (ni, mmm, isGlobal) ->
+            (foldl (\le' (ni, mmm, hreq, isGlobal) ->
               let
+                importsorts = Set.toList $
+                  Map.findWithDefault
+                    (Set.empty)
+                    ni
+                    (xnSortsMap ffxi)
+                importpreds = Set.toList $
+                  Map.findWithDefault
+                    (Set.empty)
+                    ni
+                    (xnPredsMap ffxi)
+                importops = Set.toList $
+                  Map.findWithDefault
+                    (Set.empty)
+                    ni
+                    (xnOpsMap ffxi)
+                rmm =
+                  requationSymbolsToMorphismMap
+                    nodesorts
+                    nodepreds
+                    nodeops
+                    importsorts
+                    importpreds
+                    importops
+                    nodename
+                    ni
+                    hreq
+                --
                 importnodenum = case Map.findWithDefault (-1) ni xmlnameNodeMap of
                   (-1) -> debugGO go "iGTDGXN" ("Cannot find node for \"" ++ ni ++ "\"!") (-1)
                   x -> x
@@ -1672,7 +1919,15 @@ importGraphToDGraphXN go ig n =
                     else
                       defaultDGLinkLab { dgl_type = Static.DevGraph.LocalDef }
                 -- process hiding here !
-                ddgl = case mmm of
+                ddgl =
+                  thislinklab
+                    {
+                        dgl_origin = DGTranslation
+                      , dgl_morphism =
+                        Hets.makeCASLGMorphism
+                          (Hets.morphismMapToMorphism rmm)
+                    }
+{-                ddgl = case mmm of
                   Nothing -> thislinklab
                   (Just mm) ->
                     thislinklab
@@ -1687,7 +1942,7 @@ importGraphToDGraphXN go ig n =
                                   , msource = sourcesign
                                 } -}
                             )
-                      }
+                      } -}
               in      
                 le' ++
                 if Set.null filteredimporthints
@@ -2493,7 +2748,18 @@ hybridGToDGraphG _ ig =
                                 (n, (S a dg))
                                 ) $ Graph.labNodes ig)
                 (Graph.labEdges ig)
-                
+
+
+extractFFXInputs::(ImportGraph (HXT.XmlTrees, Maybe (DGraph, FFXInput)))->[FFXInput]
+extractFFXInputs ig =
+  foldl
+    (\ffxil (n, (S a (_,mdg))) ->
+      case mdg of
+        (Just (_,ffxi)) -> ffxil ++ [ffxi]
+        _ -> ffxil
+    )
+    []
+    (Graph.labNodes ig)
                 
 dGraphGToLibEnv::GlobalOptions->(ImportGraph DGraph)->(ASL.LIB_NAME, DGraph, LibEnv)
 dGraphGToLibEnv _ ig =
