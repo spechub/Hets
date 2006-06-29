@@ -227,6 +227,7 @@ condBracesTransReduct s = let d = pretty s in
                  Extension _ _    -> specBraces d
                  Union _ _        -> specBraces d
                  Local_spec _ _ _ -> specBraces d
+                 Group _ _        -> specBraces d
                  _                -> d
 
 {- |
@@ -237,6 +238,7 @@ condBracesWithin s = let d = pretty s in
     case skip_Group $ item s of
                  Extension _ _    -> specBraces d
                  Union _ _        -> specBraces d
+                 Group _ _        -> specBraces d
                  _                -> d
 {- |
   only Extensions inside of Unions (and) need grouping braces
@@ -245,6 +247,7 @@ condBracesAnd :: Annoted SPEC -> Doc
 condBracesAnd s = let d = pretty s in
     case skip_Group $ item s of
                  Extension _ _    -> specBraces d
+                 Group _ _        -> specBraces d
                  _                -> d
 
 -- | only skip groups without annotations
