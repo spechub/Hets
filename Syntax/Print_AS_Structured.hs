@@ -32,16 +32,25 @@ instance Pretty SPEC where
 printUnion :: [Annoted SPEC] -> [Doc]
 printUnion = prepPunctuate (topKey andS <> space) . map condBracesAnd
 
+moveAnnos :: Annoted SPEC -> [Annoted SPEC] -> [Annoted SPEC]
+moveAnnos x l = appAnno $ case l of
+    [] -> error "moveAnnos"
+    h : r -> h { l_annos = l_annos x ++ l_annos h } : r
+    where appAnno a = case a of
+                 [] -> []
+                 [h] -> [appendAnno h (r_annos x)]
+                 h : r -> h : appAnno r
+
 printOptUnion :: Annoted SPEC -> [Doc]
-printOptUnion x = case skip_Group $ item x of
-        Union aa _ -> printUnion aa
+printOptUnion x = case item x of
+        Union e@(_ : _) _ -> printUnion $ moveAnnos x e
         _ -> [pretty x]
 
 printExtension :: [Annoted SPEC] -> [Doc]
-printExtension l = case l of 
+printExtension l = case l of
     [] -> []
-    x : r -> printOptUnion x ++ 
-             concatMap ((\ (d : s) -> (topKey thenS <+> d) : s) . 
+    x : r -> printOptUnion x ++
+             concatMap ((\ (d : s) -> (topKey thenS <+> d) : s) .
                         printOptUnion) r
 
 printSPEC :: SPEC -> Doc
@@ -49,14 +58,14 @@ printSPEC  spec = case spec of
     Basic_spec aa -> pretty aa
     Translation aa ab -> sep [condBracesTransReduct aa, printRENAMING ab]
     Reduction aa ab -> sep [condBracesTransReduct aa, printRESTRICTION ab]
-    Union aa _ -> 
+    Union aa _ ->
         sep $ printUnion aa
-    Extension aa _ -> 
+    Extension aa _ ->
         sep $ printExtension aa
     Free_spec aa _ -> sep [keyword freeS, printGroupSpec aa]
     Cofree_spec aa _ -> sep [keyword cofreeS, printGroupSpec aa]
     Local_spec aa ab _ ->
-        fsep [keyword localS, pretty aa, 
+        fsep [keyword localS, pretty aa,
               keyword withinS, condBracesWithin ab]
     Closed_spec aa _ -> sep [keyword closedS, printGroupSpec aa]
     Group aa _ -> pretty aa

@@ -42,8 +42,10 @@ instance Pretty LIB_ITEM where
     pretty li = case li of
         Spec_defn si (Genericity aa ab _) ac _ ->
             let x : r = case item ac of
-                          Extension e@(_ : _) _ -> printExtension e
-                          Union u@(_ : _) _ -> printUnion u
+                          Extension e@(_ : _) _ ->
+                              printExtension $ moveAnnos ac e
+                          Union u@(_ : _) _ ->
+                              printUnion $ moveAnnos ac u
                           _ -> [pretty ac]
                 sphead = fcat $ indexed (tokStr si) : printPARAMS aa
                         ++ printIMPORTED ab ++ [space <> equals]
