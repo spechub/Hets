@@ -32,11 +32,12 @@ import Common.LaTeX_funs
 import qualified Common.Doc as Doc
 
 ----------------------------------------------------------------------
--- two Styles for Formatting (Standard is Style PageMode 50 1.19)
+-- a style for formatting (Standard is Style PageMode 50 1.19)
 
 latexStyle :: Style
 latexStyle = style { ribbonsPerLine = 1.1
-                   , lineLength = calc_line_length "336.0pt"}
+                   , lineLength = calc_line_length "345.0pt"}
+                    -- for svmono you need 336.0pt
 
 -- a LatexRenderingState
 -- field indentTabs : for the number of tab
