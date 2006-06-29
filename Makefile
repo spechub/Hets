@@ -623,6 +623,8 @@ Driver/Version.hs: Driver/Version.in version_nr
 Driver/Options.hs Driver/WriteFn.hs Driver/ReadFn.hs: Driver/Version.hs
 hets.hs: Driver/Version.hs
 
+ATC/DevGraph.hs: Static/DevGraph.hs
+
 ## two dependencies for avoidence of circular prerequisites
 CASL_DEPENDENT_BINARIES= hets CASL/capa CASL/fromKif \
    Common/annos Common/test_parser Comorphisms/test/showKP \
