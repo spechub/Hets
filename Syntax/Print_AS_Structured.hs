@@ -42,8 +42,9 @@ moveAnnos x l = appAnno $ case l of
                  h : r -> h : appAnno r
 
 printOptUnion :: Annoted SPEC -> [Doc]
-printOptUnion x = case item x of
+printOptUnion x = case skip_Group $ item x of
         Union e@(_ : _) _ -> printUnion $ moveAnnos x e
+        Extension e@(_ : _) _ -> printExtension $ moveAnnos x e
         _ -> [pretty x]
 
 printExtension :: [Annoted SPEC] -> [Doc]
@@ -246,8 +247,10 @@ condBracesAnd s = let d = pretty s in
                  Extension _ _    -> specBraces d
                  _                -> d
 
+-- | only skip groups without annotations
 skip_Group :: SPEC -> SPEC
 skip_Group sp =
     case sp of
-            Group g _ -> skip_Group $ item g
-            _          -> sp
+            Group g _ | null (l_annos g) && null (r_annos g)
+                          -> skip_Group $ item g
+            _ -> sp

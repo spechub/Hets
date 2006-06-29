@@ -41,7 +41,7 @@ instance PrettyPrint LIB_ITEM where
 instance Pretty LIB_ITEM where
     pretty li = case li of
         Spec_defn si (Genericity aa ab _) ac _ ->
-            let x : r = case item ac of
+            let x : r = case skip_Group $ item ac of
                           Extension e@(_ : _) _ ->
                               printExtension $ moveAnnos ac e
                           Union u@(_ : _) _ ->
