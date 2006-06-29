@@ -98,7 +98,8 @@ latex_txt (PStr s1) cont
                                           then (showChar '}',
                                                 showString startAnno)
                                           else (id,id)
-                          return (eAn. showString s1 . sAn. s2)
+                          return (eAn. (if onlyTabs state then
+                                           id else showString s1) . sAn. s2)
     | setTabWSp
       `isPrefixOf`
       s1             = do addTabWithSpaces s1
@@ -227,7 +228,10 @@ setTabStop :: State LRState ()
 setTabStop = State (\state -> ( ()
                               , let new_setTabsThisLine =
                                        succ $ setTabsThisLine state
-                                in state
+                                in if onlyTabs state then state
+                                   { isSetLine = True }
+                                   else
+                                       state
                                     {
                                      recentlySet = succ $ recentlySet state
                                     , setTabsThisLine = new_setTabsThisLine
