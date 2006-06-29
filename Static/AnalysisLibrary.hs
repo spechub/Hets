@@ -30,7 +30,7 @@ import Logic.Coerce
 import Logic.Grothendieck
 import Logic.Prover
 import Data.Graph.Inductive.Graph
-import Syntax.AS_Structured hiding (View_defn, Spec_defn)
+import Syntax.AS_Structured
 import Syntax.AS_Library
 import Static.DevGraph
 import Static.AnalysisStructured
