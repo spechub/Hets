@@ -56,6 +56,7 @@ module Common.Doc
     , fsep
     , fcat
     , punctuate
+    , prepPunctuate
     , flushRight
       -- * keywords
     , keyword
@@ -89,6 +90,7 @@ module Common.Doc
       -- * docifying annotations and ids
     , annoDoc
     , idDoc
+    , sidDoc
     , idApplDoc
       -- * transforming to existing formats
     , toText
@@ -793,7 +795,10 @@ instance Pretty Annotation where
     pretty = annoDoc
 
 instance Pretty Token where
-   pretty = idDoc . simpleIdToId
+   pretty = sidDoc
+
+sidDoc :: Token -> Doc
+sidDoc = idDoc . simpleIdToId
 
 -- | print several annotations vertically (each in a new line)
 printAnnotationList :: [Annotation] -> Doc
@@ -813,7 +818,14 @@ printSemiAnno :: (a -> Doc) -> Bool -> Annoted a -> Doc
 printSemiAnno pp addSemi (Annoted i _ las ras) =
     let r = splitAndPrintRAnnos
             ((if addSemi then (<> semi) else id) $ pp i) ras
-    in if null las then r else text "" $+$ printAnnotationList las $+$ r
+    in if null las then r else
+           (if startsWithSemanticAnno las then id else (text "" $+$))
+              $ printAnnotationList las $+$ r
+
+startsWithSemanticAnno :: [Annotation] -> Bool
+startsWithSemanticAnno l = case l of
+    Semantic_anno _ _ : _ -> True
+    _ -> False
 
 -- | print annoted items with trailing semicolons except for the last item
 semiAnnos :: (a -> Doc) -> [Annoted a] -> Doc
@@ -869,3 +881,9 @@ useGlobalAnnos ga = changeGlobalAnnos (const ga)
 -- | add global annotations for proper mixfix printing
 changeGlobalAnnos :: (GlobalAnnos -> GlobalAnnos) -> Doc -> Doc
 changeGlobalAnnos = ChangeGlobalAnnos
+
+-- | like punctuate but prepends the symbol to all tail elements
+prepPunctuate :: Doc -> [Doc] -> [Doc]
+prepPunctuate s l = case l of
+    x : r@(_ : _) -> x : map (s <>) r
+    _ -> l

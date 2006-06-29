@@ -86,18 +86,8 @@ instance (Ord a, Pretty a, Pretty b) => Pretty (Map.Map a b) where
 addBullet :: Doc -> Doc
 addBullet = (bullet <+>)
 
-sidDoc :: Token -> Doc
-sidDoc = idDoc . simpleIdToId
-
 showDoc :: Pretty a => a -> ShowS
 showDoc = shows . pretty
 
 showGlobalDoc :: Pretty a => GlobalAnnos -> a -> ShowS
 showGlobalDoc ga = shows . toOldText ga
-
--- |
--- like punctuate from Pretty, but prepends symbol to every element
--- omitting the first element
-prepPunctuate :: Doc -> [Doc] -> [Doc]
-prepPunctuate _ [] = []
-prepPunctuate symb (x:xs) = x:map (\e -> symb <> e) xs
