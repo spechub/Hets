@@ -10,21 +10,14 @@ Portability :  portable
 latex printing data types of 'BASIC_SPEC'
 -}
 
-module CASL.LaTeX_AS_Basic
-    ( hc_sty_sig_item_keyword
-    , optLatexQuMark
-    ) where
+module CASL.LaTeX_AS_Basic where
 
 import CASL.AS_Basic_CASL
 import CASL.ToDoc
 import qualified Common.Doc as Doc
 import Common.DocUtils
-import Common.GlobalAnnotations
 import Common.LaTeX_AS_Annotation
-import Common.Keywords
-import Common.Lib.Pretty (Doc, empty)
-import Common.PrintLaTeX (PrintLaTeX(..))
-import Common.LaTeX_utils
+import Common.PrettyPrint
 
 instance (PrintLaTeX b, PrintLaTeX s, PrintLaTeX f)
     => PrintLaTeX (BASIC_SPEC b s f) where
@@ -49,10 +42,6 @@ instance PrintLaTeX f => PrintLaTeX (OP_ITEM f) where
 
 instance PrintLaTeX OP_TYPE where
     printLatex0 = toOldLatex
-
-optLatexQuMark :: FunKind -> Doc
-optLatexQuMark Partial = hc_sty_axiom quMark
-optLatexQuMark Total = empty
 
 instance PrintLaTeX OP_HEAD where
     printLatex0 = toOldLatex
@@ -113,8 +102,3 @@ instance PrintLaTeX TYPE where
 
 instance PrintLaTeX SYMB_OR_MAP where
     printLatex0 = toOldLatex
-
-hc_sty_sig_item_keyword :: GlobalAnnos -> String -> Doc
-hc_sty_sig_item_keyword ga str =
-    (if is_inside_gen_arg ga then hc_sty_plain_keyword
-                             else hc_sty_casl_keyword ) str

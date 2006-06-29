@@ -26,8 +26,6 @@ data GlobalAnnos = GA { prec_annos     :: PrecedenceGraph -- ^ precedences
                       , literal_annos  :: LiteralAnnos -- ^ literal annotations
                       , literal_map    :: LiteralMap -- ^ redundant
                         -- representation of the previous literal annotations
-                      , print_conf     :: PrintConfig -- ^ gives the
-                        -- possibility to print things upon position in AST
                       } deriving (Show,Eq)
 
 -- | empty (or initial) global annotations
@@ -37,7 +35,6 @@ emptyGlobalAnnos = GA { prec_annos    = Rel.empty
                       , display_annos = Map.empty
                       , literal_annos = emptyLiteralAnnos
                       , literal_map   = Map.empty
-                      , print_conf = default_print_conf
                       }
 
 -- | literal annotations for string, lists, number and floating
@@ -57,46 +54,6 @@ emptyLiteralAnnos = LA { string_lit  = Nothing
 
 -- | ids to be displayed according to a format
 type DisplayMap = Map.Map Id (Map.Map Display_format [Token])
-
--- | Options that can be set and used during pretty printing
-data PrintConfig = PrC { prc_inside_gen_arg :: Bool -- ^ set to True
-                         -- if inside of PARAMS or FIT_ARG
-                       , prc_first_spec_in_param :: Bool
-                         -- ^ set to True when prc_inside_gen_arg is
-                         -- set to True; set to False if first spec
-                         -- is crossed
-                       , prc_latex_print :: Bool
-                         -- ^ True if printLatex0 is invoked
-                         -- used in functions that decide on the same things
-                         -- but do different things
-                       } deriving (Show,Eq)
-
-default_print_conf :: PrintConfig
-default_print_conf = PrC { prc_inside_gen_arg = False
-                         , prc_first_spec_in_param = False
-                         , prc_latex_print = False
-                         }
-
-is_inside_gen_arg :: GlobalAnnos -> Bool
-is_inside_gen_arg ga = prc_inside_gen_arg $ print_conf ga
-
-set_inside_gen_arg :: Bool -> GlobalAnnos -> GlobalAnnos
-set_inside_gen_arg b ga = ga {print_conf = print_conf'}
-    where print_conf' = (print_conf ga) {prc_inside_gen_arg = b}
-
-is_latex_print :: GlobalAnnos -> Bool
-is_latex_print ga = prc_latex_print $ print_conf ga
-
-set_latex_print :: Bool -> GlobalAnnos -> GlobalAnnos
-set_latex_print b ga = ga {print_conf = print_conf'}
-    where print_conf' = (print_conf ga) {prc_latex_print = b}
-
-is_first_spec_in_param :: GlobalAnnos -> Bool
-is_first_spec_in_param ga = prc_first_spec_in_param $ print_conf ga
-
-set_first_spec_in_param :: Bool -> GlobalAnnos -> GlobalAnnos
-set_first_spec_in_param b ga = ga {print_conf = print_conf'}
-    where print_conf' = (print_conf ga) {prc_first_spec_in_param = b}
 
 -- | a redundant map for 'LiteralAnnos'
 type LiteralMap = Map.Map Id LiteralType
