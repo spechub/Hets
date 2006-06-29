@@ -326,6 +326,7 @@ getFromNodeDeltaM dg n usenode getnode getgraphnode delta =
       ) (getFromNode dg n usenode getnode getgraphnode) innodes
       
 getFromNodeWithOriginsM::
+  (Eq b, Show b)=>
   DGraph->
   Graph.Node->
   (DGNodeLab->Bool)->
@@ -333,15 +334,16 @@ getFromNodeWithOriginsM::
   (DGraph->Graph.Node->a)->
   (a->[b])->
   (b->DGraph->Graph.Node->Bool)->
+  (Graph.LEdge DGLinkLab->b->b)->
   ([WithOriginNode b]->c)->
   c
-getFromNodeWithOriginsM dg n usenode getnode getgraphnode getcomponents isorigin createresult =
+getFromNodeWithOriginsM dg n usenode getnode getgraphnode getcomponents isorigin morph createresult =
   let
     item' = getFromNode dg n usenode getnode getgraphnode
     components = getcomponents item'
     traced = foldl (\traced' c ->
       let
-        mo = traceOrigin dg n [] (isorigin c)
+        mo = traceMorphingOrigin dg n c [] isorigin morph
       in
         traced' ++ [case mo of
           Nothing -> mkWON c n -- current node is origin
@@ -351,24 +353,30 @@ getFromNodeWithOriginsM dg n usenode getnode getgraphnode getcomponents isorigin
     createresult traced
     
 getFromNodeWithOriginsMSet::
-  (Ord a)=>
+  (Eq a, Show a, Ord a)=>
   DGraph->
   Graph.Node->
   (DGNodeLab->Bool)->
   (DGNodeLab->Set.Set a)->
   (DGraph->Graph.Node->Set.Set a)->
   (a->DGraph->Graph.Node->Bool)->
+  (Graph.LEdge DGLinkLab->a->a)->
   Set.Set (WithOriginNode a)
-getFromNodeWithOriginsMSet dg n usenode getset getgraphset isorigin =
-  getFromNodeWithOriginsM dg n usenode getset getgraphset Set.toList isorigin Set.fromList
+getFromNodeWithOriginsMSet dg n usenode getset getgraphset isorigin morph =
+  getFromNodeWithOriginsM dg n usenode getset getgraphset Set.toList isorigin morph Set.fromList
 
 getFromCASLSignWithOrigins::
-  DGraph->Graph.Node->(CASLSign->a)->(a->[b])->(b->a->Bool)->([WithOriginNode b]->c)->c
-getFromCASLSignWithOrigins dg n caslget getcomponents isorigin createresult =
+  (Eq b, Show b)=>
+  DGraph->Graph.Node->(CASLSign->a)->(a->[b])->(b->a->Bool)
+  ->(Graph.LEdge DGLinkLab->b->b)
+  ->([WithOriginNode b]->c)
+  ->c
+getFromCASLSignWithOrigins dg n caslget getcomponents isorigin morph createresult =
   getFromNodeWithOriginsM dg n (\_ -> False) (\_ -> undefined::a)
     (\dg' n' -> getFromCASLSignM dg' n' caslget)
     getcomponents
     (\i dg' n' -> isorigin i (getFromCASLSignM dg' n' caslget))
+    morph
     createresult
     
 getSortsFromNodeWithOrigins::
@@ -380,6 +388,7 @@ getSortsFromNodeWithOrigins dg n =
     sortSet
     Set.toList
     Set.member
+    idMorph
     Set.fromList
     
 getOpsMapFromNodeWithOrigins::
@@ -393,6 +402,7 @@ getOpsMapFromNodeWithOrigins dg n =
     (\(mid, mtype) om -> case Map.lookup mid om of
       Nothing -> False
       (Just (mtype')) -> mtype == mtype')
+    idMorph
     (Map.fromList . (map (\mewo ->
       (mkWON (fst (wonItem mewo)) (wonOrigin mewo), snd (wonItem mewo)))))
       
@@ -407,6 +417,7 @@ getAssocOpsMapFromNodeWithOrigins dg n =
     (\(mid, mtype) om -> case Map.lookup mid om of
       Nothing -> False
       (Just (mtype')) -> mtype == mtype')
+    idMorph
     (Map.fromList . (map (\mewo ->
       (mkWON (fst (wonItem mewo)) (wonOrigin mewo), snd (wonItem mewo)))))
       
@@ -421,6 +432,7 @@ getPredsMapFromNodeWithOrigins dg n =
     (\(mid, mtype) om -> case Map.lookup mid om of
       Nothing -> False
       (Just (mtype')) -> mtype == mtype')
+    idMorph
     (Map.fromList . (map (\mewo ->
       (mkWON (fst (wonItem mewo)) (wonOrigin mewo), snd (wonItem mewo)))))
       
@@ -438,6 +450,7 @@ getSensFromNodeWithOrigins dg n =
         Nothing -> False
         (Just node) -> elem s (getNodeSentences node)
     )
+    idMorph --sentences don't morph
       
 traceOrigin::DGraph->Graph.Node->[Graph.Node]->(DGraph->Graph.Node->Bool)->Maybe Graph.Node
 traceOrigin dg n visited test =
@@ -478,8 +491,93 @@ traceOrigin dg n visited test =
               (Just _) ->
                 -- else use found origin
                 mo
-                
-                
+
+-- this works, but still renaming must be handled special...
+traceMorphingOrigin::
+  (Eq a, Show a)=>
+  DGraph
+  ->Graph.Node
+  ->a
+  ->[Graph.Node]
+  ->(a->DGraph->Graph.Node->Bool)
+  ->(Graph.LEdge DGLinkLab->a->a)
+  ->Maybe Graph.Node
+traceMorphingOrigin
+  dg
+  n
+  a
+  visited
+  atest
+  amorph =
+  if (elem n visited) -- circle encountered...
+    then
+      Nothing -- we are performing a depth-search so terminate this tree
+    else
+      -- check if this node still carries the attribute
+      if not $ atest a dg n
+        then
+          -- it does not, but the previous node did
+          if (length visited) == 0
+            then
+              {-  there was no previous node. this means the start
+                node did not have the attribute searched for -}
+              Debug.Trace.trace
+                "traceMorphismOrigin: search from invalid node"
+                Nothing
+            else
+              -- normal case, head is the previous node
+              (Just (head visited))
+        else
+          -- this node still carries the attribute
+          let
+            -- get possible node for import (OMDDoc-specific)
+            -- find first higher origin
+            mo = first
+                (\edge@(from, _, e) ->
+                  let
+                    ma = amorph edge a
+                  in
+                    (
+                    if (ma /= a)
+                      then
+                        Debug.Trace.trace ("Going Deeper, change from " ++ show a ++ " to " ++ show ma)
+                      else
+                        id
+                    ) $
+                    traceMorphingOrigin dg from ma (n:visited) atest amorph
+                )
+                (Graph.inn dg n)
+          in
+            -- if there is no higher origin, this node is the origin
+            case mo of
+              Nothing ->
+                {-  if further search fails, then this
+                  node must be the origin -}
+                (Just n) 
+              (Just _) ->
+                -- else use found origin
+                mo
+
+-- embed old checks...
+nullMorphCheck::forall a . (DGraph->Graph.Node->Bool)->(DGraph->Graph.Node->a->Bool)
+nullMorphCheck check = (\dg n _ -> check dg n)
+
+idMorph::forall a . Graph.LEdge DGLinkLab->a->a
+idMorph _ a = a
+
+morphByMorphism::forall a . (Morphism () () ()->a->a)->(Graph.LEdge DGLinkLab->a->a)
+morphByMorphism morph =
+  (\edge@(_, _, dgl) a ->
+    let
+      caslmorph = getCASLMorphLL dgl
+    in
+      morph caslmorph a
+  )
+
+sortMorph::Graph.LEdge DGLinkLab->SORT->SORT
+sortMorph = morphByMorphism sortBeforeMorphism
+    
+
 -- helper function to extract an element from the caslsign of a node
 -- or to provide a safe default
 getFromCASLSign::DGNodeLab->(CASLSign->a)->a->a
@@ -2075,6 +2173,9 @@ sortBeforeMorphism m s =
         (Just (a,_)) -> a
   in
     previous_sort
+
+
+
 
 buildAllSortTracesFor::
   LibEnv
