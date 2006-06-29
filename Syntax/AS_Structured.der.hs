@@ -1,17 +1,15 @@
-{-| 
-   
+{- |
 Module      :  $Header$
-Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2004
+Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Grothendieck)
 
-These data structures describe the abstract syntax tree for heterogenous 
+These data structures describe the abstract syntax tree for heterogenous
    structured specifications in HetCASL.
    Follows Sect. II:2.2.3 of the CASL Reference Manual.
-
 -}
 
 module Syntax.AS_Structured where
@@ -25,9 +23,11 @@ import Common.AS_Annotation
 import Logic.Logic (AnyLogic)
 import Logic.Grothendieck
 
-data SPEC = Basic_spec G_basic_spec 
-          | Translation (Annoted SPEC) RENAMING 
-          | Reduction (Annoted SPEC) RESTRICTION 
+-- for spec-defn and view-defn see AS_Library
+
+data SPEC = Basic_spec G_basic_spec
+          | Translation (Annoted SPEC) RENAMING
+          | Reduction (Annoted SPEC) RESTRICTION
           | Union [(Annoted SPEC)] Range
             -- pos: "and"s
           | Extension [(Annoted SPEC)] Range
@@ -56,13 +56,13 @@ data SPEC = Basic_spec G_basic_spec
 
 -}
 data RENAMING = Renaming [G_mapping] Range
-                -- pos: "with", list of comma pos 
+                -- pos: "with", list of comma pos
                  deriving (Show, Eq)
 
 data RESTRICTION = Hidden [G_hiding] Range
-                   -- pos: "hide", list of comma pos 
+                   -- pos: "hide", list of comma pos
                  | Revealed G_symb_map_items_list Range
-                   -- pos: "reveal", list of comma pos 
+                   -- pos: "reveal", list of comma pos
                    deriving (Show, Eq)
 
 data G_mapping = G_symb_map G_symb_map_items_list
@@ -73,12 +73,8 @@ data G_hiding = G_symb_list G_symb_items_list
                | G_logic_projection Logic_code
                  deriving (Show, Eq)
 
-data SPEC_DEFN = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) Range
-                 -- pos: "spec","=",opt "end"
-                 deriving Show
-
 data GENERICITY = Genericity PARAMS IMPORTED Range
-                  -- pos: many of "[","]" opt ("given", commas) 
+                  -- pos: many of "[","]" opt ("given", commas)
                   deriving Show
 
 data PARAMS = Params [Annoted SPEC]
@@ -93,11 +89,6 @@ data FIT_ARG = Fit_spec (Annoted SPEC) [G_mapping] Range
                -- annotations before the view keyword are stored in Spec_inst
                deriving Show
 
-data VIEW_DEFN = View_defn VIEW_NAME GENERICITY VIEW_TYPE
-                           [G_mapping] Range
-                 -- pos: "view",":",opt "=", opt "end" 
-                  deriving Show
-
 data VIEW_TYPE = View_type (Annoted SPEC) (Annoted SPEC) Range
                  -- pos: "to"
                  deriving Show
@@ -105,13 +96,13 @@ data VIEW_TYPE = View_type (Annoted SPEC) (Annoted SPEC) Range
 type SPEC_NAME = SIMPLE_ID
 type VIEW_NAME = SIMPLE_ID
 
-data Logic_code = Logic_code (Maybe Token) 
-                             (Maybe Logic_name) 
+data Logic_code = Logic_code (Maybe Token)
+                             (Maybe Logic_name)
                              (Maybe Logic_name) Range
                  -- pos: "logic",<encoding>,":",<src-logic>,"->",<targ-logic>
                  -- one of <encoding>, <src-logic> or <targ-logic>
                  -- must be given (by Just)
-                 -- "logic bla"    => <encoding> only 
+                 -- "logic bla"    => <encoding> only
                  -- "logic bla ->" => <src-logic> only
                  -- "logic -> bla" => <targ-logic> only
                  -- "logic bla1 -> bla2" => <src-logic> and <targ-logic>

@@ -12,15 +12,13 @@ pretty printing for heterogenous libraries in HetCASL.
 
 module Syntax.Print_AS_Library where
 
-import Common.Lib.Pretty
 import Common.PrettyPrint
-import qualified Common.Doc as Doc
+import Common.Id
+import Common.Doc
 import Common.DocUtils
-import Common.PPUtils
-import Common.GlobalAnnotations
 import Common.Keywords
 
-import qualified Syntax.AS_Structured as AS_Struct
+import Syntax.AS_Structured
 import Syntax.AS_Library
 import Common.AS_Annotation
 
@@ -28,109 +26,85 @@ import Syntax.Print_AS_Architecture()
 import Syntax.Print_AS_Structured
 
 instance PrettyPrint LIB_DEFN where
-    printText0 ga (Lib_defn aa ab _ ad) =
-        let aa' = printText0 ga aa              -- lib name
-            ab' = vsep $ map (printText0 ga) ab -- LIB_ITEMs
-            ad' = vcat $ map (printText0 ga) ad -- global ANNOTATIONs
-        in text libraryS <+> aa' $++$ ad' $++$ ab'
+    printText0 = toOldText
+
+instance Pretty LIB_DEFN where
+    pretty (Lib_defn aa ab _ ad) =
+        let aa' = pretty aa              -- lib name
+            ab' = vsep $ map pretty ab -- LIB_ITEMs
+            ad' = vcat $ map pretty ad -- global ANNOTATIONs
+        in keyword libraryS <+> aa' $++$ ad' $++$ ab'
 
 instance PrettyPrint LIB_ITEM where
-    printText0 ga (Spec_defn aa ab ac _) =
-        let aa' = printText0 ga aa
-            ab' = printText0 ga ab
-            spec_head = text specS <+> aa' <+> ab' <+> equals
-            ac' = spAnnotedPrint (printText0 ga) (printText0 ga) (<+>)
-                  (spec_head) ac
-         -- nesting is done by the instance for SPEC now
-        in ac' $$ text endS
+    printText0 = toOldText
 
-    printText0 ga (View_defn aa ab ac ad _) =
-        let aa' = printText0 ga aa
-            ab' = printText0 ga ab
-            -- ac' = printText0 ga ac
-            (frm,to) = case ac of
-                       AS_Struct.View_type vaa vab _ ->
-                           (printGroupSpec ga vaa,
-                            printGroupSpec ga vab)
-            ad' = commaT_text ga ad
-            eq' = if null ad then empty else equals
-        in (hang (hang (hang (hang (text viewS <+> aa' <+> ab')
-                                   6
-                                   (colon <+> frm <+> text toS))
-                             4
-                             to)
-                       2
-                       eq')
-                 4
-                 ad')
-           $$ text endS
-
-    printText0 ga (Arch_spec_defn aa ab _) =
-        let aa' = printText0 ga aa
-            ab' = printText0 ga ab
-        in (hang (text archS <+> text specS <+> aa' <+> equals) 4 ab')
-               $$ text endS
-    printText0 ga (Unit_spec_defn aa ab _) =
-        let aa' = printText0 ga aa
-            ab' = printText0 ga ab
-        in (hang (text unitS <+> text specS <+> aa' <+> equals) 4 ab')
-               $$ text endS
-    printText0 ga (Ref_spec_defn aa ab _) =
-        let aa' = printText0 ga aa
-            ab' = printText0 ga ab
-        in (hang (text refinementS <+> aa' <+> equals) 4 ab')
-               $$ text endS
-    printText0 ga (Download_items aa ab _) =
-        let aa' = printText0 ga aa
-            ab' = commaT_text ga ab
-        in (hang (text fromS <+> aa' <+> text getS) 4 ab')
-    printText0 ga (Syntax.AS_Library.Logic_decl aa _) =
-        printLogicEncoding ga aa
-
-condBracesGroupSpec4View_defn ::
-    (GlobalAnnos -> (Annoted AS_Struct.SPEC) -> Doc)
-        -> (Doc -> Doc) -- ^ a function enclosing the Doc
-                        -- in braces
-        -> GlobalAnnos -> (Annoted AS_Struct.SPEC) -> Doc
-condBracesGroupSpec4View_defn pf b_fun ga as =
-    case skip_Group $ item as of
-                 AS_Struct.Spec_inst _ _ _ -> as'
-                 AS_Struct.Union _ _       -> nested'
-                 AS_Struct.Extension _ _   -> nested'
-                 _                         -> nested'
-
-    where nested' = b_fun as'
-          as' = pf ga as
+instance Pretty LIB_ITEM where
+    pretty li = case li of
+        Spec_defn si (Genericity aa ab _) ac _ ->
+            let x : r = case item ac of
+                          Extension e@(_ : _) _ -> printExtension e
+                          Union u@(_ : _) _ -> printUnion u
+                          _ -> [pretty ac]
+                sphead = fcat $ indexed (tokStr si) : printPARAMS aa
+                        ++ printIMPORTED ab ++ [space <> equals]
+             in vcat $ (topKey specS <+> vcat [sphead, x]) : r
+                    ++ [keyword endS]
+        View_defn si (Genericity aa ab _) (View_type frm to _) ad _ ->
+            let sphead = fcat $ structSimpleId si : printPARAMS aa
+                        ++ printIMPORTED ab ++ [space <> colon]
+            in topKey viewS <+>
+                 fsep ([sphead, sep [printGroupSpec frm <+> keyword toS,
+                         (if null ad then id
+                          else (<+> equals)) $ printGroupSpec to]]
+                        ++ punctuate comma (map pretty ad))
+                            $+$ keyword endS
+        Arch_spec_defn si ab _ ->
+            keyword archS <+> keyword specS <+>
+                    fsep[structSimpleId si, equals, pretty ab]
+                            $+$ keyword endS
+        Unit_spec_defn si ab _ ->
+            keyword unitS <+> keyword specS <+>
+                    fsep[structSimpleId si, equals, pretty ab]
+                            $+$ keyword endS
+        Ref_spec_defn si ab _ ->
+            keyword refinementS <+>
+                    fsep[structSimpleId si, equals, pretty ab]
+                            $+$ keyword endS
+        Download_items l ab _ ->
+            topKey fromS <+> fsep ([pretty l, keyword getS] ++
+                                   punctuate comma (map pretty ab))
+        Syntax.AS_Library.Logic_decl aa _ ->
+            keyword logicS <+> pretty aa
 
 instance PrettyPrint ITEM_NAME_OR_MAP where
-    printText0 ga (Item_name aa) =
-        let aa' = printText0 ga aa
-        in aa'
-    printText0 ga (Item_name_map aa ab _) =
-        let aa' = printText0 ga aa
-            ab' = printText0 ga ab
-        in aa' <+> text mapsTo <+> ab'
+    printText0 = toOldText
 
-instance Doc.Pretty LIB_NAME where
+instance Pretty ITEM_NAME_OR_MAP where
+    pretty l = case l of
+        Item_name aa -> structSimpleId aa
+        Item_name_map aa ab _ ->
+            fsep [structSimpleId aa, mapsto, structSimpleId ab]
+
+instance Pretty LIB_NAME where
     pretty l = case l of
         Lib_version i v ->
-            Doc.pretty i Doc.<+> Doc.keyword versionS Doc.<+> Doc.pretty v
-        Lib_id i -> Doc.pretty i
+            pretty i <+> keyword versionS <+> pretty v
+        Lib_id i -> pretty i
 
 instance PrettyPrint LIB_NAME where
     printText0 = toOldText
 
-instance Doc.Pretty LIB_ID where
-    pretty l = Doc.text $ case l of
+instance Pretty LIB_ID where
+    pretty l = structId $ case l of
         Direct_link u _ -> u
         Indirect_link p _ -> p
 
 instance PrettyPrint LIB_ID where
     printText0 = toOldText
 
-instance Doc.Pretty VERSION_NUMBER where
+instance Pretty VERSION_NUMBER where
     pretty (Version_number aa _) =
-        Doc.hcat $ Doc.punctuate Doc.dot $ map Doc.text aa
+        hcat $ punctuate dot $ map (pretty . mkSimpleId) aa
 
 instance PrettyPrint VERSION_NUMBER where
     printText0 = toOldText

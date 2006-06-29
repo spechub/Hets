@@ -12,300 +12,233 @@ Printing the Structured part of hetrogenous specifications.
 
 module Syntax.Print_AS_Structured where
 
-import Common.Lib.Pretty
 import Common.PrettyPrint
-import Common.PPUtils
+import Common.Id
 import Common.Keywords
+import Common.Doc
+import Common.DocUtils
+import Common.AS_Annotation
 
 import Logic.Grothendieck()
 
 import Syntax.AS_Structured
-import Common.AS_Annotation
-import Common.GlobalAnnotations
+
+structSimpleId :: SIMPLE_ID -> Doc
+structSimpleId = structId . tokStr
+
+instance Pretty SPEC where
+    pretty = printSPEC
+
+printUnion :: [Annoted SPEC] -> [Doc]
+printUnion = prepPunctuate (topKey andS <> space) . map condBracesAnd
+
+printOptUnion :: Annoted SPEC -> [Doc]
+printOptUnion x = case skip_Group $ item x of
+        Union aa _ -> printUnion aa
+        _ -> [pretty x]
+
+printExtension :: [Annoted SPEC] -> [Doc]
+printExtension l = case l of 
+    [] -> []
+    x : r -> printOptUnion x ++ 
+             concatMap ((\ (d : s) -> (topKey thenS <+> d) : s) . 
+                        printOptUnion) r
+
+printSPEC :: SPEC -> Doc
+printSPEC  spec = case spec of
+    Basic_spec aa -> pretty aa
+    Translation aa ab -> sep [condBracesTransReduct aa, printRENAMING ab]
+    Reduction aa ab -> sep [condBracesTransReduct aa, printRESTRICTION ab]
+    Union aa _ -> 
+        sep $ printUnion aa
+    Extension aa _ -> 
+        sep $ printExtension aa
+    Free_spec aa _ -> sep [keyword freeS, printGroupSpec aa]
+    Cofree_spec aa _ -> sep [keyword cofreeS, printGroupSpec aa]
+    Local_spec aa ab _ ->
+        fsep [keyword localS, pretty aa, 
+              keyword withinS, condBracesWithin ab]
+    Closed_spec aa _ -> sep [keyword closedS, printGroupSpec aa]
+    Group aa _ -> pretty aa
+    Spec_inst aa ab _ ->
+      fcat $ structSimpleId aa : print_fit_arg_list ab
+    Qualified_spec ln asp _ ->
+      printLogicEncoding ln <> colon $+$ (pretty asp)
+    Data _ _ s1 s2 _ -> keyword dataS <+> pretty s1 $+$ pretty s2
 
 instance PrettyPrint SPEC where
-    --- This implementation doesn't use the grouping information
-    --- it detects this information by precedence rules
-    printText0 ga (Basic_spec aa) =
-        nest 4 $ printText0 ga aa
-    printText0 ga (Translation aa ab) =
-        let aa' = condBracesTransReduct printText0 sp_braces ga aa
-            ab' = printText0 ga ab
-        in hang aa' 4 ab'
-    printText0 ga (Reduction aa ab) =
-        let aa' = condBracesTransReduct printText0 sp_braces ga aa
-            ab' = printText0 ga ab
-        in hang aa' 4 ab'
-    printText0 ga (Union aa _) =
-        fsep $ pl aa
-        where pl [] = []
-              pl (x:xs) =
-                  (condBracesAnd printText0 sp_braces ga x):
-                  map (\y -> text andS $$
-                       condBracesAnd printText0 sp_braces ga y)
-                      xs
-    printText0 ga (Extension aa _) =
-        fsep $ printList aa
-        where printList [] = []
-              printList (x:xs) =
-                  (printText0 ga x):
-                    map (spAnnotedPrint (printText0 ga)
-                         (printText0 ga) (<+>) (text thenS)) xs
-    printText0 ga (Free_spec aa _) =
-        hang (text freeS) 5 $
-             printGroupSpec ga aa
-    printText0 ga (Cofree_spec aa _) =
-        hang (text cofreeS) 5 $
-             printGroupSpec ga aa
-    printText0 ga (Local_spec aa ab _) =
-        let aa' = printText0 ga aa
-            ab' = condBracesWithin printText0 sp_braces ga ab
-        in (hang (text localS) 4 aa') $$
-           (hang (text withinS) 4 ab')
-    printText0 ga (Closed_spec aa _) =
-        hang (text closedS) 4 $
-             printGroupSpec ga aa
-    printText0 ga (Group aa _) =
-        printText0 ga aa
-    printText0 ga (Spec_inst aa ab _) =
-        let aa' = printText0 ga aa
-            ab' = print_fit_arg_list printText0 sp_brackets sep ga ab
-        in nest 4 (hang aa' 4 ab')
-    printText0 ga (Qualified_spec ln asp _) =
-        printLogicEncoding ga ln <> colon $$ (printText0 ga asp)
-    printText0 ga (Data _ _ s1 s2 _) =
-        text dataS <+> (printText0 ga s1) $$ (printText0 ga s2)
-
-printGroupSpec :: GlobalAnnos -> Annoted SPEC -> Doc
-printGroupSpec = condBracesGroupSpec printText0 braces Nothing
+    printText0 = toOldText
 
 instance PrettyPrint RENAMING where
-    printText0 ga (Renaming aa _) =
-        hang (text withS) 4 $ commaT_text ga aa
+    printText0 = toOldText
+
+instance Pretty RENAMING where
+    pretty = printRENAMING
+
+printRENAMING :: RENAMING -> Doc
+printRENAMING (Renaming aa _) =
+   keyword withS <+> fsep
+        (punctuate comma $ map printG_mapping aa)
+
+instance Pretty RESTRICTION where
+    pretty = printRESTRICTION
+
+printRESTRICTION :: RESTRICTION -> Doc
+printRESTRICTION rest = case rest of
+    Hidden aa _ -> keyword hideS <+>
+                 fsep (punctuate comma $ map printG_hiding aa)
+    Revealed aa _ -> keyword revealS <+> pretty aa
 
 instance PrettyPrint RESTRICTION where
-    printText0 ga (Hidden aa _) =
-        hang (text hideS) 4 $ commaT_text ga aa
-    printText0 ga (Revealed aa _) =
-        hang (text revealS) 4 $ printText0 ga aa
-
-condPunct :: Doc -> [G_hiding] -> [Doc] -> [Doc]
-condPunct _ [] [] = []
-condPunct _ _  [] =
-    error "something went wrong in printLatex0 of Hidden"
-condPunct _ [] _  =
-    error "something went wrong in printLatex0 of Hidden"
-condPunct _ [_c] [d] = [d]
-condPunct com (c:cs) (d:ds) =
-                 (case c of
-                        G_symb_list _gsil -> d<>com
-                        G_logic_projection _enc -> d)
-                 : condPunct com cs ds
+    printText0 = toOldText
 
 {- Is declared in Print_AS_Library
 instance PrettyPrint SPEC_DEFN where
 -}
 
-printLogicEncoding :: (PrettyPrint a) => GlobalAnnos -> a -> Doc
-printLogicEncoding ga enc = text logicS <+> printText0 ga enc
+printLogicEncoding :: (Pretty a) =>  a -> Doc
+printLogicEncoding enc = keyword logicS <+> pretty enc
 
 instance PrettyPrint G_mapping where
-    printText0 ga (G_symb_map gsmil) = printText0 ga gsmil
-    printText0 ga (G_logic_translation enc) =
-        printLogicEncoding ga enc
+    printText0 = toOldText
+
+instance Pretty G_mapping where
+    pretty = printG_mapping
+
+printG_mapping ::  G_mapping -> Doc
+printG_mapping gma = case gma of
+    G_symb_map gsmil -> pretty gsmil
+    G_logic_translation enc -> printLogicEncoding enc
+
+instance Pretty G_hiding where
+    pretty = printG_hiding
+
+printG_hiding :: G_hiding -> Doc
+printG_hiding ghid = case ghid of
+    G_symb_list gsil -> pretty gsil
+    G_logic_projection enc -> printLogicEncoding enc
 
 instance PrettyPrint G_hiding where
-    printText0 ga (G_symb_list gsil) = printText0 ga gsil
-    printText0 ga (G_logic_projection enc) =
-        printLogicEncoding ga enc
+    printText0 = toOldText
+
+instance Pretty GENERICITY where
+    pretty = printGENERICITY
+
+printGENERICITY :: GENERICITY -> Doc
+printGENERICITY (Genericity aa ab _) =
+    fcat $ printPARAMS aa ++ printIMPORTED ab
 
 instance PrettyPrint GENERICITY where
-    printText0 ga (Genericity aa ab _) =
-        let aa' = printText0 ga aa
-            ab' = printText0 ga ab
-        in hang aa' 6 ab'
+    printText0 = toOldText
+
+instance Pretty PARAMS where
+    pretty = fcat . printPARAMS
+
+printPARAMS :: PARAMS -> [Doc]
+printPARAMS (Params aa) = map (brackets . rmTopKey . pretty ) aa
 
 instance PrettyPrint PARAMS where
-    printText0 ga (Params aa) =
-        if null aa then empty
-        else sep $ map (brackets.(nest (-4)).(printText0 ga)) aa
+    printText0 = toOldText
 
 instance PrettyPrint IMPORTED where
-    printText0 ga (Imported aa) =
-        if null aa then empty
-        else text givenS <+> (fsep $ punctuate comma $
-                                         map (printGroupSpec ga) aa)
+    printText0 = toOldText
+
+instance Pretty IMPORTED where
+    pretty = fcat . printIMPORTED
+
+printIMPORTED :: IMPORTED -> [Doc]
+printIMPORTED (Imported aa) = case aa of
+    [] -> []
+    _  -> (space <> keyword givenS <> space)
+          : punctuate (comma <> space) (map printGroupSpec aa)
+
+instance Pretty FIT_ARG where
+    pretty = printFIT_ARG
+
+printFIT_ARG :: FIT_ARG -> Doc
+printFIT_ARG fit = case fit of
+    Fit_spec aa ab _ ->
+        let aa' = rmTopKey $ pretty aa
+        in if null ab then aa' else
+               fsep $ aa' : keyword fitS
+                        : punctuate comma (map printG_mapping ab)
+    Fit_view si ab _ ->
+        keyword viewS <+> fcat (structSimpleId si : print_fit_arg_list ab)
 
 instance PrettyPrint FIT_ARG where
-    printText0 ga (Fit_spec aa ab _) =
-        let aa' = printText0 ga aa
-            ab' = fcat $ map (printText0 ga) ab
-        in aa' <> (if null ab then empty else space <> hang (text fitS) 4 ab')
-    printText0 ga (Fit_view aa ab _) =
-        let aa' = printText0 ga aa
-            ab' = print_fit_arg_list printText0 sp_brackets sep ga ab
-        in hang (text viewS <+> aa') 4 ab'
+    printText0 = toOldText
 
 instance PrettyPrint Logic_code where
-    printText0 ga (Logic_code (Just enc) (Just src) (Just tar) _) =
-        printText0 ga enc <+> colon <+>
-        printText0 ga src <+> funD <+>
-        printText0 ga tar
-    printText0 ga (Logic_code (Just enc) (Just src) Nothing _) =
-        printText0 ga enc <+> colon <+>
-        printText0 ga src <+> funD
-    printText0 ga (Logic_code (Just enc) Nothing (Just tar) _) =
-        printText0 ga enc <+> colon <+>
-        funD <+> printText0 ga tar
-    printText0 ga (Logic_code Nothing (Just src) (Just tar) _) =
-        printText0 ga src <+> funD <+>
-        printText0 ga tar
-    printText0 ga (Logic_code (Just enc) Nothing Nothing _) =
-        printText0 ga enc
-    printText0 ga (Logic_code Nothing (Just src) Nothing _) =
-        printText0 ga src <+> funD
-    printText0 ga (Logic_code Nothing Nothing (Just tar) _) =
-        funD <+> printText0 ga tar
-    printText0 _ (Logic_code Nothing Nothing Nothing _) =
-        error "PrettyPrint Logic_code"
+    printText0 = toOldText
 
-funD :: Doc
-funD = text funS
+instance Pretty Logic_code where
+    pretty = printLogic_code
+
+printLogic_code :: Logic_code -> Doc
+printLogic_code (Logic_code menc msrc mtar _) =
+   let pm = maybe [] ((: []) . printLogic_name) in
+   fsep $ maybe [] ((: [colon]) . pretty) menc
+        ++ pm msrc ++ funArrow : pm mtar
+
+instance Pretty Logic_name where
+    pretty = printLogic_name
+
+printLogic_name :: Logic_name -> Doc
+printLogic_name (Logic_name mlog slog) = let d = pretty mlog in
+    case slog of
+      Nothing -> d
+      Just sub -> d <> dot <> pretty sub
 
 instance PrettyPrint Logic_name where
-    printText0 ga (Logic_name mlog slog) =
-        printText0 ga mlog <>
-                       (case slog of
-                       Nothing -> empty
-                       Just sub -> char '.' <> printText0 ga sub)
+    printText0 = toOldText
 
 -----------------------------------------------
 {- |
   specealized printing of 'FIT_ARG's
 -}
-print_fit_arg_list :: (GlobalAnnos -> (Annoted FIT_ARG) -> Doc)
-                   -> (Doc -> Doc) -- ^ a function enclosing the Doc
-                                   -- in brackets
-                   -> ([Doc] -> Doc) -- ^ a function printing a list
-                                     -- of Doc seperated by space
-                   -> GlobalAnnos -> [Annoted FIT_ARG] -> Doc
-print_fit_arg_list _pf _b_fun _sep_fun _ga [] = empty
-print_fit_arg_list pf b_fun _sep_fun ga [fa] = b_fun $ pf ga fa
-print_fit_arg_list pf b_fun sep_fun ga fas =
-    sep_fun $ map (b_fun . (pf ga)) fas
+print_fit_arg_list :: [Annoted FIT_ARG] -> [Doc]
+print_fit_arg_list = map (brackets . pretty)
+
 {- |
    conditional generation of grouping braces for Union and Extension
 -}
-condBracesGroupSpec :: (GlobalAnnos -> (Annoted SPEC) -> Doc)
-                    -> (Doc -> Doc) -- ^ a function enclosing the Doc
-                                    -- in braces
-                    -> Maybe (String,Doc) -- ^ something like a keyword
-                                          -- that should be right before
-                                          -- the braces
-                    -> GlobalAnnos -> (Annoted SPEC) -> Doc
-condBracesGroupSpec pf b_fun mkeyw ga as =
-    case skip_Group $ item as of
-                 Spec_inst _ _ _ -> str_doc'<>as'
-                 Union _ _       -> nested''
-                 Extension _ _   -> nested''
-                 _               ->
-                     str_doc'<>b_fun as'
-    where as' = pf ga as
-
-          (_str,str_doc) = maybe ("",empty) id mkeyw
-          str_doc' = if isEmpty str_doc then empty
-                     else str_doc
-          nested'' = str_doc' <>b_fun as'
+printGroupSpec :: Annoted SPEC -> Doc
+printGroupSpec s = let d = pretty s in
+    case skip_Group $ item s of
+                 Spec_inst _ _ _ -> d
+                 _  -> specBraces d
 
 {- |
   generate grouping braces for Tanslations and Reductions
 -}
-condBracesTransReduct :: (GlobalAnnos -> (Annoted SPEC) -> Doc)
-                      -> (Doc -> Doc) -- ^ a function enclosing the Doc
-                                      -- in brackets
-                      -> GlobalAnnos -> (Annoted SPEC) -> Doc
-condBracesTransReduct pf b_fun ga as =
-    case skip_Group $ item as of
-                 Extension _ _    -> nested''
-                 Union _ _        -> nested''
-                 Local_spec _ _ _ -> nested''
-                 _                -> as'
-    where as' = pf ga as
-          nested'' = b_fun as'
+condBracesTransReduct :: Annoted SPEC -> Doc
+condBracesTransReduct s = let d = pretty s in
+    case skip_Group $ item s of
+                 Extension _ _    -> specBraces d
+                 Union _ _        -> specBraces d
+                 Local_spec _ _ _ -> specBraces d
+                 _                -> d
 
 {- |
   generate grouping braces for Within
 -}
-condBracesWithin :: (GlobalAnnos -> (Annoted SPEC) -> Doc)
-                 -> (Doc -> Doc) -- ^ a function enclosing the Doc
-                                 -- in braces
-                 -> GlobalAnnos -> (Annoted SPEC) -> Doc
-condBracesWithin pf b_fun ga as =
-    case skip_Group $ item as of
-                 Extension _ _    -> nested''
-                 Union _ _        -> nested''
-                 _                -> as'
-    where as' = pf ga as
-          nested'' = b_fun as'
+condBracesWithin :: Annoted SPEC -> Doc
+condBracesWithin s = let d = pretty s in
+    case skip_Group $ item s of
+                 Extension _ _    -> specBraces d
+                 Union _ _        -> specBraces d
+                 _                -> d
 {- |
   only Extensions inside of Unions (and) need grouping braces
 -}
-condBracesAnd :: (GlobalAnnos -> (Annoted SPEC) -> Doc)
-              -> (Doc -> Doc) -- ^ a function enclosing the Doc
-                              -- in braces
-              -> GlobalAnnos -> (Annoted SPEC) -> Doc
-condBracesAnd pf b_fun ga as =
-    case skip_Group $ item as of
-                 Extension _ _    -> nested''
-                 _                -> as'
-    where as' = pf ga as
-          nested'' = b_fun as'
+condBracesAnd :: Annoted SPEC -> Doc
+condBracesAnd s = let d = pretty s in
+    case skip_Group $ item s of
+                 Extension _ _    -> specBraces d
+                 _                -> d
 
 skip_Group :: SPEC -> SPEC
 skip_Group sp =
     case sp of
-            Group as _ -> skip_Group $ item as
+            Group g _ -> skip_Group $ item g
             _          -> sp
-
--- ToDo: \\THENIMPLIES,... erzeugen
---       Dazu Hilfsfunktionen erzeugen
---       nachschauen wie implies zur Zeit gesetzt wird
---
--- |
--- prints the keyword or spec head with following semantic annotation
--- if any and the list of non sematic annotations if any and
--- then the following item from 'Annoted' a
-spAnnotedPrint :: (a -> Doc) -- ^ print function for the item
-               -> (Annotation -> Doc) -- ^ print function for the annotation
-               -> (Doc -> Doc -> Doc) -- ^ a function like '<+>'
-               -> Doc -- ^ keyword or spec head (spec ... =)
-               -> Annoted a -- ^ item to print after keyword or spec head
-               -> Doc
-spAnnotedPrint pf pAn beside_ keyw ai =
-    case ai of
-         Annoted i _ las _ ->
-          let i'           = pf i
-              (msa,as)     = case las of
-                                []     -> (Nothing,[])
-                                (x:xs) | isSemanticAnno x -> (Just x,xs)
-                                xs     -> (Nothing,xs)
-              (san,anno)   = case msa of
-                               Nothing -> (empty, empty)
-                               Just a  -> (pAn a, checkAnno a keyw beside_
-                                                   $ pAn a)
-              as'          = if null as then empty else vcat $ map pAn as
-                         -- Todo: indent annos
-          in  case (render keyw) of
-                "\\THEN" | not $ isEmpty anno  -> anno $+$ as' $+$ i'
-                _keyw'                         -> keyw `beside_` san $+$ as'
-                                                  $+$ i'
-    where checkAnno an _keyword _beside san' =
-            case an of
-                 Semantic_anno anno _ ->
-                          case anno of
-                                SA_cons     -> sp_text 0 "\\THENCONS"
-                                SA_def      -> sp_text 0 "\\THENDEF"
-                                SA_implies  -> sp_text 0 "\\THENIMPLIES"
-                                SA_mono     -> sp_text 0 "\\THENMONO"
-                                _anno'      -> keyw `beside_` san'
-                 _an' -> keyw `beside_` san'
