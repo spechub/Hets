@@ -6,19 +6,21 @@ import Syntax.Parse_AS_Library
 import System.Environment
 import Text.ParserCombinators.Parsec
 import Common.AnnoState
+import Common.Doc
 import Comorphisms.LogicGraph
-import Syntax.Print_HetCASL
+import Syntax.Print_AS_Library ()
 
+parsefile :: FilePath -> IO ()
 parsefile fname = do
   input <- readFile fname
   case runParser (library (defaultLogic, logicGraph)) 
            (emptyAnnos defaultLogic) fname input of
-            Left err -> error (show err)
-            Right x -> putStrLn $ (show (printText0_eGA x)) ++ "\n..."
+            Left err -> error $ show err
+            Right x -> putStrLn $ shows (pretty x) "\n..."
 
-
+main :: IO ()
 main = do
   files <- getArgs
-  sequence (map parsefile files)
+  sequence_ (map parsefile files)
 
 

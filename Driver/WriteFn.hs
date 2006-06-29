@@ -22,7 +22,8 @@ import Text.ParserCombinators.Parsec
 import Text.PrettyPrint.HughesPJ(render)
 import Common.Utils
 import Common.Id
-import Common.Doc (pretty)
+import Common.Doc
+import Common.PrintLaTeX
 import Common.Result
 import Common.GlobalAnnotations (GlobalAnnos)
 import Common.ConvertGlobalAnnos()
@@ -36,8 +37,8 @@ import Logic.Coerce
 import Logic.Grothendieck
 import Comorphisms.LogicGraph
 
-import Syntax.Print_HetCASL
 import Syntax.AS_Library (LIB_DEFN(), LIB_NAME())
+import Syntax.Print_AS_Library ()
 
 import CASL.Logic_CASL
 #ifdef UNI_PACKAGE
@@ -53,7 +54,7 @@ import SPASS.CreateDFGDoc
 
 import Logic.Prover
 import Static.DevGraph
-import Static.DotGraph
+import Static.DotGraph as Dot
 import Static.DGToSpec
 import qualified Static.PrintDevGraph as DG
 import Proofs.StatusUtils
@@ -100,7 +101,8 @@ write_LIB_DEFN ga file opt ld = do
     mapM_ write_type $ outtypes opt
 
 write_casl_asc :: HetcatsOpts -> GlobalAnnos -> FilePath -> LIB_DEFN -> IO ()
-write_casl_asc _ ga oup ld = writeFile oup $ printLIB_DEFN_text ga ld
+write_casl_asc _ ga oup ld = writeFile oup $ 
+          shows (useGlobalAnnos ga $ pretty ld) "\n"
 
 debug_latex_filename :: FilePath -> FilePath
 debug_latex_filename = (\(b,p,_) -> p++ b ++ ".debug.tex") .
@@ -108,10 +110,11 @@ debug_latex_filename = (\(b,p,_) -> p++ b ++ ".debug.tex") .
 
 write_casl_latex :: HetcatsOpts -> GlobalAnnos -> FilePath -> LIB_DEFN -> IO ()
 write_casl_latex opt ga oup ld =
-    do writeFile oup $ printLIB_DEFN_latex ga ld
+    do let ldoc = toLatex ga $ pretty ld
+       writeFile oup $ renderLatex Nothing ldoc
        doIfVerbose opt 5 $
            writeFile (debug_latex_filename oup) $
-               printLIB_DEFN_debugLatex ga ld
+               debugRenderLatex Nothing ldoc
 
 toShATermString :: (ShATermConvertible a) => a -> IO String
 toShATermString atcon = fmap writeSharedATerm $ versionedATermTable atcon
@@ -164,7 +167,7 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
           OmdocOut ->
             hetsToOMDoc opt (ln, lenv) f
           GraphOut Dot ->
-            writeVerbFile opt f . concat . dot . devGraph $
+            writeVerbFile opt f . concat . Dot.dot . devGraph $
                           lookupGlobalContext ln lenv
           _ -> return () -- treat others below
           ) outTypes

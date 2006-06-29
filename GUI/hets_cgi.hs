@@ -41,12 +41,12 @@ import Driver.ReadFn
 import Driver.Version
 import qualified Common.Lib.Map as Map
 import qualified Common.Result as CRes
+import Common.Doc (pretty, toText)
 import Common.ResultT
 import Static.AnalysisLibrary
 import Comorphisms.LogicGraph
 import Static.DevGraph
 import Syntax.AS_Library
-import Syntax.Print_HetCASL
 
 import System.Random
 import System.IO
@@ -185,6 +185,8 @@ reset :: CGI()
 reset = mainCGI
 
 -- handle of the submit botton
+handle :: HasValue i => F5 (i String) (i Bool) (i Bool) (i Bool) (i Bool) VALID
+       -> CGI ()
 handle (F5 input box1 box2 box3 box4) =
     let str  = CGI.value input
         selectedBoxes = SB {
@@ -252,7 +254,7 @@ anaInput contents selectedBoxes outputfiles =
                                 [ownerReadMode, ownerWriteMode,
                                  groupReadMode, groupWriteMode,
                                  otherReadMode]
-                 resAsc = printLIB_DEFN_text gannos libDefn
+                 resAsc = shows (toText gannos $ pretty libDefn) "\n"
              when (outputTex conf)
                   (do
                     let pptexFile = outputfile ++ ".pp.tex"
