@@ -12,7 +12,6 @@ some instances for the class Pretty
 
 module Common.DocUtils where
 
-import Common.Id
 import Common.Doc
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map

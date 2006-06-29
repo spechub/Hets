@@ -26,7 +26,6 @@ import qualified Common.OrderedMap as OMap
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 
-import Common.Print_AS_Annotation
 import Common.Doc
 import Data.List
 
