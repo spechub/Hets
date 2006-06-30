@@ -42,7 +42,7 @@ moveAnnos x l = appAnno $ case l of
                  h : r -> h : appAnno r
 
 printOptUnion :: Annoted SPEC -> [Doc]
-printOptUnion x = case skip_Group $ item x of
+printOptUnion x = case skipVoidGroup $ item x of
         Union e@(_ : _) _ -> printUnion $ moveAnnos x e
         Extension e@(_ : _) _ -> printExtension $ moveAnnos x e
         _ -> [pretty x]
@@ -51,7 +51,7 @@ printExtension :: [Annoted SPEC] -> [Doc]
 printExtension l = case l of
     [] -> []
     x : r -> printOptUnion x ++
-             concatMap ((\ (d : s) -> (topKey thenS <+> d) : s) .
+             concatMap (( \ (d : s) -> (topKey thenS <+> d) : s) .
                         printOptUnion) r
 
 printSPEC :: SPEC -> Doc
@@ -227,7 +227,6 @@ condBracesTransReduct s = let d = pretty s in
                  Extension _ _    -> specBraces d
                  Union _ _        -> specBraces d
                  Local_spec _ _ _ -> specBraces d
-                 Group _ _        -> specBraces d
                  _                -> d
 
 {- |
@@ -238,7 +237,6 @@ condBracesWithin s = let d = pretty s in
     case skip_Group $ item s of
                  Extension _ _    -> specBraces d
                  Union _ _        -> specBraces d
-                 Group _ _        -> specBraces d
                  _                -> d
 {- |
   only Extensions inside of Unions (and) need grouping braces
@@ -247,13 +245,19 @@ condBracesAnd :: Annoted SPEC -> Doc
 condBracesAnd s = let d = pretty s in
     case skip_Group $ item s of
                  Extension _ _    -> specBraces d
-                 Group _ _        -> specBraces d
                  _                -> d
 
 -- | only skip groups without annotations
+skipVoidGroup :: SPEC -> SPEC
+skipVoidGroup sp =
+    case sp of
+            Group g _ | null (l_annos g) && null (r_annos g)
+                          -> skipVoidGroup $ item g
+            _ -> sp
+
+-- | skip nested groups
 skip_Group :: SPEC -> SPEC
 skip_Group sp =
     case sp of
-            Group g _ | null (l_annos g) && null (r_annos g)
-                          -> skip_Group $ item g
+            Group g _ -> skip_Group $ item g
             _ -> sp
