@@ -39,34 +39,46 @@ instance PrettyPrint LIB_ITEM where
     printText0 = toOldText
 
 instance Pretty LIB_ITEM where
-    pretty li = case li of
-        Spec_defn si (Genericity aa ab _) ac _ ->
-            let x : r = case skip_Group $ item ac of
+    pretty li =
+        let addLastSpace l = case l of
+                [] -> error "addLastSpace"
+                [x] -> [x <> space]
+                h : r -> h : addLastSpace r
+        in case li of
+        Spec_defn si (Genericity aa ab _) ac' _ ->
+            let las = l_annos ac'
+                (sa, ac) = if startsWithSemanticAnno las then
+                               ([equals <> space, annoDoc (head las)],
+                                ac' { l_annos = tail las })
+                           else ([equals], ac')
+                x : r = case skipVoidGroup $ item ac of
                           Extension e@(_ : _) _ ->
                               printExtension $ moveAnnos ac e
                           Union u@(_ : _) _ ->
                               printUnion $ moveAnnos ac u
                           _ -> [pretty ac]
-                sphead = fcat $ indexed (tokStr si) : printPARAMS aa
-                        ++ printIMPORTED ab ++ [space <> equals]
+                sphead = fcat $ addLastSpace
+                         (indexed (tokStr si) : printPARAMS aa
+                          ++ printIMPORTED ab) ++ sa
              in vcat $ (topKey specS <+> vcat [sphead, x]) : r
                     ++ [keyword endS]
         View_defn si (Genericity aa ab _) (View_type frm to _) ad _ ->
-            let sphead = fcat $ structSimpleId si : printPARAMS aa
-                        ++ printIMPORTED ab ++ [space <> colon]
+            let sphead = fcat $ addLastSpace
+                         (structSimpleId si : printPARAMS aa
+                          ++ printIMPORTED ab) ++ [colon]
             in topKey viewS <+>
-                 fsep ([sphead, sep [printGroupSpec frm <+> keyword toS,
-                         (if null ad then id
-                          else (<+> equals)) $ printGroupSpec to]]
-                        ++ punctuate comma (map pretty ad))
-                            $+$ keyword endS
+                 fsep ([sphead, fsep [printGroupSpec frm,
+                              keyword toS, printGroupSpec to]]
+                       ++ (if null ad then id else (equals :))
+                           [fsep $ punctuate comma $ map pretty ad])
+                          $+$ keyword endS
         Arch_spec_defn si ab _ ->
-            keyword archS <+> keyword specS <+>
-                    fsep[structSimpleId si, equals, pretty ab]
+            topKey archS <+>
+                    fsep[keyword specS, structSimpleId si, equals, pretty ab]
                             $+$ keyword endS
         Unit_spec_defn si ab _ ->
-            keyword unitS <+> keyword specS <+>
-                    fsep[structSimpleId si, equals, pretty ab]
+            topKey unitS <+>
+                    fsep[keyword specS, structSimpleId si, equals, pretty ab]
                             $+$ keyword endS
         Ref_spec_defn si ab _ ->
             keyword refinementS <+>
@@ -90,7 +102,7 @@ instance Pretty ITEM_NAME_OR_MAP where
 instance Pretty LIB_NAME where
     pretty l = case l of
         Lib_version i v ->
-            pretty i <+> keyword versionS <+> pretty v
+            fsep [pretty i, keyword versionS, pretty v]
         Lib_id i -> pretty i
 
 instance PrettyPrint LIB_NAME where
