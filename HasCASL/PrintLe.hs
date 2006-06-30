@@ -55,7 +55,7 @@ instance Pretty Selector where
     pretty (Select mi t p) =
         (case mi of
         Just i -> pretty i <+> (case p of
-                             Partial -> text (colonS++quMark)
+                             Partial -> text colonQuMark
                              Total -> colon) <> space
         Nothing -> empty) <> pretty t
 

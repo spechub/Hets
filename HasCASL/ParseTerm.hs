@@ -36,7 +36,7 @@ colT = asKey colonS
 
 -- | a colon immediately followed by a question mark
 qColonT :: AParser st Token
-qColonT = asKey (colonS++quMark)
+qColonT = asKey colonQuMark
 
 -- * parser for bracketed lists
 

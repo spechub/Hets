@@ -81,7 +81,7 @@ import Text.ParserCombinators.Parsec
 
 -- | reserved signs
 casl_reserved_ops :: [String]
-casl_reserved_ops = [colonS, colonS++quMark, defnS, dotS, cDot, mapsTo]
+casl_reserved_ops = [colonS, colonQuMark, defnS, dotS, cDot, mapsTo]
 
 -- | these formula signs are legal in terms, but illegal in declarations
 formula_ops :: [String]

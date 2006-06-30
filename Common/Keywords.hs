@@ -53,6 +53,10 @@ barS  = "|"
 mapsTo  = "|->"
 defnS  = "::="
 
+-- | a colon with a question mark
+colonQuMark :: String
+colonQuMark = colonS ++ quMark
+
 -- * comment keywords
 percentS, percents :: String
 percentS = "%"
