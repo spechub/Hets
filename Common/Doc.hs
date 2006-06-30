@@ -100,6 +100,7 @@ module Common.Doc
       -- * annotation utilities
     , printAnnotationList
     , splitAndPrintRAnnos
+    , startsWithSemanticAnno
     , fromLabelledSen
     , printAnnoted
     , printSemiAnno
