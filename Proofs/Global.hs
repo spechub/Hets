@@ -24,7 +24,7 @@ todo for Jorina:
      siehe auch Seite 302 des CASL Reference Manual
 -}
 
-module Proofs.Global (globSubsume, globDecomp) where
+module Proofs.Global (globSubsume, globDecomp, globDecompAux) where
 
 import Data.Graph.Inductive.Graph
 
@@ -93,7 +93,7 @@ globDecompForOneEdge dgraph edge =
     source = getSourceNode edge
     defEdgesToSource = [e | e <- labEdges dgraph,
                                  isDefEdge e && (getTargetNode e) == source]
-    paths = [e:edge:[]|e <- defEdgesToSource]++[edge:[]]
+    paths = map (\e -> [e,edge]) defEdgesToSource ++ [[edge]]
     --getAllLocOrHideGlobDefPathsTo dgraph (getSourceNode edge) []
 --    paths = [(node, path++(edge:[]))| (node,path) <- pathsToSource]
 
