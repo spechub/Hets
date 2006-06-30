@@ -26,6 +26,7 @@ module Common.Doc
     , semi
     , comma
     , colon
+    , quMarkD
     , equals
     , lparen
     , rparen
@@ -290,10 +291,11 @@ lambdaSymb :: String
 lambdaSymb = "\\"
 
 -- | docs possibly rendered differently for Text or LaTeX
-dot, bullet, defn, less, greater, lambda, mapsto, funArrow, pfun, cfun, pcfun,
-   exequal, forallDoc, exists, unique, cross, bar, notDoc, inDoc, andDoc,
-   orDoc, implies, equiv :: Doc
+quMarkD, dot, bullet, defn, less, greater, lambda, mapsto, funArrow, pfun,
+   cfun, pcfun, exequal, forallDoc, exists, unique, cross, bar, notDoc,
+   inDoc, andDoc, orDoc, implies, equiv :: Doc
 
+quMarkD = text quMark
 dot = text dotS
 bullet = symbol dotS
 defn = symbol defnS

@@ -83,7 +83,7 @@ printCOALTERNATIVE coal = case coal of
         _ -> parens (fsep $ punctuate semi $ map printCOCOMPONENTS l)) 
                 <> case  k of
                    Total -> empty
-                   _ -> text quMark
+                   _ -> quMarkD
         
     CoSubsorts l _ -> fsep $ text (sortS ++ if isSingle l then "" else "s") 
                             : punctuate comma (map idDoc l)

@@ -196,7 +196,7 @@ printOpType :: OP_TYPE -> Doc
 printOpType (Op_type p l r _) =
     case l of
       [] -> case p of
-          Partial -> text quMark <+> idDoc r
+          Partial -> quMarkD <+> idDoc r
           Total -> space <> idDoc r
       _ -> space <> fsep
              (punctuate (space <> cross) (map idDoc l)

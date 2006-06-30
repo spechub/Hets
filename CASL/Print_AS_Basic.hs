@@ -10,15 +10,10 @@ Portability :  portable
 pretty printing data types of 'BASIC_SPEC'
 -}
 
--- to do: remove the "Dangerous hack"
-
 module CASL.Print_AS_Basic where
 
 import Common.AS_Annotation
-import Common.GlobalAnnotations
 import Common.Print_AS_Annotation
-import Common.Keywords
-import Common.Lib.Pretty
 import Common.PrettyPrint
 import qualified Common.Doc as Doc
 import Common.DocUtils as Doc
@@ -43,16 +38,11 @@ printAnnotedFormula withDot = Doc.printAnnoted
 instance (PrettyPrint s, PrettyPrint f) => PrettyPrint (SIG_ITEMS s f) where
     printText0 ga = Doc.toText ga . printSIG_ITEMS (fromText ga) (fromText ga)
 
-
 instance PrettyPrint f => PrettyPrint (SORT_ITEM f) where
     printText0 ga = Doc.toText ga . printSortItem (fromText ga)
 
 instance PrettyPrint f => PrettyPrint (OP_ITEM f) where
     printText0 ga = Doc.toText ga . printOpItem (fromText ga)
-
-optQuMark :: FunKind -> Doc
-optQuMark Partial = text quMark
-optQuMark Total = empty
 
 instance PrettyPrint OP_TYPE where
     printText0 = toOldText
@@ -87,9 +77,6 @@ instance PrettyPrint COMPONENTS where
 instance PrettyPrint VAR_DECL where
     printText0 = toOldText
 
-printFORMULA :: PrettyPrint f => GlobalAnnos -> FORMULA f -> Doc
-printFORMULA ga = Doc.toText ga . printFormula (fromText ga)
-
 printTheoryFormula :: Doc.Pretty f => Named (FORMULA f) -> Doc.Doc
 printTheoryFormula f = printAnnotedFormula
     (case sentence f of
@@ -98,7 +85,7 @@ printTheoryFormula f = printAnnotedFormula
     _ -> True) $ Doc.fromLabelledSen f
 
 instance PrettyPrint f => PrettyPrint (FORMULA f) where
-    printText0 = printFORMULA
+    printText0 ga = Doc.toText ga . printFormula (fromText ga)
 
 instance PrettyPrint PRED_SYMB where
     printText0 = toOldText

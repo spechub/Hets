@@ -163,7 +163,7 @@ instance Pretty Instance where
 
 instance Pretty Partiality where
     pretty p = case p of
-        Partial -> text quMark
+        Partial -> quMarkD
         Total -> empty
 
 instance Pretty Quantifier where
