@@ -225,7 +225,13 @@ braces :: Doc -> Doc     -- ^ Wrap document in @{...}@
 braces d = hcat [lbrace, d, rbrace]
 
 specBraces :: Doc -> Doc     -- ^ Wrap document in @{...}@
-specBraces d = cat [lbrace <> d, rbrace]
+specBraces d = cat [addLBrace d, rbrace]
+
+-- | move the opening brace inwards
+addLBrace :: Doc -> Doc
+addLBrace d = case d of
+    Cat k (e : r) -> Cat k $ addLBrace e : r
+    _ -> lbrace <> d
 
 quotes :: Doc -> Doc     -- ^ Wrap document in @\'...\'@
 quotes d = hcat [quote, d, quote]
