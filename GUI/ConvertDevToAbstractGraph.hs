@@ -67,7 +67,7 @@ import qualified Common.Lib.Map as Map
 import qualified Common.OrderedMap as OMap
 import Common.Id
 import Common.PrettyPrint
-import Common.DocUtils
+import Common.DocUtils as Doc
 import qualified Common.Doc as Doc
 import qualified Common.Result as Res
 import Common.ResultT

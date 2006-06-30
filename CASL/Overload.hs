@@ -27,10 +27,8 @@ import qualified Common.Lib.Rel         as Rel
 import qualified Common.Lib.Map         as Map
 import qualified Common.Lib.Set         as Set
 import Common.Lib.State
-
 import Common.Id
 import Common.GlobalAnnotations
-import Common.Doc
 import Common.DocUtils
 import Common.Result
 import Common.Partial

@@ -30,6 +30,7 @@ import Haskell.TiPropATC()
 import Haskell.HatParser
 import Haskell.HatAna
 import Common.Doc
+import Common.DocUtils
 
 import Logic.Logic
 

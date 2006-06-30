@@ -26,6 +26,7 @@ import Common.Lib.State
 import Common.Id
 import Common.Result
 import Common.Doc
+import Common.DocUtils
 
 import Control.Exception(assert)
 

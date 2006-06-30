@@ -19,7 +19,7 @@ import CASL.Sign
 import CASL.Overload
 import CASL.Fold
 import Common.Id
-import Common.Doc
+import Common.DocUtils
 
 -- | the name of injections
 injName :: Id

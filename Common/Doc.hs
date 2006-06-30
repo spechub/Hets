@@ -94,8 +94,6 @@ module Common.Doc
       -- * transforming to existing formats
     , toText
     , toLatex
-      -- * a class
-    , Pretty(..)
       -- * manipulating documents
     , changeGlobalAnnos
     , rmTopKey
@@ -778,10 +776,6 @@ isBoth :: PrecedenceGraph -> Id -> Id -> Bool
 isBoth precs op arg = case precRel precs op arg of
                     BothDirections -> True
                     _ -> False
-
--- * the class stuff
-class Pretty a where
-    pretty :: a -> Doc
 
 -- | change top-level to plain keywords
 rmTopKey :: Doc -> Doc

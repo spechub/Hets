@@ -15,7 +15,7 @@ module CASL.SimplifySen(simplifySen, rmTypesT) where
 
 import Common.Id
 import Common.Result
-import Common.Doc
+import Common.DocUtils
 import Common.Lib.State
 import CASL.Sign
 import CASL.AS_Basic_CASL

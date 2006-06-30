@@ -18,6 +18,7 @@ import Modal.Print_AS()
 import Common.PrintLaTeX
 import Common.Keywords
 import Common.Doc
+import Common.DocUtils
 
 instance PrintLaTeX M_BASIC_ITEM where
     printLatex0 ga = toLatex ga . pretty

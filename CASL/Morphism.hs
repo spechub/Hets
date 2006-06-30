@@ -32,7 +32,7 @@ import Control.Monad
 import Common.PrettyPrint
 import Control.Exception (assert)
 import Common.Doc
-import Common.DocUtils ()
+import Common.DocUtils
 import Common.Print_AS_Annotation
 
 data SymbType = OpAsItemType OpType

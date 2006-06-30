@@ -28,7 +28,6 @@ import Logic.Comorphism
 import Common.AS_Annotation
 import Common.Id
 import Common.Result
-import Common.Doc
 import Common.DocUtils
 
 import qualified Common.Lib.Map as Map

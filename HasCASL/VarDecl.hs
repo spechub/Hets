@@ -16,6 +16,7 @@ module HasCASL.VarDecl where
 import Data.Maybe
 import Data.List as List
 import Control.Monad
+import Text.ParserCombinators.Parsec (runParser, eof)
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
@@ -23,9 +24,9 @@ import Common.Id
 import Common.Lib.State
 import Common.Result
 import Common.Doc
+import Common.DocUtils
 import Common.Lexer
 import Common.AnnoState
-import Text.ParserCombinators.Parsec (runParser, eof)
 
 import HasCASL.ParseTerm
 import HasCASL.As

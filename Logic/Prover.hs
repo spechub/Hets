@@ -25,8 +25,8 @@ import Common.DynamicUtils
 import qualified Common.OrderedMap as OMap
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
-
 import Common.Doc
+import Common.DocUtils
 import Data.List
 
 -- * sentence packing

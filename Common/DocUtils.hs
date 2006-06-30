@@ -20,6 +20,10 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Pretty as Pretty
 import Common.GlobalAnnotations
 
+-- * the class stuff
+class Pretty a where
+    pretty :: a -> Doc
+
 instance Pretty () where
     pretty () = empty
 

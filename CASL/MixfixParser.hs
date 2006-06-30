@@ -26,7 +26,6 @@ import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 import Common.Earley
 import Common.ConvertMixfixToken
-import Common.Doc
 import Common.DocUtils
 import Common.AS_Annotation
 import CASL.ShowMixfix

@@ -15,7 +15,7 @@ module Common.Result where
 
 import Common.Id
 import Common.Doc
-import Common.DocUtils ()
+import Common.DocUtils
 import Common.GlobalAnnotations
 import Data.List
 import Text.ParserCombinators.Parsec.Error

@@ -52,10 +52,13 @@ import UniqueNames as P(noSrcLoc, Orig(G), PN(PN))
 import WorkModule as P(mkWM, WorkModuleI)
 
 import Haskell.Wrapper
-import Text.ParserCombinators.Parsec
+
 import Common.Result
-import Data.Char
 import Common.Doc
+import Common.DocUtils
+
+import Text.ParserCombinators.Parsec
+import Data.Char
 
 instance Pretty HsDecls where
     pretty = printHsDecls

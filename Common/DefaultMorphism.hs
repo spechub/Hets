@@ -16,6 +16,7 @@ module Common.DefaultMorphism where
 
 import Common.Keywords
 import Common.Doc
+import Common.DocUtils
 
 data DefaultMorphism sign = MkMorphism sign sign deriving (Show, Eq)
 

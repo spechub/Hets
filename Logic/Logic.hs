@@ -80,7 +80,7 @@ import Common.Lib.Graph as Tree
 import Common.AnnoState
 import Common.Result
 import Common.AS_Annotation
-import Common.Doc as Doc
+import Common.Doc
 import Common.DocUtils
 import Logic.Prover -- for one half of class Sentences
 
@@ -96,13 +96,13 @@ data Stability = Stable | Testing | Unstable | Experimental
      deriving (Eq,Show)
 
 -- | shortcut for class constraints
-class (Show a, Doc.Pretty a, Typeable a, ShATermConvertible a)
+class (Show a, Pretty a, Typeable a, ShATermConvertible a)
     => PrintTypeConv a
 
 -- | shortcut for class constraints with equality
 class (Eq a, PrintTypeConv a) => EqPrintTypeConv a
 
-instance (Show a, Doc.Pretty a, Typeable a,
+instance (Show a, Pretty a, Typeable a,
           ShATermConvertible a) => PrintTypeConv a
 instance (Eq a, PrintTypeConv a) => EqPrintTypeConv a
 

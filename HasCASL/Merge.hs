@@ -13,7 +13,7 @@ merging parts of local environment
 module HasCASL.Merge where
 
 import Common.Id
-import Common.Doc
+import Common.DocUtils
 import Common.Result
 
 import HasCASL.As

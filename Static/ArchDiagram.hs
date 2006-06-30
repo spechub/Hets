@@ -23,6 +23,7 @@ import qualified Common.Lib.Graph as Tree
 
 import qualified Common.Lib.Map as Map
 import Common.Doc
+import Common.DocUtils
 import Common.Result
 import Common.Id
 

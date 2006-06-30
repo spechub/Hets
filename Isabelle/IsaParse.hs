@@ -24,7 +24,7 @@ import qualified Common.Lib.Map as Map
 import Isabelle.IsaConsts
 import Common.Id
 import Common.Result
-import Common.Doc hiding (space)
+import Common.DocUtils
 
 latin :: Parser String
 latin = single letter <?> "latin"

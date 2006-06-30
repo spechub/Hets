@@ -21,6 +21,7 @@ module OWL_DL.Logic_OWL_DL where
 import Common.AS_Annotation
 import Common.DefaultMorphism
 import Common.Doc
+import Common.DocUtils
 
 import Logic.Logic
 

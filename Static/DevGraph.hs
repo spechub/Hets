@@ -51,6 +51,7 @@ import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Id
 import Common.Doc
+import Common.DocUtils
 import Common.Result
 import Common.DynamicUtils
 

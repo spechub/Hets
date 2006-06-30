@@ -23,7 +23,7 @@ import Common.GlobalAnnotations
 import Common.Lib.Pretty
 import Common.PrettyPrint
 import qualified Common.Doc as Doc
-import Common.DocUtils
+import Common.DocUtils as Doc
 
 import SPASS.Sign
 import SPASS.Conversions
