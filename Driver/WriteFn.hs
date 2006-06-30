@@ -23,6 +23,7 @@ import Text.PrettyPrint.HughesPJ(render)
 import Common.Utils
 import Common.Id
 import Common.Doc
+import Common.DocUtils
 import Common.PrintLaTeX
 import Common.Result
 import Common.GlobalAnnotations (GlobalAnnos)

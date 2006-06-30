@@ -19,6 +19,7 @@ import HasCASL.Builtin
 import Common.Id
 import Common.Keywords
 import Common.Doc
+import Common.DocUtils
 import Common.AS_Annotation
 import Data.List
 

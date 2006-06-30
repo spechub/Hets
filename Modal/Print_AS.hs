@@ -16,7 +16,6 @@ import Common.Id
 import Common.Keywords
 import qualified Common.Lib.Map as Map
 import Common.PrettyPrint
-import Common.PPUtils
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils

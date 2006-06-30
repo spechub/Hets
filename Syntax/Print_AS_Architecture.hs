@@ -17,7 +17,6 @@ import Common.Doc
 import Common.DocUtils
 import Common.PrettyPrint
 import Common.Keywords
-import Common.PPUtils()
 
 import Syntax.AS_Architecture
 import Syntax.Print_AS_Structured

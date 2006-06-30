@@ -18,6 +18,7 @@ import Common.GlobalAnnotations
 import qualified Common.Lib.Map as Map
 import Common.Id
 import Common.Doc as Doc
+import Common.DocUtils
 import Common.Result
 import Common.Keywords
 import Static.DevGraph

@@ -12,11 +12,104 @@ some instances for the class Pretty
 
 module Common.DocUtils where
 
+import Common.AS_Annotation
 import Common.Doc
+import Common.Id
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Pretty as Pretty
 import Common.GlobalAnnotations
+
+instance Pretty () where
+    pretty () = empty
+
+instance Pretty Id where
+    pretty = idDoc
+
+instance Pretty Annotation where
+    pretty = annoDoc
+
+instance Pretty Token where
+   pretty = sidDoc
+
+sidDoc :: Token -> Doc
+sidDoc = idDoc . simpleIdToId
+
+-- | print several annotations vertically (each in a new line)
+printAnnotationList :: [Annotation] -> Doc
+printAnnotationList = vcat . map annoDoc
+
+printTrailer :: [Annotation] -> Doc
+printTrailer = flushRight . hsep . map annoDoc
+
+-- | add trailing annotation to a document
+splitAndPrintRAnnos :: Doc -> [Annotation] -> Doc
+splitAndPrintRAnnos i ras =
+    let (r, s) = splitRAnnos ras
+    in (if null s then id else ($+$ printAnnotationList s))
+       $ if null r then i else fsep [i, printTrailer r]
+
+printSemiAnno :: (a -> Doc) -> Bool -> Annoted a -> Doc
+printSemiAnno pp addSemi (Annoted i _ las ras) =
+    let r = splitAndPrintRAnnos
+            ((if addSemi then (<> semi) else id) $ pp i) ras
+    in if null las then r else
+           (if startsWithSemanticAnno las then id else (text "" $+$))
+              $ printAnnotationList las $+$ r
+
+startsWithSemanticAnno :: [Annotation] -> Bool
+startsWithSemanticAnno l = case l of
+    Semantic_anno _ _ : _ -> True
+    _ -> False
+
+-- | print annoted items with trailing semicolons except for the last item
+semiAnnos :: (a -> Doc) -> [Annoted a] -> Doc
+semiAnnos pp l = if null l then empty else
+           vcat $ map (printSemiAnno pp True) (init l)
+                ++ [printAnnoted pp $ last l]
+
+-- | print sentence with label and non-axioms with implied annotation
+printAnnoted :: (a -> Doc) -> Annoted a -> Doc
+printAnnoted pp = printSemiAnno pp False
+
+instance (Pretty a) => Pretty (Annoted a) where
+    pretty = printAnnoted pretty
+
+-- | convert a named sentence into an annoted one
+fromLabelledSen :: Named s -> Annoted s
+fromLabelledSen s = let label = senName s in
+    appendAnno (emptyAnno $ sentence s) $
+    (if null label then [] else [Label [label] nullRange])
+    ++ if isAxiom s then [] else [Semantic_anno SA_implied nullRange]
+
+instance Pretty s => Pretty (Named s) where
+    pretty = pretty . fromLabelledSen
+
+-- | function to split the annotation to the right of an item
+-- * fst contains printed label and implied annotion
+--   if any at the begining of the list of annotations
+-- * snd contains the remaining annos
+splitRAnnos :: [Annotation] -> ([Annotation], [Annotation])
+splitRAnnos r = case r of
+    [] -> ([],[])
+    [l] -> if isLabel l || isImplied l then (r, [])
+             else ([], r)
+    l : s@(i : t) ->
+        if isLabel l then
+            if isImplied i then ([l, i], t)
+            else ([l], s)
+        else if isImplied l then ([l], s)
+             else ([], r)
+
+-- | add global annotations for proper mixfix printing
+useGlobalAnnos :: GlobalAnnos -> Doc -> Doc
+useGlobalAnnos ga = changeGlobalAnnos (const ga)
+
+-- | like punctuate but prepends the symbol to all tail elements
+prepPunctuate :: Doc -> [Doc] -> [Doc]
+prepPunctuate s l = case l of
+    x : r@(_ : _) -> x : map (s <>) r
+    _ -> l
 
 toOldText :: Pretty a => GlobalAnnos -> a -> Pretty.Doc
 toOldText ga = toText ga . pretty

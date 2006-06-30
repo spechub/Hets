@@ -15,11 +15,11 @@ module COL.Print_AS where
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 import Common.PrettyPrint
-import Common.PPUtils
-import COL.AS_COL
-import COL.COLSign
 import Common.Doc
 import Common.DocUtils
+import CASL.ToDoc
+import COL.AS_COL
+import COL.COLSign
 
 instance PrettyPrint COL_SIG_ITEM where
     printText0 = toOldText
@@ -29,9 +29,9 @@ instance Pretty COL_SIG_ITEM where
 
 printCOL_SIG_ITEM :: COL_SIG_ITEM -> Doc
 printCOL_SIG_ITEM csi = case csi of
-    Constructor_items ls _ -> text (constructorS ++ pluralS ls) <+>
+    Constructor_items ls _ -> keyword (constructorS ++ pluralS ls) <+>
         semiAnnos idDoc ls
-    Observer_items ls _ -> text observerS <+>
+    Observer_items ls _ -> keyword observerS <+>
         semiAnnos (printPair idDoc (printMaybe pretty)) ls
 
 instance PrettyPrint COLSign where
@@ -41,8 +41,8 @@ instance Pretty COLSign where
     pretty = printCOLSign
 
 printCOLSign :: COLSign -> Doc
-printCOLSign s = text constructorS <+>
+printCOLSign s = keyword constructorS <+>
     (fsep $ punctuate semi $ map idDoc (Set.toList $ constructors s))
-    $+$ text observerS <+>
+    $+$ keyword observerS <+>
     (fsep $ punctuate semi $
       map (printPair idDoc pretty) (Map.toList $ observers s))

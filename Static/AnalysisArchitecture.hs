@@ -37,7 +37,7 @@ import Common.AS_Annotation
 import Common.Id
 import Common.Result
 import Common.Amalgamate
-import Common.PrettyPrint
+import Common.DocUtils
 import qualified Common.Lib.Map as Map
 
 import Data.Graph.Inductive.Graph as Graph(Node)
@@ -217,7 +217,7 @@ ana_UNIT_IMPORTED lgraph defl gctx curl opts uctx poss terms =
        sink <- inclusionSink lgraph dnsigs sig
        () <- assertAmalgamability opts pos diag' sink
        (dnsig, diag'') <- extendDiagramIncl lgraph diag' dnsigs
-                          sig $ showPretty terms ""
+                          sig $ showDoc terms ""
        return (JustDiagNode dnsig, diag'', gctx' { devGraph = dg'' }, terms')
 
 ana_UNIT_IMPORTED' :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic
@@ -249,7 +249,7 @@ ana_UNIT_EXPRESSION lgraph defl gctx curl opts
        (resnsig, _dg'') <- nodeSigUnion lgraph (devGraph gctx')
                            (map (JustNode . snd) args) DGFormalParams
        -- build the extended diagram and new based unit context
-       let dexp = showPretty uexp ""
+       let dexp = showDoc uexp ""
            insNodes diag0 [] buc0 = do return ([], diag0, buc0)
            insNodes diag0 ((un, nsig) : args0) buc0 =
                do (dnsig, diag') <- extendDiagramIncl lgraph diag0 []
@@ -345,7 +345,7 @@ ana_UNIT_TERM lgraph defl gctx curl opts uctx red@(Unit_reduction ut restr) =
        let pos = getPos_UNIT_TERM red
        (q@(Diag_node_sig qn _), diag', dg') <-
            extendDiagramWithMorphismRev pos lgraph diag dg p incl
-            (showPretty red "")
+            (showDoc red "")
             (case restr of
                  Hidden _ _ -> DGHiding
                  Revealed _ _ -> DGRevealing)
@@ -362,7 +362,7 @@ ana_UNIT_TERM lgraph defl gctx curl opts uctx red@(Unit_reduction ut restr) =
                          () <- assertAmalgamability opts pos diag' sink
                          (q', diag'', dg'') <- extendDiagramWithMorphism pos
                             lgraph diag' dg' q sigma
-                             (showPretty red "")
+                             (showDoc red "")
                              (case restr of
                                 Hidden _ _ -> DGHiding
                                 Revealed _ _ -> DGRevealing)
@@ -382,7 +382,7 @@ ana_UNIT_TERM lgraph defl gctx curl opts uctx tr@(Unit_translation ut ren) =
        -- check amalamability conditions
        () <- assertAmalgamability opts pos diag sink
        (dnsig', diag', dg') <- extendDiagramWithMorphism pos lgraph
-           diag dg dnsig gMorph (showPretty tr "")
+           diag dg dnsig gMorph (showDoc tr "")
                 DGTranslation
        return (dnsig', diag', gctx1 { devGraph = dg' }, Unit_translation
                          (replaceAnnoted ut' ut) ren)
@@ -398,7 +398,7 @@ ana_UNIT_TERM lgraph defl gctx curl opts uctx am@(Amalgamation uts poss) =
        sink <- inclusionSink lgraph dnsigs sig
        () <- assertAmalgamability opts poss diag sink
        (q, diag') <- extendDiagramIncl lgraph diag dnsigs
-                     sig $ showPretty am ""
+                     sig $ showDoc am ""
        return (q, diag', gctx' { devGraph = dg'' }, Amalgamation uts' poss)
 -- LOCAL-UNIT
 ana_UNIT_TERM lgraph defl gctx curl opts uctx (Local_unit udds ut poss) =
@@ -422,7 +422,7 @@ ana_UNIT_TERM lgraph defl gctx curl opts uctx@(buc, diag)
                              do plain_error (dnsig, diag, gctx, uappl)
                                   (ustr ++ " is a parameterless unit, "
                                    ++ "but arguments have been given: " ++
-                                      showPretty fargus "") pos
+                                      showDoc fargus "") pos
             Just (Based_par_unit_sig pI (Par_unit_sig argSigs resultSig)) ->
                 do (sigF, dg') <- nodeSigUnion lgraph dg
                        (toMaybeNode pI : map JustNode argSigs) DGFormalParams
@@ -459,7 +459,7 @@ ana_UNIT_TERM lgraph defl gctx curl opts uctx@(buc, diag)
                            do (dnsig, diag1, dg1) <-
                                 extendDiagramWithMorphismRev pos lgraph diag0
                                 dg0 targetNode (gEmbed morph)
-                                (showPretty fargus "")
+                                (showDoc fargus "")
                                 DGFormalParams
                               diag'' <- insInclusionEdges lgraph diag1 [dnsig]
                                         qB
@@ -473,7 +473,7 @@ ana_UNIT_TERM lgraph defl gctx curl opts uctx@(buc, diag)
                    assertAmalgamability opts pos diag'' sink'
                    (q, diag''') <- extendDiagram diag'' qB
                                    (gEmbed sigMorExt) sigR
-                                   $ showPretty uappl ""
+                                   $ showDoc uappl ""
                    diag4 <- insInclusionEdges lgraph diag'''
                             (map third morphSigs) q
                    return (q, diag4, gctx'' { devGraph = dg5 }, uappl)
@@ -507,11 +507,11 @@ ana_FIT_ARG_UNITS lgraph defl gctx curl opts uctx@(buc, _)
 ana_FIT_ARG_UNITS _ _ gctx _ _ (_, diag) appl pos [] _ =
     do plain_error ([], gctx, diag)
                    ("Too many arguments given in application\n"
-                    ++ showPretty appl "") pos
+                    ++ showDoc appl "") pos
 ana_FIT_ARG_UNITS _ _ gctx _ _ (_, diag) appl pos _ [] =
     do plain_error ([], gctx, diag)
                    ("Too few arguments given in application\n"
-                    ++ showPretty appl "") pos
+                    ++ showDoc appl "") pos
 
 -- | Analyse unit argument
 ana_FIT_ARG_UNIT :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic

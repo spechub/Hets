@@ -32,13 +32,11 @@ import CASL.CCC.SignFuns
 import CASL.CCC.TermFormula
 import CASL.CCC.TerminationProof
 import Common.AS_Annotation
-import Common.PrettyPrint
+import Common.DocUtils
 import Common.Result
 import Common.Id
 import Maybe
 import Debug.Trace
-import System.Cmd
-import System.IO.Unsafe
 
 
 {------------------------------------------------------------------------
@@ -136,7 +134,7 @@ checkFreeType (osig,osens) m fsn
 -}
     where
     fs1 = map sentence (filter is_user_or_sort_gen fsn)
-    fs = trace (showPretty fs1 "new formulars") fs1     -- new formulars
+    fs = trace (showDoc fs1 "new formulars") fs1     -- new formulars
     fs_terminalProof = filter (\f->(not $ is_Sort_gen_ax f) &&
                                    (not $ is_Membership f) &&
                                    (not $ is_ex_quanti f) &&
@@ -144,30 +142,30 @@ checkFreeType (osig,osens) m fsn
     ofs = map sentence (filter is_user_or_sort_gen osens)
     sig = imageOfMorphism m
     oldSorts1 = Set.union (sortSet sig) (sortSet osig)
-    oldSorts = trace (showPretty oldSorts1 "old sorts") oldSorts1  -- old sorts
+    oldSorts = trace (showDoc oldSorts1 "old sorts") oldSorts1  -- old sorts
     oSorts = Set.toList oldSorts
     allSorts1 = sortSet $ mtarget m
-    allSorts = trace (showPretty allSorts1 "all sorts") allSorts1
+    allSorts = trace (showDoc allSorts1 "all sorts") allSorts1
     newSorts1 = Set.filter (\s-> not $ Set.member s oldSorts) allSorts
                                                           -- new sorts
-    newSorts = trace (showPretty newSorts1 "new sorts") newSorts1
+    newSorts = trace (showDoc newSorts1 "new sorts") newSorts1
     nSorts = Set.toList newSorts
     oldOpMap = opMap sig
     oldPredMap = predMap sig
     fconstrs = concat $ map constraintOfAxiom (ofs ++ fs)
     (srts1,constructors1,_) = recover_Sort_gen_ax fconstrs
-    srts = trace (showPretty srts1 "srts") srts1      --   srts
-    constructors = trace (showPretty constructors1 "constrs") constructors1
+    srts = trace (showDoc srts1 "srts") srts1      --   srts
+    constructors = trace (showDoc constructors1 "constrs") constructors1
                                                            -- constructors
     f_Inhabited1 = inhabited oSorts fconstrs
-    f_Inhabited = trace (showPretty f_Inhabited1 "f_inhabited" ) f_Inhabited1
+    f_Inhabited = trace (showDoc f_Inhabited1 "f_inhabited" ) f_Inhabited1
                                                              --  f_inhabited
     axioms1 = filter (\f-> (not $ is_Sort_gen_ax f) &&
                            (not $ is_Membership f)) fs
-    axioms = trace (showPretty axioms1 "axioms") axioms1         --  axioms
+    axioms = trace (showDoc axioms1 "axioms") axioms1         --  axioms
     _axioms = map quanti axioms
     l_Syms1 = map leadingSym axioms
-    l_Syms = trace (showPretty l_Syms1 "leading_Symbol") l_Syms1
+    l_Syms = trace (showDoc l_Syms1 "leading_Symbol") l_Syms1
                                                       -- leading_Symbol
     spSrts = filter (\s->not $ elem s srts) nSorts
     notSubSorts = filter (\s-> (fst $ isSubSort s oSorts fs) == False) spSrts
@@ -238,12 +236,12 @@ checkFreeType (osig,osens) m fsn
         recover_Sort_gen_ax fconstrs (= constructors)
 -}
     ltp1 = map leading_Term_Predication (t_axioms ++ impl_p_axioms)
-    ltp = trace (showPretty ltp1 "leading_term_pred") ltp1
+    ltp = trace (showDoc ltp1 "leading_term_pred") ltp1
                                      --  leading_term_pred
     leadingTerms1 = concat $ map (\tp->case tp of
                                          Just (Left t)->[t]
                                          _ -> []) $ ltp
-    leadingTerms = trace (showPretty leadingTerms1 "leadingTerm") leadingTerms1
+    leadingTerms = trace (showDoc leadingTerms1 "leadingTerm") leadingTerms1
                                                                -- leading Term
 {-
    check that patterns do not overlap, if not, return Nothing This means:
@@ -268,7 +266,7 @@ checkFreeType (osig,osens) m fsn
           Nothing -> error "CASL.CCC.FreeTypes.<leadingSymPatterns>"
     overlapSym1 = map fst $
                   filter (\sp->not $ checkPatterns $ snd sp) leadingSymPatterns
-    overlapSym = trace (showPretty overlapSym1 "OverlapSym") overlapSym1
+    overlapSym = trace (showDoc overlapSym1 "OverlapSym") overlapSym1
     overlap_Axioms fos
         | length fos <= 1 = [[]]
         | length fos == 2 = if not $ checkPatterns $ map patternsOfAxiom fos
@@ -281,7 +279,7 @@ checkFreeType (osig,osens) m fsn
                      concat $ map overlap_Axioms $ map snd $
                      filter (\a-> (fst a) `elem` overlapSym) $
                      fromJust $ groupAxioms (t_axioms ++ impl_p_axioms)
-    overlapAxioms = trace (showPretty overlapAxioms1 "OverlapA") overlapAxioms1
+    overlapAxioms = trace (showDoc overlapAxioms1 "OverlapA") overlapAxioms1
     numOfImpl fos = length $ filter is_impli fos
     overlapQuery fos =
         case (checkPatterns2 $ map patternsOfAxiom fos) of
@@ -306,7 +304,7 @@ checkFreeType (osig,osens) m fsn
               | length res == 1 = Negation (head cond) nullRange
               | otherwise = Strong_equation (head res) (last res) nullRange
     overlap_query1 = map overlapQuery overlapAxioms
-    overlap_query = trace (showPretty overlap_query1 "OverlapQ") overlap_query1
+    overlap_query = trace (showDoc overlap_query1 "OverlapQ") overlap_query1
     pattern_Pos [] = error "pattern overlap"
     pattern_Pos sym_ps =
         if not $ checkPatterns $ snd $ head sym_ps then symPos $ fst $
@@ -326,7 +324,7 @@ checkFreeType (osig,osens) m fsn
     casl2hs = map_theory
                   (CompComorphism (CompComorphism CASL2HasCASL HasCASL2HasCASL)
                    HasCASL2Haskell) (mtarget m,(osens++fsn))
-    hsdiag = concat $ map (\a->showPretty a "") $ diags casl2hs
+    hsdiag = concat $ map (\a->showDoc a "") $ diags casl2hs
     proof = unsafePerformIO (do
                 writeFile ipath $ ("module Dummy where\n -- " ++ hsdiag)
                 system ("java -jar CASL/Termination/AProVE.jar -u cli -m " ++

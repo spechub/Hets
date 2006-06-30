@@ -15,30 +15,17 @@ module Common.Print_AS_Annotation where
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.PrettyPrint
-import Common.Lib.Pretty
-import qualified Common.Doc as Doc
+import Common.Doc
+import Common.DocUtils
 
 instance PrettyPrint Annotation where
-    printText0 ga = Doc.toText ga . Doc.annoDoc
+    printText0 ga = toText ga . annoDoc
 
--- -------------------------------------------------------------------------
--- utilies
--- -------------------------------------------------------------------------
-
-printAnnotationList_Text0 :: GlobalAnnos -> [Annotation] -> Doc
-printAnnotationList_Text0 ga = Doc.toText ga . Doc.printAnnotationList
-
-fromText :: PrettyPrint a => GlobalAnnos -> a -> Doc.Doc
-fromText ga = Doc.literalDoc . printText0 ga
+fromText :: PrettyPrint a => GlobalAnnos -> a -> Doc
+fromText ga = literalDoc . printText0 ga
 
 instance (PrettyPrint a) => PrettyPrint (Annoted a) where
-    printText0 ga = Doc.toText ga . Doc.printAnnoted (fromText ga)
+    printText0 ga = toText ga . printAnnoted (fromText ga)
 
 instance PrettyPrint s => PrettyPrint (Named s) where
-    printText0 ga = printText0 ga . sentence
--- other stuff must be printed logic dependent
-
--- | print sentence with label and non-axioms with implied annotation
-printLabelledSen :: PrettyPrint s => GlobalAnnos -> Named s -> Doc
-printLabelledSen ga s =
-    text " . " <> printText0 ga (Doc.fromLabelledSen s)
+    printText0 ga = toText ga . printAnnoted (fromText ga) . fromLabelledSen

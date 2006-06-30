@@ -16,7 +16,6 @@ import Common.Id
 import Common.Keywords
 import Common.Doc
 import Common.DocUtils
-import Common.PPUtils
 import Common.AS_Annotation
 
 import CASL.AS_Basic_CASL
@@ -398,6 +397,33 @@ isCond :: TERM f -> Bool
 isCond t = case t of
     Conditional _ _ _ _ -> True
     _ -> False
+
+-- |
+-- a helper class for calculating the pluralS of e.g. ops
+class ListCheck a where
+    innerList :: a -> [()]
+
+instance ListCheck Token where
+    innerList _ = [()]
+
+instance ListCheck Id where
+    innerList _ = [()]
+
+instance ListCheck a => ListCheck [a] where
+    innerList = concatMap innerList
+
+-- |
+-- an instance of ListCheck for Annoted stuff
+instance ListCheck a => ListCheck (Annoted a) where
+    innerList = innerList . item
+
+-- |
+-- pluralS checks a list with elements in class ListCheck for a list
+-- greater than zero. It returns an empty String if the list and all
+-- nested lists have only one element. If the list or an nested list
+-- has more than one element a String containig one "s" is returned.
+pluralS :: ListCheck a => a -> String
+pluralS l = if isSingle $ innerList l then "" else "s"
 
 ---- instances of ListCheck for various data types of AS_Basic_CASL ---
 

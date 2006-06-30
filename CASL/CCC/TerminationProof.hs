@@ -14,7 +14,8 @@ module CASL.CCC.TerminationProof where
 import CASL.Print_AS_Basic()                   
 import CASL.AS_Basic_CASL       
 import Common.AS_Annotation
-import Common.PrettyPrint
+import Common.Doc
+import Common.DocUtils
 import CASL.CCC.TermFormula
 import Common.Id
 import System.Cmd
@@ -31,7 +32,7 @@ import Debug.Trace
    CASL formulas to AProVE term rewrite systems
 -}
 
-terminationProof :: (PosItem f, PrettyPrint f, Eq f) => 
+terminationProof :: (PosItem f, Pretty f, Eq f) => 
                     [Named (FORMULA f)] -> Maybe Bool
 terminationProof fsn 
     | null all_axioms = Just True
@@ -41,12 +42,12 @@ terminationProof fsn
     | otherwise = error "termination proof"
     where
     fs1 = map sentence (filter is_user_or_sort_gen fsn)
-    fs = trace (showPretty fs1 "all formulars") fs1
+    fs = trace (showDoc fs1 "all formulars") fs1
     all_axioms1 = filter (\f->(not $ is_Sort_gen_ax f) &&
                               (not $ is_Membership f) &&
                               (not $ is_ex_quanti f) &&
                               (not $ is_Def f)) fs
-    all_axioms = trace (showPretty all_axioms1 "Terminal_allAxiom") all_axioms1
+    all_axioms = trace (showDoc all_axioms1 "Terminal_allAxiom") all_axioms1
     allVar vs = everyOnce $ concat vs   
     varsStr vars str                               
         | null vars = str

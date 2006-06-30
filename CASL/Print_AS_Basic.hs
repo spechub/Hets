@@ -21,7 +21,7 @@ import Common.Keywords
 import Common.Lib.Pretty
 import Common.PrettyPrint
 import qualified Common.Doc as Doc
-import Common.DocUtils
+import Common.DocUtils as Doc
 
 import CASL.AS_Basic_CASL
 import CASL.ToDoc

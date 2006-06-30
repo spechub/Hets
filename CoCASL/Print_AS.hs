@@ -14,7 +14,6 @@ module CoCASL.Print_AS where
 
 import Common.Keywords
 import Common.PrettyPrint
-import Common.PPUtils
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
@@ -34,7 +33,7 @@ instance Pretty C_BASIC_ITEM where
 
 printC_BASIC_ITEM :: C_BASIC_ITEM -> Doc
 printC_BASIC_ITEM cb = case cb of
-    CoFree_datatype l _ -> text cofreeS <+> text (cotypeS ++ pluralS l)
+    CoFree_datatype l _ -> keyword cofreeS <+> keyword (cotypeS ++ pluralS l)
       <+> (fsep $ punctuate semi $ map (printAnnoted printCODATATYPE_DECL) l)
     CoSort_gen l _ -> case l of
       [Annoted (Ext_SIG_ITEMS (CoDatatype_items l' _)) _ _ _] -> 
@@ -51,7 +50,7 @@ instance Pretty C_SIG_ITEM where
 
 printC_SIG_ITEM :: C_SIG_ITEM -> Doc
 printC_SIG_ITEM (CoDatatype_items l _) =
-    text (cotypeS ++ pluralS l) <+>
+    keyword (cotypeS ++ pluralS l) <+>
      (fsep $ punctuate semi $ map (printAnnoted printCODATATYPE_DECL) l)
 
 instance PrettyPrint CODATATYPE_DECL where
@@ -117,9 +116,9 @@ printC_FORMULA cf = case cf of
                                 td = printMODALITY t
                                 fd = printFormula printC_FORMULA f
                             in if b then brackets td <> fd
-                              else text lessS `sp` td `sp` text greaterS <+> fd     
-    CoSort_gen_ax sorts ops _ -> text cogeneratedS <>
-         specBraces (text sortS <+> 
+                              else less `sp` td `sp` greater <+> fd     
+    CoSort_gen_ax sorts ops _ -> keyword cogeneratedS <>
+         specBraces (keyword sortS <+> 
            (fsep $ punctuate comma $ map idDoc sorts) <> semi <+>
            (fsep $ punctuate semi $ map printOpSymb ops))  
     

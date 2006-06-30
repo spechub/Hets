@@ -28,6 +28,7 @@ import Isabelle.IsaConsts
 import Common.AS_Annotation
 import qualified Common.Lib.Map as Map
 import Common.Doc hiding (bar)
+import Common.DocUtils
 
 import Data.Char
 import Data.List

@@ -11,33 +11,23 @@ This module contains all instances of PrintLaTeX for AS_Annotation.hs
 -}
 
 module Common.LaTeX_AS_Annotation
-    ( printAnnotationList_Latex0
-    , semiAnno_latex
-    , fromLatex
+    ( fromLatex
     ) where
 
 import Common.AS_Annotation
 import Common.GlobalAnnotations
-
-import Common.PrintLaTeX
-import Common.Lib.Pretty
-
-import qualified Common.Doc as Doc
+import Common.PrettyPrint
+import Common.Doc
+import Common.DocUtils
 
 instance PrintLaTeX Annotation where
-    printLatex0 ga = Doc.toLatex ga . Doc.annoDoc
+    printLatex0 ga = toLatex ga . annoDoc
 
-printAnnotationList_Latex0 :: GlobalAnnos -> [Annotation] -> Doc
-printAnnotationList_Latex0 ga = Doc.toLatex ga . Doc.printAnnotationList
-
-fromLatex :: PrintLaTeX a => GlobalAnnos -> a -> Doc.Doc
-fromLatex ga = Doc.literalDoc . printLatex0 ga
+fromLatex :: PrintLaTeX a => GlobalAnnos -> a -> Doc
+fromLatex ga = literalDoc . printLatex0 ga
 
 instance PrintLaTeX a => PrintLaTeX (Annoted a) where
-    printLatex0 ga = Doc.toLatex ga . Doc.printAnnoted (fromLatex ga)
+    printLatex0 ga = toLatex ga . printAnnoted (fromLatex ga)
 
 instance PrintLaTeX s => PrintLaTeX (Named s) where
-    printLatex0 ga = printLatex0 ga . Doc.fromLabelledSen
-
-semiAnno_latex :: PrintLaTeX a => GlobalAnnos -> [Annoted a] -> Doc
-semiAnno_latex ga = Doc.toLatex ga . Doc.semiAnnos (fromLatex ga)
+    printLatex0 ga = printLatex0 ga . fromLabelledSen
