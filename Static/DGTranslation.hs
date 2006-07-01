@@ -20,6 +20,7 @@ import qualified Common.Lib.Map as Map
 import Common.Result
 import Maybe
 import Common.Lib.Graph
+import Data.Graph.Inductive.Graph
 
 -- translation between two GlobalContext on the basis the given Comorphism 
 dg_translation :: GlobalContext -> AnyComorphism -> Result GlobalContext
@@ -29,64 +30,86 @@ dg_translation gc cm@(Comorphism cidMor) =
         mainTrans [] diags gc = Result diags (Just gc)
         mainTrans (h:r) diags gc =  
             case Map.lookup h (toMap $ devGraph gc) of
-              Just (_, nodeLab, _) -> 
-               if lessSublogicComor (sublogicOfTh $ dgn_theory nodeLab) cm
-                 then let Result diags' maybeGC = updateNode h gc cm 
-                      in  case maybeGC of
-                            Just gc' -> mainTrans r (diags ++ diags') gc'
-                            Nothing -> mainTrans r (diags ++ diags') gc
-                 else mainTrans r ((mkDiag Hint ("node " ++ (show h) ++
+              Just (_, nodeLab, _) ->
+                  if lessSublogicComor 
+                         (sublogicOfTh $ dgn_theory nodeLab) cm
+                    then let Result diags' maybeGC = updateNode h gc cm 
+                         in  case maybeGC of
+                             Just gc' -> mainTrans r (diags ++ diags') gc'
+                             Nothing -> mainTrans r (diags ++ diags') gc
+                    else mainTrans r ((mkDiag Hint ("node " ++ (show h) ++
                             ":" ++ (show $ dgn_name nodeLab) ++
                             " is not less than " ++ (show cm)) ()):diags) gc
               Nothing -> mainTrans r ((mkDiag Error ("node " ++ (show h) 
                               ++ " is not found in graph.") ()):diags) gc
 
+ 
+
 updateNode :: Int -> GlobalContext -> AnyComorphism -> Result GlobalContext
 updateNode index gc cm@(Comorphism cidMor) =
     -- sigMap, thMap and morMap can be empty, so the index of node can
     -- not be found in it.
-    let Result smDiag _ = case Map.lookup index (sigMap gc) of
-                            Just sigElem -> fSign sigElem
-                            Nothing -> Result [] Nothing
-        Result tmDiag _ = case Map.lookup index (thMap gc) of
-                            Just thElem -> fTh thElem
-                            Nothing -> Result [] Nothing
-        Result mmDiag _ = case Map.lookup index (morMap gc) of
-                            Just morElem -> fMor morElem
-                            Nothing -> Result [] Nothing
-        (l1, node, l2) = 
+    let (inLinks, node, outLinks) = 
             fromJust $ Map.lookup index $ toMap $ devGraph gc
+        Result diagsL1 newL1 = foldl (joinResultWith (\ a b -> a ++ b)) 
+                               (Result [] (Just [])) (map updateEdge inLinks)
+        Result diagsL2 newL2 = foldl (joinResultWith (\ a b -> a ++ b)) 
+                               (Result [] (Just [])) (map updateEdge outLinks)
         Result thDiag _ = fTh $ dgn_theory node 
-        Result morDiag _ = fGMor $ dgn_sigma node
-    in  Result (thDiag++morDiag++smDiag++tmDiag++mmDiag)
-               (Just (gc {devGraph = Gr (Map.update transDev index 
-                                           (toMap $ devGraph gc))
-                         , sigMap = Map.update 
-                                    transSig 
-                                    index (sigMap gc)
-                         , thMap = Map.update
-                                   transTh 
-                                   index (thMap gc)
-                         , morMap = Map.update
-                                    transMor 
-                                    index (morMap gc)
-                         }))
+    in  Result (thDiag ++ diagsL1 ++ diagsL2)
+                (Just (gc {devGraph=Gr (Map.update (transDev (fromJust newL1)
+                                                            (fromJust newL2)) 
+                                        index 
+                                        (toMap $ devGraph gc))
+
+                          }))
    where 
      slid = sourceLogic cidMor
      tlid = targetLogic cidMor
-     transSig sign = case fSign sign of
-                       Result _ maybeResult -> maybeResult
-     fSign (G_sign lid sign) =
-      case coerceSign lid slid "" sign of
+
+     updateEdge :: (DGLinkLab, Node) -> Result [(DGLinkLab, Node)]
+     updateEdge (links@(DGLink gm@(GMorphism cid' lsign lmorphism) _ _),n)
+       = if isHomogeneous gm 
+            then
+             let sourceLid = sourceLogic (Comorphism cid')
+             in  {-case fSign sourceLid lsign of
+                   Result diagLs (Just lsign') -> 
+                       case fMor sourceLid lmorphism of
+                         Result diagLm (Just lmorphism') -> -} 
+                 case gEmbedComorphism (idComorphism (Logic tlid)) (G_sign tlid lsign) of
+                   Result diags1 gmorphism -> 
+                       Result diags1 -- (diagLs ++ diagLm) 
+                               (Just [(links{dgl_morphism=
+                                                   fromJust gmorphism
+                                            }, n)])                    
+
+{-
+                             case idComorphism (Logic tlid) of 
+                                   Comorphism cid2 ->
+                                       Result [] -- (diagLs ++ diagLm) 
+                                         (Just [(links{dgl_morphism=
+                                            GMorphism cid2 lsign lmorphism
+                                                      }, n)])
+-}            else  Result [mkDiag Hint ("Link is not homogeneous.") ()] (Just [(links,n)])
+
+     transDev newL1 newL2 (_, node, _) =
+          case transTh $ dgn_theory node of
+               Just th' -> Just (newL1, node {dgn_theory = th'
+                                             ,dgn_nf = Nothing
+                                             ,dgn_sigma = Nothing}, newL2)
+               Nothing  -> Nothing
+
+     fSign sourceID sign =
+      case coerceSign sourceID slid "" sign of
         Just sign' -> 
             case map_sign cidMor sign' of
               Result diags maybeSign ->
                   case maybeSign of
                     Just (sign'', _) ->
-                        Result diags (Just (G_sign tlid sign''))
+                        Result diags (Just sign'')
                     Nothing -> Result diags Nothing
-        Nothing    -> Result [(mkDiag Error ("cannot coerce sign" ++ show sign)
-                                     ())] Nothing 
+        Nothing    -> Result [mkDiag Error ("cannot coerce sign" ++ show sign)
+                                     ()] Nothing 
 
      transTh th = case fTh th of
                     Result _ maybeResult -> maybeResult
@@ -107,35 +130,13 @@ updateNode index gc cm@(Comorphism cidMor) =
         Nothing -> Result [(mkDiag Error ("cannot coerce sign" ++ show sign)
                                      ())] Nothing 
 
-     transMor mor = case fMor mor of 
-                      Result _ maybeResult -> maybeResult
-     fMor (G_morphism lid mor) =
-        case coerceMorphism lid slid "" mor of
+     fMor sourceID mor =
+        case coerceMorphism sourceID slid "" mor of
           Just mor' -> 
-              case map_morphism cidMor mor' of
-                Result diags maybeMor ->
-                    Result diags $ maybe Nothing 
-                            (Just . G_morphism tlid) maybeMor
+              map_morphism cidMor mor' 
+
           Nothing   -> Result [(mkDiag Error ("cannot coerce mor" ++ show mor)
-                                     ())] Nothing  
-     -- should cid also translated? and how? 
-     fGMor gm@(Just (GMorphism cid sign1 mor2)) =
-{-         let (Result diagsS mSign1) = fSign (G_sign (sourceLogic cid) sign1) 
-             (Result diagsM mMor2) = fMor (G_morphism (sourceLogic cid) mor2)
-         in  case mSign1 of 
-               Just sign1' ->
-                   case mMor2 of
-                     Just mor2' -> Result (diagsS ++ diagsM) 
-                                     (Just (GMorphism cid sign1' mor2'))
-                     _ -> Result (diagsS ++ diagsM) Nothing
-               Nothing -> Result (diagsS ++ diagsM) Nothing
--}
-           Result [] gm
-     fGMor Nothing = Result [mkDiag Warning ("node " ++ (show index) ++ " no GMorphism") ()] Nothing
-         
-     transDev (l1, node, l2) =
-         case transTh $ dgn_theory node of
-           Just th' -> Just (l1, node {dgn_theory = th'}, l2)
-           Nothing  -> Nothing
+                                ())] Nothing  
+
 
 
