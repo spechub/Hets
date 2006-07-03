@@ -46,8 +46,7 @@ printBASIC_ITEMS fB fS fF sis = case sis of
              $ sep [keyword generatedS <+> keyword (typeS ++ pluralS l'),
                     semiAnnos printDATATYPE_DECL l']
          _ -> sep [keyword generatedS, specBraces $ vcat $ map
-              (printAnnoted ((if isSingle l then rmTopKey else id) .
-                     printSIG_ITEMS fS fF)) l]
+              (printAnnoted $ printSIG_ITEMS fS fF) l]
     Var_items l _ -> topSigKey (varS ++ pluralS l) <+>
                            fsep (punctuate semi $ map printVarDecl l)
     Local_var_axioms l f _  ->
