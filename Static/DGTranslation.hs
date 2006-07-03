@@ -72,25 +72,24 @@ updateNode index gc cm@(Comorphism cidMor) =
        = if isHomogeneous gm 
             then
              let sourceLid = sourceLogic (Comorphism cid')
-             in  {-case fSign sourceLid lsign of
+             in  case fSign sourceLid lsign of
                    Result diagLs (Just lsign') -> 
                        case fMor sourceLid lmorphism of
-                         Result diagLm (Just lmorphism') -> -} 
-                 case gEmbedComorphism (idComorphism (Logic tlid)) (G_sign tlid lsign) of
+                         Result diagLm (Just lmorphism') -> 
+                 {- case gEmbedComorphism (idComorphism (Logic tlid)) (G_sign tlid lsign) of
                    Result diags1 gmorphism -> 
                        Result diags1 -- (diagLs ++ diagLm) 
                                (Just [(links{dgl_morphism=
                                                    fromJust gmorphism
-                                            }, n)])                    
+                                            }, n)]) -} 
 
-{-
                              case idComorphism (Logic tlid) of 
                                    Comorphism cid2 ->
                                        Result [] -- (diagLs ++ diagLm) 
                                          (Just [(links{dgl_morphism=
-                                            GMorphism cid2 lsign lmorphism
+                                            GMorphism cid2 lsign' lmorphism'
                                                       }, n)])
--}            else  Result [mkDiag Hint ("Link is not homogeneous.") ()] (Just [(links,n)])
+            else  Result [mkDiag Hint ("Link is not homogeneous.") ()] (Just [(links,n)])
 
      transDev newL1 newL2 (_, node, _) =
           case transTh $ dgn_theory node of
