@@ -6,7 +6,7 @@ import Syntax.Parse_AS_Library
 import System.Environment
 import Text.ParserCombinators.Parsec
 import Common.AnnoState
-import Common.Doc
+import Common.DocUtils
 import Comorphisms.LogicGraph
 import Syntax.Print_AS_Library ()
 
@@ -22,5 +22,3 @@ main :: IO ()
 main = do
   files <- getArgs
   sequence_ (map parsefile files)
-
-

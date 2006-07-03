@@ -22,6 +22,7 @@ import HasCASL.Builtin
 
 import Common.Lib.State
 import Common.Doc
+import Common.DocUtils
 import Common.RunParsers
 import Common.AS_Annotation
 import Common.GlobalAnnotations

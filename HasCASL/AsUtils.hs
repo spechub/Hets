@@ -16,7 +16,6 @@ module HasCASL.AsUtils where
 import HasCASL.As
 import Common.Id
 import Common.Keywords
-import Common.Doc
 import Common.DocUtils
 import qualified Common.Lib.Set as Set
 

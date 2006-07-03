@@ -18,7 +18,6 @@ import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Pos
 import Common.Anno_Parser
 import Common.AnnoState
-import Common.Doc
 import Common.DocUtils
 import Common.GlobalAnnotations
 import Common.AnalyseAnnos(addGlobalAnnos)
