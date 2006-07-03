@@ -47,7 +47,7 @@ import GUI.GenericATPState
 -}
 mathServBroker :: Prover Sign Sentence ()
 mathServBroker =
-  Prover { prover_name = "MSBroker (Exp)",
+  Prover { prover_name = "MSBroker",
            prover_sublogic = "SoftFOL",
            prove = mathServBrokerGUI
          }
@@ -98,7 +98,12 @@ runMSBroker sps cfg saveTPTP thName nGoal = do
     prob <- showTPTPProblem thName sps nGoal
     when saveTPTP
         (writeFile (thName++'_':AS_Anno.senName nGoal++".tptp") prob)
-    mathServOut <- callMathServ "Broker" "ProveProblemOpt" prob tLimit Nothing
+    mathServOut <- callMathServ
+        MathServCall{mathServService = Broker,
+                     mathServOperation = ProblemOpt,
+                     problem = prob,
+                     proverTimeLimit = tLimit,
+                     extraOptions = Nothing}
     parseMathServOut mathServOut cfg nGoal (prover_name mathServBroker)
     where
       tLimit = maybe (guiDefaultTimeLimit) id $ timeLimit cfg

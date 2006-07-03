@@ -41,7 +41,7 @@ import GUI.GenericATPState
 -}
 vampire :: Prover Sign Sentence ()
 vampire = 
-  Prover { prover_name = "Vampire (Exp)",
+  Prover { prover_name = "Vampire",
            prover_sublogic = "SoftFOL",
            prove = vampireGUI
          }
@@ -91,8 +91,12 @@ runVampire sps cfg saveTPTP thName nGoal = do
     prob <- showTPTPProblem thName sps nGoal
     when saveTPTP
         (writeFile (thName++'_':AS_Anno.senName nGoal++".tptp") prob)
-    mathServOut <- callMathServ "VampireService" "ProveTPTPProblem" prob
-                                tLimit (Just $ unwords $ extraOpts cfg)
+    mathServOut <- callMathServ
+        MathServCall{ mathServService = VampireService,
+                      mathServOperation = TPTPProblem,
+                      problem = prob,
+                      proverTimeLimit = tLimit,
+                      extraOptions = Just $ unwords $ extraOpts cfg}
     parseMathServOut mathServOut cfg nGoal (prover_name vampire)
     where
       tLimit = maybe (guiDefaultTimeLimit) id $ timeLimit cfg

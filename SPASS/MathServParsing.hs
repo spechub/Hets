@@ -12,6 +12,13 @@ Functions for parsing and mapping MathServ output.
 
 -}
 
+{-
+  to do:
+  - add MathServResponse record with full rdf data
+  --> rewrite parseMathServOut
+  --> add another layer/function for filling ProofStatus from MathServResponse
+-}
+
 module SPASS.MathServParsing where
 
 import Logic.Prover
@@ -36,6 +43,75 @@ import Data.Maybe
 import GUI.GenericATP (guiDefaultTimeLimit)
 import GUI.GenericATPState
 
+-- * Datatypes for MathServ services
+
+{- |
+  Record type for all needed data to do a MathServ call.
+-}
+data MathServCall = MathServCall {
+    -- | Selected MathServ service
+    mathServService :: MathServServices,
+    -- | Selected MathServ operation
+    mathServOperation :: MathServOperationTypes,
+    -- | Problem to prove in TPTP format
+    problem :: String,
+    -- | Time limit
+    proverTimeLimit :: Int,
+    -- | Extra options
+    extraOptions :: Maybe String
+  }
+
+{- |
+  MathServ services to select.
+-}
+data MathServServices =
+  -- | Broker service
+    Broker
+  -- | Vampire service
+  | VampireService
+  deriving (Show)
+
+{- |
+  MathServ operation to select. These are only common types and will be
+  translated into correct MathServOperations.
+-}
+data MathServOperationTypes =
+  -- | stands for ProveProblemOpt
+    ProblemOpt
+  -- | stands for ProveProblemChoice
+  | ProblemChoice
+  -- | stands for ProveTPTPProblem or ProveTPTPProblemWithOptions
+  | TPTPProblem
+  -- | stands for ProveProblem
+  | Problem
+
+-- ** functions for handling with MathServ services
+
+{- |
+  To check whether the selected MathServ operation is known and can be executed
+  by the selected MathServ service. It returns the resulting SOAP operation.
+-}
+mkProveProblem :: MathServCall -- ^ needed data to do a MathServ call
+               -> MathServOperations -- ^ resulting MathServOperations
+mkProveProblem call =
+    case (mathServService call) of
+     VampireService -> case (mathServOperation call) of
+          TPTPProblem -> maybe ProveTPTPProblem{in0=(problem call),
+                                                in1=(proverTimeLimit call)}
+                               (ProveTPTPProblemWithOptions (problem call)
+                                                    (proverTimeLimit call))
+                               (extraOptions call)
+          Problem     -> ProveProblem (problem call) (proverTimeLimit call)
+          _           -> error $ "unknown Operation for service Vampire\n"++
+                       "known operations: ProveProblem, ProveTPTPProblem"
+     Broker -> case (mathServOperation call) of
+         ProblemOpt    -> ProveProblemOpt (problem call)
+                                          (proverTimeLimit call)
+         ProblemChoice -> ProveProblemChoice (problem call)
+                                             (proverTimeLimit call)
+         _ -> error $ "unknown Operation for service Broker\n"++
+                "known operations: ProveProblemOpt, ProveProblemChoice"
+
 -- * MathServ Interfacing Code
 
 makeEndPoint :: String -> Maybe HTTPTransport
@@ -49,20 +125,16 @@ makeEndPoint uriStr = maybe Nothing
   Sends a problem in TPTP format to MathServ using a given time limit.
   Either MathServ output is returned or a simple error message (no XML).
 -}
-callMathServ :: String -- ^ MathServ Service name
-             -> String -- ^ SOAP operation name
-             -> String -- ^ Problem to prove in TPTP format
-             -> Int -- ^ Time limit
-             -> Maybe String -- ^ extra options
+callMathServ :: MathServCall -- ^ needed data to do a MathServ call
              -> IO String -- ^ MathServ output or error message
-callMathServ service operation problem timeout xopts =
+callMathServ call =
     do
        maybe (do
                 return "Could not start MathServ.")
              (\ endPoint -> do
                  (res::Either SimpleFault MathServOutput)
                     <- soapCall endPoint $
-                       mkProveProblem xopts service operation problem timeout
+                       mkProveProblem call
                  case res of
                   Left mErr -> do
                     return $ show mErr
@@ -70,14 +142,15 @@ callMathServ service operation problem timeout xopts =
                     return $ getResponse resp
              )
              (makeEndPoint $
-                "http://"++server++':':port++"/axis/services/"++service)
+                "http://"++server++':':port++"/axis/services/"++
+                  (show $ mathServService call))
     where
     -- server data
         server = "denebola.informatik.uni-bremen.de"
         port = "8080"
 
 {- |
-  Verifies if the used prover was SPASS.This is done by parsing the prover 
+  Verifies if the used prover was SPASS.This is done by parsing the prover
   output.
 -}
 isSPASSOutput :: [String] -- ^ the prover output (maybe SPASS)
@@ -88,7 +161,7 @@ isSPASSOutput out =
       re_spass = mkRegex "SPASS V.*$"
 
 {- |
-  Reads and parses the output of SPASS. The goal status will be updated (if 
+  Reads and parses the output of SPASS. The goal status will be updated (if
   possible), used axioms will be filtered and added.
 -}
 parseSPASSOutput :: [String] -- ^ SPASS output, beginning with result line
@@ -124,7 +197,7 @@ parseMathServOut :: String -- ^ MathServ output or error messages
                  -> GenericConfig () -- ^ configuration to use
                  -> AS_Anno.Named SPTerm -- ^ goal to prove
                  -> String -- ^ prover name
-                 -> IO (ATPRetval, GenericConfig ()) 
+                 -> IO (ATPRetval, GenericConfig ())
                  -- ^ (retval, configuration with proof status and
                  --    complete output)
 parseMathServOut mathServOut cfg nGoal prName = do
@@ -134,6 +207,11 @@ parseMathServOut mathServOut cfg nGoal prName = do
         output = maybe (lines mathServOut) (lines . unTab) $
                        getXTextValue $ getXPath outputXPath rdfTree
         timeout = isJust $ matchRegex re_timeout $ unlines output
+        -- get real prover name if Broker was used
+        prName' = if (prName == brokerName)
+                     then (usedProverName rdfTree) ++ " [via MathServBroker]"
+                     else prName ++ " [via MathServ]"
+        defaultPrStat = defaultProof_status nGoal prName' tLimit
 
     -- get some more infos if SPASS was used
         (res', usedAxs) = if isSPASSOutput output
@@ -145,8 +223,8 @@ parseMathServOut mathServOut cfg nGoal prName = do
             cfg{proof_status = retval,
                 resultOutput = output})
     where
+      brokerName = "MSBroker"
       tLimit = maybe (guiDefaultTimeLimit) id $ timeLimit cfg
-      defaultPrStat = defaultProof_status nGoal prName tLimit
       -- replace tabulators with each 8 spaces
       unTab = foldr (\ch li ->
                         if ch == '\x9' then "        "++li
@@ -171,6 +249,17 @@ mapToGoalStatus stat = case stat of
     where
       re_theorem = mkRegex "Theorem$"
       re_counter = mkRegex "Counter$"
+
+usedProverName :: XmlTree -- ^ XML parsed MathServ output
+               -> String -- ^ name of used prover (or unknown)
+usedProverName rdfTree =
+    maybe unknownProver (takeWhile (\ch -> not $ ch == '_')) $
+          getXTextValue $ getXPath proverXPath rdfTree    
+          
+    where
+      proverXPath = "/mw:*[local-name()='FoAtpResult']/mw:*[local-"
+                     ++ "name()='system']/text()"
+      unknownProver = "unknown"
 
 {- |
   Helper function. Given a one-elemented [XmlTree], containing an XText element
