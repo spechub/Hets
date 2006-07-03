@@ -308,15 +308,15 @@ var   x : s
 . true
 . not p /\ not q(x) /\ q(x)
 . not p \/ not q(x) \/ q(x)
-. not p /\ not q(x) /\ q(x) => 
-  not p \/ not q(x) \/ q(x) => not p /\ not q(x) /\ q(x)
-. not p /\ not q(x) /\ q(x) if not p \/ not q(x) \/ q(x) if 
-  not p /\ not q(x) /\ q(x)
+. not p /\ not q(x) /\ q(x) 
+  => not p \/ not q(x) \/ q(x) => not p /\ not q(x) /\ q(x)
+. not p /\ not q(x) /\ q(x) if not p \/ not q(x) \/ q(x) 
+  if not p /\ not q(x) /\ q(x)
 forall x : s 
-. not p /\ not q(x) /\ q(x) <=> 
-  (exists x : s 
-   . not p \/ not q(x) \/ q(x) <=> 
-     (exists! x : s . not p /\ not q(x) /\ q(x)))
+. not p /\ not q(x) /\ q(x) 
+  <=> (exists x : s 
+       . not p \/ not q(x) \/ q(x) 
+         <=> (exists! x : s . not p /\ not q(x) /\ q(x)))
 . def f(x)
 . f(x) =e= g(x)
 . f(x) = g(x)
@@ -802,13 +802,13 @@ ops   ' ' : Char = '\032'; %(printable_32)%
       'þ' : Char = '\254'; %(printable_254)%
       'ÿ' : Char = '\255' %(printable_255)%
 preds isLetter(c : Char) <=> 
-      (ord('A') <= ord(c) /\ ord(c) <= ord('Z')) \/ 
-      (ord('a') <= ord(c) /\ ord(c) <= ord('z'));       %(isLetter_def)%
+      (ord('A') <= ord(c) /\ ord(c) <= ord('Z')) 
+      \/ (ord('a') <= ord(c) /\ ord(c) <= ord('z'));    %(isLetter_def)%
       isDigit(c : Char) <=> ord('0') <= ord(c) /\ ord(c) <= ord('9'); 
                                                          %(isDigit_def)%
       isPrintable(c : Char) <=> 
-      (ord(' ') <= ord(c) /\ ord(c) <= ord('~')) \/ 
-      (ord(' ') <= ord(c) /\ ord(c) <= ord('ÿ'))     %(isPrintable_def)%
+      (ord(' ') <= ord(c) /\ ord(c) <= ord('~')) 
+      \/ (ord(' ') <= ord(c) /\ ord(c) <= ord('ÿ'))  %(isPrintable_def)%
 
 %% alternative definition of characters as '\o ppp',
 %% where p in {0,1,...,7} :

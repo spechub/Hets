@@ -297,16 +297,16 @@ printRecord mf = Record
           fsep $ printQuant q : punctuate semi (map printVarDecl l)
                                 ++ [addBullet r]
     , foldConjunction = \ (Conjunction ol _) l _ ->
-          fsep $ punctuate (space <> andDoc) $ zipWith mkJunctDoc ol l
+          fsep $ prepPunctuate (andDoc <> space) $ zipWith mkJunctDoc ol l
     , foldDisjunction = \ (Disjunction ol _) l _ ->
-          fsep $ punctuate (space <> orDoc) $ zipWith mkJunctDoc ol l
+          fsep $ prepPunctuate (orDoc <> space) $ zipWith mkJunctDoc ol l
     , foldImplication = \ (Implication oL oR b _) l r _ _ ->
           let nl = if isAnyImpl oL then parens l else l
               nr = if isImpl b oR then parens r else r
-          in if b then fsep [nl, implies, nr]
-             else fsep [nr, text ifS, nl]
+          in if b then sep [nl, hsep [implies, nr]]
+             else sep [nr, hsep [text ifS, nl]]
     , foldEquivalence = \ (Equivalence oL oR _) l r _ ->
-          fsep [mkEquivDoc oL l, equiv, mkEquivDoc oR r]
+          sep [mkEquivDoc oL l, hsep [equiv, mkEquivDoc oR r]]
     , foldNegation = \ (Negation o _) r _ -> hsep [notDoc, mkJunctDoc o r]
     , foldTrue_atom = \ _ _ -> text trueS
     , foldFalse_atom = \ _ _ -> text falseS
@@ -315,8 +315,8 @@ printRecord mf = Record
           Qual_pred_name _ _ _ -> if null l then printPredSymb p else
               fcat [printPredSymb p, parens $ fsep $ punctuate comma l]
     , foldDefinedness = \ _ r _ -> hsep [text defS, r]
-    , foldExistl_equation = \ _ l r _ -> fsep [l, exequal, r]
-    , foldStrong_equation = \ _ l r _ -> fsep [l, equals, r]
+    , foldExistl_equation = \ _ l r _ -> sep [l, hsep[exequal, r]]
+    , foldStrong_equation = \ _ l r _ -> sep [l, hsep [equals, r]]
     , foldMembership = \ _ r t _ -> fsep [r, inDoc, idDoc t]
     , foldMixfix_formula = \ _ r -> r
     , foldSort_gen_ax = \ (Sort_gen_ax constrs _) _ _ ->

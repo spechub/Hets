@@ -1200,8 +1200,8 @@
  pred odd : Nat
  pred p : ()
  pred q : s,[forall v1 : Nat 
-             . pre(suc(v1)) = 
-               v1                                           %(ga_selector_pre)%, 
+             . pre(suc(v1)) 
+               = v1                                         %(ga_selector_pre)%, 
              forall v1, v2 : Nat . suc(v1) = suc(v2) <=> v1 = v2 
                                                            %(ga_injective_suc)%, 
              forall v1 : Nat . not 0 = suc(v1) %(ga_disjoint_0_suc)%, 
@@ -1240,21 +1240,17 @@
                                                                 %(Nat_sub_def)%, 
              forall v1 : Nat . not def v1 /? 0 %(Nat_divide_0)%, 
              forall v1, v2, v3 : Nat 
-             . (v1 /? v2 = v3 <=> v1 = v3 * v2) if 
-               v2 > 
-               0                                             %(Nat_divide_Pos)%, 
+             . (v1 /? v2 = v3 <=> v1 = v3 * v2) 
+               if v2 > 
+                  0                                          %(Nat_divide_Pos)%, 
              forall v1, v2, v3 : Nat 
-             . v1 div v2 = v3 <=> 
-               (exists v4 : Nat 
-                . v1 = v2 * v3 + v4 /\ 
-                  v4 < 
-                  v2)                                               %(Nat_div)%, 
+             . v1 div v2 = v3 
+               <=> (exists v4 : Nat . v1 = v2 * v3 + v4 /\ v4 < v2) 
+                                                                    %(Nat_div)%, 
              forall v1, v2, v3 : Nat 
-             . v1 mod v2 = v3 <=> 
-               (exists v4 : Nat 
-                . v1 = v2 * v4 + v3 /\ 
-                  v3 < 
-                  v2)                                               %(Nat_mod)%, 
+             . v1 mod v2 = v3 
+               <=> (exists v4 : Nat . v1 = v2 * v4 + v3 /\ v3 < v2) 
+                                                                    %(Nat_mod)%, 
              forall v1, v2 : Nat . v1 quot v2 = v1 div v2 %(Nat_quot)%, 
              forall v1, v2 : Nat . v1 rem v2 = v1 mod v2 %(Nat_rem)%, 
              1 = suc(0) %(Nat_1_def)%, 2 = suc(1) %(Nat_2_def)%, 
@@ -1268,13 +1264,13 @@
              forall v1, v2 : Nat . min(v1, v2) = min(v2, v1) %(ga_comm_min)%, 
              forall v1, v2 : Nat . max(v1, v2) = max(v2, v1) %(ga_comm_max)%, 
              forall v1, v2, v3 : Nat 
-             . min(v1, min(v2, v3)) = 
-               min(min(v1, v2), 
-                   v3)                                         %(ga_assoc_min)%, 
+             . min(v1, min(v2, v3)) 
+               = min(min(v1, v2), 
+                     v3)                                       %(ga_assoc_min)%, 
              forall v1, v2, v3 : Nat 
-             . max(v1, max(v2, v3)) = 
-               max(max(v1, v2), 
-                   v3)                                         %(ga_assoc_max)%, 
+             . max(v1, max(v2, v3)) 
+               = max(max(v1, v2), 
+                     v3)                                       %(ga_assoc_max)%, 
              forall v1, v2 : Nat . def v1 -? v2 <=> v1 >= v2 %(Nat_sub_dom)%, 
              forall v1, v2 : Nat . def v1 /? v2 <=> v1 mod v2 = 0 
                                                              %(Nat_divide_dom)%, 
@@ -1293,22 +1289,22 @@
              generated{sort Int; op __-__ : Nat * Nat -> Int} 
                                                            %(ga_generated_Int)%, 
              forall v1, v2, v3, v4 : Nat 
-             . v1 - v2 = v3 - v4 <=> 
-               v1 + v4 = 
-               v3 + 
-               v2                                              %(Int_equality)%, 
+             . v1 - v2 = v3 - v4 
+               <=> v1 + v4 
+                   = v3 + 
+                     v2                                        %(Int_equality)%, 
              forall v1 : Nat . v1 = v1 - 0 %(Int_Nat_embedding)%, 
              forall v1, v2, v3, v4 : Nat 
-             . (v1 - v2) + (v3 - v4) = 
-               (v1 + v3) - 
-               (v2 + 
-                v4)                                             %(Int_add_def)%, 
+             . (v1 - v2) + (v3 - v4) 
+               = (v1 + v3) - 
+                 (v2 + 
+                  v4)                                           %(Int_add_def)%, 
              forall v1, v2, v3, v4 : Nat 
-             . (v1 - v2) * (v3 - v4) = 
-               (v1 * v3 + v2 * v4) - 
-               (v2 * v3 + 
-                v1 * 
-                v4)                                            %(Int_mult_def)%, 
+             . (v1 - v2) * (v3 - v4) 
+               = (v1 * v3 + v2 * v4) - 
+                 (v2 * v3 + 
+                  v1 * 
+                  v4)                                          %(Int_mult_def)%, 
              forall v1, v2 : Int . v1 - v2 = v1 + - v2 %(Int_sub_def)%, 
              forall v1 : Int . + v1 = v1 %(Int_pos_def)%, 
              forall v1 : Int 
@@ -1370,10 +1366,10 @@
              generated{sort Rat; op __/__ : Int * Pos -> Rat} 
                                                            %(ga_generated_Rat)%, 
              forall v1, v2 : Int; v3, v4 : Pos 
-             . v1 / v3 = v2 / v4 <=> 
-               v1 * v4 = 
-               v2 * 
-               v3                                              %(Rat_equality)%, 
+             . v1 / v3 = v2 / v4 
+               <=> v1 * v4 
+                   = v2 * 
+                     v3                                        %(Rat_equality)%, 
              forall v1 : Int . v1 / 1 = v1 %(embeddingIntToRat)%, 
              forall v1, v2 : Pos; v3, v4 : Int 
              . (v3 / v1) <= (v4 / v2) <=> (v3 * v2) <= (v4 * v1) 
@@ -1387,10 +1383,10 @@
                                                                 %(Rat_add_def)%, 
              forall v1, v2 : Rat . v1 - v2 = v1 + - v2 %(Rat_sub_def)%, 
              forall v1, v2 : Pos; v3, v4 : Int 
-             . (v3 / v1) * (v4 / v2) = 
-               (v3 * v4) / 
-               (v1 * 
-                v2)                                            %(Rat_mult_def)%, 
+             . (v3 / v1) * (v4 / v2) 
+               = (v3 * v4) / 
+                 (v1 * 
+                  v2)                                          %(Rat_mult_def)%, 
              forall v1 : Rat . not def v1 / 0 %(Rat_divide_def1)%, 
              forall v1, v2, v3 : Rat 
              . (v1 / v2 = v3 <=> v3 = v1 * v2) if not v2 = 0 
@@ -1429,10 +1425,10 @@
              forall v1 : a; v2, v3, v4 : t . d(c(v1, v2, v3, v4)) = v4 
                                                               %(ga_selector_d)%, 
              forall v1 : a; v2, v3, v4 : t; v5 : a; v6, v7, v8 : t 
-             . c(v1, v2, v3, v4) = c(v5, v6, v7, v8) <=> 
-               v1 = v5 /\ v2 = v6 /\ v3 = v7 /\ 
-               v4 = 
-               v8                                            %(ga_injective_c)%, 
+             . c(v1, v2, v3, v4) = c(v5, v6, v7, v8) 
+               <=> v1 = v5 /\ v2 = v6 /\ v3 = v7 
+                   /\ v4 
+                      = v8                                   %(ga_injective_c)%, 
              forall v1, v2 : a . c(v1) = c(v2) <=> v1 = v2 %(ga_injective_c)%, 
              forall v1 : s . not (v1 in s2 /\ v1 in s1) 
                                                     %(ga_disjoint_sorts_s2_s1)%, 
@@ -1448,8 +1444,8 @@
                                                             %(ga_disjoint_c_c)%, 
              forall v1 : a . not c = c(v1) %(ga_disjoint_c_c)%, 
              forall v1 : a; v2, v3, v4 : t; v5 : a 
-             . not c(v1, v2, v3, v4) = 
-                   c(v5)                                    %(ga_disjoint_c_c)%, 
+             . not c(v1, v2, v3, v4) 
+                   = c(v5)                                  %(ga_disjoint_c_c)%, 
              not def a(c) %(ga_selector_undef_a_c)%, 
              forall v1 : a . not def a(c(v1)) %(ga_selector_undef_a_c)%, 
              not def b(c) %(ga_selector_undef_b_c)%, 
@@ -1530,16 +1526,16 @@
              false, true, forall v1 : s . not p /\ not q(v1) /\ q(v1), 
              forall v1 : s . not p \/ not q(v1) \/ q(v1), 
              forall v1 : s 
-             . not p /\ not q(v1) /\ q(v1) => 
-               not p \/ not q(v1) \/ q(v1) => not p /\ not q(v1) /\ q(v1), 
+             . not p /\ not q(v1) /\ q(v1) 
+               => not p \/ not q(v1) \/ q(v1) => not p /\ not q(v1) /\ q(v1), 
              forall v1 : s 
-             . not p /\ not q(v1) /\ q(v1) if not p \/ not q(v1) \/ q(v1) if 
-               not p /\ not q(v1) /\ q(v1), 
+             . not p /\ not q(v1) /\ q(v1) if not p \/ not q(v1) \/ q(v1) 
+               if not p /\ not q(v1) /\ q(v1), 
              forall v1 : s 
-             . not p /\ not q(v1) /\ q(v1) <=> 
-               (exists v2 : s 
-                . not p \/ not q(v2) \/ q(v2) <=> 
-                  (exists! v3 : s . not p /\ not q(v3) /\ q(v3))), 
+             . not p /\ not q(v1) /\ q(v1) 
+               <=> (exists v2 : s 
+                    . not p \/ not q(v2) \/ q(v2) 
+                      <=> (exists! v3 : s . not p /\ not q(v3) /\ q(v3))), 
              forall v1 : s . def f(v1), forall v1 : s . f(v1) =e= g(v1), 
              forall v1 : s . f(v1) = g(v1), forall v1 : t . v1 in s, 
              forall v1 : s . def g(v1), forall v1 : s . def g(v1), 
@@ -1809,18 +1805,17 @@
              'ü' = '\252' %(printable_252)%, 'ý' = '\253' %(printable_253)%, 
              'þ' = '\254' %(printable_254)%, 'ÿ' = '\255' %(printable_255)%, 
              forall v1 : Char 
-             . isLetter(v1) <=> 
-               (ord('A') <= ord(v1) /\ ord(v1) <= ord('Z')) \/ 
-               (ord('a') <= ord(v1) /\ 
-                ord(v1) <= 
-                ord('z'))                                      %(isLetter_def)%, 
+             . isLetter(v1) 
+               <=> (ord('A') <= ord(v1) /\ ord(v1) <= ord('Z')) 
+                   \/ (ord('a') <= ord(v1) /\ ord(v1) <= ord('z')) 
+                                                               %(isLetter_def)%, 
              forall v1 : Char 
              . isDigit(v1) <=> ord('0') <= ord(v1) /\ ord(v1) <= ord('9') 
                                                                 %(isDigit_def)%, 
              forall v1 : Char 
-             . isPrintable(v1) <=> 
-               (ord(' ') <= ord(v1) /\ ord(v1) <= ord('~')) \/ 
-               (ord(' ') <= ord(v1) /\ ord(v1) <= ord('ÿ')) 
+             . isPrintable(v1) 
+               <=> (ord(' ') <= ord(v1) /\ ord(v1) <= ord('~')) 
+                   \/ (ord(' ') <= ord(v1) /\ ord(v1) <= ord('ÿ')) 
                                                             %(isPrintable_def)%, 
              '\o000' : Char = '\000' : Char %(slash_o000)%, 
              '\o001' = '\001' %(slash_o001)%, '\o002' = '\002' %(slash_o002)%, 

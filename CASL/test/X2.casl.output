@@ -6,21 +6,21 @@
  op c : a -> s
  op c : a * t * t * t -> s
  op d : s -> t,[forall v1 : a; v2, v3, v4 : t 
-                . a(c(v1, v2, v3, v4)) = 
-                  v2                                             %(ga_selector_a)%, 
+                . a(c(v1, v2, v3, v4)) 
+                  = v2                                           %(ga_selector_a)%, 
                 forall v1 : a; v2, v3, v4 : t . b(c(v1, v2, v3, v4)) = v3 
                                                                  %(ga_selector_b)%, 
                 forall v1 : a; v2, v3, v4 : t . d(c(v1, v2, v3, v4)) = v4 
                                                                  %(ga_selector_d)%, 
                 forall v1 : a; v2, v3, v4 : t; v5 : a; v6, v7, v8 : t 
-                . c(v1, v2, v3, v4) = c(v5, v6, v7, v8) <=> 
-                  v1 = v5 /\ v2 = v6 /\ v3 = v7 /\ 
-                  v4 = 
-                  v8                                            %(ga_injective_c)%, 
+                . c(v1, v2, v3, v4) = c(v5, v6, v7, v8) 
+                  <=> v1 = v5 /\ v2 = v6 /\ v3 = v7 
+                      /\ v4 
+                         = v8                                   %(ga_injective_c)%, 
                 forall v1, v2 : a 
-                . c(v1) = c(v2) <=> 
-                  v1 = 
-                  v2                                            %(ga_injective_c)%, 
+                . c(v1) = c(v2) 
+                  <=> v1 
+                      = v2                                      %(ga_injective_c)%, 
                 forall v1 : s . not (v1 in s2 /\ v1 in s1) 
                                                        %(ga_disjoint_sorts_s2_s1)%, 
                 not c in s2 %(ga_disjoint_c_sort_s2)%, 
@@ -35,8 +35,8 @@
                                                                %(ga_disjoint_c_c)%, 
                 forall v1 : a . not c = c(v1) %(ga_disjoint_c_c)%, 
                 forall v1 : a; v2, v3, v4 : t; v5 : a 
-                . not c(v1, v2, v3, v4) = 
-                      c(v5)                                    %(ga_disjoint_c_c)%, 
+                . not c(v1, v2, v3, v4) 
+                      = c(v5)                                  %(ga_disjoint_c_c)%, 
                 not def a(c) %(ga_selector_undef_a_c)%, 
                 forall v1 : a . not def a(c(v1)) %(ga_selector_undef_a_c)%, 
                 not def b(c) %(ga_selector_undef_b_c)%, 
