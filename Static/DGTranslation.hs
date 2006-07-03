@@ -51,13 +51,13 @@ updateNode index gc cm@(Comorphism cidMor) =
     -- not be found in it.
     let (inLinks, node, outLinks) = 
             fromJust $ Map.lookup index $ toMap $ devGraph gc
-        Result diagsL1 newL1 = foldl (joinResultWith (\ a b -> a ++ b)) 
-                               (Result [] (Just [])) (map updateEdge inLinks)
+        -- Result diagsL1 newL1 = foldl (joinResultWith (\ a b -> a ++ b)) 
+        --                       (Result [] (Just [])) (map updateEdge inLinks)
         Result diagsL2 newL2 = foldl (joinResultWith (\ a b -> a ++ b)) 
                                (Result [] (Just [])) (map updateEdge outLinks)
         Result thDiag _ = fTh $ dgn_theory node 
-    in  Result (thDiag ++ diagsL1 ++ diagsL2)
-                (Just (gc {devGraph=Gr (Map.update (transDev (fromJust newL1)
+    in  Result (thDiag ++ diagsL2)
+                (Just (gc {devGraph=Gr (Map.update (transDev inLinks
                                                             (fromJust newL2)) 
                                         index 
                                         (toMap $ devGraph gc))
@@ -72,23 +72,17 @@ updateNode index gc cm@(Comorphism cidMor) =
        = if isHomogeneous gm 
             then
              let sourceLid = sourceLogic (Comorphism cid')
+                 targetLid = targetLogic (Comorphism cid')
              in  case fSign sourceLid lsign of
                    Result diagLs (Just lsign') -> 
                        case fMor sourceLid lmorphism of
                          Result diagLm (Just lmorphism') -> 
-                 {- case gEmbedComorphism (idComorphism (Logic tlid)) (G_sign tlid lsign) of
-                   Result diags1 gmorphism -> 
-                       Result diags1 -- (diagLs ++ diagLm) 
-                               (Just [(links{dgl_morphism=
-                                                   fromJust gmorphism
-                                            }, n)]) -} 
-
                              case idComorphism (Logic tlid) of 
-                                   Comorphism cid2 ->
-                                       Result [] -- (diagLs ++ diagLm) 
-                                         (Just [(links{dgl_morphism=
-                                            GMorphism cid2 lsign' lmorphism'
-                                                      }, n)])
+                               Comorphism cid2 ->
+                                   Result (diagLs ++ diagLm) 
+                                     (Just [(links{dgl_morphism=
+                                                   GMorphism cid2 (fromJust $ coerceSign tlid (sourceLogic cid2) "" lsign') (fromJust $ coerceMorphism tlid (targetLogic cid2) "" lmorphism')
+                                                  }, n)])
             else  Result [mkDiag Hint ("Link is not homogeneous.") ()] (Just [(links,n)])
 
      transDev newL1 newL2 (_, node, _) =
