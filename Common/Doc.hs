@@ -60,6 +60,7 @@ module Common.Doc
     , flushRight
       -- * keywords
     , keyword
+    , topSigKey
     , topKey
     , indexed
     , structId
@@ -119,8 +120,8 @@ infixl 5 $++$
 -- * the data type
 
 data TextKind =
-    IdKind | IdSymb | Symbol | Comment | Keyword | TopKey | Indexed | StructId
-    | Native
+    IdKind | IdSymb | Symbol | Comment | Keyword | TopKey Int
+           | Indexed | StructId | Native
 
 data Format = Small | FlushRight
 
@@ -279,11 +280,12 @@ fcat = Cat Fill . rmEmpties
 fsep   :: [Doc] -> Doc          -- ^ \"Paragraph fill\" version of sep
 fsep = Cat Fill . punctuate space . rmEmpties
 
-keyword, topKey, indexed, structId :: String -> Doc
+keyword, topSigKey, topKey, indexed, structId :: String -> Doc
 keyword = Text Keyword
 indexed = Text Indexed
 structId = Text StructId
-topKey = Text TopKey
+topKey = Text (TopKey 4)
+topSigKey = Text (TopKey 5)
 
 lambdaSymb :: String
 lambdaSymb = "\\"
@@ -396,7 +398,7 @@ toText :: GlobalAnnos -> Doc -> Pretty.Doc
 toText ga = foldDoc anyRecord
     { foldEmpty = \ _ -> Pretty.empty
     , foldText = \ _ k s -> case k of
-          TopKey -> Pretty.text $ s ++ replicate (5 - length s) ' '
+          TopKey n -> Pretty.text $ s ++ replicate (n - length s) ' '
           _ -> Pretty.text s
     , foldCat = \ _ c -> case c of
           Vert -> Pretty.vcat
@@ -541,7 +543,7 @@ textToLatex b k s = let e = escapeLatex True s in
                -- multiple spaces should be replaced by \hspace
     Keyword -> (if b then makeSmallLatex b . hc_sty_small_keyword
                 else hc_sty_plain_keyword) s
-    TopKey -> hc_sty_casl_keyword s
+    TopKey _ -> hc_sty_casl_keyword s
     Indexed -> hc_sty_structid_indexed s
     StructId -> hc_sty_structid s
     Native -> hc_sty_axiom s
@@ -781,7 +783,7 @@ isBoth precs op arg = case precRel precs op arg of
 rmTopKey :: Doc -> Doc
 rmTopKey = foldDoc idRecord
     { foldText = \ d k s -> case k of
-          TopKey -> Text Keyword s
+          TopKey _ -> Text Keyword s
           _ -> d
     }
 

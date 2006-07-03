@@ -1,8 +1,10 @@
-free type Tree(a : Type) ::= Leaf (a) | 
-                             Node (Tree a) (a) | 
-                             EmptyLeaf
-free type Nat ::= Zero | 
-                  Suc (Nat)
+free type 
+Tree(a : Type) ::= Leaf (a) | 
+                   Node (Tree a) (a) | 
+                   EmptyLeaf
+free type 
+Nat ::= Zero | 
+        Suc (Nat)
 op    caseTree : forall a . Tree Nat -> Tree Nat
 forall h : Tree Nat; n : Nat; t : Tree Nat
 . (op caseTree : Tree Nat -> Tree Nat) (var t : Tree Nat) = 

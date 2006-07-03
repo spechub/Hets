@@ -1,7 +1,7 @@
 class Cpo < Type
 class Cppo < Cpo
-type  instance __-->__ : -Cpo -> +Cpo -> Cpo
-type  instance __-->__ : -Cpo -> +Cppo -> Cppo
+type instance __-->__ : -Cpo -> +Cpo -> Cpo
+type instance __-->__ : -Cpo -> +Cppo -> Cppo
 var   c : Cppo
 fun   Y : (c --> c) --> c
 %% Classes ---------------------------------------------------------------

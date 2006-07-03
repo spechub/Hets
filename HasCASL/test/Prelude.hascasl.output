@@ -29,12 +29,14 @@ type  __*__ : +Type -> +Type -> Type
 %% CASL requires "<=>" for pred-defn and disallows "()" as result
 op    def, tt : Pred s
 var   x : s
-program (op def[s] : forall s : Type . Pred s) : Pred s = 
-        \ (var x : s) . () : s ->? Unit
-        %% def is also total (identical to tt) 
-program (op tt[s] : forall s : Type . Pred s) : Pred s = 
-        \ (var x : s) . () : s ->? Unit
-        %% tt is total "op tt(x: s): unit = ()"
+program 
+(op def[s] : forall s : Type . Pred s) : Pred s = 
+\ (var x : s) . () : s ->? Unit
+%% def is also total (identical to tt) 
+program 
+(op tt[s] : forall s : Type . Pred s) : Pred s = 
+\ (var x : s) . () : s ->? Unit
+%% tt is total "op tt(x: s): unit = ()"
 
 %% total function type
 type  __->__ : -Type -> +Type -> Type
@@ -45,8 +47,9 @@ op    __res__ : forall s : Type; t : Type . s * t -> s =
       \ ((var x : s), (var y : t)) .! (var x : s) as s
 op    fst : forall s : Type; t : Type . s * t -> s = 
       \ ((var x : s), (var y : t)) .! (var x : s) as s
-program (var snd : s * t ->? t) ((var x : s), (var y : t) : t) : t 
-        = (var y : t)
+program 
+(var snd : s * t ->? t) ((var x : s), (var y : t) : t) : t = 
+(var y : t)
 
 %% trivial because its the strict function property
 . (\ ((var x : s), (var y : t)) . def (x res y)) = 
@@ -90,32 +93,33 @@ type  s < ? s
 type  nat
 class Cpo < Type
       {var   c : Cpo;
-       pred  __<<=__ : c * c;
-       ;
-       pred  isChain : forall c : Cpo . nat -> c;
-       pred  isBound : forall c : Cpo . c * (nat -> c);
-       op    sup : (nat -> c) ->? c;
+      pred  __<<=__ : c * c;
+      ;
+      pred  isChain : forall c : Cpo . nat -> c;
+      pred  isBound : forall c : Cpo . c * (nat -> c);
+      op    sup : (nat -> c) ->? c;
       }
 class Pcpo < Cpo
       {var   p : Pcpo;
-       op    bottom : p;
+      op    bottom : p;
       }
-class instance Flatcpo < Cpo
-               {var   f : Flatcpo;}
+class instance 
+Flatcpo < Cpo
+{var   f : Flatcpo;}
 var   c : Cpo; d : Cpo
-type  instance __*__ : +Cpo -> +Cpo -> Cpo
+type instance __*__ : +Cpo -> +Cpo -> Cpo
 var   x1 : c; x2 : c; y1 : d; y2 : d
-type  instance __*__ : +Pcpo -> +Pcpo -> Pcpo
+type instance __*__ : +Pcpo -> +Pcpo -> Pcpo
 type  Unit : Pcpo
 
 %% Pcont
-type  instance __-->?__ : -Cpo -> +Cpo -> Pcpo
+type instance __-->?__ : -Cpo -> +Cpo -> Pcpo
 type  __-->?__ < __->?__
 
 %% Tcont
-type  instance __-->__ : -Cpo -> +Cpo -> Cpo
+type instance __-->__ : -Cpo -> +Cpo -> Cpo
 var   f : c --> d; g : c --> d
-type  instance __-->__ : -Cpo -> +Pcpo -> Pcpo
+type instance __-->__ : -Cpo -> +Pcpo -> Pcpo
 fun   Y : (p --> p) --> p
 var   f : p --> p; x : p
 . (var f : p --> p) 
@@ -133,8 +137,9 @@ op    undefined : forall p : Pcpo; c : Cpo . c --> p =
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% user stuff
-free type bool ::= true | 
-                   false
+free type 
+bool ::= true | 
+         false
 type  bool : Flatcpo
 type  nat : Flatcpo
 %% Classes ---------------------------------------------------------------

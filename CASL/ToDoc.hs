@@ -37,16 +37,18 @@ printBASIC_ITEMS :: (b -> Doc) -> (s -> Doc) -> (f -> Doc)
                  -> BASIC_ITEMS b s f -> Doc
 printBASIC_ITEMS fB fS fF sis = case sis of
     Sig_items s -> printSIG_ITEMS fS fF s
-    Free_datatype l _ -> keyword freeS <+> keyword (typeS ++ pluralS l) <+>
-         semiAnnos printDATATYPE_DECL l
+    Free_datatype l _ -> sep [keyword freeS <+> keyword (typeS ++ pluralS l),
+                              semiAnnos printDATATYPE_DECL l]
     Sort_gen l _ -> case l of
-         [Annoted (Datatype_items l' _) _ _ _] -> keyword generatedS <+>
-                 keyword (typeS ++ pluralS l') <+>
-                  semiAnnos printDATATYPE_DECL l'
-         _ -> keyword generatedS <+> (specBraces $ vcat $ map
+         [Annoted (Datatype_items l' _) _ las ras] ->
+             (if null las then id else (printAnnotationList las $+$))
+             $ (if null ras then id else ($+$ printAnnotationList ras))
+             $ sep [keyword generatedS <+> keyword (typeS ++ pluralS l'),
+                    semiAnnos printDATATYPE_DECL l']
+         _ -> sep [keyword generatedS, specBraces $ vcat $ map
               (printAnnoted ((if isSingle l then rmTopKey else id) .
-                     printSIG_ITEMS fS fF)) l)
-    Var_items l _ -> keyword (varS ++ pluralS l) <+>
+                     printSIG_ITEMS fS fF)) l]
+    Var_items l _ -> topSigKey (varS ++ pluralS l) <+>
                            fsep (punctuate semi $ map printVarDecl l)
     Local_var_axioms l f _  ->
             fsep [fsep $ forallDoc : punctuate semi (map printVarDecl l)
@@ -63,13 +65,13 @@ instance (Pretty s, Pretty f) => Pretty (SIG_ITEMS s f) where
 
 printSIG_ITEMS :: (s -> Doc) -> (f -> Doc) -> SIG_ITEMS s f -> Doc
 printSIG_ITEMS fS fF sis = case sis of
-    Sort_items l _ -> topKey (sortS ++ pluralS l) <+>
+    Sort_items l _ -> topSigKey (sortS ++ pluralS l) <+>
          semiAnnos (printSortItem fF) l
-    Op_items l _  -> topKey (opS ++ pluralS l) <+>
+    Op_items l _  -> topSigKey (opS ++ pluralS l) <+>
              semiAnnos (printOpItem fF) l
-    Pred_items l _ -> topKey (predS ++ pluralS l) <+>
+    Pred_items l _ -> topSigKey (predS ++ pluralS l) <+>
              semiAnnos (printPredItem fF) l
-    Datatype_items l _ -> topKey (typeS ++ pluralS l) <+>
+    Datatype_items l _ -> topSigKey (typeS ++ pluralS l) <+>
              semiAnnos printDATATYPE_DECL l
     Ext_SIG_ITEMS s -> fS s
 
@@ -87,7 +89,7 @@ printCOMPONENTS c = case c of
     Cons_select k l s _ -> fsep $ punctuate comma (map idDoc l)
            ++ [case k of
            Total -> colon
-           Partial -> colon <> text "?", idDoc s]
+           Partial -> colon <> quMarkD, idDoc s]
     Sort s -> idDoc s
 
 instance Pretty COMPONENTS  where
@@ -101,8 +103,8 @@ printALTERNATIVE a = case a of
        parens ( sep $ punctuate semi $ map printCOMPONENTS l)
        <> case k of
                Total -> empty
-               Partial -> text "?"
-  Subsorts l _ -> fsep $ text (sortS ++ if isSingle l then "" else "s")
+               Partial -> quMarkD
+  Subsorts l _ -> fsep $ text (sortS ++ pluralS l)
                             : punctuate comma (map idDoc l)
 
 instance Pretty ALTERNATIVE where

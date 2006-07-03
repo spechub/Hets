@@ -21,7 +21,6 @@ import Common.Keywords
 import Common.DocUtils
 import Common.Doc
 import Common.AS_Annotation
-import Data.List
 
 -- | short cut for: if b then empty else d
 noPrint :: Bool -> Doc -> Doc
@@ -45,12 +44,12 @@ instance Pretty Variance where
 instance Pretty a => Pretty (AnyKind a) where
     pretty knd = case knd of
         ClassKind ci -> pretty ci
-        FunKind v k1 k2 _ -> pretty v <>
+        FunKind v k1 k2 _ -> fsep [pretty v <>
                           (case k1 of
                                   FunKind _ _ _ _ -> parens
                                   _ -> id) (pretty k1)
-                          <+> funArrow
-                          <+> pretty k2
+                          , funArrow
+                          , pretty k2]
 
 instance Pretty TypePattern where
     pretty tp = case tp of
@@ -139,12 +138,11 @@ printType ty = case ty of
           -- if i == 0 then empty else text ("_v"++ show i)
         TypeAppl t1 t2 -> fcat [parens (printType t1),
                                 parens (printType t2)]
-        ExpandedType t1 t2 -> printType t1 <> text asP <> printType t2
+        ExpandedType t1 t2 -> fcat [printType t1, text asP, printType t2]
         TypeToken t -> pretty t
         BracketType k l _ -> bracket k $ fsep $
                              punctuate comma $ map (printType) l
-        KindedType t kind _ -> printType t
-                                       <+> colon <+> pretty kind
+        KindedType t kind _ -> sep [printType t, colon <+> pretty kind]
         MixfixType ts -> fsep $ map printType ts
 
 instance Pretty Type where
@@ -155,11 +153,6 @@ instance Pretty TypeScheme where
     pretty (TypeScheme vs t _) = let tdoc = pretty t in
         if null vs then tdoc else
            fsep [forallDoc, semiDs vs, bullet, tdoc]
-
-instance Pretty Instance where
-    pretty i = case i of
-        Instance -> space <> keyword instanceS
-        Plain -> empty
 
 instance Pretty Partiality where
     pretty p = case p of
@@ -241,7 +234,8 @@ printTermRec = let commaT = fsep . punctuate comma in FoldRec
      , foldMixTypeTerm = \ _ q t _ -> pretty q <+> pretty t
      , foldMixfixTerm = \ _ ts -> fsep ts
      , foldBracketTerm = \ _ k l _ -> bracket k $ commaT l
-     , foldAsPattern = \ _ (VarDecl v _ _ _) p _ -> pretty v <+> text asP <+> p
+     , foldAsPattern = \ _ (VarDecl v _ _ _) p _ -> 
+                       fsep [pretty v, text asP, p]
      , foldProgEq = \ _ p t _ -> (p, t)
     }
 
@@ -312,29 +306,31 @@ instance Pretty ProgEq where
 instance Pretty BasicItem where
     pretty bi = case bi of
         SigItems s -> pretty s
-        ProgItems l _ -> noNullPrint l $ keyword programS <+> semiAnnoted l
-        ClassItems i l _ -> noNullPrint l $ topKey classS <> pretty i
-                            <+> semiAnnoted l
-        GenVarItems l _ -> noNullPrint l $ topKey varS <+> semiDs l
-        FreeDatatype l _ -> noNullPrint l $ keyword freeS <+> keyword typeS
-                            <+> semiAnnoted l
-        GenItems l _ -> noNullPrint l $ keyword generatedS
-                        <+> specBraces (semiAnnoted l)
+        ProgItems l _ -> noNullPrint l $ sep [keyword programS, semiAnnoted l]
+        ClassItems i l _ -> let b = semiAnnoted l in noNullPrint l $ case i of 
+            Plain -> topSigKey classS <+>b
+            Instance -> sep [keyword classS <+> keyword instanceS, b]
+        GenVarItems l _ -> noNullPrint l $ topSigKey varS <+> semiDs l
+        FreeDatatype l _ -> noNullPrint l $ sep
+                            [keyword freeS <+> keyword typeS, semiAnnoted l]
+        GenItems l _ -> noNullPrint l $ sep [keyword generatedS,
+                                            specBraces $ semiAnnoted l]
         AxiomItems vs fs _ ->
             vcat $ (if null vs then [] else
                     [forallDoc <+> semiDs vs])
-                  ++ (map ( \ x -> bullet <+> pretty x) fs)
-        Internal l _ -> noNullPrint l $ keyword internalS
-                        <+> specBraces (semiAnnoted l)
+                  ++ (map (addBullet . pretty) fs)
+        Internal l _ -> noNullPrint l $ sep 
+                        [keyword internalS, specBraces $ semiAnnoted l]
 
 instance Pretty OpBrand where
     pretty b = keyword $ show b
 
 instance Pretty SigItems where
     pretty si = case si of
-        TypeItems i l _ -> noNullPrint l $ topKey typeS <> pretty i
-                           <+> semiAnnoted l
-        OpItems b l _ -> noNullPrint l $ topKey (show b) <+> semiAnnoted
+        TypeItems i l _ -> let b = semiAnnoted l in noNullPrint l $ case i of
+            Plain -> topSigKey typeS <+> b
+            Instance -> sep [keyword typeS <+> keyword instanceS, b]
+        OpItems b l _ -> noNullPrint l $ topSigKey (show b) <+> semiAnnoted
                          (if isPred b then concat $
                           mapAnM ((:[]) . mapOpItem) l else l)
 

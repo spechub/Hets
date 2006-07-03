@@ -183,8 +183,8 @@ ops   __a : b;
       c : b
 sorts s, t < s
 . a = a
-vars a : t; a, b : s
-vars a : t; a, b : s
+vars  a : t; a, b : s
+vars  a : t; a, b : s
 . a = a
 . a = a
 forall a : t; a, b : s 
@@ -196,19 +196,16 @@ forall a : t; a, b : s
 . a = a
 type  s ::= sorts s2, s1 | c | c(a; a, b : t; a, d : t) | c(a)?
 free type s ::= sorts s2, s1 | c | c(a; a, b : t; d : t) | c(a)?
-generated type s ::= 
-               sorts s2, s1 | c | c(a; a, b : t; d : t) | c(a)?
-generated {pred  __<__ : a * a
-           ops   a : b;
-                 c : b
-           sorts s, t < s
-           type  s ::= 
-                 sorts s2, s1 | 
-                 c | 
-                 c(a) | 
-                 c(a; a, b : t; d : t) | 
-                 c(a)? %(bla1)%
-          }
+generated type 
+s ::= sorts s2, s1 | c | c(a; a, b : t; d : t) | c(a)?
+generated 
+{pred  __<__ : a * a
+ops   a : b;
+      c : b
+sorts s, t < s
+type  s ::= 
+      sorts s2, s1 | c | c(a) | c(a; a, b : t; d : t) | c(a)? %(bla1)%
+}
 
 %(sort)%
 sorts 
@@ -221,7 +218,7 @@ ops   a : b; %(bla4)%
       c : d %(bla5)%
 
 %(bla6)%
-vars a : t; a, b : s
+vars  a : t; a, b : s
 
 %(bla8-ignored)%
 %(type)%
@@ -311,10 +308,11 @@ types Tree ::= Leaf(Data1) | Forest;
 free type List ::= Nil | Cons(Data1; List)
 generated type Set ::= Mt | Add(Data1; Set)
 generated type Set ::= Mt | Add(Data1; Set)
-generated {sort  nat
-           ops   0 : nat;
-                 succ : nat -> nat
-          }
+generated 
+{sort  nat
+ops   0 : nat;
+      succ : nat -> nat
+}
 sort  s < t
 ops   f, g : s ->? s;
       g : s -> t;
@@ -323,9 +321,9 @@ ops   f, g : s ->? s;
       {__} : s -> s
 preds p : ();
       q : s
-vars x, y, z : s; r1, r2 : t
+vars  x, y, z : s; r1, r2 : t
 . false
-var x : s
+var   x : s
 . true
 . not p /\ not q(x) /\ q(x)
 . not p \/ not q(x) \/ q(x)

@@ -6,16 +6,16 @@ op    f : forall a : Type; b : Type . a * b -> Pair a b =
       ((var a : a), (var b : b)) 
       as Pair a b
 op    g : Pair a b ->? a
-program ((op g[_v25; _v27] : 
-          forall a : Type; b : Type . Pair a b ->? a) 
-         : Pair _v25 _v27 ->? _v25) 
-        (((op Pair[_v25; _v27] : 
-           forall a : Type; b : Type . a * b -> Pair a b) 
-          : _v25 * _v27 -> Pair _v25 _v27) 
-         ((var a : _v25), (var b : _v27)) 
-         : Pair _v25 _v27) 
-        : _v25 
-        = (var a : _v25)
+program 
+((op g[_v25; _v27] : forall a : Type; b : Type . Pair a b ->? a) : 
+ Pair _v25 _v27 ->? _v25) 
+(((op Pair[_v25; _v27] : 
+   forall a : Type; b : Type . a * b -> Pair a b) 
+  : _v25 * _v27 -> Pair _v25 _v27) 
+ ((var a : _v25), (var b : _v27)) 
+ : Pair _v25 _v27) 
+: _v25 
+= (var a : _v25)
 %% Type Constructors -----------------------------------------------------
 Pair 
 : Type -> Type -> Type 
