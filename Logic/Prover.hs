@@ -38,7 +38,7 @@ data SenStatus a tStatus = SenStatus
      , thmStatus :: [tStatus]
      } deriving Show
 
-instance Pretty a => Pretty (SenStatus a b) where
+instance (Show b, Pretty a) => Pretty (SenStatus a b) where
     pretty = printSenStatus pretty
 
 printSenStatus :: (a -> Doc) -> SenStatus a b  -> Doc

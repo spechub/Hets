@@ -553,7 +553,7 @@ data GlobalContext = GlobalContext
     , globalEnv :: GlobalEnv
     , devGraph :: DGraph
     , proofHistory :: ProofHistory
-    }
+    } deriving Show
 
 emptyGlobalContext :: GlobalContext
 emptyGlobalContext = GlobalContext

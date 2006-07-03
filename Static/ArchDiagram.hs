@@ -33,8 +33,10 @@ import Static.DevGraph
 -- (as defined for extended static semantics in Chap. III:5.6.1)
 
 data DiagNodeLab = DiagNode { dn_sig :: NodeSig, dn_desc :: String }
+                 deriving Show
 
 data DiagLinkLab = DiagLink { dl_morphism :: GMorphism }
+                 deriving Show
 
 type Diag = Tree.Gr DiagNodeLab DiagLinkLab
 emptyDiag :: Diag

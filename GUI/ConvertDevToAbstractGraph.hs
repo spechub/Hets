@@ -92,7 +92,7 @@ data ConversionMaps = ConversionMaps {
                         dg2abstrEdge :: DGraphToAGraphEdge,
                         abstr2dgNode :: AGraphToDGraphNode,
                         abstr2dgEdge :: AGraphToDGraphEdge,
-                        libname2dg :: LibEnv}
+                        libname2dg :: LibEnv} deriving Show
 
 instance Doc.Pretty String where -- overlapping !
     pretty c = Doc.text (take 25 c)

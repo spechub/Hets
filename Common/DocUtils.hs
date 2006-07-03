@@ -21,7 +21,7 @@ import qualified Common.Lib.Pretty as Pretty
 import Common.GlobalAnnotations
 
 -- * the class stuff
-class Pretty a where
+class Show a => Pretty a where
     pretty :: a -> Doc
 
 instance Pretty () where
