@@ -401,17 +401,18 @@ convFun cvf = case cvf of
             BoolType -> lift2bool
             PartialVal _ -> lift2option
             _ -> lift
-    CompFun f1 f2 -> mkTermAppl (mkTermAppl compFun $ convFun f1) $ convFun f2
+    CompFun f1 f2 -> 
+        mkTermAppl (mkTermAppl (con compV) $ convFun f1) $ convFun f2
     ConstNil -> constNil
     ConstTrue -> constTrue
     SomeOp -> conSome
     MapFun mf cv -> mkTermAppl (mapFun mf) $ convFun cv
     LiftFun lf cv -> mkTermAppl (liftFun lf) $ convFun cv
     ArgFun cv -> mkTermAppl argFunOp $ convFun cv
-    ResFun cv -> mkTermAppl compFun $ convFun cv
+    ResFun cv -> mkTermAppl (con compV) $ convFun cv
 
 liftFst, liftSnd, mapFst, mapSnd, mapSome, idOp, bool2option,
-    option2bool, compFun, constNil, constTrue, argFunOp,
+    option2bool, constNil, constTrue, argFunOp,
     liftUnit2unit, liftUnit2bool, liftUnit2option, liftUnit, lift2unit,
     lift2bool, lift2option, lift :: Isa.Term
 
@@ -423,7 +424,6 @@ mapSome = conDouble "mapSome"
 idOp = conDouble "id"
 bool2option = conDouble "bool2option"
 option2bool = conDouble "option2bool"
-compFun = conDouble "comp"
 constNil = conDouble "constNil"
 constTrue = conDouble "constTrue"
 argFunOp = conDouble "flipComp"
@@ -528,7 +528,7 @@ mkTermAppl fun arg = case (fun, arg) of
           | new mp == "liftUnit2unit" -> arg
           | new mp == "lift2unit" -> mkTermAppl (conDouble "option2bool") arg
       (MixfixApp (MixfixApp (Const cmp _) [f] _) [g] c, _)
-          | new cmp == "comp" -> mkTermAppl f $ mkTermAppl g arg
+          | new cmp == compS -> mkTermAppl f $ mkTermAppl g arg
           | new cmp == "flipComp" -> mkTermAppl g $ mkTermAppl f arg
           | new cmp == "flipCurryOp" -> mkTermAppl f $ Tuplex [arg, g] c
           | new cmp == "curryOp" -> mkTermAppl f $ Tuplex [g, arg] c
