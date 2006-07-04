@@ -17,6 +17,7 @@ module Syntax.AS_Library where
 -- DrIFT command:
 {-! global: UpPos !-}
 
+import Data.List
 import Common.Id
 import Common.AS_Annotation
 
@@ -79,7 +80,8 @@ instance Show LIB_ID where
   show (Indirect_link s1 _) = s1
 
 instance Show LIB_NAME where
-  show (Lib_version libid _) = show libid
+  show (Lib_version libid (Version_number vs _)) = 
+      shows libid " version " ++ concat (intersperse "." vs)
   show (Lib_id libid) = show libid
 
 instance Eq LIB_ID where
