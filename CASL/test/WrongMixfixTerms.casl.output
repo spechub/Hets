@@ -6,7 +6,7 @@
 *** Error 4.3, expected further mixfix token: ["__"]
 *** Error 5.1, expected further mixfix token: ["__"]
 *** Error 6.1-6.4, expected further mixfix token: ["(","(var )"]
-*** Error 7.5, unexpected mixfix token: ,
+*** Error 7.1, unexpected mixfix token: (
 *** Error 8.13, unexpected mixfix token: ,
 *** Error 9.12, not a formula: (op a : b)
 *** Error 10.8-10.16, not a formula: (var a : b)

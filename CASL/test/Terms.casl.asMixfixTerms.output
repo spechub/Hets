@@ -1,5 +1,5 @@
-
-
+*** Error 1.1, unexpected mixfix token: *
+*** Error 2.1, unexpected mixfix token: **
 a_a
 *** Error 4.1, expected further mixfix token: ["!","!=","*","+","-"]
 123
@@ -10,13 +10,13 @@ a_a
 12.23E34
 "bla"
 ""
-
-
-
+*** Error 13.1, unexpected mixfix token: <
+*** Error 14.1, unexpected mixfix token: <=
+*** Error 15.1, unexpected mixfix token: .a
 'a'
-[ a, b ]
-[ a, b ]
-[ a, b ]
+*** Error 17.1, unexpected mixfix token: <
+*** Error 18.1, unexpected mixfix token: <=
+*** Error 19.1, unexpected mixfix token: .a
 *** Error 20.1-20.8, expected further mixfix token: ["p","x"]
 *** Error 21.1-21.4, expected further mixfix token: ["(","(var )"]
 *** Error 22.7, unexpected mixfix token: b
@@ -33,7 +33,7 @@ a_a
 *** Error 31.7, unexpected mixfix token: b
 *** Error 32.8, unexpected mixfix token: b
 *** Error 33.8, unexpected mixfix token: b
-*** Error 34.3, unexpected mixfix token: }
+*** Error 34.1, unexpected mixfix token: (
 *** Error 35.3, unexpected mixfix token: }
 *** Error 36.3, unexpected mixfix token: }
 (var y : bb)
@@ -52,7 +52,7 @@ ys as b
 predy : bb
 predy : bb
 a when b else c
-
+*** Error 53.1, unexpected mixfix token: #
 *** Error 54.1-54.3, expected further mixfix token: ["p","x"]
 (pred y : bb)
 (pred y : bb)
