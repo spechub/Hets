@@ -49,7 +49,7 @@ printAltDefn dt tArgs rk (Construct mi ts p sels) = case mi of
         Just i -> fcat $ [pretty i <> space, colon <> space,
                           pretty (createConstrType dt tArgs rk p ts)]
                          ++ map (parens . semiDs) sels
-        Nothing -> text (typeS ++ sS) <+> commaDs ts
+        Nothing -> text (typeS ++ sS) <+> ppWithCommas ts
 
 instance Pretty Selector where
     pretty (Select mi t p) =
@@ -156,7 +156,7 @@ instance Pretty Morphism where
       in (if Map.null tm then empty
          else keyword (typeS ++ sS) <+> printMap0 tm)
          $+$ (if Map.null fm then empty
-             else keyword (opS ++ sS) <+> fsep (punctuate comma ds))
+             else keyword (opS ++ sS) <+> sepByCommas ds)
          $+$ colon <+> specBraces (pretty $ msource m)
                     $+$ mapsto
                     <+> specBraces (pretty $ mtarget m)
