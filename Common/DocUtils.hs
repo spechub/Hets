@@ -137,9 +137,6 @@ printMaybe fA mb = case mb of
     Just x -> fA x
     Nothing -> empty
 
-sepByCommas :: [Doc] -> Doc
-sepByCommas = fsep . punctuate comma
-
 ppWithCommas :: Pretty a => [a] -> Doc
 ppWithCommas = sepByCommas . map pretty
 

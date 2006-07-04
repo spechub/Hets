@@ -57,6 +57,7 @@ module Common.Doc
     , fsep
     , fcat
     , punctuate
+    , sepByCommas
     , flushRight
       -- * keywords
     , keyword
@@ -688,6 +689,9 @@ splitDoc d = case d of
     IdApplDoc i l -> Just (i, l)
     _ -> Nothing
 
+sepByCommas :: [Doc] -> Doc
+sepByCommas = fsep . punctuate comma
+
 data Weight = Weight Int Id Id Id -- top, left, right
 
 -- print literal terms and mixfix applications
@@ -716,7 +720,7 @@ codeOutAppl ga md m origDoc _ args = case origDoc of
              toMixfixList mkList doSplit ga i aas
          else if null args || length args /= placeCount i then
              codeOutId m i <> if null args then empty else
-                             parens (fsep $ punctuate comma args)
+                                  parens (sepByCommas args)
          else let
              parArgs = reverse $ foldl ( \ l (arg, dc) ->
                 case getWeight ga arg of
