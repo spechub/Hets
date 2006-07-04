@@ -29,9 +29,6 @@ noPrint b d = if b then empty else d
 noNullPrint :: [a] -> Doc -> Doc
 noNullPrint = noPrint . null
 
-commaDs :: Pretty a => [a] -> Doc
-commaDs = fsep . punctuate comma . map pretty
-
 semiDs :: Pretty a => [a] -> Doc
 semiDs = fsep . punctuate semi . map pretty
 
@@ -39,7 +36,7 @@ semiAnnoted :: Pretty a => [Annoted a] -> Doc
 semiAnnoted = semiAnnos pretty
 
 instance Pretty Variance where
-    pretty = idDoc . simpleIdToId . mkSimpleId . show
+    pretty = sidDoc . mkSimpleId . show
 
 instance Pretty a => Pretty (AnyKind a) where
     pretty knd = case knd of
@@ -57,7 +54,7 @@ instance Pretty TypePattern where
                                  <> fcat (map (parens . pretty) args)
         TypePatternToken t -> pretty t
         MixfixTypePattern ts -> fsep (map (pretty) ts)
-        BracketTypePattern k l _ -> bracket k $ commaDs l
+        BracketTypePattern k l _ -> bracket k $ ppWithCommas l
         TypePatternArg t _ -> parens $ pretty t
 
 -- | put proper brackets around a document
@@ -190,7 +187,7 @@ parenTermDoc :: Term -> Doc -> Doc
 parenTermDoc trm = if isSimpleTerm trm then id else parens
 
 printTermRec :: FoldRec Doc (Doc, Doc)
-printTermRec = let commaT = fsep . punctuate comma in FoldRec
+printTermRec = FoldRec
     { foldQualVar = \ _ vd -> parens $ keyword varS <+> pretty vd
     , foldQualOp = \ _ br n t _ ->
           parens $ fsep [pretty br, pretty n, colon, pretty $
@@ -198,7 +195,7 @@ printTermRec = let commaT = fsep . punctuate comma in FoldRec
     , foldResolvedMixTerm = \ (ResolvedMixTerm _ os _) n ts _ ->
           if placeCount n == length ts || null ts then
           idApplDoc n $ zipWith parenTermDoc os ts
-          else idApplDoc applId [idDoc n, parens $ commaT ts]
+          else idApplDoc applId [idDoc n, parens $ sepByCommas ts]
     , foldApplTerm = \ (ApplTerm o1 o2 _) t1 t2 _ ->
         case (o1, o2) of
           (ResolvedMixTerm n [] _, TupleTerm ts _)
@@ -207,7 +204,7 @@ printTermRec = let commaT = fsep . punctuate comma in FoldRec
           (ResolvedMixTerm n [] _, _) | placeCount n == 1 ->
               idApplDoc n [parenTermDoc o2 t2]
           _ -> idApplDoc applId [parenTermDoc o1 t1, parenTermDoc o2 t2]
-     , foldTupleTerm = \ _ ts _ -> parens $ commaT ts
+     , foldTupleTerm = \ _ ts _ -> parens $ sepByCommas ts
      , foldTypedTerm = \ _ t q typ _ -> fsep [t, pretty q, pretty typ]
      , foldQuantifiedTerm = \ _ q vs t _ ->
            fsep [pretty q, semiDs vs, bullet, t]
@@ -233,7 +230,7 @@ printTermRec = let commaT = fsep . punctuate comma in FoldRec
      , foldTermToken = \ _ t -> pretty t
      , foldMixTypeTerm = \ _ q t _ -> pretty q <+> pretty t
      , foldMixfixTerm = \ _ ts -> fsep ts
-     , foldBracketTerm = \ _ k l _ -> bracket k $ commaT l
+     , foldBracketTerm = \ _ k l _ -> bracket k $ sepByCommas l
      , foldAsPattern = \ _ (VarDecl v _ _ _) p _ -> 
                        fsep [pretty v, text asP, p]
      , foldProgEq = \ _ p t _ -> (p, t)
@@ -284,7 +281,7 @@ printList0 :: (Pretty a) => [a] -> Doc
 printList0 l =  case l of
     []  -> empty
     [x] -> pretty x
-    _   -> parens $ commaDs l
+    _   -> parens $ ppWithCommas l
 
 instance Pretty InstOpId where
     pretty (InstOpId n l _) = pretty n <> noNullPrint l
@@ -340,19 +337,19 @@ instance Pretty ClassItem where
                                       else specBraces (semiAnnoted l)
 
 instance Pretty ClassDecl where
-    pretty (ClassDecl l k _) = fsep [commaDs l, less, pretty k]
+    pretty (ClassDecl l k _) = fsep [ppWithCommas l, less, pretty k]
 
 instance Pretty Vars where
     pretty vd = case vd of
         Var v -> pretty v
-        VarTuple vs _ -> parens $ commaDs vs
+        VarTuple vs _ -> parens $ ppWithCommas vs
 
 instance Pretty TypeItem where
     pretty ti = case ti of
         TypeDecl l k _ -> if null l then error "pretty TypeDecl" else
-                          commaDs l <> printKind k
+                          ppWithCommas l <> printKind k
         SubtypeDecl l t _ -> if null l then error "pretty SubtypeDecl"
-            else fsep [commaDs l, less, pretty t]
+            else fsep [ppWithCommas l, less, pretty t]
         IsoDecl l _ -> fsep $ punctuate (space <> equals) $ map pretty l
         SubtypeDefn p v t f _ ->
             fsep [pretty p, equals,
@@ -373,9 +370,9 @@ mapOpItem oi = case oi of
 instance Pretty OpItem where
     pretty oi = case oi of
         OpDecl l t attrs _ -> if null l then error "pretty OpDecl" else
-            commaDs l <+> colon <+> (pretty t
+            ppWithCommas l <+> colon <+> (pretty t
                  <> (if null attrs then empty else comma <> space)
-                 <> commaDs attrs)
+                 <> ppWithCommas attrs)
         OpDefn n ps s p t _ ->
             fsep [fcat $ pretty n : (map (parens . semiDs) ps)
                  , colon <> pretty p, pretty s, equals, pretty t]
@@ -398,14 +395,14 @@ instance Pretty DatatypeDecl where
                                            $ map pretty alts)
                                   <+> case d of [] -> empty
                                                 _ -> keyword derivingS
-                                                          <+> commaDs d
+                                                          <+> ppWithCommas d
 
 instance Pretty Alternative where
     pretty alt = case alt of
         Constructor n cs p _ ->
             pretty n <+> fsep (map (parens . semiDs) cs)
                        <> pretty p
-        Subtype l _ -> noNullPrint l $ text typeS <+> commaDs l
+        Subtype l _ -> noNullPrint l $ text typeS <+> ppWithCommas l
 
 instance Pretty Component where
     pretty sel = case sel of
@@ -417,7 +414,7 @@ instance Pretty Component where
 instance Pretty OpId where
     pretty (OpId n ts _) = pretty n
                                   <+> noNullPrint ts
-                                      (brackets $ commaDs ts)
+                                      (brackets $ ppWithCommas ts)
 
 instance Pretty Symb where
     pretty (Symb i mt _) =
@@ -428,7 +425,7 @@ instance Pretty Symb where
 
 instance Pretty SymbItems where
     pretty (SymbItems k syms _ _) =
-        printSK k <> commaDs syms
+        printSK k <> ppWithCommas syms
 
 instance Pretty SymbOrMap where
     pretty (SymbOrMap s mt _) =
@@ -439,7 +436,7 @@ instance Pretty SymbOrMap where
 
 instance Pretty SymbMapItems where
     pretty (SymbMapItems k syms _ _) =
-        printSK k <> commaDs syms
+        printSK k <> ppWithCommas syms
 
 -- | print symbol kind
 printSK :: SymbKind -> Doc
