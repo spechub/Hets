@@ -252,22 +252,23 @@ iterateCharts par extR g terms c =
             Mixfix_braced ts ps ->
                 self (expand ("{", "}") ts ps ++ tail terms) c
             Mixfix_parenthesized ts ps ->
-                if isSingle ts then
-                   let Result mds v = resolveTerm
-                                      $ head ts
-                       tNew = case v of Nothing -> head ts
-                                        Just x -> x
-                       c2 = self (tail terms) (oneStep (tNew, varTok))
-                   in mixDiags mds c2
-                else self (expand ("(", ")") ts ps ++ tail terms) c
-            Conditional t1 f2 t3 ps ->
+                case ts of
+                  [h] -> let Result mds v = resolveTerm h
+                             tNew = case v of
+                                      Nothing -> h
+                                      Just x -> x
+                             c2 = self (tail terms) (oneStep (tNew, varTok))
+                         in mixDiags mds c2
+                  _ -> self (expand ("(", ")") ts ps ++ tail terms) c
+            h@(Conditional t1 f2 t3 ps) ->
                 let Result mds v =
                         do t4 <- resolveTerm t1
                            f5 <- resolveMixFrm par extR g (adder, ruleS) f2
                            t6 <- resolveTerm t3
                            return (Conditional t4 f5 t6 ps)
-                    tNew = case v of Nothing -> head terms
-                                     Just x -> x
+                    tNew = case v of
+                             Nothing -> h
+                             Just x -> x
                     c2 = self (tail terms)
                          (oneStep (tNew, varTok {tokPos = posOfTerm tNew}))
                 in mixDiags mds c2
@@ -290,8 +291,9 @@ iterateCharts par extR g terms c =
                 self (tail terms) (oneStep (t, exprTok{tokPos = ps} ))
             Sorted_term t s ps ->
                    let Result mds v = resolveTerm t
-                       tNew = Sorted_term (case v of Nothing -> t
-                                                     Just x -> x) s ps
+                       tNew = Sorted_term (case v of
+                                             Nothing -> t
+                                             Just x -> x) s ps
                        c2 = self (tail terms) (oneStep (tNew, varTok))
                    in mixDiags mds c2
             _ -> error "iterateCharts"
@@ -313,7 +315,7 @@ resolveMixfix par extR g ruleS t =
 resolveMixTrm :: Pretty f => (f -> f)
               -> MixResolve f -> MixResolve (TERM f)
 resolveMixTrm par extR ga (adder, ruleS) trm =
-        getResolved (showTerm par ga) (posOfTerm trm) toAppl
+    getResolved (showTerm par ga) (posOfTerm trm) toAppl
            $ iterateCharts par extR ga [trm] $ initChart adder ruleS
 
 showTerm :: Pretty f => (f -> f) -> GlobalAnnos -> TERM f -> ShowS
@@ -372,9 +374,7 @@ resolveMixFrm par extR g ids frm =
               return $ Membership tNew s ps
        Mixfix_formula tOld ->
            do tNew <- resolveTerm tOld
-              mkPredication tNew
-         where mkPredication t =
-                 case t of
+              case tNew of
                  Application (Op_name ide) args ps ->
                      return $ Predication (Pred_name ide) args ps
                  Mixfix_qual_pred qide ->
@@ -383,8 +383,8 @@ resolveMixFrm par extR g ids frm =
                               Mixfix_parenthesized ts ps] ->
                      return $ Predication qide ts ps
                  _ -> fatal_error
-                        ("not a formula: " ++ showTerm par g t "")
-                        (posOfTerm t)
+                        ("not a formula: " ++ showTerm par g tNew "")
+                        (posOfTerm tNew)
        ExtFORMULA f ->
            do newF <- extR g ids f
               return $ ExtFORMULA newF
