@@ -386,8 +386,9 @@ initChart adder ruleS =
 -- | extract resolved result
 getResolved :: (a -> ShowS) -> Range -> ToExpr a -> Chart a -> Result a
 getResolved pp p toExpr st =
-    let items = snd $ currItems st
+    let (predicted, items') = currItems st
         ds = solveDiags st
+        items = if null items' && null ds then predicted else items'
     in case items of
        [] -> Result ds Nothing
        _ -> let (finals, rest1) = partition ((0 ==) . index) items
