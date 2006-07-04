@@ -254,11 +254,10 @@ doShowProofDetails s@(ProofGUIState { theoryName = thName}) =
                             ++ thName)
                            (thName ++ "-proof-details.txt") (detailsText sens)
     where sens = selectedGoalMap s
-          detailsText s' = show $
-                      Pretty.vsep (map (\ (l, st) ->
-                                 Pretty.cat [Pretty.text l,
-                                      Pretty.space Pretty.<> printSenStat st ])
-                            $ OMap.toList s')
+          detailsText s' = show $ Pretty.vsep (map (\ (l, st) ->
+                                  Pretty.text l Pretty.$+$
+                                  spaces4 Pretty.<> printSenStat st)
+                           $ OMap.toList s')
           printSenStat st =
               if null $ thmStatus st
                  then stat "Open"
@@ -266,18 +265,17 @@ doShowProofDetails s@(ProofGUIState { theoryName = thName}) =
                       map printCmWStat $
                       sortBy (comparing snd) $ thmStatus st
           stat str = Pretty.text "Status:" Pretty.<+> Pretty.text str
-          printCmWStat (c, bp) =
-              Pretty.cat [Pretty.text "Com:" Pretty.<+> Pretty.text (show c)
-                  , Pretty.space Pretty.<> printBP bp]
+          spaces4 = Pretty.text "    "
+          printCmWStat (c, bp) = 
+              Pretty.text "Com:" Pretty.<+> Pretty.text (show c)
+              Pretty.$+$ spaces4 Pretty.<> printBP bp
           printBP bp = case bp of
                        DevGraph.BasicProof _ ps ->
                         stat (show $ goalStatus ps) Pretty.$+$
                         (case goalStatus ps of
-                         Proved _ ->
-                           (Pretty.text "Used axioms:") Pretty.$+$
-                                  (Pretty.fsep (Pretty.punctuate
-                                                     Pretty.comma
-                                               (map (Pretty.text . show) $
+                         Proved _ -> Pretty.text "Used axioms:" Pretty.<+>
+                             (Pretty.fsep (Pretty.punctuate Pretty.comma
+                                           (map (Pretty.text . show) $
                                                    usedAxioms ps)))
                          _ -> Pretty.empty)
                         Pretty.$+$ Pretty.text "Prover:" Pretty.<+>
