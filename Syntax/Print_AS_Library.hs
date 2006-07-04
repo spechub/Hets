@@ -70,7 +70,7 @@ instance Pretty LIB_ITEM where
                  fsep ([sphead, fsep [printGroupSpec frm,
                               keyword toS, printGroupSpec to]]
                        ++ (if null ad then id else (equals :))
-                           [fsep $ punctuate comma $ map pretty ad])
+                           [ppWithCommas ad])
                           $+$ keyword endS
         Arch_spec_defn si ab _ ->
             topKey archS <+>

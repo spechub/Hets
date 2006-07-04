@@ -90,7 +90,7 @@ toMixType typ = case typ of
     {- (Prefix, ExpandedType
                       (parenPrec Prefix $ toMixType t1)
                          $ parenPrec Prefix $ toMixType t2) -}
-    BracketType k l _ -> (Outfix, bracket k $ fsep $ punctuate comma $ map
+    BracketType k l _ -> (Outfix, bracket k $ sepByCommas $ map
                              (snd . toMixType) l)
     KindedType t kind _ -> (Prefix,
                fsep [parenPrec Prefix $ toMixType t, colon, pretty kind])
@@ -137,8 +137,7 @@ printType ty = case ty of
                                 parens (printType t2)]
         ExpandedType t1 t2 -> fcat [printType t1, text asP, printType t2]
         TypeToken t -> pretty t
-        BracketType k l _ -> bracket k $ fsep $
-                             punctuate comma $ map (printType) l
+        BracketType k l _ -> bracket k $ sepByCommas $ map (printType) l
         KindedType t kind _ -> sep [printType t, colon <+> pretty kind]
         MixfixType ts -> fsep $ map printType ts
 

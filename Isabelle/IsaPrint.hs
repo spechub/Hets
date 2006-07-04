@@ -235,7 +235,7 @@ printTrm b trm = case trm of
     Tuplex cs c -> ((case c of
         NotCont -> parens
         IsCont -> \ d -> text "<" <+> d <+> text ">") $
-                        fsep (punctuate comma $ map (printPlainTerm b) cs)
+                        sepByCommas (map (printPlainTerm b) cs)
                     , maxPrio)
     Fix t -> (text "fix $" <+> printParenTerm b maxPrio t, maxPrio - 1)
     Bottom -> (text "UU", maxPrio)

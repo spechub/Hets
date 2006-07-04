@@ -184,8 +184,7 @@ instance PrettyPrint G_symb_items_list where
     printText0 = toOldText
 
 instance Pretty G_symb_items_list where
-    pretty (G_symb_items_list _ l) =
-        fsep $ punctuate comma $ map pretty l
+    pretty (G_symb_items_list _ l) = ppWithCommas l
 
 instance Eq G_symb_items_list where
   (G_symb_items_list i1 s1) == (G_symb_items_list i2 s2) =
@@ -207,8 +206,7 @@ instance PrettyPrint G_symb_map_items_list where
     printText0 = toOldText
 
 instance Pretty G_symb_map_items_list where
-    pretty (G_symb_map_items_list _ l) =
-        fsep $ punctuate comma $ map pretty l
+    pretty (G_symb_map_items_list _ l) = ppWithCommas l
 
 instance Eq G_symb_map_items_list where
   (G_symb_map_items_list i1 s1) == (G_symb_map_items_list i2 s2) =

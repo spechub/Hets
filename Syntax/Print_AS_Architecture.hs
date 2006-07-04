@@ -81,7 +81,7 @@ instance Pretty REF_SPEC where
             x : xs -> sep $ pretty x :
                map ( \ s -> keyword thenS <+> pretty s) xs
         Component_ref aa _ ->
-            specBraces $ fsep $ punctuate comma $ map pretty aa
+            specBraces $ ppWithCommas aa
 
 instance PrettyPrint UNIT_EXPRESSION where
     printText0 = toOldText

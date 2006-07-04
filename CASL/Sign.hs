@@ -112,7 +112,7 @@ instance (Pretty f, Pretty e) => Pretty (Sign f e) where
 
 printSign :: (f->Doc) -> (e->Doc) -> Sign f e ->Doc
 printSign _ fE s = text (sortS++sS) <+>
-    (fsep $ punctuate comma $ map idDoc (Set.toList $ sortSet s)) $+$
+    sepByCommas (map idDoc (Set.toList $ sortSet s)) $+$
     (if Rel.null (sortRel s) then empty
       else text (sortS++sS) <+>
        (fsep $ punctuate semi $ map printRel $ Map.toList

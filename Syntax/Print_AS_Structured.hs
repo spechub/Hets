@@ -87,16 +87,14 @@ instance Pretty RENAMING where
 
 printRENAMING :: RENAMING -> Doc
 printRENAMING (Renaming aa _) =
-   keyword withS <+> fsep
-        (punctuate comma $ map printG_mapping aa)
+   keyword withS <+> ppWithCommas aa
 
 instance Pretty RESTRICTION where
     pretty = printRESTRICTION
 
 printRESTRICTION :: RESTRICTION -> Doc
 printRESTRICTION rest = case rest of
-    Hidden aa _ -> keyword hideS <+>
-                 fsep (punctuate comma $ map printG_hiding aa)
+    Hidden aa _ -> keyword hideS <+> ppWithCommas aa
     Revealed aa _ -> keyword revealS <+> pretty aa
 
 instance PrettyPrint RESTRICTION where

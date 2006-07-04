@@ -216,7 +216,7 @@ checkUnusedTypevars sc@(TypeScheme tArgs t ps) = do
         rest = map getTypeVar tArgs List.\\ ls
     if null rest then return ()
       else addDiags [Diag Warning ("unused type variables: "
-               ++ show(fsep $ punctuate comma $ map pretty rest)) ps]
+               ++ show(ppWithCommas rest)) ps]
     return sc
 
 -- | storing an operation
