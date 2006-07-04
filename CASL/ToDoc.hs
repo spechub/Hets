@@ -111,7 +111,7 @@ instance Pretty ALTERNATIVE where
 
 printSortItem :: (f -> Doc) -> SORT_ITEM f -> Doc
 printSortItem mf si = case si of
-    Sort_decl sl _ -> fsep $ punctuate comma $ map idDoc sl
+    Sort_decl sl _ -> sepByCommas $ map idDoc sl
     Subsort_decl sl sup _ -> fsep $ (punctuate comma $ map idDoc sl)
                                      ++ [less, idDoc sup]
     Subsort_defn s v sup af _ -> fsep [idDoc s, equals,
@@ -239,7 +239,7 @@ instance Pretty SYMB_ITEMS where
 
 printSymbItems :: SYMB_ITEMS -> Doc
 printSymbItems (Symb_items k l _) =
-    print_kind_text k l <+> (fsep $ punctuate comma $ map printSymb l)
+    print_kind_text k l <+> sepByCommas (map printSymb l)
 
 instance Pretty SYMB where
     pretty = printSymb
@@ -289,7 +289,7 @@ instance Pretty SYMB_MAP_ITEMS where
 
 printSymbMapItems :: SYMB_MAP_ITEMS -> Doc
 printSymbMapItems (Symb_map_items k l _) =
-    print_kind_text k l <+> (fsep $ punctuate comma $ map printSymbOrMap l)
+    print_kind_text k l <+> sepByCommas (map printSymbOrMap l)
 
 printRecord :: (f -> Doc) -> Record f Doc Doc
 printRecord mf = Record
@@ -313,7 +313,7 @@ printRecord mf = Record
     , foldPredication = \ _ p l _ -> case p of
           Pred_name i -> idApplDoc i l
           Qual_pred_name _ _ _ -> if null l then printPredSymb p else
-              fcat [printPredSymb p, parens $ fsep $ punctuate comma l]
+              fcat [printPredSymb p, parens $ sepByCommas l]
     , foldDefinedness = \ _ r _ -> hsep [text defS, r]
     , foldExistl_equation = \ _ l r _ -> sep [l, hsep[exequal, r]]
     , foldStrong_equation = \ _ l r _ -> sep [l, hsep [equals, r]]
@@ -328,7 +328,7 @@ printRecord mf = Record
                 fsep (punctuate semi (map printOpSymb ops))
                 <> if null sortMap then empty else
                    space <> text withS
-                    <+> fsep (punctuate comma (map printSortMap sortMap)))
+                    <+> sepByCommas (map printSortMap sortMap))
     , foldExtFORMULA = \ _ f -> mf f
     , foldSimpleId = \ _ -> sidDoc
     , foldQual_var = \ _ v s _ ->
@@ -336,7 +336,7 @@ printRecord mf = Record
     , foldApplication = \ _ o l _ -> case o of
           Op_name i -> idApplDoc i l
           Qual_op_name _ _ _ -> let d = parens $ printOpSymb o in
-              if null l then d else fcat [d, parens $ fsep $ punctuate comma l]
+              if null l then d else fcat [d, parens $ sepByCommas l]
     , foldSorted_term = \ _ r t _ -> fsep[idApplDoc typeId [r], idDoc t]
     , foldCast = \ _ r t _ ->
           fsep[idApplDoc (mkId [placeTok, mkSimpleId asS]) [r], idDoc t]
@@ -350,9 +350,9 @@ printRecord mf = Record
     , foldMixfix_token = \ _ -> sidDoc
     , foldMixfix_sorted_term = \ _ s _ -> colon <+> idDoc s
     , foldMixfix_cast = \ _ s _ -> text asS <+> idDoc s
-    , foldMixfix_parenthesized = \ _ l _ -> parens $ fsep $ punctuate comma l
-    , foldMixfix_bracketed = \ _ l _ -> brackets $ fsep $ punctuate comma l
-    , foldMixfix_braced = \ _ l _ -> specBraces $ fsep $ punctuate comma l
+    , foldMixfix_parenthesized = \ _ l _ -> parens $ sepByCommas l
+    , foldMixfix_bracketed = \ _ l _ -> brackets $ sepByCommas l
+    , foldMixfix_braced = \ _ l _ -> specBraces $ sepByCommas l
     }
 
 printFormula :: (f -> Doc) -> FORMULA f -> Doc
