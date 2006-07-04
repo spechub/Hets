@@ -13,7 +13,7 @@ parse the outer syntax of an Isabelle theory file. The syntax is taken from
 
 module Isabelle.IsaParse
     (parseTheory
-    , Body
+    , Body(..)
     , TheoryHead(..)
     , compatibleBodies) where
 
