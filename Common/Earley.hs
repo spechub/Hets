@@ -29,6 +29,7 @@ import Common.AS_Annotation
 import Common.Prec
 import qualified Common.Lib.Map as Map
 import Data.List
+import Control.Exception
 
 -- | take the difference of the two input lists take (length l2 - length l1) l2
 takeDiff :: [a] -> [b] -> [b]
@@ -343,18 +344,19 @@ nextChart :: (a -> a -> a) -> ToExpr a -> GlobalAnnos
 nextChart addType toExpr ga st term@(_, tok) =
     let table = prevTable st
         idx = currIndex st
+        igz = idx > 0
         (cItems, sItems) = currItems st
         (cRules, sRules) = rules st
-        pItems = if null cItems && idx /= 0 then sItems else
+        pItems = if null cItems && igz then sItems else
                  map (mkItem idx) (addRules st tok ++ sRules) ++ sItems
         scannedItems = scan addType term pItems
-        nextTable = if null cItems && idx /= 0 then table
+        nextTable = if null cItems && igz then table
                     else Map.insert idx (map (mkItem idx) cRules ++ cItems)
                          table
         completedItems = complete toExpr ga nextTable
                          $ sortBy ordItem $ scannedItems
         nextIdx = idx + 1
-    in  if null pItems then st else
+    in  if null pItems && igz then st else
         st { prevTable = nextTable
            , currIndex = nextIdx
            , currItems = doPredict completedItems
@@ -390,7 +392,7 @@ getResolved pp p toExpr st =
         ds = solveDiags st
         items = if null items' && null ds then predicted else items'
     in case items of
-       [] -> Result ds Nothing
+       [] -> assert (not $ null ds) $ Result ds Nothing
        _ -> let (finals, rest1) = partition ((0 ==) . index) items
                 (result, rest2) = partition (null . rest) finals
             in case result of
