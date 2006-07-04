@@ -181,10 +181,16 @@ mixfixSuffix = forget $ lexP isaString
     >> option [] (bracketsP $ commalist $ lexP nat)
            >> option () (forget $ lexP nat)
 
+structureL :: Parser ()
+structureL = forget $ lexS structureS
+
+genMixfix :: Bool -> Parser ()
+genMixfix b = parensP $
+    (if b then id else (<|> structureL)) $
+        infixP <|> mixfixSuffix <|> (lexS "binder" >> mixfixSuffix)
+
 mixfix :: Parser ()
-mixfix = lexS "(" >>
-    (infixP <|> mixfixSuffix <|> (lexS "binder" >> mixfixSuffix)
-     <|> (forget $ lexS "structure")) << lexS ")"
+mixfix = genMixfix False
 
 atom :: Parser String
 atom = var <|> typefree <|> typevar <|> nameref
@@ -235,9 +241,36 @@ arity = fmap (:[]) namerefP <|> do
 
 data Const = Const Token Token
 
+typeSuffix :: Parser Token
+typeSuffix = lexS "::" >> typeP
+
 consts :: Parser [Const]
-consts = lexS constsS >> many1 (bind Const nameP (lexS "::" >> typeP
+consts = lexS constsS >> many1 (bind Const nameP (typeSuffix
                                           << option () mixfix))
+
+vars :: Parser ()
+vars = many1 nameP >> option () (forget typeSuffix)
+
+andL :: Parser ()
+andL = forget $ lexS andS
+
+structs :: Parser ()
+structs = parensP $ structureL << separatedBy vars andL
+
+constdecl :: Parser [Const]
+constdecl = do
+    n <- nameP
+    do t <- typeSuffix << option () mixfix
+       return [Const n t]
+     <|> (lexS "where" >> return [])
+  <|> (mixfix >> return [])
+
+constdef :: Parser ()
+constdef = option () (forget thmdecl) << prop
+
+constdefs :: Parser [[Const]]
+constdefs = lexS constdefsS >> option () structs >>
+            many1 (option [] constdecl << constdef)
 
 axmdecl :: Parser Token
 axmdecl = (nameP << option () attributes) << lexS ":"
@@ -280,7 +313,7 @@ thmdecl = try $ thmbind << lexS ":"
 theorems :: Parser ()
 theorems = forget $ (lexS theoremsS <|> lexS lemmasS)
     >> option () locale
-    >> separatedBy (option () (forget thmdef) >> thmrefs) (lexS andS)
+    >> separatedBy (option () (forget thmdef) >> thmrefs) andL
 
 proppat :: Parser ()
 proppat = forget . parensP . many1 $ lexP term
@@ -292,7 +325,7 @@ props = bind Goal (option (mkSimpleId "") thmdecl)
         $ many1 (prop << option () proppat)
 
 goal :: Parser [Goal]
-goal = fmap fst $ separatedBy props (lexS andS)
+goal = fmap fst $ separatedBy props andL
 
 lemma :: Parser [Goal]
 lemma = choice (map lexS [lemmaS, theoremS, corollaryS])
@@ -309,7 +342,7 @@ mltext :: Parser Token
 mltext = lexS mlS >> lexP isaText
 
 cons :: Parser [Token]
-cons = bind (:) nameP (many typeP) << option () mixfix
+cons = bind (:) nameP (many typeP) << option () (parensP infixP)
 
 data Dtspec = Dtspec Typespec [[Token]]
 
@@ -323,7 +356,7 @@ dtspec = do
     return $ Dtspec t cs
 
 datatype :: Parser [Dtspec]
-datatype = lexS datatypeS >> fmap fst (separatedBy dtspec $ lexS andS)
+datatype = lexS datatypeS >> fmap fst (separatedBy dtspec andL)
 
 -- allow '.' sequences in unknown parts
 anyP :: Parser String
@@ -353,6 +386,7 @@ theoryBody = many $
     <|> ignore types
     <|> fmap Datatype datatype
     <|> fmap Consts consts
+    <|> fmap (Consts . concat) constdefs
     <|> fmap Axioms defs
     <|> ignore classes
     <|> ignore markupP

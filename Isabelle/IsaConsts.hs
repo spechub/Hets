@@ -214,8 +214,11 @@ timesS = "op *"
 consS :: String
 consS = "Cons"
 
+compS :: String
+compS = "comp"
+
 plusV :: VName
-plusV = VName plusS $ Just $ AltSyntax "(_ +/ _)"   [65, 66] 65
+plusV = VName plusS $ Just $ AltSyntax "(_ +/ _)" [65, 66] 65
 
 minusV :: VName
 minusV = VName minusS $ Just $ AltSyntax "(_ -/ _)" [65, 66] 65
@@ -226,6 +229,9 @@ timesV = VName timesS $ Just $ AltSyntax "(_ */ _)" [70, 71] 70
 consV :: VName
 consV = VName consS $ Just $ AltSyntax "(_ #/ _)" [66, 65] 65
 
+compV :: VName
+compV = VName compS $ Just $ AltSyntax "(_ o/ _)" [55, 56] 55
+
 -- | apply VName operator to two term
 binVNameAppl :: VName -> Term -> Term -> Term
 binVNameAppl v t1 t2 = MixfixApp (con v) [t1,t2] NotCont
@@ -235,7 +241,7 @@ binConj, binDisj, binImpl, binEqv, binEq :: Term -> Term -> Term
 binConj = binVNameAppl conjV
 binDisj = binVNameAppl disjV
 binImpl = binVNameAppl implV
-binEq   = binVNameAppl eqV
+binEq = binVNameAppl eqV
 binEqv = binEq
 
 -- * boolean constants
@@ -334,6 +340,12 @@ typesS = "types"
 constsS :: String
 constsS = "consts"
 
+structureS :: String
+structureS = "structure"
+
+constdefsS :: String
+constdefsS = "constdefs"
+
 domainS :: String
 domainS = "domain"
 
@@ -360,7 +372,7 @@ ignoredKeys =
     [ domainS, oopsS, refuteS, fixrecS, primrecS
     , "sorry", "done", "by", "proof", "apply", "qed"
     , "classrel", "defaultsort", "nonterminls", "arities"
-    , "constdefs", "syntax", "no_syntax", "translations"
+    , "syntax", "no_syntax", "translations"
     , "global", "local", "hide", "use", "setup", "method_setup"
     , "ML_command", "ML_setup", "oracle"
     , "fix", "assume", "presume", "def", "note", "then", "from", "with"
@@ -389,7 +401,7 @@ ignoredKeys =
 usedTopKeys :: [String]
 usedTopKeys = markups ++
     [ importsS, usesS, beginS, contextS, mlS, axiomsS, defsS, constsS
-    , lemmasS, theoremsS, lemmaS, corollaryS, theoremS, datatypeS
+    , constdefsS, lemmasS, theoremsS, lemmaS, corollaryS, theoremS, datatypeS
     , classesS, axclassS, instanceS, typesS, typedeclS, endS ]
 
 -- | all Isabelle keywords
