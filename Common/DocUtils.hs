@@ -137,47 +137,51 @@ printMaybe fA mb = case mb of
     Just x -> fA x
     Nothing -> empty
 
+sepByCommas :: [Doc] -> Doc
+sepByCommas = fsep . punctuate comma
+
+ppWithCommas :: Pretty a => [a] -> Doc
+ppWithCommas = sepByCommas . map pretty
+
 instance (Pretty a, Pretty b) => Pretty (a, b) where
     pretty = printPair pretty pretty
 
 printPair :: (a -> Doc) -> (b -> Doc) -> (a, b) -> Doc
-printPair fA fB (a, b) =
-    lparen <> fA a <> comma <> fB b <> rparen
+printPair fA fB (a, b) = parens $ sepByCommas [fA a, fB b]
 
 instance (Pretty a, Pretty b, Pretty c) => Pretty (a, b, c) where
     pretty = printTriple pretty pretty pretty
 
 printTriple :: (a -> Doc) -> (b -> Doc) -> (c -> Doc) -> (a, b, c) -> Doc
-printTriple fA fB fC (a,b,c) =
-    lparen <> fA a <> comma <> fB b <> comma <> fC c <> rparen
+printTriple fA fB fC (a,b,c) = parens $ sepByCommas [fA a, fB b, fC c]
 
 instance Pretty Int where
-    pretty = text . show
+    pretty = sidDoc . mkSimpleId . show
 
 printSetWithComma :: Pretty a => Set.Set a -> Doc
-printSetWithComma = printSet id (fsep . punctuate comma)
-
-printList :: (Doc -> Doc) -> ([Doc] -> Doc) -> [Doc] -> Doc
-printList brace inter = brace . inter
+printSetWithComma = ppWithCommas . Set.toList
 
 instance Pretty a => Pretty [a] where
-    pretty = printList brackets (fsep . punctuate comma) . map pretty
-
-printSet :: Pretty a => (Doc -> Doc) -> ([Doc] -> Doc) -> Set.Set a -> Doc
-printSet brace inter = printList brace inter . map pretty . Set.toList
+    pretty = brackets . ppWithCommas
 
 instance Pretty a => Pretty (Set.Set a) where
-    pretty = printSet specBraces (fsep . punctuate comma)
+    pretty = brackets . ppWithCommas . Set.toList
 
-printMap :: (Pretty a, Ord a, Pretty b) => (Doc -> Doc) -> ([Doc] -> Doc)
+printMap :: (Pretty a, Pretty b) => (Doc -> Doc) -> ([Doc] -> Doc)
          -> (Doc -> Doc -> Doc) -> Map.Map a b -> Doc
-printMap brace inter pairDoc = printList brace inter
-     . map ( \ (a, b) -> pairDoc (pretty a) (pretty b))
+printMap = ppMap pretty pretty
+
+ppMap :: (a -> Doc) -> (b -> Doc) -> (Doc -> Doc) -> ([Doc] -> Doc)
+      -> (Doc -> Doc -> Doc) -> Map.Map a b -> Doc
+ppMap fa fb brace inter pairDoc = brace . inter
+     . map ( \ (a, b) -> pairDoc (fa a) (fb b))
      . Map.toList
 
-instance (Ord a, Pretty a, Pretty b) => Pretty (Map.Map a b) where
-    pretty = printMap specBraces (fsep . punctuate comma)
-             (\ a b -> a <+> mapsto <+> b)
+pairElems :: Doc -> Doc -> Doc
+pairElems a b = a <+> mapsto <+> b
+
+instance (Pretty a, Pretty b) => Pretty (Map.Map a b) where
+    pretty = printMap specBraces sepByCommas pairElems
 
 addBullet :: Doc -> Doc
 addBullet = (bullet <+>)

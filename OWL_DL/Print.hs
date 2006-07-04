@@ -608,17 +608,17 @@ instance PrettyPrint Individual where
    printText0 = toOldText
            
 foldSetToDoc2 :: (Pretty a) => Set.Set a -> Doc
-foldSetToDoc2 = printSet id (vcat . punctuate comma)
+foldSetToDoc2 = vcat . punctuate comma . map pretty . Set.toList
 
 -- output a list in vertikal direction
 foldListToDocV :: (Pretty a, Pretty b) 
                   => (a -> b -> Doc) -> a -> [b] -> Doc
-foldListToDocV printForm iD = printList id vcat . map (printForm iD) 
+foldListToDocV printForm iD = vcat . map (printForm iD) 
 
 -- output a list in horizonal direction
 foldListToDocH :: (Pretty a, Pretty b) 
                   =>  (a -> b -> Doc) -> a -> [b] -> Doc
-foldListToDocH printForm iD = printList id hsep . map (printForm iD) 
+foldListToDocH printForm iD = hsep . map (printForm iD) 
 
 -- output form with different demands
 form1 :: Int -> URIreference-> Description -> Doc
