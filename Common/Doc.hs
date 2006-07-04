@@ -606,8 +606,11 @@ codeOrigId m (Id ts cs _) = let
     if null cs then conv ts
        else conv toks ++ codeCompIds m cs : conv places
 
+cCommaT :: Map.Map Id [Token] -> [Id] -> [Doc]
+cCommaT m = punctuate comma . map (codeOutId m)
+
 codeCompIds :: Map.Map Id [Token] -> [Id] -> Doc
-codeCompIds m cs = brackets $ fcat $ punctuate comma $ map (codeOutId m) cs
+codeCompIds m cs = brackets $ fcat $ cCommaT m cs
 
 codeIdToks :: [Token] -> [Doc]
 codeIdToks = map (\ t -> let s = tokStr t in
@@ -638,9 +641,6 @@ percent = symbol percentS
 
 annoRparen :: Doc
 annoRparen = rparen <> percent
-
-cCommaT :: Map.Map Id [Token] -> [Id] -> [Doc]
-cCommaT m = punctuate comma . map (codeOutId m)
 
 hCommaT :: Map.Map Id [Token] -> [Id] -> Doc
 hCommaT m = hsep . cCommaT m
