@@ -13,7 +13,6 @@ printing AS_CoCASL and CoCASLSign data types
 module CoCASL.Print_AS where
 
 import Common.Keywords
-import Common.PrettyPrint
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
@@ -24,9 +23,6 @@ import CASL.ToDoc
 
 import CoCASL.AS_CoCASL
 import CoCASL.CoCASLSign
-
-instance PrettyPrint C_BASIC_ITEM where
-    printText0 = toOldText
 
 instance Pretty C_BASIC_ITEM where
     pretty = printC_BASIC_ITEM
@@ -42,9 +38,6 @@ printC_BASIC_ITEM cb = case cb of
       _ -> keyword cogeneratedS <+> 
            (specBraces $ vcat $ map pretty l)
 
-instance PrettyPrint C_SIG_ITEM where
-    printText0 = toOldText
-
 instance Pretty C_SIG_ITEM where
     pretty = printC_SIG_ITEM
 
@@ -52,9 +45,6 @@ printC_SIG_ITEM :: C_SIG_ITEM -> Doc
 printC_SIG_ITEM (CoDatatype_items l _) =
     keyword (cotypeS ++ pluralS l) <+>
      (fsep $ punctuate semi $ map (printAnnoted printCODATATYPE_DECL) l)
-
-instance PrettyPrint CODATATYPE_DECL where
-    printText0 = toOldText
 
 instance Pretty CODATATYPE_DECL where
     pretty = printCODATATYPE_DECL
@@ -64,9 +54,6 @@ printCODATATYPE_DECL (CoDatatype_decl s a _) = case a of
       [] -> idDoc s
       _ -> fsep [idDoc s, defn, sep $ punctuate (space <> bar) $ 
                       map (printAnnoted printCOALTERNATIVE) a]
-
-instance PrettyPrint COALTERNATIVE where
-    printText0 = toOldText
 
 instance Pretty COALTERNATIVE where
     pretty = printCOALTERNATIVE
@@ -89,9 +76,6 @@ printCOALTERNATIVE coal = case coal of
                             : punctuate comma (map idDoc l)
       
 
-instance PrettyPrint COCOMPONENTS where
-    printText0 = toOldText
-
 instance Pretty COCOMPONENTS where
     pretty = printCOCOMPONENTS
 
@@ -102,8 +86,6 @@ printCOCOMPONENTS (CoSelect l s _) =
     <> colon
     <> printOpType s
 
-instance PrettyPrint C_FORMULA where
-    printText0 = toOldText
 
 instance Pretty C_FORMULA where
     pretty = printC_FORMULA
@@ -123,9 +105,6 @@ printC_FORMULA cf = case cf of
            (fsep $ punctuate semi $ map printOpSymb ops))  
     
 
-instance PrettyPrint MODALITY where
-    printText0 = toOldText
-
 instance Pretty MODALITY where
     pretty = printMODALITY
 
@@ -133,9 +112,6 @@ printMODALITY :: MODALITY -> Doc
 printMODALITY md = case md of
     Simple_mod ident -> sidDoc ident
     Term_mod t -> printTerm printC_FORMULA t
-
-instance PrettyPrint CoCASLSign where
-    printText0 = toOldText
 
 instance Pretty CoCASLSign where
     pretty = printCoCASLSign

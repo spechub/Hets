@@ -17,13 +17,11 @@ module CoCASL.Logic_CoCASL where
 
 import CoCASL.AS_CoCASL
 import CoCASL.CoCASLSign
-import CoCASL.ATC_CoCASL
+import CoCASL.ATC_CoCASL()
 import CoCASL.Parse_AS
 import CoCASL.StatAna
-import CoCASL.LaTeX_CoCASL
 import CoCASL.Sublogic
 import CASL.Sign
-import CASL.StaticAna
 import CASL.Morphism
 import CASL.SymbolMapAnalysis
 import CASL.Logic_CASL
