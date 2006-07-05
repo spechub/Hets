@@ -342,7 +342,7 @@ mltext :: Parser Token
 mltext = lexS mlS >> lexP isaText
 
 cons :: Parser [Token]
-cons = bind (:) nameP (many typeP) << option () (parensP infixP)
+cons = bind (:) nameP (many typeP) << option () mixfix
 
 data Dtspec = Dtspec Typespec [[Token]]
 
