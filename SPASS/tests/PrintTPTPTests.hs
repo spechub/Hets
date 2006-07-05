@@ -2,7 +2,6 @@ import SPASS.Sign
 import SPASS.PrintTPTP
 
 import Common.AS_Annotation
-import Common.Lib.Pretty
 
 
 -- | a more pretty alternative for shows using PrintTPTP
@@ -12,35 +11,33 @@ showPretty2 = shows . printTPTP
 
 main :: IO ()
 main = do
-  putStr "--- Term-Tests ---\n"
-  putStr $ showPretty2 spSimpleTermTest1 "\n\n"
-  putStr $ showPretty2 spQuantTermTest1 "\n\n"
-  putStr $ showPretty2 spQuantTermTest2 "\n\n"
-  putStr $ showPretty2 spQuantTermTest3 "\n\n"
-  putStr $ showPretty2 spQuantTermTest4 "\n\n"
-  putStr $ showPretty2 spQuantTermTest5 "\n\n"
-  
-  putStr "--- Formula-Test ---\n"
-  putStr $ render $ printFormula SPOriginAxioms spFormulaTest
-  putStr "\n\n"
-  
-  putStr "--- FormulaList-Tests ---\n"
-  putStr $ showPretty2 spFormulaListTest1 "\n\n"
-  putStr $ showPretty2 spFormulaListTest2 "\n\n"
-  putStr $ showPretty2 spFormulaListTest3 "\n\n"
-  putStr $ showPretty2 spFormulaListTest4 "\n\n"
-  
-  putStr "--- Description-Tests ---\n"
-  putStr $ showPretty2 spDescTest1 "\n\n"
-  putStr $ showPretty2 spDescTest2 "\n\n"
-  
-  putStr "--- Problem-Test ---\n"
-  putStr $ showPretty2 spProblemTest "\n\n"
-  
-  putStr "--- Declaration-Test ---\n"
-  putStr $ showPretty2 spDeclTest "\n\n"
-  return ()
-  
+  putStrLn "--- Term-Tests ---"
+  putStrLn $ showPretty2 spSimpleTermTest1 "\n"
+  putStrLn $ showPretty2 spQuantTermTest1 "\n"
+  putStrLn $ showPretty2 spQuantTermTest2 "\n"
+  putStrLn $ showPretty2 spQuantTermTest3 "\n"
+  putStrLn $ showPretty2 spQuantTermTest4 "\n"
+  putStrLn $ showPretty2 spQuantTermTest5 "\n"
+
+  putStrLn "--- Formula-Test ---"
+  putStrLn $ show $ printFormula SPOriginAxioms spFormulaTest
+  putStrLn "\n"
+
+  putStrLn "--- FormulaList-Tests ---"
+  putStrLn $ showPretty2 spFormulaListTest1 "\n"
+  putStrLn $ showPretty2 spFormulaListTest2 "\n"
+  putStrLn $ showPretty2 spFormulaListTest3 "\n"
+  putStrLn $ showPretty2 spFormulaListTest4 "\n"
+
+  putStrLn "--- Description-Tests ---"
+  putStrLn $ showPretty2 spDescTest1 "\n"
+  putStrLn $ showPretty2 spDescTest2 "\n"
+
+  putStrLn "--- Problem-Test ---"
+  putStrLn $ showPretty2 spProblemTest "\n"
+
+  putStrLn "--- Declaration-Test ---"
+  putStrLn $ showPretty2 spDeclTest "\n"
 
 spSimpleTermTest1 :: SPSymbol
 spSimpleTermTest1 = SPCustomSymbol "testsymbol"
@@ -82,7 +79,7 @@ SPComplexTerm {symbol=SPEqual, arguments=[
   ]},
   SPComplexTerm {symbol=SPCustomSymbol "Elem", arguments=[SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "b"), SPSimpleTerm (SPCustomSymbol "c")]}
 ]}}
- 
+
 spFormulaTest :: SPFormula
 spFormulaTest = (emptyName SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}) {senName= "testformula"}
 
