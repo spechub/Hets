@@ -87,7 +87,8 @@ logics = CASL HasCASL Isabelle Modal CoCASL COL CspCASL CASL_DL SPASS \
 TESTTARGETFILES += CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
     ATC/ATCTest.hs ATC/ATCTest2.hs Common/ATerm/ATermLibTest.hs \
-    Common/ATerm/ATermDiffMain.hs Common/annos.hs Common/test_parser.hs
+    Common/ATerm/ATermDiffMain.hs Common/annos.hs Common/test_parser.hs \
+    SPASS/tests/PrintTPTPTests.hs SPASS/tests/PrintTests.hs
 
 UNI_PACKAGE_CONF = $(wildcard ../uni/uni-package.conf)
 ifneq ($(strip $(UNI_PACKAGE_CONF)),)
