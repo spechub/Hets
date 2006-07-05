@@ -22,12 +22,10 @@ import Maybe
 
 import Common.AS_Annotation
 import Common.Doc
-import Common.DocUtils
 
 import Control.Exception
 
 import SPASS.Sign
-import SPASS.Print ()
 import SPASS.Conversions
 
 
@@ -125,7 +123,9 @@ instance PrintTPTP SPFormulaList where
   Creates a Doc from a SPASS Origin Type.
 -}
 instance PrintTPTP SPOriginType where
-    printTPTP = pretty
+    printTPTP t = text $ case t of
+        SPOriginAxioms      -> "axiom"
+        SPOriginConjectures -> "conjecture"
 
 {- |
   Creates a Doc from a SPASS Formula. Needed since SPFormula is just a
@@ -135,7 +135,7 @@ instance PrintTPTP SPOriginType where
 printFormula :: SPOriginType -> SPFormula -> Doc
 -- printFormula ot f = printFormulaText ot (senName f) (sentence f)
 printFormula ot f =
-    text "fof" <> parens (text (senName f) <> comma <> printTPTP ot <> comma 
+    text "fof" <> parens (text (senName f) <> comma <> printTPTP ot <> comma
                           $+$ parens (printTPTP $ sentence f)) <> dot
 
 {- |
@@ -194,7 +194,7 @@ printTermList symb terms = case symb of
       associate sb = case terms of
         []  -> empty
         [x] -> printTPTP x
-        _   -> parens $ vcat $ punctuate (space <> printTPTP sb) 
+        _   -> parens $ vcat $ punctuate (space <> printTPTP sb)
                       $ map printTPTP terms
       applicate sb =
         if null terms then printTPTP sb
@@ -242,7 +242,7 @@ instance PrintTPTP SPDescription where
   On left side will be displayed the field's name, on right side its content.
 -}
 spCommentText :: String -> String -> Doc
-spCommentText fieldName fieldDesc = 
+spCommentText fieldName fieldDesc =
     hsep [text "%", text fieldName, colon, text fieldDesc]
 
 {- |
