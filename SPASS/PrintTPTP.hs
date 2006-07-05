@@ -69,15 +69,13 @@ instance PrintTPTP SPLogicalPart where
               SPTermDecl{}       -> True
               SPSimpleTermDecl _ -> True
               _                  -> False) $ declarationList lp
-      in (foldl (\declList (decl, i) ->
-                    declList
-                    $+$ text "fof" <>
+      in vcat (map (\ (decl, i) ->
+                    text "fof" <>
                     parens (text ("declaration" ++ show i) <> comma <>
                     printTPTP SPOriginAxioms <> comma
                     $+$ parens (printTPTP decl)) <> dot)
-                empty $
-                zip validDeclarations [(1::Int)..])
-         $+$ foldl (\d x -> d $+$ printTPTP x) empty (formulaLists lp)
+                $ zip validDeclarations [(1::Int)..])
+         $+$ vcat (map printTPTP $ formulaLists lp)
 
 {- |
   Standard variable term to be used in subsort declaration.
@@ -116,8 +114,7 @@ instance PrintTPTP SPDeclaration where
   Creates a Doc from a SPASS Formula List.
 -}
 instance PrintTPTP SPFormulaList where
-    printTPTP l = foldl (\fl x-> fl $+$ printFormula (originType l) x)
-                        empty $ formulae l
+    printTPTP l = vcat $ map (printFormula $ originType l) $ formulae l
 
 {- |
   Creates a Doc from a SPASS Origin Type.
