@@ -23,7 +23,6 @@ import qualified Common.Lib.Set as Set
 import Common.Id
 import Common.Lib.State
 import Common.Result
-import Common.Doc
 import Common.DocUtils
 import Common.Lexer
 import Common.AnnoState

@@ -16,8 +16,6 @@ Pretty printing for SPASS signatures.
 
 module SPASS.Print where
 
-import Maybe
-
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
