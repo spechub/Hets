@@ -162,7 +162,7 @@ instance Pretty a => Pretty [a] where
     pretty = brackets . ppWithCommas
 
 instance Pretty a => Pretty (Set.Set a) where
-    pretty = brackets . ppWithCommas . Set.toList
+    pretty = specBraces . ppWithCommas . Set.toList
 
 printMap :: (Pretty a, Pretty b) => (Doc -> Doc) -> ([Doc] -> Doc)
          -> (Doc -> Doc -> Doc) -> Map.Map a b -> Doc
