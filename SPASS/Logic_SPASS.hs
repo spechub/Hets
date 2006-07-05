@@ -62,8 +62,7 @@ instance Logic.Logic.Syntax SoftFOL () () ()
 
 instance Sentences SoftFOL Sentence () Sign SoftFOLMorphism ()  where
       map_sen SoftFOL _ s = return s
-      print_named SoftFOL formula = literalDoc $
-        printFormula emptyGlobalAnnos formula
+      print_named SoftFOL = printFormula
 -- the prover uses HTk and IO functions from uni
 #ifdef UNI_PACKAGE
       provers SoftFOL = [spassProver

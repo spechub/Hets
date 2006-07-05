@@ -19,35 +19,18 @@ module SPASS.Print where
 import Maybe
 
 import Common.AS_Annotation
-import Common.GlobalAnnotations
-import Common.Lib.Pretty
-import Common.PrettyPrint
-import qualified Common.Doc as Doc
-import Common.DocUtils as Doc
+import Common.Doc
+import Common.DocUtils
 
 import SPASS.Sign
 import SPASS.Conversions
 
-instance Doc.Pretty Sign where
-    pretty = Doc.literalDoc . printText0 emptyGlobalAnnos 
-
-instance PrintLaTeX Sign where
-  printLatex0 = toOldLatex
-
-instance PrettyPrint Sign where
-  printText0 ga = printText0 ga . signToSPLogicalPart
-
-instance Doc.Pretty SPTerm where
-    pretty = Doc.literalDoc . printText0 emptyGlobalAnnos 
-
-instance PrintLaTeX SPTerm where
-  printLatex0 = toOldLatex
+instance Pretty Sign where
+  pretty = pretty . signToSPLogicalPart
 
 {- |
   Helper function. Generates a '.' as a Doc.
 -}
-dot :: Doc
-dot = char '.'
 
 endOfListS :: String
 endOfListS = "end_of_list."
@@ -55,154 +38,153 @@ endOfListS = "end_of_list."
 {- |
   Creates a Doc from a SPASS Problem.
 -}
-instance PrettyPrint SPProblem where
-  printText0 ga p = text "begin_problem" <> parens (text (identifier p)) <> dot
-    $$ printText0 ga (description p)
-    $$ printText0 ga (logicalPart p)
-    $$ printSettings ga (settings p)
-    $$ text "end_problem."
+instance Pretty SPProblem where
+  pretty p = text "begin_problem" <> parens (text (identifier p)) <> dot
+    $+$ pretty (description p)
+    $+$ pretty (logicalPart p)
+    $+$ printSettings (settings p)
+    $+$ text "end_problem."
 
 {- |
   Creates a Doc from a SPASS Logical Part.
 -}
-instance PrettyPrint SPLogicalPart where
-  printText0 ga lp =
-    (if isJust (symbolList lp) then printText0 ga (fromJust (symbolList lp)) else empty)
-    $$ (if not $ null (declarationList lp) then printDeclarationList (declarationList lp) else empty)
-    $$ (if not $ null (formulaLists lp) then printFormulaLists (formulaLists lp) else empty)
-    where
-      printDeclarationList xs = text "list_of_declarations."
-        $$ foldl (\d x-> d $$ printText0 ga x) empty xs
-        $$ text endOfListS
-      printFormulaLists = foldl (\d x-> d $$ printText0 ga x) empty
+instance Pretty SPLogicalPart where
+  pretty lp =
+    pretty (symbolList lp)
+    $+$ (case declarationList lp of
+           [] -> empty
+           l -> text "list_of_declarations." 
+                $+$ vcat (map pretty l)
+                $+$ text endOfListS)
+    $+$ vcat (map pretty $ formulaLists lp)
 
 {- |
   Creates a Doc from a SPASS Symbol List.
 -}
-instance PrettyPrint SPSymbolList where
-  printText0 ga sl = text "list_of_symbols."
-    $$ printSignSymList "functions" (functions sl)
-    $$ printSignSymList "predicates" (predicates sl)
-    $$ printSignSymList "sorts" (sorts sl)
-    $$ printSignSymList "operators" (operators sl)
-    $$ printSignSymList "quantifiers" (quantifiers sl)
-    $$ text endOfListS
+instance Pretty SPSymbolList where
+  pretty sl = text "list_of_symbols."
+    $+$ printSignSymList "functions" (functions sl)
+    $+$ printSignSymList "predicates" (predicates sl)
+    $+$ printSignSymList "sorts" (sorts sl)
+    $+$ printSignSymList "operators" (operators sl)
+    $+$ printSignSymList "quantifiers" (quantifiers sl)
+    $+$ text endOfListS
     where 
-      printSignSymList lname list =
-        if not $ null list
-          then text lname <> brackets (foldl (\d x-> if isEmpty d then printText0 ga x else d <> comma $$ printText0 ga x) empty list) <> dot
-          else empty
+      printSignSymList lname list = case list of
+        [] -> empty
+        _ -> text lname <> 
+               brackets (vcat $ punctuate comma $ map pretty list) <> dot
 
 {-|
   Helper function. Creates a Doc from a Signature Symbol.
 -}
-instance PrettyPrint SPSignSym where
-  printText0 _ (SPSimpleSignSym s) = text s
-  printText0 _ ssym = parens (text (sym ssym) <> comma <> int (arity ssym))
+instance Pretty SPSignSym where
+  pretty ssym = case ssym of 
+      SPSimpleSignSym s -> text s
+      _ -> parens (text (sym ssym) <> comma <> pretty (arity ssym))
 
 {- |
   Creates a Doc from a SPASS Declaration
 -}
-instance PrettyPrint SPDeclaration where
-  printText0 ga d = case d of
+instance Pretty SPDeclaration where
+  pretty d = case d of
     SPSubsortDecl {sortSymA= a, sortSymB= b} ->
       text "subsort" <> parens (text a <> comma <> text b) <> dot
     SPTermDecl {termDeclTermList= l, termDeclTerm= t} ->
-      printText0 ga (SPQuantTerm {quantSym= SPForall, variableList= l, qFormula= t}) <> dot
+      pretty (SPQuantTerm {quantSym= SPForall, variableList= l, qFormula= t})
+                 <> dot
     SPSimpleTermDecl t ->
-      printText0 ga t <> dot
+      pretty t <> dot
     SPPredDecl {predSym= p, sortSyms= slist} ->
-      printText0 ga (SPComplexTerm {symbol= (SPCustomSymbol "predicate"), arguments= (map (\x-> SPSimpleTerm (SPCustomSymbol x)) (p:slist))}) <> dot
+      pretty (SPComplexTerm {symbol= (SPCustomSymbol "predicate"), arguments= 
+          (map (\x-> SPSimpleTerm (SPCustomSymbol x)) (p:slist))}) <> dot
     SPGenDecl {sortSym= s, freelyGenerated= freelygen, funcList= l} ->
-      text "sort" <+> text s <+> (if freelygen then text "freely" else empty) <+> text "generated by" <+> brackets (printFuncList l) <> dot
-    where
-      printFuncList = foldl (\fl x-> if isEmpty fl then text x else fl <> comma <> text x) empty
+      text "sort" <+> text s <+> (if freelygen then text "freely" else empty)
+               <+> text "generated by" 
+               <+> brackets (hcat $ punctuate comma $ map text l) <> dot
 
 {- |
-  Creates a Common.Lib.Pretty.Doc from a SPASS Formula List
+  Creates a Doc from a SPASS Formula List
 -}
-instance PrettyPrint SPFormulaList where
-  printText0 ga l = text "list_of_formulae" <> parens (printText0 ga (originType l)) <> dot
-    $$ printFormulae (formulae l)
-    $$ text endOfListS
-    where
-      printFormulae = foldl (\fl x-> fl $$ printFormula ga x <> dot) empty
+instance Pretty SPFormulaList where
+  pretty l = text "list_of_formulae" <> parens (pretty (originType l)) <> dot
+    $+$ vcat (map (\ x -> printFormula x <> dot) $ formulae l)
+    $+$ text endOfListS
 
 {- |
   Creates a Doc from a SPASS Origin Type
 -}
-instance PrettyPrint SPOriginType where
-  printText0 _ t = case t of
-    SPOriginAxioms      -> text "axioms"
-    SPOriginConjectures -> text "conjectures"
+instance Pretty SPOriginType where
+  pretty t = text $ case t of
+    SPOriginAxioms      -> "axioms"
+    SPOriginConjectures -> "conjectures"
 
 {- |
   Creates a Doc from a SPASS Formula. Needed since SPFormula is just a
-  'type SPFormula = Named SPTerm' and thus instanciating PrettyPrint is not
+  'type SPFormula = Named SPTerm' and thus instanciating Pretty is not
   possible.
 -}
-printFormula :: GlobalAnnos-> SPFormula-> Doc
-printFormula ga f =
-  text "formula" <> parens (printText0 ga (sentence f) <> comma <> 
-                            text (senName f))
+printFormula :: SPFormula-> Doc
+printFormula f =
+  text "formula" <> parens (pretty (sentence f) <> comma <> text (senName f))
 
 {- |
   Creates a Doc from a SPASS Term.
 -}
-instance PrettyPrint SPTerm where
-  printText0 ga t = case t of
-    SPQuantTerm{quantSym= qsym, variableList= tlist, qFormula= tt} -> printText0 ga qsym <> parens (brackets (printTermList tlist) <> comma <> printText0 ga tt)
-    SPSimpleTerm stsym -> printText0 ga stsym
-    SPComplexTerm{symbol= ctsym, arguments= args} -> printText0 ga ctsym <> if null args then empty else parens (printTermList args)
+instance Pretty SPTerm where
+  pretty t = case t of
+    SPQuantTerm{quantSym= qsym, variableList= tlist, qFormula= tt} ->
+        pretty qsym <> 
+        parens (brackets (printTermList tlist) <> comma <> pretty tt)
+    SPSimpleTerm stsym -> pretty stsym
+    SPComplexTerm{symbol= ctsym, arguments= args} -> 
+        pretty ctsym <> 
+               if null args then empty else parens (printTermList args)
     where
-      printTermList = foldl (\tl x-> if isEmpty tl then printText0 ga x else tl <> comma <> (printText0 ga x)) empty
+      printTermList = hcat . punctuate comma . map pretty
 
 {- |
   Creates a Doc from a SPASS Quantifier Symbol.
 -}
-instance PrettyPrint SPQuantSym where
-  printText0 _ qs = case qs of
-    SPForall             -> text "forall"
-    SPExists             -> text "exists"
-    SPCustomQuantSym cst -> text cst
+instance Pretty SPQuantSym where
+  pretty qs = text $ case qs of
+    SPForall             -> "forall"
+    SPExists             -> "exists"
+    SPCustomQuantSym cst -> cst
 
 {- |
   Creates a Doc from a SPASS Symbol.
 -}
 -- printSymbol :: SPSymbol-> Doc
-instance PrettyPrint SPSymbol where
-    printText0 _ s = case s of
-     SPEqual            -> text "equal"
-     SPTrue             -> text "true"
-     SPFalse            -> text "false"
-     SPOr               -> text "or"
-     SPAnd              -> text "and"
-     SPNot              -> text "not"
-     SPImplies          -> text "implies"
-     SPImplied          -> text "implied"
-     SPEquiv            -> text "equiv"
-     SPCustomSymbol cst -> text cst
+instance Pretty SPSymbol where
+    pretty s = text $ case s of
+     SPEqual            -> "equal"
+     SPTrue             -> "true"
+     SPFalse            -> "false"
+     SPOr               -> "or"
+     SPAnd              -> "and"
+     SPNot              -> "not"
+     SPImplies          -> "implies"
+     SPImplied          -> "implied"
+     SPEquiv            -> "equiv"
+     SPCustomSymbol cst -> cst
 
 {- |
   Creates a Doc from a SPASS description.
 -}
-instance PrettyPrint SPDescription where
-  printText0 ga d = text "list_of_descriptions."
-    $$ text "name" <> parens (spText (name d)) <> dot
-    $$ text "author" <> parens (spText (author d)) <> dot
-    $$ (if isJust (version d) then text "version" <> parens (spText (fromJust (version d))) <> dot else empty)
-    $$ (if isJust (logic d) then text "logic" <> parens (spText (fromJust (logic d))) <> dot else empty)
-    $$ text "status" <> parens (printText0 ga (status d)) <> dot
-    $$ text "description" <> parens (spText (desc d)) <> dot
-    $$ (if isJust (date d) then text "date" <> parens (spText (fromJust (date d))) <> dot else empty)
-    $$ text endOfListS
-
-{- |
-  Helper function. Wraps a String in "{*  *}" as required for some of the
-  description fields.
--}
-spText :: String-> Doc
-spText s = textBraces $ text s
+instance Pretty SPDescription where
+  pretty d = 
+    let sptext str v = text str <> parens (textBraces $ text v) <> dot
+        mtext str = maybe empty $ sptext str
+    in text "list_of_descriptions."
+    $+$ sptext "name" (name d)
+    $+$ sptext "author" (author d)
+    $+$ mtext "version" (version d)
+    $+$ mtext "logic" (logic d)
+    $+$ text "status" <> parens (pretty $ status d) <> dot
+    $+$ sptext "description" (desc d)
+    $+$ mtext "date" (date d)
+    $+$ text endOfListS
 
 {- |
   surrounds  a doc with "{*  *}" as required for some of the
@@ -211,23 +193,24 @@ spText s = textBraces $ text s
 textBraces :: Doc -> Doc
 textBraces d = text "{* " <> d <> text " *}"
 
-
 {- |
   Creates a Doc from an 'SPLogState'.
 -}
-instance PrettyPrint SPLogState where
-  printText0 _ s = case s of
-    SPStateSatisfiable   -> text "satisfiable"
-    SPStateUnsatisfiable -> text "unsatisfiable"
-    SPStateUnknown       -> text "unknown"
+instance Pretty SPLogState where
+  pretty s = text $ case s of
+    SPStateSatisfiable   -> "satisfiable"
+    SPStateUnsatisfiable -> "unsatisfiable"
+    SPStateUnknown       -> "unknown"
 
-printSettings :: GlobalAnnos -> [SPSetting] -> Doc
-printSettings _ [] = empty
-printSettings ga l = 
-    text "list_of_settings(SPASS)." $$
-    textBraces (vcat (map (printText0 ga) l)) $$
+printSettings :: [SPSetting] -> Doc
+printSettings [] = empty
+printSettings l = case l of
+  [] -> empty
+  _ -> 
+    text "list_of_settings(SPASS)." $+$
+    textBraces (vcat (map (pretty) l)) $+$
     text endOfListS
 
-instance PrettyPrint SPSetting where
-    printText0 _ (SPFlag sw v) = 
-        text "set_flag"<>parens(text sw<>comma<>text v)<>dot
+instance Pretty SPSetting where
+    pretty (SPFlag sw v) = 
+        text "set_flag" <> parens (text sw <> comma <> text v) <>dot

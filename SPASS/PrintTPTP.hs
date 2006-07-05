@@ -21,11 +21,13 @@ module SPASS.PrintTPTP where
 import Maybe
 
 import Common.AS_Annotation
-import Common.Lib.Pretty
+import Common.Doc
+import Common.DocUtils
 
 import Control.Exception
 
 import SPASS.Sign
+import SPASS.Print ()
 import SPASS.Conversions
 
 
@@ -35,25 +37,16 @@ class PrintTPTP a where
     printTPTP :: a -> Doc
 
 {- |
-  Helper function. Generates a '.' as a Doc.
--}
-dot :: Doc
-dot = char '.'
-
-{- |
   Helper function. Generates a separating comment line.
 -}
 separator :: String
-separator = "%-----------------------------------------------------------------"
-            ++ "---------"
+separator = '%' : replicate 75 '-'
 
 {- |
   Helper function. Generates a comma separated list of SPASS Terms as a Doc.
 -}
 printCommaSeparated :: [SPTerm] -> Doc
-printCommaSeparated = foldl (\vl v -> if isEmpty vl then printTPTP v
-                                      else vl <> comma <> printTPTP v) empty
-
+printCommaSeparated = hcat . punctuate comma . map printTPTP
 
 instance PrintTPTP Sign where
     printTPTP = printTPTP . signToSPLogicalPart
@@ -63,10 +56,10 @@ instance PrintTPTP Sign where
 -}
 instance PrintTPTP SPProblem where
     printTPTP p = text separator
-      $$ text "% Problem" <+> colon <+> text (identifier p)
-      $$ printTPTP (description p)
-      $$ text separator
-      $$ printTPTP (logicalPart p)
+      $+$ text "% Problem" <+> colon <+> text (identifier p)
+      $+$ printTPTP (description p)
+      $+$ text separator
+      $+$ printTPTP (logicalPart p)
 
 {- |
   Creates a Doc from a SPASS Logical Part.
@@ -80,13 +73,13 @@ instance PrintTPTP SPLogicalPart where
               _                  -> False) $ declarationList lp
       in (foldl (\declList (decl, i) ->
                     declList
-                    $$ text "fof" <>
+                    $+$ text "fof" <>
                     parens (text ("declaration" ++ show i) <> comma <>
                     printTPTP SPOriginAxioms <> comma
-                    $$ parens (printTPTP decl)) <> dot)
+                    $+$ parens (printTPTP decl)) <> dot)
                 empty $
                 zip validDeclarations [(1::Int)..])
-         $$ foldl (\d x -> d $$ printTPTP x) empty (formulaLists lp)
+         $+$ foldl (\d x -> d $+$ printTPTP x) empty (formulaLists lp)
 
 {- |
   Standard variable term to be used in subsort declaration.
@@ -125,16 +118,14 @@ instance PrintTPTP SPDeclaration where
   Creates a Doc from a SPASS Formula List.
 -}
 instance PrintTPTP SPFormulaList where
-    printTPTP l = foldl (\fl x-> fl $$ printFormula (originType l) x)
+    printTPTP l = foldl (\fl x-> fl $+$ printFormula (originType l) x)
                         empty $ formulae l
 
 {- |
   Creates a Doc from a SPASS Origin Type.
 -}
 instance PrintTPTP SPOriginType where
-    printTPTP t = case t of
-        SPOriginAxioms      -> text "axiom"
-        SPOriginConjectures -> text "conjecture"
+    printTPTP = pretty
 
 {- |
   Creates a Doc from a SPASS Formula. Needed since SPFormula is just a
@@ -144,23 +135,8 @@ instance PrintTPTP SPOriginType where
 printFormula :: SPOriginType -> SPFormula -> Doc
 -- printFormula ot f = printFormulaText ot (senName f) (sentence f)
 printFormula ot f =
-    text "fof" <> parens (text (senName f) <> comma <> (printTPTP ot) <> comma $$
-                          parens (printTPTP $ sentence f)) <> dot
-
-{- |
-  Creates a Doc from a formula consisting of an origin type, name and SPASS
-  Term. Origin type is already formatted as a Doc.
-  Needed for creating Doc from both SPASS Formula and SPASS Declaration.
--}
-{-
-printFormulaText :: SPOriginType
-                 -> String -- ^ name of formula
-                 -> SPTerm -- ^ term of formula
-                 -> Doc
-printFormulaText ot fname fterm =
-    text "fof" <> parens (text fname <> comma <> (printTPTP ot) <> comma $$
-                          parens (printTPTP fterm)) <> dot
--}
+    text "fof" <> parens (text (senName f) <> comma <> printTPTP ot <> comma 
+                          $+$ parens (printTPTP $ sentence f)) <> dot
 
 {- |
   Creates a Doc from a SPASS Term.
@@ -218,9 +194,8 @@ printTermList symb terms = case symb of
       associate sb = case terms of
         []  -> empty
         [x] -> printTPTP x
-        _   -> parens (foldl (\tl x -> if isEmpty tl then printTPTP x
-                                       else tl <+> printTPTP sb $$ printTPTP x)
-                             empty terms)
+        _   -> parens $ vcat $ punctuate (space <> printTPTP sb) 
+                      $ map printTPTP terms
       applicate sb =
         if null terms then printTPTP sb
         else printTPTP sb <> parens (printCommaSeparated terms)
@@ -229,51 +204,52 @@ printTermList symb terms = case symb of
   Creates a Doc from a SPASS Quantifier Symbol.
 -}
 instance PrintTPTP SPQuantSym where
-    printTPTP qs = case qs of
-        SPForall             -> char '!'
-        SPExists             -> char '?'
-        SPCustomQuantSym cst -> text cst
+    printTPTP qs = text $ case qs of
+        SPForall             -> "!"
+        SPExists             -> "?"
+        SPCustomQuantSym cst -> cst
 
 {- |
   Creates a Doc from a SPASS Symbol.
 -}
 instance PrintTPTP SPSymbol where
-    printTPTP s = case s of
-        SPEqual            -> char '='
-        SPTrue             -> text "$true"
-        SPFalse            -> text "$false"
-        SPOr               -> char '|'
-        SPAnd              -> char '&'
-        SPNot              -> char '~'
-        SPImplies          -> text "=>"
-        SPImplied          -> text "<="
-        SPEquiv            -> text "<=>"
-        SPCustomSymbol cst -> text cst
+    printTPTP s = text $ case s of
+        SPEqual            -> "="
+        SPTrue             -> "$true"
+        SPFalse            -> "$false"
+        SPOr               -> "|"
+        SPAnd              -> "&"
+        SPNot              -> "~"
+        SPImplies          -> "=>"
+        SPImplied          -> "<="
+        SPEquiv            -> "<=>"
+        SPCustomSymbol cst -> cst
 
 {- |
   Creates a Doc from a SPASS description.
 -}
 instance PrintTPTP SPDescription where
     printTPTP d = spCommentText "Name   " (name d)
-      $$ spCommentText "Author " (author d)
-      $$ maybe empty (spCommentText "Version") (version d)
-      $$ maybe empty (spCommentText "Logic  ") (logic d)
-      $$ text "% Status " <+> colon <+> printTPTP (status d)
-      $$ spCommentText "Desc   " (desc d)
-      $$ maybe empty (spCommentText "Date   ") (date d)
+      $+$ spCommentText "Author " (author d)
+      $+$ maybe empty (spCommentText "Version") (version d)
+      $+$ maybe empty (spCommentText "Logic  ") (logic d)
+      $+$ text "% Status " <+> colon <+> printTPTP (status d)
+      $+$ spCommentText "Desc   " (desc d)
+      $+$ maybe empty (spCommentText "Date   ") (date d)
 
 {- |
   Helper function. Creates a formatted comment output for a description field.
   On left side will be displayed the field's name, on right side its content.
 -}
 spCommentText :: String -> String -> Doc
-spCommentText fieldName fieldDesc = hsep [char '%', text fieldName, colon, text fieldDesc]
+spCommentText fieldName fieldDesc = 
+    hsep [text "%", text fieldName, colon, text fieldDesc]
 
 {- |
   Creates a Doc from an 'SPLogState'.
 -}
 instance PrintTPTP SPLogState where
-    printTPTP s = case s of
-      SPStateSatisfiable   -> text "satisfiable"
-      SPStateUnsatisfiable -> text "unsatisfiable"
-      SPStateUnknown       -> text "unknown"
+    printTPTP s = text $ case s of
+      SPStateSatisfiable   -> "satisfiable"
+      SPStateUnsatisfiable -> "unsatisfiable"
+      SPStateUnknown       -> "unknown"

@@ -18,11 +18,11 @@ import SPASS.Sign
 import SPASS.Conversions
 import SPASS.Translate
 import SPASS.PrintTPTP
-import SPASS.PrintDFG
+import SPASS.Print ()
 
 import qualified Common.AS_Annotation as AS_Anno
 import Common.ProofUtils
-import Common.PrettyPrint
+import Common.DocUtils
 
 -- * Data structures
 
@@ -64,7 +64,7 @@ showDFGProblem :: String -- ^ theory name
                   -> IO String -- ^ formatted output of the goal
 showDFGProblem thName pst nGoal = do
   prob <- genSPASSProblem thName (initialLogicalPart pst) $ Just nGoal
-  return $ show $ printDFG prob
+  return $ showDoc prob ""
 
 {- |
   Pretty printing SPASS goal in TPTP format.

@@ -18,7 +18,7 @@ module SPASS.Translate (reservedWords, transId, transSenName) where
 import Data.Char
 
 import Common.Id
-import Common.PrettyPrint
+import Common.DocUtils
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 
@@ -30,7 +30,7 @@ import Common.ProofUtils
 
 -- | collect all keywords of SPASS
 reservedWords :: Set.Set SPIdentifier 
-reservedWords = Set.fromList (map ((flip showPretty) "") [SPEqual
+reservedWords = Set.fromList (map ((flip showDoc) "") [SPEqual
                                           , SPTrue 
                                           , SPFalse 
                                           , SPOr 
@@ -38,7 +38,7 @@ reservedWords = Set.fromList (map ((flip showPretty) "") [SPEqual
                                           , SPNot
                                           , SPImplies
                                           , SPImplied
-                                          ,SPEquiv] ++ 
+                                          , SPEquiv] ++ 
     words "date name author status description")
 
 transSenName :: String -> String

@@ -23,11 +23,10 @@ import Logic.Coerce
 
 import Static.DevGraph
 
-import Common.Lib.Pretty
 import Common.Id
-import Common.PrettyPrint
+import Common.Doc
+import Common.DocUtils
 import Common.Result
-import Common.GlobalAnnotations
 import Common.AS_Annotation as AS_Anno
 import Common.ProofUtils
 
@@ -45,7 +44,7 @@ import SPASS.Logic_SPASS
 import SPASS.Conversions
 import SPASS.Translate
 import SPASS.Sign
-import SPASS.PrintDFG
+
 
 spassConsTimeLimit :: Int
 spassConsTimeLimit = 500
@@ -64,7 +63,7 @@ printTheoryAsDFG ln sn checkConsistency gth@(G_theory lid sign thSens) =
                               (if checkConsistency
                                then Just falseConj
                                else Nothing)
-                  return $ Just $ printText0 emptyGlobalAnnos $ 
+                  return $ Just $ pretty $ 
                          (prob {settings = flags}))
  
       (if lessSublogicComor (sublogicOfTh gth) $ Comorphism idCASL
@@ -86,7 +85,7 @@ printTheoryAsDFG ln sn checkConsistency gth@(G_theory lid sign thSens) =
 
 
   where sens = toNamedList thSens
-        thName = showPretty (getLIB_ID ln) "_" ++ showPretty sn ""
+        thName = shows (getLIB_ID ln) "_" ++ show sn
 
         spLogicalPart sig sen = 
                             foldl insertSentence 
