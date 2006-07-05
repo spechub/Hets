@@ -248,7 +248,7 @@ mapToGoalStatus stat = case stat of
                    else Just Open
     where
       re_theorem = mkRegex "Theorem$"
-      re_counter = mkRegex "Counter$"
+      re_counter = mkRegex "CounterSatisfiable$"
 
 usedProverName :: XmlTree -- ^ XML parsed MathServ output
                -> String -- ^ name of used prover (or unknown)
