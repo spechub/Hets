@@ -70,7 +70,8 @@ printTheory libdir ln sn (G_theory lid sign0 sens0) =
                 in case maybeResult r3 of
                    Nothing -> Nothing
                    Just (sign, sens) -> let
-                     tn = reverse (takeWhile (/= '/') $ reverse $ show ln)
+                     tn = reverse (takeWhile (/= '/') 
+                                  $ reverse $ show $ getLIB_ID ln)
                           ++ "_" ++ tokStr sn
                      in Just $ printIsaTheory tn libdir sign
                         $ prepareSenNames transString
