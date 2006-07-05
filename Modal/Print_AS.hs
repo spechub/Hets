@@ -15,7 +15,6 @@ module Modal.Print_AS where
 import Common.Id
 import Common.Keywords
 import qualified Common.Lib.Map as Map
-import Common.PrettyPrint
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
@@ -32,9 +31,6 @@ printFormulaOfModalSign f =
               rekuPF tf = fsep $ punctuate semi
                           $ map (printAnnoted pretty) tf
 
-instance PrettyPrint M_BASIC_ITEM where
-    printText0 = toOldText
-
 instance Pretty M_BASIC_ITEM where
     pretty (Simple_mod_decl is fs _) =
         cat [keyword modalityS <+> semiAnnos pretty is
@@ -43,15 +39,9 @@ instance Pretty M_BASIC_ITEM where
         cat [keyword termS <+> keyword modalityS <+> semiAnnos pretty ss
             , space <> specBraces (semiAnnos pretty fs)]
 
-instance PrettyPrint RIGOR where
-    printText0 = toOldText
-
 instance Pretty RIGOR where
     pretty Rigid = keyword rigidS
     pretty Flexible = keyword flexibleS
-
-instance PrettyPrint M_SIG_ITEM where
-    printText0 = toOldText
 
 instance Pretty M_SIG_ITEM where
     pretty (Rigid_op_items r ls _) =
@@ -60,9 +50,6 @@ instance Pretty M_SIG_ITEM where
     pretty (Rigid_pred_items r ls _) =
         cat [pretty r <+> keyword (predS ++ pluralS ls),
              space <> semiAnnos pretty ls]
-
-instance PrettyPrint M_FORMULA where
-    printText0 = toOldText
 
 instance Pretty M_FORMULA where
     pretty (BoxOrDiamond b t f _) =
@@ -74,17 +61,11 @@ instance Pretty M_FORMULA where
                   else less `sp` td `sp` greater)
                : [condParensInnerF (printFormula pretty) parens f]
 
-instance PrettyPrint MODALITY where
-    printText0 = toOldText
-
 instance Pretty MODALITY where
     pretty (Simple_mod ident) =
         if tokStr ident == emptyS then empty
            else pretty ident
     pretty (Term_mod t) = pretty t
-
-instance PrettyPrint ModalSign where
-    printText0 = toOldText
 
 instance Pretty ModalSign where
     pretty = printModalSign

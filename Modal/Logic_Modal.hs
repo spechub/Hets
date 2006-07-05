@@ -21,7 +21,6 @@ import Modal.ModalSign
 import Modal.ATC_Modal()
 import Modal.Parse_AS
 import Modal.StatAna
-import Modal.LaTeX_Modal()
 import CASL.Sign
 import CASL.Morphism
 import CASL.SymbolMapAnalysis
