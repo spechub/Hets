@@ -3,7 +3,7 @@ Module      :  $Header$
 Copyright   :  Heng Jiang, Uni Bremen 2004-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Central data structure for development graphs.
+Test Logic translation for development graphs.
    Follows Sect. IV:4.2 of the CASL Reference Manual.
 -}
 
@@ -29,22 +29,23 @@ import Common.Result
 import Maybe
 
 
+instance Eq GlobalContext where
+    gc1 == gc2 = 
+        (show $ devGraph gc1) == (show $ devGraph gc2)
+
 process :: FilePath -> IO (Maybe (LIB_NAME, LibEnv))
 process = anaLib defaultHetcatsOpts
 
 process2 :: FilePath -> IO (Maybe (LIB_NAME, LibEnv))
-process2 = do  
-    mResult <-anaLib defaultHetcatsOpts
+process2 file = do  
+    mResult <- anaLib defaultHetcatsOpts file
     case mResult of
       Just (libName, gcMap) ->
           case Map.lookup libName gcMap of
             Just gc -> 
-                do putStrLn ("find: " ++ 
-                             (show $ libName) ++ " in " ++ 
-                             (show mResult))
-                   putStrLn $ show gc
+                do putStrLn ("orig: \n" ++ (show $ devGraph gc))
                    gc' <- trans_PCFOL2CFOL gc
-                   putStrLn $ show $ gc'
+                   putStrLn ("translated: \n" ++ (show $ devGraph gc'))
                    if gc == gc' then
                        putStrLn "equals!"
                      else putStrLn "difference!"
@@ -79,6 +80,6 @@ trans_PCFOL2CFOL gc = do
 
 main :: IO()
 main = do
-  files <- getArgs
-  mapM_ process files
+  file <- getArgs
+  mapM_ process2 file
   return ()
