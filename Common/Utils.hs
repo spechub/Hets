@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2004
+Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luettich@tzi.de
@@ -223,17 +223,17 @@ comparing selector x y = compare (selector x) (selector y)
 
 {- | get, parse and check an environment variable; provide the default
   value, only if the envionment variable is not set or the
-  parse-check-function returns a Left value 
+  parse-check-function returns a Left value
 -}
 getEnvSave :: a -- ^ default value
            -> String -- ^ name of environment variable
-           -> (String -> Either b a) -- ^ parse and check value of variable; 
+           -> (String -> Either b a) -- ^ parse and check value of variable;
                          -- for every b the default value is returned
            -> IO a
 getEnvSave defValue envVar readFun = do
    is <- Exception.catch (getEnv envVar >>= (return . Right))
-               (\e -> case e of 
-                      Exception.IOException ie -> 
+               (\e -> case e of
+                      Exception.IOException ie ->
                           if isDoesNotExistError ie -- == NoSuchThing
                           then return $ Left defValue
                           else Exception.throwIO e
@@ -248,20 +248,19 @@ createTempFile :: FilePath      -- ^ parent path, but no separator (\/)
 	       -> FilePath     -- ^ suffix of file (no point)
 	       -> IO Handle
 createTempFile parent preName sufName =
-    do random <- getRandom
+    do randm <- getRandom
        pid <- getProcessID
        time <- getClockTime
        ctime <- toCalendarTime time
-       let outTime = (show $ ctDay ctime) ++ (show $ ctHour ctime)
-                     ++ (show $ ctMin ctime) ++ (show $ ctSec ctime)
+       let outTime = show (ctDay ctime) ++ show (ctHour ctime)
+                     ++ show (ctMin ctime) ++ show (ctSec ctime)
            parentPath = (if length parent == 0
-	   		  then "/tmp/tmp" ++ (show random)
+	   		  then "/tmp/tmp" ++ show randm
 	   		  else parent)
 	   separator = "/"
-	   randomName = (show pid) ++ outTime ++ (show random)
+	   randomName = show pid ++ outTime ++ show randm
 	   abPath = parentPath ++ separator ++ preName ++ randomName ++
                     (if length sufName == 0 then "" else "." ++ sufName)
        openFile abPath WriteMode
     where getRandom :: IO Int
           getRandom = getStdRandom (randomR (10000, 99999))
-	
