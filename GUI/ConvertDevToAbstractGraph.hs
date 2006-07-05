@@ -83,6 +83,14 @@ import List(nub)
 import Control.Monad
 import Control.Monad.Trans
 
+import InfoBus
+import Events
+import Destructible
+import DialogWin (useHTk)
+import System.Exit (ExitCode(ExitSuccess), exitWith)
+import GUI.DGTranslation
+
+
 {- Maps used to track which node resp edge of the abstract graph
 correspondes with which of the development graph and vice versa and
 one Map to store which libname belongs to which development graph-}
@@ -180,7 +188,7 @@ convertGraph graphMem libname libEnv opts =
 initializeGraph :: IORef GraphMem -> LIB_NAME -> DGraph -> ConversionMaps
                      -> GlobalContext -> HetcatsOpts
                      -> IO (Descr,GraphInfo,IORef ConversionMaps)
-initializeGraph ioRefGraphMem ln dGraph convMaps _ opts = do
+initializeGraph ioRefGraphMem ln dGraph convMaps gc opts = do
   graphMem <- readIORef ioRefGraphMem
   event <- newIORef 0
   convRef <- newIORef convMaps
@@ -272,7 +280,11 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts = do
                    Button "Theorem Hide Shift"
                           (proofMenu gInfo (return . return .
                                                    theoremHideShift ln))
-                    ]])]
+                    ],
+                  Menu (Just "Translation")
+                    [Button "DevGraph translation"
+                          (do dg_translation_GUI (ln, Map.singleton ln gc) opts)  ]
+                    ])]
       -- the node types
                [("open_cons__spec",
                  createLocalMenuNodeTypeSpec "Coral" ioRefSubtreeEvents
@@ -1462,4 +1474,27 @@ applyChangesAux2 gid libname grInfo visibleNodes _ convMaps (change:changes) =
                               ++ " of development "
                          ++ "graph does not exist in abstraction graph")
 
+
+dg_translation_GUI :: (LIB_NAME, LibEnv) -> HetcatsOpts -> IO ()
+dg_translation_GUI (ln, libenv) opts = 
+    do newgc <- case Map.lookup ln libenv of
+                  Just gc -> trans_PCFOL2CFOL gc
+                  Nothing -> error "......"
+       let newLibenv = Map.update (\_ -> Just newgc) ln libenv
+       dg_showGraphAux ( \ gm -> convertGraph gm ln newLibenv opts)
+
+dg_showGraphAux :: 
+             (IORef GraphMem -> IO (Descr, GraphInfo, ConversionMaps))
+             -> IO ()
+dg_showGraphAux convFct = do
+            (graphMem,wishInst) <- initializeConverter
+            useHTk -- All messages are displayed in TK dialog windows
+                   -- from this point on
+            (gid, gv, _cmaps) <- convFct graphMem
+            GUI.AbstractGraphView.redisplay gid gv
+            graph <- get_graphid gid gv
+            sync(destroyed graph)
+            destroy wishInst
+            InfoBus.shutdown
+            exitWith ExitSuccess
 
