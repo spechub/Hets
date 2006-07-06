@@ -28,7 +28,7 @@ Integrate stuff from Saarbrücken (what exactly?)
 
 -}
 
-module Proofs.InferBasic (basicInferenceNode, getGoals) where
+module Proofs.InferBasic (basicInferenceNode, getGoals, GetPName()) where
 
 import Static.DevGraph
 import Static.DGToSpec
