@@ -85,6 +85,42 @@ data MathServOperationTypes =
   -- | stands for ProveProblem
   | Problem
 
+{- |
+  A MathServ response structure to be filled by parsing all rdf-objects
+  returned by MathServ.
+-}
+data MathServResponse =
+       MathServResponse { foAtpResult  :: MWFoAtpResult,
+                          timeResource :: MWTimeResource
+                          } deriving (Eq, Ord, Show)
+
+data MWFoAtpResult =
+       MWFoAtpResult { proof       :: MWProof,
+                       time        :: MWTimeResource,
+                       output      :: String
+                       } deriving (Eq, Ord, Show)
+
+data MWProof =
+-- !! other types? maybe add another data structure layer?
+       TstpCnfRefutation { formalProof :: String,
+                           calculus    :: String,
+                           proofOf     :: String,
+                           axioms      :: [String]
+                           } deriving (Eq, Ord, Show)
+
+data MWTimeResource =
+       MWTimeResource { cpuTime       :: TimeValue,
+                        wallClockTime :: TimeValue
+                        } deriving (Eq, Ord, Show)
+
+-- !! maybe replace TimeValue with just Int and cancel dataType?
+data TimeValue =
+       TimeValue { dataType :: String,
+                   value    :: Int
+                   } deriving (Eq, Ord, Show)
+
+
+
 -- ** functions for handling with MathServ services
 
 {- |
@@ -213,12 +249,10 @@ parseMathServOut mathServOut cfg nGoal prName = do
                      else prName ++ " [via MathServ]"
         defaultPrStat = defaultProof_status nGoal prName' tLimit
 
-    -- get some more infos if SPASS was used
-        (res', usedAxs) = if isSPASSOutput output
-                             then parseSPASSOutput output (res, [])
-                             -- the goal itself was used as an axiom
-                             else (res, [AS_Anno.senName nGoal])
-        (atpErr, retval) = proof_stat nGoal res' usedAxs timeout defaultPrStat
+        -- get used axioms if available, otherwise set the goal itself as axiom
+        usedAxs = maybe [AS_Anno.senName nGoal] words $
+                        getXTextValue $ getXPath axiomsXPath rdfTree
+        (atpErr, retval) = proof_stat nGoal res usedAxs timeout defaultPrStat
     return (atpErr,
             cfg{proof_status = retval,
                 resultOutput = output})
@@ -233,6 +267,9 @@ parseMathServOut mathServOut cfg nGoal prName = do
                      ++ "name()='output']/text()"
       resultXPath = "/mw:*[local-name()='FoAtpResult']/mw:*[local-"
                      ++ "name()='status']/attribute::rdf:*/text()"
+      axiomsXPath = "/mw:*[local-name()='FoAtpResult']/mw:*[local-"
+                     ++ "name()='proof']/mw:*/mw:*[local-name()='axioms']"
+                     ++ "/text()"
       re_timeout = mkRegex "Terminated by signal."
 
 {- |
