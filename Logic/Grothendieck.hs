@@ -48,15 +48,14 @@ import Logic.Morphism
 import Logic.Coerce
 import Common.Doc
 import Common.DocUtils
-import Common.PrettyPrint
 import qualified Common.Lib.Graph as Tree
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import Common.Result
 import Common.Utils
 import Common.DynamicUtils
-import qualified Data.List as List
-import Data.Maybe
+import Data.List (nub)
+import Data.Maybe (catMaybes)
 import Control.Monad (foldM, unless)
 
 ------------------------------------------------------------------
@@ -74,9 +73,6 @@ data G_basic_spec = forall lid sublogics
 
 instance Show G_basic_spec where
     show (G_basic_spec _ s) = show s
-
-instance PrettyPrint G_basic_spec where
-    printText0 = toOldText
 
 instance Pretty G_basic_spec where
     pretty (G_basic_spec _ s) = pretty s
@@ -119,9 +115,6 @@ isSubGsign lg (G_sign lid1 sigma1) (G_sign lid2 sigma2) =
 instance Show G_sign where
     show (G_sign _ s) = show s
 
-instance PrettyPrint G_sign where
-    printText0 = toOldText
-
 instance Pretty G_sign where
     pretty (G_sign _ s) = pretty s
 
@@ -158,9 +151,6 @@ data G_symbol = forall lid sublogics
 instance Show G_symbol where
     show (G_symbol _ s) = show s
 
-instance PrettyPrint G_symbol where
-    printText0 = toOldText
-
 instance Pretty G_symbol where
     pretty (G_symbol _ s) = pretty s
 
@@ -180,9 +170,6 @@ data G_symb_items_list = forall lid sublogics
 instance Show G_symb_items_list where
     show (G_symb_items_list _ l) = show l
 
-instance PrettyPrint G_symb_items_list where
-    printText0 = toOldText
-
 instance Pretty G_symb_items_list where
     pretty (G_symb_items_list _ l) = ppWithCommas l
 
@@ -201,9 +188,6 @@ data G_symb_map_items_list = forall lid sublogics
 
 instance Show G_symb_map_items_list where
     show (G_symb_map_items_list _ l) = show l
-
-instance PrettyPrint G_symb_map_items_list where
-    printText0 = toOldText
 
 instance Pretty G_symb_map_items_list where
     pretty (G_symb_map_items_list _ l) = ppWithCommas l
@@ -465,9 +449,6 @@ instance Language Grothendieck
 instance Show GMorphism where
     show (GMorphism cid s m) = show cid ++ "(" ++ show s ++ ")" ++ show m
 
-instance PrettyPrint GMorphism where
-    printText0 = toOldText
-
 instance Pretty GMorphism where
     pretty (GMorphism cid s m) =
       text (show cid)
@@ -603,7 +584,7 @@ compHomInclusion mor1 mor2 = compInclusion emptyLogicGraph mor1 mor2
 -- | Find all (composites of) comorphisms starting from a given logic
 findComorphismPaths :: LogicGraph ->  G_sublogics -> [AnyComorphism]
 findComorphismPaths lg (G_sublogics lid sub) =
-  List.nub $ map fst $ iterateComp (0::Int) [(idc,[idc])]
+  nub $ map fst $ iterateComp (0::Int) [(idc,[idc])]
   where
   idc = Comorphism (IdComorphism lid sub)
   coMors = Map.elems $ comorphisms lg
@@ -611,7 +592,7 @@ findComorphismPaths lg (G_sublogics lid sub) =
   iterateComp n l = -- (l::[(AnyComorphism,[AnyComorphism])]) =
     if n>3 || l==newL then newL else iterateComp (n+1) newL
     where
-    newL = List.nub (l ++ (concat (map extend l)))
+    newL = nub (l ++ (concat (map extend l)))
     -- extend comorphism list in all directions, but no cylces
     extend (coMor,comps) =
        let addCoMor c =
