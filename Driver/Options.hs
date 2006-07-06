@@ -560,7 +560,7 @@ guess :: String -> InType -> InType
 guess file GuessIn = guessInType file
 guess _file itype  = itype
 
--- | 'guessInType' parses an 'InType' from the FilePath to our 'InFile'
+-- | 'guessInType' parses an 'InType' from the FilePath
 guessInType :: FilePath -> InType
 guessInType file =
     case fileparse downloadExtensions file of
@@ -615,7 +615,7 @@ checkFlags fs =
           fs' <- collectFlags fs
           return fs'
 
--- | 'checkInFiles' checks all given InFiles for sanity
+-- | 'checkInFiles' checks all given input files for sanity
 checkInFiles :: [String] -> IO [FilePath]
 checkInFiles fs =
        case fs of
@@ -633,7 +633,7 @@ checkInFiles fs =
 
 -- auxiliary functions: FileSystem interaction --
 
--- | 'checkInFile' checks a single InFile for sanity
+-- | 'checkInFile' checks a single input file for sanity
 checkInFile :: FilePath -> IO Bool
 checkInFile file =
     do exists <- doesFileExist file
