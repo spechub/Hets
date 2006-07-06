@@ -43,7 +43,6 @@ import Proofs.GUIState
 import Common.Id
 import Common.Result
 import Common.ResultT
-import Common.PrettyPrint
 import Common.Utils
 
 import qualified Common.Lib.Map as Map
@@ -87,12 +86,12 @@ instance GetPName G_cons_checker where
 -- | Pairs each target prover of these comorphisms with its comorphism
 getProvers :: [AnyComorphism] -> [(G_prover, AnyComorphism)]
 getProvers = foldl addProvers []
-    where addProvers acc cm = 
-              case cm of 
-              Comorphism cid -> acc ++ 
-                  map (\p -> (G_prover (targetLogic cid) p,cm)) 
-                      (provers $ targetLogic cid) 
-           
+    where addProvers acc cm =
+              case cm of
+              Comorphism cid -> acc ++
+                  map (\p -> (G_prover (targetLogic cid) p,cm))
+                      (provers $ targetLogic cid)
+
 
 {-     [(G_prover (targetLogic cid) p, cm) |
         cm@(Comorphism cid) <- cms,
@@ -100,13 +99,13 @@ getProvers = foldl addProvers []
 -}
 getConsCheckers :: [AnyComorphism] -> [(G_cons_checker, AnyComorphism)]
 getConsCheckers = foldl addCCs []
-    where addCCs acc cm = 
-              case cm of 
-              Comorphism cid -> acc ++ 
-                  map (\p -> (G_cons_checker (targetLogic cid) p,cm)) 
-                      (cons_checkers $ targetLogic cid) 
+    where addCCs acc cm =
+              case cm of
+              Comorphism cid -> acc ++
+                  map (\p -> (G_cons_checker (targetLogic cid) p,cm))
+                      (cons_checkers $ targetLogic cid)
 
-selectProver :: GetPName a => 
+selectProver :: GetPName a =>
                 [(a,AnyComorphism)] -> ResultT IO (a,AnyComorphism)
 selectProver [p] = return p
 selectProver [] = liftR $ fatal_error "No prover available" nullRange
@@ -149,7 +148,7 @@ basicInferenceNode checkCons lg (ln, node) libname libEnv = do
                     $ maybeToMonad ("Could not find node "++show node)
                     $ fst $ match node dGraph
         let nodeName = dgn_name $ lab' ctx
-            thName = showPretty (getLIB_ID ln) "_"
+            thName = shows (getLIB_ID ln) "_"
                      ++ {-maybe (show node)-} showName nodeName
             sublogic = sublogicOfTh thForProof
         -- select a suitable translation and prover
@@ -224,9 +223,9 @@ proveKnownPMap st =
                                G_prover _ p -> prover_name p == s
     in case mt of
        Nothing -> proveFineGrainedSelect st
-       Just (pr_n,cm) -> 
-           callProver st 
-                      (case filter (matchingPr pr_n) $ 
+       Just (pr_n,cm) ->
+           callProver st
+                      (case filter (matchingPr pr_n) $
                             getProvers [cm] of
                        [] -> error "Proofs.InferBasic: no prover found"
                        [p] -> p

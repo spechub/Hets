@@ -12,7 +12,6 @@ Printing the Structured part of hetrogenous specifications.
 
 module Syntax.Print_AS_Structured where
 
-import Common.PrettyPrint
 import Common.Id
 import Common.Keywords
 import Common.Doc
@@ -76,12 +75,6 @@ printSPEC  spec = case spec of
       printLogicEncoding ln <> colon $+$ (pretty asp)
     Data _ _ s1 s2 _ -> keyword dataS <+> pretty s1 $+$ pretty s2
 
-instance PrettyPrint SPEC where
-    printText0 = toOldText
-
-instance PrettyPrint RENAMING where
-    printText0 = toOldText
-
 instance Pretty RENAMING where
     pretty = printRENAMING
 
@@ -97,18 +90,8 @@ printRESTRICTION rest = case rest of
     Hidden aa _ -> keyword hideS <+> ppWithCommas aa
     Revealed aa _ -> keyword revealS <+> pretty aa
 
-instance PrettyPrint RESTRICTION where
-    printText0 = toOldText
-
-{- Is declared in Print_AS_Library
-instance PrettyPrint SPEC_DEFN where
--}
-
 printLogicEncoding :: (Pretty a) =>  a -> Doc
 printLogicEncoding enc = keyword logicS <+> pretty enc
-
-instance PrettyPrint G_mapping where
-    printText0 = toOldText
 
 instance Pretty G_mapping where
     pretty = printG_mapping
@@ -126,9 +109,6 @@ printG_hiding ghid = case ghid of
     G_symb_list gsil -> pretty gsil
     G_logic_projection enc -> printLogicEncoding enc
 
-instance PrettyPrint G_hiding where
-    printText0 = toOldText
-
 instance Pretty GENERICITY where
     pretty = printGENERICITY
 
@@ -136,20 +116,11 @@ printGENERICITY :: GENERICITY -> Doc
 printGENERICITY (Genericity aa ab _) =
     fcat $ printPARAMS aa ++ printIMPORTED ab
 
-instance PrettyPrint GENERICITY where
-    printText0 = toOldText
-
 instance Pretty PARAMS where
     pretty = fcat . printPARAMS
 
 printPARAMS :: PARAMS -> [Doc]
 printPARAMS (Params aa) = map (brackets . rmTopKey . pretty ) aa
-
-instance PrettyPrint PARAMS where
-    printText0 = toOldText
-
-instance PrettyPrint IMPORTED where
-    printText0 = toOldText
 
 instance Pretty IMPORTED where
     pretty = fcat . printIMPORTED
@@ -173,12 +144,6 @@ printFIT_ARG fit = case fit of
     Fit_view si ab _ ->
         keyword viewS <+> fcat (structSimpleId si : print_fit_arg_list ab)
 
-instance PrettyPrint FIT_ARG where
-    printText0 = toOldText
-
-instance PrettyPrint Logic_code where
-    printText0 = toOldText
-
 instance Pretty Logic_code where
     pretty = printLogic_code
 
@@ -196,9 +161,6 @@ printLogic_name (Logic_name mlog slog) = let d = pretty mlog in
     case slog of
       Nothing -> d
       Just sub -> d <> dot <> pretty sub
-
-instance PrettyPrint Logic_name where
-    printText0 = toOldText
 
 -----------------------------------------------
 {- |

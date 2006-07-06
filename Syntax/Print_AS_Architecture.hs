@@ -1,7 +1,6 @@
-{-|
-
+{- |
 Module      :  $Header$
-Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2004
+Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luettich@tzi.de
@@ -15,14 +14,10 @@ module Syntax.Print_AS_Architecture where
 
 import Common.Doc
 import Common.DocUtils
-import Common.PrettyPrint
 import Common.Keywords
 
 import Syntax.AS_Architecture
 import Syntax.Print_AS_Structured
-
-instance PrettyPrint ARCH_SPEC where
-    printText0 = toOldText
 
 instance Pretty ARCH_SPEC where
     pretty a = case a of
@@ -32,15 +27,9 @@ instance Pretty ARCH_SPEC where
         Arch_spec_name aa -> pretty aa
         Group_arch_spec aa _ -> specBraces $ pretty aa
 
-instance PrettyPrint UNIT_REF where
-    printText0 = toOldText
-
 instance Pretty UNIT_REF where
     pretty (Unit_ref aa ab  _) =
         fsep [structSimpleId aa, keyword toS, pretty ab]
-
-instance PrettyPrint UNIT_DECL_DEFN where
-    printText0 = toOldText
 
 instance Pretty UNIT_DECL_DEFN where
     pretty ud = case ud of
@@ -50,9 +39,6 @@ instance Pretty UNIT_DECL_DEFN where
                      keyword givenS : punctuate comma (map pretty ac)
         Unit_defn aa ab _ -> fsep $ [structSimpleId aa, equals, pretty ab]
 
-instance PrettyPrint UNIT_SPEC where
-    printText0 = toOldText
-
 instance Pretty UNIT_SPEC where
     pretty u = case u of
         Unit_type aa ab _ ->
@@ -61,9 +47,6 @@ instance Pretty UNIT_SPEC where
              punctuate (space <> cross) (map pretty aa) ++ [funArrow, ab']
         Spec_name aa -> pretty aa
         Closed_unit_spec aa _ -> fsep [keyword closedS, pretty aa]
-
-instance PrettyPrint REF_SPEC where
-    printText0 = toOldText
 
 instance Pretty REF_SPEC where
     pretty rs = case rs of
@@ -83,9 +66,6 @@ instance Pretty REF_SPEC where
         Component_ref aa _ ->
             specBraces $ ppWithCommas aa
 
-instance PrettyPrint UNIT_EXPRESSION where
-    printText0 = toOldText
-
 instance Pretty UNIT_EXPRESSION where
     pretty (Unit_expression aa ab _) =
         let ab' = pretty ab
@@ -94,17 +74,11 @@ instance Pretty UNIT_EXPRESSION where
                     punctuate semi (map pretty aa)
                     ++ [addBullet ab']
 
-instance PrettyPrint UNIT_BINDING where
-    printText0 = toOldText
-
 instance Pretty UNIT_BINDING where
     pretty (Unit_binding aa ab _) =
         let aa' = pretty aa
             ab' = pretty ab
         in fsep [aa', colon, ab']
-
-instance PrettyPrint UNIT_TERM where
-    printText0 = toOldText
 
 instance Pretty UNIT_TERM where
     pretty ut = case ut of
@@ -125,9 +99,6 @@ instance Pretty UNIT_TERM where
                         ++ [keyword withinS, pretty ab]
         Unit_appl aa ab _ -> fsep $ structSimpleId aa : map pretty ab
         Group_unit_term aa _ -> specBraces $ pretty aa
-
-instance PrettyPrint FIT_ARG_UNIT where
-    printText0 = toOldText
 
 instance Pretty FIT_ARG_UNIT where
     pretty (Fit_arg_unit aa ab _) = brackets $

@@ -12,7 +12,6 @@ pretty printing for heterogenous libraries in HetCASL.
 
 module Syntax.Print_AS_Library where
 
-import Common.PrettyPrint
 import Common.Id
 import Common.Doc
 import Common.DocUtils
@@ -25,18 +24,12 @@ import Common.AS_Annotation
 import Syntax.Print_AS_Architecture()
 import Syntax.Print_AS_Structured
 
-instance PrettyPrint LIB_DEFN where
-    printText0 = toOldText
-
 instance Pretty LIB_DEFN where
     pretty (Lib_defn aa ab _ ad) =
         let aa' = pretty aa              -- lib name
             ab' = vsep $ map pretty ab -- LIB_ITEMs
             ad' = vcat $ map pretty ad -- global ANNOTATIONs
         in keyword libraryS <+> aa' $++$ ad' $++$ ab'
-
-instance PrettyPrint LIB_ITEM where
-    printText0 = toOldText
 
 instance Pretty LIB_ITEM where
     pretty li =
@@ -90,9 +83,6 @@ instance Pretty LIB_ITEM where
         Syntax.AS_Library.Logic_decl aa _ ->
             keyword logicS <+> pretty aa
 
-instance PrettyPrint ITEM_NAME_OR_MAP where
-    printText0 = toOldText
-
 instance Pretty ITEM_NAME_OR_MAP where
     pretty l = case l of
         Item_name aa -> structSimpleId aa
@@ -105,20 +95,11 @@ instance Pretty LIB_NAME where
             fsep [pretty i, keyword versionS, pretty v]
         Lib_id i -> pretty i
 
-instance PrettyPrint LIB_NAME where
-    printText0 = toOldText
-
 instance Pretty LIB_ID where
     pretty l = structId $ case l of
         Direct_link u _ -> u
         Indirect_link p _ -> p
 
-instance PrettyPrint LIB_ID where
-    printText0 = toOldText
-
 instance Pretty VERSION_NUMBER where
     pretty (Version_number aa _) =
         hcat $ punctuate dot $ map (pretty . mkSimpleId) aa
-
-instance PrettyPrint VERSION_NUMBER where
-    printText0 = toOldText
