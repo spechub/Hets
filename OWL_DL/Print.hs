@@ -19,7 +19,6 @@ Pretty printing for OWL DL theories.
 
 module OWL_DL.Print where
 
-import Common.PrettyPrint
 import Common.Doc
 import Common.DocUtils
 
@@ -28,12 +27,6 @@ import OWL_DL.AS
 
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
-
-instance PrintLaTeX Sign where
-  printLatex0 = toOldLatex
-
-instance PrettyPrint Sign where
-  printText0 = toOldText
 
 instance Pretty Sign where
     pretty = printSign
@@ -50,9 +43,6 @@ printSign (Sign _ p2 p3 p4 p5 p6 _ p8 p9 p10) =
     ((text "sign_axioms") $+$ (foldSetToDoc2 p9)) $+$ 
     empty
 
-instance PrettyPrint URIreference where
-    printText0 = toOldText 
-
 instance Pretty URIreference where
     pretty = printURIreference
 
@@ -64,9 +54,6 @@ printURIreference (QN prefix localpart uri)
                            else text $ show (uri ++ ":" ++ localpart)
     | otherwise =   text $ show ( prefix ++ ":" ++ localpart)
 
-instance PrettyPrint Namespace where
-    printText0 =  toOldText
-
 instance Pretty Namespace where
     pretty = printNamespace
 
@@ -75,12 +62,6 @@ printNamespace nsMap =
     vcat $ map pp (Map.toList nsMap)  
        where pp :: (String, String) -> Doc
              pp (s1,s2) = text s1 <> defn <> text s2
-
-instance PrintLaTeX Sentence where
-    printLatex0 = toOldLatex
-
-instance PrettyPrint Sentence where
-    printText0 = toOldText
 
 instance Pretty Sentence where
     pretty = printSentence
@@ -91,9 +72,6 @@ printSentence sent = case sent of
     OWLFact fact   -> printFact fact
 
 -- not necessary
-instance PrettyPrint Ontology where
-    printText0 = toOldText
-
 instance Pretty Ontology where
     pretty = printOntology
 
@@ -106,12 +84,6 @@ printOntology (Ontology maybeID directives ns) =
             ) $+$
     (fsep $ map printDirective directives) $+$
     printNamespace ns
-
-instance PrintLaTeX Ontology where
-    printLatex0 = toOldLatex
-
-instance PrettyPrint Directive where
-    printText0 = toOldText
 
 instance Pretty Directive where
     pretty = printDirective
@@ -218,10 +190,7 @@ printAxiom axiom = case axiom of
                                              text "x z")))
 	           _  -> text "" 
     u -> text $ show u
-    
-instance PrettyPrint Axiom where
-    printText0 = toOldText
-	      	
+    	      	
 instance Pretty SignAxiom where	 
     pretty = printSignAxiom
 
@@ -272,12 +241,6 @@ printSignAxiom signAxiom = case signAxiom of
     Conceptmembership iID desc ->
       parens (printDescription 0 iID desc <+> printURIreference iID)    
 
-instance PrettyPrint SignAxiom where
-    printText0 = toOldText
-             
-instance PrettyPrint RDomain where
-    printText0 = toOldText
-
 instance Pretty RDomain where
     pretty = printRDomain
 
@@ -287,9 +250,6 @@ printRDomain (RDomain desc) =
       DC cid -> printURIreference cid <+> text "x"
       _      -> printDescription 0 emptyQN desc  -- ToDo: level hierachie
 
-instance PrettyPrint RRange where
-    printText0 = toOldText
-
 instance Pretty RRange where 
     pretty = printRRange
 
@@ -297,9 +257,6 @@ printRRange :: RRange -> Doc
 printRRange rRange = case rRange of
     RIRange desc -> printDescription 0 emptyQN desc -- ToDo: level hierachie
     RDRange dataRange -> printDataRange dataRange
-
-instance PrettyPrint DataRange where
-    printText0 = toOldText
 
 instance Pretty DataRange where               
     pretty = printDataRange
@@ -329,9 +286,6 @@ printDataRange dr = case dr of
                           _             -> False
         allEqTypedLit _ = False
 
-instance PrettyPrint DataLiteral where
-    printText0 = toOldText
-
 instance Pretty DataLiteral where
     pretty = printDataLiteral
 
@@ -344,9 +298,6 @@ printDataLiteral dl = case dl of
     RDFSL rdfLit     -> text rdfLit
 
 -- default handler of restriction
-instance PrettyPrint Restriction where
-    printText0 = toOldText
-
 instance Pretty Restriction where
     pretty = printRestriction
 
@@ -414,10 +365,6 @@ printRestriction2 origVar tmpVar ipID (h:r) = case h of
         (printCard origVar ipID cardinality)  $+$
         (printRestriction2 origVar tmpVar ipID r)      
    
-
-instance PrettyPrint Description where
-    printText0 = toOldText
-
 instance Pretty Description where
     pretty = printDescription 0 emptyQN
 
@@ -532,9 +479,6 @@ printCard level pid card = case card of
 	text "))" $+$
 	text ")" 
 
-instance PrettyPrint Fact where
-    printText0 = toOldText
-
 instance Pretty Fact where
     pretty = printFact
 
@@ -604,9 +548,6 @@ printAnonymIndividual iid' ipID typesI valuesI level=
        printIndividual1 (Just $ simpleQN $ choiceName level) 
                          valuesI (level+1)))))
 
-instance PrettyPrint Individual where
-   printText0 = toOldText
-           
 foldSetToDoc2 :: (Pretty a) => Set.Set a -> Doc
 foldSetToDoc2 = vcat . punctuate comma . map pretty . Set.toList
 
