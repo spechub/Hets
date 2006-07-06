@@ -13,11 +13,10 @@ The Sokrates example from the SPASS tutorial at
 -}
 
 import SPASS.Sign
-import SPASS.Print
 
 import Common.AS_Annotation
-import Common.PrettyPrint
-import Common.Lib.Pretty
+
+main = return () -- to allow for make SPASS/tests/Sokrates.o
 
 sokratesProblem :: SPProblem
 sokratesProblem = SPProblem { identifier = "Sokrates1",
