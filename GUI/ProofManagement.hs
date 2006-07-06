@@ -10,12 +10,6 @@ Portability :  needs POSIX
 
 Goal management GUI for the structured level similar to how 'SPASS.Prove'
 works for SPASS.
-
--}
-
-{- ToDo:
-
-   -
 -}
 
 module GUI.ProofManagement (proofManagementGUI) where
@@ -119,7 +113,7 @@ goalsView = map toStatus . OMap.toList . goalMap
 -}
 populatePathsListBox :: ListBox String
                      -> KnownProvers.KnownProversMap
-		     -> IO ()
+                     -> IO ()
 populatePathsListBox lb prvs = do
   lb # HTk.value (Map.keys prvs)
   return ()
@@ -204,7 +198,7 @@ updateStateGetSelectedSens s lbAxs lbThs =
 -}
 doSelectAllEntries :: Bool -- ^ indicates wether all entries should be selected
                          -- or deselected
-		 -> ListBox a
+                 -> ListBox a
                  -> IO ()
 doSelectAllEntries selectAll lb =
   if selectAll
@@ -287,7 +281,7 @@ doShowProofDetails s@(ProofGUIState { theoryName = thName}) =
   Called whenever a prover is selected from the "Pick Theorem Prover" ListBox.
 -}
 doSelectProverPath :: ProofGUIState lid sentence
-		   -> ListBox String
+                   -> ListBox String
                    -> IO (ProofGUIState lid sentence)
 doSelectProverPath s lb =
     do selected <- (getSelection lb) :: IO (Maybe [Int])
@@ -589,12 +583,12 @@ proofManagementGUI lid proveF fineGrainedSelectionF
              enableWidsUponSelection lb goalSpecificWids
              done)
       +> (deselectAllGoals >>> do
-	    doSelectAllEntries False lb
+            doSelectAllEntries False lb
             disableWids goalSpecificWids
             modifyIORef stateRef (\s -> s{selectedGoals = []})
             done)
       +> (selectAllGoals >>> do
-	    doSelectAllEntries True lb
+            doSelectAllEntries True lb
             enableWids goalSpecificWids
             modifyIORef stateRef
                             (\s -> s{selectedGoals = OMap.keys (goalMap s)})
@@ -610,52 +604,52 @@ proofManagementGUI lid proveF fineGrainedSelectionF
                                      OMap.keys (goalMap s)})
             done)
       +> (deselectAllAxs >>> do
-	    doSelectAllEntries False lbAxs
+            doSelectAllEntries False lbAxs
             modifyIORef stateRef (\s -> s{includedAxioms = []})
             done)
       +> (deselectAllThs >>> do
-	    doSelectAllEntries False lbThs
+            doSelectAllEntries False lbThs
             modifyIORef stateRef (\s -> s{includedTheorems = []})
             done)
       +> (displayGoals >>> do
             s <- readIORef stateRef
             s' <- updateStateGetSelectedGoals s lb
-	    doDisplayGoals s'
+            doDisplayGoals s'
             done)
       +> (selectProverPath>>> do
             s <- readIORef stateRef
-	    s' <- doSelectProverPath s pathsLb
-	    writeIORef stateRef s'
+            s' <- doSelectProverPath s pathsLb
+            writeIORef stateRef s'
             done)
       +> (moreProverPaths >>> do
             s <- readIORef stateRef
-	    let s' = s{proverRunning = True}
-	    updateDisplay s' True lb pathsLb statusLabel
+            let s' = s{proverRunning = True}
+            updateDisplay s' True lb pathsLb statusLabel
             disableWids wids
             prState <- (updateStateGetSelectedSens s' lbAxs lbThs >>=
                         (\ si -> updateStateGetSelectedGoals si lb))
             writeIORef stateRef prState
-	    Result.Result ds ms'' <- fineGrainedSelectionF prState
+            Result.Result ds ms'' <- fineGrainedSelectionF prState
             s'' <- case ms'' of
                    Nothing -> fail "fineGrainedSelection returned Nothing"
                    Just res -> return res
-	    let s''' = s'' {proverRunning = False,accDiags = accDiags s'' ++ ds}
+            let s''' = s'' {proverRunning = False,accDiags = accDiags s'' ++ ds}
             enableWids wids
-	    updateDisplay s''' True lb pathsLb statusLabel
+            updateDisplay s''' True lb pathsLb statusLabel
             putWinOnTop main
-	    writeIORef stateRef s'''
+            writeIORef stateRef s'''
             done)
       +> (doProve >>> do
             s <- readIORef stateRef
-	    let s' = s{proverRunning = True}
-	    updateDisplay s' True lb pathsLb statusLabel
+            let s' = s{proverRunning = True}
+            updateDisplay s' True lb pathsLb statusLabel
             disableWids wids
             prState <- (updateStateGetSelectedSens s' lbAxs lbThs >>=
                         (\ si -> updateStateGetSelectedGoals si lb))
             -- putStrLn (show (includedAxioms prState)++
             --                   ' ':show (includedTheorems prState))
             writeIORef stateRef prState
-	    Result.Result ds ms'' <- proveF prState
+            Result.Result ds ms'' <- proveF prState
             curSt <- readIORef stateRef
             if proofManagementDestroyed curSt
                then done
@@ -663,17 +657,17 @@ proofManagementGUI lid proveF fineGrainedSelectionF
              s'' <- case ms'' of
                    Nothing -> fail "proveF returned Nothing"
                    Just res -> return res
-	     let s''' = s''{proverRunning = False,
+             let s''' = s''{proverRunning = False,
                            accDiags = accDiags s'' ++ ds}
              enableWids wids
-	     updateDisplay s''' True lb pathsLb statusLabel
+             updateDisplay s''' True lb pathsLb statusLabel
              putWinOnTop main
-	     writeIORef stateRef s'''
+             writeIORef stateRef s'''
              done)
       +> (showProofDetails >>> do
             s <- readIORef stateRef
             s' <- updateStateGetSelectedGoals s lb
-	    doShowProofDetails s'
+            doShowProofDetails s'
             done)
       ))
   sync ( (close >>> destroy main)

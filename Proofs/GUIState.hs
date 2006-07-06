@@ -10,7 +10,6 @@ Portability :  non-portable(Logic)
 
 The 'ProofGUIState' data structure abstracts the GUI implementation details
 away by allowing callback function to use it as the sole input and output.
-
 -}
 
 module Proofs.GUIState where
@@ -35,16 +34,16 @@ data ProofGUIState lid sentence =
      ProofGUIState 
       { -- | theory name
         theoryName :: String,
-	-- | Grothendieck theory
-	theory :: G_theory,
+        -- | Grothendieck theory
+        theory :: G_theory,
         -- | logic id associated with following maps
         logicId :: lid,
         -- | sublogic of initial G_theory
         sublogicOfTheory :: G_sublogics,
         -- | goals are stored in a separate map
         goalMap :: ThSens sentence (AnyComorphism,BasicProof),
-	-- | currently known provers
-	proversMap :: KnownProversMap,
+        -- | currently known provers
+        proversMap :: KnownProversMap,
         -- | comorphisms fitting with sublogic of this G_theory
         comorphismsToProvers :: [(G_prover,AnyComorphism)],
         -- | currently selected goals
@@ -73,7 +72,7 @@ initialState ::
                 lid1
               -> String
              -> G_theory
-	     -> KnownProversMap
+             -> KnownProversMap
              -> [(G_prover,AnyComorphism)]
              -> m (ProofGUIState lid1 sentence1)
 initialState lid1 thN th@(G_theory lid2 sig thSens) pm cms = 
@@ -81,11 +80,11 @@ initialState lid1 thN th@(G_theory lid2 sig thSens) pm cms =
        gMap' <- coerceThSens lid2 lid1 "creating initial GUI State" gMap
        return $ 
            ProofGUIState { theoryName = thN,
-		           theory = G_theory lid2 sig aMap,
+                           theory = G_theory lid2 sig aMap,
                            sublogicOfTheory = sublogicOfTh th,
                            logicId = lid1,
                            goalMap = gMap',
-		           proversMap = pm,
+                           proversMap = pm,
                            comorphismsToProvers = cms,
                            selectedGoals = [],
                            includedAxioms = OMap.keys aMap,

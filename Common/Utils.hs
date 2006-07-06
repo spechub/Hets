@@ -244,9 +244,9 @@ getEnvSave defValue envVar readFun = do
   create a temp file.
 -}
 createTempFile :: FilePath      -- ^ parent path, but no separator (\/)
-	       -> FilePath     -- ^ name of file (prefix)
-	       -> FilePath     -- ^ suffix of file (no point)
-	       -> IO Handle
+               -> FilePath     -- ^ name of file (prefix)
+               -> FilePath     -- ^ suffix of file (no point)
+               -> IO Handle
 createTempFile parent preName sufName =
     do randm <- getRandom
        pid <- getProcessID
@@ -255,11 +255,11 @@ createTempFile parent preName sufName =
        let outTime = show (ctDay ctime) ++ show (ctHour ctime)
                      ++ show (ctMin ctime) ++ show (ctSec ctime)
            parentPath = (if length parent == 0
-	   		  then "/tmp/tmp" ++ show randm
-	   		  else parent)
-	   separator = "/"
-	   randomName = show pid ++ outTime ++ show randm
-	   abPath = parentPath ++ separator ++ preName ++ randomName ++
+                          then "/tmp/tmp" ++ show randm
+                          else parent)
+           separator = "/"
+           randomName = show pid ++ outTime ++ show randm
+           abPath = parentPath ++ separator ++ preName ++ randomName ++
                     (if length sufName == 0 then "" else "." ++ sufName)
        openFile abPath WriteMode
     where getRandom :: IO Int
