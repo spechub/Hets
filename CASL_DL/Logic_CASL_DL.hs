@@ -10,9 +10,6 @@ Portability :  portable
 Instance of class Logic for CASL DL.
 -}
 
-{- todo:
--}
-
 module CASL_DL.Logic_CASL_DL (CASL_DL(..)) where
 
 import Common.Result
@@ -23,7 +20,6 @@ import CASL_DL.PredefinedSign
 import CASL_DL.ATC_CASL_DL ()
 import CASL_DL.Parse_AS ()
 import CASL_DL.StatAna
-import CASL_DL.LaTeX_AS ()
 
 import CASL.Sign
 import CASL.Morphism
@@ -41,7 +37,7 @@ import Logic.Logic
 data CASL_DL = CASL_DL deriving Show
 
 instance Language CASL_DL  where
- description _ = 
+ description _ =
   "CASL_DL is at the same time an extension and a restriction of CASL.\n\
   \It additionally provides cardinality restrictions in a description logic\n\
   \sense; and it limits the expressivity of CASL to the description logic\n\
@@ -54,7 +50,7 @@ instance Language CASL_DL  where
 type DLMor = Morphism DL_FORMULA CASL_DLSign ()
 type DLFORMULA = FORMULA DL_FORMULA
 
-instance Category CASL_DL DLSign DLMor  
+instance Category CASL_DL DLSign DLMor
     where
          -- ide :: id -> object -> morphism
          ide CASL_DL = idMor dummy
@@ -72,10 +68,10 @@ instance Category CASL_DL DLSign DLMor
 
 instance Syntax CASL_DL DL_BASIC_SPEC
                 SYMB_ITEMS SYMB_MAP_ITEMS
-      where 
+      where
          parse_basic_spec CASL_DL = Just $ basicSpec casl_DL_reserved_words
          parse_symb_items CASL_DL = Just $ symbItems casl_DL_reserved_words
-         parse_symb_map_items CASL_DL = 
+         parse_symb_map_items CASL_DL =
              Just $ symbMapItems casl_DL_reserved_words
 
 -- CASL_DL logic
@@ -94,7 +90,7 @@ instance Sentences CASL_DL DLFORMULA () DLSign DLMor Symbol where
       sym_of CASL_DL = symOf
       symmap_of CASL_DL = morphismToSymbMap
       sym_name CASL_DL = symName
-      provers CASL_DL = [] 
+      provers CASL_DL = []
       cons_checkers CASL_DL = []
       simplify_sen CASL_DL = simplifySen minDLForm simplifyCD
 
@@ -116,14 +112,14 @@ simplifyCD sign (Cardinality ct ps t1 t2 r) = simpCard
 
 instance StaticAnalysis CASL_DL DL_BASIC_SPEC DLFORMULA ()
                SYMB_ITEMS SYMB_MAP_ITEMS
-               DLSign 
-               DLMor 
+               DLSign
+               DLMor
                Symbol RawSymbol where
          basic_analysis CASL_DL = Just $ basicCASL_DLAnalysis
-         stat_symb_map_items CASL_DL sml = 
-             statSymbMapItems sml >>= checkSymbolMapDL 
+         stat_symb_map_items CASL_DL sml =
+             statSymbMapItems sml >>= checkSymbolMapDL
          stat_symb_items CASL_DL = statSymbItems
-         ensures_amalgamability CASL_DL _ = 
+         ensures_amalgamability CASL_DL _ =
              fail "CASL_DL: ensures_amalgamability nyi" -- ???
 
          sign_to_basic_spec CASL_DL _sigma _sens = Basic_spec [] -- ???
@@ -131,9 +127,9 @@ instance StaticAnalysis CASL_DL DL_BASIC_SPEC DLFORMULA ()
          symbol_to_raw CASL_DL = symbolToRaw
          id_to_raw CASL_DL = idToRaw
          matches CASL_DL = CASL.Morphism.matches
-         
+
          empty_signature CASL_DL = predefinedSign
-         signature_union CASL_DL sigma1 sigma2 = 
+         signature_union CASL_DL sigma1 sigma2 =
            return $ addSig addCASL_DLSign sigma1 sigma2
          morphism_union CASL_DL = morphismUnion (const id) addCASL_DLSign
          final_union CASL_DL = finalUnion addCASL_DLSign
@@ -142,13 +138,13 @@ instance StaticAnalysis CASL_DL DL_BASIC_SPEC DLFORMULA ()
          cogenerated_sign CASL_DL = cogeneratedSign dummy
          generated_sign CASL_DL = generatedSign dummy
          induced_from_morphism CASL_DL = inducedFromMorphism dummy
-         induced_from_to_morphism CASL_DL = 
+         induced_from_to_morphism CASL_DL =
              inducedFromToMorphism dummy isSubCASL_DLSign
          theory_to_taxonomy CASL_DL = convTaxo
 
 instance Logic CASL_DL ()
                DL_BASIC_SPEC DLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
-               DLSign 
+               DLSign
                DLMor
                Symbol RawSymbol () where
          stability _ = Unstable
