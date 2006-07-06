@@ -15,7 +15,8 @@ module HasCASL.TypeMixAna (mkTypeConstrAppl) where
 
 import HasCASL.As
 import HasCASL.AsUtils
-import HasCASL.PrintAs()
+import HasCASL.PrintAs ()
+import Common.DocUtils
 import Common.Id
 import Common.Result
 
@@ -72,7 +73,7 @@ mkTypeConstrAppls m ty = case ty of
                 mTs <- mapM (mkTypeConstrAppls TopLevel) ts
                 return $ mkTypeAppl top mTs
            else error "mkTypeConstrAppls"
-       _ -> error $ "mkTypeConstrAppls " ++ showPretty ty "\n" ++ show ty
+       _ -> error $ "mkTypeConstrAppls " ++ showDoc ty "\n" ++ show ty
 
 isPlaceType :: Type -> Bool
 isPlaceType ty = case ty of 

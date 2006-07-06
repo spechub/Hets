@@ -15,13 +15,6 @@ module Comorphisms.PCoClTyConsHOL2IsabelleHOL
 
 import Logic.Logic as Logic
 import Logic.Comorphism
-import Common.Id
-import Common.Result
-import qualified Common.Lib.Map as Map
-import Common.AS_Annotation (Named(..))
-
-import Data.List
-import Data.Maybe
 
 import HasCASL.Logic_HasCASL
 import HasCASL.Sublogic
@@ -35,6 +28,14 @@ import Isabelle.IsaSign as Isa
 import Isabelle.IsaConsts
 import Isabelle.Logic_Isabelle
 import Isabelle.Translate
+
+import Common.DocUtils
+import Common.Id
+import Common.Result
+import qualified Common.Lib.Map as Map
+import Common.AS_Annotation (Named(..))
+
+import Data.List (elemIndex)
 
 -- | The identity of the comorphism
 data PCoClTyConsHOL2IsabelleHOL = PCoClTyConsHOL2IsabelleHOL deriving Show
@@ -317,7 +318,7 @@ transTerm sign trm = case trm of
                    $ map (transTerm sign) ts
     TupleTerm [] _ -> (UnitType, unitOp)
     ApplTerm t1 t2 _ -> mkApp sign t1 t2 -- transAppl sign Nothing t1 t2
-    _ -> error $ "PCoClTyConsHOL2IsabelleHOL.transTerm " ++ showPretty trm "\n"
+    _ -> error $ "PCoClTyConsHOL2IsabelleHOL.transTerm " ++ showDoc trm "\n"
                 ++ show trm
 
 instType :: FunType -> FunType -> ConvFun

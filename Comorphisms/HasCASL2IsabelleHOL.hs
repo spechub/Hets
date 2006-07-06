@@ -14,13 +14,6 @@ module Comorphisms.HasCASL2IsabelleHOL where
 
 import Logic.Logic as Logic
 import Logic.Comorphism
-import Common.Id
-import Common.Result
-import qualified Common.Lib.Map as Map
-import Common.AS_Annotation (Named(..))
-
-import Data.List
-import Data.Maybe
 
 import HasCASL.Logic_HasCASL
 import HasCASL.Sublogic
@@ -33,6 +26,15 @@ import Isabelle.IsaSign as IsaSign
 import Isabelle.IsaConsts
 import Isabelle.Logic_Isabelle
 import Isabelle.Translate
+
+import Common.DocUtils
+import Common.Id
+import Common.Result
+import qualified Common.Lib.Map as Map
+import Common.AS_Annotation (Named(..))
+
+import Data.List (elemIndex, nub)
+import Data.Maybe (catMaybes)
 
 -- | The identity of the comorphism
 data HasCASL2IsabelleHOL = HasCASL2IsabelleHOL deriving Show
@@ -141,7 +143,7 @@ transType t = case getTypeAppl t of
           else Type (showIsaTypeT tid baseSign) [] $ map transType tyArgs
        else TFree (showIsaTypeT tid baseSign) []
             -- type arguments are not allowed here!
-   _ -> error $ "transType " ++ showPretty t "\n" ++ show t
+   _ -> error $ "transType " ++ showDoc t "\n" ++ show t
 
 -- * translation of a datatype declaration
 
@@ -251,7 +253,7 @@ transTerm sign trm = case trm of
              [(conDouble "None", conDouble "None"),
               (App conSome (IsaSign.Free (mkVName "caseVar") noType) NotCont,
                Case (IsaSign.Free (mkVName "caseVar") noType) alts)]
-    _ -> error $ "HasCASL2IsabelleHOL.transTerm " ++ showPretty trm "\n"
+    _ -> error $ "HasCASL2IsabelleHOL.transTerm " ++ showDoc trm "\n"
                 ++ show trm
 
 transAppl :: Env -> Maybe As.Type -> As.Term -> As.Term -> IsaSign.Term
@@ -397,7 +399,7 @@ sortCaseAlts sign peqs =
   let consList
         | null peqs = error "No case alternatives."
         | otherwise = getCons sign (getName (head peqs))
-      groupedByCons = Data.List.nub (map (groupCons peqs) consList)
+      groupedByCons = nub (map (groupCons peqs) consList)
   in  map (flattenPattern sign) groupedByCons
 
 -- Returns a list of the constructors of the used datatype

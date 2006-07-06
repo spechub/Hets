@@ -19,6 +19,7 @@ import HasCASL.ClassAna
 import HasCASL.TypeMixAna
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
+import Common.DocUtils
 import Common.Id
 import Common.Result
 import Data.List as List
@@ -57,7 +58,7 @@ subKinds :: DiagKind -> ClassMap -> Type -> Kind -> [Kind] -> [Kind]
 subKinds dk cm ty sk ks res = 
    if any ( \ k -> lesserKind cm k sk) ks then return res
    else Result [Diag dk
-        ("no kind found for '" ++ showPretty ty "'" ++ 
+        ("no kind found for '" ++ showDoc ty "'" ++ 
          if null ks then "" else expected sk $ head ks)
         $ getRange ty] $ Just []
 
@@ -97,7 +98,7 @@ inferKinds b ty te@Env{classMap = cm} = let
                 Just (_, t3) -> ExpandedType t3 t4
                 Nothing -> t4)
     _ -> error "inferKinds"
-  in -- trace (showPretty ty " : " ++ showPretty resu "") 
+  in -- trace (showDoc ty " : " ++ showDoc resu "") 
      resu
 
 -- * converting type terms

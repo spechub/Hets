@@ -108,7 +108,7 @@ diffKindDiag :: (PosItem a, Pretty a) =>
                  a -> RawKind -> RawKind -> [Diagnosis]
 diffKindDiag a k1 k2 = 
            [ Diag Error
-              ("incompatible kind of: " ++ showPretty a "" ++ expected k1 k2)
+              ("incompatible kind of: " ++ showDoc a "" ++ expected k1 k2)
             $ getRange a ]
 
 -- | check if raw kinds are equal

@@ -14,16 +14,16 @@ module HasCASL.Unify where
 
 import HasCASL.As
 import HasCASL.AsUtils
-import HasCASL.PrintAs()
+import HasCASL.PrintAs ()
 import HasCASL.TypeAna
 import HasCASL.Le
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
+import Common.DocUtils
 import Common.Id
 import Common.Lib.State
 import Common.Result
-import Common.DocUtils ()
 
 import Data.List as List
 import Data.Maybe
@@ -166,17 +166,17 @@ subst m = rename (\ i k n ->
                Just s -> s
                _ -> TypeName i k n)
 
-showPrettyWithPos :: Type -> ShowS
-showPrettyWithPos a =  let p = getRange a in
-        showChar '\'' . showPretty a . showChar '\''
+showDocWithPos :: Type -> ShowS
+showDocWithPos a =  let p = getRange a in
+        showChar '\'' . showDoc a . showChar '\''
            . noShow (isNullRange p) (showChar ' ' .
                showParen True (showPos $ maximumBy comparePos (rangeToList p)))
 
 uniResult :: String -> Type -> String -> Type -> Result Subst
 uniResult s1 a s2 b =
       Result [Diag Hint ("in type\n" ++ "  " ++ s1 ++ " " ++
-                         showPrettyWithPos a "\n  " ++ s2 ++ " " ++
-                         showPrettyWithPos b "") nullRange] Nothing
+                         showDocWithPos a "\n  " ++ s2 ++ " " ++
+                         showDocWithPos b "") nullRange] Nothing
 
 -- | make representation of bound variables unique
 generalize :: [TypeArg] -> Type -> Type

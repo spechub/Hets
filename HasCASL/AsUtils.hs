@@ -304,14 +304,11 @@ toKind vk = case vk of
         _ -> error "toKind: Downset"
     MissingKind -> error "toKind: Missing"
 
-showPretty :: Pretty a => a -> ShowS
-showPretty = showDoc
-
 -- | generate a comparison string
 expected :: Pretty a => a -> a -> String
 expected a b =
-    "\n  expected: " ++ showPretty a
-    "\n     found: " ++ showPretty b "\n"
+    "\n  expected: " ++ showDoc a
+    "\n     found: " ++ showDoc b "\n"
 
 instance PosItem a => PosItem [a] where
     getRange = concatMapRange getRange

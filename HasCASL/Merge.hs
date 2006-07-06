@@ -40,7 +40,7 @@ instance (Ord a, PosItem a, Pretty a, Mergeable b)
 
 improveDiag :: (PosItem a, Pretty a) => a -> Diagnosis -> Diagnosis
 improveDiag v d = d { diagString = let f:l = lines $ diagString d in 
-                      unlines $ (f ++ " of '" ++ showPretty v "'") : l
+                      unlines $ (f ++ " of '" ++ showDoc v "'") : l
                     , diagPos = getRange v
                     }
 

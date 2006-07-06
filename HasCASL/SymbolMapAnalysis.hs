@@ -18,7 +18,6 @@ module HasCASL.SymbolMapAnalysis
     )  where
 
 import HasCASL.As
-import HasCASL.AsUtils
 import HasCASL.Le
 import HasCASL.PrintLe
 import HasCASL.Builtin
@@ -27,12 +26,15 @@ import HasCASL.Symbol
 import HasCASL.RawSym
 import HasCASL.Morphism
 import HasCASL.VarDecl
+
+import Common.DocUtils
 import Common.Id
 import Common.Result
 import Common.Lib.State
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
-import Data.List
+
+import Data.List (intersperse)
 
 inducedFromMorphism :: RawSymbolMap -> Env -> Result Morphism
 inducedFromMorphism rmap1 sigma = do
@@ -81,10 +83,10 @@ inducedFromMorphism rmap1 sigma = do
                  , funMap = op_Map }
       else Result [Diag Error
            ("the following symbols: " ++
-            concat (intersperse ", " $ map (flip showPretty "")
+            concat (intersperse ", " $ map (flip showDoc "")
                    $ Set.toList wrongRsyms) ++
             "\nare already mapped directly or do not match with signature\n"
-            ++ showPretty sigma "") nullRange] Nothing
+            ++ showDoc sigma "") nullRange] Nothing
 
 mapTypeInfo :: IdMap -> TypeInfo -> TypeInfo
 mapTypeInfo im ti =
@@ -111,7 +113,7 @@ typeFun e rmap s k = do
     if Set.null rsys then return s -- use default = identity mapping
        else case Set.lookupSingleton rsys of
        Just rsy -> return $ rawSymName rsy
-       Nothing -> Result [mkDiag Error ("type: " ++ showPretty s
+       Nothing -> Result [mkDiag Error ("type: " ++ showDoc s
                        " mapped ambiguously") rsys] Nothing
 
 -- | compute mapping of functions
@@ -150,7 +152,7 @@ mapOpSym :: Env -> IdMap -> Id -> TypeScheme -> RawSymbol
 mapOpSym e type_Map i ot rsy =
     let sc = mapTypeScheme type_Map ot
         err d = Result [mkDiag Error ("Operation symbol " ++
-                             showPretty (idToOpSymbol e i sc)
+                             showDoc (idToOpSymbol e i sc)
                              "\nis mapped to " ++ d) rsy] Nothing in
       case rsy of
       AnID id' -> return (id', sc)
@@ -219,7 +221,7 @@ inducedFromToMorphism rmap1 sigma1 sigma2 = do
           return mor1 { typeIdMap = Map.singleton n1 n2 }
           else Result [Diag Error ("No symbol mapping found for:\n"
            ++ shows (printMap1 rmap) "\nOrignal Signature1:\n"
-           ++ showPretty sigma1 "\nInduced "
+           ++ showDoc sigma1 "\nInduced "
            ++ showEnvDiff (mtarget mor1) sigma2) nullRange] Nothing
 
 -- | reveal the symbols in the set

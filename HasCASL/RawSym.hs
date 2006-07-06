@@ -19,6 +19,8 @@ import HasCASL.PrintLe()
 import HasCASL.ClassAna
 import HasCASL.VarDecl
 import HasCASL.Builtin
+
+import Common.DocUtils
 import Common.Id
 import Common.Result
 import Common.Lib.State
@@ -32,7 +34,7 @@ statSymbMapItems sl = do
             m <- mm
             if Map.member r1 m then do 
                 Result [Diag Error ("duplicate mapping for: " ++ 
-                          showPretty r1 "\n ignoring: " ++ showPretty r2 "")
+                          showDoc r1 "\n ignoring: " ++ showDoc r2 "")
                        $ posOfId $ rawSymName r2] $ Just ()
                 return m
               else return $ Map.insert r1 r2 m) 
@@ -58,7 +60,7 @@ symbToRaw k (Symb idt mt _)     = case mt of
             rk = if null vs then Nothing else 
                  convTypeToKind t 
             rrk = maybeToResult (getRange t) 
-                           ("not a kind: " ++ showPretty t "") rk
+                           ("not a kind: " ++ showDoc t "") rk
         in case k of 
               SK_op -> r
               SK_fun -> r
@@ -118,6 +120,6 @@ anaRawMap s1 s2 =
                 Nothing -> return $ Map.insert j w m
                 Just x -> Result [mkDiag Error "duplicate mapping for" i,
                                  mkDiag Hint ("mapped to '" 
-                                  ++ showPretty x "' and '" 
-                                  ++ showPretty w "' from") j] Nothing)
+                                  ++ showDoc x "' and '" 
+                                  ++ showDoc w "' from") j] Nothing)
                       $ return Map.empty

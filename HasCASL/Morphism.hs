@@ -21,10 +21,11 @@ import HasCASL.AsToLe
 import HasCASL.MapTerm
 import HasCASL.Merge
 
+import Common.DocUtils
 import Common.Id
 import Common.Result
 import qualified Common.Lib.Map as Map
-import Data.List as List
+import Data.List ((\\))
 
 instance Eq Morphism where
     m1 == m2 = (msource m1, mtarget m1, typeIdMap m1, funMap m1) == 
@@ -121,8 +122,8 @@ inclusionMor e1 e2 =
 
 showEnvDiff :: Env -> Env -> String
 showEnvDiff e1 e2 = 
-    "Signature 1:\n" ++ showPretty e1 "\nSignature 2:\n" 
-           ++ showPretty e2 "\nDifference\n" ++ showPretty 
+    "Signature 1:\n" ++ showDoc e1 "\nSignature 2:\n" 
+           ++ showDoc e2 "\nDifference\n" ++ showDoc 
               (diffEnv e1 e2) ""
 
 legalEnv :: Env -> Bool
@@ -149,8 +150,8 @@ morphismUnion m1 m2 =
            tm1 = Map.toList $ typeIdMap m1
            tm2 = Map.toList $ typeIdMap m2
                  -- unchanged types
-           ut1 = Map.keys (typeMap s1) List.\\ map fst tm1
-           ut2 = Map.keys (typeMap s2) List.\\ map fst tm2
+           ut1 = Map.keys (typeMap s1) \\ map fst tm1
+           ut2 = Map.keys (typeMap s2) \\ map fst tm2
            mkP = map ( \ a -> (a, a))
            tml = tm1 ++ tm2 ++ mkP (ut1 ++ ut2)
            fm1 = Map.toList $ funMap m1
@@ -159,8 +160,8 @@ morphismUnion m1 m2 =
            af = concatMap ( \ (i, os) ->  
                       map ( \ o -> (i, opType o)) $ opInfos os) . Map.toList
                  -- unchanged functions
-           uf1 = af (assumps s1) List.\\ map fst fm1
-           uf2 = af (assumps s2) List.\\ map fst fm2
+           uf1 = af (assumps s1) \\ map fst fm1
+           uf2 = af (assumps s2) \\ map fst fm2
            fml = fm1 ++ fm2 ++ mkP (uf1 ++ uf2)
        s <- merge s1 s2
        t <- merge (mtarget m1) $ mtarget m2
@@ -192,7 +193,7 @@ morphismUnion m1 m2 =
                   , funMap = Map.filterWithKey (/=) fm }
 
 showFun :: (Id, TypeScheme) -> ShowS
-showFun (i, ty) = showId i . (" : " ++) . showPretty ty
+showFun (i, ty) = showId i . (" : " ++) . showDoc ty
 
 morphismToSymbMap :: Morphism -> SymbolMap
 morphismToSymbMap mor = 

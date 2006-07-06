@@ -88,17 +88,17 @@ byInst te c = let cm = classMap te in case c of
       let Result _ds mk = inferKinds (Just True) ty te in
                    case mk of 
                    Nothing -> fail $ "constrain '" ++ 
-                                  showPretty c "' is unprovable"
+                                  showDoc c "' is unprovable"
                    Just ((_, ks), _) -> if any ( \ j -> lesserKind cm j k) ks 
                              then return noC 
                              else fail $ "constrain '" ++ 
-                                  showPretty c "' is unprovable"
+                                  showDoc c "' is unprovable"
                                   ++ "\n  known kinds are: " ++
                                   concat (intersperse ", " $ 
-                                          map (flip showPretty "") ks) 
+                                          map (flip showDoc "") ks) 
     Subtyping t1 t2 -> if lesserType te t1 t2 then return noC
-                       else fail ("unable to prove: " ++ showPretty t1 " < " 
-                                  ++ showPretty t2 "")
+                       else fail ("unable to prove: " ++ showDoc t1 " < " 
+                                  ++ showDoc t2 "")
 
 freshTypeVarT :: Type -> State Int Type             
 freshTypeVarT t = 
@@ -154,7 +154,7 @@ shapeMgu te cs =
                  FunKind CoVar _ _ _ -> [(va, a)]
                  FunKind ContraVar _ _ _ -> [(a, va)]
                  _ -> [(a, va), (va, a)]) ++ substPairList s rest
-       else error ("shapeMgu1: " ++ showPretty t1 " < " ++ showPretty t2 "") 
+       else error ("shapeMgu1: " ++ showDoc t1 " < " ++ showDoc t2 "") 
     (_, TypeName _ _ _) -> do ats <- shapeMgu te ((t2, t1) : map swap rest)
                               return $ map swap ats
     (TypeAppl f1 a1, TypeAppl f2 a2) -> 
@@ -164,7 +164,7 @@ shapeMgu te cs =
               (FunKind ContraVar _ _ _, 
                FunKind ContraVar _ _ _) -> (a2, a1) : rest
               _ -> (a1, a2) : (a2, a1) : rest
-    _ -> error ("shapeMgu2: " ++ showPretty t1 " < " ++ showPretty t2 "")
+    _ -> error ("shapeMgu2: " ++ showDoc t1 " < " ++ showDoc t2 "")
 
 shapeUnify :: TypeEnv -> [(Type, Type)] -> State Int (Subst, [(Type, Type)])
 shapeUnify te l = do 
@@ -191,8 +191,8 @@ collapser r =
                 let (c1, rs) = Set.deleteFindMin cs
                     c2 = Set.findMin rs
                 in Diag Hint ("contradicting type inclusions for '"
-                         ++ showPretty c1 "' and '" 
-                         ++ showPretty c2 "'") nullRange) ws) Nothing
+                         ++ showDoc c1 "' and '" 
+                         ++ showDoc c2 "'") nullRange) ws) Nothing
 
 extendSubst :: Subst -> (Type, Set.Set Type) -> Subst
 extendSubst s (t, vs) = Set.fold ( \ (TypeName _ _ n) -> 
