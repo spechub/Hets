@@ -17,7 +17,7 @@ import COL.COLSign
 import COL.ATC_COL()
 import COL.Parse_AS()
 import COL.StatAna
-import COL.LaTeX_COL()
+import COL.Print_AS()
 import CASL.Sign
 import CASL.StaticAna
 import CASL.MixfixParser
