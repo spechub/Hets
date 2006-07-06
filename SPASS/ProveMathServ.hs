@@ -78,7 +78,8 @@ mathServBrokerGUI thName th =
           fileExtensions = FileExtensions{problemOutput = ".tptp",
                                           proverOutput = ".spass",
                                           theoryConfiguration = ".spcf"},
-          runProver = runMSBroker}
+          runProver = runMSBroker,
+          createProverOptions = extraOpts}
 
 {- |
   Runs the MathServ broker and returns GUI proof status and prover
@@ -95,7 +96,7 @@ runMSBroker :: SPASSProverState
             -- ^ (retval, configuration with proof status and complete output)
 runMSBroker sps cfg saveTPTP thName nGoal = do
     putStrLn ("running MathServ Broker...")
-    prob <- showTPTPProblem thName sps nGoal
+    prob <- showTPTPProblem thName sps nGoal $ extraOpts cfg
     when saveTPTP
         (writeFile (thName++'_':AS_Anno.senName nGoal++".tptp") prob)
     mathServOut <- callMathServ

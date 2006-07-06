@@ -706,13 +706,27 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
           done)
       +> (saveProb >>> do
             rs <- readIORef stateRef
+            curEntTL <- (getValueSafe guiDefaultTimeLimit
+                                      timeEntry) :: IO Int
             inclProvedThs <- readTkVariable inclProvedThsTK
             maybe (return ())
                   (\ goal -> do
                       let (nGoal,lp') =
                               prepareLP (proverState rs)
                                         rs goal inclProvedThs
-                      prob <- (goalOutput atpFun) lp' nGoal
+                          s = rs {configsMap = adjustOrSetConfig
+                                            (setTimeLimit curEntTL)
+                                            prName goal pt
+                                            (configsMap rs)}
+                      extraOptions <- (getValue optionsEntry) :: IO String
+                      let s' = s {configsMap = adjustOrSetConfig
+                                            (setExtraOpts (words extraOptions))
+                                            prName goal pt
+                                            (configsMap s)}
+
+                      prob <- (goalOutput atpFun) lp' nGoal $
+                        (createProverOptions atpFun)
+                          (getConfig prName goal pt $ configsMap s')
                       createTextSaveDisplay
                         (prName++" Problem for Goal "++goal)
                         (thName++'_':goal

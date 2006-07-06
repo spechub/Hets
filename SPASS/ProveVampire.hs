@@ -72,7 +72,8 @@ vampireGUI thName th =
           fileExtensions = FileExtensions{problemOutput = ".tptp",
                                           proverOutput = ".spass",
                                           theoryConfiguration = ".spcf"},
-          runProver = runVampire}
+          runProver = runVampire,
+          createProverOptions = extraOpts}
 
 {- |
   Runs the Vampire service.
@@ -88,7 +89,7 @@ runVampire :: SPASSProverState
            -- ^ (retval, configuration with proof status and complete output)
 runVampire sps cfg saveTPTP thName nGoal = do
     putStrLn ("running MathServ VampireService...")
-    prob <- showTPTPProblem thName sps nGoal
+    prob <- showTPTPProblem thName sps nGoal $ extraOpts cfg
     when saveTPTP
         (writeFile (thName++'_':AS_Anno.senName nGoal++".tptp") prob)
     mathServOut <- callMathServ

@@ -161,7 +161,7 @@ data ATPFunctions sign sentence proof_tree pst = ATPFunctions {
     -- | inserts a goal into prover state
     atpInsertSentence :: pst -> AS_Anno.Named sentence -> pst,
     -- | output of a goal in a prover specific format
-    goalOutput :: pst -> AS_Anno.Named sentence-> IO String,
+    goalOutput :: pst -> AS_Anno.Named sentence-> [String] -> IO String,
     -- | help text
     proverHelpText :: String,
     -- | environment variable containing time limit for batch time
@@ -169,7 +169,9 @@ data ATPFunctions sign sentence proof_tree pst = ATPFunctions {
     -- | file extensions for all output formats
     fileExtensions :: FileExtensions,
     -- | runs the prover
-    runProver :: RunProver sentence proof_tree pst
+    runProver :: RunProver sentence proof_tree pst,
+    -- | list of all options the prover finally runs with
+    createProverOptions :: GenericConfig proof_tree -> [String]
   }
 
 {- |

@@ -67,7 +67,9 @@ spassProver =
   data type ATPFunctions.
 -}
 spassProveGUI :: String -- ^ theory name
-              -> Theory Sign Sentence () -- ^ theory consisting of a SPASS.Sign.Sign and a list of Named SPASS.Sign.Sentence
+              -> Theory Sign Sentence () -- ^ theory consisting of a
+                                         --   SPASS.Sign.Sign and a list of
+                                         --   Named SPASS.Sign.Sentence
               -> IO([Proof_status ()]) -- ^ proof status for each goal
 spassProveGUI thName th =
     genericATPgui atpFun True (prover_name spassProver) thName th ()
@@ -83,7 +85,8 @@ spassProveGUI thName th =
           fileExtensions = FileExtensions{problemOutput = ".dfg",
                                           proverOutput = ".spass",
                                           theoryConfiguration = ".spcf"},
-          runProver = runSpass}
+          runProver = runSpass,
+          createProverOptions = createSpassOptions}
 
 
 -- * SPASS Interfacing Code
@@ -92,7 +95,8 @@ spassProveGUI thName th =
   Reads and parses the output of SPASS.
 -}
 parseSpassOutput :: ChildProcess -- ^ the SPASS process
-                 -> IO (Maybe String, [String], [String]) -- ^ (result, used axioms, complete output)
+                 -> IO (Maybe String, [String], [String])
+                    -- ^ (result, used axioms, complete output)
 parseSpassOutput spass = parseProtected (parseStart True) (Nothing, [], [])
   where
 
@@ -132,9 +136,11 @@ parseSpassOutput spass = parseProtected (parseStart True) (Nothing, [], [])
               e <- waitForChildProcess spass
               case e of
                 ChildTerminated ->
-                  return (Nothing, [], output ++ [line, "", "SPASS has been terminated."])
+                  return (Nothing, [], output ++ [line, "",
+                                                  "SPASS has been terminated."])
                 ChildExited retval ->
-                  return (Nothing, [], output ++ [line, "", "SPASS returned error: "++(show retval)])
+                  return (Nothing, [], output ++ [line, "",
+                                       "SPASS returned error: "++(show retval)])
 
     -- actual parsing. tries to read from SPASS until ".*SPASS-STOP.*" matches.
     parseIt (res, usedAxs, output) = do
@@ -144,9 +150,9 @@ parseSpassOutput spass = parseProtected (parseStart True) (Nothing, [], [])
                                    then "        "++li
                                    else ch:li) "" line
       let resMatch = matchRegex re_sb line'
-      let res' = if isJust resMatch then (Just $ head $ fromJust resMatch) else res
+      let res' = maybe res (Just . head) resMatch
       let usedAxsMatch = matchRegex re_ua line'
-      let usedAxs' = if isJust usedAxsMatch then (words $ head $ fromJust usedAxsMatch) else usedAxs
+      let usedAxs' = maybe usedAxs (words . head) usedAxsMatch
       if seq (length line) $ isJust (matchRegex re_stop line')
         then do
           _ <- waitForChildProcess spass
@@ -164,12 +170,15 @@ parseSpassOutput spass = parseProtected (parseStart True) (Nothing, [], [])
 {- |
   Runs SPASS. SPASS is assumed to reside in PATH.
 -}
-runSpass :: SPASSProverState -- ^ logical part containing the input Sign and axioms and possibly goals that have been proved earlier as additional axioms
+runSpass :: SPASSProverState -- ^ logical part containing the input Sign and
+                             --  axioms and possibly goals that have been proved
+                             --  earlier as additional axioms
          -> GenericConfig () -- ^ configuration to use
          -> Bool -- ^ True means save DFG file
          -> String -- ^ name of the theory in the DevGraph
          -> AS_Anno.Named SPTerm -- ^ goal to prove
-         -> IO (ATPRetval, GenericConfig ()) -- ^ (retval, configuration with proof status and complete output)
+         -> IO (ATPRetval, GenericConfig ())
+             -- ^ (retval, configuration with proof status and complete output)
 runSpass sps cfg saveDFG thName nGoal = do
   putStrLn ("running 'SPASS" ++ (concatMap (' ':) allOptions) ++ "'")
   spass <- newChildProcess "SPASS" [ChildProcess.arguments allOptions]
@@ -201,25 +210,17 @@ runSpass sps cfg saveDFG thName nGoal = do
                   emptyConfig (prover_name spassProver)
                               (AS_Anno.senName nGoal) ())
         else do
-          prob <- showDFGProblem thName sps nGoal
+          prob <- showDFGProblem thName sps nGoal (createSpassOptions cfg)
           when saveDFG
                (writeFile (thName++'_':AS_Anno.senName nGoal++".dfg") prob)
           sendMsg spass prob
           (res, usedAxs, output) <- parseSpassOutput spass
-          let (err, retval) = proof_stat res usedAxs cleanOptions
+          let (err, retval) = proof_stat res usedAxs (cleanOptions cfg)
           return (err,
                   cfg{proof_status = retval,
                       resultOutput = output})
 
-    filterOptions = ["-DocProof", "-Stdin", "-TimeLimit"]
-    cleanOptions = filter (\ opt -> not (or (map (flip isPrefixOf opt)
-                                                 filterOptions)))
-                          (extraOpts cfg)
-    tLimit = if isJust (timeLimit cfg)
-               then fromJust (timeLimit cfg)
-               -- this is OK. the batch prover always has the time limit set
-               else guiDefaultTimeLimit
-    allOptions = cleanOptions ++ ["-DocProof", "-Stdin", "-TimeLimit=" ++ (show tLimit)]
+    allOptions = createSpassOptions cfg
     defaultProof_status opts =
         (openProof_status (AS_Anno.senName nGoal) (prover_name spassProver) ())
         {tacticScript = Tactic_script $ concatMap (' ':) opts}
@@ -243,3 +244,27 @@ runSpass sps cfg saveDFG thName nGoal = do
     proved = ["Proof found."]
     disproved = ["Completion found."]
     timelimit = ["Ran out of time."]
+
+
+{- |
+  Creates a list of all options the SPASS prover runs with.
+  That includes the defaults -DocProof, -Stdin and -Timelimit.
+-}
+createSpassOptions :: GenericConfig () -> [String]
+createSpassOptions cfg = 
+    (cleanOptions cfg) ++ ["-DocProof", "-Stdin", "-TimeLimit="
+                                                  ++ (show tLimit)]
+  where
+    tLimit = maybe guiDefaultTimeLimit id (timeLimit cfg)
+             -- this is OK. the batch prover always has the time limit set
+
+{- |
+  Filters extra options and just returns the non standard options.
+-}    
+cleanOptions :: GenericConfig () -> [String]
+cleanOptions cfg = 
+    filter (\ opt -> not (or (map (flip isPrefixOf opt)
+                                  filterOptions)))
+           (extraOpts cfg)
+    where
+      filterOptions = ["-DocProof", "-Stdin", "-TimeLimit"]

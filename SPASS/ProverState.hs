@@ -22,6 +22,7 @@ import SPASS.Print ()
 
 import qualified Common.AS_Annotation as AS_Anno
 import Common.ProofUtils
+import Common.Utils (splitOn)
 import Common.DocUtils
 
 -- * Data structures
@@ -61,10 +62,13 @@ insertSentenceGen pst s = pst{initialLogicalPart =
 showDFGProblem :: String -- ^ theory name
                   -> SPASSProverState -- ^ prover state containing initial logical part
                   -> AS_Anno.Named SPTerm -- ^ goal to print
+                  -> [String] -- ^ extra options
                   -> IO String -- ^ formatted output of the goal
-showDFGProblem thName pst nGoal = do
+showDFGProblem thName pst nGoal opts = do
   prob <- genSPASSProblem thName (initialLogicalPart pst) $ Just nGoal
-  return $ showDoc prob ""
+  -- add SPASS command line settings and extra options
+  let prob' = prob { settings = (settings prob) ++ (parseSPASSCommands opts) }
+  return $ showDoc prob' ""
 
 {- |
   Pretty printing SPASS goal in TPTP format.
@@ -73,7 +77,34 @@ showTPTPProblem :: String -- ^ theory name
                 -> SPASSProverState -- ^ prover state containing
                                     --   initial logical part
                 -> AS_Anno.Named SPTerm -- ^ goal to print
+                -> [String] -- ^ extra options
                 -> IO String -- ^ formatted output of the goal
-showTPTPProblem thName pst nGoal = do
+showTPTPProblem thName pst nGoal opts = do
   prob <- genSPASSProblem thName (initialLogicalPart pst) $ Just nGoal
   return $ show $ printTPTP prob
+
+{- |
+  Translates SPASS command line into [SPSetting].
+-}
+parseSPASSCommands :: [String] -- ^ SPASS command line options
+                   -> [SPSetting] -- ^ parsed parameters and options
+parseSPASSCommands comLine =
+    map (\opt -> let splitOpt = splitOn '=' opt
+                 in case length splitOpt of
+                      0 -> SPFlag "" ""
+                      1 -> SPFlag (head splitOpt) "1"
+                      -- if multiple '=', texts are concatenated
+                      _ -> SPFlag (head splitOpt) $ concat $ tail splitOpt
+        ) $
+        map undash comLine
+    where
+      -- remove '-' (multiple) at beginning of an option
+      undash = dropWhile (\ch -> ch == '-')
+
+{-
+  include current options into saved DFG file (saved from GUI) 
+    (s. SPASS.CreateDFG)
+  include current options as comment into saved TPTP file (saved from GUI)
+    and also the requested prover or "[via Broker]"
+
+-}
