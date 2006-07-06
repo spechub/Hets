@@ -22,18 +22,19 @@ module CASL.Morphism where
 
 import CASL.Sign
 import CASL.AS_Basic_CASL
-import Common.Id
-import Common.Result
-import Common.Keywords
+
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
-import Control.Monad
-import Common.PrettyPrint
-import Control.Exception (assert)
 import Common.Doc
 import Common.DocUtils
+import Common.Id
+import Common.Keywords
+import Common.Result
+import Common.PrettyPrint
 import Common.Print_AS_Annotation
+
+import Control.Exception (assert)
 
 data SymbType = OpAsItemType OpType
                 -- since symbols do not speak about totality, the totality
@@ -190,8 +191,8 @@ statSymbMapItems sl = do
     case Map.lookup rsy1 m1 of
       Nothing -> return $ Map.insert rsy1 rsy2 m1
       Just rsy3 ->
-        plain_error m1 ("Symbol " ++ showPretty rsy1 " mapped twice to "
-                ++ showPretty rsy2 " and " ++ showPretty rsy3 "") nullRange
+        plain_error m1 ("Symbol " ++ showDoc rsy1 " mapped twice to "
+                ++ showDoc rsy2 " and " ++ showDoc rsy3 "") nullRange
 
 pairM :: Monad m => (m a,m b) -> m (a,b)
 pairM (x,y) = do
@@ -223,8 +224,8 @@ symbKindToRaw sk idt = case sk of
 typedSymbKindToRaw :: SYMB_KIND -> Id -> TYPE -> Result RawSymbol
 typedSymbKindToRaw k idt t =
     let err = plain_error (AnID idt)
-              (showPretty idt ":" ++ showPretty t
-               "does not have kind" ++ showPretty k "") nullRange
+              (showDoc idt ":" ++ showDoc t
+               "does not have kind" ++ showDoc k "") nullRange
         aSymb = ASymbol $ case t of
                  O_type ot -> idToOpSymbol idt $ toOpType ot
                  P_type pt -> idToPredSymbol idt $ toPredType pt
@@ -442,7 +443,7 @@ morphismUnion uniteM addSigExt mor1 mor2 =
                             else (ds, Map.insert isc (j, Total) m) else
               (Diag Error
                ("incompatible mapping of op " ++ showId i ":"
-                ++ showPretty ot { opKind = t } " to "
+                ++ showDoc ot { opKind = t } " to "
                 ++ showId j " and " ++ showId k "") nullRange : ds, m))
            (sds, omap1) (Map.toList omap2 ++ concatMap
               ( \ (a, s) -> map ( \ ot -> ((a, ot {opKind = Partial}),
@@ -454,7 +455,7 @@ morphismUnion uniteM addSigExt mor1 mor2 =
           Just k -> if j == k then (ds, m) else
               (Diag Error
                ("incompatible mapping of pred " ++ showId i ":"
-                ++ showPretty pt " to " ++ showId j " and "
+                ++ showDoc pt " to " ++ showId j " and "
                 ++ showId k "") nullRange : ds, m)) (ods, pmap1)
           (Map.toList pmap2 ++ concatMap ( \ (a, s) -> map
               ( \ pt -> ((a, pt), a)) $ Set.toList s) (Map.toList up))

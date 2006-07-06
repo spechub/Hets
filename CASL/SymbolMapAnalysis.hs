@@ -36,15 +36,14 @@ module CASL.SymbolMapAnalysis
 import CASL.Sign
 import CASL.AS_Basic_CASL
 import CASL.Morphism
-import Common.Id
-import Common.Result
+
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
 import Common.Doc
 import Common.DocUtils
-import Control.Monad
-import Data.Maybe
+import Common.Id
+import Common.Result
 
 {-
 inducedFromMorphism :: RawSymbolMap -> sign -> Result morphism
@@ -132,8 +131,7 @@ inducedFromMorphism extEm rmap sigma = do
           -- that is not directly mapped
           _ -> Map.lookup (ASymbol sy) rmap == Nothing
   -- ... if not, generate an error
-  when (not (Set.null incorrectRsyms))
-    $ fail $
+  if Set.null incorrectRsyms then return () else fail $
        "the following symbols: "
         ++ showDoc incorrectRsyms
         "\nare already mapped directly or do not match with signature\n"
@@ -611,7 +609,7 @@ inducedFromToMorphism extEm isSubExt  rmap sigma1 sigma2 = do
          posmap = (posmap1,posmap2)
      -- Are there symbols that cannot be mapped at all?
      -- Then generate an error immediately
-     --trace ("posmap1= "++showPretty posmap1 "") (return ())
+     --trace ("posmap1= "++showDoc posmap1 "") (return ())
      case Map.lookup (True,0) posmap2 of
        Nothing -> return ()
        Just syms -> fail $ "No symbol mapping for "
@@ -629,16 +627,16 @@ inducedFromToMorphism extEm isSubExt  rmap sigma1 sigma2 = do
 tryToInduce :: Sign f e -> Sign f e -> SymbolMap -> PosMap
             -> Result (Maybe SymbolMap)
 tryToInduce sigma1 sigma2 akmap (posmap1, posmap2) = do
-       --trace("akmap: "++showPretty akmap "") (return ())
+       --trace("akmap: "++showDoc akmap "") (return ())
        if Map.null posmap2 then return $ Just akmap -- 4a.
         else do
-          --trace ("trying to map: "++showPretty sym1 "") (return ())
+          --trace ("trying to map: "++showDoc sym1 "") (return ())
           akmap1 <-
              tryToInduce1 sigma1 sigma2 akmap posmap' sym1 symset1
-          if isNothing akmap1
+          case akmap1 of
              -- 6. no map for symset1, hence try symset2
-             then tryToInduce1 sigma1 sigma2 akmap posmap' sym1 symset2
-             else return akmap1
+            Nothing -> tryToInduce1 sigma1 sigma2 akmap posmap' sym1 symset2
+            Just _ -> return akmap1
        where
        -- 4b. take symbol with minimal remaining values (MRV)
        (card,(sym1,symset):_symsets) = Map.findMin posmap2
@@ -659,9 +657,9 @@ tryToInduce2 sigma1 sigma2 akmap posmap sym1 sym2 akmapSoFar = do
        -- 5.1. to 5.3. consistency check
        akmapSoFar1 <- akmapSoFar
        {-(trace ("map "++(case akmapSoFar1 of
-                         Just x -> showPretty x " + "
+                         Just x -> showDoc x " + "
                          Nothing -> "")
-        ++showPretty sym1 " |-> " ++showPretty sym2 "; stopBackTrack: "
+        ++showDoc sym1 " |-> " ++showDoc sym2 "; stopBackTrack: "
         ++show stopBackTrack) (return ())) -}
        akmap' <-
         case extendSymbMap akmap sym1 sym2 of

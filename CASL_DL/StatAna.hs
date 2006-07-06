@@ -50,7 +50,7 @@ import qualified Common.Lib.Rel as Rel
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.AnalyseAnnos
-import Common.PrettyPrint
+import Common.DocUtils
 import Common.Id
 import Common.Result
 
@@ -59,11 +59,11 @@ import Data.List
 import Debug.Trace
 
 basicCASL_DLAnalysis :: (BASIC_SPEC () () DL_FORMULA,
-		         Sign DL_FORMULA CASL_DLSign, GlobalAnnos)
-		     -> Result (BASIC_SPEC () () DL_FORMULA,
-			        Sign DL_FORMULA CASL_DLSign,
-			        Sign DL_FORMULA CASL_DLSign,
-			        [Named (FORMULA DL_FORMULA)])
+                         Sign DL_FORMULA CASL_DLSign, GlobalAnnos)
+                     -> Result (BASIC_SPEC () () DL_FORMULA,
+                                Sign DL_FORMULA CASL_DLSign,
+                                Sign DL_FORMULA CASL_DLSign,
+                                [Named (FORMULA DL_FORMULA)])
 basicCASL_DLAnalysis (bs,sig,ga) = 
     do ga' <- addGlobalAnnos ga caslDLGlobalAnnos
        --basicAnalysis minDLForm (const return) 
@@ -87,18 +87,18 @@ basicCASL_DLAnalysis (bs,sig,ga) =
 -}
 postAna :: [Diagnosis] 
         -> (BASIC_SPEC () () DL_FORMULA,
-	    Sign DL_FORMULA CASL_DLSign,
-	    Sign DL_FORMULA CASL_DLSign,
-	    [Named (FORMULA DL_FORMULA)]) 
+            Sign DL_FORMULA CASL_DLSign,
+            Sign DL_FORMULA CASL_DLSign,
+            [Named (FORMULA DL_FORMULA)]) 
         -> Result (BASIC_SPEC () () DL_FORMULA,
-		   Sign DL_FORMULA CASL_DLSign,
-		   Sign DL_FORMULA CASL_DLSign,
-		   [Named (FORMULA DL_FORMULA)])
-postAna ds1 i@(bs,diff_sig,acc_sig,sens) =
+                   Sign DL_FORMULA CASL_DLSign,
+                   Sign DL_FORMULA CASL_DLSign,
+                   [Named (FORMULA DL_FORMULA)])
+postAna ds1 i@(_, diff_sig, acc_sig, _) =
     Result (ds1++ds_sig) $ if null ds_sig then Just i else Nothing
-    where ds_sig = checkSorts ++ checkPreds ++ checkOps
+    where ds_sig = chkSorts ++ checkPreds ++ checkOps
 
-          checkSorts = Set.fold chSort [] (sortSet diff_sig) ++
+          chkSorts = Set.fold chSort [] (sortSet diff_sig) ++
              (if Set.member topSortD (supersortsOf topSort acc_sig) ||
                  Set.member topSortD (subsortsOf topSort acc_sig) ||
                  (supersortsOf topSortD predefinedSign /= 
@@ -116,11 +116,11 @@ postAna ds1 i@(bs,diff_sig,acc_sig,sens) =
                   then []
                   else [mkDiag Error 
                         ("\n     new sort is not a subsort of '"++ 
-                         showPretty topSort "':") s]) ++
+                         showDoc topSort "':") s]) ++
               (if Set.member topSort (subsortsOf s acc_sig) 
                   then [mkDiag Error 
                         ("\n     new sort must not be a supersort of '"++ 
-                         showPretty topSort "':") s]
+                         showDoc topSort "':") s]
                   else [])
 
           selectDATAKernel rel =
@@ -148,7 +148,7 @@ postAna ds1 i@(bs,diff_sig,acc_sig,sens) =
                   then []
                   else [mkDiag Error 
                         ("\n     the first argument sort of this "++kstr++
-                        " is not a subsort of '"++ showPretty topSort "':") 
+                        " is not a subsort of '"++ showDoc topSort "':") 
                         sym]
                                
 
@@ -180,7 +180,7 @@ type DLSign = Sign DL_FORMULA CASL_DLSign
 -- static analysis of annotations
 analyseAnnos :: GlobalAnnos -> Sign DL_FORMULA CASL_DLSign 
              -> BASIC_SPEC () () DL_FORMULA -> Result DLSign
-analyseAnnos ga sig bs = 
+analyseAnnos _ga sig _bs = 
     Result [Diag Warning "Analysis of Annotations not yet implemented" 
                  nullRange] 
            (Just $ {- extentedInfo -} sig)
@@ -245,10 +245,10 @@ minDLForm sign form =
                                 amigDs ts = 
                                  [Diag Error 
                                   ("Ambigous types found for\n    pred '"++
-                                   showPretty pn "' in cardinalty "++
+                                   showDoc pn "' in cardinalty "++
                                    "constraint: (showing only two of them)\n"++
-                                   "    '"++ showPretty (head ts) "', '"++
-                                   showPretty (head $ tail ts) "'") ran]
+                                   "    '"++ showDoc (head ts) "', '"++
+                                   showDoc (head $ tail ts) "'") ran]
                              in maybe (Result ds' Nothing) 
                               (\ ts -> case ts of
                                 [] -> error "CASL_DL.StatAna: Internal error"
@@ -334,7 +334,7 @@ checkSymbolMapDL rsm =
           ds syms = [Diag Error 
                      ("Predefined CASL_DL symbols\n    cannot be mapped: "++
                       concat (intersperse ", " $ 
-                              map (\x -> showPretty x "") syms))
+                              map (\x -> showDoc x "") syms))
                      (minimum $ map getRange syms)]
                           
 
