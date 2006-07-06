@@ -34,8 +34,8 @@ module CspCASL.Logic_CspCASL(CspCASL(CspCASL)) where
 import CspCASL.AS_CSP_CASL
 import CspCASL.CCKeywords
 import CspCASL.Parse_AS_CSP_CASL
-import CspCASL.LaTeX_AS_CSP_CASL
-import CspCASL.ATC_CspCASL
+import CspCASL.Print_AS_CSP_CASL()
+import CspCASL.ATC_CspCASL()
 import CspCASL.SignCSP
 import CspCASL.StatAnaCSP
 

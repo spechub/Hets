@@ -29,25 +29,18 @@ import ConstraintCASL.Parse_AS_Basic
 import ConstraintCASL.Formula
 import ConstraintCASL.StaticAna
 import ConstraintCASL.ATC_ConstraintCASL()
-import ConstraintCASL.Print_AS
-import ConstraintCASL.LaTeX_AS
+import ConstraintCASL.Print_AS()
 
 import CASL.AS_Basic_CASL
 import CASL.LaTeX_CASL()
 import CASL.SymbolParser
 import CASL.MapSentence
-import CASL.Amalgamability
 import CASL.ATC_CASL()
 import CASL.Sublogic
 import CASL.Sign
-import CASL.StaticAna
 import CASL.Morphism
 import CASL.SymbolMapAnalysis
-import CASL.Taxonomy
-import CASL.SimplifySen
 import CASL.Logic_CASL
-import CASL.CCC.FreeTypes
-import CASL.CCC.OnePoint -- currently unused
 
 data ConstraintCASL = ConstraintCASL deriving Show
 
