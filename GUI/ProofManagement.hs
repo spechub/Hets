@@ -75,9 +75,8 @@ statusNotRunning = (Black, "No Prover Running")
 statusRunning :: (ProverStatusColour, String)
 statusRunning = (Blue, "Waiting for Prover")
 
-{- |
-  Converts a 'ProofGUIState' into a ('ProverStatusColour', 'String') tuple to be
-  displayed by the GUI.
+{- | Converts a 'ProofGUIState' into a ('ProverStatusColour',
+     'String') tuple to be displayed by the GUI.  
 -}
 toGuiStatus :: ProofGUIState lid sentence
             -> (ProverStatusColour, String)
@@ -89,7 +88,7 @@ toGuiStatus st = if proverRunning st
   Generates a list of 'GUI.HTkUtils.LBGoalView' representations of all goals
   from a 'SPASS.Prove.State'.
 
-  Uses 'toStatusIndicator' internally.
+  Uses a status indicator internally.
 -}
 goalsView :: ProofGUIState lid sentence  -- ^ current global state
           -> [LBGoalView] -- ^ resulting ['LBGoalView'] list
@@ -135,11 +134,15 @@ populateAxiomsList lbAxs s =
    Updates the display of the status of the selected goals.
 -}
 updateDisplay :: ProofGUIState lid sentence -- ^ current global state
-              -> Bool -- ^ set to 'True' if you want the 'ListBox' to be updated
-              -> ListBox String -- ^ 'ListBox' displaying the status of all goals (see 'goalsView')
-              -> ListBox String -- ^ 'ListBox' displaying possible morphism paths to prover logics
-              -> Label -- ^ 'Label' displaying the status of the currently selected goal(s)
-              -> IO ()
+    -> Bool
+    -- ^ set to 'True' if you want the 'ListBox' to be updated
+    -> ListBox String
+    -- ^ 'ListBox' displaying the status of all goals (see 'goalsView')
+    -> ListBox String
+    -- ^ 'ListBox' displaying possible morphism paths to prover logics
+    -> Label
+    -- ^ 'Label' displaying the status of the currently selected goal(s)
+    -> IO ()
 updateDisplay st updateLb goalsLb pathsLb statusLabel = do
     -- update goals listbox
     when updateLb
@@ -260,7 +263,7 @@ doShowProofDetails s@(ProofGUIState { theoryName = thName}) =
                       sortBy (comparing snd) $ thmStatus st
           stat str = Pretty.text "Status:" Pretty.<+> Pretty.text str
           spaces4 = Pretty.text "    "
-          printCmWStat (c, bp) = 
+          printCmWStat (c, bp) =
               Pretty.text "Com:" Pretty.<+> Pretty.text (show c)
               Pretty.$+$ spaces4 Pretty.<> printBP bp
           printBP bp = case bp of
@@ -633,7 +636,8 @@ proofManagementGUI lid proveF fineGrainedSelectionF
             s'' <- case ms'' of
                    Nothing -> fail "fineGrainedSelection returned Nothing"
                    Just res -> return res
-            let s''' = s'' {proverRunning = False,accDiags = accDiags s'' ++ ds}
+            let s''' = s'' { proverRunning = False
+                           , accDiags = accDiags s'' ++ ds }
             enableWids wids
             updateDisplay s''' True lb pathsLb statusLabel
             putWinOnTop main
