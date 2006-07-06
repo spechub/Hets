@@ -7,10 +7,10 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Instance of class Logic for CASL DL.
+Instance of class Logic for CASL DL
 -}
 
-module CASL_DL.Logic_CASL_DL (CASL_DL(..)) where
+module CASL_DL.Logic_CASL_DL (CASL_DL(..), DLMor, DLFORMULA) where
 
 import Common.Result
 
