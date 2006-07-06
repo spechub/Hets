@@ -38,6 +38,13 @@ to fill the ontology.  --}
 
 module Taxonomy.MMiSSOntology (
   MMiSSOntology,
+  ClassName,
+  ObjectName,
+  SuperClass,
+  DefaultText,
+  Cardinality,
+  SuperRel,
+  RelName,
   RelationProperty(..),
   -- data RelationProperty = InversOf String
   --                       | Functional
@@ -112,7 +119,7 @@ module Taxonomy.MMiSSOntology (
 
 where
 
-import Control.Monad
+import Control.Monad (liftM)
 import Data.List
 
 import Data.Graph.Inductive.Graph
