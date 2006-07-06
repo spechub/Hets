@@ -14,10 +14,6 @@ This module provides functions to write a pretty printed abstract
 
 module Driver.WriteFn where
 
-import Control.Monad
-import Data.Maybe
-import Data.List
-
 import Text.ParserCombinators.Parsec
 import Text.PrettyPrint.HughesPJ(render)
 import Common.Utils
@@ -102,7 +98,7 @@ write_LIB_DEFN ga file opt ld = do
     mapM_ write_type $ outtypes opt
 
 write_casl_asc :: HetcatsOpts -> GlobalAnnos -> FilePath -> LIB_DEFN -> IO ()
-write_casl_asc _ ga oup ld = writeFile oup $ 
+write_casl_asc _ ga oup ld = writeFile oup $
           shows (useGlobalAnnos ga $ pretty ld) "\n"
 
 debug_latex_filename :: FilePath -> FilePath
@@ -253,10 +249,11 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
                                        let Result d res =
                                                computeCompTable i th2
                                         in do showDiags opt d
-                                              when (isJust res) $
-                                                 writeVerbFile opt f $
-                                                 render $ table_document $
-                                                 fromJust res
+                                              case res of
+                                                Just td ->
+                                                  writeVerbFile opt f $
+                                                  render $ table_document td
+                                                Nothing -> return ()
 #endif
                       _ -> return () -- ignore other file types
                              ) outTypes
