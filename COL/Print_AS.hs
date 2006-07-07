@@ -14,15 +14,11 @@ module COL.Print_AS where
 
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
-import Common.PrettyPrint
 import Common.Doc
 import Common.DocUtils
 import CASL.ToDoc
 import COL.AS_COL
 import COL.COLSign
-
-instance PrettyPrint COL_SIG_ITEM where
-    printText0 = toOldText
 
 instance Pretty COL_SIG_ITEM where
     pretty = printCOL_SIG_ITEM
@@ -33,9 +29,6 @@ printCOL_SIG_ITEM csi = case csi of
         semiAnnos idDoc ls
     Observer_items ls _ -> keyword observerS <+>
         semiAnnos (printPair idDoc (printMaybe pretty)) ls
-
-instance PrettyPrint COLSign where
-    printText0 = toOldText
 
 instance Pretty COLSign where
     pretty = printCOLSign
