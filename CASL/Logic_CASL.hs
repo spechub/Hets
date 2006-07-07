@@ -21,9 +21,8 @@ import Text.ParserCombinators.Parsec
 import Logic.Logic
 
 import CASL.AS_Basic_CASL
-import CASL.LaTeX_CASL()
 import CASL.Parse_AS_Basic
-import CASL.Print_AS_Basic
+import CASL.ToDoc
 import CASL.SymbolParser
 import CASL.MapSentence
 import CASL.Amalgamability

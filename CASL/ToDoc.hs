@@ -449,3 +449,14 @@ instance ListCheck VAR_DECL where
     innerList (Var_decl l _ _) = innerList l
 
 -----------------------------------------------------------------------------
+
+printTheoryFormula :: Pretty f => Named (FORMULA f) -> Doc
+printTheoryFormula f = printAnnotedFormula
+    (case sentence f of
+    Quantification Universal _ _ _ -> False
+    Sort_gen_ax _ _ -> False
+    _ -> True) $ fromLabelledSen f
+
+printAnnotedFormula :: Pretty f => Bool -> Annoted (FORMULA f) -> Doc
+printAnnotedFormula withDot = printAnnoted
+           ((if withDot then (bullet <+>) else id) . pretty)

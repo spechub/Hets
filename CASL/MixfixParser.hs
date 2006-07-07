@@ -29,7 +29,7 @@ import Common.ConvertMixfixToken
 import Common.DocUtils
 import Common.AS_Annotation
 import CASL.ShowMixfix
-import CASL.Print_AS_Basic()
+import CASL.ToDoc()
 import Control.Exception (assert)
 
 data Mix b s f e = MixRecord

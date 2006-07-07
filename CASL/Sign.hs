@@ -14,7 +14,6 @@ This module provides CASL signatures that also serve as local
 module CASL.Sign where
 
 import CASL.AS_Basic_CASL
-import CASL.Print_AS_Basic ()
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel

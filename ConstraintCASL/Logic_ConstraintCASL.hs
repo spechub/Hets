@@ -32,7 +32,7 @@ import ConstraintCASL.ATC_ConstraintCASL()
 import ConstraintCASL.Print_AS()
 
 import CASL.AS_Basic_CASL
-import CASL.LaTeX_CASL()
+import CASL.ToDoc()
 import CASL.SymbolParser
 import CASL.MapSentence
 import CASL.ATC_CASL()

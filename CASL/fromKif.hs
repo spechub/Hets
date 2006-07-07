@@ -13,7 +13,7 @@ module Main where
 
 import CASL.Kif
 import CASL.Kif2CASL
-import CASL.Print_AS_Basic()
+import CASL.ToDoc()
 
 import Common.Utils
 import Common.DocUtils
