@@ -35,7 +35,7 @@ import HasCASL.Logic_HasCASL
 import Comorphisms.CASL2PCFOL
 import Comorphisms.CASL2SubCFOL
 import Comorphisms.CFOL2IsabelleHOL
-import Comorphisms.HasCASL2IsabelleHOL
+import Comorphisms.PCoClTyConsHOL2IsabelleHOL
 #ifdef PROGRAMATICA
 import Comorphisms.Haskell2IsabelleHOLCF
 import Haskell.Logic_Haskell
@@ -58,7 +58,7 @@ printTheory libdir ln sn (G_theory lid sign0 sens0) =
 #endif
                     r4 = do
                       th0 <- coerceBasicTheory lid HasCASL "" th
-                      wrapMapTheory HasCASL2IsabelleHOL th0
+                      wrapMapTheory PCoClTyConsHOL2IsabelleHOL th0
                     r5 = coerceBasicTheory lid Isabelle "" th
                     r3 = case maybeResult r1 of
                          Nothing -> case maybeResult r2 of

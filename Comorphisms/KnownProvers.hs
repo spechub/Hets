@@ -46,7 +46,7 @@ import Comorphisms.CoPCFOL2CoCFOL
 -- import Comorphisms.CoCFOL2IsabelleHOL
 import Comorphisms.Modal2CASL
 #endif
-import Comorphisms.HasCASL2IsabelleHOL
+import Comorphisms.PCoClTyConsHOL2IsabelleHOL
 #ifdef PROGRAMATICA
 import Comorphisms.Haskell2IsabelleHOLCF
 #endif
@@ -100,7 +100,7 @@ isaComorphisms = do
 #ifdef PROGRAMATICA
                Comorphism Haskell2IsabelleHOLCF,
 #endif
-               Comorphism HasCASL2IsabelleHOL]
+               Comorphism PCoClTyConsHOL2IsabelleHOL]
 
 spassComorphisms :: Result [AnyComorphism]
 spassComorphisms =
