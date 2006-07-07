@@ -171,7 +171,7 @@ funType t = case getTypeAppl t of
            [ty] | tid == lazyTypeId -> makePartialVal ty
            [t1, t2] | isArrow tid -> FunType t1 $ if isPartialArrow tid then
                                                makePartialVal t2 else t2
-           ftys@(_ : _ : _) | isProductId tid -> foldl1 PairType ftys
+           ftys@(_ : _ : _) | isProductId tid -> foldr1 PairType ftys
            ftys -> ApplType tid ftys
        else if null tys then TypeVar tid
             else error "funType: no higher kinds"
@@ -253,8 +253,8 @@ noneOp = conDouble "None"
 exEqualOp :: Isa.Term
 exEqualOp = conDouble "exEqualOp"
 
-ifThenElseOp :: Isa.Term
-ifThenElseOp = conDouble "ifThenElseOp"
+whenElseOp :: Isa.Term
+whenElseOp = conDouble "whenElseOp"
 
 uncurryOpS :: String
 uncurryOpS = "uncurryOp"
@@ -277,17 +277,17 @@ transTerm sign trm = case trm of
       | opId == infixIf -> (fTy, ifImplOp)
       | opId == eqvId -> unCurry eqV
       | opId == exEq -> (fTy, exEqualOp)
-      | opId == eqId -> (instfTy, cf $ mkTermAppl uncurryOp $ con eqV)
+      | opId == eqId -> (instfTy, cf $ termAppl uncurryOp $ con eqV)
       | opId == notId -> (fTy, notOp)
       | opId == defId -> (instfTy, cf $ defOp)
-      | opId == whenElse -> (fTy, ifThenElseOp)
+      | opId == whenElse -> (fTy, whenElseOp)
       | otherwise -> (instfTy, cf $ conDouble $ transOpId sign opId ts)
        where instfTy = funType $ subst (if null is then Map.empty else
                     Map.fromList $ zipWith (\ (TypeArg _ _ _ _ i _ _) t
                           -> (i, t)) targs is) ty
              fTy = funType ty
              cf = mkTermAppl (convFun $ instType fTy instfTy)
-             unCurry f = (fTy, mkTermAppl uncurryOp $ con f)
+             unCurry f = (fTy, termAppl uncurryOp $ con f)
     QuantifiedTerm quan varDecls phi _ ->
         let quantify q gvd phi' = case gvd of
                 GenVarDecl (VarDecl var typ _ _) ->
@@ -314,7 +314,7 @@ transTerm sign trm = case trm of
         let (bTy, bTrm) = transTerm sign body
         in (bTy, Isa.Let (map (transProgEq sign) peqs) bTrm)
     TupleTerm ts@(_ : _) _ ->
-        foldl1 ( \ (s, p) (t, e) -> (PairType s t, Tuplex [p, e] NotCont))
+        foldr1 ( \ (s, p) (t, e) -> (PairType s t, Tuplex [p, e] NotCont))
                    $ map (transTerm sign) ts
     TupleTerm [] _ -> (UnitType, unitOp)
     ApplTerm t1 t2 _ -> mkApp sign t1 t2 -- transAppl sign Nothing t1 t2
@@ -402,7 +402,7 @@ convFun cvf = case cvf of
             BoolType -> lift2bool
             PartialVal _ -> lift2option
             _ -> lift
-    CompFun f1 f2 -> 
+    CompFun f1 f2 ->
         mkTermAppl (mkTermAppl (con compV) $ convFun f1) $ convFun f2
     ConstNil -> constNil
     ConstTrue -> constTrue
@@ -508,9 +508,15 @@ mkResFun c = case c of
 
 mkTermAppl :: Isa.Term -> Isa.Term -> Isa.Term
 mkTermAppl fun arg = case (fun, arg) of
-      (MixfixApp (Const uc _) [b@(Const bin _)] c, Tuplex a@[_, _] _)
+      (MixfixApp (Const uc _) [b@(Const bin _)] c, Tuplex a@[l, r] _)
           | new uc == uncurryOpS && elem (new bin) [eq, conj, disj, impl]
-              -> MixfixApp b a c
+              -> case (l, r) of
+                   (MixfixApp (Const f _) [la] _,
+                    MixfixApp (Const g _) [ra] _) 
+                       | new bin == eq && f == g && 
+                         elem (new f) [someS, "option2bool", "bool2option"]
+                       -> MixfixApp b [la, ra] c
+                   _ -> MixfixApp b a c
       (MixfixApp (Const mp _) [f] _, Tuplex [a, b] c)
           | new mp == "mapFst" -> Tuplex [mkTermAppl f a, b] c
           | new mp == "mapSnd" -> Tuplex [a, mkTermAppl f b] c
@@ -550,7 +556,7 @@ mkTermAppl fun arg = case (fun, arg) of
               in case arg of
                     Const j _ | new j == "True" -> tc
                               | new j == "False" -> noneOp
-                    _ -> If arg tc noneOp NotCont
+                    _ -> termAppl fun arg -- If arg tc noneOp NotCont
           | new i == "id" -> arg
           | new i == "constTrue" -> true
           | new i == "constNil" -> unitOp
