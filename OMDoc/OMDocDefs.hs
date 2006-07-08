@@ -293,6 +293,7 @@ type XmlTaggedDevGraph =
     (XmlNamed Hets.NODE_NAMEWO)
     (
         Set.Set XmlNamedWONSORT
+      , Set.Set Hets.SORTWO
       , Rel.Rel XmlNamedWONSORT
       , [(XmlNamedWONId, PredType)]
       , [(XmlNamedWONId, OpType)]

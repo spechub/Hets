@@ -320,7 +320,7 @@ correctXmlNames cm wm im =
         cmap = case Map.lookup ln cm of
           Nothing -> error ("Cannot process import from unprocessed DG!")
           (Just x) -> x
-        (xnsourcenodewo, (xnsorts, xnrels, xnpreds, xnops, _)) =
+        (xnsourcenodewo, (xnsorts, _, xnrels, xnpreds, xnops, _)) =
           case
             Map.toList $ Map.filterWithKey
               (\xnw _ -> (Hets.wonItem $ xnItem xnw) == nn)
@@ -336,7 +336,7 @@ correctXmlNames cm wm im =
         xnrelslist = Rel.toList xnrels
       in
         Map.map
-          (\(pwms, pwmr, pwmp, pwmo, pwme) ->
+          (\(pwms,ms,pwmr, pwmp, pwmo, pwme) ->
             (
                 Set.map
                   (correctItem
@@ -344,6 +344,7 @@ correctXmlNames cm wm im =
                     (==)
                   )
                   pwms
+              ,  ms
               ,  Rel.fromList
                    (
                     map
@@ -429,6 +430,7 @@ createXmlNameMap dg =
         (Set.toList onlyrefnameset)
     nodexmlnameset = Set.fromList (onlynodexmlnamelist ++ onlyrefxmlnamelist)
     sortswomap = Hets.getSortsWOWithNodeDGNamesWO dg
+    sortswomorphmap = Hets.getSortsWOMorphWithNodeDGNamesWO dg
     relswomap= Hets.getRelationsWOWithNodeDGNamesWOSMDGWO dg sortswomap
     predswomap = Map.map mapToSetToTupelList $ Hets.getPredMapsWOWithNodeDGNamesWO dg
     opswomap = Map.map mapToSetToTupelList $ Hets.getOpMapsWOWithNodeDGNamesWO dg
@@ -537,6 +539,13 @@ createXmlNameMap dg =
             sorts = case Map.lookup (xnItem nx) xmlnamedsortswomap of
               Nothing -> Set.empty
               (Just s) -> s
+            msorts =
+              case
+                find (\(o, ms') -> Hets.woOrigin o == (xnWOaToO nx))
+                  $ Map.toList sortswomorphmap
+              of
+                Nothing -> Set.empty
+                (Just (_,ms')) -> ms'
             rels = case Map.lookup (xnItem nx) xmlnamedrelswomap of
               Nothing -> Rel.empty
               (Just r) -> r
@@ -550,7 +559,7 @@ createXmlNameMap dg =
               Nothing -> []
               (Just s) -> (Set.toList s)
           in
-            (nx, (sorts, rels, preds, ops, sens))
+            (nx, (sorts, msorts, rels, preds, ops, sens))
         )
         xnwonames
   where
@@ -677,7 +686,7 @@ usedXTNames xtagln =
     namedmaps = map snd (concatMap Map.toList taggeddgs)
     names =
       map
-        (\(ss,_,pl,ol,el) ->
+        (\(ss,_,_,pl,ol,el) ->
           (map xnName (Set.toList ss))
             ++ map (xnName . fst) pl
             ++ map (xnName . fst) ol
@@ -733,13 +742,31 @@ libToXmlCMPIOXmlNamed go lenv xmlnamemap ln =
       let
         theoname = xnName xnodetupel
         (nodenum, nodename) = xnItem xnodetupel
-        (theosorts, theorels, theopreds, theoops, theosens) =
-          (\(a,b,c,d, e) -> (Set.toList a, b, c, d, e)) $
+        (theosorts, theomorphsorts, theorels, theopreds, theoops, theosens) =
+          (\(a,b,c,d,e,f) -> (Set.toList a, Set.toList b, c, d, e, f)) $
           Map.findWithDefault
-            (Set.empty, Rel.empty, [], [], [])
+            (Set.empty, Set.empty, Rel.empty, [], [], [])
             (XmlNamed (Hets.mkWON nodename nodenum) theoname)
             xmlNamedSymbolsWOMap
-        realsorts = filter (\i -> (xnWOaToO i) == nodenum) theosorts
+--        realsorts = filter (\i -> (xnWOaToO i) == nodenum) theosorts
+        realsorts =
+          filter
+            (\i -> 
+              let
+                thisorigin = xnWOaToO i
+                morphorigin =
+                  case
+                    find (\ms -> (xnWOaToa i) == (Hets.woItem ms)) theomorphsorts
+                  of
+                    Nothing ->
+                      Debug.Trace.trace
+                        ("Thats funny. No morphing origin for \"" ++ show i ++ "\" in " ++ show theomorphsorts)
+                        thisorigin
+                    (Just ms) -> Hets.wonOrigin ms
+              in
+                (thisorigin == nodenum) && (thisorigin == morphorigin)
+            )
+            theosorts 
         realsortswo = map xnItem realsorts
         realrels = Rel.fromList $ filter (\(a,b) ->
           (elem a realsorts) || (elem b realsorts)
@@ -762,10 +789,10 @@ libToXmlCMPIOXmlNamed go lenv xmlnamemap ln =
               ((itheonum, itheoname), itheoxmlname) = case find (\x -> (fst (xnItem x)) == (Hets.woOrigin inodenamewo)) (Set.toList nodexmlnameset) of
                 Nothing -> error "Unknown Origin of Morphism!"
                 (Just x) -> (xnItem x, xnName x)
-              (itheosorts, _, itheopreds, itheoops, _) =
-                (\(a,b,c,d,e) -> (Set.toList a, b, c, d, e)) $
+              (itheosorts, _, _, itheopreds, itheoops, _) =
+                (\(a,b,c,d,e,f) -> (Set.toList a, b, c, d, e, f)) $
                   Map.findWithDefault
-                    (Set.empty, Rel.empty, [], [], [])
+                    (Set.empty, Set.empty, Rel.empty, [], [], [])
                     (XmlNamed (Hets.mkWON itheoname itheonum) itheoxmlname)
                     xmlNamedSymbolsWOMap
               mmapandset =

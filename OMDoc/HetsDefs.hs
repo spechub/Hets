@@ -343,11 +343,13 @@ getFromNodeWithOriginsM dg n usenode getnode getgraphnode getcomponents isorigin
     components = getcomponents item'
     traced = foldl (\traced' c ->
       let
-        mo = traceMorphingOrigin dg n c [] isorigin morph
+        ttm = traceToMorph dg n c [] isorigin morph
+--        mo = Debug.Trace.trace ("Trace : " ++ show ttm) $ traceMorphingOrigin dg n c [] isorigin morph
       in
-        traced' ++ [case mo of
-          Nothing -> mkWON c n -- current node is origin
-          (Just o) -> mkWON c o]
+        traced' ++ [case ttm of
+          OBNothing -> mkWON c n -- current node is origin
+          (OBMorphism {}) -> mkWON c n -- current node is origin
+          (OBOrigin o) -> mkWON c o]
         ) [] components
   in
     createresult traced
@@ -388,8 +390,22 @@ getSortsFromNodeWithOrigins dg n =
     sortSet
     Set.toList
     Set.member
-    idMorph
+    sortMorph
     Set.fromList
+
+getSortsFromNodeWithMorphOrigins::
+  DGraph->Graph.Node->SortsWO
+getSortsFromNodeWithMorphOrigins dg n =
+  getFromCASLSignWithOrigins
+    dg
+    n
+    sortSet
+    Set.toList
+    Set.member
+    sortMorph
+    Set.fromList
+
+
     
 getOpsMapFromNodeWithOrigins::
   DGraph->Graph.Node->OpsWO
@@ -537,14 +553,13 @@ traceMorphingOrigin
                   let
                     ma = amorph edge a
                   in
-                    (
                     if (ma /= a)
                       then
-                        Debug.Trace.trace ("Going Deeper, change from " ++ show a ++ " to " ++ show ma)
+                        Debug.Trace.trace
+                          ("Stopping origin trace on " ++ show a ++ " to " ++ show ma)
+                          Nothing
                       else
-                        id
-                    ) $
-                    traceMorphingOrigin dg from ma (n:visited) atest amorph
+                        traceMorphingOrigin dg from ma (n:visited) atest amorph
                 )
                 (Graph.inn dg n)
           in
@@ -557,6 +572,90 @@ traceMorphingOrigin
               (Just _) ->
                 -- else use found origin
                 mo
+
+data OriginBranch = OBOrigin Graph.Node | OBMorphism Graph.Node | OBNothing
+  deriving Show
+
+traceToMorph::
+  (Eq a, Show a)=>
+  DGraph
+  ->Graph.Node
+  ->a
+  ->[Graph.Node]
+  ->(a->DGraph->Graph.Node->Bool)
+  ->(Graph.LEdge DGLinkLab->a->a)
+  ->OriginBranch
+traceToMorph
+  dg
+  n
+  a
+  visited
+  atest
+  amorph =
+  if (elem n visited) -- circle encountered...
+    then
+      OBNothing
+    else
+      if not $ atest a dg n
+        then
+          if (length visited) == 0
+            then
+              OBNothing
+            else
+              OBOrigin (head visited)
+        else
+          let
+            inedges = Graph.inn dg n
+            branches =
+              map
+                (\edge@(from, _, _) ->
+                  let
+                    am = amorph edge a
+                  in
+                    (am, traceToMorph dg from am (n:visited) atest amorph)
+                )
+                inedges
+            remapped =
+              map
+                (\(am, ob) ->
+                  if am == a
+                    then
+                      ob
+                    else
+                      case ob of
+                        (OBOrigin x) -> OBMorphism x
+                        _ -> ob
+                )
+                branches
+          in
+            case
+              Data.List.find
+                (\ob -> case ob of (OBOrigin x) -> True; _ -> False)
+                remapped
+            of
+              (Just x) ->
+             --   Debug.Trace.trace
+               --   ("Found real origin for " ++ show a ++ " at " ++ show n)
+                  x
+              _ ->
+                case
+                  Data.List.find
+                    (\ob -> case ob of (OBMorphism x) -> True; _ -> False)
+                    remapped
+                of
+                  (Just x) ->
+               --     Debug.Trace.trace
+                 --     ("Found only morph origin for " ++ show a ++ " at " ++ show n)
+                      x
+                  _ ->
+                    if null remapped
+                      then
+                   --     Debug.Trace.trace 
+                     --     ("Found current node as origin for " ++ show a ++ " at " ++ show n)
+                          (OBOrigin n)
+                      else
+                        OBNothing
+
 
 -- embed old checks...
 nullMorphCheck::forall a . (DGraph->Graph.Node->Bool)->(DGraph->Graph.Node->a->Bool)
@@ -727,8 +826,9 @@ getNodeDGNameMappingWONP dg mapper dispose =
     else
       Map.insert thisname mapped mapping
     ) Map.empty $ Graph.labNodes dg
-    
-type Imports = Set.Set (String, (Maybe MorphismMap), HidingAndRequationList, Bool)
+   
+-- added Integer to keep the order of imports (to OMDoc, from OMDoc)
+type Imports = Set.Set (Integer, (String, (Maybe MorphismMap), HidingAndRequationList, Bool))
 type Sorts = Set.Set SORT
 type Rels = Rel.Rel SORT
 type Preds = Map.Map Id.Id (Set.Set PredType)
@@ -741,7 +841,7 @@ type IdWO = WithOriginNode Id.Id
 type SentenceWO = WithOriginNode (Ann.Named CASLFORMULA)
 
 
-type ImportsWO = Set.Set (NODE_NAMEWO, (Maybe MorphismMap), HidingAndRequationList)
+type ImportsWO = Set.Set (Integer, (NODE_NAMEWO, (Maybe MorphismMap), HidingAndRequationList))
 type SortsWO = Set.Set SORTWO
 type RelsWO = Rel.Rel SORTWO
 type PredsWO = Map.Map IdWO (Set.Set PredType)
@@ -815,6 +915,10 @@ getSortsWithNodeDGNames dg = getNodeDGNameMapping dg getNodeDeltaSorts Set.null
 getSortsWOWithNodeDGNamesWO::DGraph->SortsMapDGWO
 getSortsWOWithNodeDGNamesWO dg =
   getNodeDGNameMappingWO dg getSortsFromNodeWithOrigins Set.null
+
+getSortsWOMorphWithNodeDGNamesWO::DGraph->SortsMapDGWO
+getSortsWOMorphWithNodeDGNamesWO dg =
+  getNodeDGNameMappingWO dg getSortsFromNodeWithMorphOrigins Set.null
 
 -- create a mapping of node-name -> Relation of Sorts for all nodes
 getRelationsWithNodeNames::DGraph->RelsMap
@@ -948,7 +1052,7 @@ isEmptyMorphismMap (sm,om,pm,hs) =
 getNodeImportsNodeNames::DGraph->ImportsMap
 getNodeImportsNodeNames dg = getNodeNameMapping dg (
   \dgr n -> Set.fromList $ 
-   foldl (\names (from,node) ->
+   foldl (\names (c, (from,node)) ->
     let
       edges' = filter (\(a,b,_) -> (a == from) && (b==n)) $ Graph.labEdges dgr
       caslmorph = case edges' of
@@ -965,13 +1069,13 @@ getNodeImportsNodeNames dg = getNodeNameMapping dg (
         else
           (Just (makeMorphismMap caslmorph))
     in
-      ((adjustNodeName ("AnonNode_"++(show from)) $ getDGNodeName node), mmm, ([],[]), isglobal):names
-    ) [] $ inputLNodes dgr n ) Set.null
+      ((c, ((adjustNodeName ("AnonNode_"++(show from)) $ getDGNodeName node), mmm, ([],[]), isglobal))):names
+    ) [] $ zip [1..] (inputLNodes dgr n) ) Set.null
   
 getNodeImportsNodeDGNamesWO::DGraph->ImportsMapDGWO --Map.Map NODE_NAMEWO (Set.Set (NODE_NAMEWO, Maybe MorphismMap))
 getNodeImportsNodeDGNamesWO dg = getNodeDGNameMappingWO dg (
   \dgr n -> Set.fromList $ 
-   foldl (\names (from,node) ->
+   foldl (\names (c, (from,node)) ->
     let
       edges' = filter (\(a,b,_) -> (a == from) && (b==n)) $ Graph.labEdges dgr
       caslmorph = case edges' of
@@ -983,8 +1087,8 @@ getNodeImportsNodeDGNamesWO dg = getNodeDGNameMappingWO dg (
         else
           (Just (makeMorphismMap caslmorph))
     in
-      ((mkWON (dgn_name node) from), mmm, ([],[])):names
-    ) [] $ inputLNodes dgr n ) Set.null
+      ((c,((mkWON (dgn_name node) from), mmm, ([],[])))):names
+    ) [] $ zip [1..] (inputLNodes dgr n) ) Set.null
 
 switchTargetSourceMorph::Morphism () () ()->Morphism () () ()
 switchTargetSourceMorph m =
@@ -1119,7 +1223,7 @@ findNodeNameFor::ImportsMap->(Map.Map String a)->(a->Bool)->String->(Maybe Strin
 findNodeNameFor importsMap attribMap finder name =
   let
     m_currentAttrib = Map.lookup name attribMap
-    currentImports = Set.map (\(a,_,_,_) -> a) $ Map.findWithDefault Set.empty name importsMap
+    currentImports = Set.map (\(_, (a,_,_,_)) -> a) $ Map.findWithDefault Set.empty name importsMap
   in
     if (
       case m_currentAttrib of
@@ -2174,7 +2278,9 @@ sortBeforeMorphism m s =
   in
     previous_sort
 
-
+sortAfterMorphism::Morphism a b c->SORT->SORT
+sortAfterMorphism m s =
+  Map.findWithDefault s s (sort_map m)
 
 
 buildAllSortTracesFor::
@@ -2213,6 +2319,4 @@ buildAllSortTracesFor
 
 instance Show [SortTrace] where
   show = concat . map (\st -> (show st) ++ "\n")
-
-
 

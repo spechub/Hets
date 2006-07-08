@@ -381,7 +381,9 @@ requationSymbolsToMorphismMap
                     case mo of
                       (Just (o,_)) -> o
                       Nothing ->
-                        error ("No such symbol " ++ s ++ " in " ++ from)
+                        Debug.Trace.trace ("Unknown Symbol in Hiding... \"" ++ s ++ "\" Options : " ++ (show fromsortlist) ++ (show frompredlist) ++ (show fromoplist)) $
+                        Hets.stringToId s
+{-                        error ("No such symbol " ++ s ++ " in " ++ from ++ "(" ++ (show fromsortlist) ++ (show frompredlist) ++ (show fromoplist) ++ ") tolists : "++ (show fromsortlist) ++ (show frompredlist) ++ (show fromoplist) ++ " f " ++ from ++ " t " ++ to)-}
         )
         hiddens
     (sm, pm, om) =
@@ -415,7 +417,7 @@ requationSymbolsToMorphismMap
                           Nothing ->
                             error ("No such operator " ++ tosymbol ++ " in " ++ to)
                       Nothing ->
-                        error ("No such symbol " ++ fromsymbol ++ " in " ++ from ++ " ( " ++ show fromsortlist ++ " ) ")
+                        error ("No such symbol " ++ fromsymbol ++ " in " ++ from ++ " ( " ++ show fromsortlist ++ " ) (map to \"" ++ tosymbol ++ "\" " ++ show tosortlist ++ ") ")
         )
         (Map.empty, Map.empty, Map.empty)
         reqlist
@@ -1391,7 +1393,7 @@ importsFromXmlTheory t =
     imports' = applyXmlFilter (getChildren .> isTag "imports") t
   in
     foldl
-      (\imps i ->
+      (\imps (c, i) ->
         let
           from = xshow $ applyXmlFilter (getValue "from") [i]
           mfromURI = URI.parseURIReference from
@@ -1415,8 +1417,8 @@ importsFromXmlTheory t =
             ) (Map.empty, Map.empty, Map.empty, Set.empty) $
               applyXmlFilter (getChildren .> isTag "morphism") [i] -}
         in
-          Set.union imps (Set.singleton (fromname, (Just mm), hreq, True))
-      ) Set.empty imports'
+          Set.union imps (Set.singleton (c, (fromname, (Just mm), hreq, True)))
+      ) Set.empty (zip [1..] imports')
        
 
 requationsFromXml::HXT.XmlTrees->Hets.RequationMap
@@ -1571,6 +1573,7 @@ ffxiSToXmlTaggedDevGraph
             xnwonnode 
             (
                 sorts
+              , Set.empty
               , rels
               , preds
               , ops
@@ -1778,7 +1781,7 @@ importGraphToDGraphXN::
   GlobalOptions
   ->(ImportGraph (HXT.XmlTrees, Maybe (DGraph, FFXInput)))
   ->Graph.Node
-  ->(DGraph, FFXInput)
+  ->(DGraph, Map.Map Graph.Node XmlName, FFXInput)
 importGraphToDGraphXN go ig n =
   let
     mnode = Graph.lab ig n
@@ -1796,6 +1799,8 @@ importGraphToDGraphXN go ig n =
     --nodegraph = (Graph.mkGraph lnodes [])::DGraph
     nameNodeMap = Map.fromList $
       map ( \(n' , xnnode' ) -> (getDGNodeName (xnItem xnnode' ) , n' ) ) $ lnodes
+    nodeXNameMap = Map.fromList $
+      map (\(n', xnnode' ) -> (n', xnName xnnode')) lnodes
     xmlnameNodeMap = Map.fromList $
       map ( \(n' , xnnode' ) -> (xnName xnnode', n' ) ) $ lnodes
     -- this is terribly broken (morphisms are not handled correct)!
@@ -1841,7 +1846,7 @@ importGraphToDGraphXN go ig n =
                     _ -> error "node error!"
             -- targetsign = getNodeSignature ig (Just tnode)
             nodeimporthints = Map.findWithDefault Set.empty nodename importhints
-            importsfrom = map (\(a,_,_,_) -> a) $ Set.toList nodeimports
+            importsfrom = map (\(_, (a,_,_,_)) -> a) $ Set.toList nodeimports
             -- the omdoc-imports have limited support for the imports
             -- used in a dgraph. some import-hints have no import-tag in
             -- the omdoc
@@ -1864,7 +1869,7 @@ importGraphToDGraphXN go ig n =
                 )
                 nodeimporthints 
           in
-            (foldl (\le' (ni, mmm, hreq, isGlobal) ->
+            (foldl (\le' (_, (ni, mmm, hreq, isGlobal)) ->
               let
                 importsorts = Set.toList $
                   Map.findWithDefault
@@ -1881,17 +1886,19 @@ importGraphToDGraphXN go ig n =
                     (Set.empty)
                     ni
                     (xnOpsMap ffxi)
-                rmm =
+{-                rmm =
+                  -- this cannot be done here, because morphism mappings
+                  -- and hiding may (and do) reference to imported symbols...
                   requationSymbolsToMorphismMap
-                    nodesorts
-                    nodepreds
-                    nodeops
                     importsorts
                     importpreds
                     importops
-                    nodename
+                    nodesorts
+                    nodepreds
+                    nodeops
                     ni
-                    hreq
+                    nodename
+                    hreq -}
                 --
                 importnodenum = case Map.findWithDefault (-1) ni xmlnameNodeMap of
                   (-1) -> debugGO go "iGTDGXN" ("Cannot find node for \"" ++ ni ++ "\"!") (-1)
@@ -1919,15 +1926,15 @@ importGraphToDGraphXN go ig n =
                     else
                       defaultDGLinkLab { dgl_type = Static.DevGraph.LocalDef }
                 -- process hiding here !
-                ddgl =
+{-                ddgl =
                   thislinklab
                     {
                         dgl_origin = DGTranslation
                       , dgl_morphism =
                         Hets.makeCASLGMorphism
                           (Hets.morphismMapToMorphism rmm)
-                    }
-{-                ddgl = case mmm of
+                    } -}
+                ddgl = case mmm of
                   Nothing -> thislinklab
                   (Just mm) ->
                     thislinklab
@@ -1942,7 +1949,7 @@ importGraphToDGraphXN go ig n =
                                   , msource = sourcesign
                                 } -}
                             )
-                      } -}
+                      } 
               in      
                 le' ++
                 if Set.null filteredimporthints
@@ -1994,7 +2001,7 @@ importGraphToDGraphXN go ig n =
         ) [] (ledges ++ glThmLEdges)
     cleannodes = map (\(n' , xnnode' ) -> (n' , cleanNodeName (xnItem xnnode' ) )) lnodes  
   in
-    (Graph.mkGraph cleannodes validedges, ffxi)
+    (Graph.mkGraph cleannodes validedges, nodeXNameMap, ffxi)
   where
   getFragmentOrWarnAndString::String->String
   getFragmentOrWarnAndString s =
@@ -2017,6 +2024,253 @@ importGraphToDGraphXN go ig n =
                 s
             else
               drop 1 frag
+
+type TaggedEdgeDGraph = CLGraph.Gr DGNodeLab (Int, DGLinkLab)
+
+tagEdges::DGraph->TaggedEdgeDGraph
+tagEdges dg =
+  let
+    labNodes = Graph.labNodes dg
+    labEdges = Graph.labEdges dg
+    newLabEdges = zipWith (\a (f, t, dgl) -> (f, t, (a, dgl))) [1..] labEdges
+  in
+    Graph.mkGraph labNodes newLabEdges
+
+untagEdges::TaggedEdgeDGraph->DGraph
+untagEdges tedg =
+  let
+    labNodes = Graph.labNodes tedg
+    labEdges = Graph.labEdges tedg
+    newLabEdges = map (\(f, t, (a, dgl)) -> (f, t, dgl)) labEdges
+  in
+    Graph.mkGraph labNodes newLabEdges
+
+processImportsAndMorphisms::DGraph->Map.Map Graph.Node XmlName->FFXInput->DGraph
+processImportsAndMorphisms dg nxm ffxi =
+  let
+    taggedDG = tagEdges dg
+    allEdges = (Graph.labEdges taggedDG)
+    defEdges =
+      foldl
+        (\eC (tedge@(_,_,(_, dgl))) ->
+          eC ++
+            case dgl_type dgl of
+              (GlobalDef {}) -> [tedge] 
+              (LocalDef {}) -> [tedge]
+              (HidingDef {}) -> [tedge]
+              _ -> []
+        )
+        []
+        allEdges
+    thmEdges =
+      foldl
+        (\eC (tedge@(_,_,(_, dgl))) ->
+          eC ++
+            case dgl_type dgl of
+              (GlobalThm {}) -> [tedge] 
+              (LocalThm {}) -> [tedge]
+              (HidingThm {}) -> [tedge]
+              _ -> []
+        )
+        []
+        allEdges
+    ((defdg, deffxxi),_) =
+      until
+        (\(_, remainingEdges) -> null remainingEdges)
+        (\((dg', ffxi'), (edge:edges)) ->
+        --  Debug.Trace.trace (".") $
+            processEdge dg' nxm ffxi' edge edges
+        )
+        ((taggedDG, ffxi), defEdges)
+    ((thmdg, thmfxxi),_) =
+      until
+        (\(_, remainingEdges) -> null remainingEdges)
+        (\((dg', ffxi'), (edge:edges)) ->
+      --    Debug.Trace.trace (".") $
+            processEdge dg' nxm ffxi' edge edges
+        )
+        ((defdg,deffxxi), thmEdges) 
+  in
+      (untagEdges defdg)
+
+processEdge::
+  TaggedEdgeDGraph
+  ->Map.Map Graph.Node XmlName
+  ->FFXInput
+  ->Graph.LEdge (Int, DGLinkLab)
+  ->[Graph.LEdge (Int, DGLinkLab)]
+  ->((TaggedEdgeDGraph, FFXInput), [Graph.LEdge (Int, DGLinkLab)])
+processEdge
+  tdg
+  nxm
+  ffxi
+  (tedge@(from, to, (tag, dgl)))
+  edges =
+  -- check if this edge is from a node that needs edge processing itself
+  -- if yes : process that node recusivly, else : apply import
+  -- local imports are always valid, unless they contain a morphism
+  -- if they contain a morphism, process last (two (depending) morphisms need
+  -- to be processed according to order (need info from previous step... not possible
+  -- here..., but when independent, processing is possible)
+  --
+  let
+    fromnode = fromMaybe (error "No such node!") $ Graph.lab tdg from
+    tonode = fromMaybe (error "No such node!") $ Graph.lab tdg to
+    unprocessedFrom = filter (\(from', tof, _) -> (from' /= from) && (tof == from) ) edges
+    fromxname = Map.findWithDefault (error "No such name!") from nxm
+    toxname = Map.findWithDefault (error "No such name!") to nxm
+    (parallelImports, otherImports) =
+      partition (\(_, tot, _) -> tot == to) edges
+  in
+    if null unprocessedFrom
+      then
+        if hasCASLMorphism dgl
+          then
+            case partition (\(_, _, (_, dgl')) -> not $ hasCASLMorphism dgl') parallelImports
+            of
+              ( [], _ ) ->
+  --              Debug.Trace.trace ("M!")
+                  ( applyLink tdg tedge, edges )
+              ( betterEdges, rest ) ->
+    --            Debug.Trace.trace ("BeboM " ++ show (fromxname, toxname) )
+                  ((tdg, ffxi), betterEdges ++ [tedge] ++ rest ++ otherImports)
+          else
+      --      Debug.Trace.trace ("I!")
+              ( applyLink tdg tedge, edges )
+      else
+     --   Debug.Trace.trace ("DooI" ++ show (fromxname, toxname) ++ " " ++ show (from, to) ++ " -> " ++ (show $ map (\(a,b,(_,c)) -> (a,b, dgl_type c)) unprocessedFrom) )
+          ((tdg, ffxi), edges ++ [tedge]) -- try other edge in processImportsAndMorphisms
+  where
+    hasCASLMorphism::DGLinkLab->Bool
+    hasCASLMorphism dgl' =
+      let
+        caslmorph = Hets.getCASLMorphLL dgl'
+      in
+        not $ and
+          [
+              (Map.null (sort_map caslmorph))
+            , (Map.null (pred_map caslmorph))
+            , (Map.null (fun_map caslmorph))
+          ]
+    applyLink::TaggedEdgeDGraph->Graph.LEdge (Int, DGLinkLab)->(TaggedEdgeDGraph, FFXInput)
+    applyLink
+      tdg'
+      (edge'@(from',  to' , (tag', dgl'))) =
+      let
+        fromxname = Map.findWithDefault (error "No such name!") from' nxm
+        toxname = Map.findWithDefault (error "No such name!") to' nxm
+        caslmorph = Hets.getCASLMorphLL dgl'
+        sourcesorts =
+          Map.findWithDefault
+            Set.empty
+            fromxname
+            (xnSortsMap ffxi)
+        sourcepreds =
+          Map.findWithDefault
+            Set.empty
+            fromxname
+            (xnPredsMap ffxi)
+        sourceops =
+          Map.findWithDefault
+            Set.empty
+            fromxname
+            (xnOpsMap ffxi)
+        targetsorts =
+          Map.findWithDefault
+            Set.empty
+            toxname
+            (xnSortsMap ffxi)
+        targetpreds =
+          Map.findWithDefault
+            Set.empty
+            toxname
+            (xnPredsMap ffxi)
+        targetops =
+          Map.findWithDefault
+            Set.empty
+            toxname
+            (xnOpsMap ffxi)
+        caslmorphism = Hets.getCASLMorphLL dgl
+        newmorph =
+          fixMorphism
+            (Set.toList sourcesorts)
+            (Set.toList sourcepreds)
+            (Set.toList sourceops)
+            (Set.toList targetsorts)
+            (Set.toList targetpreds)
+            (Set.toList targetops)
+            caslmorph
+        newNode =
+          Hets.addSignsAndHideWithMorphism
+            (untagEdges tdg')
+            (sortSet (msource caslmorph))
+            caslmorph
+            from' 
+            to'
+        graphEdges = Graph.labEdges tdg'
+        allButThisEdge =
+          filter 
+            (\(_, _, (tag'', _)) -> tag'' /= tag')
+            graphEdges
+        savedEdges =
+            filter
+              (\(froms, tos, _) ->
+                (froms == to') || (tos == to')
+              )
+              allButThisEdge
+--        savedEdges = (Graph.inn dg' to') ++ (Graph.out dg' to')
+        unmodifiedEdges =
+          filter
+            (\(_, _, (t, _)) ->
+              case
+                find (\(_, _, (t', _)) -> t == t') savedEdges
+              of
+                Nothing -> True
+                _ -> False
+            )
+            allButThisEdge
+        dgUnmodified =
+          Graph.mkGraph (Graph.labNodes tdg') unmodifiedEdges
+        dgWithNewNode =
+          Graph.insNode (to', newNode) $ Graph.delNode to' dgUnmodified
+        dgWithNewNodeAndOldEdges =
+          Graph.insEdges savedEdges dgWithNewNode
+        newmorphdg = case dgl_type dgl of
+          (HidingDef {}) ->
+            newmorph
+              {
+                  msource = getSign (untagEdges dgWithNewNodeAndOldEdges) to'
+                , mtarget = getSign (untagEdges dgWithNewNodeAndOldEdges) from'
+              }
+          _ ->
+            newmorph
+              {
+                  msource = getSign (untagEdges dgWithNewNodeAndOldEdges) from'
+                , mtarget = getSign (untagEdges dgWithNewNodeAndOldEdges) to'
+              }
+        newEdge =
+          (
+              from'
+            , to'
+            , (tag' , dgl
+                {
+                  dgl_morphism =
+                    Hets.makeCASLGMorphism
+                      newmorphdg
+                }
+              )
+          )
+        newtsorts = Set.union sourcesorts targetsorts
+        newtpreds = Set.union sourcepreds targetpreds
+        newtops = Set.union sourceops targetops
+        newffxi = ffxi
+          {
+              xnSortsMap = Map.insert toxname newtsorts (xnSortsMap ffxi)
+            , xnPredsMap = Map.insert toxname newtpreds (xnPredsMap ffxi)
+            , xnOpsMap = Map.insert toxname newtops (xnOpsMap ffxi)
+          }
+      in
+        (Graph.insEdge newEdge dgWithNewNodeAndOldEdges, newffxi)
  
 applyLocalImportsAndHiding::DGraph->DGraph
 applyLocalImportsAndHiding dg =
@@ -2717,10 +2971,11 @@ processImportGraphXN go ig =
               --      (\(_, S _ (omdoc, _)) -> omdoc) changednode
               changednodenum =
                 (\(nodenum, _) -> nodenum) changednode
-              (skeldg, ffxi) = importGraphToDGraphXN go igxmd changednodenum
-              dg = applyGlobalImportsAndHiding
+              (skeldg, nxm, ffxi) = importGraphToDGraphXN go igxmd changednodenum
+{-              dg = applyGlobalImportsAndHiding
                 $ applyLocalImportsAndHiding
-                  $ fixDGMorphisms ffxi skeldg
+                  $ fixDGMorphisms ffxi skeldg -}
+              dg = processImportsAndMorphisms skeldg nxm ffxi
               -- name = (\(_, (S (nname,_) _)) -> nname) changednode
               -- create the altered node
               newnode = (\(nodenum, S a (omdoc,_)) ->
