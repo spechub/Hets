@@ -7,22 +7,22 @@ Test Logic translation for development graphs.
    Follows Sect. IV:4.2 of the CASL Reference Manual.
 -}
 
-module Static.Test.TestDGTrans where
+module Main where -- Static.Test.TestDGTrans where
 
 import Static.DGTranslation
-import Logic.Logic
-import Logic.Coerce
-import Logic.Comorphism
+-- import Logic.Logic
+-- import Logic.Coerce
+-- import Logic.Comorphism
 import Logic.Grothendieck
-import Logic.Prover
+-- import Logic.Prover
 
 import Syntax.AS_Library
 import Static.AnalysisLibrary
 import Static.DevGraph
-import Static.PrintDevGraph
+-- import Static.PrintDevGraph
 import Driver.Options
 import qualified Common.Lib.Map as Map
-import Common.Doc
+-- import Common.Doc
 import System.Environment
 import Comorphisms.PCFOL2CFOL
 import Common.Result
@@ -55,10 +55,6 @@ process2 file = do
       _ -> do putStrLn "nichts"
               return mResult
 
-
-printLibEnv :: LibEnv -> Doc
-printLibEnv le = vsep $ map (printLibrary le) $ Map.toList le
-
 {- Call this function as follows
 make
 make ghci
@@ -71,8 +67,8 @@ printLibEnv lenv
 trans_PCFOL2CFOL :: GlobalContext -> IO GlobalContext
 trans_PCFOL2CFOL gc = do
     case dg_translation gc (Comorphism PCFOL2CFOL) of
-      Result diags maybeGC ->
-          do putStrLn $ show diags
+      Result diags' maybeGC ->
+          do putStrLn ("diagnosis : \n" ++ (show diags'))
              case maybeGC of
                Just gc' -> return gc'
                Nothing  -> return gc

@@ -21,6 +21,9 @@ import Common.Result
 import Maybe
 import Common.Lib.Graph
 import Data.Graph.Inductive.Graph
+import CASL.Logic_CASL
+import Comorphisms.CASL2PCFOL
+import Comorphisms.CASL2SubCFOL
 
 -- translation between two GlobalContext on the basis the given Comorphism 
 dg_translation :: GlobalContext -> AnyComorphism -> Result GlobalContext
@@ -30,18 +33,32 @@ dg_translation gc cm@(Comorphism cidMor) =
         mainTrans [] diagsMain gcon = Result diagsMain (Just gcon)
         mainTrans (h:r) diagsMain gcon =  
             case Map.lookup h (toMap $ devGraph gcon) of
-              Just (_, nodeLab, _) ->
+              Just (node@(_, nodeLab, _)) ->
                   if lessSublogicComor 
                          (sublogicOfTh $ dgn_theory nodeLab) cm
                     then let Result diags' maybeGC = updateNode h gcon cm 
                          in  case maybeGC of
-                             Just gc' -> mainTrans r (diagsMain ++ diags') gc'
-                             Nothing -> mainTrans r (diagsMain ++ diags') gc
-                    else mainTrans r (diagsMain ++ [(mkDiag Hint ("node " ++ (show h) ++
-                            ":" ++ (show $ dgn_name nodeLab) ++
-                            " is not less than " ++ (show cm)) ())]) gcon
+                              Just gc' -> mainTrans r (diagsMain ++ diags') gc'
+                              Nothing -> mainTrans r (diagsMain ++ diags') gc
+                    else  let gcon' = changeThOfNode node  gcon
+			      hintDiag = diagsMain ++ [(mkDiag Hint ("node " ++ (show h) ++
+					":" ++ (show $ dgn_name nodeLab) ++
+					" is not less than " ++ (show cm) ++ 
+                                        " -- change the theory...") ())] 
+			  in mainTrans r hintDiag gcon'
               Nothing -> mainTrans r (diagsMain ++ [(mkDiag Error ("node " ++ (show h) 
                               ++ " is not found in graph.") ())]) gcon
+			      
+	     where changeThOfNode (lin, nodeLab, lout) globalContext =
+                     case dgn_theory nodeLab of
+                      G_theory lid sign0 sens0 ->
+		       let th = (sign0, toNamedList sens0)
+                           Result _ (Just (sign1, sens1)) = do
+						th0 <- coerceBasicTheory lid CASL "" th
+						th1 <- wrapMapTheory CASL2PCFOL th0
+						wrapMapTheory CASL2SubCFOL th1
+		       in globalContext {devGraph =Gr (Map.update (\_ -> Just (lin, nodeLab{dgn_theory = G_theory (targetLogic CASL2SubCFOL) sign1 (toThSens sens1)}, lout)) h (toMap $ devGraph globalContext))}
+				
 
 
 updateNode :: Int -> GlobalContext -> AnyComorphism -> Result GlobalContext
