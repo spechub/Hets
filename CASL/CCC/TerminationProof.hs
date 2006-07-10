@@ -11,7 +11,7 @@ Portability :  portable
 
 module CASL.CCC.TerminationProof where
 
-import CASL.Print_AS_Basic()                   
+import CASL.ToDoc ()
 import CASL.AS_Basic_CASL       
 import Common.AS_Annotation
 import Common.DocUtils
