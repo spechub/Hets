@@ -1,0 +1,161 @@
+library Basic/RelationsAndOrders
+version 1.0
+%authors: M. Roggenbach <csmarkus@swansea.ac.uk>, T. Mossakowski, L. Schröder
+%date: 18 December 2003
+
+%{ This library provides 
+
+- specifications of binary relations of different sort, 
+- views stating that the numbers specified in the
+   Library Basic/Numbers are totally ordered, and
+- a specification of Boolean Algebras.
+
+Then, the different concepts specified are enriched with additional
+operations and predicates: In case of partial orders, the specification
+ExtPartialOrder provides the notions of inf, sup; the specification
+ExtTotalOrder adds the functions min and max to total orders;
+ExtBooleanAlgebra defines a complement operation as well as a
+less-or-equal relation for Boolean algebras.
+
+Finally, the library provides non parametrized variants of these
+enriched specifications. }%
+
+%display __~__    %LATEX __\sim__
+%display __<=__    %LATEX __\leq__
+%display __>=__    %LATEX __\geq__
+%display __cup __ %LATEX __\sqcup__
+%display __cap __ %LATEX __\sqcap__
+%display compl__  %LATEX __^{-1}
+
+%prec { __ cup __ } < { __ cap __}
+
+
+spec Relation =
+     sort Elem
+     pred __ ~ __: Elem * Elem
+end
+
+spec ReflexiveRelation =
+     Relation
+then
+     forall x:Elem
+     . x ~ x                        %(refl)%
+end
+
+spec IrreflexiveRelation =
+     Relation
+then
+     forall x:Elem
+     . not x ~ x                  %(irrefl)%
+end
+
+spec SymmetricRelation =
+     Relation
+then forall x,y:Elem
+     . x ~ y if y ~ x                %(sym)%
+end
+
+spec AsymmetricRelation =
+     Relation
+then forall x,y:Elem
+     . not x ~ y if y ~ x           %(asym)%
+end
+
+spec AntisymmetricRelation =
+     Relation
+then forall x,y:Elem
+     . x = y if x ~ y /\ y ~ x %(antisym)%
+end
+
+spec TransitiveRelation =
+     Relation
+then forall x,y,z:Elem
+     . x ~ z if x ~ y /\ y ~ z     %(trans)%
+end
+
+spec SimilarityRelation =
+     ReflexiveRelation and SymmetricRelation
+end
+
+spec PartialEquivalenceRelation =
+     SymmetricRelation and TransitiveRelation
+end
+
+spec EquivalenceRelation =
+     ReflexiveRelation and PartialEquivalenceRelation
+end
+
+spec PreOrder =
+     {ReflexiveRelation and TransitiveRelation}
+     with pred __ ~ __ |-> __ <= __
+end
+
+spec StrictOrder =
+     { {IrreflexiveRelation and TransitiveRelation}
+       then %implies
+             AsymmetricRelation }
+     with pred __ ~ __ |-> __ < __
+end
+
+spec PartialOrder =
+     PreOrder 
+and  AntisymmetricRelation with pred __ ~ __ |-> __ <= __
+end
+
+spec TotalOrder =
+     PartialOrder
+then forall x,y:Elem
+     . x <= y \/ y <= x                    %(dichotomy_TotalOrder)%
+end
+
+spec StrictTotalOrder =
+     StrictOrder
+then forall x,y:Elem
+     . x < y \/ y < x \/ x=y        %(trichotomy_StrictTotalOrder)%
+end
+
+spec RightUniqueRelation =
+     sorts S, T
+     pred __ R __: S * T
+     forall s:S; t1,t2:T
+     . s R t1 /\ s R t2 => t1=t2
+end
+
+spec LeftTotalRelation =
+     sorts S, T
+     pred __ R __: S * T
+     forall s:S . exists t:T . s R t
+end
+
+spec BooleanAlgebra =
+
+     sort Elem
+
+     ops 0,1:       Elem;
+         __ cap __: Elem * Elem -> Elem, assoc, comm, unit 1;
+         __ cup __: Elem * Elem -> Elem, assoc, comm, unit 0;
+
+     forall x,y,z:Elem
+
+     . x cap ( x cup y) = x             %(absorption_def1)%
+     . x cup ( x cap y) = x             %(absorption_def2)%
+
+     . x cap 0 = 0                      %(zeroAndCap)%
+     . x cup 1 = 1                      %(oneAndCup)%
+
+     . x cap ( y cup z) = (x cap y) cup ( x cap z)             
+                                        %(distr1_BooleanAlgebra)%
+     . x cup ( y cap z) = (x cup y) cap ( x cup z)             
+                                        %(distr2_BooleanAlgebra)%
+
+     . exists x': Elem . x cup x' = 1 /\ x cap x' = 0             
+                                        %(inverse_BooleanAlgebra)%
+
+then %implies
+
+     op __ cup __, __ cap __ : Elem * Elem -> Elem , idem
+
+     forall x: Elem
+     . exists! x': Elem . 
+         x cup x' = 1 /\ x cap x' = 0   %(uniqueComplement_BooleanAlgebra)%
+end
