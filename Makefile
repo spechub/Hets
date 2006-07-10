@@ -56,7 +56,7 @@ GENERATERULES_deps = utils/GenerateRules/*hs $(DRIFT_deps)
 GENITCORRECTIONS_deps = utils/itcor/GenItCorrections.hs Common/Utils.hs \
     Common/Lib/Map.hs Common/Lib/Set.hs
 INLINEAXIOMS_deps = utils/InlineAxioms/InlineAxioms.hs \
-    Common/Doc.hs CASL/Print_AS_Basic.hs Modal/AS_Modal.hs \
+    Common/Doc.hs CASL/ToDoc.hs Modal/AS_Modal.hs \
     Modal/Parse_AS.hs Modal/ModalSign.hs Modal/Print_AS.hs Modal/StatAna.hs
 
 HC = ghc
