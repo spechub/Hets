@@ -31,8 +31,6 @@ import Common.DocUtils
 import Common.Id
 import Common.Keywords
 import Common.Result
-import Common.PrettyPrint
-import Common.Print_AS_Annotation
 
 import Control.Exception (assert)
 
@@ -479,19 +477,11 @@ isSortInjective m =
    where sm = sort_map m
          src = Map.keys sm
 
-instance PrettyPrint Symbol where
-    printText0 ga = toText ga . pretty
-
 instance Pretty Symbol where
   pretty sy = pretty (symName sy) <>
     case symbType sy of
        SortAsItemType -> empty
        st -> space <> colon <> pretty st
-
-
-instance PrettyPrint SymbType where
-  -- op types try to place a question mark immediately after a colon
-  printText0 ga = toText ga . pretty
 
 instance Pretty SymbType where
   pretty st = case st of
@@ -499,28 +489,17 @@ instance Pretty SymbType where
      PredAsItemType pt -> space <> pretty pt
      SortAsItemType -> empty
 
-instance PrettyPrint Kind where
-    printText0 ga = toText ga . pretty
-
 instance Pretty Kind where
   pretty k = keyword $ case k of
       SortKind -> sortS
       FunKind -> opS
       PredKind -> predS
 
-instance PrettyPrint RawSymbol where
-    printText0 ga = toText ga . pretty
-
 instance Pretty RawSymbol where
   pretty rsym = case rsym of
     ASymbol sy -> pretty sy
     AnID i -> pretty i
     AKindedId k i -> pretty k <+> pretty i
-
-instance (PrettyPrint e, PrettyPrint f, PrettyPrint m) =>
-    PrettyPrint (Morphism f e m) where
-        printText0 ga = toText ga .
-          printMorphism (fromText ga) (fromText ga) (fromText ga)
 
 printMorphism :: (f->Doc) -> (e->Doc) -> (m->Doc) -> Morphism f e m -> Doc
 printMorphism fF fE fM mor =

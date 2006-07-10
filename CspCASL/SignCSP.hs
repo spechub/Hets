@@ -19,7 +19,6 @@ import CASL.Sign
 import CASL.Morphism
 import Common.Id
 import qualified Common.Lib.Map as Map
-import Common.PrettyPrint
 import Common.Doc
 import Common.DocUtils
 
@@ -70,14 +69,4 @@ instance Pretty CSPAddSign where
   pretty = text . show
 instance Pretty CSPAddMorphism where
   pretty = text . show
-
-instance PrettyPrint CSPAddSign where
-  printText0 = toOldText
-instance PrettyPrint CSPAddMorphism where
-  printText0 = toOldText
-
-instance PrintLaTeX CSPAddSign where
-  printLatex0 = toOldLatex
-instance PrintLaTeX CSPAddMorphism where
-  printLatex0 = toOldLatex
 

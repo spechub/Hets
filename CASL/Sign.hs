@@ -18,13 +18,11 @@ import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.State as State
-import Common.PrettyPrint
 import Common.Keywords
 import Common.Id
 import Common.Result
 import Common.AS_Annotation
 import Common.GlobalAnnotations
-import Common.Print_AS_Annotation
 import Common.Doc
 import Common.DocUtils
 import CASL.ToDoc
@@ -91,20 +89,11 @@ toOpType (Op_type k args r _) = OpType k args r
 toPredType :: PRED_TYPE -> PredType
 toPredType (Pred_type args _) = PredType args
 
-instance PrettyPrint OpType where
-  printText0 ga = toText ga . pretty
-
 instance Pretty OpType where
   pretty = printOpType . toOP_TYPE
 
-instance PrettyPrint PredType where
-  printText0 ga = toText ga . pretty
-
 instance Pretty PredType where
   pretty = printPredType . toPRED_TYPE
-
-instance (PrettyPrint f, PrettyPrint e) => PrettyPrint (Sign f e) where
-    printText0 ga = toText ga . printSign (fromText ga) (fromText ga)
 
 instance (Pretty f, Pretty e) => Pretty (Sign f e) where
     pretty = printSign pretty pretty
