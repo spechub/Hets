@@ -7,20 +7,71 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-document data type for displaying (heterogenous) CASL specifications
-at least as plain text and latex (and maybe in html as well)
+This module contains a document data type 'Doc' for displaying
+(heterogenous) CASL specifications at least as plain text and latex
+(and maybe html as well)
 
-inspired by John Hughes's and Simon Peyton Jones's Pretty Printer Combinators
-in "Text.PrettyPrint.HughesPJ", Thomas Hallgren's
-<http://www.cse.ogi.edu/~hallgren/Programatica/tools/pfe.cgi?PrettyDoc>
-Daan Leijen's PPrint: A prettier printer 2001, Olaf Chiti's
-Pretty printing with lazy Dequeues 2003
+Inspired by John Hughes's and Simon Peyton Jones's Pretty Printer
+Combinators in "Text.PrettyPrint.HughesPJ", Thomas Hallgren's
+<http://www.cse.ogi.edu/~hallgren/Programatica/tools/pfe.cgi?PrettyDoc>,
+Daan Leijen's PPrint: A prettier printer 2001, and Olaf Chiti's Pretty
+printing with lazy Dequeues 2003
+
+The main combinators are those from "Text.PrettyPrint.HughesPJ" except
+nest, hang and $$. Instead of $$ '$+$' must be used that always forces a
+line break. Indentation must be constructed using '<>' or '<+>', i.e.
+'text' \"spec\" '<+>' MultilineBlock.
+
+Also char, ptext, int, integer, float, double and rational do not
+exist. These can all be simulated using 'text' (and 'show'). There's
+an instance for 'Int' in "Common.DocUtils".
+
+Furthermore, documents can no longer be tested with isEmpty. 'empty'
+documents are silently ignored (as by "Text.PrettyPrint.HughesPJ") and
+often it is more natural (or even necessary anyway) to test the
+original data structure for emptiness.
+
+Putting a document into braces has changed to 'specBraces' (a function
+braces is simply not exported), ensuring that opening and closing
+braces are in the same column if the whole document does not fit on a
+single line.
+
+Rendering of documents is achieved by translations to the old
+"Common.Lib.Pretty". For plain text simply 'show' can be
+used. Any document can be translated to LaTeX via 'toLatex' and then
+processed further by "Common.PrintLatex". If you like the output is a
+different question, but the result should be legal LaTeX in
+conjunction with the hetcasl.sty file.
+
+For nicer looking LaTeX the predefined symbol constants should be
+used! There is a difference between 'bullet' and 'dot' that is not
+visible in plain text.
+
+There are also three kinds of keywords, a plain 'keyword', a
+'topSigKey' having the width of \"preds\", and a 'topKey' having the
+width of \"view\". In plain text only inserted spaces are visible.
+
+Strings in small caps are created by 'structId' and
+'indexed'. The latter puts the string also into a LaTeX index.
+
+In order to avoid considering display annotations and precedences,
+documents can be constructed using 'annoDoc', 'idDoc', and 'idApplDoc'.
+
+Currently only a few annotations (i.e. labels and %implied) are
+printed 'flushRight'. This function is problematic as it does not
+prevent something to be appended using '<>' or '<+>'. Furthermore
+flushed parts are currently only visible in plain text, if they don't
+fit on the same line (as nest is used for indenting).
+
+Further functions are documented in "Common.DocUtils".
+
+Examples can be produced using: hets -v2 -o pp.het,pp.tex
 -}
 
 module Common.Doc
-    ( -- * The document type
+    ( -- * the document type
       Doc            -- Abstract
-      -- * Primitive Documents
+      -- * primitive documents
     , empty
     , space
     , semi
@@ -34,16 +85,20 @@ module Common.Doc
     , rbrack
     , lbrace
     , rbrace
-      -- * Converting strings into documents
+      -- * converting strings into documents
     , text
-    , literalDoc
-      -- * Wrapping documents in delimiters
+    , keyword
+    , topSigKey
+    , topKey
+    , indexed
+    , structId
+      -- * wrapping documents in delimiters
     , parens
     , brackets
     , specBraces
     , quotes
     , doubleQuotes
-      -- * Combining documents
+      -- * combining documents
     , (<>)
     , (<+>)
     , hcat
@@ -58,13 +113,6 @@ module Common.Doc
     , fcat
     , punctuate
     , sepByCommas
-    , flushRight
-      -- * keywords
-    , keyword
-    , topSigKey
-    , topKey
-    , indexed
-    , structId
       -- * symbols
     , dot
     , bullet
@@ -97,6 +145,8 @@ module Common.Doc
     , toText
     , toLatex
       -- * manipulating documents
+    , flushRight
+    , literalDoc
     , changeGlobalAnnos
     , rmTopKey
     ) where
@@ -190,7 +240,7 @@ commentText = Text Comment
 native :: String -> Doc
 native = Text Native
 
--- leave this string entirely untouched for old latex bits
+-- | integrate old bits untouched (to be deleted)
 literalDoc :: Pretty.Doc -> Doc
 literalDoc = LiteralDoc
 
