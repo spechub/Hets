@@ -14,7 +14,6 @@ This class needs to be instantiated for every datastructure in AS_*
 module Common.PrintLaTeX
     ( renderLatex
     , debugRenderLatex
-    , PrintLaTeX(..)
     , renderLatexVerb
     , renderInternalLatex
     , setTabWithSpaces
@@ -25,11 +24,8 @@ import Data.Char (isSpace, isDigit)
 import Common.Lib.State (State(..),evalState,get,put)
 import Data.List (isPrefixOf,isSuffixOf)
 
-import Common.Id
 import Common.Lib.Pretty
-import Common.PrettyPrint
 import Common.LaTeX_funs
-import qualified Common.Doc as Doc
 
 ----------------------------------------------------------------------
 -- a style for formatting (Standard is Style PageMode 50 1.19)
@@ -358,10 +354,3 @@ renderLatexVerb mi d = renderStyle textStyle' d'
                                      (case mi of
                                       Nothing -> lineLength style
                                       Just l  -> l) }
-
--- moved instance from Id.hs (to avoid cyclic imports via GlobalAnnotations)
-instance PrintLaTeX Token where
-    printLatex0 ga t = Doc.toLatex ga $ Doc.idDoc $ Id [t] [] nullRange
-
-instance PrintLaTeX Id where
-    printLatex0 ga = Doc.toLatex ga . Doc.idDoc
