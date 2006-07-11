@@ -18,7 +18,6 @@ import Common.Anno_Parser
 import Common.Doc
 import Common.DocUtils
 import Common.AnalyseAnnos
-import Common.Print_AS_Annotation()
 import Common.ConvertGlobalAnnos()
 
 main :: IO ()

@@ -23,7 +23,6 @@ import PropPosSyntax
 import System.Environment
 
 import Common.Result
-import Common.Print_AS_Annotation()
 import Common.GlobalAnnotations
 import Common.DocUtils
 
