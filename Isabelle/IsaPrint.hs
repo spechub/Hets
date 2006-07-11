@@ -57,7 +57,8 @@ printTheoryBody sig sens =
         (rdefs, ts) = getRecDefs rs
         tNames = map senName $ ts ++ axs
     in
-    callML "initialize" (text $ show $ map Quote tNames) $++$
+    callML "initialize" (brackets $ sepByCommas 
+                        $ map (text . show . Quote) tNames) $++$
     printSign sig $++$
     (if null axs then empty else text axiomsS $+$
         vsep (map printNamedSen axs)) $++$
@@ -74,7 +75,7 @@ printTheoryBody sig sens =
 
 callML :: String -> Doc -> Doc
 callML fun args =
-    text mlS <+> doubleQuotes (text ("Header." ++ fun) <+> args)
+    text mlS <+> doubleQuotes (fsep [text ("Header." ++ fun), args])
 
 data QuotedString = Quote String
 instance Show QuotedString where
@@ -170,13 +171,13 @@ printNamedSen NamedSen { senName = lab, sentence = s, isAxiom = b } =
   _ -> let dd = doubleQuotes d in
        if isRefute s then text lemmaS <+> text lab <+> colon
               <+> dd $+$ text refuteS
-       else if null lab then dd else (case s of
+       else if null lab then dd else fsep[ (case s of
     ConstDef {} -> text $ lab ++ "_def"
     Sentence {isSimp = c} ->
         (if b then empty else text theoremS)
         <+> text lab <+>
         (if c && b then brackets $ text simpS else empty)
-    _ -> error "printNamedSen") <+> colon <+> dd
+    _ -> error "printNamedSen") <+> colon, dd]
 
 -- | sentence printing
 printSentence :: Sentence -> Doc
@@ -202,7 +203,7 @@ printTrm b trm = case trm of
     Const vn _ -> case altSyn vn of
         Nothing -> (text $ new vn, maxPrio)
         Just (AltSyntax s is i) -> if b && null is then
-            (replaceUnderlines s [], i) else (text $ new vn, maxPrio)
+            (fsep $ replaceUnderlines s [], i) else (text $ new vn, maxPrio)
     Free vn _ -> (text $ new vn, maxPrio)
     Var (Indexname _ _) _ -> error "Isa.Term.Var not used"
     Bound _ -> error "Isa.Term.Bound not used"
@@ -210,28 +211,29 @@ printTrm b trm = case trm of
         NotCont -> "%"
         IsCont -> "LAM") <+> printPlainTerm b v <> text "."
                     <+> printPlainTerm b t, lowPrio)
-    If i t e c -> let d = printPlainTerm b i <+>
-                        text "then" <+> printPlainTerm b t <+>
-                        text "else" <+> printPlainTerm b e
+    If i t e c -> let d = fsep [printPlainTerm b i,
+                        text "then" <+> printPlainTerm b t,
+                        text "else" <+> printPlainTerm b e]
                   in case c of
         NotCont -> (text "if" <+> d, lowPrio)
         IsCont -> (text "If" <+> d <+> text "fi", maxPrio)
     Case e ps -> (text "case" <+> printPlainTerm b e <+> text "of"
                   $+$ vcat (bar $
-                         map (\ (p, t) -> printPlainTerm b p <+> text "=>"
-                                       <+> printPlainTerm b t) ps), lowPrio)
-    Let es i -> (text "let" <+>
+                         map (\ (p, t) -> 
+                                  fsep [ printPlainTerm b p <+> text "=>"
+                                       , printPlainTerm b t]) ps), lowPrio)
+    Let es i -> (fsep [text "let" <+>
            vcat (punctuate semi $
-                 map (\ (p, t) -> printPlainTerm b p <+> text "="
-                               <+> printPlainTerm b t) es)
-           <+> text "in" <+> printPlainTerm b i, lowPrio)
-    IsaEq t1 t2 -> ((case t1 of
+                 map (\ (p, t) -> fsep [ printPlainTerm b p <+> text "="
+                                       , printPlainTerm b t]) es)
+           , text "in" <+> printPlainTerm b i], lowPrio)
+    IsaEq t1 t2 -> (fsep [(case t1 of
         Const vn y -> let
             vv = text (new vn)
             tt = printType y
           in if y == noType then vv else (vv <+> doubleColon <+> tt)
         _ -> printParenTerm b (isaEqPrio + 1) t1) <+> text "=="
-                   <+> printParenTerm b isaEqPrio t2, isaEqPrio)
+                  , printParenTerm b isaEqPrio t2], isaEqPrio)
     Tuplex cs c -> ((case c of
         NotCont -> parens
         IsCont -> \ d -> text "<" <+> d <+> text ">") $
@@ -246,16 +248,16 @@ printTrm b trm = case trm of
         Const (VName n (Just (AltSyntax s is i))) _ -> let l = length is in
             case compare l $ length args of
                EQ -> if b || n == cNot || isPrefixOf "op " n then
-                   (replaceUnderlines s
+                   (fsep $ replaceUnderlines s
                      $ zipWith (printParenTerm b) is args, i)
                    else printApp b c f args
                LT -> let (fargs, rargs) = splitAt l args in
                      printApp b c (MixfixApp f fargs c) rargs
                GT -> printApp b c f args
         Const vn _ | new vn `elem` [allS, exS, ex1S] -> case args of
-            [Abs v _ t _] -> (text (new vn) <+> printPlainTerm b v
+            [Abs v _ t _] -> (fsep [text (new vn) <+> printPlainTerm b v
                     <> text "."
-                    <+> printPlainTerm b t, lowPrio)
+                    , printPlainTerm b t], lowPrio)
             _ -> printApp b c f args
         MixfixApp g margs@(_ : _) d | c == d ->
             printTrm b $ MixfixApp g (margs ++ args) d
@@ -271,17 +273,23 @@ printApp b c t l = case l of
           $ printParenTerm b (maxPrio - 1) t : map (printParenTerm b maxPrio) l
           , maxPrio - 1)
 
-replaceUnderlines :: String -> [Doc] -> Doc
+replaceUnderlines :: String -> [Doc] -> [Doc]
 replaceUnderlines str l = case str of
-    "" -> empty
+    "" -> []
     '\'': r@(q : s) -> if q `elem` "_/'()"
-                       then text [q] <> replaceUnderlines s l
-                       else text "'" <> replaceUnderlines r l
+                       then cons (text [q]) $ replaceUnderlines s l
+                       else cons (text "'") $ replaceUnderlines r l
     '_' : r -> case l of
-                  h : t -> h <> replaceUnderlines r t
+                  h : t -> cons h $ replaceUnderlines r t
                   _ -> error "replaceUnderlines"
+    '/' : ' ' : r -> empty : replaceUnderlines r l
     q : r -> if q `elem` "()/" then replaceUnderlines r l
-             else text [q] <> replaceUnderlines r l
+             else cons (text [q]) $ replaceUnderlines r l
+  where
+    cons :: Doc -> [Doc] -> [Doc]
+    cons d r = case r of
+                 [] -> [d]
+                 h : t -> (d <> h) : t
 
 -- end of term printing
 
