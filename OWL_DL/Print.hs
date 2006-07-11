@@ -7,7 +7,7 @@ Maintainer  :  jiang@tzi.de
 Stability   :  provisional
 Portability :  non-portable(instances for URIreference and Namespace)
 
-Pretty printing for OWL DL theories. 
+Pretty printing for OWL DL theories.
 -}
 
 {-
@@ -33,15 +33,14 @@ instance Pretty Sign where
 
 printSign :: Sign -> Doc
 printSign (Sign _ p2 p3 p4 p5 p6 _ p8 p9 p10) =
-    (text "namespaces ") $+$ (printNamespace p10) $+$
-    ((text "concepts") <+> (printSetWithComma p2)) $+$
-    ((text "primaryConcepts ") <+> (printSetWithComma p3)) $+$
-    ((text "datatypes ") <+> (printSetWithComma p4)) $+$
-    ((text "indvidual_valued_roles ") <+> (printSetWithComma p5)) $+$
-    ((text "data_valued_roles ") <+> (printSetWithComma p6)) $+$
-    ((text "individuals ") <+> (printSetWithComma p8)) $+$
-    ((text "sign_axioms") $+$ (foldSetToDoc2 p9)) $+$ 
-    empty
+    text "namespaces " $+$ printNamespace p10 $+$
+    text "concepts" <+> setToDocF p2 $+$
+    text "primaryConcepts " <+> setToDocF p3 $+$
+    text "datatypes " <+> setToDocF p4 $+$
+    text "indvidual_valued_roles " <+> setToDocF p5 $+$
+    text "data_valued_roles " <+> setToDocF p6 $+$
+    text "individuals " <+> setToDocF p8 $+$
+    text "sign_axioms" $+$ vcat (setToDocs p9)
 
 instance Pretty URIreference where
     pretty = printURIreference
@@ -59,7 +58,7 @@ instance Pretty Namespace where
 
 printNamespace :: Namespace -> Doc
 printNamespace nsMap =
-    vcat $ map pp (Map.toList nsMap)  
+    vcat $ map pp (Map.toList nsMap)
        where pp :: (String, String) -> Doc
              pp (s1,s2) = text s1 <> defn <> text s2
 
@@ -77,7 +76,7 @@ instance Pretty Ontology where
 
 printOntology :: Ontology -> Doc
 printOntology (Ontology maybeID directives ns) =
-    text "Ontology" <+> 
+    text "Ontology" <+>
           (case maybeID of
              Just oid -> printURIreference oid
              _        -> text "anomie"
@@ -97,116 +96,116 @@ instance Pretty Axiom where
 printAxiom :: Axiom -> Doc
 printAxiom axiom = case axiom of
     Class cid _ _ _ descs ->
-      foldListToDocV (printDescription (-1)) cid descs 
+      listToDocV (printDescription (-1)) cid descs
     EnumeratedClass cid _ _ iids ->
-      parens (text "forall ((x owl:Thing))" $+$ 
+      parens (text "forall ((x owl:Thing))" $+$
 	                  (printDescription (-1) cid $ OneOfDes iids))
     DisjointClasses desc1 desc2 _ ->
       parens (text "forall ((x owl:Thing))" <+>
               parens (text "not" <+> parens (text "and" <+>
                  printDescription (-1) emptyQN desc1 <+>
-                 text "x" <+> 
+                 text "x" <+>
                  printDescription (-1) emptyQN desc2 <+> text "x")))
-    EquivalentClasses desc1 descs ->  
-      foldListToDocV  
-	  (\x y -> 
+    EquivalentClasses desc1 descs ->
+      listToDocV
+	  (\x y ->
           case y of
 	  DC cid2 ->
-	    parens (text "forall ((x owl:Thing))" <+> 
-                    parens (text "iff" <> 
-                    printDescription (-1) emptyQN x <+> 
-                    text "x" <+> printURIreference cid2 <+> 
+	    parens (text "forall ((x owl:Thing))" <+>
+                    parens (text "iff" <>
+                    printDescription (-1) emptyQN x <+>
+                    text "x" <+> printURIreference cid2 <+>
                     text "x"))
-	  _      -> 
+	  _      ->
 	      case x of
 	        DC cid1 ->
-                   parens (text "forall ((x owl:Thing))" $+$ 
+                   parens (text "forall ((x owl:Thing))" $+$
                            printDescription (-1) cid1 y)
 	        _       -> error ("EquivalentClasses Error:" ++ (show axiom))
 	  ) desc1 descs
-    Datatype dID _ _ -> 
+    Datatype dID _ _ ->
       printURIreference dID
     DEquivalentProperties dpID1 dpID2 _ ->
-	    parens (text "forall ((x owl:Thing) (y owl:Thing))" <+> 
+	    parens (text "forall ((x owl:Thing) (y owl:Thing))" <+>
                      parens (text "iff" <> printURIreference dpID1 <+>
                      text "x y" <+> printURIreference dpID2 <+>
 	             text "x y"))
     IEquivalentProperties ipID1 ipID2 _ ->
-	    parens (text "forall ((x owl:Thing) (y owl:Thing))" <+> 
+	    parens (text "forall ((x owl:Thing) (y owl:Thing))" <+>
                     parens (text "iff" <> printURIreference ipID1 <+>
 	            text "x y" <+> printURIreference ipID2 <+>
 		    text "x y"))
     DSubPropertyOf dpID1 dpID2 ->
-	    parens (text "forall ((x owl:Thing) (y rdfs:Lilteral))" <+> 
-                    parens (text "implies" <+> 
+	    parens (text "forall ((x owl:Thing) (y rdfs:Lilteral))" <+>
+                    parens (text "implies" <+>
                             parens (printURIreference dpID1 <+>
-			            text "x y") <+> 
+			            text "x y") <+>
                             parens (printURIreference dpID2 <+>
 			            text "x y")))
     ISubPropertyOf ipID1 ipID2 ->
-	    parens (text "forall ((x owl:Thing) (y owl:Thing))" <+> 
-                    parens (text "implies" <+> 
+	    parens (text "forall ((x owl:Thing) (y owl:Thing))" <+>
+                    parens (text "implies" <+>
                             parens (printURIreference ipID1 <+>
-			            text "x y") <+> 
+			            text "x y") <+>
                             parens (printURIreference ipID2 <+>
 			            text "x y")))
     ObjectProperty iid _ _ _ maybeInverse isSymmetric maybeFunc _ _ ->
       case maybeInverse of
-	Just pid -> parens (text "forall ((x owl:Thing) (y owl:Thing))" 
-                            <+>  parens (text "iff" <+> 
+	Just pid -> parens (text "forall ((x owl:Thing) (y owl:Thing))"
+                            <+>  parens (text "iff" <+>
                                          parens (printURIreference iid <+>
-			                         text "x y") <+> 
+			                         text "x y") <+>
                                          parens (printURIreference pid <+>
 			                         text "y x")))
         _ -> if isSymmetric then
-                parens (text "forall ((x owl:Thing) (y owl:Thing))" 
-                        <+>  parens (text "implies" <+> 
+                parens (text "forall ((x owl:Thing) (y owl:Thing))"
+                        <+>  parens (text "implies" <+>
                                      parens (printURIreference iid <+>
-			                     text "x y") <+> 
+			                     text "x y") <+>
                                      parens (printURIreference iid <+>
 			                     text "y x")))
-               else 
+               else
                  case maybeFunc of
                    Just InverseFunctional ->
-                     parens (text ("forall ((x owl:Thing)" ++ 
-                              "(y owl:Thing) (z owl:Thing))") <+>  
-                             parens (text "implies" $+$ 
-                                     parens (text "and" <+> 
+                     parens (text ("forall ((x owl:Thing)" ++
+                              "(y owl:Thing) (z owl:Thing))") <+>
+                             parens (text "implies" $+$
+                                     parens (text "and" <+>
                                               printURIreference iid <+>
-			                      text "y z" $+$ 
+			                      text "y z" $+$
                                               printURIreference iid <+>
 			                      text "z x") $+$
                                      (parens $ text "= y z")))
-                   Just Transitive ->  
-                     parens (text ("forall ((x owl:Thing)" ++ 
-                              "(y owl:Thing) (z owl:Thing))") <+>  
-                             parens (text "implies" $+$ 
-                                     parens (text "and" <+> 
+                   Just Transitive ->
+                     parens (text ("forall ((x owl:Thing)" ++
+                              "(y owl:Thing) (z owl:Thing))") <+>
+                             parens (text "implies" $+$
+                                     parens (text "and" <+>
                                              printURIreference iid <+>
-			                     text "x y" $+$ 
+			                     text "x y" $+$
                                              printURIreference iid<+>
 			                     text "y z") $+$
-                                     parens (printURIreference iid <+> 
+                                     parens (printURIreference iid <+>
                                              text "x z")))
-	           _  -> text "" 
+	           _  -> text ""
     u -> text $ show u
     	      	
-instance Pretty SignAxiom where	 
+instance Pretty SignAxiom where	
     pretty = printSignAxiom
 
 printSignAxiom :: SignAxiom -> Doc
 printSignAxiom signAxiom = case signAxiom of
-    Subconcept cid1 cid2 -> 
-      parens (text "forall ((x owl:Thing))" <+> 
+    Subconcept cid1 cid2 ->
+      parens (text "forall ((x owl:Thing))" <+>
               parens (text "implies" <+>
                       parens (printURIreference cid1 <+> text "x") <+>
                       parens (printURIreference cid2 <+> text "x")))
     RoleDomain rid rdomains ->
-      foldListToDocH   
+      listToDocH
 	(\x y -> parens (text "forall ((x owl:Thing) (y owl:Thing))" $+$
-                         parens (text "implies" <+> 
-                                 parens (printURIreference x <+> 
-                                         text "x y") <+> 
+                         parens (text "implies" <+>
+                                 parens (printURIreference x <+>
+                                         text "x y") <+>
                                  (parens $ printRDomain y)))
         ) rid rdomains
     RoleRange rid rranges -> case head rranges of
@@ -215,31 +214,31 @@ printSignAxiom signAxiom = case signAxiom of
         text "(implies (" <> printURIreference rid <+> text "x y)" $+$
         (if (length rranges > 1) then
            text "(or "
-         else lparen) <> 
-        foldListToDocH form5 rid rranges $+$ text ")))"
+         else lparen) <>
+        listToDocH form5 rid rranges $+$ text ")))"
       _         ->
-	foldListToDocV   
-	  (\x y -> text "(forall ((x owl:Thing) (y owl:Thing))" $+$ 
-                   text "(implies (" <> printURIreference x <+> 
+	listToDocV
+	  (\x y -> text "(forall ((x owl:Thing) (y owl:Thing))" $+$
+                   text "(implies (" <> printURIreference x <+>
 	           text "x y) (" <> printRRange y <> text " y)" $+$
 	           text "))")
 	  rid rranges
     FuncRole (rtype, rid) ->
       case rtype of
-	IRole -> 
-	  text "(forall ((x owl:Thing) (y owl:Thing) (z owl:Thing))" $+$ 
+	IRole ->
+	  text "(forall ((x owl:Thing) (y owl:Thing) (z owl:Thing))" $+$
           text "(implies" $+$
-	  text "(and (" <> printURIreference rid <+> 
+	  text "(and (" <> printURIreference rid <+>
 	  text "x y) (" <+> printURIreference rid <+> text "x z))" $+$
 	  text "(= y z)" $+$ text "))"
         DRole ->
-	  text "(forall ((x owl:Thing) (y rdfs:Literal) (z rdfs:Literal))" $+$ 
+	  text "(forall ((x owl:Thing) (y rdfs:Literal) (z rdfs:Literal))" $+$
           text "(implies" $+$
-	  text "(and (" <> printURIreference rid <+> 
+	  text "(and (" <> printURIreference rid <+>
 	  text "x y) (" <+> printURIreference rid <+> text "x z))" $+$
 	  text "(= y z)" $+$ text "))"
     Conceptmembership iID desc ->
-      parens (printDescription 0 iID desc <+> printURIreference iID)    
+      parens (printDescription 0 iID desc <+> printURIreference iID)
 
 instance Pretty RDomain where
     pretty = printRDomain
@@ -250,7 +249,7 @@ printRDomain (RDomain desc) =
       DC cid -> printURIreference cid <+> text "x"
       _      -> printDescription 0 emptyQN desc  -- ToDo: level hierachie
 
-instance Pretty RRange where 
+instance Pretty RRange where
     pretty = printRRange
 
 printRRange :: RRange -> Doc
@@ -258,7 +257,7 @@ printRRange rRange = case rRange of
     RIRange desc -> printDescription 0 emptyQN desc -- ToDo: level hierachie
     RDRange dataRange -> printDataRange dataRange
 
-instance Pretty DataRange where               
+instance Pretty DataRange where
     pretty = printDataRange
 
 printDataRange :: DataRange -> Doc
@@ -269,11 +268,11 @@ printDataRange dr = case dr of
       (if allEqTypedLit dls then
              case head dls of
                  TypedL (_, drType) ->
-                    (text "(iff (") <> (printURIreference drType) <+> 
-                    (text "x)") 
+                    (text "(iff (") <> (printURIreference drType) <+>
+                    (text "x)")
                  _  -> error "false check datarange."
           else empty) $+$ (parens (text "or") <>
-           parens (foldListToDocH form4 emptyQN dls)) <>
+           parens (listToDocH form4 emptyQN dls)) <>
            (if allEqTypedLit dls then rparen else empty))
     RLit rdfLit   -> (text "rdf_literal") <+> (text rdfLit)
   where allEqTypedLit :: [DataLiteral] -> Bool
@@ -281,7 +280,7 @@ printDataRange dr = case dr of
         allEqTypedLit (TypedL (_, ty):dls') = all check dls'
                 where check :: DataLiteral -> Bool
                       check dl = case dl of
-                          TypedL (_, t) -> if t == ty then True 
+                          TypedL (_, t) -> if t == ty then True
                                            else False
                           _             -> False
         allEqTypedLit _ = False
@@ -291,10 +290,10 @@ instance Pretty DataLiteral where
 
 printDataLiteral :: DataLiteral -> Doc
 printDataLiteral dl = case dl of
-    TypedL (lf, uri) -> parens (text (lf ++ ":") <+> 
+    TypedL (lf, uri) -> parens (text (lf ++ ":") <+>
                                      printURIreference uri)
     PlainL (lf, lt)  -> parens (text ("stringInLang '"++lf++" : "++lt))
-    Plain lf         -> text lf 
+    Plain lf         -> text lf
     RDFSL rdfLit     -> text rdfLit
 
 -- default handler of restriction
@@ -312,34 +311,34 @@ printRestriction1 :: Int -> Int -> URIreference -> [Drcomponent] -> Doc
 printRestriction1 _ _ _ [] = empty
 printRestriction1  origVar tmpVar dpID (h:r) = case h of
     DRCAllValuesFrom dataRange ->
-      parens (text "forall" <+> parens (text (choiceName tmpVar ++ 
-                                                    " rdfs:Literal")) <+> 
+      parens (text "forall" <+> parens (text (choiceName tmpVar ++
+                                                    " rdfs:Literal")) <+>
            parens ((text "implies") <> parens ((printURIreference dpID) <+>
-	          (text ((choiceName origVar)++" "++(choiceName tmpVar)))) <+> 
+	          (text ((choiceName origVar)++" "++(choiceName tmpVar)))) <+>
                         (printDataRange dataRange))) $+$
       (printRestriction1 origVar (tmpVar+1) dpID r)
-    DRCSomeValuesFrom dataRange -> 
-      parens (text "exists" <+> parens (text (choiceName tmpVar ++ 
+    DRCSomeValuesFrom dataRange ->
+      parens (text "exists" <+> parens (text (choiceName tmpVar ++
                                                     " rdfs:Literal")) <+>
           parens ((text "and") <> parens ((printURIreference dpID) <+>
 	          (text ((choiceName origVar)++" "++(choiceName tmpVar)))) <+>
-                       (printDataRange dataRange))) $+$ 
+                       (printDataRange dataRange))) $+$
       (printRestriction1 origVar (tmpVar+1) dpID r)
     DRCValue dl ->
       (printURIreference dpID) <+> (text $ choiceName origVar ++ "r1") <+>
 	  (printDataLiteral dl) $+$
-	(printRestriction1 origVar tmpVar dpID r) 
-    DRCCardinality cardinality -> 
+	(printRestriction1 origVar tmpVar dpID r)
+    DRCCardinality cardinality ->
         (printCard origVar dpID cardinality) $+$
         (printRestriction1 origVar tmpVar dpID r)
 
-printRestriction2 :: Int -> Int -> URIreference 
+printRestriction2 :: Int -> Int -> URIreference
                   -> [Ircomponent] -> Doc
 printRestriction2 _ _ _ [] = empty
 printRestriction2 origVar tmpVar ipID (h:r) = case h of
-    IRCAllValuesFrom desc -> 
-      parens (text "forall" <+> parens (text $ (choiceName tmpVar ++ 
-                                                    " owl:Thing")) <+> 
+    IRCAllValuesFrom desc ->
+      parens (text "forall" <+> parens (text $ (choiceName tmpVar ++
+                                                    " owl:Thing")) <+>
            parens ((text "implies") <+> parens ((printURIreference ipID) <+>
 	          (text ((choiceName origVar)++" "++(choiceName tmpVar)))) <+>
                (case desc of
@@ -348,7 +347,7 @@ printRestriction2 origVar tmpVar ipID (h:r) = case h of
                 _    -> printDescription origVar ipID desc))) $+$
 	(printRestriction2 origVar (tmpVar+1) ipID r)
     IRCSomeValuesFrom desc ->
-      parens (text "exists" <+> parens (text $ (choiceName tmpVar ++ 
+      parens (text "exists" <+> parens (text $ (choiceName tmpVar ++
                                                     " owl:Thing")) <+>
            parens ((text "and") <> parens ((printURIreference ipID) <+>
 	          (text ((choiceName origVar)++" "++(choiceName tmpVar)))) <+>
@@ -360,11 +359,11 @@ printRestriction2 origVar tmpVar ipID (h:r) = case h of
     IRCValue iid ->
       (printURIreference ipID) <+> (text $ choiceName origVar) <+>
 	  (printURIreference iid) $+$
-      (printRestriction2 origVar tmpVar ipID r) 
-    IRCCardinality cardinality -> 
+      (printRestriction2 origVar tmpVar ipID r)
+    IRCCardinality cardinality ->
         (printCard origVar ipID cardinality)  $+$
-        (printRestriction2 origVar tmpVar ipID r)      
-   
+        (printRestriction2 origVar tmpVar ipID r)
+
 instance Pretty Description where
     pretty = printDescription 0 emptyQN
 
@@ -374,21 +373,21 @@ printDescription level iD desc = case desc of
     DR restr -> printRestriction0 level restr
     UnionOf descs ->
       if isEmptyQN iD then
-         parens (text "or" <+> (foldListToDocH (form6 (level+1)) iD descs))
+         parens (text "or" <+> (listToDocH (form6 (level+1)) iD descs))
        else
-         text "(iff (" <> printURIreference iD <+> 
+         text "(iff (" <> printURIreference iD <+>
          text (choiceName (level+1) ++ ")") $+$
-         text "(or" <+> foldListToDocH (form6 $ level+1) iD descs
+         text "(or" <+> listToDocH (form6 $ level+1) iD descs
          $+$ text "))"
-    IntersectionOf descs -> 
+    IntersectionOf descs ->
       if isEmptyQN iD then
-         parens (text "and" <+> 
-                    foldListToDocH (form1 $ level+1) iD descs)
+         parens (text "and" <+>
+                    listToDocH (form1 $ level+1) iD descs)
        else
-         text "(iff (" <> printURIreference iD <+> 
+         text "(iff (" <> printURIreference iD <+>
          text (choiceName (level+1) ++ ")")
-         $+$ text "(and" <+> 
-         foldListToDocH (form1 $ level+1) iD descs <> rparen 
+         $+$ text "(and" <+>
+         listToDocH (form1 $ level+1) iD descs <> rparen
           $+$ text ")"
     ComplementOf desc1 ->
       if isEmptyQN iD then
@@ -396,13 +395,13 @@ printDescription level iD desc = case desc of
                     text (choiceName $ level+1))
        else
          text "(iff (" <> printURIreference iD <+>
-         (text $ choiceName $ level+1) <> text ") (not" <+> 
+         (text $ choiceName $ level+1) <> text ") (not" <+>
          printDescription (level+1) iD desc1 <+>
          (text $ choiceName $ level+1) <> text "))"
-    OneOfDes inds -> 
-      parens (text "or" <> foldListToDocH (form2 $ level+1) iD inds) 
-      
-printRestriction0 :: Int -> Restriction -> Doc   
+    OneOfDes inds ->
+      parens (text "or" <> listToDocH (form2 $ level+1) iD inds)
+
+printRestriction0 :: Int -> Restriction -> Doc
 printRestriction0 level restr =
     case restr of
       DataRestriction dpID drcom drcoms ->
@@ -412,7 +411,7 @@ printRestriction0 level restr =
 
 printCard :: Int -> URIreference -> Cardinality -> Doc
 printCard level pid card = case card of
-    MinCardinality n -> 
+    MinCardinality n ->
      if n > 1 then text "exists ((x1 owl:Thing) " <>
         (if n==2 then empty else text "... ") <>
         (text "(x" <> (text $ show  n) <+> text "owl:Thing)) (and " $+$
@@ -425,34 +424,34 @@ printCard level pid card = case card of
                    (text $ show n)) <> text ")" )
         else
           text "exists (x1 owl:Thing)" <+>
-          parens (printURIreference pid <+> 
+          parens (printURIreference pid <+>
                   text (choiceName level ++" x1"))
-    MaxCardinality n -> 
-     if n > 1 then text "forall ((x1 owl:Thing)" <> 
+    MaxCardinality n ->
+     if n > 1 then text "forall ((x1 owl:Thing)" <>
         (if n==2 then space else text "... ") <> text "(x" <>
         (text $ show $ n+1) <+> text "owl:Thing)) (implies" $+$
         text "(" <> printURIreference pid <+>
         text (choiceName level ++ " x1)") <>
         (if n==2 then space else text "... ") <>
-        text "(" <> printURIreference pid <+> 
+        text "(" <> printURIreference pid <+>
         text (choiceName level ++ " x") <> (text $ show $ n+1) <> text "))" $+$
         text "not [ALLDIFFERENT x1" <>
         (if n==2 then space else text "... ") <> text "x" <>
         (text $ show $ n+1) <> text "])"
-      else 
-        text "forall ((x1 owl:Thing))" <+> 
+      else
+        text "forall ((x1 owl:Thing))" <+>
         parens (text "implies" $+$
-		 parens (printURIreference pid <+> 
-                          text (choiceName level ++ " x1"))) 
+		 parens (printURIreference pid <+>
+                          text (choiceName level ++ " x1")))
 
     Cardinality n ->
      if n > 1 then text "exists ((x1 owl:Thing)" <>
-        (if n==2 then space else text "... ") <> text "(x" <> (text $ show n) 
+        (if n==2 then space else text "... ") <> text "(x" <> (text $ show n)
         <+> text "owl:Thing)) (and " $+$
         text "[ALLDIFFERENT x1" <>
-        (if n==2 then space else text "... ") <> text "x" <> (text $ show n) 
+        (if n==2 then space else text "... ") <> text "x" <> (text $ show n)
         <> text "]" $+$
-        text "(" <> printURIreference pid <+> 
+        text "(" <> printURIreference pid <+>
         text (choiceName level ++ " x1)") <>
         (if n==2 then space else text "... ") <+>
         text "(" <> printURIreference pid <+>
@@ -460,24 +459,24 @@ printCard level pid card = case card of
         text ")" $+$
         text ("(forall ((" ++ (choiceName $ level+2) ++
                                         " owl:Thing)) (implies") $+$
-        text "(" <> printURIreference pid <+> 
+        text "(" <> printURIreference pid <+>
         text (choiceName level ++" "++ (choiceName $ level+2) ++ ")" ) $+$
         text ("(or (= " ++ (choiceName $ level+2) ++ " x1) ") <>
         (if n==2 then space else text "... ") <>
         text ("(= " ++ choiceName level ++ " " ++ (choiceName $ level+2)) <>
-        (text $ show n) <> text "))" $+$ 
+        (text $ show n) <> text "))" $+$
         text "))" $+$ text "))"
-      else 
+      else
         text "exists ((x1 owl:Thing)) (and " $+$
-        text "(" <> printURIreference pid <+> 
+        text "(" <> printURIreference pid <+>
         text (choiceName level ++ " x1)") $+$
 	text ("(forall ((" ++ (choiceName $ level+2) ++
                   "owl:Thing)) (implies") $+$
-	text "(" <> printURIreference pid <+> 
+	text "(" <> printURIreference pid <+>
         text (choiceName level ++ " " ++ choiceName (level+2) ++ ")") $+$
 	text ("((= " ++ choiceName (level+2) ++ " x1))") $+$
 	text "))" $+$
-	text ")" 
+	text ")"
 
 instance Pretty Fact where
     pretty = printFact
@@ -485,15 +484,15 @@ instance Pretty Fact where
 printFact :: Fact -> Doc
 printFact fact = case fact of
     Indiv individual -> printIndividual individual
-    SameIndividual iid1 iid2 iids -> 
-      foldListToDocV  (\x y -> parens (text "=" <+> pretty x <+> pretty y))
+    SameIndividual iid1 iid2 iids ->
+      listToDocV  (\x y -> parens (text "=" <+> pretty x <+> pretty y))
                         iid1 (iid2:iids)
-    DifferentIndividuals iid1 iid2 iids -> 
+    DifferentIndividuals iid1 iid2 iids ->
       parens (text "forall ((x owl:Thing))" $+$
-              parens (text "or" <+> 
-                foldListToDocH (form2 0) emptyQN (iid1:iid2:iids))) $+$
-      brackets (text "ALLDEFFERENT" <+> 
-                foldListToDocH form3 emptyQN (iid1:iid2:iids))
+              parens (text "or" <+>
+                listToDocH (form2 0) emptyQN (iid1:iid2:iids))) $+$
+      brackets (text "ALLDEFFERENT" <+>
+                listToDocH form3 emptyQN (iid1:iid2:iids))
 
 instance Pretty Individual where
     pretty = printIndividual
@@ -515,11 +514,11 @@ printIndividual1 iid' (hv:tv) level = case hv of
         else printIntIndiv iid' pid indiv level)
       $+$ printIndividual1 iid' tv (if level < 0 then 0 else level)
     ValueDL pid dl ->
-      parens (printURIreference pid <+> pretty iid' <+> printDataLiteral dl) 
+      parens (printURIreference pid <+> pretty iid' <+> printDataLiteral dl)
       $+$ printIndividual1 iid' tv level
 
 printIntIndiv :: (Maybe IndividualID)
-                         -> IndividualvaluedPropertyID 
+                         -> IndividualvaluedPropertyID
                          -> Individual
                          -> Int
                          -> Doc
@@ -535,31 +534,37 @@ printAnonymIndividual :: (Maybe IndividualID)
                                  -> Int
                                  -> Doc
 printAnonymIndividual iid' ipID typesI valuesI level=
-    parens (text ("exists (" ++ choiceName level ++ " owl:Thing)") 
+    parens (text ("exists (" ++ choiceName level ++ " owl:Thing)")
             $+$ (parens (text "and" <+>
             (parens (printURIreference ipID <+>
                pretty iid' <+> (text $ choiceName level)) $+$
-            (foldListToDocV  
-               (\x y -> case x of 
-                   (QN _ str _) -> 
-                       parens (printDescription 0 emptyQN y <+> 
-                         text str)) (simpleQN $ choiceName level) 
+            (listToDocV
+               (\x y -> case x of
+                   (QN _ str _) ->
+                       parens (printDescription 0 emptyQN y <+>
+                         text str)) (simpleQN $ choiceName level)
                                    (reverse typesI)) $+$
-       printIndividual1 (Just $ simpleQN $ choiceName level) 
+       printIndividual1 (Just $ simpleQN $ choiceName level)
                          valuesI (level+1)))))
 
-foldSetToDoc2 :: (Pretty a) => Set.Set a -> Doc
-foldSetToDoc2 = vcat . punctuate comma . map pretty . Set.toList
+setToDocs :: Pretty a => Set.Set a -> [Doc]
+setToDocs = punctuate comma . map pretty . Set.toList
+
+setToDocF :: Pretty a => Set.Set a -> Doc
+setToDocF = fsep . setToDocs
+
+setToDocV :: (Pretty a) => Set.Set a -> Doc
+setToDocV = vcat . setToDocs
 
 -- output a list in vertikal direction
-foldListToDocV :: (Pretty a, Pretty b) 
+listToDocV :: (Pretty a, Pretty b)
                   => (a -> b -> Doc) -> a -> [b] -> Doc
-foldListToDocV printForm iD = vcat . map (printForm iD) 
+listToDocV printForm iD = vcat . map (printForm iD)
 
 -- output a list in horizonal direction
-foldListToDocH :: (Pretty a, Pretty b) 
+listToDocH :: (Pretty a, Pretty b)
                   =>  (a -> b -> Doc) -> a -> [b] -> Doc
-foldListToDocH printForm iD = hsep . map (printForm iD) 
+listToDocH printForm iD = hsep . map (printForm iD)
 
 -- output form with different demands
 form1 :: Int -> URIreference-> Description -> Doc
@@ -570,19 +575,19 @@ form1 level iD des =
      _ -> parens (printDescription level iD des)
 
 form2 :: Int -> URIreference -> IndividualID -> Doc
-form2 level _ ind = 
-    parens (text "=" <+> printURIreference ind <+> 
+form2 level _ ind =
+    parens (text "=" <+> printURIreference ind <+>
                     (text $ choiceName level))
 
 form3 :: URIreference -> IndividualID -> Doc
 form3 _ iid = printURIreference iid
 
 form4 :: URIreference -> DataLiteral -> Doc
-form4  _ dl = 
+form4  _ dl =
     parens (equals <+> printDataLiteral dl <+> text "x")
 
 form5 :: URIreference -> RRange -> Doc
-form5 _ dl = 
+form5 _ dl =
     parens (printRRange dl <+> text "y")
 
 -- only for UnionOf (DEBUG)
@@ -595,9 +600,9 @@ emptyQN = QN "" "" ""
 
 simpleQN :: String -> QName
 simpleQN str = QN "" str ""
-               
+
 choiceName :: Int -> String
-choiceName level 
+choiceName level
     | level <= 0 = "x"
     | level == 1 = "y"
     | level == 2 = "z"
