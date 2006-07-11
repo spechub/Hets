@@ -506,20 +506,30 @@ mkResFun c = case c of
     IdOp -> c
     _ -> ResFun c
 
+isEquallyLifted :: Isa.Term -> Isa.Term -> Maybe (Isa.Term, Isa.Term, Isa.Term)
+isEquallyLifted l r = case (l, r) of
+    (MixfixApp ft@(Const f _) [la] _,
+     MixfixApp (Const g _) [ra] _) 
+        | f == g && elem (new f) [someS, "option2bool", "bool2option"]
+            -> Just (ft, la, ra)
+    _ -> Nothing
+
 mkTermAppl :: Isa.Term -> Isa.Term -> Isa.Term
 mkTermAppl fun arg = case (fun, arg) of
       (MixfixApp (Const uc _) [b@(Const bin _)] c, Tuplex a@[l, r] _)
           | new uc == uncurryOpS && elem (new bin) [eq, conj, disj, impl]
-              -> case (l, r) of
-                   (MixfixApp (Const f _) [la] _,
-                    MixfixApp (Const g _) [ra] _) 
-                       | new bin == eq && f == g && 
-                         elem (new f) [someS, "option2bool", "bool2option"]
-                       -> MixfixApp b [la, ra] c
+              -> case isEquallyLifted l r of
+                   Just (_, la, ra) | new bin == eq -> MixfixApp b [la, ra] c
                    _ -> MixfixApp b a c
       (MixfixApp (Const mp _) [f] _, Tuplex [a, b] c)
           | new mp == "mapFst" -> Tuplex [mkTermAppl f a, b] c
           | new mp == "mapSnd" -> Tuplex [a, mkTermAppl f b] c
+      (Const mp _, Tuplex [a, b] _)
+          | new mp == "ifImplOp" -> binImpl b a
+      (Const mp _, Tuplex [a, Tuplex [b, c] _] d)
+          | new mp == "whenElseOp" -> case isEquallyLifted a c of
+              Just (f, na, nc) -> mkTermAppl f $ If b na nc d
+              Nothing -> If b a c d
       (MixfixApp (Const mp _) [f] c, _)
           | new mp == "liftUnit2bool" -> let af = mkTermAppl f unitOp in
              case arg of
