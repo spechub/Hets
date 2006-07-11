@@ -146,7 +146,6 @@ module Common.Doc
     , toLatex
       -- * manipulating documents
     , flushRight
-    , literalDoc
     , changeGlobalAnnos
     , rmTopKey
     ) where
@@ -191,7 +190,6 @@ data Doc
     | Text TextKind String -- non-empty and no white spaces inside
     | Cat ComposeKind [Doc]
     | Attr Format Doc      -- for annotations
-    | LiteralDoc Pretty.Doc  -- for backward compatibility only
     | ChangeGlobalAnnos (GlobalAnnos -> GlobalAnnos) Doc
 
 instance Show Doc where
@@ -239,10 +237,6 @@ commentText = Text Comment
 -- put this string into math mode for latex and don't escape it
 native :: String -> Doc
 native = Text Native
-
--- | integrate old bits untouched (to be deleted)
-literalDoc :: Pretty.Doc -> Doc
-literalDoc = LiteralDoc
 
 lparen, rparen, lbrack, rbrack, lbrace, rbrace, quote, doubleQuote :: Doc
 
@@ -400,7 +394,6 @@ data DocRecord a = DocRecord
     , foldText :: Doc -> TextKind -> String -> a
     , foldCat :: Doc -> ComposeKind -> [a] -> a
     , foldAttr :: Doc -> Format -> a -> a
-    , foldLiteralDoc :: Doc -> Pretty.Doc -> a
     , foldChangeGlobalAnnos :: Doc -> (GlobalAnnos -> GlobalAnnos) -> a -> a
     }
 
@@ -413,7 +406,6 @@ foldDoc r d = case d of
     Text k s -> foldText r d k s
     Cat k l -> foldCat r d k $ map (foldDoc r) l
     Attr a e -> foldAttr r d a $ foldDoc r e
-    LiteralDoc o -> foldLiteralDoc r d o
     ChangeGlobalAnnos f e -> foldChangeGlobalAnnos r d f $ foldDoc r e
 
 idRecord :: DocRecord Doc
@@ -425,7 +417,6 @@ idRecord = DocRecord
     , foldText = \ _ -> Text
     , foldCat = \ _ -> Cat
     , foldAttr = \ _ -> Attr
-    , foldLiteralDoc = \ _ -> LiteralDoc
     , foldChangeGlobalAnnos = \ _ -> ChangeGlobalAnnos
     }
 
@@ -438,7 +429,6 @@ anyRecord = DocRecord
     , foldText = error "anyRecord.Text"
     , foldCat = error "anyRecord.Cat"
     , foldAttr = error "anyRecord.Attr"
-    , foldLiteralDoc = error "anyRecord.LiteralDoc"
     , foldChangeGlobalAnnos = error "anyRecord.ChangeGlobalAnnos"
     }
 
@@ -460,7 +450,6 @@ toText ga = foldDoc anyRecord
           FlushRight -> let l = length $ show d in
             if l < 66 then Pretty.nest (66 - l) d else d
           _ -> d
-    , foldLiteralDoc = \ _ d -> d
     , foldChangeGlobalAnnos = \ _ _ d -> d
     } . codeOut ga Nothing Map.empty
 
@@ -511,7 +500,6 @@ toLatexRecord tab = anyRecord
           Small -> case o of
               Attr Small (Text j s) -> textToLatex True j s
               _ -> makeSmallLatex True d
-    , foldLiteralDoc = \ _ d -> d
     , foldChangeGlobalAnnos = \ _ _ d -> d
     }
 

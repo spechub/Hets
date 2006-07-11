@@ -7,7 +7,8 @@ Maintainer  :  wjch868@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-some instances for the class Pretty
+This module introduces a 'Pretty' class for pretty printing and
+supplies a couple of instances and other utility functions
 -}
 
 module Common.DocUtils where
@@ -17,7 +18,6 @@ import Common.Doc
 import Common.Id
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Pretty as Pretty
 import Common.GlobalAnnotations
 
 -- * the class stuff
@@ -36,6 +36,7 @@ instance Pretty Annotation where
 instance Pretty Token where
    pretty = sidDoc
 
+-- | convert a token to a document (different from 'text' for LaTex)
 sidDoc :: Token -> Doc
 sidDoc = idDoc . simpleIdToId
 
@@ -43,6 +44,7 @@ sidDoc = idDoc . simpleIdToId
 printAnnotationList :: [Annotation] -> Doc
 printAnnotationList = vcat . map annoDoc
 
+-- | print annotations flush right
 printTrailer :: [Annotation] -> Doc
 printTrailer = flushRight . hsep . map annoDoc
 
@@ -53,6 +55,7 @@ splitAndPrintRAnnos i ras =
     in (if null s then id else ($+$ printAnnotationList s))
        $ if null r then i else fsep [i, printTrailer r]
 
+-- | conditionally add a 'semi' after the doc but before trailing annotations
 printSemiAnno :: (a -> Doc) -> Bool -> Annoted a -> Doc
 printSemiAnno pp addSemi (Annoted i _ las ras) =
     let r = splitAndPrintRAnnos
@@ -61,6 +64,7 @@ printSemiAnno pp addSemi (Annoted i _ las ras) =
            (if startsWithSemanticAnno las then id else (text "" $+$))
               $ printAnnotationList las $+$ r
 
+-- | test for semantic annos before structured specs
 startsWithSemanticAnno :: [Annotation] -> Bool
 startsWithSemanticAnno l = case l of
     Semantic_anno _ _ : _ -> True
@@ -115,12 +119,6 @@ prepPunctuate s l = case l of
     x : r@(_ : _) -> x : map (s <>) r
     _ -> l
 
-toOldText :: Pretty a => GlobalAnnos -> a -> Pretty.Doc
-toOldText ga = toText ga . pretty
-
-toOldLatex :: Pretty a => GlobalAnnos -> a -> Pretty.Doc
-toOldLatex ga = toLatex ga . pretty
-
 instance (Pretty a, Pretty b) => Pretty (Either a b) where
     pretty = printEither pretty pretty
 
@@ -155,9 +153,6 @@ printTriple fA fB fC (a,b,c) = parens $ sepByCommas [fA a, fB b, fC c]
 instance Pretty Int where
     pretty = sidDoc . mkSimpleId . show
 
-printSetWithComma :: Pretty a => Set.Set a -> Doc
-printSetWithComma = ppWithCommas . Set.toList
-
 instance Pretty a => Pretty [a] where
     pretty = brackets . ppWithCommas
 
@@ -180,11 +175,13 @@ pairElems a b = a <+> mapsto <+> b
 instance (Pretty a, Pretty b) => Pretty (Map.Map a b) where
     pretty = printMap specBraces sepByCommas pairElems
 
+-- | start with a bullet, i.e. formulas
 addBullet :: Doc -> Doc
 addBullet = (bullet <+>)
 
 showDoc :: Pretty a => a -> ShowS
 showDoc = shows . pretty
 
+-- | like showDoc but considers global annotations
 showGlobalDoc :: Pretty a => GlobalAnnos -> a -> ShowS
-showGlobalDoc ga = shows . toOldText ga
+showGlobalDoc ga = shows . useGlobalAnnos ga . pretty
