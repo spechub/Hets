@@ -109,7 +109,7 @@ printSign _ fE s = text (sortS++sS) <+>
     $+$ printSetMap (text predS) space (predMap s)
     $+$ fE (extendedInfo s)
     where printRel (supersort, subsorts) =
-            printSetWithComma subsorts <+> text lessS <+>
+            ppWithCommas (Set.toList subsorts) <+> text lessS <+>
                idDoc supersort
 
 printSetMap :: (Pretty k,Pretty a,Ord a,Ord k) => Doc -> Doc
