@@ -350,3 +350,12 @@ adjustNode dgraph (node,oldLab) newLab =
       changes = map DeleteEdge es ++ [DeleteNode (node, oldLab),
                 InsertNode (node, newLab)] ++ map InsertEdge es
    in (changesDG dgraph changes, changes)
+
+--getAllNodeGoals :: LIB_NAME -> LibEnv -> [DGNodeLab]
+--getAllNodeGoals ln libEnv = 
+--                          let dgraph = lookupDgraph ln  libEnv
+--                          in nodes dgraph  
+
+getAllOpenNodeGoals :: [DGNodeLab] -> [DGNodeLab]
+getAllOpenNodeGoals nodes =
+                           filter hasOpenGoals nodes 

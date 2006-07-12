@@ -143,8 +143,8 @@ isDGRef :: DGNodeLab -> Bool
 isDGRef (DGNode _ _ _ _ _ _ _) = False
 isDGRef (DGRef _ _ _ _ _ _) = True
 
-locallyEmpty ::  DGNodeLab -> Bool
-locallyEmpty dgn =
+hasOpenGoals ::  DGNodeLab -> Bool
+hasOpenGoals dgn =
   case dgn_theory dgn of
   G_theory _lid _sigma sens ->
     OMap.null $ OMap.filter

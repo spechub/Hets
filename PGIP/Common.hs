@@ -42,3 +42,15 @@ extractFrom (status,cmdID)
                                                                 [] -> Nothing
                                                                 (Env x y):_ -> Just (Env x y)
                                                                 _:ls-> (extractFrom (ls,cmdID))
+
+
+-- | The 'extractNodeGoals' function, given a list of parsed goals extracts the NodeGoals as a list of LIB_ID's
+extractNodeGoals::[GOAL] -> [LIB_ID]
+extractNodeGoals ls
+                    = case ls of
+                                []          -> []
+                                (Node x):l  -> x:(extractNodeGoals l)
+                                _:l         -> extractNode l
+
+
+

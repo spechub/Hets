@@ -39,16 +39,33 @@ import Data.Maybe
 -- local decomposition
 -- --------------------
 
+
+locStepDecomp :: LIB_NAME -> LibEnv -> [LEdge DGLinkLab] -> LibEnv
+locStepDecomp ln libEnv goals =
+               let dgraph = lookupDGraph ln libEnv
+                   localThmEdges = case goals of 
+                                       [] -> filter isUnprovenLocalThm (labEdges dgraph)
+                                       l -> filter isUnprovenLocalThm l
+                   (nextDGraph, nextHistoryElem) =
+                          locDecompAux libEnv ln dgraph ([],[]) localThmEdges
+               in mkResultProofStatus ln libEnv nextDGraph nextHistoryElem
+
+
+locDecomp :: LIB_NAME -> LibEnv -> LibEnv
+locDecomp ln libEnv=
+                  locStepDecomp ln libEnv []
+
+
 {- a merge of the rules local subsumption, local decomposition I and
    local decomposition II -}
 -- applies this merge of rules to all unproven localThm edges if possible
-locDecomp :: LIB_NAME -> LibEnv -> LibEnv
-locDecomp ln libEnv =
-  let dgraph = lookupDGraph ln libEnv
-      localThmEdges = filter isUnprovenLocalThm (labEdges dgraph)
-      (nextDGraph, nextHistoryElem) =
-          locDecompAux libEnv ln dgraph ([],[]) localThmEdges
-  in mkResultProofStatus ln libEnv nextDGraph nextHistoryElem
+--locDecomp :: LIB_NAME -> LibEnv -> LibEnv
+--locDecomp ln libEnv =
+--  let dgraph = lookupDGraph ln libEnv
+--      localThmEdges = filter isUnprovenLocalThm (labEdges dgraph)
+--      (nextDGraph, nextHistoryElem) =
+--          locDecompAux libEnv ln dgraph ([],[]) localThmEdges
+--  in mkResultProofStatus ln libEnv nextDGraph nextHistoryElem
 
 {- auxiliary function for locDecomp (above)
    actual implementation -}
@@ -111,14 +128,29 @@ isSameTranslation th morphism path =
 -- local inference
 -- ----------------------------------------------
 
--- applies local subsumption to all unproven local theorem edges
+
+localStepInference :: LIB_NAME -> LibEnv -> [LEdge DGLinkLab] -> LibEnv
+localStepInference ln libEnv goals=
+   let dgraph = lookupDGraph ln libEnv
+       localThmEdges = case goals of
+                           [] -> filter isUnprovenLocalThm (labEdges dgraph)
+                           l  -> filter isUnprovenLocalThm l
+       (nextDGraph, nextHistoryElem) =
+               localInferenceAux libEnv ln dgraph ([],[]) localThmEdges
+   in mkResultProofStatus ln libEnv nextDGraph nextHistoryElem    
+
 localInference :: LIB_NAME -> LibEnv -> LibEnv
 localInference ln libEnv =
-  let dgraph = lookupDGraph ln libEnv
-      localThmEdges = filter isUnprovenLocalThm (labEdges dgraph)
-      (nextDGraph, nextHistoryElem) =
-          localInferenceAux libEnv ln dgraph ([],[]) localThmEdges
-  in mkResultProofStatus ln libEnv nextDGraph nextHistoryElem
+                  localStepInference ln libEnv []
+
+-- applies local subsumption to all unproven local theorem edges
+--localInference :: LIB_NAME -> LibEnv -> LibEnv
+--localInference ln libEnv =
+--  let dgraph = lookupDGraph ln libEnv
+--      localThmEdges = filter isUnprovenLocalThm (labEdges dgraph)
+--      (nextDGraph, nextHistoryElem) =
+--          localInferenceAux libEnv ln dgraph ([],[]) localThmEdges
+--  in mkResultProofStatus ln libEnv nextDGraph nextHistoryElem
 
 -- auxiliary method for localInference
 localInferenceAux :: LibEnv -> LIB_NAME -> DGraph -> ([DGRule],[DGChange])

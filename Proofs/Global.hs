@@ -46,16 +46,40 @@ import Proofs.StatusUtils
    where e1...en are the global theorem links in DGm
    DGm+1 results from DGm by application of GlobDecomp e1,...,GlobDecomp en -}
 
+
+{- applies global decomposition to the list of edges given (global theorem edges)
+   if possible, if empty list is given then to all unproven global theorems -}
+globStepDecomp :: LIB_NAME -> LibEnv -> [LEdge DGLinkLab] -> LibEnv
+globStepDecomp ln proofStatus goals =
+            let dgraph = lookupDGraph ln proofStatus
+                globalThmEdges = case goals of
+                                     [] -> filter isUnprovenGlobalThm (labEdges dgraph)
+                                     l  -> filter isUnprovenGlobalThm l
+                (newDGraph, newHistoryElem)= globDecompAux dgraph globalThmEdges ([],[])
+            in mkResultProofStatus ln proofStatus newDGraph newHistoryElem
+
+
 {- applies global decomposition to all unproven global theorem edges
    if possible -}
-globDecomp :: LIB_NAME -> LibEnv -> LibEnv
+globDecomp ::LIB_NAME -> LibEnv -> LibEnv
 globDecomp ln proofStatus =
-  let dgraph = lookupDGraph ln proofStatus
-      globalThmEdges = filter isUnprovenGlobalThm (labEdges dgraph)
-      (newDGraph, newHistoryElem) = globDecompAux dgraph globalThmEdges ([],[])
+                         globStepDecomp ln proofStatus [] 
+                            
+                
+
+
+
+
+{- applies global decomposition to all unproven global theorem edges
+   if possible -}
+--globDecomp :: LIB_NAME -> LibEnv -> LibEnv
+--globDecomp ln proofStatus =
+--  let dgraph = lookupDGraph ln proofStatus
+--      globalThmEdges = filter isUnprovenGlobalThm (labEdges dgraph)
+--      (newDGraph, newHistoryElem) = globDecompAux dgraph globalThmEdges ([],[])
 --        (finalDGraph, finalHistoryElem)
 --            = removeSuperfluousInsertions newDGraph newHistoryElem
-  in mkResultProofStatus ln proofStatus newDGraph newHistoryElem
+--  in mkResultProofStatus ln proofStatus newDGraph newHistoryElem
         --finalDGraph finalHistoryElem
 
 {- removes all superfluous insertions from the list of changes as well as
@@ -167,16 +191,32 @@ globDecompForOneEdgeAux dgraph edge@(_,target,_) changes
 -- global subsumption
 -- -------------------
 
--- applies global subsumption to all unproven global theorem edges if possible
+
+globStepSubsume :: LIB_NAME -> LibEnv -> [LEdge DGLinkLab] -> LibEnv
+globStepSubsume ln libEnv goals =
+           let dgraph = lookupDGraph ln libEnv
+               globalThmEdges = case goals of
+                                  [] -> filter isUnprovenGlobalThm (labEdges dgraph)
+                                  l  -> filter isUnprovenGlobalThm l
+               (nextDGraph, nextHistoryElem) =
+                           globSubsumeAux libEnv dgraph ([],[]) globalThmEdges
+           in mkResultProofStatus ln libEnv nextDGraph nextHistoryElem
+
+
 globSubsume :: LIB_NAME -> LibEnv -> LibEnv
 globSubsume ln libEnv =
-  let dgraph = lookupDGraph ln libEnv
-      globalThmEdges = filter isUnprovenGlobalThm (labEdges dgraph)
-    {- the previous 'nub' is (probably) not needed, because it is
-       (or should be) checked for duplicate edge insertions -}
-      (nextDGraph, nextHistoryElem) =
-          globSubsumeAux libEnv dgraph ([],[]) globalThmEdges
-  in mkResultProofStatus ln libEnv nextDGraph nextHistoryElem
+              globStepSubsume ln libEnv []
+
+-- applies global subsumption to all unproven global theorem edges if possible
+--globSubsume :: LIB_NAME -> LibEnv -> LibEnv
+--globSubsume ln libEnv =
+--  let dgraph = lookupDGraph ln libEnv
+--      globalThmEdges = filter isUnprovenGlobalThm (labEdges dgraph)
+--    {- the previous 'nub' is (probably) not needed, because it is
+--       (or should be) checked for duplicate edge insertions -}
+--      (nextDGraph, nextHistoryElem) =
+--          globSubsumeAux libEnv dgraph ([],[]) globalThmEdges
+--  in mkResultProofStatus ln libEnv nextDGraph nextHistoryElem
 
 {- auxiliary function for globSubsume (above)
    the actual implementation -}

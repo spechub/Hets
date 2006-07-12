@@ -81,7 +81,7 @@ rules =
          -- , theoremHideShift
     ]
 
--- | number of rukes
+-- | number of rules
 noRules :: Int
 noRules = length rules
 

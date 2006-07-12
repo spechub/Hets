@@ -253,24 +253,5 @@ parseScriptFile fileName
                                           return Nothing 
 
 
--------------------------------------------------------------------------- test function	
-----------  myPrint [] = putStrLn " ."
----------myPrint ((CommandIOParam x y _):ls) = do myPrint ls
-----------                                         putStrLn $ show y 
-----------myPrint ((CommandIO x y):ls) = do myPrint ls
------------                                  putStrLn $ show y
-------------myPrint ((CommandTest x y):ls) = do myPrint ls
----------                                    putStrLn $ show y
---myPrint CommandError:ls = do myPrint ls
---                             putStrLn "error ..!"
------parseScriptString input
--------                       = do 
-----------			   let r=runParser parseScript (emptyAnnos())  "" input
--------			   case r of
---                                Right out->  
------                                         myPrint out 
------                                Left err ->
--------                                         putStrLn "error" 
-		
 						 					 
 

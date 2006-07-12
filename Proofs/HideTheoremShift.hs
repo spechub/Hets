@@ -61,17 +61,38 @@ automaticHideTheoremShift ln = runIdentity . hideTheoremShift
                   [a] -> Just a   -- may be take the first one always?
                   _ -> Nothing) ln
 
+
+hideStepTheoremShift :: Monad m => ProofBaseSelector m -> LIB_NAME
+                     -> LibEnv -> [LEdge DGLinkLab] -> m LibEnv
+hideStepTheoremShift proofBaseSel ln proofStatus goals = do
+      let dgraph = lookupDGraph ln proofStatus 
+          hidingThmEdges = case goals of 
+                               [] -> filter isUnprovenHidingThm (labEdges dgraph)
+                               l  -> filter isUnprovenHidingThm l
+      result <- hideTheoremShiftAux dgraph ([],[]) hidingThmEdges proofBaseSel
+      let nextDGraph = fst result
+          nextHistoryElem = snd result
+          newProofStatus 
+               = mkResultProofStatus ln proofStatus nextDGraph nextHistoryElem
+      return newProofStatus
+
+
 hideTheoremShift :: Monad m => ProofBaseSelector m -> LIB_NAME
                  -> LibEnv -> m LibEnv
-hideTheoremShift proofBaseSel ln proofStatus = do
-  let dgraph = lookupDGraph ln proofStatus
-      hidingThmEdges = filter isUnprovenHidingThm (labEdges dgraph)
-  result <- hideTheoremShiftAux dgraph ([],[]) hidingThmEdges proofBaseSel
-  let nextDGraph = fst result
-      nextHistoryElem = snd result
-      newProofStatus
-          = mkResultProofStatus ln proofStatus nextDGraph nextHistoryElem
-  return newProofStatus
+hideTheoremShift proofBaseSel ln proofStatus 
+                        = hideStepTheoremShift proofBaseSel ln proofStatus []
+
+--hideTheoremShift :: Monad m => ProofBaseSelector m -> LIB_NAME
+--                 -> LibEnv -> m LibEnv
+--hideTheoremShift proofBaseSel ln proofStatus = do
+--  let dgraph = lookupDGraph ln proofStatus
+--      hidingThmEdges = filter isUnprovenHidingThm (labEdges dgraph)
+--  result <- hideTheoremShiftAux dgraph ([],[]) hidingThmEdges proofBaseSel
+--  let nextDGraph = fst result
+--      nextHistoryElem = snd result
+--      newProofStatus
+--          = mkResultProofStatus ln proofStatus nextDGraph nextHistoryElem
+--  return newProofStatus
 
 {- auxiliary method for hideTheoremShift -}
 hideTheoremShiftAux :: Monad m => DGraph -> ([DGRule],[DGChange])
