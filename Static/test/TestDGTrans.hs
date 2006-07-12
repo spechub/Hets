@@ -12,7 +12,7 @@ module Main where -- Static.Test.TestDGTrans where
 import Static.DGTranslation
 -- import Logic.Logic
 -- import Logic.Coerce
--- import Logic.Comorphism
+import Logic.Comorphism
 import Logic.Grothendieck
 -- import Logic.Prover
 
@@ -27,11 +27,9 @@ import System.Environment
 import Comorphisms.PCFOL2CFOL
 import Common.Result
 import Maybe
+import GUI.ShowGraph
+import Common.Lib.Graph
 
-
-instance Eq GlobalContext where
-    gc1 == gc2 = 
-        (show $ devGraph gc1) == (show $ devGraph gc2)
 
 process :: FilePath -> IO (Maybe (LIB_NAME, LibEnv))
 process = anaLib defaultHetcatsOpts
@@ -43,12 +41,9 @@ process2 file = do
       Just (libName, gcMap) ->
           case Map.lookup libName gcMap of
             Just gc -> 
-                do putStrLn ("orig: \n" ++ (show $ devGraph gc))
-                   gc' <- trans_PCFOL2CFOL gc
-                   putStrLn ("translated: \n" ++ (show $ devGraph gc'))
-                   if gc == gc' then
-                       putStrLn "equals!"
-                     else putStrLn "difference!"
+                do -- putStrLn ("orig: \n" ++ (show $ devGraph gc))
+                   gc' <- trans (Comorphism PCFOL2CFOL) gc
+                   -- putStrLn ("translated: \n" ++ (show $ devGraph gc'))
                    return mResult
             _ -> do putStrLn "not found gc."
                     return mResult
@@ -64,18 +59,46 @@ printLibEnv lenv
 -}
 
 
-trans_PCFOL2CFOL :: GlobalContext -> IO GlobalContext
-trans_PCFOL2CFOL gc = do
-    case dg_translation gc (Comorphism PCFOL2CFOL) of
+trans :: AnyComorphism -> GlobalContext -> IO GlobalContext
+trans acm gc = do
+    case dg_translation gc acm of
       Result diags' maybeGC ->
           do putStrLn ("diagnosis : \n" ++ (show diags'))
              case maybeGC of
-               Just gc' -> return gc'
-               Nothing  -> return gc
+               Just gc' -> if not $ isLessSubLogic acm $ devGraph gc'
+                             then do putStrLn "anyplace is not less als Comorphism."
+                                     return gc'
+                             else return gc'
+               Nothing  -> do putStrLn "no result from translation" 
+                              return gc
 
+isLessSubLogic :: AnyComorphism -> DGraph -> Bool
+isLessSubLogic acm dg =
+    all checkAllLess (Map.elems $ toMap dg)
 
+  where checkAllLess (inlinks, node, outlinks) =
+            if lessSublogicComor (sublogicOfTh $ dgn_theory node) acm
+               then all checkEdgeLess (inlinks ++ outlinks)
+               else error ((show $ dgn_name node) ++ " not less than" ++ (show acm)) -- False
+
+        checkEdgeLess (edge, n) =
+            case dgl_morphism edge of
+              gm@(GMorphism cid _ _) ->
+                  if isHomogeneous gm then
+                      if lessSublogicComor (G_sublogics 
+                            (sourceLogic cid) (sourceSublogic cid)) acm
+                         then True
+                         else -- error ("near of node " ++ (show n) ++ " has a edge not less than " ++ (show acm)) 
+                              False
+                     else True
+            
 main :: IO()
 main = do
-  file <- getArgs
-  mapM_ process2 file
-  return ()
+  files <- getArgs
+  if length files /= 1 then
+      error "usage: TestDGTrans filename"
+      else do let file = head files
+              res <- process2 file
+              showGraph file defaultHetcatsOpts res
+  -- return ()
+
