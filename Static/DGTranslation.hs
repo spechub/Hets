@@ -62,7 +62,7 @@ dg_translation gc cm@(Comorphism cidMor) =
 
 
 updateNode :: Int -> GlobalContext -> AnyComorphism -> Result GlobalContext
-updateNode index gc (Comorphism cidMor) =
+updateNode index gc acm@(Comorphism cidMor) =
     -- sigMap, thMap and morMap can be empty, so the index of node can
     -- not be found in it.
     let (inLinks, node, outLinks) = 
@@ -89,18 +89,23 @@ updateNode index gc (Comorphism cidMor) =
             then
              let sourceLid = sourceLogic cid'
                  targetLid = targetLogic cid'
-             in  case fSign sourceLid lsign of
-                   Result diagLs (Just lsign') -> 
-                       case fMor targetLid lmorphism of
-                         Result diagLm (Just lmorphism') -> 
-                             case idComorphism (Logic tlid) of 
-                               Comorphism cid2 ->
-                                   Result (diagLs ++ diagLm) 
-                                     (Just [(links{dgl_morphism=
+             in  
+                if lessSublogicComor (G_sublogics 
+                            sourceLid (sourceSublogic cid')) acm
+                    then
+                        case fSign sourceLid lsign of
+                          Result diagLs (Just lsign') -> 
+                              case fMor targetLid lmorphism of
+                                Result diagLm (Just lmorphism') -> 
+                                    case idComorphism (Logic tlid) of 
+                                      Comorphism cid2 ->
+                                          Result (diagLs ++ diagLm) 
+                                             (Just [(links{dgl_morphism=
                                                    GMorphism cid2 (fromJust $ coerceSign tlid (sourceLogic cid2) "" lsign') (fromJust $ coerceMorphism tlid (targetLogic cid2) "" lmorphism')
                                                   }, n)])
-                         Result diagLm Nothing  -> Result (diagLm ++ [mkDiag Error ("morphism of link can not be translated.") ()]) (Just [(links, n)])
-                   Result diagLs Nothing  -> Result (diagLs ++ [mkDiag Error ("sign of link can not be translated.") ()]) (Just [(links, n)])
+                                Result diagLm Nothing  -> Result (diagLm ++ [mkDiag Error ("morphism of link can not be translated.") ()]) (Just [(links, n)])
+                          Result diagLs Nothing  -> Result (diagLs ++ [mkDiag Error ("sign of link can not be translated.") ()]) (Just [(links, n)])
+                    else Result [mkDiag Hint ("GMorphism of a Link from node " ++ (show n) ++ " is not less than ." ++ (show cidMor)) ()] (Just [(links,n)])
             else  Result [mkDiag Hint ("Link is not homogeneous.") ()] (Just [(links,n)])
 
      transDev newL1 newL2 (_, node, _) =
