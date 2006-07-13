@@ -698,7 +698,7 @@ codeOutAnno d m a = case a of
                              (rbrace <> percent)
     Display_anno i ds _ -> annoLparen displayS <> fsep
         ( fcat (codeOrigId m i) :
-          map ( \ (df, s) -> percent <> text (lookupDisplayFormat df)
+          map ( \ (df, s) -> percent <> commentText (lookupDisplayFormat df)
                 <+> maybe (commentText s) (const $ codeOutId m i)
                     (Map.lookup i m)) ds) <> annoRparen
     List_anno i1 i2 i3 _ -> annoLine listS <+> hCommaT m [i1, i2, i3]
