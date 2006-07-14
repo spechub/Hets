@@ -451,6 +451,22 @@ Name of the real prover should be in the prover_name of Proof_status
   if the Broker was used but "<name> [via MathServBroker]" should be 
   the end of the prover name
 
+SPASS encoding improvements in CASL2SPASS
+  if there is only one sort in the signature eliminate it
+    involves SPASS.Utils
+    add a boolean flag to CSort to recognize omitted sorts during
+     the sentence translation
+    typings in the signature have to be removed
+    all variable declarations have to consider the flag (quantified formulas)
+  if there are predicates defined upon equality substitute them with equality
+    and remove them from the signature
+    find definitions (Equivalences) where one side is a binary predicate 
+      and the other side is a builtin equality application (Strong_equation)
+      return the full qualified (with type) predicate(s)
+      this is done before the translation of the signature/sentences happens
+    remove symbol from signature and mark it in the idMap as equality
+     (involves adding a flag to SPASS.Utils.CPred)
+
 display of tactic_scripts in GUI.ProofManagement 
 
 
