@@ -45,7 +45,6 @@ class (Language cid,
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2
              | cid -> lid1, cid -> lid2
-
   where
     -- source and target logic and sublogic
     -- the source sublogic is the maximal one for which the comorphism works
@@ -115,7 +114,7 @@ errMapSymbol :: Comorphism cid
          => cid -> symbol1 -> Set.Set symbol2
 errMapSymbol cid _ = error $ "no symbol mapping for " ++ show cid
 
-wrapMapTheory ::  Comorphism cid
+wrapMapTheory :: Comorphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
@@ -123,21 +122,20 @@ wrapMapTheory ::  Comorphism cid
             => cid -> (sign1, [Named sentence1])
                    -> Result (sign2, [Named sentence2])
 wrapMapTheory cid (sign, sens) =
-    case sourceLogic cid of
-      lid -> case sourceSublogic cid of
-          sub -> let
-              sigLog = min_sublogic_sign lid sign
-              senLog = foldl join sigLog $
-                       map (min_sublogic_sentence lid . sentence) sens
-              in if join sub senLog == sub
+      case sourceSublogic cid of
+        sub -> case minSublogic sign of 
+          sigLog -> case foldl join sigLog 
+                    $ map (minSublogic . sentence) sens of 
+            senLog -> 
+              if join sub senLog == sub
                  then map_theory cid (sign, sens)
                  else fail $ "for '" ++ language_name cid ++
                            "' expected sublogic '" ++
-                           concat (sublogic_names lid sub) ++
+                           concat (sublogic_names sub) ++
                            "'\n but found sublogic '" ++
-                           concat (sublogic_names lid senLog) ++
+                           concat (sublogic_names senLog) ++
                            "' with signature sublogic '" ++
-                           concat (sublogic_names lid sigLog) ++ "'"
+                           concat (sublogic_names sigLog) ++ "'"
 
 simpleTheoryMapping :: (sign1 -> sign2) -> (sentence1 -> sentence2)
                     -> (sign1, [Named sentence1])
@@ -169,7 +167,7 @@ instance Logic lid sublogics
         sign morphism symbol raw_symbol proof_tree =>
          Language (IdComorphism lid sublogics) where
            language_name (IdComorphism lid sub) =
-               case sublogic_names lid sub of
+               case sublogic_names sub of
                [] -> error "language_name IdComorphism"
                h : _ -> "id_" ++ language_name lid ++ "." ++ h
 

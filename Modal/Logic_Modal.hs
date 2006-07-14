@@ -143,12 +143,3 @@ instance Logic Modal ()
                ModalMor
                Symbol RawSymbol () where
          stability _ = Unstable
-         min_sublogic_basic_spec Modal _basic_spec = ()
-         min_sublogic_sentence Modal _sentence = ()
-         min_sublogic_symb_items Modal _symb_items = ()
-         min_sublogic_symb_map_items Modal _symb_map_items = ()
-         min_sublogic_sign Modal _sign = ()
-         min_sublogic_morphism Modal _morphism = ()
-         min_sublogic_symbol Modal _symbol = ()
---         sublogic_names Modal _ = ["Modal"]
---         all_sublogics Modal = [()]

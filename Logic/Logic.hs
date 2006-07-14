@@ -93,7 +93,7 @@ import Taxonomy.MMiSSOntology (MMiSSOntology)
 
 -- | Stability of logic implementations
 data Stability = Stable | Testing | Unstable | Experimental
-     deriving (Eq,Show)
+     deriving (Eq, Show)
 
 -- | shortcut for class constraints
 class (Show a, Pretty a, Typeable a, ShATermConvertible a)
@@ -279,20 +279,72 @@ class (Eq l, Show l) => SemiLatticeWithTop l where
   join :: l -> l -> l
   top :: l
 
-isSubElem :: SemiLatticeWithTop l => l -> l -> Bool
-isSubElem a b = join a b == b
-
 instance SemiLatticeWithTop () where
   join _ _ = ()
   top = ()
+
+isSubElem :: SemiLatticeWithTop l => l -> l -> Bool
+isSubElem a b = join a b == b
+
+class MinSublogic sublogic item where
+    minSublogic :: item -> sublogic
+
+-- a default instance for no sublogics
+instance MinSublogic () a where
+    minSublogic _ = ()
+
+{-
+instance SemiLatticeWithTop s => MinSublogic s a where
+    minSublogic _ = top
+-}
+
+class MinSublogic sublogic item => ProjectSublogic sublogic item where
+    projectSublogic :: sublogic -> item -> item
+
+-- a default instance for no sublogics
+instance ProjectSublogic () b where
+    projectSublogic _ = id
+
+{-
+instance MinSublogic a b => ProjectSublogic a b where
+    projectSublogic _ = id
+-}
+
+class MinSublogic sublogic item => ProjectSublogicM sublogic item where
+    projectSublogicM :: sublogic -> item -> Maybe item
+
+-- a default instance for no sublogics
+instance ProjectSublogicM () b where
+    projectSublogicM _ = Just
+
+{-
+instance (SemiLatticeWithTop a, MinSublogic a b) => ProjectSublogicM a b where
+    projectSublogicM l i = if isSubElem (minSublogic i) l 
+                           then Just i else Nothing
+-}
+
+class Sublogics l where
+    sublogic_names :: l -> [String]
+
+instance Sublogics () where
+    sublogic_names () = [""]
 
 -- logics
 
 class (StaticAnalysis lid
         basic_spec sentence proof_tree symb_items symb_map_items
         sign morphism symbol raw_symbol,
-       SemiLatticeWithTop sublogics, ShATermConvertible sublogics,
-       Typeable sublogics)
+       SemiLatticeWithTop sublogics,
+       MinSublogic sublogics sentence,
+       ProjectSublogic sublogics basic_spec,
+       ProjectSublogicM sublogics symb_items,
+       ProjectSublogicM sublogics symb_map_items,
+       ProjectSublogic sublogics sign,
+       ProjectSublogic sublogics morphism,
+       ProjectSublogicM sublogics symbol,
+       Typeable sublogics,
+       ShATermConvertible sublogics,
+       Sublogics sublogics)
     => Logic lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree
@@ -310,61 +362,14 @@ class (StaticAnalysis lid
          data_logic :: lid -> Maybe AnyLogic
          data_logic _ = Nothing
 
-         sublogic_names :: lid -> sublogics -> [String]
-         sublogic_names lid _ = [language_name lid]
-             -- the first name is the principal name
-         all_sublogics :: lid -> [sublogics]
-         all_sublogics _ = [top]
-
-         is_in_basic_spec :: lid -> sublogics -> basic_spec -> Bool
-         is_in_basic_spec _ _ _ = False
-         is_in_sentence :: lid -> sublogics -> sentence -> Bool
-         is_in_sentence _ _ _ = False
-         is_in_symb_items :: lid -> sublogics -> symb_items -> Bool
-         is_in_symb_items _ _ _ = False
-         is_in_symb_map_items :: lid -> sublogics -> symb_map_items -> Bool
-         is_in_symb_map_items _ _ _ = False
-         is_in_sign :: lid -> sublogics -> sign -> Bool
-         is_in_sign _ _ _ = False
-         is_in_morphism :: lid -> sublogics -> morphism -> Bool
-         is_in_morphism _ _ _ = False
-         is_in_symbol :: lid -> sublogics -> symbol -> Bool
-         is_in_symbol _ _ _ = False
-
-         min_sublogic_basic_spec :: lid -> basic_spec -> sublogics
-         min_sublogic_basic_spec _ _ = top
-         min_sublogic_sentence :: lid -> sentence -> sublogics
-         min_sublogic_sentence _ _ = top
-         min_sublogic_symb_items :: lid -> symb_items -> sublogics
-         min_sublogic_symb_items _ _ = top
-         min_sublogic_symb_map_items :: lid -> symb_map_items -> sublogics
-         min_sublogic_symb_map_items _ _ = top
-         min_sublogic_sign :: lid -> sign -> sublogics
-         min_sublogic_sign _ _ = top
-         min_sublogic_morphism :: lid -> morphism -> sublogics
-         min_sublogic_morphism _ _ = top
-         min_sublogic_symbol :: lid -> symbol -> sublogics
-         min_sublogic_symbol _ _ = top
-         proj_sublogic_basic_spec :: lid -> sublogics
-                                  -> basic_spec -> basic_spec
-         proj_sublogic_basic_spec _ _ b = b
-         proj_sublogic_symb_items :: lid -> sublogics
-                                  -> symb_items -> Maybe symb_items
-         proj_sublogic_symb_items _ _ _ = Nothing
-         proj_sublogic_symb_map_items :: lid -> sublogics
-                                      -> symb_map_items -> Maybe symb_map_items
-         proj_sublogic_symb_map_items _ _ _ = Nothing
-         proj_sublogic_sign :: lid -> sublogics -> sign -> sign
-         proj_sublogic_sign _ _ s = s
-         proj_sublogic_morphism :: lid -> sublogics -> morphism -> morphism
-         proj_sublogic_morphism _ _ m = m
-         proj_sublogic_epsilon :: lid -> sublogics -> sign -> morphism
-         proj_sublogic_epsilon li _ s = ide li s
-         proj_sublogic_symbol :: lid -> sublogics -> symbol -> Maybe symbol
-         proj_sublogic_symbol _ _ _ = Nothing
-
          top_sublogic :: lid -> sublogics
          top_sublogic _ = top
+
+         all_sublogics :: lid -> [sublogics]
+         all_sublogics li = [top_sublogic li]
+
+         proj_sublogic_epsilon :: lid -> sublogics -> sign -> morphism
+         proj_sublogic_epsilon li _ s = ide li s
 
 ----------------------------------------------------------------
 -- Derived functions

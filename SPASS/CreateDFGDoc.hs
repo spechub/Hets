@@ -103,11 +103,14 @@ printTheoryAsDFG ln sn checkConsistency gth@(G_theory lid sign thSens) =
 
         falseSen = SPSimpleTerm SPFalse
 
+        caslTop :: CASL_Sublogics -- fix the instance!
+        caslTop = top
         max_nosub_SPASS = 
-               top {cons_features =
-                        (cons_features top) {emptyMapping = True} }
-        max_sub_SPASS = top { sub_features = LocFilSub
+               caslTop {cons_features =
+                        (cons_features caslTop) {emptyMapping = True} }
+        max_sub_SPASS = caslTop { sub_features = LocFilSub
                                , cons_features = 
-                                   (cons_features top) {onlyInjConstrs=False}}
+                                   (cons_features caslTop) 
+                                   {onlyInjConstrs=False}}
         idCASL = IdComorphism CASL max_sub_SPASS
         idCASL_nosub = IdComorphism CASL max_nosub_SPASS

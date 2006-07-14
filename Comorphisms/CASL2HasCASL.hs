@@ -49,7 +49,7 @@ instance Comorphism CASL2HasCASL
                BasicSpec Sentence SymbItems SymbMapItems
                Env Morphism Symbol RawSymbol () where
     sourceLogic CASL2HasCASL = CASL
-    sourceSublogic CASL2HasCASL = CASL_SL
+    sourceSublogic CASL2HasCASL = CasSub.top
                       { CasSub.sub_features = CasSub.Sub,
                          -- simple subsorting in HasCASL
                         CasSub.has_part = True,

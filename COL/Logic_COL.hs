@@ -111,15 +111,4 @@ instance Logic COL ()
                C_BASIC_SPEC COLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CSign
                COLMor
-               Symbol RawSymbol () where
-         min_sublogic_basic_spec COL _basic_spec = ()
-         min_sublogic_sentence COL _sentence = ()
-         min_sublogic_symb_items COL _symb_items = ()
-         min_sublogic_symb_map_items COL _symb_map_items = ()
-         min_sublogic_sign COL _sign = ()
-         min_sublogic_morphism COL _morphism = ()
-         min_sublogic_symbol COL _symbol = ()
---         sublogic_names COL _ = ["COL"]
---         all_sublogics COL = [()]
-
-
+               Symbol RawSymbol ()

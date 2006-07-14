@@ -119,44 +119,21 @@ instance StaticAnalysis ConstraintCASL ConstraintCASLBasicSpec ConstraintCASLFOR
          cogenerated_sign ConstraintCASL = cogeneratedSign dummy
          generated_sign ConstraintCASL = generatedSign dummy
          induced_from_morphism ConstraintCASL = inducedFromMorphism dummy
-         induced_from_to_morphism ConstraintCASL = inducedFromToMorphism dummy trueC
+         induced_from_to_morphism ConstraintCASL = 
+             inducedFromToMorphism dummy trueC
          theory_to_taxonomy ConstraintCASL = 
            error "theory_to_taxonomy ConstraintCASL nyi" -- convTaxo
 
+instance MinSL () ConstraintFORMULA
+instance ProjForm () ConstraintFORMULA
 
-instance Logic ConstraintCASL CASL.Sublogic.CASL_Sublogics
-               ConstraintCASLBasicSpec ConstraintCASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
+instance Logic ConstraintCASL CASL_Sublogics
+               ConstraintCASLBasicSpec ConstraintCASLFORMULA
+               SYMB_ITEMS SYMB_MAP_ITEMS
                ConstraintCASLSign
                ConstraintCASLMor
                Symbol RawSymbol () where
 
          stability _ = Experimental
-
-         sublogic_names ConstraintCASL = CASL.Sublogic.sublogics_name
-         all_sublogics ConstraintCASL = CASL.Sublogic.sublogics_all
-
-         data_logic ConstraintCASL = Nothing
-
-         is_in_basic_spec ConstraintCASL = CASL.Sublogic.in_basic_spec
-         is_in_sentence ConstraintCASL = CASL.Sublogic.in_sentence
-         is_in_symb_items ConstraintCASL = CASL.Sublogic.in_symb_items
-         is_in_symb_map_items ConstraintCASL = CASL.Sublogic.in_symb_map_items
-         is_in_sign ConstraintCASL = CASL.Sublogic.in_sign
-         is_in_morphism ConstraintCASL = CASL.Sublogic.in_morphism
-         is_in_symbol ConstraintCASL = CASL.Sublogic.in_symbol
-
-         min_sublogic_basic_spec ConstraintCASL = CASL.Sublogic.sl_basic_spec
-         min_sublogic_sentence ConstraintCASL = CASL.Sublogic.sl_sentence
-         min_sublogic_symb_items ConstraintCASL = CASL.Sublogic.sl_symb_items
-         min_sublogic_symb_map_items ConstraintCASL = CASL.Sublogic.sl_symb_map_items
-         min_sublogic_sign ConstraintCASL = CASL.Sublogic.sl_sign
-         min_sublogic_morphism ConstraintCASL = CASL.Sublogic.sl_morphism
-         min_sublogic_symbol ConstraintCASL = CASL.Sublogic.sl_symbol
-
-         proj_sublogic_basic_spec ConstraintCASL = CASL.Sublogic.pr_basic_spec
-         proj_sublogic_symb_items ConstraintCASL = CASL.Sublogic.pr_symb_items
-         proj_sublogic_symb_map_items ConstraintCASL = CASL.Sublogic.pr_symb_map_items
-         proj_sublogic_sign ConstraintCASL = CASL.Sublogic.pr_sign
-         proj_sublogic_morphism ConstraintCASL = CASL.Sublogic.pr_morphism
-         proj_sublogic_epsilon ConstraintCASL = CASL.Sublogic.pr_epsilon dummy
-         proj_sublogic_symbol ConstraintCASL = CASL.Sublogic.pr_symbol
+         proj_sublogic_epsilon ConstraintCASL = pr_epsilon dummy
+         all_sublogics _ = sublogics_all [()]

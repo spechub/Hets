@@ -25,10 +25,10 @@ import CoCASL.Logic_CoCASL
 import CoCASL.CoCASLSign
 import CoCASL.AS_CoCASL
 import CoCASL.StatAna
-import qualified CoCASL.Sublogic
+import CoCASL.Sublogic
+import CASL.Sublogic
 import CASL.AS_Basic_CASL
 import CASL.Morphism
-import CASL.Sublogic
 import Comorphisms.CFOL2IsabelleHOL
 
 -- Isabelle
@@ -46,7 +46,7 @@ data CoCFOL2IsabelleHOL = CoCFOL2IsabelleHOL deriving (Show)
 instance Language CoCFOL2IsabelleHOL -- default definition is okay
 
 instance Comorphism CoCFOL2IsabelleHOL
-               CoCASL CoCASL.Sublogic.CoCASL_Sublogics
+               CoCASL CoCASL_Sublogics
                C_BASIC_SPEC CoCASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CSign
                CoCASLMor
@@ -56,17 +56,15 @@ instance Comorphism CoCFOL2IsabelleHOL
                IsabelleMorphism () () ()  where
     sourceLogic CoCFOL2IsabelleHOL = CoCASL
     sourceSublogic CoCFOL2IsabelleHOL =
-      CoCASL.Sublogic.CoCASL_SL
-          { CoCASL.Sublogic.has_co = True,
-            CoCASL.Sublogic.casl =
-             CASL_SL  { sub_features = NoSub,
-                        has_part = False,
-                        cons_features = SortGen { emptyMapping = False,
-                                                  onlyInjConstrs = False},
-                        has_eq = True,
-                        has_pred = True,
-                        which_logic = FOL
-                      }
+      CASL_SL
+          { ext_features = True,
+            sub_features = NoSub,
+            has_part = False,
+            cons_features = SortGen { emptyMapping = False,
+                                      onlyInjConstrs = False},
+            has_eq = True,
+            has_pred = True,
+            which_logic = FOL
           }
     targetLogic CoCFOL2IsabelleHOL = Isabelle
     mapSublogic CoCFOL2IsabelleHOL _ = ()

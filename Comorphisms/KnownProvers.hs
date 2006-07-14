@@ -104,9 +104,11 @@ isaComorphisms = do
 
 spassComorphisms :: Result [AnyComorphism]
 spassComorphisms =
-    do let max_nosub_SPASS = 
-               top {cons_features =
-                        (cons_features top) {emptyMapping = True} }
+    do let caslTop :: CASL_Sublogics
+           caslTop = top
+           max_nosub_SPASS = 
+               caslTop {cons_features =
+                        (cons_features caslTop) {emptyMapping = True} }
            max_sub_SPASS = max_nosub_SPASS { sub_features = LocFilSub }
            idCASL_sub = Comorphism (IdComorphism CASL max_sub_SPASS)
            idCASL_nosub = Comorphism (IdComorphism CASL max_nosub_SPASS)

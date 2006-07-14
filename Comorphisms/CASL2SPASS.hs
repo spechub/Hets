@@ -40,7 +40,7 @@ import Data.Maybe
 -- CASL
 import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
-import CASL.Sublogic
+import CASL.Sublogic as SL
 import qualified CASL.Sign as CSign
 import CASL.Morphism
 import CASL.Quantification
@@ -116,7 +116,7 @@ formTrCASL _ _ = error "SuleCFOL2SoftFOL: No extended formulas allowed in CASL"
 instance Language SuleCFOL2SoftFOL -- default definition is okay
 
 instance Comorphism SuleCFOL2SoftFOL
-               CASL CASL.Sublogic.CASL_Sublogics
+               CASL CASL_Sublogics
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign
                CASLMor
@@ -125,7 +125,7 @@ instance Comorphism SuleCFOL2SoftFOL
                SPSign.Sign
                SoftFOLMorphism () () ()  where
     sourceLogic _ = CASL
-    sourceSublogic _ = CASL_SL
+    sourceSublogic _ = SL.top
                       { sub_features = LocFilSub,
                         has_part = False,
                         cons_features = SortGen { emptyMapping = True,

@@ -21,7 +21,8 @@ import Common.AS_Annotation
 import CoCASL.Logic_CoCASL
 import CoCASL.AS_CoCASL
 import CoCASL.StatAna
-import qualified CoCASL.Sublogic as SL
+import CoCASL.Sublogic
+import CASL.Sublogic as SL
 import CASL.AS_Basic_CASL
 import CASL.Morphism
 import CASL.Sublogic
@@ -36,12 +37,12 @@ data CoCASL2CoPCFOL = CoCASL2CoPCFOL deriving (Show)
 instance Language CoCASL2CoPCFOL -- default definition is okay
 
 instance Comorphism CoCASL2CoPCFOL
-               CoCASL SL.CoCASL_Sublogics
+               CoCASL CoCASL_Sublogics
                C_BASIC_SPEC CoCASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CSign
                CoCASLMor
                CASL.Morphism.Symbol CASL.Morphism.RawSymbol ()
-               CoCASL SL.CoCASL_Sublogics
+               CoCASL CoCASL_Sublogics
                C_BASIC_SPEC CoCASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CSign
                CoCASLMor
@@ -49,13 +50,12 @@ instance Comorphism CoCASL2CoPCFOL
     sourceLogic CoCASL2CoPCFOL = CoCASL
     sourceSublogic CoCASL2CoPCFOL = SL.top
     targetLogic CoCASL2CoPCFOL = CoCASL
-    mapSublogic CoCASL2CoPCFOL sl = sl
-          { SL.casl = sublogics_max need_horn (SL.casl sl)
+    mapSublogic CoCASL2CoPCFOL sl =
+          sublogics_max need_horn sl
             { sub_features = NoSub  -- subsorting is coded out
             , has_part = True
             , has_eq = True
             }
-          }
     map_theory CoCASL2CoPCFOL = mkTheoryMapping ( \ sig ->
       let e = encodeSig sig in return (e, monotonicities sig
                 ++ map (mapNamed mapSen) (generateAxioms sig)))

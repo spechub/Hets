@@ -94,30 +94,41 @@ instance SemiLatticeWithTop Sublogic where
     join = sublogic_max
     top = topLogic
 
+instance Sublogics Sublogic where
+    sublogic_names = sublogic_name
+
+instance MinSublogic Sublogic BasicSpec where
+    minSublogic = sl_basicSpec
+
+instance MinSublogic Sublogic Sentence where
+    minSublogic = sl_sentence
+
+instance MinSublogic Sublogic SymbItems where
+    minSublogic = sl_symbItems
+
+instance MinSublogic Sublogic SymbMapItems where
+    minSublogic = sl_symbMapItems
+
+instance MinSublogic Sublogic Env where
+    minSublogic = sl_env
+
+instance MinSublogic Sublogic Morphism where
+    minSublogic = sl_morphism
+
+instance MinSublogic Sublogic Symbol where
+    minSublogic = sl_symbol
+
+instance ProjectSublogic Sublogic BasicSpec
+instance ProjectSublogicM Sublogic SymbItems
+instance ProjectSublogicM Sublogic SymbMapItems
+instance ProjectSublogic Sublogic Env
+instance ProjectSublogic Sublogic Morphism
+instance ProjectSublogicM Sublogic Symbol
+
 instance Logic HasCASL Sublogic
                BasicSpec Sentence SymbItems SymbMapItems
                Env
                Morphism
                Symbol RawSymbol () where
          stability _ = Testing
-
-         sublogic_names HasCASL = sublogic_name
-         all_sublogics HasCASL = sublogics_all
-
-         data_logic HasCASL = Nothing
-
-         is_in_basic_spec HasCASL = in_basicSpec
-         is_in_sentence HasCASL = in_sentence
-         is_in_symb_items HasCASL = in_symbItems
-         is_in_symb_map_items HasCASL = in_symbMapItems
-         is_in_sign HasCASL = in_env
-         is_in_morphism HasCASL = in_morphism
-         is_in_symbol HasCASL = in_symbol
-
-         min_sublogic_basic_spec HasCASL = sl_basicSpec
-         min_sublogic_sentence HasCASL = sl_sentence
-         min_sublogic_symb_items HasCASL = sl_symbItems
-         min_sublogic_symb_map_items HasCASL = sl_symbMapItems
-         min_sublogic_sign HasCASL = sl_env
-         min_sublogic_morphism HasCASL = sl_morphism
-         min_sublogic_symbol HasCASL = sl_symbol
+         all_sublogics _ = sublogics_all

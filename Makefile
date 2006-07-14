@@ -52,7 +52,7 @@ INSTALLDIR = \
     /home/www/agbkb/forschung/formal_methods/CoFI/hets/`utils/sysname.sh`
 
 DRIFT_deps = utils/DrIFT-src/*hs
-GENERATERULES_deps = utils/GenerateRules/*hs $(DRIFT_deps) 
+GENERATERULES_deps = utils/GenerateRules/*hs $(DRIFT_deps)
 GENITCORRECTIONS_deps = utils/itcor/GenItCorrections.hs Common/Utils.hs \
     Common/Lib/Map.hs Common/Lib/Set.hs
 INLINEAXIOMS_deps = utils/InlineAxioms/InlineAxioms.hs \
@@ -268,7 +268,7 @@ Isabelle_files = Isabelle/IsaSign.hs
 
 Modal_files = Modal/AS_Modal.hs Modal/ModalSign.hs
 ConstraintCASL_files = ConstraintCASL/AS_ConstraintCASL.hs
-CoCASL_files = CoCASL/AS_CoCASL.hs CoCASL/CoCASLSign.hs CoCASL/Sublogic.hs
+CoCASL_files = CoCASL/AS_CoCASL.hs CoCASL/CoCASLSign.hs
 COL_files = COL/AS_COL.hs COL/COLSign.hs
 CspCASL_files = CspCASL/AS_CSP_CASL.hs CspCASL/SignCSP.hs
 
@@ -478,7 +478,7 @@ install-hets:
 
 install: hets-opt install-hets
 
-pack/install-%.jar: pack/install-%.xml pack/UserInputSpec-%.xml hets.in hets 
+pack/install-%.jar: pack/install-%.xml pack/UserInputSpec-%.xml hets.in hets
        ## TODO: add more dependencies and use hets-opt
 	compile $< -b . -k standard -o $@
 #	compile $< -b . -k web -o $@
@@ -559,7 +559,7 @@ bin_clean:
 	$(RM) showKP
 	$(RM) $(TESTTARGETS)
 
-clean_pretty: 
+clean_pretty:
 	$(RM) pretty/*.c.* pretty/*.h.* pretty/gen_it_* \
                pretty/generated_words.tex
 

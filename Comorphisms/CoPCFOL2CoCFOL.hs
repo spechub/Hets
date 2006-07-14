@@ -22,7 +22,8 @@ import Common.AS_Annotation
 import CoCASL.Logic_CoCASL
 import CoCASL.AS_CoCASL
 import CoCASL.StatAna
-import qualified CoCASL.Sublogic as SL
+import CoCASL.Sublogic
+import CASL.Sublogic as SL
 import CASL.AS_Basic_CASL
 import CASL.Morphism
 import CASL.Sublogic
@@ -36,27 +37,24 @@ data CoPCFOL2CoCFOL = CoPCFOL2CoCFOL deriving (Show)
 instance Language CoPCFOL2CoCFOL -- default definition is okay
 
 instance Comorphism CoPCFOL2CoCFOL
-               CoCASL SL.CoCASL_Sublogics
+               CoCASL CoCASL_Sublogics
                C_BASIC_SPEC CoCASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CSign
                CoCASLMor
                CASL.Morphism.Symbol CASL.Morphism.RawSymbol ()
-               CoCASL SL.CoCASL_Sublogics
+               CoCASL CoCASL_Sublogics
                C_BASIC_SPEC CoCASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CSign
                CoCASLMor
                CASL.Morphism.Symbol CASL.Morphism.RawSymbol () where
     sourceLogic CoPCFOL2CoCFOL = CoCASL
-    sourceSublogic CoPCFOL2CoCFOL =
-      SL.top { SL.casl = (SL.casl SL.top) { sub_features = NoSub } }
+    sourceSublogic CoPCFOL2CoCFOL = SL.top { sub_features = NoSub }
     targetLogic CoPCFOL2CoCFOL = CoCASL
     mapSublogic CoPCFOL2CoCFOL sl = sl
-          { SL.casl = (SL.casl sl)
                { has_part = False -- partiality is coded out
                , has_eq = True
                , has_pred = True
                }
-          }
     map_theory CoPCFOL2CoCFOL = mkTheoryMapping ( \ sig ->
           let e = sig2FOL sig in return (e, map (mapNamed mapSen)
                                               $ generateFOLAxioms sig))

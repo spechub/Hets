@@ -19,7 +19,7 @@ import qualified Common.Lib.Set as Set
 
 -- CASL
 import CASL.Logic_CASL
-import CASL.Sublogic
+import CASL.Sublogic as SL
 import CASL.Sign
 import CASL.AS_Basic_CASL
 import CASL.Morphism
@@ -30,7 +30,7 @@ import CoCASL.Logic_CoCASL
 import CoCASL.AS_CoCASL
 import CoCASL.CoCASLSign
 import CoCASL.StatAna (CSign)
-import qualified CoCASL.Sublogic
+import CoCASL.Sublogic
 
 -- | The identity of the comorphism
 data CASL2CoCASL = CASL2CoCASL deriving (Show)
@@ -43,26 +43,16 @@ instance Comorphism CASL2CoCASL
                CASLSign
                CASLMor
                Symbol RawSymbol ()
-               CoCASL CoCASL.Sublogic.CoCASL_Sublogics
+               CoCASL CoCASL_Sublogics
                C_BASIC_SPEC CoCASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CSign
                CoCASLMor
                Symbol RawSymbol () where
     sourceLogic CASL2CoCASL = CASL
-    sourceSublogic CASL2CoCASL = CASL_SL
-                      { sub_features = Sub,
-                        has_part = True,
-                        cons_features = SortGen { emptyMapping = False,
-                                                  onlyInjConstrs = False},
-                        has_eq = True,
-                        has_pred = True,
-                        which_logic = FOL
-                      }
+    sourceSublogic CASL2CoCASL = SL.top
     targetLogic CASL2CoCASL = CoCASL
-    mapSublogic CASL2CoCASL s =
-        CoCASL.Sublogic.CoCASL_SL
-          { CoCASL.Sublogic.has_co = False,
-            CoCASL.Sublogic.casl = s }
+    mapSublogic CASL2CoCASL s = s { ext_features = False }
+
     map_theory CASL2CoCASL = return . simpleTheoryMapping mapSig mapSen
     map_morphism CASL2CoCASL = return . mapMor
     map_sentence CASL2CoCASL _ = return . mapSen

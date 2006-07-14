@@ -1,3 +1,4 @@
+{-# OPTIONS -fallow-undecidable-instances #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2005
@@ -5,7 +6,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  till@tzi.de
 Stability   :  provisional
-Portability :  portable
+Portability :  non-portable (imports Logic.Logic)
 
 Here is the place where the class Logic is instantiated for CASL.
    Also the instances for Syntax an Category.
@@ -27,7 +28,7 @@ import CASL.SymbolParser
 import CASL.MapSentence
 import CASL.Amalgamability
 import CASL.ATC_CASL()
-import CASL.Sublogic
+import CASL.Sublogic as SL
 import CASL.Sign
 import CASL.StaticAna
 import CASL.Morphism
@@ -89,10 +90,86 @@ instance Syntax CASL CASLBasicSpec
 
 -- lattices (for sublogics)
 
-instance SemiLatticeWithTop CASL_Sublogics where
-    join = CASL.Sublogic.sublogics_max
-    top = CASL.Sublogic.top
+instance Lattice a => SemiLatticeWithTop (CASL_SL a) where
+    join = sublogics_max
+    top = SL.top
 
+class Lattice a => MinSL a f where
+    minSL :: f -> CASL_SL a
+
+instance MinSL () () where
+    minSL () = bottom 
+
+class NameSL a where
+    nameSL :: a -> String
+
+instance NameSL () where
+    nameSL _ = ""
+
+class Lattice a => ProjForm a f where
+    projForm :: CASL_SL a -> f -> Maybe (FORMULA f)
+
+instance Lattice a => ProjForm a () where
+    projForm _ f = Just $ ExtFORMULA f
+
+class (Lattice a, ProjForm a f) => ProjSigItem a s f where
+    projSigItems :: CASL_SL a -> s -> (Maybe (SIG_ITEMS s f), [SORT])
+
+instance (Lattice a, ProjForm a f) => ProjSigItem a () f where
+    projSigItems _ s = (Just $ Ext_SIG_ITEMS s, [])
+
+class (Lattice a, ProjForm a f) => ProjBasic a b s f where
+    projBasicItems :: CASL_SL a -> b -> (Maybe (BASIC_ITEMS b s f), [SORT])
+
+instance (Lattice a, ProjForm a f, ProjSigItem a s f) 
+    => ProjBasic a () s f where
+    projBasicItems _ b = (Just $ Ext_BASIC_ITEMS b, [])
+
+instance (NameSL a) => Sublogics (CASL_SL a) where
+    sublogic_names = sublogics_name nameSL
+
+instance (MinSL a f, MinSL a s, MinSL a b) => 
+    MinSublogic (CASL_SL a) (BASIC_SPEC b s f) where
+    minSublogic = sl_basic_spec minSL minSL minSL
+
+instance MinSL a f => MinSublogic (CASL_SL a) (FORMULA f) where
+    minSublogic = sl_sentence minSL
+
+instance Lattice a => MinSublogic (CASL_SL a) SYMB_ITEMS where
+    minSublogic = sl_symb_items
+
+instance Lattice a => MinSublogic (CASL_SL a) SYMB_MAP_ITEMS where
+    minSublogic = sl_symb_map_items
+
+instance Lattice a => MinSublogic (CASL_SL a) (Sign f e) where
+    minSublogic = sl_sign
+
+instance Lattice a => MinSublogic (CASL_SL a) (Morphism f e m) where
+    minSublogic = sl_morphism
+
+instance Lattice a => MinSublogic (CASL_SL a) Symbol where
+    minSublogic = sl_symbol
+
+instance (MinSL a f, MinSL a s, MinSL a b, ProjForm a f, 
+          ProjSigItem a s f, ProjBasic a b s f) => 
+    ProjectSublogic (CASL_SL a) (BASIC_SPEC b s f) where
+    projectSublogic = pr_basic_spec projBasicItems projSigItems projForm 
+
+instance Lattice a => ProjectSublogicM (CASL_SL a) SYMB_ITEMS where
+    projectSublogicM = pr_symb_items
+
+instance Lattice a => ProjectSublogicM (CASL_SL a) SYMB_MAP_ITEMS where
+    projectSublogicM = pr_symb_map_items
+
+instance Lattice a => ProjectSublogic (CASL_SL a) (Sign f e) where
+    projectSublogic = pr_sign
+
+instance Lattice a => ProjectSublogic (CASL_SL a) (Morphism f e m) where
+    projectSublogic = pr_morphism
+
+instance Lattice a => ProjectSublogicM (CASL_SL a) Symbol where
+    projectSublogicM = pr_symbol
+ 
 -- CASL logic
 
 instance Sentences CASL CASLFORMULA () CASLSign CASLMor Symbol where
@@ -137,40 +214,11 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA ()
          induced_from_to_morphism CASL = inducedFromToMorphism dummy trueC
          theory_to_taxonomy CASL = convTaxo
 
-
-instance Logic CASL CASL.Sublogic.CASL_Sublogics
+instance Logic CASL CASL_Sublogics
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign
                CASLMor
                Symbol RawSymbol () where
-
          stability _ = Stable
-
-         sublogic_names CASL = CASL.Sublogic.sublogics_name
-         all_sublogics CASL = CASL.Sublogic.sublogics_all
-
-         data_logic CASL = Nothing
-
-         is_in_basic_spec CASL = CASL.Sublogic.in_basic_spec
-         is_in_sentence CASL = CASL.Sublogic.in_sentence
-         is_in_symb_items CASL = CASL.Sublogic.in_symb_items
-         is_in_symb_map_items CASL = CASL.Sublogic.in_symb_map_items
-         is_in_sign CASL = CASL.Sublogic.in_sign
-         is_in_morphism CASL = CASL.Sublogic.in_morphism
-         is_in_symbol CASL = CASL.Sublogic.in_symbol
-
-         min_sublogic_basic_spec CASL = CASL.Sublogic.sl_basic_spec
-         min_sublogic_sentence CASL = CASL.Sublogic.sl_sentence
-         min_sublogic_symb_items CASL = CASL.Sublogic.sl_symb_items
-         min_sublogic_symb_map_items CASL = CASL.Sublogic.sl_symb_map_items
-         min_sublogic_sign CASL = CASL.Sublogic.sl_sign
-         min_sublogic_morphism CASL = CASL.Sublogic.sl_morphism
-         min_sublogic_symbol CASL = CASL.Sublogic.sl_symbol
-
-         proj_sublogic_basic_spec CASL = CASL.Sublogic.pr_basic_spec
-         proj_sublogic_symb_items CASL = CASL.Sublogic.pr_symb_items
-         proj_sublogic_symb_map_items CASL = CASL.Sublogic.pr_symb_map_items
-         proj_sublogic_sign CASL = CASL.Sublogic.pr_sign
-         proj_sublogic_morphism CASL = CASL.Sublogic.pr_morphism
-         proj_sublogic_epsilon CASL = CASL.Sublogic.pr_epsilon dummy
-         proj_sublogic_symbol CASL = CASL.Sublogic.pr_symbol
+         proj_sublogic_epsilon CASL = pr_epsilon dummy
+         all_sublogics _ = sublogics_all [()]

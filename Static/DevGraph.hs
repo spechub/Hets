@@ -55,7 +55,7 @@ import Common.DocUtils
 import Common.Result
 import Common.DynamicUtils
 
-import Control.Monad
+import Control.Monad (foldM)
 import Control.Exception
 
 getNewNode :: Tree.Gr a b -> Node
@@ -652,10 +652,10 @@ instance Pretty G_theory where
 -- | compute sublogic of a theory
 sublogicOfTh :: G_theory -> G_sublogics
 sublogicOfTh (G_theory lid sigma sens) =
-  let sub = foldl Logic.Logic.join
-                  (min_sublogic_sign lid sigma)
+  let sub = foldl join
+                  (minSublogic sigma)
                   (map snd $ OMap.toList $
-                   OMap.map (min_sublogic_sentence lid . value)
+                   OMap.map (minSublogic . value)
                        sens)
    in G_sublogics lid sub
 

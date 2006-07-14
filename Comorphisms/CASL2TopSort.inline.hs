@@ -34,7 +34,7 @@ import CASL.AS_Basic_CASL
 import CASL.Utils
 import CASL.Sign
 import CASL.Morphism
-import CASL.Sublogic
+import CASL.Sublogic as SL
 import CASL.Inject (injName)
 
 -- | The identity of the comorphism
@@ -54,14 +54,10 @@ instance Comorphism CASL2TopSort
                CASLMor
                Symbol RawSymbol () where
     sourceLogic CASL2TopSort = CASL
-    sourceSublogic CASL2TopSort = CASL_SL
+    sourceSublogic CASL2TopSort = SL.top
                       { sub_features = LocFilSub,
-                        has_part = True,
                         cons_features = SortGen { emptyMapping = True,
-                                                  onlyInjConstrs = True},
-                        has_eq = True,
-                        has_pred = True,
-                        which_logic = FOL
+                                                  onlyInjConstrs = True}
                       }
     targetLogic CASL2TopSort = CASL
     mapSublogic CASL2TopSort sub =

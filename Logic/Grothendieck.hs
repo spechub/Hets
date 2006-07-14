@@ -220,7 +220,7 @@ instance Typeable G_sublogics where
   typeOf _ = mkTyConApp tyconG_sublogics []
 
 instance Show G_sublogics where
-    show (G_sublogics lid sub) = case sublogic_names lid sub of
+    show (G_sublogics lid sub) = case sublogic_names sub of
       [] -> error "show G_sublogics"
       h : _ -> show lid ++ "." ++ h
 

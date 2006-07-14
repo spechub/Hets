@@ -25,7 +25,7 @@ import Data.Char
 -- CASL
 import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
-import CASL.Sublogic
+import CASL.Sublogic as SL
 import CASL.Sign
 import CASL.Morphism
 import CASL.Quantification
@@ -60,7 +60,7 @@ formTrCASL _ _ = error "CFOL2IsabelleHOL: No extended formulas allowed in CASL"
 instance Language CFOL2IsabelleHOL -- default definition is okay
 
 instance Comorphism CFOL2IsabelleHOL
-               CASL CASL.Sublogic.CASL_Sublogics
+               CASL CASL_Sublogics
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign
                CASLMor
@@ -69,14 +69,9 @@ instance Comorphism CFOL2IsabelleHOL
                IsaSign.Sign
                IsabelleMorphism () () ()  where
     sourceLogic _ = CASL
-    sourceSublogic _ = CASL_SL
+    sourceSublogic _ = SL.top
                       { sub_features = NoSub, -- no subsorting yet ...
-                        has_part = False, -- no partiality yet ...
-                        cons_features = SortGen { emptyMapping = False,
-                                                  onlyInjConstrs = False},
-                        has_eq = True,
-                        has_pred = True,
-                        which_logic = FOL
+                        has_part = False -- no partiality yet ...
                       }
     targetLogic _ = Isabelle
     mapSublogic _ _ = ()

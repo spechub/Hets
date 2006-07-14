@@ -148,12 +148,3 @@ instance Logic CASL_DL ()
                DLMor
                Symbol RawSymbol () where
          stability _ = Unstable
-         min_sublogic_basic_spec CASL_DL _basic_spec = ()
-         min_sublogic_sentence CASL_DL _sentence = ()
-         min_sublogic_symb_items CASL_DL _symb_items = ()
-         min_sublogic_symb_map_items CASL_DL _symb_map_items = ()
-         min_sublogic_sign CASL_DL _sign = ()
-         min_sublogic_morphism CASL_DL _morphism = ()
-         min_sublogic_symbol CASL_DL _symbol = ()
---         sublogic_names CASL_DL _ = ["CASL_DL"]
---         all_sublogics CASL_DL = [()]

@@ -19,7 +19,7 @@ import qualified Common.Lib.Set as Set
 
 -- CASL
 import CASL.Logic_CASL
-import CASL.Sublogic
+import CASL.Sublogic as SL
 import CASL.Sign
 import CASL.AS_Basic_CASL
 import CASL.Morphism
@@ -46,15 +46,7 @@ instance Comorphism CASL2Modal
                ModalMor
                Symbol RawSymbol () where
     sourceLogic CASL2Modal = CASL
-    sourceSublogic CASL2Modal = CASL_SL
-                      { sub_features = Sub,
-                        has_part = True,
-                        cons_features = SortGen { emptyMapping = False,
-                                                  onlyInjConstrs = False},
-                        has_eq = True,
-                        has_pred = True,
-                        which_logic = FOL
-                      }
+    sourceSublogic CASL2Modal = SL.top
     targetLogic CASL2Modal = Modal
     mapSublogic CASL2Modal _ = ()
     map_theory CASL2Modal = return . simpleTheoryMapping mapSig mapSen

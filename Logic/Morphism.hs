@@ -85,7 +85,7 @@ instance Logic lid sublogics
         sign morphism symbol raw_symbol proof_tree =>
          Language (IdMorphism lid sublogics) where
            language_name (IdMorphism lid sub) =
-               case sublogic_names lid sub of
+               case sublogic_names sub of
                [] -> error "language_name IdMorphism"
                h : _ -> "id_" ++ language_name lid ++ "." ++ h
 

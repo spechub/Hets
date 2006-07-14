@@ -156,10 +156,10 @@ showLogicGraph
         showSublogic l =
             case l of
               Logic lid -> unlines (map unwords $
-                                map (sublogic_names lid) (all_sublogics lid))
+                                map sublogic_names (all_sublogics lid))
         showSubTitle gsl =
             case gsl of
-              G_sublogics lid sls -> unwords $ sublogic_names lid sls
+              G_sublogics _ sls -> unwords $ sublogic_names sls
         showTitle l =
             case l of
               Logic lid -> language_name lid
@@ -217,16 +217,14 @@ showLogicGraph
                          subNodeMenu $$$
                          Ellipse $$$
                          ValueTitle
-                           (\gsl -> return (unwords $ sublogic_names
-                                                      sublid gsl)) $$$
+                           (\gsl -> return (unwords $ sublogic_names gsl)) $$$
                          Color "yellow" $$$
                          emptyNodeTypeParms
                  subNodeType <- newNodeType subLogicG subNodeTypeParms
                  subNodeList <- mapM (newNode subLogicG subNodeType)
                                 listG_Sublogics
                  let slAndNodes = Map.fromList $ 
-                                  zip (map (sublogic_names sublid) 
-                                           listG_Sublogics) 
+                                  zip (map sublogic_names listG_Sublogics) 
                                       subNodeList
                      lookupSublogic g_sl = 
                          Map.findWithDefault 
@@ -243,7 +241,7 @@ showLogicGraph
                                   (lookupSublogic node2)
                  mapM_ insertSubArc $ 
                      Rel.toList $ Rel.intransKernel $ Rel.fromList
-                     [ (sublogic_names sublid g1,sublogic_names sublid g2)
+                     [ (sublogic_names g1, sublogic_names g2)
                      | g1 <- listG_Sublogics
                      , g2 <- listG_Sublogics
                      , isSubElem g1 g2
