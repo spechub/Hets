@@ -44,7 +44,7 @@ process2 file = do
                 do -- putStrLn ("orig: \n" ++ (show $ devGraph gc))
                    gc' <- trans (Comorphism PCFOL2CFOL) gc
                    -- putStrLn ("translated: \n" ++ (show $ devGraph gc'))
-                   return mResult
+                   return $ Just (libName, Map.update (\_ -> Just gc') libName gcMap)
             _ -> do putStrLn "not found gc."
                     return mResult
       _ -> do putStrLn "nichts"
@@ -66,7 +66,8 @@ trans acm gc = do
           do putStrLn ("diagnosis : \n" ++ (show diags'))
              case maybeGC of
                Just gc' -> if not $ isLessSubLogic acm $ devGraph gc'
-                             then do putStrLn "anyplace is not less als Comorphism."
+                             then do putStrLn ("anyplace is not less" ++ 
+                                               "than Comorphism.")
                                      return gc'
                              else return gc'
                Nothing  -> do putStrLn "no result from translation" 
@@ -79,7 +80,8 @@ isLessSubLogic acm dg =
   where checkAllLess (inlinks, node, outlinks) =
             if lessSublogicComor (sublogicOfTh $ dgn_theory node) acm
                then all checkEdgeLess (inlinks ++ outlinks)
-               else error ((show $ dgn_name node) ++ " not less than" ++ (show acm)) -- False
+               else error ((show $ dgn_name node) ++ " not less than" 
+                           ++ (show acm)) -- False
 
         checkEdgeLess (edge, n) =
             case dgl_morphism edge of
