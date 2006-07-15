@@ -89,7 +89,8 @@ runVampire :: SPASSProverState
            -- ^ (retval, configuration with proof status and complete output)
 runVampire sps cfg saveTPTP thName nGoal = do
     putStrLn ("running MathServ VampireService...")
-    prob <- showTPTPProblem thName sps nGoal $ extraOpts cfg
+    prob <- showTPTPProblem thName sps nGoal $ extraOpts cfg ++
+                                                 ["Requested prover: Vampire"]
     when saveTPTP
         (writeFile (thName++'_':AS_Anno.senName nGoal++".tptp") prob)
     mathServOut <- callMathServ
@@ -98,6 +99,7 @@ runVampire sps cfg saveTPTP thName nGoal = do
                       problem = prob,
                       proverTimeLimit = tLimit,
                       extraOptions = Just $ unwords $ extraOpts cfg}
-    parseMathServOut mathServOut cfg nGoal (prover_name vampire)
+    mathServResponse <- parseMathServOut mathServOut
+    mapMathServResponse mathServResponse cfg nGoal (prover_name vampire)
     where
       tLimit = maybe (guiDefaultTimeLimit) id $ timeLimit cfg

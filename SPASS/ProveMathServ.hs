@@ -96,7 +96,7 @@ runMSBroker :: SPASSProverState
             -- ^ (retval, configuration with proof status and complete output)
 runMSBroker sps cfg saveTPTP thName nGoal = do
     putStrLn ("running MathServ Broker...")
-    prob <- showTPTPProblem thName sps nGoal $ extraOpts cfg
+    prob <- showTPTPProblem thName sps nGoal $ extraOpts cfg ++ ["[via Broker]"]
     when saveTPTP
         (writeFile (thName++'_':AS_Anno.senName nGoal++".tptp") prob)
     mathServOut <- callMathServ
@@ -105,6 +105,7 @@ runMSBroker sps cfg saveTPTP thName nGoal = do
                      problem = prob,
                      proverTimeLimit = tLimit,
                      extraOptions = Nothing}
-    parseMathServOut mathServOut cfg nGoal (prover_name mathServBroker)
+    mathServResponse <- parseMathServOut mathServOut
+    mapMathServResponse mathServResponse cfg nGoal (prover_name mathServBroker)
     where
       tLimit = maybe (guiDefaultTimeLimit) id $ timeLimit cfg
