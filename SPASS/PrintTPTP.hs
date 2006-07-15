@@ -56,6 +56,7 @@ instance PrintTPTP SPProblem where
     printTPTP p = text separator
       $+$ text "% Problem" <+> colon <+> text (identifier p)
       $+$ printTPTP (description p)
+      $+$ vcat (map printTPTP $ settings p)
       $+$ text separator
       $+$ printTPTP (logicalPart p)
 
@@ -250,3 +251,7 @@ instance PrintTPTP SPLogState where
       SPStateSatisfiable   -> "satisfiable"
       SPStateUnsatisfiable -> "unsatisfiable"
       SPStateUnknown       -> "unknown"
+
+instance PrintTPTP SPSetting where
+    printTPTP (SPFlag sw v) =
+      hsep [text "% Option ", colon, text sw, comma, text v]
