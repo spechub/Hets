@@ -13,20 +13,13 @@ Functions for parsing and mapping MathServ output.
 -}
 
 {-
-  to do:
-  - add MathServResponse record with full rdf data
-  --> rewrite parseMathServOut
-  --> add another layer/function for filling ProofStatus from MathServResponse
+  To do:
+  - also parse mw:failure and mw:message
 -}
 
 module SPASS.MathServParsing where
 
-import Logic.Prover
-
-import SPASS.Sign
 import SPASS.MathServCommunication
-
-import qualified Common.AS_Annotation as AS_Anno
 
 import Network.URI
 import Network.Service
@@ -35,13 +28,9 @@ import Org.Xmlsoap.Schemas.Soap.Envelope as ENV
 import Text.XML.HXT.Aliases
 import Text.XML.HXT.Parser hiding (when)
 import Text.XML.HXT.XPath
-import Text.Regex
 
 import Data.List
 import Data.Maybe
-
-import GUI.GenericATP (guiDefaultTimeLimit)
-import GUI.GenericATPState
 
 -- * Datatypes for MathServ services
 
@@ -95,30 +84,68 @@ data MathServResponse =
                           } deriving (Eq, Ord, Show)
 
 data MWFoAtpResult =
-       MWFoAtpResult { proof       :: MWProof,
-                       time        :: MWTimeResource,
-                       output      :: String
+       MWFoAtpResult { proof        :: MWFormalProof,
+                       resultFor    :: MWProvingProblem,
+                       outputStr    :: String,
+                       saturation   :: String,
+                       systemStatus :: MWStatus,
+                       systemStr    :: String,
+                       time         :: MWTimeResource
+-- defined, but not needed?
+--                       timeRes     :: MWTimeResource,
                        } deriving (Eq, Ord, Show)
 
-data MWProof =
--- !! other types? maybe add another data structure layer?
+data MWFormalProof =
        TstpCnfRefutation { formalProof :: String,
-                           calculus    :: String,
-                           proofOf     :: String,
-                           axioms      :: [String]
+                           proofOf     :: MWProvingProblem,
+                           calculus    :: MWCalculus,
+                           axioms      :: String
                            } deriving (Eq, Ord, Show)
 
+data MWStatus =
+       MWStatus { solved   :: Bool,
+                  foStatus :: FoStatus
+                  } deriving (Eq, Ord, Show)
+
+data FoStatus =
+       CounterEquivalent
+     | CounterSatisfiable
+     | CounterTheorem
+     | Equivalent
+     | NoConsequence
+     | Satisfiable
+     | TautologousConclusion
+     | Tautology
+     | Theorem
+     | Unsatisfiable
+     | UnsatisfiableConclusion
+     | Assumed
+     | GaveUp
+     | InputError
+     | MemoryOut
+     | ResourceOut
+     | Timeout
+     | Unknown
+     deriving (Eq, Ord, Show)
+
+data MWProvingProblem =
+       TstpFOFProblem
+     deriving (Eq, Ord, Show)
+       
+data MWCalculus =
+       AprosNDCalculus
+     | OmegaNDCalculus
+     | EpResCalc
+     | SpassResCalc
+     | StandardRes
+     | OtterCalc
+     | ZenonCalc
+     deriving (Eq, Ord, Show)
+
 data MWTimeResource =
-       MWTimeResource { cpuTime       :: TimeValue,
-                        wallClockTime :: TimeValue
+       MWTimeResource { cpuTime       :: Int,
+                        wallClockTime :: Int
                         } deriving (Eq, Ord, Show)
-
--- !! maybe replace TimeValue with just Int and cancel dataType?
-data TimeValue =
-       TimeValue { dataType :: String,
-                   value    :: Int
-                   } deriving (Eq, Ord, Show)
-
 
 
 -- ** functions for handling with MathServ services
@@ -185,171 +212,204 @@ callMathServ call =
         server = "denebola.informatik.uni-bremen.de"
         port = "8080"
 
-{- |
-  Verifies if the used prover was SPASS.This is done by parsing the prover
-  output.
--}
-isSPASSOutput :: [String] -- ^ the prover output (maybe SPASS)
-              -> Bool
-isSPASSOutput out =
-    isJust $ matchRegex re_spass $ unlines out
-    where
-      re_spass = mkRegex "SPASS V.*$"
 
 {- |
-  Reads and parses the output of SPASS. The goal status will be updated (if
-  possible), used axioms will be filtered and added.
--}
-parseSPASSOutput :: [String] -- ^ SPASS output, beginning with result line
-                 -> (Maybe GoalStatus, [String])
-                 -> (Maybe GoalStatus, [String])
-                    -- ^ (current goal status, currently used axioms)
-parseSPASSOutput [] result = result
-parseSPASSOutput (line:ls) (res, usedAxs) =
-    if null ls then (res', usedAxs') else parseSPASSOutput ls (res', usedAxs')
-
-    where
-      resultMatch = matchRegex re_sb line
-      res' = maybe res createGoalStatus resultMatch
-      createGoalStatus resMatch
-        | elem proved resMatch = Just $ Proved Nothing
-        | elem disproved resMatch = Just Disproved
-        | elem timelimit resMatch = Just Open
-        | otherwise = res
-      usedAxsMatch = matchRegex re_ua line
-      usedAxs' = if isJust usedAxsMatch
-                 then (words $ head $ fromJust usedAxsMatch) else usedAxs
-
-      re_sb = mkRegex "SPASS beiseite: (.*)$"
-      re_ua = mkRegex "Formulae used in the proof.*:(.*)$"
-      proved = "Proof found."
-      disproved = "Completion found."
-      timelimit = "Ran out of time."
-
-{- |
-  Parses the MathServ output.
+  Full parsing of RDF-objects returned by MathServ and putting the results
+  into a MathServResponse data-structure.
 -}
 parseMathServOut :: String -- ^ MathServ output or error messages
-                 -> GenericConfig () -- ^ configuration to use
-                 -> AS_Anno.Named SPTerm -- ^ goal to prove
-                 -> String -- ^ prover name
-                 -> IO (ATPRetval, GenericConfig ())
-                 -- ^ (retval, configuration with proof status and
-                 --    complete output)
-parseMathServOut mathServOut cfg nGoal prName = do
+                 -> IO MathServResponse -- ^ parsed rdf-objects in record
+parseMathServOut mathServOut = do
     mtrees <- parseXML mathServOut
     let rdfTree = maybe emptyRoot head mtrees
-        res = mapToGoalStatus $ getXTextValue $ getXPath resultXPath rdfTree
-        output = maybe (lines mathServOut) (lines . unTab) $
-                       getXTextValue $ getXPath outputXPath rdfTree
-        timeout = isJust $ matchRegex re_timeout $ unlines output
-        -- get real prover name if Broker was used
-        prName' = if (prName == brokerName)
-                     then (usedProverName rdfTree) ++ " [via MathServBroker]"
-                     else prName ++ " [via MathServ]"
-        defaultPrStat = defaultProof_status nGoal prName' tLimit
-
-        -- get used axioms if available, otherwise set the goal itself as axiom
-        usedAxs = maybe [AS_Anno.senName nGoal] words $
-                        getXTextValue $ getXPath axiomsXPath rdfTree
-        (atpErr, retval) = proof_stat nGoal res usedAxs timeout defaultPrStat
-    return (atpErr,
-            cfg{proof_status = retval,
-                resultOutput = output})
+    return MathServResponse {
+             foAtpResult = parseFoAtpResult rdfTree,
+             timeResource = parseTimeResource rdfTree }
     where
-      brokerName = "MSBroker"
-      tLimit = maybe (guiDefaultTimeLimit) id $ timeLimit cfg
-      -- replace tabulators with each 8 spaces
-      unTab = foldr (\ch li ->
-                        if ch == '\x9' then "        "++li
-                                       else ch:li) ""
-      outputXPath = "/mw:*[local-name()='FoAtpResult']/mw:*[local-"
-                     ++ "name()='output']/text()"
-      resultXPath = "/mw:*[local-name()='FoAtpResult']/mw:*[local-"
-                     ++ "name()='status']/attribute::rdf:*/text()"
-      axiomsXPath = "/mw:*[local-name()='FoAtpResult']/mw:*[local-"
-                     ++ "name()='proof']/mw:*/mw:*[local-name()='axioms']"
-                     ++ "/text()"
-      re_timeout = mkRegex "Terminated by signal."
+
 
 {- |
-  Maps the status message from MathServ results to GoalStatus.
-  RegExp are used.
+  Parses an XmlTree for a FoAtpResult object on first level. If existing,
+  all values of such an object are recursively parsed from underlying XmlTree.
+  All found objects are put into a MWFoAtpResult data structure.
 -}
-mapToGoalStatus :: Maybe String -- ^ MathServ output
-                -> Maybe GoalStatus -- ^ final parsed goal status
-mapToGoalStatus stat = case stat of
-    Nothing -> Nothing
-    Just st -> if isJust $ matchRegex re_theorem st then Just $ Proved Nothing
-                 else if isJust $ matchRegex re_counter st then Just Disproved
-                   else Just Open
+parseFoAtpResult :: XmlTree -- ^ XML tree to parse (should be MathServ output)
+                 -> MWFoAtpResult -- ^ parsed Result node
+parseFoAtpResult rdfTree =
+    MWFoAtpResult { proof        = parseProof nextTree,
+                    resultFor    = parseProvingProblem nextTree,
+                    outputStr    = getXText outputXPath nextTree,
+                    saturation   = getXText saturationXPath nextTree,
+                    systemStatus = parseStatus nextTree,
+                    systemStr    = getXText systemXPath nextTree,
+                    time         = parseTimeResource $ head $
+                                     getXPath timeXPath nextTree }
     where
-      re_theorem = mkRegex "Theorem$"
-      re_counter = mkRegex "CounterSatisfiable$"
+      nextTree =  head $ getXPath atpResultXPath rdfTree
+      atpResultXPath = "/mw:*[local-name()='FoAtpResult']"
+      outputXPath = "/mw:*[local-name()='output']"
+      saturationXPath = "/mw:*[local-name()='saturation']"
+      systemXPath = "/mw:*[local-name()='system']"
+      timeXPath = "/mw:*[local-name()='time']"
 
-usedProverName :: XmlTree -- ^ XML parsed MathServ output
-               -> String -- ^ name of used prover (or unknown)
-usedProverName rdfTree =
-    maybe unknownProver (takeWhile (\ch -> not $ ch == '_')) $
-          getXTextValue $ getXPath proverXPath rdfTree    
-          
+
+{- |
+  Parses an XmlTree for a FormalProof object on first level. If existing,
+  all values of such an object are recursively parsed from underlying XmlTree.
+  All found objects are put into a MWFormalProof data structure.
+-}
+parseProof :: XmlTree -- ^ XML tree to parse
+           -> MWFormalProof -- ^ parsed Formal Proof node
+parseProof rdfTree =
+-- to be completed (recognition of used MWFormalProof's name)
+    TstpCnfRefutation { formalProof = getXText formalProofXPath nextTree,
+                        proofOf     = parseProvingProblem nextTree,
+                        calculus    = parseCalculus nextTree,
+                        axioms      = getXText axiomsXPath nextTree }
     where
-      proverXPath = "/mw:*[local-name()='FoAtpResult']/mw:*[local-"
-                     ++ "name()='system']/text()"
-      unknownProver = "unknown"
+      nextTree = head $ getXPath proofXPath rdfTree
+      proofXPath = "/mw:*[local-name()='proof']/mw:*[1]"
+      
+      axiomsXPath = "/mw:*[local-name()='axioms']"
+      formalProofXPath = "/mw:*[local-name()='formalProof']"
+    
 
 {- |
-  Helper function. Given a one-elemented [XmlTree], containing an XText element
-  in first node, the function returns value of this XText element, if existing.
+  Parses an XmlTree for a ProvingProblem object on first level.
+  Currently only TstpFofProblem can be classified. An empty or non-existing
+  problem object will be classified a TstpFofProblem, too. Other occuring
+  ProvingProblems will cause an exception.
 -}
-getXTextValue :: XmlTrees -- ^ XmlTrees to parse
-              -> Maybe String -- ^ value of XText element
-getXTextValue xmltrees = case xmltrees of
-    [] -> Nothing
-    xt -> let firstNode = getNode $ head xt
-          in  if isXTextNode firstNode
-                 then (\(XText s) -> Just s) firstNode
-                 else Nothing
+parseProvingProblem :: XmlTree -- ^ XML tree to parse
+                    -> MWProvingProblem -- ^ Parsed Proving Problem node
+parseProvingProblem rdfTree =
+    let prob = getAnchor $ getXText problemXPath rdfTree
+    in  case (tillLastDash prob) of
+          "generated_tstp_fof_problem_" -> TstpFOFProblem
+          []                            -> TstpFOFProblem
+          _                             -> error $
+            "Could not classify proving problem: " ++ prob
+    where
+      problemXPath = "/mw:*[local-name()='proofOf']/attribute::rdf:*"
+      tillLastDash = reverse . (dropWhile (\ch -> not $ ch == '_'))
+                     . reverse
 
 {- |
-  Default proof status. Contains the goal name, prover name
-  and the time limit option used by MathServ.
+  Parses an XmlTree for a Calculus object on first level.
+  Currently seven different Calculus objects can be classified.
+  Other objects (also empty or non-existing ones) will cause an exception.
 -}
-defaultProof_status :: AS_Anno.Named SPTerm -- ^ goal to prove
-                    -> String -- ^ prover name
-                    -> Int -- ^ time limit
-                    -> Proof_status ()
-defaultProof_status nGoal prName tl =
-  (openProof_status (AS_Anno.senName nGoal)
-                    prName ())
-  {tacticScript = Tactic_script $ show tl}
-
+parseCalculus :: XmlTree -- ^ XML tree to parse
+              -> MWCalculus -- ^ parsed Calculus node
+parseCalculus rdfTree = case calc of
+      "AProsNDCalculus" -> AprosNDCalculus
+      "OmegaNDCalculus" -> OmegaNDCalculus
+      "ep_res_calc"     -> EpResCalc
+      "spass_res_calc"  -> SpassResCalc
+      "otter_calc"      -> OtterCalc
+      "zenon_calc"      -> ZenonCalc
+      "standard_res"    -> StandardRes
+      _                 -> error $ "Could not classify calculus: " ++ calc
+    where
+      calculusXPath = "/mw:*[local-name()='calculus']/attribute::rdf:*"
+      calc = (getAnchor $ getXText calculusXPath rdfTree)
+               
+{- |
+  Parses an XmlTree for a Status object on first level.
+  Currently 18 different Status objects can be classified.
+  Other objects (also empty or non-existing ones) will cause an exception.
+  The status is differentiated into solved unsolved by the object itself.
+-}
+parseStatus :: XmlTree -- ^ XML tree to parse
+            -> MWStatus -- ^ parsed Status node
+parseStatus rdfTree = case statusStr of
+      "CounterEquivalent"  -> MWStatus { solved = True,
+                                         foStatus = CounterEquivalent }
+      "CounterSatisfiable" -> MWStatus { solved = True,
+                                         foStatus = CounterSatisfiable }
+      "CounterTheorem"     -> MWStatus { solved = True,
+                                         foStatus = CounterTheorem }
+      "Equivalent"         -> MWStatus { solved = True,
+                                         foStatus = Equivalent }
+      "NoConsequence"      -> MWStatus { solved = True,
+                                         foStatus = NoConsequence }
+      "Satisfiable"        -> MWStatus { solved = True,
+                                         foStatus = Satisfiable }
+      "TautologousConclusion" -> MWStatus { solved = True,
+                                         foStatus = TautologousConclusion }
+      "Tautology"          -> MWStatus { solved = True,
+                                         foStatus = Tautology }
+      "Theorem"            -> MWStatus { solved = True,
+                                         foStatus = Theorem }
+      "Unsatisfiable"      -> MWStatus { solved = True,
+                                         foStatus = Unsatisfiable }
+      "UnsatisfiableConclusion" -> MWStatus { solved = True,
+                                         foStatus = UnsatisfiableConclusion }
+      "Assumed"            -> MWStatus { solved = False,
+                                         foStatus = Assumed }
+      "GaveUp"             -> MWStatus { solved = False,
+                                         foStatus = GaveUp }
+      "InputError"         -> MWStatus { solved = False,
+                                         foStatus = InputError }
+      "MemoryOut"          -> MWStatus { solved = False,
+                                         foStatus = MemoryOut }
+      "ResourceOut"        -> MWStatus { solved = False,
+                                         foStatus = ResourceOut }
+      "Timeout"            -> MWStatus { solved = False,
+                                         foStatus = Timeout }
+      "Unknown"            -> MWStatus { solved = False,
+                                         foStatus = Unknown }
+      _                    -> error $ "Could not classify status of proof: "
+                                      ++ statusStr
+    where
+      statusXPath = "/mw:*[local-name()='status']/attribute::rdf:*"
+      statusStr = (getAnchor $ getXText statusXPath rdfTree)
 
 {- |
-  Returns the value of a prover run used in GUI (Success, Error or
-  TLimitExceeded), and the proof_status containing all prove
-  information available.
+  Parses an XmlTree for a TimeResource object on first level. If existing,
+  cpuTime and wallClockTime are parsed and returned in MWTimeResource record.
 -}
-proof_stat :: AS_Anno.Named SPTerm -- ^ goal to prove
-           -> Maybe GoalStatus -- ^ Nothing stands for prove error
-           -> [String] -- ^ Used axioms in the proof
-           -> Bool -- ^ Timeout status
-           -> Proof_status () -- ^ default proof status
-           -> (ATPRetval, Proof_status ())
-           -- ^ General return value of a prover run, used in GUI.
-           --   Detailed proof status if information is available.
-proof_stat nGoal res usedAxs timeOut defaultPrStat
-  | isNothing res =
-      (ATPError "Internal error.", defaultPrStat)
-  | (fromJust res == Proved Nothing) =
-      (ATPSuccess, defaultPrStat
-       { goalStatus = Proved $ if elem (AS_Anno.senName nGoal) usedAxs
-                               then Nothing
-                               else Just False
-       , usedAxioms = filter (/=(AS_Anno.senName nGoal)) usedAxs })
-  | (fromJust res == Disproved) =
-      (ATPSuccess, defaultPrStat { goalStatus = Disproved } )
-  | isJust res && timeOut =
-      (ATPTLimitExceeded,
-       defaultPrStat { goalStatus = fromJust res })
-  | otherwise = (ATPSuccess, defaultPrStat)
+parseTimeResource :: XmlTree -- ^ XML tree to parse
+                  -> MWTimeResource -- ^ parsed time resource with
+                                    --   cpuTime and wallClockTime
+parseTimeResource rdfTree =
+    MWTimeResource {
+      cpuTime       = read cpuTimeString,
+      wallClockTime = read wallClockTimeString }
+    where
+      cpuTimeString = getXText cpuTimeXPath rdfTree
+      wallClockTimeString = getXText wallClockTimeXPath rdfTree
+      
+      timeResXPath = "/mw:*[local-name()='TimeResource']/"
+      cpuTimeXPath = timeResXPath ++ "/mw:*[local-name()='cpuTime']"
+      wallClockTimeXPath =
+          timeResXPath ++ "/mw:*[local-name()='wallClockTime']"
+    
+{- |
+  Removes first part of string until '#' (including '#').
+-}
+getAnchor :: String -- ^ in-string
+          -> String -- ^ part of string after first occurence of '#'
+getAnchor s =
+    let s' = dropWhile (\ch -> not $ ch == '#') s
+    in  case s' of
+          [] -> s'
+          _  -> tail s'
+
+{- |
+  This helper function awaits an XPath to an element that contains another
+  XText element (or is empty). The content of this XText element will be
+  returned.
+-}
+getXText :: String -- ^ XPath to element containing one XText element
+         -> XmlTree -- ^ XML tree to parse
+         -> String -- ^ value of XText element
+getXText xp rdfTree =
+    let xptext = xp ++ "/text()"
+        xmltrees = getXPath xptext rdfTree
+    in case xmltrees of
+         [] -> []
+         xt -> let firstNode = getNode $ head xt
+               in  if isXTextNode firstNode
+                     then (\(XText s) -> s) firstNode
+                     else []
