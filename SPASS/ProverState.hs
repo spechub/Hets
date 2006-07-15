@@ -14,16 +14,23 @@ Data structures and initialising functions for Prover state and configurations.
 
 module SPASS.ProverState where
 
+import Logic.Prover
+
 import SPASS.Sign
 import SPASS.Conversions
 import SPASS.Translate
 import SPASS.PrintTPTP
 import SPASS.Print ()
+import SPASS.MathServParsing
 
 import qualified Common.AS_Annotation as AS_Anno
 import Common.ProofUtils
 import Common.Utils (splitOn)
 import Common.DocUtils
+
+import GUI.GenericATP (guiDefaultTimeLimit)
+import GUI.GenericATPState
+
 
 -- * Data structures
 
@@ -42,9 +49,9 @@ spassProverState :: Sign -- ^ SPASS signature
 spassProverState sign oSens' = SPASSProverState{
     initialLogicalPart = foldl insertSentence
                                (signToSPLogicalPart sign)
-                               (reverse axioms)}
+                               (reverse axiomList)}
   where nSens = prepareSenNames transSenName oSens'
-        axioms = filter AS_Anno.isAxiom nSens
+        axiomList = filter AS_Anno.isAxiom nSens
 
 {- |
   Inserts a named SPASS term into SPASS prover state.
@@ -81,7 +88,10 @@ showTPTPProblem :: String -- ^ theory name
                 -> IO String -- ^ formatted output of the goal
 showTPTPProblem thName pst nGoal opts = do
   prob <- genSPASSProblem thName (initialLogicalPart pst) $ Just nGoal
-  return $ show $ printTPTP prob
+  -- add extra options as SPSettings with only one field filled
+  let prob' = prob { settings = (settings prob) ++
+                                (map (\opt -> SPFlag "" opt) opts) }
+  return $ show $ printTPTP prob'
 
 {- |
   Translates SPASS command line into [SPSetting].
@@ -101,10 +111,105 @@ parseSPASSCommands comLine =
       -- remove '-' (multiple) at beginning of an option
       undash = dropWhile (\ch -> ch == '-')
 
-{-
-  include current options into saved DFG file (saved from GUI) 
-    (s. SPASS.CreateDFG)
-  include current options as comment into saved TPTP file (saved from GUI)
-    and also the requested prover or "[via Broker]"
 
+{- |
+  Maps a MathServResponse record into a GenericConfig with Proof_status.
 -}
+mapMathServResponse :: MathServResponse -- ^ Parsed MathServ data
+                    -> GenericConfig () -- ^ configuration to use
+                    -> AS_Anno.Named SPTerm -- ^ goal to prove
+                    -> String -- ^ prover name
+                    -> IO (ATPRetval, GenericConfig ())
+                    -- ^ (retval, configuration with proof status and
+                    --    complete output)
+mapMathServResponse msr cfg nGoal prName = do
+    let atpResult = foAtpResult msr
+        res = mapToGoalStatus $ systemStatus atpResult
+        output = lines $ unTab $ outputStr atpResult
+        timeout = (foStatus $ systemStatus atpResult) == Timeout
+        -- get real prover name if Broker was used
+        prName' = if (prName == brokerName)
+                     then (usedProverName $ systemStr atpResult) ++ " [via MathServBroker]"
+                     else prName ++ " [via MathServ]"
+        defaultPrStat = defaultProof_status nGoal prName' tLimit
+        usedAxs = if (null $ axioms $ proof atpResult)
+                    then [AS_Anno.senName nGoal]
+                    else words $ axioms $ proof atpResult
+
+-- !! map error message via MWFailure / MWMessage, replace "False" value below
+        (atpErr, retval) = proof_stat nGoal res usedAxs timeout False defaultPrStat
+    return (atpErr,
+            cfg{proof_status = retval,
+                resultOutput = output})
+    where
+      brokerName = "MSBroker"
+      tLimit = maybe (guiDefaultTimeLimit) id $ timeLimit cfg
+      -- replace tabulators with each 8 spaces
+      unTab = foldr (\ch li ->
+                        if ch == '\x9' then "        "++li
+                                       else ch:li) ""
+
+{- |
+  Maps the status message from MathServ results to GoalStatus.
+  RegExp are used.
+-}
+mapToGoalStatus :: MWStatus -- ^ goal status
+                -> GoalStatus -- ^ final parsed goal status
+mapToGoalStatus stat = case (foStatus stat) of
+        Theorem            -> Proved Nothing
+        CounterSatisfiable -> Disproved
+        _                  -> Open
+
+{- |
+  Gets the prover name from MathServResponse and extracts the name only
+  (without version number). If the name's empty, prover name is "unknown".
+-}
+usedProverName :: String -- ^ Prover name from MathServResponse
+               -> String -- ^ name without version number or unknown
+usedProverName pn =
+    if (null pn) then "unknown"
+      else (takeWhile (\ch -> not $ ch == '_')) pn
+
+{- |
+  Default proof status. Contains the goal name, prover name
+  and the time limit option used by MathServ.
+-}
+defaultProof_status :: AS_Anno.Named SPTerm -- ^ goal to prove
+                    -> String -- ^ prover name
+                    -> Int -- ^ time limit
+                    -> Proof_status ()
+defaultProof_status nGoal prName tl =
+  (openProof_status (AS_Anno.senName nGoal)
+                    prName ())
+  {tacticScript = Tactic_script $ show tl}
+
+
+{- |
+  Returns the value of a prover run used in GUI (Success, Error or
+  TLimitExceeded), and the proof_status containing all prove
+  information available.
+-}
+proof_stat :: AS_Anno.Named SPTerm -- ^ goal to prove
+           -> GoalStatus -- ^ Nothing stands for prove error
+           -> [String] -- ^ Used axioms in the proof
+           -> Bool -- ^ Timeout status
+           -> Bool -- ^ Failure status
+           -> Proof_status () -- ^ default proof status
+           -> (ATPRetval, Proof_status ())
+           -- ^ General return value of a prover run, used in GUI.
+           --   Detailed proof status if information is available.
+proof_stat nGoal res usedAxs timeOut mathServFail defaultPrStat
+  | mathServFail =
+      (ATPError "Internal error.", defaultPrStat)
+  | (res == Proved Nothing) =
+      (ATPSuccess, defaultPrStat
+       { goalStatus = Proved $ if elem (AS_Anno.senName nGoal) usedAxs
+                               then Nothing
+                               else Just False
+       , usedAxioms = filter (/=(AS_Anno.senName nGoal)) usedAxs })
+  | (res == Disproved) =
+      (ATPSuccess, defaultPrStat { goalStatus = Disproved } )
+  | timeOut =
+      (ATPTLimitExceeded,
+       defaultPrStat { goalStatus = res })
+  | otherwise = (ATPSuccess, defaultPrStat { goalStatus = res })
