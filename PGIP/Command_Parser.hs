@@ -21,10 +21,18 @@ import Syntax.AS_Library
 import Syntax.Parse_AS_Library
 import Common.AnnoState
 import Common.Lexer
+import Common.Token
+import Common.Id
 import Text.ParserCombinators.Parsec
 import PGIP.Parser_Syntax
 import PGIP.Commands
 import PGIP.Common
+
+
+pgipKeywords::[String]
+pgipKeywords = ["dg","dg-all","show-dg-goals","show-theory-goals","show-theory","node-info","show-taxonomy","show-concepts",
+                "translate","prover","proof-script","cons-check","prove","prove-all","use","auto","glob-subsume","glob-decomp",
+                "loc-infer","loc-decomp","comp","comp-new","hide-thm","thm-hide","basic","using","excluding","end-script"]
 
 -- |the 'getPath' function read a path as a a list of words
 getPath::AParser st [String]
@@ -52,21 +60,21 @@ getKeyWord wd
                        
 getGoal::AParser st GOAL
 getGoal        
-       = try ( do  v1<-libId
+       = try ( do  v1<-sortId pgipKeywords
                    getKeyWord "-"
                    v2<-getNumber
                    getKeyWord "->"
-                   v3<-libId
-                   return (CountedEdge v1 (read v2::Int) v3)
+                   v3<-sortId pgipKeywords
+                   return (LabeledEdge v1 (read v2::Int) v3)
              )       
       <|> 
-         try ( do  v1<-libId
+         try ( do  v1<-sortId pgipKeywords
                    getKeyWord "->"                                  
-                   v2<-libId
+                   v2<-sortId pgipKeywords
                    return (Edge  v1  v2)
              )
       <|> 
-         try ( do  v<-libId
+         try ( do  v<-sortId pgipKeywords
                    return (Node  v)
              )   
       <?>
@@ -91,15 +99,15 @@ getScript
         <?> 
            "some prover script"
                                         
-getComorphism::AParser st [LIB_ID]
+getComorphism::AParser st [Id]
 getComorphism 
-             = try ( do  v<-libId
+             = try ( do  v<-sortId pgipKeywords
                          getKeyWord ";"
                          vs <-getComorphism
                          return ( v:vs)
                    )
             <|>
-               try ( do  v<-libId
+               try ( do  v<-sortId pgipKeywords
                          return [ v]
                    )
             <?>
@@ -118,12 +126,12 @@ scanCommand arg
                                  return ((Path v):vs)
 --- scanning a prover
                           "PROVER":ls  ->  do
-                                 v <- libId 
+                                 v <- sortId pgipKeywords 
                                  vs<- scanCommand ls
                                  return ((Prover v):vs)
 --- scanning a formula
                           "FORMULA":ls  ->  do
-                                 v <- libId 
+                                 v <- sortId pgipKeywords 
                                  vs<- scanCommand ls
                                  return ((Formula  v):vs)
 --- scanning a comorphism
@@ -138,14 +146,14 @@ scanCommand arg
                                  return ((Goals v):vs)
 --- scanning none or many formulas
                           "FORMULA-STAR":ls  ->  do
-                                 v<- many ( do  tmp<-libId
+                                 v<- many ( do  tmp<-sortId pgipKeywords
                                                 return  tmp
                                           )
                                  vs<-scanCommand ls
                                  return  ((Formulas v):vs)
 --- scanning one or more formula
                           "FORMULA-PLUS":ls  ->  do
-                                 v<- many1 ( do  tmp<-libId
+                                 v<- many1 ( do  tmp<-sortId pgipKeywords
                                                  return tmp
 			                   )
 			         vs<-scanCommand ls
@@ -224,7 +232,7 @@ runScriptCommands (arg,status)
                                                        case tmp of
                                                             Nothing -> return Nothing
                                                             Just xx -> do
-                                                                        val <- fn (x,xx)
+                                                                        let val = fn (x,xx)
                                                                         let newStatus= addOrReplace (val,status)
                                                                         runScriptCommands (ls,newStatus)
                               (CommandStatus fn cmdID):ls -> do
@@ -254,4 +262,5 @@ parseScriptFile fileName
 
 
 						 					 
+
 

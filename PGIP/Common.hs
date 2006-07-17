@@ -18,6 +18,10 @@ module PGIP.Common where
                       
 
 import PGIP.Commands
+import Proofs.EdgeUtils
+
+
+
 -- | The 'addOrReplace' function,given a CmdInterpeterStatus and a list of such CmdInterpeterStatus, replaces any occurance of that type
 -- of CmdInterpeterStatus with the given one, and if none found it adds one to the list
 addOrReplace::(CmdInterpreterStatus,[CmdInterpreterStatus])->[CmdInterpreterStatus]
@@ -45,12 +49,10 @@ extractFrom (status,cmdID)
 
 
 -- | The 'extractNodeGoals' function, given a list of parsed goals extracts the NodeGoals as a list of LIB_ID's
-extractNodeGoals::[GOAL] -> [LIB_ID]
-extractNodeGoals ls
-                    = case ls of
-                                []          -> []
-                                (Node x):l  -> x:(extractNodeGoals l)
-                                _:l         -> extractNode l
-
-
+--extractNodeGoals::[GOAL] -> [Id]
+--extractNodeGoals ls
+--                    = case ls of
+--                                []          -> []
+--                                (Node x):l  -> x:(extractNodeGoals l)
+--                                _:l         -> extractNode l
 

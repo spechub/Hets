@@ -24,7 +24,7 @@ todo for Jorina:
      siehe auch Seite 302 des CASL Reference Manual
 -}
 
-module Proofs.Global (globSubsume, globDecomp, globDecompAux) where
+module Proofs.Global (globSubsume, globDecomp, globDecompAux, globDecompFromList, globSubsumeFromList) where
 
 import Data.Graph.Inductive.Graph
 
@@ -49,12 +49,9 @@ import Proofs.StatusUtils
 
 {- applies global decomposition to the list of edges given (global theorem edges)
    if possible, if empty list is given then to all unproven global theorems -}
-globStepDecomp :: LIB_NAME -> LibEnv -> [LEdge DGLinkLab] -> LibEnv
-globStepDecomp ln proofStatus goals =
+globDecompFromList :: LIB_NAME -> LibEnv -> [LEdge DGLinkLab] -> LibEnv
+globDecompFromList ln proofStatus globalThmEdges =
             let dgraph = lookupDGraph ln proofStatus
-                globalThmEdges = case goals of
-                                     [] -> filter isUnprovenGlobalThm (labEdges dgraph)
-                                     l  -> filter isUnprovenGlobalThm l
                 (newDGraph, newHistoryElem)= globDecompAux dgraph globalThmEdges ([],[])
             in mkResultProofStatus ln proofStatus newDGraph newHistoryElem
 
@@ -63,7 +60,9 @@ globStepDecomp ln proofStatus goals =
    if possible -}
 globDecomp ::LIB_NAME -> LibEnv -> LibEnv
 globDecomp ln proofStatus =
-                         globStepDecomp ln proofStatus [] 
+                         let dgraph = lookupDGraph ln proofStatus
+                             globalThmEdges  = filter isUnprovenGlobalThm (labEdges dgraph)
+                         in globDecompFromList ln proofStatus globalThmEdges 
                             
                 
 
@@ -192,12 +191,9 @@ globDecompForOneEdgeAux dgraph edge@(_,target,_) changes
 -- -------------------
 
 
-globStepSubsume :: LIB_NAME -> LibEnv -> [LEdge DGLinkLab] -> LibEnv
-globStepSubsume ln libEnv goals =
+globSubsumeFromList :: LIB_NAME -> LibEnv -> [LEdge DGLinkLab] -> LibEnv
+globSubsumeFromList ln libEnv globalThmEdges =
            let dgraph = lookupDGraph ln libEnv
-               globalThmEdges = case goals of
-                                  [] -> filter isUnprovenGlobalThm (labEdges dgraph)
-                                  l  -> filter isUnprovenGlobalThm l
                (nextDGraph, nextHistoryElem) =
                            globSubsumeAux libEnv dgraph ([],[]) globalThmEdges
            in mkResultProofStatus ln libEnv nextDGraph nextHistoryElem
@@ -205,7 +201,9 @@ globStepSubsume ln libEnv goals =
 
 globSubsume :: LIB_NAME -> LibEnv -> LibEnv
 globSubsume ln libEnv =
-              globStepSubsume ln libEnv []
+              let dgraph = lookupDGraph ln libEnv
+                  globalThmEdges  = filter isUnprovenGlobalThm (labEdges dgraph)
+              in globSubsumeFromList ln libEnv globalThmEdges
 
 -- applies global subsumption to all unproven global theorem edges if possible
 --globSubsume :: LIB_NAME -> LibEnv -> LibEnv

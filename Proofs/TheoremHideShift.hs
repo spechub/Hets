@@ -62,6 +62,11 @@ theoremHideShift ln proofStatus =
       finalProofstatus = handleNonLeaves ln auxProofstatus nonLeaves
   in reviseProofStatus finalProofstatus
 
+
+--theoremHideShiftFromList :: LIB_NAME -> LibEnv -> [LEdge DGLinkLab] -> LibEnv
+--theoremHideShiftFromList ln proofStatus ls =
+    
+
 -- bei DGRefs auch ueber lib-Grenze hinaus suchen?
 {- | returns True, if the given node has at least one directely or
    indirectely (ie via an ingoing path of GlobalDef edges)

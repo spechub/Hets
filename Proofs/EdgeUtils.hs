@@ -157,6 +157,19 @@ getLabelOfEdge (_,_,label) = label
 -- methods that calculate paths of certain types
 -- ----------------------------------------------
 
+
+
+getAllPathsOfTypeFromGoalList :: DGraph -> (LEdge DGLinkLab -> Bool) ->[LEdge DGLinkLab] -> [[LEdge DGLinkLab]]
+getAllPathsOfTypeFromGoalList dgraph isType ls =
+    concat
+    [concat (map (getAllPathsOfTypeBetween dgraph isType source) targets) |
+     source <- sources]
+    where 
+      edgesOfType = [edge | edge <- ls]
+      sources = nub (map getSourceNode edgesOfType)
+      targets = nub (map getTargetNode edgesOfType)
+
+
 {- | returns all paths consisting of edges of the given type in the given
    development graph-}
 getAllPathsOfType :: DGraph -> (LEdge DGLinkLab -> Bool) -> [[LEdge DGLinkLab]]

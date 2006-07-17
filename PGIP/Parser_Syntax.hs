@@ -33,13 +33,13 @@ import PGIP.Commands
 commands::[ ([String], CommandFunctionsAndParameters)]
 commands =     [(["use","PATH"],                                       (CommandParam commandUse [])), -- Static.AnalysisLibrary, Driver.ReadFn
                 (["dg","auto","GOALS"],                                (CommandTest test [])), -- Proofs.Auto
-                (["dg","glob-subsume","GOALS"],                        (CommandTest test [])), -- Proofs.Global
-                (["dg","glob-decomp","GOALS"],                         (CommandTest test [])), -- Proofs.Global
-                (["dg","loc-infer","GOALS"],                           (CommandTest test [])), -- Proofs.Local
-                (["dg","loc-decomp","GOALS"],                          (CommandTest test [])), -- Proofs.Local
-                (["dg","comp","GOALS"],                                (CommandTest test [])), -- Proofs.Comp
-                (["dg","comp-new","GOALS"],                            (CommandTest test [])), -- Proofs.Comp
-                (["dg","hide-thm","GOALS"],                            (CommandTest test [])), -- Proofs.HideThmShift
+                (["dg","glob-subsume","GOALS"],                        (CommandParamStatus commandDgGlobSubsume [] EnvID)), -- Proofs.Global
+                (["dg","glob-decomp","GOALS"],                         (CommandParamStatus commandDgGlobDecomp  [] EnvID)), -- Proofs.Global
+                (["dg","loc-infer","GOALS"],                           (CommandParamStatus commandDgLocInfer    [] EnvID)), -- Proofs.Local
+                (["dg","loc-decomp","GOALS"],                          (CommandParamStatus commandDgLocDecomp   [] EnvID)), -- Proofs.Local
+                (["dg","comp","GOALS"],                                (CommandParamStatus commandDgComp        [] EnvID)), -- Proofs.Comp
+                (["dg","comp-new","GOALS"],                            (CommandParamStatus commandDgCompNew     [] EnvID)), -- Proofs.Comp
+                (["dg","hide-thm","GOALS"],                            (CommandParamStatus commandDgHideThm     [] EnvID)), -- Proofs.HideThmShift
                 (["dg","thm-hide","GOALS"],                            (CommandTest test [])), -- Proofs.ThmHideShift
                 (["dg","basic","GOALS"],                               (CommandTest test [])), -- Proofs.InferBasic
                 (["dg-all","auto"],                                    (CommandStatus commandDgAllAuto EnvID)), -- dto.
@@ -62,10 +62,10 @@ commands =     [(["use","PATH"],                                       (CommandP
                 (["prover","PROVER"],                                  (CommandTest test [])), -- Proofs.InferBasic
                 (["proof-script","FORMULA","PROOF-SCRIPT"],            (CommandTest test [])), -- Isabelle.IsaProve.hs (for Isabelle)
                 (["cons-check", "PROVER"],                             (CommandTest test [])), -- ISabelle.IsaProve.hs (for ISabelle)
-                (["prove", "FORMULA-STAR","with","FORMULA-PLUS"],      (CommandTest test [])), -- Proofs.InferBasic
+                (["prove", "FORMULA-STAR","using","FORMULA-PLUS"],     (CommandTest test [])), -- Proofs.InferBasic
                 (["prove", "FORMULA-STAR","excluding","FORMULA-PLUS"], (CommandTest test [])), -- Proofs.InferBasic
                 (["prove", "FORMULA-STAR"],                            (CommandTest test [])), -- Proofs.InferBasic
-                (["prove-all","with","FORMULA-PLUS"],                  (CommandTest test [])), -- dto.
+                (["prove-all","using","FORMULA-PLUS"],                 (CommandTest test [])), -- dto.
                 (["prove-all","excluding","FORMULA-PLUS"],             (CommandTest test [])),
                 (["prove-all"],                                        (CommandTest test []))]
 
