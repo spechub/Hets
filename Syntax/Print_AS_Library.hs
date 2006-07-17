@@ -32,12 +32,7 @@ instance Pretty LIB_DEFN where
         in keyword libraryS <+> aa' $++$ ad' $++$ ab'
 
 instance Pretty LIB_ITEM where
-    pretty li =
-        let addLastSpace l = case l of
-                [] -> error "addLastSpace"
-                [x] -> [x <> space]
-                h : r -> h : addLastSpace r
-        in case li of
+    pretty li = case li of
         Spec_defn si (Genericity aa ab _) ac' _ ->
             let las = l_annos ac'
                 (sa, ac) = if startsWithSemanticAnno las then
@@ -50,15 +45,13 @@ instance Pretty LIB_ITEM where
                           Union u@(_ : _) _ ->
                               printUnion $ moveAnnos ac u
                           _ -> [pretty ac]
-                sphead = fcat $ addLastSpace
-                         (indexed (tokStr si) : printPARAMS aa
-                          ++ printIMPORTED ab) ++ sa
+                sphead = sep [ fcat (indexed (tokStr si) : printPARAMS aa)
+                             , fsep (printIMPORTED ab ++ sa)]
              in vcat $ (topKey specS <+> vcat [sphead, x]) : r
                     ++ [keyword endS]
         View_defn si (Genericity aa ab _) (View_type frm to _) ad _ ->
-            let sphead = fcat $ addLastSpace
-                         (structSimpleId si : printPARAMS aa
-                          ++ printIMPORTED ab) ++ [colon]
+            let sphead = sep [ fcat (structSimpleId si : printPARAMS aa)
+                             , fsep (printIMPORTED ab ++ [colon])]
             in topKey viewS <+>
                  fsep ([sphead, fsep [printGroupSpec frm,
                               keyword toS, printGroupSpec to]]

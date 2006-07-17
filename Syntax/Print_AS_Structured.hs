@@ -114,7 +114,7 @@ instance Pretty GENERICITY where
 
 printGENERICITY :: GENERICITY -> Doc
 printGENERICITY (Genericity aa ab _) =
-    fcat $ printPARAMS aa ++ printIMPORTED ab
+    fcat (printPARAMS aa) <+> fsep (printIMPORTED ab)
 
 instance Pretty PARAMS where
     pretty = fcat . printPARAMS
@@ -123,13 +123,13 @@ printPARAMS :: PARAMS -> [Doc]
 printPARAMS (Params aa) = map (brackets . rmTopKey . pretty ) aa
 
 instance Pretty IMPORTED where
-    pretty = fcat . printIMPORTED
+    pretty = fsep . printIMPORTED
 
 printIMPORTED :: IMPORTED -> [Doc]
 printIMPORTED (Imported aa) = case aa of
     [] -> []
-    _  -> (space <> keyword givenS <> space)
-          : punctuate (comma <> space) (map printGroupSpec aa)
+    _  -> keyword givenS
+          : punctuate comma (map printGroupSpec aa)
 
 instance Pretty FIT_ARG where
     pretty = printFIT_ARG
