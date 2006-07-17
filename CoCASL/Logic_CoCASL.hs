@@ -35,13 +35,13 @@ import Logic.Logic
 data CoCASL = CoCASL deriving Show
 
 instance Language CoCASL  where
- description _ = 
+ description _ =
   "CoCASL is the coalgebraic extension of CASL."
 
 type CoCASLMor = Morphism C_FORMULA CoCASLSign ()
 type CoCASLFORMULA = FORMULA C_FORMULA
 
-instance Category CoCASL CSign CoCASLMor  
+instance Category CoCASL CSign CoCASLMor
     where
          -- ide :: id -> object -> morphism
          ide CoCASL = idMor dummy
@@ -59,22 +59,23 @@ instance Category CoCASL CSign CoCASLMor
 
 instance Syntax CoCASL C_BASIC_SPEC
                 SYMB_ITEMS SYMB_MAP_ITEMS
-      where 
+      where
          parse_basic_spec CoCASL = Just $ basicSpec cocasl_reserved_words
          parse_symb_items CoCASL = Just $ symbItems cocasl_reserved_words
-         parse_symb_map_items CoCASL = Just $ symbMapItems cocasl_reserved_words
+         parse_symb_map_items CoCASL =
+             Just $ symbMapItems cocasl_reserved_words
 
 -- CoCASL logic
 
 
 map_C_FORMULA :: MapSen C_FORMULA CoCASLSign ()
 map_C_FORMULA mor frm = case frm of
-           BoxOrDiamond b m f ps -> let 
+           BoxOrDiamond b m f ps -> let
               newF = mapSen map_C_FORMULA mor f
-              newM = case m of 
+              newM = case m of
                    Simple_mod _ ->  m
-                   Term_mod t -> Term_mod $ mapTerm map_C_FORMULA mor t 
-              in BoxOrDiamond b newM newF ps 
+                   Term_mod t -> Term_mod $ mapTerm map_C_FORMULA mor t
+              in BoxOrDiamond b newM newF ps
            phi -> phi
 
 instance Sentences CoCASL CoCASLFORMULA () CSign CoCASLMor Symbol where
@@ -83,18 +84,18 @@ instance Sentences CoCASL CoCASLFORMULA () CSign CoCASLMor Symbol where
       sym_of CoCASL = symOf
       symmap_of CoCASL = morphismToSymbMap
       sym_name CoCASL = symName
-      provers CoCASL = [] 
+      provers CoCASL = []
       cons_checkers CoCASL = []
 
 instance StaticAnalysis CoCASL C_BASIC_SPEC CoCASLFORMULA ()
                SYMB_ITEMS SYMB_MAP_ITEMS
-               CSign 
-               CoCASLMor 
+               CSign
+               CoCASLMor
                Symbol RawSymbol where
          basic_analysis CoCASL = Just $ basicCoCASLAnalysis
          stat_symb_map_items CoCASL = statSymbMapItems
          stat_symb_items CoCASL = statSymbItems
-         ensures_amalgamability CoCASL _ = 
+         ensures_amalgamability CoCASL _ =
              fail "CoCASL: ensures_amalgamability nyi" -- ???
 
          sign_to_basic_spec CoCASL _sigma _sens = Basic_spec [] -- ???
@@ -102,9 +103,9 @@ instance StaticAnalysis CoCASL C_BASIC_SPEC CoCASLFORMULA ()
          symbol_to_raw CoCASL = symbolToRaw
          id_to_raw CoCASL = idToRaw
          matches CoCASL = CASL.Morphism.matches
-         
+
          empty_signature CoCASL = emptySign emptyCoCASLSign
-         signature_union CoCASL sigma1 sigma2 = 
+         signature_union CoCASL sigma1 sigma2 =
            return $ addSig addCoCASLSign sigma1 sigma2
          morphism_union CoCASL = morphismUnion (const id) addCoCASLSign
          final_union CoCASL = finalUnion addCoCASLSign
@@ -113,22 +114,28 @@ instance StaticAnalysis CoCASL C_BASIC_SPEC CoCASLFORMULA ()
          cogenerated_sign CoCASL = cogeneratedSign dummy
          generated_sign CoCASL = generatedSign dummy
          induced_from_morphism CoCASL = inducedFromMorphism dummy
-         induced_from_to_morphism CoCASL = 
+         induced_from_to_morphism CoCASL =
              inducedFromToMorphism dummy isSubCoCASLSign
 
 instance NameSL Bool where
     nameSL b = if b then "Co" else ""
 
-instance MinSL Bool C_FORMULA
-instance MinSL Bool C_SIG_ITEM
-instance MinSL Bool C_BASIC_ITEM
+instance MinSL Bool C_FORMULA where
+    minSL = minFormSublogic
+
+instance MinSL Bool C_SIG_ITEM where
+    minSL = minCSigItem
+
+instance MinSL Bool C_BASIC_ITEM where
+    minSL = minCBaseItem
+
 instance ProjForm Bool C_FORMULA
 instance ProjSigItem Bool C_SIG_ITEM C_FORMULA
 instance ProjBasic Bool C_BASIC_ITEM C_SIG_ITEM C_FORMULA
 
 instance Logic CoCASL CoCASL_Sublogics
                C_BASIC_SPEC CoCASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
-               CSign 
+               CSign
                CoCASLMor
                Symbol RawSymbol () where
          stability _ = Unstable
