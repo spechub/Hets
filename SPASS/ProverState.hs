@@ -28,6 +28,8 @@ import Common.ProofUtils
 import Common.Utils (splitOn)
 import Common.DocUtils
 
+import Data.Maybe
+
 import GUI.GenericATP (guiDefaultTimeLimit)
 import GUI.GenericATPState
 
@@ -114,36 +116,55 @@ parseSPASSCommands comLine =
 
 {- |
   Maps a MathServResponse record into a GenericConfig with Proof_status.
+  If there is no FoAtpResult available, an ATPError and a corresponding
+  MWFailure message (hopefully filled) will be returned .
 -}
 mapMathServResponse :: MathServResponse -- ^ Parsed MathServ data
                     -> GenericConfig () -- ^ configuration to use
                     -> AS_Anno.Named SPTerm -- ^ goal to prove
                     -> String -- ^ prover name
-                    -> IO (ATPRetval, GenericConfig ())
+                    -> (ATPRetval, GenericConfig ())
                     -- ^ (retval, configuration with proof status and
                     --    complete output)
-mapMathServResponse msr cfg nGoal prName = do
-    let atpResult = foAtpResult msr
-        res = mapToGoalStatus $ systemStatus atpResult
+mapMathServResponse msr cfg nGoal prName =
+    maybe (ATPError "Internal Error.",
+           cfg { proof_status = defaultProof_status nGoal
+                    (prName ++ " [via MathServ]") (configTimeLimit cfg),
+                 resultOutput = maybe [] lines (failure msr) })
+          (\res -> mapProverResult res cfg nGoal prName)
+          (foAtpResult msr)
+
+{- |
+  Maps a FoAtpResult record into a GenericConfig with Proof_status.
+  !! Comment missing !!
+-}
+mapProverResult :: MWFoAtpResult -- ^ Parsed FoATPResult data
+                -> GenericConfig () -- ^ configuration to use
+                -> AS_Anno.Named SPTerm -- ^ goal to prove
+                -> String -- ^ prover name
+                -> (ATPRetval, GenericConfig ())
+                -- ^ (retval, configuration with proof status, complete output)
+mapProverResult atpResult cfg nGoal prName =
+    let res = mapToGoalStatus $ systemStatus atpResult
         output = lines $ unTab $ outputStr atpResult
         timeout = (foStatus $ systemStatus atpResult) == Timeout
+        
         -- get real prover name if Broker was used
+        brokerName = "MSBroker"
         prName' = if (prName == brokerName)
-                     then (usedProverName $ systemStr atpResult) ++ " [via MathServBroker]"
+                     then (usedProverName $ systemStr atpResult)
+                          ++ " [via MathServBroker]"
                      else prName ++ " [via MathServ]"
-        defaultPrStat = defaultProof_status nGoal prName' tLimit
+        
         usedAxs = if (null $ axioms $ proof atpResult)
                     then [AS_Anno.senName nGoal]
                     else words $ axioms $ proof atpResult
-
--- !! map error message via MWFailure / MWMessage, replace "False" value below
-        (atpErr, retval) = proof_stat nGoal res usedAxs timeout False defaultPrStat
-    return (atpErr,
-            cfg{proof_status = retval,
-                resultOutput = output})
+        (atpErr, retval) = proof_stat nGoal res usedAxs timeout $
+            defaultProof_status nGoal prName' $ configTimeLimit cfg
+    in  (atpErr,
+         cfg { proof_status = retval,
+               resultOutput = output })
     where
-      brokerName = "MSBroker"
-      tLimit = maybe (guiDefaultTimeLimit) id $ timeLimit cfg
       -- replace tabulators with each 8 spaces
       unTab = foldr (\ch li ->
                         if ch == '\x9' then "        "++li
@@ -185,7 +206,17 @@ defaultProof_status nGoal prName tl =
 
 
 {- |
-  Returns the value of a prover run used in GUI (Success, Error or
+  Returns the time limit from GenericConfig if available. Otherwise
+  guiDefaultTimeLimit is returned.
+-}
+configTimeLimit :: GenericConfig ()
+                -> Int
+configTimeLimit cfg = 
+    maybe (guiDefaultTimeLimit) id $ timeLimit cfg
+
+
+{- |
+  Returns the value of a prover run used in GUI (Success or
   TLimitExceeded), and the proof_status containing all prove
   information available.
 -}
@@ -193,14 +224,11 @@ proof_stat :: AS_Anno.Named SPTerm -- ^ goal to prove
            -> GoalStatus -- ^ Nothing stands for prove error
            -> [String] -- ^ Used axioms in the proof
            -> Bool -- ^ Timeout status
-           -> Bool -- ^ Failure status
            -> Proof_status () -- ^ default proof status
            -> (ATPRetval, Proof_status ())
            -- ^ General return value of a prover run, used in GUI.
            --   Detailed proof status if information is available.
-proof_stat nGoal res usedAxs timeOut mathServFail defaultPrStat
-  | mathServFail =
-      (ATPError "Internal error.", defaultPrStat)
+proof_stat nGoal res usedAxs timeOut defaultPrStat
   | (res == Proved Nothing) =
       (ATPSuccess, defaultPrStat
        { goalStatus = Proved $ if elem (AS_Anno.senName nGoal) usedAxs

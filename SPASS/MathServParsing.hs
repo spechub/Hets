@@ -79,8 +79,9 @@ data MathServOperationTypes =
   returned by MathServ.
 -}
 data MathServResponse =
-       MathServResponse { foAtpResult  :: MWFoAtpResult,
-                          timeResource :: MWTimeResource
+       MathServResponse { foAtpResult  :: Maybe MWFoAtpResult,
+                          timeResource :: MWTimeResource,
+                          failure      :: Maybe String
                           } deriving (Eq, Ord, Show)
 
 data MWFoAtpResult =
@@ -139,6 +140,7 @@ data MWCalculus =
      | SpassResCalc
      | StandardRes
      | OtterCalc
+     | VampireResCalc
      | ZenonCalc
      deriving (Eq, Ord, Show)
 
@@ -222,10 +224,17 @@ parseMathServOut :: String -- ^ MathServ output or error messages
 parseMathServOut mathServOut = do
     mtrees <- parseXML mathServOut
     let rdfTree = maybe emptyRoot head mtrees
+        failStr = getMaybeXText failureXPath rdfTree
+        
     return MathServResponse {
-             foAtpResult = parseFoAtpResult rdfTree,
+             failure = failStr,
+             foAtpResult = if (isJust failStr)
+                           then Nothing
+                           else Just $ parseFoAtpResult rdfTree,
              timeResource = parseTimeResource rdfTree }
     where
+      failureXPath = "/mw:*[local-name()='Failure']/"
+                     ++ "mw:*[local-name()='message']"
 
 
 {- |
@@ -245,7 +254,8 @@ parseFoAtpResult rdfTree =
                     time         = parseTimeResource $ head $
                                      getXPath timeXPath nextTree }
     where
-      nextTree =  head $ getXPath atpResultXPath rdfTree
+      nextTree =  (\xp -> if (null xp) then emptyRoot else head xp) $
+                  getXPath atpResultXPath rdfTree
       atpResultXPath = "/mw:*[local-name()='FoAtpResult']"
       outputXPath = "/mw:*[local-name()='output']"
       saturationXPath = "/mw:*[local-name()='saturation']"
@@ -267,7 +277,8 @@ parseProof rdfTree =
                         calculus    = parseCalculus nextTree,
                         axioms      = getXText axiomsXPath nextTree }
     where
-      nextTree = head $ getXPath proofXPath rdfTree
+      nextTree =  (\xp -> if (null xp) then emptyRoot else head xp) $
+                  getXPath proofXPath rdfTree
       proofXPath = "/mw:*[local-name()='proof']/mw:*[1]"
       
       axiomsXPath = "/mw:*[local-name()='axioms']"
@@ -282,7 +293,9 @@ parseProof rdfTree =
 -}
 parseProvingProblem :: XmlTree -- ^ XML tree to parse
                     -> MWProvingProblem -- ^ Parsed Proving Problem node
-parseProvingProblem rdfTree =
+parseProvingProblem rdfTree = TstpFOFProblem
+-- !! not correct at the moment
+{-
     let prob = getAnchor $ getXText problemXPath rdfTree
     in  case (tillLastDash prob) of
           "generated_tstp_fof_problem_" -> TstpFOFProblem
@@ -293,7 +306,8 @@ parseProvingProblem rdfTree =
       problemXPath = "/mw:*[local-name()='proofOf']/attribute::rdf:*"
       tillLastDash = reverse . (dropWhile (\ch -> not $ ch == '_'))
                      . reverse
-
+-}
+    
 {- |
   Parses an XmlTree for a Calculus object on first level.
   Currently seven different Calculus objects can be classified.
@@ -302,14 +316,16 @@ parseProvingProblem rdfTree =
 parseCalculus :: XmlTree -- ^ XML tree to parse
               -> MWCalculus -- ^ parsed Calculus node
 parseCalculus rdfTree = case calc of
-      "AProsNDCalculus" -> AprosNDCalculus
-      "OmegaNDCalculus" -> OmegaNDCalculus
-      "ep_res_calc"     -> EpResCalc
-      "spass_res_calc"  -> SpassResCalc
-      "otter_calc"      -> OtterCalc
-      "zenon_calc"      -> ZenonCalc
-      "standard_res"    -> StandardRes
-      _                 -> error $ "Could not classify calculus: " ++ calc
+      "AProsNDCalculus"  -> AprosNDCalculus
+      "OmegaNDCalculus"  -> OmegaNDCalculus
+      "ep_res_calc"      -> EpResCalc
+      "spass_res_calc"   -> SpassResCalc
+      "otter_calc"       -> OtterCalc
+      "vampire_res_calc" -> VampireResCalc
+      "zenon_calc"       -> ZenonCalc
+      "standard_res"     -> StandardRes
+      []                 -> StandardRes
+      _                  -> error $ "Could not classify calculus: " ++ calc
     where
       calculusXPath = "/mw:*[local-name()='calculus']/attribute::rdf:*"
       calc = (getAnchor $ getXText calculusXPath rdfTree)
@@ -413,3 +429,16 @@ getXText xp rdfTree =
                in  if isXTextNode firstNode
                      then (\(XText s) -> s) firstNode
                      else []
+
+{- |
+  Same as getXText, but if the element does not exist Nothing will be returned.
+  Otherwise Just [Text] will be returned.
+-}
+getMaybeXText :: String -- ^ XPath to element containing one XText element
+              -> XmlTree -- ^ XML tree to parse
+              -> Maybe String -- ^ value of XText element
+getMaybeXText xp rdfTree =
+    let xmltrees = getXPath xp rdfTree
+    in  case xmltrees of
+          [] -> Nothing
+          _ -> Just $ getXText xp rdfTree

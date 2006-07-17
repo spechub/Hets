@@ -99,7 +99,7 @@ runVampire sps cfg saveTPTP thName nGoal = do
                       problem = prob,
                       proverTimeLimit = tLimit,
                       extraOptions = Just $ unwords $ extraOpts cfg}
-    mathServResponse <- parseMathServOut mathServOut
-    mapMathServResponse mathServResponse cfg nGoal (prover_name vampire)
+    msResponse <- parseMathServOut mathServOut
+    return (mapMathServResponse msResponse cfg nGoal (prover_name vampire))
     where
       tLimit = maybe (guiDefaultTimeLimit) id $ timeLimit cfg
