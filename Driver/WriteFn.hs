@@ -16,6 +16,7 @@ module Driver.WriteFn where
 
 import Text.ParserCombinators.Parsec
 import Text.PrettyPrint.HughesPJ(render)
+import Data.Graph.Inductive.Graph(lab')
 import Common.Utils
 import Common.Id
 import Common.Doc
@@ -170,7 +171,9 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
           ) outTypes
     mapM_ ( \ i -> case Map.lookup i gctx of
         Just (SpecEntry (_,_,_, NodeSig n _)) ->
-         case computeTheory lenv ln n of
+            if isDGRef $ lab' $ safeContext "writeSpecFile"
+                (lookupDGraph ln lenv) n then return ()
+            else case computeTheory lenv ln n of
           Result ds Nothing -> do
                  putIfVerbose opt 0 $ "could not compute theory of spec "
                                   ++ show i
