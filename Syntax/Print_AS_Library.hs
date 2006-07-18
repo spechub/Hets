@@ -36,22 +36,26 @@ instance Pretty LIB_ITEM where
         Spec_defn si (Genericity aa ab _) ac' _ ->
             let las = l_annos ac'
                 (sa, ac) = if startsWithSemanticAnno las then
-                               ([equals <> space, annoDoc (head las)],
+                               (equals <+> annoDoc (head las),
                                 ac' { l_annos = tail las })
-                           else ([equals], ac')
+                           else (equals, ac')
                 x : r = case skipVoidGroup $ item ac of
                           Extension e@(_ : _) _ ->
                               printExtension $ moveAnnos ac e
                           Union u@(_ : _) _ ->
                               printUnion $ moveAnnos ac u
                           _ -> [pretty ac]
-                sphead = sep [ fcat (indexed (tokStr si) : printPARAMS aa)
-                             , fsep (printIMPORTED ab ++ sa)]
+                sphead = fsep [ cat [ indexed (tokStr si)
+                                    , fcat (printPARAMS aa)]
+                              , fsep (printIMPORTED ab)
+                              , sa]
              in vcat $ (topKey specS <+> vcat [sphead, x]) : r
                     ++ [keyword endS]
         View_defn si (Genericity aa ab _) (View_type frm to _) ad _ ->
-            let sphead = sep [ fcat (structSimpleId si : printPARAMS aa)
-                             , fsep (printIMPORTED ab ++ [colon])]
+            let sphead = fsep [ cat [ structSimpleId si
+                                    , fcat (printPARAMS aa)]
+                              , fsep (printIMPORTED ab)
+                              , colon]
             in topKey viewS <+>
                  fsep ([sphead, fsep [printGroupSpec frm,
                               keyword toS, printGroupSpec to]]
