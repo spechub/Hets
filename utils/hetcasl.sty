@@ -22,6 +22,11 @@
 % The next two length variables will be used in \KW
 \newlength{\@realWidth}\newlength{\@neededWidth}
 
+\newlength{\@EqSpace}
+\newlength{\@ABSpace}
+\newlength{\@LeftABSpace}
+\newlength{\@RightABSpace}
+
 \newif\ifhetcasl \hetcaslfalse
 
 \newenvironment{hetcasl}[1][\textwidth]%
@@ -85,6 +90,12 @@
 \newcommand{\Id}[1]{\textit{##1}}%
 % \AX prints its argument in math modus
 \newcommand{\Ax}[1]{\ensuremath{##1}}%
+% \AltBar prints a | with the space of an = sign
+\settowidth{\@EqSpace}{\Ax{=}}
+\settowidth{\@ABSpace}{\Ax{|}}
+\setlength{\@LeftABSpace}{(\@EqSpace - \@ABSpace) *3 /4}
+\setlength{\@RightABSpace}{\@EqSpace - \@ABSpace - \@LeftABSpace}
+\newcommand{\AltBar}{\hspace*{\@LeftABSpace}\Ax{|}\hspace*{\@RightABSpace}}
 
 \newcommand{\ANNOTEWORD}[1]{{\small{}\KW{\%##1}}}
 
