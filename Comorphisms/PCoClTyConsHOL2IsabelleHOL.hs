@@ -329,7 +329,7 @@ transTerm sign trm = case trm of
                            (ty, t)
                        -- else (makePartialVal ty, termAppl conSome t)
             Total -> if isPartialVal ty
-                     then fail "PCoClTyConsHOL2IsabelleHOL.totalLambda"
+                     then error "PCoClTyConsHOL2IsabelleHOL.totalLambda"
                      else (ty, t)) $ reverse pats
     LetTerm As.Let peqs body _ -> do
         (bTy, bTrm) <- transTerm sign body
