@@ -590,6 +590,7 @@ textToLatex b k s = let e = escapeLatex True s in
 latexSymbols :: Map.Map String Pretty.Doc
 latexSymbols = Map.fromList
     [ (dotS, bullet_latex)
+    , (barS, casl_normal_latex "\\AltBar{}")
     , (diamondS, hc_sty_axiom "\\Diamond")
     , (percentS, hc_sty_small_keyword "\\%")
     , (percents, hc_sty_small_keyword "\\%\\%")
