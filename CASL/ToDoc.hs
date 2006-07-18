@@ -75,10 +75,12 @@ printSIG_ITEMS fS fF sis = case sis of
     Ext_SIG_ITEMS s -> fS s
 
 printDATATYPE_DECL :: DATATYPE_DECL ->Doc
-printDATATYPE_DECL (Datatype_decl s a _) = case a of
+printDATATYPE_DECL (Datatype_decl s a _) = 
+    let pa = printAnnoted printALTERNATIVE in case a of
     [] -> idDoc s
-    _  -> fsep [idDoc s, defn, sep $ punctuate (space <> bar) $
-                      map (printAnnoted printALTERNATIVE) a]
+    h : t  -> sep [idDoc s, colon <> colon <> sep
+                      ((equals <+> pa h) : 
+                       map ((bar <+>) . pa) t)]
 
 instance Pretty DATATYPE_DECL where
     pretty = printDATATYPE_DECL
