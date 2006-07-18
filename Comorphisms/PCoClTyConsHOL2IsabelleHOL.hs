@@ -33,9 +33,10 @@ import Common.DocUtils
 import Common.Id
 import Common.Result
 import qualified Common.Lib.Map as Map
-import Common.AS_Annotation (Named(..))
+import Common.AS_Annotation
 
 import Data.List (elemIndex)
+import Control.Monad (foldM)
 
 -- | The identity of the comorphism
 data PCoClTyConsHOL2IsabelleHOL = PCoClTyConsHOL2IsabelleHOL deriving Show
@@ -54,40 +55,46 @@ instance Comorphism PCoClTyConsHOL2IsabelleHOL
     sourceSublogic PCoClTyConsHOL2IsabelleHOL = noSubtypes
     targetLogic PCoClTyConsHOL2IsabelleHOL = Isabelle
     mapSublogic PCoClTyConsHOL2IsabelleHOL _ = ()
-    map_theory PCoClTyConsHOL2IsabelleHOL = mkTheoryMapping transSignature
-                   (map_sentence PCoClTyConsHOL2IsabelleHOL)
+    map_theory PCoClTyConsHOL2IsabelleHOL (env, sens) = do
+      sign <- transSignature env
+      isens <- mapM (mapNamedM $ transSentence env) sens
+      return (sign, isens)
     map_morphism = mapDefaultMorphism
     map_sentence PCoClTyConsHOL2IsabelleHOL sign phi =
-       case transSentence sign phi of
-         Nothing   -> warning (mkSen true)
-                           "translation of sentence not implemented" nullRange
-         Just (ts) -> return $ mkSen ts
+       transSentence sign phi
     map_symbol = errMapSymbol
 
 -- * Signature
 baseSign :: BaseSig
 baseSign = MainHC_thy
 
-transSignature :: Env -> Result (Isa.Sign,[Named Isa.Sentence])
-transSignature sign =
-  return (Isa.emptySign {
-    baseSig = baseSign,
-    -- translation of typeconstructors
-    tsig = emptyTypeSig
-             { arities = Map.foldWithKey extractTypeName
-                                        Map.empty
-                                        (typeMap sign) },
-    -- translation of operation declarations
-    constTab = Map.foldWithKey insertOps
-                               Map.empty
-                               (assumps sign),
-    -- translation of datatype declarations
-    domainTab = transDatatype (typeMap sign),
-    showLemmas = True },
-    [] )
-   where
-    extractTypeName tyId typeInfo m =
-        if isDatatypeDefn typeInfo then m
+transAssumps :: Assumps -> Result ConstTab
+transAssumps = foldM insertOps Map.empty . Map.toList where
+  insertOps m (name, ops) = case opInfos ops of
+          [info] -> case transOpInfo info of
+                 Nothing -> return m
+                 Just r -> do
+                    ty <- r
+                    return $ Map.insert
+                           (mkVName $ showIsaConstT name baseSign) ty m
+          infos -> foldM ( \ m' (i, info) ->
+                      case transOpInfo info of
+                        Nothing -> return m'
+                        Just r -> do
+                          ty <- r
+                          return $ Map.insert
+                             (mkVName $ showIsaConstIT name i baseSign)
+                             ty m') m $ zip [1..] infos
+
+transSignature :: Env -> Result Isa.Sign
+transSignature env = do
+    dt <- transDatatype env
+    ct <- transAssumps $ assumps env
+    let isDatatypeDefn t = case typeDefn t of
+                         DatatypeDefn _ -> True
+                         _              -> False
+        extractTypeName tyId typeInfo m =
+           if isDatatypeDefn typeInfo then m
            else let getTypeArgs n k = case k of
                         ClassKind _ -> []
                         FunKind _ _ r _ ->
@@ -95,45 +102,35 @@ transSignature sign =
                                            : getTypeArgs (n + 1) r
                 in Map.insert (showIsaTypeT tyId baseSign)
                   [(isaTerm, getTypeArgs (1 :: Int) $ typeKind typeInfo)] m
-    isDatatypeDefn t = case typeDefn t of
-                         DatatypeDefn _ -> True
-                         _              -> False
-    insertOps name ops m =
-     let infos = opInfos ops
-     in if isSingle infos then
-            let transOp = transOpInfo (head infos)
-            in case transOp of
-                 Just op ->
-                     Map.insert (mkVName $ showIsaConstT name baseSign) op m
-                 Nothing -> m
-          else
-            let transOps = map transOpInfo infos
-            in  foldl (\ m' (transOp,i) ->
-                           case transOp of
-                             Just typ -> Map.insert
-                                 (mkVName $ showIsaConstIT name i baseSign)
-                                 typ m'
-                             Nothing   -> m')
-                      m (zip transOps [1::Int ..])
+    return $ Isa.emptySign
+        { baseSig = baseSign
+    -- translation of typeconstructors
+        , tsig = emptyTypeSig
+             { arities = Map.foldWithKey extractTypeName
+                                        Map.empty
+                                        (typeMap env) }
+        , constTab = ct
+        , domainTab = dt
+        , showLemmas = True }
 
 -- * translation of a type in an operation declaration
 
 -- extract type from OpInfo
 -- omit datatype constructors
-transOpInfo :: OpInfo -> Maybe Typ
+transOpInfo :: OpInfo -> Maybe (Result Typ)
 transOpInfo (OpInfo t _ opDef) =  case opDef of
     ConstructData _ -> Nothing
     _  -> Just (transOpType t)
 
 -- operation type
-transOpType :: TypeScheme -> Typ
+transOpType :: TypeScheme -> Result Typ
 transOpType (TypeScheme _ op _) = transType op
 
 unitTyp :: Typ
 unitTyp = Type "unit" holType []
 -- types
-transType :: Type -> Typ
-transType = transFunType . funType
+transType :: Type -> Result Typ
+transType = fmap transFunType . funType
 
 transFunType :: FunType -> Typ
 transFunType fty = case fty of
@@ -162,49 +159,61 @@ makePartialVal t = if isPartialVal t then t else case t of
     UnitType -> BoolType
     _ -> PartialVal t
 
-funType :: Type -> FunType
+funType :: Type -> Result FunType
 funType t = case getTypeAppl t of
    (TypeName tid _ n, tys) ->
-       if n == 0 then
-           case map funType tys of
-           [] | tid == unitTypeId -> UnitType
-           [ty] | tid == lazyTypeId -> makePartialVal ty
-           [t1, t2] | isArrow tid -> FunType t1 $ if isPartialArrow tid then
-                                               makePartialVal t2 else t2
-           ftys@(_ : _ : _) | isProductId tid -> foldr1 PairType ftys
-           ftys -> ApplType tid ftys
-       else if null tys then TypeVar tid
-            else error "funType: no higher kinds"
-   _ -> error "funType: no type appl"
+       if n == 0 then do
+           ftys <- mapM funType tys
+           return $ case ftys of
+             [] | tid == unitTypeId -> UnitType
+             [ty] | tid == lazyTypeId -> makePartialVal ty
+             [t1, t2] | isArrow tid -> FunType t1 $
+                  if isPartialArrow tid then makePartialVal t2 else t2
+             (_ : _ : _) | isProductId tid -> foldr1 PairType ftys
+             _ -> ApplType tid ftys
+       else if null tys then return $ TypeVar tid
+            else fatal_error "funType: no higher kinds" $ posOfId tid
+   _ -> fatal_error "funType: no type appl" $ getRange t
 
 -- * translation of a datatype declaration
 
-transDatatype :: TypeMap -> DomainTab
-transDatatype tm = map transDataEntry (Map.fold extractDataypes [] tm)
-  where extractDataypes ti des = case typeDefn ti of
+transDatatype :: Env -> Result DomainTab
+transDatatype env = do
+    let extractDatatypes ti des = case typeDefn ti of
                                    DatatypeDefn de -> des++[de]
                                    _               -> des
+    mapM (transDataEntry env)
+                  $ Map.fold extractDatatypes [] $ typeMap env
 
 -- datatype with name (tyId) + args (tyArgs) and alternatives
-transDataEntry :: DataEntry -> [DomainEntry]
-transDataEntry (DataEntry _ tyId _ tyArgs _ alts) =
-    -- only free types are allowed
-    [(transDName tyId tyArgs, map transAltDefn alts)]
-  where transDName ti ta = Type (showIsaTypeT ti baseSign) []
-                           $ map transTypeArg ta
+transDataEntry :: Env -> DataEntry -> Result [DomainEntry]
+transDataEntry env (DataEntry tm tyId gk tyArgs rk alts) =
+    let i = Map.findWithDefault tyId tyId tm
+        dt = patToType i tyArgs rk
+    in case gk of
+    Le.Free -> do
+      nalts <- mapM (transAltDefn env tyArgs dt i) alts
+      let transDName ti ta = Type (showIsaTypeT ti baseSign) []
+                             $ map transTypeArg ta
+      return [(transDName i tyArgs, nalts)]
+    _ -> fatal_error ("only free types are allowed: "  ++ show i)
+         $ posOfId i
 
--- arguments of datatype's typeconstructor
+-- arguments of a datatype's typeconstructor
 transTypeArg :: TypeArg -> Typ
 transTypeArg ta = TFree (showIsaTypeT (getTypeVar ta) baseSign) []
 
 -- datatype alternatives/constructors
-transAltDefn :: AltDefn -> (VName, [Typ])
-transAltDefn (Construct opId ts Total _) =
-   let ts' = map transType ts
-   in case opId of
-        Just opId' -> (mkVName $ showIsaConstT opId' baseSign, ts')
-        Nothing  -> (mkVName "", ts')
-transAltDefn _ = error "PCoClTyConsHOL2IsabelleHOL.transAltDefn"
+transAltDefn :: Env -> [TypeArg] -> Type -> Id -> AltDefn
+             -> Result (VName, [Typ])
+transAltDefn env args dt tyId alt = case alt of
+    Construct (Just opId) ts Total _ -> do
+        let sc = TypeScheme args (getFunType dt Total ts) nullRange
+        nts <- mapM transType ts
+        -- extract overloaded opId number
+        return (mkVName $ transOpId env opId sc, nts)
+    _ -> fatal_error ("missing total constructor for: " ++ show tyId)
+         $ posOfId tyId
 
 -- * Formulas
 
@@ -212,17 +221,23 @@ transAltDefn _ = error "PCoClTyConsHOL2IsabelleHOL.transAltDefn"
 transVar :: Var -> VName
 transVar v = mkVName $ showIsaConstT v baseSign
 
-transSentence :: Env -> Le.Sentence -> Maybe Isa.Term
+transSentence :: Env -> Le.Sentence -> Result Isa.Sentence
 transSentence sign s = case s of
-    Le.Formula trm -> Just $ case transTerm sign trm of
-        (BoolType, t) -> t
-        (PartialVal _, t) -> mkTermAppl option2bool t
-        (FunType _ _, _) -> error "transSentence: FunType"
-        (PairType _ _, _) -> error "transSentence: PairType"
-        (ApplType _ _, _) -> error "transSentence: ApplType"
-        _ -> true
-    DatatypeSen _ -> Nothing
-    ProgEqSen _ _ _ -> Nothing
+    Le.Formula trm -> do
+      (ty, t) <- transTerm sign trm
+      case ty of
+        BoolType -> return $ mkSen t
+        PartialVal _ -> return $ mkSen $ mkTermAppl option2bool t
+        FunType _ _ -> error "transSentence: FunType"
+        PairType _ _ -> error "transSentence: PairType"
+        ApplType _ _ -> error "transSentence: ApplType"
+        _ -> return $ mkSen true
+    DatatypeSen _ -> warning (mkSen true)
+                           "translation of sentence not implemented"
+                           nullRange
+    ProgEqSen _ _ _ -> warning (mkSen true)
+                           "translation of sentence not implemented"
+                           nullRange
 
 -- disambiguate operation names
 transOpId :: Env -> UninstOpId -> TypeScheme -> String
@@ -234,12 +249,12 @@ transOpId sign op ts =
     Just str -> str
     Nothing  -> error $ "transOpId " ++ showIsaConstT op baseSign
 
-transProgEq :: Env -> ProgEq -> (Isa.Term, Isa.Term)
-transProgEq sign (ProgEq pat trm _) =
-    let op = transPattern sign pat
-        (ty, ot) = transTerm sign trm
-    in if isPartialVal ty then error "transProgEq"
-       else (op, ot)
+transProgEq :: Env -> ProgEq -> Result (Isa.Term, Isa.Term)
+transProgEq sign (ProgEq pat trm _) = do
+    op <- transPattern sign pat
+    (ty, ot) <- transTerm sign trm
+    if isPartialVal ty then fail "transProgEq"
+       else return (op, ot)
 
 ifImplOp :: Isa.Term
 ifImplOp = conDouble "ifImplOp"
@@ -263,62 +278,70 @@ uncurryOp :: Isa.Term
 uncurryOp = conDouble uncurryOpS
 
 -- terms
-transTerm :: Env -> As.Term -> (FunType, Isa.Term)
+transTerm :: Env -> As.Term -> Result (FunType, Isa.Term)
 transTerm sign trm = case trm of
-    QualVar (VarDecl var t _ _) -> (funType t,
-        Isa.Free (transVar var) $ transType t)
-    QualOp _ (InstOpId opId is _) ts@(TypeScheme targs ty _) _
-      | opId == trueId -> (fTy, true)
-      | opId == falseId -> (fTy, false)
-      | opId == botId -> (fTy, noneOp)
-      | opId == andId -> unCurry conjV
-      | opId == orId -> unCurry disjV
-      | opId == implId -> unCurry implV
-      | opId == infixIf -> (fTy, ifImplOp)
-      | opId == eqvId -> unCurry eqV
-      | opId == exEq -> (fTy, exEqualOp)
-      | opId == eqId -> (instfTy, cf $ termAppl uncurryOp $ con eqV)
-      | opId == notId -> (fTy, notOp)
-      | opId == defId -> (instfTy, cf $ defOp)
-      | opId == whenElse -> (fTy, whenElseOp)
-      | otherwise -> (instfTy, cf $ conDouble $ transOpId sign opId ts)
-       where instfTy = funType $ subst (if null is then Map.empty else
+    QualVar (VarDecl var t _ _) -> do
+        fTy <- funType t
+        return (fTy, Isa.Free (transVar var) $ transFunType fTy)
+    QualOp _ (InstOpId opId is _) ts@(TypeScheme targs ty _) _ -> do
+        fTy <- funType ty
+        instfTy <- funType $ subst (if null is then Map.empty else
                     Map.fromList $ zipWith (\ (TypeArg _ _ _ _ i _ _) t
-                          -> (i, t)) targs is) ty
-             fTy = funType ty
-             cf = mkTermAppl (convFun $ instType fTy instfTy)
-             unCurry f = (fTy, termAppl uncurryOp $ con f)
-    QuantifiedTerm quan varDecls phi _ ->
-        let quantify q gvd phi' = case gvd of
-                GenVarDecl (VarDecl var typ _ _) ->
-                    termAppl (conDouble $ qname q)
-                    $ Abs (con $ transVar var)
-                          (transType typ) phi' NotCont
-                GenTypeVarDecl _ ->  phi'
-            qname Universal   = allS
-            qname Existential = exS
-            qname Unique      = ex1S
-            (ty, psi) = transTerm sign phi
-        in (ty, foldr (quantify quan) psi varDecls)
+                                                -> (i, t)) targs is) ty
+        let cf = mkTermAppl (convFun $ instType fTy instfTy)
+            unCurry f = (fTy, termAppl uncurryOp $ con f)
+        return $ case () of
+          ()
+              | opId == trueId -> (fTy, true)
+              | opId == falseId -> (fTy, false)
+              | opId == botId -> (fTy, noneOp)
+              | opId == andId -> unCurry conjV
+              | opId == orId -> unCurry disjV
+              | opId == implId -> unCurry implV
+              | opId == infixIf -> (fTy, ifImplOp)
+              | opId == eqvId -> unCurry eqV
+              | opId == exEq -> (fTy, exEqualOp)
+              | opId == eqId -> (instfTy, cf $ termAppl uncurryOp $ con eqV)
+              | opId == notId -> (fTy, notOp)
+              | opId == defId -> (instfTy, cf $ defOp)
+              | opId == whenElse -> (fTy, whenElseOp)
+              | otherwise -> (instfTy, cf $ conDouble $ transOpId sign opId ts)
+    QuantifiedTerm quan varDecls phi _ -> do
+        let qname = case quan of
+                      Universal -> allS
+                      Existential -> exS
+                      Unique -> ex1S
+            quantify phi' gvd = case gvd of
+                GenVarDecl (VarDecl var typ _ _) -> do
+                    ty <- transType typ
+                    return $ termAppl (conDouble $ qname)
+                               $ Abs (con $ transVar var)
+                                 ty phi' NotCont
+                GenTypeVarDecl _ ->  return phi'
+        (ty, psi) <- transTerm sign phi
+        psiR <- foldM quantify psi $ reverse varDecls
+        return (ty, psiR)
     TypedTerm t _q _ty _ -> transTerm sign t
-    LambdaTerm pats q body _ ->
-        let (ty, t) = transTerm sign body in
-        foldr (abstraction sign) (case q of
+    LambdaTerm pats q body _ -> do
+        (ty, t) <- transTerm sign body
+        foldM (abstraction sign) (case q of
             Partial -> -- if isPartialVal ty then
                            (ty, t)
                        -- else (makePartialVal ty, termAppl conSome t)
             Total -> if isPartialVal ty
-                     then error "PCoClTyConsHOL2IsabelleHOL.totalLambda"
-                     else (ty, t)) pats
-    LetTerm As.Let peqs body _ ->
-        let (bTy, bTrm) = transTerm sign body
-        in (bTy, Isa.Let (map (transProgEq sign) peqs) bTrm)
-    TupleTerm ts@(_ : _) _ ->
-        foldr1 ( \ (s, p) (t, e) -> (PairType s t, Tuplex [p, e] NotCont))
-                   $ map (transTerm sign) ts
-    TupleTerm [] _ -> (UnitType, unitOp)
+                     then fail "PCoClTyConsHOL2IsabelleHOL.totalLambda"
+                     else (ty, t)) $ reverse pats
+    LetTerm As.Let peqs body _ -> do
+        (bTy, bTrm) <- transTerm sign body
+        nEqs <- mapM (transProgEq sign) peqs
+        return (bTy, Isa.Let nEqs bTrm)
+    TupleTerm ts@(_ : _) _ -> do
+        nTs <- mapM (transTerm sign) ts
+        return $ foldr1 ( \ (s, p) (t, e) ->
+                          (PairType s t, Tuplex [p, e] NotCont)) nTs
+    TupleTerm [] _ -> return (UnitType, unitOp)
     ApplTerm t1 t2 _ -> mkApp sign t1 t2 -- transAppl sign Nothing t1 t2
-    _ -> error $ "PCoClTyConsHOL2IsabelleHOL.transTerm " ++ showDoc trm "\n"
+    _ -> fail $ "PCoClTyConsHOL2IsabelleHOL.transTerm " ++ showDoc trm "\n"
                 ++ show trm
 
 instType :: FunType -> FunType -> ConvFun
@@ -509,7 +532,7 @@ mkResFun c = case c of
 isEquallyLifted :: Isa.Term -> Isa.Term -> Maybe (Isa.Term, Isa.Term, Isa.Term)
 isEquallyLifted l r = case (l, r) of
     (MixfixApp ft@(Const f _) [la] _,
-     MixfixApp (Const g _) [ra] _) 
+     MixfixApp (Const g _) [ra] _)
         | f == g && elem (new f) [someS, "option2bool", "bool2option"]
             -> Just (ft, la, ra)
     _ -> Nothing
@@ -574,11 +597,11 @@ mkTermAppl fun arg = case (fun, arg) of
           | new i == "option2bool" -> false
       _ -> termAppl fun arg
 
-mkApp :: Env -> As.Term -> As.Term -> (FunType, Isa.Term)
-mkApp sg f arg =
-    let (fTy, fTrm) = transTerm sg f
-        (aTy, aTrm) = transTerm sg arg
-    in case fTy of
+mkApp :: Env -> As.Term -> As.Term -> Result (FunType, Isa.Term)
+mkApp sg f arg = do
+    (fTy, fTrm) <- transTerm sg f
+    (aTy, aTrm) <- transTerm sg arg
+    return $ case fTy of
          FunType a r -> let ((rTy, fConv), (_, aConv)) = adjustTypes a r aTy
             in (if rTy then makePartialVal r else r,
                 mkTermAppl (applConv fConv fTrm)
@@ -594,22 +617,26 @@ mkApp sg f arg =
 
 -- * translation of lambda abstractions
 
-getPatternType :: As.Term -> FunType
+getPatternType :: As.Term -> Result FunType
 getPatternType t =
       case t of
         QualVar (VarDecl _ typ _ _) -> funType typ
-        TypedTerm _ _ typ _         -> funType typ
-        TupleTerm ts _           -> foldr1 PairType $ map getPatternType ts
-        _ -> error "PCoClTyConsHOL2IsabelleHOL.getPatternType"
+        TypedTerm _ _ typ _ -> funType typ
+        TupleTerm ts _ -> do
+            ptys <- mapM getPatternType ts
+            return $ foldr1 PairType ptys
+        _ -> fail "PCoClTyConsHOL2IsabelleHOL.getPatternType"
 
-transPattern :: Env -> As.Term -> Isa.Term
-transPattern sign pat =
-    let (ty, trm) = transTerm sign pat
-    in if isPartialVal ty then error "transPattern"
-       else trm
+transPattern :: Env -> As.Term -> Result Isa.Term
+transPattern sign pat = do
+    (ty, trm) <- transTerm sign pat
+    if isPartialVal ty then fail "transPattern"
+       else return trm
 
 -- form Abs(pattern term)
-abstraction :: Env -> As.Term -> (FunType, Isa.Term) -> (FunType, Isa.Term)
-abstraction sign pat (ty, body) = let pTy = getPatternType pat in
-    (FunType pTy ty,
-     Abs (transPattern sign pat) (transFunType pTy) body NotCont)
+abstraction :: Env -> (FunType, Isa.Term) -> As.Term
+            -> Result (FunType, Isa.Term)
+abstraction sign (ty, body) pat = do
+    pTy <- getPatternType pat
+    nPat <- transPattern sign pat
+    return (FunType pTy ty, Abs nPat (transFunType pTy) body NotCont)
