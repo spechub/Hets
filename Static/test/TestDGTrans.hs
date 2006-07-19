@@ -42,6 +42,8 @@ process2 file = do
           case Map.lookup libName gcMap of
             Just gc -> 
                 do -- putStrLn ("orig: \n" ++ (show $ devGraph gc))
+{-                x  <-  compComorphism (Comorphism CASL2PCFOL) 
+                                     (Comorphism CASL2SubCFOL)-}
                    gc' <- trans (Comorphism PCFOL2CFOL) gc
                    -- putStrLn ("translated: \n" ++ (show $ devGraph gc'))
                    return $ Just (libName, Map.update (\_ -> Just gc') libName gcMap)
