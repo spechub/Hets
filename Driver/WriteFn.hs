@@ -177,7 +177,7 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
           Result ds Nothing -> do
                  putIfVerbose opt 0 $ "could not compute theory of spec "
                                   ++ show i
-                 putIfVerbose opt 0 $ unlines $ map show ds
+                 putIfVerbose opt 2 $ unlines $ map show ds
           Result _ (Just raw_gTh0) -> do
             let tr = transNames opt
                 resTh = if null tr then return (raw_gTh0, "") else do
@@ -200,10 +200,12 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
                      let f = filePrefix ++ "_" ++ show i ++ "." ++ show ot
                      in case ot of
                       ThyFile -> case printTheory (libdir opt) ln i gTh of
-                                    Nothing -> putIfVerbose opt 0 $
-                                        "could not translate to Isabelle " ++
-                                         show i
-                                    Just d -> do
+                          Result ds Nothing -> do 
+                              putIfVerbose opt 0 $
+                                  "could not translate to Isabelle file: "
+                                  ++ f
+                              putIfVerbose opt 2 $ unlines $ map show ds
+                          Result _ (Just d) -> do
                                       let s = shows d "\n"
                                       case parse parseTheory f s of
                                           Left err -> putIfVerbose opt 0 $
@@ -217,8 +219,7 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
                                         OnlyAxioms  -> False)
                                        gTh
                             maybe (putIfVerbose opt 0 $
-                                     "could not translate to DFG: " ++
-                                     show i)
+                                     "could not translate to DFG file: " ++ f)
                                   (\ d -> writeVerbFile opt f $ shows d "\n")
                                   mDoc
 
@@ -235,8 +236,8 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
 #ifdef PROGRAMATICA
                       HaskellOut -> case printModule gTh of
                                     Nothing -> putIfVerbose opt 0 $
-                                        "could not translate to Haskell " ++
-                                         show i
+                                        "could not translate to Haskell file: "
+                                        ++ f
                                     Just d ->
                                         writeVerbFile opt f $ shows d "\n"
 #endif
@@ -246,8 +247,8 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
                                     r1 = coerceBasicTheory lid CASL "" th
                                   in case r1 of
                                      Nothing -> putIfVerbose opt 0 $
-                                         "could not translate from CASL " ++
-                                         show i
+                                       "could not translate CASL to file: "
+                                       ++ f
                                      Just th2 ->
                                        let Result d res =
                                                computeCompTable i th2
