@@ -70,7 +70,7 @@ printSPEC  spec = case spec of
     Closed_spec aa _ -> sep [keyword closedS, printGroupSpec aa]
     Group aa _ -> pretty aa
     Spec_inst aa ab _ ->
-      fcat $ structSimpleId aa : print_fit_arg_list ab
+      cat [structSimpleId aa, print_fit_arg_list ab]
     Qualified_spec ln asp _ ->
       printLogicEncoding ln <> colon $+$ (pretty asp)
     Data _ _ s1 s2 _ -> keyword dataS <+> pretty s1 $+$ pretty s2
@@ -113,23 +113,22 @@ instance Pretty GENERICITY where
     pretty = printGENERICITY
 
 printGENERICITY :: GENERICITY -> Doc
-printGENERICITY (Genericity aa ab _) =
-    fcat (printPARAMS aa) <+> fsep (printIMPORTED ab)
+printGENERICITY (Genericity aa ab _) = sep [printPARAMS aa, printIMPORTED ab]
 
 instance Pretty PARAMS where
-    pretty = fcat . printPARAMS
+    pretty = printPARAMS
 
-printPARAMS :: PARAMS -> [Doc]
-printPARAMS (Params aa) = map (brackets . rmTopKey . pretty ) aa
+printPARAMS :: PARAMS -> Doc
+printPARAMS (Params aa) = cat $ map (brackets . rmTopKey . pretty ) aa
 
 instance Pretty IMPORTED where
-    pretty = fsep . printIMPORTED
+    pretty = printIMPORTED
 
-printIMPORTED :: IMPORTED -> [Doc]
+printIMPORTED :: IMPORTED -> Doc
 printIMPORTED (Imported aa) = case aa of
-    [] -> []
-    _  -> keyword givenS
-          : punctuate comma (map printGroupSpec aa)
+    [] -> empty
+    _  -> sep [ keyword givenS
+              , sepByCommas $ map printGroupSpec aa]
 
 instance Pretty FIT_ARG where
     pretty = printFIT_ARG
@@ -142,7 +141,7 @@ printFIT_ARG fit = case fit of
                fsep $ aa' : keyword fitS
                         : punctuate comma (map printG_mapping ab)
     Fit_view si ab _ ->
-        keyword viewS <+> fcat (structSimpleId si : print_fit_arg_list ab)
+        sep [keyword viewS, cat [structSimpleId si, print_fit_arg_list ab]]
 
 instance Pretty Logic_code where
     pretty = printLogic_code
@@ -166,8 +165,8 @@ printLogic_name (Logic_name mlog slog) = let d = pretty mlog in
 {- |
   specealized printing of 'FIT_ARG's
 -}
-print_fit_arg_list :: [Annoted FIT_ARG] -> [Doc]
-print_fit_arg_list = map (brackets . pretty)
+print_fit_arg_list :: [Annoted FIT_ARG] -> Doc
+print_fit_arg_list = cat . map (brackets . pretty)
 
 {- |
    conditional generation of grouping braces for Union and Extension

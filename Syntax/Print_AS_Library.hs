@@ -46,15 +46,15 @@ instance Pretty LIB_ITEM where
                               printUnion $ moveAnnos ac u
                           _ -> [pretty ac]
                 sphead = fsep [ cat [ indexed (tokStr si)
-                                    , fcat (printPARAMS aa)]
-                              , fsep (printIMPORTED ab)
+                                    , printPARAMS aa]
+                              , printIMPORTED ab
                               , sa]
              in vcat $ (topKey specS <+> vcat [sphead, x]) : r
                     ++ [keyword endS]
         View_defn si (Genericity aa ab _) (View_type frm to _) ad _ ->
             let sphead = fsep [ cat [ structSimpleId si
-                                    , fcat (printPARAMS aa)]
-                              , fsep (printIMPORTED ab)
+                                    , printPARAMS aa]
+                              , printIMPORTED ab
                               , colon]
             in topKey viewS <+>
                  fsep ([sphead, fsep [printGroupSpec frm,
