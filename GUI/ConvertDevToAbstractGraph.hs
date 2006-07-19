@@ -25,6 +25,8 @@ Conversion of development graphs from Logic.DevGraph
 
 module GUI.ConvertDevToAbstractGraph where
 
+import Debug.Trace
+
 import Logic.Logic
 import Logic.Coerce
 import Logic.Grothendieck
@@ -1174,16 +1176,20 @@ getDGNodeType dgnodelab =
             _ -> False
 
 getDGLinkType :: DGLinkLab -> String
-getDGLinkType lnk = case dgl_type lnk of
-  GlobalDef ->
-    if isHomogeneous $ dgl_morphism lnk then "globaldef"
-        else "hetdef"
-  HidingDef -> "hidingdef"
-  LocalThm thmLnkState _ _ -> het++"local" ++ getThmType thmLnkState ++ "thm"
-  GlobalThm thmLnkState _ _ -> het++getThmType thmLnkState ++ "thm"
-  HidingThm _ thmLnkState -> getThmType thmLnkState ++ "hidingthm"
-  FreeThm _ bool -> if bool then "proventhm" else "unproventhm"
-  _  -> "def" -- LocalDef, FreeDef, CofreeDef
+getDGLinkType lnk = case dgl_morphism lnk of
+ GMorphism cid _ mor -> 
+  {- if not (is_injective (targetLogic cid) mor) then trace "noninjective morphism found" "hetdef" 
+  else -}
+   case dgl_type lnk of
+    GlobalDef ->
+      if isHomogeneous $ dgl_morphism lnk then "globaldef"
+          else "hetdef"
+    HidingDef -> "hidingdef"
+    LocalThm thmLnkState _ _ -> het++"local" ++ getThmType thmLnkState ++ "thm"
+    GlobalThm thmLnkState _ _ -> het++getThmType thmLnkState ++ "thm"
+    HidingThm _ thmLnkState -> getThmType thmLnkState ++ "hidingthm"
+    FreeThm _ bool -> if bool then "proventhm" else "unproventhm"
+    _  -> "def" -- LocalDef, FreeDef, CofreeDef
  where het = if isHomogeneous $ dgl_morphism lnk then "" else "het"
 
 getThmType :: ThmLinkStatus -> String

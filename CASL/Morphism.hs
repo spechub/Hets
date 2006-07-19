@@ -477,6 +477,14 @@ isSortInjective m =
    where sm = sort_map m
          src = Map.keys sm
 
+isInjective :: Morphism f e m -> Bool
+isInjective m =
+   null [() | k1 <- src, k2 <-src, k1 /= k2,
+              (Map.lookup k1 symmap::Maybe Symbol)==Map.lookup k2 symmap]
+   where src = Map.keys symmap
+         symmap = morphismToSymbMap m
+
+
 instance Pretty Symbol where
   pretty sy = pretty (symName sy) <>
     case symbType sy of

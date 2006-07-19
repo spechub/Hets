@@ -249,6 +249,9 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          is_transportable :: lid -> morphism -> Bool
          is_transportable l _ =
             error ("Logic.is_transportable nyi for logic"++language_name l)
+         is_injective :: lid -> morphism -> Bool
+         is_injective l _ =
+            error ("Logic.is_injective nyi for logic"++language_name l)
 
            -- see CASL reference manual, III.4.1.2
          is_subsig :: lid -> sign -> sign -> Bool
