@@ -18,8 +18,8 @@ Clause[split level]justification.literal number
 MPI:
 - cache CNF computations for optimized skolemization
   (workaround until this is fixed: disable optimized skolemization)
-- allow U as predicate name
-- CNF translation shuold output info 
++ allow U as predicate name
++ CNF translation shuold output info 
     about relation between input axioms and clauses
 - treatment of sorted equations
 - does it help to mark theorems (that follow from the rest)?
@@ -75,3 +75,5 @@ New interface to SPASS:
   - send only clauses depending on selected sentences
   => as quick as -interactive with strict timeout
 
+Bremen:
+- send RCCDagstuhl.het in parts
