@@ -218,7 +218,7 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          sign_to_basic_spec :: lid -> sign -> [Named sentence] -> basic_spec
          stat_symb_map_items ::
              lid -> [symb_map_items] -> Result (EndoMap raw_symbol)
-         stat_symb_map_items _ _ = fail "Logic.stat_symb_map_items"
+         stat_symb_map_items l _ = statErr l "stat_symb_map_items"
          stat_symb_items :: lid -> [symb_items] -> Result [raw_symbol]
          stat_symb_items l _ = statErr l "stat_symb_items"
          -- amalgamation
@@ -247,11 +247,9 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          final_union :: lid -> sign -> sign -> Result sign
          final_union l _ _ = statErr l "final_union"
          is_transportable :: lid -> morphism -> Bool
-         is_transportable l _ =
-            error ("Logic.is_transportable nyi for logic"++language_name l)
+         is_transportable _ _ = False -- save default
          is_injective :: lid -> morphism -> Bool
-         is_injective l _ =
-            error ("Logic.is_injective nyi for logic"++language_name l)
+         is_injective _ _ = False -- save default
 
            -- see CASL reference manual, III.4.1.2
          is_subsig :: lid -> sign -> sign -> Bool
@@ -322,7 +320,7 @@ instance ProjectSublogicM () b where
 
 {-
 instance (SemiLatticeWithTop a, MinSublogic a b) => ProjectSublogicM a b where
-    projectSublogicM l i = if isSubElem (minSublogic i) l 
+    projectSublogicM l i = if isSubElem (minSublogic i) l
                            then Just i else Nothing
 -}
 
