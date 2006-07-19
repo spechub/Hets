@@ -233,11 +233,11 @@ transSentence sign s = case s of
         ApplType _ _ -> error "transSentence: ApplType"
         _ -> return $ mkSen true
     DatatypeSen _ -> warning (mkSen true)
-                           "translation of sentence not implemented"
+                           "translation of datatype sentences not implemented"
                            nullRange
-    ProgEqSen _ _ _ -> warning (mkSen true)
+    ProgEqSen _ _ (ProgEq _ _ r) -> warning (mkSen true)
                            "translation of sentence not implemented"
-                           nullRange
+                           r
 
 -- disambiguate operation names
 transOpId :: Env -> UninstOpId -> TypeScheme -> String
@@ -250,10 +250,11 @@ transOpId sign op ts =
     Nothing  -> error $ "transOpId " ++ showIsaConstT op baseSign
 
 transProgEq :: Env -> ProgEq -> Result (Isa.Term, Isa.Term)
-transProgEq sign (ProgEq pat trm _) = do
+transProgEq sign (ProgEq pat trm r) = do
     op <- transPattern sign pat
     (ty, ot) <- transTerm sign trm
-    if isPartialVal ty then fail "transProgEq"
+    if isPartialVal ty then fatal_error 
+           ("rhs must not be partial currently: " ++ showDoc trm "") r
        else return (op, ot)
 
 ifImplOp :: Isa.Term
@@ -322,15 +323,16 @@ transTerm sign trm = case trm of
         psiR <- foldM quantify psi $ reverse varDecls
         return (ty, psiR)
     TypedTerm t _q _ty _ -> transTerm sign t
-    LambdaTerm pats q body _ -> do
-        (ty, t) <- transTerm sign body
-        foldM (abstraction sign) (case q of
-            Partial -> -- if isPartialVal ty then
-                           (ty, t)
-                       -- else (makePartialVal ty, termAppl conSome t)
+    LambdaTerm pats q body r -> do
+        p@(ty, _) <- transTerm sign body
+        pt <- case q of
+            Partial -> return p
             Total -> if isPartialVal ty
-                     then error "PCoClTyConsHOL2IsabelleHOL.totalLambda"
-                     else (ty, t)) $ reverse pats
+                     then fatal_error 
+                         ("partial lambda body in total abstraction: " 
+                          ++ showDoc body "") r
+                     else return p
+        foldM (abstraction sign) pt $ reverse pats
     LetTerm As.Let peqs body _ -> do
         (bTy, bTrm) <- transTerm sign body
         nEqs <- mapM (transProgEq sign) peqs
@@ -341,8 +343,8 @@ transTerm sign trm = case trm of
                           (PairType s t, Tuplex [p, e] NotCont)) nTs
     TupleTerm [] _ -> return (UnitType, unitOp)
     ApplTerm t1 t2 _ -> mkApp sign t1 t2 -- transAppl sign Nothing t1 t2
-    _ -> fail $ "PCoClTyConsHOL2IsabelleHOL.transTerm " ++ showDoc trm "\n"
-                ++ show trm
+    _ -> fatal_error ("cannot translate term: " ++ showDoc trm "") 
+         $ getRange trm
 
 instType :: FunType -> FunType -> ConvFun
 instType f1 f2 = case (f1, f2) of
@@ -469,50 +471,55 @@ unpackOp ft = case ft of
 
 -- True means require result type to be partial
 adjustTypes :: FunType -> FunType -> FunType
-            -> ((Bool, ConvFun), (FunType, ConvFun))
+            -> Result ((Bool, ConvFun), (FunType, ConvFun))
 adjustTypes aTy rTy ty = case (aTy, ty) of
-    (BoolType, BoolType) -> ((False, IdOp), (ty, IdOp))
-    (UnitType, UnitType) -> ((False, IdOp), (ty, IdOp))
-    (PartialVal _, BoolType) -> ((False, IdOp), (aTy, Bool2option))
-    (BoolType, PartialVal _) -> ((False, IdOp), (aTy, Option2bool))
-    (_, BoolType) -> ((True, LiftUnit rTy), (ty, IdOp))
-    (BoolType, _) -> ((False, IdOp), (aTy, ConstTrue))
-    (PartialVal a, PartialVal b) -> case adjustTypes a rTy b of
-        q@(fp, (argTy, aTrm)) -> case argTy of
+    (BoolType, BoolType) -> return ((False, IdOp), (ty, IdOp))
+    (UnitType, UnitType) -> return ((False, IdOp), (ty, IdOp))
+    (PartialVal _, BoolType) -> return ((False, IdOp), (aTy, Bool2option))
+    (BoolType, PartialVal _) -> return ((False, IdOp), (aTy, Option2bool))
+    (_, BoolType) -> return ((True, LiftUnit rTy), (ty, IdOp))
+    (BoolType, _) -> return ((False, IdOp), (aTy, ConstTrue))
+    (PartialVal a, PartialVal b) -> do
+        q@(fp, (argTy, aTrm)) <- adjustTypes a rTy b
+        return $ case argTy of
             PartialVal _ -> q
             _ -> (fp, (PartialVal argTy, mkMapFun MapSome aTrm))
-    (a, PartialVal b) -> case adjustTypes a rTy b of
-        q@(_, ap@(argTy, _)) -> case argTy of
+    (a, PartialVal b) -> do
+        q@(_, ap@(argTy, _)) <- adjustTypes a rTy b
+        return $ case argTy of
             PartialVal _ -> q
             _ -> ((True, LiftSome rTy), ap)
-    (PartialVal a, b) -> case adjustTypes a rTy b of
-        q@(fp, (argTy, aTrm)) -> case argTy of
+    (PartialVal a, b) -> do
+        q@(fp, (argTy, aTrm)) <- adjustTypes a rTy b
+        return $ case argTy of
             PartialVal _ -> q
             _ -> (fp, (PartialVal argTy, mkCompFun SomeOp aTrm))
-    (PairType a c, PairType b d) ->
-        let ((res2Ty, f2), (arg2Ty, a2)) = adjustTypes c rTy d
-            ((res1Ty, f1), (arg1Ty, a1)) = adjustTypes a
+    (PairType a c, PairType b d) -> do
+        ((res2Ty, f2), (arg2Ty, a2)) <- adjustTypes c rTy d
+        ((res1Ty, f1), (arg1Ty, a1)) <- adjustTypes a
                 (if res2Ty then makePartialVal rTy else rTy) b
-        in ((res1Ty || res2Ty,
+        return $ ((res1Ty || res2Ty,
              mkCompFun (mkLiftFun LiftFst f1) $ mkLiftFun LiftSnd f2),
-           (PairType arg1Ty arg2Ty,
-           mkCompFun (mkMapFun MapSnd a2) $ mkMapFun MapFst a1))
-    (FunType a c, FunType b d) ->
-       let ((_, aF), (aT, aC)) = adjustTypes b c a
-           ((cB, cF), (dT, dC)) = adjustTypes c rTy d
-       in if cB || isNotIdOp cF
-          then error "adjustTypes.FunTypes" else ((False, IdOp),
-           (FunType aT dT,
-                    mkCompFun aF $ mkCompFun (mkResFun dC) $ mkArgFun aC))
-    (TypeVar _, _) -> ((False, IdOp), (ty, IdOp))
-    (_, TypeVar _) -> ((False, IdOp), (aTy, IdOp))
+                  (PairType arg1Ty arg2Ty,
+                   mkCompFun (mkMapFun MapSnd a2) $ mkMapFun MapFst a1))
+    (FunType a c, FunType b d) -> do
+        ((_, aF), (aT, aC)) <- adjustTypes b c a
+        ((cB, cF), (dT, dC)) <- adjustTypes c rTy d
+        if cB || isNotIdOp cF
+          then fail "cannot adjust result types of function type"
+          else return ((False, IdOp),
+                       (FunType aT dT,
+                        mkCompFun aF $ mkCompFun (mkResFun dC) $ mkArgFun aC))
+    (TypeVar _, _) -> return ((False, IdOp), (ty, IdOp))
+    (_, TypeVar _) -> return ((False, IdOp), (aTy, IdOp))
     (ApplType i1 l1, ApplType i2 l2) | i1 == i2 && length l1 == length l2
-        -> let l = zipWith (\ a b -> adjustTypes a rTy b) l1 l2
-           in if or (map (fst . fst) l) || or
+        -> do l <- mapM (\ (a, b) -> adjustTypes a rTy b) $ zip l1 l2
+              if or (map (fst . fst) l) || or
                  (map (isNotIdOp . snd . snd) l)
-              then error "adjustTypes.ApplType"
-              else ((False, IdOp), (ApplType i1 $ map (fst . snd) l, IdOp))
-    _ -> error "adjustTypes"
+                then fail "cannot adjust type application"
+                else return ((False, IdOp), 
+                             (ApplType i1 $ map (fst . snd) l, IdOp))
+    _ -> fail "cannot adjust types"
 
 applConv :: ConvFun -> Isa.Term -> Isa.Term
 applConv cnv t = case cnv of
@@ -601,19 +608,19 @@ mkApp :: Env -> As.Term -> As.Term -> Result (FunType, Isa.Term)
 mkApp sg f arg = do
     (fTy, fTrm) <- transTerm sg f
     (aTy, aTrm) <- transTerm sg arg
-    return $ case fTy of
-         FunType a r -> let ((rTy, fConv), (_, aConv)) = adjustTypes a r aTy
-            in (if rTy then makePartialVal r else r,
+    case fTy of
+         FunType a r -> do 
+             ((rTy, fConv), (_, aConv)) <- adjustTypes a r aTy
+             return $ (if rTy then makePartialVal r else r,
                 mkTermAppl (applConv fConv fTrm)
                              $ applConv aConv aTrm)
-         PartialVal (FunType a r) ->
-             let ((_, fConv), (_, aConv)) = adjustTypes a r aTy
-                 resTy = makePartialVal r
-             in (resTy,
-                mkTermAppl (mkTermAppl (mkTermAppl
+         PartialVal (FunType a r) -> do
+             ((_, fConv), (_, aConv)) <- adjustTypes a r aTy
+             let resTy = makePartialVal r
+             return (resTy, mkTermAppl (mkTermAppl (mkTermAppl
                               (unpackOp r) $ convFun fConv) fTrm)
-                  $ applConv aConv aTrm)
-         _ -> error "not a function type"
+                            $ applConv aConv aTrm)
+         _ -> fail "not a function type"
 
 -- * translation of lambda abstractions
 
@@ -625,12 +632,15 @@ getPatternType t =
         TupleTerm ts _ -> do
             ptys <- mapM getPatternType ts
             return $ foldr1 PairType ptys
-        _ -> fail "PCoClTyConsHOL2IsabelleHOL.getPatternType"
+        _ -> fatal_error ("not a pattern for Isabelle: " ++ showDoc t "")
+             $ getRange t
 
 transPattern :: Env -> As.Term -> Result Isa.Term
 transPattern sign pat = do
     (ty, trm) <- transTerm sign pat
-    if isPartialVal ty then fail "transPattern"
+    if isPartialVal ty then 
+        fatal_error ("pattern must not be partial: " ++ showDoc pat "")
+             $ getRange pat
        else return trm
 
 -- form Abs(pattern term)
