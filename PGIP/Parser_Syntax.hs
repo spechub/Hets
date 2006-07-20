@@ -41,7 +41,7 @@ commands =     [(["use","PATH"],                                       (CommandP
                 (["dg","comp-new","GOALS"],                            (CommandParamStatus commandDgCompNew     [] [EnvID])), -- Proofs.Comp
                 (["dg","hide-thm","GOALS"],                            (CommandParamStatus commandDgHideThm     [] [EnvID])), -- Proofs.HideThmShift
                 (["dg","thm-hide","GOALS"],                            (CommandTest test [])), -- Proofs.ThmHideShift
-                (["dg","basic","GOALS"],                               (CommandParamStatus commandDgInferBasic  [] [EnvID])), -- Proofs.InferBasic
+                (["dg","basic","GOALS"],                               (CommandTest test [])), -- Proofs.InferBasic
                 (["dg-all","auto"],                                    (CommandStatus commandDgAllAuto             [EnvID])), -- dto.
                 (["dg-all","glob-subsume"],                            (CommandStatus commandDgAllGlobSubsume      [EnvID])),
                 (["dg-all","glob-decomp"],                             (CommandStatus commandDgAllGlobDecomp       [EnvID])),
@@ -51,9 +51,9 @@ commands =     [(["use","PATH"],                                       (CommandP
                 (["dg-all","comp-new"],                                (CommandStatus commandDgAllCompNew          [EnvID])),
                 (["dg-all","hide-thm"],                                (CommandStatus commandDgAllHideThm          [EnvID])),
                 (["dg-all","thm-hide"],                                (CommandStatus commandDgAllThmHide          [EnvID])),
-                (["dg-all","basic"],                                   (CommandStatus commandDgAllInferBasic       [EnvID])),
+                (["dg-all","basic"],                                   (CommandTest test [])),
                 (["show-dg-goals"],                                    (CommandTest test [])), -- new function
-                (["show-theory-goals"],                                (CommandShowStatus commandShowTheoryGoals   [EnvID])),
+                (["show-theory-goals"],                                (CommandShowStatus commandShowTheory        [EnvID])),
                 (["show-theory"],                                      (CommandShowStatus commandShowTheory        [EnvID])), -- dto.
                 (["node-info"],                                        (CommandTest test [])), -- GUI.ConvertAbstractToDevGraph
                 (["show-taxonomy"],                                    (CommandTest test [])), --  GUI.ConvertAbstractToDevGraph

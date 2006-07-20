@@ -12,7 +12,7 @@ The Main module of the Heterogeneous Tool Set.
    It provides the main function to call (and not much more).
 
 -}
-
+   
 -- for interactice purposes use Test.hs
 
 module Main where
@@ -36,6 +36,8 @@ import GUI.ShowGraph
 #ifdef PROGRAMATICA
 import Haskell.Haskell2DG
 #endif
+
+import PGIP.Command_Parser
 
 main :: IO ()
 main = do
@@ -68,6 +70,7 @@ processFile opts file =
                  Just (ln, libEnv) -> do
                      proofStatus <- readPrfFiles opts libEnv
                      return $ Just (ln, proofStatus)
+             ProofCommand -> parseScriptFile file
              _ -> anaLib opts file
            case gui opts of
              Not -> return ()

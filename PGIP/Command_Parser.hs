@@ -19,6 +19,8 @@ module PGIP.Command_Parser where
 
 import Syntax.AS_Library
 import Syntax.Parse_AS_Library
+import Static.DevGraph
+import Static.AnalysisLibrary
 import Common.AnnoState
 import Common.Lexer
 import Common.Token
@@ -204,7 +206,8 @@ checkCommand arg
                                           )
                                    <|>
                                       checkCommand command_list
-                        (_, CommandError):command_list -> checkCommand command_list   
+                        (_, CommandError):command_list -> checkCommand command_list 
+                        _:l -> checkCommand l 
                         []  -> do
                                       scanAnyWords 
                                       return CommandError 
@@ -219,51 +222,56 @@ parseScript
                                    )
                 return ls
 
-runScriptCommands::([CommandFunctionsAndParameters],[CmdInterpreterStatus]) -> IO (Maybe ())
+getLibEnv::[CmdInterpreterStatus]->Maybe (LIB_NAME,LibEnv)
+getLibEnv ls =
+          case ls of 
+                 [] -> Nothing
+                 (Env x y):_ -> let tmp = (x,y)
+                                in  Just tmp
+                 _:l  -> getLibEnv l
+runScriptCommands::([CommandFunctionsAndParameters],[CmdInterpreterStatus]) -> IO (Maybe (LIB_NAME,LibEnv))
 runScriptCommands (arg,status)
                      = case arg of
-                              [] -> return (Just ())
+                              [] -> return $ getLibEnv status
                               (CommandParam fn x):ls -> do 
                                                        val<- fn x
                                                        let newStatus= addOrReplace (val,status)
                                                        runScriptCommands (ls,newStatus)
                               (CommandParamStatus fn x cmdID):ls -> do
-                                                       let tmp = extractFrom (status,cmdID)
-                                                       case tmp of
-                                                            Nothing -> return Nothing
-                                                            Just xx -> do
-                                                                        let val = fn (x,xx)
+--                                                       let tmp = extractFrom (status,cmdID)
+--                                                       case tmp of
+--                                                            Nothing -> return Nothing
+--                                                            Just xx -> do
+                                                                        let val = fn (x,status)
                                                                         let newStatus= addOrReplace (val,status)
                                                                         runScriptCommands (ls,newStatus)
                               (CommandStatus fn cmdID):ls -> do
-                                                       let tmp = extractFrom (status,cmdID)
-                                                       case tmp of 
-                                                            Nothing -> return Nothing
-                                                            Just xx -> do
-                                                                         let val= fn xx
+--                                                       let tmp = extractFrom (status,cmdID)
+--                                                       case tmp of 
+--                                                            Nothing -> return Nothing
+--                                                            Just xx -> do
+                                                                         let val= fn status
                                                                          let newStatus= addOrReplace(val,status)
                                                                          runScriptCommands (ls, newStatus)
                               (CommandTest fn x):ls -> do
                                                        fn x
                                                        runScriptCommands (ls,status)
                               (CommandShowStatus fn cmdID):ls -> do
-                                                          let tmp = extractFrom (status, cmdID)
-                                                          case tmp of 
-                                                               Nothing -> return Nothing
-                                                               Just xx -> do 
-                                                                           let val= fn xx
-                                                                           let newStatus = addOrReplace (val, status)
-                                                                           runScriptCommands (ls, newStatus)
+--                                                          let tmp = extractFrom (status, cmdID)
+--                                                          case tmp of 
+--                                                               Nothing -> return Nothing
+--                                                               Just xx -> do 
+                                                                           let val= fn status
+                                                                           runScriptCommands (ls, status)
                               CommandError:_ -> return Nothing
 
-parseScriptFile:: FilePath-> IO (Maybe())
+parseScriptFile:: FilePath-> IO (Maybe (LIB_NAME,LibEnv))
 parseScriptFile fileName
                         = do 
                             input<- readFile fileName
                             let r=runParser parseScript (emptyAnnos()) "" input
                             case r of
-                               Right out-> do 
-                                           runScriptCommands (out,[])
+                               Right out-> runScriptCommands (out,[])
                                              
                                Left _ -> 
                                           return Nothing 

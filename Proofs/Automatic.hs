@@ -36,7 +36,7 @@ Add proof status information
 
 -}
 
-module Proofs.Automatic (automatic) where
+module Proofs.Automatic (automatic, automaticFromList) where
 
 import Data.Graph.Inductive.Graph 
 import Static.DevGraph

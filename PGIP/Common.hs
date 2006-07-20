@@ -24,7 +24,7 @@ import Proofs.EdgeUtils
 
 -- | The 'addOrReplace' function,given a CmdInterpeterStatus and a list of such CmdInterpeterStatus, replaces any occurance of that type
 -- of CmdInterpeterStatus with the given one, and if none found it adds one to the list
-addOrReplace::(CmdInterpreterStatus,[CmdInterpreterStatus])->[CmdInterpreterStatus]
+addOrReplace::([CmdInterpreterStatus],[CmdInterpreterStatus])->[CmdInterpreterStatus]
 addOrReplace (val,status)
                       = case val of
                                   []                  ->  status
@@ -40,8 +40,8 @@ addOrReplace (val,status)
                                                           (OutputErr xx):_      -> (OutputErr xx):[]
                                                           (Env xx yy):ls        -> addOrReplace(l, (Env xx yy):addOrReplace([SelectedNodes x], ls))
                                                           (SelectedNodes _):ls  -> addOrReplace(l, (SelectedNodes x):ls)
-                                  OutputErr x -> (OutputErr x):[]
-                                  CmdInitialState -> status
+                                  (OutputErr x):l -> (OutputErr x):[]
+                                  CmdInitialState:l -> addOrReplace (l,status)
 
 -- | The 'extractFrom' function, given a list of CmdInterpeterStatus and a CmdInterpreterStatusID, it returns the first occurance of 
 -- that type of CmdInterpreterStatus from the list 
