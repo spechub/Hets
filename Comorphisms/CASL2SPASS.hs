@@ -320,7 +320,7 @@ integrateGenerated idMap genSens sign
           case makeGens idMap' genAxs of
           Result dias mv ->
             maybe (Result dias Nothing)
-                  (\ (spSortMap_makeGens,newOpsMap,idMap'') ->
+                  (\ (spSortMap_makeGens,newOpsMap,idMap'',exhaustSens) ->
                       let spSortMap' =
                             Map.union spSortMap_makeGens (SPSign.sortMap sign)
                       in assert (Map.size spSortMap' ==
@@ -335,7 +335,8 @@ integrateGenerated idMap genSens sign
                                                      Map.union (predMap sign)
                                                                newPredsMap},
                                             mkInjSentences idMap' newOpsMap++
-                                            goalsAndSentences))))
+                                            goalsAndSentences++
+                                            exhaustSens))))
                   mv
 
 makeGenGoals :: IdType_SPId_Map -> [Named (FORMULA f)]
@@ -358,35 +359,43 @@ only one goal, but additional symbols, axioms and a goal
 
 makeGens :: (Pretty f, PosItem f) =>
             IdType_SPId_Map -> [Named (FORMULA f)]
-         -> Result (SortMap, FuncMap, IdType_SPId_Map)
+         -> Result (SortMap, FuncMap, IdType_SPId_Map,[Named SPTerm])
+            -- ^ The list of SoftFOL sentences gives exhaustiveness for 
+            -- generated sorts with only constant constructors
 makeGens idMap fs =
-    case foldl makeGen (return (Map.empty,idMap,[])) fs of
+    case foldl makeGen (return (Map.empty,idMap,[],[])) fs of
     Result ds mv ->
         maybe (Result ds Nothing)
-              (\ (opMap,idMap',pairs) ->
+              (\ (opMap,idMap',pairs,exhaustSens) ->
                    Result ds
                       (Just (foldr (uncurry Map.insert)
                                    Map.empty pairs,
-                             opMap,idMap')))
+                             opMap,idMap',exhaustSens)))
               mv
 
 makeGen :: (Pretty f, PosItem f) =>
-           Result (FuncMap, IdType_SPId_Map, [(SPIdentifier,Maybe Generated)])
+           Result (FuncMap, IdType_SPId_Map, 
+                   [(SPIdentifier,Maybe Generated)],[Named SPTerm])
         -> Named (FORMULA f)
-        -> Result (FuncMap, IdType_SPId_Map, [(SPIdentifier,Maybe Generated)])
-makeGen r@(Result ods omv) nf = maybe (Result ods Nothing) process omv where
- process (oMap,iMap,rList) = case sentence nf of
+        -> Result (FuncMap, IdType_SPId_Map, 
+                   [(SPIdentifier,Maybe Generated)],[Named SPTerm])
+makeGen r@(Result ods omv) nf = 
+    maybe (Result ods Nothing) process omv where
+ process (oMap,iMap,rList,eSens) = case sentence nf of
   Sort_gen_ax constrs free ->
-      if null mp then (case mapAccumL makeGenP (oMap,iMap) srts of
-                       ((oMap',iMap'),genPairs) ->
-                          Result ods (Just (oMap',iMap',rList++genPairs)))
+      if null mp then (case mapAccumL makeGenP (oMap,iMap,[]) srts of
+                       ((oMap',iMap',eSens'),genPairs) ->
+                          Result ods (Just (oMap',iMap',
+                                            rList++genPairs,
+                                            eSens++eSens')))
                  else mkError "Non injective sort mappings cannot \
                               \be translated to SoftFOL" (sentence nf)
       where (srts,ops,mp) = recover_Sort_gen_ax constrs
             hasTheSort s (Qual_op_name _ ot _) = s == res_OP_TYPE ot
             hasTheSort _ _ = error "SuleCFOL2SoftFOL.hasTheSort"
             mkGen = Just . Generated free . map fst
-            makeGenP (opMap,idMap) s = ((newOpMap, newIdMap),
+            makeGenP (opMap,idMap,exSens) s = ((newOpMap, newIdMap,
+                                                exSens++eSen ops_of_s s),
                                         (s', mkGen cons))
                 where ((newOpMap,newIdMap),cons) =
                           mapAccumL mkInjOp (opMap,idMap) ops_of_s
@@ -394,6 +403,28 @@ makeGen r@(Result ods omv) nf = maybe (Result ods Nothing) process omv where
                       s' = maybe (error "SuleCFOL2SoftFOL.makeGen: No mapping \
                                         \found for '"++show s++"'") id
                                  (lookupSPId s CSort idMap)
+            eSen os s = if all nullArgs os 
+                        then [(emptyName (SPQuantTerm SPForall
+                                            [typedVarTerm var $ 
+                                             maybe (error "lookup failed") 
+                                                   id 
+                                                   (lookupSPId s (CSort) iMap)]
+                                            (disj var os)))
+                              {senName = newName s}]
+                        else []
+            disj v os = case map (\x -> mkEq (varTerm v) 
+                                        (varTerm $ transOP_SYMB iMap x) ) os of
+                        [] -> error "CASL2SPASS: no constructors found"
+                        [x] -> x
+                        xs -> foldl1 mkDisj xs
+            var = fromJust (find (\ x -> not (Set.member x usedIds))
+                            ("X":["X"++show i | i <- [(1::Int)..]]))
+            varTerm v = simpTerm (spSym v) 
+            newName s = "ga_exhaustive_generated_sort_"++(show $ pretty s)
+            usedIds = elemsSPId_Set iMap
+            nullArgs o = case o of
+                         Qual_op_name _ (Op_type _ args _ _) _ -> null args
+                         _ -> error "CASL2SPASS: wrong constructor"
   _ -> r
 
 mkInjOp :: (FuncMap, IdType_SPId_Map)
