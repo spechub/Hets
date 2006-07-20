@@ -34,7 +34,7 @@ pickParser :: (Continuity, Bool)
 pickParser c = do
    b <- hatParser
    let res@(Result _ m) = do
-          (_, _, sig, sens) <- hatAna (b, HatAna.emptySign, emptyGlobalAnnos)
+          (_, sig, sens) <- hatAna (b, HatAna.emptySign, emptyGlobalAnnos)
           transTheory (fst c) (snd c) sig sens
    case m of
       Nothing -> fail $ show res
