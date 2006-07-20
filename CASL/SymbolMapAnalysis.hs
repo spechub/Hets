@@ -131,11 +131,12 @@ inducedFromMorphism extEm rmap sigma = do
           -- that is not directly mapped
           _ -> Map.lookup (ASymbol sy) rmap == Nothing
   -- ... if not, generate an error
-  if Set.null incorrectRsyms then return () else fail $
-       "the following symbols: "
+  if Set.null incorrectRsyms then return () else fatal_error
+       ("the following symbols: "
         ++ showDoc incorrectRsyms
         "\nare already mapped directly or do not match with signature\n"
-        ++ showDoc sigma ""
+        ++ showDoc sigma "")
+       $ getSetRange incorrectRsyms
 
   -- compute the sort map (as a Map)
   sort_Map <- Set.fold
@@ -182,7 +183,7 @@ sortFun rmap s =
           Nothing -> plain_error s  -- ambiguity! generate an error
                  ("Sort " ++ showId s
                   " is mapped ambiguously: "  ++ showDoc rsys "")
-                 $ posOfId s
+                 $ getSetRange rsys
     where
     -- get all raw symbols to which s is mapped to
     rsys = Set.unions $ map ( \ x -> case Map.lookup x rmap of
@@ -205,7 +206,8 @@ opFun rmap sort_Map ide ots m =
              plain_error m'
                ("Operation " ++ showId ide
                 " is mapped twice: "
-                ++ showDoc (rsy1, rsy2) "") $ posOfId ide
+                ++ showDoc (rsy1, rsy2) "")
+               $ appRange (getRange rsy1) $ getRange rsy2
        (Just rsy, Nothing) ->
           Set.fold (insertmapOpSym sort_Map ide rsy) m1 ots1
        (Nothing, Just rsy) ->
@@ -236,12 +238,12 @@ mappedOpSym sort_Map ide ot rsy =
            else plain_error (ide, opKind ot)
              (opSym ++ "type " ++ showDoc ot'
               " but should be mapped to type " ++
-              showDoc (mapOpType sort_Map ot)"") $ posOfId ide
+              showDoc (mapOpType sort_Map ot)"") $ getRange rsy
       AnID ide' -> return (ide',opKind ot)
       AKindedId FunKind ide' -> return (ide',opKind ot)
       _ -> plain_error (ide,opKind ot)
                (opSym ++ "symbol of wrong kind: " ++ showDoc rsy "")
-               $ posOfId ide
+               $ getRange rsy
 
     -- insert mapping of op symbol (ide,ot) to raw symbol rsy into m
 insertmapOpSym :: Sort_map -> Id -> RawSymbol -> OpType
@@ -277,7 +279,8 @@ predFun rmap sort_Map ide pts m =
              plain_error m'
                ("Predicate " ++ showId ide
                 " is mapped twice: " ++
-                showDoc (rsy1, rsy2) "") $ posOfId ide
+                showDoc (rsy1, rsy2) "")
+               $ appRange (getRange rsy1) $ getRange rsy2
        (Just rsy, Nothing) ->
           Set.fold (insertmapPredSym sort_Map ide rsy) m1 pts1
        (Nothing, Just rsy) ->
@@ -308,12 +311,12 @@ mappedPredSym sort_Map ide pt rsy =
            else plain_error ide
              (predSym ++ "type " ++ showDoc pt'
               " but should be mapped to type " ++
-              showDoc (mapPredType sort_Map pt) "") $ posOfId ide
+              showDoc (mapPredType sort_Map pt) "") $ getRange rsy
       AnID ide' -> return ide'
       AKindedId PredKind ide' -> return ide'
       _ -> plain_error ide
                (predSym ++ "symbol of wrong kind: " ++ showDoc rsy "")
-               $ posOfId ide
+               $ getRange rsy
 
     -- insert mapping of pred symbol (ide,pt) to raw symbol rsy into m
 insertmapPredSym :: Sort_map -> Id -> RawSymbol -> PredType
@@ -583,7 +586,7 @@ inducedFromToMorphism :: (Pretty f, Pretty e, Pretty m)
                       -> (e -> e -> Bool) -- ^ subsignature test of extensions
                       -> RawSymbolMap
                       -> Sign f e -> Sign f e -> Result (Morphism f e m)
-inducedFromToMorphism extEm isSubExt  rmap sigma1 sigma2 = do
+inducedFromToMorphism extEm isSubExt rmap sigma1 sigma2 = do
   let symset1 = symOf sigma1
       symset2 = symOf sigma2
   -- 1. use rmap to get a renaming...
@@ -612,12 +615,15 @@ inducedFromToMorphism extEm isSubExt  rmap sigma1 sigma2 = do
      --trace ("posmap1= "++showDoc posmap1 "") (return ())
      case Map.lookup (True,0) posmap2 of
        Nothing -> return ()
-       Just syms -> fail $ "No symbol mapping for "
-                    ++ showDoc (map fst syms) ""
+       Just syms -> fatal_error ("No symbol mapping for "
+                    ++ showDoc (map fst syms) "")
+                   $ concatMapRange getRange $ map fst syms
      -- 3. call recursive function with empty akmap and initial posmap
      smap <- tryToInduce sigma1 sigma2 Map.empty posmap
      smap1 <- case smap of
-                 Nothing -> fail "No signature morphism for symbol map found"
+                 Nothing -> fatal_error
+                            "No signature morphism for symbol map found"
+                            $ getMapRange rmap
                  Just x -> return x
      -- 9./10. compute and return the resulting morphism
      symbMapToMorphism extEm sigma1 sigma2 smap1
@@ -686,13 +692,13 @@ tryToInduce2 sigma1 sigma2 akmap posmap sym1 sym2 akmapSoFar = do
          (Nothing,Nothing) -> return Nothing
          (Just smap,Nothing) -> return $ Just smap
          (Nothing,Just smap) -> return $ Just smap
-         (Just smap1,Just smap2) ->
+         (Just smap1, Just smap2) ->
             let shorten = Map.filterWithKey (/=) in
-            fail $ shows
+            fatal_error (shows
              (text "Ambiguous symbol map" $+$
               text "Map1" <+> pretty (shorten smap1) $+$
               text "Map2" <+> pretty (shorten smap2))
-            ""
+             "") $ getMapRange $ shorten smap1
 
 {-
 Computing signature generated by a symbol set.
@@ -725,8 +731,10 @@ Output: signature "Sigma1"<=Sigma.
 generatedSign :: Ext f e m -> SymbolSet -> Sign f e -> Result (Morphism f e m)
 generatedSign extEm sys sigma =
   if not (sys `Set.isSubsetOf` symset)   -- 2.
-   then fail $ "Revealing: The following symbols "
-           ++ showDoc (sys Set.\\ symset) " are not in the signature"
+   then let diffsyms = sys Set.\\ symset in
+        fatal_error ("Revealing: The following symbols "
+                     ++ showDoc diffsyms " are not in the signature")
+        $ getSetRange diffsyms
    else return $ embedMorphism extEm sigma2 sigma    -- 7.
   where
   symset = symOf sigma   -- 1.
@@ -775,8 +783,10 @@ cogeneratedSign :: Ext f e m -> SymbolSet -> Sign f e
 cogeneratedSign extEm symset sigma =
   if {-trace ("symset "++show symset++"\nsymset0 "++show symset0)-}
            (not (symset `Set.isSubsetOf` symset0))   -- 2.
-   then fail $ "Hiding: The following symbols "
-            ++ showDoc (symset Set.\\ symset0) " are not in the signature"
+   then let diffsyms = symset Set.\\ symset0 in
+        fatal_error ("Hiding: The following symbols "
+            ++ showDoc diffsyms " are not in the signature")
+        $ getSetRange diffsyms
    else generatedSign extEm symset1 sigma -- 4./5.
   where
   symset0 = symOf sigma   -- 1.
@@ -801,3 +811,9 @@ finalUnion addSigExt sigma1 sigma2 = return $ addSig addSigExt sigma1 sigma2
 -- | Insert into a list of values
 listInsert :: Ord k => k -> a -> Map.Map k [a] -> Map.Map k [a]
 listInsert kx x t = Map.insert kx (x : Map.findWithDefault [] kx t) t
+
+getSetRange :: PosItem a => Set.Set a -> Range
+getSetRange = concatMapRange getRange . Set.toList
+
+getMapRange :: PosItem a => Map.Map a b -> Range
+getMapRange = concatMapRange getRange . Map.keys
