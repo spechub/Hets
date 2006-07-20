@@ -34,7 +34,7 @@ CLEAN_PATH = . utils/itcor \
     Taxonomy CASL_DL SPASS OWL_DL OMDoc $(PFE_PATHS) \
     $(addprefix hxt/, $(HXT_PATHS)) \
     hcl/src/Data syb-generics/Data syb-generics/Data/Generics2 \
-    $(addprefix haifa-lite/src/, $(HAIFA_PATHS))
+    $(addprefix haifa-lite/src/, $(HAIFA_PATHS)) PGIP
 
 # the 'replacing spaces' example was taken from the (GNU) Make info manual
 empty =
