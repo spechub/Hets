@@ -226,7 +226,7 @@ nodeStaticAna ((n,topNode):[]) (inSig, _, oldDiags) signMap ontoMap dg =
             Result diag res =
                  basicOWL_DLAnalysis (ontology, inSig, emptyGlobalAnnos)
         in  case res of
-            Just (_,_,accSig,sent) ->
+            Just (_, accSig, sent) ->
              let newLNode = (n, topNode {dgn_theory = G_theory OWL_DL accSig
                                          (toThSens sent)})
                  ledges = (inn dg n) ++ (out dg n)
@@ -278,7 +278,7 @@ printResOfStatic al =
         --      -> Result (Ontology,Sign,Sign,[Named Sentence])
                 -> Result (Sign,[Named Sentence])
          output (_, ontology) =
-             let Result diagsA (Just (_, _, accSig, namedSen)) =
+             let Result diagsA (Just (_, accSig, namedSen)) =
                      basicOWL_DLAnalysis (ontology,
                                           emptySign,
                                           emptyGlobalAnnos)
@@ -391,7 +391,7 @@ nodesStaticAna (hnode:rnodes) inSign ontoMap =
         Result diag res =
             basicOWL_DLAnalysis (ontology, inSign, emptyGlobalAnnos)
     in  case res of
-        Just ((Ontology _ directives namespace),_,accSig,sent) ->
+        Just ((Ontology _ directives namespace), accSig, sent) ->
             concatResult
             (Result diag
               (Just ((Ontology mid directives namespace), accSig, sent)))
