@@ -15,7 +15,11 @@ Here is the place where the class Logic is instantiated for CASL.
   real implementation for map_sen
 -}
 
-module ConstraintCASL.Logic_ConstraintCASL(module ConstraintCASL.Logic_ConstraintCASL, CASLSign, ConstraintCASLMor) where
+module ConstraintCASL.Logic_ConstraintCASL
+    ( module ConstraintCASL.Logic_ConstraintCASL
+    , CASLSign
+    , ConstraintCASLMor) 
+    where
 
 import Common.AS_Annotation
 import Common.Result
@@ -90,7 +94,8 @@ instance Sentences ConstraintCASL ConstraintCASLFORMULA () ConstraintCASLSign Co
       simplify_sen ConstraintCASL = 
         error "simplify_sen ConstraintCASL nyi" -- simplifySen dummyMin dummy
 
-instance StaticAnalysis ConstraintCASL ConstraintCASLBasicSpec ConstraintCASLFORMULA ()
+instance StaticAnalysis ConstraintCASL 
+               ConstraintCASLBasicSpec ConstraintCASLFORMULA ()
                SYMB_ITEMS SYMB_MAP_ITEMS
                ConstraintCASLSign
                ConstraintCASLMor
@@ -110,10 +115,10 @@ instance StaticAnalysis ConstraintCASL ConstraintCASLBasicSpec ConstraintCASLFOR
          is_transportable ConstraintCASL = isSortInjective
 
          empty_signature ConstraintCASL = emptySign ()
-         signature_union ConstraintCASL sigma1 sigma2 =
-           return $ addSig dummy sigma1 sigma2
-         morphism_union ConstraintCASL = morphismUnion (const id) dummy
-         final_union ConstraintCASL = finalUnion dummy
+         signature_union ConstraintCASL s = return . addSig const s
+         signature_difference ConstraintCASL s = return . diffSig const s
+         morphism_union ConstraintCASL = morphismUnion (const id) const
+         final_union ConstraintCASL = finalUnion const
          is_subsig ConstraintCASL = isSubSig trueC
          inclusion ConstraintCASL = sigInclusion dummy trueC
          cogenerated_sign ConstraintCASL = cogeneratedSign dummy

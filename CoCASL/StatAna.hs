@@ -43,8 +43,8 @@ import Common.Id
 import Common.Result
 import Common.DocUtils
 
-import Data.Maybe
-import Data.List
+import Data.Maybe (catMaybes)
+import Data.List (partition)
 
 type CSign = Sign C_FORMULA CoCASLSign
 
@@ -52,10 +52,9 @@ basicCoCASLAnalysis :: (BASIC_SPEC C_BASIC_ITEM C_SIG_ITEM C_FORMULA,
                        Sign C_FORMULA CoCASLSign, GlobalAnnos)
                    -> Result (BASIC_SPEC C_BASIC_ITEM C_SIG_ITEM C_FORMULA,
                               Sign C_FORMULA CoCASLSign,
-                              Sign C_FORMULA CoCASLSign,
                               [Named (FORMULA C_FORMULA)])
-basicCoCASLAnalysis = basicAnalysis minExpForm ana_C_BASIC_ITEM
-                      ana_C_SIG_ITEM ana_CMix diffCoCASLSign
+basicCoCASLAnalysis = 
+    basicAnalysis minExpForm ana_C_BASIC_ITEM ana_C_SIG_ITEM ana_CMix
 
 ana_CMix :: Mix C_BASIC_ITEM C_SIG_ITEM C_FORMULA CoCASLSign
 ana_CMix = emptyMix

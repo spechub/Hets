@@ -38,7 +38,7 @@ process fn = do
             HsModule _ _ _ _ b <- parseTokens HP.parse fn ts
             hatAna(HsDecls b, emptySign, emptyGlobalAnnos)
     case m of
-        Just (_, _, sig, hs) -> do
+        Just (_, sig, hs) -> do
             putStrLn $ showDoc sig ""
             mapM_ (putStrLn . flip showDoc "") hs
         _ -> mapM_ (putStrLn . show) ds

@@ -54,7 +54,6 @@ import qualified Debug.Trace as Debug.Trace
 
 import qualified Data.List as Data.List
 
-import Char (isSpace)
 import Data.Maybe (fromMaybe)
 
 import OMDoc.Util 
@@ -1288,7 +1287,7 @@ buildCASLSentenceDiff::(Prover.ThSens CASLFORMULA (AnyComorphism, BasicProof))->
 buildCASLSentenceDiff = OMap.difference
 
 buildCASLSignDiff::CASLSign->CASLSign->CASLSign
-buildCASLSignDiff = diffSig
+buildCASLSignDiff = diffSig const
 
 emptyCASLMorphism::(CASL.Morphism.Morphism () () ())
 emptyCASLMorphism = CASL.Morphism.Morphism (emptySign ()) (emptySign ()) Map.empty Map.empty Map.empty ()
@@ -1487,7 +1486,8 @@ makeMorphismMap_o (Morphism ssource starget sortmap funmap predmap _) =
           PredType (map (\id' -> Map.findWithDefault id' id' sortmap) (predArgs spt))
         ) ) ) $ Map.toList predmap
   in
-    (sortmap, newfunmap, newpredmap, Set.fromList $ getSymbols $ diffSig ssource starget)
+    (sortmap, newfunmap, newpredmap, Set.fromList $ getSymbols 
+                $ diffSig const ssource starget)
 
 makeMorphismMap::(Morphism () () ())->MorphismMap
 makeMorphismMap m =

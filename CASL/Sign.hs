@@ -124,13 +124,14 @@ printSetMap header sepa m = vcat $ map (\ (i, t) ->
 
 -- working with Sign
 
-diffSig :: Sign f e -> Sign f e -> Sign f e
-diffSig a b =
+diffSig :: (e -> e -> e) -> Sign f e -> Sign f e -> Sign f e
+diffSig dif a b =
     a { sortSet = sortSet a `Set.difference` sortSet b
       , sortRel = Rel.transClosure $ Rel.difference (sortRel a) $ sortRel b
       , opMap = opMap a `diffMapSet` opMap b
       , assocOps = assocOps a `diffMapSet` assocOps b
       , predMap = predMap a `diffMapSet` predMap b
+      , extendedInfo = dif (extendedInfo a) $ extendedInfo b
       }
   -- transClosure needed:  {a < b < c} - {a < c; b}
   -- is not transitive!

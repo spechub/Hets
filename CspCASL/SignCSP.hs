@@ -39,10 +39,11 @@ diffCSPAddSign a b =
         processNames = processNames a `Map.difference` processNames b
       }
 
-diffCSPSign :: CSPSign -> CSPSign -> CSPSign
-diffCSPSign sig1 sig2 = 
-  diffSig sig1 sig2 
-     { extendedInfo = extendedInfo sig1 `diffCSPAddSign` extendedInfo sig2 }
+addCSPAddSign :: CSPAddSign -> CSPAddSign -> CSPAddSign
+addCSPAddSign a b = 
+    a { channelNames = channelNames a `Map.union` channelNames b,
+        processNames = processNames a `Map.union` processNames b
+      }
 
 emptyCSPSign :: CSPSign
 emptyCSPSign = emptySign emptyCSPAddSign

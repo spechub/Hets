@@ -35,8 +35,7 @@ type ConstraintCASLMor = Morphism ConstraintFORMULA () ()
 
 basicConstraintCASLAnalysis :: 
         (ConstraintCASLBasicSpec, ConstraintCASLSign, GlobalAnnos)
-                  -> Result (ConstraintCASLBasicSpec, ConstraintCASLSign,
+                  -> Result (ConstraintCASLBasicSpec,
                              ConstraintCASLSign, [Named ConstraintCASLFORMULA])
 basicConstraintCASLAnalysis =
-    basicAnalysis (const return) (const return) (const return) emptyMix const
-
+    basicAnalysis (const return) (const return) (const return) emptyMix

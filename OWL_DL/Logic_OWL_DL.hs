@@ -73,6 +73,7 @@ instance StaticAnalysis OWL_DL Ontology Sentence ()
       basic_analysis OWL_DL = Just basicOWL_DLAnalysis
       empty_signature OWL_DL = emptySign
       signature_union OWL_DL s = return . addSign s
+      signature_difference OWL_DL s = return . diffSig s
       final_union OWL_DL = signature_union OWL_DL
       inclusion OWL_DL = defaultInclusion (is_subsig OWL_DL)
       is_subsig OWL_DL = isSubSign

@@ -82,7 +82,7 @@ instance StaticAnalysis COL C_BASIC_SPEC COLFORMULA ()
                Symbol RawSymbol where
          basic_analysis COL = Just $ basicAnalysis (const return)
                               (const return) ana_COL_SIG_ITEM
-                              emptyMix const
+                              emptyMix
          stat_symb_map_items COL = statSymbMapItems
          stat_symb_items COL = statSymbItems
          ensures_amalgamability COL _ =
@@ -97,6 +97,8 @@ instance StaticAnalysis COL C_BASIC_SPEC COLFORMULA ()
          empty_signature COL = emptySign emptyCOLSign
          signature_union COL sigma1 sigma2 =
            return $ addSig addCOLSign sigma1 sigma2
+         signature_difference COL sigma1 sigma2 =
+           return $ addSig diffCOLSign sigma1 sigma2
          morphism_union COL = morphismUnion (const id) addCOLSign
          final_union COL = finalUnion addCOLSign
          is_subsig COL = isSubSig isSubCOLSign

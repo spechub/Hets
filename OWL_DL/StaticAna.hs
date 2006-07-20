@@ -7,8 +7,8 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  portable
 
+static analysis for OWL_DL
 -}
-
 
 module OWL_DL.StaticAna where
 
@@ -20,26 +20,26 @@ import Common.AS_Annotation
 import Common.Result
 import Common.GlobalAnnotations
 import OWL_DL.Namespace
-import Maybe
--- import Debug.Trace
+import Data.Maybe (fromJust) 
 
 -- | static analysis of ontology with incoming sign.
 basicOWL_DLAnalysis :: 
     (Ontology, Sign, GlobalAnnos) ->
-        Result (Ontology,Sign,Sign,[Named Sentence])
+        Result (Ontology, Sign, [Named Sentence])
 basicOWL_DLAnalysis (ontology@(Ontology oName _ ns), inSign, ga) =
     let -- importsUriList = searchImport ontology
-        diags1 = foldl (++) [] (map isNamespaceInImport (Map.elems (removeDefault ns)))
+        diags1 = foldl (++) [] (map isNamespaceInImport 
+                                (Map.elems (removeDefault ns)))
         (integNamespace, transMap) = 
             integrateNamespaces (namespaceMap inSign) ns
         ontology' = renameNamespace transMap ontology
     in  case anaOntology (inSign {namespaceMap = integNamespace}) ontology' of
         Result diags2 (Just (onto, accSign, namedSen)) ->
-          let diffSign = diffSig accSign inSign
-          in  Result (diags1 ++ diags2) $ 
-                        Just (onto, diffSign, accSign, namedSen)
-        _        -> error ("unknow error in static analysis. Pleas try again.\n" ++ 
-                           (show $ anaOntology (inSign {namespaceMap = integNamespace}) ontology'))
+          Result (diags1 ++ diags2) $ 
+                        Just (onto, accSign, namedSen)
+        _  -> fail ("unknown error in static analysis. Please try again.\n" ++ 
+                  (show $ anaOntology (inSign {namespaceMap = integNamespace})
+                        ontology'))
    
   where -- static analysis with changed namespace base of inSign.
         anaOntology :: Sign -> Ontology
@@ -63,7 +63,8 @@ basicOWL_DLAnalysis (ontology@(Ontology oName _ ns), inSign, ga) =
                   else 
                     [mkDiag 
                         Warning 
-                        ("\"" ++ uri' ++ "\"" ++ " is not imported in ontology: " ++ 
+                        ("\"" ++ uri' ++ "\"" ++ 
+                                  " is not imported in ontology: " ++ 
                                   (show $ localPart $ fromJust oName)) 
                         ()]
         importList = (localPart $ fromJust oName):(searchImport ontology)
@@ -278,7 +279,8 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
 			     inSign { indValuedRoles = Set.insert ivId ivr,
 				       axioms = roleRangesAndDomains
 				     }
-	    (remake, namedSent) = case maybeFunc of   -- case of inverse or transitive
+	    (remake, namedSent) = case maybeFunc of   
+                                    -- case of inverse or transitive
  			Just Functional                   -> (False, [])
 			Just Transitive                   -> 
                            case m_inv of
@@ -427,7 +429,7 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
             anaDirective ga inSign onto rest
         Just iid -> 
          if localPart iid == "_" then
-           -- if a individual named "_" is it also anonymous individual -> ignored
+    -- if a individual named "_" is it also anonymous individual -> ignored
            anaDirective ga inSign onto rest
            else
             let oriInd = individuals inSign
@@ -553,7 +555,7 @@ anaDirective ga inSign onto@(Ontology mID direc ns) (directiv:rest) =
                       hasRealCASL_sortWithValue r first res diags1
           checkPrimaryConcept _ = (False, [])
           
-          -- all check-functions check whether the concepts oder roles of axioms 
+          -- all check-functions check whether the concepts or roles of axioms 
           -- already occurred in Sign
           checkConcept :: [Description] -> Sign -> Result Bool
           checkConcept deses sign =
@@ -635,4 +637,3 @@ nullID = QN "" "" ""
 
 initResult :: Result a
 initResult = Result [] Prelude.Nothing
-

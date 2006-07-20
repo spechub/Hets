@@ -38,10 +38,9 @@ basicModalAnalysis :: (BASIC_SPEC M_BASIC_ITEM M_SIG_ITEM M_FORMULA,
                        Sign M_FORMULA ModalSign, GlobalAnnos)
                    -> Result (BASIC_SPEC M_BASIC_ITEM M_SIG_ITEM M_FORMULA,
                               Sign M_FORMULA ModalSign,
-                              Sign M_FORMULA ModalSign,
                               [Named (FORMULA M_FORMULA)])
-basicModalAnalysis = basicAnalysis minExpForm ana_M_BASIC_ITEM
-                     ana_M_SIG_ITEM ana_Mix diffModalSign
+basicModalAnalysis = 
+    basicAnalysis minExpForm ana_M_BASIC_ITEM ana_M_SIG_ITEM ana_Mix
 
 ana_Mix :: Mix M_BASIC_ITEM M_SIG_ITEM M_FORMULA ModalSign
 ana_Mix = emptyMix

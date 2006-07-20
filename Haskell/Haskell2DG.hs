@@ -47,7 +47,7 @@ anaHaskellFile opts file = do
          Result es Nothing -> do
            putIfVerbose opts 0 $ unlines $ map show es
            return Nothing
-         Result _ (Just (_, _, sig, sens)) -> do
+         Result _ (Just (_, sig, sens)) -> do
           let (bas, dir, _) = fileparse downloadExtensions file
               mName = mkSimpleId bas
               name = makeName $ mName

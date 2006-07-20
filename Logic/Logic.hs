@@ -200,17 +200,14 @@ class ( Syntax lid basic_spec symb_items symb_map_items
         | lid -> basic_spec sentence proof_tree symb_items symb_map_items
                  sign morphism symbol raw_symbol
       where
-         -- static analysis of basic specifications and symbol maps
+         {- static analysis of basic specifications and symbol maps.
+            The resulting bspec has analyzed axioms in it.
+            The resulting sign is an extension of the input sign -}
          basic_analysis :: lid ->
                            Maybe((basic_spec,  -- abstract syntax tree
                             sign,   -- efficient table for env signature
                             GlobalAnnos) ->   -- global annotations
-                           Result (basic_spec,sign,sign,[Named sentence]))
-                           -- the resulting bspec has analyzed axioms in it
-                           -- sign's: sigma_local, sigma_complete, i.e.
-                           -- the second output sign united with the input sign
-                           -- should yield the first output sign
-                           -- the second output sign is the accumulated sign
+                           Result (basic_spec, sign, [Named sentence]))
          -- default implementation
          basic_analysis _ = Nothing
 
@@ -242,6 +239,14 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          empty_signature :: lid -> sign
          signature_union :: lid -> sign -> sign -> Result sign
          signature_union l _ _ = statErr l "signature_union"
+            {- computing the difference of signatures. The first
+            signature must be an inclusion of the second. The resulting
+            signature might be an unclosed signature that should only be
+            used with care, though the following property should hold: 
+              is_subsig s1 s2 => union s1 (difference s2 s1) = s2
+            (Unions are supposed to be symmetric and associative.) -}
+         signature_difference :: lid -> sign -> sign -> Result sign
+         signature_difference l _ _ = statErr l "signature_difference"
          morphism_union :: lid -> morphism -> morphism -> Result morphism
          morphism_union l _ _ = statErr l "morphism_union"
          final_union :: lid -> sign -> sign -> Result sign

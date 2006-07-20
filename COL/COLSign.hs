@@ -28,6 +28,11 @@ addCOLSign s1 s2 =
     s1 { constructors = Set.union (constructors s1) $ constructors s2
        , observers = Map.union (observers s1) $ observers s2 }
 
+diffCOLSign :: COLSign -> COLSign -> COLSign
+diffCOLSign s1 s2 = 
+    s1 { constructors = Set.difference (constructors s1) $ constructors s2
+       , observers = Map.difference (observers s1) $ observers s2 }
+
 isSubCOLSign :: COLSign -> COLSign -> Bool
 isSubCOLSign s1 s2 = 
     Set.null (constructors s2 Set.\\ constructors s1)

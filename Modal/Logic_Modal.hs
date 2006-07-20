@@ -124,8 +124,8 @@ instance StaticAnalysis Modal M_BASIC_SPEC ModalFORMULA ()
          matches Modal = CASL.Morphism.matches
 
          empty_signature Modal = emptySign emptyModalSign
-         signature_union Modal sigma1 sigma2 =
-           return $ addSig addModalSign sigma1 sigma2
+         signature_union Modal s = return . addSig addModalSign s
+         signature_difference Modal s = return . diffSig diffModalSign s
          morphism_union Modal = morphismUnion (const id) addModalSign
          final_union Modal = finalUnion addModalSign
          is_subsig Modal = isSubSig isSubModalSign

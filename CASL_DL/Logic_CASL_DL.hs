@@ -129,8 +129,8 @@ instance StaticAnalysis CASL_DL DL_BASIC_SPEC DLFORMULA ()
          matches CASL_DL = CASL.Morphism.matches
 
          empty_signature CASL_DL = predefinedSign
-         signature_union CASL_DL sigma1 sigma2 =
-           return $ addSig addCASL_DLSign sigma1 sigma2
+         signature_union CASL_DL s = return . addSig addCASL_DLSign s
+         signature_difference CASL_DL s = return . diffSig diffCASL_DLSign s
          morphism_union CASL_DL = morphismUnion (const id) addCASL_DLSign
          final_union CASL_DL = finalUnion addCASL_DLSign
          is_subsig CASL_DL = isSubSig isSubCASL_DLSign

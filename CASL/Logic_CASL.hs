@@ -55,7 +55,7 @@ type CASLFORMULA = FORMULA ()
 -- type CASLSign = Sign () ()
 -- type CASLMor = Morphism () () ()
 
-dummy :: a -> b -> ()
+dummy :: Sign f s -> a -> ()
 dummy _ _ = ()
 
 -- dummy of "Min f e"
@@ -203,10 +203,10 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA ()
          is_injective CASL = isInjective
 
          empty_signature CASL = emptySign ()
-         signature_union CASL sigma1 sigma2 =
-           return $ addSig dummy sigma1 sigma2
-         morphism_union CASL = morphismUnion (const id) dummy
-         final_union CASL = finalUnion dummy
+         signature_union CASL s = return . addSig const s
+         signature_difference CASL s = return . diffSig const s
+         morphism_union CASL = morphismUnion (const id) const
+         final_union CASL = finalUnion const
          is_subsig CASL = isSubSig trueC
          inclusion CASL = sigInclusion dummy trueC
          cogenerated_sign CASL = cogeneratedSign dummy

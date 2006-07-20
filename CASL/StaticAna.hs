@@ -792,12 +792,11 @@ basicAnalysis :: Pretty f
               -> Ana b b s f e  -- ^ static analysis of basic item b
               -> Ana s b s f e  -- ^ static analysis of signature item s
               -> Mix b s f e -- ^ for mixfix analysis
-              -> (e -> e -> e) -- ^ difference of signature extension e
               -> (BASIC_SPEC b s f, Sign f e, GlobalAnnos)
-         -> Result (BASIC_SPEC b s f, Sign f e, Sign f e, [Named (FORMULA f)])
+         -> Result (BASIC_SPEC b s f, Sign f e, [Named (FORMULA f)])
             -- ^ (BS with analysed mixfix formulas for pretty printing,
             -- differences to input Sig,accumulated Sig,analysed Sentences)
-basicAnalysis mef anab anas mix dif (bs, inSig, ga) =
+basicAnalysis mef anab anas mix (bs, inSig, ga) =
     let allIds = unite $ ids_BASIC_SPEC (getBaseIds mix) (getSigIds mix) bs
                  : getExtIds mix (extendedInfo inSig) :
                   [mkIdSets (allOpIds inSig) $ allPredIds inSig]
@@ -809,12 +808,10 @@ basicAnalysis mef anab anas mix dif (bs, inSig, ga) =
         cleanSig = accSig { envDiags = [], sentences = []
                           , varMap = Map.empty
                           , globAnnos = ga } -- ignore assoc declarations
-        diff = diffSig cleanSig inSig
-            { extendedInfo = dif (extendedInfo accSig) $ extendedInfo inSig }
-    in Result ds $ Just (newBs, diff, cleanSig, sents)
+    in Result ds $ Just (newBs, cleanSig, sents)
 
 basicCASLAnalysis :: (BASIC_SPEC () () (), Sign () (), GlobalAnnos)
-                  -> Result (BASIC_SPEC () () (), Sign () (),
+                  -> Result (BASIC_SPEC () () (),
                              Sign () (), [Named (FORMULA ())])
 basicCASLAnalysis =
-    basicAnalysis (const return) (const return) (const return) emptyMix const
+    basicAnalysis (const return) (const return) (const return) emptyMix

@@ -62,15 +62,12 @@ basicCASL_DLAnalysis :: (BASIC_SPEC () () DL_FORMULA,
                          Sign DL_FORMULA CASL_DLSign, GlobalAnnos)
                      -> Result (BASIC_SPEC () () DL_FORMULA,
                                 Sign DL_FORMULA CASL_DLSign,
-                                Sign DL_FORMULA CASL_DLSign,
                                 [Named (FORMULA DL_FORMULA)])
 basicCASL_DLAnalysis (bs,sig,ga) = 
     do ga' <- addGlobalAnnos ga caslDLGlobalAnnos
-       --basicAnalysis minDLForm (const return) 
-       --      (const return) ana_Mix diffCASL_DLSign (bs,sig,ga')
        case basicAnalysis minDLForm (const return) 
-             (const return) ana_Mix diffCASL_DLSign (bs,sig,ga') of
-        r@(Result ds1 mr) -> maybe r (postAna ds1) mr
+             (const return) ana_Mix (bs,sig,ga') of
+        r@(Result ds1 mr) -> maybe r (postAna ds1 sig) mr
 
 {- |
   postAna checks the Signature for
@@ -85,19 +82,18 @@ basicCASL_DLAnalysis (bs,sig,ga) =
   * all new operations must have a subsort of Thing as 1st argument
 
 -}
-postAna :: [Diagnosis] 
+postAna :: [Diagnosis]
+        -> Sign DL_FORMULA CASL_DLSign
         -> (BASIC_SPEC () () DL_FORMULA,
-            Sign DL_FORMULA CASL_DLSign,
             Sign DL_FORMULA CASL_DLSign,
             [Named (FORMULA DL_FORMULA)]) 
         -> Result (BASIC_SPEC () () DL_FORMULA,
                    Sign DL_FORMULA CASL_DLSign,
-                   Sign DL_FORMULA CASL_DLSign,
                    [Named (FORMULA DL_FORMULA)])
-postAna ds1 i@(_, diff_sig, acc_sig, _) =
+postAna ds1 in_sig i@(_, acc_sig, _) =
     Result (ds1++ds_sig) $ if null ds_sig then Just i else Nothing
     where ds_sig = chkSorts ++ checkPreds ++ checkOps
-
+          diff_sig = diffSig diffCASL_DLSign acc_sig in_sig 
           chkSorts = Set.fold chSort [] (sortSet diff_sig) ++
              (if Set.member topSortD (supersortsOf topSort acc_sig) ||
                  Set.member topSortD (subsortsOf topSort acc_sig) ||

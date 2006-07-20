@@ -122,21 +122,21 @@ emptySign = Sign
     }
 
 hatAna :: (HsDecls, Sign, GlobalAnnos) ->
-          Result (HsDecls, Sign, Sign, [Named (TiDecl PNT)])
+          Result (HsDecls, Sign, [Named (TiDecl PNT)])
 hatAna (HsDecls hs, e, ga) = do
-    (decls, diffSig, accSig, sens) <-
+    (decls, accSig, sens) <-
         hatAna2 (HsDecls hs, addSign e preludeSign, ga)
-    return (decls, diffSig, diffSign accSig preludeSign, sens)
+    return (decls, diffSign accSig preludeSign, sens)
 
 preludeSign :: Sign
 preludeSign = case maybeResult $ hatAna2
                 (HsDecls $ preludeDecls,
                          emptySign, emptyGlobalAnnos) of
-                Just (_, _, sig, _) -> sig
+                Just (_, sig, _) -> sig
                 _ -> error "preludeSign"
 
 hatAna2 :: (HsDecls, Sign, GlobalAnnos) ->
-          Result (HsDecls, Sign, Sign, [Named (TiDecl PNT)])
+          Result (HsDecls, Sign, [Named (TiDecl PNT)])
 hatAna2 (hs@(HsDecls ds), e, _) = do
    let parsedMod = HsModule loc0 (SN mod_Prelude loc0) Nothing [] ds
        astMod = toMod parsedMod
@@ -174,7 +174,7 @@ hatAna2 (hs@(HsDecls ds), e, _) = do
    fs :>: (is, (ts, vs)) <-
         lift $ inMyEnv $ tcTopDecls id sds
    let accSign = extendSign e is ts vs insc fixs
-   return (hs, diffSign accSign e, accSign, map emptyName $ fromDefs
+   return (hs, accSign, map emptyName $ fromDefs
              (fs :: TiDecls PNT))
 
 -- filtering some Prelude stuff

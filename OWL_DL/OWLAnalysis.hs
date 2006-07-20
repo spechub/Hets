@@ -289,11 +289,12 @@ nodeStaticAna
                  -- imported ontology.
                  basicOWL_DLAnalysis (ontology, inSig, emptyGlobalAnnos)
         case res of  
-	  Just (_,difSig,accSig,sent) ->
+	  Just (_, accSig, sent) ->
             do    
 	     let (newGlobalNs, tMap) = 
                      integrateNamespaces globalNs (namespaceMap accSig)
                  newSent = map (renameNamespace tMap) sent 
+                 difSig = diffSig accSig inSig
                  newDifSig = renameNamespace tMap difSig
                  newSig  = renameNamespace tMap accSig
                  -- the new node (with sign and sentence) has the sign of

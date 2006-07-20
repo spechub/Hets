@@ -34,7 +34,7 @@ hParser :: AParser () (Sign, [Named (TiDecl PNT)])
 hParser = do
    b <- basicSpec
    let res@(Result _ m) = do
-          (_, _, sig, sens) <- basicAnalysis(b, initialEnv, emptyGlobalAnnos)
+          (_, sig, sens) <- basicAnalysis(b, initialEnv, emptyGlobalAnnos)
           mapTheory (sig, map (mapNamed $ translateSen sig) sens)
    case m of
       Nothing -> error $ show res

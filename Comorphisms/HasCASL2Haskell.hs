@@ -80,7 +80,7 @@ mapTheory (sig, csens) = do
     let hs = translateSig sig
         ps = concatMap (translateSentence sig) csens
         cs = cleanSig hs ps
-    (_, _, hsig, sens) <-
+    (_, hsig, sens) <-
             hatAna (HsDecls (cs ++ map sentence ps),
                             emptySign, emptyGlobalAnnos)
     return (diffSign hsig preludeSign,

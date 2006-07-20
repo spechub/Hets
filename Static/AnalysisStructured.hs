@@ -146,14 +146,14 @@ ana_SPEC lg gctx nsig name opts sp =
   Basic_spec (G_basic_spec lid bspec) ->
     do G_sign lid' sigma' <- return (getMaybeSig nsig)
        sigma <- coerceSign lid' lid "Analysis of basic spec" sigma'
-       (bspec', _sigma_local, sigma_complete, ax) <-
+       (bspec', sigma_complete, ax) <-
           if isStructured opts
-           then return (bspec,empty_signature lid, empty_signature lid,[])
+           then return (bspec, empty_signature lid, [])
            else do b <- maybeToMonad
                           ("no basic analysis for logic "
                                          ++ language_name lid)
                           (basic_analysis lid)
-                   b (bspec,sigma, globalAnnos gctx)
+                   b (bspec, sigma, globalAnnos gctx)
        incl <- ginclusion lg
                       (G_sign lid sigma) (G_sign lid sigma_complete)
        let node_contents =

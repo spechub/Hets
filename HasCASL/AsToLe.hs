@@ -73,12 +73,11 @@ idsOfOpItem b (OpDefn (OpId i _ _) _ _ _ _ _) =
 
 -- | basic analysis
 basicAnalysis :: (BasicSpec, Env, GlobalAnnos) ->
-                 Result (BasicSpec, Env, Env, [Named Sentence])
+                 Result (BasicSpec, Env, [Named Sentence])
 basicAnalysis (b, e, ga) =
     let (nb, ne) = runState (anaBasicSpec ga b) e
-        ce = cleanEnv ne
         in Result (reverse $ envDiags ne) $
-           Just (nb, diffEnv ce e, ce, reverse $ sentences ne)
+           Just (nb, cleanEnv ne, reverse $ sentences ne)
 
 -- | is the signature empty?
 isEmptyEnv :: Env -> Bool

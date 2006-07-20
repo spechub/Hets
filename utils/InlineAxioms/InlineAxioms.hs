@@ -148,7 +148,7 @@ instance ToString M_FORMULA
 parseAndAnalyse :: (Show sens, Show sign, ToString sens, ToString sign)
                 => AParser () basic_spec -> sign
                 -> ((basic_spec, sign, GlobalAnnos)
-                    -> Result (basic_spec, sign, sign, sens))
+                    -> Result (basic_spec, sign, sens))
                 -> ResType
                 -> String -> String
 parseAndAnalyse pars empt ana resType str =
@@ -156,7 +156,7 @@ parseAndAnalyse pars empt ana resType str =
   Left err -> error (show err)
   Right ast -> let Result ds m = ana (ast, empt, emptyGlobalAnnos) in
             case m of
-              Just (_,s1,_,sens) ->
+              Just (_, s1, sens) ->
                   case resType of
                     InAxioms -> toString sens
                     InSign ->  toString s1
