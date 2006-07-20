@@ -27,12 +27,19 @@ import Proofs.EdgeUtils
 addOrReplace::(CmdInterpreterStatus,[CmdInterpreterStatus])->[CmdInterpreterStatus]
 addOrReplace (val,status)
                       = case val of
-                                  Env x y -> do
-                                               case status of
-                                                          [] -> (Env x y):[]
-                                                          CmdInitialState:ls -> addOrReplace (val,ls)
-                                                          (OutputErr xx):_ -> (OutputErr xx):[]
-                                                          (Env _ _):ls -> (Env x y):ls
+                                  []                  ->  status
+                                  (Env x y):l         -> case status of
+                                                          []                    -> addOrReplace(l,(Env x y):[])
+                                                          CmdInitialState:ls    -> addOrReplace ((Env x y):l,ls)
+                                                          (OutputErr xx):_      -> (OutputErr xx):[]
+                                                          (Env _ _):ls          -> addOrReplace(l,(Env x y):ls)
+                                                          (SelectedNodes xx):ls -> addOrReplace(l, (SelectedNodes xx):addOrReplace([Env x y],ls))
+                                  (SelectedNodes x):l -> case status of
+                                                          []                    -> addOrReplace (l,(SelectedNodes x):[])
+                                                          CmdInitialState:ls    -> addOrReplace ((SelectedNodes x):l, ls)
+                                                          (OutputErr xx):_      -> (OutputErr xx):[]
+                                                          (Env xx yy):ls        -> addOrReplace(l, (Env xx yy):addOrReplace([SelectedNodes x], ls))
+                                                          (SelectedNodes _):ls  -> addOrReplace(l, (SelectedNodes x):ls)
                                   OutputErr x -> (OutputErr x):[]
                                   CmdInitialState -> status
 

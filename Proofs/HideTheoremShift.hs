@@ -73,8 +73,9 @@ automaticHideTheoremShiftFromList ln ls = runIdentity. hideTheoremShiftFromList
 hideTheoremShiftFromList :: Monad m => ProofBaseSelector m -> LIB_NAME
                      -> [LEdge DGLinkLab] -> LibEnv  -> m LibEnv
 hideTheoremShiftFromList proofBaseSel ln hidingThmEdges proofStatus= do
-      let dgraph = lookupDGraph ln proofStatus 
-      result <- hideTheoremShiftAux dgraph ([],[]) hidingThmEdges proofBaseSel
+      let dgraph = lookupDGraph ln proofStatus
+          finalHidingThmEdges = filter isUnprovenHidingThm hidingThmEdges     
+      result <- hideTheoremShiftAux dgraph ([],[]) finalHidingThmEdges proofBaseSel
       let nextDGraph = fst result
           nextHistoryElem = snd result
           newProofStatus 

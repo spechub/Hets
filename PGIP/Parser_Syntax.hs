@@ -32,29 +32,29 @@ import PGIP.Commands
 
 commands::[ ([String], CommandFunctionsAndParameters)]
 commands =     [(["use","PATH"],                                       (CommandParam commandUse [])), -- Static.AnalysisLibrary, Driver.ReadFn
-                (["dg","auto","GOALS"],                                (CommandTest test [])), -- Proofs.Auto
-                (["dg","glob-subsume","GOALS"],                        (CommandParamStatus commandDgGlobSubsume [] EnvID)), -- Proofs.Global
-                (["dg","glob-decomp","GOALS"],                         (CommandParamStatus commandDgGlobDecomp  [] EnvID)), -- Proofs.Global
-                (["dg","loc-infer","GOALS"],                           (CommandParamStatus commandDgLocInfer    [] EnvID)), -- Proofs.Local
-                (["dg","loc-decomp","GOALS"],                          (CommandParamStatus commandDgLocDecomp   [] EnvID)), -- Proofs.Local
-                (["dg","comp","GOALS"],                                (CommandParamStatus commandDgComp        [] EnvID)), -- Proofs.Comp
-                (["dg","comp-new","GOALS"],                            (CommandParamStatus commandDgCompNew     [] EnvID)), -- Proofs.Comp
-                (["dg","hide-thm","GOALS"],                            (CommandParamStatus commandDgHideThm     [] EnvID)), -- Proofs.HideThmShift
+                (["dg","auto","GOALS"],                                (CommandParamStatus commandDgAuto        [] [EnvID])), -- Proofs.Auto
+                (["dg","glob-subsume","GOALS"],                        (CommandParamStatus commandDgGlobSubsume [] [EnvID])), -- Proofs.Global
+                (["dg","glob-decomp","GOALS"],                         (CommandParamStatus commandDgGlobDecomp  [] [EnvID])), -- Proofs.Global
+                (["dg","loc-infer","GOALS"],                           (CommandParamStatus commandDgLocInfer    [] [EnvID])), -- Proofs.Local
+                (["dg","loc-decomp","GOALS"],                          (CommandParamStatus commandDgLocDecomp   [] [EnvID])), -- Proofs.Local
+                (["dg","comp","GOALS"],                                (CommandParamStatus commandDgComp        [] [EnvID])), -- Proofs.Comp
+                (["dg","comp-new","GOALS"],                            (CommandParamStatus commandDgCompNew     [] [EnvID])), -- Proofs.Comp
+                (["dg","hide-thm","GOALS"],                            (CommandParamStatus commandDgHideThm     [] [EnvID])), -- Proofs.HideThmShift
                 (["dg","thm-hide","GOALS"],                            (CommandTest test [])), -- Proofs.ThmHideShift
-                (["dg","basic","GOALS"],                               (CommandTest test [])), -- Proofs.InferBasic
-                (["dg-all","auto"],                                    (CommandStatus commandDgAllAuto EnvID)), -- dto.
-                (["dg-all","glob-subsume"],                            (CommandStatus commandDgAllGlobSubsume EnvID)),
-                (["dg-all","glob-decomp"],                             (CommandStatus commandDgAllGlobDecomp EnvID)),
-                (["dg-all","loc-infer"],                               (CommandStatus commandDgAllLocInfer EnvID)),
-                (["dg-all","loc-decomp"],                              (CommandStatus commandDgAllLocDecomp EnvID)),
-                (["dg-all","comp"],                                    (CommandStatus commandDgAllComp EnvID)),
-                (["dg-all","comp-new"],                                (CommandStatus commandDgAllCompNew EnvID)),
-                (["dg-all","hide-thm"],                                (CommandStatus commandDgAllHideThm EnvID)),
-                (["dg-all","thm-hide"],                                (CommandStatus commandDgAllThmHide EnvID)),
-                (["dg-all","basic"],                                   (CommandTest test [])),
+                (["dg","basic","GOALS"],                               (CommandParamStatus commandDgInferBasic  [] [EnvID])), -- Proofs.InferBasic
+                (["dg-all","auto"],                                    (CommandStatus commandDgAllAuto             [EnvID])), -- dto.
+                (["dg-all","glob-subsume"],                            (CommandStatus commandDgAllGlobSubsume      [EnvID])),
+                (["dg-all","glob-decomp"],                             (CommandStatus commandDgAllGlobDecomp       [EnvID])),
+                (["dg-all","loc-infer"],                               (CommandStatus commandDgAllLocInfer         [EnvID])),
+                (["dg-all","loc-decomp"],                              (CommandStatus commandDgAllLocDecomp        [EnvID])),
+                (["dg-all","comp"],                                    (CommandStatus commandDgAllComp             [EnvID])),
+                (["dg-all","comp-new"],                                (CommandStatus commandDgAllCompNew          [EnvID])),
+                (["dg-all","hide-thm"],                                (CommandStatus commandDgAllHideThm          [EnvID])),
+                (["dg-all","thm-hide"],                                (CommandStatus commandDgAllThmHide          [EnvID])),
+                (["dg-all","basic"],                                   (CommandStatus commandDgAllInferBasic       [EnvID])),
                 (["show-dg-goals"],                                    (CommandTest test [])), -- new function
-                (["show-theory-goals"],                                (CommandTest test [])), -- showTheory in GUI.ConvertAbstractToDevGraph
-                (["show-theory"],                                      (CommandTest test [])), -- dto.
+                (["show-theory-goals"],                                (CommandShowStatus commandShowTheoryGoals   [EnvID])),
+                (["show-theory"],                                      (CommandShowStatus commandShowTheory        [EnvID])), -- dto.
                 (["node-info"],                                        (CommandTest test [])), -- GUI.ConvertAbstractToDevGraph
                 (["show-taxonomy"],                                    (CommandTest test [])), --  GUI.ConvertAbstractToDevGraph
                 (["show-concepts"],                                    (CommandTest test [])), --  GUI.ConvertAbstractToDevGraph

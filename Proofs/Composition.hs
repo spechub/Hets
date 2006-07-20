@@ -22,8 +22,8 @@ import Static.DevGraph
 import Static.DGToSpec
 import Data.Graph.Inductive.Graph
 
-compositionCreatingEdgesFromList :: LIB_NAME->LibEnv ->[LEdge DGLinkLab] -> LibEnv
-compositionCreatingEdgesFromList libname proofStatus ls =
+compositionCreatingEdgesFromList :: LIB_NAME->[LEdge DGLinkLab] -> LibEnv -> LibEnv
+compositionCreatingEdgesFromList libname ls proofStatus =
       let dgraph = lookupDGraph libname proofStatus
           pathsToCompose = getAllPathsOfTypeFromGoalList dgraph isGlobalThm ls
           (newDGraph, newHistoryElem)
@@ -39,7 +39,7 @@ compositionCreatingEdges :: LIB_NAME -> LibEnv -> LibEnv
 compositionCreatingEdges libname proofStatus =
     let dgraph = lookupDGraph libname proofStatus
         allEdges = filter isGlobalThm (labEdges dgraph)
-    in compositionCreatingEdgesFromList libname proofStatus allEdges
+    in compositionCreatingEdgesFromList libname allEdges proofStatus 
 --compositionCreatingEdges :: LIB_NAME -> LibEnv -> LibEnv
 --compositionCreatingEdges libname proofStatus =
 --  let dgraph = lookupDGraph libname proofStatus
@@ -109,8 +109,8 @@ deleteRedundantEdgesAux dgraph (edge : list) changes =
 -- composition without creating new new edges
 -- ---------------------------------------------------------------------------
 
-compositionFromList :: LIB_NAME -> LibEnv -> [LEdge DGLinkLab] -> LibEnv
-compositionFromList libname proofStatus glbThmEdge
+compositionFromList :: LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
+compositionFromList libname glbThmEdge proofStatus 
       = let dgraph = lookupDGraph libname proofStatus
             (newDGraph, newHistoryElem) =
                     compositionAux dgraph glbThmEdge ([],[])
@@ -125,7 +125,7 @@ composition :: LIB_NAME -> LibEnv -> LibEnv
 composition libname proofStatus =
   let dgraph = lookupDGraph libname proofStatus
       globalThmEdges = filter isGlobalThm (labEdges dgraph)
-  in compositionFromList libname proofStatus globalThmEdges
+  in compositionFromList libname globalThmEdges proofStatus
 
 {- | auxiliary method for composition -}
 compositionAux :: DGraph -> [LEdge DGLinkLab] -> ([DGRule],[DGChange])

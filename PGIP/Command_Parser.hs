@@ -246,6 +246,14 @@ runScriptCommands (arg,status)
                               (CommandTest fn x):ls -> do
                                                        fn x
                                                        runScriptCommands (ls,status)
+                              (CommandShowStatus fn cmdID):ls -> do
+                                                          let tmp = extractFrom (status, cmdID)
+                                                          case tmp of 
+                                                               Nothing -> return Nothing
+                                                               Just xx -> do 
+                                                                           let val= fn xx
+                                                                           let newStatus = addOrReplace (val, status)
+                                                                           runScriptCommands (ls, newStatus)
                               CommandError:_ -> return Nothing
 
 parseScriptFile:: FilePath-> IO (Maybe())

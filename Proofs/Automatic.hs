@@ -38,6 +38,7 @@ Add proof status information
 
 module Proofs.Automatic (automatic) where
 
+import Data.Graph.Inductive.Graph 
 import Static.DevGraph
 import Syntax.AS_Library
 import Syntax.Print_AS_Library()
@@ -56,12 +57,30 @@ import Data.Maybe (fromJust)
 applyRule :: DGRule -> DGraph -> Maybe ([DGChange],DGraph)
 applyRule = error "Proofs.hs:applyRule"
 
+
+automaticFromList :: LIB_NAME ->  [LEdge DGLinkLab] -> LibEnv -> LibEnv
+automaticFromList ln ls libEnv= 
+                                 let x = automaticRecursiveFromList ln 0 libEnv ls
+                                     y = localInferenceFromList ln ls x 
+                                     z = mergeHistories 0 2 y
+                                 in fromJust z
+
 {- | automatically applies all rules to the library
    denoted by the library name of the given proofstatus-}
 automatic :: LIB_NAME -> LibEnv -> LibEnv
 automatic ln = fromJust . mergeHistories 0 2 .
             localInference ln . automaticRecursive ln 0
 
+
+
+
+automaticRecursiveFromList :: LIB_NAME -> Int -> LibEnv -> [LEdge DGLinkLab] -> LibEnv
+automaticRecursiveFromList ln cnt proofstatus ls =
+  let auxProofstatus = automaticApplyRulesToGoals ln ls proofstatus             
+      finalProofstatus = mergeHistories cnt noRulesWithGoals auxProofstatus
+  in case finalProofstatus of
+     Nothing -> proofstatus
+     Just p -> automaticRecursiveFromList ln 1 p ls
 {- | applies the rules recursively until no further changes can be made -}
 automaticRecursive :: LIB_NAME -> Int -> LibEnv -> LibEnv
 automaticRecursive ln cnt proofstatus =
@@ -84,6 +103,21 @@ rules =
 -- | number of rules
 noRules :: Int
 noRules = length rules
+
+
+rulesWithGoals :: [LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> LibEnv]
+rulesWithGoals =
+            [automaticHideTheoremShiftFromList
+            , locDecompFromList
+            , globDecompFromList
+            , globSubsumeFromList
+            ]
+
+noRulesWithGoals :: Int
+noRulesWithGoals = length rulesWithGoals
+
+automaticApplyRulesToGoals :: LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
+automaticApplyRulesToGoals ln ls = foldl (.) id $ map (\f -> f ln ls) rulesWithGoals 
 
 {- | sequentially applies all rules to the given proofstatus,
    ie to the library denoted by the library name of the proofstatus -}

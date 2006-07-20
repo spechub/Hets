@@ -49,10 +49,11 @@ import Proofs.StatusUtils
 
 {- applies global decomposition to the list of edges given (global theorem edges)
    if possible, if empty list is given then to all unproven global theorems -}
-globDecompFromList :: LIB_NAME -> LibEnv -> [LEdge DGLinkLab] -> LibEnv
-globDecompFromList ln proofStatus globalThmEdges =
+globDecompFromList :: LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
+globDecompFromList ln globalThmEdges proofStatus  =
             let dgraph = lookupDGraph ln proofStatus
-                (newDGraph, newHistoryElem)= globDecompAux dgraph globalThmEdges ([],[])
+                finalGlobalThmEdges = filter isUnprovenGlobalThm globalThmEdges
+                (newDGraph, newHistoryElem)= globDecompAux dgraph finalGlobalThmEdges ([],[])
             in mkResultProofStatus ln proofStatus newDGraph newHistoryElem
 
 
@@ -62,7 +63,7 @@ globDecomp ::LIB_NAME -> LibEnv -> LibEnv
 globDecomp ln proofStatus =
                          let dgraph = lookupDGraph ln proofStatus
                              globalThmEdges  = filter isUnprovenGlobalThm (labEdges dgraph)
-                         in globDecompFromList ln proofStatus globalThmEdges 
+                         in globDecompFromList ln globalThmEdges proofStatus 
                             
                 
 
@@ -191,11 +192,12 @@ globDecompForOneEdgeAux dgraph edge@(_,target,_) changes
 -- -------------------
 
 
-globSubsumeFromList :: LIB_NAME -> LibEnv -> [LEdge DGLinkLab] -> LibEnv
-globSubsumeFromList ln libEnv globalThmEdges =
+globSubsumeFromList :: LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
+globSubsumeFromList ln globalThmEdges libEnv=
            let dgraph = lookupDGraph ln libEnv
+               finalGlobalThmEdges = filter isUnprovenGlobalThm globalThmEdges
                (nextDGraph, nextHistoryElem) =
-                           globSubsumeAux libEnv dgraph ([],[]) globalThmEdges
+                           globSubsumeAux libEnv dgraph ([],[]) finalGlobalThmEdges
            in mkResultProofStatus ln libEnv nextDGraph nextHistoryElem
 
 
@@ -203,7 +205,7 @@ globSubsume :: LIB_NAME -> LibEnv -> LibEnv
 globSubsume ln libEnv =
               let dgraph = lookupDGraph ln libEnv
                   globalThmEdges  = filter isUnprovenGlobalThm (labEdges dgraph)
-              in globSubsumeFromList ln libEnv globalThmEdges
+              in globSubsumeFromList ln globalThmEdges libEnv
 
 -- applies global subsumption to all unproven global theorem edges if possible
 --globSubsume :: LIB_NAME -> LibEnv -> LibEnv

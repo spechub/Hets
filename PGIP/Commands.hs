@@ -60,6 +60,7 @@ data CmdInterpreterStatus =
    OutputErr  String
  | CmdInitialState
  | Env     LIB_NAME LibEnv
+ | SelectedNodes [Node]
 
 
 data CmdInterpreterStatusID =
@@ -67,9 +68,10 @@ data CmdInterpreterStatusID =
  
 data CommandFunctionsAndParameters=
    CommandParam        ([ScriptCommandParameters]->IO CmdInterpreterStatus) [ScriptCommandParameters] 
- | CommandParamStatus  (([ScriptCommandParameters],CmdInterpreterStatus)-> CmdInterpreterStatus) [ScriptCommandParameters] CmdInterpreterStatusID 
- | CommandStatus       (CmdInterpreterStatus -> CmdInterpreterStatus) CmdInterpreterStatusID
+ | CommandParamStatus  (([ScriptCommandParameters],[CmdInterpreterStatus])-> [CmdInterpreterStatus]) [ScriptCommandParameters] [CmdInterpreterStatusID]
+ | CommandStatus       ([CmdInterpreterStatus] -> [CmdInterpreterStatus]) [CmdInterpreterStatusID]
  | CommandTest         ([ScriptCommandParameters]->IO())  [ScriptCommandParameters]
+ | CommandShowStatus   ([CmdInterpreterStatus] -> IO()) [CmdInterpreterStatusID]
  | CommandError
 
 
@@ -78,7 +80,7 @@ test::([ScriptCommandParameters])->IO()
 test (ls) = putStrLn $ show ls
                
 
-commandUse::[ScriptCommandParameters]->IO CmdInterpreterStatus
+commandUse::[ScriptCommandParameters]->IO [CmdInterpreterStatus]
 commandUse ls 
             = case ls of
                 (Path list):_ -> do
@@ -86,154 +88,258 @@ commandUse ls
                                   let opts = defaultHetcatsOpts
                                   result<- anaLib opts file
                                   case result of
-                                      Just (name,env) ->  return (Env name env) 
-                                      Nothing ->  return (OutputErr "Couldn't load the file specified")
-                _             -> return (OutputErr "Wrong parameter") 
+                                      Just (name,env) ->  return [(Env name env)] 
+                                      Nothing ->  return [(OutputErr "Couldn't load the file specified")]
+                _             -> return [(OutputErr "Wrong parameter")]
 
-commandDgAllAuto::CmdInterpreterStatus -> CmdInterpreterStatus
+commandDgAllAuto::[CmdInterpreterStatus] -> [CmdInterpreterStatus]
 commandDgAllAuto arg
                  = case arg of
-                      (Env x y) -> let result= (automatic x) y in
-                                       (Env x result)
-                      _         -> (OutputErr "Wrong parameter")
+                      (Env x y):_   -> let result= automatic x y 
+                                       in  [(Env x result)]
+                      _:l           -> commandDgAllAuto l
+                      []            -> [(OutputErr "Wrong parameter")]
 
-commandDgGlobSubsume::([ScriptCommandParameters],CmdInterpreterStatus) -> CmdInterpreterStatus
+commandDgAuto :: ([ScriptCommandParameters],[CmdInterpreterStatus]) -> [CmdInterpreterStatus]
+commandDgAuto (param,status)
+       = case status of
+           (Env ln libEnv):_ -> case param of
+                                   (Goals ls):_ -> let l = getALLEdgeGoals ln libEnv ls
+                                                       result = automaticFromFile ln l libEnv
+                                                       in [(Env ln result)]
+                                   _            -> [(OutputErr "Wrong parameters")]
+           _:l               -> commandDgAuto (param, l)
+           []                -> [(OutputErr "Wrong parameters")]
+
+commandDgGlobSubsume::([ScriptCommandParameters],[CmdInterpreterStatus]) -> [CmdInterpreterStatus]
 commandDgGlobSubsume (param,status)
      = case status of
-        (Env ln libEnv) -> case param of
-                              (Goals ls):_ -> let l = getAllGlobalEdgeGoals ln libEnv ls
-                                                  result = globSubsumeFromList ln libEnv l
-                                              in (Env ln result)
-                              _            -> (OutputErr "Wrong parameters")
-        _               -> (OutputErr "Wrong parameters")
+        (Env ln libEnv):_  -> case param of
+                               (Goals ls):_ -> let l = getAllGlobalEdgeGoals ln libEnv ls
+                                                   result = globSubsumeFromList ln l libEnv 
+                                               in [(Env ln result)]
+                               _            -> [(OutputErr "Wrong parameters")]
+        _:l                -> commandDgGlobSubsume (param,l)
+        []                 -> [(OutputErr "Wrong parameters")]
 
 
 
-commandDgAllGlobSubsume::CmdInterpreterStatus -> CmdInterpreterStatus
+commandDgAllGlobSubsume::[CmdInterpreterStatus] -> [CmdInterpreterStatus]
 commandDgAllGlobSubsume arg
                           = case arg of
-                               (Env x y) -> let result =(globSubsume x) y in
-                                                (Env x result)
-                               _         -> (OutputErr "Wrong parameters")
+                               (Env x y):_  -> let result =(globSubsume x) y 
+                                               in  [(Env x result)]
+                               _:l          -> commandDgAllGlobSubsume l
+                               []           -> [(OutputErr "Wrong parameters")]
 
-commandDgAllGlobDecomp::CmdInterpreterStatus -> CmdInterpreterStatus
+commandDgAllGlobDecomp::[CmdInterpreterStatus] -> [CmdInterpreterStatus]
 commandDgAllGlobDecomp arg 
                           = case arg of 
-                               (Env x y) -> let result= (globDecomp x) y in
-                                                (Env x result)
-                               _         -> (OutputErr "Wrong parameters")
+                               (Env x y):_ -> let result= (globDecomp x) y 
+                                              in  [(Env x result)]
+                               _:l         -> commandDgAllGlobDecomp l
+                               []          -> [(OutputErr "Wrong parameters")]
 
 
-commandDgGlobDecomp :: ([ScriptCommandParameters],CmdInterpreterStatus) -> CmdInterpreterStatus
+commandDgGlobDecomp :: ([ScriptCommandParameters],[CmdInterpreterStatus]) -> [CmdInterpreterStatus]
 commandDgGlobDecomp (param,status) 
        = case status of
-          (Env ln libEnv) -> case param of
-                               (Goals ls):_ -> let l = getAllGlobalEdgeGoals ln libEnv ls
-                                                   result = globDecompFromList ln libEnv l
-                                               in (Env ln result)
-                               _            -> (OutputErr "Wrong parameters")
-          _               -> (OutputErr "Wrong parameters")
+          (Env ln libEnv):_ -> case param of
+                                (Goals ls):_ -> let l = getAllGlobalEdgeGoals ln libEnv ls
+                                                    result = globDecompFromList ln l libEnv 
+                                                in [(Env ln result)]
+                                _            -> [(OutputErr "Wrong parameters")]
+          _:l               -> commandDgGlobDecomp (param,l)
+          []                -> [(OutputErr "Wrong parameters")]
 
 
-commandDgAllLocInfer::CmdInterpreterStatus -> CmdInterpreterStatus                        
+commandDgAllLocInfer::[CmdInterpreterStatus] -> [CmdInterpreterStatus]                        
 commandDgAllLocInfer arg
                         = case arg of
-                             (Env x y) -> let result= (localInference x) y in
-                                              (Env x result)
-                             _         -> (OutputErr "Wrong parameters")
+                             (Env x y):_ -> let result= (localInference x) y 
+                                            in  [(Env x result)]
+                             _:l         -> commandDgAllLocInfer l
+                             []          -> [(OutputErr "Wrong parameters")]
 
 
-commandDgLocInfer::([ScriptCommandParameters],CmdInterpreterStatus) -> CmdInterpreterStatus
+commandDgLocInfer::([ScriptCommandParameters],[CmdInterpreterStatus]) -> [CmdInterpreterStatus]
 commandDgLocInfer (param,status)
          = case status of 
-             (Env ln libEnv) -> case param of
+             (Env ln libEnv):_ -> case param of
                                   (Goals ls):_ -> let l = getAllLocalEdgeGoals ln libEnv ls
-                                                      result = localInferenceFromList ln libEnv l
-                                                  in (Env ln result)
-                                  _            -> (OutputErr "Wrong parameters")
-             _               -> (OutputErr "Wrong parameters")
+                                                      result = localInferenceFromList ln l libEnv 
+                                                  in [(Env ln result)]
+                                  _            -> [(OutputErr "Wrong parameters")]
+             _:l               -> commandDgLocInfer (param,l)
+             []                -> [(OutputErr "Wrong parameters")]
 
-commandDgAllLocDecomp::CmdInterpreterStatus -> CmdInterpreterStatus
+commandDgAllLocDecomp::[CmdInterpreterStatus] -> [CmdInterpreterStatus]
 commandDgAllLocDecomp arg
                          = case arg of 
-                               (Env x y) -> let result= (locDecomp x) y in
-                                                (Env x result)
-                               _         -> (OutputErr "Wrong parameters")
+                               (Env x y):l -> let result= (locDecomp x) y 
+                                              in  [(Env x result)]
+                               _:l         -> commandDgAllLocDecomp l
+                               []          -> [(OutputErr "Wrong parameters")]
 
 
-commandDgLocDecomp::([ScriptCommandParameters], CmdInterpreterStatus)-> CmdInterpreterStatus
+commandDgLocDecomp::([ScriptCommandParameters], [CmdInterpreterStatus])-> [CmdInterpreterStatus]
 commandDgLocDecomp (param,status)
        = case status of
-           (Env ln libEnv) -> case param of
-                                (Goals ls):_ -> let l = getAllLocalEdgeGoals ln libEnv ls
-                                                    result = locDecompFromList ln libEnv l
-                                                in (Env ln result)
-                                _            -> (OutputErr "Wrong parameters")
-           _               -> (OutputErr "Wrong parameters")
+           (Env ln libEnv):_ -> case param of
+                                 (Goals ls):_ -> let l = getAllLocalEdgeGoals ln libEnv ls
+                                                     result = locDecompFromList ln l libEnv 
+                                                 in  [(Env ln result)]
+                                 _            -> [(OutputErr "Wrong parameters")]
+           _:l               -> commandDgLocDecomp (param,l)
+           []                -> [(OutputErr "Wrong parameters")]
 
 
-commandDgComp::([ScriptCommandParameters], CmdInterpreterStatus) -> CmdInterpreterStatus
+commandDgComp::([ScriptCommandParameters], [CmdInterpreterStatus]) -> [CmdInterpreterStatus]
 commandDgComp (param, status)
       = case status of
-         (Env ln libEnv) -> case param of
-                              (Goals ls):_ -> let l = getAllGlobalEdgeGoals ln libEnv ls
-                                                  result = compositionFromList ln libEnv l
-                                              in (Env ln result)
-                              _            -> (OutputErr "Wrong parameters")
-         _               -> (OutputErr "Wrong parameters")
+         (Env ln libEnv):_ -> case param of
+                               (Goals ls):_ -> let l = getAllGlobalEdgeGoals ln libEnv ls
+                                                   result = compositionFromList ln l libEnv 
+                                               in [(Env ln result)]
+                               _            -> [(OutputErr "Wrong parameters")]
+         _:l               -> commandDgComp (param, l)
+         []                -> [(OutputErr "Wrong parameters")]
 
 
-commandDgAllComp::CmdInterpreterStatus -> CmdInterpreterStatus
+commandDgAllComp::[CmdInterpreterStatus] -> [CmdInterpreterStatus]
 commandDgAllComp arg 
                     = case arg of
-                           (Env x y) -> let result= (composition x) y in
-                                            (Env x result)
-                           _         -> (OutputErr "Wrong parameters")
+                           (Env x y):_ -> let result= (composition x) y 
+                                          in  [(Env x result)]
+                           _:l         -> commandDgAllComp l
+                           []          -> [(OutputErr "Wrong parameters")]
 
-commandDgCompNew::([ScriptCommandParameters],CmdInterpreterStatus) -> CmdInterpreterStatus
+commandDgCompNew::([ScriptCommandParameters],[CmdInterpreterStatus]) -> [CmdInterpreterStatus]
 commandDgCompNew (param, status)
         = case status of
-           (Env ln libEnv) -> case param of
-                                (Goals ls):_ -> let l = getAllGlobalEdgeGoals ln libEnv ls
-                                                    result = compositionCreatingEdgesFromList ln libEnv l
-                                                in (Env ln result)
-                                _            -> (OutputErr "Wrong parameters")
-           _               -> (OutputErr "Wrong parameters")
+           (Env ln libEnv):_ -> case param of
+                                  (Goals ls):_ -> let l = getAllGlobalEdgeGoals ln libEnv ls
+                                                      result = compositionCreatingEdgesFromList ln l libEnv 
+                                                  in [(Env ln result)]
+                                  _            -> [(OutputErr "Wrong parameters")]
+           _:l               -> commandDgCompNew (param,l)
+           []                -> [(OutputErr "Wrong parameters")]
 
  
 
-commandDgAllCompNew::CmdInterpreterStatus -> CmdInterpreterStatus
+commandDgAllCompNew::[CmdInterpreterStatus] -> [CmdInterpreterStatus]
 commandDgAllCompNew arg
                       = case arg of
-                             (Env x y) -> let result=(compositionCreatingEdges x) y in
-                                              (Env x result)
-                             _         -> (OutputErr "Wrong parameters")
+                             (Env x y):_ -> let result=(compositionCreatingEdges x) y 
+                                            in  [(Env x result)]
+                             _:l         -> commandDgAllCompNew l
+                             []          -> [(OutputErr "Wrong parameters")]
 
-commandDgHideThm::([ScriptCommandParameters],CmdInterpreterStatus) -> CmdInterpreterStatus
+commandDgHideThm::([ScriptCommandParameters],[CmdInterpreterStatus]) -> [CmdInterpreterStatus]
 commandDgHideThm (param, status)
          = case status of
-             (Env ln libEnv) -> case param of
-                                  (Goals ls):_  -> let l = getAllHidingThmGoals ln libEnv ls
-                                                       result = automaticHideTheoremShiftFromList ln l libEnv
-                                                   in (Env ln result)
-                                  _             -> (OutputErr "Wrong parameters")
-             _               -> (OutputErr "Wrong parameters")
+             (Env ln libEnv):_ -> case param of
+                                    (Goals ls):_  -> let l = getAllHidingThmGoals ln libEnv ls
+                                                         result = automaticHideTheoremShiftFromList ln l libEnv
+                                                     in [(Env ln result)]
+                                    _             -> [(OutputErr "Wrong parameters")]
+             _:l               -> commandDgHideThm (param,l)
+             []                -> [(OutputErr "Wrong parameters")]
 
-commandDgAllHideThm::CmdInterpreterStatus -> CmdInterpreterStatus
+commandDgAllHideThm::[CmdInterpreterStatus] -> [CmdInterpreterStatus]
 commandDgAllHideThm arg
                       = case arg of
-                             (Env x y) -> let result= (automaticHideTheoremShift x) y in
-                                              (Env x result)
-                             _         -> (OutputErr "Wrong parameters")
+                             (Env x y):_ -> let result= (automaticHideTheoremShift x) y 
+                                            in  [(Env x result)]
+                             _:l         -> commandDgAllHideThm l
+                             []          -> [(OutputErr "Wrong parameters")]
 
-commandDgAllThmHide::CmdInterpreterStatus -> CmdInterpreterStatus
+commandDgAllThmHide::[CmdInterpreterStatus] -> [CmdInterpreterStatus]
 commandDgAllThmHide arg
                        = case arg of
-                              (Env x y) -> let result=(theoremHideShift x) y in
-                                               (Env x result)
-                              _         -> (OutputErr "Wrong parameters")
+                              (Env x y):_ -> let result=(theoremHideShift x) y 
+                                             in  [(Env x result)]
+                              _:l         -> commandDgAllThmHide l
+                              []          -> [(OutputErr "Wrong parameters")]
 
-  
+
+commandDgAllInferBasic::[CmdInterpreterStatus] -> [CmdInterpreterStatus]
+commandDgAllInferBasic arg
+                        = case arg of
+                               (Env x y):_ -> let dgraph = lookupDGraph ln libEnv
+                                                  lno    = labNodes dgraph
+                                                  ll     = filter lno hasOpenGoals
+                                                  result = applyInferBasic ll ln libEnv
+                                              in (Env ln result):(SelectedNodes ll):[]
+                               _:l         -> commandDgAllInferBasic l
+                               []          -> [(OutputErr "Wrong parameters")]
+
+commandShowTheory :: [CmdInterpreterStatus] -> IO()
+commandShowTheory arg
+       = case arg of
+           (Env x y):l  -> case l of
+                             (SelectedNodes ll):_  -> let dgraph = lookupDGraph x y
+                                                      in  printAllTheory ll dgraph
+                             _:ls                  -> commandShowTheory (Env x y):ls
+                             []                    -> putToStr "Error ! \n"
+           (SelectedNodes ll):l -> case l of
+                                    (Env  x y):_ ->  let dgraph = lookupDGraph x y
+                                                     in  printAllTheory ll graph
+                                    _:ls         -> commandShowTheory (SelectedNodes ll):ls
+                                    []           -> putToStr "Error ! \n"
+
+
+
+printAllTheory::   [Node] ->DGraph -> IO()
+printAllTheory ls dgraph
+          = case ls of 
+                  x:l -> do 
+                            dgnode <- lab' (context dgraph x)
+                            theTh <- fromJust $ getNodeByNumber (lnode dgraph) x
+                            str = showDoc theTh "\n"
+                            thName = showName (dgn_name x)
+                            putToStr (thName ++ "\n\n"++str++"\n")
+                            return (printAllTheory l dgraph)
+                  []  ->  ()
+
+getNodeByNumber :: [LNode DGNodeLab] -> Node -> Maybe DGNodeLab
+getNodeByNumber ls x = case ls of
+                        (xx,(DGNode _ theTh _ _ _ _ _)):l -> if (x==xx) then (Just theTh)
+                                                                        else getNodeByNumber (l,x)
+                        _                                 -> getNodeByNumber (l,x)
+                        []                                -> Nothing
+
+
+commandDgInferBasic::([ScriptCommandParameters],[CmdInterpreterStatus]) -> [CmdInterpreterStatus]
+commandDgInferBasic (param, status)
+      = case status of
+          (Env ln libEnv):_ -> case param of
+                                 (Goals ls):_ -> let dgraph = lookupDGraph ln libEnv
+                                                     lno    = labNodes dgraph 
+                                                     ll = getAllNodeGoals lno ls
+                                                     result = applyInferBasic ll ln libEnv
+                                                 in  (Env ln result):(SelectedNodes ll):[] 
+                                 _            -> [(OutputErr "Wrong parameters")]
+          _:l               -> commandDgInferBasic (param, l)
+          []                -> [(OutputErr "Wrong parameters")]
+                                        
+
+applyInferBasic:: [Node] -> LIB_NAME -> LibEnv -> LibEnv
+applyInferBasic ll ln libEnv
+      = case ll of
+             x:l         -> let Result _ r = basicInferenceNode False logicGraph (ln,y) ln libEnv
+                            in  applyInferBasic l ln  (fromJust r)
+             []          -> libEnv
+            
+
+getAllNodeGoals :: [LNode DGNodeLab]->[GOAL] -> [Node]
+getAllNodeGoals lno ls
+       = case ls of
+             (Edge _ _):l          -> getAllNodeGoals l
+             (LabeledEdge _ _ _):l -> getAllNodeGoals l
+             (Node x):l            -> (fromJust $ findNodeNumber lno x):(getAllNodeGoals  lno l)
+             []                    -> []
+
 
 
 -- | The 'findNodeNumber' function, given the Id of a node searches a list of LNode and returns the index of the node
@@ -254,8 +360,9 @@ isEdgeBetween x y (currentEdgeX,currentEdgeY, currentEdgeLab) =
 getAllEdges:: LIB_NAME->LibEnv->Id -> Id -> [LEdge DGLinkLab]
 getAllEdges ln libEnv x y =
                     let dgraph     = lookupDGraph ln libEnv
-                        xNb   = fromJust $ findNodeNumber (labNodes dgraph) x
-                        yNb   = fromJust $ findNodeNumber (labNodes dgraph) y
+                        lno        = labNodes dgraph
+                        xNb   = fromJust $ findNodeNumber lno x
+                        yNb   = fromJust $ findNodeNumber lno y
                     in filter (isEdgeBetween xNb yNb) (labEdges dgraph)
                         
 
@@ -310,3 +417,6 @@ getAllHidingThmGoals ln libEnv ls =
                                                           theEdge      = fromJust $ selectLabeledEdge thelab allHidingThm
                                                       in  theEdge : (getAllHidingThmGoals ln libEnv l)
 
+
+
+                             
