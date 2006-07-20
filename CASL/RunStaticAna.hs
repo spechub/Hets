@@ -1,13 +1,13 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2003 
+Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2003
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
 Stability   :  experimental
-Portability :  portable 
+Portability :  portable
 
-make static analysis checkable by RunParsers 
+make static analysis checkable by RunParsers
 
 -}
 
@@ -25,50 +25,50 @@ import CASL.SimplifySen
 import CASL.Quantification
 import CASL.AlphaConvert
 
-localAnalysis :: GlobalAnnos -> BASIC_SPEC () () () 
+localAnalysis :: GlobalAnnos -> BASIC_SPEC () () ()
               -> Result (BASIC_SPEC () () ())
-localAnalysis ga bs = 
+localAnalysis ga bs =
         let Result ds ms = basicCASLAnalysis (bs, emptySign () , ga)
-        in Result ds $ case ms of 
-           Just (newBs, _difSig, _accSig, _sents) -> Just newBs
+        in Result ds $ case ms of
+           Just (newBs, _accSig, _sents) -> Just newBs
            _ -> Nothing
 
 runAna :: GlobalAnnos -> AParser () (Result (BASIC_SPEC () () ()))
-runAna ga = 
+runAna ga =
     do b <- basicSpec []
        return $ localAnalysis ga b
 
 localAna :: GlobalAnnos -> BASIC_SPEC () () () -> Result (Sign () ())
-localAna ga bs = 
-    let Result ds ms = 
+localAna ga bs =
+    let Result ds ms =
             basicCASLAnalysis (bs, emptySign () , ga)
         es = filter ((<= Error)  . diagKind) ds
-        in case ms of 
-           Just (_newBs, difSig, _accSig, _sents) -> Result es $ Just difSig
+        in case ms of
+           Just (_newBs, accSig, _sents) -> Result es $ Just accSig
            Nothing -> Result ds Nothing
 
 getSign :: GlobalAnnos -> AParser () (Result (Sign () ()))
-getSign ga = 
+getSign ga =
     do b <- basicSpec []
        return $ localAna ga b
 
-props :: GlobalAnnos -> BASIC_SPEC () () () 
+props :: GlobalAnnos -> BASIC_SPEC () () ()
       -> Result (Sign () (), [Named (FORMULA ())])
-props ga bs = 
-    let Result ds ms = 
+props ga bs =
+    let Result ds ms =
             basicCASLAnalysis (bs, emptySign (), ga)
-        in Result ds $ case ms of 
-           Just (_newBs, difSig, accSig, sents) -> Just (difSig, 
+        in Result ds $ case ms of
+           Just (_newBs, accSig, sents) -> Just (accSig,
                      map (mapNamed $ simplifySen (error "props1")
                                      (error "props2") accSig
                            . stripQuant . convertFormula 1 id)
                        sents)
            Nothing -> Nothing
 
-getProps :: GlobalAnnos 
+getProps :: GlobalAnnos
          -> AParser () (Result (Sign () (), [Named (FORMULA ())]))
-getProps ga = 
+getProps ga =
     do b <- basicSpec []
        return $ props ga b
 
-         
+
