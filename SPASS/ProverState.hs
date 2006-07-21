@@ -127,7 +127,7 @@ mapMathServResponse :: MathServResponse -- ^ Parsed MathServ data
                     -- ^ (retval, configuration with proof status and
                     --    complete output)
 mapMathServResponse msr cfg nGoal prName =
-    maybe (ATPError "Internal Error.",
+    maybe (ATPError "MathServ Error:\n", -- first line of error message as second line
            cfg { proof_status = defaultProof_status nGoal
                     (prName ++ " [via MathServ]") (configTimeLimit cfg),
                  resultOutput = maybe [] lines (failure msr) })
@@ -146,11 +146,15 @@ mapProverResult :: MWFoAtpResult -- ^ Parsed FoATPResult data
                 -- ^ (retval, configuration with proof status, complete output)
 mapProverResult atpResult cfg nGoal prName =
     let res = mapToGoalStatus $ systemStatus atpResult
-        output = lines $ unTab $ outputStr atpResult
+        output = 
+         -- system name if via Broker
+         -- tstp proof with calculus
+         -- time ressource global
+            lines $ unTab $ outputStr atpResult
         timeout = (foStatus $ systemStatus atpResult) == Timeout
         
         -- get real prover name if Broker was used
-        brokerName = "MSBroker"
+        brokerName = "MSBroker" -- introduce String constant
         prName' = if (prName == brokerName)
                      then (usedProverName $ systemStr atpResult)
                           ++ " [via MathServBroker]"

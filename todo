@@ -431,7 +431,9 @@ use either XPath or Haifas xmlify stuff for
 
 SPASS/Logic_SPASS
   change proof_tree to String and save TSTP to it
-  SPASS Proof must be parsed and translated to TSTP 
+  SPASS proof between "^Here is a proof" and "^Formulae used"
+  later
+    SPASS Proof must be parsed and translated to TSTP 
     (Klaus checks for this functionallity in MathServ)
 
 SPASS/MathServCommunications

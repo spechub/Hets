@@ -83,6 +83,7 @@ data MathServResponse =
                           timeResource :: MWTimeResource,
                           failure      :: Maybe String
                           } deriving (Eq, Ord, Show)
+      -- Either String MWFoAtpResult
 
 data MWFoAtpResult =
        MWFoAtpResult { proof        :: MWFormalProof,
@@ -108,7 +109,7 @@ data MWStatus =
                   foStatus :: FoStatus
                   } deriving (Eq, Ord, Show)
 
-data FoStatus =
+data FoStatus = -- SystemStatus = Solved SolvedStatus | Unsolved UnsolvedStatus
        CounterEquivalent
      | CounterSatisfiable
      | CounterTheorem
@@ -127,7 +128,8 @@ data FoStatus =
      | ResourceOut
      | Timeout
      | Unknown
-     deriving (Eq, Ord, Show)
+     -- | NoStatus
+     deriving (Eq, Ord, Show,Read)
 
 data MWProvingProblem =
        TstpFOFProblem
@@ -142,6 +144,7 @@ data MWCalculus =
      | OtterCalc
      | VampireResCalc
      | ZenonCalc
+     -- | UnknownCalc
      deriving (Eq, Ord, Show)
 
 data MWTimeResource =
