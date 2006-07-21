@@ -110,8 +110,7 @@ transSignature env = do
                                         Map.empty
                                         (typeMap env) }
         , constTab = ct
-        , domainTab = dt
-        , showLemmas = True }
+        , domainTab = dt }
 
 -- * translation of a type in an operation declaration
 
