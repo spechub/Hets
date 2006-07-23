@@ -23,9 +23,9 @@ import Maybe
 import Common.Lib.Graph
 import Data.Graph.Inductive.Graph
 import CASL.Logic_CASL
-import Comorphisms.CASL2PCFOL
-import Comorphisms.CASL2SubCFOL
+import Common.AS_Annotation
 
+import Debug.Trace
 
 -- translation between two GlobalContext on the basis the given Comorphism 
 dg_translation :: GlobalContext -> AnyComorphism -> Result GlobalContext
@@ -42,21 +42,24 @@ dg_translation gc cm@(Comorphism cidMor) =
                    in  case maybeGC of
                          Just gc' -> mainTrans r (diagsMain ++ diags') gc'
                          Nothing -> mainTrans r (diagsMain ++ diags') gc
-              else  let gcon' = changeThOfNode node  gcon
+              else  let -- gcon' = changeThOfNode node  gcon
 			hintDiag = diagsMain ++ 
-                                   [(mkDiag Hint ("node " ++ (show h) ++
+                                   [(mkDiag Error ("node " ++ (show h) ++
 				     ":" ++ (show $ dgn_name nodeLab) ++
 			             " is not less than " ++ (show cm) ++ 
                                      " -- change the theory...") ())] 
-                        Result diags' maybeGC = updateNode h gcon' cm 
-		    in case maybeGC of
-                         Just gc' -> 
+                        Result diags' maybeGC = updateNode h gcon cm 
+		    in  case maybeGC of
+                          Just gc' -> 
                              mainTrans r (diagsMain++hintDiag++diags') gc'
-                         Nothing -> 
+                          Nothing -> 
                              mainTrans r (diagsMain++hintDiag++diags') gc
+                     
           Nothing -> mainTrans r (diagsMain ++ 
                                   [(mkDiag Error ("node " ++ (show h) 
                               ++ " is not found in graph.") ())]) gcon
+
+{-
               -- if theory of a node not less than the given comorphism
               -- change the thoery to SubCFOL ...
         where changeThOfNode (lin, nodeLab, lout) globalContext =
@@ -74,7 +77,8 @@ dg_translation gc cm@(Comorphism cidMor) =
                                          G_theory (targetLogic CASL2SubCFOL) 
                                          sign1 (toThSens sens1)},lout)) 
                               h (toMap $ devGraph globalContext))}
-				
+	-}
+			
 updateNode :: Int -> GlobalContext -> AnyComorphism -> Result GlobalContext
 updateNode index gc acm@(Comorphism cidMor) =
     let (outLinks, node, inLinks) = 
@@ -105,8 +109,10 @@ updateNode index gc acm@(Comorphism cidMor) =
           then
            let sourceLid = sourceLogic cid'
                targetLid = targetLogic cid'
-           in if lessSublogicComor (G_sublogics 
-                             sourceLid (sourceSublogic cid')) acm
+           in if {- lessSublogicComor (G_sublogics 
+                             sourceLid (sourceSublogic cid')) acm  -}
+                 (lessSublogicComor (sublogicOfSign (G_sign sourceLid lsign)) acm) 
+                 && (lessSublogicComor (sublogicOfMor (G_morphism targetLid lmorphism)) acm)
                then
                  case fSign sourceLid lsign of
                    Result diagLs (Just (lsign', lsens)) -> 
@@ -114,7 +120,7 @@ updateNode index gc acm@(Comorphism cidMor) =
                        Result diagLm (Just lmorphism') -> 
                          case idComorphism (Logic tlid) of 
                            Comorphism cid2 ->
-                             Result (diagLs ++ diagLm) 
+                             Result (diagLs ++ diagLm ++ [mkDiag Hint "successful translation of edge." ()]) 
                                (Just ([(links{dgl_morphism=
                                    GMorphism cid2 
                                       (fromJust $ coerceSign tlid 
@@ -122,19 +128,19 @@ updateNode index gc acm@(Comorphism cidMor) =
                                       (fromJust $ coerceMorphism tlid 
                                          (targetLogic cid2) "" lmorphism')
                                              }, n)], lsens))
-                       Result diagLm Nothing  -> Result (diagLm ++ 
+                       Result diagLm Nothing  ->  Result (diagLm ++ 
                          [mkDiag Error ("morphism of link can not be translated.") ()]) 
                          (Just ([(links, n)], []))
                    Result diagLs Nothing  -> Result (diagLs ++ 
                          [mkDiag Error ("sign of link can not be translated.") ()]) 
                          (Just ([(links, n)], []))
-               else Result [mkDiag Hint ("GMorphism of a Link to node " ++ 
+               else Result [mkDiag Error ("GMorphism of a Link to node " ++ 
                                          (show $ getNameOfNode n gc) ++ 
                                          " is not less than ." ++ 
                                          (show cidMor)) ()] 
                         (Just ([(links,n)], []))
-          else  Result [mkDiag Hint ("Link is not homogeneous.") ()] 
-                    (Just ([(links,n)], []))
+          else Result [mkDiag Hint ("Link is not homogeneous.") ()] 
+                     (Just ([(links,n)], []))
                   
      -- to translate sign
      fSign sourceID sign =
@@ -144,8 +150,8 @@ updateNode index gc acm@(Comorphism cidMor) =
               Result diagsOfcs maybeSign ->
                   case maybeSign of
                     Just (sign'', sens) ->
-                        Result diagsOfcs (Just (sign'',sens))
-                    Nothing -> Result diagsOfcs Nothing
+                        Result (diagsOfcs++[mkDiag Hint "successful translation of sign." ()]) (Just (sign'',sens))
+                    Nothing -> error "Result diagsOfcs Nothing"
         Nothing  -> Result [mkDiag Error ("cannot coerce sign" ++ show sign)
                             ()] Nothing 
 
@@ -173,7 +179,7 @@ updateNode index gc acm@(Comorphism cidMor) =
                         Just (sign'', namedS) -> 
                             Result diagsOfth (Just (G_theory tlid sign'' 
                                  (toThSens $ List.nub (namedS ++  tmSens))))
-                        Nothing ->  Result diagsOfth Nothing
+                        Nothing ->  error "Result diagsOfth Nothing"
               Nothing    -> Result [(mkDiag Error 
                                      ("cannot coerce sens" ++ show thSens)
                                      ())] Nothing 
@@ -183,8 +189,9 @@ updateNode index gc acm@(Comorphism cidMor) =
      fMor sourceID mor =
         case coerceMorphism sourceID slid "" mor of
           Just mor' -> 
-              map_morphism cidMor mor' 
-
+              let Result diagsM res =  map_morphism cidMor mor'
+                  diagZ = [mkDiag Hint "successful translation of morphism." ()]
+              in  Result (diagsM ++ diagZ) res
           Nothing -> Result [(mkDiag Error ("cannot coerce mor" ++ show mor)
                               ())] Nothing  
 

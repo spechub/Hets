@@ -25,41 +25,32 @@ import qualified Common.Lib.Map as Map
 -- import Common.Doc
 import System.Environment
 import Comorphisms.PCFOL2CFOL
+import Comorphisms.CASL2PCFOL
+import Comorphisms.CASL2SubCFOL
 import Common.Result
 import Maybe
 import GUI.ShowGraph
 import Common.Lib.Graph
 
+import Debug.Trace
 
 process :: FilePath -> IO (Maybe (LIB_NAME, LibEnv))
-process = anaLib defaultHetcatsOpts
-
-process2 :: FilePath -> IO (Maybe (LIB_NAME, LibEnv))
-process2 file = do  
+process file = do  
     mResult <- anaLib defaultHetcatsOpts file
     case mResult of
       Just (libName, gcMap) ->
           case Map.lookup libName gcMap of
             Just gc -> 
                 do -- putStrLn ("orig: \n" ++ (show $ devGraph gc))
-{-                x  <-  compComorphism (Comorphism CASL2PCFOL) 
-                                     (Comorphism CASL2SubCFOL)-}
-                   gc' <- trans (Comorphism PCFOL2CFOL) gc
+                   x  <-  compComorphism (Comorphism CASL2PCFOL) 
+                                         (Comorphism CASL2SubCFOL)
+                   gc' <- trans (trace ("compCom: " ++ show x) x) gc
                    -- putStrLn ("translated: \n" ++ (show $ devGraph gc'))
                    return $ Just (libName, Map.update (\_ -> Just gc') libName gcMap)
             _ -> do putStrLn "not found gc."
                     return mResult
-      _ -> do putStrLn "nichts"
+      _ -> do putStrLn "analib error."
               return mResult
-
-{- Call this function as follows
-make
-make ghci
-:l Test.hs
-Just (_, lenv) <- process "../CASL-lib/List.casl"
-printLibEnv lenv
--}
-
 
 trans :: AnyComorphism -> GlobalContext -> IO GlobalContext
 trans acm gc = do
@@ -72,7 +63,7 @@ trans acm gc = do
                                                "than Comorphism.")
                                      return gc'
                              else return gc'
-               Nothing  -> do putStrLn "no result from translation" 
+               Nothing  -> do putStrLn "no translation" 
                               return gc
 
 isLessSubLogic :: AnyComorphism -> DGraph -> Bool
@@ -102,7 +93,7 @@ main = do
   if length files /= 1 then
       error "usage: TestDGTrans filename"
       else do let file = head files
-              res <- process2 file
+              res <- process file
               showGraph file defaultHetcatsOpts res
   -- return ()
 
