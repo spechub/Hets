@@ -128,7 +128,7 @@ data FoStatus = -- SystemStatus = Solved SolvedStatus | Unsolved UnsolvedStatus
      | ResourceOut
      | Timeout
      | Unknown
-     -- | NoStatus
+     -- NoStatus
      deriving (Eq, Ord, Show,Read)
 
 data MWProvingProblem =
@@ -144,7 +144,7 @@ data MWCalculus =
      | OtterCalc
      | VampireResCalc
      | ZenonCalc
-     -- | UnknownCalc
+     -- UnknownCalc
      deriving (Eq, Ord, Show)
 
 data MWTimeResource =
