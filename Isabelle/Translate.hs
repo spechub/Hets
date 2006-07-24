@@ -38,7 +38,7 @@ data IsaPreludes = IsaPreludes
 isaKeyset :: Set.Set String
 isaKeyset = Set.fromList isaKeywords
 
-mkPreludeMap :: [(BaseSig, Set.Set String)] ->  Map.Map BaseSig (Set.Set String)
+mkPreludeMap :: [(BaseSig, Set.Set String)] -> Map.Map BaseSig (Set.Set String)
 mkPreludeMap = Map.fromList . map (\ (b, s) -> (b, Set.union s isaKeyset))
 
 isaPrelude :: IsaPreludes
