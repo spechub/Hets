@@ -66,21 +66,27 @@ printTheoryAsDFG ln sn checkConsistency gth@(G_theory lid sign thSens) =
                   return $ Just $ pretty $ 
                          (prob {settings = flags}))
  
-      (if lessSublogicComor (sublogicOfTh gth) $ Comorphism idCASL
+      (if lessSublogicComor (sublogicOfTh gth) $ 
+          Comorphism SuleCFOL2SoftFOL
        then resultToMaybe  
+             (coerceBasicTheory lid CASL "" (sign,sens)
+              >>= map_theory SuleCFOL2SoftFOL)
+       else
+        if lessSublogicComor (sublogicOfTh gth) $ Comorphism idCASL
+        then resultToMaybe  
              (coerceBasicTheory lid CASL "" (sign,sens)
               >>= map_theory idCASL
               >>= map_theory CASL2SubCFOL
               >>= map_theory SuleCFOL2SoftFOL)
-       else if lessSublogicComor (sublogicOfTh gth) $ 
+        else if lessSublogicComor (sublogicOfTh gth) $ 
                 Comorphism idCASL_nosub
-            then resultToMaybe  
+             then resultToMaybe  
                      (coerceBasicTheory lid CASL "" (sign,sens)
                       >>= map_theory idCASL_nosub
                       >>= map_theory CASL2PCFOL
                       >>= map_theory CASL2SubCFOL
                       >>= map_theory SuleCFOL2SoftFOL)
-            else resultToMaybe $
+             else resultToMaybe $
                  coerceBasicTheory lid SoftFOL "" (sign,sens))
 
 
