@@ -131,9 +131,9 @@ globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes [] =
 --  if null changes then (dgraph, changes)
   -- else
      if isDuplicate provenEdge dgraph changes
-            then (delLEdge edge dgraph,
+            then (deLLEdge edge dgraph,
             ((DeleteEdge edge):changes))
-      else ((insEdge provenEdge (delLEdge edge dgraph)),
+      else ((insEdge provenEdge (deLLEdge edge dgraph)),
             ((DeleteEdge edge):((InsertEdge provenEdge):changes)))
   where
     (GlobalThm _ conservativity conservStatus) = (dgl_type edgeLab)
@@ -227,10 +227,10 @@ globSubsumeAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
   if not (null proofBasis) || isIdentityEdge ledge libEnv dgraph
    then
      if isDuplicate newEdge dgraph changes then
-        globSubsumeAux libEnv (delLEdge ledge dgraph)
+        globSubsumeAux libEnv (deLLEdge ledge dgraph)
           (newRules,(DeleteEdge ledge):changes) list
       else
-        globSubsumeAux libEnv (insEdge newEdge (delLEdge ledge dgraph))
+        globSubsumeAux libEnv (insEdge newEdge (deLLEdge ledge dgraph))
           (newRules,(DeleteEdge ledge):((InsertEdge newEdge):changes)) list
    else
      globSubsumeAux libEnv dgraph (rules,changes) list
@@ -337,7 +337,7 @@ removeSuperfluousEdgesAux dgraph ((edge@(src,tgt,edgeLab)):list)
     equivalentEdges
         = [e | e <- resultingEdges,(snd e) == (src,tgt,dgl_morphism edgeLab)]
     newResultingEdges = [e | e <- resultingEdges,(fst e) /= edge]
-    newDGraph = delLEdge edge dgraph
+    newDGraph = deLLEdge edge dgraph
 
 {- returns true, if the given change is an insertion of an local theorem edge,
    false otherwise -}

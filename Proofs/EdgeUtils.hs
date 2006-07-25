@@ -21,15 +21,15 @@ import Static.DGToSpec
 import Data.Graph.Inductive.Graph
 import Data.List
 
-delLEdge :: LEdge DGLinkLab -> DGraph -> DGraph
-delLEdge e@(v, _, _) g = case match v g of
+deLLEdge :: LEdge DGLinkLab -> DGraph -> DGraph
+deLLEdge e@(v, _, _) g = case match v g of
     (Just(p, v', l', s), g') ->
         let (ls, rs) = partition (\ (k, n) -> e == (v, n, k)) s in
         case ls of
-          [] -> error $ "delLEdge no edge: " ++ show e
+          [] -> error $ "deLLEdge no edge: " ++ show e
           [_] -> (p, v', l', rs) & g'
-          _ -> error $ "delLEdge multiple edges: " ++ show e
-    _ -> error $ "delLEdge no node for edge: " ++ show e
+          _ -> error $ "deLLEdge multiple edges: " ++ show e
+    _ -> error $ "deLLEdge no node for edge: " ++ show e
 
 insLEdge :: LEdge DGLinkLab -> DGraph -> DGraph
 insLEdge e@(v, w, l) g = case match v g of
@@ -58,7 +58,7 @@ changeDG g c = case c of
     InsertNode n -> insLNode n g
     DeleteNode n -> delLNode n g
     InsertEdge e -> insLEdge e g
-    DeleteEdge e -> delLEdge e g
+    DeleteEdge e -> deLLEdge e g
 
 changesDG :: DGraph -> [DGChange] -> DGraph
 changesDG = foldl' changeDG

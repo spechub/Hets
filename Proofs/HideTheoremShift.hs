@@ -115,7 +115,7 @@ hideTheoremShiftAux dgraph (rules,changes) (ledge:list) proofBaseSel =
       then hideTheoremShiftAux dgraph (rules,changes) list proofBaseSel
        else do
          let newEdge = makeProvenHidingThmEdge proofBasis ledge
-             auxDGraph = insEdge newEdge (delLEdge ledge dgraph)
+             auxDGraph = insEdge newEdge (deLLEdge ledge dgraph)
              auxChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
              (newDGraph,newChanges) =
                  insertNewEdges auxDGraph auxChanges proofBasis

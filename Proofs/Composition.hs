@@ -102,7 +102,7 @@ deleteRedundantEdgesAux :: DGraph -> [LEdge DGLinkLab] -> [DGChange]
              -> (DGraph,[DGChange])
 deleteRedundantEdgesAux dgraph [] changes =  (dgraph,changes)
 deleteRedundantEdgesAux dgraph (edge : list) changes =
-  deleteRedundantEdgesAux (delLEdge edge dgraph) list
+  deleteRedundantEdgesAux (deLLEdge edge dgraph) list
                               $ DeleteEdge edge : changes
 
 -- ---------------------------------------------------------------------------
@@ -135,7 +135,7 @@ compositionAux dgraph (edge:edgs) (rules,changes) =
   case compositionForOneEdge dgraph edge of
     Nothing -> compositionAux dgraph edgs (rules,changes)
     Just (newEdge,proofBasis) ->
-        compositionAux (insEdge newEdge $ delLEdge edge dgraph)
+        compositionAux (insEdge newEdge $ deLLEdge edge dgraph)
                        edgs
                        (Composition proofBasis : rules,
                         InsertEdge newEdge : DeleteEdge edge : changes)

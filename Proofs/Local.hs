@@ -89,7 +89,7 @@ locDecompAux libEnv ln dgraph (rules,changes)
     pathsWithoutEdgeItself = filter (notElem ledge) allPaths
     filteredPaths = filterByTranslation th morphism pathsWithoutEdgeItself
     proofBasis = selectProofBasis dgraph ledge filteredPaths
-    auxGraph = delLEdge ledge dgraph
+    auxGraph = deLLEdge ledge dgraph
     LocalThm _ conservativity conservStatus = dgl_type edgeLab
     newEdge = (src,
                tgt,
@@ -201,7 +201,7 @@ localInferenceAux libEnv ln dgraph (rules, changes)
   where
     morphism = dgl_morphism edgeLab
     maybeThSrc = computeLocalTheory libEnv ln src
-    auxGraph = delLEdge ledge dgraph
+    auxGraph = deLLEdge ledge dgraph
     (LocalThm _ conservativity conservStatus) = (dgl_type edgeLab)
     newLab = DGLink {dgl_morphism = morphism,
                        dgl_type =
