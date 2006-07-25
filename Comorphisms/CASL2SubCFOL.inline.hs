@@ -31,7 +31,6 @@ import CASL.Overload
 import CASL.Fold
 import CASL.Project
 import CASL.Simplify
-import Comorphisms.PCFOL2CFOL
 
 -- | The identity of the comorphism
 data CASL2SubCFOL = CASL2SubCFOL deriving (Show)
@@ -61,11 +60,84 @@ instance Comorphism CASL2SubCFOL
       let e = encodeSig sig in return (e, generateAxioms sig))
       (map_sentence CASL2SubCFOL)
     map_morphism CASL2SubCFOL mor = return
-      (mor  { msource =  encodeSig $ msource mor,
-              mtarget =  encodeSig $ mtarget mor })
-      -- other components need not to be adapted!
-    map_sentence CASL2SubCFOL sig = return . codeFormula (sortSet sig)
-    map_symbol CASL2SubCFOL = Set.singleton . id
+      (mor  { msource = encodeSig $ msource mor
+            , mtarget = encodeSig $ mtarget mor
+            , fun_map = Map.map (\ (i, _) -> (i, Total)) $ fun_map mor })
+    map_sentence CASL2SubCFOL sig = 
+        return . codeFormula (allSortsWithBottom sig)
+    map_symbol CASL2SubCFOL s =
+      Set.singleton s { symbType = totalizeSymbType $ symbType s }
+
+totalizeSymbType :: SymbType -> SymbType
+totalizeSymbType t = case t of
+  OpAsItemType ot -> OpAsItemType ot { opKind = Total }
+  _ -> t
+
+sortsWithBottom :: Sign f e -> Set.Set SORT
+sortsWithBottom sign =
+    let ops = Map.elems $ opMap sign
+        resSortsOfPartialFcts =
+            Set.unions $ map (Set.map opRes .
+                                 Set.filter ( \ t -> opKind t == Partial))
+            ops
+        collect given =
+            let more = Set.unions $ map (Set.map opRes .
+                                 Set.filter ( \ t -> any
+                                 (flip Set.member given) $ opArgs t)) ops
+            in if Set.isSubsetOf more given then given
+               else collect $ Set.union more given
+     in collect resSortsOfPartialFcts
+
+-- all supersorts inherit the same bottom element
+allSortsWithBottom :: Sign f e -> Set.Set SORT
+allSortsWithBottom sign = let s = sortsWithBottom sign in
+    Set.unions $ s : map (flip supersortsOf sign) (Set.toList s)
+
+bottom :: Id
+bottom = mkId[mkSimpleId "g__bottom"]
+
+defPred :: Id
+defPred = mkId[mkSimpleId "g__defined"]
+
+defined :: Set.Set SORT -> TERM f -> SORT -> Range -> FORMULA f
+defined bsorts t s ps =
+  if Set.member s bsorts then Predication 
+         (Qual_pred_name defPred (Pred_type [s] nullRange) nullRange) [t] ps
+  else True_atom ps
+
+defVards :: Set.Set SORT -> [VAR_DECL] -> FORMULA f
+defVards bs [vs@(Var_decl [_] _ _)] = head $ defVars bs vs
+defVards bs vs = Conjunction (concatMap (defVars bs) vs) nullRange
+
+defVars :: Set.Set SORT -> VAR_DECL -> [FORMULA f]
+defVars bs (Var_decl vns s _) = map (defVar bs s) vns
+
+defVar :: Set.Set SORT -> SORT -> Token -> FORMULA f
+defVar bs s v = defined bs (Qual_var v s nullRange) s nullRange
+
+totalizeOpSymb :: OP_SYMB -> OP_SYMB
+totalizeOpSymb o = case o of
+                            Qual_op_name i (Op_type _ args res ps) qs ->
+                                Qual_op_name i (Op_type Total args res ps) qs
+                            _ -> o
+
+addBottomAlt :: Constraint -> Constraint
+addBottomAlt c = c 
+    { opSymbs = opSymbs c ++ 
+           [(Qual_op_name bottom 
+           (Op_type Total [] (newSort c) nullRange)
+           nullRange, [])] }
+
+argSorts :: Constraint -> Set.Set SORT
+argSorts c = Set.unions $ map (argsOpSymb . fst) $ opSymbs c
+    where argsOpSymb op = case op of
+              Qual_op_name _ ot _ -> Set.fromList $ args_OP_TYPE ot
+              _ -> error "argSorts"
+
+totalizeConstraint :: Set.Set Id -> Constraint -> Constraint
+totalizeConstraint bsrts c = 
+    (if Set.member (newSort c) bsrts then addBottomAlt else id) 
+    c { opSymbs = map ( \ (o, is) -> (totalizeOpSymb o, is)) $ opSymbs c }
 
 -- | Add projections to the signature
 encodeSig :: Sign f e -> Sign f e
@@ -73,7 +145,7 @@ encodeSig sig = if Set.null bsorts then sig else
     sig { opMap = projOpMap, predMap = newpredMap } where
    newTotalMap = Map.map (Set.map $ makeTotal Total) $ opMap sig
    botType x = OpType {opKind = Total, opArgs=[], opRes=x }
-   bsorts = sortSet sig -- all sorts must be considered for as and in forms
+   bsorts = allSortsWithBottom sig
    botTypes = Set.map botType bsorts
    botOpMap  = Map.insert bottom botTypes newTotalMap
    defType x = PredType{predArgs=[x]}
@@ -168,10 +240,20 @@ codeRecord bsrts mf = (mapRecord mf)
                   defined bsrts t1 (term_sort t1) ps] ps
     , foldMembership = \ _ t s ps ->
           defined bsrts (projectUnique Total ps t s) s ps
-    , foldSort_gen_ax = \ _ cs b -> Sort_gen_ax (map totalizeConstraint cs) b
+    , foldSort_gen_ax = \ _ cs b -> 
+          Sort_gen_ax (map (totalizeConstraint bsrts) cs)
+          $ if Set.null $ Set.intersection bsrts $ Set.unions 
+                $ map argSorts cs then b else False 
     , foldApplication = \ _ o args ps -> Application (totalizeOpSymb o) args ps
     , foldCast = \ _ t s ps -> projectUnique Total ps t s
     }
 
 codeFormula :: Set.Set SORT -> FORMULA () -> FORMULA ()
 codeFormula bsorts = foldFormula (codeRecord bsorts $ error "CASL2SubCFol")
+
+rmDefsRecord :: Set.Set SORT -> (f -> f) ->  Record f (FORMULA f) (TERM f)
+rmDefsRecord  bsrts mf = (mapRecord mf)
+    { foldDefinedness = \ _ t ps -> defined bsrts t (term_sort t) ps }
+
+rmDefs :: Set.Set SORT -> (f -> f) -> FORMULA f -> FORMULA f
+rmDefs bsrts = foldFormula . rmDefsRecord bsrts
