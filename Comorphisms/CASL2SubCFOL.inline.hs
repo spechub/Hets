@@ -14,12 +14,6 @@ module Comorphisms.CASL2SubCFOL where
 
 import Logic.Logic
 import Logic.Comorphism
-import Common.Id
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
-import qualified Common.Lib.Rel as Rel
-import Common.AS_Annotation
-import Data.List
 
 -- CASL
 import CASL.Logic_CASL
@@ -31,6 +25,15 @@ import CASL.Overload
 import CASL.Fold
 import CASL.Project
 import CASL.Simplify
+
+import Common.Id
+import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
+import qualified Common.Lib.Rel as Rel
+import Common.AS_Annotation
+import Common.ProofUtils
+
+import Data.List (zip)
 
 -- | The identity of the comorphism
 data CASL2SubCFOL = CASL2SubCFOL deriving (Show)
@@ -56,15 +59,25 @@ instance Comorphism CASL2SubCFOL
         , has_pred    = True
         , which_logic = max Horn $ which_logic sl
         , has_eq      = True} else sl
-    map_theory CASL2SubCFOL = mkTheoryMapping ( \ sig ->
-      let e = encodeSig sig in return (e, generateAxioms sig))
-      (map_sentence CASL2SubCFOL)
-    map_morphism CASL2SubCFOL mor = return
-      (mor  { msource = encodeSig $ msource mor
-            , mtarget = encodeSig $ mtarget mor
-            , fun_map = Map.map (\ (i, _) -> (i, Total)) $ fun_map mor })
-    map_sentence CASL2SubCFOL sig = 
-        return . codeFormula (allSortsWithBottom sig)
+    map_theory CASL2SubCFOL (sig, sens) =
+        let bsrts = allSortsWithBottom sig $
+                    Set.unions $ sortsWithBottom sig :
+                       map (botFormulaSorts . sentence) sens
+            e = encodeSig bsrts sig
+            sens1 = generateAxioms bsrts sig
+            sens2 = map (mapNamed (codeFormula bsrts)) sens
+        in return (e, disambiguateSens Set.empty . nameSens $ sens1 ++ sens2)
+    map_morphism CASL2SubCFOL mor@Morphism{msource = src, mtarget = tar} =
+        return
+        mor { msource = encodeSig (allSortsWithBottom src
+                                  $ sortsWithBottom src) src
+            , mtarget = encodeSig (allSortsWithBottom tar
+                                  $ sortsWithBottom tar) tar
+            , fun_map = Map.map (\ (i, _) -> (i, Total)) $ fun_map mor }
+    map_sentence CASL2SubCFOL sig sen =
+        return $ codeFormula
+           (allSortsWithBottom sig $
+            Set.union (botFormulaSorts sen) $ sortsWithBottom sig) sen
     map_symbol CASL2SubCFOL s =
       Set.singleton s { symbType = totalizeSymbType $ symbType s }
 
@@ -89,8 +102,8 @@ sortsWithBottom sign =
      in collect resSortsOfPartialFcts
 
 -- all supersorts inherit the same bottom element
-allSortsWithBottom :: Sign f e -> Set.Set SORT
-allSortsWithBottom sign = let s = sortsWithBottom sign in
+allSortsWithBottom :: Sign f e -> Set.Set SORT -> Set.Set SORT
+allSortsWithBottom sign s =
     Set.unions $ s : map (flip supersortsOf sign) (Set.toList s)
 
 bottom :: Id
@@ -101,7 +114,7 @@ defPred = mkId[mkSimpleId "g__defined"]
 
 defined :: Set.Set SORT -> TERM f -> SORT -> Range -> FORMULA f
 defined bsorts t s ps =
-  if Set.member s bsorts then Predication 
+  if Set.member s bsorts then Predication
          (Qual_pred_name defPred (Pred_type [s] nullRange) nullRange) [t] ps
   else True_atom ps
 
@@ -122,9 +135,9 @@ totalizeOpSymb o = case o of
                             _ -> o
 
 addBottomAlt :: Constraint -> Constraint
-addBottomAlt c = c 
-    { opSymbs = opSymbs c ++ 
-           [(Qual_op_name bottom 
+addBottomAlt c = c
+    { opSymbs = opSymbs c ++
+           [(Qual_op_name bottom
            (Op_type Total [] (newSort c) nullRange)
            nullRange, [])] }
 
@@ -134,18 +147,17 @@ argSorts c = Set.unions $ map (argsOpSymb . fst) $ opSymbs c
               Qual_op_name _ ot _ -> Set.fromList $ args_OP_TYPE ot
               _ -> error "argSorts"
 
-totalizeConstraint :: Set.Set Id -> Constraint -> Constraint
-totalizeConstraint bsrts c = 
-    (if Set.member (newSort c) bsrts then addBottomAlt else id) 
+totalizeConstraint :: Set.Set SORT -> Constraint -> Constraint
+totalizeConstraint bsrts c =
+    (if Set.member (newSort c) bsrts then addBottomAlt else id)
     c { opSymbs = map ( \ (o, is) -> (totalizeOpSymb o, is)) $ opSymbs c }
 
 -- | Add projections to the signature
-encodeSig :: Sign f e -> Sign f e
-encodeSig sig = if Set.null bsorts then sig else
+encodeSig :: Set.Set SORT -> Sign f e -> Sign f e
+encodeSig bsorts sig = if Set.null bsorts then sig else
     sig { opMap = projOpMap, predMap = newpredMap } where
    newTotalMap = Map.map (Set.map $ makeTotal Total) $ opMap sig
    botType x = OpType {opKind = Total, opArgs=[], opRes=x }
-   bsorts = allSortsWithBottom sig
    botTypes = Set.map botType bsorts
    botOpMap  = Map.insert bottom botTypes newTotalMap
    defType x = PredType{predArgs=[x]}
@@ -158,8 +170,8 @@ encodeSig sig = if Set.null bsorts then sig else
                           Map.insert (uniqueProjName $ toOP_TYPE t)
                         $ Set.singleton t) botOpMap setprojOptype
 
-generateAxioms :: Sign () e -> [Named (FORMULA ())]
-generateAxioms sig = filter (not . is_True_atom . sentence) $
+generateAxioms :: Set.Set SORT -> Sign f e -> [Named (FORMULA ())]
+generateAxioms bsorts sig = filter (not . is_True_atom . sentence) $
   map (mapNamed $ simplifyFormula id . rmDefs bsorts id) $
     map (mapNamed $ renameFormula id) (concat
     [inlineAxioms CASL
@@ -219,7 +231,6 @@ generateAxioms sig = filter (not . is_True_atom . sentence) $
         sorts = Set.toList $ sortSet sig
         sig2 = sig { sortRel = Rel.irreflex $ sortRel sig }
         d = defPred
-        bsorts = sortSet sig
         sortList = Set.toList bsorts
         opList = [(f,t) | (f,types) <- Map.toList $ opMap sig,
                   t <- Set.toList types ]
@@ -240,10 +251,10 @@ codeRecord bsrts mf = (mapRecord mf)
                   defined bsrts t1 (term_sort t1) ps] ps
     , foldMembership = \ _ t s ps ->
           defined bsrts (projectUnique Total ps t s) s ps
-    , foldSort_gen_ax = \ _ cs b -> 
+    , foldSort_gen_ax = \ _ cs b ->
           Sort_gen_ax (map (totalizeConstraint bsrts) cs)
-          $ if Set.null $ Set.intersection bsrts $ Set.unions 
-                $ map argSorts cs then b else False 
+          $ if Set.null $ Set.intersection bsrts $ Set.unions
+                $ map argSorts cs then b else False
     , foldApplication = \ _ o args ps -> Application (totalizeOpSymb o) args ps
     , foldCast = \ _ t s ps -> projectUnique Total ps t s
     }
@@ -257,3 +268,13 @@ rmDefsRecord  bsrts mf = (mapRecord mf)
 
 rmDefs :: Set.Set SORT -> (f -> f) -> FORMULA f -> FORMULA f
 rmDefs bsrts = foldFormula . rmDefsRecord bsrts
+
+-- | find sorts that need a bottom in membership formulas and casts
+
+botSorts :: (f -> Set.Set SORT) -> Record f (Set.Set SORT) (Set.Set SORT)
+botSorts mf = (constRecord mf Set.unions Set.empty)
+     { foldMembership = \ _ _ s _ -> Set.singleton s
+     , foldCast = \ _ _ s _ -> Set.singleton s }
+
+botFormulaSorts :: FORMULA f -> Set.Set SORT
+botFormulaSorts = foldFormula (botSorts $ const Set.empty)
