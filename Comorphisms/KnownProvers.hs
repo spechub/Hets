@@ -37,12 +37,12 @@ import Logic.Prover (prover_name)
 import CASL.Logic_CASL
 import CASL.Sublogic
 
-import Comorphisms.PCFOL2CFOL
+import Comorphisms.CASL2SubCFOL
 import Comorphisms.CFOL2IsabelleHOL
 import Comorphisms.CASL2PCFOL
 #ifdef CASLEXTENSIONS
 import Comorphisms.CoCASL2CoPCFOL
-import Comorphisms.CoPCFOL2CoCFOL
+import Comorphisms.CoCASL2CoSubCFOL
 -- import Comorphisms.CoCFOL2IsabelleHOL
 import Comorphisms.Modal2CASL
 #endif
@@ -50,7 +50,6 @@ import Comorphisms.PCoClTyConsHOL2IsabelleHOL
 #ifdef PROGRAMATICA
 import Comorphisms.Haskell2IsabelleHOLCF
 #endif
-import Comorphisms.CASL2SubCFOL
 import Comorphisms.CASL2SPASS
 
 type KnownProversMap = Map.Map String [AnyComorphism]
@@ -81,15 +80,15 @@ shrinkKnownProvers sub = Map.filter (not . null) .
 isaComorphisms :: Result [AnyComorphism]
 isaComorphisms = do
        -- CASL
-       pc2IHOL <- compComorphism (Comorphism PCFOL2CFOL)
+       pc2IHOL <- compComorphism (Comorphism CASL2SubCFOL)
                                  (Comorphism CFOL2IsabelleHOL)
        subpc2IHOL <- compComorphism (Comorphism CASL2PCFOL) pc2IHOL
 #ifdef CASLEXTENSIONS
        -- CoCASL
        co2IHOL <-
            (compComorphism (Comorphism CoCASL2CoPCFOL)
-                           (Comorphism CoPCFOL2CoCFOL)
-            >>= (\x -> compComorphism x (Comorphism CoPCFOL2CoCFOL)))
+                           (Comorphism CoCASL2CoSubCFOL)
+            >>= (\x -> compComorphism x (Comorphism CoCASL2CoSubCFOL)))
        -- ModalCASL
        mod2IHOL <- compComorphism (Comorphism Modal2CASL) subpc2IHOL
 #endif

@@ -40,7 +40,6 @@ import Logic.Comorphism
 import Logic.Grothendieck
 import Comorphisms.CASL2PCFOL
 import Comorphisms.CASL2SubCFOL
-import Comorphisms.PCFOL2CFOL
 import Comorphisms.CASL2HasCASL
 import Comorphisms.HasCASL2HasCASL
 import Comorphisms.CFOL2IsabelleHOL
@@ -48,7 +47,7 @@ import Comorphisms.CASL2SPASS
 #ifdef CASLEXTENSIONS
 import Comorphisms.CoCFOL2IsabelleHOL
 import Comorphisms.CoCASL2CoPCFOL
-import Comorphisms.CoPCFOL2CoCFOL
+import Comorphisms.CoCASL2CoSubCFOL
 import Comorphisms.CASL2Modal
 import Comorphisms.Modal2CASL
 import Comorphisms.CASL2CoCASL
@@ -90,7 +89,7 @@ addUnionNames (c1@(Comorphism cid1),  c2@(Comorphism cid2)) =
 inclusionList :: [AnyComorphism]
 inclusionList = [Comorphism CASL2HasCASL, Comorphism HasCASL2HasCASL, 
                  Comorphism CFOL2IsabelleHOL,
-                 Comorphism SuleCFOL2SoftFOL, Comorphism CASL2SubCFOL,
+                 Comorphism SuleCFOL2SoftFOL,
 #ifdef PROGRAMATICA
                  Comorphism HasCASL2Haskell,
                  Comorphism Haskell2IsabelleHOLCF,
@@ -110,9 +109,9 @@ normalList :: [AnyComorphism]
 normalList = [
 #ifdef CASLEXTENSIONS
                  Comorphism CoCASL2CoPCFOL,
-                 Comorphism CoPCFOL2CoCFOL,
+                 Comorphism CoCASL2CoSubCFOL,
 #endif
-                 Comorphism CASL2PCFOL, Comorphism PCFOL2CFOL, 
+                 Comorphism CASL2PCFOL, Comorphism CASL2SubCFOL, 
                  Comorphism CASL2TopSort]
 
 comorphismList :: [AnyComorphism]
