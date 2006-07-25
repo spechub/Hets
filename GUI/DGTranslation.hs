@@ -21,7 +21,7 @@ import qualified Common.Lib.Map as Map
 
 -- import Static.DGTranslation
 import Static.DGTranslation
-import Comorphisms.PCFOL2CFOL
+import Comorphisms.CASL2SubCFOL
 
 {-
 dg_translation_GUI :: (LIB_NAME, LibEnv) 
@@ -45,5 +45,5 @@ trans gc comorphism= do
                Nothing  -> return gc  
 
 
-trans_PCFOL2CFOL gc = trans gc (Comorphism PCFOL2CFOL)
+trans_CASL2SubCFOL gc = trans gc (Comorphism CASL2SubCFOL)
 
