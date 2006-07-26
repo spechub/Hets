@@ -2,7 +2,7 @@
 
 # Test if the KnownProversMap works
 
-../../showKP
+../../Comorphisms/test/showKP
 ret=$?
 (exit $ret) && echo "  passed" || echo "  failed"
 exit $ret
