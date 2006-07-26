@@ -91,7 +91,8 @@ toAltSyntax prd over ga n i@(Id ms cs qs) thy = let
       else if begPlace i then let q = adjustPrec $ mx + 3 in (q : minL1 , q)
       else if endPlace i then let q = adjustPrec $ mx + 2 in (minL1 ++ [q], q)
       else (minL, maxPrio - 1)
-    in if n == 0 then Just $ AltSyntax ts [] maxPrio
+    in if n < 0 then Nothing
+       else if n == 0 then Just $ AltSyntax ts [] maxPrio
        else if isMixfix i then Just $ AltSyntax
                 ('(' : (if begPlace i then "_ " else ht)
                          ++ tts ++ ")") precList erg
