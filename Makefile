@@ -88,7 +88,7 @@ TESTTARGETFILES += CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
     ATC/ATCTest.hs ATC/ATCTest2.hs Common/ATerm/ATermLibTest.hs \
     Common/ATerm/ATermDiffMain.hs Common/annos.hs Common/test_parser.hs \
-    SPASS/tests/PrintTPTPTests.hs
+    SPASS/tests/PrintTPTPTests.hs Comorphisms/test/showKP.hs
 
 UNI_PACKAGE_CONF = $(wildcard ../uni/uni-package.conf)
 ifneq ($(strip $(UNI_PACKAGE_CONF)),)
@@ -556,7 +556,6 @@ o_clean:
 bin_clean:
 	$(RM) hets
 	$(RM) hets.cgi
-	$(RM) showKP
 	$(RM) $(TESTTARGETS)
 
 clean_pretty:
@@ -605,8 +604,7 @@ Haskell/h2hf: Haskell/h2hf.hs Haskell/*.hs Isabelle/*.hs Common/*.hs \
 h2h: Haskell/h2h
 
 ### test program to check the known provers
-showKP: Comorphisms/test/showKP.hs Comorphisms/*.hs Common/*.hs Logic/*.hs
-	$(HC) --make -o $@ $< $(HC_OPTS)
+showKP: Comorphisms/test/showKP
 
 ### run tests in other directories
 check: $(TESTTARGETS)
