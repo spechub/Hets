@@ -43,7 +43,7 @@ import Comorphisms.CASL2PCFOL
 #ifdef CASLEXTENSIONS
 import Comorphisms.CoCASL2CoPCFOL
 import Comorphisms.CoCASL2CoSubCFOL
--- import Comorphisms.CoCFOL2IsabelleHOL
+import Comorphisms.CoCFOL2IsabelleHOL
 import Comorphisms.Modal2CASL
 #endif
 import Comorphisms.PCoClTyConsHOL2IsabelleHOL
@@ -66,9 +66,9 @@ knownProvers =
        return $ foldl insProvers Map.empty (isaCs++spassCs)
        where insProvers kpm cm =
               case cm of
-              (Comorphism cid) -> 
+              (Comorphism cid) ->
                  let prs = provers (targetLogic cid)
-                 in foldl (\ m p -> Map.insertWith mergeLists 
+                 in foldl (\ m p -> Map.insertWith mergeLists
                                           (prover_name p) [cm] m) kpm prs
              mergeLists xs ys = ys++xs
 
@@ -80,19 +80,19 @@ shrinkKnownProvers sub = Map.filter (not . null) .
 isaComorphisms :: Result [AnyComorphism]
 isaComorphisms = do
        -- CASL
-       pc2IHOL <- compComorphism (Comorphism CASL2SubCFOL)
-                                 (Comorphism CFOL2IsabelleHOL)
-       subpc2IHOL <- compComorphism (Comorphism CASL2PCFOL) pc2IHOL
+       subpc2IHOL <-
+           compComorphism (Comorphism CASL2PCFOL) (Comorphism CASL2SubCFOL)
+           >>= (\ x -> compComorphism x (Comorphism CFOL2IsabelleHOL))
 #ifdef CASLEXTENSIONS
        -- CoCASL
        co2IHOL <-
-           (compComorphism (Comorphism CoCASL2CoPCFOL)
-                           (Comorphism CoCASL2CoSubCFOL)
-            >>= (\x -> compComorphism x (Comorphism CoCASL2CoSubCFOL)))
+           compComorphism (Comorphism CoCASL2CoPCFOL)
+                              (Comorphism CoCASL2CoSubCFOL)
+            >>= (\ x -> compComorphism x (Comorphism CoCFOL2IsabelleHOL))
        -- ModalCASL
        mod2IHOL <- compComorphism (Comorphism Modal2CASL) subpc2IHOL
 #endif
-       return [Comorphism CFOL2IsabelleHOL, pc2IHOL, subpc2IHOL,
+       return [Comorphism CFOL2IsabelleHOL, subpc2IHOL,
 #ifdef CASLEXTENSIONS
                co2IHOL, mod2IHOL,
 #endif
@@ -105,7 +105,7 @@ spassComorphisms :: Result [AnyComorphism]
 spassComorphisms =
     do let caslTop :: CASL_Sublogics
            caslTop = top
-           max_nosub_SPASS = 
+           max_nosub_SPASS =
                caslTop {cons_features =
                         (cons_features caslTop) {emptyMapping = True} }
            max_sub_SPASS = max_nosub_SPASS { sub_features = LocFilSub }
@@ -114,7 +114,7 @@ spassComorphisms =
            compSPASS x = compComorphism x (Comorphism SuleCFOL2SoftFOL)
        partOut <- (compComorphism idCASL_sub (Comorphism CASL2SubCFOL)
                    >>= compSPASS)
-       partSubOut <- (compComorphism (Comorphism CASL2PCFOL) 
+       partSubOut <- (compComorphism (Comorphism CASL2PCFOL)
                                      (Comorphism CASL2SubCFOL)
                       >>= (compComorphism idCASL_nosub)
                       >>= compSPASS)
