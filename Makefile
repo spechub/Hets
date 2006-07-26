@@ -334,7 +334,7 @@ tax_objects = $(patsubst %.hs, %.o, $(tax_sources))
 
 .PHONY : all hets-opt hets-optimized clean o_clean clean_pretty \
     real_clean bin_clean distclean \
-    check capa hacapa h2h h2hf clean_genRules genRules \
+    check capa hacapa h2h h2hf showKP clean_genRules genRules \
     count doc apache_doc post_doc4apache fromKif \
     derivedSources install_hets install release cgi patch ghci
 
