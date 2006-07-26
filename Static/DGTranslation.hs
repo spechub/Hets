@@ -24,8 +24,9 @@ import Common.Lib.Graph
 import Data.Graph.Inductive.Graph
 import CASL.Logic_CASL
 import Common.AS_Annotation
-
+import Common.DocUtils
 import Debug.Trace
+import Common.Id
 
 -- translation between two GlobalContext on the basis the given Comorphism 
 dg_translation :: GlobalContext -> AnyComorphism -> Result GlobalContext
@@ -37,7 +38,7 @@ dg_translation gc cm@(Comorphism cidMor) =
         case Map.lookup h (toMap $ devGraph gcon) of
           Just (node@(_, nodeLab, _)) ->
            if lessSublogicComor 
-                  (sublogicOfTh $ dgn_theory nodeLab) cm
+                  (sublogicOfTh $ dgn_theory nodeLab)  cm
               then let Result diags' maybeGC = updateNode h gcon cm 
                    in  case maybeGC of
                          Just gc' -> mainTrans r (diagsMain ++ diags') gc'
@@ -81,22 +82,27 @@ dg_translation gc cm@(Comorphism cidMor) =
 			
 updateNode :: Int -> GlobalContext -> AnyComorphism -> Result GlobalContext
 updateNode index gc acm@(Comorphism cidMor) =
-    let (outLinks, node, inLinks) = 
+    let (inLinks, node, outLinks) = 
             fromJust $ Map.lookup index $ toMap $ devGraph gc
-        -- wir translate only the from-links
-        Result diagsL1 (Just (newL1, toMergedSent)) = 
+     -- only the sentences of from-links to be merged in theory of node
+        Result diagsL1 (Just (newL1, toMergedSent1)) = 
             foldl (joinResultWith (\ (a, sen1) (b, sen2) -> 
                                        (a ++ b, List.nub (sen1 ++sen2)))) 
                       (Result [] (Just ([], []))) (map updateEdge inLinks)
-        Result thDiag newNode = transTh outLinks newL1 toMergedSent node
-    in if length newL1 /= 0 then  
-        Result (thDiag ++ diagsL1)
+     --   Result diagsL2 (Just (newL2, _)) = 
+     --       foldl (joinResultWith (\ (a, sen1) (b, sen2) -> 
+     --                                  (a ++ b, List.nub (sen1 ++sen2)))) 
+     --                 (Result [] (Just ([], []))) (map updateEdge outLinks)
+        Result thDiag newNode = transTh newL1 outLinks toMergedSent1 node
+   
+    in {- if length newL1 /= 0 then -}  
+        Result (diagsL1 ++ thDiag)
                 (Just (gc {devGraph=Gr (Map.update (\_ -> newNode)  
                                         index 
                                         (toMap $ devGraph gc))
 
                           }))
-          else  Result (thDiag ++ diagsL1) (Just gc)
+      --    else  Result (diagsL1 ++ diagsL2 ++ thDiag) (Just gc) 
 
    where 
      slid = sourceLogic cidMor
@@ -118,15 +124,17 @@ updateNode index gc acm@(Comorphism cidMor) =
                    Result diagLs (Just (lsign', lsens)) -> 
                      case fMor targetLid lmorphism of
                        Result diagLm (Just lmorphism') -> 
+
                          case idComorphism (Logic tlid) of 
                            Comorphism cid2 ->
-                             Result (diagLs ++ diagLm ++ [mkDiag Hint "successful translation of edge." ()]) 
+                            let newSign = fromJust $ coerceSign tlid 
+                                            (sourceLogic cid2) "" lsign'
+                                newMor = fromJust $ coerceMorphism tlid 
+                                         (targetLogic cid2) "" lmorphism'
+                            in  Result (trace ((show $ sublogicOfSign (G_sign sourceLid lsign)) ++ " --> " ++ (show $ sublogicOfSign (G_sign (sourceLogic cid2) newSign))) (diagLs ++ diagLm ++ [mkDiag Hint "successful translation of edge." ()]) )
                                (Just ([(links{dgl_morphism=
-                                   GMorphism cid2 
-                                      (fromJust $ coerceSign tlid 
-                                         (sourceLogic cid2) "" lsign') 
-                                      (fromJust $ coerceMorphism tlid 
-                                         (targetLogic cid2) "" lmorphism')
+                                              GMorphism cid2 
+                                                  newSign newMor
                                              }, n)], lsens))
                        Result diagLm Nothing  ->  Result (diagLm ++ 
                          [mkDiag Error ("morphism of link can not be translated.") ()]) 
@@ -157,7 +165,7 @@ updateNode index gc acm@(Comorphism cidMor) =
 
      -- to translate theory
      transTh newL1 newL2 toMergedSens node =
-         case fTh toMergedSens $ dgn_theory node of
+         case fTh toMergedSens node $ dgn_theory node of
            Result diagsT maybeTh -> 
                case maybeTh of
                  Just th' -> 
@@ -167,7 +175,7 @@ updateNode index gc acm@(Comorphism cidMor) =
                                           newL2))
                  Nothing  -> Result diagsT Nothing
 
-     fTh tmSens (G_theory lid sign thSens) =
+     fTh tmSens node g@(G_theory lid sign thSens) =
       case coerceSign lid slid "" sign of
         Just sign' -> 
             case coerceThSens lid slid "" thSens of
@@ -177,8 +185,7 @@ updateNode index gc acm@(Comorphism cidMor) =
                       -- show diags
                       case maybeTh of
                         Just (sign'', namedS) -> 
-                            Result diagsOfth (Just (G_theory tlid sign'' 
-                                 (toThSens $ List.nub (namedS ++  tmSens))))
+                            Result (diagsOfth ++ [mkDiag Hint "successful translation of theory" ()]) (Just (let x = G_theory tlid sign'' (toThSens $ List.nub (namedS ++ tmSens  )) in trace ((show cidMor) ++ ": " ++ (show $ sublogicOfTh g) ++ " -> " ++ (show $ sublogicOfTh x)) x))
                         Nothing ->  error "Result diagsOfth Nothing"
               Nothing    -> Result [(mkDiag Error 
                                      ("cannot coerce sens" ++ show thSens)

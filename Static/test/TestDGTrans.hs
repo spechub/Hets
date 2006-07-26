@@ -44,7 +44,7 @@ process file = do
                 do -- putStrLn ("orig: \n" ++ (show $ devGraph gc))
                    x  <-  compComorphism (Comorphism CASL2PCFOL) 
                                          (Comorphism CASL2SubCFOL)
-                   gc' <- trans (trace ("compCom: " ++ show x) x) gc
+                   gc' <- trans  x gc
                    -- putStrLn ("translated: \n" ++ (show $ devGraph gc'))
                    return $ Just (libName, Map.update (\_ -> Just gc') libName gcMap)
             _ -> do putStrLn "not found gc."
@@ -56,15 +56,17 @@ trans :: AnyComorphism -> GlobalContext -> IO GlobalContext
 trans acm gc = do
     case dg_translation gc acm of
       Result diags' maybeGC ->
-          do putStrLn ("diagnosis : \n" ++ (show diags'))
-             case maybeGC of
-               Just gc' -> if not $ isLessSubLogic acm $ devGraph gc'
+          do putStrLn ("diagnosis : \n" ++ (show $ filter isErrorDiag diags'))
+             if hasErrors diags' then error "error(s) in translation."
+              else do
+               case maybeGC of
+                Just gc' -> if not $ isLessSubLogic acm $ devGraph gc'
                              then do putStrLn ("anyplace is not less" ++ 
                                                "than Comorphism.")
                                      return gc'
                              else return gc'
-               Nothing  -> do putStrLn "no translation" 
-                              return gc
+                Nothing  -> do putStrLn "no translation" 
+                               return gc
 
 isLessSubLogic :: AnyComorphism -> DGraph -> Bool
 isLessSubLogic acm dg =
