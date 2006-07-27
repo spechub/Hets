@@ -57,7 +57,7 @@ printTheoryBody sig sens =
         (rdefs, ts) = getRecDefs rs
         tNames = map senName $ ts ++ axs
     in
-    callML "initialize" (brackets $ sepByCommas 
+    callML "initialize" (brackets $ sepByCommas
                         $ map (text . show . Quote) tNames) $++$
     printSign sig $++$
     (if null axs then empty else text axiomsS $+$
@@ -219,7 +219,7 @@ printTrm b trm = case trm of
         IsCont -> (text "If" <+> d <+> text "fi", maxPrio)
     Case e ps -> (text "case" <+> printPlainTerm b e <+> text "of"
                   $+$ vcat (bar $
-                         map (\ (p, t) -> 
+                         map (\ (p, t) ->
                                   fsep [ printPlainTerm b p <+> text "=>"
                                        , printPlainTerm b t]) ps), lowPrio)
     Let es i -> (fsep [text "let" <+>
@@ -335,24 +335,23 @@ printNInstance t xs = text instanceS <+> text t <> doubleColon <>
            $ map (doubleQuotes . printSort . snd) ys)
     <+> printClass (fst xs) $+$ text "by intro_classes"
 
+-- filter out types that are given in the domain table
 printTypeDecls :: Sign -> Doc
 printTypeDecls sig =
-    Map.foldWithKey (printTycon sig) empty $ arities $ tsig sig
+    let dt = Map.fromList $ map (\ (t, _) -> (typeId t, []))
+             $ concat $ domainTab sig
+    in vcat $ map printTycon $ Map.toList
+           $ Map.difference (arities $ tsig sig) dt
 
-printTycon :: Sign -> TName -> [(IsaClass, [(Typ, Sort)])] -> Doc -> Doc
-printTycon sig t arity' rest =
+printTycon :: (TName, [(IsaClass, [(Typ, Sort)])]) -> Doc
+printTycon (t, arity') =
               let arity = if null arity' then
                           error "IsaPrint.printTycon"
                                 else length (snd $ head arity') in
-            if dtyp sig t then empty else
             text typedeclS <+>
             (if arity > 0
              then parens $ hsep (map (text . ("'a"++) . show) [1..arity])
-             else empty) <+> text t $+$ rest
-
-dtyp :: Sign -> TName -> Bool
-dtyp sig t = elem t $
-         concat [map (typeId . fst) x | x <- domainTab sig]
+             else empty) <+> text t
 
 -- | show alternative syntax (computed by comorphisms)
 printAlt :: VName -> Doc
