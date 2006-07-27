@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2005
+Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
@@ -83,9 +83,7 @@ mapSentence m s = return $ case s of
 mapFunSym :: IdMap -> FunMap -> (Id, TypeScheme) -> (Id, TypeScheme)
 mapFunSym im fm (i, sc) =
     let msc = mapTypeScheme im sc
-        (j, sc2) = Map.findWithDefault (i, msc)
-                   (i, msc) fm in
-        (j , sc2)
+    in Map.findWithDefault (i, msc) (i, msc) fm
 
 embedMorphism :: Env -> Env -> Morphism
 embedMorphism = mkMorphism
