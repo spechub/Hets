@@ -27,35 +27,37 @@ If the parser meaneage to parse in the given order all the indicated words
 module PGIP.Parser_Syntax where
 
 import PGIP.Commands
+import PGIP.Common
    
         -- basic datastructures: see Static.DevGraph, Logic.Prover 
 
 commands::[ ([String], CommandFunctionsAndParameters)]
 commands =     [(["use","PATH"],                                       (CommandParam commandUse [])), -- Static.AnalysisLibrary, Driver.ReadFn
-                (["dg","auto","GOALS"],                                (CommandParamStatus commandDgAuto        [] [EnvID])), -- Proofs.Auto
-                (["dg","glob-subsume","GOALS"],                        (CommandParamStatus commandDgGlobSubsume [] [EnvID])), -- Proofs.Global
-                (["dg","glob-decomp","GOALS"],                         (CommandParamStatus commandDgGlobDecomp  [] [EnvID])), -- Proofs.Global
-                (["dg","loc-infer","GOALS"],                           (CommandParamStatus commandDgLocInfer    [] [EnvID])), -- Proofs.Local
-                (["dg","loc-decomp","GOALS"],                          (CommandParamStatus commandDgLocDecomp   [] [EnvID])), -- Proofs.Local
-                (["dg","comp","GOALS"],                                (CommandParamStatus commandDgComp        [] [EnvID])), -- Proofs.Comp
-                (["dg","comp-new","GOALS"],                            (CommandParamStatus commandDgCompNew     [] [EnvID])), -- Proofs.Comp
-                (["dg","hide-thm","GOALS"],                            (CommandParamStatus commandDgHideThm     [] [EnvID])), -- Proofs.HideThmShift
+                (["dg","auto","GOALS"],                                (CommandParamStatus commandDgAuto        [] )), -- Proofs.Auto
+                (["dg","glob-subsume","GOALS"],                        (CommandParamStatus commandDgGlobSubsume [] )), -- Proofs.Global
+                (["dg","glob-decomp","GOALS"],                         (CommandParamStatus commandDgGlobDecomp  [] )), -- Proofs.Global
+                (["dg","loc-infer","GOALS"],                           (CommandParamStatus commandDgLocInfer    [] )), -- Proofs.Local
+                (["dg","loc-decomp","GOALS"],                          (CommandParamStatus commandDgLocDecomp   [] )), -- Proofs.Local
+                (["dg","comp","GOALS"],                                (CommandParamStatus commandDgComp        [] )), -- Proofs.Comp
+                (["dg","comp-new","GOALS"],                            (CommandParamStatus commandDgCompNew     [] )), -- Proofs.Comp
+                (["dg","hide-thm","GOALS"],                            (CommandParamStatus commandDgHideThm     [] )), -- Proofs.HideThmShift
                 (["dg","thm-hide","GOALS"],                            (CommandTest test [])), -- Proofs.ThmHideShift
-                (["dg","basic","GOALS"],                               (CommandTest test [])), -- Proofs.InferBasic
-                (["dg-all","auto"],                                    (CommandStatus commandDgAllAuto             [EnvID])), -- dto.
-                (["dg-all","glob-subsume"],                            (CommandStatus commandDgAllGlobSubsume      [EnvID])),
-                (["dg-all","glob-decomp"],                             (CommandStatus commandDgAllGlobDecomp       [EnvID])),
-                (["dg-all","loc-infer"],                               (CommandStatus commandDgAllLocInfer         [EnvID])),
-                (["dg-all","loc-decomp"],                              (CommandStatus commandDgAllLocDecomp        [EnvID])),
-                (["dg-all","comp"],                                    (CommandStatus commandDgAllComp             [EnvID])),
-                (["dg-all","comp-new"],                                (CommandStatus commandDgAllCompNew          [EnvID])),
-                (["dg-all","hide-thm"],                                (CommandStatus commandDgAllHideThm          [EnvID])),
-                (["dg-all","thm-hide"],                                (CommandStatus commandDgAllThmHide          [EnvID])),
-                (["dg-all","basic"],                                   (CommandTest test [])),
-                (["show-dg-goals"],                                    (CommandTest test [])), -- new function
-                (["show-theory-goals"],                                (CommandShowStatus commandShowTheory        [EnvID])),
-                (["show-theory"],                                      (CommandShowStatus commandShowTheory        [EnvID])), -- dto.
-                (["node-info"],                                        (CommandTest test [])), -- GUI.ConvertAbstractToDevGraph
+                (["dg","basic","GOALS"],                               (CommandParamStatus commandDgInferBasic  [] )), -- Proofs.InferBasic
+                (["dg-all","auto"],                                    (CommandStatus commandDgAllAuto             )), -- dto.
+                (["dg-all","glob-subsume"],                            (CommandStatus commandDgAllGlobSubsume      )),
+                (["dg-all","glob-decomp"],                             (CommandStatus commandDgAllGlobDecomp       )),
+                (["dg-all","loc-infer"],                               (CommandStatus commandDgAllLocInfer         )),
+                (["dg-all","loc-decomp"],                              (CommandStatus commandDgAllLocDecomp        )),
+                (["dg-all","comp"],                                    (CommandStatus commandDgAllComp             )),
+                (["dg-all","comp-new"],                                (CommandStatus commandDgAllCompNew          )),
+                (["dg-all","hide-thm"],                                (CommandStatus commandDgAllHideThm          )),
+                (["dg-all","thm-hide"],                                (CommandStatus commandDgAllThmHide          )),
+                (["dg-all","basic"],                                   (CommandStatus commandDgAllInferBasic       )),
+                (["show-dg-goals"],                                    (CommandShowStatus commandShowDgGoals       )), -- new function
+--                (["show-dg-goals"],                                    (CommandTest test [])),
+                (["show-theory-goals"],                                (CommandShowStatus commandShowTheory        )),
+                (["show-theory"],                                      (CommandShowStatus commandShowNodeTheory    )), -- dto.
+                (["node-info"],                                        (CommandShowStatus commandShowNodeInfo      )), -- GUI.ConvertAbstractToDevGraph
                 (["show-taxonomy"],                                    (CommandTest test [])), --  GUI.ConvertAbstractToDevGraph
                 (["show-concepts"],                                    (CommandTest test [])), --  GUI.ConvertAbstractToDevGraph
                 (["translate","COMORPHISM"],                           (CommandTest test [])), -- Proofs.InferBasic

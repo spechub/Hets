@@ -17,49 +17,248 @@ Usefull function used by the parser.
 module PGIP.Common where
                       
 
-import PGIP.Commands
-import Proofs.EdgeUtils
 
+import Proofs.EdgeUtils
+import Data.Graph.Inductive.Graph
+import Syntax.AS_Library
+import Static.AnalysisLibrary
+import Static.DevGraph
+import Driver.Options
+import Common.Utils
+import Proofs.Automatic
+import Proofs.Global
+import Proofs.Local
+import Proofs.Composition
+import Proofs.HideTheoremShift
+import Proofs.TheoremHideShift
+import Proofs.EdgeUtils
+import Proofs.InferBasic
+import Common.Id
+import Common.DocUtils
+import Common.Result
+import Data.Maybe
+import Data.Graph.Inductive.Graph
+import Comorphisms.LogicGraph
+
+type GDataEdge = LEdge DGLinkLab
+type GDataNode = LNode DGNodeLab
+
+data GOAL = 
+   Node         Id   
+ | Edge         Id   Id     
+ | LabeledEdge  Id   Int     Id 
+ deriving (Eq,Show)
+
+data GraphGoals =
+   GraphNode  GDataNode
+ | GraphEdge  GDataEdge
+-- | GraphGlobalEdge [GDataEdge]
+-- | GraphHidingEdge [GDataEdge]
+ deriving (Eq,Show)     
+
+data ScriptCommandParameters =
+   Path                         [String] 
+ | Formula                       Id 
+ | Prover                        Id
+ | Goals                         [GOAL]
+ | ParsedComorphism             [Id]
+ | AxiomSelectionWith           [Id]
+ | AxiomSelectionExcluding      [Id]
+ | Formulas                     [Id]
+ | ProofScript                   String
+ | ParamErr                      String
+ | NoParam
+ deriving (Eq,Show)
+
+data CmdInterpreterStatus = 
+   OutputErr  String
+ | CmdInitialState
+ | Env     LIB_NAME LibEnv
+ | Selected [GraphGoals]
+ | AllGraphGoals [GraphGoals]
+
+
+
+
+ 
+data CommandFunctionsAndParameters=
+   CommandParam        ([ScriptCommandParameters]->IO [CmdInterpreterStatus]) [ScriptCommandParameters] 
+ | CommandParamStatus  (([ScriptCommandParameters],[CmdInterpreterStatus])-> [CmdInterpreterStatus]) [ScriptCommandParameters] 
+ | CommandStatus       ([CmdInterpreterStatus] -> [CmdInterpreterStatus])
+ | CommandTest         ([ScriptCommandParameters]->IO())  [ScriptCommandParameters]
+ | CommandShowStatus   ([CmdInterpreterStatus] -> IO()) 
+ | CommandError        String
+
+
+extractGraphNode:: Id->[GraphGoals]->Maybe GraphGoals
+extractGraphNode x allGoals 
+    = case allGoals of
+       []              -> Nothing
+       (GraphNode (nb,label)):l    -> if (( getDGNodeName label)==(show x)) then Just (GraphNode (nb,label)) 
+                                                                            else extractGraphNode x l
+       _:l                           -> extractGraphNode x l
+         
+
+extractGraphEdge:: Id -> Id -> [GraphGoals] -> Maybe GraphGoals
+extractGraphEdge x y allGoals
+   = case allGoals of
+      []             -> Nothing
+      (GraphEdge (xx,yy,label)):l  -> let tmp1 = fromJust $ extractGraphNode x allGoals
+                                          tmp2 = fromJust $ extractGraphNode y allGoals
+                                      in case tmp1 of 
+                                           (GraphNode (tmp1_nb, tmp1_lab)) ->
+                                                case tmp2 of
+                                                   (GraphNode (tmp2_nb, tmp2_lab)) ->
+                                                          if (tmp1_nb == xx) 
+                                                              then if (tmp2_nb == yy) then Just (GraphEdge (xx,yy,label))
+                                                                                      else extractGraphEdge x y l
+                                                              else extractGraphEdge x y l
+                                                   _ -> extractGraphEdge x y l
+                                           _ -> extractGraphEdge x y l  
+                                                               
+
+extractGraphLabeledEdge:: Id -> Int -> Id -> [GraphGoals] -> Maybe GraphGoals
+extractGraphLabeledEdge x nb y allGoals
+    = case allGoals of
+      []             -> Nothing
+      (GraphEdge (xx,yy,label)):l  -> let tmp1 = fromJust $ extractGraphNode x allGoals
+                                          tmp2 = fromJust $ extractGraphNode y allGoals
+                                      in case tmp1 of 
+                                           (GraphNode (tmp1_nb, tmp1_lab)) ->
+                                                case tmp2 of
+                                                   (GraphNode (tmp2_nb, tmp2_lab)) ->
+                                                          if (tmp1_nb == xx) 
+                                                              then if (tmp2_nb == yy) 
+                                                                  then if (nb==0)  
+                                                                       then Just (GraphEdge (xx,yy,label))
+                                                                       else extractGraphLabeledEdge x (nb-1) y l
+                                                                  else extractGraphLabeledEdge x nb y l
+                                                              else extractGraphLabeledEdge x nb y l
+                                                   _ -> extractGraphLabeledEdge x nb y l
+                                           _ -> extractGraphLabeledEdge x nb y l  
+  
+
+
+
+getGoalList :: [GOAL] -> [GraphGoals] -> [GraphGoals]
+getGoalList goalList allGoals 
+                    = case goalList of
+                          (Node x):l             -> (fromJust $ extractGraphNode x allGoals):(getGoalList l allGoals)
+                          (Edge x y):l           -> (fromJust $ extractGraphEdge x y allGoals):(getGoalList l allGoals)
+                          (LabeledEdge x nb y):l ->(fromJust $ extractGraphLabeledEdge x nb y allGoals):(getGoalList l allGoals)
+                          []                     -> []
+
+getEdgeGoals::[GDataEdge] -> [GraphGoals] 
+getEdgeGoals ls =
+          case ls of 
+               x:l   -> if (isUnprovenGlobalThm x) 
+                         then (GraphEdge x):(getEdgeGoals l)
+                         else if (isUnprovenLocalThm x) 
+                           then (GraphEdge x):(getEdgeGoals l)
+                           else if (isUnprovenHidingThm x) 
+                               then (GraphEdge x):(getEdgeGoals l)
+                               else getEdgeGoals l
+               []    -> []
+
+getNodeGoals::[GDataNode] -> [GraphGoals]
+getNodeGoals ls =
+         case ls of
+               (nb,x):l  -> if (hasOpenGoals x) then (GraphNode (nb,x)):(getNodeGoals l)
+                                           else getNodeGoals l
+               []   -> []
+
+createAllGoalsList :: LIB_NAME->LibEnv -> [GraphGoals]
+createAllGoalsList ln libEnv
+                    = let dgraph = lookupDGraph ln libEnv
+                          edgeGoals = getEdgeGoals (labEdges dgraph)
+                          nodeGoals = getNodeGoals (labNodes dgraph)
+                      in edgeGoals ++ nodeGoals
+
+
+getEdgeList :: [GraphGoals] -> [GDataEdge]
+getEdgeList ls =
+        case ls of 
+             (GraphEdge x):l  -> x:(getEdgeList l)
+             (GraphNode _):l  -> getEdgeList l
+             []               -> []
+
+getNodeList :: [GraphGoals] -> [GDataNode]
+getNodeList ls =
+       case ls of 
+            (GraphEdge _):l  -> getNodeList l
+            (GraphNode x):l  -> x:(getNodeList l)
+            []               -> []
 
 
 -- | The 'addOrReplace' function,given a CmdInterpeterStatus and a list of such CmdInterpeterStatus, replaces any occurance of that type
 -- of CmdInterpeterStatus with the given one, and if none found it adds one to the list
 addOrReplace::([CmdInterpreterStatus],[CmdInterpreterStatus])->[CmdInterpreterStatus]
 addOrReplace (val,status)
-                      = case val of
-                                  []                  ->  status
-                                  (Env x y):l         -> case status of
-                                                          []                    -> addOrReplace(l,(Env x y):[])
-                                                          CmdInitialState:ls    -> addOrReplace ((Env x y):l,ls)
-                                                          (OutputErr xx):_      -> (OutputErr xx):[]
-                                                          (Env _ _):ls          -> addOrReplace(l,(Env x y):ls)
-                                                          (SelectedNodes xx):ls -> addOrReplace(l, (SelectedNodes xx):addOrReplace([Env x y],ls))
-                                  (SelectedNodes x):l -> case status of
-                                                          []                    -> addOrReplace (l,(SelectedNodes x):[])
-                                                          CmdInitialState:ls    -> addOrReplace ((SelectedNodes x):l, ls)
-                                                          (OutputErr xx):_      -> (OutputErr xx):[]
-                                                          (Env xx yy):ls        -> addOrReplace(l, (Env xx yy):addOrReplace([SelectedNodes x], ls))
-                                                          (SelectedNodes _):ls  -> addOrReplace(l, (SelectedNodes x):ls)
-                                  (OutputErr x):l -> (OutputErr x):[]
-                                  CmdInitialState:l -> addOrReplace (l,status)
-
--- | The 'extractFrom' function, given a list of CmdInterpeterStatus and a CmdInterpreterStatusID, it returns the first occurance of 
--- that type of CmdInterpreterStatus from the list 
-extractFrom::([CmdInterpreterStatus],CmdInterpreterStatusID) -> Maybe CmdInterpreterStatus
-extractFrom (status,cmdID)
-                          = case cmdID of
-                                        EnvID -> do 
-                                                   case status of 
-                                                                [] -> Nothing
-                                                                (Env x y):_ -> Just (Env x y)
-                                                                _:ls-> (extractFrom (ls,cmdID))
+   = case val of
+      []                  ->  status
+      (Env x y):l         -> case status of
+                              []                    -> addOrReplace(l,(Env x y):[])
+                              CmdInitialState:ls    -> addOrReplace ((Env x y):l,ls)
+                              (OutputErr xx):_      -> (OutputErr xx):[]
+                              (Env _ _):ls          -> addOrReplace(l,(Env x y):ls)
+                              (Selected xx):ls      -> addOrReplace(l, (Selected xx):addOrReplace([Env x y],ls))
+                              (AllGraphGoals xx):ls -> addOrReplace(l, (AllGraphGoals xx):addOrReplace([Env x y],ls))
+      (Selected x):l -> case status of
+                              []                    -> addOrReplace (l,(Selected x):[])
+                              CmdInitialState:ls    -> addOrReplace ((Selected x):l, ls)
+                              (OutputErr xx):_      -> (OutputErr xx):[]
+                              (Env xx yy):ls        -> addOrReplace(l, (Env xx yy):addOrReplace([Selected x], ls))
+                              (Selected _):ls  -> addOrReplace(l, (Selected x):ls)
+                              (AllGraphGoals xx):ls -> addOrReplace(l, (AllGraphGoals xx):addOrReplace([Selected x],ls))
+      (AllGraphGoals x):l -> case status of
+                             []                     -> addOrReplace (l,(AllGraphGoals x):[])
+                             CmdInitialState:ls     -> addOrReplace ((AllGraphGoals x):l,ls)
+                             (OutputErr xx):_       -> (OutputErr xx):[]
+                             (Env xx yy):ls         -> addOrReplace(l, (Env xx yy):addOrReplace([AllGraphGoals x], ls))
+                             (Selected xx):ls       -> addOrReplace(l, (Selected xx):addOrReplace([AllGraphGoals x], ls))
+                             (AllGraphGoals _):ls   -> addOrReplace(l, (AllGraphGoals x):ls)
+      (OutputErr x):l -> (OutputErr x):[]
+      CmdInitialState:l -> addOrReplace (l,status)
 
 
--- | The 'extractNodeGoals' function, given a list of parsed goals extracts the NodeGoals as a list of LIB_ID's
---extractNodeGoals::[GOAL] -> [Id]
---extractNodeGoals ls
---                    = case ls of
---                                []          -> []
---                                (Node x):l  -> x:(extractNodeGoals l)
---                                _:l         -> extractNode l
+
+printNodeTheoryFromList :: [GraphGoals]-> IO()
+printNodeTheoryFromList ls =
+                case ls of 
+                     (GraphNode x):l -> do 
+                                         printNodeTheory (GraphNode x)
+                                         result<- printNodeTheoryFromList l
+                                         return result
+                     _:l   -> do
+                                result <-printNodeTheoryFromList l
+                                return result
+                     []    -> return ()
+
+printNodeTheory :: GraphGoals -> IO()
+printNodeTheory arg =
+                 case arg of
+                       GraphNode (_,(DGNode _ theTh _ _ _ _ _)) -> putStr  ((showDoc theTh "\n") ++ "\n")
+                       _                                        -> putStr "Not a node!\n" 
+
+
+printNodeInfoFromList :: [GraphGoals] -> IO()
+printNodeInfoFromList ls =
+              case ls of
+                     (GraphNode x):l -> do
+                                          printNodeInfo (GraphNode x)
+                                          result <-printNodeInfoFromList l
+                                          return result
+                     _:l             -> do 
+                                         result<- printNodeInfoFromList l
+                                         return result
+                     []              -> return ()
+
+printNodeInfo :: GraphGoals -> IO()
+printNodeInfo x =
+              case x of
+                    GraphNode (_, (DGNode tname _ _ _ _ _ _)) -> putStr (( show tname)++"\n")
+                    _                                       -> putStr "Not a node!\n"
+
+
+
 

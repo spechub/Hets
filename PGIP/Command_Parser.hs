@@ -36,15 +36,25 @@ pgipKeywords = ["dg","dg-all","show-dg-goals","show-theory-goals","show-theory",
                 "translate","prover","proof-script","cons-check","prove","prove-all","use","auto","glob-subsume","glob-decomp",
                 "loc-infer","loc-decomp","comp","comp-new","hide-thm","thm-hide","basic","using","excluding","end-script"]
 
+scanPathFile::CharParser st String
+scanPathFile 
+--           = (char '-') <:> scanDotWords
+             = many1 ( oneOf (caslLetters ++ ['0'..'9'] ++ ['-','_','.']))
 -- |the 'getPath' function read a path as a a list of words
 getPath::AParser st [String]
 getPath 
-        = try ( do  v<-scanAnyWords `sepBy1` (string "/")
+        = try ( do  --v<-scanAnyWords `sepBy1` (string "/")
+                    v<-sepBy1 scanPathFile (string "/")
+--                  try (do (string ".")
+--                          scanAnyWords)
                     return v
               )
       <|> 
           try ( do  skip
-                    v<- scanAnyWords `sepBy1` (string "/")
+                    --v<- scanAnyWords `sepBy1` (string "/")
+                    v<-sepBy1 scanPathFile (string "/")
+--                  try (do (string ".")
+--                          scanAnyWords)
                     return v
               )
       <?> 
@@ -171,56 +181,94 @@ scanCommand arg
                                  vs<- scanCommand ls
                                  return vs
 
+printSomething :: String -> IO()
+printSomething y = putStr y
+
 checkCommand::[([String], CommandFunctionsAndParameters)]->AParser st CommandFunctionsAndParameters
 checkCommand arg
                 = case arg of 
-                        (command_description, (CommandParamStatus x _ cmdID)):command_list ->  do
+                        (command_description, (CommandParamStatus x _ )):command_list ->  do
                                       try ( do 
+--                                               putStr ("CommandParamStatus with description " ++ (show command_description) ++ "\n")
                                                ls<-scanCommand command_description 
                                                try (skip) <|> try (eof)
-                                               return (CommandParamStatus x ls cmdID)
+                                               return (CommandParamStatus x ls )
                                           )
                                    <|>
                                       checkCommand command_list
                         (command_description, (CommandParam x _)):command_list ->  do
                                       try ( do
+--                                               putStr ("CommandParam with description " ++ (show command_description) ++ "\n")
                                                ls<-scanCommand command_description
                                                try (skip) <|> try (eof)
                                                return (CommandParam x ls)
                                           )
                                    <|>
                                       checkCommand command_list
-                        (command_description, (CommandStatus x cmdID)):command_list -> do
+                        (command_description, (CommandStatus x )):command_list -> do
                                       try ( do 
+--                                               putStr ("CommandStatus with description " ++ (show command_description) ++ "\n")
                                                scanCommand command_description
                                                try (skip) <|> try     (eof)
-                                               return (CommandStatus x cmdID)
+                                               return (CommandStatus x )
                                           )
                                    <|>
                                       checkCommand command_list
                         (command_description, (CommandTest x _)):command_list -> do
                                       try ( do 
+--                                               putStr ("CommandTest with description "++ (show command_description) ++ "\n")
                                                ls<-scanCommand command_description
                                                try (skip) <|> try(eof)
                                                return (CommandTest x ls)
                                           )
                                    <|>
                                       checkCommand command_list
-                        (_, CommandError):command_list -> checkCommand command_list 
+                        (command_description, (CommandShowStatus x)):command_list -> do
+                                      try ( do 
+                                              ls<-scanCommand command_description
+                                              try (skip) <|> try (eof)
+                                              return (CommandShowStatus x)
+                                          )
+                                   <|>
+                                      checkCommand command_list
+                        (_, (CommandError _)):command_list -> checkCommand command_list 
                         _:l -> checkCommand l 
                         []  -> do
-                                      scanAnyWords 
-                                      return CommandError 
+                                      let ls = ""
+                                      try (scanAnyWords ) <|> (do eof
+                                                                  return "")
+                                      return (CommandError ls)
                     
 
-parseScript::AParser st [CommandFunctionsAndParameters]
-parseScript 
-            = do
-                ls <-many (checkCommand commands)
-                try (eof) <|> try  ( do skip 
-                                        eof
-                                   )
-                return ls
+
+parseCommand::Int->AParser st CommandFunctionsAndParameters
+parseCommand x
+            = case x of 
+                     0 -> checkCommand commands
+                     _ -> do 
+                           checkCommand commands
+                           skip
+                           x<- parseCommand (x-1)
+                           return x
+
+parseScript :: Int -> String -> IO (Maybe [CommandFunctionsAndParameters])
+parseScript nb str
+          = do 
+            let x=runParser (parseCommand nb) (emptyAnnos()) "" str
+            case x of
+                Left _ -> do
+                           putStr "An error has occured \n"
+                           return Nothing
+                Right (CommandError smt) -> do
+--                                      putStr ("_"++smt++"_\n"++str ++ "\n\n"++(show nb)++ "\n\n")
+                                      return (Just [])
+                Right y            -> do
+                                        
+                                       z<-parseScript (nb+1) str
+                                       case z of
+                                            Nothing -> return Nothing
+                                            Just zz -> return (Just (y:zz))
+
 
 getLibEnv::[CmdInterpreterStatus]->Maybe (LIB_NAME,LibEnv)
 getLibEnv ls =
@@ -236,44 +284,41 @@ runScriptCommands (arg,status)
                               (CommandParam fn x):ls -> do 
                                                        val<- fn x
                                                        let newStatus= addOrReplace (val,status)
+                                                       putStr ("Command parameters " ++ (show x) ++ "\n") 
                                                        runScriptCommands (ls,newStatus)
-                              (CommandParamStatus fn x cmdID):ls -> do
---                                                       let tmp = extractFrom (status,cmdID)
---                                                       case tmp of
---                                                            Nothing -> return Nothing
---                                                            Just xx -> do
-                                                                        let val = fn (x,status)
-                                                                        let newStatus= addOrReplace (val,status)
-                                                                        runScriptCommands (ls,newStatus)
-                              (CommandStatus fn cmdID):ls -> do
---                                                       let tmp = extractFrom (status,cmdID)
---                                                       case tmp of 
---                                                            Nothing -> return Nothing
---                                                            Just xx -> do
-                                                                         let val= fn status
-                                                                         let newStatus= addOrReplace(val,status)
-                                                                         runScriptCommands (ls, newStatus)
+                              (CommandParamStatus fn x ):ls -> do
+                                                       let val = fn (x,status)
+                                                       let newStatus= addOrReplace (val,status)
+                                                       putStr ("Command parameters " ++ (show x) ++ "\n")
+                                                       runScriptCommands (ls,newStatus)
+                              (CommandStatus fn ):ls -> do
+                                                       let val= fn status
+                                                       let newStatus= addOrReplace(val,status)
+                                                       runScriptCommands (ls, newStatus)
                               (CommandTest fn x):ls -> do
                                                        fn x
+                                                       putStr ("Command parameters "++ (show x) ++ "\n")
                                                        runScriptCommands (ls,status)
-                              (CommandShowStatus fn cmdID):ls -> do
---                                                          let tmp = extractFrom (status, cmdID)
---                                                          case tmp of 
---                                                               Nothing -> return Nothing
---                                                               Just xx -> do 
-                                                                           let val= fn status
-                                                                           runScriptCommands (ls, status)
-                              CommandError:_ -> return Nothing
+                              (CommandShowStatus fn ):ls -> do
+                                                       fn status
+                                                       putStr "Command parameters : none \n"
+                                                       runScriptCommands (ls, status)
+                              CommandError _:_ -> return Nothing
 
 parseScriptFile:: FilePath-> IO (Maybe (LIB_NAME,LibEnv))
 parseScriptFile fileName
                         = do 
                             input<- readFile fileName
-                            let r=runParser parseScript (emptyAnnos()) "" input
+--                            let r=runParser (parseScript [])  (emptyAnnos()) "" input
+                            r<-parseScript 0  input
                             case r of
-                               Right out-> runScriptCommands (out,[])
+                               Just out-> do
+                                           putStr "File parsed.Executing...\n"
+                                           x<-runScriptCommands (out,[])
+                                           return x
                                              
-                               Left _ -> 
+                               Nothing -> do
+                                          putStr "An error has occured\n"
                                           return Nothing 
 
 

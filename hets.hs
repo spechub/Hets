@@ -36,7 +36,7 @@ import GUI.ShowGraph
 #ifdef PROGRAMATICA
 import Haskell.Haskell2DG
 #endif
-
+ 
 import PGIP.Command_Parser
 
 main :: IO ()
@@ -69,8 +69,11 @@ processFile opts file =
                  Nothing -> return Nothing
                  Just (ln, libEnv) -> do
                      proofStatus <- readPrfFiles opts libEnv
-                     return $ Just (ln, proofStatus)
-             ProofCommand -> parseScriptFile file
+                     return $ Just (ln, proofStatus)                                
+             ProofCommand -> do            
+                   putStr "Start processing a proof command file\n"    
+                   result <- parseScriptFile file
+                   return result
              _ -> anaLib opts file
            case gui opts of
              Not -> return ()
