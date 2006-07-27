@@ -185,7 +185,7 @@ generateAxioms bsorts sig = filter (not . is_True_atom . sentence) $
       \ op pr : s'->s  \
       \ pred d:s       \
       \ forall x:s . d(x) => pr(x)=x     %(ga_projection)% "
-      | s <- sorts, let y =  mkSimpleId "y",
+      | s <- sortList, let y =  mkSimpleId "y",
         s' <- minSupers s])
     ++ concat([inlineAxioms CASL
       " sort s          \
@@ -228,7 +228,6 @@ generateAxioms bsorts sig = filter (not . is_True_atom . sentence) $
         pr = projName
         minSupers so = keepMinimals sig2 id $ Set.toList $ Set.delete so
                            $ supersortsOf so sig2
-        sorts = Set.toList $ sortSet sig
         sig2 = sig { sortRel = Rel.irreflex $ sortRel sig }
         d = defPred
         sortList = Set.toList bsorts
