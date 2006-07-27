@@ -25,6 +25,7 @@ import CASL.AS_Basic_CASL
 import CASL.Morphism
 import CASL.Sublogic
 import CASL.Fold
+import CASL.Simplify
 import Comorphisms.CASL2SubCFOL
 import Comorphisms.CASL2CoCASL
 
@@ -60,10 +61,11 @@ instance Comorphism CoCASL2CoSubCFOL
     map_theory CoCASL2CoSubCFOL (sig, sens) =
         let bsrts = allSortsWithBottom sig $
                     Set.unions $ sortsWithBottom sig :
-                       map (botFormulaSorts . sentence) sens
+                       map (botCoFormulaSorts . sentence) sens
             e = encodeSig bsrts sig
             sens1 = map (mapNamed mapSen) $ generateAxioms bsrts sig
-            sens2 = map (mapNamed (codeCoFormula bsrts)) sens
+            sens2 = map (mapNamed (simplifyFormula simC_FORMULA
+                                   . codeCoFormula bsrts)) sens
         in return (e, disambiguateSens Set.empty . nameSens $ sens1 ++ sens2)
     map_morphism CoCASL2CoSubCFOL mor@Morphism{msource = src, mtarget = tar} =
         return
@@ -73,9 +75,9 @@ instance Comorphism CoCASL2CoSubCFOL
                                   $ sortsWithBottom tar) tar
             , fun_map = Map.map (\ (i, _) -> (i, Total)) $ fun_map mor }
     map_sentence CoCASL2CoSubCFOL sig  sen =
-        return $ codeCoFormula
+        return $ simplifyFormula simC_FORMULA $ codeCoFormula
            (allSortsWithBottom sig $
-            Set.union (botFormulaSorts sen) $ sortsWithBottom sig) sen
+            Set.union (botCoFormulaSorts sen) $ sortsWithBottom sig) sen
     map_symbol CoCASL2CoSubCFOL s =
       Set.singleton s { symbType = totalizeSymbType $ symbType s }
 
@@ -86,3 +88,13 @@ codeC_FORMULA :: Set.Set SORT -> C_FORMULA -> C_FORMULA
 codeC_FORMULA bsrts = foldC_Formula (codeRecord bsrts $ codeC_FORMULA bsrts)
     mapCoRecord { foldCoSort_gen_ax = \ _ s o b ->
                   CoSort_gen_ax s (map totalizeOpSymb o) b }
+
+simC_FORMULA :: C_FORMULA -> C_FORMULA
+simC_FORMULA = foldC_Formula (simplifyRecord simC_FORMULA) mapCoRecord
+
+botCoSorts :: C_FORMULA -> Set.Set SORT
+botCoSorts = foldC_Formula (botSorts botCoSorts)
+             (constCoRecord Set.unions Set.empty)
+
+botCoFormulaSorts :: FORMULA C_FORMULA -> Set.Set SORT
+botCoFormulaSorts = foldFormula $ botSorts botCoSorts

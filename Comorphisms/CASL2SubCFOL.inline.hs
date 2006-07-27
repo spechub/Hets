@@ -65,7 +65,8 @@ instance Comorphism CASL2SubCFOL
                        map (botFormulaSorts . sentence) sens
             e = encodeSig bsrts sig
             sens1 = generateAxioms bsrts sig
-            sens2 = map (mapNamed (codeFormula bsrts)) sens
+            sens2 = map (mapNamed (simplifyFormula id . codeFormula bsrts))
+                    sens
         in return (e, disambiguateSens Set.empty . nameSens $ sens1 ++ sens2)
     map_morphism CASL2SubCFOL mor@Morphism{msource = src, mtarget = tar} =
         return
@@ -75,7 +76,7 @@ instance Comorphism CASL2SubCFOL
                                   $ sortsWithBottom tar) tar
             , fun_map = Map.map (\ (i, _) -> (i, Total)) $ fun_map mor }
     map_sentence CASL2SubCFOL sig sen =
-        return $ codeFormula
+        return $ simplifyFormula id $ codeFormula
            (allSortsWithBottom sig $
             Set.union (botFormulaSorts sen) $ sortsWithBottom sig) sen
     map_symbol CASL2SubCFOL s =
