@@ -34,6 +34,7 @@ import Common.Id
 import Common.Result
 import qualified Common.Lib.Map as Map
 import Common.AS_Annotation
+import Common.GlobalAnnotations
 
 import Data.List (elemIndex)
 import Control.Monad (foldM)
@@ -58,7 +59,11 @@ instance Comorphism PCoClTyConsHOL2IsabelleHOL
     map_theory PCoClTyConsHOL2IsabelleHOL (env, sens) = do
       sign <- transSignature env
       isens <- mapM (mapNamedM $ transSentence env) sens
-      return (sign, isens)
+      dt <- mapM (transDataEntry env) $ concatMap
+            ( \ ns -> case sentence ns of
+              DatatypeSen ds -> ds
+              _ -> []) sens
+      return (sign { domainTab = dt }, isens)
     map_morphism = mapDefaultMorphism
     map_sentence PCoClTyConsHOL2IsabelleHOL sign phi =
        transSentence sign phi
@@ -68,39 +73,40 @@ instance Comorphism PCoClTyConsHOL2IsabelleHOL
 baseSign :: BaseSig
 baseSign = MainHC_thy
 
-transAssumps :: Assumps -> Result ConstTab
-transAssumps = foldM insertOps Map.empty . Map.toList where
-  insertOps m (name, ops) = case opInfos ops of
+transAssumps :: GlobalAnnos -> Assumps -> Result ConstTab
+transAssumps ga = foldM insertOps Map.empty . Map.toList where
+  insertOps m (name, ops) = 
+      let b = isMixfix name
+          chk t = if b then isPlainFunType t else -1
+          trns = if b then transPlainFunType else transFunType
+      in case opInfos ops of
           [info] -> case transOpInfo info of
                  Nothing -> return m
                  Just r -> do
                     ty <- r
                     return $ Map.insert
-                           (mkVName $ showIsaConstT name baseSign) ty m
+                           (mkIsaConstT False ga (chk ty)
+                            name baseSign) (trns ty) m
           infos -> foldM ( \ m' (i, info) ->
                       case transOpInfo info of
                         Nothing -> return m'
                         Just r -> do
                           ty <- r
                           return $ Map.insert
-                             (mkVName $ showIsaConstIT name i baseSign)
-                             ty m') m $ zip [1..] infos
+                             (mkIsaConstIT False ga (chk ty) 
+                              name i baseSign) (trns ty) m'
+                         ) m $ zip [1..] infos
 
 transSignature :: Env -> Result Isa.Sign
 transSignature env = do
-    dt <- transDatatype env
-    ct <- transAssumps $ assumps env
-    let isDatatypeDefn t = case typeDefn t of
-                         DatatypeDefn _ -> True
-                         _              -> False
-        extractTypeName tyId typeInfo m =
-           if isDatatypeDefn typeInfo then m
-           else let getTypeArgs n k = case k of
+    ct <- transAssumps (globAnnos env) $ assumps env
+    let extractTypeName tyId typeInfo m =
+            let getTypeArgs n k = case k of
                         ClassKind _ -> []
                         FunKind _ _ r _ ->
                             (TFree ("'a" ++ show n) [], [isaTerm])
                                            : getTypeArgs (n + 1) r
-                in Map.insert (showIsaTypeT tyId baseSign)
+            in Map.insert (showIsaTypeT tyId baseSign)
                   [(isaTerm, getTypeArgs (1 :: Int) $ typeKind typeInfo)] m
     return $ Isa.emptySign
         { baseSig = baseSign
@@ -109,27 +115,22 @@ transSignature env = do
              { arities = Map.foldWithKey extractTypeName
                                         Map.empty
                                         (typeMap env) }
-        , constTab = ct
-        , domainTab = dt }
+        , constTab = ct }
 
 -- * translation of a type in an operation declaration
 
 -- extract type from OpInfo
 -- omit datatype constructors
-transOpInfo :: OpInfo -> Maybe (Result Typ)
-transOpInfo (OpInfo t _ opDef) =  case opDef of
+transOpInfo :: OpInfo -> Maybe (Result FunType)
+transOpInfo (OpInfo (TypeScheme _ op _) _ opDef) =  case opDef of
     ConstructData _ -> Nothing
-    _  -> Just (transOpType t)
-
--- operation type
-transOpType :: TypeScheme -> Result Typ
-transOpType (TypeScheme _ op _) = transType op
+    _  -> Just $ funType op
 
 unitTyp :: Typ
 unitTyp = Type "unit" holType []
 -- types
 transType :: Type -> Result Typ
-transType = fmap transFunType . funType
+transType = fmap transPlainFunType . funType
 
 transFunType :: FunType -> Typ
 transFunType fty = case fty of
@@ -138,12 +139,32 @@ transFunType fty = case fty of
     FunType f a -> mkFunType (transFunType f) $ transFunType a
     PartialVal a -> mkOptionType $ transFunType a
     PairType a b -> prodType (transFunType a) $ transFunType b
+    TupleType l -> transFunType $ foldr1 PairType l
     ApplType tid args -> Type (showIsaTypeT tid baseSign) []
                        $ map transFunType args
     TypeVar tid -> TFree (showIsaTypeT tid baseSign) []
 
+-- compute number of arguments for plain CASL functions 
+isPlainFunType :: FunType -> Int
+isPlainFunType fty = case fty of
+    FunType f a -> case a of 
+                     FunType _ _ -> -1
+                     _ -> case f of 
+                            TupleType l -> if length l == 2 then 2 else -1
+                            _ -> 1
+    _ -> 0
+
+transPlainFunType :: FunType -> Typ
+transPlainFunType fty = if isPlainFunType fty == 2 then 
+    case fty of
+    FunType (TupleType l) a -> foldr mkFunType (transFunType a) 
+                               $ map transFunType l
+    _ -> transFunType fty
+    else transFunType fty
+
 data FunType = UnitType | BoolType | FunType FunType FunType
              | PartialVal FunType | PairType FunType FunType
+             | TupleType [FunType]
              | ApplType Id [FunType] | TypeVar Id
                deriving Eq
 
@@ -168,21 +189,13 @@ funType t = case getTypeAppl t of
              [ty] | tid == lazyTypeId -> makePartialVal ty
              [t1, t2] | isArrow tid -> FunType t1 $
                   if isPartialArrow tid then makePartialVal t2 else t2
-             (_ : _ : _) | isProductId tid -> foldr1 PairType ftys
+             (_ : _ : _) | isProductId tid -> TupleType ftys
              _ -> ApplType tid ftys
        else if null tys then return $ TypeVar tid
             else fatal_error "funType: no higher kinds" $ posOfId tid
    _ -> fatal_error "funType: no type appl" $ getRange t
 
 -- * translation of a datatype declaration
-
-transDatatype :: Env -> Result DomainTab
-transDatatype env = do
-    let extractDatatypes ti des = case typeDefn ti of
-                                   DatatypeDefn de -> des++[de]
-                                   _               -> des
-    mapM (transDataEntry env)
-                  $ Map.fold extractDatatypes [] $ typeMap env
 
 -- datatype with name (tyId) + args (tyArgs) and alternatives
 transDataEntry :: Env -> DataEntry -> Result [DomainEntry]
@@ -191,7 +204,7 @@ transDataEntry env (DataEntry tm tyId gk tyArgs rk alts) =
         dt = patToType i tyArgs rk
     in case gk of
     Le.Free -> do
-      nalts <- mapM (transAltDefn env tyArgs dt i) alts
+      nalts <- mapM (transAltDefn env tm tyArgs dt i) alts
       let transDName ti ta = Type (showIsaTypeT ti baseSign) []
                              $ map transTypeArg ta
       return [(transDName i tyArgs, nalts)]
@@ -203,14 +216,17 @@ transTypeArg :: TypeArg -> Typ
 transTypeArg ta = TFree (showIsaTypeT (getTypeVar ta) baseSign) []
 
 -- datatype alternatives/constructors
-transAltDefn :: Env -> [TypeArg] -> Type -> Id -> AltDefn
+transAltDefn :: Env -> IdMap -> [TypeArg] -> Type -> Id -> AltDefn
              -> Result (VName, [Typ])
-transAltDefn env args dt tyId alt = case alt of
+transAltDefn env tm args dt tyId alt = case alt of
     Construct (Just opId) ts Total _ -> do
-        let sc = TypeScheme args (getFunType dt Total ts) nullRange
-        nts <- mapM transType ts
+        let mTs = map (mapType tm) ts
+            sc = TypeScheme args (getFunType dt Total mTs) nullRange
+        nts <- mapM funType mTs
         -- extract overloaded opId number
-        return (mkVName $ transOpId env opId sc, nts)
+        return (transOpId env opId sc, case nts of 
+                [TupleType l] | isMixfix opId -> map transFunType l
+                _ -> map transFunType nts)
     _ -> fatal_error ("missing total constructor for: " ++ show tyId)
          $ posOfId tyId
 
@@ -229,6 +245,7 @@ transSentence sign s = case s of
         PartialVal _ -> return $ mkSen $ mkTermAppl option2bool t
         FunType _ _ -> error "transSentence: FunType"
         PairType _ _ -> error "transSentence: PairType"
+        TupleType _ -> error "transSentence: TupleType"
         ApplType _ _ -> error "transSentence: ApplType"
         _ -> return $ mkSen true
     DatatypeSen _ -> warning (mkSen true)
@@ -239,14 +256,22 @@ transSentence sign s = case s of
                            r
 
 -- disambiguate operation names
-transOpId :: Env -> UninstOpId -> TypeScheme -> String
-transOpId sign op ts =
-  case (do ops <- Map.lookup op (assumps sign)
-           if isSingle (opInfos ops) then return $ showIsaConstT op baseSign
+transOpId :: Env -> UninstOpId -> TypeScheme -> VName
+transOpId sign op ts@(TypeScheme _ ty _) = 
+    let ga = globAnnos sign
+        Result _ mty = funType ty
+    in case mty of 
+         Nothing -> error "transOpId"
+         Just fty -> 
+           let args = if isMixfix op then isPlainFunType fty else -1 
+           in case (do 
+           ops <- Map.lookup op (assumps sign)
+           if isSingle (opInfos ops) then return $ 
+              mkIsaConstT False ga args op baseSign
              else do i <- elemIndex ts (map opType (opInfos ops))
-                     return $ showIsaConstIT op (i+1) baseSign) of
-    Just str -> str
-    Nothing  -> error $ "transOpId " ++ showIsaConstT op baseSign
+                     return $ mkIsaConstIT False ga args op (i+1) baseSign) of
+          Just str -> str
+          Nothing  -> error $ "transOpId " ++ showIsaConstT op baseSign
 
 transProgEq :: Env -> ProgEq -> Result (Isa.Term, Isa.Term)
 transProgEq sign (ProgEq pat trm r) = do
@@ -305,7 +330,10 @@ transTerm sign trm = case trm of
               | opId == notId -> (fTy, notOp)
               | opId == defId -> (instfTy, cf $ defOp)
               | opId == whenElse -> (fTy, whenElseOp)
-              | otherwise -> (instfTy, cf $ conDouble $ transOpId sign opId ts)
+              | otherwise -> (instfTy, 
+                            cf $ (if isPlainFunType fTy == 2 && isMixfix opId
+                                  then termAppl uncurryOp
+                                  else id) $ con $ transOpId sign opId ts)
     QuantifiedTerm quan varDecls phi _ -> do
         let qname = case quan of
                       Universal -> allS
@@ -347,6 +375,8 @@ transTerm sign trm = case trm of
 
 instType :: FunType -> FunType -> ConvFun
 instType f1 f2 = case (f1, f2) of
+    (TupleType l1, _) -> instType (foldr1 PairType l1) f2
+    (_, TupleType l2) -> instType f1 $ foldr1 PairType l2
     (PartialVal (TypeVar _), BoolType) -> Option2bool
     (PairType a c, PairType b d) ->
         let c2 = instType c d
@@ -472,6 +502,8 @@ unpackOp ft = case ft of
 adjustTypes :: FunType -> FunType -> FunType
             -> Result ((Bool, ConvFun), (FunType, ConvFun))
 adjustTypes aTy rTy ty = case (aTy, ty) of
+    (TupleType l, _) -> adjustTypes (foldr1 PairType l) rTy ty
+    (_, TupleType l) -> adjustTypes aTy rTy $ foldr1 PairType l
     (BoolType, BoolType) -> return ((False, IdOp), (ty, IdOp))
     (UnitType, UnitType) -> return ((False, IdOp), (ty, IdOp))
     (PartialVal _, BoolType) -> return ((False, IdOp), (aTy, Bool2option))
@@ -546,7 +578,7 @@ isEquallyLifted l r = case (l, r) of
 mkTermAppl :: Isa.Term -> Isa.Term -> Isa.Term
 mkTermAppl fun arg = case (fun, arg) of
       (MixfixApp (Const uc _) [b@(Const bin _)] c, Tuplex a@[l, r] _)
-          | new uc == uncurryOpS && elem (new bin) [eq, conj, disj, impl]
+          | new uc == uncurryOpS -- && elem (new bin) [eq, conj, disj, impl]
               -> case isEquallyLifted l r of
                    Just (_, la, ra) | new bin == eq -> MixfixApp b [la, ra] c
                    _ -> MixfixApp b a c
