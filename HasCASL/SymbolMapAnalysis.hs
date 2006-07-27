@@ -62,7 +62,7 @@ inducedFromMorphism rmap1 sigma = do
               (\ (s, ti) m ->
                do s' <- typeFun sigma rmap s (typeKind ti)
                   m1 <- m
-                  return $ Map.insert s s' m1)
+                  return $ if s == s' then m1 else Map.insert s s' m1)
               (return Map.empty) $ Map.toList srcTypeMap
   -- compute the op map (as a Map)
       let tarTypeMap = addUnit $ Map.foldWithKey
@@ -171,9 +171,10 @@ insertmapOpSym :: Env -> IdMap -> Id -> RawSymbol -> TypeScheme
                -> Result FunMap -> Result FunMap
 insertmapOpSym e type_Map i rsy ot m = do
       m1 <- m
-      (id',kind') <- mapOpSym e type_Map i ot rsy
-      return (Map.insert (i, mapTypeScheme type_Map ot) (id',kind') m1)
-    -- insert mapping of op symbol (id,ot) to itself into m
+      q <- mapOpSym e type_Map i ot rsy
+      let p = (i, mapTypeScheme type_Map ot)
+      return $ if p == q then m1 else Map.insert p q m1
+    -- insert mapping of op symbol (i, ot) into m
 
   -- map the ops in the source signature
 mapOps :: IdMap -> FunMap -> Id -> OpInfos -> Env -> Env
