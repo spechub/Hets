@@ -193,9 +193,18 @@ printTerm = printPlainTerm True
 printPlainTerm :: Bool -> Term -> Doc
 printPlainTerm b = fst . printTrm b
 
+-- | print parens but leave a space if doc starts or ends with a bar
+parensForTerm :: Doc -> Doc
+parensForTerm d =
+    let s = show d
+        b = '|'
+    in parens $ if null s then d
+                else (if head s == b then (space <>) else id)
+                         ((if last s == b then (<> space) else id) d)
+
 printParenTerm :: Bool -> Int -> Term -> Doc
 printParenTerm b i t = case printTrm b t of
-    (d, j) -> if j < i then parens d else d
+    (d, j) -> if j < i then parensForTerm d else d
 
 -- | print the term using the alternative syntax (if True)
 printTrm :: Bool -> Term -> (Doc, Int)
@@ -235,14 +244,14 @@ printTrm b trm = case trm of
         _ -> printParenTerm b (isaEqPrio + 1) t1) <+> text "=="
                   , printParenTerm b isaEqPrio t2], isaEqPrio)
     Tuplex cs c -> ((case c of
-        NotCont -> parens
+        NotCont -> parensForTerm
         IsCont -> \ d -> text "<" <+> d <+> text ">") $
                         sepByCommas (map (printPlainTerm b) cs)
                     , maxPrio)
     Fix t -> (text "fix $" <+> printParenTerm b maxPrio t, maxPrio - 1)
     Bottom -> (text "UU", maxPrio)
     Wildcard -> error "Isa.Term.Wildcard not used"
-    Paren t -> (parens $ printPlainTerm b t, maxPrio)
+    Paren t -> (parensForTerm $ printPlainTerm b t, maxPrio)
     App f a c -> printTrm b $ MixfixApp f [a] c
     MixfixApp f args c -> case f of
         Const (VName n (Just (AltSyntax s is i))) _ -> let l = length is in
