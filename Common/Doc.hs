@@ -171,7 +171,7 @@ infixl 5 $++$
 
 data TextKind =
     IdKind | IdSymb | Symbol | Comment | Keyword | TopKey Int
-           | Indexed | StructId | Native
+           | Indexed | StructId | Native | HetsLabel
 
 data Format = Small | FlushRight
 
@@ -577,8 +577,7 @@ textToLatex b k s = let e = escapeLatex True s in
     IdKind -> makeSmallLatex b $ hc_sty_id e
     IdSymb -> makeSmallLatex b $ hc_sty_axiom $ escapeLatex False s
     Symbol -> makeSmallLatex b $ symbolToLatex s
-    Comment -> (if b then makeSmallLatex b . casl_comment_latex
-               else casl_normal_latex) e
+    Comment -> makeSmallLatex b $ casl_comment_latex e
                -- multiple spaces should be replaced by \hspace
     Keyword -> (if b then makeSmallLatex b . hc_sty_small_keyword
                 else hc_sty_plain_keyword) s
@@ -586,6 +585,10 @@ textToLatex b k s = let e = escapeLatex True s in
     Indexed -> hc_sty_structid_indexed s
     StructId -> hc_sty_structid s
     Native -> hc_sty_axiom s
+    HetsLabel -> Pretty.hcat [ latex_macro "\\HetsLabel{"
+                             , casl_comment_latex $ concatMap
+                                 ( \ c -> if c == '_' then "\\_" else [c]) s
+                             , latex_macro "}" ]
 
 latexSymbols :: Map.Map String Pretty.Doc
 latexSymbols = Map.fromList
@@ -666,14 +669,17 @@ annoLine w = percent <> keyword w
 annoLparen :: String -> Doc
 annoLparen w = percent <> keyword w <> lparen
 
-wrapAnnoLines :: Maybe Display_format -> Doc -> [String] -> Doc -> Doc
-wrapAnnoLines d a l b = case map (commentText .
+wrapLines :: TextKind -> Maybe Display_format -> Doc -> [String] -> Doc -> Doc
+wrapLines k d a l b = case map (Text k .
           maybe id (const $ dropWhile isSpace) d) l of
     [] -> a <> b
     [x] -> hcat [a, x, b]
     ds@(x : r) -> case d of
         Nothing -> vcat $ fcat [a, x] : init r ++ [fcat [last r, b]]
         Just _ -> a <+> vcat ds <> b
+
+wrapAnnoLines :: Maybe Display_format -> Doc -> [String] -> Doc -> Doc
+wrapAnnoLines = wrapLines Comment
 
 percent :: Doc
 percent = symbol percentS
@@ -719,9 +725,14 @@ codeOutAnno d m a = case a of
                           ALeft -> left_assocS
                           ARight -> right_assocS)
                         <> fCommaT m l <> annoRparen
-    Label l _ -> wrapAnnoLines d (annoLparen "") l annoRparen
+    Label l _ -> wrapLines (case l of
+                  [x] -> let r = dropWhile isSpace x in
+                         if not (null r)
+                            && all ( \ c -> isAlphaNum c || elem c ":_" ) r
+                            then HetsLabel
+                            else Comment
+                  _ -> Comment) d (percent <> lparen) l annoRparen
     Semantic_anno sa _ -> annoLine $ lookupSemanticAnno sa
-
 
 splitDoc :: Doc -> Maybe (Id, [Doc])
 splitDoc d = case d of
