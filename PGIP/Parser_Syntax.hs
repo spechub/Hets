@@ -54,14 +54,13 @@ commands =     [(["use","PATH"],                                       (CommandP
                 (["dg-all","thm-hide"],                                (CommandStatus commandDgAllThmHide          )),
                 (["dg-all","basic"],                                   (CommandStatus commandDgAllInferBasic       )),
                 (["show-dg-goals"],                                    (CommandShowStatus commandShowDgGoals       )), -- new function
---                (["show-dg-goals"],                                    (CommandTest test [])),
                 (["show-theory-goals"],                                (CommandShowStatus commandShowTheory        )),
                 (["show-theory"],                                      (CommandShowStatus commandShowNodeTheory    )), -- dto.
                 (["node-info"],                                        (CommandShowStatus commandShowNodeInfo      )), -- GUI.ConvertAbstractToDevGraph
-                (["show-taxonomy"],                                    (CommandTest test [])), --  GUI.ConvertAbstractToDevGraph
-                (["show-concepts"],                                    (CommandTest test [])), --  GUI.ConvertAbstractToDevGraph
-                (["translate","COMORPHISM"],                           (CommandTest test [])), -- Proofs.InferBasic
-                (["prover","PROVER"],                                  (CommandTest test [])), -- Proofs.InferBasic
+                (["show-taxonomy"],                                    (CommandShowStatus commandShowNodeTaxonomy  )), --  GUI.ConvertAbstractToDevGraph
+                (["show-concepts"],                                    (CommandShowStatus commandShowNodeConcept   )), --  GUI.ConvertAbstractToDevGraph
+                (["translate","COMORPHISM"],                           (CommandParamStatus commandTranslate     [] )), -- Proofs.InferBasic
+                (["prover","PROVER"],                                  (CommandParamStatus commandProver        [] )), -- Proofs.InferBasic
                 (["proof-script","FORMULA","PROOF-SCRIPT"],            (CommandTest test [])), -- Isabelle.IsaProve.hs (for Isabelle)
                 (["cons-check", "PROVER"],                             (CommandTest test [])), -- ISabelle.IsaProve.hs (for ISabelle)
                 (["prove", "FORMULA-STAR","using","FORMULA-PLUS"],     (CommandTest test [])), -- Proofs.InferBasic
@@ -69,6 +68,6 @@ commands =     [(["use","PATH"],                                       (CommandP
                 (["prove", "FORMULA-STAR"],                            (CommandTest test [])), -- Proofs.InferBasic
                 (["prove-all","using","FORMULA-PLUS"],                 (CommandTest test [])), -- dto.
                 (["prove-all","excluding","FORMULA-PLUS"],             (CommandTest test [])),
-                (["prove-all"],                                        (CommandTest test []))]
+                (["prove-all"],                                        (CommandStatusIO commandProveAll ))]
 
 

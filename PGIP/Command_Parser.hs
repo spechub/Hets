@@ -14,7 +14,6 @@ Parsing the comand line script.
 
 -} 
 
-
 module PGIP.Command_Parser where
 
 import Syntax.AS_Library
@@ -29,32 +28,28 @@ import Text.ParserCombinators.Parsec
 import PGIP.Parser_Syntax
 import PGIP.Commands
 import PGIP.Common
+import Data.Maybe
 
-
-pgipKeywords::[String]
-pgipKeywords = ["dg","dg-all","show-dg-goals","show-theory-goals","show-theory","node-info","show-taxonomy","show-concepts",
-                "translate","prover","proof-script","cons-check","prove","prove-all","use","auto","glob-subsume","glob-decomp",
-                "loc-infer","loc-decomp","comp","comp-new","hide-thm","thm-hide","basic","using","excluding","end-script"]
 
 scanPathFile::CharParser st String
 scanPathFile 
---           = (char '-') <:> scanDotWords
              = many1 ( oneOf (caslLetters ++ ['0'..'9'] ++ ['-','_','.']))
+
+
+scanAnyWord::CharParser st String
+scanAnyWord
+        = many1 (oneOf (caslLetters ++ ['0'..'9'] ++ ['-','_','\'','.','/']))
+
 -- |the 'getPath' function read a path as a a list of words
 getPath::AParser st [String]
 getPath 
-        = try ( do  --v<-scanAnyWords `sepBy1` (string "/")
+        = try ( do  
                     v<-sepBy1 scanPathFile (string "/")
---                  try (do (string ".")
---                          scanAnyWords)
                     return v
               )
       <|> 
           try ( do  skip
-                    --v<- scanAnyWords `sepBy1` (string "/")
                     v<-sepBy1 scanPathFile (string "/")
---                  try (do (string ".")
---                          scanAnyWords)
                     return v
               )
       <?> 
@@ -72,21 +67,21 @@ getKeyWord wd
                        
 getGoal::AParser st GOAL
 getGoal        
-       = try ( do  v1<-sortId pgipKeywords
+       = try ( do  v1<-scanAnyWord
                    getKeyWord "-"
                    v2<-getNumber
                    getKeyWord "->"
-                   v3<-sortId pgipKeywords
+                   v3<-scanAnyWord
                    return (LabeledEdge v1 (read v2::Int) v3)
              )       
       <|> 
-         try ( do  v1<-sortId pgipKeywords
+         try ( do  v1<-scanAnyWord
                    getKeyWord "->"                                  
-                   v2<-sortId pgipKeywords
+                   v2<-scanAnyWord
                    return (Edge  v1  v2)
              )
       <|> 
-         try ( do  v<-sortId pgipKeywords
+         try ( do  v<-scanAnyWord
                    return (Node  v)
              )   
       <?>
@@ -98,28 +93,28 @@ getScript
                      return ""
                )
         <|> 
-           try ( do  v<-scanAnyWords
+           try ( do  v<-scanAnyWord
                      vs <-getScript
                      return (v++" "++vs)
                )
         <|>
            try ( do  skip
-                     v<-scanAnyWords
+                     v<-scanAnyWord
                      vs<-getScript
                      return (v++" "++vs)
                )
         <?> 
            "some prover script"
                                         
-getComorphism::AParser st [Id]
+getComorphism::AParser st [String]
 getComorphism 
-             = try ( do  v<-sortId pgipKeywords
+             = try ( do  v<-scanAnyWord
                          getKeyWord ";"
                          vs <-getComorphism
                          return ( v:vs)
                    )
             <|>
-               try ( do  v<-sortId pgipKeywords
+               try ( do  v<-scanAnyWord
                          return [ v]
                    )
             <?>
@@ -138,12 +133,12 @@ scanCommand arg
                                  return ((Path v):vs)
 --- scanning a prover
                           "PROVER":ls  ->  do
-                                 v <- sortId pgipKeywords 
+                                 v <- scanAnyWord 
                                  vs<- scanCommand ls
                                  return ((Prover v):vs)
 --- scanning a formula
                           "FORMULA":ls  ->  do
-                                 v <- sortId pgipKeywords 
+                                 v <- scanAnyWord 
                                  vs<- scanCommand ls
                                  return ((Formula  v):vs)
 --- scanning a comorphism
@@ -158,14 +153,14 @@ scanCommand arg
                                  return ((Goals v):vs)
 --- scanning none or many formulas
                           "FORMULA-STAR":ls  ->  do
-                                 v<- many ( do  tmp<-sortId pgipKeywords
+                                 v<- many ( do  tmp<-scanAnyWord
                                                 return  tmp
                                           )
                                  vs<-scanCommand ls
                                  return  ((Formulas v):vs)
 --- scanning one or more formula
                           "FORMULA-PLUS":ls  ->  do
-                                 v<- many1 ( do  tmp<-sortId pgipKeywords
+                                 v<- many1 ( do  tmp<-scanAnyWord
                                                  return tmp
 			                   )
 			         vs<-scanCommand ls
@@ -284,12 +279,12 @@ runScriptCommands (arg,status)
                               (CommandParam fn x):ls -> do 
                                                        val<- fn x
                                                        let newStatus= addOrReplace (val,status)
-                                                       putStr ("Command parameters " ++ (show x) ++ "\n") 
+--                                                       putStr ("Command parameters " ++ (show x) ++ "\n") 
                                                        runScriptCommands (ls,newStatus)
                               (CommandParamStatus fn x ):ls -> do
                                                        let val = fn (x,status)
                                                        let newStatus= addOrReplace (val,status)
-                                                       putStr ("Command parameters " ++ (show x) ++ "\n")
+--                                                       putStr ("Command parameters " ++ (show x) ++ "\n")
                                                        runScriptCommands (ls,newStatus)
                               (CommandStatus fn ):ls -> do
                                                        let val= fn status
@@ -297,13 +292,50 @@ runScriptCommands (arg,status)
                                                        runScriptCommands (ls, newStatus)
                               (CommandTest fn x):ls -> do
                                                        fn x
-                                                       putStr ("Command parameters "++ (show x) ++ "\n")
+--                                                       putStr ("Command parameters "++ (show x) ++ "\n")
                                                        runScriptCommands (ls,status)
                               (CommandShowStatus fn ):ls -> do
                                                        fn status
-                                                       putStr "Command parameters : none \n"
+--                                                       putStr "Command parameters : none \n"
                                                        runScriptCommands (ls, status)
+                              (CommandStatusIO fn):ls  -> do 
+                                                           val<-fn status
+                                                           let newStatus = addOrReplace (val,status)
+                                                           runScriptCommands (ls, newStatus)
                               CommandError _:_ -> return Nothing
+
+runScriptLine :: [CommandFunctionsAndParameters]->[CmdInterpreterStatus] -> IO (Maybe [CmdInterpreterStatus])
+runScriptLine arg status
+           = case arg of
+             [] -> return (Just status)
+             (CommandParam fn x):ls -> do 
+                                        val<- fn x
+                                        let newStatus= addOrReplace (val,status)
+--                                        putStr ("Command parameters " ++ (show x) ++ "\n") 
+                                        runScriptLine ls newStatus
+             (CommandParamStatus fn x ):ls -> do
+                                               let val = fn (x,status)
+                                               let newStatus= addOrReplace (val,status)
+--                                               putStr ("Command parameters " ++ (show x) ++ "\n")
+                                               runScriptLine ls newStatus 
+             (CommandStatus fn ):ls -> do
+                                        let val= fn status
+                                        let newStatus= addOrReplace(val,status)
+                                        runScriptLine ls newStatus
+             (CommandTest fn x):ls -> do
+                                       fn x
+--                                       putStr ("Command parameters "++ (show x) ++ "\n")
+                                       runScriptLine ls status
+             (CommandShowStatus fn ):ls -> do
+                                            fn status
+--                                            putStr "Command parameters : none \n"
+                                            runScriptLine ls status 
+             (CommandStatusIO fn):ls    -> do 
+                                             val <-fn status
+                                             let newStatus = addOrReplace (val, status)
+                                             runScriptLine ls newStatus
+             CommandError _:_ -> return Nothing
+
 
 parseScriptFile:: FilePath-> IO (Maybe (LIB_NAME,LibEnv))
 parseScriptFile fileName
@@ -323,5 +355,21 @@ parseScriptFile fileName
 
 
 						 					 
+
+
+runInteractive :: [CmdInterpreterStatus] -> IO (Maybe (LIB_NAME, LibEnv))
+runInteractive status =
+                 do 
+                   x<-getLine
+                   if (x=="q") then return $ getLibEnv status
+                               else do r<-parseScript 0 x
+                                       case r of
+                                          Just out ->do
+                                                     tmp <-  runScriptLine out status
+                                                     let nwStatus = fromJust tmp
+                                                     runInteractive nwStatus
+                                          Nothing -> do
+                                                      putStr "Error, couldn't parse input \n"
+                                                      runInteractive status
 
 

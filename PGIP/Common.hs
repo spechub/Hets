@@ -23,7 +23,6 @@ import Data.Graph.Inductive.Graph
 import Syntax.AS_Library
 import Static.AnalysisLibrary
 import Static.DevGraph
-import Driver.Options
 import Common.Utils
 import Proofs.Automatic
 import Proofs.Global
@@ -36,6 +35,8 @@ import Proofs.InferBasic
 import Common.Id
 import Common.DocUtils
 import Common.Result
+import Common.Taxonomy
+import GUI.Taxonomy
 import Data.Maybe
 import Data.Graph.Inductive.Graph
 import Comorphisms.LogicGraph
@@ -44,27 +45,27 @@ type GDataEdge = LEdge DGLinkLab
 type GDataNode = LNode DGNodeLab
 
 data GOAL = 
-   Node         Id   
- | Edge         Id   Id     
- | LabeledEdge  Id   Int     Id 
+   Node         String   
+ | Edge         String   String     
+ | LabeledEdge  String   Int     String 
  deriving (Eq,Show)
 
 data GraphGoals =
    GraphNode  GDataNode
  | GraphEdge  GDataEdge
--- GraphGlobalEdge [GDataEdge]
--- GraphHidingEdge [GDataEdge]
+-- | GraphGlobalEdge [GDataEdge]
+-- | GraphHidingEdge [GDataEdge]
  deriving (Eq,Show)     
 
 data ScriptCommandParameters =
    Path                         [String] 
- | Formula                       Id 
- | Prover                        Id
+ | Formula                       String 
+ | Prover                        String
  | Goals                         [GOAL]
- | ParsedComorphism             [Id]
- | AxiomSelectionWith           [Id]
- | AxiomSelectionExcluding      [Id]
- | Formulas                     [Id]
+ | ParsedComorphism             [String]
+ | AxiomSelectionWith           [String]
+ | AxiomSelectionExcluding      [String]
+ | Formulas                     [String]
  | ProofScript                   String
  | ParamErr                      String
  | NoParam
@@ -76,6 +77,8 @@ data CmdInterpreterStatus =
  | Env     LIB_NAME LibEnv
  | Selected [GraphGoals]
  | AllGraphGoals [GraphGoals]
+ | Comorphism [String]
+ | ProverUsed String
 
 
 
@@ -86,20 +89,21 @@ data CommandFunctionsAndParameters=
  | CommandParamStatus  (([ScriptCommandParameters],[CmdInterpreterStatus])-> [CmdInterpreterStatus]) [ScriptCommandParameters] 
  | CommandStatus       ([CmdInterpreterStatus] -> [CmdInterpreterStatus])
  | CommandTest         ([ScriptCommandParameters]->IO())  [ScriptCommandParameters]
- | CommandShowStatus   ([CmdInterpreterStatus] -> IO()) 
+ | CommandShowStatus   ([CmdInterpreterStatus] -> IO())
+ | CommandStatusIO     ([CmdInterpreterStatus] -> IO [CmdInterpreterStatus]) 
  | CommandError        String
 
 
-extractGraphNode:: Id->[GraphGoals]->Maybe GraphGoals
+extractGraphNode:: String->[GraphGoals]->Maybe GraphGoals
 extractGraphNode x allGoals 
     = case allGoals of
        []              -> Nothing
-       (GraphNode (nb,label)):l    -> if (( getDGNodeName label)==(show x)) then Just (GraphNode (nb,label)) 
+       (GraphNode (nb,label)):l    -> if (( getDGNodeName label)==x) then Just (GraphNode (nb,label)) 
                                                                             else extractGraphNode x l
        _:l                           -> extractGraphNode x l
          
 
-extractGraphEdge:: Id -> Id -> [GraphGoals] -> Maybe GraphGoals
+extractGraphEdge:: String -> String -> [GraphGoals] -> Maybe GraphGoals
 extractGraphEdge x y allGoals
    = case allGoals of
       []             -> Nothing
@@ -117,7 +121,7 @@ extractGraphEdge x y allGoals
                                            _ -> extractGraphEdge x y l  
                                                                
 
-extractGraphLabeledEdge:: Id -> Int -> Id -> [GraphGoals] -> Maybe GraphGoals
+extractGraphLabeledEdge:: String -> Int -> String -> [GraphGoals] -> Maybe GraphGoals
 extractGraphLabeledEdge x nb y allGoals
     = case allGoals of
       []             -> Nothing
@@ -190,8 +194,6 @@ getNodeList ls =
             []               -> []
 
 
--- | The 'addOrReplace' function,given a CmdInterpeterStatus and a list of such CmdInterpeterStatus, replaces any occurance of that type
--- of CmdInterpeterStatus with the given one, and if none found it adds one to the list
 addOrReplace::([CmdInterpreterStatus],[CmdInterpreterStatus])->[CmdInterpreterStatus]
 addOrReplace (val,status)
    = case val of
@@ -203,22 +205,46 @@ addOrReplace (val,status)
                               (Env _ _):ls          -> addOrReplace(l,(Env x y):ls)
                               (Selected xx):ls      -> addOrReplace(l, (Selected xx):addOrReplace([Env x y],ls))
                               (AllGraphGoals xx):ls -> addOrReplace(l, (AllGraphGoals xx):addOrReplace([Env x y],ls))
+                              (Comorphism xx):ls    -> addOrReplace(l, (Comorphism xx):addOrReplace([Env x y],ls))
+                              (ProverUsed xx):ls    -> addOrReplace(l, (ProverUsed xx):addOrReplace([Env x y],ls))
       (Selected x):l -> case status of
                               []                    -> addOrReplace (l,(Selected x):[])
                               CmdInitialState:ls    -> addOrReplace ((Selected x):l, ls)
                               (OutputErr xx):_      -> (OutputErr xx):[]
                               (Env xx yy):ls        -> addOrReplace(l, (Env xx yy):addOrReplace([Selected x], ls))
-                              (Selected _):ls  -> addOrReplace(l, (Selected x):ls)
+                              (Selected _):ls       -> addOrReplace(l, (Selected x):ls)
                               (AllGraphGoals xx):ls -> addOrReplace(l, (AllGraphGoals xx):addOrReplace([Selected x],ls))
+                              (Comorphism xx):ls    -> addOrReplace(l, (Comorphism xx):addOrReplace([Selected x],ls))
+                              (ProverUsed xx):ls    -> addOrReplace(l, (ProverUsed xx):addOrReplace([Selected x],ls))
       (AllGraphGoals x):l -> case status of
-                             []                     -> addOrReplace (l,(AllGraphGoals x):[])
-                             CmdInitialState:ls     -> addOrReplace ((AllGraphGoals x):l,ls)
-                             (OutputErr xx):_       -> (OutputErr xx):[]
-                             (Env xx yy):ls         -> addOrReplace(l, (Env xx yy):addOrReplace([AllGraphGoals x], ls))
-                             (Selected xx):ls       -> addOrReplace(l, (Selected xx):addOrReplace([AllGraphGoals x], ls))
-                             (AllGraphGoals _):ls   -> addOrReplace(l, (AllGraphGoals x):ls)
-      (OutputErr x):l -> (OutputErr x):[]
-      CmdInitialState:l -> addOrReplace (l,status)
+                              []                    -> addOrReplace (l,(AllGraphGoals x):[])
+                              CmdInitialState:ls    -> addOrReplace ((AllGraphGoals x):l,ls)
+                              (OutputErr xx):_      -> (OutputErr xx):[]
+                              (Env xx yy):ls        -> addOrReplace(l, (Env xx yy):addOrReplace([AllGraphGoals x], ls))
+                              (Selected xx):ls      -> addOrReplace(l, (Selected xx):addOrReplace([AllGraphGoals x], ls))
+                              (AllGraphGoals _):ls  -> addOrReplace(l, (AllGraphGoals x):ls)
+                              (Comorphism xx):ls    -> addOrReplace(l, (Comorphism xx):addOrReplace([AllGraphGoals x], ls))
+                              (ProverUsed xx):ls    -> addOrReplace(l, (ProverUsed xx):addOrReplace([AllGraphGoals x], ls))
+      (Comorphism x):l    -> case status of
+                              []                    -> addOrReplace (l, (Comorphism x):[])
+                              CmdInitialState:ls    -> addOrReplace ((Comorphism x):l, ls)
+                              (OutputErr xx):_      -> (OutputErr xx):[]
+                              (Env xx yy):ls        -> addOrReplace (l, (Env xx yy):addOrReplace([Comorphism x], ls))
+                              (Selected xx):ls      -> addOrReplace (l, (Selected xx):addOrReplace([Comorphism x],ls))
+                              (AllGraphGoals xx):ls -> addOrReplace (l, (AllGraphGoals xx):addOrReplace([Comorphism x],ls))
+                              (Comorphism _):ls     -> addOrReplace (l, (Comorphism x):ls)
+                              (ProverUsed xx):ls    -> addOrReplace (l, (ProverUsed xx):addOrReplace([Comorphism x],ls))
+      (ProverUsed x):l    -> case status of
+                              []                    -> addOrReplace (l, (ProverUsed x):[])
+                              CmdInitialState:ls    -> addOrReplace ((ProverUsed x):l, ls)
+                              (OutputErr xx):_      -> (OutputErr xx):[]
+                              (Env xx yy):ls        -> addOrReplace (l, (Env xx yy):addOrReplace([ProverUsed x], ls))
+                              (Selected xx):ls      -> addOrReplace (l, (Selected xx):addOrReplace([ProverUsed x], ls))
+                              (AllGraphGoals xx):ls -> addOrReplace (l, (AllGraphGoals xx):addOrReplace([ProverUsed x], ls))
+                              (Comorphism xx):ls    -> addOrReplace (l, (Comorphism xx):addOrReplace([ProverUsed x], ls))
+                              (ProverUsed _):ls     -> addOrReplace (l, (ProverUsed x):ls)
+      (OutputErr x):l     -> (OutputErr x):[]
+      CmdInitialState:l   -> addOrReplace (l,status)
 
 
 
@@ -256,9 +282,38 @@ printNodeInfoFromList ls =
 printNodeInfo :: GraphGoals -> IO()
 printNodeInfo x =
               case x of
-                    GraphNode (_, (DGNode tname _ _ _ _ _ _)) -> putStr (( show tname)++"\n")
+                    GraphNode (_, (DGNode tname _ _ _ _ _ _)) -> putStr (( showName tname)++"\n")
                     _                                       -> putStr "Not a node!\n"
 
 
+printNodeTaxonomyFromList :: TaxoGraphKind -> [GraphGoals]-> IO()
+printNodeTaxonomyFromList kind ls =
+             case ls of
+                   (GraphNode x):l -> do 
+                                        printNodeTaxonomy kind (GraphNode x)
+                                        result <- printNodeTaxonomyFromList kind l
+                                        return result
+                   _:l             -> do
+                                       result <- printNodeTaxonomyFromList kind l
+                                       return result
+                   []              -> return ()
 
+
+printNodeTaxonomy :: TaxoGraphKind -> GraphGoals -> IO()
+printNodeTaxonomy kind x =
+              case x of 
+                   GraphNode (_, (DGNode tname thTh _ _ _ _ _)) -> displayGraph kind (show tname) thTh
+                   _                                            -> putStr "Not a node!\n"
+        
+
+proveNodes :: [GraphGoals] -> LIB_NAME ->LibEnv -> IO LibEnv
+proveNodes ls ln libEnv
+     = case ls of
+             (GraphNode (nb, _)):l -> do
+                                        result <- basicInferenceNode False logicGraph (ln,nb) ln libEnv
+                                        case result of 
+                                            Result _ (Just nwEnv)  -> proveNodes l ln nwEnv
+                                            _                        -> proveNodes l ln libEnv
+             _:l                   -> proveNodes l ln libEnv
+             []                    -> return libEnv
 

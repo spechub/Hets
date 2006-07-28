@@ -36,52 +36,58 @@ import GUI.ShowGraph
 #ifdef PROGRAMATICA
 import Haskell.Haskell2DG
 #endif
- 
+
 import PGIP.Command_Parser
+
 
 main :: IO ()
 main = do
     opts <- getArgs >>= hetcatsOpts
-    putIfVerbose opts 3 ("Options: " ++ show opts)
-    mapM_ (processFile opts) (infiles opts)
+    if (interactive opts) 
+         then do     
+               runInteractive []
+               return ()
+         else do               
+               putIfVerbose opts 3 ("Options: " ++ show opts)
+               mapM_ (processFile opts) (infiles opts)
 
 processFile :: HetcatsOpts -> FilePath -> IO ()
 processFile opts file =
     do putIfVerbose opts 3 ("Processing input: " ++ file)
        case guess file (intype opts) of
-         s -> do
-           res <- case s of
+                  s -> do
+                        res <- case s of
 
 #ifdef PROGRAMATICA
-             HaskellIn -> anaHaskellFile opts file
+                          HaskellIn -> anaHaskellFile opts file
 #endif
 
 #ifdef CASLEXTENSIONS
-             OWL_DLIn -> do
-                 ontoMap <- parseOWL file
-                 structureAna file opts ontoMap
+                          OWL_DLIn -> do
+                             ontoMap <- parseOWL file
+                             structureAna file opts ontoMap
 #endif
-             OmdocIn -> do
-               mLibEnvFromOMDocFile opts file
-             PrfIn -> do
-               m <- anaLib (removePrfOut opts) file
-               case m of
-                 Nothing -> return Nothing
-                 Just (ln, libEnv) -> do
-                     proofStatus <- readPrfFiles opts libEnv
-                     return $ Just (ln, proofStatus)                                
-             ProofCommand -> do            
-                   putStr "Start processing a proof command file\n"    
-                   result <- parseScriptFile file
-                   return result
-             _ -> anaLib opts file
-           case gui opts of
-             Not -> return ()
-             _  ->
+                          OmdocIn -> do
+                             mLibEnvFromOMDocFile opts file
+                          PrfIn -> do
+                             m <- anaLib (removePrfOut opts) file
+                             case m of
+                               Nothing -> return Nothing
+                               Just (ln, libEnv) -> do
+                                  proofStatus <- readPrfFiles opts libEnv
+                                  return $ Just (ln, proofStatus)                                   
+                          ProofCommand -> do            
+                               putStr "Start processing a proof command file\n"    
+                               result <- parseScriptFile file
+                               return result
+                          _ -> anaLib opts file
+                        case gui opts of
+                           Not -> return ()
+                           _  ->
 #ifdef UNI_PACKAGE
-                   showGraph file opts res
+                              showGraph file opts res
 #else
-                   fail $ "No graph display interface; \n" ++
-                          "UNI_PACKAGE option has been "++
-                          "disabled during compilation of Hets"
+                              fail $ "No graph display interface; \n" ++
+                                     "UNI_PACKAGE option has been "++
+                                     "disabled during compilation of Hets"
 #endif

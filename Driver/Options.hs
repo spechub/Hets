@@ -29,6 +29,8 @@ import System.Exit
 import Control.Monad.Trans
 import Data.List
 
+--import PGIP.Command_Parser
+
 -- | short version without date for ATC files
 hetsVersion :: String
 hetsVersion = takeWhile (/= ',') hetcats_version
@@ -38,7 +40,7 @@ bracket s = "[" ++ s ++ "]"
 
 -- use the same strings for parsing and printing!
 verboseS, intypeS, outtypesS, rawS, skipS, structS, transS,
-     guiS, onlyGuiS, libdirS, outdirS, amalgS, specS, recursiveS :: String
+     guiS, onlyGuiS, libdirS, outdirS, amalgS, specS, recursiveS, interactiveS :: String
 
 verboseS = "verbose"
 intypeS = "input-type"
@@ -54,6 +56,7 @@ amalgS = "casl-amalg"
 specS = "named-specs"
 transS = "translation"
 recursiveS = "recursive"
+interactiveS = "interactive"
 
 asciiS, latexS, textS, texS :: String
 asciiS = "ascii"
@@ -106,6 +109,7 @@ data HetcatsOpts =        -- for comments see usage info
           , defLogic :: String
           , outputToStdout :: Bool    -- flag: output diagnostic messages?
           , caslAmalg :: [CASLAmalgOpt]
+          , interactive :: Bool -- flag telling if it should run in interactive mode
           }
 
 instance Show HetcatsOpts where
@@ -117,6 +121,7 @@ instance Show HetcatsOpts where
                 ++ showEqOpt outdirS (outdir opts)
                 ++ showEqOpt outtypesS (showOutFiles $ outtypes opts)
                 ++ (if recurse opts then showOpt recursiveS else "")
+                ++ (if interactive opts then " Interactive mode " else "")
                 ++ showEqOpt specS (joinWith ':' $ map show $ specNames opts)
                 ++ showEqOpt specS (joinWith ':' $ map show $ transNames opts)
                 ++ showRaw (rawopts opts)
@@ -140,6 +145,7 @@ makeOpts opts flg = case flg of
     OutDir x   -> opts { outdir = x }
     OutTypes x -> opts { outtypes = x }
     Recurse    -> opts { recurse = True }
+    Interactive-> opts { interactive = True }
     Specs x    -> opts { specNames = x }
     Trans x    -> opts { transNames = x }
     Raw x      -> opts { rawopts = x }
@@ -169,6 +175,7 @@ defaultHetcatsOpts =
           , verbose  = 1
           , outputToStdout = True
           , caslAmalg = [Cell]
+          , interactive = False
           }
 
 -- | every 'Flag' describes an option (see usage info)
@@ -188,6 +195,7 @@ data Flag = Verbose  Int
           | Trans    [SIMPLE_ID]
           | Raw      [RawOpt]
           | CASLAmalg [CASLAmalgOpt]
+          | Interactive
 
 -- | 'AnaType' describes the type of analysis to be performed
 data AnaType = Basic | Structured | Skip
@@ -420,6 +428,8 @@ options =
        ++ bS ++ dfgS ++ bracket cS)
     , Option ['R'] [recursiveS] (NoArg Recurse)
       "output also imported libraries"
+    , Option ['I'] [interactiveS] (NoArg Interactive)
+      " runs in interactive mode"
     , Option ['n'] [specS] (ReqArg parseSpecOpts "NSPECS")
       ("process specs option " ++ crS ++ listS ++ " SIMPLE-ID")
     , Option ['t'] [transS] (ReqArg parseTransOpt "TRANS")
@@ -588,11 +598,16 @@ hetcatsOpts argv =
    in case (getOpt Permute options argv') of
         (opts,non_opts,[]) ->
             do flags <- checkFlags opts
-               infs  <- checkInFiles non_opts
-               hcOpts <- return $
-                         foldr (flip makeOpts) defaultHetcatsOpts flags
-               let hcOpts' = hcOpts { infiles = infs }
-               seq (length $ show hcOpts') $ return $ hcOpts'
+               if not $ null [ () | Interactive <- flags]
+                       then do
+                             hcOpts <-return $ foldr (flip makeOpts) defaultHetcatsOpts flags
+                             seq (length $ show hcOpts) $ return $ hcOpts
+                       else do
+                             infs  <- checkInFiles non_opts
+                             hcOpts <- return $
+                                       foldr (flip makeOpts) defaultHetcatsOpts flags
+                             let hcOpts' = hcOpts { infiles = infs }
+                             seq (length $ show hcOpts') $ return $ hcOpts'
         (_,_,errs) -> hetsError (concat errs)
 
 -- | 'checkFlags' checks all parsed Flags for sanity
@@ -613,6 +628,10 @@ checkFlags fs =
              then do putStrLn ("version of hets: " ++ hetcats_version)
                      exitWith ExitSuccess
              else return [] -- fall through
+--          if not $ null [ () | Interactive <- fs]
+--             then do runInteractive []
+--                     exitWith ExitSuccess
+--             else return [] -- fall through
           fs' <- collectFlags fs
           return fs'
 
