@@ -52,8 +52,8 @@ data GOAL =
 data GraphGoals =
    GraphNode  GDataNode
  | GraphEdge  GDataEdge
--- | GraphGlobalEdge [GDataEdge]
--- | GraphHidingEdge [GDataEdge]
+-- GraphGlobalEdge [GDataEdge]
+-- GraphHidingEdge [GDataEdge]
  deriving (Eq,Show)     
 
 data ScriptCommandParameters =
