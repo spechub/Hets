@@ -37,13 +37,14 @@ import Common.DocUtils
 import Common.DefaultMorphism
 import Common.ProofUtils
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 
 import Text.ParserCombinators.Parsec
 
 import Driver.Options
 
 import Data.Char
-import Data.List(nub)
+import Data.List(isSuffixOf)
 import Control.Monad
 
 import System.Directory
@@ -113,8 +114,9 @@ getProofDeps m thName thm = do
     b <- checkInFile file
     if b then do
         s <- readFile file
-        let l = nub $ filter (not . null) $ map strip $ lines s
-        return $ mkProved (mapN thm) $ map mapN l
+        return $ mkProved (mapN thm) $ map mapN $
+               Set.toList $ Set.filter (not . null) $
+               Set.fromList $ map strip $ lines s
       else return $ openIsaProof_status $ mapN thm
 
 getAllProofDeps :: Map.Map String String -> String -> [String]
@@ -214,11 +216,13 @@ isaProve thName th = do
       return []
 
 markSimp :: Named Sentence -> Named Sentence
-markSimp = mapNamed markSimpSen
+markSimp s = let n = senName s in
+             if isSuffixOf "_def" n then s else
+             mapNamed (markSimpSen isSimpRuleSen) s
 
-markSimpSen :: Sentence -> Sentence
-markSimpSen s = case s of
-                  Sentence {} -> s {isSimp = isSimpRuleSen s}
+markSimpSen :: (Sentence -> Bool) -> Sentence -> Sentence
+markSimpSen f s = case s of
+                  Sentence {} -> s {isSimp = f s}
                   _ -> s
 
 isSimpRuleSen :: Sentence -> Bool
@@ -229,22 +233,33 @@ isSimpRuleSen sen = case sen of
 -- | test whether a formula should be put into the simpset
 isSimpRule :: Term -> Bool
 -- only universal quantifications
-isSimpRule App { funId = Const {termName = VName { new = q }}
-               , argId = arg@Abs{}}
-    | q == exS || q == ex1S = False
-    | q == allS             = isSimpRule (termId arg)
--- accept everything expect from abstractions
-isSimpRule App {funId = arg1, argId = arg2} =
-    isSimpRule arg1 && isSimpRule arg2
-isSimpRule MixfixApp {funId = arg1, argIds = args } =
-    isSimpRule arg1 && all isSimpRule args
-isSimpRule Const{} = True
-isSimpRule Free{}  = True
-isSimpRule Var{}   = True
-isSimpRule Bound{} = True
-isSimpRule Abs{}   = False
-isSimpRule If{}    = True
-isSimpRule Case{}  = True
-isSimpRule Let{}   = True
-isSimpRule (Paren t) = isSimpRule t
-isSimpRule _       = False
+isSimpRule trm = case trm of
+    MixfixApp { funId = Const {termName = VName { new = q }}
+               , argIds = [arg@Abs{}]}
+        | q == exS || q == ex1S -> False
+        | q == allS  -> isSimpRule (termId arg)
+    MixfixApp { funId = Const {termName = VName { new = q }}
+              , argIds = [a1, a2] }
+        | q == eq -> sizeOfTerm a1 > sizeOfTerm a2
+        | q == impl -> sizeOfTerm a1 < sizeOfTerm a2
+    Paren t -> isSimpRule t
+    _ -> True
+
+sizeOfTerm :: Term -> Int
+sizeOfTerm trm = case trm of
+    Abs { termId = t } -> sizeOfTerm t + 1
+    App { funId = t1, argId = t2 } -> sizeOfTerm t1 + sizeOfTerm t2
+    MixfixApp { funId = t1, argIds = ts } ->
+        sizeOfTerm t1 + sum (map sizeOfTerm ts)
+    If { ifId = t1, thenId = t2, elseId = t3 } ->
+        sizeOfTerm t1 + max (sizeOfTerm t2) (sizeOfTerm t3)
+    Case { termId = t1, caseSubst = cs } ->
+        sizeOfTerm t1 + foldr max 0 (map (sizeOfTerm . snd) cs)
+    Let { letSubst = es, inId = t } ->
+        sizeOfTerm t + sum (map (sizeOfTerm . snd) es)
+    IsaEq { firstTerm = t1, secondTerm = t2 } ->
+        sizeOfTerm t1 + sizeOfTerm t2 + 1
+    Tuplex ts _ -> sum $ map sizeOfTerm ts
+    Fix t -> sizeOfTerm t + 1
+    Paren t -> sizeOfTerm t
+    _ -> 1
