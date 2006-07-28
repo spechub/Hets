@@ -64,7 +64,7 @@ changesDG :: DGraph -> [DGChange] -> DGraph
 changesDG = foldl' changeDG
 
 applyProofHistory :: ProofHistory  -> GlobalContext -> GlobalContext
-applyProofHistory h c = c { devGraph = changesDG (devGraph c) $ concatMap snd 
+applyProofHistory h c = c { devGraph = changesDG (devGraph c) $ concatMap snd
                                        $ reverse h
                           , proofHistory = h }
 
@@ -164,7 +164,7 @@ getAllPathsOfTypeFromGoalList dgraph isType ls =
     concat
     [concat (map (getAllPathsOfTypeBetween dgraph isType source) targets) |
      source <- sources]
-    where 
+    where
       edgesOfType = [edge | edge <- ls]
       sources = nub (map getSourceNode edgesOfType)
       targets = nub (map getTargetNode edgesOfType)
@@ -365,10 +365,9 @@ adjustNode dgraph (node,oldLab) newLab =
    in (changesDG dgraph changes, changes)
 
 --getAllNodeGoals :: LIB_NAME -> LibEnv -> [DGNodeLab]
---getAllNodeGoals ln libEnv = 
+--getAllNodeGoals ln libEnv =
 --                          let dgraph = lookupDgraph ln  libEnv
---                          in nodes dgraph  
+--                          in nodes dgraph
 
 getAllOpenNodeGoals :: [DGNodeLab] -> [DGNodeLab]
-getAllOpenNodeGoals nodes =
-                           filter hasOpenGoals nodes 
+getAllOpenNodeGoals = filter hasOpenGoals
