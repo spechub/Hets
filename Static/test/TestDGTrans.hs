@@ -24,14 +24,14 @@ import Driver.Options
 import qualified Common.Lib.Map as Map
 -- import Common.Doc
 import System.Environment
-import Comorphisms.PCFOL2CFOL
+-- import Comorphisms.PCFOL2CFOL
 import Comorphisms.CASL2PCFOL
 import Comorphisms.CASL2SubCFOL
 import Common.Result
 import Maybe
 import GUI.ShowGraph
 import Common.Lib.Graph
-
+-- import Common.DocUtils
 import Debug.Trace
 
 process :: FilePath -> IO (Maybe (LIB_NAME, LibEnv))
@@ -46,7 +46,7 @@ process file = do
                                          (Comorphism CASL2SubCFOL)
                    gc' <- trans  x gc
                    -- putStrLn ("translated: \n" ++ (show $ devGraph gc'))
-                   return $ Just (libName, Map.update (\_ -> Just gc') libName gcMap)
+                   return $ Just (libName, Map.update (\_ -> Just (trace (show (devGraph gc') ++ "\n\n") gc')) libName gcMap)
             _ -> do putStrLn "not found gc."
                     return mResult
       _ -> do putStrLn "analib error."
@@ -78,7 +78,7 @@ isLessSubLogic acm dg =
                else error ((show $ dgn_name node) ++ " not less than" 
                            ++ (show acm)) -- False
 
-        checkEdgeLess (edge, n) =
+        checkEdgeLess (edge, _) =
             case dgl_morphism edge of
               gm@(GMorphism cid _ _) ->
                   if isHomogeneous gm then

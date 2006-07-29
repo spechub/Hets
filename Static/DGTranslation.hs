@@ -22,21 +22,29 @@ import Common.Result
 import Maybe
 import Common.Lib.Graph
 import Data.Graph.Inductive.Graph
-import CASL.Logic_CASL
-import Common.AS_Annotation
-import Common.DocUtils
-import Debug.Trace
-import Common.Id
+-- import CASL.Logic_CASL
+-- import Common.AS_Annotation
+-- import Common.DocUtils
 
--- translation between two GlobalContext on the basis the given Comorphism 
+import Debug.Trace
+-- import Common.Id
+
+-- | translation a GlobalContext on the basis the given Comorphism 
+-- | if the sublogic of (theory of) node less than given Comorphism
+-- | then call the process to translate;
+-- | otherwise do not translate the graph. 
 dg_translation :: GlobalContext -> AnyComorphism -> Result GlobalContext
-dg_translation gc cm@(Comorphism cidMor) =
+dg_translation gc cm =
     mainTrans (Map.keys $ toMap $ devGraph gc) [] gc
   where  
+    -- rekursiv translate alle nodes of DevGraph of GlobalContext
     mainTrans [] diagsMain gcon = Result diagsMain (Just gcon)
     mainTrans (h:r) diagsMain gcon =  
         case Map.lookup h (toMap $ devGraph gcon) of
-          Just (node@(_, nodeLab, _)) ->
+          Just (_, nodeLab, _) ->
+           -- if the sublogic of (theory of) node less than given Comorphism
+           -- then call the process to translate;
+           -- otherwise do not translate the graph.
            if lessSublogicComor 
                   (sublogicOfTh $ dgn_theory nodeLab)  cm
               then let Result diags' maybeGC = updateNode h gcon cm 
@@ -49,12 +57,12 @@ dg_translation gc cm@(Comorphism cidMor) =
 				     ":" ++ (show $ dgn_name nodeLab) ++
 			             " is not less than " ++ (show cm) ++ 
                                      " -- change the theory...") ())] 
-                        Result diags' maybeGC = updateNode h gcon cm 
-		    in  case maybeGC of
-                          Just gc' -> 
-                             mainTrans r (diagsMain++hintDiag++diags') gc'
-                          Nothing -> 
-                             mainTrans r (diagsMain++hintDiag++diags') gc
+              --          Result diags' maybeGC = updateNode h gcon cm 
+		    in  -- case maybeGC of
+                --          Just gc' -> 
+                --             mainTrans r (diagsMain++hintDiag++diags') gc'
+                --          Nothing -> 
+                             mainTrans r (diagsMain++hintDiag) gc
                      
           Nothing -> mainTrans r (diagsMain ++ 
                                   [(mkDiag Error ("node " ++ (show h) 
@@ -79,12 +87,15 @@ dg_translation gc cm@(Comorphism cidMor) =
                                          sign1 (toThSens sens1)},lout)) 
                               h (toMap $ devGraph globalContext))}
 	-}
-			
-updateNode :: Int -> GlobalContext -> AnyComorphism -> Result GlobalContext
+		
+-- | update the translated node	
+updateNode :: Int     -- ^ the number of node
+		   -> GlobalContext -> AnyComorphism -> Result GlobalContext
 updateNode index gc acm@(Comorphism cidMor) =
     let (inLinks, node, outLinks) = 
             fromJust $ Map.lookup index $ toMap $ devGraph gc
-     -- only the sentences of from-links to be merged in theory of node
+        -- wir translate only the links which are end at this node (inLinks)
+        -- only the sentences of from-links to be merged in theory of node
         Result diagsL1 (Just (newL1, toMergedSent1)) = 
             foldl (joinResultWith (\ (a, sen1) (b, sen2) -> 
                                        (a ++ b, List.nub (sen1 ++sen2)))) 
@@ -108,6 +119,10 @@ updateNode index gc acm@(Comorphism cidMor) =
      slid = sourceLogic cidMor
      tlid = targetLogic cidMor
 
+     -- update the edges of a node
+     -- if the sublogic of (sign and morphism of) node less than given 
+     -- Comorphism then translate the GMorphism, otherwise give out a
+     -- Error-Diagnosis, but the GMorphism is not translated.
      -- updateEdge :: (DGLinkLab, Node) 
      --            -> Result ([(DGLinkLab, Node)], [Named sentence2])]
      updateEdge (links@(DGLink gm@(GMorphism cid' lsign lmorphism) _ _),n)
@@ -120,11 +135,13 @@ updateNode index gc acm@(Comorphism cidMor) =
                  (lessSublogicComor (sublogicOfSign (G_sign sourceLid lsign)) acm) 
                  && (lessSublogicComor (sublogicOfMor (G_morphism targetLid lmorphism)) acm)
                then
+                  -- translate sign of GMorphism
                  case fSign sourceLid lsign of
                    Result diagLs (Just (lsign', lsens)) -> 
+                     -- translate morphism of GMorphism
                      case fMor targetLid lmorphism of
                        Result diagLm (Just lmorphism') -> 
-
+                          -- build a new GMorphism of an edge
                          case idComorphism (Logic tlid) of 
                            Comorphism cid2 ->
                             let newSign = fromJust $ coerceSign tlid 
@@ -147,7 +164,7 @@ updateNode index gc acm@(Comorphism cidMor) =
                                          " is not less than ." ++ 
                                          (show cidMor)) ()] 
                         (Just ([(links,n)], []))
-          else Result [mkDiag Hint ("Link is not homogeneous.") ()] 
+          else Result [mkDiag Error ("Link is not homogeneous.") ()] 
                      (Just ([(links,n)], []))
                   
      -- to translate sign
@@ -175,7 +192,7 @@ updateNode index gc acm@(Comorphism cidMor) =
                                           newL2))
                  Nothing  -> Result diagsT Nothing
 
-     fTh tmSens node g@(G_theory lid sign thSens) =
+     fTh tmSens _ g@(G_theory lid sign thSens) =
       case coerceSign lid slid "" sign of
         Just sign' -> 
             case coerceThSens lid slid "" thSens of
