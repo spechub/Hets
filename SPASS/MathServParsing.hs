@@ -13,8 +13,6 @@ Functions for parsing and mapping MathServ output.
 -}
 
 {-
-  To do:
-  - also parse mw:failure and mw:message
 -}
 
 module SPASS.MathServParsing where
@@ -25,12 +23,16 @@ import Network.URI
 import Network.Service
 import Org.Xmlsoap.Schemas.Soap.Envelope as ENV
 
+import Text.Regex
 import Text.XML.HXT.Aliases
 import Text.XML.HXT.Parser hiding (when)
 import Text.XML.HXT.XPath
 
+import Data.Char (toUpper)
 import Data.List
 import Data.Maybe
+
+import GHC.Read
 
 -- * Datatypes for MathServ services
 
@@ -79,11 +81,9 @@ data MathServOperationTypes =
   returned by MathServ.
 -}
 data MathServResponse =
-       MathServResponse { foAtpResult  :: Maybe MWFoAtpResult,
-                          timeResource :: MWTimeResource,
-                          failure      :: Maybe String
+       MathServResponse { foAtpResult  :: Either String MWFoAtpResult,
+                          timeResource :: MWTimeResource
                           } deriving (Eq, Ord, Show)
-      -- Either String MWFoAtpResult
 
 data MWFoAtpResult =
        MWFoAtpResult { proof        :: MWFormalProof,
@@ -104,12 +104,20 @@ data MWFormalProof =
                            axioms      :: String
                            } deriving (Eq, Ord, Show)
 
+
 data MWStatus =
        MWStatus { solved   :: Bool,
-                  foStatus :: FoStatus
+                  foAtpStatus :: FoAtpStatus
                   } deriving (Eq, Ord, Show)
 
-data FoStatus = -- SystemStatus = Solved SolvedStatus | Unsolved UnsolvedStatus
+--- data MWStatus = MWStatus Bool SystemStatus deriving (Eq, Ord, Show)
+
+data FoAtpStatus =
+       Solved SolvedStatus
+     | Unsolved UnsolvedStatus
+     deriving (Eq, Ord, Show,Read)
+
+data SolvedStatus =
        CounterEquivalent
      | CounterSatisfiable
      | CounterTheorem
@@ -121,18 +129,22 @@ data FoStatus = -- SystemStatus = Solved SolvedStatus | Unsolved UnsolvedStatus
      | Theorem
      | Unsatisfiable
      | UnsatisfiableConclusion
-     | Assumed
+     deriving (Eq, Ord, Show,Read)
+
+data UnsolvedStatus =
+       Assumed
      | GaveUp
      | InputError
      | MemoryOut
      | ResourceOut
      | Timeout
      | Unknown
-     -- NoStatus
+     | NoStatus
      deriving (Eq, Ord, Show,Read)
 
 data MWProvingProblem =
        TstpFOFProblem
+     | UnknownProvingProblem
      deriving (Eq, Ord, Show)
        
 data MWCalculus =
@@ -144,8 +156,8 @@ data MWCalculus =
      | OtterCalc
      | VampireResCalc
      | ZenonCalc
-     -- UnknownCalc
-     deriving (Eq, Ord, Show)
+     | UnknownCalc
+     deriving (Eq, Ord, Show, Read)
 
 data MWTimeResource =
        MWTimeResource { cpuTime       :: Int,
@@ -230,11 +242,14 @@ parseMathServOut mathServOut = do
         failStr = getMaybeXText failureXPath rdfTree
         
     return MathServResponse {
-             failure = failStr,
-             foAtpResult = if (isJust failStr)
+             foAtpResult = maybe (Right $ parseFoAtpResult rdfTree)
+                                 Left failStr
+{-
+             if (isJust failStr)
                            then Nothing
                            else Just $ parseFoAtpResult rdfTree,
-             timeResource = parseTimeResource rdfTree }
+-}
+             ,timeResource = parseTimeResource rdfTree }
     where
       failureXPath = "/mw:*[local-name()='Failure']/"
                      ++ "mw:*[local-name()='message']"
@@ -274,7 +289,7 @@ parseFoAtpResult rdfTree =
 parseProof :: XmlTree -- ^ XML tree to parse
            -> MWFormalProof -- ^ parsed Formal Proof node
 parseProof rdfTree =
--- to be completed (recognition of used MWFormalProof's name)
+-- !! to be completed (recognition of used MWFormalProof's name)
     TstpCnfRefutation { formalProof = getXText formalProofXPath nextTree,
                         proofOf     = parseProvingProblem nextTree,
                         calculus    = parseCalculus nextTree,
@@ -296,20 +311,13 @@ parseProof rdfTree =
 -}
 parseProvingProblem :: XmlTree -- ^ XML tree to parse
                     -> MWProvingProblem -- ^ Parsed Proving Problem node
-parseProvingProblem rdfTree = TstpFOFProblem
--- !! not correct at the moment
-{-
+parseProvingProblem rdfTree =
     let prob = getAnchor $ getXText problemXPath rdfTree
-    in  case (tillLastDash prob) of
-          "generated_tstp_fof_problem_" -> TstpFOFProblem
-          []                            -> TstpFOFProblem
-          _                             -> error $
-            "Could not classify proving problem: " ++ prob
+    in  case (matchRegex (mkRegex "generated_tstp_fof_problem") prob) of
+          Nothing -> UnknownProvingProblem
+          _       -> TstpFOFProblem
     where
       problemXPath = "/mw:*[local-name()='proofOf']/attribute::rdf:*"
-      tillLastDash = reverse . (dropWhile (\ch -> not $ ch == '_'))
-                     . reverse
--}
     
 {- |
   Parses an XmlTree for a Calculus object on first level.
@@ -318,7 +326,11 @@ parseProvingProblem rdfTree = TstpFOFProblem
 -}
 parseCalculus :: XmlTree -- ^ XML tree to parse
               -> MWCalculus -- ^ parsed Calculus node
-parseCalculus rdfTree = case calc of
+parseCalculus rdfTree = 
+    either (\_ -> UnknownCalc) id
+           (readEither (filterUnderline calc) :: Either String MWCalculus)
+{-
+    case calc of
       "AProsNDCalculus"  -> AprosNDCalculus
       "OmegaNDCalculus"  -> OmegaNDCalculus
       "ep_res_calc"      -> EpResCalc
@@ -327,11 +339,13 @@ parseCalculus rdfTree = case calc of
       "vampire_res_calc" -> VampireResCalc
       "zenon_calc"       -> ZenonCalc
       "standard_res"     -> StandardRes
-      []                 -> StandardRes
-      _                  -> error $ "Could not classify calculus: " ++ calc
+      []                 -> UnknownCalc
+      _                  -> UnknownCalc
+-}
     where
       calculusXPath = "/mw:*[local-name()='calculus']/attribute::rdf:*"
       calc = (getAnchor $ getXText calculusXPath rdfTree)
+      
                
 {- |
   Parses an XmlTree for a Status object on first level.
@@ -341,45 +355,18 @@ parseCalculus rdfTree = case calc of
 -}
 parseStatus :: XmlTree -- ^ XML tree to parse
             -> MWStatus -- ^ parsed Status node
-parseStatus rdfTree = case statusStr of
-      "CounterEquivalent"  -> MWStatus { solved = True,
-                                         foStatus = CounterEquivalent }
-      "CounterSatisfiable" -> MWStatus { solved = True,
-                                         foStatus = CounterSatisfiable }
-      "CounterTheorem"     -> MWStatus { solved = True,
-                                         foStatus = CounterTheorem }
-      "Equivalent"         -> MWStatus { solved = True,
-                                         foStatus = Equivalent }
-      "NoConsequence"      -> MWStatus { solved = True,
-                                         foStatus = NoConsequence }
-      "Satisfiable"        -> MWStatus { solved = True,
-                                         foStatus = Satisfiable }
-      "TautologousConclusion" -> MWStatus { solved = True,
-                                         foStatus = TautologousConclusion }
-      "Tautology"          -> MWStatus { solved = True,
-                                         foStatus = Tautology }
-      "Theorem"            -> MWStatus { solved = True,
-                                         foStatus = Theorem }
-      "Unsatisfiable"      -> MWStatus { solved = True,
-                                         foStatus = Unsatisfiable }
-      "UnsatisfiableConclusion" -> MWStatus { solved = True,
-                                         foStatus = UnsatisfiableConclusion }
-      "Assumed"            -> MWStatus { solved = False,
-                                         foStatus = Assumed }
-      "GaveUp"             -> MWStatus { solved = False,
-                                         foStatus = GaveUp }
-      "InputError"         -> MWStatus { solved = False,
-                                         foStatus = InputError }
-      "MemoryOut"          -> MWStatus { solved = False,
-                                         foStatus = MemoryOut }
-      "ResourceOut"        -> MWStatus { solved = False,
-                                         foStatus = ResourceOut }
-      "Timeout"            -> MWStatus { solved = False,
-                                         foStatus = Timeout }
-      "Unknown"            -> MWStatus { solved = False,
-                                         foStatus = Unknown }
-      _                    -> error $ "Could not classify status of proof: "
-                                      ++ statusStr
+parseStatus rdfTree = 
+    let foAtp =
+          either (\st -> either (error $ "Could not classify status of proof: "
+                                         ++ st)
+                           Unsolved
+                           (readEither st :: Either String UnsolvedStatus))
+                 Solved
+                 ((readEither statusStr) :: Either String SolvedStatus)
+    in MWStatus {solved      = case foAtp of
+                                 Solved _   -> True
+                                 Unsolved _ -> False,
+                 foAtpStatus = foAtp}
     where
       statusXPath = "/mw:*[local-name()='status']/attribute::rdf:*"
       statusStr = (getAnchor $ getXText statusXPath rdfTree)
@@ -435,7 +422,7 @@ getXText xp rdfTree =
 
 {- |
   Same as getXText, but if the element does not exist Nothing will be returned.
-  Otherwise Just [Text] will be returned.
+  Otherwise Just 'Text' will be returned.
 -}
 getMaybeXText :: String -- ^ XPath to element containing one XText element
               -> XmlTree -- ^ XML tree to parse
@@ -445,3 +432,26 @@ getMaybeXText xp rdfTree =
     in  case xmltrees of
           [] -> Nothing
           _ -> Just $ getXText xp rdfTree
+
+{- |
+  Filters '_' out of a String and uppercases each letter after a '_'.
+-}
+filterUnderline :: String -- ^ input String
+                -> String -- ^ un-dashed output String
+filterUnderline st = case st of
+    []  -> []
+    _   -> case (head st) of
+             '_' -> if (length st == 1) then []
+                    else filterUnderline $ stringToUpper $ tail st
+             _   -> if (length st == 1) then st
+                    else (head st) : (filterUnderline $ tail st)
+           
+{-
+  Upcase the first char in a given String
+-}
+stringToUpper :: String -- ^ input String
+              -> String -- ^ output String with first letter upcased
+stringToUpper str =
+    if (length str == 1) then [toUpper $ head str]
+    else (toUpper $ head str) : (tail str)
+   
