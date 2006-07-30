@@ -18,8 +18,8 @@ module SPASS.ProveVampire (vampire,vampireGUI) where
 import Logic.Prover
 
 import SPASS.Sign
-import SPASS.ProveHelp
 import SPASS.Translate
+import SPASS.MathServMapping
 import SPASS.MathServParsing
 import SPASS.ProverState
 
@@ -45,6 +45,11 @@ vampire =
            prover_sublogic = "SoftFOL",
            prove = vampireGUI
          }
+
+spassHelpText :: String
+spassHelpText =
+  "No help yet available.\n" ++
+  "Ask Klaus Lüttich (luettich@informatik.uni-bremen.de) for more information.\n"
 
 
 -- * Main GUI

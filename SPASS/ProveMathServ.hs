@@ -24,8 +24,8 @@ module SPASS.ProveMathServ (mathServBroker,mathServBrokerGUI) where
 import Logic.Prover
 
 import SPASS.Sign
-import SPASS.ProveHelp
 import SPASS.Translate
+import SPASS.MathServMapping
 import SPASS.MathServParsing
 import SPASS.ProverState
 
@@ -51,6 +51,11 @@ mathServBroker =
            prover_sublogic = "SoftFOL",
            prove = mathServBrokerGUI
          }
+
+spassHelpText :: String
+spassHelpText =
+  "No help yet available.\n" ++
+  "Ask Klaus Lüttich (luettich@informatik.uni-bremen.de) for more information.\n"
 
 
 -- * Main GUI
