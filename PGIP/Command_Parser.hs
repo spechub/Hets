@@ -29,7 +29,7 @@ import PGIP.Parser_Syntax
 import PGIP.Commands
 import PGIP.Common
 import Data.Maybe
-
+import IO (hFlush, stdout)
 
 scanPathFile::CharParser st String
 scanPathFile 
@@ -360,6 +360,8 @@ parseScriptFile fileName
 runInteractive :: [CmdInterpreterStatus] -> IO (Maybe (LIB_NAME, LibEnv))
 runInteractive status =
                  do 
+                   putStr "Hets> "
+                   IO.hFlush IO.stdout
                    x<-getLine
                    if (x=="q") then return $ getLibEnv status
                                else do r<-parseScript 0 x
