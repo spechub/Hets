@@ -137,9 +137,6 @@ showIsaConstIT ide i thy = showIsaConstT ide thy ++ "_" ++ show i
 
 mkIsaConstIT :: Bool -> GlobalAnnos -> Int -> Id -> Int -> BaseSig -> VName
 mkIsaConstIT prd ga n ide i thy =
-    {- if n == 0 || isPrefixOf "g__" (show ide)
-    then mkVName $ showIsaConstIT ide i thy
-    else -}
     mkIsaConstVName i ( \ ide' -> showIsaConstIT ide' i) prd ga n ide thy
 
 transIsaStringT :: Map.Map BaseSig (Set.Set String) -> BaseSig
