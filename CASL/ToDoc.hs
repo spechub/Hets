@@ -75,11 +75,11 @@ printSIG_ITEMS fS fF sis = case sis of
     Ext_SIG_ITEMS s -> fS s
 
 printDATATYPE_DECL :: DATATYPE_DECL ->Doc
-printDATATYPE_DECL (Datatype_decl s a _) = 
+printDATATYPE_DECL (Datatype_decl s a _) =
     let pa = printAnnoted printALTERNATIVE in case a of
     [] -> idDoc s
     h : t  -> sep [idDoc s, colon <> colon <> sep
-                      ((equals <+> pa h) : 
+                      ((equals <+> pa h) :
                        map ((bar <+>) . pa) t)]
 
 instance Pretty DATATYPE_DECL where
@@ -173,7 +173,7 @@ printOpHead (Op_head k l r _) =
     fcat $ (if null l then [] else [printArgDecls l <> space]) ++
          [ (case k of
              Total -> colon
-             Partial -> idDoc $ mkId [mkSimpleId ":?"]) <> space
+             Partial -> text colonQuMark) <> space
          , idDoc r]
 
 instance Pretty OP_HEAD where
@@ -332,7 +332,7 @@ printRecord mf = Record
                    space <> text withS
                     <+> sepByCommas (map printSortMap sortMap))
     , foldExtFORMULA = \ _ f -> mf f
-    , foldSimpleId = \ _ -> sidDoc
+    , foldSimpleId = \ _ s -> idApplDoc (simpleIdToId s) []
     , foldQual_var = \ _ v s _ ->
           parens $ fsep [text varS, sidDoc v, colon, idDoc s]
     , foldApplication = \ _ o l _ -> case o of
