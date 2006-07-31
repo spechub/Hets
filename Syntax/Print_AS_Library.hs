@@ -99,4 +99,4 @@ instance Pretty LIB_ID where
 
 instance Pretty VERSION_NUMBER where
     pretty (Version_number aa _) =
-        hcat $ punctuate dot $ map (pretty . mkSimpleId) aa
+        hcat $ punctuate dot $ map codeToken aa
