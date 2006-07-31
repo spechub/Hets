@@ -14,6 +14,7 @@ module Common.ConvertLiteral
     ( SplitM
     , isGenLiteral
     , isGenNumber
+    , isGenNum
     , isGenString
     , isGenList
     , isGenFloat
@@ -42,23 +43,31 @@ isGenLiteral splt ga i trm =
           , isGenFrac   splt ga i trm
           ]
 
+-- | is a number or a single digit
+isGenNum :: SplitM a -> GlobalAnnos -> Id -> [a] -> Bool
+isGenNum splt ga i trs = case trs of
+    [] -> digitTest i
+    _ -> isGenNumber splt ga i trs
+
+-- | is a number of more than one digit
 isGenNumber :: SplitM a -> GlobalAnnos -> Id -> [a] -> Bool
-isGenNumber splt ga i trs =
-    (digitTest i && null trs)
-    || (getLiteralType ga i == Number && all (sameId splt digitTest i) trs)
-    where digitTest ii =
-              (getLiteralType ga ii == Number) || case ii of
-                         Id [t] [] _
-                             | not $ null tstr -> isDigit $ head $ tstr
-                             | otherwise    -> False
-                             where tstr = tokStr t
-                         _           -> False
+isGenNumber splt ga i trs = case trs of
+    [_, _] -> getLiteralType ga i == Number
+              && all (sameId splt digitTest i) trs
+    _ -> False
+
+digitTest :: Id -> Bool
+digitTest ii = case ii of
+                         Id [t] [] _ -> case tokStr t of
+                             [d] -> isDigit d
+                             _ -> False
+                         _ -> False
 
 isGenSignedNumber :: SplitM a -> GlobalAnnos -> Id -> [a] -> Bool
 isGenSignedNumber splt ga i trs =
     case trs of
     [hd] -> case splt hd of
-            Just (ni, nt) -> isSign i && isGenNumber splt ga ni nt
+            Just (ni, nt) -> isSign i && isGenNum splt ga ni nt
             Nothing -> False
     _ -> False
 
@@ -100,8 +109,8 @@ isGenFloat splt ga i [l, r] =
     case getLiteralType ga i of
     Floating -> case (splt l, splt r) of
         (Just (li, ltrm), Just (ri, rtrm)) ->
-            (isGenNumber splt ga li ltrm || isGenFrac splt ga li ltrm) &&
-            (isGenSignedNumber splt ga ri rtrm || isGenNumber splt ga ri rtrm)
+            (isGenNum splt ga li ltrm || isGenFrac splt ga li ltrm) &&
+            (isGenSignedNumber splt ga ri rtrm || isGenNum splt ga ri rtrm)
         _ -> False
     _ -> False
 isGenFloat _ _ _ _ = False
@@ -111,7 +120,7 @@ isGenFrac splt ga i [l, r] =
     case getLiteralType ga i of
     Fraction -> case (splt l, splt r) of
        (Just (li, ltrm), Just (ri, rtrm)) ->
-                   isGenNumber splt ga li ltrm && isGenNumber splt ga ri rtrm
+                   isGenNum splt ga li ltrm && isGenNum splt ga ri rtrm
        _ -> False
     _ -> False
 isGenFrac _ _ _ _ = False
