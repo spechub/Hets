@@ -7,18 +7,18 @@ Maintainer  :  hets@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-static analysis of DL parts especially cardinalities, predefined datatypes 
+static analysis of DL parts especially cardinalities, predefined datatypes
 and additional annottations
 -}
 
 {- todo:
-    - check for declaration/definition of illegal sorts, operations 
+    - check for declaration/definition of illegal sorts, operations
       and prediacates (related to the topsort DATA and the predefined symbols)
     -check for illegal formulas related to DATA and with predefined symbols
-    - check that every new sort, operation and prediacte is related to Thing 
+    - check that every new sort, operation and prediacte is related to Thing
       in the subject argument position (1st argument),
       all other arguments can be either below DATA or Thing
-    
+
 
 -}
 module CASL_DL.StatAna ( basicCASL_DLAnalysis
@@ -41,7 +41,6 @@ import CASL.AS_Basic_CASL
 import CASL.ShowMixfix
 import CASL.Overload
 import CASL.Inject
-import CASL.LiteralFuns
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
@@ -53,6 +52,7 @@ import Common.AnalyseAnnos
 import Common.DocUtils
 import Common.Id
 import Common.Result
+import Common.ConvertLiteral
 
 import Data.List
 
@@ -63,16 +63,16 @@ basicCASL_DLAnalysis :: (BASIC_SPEC () () DL_FORMULA,
                      -> Result (BASIC_SPEC () () DL_FORMULA,
                                 Sign DL_FORMULA CASL_DLSign,
                                 [Named (FORMULA DL_FORMULA)])
-basicCASL_DLAnalysis (bs,sig,ga) = 
+basicCASL_DLAnalysis (bs,sig,ga) =
     do ga' <- addGlobalAnnos ga caslDLGlobalAnnos
-       case basicAnalysis minDLForm (const return) 
+       case basicAnalysis minDLForm (const return)
              (const return) ana_Mix (bs,sig,ga') of
         r@(Result ds1 mr) -> maybe r (postAna ds1 sig) mr
 
 {- |
   postAna checks the Signature for
 
-  * all new sorts must be a proper subsort of Thing and 
+  * all new sorts must be a proper subsort of Thing and
     must not be related to DATA
 
   * no new subsort relations with DATA
@@ -86,44 +86,44 @@ postAna :: [Diagnosis]
         -> Sign DL_FORMULA CASL_DLSign
         -> (BASIC_SPEC () () DL_FORMULA,
             Sign DL_FORMULA CASL_DLSign,
-            [Named (FORMULA DL_FORMULA)]) 
+            [Named (FORMULA DL_FORMULA)])
         -> Result (BASIC_SPEC () () DL_FORMULA,
                    Sign DL_FORMULA CASL_DLSign,
                    [Named (FORMULA DL_FORMULA)])
 postAna ds1 in_sig i@(_, acc_sig, _) =
     Result (ds1++ds_sig) $ if null ds_sig then Just i else Nothing
     where ds_sig = chkSorts ++ checkPreds ++ checkOps
-          diff_sig = diffSig diffCASL_DLSign acc_sig in_sig 
+          diff_sig = diffSig diffCASL_DLSign acc_sig in_sig
           chkSorts = Set.fold chSort [] (sortSet diff_sig) ++
              (if Set.member topSortD (supersortsOf topSort acc_sig) ||
                  Set.member topSortD (subsortsOf topSort acc_sig) ||
-                 (supersortsOf topSortD predefinedSign /= 
+                 (supersortsOf topSortD predefinedSign /=
                   supersortsOf topSortD acc_sig) ||
-                 (selectDATAKernel (sortRel predefinedSign)  
-                  /= 
+                 (selectDATAKernel (sortRel predefinedSign)
+                  /=
                   selectDATAKernel (sortRel acc_sig))
-               then [Diag Error 
+               then [Diag Error
                         ("\n     new subsort relations with data "++
                          "topsort are not allowed") nullRange]
-                  else []) 
+                  else [])
 
-          chSort s ds = ds ++ 
-              (if Set.member topSort (supersortsOf s acc_sig) 
+          chSort s ds = ds ++
+              (if Set.member topSort (supersortsOf s acc_sig)
                   then []
-                  else [mkDiag Error 
-                        ("\n     new sort is not a subsort of '"++ 
+                  else [mkDiag Error
+                        ("\n     new sort is not a subsort of '"++
                          showDoc topSort "':") s]) ++
-              (if Set.member topSort (subsortsOf s acc_sig) 
-                  then [mkDiag Error 
-                        ("\n     new sort must not be a supersort of '"++ 
+              (if Set.member topSort (subsortsOf s acc_sig)
+                  then [mkDiag Error
+                        ("\n     new sort must not be a supersort of '"++
                          showDoc topSort "':") s]
                   else [])
 
           selectDATAKernel rel =
               Rel.intransKernel $ Rel.restrict rel $
-                 Set.insert topSortD 
+                 Set.insert topSortD
                         (subsortsOf topSortD predefinedSign)
-          
+
           checkPreds = Map.foldWithKey chPred [] (predMap diff_sig)
           chPred p ts ds = ds ++
               Set.fold (\ t -> chArgs "pred" p $ predArgs t) [] ts
@@ -134,26 +134,26 @@ postAna ds1 in_sig i@(_, acc_sig, _) =
 
           chArgs kstr sym args ds = ds ++
               case args of
-              [] -> if kstr == "op" 
-                    then [] 
-                    else [mkDiag Error 
+              [] -> if kstr == "op"
+                    then []
+                    else [mkDiag Error
                         ("\n     propositional symbols are not allowed") sym]
-              (s:_) -> 
+              (s:_) ->
                   if s == topSort ||
                      Set.member topSort (supersortsOf s acc_sig)
                   then []
-                  else [mkDiag Error 
+                  else [mkDiag Error
                         ("\n     the first argument sort of this "++kstr++
-                        " is not a subsort of '"++ showDoc topSort "':") 
+                        " is not a subsort of '"++ showDoc topSort "':")
                         sym]
-                               
+
 
 {- sketch of Annotation analysis:
 
     where callAna bsRes =
               case analyseAnnos ga acc_sig bs of
-              Result ds2 mESig -> 
-                  maybe (Result (ds1++ds2) Nothing) 
+              Result ds2 mESig ->
+                  maybe (Result (ds1++ds2) Nothing)
                         (integrateExt (ds1++ds2) baRes) mESig
           integrateExt ds (bs',dif_sig,acc_sig,sens) eSig =
               Result ds (bs',
@@ -174,11 +174,11 @@ type DLSign = Sign DL_FORMULA CASL_DLSign
 
 -- |
 -- static analysis of annotations
-analyseAnnos :: GlobalAnnos -> Sign DL_FORMULA CASL_DLSign 
+analyseAnnos :: GlobalAnnos -> Sign DL_FORMULA CASL_DLSign
              -> BASIC_SPEC () () DL_FORMULA -> Result DLSign
-analyseAnnos _ga sig _bs = 
-    Result [Diag Warning "Analysis of Annotations not yet implemented" 
-                 nullRange] 
+analyseAnnos _ga sig _bs =
+    Result [Diag Warning "Analysis of Annotations not yet implemented"
+                 nullRange]
            (Just $ {- extentedInfo -} sig)
 
 injDL_FORMULA :: DL_FORMULA -> DL_FORMULA
@@ -188,15 +188,15 @@ injDL_FORMULA (Cardinality ct pn varTerm natTerm ps) =
 
 mapDL_FORMULA :: DL_FORMULA -> DL_FORMULA
 mapDL_FORMULA (Cardinality ct pn varTerm natTerm ps) =
-    Cardinality ct pn (mapT varTerm) (mapT natTerm) ps 
+    Cardinality ct pn (mapT varTerm) (mapT natTerm) ps
     where mapT = mapTerm mapDL_FORMULA
 
 resolveDL_FORMULA :: MixResolve DL_FORMULA
 resolveDL_FORMULA ga ids (Cardinality ct ps varTerm natTerm ran) =
     do vt <- resMixTerm varTerm
        nt <- resMixTerm natTerm
-       return $ Cardinality ct ps vt nt ran 
-    where resMixTerm = resolveMixTrm mapDL_FORMULA 
+       return $ Cardinality ct ps vt nt ran
+    where resMixTerm = resolveMixTrm mapDL_FORMULA
                                      resolveDL_FORMULA ga ids
 
 noExtMixfixDL :: DL_FORMULA -> Bool
@@ -206,21 +206,21 @@ noExtMixfixDL f =
     Cardinality _ _ t1 t2 _ -> noInner t1 && noInner t2
 
 minDLForm :: Min DL_FORMULA CASL_DLSign
-minDLForm sign form = 
+minDLForm sign form =
     case form of
     Cardinality ct ps varTerm natTerm ran ->
      case predName ps of
      pn ->
         case Map.findWithDefault Set.empty pn (predMap sign) of
-        pn_typeSet 
-            | Set.null pn_typeSet -> 
+        pn_typeSet
+            | Set.null pn_typeSet ->
                 Result [Diag Error ("Unknown predicate: \""++
                                     show pn++"\"") (posOfId pn)]
                        Nothing
-            | otherwise -> 
+            | otherwise ->
               let pn_RelTypes = Set.filter (\pt -> length (predArgs pt) == 2)
                                            pn_typeSet
-              in if Set.null pn_RelTypes 
+              in if Set.null pn_RelTypes
                  then Result [Diag Error ("No binary predicate \""++
                                     show pn++"\" declared") (posOfId pn)]
                        Nothing
@@ -231,39 +231,39 @@ minDLForm sign form =
                    let n_sort = term_sort n2
                    ps' <- case sub_sort_of_subj pn v_sort pn_RelTypes of
                           Result ds mts ->
-                            let ds' = 
-                                 if null ds 
-                                 then [mkDiag Error 
-                                       ("Variable in cardinality constraint\n"++
-                                        "    has wrong type")
+                            let ds' =
+                                 if null ds
+                                 then [mkDiag Error
+                                       ("Variable in cardinality constraint\n"
+                                        ++ "    has wrong type")
                                        varTerm]
                                  else ds
-                                amigDs ts = 
-                                 [Diag Error 
+                                amigDs ts =
+                                 [Diag Error
                                   ("Ambigous types found for\n    pred '"++
                                    showDoc pn "' in cardinalty "++
                                    "constraint: (showing only two of them)\n"++
                                    "    '"++ showDoc (head ts) "', '"++
                                    showDoc (head $ tail ts) "'") ran]
-                             in maybe (Result ds' Nothing) 
+                             in maybe (Result ds' Nothing)
                               (\ ts -> case ts of
                                 [] -> error "CASL_DL.StatAna: Internal error"
-                                [x] -> maybe 
-                                         (return $ 
+                                [x] -> maybe
+                                         (return $
                                             Qual_pred_name pn x nullRange)
-                                         (\ pt -> if x == pt 
+                                         (\ pt -> if x == pt
                                                   then return ps
                                                   else noPredTypeErr ps)
                                          (getType ps)
-                                _ -> maybe (Result (amigDs ts) Nothing) 
+                                _ -> maybe (Result (amigDs ts) Nothing)
                                            (\ pt -> if pt `elem` ts
                                                     then return ps
                                                     else noPredTypeErr ps)
                                            (getType ps))
                               mts
-                   let isNatTerm = 
-                           if isNumberTerm (globAnnos sign) n2 && 
-                              (show n_sort == "nonNegativeInteger" || 
+                   let isNatTerm =
+                           if isNumberTerm (globAnnos sign) n2 &&
+                              (show n_sort == "nonNegativeInteger" ||
                                trace (show n_sort) True)
                            then []
                            else [mkDiag Error
@@ -283,56 +283,74 @@ minDLForm sign form =
           getType ps = case ps of
                         Pred_name _ -> Nothing
                         Qual_pred_name _ pType _ -> Just pType
-          isNumberTerm ga t = 
+          isNumberTerm ga t =
               maybe False (uncurry (isNumber ga)) (splitApplM t)
 
-          noPredTypeErr ps = Result 
+          noPredTypeErr ps = Result
               [mkDiag Error "no predicate with \n    given type found" ps]
               Nothing
 
           sub_sort_of_subj pn v_sort typeSet =
-              foldl (\ (Result ds mv) pt -> 
-                         case predArgs pt of 
-                         (s:_) 
+              foldl (\ (Result ds mv) pt ->
+                         case predArgs pt of
+                         (s:_)
                              | leq_SORT sign v_sort s ->
                                  maybe (Result ds $ Just [toPRED_TYPE pt])
-                                       (\ l -> Result ds $ 
+                                       (\ l -> Result ds $
                                                    Just $ l++[toPRED_TYPE pt])
                                        mv
                              | otherwise ->
-                                 Result ds mv 
-                         _ -> Result (ds++[mkDiag Error 
-                                                  ("no propositional "++
-                                                   "symbols are allowed\n    "++
-                                                   "within cardinality "++
+                                 Result ds mv
+                         _ -> Result (ds++[mkDiag Error
+                                                  ("no propositional " ++
+                                                   "symbols are allowed\n    "
+                                                   ++ "within cardinality " ++
                                                    "constraints")
-                                                  pn]) mv 
+                                                  pn]) mv
                   ) (Result [] Nothing) $ Set.toList typeSet
 
 -- | symbol map analysis
 checkSymbolMapDL ::  RawSymbolMap -> Result RawSymbolMap
-{-    - implement a symbol mapping that forbids mapping of predefined symbols 
+{-    - implement a symbol mapping that forbids mapping of predefined symbols
        from emptySign
-       use from Logic.Logic.Logic and from CASL: 
+       use from Logic.Logic.Logic and from CASL:
           matches, symOf, statSymbMapItems
 -}
-checkSymbolMapDL rsm = 
-    let syms = Map.foldWithKey checkSourceSymbol [] rsm 
-    in if null syms 
+checkSymbolMapDL rsm =
+    let syms = Map.foldWithKey checkSourceSymbol [] rsm
+    in if null syms
        then return rsm
        else Result (ds syms) Nothing
-    where checkSourceSymbol sSym _ syms = 
-              if Set.fold (\ ps -> (||) $ matches ps sSym) False 
+    where checkSourceSymbol sSym _ syms =
+              if Set.fold (\ ps -> (||) $ matches ps sSym) False
                           symOfPredefinedSign
               then syms ++ [sSym]
               else syms
           -- ds :: [RawSymbol] -> [Diagnosis]
-          ds syms = [Diag Error 
+          ds syms = [Diag Error
                      ("Predefined CASL_DL symbols\n    cannot be mapped: "++
-                      concat (intersperse ", " $ 
+                      concat (intersperse ", " $
                               map (\x -> showDoc x "") syms))
                      (minimum $ map getRange syms)]
-                          
 
 symOfPredefinedSign :: SymbolSet
 symOfPredefinedSign = symOf predefinedSign
+
+isNumber :: GlobalAnnos -> Id -> [TERM f] -> Bool
+isNumber = isGenNum splitApplM
+
+splitApplM :: TERM f -> Maybe (Id, [TERM f])
+splitApplM t = case t of
+    Application _ _ _ -> Just $ splitAppl t
+    _ -> Nothing
+
+splitAppl :: TERM f -> (Id, [TERM f])
+splitAppl t = case t of
+              Application oi ts _ -> (op_id oi,ts)
+              _ -> error "splitAppl: no Application found"
+
+-- | extract the Id from any OP_SYMB
+op_id :: OP_SYMB -> Id
+op_id op = case op of
+           Qual_op_name x _ _ -> x
+           Op_name x          -> x
