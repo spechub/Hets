@@ -139,6 +139,7 @@ module Common.Doc
     , equiv
       -- * docifying annotations and ids
     , annoDoc
+    , codeToken
     , idDoc
     , idApplDoc
       -- * transforming to existing formats
@@ -169,9 +170,12 @@ infixl 5 $++$
 
 -- * the data type
 
+data LabelKind = IdDecl | IdAppl deriving Show
+
 data TextKind =
     IdKind | IdSymb | Symbol | Comment | Keyword | TopKey Int
            | Indexed | StructId | Native | HetsLabel
+           | IdLabel LabelKind TextKind Id
 
 data Format = Small | FlushRight
 
@@ -570,12 +574,16 @@ symbolToLatex s = Map.findWithDefault (hc_sty_axiom
                                        $ escapeLatex False s) s latexSymbols
 
 textToLatex :: Bool -> TextKind -> String -> Pretty.Doc
-textToLatex b k s = let e = escapeLatex True s in
+textToLatex b k s = case s of
+  [] -> Pretty.text ""
+  h : _ -> let e = escapeLatex True s in
         if elem s $ map (: []) ",;[]() "
         then makeSmallLatex b $ casl_normal_latex s
         else case k of
     IdKind -> makeSmallLatex b $ hc_sty_id e
-    IdSymb -> makeSmallLatex b $ hc_sty_axiom $ escapeLatex False s
+    IdSymb -> makeSmallLatex b $ if s == "__" then symbolToLatex s
+              else if isAlpha h || elem h "._'" then hc_sty_id e
+              else hc_sty_axiom $ escapeLatex False s
     Symbol -> makeSmallLatex b $ symbolToLatex s
     Comment -> makeSmallLatex b $ casl_comment_latex e
                -- multiple spaces should be replaced by \hspace
@@ -586,9 +594,17 @@ textToLatex b k s = let e = escapeLatex True s in
     StructId -> hc_sty_structid s
     Native -> hc_sty_axiom s
     HetsLabel -> Pretty.hcat [ latex_macro "\\HetsLabel{"
-                             , casl_comment_latex $ concatMap
-                                 ( \ c -> if c == '_' then "\\_" else [c]) s
+                             , casl_comment_latex $ escapeLabel s
                              , latex_macro "}" ]
+    IdLabel appl tk i -> let d = textToLatex b tk s
+                             si = showId i ""
+        in if b || not (isLegalLabel si) then d else Pretty.hcat
+            [ latex_macro $ "\\" ++ shows appl "Label{"
+            , d
+            , latex_macro $ "}{" ++ escapeLabel si ++ "}" ]
+
+escapeLabel :: String -> String
+escapeLabel = concatMap ( \ c -> if c == '_' then "\\_" else [c])
 
 latexSymbols :: Map.Map String Pretty.Doc
 latexSymbols = Map.fromList
@@ -627,7 +643,7 @@ codeOut :: GlobalAnnos -> Maybe Display_format -> Map.Map Id [Token] -> Doc
         -> Doc
 codeOut ga d m = foldDoc idRecord
     { foldAnnoDoc = \ _ -> small . codeOutAnno d m
-    , foldIdDoc = \ _ -> codeOutId m
+    , foldIdDoc = \ _ -> codeOutId IdDecl m
     , foldIdApplDoc = codeOutAppl ga d m
     , foldChangeGlobalAnnos = \ (ChangeGlobalAnnos fg e) _ _ ->
           let ng = fg ga in codeOut ng d
@@ -636,32 +652,36 @@ codeOut ga d m = foldDoc idRecord
     }
 
 codeToken :: String -> Doc
-codeToken s = case s of
-    [] -> empty
-    h : _ -> (if s /= "__" && (isAlpha h || elem h "._'")
-              then text else Text IdSymb) s
+codeToken = Text IdSymb
 
-codeOrigId :: Map.Map Id [Token] -> Id -> [Doc]
-codeOrigId m (Id ts cs _) = let
+codeOrigId :: LabelKind -> Map.Map Id [Token] -> Id -> [Doc]
+codeOrigId lk m i@(Id ts cs _) = let
     (toks, places) = splitMixToken ts
-    conv = map (codeToken . tokStr) in
-    if null cs then conv ts
+    conv = reverse . snd . foldl ( \ (b, l) t ->
+           let s = tokStr t
+           in if isPlace t then (b, symbol s : l)
+              else (True, (if b then codeToken s else makeLabel lk IdSymb s i)
+                            : l)) (False, [])
+    in if null cs then conv ts
        else conv toks ++ codeCompIds m cs : conv places
 
 cCommaT :: Map.Map Id [Token] -> [Id] -> [Doc]
-cCommaT m = punctuate comma . map (codeOutId m)
+cCommaT m = punctuate comma . map (codeOutId IdAppl m)
 
 codeCompIds :: Map.Map Id [Token] -> [Id] -> Doc
 codeCompIds m cs = brackets $ fcat $ cCommaT m cs
 
-codeIdToks :: [Token] -> [Doc]
-codeIdToks = map (\ t -> let s = tokStr t in
-                         if isPlace t then symbol s else native s)
+codeOutId :: LabelKind -> Map.Map Id [Token] -> Id -> Doc
+codeOutId lk m i = fcat $ case Map.lookup i m of
+    Nothing -> codeOrigId lk m i
+    Just ts -> reverse $ snd $ foldl ( \ (b, l) t ->
+        let s = tokStr t
+        in if isPlace t then (b, symbol s : l) else
+            (True, (if b then native s else
+                        makeLabel lk Native s i) : l)) (False, []) ts
 
-codeOutId :: Map.Map Id [Token] -> Id -> Doc
-codeOutId m i = fcat $ case Map.lookup i m of
-    Nothing -> codeOrigId m i
-    Just ts -> codeIdToks ts
+makeLabel :: LabelKind -> TextKind -> String -> Id -> Doc
+makeLabel l k s i = Text (IdLabel l k i) s
 
 annoLine :: String -> Doc
 annoLine w = percent <> keyword w
@@ -704,12 +724,12 @@ codeOutAnno d m a = case a of
             Comment_start -> wrapAnnoLines d (percent <> lbrace) l
                              (rbrace <> percent)
     Display_anno i ds _ -> annoLparen displayS <> fsep
-        ( fcat (codeOrigId m i) :
+        ( fcat (codeOrigId IdAppl m i) :
           map ( \ (df, s) -> percent <> commentText (lookupDisplayFormat df)
-                <+> maybe (commentText s) (const $ codeOutId m i)
+                <+> maybe (commentText s) (const $ codeOutId IdAppl m i)
                     (Map.lookup i m)) ds) <> annoRparen
     List_anno i1 i2 i3 _ -> annoLine listS <+> hCommaT m [i1, i2, i3]
-    Number_anno i _ -> annoLine numberS <+> codeOutId m i
+    Number_anno i _ -> annoLine numberS <+> codeOutId IdAppl m i
     Float_anno i1 i2 _ -> annoLine floatingS <+> hCommaT m [i1, i2]
     String_anno i1 i2 _ -> annoLine stringS <+> hCommaT m [i1, i2]
     Prec_anno p l1 l2 _ -> annoLparen precS <>
@@ -727,12 +747,14 @@ codeOutAnno d m a = case a of
                         <> fCommaT m l <> annoRparen
     Label l _ -> wrapLines (case l of
                   [x] -> let r = dropWhile isSpace x in
-                         if not (null r)
-                            && all ( \ c -> isAlphaNum c || elem c ":_" ) r
+                         if isLegalLabel r
                             then HetsLabel
                             else Comment
                   _ -> Comment) d (percent <> lparen) l annoRparen
     Semantic_anno sa _ -> annoLine $ lookupSemanticAnno sa
+
+isLegalLabel :: String -> Bool
+isLegalLabel r = not (null r) && all ( \ c -> isAlphaNum c || elem c ":_" ) r
 
 splitDoc :: Doc -> Maybe (Id, [Doc])
 splitDoc d = case d of
@@ -755,9 +777,9 @@ codeOutAppl ga md m origDoc _ args = case origDoc of
         precs = mkPrecIntMap pa
         p = Map.findWithDefault maxBound i $ precMap precs
         doSplit = maybe (error "doSplit") id . splitDoc
-        mkList op largs cl = fsep $ codeOutId m op : punctuate comma
+        mkList op largs cl = fsep $ codeOutId IdAppl m op : punctuate comma
                              (map (codeOut ga md m) largs)
-                             ++ [codeOutId m cl]
+                             ++ [codeOutId IdAppl m cl]
     in if isGenNumber splitDoc ga i aas then
              mk $ toNumber doSplit i aas
          else if isGenFrac splitDoc ga i aas then
@@ -769,7 +791,7 @@ codeOutAppl ga md m origDoc _ args = case origDoc of
          else if isGenList splitDoc ga i aas then
              toMixfixList mkList doSplit ga i aas
          else if null args || length args /= placeCount i then
-             codeOutId m i <> if null args then empty else
+             codeOutId IdAppl m i <> if null args then empty else
                                   parens (sepByCommas args)
          else let
              parArgs = reverse $ foldl ( \ l (arg, dc) ->
@@ -788,16 +810,22 @@ codeOutAppl ga md m origDoc _ args = case origDoc of
                     else d) : l) [] $ zip aas args
              (fts, ncs, cFun, hFun) = case Map.lookup i m of
                             Nothing ->
-                                (fst $ splitMixToken ts, cs, codeToken, fsep)
-                            Just nts -> (nts, [], native, fsep)
-             (rArgs, fArgs) = mapAccumL ( \ ac t ->
+                                (fst $ splitMixToken ts, cs, IdSymb, fsep)
+                            Just nts -> (nts, [], Native, fsep)
+             ((_, rArgs), fArgs) = mapAccumL ( \ (b, ac) t ->
                if isPlace t then case ac of
-                 hd : tl -> (tl, hd)
+                 hd : tl -> ((b, tl), hd)
                  _ -> error "addPlainArg"
-                 else (ac, cFun $ tokStr t)) parArgs fts
+                 else ((True, ac),
+                       let s = tokStr t in
+                       if b then Text cFun s else makeIdApplLabel cFun s i))
+                                                  (False, parArgs) fts
             in hFun $ fArgs ++ (if null ncs then [] else [codeCompIds m cs])
                                                  ++ rArgs
   _ -> error "Common.Doc.codeOutAppl"
+
+makeIdApplLabel :: TextKind -> String -> Id -> Doc
+makeIdApplLabel k s i = Text (IdLabel IdAppl k i) s
 
 getWeight :: GlobalAnnos -> Doc -> Maybe Weight
 getWeight ga d = let
