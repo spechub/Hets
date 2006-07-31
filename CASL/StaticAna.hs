@@ -57,6 +57,7 @@ addOp ty i =
            check = addDiags $ checkPlaces (opArgs ty) i
                    ++ checkWithOtherMap "predicate" (predMap e) i
                    ++ checkWithVars (varMap e) i
+                   ++ checkNamePrefix i
            store = do put e { opMap = addOpTo i ty m }
        if Set.member ty l then
              addDiags [mkDiag Hint "redeclared op" i]
@@ -97,6 +98,7 @@ addPred ty i =
                   addDiags $ checkPlaces (predArgs ty) i
                            ++ checkWithOtherMap "operation" (opMap e) i
                            ++ checkWithVars (varMap e) i
+                           ++ checkNamePrefix i
 
 allOpIds :: Sign f e -> Set.Set Id
 allOpIds = Rel.keysSet . opMap

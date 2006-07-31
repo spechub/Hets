@@ -14,6 +14,7 @@ This module provides CASL signatures that also serve as local
 module CASL.Sign where
 
 import CASL.AS_Basic_CASL
+import CASL.ToDoc
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
@@ -25,7 +26,8 @@ import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Doc
 import Common.DocUtils
-import CASL.ToDoc
+
+import Data.List (isPrefixOf)
 
 -- constants have empty argument lists
 data OpType = OpType {opKind :: FunKind, opArgs :: [SORT], opRes :: SORT}
@@ -98,7 +100,7 @@ instance Pretty PredType where
 instance (Pretty f, Pretty e) => Pretty (Sign f e) where
     pretty = printSign pretty pretty
 
-printSign :: (f->Doc) -> (e->Doc) -> Sign f e ->Doc
+printSign :: (f -> Doc) -> (e -> Doc) -> Sign f e -> Doc
 printSign _ fE s = text (sortS++sS) <+>
     sepByCommas (map idDoc (Set.toList $ sortSet s)) $+$
     (if Rel.null (sortRel s) then empty
@@ -208,7 +210,8 @@ addSort s =
        let m = sortSet e
        if Set.member s m then
           addDiags [mkDiag Hint "redeclared sort" s]
-          else State.put e { sortSet = Set.insert s m }
+          else do State.put e { sortSet = Set.insert s m }
+                  addDiags $ checkNamePrefix s
 
 hasSort :: Sign f e -> SORT -> [Diagnosis]
 hasSort e s = if Set.member s $ sortSet e then []
@@ -264,6 +267,15 @@ closeSubsortRel=
     do e <- State.get
        State.put e { sortRel = Rel.transClosure $ sortRel e }
 
+-- | a prefix for generated names
+genNamePrefix :: String
+genNamePrefix = "gn_"
+
+checkNamePrefix :: Id -> [Diagnosis]
+checkNamePrefix i = if isPrefixOf genNamePrefix $ showId i "" then
+    [mkDiag Warning "identifier may conflict with generated names" i]
+    else []
+
 alsoWarning :: String -> Id -> [Diagnosis]
 alsoWarning msg i = [mkDiag Warning ("also known as " ++ msg) i]
 
@@ -289,6 +301,7 @@ addVar s v =
        State.put e { varMap = Map.insert v s m }
        addDiags $ ds ++ checkWithOtherMap "operation" (opMap e) i
                 ++ checkWithOtherMap "predicate" (predMap e) i
+                ++ checkNamePrefix i
 
 addOpTo :: Id -> OpType -> OpMap -> OpMap
 addOpTo k v m =

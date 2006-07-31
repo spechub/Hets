@@ -108,10 +108,10 @@ allSortsWithBottom sign s =
     Set.unions $ s : map (flip supersortsOf sign) (Set.toList s)
 
 bottom :: Id
-bottom = mkId[mkSimpleId "g__bottom"]
+bottom = mkId[mkSimpleId $ genNamePrefix ++ "bottom"]
 
 defPred :: Id
-defPred = mkId[mkSimpleId "g__defined"]
+defPred = mkId[mkSimpleId $ genNamePrefix ++ "defined"]
 
 defined :: Set.Set SORT -> TERM f -> SORT -> Range -> FORMULA f
 defined bsorts t s ps =
