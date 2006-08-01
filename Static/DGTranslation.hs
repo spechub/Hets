@@ -25,7 +25,7 @@ import Data.Graph.Inductive.Graph
 -- import CASL.Logic_CASL
 -- import Common.AS_Annotation
 -- import Common.DocUtils
-
+import Control.Exception
 import Debug.Trace
 -- import Common.Id
 
@@ -99,15 +99,17 @@ updateNode index gc acm@(Comorphism cidMor) =
         Result diagsL1 (Just (newL1, toMergedSent1)) = 
             foldl (joinResultWith (\ (a, sen1) (b, sen2) -> 
                                        (a ++ b, List.nub (sen1 ++sen2)))) 
-                      (Result [] (Just ([], []))) (map updateEdge inLinks)
-     --   Result diagsL2 (Just (newL2, _)) = 
-     --       foldl (joinResultWith (\ (a, sen1) (b, sen2) -> 
-     --                                  (a ++ b, List.nub (sen1 ++sen2)))) 
-     --                 (Result [] (Just ([], []))) (map updateEdge outLinks)
-        Result thDiag newNode = transTh newL1 outLinks toMergedSent1 node
+                      (Result [] (Just ([], []))) (map (updateEdge True) 
+                                                       inLinks)
+        Result diagsL2 (Just (newL2, _)) = 
+            foldl (joinResultWith (\ (a, sen1) (b, sen2) -> 
+                                       (a ++ b, List.nub (sen1 ++sen2)))) 
+                      (Result [] (Just ([], []))) (map (updateEdge False) 
+                                                       outLinks)
+        Result thDiag newNode = transTh newL1 newL2 toMergedSent1 node
    
     in {- if length newL1 /= 0 then -}  
-        Result (diagsL1 ++ thDiag)
+        Result (diagsL1 ++diagsL2 ++ thDiag)
                 (Just (gc {devGraph=Gr (Map.update (\_ -> newNode)  
                                         index 
                                         (toMap $ devGraph gc))
@@ -123,17 +125,21 @@ updateNode index gc acm@(Comorphism cidMor) =
      -- if the sublogic of (sign and morphism of) node less than given 
      -- Comorphism then translate the GMorphism, otherwise give out a
      -- Error-Diagnosis, but the GMorphism is not translated.
+     -- (inlink, node)
      -- updateEdge :: (DGLinkLab, Node) 
      --            -> Result ([(DGLinkLab, Node)], [Named sentence2])]
-     updateEdge (links@(DGLink gm@(GMorphism cid' lsign lmorphism) _ _),n)
+     updateEdge isDebug (links@(DGLink gm@(GMorphism cid' lsign lmorphism) 
+                                       _ _),n)
        = if isHomogeneous gm 
           then
            let sourceLid = sourceLogic cid'
                targetLid = targetLogic cid'
            in if {- lessSublogicComor (G_sublogics 
                              sourceLid (sourceSublogic cid')) acm  -}
-                 (lessSublogicComor (sublogicOfSign (G_sign sourceLid lsign)) acm) 
-                 && (lessSublogicComor (sublogicOfMor (G_morphism targetLid lmorphism)) acm)
+                 (lessSublogicComor (sublogicOfSign (G_sign sourceLid lsign))
+                                    acm) 
+                 && (lessSublogicComor (sublogicOfMor (G_morphism targetLid 
+                                                       lmorphism)) acm)
                then
                   -- translate sign of GMorphism
                  case fSign sourceLid lsign of
@@ -148,16 +154,30 @@ updateNode index gc acm@(Comorphism cidMor) =
                                             (sourceLogic cid2) "" lsign'
                                 newMor = fromJust $ coerceMorphism tlid 
                                          (targetLogic cid2) "" lmorphism'
-                            in  Result (trace ((show $ sublogicOfSign (G_sign sourceLid lsign)) ++ " --> " ++ (show $ sublogicOfSign (G_sign (sourceLogic cid2) newSign))) (diagLs ++ diagLm ++ [mkDiag Hint "successful translation of edge." ()]) )
-                               (Just ([(links{dgl_morphism=
-                                              GMorphism cid2 
-                                                  newSign newMor
-                                             }, n)], lsens))
+                                slNewSign = sublogicOfSign $ 
+                                                G_sign (sourceLogic cid2) 
+                                                       newSign
+                                slNewMor  = sublogicOfMor $ 
+                                               G_morphism (targetLogic cid2) 
+                                                          newMor
+                                res = Result (diagLs ++ diagLm ++ 
+                                 [mkDiag Hint 
+                                    "successful translation of edge." ()])
+                                            (Just ([(links{dgl_morphism=
+                                                           GMorphism cid2 
+                                                           newSign newMor
+                                                          }, n)], lsens))
+                            in  assert (slNewSign == slNewMor) 
+                                    $ if not isDebug then res else res 
+                                          {diags = diags res ++ 
+                                           [mkDiag Warning ((show $ getNameOfNode n gc) ++ "->" ++ (show $ getNameOfNode index gc) ++ ": " ++ (show $ sublogicOfSign (G_sign sourceLid lsign)) ++ " --> " ++ (show slNewSign)) ()] }
                        Result diagLm Nothing  ->  Result (diagLm ++ 
-                         [mkDiag Error ("morphism of link can not be translated.") ()]) 
+                         [mkDiag Error 
+                          ("morphism of link can not be translated.") ()]) 
                          (Just ([(links, n)], []))
                    Result diagLs Nothing  -> Result (diagLs ++ 
-                         [mkDiag Error ("sign of link can not be translated.") ()]) 
+                         [mkDiag Error 
+                          ("sign of link can not be translated.") ()]) 
                          (Just ([(links, n)], []))
                else Result [mkDiag Error ("GMorphism of a Link to node " ++ 
                                          (show $ getNameOfNode n gc) ++ 
@@ -175,7 +195,10 @@ updateNode index gc acm@(Comorphism cidMor) =
               Result diagsOfcs maybeSign ->
                   case maybeSign of
                     Just (sign'', sens) ->
-                        Result (diagsOfcs++[mkDiag Hint "successful translation of sign." ()]) (Just (sign'',sens))
+                        Result (diagsOfcs
+                                ++[mkDiag Hint 
+                                   "successful translation of sign." ()]) 
+                               (Just (sign'',sens))
                     Nothing -> error "Result diagsOfcs Nothing"
         Nothing  -> Result [mkDiag Error ("cannot coerce sign" ++ show sign)
                             ()] Nothing 
@@ -202,7 +225,7 @@ updateNode index gc acm@(Comorphism cidMor) =
                       -- show diags
                       case maybeTh of
                         Just (sign'', namedS) -> 
-                            Result (diagsOfth ++ [mkDiag Hint "successful translation of theory" ()]) (Just (let x = G_theory tlid sign'' (toThSens $ List.nub (namedS ++ tmSens  )) in trace ((show cidMor) ++ ": " ++ (show $ sublogicOfTh g) ++ " -> " ++ (show $ sublogicOfTh x)) x))
+                            Result (diagsOfth ++ [mkDiag Hint "successful translation of theory" ()]) (Just (let x = G_theory tlid sign'' (toThSens $ List.nub (namedS {- ++ tmSens -} )) in trace ((show $ getNameOfNode index gc) ++ ": " ++ (show $ sublogicOfTh g) ++ " -> " ++ (show $ sublogicOfTh x)) x))
                         Nothing ->  error "Result diagsOfth Nothing"
               Nothing    -> Result [(mkDiag Error 
                                      ("cannot coerce sens" ++ show thSens)
@@ -214,7 +237,8 @@ updateNode index gc acm@(Comorphism cidMor) =
         case coerceMorphism sourceID slid "" mor of
           Just mor' -> 
               let Result diagsM res =  map_morphism cidMor mor'
-                  diagZ = [mkDiag Hint "successful translation of morphism." ()]
+                  diagZ = [mkDiag Hint "successful translation of morphism."
+                                      ()]
               in  Result (diagsM ++ diagZ) res
           Nothing -> Result [(mkDiag Error ("cannot coerce mor" ++ show mor)
                               ())] Nothing  

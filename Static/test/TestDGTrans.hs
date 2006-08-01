@@ -32,7 +32,7 @@ import Maybe
 import GUI.ShowGraph
 import Common.Lib.Graph
 -- import Common.DocUtils
-import Debug.Trace
+-- import Debug.Trace
 
 process :: FilePath -> IO (Maybe (LIB_NAME, LibEnv))
 process file = do  
@@ -46,7 +46,7 @@ process file = do
                                          (Comorphism CASL2SubCFOL)
                    gc' <- trans  x gc
                    -- putStrLn ("translated: \n" ++ (show $ devGraph gc'))
-                   return $ Just (libName, Map.update (\_ -> Just (trace (show (devGraph gc') ++ "\n\n") gc')) libName gcMap)
+                   return $ Just (libName, Map.update (\_ -> Just gc') libName gcMap)
             _ -> do putStrLn "not found gc."
                     return mResult
       _ -> do putStrLn "analib error."
@@ -56,7 +56,7 @@ trans :: AnyComorphism -> GlobalContext -> IO GlobalContext
 trans acm gc = do
     case dg_translation gc acm of
       Result diags' maybeGC ->
-          do putStrLn ("diagnosis : \n" ++ (show $ filter isErrorDiag diags'))
+          do putStrLn ("diagnosis : \n" ++ (unlines $ map diagString $ filter (\x -> diagKind x /= Hint ) diags'))
              if hasErrors diags' then error "error(s) in translation."
               else do
                case maybeGC of
