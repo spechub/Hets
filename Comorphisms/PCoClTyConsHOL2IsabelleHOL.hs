@@ -63,7 +63,8 @@ instance Comorphism PCoClTyConsHOL2IsabelleHOL
             ( \ ns -> case sentence ns of
               DatatypeSen ds -> ds
               _ -> []) sens
-      return (sign { domainTab = dt }, isens)
+      return (sign { domainTab = dt },
+                   filter ( \ ns -> sentence ns /= mkSen true) isens)
     map_morphism = mapDefaultMorphism
     map_sentence PCoClTyConsHOL2IsabelleHOL sign phi =
        transSentence sign phi
@@ -75,9 +76,9 @@ baseSign = MainHC_thy
 
 transAssumps :: GlobalAnnos -> Assumps -> Result ConstTab
 transAssumps ga = foldM insertOps Map.empty . Map.toList where
-  insertOps m (name, ops) = 
+  insertOps m (name, ops) =
       let b = isMixfix name
-          chk t = if b then isPlainFunType t else -1
+          chk t = let pf = isPlainFunType t in if b || pf < 2 then pf else -1
           trns = if b then transPlainFunType else transFunType
       in case opInfos ops of
           [info] -> case transOpInfo info of
@@ -93,7 +94,7 @@ transAssumps ga = foldM insertOps Map.empty . Map.toList where
                         Just r -> do
                           ty <- r
                           return $ Map.insert
-                             (mkIsaConstIT False ga (chk ty) 
+                             (mkIsaConstIT False ga (chk ty)
                               name i baseSign) (trns ty) m'
                          ) m $ zip [1..] infos
 
@@ -144,20 +145,20 @@ transFunType fty = case fty of
                        $ map transFunType args
     TypeVar tid -> TFree (showIsaTypeT tid baseSign) []
 
--- compute number of arguments for plain CASL functions 
+-- compute number of arguments for plain CASL functions
 isPlainFunType :: FunType -> Int
 isPlainFunType fty = case fty of
-    FunType f a -> case a of 
+    FunType f a -> case a of
                      FunType _ _ -> -1
-                     _ -> case f of 
+                     _ -> case f of
                             TupleType l -> if length l == 2 then 2 else -1
                             _ -> 1
     _ -> 0
 
 transPlainFunType :: FunType -> Typ
-transPlainFunType fty = if isPlainFunType fty == 2 then 
+transPlainFunType fty = if isPlainFunType fty == 2 then
     case fty of
-    FunType (TupleType l) a -> foldr mkFunType (transFunType a) 
+    FunType (TupleType l) a -> foldr mkFunType (transFunType a)
                                $ map transFunType l
     _ -> transFunType fty
     else transFunType fty
@@ -224,7 +225,7 @@ transAltDefn env tm args dt tyId alt = case alt of
             sc = TypeScheme args (getFunType dt Total mTs) nullRange
         nts <- mapM funType mTs
         -- extract overloaded opId number
-        return (transOpId env opId sc, case nts of 
+        return (transOpId env opId sc, case nts of
                 [TupleType l] | isMixfix opId -> map transFunType l
                 _ -> map transFunType nts)
     _ -> fatal_error ("missing total constructor for: " ++ show tyId)
@@ -248,25 +249,24 @@ transSentence sign s = case s of
         TupleType _ -> error "transSentence: TupleType"
         ApplType _ _ -> error "transSentence: ApplType"
         _ -> return $ mkSen true
-    DatatypeSen _ -> warning (mkSen true)
-                           "translation of datatype sentences not implemented"
-                           nullRange
+    DatatypeSen _ -> return $ mkSen true
     ProgEqSen _ _ (ProgEq _ _ r) -> warning (mkSen true)
                            "translation of sentence not implemented"
                            r
 
 -- disambiguate operation names
 transOpId :: Env -> UninstOpId -> TypeScheme -> VName
-transOpId sign op ts@(TypeScheme _ ty _) = 
+transOpId sign op ts@(TypeScheme _ ty _) =
     let ga = globAnnos sign
         Result _ mty = funType ty
-    in case mty of 
+    in case mty of
          Nothing -> error "transOpId"
-         Just fty -> 
-           let args = if isMixfix op then isPlainFunType fty else -1 
-           in case (do 
+         Just fty ->
+           let pf = isPlainFunType fty
+               args = if pf < 2 || isMixfix op then pf else -1
+           in case (do
            ops <- Map.lookup op (assumps sign)
-           if isSingle (opInfos ops) then return $ 
+           if isSingle (opInfos ops) then return $
               mkIsaConstT False ga args op baseSign
              else do i <- elemIndex ts (map opType (opInfos ops))
                      return $ mkIsaConstIT False ga args op (i+1) baseSign) of
@@ -277,7 +277,7 @@ transProgEq :: Env -> ProgEq -> Result (Isa.Term, Isa.Term)
 transProgEq sign (ProgEq pat trm r) = do
     op <- transPattern sign pat
     (ty, ot) <- transTerm sign trm
-    if isPartialVal ty then fatal_error 
+    if isPartialVal ty then fatal_error
            ("rhs must not be partial currently: " ++ showDoc trm "") r
        else return (op, ot)
 
@@ -330,7 +330,7 @@ transTerm sign trm = case trm of
               | opId == notId -> (fTy, notOp)
               | opId == defId -> (instfTy, cf $ defOp)
               | opId == whenElse -> (fTy, whenElseOp)
-              | otherwise -> (instfTy, 
+              | otherwise -> (instfTy,
                             cf $ (if isPlainFunType fTy == 2 && isMixfix opId
                                   then termAppl uncurryOp
                                   else id) $ con $ transOpId sign opId ts)
@@ -355,8 +355,8 @@ transTerm sign trm = case trm of
         pt <- case q of
             Partial -> return p
             Total -> if isPartialVal ty
-                     then fatal_error 
-                         ("partial lambda body in total abstraction: " 
+                     then fatal_error
+                         ("partial lambda body in total abstraction: "
                           ++ showDoc body "") r
                      else return p
         foldM (abstraction sign) pt $ reverse pats
@@ -370,7 +370,7 @@ transTerm sign trm = case trm of
                           (PairType s t, Tuplex [p, e] NotCont)) nTs
     TupleTerm [] _ -> return (UnitType, unitOp)
     ApplTerm t1 t2 _ -> mkApp sign t1 t2 -- transAppl sign Nothing t1 t2
-    _ -> fatal_error ("cannot translate term: " ++ showDoc trm "") 
+    _ -> fatal_error ("cannot translate term: " ++ showDoc trm "")
          $ getRange trm
 
 instType :: FunType -> FunType -> ConvFun
@@ -548,7 +548,7 @@ adjustTypes aTy rTy ty = case (aTy, ty) of
               if or (map (fst . fst) l) || or
                  (map (isNotIdOp . snd . snd) l)
                 then fail "cannot adjust type application"
-                else return ((False, IdOp), 
+                else return ((False, IdOp),
                              (ApplType i1 $ map (fst . snd) l, IdOp))
     _ -> fail "cannot adjust types"
 
@@ -640,7 +640,7 @@ mkApp sg f arg = do
     (fTy, fTrm) <- transTerm sg f
     (aTy, aTrm) <- transTerm sg arg
     case fTy of
-         FunType a r -> do 
+         FunType a r -> do
              ((rTy, fConv), (_, aConv)) <- adjustTypes a r aTy
              return $ (if rTy then makePartialVal r else r,
                 mkTermAppl (applConv fConv fTrm)
@@ -669,7 +669,7 @@ getPatternType t =
 transPattern :: Env -> As.Term -> Result Isa.Term
 transPattern sign pat = do
     (ty, trm) <- transTerm sign pat
-    if isPartialVal ty then 
+    if isPartialVal ty then
         fatal_error ("pattern must not be partial: " ++ showDoc pat "")
              $ getRange pat
        else return trm
