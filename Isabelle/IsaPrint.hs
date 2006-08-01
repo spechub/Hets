@@ -52,7 +52,8 @@ printIsaTheory tn _ sign sens = let
 
 printTheoryBody :: Sign -> [Named Sentence] -> Doc
 printTheoryBody sig sens =
-    let (axs, rest) = getAxioms sens
+    let (axs, rest) =
+            getAxioms $ filter ( \ ns -> sentence ns /= mkSen true) sens
         (defs, rs) = getDefs rest
         (rdefs, ts) = getRecDefs rs
         tNames = map senName $ ts ++ axs
@@ -345,12 +346,12 @@ printNInstance t xs = text instanceS <+> text t <> doubleColon <>
     <+> printClass (fst xs) $+$ text "by intro_classes"
 
 -- filter out types that are given in the domain table
-printTypeDecls :: Sign -> Doc
-printTypeDecls sig =
+printTypeDecls :: DomainTab -> Arities -> Doc
+printTypeDecls odt ars =
     let dt = Map.fromList $ map (\ (t, _) -> (typeId t, []))
-             $ concat $ domainTab sig
+             $ concat odt
     in vcat $ map printTycon $ Map.toList
-           $ Map.difference (arities $ tsig sig) dt
+           $ Map.difference ars dt
 
 printTycon :: (TName, [(IsaClass, [(Typ, Sort)])]) -> Doc
 printTycon (t, arity') =
@@ -373,14 +374,22 @@ printAlt (VName _ altV) = case altV of
 instance Pretty Sign where
     pretty = printSign
 
+-- | a dummy constant table with wrong types
+constructors :: DomainTab -> ConstTab
+constructors = Map.fromList . map (\ v -> (v, noType))
+               . concatMap (map fst . snd) . concat
+
 printSign :: Sign -> Doc
-printSign sig =
-    printTypeDecls sig $++$
+printSign sig = let dt = domainTab sig
+                    ars = arities $ tsig sig
+                in
+    printTypeDecls dt ars $++$
     printClassrel (classrel $ tsig sig) $++$
-    printDomainDefs (domainTab sig) $++$
-    printConstTab (constTab sig) $++$
+    printDomainDefs dt $++$
+    printConstTab (Map.difference (constTab sig)
+                  $ constructors dt) $++$
     (if showLemmas sig then showCaseLemmata (domainTab sig) else empty) $++$
-    printArities (theoryName sig) (arities $ tsig sig)
+    printArities (theoryName sig) ars
     where
     printConstTab tab = if Map.null tab then empty else text constsS
                         $+$ vcat (map printConst $ Map.toList tab)
