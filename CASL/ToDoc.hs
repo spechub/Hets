@@ -324,13 +324,13 @@ printRecord mf = Record
     , foldSort_gen_ax = \ (Sort_gen_ax constrs _) _ _ ->
         let (sorts, ops, sortMap) = recover_Sort_gen_ax constrs
             printSortMap (s1, s2) = fsep [idDoc s1, mapsto, idDoc s2]
-        in text generatedS <> specBraces(
+        in sep [text generatedS, specBraces $
                 fsep (text sortS : punctuate comma (map idDoc sorts))
                 <> semi <+>
                 fsep (punctuate semi (map printOpSymb ops))
                 <> if null sortMap then empty else
                    space <> text withS
-                    <+> sepByCommas (map printSortMap sortMap))
+                    <+> sepByCommas (map printSortMap sortMap)]
     , foldExtFORMULA = \ _ f -> mf f
     , foldSimpleId = \ _ s -> idApplDoc (simpleIdToId s) []
     , foldQual_var = \ _ v s _ ->
