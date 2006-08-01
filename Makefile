@@ -154,6 +154,7 @@ APPENDPRELUDESTRING = utils/appendHaskellPreludeString \
 ## rule for appendHaskellPreludeString
 Haskell/PreludeString.hs: Haskell/PreludeString.append.hs \
     $(APPENDPRELUDESTRING)
+	$(RM) $@
 	$(APPENDPRELUDESTRING) < $< > $@
 	chmod 444 $@
 
