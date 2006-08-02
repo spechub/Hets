@@ -660,7 +660,7 @@ sublogicOfTh (G_theory lid sigma sens) =
    in G_sublogics lid sub
 
 sublogicOfSign :: G_sign -> G_sublogics
-sublogicOfSign (G_sign lid sign) = 
+sublogicOfSign (G_sign lid sign) =
     G_sublogics lid (minSublogic sign)
 
 sublogicOfMor :: G_morphism -> G_sublogics
@@ -695,8 +695,8 @@ joinG_sentences :: Monad m => G_theory -> G_theory -> m G_theory
 joinG_sentences (G_theory lid1 sig1 sens1) (G_theory lid2 sig2 sens2) = do
   sens2' <- coerceThSens lid2 lid1 "joinG_sentences" sens2
   sig2' <- coerceSign lid2 lid1 "joinG_sentences" sig2
-  return $ assert (sig1 == sig2') $ G_theory lid1 sig1 $ joinSens sens1 sens2'
- 
+  return $ assert (sig1 == sig2') $ G_theory lid1 sig1 $ joinSens sens2' sens1
+
 
 -- | flattening the sentences form a list of G_theories
 flatG_sentences :: Monad m => G_theory -> [G_theory] -> m G_theory
