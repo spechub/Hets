@@ -11,13 +11,16 @@ Tree-based implementation of 'Graph' and 'DynGraph' using Common.Lib.Map
 instead of Data.Graph.Inductive.Internal.FiniteMap
 -}
 
-module Common.Lib.Graph (Gr(..)) where
+module Common.Lib.Graph (Gr, convertToMap, unsafeConstructGr) where
 
 import Data.Graph.Inductive.Graph
 import qualified Common.Lib.Map as Map
 
 -- | the graph type constructor
-newtype Gr a b = Gr { toMap :: Map.Map Node (Adj b, a, Adj b) }
+newtype Gr a b = Gr { convertToMap :: Map.Map Node (Adj b, a, Adj b) }
+
+unsafeConstructGr :: Map.Map Node (Adj b, a, Adj b) -> Gr a b
+unsafeConstructGr = Gr
 
 type GraphRep a b = Map.Map Node (Context' a b)
 type Context' a b = (Adj b, a, Adj b)
