@@ -141,6 +141,7 @@ module Common.Doc
     , annoDoc
     , codeToken
     , idDoc
+    , idLabelDoc
     , idApplDoc
       -- * transforming to existing formats
     , toText
@@ -156,6 +157,7 @@ import Common.Keywords
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Pretty as Pretty
 import Common.LaTeX_funs
 import Common.ConvertLiteral
@@ -170,7 +172,7 @@ infixl 5 $++$
 
 -- * the data type
 
-data LabelKind = IdDecl | IdAppl deriving Show
+data LabelKind = IdDecl | IdAppl deriving (Show, Eq)
 
 data TextKind =
     IdKind | IdSymb | Symbol | Comment | Keyword | TopKey Int
@@ -189,7 +191,7 @@ data ComposeKind
 data Doc
     = Empty          -- creates an empty line if composed vertically
     | AnnoDoc Annotation -- we know how to print annotations
-    | IdDoc Id           -- for plain ids outside applications
+    | IdDoc LabelKind Id -- for plain ids outside applications
     | IdApplDoc Id [Doc] -- for mixfix applications and literal terms
     | Text TextKind String -- non-empty and no white spaces inside
     | Cat ComposeKind [Doc]
@@ -373,9 +375,13 @@ equiv = symbol equivS
 annoDoc :: Annotation -> Doc
 annoDoc = AnnoDoc
 
--- | for plain ids outside applications
+-- | for plain ids outside of terms
 idDoc :: Id -> Doc
-idDoc = IdDoc
+idDoc = IdDoc IdAppl
+
+-- | for newly declared ids
+idLabelDoc :: Id -> Doc
+idLabelDoc = IdDoc IdDecl
 
 -- | for mixfix applications and literal terms (may print \"\" for empty)
 idApplDoc :: Id -> [Doc] -> Doc
@@ -393,7 +399,7 @@ small = Attr Small
 data DocRecord a = DocRecord
     { foldEmpty :: Doc -> a
     , foldAnnoDoc :: Doc -> Annotation -> a
-    , foldIdDoc :: Doc -> Id -> a
+    , foldIdDoc :: Doc -> LabelKind -> Id -> a
     , foldIdApplDoc :: Doc -> Id -> [a] -> a
     , foldText :: Doc -> TextKind -> String -> a
     , foldCat :: Doc -> ComposeKind -> [a] -> a
@@ -405,7 +411,7 @@ foldDoc :: DocRecord a -> Doc -> a
 foldDoc r d = case d of
     Empty -> foldEmpty r d
     AnnoDoc a -> foldAnnoDoc r d a
-    IdDoc i -> foldIdDoc r d i
+    IdDoc l i -> foldIdDoc r d l i
     IdApplDoc i l -> foldIdApplDoc r d i $ map (foldDoc r) l
     Text k s -> foldText r d k s
     Cat k l -> foldCat r d k $ map (foldDoc r) l
@@ -460,31 +466,32 @@ toText ga = foldDoc anyRecord
 -- * conversion to latex
 
 toLatex :: GlobalAnnos -> Doc -> Pretty.Doc
-toLatex ga = let dm = Map.map (Map.! DF_LATEX) .
+toLatex ga d = let dm = Map.map (Map.! DF_LATEX) .
                       Map.filter (Map.member DF_LATEX) $ display_annos ga
-    in foldDoc (toLatexRecord False)
-           . makeSmallMath False False . codeOut ga (Just DF_LATEX) dm
+                   dis = getDeclIds d
+    in foldDoc (toLatexRecord dis False)
+           . makeSmallMath False False $ codeOut ga (Just DF_LATEX) dm d
 
 -- avoid too many tabs
-toLatexRecord :: Bool -> DocRecord Pretty.Doc
-toLatexRecord tab = anyRecord
+toLatexRecord :: Set.Set Id -> Bool -> DocRecord Pretty.Doc
+toLatexRecord dis tab = anyRecord
     { foldEmpty = \ _ -> Pretty.empty
-    , foldText = \ _ k s -> textToLatex False k s
+    , foldText = \ _ k s -> textToLatex dis False k s
     , foldCat = \ (Cat c os) _ _ ->
           if any isNative os then Pretty.hcat $
              latex_macro "{\\Ax{"
-             : map (foldDoc (toLatexRecord False)
+             : map (foldDoc (toLatexRecord dis False)
                        { foldText = \ _ k s ->
                           case k of
                             Native -> Pretty.sp_text (axiom_width s) s
                             IdKind | s == " " ->
                                 Pretty.sp_text (axiom_width s) "\\,"
-                            _ -> textToLatex False k s
+                            _ -> textToLatex dis False k s
                         }) os
               ++ [latex_macro "}}"]
           else case os of
                [] -> Pretty.empty
-               [d] -> foldDoc (toLatexRecord tab) d
+               [d] -> foldDoc (toLatexRecord dis tab) d
                d : r -> (if tab && c /= Horiz then
                              (latex_macro setTab Pretty.<>)
                          . (latex_macro startTab Pretty.<>)
@@ -496,13 +503,13 @@ toLatexRecord tab = anyRecord
                              HorizOrVert -> Pretty.cat
                              Fill -> Pretty.fcat)
                         $ case c of
-                            Vert -> map (foldDoc $ toLatexRecord False) os
-                            _ -> foldDoc (toLatexRecord False) d :
-                                     map (foldDoc $ toLatexRecord True) r
+                            Vert -> map (foldDoc $ toLatexRecord dis False) os
+                            _ -> foldDoc (toLatexRecord dis False) d :
+                                     map (foldDoc $ toLatexRecord dis True) r
     , foldAttr = \ o k d -> case k of
           FlushRight -> flushright d
           Small -> case o of
-              Attr Small (Text j s) -> textToLatex True j s
+              Attr Small (Text j s) -> textToLatex dis True j s
               _ -> makeSmallLatex True d
     , foldChangeGlobalAnnos = \ _ _ d -> d
     }
@@ -573,8 +580,21 @@ symbolToLatex :: String -> Pretty.Doc
 symbolToLatex s = Map.findWithDefault (hc_sty_axiom
                                        $ escapeLatex False s) s latexSymbols
 
-textToLatex :: Bool -> TextKind -> String -> Pretty.Doc
-textToLatex b k s = case s of
+getDeclIds :: Doc -> Set.Set Id
+getDeclIds = foldDoc anyRecord
+    { foldEmpty = \ _ -> Set.empty
+    , foldText = \ _ _ _ -> Set.empty
+    , foldCat = \ _ _ c -> Set.unions c
+    , foldAttr = \ _ _ d -> d
+    , foldChangeGlobalAnnos = \ _ _ d -> d
+    , foldIdDoc = \ _ lk i ->
+          if lk == IdDecl then Set.singleton i else Set.empty
+    , foldIdApplDoc = \ _ _ _  -> Set.empty
+    , foldAnnoDoc = \ _ _ -> Set.empty
+    }
+
+textToLatex :: Set.Set Id -> Bool -> TextKind -> String -> Pretty.Doc
+textToLatex dis b k s = case s of
   [] -> Pretty.text ""
   h : _ -> let e = escapeLatex True s in
         if elem s $ map (: []) ",;[]() "
@@ -596,15 +616,17 @@ textToLatex b k s = case s of
     HetsLabel -> Pretty.hcat [ latex_macro "\\HetsLabel{"
                              , casl_comment_latex $ escapeLabel s
                              , latex_macro "}" ]
-    IdLabel appl tk i -> let d = textToLatex b tk s
+    IdLabel appl tk i -> let d = textToLatex dis b tk s
                              si = showId i ""
-        in if b || not (isLegalLabel si) then d else Pretty.hcat
+        in if b || appl == IdAppl && not (Set.member i dis)
+               || not (isLegalLabel si)
+           then d else Pretty.hcat
             [ latex_macro $ "\\" ++ shows appl "Label{"
             , d
             , latex_macro $ "}{" ++ escapeLabel si ++ "}" ]
 
 escapeLabel :: String -> String
-escapeLabel = concatMap ( \ c -> if c == '_' then "\\_" else [c])
+escapeLabel = map ( \ c -> if c == '_' then ':' else c)
 
 latexSymbols :: Map.Map String Pretty.Doc
 latexSymbols = Map.fromList
@@ -643,7 +665,7 @@ codeOut :: GlobalAnnos -> Maybe Display_format -> Map.Map Id [Token] -> Doc
         -> Doc
 codeOut ga d m = foldDoc idRecord
     { foldAnnoDoc = \ _ -> small . codeOutAnno d m
-    , foldIdDoc = \ _ -> codeOutId IdDecl m
+    , foldIdDoc = \ _ lk -> codeOutId lk m
     , foldIdApplDoc = codeOutAppl ga d m
     , foldChangeGlobalAnnos = \ (ChangeGlobalAnnos fg e) _ _ ->
           let ng = fg ga in codeOut ng d
@@ -754,7 +776,7 @@ codeOutAnno d m a = case a of
     Semantic_anno sa _ -> annoLine $ lookupSemanticAnno sa
 
 isLegalLabel :: String -> Bool
-isLegalLabel r = not (null r) && all ( \ c -> isAlphaNum c || elem c ":_" ) r
+isLegalLabel r = not (null r) && all ( \ c -> isAlphaNum c || elem c "_" ) r
 
 splitDoc :: Doc -> Maybe (Id, [Doc])
 splitDoc d = case d of

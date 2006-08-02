@@ -77,8 +77,8 @@ printSIG_ITEMS fS fF sis = case sis of
 printDATATYPE_DECL :: DATATYPE_DECL ->Doc
 printDATATYPE_DECL (Datatype_decl s a _) =
     let pa = printAnnoted printALTERNATIVE in case a of
-    [] -> idDoc s
-    h : t  -> sep [idDoc s, colon <> colon <> sep
+    [] -> idLabelDoc s
+    h : t  -> sep [idLabelDoc s, colon <> colon <> sep
                       ((equals <+> pa h) :
                        map ((bar <+>) . pa) t)]
 
@@ -87,7 +87,7 @@ instance Pretty DATATYPE_DECL where
 
 printCOMPONENTS :: COMPONENTS ->Doc
 printCOMPONENTS c = case c of
-    Cons_select k l s _ -> fsep $ punctuate comma (map idDoc l)
+    Cons_select k l s _ -> fsep $ punctuate comma (map idLabelDoc l)
            ++ [case k of
            Total -> colon
            Partial -> colon <> quMarkD, idDoc s]
@@ -99,8 +99,8 @@ instance Pretty COMPONENTS  where
 printALTERNATIVE :: ALTERNATIVE ->Doc
 printALTERNATIVE a = case a of
   Alt_construct k n l _ -> case l of
-    [] -> idDoc n
-    _ ->  idDoc n <>
+    [] -> idLabelDoc n
+    _ -> idLabelDoc n <>
        parens ( sep $ punctuate semi $ map printCOMPONENTS l)
        <> case k of
                Total -> empty
@@ -113,13 +113,13 @@ instance Pretty ALTERNATIVE where
 
 printSortItem :: (f -> Doc) -> SORT_ITEM f -> Doc
 printSortItem mf si = case si of
-    Sort_decl sl _ -> sepByCommas $ map idDoc sl
-    Subsort_decl sl sup _ -> fsep $ (punctuate comma $ map idDoc sl)
-                                     ++ [less, idDoc sup]
-    Subsort_defn s v sup af _ -> fsep [idDoc s, equals,
+    Sort_decl sl _ -> sepByCommas $ map idLabelDoc sl
+    Subsort_decl sl sup _ -> fsep $ (punctuate comma $ map idLabelDoc sl)
+                                     ++ [less, idLabelDoc sup]
+    Subsort_defn s v sup af _ -> fsep [idLabelDoc s, equals,
               specBraces $ fsep [sidDoc v, colon, idDoc sup,
                              printAnnoted (addBullet . printFormula mf) af]]
-    Iso_decl sl _ -> fsep $ punctuate (space <> equals) $ map idDoc sl
+    Iso_decl sl _ -> fsep $ punctuate (space <> equals) $ map idLabelDoc sl
 
 instance Pretty f => Pretty (SORT_ITEM f) where
     pretty = printSortItem pretty
@@ -148,10 +148,10 @@ printPredHead (Pred_head l _) = printArgDecls l
 
 printPredItem :: (f -> Doc) -> PRED_ITEM f -> Doc
 printPredItem mf p = case p of
-    Pred_decl l t _ -> fsep $ (punctuate comma $ map idDoc l)
+    Pred_decl l t _ -> fsep $ (punctuate comma $ map idLabelDoc l)
                        ++ [colon, printPredType t]
     Pred_defn i h f _ ->
-        fcat [idDoc i, printPredHead h <> space, equiv <> space,
+        fcat [idLabelDoc i, printPredHead h <> space, equiv <> space,
               printAnnoted (printFormula mf) f]
 
 instance Pretty f => Pretty (PRED_ITEM f) where
@@ -181,11 +181,11 @@ instance Pretty OP_HEAD where
 
 printOpItem :: (f -> Doc) -> OP_ITEM f -> Doc
 printOpItem mf p = case p of
-    Op_decl l t a _ -> fsep $ (punctuate comma $ map idDoc l)
+    Op_decl l t a _ -> fsep $ (punctuate comma $ map idLabelDoc l)
         ++ [colon <> (if null a then id else (<> comma))(printOpType t)]
         ++ punctuate comma (map (printAttr mf) a)
     Op_defn i h@(Op_head _ l _ _) t _ ->
-        fcat [(if null l then (<> space) else id) $ idDoc i
+        fcat [(if null l then (<> space) else id) $ idLabelDoc i
              , printOpHead h <> space, equals <> space
              , printAnnoted (printTerm mf) t]
 
