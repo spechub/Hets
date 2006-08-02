@@ -32,10 +32,10 @@ import GUI.GenericATPState
   MWFailure message (hopefully filled) will be returned .
 -}
 mapMathServResponse :: MathServResponse -- ^ Parsed MathServ data
-                    -> GenericConfig () -- ^ configuration to use
+                    -> GenericConfig String -- ^ configuration to use
                     -> AS_Anno.Named SPTerm -- ^ goal to prove
                     -> String -- ^ prover name
-                    -> (ATPRetval, GenericConfig ())
+                    -> (ATPRetval, GenericConfig String)
                     -- ^ (retval, configuration with proof status and
                     --    complete output)
 mapMathServResponse msr cfg nGoal prName =
@@ -48,16 +48,15 @@ mapMathServResponse msr cfg nGoal prName =
               (\res -> mapProverResult res cfg nGoal prName)
               (foAtpResult msr)
 
---        mapProverResult (foAtpResult msr) cfg nGoal prName
 {- |
   Maps a FoAtpResult record into a GenericConfig with Proof_status.
   !! Comment missing !!
 -}
 mapProverResult :: MWFoAtpResult -- ^ Parsed FoATPResult data
-                -> GenericConfig () -- ^ configuration to use
+                -> GenericConfig String -- ^ configuration to use
                 -> AS_Anno.Named SPTerm -- ^ goal to prove
                 -> String -- ^ prover name
-                -> (ATPRetval, GenericConfig ())
+                -> (ATPRetval, GenericConfig String)
                 -- ^ (retval, configuration with proof status, complete output)
 mapProverResult atpResult cfg nGoal prName =
     let res = mapToGoalStatus $ systemStatus atpResult
@@ -117,15 +116,10 @@ usedProverName pn =
 defaultProof_status :: AS_Anno.Named SPTerm -- ^ goal to prove
                     -> String -- ^ prover name
                     -> Int -- ^ time limit
-                    -> Proof_status ()
+                    -> Proof_status String
 defaultProof_status nGoal prName tl =
   (openProof_status (AS_Anno.senName nGoal)
-                    prName ())
--- !! TacticScript füllen:
-{-
-  format of tactic_script and parser for MathServBroker and 
-    individual MathServ reasoners
--}
+                    prName "")
   {tacticScript = Tactic_script $ show tl}
 
 
@@ -133,7 +127,7 @@ defaultProof_status nGoal prName tl =
   Returns the time limit from GenericConfig if available. Otherwise
   guiDefaultTimeLimit is returned.
 -}
-configTimeLimit :: GenericConfig ()
+configTimeLimit :: GenericConfig String
                 -> Int
 configTimeLimit cfg = 
     maybe (guiDefaultTimeLimit) id $ timeLimit cfg
@@ -148,8 +142,8 @@ proof_stat :: AS_Anno.Named SPTerm -- ^ goal to prove
            -> GoalStatus -- ^ Nothing stands for prove error
            -> [String] -- ^ Used axioms in the proof
            -> Bool -- ^ Timeout status
-           -> Proof_status () -- ^ default proof status
-           -> (ATPRetval, Proof_status ())
+           -> Proof_status String -- ^ default proof status
+           -> (ATPRetval, Proof_status String)
            -- ^ General return value of a prover run, used in GUI.
            --   Detailed proof status if information is available.
 proof_stat nGoal res usedAxs timeOut defaultPrStat

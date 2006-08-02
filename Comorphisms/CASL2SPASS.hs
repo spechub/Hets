@@ -123,7 +123,7 @@ instance Comorphism SuleCFOL2SoftFOL
                CASL.Morphism.Symbol CASL.Morphism.RawSymbol ()
                SoftFOL () () SPTerm () ()
                SPSign.Sign
-               SoftFOLMorphism () () ()  where
+               SoftFOLMorphism () () String where
     sourceLogic _ = CASL
     sourceSublogic _ = SL.top
                       { sub_features = LocFilSub,

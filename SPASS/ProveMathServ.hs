@@ -45,7 +45,7 @@ import GUI.GenericATPState
   The Prover implementation. First runs the batch prover (with graphical
   feedback), then starts the GUI prover.
 -}
-mathServBroker :: Prover Sign Sentence ()
+mathServBroker :: Prover Sign Sentence String
 mathServBroker =
   Prover { prover_name = "MSBroker",
            prover_sublogic = "SoftFOL",
@@ -65,12 +65,12 @@ spassHelpText =
   data type ATPFunctions.
 -}
 mathServBrokerGUI :: String -- ^ theory name
-                  -> Theory Sign Sentence ()
+                  -> Theory Sign Sentence String
                   -- ^ theory consisting of a SPASS.Sign.Sign
                   --   and a list of Named SPASS.Sign.Sentence
-                  -> IO([Proof_status ()]) -- ^ proof status for each goal
+                  -> IO([Proof_status String]) -- ^ proof status for each goal
 mathServBrokerGUI thName th =
-    genericATPgui atpFun False (prover_name mathServBroker) thName th ()
+    genericATPgui atpFun False (prover_name mathServBroker) thName th ""
 
     where
       atpFun = ATPFunctions
@@ -93,11 +93,11 @@ mathServBrokerGUI thName th =
 runMSBroker :: SPASSProverState
             -- ^ logical part containing the input Sign and axioms and possibly
             --   goals that have been proved earlier as additional axioms
-            -> GenericConfig () -- ^ configuration to use
+            -> GenericConfig String -- ^ configuration to use
             -> Bool -- ^ True means save TPTP file
             -> String -- ^ name of the theory in the DevGraph
             -> AS_Anno.Named SPTerm -- ^ goal to prove
-            -> IO (ATPRetval, GenericConfig ())
+            -> IO (ATPRetval, GenericConfig String)
             -- ^ (retval, configuration with proof status and complete output)
 runMSBroker sps cfg saveTPTP thName nGoal = do
     putStrLn ("running MathServ Broker...")

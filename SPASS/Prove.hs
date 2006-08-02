@@ -53,7 +53,7 @@ import GUI.GenericATPState
   The Prover implementation. First runs the batch prover (with graphical
   feedback), then starts the GUI prover.
 -}
-spassProver :: Prover Sign Sentence ()
+spassProver :: Prover Sign Sentence String
 spassProver =
   Prover { prover_name = "SPASS",
            prover_sublogic = "SoftFOL",
@@ -67,12 +67,12 @@ spassProver =
   data type ATPFunctions.
 -}
 spassProveGUI :: String -- ^ theory name
-              -> Theory Sign Sentence () -- ^ theory consisting of a
-                                         --   SPASS.Sign.Sign and a list of
-                                         --   Named SPASS.Sign.Sentence
-              -> IO([Proof_status ()]) -- ^ proof status for each goal
+              -> Theory Sign Sentence String -- ^ theory consisting of a
+                                             --   SPASS.Sign.Sign and a list of
+                                             --   Named SPASS.Sign.Sentence
+              -> IO([Proof_status String]) -- ^ proof status for each goal
 spassProveGUI thName th =
-    genericATPgui atpFun True (prover_name spassProver) thName th ()
+    genericATPgui atpFun True (prover_name spassProver) thName th ""
 
     where
       atpFun = ATPFunctions
@@ -173,11 +173,11 @@ parseSpassOutput spass = parseProtected (parseStart True) (Nothing, [], [])
 runSpass :: SPASSProverState -- ^ logical part containing the input Sign and
                              --  axioms and possibly goals that have been proved
                              --  earlier as additional axioms
-         -> GenericConfig () -- ^ configuration to use
+         -> GenericConfig String -- ^ configuration to use
          -> Bool -- ^ True means save DFG file
          -> String -- ^ name of the theory in the DevGraph
          -> AS_Anno.Named SPTerm -- ^ goal to prove
-         -> IO (ATPRetval, GenericConfig ())
+         -> IO (ATPRetval, GenericConfig String)
              -- ^ (retval, configuration with proof status and complete output)
 runSpass sps cfg saveDFG thName nGoal = do
   putStrLn ("running 'SPASS" ++ (concatMap (' ':) allOptions) ++ "'")
@@ -194,10 +194,10 @@ runSpass sps cfg saveDFG thName nGoal = do
                     (ATPError ("Internal error communicating "++
                                "with SPASS.\n"++show e),
                               emptyConfig (prover_name spassProver)
-                                          (AS_Anno.senName nGoal) ())
+                                          (AS_Anno.senName nGoal) "")
                 _ -> (ATPError ("Error running SPASS.\n"++show excep),
                         emptyConfig (prover_name spassProver)
-                                    (AS_Anno.senName nGoal) ())
+                                    (AS_Anno.senName nGoal) "")
              ))
 
   where
@@ -208,31 +208,32 @@ runSpass sps cfg saveDFG thName nGoal = do
         then return
                  (ATPError "Could not start SPASS. Is SPASS in your $PATH?",
                   emptyConfig (prover_name spassProver)
-                              (AS_Anno.senName nGoal) ())
+                              (AS_Anno.senName nGoal) "")
         else do
           prob <- showDFGProblem thName sps nGoal (createSpassOptions cfg)
           when saveDFG
                (writeFile (thName++'_':AS_Anno.senName nGoal++".dfg") prob)
           sendMsg spass prob
           (res, usedAxs, output) <- parseSpassOutput spass
-          let (err, retval) = proof_stat res usedAxs (cleanOptions cfg)
+          let (err, retval) = proof_stat res usedAxs (cleanOptions cfg) output
           return (err,
                   cfg{proof_status = retval,
                       resultOutput = output})
 
     allOptions = createSpassOptions cfg
     defaultProof_status opts =
-        (openProof_status (AS_Anno.senName nGoal) (prover_name spassProver) ())
+        (openProof_status (AS_Anno.senName nGoal) (prover_name spassProver) "")
         {tacticScript = Tactic_script $ concatMap (' ':) opts}
 
-    proof_stat res usedAxs options
+    proof_stat res usedAxs options out
       | isJust res && elem (fromJust res) proved =
           (ATPSuccess,
            (defaultProof_status options)
            { goalStatus = Proved $ if elem (AS_Anno.senName nGoal) usedAxs
                                    then Nothing
                                    else Just False
-           , usedAxioms = filter (/=(AS_Anno.senName nGoal)) usedAxs })
+           , usedAxioms = filter (/=(AS_Anno.senName nGoal)) usedAxs
+           , proofTree = spassProof $ unlines out })
       | isJust res && elem (fromJust res) disproved =
           (ATPSuccess,
            (defaultProof_status options) { goalStatus = Disproved } )
@@ -250,7 +251,7 @@ runSpass sps cfg saveDFG thName nGoal = do
   Creates a list of all options the SPASS prover runs with.
   That includes the defaults -DocProof, -Stdin and -Timelimit.
 -}
-createSpassOptions :: GenericConfig () -> [String]
+createSpassOptions :: GenericConfig String -> [String]
 createSpassOptions cfg = 
     (cleanOptions cfg) ++ ["-DocProof", "-Stdin", "-TimeLimit="
                                                   ++ (show tLimit)]
@@ -261,10 +262,22 @@ createSpassOptions cfg =
 {- |
   Filters extra options and just returns the non standard options.
 -}    
-cleanOptions :: GenericConfig () -> [String]
+cleanOptions :: GenericConfig String -> [String]
 cleanOptions cfg = 
     filter (\ opt -> not (or (map (flip isPrefixOf opt)
                                   filterOptions)))
            (extraOpts cfg)
     where
       filterOptions = ["-DocProof", "-Stdin", "-TimeLimit"]
+
+{- |
+  Extract proof tree from SPASS output. This will be the String between
+  "Here is a proof" and "Formulae used in the proof"
+-}
+spassProof :: String -- ^ SPASS output containing proof tree
+           -> String -- ^ extracted proof tree
+spassProof pr =
+    let getMatch = matchRegex re_proof_tree pr
+        re_proof_tree = mkRegex $ "\nHere is a proof with depth.*:\n"
+                               ++ "(.*)\nFormulae used in the proof"
+    in maybe [] head getMatch
