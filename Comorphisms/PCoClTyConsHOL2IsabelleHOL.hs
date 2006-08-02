@@ -33,10 +33,12 @@ import Common.DocUtils
 import Common.Id
 import Common.Result
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 
 import Data.List (elemIndex)
+import Data.Maybe (catMaybes, isNothing)
 import Control.Monad (foldM)
 
 -- | The identity of the comorphism
@@ -59,12 +61,12 @@ instance Comorphism PCoClTyConsHOL2IsabelleHOL
     map_theory PCoClTyConsHOL2IsabelleHOL (env, sens) = do
       sign <- transSignature env
       isens <- mapM (mapNamedM $ transSentence env) sens
-      dt <- mapM (transDataEntry env) $ concatMap
-            ( \ ns -> case sentence ns of
-              DatatypeSen ds -> ds
-              _ -> []) sens
-      return (sign { domainTab = dt },
-                   filter ( \ ns -> sentence ns /= mkSen true) isens)
+      (dt, _, _) <- foldM (transDataEntries env) ([], Set.empty, Set.empty)
+                    $ filter (not . null) $ map
+                          ( \ ns -> case sentence ns of
+                                      DatatypeSen ds -> ds
+                                      _ -> []) sens
+      return (sign { domainTab = dt }, isens)
     map_morphism = mapDefaultMorphism
     map_sentence PCoClTyConsHOL2IsabelleHOL sign phi =
        transSentence sign phi
@@ -81,19 +83,14 @@ transAssumps ga = foldM insertOps Map.empty . Map.toList where
           chk t = let pf = isPlainFunType t in if b || pf < 2 then pf else -1
           trns = if b then transPlainFunType else transFunType
       in case opInfos ops of
-          [info] -> case transOpInfo info of
-                 Nothing -> return m
-                 Just r -> do
-                    ty <- r
-                    return $ Map.insert
-                           (mkIsaConstT False ga (chk ty)
-                            name baseSign) (trns ty) m
-          infos -> foldM ( \ m' (i, info) ->
-                      case transOpInfo info of
-                        Nothing -> return m'
-                        Just r -> do
-                          ty <- r
-                          return $ Map.insert
+          [info] -> do
+              ty <- transOpInfo info
+              return $ Map.insert
+                         (mkIsaConstT False ga (chk ty)
+                          name baseSign) (trns ty) m
+          infos -> foldM ( \ m' (i, info) -> do
+                        ty <- transOpInfo info
+                        return $ Map.insert
                              (mkIsaConstIT False ga (chk ty)
                               name i baseSign) (trns ty) m'
                          ) m $ zip [1..] infos
@@ -121,11 +118,9 @@ transSignature env = do
 -- * translation of a type in an operation declaration
 
 -- extract type from OpInfo
--- omit datatype constructors
-transOpInfo :: OpInfo -> Maybe (Result FunType)
-transOpInfo (OpInfo (TypeScheme _ op _) _ opDef) =  case opDef of
-    ConstructData _ -> Nothing
-    _  -> Just $ funType op
+transOpInfo :: OpInfo -> Result FunType
+transOpInfo oi =  case opType oi of
+    TypeScheme _ op _ -> funType op
 
 unitTyp :: Typ
 unitTyp = Type "unit" holType []
@@ -198,8 +193,31 @@ funType t = case getTypeAppl t of
 
 -- * translation of a datatype declaration
 
+transDataEntries :: Env -> (DomainTab, Set.Set TName, Set.Set VName)
+    -> [DataEntry] -> Result (DomainTab, Set.Set TName, Set.Set VName)
+transDataEntries env t@(dt, tys, cs) l = do
+    let rs = map (transDataEntry env) l
+        ms = map maybeResult rs
+        toWarning = map ( \ d -> d { diagKind = Warning })
+    appendDiags $ toWarning $ concatMap diags rs
+    if any isNothing ms then return t
+        else do
+        let des = catMaybes ms
+            ntys = map (Isa.typeId . fst) des
+            ncs = concatMap (map fst . snd) des
+            foldF str cnv = foldM ( \ s i ->
+                   if Set.member i s then
+                       fail $ "duplicate " ++ str ++ cnv i
+                   else return $ Set.insert i s)
+            Result d1 mrtys = foldF "datatype " id tys ntys
+            Result d2 mrcs = foldF "constructor " new cs ncs
+        appendDiags $ toWarning $ d1 ++ d2
+        case (mrtys, mrcs) of
+          (Just rtys, Just rcs) -> return (des : dt, rtys, rcs)
+          _ -> return t
+
 -- datatype with name (tyId) + args (tyArgs) and alternatives
-transDataEntry :: Env -> DataEntry -> Result [DomainEntry]
+transDataEntry :: Env -> DataEntry -> Result DomainEntry
 transDataEntry env (DataEntry tm tyId gk tyArgs rk alts) =
     let i = Map.findWithDefault tyId tyId tm
         dt = patToType i tyArgs rk
@@ -208,8 +226,8 @@ transDataEntry env (DataEntry tm tyId gk tyArgs rk alts) =
       nalts <- mapM (transAltDefn env tm tyArgs dt i) alts
       let transDName ti ta = Type (showIsaTypeT ti baseSign) []
                              $ map transTypeArg ta
-      return [(transDName i tyArgs, nalts)]
-    _ -> fatal_error ("only free types are allowed: "  ++ show i)
+      return (transDName i tyArgs, nalts)
+    _ -> fatal_error ("not a free type: "  ++ show i)
          $ posOfId i
 
 -- arguments of a datatype's typeconstructor
@@ -228,7 +246,7 @@ transAltDefn env tm args dt tyId alt = case alt of
         return (transOpId env opId sc, case nts of
                 [TupleType l] | isMixfix opId -> map transFunType l
                 _ -> map transFunType nts)
-    _ -> fatal_error ("missing total constructor for: " ++ show tyId)
+    _ -> fatal_error ("not a total constructor: " ++ show tyId)
          $ posOfId tyId
 
 -- * Formulas
