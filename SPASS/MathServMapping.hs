@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  Maps a MathServResponse into a prover configuration
+Description :  Maps a MathServResponse into a prover configuration.
 Copyright   :  (c) Rainer Grabbe
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -8,7 +8,7 @@ Maintainer  :  rainer25@tzi.de
 Stability   :  provisional
 Portability :  needs POSIX
 
-Maps a MathServResponse into a GenericConfig structure
+Maps a MathServResponse into a GenericConfig structure.
 
 -}
 
@@ -27,9 +27,16 @@ import GUI.GenericATP (guiDefaultTimeLimit)
 import GUI.GenericATPState
 
 {- |
+  Name of the prover if MathServ was called via Broker.
+-}
+brokerName :: String
+brokerName = "MSBroker"
+
+
+{- |
   Maps a MathServResponse record into a GenericConfig with Proof_status.
-  If there is no FoAtpResult available, an ATPError and a corresponding
-  MWFailure message (hopefully filled) will be returned .
+  If an error occured, an ATPError with error message instead of result output
+  will be returned.
 -}
 mapMathServResponse :: MathServResponse -- ^ Parsed MathServ data
                     -> GenericConfig String -- ^ configuration to use
@@ -40,45 +47,59 @@ mapMathServResponse :: MathServResponse -- ^ Parsed MathServ data
                     --    complete output)
 mapMathServResponse msr cfg nGoal prName =
     either (\failure -> 
-              (ATPError "MathServ Error:\n", -- first line of error message as second line
+              (ATPError ("MathServ Error: " ++
+                   if (null failure) then [] else head $ lines failure),
                cfg { proof_status = defaultProof_status nGoal
-                       (prName ++ " [via MathServ]") (configTimeLimit cfg),
+                       (prName ++ " [via MathServ]") (configTimeLimit cfg)
+                       (extraOpts cfg) "",
                     resultOutput = lines failure }
                     ))
-              (\res -> mapProverResult res cfg nGoal prName)
+              (\res -> mapProverResult res (timeResource msr) cfg nGoal prName)
               (foAtpResult msr)
 
 {- |
   Maps a FoAtpResult record into a GenericConfig with Proof_status.
-  !! Comment missing !!
+  Result output contains all important informations in a list of Strings.
+  The function should only be called if there is a FoAtpResult available.
 -}
-mapProverResult :: MWFoAtpResult -- ^ Parsed FoATPResult data
+mapProverResult :: MWFoAtpResult -- ^ parsed FoATPResult data
+                -> MWTimeResource -- ^ global time spent
                 -> GenericConfig String -- ^ configuration to use
                 -> AS_Anno.Named SPTerm -- ^ goal to prove
                 -> String -- ^ prover name
                 -> (ATPRetval, GenericConfig String)
                 -- ^ (retval, configuration with proof status, complete output)
-mapProverResult atpResult cfg nGoal prName =
+mapProverResult atpResult timeRes cfg nGoal prName =
     let res = mapToGoalStatus $ systemStatus atpResult
-        output = 
-         -- system name if via Broker
-         -- tstp proof with calculus
-         -- time ressource global
-            lines $ unTab $ outputStr atpResult
+        output = [ if (prName == brokerName) then
+                     "* Used prover   : "
+                     ++ (usedProverName $ systemStr atpResult)
+                   else [],
+                   "* Formal proof  :"]
+              ++ lines (formalProof $ proof atpResult)
+              ++ [[], replicate 70 '*',
+                  "* Calculus      : " ++ (show $ calculus $ proof atpResult),
+                  "* Spent time    : CPU time        = "
+                    ++ (show $ cpuTime timeRes) ++ " ms",
+                  "                  Wall clock time = "
+                    ++ (show $ wallClockTime timeRes) ++ " ms",
+                  "* Prover output :"]
+              ++ (lines $ unTab $ outputStr atpResult)
         timeout = (foAtpStatus $ systemStatus atpResult) == Unsolved Timeout
-        
+
         -- get real prover name if Broker was used
-        brokerName = "MSBroker" -- introduce String constant
         prName' = if (prName == brokerName)
                      then (usedProverName $ systemStr atpResult)
                           ++ " [via MathServBroker]"
                      else prName ++ " [via MathServ]"
-        
         usedAxs = if (null $ axioms $ proof atpResult)
                     then [AS_Anno.senName nGoal]
                     else words $ axioms $ proof atpResult
         (atpErr, retval) = proof_stat nGoal res usedAxs timeout $
-            defaultProof_status nGoal prName' $ configTimeLimit cfg
+            defaultProof_status nGoal prName'
+                           (configTimeLimit cfg)
+                           (extraOpts cfg)
+                           (formalProof $ proof atpResult)
     in  (atpErr,
          cfg { proof_status = retval,
                resultOutput = output })
@@ -116,12 +137,13 @@ usedProverName pn =
 defaultProof_status :: AS_Anno.Named SPTerm -- ^ goal to prove
                     -> String -- ^ prover name
                     -> Int -- ^ time limit
+                    -> [String] -- ^ list of used options
+                    -> String -- ^ proof tree
                     -> Proof_status String
-defaultProof_status nGoal prName tl =
+defaultProof_status nGoal prName tl opts pt =
   (openProof_status (AS_Anno.senName nGoal)
-                    prName "")
-  {tacticScript = Tactic_script $ show tl}
-
+                    prName pt)
+  {tacticScript = Tactic_script $ unwords $ ("TimeLimit=" ++ show tl):opts }
 
 {- |
   Returns the time limit from GenericConfig if available. Otherwise
