@@ -27,33 +27,20 @@ Functions to calculate the length of a given word as it would be
 
 module Common.LaTeX_funs
     ( calc_line_length
-
     , axiom_width
     , latex_macro
+    , flushright
     , casl_comment_latex
     , casl_normal_latex
 
     , hc_sty_small_keyword
     , hc_sty_plain_keyword
     , hc_sty_casl_keyword
-    , hc_sty_comment
 
     , hc_sty_axiom
     , hc_sty_structid
     , hc_sty_structid_indexed
     , hc_sty_id
-
-    , flushright
-    , bullet_latex
-    , mapsto_latex
-    , rightArrow
-    , pfun_latex
-    , cfun_latex
-    , pcfun_latex
-    , exequal_latex
-    , forall_latex
-    , exists_latex
-    , unique_latex
 
     , startTab, endTab, setTab
     , setTabWSp
@@ -247,9 +234,6 @@ hc_sty_small_keyword kw =
     latex_macro "\\KW{" <> casl_annotationbf_latex (escapeUnderline kw)
                     <> latex_macro "}"
 
-hc_sty_comment :: Doc -> Doc
-hc_sty_comment cm = latex_macro startAnno <> cm <> latex_macro endAnno
-
 hc_sty_axiom, hc_sty_structid, hc_sty_id,hc_sty_structid_indexed
     :: String -> Doc
 hc_sty_structid sid = latex_macro "\\SId{"<>sid_doc<>latex_macro "}"
@@ -286,22 +270,6 @@ escapeLatex addAx = concatMap ( \ c ->
          else '\\' : [c]
      else if addAx && elem c "<|>=-!()[]?:;,./*+@" then "\\Ax{" ++ c : "}"
      else Map.findWithDefault [c] c escapeMap)
-
-
-bullet_latex, mapsto_latex, rightArrow, pfun_latex, cfun_latex,
-    pcfun_latex, exequal_latex :: Doc
-bullet_latex = hc_sty_axiom "\\bullet"
-mapsto_latex = hc_sty_axiom "\\mapsto"
-rightArrow   = hc_sty_axiom "\\rightarrow"
-pfun_latex   = hc_sty_axiom "\\rightarrow?"
-cfun_latex   = hc_sty_axiom "\\stackrel{c}{\\rightarrow}"
-pcfun_latex  = hc_sty_axiom "\\stackrel{c}{\\rightarrow}?"
-exequal_latex = sp_text (axiom_width "=") "\\Ax{\\stackrel{e}{=}}"
-
-forall_latex, exists_latex, unique_latex :: Doc
-forall_latex = hc_sty_axiom "\\forall"
-exists_latex = hc_sty_axiom "\\exists"
-unique_latex = hc_sty_axiom "\\exists!"
 
 parseAxiomString :: String -> [String]
 parseAxiomString s = case parse axiomString "" s of

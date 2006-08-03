@@ -634,32 +634,33 @@ escapeLabel :: String -> String
 escapeLabel = map ( \ c -> if c == '_' then ':' else c)
 
 latexSymbols :: Map.Map String Pretty.Doc
-latexSymbols = Map.fromList
-    [ (dotS, bullet_latex)
+latexSymbols = Map.union (Map.fromList
+    [ ("{", casl_normal_latex "\\{")
+    , ("}", casl_normal_latex "\\}")
     , (barS, casl_normal_latex "\\AltBar{}")
-    , (diamondS, hc_sty_axiom "\\Diamond")
     , (percentS, hc_sty_small_keyword "\\%")
     , (percents, hc_sty_small_keyword "\\%\\%")
-    , ("{", casl_normal_latex "\\{")
-    , ("}", casl_normal_latex "\\}")
-    , ("__", hc_sty_axiom "\\_\\_")
-    , (lambdaSymb, hc_sty_axiom "\\lambda")
-    , (mapsTo, mapsto_latex)
-    , (funS, rightArrow)
-    , (pFun, hc_sty_axiom "\\rightarrow?")
-    , (contFun, cfun_latex)
-    , (pContFun, pcfun_latex)
-    , (exEqual, exequal_latex)
-    , (forallS, forall_latex)
-    , (existsS, exists_latex)
-    , (existsUnique, unique_latex)
-    , (prodS, hc_sty_axiom "\\times")
-    , (notS, hc_sty_axiom "\\neg")
-    , (inS, hc_sty_axiom "\\in")
-    , (lAnd, hc_sty_axiom "\\wedge")
-    , (lOr, hc_sty_axiom "\\vee")
-    , (implS, hc_sty_axiom "\\Rightarrow")
-    , (equivS, hc_sty_axiom "\\Leftrightarrow") ]
+    , (exEqual, Pretty.sp_text (axiom_width "=") "\\Ax{\\stackrel{e}{=}}") ])
+    $ Map.map hc_sty_axiom $ Map.fromList
+    [ (dotS, "\\bullet")
+    , (diamondS, "\\Diamond")
+    , ("__", "\\_\\_")
+    , (lambdaSymb, "\\lambda")
+    , (mapsTo, "\\mapsto")
+    , (funS, "\\rightarrow")
+    , (pFun, "\\rightarrow?")
+    , (contFun, "\\stackrel{c}{\\rightarrow}")
+    , (pContFun, "\\stackrel{c}{\\rightarrow}?")
+    , (forallS, "\\forall")
+    , (existsS, "\\exists")
+    , (existsUnique, "\\exists!")
+    , (prodS, "\\times")
+    , (notS, "\\neg")
+    , (inS, "\\in")
+    , (lAnd, "\\wedge")
+    , (lOr, "\\vee")
+    , (implS, "\\Rightarrow")
+    , (equivS, "\\Leftrightarrow") ]
 
 -- * coding out stuff
 
