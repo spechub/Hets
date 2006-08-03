@@ -220,7 +220,7 @@ runSpass sps cfg saveDFG thName nGoal = do
                   cfg{proof_status = retval,
                       resultOutput = output})
 
-    allOptions = createSpassOptions cfg
+    allOptions = ("-Stdin"):(createSpassOptions cfg)
     defaultProof_status opts =
         (openProof_status (AS_Anno.senName nGoal) (prover_name spassProver) "")
         {tacticScript = Tactic_script $ concatMap (' ':) opts}
@@ -253,8 +253,7 @@ runSpass sps cfg saveDFG thName nGoal = do
 -}
 createSpassOptions :: GenericConfig String -> [String]
 createSpassOptions cfg = 
-    (cleanOptions cfg) ++ ["-DocProof", "-Stdin", "-TimeLimit="
-                                                  ++ (show tLimit)]
+    (cleanOptions cfg) ++ ["-DocProof", "-TimeLimit=" ++ (show tLimit)]
   where
     tLimit = maybe guiDefaultTimeLimit id (timeLimit cfg)
              -- this is OK. the batch prover always has the time limit set
