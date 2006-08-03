@@ -463,6 +463,7 @@ escapeMap = Map.fromList
   ('É' , "\\Ax{\\acute{E}}"),
   ('Ì' , "\\Ax{\\grave{I}}"),
   ('Í' , "\\Ax{\\acute{I}}"),
+  ('Ð' , "\\Id{\\DH}"),
   ('Ò' , "\\Ax{\\grave{O}}"),
   ('Ó' , "\\Ax{\\acute{O}}"),
   ('×' , "\\Ax{\\times}"),
@@ -476,6 +477,7 @@ escapeMap = Map.fromList
   ('é' , "\\Ax{\\acute{e}}"),
   ('ì' , "\\Ax{\\grave{\\Id{\\i}}}"),
   ('í' , "\\Ax{\\acute{\\Id{\\i}}}"),
+  ('ð' , "\\Id{\\dh}"),
   ('ò' , "\\Ax{\\grave{o}}"),
   ('ó' , "\\Ax{\\acute{o}}"),
   ('÷' , "\\Ax{\\div}"),
@@ -485,6 +487,6 @@ escapeMap = Map.fromList
   ('þ' , "\\Id{\\th}")]
 
 {- acute and grave characters don't work in a tabbing environment
-   \textcent requires \usepackage{textcomp}
-    and \guillemot \usepackage[T1]{fontenc}
+   \textcent upto textbrokenbar requires \usepackage{textcomp}
+    whereas \guillemot, eth, and thorn  \usepackage[T1]{fontenc}
 -}
