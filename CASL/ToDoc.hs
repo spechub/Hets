@@ -313,7 +313,7 @@ printRecord mf = Record
     , foldTrue_atom = \ _ _ -> text trueS
     , foldFalse_atom = \ _ _ -> text falseS
     , foldPredication = \ _ p l _ -> case p of
-          Pred_name i -> idApplDoc i l
+          Pred_name i -> predIdApplDoc i l
           Qual_pred_name _ _ _ -> if null l then printPredSymb p else
               fcat [printPredSymb p, parens $ sepByCommas l]
     , foldDefinedness = \ _ r _ -> hsep [text defS, r]

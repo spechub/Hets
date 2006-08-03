@@ -142,6 +142,7 @@ module Common.Doc
     , codeToken
     , idDoc
     , idLabelDoc
+    , predIdApplDoc
     , idApplDoc
       -- * transforming to existing formats
     , toText
@@ -192,7 +193,7 @@ data Doc
     = Empty          -- creates an empty line if composed vertically
     | AnnoDoc Annotation -- we know how to print annotations
     | IdDoc LabelKind Id -- for plain ids outside applications
-    | IdApplDoc Id [Doc] -- for mixfix applications and literal terms
+    | IdApplDoc Bool Id [Doc] -- for mixfix applications and literal terms
     | Text TextKind String -- non-empty and no white spaces inside
     | Cat ComposeKind [Doc]
     | Attr Format Doc      -- for annotations
@@ -385,7 +386,11 @@ idLabelDoc = IdDoc IdDecl
 
 -- | for mixfix applications and literal terms (may print \"\" for empty)
 idApplDoc :: Id -> [Doc] -> Doc
-idApplDoc = IdApplDoc
+idApplDoc = IdApplDoc False
+
+-- | for mixfix applications of predicate identifiers
+predIdApplDoc :: Id -> [Doc] -> Doc
+predIdApplDoc = IdApplDoc True
 
 -- | put document as far to the right as fits (for annotations)
 flushRight :: Doc -> Doc
@@ -400,7 +405,7 @@ data DocRecord a = DocRecord
     { foldEmpty :: Doc -> a
     , foldAnnoDoc :: Doc -> Annotation -> a
     , foldIdDoc :: Doc -> LabelKind -> Id -> a
-    , foldIdApplDoc :: Doc -> Id -> [a] -> a
+    , foldIdApplDoc :: Doc -> Bool -> Id -> [a] -> a
     , foldText :: Doc -> TextKind -> String -> a
     , foldCat :: Doc -> ComposeKind -> [a] -> a
     , foldAttr :: Doc -> Format -> a -> a
@@ -412,7 +417,7 @@ foldDoc r d = case d of
     Empty -> foldEmpty r d
     AnnoDoc a -> foldAnnoDoc r d a
     IdDoc l i -> foldIdDoc r d l i
-    IdApplDoc i l -> foldIdApplDoc r d i $ map (foldDoc r) l
+    IdApplDoc b i l -> foldIdApplDoc r d b i $ map (foldDoc r) l
     Text k s -> foldText r d k s
     Cat k l -> foldCat r d k $ map (foldDoc r) l
     Attr a e -> foldAttr r d a $ foldDoc r e
@@ -589,7 +594,7 @@ getDeclIds = foldDoc anyRecord
     , foldChangeGlobalAnnos = \ _ _ d -> d
     , foldIdDoc = \ _ lk i ->
           if lk == IdDecl then Set.singleton i else Set.empty
-    , foldIdApplDoc = \ _ _ _  -> Set.empty
+    , foldIdApplDoc = \ _ _ _ _ -> Set.empty
     , foldAnnoDoc = \ _ _ -> Set.empty
     }
 
@@ -666,7 +671,7 @@ codeOut :: GlobalAnnos -> Maybe Display_format -> Map.Map Id [Token] -> Doc
 codeOut ga d m = foldDoc idRecord
     { foldAnnoDoc = \ _ -> small . codeOutAnno d m
     , foldIdDoc = \ _ lk -> codeOutId lk m
-    , foldIdApplDoc = codeOutAppl ga d m
+    , foldIdApplDoc = \ o _ _ -> codeOutAppl ga d m o
     , foldChangeGlobalAnnos = \ (ChangeGlobalAnnos fg e) _ _ ->
           let ng = fg ga in codeOut ng d
              (maybe m (\ f -> Map.map (Map.! f) .
@@ -780,7 +785,7 @@ isLegalLabel r = not (null r) && all ( \ c -> isAlphaNum c || elem c "_" ) r
 
 splitDoc :: Doc -> Maybe (Id, [Doc])
 splitDoc d = case d of
-    IdApplDoc i l -> Just (i, l)
+    IdApplDoc _ i l -> Just (i, l)
     _ -> Nothing
 
 sepByCommas :: [Doc] -> Doc
@@ -790,9 +795,9 @@ data Weight = Weight Int Id Id Id -- top, left, right
 
 -- print literal terms and mixfix applications
 codeOutAppl :: GlobalAnnos -> Maybe Display_format -> Map.Map Id [Token]
-            -> Doc -> Id -> [Doc] -> Doc
-codeOutAppl ga md m origDoc _ args = case origDoc of
-  IdApplDoc i@(Id ts cs _) aas ->
+            -> Doc -> [Doc] -> Doc
+codeOutAppl ga md m origDoc args = case origDoc of
+  IdApplDoc isPred i@(Id ts cs _) aas ->
     let mk t = codeToken $ tokStr t
         pa = prec_annos ga
         assocs = assoc_annos ga
@@ -825,10 +830,12 @@ codeOutAppl ga md m origDoc _ args = case origDoc of
                         oArg = if isDiffAssoc assocs pa i ta then pArg else d
                     in (if isLeftArg i l then
                        if checkArg ARight ga (i, p) (ta, q) ra
-                       then oArg else if isSafeLhs i ta then d else pArg
+                       then oArg
+                       else if isPred || isSafeLhs i ta then d else pArg
                     else if isRightArg i l then
                        if checkArg ALeft ga (i, p) (ta, q) la
-                       then oArg else if isInfix ta then pArg else d
+                       then oArg
+                       else if isInfix ta && not isPred then pArg else d
                     else d) : l) [] $ zip aas args
              (fts, ncs, cFun, hFun) = case Map.lookup i m of
                             Nothing ->
@@ -855,7 +862,7 @@ getWeight ga d = let
     precs = mkPrecIntMap pa
     m = precMap precs
     in case d of
-    IdApplDoc i aas@(hd : _) ->
+    IdApplDoc _ i aas@(hd : _) ->
         let p = Map.findWithDefault
               (if begPlace i || endPlace i then 0 else maxBound) i m in
         if isGenLiteral splitDoc ga i aas then Nothing else
