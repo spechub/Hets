@@ -114,12 +114,12 @@ instance Pretty ALTERNATIVE where
 printSortItem :: (f -> Doc) -> SORT_ITEM f -> Doc
 printSortItem mf si = case si of
     Sort_decl sl _ -> sepByCommas $ map idLabelDoc sl
-    Subsort_decl sl sup _ -> fsep $ (punctuate comma $ map idLabelDoc sl)
-                                     ++ [less, idLabelDoc sup]
+    Subsort_decl sl sup _ -> fsep $ (punctuate comma $ map idDoc sl)
+                                     ++ [less, idDoc sup]
     Subsort_defn s v sup af _ -> fsep [idLabelDoc s, equals,
               specBraces $ fsep [sidDoc v, colon, idDoc sup,
                              printAnnoted (addBullet . printFormula mf) af]]
-    Iso_decl sl _ -> fsep $ punctuate (space <> equals) $ map idLabelDoc sl
+    Iso_decl sl _ -> fsep $ punctuate (space <> equals) $ map idDoc sl
 
 instance Pretty f => Pretty (SORT_ITEM f) where
     pretty = printSortItem pretty
