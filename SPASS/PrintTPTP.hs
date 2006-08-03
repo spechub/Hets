@@ -254,4 +254,8 @@ instance PrintTPTP SPLogState where
 
 instance PrintTPTP SPSetting where
     printTPTP (SPFlag sw v) =
-      hsep [text "% Option ", colon, text sw, comma, text v]
+      if (null sw) then
+        hsep [text "% Option ", colon, text v]
+      else
+        hsep [text "% Option ", colon, text sw, comma, text v]
+      
