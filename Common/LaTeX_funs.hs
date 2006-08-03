@@ -319,12 +319,12 @@ hc_sty_casl_keyword str =
 
 hc_sty_plain_keyword :: String -> Doc
 hc_sty_plain_keyword kw =
-    latex_macro "\\KW{" <> casl_keyword_latex (escapeUnderline kw) 
+    latex_macro "\\KW{" <> casl_keyword_latex (escapeUnderline kw)
                     <> latex_macro "}"
 
 hc_sty_small_keyword :: String -> Doc
 hc_sty_small_keyword kw =
-    latex_macro "\\KW{" <> casl_annotationbf_latex (escapeUnderline kw) 
+    latex_macro "\\KW{" <> casl_annotationbf_latex (escapeUnderline kw)
                     <> latex_macro "}"
 
 hc_sty_comment, hc_sty_annotation :: Doc -> Doc
@@ -370,14 +370,14 @@ endAnno :: String
 endAnno = "%@%small@}"
 
 escapeUnderline :: String -> String
-escapeUnderline = concatMap ( \ c -> if c == '_' then "\\_" else [c]) 
+escapeUnderline = concatMap ( \ c -> if c == '_' then "\\_" else [c])
 
 escapeLatex :: Bool -> String -> String
 escapeLatex addAx = concatMap ( \ c ->
-     if c `elem` "_%$&{}#" then 
+     if elem c "_%$&{}#" then
          if addAx then "\\Ax{\\" ++ c : "}"
-         else '\\' : [c]               
-     else if addAx && c `elem` "<|>=-!()[]?:;,./*+@" then "\\Ax{" ++ c : "}"
+         else '\\' : [c]
+     else if addAx && elem c "<|>=-!()[]?:;,./*+@" then "\\Ax{" ++ c : "}"
      else Map.findWithDefault [c] c escapeMap)
 
 equals_latex, less_latex, colon_latex, dot_latex,
@@ -449,7 +449,12 @@ escapeMap = Map.fromList
   ('®' , "\\Id{\\textregistered}"),
   ('\175', "\\Ax{\\bar{\\ }}"),
   ('°' , "\\Id{\\textdegree}"),
+  ('±' , "\\Ax{\\pm}"),
+  ('²' , "\\Ax{^2}"),
+  ('³' , "\\Ax{^3}"),
   ('´' , "\\Ax{\\acute{\\ }}"),
+  ('µ' , "\\Ax{\\mu}"),
+  ('¹' , "\\Ax{^1}"),
   ('º' , "\\Id{\\textordmasculine}"),
   ('»' , "\\Id{\\guillemotright}"),
   ('À' , "\\Ax{\\grave{A}}"),
@@ -460,6 +465,7 @@ escapeMap = Map.fromList
   ('Í' , "\\Ax{\\acute{I}}"),
   ('Ò' , "\\Ax{\\grave{O}}"),
   ('Ó' , "\\Ax{\\acute{O}}"),
+  ('×' , "\\Ax{\\times}"),
   ('Ù' , "\\Ax{\\grave{U}}"),
   ('Ú' , "\\Ax{\\acute{U}}"),
   ('Ý' , "\\Ax{\\acute{Y}}"),
@@ -472,6 +478,7 @@ escapeMap = Map.fromList
   ('í' , "\\Ax{\\acute{\\Id{\\i}}}"),
   ('ò' , "\\Ax{\\grave{o}}"),
   ('ó' , "\\Ax{\\acute{o}}"),
+  ('÷' , "\\Ax{\\div}"),
   ('ù' , "\\Ax{\\grave{u}}"),
   ('ú' , "\\Ax{\\acute{u}}"),
   ('ý' , "\\Ax{\\acute{y}}"),
