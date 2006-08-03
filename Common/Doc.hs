@@ -613,9 +613,9 @@ textToLatex dis b k s = case s of
     Indexed -> hc_sty_structid_indexed s
     StructId -> hc_sty_structid s
     Native -> hc_sty_axiom s
-    HetsLabel -> Pretty.hcat [ latex_macro "\\HetsLabel{"
-                             , casl_comment_latex $ escapeLabel s
-                             , latex_macro "}" ]
+    HetsLabel -> Pretty.hcat [ latex_macro $ "\\HetsLabel{"
+                             , textToLatex dis b Comment s
+                             , latex_macro $ "}{" ++ escapeLabel s ++ "}" ]
     IdLabel appl tk i -> let d = textToLatex dis b tk s
                              si = showId i ""
         in if b || appl == IdAppl && not (Set.member i dis)
