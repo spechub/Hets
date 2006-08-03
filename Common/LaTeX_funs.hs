@@ -26,52 +26,24 @@ Functions to calculate the length of a given word as it would be
 -}
 
 module Common.LaTeX_funs
-    ( calc_line_length,
-     pt_length,
-     keyword_width, axiom_width,
-     normal_width,
+    ( calc_line_length
 
-     hspace_latex,
-     (<\+>),
-     (<~>),
-     latex_macro,
-     comma_latex,
-     semi_latex,
-     space_latex,
+    , axiom_width
+    , latex_macro
+    , casl_comment_latex
+    , casl_normal_latex
 
-     parens_latex,
-     brackets_latex,
-     quotes_latex,
+    , hc_sty_small_keyword
+    , hc_sty_plain_keyword
+    , hc_sty_casl_keyword
+    , hc_sty_comment
 
-     sep_latex,
-     fsep_latex,
+    , hc_sty_axiom
+    , hc_sty_structid
+    , hc_sty_structid_indexed
+    , hc_sty_id
 
-     casl_keyword_latex,
-     casl_annotation_latex,
-     casl_annotationbf_latex,
-     casl_axiom_latex,
-     casl_comment_latex,
-     casl_structid_latex,
-     casl_normal_latex,
-
-     hc_sty_small_keyword,
-     hc_sty_plain_keyword,
-     hc_sty_hetcasl_keyword,
-     hc_sty_casl_keyword,
-
-     hc_sty_comment,
-     hc_sty_annotation,
-
-     hc_sty_axiom,
-     hc_sty_structid,
-     hc_sty_structid_indexed,
-     hc_sty_id,
-
-     flushright
-    , equals_latex
-    , less_latex
-    , colon_latex
-    , dot_latex
+    , flushright
     , bullet_latex
     , mapsto_latex
     , rightArrow
@@ -93,13 +65,10 @@ module Common.LaTeX_funs
 import qualified Common.Lib.Map as Map
 import Data.Char
 import Data.List (isPrefixOf)
-import Numeric
 
 import Common.LaTeX_maps
 import Common.Lib.Pretty as Pretty
 import Text.ParserCombinators.Parsec as Parsec
-
-infixl 6 <\+>, <~>
 
 -- |
 -- a constant String for starting a LaTeX indentation with tab stop
@@ -139,11 +108,6 @@ calc_line_length s =
         len :: Double
         len = read $ map (\c -> case c of ',' -> '.';_ -> c) r_number
     in truncate (len * unit * 1000)
-
-pt_length :: Int -> String
-pt_length i = showFFloat (Just 3) pt "pt"
-    where pt :: Float
-          pt = fromRational (toRational i /351)
 
 {- functions to calculate a word-width in integer with a given word
    type or purpose
@@ -195,7 +159,6 @@ itCorrection s
           itCorrection' _ _ = error ("itCorrection' doesn't work with " ++ s)
           lookupCorrection str = Map.findWithDefault def_cor str
                                  italiccorrection_map
-          -- lookupWithDefaultFM correction_map def_cor pc
           -- TODO: Build a nice correction map
           def_cor = 610
 
@@ -226,13 +189,7 @@ sum_char_width_deb _pref_fun cFM key_cFM s = sum_char_width' s 0
                                         else sum_char_width' rest nl
               where nl = r + lookupWithDefault_cFM (c1:[])
           lookupWithDefault_cFM s' = case Map.lookup s' cFM of
-                                     Nothing -> {- trace
-                                                   ((pref_fun
-                                                     . showString s'
-                                                     . showString "\' of \""
-                                                     . showString s)
-                                                    "\" not found!") -}
-                                                   2200
+                                     Nothing -> 2200 -- do something here?
                                      Just w  -> w
 
 prefixIsKey :: String -> Map.Map Char [String] -> Maybe String
@@ -248,27 +205,13 @@ isLigature s
     | otherwise = Map.findWithDefault False s ligatures
 
 keyword_width, structid_width, axiom_width, annotationbf_width,
-  annotation_width, comment_width, normal_width
-      :: String -> Int
-annotation_width   = calc_word_width Annotation
+    comment_width, normal_width :: String -> Int
 annotationbf_width = calc_word_width AnnotationBold
 keyword_width      = calc_word_width Keyword
 structid_width     = calc_word_width StructId
 comment_width      = calc_word_width Comment
 normal_width       = calc_word_width Normal
 axiom_width        = sum . map (calc_word_width Axiom) . parseAxiomString
-
--- |
--- LaTeX version of '<+>' with enough space counted.  It's choosen the
--- space between keywords which is nearly the average width of a
--- space.
-(<\+>) :: Doc -> Doc -> Doc
--- TODO: did not work correctly !!!
-d1 <\+> d2 = if isEmpty d1 then d2 else
-                 if isEmpty d2 then d1 else d1 <> space_latex <> d2
-
-(<~>) :: Doc -> Doc -> Doc
-d1 <~> d2 = d1 <> casl_normal_latex "~" <> d2
 
 -- |
 -- latex_macro creates a document ('Doc') containing String
@@ -278,39 +221,16 @@ d1 <~> d2 = d1 <> casl_normal_latex "~" <> d2
 latex_macro :: String -> Doc
 latex_macro = sp_text 0
 
-comma_latex, semi_latex, space_latex :: Doc
-comma_latex  = casl_normal_latex ","
-semi_latex   = casl_normal_latex ";"
-space_latex  = casl_normal_latex " "
-
-parens_latex, brackets_latex, quotes_latex :: Doc -> Doc
-parens_latex d   = casl_normal_latex "("<>d<>casl_normal_latex ")"
-brackets_latex d = casl_normal_latex "["<>d<>casl_normal_latex "]"
-quotes_latex d = q <> d <> q
-    where q = casl_normal_latex "{\\tt{}\\textquotedblright}"
-
-sep_latex :: [Doc] -> Doc
-sep_latex = cat . cond_punctuate space_latex
-
-fsep_latex :: [Doc] -> Doc
-fsep_latex = fcat . cond_punctuate space_latex
-
-casl_keyword_latex, casl_annotation_latex, casl_annotationbf_latex,
+casl_keyword_latex, casl_annotationbf_latex,
        casl_axiom_latex,
        casl_comment_latex, casl_structid_latex,
        casl_normal_latex :: String -> Doc
 casl_annotationbf_latex s = sp_text (annotationbf_width s) s
-casl_annotation_latex s   = sp_text (annotation_width s) s
 casl_structid_latex s     = sp_text (structid_width s) s
 casl_comment_latex s      = sp_text (comment_width s) s
 casl_keyword_latex s      = sp_text (keyword_width s) s
 casl_normal_latex s       = sp_text (normal_width s) s
 casl_axiom_latex s        = sp_text (axiom_width s) s
-
--- | form, spec, view, then
-hc_sty_hetcasl_keyword :: String -> Doc
-hc_sty_hetcasl_keyword str =
-    sp_text (keyword_width "view") $ "\\" ++ map toUpper str
 
 -- | sort, op, pred, type and its plurals
 hc_sty_casl_keyword :: String -> Doc
@@ -327,9 +247,8 @@ hc_sty_small_keyword kw =
     latex_macro "\\KW{" <> casl_annotationbf_latex (escapeUnderline kw)
                     <> latex_macro "}"
 
-hc_sty_comment, hc_sty_annotation :: Doc -> Doc
+hc_sty_comment :: Doc -> Doc
 hc_sty_comment cm = latex_macro startAnno <> cm <> latex_macro endAnno
-hc_sty_annotation = hc_sty_comment
 
 hc_sty_axiom, hc_sty_structid, hc_sty_id,hc_sty_structid_indexed
     :: String -> Doc
@@ -343,21 +262,9 @@ hc_sty_id i        = latex_macro "\\Id{"<>id_doc<>latex_macro "}"
 hc_sty_axiom ax = latex_macro "\\Ax{"<>ax_doc<>latex_macro "}"
     where ax_doc = casl_axiom_latex ax
 
-cond_punctuate :: Doc -> [Doc] -> [Doc]
-cond_punctuate _p []     = []
-cond_punctuate p (doc:docs) = go doc docs
-    where go d []     = [d]
-          go d (e:es) = cond_predicate : go e es
-              where cond_predicate = if isEmpty d then d else d<>p
-
 -- | flush argument doc to the right
 flushright :: Doc -> Doc
 flushright d = latex_macro "\\`" <> d
-
--- |
--- makes a \hspace*{String} as Doc with appropiate size
-hspace_latex :: String -> Doc
-hspace_latex str = sp_text (calc_line_length str) ("\\hspace*{"++str++"}")
 
 -- |
 -- a constant String for the start of annotations
@@ -380,13 +287,9 @@ escapeLatex addAx = concatMap ( \ c ->
      else if addAx && elem c "<|>=-!()[]?:;,./*+@" then "\\Ax{" ++ c : "}"
      else Map.findWithDefault [c] c escapeMap)
 
-equals_latex, less_latex, colon_latex, dot_latex,
-    bullet_latex, mapsto_latex, rightArrow, pfun_latex, cfun_latex,
+
+bullet_latex, mapsto_latex, rightArrow, pfun_latex, cfun_latex,
     pcfun_latex, exequal_latex :: Doc
-equals_latex = hc_sty_axiom "="
-less_latex   = hc_sty_axiom "<"
-colon_latex  = casl_normal_latex ":"
-dot_latex    = casl_normal_latex "."
 bullet_latex = hc_sty_axiom "\\bullet"
 mapsto_latex = hc_sty_axiom "\\mapsto"
 rightArrow   = hc_sty_axiom "\\rightarrow"
