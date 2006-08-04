@@ -28,6 +28,9 @@ bzip2 -k hets
 chgrp linuxbkb hets
 \cp -fp hets /home/linux-bkb/bin/
 
+# copy matching version for hets.cgi
+\cp -f ../HetCATS/utils/hetcasl.sty /home/www/cofi/hets-tmp/
+
 # make latex documentation
 \cp ../HetCATS/utils/hetcasl.sty .
 pdflatex Basic-Libraries
