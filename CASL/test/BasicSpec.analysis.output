@@ -115,7 +115,7 @@ forall m, n, r, s : Int; a, b, c, d : Nat
 . even(m) <=> even(abs(m)) %(Int_even_def)%
 . odd(m) <=> not even(m) %(Int_odd_def)%
 . m /? n = sign(m) * sign(n) * (abs(m) /? abs(n)) %(Int_divide)%
-. (m mod n) < abs(n) if not n = 0 %(Int_mod_range)%
+. m mod n < abs(n) if not n = 0 %(Int_mod_range)%
 . m = (m div n) * n + (m mod n) if not n = 0 %(Int_mod__div_def)%
 . not def m mod 0 %(Int_mod_zero)%
 . not def m div 0 %(Int_div_zero)%
@@ -152,7 +152,7 @@ ops   0, 1 : Rat;
       __^__ : Rat * Int -> Rat;
       min, max : Rat * Rat -> Rat
 forall p, q : Pos; n : Nat; i, j : Int; x, y, z : Rat 
-. (i / p) <= (j / q) <=> (i * q) <= (j * p) %(Rat_leq_def)%
+. i / p <= j / q <=> i * q <= j * p %(Rat_leq_def)%
 . x >= y <=> y <= x %(Rat_geq_def)%
 . x < y <=> x <= y /\ not x = y %(Rat_less_def)%
 . x > y <=> y < x %(Rat_greater_def)%

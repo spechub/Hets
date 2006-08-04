@@ -1318,7 +1318,7 @@
   forall v1, v2 : Int 
   . v1 /? v2 = sign(v1) * sign(v2) * (abs(v1) /? abs(v2)) 
                                                       %(Int_divide)%, 
-  forall v1, v2 : Int . (v1 mod v2) < abs(v2) if not v2 = 0 
+  forall v1, v2 : Int . v1 mod v2 < abs(v2) if not v2 = 0 
                                                    %(Int_mod_range)%, 
   forall v1, v2 : Int 
   . v1 = (v1 div v2) * v2 + (v1 mod v2) if not v2 = 0 
@@ -1359,8 +1359,8 @@
     <=> v1 * v4 = v2 * v3                           %(Rat_equality)%, 
   forall v1 : Int . v1 / 1 = v1 %(embeddingIntToRat)%, 
   forall v1, v2 : Pos; v3, v4 : Int 
-  . (v3 / v1) <= (v4 / v2) <=> (v3 * v2) <= (v4 * v1) 
-                                                     %(Rat_leq_def)%, 
+  . v3 / v1 <= v4 / v2 
+    <=> v3 * v2 <= v4 * v1                           %(Rat_leq_def)%, 
   forall v1, v2 : Rat . v1 >= v2 <=> v2 <= v1 %(Rat_geq_def)%, 
   forall v1, v2 : Rat . v1 < v2 <=> v1 <= v2 /\ not v1 = v2 
                                                     %(Rat_less_def)%, 
