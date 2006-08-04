@@ -298,18 +298,28 @@ printRecord mf = Record
     { foldQuantification = \ _ q l r _ ->
           fsep $ printQuant q : punctuate semi (map printVarDecl l)
                                 ++ [addBullet r]
-    , foldConjunction = \ (Conjunction ol _) l _ ->
-          fsep $ prepPunctuate (andDoc <> space) $ zipWith mkJunctDoc ol l
-    , foldDisjunction = \ (Disjunction ol _) l _ ->
-          fsep $ prepPunctuate (orDoc <> space) $ zipWith mkJunctDoc ol l
+    , foldConjunction = \ (Conjunction ol _) l _ -> case ol of
+          [] -> text trueS
+          _ -> fsep $ prepPunctuate (andDoc <> space)
+               $ zipWith (mkJunctDoc True) (init ol) (init l) ++
+                 [mkJunctDoc False (last ol) (last l)]
+    , foldDisjunction = \ (Disjunction ol _) l _ -> case ol of
+          [] -> text falseS
+          _ -> fsep $ prepPunctuate (orDoc <> space)
+               $ zipWith (mkJunctDoc True) (init ol) (init l) ++
+                 [mkJunctDoc False (last ol) (last l)]
     , foldImplication = \ (Implication oL oR b _) l r _ _ ->
-          let nl = if isAnyImpl oL then parens l else l
-              nr = if isImpl b oR then parens r else r
+          let nl = if isAnyImpl oL || b && isQuant oL
+                   then parens l else l
+              nr = if isImpl b oR || not b && isQuant oR
+                   then parens r else r
           in if b then sep [nl, hsep [implies, nr]]
              else sep [nr, hsep [text ifS, nl]]
     , foldEquivalence = \ (Equivalence oL oR _) l r _ ->
-          sep [mkEquivDoc oL l, hsep [equiv, mkEquivDoc oR r]]
-    , foldNegation = \ (Negation o _) r _ -> hsep [notDoc, mkJunctDoc o r]
+          sep [if isQuant oL then parens l else
+                   mkEquivDoc oL l, hsep [equiv, mkEquivDoc oR r]]
+    , foldNegation = \ (Negation o _) r _ ->
+          hsep [notDoc, mkJunctDoc False o r]
     , foldTrue_atom = \ _ _ -> text trueS
     , foldFalse_atom = \ _ _ -> text falseS
     , foldPredication = \ _ p l _ -> case p of
@@ -372,11 +382,20 @@ instance Pretty f => Pretty (TERM f) where
 isQuant, isEquiv, isAnyImpl, isJunct :: FORMULA f -> Bool
 isQuant f = case f of
     Quantification _ _ _ _ -> True
+    Conjunction l _ -> case l of
+        [] -> False
+        _ -> isQuant $ last l
+    Disjunction l _ ->  case l of
+        [] -> False
+        _ -> isQuant $ last l
+    Implication a b impl _ -> isQuant $ if impl then b else a
+    Equivalence _ b _ -> isQuant b
+    Negation a _ -> isQuant a
     _ -> False
 
 isEquiv f = case f of
     Equivalence _ _ _ -> True
-    _ -> isQuant f
+    _ -> False
 
 isAnyImpl f = isImpl True f || isImpl False f
 
@@ -385,8 +404,9 @@ isJunct f = case f of
     Disjunction _ _ -> True
     _ -> isAnyImpl f
 
-mkJunctDoc :: FORMULA f -> Doc -> Doc
-mkJunctDoc f = if isJunct f then parens else id
+-- true for non-final
+mkJunctDoc :: Bool -> FORMULA f -> Doc -> Doc
+mkJunctDoc b f = if isJunct f || b && isQuant f then parens else id
 
 mkEquivDoc :: FORMULA f -> Doc -> Doc
 mkEquivDoc f = if isEquiv f then parens else id

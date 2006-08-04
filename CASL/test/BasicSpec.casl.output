@@ -40,9 +40,9 @@ forall m, n, r, s : Nat
 . m -? n = r <=> m = r + n %(Nat_sub_def)%
 . not def (m /? 0) %(Nat_divide_0)%
 . (m /? n = r <=> m = r * n) if n > 0 %(Nat_divide_Pos)%
-. m div n = r <=> (exists s : Nat . m = n * r + s /\ s < n) 
+. m div n = r <=> exists s : Nat . m = n * r + s /\ s < n 
                                                        %(Nat_div)%
-. m mod n = s <=> (exists r : Nat . m = n * r + s /\ s < n) 
+. m mod n = s <=> exists r : Nat . m = n * r + s /\ s < n 
                                                        %(Nat_mod)%
 . m quot n = m div n %(Nat_quot)%
 . m rem n = m mod n %(Nat_rem)%
@@ -337,9 +337,9 @@ var   x : s
   if not p /\ not q(x) /\ q(x)
 forall x : s 
 . not p /\ not q(x) /\ q(x) 
-  <=> (exists x : s 
-       . not p \/ not q(x) \/ q(x) 
-         <=> (exists! x : s . not p /\ not q(x) /\ q(x)))
+  <=> exists x : s 
+      . not p \/ not q(x) \/ q(x) 
+        <=> exists! x : s . not p /\ not q(x) /\ q(x)
 . def f(x)
 . f(x) =e= g(x)
 . f(x) = g(x)

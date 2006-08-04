@@ -27,7 +27,7 @@ a => b => c => d
 a if b if c if d
 a <=> b
 a /\ b if b \/ c if not c if def d
-m div n = r <=> (exists s : Nat . m = n * r + s /\ s < n)
+m div n = r <=> exists s : Nat . m = n * r + s /\ s < n
 a => (b if c)
 a if (b => c)
 (a => b) if c
