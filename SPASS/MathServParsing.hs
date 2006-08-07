@@ -240,7 +240,7 @@ parseMathServOut mathServOut = do
     mtrees <- parseXML mathServOut
     let rdfTree = maybe emptyRoot head mtrees
         failStr = getMaybeXText failureXPath rdfTree
-        
+
     return MathServResponse {
              foAtpResult = maybe (Right $ parseFoAtpResult rdfTree)
                                  Left failStr
@@ -329,19 +329,6 @@ parseCalculus :: XmlTree -- ^ XML tree to parse
 parseCalculus rdfTree = 
     either (\_ -> UnknownCalc) id
            (readEither (filterUnderline calc) :: Either String MWCalculus)
-{-
-    case calc of
-      "AProsNDCalculus"  -> AprosNDCalculus
-      "OmegaNDCalculus"  -> OmegaNDCalculus
-      "ep_res_calc"      -> EpResCalc
-      "spass_res_calc"   -> SpassResCalc
-      "otter_calc"       -> OtterCalc
-      "vampire_res_calc" -> VampireResCalc
-      "zenon_calc"       -> ZenonCalc
-      "standard_res"     -> StandardRes
-      []                 -> UnknownCalc
-      _                  -> UnknownCalc
--}
     where
       calculusXPath = "/mw:*[local-name()='calculus']/attribute::rdf:*"
       calc = (getAnchor $ getXText calculusXPath rdfTree)
@@ -357,10 +344,11 @@ parseStatus :: XmlTree -- ^ XML tree to parse
             -> MWStatus -- ^ parsed Status node
 parseStatus rdfTree = 
     let foAtp =
-          either (\st -> either (error $ "Could not classify status of proof: "
-                                         ++ st)
-                           Unsolved
-                           (readEither st :: Either String UnsolvedStatus))
+          either (\_ ->
+                       either (error $ "Could not classify status of proof: "
+                                         ++ statusStr)
+                         Unsolved
+                         (readEither statusStr :: Either String UnsolvedStatus))
                  Solved
                  ((readEither statusStr) :: Either String SolvedStatus)
     in MWStatus {solved      = case foAtp of
@@ -454,4 +442,3 @@ stringToUpper :: String -- ^ input String
 stringToUpper str =
     if (length str == 1) then [toUpper $ head str]
     else (toUpper $ head str) : (tail str)
-   
