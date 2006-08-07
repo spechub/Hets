@@ -11,7 +11,7 @@ parse error at 4.1:
 unexpected " "
 expecting "%"
 
-%% } % 
+%% } %
 parse error at 6.1:
 unexpected "}"
 expecting "%"
@@ -83,7 +83,7 @@ parse error at 25.1:
 unexpected end of input
 expecting "%"
 
-%% one word annotes 
+%% one word annotes
 %implies
 %def
 parse error at 29.1:

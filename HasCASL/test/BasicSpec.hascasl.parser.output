@@ -10,7 +10,7 @@ type  s : c
 pred  tt : s
 var   x : s
 program tt = \ x : s . ()
-program 
+program
 __ res __ (x : s, y : t) : s = x;
 fst (x : s, y : t) : s = x;
 snd (x : s, y : t) : t = y
@@ -19,10 +19,10 @@ type  s < ? s
 program all (p : (? s)) : (? Unit) = eq (p, tt)
 program And (x, y : (? Unit)) : (? Unit) = t1 () res t2 ()
 program __ impl __ (x, y : (? Unit)) = eq (x, x And y)
-program 
-__ or __ (x, y : (? Unit)) : (? Unit) = 
+program
+__ or __ (x, y : (? Unit)) : (? Unit) =
 all (\ r : (? Unit) . ((x impl r) res (y impl r)) impl r);
-ex (p : (? s)) : (? Unit) = 
+ex (p : (? s)) : (? Unit) =
 all (\ r : (? Unit) . all (\ x : s . p (x) impl r) impl r);
 ff () : (? Unit) = all (\ r : (? Unit) . r ())
 forall x : t; y : t

@@ -1,17 +1,17 @@
 var   S : Type; N : Type; E : Type
 type  Set : Type -> Type := \ S : Type . S ->? Unit
-type  Graph : Type -> Type -> Type := 
+type  Graph : Type -> Type -> Type :=
       \ (N : Type)(E : Type) . Set N * (E ->? N) * (E ->? N)
 op    __union__ : Graph N E * Graph N E -> Graph N E;
       __union__, __intersection__, __\\__ : Set S * Set S -> Set S
 forall g : Graph N E; g' : Graph N E
-. (op __union__[N; E] : 
-   forall N : Type; E : Type . Graph N E * Graph N E -> Graph N E) 
-  ((var g : Graph N E), (var g' : Graph N E)) 
+. (op __union__[N; E] :
+   forall N : Type; E : Type . Graph N E * Graph N E -> Graph N E)
+  ((var g : Graph N E), (var g' : Graph N E))
   = (var g : Graph N E)
 %% Type Constructors -----------------------------------------------------
-Graph 
-: Type -> Type -> Type 
+Graph
+: Type -> Type -> Type
 := \ (N : Type)(E : Type) . Set N * (E ->? N) * (E ->? N)
 Set : Type -> Type := \ S : Type . S ->? Unit
 %% Type Variables --------------------------------------------------------
@@ -21,9 +21,9 @@ S  : Type %(var_1)%
 %% Assumptions -----------------------------------------------------------
 __\\__ : forall S : Type . Set S * Set S -> Set S %(op)%
 __intersection__ : forall S : Type . Set S * Set S -> Set S %(op)%
-__union__ 
+__union__
 : forall S : Type . Set S * Set S -> Set S %(op)%
-: forall N : Type; E : Type . Graph N E * Graph N E -> Graph N E 
+: forall N : Type; E : Type . Graph N E * Graph N E -> Graph N E
 %(op)%
 %% Variables -------------------------------------------------------------
 g : Graph N E

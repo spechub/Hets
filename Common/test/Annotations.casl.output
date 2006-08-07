@@ -10,7 +10,7 @@ line
 label)%
 %prec({a__, __**__} < {p, 'e', 6})%
 %prec({a__, 0} <> {__k_h__, .f'____})%
-%% one word annotes 
+%% one word annotes
 %implies
 %def
 %cons

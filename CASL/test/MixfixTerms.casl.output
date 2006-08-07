@@ -34,8 +34,8 @@ A A 0 B B
 b + A 0 B + b
 - A 0 B
 a ! ! !
-Pl7 { nicht_wenden } -- folge_dem_Gang --> { nicht_wenden } Pl3 
---> RS3 
+Pl7 { nicht_wenden } -- folge_dem_Gang --> { nicht_wenden } Pl3 -->
+RS3
 --> RS6
 (a + b) * c
 a * (b * c)

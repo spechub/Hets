@@ -1,41 +1,41 @@
-free type 
+free type
 Tree(a : Type) ::= Leaf (a) | 
                    Node (Tree a) (a) | 
                    EmptyLeaf
-free type 
+free type
 Nat ::= Zero | 
         Suc (Nat)
 op    caseTree : forall a . Tree Nat -> Tree Nat
 forall h : Tree Nat; n : Nat; t : Tree Nat
-. (op caseTree : Tree Nat -> Tree Nat) (var t : Tree Nat) = 
-  (case (var t : Tree Nat) of 
-   (op EmptyLeaf[Nat] : forall a : Type . Tree a) -> 
+. (op caseTree : Tree Nat -> Tree Nat) (var t : Tree Nat) =
+  (case (var t : Tree Nat) of
+   (op EmptyLeaf[Nat] : forall a : Type . Tree a) ->
    (op EmptyLeaf[_v17] : forall a : Type . Tree a) | 
-   (op Leaf[Nat] : forall a : Type . a -> Tree a) (var n : Nat) -> 
+   (op Leaf[Nat] : forall a : Type . a -> Tree a) (var n : Nat) ->
    (op EmptyLeaf[_v17] : forall a : Type . Tree a) | 
-   (op Node[Nat] : forall a : Type . Tree a -> a -> Tree a) 
-   (op EmptyLeaf[Nat] : forall a : Type . Tree a) 
-   (var n : Nat) 
+   (op Node[Nat] : forall a : Type . Tree a -> a -> Tree a)
+   (op EmptyLeaf[Nat] : forall a : Type . Tree a)
+   (var n : Nat)
    -> (op EmptyLeaf[_v17] : forall a : Type . Tree a) | 
-   (op Node[Nat] : forall a : Type . Tree a -> a -> Tree a) 
-   ((op Node[Nat] : forall a : Type . Tree a -> a -> Tree a) 
-    (var h : Tree Nat) 
-    (var n : Nat)) 
-   (var n : Nat) 
+   (op Node[Nat] : forall a : Type . Tree a -> a -> Tree a)
+   ((op Node[Nat] : forall a : Type . Tree a -> a -> Tree a)
+    (var h : Tree Nat)
+    (var n : Nat))
+   (var n : Nat)
    -> (var h : Tree Nat) | 
-   (op Node[Nat] : forall a : Type . Tree a -> a -> Tree a) 
-   ((op Leaf[Nat] : forall a : Type . a -> Tree a) (var n : Nat)) 
-   (var n : Nat) 
+   (op Node[Nat] : forall a : Type . Tree a -> a -> Tree a)
+   ((op Leaf[Nat] : forall a : Type . a -> Tree a) (var n : Nat))
+   (var n : Nat)
    -> (op Leaf[Nat] : forall a : Type . a -> Tree a) (var n : Nat))
 %% Type Constructors -----------------------------------------------------
-Nat 
-: Type 
- %[free type Nat ::= 
+Nat
+: Type
+ %[free type Nat ::=
              Zero : Nat
              Suc : Nat -> Nat(Nat)]%
-Tree 
-: Type -> Type 
- %[free type Tree(a : Type) ::= 
+Tree
+: Type -> Type
+ %[free type Tree(a : Type) ::=
              Leaf : a -> Tree a(a)
              Node : Tree a -> a -> Tree a(Tree a)(a)
              EmptyLeaf : Tree a]%
@@ -51,15 +51,15 @@ h : Tree Nat
 n : Nat
 t : Tree Nat
 %% Sentences -------------------------------------------------------------
-free type Tree(a : Type) ::= 
+free type Tree(a : Type) ::=
           Leaf : a -> Tree a(a)
           Node : Tree a -> a -> Tree a(Tree a)(a)
           EmptyLeaf : Tree a                           %(ga_Tree)%
-free type Nat ::= 
+free type Nat ::=
           Zero : Nat
           Suc : Nat -> Nat(Nat)                         %(ga_Nat)%
-caseTree t = 
-(case t of 
+caseTree t =
+(case t of
  EmptyLeaf -> EmptyLeaf | 
  Leaf n -> EmptyLeaf | 
  Node EmptyLeaf n -> EmptyLeaf | 

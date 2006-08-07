@@ -102,19 +102,19 @@ a \ a : v .! ! x
 let x = y in z
 let x = y;
     x = y;
-    x = y 
-in 
+    x = y
+in
 z
 let x = y;
     x = y;
-    x = y 
-in 
+    x = y
+in
 z in t
 let x = (y in z) in x
 let x = \ y : t . y in x (x)
 let x = case x in t of y -> z;
-    x = y 
-in 
+    x = y
+in
 x
 ()
 if a then b
@@ -126,10 +126,10 @@ if a then b else c
 \ (a # (b, c) : S * S) . a
 \ (a # (b, c) # : S * S) . a
 \ (a) . a
-y where 
+y where
 x = y;
 z = y
-y where 
+y where
 x = y;
 z = y in t
 ((op __<__ : ?##))

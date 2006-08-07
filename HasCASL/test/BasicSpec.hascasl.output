@@ -9,10 +9,10 @@ type  s : c
 pred  tt : s
 var   x : s
 program (pred tt : s) = \ (var x : s) . () : s ->? Unit
-program 
-(var fst : s * t ->? s) ((var x : s), (var y : t) : t) : s = 
+program
+(var fst : s * t ->? s) ((var x : s), (var y : t) : t) : s =
 (var x : s);
-(var snd : s * t ->? t) ((var x : s), (var y : t) : t) : t = 
+(var snd : s * t ->? t) ((var x : s), (var y : t) : t) : t =
 (var y : t)
 pred  eq : s * s
 type  s < ? s
@@ -41,26 +41,26 @@ a < b
 b < Type
 c < Type
 %% Type Constructors -----------------------------------------------------
-Data1 
-: Type < Data2 
- %[type Data1 ::= 
+Data1
+: Type < Data2
+ %[type Data1 ::=
         a : Data1
         b : Data1
         c : Data1]%
-Data2 
-: Type 
- %[type Data2 ::= 
+Data2
+: Type
+ %[type Data2 ::=
         Cons21 : Data1 * Data2 -> Data2(Data1; Data2)
         Cons22 : Data2 * Data1 -> Data2(Data2; Data1)
         types Data1]%
-Data3 
-: Type 
- %[type Data3 ::= 
+Data3
+: Type
+ %[type Data3 ::=
         Cons31 : Data1 * Data2 -> Data3(sel1 :? Data1; sel2 :? Data2)
         Cons32 : Data2 * Data1 -> Data3(sel2 :? Data2; sel1 :? Data1)]%
-Data4 
-: Type 
- %[type Data4 ::= 
+Data4
+: Type
+ %[type Data4 ::=
         Cons41 : Data1 * Data2 ->? Data4(sel1 :? Data1; sel2 :? Data2)
         Cons42 : Data2 * Data1 ->? Data4(sel2 :? Data2; sel1 :? Data1)]%
 s : (Type, c)
@@ -73,30 +73,30 @@ Cons31 : Data1 * Data2 -> Data3 %(construct Data3)%
 Cons32 : Data2 * Data1 -> Data3 %(construct Data3)%
 Cons41 : Data1 * Data2 ->? Data4 %(construct Data4)%
 Cons42 : Data2 * Data1 ->? Data4 %(construct Data4)%
-a 
+a
 : Data1 %(construct Data1)%
 : ? s %(op)%
 b : Data1 %(construct Data1)%
 c : Data1 %(construct Data1)%
 eq : s * s ->? Unit %(pred)%
 fst : s * t ->? s %(op)%
-sel1 
-: Data4 ->? Data1 
+sel1
+: Data4 ->? Data1
 %(select from Data4 constructed by
-(Cons42 : Data2 * Data1 ->? Data4, 
+(Cons42 : Data2 * Data1 ->? Data4,
  Cons41 : Data1 * Data2 ->? Data4))%
-: Data3 ->? Data1 
+: Data3 ->? Data1
 %(select from Data3 constructed by
-(Cons32 : Data2 * Data1 -> Data3, 
+(Cons32 : Data2 * Data1 -> Data3,
  Cons31 : Data1 * Data2 -> Data3))%
-sel2 
-: Data4 ->? Data2 
+sel2
+: Data4 ->? Data2
 %(select from Data4 constructed by
-(Cons42 : Data2 * Data1 ->? Data4, 
+(Cons42 : Data2 * Data1 ->? Data4,
  Cons41 : Data1 * Data2 ->? Data4))%
-: Data3 ->? Data2 
+: Data3 ->? Data2
 %(select from Data3 constructed by
-(Cons32 : Data2 * Data1 -> Data3, 
+(Cons32 : Data2 * Data1 -> Data3,
  Cons31 : Data1 * Data2 -> Data3))%
 snd : s * t ->? t %(op)%
 tt : s ->? Unit %(pred)%
@@ -108,45 +108,45 @@ program tt = \ x . () : s ->? Unit %(pe_tt)%
 program (var fst : s * t ->? s) (x, y : t) : s = x %(pe_fst)%
 program (var snd : s * t ->? t) (x, y : t) : t = y %(pe_snd)%
 x = y
-type Data1 ::= 
+type Data1 ::=
      a : Data1
      b : Data1
      c : Data1                                        %(ga_Data1)%
-type Data2 ::= 
+type Data2 ::=
      Cons21 : Data1 * Data2 -> Data2(Data1; Data2)
      Cons22 : Data2 * Data1 -> Data2(Data2; Data1)
      types Data1                                      %(ga_Data2)%
-forall x_1_1 : Data1; x_1_2 : Data2 . 
-(op sel1 : Data3 ->? Data1) (Cons31 (x_1_1, x_1_2)) = x_1_1 
+forall x_1_1 : Data1; x_1_2 : Data2 .
+(op sel1 : Data3 ->? Data1) (Cons31 (x_1_1, x_1_2)) = x_1_1
                                                 %(ga_select_sel1)%
-forall x_1_1 : Data1; x_1_2 : Data2 . 
-(op sel2 : Data3 ->? Data2) (Cons31 (x_1_1, x_1_2)) = x_1_2 
+forall x_1_1 : Data1; x_1_2 : Data2 .
+(op sel2 : Data3 ->? Data2) (Cons31 (x_1_1, x_1_2)) = x_1_2
                                                 %(ga_select_sel2)%
-forall x_1_1 : Data2; x_1_2 : Data1 . 
-(op sel2 : Data3 ->? Data2) (Cons32 (x_1_1, x_1_2)) = x_1_1 
+forall x_1_1 : Data2; x_1_2 : Data1 .
+(op sel2 : Data3 ->? Data2) (Cons32 (x_1_1, x_1_2)) = x_1_1
                                                 %(ga_select_sel2)%
-forall x_1_1 : Data2; x_1_2 : Data1 . 
-(op sel1 : Data3 ->? Data1) (Cons32 (x_1_1, x_1_2)) = x_1_2 
+forall x_1_1 : Data2; x_1_2 : Data1 .
+(op sel1 : Data3 ->? Data1) (Cons32 (x_1_1, x_1_2)) = x_1_2
                                                 %(ga_select_sel1)%
-type Data3 ::= 
+type Data3 ::=
      Cons31 : Data1 * Data2 -> Data3(sel1 :? Data1; sel2 :? Data2)
-     Cons32 : Data2 * Data1 -> Data3(sel2 :? Data2; sel1 :? Data1) 
+     Cons32 : Data2 * Data1 -> Data3(sel2 :? Data2; sel1 :? Data1)
                                                       %(ga_Data3)%
-forall x_1_1 : Data1; x_1_2 : Data2 . 
-(op sel1 : Data4 ->? Data1) (Cons41 (x_1_1, x_1_2)) = x_1_1 
+forall x_1_1 : Data1; x_1_2 : Data2 .
+(op sel1 : Data4 ->? Data1) (Cons41 (x_1_1, x_1_2)) = x_1_1
                                                 %(ga_select_sel1)%
-forall x_1_1 : Data1; x_1_2 : Data2 . 
-(op sel2 : Data4 ->? Data2) (Cons41 (x_1_1, x_1_2)) = x_1_2 
+forall x_1_1 : Data1; x_1_2 : Data2 .
+(op sel2 : Data4 ->? Data2) (Cons41 (x_1_1, x_1_2)) = x_1_2
                                                 %(ga_select_sel2)%
-forall x_1_1 : Data2; x_1_2 : Data1 . 
-(op sel2 : Data4 ->? Data2) (Cons42 (x_1_1, x_1_2)) = x_1_1 
+forall x_1_1 : Data2; x_1_2 : Data1 .
+(op sel2 : Data4 ->? Data2) (Cons42 (x_1_1, x_1_2)) = x_1_1
                                                 %(ga_select_sel2)%
-forall x_1_1 : Data2; x_1_2 : Data1 . 
-(op sel1 : Data4 ->? Data1) (Cons42 (x_1_1, x_1_2)) = x_1_2 
+forall x_1_1 : Data2; x_1_2 : Data1 .
+(op sel1 : Data4 ->? Data1) (Cons42 (x_1_1, x_1_2)) = x_1_2
                                                 %(ga_select_sel1)%
-type Data4 ::= 
+type Data4 ::=
      Cons41 : Data1 * Data2 ->? Data4(sel1 :? Data1; sel2 :? Data2)
-     Cons42 : Data2 * Data1 ->? Data4(sel2 :? Data2; sel1 :? Data1) 
+     Cons42 : Data2 * Data1 ->? Data4(sel2 :? Data2; sel1 :? Data1)
                                                       %(ga_Data4)%
 true
 %% Diagnostics -----------------------------------------------------------
@@ -173,7 +173,7 @@ true
 
 ### Hint 28.35-28.41, untypable application (with result type: ? Unit)
  'eq (p, tt)'
-*** Error 28.33, no typing for 'program (var all : _v34) ((var p : _v35) : ? s) : ? Unit = 
+*** Error 28.33, no typing for 'program (var all : _v34) ((var p : _v35) : ? s) : ? Unit =
           eq (p, tt)'
 ### Hint 30.14, rebound variable 'x'
 ### Hint 30.40, no type match for: t1
@@ -188,7 +188,7 @@ true
  't1 res t2'
 ### Hint 30.40-30.52, untypable application (with result type: ? Unit)
  't1 res t2 ()'
-*** Error 30.38, no typing for 'program (var And : _v46) (x, (var y : _v47) : ? Unit) : ? Unit = 
+*** Error 30.38, no typing for 'program (var And : _v46) (x, (var y : _v47) : ? Unit) : ? Unit =
           t1 res t2 ()'
 *** Error 32.12, unexpected mixfix token: impl
 *** Error 34.12, unexpected mixfix token: or
@@ -197,10 +197,10 @@ true
   known types:
     
 ### Hint 37.27-38.45, untypable application (with result type: ? Unit)
- 'all 
+ 'all
   (\ (var r : _v68) : ? Unit . all (\ x : s . p x impl r) impl r)'
-*** Error 37.25, no typing for 'program (var ex : _v66) ((var p : _v67) : ? s) : ? Unit = 
-          all 
+*** Error 37.25, no typing for 'program (var ex : _v66) ((var p : _v67) : ? s) : ? Unit =
+          all
           (\ (var r : _v68) : ? Unit . all (\ x : s . p x impl r) impl r)'
 ### Hint 40.20, no type match for: all
   with (maximal) type: _v82 ->? ? Unit
@@ -208,7 +208,7 @@ true
     
 ### Hint 40.20-40.38, untypable application (with result type: ? Unit)
  'all (\ (var r : _v76) : ? Unit . r)'
-*** Error 40.18, no typing for 'program (var ff : _v75) () : ? Unit = 
+*** Error 40.18, no typing for 'program (var ff : _v75) () : ? Unit =
           all (\ (var r : _v76) : ? Unit . r)'
 ### Hint 45.9, not a class 't'
 ### Hint 45.8, rebound variable 'x'

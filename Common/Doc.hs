@@ -451,22 +451,33 @@ anyRecord = DocRecord
 
 -- | simple conversion to a standard text document
 toText :: GlobalAnnos -> Doc -> Pretty.Doc
-toText ga = foldDoc anyRecord
+toText ga = toTextAux . codeOut ga Nothing Map.empty
+
+toTextAux :: Doc -> Pretty.Doc
+toTextAux = foldDoc anyRecord
     { foldEmpty = \ _ -> Pretty.empty
     , foldText = \ _ k s -> case k of
           TopKey n -> Pretty.text $ s ++ replicate (n - length s) ' '
           _ -> Pretty.text s
-    , foldCat = \ _ c -> case c of
+    , foldCat = \ (Cat _ ds) c l -> case ds of
+        [] -> Pretty.empty
+        _ -> if all hasSpace $ init ds then 
+          (case c of
+          Vert -> Pretty.vcat
+          Horiz -> Pretty.hsep
+          HorizOrVert -> Pretty.sep
+          Fill -> Pretty.fsep) $ map (toTextAux . rmSpace) ds 
+          else (case c of
           Vert -> Pretty.vcat
           Horiz -> Pretty.hcat
           HorizOrVert -> Pretty.cat
-          Fill -> Pretty.fcat
+          Fill -> Pretty.fcat) l 
     , foldAttr = \ _ k d -> case k of
           FlushRight -> let l = length $ show d in
             if l < 66 then Pretty.nest (66 - l) d else d
           _ -> d
     , foldChangeGlobalAnnos = \ _ _ d -> d
-    } . codeOut ga Nothing Map.empty
+    }
 
 -- * conversion to latex
 
@@ -562,11 +573,17 @@ isNative d = case d of
                Cat Horiz [t, _] -> isMathLatex t
                _ -> isMathLatex d
 
--- | remove the spaces inserted by punctuate for latex macros
+-- | remove the spaces inserted by punctuate
 rmSpace :: Doc -> Doc
-rmSpace d = case d of
-              Cat Horiz [t, Text IdKind s] | s == " " -> t
-              _ -> d
+rmSpace = snd . anaSpace
+
+hasSpace :: Doc -> Bool
+hasSpace = fst . anaSpace
+
+anaSpace :: Doc -> (Bool, Doc)
+anaSpace d = case d of
+              Cat Horiz [t, Text IdKind s] | s == " " -> (True, t)
+              _ -> (False, d)
 
 allHoriz :: Doc -> Bool
 allHoriz d = case d of
@@ -577,13 +594,12 @@ allHoriz d = case d of
                _ -> False
 
 makeSmallLatex :: Bool -> Pretty.Doc -> Pretty.Doc
-makeSmallLatex b d =
-   if b then Pretty.hcat [latex_macro startAnno, d, latex_macro endAnno]
-   else d
+makeSmallLatex b d = if b then
+    Pretty.hcat [latex_macro startAnno, d, latex_macro endAnno] else d
 
 symbolToLatex :: String -> Pretty.Doc
-symbolToLatex s = Map.findWithDefault (hc_sty_axiom
-                                       $ escapeLatex False s) s latexSymbols
+symbolToLatex s =
+    Map.findWithDefault (hc_sty_axiom $ escapeLatex False s) s latexSymbols
 
 getDeclIds :: Doc -> Set.Set Id
 getDeclIds = foldDoc anyRecord
@@ -717,9 +733,15 @@ annoLine w = percent <> keyword w
 annoLparen :: String -> Doc
 annoLparen w = percent <> keyword w <> lparen
 
+revDropSpaces :: String -> String
+revDropSpaces = reverse . dropWhile isSpace
+
+strip :: String -> String
+strip = revDropSpaces . revDropSpaces
+
 wrapLines :: TextKind -> Maybe Display_format -> Doc -> [String] -> Doc -> Doc
 wrapLines k d a l b = case map (Text k .
-          maybe id (const $ dropWhile isSpace) d) l of
+          maybe id (const strip) d) l of
     [] -> a <> b
     [x] -> hcat [a, x, b]
     ds@(x : r) -> case d of
@@ -746,7 +768,8 @@ codeOutAnno d m a = case a of
     Unparsed_anno aw at _ -> case at of
         Line_anno s -> (case aw of
             Annote_word w -> annoLine w
-            Comment_start -> symbol percents) <> commentText s
+            Comment_start -> symbol percents) 
+                             <> commentText (revDropSpaces $ reverse s)
         Group_anno l -> case aw of
             Annote_word w -> wrapAnnoLines d (annoLparen w) l annoRparen
             Comment_start -> wrapAnnoLines d (percent <> lbrace) l
@@ -774,7 +797,7 @@ codeOutAnno d m a = case a of
                           ARight -> right_assocS)
                         <> fCommaT m l <> annoRparen
     Label l _ -> wrapLines (case l of
-                  [x] -> let r = dropWhile isSpace x in
+                  [x] -> let r = strip x in
                          if isLegalLabel r
                             then HetsLabel
                             else Comment

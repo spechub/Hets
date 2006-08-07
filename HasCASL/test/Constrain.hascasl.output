@@ -3,8 +3,8 @@ class Ord < Eq
 type  a : Ord
 op    f : forall e : Ord . e -> e
 op    c : a
-. (op f[a] : forall e : Ord . e -> e) 
-  ((op f[a] : forall e : Ord . e -> e) (op c : a)) 
+. (op f[a] : forall e : Ord . e -> e)
+  ((op f[a] : forall e : Ord . e -> e) (op c : a))
   = (op c : a)
 type  t : Eq
 op    b : t

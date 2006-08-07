@@ -14,7 +14,7 @@ class i < g
 class g < i
       %% cycle via i = g
 class i < Type
-      %% i is already alias class 
+      %% i is already alias class
 %% Classes ---------------------------------------------------------------
 a < Type
 b < a
