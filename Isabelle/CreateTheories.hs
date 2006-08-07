@@ -33,8 +33,7 @@ import CASL.Logic_CASL
 import HasCASL.Logic_HasCASL
 
 import Comorphisms.CASL2PCFOL
-import Comorphisms.CASL2SubCFOL
-import Comorphisms.CFOL2IsabelleHOL
+import Comorphisms.CASL2HasCASL
 import Comorphisms.PCoClTyConsHOL2IsabelleHOL
 #ifdef PROGRAMATICA
 import Comorphisms.Haskell2IsabelleHOLCF
@@ -48,8 +47,8 @@ printTheory libdir ln sn (G_theory lid sign0 sens0) = do
         r1' = do
           th0 <- r1
           th1 <- wrapMapTheory CASL2PCFOL th0
-          th2 <- wrapMapTheory CASL2SubCFOL th1
-          wrapMapTheory CFOL2IsabelleHOL th2
+          th2 <- wrapMapTheory CASL2HasCASL th1
+          wrapMapTheory PCoClTyConsHOL2IsabelleHOL th2
 #ifdef PROGRAMATICA
         r2 = coerceBasicTheory lid Haskell "" th
         r2' = do
@@ -71,8 +70,8 @@ printTheory libdir ln sn (G_theory lid sign0 sens0) = do
                        _ -> r4'
                    _ -> r2'
                _ -> r1'
-    (sign, sens) <- r3 
-    let tn = reverse (takeWhile (/= '/') 
+    (sign, sens) <- r3
+    let tn = reverse (takeWhile (/= '/')
                      $ reverse $ show $ getLIB_ID ln)
              ++ "_" ++ tokStr sn
     return $ printIsaTheory tn libdir sign
