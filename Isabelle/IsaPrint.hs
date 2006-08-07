@@ -207,6 +207,13 @@ printParenTerm :: Bool -> Int -> Term -> Doc
 printParenTerm b i t = case printTrm b t of
     (d, j) -> if j < i then parensForTerm d else d
 
+flatTuplex :: [Term] -> Continuity -> [Term]
+flatTuplex cs c = case cs of
+    [] -> cs
+    _ -> case last cs of
+           Tuplex rs@(_ : _ : _) d | d == c -> init cs ++ flatTuplex rs d
+           _ -> cs
+
 -- | print the term using the alternative syntax (if True)
 printTrm :: Bool -> Term -> (Doc, Int)
 printTrm b trm = case trm of
@@ -247,7 +254,7 @@ printTrm b trm = case trm of
     Tuplex cs c -> ((case c of
         NotCont -> parensForTerm
         IsCont -> \ d -> text "<" <+> d <+> text ">") $
-                        sepByCommas (map (printPlainTerm b) cs)
+                        sepByCommas (map (printPlainTerm b) $ flatTuplex cs c)
                     , maxPrio)
     Fix t -> (text "fix $" <+> printParenTerm b maxPrio t, maxPrio - 1)
     Bottom -> (text "UU", maxPrio)
