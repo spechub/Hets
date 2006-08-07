@@ -593,10 +593,15 @@ isEquallyLifted l r = case (l, r) of
             -> Just (ft, la, ra)
     _ -> Nothing
 
+isLifted :: Isa.Term -> Bool
+isLifted t = case t of
+    MixfixApp (Const f _) [_] _ | new f == someS -> True
+    _ -> False
+
 mkTermAppl :: Isa.Term -> Isa.Term -> Isa.Term
 mkTermAppl fun arg = case (fun, arg) of
       (MixfixApp (Const uc _) [b@(Const bin _)] c, Tuplex a@[l, r] _)
-          | new uc == uncurryOpS -- && elem (new bin) [eq, conj, disj, impl]
+          | new uc == uncurryOpS
               -> case isEquallyLifted l r of
                    Just (_, la, ra) | new bin == eq -> MixfixApp b [la, ra] c
                    _ -> MixfixApp b a c
@@ -605,6 +610,8 @@ mkTermAppl fun arg = case (fun, arg) of
           | new mp == "mapSnd" -> Tuplex [a, mkTermAppl f b] c
       (Const mp _, Tuplex [a, b] _)
           | new mp == "ifImplOp" -> binImpl b a
+          | new mp == "exEqualOp" && (isLifted a || isLifted b) ->
+            mkTermAppl (mkTermAppl uncurryOp (con eqV)) arg
       (Const mp _, Tuplex [a, Tuplex [b, c] _] d)
           | new mp == "whenElseOp" -> case isEquallyLifted a c of
               Just (f, na, nc) -> mkTermAppl f $ If b na nc d
@@ -628,6 +635,7 @@ mkTermAppl fun arg = case (fun, arg) of
           | new cmp == "flipComp" -> mkTermAppl g $ mkTermAppl f arg
           | new cmp == "flipCurryOp" -> mkTermAppl f $ Tuplex [arg, g] c
           | new cmp == "curryOp" -> mkTermAppl f $ Tuplex [g, arg] c
+          | new cmp == "flip" -> mkTermAppl (mkTermAppl f arg) g
       (MixfixApp (MixfixApp (Const cmp _) [f] _) [g] _,
        Tuplex [a, b] _)
           | new cmp == "liftFst" -> mkTermAppl (mkTermAppl f
@@ -639,6 +647,9 @@ mkTermAppl fun arg = case (fun, arg) of
           | new d == "option2bool" && new sm == someS -> true
           | new d == "option2bool" && new sm == "bool2option"
             || new d == "bool2option" && new sm == "option2bool" -> a
+          | new d == "curryOp" && new sm == uncurryOpS -> a 
+          | new d == "flipCurryOp" && new sm == uncurryOpS -> 
+              mkTermAppl (conDouble "flip") a 
       (Const i _, _)
           | new i == "bool2option" ->
               let tc = mkTermAppl conSome $ unitOp
