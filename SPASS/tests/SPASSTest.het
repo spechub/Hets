@@ -61,6 +61,11 @@ then %implies
      . exists x:s . x in s %(trivial_non_empty_test)%
 end
 
+spec FreeTest =
+     free type X ::= X | X1 | e
+then %implies
+     . not X1 = X %(simple_disjoint)%
+
 spec PredicateLogic =
      preds A,B,C : ()
      . A => B %(ax1)%
