@@ -300,11 +300,13 @@ goalProcessed stateRef tLimit numGoals label prName
   writeIORef stateRef s'
 
   let notReady = numGoals - processedGoalsSoFar > 0
-  label # text (if notReady
-                then (batchInfoText tLimit numGoals processedGoalsSoFar)
-                else "Batch mode finished\n\n")
-
-  return notReady
+  if mainDestroyed s
+     then return False 
+     else do
+      label # text (if notReady
+                    then (batchInfoText tLimit numGoals processedGoalsSoFar)
+                    else "Batch mode finished\n\n")
+      return notReady
 
 {- |
    Updates the display of the status of the current goal.
@@ -559,22 +561,22 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
   batchTitle <- newLabel batch [text $ (prName)++" Batch Mode:"]
   pack batchTitle [Side AtTop]
 
-  batchLeft <- newVBox batch []
-  pack batchLeft [Expand On, Fill X, Side AtLeft]
+  batchRight <- newVBox batch []
+  pack batchRight [Expand On, Fill X, Side AtRight]
 
-  batchBtnBox <- newHBox batchLeft []
-  pack batchBtnBox [Expand On, Fill X, Side AtLeft]
+  batchBtnBox <- newHBox batchRight []
+  pack batchBtnBox [Expand On, Fill X, Side AtRight]
   stopBatchButton <- newButton batchBtnBox [text "Stop"]
   pack stopBatchButton []
   runBatchButton <- newButton batchBtnBox [text "Run"]
   pack runBatchButton []
 
-  batchSpacer <- newSpace batchLeft (pp 150) [orient Horizontal]
-  pack batchSpacer [Side AtLeft]
-  batchStatusLabel <- newLabel batchLeft [text "\n\n"]
+  batchSpacer <- newSpace batchRight (pp 150) [orient Horizontal]
+  pack batchSpacer [Side AtRight]
+  batchStatusLabel <- newLabel batchRight [text "\n\n"]
   pack batchStatusLabel []
 
-  OpFrame { of_Frame = batchRight
+  OpFrame { of_Frame = batchLeft
           , of_timeSpinner = batchTimeSpinner
           , of_timeEntry = batchTimeEntry
           , of_optionsEntry = batchOptionsEntry}
@@ -589,9 +591,11 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                     done))
                  isExtraOptions
 
+  pack batchLeft [Expand On, Fill X, Anchor NorthWest,Side AtLeft]
+
   saveProblem_batch <- createTkVariable False
   saveProblem_batch_checkBox <-
-         newCheckButton batchRight
+         newCheckButton batchLeft
                         [variable saveProblem_batch,
                          text $ "Save "
                      ++ (removeFirstDot $ problemOutput $ fileExtensions atpFun)]
@@ -599,8 +603,6 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
   enableSaveCheckBox <- getEnvSave False "HETS_ENABLE_BATCH_SAVE" readEither
   when enableSaveCheckBox $
        pack saveProblem_batch_checkBox [Expand Off, Fill None, Side AtBottom]
-
-  pack batchRight [Expand On, Fill X, Anchor NorthWest,Side AtRight]
 
   batchTimeEntry # HTk.value batchTLimit
 
@@ -827,12 +829,16 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                                                     batchStatusLabel
                                                     prName gPSF nSen cfg
                               st <- readIORef stateRef
-                              updateDisplay st True lb statusLabel timeEntry
+                              if (mainDestroyed st) 
+                                 then return False
+                                 else do
+                               updateDisplay st True lb statusLabel timeEntry
                                             optionsEntry axiomsLb
-                              case retval of
+                               case retval of
                                 ATPError message -> errorMess message
                                 _ -> return ()
-                              when (not cont)
+                               let cont' = cont && batchModeIsRunning st
+                               when (not cont)
                                    (do
                                     -- putStrLn "Batch ended"
                                     disable stopBatchButton
@@ -841,7 +847,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                                     writeIORef stateRef
                                             (st {batchModeIsRunning = False})
                                     cleanupThread threadStateRef)
-                              return cont)
+                               return cont')
                           (atpInsertSentence atpFun) (runProver atpFun)
                           prName thName s
                        return ())
@@ -852,19 +858,22 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
               batchStatusLabel # text ("No further open goals\n\n")
               done)
       +> (stopBatch >>> do
+            modifyIORef stateRef
+                           (\s -> s {batchModeIsRunning = False})
             cleanupThread threadStateRef
             modifyIORef threadStateRef (\ s -> s {batchStopped = True})
-            -- putStrLn "Batch stopped"
-            disable stopBatchButton
-            enableWids wids
-            enableWidsUponSelection lb goalSpecificWids
-            batchStatusLabel # text "Batch mode stopped\n\n"
+            -- putStrLn "Batch stopped"            
             st <- readIORef stateRef
-            writeIORef stateRef
-                           (st {batchModeIsRunning = False})
-            updateDisplay st True lb statusLabel timeEntry
-                          optionsEntry axiomsLb
-            done)
+            if mainDestroyed st 
+               then return ()
+               else do               
+                  disable stopBatchButton
+                  enableWids wids
+                  enableWidsUponSelection lb goalSpecificWids
+                  batchStatusLabel # text "Batch mode stopped\n\n"
+                  updateDisplay st True lb statusLabel timeEntry
+                                optionsEntry axiomsLb
+                  done)
       +> (help >>> do
             createTextDisplay (prName ++ " Help")
                               (proverHelpText atpFun)
