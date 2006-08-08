@@ -461,17 +461,17 @@ toTextAux = foldDoc anyRecord
           _ -> Pretty.text s
     , foldCat = \ (Cat _ ds) c l -> case ds of
         [] -> Pretty.empty
-        _ -> if all hasSpace $ init ds then 
+        _ -> if all hasSpace $ init ds then
           (case c of
           Vert -> Pretty.vcat
           Horiz -> Pretty.hsep
           HorizOrVert -> Pretty.sep
-          Fill -> Pretty.fsep) $ map (toTextAux . rmSpace) ds 
+          Fill -> Pretty.fsep) $ map (toTextAux . rmSpace) ds
           else (case c of
           Vert -> Pretty.vcat
           Horiz -> Pretty.hcat
           HorizOrVert -> Pretty.cat
-          Fill -> Pretty.fcat) l 
+          Fill -> Pretty.fcat) l
     , foldAttr = \ _ k d -> case k of
           FlushRight -> let l = length $ show d in
             if l < 66 then Pretty.nest (66 - l) d else d
@@ -633,7 +633,7 @@ textToLatex dis b k s = case s of
     TopKey _ -> hc_sty_casl_keyword s
     Indexed -> hc_sty_structid_indexed s
     StructId -> hc_sty_structid s
-    Native -> hc_sty_axiom s
+    Native -> Pretty.sp_text (axiom_width s) s
     HetsLabel -> Pretty.hcat [ latex_macro $ "\\HetsLabel{"
                              , textToLatex dis b Comment s
                              , latex_macro $ "}{" ++ escapeLabel s ++ "}" ]
@@ -768,7 +768,7 @@ codeOutAnno d m a = case a of
     Unparsed_anno aw at _ -> case at of
         Line_anno s -> (case aw of
             Annote_word w -> annoLine w
-            Comment_start -> symbol percents) 
+            Comment_start -> symbol percents)
                              <> commentText (revDropSpaces $ reverse s)
         Group_anno l -> case aw of
             Annote_word w -> wrapAnnoLines d (annoLparen w) l annoRparen
