@@ -21,10 +21,10 @@ import qualified List as List (nub)
 import Common.Result
 import Maybe
 import Data.Graph.Inductive.Graph
-import Control.Exception
+-- import Control.Exception
 import Debug.Trace
 -- import Common.Id
--- import Common.DocUtils
+import Common.DocUtils
 
 
 -- | translation a GlobalContext on the basis the given Comorphism 
@@ -32,12 +32,12 @@ import Debug.Trace
 -- | then call the process to translate;
 -- | otherwise do not translate the graph. 
 dg_translation :: GlobalContext -> AnyComorphism -> Result GlobalContext
-dg_translation gc cm =
+dg_translation gc cm = 
     mainTrans (nodes $ devGraph gc) [] gc
   where  
     -- rekursiv translate alle nodes of DevGraph of GlobalContext
     mainTrans [] diagsMain gcon = Result diagsMain (Just gcon)
-    mainTrans (h:r) diagsMain gcon =  
+    mainTrans (h:r) diagsMain gcon  =  
         case fst $ match h $ devGraph gcon of
           Just (_, _, nodeLab, _) ->
            -- if the sublogic of (theory of) node less than given Comorphism
@@ -47,16 +47,15 @@ dg_translation gc cm =
                   (sublogicOfTh $ dgn_theory nodeLab)  cm
               then let Result diags' maybeGC = updateNode h gcon cm 
                    in  case maybeGC of
-                         Just gc' -> mainTrans r (diagsMain ++ diags') gc'
-                         Nothing -> mainTrans r (diagsMain ++ diags') gc
+                         Just gc' -> mainTrans r (diagsMain ++ diags') gc' 
+                         Nothing -> mainTrans r (diagsMain ++ diags') gcon 
               else  let 
 			hintDiag = diagsMain ++ 
-                                   [(mkDiag Error ("node " ++ (show h) ++
-				     ":" ++ (show $ dgn_name nodeLab) ++
-			             " is not less than " ++ (show cm) ++ 
-                                     " -- change the theory...") ())] 
-		    in  mainTrans r (diagsMain++hintDiag) gc
-                     
+                                   [(mkDiag Error ("sublogic of " ++ 
+                                     (show $ dgn_name nodeLab) ++ " is " ++ 
+                                     (show $ sublogicOfTh $ dgn_theory nodeLab) ++ 
+                                     ", this is not less than " ++ (show cm)) ())] 
+		    in  mainTrans r (diagsMain++hintDiag) gcon 
           Nothing -> mainTrans r (diagsMain ++ 
                                   [(mkDiag Error ("node " ++ (show h) 
                               ++ " is not found in graph.") ())]) gcon
@@ -69,7 +68,8 @@ updateNode index gc acm@(Comorphism cidMor) =
             fromJust $ fst $ match index  $ devGraph gc
         Result diagsL m_dgWithNewEdges =
              updateEdges inLinks [] (devGraph gc)
-    in case m_dgWithNewEdges of
+    in 
+        case m_dgWithNewEdges of
          Just dgWithNewEdges ->
            let  Result diagN m_dgAll = transTh node dgWithNewEdges
            in 
@@ -124,14 +124,14 @@ updateNode index gc acm@(Comorphism cidMor) =
                                 slNewSign = sublogicOfSign $ 
                                                 G_sign (sourceLogic cid2) 
                                                        newSign
-                                slNewMor  = sublogicOfMor $ 
+                                slNewMor = sublogicOfMor $ 
                                                G_morphism (targetLogic cid2) 
-                                                          newMor
-                            in  assert (slNewSign == slNewMor) $
+                                                          newMor                    
+                            in {- assert (slNewSign == slNewMor) $ -}
                                 updateEdges r  
-                                 (diagnosis ++ diagLs ++ diagLm ++ [mkDiag Hint 
-                                         "successful translation of edge." (),
-                                          mkDiag Warning ((show $ getNameOfNode n gc) ++ "->" ++ (show $ getNameOfNode index gc) ++ ": " ++ (show $ sublogicOfSign (G_sign sourceLid lsign)) ++ " --> " ++ (show slNewSign)) () ] )
+                                 (diagnosis ++ diagLs ++ diagLm ++ 
+                                  [mkDiag Hint 
+                                   ((show $ getNameOfNode n gc) ++ "->" ++ (show $ getNameOfNode index gc) ++ ":\n\tSign    :\t" ++ (show $ sublogicOfSign (G_sign sourceLid lsign)) ++ " --> " ++ (show slNewSign) ++ "\n\tMorphism:\t" ++ (show $ sublogicOfMor (G_morphism targetLid lmorphism)) ++ " --> " ++ (show slNewMor)) () ] )
                                  (emap (\x -> if x == links then links{
                                                          dgl_morphism= 
                                                              GMorphism cid2 
@@ -162,21 +162,19 @@ updateNode index gc acm@(Comorphism cidMor) =
               Result diagsOfcs maybeSign ->
                   case maybeSign of
                     Just (sign'', sens) ->
-                        Result (diagsOfcs
-                                ++[mkDiag Hint 
-                                   "successful translation of sign." ()]) 
+                        Result diagsOfcs 
                                (Just (sign'',sens))
                     Nothing -> error "Result diagsOfcs Nothing"
-        Nothing  -> Result [mkDiag Error ("cannot coerce sign" ++ show sign)
+        Nothing  -> Result [mkDiag Error ("cannot coerce sign" ++ showDoc sign "\n")
                             ()] Nothing 
 
      -- to translate theory
      transTh node gcWithNewEdges =
-         case fTh $ dgn_theory node of
+          case fTh $ dgn_theory node of
            Result diagsT maybeTh -> 
                case maybeTh of
                  Just th' -> 
-                     Result diagsT (Just (nmap (\x -> if x == node then 
+                       Result diagsT (Just (nmap (\x -> if x == node then 
                                                           node {dgn_theory = th'
                                                                ,dgn_nf = Nothing
                                                                ,dgn_sigma = Nothing
@@ -191,10 +189,9 @@ updateNode index gc acm@(Comorphism cidMor) =
               Just thSens' -> 
                   case map_theory cidMor (sign', toNamedList thSens') of
                     Result diagsOfth maybeTh ->
-                      -- show diags
                       case maybeTh of
                         Just (sign'', namedS) -> 
-                            Result (diagsOfth ++ [mkDiag Hint "successful translation of theory" ()]) (Just (let x = G_theory tlid sign'' (toThSens $ List.nub namedS) in trace ((show $ getNameOfNode index gc) ++ ": " ++ (show $ sublogicOfTh g) ++ " -> " ++ (show $ sublogicOfTh x)) x))
+                            Result diagsOfth (Just (let x = G_theory tlid sign'' (toThSens $ List.nub namedS) in trace ((show $ getNameOfNode index gc) ++ ": " ++ (show $ sublogicOfTh g) ++ " -> " ++ (show $ sublogicOfTh x)) x))
                         Nothing ->  error "Result diagsOfth Nothing"
               Nothing    -> Result [(mkDiag Error 
                                      ("cannot coerce sens" ++ show thSens)
@@ -206,9 +203,7 @@ updateNode index gc acm@(Comorphism cidMor) =
         case coerceMorphism sourceID slid "" mor of
           Just mor' -> 
               let Result diagsM res =  map_morphism cidMor mor'
-                  diagZ = [mkDiag Hint "successful translation of morphism."
-                                      ()]
-              in  Result (diagsM ++ diagZ) res
+              in  Result diagsM res
           Nothing -> Result [(mkDiag Error ("cannot coerce mor" ++ show mor)
                               ())] Nothing  
 
@@ -218,4 +213,7 @@ getNameOfNode index gc =
      let (_, _, node, _) = fromJust $ fst $ match index $ devGraph $ gc
      in  dgn_name node
 
-
+{-
+getNodeName :: NODE_NAME -> SIMPLE_ID
+getNodeName (n, _, _) = n
+-}
