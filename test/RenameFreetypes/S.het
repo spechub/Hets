@@ -1,0 +1,11 @@
+library S
+
+spec S = 
+
+free type Bool ::= True | False
+
+free type List ::= Nil | Cons(head :? Bool; tail :? List)
+
+with Bool |-> bool, True |-> true', False |-> false',
+     List |-> list, Nil |-> nil, Cons |-> cons, head |-> Head,
+     tail |-> Tail           
