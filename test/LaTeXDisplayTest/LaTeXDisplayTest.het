@@ -1,0 +1,26 @@
+
+library LaTeXDisplayTest
+
+%number __@@__
+
+%display ~__ %LATEX -__
+%display @__ %LATEX \overline{__}
+%display __^__ %LATEX {__}^{__}
+
+spec X =
+     sort s,n 
+     ops ~__,@__:s -> s;
+	 1,2,3,4,5,6,7,8,9,0:n;
+	 {} : s;
+	 __@@__,__+__,__^__ : n*n->n
+     . @ {} = {}
+     forall x : s . @ x = x
+     . 2^3 = 2^(2+1)
+end
+
+spec X2 =
+     sort s
+     ops 
+	 ~__ : s -> s;
+	 @__ : s -> s
+end
