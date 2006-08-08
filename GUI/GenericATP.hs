@@ -445,7 +445,6 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
 
   lb <- newListBox lbFrame [bg "white",exportSelection False,
                             selectMode Single, height 15] :: IO (ListBox String)
-  populateGoalsListBox lb (goalsView initState)
   pack lb [Expand On, Side AtLeft, Fill Both]
   sb <- newScrollBar lbFrame []
   pack sb [Expand On, Side AtRight, Fill Y, Anchor West]
@@ -650,6 +649,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
   exitButton <- newButton bottom [text "Exit Prover"]
   pack exitButton [PadX (cm 0.3)]
 
+  populateGoalsListBox lb (goalsView initState)
   putWinOnTop main
 
   -- IORef for batch thread
