@@ -500,6 +500,8 @@ toLatexRecord dis tab = anyRecord
                        { foldText = \ _ k s ->
                           case k of
                             Native -> Pretty.sp_text (axiom_width s) s
+                            IdLabel _ Native _ ->
+                                Pretty.sp_text (axiom_width s) s
                             IdKind | s == " " ->
                                 Pretty.sp_text (axiom_width s) "\\,"
                             _ -> textToLatex dis False k s
@@ -565,6 +567,7 @@ needsMathMode i s = case s of
 isMathLatex :: Doc -> Bool
 isMathLatex d = case d of
                Text Native s -> needsMathMode 0 s
+               Text (IdLabel _ Native _) s -> needsMathMode 0 s
                Attr Small f -> isMathLatex f
                _ -> False
 
@@ -633,7 +636,7 @@ textToLatex dis b k s = case s of
     TopKey _ -> hc_sty_casl_keyword s
     Indexed -> hc_sty_structid_indexed s
     StructId -> hc_sty_structid s
-    Native -> Pretty.sp_text (axiom_width s) s
+    Native -> hc_sty_axiom s
     HetsLabel -> Pretty.hcat [ latex_macro $ "\\HetsLabel{"
                              , textToLatex dis b Comment s
                              , latex_macro $ "}{" ++ escapeLabel s ++ "}" ]
