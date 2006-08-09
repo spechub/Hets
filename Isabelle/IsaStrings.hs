@@ -9,7 +9,7 @@ Portability :  portable
 
 String constants of Isabelle keywords to be excluded by translations
 
-obtained by manually taking @lexicon@ and @consts@ from 
+obtained by manually taking @lexicon@ and @consts@ from
 @print_syntax(theory "...")@
 (initial empty strings omitted)
 -}
@@ -21,17 +21,17 @@ import qualified Common.Lib.Set as Set
 -- | convert pasted strings to a relevant set of strings
 mkIsaSet :: [String] -> Set.Set String
 mkIsaSet = Set.fromList . concatMap words
-{- fewer list elements are better to optimize ("\",\"" -> "   ") 
+{- fewer list elements are better to optimize ("\",\"" -> "   ")
    but keep all words in case we also want to use symbols
 -}
 
-data IsaSets = IsaSets 
+data IsaSets = IsaSets
     { types  :: Set.Set String
     , consts  :: Set.Set String
     }
 
 holcfS :: IsaSets
-holcfS = 
+holcfS =
   IsaSets {
   types =  mkIsaSet [""],
   consts = mkIsaSet [
@@ -164,9 +164,9 @@ holcfS =
   ]}
 
 mainS :: IsaSets
-mainS = 
+mainS =
   IsaSets {
-  types =  mkIsaSet ["Int"],
+  types =  mkIsaSet ["bool Int"],
   consts = mkIsaSet ["inject n [__] [__/__] __[__/__] {__} >= > /",
   "!   !!   #   %   &   (   ()   (]   (|   (}   )   *   +   ++   ,",
   "-   -->   -`   .   ..   ...   ..}   /   //   0   1   :   ::   :=   ;   <",
