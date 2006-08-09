@@ -25,6 +25,7 @@ import CASL.Overload
 import CASL.Fold
 import CASL.Project
 import CASL.Simplify
+import CASL.StaticAna
 
 import Common.Id
 import qualified Common.Lib.Map as Map
@@ -63,11 +64,16 @@ instance Comorphism CASL2SubCFOL
         let bsrts = allSortsWithBottom sig $
                     Set.unions $ sortsWithBottom sig :
                        map (botFormulaSorts . sentence) sens
-            e = encodeSig bsrts sig
+            constructors = foldr (\ ns l -> case sentence ns of
+                Sort_gen_ax cs _ -> let (_, ops, _) = recover_Sort_gen_ax cs in
+                                    ops ++ l
+                _ -> l) [] sens
+            genSens = concatMap (generateDefinedness bsrts) constructors
             sens1 = generateAxioms bsrts sig
             sens2 = map (mapNamed (simplifyFormula id . codeFormula bsrts))
                     sens
-        in return (e, disambiguateSens Set.empty . nameSens $ sens1 ++ sens2)
+        in return (encodeSig bsrts sig, disambiguateSens Set.empty . nameSens
+                        $ genSens ++ sens1 ++ sens2)
     map_morphism CASL2SubCFOL mor@Morphism{msource = src, mtarget = tar} =
         return
         mor { msource = encodeSig (allSortsWithBottom src
@@ -81,6 +87,19 @@ instance Comorphism CASL2SubCFOL
             Set.union (botFormulaSorts sen) $ sortsWithBottom sig) sen
     map_symbol CASL2SubCFOL s =
       Set.singleton s { symbType = totalizeSymbType $ symbType s }
+
+generateDefinedness :: Set.Set SORT -> OP_SYMB -> [Named (FORMULA ())]
+generateDefinedness bsrts o = case o of
+    Qual_op_name i ot@(Op_type _ args res _) _ ->
+        if Set.member res bsrts then
+        let (_, v, t, _) = selForms1 "X"
+                (i, makeTotal Total $ toOpType ot, map Sort args)
+        in [(emptyName $ simplifyFormula id $ mkForall v
+             (Implication (defVards bsrts v)
+              (defined bsrts t res nullRange) True nullRange) nullRange)
+            { senName = "ga_defined_" ++ showId i "" }]
+        else []
+    _ -> error "generateDefinedness"
 
 totalizeSymbType :: SymbType -> SymbType
 totalizeSymbType t = case t of
@@ -131,9 +150,9 @@ defVar bs s v = defined bs (Qual_var v s nullRange) s nullRange
 
 totalizeOpSymb :: OP_SYMB -> OP_SYMB
 totalizeOpSymb o = case o of
-                            Qual_op_name i (Op_type _ args res ps) qs ->
-                                Qual_op_name i (Op_type Total args res ps) qs
-                            _ -> o
+    Qual_op_name i (Op_type _ args res ps) qs ->
+        Qual_op_name i (Op_type Total args res ps) qs
+    _ -> o
 
 addBottomAlt :: Constraint -> Constraint
 addBottomAlt c = c
@@ -196,7 +215,7 @@ generateAxioms bsorts sig = filter (not . is_True_atom . sentence) $
       " sort s              \
       \ op bottom:s         \
       \ pred d:s            \
-      \ forall x:s . not d(x) <=> x=bottom            %(ga_notDefBottom)%"
+      \ forall x:s . x=bottom => not d(x)   %(ga_notDefBottom)%"
         | s <- sortList ] ++
     [inlineAxioms CASL
       " sort t             \
@@ -243,7 +262,7 @@ codeRecord bsrts mf = (mapRecord mf)
     { foldQuantification = \  _ q vs qf ps ->
       case q of
       Universal ->
-          Quantification q vs (Implication (defVards bsrts vs) qf False ps) ps
+          Quantification q vs (Implication (defVards bsrts vs) qf True ps) ps
       _ -> Quantification q vs (Conjunction [defVards bsrts vs, qf] ps) ps
     , foldDefinedness = \ _ t ps -> defined bsrts t (term_sort t) ps
     , foldExistl_equation = \ _ t1 t2 ps ->
@@ -252,9 +271,7 @@ codeRecord bsrts mf = (mapRecord mf)
     , foldMembership = \ _ t s ps ->
           defined bsrts (projectUnique Total ps t s) s ps
     , foldSort_gen_ax = \ _ cs b ->
-          Sort_gen_ax (map (totalizeConstraint bsrts) cs)
-          $ if Set.null $ Set.intersection bsrts $ Set.unions
-                $ map argSorts cs then b else False
+          Sort_gen_ax (map (totalizeConstraint bsrts) cs) b
     , foldApplication = \ _ o args ps -> Application (totalizeOpSymb o) args ps
     , foldCast = \ _ t s ps -> projectUnique Total ps t s
     }
