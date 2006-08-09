@@ -40,6 +40,7 @@ import CASL.Sublogic
 import Comorphisms.CASL2SubCFOL
 import Comorphisms.CASL2PCFOL
 import Comorphisms.CASL2HasCASL
+import Comorphisms.CFOL2IsabelleHOL
 #ifdef CASLEXTENSIONS
 import Comorphisms.CoCASL2CoPCFOL
 import Comorphisms.CoCASL2CoSubCFOL
@@ -80,10 +81,13 @@ shrinkKnownProvers sub = Map.filter (not . null) .
 isaComorphisms :: Result [AnyComorphism]
 isaComorphisms = do
        -- CASL
-       subpc2IHOL <-
+       subpc2IHOLviaHasCASL <-
            compComorphism (Comorphism CASL2PCFOL) (Comorphism CASL2HasCASL)
            >>= ( \ x -> compComorphism x
                  $ Comorphism PCoClTyConsHOL2IsabelleHOL)
+       subpc2IHOL <-
+           compComorphism (Comorphism CASL2PCFOL) (Comorphism CASL2SubCFOL)
+           >>= ( \ x -> compComorphism x $ Comorphism CFOL2IsabelleHOL)
 #ifdef CASLEXTENSIONS
        -- CoCASL
        co2IHOL <-
@@ -93,7 +97,7 @@ isaComorphisms = do
        -- ModalCASL
        mod2IHOL <- compComorphism (Comorphism Modal2CASL) subpc2IHOL
 #endif
-       return [subpc2IHOL,
+       return [Comorphism CFOL2IsabelleHOL, subpc2IHOL, subpc2IHOLviaHasCASL,
 #ifdef CASLEXTENSIONS
                co2IHOL, mod2IHOL,
 #endif
