@@ -16,7 +16,7 @@ The embedding comorphism from CoCASL to Isabelle-HOL.
     modal formulas
 -}
 
-module Comorphisms.CoCFOL2IsabelleHOL where
+module Comorphisms.CoCFOL2IsabelleHOL (CoCFOL2IsabelleHOL(..)) where
 
 import Logic.Logic as Logic
 import Logic.Comorphism
@@ -37,7 +37,8 @@ import Isabelle.IsaConsts
 import Isabelle.Logic_Isabelle
 
 import Debug.Trace
-import Data.List
+import Data.List (findIndex)
+import Data.Char (ord, chr)
 
 
 -- | The identity of the comorphism
@@ -73,6 +74,12 @@ instance Comorphism CoCFOL2IsabelleHOL
     map_sentence CoCFOL2IsabelleHOL sign =
       return . mapSen formTrCoCASL sign
     map_symbol = errMapSymbol
+
+xvar :: Int -> String
+xvar i = if i<=26 then [chr (i+ord('a'))] else "x"++show i
+
+rvar :: Int -> String
+rvar i = if i<=9 then [chr (i+ord('R'))] else "R"++show i
 
 -- | extended signature translation for CoCASL
 sigTrCoCASL :: SignTranslator C_FORMULA CoCASLSign

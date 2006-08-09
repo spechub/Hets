@@ -10,19 +10,21 @@ Portability :  non-portable (imports Logic.Logic)
 The embedding comorphism from CASL to Isabelle-HOL.
 -}
 
-module Comorphisms.CFOL2IsabelleHOL where
+module Comorphisms.CFOL2IsabelleHOL
+    ( CFOL2IsabelleHOL(..)
+    , transTheory
+    , mapSen
+    , SignTranslator
+    , FormulaTranslator
+    , quantifyIsa
+    , transSort
+    , transOP_SYMB
+    , var
+    ) where
 
-import Logic.Logic as Logic
+import Logic.Logic
 import Logic.Comorphism
-import Common.AS_Annotation
-import Common.Id
-import Common.Result
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
-import Data.List as List
-import Data.Maybe
-import Data.Char
--- CASL
+
 import CASL.Logic_CASL
 import CASL.AS_Basic_CASL
 import CASL.Sublogic as SL
@@ -31,11 +33,19 @@ import CASL.Morphism
 import CASL.Quantification
 import CASL.Overload
 
--- Isabelle
 import Isabelle.IsaSign as IsaSign
 import Isabelle.IsaConsts
 import Isabelle.Logic_Isabelle
 import Isabelle.Translate
+
+import Common.AS_Annotation
+import Common.Id
+import Common.Result
+import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
+
+import qualified Data.List as List
+import Data.Maybe (mapMaybe)
 
 -- | The identity of the comorphism
 data CFOL2IsabelleHOL = CFOL2IsabelleHOL deriving (Show)
@@ -95,12 +105,10 @@ transTheory trSig trForm (sign, sens) =
     baseSig = baseSign,
     tsig = emptyTypeSig {arities =
                Set.fold (\s -> let s1 = showIsaTypeT s baseSign in
-                                if s1 `elem` dtTypes then id
-                                 else Map.insert s1 [(isaTerm, [])])
+                                 Map.insert s1 [(isaTerm, [])])
                                Map.empty (sortSet sign)},
     constTab = Map.foldWithKey insertPreds
-                (Map.filterWithKey (isNotIn dtDefs)
-                $ Map.foldWithKey insertOps Map.empty
+                (Map.foldWithKey insertOps Map.empty
                 $ opMap sign) $ predMap sign,
     domainTab = dtDefs},
          map (mapNamed (mapSen trForm sign)) real_sens)
@@ -110,8 +118,7 @@ transTheory trSig trForm (sign, sens) =
         (\ s -> case sentence s of
                 Sort_gen_ax _ _ -> False
                 _ -> True) sens
-    dtDefs = topoSort (makeDtDefs sign sort_gen_axs)
-    dtTypes = map ((\(Type s _ _) -> s).fst) $ concat dtDefs
+    dtDefs = makeDtDefs sign sort_gen_axs
     ga = globAnnos sign
     insertOps op ts m = case Set.lookupSingleton ts of
       Just t ->
@@ -132,104 +139,6 @@ transTheory trSig trForm (sign, sens) =
                     (transPredType t) m1) m
                 (zip (Set.toList ts) [1..])
 
--- | filter out constructors from data types
-isNotIn :: DomainTab -> VName -> Typ -> Bool
-isNotIn l a _ = all (all (isNotIn' a . snd)) l where
-    isNotIn' c = all ((/= c) . fst)
-
--- topoSort
--- A(i) = [[j]] with definition of datatype i needs j
--- inI(i) = [n] i is needed by n other definions
--- (1) L<-[]
--- (2) for i=1 to n do inI(i)<-0 od;
--- (3) for i=1 to n do
--- (4)   for (j elem A(i)) do inI(j)<-inI(j) + 1 od
--- (5) od;
--- (6) for i=1 to n do
--- (7)   if inI(i) = 0  then i:L fi
--- (8) od;
--- (9) while L != [] do
---(10)   v <- head(L)
---(11)   L <- tail(L)
---(12)   sortedList <- sortedList ++ v
---(13)   for (w elem A(v)) do
---(14)       inI(w) <- inI(w) - 1
---(15)       if inI(w)=0 then L<- L++w fi
---(16)   od;
---(17) od;
-topoSort :: [[(Typ, [(a, [Typ])])]] -> [[(Typ, [(a, [Typ])])]]
-topoSort [] = []
-topoSort dts = whileL (collectL inI_ 1) inI_ adI_ dts
-    where
-    (inI_, adI_) =  makeLists [] dts 1 (map (const 0) dts)
-                    $ map (const [0]) dts
-    -- generate both A- and inI-list
-    makeLists :: [[(Typ, [(a, [Typ])])]] -> [[(Typ, [(a, [Typ])])]] ->
-                 Int -> [Int] -> [[Int]] -> ([Int], [[Int]])
-    makeLists _ [] _ inI ad = (inI, ad)
-    makeLists as1 (a:as2) n inI ad =
-        if (snd (findIn as1 a n [])) == True then
-           makeLists (concat [as1, [a]]) as2 (n+1)  updateIn1 updateAdj1
-        else
-           if (snd (findIn as2 a n [])) == True then
-              makeLists (concat [as1,[a]]) as2 (n+1) updateIn2 updateAdj2
-           else makeLists (concat [as1, [a]]) as2 (n+1) inI ad
-        where
-        updateAdj1 = updateAdj ad (fst (findIn as1 a n [])) 0
-        updateAdj2 = updateAdj ad (fst (findIn as2 a n [])) n
-        updateIn1  = updateIn inI (count (fst (findIn as1 a n []))) n
-        updateIn2  = updateIn inI (count (fst (findIn as1 a n [])) +
-                                   count (fst (findIn as2 a n []))) n
-    -- is Type a in the list (b:bs)
-    findIn :: [[(Typ, [(a, [Typ])])]] -> [(Typ, [(a, [Typ])])]
-           -> Int -> [Int]-> ([Int], Bool)
-    findIn [] _ _ l = (if (sum l) > 0 then (l, True) else ([], False))
-    findIn (b:bs) a n l = findIn bs a n (concat [l, list])
-        where
-        list = map (compareTypes n (getType (head b)))
-               $ concat (getUsedTypes (snd (head a)))
-    compareTypes n t1 t2 = if t1 == t2 then n else 0
-    -- returns the typename of a
-    getType a = let (Type d _ _) = fst a in d
-    -- returns all used types
-    getUsedTypes [] = []
-    getUsedTypes (b:bs) = (getUsedType (snd b)) :(getUsedTypes bs)
-    getUsedType  [] = []
-    getUsedType  (c:cs) = let (Type d _ _) = c in d :(getUsedType cs)
-    updateAdj :: [[a]] -> [a] -> Int -> [[a]]
-    updateAdj (ad:ads) (c:cs) 0 = (c:ad):(updateAdj ads cs 0)
-    updateAdj (ad:ads) cs n = ad:(updateAdj ads cs (n-1))
-    updateAdj ad _ _ = ad
-    count as = length (List.filter (> 0) as)
-    updateIn [] _ _ = error "topoSort.updateIn"
-    updateIn (_ : inIs) c 1 = c:inIs
-    updateIn (inI:inIs) c n = inI:(updateIn inIs c (n-1))
-    -- Lines 6-8
-    collectL [] _ = []
-    collectL (inI:inIs) i = if inI == 0 then i:(collectL inIs (i+1))
-                            else (collectL inIs (i+1))
-
-    -- Lines 9-16
-    whileL [] _ _ _ = []
-    whileL (l:ls) inI adI dtDefs = selElemAt l dtDefs
-                                   : whileL newLs newInIs adI dtDefs
-        where
-        newLs = concat [ls, snd(updateInI2 (selElemAt l adI) inI 1 [] [])]
-        newInIs = fst(updateInI2 (selElemAt l adI) inI 1 [] [])
-        updateInI2 _  []  _ newL ins = (reverse ins, reverse newL)
-        updateInI2 [] inI' _ _ _   = (inI', [])
-        updateInI2 listOfInd (inI':inIs) n newL ins =
-                 let dInI = inI' - 1 in
-                 if n `elem` listOfInd then
-                    if dInI == 0 then
-                       updateInI2 listOfInd inIs (n+1) (n:newL) (dInI:ins)
-                    else
-                       updateInI2 listOfInd inIs (n+1) newL (dInI:ins)
-                 else updateInI2 listOfInd inIs (n+1) newL (inI':ins)
-    -- get the l-th value from the list
-    selElemAt :: Int -> [a] -> a
-    selElemAt l xs = xs !! (l - 1)
-
 makeDtDefs :: CASL.Sign.Sign f e -> [Named (FORMULA f)]
                -> [[(Typ,[(VName,[Typ])])]]
 makeDtDefs sign = delDoubles . (mapMaybe $ makeDtDef sign)
@@ -249,7 +158,7 @@ makeDtDef :: CASL.Sign.Sign f e -> Named (FORMULA f) ->
 makeDtDef sign nf = case sentence nf of
   Sort_gen_ax constrs True -> Just(map makeDt srts) where
     (srts,ops,_maps) = recover_Sort_gen_ax constrs
-    makeDt s = (transSort s, map makeOp (List.filter (hasTheSort s) ops))
+    makeDt s = (transSort s, map makeOp (filter (hasTheSort s) ops))
     makeOp opSym = (transOP_SYMB sign opSym, transArgs opSym)
     hasTheSort s (Qual_op_name _ ot _) = s == res_OP_TYPE ot
     hasTheSort _ _ = error "CFOL2IsabelleHOL.hasTheSort"
@@ -276,12 +185,6 @@ var v = IsaSign.Free (mkVName v) noType
 transVar :: VAR -> String
 transVar v = showIsaConstT (simpleIdToId v) baseSign
 
-xvar :: Int -> String
-xvar i = if i<=26 then [chr (i+ord('a'))] else "x"++show i
-
-rvar :: Int -> String
-rvar i = if i<=9 then [chr (i+ord('R'))] else "R"++show i
-
 quantifyIsa :: String -> (String, Typ) -> Term -> Term
 quantifyIsa q (v,t) phi =
   App (conDouble q) (Abs (Free (mkVName v) noType) t phi NotCont) NotCont
@@ -307,7 +210,7 @@ transOP_SYMB sign (Qual_op_name op ot _) = let
            if Set.isSingleton ots
              then return $ mkIsaConstT False ga l op baseSign
              else do
-                   i <- elemIndex (toOpType ot) (Set.toList ots)
+                   i <- List.elemIndex (toOpType ot) (Set.toList ots)
                    return $ mkIsaConstIT False ga l op (i+1) baseSign) of
     Just vn -> vn
     Nothing -> error ("CASL2Isabelle unknown op: " ++ show op)
@@ -321,7 +224,7 @@ transPRED_SYMB sign (Qual_pred_name p pt@(Pred_type args _) _) = let
            if Set.isSingleton pts
              then return $ mkIsaConstT True ga l p baseSign
              else do
-                   i <- elemIndex (toPredType pt) (Set.toList pts)
+                   i <- List.elemIndex (toPredType pt) (Set.toList pts)
                    return $ mkIsaConstIT True ga l p (i+1) baseSign) of
     Just vn -> vn
     Nothing -> error ("CASL2Isabelle unknown pred: " ++ show p)
