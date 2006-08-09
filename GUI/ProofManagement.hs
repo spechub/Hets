@@ -11,6 +11,13 @@ Portability :  needs POSIX
 Goal management GUI for the structured level similar to how 'SPASS.Prove'
 works for SPASS.
 -}
+{-
+  todo:
+    - window manager close buttons erases all goals !! 
+      Why? Proofs.InferBasic? KL
+    - move populate list boxes calls towards the event section 
+      after the last pack
+-}
 
 module GUI.ProofManagement (proofManagementGUI) where
 
