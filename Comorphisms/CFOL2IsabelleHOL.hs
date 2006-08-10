@@ -14,6 +14,7 @@ module Comorphisms.CFOL2IsabelleHOL
     ( CFOL2IsabelleHOL(..)
     , transTheory
     , mapSen
+    , IsaTheory
     , SignTranslator
     , FormulaTranslator
     , quantifyIsa
@@ -51,7 +52,7 @@ import Data.Maybe (mapMaybe)
 data CFOL2IsabelleHOL = CFOL2IsabelleHOL deriving (Show)
 
 -- Isabelle theories
-type IsaTheory = (IsaSign.Sign,[Named IsaSign.Sentence])
+type IsaTheory = (IsaSign.Sign, [Named IsaSign.Sentence])
 
 -- extended signature translation
 type SignTranslator f e = CASL.Sign.Sign f e -> e -> IsaTheory -> IsaTheory
