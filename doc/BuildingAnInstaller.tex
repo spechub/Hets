@@ -1,0 +1,91 @@
+
+\documentclass[a4paper]{article}
+\usepackage{xspace}
+%%%%%%%%%%%%%%%
+\newcommand{\NeededHDSpaceMB}{500}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\Hets}{\textmd{\textsc{Hets}}\xspace}
+\newcommand{\HetsInstallDir}{hets-install}
+
+\title{How to build an installer for \Hets}
+\author{Klaus L\"uttich}
+\date{last update: August 2006}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+  This document describes the generation of automatic platform
+  dependent and independent installers for \Hets with IzPack. IzPack
+  allows the description of installers with XML and was extended by
+  Heng Jiang supervised by Klaus Lüttich. This description is twofold:
+  $(i)$ it gives a quick overview and the interface for the generator;
+  and $(ii)$ it gives a detailed listing of steps performed during the
+  genration of installers.
+\end{abstract}
+
+\section{Generation of Installers for \Hets with IzPack}
+
+IzPack compiles installer descriptions in XML into \texttt{jar} files,
+which can be executed with a Java Runtime Environment (JRE version 1.4
+or newer). The XML files are in HetCATS/pack together with a Makefile
+which eases the generation. The generation process needs
+\NeededHDSpaceMB~MB of hard disk space including the generated
+installers. An empty directory should be created for the generation of
+installers which will be called \texttt{\HetsInstallDir} throughout this
+document. The platform dependent installers for the distribution via
+WWW end up in the directory hets-install and are called 
+\texttt{install\_hets\_{\it arch}\_{\it os}.jar} where \textit{arch} is
+the architecture (x86,sparc,ppc) and \textit{os} is the operating
+system (linux,solaris,macosx). Note, not all combinations are available.
+
+A typical genration process involves these steps:
+\begin{enumerate}
+\item create a directory: \texttt{mkdir \HetsInstallDir}
+\item copy XML files from the HetCATS working directory to the new
+  directory: \texttt{cp -r HetCATS/pack \HetsInstallDir}
+\item 
+\end{enumerate}
+\clearpage
+
+\section{Detailed List of Steps Performend for the Generation of Installers}
+
+\begin{itemize}
+\item use HetCATS/Makefile.installer for the generation of platform dependent
+  Hets installers
+\item a new directory (main) is created with platform dependent
+  subdirectories and a platform independent directory tree
+\item the installers will end up in the main directory with specific
+  suffixes showing their platform
+  \begin{itemize}
+  \item hets-installer-ppc-mac.jar
+  \item hets-installer-x86-linux.jar
+  \item hets-installer-sparc-solaris.jar
+  \end{itemize}
+\end{itemize}
+
+Makfile.installer:
+\begin{itemize}
+\item check out a fresh CASL-lib working copy;
+  and make sure that only .casl and .het files are in the CASL-lib
+  tree;
+  we might include other files as well
+\item check out a fresh HetCATS working copy and perform all steps to
+  build a source distribution except for the generation of the
+  tar-archive
+\item a fresh programmatica source is needed as well
+\item object files should not apper in the installer
+\item hets binaries are obtained from the www-server as daily hets
+  files
+\item SPASS binaries are obtained from the SPASS-web-site
+\item scripts from the utils directory
+  \begin{itemize}
+  \item getDailyHets.sh
+  \end{itemize}
+\item GMP.framework for Mac OS X from hets homepage
+\end{itemize}
+
+\begin{itemize}
+\item 
+\end{itemize}
+\end{document}
