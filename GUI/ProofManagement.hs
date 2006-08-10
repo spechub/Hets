@@ -13,8 +13,6 @@ works for SPASS.
 -}
 {-
   todo:
-    - window manager close buttons erases all goals !! 
-      Why? Proofs.InferBasic? KL
     - move populate list boxes calls towards the event section 
       after the last pack
 -}
@@ -690,7 +688,8 @@ proofManagementGUI lid proveF fineGrainedSelectionF
   s <- readIORef stateRef
   case theory s of
    DevGraph.G_theory lidT sigT sensT ->
-    do gMap <- DevGraph.coerceThSens (logicId s) lidT "" (goalMap s)
+    do gMap <- DevGraph.coerceThSens (logicId s) lidT 
+                               "ProofManagement last coerce" (goalMap s)
        return (Result.Result {Result.diags = accDiags s,
                               Result.maybeResult =
                                   Just (DevGraph.G_theory lidT sigT
