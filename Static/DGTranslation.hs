@@ -7,33 +7,47 @@ Central data structure for development graphs.
    Follows Sect. IV:4.2 of the CASL Reference Manual.
 -}
 
-module Static.DGTranslation (dg_translation) where
+module Static.DGTranslation (libEnv_translation, dg_translation) where
 
 import Logic.Logic
 import Logic.Coerce
 import Logic.Comorphism
 import Logic.Grothendieck
 import Logic.Prover
-
+import Syntax.AS_Library
 import Static.DevGraph
--- import qualified Common.Lib.Map as Map
+
+import qualified Common.Lib.Map as Map
 import qualified List as List (nub)
 import Common.Result
 import Maybe
 import Data.Graph.Inductive.Graph
--- import Control.Exception
-import Debug.Trace
+import Control.Exception
+-- import Debug.Trace
 -- import Common.Id
 import Common.DocUtils
 
+-- | translation of a LibEnv (a map of globalcontext)
+libEnv_translation :: LibEnv -> AnyComorphism -> Result LibEnv
+libEnv_translation libEnv comorphism =
+     updateGc (Map.keys libEnv) libEnv []
 
+   where updateGc :: [LIB_NAME] -> LibEnv -> [Diagnosis] -> Result LibEnv
+         updateGc [] le diag =  Result diag (Just le)
+         updateGc (k1:kr) le diagnosis = 
+             let gc = lookupGlobalContext k1 le
+                 Result diagTran gc' = dg_translation gc comorphism
+             in  updateGc kr (Map.update (\_ -> gc') k1 le) 
+                     (diagnosis ++ diagTran)
+ 
 -- | translation a GlobalContext on the basis the given Comorphism 
 -- | if the sublogic of (theory of) node less than given Comorphism
 -- | then call the process to translate;
 -- | otherwise do not translate the graph. 
 dg_translation :: GlobalContext -> AnyComorphism -> Result GlobalContext
 dg_translation gc cm = 
-    mainTrans (nodes $ devGraph gc) [] gc
+    let nodesList = nodes $ devGraph gc
+    in  mainTrans nodesList [] gc
   where  
     -- rekursiv translate alle nodes of DevGraph of GlobalContext
     mainTrans [] diagsMain gcon = Result diagsMain (Just gcon)
@@ -46,16 +60,16 @@ dg_translation gc cm =
            if lessSublogicComor 
                   (sublogicOfTh $ dgn_theory nodeLab)  cm
               then let Result diags' maybeGC = updateNode h gcon cm 
-                   in  case maybeGC of
-                         Just gc' -> mainTrans r (diagsMain ++ diags') gc' 
+                   in case maybeGC of
+                         Just gc' -> mainTrans r (diagsMain ++ diags') gc'  
                          Nothing -> mainTrans r (diagsMain ++ diags') gcon 
-              else  let 
-			hintDiag = diagsMain ++ 
-                                   [(mkDiag Error ("sublogic of " ++ 
-                                     (show $ dgn_name nodeLab) ++ " is " ++ 
-                                     (show $ sublogicOfTh $ dgn_theory nodeLab) ++ 
-                                     ", this is not less than " ++ (show cm)) ())] 
-		    in  mainTrans r (diagsMain++hintDiag) gcon 
+              else let nodeName = getDGNodeName nodeLab
+                       slOfNode = sublogicOfTh $ dgn_theory nodeLab
+                       hintDiag = [(mkDiag Error ("sublogic of " ++ 
+                                    nodeName ++ " is " ++ show slOfNode ++
+                                    ", this is not less than " ++ (show cm))
+                                    ())] 
+		   in  mainTrans r (diagsMain++hintDiag) gcon
           Nothing -> mainTrans r (diagsMain ++ 
                                   [(mkDiag Error ("node " ++ (show h) 
                               ++ " is not found in graph.") ())]) gcon
@@ -71,14 +85,14 @@ updateNode index gc acm@(Comorphism cidMor) =
     in 
         case m_dgWithNewEdges of
          Just dgWithNewEdges ->
-           let  Result diagN m_dgAll = transTh node dgWithNewEdges
+           let  Result diagsN m_dgAll = transTh node dgWithNewEdges
            in 
              case m_dgAll of
                Just dgAll -> 
-                   Result (diagsL ++ diagN)
+                   Result (diagsN ++ diagsL)
                               (Just (gc {devGraph=dgAll}))
                Nothing ->
-                   Result (diagsL ++ diagN ++ 
+                   Result (diagsN ++ diagsL ++ 
                                [mkDiag Error "translation of nodes failed." ()])
                               (Just gc)         -- Nothing?
          Nothing -> Result (diagsL ++
@@ -126,16 +140,18 @@ updateNode index gc acm@(Comorphism cidMor) =
                                                        newSign
                                 slNewMor = sublogicOfMor $ 
                                                G_morphism (targetLogic cid2) 
-                                                          newMor                    
-                            in {- assert (slNewSign == slNewMor) $ -}
+                                                          newMor     
+                                domMor = sublogicOfSign $
+                                           G_sign (targetLogic cid2) (dom (targetLogic cid2) newMor)
+                            in  assert (slNewSign == domMor) $ 
                                 updateEdges r  
                                  (diagnosis ++ diagLs ++ diagLm ++ 
                                   [mkDiag Hint 
-                                   ((show $ getNameOfNode n gc) ++ "->" ++ (show $ getNameOfNode index gc) ++ ":\n\tSign    :\t" ++ (show $ sublogicOfSign (G_sign sourceLid lsign)) ++ " --> " ++ (show slNewSign) ++ "\n\tMorphism:\t" ++ (show $ sublogicOfMor (G_morphism targetLid lmorphism)) ++ " --> " ++ (show slNewMor)) () ] )
+                                   ((getNameOfNode n gc) ++ "->" ++ (getNameOfNode index gc) ++ ":\n\tSign    :  " ++ (show $ sublogicOfSign (G_sign sourceLid lsign)) ++ " --> " ++ (show slNewSign) ++ "\n\tMorphism:  " ++ (show $ sublogicOfMor (G_morphism targetLid lmorphism)) ++ " --> " ++ (show slNewMor)) () ] )
                                  (emap (\x -> if x == links then links{
-                                                         dgl_morphism= 
+                                                        dgl_morphism= 
                                                              GMorphism cid2 
-                                                                 newSign newMor
+                                                               newSign newMor
                                                                       }
                                                 else x) dGraph)
                        Result diagLm Nothing  ->  Result (diagLm ++ 
@@ -147,7 +163,7 @@ updateNode index gc acm@(Comorphism cidMor) =
                           ("sign of link can not be translated.") ()]) 
                          (Just dGraph)
                else Result [mkDiag Error ("GMorphism of a Link to node " ++ 
-                                         (show $ getNameOfNode n gc) ++ 
+                                         (getNameOfNode n gc) ++ 
                                          " is not less than ." ++ 
                                          (show cidMor)) ()] 
                         (Just dGraph)
@@ -191,7 +207,12 @@ updateNode index gc acm@(Comorphism cidMor) =
                     Result diagsOfth maybeTh ->
                       case maybeTh of
                         Just (sign'', namedS) -> 
-                            Result diagsOfth (Just (let x = G_theory tlid sign'' (toThSens $ List.nub namedS) in trace ((show $ getNameOfNode index gc) ++ ": " ++ (show $ sublogicOfTh g) ++ " -> " ++ (show $ sublogicOfTh x)) x))
+                          let th = G_theory tlid sign'' (toThSens $ List.nub namedS)
+                              diagTrans = mkDiag Hint 
+                                          ("\n" ++ (getNameOfNode index gc) ++ ": " 
+                                           ++ (show $ sublogicOfTh g) ++ " -> " 
+                                           ++ (show $ sublogicOfTh th)) ()
+                          in Result (diagsOfth ++ [diagTrans]) (Just th)
                         Nothing ->  error "Result diagsOfth Nothing"
               Nothing    -> Result [(mkDiag Error 
                                      ("cannot coerce sens" ++ show thSens)
@@ -208,12 +229,7 @@ updateNode index gc acm@(Comorphism cidMor) =
                               ())] Nothing  
 
 -- | get the name of a node from the number of node
-getNameOfNode :: Node -> GlobalContext -> NODE_NAME
+getNameOfNode :: Node -> GlobalContext -> String
 getNameOfNode index gc =
      let (_, _, node, _) = fromJust $ fst $ match index $ devGraph $ gc
-     in  dgn_name node
-
-{-
-getNodeName :: NODE_NAME -> SIMPLE_ID
-getNodeName (n, _, _) = n
--}
+     in  getDGNodeName node
