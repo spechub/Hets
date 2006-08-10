@@ -244,7 +244,7 @@ transAltDefn env tm args dt tyId alt = case alt of
         nts <- mapM funType mTs
         -- extract overloaded opId number
         return (transOpId env opId sc, case nts of
-                [TupleType l] | isMixfix opId -> map transFunType l
+                [TupleType l@[_, _]] | isMixfix opId -> map transFunType l
                 _ -> map transFunType nts)
     _ -> fatal_error ("not a total constructor: " ++ show tyId)
          $ posOfId tyId
