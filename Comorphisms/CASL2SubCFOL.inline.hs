@@ -25,7 +25,6 @@ import CASL.Overload
 import CASL.Fold
 import CASL.Project
 import CASL.Simplify
-import CASL.StaticAna
 
 import Common.Id
 import qualified Common.Lib.Map as Map
@@ -64,16 +63,11 @@ instance Comorphism CASL2SubCFOL
         let bsrts = allSortsWithBottom sig $
                     Set.unions $ sortsWithBottom sig :
                        map (botFormulaSorts . sentence) sens
-            constructors = foldr (\ ns l -> case sentence ns of
-                Sort_gen_ax cs _ -> let (_, ops, _) = recover_Sort_gen_ax cs in
-                                    ops ++ l
-                _ -> l) [] sens
-            genSens = concatMap (generateDefinedness bsrts) constructors
             sens1 = generateAxioms bsrts sig
             sens2 = map (mapNamed (simplifyFormula id . codeFormula bsrts))
                     sens
         in return (encodeSig bsrts sig, disambiguateSens Set.empty . nameSens
-                        $ genSens ++ sens1 ++ sens2)
+                        $ sens1 ++ sens2)
     map_morphism CASL2SubCFOL mor@Morphism{msource = src, mtarget = tar} =
         return
         mor { msource = encodeSig (allSortsWithBottom src
@@ -87,19 +81,6 @@ instance Comorphism CASL2SubCFOL
             Set.union (botFormulaSorts sen) $ sortsWithBottom sig) sen
     map_symbol CASL2SubCFOL s =
       Set.singleton s { symbType = totalizeSymbType $ symbType s }
-
-generateDefinedness :: Set.Set SORT -> OP_SYMB -> [Named (FORMULA ())]
-generateDefinedness bsrts o = case o of
-    Qual_op_name i ot@(Op_type _ args res _) _ ->
-        if Set.member res bsrts then
-        let (_, v, t, _) = selForms1 "X"
-                (i, makeTotal Total $ toOpType ot, map Sort args)
-        in [(emptyName $ simplifyFormula id $ mkForall v
-             (Implication (defVards bsrts v)
-              (defined bsrts t res nullRange) True nullRange) nullRange)
-            { senName = "ga_defined_" ++ showId i "" }]
-        else []
-    _ -> error "generateDefinedness"
 
 totalizeSymbType :: SymbType -> SymbType
 totalizeSymbType t = case t of
@@ -215,7 +196,7 @@ generateAxioms bsorts sig = filter (not . is_True_atom . sentence) $
       " sort s              \
       \ op bottom:s         \
       \ pred d:s            \
-      \ forall x:s . x=bottom => not d(x)   %(ga_notDefBottom)%"
+      \ . not d(bottom)   %(ga_notDefBottom)%"
         | s <- sortList ] ++
     [inlineAxioms CASL
       " sort t             \
