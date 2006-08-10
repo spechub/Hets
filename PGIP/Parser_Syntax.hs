@@ -31,43 +31,81 @@ import PGIP.Common
    
         -- basic datastructures: see Static.DevGraph, Logic.Prover 
 
-commands::[ ([String], CommandFunctionsAndParameters)]
-commands =     [(["use","PATH"],                                       (CommandParam commandUse [])), -- Static.AnalysisLibrary, Driver.ReadFn
-                (["dg","auto","GOALS"],                                (CommandParamStatus commandDgAuto        [] )), -- Proofs.Auto
-                (["dg","glob-subsume","GOALS"],                        (CommandParamStatus commandDgGlobSubsume [] )), -- Proofs.Global
-                (["dg","glob-decomp","GOALS"],                         (CommandParamStatus commandDgGlobDecomp  [] )), -- Proofs.Global
-                (["dg","loc-infer","GOALS"],                           (CommandParamStatus commandDgLocInfer    [] )), -- Proofs.Local
-                (["dg","loc-decomp","GOALS"],                          (CommandParamStatus commandDgLocDecomp   [] )), -- Proofs.Local
-                (["dg","comp","GOALS"],                                (CommandParamStatus commandDgComp        [] )), -- Proofs.Comp
-                (["dg","comp-new","GOALS"],                            (CommandParamStatus commandDgCompNew     [] )), -- Proofs.Comp
-                (["dg","hide-thm","GOALS"],                            (CommandParamStatus commandDgHideThm     [] )), -- Proofs.HideThmShift
-                (["dg","thm-hide","GOALS"],                            (CommandTest test [])), -- Proofs.ThmHideShift
-                (["dg","basic","GOALS"],                               (CommandParamStatus commandDgInferBasic  [] )), -- Proofs.InferBasic
-                (["dg-all","auto"],                                    (CommandStatus commandDgAllAuto             )), -- dto.
-                (["dg-all","glob-subsume"],                            (CommandStatus commandDgAllGlobSubsume      )),
-                (["dg-all","glob-decomp"],                             (CommandStatus commandDgAllGlobDecomp       )),
-                (["dg-all","loc-infer"],                               (CommandStatus commandDgAllLocInfer         )),
-                (["dg-all","loc-decomp"],                              (CommandStatus commandDgAllLocDecomp        )),
-                (["dg-all","comp"],                                    (CommandStatus commandDgAllComp             )),
-                (["dg-all","comp-new"],                                (CommandStatus commandDgAllCompNew          )),
-                (["dg-all","hide-thm"],                                (CommandStatus commandDgAllHideThm          )),
-                (["dg-all","thm-hide"],                                (CommandStatus commandDgAllThmHide          )),
-                (["dg-all","basic"],                                   (CommandStatus commandDgAllInferBasic       )),
-                (["show-dg-goals"],                                    (CommandShowStatus commandShowDgGoals       )), -- new function
-                (["show-theory-goals"],                                (CommandShowStatus commandShowTheory        )),
-                (["show-theory"],                                      (CommandShowStatus commandShowNodeTheory    )), -- dto.
-                (["node-info"],                                        (CommandShowStatus commandShowNodeInfo      )), -- GUI.ConvertAbstractToDevGraph
-                (["show-taxonomy"],                                    (CommandShowStatus commandShowNodeTaxonomy  )), --  GUI.ConvertAbstractToDevGraph
-                (["show-concepts"],                                    (CommandShowStatus commandShowNodeConcept   )), --  GUI.ConvertAbstractToDevGraph
-                (["translate","COMORPHISM"],                           (CommandParamStatus commandTranslate     [] )), -- Proofs.InferBasic
-                (["prover","PROVER"],                                  (CommandParamStatus commandProver        [] )), -- Proofs.InferBasic
-                (["proof-script","FORMULA","PROOF-SCRIPT"],            (CommandTest test [])), -- Isabelle.IsaProve.hs (for Isabelle)
-                (["cons-check", "PROVER"],                             (CommandTest test [])), -- ISabelle.IsaProve.hs (for ISabelle)
-                (["prove", "FORMULA-STAR","using","FORMULA-PLUS"],     (CommandTest test [])), -- Proofs.InferBasic
-                (["prove", "FORMULA-STAR","excluding","FORMULA-PLUS"], (CommandTest test [])), -- Proofs.InferBasic
-                (["prove", "FORMULA-STAR"],                            (CommandTest test [])), -- Proofs.InferBasic
-                (["prove-all","using","FORMULA-PLUS"],                 (CommandTest test [])), -- dto.
-                (["prove-all","excluding","FORMULA-PLUS"],             (CommandTest test [])),
-                (["prove-all"],                                        (CommandStatusIO commandProveAll ))]
-
+commands::[ ([String],InterpreterCmd )]
+commands 
+ =[(["use","PATH"],
+                                                 (CmdP   cUse           [])),
+   (["dg","auto","GOALS"],
+                                                 (CmdPS  cDgAuto        [])), 
+   (["dg","glob-subsume","GOALS"],
+                                                 (CmdPS  cDgGlobSubsume [])), 
+   (["dg","glob-decomp","GOALS"],
+                                                 (CmdPS  cDgGlobDecomp  [])), 
+   (["dg","loc-infer","GOALS"],
+                                                 (CmdPS  cDgLocInfer    [])), 
+   (["dg","loc-decomp","GOALS"],
+                                                 (CmdPS  cDgLocDecomp   [])), 
+   (["dg","comp","GOALS"],
+                                                 (CmdPS  cDgComp        [])), 
+   (["dg","comp-new","GOALS"],
+                                                 (CmdPS  cDgCompNew     [])), 
+   (["dg","hide-thm","GOALS"],
+                                                 (CmdPS  cDgHideThm     [])), 
+   (["dg","thm-hide","GOALS"],
+                                                 (CmdT   test           [])), 
+   (["dg","basic","GOALS"],
+                                                 (CmdPS  cDgInferBasic  [])), 
+   (["dg-all","auto"],
+                                                 (CmdS   cDgAllAuto       )), 
+   (["dg-all","glob-subsume"],
+                                                 (CmdS   cDgAllGlobSubsume)),
+   (["dg-all","glob-decomp"],
+                                                 (CmdS   cDgAllGlobDecomp )),
+   (["dg-all","loc-infer"],
+                                                 (CmdS   cDgAllLocInfer   )),
+   (["dg-all","loc-decomp"],
+                                                 (CmdS   cDgAllLocDecomp  )),
+   (["dg-all","comp"],
+                                                 (CmdS   cDgAllComp       )),
+   (["dg-all","comp-new"],
+                                                 (CmdS   cDgAllCompNew    )),
+   (["dg-all","hide-thm"],
+                                                 (CmdS   cDgAllHideThm    )),
+   (["dg-all","thm-hide"],
+                                                 (CmdS   cDgAllThmHide    )),
+   (["dg-all","basic"],
+                                                 (CmdS   cDgAllInferBasic )),
+   (["show-dg-goals"],
+                                                 (CmdSS  cShowDgGoals     )), 
+   (["show-theory-goals"],
+                                                 (CmdSS  cShowTheory      )),
+   (["show-theory"],
+                                                 (CmdSS  cShowNodeTheory  )), 
+   (["node-info"],
+                                                 (CmdSS  cShowNodeInfo    )), 
+   (["show-taxonomy"],
+                                                 (CmdSS  cShowNodeTaxonomy)), 
+   (["show-concepts"],
+                                                 (CmdSS  cShowNodeConcept )), 
+   (["translate","COMORPHISM"],
+                                                 (CmdPS  cTranslate     [])), 
+   (["prover","PROVER"],
+                                                 (CmdPS  cProver        [])), 
+   (["proof-script","FORMULA","PROOF-SCRIPT"],
+                                                 (CmdT   test           [])), 
+   (["cons-check", "PROVER"],
+                                                 (CmdT   test           [])), 
+   (["prove-all","using","FORMULA-PLUS"],
+                                                 (CmdT   test           [])), 
+   (["prove-all","excluding","FORMULA-PLUS"],
+                                                 (CmdT   test           [])),
+   (["prove-all"],
+                                                 (CmdT test             [])),
+   (["prove", "FORMULA-STAR","using","FORMULA-PLUS"],
+                                                 (CmdT   test           [])), 
+   (["prove", "FORMULA-STAR","excluding","FORMULA-PLUS"],
+                                                 (CmdT   test           [])), 
+   (["prove", "FORMULA-STAR"],
+                                                 (CmdT   test           []))]
+ 
 

@@ -44,7 +44,7 @@ main :: IO ()
 main = do
     opts <- getArgs >>= hetcatsOpts
     if (interactive opts) 
-         then do     
+         then do        
                runInteractive []
                return ()
          else do               
