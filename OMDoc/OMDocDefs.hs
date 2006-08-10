@@ -89,8 +89,8 @@ theoryNameXMLAttr = "id"
 
 axiomNameXMLNS
   ,axiomNameXMLAttr :: String
-axiomNameXMLNS = ""
-axiomNameXMLAttr = "name"
+axiomNameXMLNS = "xml"
+axiomNameXMLAttr = "id"
                                                 
 sortNameXMLNS
   ,sortNameXMLAttr :: String
@@ -275,18 +275,6 @@ getNodeForTheoryName xntheoryset xname =
   case find (\i -> (xnName i) == xname) $ Set.toList xntheoryset of
     Nothing -> Nothing
     (Just i) -> Just (fst (xnItem i))
-
-cv_Op_typeToOpType::OP_TYPE->OpType
-cv_Op_typeToOpType (Op_type fk args res _) = OpType fk args res
-
-cv_OpTypeToOp_type::OpType->OP_TYPE
-cv_OpTypeToOp_type (OpType fk args res) = Op_type fk args res Id.nullRange
-
-cv_Pred_typeToPredType::PRED_TYPE->PredType
-cv_Pred_typeToPredType (Pred_type args _) = PredType args
-
-cv_PredTypeToPred_type::PredType->PRED_TYPE
-cv_PredTypeToPred_type (PredType args) = Pred_type args Id.nullRange
 
 type XmlTaggedDevGraph =
   Map.Map

@@ -548,7 +548,7 @@ traceMorphingOrigin
             -- get possible node for import (OMDDoc-specific)
             -- find first higher origin
             mo = first
-                (\edge@(from, _, e) ->
+                (\edge@(from, _, _) ->
                   let
                     ma = amorph edge a
                   in
@@ -629,7 +629,7 @@ traceToMorph
           in
             case
               Data.List.find
-                (\ob -> case ob of (OBOrigin x) -> True; _ -> False)
+                (\ob -> case ob of (OBOrigin {}) -> True; _ -> False)
                 remapped
             of
               (Just x) ->
@@ -639,7 +639,7 @@ traceToMorph
               _ ->
                 case
                   Data.List.find
-                    (\ob -> case ob of (OBMorphism x) -> True; _ -> False)
+                    (\ob -> case ob of (OBMorphism {}) -> True; _ -> False)
                     remapped
                 of
                   (Just x) ->
@@ -665,7 +665,7 @@ idMorph _ a = a
 
 morphByMorphism::forall a . (Morphism () () ()->a->a)->(Graph.LEdge DGLinkLab->a->a)
 morphByMorphism morph =
-  (\edge@(_, _, dgl) a ->
+  (\(_, _, dgl) a ->
     let
       caslmorph = getCASLMorphLL dgl
     in
@@ -760,6 +760,13 @@ getNodeDeltaOpMaps dg n = getFromCASLSignDeltaM dg n opMap
   (Map.differenceWith (\a b -> let diff = Set.difference a b in if Set.null diff then Nothing else Just diff))
   Map.empty
   
+getProverSentences::G_theory->Prover.ThSens CASLFORMULA (AnyComorphism, BasicProof)
+getProverSentences (G_theory _ _ thsens) =
+  let
+    (Just csen) = ((cast thsens)::(Maybe (Prover.ThSens CASLFORMULA (AnyComorphism, BasicProof))))
+  in
+    csen
+
 getSentencesFromG_theory::G_theory->[Ann.Named CASLFORMULA]
 getSentencesFromG_theory (G_theory _ _ thsens) =
   let
@@ -1035,7 +1042,7 @@ getNonAxioms::[Ann.Named a]->[Ann.Named a]
 getNonAxioms l = filter (\(NamedSen {isAxiom = iA}) -> not iA) l
 
 isEmptyMorphism::(Morphism a b c)->Bool
-isEmptyMorphism (Morphism ss ts sm fm pm _) =
+isEmptyMorphism (Morphism _ _ sm fm pm _) =
   Map.null sm && Map.null fm && Map.null pm
 
 isEmptyCASLMorphism::CASL.Morphism.Morphism () () ()->Bool
@@ -1558,7 +1565,7 @@ makeMorphismMap m =
       )
       (sms, hiddens)
       (predMap ssign)
-    (smo, hiddeno) =
+    (_, hiddeno) =
      Map.foldWithKey
       (\oid os (smo', ho) ->
         Set.fold
@@ -1596,7 +1603,7 @@ makeMorphismMap m =
       )
       (smp, hiddenp)
       (opMap ssign)
-    sma =
+{-    sma =
      Map.foldWithKey
       (\oid os sma' ->
         Set.fold
@@ -1632,7 +1639,7 @@ makeMorphismMap m =
           os
       )
       smo
-      (assocOps ssign)
+      (assocOps ssign) -}
     newopmap =
       Map.fromList $
         map
@@ -1846,17 +1853,18 @@ buildMorphismSign morphism hidingSet sign =
     assocshide = Map.filterWithKey (\k _ -> not $ Set.member k hidingSet) (assocOps sign)
     msorts =  
       Set.map
-        (\s ->
+        (mapSort (sort_map morphism)) 
+{-      (\s ->
           case Map.lookup s (sort_map morphism) of
             Nothing -> s
             (Just ms) -> ms
-        )
+        ) -}
         sortshide
     mrel =
      Rel.fromList $
       map
         (\(a, b) ->
-          let
+{-          let
             na = case Map.lookup a (sort_map morphism) of
               Nothing -> a
               (Just ma) -> ma
@@ -1864,13 +1872,15 @@ buildMorphismSign morphism hidingSet sign =
               Nothing -> b
               (Just mb) -> mb
          in
-          (na, nb)
-        )
+          (na, nb) -}
+          (mapSort (sort_map morphism) a, mapSort (sort_map morphism) b)
+        ) 
+
         (Rel.toList relhide)
     mpreds =
       Map.foldWithKey
         (\pid ps mpm ->
-          let
+{-          let
             mpreds' =
               map
                 (\pt ->
@@ -1889,14 +1899,26 @@ buildMorphismSign morphism hidingSet sign =
                   Map.insert mpid newset mpm'
               )
               mpm
-              mpreds'
+              mpreds' -}
+          let
+            mapped =
+              map
+                (mapPredSym (sort_map morphism) (pred_map morphism))
+                (zip (repeat pid) (Set.toList ps))
+          in
+            foldl
+              (\mpm' (pid',  pt') ->
+                Map.insertWith Set.union pid' (Set.singleton pt') mpm'
+              )
+              mpm
+              mapped
         )
         (Map.empty)
         predshide
     mops =
       Map.foldWithKey
         (\oid os mom ->
-          let
+{-          let
             mops' =
               map
                 (\ot ->
@@ -1915,14 +1937,26 @@ buildMorphismSign morphism hidingSet sign =
                   Map.insert moid newset mom'
               )
               mom
-              mops'
+              mops' -}
+          let
+            mapped =
+              map
+                (mapOpSym (sort_map morphism) (fun_map morphism))
+                (zip (repeat oid) (Set.toList os))
+          in
+            foldl
+              (\mom' (oid',  ot') ->
+                Map.insertWith Set.union oid' (Set.singleton ot') mom'
+              )
+              mom
+              mapped
         )
         (Map.empty)
         opshide
     mass =
       Map.foldWithKey
         (\oid os mam ->
-          let
+{-          let
             mass' =
               map
                 (\ot ->
@@ -1941,7 +1975,19 @@ buildMorphismSign morphism hidingSet sign =
                   Map.insert moid newset mam'
               )
               mam
-              mass'
+              mass' -}
+          let
+            mapped =
+              map
+                (mapOpSym (sort_map morphism) (fun_map morphism))
+                (zip (repeat oid) (Set.toList os))
+          in
+            foldl
+              (\mam' (oid',  ot') ->
+                Map.insertWith Set.union oid' (Set.singleton ot') mam'
+              )
+              mam
+              mapped
         )
         (Map.empty)
         assocshide
@@ -2158,7 +2204,7 @@ addSigns dg n1 n2 =
     asign = CASL.Sign.addSig (\_ _ -> ()) sign1 sign2
     newnodel = n2dgnl {
       dgn_theory =
-        (\(G_theory _ _ thsens) -> G_theory CASL asign (Prover.toThSens [])) (dgn_theory n2dgnl)
+        (\(G_theory _ _ {-thsens-} _) -> G_theory CASL asign (Prover.toThSens [])) (dgn_theory n2dgnl)
       }
       
   in
@@ -2271,7 +2317,7 @@ sortBeforeMorphism m s =
     maplist = Map.toList (sort_map m)
     previous_sort =
       case
-        Data.List.find (\(a,b) -> b == s) maplist
+        Data.List.find (\(_,b) -> b == s) maplist
       of
         Nothing -> s
         (Just (a,_)) -> a
@@ -2319,4 +2365,1198 @@ buildAllSortTracesFor
 
 instance Show [SortTrace] where
   show = concat . map (\st -> (show st) ++ "\n")
+
+ 
+showLinks::DGraph->IO ()
+showLinks dg =
+  let
+    nodes' = Graph.labNodes dg
+    edges' = Graph.labEdges dg
+  in
+    showRec nodes' edges'
+  where
+    showRec::[Graph.LNode DGNodeLab] -> [Graph.LEdge DGLinkLab] -> IO ()
+    showRec _ [] = return ()
+    showRec nodes' ((from, to, _):rest) =
+      let
+        fromname = getDGNodeName $ fromMaybe (error "!") $ lookup from nodes'
+        toname = getDGNodeName $ fromMaybe (error "!") $ lookup to nodes'
+      in
+        putStrLn (fromname ++ " -> " ++ toname) >> showRec nodes' rest
+
+getMorphismImages::DGraph->[(String, String, String)]
+getMorphismImages dg =
+  let
+    nodes' = Graph.labNodes dg
+    edges' = Graph.labEdges dg
+  in
+    showRec nodes' edges'
+  where
+    showRec::[Graph.LNode DGNodeLab] -> [Graph.LEdge DGLinkLab] ->[(String, String, String)]
+    showRec _ [] = []
+    showRec nodes' ((from, to, ll):rest) =
+      let
+        fromname = getDGNodeName $ fromMaybe (error "!") $ lookup from nodes'
+        toname = getDGNodeName $ fromMaybe (error "!") $ lookup to nodes'
+        caslmorph = getCASLMorphLL ll
+        sourcesyms = symOf (msource caslmorph)
+        targetsyms = symOf (mtarget caslmorph)
+      in
+        (fromname, toname,  "(" ++ (show sourcesyms) ++ ") -> (" ++ (show targetsyms) ++ ")"):(showRec nodes' rest)
+
+
+getMorphismSets::DGraph->[ (String, String, SymbolSet, SymbolSet) ]
+getMorphismSets dg =
+  let
+    nodes' = Graph.labNodes dg
+    edges' =
+      filter
+        (\(_,_,ll) ->
+          case dgl_type ll of
+            (LocalDef {}) -> True
+            (GlobalDef {}) -> True
+            (HidingDef {}) -> True
+            _ -> False
+        )
+        (Graph.labEdges dg)
+  in
+    makeSets nodes' edges'
+  where
+    makeSets::[Graph.LNode DGNodeLab] -> [Graph.LEdge DGLinkLab] ->[(String, String, SymbolSet, SymbolSet)]
+    makeSets _ [] = []
+    makeSets nodes' ((from, to, ll):rest) =
+      let
+        fromname = getDGNodeName $ fromMaybe (error "!") $ lookup from nodes'
+        toname = getDGNodeName $ fromMaybe (error "!") $ lookup to nodes'
+        caslmorph = getCASLMorphLL ll
+        sourcesyms = symOf (msource caslmorph)
+        targetsyms = symOf (mtarget caslmorph)
+        isHiding = case (dgl_type ll) of (HidingDef {}) -> True; _ -> False
+        diffset =
+          if not isHiding
+            then
+              Set.difference sourcesyms targetsyms
+            else
+              Set.difference targetsyms sourcesyms
+        extset =
+          if isHiding
+            then
+              Set.difference sourcesyms targetsyms
+            else
+              Set.difference targetsyms sourcesyms
+      in
+        (fromname ++ (if isHiding then "!" else ""), toname,  diffset, extset):(makeSets nodes' rest)
+
+
+
+-- computes order of processing for a whole library environment
+-- handles library references by making sure that the target node
+-- has been processed before so processing the reference is safe
+
+
+-- libname, node-name, node-num, trace-order
+-- | TracemarkS are the steps to take when following links
+type TraceMark = (LIB_NAME, String, Graph.Node, Int)
+ 
+instance Ord TraceMark where
+  (_, _, _, i1) < (_, _, _, i2) = i1 < i2
+
+{- |
+  Creates a list of TraceMarkS from a library environment that show
+  the order of inter node dependencies for following links
+-}
+createTraceMarks::LibEnv->[TraceMark]
+createTraceMarks le =
+  let
+    libNamesAndDGs = Map.fromList $ map (\(a, b) -> (a, devGraph b)) $ Map.toList le
+    initialFinalMap =
+      Map.map
+        (\dg ->
+          let
+            graphnodes = Graph.labNodes dg
+            noimports =
+              filter
+                (\(nodeNum, node) ->
+                 -- references cannot be starts
+                 (not $ isDGRef node) &&
+                  (null $
+                    filter
+                      -- only definitional links disqualify a node as start
+                      (\(_,_,ll) -> defLink ll)
+                      (Graph.inn dg nodeNum)
+                  )
+                )
+                graphnodes
+          in
+            noimports
+        )
+        libNamesAndDGs
+    (initialMarked, _) =
+      foldl
+        (\(currentList, n) (libname, ninodes) ->
+          let
+            (cm, nn) =
+              foldl
+                (\(cm', nn') (nodenum, node) ->
+                  ( cm'++[(libname, (getDGNodeName node), nodenum, nn')], nn' + 1)
+                )
+                ([], n)
+                ninodes
+          in
+            (currentList ++ cm, nn)
+        )
+        ([], (0::Int))
+        (Map.toList initialFinalMap)
+    flat =
+      foldl
+        (\f (libname, dg) ->
+          f ++ map (\(nodeNum, node) -> (libname, nodeNum, node)) (Graph.labNodes dg)
+        )
+        []
+        (Map.toList libNamesAndDGs)
+    flatNoInit =
+      filter
+        (\(libname, nodeNum, _) ->
+          case
+            Data.List.find
+              (\(libname', _, nodeNum', _) ->
+                libname == libname' && nodeNum == nodeNum'
+              )
+              initialMarked
+          of
+            Nothing -> True
+            _ -> False
+        )
+        flat
+    (amarked, _) =
+      until
+        (\(_, unmarked) -> null unmarked)
+        (\(marked, (current@(libname, nodeNum, node)):unmarked) ->
+          let
+            (realNode, realLibName) =
+              if isDGRef node
+                then
+                  (dgn_node node, dgn_libname node)
+                else
+                  (nodeNum, libname)
+            importDG = (Map.findWithDefault (error "impossible!") realLibName libNamesAndDGs)
+            inNodeNums =
+              map
+                (\(from, _, _) -> from)
+                $ filter
+                    (\(_, _, ll) -> defLink ll)
+                    (Graph.inn
+                      importDG
+                      realNode
+                    )
+            inMarked =
+              map
+                (\nn ->
+                  case
+                    Data.List.find
+                      (\(libname', _, nodeNum', _) ->
+                        libname' == realLibName && nodeNum' == nn
+                      )
+                      marked
+                  of
+                    Nothing -> False
+                    _ -> True
+                )
+                inNodeNums
+          in
+            if and inMarked
+              then
+                -- check against real, but save in context of current DG
+                (marked ++ [(libname, getDGNodeName node, nodeNum, length marked)], unmarked)
+              else
+                (marked, unmarked++[current])
+        )
+        (initialMarked, flatNoInit)
+  in
+    amarked
+
+-- | check if a DGLinkLab is one of the definitional types
+defLink::DGLinkLab->Bool
+defLink dgl =
+  case dgl_type dgl of
+    (LocalDef {}) -> True
+    (GlobalDef {}) -> True
+    (HidingDef {}) -> True
+    (FreeDef {}) -> True
+    (CofreeDef {}) -> True
+    _ -> False
+
+{- |
+  Create a minimal library environment where developement graph nodes only
+  contain sorts, ops and preds where they are defined (or imported via DGRefS)
+-}
+createMinimalLibEnv::
+  LibEnv -- ^ library environment to reduce
+  ->[TraceMark] -- ^ tracemarks created by 'createTraceMarks'
+  ->LibEnv
+createMinimalLibEnv ln tracemarks =
+  foldl
+    (\ln' (libname, _, nodenum, _) ->
+      let
+        currentLookup = Map.findWithDefault (error "This can't happen!") libname ln'
+        currentDG = devGraph currentLookup
+        currentNode = (\(Just a) -> a) $ Graph.lab currentDG nodenum
+        currentCASLSign = getJustCASLSign $ getCASLSign (dgn_sign currentNode)
+        inDefLinks =
+          filter
+            (\(_, _, ll) -> defLink ll)
+            (Graph.inn currentDG nodenum)
+        strippedCASLSign =
+          foldl
+            (\s (from, _, ll) ->
+              let
+                caslmorph = getCASLMorphLL ll
+                sourcesign =
+                  case dgl_type ll of
+                    (HidingDef {}) -> mtarget caslmorph
+                    (FreeDef {}) ->
+                      let
+                        nodesign =
+                          (\(Just a) -> a)
+                            $
+                            getCASLSign
+                              (dgn_sign
+                                $
+                                (\(Just a) -> a)
+                                  $
+                                  Graph.lab
+                                    currentDG
+                                    from
+                              )
+                      in
+                        nodesign
+                    _ -> msource caslmorph
+                strippedSorts =
+                  Set.difference (sortSet s) (sortSet sourcesign)
+                strippedRels =
+                  Rel.fromList
+                    $
+                    filter
+                      (\(a,b) ->
+                        any (\x -> (Set.member x strippedSorts)) [a,b]
+                      )
+                      (Rel.toList (sortRel s))
+                strippedPreds = signstrip s sourcesign predMap
+                strippedOps = signstrip s sourcesign opMap
+                strippedAssocOps = signstrip s sourcesign assocOps
+              in
+                s
+                  {
+                      sortSet = strippedSorts
+                    , sortRel = strippedRels
+                    , predMap = strippedPreds
+                    , opMap = strippedOps
+                    , assocOps = strippedAssocOps
+                  }
+            )
+            currentCASLSign
+            inDefLinks
+        currentSentences = getProverSentences (dgn_theory currentNode)
+        newNode =
+          currentNode
+            {
+              dgn_theory = G_theory CASL strippedCASLSign currentSentences
+            }
+        oldEdges = Graph.labEdges currentDG
+        oldNodes = filter (\(n,_) -> n /= nodenum) $ Graph.labNodes currentDG
+        newGraph = mkGraph ((nodenum, newNode):oldNodes) oldEdges
+        newLookup =
+          currentLookup
+            {
+              devGraph = newGraph
+            }
+      in
+        Map.insert libname newLookup ln'
+    )
+    ln
+    (reverse tracemarks)
+  where
+    signstrip::
+      (Ord a, Ord b)
+      =>CASLSign
+      ->CASLSign
+      ->(CASLSign->Map.Map a (Set.Set b))
+      ->Map.Map a (Set.Set b)
+    signstrip tosign fromsign =
+      (\selector ->
+        Map.filter (not . Set.null)
+        $
+        Map.mapWithKey
+        (\sid sset ->
+          let
+            sourceset = Map.findWithDefault Set.empty sid (selector fromsign)
+          in
+            (Set.difference sset sourceset)
+        )
+        (selector tosign)
+      )
+
+type IdNameMapping = (LIB_NAME, NODE_NAME, String, Graph.Node, Set.Set (Id.Id, String), Set.Set ((Id.Id, PredType), String), Set.Set ((Id.Id, OpType), String), Set.Set ((Id.Id, Int), String), Set.Set ((Int, Id.Id, OpType), String))
+
+instance Show IdNameMapping where
+  show (ln, nn, nsn, nnum, sorts, preds, ops, sens, cons) =
+    "(" ++ show ln ++ ", " ++ show nn ++ ", " ++ show nsn ++ ", "
+      ++ show nnum ++ ", " ++ show sorts ++ ", " ++ show preds ++ ", "
+      ++ show ops ++ ", " ++ show sens ++ ", " ++ show cons ++ ")"
+
+inmGetLibName::IdNameMapping->LIB_NAME
+inmGetLibName (ln, _, _, _, _, _, _, _, _) = ln
+
+inmGetNodeName::IdNameMapping->NODE_NAME
+inmGetNodeName (_, nn, _, _, _, _, _, _, _) = nn
+
+inmGetNodeId::IdNameMapping->String
+inmGetNodeId (_, _, id', _, _, _, _, _, _) = id'
+
+inmGetNodeNum::IdNameMapping->Graph.Node
+inmGetNodeNum (_, _, _, nn, _, _, _, _, _) = nn
+
+inmGetIdNameSortSet::IdNameMapping->Set.Set (Id.Id, String)
+inmGetIdNameSortSet (_, _, _, _, s, _, _, _, _) = s
+
+inmGetIdNamePredSet::IdNameMapping->Set.Set ((Id.Id, PredType), String)
+inmGetIdNamePredSet (_, _, _, _, _, s, _, _, _) = s
+
+inmGetIdNameOpSet::IdNameMapping->Set.Set ((Id.Id, OpType), String)
+inmGetIdNameOpSet (_, _, _, _, _, _, s, _, _) = s
+
+inmGetIdNameSensSet::IdNameMapping->Set.Set ((Id.Id, Int), String)
+inmGetIdNameSensSet (_, _, _, _, _, _, _, s, _) = s
+
+inmGetIdNameConsSet::IdNameMapping->Set.Set ((Int, Id.Id, OpType), String)
+inmGetIdNameConsSet (_, _, _, _, _, _, _, _, c) = c
+
+inmGetIdNameAllSet::IdNameMapping->Set.Set (Id.Id, String)
+inmGetIdNameAllSet inm =
+  Set.union
+    (
+      Set.union
+        (
+          Set.union
+            (inmGetIdNameSortSet inm)
+            (
+              Set.map
+                (\( (id', _), s') -> (id', s'))
+                (inmGetIdNameSensSet inm)
+            )
+        )
+        (
+          Set.union
+            (
+            Set.map
+              (\( (id',_), s') -> (id', s'))
+              (inmGetIdNamePredSet inm)
+            )
+            (
+            Set.map
+              (\( (id',_), s') -> (id', s'))
+              (inmGetIdNameOpSet inm)
+            )
+        )
+    )
+    (
+      Set.map
+        (\((_, id', _), s') -> (id', s'))
+        (inmGetIdNameConsSet inm)
+    )
+
+inmGetLNNN::IdNameMapping->(LIB_NAME, Graph.Node)
+inmGetLNNN inm = (inmGetLibName inm, inmGetNodeNum inm)
+
+inmFindLNNN::(LIB_NAME, Graph.Node)->[IdNameMapping]->Maybe IdNameMapping
+inmFindLNNN lnnn = Data.List.find (\inm -> inmGetLNNN inm == lnnn)
+
+getIdOrigins::[IdNameMapping]->Id.Id->[IdNameMapping]
+getIdOrigins [] _ = []
+getIdOrigins (o:r) sid =
+  (
+    if
+      Set.null
+        $
+        Set.filter
+          (\(sid', _) -> sid' == sid)
+          $
+          inmGetIdNameAllSet o
+      then
+        []
+      else
+        [o]
+  ) ++ getIdOrigins r sid
+
+getNameOrigins::[IdNameMapping]->String->[IdNameMapping]
+getNameOrigins [] _ = []
+getNameOrigins (o:r) name =
+  (
+    if
+      Set.null
+        $
+        Set.filter
+          (\(_, name') -> name' == name)
+          $
+          inmGetIdNameAllSet o
+      then
+        []
+      else
+        [o]
+  ) ++ getNameOrigins r name
+
+getLNGNL::[IdNameMapping]->LIB_NAME->Graph.Node->[IdNameMapping]
+getLNGNL m ln nn =
+  case (getLNGN m ln nn) of
+    Nothing -> []
+    (Just o) -> [o]
+
+getLNGN::[IdNameMapping]->LIB_NAME->Graph.Node->Maybe IdNameMapping
+getLNGN [] _ _ = Nothing
+getLNGN (h:r) ln nn
+  | (inmGetLibName h) == ln && (inmGetNodeNum h) == nn = Just h
+  | otherwise = getLNGN r ln nn
+
+getNameFor::[IdNameMapping]->(IdNameMapping->a)->(a->c)->(c->Bool)->(c->String)->Maybe String
+getNameFor [] _ _ _ _ = Nothing
+getNameFor (h:r) translate process found extract =
+  let
+    processed = process $ translate h
+  in
+    if found processed
+      then
+        Just (extract processed)
+      else
+        getNameFor r translate process found extract
+
+getNameForSort::[IdNameMapping]->SORT->Maybe String
+getNameForSort mapping s =
+  getNameFor
+    mapping
+    inmGetIdNameSortSet
+    (Set.filter (\(sid, _) -> sid == s))
+    (not . Set.null)
+    (snd . head . Set.toList)
+
+getNameForPred::[IdNameMapping]->(Id.Id, PredType)->Maybe String
+getNameForPred mapping (pid, pt) =
+  getNameFor
+    mapping
+    inmGetIdNamePredSet
+    (Set.filter (\((pid', pt'), _) -> pid' == pid && pt' == pt))
+    (not . Set.null)
+    (snd . head . Set.toList)
+
+getNameForOp::[IdNameMapping]->(Id.Id, OpType)->Maybe String
+getNameForOp mapping (oid, ot) =
+  getNameFor
+    mapping
+    inmGetIdNameOpSet
+    (Set.filter (\((oid', ot'), _) -> oid' == oid && ot' == ot))
+    (not . Set.null)
+    (snd . head . Set.toList)
+
+getNameForSens::[IdNameMapping]->(Id.Id, Int)->Maybe String
+getNameForSens mapping (s,sn) =
+  getNameFor
+    mapping
+    inmGetIdNameSensSet
+    (Set.filter (\((sid, sn'), _) -> sid == s && sn' == sn))
+    (not . Set.null)
+    (snd . head . Set.toList)
+
+getNameForCons::[IdNameMapping]->(Int, Id.Id, OpType)->Maybe String
+getNameForCons mapping (sennum, cid, ot) =
+  getNameFor
+    mapping
+    inmGetIdNameConsSet
+    (Set.filter (\((sennum', cid', ot'), _) -> sennum' == sennum && cid' == cid && ot' == ot))
+    (not . Set.null)
+    (snd . head . Set.toList)
+
+cv_Op_typeToOpType::OP_TYPE->OpType
+cv_Op_typeToOpType (Op_type fk args res _) = OpType fk args res
+
+cv_OpTypeToOp_type::OpType->OP_TYPE
+cv_OpTypeToOp_type (OpType fk args res) = Op_type fk args res Id.nullRange
+
+cv_Pred_typeToPredType::PRED_TYPE->PredType
+cv_Pred_typeToPredType (Pred_type args _) = PredType args
+
+cv_PredTypeToPred_type::PredType->PRED_TYPE
+cv_PredTypeToPred_type (PredType args) = Pred_type args Id.nullRange
+
+extractConstructorOps::Ann.Named CASLFORMULA->Set.Set (Id.Id, OpType)
+extractConstructorOps ansen =
+  case Ann.sentence ansen of
+    (Sort_gen_ax cons _) ->
+      foldl
+        (\ops (Constraint _ symbs _) ->
+          foldl
+            (\ops' (Qual_op_name name ot _) ->
+              Set.insert (name, cv_Op_typeToOpType ot) ops'
+            )
+            ops
+            (map fst symbs)
+        )
+        Set.empty
+        cons
+    _ -> Set.empty
+
+{- |
+  Create a list of SetS of tuples of an Id and a unique String for the Id.
+  Each Set is annotated with it's node number, node name and library name.
+-}
+createUniqueNames::
+  LibEnv -- ^ the minimal libary environment to create names for
+  ->[TraceMark] -- ^ tracemarks used to create the minimal environment
+  ->[IdNameMapping] 
+createUniqueNames ln tracemarks =
+  foldl
+    (\names (libname, _, nodenum, _) ->
+      let
+        dg = devGraph $ Map.findWithDefault (error "This can't happen!") libname ln
+        node = (\(Just a) -> a) $ Graph.lab dg nodenum
+        nodename = getNodeName node
+        caslsign = (\(Just a) -> a) $ getCASLSign (dgn_sign node)
+        previousNodeNameUse =
+          foldl
+            (\c inm ->
+              if (
+                  -- check if there is another node with the same name...
+                  ( (inmGetNodeName inm) == dgn_name node)
+                  ||
+                    -- ...or if the nodename matches a used unique name
+                    not
+                      (Set.null
+                        $
+                        Set.filter
+                          (\(_, uname) ->
+                            nodename == uname
+                          )
+                          (inmGetIdNameSortSet inm)
+                      )
+                )
+                then
+                  c + 1
+                else
+                  c
+            )
+            (0::Integer)
+            names
+        uniqueNodeName =
+          case
+            previousNodeNameUse
+          of
+            0 -> nodename
+            n -> nodename ++ "_" ++ (show (n+1))
+        usedIdsForSorts =
+          Set.fromList
+            $
+            map
+              (stringToId . nodeNameToName)
+              (
+                (
+                  map
+                    inmGetNodeName
+                    names
+                )
+                ++ [dgn_name node]
+              )
+        uniqueSortIds =
+          Set.fold
+            (\sid us ->
+              let
+                sameIdBefore =
+                  Set.fold
+                    (\id' c ->
+                      if id' == sid
+                        then
+                          c + 1
+                        else
+                          c
+                    )
+                    (0::Integer)
+                    usedIdsForSorts
+                -- this catches overloading... 
+                sameIdInNodeCount =
+                  Set.fold
+                    (\(sid', _) c ->
+                      if sid' == sid
+                        then
+                          c + 1
+                        else
+                          c
+                    )
+                    sameIdBefore
+                    us
+                -- this catches same named but different sorts
+                previousSameIdCount =
+                  foldl
+                    (\c inm ->
+                      Set.fold
+                        (\(ui, _) c' ->
+                          if ui == sid
+                            then
+                              c' + 1
+                            else
+                              c'
+                        )
+                        c
+                        (inmGetIdNameAllSet inm)
+                    )
+                    sameIdInNodeCount
+                    names
+                thisName =
+                  case
+                    previousSameIdCount
+                  of
+                    0 -> show sid
+                    n -> (show sid) ++ "_" ++ (show (n+1))
+              in
+                Set.insert (sid, thisName) us
+            )
+            Set.empty
+            (sortSet caslsign)
+        usedIdsForPreds =
+          Set.union
+            usedIdsForSorts
+            (Set.map fst uniqueSortIds)
+        uniquePredIds =
+          Map.foldWithKey
+            (\pid pts us ->
+              Set.fold
+                (\pt us' ->
+                  let
+                    sameIdBefore =
+                      Set.fold
+                        (\id' c ->
+                          if id' == pid
+                            then
+                              c + 1
+                            else
+                              c
+                        )
+                        (0::Integer)
+                        usedIdsForPreds
+                    sameIdInNodeCount =
+                      Set.fold
+                        (\((pid',_), _) c ->
+                          if pid' == pid
+                            then
+                              c + 1
+                            else
+                              c
+                        )
+                        sameIdBefore
+                        us'
+                    previousSameIdCount =
+                      foldl
+                        (\c inm ->
+                          Set.fold
+                            (\(ui, _) c' ->
+                              if ui == pid
+                                then
+                                  c' + 1
+                                else
+                                  c'
+                            )
+                            c
+                            (inmGetIdNameAllSet inm)
+                        )
+                        sameIdInNodeCount
+                        names
+                    thisName =
+                      case
+                        previousSameIdCount
+                      of
+                        0 -> show pid
+                        n -> (show pid) ++ "_" ++ (show (n+1))
+
+                  in
+                    Set.insert ((pid, pt), thisName) us'
+                )
+                us
+                pts
+            )
+            Set.empty
+            (predMap caslsign)
+        usedIdsForOps =
+          Set.union
+            usedIdsForPreds
+            (
+              Set.map
+                (fst . fst)
+                uniquePredIds
+            )
+        uniqueOpIds =
+          Map.foldWithKey
+            (\oid ots us ->
+              Set.fold
+                (\ot us' ->
+                  let
+                    sameIdBefore =
+                      Set.fold
+                        (\id' c ->
+                          if id' == oid
+                            then
+                              c + 1
+                            else
+                              c
+                        )
+                        (0::Integer)
+                        usedIdsForOps
+                    sameIdInNodeCount =
+                      Set.fold
+                        (\((oid',_), _) c ->
+                          if oid' == oid
+                            then
+                              c + 1
+                            else
+                              c
+                        )
+                        sameIdBefore
+                        us'
+                    previousSameIdCount =
+                      foldl
+                        (\c inm ->
+                          Set.fold
+                            (\(ui, _) c' ->
+                              if ui == oid
+                                then
+                                  c' + 1
+                                else
+                                  c'
+                            )
+                            c
+                            (inmGetIdNameAllSet inm)
+                        )
+                        sameIdInNodeCount
+                        names
+                    thisName =
+                      case
+                        previousSameIdCount
+                      of
+                        0 -> show oid
+                        n -> (show oid) ++ "_" ++ (show (n+1))
+
+                  in
+                    Set.insert ((oid, ot), thisName) us'
+                )
+                us
+                ots
+            )
+            Set.empty
+            (opMap caslsign)
+        usedIdsForSens =
+          Set.union
+            usedIdsForOps
+            (
+              Set.map
+                (fst . fst)
+                uniqueOpIds
+            )
+        uniqueSensIds =
+          foldl
+            (\us (ns, snum) ->
+              let
+                sid = stringToId $ senName ns 
+                sidid =
+                  case
+                    senName ns
+                  of
+                    [] -> "AnonSens"
+                    x -> x
+                -- this catches overloading... 
+                sameIdBefore =
+                  Set.fold
+                    (\id' c ->
+                      if id' == sid
+                        then
+                          c + 1
+                        else
+                          c
+                    )
+                    (0::Integer)
+                    usedIdsForSens
+                sameIdInNodeCount =
+                  Set.fold
+                    (\((sid', _), _) c ->
+                      if sid' == sid
+                        then
+                          c + 1
+                        else
+                          c
+                    )
+                    sameIdBefore
+                    us
+                -- this catches same named but different sorts
+                previousSameIdCount =
+                  foldl
+                    (\c inm ->
+                      Set.fold
+                        (\(ui, _) c' ->
+                          if ui == sid
+                            then
+                              c' + 1
+                            else
+                              c'
+                        )
+                        c
+                        (inmGetIdNameAllSet inm)
+                    )
+                    sameIdInNodeCount
+                    names
+                thisName =
+                  case
+                    previousSameIdCount
+                  of
+                    0 -> sidid
+                    n -> sidid ++ "_" ++ (show (n+1))
+              in
+                Set.insert ((sid, snum), thisName) us
+            )
+            Set.empty
+            (zip (getNodeSentences node) ([1..]::[Int]))
+        usedIdsForCons =
+          Set.union
+            usedIdsForSens
+            (
+              Set.map
+                (fst . fst)
+                uniqueSensIds
+            )
+        sencons =
+          concatMap
+            (\(s, n) ->
+              Set.toList
+                $
+                Set.map
+                  (\(cid, ot) -> (n, cid, ot))
+                  (extractConstructorOps s)
+            )
+            (zip (getNodeSentences node) [1..])
+        uniqueConsIds =
+          foldl
+            (\uCI (sennum, cid, ct) ->
+              let
+                sameIdBefore =
+                  Set.fold
+                    (\id' c ->
+                      if id' == cid
+                        then
+                          c + 1
+                        else
+                          c
+                    )
+                    (0::Integer)
+                    usedIdsForCons
+                sameIdInNodeCount =
+                  Set.fold
+                    (\((_, cid' ,_), _) c ->
+                      if cid' == cid
+                        then
+                          c + 1
+                        else
+                          c
+                    )
+                    sameIdBefore
+                    uCI
+                previousSameIdCount =
+                  foldl
+                    (\c inm ->
+                      Set.fold
+                        (\(ui, _) c' ->
+                          if ui == cid
+                            then
+                              c' + 1
+                            else
+                              c'
+                        )
+                        c
+                        (inmGetIdNameAllSet inm)
+                    )
+                    sameIdInNodeCount
+                    names
+                nameFromOps =
+                  case
+                    Data.List.find
+                      ( \( (oid, ot), _ ) -> oid == cid && ot == ct )
+                      (Set.toList uniqueOpIds)
+                  of
+                    Nothing -> Nothing
+                    (Just (_, uname)) -> Just uname
+                thisName =
+                  case nameFromOps of
+                    Nothing ->
+                      case
+                        previousSameIdCount
+                      of
+                        0 -> show cid
+                        n -> (show cid) ++ "_" ++ (show (n+1))
+                    (Just uname) -> uname
+              in
+                Set.insert ((sennum, cid, ct), thisName) uCI
+            )
+            Set.empty
+            sencons
+      in
+        if isDGRef node -- references do not create new names
+          then
+            names
+          else
+            names ++
+              [(
+                  libname
+                , dgn_name node
+                , uniqueNodeName
+                , nodenum
+                , uniqueSortIds
+                , uniquePredIds
+                , uniqueOpIds
+                , uniqueSensIds
+                , uniqueConsIds
+              )]
+    )
+    []
+    tracemarks
+  where
+    getNodeName::DGNodeLab->String
+    getNodeName = nodeNameToName . dgn_name
+    nodeNameToName::NODE_NAME->String
+    nodeNameToName =
+      (\nn ->
+        let
+          nodename = showName nn
+        in
+          if (length nodename) == 0
+            then
+              "AnonNode"
+            else
+              nodename
+      )
+
+{- |
+  Extend a list of unique names obtained from a minimal library environment
+  by applying it to a full library environment and performing Id origin
+  resolution according to a given list of TraceMarkS
+-}
+createFullNameMapping::
+  LibEnv -- ^ full library environment
+  ->[TraceMark] -- ^ tracemarks used in creating unique names
+  ->[IdNameMapping] -- ^ unique name sets
+  ->[IdNameMapping]
+createFullNameMapping
+  lenv
+  tracemarks
+  uniqueNames
+  =
+    foldl
+      (\fullnames (libname, nodename, nodenum, _) ->
+        let
+          dg = devGraph $ Map.findWithDefault (error "This can't happen!") libname lenv
+          node = (\(Just a) -> a) $ Graph.lab dg nodenum
+          caslsign = (\(Just a) -> a) $ getCASLSign (dgn_sign node)
+          mappedSorts =
+            Set.fold
+              (\sid ns->
+                Set.insert
+                  (sid, findUniqueName libname nodenum sid inSorts)
+                  ns
+              )
+              Set.empty
+              (sortSet caslsign)
+          mappedPreds =
+            Map.foldWithKey
+              (\pid pts mp ->
+                Set.fold
+                  (\pt mp' ->
+                    Set.insert
+                      ((pid, pt), findUniqueName libname nodenum pid (inPreds pt))
+                      mp'
+                  )
+                  mp
+                  pts
+              )
+              Set.empty
+              (predMap caslsign)
+          mappedOps =
+            Map.foldWithKey
+              (\oid ots mo ->
+                Set.fold
+                  (\ot mo' ->
+                    Set.insert
+                      ((oid, ot), findUniqueName libname nodenum oid (inOps ot))
+                      mo'
+                  )
+                  mo
+                  ots
+              )
+              Set.empty
+              (opMap caslsign)
+          (uniqueNodeName, sens, cons) =
+            case
+              Data.List.find
+                (\ inm ->
+                  (inmGetLibName inm) == libname && (inmGetNodeNum inm) == nodenum
+                )
+                uniqueNames
+            of
+              Nothing ->
+                if isDGRef node
+                  then
+                    let
+                      reallibname = dgn_libname node
+                      realnodenum = dgn_node node
+                    in
+                      case
+                        Data.List.find
+                          (\ inm ->
+                            (inmGetLibName inm) == reallibname
+                            && (inmGetNodeNum inm) == realnodenum
+                          )
+                          uniqueNames
+                      of
+                        Nothing ->
+                          error
+                            (
+                              "No unique name for refnode "
+                                ++ (show (libname, nodename, nodenum))
+                            )
+                        (Just inm) -> (inmGetNodeId inm, inmGetIdNameSensSet inm, inmGetIdNameConsSet inm)
+                  else
+                    error ("No unique name for node " ++ (show (libname, nodename, nodenum)))
+              (Just inm) -> (inmGetNodeId inm, inmGetIdNameSensSet inm, inmGetIdNameConsSet inm)
+        in
+          fullnames ++
+            [(
+                libname
+              , dgn_name node
+              , uniqueNodeName
+              , nodenum
+              , mappedSorts
+              , mappedPreds
+              , mappedOps
+              , sens
+              , cons
+            )]
+      )
+      []
+      tracemarks
+  where
+    inSorts::IdNameMapping->Set.Set (Id.Id, String)
+    inSorts = inmGetIdNameSortSet
+    inPreds::PredType->IdNameMapping->Set.Set (Id.Id, String)
+    inPreds pt inm =
+      Set.fold
+        (\((id', pt'), name) s ->
+          if pt' == pt
+            then
+              Set.insert (id', name) s
+            else
+              s
+        )
+        Set.empty
+        (inmGetIdNamePredSet inm)
+    inOps::OpType->IdNameMapping->Set.Set (Id.Id, String)
+    inOps ot inm =
+      Set.fold
+        (\((id', ot'), name) s ->
+          if ot' == ot
+            then
+              Set.insert (id', name) s
+            else
+              s
+        )
+        Set.empty
+        (inmGetIdNameOpSet inm)
+    findUniqueName::LIB_NAME->Graph.Node->Id.Id->(IdNameMapping->Set.Set (Id.Id, String))->String
+    findUniqueName libname nodenum sid getSet =
+      let
+        (thePast, _) =
+          until
+            (\(_,tm) -> null tm)
+            (\(tP, (tm@(ln, _, nn, _)):r) ->
+              if ln == libname && nn == nodenum
+                then
+                  (tP ++ [tm], [])
+                else
+                  (tP ++ [tm], r)
+            )
+            ([], tracemarks)
+        (mUniqueName, _) =
+          until
+            (\(mUN, tp) -> case mUN of Nothing -> False; _ -> null tp)
+            (\(_, (ln, nname, nn, _):r) ->
+              case
+                Data.List.find
+                  (\ inm ->
+                    (inmGetLibName inm) == ln && (inmGetNodeNum inm) == nn
+                  )
+                  uniqueNames
+              of
+                Nothing ->
+                  let
+                    dg =
+                      devGraph
+                        $
+                        Map.findWithDefault
+                          (error "This can't happen!")
+                          ln
+                          lenv
+                    node = (\(Just a) -> a) $ Graph.lab dg nn
+                  in
+                    if isDGRef node
+                      then
+                        let
+                          refnode = dgn_node node
+                          reflibname = dgn_libname node
+                        in
+                          case
+                            Data.List.find
+                              (\ inm ->
+                                (inmGetLibName inm) == reflibname
+                                && (inmGetNodeNum inm) == refnode
+                              )
+                              uniqueNames
+                          of
+                            Nothing ->
+                              error
+                                (
+                                  "Error while searching Id from DGRef ("
+                                    ++  (show sid) ++ ")"
+                                )
+                            (Just inm) ->
+                              case
+                                Set.toList
+                                  $
+                                  Set.filter (\(uid, _) -> uid == sid) (getSet inm)
+                              of
+                                [] -> (Nothing, r)
+                                (_, uniqueName):_ -> (Just uniqueName, [])
+                      else
+                        error
+                          ("Unable to find Id-Set for current node "
+                            ++ (show (ln, nname, nn))
+                          )
+                (Just inm) ->
+                  case
+                    Set.toList
+                      $
+                      Set.filter
+                        (\(uid, _) -> uid == sid)
+                        (getSet inm)
+                  of
+                    [] -> (Nothing, r)
+                    (_, uniqueName):_ -> (Just uniqueName, [])
+            )
+            (Nothing, reverse thePast)
+      in
+        case mUniqueName of
+          Nothing -> error ("No unique name for " ++ (show sid) ++ "!")
+          (Just uniqueName) -> uniqueName
+
+
+
+
 

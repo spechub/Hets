@@ -16,6 +16,7 @@ TODO:
     (e.g. Basic/Graphs.casl can be converted to OMDoc but not back)
 -}
 module OMDoc.OMDocInput
+{-
   (
     -- options currently for debugging, stores HetcatsOptions
      GlobalOptions(..)
@@ -48,6 +49,7 @@ module OMDoc.OMDocInput
     ,requationsFromXml
     ,extractFFXInputs
   )
+-}
   where
 
 import qualified OMDoc.HetsDefs as Hets
@@ -303,7 +305,7 @@ consToSensXN sortid conlist =
                   (xnWOaToa sortid)
                   [(Qual_op_name
                       (xnWOaToa id' )
-                      (cv_OpTypeToOp_type $ opTypeXNWONToOpType ot)
+                      (Hets.cv_OpTypeToOp_type $ opTypeXNWONToOpType ot)
                       Id.nullRange , [0])] 
                   (xnWOaToa sortid)
               ]
@@ -373,7 +375,7 @@ requationSymbolsToMorphismMap
             (ms, mp, mo) = findSymbol fromsortlist frompredlist fromoplist s
           in
             case ms of
-              (Just s) -> s
+              (Just s') -> s'
               Nothing ->
                 case mp of
                   (Just (p,_)) -> p
@@ -412,8 +414,8 @@ requationSymbolsToMorphismMap
                     case mfo of
                       (Just fo) ->
                         case getOp (mts, mtp, mto) of
-                          (Just to) ->
-                            (sm', pm' , Map.insert fo to om' )
+                          (Just to') ->
+                            (sm', pm' , Map.insert fo to' om' )
                           Nothing ->
                             error ("No such operator " ++ tosymbol ++ " in " ++ to)
                       Nothing ->
@@ -424,7 +426,7 @@ requationSymbolsToMorphismMap
   in
     (sm, om, pm, Set.fromList hiddenmapped)
   where
-  findSymbol:: forall a b .
+  findSymbol::
     [XmlNamedWONSORT]
     ->[(XmlNamedWONSORT, PredTypeXNWON)]
     ->[(XmlNamedWONSORT, OpTypeXNWON)]
@@ -1583,6 +1585,8 @@ ffxiSToXmlTaggedDevGraph
       )
       Map.empty
       (xnTheorySet ffxi)
+
+
                         
 importGraphToDGNodesXN::
   GlobalOptions
@@ -1602,21 +1606,29 @@ importGraphToDGNodesXN go ig n =
       foldl (\cm (_, from, (TI (theoname, _))) ->
         let
           moriginnode = Graph.lab ig from
-          (S (slibname, ssrc) (_,modg)) = case moriginnode of
+          (S (slibname, _) (_,modg)) = case moriginnode of
             Nothing -> error ("node error (Import of "
-              ++ slibname ++ " from " ++ ssrc ++ " )!")
+              ++ theoname ++ " from " ++ (show from) ++ " )!")
             (Just n' ) -> n'
             -- the DG should have been created before accessing it (should work)
           (odg, offxi) = case modg of
                   Nothing -> error ("dg error (DevelopmentGraph for "
                     ++ slibname ++ " not found)!")
                   (Just o) -> o
-          (onodenum, onodedgnl) =
+          theoid =
+            case
+              find
+                (\q -> xnName q == theoname)
+                (Set.toList (xnTheorySet offxi))
+            of
+              Nothing -> theoname
+              (Just q) -> showName $ snd $ xnItem q 
+          ({-onodenum-}_, onodedgnl) =
             case filter
-              (\(_,node' ) -> (getDGNodeName node' ) == theoname ) $
+              (\(_,node' ) -> (getDGNodeName node' ) == theoid ) $
               Graph.labNodes odg
                 of
-                  [] -> error "no such node in origin..."
+                  [] -> error ("no such node in origin... 1 (for " ++ theoname ++ ")")
                   l -> head l
           otxn =
             case
@@ -1654,21 +1666,29 @@ importGraphToDGNodesXN go ig n =
       foldl (\(r, nf) (_, from, (TI (theoname, _))) ->
         let
           moriginnode = Graph.lab ig from
-          (S (slibname, ssrc) (_,modg)) = case moriginnode of
+          (S (slibname, _) (_,modg)) = case moriginnode of
             Nothing -> error ("node error (Import of "
-              ++ slibname ++ " from " ++ ssrc ++ " )!")
+              ++ theoname ++ " from " ++ (show from) ++ " )!")
             (Just n' ) -> n'
             -- the DG should have been created before accessing it (should work)
           (odg, offxi) = case modg of
                   Nothing -> error ("dg error (DevelopmentGraph for "
                     ++ slibname ++ " not found)!")
                   (Just o) -> o
+          theoid =
+            case
+              find
+                (\q -> xnName q == theoname)
+                (Set.toList (xnTheorySet offxi))
+            of
+              Nothing -> theoname
+              (Just q) -> showName $ snd $ xnItem q 
           (onodenum, onodedgnl) =
             case filter
-              (\(_,node' ) -> (getDGNodeName node' ) == theoname ) $
+              (\(_,node' ) -> (getDGNodeName node' ) == theoid ) $
               Graph.labNodes odg
                 of
-                  [] -> error "no such node in origin..."
+                  [] -> error ("no such node in origin... (for \"" ++ theoname ++ "\")")
                   l -> head l
           otxn =
             case
@@ -1715,9 +1735,9 @@ importGraphToDGNodesXN go ig n =
     sensmap = (\smap ->
       debugGO go "iGTDGNXN" ("Sentences extracted... : "
         ++ (showSenNames smap)) smap) $ sensXNWONFromXml go newffxi axtheoryset
-    psorts = mapSetToSet (debugGO go "iGTDGNXN" "at mapSetToSet(sortsmap)" sortsmap)
-    ppreds = mapSetToSet (debugGO go "iGTDGNXN" "at mapSetToSet(predsmap)" predsmap)
-    pops = mapSetToSet (debugGO go "iGTDGNXN" "at mapSetToSet(opsmap)" opsmap)
+    -- psorts = mapSetToSet (debugGO go "iGTDGNXN" "at mapSetToSet(sortsmap)" sortsmap)
+    -- ppreds = mapSetToSet (debugGO go "iGTDGNXN" "at mapSetToSet(predsmap)" predsmap)
+    -- pops = mapSetToSet (debugGO go "iGTDGNXN" "at mapSetToSet(opsmap)" opsmap)
   in   
     (\a -> (a, axtheoryset, newffxi)) $
     Set.fold (\xntheory dgnodelist ->
@@ -1794,11 +1814,11 @@ importGraphToDGraphXN go ig n =
     -- Output is a candidate...
     -- FFXInput was intended to rename symbols in formulas but this needs to
     -- be done for morphisms also (and the structure is created anyway)
-    (nodes, axtheoryset, ffxi) = (\(a, b, c) -> (reverse a, b, c)) $ importGraphToDGNodesXN go ig n
+    (nodes, {-axtheoryset-}_, ffxi) = (\(a, b, c) -> (reverse a, b, c)) $ importGraphToDGNodesXN go ig n
     lnodes = (zip [0..] nodes)::[(Graph.Node, (XmlNamed DGNodeLab))]
     --nodegraph = (Graph.mkGraph lnodes [])::DGraph
-    nameNodeMap = Map.fromList $
-      map ( \(n' , xnnode' ) -> (getDGNodeName (xnItem xnnode' ) , n' ) ) $ lnodes
+{-    nameNodeMap = Map.fromList $
+      map ( \(n' , xnnode' ) -> (getDGNodeName (xnItem xnnode' ) , n' ) ) $ lnodes -}
     nodeXNameMap = Map.fromList $
       map (\(n', xnnode' ) -> (n', xnName xnnode')) lnodes
     xmlnameNodeMap = Map.fromList $
@@ -1809,7 +1829,7 @@ importGraphToDGraphXN go ig n =
     glTheoIncs = glThmsFromXml omdoc
     glThmLEdges =
       foldl
-        (\gltle (eid, efrom, eto, lnk) ->
+        (\gltle (_, efrom, eto, lnk) ->
           let
             fromname = getFragmentOrWarnAndString efrom
             toname = getFragmentOrWarnAndString eto
@@ -1824,7 +1844,7 @@ importGraphToDGraphXN go ig n =
       foldl
         (\le (nodename, nodeimports) ->
           let     
-            nodesorts = Set.toList $
+{-            nodesorts = Set.toList $
               Map.findWithDefault
                 (Set.empty)
                 nodename
@@ -1838,12 +1858,12 @@ importGraphToDGraphXN go ig n =
               Map.findWithDefault
                 (Set.empty)
                 nodename
-                (xnOpsMap ffxi)
+                (xnOpsMap ffxi) -}
             --
             nodenum = Map.findWithDefault (-1) nodename xmlnameNodeMap
-            tnode = case map (xnItem . snd) $ filter (\(n' ,_) -> n' == nodenum) lnodes of
+{-            tnode = case map (xnItem . snd) $ filter (\(n' ,_) -> n' == nodenum) lnodes of
                     (l:_) -> l
-                    _ -> error "node error!"
+                    _ -> error "node error!" -}
             -- targetsign = getNodeSignature ig (Just tnode)
             nodeimporthints = Map.findWithDefault Set.empty nodename importhints
             importsfrom = map (\(_, (a,_,_,_)) -> a) $ Set.toList nodeimports
@@ -1869,10 +1889,10 @@ importGraphToDGraphXN go ig n =
                 )
                 nodeimporthints 
           in
-            (foldl (\le' (_, (ni, mmm, hreq, isGlobal)) ->
+            (foldl (\le' (_, (ni, mmm, _, isGlobal)) ->
               let
-                importsorts = Set.toList $
-                  Map.findWithDefault
+ {-               importsorts = Set.toList $
+                    Map.findWithDefault
                     (Set.empty)
                     ni
                     (xnSortsMap ffxi)
@@ -1885,7 +1905,7 @@ importGraphToDGraphXN go ig n =
                   Map.findWithDefault
                     (Set.empty)
                     ni
-                    (xnOpsMap ffxi)
+                    (xnOpsMap ffxi) -}
 {-                rmm =
                   -- this cannot be done here, because morphism mappings
                   -- and hiding may (and do) reference to imported symbols...
@@ -1899,15 +1919,14 @@ importGraphToDGraphXN go ig n =
                     ni
                     nodename
                     hreq -}
-                --
                 importnodenum = case Map.findWithDefault (-1) ni xmlnameNodeMap of
                   (-1) -> debugGO go "iGTDGXN" ("Cannot find node for \"" ++ ni ++ "\"!") (-1)
                   x -> x
-                snode = case map (xnItem . snd) $
+{-                snode = case map (xnItem . snd) $
                   filter (\(n' ,_) -> n' == importnodenum) lnodes
                     of
                       (l:_) -> l
-                      _ -> error "node error!"
+                      _ -> error "node error!" -}
                 --sourcesign = getNodeSignature ig (Just snode)
                 filteredimporthints =
                   Set.filter (\h -> (fromName h) == ni) importhintswithoutimports
@@ -2041,7 +2060,7 @@ untagEdges tedg =
   let
     labNodes = Graph.labNodes tedg
     labEdges = Graph.labEdges tedg
-    newLabEdges = map (\(f, t, (a, dgl)) -> (f, t, dgl)) labEdges
+    newLabEdges = map (\(f, t, (_, dgl)) -> (f, t, dgl)) labEdges
   in
     Graph.mkGraph labNodes newLabEdges
 
@@ -2062,7 +2081,7 @@ processImportsAndMorphisms dg nxm ffxi =
         )
         []
         allEdges
-    thmEdges =
+{-    thmEdges =
       foldl
         (\eC (tedge@(_,_,(_, dgl))) ->
           eC ++
@@ -2073,8 +2092,8 @@ processImportsAndMorphisms dg nxm ffxi =
               _ -> []
         )
         []
-        allEdges
-    ((defdg, deffxxi),_) =
+        allEdges -}
+    ((defdg, {-deffxxi-}_),_) =
       until
         (\(_, remainingEdges) -> null remainingEdges)
         (\((dg', ffxi'), (edge:edges)) ->
@@ -2082,14 +2101,14 @@ processImportsAndMorphisms dg nxm ffxi =
             processEdge dg' nxm ffxi' edge edges
         )
         ((taggedDG, ffxi), defEdges)
-    ((thmdg, thmfxxi),_) =
+{-    ((thmdg, thmfxxi),_) =
       until
         (\(_, remainingEdges) -> null remainingEdges)
         (\((dg', ffxi'), (edge:edges)) ->
       --    Debug.Trace.trace (".") $
             processEdge dg' nxm ffxi' edge edges
         )
-        ((defdg,deffxxi), thmEdges) 
+        ((defdg,deffxxi), thmEdges) -}
   in
       (untagEdges defdg)
 
@@ -2104,7 +2123,7 @@ processEdge
   tdg
   nxm
   ffxi
-  (tedge@(from, to, (tag, dgl)))
+  (tedge@(from, to, ({-tag-}_, dgl)))
   edges =
   -- check if this edge is from a node that needs edge processing itself
   -- if yes : process that node recusivly, else : apply import
@@ -2114,11 +2133,11 @@ processEdge
   -- here..., but when independent, processing is possible)
   --
   let
-    fromnode = fromMaybe (error "No such node!") $ Graph.lab tdg from
-    tonode = fromMaybe (error "No such node!") $ Graph.lab tdg to
+    -- fromnode = fromMaybe (error "No such node!") $ Graph.lab tdg from
+    -- tonode = fromMaybe (error "No such node!") $ Graph.lab tdg to
     unprocessedFrom = filter (\(from', tof, _) -> (from' /= from) && (tof == from) ) edges
-    fromxname = Map.findWithDefault (error "No such name!") from nxm
-    toxname = Map.findWithDefault (error "No such name!") to nxm
+    -- fromxname = Map.findWithDefault (error "No such name!") from nxm
+    -- toxname = Map.findWithDefault (error "No such name!") to nxm
     (parallelImports, otherImports) =
       partition (\(_, tot, _) -> tot == to) edges
   in
@@ -2155,7 +2174,7 @@ processEdge
     applyLink::TaggedEdgeDGraph->Graph.LEdge (Int, DGLinkLab)->(TaggedEdgeDGraph, FFXInput)
     applyLink
       tdg'
-      (edge'@(from',  to' , (tag', dgl'))) =
+      (from',  to' , (tag', dgl')) =
       let
         fromxname = Map.findWithDefault (error "No such name!") from' nxm
         toxname = Map.findWithDefault (error "No such name!") to' nxm
@@ -2190,7 +2209,7 @@ processEdge
             Set.empty
             toxname
             (xnOpsMap ffxi)
-        caslmorphism = Hets.getCASLMorphLL dgl
+        --caslmorphism = Hets.getCASLMorphLL dgl
         newmorph =
           fixMorphism
             (Set.toList sourcesorts)
@@ -2519,7 +2538,7 @@ fixMorphism
           --, opMap = fixOps sops (opMap sourcesign)
           --, assocOps = fixOps sops (assocOps sourcesign)
         } 
-    targetsign = mtarget m
+    --targetsign = mtarget m
 {-    newtargetsign =
       targetsign
         {
@@ -3008,7 +3027,7 @@ hybridGToDGraphG _ ig =
 extractFFXInputs::(ImportGraph (HXT.XmlTrees, Maybe (DGraph, FFXInput)))->[FFXInput]
 extractFFXInputs ig =
   foldl
-    (\ffxil (n, (S a (_,mdg))) ->
+    (\ffxil (_, (S _ (_,mdg))) ->
       case mdg of
         (Just (_,ffxi)) -> ffxil ++ [ffxi]
         _ -> ffxil
@@ -3111,6 +3130,86 @@ isTrueAtom::(FORMULA ())->Bool
 isTrueAtom (True_atom _) = True
 isTrueAtom _ = False
 
+
+getPresentationFor::HXT.XmlTrees->String->Id.Id
+getPresentationFor from for =
+  let
+    hetspress =
+      xshow
+        $
+        applyXmlFilter
+          (
+            getChildren .> 
+            isTag "presentation" .> withSValue "for" for .>
+            getChildren .> isTag "use" .> withSValue "format" "Hets" .>
+            getChildren
+          )
+          from
+        -- hets presentations are optional
+    hetspres = case hetspress of
+      [] -> (Hets.stringToId for)
+      x -> read x -- incorrect hets presentations will cause an exception here
+  in
+    hetspres
+
+extractSortsFromTheory::HXT.XmlTrees->Set.Set (String, Id.Id)
+extractSortsFromTheory t =
+  let
+    sortsymbols =
+      applyXmlFilter
+        (
+          isTag "theory" .> getChildren .> isTag "symbol"
+            .> withQualSValue symbolTypeXMLNS symbolTypeXMLAttr "sort"
+        )
+        t
+    symbolids =
+      map
+        (\x -> xshow [x])
+        $
+        applyXmlFilter
+          (getQualValue sortNameXMLNS sortNameXMLAttr)
+          sortsymbols
+  in
+    foldl
+      (\s sid ->
+        let
+          hetspres = getPresentationFor t sid
+        in
+          Set.insert (sid, hetspres) s
+      )
+      Set.empty
+      symbolids
+
+extractSortsFromXml::HXT.XmlTrees->Map.Map (String, NODE_NAME) (Set.Set (String, Id.Id))
+extractSortsFromXml t =
+  let
+    theories =
+      applyXmlFilter
+        (
+          isTag "omdoc" .> getChildren .> isTag "theory"
+        )
+        t
+  in
+    foldl
+      (\m th ->
+        let
+          theoid =
+            xshow
+              $
+              applyXmlFilter
+                (
+                  getQualValue "xml" "id"
+                )
+                [th]
+          theopres = Hets.idToNodeName $ getPresentationFor [th] theoid
+        in
+          Map.insert
+            (theoid, theopres) 
+            (extractSortsFromTheory [th])
+            m
+      )
+      Map.empty
+      theories
 
 -- X M L -> FORMULA
 
@@ -3570,7 +3669,7 @@ formulaFromXmlXN ffxi anxml =
                       in
                         case (case withThisOrigin of [] -> possibilities; _ -> withThisOrigin) of
                           (i:_) ->
-                            Predication (Qual_pred_name (xnWOaToa (fst i)) (cv_PredTypeToPred_type $ predTypeXNWONToPredType (snd i)) Id.nullRange) predterms Id.nullRange
+                            Predication (Qual_pred_name (xnWOaToa (fst i)) (Hets.cv_PredTypeToPred_type $ predTypeXNWONToPredType (snd i)) Id.nullRange) predterms Id.nullRange
                           [] ->
                             error ("Could not find predicate for \"" ++ applySym ++ "\"")
                                                       else
@@ -3658,7 +3757,7 @@ predicationFromXmlXN ffxi anxml =
                         Nothing -> error "Predicate not found!"
                         (Just pxnwon) -> pxnwon
         in
-                Qual_pred_name (xnWOaToa predxnid) (cv_PredTypeToPred_type $ predTypeXNWONToPredType predXNWON) Id.nullRange
+                Qual_pred_name (xnWOaToa predxnid) (Hets.cv_PredTypeToPred_type $ predTypeXNWONToPredType predXNWON) Id.nullRange
 
                 
 -- String to Quantifiert...
@@ -3811,7 +3910,7 @@ operatorFromXmlXN ffxi anxml =
                         then -- eventually there should be an aux. casl-theory while processing...
                                 Op_name $ debugGO (ffxiGO ffxi) "oFXXN" ("creating casl operator for : " ++ sxname) $ Hets.stringToId sxname
                         else
-                                Qual_op_name ((\x -> debugGO (ffxiGO ffxi) "oFXXN" ("creating operator for : " ++ sxname ++ " (" ++ (show x) ++ ")") x) (xnWOaToa opxnid)) (cv_OpTypeToOp_type $ opTypeXNWONToOpType opXNWON) Id.nullRange
+                                Qual_op_name ((\x -> debugGO (ffxiGO ffxi) "oFXXN" ("creating operator for : " ++ sxname ++ " (" ++ (show x) ++ ")") x) (xnWOaToa opxnid)) (Hets.cv_OpTypeToOp_type $ opTypeXNWONToOpType opXNWON) Id.nullRange
 
 
 opName::OP_SYMB->String
