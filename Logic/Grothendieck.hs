@@ -33,8 +33,6 @@ The Grothendieck logic is defined to be the
    Heterogeneous specification and the heterogeneous tool set.
 
    Todo:
-   compComorphism: cancellation of id comorphisms if target sublogic is
-                   not increased
    gWeaklyAmalgamableCocone
    Transportability for heterogeneous morphisms
 -}
@@ -227,11 +225,11 @@ instance Show G_sublogics where
 instance Eq G_sublogics where
     (G_sublogics lid1 l1) == (G_sublogics lid2 l2) =
        language_name lid1 == language_name lid2
-          && coerceSublogic lid1 lid2 l1 == l2
+          && forceCoerceSublogic lid1 lid2 l1 == l2
 
 isProperSublogic :: G_sublogics -> G_sublogics -> Bool
 isProperSublogic a@(G_sublogics lid1 l1) b@(G_sublogics lid2 l2) =
-    isSubElem (coerceSublogic lid1 lid2 l1) l2 && a /= b
+    isSubElem (forceCoerceSublogic lid1 lid2 l1) l2 && a /= b
 
 -- | Homogeneous Grothendieck signature morphisms
 data G_morphism = forall lid sublogics
@@ -298,7 +296,7 @@ compComorphism (Comorphism cid1) (Comorphism cid2) =
    let l1 = targetLogic cid1
        l2 = sourceLogic cid2 in
    if language_name l1 == language_name l2 then
-      if isSubElem (coerceSublogic l1 l2 $ targetSublogic cid1)
+      if isSubElem (forceCoerceSublogic l1 l2 $ targetSublogic cid1)
             $ sourceSublogic cid2
        then {- case (isIdComorphism cm1,isIdComorphism cm2) of
          (True,_) -> return cm2
@@ -314,7 +312,7 @@ lessSublogicComor :: G_sublogics -> AnyComorphism -> Bool
 lessSublogicComor (G_sublogics lid1 sub1) (Comorphism cid) =
     let lid2 = sourceLogic cid
     in language_name lid2 == language_name lid1
-           && isSubElem (coerceSublogic lid1 lid2 sub1) (sourceSublogic cid)
+        && isSubElem (forceCoerceSublogic lid1 lid2 sub1) (sourceSublogic cid)
 
 --- Morphisms ---
 
@@ -478,29 +476,25 @@ instance Category Grothendieck G_sign GMorphism where
   comp _
        (GMorphism r1 sigma1 mor1)
        (GMorphism r2 _sigma2 mor2) =
-    if isIdComorphism (Comorphism r1)
-      then do let lid1 = sourceLogic r1
-                  lid2 = targetLogic r1
-                  lid3 = sourceLogic r2
-                  lid4 = targetLogic r2
-              sigma1' <- coerceSign lid1 lid3 "Grothendieck.comp" sigma1
-              mor1' <- coerceMorphism lid2 lid3 "Grothendieck.comp" mor1
-              mor1'' <- map_morphism r2 mor1'
-              mor <- comp lid4 mor1'' mor2 
-              return (GMorphism r2 sigma1' mor)
-      else if isIdComorphism (Comorphism r2)
-           then do let lid2 = targetLogic r1
-                       lid4 = targetLogic r2
-                   mor2' <- coerceMorphism lid4 lid2 "Grothendieck.comp" mor2
-                   mor <- comp lid2 mor1 mor2' 
-                   return (GMorphism r1 sigma1 mor)
-           else do let lid2 = targetLogic r1
-                       lid3 = sourceLogic r2
-                       lid4 = targetLogic r2
-                   mor1' <- coerceMorphism lid2 lid3 "Grothendieck.comp" mor1
-                   mor1'' <- map_morphism r2 mor1'
-                   mor <- comp lid4 mor1'' mor2 
-                   return (GMorphism (CompComorphism r1 r2) sigma1 mor)
+    do let lid1 = sourceLogic r1
+           lid2 = targetLogic r1
+           lid3 = sourceLogic r2
+           lid4 = targetLogic r2
+       mor1' <- coerceMorphism lid2 lid3 "Grothendieck.comp" mor1
+       mor1'' <- map_morphism r2 mor1'
+       mor <- comp lid4 mor1'' mor2 
+       if isIdComorphism (Comorphism r1) && 
+          case coerceSublogic lid2 lid3 "Grothendieck.comp" 
+                              (targetSublogic r1) of
+            Just sl1 -> isSubElem (targetSublogic r2) (mapSublogic r2 sl1) 
+            _ -> False
+         then do sigma1' <- coerceSign lid1 lid3 "Grothendieck.comp" sigma1
+                 return (GMorphism r2 sigma1' mor)
+         else if isIdComorphism (Comorphism r2) 
+           then do mor2' <- coerceMorphism lid4 lid2 "Grothendieck.comp" mor2
+                   mor' <- comp lid2 mor1 mor2' 
+                   return (GMorphism r1 sigma1 mor')
+           else return (GMorphism (CompComorphism r1 r2) sigma1 mor)
   dom _ (GMorphism r sigma _mor) =
     G_sign (sourceLogic r) sigma
   cod _ (GMorphism r _sigma mor) =
@@ -639,7 +633,7 @@ findComorphism gsl@(G_sublogics lid sub) ((Comorphism cid):rest) =
     let l2 = sourceLogic cid
         rec = findComorphism gsl rest in
    if language_name lid == language_name l2
-      then if isSubElem (coerceSublogic lid l2 sub) $ sourceSublogic cid
+      then if isSubElem (forceCoerceSublogic lid l2 sub) $ sourceSublogic cid
               then return $ Comorphism cid
               else rec
       else rec

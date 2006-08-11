@@ -43,9 +43,18 @@ coerceSublogic ::
    (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
    Logic  lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
+                sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
+   Monad m)
+   => lid1 -> lid2 -> String -> sublogics1 -> m sublogics2
+coerceSublogic l1 l2 msg s1 = primCoerce l1 l2 msg s1
+
+forceCoerceSublogic ::
+   (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+                sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
+   Logic  lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2)
    => lid1 -> lid2 -> sublogics1 -> sublogics2
-coerceSublogic l1 l2 s1 = unsafeCoerce l1 l2 s1
+forceCoerceSublogic l1 l2 s1 = unsafeCoerce l1 l2 s1
 
 coerceSign ::
    (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1

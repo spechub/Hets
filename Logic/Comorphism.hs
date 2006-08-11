@@ -223,7 +223,7 @@ instance (Comorphism cid1
      sourceSublogic cid1
    mapSublogic (CompComorphism cid1 cid2) =
      mapSublogic cid2
-     . coerceSublogic (targetLogic cid1) (sourceLogic cid2)
+     . forceCoerceSublogic (targetLogic cid1) (sourceLogic cid2) 
      . mapSublogic cid1
    map_sentence (CompComorphism cid1 cid2) =
        \si1 se1 ->
