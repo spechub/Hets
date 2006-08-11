@@ -231,9 +231,15 @@ instance Pretty DGLinkType where
         HidingDef -> "HidingDef"
         FreeDef _ -> "FreeDef"
         CofreeDef _ -> "CofreeDef"
-        LocalThm _ _ _ -> "LocalThm"
-        GlobalThm _ _ _ -> "GlobalThm"
-        HidingThm _ _ -> "HidingThm"
+        LocalThm s _ _ -> case s of
+			        (Proven _ _) -> "LocalThmProven"
+			        _ -> "LocalThmUnproven"
+        GlobalThm s _ _ -> case s of 
+			        (Proven _ _) -> "GlobalThmProven"
+				_ -> "GlobalThmUnproven"
+        HidingThm _ s -> case s of
+			      LeftOpen -> "HidingThmUnproven"
+			      _ -> "HidingThmProven"
         FreeThm _ _ -> "FreeThm"
 
 -- | Conservativity annotations. For compactness, only the greatest
@@ -266,7 +272,7 @@ data DGRule =
  | Composition [LEdge DGLinkLab]
  | LocalInference
  | BasicInference AnyComorphism BasicProof -- coding and proof tree. obsolete ?!?
- | BasicConsInference Edge BasicConsProof
+  | BasicConsInference Edge BasicConsProof
    deriving (Show, Eq)
 
 instance Pretty DGRule where
