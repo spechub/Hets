@@ -234,19 +234,13 @@ development graph calculus
 look at Static/DevGraph.hs
 look at Proofs/EdgeUtils.hs Proofs/StatusUtils.hs Proofs/Global.hs
 
-fix bug: when lodaing Basic/RelationsAndOrders.casl and
-  doing 4x edit - proofs - Global Decomposition, we get
-    hets: applyChangesAux2: deleted edge from 3 to 15 of type GlobalThm 
-    and origin DGProof of development graph does not exist in abstraction graph
-  look at Proofs/Global.hs, GUI/ConvertAbstractToDevgraph,
-    function applyChanges
-  Hint: first try to cut down the example (find out the minimal
-    subpart that still leads to the error)
-
-test development grapg GUI: 
+test development graph GUI: 
+   global decomposition
    menu edit - unnamed nodes - hide/show nodes,
    node menu: show just subtree / undo
    interaction with edit - proofs - automatic?
+
+restrict proofs: only one prove window per node at a given time
 
 implement simplified rule Theorem-Hide-Shift
 try out examples
@@ -541,6 +535,7 @@ Integration with generic prover interface?
 Till
 ************************************************
 
+Umlaute in daVinci anzeigen
 
 Fragen an Michael:
 werden Links in der richtigen Reihenfolge geschrieben (S. 183 OMDoc)?
