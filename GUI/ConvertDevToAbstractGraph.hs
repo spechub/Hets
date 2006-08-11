@@ -125,10 +125,20 @@ data GraphMem = GraphMem {
 --type AGraphToDGraphEdge = Map.Map Descr (LIB_NAME,(Descr,Descr,String))
 
 -- ken's stuff
+-- | types of the Maps above 
 type DGraphAndAGraphNode = InjMap.InjMap (LIB_NAME, Node) Descr
 type DGraphAndAGraphEdge = InjMap.InjMap (LIB_NAME, (Descr, Descr, String)) Descr
 
+--newtype DGraphAndAGraphEdge = DGraphAndAGraphEdge (InjMap.InjMap (LIB_NAME, (Descr, Descr, String)) Descr)
 
+-- only for test
+instance Show DGraphAndAGraphEdge where
+   show x = dgToAgText ++ "\n" ++ agToDgText 
+            where dgToAgEdges = map (\((ln, (d1, d2, _)), d) -> ((ln, (d1, d2, "")), d)) $ Map.toList $ InjMap.getAToB x
+                  agToDgEdges = map (\(d, (ln, (d1, d2, _))) -> (d, (ln, (d1, d2, "")))) $ Map.toList $ InjMap.getBToA x
+		  dgToAgText = "The current dgToAg: \n" ++ show dgToAgEdges
+		  agToDgText = "The current agToDg: \n" ++ show agToDgEdges
+		  
 data InternalNames =
      InternalNames { showNames :: Bool,
                      updater :: [(String,(String -> String) -> IO ())] }
@@ -623,7 +633,6 @@ createLocalMenuNodeTypeDgRef color actGraphInfo
 type ButtonMenu a = MenuPrim (Maybe String) (a -> IO ())
 
 -- | menu button for local menus
---llllllllllllllllllllllllllllllllllllll
 createMenuButton :: String -> (Descr -> DGraphAndAGraphNode -> DGraph -> IO ())
                  -> GInfo -> ButtonMenu NodeDescr
 createMenuButton title menuFun (ioProofStatus,_,convRef,_,ln,_,_,_,_) =
@@ -844,7 +853,6 @@ createLocalMenuValueTitleShowConservativity =
 -- end of local menu definitions
 -- ------------------------------
 
--- lllllllllllllllllll
 showSpec :: Descr -> DGraphAndAGraphNode -> DGraph -> IO ()
 showSpec descr dgAndabstrNodeMap dgraph =
   case InjMap.lookupWithB descr dgAndabstrNodeMap of
@@ -880,7 +888,6 @@ getSignatureOfNode descr dgAndabstrNodeMap dgraph =
 {- |
    fetches the theory from a node inside the IO Monad
    (added by KL based on code in getTheoryOfNode) -}
--- llllllllllllllllllllllllllllllll
 lookupTheoryOfNode :: IORef LibEnv -> Descr -> DGraphAndAGraphNode ->
                       DGraph -> IO (Res.Result (Node,G_theory))
 lookupTheoryOfNode proofStatusRef descr dgAndabstrNodeMap _ = do
@@ -896,7 +903,6 @@ lookupTheoryOfNode proofStatusRef descr dgAndabstrNodeMap _ = do
 
 {- | outputs the local axioms of a node in a window;
 used by the node menu defined in initializeGraph-}
--- lllllllllllllllllllllllllllllllll
 getLocalAxOfNode :: GInfo -> Descr -> DGraphAndAGraphNode -> DGraph -> IO()
 getLocalAxOfNode _ descr dgAndabstrNodeMap dgraph = do
   case InjMap.lookupWithB descr dgAndabstrNodeMap of
@@ -915,7 +921,6 @@ getLocalAxOfNode _ descr dgAndabstrNodeMap dgraph = do
 
 {- | outputs the theory of a node in a window;
 used by the node menu defined in initializeGraph-}
---lllllllllllllllllllllllllllll
 getTheoryOfNode :: GInfo -> Descr -> DGraphAndAGraphNode -> DGraph -> IO()
 getTheoryOfNode (proofStatusRef,_,_,_,_,_,_,opts,_)
                 descr dgAndabstrNodeMap dgraph = do
@@ -939,7 +944,6 @@ displayTheory ext node dgraph gth =
 
 {- | translate the theory of a node in a window;
 used by the node menu defined in initializeGraph-}
--- lllllllllllllllllllllllllllllllllllllllllllllllllllllll
 translateTheoryOfNode :: GInfo -> Descr -> DGraphAndAGraphNode -> DGraph -> IO()
 translateTheoryOfNode (proofStatusRef,_,_,_,_,_,_,opts,_)
                       descr dgAndabstrNodeMap dgraph = do
@@ -980,7 +984,6 @@ translateTheoryOfNode (proofStatusRef,_,_,_,_,_,_,opts,_)
 {- | outputs the sublogic of a node in a window;
 used by the node menu defined in initializeGraph-}
 ----------------------------------------------------------
--- llllllllllllllllllllllllllllllll
 getSublogicOfNode :: IORef LibEnv -> Descr -> DGraphAndAGraphNode
                   -> DGraph -> IO()
 getSublogicOfNode proofStatusRef descr dgAndabstrNodeMap dgraph = do
@@ -1004,7 +1007,6 @@ getSublogicOfNode proofStatusRef descr dgAndabstrNodeMap dgraph = do
                       ++ " has no corresponding node in the development graph")
 
 -- | prints the origin of the node
--- llllllllllllllllllllllllllllllllllllll
 showOriginOfNode :: Descr -> DGraphAndAGraphNode -> DGraph -> IO()
 showOriginOfNode descr dgAndabstrNodeMap dgraph =
   case InjMap.lookupWithB descr dgAndabstrNodeMap of
@@ -1021,7 +1023,6 @@ showOriginOfNode descr dgAndabstrNodeMap dgraph =
                       ++ " has no corresponding node in the development graph")
 
 -- | Show proof status of a node
--- lllllllllllllllllllllllllllllllllllllllll
 showProofStatusOfNode :: GInfo -> Descr -> DGraphAndAGraphNode -> DGraph -> IO()
 showProofStatusOfNode _ descr dgAndabstrNodeMap dgraph =
   case InjMap.lookupWithB descr dgAndabstrNodeMap of
@@ -1056,7 +1057,6 @@ showStatusAux dgnode =
              else ""
 
 -- | start local theorem proving or consistency checking at a node
--- llllllllllllllllllllllllllllllllllllllllllllllll
 proveAtNode :: Bool -> GInfo -> Descr -> DGraphAndAGraphNode -> DGraph -> IO()
 proveAtNode checkCons gInfo@(_,_,_,_,ln,_,_,_,_) descr dgAndabstrNodeMap _ =
   case InjMap.lookupWithB descr dgAndabstrNodeMap of
@@ -1166,7 +1166,6 @@ emtpy, it returns the conversion maps unchanged otherwise it adds the
 converted first node to the abstract graph and to the affected
 conversion maps and afterwards calls itself with the remaining node
 list -}
--- lllllllllllllllllllllllllll
 convertNodesAux :: ConversionMaps -> Descr -> GraphInfo ->
                      [LNode DGNodeLab] -> LIB_NAME -> IO ConversionMaps
 convertNodesAux convMaps _ _ [] _ = return convMaps
@@ -1204,7 +1203,7 @@ getDGNodeType dgnodelab =
 
 getDGLinkType :: DGLinkLab -> String
 getDGLinkType lnk = case dgl_morphism lnk of
- GMorphism cid _ mor -> 
+ GMorphism _ _ _ -> 
   {- if not (is_injective (targetLogic cid) mor) then trace "noninjective morphism found" "hetdef" 
   else -}
    case dgl_type lnk of
@@ -1238,7 +1237,6 @@ convertEdges convMaps descr grInfo dgraph libname
                                 libname
 
 -- | auxiliary function for convertEges
---lllllllllllllllllllllllllllllllll
 convertEdgesAux :: ConversionMaps -> Descr -> GraphInfo ->
                     [LEdge DGLinkLab] -> LIB_NAME -> IO ConversionMaps
 convertEdgesAux convMaps _ _ [] _ = return convMaps
@@ -1262,14 +1260,14 @@ convertEdgesAux convMaps descr grInfo (ledge@(src,tar,edgelab) : lEdges)
                                  abstr2dgEdge = Map.insert newDescr
                                      (libname, (src,tar,showDoc edgelab ""))
                                      (abstr2dgEdge convMaps),-} 
-				 dgAndabstrEdge = InjMap.insert (libname, (src, tar, showDoc edgelab "")) newDescr (dgAndabstrEdge convMaps)
+				 dgAndabstrEdge = InjMap.insert (libname,
+				 (src, tar, showDoc edgelab "")) newDescr (dgAndabstrEdge convMaps)
 				}
                                          descr grInfo lEdges libname)
         return newConvMaps
       _ -> error "Cannot find nodes"
 
 -- | show library referened by a DGRef node (=node drawn as a box)
--- llllllllllllllllllllllllllllllllllllllll
 showReferencedLibrary :: IORef GraphMem -> Descr -> Descr -> GraphInfo
                       -> ConversionMaps -> HetcatsOpts
                       -> IO (Descr, GraphInfo, ConversionMaps)
@@ -1391,6 +1389,7 @@ applyChangesAux gid libname grInfo  ioRefVisibleNodes
       (newVisibleNodes, newEventDescr, newConvMaps) <-
           applyChangesAux2 gid libname grInfo visibleNodes
                       eventDescr convMaps changes
+      {-trace (show $ dgAndabstrEdge newConvMaps) $-} 
       writeIORef ioRefVisibleNodes newVisibleNodes
       return (newEventDescr, newConvMaps)
 
@@ -1461,7 +1460,15 @@ applyChangesAux2 gid libname grInfo visibleNodes _ convMaps (change:changes) =
            --    Map.lookup (libname,tgt) dg2abstrNodeMap) of
            (Just abstrSrc, Just abstrTgt) ->
              do let dgEdge = (libname, (src,tgt,showDoc edgelab ""))
-                AGV.Result descr err <-
+                {-
+		case (InjMap.lookupWithA dgEdge $ dgAndabstrEdge convMaps) of
+		    Just x -> case trace (show dgEdge) $ (InjMap.lookupWithB x $ dgAndabstrEdge convMaps) of
+				   Just y -> putStrLn $ show y
+				   Nothing -> putStr ""
+--trace (show $ isProven ledge) $ putStrLn $ show x
+		    _ -> putStr ""
+		-}
+		AGV.Result descr err <-
                    addlink gid (getDGLinkType edgelab)
                               "" (Just ledge) abstrSrc abstrTgt grInfo
                 case err of
@@ -1508,10 +1515,16 @@ applyChangesAux2 gid libname grInfo visibleNodes _ convMaps (change:changes) =
                    Just msg -> error $ 
                                "applyChangesAux2: could not delete edge "
                                       ++ shows abstrEdge ":\n" ++ msg
-
+{-trace ((show $ InjMap.getAToB dgAndabstrEdgeMap)++ "\nThe to be deleted edge is:\n" ++(show dgEdge)) $ -}
             Nothing -> error $ "applyChangesAux2: deleted edge from "
                               ++ shows src " to " ++ shows tgt
                               " of type " ++ showDoc (dgl_type edgelab)
                               " and origin " ++ shows (dgl_origin edgelab)
                               " of development "
                          ++ "graph does not exist in abstraction graph"
+
+
+
+ 
+
+
