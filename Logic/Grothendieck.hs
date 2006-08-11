@@ -447,15 +447,30 @@ data Grothendieck = Grothendieck deriving Show
 instance Language Grothendieck
 
 instance Show GMorphism where
-    show (GMorphism cid s m) = show cid ++ "(" ++ show s ++ ")" ++ show m
+    show (GMorphism cid s m) = 
+      show (normalize (Comorphism cid)) ++ "(" ++ show s ++ ")" ++ show m
 
 instance Pretty GMorphism where
     pretty (GMorphism cid s m) =
-      text (show cid)
+      text (show (normalize (Comorphism cid)))
       <+>
       parens (space <> pretty s <> space)
       $+$
       pretty m
+
+normalize :: AnyComorphism -> AnyComorphism
+normalize = id
+{- todo: somthing like the following...
+normalize (Comorphism cid) =
+  case cid of
+   CompComorphism r1 r2 ->
+    case (normalize (Comorphism r1),  normalize (Comorphism r2)) of
+     (Comorphism n1, Comorphism n2) ->
+       if isIdComorphism (Comorphism n1) then Comorphism n2
+         else if isIdComorphism (Comorphism n2) then Comorphism n1
+           else Comorphism (CompComorphism n1 n2)
+   _ -> Comorphism cid
+-}
 
 instance Category Grothendieck G_sign GMorphism where
   ide _ (G_sign lid sigma) =
@@ -463,13 +478,29 @@ instance Category Grothendieck G_sign GMorphism where
   comp _
        (GMorphism r1 sigma1 mor1)
        (GMorphism r2 _sigma2 mor2) =
-    do let lid2 = targetLogic r1
-           lid3 = sourceLogic r2
-           lid4 = targetLogic r2
-       mor1' <- coerceMorphism lid2 lid3 "Grothendieck.comp" mor1
-       mor1'' <- map_morphism r2 mor1'
-       mor <- comp lid4 mor1'' mor2
-       return (GMorphism (CompComorphism r1 r2) sigma1 mor)
+    if isIdComorphism (Comorphism r1)
+      then do let lid1 = sourceLogic r1
+                  lid2 = targetLogic r1
+                  lid3 = sourceLogic r2
+                  lid4 = targetLogic r2
+              sigma1' <- coerceSign lid1 lid3 "Grothendieck.comp" sigma1
+              mor1' <- coerceMorphism lid2 lid3 "Grothendieck.comp" mor1
+              mor1'' <- map_morphism r2 mor1'
+              mor <- comp lid4 mor1'' mor2 
+              return (GMorphism r2 sigma1' mor)
+      else if isIdComorphism (Comorphism r2)
+           then do let lid2 = targetLogic r1
+                       lid4 = targetLogic r2
+                   mor2' <- coerceMorphism lid4 lid2 "Grothendieck.comp" mor2
+                   mor <- comp lid2 mor1 mor2' 
+                   return (GMorphism r1 sigma1 mor)
+           else do let lid2 = targetLogic r1
+                       lid3 = sourceLogic r2
+                       lid4 = targetLogic r2
+                   mor1' <- coerceMorphism lid2 lid3 "Grothendieck.comp" mor1
+                   mor1'' <- map_morphism r2 mor1'
+                   mor <- comp lid4 mor1'' mor2 
+                   return (GMorphism (CompComorphism r1 r2) sigma1 mor)
   dom _ (GMorphism r sigma _mor) =
     G_sign (sourceLogic r) sigma
   cod _ (GMorphism r _sigma mor) =
