@@ -1,0 +1,61 @@
+#
+# Makefile
+# $Header$
+# Author: Heng Jiang, Uni Bremen 2004-2006
+# Year:   2006
+#
+# This Makefile will generate the installer for Hets with IzPack
+#
+
+all: casl-lib-checkout hetcats-checkout build
+     
+EMPTY =
+IZPACK_PATH = $(shell echo $$HETS_IZPACK)
+ifeq ($(IZPACK_PATH), $(EMPTY))     
+  IZPACK_PATH = $(shell echo $$HETS_HOME)/../izpack_het
+endif
+
+IZPACK_COMPILE = $(IZPACK_PATH)/bin/compile
+IZPACK_SAMPLE = $(IZPACK_PATH)/sample
+
+PLATFORM = $(shell arch)
+ifeq ($(PLATFORM), "sparc")
+    INSTALL_XML = $(IZPACK_SAMPLE)/pack/install-solaris.xml
+    INSTALL_JAR = hets-installer-sparc-solatis.jar 
+else 
+    ifeq ($(PLATFORM), "ppc")
+        INSTALL_XML = $(IZPACK_PATH)/sample/pack/install-mac.xml
+        INSTALL_JAR = hets-installer-pcc-mac.jar
+    else
+        INSTALL_XML = $(IZPACK_PATH)/sample/pack/install-linux.xml
+        INSTALL_JAR = hets-installer-x86-linux.jar
+    endif
+endif
+
+casl-lib-checkout :
+	@echo update casl-lib 
+	@cd $(IZPACK_SAMPLE) ; \
+	if [ -d CASL-lib ]; then \
+	  cvs up -dPA CASL-lib ; \
+	 else \
+	  cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:\/repository co -P CASL-lib ; \
+        fi
+  
+hetcats-checkout :
+	$(MAKE) release
+	mv HetCATS.tar $(IZPACK_SAMPLE)/src/
+	$(RM) -fr HetCATS
+
+build:
+	@echo update izpack_het
+	@if [ -d $(IZPACK_PATH) ]; then \
+	  svn up $(IZPACK_PATH) ; \
+	  else \
+	    svn checkout https://svn-agbkb.informatik.uni-bremen.de/izpack \
+		$HETS_HOME/../izpack_het ; \
+        fi
+	@chmod +x $(IZPACK_PATH)/bin/compile
+	$(IZPACK_COMPILE) $(INSTALL_XML) -b $(IZPACK_SAMPLE)/ -o $(INSTALL_JAR) -k standard
+
+.PHONY : all build casl-lib-checkout hetcats-checkout
+
