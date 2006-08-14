@@ -1,48 +1,71 @@
 {- | 
 Module      :  $Header$
-Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2004
+Copyright   :  (c) Till Mossakowski, Klaus Lüttich Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-Display of development graphs using dot
+Display of development graphs using Graphviz/dot
 -}
 
-module Static.DotGraph where
+module Static.DotGraph(dotGraph) where
 
 import Data.Graph.Inductive.Graph
 import Static.DevGraph
+import Data.List (intersperse)
 
 edgeAttribute :: DGLinkType -> String
 edgeAttribute LocalDef = " [style=bold]"
 edgeAttribute GlobalDef = " [style=bold]"
-edgeAttribute HidingDef = " [style=bold]"
+edgeAttribute HidingDef = " [style=bold,arrowhead=vee]"
 edgeAttribute (FreeDef _) = " [style=bold]"
 edgeAttribute (CofreeDef _) = " [style=bold]"
-edgeAttribute (LocalThm _ _ _)  = " [style=dotted]"
-edgeAttribute (GlobalThm _ _ _) = " [style=dotted]"
-edgeAttribute (HidingThm _ _) = " [style=dotted]"
-edgeAttribute (FreeThm _ _) = " [style=dotted]"
+edgeAttribute (LocalThm _ _con _)  = " [arrowhead=onormal"++
+                                    -- conLabel con++
+                                    "]"
+edgeAttribute (GlobalThm _ _con _) = " [arrowhead=onormal"++
+                                    -- conLabel con++
+                                    "]"
+edgeAttribute (HidingThm _ _) = " [arrowhead=vee]"
+edgeAttribute (FreeThm _ _) = " [arrowhead=onormal]"
+
+conLabel :: Conservativity -> String
+conLabel c = case show c of
+             xs | null xs -> ""
+                | otherwise -> ",label=\""++ xs ++ "?\""
 
 showNode :: DGraph -> Node -> String
-showNode dg n = getDGNodeName $ lab' $ context dg n
+showNode dg n = case getDGNodeName $ lab' $ context dg n of
+                xs | null xs -> "n__" ++ show n
+                   | otherwise -> xs
 
 dotEdge :: DGraph -> (Node, Node, DGLinkLab) -> String
 dotEdge dg (n1,n2,link) = 
   showNode dg n1 ++ " -> " ++ showNode dg n2
                ++ edgeAttribute (dgl_type link) ++ ";"
     
-nodeAttribute :: DGNodeLab -> String
-nodeAttribute (DGNode _ _ _ _ _ _ _) = ""
-nodeAttribute (DGRef _ _ _ _ _ _) =  " [shape=box]"
+nodeAttribute :: Bool -> DGNodeLab -> String
+nodeAttribute showInternal la =
+   case concat $ intersperse "," (inter la ++
+                                  case la of 
+                                  DGNode {} -> []
+                                  DGRef {}  -> ["shape=box"]) of
+   xs | null xs -> ""
+      | otherwise -> '[':xs++"]"
+ where inter l = if isInternalNode l && not showInternal
+                    then ["label=\"\",height=0.2,width=0.35"]
+                    else []
 
-dotNode :: DGraph -> (Node, DGNodeLab) -> String
-dotNode dg (n,ncontents) =
-  showNode dg n ++ nodeAttribute ncontents ++ ";"
+dotNode :: Bool -> DGraph -> (Node, DGNodeLab) -> String
+dotNode showInternal dg (n,ncontents) =
+  showNode dg n ++ nodeAttribute showInternal ncontents ++ ";"
 
-dot :: DGraph -> [String]
-dot dg =
+-- | Generate a dot term representation out of a development graph
+dotGraph :: Bool -- ^ True means show internal node labels 
+    -> DGraph -> String
+dotGraph showInternalNodeLabels dg = unlines $
   ["digraph G {","    size = \"8,6\"","  "] ++
-  map (dotNode dg) (labNodes dg) ++ map (dotEdge dg) (labEdges dg)++["}"]
+  map (dotNode showInternalNodeLabels dg) (labNodes dg) ++ 
+  map (dotEdge dg) (labEdges dg)++["}"]

@@ -364,16 +364,18 @@ formatList :: [HetOutFormat]
 formatList = [OutAscii, OutTerm, OutTaf, OutHtml, OutXml]
 
 -- | 'GraphType' describes the type of Graph that we want generated
-data GraphType = Dot | PostScript | Davinci
+data GraphType = Dot Bool -- ^ True means show internal node labels
+               | PostScript | Davinci
 
 instance Show GraphType where
     show g = case g of
-             Dot -> "dot"
+             Dot showInternalNodeLabels -> 
+                 (if showInternalNodeLabels then "exp." else "") ++ "dot"
              PostScript -> "ps"
              Davinci -> "davinci"
 
 graphList :: [GraphType]
-graphList = [Dot, PostScript, Davinci]
+graphList = [Dot True, Dot False, PostScript, Davinci]
 
 -- | 'RawOpt' describes the options we want to be passed to the Pretty-Printer
 data RawOpt = RawAscii String | RawLatex String

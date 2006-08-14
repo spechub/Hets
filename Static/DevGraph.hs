@@ -99,11 +99,11 @@ dgn_sign dn = case dgn_theory dn of
     G_theory lid sig _ -> G_sign lid sig
 
 isInternalNode :: DGNodeLab -> Bool
-isInternalNode (DGNode n _ _ _ _ _ _) = isInternal n
-isInternalNode _ = False
+isInternalNode (DGNode {dgn_name = n}) = isInternal n
+isInternalNode (DGRef {dgn_name = n}) = null $ show $ getName n
 
 isRefNode :: DGNodeLab -> Bool
-isRefNode (DGNode _ _ _ _ _ _ _) = False
+isRefNode (DGNode {}) = False
 isRefNode _ = True
 
 -- gets the name of a development graph node as a string

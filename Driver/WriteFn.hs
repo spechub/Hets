@@ -52,7 +52,7 @@ import SPASS.CreateDFGDoc
 
 import Logic.Prover
 import Static.DevGraph
-import Static.DotGraph as Dot
+import Static.DotGraph
 import Static.DGToSpec
 import qualified Static.PrintDevGraph as DG
 import Proofs.StatusUtils
@@ -164,8 +164,8 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
               writeVerbFile opt f str
           OmdocOut ->
             hetsToOMDoc opt (ln, lenv) f
-          GraphOut Dot ->
-            writeVerbFile opt f . concat . Dot.dot . devGraph $
+          GraphOut (Dot showInternalNodeLabels) ->
+            writeVerbFile opt f . dotGraph showInternalNodeLabels . devGraph $
                           lookupGlobalContext ln lenv
           _ -> return () -- treat others below
           ) outTypes
