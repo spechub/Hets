@@ -80,7 +80,7 @@ consCheck :: String -> TheoryMorphism Sign Sentence (DefaultMorphism Sign) ()
 consCheck thName tm = case t_target tm of
     Theory sig nSens -> let (axs, _) = getAxioms $ toNamedList nSens in
        isaProve (thName ++ "_c") $
-           Theory emptySign { baseSig = baseSig sig }
+           Theory sig
                $ markAsGoal $ toThSens $ if null axs then [] else
                    [ (emptyName $ mkRefuteSen $ termAppl notOp
                      $ foldr1 binConj $ map (senTerm . sentence) axs)
