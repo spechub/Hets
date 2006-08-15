@@ -116,7 +116,7 @@ werden Signatur-Symbole in OMDoc mit der Theorie versehen, in der
 OMDoc/OpenMath-Formeln als Haskell-Datentyp formulieren; diesen als Zwischendatentyp verwenden
 
 Hiding: unterschiedlich in OMDoc und Hets
-ein Hets-Hiding-Link mit einer Inklusion Sigma_1->Sigma_2 als 
+ein Hets-Hiding-Link mit einer Inklusion Sigma_1->Sigma_2 als
   Signaturmorphismus
   wird übersetzt in einen OMDoc-Theoriemorphismus
   mit leerer/identischer Abbildung, bei dem die Symbole aus
@@ -132,7 +132,7 @@ ein OMDoc-Theoriemorphismus mit Hiding, der eine Inklusion ist
 
 Logiken: über verschiedene OMDoc-Theorien mit URI
 
-  
+
 
 ************************************************
 Mingyi (Till)
@@ -140,7 +140,7 @@ Mingyi (Till)
 
 port CCC to Haskell
 
-Funktionen imageOfMorphism und inhabited 
+Funktionen imageOfMorphism und inhabited
   von OnePoint.hs in eigenes Modul verschieben: Modul SignFuns.hs
   mit "cvs add SigFuns.hs" einchecken
 
@@ -175,11 +175,11 @@ call the symbols in the image of the signature morphism "new"
 
 
 
-check' :: [EquationInfo] -> ([ExhaustivePat],EqnSet)  
+check' :: [EquationInfo] -> ([ExhaustivePat],EqnSet)
 check' []                                              = ([([],[])],emptyUniqSet)
 
 -- nur ein Pattern, bestehend aus nur Variablen? fertig, True
-check' [EqnInfo n ctx ps (MatchResult CanFail _)] 
+check' [EqnInfo n ctx ps (MatchResult CanFail _)]
    | all_vars ps  = ([(takeList ps (repeat new_wild_pat),[])],  unitUniqSet n)
 
 -- besteht das erste Pattern nur aus Variablen? dann darf es kein zweites geben!
@@ -190,7 +190,7 @@ check' qs@((EqnInfo n ctx ps (MatchResult CanFail _)):rs)
 
 -- falls ein Konstruktor dabei ist: split_by_constructor
 -- wenn die ersten Argument nur Variablen sind: first_column_only_vars
-check' qs@((EqnInfo n ctx ps result):_) 
+check' qs@((EqnInfo n ctx ps result):_)
    | all_vars ps  = ([],  unitUniqSet n)
    | constructors = split_by_constructor qs
    | only_vars    = first_column_only_vars qs
@@ -199,7 +199,7 @@ check' qs@((EqnInfo n ctx ps result):_)
      -- Note: RecPats will have been simplified to ConPats
      --       at this stage.
     constructors = or (map is_con qs)
-    only_vars    = and (map is_var qs) 
+    only_vars    = and (map is_var qs)
 
 
 subsort definitions: are conservative if formula is satisfiable
@@ -212,7 +212,7 @@ Heng (Klaus)
 OWL-DL logic
 OWL-DL (<)-> CASL-DL
 
-emacs mode: 
+emacs mode:
   highlight does not work properly for HasCASL/Set.het or UserManual/Sbcs.casl
      some operation symbols
   show hets output immediately
@@ -234,7 +234,7 @@ development graph calculus
 look at Static/DevGraph.hs
 look at Proofs/EdgeUtils.hs Proofs/StatusUtils.hs Proofs/Global.hs
 
-test development graph GUI: 
+test development graph GUI:
    global decomposition
    menu edit - unnamed nodes - hide/show nodes,
    node menu: show just subtree / undo
@@ -257,7 +257,7 @@ further task 1
 further task 2
 ************************************************
 
-Uni-Refactoring, 
+Uni-Refactoring,
 
 make modules hierarchical, change scoped type variables for ghc-6.5
 (and older ghcs), replace deprecated code (i.e. FiniteMap, hslibs),
@@ -286,7 +286,7 @@ change management
    - DGOrigin
    - Signatur
 
-einfaches Merge von lokalen Beweisen eines abgespeichteren DG 
+einfaches Merge von lokalen Beweisen eines abgespeichteren DG
   in aktuellen DG
 
 ************************************************
@@ -338,7 +338,7 @@ refactoring of dgraphs: add unique tags + hashes (but no table)
 display library graph
 
 
-unify GUI/AbstractGraphView.hs and Taxonomy/AbstractGraphView.hs 
+unify GUI/AbstractGraphView.hs and Taxonomy/AbstractGraphView.hs
 and uni/appl/ontologytool/AbstractGraphView.hs
 (make it really abstract), possibly contact amahnke@tzi.de regarding
 Taxonomy, possibly use uni/appl/ontologytool instead of Taxonomy!
@@ -363,8 +363,8 @@ Christian
 
 Isabelle coding
 - improve display syntax in HasCASL-Isabelle coding
-- correct CASL2Isabelle 
-  (inconsistency due to coding of free datatypes)
+- identifiers in mixfix templates must be excluded as ordinary
+identifiers (i.e. as quantified variables)
 
 
 more abstract datatypes?
@@ -372,12 +372,12 @@ more abstract datatypes?
 collect the patches for programatica (or create a package)
 -    conv (SN i p) = PN i (S p)
 +    conv (SN i p) = PN i (Sn (show i) p)
-in programatica/tools/base/parse2/NumberNames.hs 
+in programatica/tools/base/parse2/NumberNames.hs
 fixes translation error of Pair
 
 simplification of HasCASL sentences (omit types)
 
-Logic COL is a ruin (with wrongly qualified module names)
+Logic COL is a ruin
 
 logic coding from the comand line with printing of results
 
@@ -391,7 +391,7 @@ Haskell modules: hiding, renaming
 
 
 Static analysis for HasCASL
-  pattern analysis for program equations 
+  pattern analysis for program equations
   implemented only atomic subtyping
 
 Weak amalgamation analysis?
@@ -427,24 +427,24 @@ SPASS/Logic_SPASS
   change proof_tree to String and save TSTP to it
   SPASS proof between "^Here is a proof" and "^Formulae used"
   later
-    SPASS Proof must be parsed and translated to TSTP 
+    SPASS Proof must be parsed and translated to TSTP
     (Klaus checks for this functionallity in MathServ)
 
 SPASS/MathServCommunications
   types for Service and Soap Operation instead of Strings
 
 tactic_script activities
-  parser for SPASS commandline 
+  parser for SPASS commandline
     parsed into [SPASS.Sign.SPSetting]
-  format of tactic_script and parser for MathServBroker and 
+  format of tactic_script and parser for MathServBroker and
     individual MathServ reasoners
-  include current options into saved DFG file (saved from GUI) 
+  include current options into saved DFG file (saved from GUI)
     (s. SPASS.CreateDFG)
   include current options as comment into saved TPTP file (saved from GUI)
     and also the requested prover or "[via Broker]"
 
-Name of the real prover should be in the prover_name of Proof_status 
-  if the Broker was used but "<name> [via MathServBroker]" should be 
+Name of the real prover should be in the prover_name of Proof_status
+  if the Broker was used but "<name> [via MathServBroker]" should be
   the end of the prover name
 
 SPASS encoding improvements in SPASS.Conversions/Comorphisms.CASL2SPASS
@@ -452,9 +452,9 @@ SPASS encoding improvements in SPASS.Conversions/Comorphisms.CASL2SPASS
     special case: (freely) generated sorts are not eliminated
       new flag in SPASS sign: singleSorted
       Sentences are modified in CASL2SPASS
-      all variable declarations have to consider the flag 
+      all variable declarations have to consider the flag
          (quantified formulas) variable lists without types
-       Formula/Term specific 
+       Formula/Term specific
        - F:sort membership ==> true
        - T:explicit cast is omitted
        - T:explicit typing of terms is omitted
@@ -464,26 +464,26 @@ SPASS encoding improvements in SPASS.Conversions/Comorphisms.CASL2SPASS
 SPASS encoding improvements in CASL2SPASS
   - if there are predicates defined upon equality substitute them with equality
     and remove them from the signature
-    find definitions (Equivalences) where one side is a binary predicate 
+    find definitions (Equivalences) where one side is a binary predicate
       and the other side is a builtin equality application (Strong_equation)
       return the full qualified (with type) predicate(s)
       this is done before the translation of the signature/sentences happens
     remove symbol from signature and mark it in the idMap as equality
      (involves adding a flag to SPASS.Utils.CPred)
 
-display of tactic_scripts in GUI.ProofManagement 
+display of tactic_scripts in GUI.ProofManagement
 
 
 ************************************************
 Klaus
 ************************************************
 
-for consistency checking with Isabelle, look at the following SAT-Solvers: 
+for consistency checking with Isabelle, look at the following SAT-Solvers:
 MChaff, ZChaff, Berkmin
 
 Consistency checker interface
   via global interface, accessible from global and node menus
-  use falseSentence from Logic.Logic (property: holds in no model) 
+  use falseSentence from Logic.Logic (property: holds in no model)
     proved -> inconsistent
     disproved -> consistent (assuming completeness)
   batch mode for automatic provers such as SPASS
@@ -521,7 +521,7 @@ CASL consistency checker
 Weitere %implies-Annotationen zu den Basic Datatypes hinzufuegen
   (Vorbild: Larch-Handbuch)
 Simpsets/Taktiken fuer Minimierung der ueberladenen Typen entwickeln
-Parser and static analysis for CSP-CASL 
+Parser and static analysis for CSP-CASL
 
 ************************************************
 Christoph
@@ -605,7 +605,7 @@ topsort coding: partial functions as relations?
 
 theorem link menu for proof obligations
 
-UserManual/Chapter7.casl: local thm link starting from Monoid leads to type error 
+UserManual/Chapter7.casl: local thm link starting from Monoid leads to type error
 in Isabelle. Reason: Inlineaxioms does not translate ga_totality axioms
 correctly.
 
@@ -726,7 +726,7 @@ variants for specs (needed for DOLCE: CASL variant, DL variant, ...)
 Integration of MAYA and Isabelle/HOL (global HOL-Coding of
   Grothendieck logic)
   + for TAS: reflection of HOL in HOL, to be composed with encodings
-    (i.e. signatures, axioms, signature morphisms in HOL, 
+    (i.e. signatures, axioms, signature morphisms in HOL,
           re-use ML signatures) (Einar)
 
 Display Specs as daVinci subgraphs
