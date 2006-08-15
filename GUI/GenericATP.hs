@@ -301,7 +301,9 @@ goalProcessed stateRef tLimit numGoals label prName
                       (configsMap s)}
   writeIORef stateRef s'
 
-  let notReady = numGoals - processedGoalsSoFar > 0
+  let notReady = case retval of 
+                 ATPError _ -> False 
+                 _ -> numGoals - processedGoalsSoFar > 0
   if mainDestroyed s
      then return False 
      else do
