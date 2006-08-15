@@ -79,20 +79,18 @@ baseSign = MainHC_thy
 transAssumps :: GlobalAnnos -> Assumps -> Result ConstTab
 transAssumps ga = foldM insertOps Map.empty . Map.toList where
   insertOps m (name, ops) =
-      let b = isMixfix name
-          chk t = let pf = isPlainFunType t in if b || pf < 2 then pf else -1
-          trns = if b then transPlainFunType else transFunType
+      let chk t = isPlainFunType t
       in case opInfos ops of
           [info] -> do
               ty <- transOpInfo info
               return $ Map.insert
                          (mkIsaConstT False ga (chk ty)
-                          name baseSign) (trns ty) m
+                          name baseSign) (transPlainFunType ty) m
           infos -> foldM ( \ m' (i, info) -> do
                         ty <- transOpInfo info
                         return $ Map.insert
                              (mkIsaConstIT False ga (chk ty)
-                              name i baseSign) (trns ty) m'
+                              name i baseSign) (transPlainFunType ty) m'
                          ) m $ zip [1..] infos
 
 transSignature :: Env -> Result Isa.Sign
@@ -135,7 +133,7 @@ transFunType fty = case fty of
     FunType f a -> mkFunType (transFunType f) $ transFunType a
     PartialVal a -> mkOptionType $ transFunType a
     PairType a b -> prodType (transFunType a) $ transFunType b
-    TupleType l -> transFunType $ foldr1 PairType l
+    TupleType l -> transFunType $ foldl1 PairType l
     ApplType tid args -> Type (showIsaTypeT tid baseSign) []
                        $ map transFunType args
     TypeVar tid -> TFree (showIsaTypeT tid baseSign) []
@@ -146,17 +144,18 @@ isPlainFunType fty = case fty of
     FunType f a -> case a of
                      FunType _ _ -> -1
                      _ -> case f of
-                            TupleType l -> if length l == 2 then 2 else -1
+                            TupleType l -> length l
                             _ -> 1
     _ -> 0
 
 transPlainFunType :: FunType -> Typ
-transPlainFunType fty = if isPlainFunType fty == 2 then
+transPlainFunType fty =
     case fty of
-    FunType (TupleType l) a -> foldr mkFunType (transFunType a)
+    FunType (TupleType l) a -> case a of
+        FunType _ _ -> transFunType fty
+        _ -> foldr mkFunType (transFunType a)
                                $ map transFunType l
     _ -> transFunType fty
-    else transFunType fty
 
 data FunType = UnitType | BoolType | FunType FunType FunType
              | PartialVal FunType | PairType FunType FunType
@@ -244,7 +243,7 @@ transAltDefn env tm args dt tyId alt = case alt of
         nts <- mapM funType mTs
         -- extract overloaded opId number
         return (transOpId env opId sc, case nts of
-                [TupleType l@[_, _]] | isMixfix opId -> map transFunType l
+                [TupleType l] -> map transFunType l
                 _ -> map transFunType nts)
     _ -> fatal_error ("not a total constructor: " ++ show tyId)
          $ posOfId tyId
@@ -280,8 +279,7 @@ transOpId sign op ts@(TypeScheme _ ty _) =
     in case mty of
          Nothing -> error "transOpId"
          Just fty ->
-           let pf = isPlainFunType fty
-               args = if pf < 2 || isMixfix op then pf else -1
+           let args = isPlainFunType fty
            in case (do
            ops <- Map.lookup op (assumps sign)
            if isSingle (opInfos ops) then return $
@@ -320,6 +318,9 @@ uncurryOpS = "uncurryOp"
 uncurryOp :: Isa.Term
 uncurryOp = conDouble uncurryOpS
 
+for :: Int -> (a -> a) -> a -> a
+for n f a = if n <= 0 then a else for (n - 1) f $ f a
+
 -- terms
 transTerm :: Env -> As.Term -> Result (FunType, Isa.Term)
 transTerm sign trm = case trm of
@@ -349,9 +350,9 @@ transTerm sign trm = case trm of
               | opId == defId -> (instfTy, cf $ defOp)
               | opId == whenElse -> (fTy, whenElseOp)
               | otherwise -> (instfTy,
-                            cf $ (if isPlainFunType fTy == 2 && isMixfix opId
-                                  then termAppl uncurryOp
-                                  else id) $ con $ transOpId sign opId ts)
+                            cf $ (for (isPlainFunType fTy - 1)
+                                  $ termAppl uncurryOp)
+                             $ con $ transOpId sign opId ts)
     QuantifiedTerm quan varDecls phi _ -> do
         let qname = case quan of
                       Universal -> allS
@@ -384,7 +385,7 @@ transTerm sign trm = case trm of
         return (bTy, Isa.Let nEqs bTrm)
     TupleTerm ts@(_ : _) _ -> do
         nTs <- mapM (transTerm sign) ts
-        return $ foldr1 ( \ (s, p) (t, e) ->
+        return $ foldl1 ( \ (s, p) (t, e) ->
                           (PairType s t, Tuplex [p, e] NotCont)) nTs
     TupleTerm [] _ -> return (UnitType, unitOp)
     ApplTerm t1 t2 _ -> mkApp sign t1 t2 -- transAppl sign Nothing t1 t2
@@ -393,8 +394,8 @@ transTerm sign trm = case trm of
 
 instType :: FunType -> FunType -> ConvFun
 instType f1 f2 = case (f1, f2) of
-    (TupleType l1, _) -> instType (foldr1 PairType l1) f2
-    (_, TupleType l2) -> instType f1 $ foldr1 PairType l2
+    (TupleType l1, _) -> instType (foldl1 PairType l1) f2
+    (_, TupleType l2) -> instType f1 $ foldl1 PairType l2
     (PartialVal (TypeVar _), BoolType) -> Option2bool
     (PairType a c, PairType b d) ->
         let c2 = instType c d
@@ -520,8 +521,8 @@ unpackOp ft = case ft of
 adjustTypes :: FunType -> FunType -> FunType
             -> Result ((Bool, ConvFun), (FunType, ConvFun))
 adjustTypes aTy rTy ty = case (aTy, ty) of
-    (TupleType l, _) -> adjustTypes (foldr1 PairType l) rTy ty
-    (_, TupleType l) -> adjustTypes aTy rTy $ foldr1 PairType l
+    (TupleType l, _) -> adjustTypes (foldl1 PairType l) rTy ty
+    (_, TupleType l) -> adjustTypes aTy rTy $ foldl1 PairType l
     (BoolType, BoolType) -> return ((False, IdOp), (ty, IdOp))
     (UnitType, UnitType) -> return ((False, IdOp), (ty, IdOp))
     (PartialVal _, BoolType) -> return ((False, IdOp), (aTy, Bool2option))
@@ -612,7 +613,7 @@ mkTermAppl fun arg = case (fun, arg) of
           | new mp == "ifImplOp" -> binImpl b a
           | new mp == "exEqualOp" && (isLifted a || isLifted b) ->
             mkTermAppl (mkTermAppl uncurryOp (con eqV)) arg
-      (Const mp _, Tuplex [a, Tuplex [b, c] _] d)
+      (Const mp _, Tuplex [Tuplex [a, b] _, c] d)
           | new mp == "whenElseOp" -> case isEquallyLifted a c of
               Just (f, na, nc) -> mkTermAppl f $ If b na nc d
               Nothing -> If b a c d
@@ -647,9 +648,9 @@ mkTermAppl fun arg = case (fun, arg) of
           | new d == "option2bool" && new sm == someS -> true
           | new d == "option2bool" && new sm == "bool2option"
             || new d == "bool2option" && new sm == "option2bool" -> a
-          | new d == "curryOp" && new sm == uncurryOpS -> a 
-          | new d == "flipCurryOp" && new sm == uncurryOpS -> 
-              mkTermAppl (conDouble "flip") a 
+          | new d == "curryOp" && new sm == uncurryOpS -> a
+          | new d == "flipCurryOp" && new sm == uncurryOpS ->
+              mkTermAppl (conDouble "flip") a
       (Const i _, _)
           | new i == "bool2option" ->
               let tc = mkTermAppl conSome $ unitOp
@@ -691,7 +692,7 @@ getPatternType t =
         TypedTerm _ _ typ _ -> funType typ
         TupleTerm ts _ -> do
             ptys <- mapM getPatternType ts
-            return $ foldr1 PairType ptys
+            return $ foldl1 PairType ptys
         _ -> fatal_error ("not a pattern for Isabelle: " ++ showDoc t "")
              $ getRange t
 
