@@ -7,9 +7,10 @@
 # This Makefile will generate the installer for Hets with IzPack
 #
 
-all: casl-lib-checkout hetcats-checkout build
+all: download build
      
 EMPTY =
+ACTDATE = $(shell date +%F)
 IZPACK_PATH = $(shell echo $$HETS_IZPACK)
 ifeq ($(IZPACK_PATH), $(EMPTY))     
   IZPACK_PATH = $(shell echo $$HETS_HOME)/../izpack_het
@@ -18,33 +19,57 @@ endif
 IZPACK_COMPILE = $(IZPACK_PATH)/bin/compile
 IZPACK_SAMPLE = $(IZPACK_PATH)/sample
 
-PLATFORM = $(shell arch)
-ifeq ($(PLATFORM), "sparc")
+PLATFORM = $(shell uname -s)
+GMPURL = ""
+ifeq ($(PLATFORM), SunOS)
     INSTALL_XML = $(IZPACK_SAMPLE)/pack/install-solaris.xml
-    INSTALL_JAR = hets-installer-sparc-solatis.jar 
+    INSTALL_JAR = hets-installer-sparc-solatis.jar
+    SPASSURL = http://spass.mpi-sb.mpg.de/download/binaries/spass22sparc59.tgz
 else 
-    ifeq ($(PLATFORM), "ppc")
+    ifeq ($(PLATFORM), Darwin)
         INSTALL_XML = $(IZPACK_PATH)/sample/pack/install-mac.xml
         INSTALL_JAR = hets-installer-pcc-mac.jar
-    else
+	GMPURL=http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/mac/GMP.framework.zip
+	SPASSURL = http://spass.mpi-sb.mpg.de/download/binaries/spass22mac.dmg
+    else 
+      ifeq ($(PLATFORM), Linux)
         INSTALL_XML = $(IZPACK_PATH)/sample/pack/install-linux.xml
         INSTALL_JAR = hets-installer-x86-linux.jar
+	SPASSURL = http://spass.mpi-sb.mpg.de/download/binaries/spass22pclinux.tgz
+      endif
     endif
 endif
+
+download : hetcats-checkout casl-lib-checkout other-download
 
 casl-lib-checkout :
 	@echo update casl-lib 
 	@cd $(IZPACK_SAMPLE) ; \
-	if [ -d CASL-lib ]; then \
+	if [ -d CASL-lib ] ; then \
 	  cvs up -dPA CASL-lib ; \
 	 else \
 	  cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:\/repository co -P CASL-lib ; \
         fi
-  
-hetcats-checkout :
+
+hetcats-checkout : daily-hets-download
 	$(MAKE) release
 	mv HetCATS.tar $(IZPACK_SAMPLE)/src/
-	$(RM) -fr HetCATS
+	$(RM) -r HetCATS
+	cd $(IZPACK_SAMPLE)/src ; tar xvf HetCATS.tar ; $(RM) HetCATS.tar
+
+daily-hets-download :
+	@sh utils/getDailyHets.sh
+	mv $(HOME)/bin/hets-$(ACTDATE) $(IZPACK_SAMPLE)/hets
+
+other-download :
+	if [ $(GMPURL) != "" ]; then \
+	  wget --output-document=$(IZPACK_SAMPLE)/GMP/GMP.framework.zip $(GMPURL) ; \
+	  cd $(IZPACK_SAMPLE)/GMP ; \
+	  unzip GMP.framework.zip ; \
+	  $(RM) GMP.framework.zip ; \
+	fi
+	wget --output-document=$(IZPACK_SAMPLE)/SPASS/spass.tgz $(SPASSURL)
+	cd $(IZPACK_SAMPLE)/SPASS/ ; tar xvf spass.tgz ; $(RM) spass.tgz
 
 build:
 	@echo update izpack_het
@@ -57,5 +82,5 @@ build:
 	@chmod +x $(IZPACK_PATH)/bin/compile
 	$(IZPACK_COMPILE) $(INSTALL_XML) -b $(IZPACK_SAMPLE)/ -o $(INSTALL_JAR) -k standard
 
-.PHONY : all build casl-lib-checkout hetcats-checkout
+.PHONY : all download build casl-lib-checkout hetcats-checkout daily-hets-download daily-hets-download other-download
 
