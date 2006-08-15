@@ -111,6 +111,7 @@ runMSBroker sps cfg saveTPTP thName nGoal = do
                      proverTimeLimit = tLimit,
                      extraOptions = Nothing}
     msResponse <- parseMathServOut mathServOut
-    return (mapMathServResponse msResponse cfg nGoal (prover_name mathServBroker))
+    return (mapMathServResponse msResponse cfg nGoal
+                               (prover_name mathServBroker))
     where
       tLimit = maybe (guiDefaultTimeLimit) id $ timeLimit cfg

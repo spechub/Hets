@@ -33,31 +33,34 @@ import GUI.GenericATPState
 brokerName :: String
 brokerName = "MSBroker"
 
-
 {- |
   Maps a MathServResponse record into a GenericConfig with Proof_status.
   If an error occured, an ATPError with error message instead of result output
   will be returned.
 -}
-mapMathServResponse :: MathServResponse -- ^ Parsed MathServ data
+mapMathServResponse :: Either String MathServResponse 
+                  -- ^ SOAP faultstring or Parsed MathServ data
                     -> GenericConfig String -- ^ configuration to use
                     -> AS_Anno.Named SPTerm -- ^ goal to prove
                     -> String -- ^ prover name
                     -> (ATPRetval, GenericConfig String)
                     -- ^ (retval, configuration with proof status and
                     --    complete output)
-mapMathServResponse msr cfg nGoal prName =
-    either (\failure -> 
-              (ATPError ("MathServ Error: " ++
+mapMathServResponse eMsr cfg nGoal prName =
+    either (\ errStr -> (ATPError errStr,cfg))
+           (\msr -> 
+            either 
+              (\failure -> 
+                (ATPError ("MathServ Error: " ++
                    if (null failure) then [] else head $ lines failure),
-               cfg { proof_status = defaultProof_status nGoal
-                       (prName ++ " [via MathServ]") (configTimeLimit cfg)
-                       (extraOpts cfg) "",
-                    resultOutput = lines failure,
-                    timeUsed = globalTime $ timeResource msr }
-                    ))
-           (\res -> mapProverResult res (timeResource msr) cfg nGoal prName)
-           (foAtpResult msr)
+                 cfg { proof_status = defaultProof_status nGoal
+                         (prName ++ " [via MathServ]") (configTimeLimit cfg)
+                         (extraOpts cfg) "",
+                       resultOutput = lines failure,
+                       timeUsed = globalTime $ timeResource msr }))
+              (\res -> mapProverResult res (timeResource msr) cfg nGoal prName)
+              (foAtpResult msr))
+           eMsr
 
 {- |
   Maps a FoAtpResult record into a GenericConfig with Proof_status.

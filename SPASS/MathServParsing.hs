@@ -203,20 +203,21 @@ makeEndPoint uriStr = maybe Nothing
   Either MathServ output is returned or a simple error message (no XML).
 -}
 callMathServ :: MathServCall -- ^ needed data to do a MathServ call
-             -> IO String -- ^ MathServ output or error message
+             -> IO (Either String String) 
+             -- ^ Left (SOAP error) or Right (MathServ output or error message)
 callMathServ call =
     do
        maybe (do
-                return "Could not start MathServ.")
+                return $ Left $ "Could not start MathServ.")
              (\ endPoint -> do
                  (res::Either SimpleFault MathServOutput)
                     <- soapCall endPoint $
                        mkProveProblem call
                  case res of
                   Left mErr -> do
-                    return $ show mErr
+                    return $ Left $ faultstring mErr
                   Right resp -> do
-                    return $ getResponse resp
+                    return $ Right $ getResponse resp
              )
              (makeEndPoint $
                 "http://"++server++':':port++"/axis/services/"++
@@ -231,14 +232,22 @@ callMathServ call =
   Full parsing of RDF-objects returned by MathServ and putting the results
   into a MathServResponse data-structure.
 -}
-parseMathServOut :: String -- ^ MathServ output or error messages
-                 -> IO MathServResponse -- ^ parsed rdf-objects in record
-parseMathServOut mathServOut = do
+parseMathServOut :: Either String String 
+       -- ^ Left (SOAP error) or Right (MathServ output or error message)
+                 -> IO (Either String MathServResponse) 
+       -- ^ parsed rdf-objects in record
+parseMathServOut eMathServOut = 
+   case eMathServOut of
+   Left errStr -> return $ 
+                  Left ("MathServ/SOAP Error:\n" ++ errStr++
+                        "\nplease report this error to "++
+                        "cofi@informatik.uni-bremen.de")
+   Right mathServOut -> do
     mtrees <- parseXML mathServOut
     let rdfTree = maybe emptyRoot head mtrees
         failStr = getMaybeXText failureXPath rdfTree
 
-    return MathServResponse {
+    return $ Right (MathServResponse {
              foAtpResult = maybe (Right $ parseFoAtpResult rdfTree)
                                  Left failStr
 {-
@@ -246,7 +255,7 @@ parseMathServOut mathServOut = do
                            then Nothing
                            else Just $ parseFoAtpResult rdfTree,
 -}
-             ,timeResource = parseTimeResource rdfTree }
+             ,timeResource = parseTimeResource rdfTree })
     where
       failureXPath = "/mw:*[local-name()='Failure']/"
                      ++ "mw:*[local-name()='message']"
