@@ -14,16 +14,17 @@ Maps a MathServResponse into a GenericConfig structure.
 
 module SPASS.MathServMapping where
 
+import Common.Doc -- as Pretty
 import qualified Common.AS_Annotation as AS_Anno
 
 import Logic.Prover
 
 import SPASS.MathServParsing
+import SPASS.ProverState (configTimeLimit)
 import SPASS.Sign
 
 import Data.Maybe
 
-import GUI.GenericATP (guiDefaultTimeLimit)
 import GUI.GenericATPState
 
 {- |
@@ -52,10 +53,11 @@ mapMathServResponse msr cfg nGoal prName =
                cfg { proof_status = defaultProof_status nGoal
                        (prName ++ " [via MathServ]") (configTimeLimit cfg)
                        (extraOpts cfg) "",
-                    resultOutput = lines failure }
+                    resultOutput = lines failure,
+                    timeUsed = globalTime $ timeResource msr }
                     ))
-              (\res -> mapProverResult res (timeResource msr) cfg nGoal prName)
-              (foAtpResult msr)
+           (\res -> mapProverResult res (timeResource msr) cfg nGoal prName)
+           (foAtpResult msr)
 
 {- |
   Maps a FoAtpResult record into a GenericConfig with Proof_status.
@@ -71,20 +73,21 @@ mapProverResult :: MWFoAtpResult -- ^ parsed FoATPResult data
                 -- ^ (retval, configuration with proof status, complete output)
 mapProverResult atpResult timeRes cfg nGoal prName =
     let res = mapToGoalStatus $ systemStatus atpResult
-        output = [ if (prName == brokerName) then
-                     "* Used prover   : "
-                     ++ (usedProverName $ systemStr atpResult)
-                   else [],
-                   "* Formal proof  :"]
-              ++ lines (formalProof $ proof atpResult)
-              ++ [[], replicate 70 '*',
-                  "* Calculus      : " ++ (show $ calculus $ proof atpResult),
-                  "* Spent time    : CPU time        = "
-                    ++ (show $ cpuTime timeRes) ++ " ms",
-                  "                  Wall clock time = "
-                    ++ (show $ wallClockTime timeRes) ++ " ms",
-                  "* Prover output :"]
-              ++ (lines $ unTab $ outputStr atpResult)
+        output = (lines . show) $
+          (if (prName == brokerName) then
+              text "Used prover  " <+> colon <+> text
+                           (usedProverName $ systemStr atpResult)
+            else empty)
+          $+$ text "Calculus     " <+> colon <+>
+              text (show $ calculus $ proof atpResult)
+          $+$ text "Spent time   " <+> colon <+> (
+              text "CPU time       "              <+> equals <+>
+              text (show $ cpuTime timeRes)       <+> text "ms"
+              $+$ text "Wall clock time"          <+> equals <+>
+              text (show $ wallClockTime timeRes) <+> text "ms" )
+          $+$ text "Prover output" <+> colon $+$
+              vcat (map text (lines $ unTab $ outputStr atpResult))
+          $+$ text (replicate 75 '-')
         timeout = (foAtpStatus $ systemStatus atpResult) == Unsolved Timeout
 
         -- get real prover name if Broker was used
@@ -102,7 +105,8 @@ mapProverResult atpResult timeRes cfg nGoal prName =
                            (formalProof $ proof atpResult)
     in  (atpErr,
          cfg { proof_status = retval,
-               resultOutput = output })
+               resultOutput = output,
+               timeUsed     = globalTime timeRes })
     where
       -- replace tabulators with each 8 spaces
       unTab = foldr (\ch li ->
@@ -143,17 +147,9 @@ defaultProof_status :: AS_Anno.Named SPTerm -- ^ goal to prove
 defaultProof_status nGoal prName tl opts pt =
   (openProof_status (AS_Anno.senName nGoal)
                     prName pt)
-  {tacticScript = Tactic_script $ unwords $ ("TimeLimit=" ++ show tl):opts }
-
-{- |
-  Returns the time limit from GenericConfig if available. Otherwise
-  guiDefaultTimeLimit is returned.
--}
-configTimeLimit :: GenericConfig String
-                -> Int
-configTimeLimit cfg = 
-    maybe (guiDefaultTimeLimit) id $ timeLimit cfg
-
+  {tacticScript = Tactic_script
+    {ts_timeLimit = tl,
+     ts_extraOpts = unwords opts} }
 
 {- |
   Returns the value of a prover run used in GUI (Success or
@@ -181,3 +177,10 @@ proof_stat nGoal res usedAxs timeOut defaultPrStat
       (ATPTLimitExceeded,
        defaultPrStat { goalStatus = res })
   | otherwise = (ATPSuccess, defaultPrStat { goalStatus = res })
+
+{- |
+  Sum over CPU time and wall clock time from a given MWTimeResource.
+-}
+globalTime :: MWTimeResource -- ^ time resource: CPU time, wall clock time
+           -> Int -- ^ sum of both times
+globalTime msr = (cpuTime msr) + (wallClockTime msr)

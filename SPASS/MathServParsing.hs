@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  Help functions for all automatic theorem provers.
+Description :  Functions for parsing MathServ output into a MathServResponse structure.
 Copyright   :  (c) Rainer Grabbe
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -8,11 +8,8 @@ Maintainer  :  rainer25@tzi.de
 Stability   :  provisional
 Portability :  needs POSIX
 
-Functions for parsing and mapping MathServ output.
+Functions for parsing MathServ output into a MathServResponse structure.
 
--}
-
-{-
 -}
 
 module SPASS.MathServParsing where

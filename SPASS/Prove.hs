@@ -95,77 +95,88 @@ spassProveGUI thName th =
   Reads and parses the output of SPASS.
 -}
 parseSpassOutput :: ChildProcess -- ^ the SPASS process
-                 -> IO (Maybe String, [String], [String])
-                    -- ^ (result, used axioms, complete output)
-parseSpassOutput spass = parseProtected (parseStart True) (Nothing, [], [])
+                 -> IO (Maybe String, [String], [String], Int)
+                    -- ^ (result, used axioms, complete output, used time)
+parseSpassOutput spass = parseProtected (parseStart True) (Nothing, [], [], 0)
   where
 
     -- check for errors. unfortunately we cannot just read from SPASS until an
     -- EOF since readMsg will just wait forever on EOF.
-    parseProtected f (res, usedAxs, output) = do
+    parseProtected f (res, usedAxs, output, tUsed) = do
       e <- getToolStatus spass
       case e of
         Nothing
           -- still running
-          -> f (res, usedAxs, output)
+          -> f (res, usedAxs, output, tUsed)
         Just (ExitFailure retval)
           -- returned error
           -> do
               _ <- waitForChildProcess spass
-              return (Nothing, [], ["SPASS returned error: "++(show retval)])
+              return (Nothing, [], ["SPASS returned error: "++(show retval)], 0)
         Just ExitSuccess
           -- completed successfully. read remaining output.
-          -> f (res, usedAxs, output)
+          -> f (res, usedAxs, output, tUsed)
 
     -- the first line of SPASS output is always empty.
     -- the second contains SPASS-START in the usual case
     -- and an error message in case of an error
-    parseStart firstline (res, usedAxs, output) = do
+    parseStart firstline (res, usedAxs, output, tUsed) = do
       line <- readMsg spass
       if firstline
         -- ignore empty first line
-        then parseProtected (parseStart False) (res, usedAxs, output ++ [""])
+        then parseProtected (parseStart False)
+                            (res, usedAxs, output ++ [""], tUsed)
         -- check for a potential error
         else do
           let startMatch = matchRegex re_start line
           if isJust startMatch
             -- got SPASS-START. continue parsing
-            then parseProtected parseIt (res, usedAxs, output ++ [line])
+            then parseProtected parseIt (res, usedAxs, output ++ [line], tUsed)
             -- error. abort parsing
             else do
               e <- waitForChildProcess spass
               case e of
                 ChildTerminated ->
-                  return (Nothing, [], output ++ [line, "",
-                                                  "SPASS has been terminated."])
+                  return (Nothing, [], output ++
+                      [line, "", "SPASS has been terminated."], 0)
                 ChildExited retval ->
-                  return (Nothing, [], output ++ [line, "",
-                                       "SPASS returned error: "++(show retval)])
+                  return (Nothing, [], output ++
+                      [line, "", "SPASS returned error: " ++ (show retval)], 0)
 
     -- actual parsing. tries to read from SPASS until ".*SPASS-STOP.*" matches.
-    parseIt (res, usedAxs, output) = do
+    parseIt (res, usedAxs, output, tUsed) = do
       line <- readMsg spass
       -- replace tabulators with each 8 spaces
       let line' = foldr (\ch li -> if ch == '\x9'
                                    then "        "++li
                                    else ch:li) "" line
-      let resMatch = matchRegex re_sb line'
-      let res' = maybe res (Just . head) resMatch
-      let usedAxsMatch = matchRegex re_ua line'
-      let usedAxs' = maybe usedAxs (words . head) usedAxsMatch
+          resMatch = matchRegex re_sb line'
+          res' = maybe res (Just . head) resMatch
+          usedAxsMatch = matchRegex re_ua line'
+          usedAxs' = maybe usedAxs (words . head) usedAxsMatch
+          tUsed' = maybe tUsed (calculateTime) $ matchRegex re_tu line
       if seq (length line) $ isJust (matchRegex re_stop line')
         then do
           _ <- waitForChildProcess spass
-          return (res', usedAxs', output ++ [line'])
+          return (res', usedAxs', output ++ [line'], tUsed')
         else
-          parseProtected parseIt (res', usedAxs', output ++ [line'])
+          parseProtected parseIt (res', usedAxs', output ++ [line'], tUsed')
 
     -- regular expressions used for parsing
     re_start = mkRegex ".*SPASS-START.*"
     re_stop = mkRegex ".*SPASS-STOP.*"
     re_sb = mkRegex "SPASS beiseite: (.*)$"
     re_ua = mkRegex "Formulae used in the proof.*:(.*)$"
-
+    re_tu = mkRegex $ "SPASS spent\t([0-9]+):([0-9]+):([0-9]+)\\.([0-9]+) "
+                      ++ "on the problem.$"
+    calculateTime matches = if (not $ length matches == 4) then (0::Int)
+       else
+        (read hs)*10 + (read s)*1000 + (read m)*60000 + (read h)*3600000 :: Int
+      where
+        h  = matches !! 0
+        m  = matches !! 1
+        s  = matches !! 2
+        hs = matches !! 3
 
 {- |
   Runs SPASS. SPASS is assumed to reside in PATH.
@@ -214,16 +225,19 @@ runSpass sps cfg saveDFG thName nGoal = do
           when saveDFG
                (writeFile (thName++'_':AS_Anno.senName nGoal++".dfg") prob)
           sendMsg spass prob
-          (res, usedAxs, output) <- parseSpassOutput spass
+          (res, usedAxs, output, tUsed) <- parseSpassOutput spass
           let (err, retval) = proof_stat res usedAxs (cleanOptions cfg) output
           return (err,
                   cfg{proof_status = retval,
-                      resultOutput = output})
+                      resultOutput = output,
+                      timeUsed     = tUsed})
 
     allOptions = ("-Stdin"):(createSpassOptions cfg)
     defaultProof_status opts =
         (openProof_status (AS_Anno.senName nGoal) (prover_name spassProver) "")
-        {tacticScript = Tactic_script $ concatMap (' ':) opts}
+        {tacticScript = Tactic_script
+          {ts_timeLimit = configTimeLimit cfg,
+           ts_extraOpts = unwords opts} }
 
     proof_stat res usedAxs options out
       | isJust res && elem (fromJust res) proved =
@@ -253,10 +267,7 @@ runSpass sps cfg saveDFG thName nGoal = do
 -}
 createSpassOptions :: GenericConfig String -> [String]
 createSpassOptions cfg = 
-    (cleanOptions cfg) ++ ["-DocProof", "-TimeLimit=" ++ (show tLimit)]
-  where
-    tLimit = maybe guiDefaultTimeLimit id (timeLimit cfg)
-             -- this is OK. the batch prover always has the time limit set
+    (cleanOptions cfg) ++ ["-DocProof"]
 
 {- |
   Filters extra options and just returns the non standard options.

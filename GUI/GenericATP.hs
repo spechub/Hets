@@ -48,6 +48,7 @@ import Space
 
 import GUI.HTkUtils
 import GUI.GenericATPState
+import GUI.PrintUtils
 
 -- debugging
 import Debug.Trace
@@ -272,7 +273,7 @@ batchInfoText tl gTotal gDone =
 {- |
   Called every time a goal has been processed in the batch mode gui.
 -}
-goalProcessed :: (Ord proof_tree) =>
+goalProcessed :: (Ord proof_tree, Show proof_tree) =>
                  IORef (GenericState sign sentence proof_tree pst)
                -- ^ IORef pointing to the backing State data structure
               -> Int -- ^ batch time limit
@@ -293,7 +294,8 @@ goalProcessed stateRef tLimit numGoals label prName
                                     isTimeLimitExceeded retval,
                                 timeLimit = Just tLimit,
                                 proof_status = proof_status res_cfg,
-                                resultOutput = resultOutput res_cfg})
+                                resultOutput = resultOutput res_cfg,
+                                timeUsed     = timeUsed res_cfg})
                       prName (AS_Anno.senName nGoal)
                       (proof_tree s)
                       (configsMap s)}
@@ -778,7 +780,8 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                         adjustOrSetConfig
                            (\ c -> c {timeLimitExceeded = isTimeLimitExceeded retval,
                                       proof_status = proof_status cfg,
-                                      resultOutput = resultOutput cfg})
+                                      resultOutput = resultOutput cfg,
+                                      timeUsed     = timeUsed cfg})
                            prName goal pt (configsMap s')}
                  writeIORef stateRef s''
                  updateDisplay s'' True lb statusLabel timeEntry
@@ -881,9 +884,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
             done)
       +> (saveConfiguration >>> do
             s <- readIORef stateRef
-            let (cfgList, resList) = getCfgText $ configsMap s
-                cfgText = unlines $ ("Configuration:\n":cfgList)
-                                    ++ ("\nResults:\n":resList)
+            let cfgText = show $ printCfgText $ configsMap s
             createTextSaveDisplay
                 (prName ++ " Configuration for Theory " ++ thName)
                 (thName ++ (theoryConfiguration $ fileExtensions atpFun))
@@ -941,26 +942,6 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                                  " not found!!"))
                          id (find ((==goal) . AS_Anno.senName) (goalsList s)),
                    prS)
-    getCfgText mp = ("{":lc, "{":lr)
-      where
-      (lc, lr) =
-        Map.foldWithKey (\ k cfg (lCfg,lRes) ->
-                           let r = proof_status cfg
-                               outp = resultOutput cfg
-                           in
-                           ((show k
-                             ++ ":=GenericConfig {"
-                             ++ "timeLimit = " ++ show (timeLimit cfg)
-                             ++ ", timeLimitExceeded = "
-                             ++ show (timeLimitExceeded cfg)
-                             ++ ", extraOpts = "
-                             ++ show (extraOpts cfg)
-                             ++ "}," ):lCfg,
-                            (show k
-                             ++ ":=\n    ("
-                             ++ show r ++ ",\n     \""
-                             ++ (unlines outp) ++ "\")"):lRes))
-                        (["}"],["}"]) mp
     transNames nm pStat =
       pStat { goalName = trN $ goalName pStat
             , usedAxioms = foldr (fil $ trN $ goalName pStat) [] $

@@ -14,14 +14,11 @@ Data structures and initialising functions for Prover state and configurations.
 
 module SPASS.ProverState where
 
--- import Logic.Prover
-
 import SPASS.Sign
 import SPASS.Conversions
 import SPASS.Translate
 import SPASS.PrintTPTP
 import SPASS.Print ()
--- import SPASS.MathServParsing
 
 import qualified Common.AS_Annotation as AS_Anno
 import Common.ProofUtils
@@ -30,6 +27,8 @@ import Common.DocUtils
 
 import Data.Maybe
 
+import GUI.GenericATP (guiDefaultTimeLimit)
+import GUI.GenericATPState
 
 -- * Data structures
 
@@ -109,3 +108,12 @@ parseSPASSCommands comLine =
     where
       -- remove '-' (multiple) at beginning of an option
       undash = dropWhile (\ch -> ch == '-')
+
+{- |
+  Returns the time limit from GenericConfig if available. Otherwise
+  guiDefaultTimeLimit is returned.
+-}
+configTimeLimit :: GenericConfig String
+                -> Int
+configTimeLimit cfg = 
+    maybe (guiDefaultTimeLimit) id $ timeLimit cfg

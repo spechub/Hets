@@ -148,7 +148,10 @@ data TheoryMorphism sign sen mor proof_tree = TheoryMorphism
     , t_morphism :: mor }
 
 -- e.g. the file name, or the script itself, or a configuration string
-data Tactic_script = Tactic_script String deriving (Eq, Ord, Show)
+data Tactic_script = Tactic_script
+    { ts_timeLimit :: Int, -- ^ used time limit
+      ts_extraOpts :: String -- ^ used extra options (if any)
+    } deriving (Eq, Ord, Show)
 
 -- | enumeration type representing the status of a goal
 data GoalStatus = Open
@@ -194,7 +197,9 @@ openProof_status goalname provername proof_tree =
                  , usedAxioms = []
                  , proverName = provername
                  , proofTree = proof_tree
-                 , tacticScript = Tactic_script "" }
+                 , tacticScript = Tactic_script
+                     { ts_timeLimit = 0
+                     , ts_extraOpts = "" } }
 
 {-
 instance Eq a => Ord (Proof_status a) where

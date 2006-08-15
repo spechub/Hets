@@ -39,7 +39,9 @@ data GenericConfig proof_tree = GenericConfig {
     extraOpts :: [String],
     -- | Represents the result of a prover run.
     proof_status :: Proof_status proof_tree,
-    resultOutput :: [String]
+    resultOutput :: [String],
+    -- | global time used in milliseconds
+    timeUsed :: Int
                                } deriving (Eq, Ord, Show)
 
 {- |
@@ -56,7 +58,8 @@ emptyConfig prName n pt =
                    timeLimitExceeded = False,
                    extraOpts = [],
                    proof_status = openProof_status n prName pt,
-                   resultOutput = []
+                   resultOutput = [],
+                   timeUsed = 0
                   }
 
 {- |
