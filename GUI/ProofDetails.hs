@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  GUI for showing/saving proof details.
+Description :  GUI for showing\/saving proof details.
 Copyright   :  (c) Rainer Grabbe 2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -38,7 +38,7 @@ import qualified Static.DevGraph as DevGraph
 -- * record structures and basic functions for handling
 
 {- |
-  Record structure containing proof details for a goal/prover combination.
+  Record structure containing proof details for a goal\/prover combination.
 -}
 data GoalDescription = GoalDescription {
     proverInfo :: String, -- ^ standard proof details
@@ -156,7 +156,7 @@ getRealEndOfTextIndex ed = do
     
 
 {- |
-  For a given Map containing all goal/prover values, this function adapts
+  For a given Map containing all goal\/prover values, this function adapts
   the text positions lying behind after a given reference position. This is
   called when a position in the text is moved after clicking a text tag button.
 -}
@@ -164,7 +164,7 @@ adaptTextPositions :: (Int -> Int -> Int)  -- ^ mostly add or subtract values
                    -> Int -- ^ (difference) value
                    -> Position -- ^ reference Position
                    -> Map.Map (String, Int) GoalDescription
-                      -- ^ Map for all goal/prover combinations
+                      -- ^ Map for all goal\/prover combinations
                    -> Map.Map (String, Int) GoalDescription -- ^ adapted Map
 adaptTextPositions f diff pos li =
     Map.map (\ gDesc ->
@@ -276,10 +276,10 @@ addTextTagButton :: String -- ^ caption for button
                  -> OpenText -- ^ conatins text to be outfolded if clicked
                  -> Bool -- ^ true if tacticScript, false if proofTree
                  -> Editor -- ^ editor window to which button will be attached
-                 -> (String, Int) -- ^ key in goal/prover descriptions
+                 -> (String, Int) -- ^ key in goal\/prover descriptions
                                   -- (goal name and index)
                  -> IORef (Map.Map (String, Int) GoalDescription)
-                 -- ^ current state of all goal/prover descriptions
+                 -- ^ current state of all goal\/prover descriptions
                  -> IO OpenText -- ^ information about OpenText status
 addTextTagButton cap addText isTactic ed (gName, ind) stateRef = do
     curPosStart <- getRealEndOfTextIndex ed
