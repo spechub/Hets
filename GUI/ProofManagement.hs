@@ -21,7 +21,6 @@ module GUI.ProofManagement (proofManagementGUI) where
 
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Doc as Pretty
-import Common.Utils
 import qualified Common.Result as Result
 import qualified Common.Lib.Map as Map
 import qualified Common.OrderedMap as OMap
@@ -36,6 +35,7 @@ import Space
 import XSelection
 
 import GUI.HTkUtils
+import GUI.ProofDetails
 
 import Proofs.GUIState
 import Logic.Logic
@@ -232,58 +232,6 @@ doDisplayGoals s@(ProofGUIState { theoryName = thName
                                  . AS_Anno.mapNamed (simplify_sen lid1 sig1))
                                            $ toNamedList s')
           sens = selectedGoalMap s
-
-
-{- |
-  Called whenever the button "Show proof details" is clicked.
--}
-doShowProofDetails ::
-    (Logic lid
-           sublogics1
-           basic_spec1
-           sentence
-           symb_items1
-           symb_map_items1
-           sign1
-           morphism1
-           symbol1
-           raw_symbol1
-           proof_tree1) =>
-       ProofGUIState lid sentence
-    -> IO ()
-doShowProofDetails s@(ProofGUIState { theoryName = thName}) =
-     createTextSaveDisplay ("Proof Details of Selected Goals from Theory "
-                            ++ thName)
-                           (thName ++ "-proof-details.txt") (detailsText sens)
-    where sens = selectedGoalMap s
-          detailsText s' = show $ Pretty.vsep (map (\ (l, st) ->
-                                  Pretty.text l Pretty.$+$
-                                  spaces4 Pretty.<> printSenStat st)
-                           $ OMap.toList s')
-          printSenStat st =
-              if null $ thmStatus st
-                 then stat "Open"
-                 else Pretty.vcat $
-                      map printCmWStat $
-                      sortBy (comparing snd) $ thmStatus st
-          stat str = Pretty.text "Status:" Pretty.<+> Pretty.text str
-          spaces4 = Pretty.text "    "
-          printCmWStat (c, bp) =
-              Pretty.text "Com:" Pretty.<+> Pretty.text (show c)
-              Pretty.$+$ spaces4 Pretty.<> printBP bp
-          printBP bp = case bp of
-                       DevGraph.BasicProof _ ps ->
-                        stat (show $ goalStatus ps) Pretty.$+$
-                        (case goalStatus ps of
-                         Proved _ -> Pretty.text "Used axioms:" Pretty.<+>
-                             (Pretty.fsep (Pretty.punctuate Pretty.comma
-                                           (map (Pretty.text . show) $
-                                                   usedAxioms ps)))
-                         _ -> Pretty.empty)
-                        Pretty.$+$ Pretty.text "Prover:" Pretty.<+>
-                              Pretty.text (proverName ps)
-                       otherProof -> stat (show otherProof)
-
 
 {- |
   Called whenever a prover is selected from the "Pick Theorem Prover" ListBox.
