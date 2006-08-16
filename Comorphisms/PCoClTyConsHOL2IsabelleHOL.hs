@@ -601,11 +601,12 @@ isLifted t = case t of
 
 mkTermAppl :: Isa.Term -> Isa.Term -> Isa.Term
 mkTermAppl fun arg = case (fun, arg) of
-      (MixfixApp (Const uc _) [b@(Const bin _)] c, Tuplex a@[l, r] _)
+      (MixfixApp (Const uc _) [b] c, Tuplex [l, r] _)
           | new uc == uncurryOpS
-              -> case isEquallyLifted l r of
-                   Just (_, la, ra) | new bin == eq -> MixfixApp b [la, ra] c
-                   _ -> MixfixApp b a c
+              -> case (isEquallyLifted l r, b) of
+                   (Just (_, la, ra), Const bin _) | new bin == eq ->
+                       MixfixApp b [la, ra] c
+                   _ -> mkTermAppl (mkTermAppl b l) r
       (MixfixApp (Const mp _) [f] _, Tuplex [a, b] c)
           | new mp == "mapFst" -> Tuplex [mkTermAppl f a, b] c
           | new mp == "mapSnd" -> Tuplex [a, mkTermAppl f b] c
