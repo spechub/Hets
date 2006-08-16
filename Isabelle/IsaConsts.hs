@@ -109,14 +109,6 @@ isaEqPrio = 2 -- left assoc
 termAppl :: Term -> Term -> Term
 termAppl t1 t2 = MixfixApp t1 [t2] NotCont
 
--- | function application to a list of arguments
-termMixfixAppl :: Term -> [Term] -> Term
-termMixfixAppl t1 t2 = MixfixApp t1 t2 NotCont
-
--- | apply binary operation to arguments
-binConst :: String -> Term -> Term -> Term
-binConst s t1 t2 = MixfixApp (conDouble s) [t1,t2] NotCont
-
 -- | construct a constant with no type
 con :: VName -> Term
 con s = Const s noType
@@ -130,11 +122,7 @@ conDouble = con . mkVName
 someS :: String
 someS = "Some"
 
--- | Some term
-conSomeT :: Typ -> Term
-conSomeT t = Const (mkVName someS) t
-
--- | some constant with no type
+-- | some constant
 conSome :: Term
 conSome = conDouble someS
 
@@ -234,7 +222,7 @@ compV = VName compS $ Just $ AltSyntax "(_ o/ _)" [55, 56] 55
 
 -- | apply VName operator to two term
 binVNameAppl :: VName -> Term -> Term -> Term
-binVNameAppl v t1 t2 = MixfixApp (con v) [t1,t2] NotCont
+binVNameAppl v t1 t2 = MixfixApp (con v) [t1, t2] NotCont
 
 -- * binary junctors
 binConj, binDisj, binImpl, binEqv, binEq :: Term -> Term -> Term
@@ -261,10 +249,6 @@ false = Const (mkVName cFalse) boolType
 -- | lower case pair
 pairC :: String
 pairC = "pair"
-
--- | upper case pair
-isaPair :: String
-isaPair = "Pair"
 
 -- * keywords in theory files from the Isar Reference Manual 2005
 

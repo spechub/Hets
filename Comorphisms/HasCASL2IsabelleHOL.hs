@@ -204,9 +204,7 @@ transProgEq sign (ProgEq pat t _) =
 transTerm :: Env -> As.Term -> IsaSign.Term
 transTerm sign trm = case trm of
     QualVar (VarDecl var t _ _) ->
-        let t' = transType t
-            ot = mkFunType t' $ mkOptionType t'
-        in termAppl (conSomeT ot) $ IsaSign.Free (transVar var) t'
+        termAppl conSome $ IsaSign.Free (transVar var) $ transType t
 
     QualOp _ (InstOpId opId _ _) ts _ ->
         if opId == trueId then true
@@ -673,3 +671,11 @@ transPat sign (TupleTerm terms@(_ : _) _) =
 transPat _ (QualOp _ (InstOpId i _ _) _ _) =
     conDouble (showIsaConstT i baseSign)
 transPat _ _ =  error "HasCASL2IsabelleHOL.transPat"
+
+-- | apply binary operation to arguments
+binConst :: String -> IsaSign.Term -> IsaSign.Term -> IsaSign.Term
+binConst s = binVNameAppl $ mkVName s
+
+-- | upper case curried pair constructor
+isaPair :: String
+isaPair = "Pair"
