@@ -13,15 +13,15 @@ The embedding comorphism from Haskell to Isabelle-HOLCF.
 module Comorphisms.Hs2HOLCF (transTheory) where
 
 import qualified Common.Lib.Map as Map
-import Common.Result as Result
+import Common.Result
 import Common.AS_Annotation
-import Comorphisms.Hs2HOLCFaux as Hs2HOLCFaux
+import Comorphisms.Hs2HOLCFaux
 
 -- Haskell
-import Haskell.HatParser as HatParser hiding (HsType)
 import Haskell.HatAna as HatAna
 
 -- Programatica
+import NewPrettyPrint (pp)
 import TypedIds
 
 import TiTypes
@@ -39,7 +39,7 @@ import TiDecorate
 
 -- Isabelle
 import Isabelle.IsaSign as IsaSign
-import Isabelle.IsaConsts as IsaConsts
+import Isabelle.IsaConsts
 
 ------------------------------ Top level function -----------------------------
 transTheory :: Continuity -> Bool -> HatAna.Sign -> [Named PrDecl]
