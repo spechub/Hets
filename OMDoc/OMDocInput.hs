@@ -2025,8 +2025,8 @@ processEdge
         newNode =
           Hets.addSignsAndHideWithMorphism
             (untagEdges tdg')
-            (sortSet (msource caslmorph))
-            caslmorph
+            (sortSet (msource newmorph))
+            newmorph
             from' 
             to'
         graphEdges = Graph.labEdges tdg'
@@ -2145,7 +2145,7 @@ fixMorphism
         }
   in
 {-    Debug.Trace.trace
-      ("Transformed morph " ++ show m ++ " -> " ++ show nm) -}
+      ("Transformed morph " ++ show m ++ " -> " ++ show nm)  -}
       nm
 
 fixSort::
