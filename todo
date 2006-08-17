@@ -138,6 +138,26 @@ Logiken: über verschiedene OMDoc-Theorien mit URI
 Mingyi (Till)
 ************************************************
 
+Diplomarbeit
+- CASL-Logik: "Relating CASL with other specification languages", S.401-408
+- Konservative, definitionale und monomorphe Erweiterungen, Konsistenz
+  siehe CASL reference manual (suche nach conservative)
+- warum sind konservative Erweiterungen wichtig?
+  - um zu prüfen, ob Spezifikationen konsistent sind, also implementiert
+    werden können
+  - für Refinement-Beweise
+- Algorithmen zur Prüfung von Erweiterungen, ob diese konservativ,
+  definitional oder monomorph sind
+  - Beschreibung des Algorithmus in Pseudocode
+  - Korrektheitsbeweis, d.h. für die Erweiterungen, die der Algorithmus
+    als konservativ erkennt, muss für jedes Modell der kleineren
+    Spezifikation eine Modellerweiterung zur größeren Spezifikation
+    gefunden werden. Z.B. im Falle von free types kann dies eine
+    Termalgebra-Konstruktion sein.
+    SP1 -- \sigma --> SP2
+    konservativ: jedes SP_1-Modell M1 hat eine Erweiterung zu einem
+    SP2-Modell M2 mit M2|_\sigma=M1.
+
 port CCC to Haskell
 
 Funktionen imageOfMorphism und inhabited
