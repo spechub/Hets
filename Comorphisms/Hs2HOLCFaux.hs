@@ -65,7 +65,6 @@ module Comorphisms.Hs2HOLCFaux
     ) where
 
 import Data.List
-import Data.Maybe
 import qualified Common.Lib.Map as Map
 import Common.AS_Annotation
 
@@ -190,31 +189,31 @@ getLitName :: HsType -> PNT
 getLitName (Typ t) = case t of
    HsTyVar x -> x
    HsTyCon x -> x
-   _ -> error "Type is not a literal (Haskell2IsabelleHOLCF.getLitName)"
+   _ -> error "Hs2HOLCFaux.getLitName"
 
 ------------------------ getting class and type ouf of predicate --------------
 
 getInstType :: HsPred -> HsType
 getInstType x = case x of (Typ (HsTyApp _ t)) -> t
-                          _ -> error "error, getInstType"
+                          _ -> error "Hs2HOLCFaux.getInstType"
 
 getInstClass :: HsPred -> HsType
 getInstClass x = case x of (Typ (HsTyApp c _)) -> c
-                           _ -> error "error, getInstClass"
+                           _ -> error "Hs2HOLCFaux.getInstClass"
 
 ---------------------------- getting class information -----------------------
 
 extClassInfo :: HsTypeInfo -> [HsClass]
 extClassInfo p = case p of
         TiTypes.Class a _ _ _ -> map getInstType a
-        _ -> error "error Haskell2IsabelleHOLCF.extClassInfo"
+        _ -> error "Hs2HOLCFaux.extClassInfo"
 
 --------------------------- getting info on type syns ------------------------
 
 extAbbrsInfo :: HsTypeInfo -> ([PNT], HsType)
 extAbbrsInfo p = case p of
            TiTypes.Synonym ls t -> (ls, t)
-           _ -> error "extAbbrsInfo"
+           _ -> error "Hs2HOLCFaux.extAbbrsInfo"
 
 ----------- getting arity information from Haskell instances -----------------
 
@@ -222,10 +221,10 @@ getInstPrems :: HsInstance -> [HsPred]
 getInstPrems (_, IE _ _ ps) = ps
 
 getMainInstType :: HsInstance -> HsType
-getMainInstType i = getInstType (fst i)
+getMainInstType (i, _) = getInstType i
 
 getMainInstClass :: HsInstance -> HsClass
-getMainInstClass i = getInstClass (fst i)
+getMainInstClass (i, _) = getInstClass i
 
 prepInst :: HsInstance -> (HsClass, [(HsType, [HsClass])])
 prepInst i = (getMainInstClass i, prepInst1 i)
@@ -312,21 +311,21 @@ showIsaHsTypeString (Typ t) = case t of
 joinNames :: [String] -> String
 joinNames = concatMap (++ "_X")
 
+isCont :: Continuity -> Bool
+isCont = (== IsCont)
+
 transTN :: Continuity -> String -> String -> String
-transTN c s1 s2 = case (c,s1,s2) of
-   (IsCont,"Prelude","Bool") -> "tr"
-   (IsCont,"Prelude","Int") -> "dInt"
-   (IsCont,"Prelude","Integer") -> "dInt"
-   (IsCont,"Prelude","Rational") -> "dRat"
-   (IsCont,"Prelude","[]") -> "llist"
-   (IsCont,"Prelude","(,)") -> "*"
-   (NotCont,"Prelude","Bool") -> "bool"
-   (NotCont,"Prelude","Int") -> "int"
-   (NotCont,"Prelude","Integer") -> "int"
-   (NotCont,"Prelude","Rational") -> "Rat"
-   (NotCont,"Prelude","[]") -> "list"
-   (NotCont,"Prelude","(,)") -> "*"
-   _ -> transPath s1 s2
+transTN c s1 s2 = let d = transPath s1 s2
+                      ic = isCont c
+    in if s1 == "Prelude" then case s2 of
+        "Bool" -> if ic then "tr" else "bool"
+        "Int" -> if ic then "dInt" else "int"
+        "Integer" -> if ic then "dInt" else "int"
+        "Rational" -> if ic then "dRat" else "Rat"
+        "[]" -> if ic then "llist" else "list"
+        "(,)" -> "*"
+        _ -> d
+    else d
 
 transPath :: String -> String -> String
 transPath s1 s2 = showIsaName s1 ++ "_" ++ showIsaName s2
@@ -338,9 +337,7 @@ typTuple :: Continuity -> [Typ] -> Typ
 typTuple c ts = case ts of
   [] -> noType
   [a] -> a
-  a : as -> (case c of
-               IsCont -> mkContProduct
-               NotCont -> prodType) a (typTuple c as)
+  a : as -> (if isCont c then mkContProduct else prodType) a (typTuple c as)
 
 ----------------------------- equivalence of types modulo variables name ------
 
@@ -386,11 +383,11 @@ typeVarsRep f ls t = case t of
 
 unifyTVars :: [IsaType] -> (IsaType,[IsaType])
 unifyTVars ls = case chkTHead ls of
-    False -> error "Hs2HOLCFaux,unifyTVars"
+    False -> error "Hs2HOLCFaux.unifyTVars"
     True -> case ls of
         IsaSign.Type "=>" _ [i, _] : _ ->
            (i, [b | IsaSign.Type "=>" _ [_, b] <- ls])
-        _ -> error "Hs2HOLCFaux,uTV"
+        _ -> error "Hs2HOLCFaux.uTV"
 
 chkTHead :: [IsaType] -> Bool
 chkTHead ls = case ls of
@@ -414,9 +411,9 @@ renTVars ls = [renTVar b a | (a, b) <- listEnum ls]
 
 groupInst :: [IsaTypeInsts] -> [IsaTypeInsts]
 groupInst db =
-  remove_duplicates [(fst y,
+  remove_duplicates [(y,
         remove_duplicates $ concat
-                      [snd x | x <- db, fst x == fst y]) | y <- db]
+                      [b | (a, b) <- db, a == y]) | (y, _) <- db]
 
 ------------------------- DATATYPES -------------------------------------------
 ----------------------- getting mutually recursive domains in Isabelle --------
@@ -425,7 +422,7 @@ getDepDoms :: [[IsaSign.DomainEntry]] -> IsaSign.DomainTab
 getDepDoms ls = abGetDep deDepOn ls
 
 deDepOn :: DomainEntry -> DomainEntry -> Bool
-deDepOn x y = depOn subTypForm fst (concat . (map snd) . snd) x y
+deDepOn x y = depOn subTypForm fst (concatMap snd . snd) x y
 
 subTypForm :: Typ -> Typ -> Bool
 subTypForm t1 t2 = case t2 of
@@ -441,10 +438,8 @@ type AConstTab = Map.Map VName (Typ,IsaVT)
 data IsaVT = IsaConst | IsaVal deriving (Eq, Show)
 
 getDomType :: AConstTab -> VName -> IsaType
-getDomType ctab c = let x = Map.lookup c ctab in
-                           case x of
-                           Nothing -> error "Haskell2IsabelleHOLCF.getDomType"
-                           Just y -> getHeadType $ fst y
+getDomType ctab c = maybe (error "Hs2HOLCFaux.getDomType")
+    (getHeadType . fst) $ Map.lookup c ctab
 
 isFunArrow :: String -> Bool
 isFunArrow name = elem name [funS, cFunS]
@@ -455,10 +450,7 @@ getHeadType t = case t of
   _ -> t
 
 getFieldTypes :: AConstTab -> VName -> [IsaType]
-getFieldTypes ctab c = let x = Map.lookup c ctab in
-                           case x of
-                                  Nothing -> []
-                                  Just y -> argTypes (fst y)
+getFieldTypes ctab c = maybe [] (argTypes . fst) $ Map.lookup c ctab
 
 argTypes :: IsaType -> [IsaType]
 argTypes a = case a of
@@ -495,22 +487,18 @@ termMAppl c t ts =
 
 tupleSelector :: Int -> Int -> Term -> Continuity -> Term
 tupleSelector mx n t c
-  | mx < 2 = error "Haskell2IsabelleHOLCF, tupleSelector - error 1"
-  | n == 0 = error "Haskell2IsabelleHOLCF, tupleSelector - error 2"
-  | mx < n = error "Haskell2IsabelleHOLCF, tupleSelector - error 3"
+  | mx < 2 = error "Hs2HOLCFaux.tupleSelector1"
+  | n == 0 = error "Hs2HOLCFaux.tupleSelector2"
+  | mx < n = error "Hs2HOLCFaux.tupleSelector3"
   | n == mx = tupleSelect (n - 1) t c
-  | True = termMAppl c (conDouble (case c of
-                                     IsCont -> "cfst"
-                                     NotCont -> "fst"))
+  | True = termMAppl c (conDouble (if isCont c then "cfst" else "fst"))
                               $ [tupleSelect (n - 1) t c]
 
 tupleSelect :: Int -> Term -> Continuity -> Term
 tupleSelect n t c = case n of
   0 -> t
   _ -> tupleSelect (n - 1)
-     (termMAppl c (conDouble (case c of
-                                IsCont -> "csnd"
-                                NotCont -> "snd")) [t]) c
+     (termMAppl c (conDouble $ if isCont c then "csnd" else "snd") [t]) c
 
 ------------------------------------- term filters ----------------------------
 
@@ -523,37 +511,34 @@ constFilter :: Term -> [Term]
 constFilter t = case t of
  IsaSign.Const _ _ -> [t]
  IsaSign.Abs _ _ x _ -> constFilter x
- IsaSign.App x y _ -> concat $ map constFilter [x,y]
- IsaSign.If x y z _ -> concat $ map constFilter [x,y,z]
- IsaSign.Case x ys -> concat $ map constFilter (x:(map snd ys))
- IsaSign.Let xs y -> concat $ map constFilter (y:(map snd xs))
- IsaSign.IsaEq x y -> concat $ map constFilter [x,y]
- IsaSign.Tuplex xs _ -> concat $ map constFilter xs
+ IsaSign.App x y _ -> concatMap constFilter [x, y]
+ IsaSign.If x y z _ -> concatMap constFilter [x, y, z]
+ IsaSign.Case x ys -> concatMap constFilter $ x : map snd ys
+ IsaSign.Let xs y -> concatMap constFilter $ y :  map snd xs
+ IsaSign.IsaEq x y -> concatMap constFilter [x, y]
+ IsaSign.Tuplex xs _ -> concatMap constFilter xs
  IsaSign.Fix x -> constFilter x
  IsaSign.Paren x -> constFilter x
  _ -> [t]
 
-elPos :: Int -> [Term] -> Term -> Maybe Int
-elPos n ls x = case (listEnum ls) of
-  [] -> Nothing
-  a : as -> if constEq x (fst a) then Just $ (snd a + (n - length ls))
-                                 else elPos n (map fst as) x
+elPos :: [Term] -> Term -> Maybe Int
+elPos ls x = fmap (+ 1) $ findIndex (constEq x) ls
 
 -------------------- subterm extraction -------------------------------------
 
 extFBody :: Term -> (Term, [Term])
-extFBody t' = let (x, ys) = extFB t' [] in (x, reverse ys)
+extFBody t' = extFB t' []
  where
   extFB t as = case t of
      IsaSign.Abs x _ b _ -> extFB b (x : as)
-     _ -> (t, as)
+     _ -> (t, reverse as)
 
 extTBody :: Term -> (Term, [Term])
-extTBody t' = let (x,ys) = extTB t' [] in (x, reverse ys)
+extTBody t' = extTB t' []
  where
   extTB t as = case t of
      IsaSign.App a x _ -> extTB a (x : as)
-     _ -> (t, as)
+     _ -> (t, reverse as)
 
 ------------------- eliminating case expressions ---------------------------
 
@@ -566,7 +551,7 @@ destCaseU ((t,rs),ks) = case (t,rs) of
     (Case v ls, vv : vs) -> if v == vv
           then [(ks ++ [l], termMAbs NotCont vs m) | (l,m) <- ls]
           else destCaseU ((t,vs), ks ++ [vv])
-    _ -> error "Hs2HOLCFaux, destCase"
+    _ -> error "Hs2HOLCFaux.destCaseU"
 
 destCase :: IsaTerm -> (VName -> VName) -> [(IsaPattern,IsaTerm)]
 destCase t f = let w = extFBody t in case w of
@@ -577,7 +562,7 @@ destCase t f = let w = extFBody t in case w of
                   renVars (Free (f n) tt)
                          [l] (termMAbs NotCont vs m)) | (l, m) <- ls]
           _ -> [(l,termMAbs NotCont vs m) | (l, m) <- ls]
-    _ -> error "Hs2HOLCFaux, destCase"
+    _ -> error "Hs2HOLCFaux.destCase"
 
 ----------------------------- equivalence on terms ---------------------------
 
@@ -649,9 +634,8 @@ renFuns f t = case t of
 --------------------- getting info from sentences ----------------------------
 
 newConstTab :: Continuity -> [Named IsaSign.Sentence] -> ConstTab
-newConstTab c ls = case c of
-  IsCont -> Map.empty
-  NotCont -> Map.fromList [(mkVName $ extAxName x, extAxType x) | x <- ls]
+newConstTab c ls = if isCont c then Map.empty else
+    Map.fromList [(mkVName $ extAxName x, extAxType x) | x <- ls]
 
 extAxName :: Named Sentence -> String
 extAxName s = senName s
@@ -666,23 +650,23 @@ extAxType s = case s of
 extFunTerm :: Named Sentence -> Term
 extFunTerm s = case s of
   NamedSen _ _ _ (ConstDef (IsaEq t _)) -> fst $ extTBody t
-  _ -> error "Hs2HOLCFaux, extFunTerm"
+  _ -> error "Hs2HOLCFaux.extFunTerm"
 
 extLeftH :: Named Sentence -> Term
 extLeftH s = case s of
   NamedSen _ _ _ (ConstDef (IsaEq t _)) -> t
-  _ -> error "Hs2HOLCFaux, extLeftH"
+  _ -> error "Hs2HOLCFaux.extLeftH"
 
 extRightH :: Named Sentence -> Term
 extRightH s = case s of
   NamedSen _ _ _ (ConstDef (IsaEq _ t)) -> t
-  _ -> error "Hs2HOLCFaux, extRightH"
+  _ -> error "Hs2HOLCFaux.extRightH"
 
 {- left comp is the def name, right comp are the constants in the def  -}
 sentAna :: Named Sentence -> (Term, [Term])
 sentAna s = case s of
   NamedSen _ True _ (ConstDef (IsaEq l r)) -> (l, constFilter r)
-  _ -> error "Hs2HOLCFaux, sentAna"
+  _ -> error "Hs2HOLCFaux.sentAna"
 
 ------------------ checking for mutually recursive function defs -------------
 
@@ -700,7 +684,7 @@ fixMRec :: Continuity -> [[Named Sentence]] -> [Named Sentence]
 fixMRec c ls = addFixPoints c $ getDepSent ls
 
 addFixPoints :: Continuity -> [[Named Sentence]] -> [Named Sentence]
-addFixPoints c xs = concat $ map (fixPoint c) xs
+addFixPoints c xs = concatMap (fixPoint c) xs
 
 fixPoint :: Continuity -> [Named Sentence] -> [Named Sentence]
 fixPoint c xs = case xs of
@@ -708,16 +692,16 @@ fixPoint c xs = case xs of
          then case a of
            NamedSen l m n (ConstDef (IsaEq lh rh)) -> case c of
              IsCont ->
-                [NamedSen l m n $ RecDef "fixrec" [[holEq lh rh]]]
-             NotCont -> [NamedSen l m n $ RecDef "primrec"
+                [NamedSen l m n $ RecDef fixrecS [[holEq lh rh]]]
+             NotCont -> [NamedSen l m n $ RecDef primrecS
                                                [destCaseS c lh rh]]
-           _ -> error "Hs2HOLCFaux, fixPoint"
+           _ -> error "Hs2HOLCFaux.fixPoint"
          else xs
   _ : _ -> case c of
     IsCont -> let
          jn = joinNames (map extAxName xs) -- name is ininfluential here
          ys = [[holEq (extLeftH x) $ extRightH x] | x <- xs]
-      in [NamedSen jn True False $ RecDef "fixrec" ys]
+      in [NamedSen jn True False $ RecDef fixrecS ys]
     NotCont -> let
          jj = joinNames (map extAxName xs)
          jn = mkVName jj
@@ -740,7 +724,7 @@ fixPoint c xs = case xs of
 
 makeRecDef :: Term -> [(Term,Term)] -> Sentence
 makeRecDef t ls =
- RecDef "primrec" [map (\x -> holEq (App t (fst x) NotCont) (snd x)) ls]
+ RecDef primrecS [map (\ (a, b) -> holEq (App t a NotCont) b) ls]
 
 mkNewDef :: Named Sentence -> String -> Int -> Int -> Named Sentence
 mkNewDef s z x y = let a = NotCont in case s of
@@ -749,8 +733,8 @@ mkNewDef s z x y = let a = NotCont in case s of
         NamedSen l m n (ConstDef (IsaEq lh $
            termMAbs a (w:ws) $ termMAppl a (tupleSelector x y
                  (App (conDouble z) w a) a) ws))
-     _ -> error "Hs2HOLCFaux, mkNewDef 2"
-   _ -> error "Hs2HOLCFaux, mkNewDef 1"
+     _ -> error "Hs2HOLCFaux.mkNewDef1"
+   _ -> error "Hs2HOLCFaux.mkNewDef2"
 
 reassemble :: [[(Term,Term)]] -> Map.Map Term [Term] -- [(b, [c])]
 reassemble ls = foldr
@@ -760,7 +744,7 @@ reassemble ls = foldr
 
 newFCons :: Term -> [Term] -> Term -> Maybe Term
 newFCons t ls k = case k of
- App n w NotCont -> case elPos (length ls) ls n of
+ App n w NotCont -> case elPos ls n of
    Nothing -> Nothing
    Just i ->
       Just $ tupleSelector (length ls) i (IsaSign.App t w NotCont) NotCont
