@@ -226,13 +226,14 @@ runSpass sps cfg saveDFG thName nGoal = do
                (writeFile (thName++'_':AS_Anno.senName nGoal++".dfg") prob)
           sendMsg spass prob
           (res, usedAxs, output, tUsed) <- parseSpassOutput spass
-          let (err, retval) = proof_stat res usedAxs (cleanOptions cfg) output
+          let (err, retval) = proof_stat res usedAxs extraOptions output
           return (err,
                   cfg{proof_status = retval,
                       resultOutput = output,
                       timeUsed     = tUsed})
 
     allOptions = ("-Stdin"):(createSpassOptions cfg)
+    extraOptions = ("-DocProof"):(cleanOptions cfg)
     defaultProof_status opts =
         (openProof_status (AS_Anno.senName nGoal) (prover_name spassProver) "")
         {tacticScript = Tactic_script
@@ -263,11 +264,12 @@ runSpass sps cfg saveDFG thName nGoal = do
 
 {- |
   Creates a list of all options the SPASS prover runs with.
-  That includes the defaults -DocProof, -Stdin and -Timelimit.
+  That includes the defaults -DocProof and -Timelimit.
 -}
 createSpassOptions :: GenericConfig String -> [String]
 createSpassOptions cfg = 
-    (cleanOptions cfg) ++ ["-DocProof"]
+    (cleanOptions cfg) ++ ["-DocProof", "-TimeLimit="
+                             ++ (show $ configTimeLimit cfg)]
 
 {- |
   Filters extra options and just returns the non standard options.
