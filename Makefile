@@ -19,8 +19,9 @@ HXT_PATHS = Data Data/Tree Data/Tree/NTree Data/Digest Text Text/XML \
     Text/XML/HXT Text/XML/HXT/IO Text/XML/HXT/DOM Text/XML/HXT/Arrow \
     Text/XML/HXT/XPath Text/XML/HXT/Validator Text/XML/HXT/Parser \
     Text/XML/HXT/RelaxNG Text/XML/HXT/ProtocolHandler Codec Codec/ASN1 \
-    Codec/Binary Codec/Encryption Codec/Encryption/RSA System Control \
-    Control/Arrow Control/Monad Network
+    Codec/Binary Codec/Encryption Codec/Encryption/RSA Network \
+    Control Control/Arrow Control/Monad System \
+    System/Console System/Console/Shell System/Console/Shell/Backend
 HAIFA_PATHS = Network Network/Server Org Org/W3 Org/W3/N2001 \
     Org/Xmlsoap Org/Xmlsoap/Schemas Org/Xmlsoap/Schemas/Soap \
     Text Text/XML Text/XML/HXT Text/XML/Schema Text/XML/Schema/TypeMapper \
@@ -68,7 +69,6 @@ GENRULECALL = $(GENRULES) -r Typeable -r ShATermConvertible \
 DRIFT = utils/DrIFT
 INLINEAXIOMS = utils/outlineAxioms
 HADDOCK = haddock
-CPPP = cpp
 
 # remove -fno-warn-orphans for older ghcs and add -ifgl
 HC_WARN = -Wall -fno-warn-orphans
@@ -303,6 +303,7 @@ cpp_sources = Common/DynamicUtils.hs \
     Comorphisms/LogicList.hs Comorphisms/LogicGraph.hs \
     Comorphisms/KnownProvers.hs hets.hs $(happy_files) \
     hxt/Text/XML/HXT/ProtocolHandler/ProtocolHandler.hs \
+    hxt/System/Console/Shell/Regex.hs \
     OMDoc/HetsInterface.hs
 
 # unused, remove when header files are gone
@@ -657,7 +658,8 @@ $(CASL_DEPENDENT_BINARIES): $(sources) $(derived_sources)
 
 ## rule for cpp and haddock
 %.hspp: %.hs
-	$(HC) -E -cpp -DUNI_PACKAGE -DCASLEXTENSIONS -DPROGRAMATICA -optP -P $<
+	$(HC) -E -cpp -D__HADDOCK__ \
+            -DUNI_PACKAGE -DCASLEXTENSIONS -DPROGRAMATICA -optP -P $<
 
 ## compiling rules for object and interface files
 %.o %.hi: %.hs
@@ -697,4 +699,3 @@ Modal/ModalSystems.hs: Modal/GeneratePatterns.inline.hs.in \
 	$(RM) $@
 	$(PERL) utils/genTransMFormFunc.pl $< $@
 	chmod 444 $@
-
