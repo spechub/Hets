@@ -178,10 +178,10 @@ shellDgBasicAll
 shellShowDgGoals :: Sh [Status] ()
 shellShowDgGoals 
    = do
-     val <- getShellSt >>= \state -> liftIO(cDgAuto input state)
+     val <- getShellSt >>= \state -> liftIO(cShowDgGoals "" state)
      modifyShellSt (update val)
 
- = modifyShellSt (update [Exec cShowDgGoals ""].deleteExec)
+-- = modifyShellSt (update [Exec cShowDgGoals ""].deleteExec)
 
 shellShowTheoryGoals :: Sh [Status] ()
 shellShowTheoryGoals
@@ -189,7 +189,7 @@ shellShowTheoryGoals
      val <- getShellSt >>= \state -> liftIO(cDgAuto input state)
      modifyShellSt (update val)
 
- = modifyShellSt (update [Exec cShowTheory ""].deleteExec)
+-- = modifyShellSt (update [Exec cShowTheory ""].deleteExec)
 
 shellShowTheory :: Sh [Status] ()
 shellShowTheory 
@@ -197,7 +197,7 @@ shellShowTheory
      val <- getShellSt >>= \state -> liftIO(cDgAuto input state)
      modifyShellSt (update val)
 
- = modifyShellSt (update [Exec cShowNodeTheory ""].deleteExec)
+-- = modifyShellSt (update [Exec cShowNodeTheory ""].deleteExec)
 
 shellNodeInfo :: Sh [Status] ()
 shellNodeInfo
@@ -205,7 +205,7 @@ shellNodeInfo
      val <- getShellSt >>= \state -> liftIO(cDgAuto input state)
      modifyShellSt (update val)
 
- = modifyShellSt (update [Exec cShowNodeInfo ""].deleteExec)
+-- = modifyShellSt (update [Exec cShowNodeInfo ""].deleteExec)
 
 shellShowTaxonomy :: Sh [Status] ()
 shellShowTaxonomy
@@ -213,7 +213,7 @@ shellShowTaxonomy
      val <- getShellSt >>= \state -> liftIO(cDgAuto input state)
      modifyShellSt (update val)
 
- = modifyShellSt (update [Exec cShowNodeTaxonomy ""].deleteExec)
+-- = modifyShellSt (update [Exec cShowNodeTaxonomy ""].deleteExec)
 
 shellShowConcept :: Sh [Status] ()
 shellShowConcept
@@ -221,7 +221,7 @@ shellShowConcept
      val <- getShellSt >>= \state -> liftIO(cDgAuto input state)
      modifyShellSt (update val)
 
- = modifyShellSt (update [Exec cShowNodeConcept "" ].deleteExec)
+-- = modifyShellSt (update [Exec cShowNodeConcept "" ].deleteExec)
 
 shellTranslate :: String -> Sh [Status] ()
 shellTranslate input
@@ -229,7 +229,7 @@ shellTranslate input
      val <- getShellSt >>= \state -> liftIO(cDgAuto input state)
      modifyShellSt (update val)
 
- = modifyShellSt (update [Exec cTranslate input].deleteExec)
+-- = modifyShellSt (update [Exec cTranslate input].deleteExec)
 
 shellProver :: String -> Sh [Status] ()
 shellProver input
@@ -237,7 +237,7 @@ shellProver input
      val <- getShellSt >>= \state -> liftIO(cDgAuto input state)
      modifyShellSt (update val)
 
- = modifyShellSt (update [Exec cProver input].deleteExec)
+-- = modifyShellSt (update [Exec cProver input].deleteExec)
 
 pgipEvalFunc :: String -> Sh [Status] ()
 pgipEvalFunc str
