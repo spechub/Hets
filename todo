@@ -69,10 +69,25 @@ HasCASL examples
 Florian (Till)
 ************************************************
 
-Bremer Constraint-Solver angucken
-Shi Hui wegen Anwendungen kontaktieren 1. Juni
-Literatur über DCC und RCC8 lesen bis Mitte Juni
-Mitte/Ende Juni: Outline der Diplomarbeit
+Aufgabe von Shi Hui: XML-Anfragen mit DCC-Ausdrücken an Bremer Solver schicken
+ - ggf. Server nutzen
+ - Vorverarbeitung für Solver (z.B. Duplikate raus)
+ - Shi soll auf Freiburger XML-Format umsteigen (ggf. mit XSLT)
+
+Applikation1  ---
+                   |      | -- Freibuger Solver
+                   XML ---      |---- Französischer Solver
+                   |      |-- Hets -- Bremer Solver
+Applikation2 -----             |
+                            ConstraintCASL
+                               |
+                   Semantische Modelle/Korrektheit (CASL, HAsCASL)
+
+XML-Einlesen in Haskell: 
+HXT (siehe OMDoc.XmlHandling): kann Namespaces
+(HaXML: kann Haskell-Datenypen in DTDs umwandeln)
+
+Outline der Diplomarbeit
   Qualitative Constraint-Kalküle (siehe Thomas)
   CASL (siehe Paper   T. Mossakowski: Relating CASL with Other Specification Languages:
         the Institution Level Theoretical Computer Science 286, p. 367-475, 2002.)
@@ -554,6 +569,8 @@ Integration with generic prover interface?
 ************************************************
 Till
 ************************************************
+
+Model expansion flag for comorphisms
 
 Umlaute in daVinci anzeigen
 
