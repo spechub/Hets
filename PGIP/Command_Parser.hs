@@ -19,9 +19,9 @@ module PGIP.Command_Parser where
 import PGIP.Commands
 import PGIP.Common
 import Data.Maybe
-import Shell.Backend.Readline
-import Shell.ShellMonad
-import Shell
+import System.Console.Shell.Backend.Readline
+import System.Console.Shell.ShellMonad
+import System.Console.Shell
 import Control.Monad.Trans
 
 data OutputScan = 
