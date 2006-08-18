@@ -10,6 +10,15 @@ Portability :  portable
 CASL static analysis for basic specifications
 Follows Chaps. III:2 and III:3 of the CASL Reference Manual.
 
+The static analysis takes an abstract syntax tree of a basic specification
+and outputs a signature and a set of formulas, while checking that
+- all sorts used in operation and predicate declarations have been declared
+- all sorts, operation and predicate symbols used in formulas have
+  been declared
+- formulas type-check
+The formulas are returned with fully-qualified variables, oepration
+and predicate symbols.
+
 -}
 
 module CASL.StaticAna where
