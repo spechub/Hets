@@ -21,7 +21,7 @@ and predicate symbols.
 
 The static analysis functions are parameterized with functions for
 treating CASL extensions, that is, additional basic items, signature
-items and/or formulas.
+items and formulas.
 -}
 
 module CASL.StaticAna where
