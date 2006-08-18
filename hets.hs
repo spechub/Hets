@@ -39,13 +39,13 @@ import Haskell.Haskell2DG
 
 import PGIP.Command_Parser
 
-
 main :: IO ()
 main = do
     opts <- getArgs >>= hetcatsOpts
     if (interactive opts) 
          then do        
-               runInteractive []
+--               runInteractive []
+               pgipRunShell 
                return ()
          else do               
                putIfVerbose opts 3 ("Options: " ++ show opts)
@@ -78,8 +78,8 @@ processFile opts file =
                                   return $ Just (ln, proofStatus)                                   
                           ProofCommand -> do            
                                putStr "Start processing a proof command file\n"    
-                               result <- parseScriptFile file
-                               return result
+--                               result <- parseScriptFile file
+                               return Nothing
                           _ -> anaLib opts file
                         case gui opts of
                            Not -> return ()

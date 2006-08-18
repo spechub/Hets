@@ -16,16 +16,339 @@ Parsing the comand line script.
 
 module PGIP.Command_Parser where
 
-import Syntax.AS_Library
-import Static.DevGraph
+--import Syntax.AS_Library
+--import Static.DevGraph
 import Common.AnnoState
 import Common.Lexer
+--import Common.Utils
 import Text.ParserCombinators.Parsec
-import PGIP.Parser_Syntax
+--import PGIP.Parser_Syntax
+import PGIP.Commands
 import PGIP.Common
 import Data.Maybe
-import IO (hFlush, stdout)
+--import IO (hFlush, stdout)
+import Shell.Backend.Readline
+import Shell.ShellMonad
+import Shell
 
+
+data OutputScan = 
+    Out CmdParam String
+
+
+getFileUsed :: [Status] -> String
+getFileUsed ls
+ = case ls of
+      (Address adr):_    -> takeName adr
+      _:l                -> getFileUsed l
+      []                 -> "Hets>"
+
+
+takeName :: String -> String
+takeName ls
+  = case ls of
+      '.':_ -> ['>']
+      x :l  -> x:(takeName l)
+      _     -> ['>']
+	
+pgipTest :: String -> Sh [Status] ()
+pgipTest str
+          = shellPutStr str
+
+
+shellUse :: File -> Sh [Status] ()
+shellUse (File filename)
+  = modifyShellSt (update [Exec cUse filename]. deleteExec)
+
+
+shellDgAutoAll ::  Sh [Status] ()
+shellDgAutoAll 
+  = modifyShellSt (update [Exec cDgAllAuto ""]. deleteExec)
+
+shellDgAuto :: String -> Sh [Status] ()
+shellDgAuto input
+  = modifyShellSt (update [Exec cDgAuto input] . deleteExec)
+
+shellDgGlobSubsume :: String -> Sh [Status] ()
+shellDgGlobSubsume input
+  = modifyShellSt (update [Exec cDgGlobSubsume input]. deleteExec)
+
+shellDgGlobDecomp :: String -> Sh [Status] ()
+shellDgGlobDecomp input
+  = modifyShellSt (update [Exec cDgGlobDecomp input]. deleteExec)
+
+shellDgLocInfer :: String -> Sh [Status] ()
+shellDgLocInfer input
+  = modifyShellSt (update [Exec cDgLocInfer input]. deleteExec)
+
+shellDgLocDecomp :: String -> Sh [Status] ()
+shellDgLocDecomp input
+  = modifyShellSt (update [Exec cDgLocDecomp input]. deleteExec)
+
+shellDgComp :: String -> Sh [Status] ()
+shellDgComp input
+  = modifyShellSt (update [Exec cDgComp input].deleteExec)
+
+shellDgCompNew :: String -> Sh [Status] ()
+shellDgCompNew input
+  = modifyShellSt (update [Exec cDgCompNew input].deleteExec)
+
+shellDgHideThm :: String -> Sh [Status] ()
+shellDgHideThm input
+  = modifyShellSt (update [Exec cDgHideThm input].deleteExec)
+
+shellDgBasic :: String -> Sh [Status] ()
+shellDgBasic input
+  = modifyShellSt (update [Exec cDgInferBasic input].deleteExec)
+
+shellDgGlobSubsumeAll :: Sh [Status] ()
+shellDgGlobSubsumeAll
+  = modifyShellSt (update [Exec cDgAllGlobSubsume ""].deleteExec)
+
+shellDgGlobDecompAll :: Sh [Status] ()
+shellDgGlobDecompAll
+  = modifyShellSt (update [Exec cDgAllGlobDecomp ""].deleteExec)
+
+shellDgLocInferAll :: Sh [Status] ()
+shellDgLocInferAll
+  = modifyShellSt (update [Exec cDgAllLocInfer ""].deleteExec)
+
+shellDgLocDecompAll :: Sh [Status] ()
+shellDgLocDecompAll
+  = modifyShellSt (update [Exec cDgAllLocDecomp ""].deleteExec)
+
+shellDgCompAll :: Sh [Status] ()
+shellDgCompAll
+  = modifyShellSt (update [Exec cDgAllComp ""].deleteExec)
+
+shellDgCompNewAll :: Sh [Status] ()
+shellDgCompNewAll
+  = modifyShellSt (update [Exec cDgAllCompNew ""].deleteExec)
+
+shellDgHideThmAll :: Sh [Status] ()
+shellDgHideThmAll
+  = modifyShellSt (update [Exec cDgAllHideThm ""].deleteExec)
+
+shellDgBasicAll :: Sh [Status] ()
+shellDgBasicAll
+  = modifyShellSt (update [Exec cDgAllInferBasic ""].deleteExec)
+
+shellShowDgGoals :: Sh [Status] ()
+shellShowDgGoals 
+  = modifyShellSt (update [Exec cShowDgGoals ""].deleteExec)
+
+shellShowTheoryGoals :: Sh [Status] ()
+shellShowTheoryGoals
+  = modifyShellSt (update [Exec cShowTheory ""].deleteExec)
+
+shellShowTheory :: Sh [Status] ()
+shellShowTheory 
+  = modifyShellSt (update [Exec cShowNodeTheory ""].deleteExec)
+
+shellNodeInfo :: Sh [Status] ()
+shellNodeInfo
+  = modifyShellSt (update [Exec cShowNodeInfo ""].deleteExec)
+
+shellShowTaxonomy :: Sh [Status] ()
+shellShowTaxonomy
+  = modifyShellSt (update [Exec cShowNodeTaxonomy ""].deleteExec)
+
+shellShowConcept :: Sh [Status] ()
+shellShowConcept
+  = modifyShellSt (update [Exec cShowNodeConcept "" ].deleteExec)
+
+shellTranslate :: String -> Sh [Status] ()
+shellTranslate input
+  = modifyShellSt (update [Exec cTranslate input].deleteExec)
+
+shellProver :: String -> Sh [Status] ()
+shellProver input
+  = modifyShellSt (update [Exec cProver input].deleteExec)
+
+pgipEvalFunc :: String -> Sh [Status] ()
+pgipEvalFunc str
+  = case str of
+     []   -> modifyShellSt deleteExec
+     x    -> do 
+              modifyShellSt deleteExec   
+              (shellPutStr ("Unkown input :" ++ x ++ "\n"
+                           ++ "Type \'help\' for more information\n"))
+
+pgipShellCommands :: [ShellCommand [Status]]
+pgipShellCommands 
+                    = (exitCommand "exit")
+                    : (helpCommand "help")
+                    : (cmd "use" shellUse "open a file with HetCASL library")
+                    : (cmd "dg auto" shellDgAuto 
+                      "apply automatic tactic to a list of goals")
+                    : (cmd "dg glob-subsume" shellDgGlobSubsume 
+                      "apply global subsumption to a list of goals")
+                    : (cmd "dg glob-decomp" shellDgGlobDecomp
+                      "apply global decomposition to a list of goals")
+                    : (cmd "dg loc-infer" shellDgLocInfer
+                      "apply local inference to a list of goals")
+                    : (cmd "dg loc-decomp" shellDgLocDecomp
+                      "apply local decomposition to a list of goals")
+                    : (cmd "dg comp" shellDgComp
+                      "apply composition to a list of goals")
+                    : (cmd "dg comp-new" shellDgCompNew
+                       ("apply composition with speculation of new edges to"++
+                      " a list of goals"))
+                    : (cmd "dg hide-thm" shellDgHideThm
+                      "apply hide theorem shift to a list of goals")
+                    : (cmd "dg basic" shellDgBasic
+                      "select a list of goals for proving")
+                    : (cmd "dg-all auto" shellDgAutoAll 
+                      "apply automatic tactic to all goals")
+                    : (cmd "dg-all glob-subsume" shellDgGlobSubsumeAll 
+                      "apply global subsumption to all goals")
+                    : (cmd "dg-all glob-decomp" shellDgGlobDecompAll
+                      "apply global decomposition to all goals")
+                    : (cmd "dg-all loc-infer" shellDgLocInferAll
+                      "apply local inference to all goals")
+                    : (cmd "dg-all loc-decomp" shellDgLocDecompAll
+                      "apply local decomposition to all goals")
+                    : (cmd "dg-all comp" shellDgCompAll
+                      "apply composition to all goals")
+                    : (cmd "dg-all comp-new" shellDgCompNewAll
+                       ("apply composition with speculation of new edges to"++
+                      " all goals"))
+                    : (cmd "dg-all hide-thm" shellDgHideThmAll
+                      "apply hide theorem shift to all goals")
+                    : (cmd "dg-all basic" shellDgBasicAll
+                      "select all goals for proving")
+                    : (cmd "show-dg-goals" shellShowDgGoals
+                      "shows list of all open dg goals")
+                    : (cmd "show-theory-goals" shellShowTheoryGoals
+                      "shows list of theory goals")
+                    : (cmd "show-theory" shellShowTheory
+                      "shows current theory and proof goals")
+                    : (cmd "node-info" shellNodeInfo
+                      "shows info about current dg node")
+                    : (cmd "show-taxonomy" shellShowTaxonomy
+                      "shows taxonomy graph")
+                    : (cmd "show-concept" shellShowConcept
+                      "shows concept graph")
+                    : (cmd "translate" shellTranslate
+                      "translate theory goals along comorphism")
+                    : (cmd "prover" shellProver
+                      "selects a prover")
+                    : [] 
+
+
+deleteExec :: [Status] -> [Status]
+deleteExec ls
+   = case ls of 
+        Exec _ _:l -> deleteExec l
+        x:l      -> x:(deleteExec l)
+        []       -> []
+
+pgipExec :: [Status] -> [Status] -> IO [Status]
+pgipExec ls status
+  = case ls of 
+      (Exec fn input):l  -> 
+                  do 
+                     val <-fn input status
+                     let nwStatus = update val (deleteExec status)
+                     pgipExec l nwStatus
+                     pgipExec l nwStatus
+      _:l                  -> pgipExec l status
+      []                   -> return status
+
+pgipProcessInput :: [Status] -> IO String
+pgipProcessInput state
+                     = do
+                         val <- pgipExec state state
+                         let _ =modifyShellSt (update val)
+                         return (getFileUsed val) 
+
+pgipShellDescription :: ShellDescription [Status]
+pgipShellDescription =
+ let wbc = "\t\n\r\v\\,;" in
+      ShDesc
+       { shellCommands      = pgipShellCommands
+       , commandStyle       = OnlyCommands
+       , evaluateFunc       = pgipEvalFunc
+       , wordBreakChars     = wbc
+       , beforePrompt       = return ()
+       , prompt             = pgipProcessInput 
+       , exceptionHandler   = defaultExceptionHandler
+       , defaultCompletions = Just (\_ _ -> return [])
+       , historyFile        = Just ("consoleHistory.tmp")
+       , maxHistoryEntries  = 100
+       , historyEnabled     = True
+       }
+
+
+pgipRunShell :: IO [Status]
+pgipRunShell = runShell pgipShellDescription 
+                        readlineBackend 
+                        []
+
+
+{--
+checkLetter :: Char -> String -> Bool
+checkLetter x ls
+    = case ls of 
+            []   -> return False
+            l:ll -> if (l == x) then True
+                                else checkLetter x ll
+
+scanAnyWord::String -> String -> [String]
+scanAnyWord input tmp
+     = case input  of 
+         []  -> return tmp:[]
+         x:l -> if (checkLetter x (caslLetters++['0'..'9']++['-','_']))
+                                 then scanAnyWord l x:tmp
+                                 else tmp:input:[]
+                  
+         
+getKeyWord::String -> String -> [String ]
+getKeyWord l1 l2 
+  = case l1 of 
+        []  -> l2:[]
+        x:ll1 -> case l2 of
+                  []    -> []
+                  y:ll2 -> if (x == y) then getKeyWord ll1 ll2
+                                       else []
+
+
+getGoal::String -> [GOAL]
+getGoal input       
+  = let tmp1 = scanAnyWord input "" in
+    case tmp1 of
+     []         -> []
+     v1:rest1:_ -> let tmp2 = getKeyWord "-" rest1 in
+                   case tmp2 of 
+                    []  -> (Node v1):getGoal rest1
+                    x:_ -> let tmp2= getNumber rest1 in
+                           case tmp2 of
+                            []         -> []
+                            v2:rest2:_ -> let tmp3=getKeyWord "->" rest2 in
+                                          case tmp3 of
+                                           []    ->                                         
+                                      
+          sw = getKeyWord "-"
+                   v2<-getNumber
+                   getKeyWord "->"
+                   v3<-scanAnyWord
+                   return (LabeledEdge v1 (read v2::Int) v3)
+             )       
+      <|> 
+         try ( do  v1<-scanAnyWord
+                   getKeyWord "->"                                  
+                   v2<-scanAnyWord
+                   return (Edge  v1  v2)
+             )
+      <|> 
+         try ( do  v<-scanAnyWord
+                   return (Node  v)
+             )   
+      <?>
+         "goal"    
+
+
+ 
 scanPathFile::CharParser st String
 scanPathFile 
      = many1 ( oneOf (caslLetters ++ ['0'..'9'] ++ ['-','_','.']))
@@ -33,19 +356,21 @@ scanPathFile
 
 scanAnyWord::CharParser st String
 scanAnyWord
-     = many1 (oneOf (caslLetters ++ ['0'..'9'] ++ ['_','\'','.','/']))
+     = many1 (oneOf (caslLetters ++ ['0'..'9'] ++ ['_','\'','.','-']))
 
 -- |the 'getPath' function read a path as a a list of words
-getPath::AParser st [String]
+getPath::AParser st String
 getPath 
         = try ( do  
                     v<-sepBy1 scanPathFile (string "/")
-                    return v
+                    let result = joinWith '/' v
+                    return result
               )
       <|> 
           try ( do  skip
                     v<-sepBy1 scanPathFile (string "/")
-                    return v
+                    let result = joinWith '/' v
+                    return result
               )
       <?> 
           "path"
@@ -141,9 +466,10 @@ scanCommand arg
                                  v <- getComorphism 
                                  vs<-scanCommand ls
                                  return ((ParsedComorphism v):vs)
---- scanning goals
+--- scanning goals 
                           "GOALS":ls  ->  do
                                  v<-many getGoal
+--                                 v<- getGoal
                                  vs<- scanCommand ls
                                  return ((Goals v):vs)
 --- scanning none or many formulas
@@ -159,7 +485,7 @@ scanCommand arg
                                                  return tmp
 			                   )
 			         vs<-scanCommand ls
-			         return ((Formulas v):vs)
+                                 return ((Formulas v):vs)
 --- scanning proof script
                           "PROOF-SCRIPT":ls  ->  do
                                  v<- getScript
@@ -170,7 +496,7 @@ scanCommand arg
                                  getKeyWord keyword
                                  vs<- scanCommand ls
                                  return vs
-
+--}
 
 checkCommand::[([String], InterpreterCmd)]->AParser st InterpreterCmd
 checkCommand arg
@@ -246,36 +572,36 @@ checkCommand arg
                                   )
 
 
-parsingCommand::Int->AParser st InterpreterCmd
-parsingCommand x
-   = case x of 
-       0 -> checkCommand commands
-       _ -> do 
-              checkCommand commands
-              skip
-              result<- parsingCommand (x-1)
-              return result
+--parsingCommand::Int->AParser st InterpreterCmd
+--parsingCommand x
+--   = case x of 
+--       0 -> checkCommand commands
+--       _ -> do 
+--              checkCommand commands
+--              skip
+--              result<- parsingCommand (x-1)
+--              return result
+--
+--parseScript :: Int -> String -> IO (Maybe [InterpreterCmd])
+--parseScript nb str
+--  = do 
+--     let x=runParser (parsingCommand nb) (emptyAnnos()) "" str
+--     case x of
+--       Left _  -> do
+--                   putStr "An error has occured \n"
+--                   return Nothing
+--       Right (CmdE _) -> 
+--                  do
+----                 putStr ("_"++smt++"_\n"++str ++ "\n\n"++(show nb)++ "\n\n")
+--                   return (Nothing)
+--       Right EndOfCommands -> return (Just [])
+--       Right y -> do
+--                   z<-parseScript (nb+1) str
+--                   case z of
+--                      Nothing -> return Nothing
+--                      Just zz -> return (Just (y:zz))
 
-parseScript :: Int -> String -> IO (Maybe [InterpreterCmd])
-parseScript nb str
-  = do 
-     let x=runParser (parsingCommand nb) (emptyAnnos()) "" str
-     case x of
-       Left _  -> do
-                   putStr "An error has occured \n"
-                   return Nothing
-       Right (CmdE _) -> 
-                  do
---                 putStr ("_"++smt++"_\n"++str ++ "\n\n"++(show nb)++ "\n\n")
-                   return (Nothing)
-       Right EndOfCommands -> return (Just [])
-       Right y -> do
-                   z<-parseScript (nb+1) str
-                   case z of
-                      Nothing -> return Nothing
-                      Just zz -> return (Just (y:zz))
-
-
+{--
 getLibEnv::[Status]->Maybe (LIB_NAME,LibEnv)
 getLibEnv ls 
       =  case ls of 
@@ -291,17 +617,17 @@ runScriptCommands (arg,status)
       [] -> return  $ getLibEnv status
       (CmdP fn x):ls -> do 
                          val<- fn x
-                         let newStatus= update (val,status)
+                         let newStatus= update val status 
 --                       putStr ("Command parameters " ++ (show x) ++ "\n") 
                          runScriptCommands (ls,newStatus)
       (CmdPS fn x):ls-> do
                          let val = fn (x,status)
-                         let newStatus= update (val,status)
+                         let newStatus= update val status
 --                       putStr ("Command parameters " ++ (show x) ++ "\n")
                          runScriptCommands (ls,newStatus)
       (CmdS fn ):ls  -> do
                          let val= fn status
-                         let newStatus= update(val,status)
+                         let newStatus= update val status 
                          runScriptCommands (ls, newStatus)
       (CmdT fn x):ls -> do
                          fn x
@@ -313,7 +639,7 @@ runScriptCommands (arg,status)
                          runScriptCommands (ls, status)
       (CmdSIO fn):ls -> do 
                          val<-fn status
-                         let newStatus = update (val,status)
+                         let newStatus = update val status 
                          runScriptCommands (ls, newStatus)
       (CmdE _):_     -> return Nothing
       EndOfCommands:_-> runScriptCommands ([], status)
@@ -324,17 +650,17 @@ runScriptLine arg status
       [] -> return (Just status)
       (CmdP fn x):ls  -> do 
                           val<- fn x
-                          let newStatus= update (val,status)
+                          let newStatus= update  val status 
 --                        putStr ("Command parameters " ++ (show x) ++ "\n")
                           runScriptLine ls newStatus
       (CmdPS fn x):ls -> do
                           let val = fn (x,status)
-                          let newStatus= update (val,status)
+                          let newStatus= update val status 
 --                        putStr ("Command parameters " ++ (show x) ++ "\n")
                           runScriptLine ls newStatus 
       (CmdS fn ):ls   -> do
                           let val= fn status
-                          let newStatus= update(val,status)
+                          let newStatus= update val status 
                           runScriptLine ls newStatus
       (CmdT fn x):ls  -> do
                           fn x
@@ -346,7 +672,7 @@ runScriptLine arg status
                           runScriptLine ls status 
       (CmdSIO fn):ls  -> do 
                           val <-fn status
-                          let newStatus = update (val, status)
+                          let newStatus = update val status
                           runScriptLine ls newStatus
       (CmdE _):_       -> return Nothing
       EndOfCommands:_  -> runScriptLine [] status
@@ -459,27 +785,14 @@ printDetails =
    " ID ::=                          -- identifier (String)\n\n"
 
 	
-takeName :: String -> String
-takeName ls
-  = case ls of
-      '.':_ -> []
-      x :l  -> x:(takeName l)
-      _     -> []
-					 					 
-combine :: [String] -> String
-combine ls
-  = case ls of
-     x:[]-> (takeName x) ++ (combine [])
-     x:l -> x ++ "/" ++ (combine l)
-     []  -> "> "
+-- takeName :: String -> String
+-- takeName ls
+--   = case ls of
+--      '.':_ -> ['>']
+--      x :l  -> x:(takeName l)
+--      _     -> ['>']
+--					 					 
 
-
-getFileUsed :: [Status] -> String
-getFileUsed ls
- = case ls of
-      (Address adr):_ -> combine adr
-      _:l                -> getFileUsed l
-      []                 -> "Hets>"
 
 extractFirstWord :: String -> String
 extractFirstWord ls
@@ -526,8 +839,8 @@ runInteractive status =
                 runInteractive nwStatus
              Nothing -> 
                do
-                putStr "Error, couldn't parse input \n"
-                putStr "Please type help for more information\n"
+                putStr "\nError, couldn't parse input \n"
+                putStr "Please type help for more information\n\n"
                 runInteractive status
 
-
+--}

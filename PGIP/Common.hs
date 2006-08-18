@@ -45,7 +45,7 @@ data GraphGoals =
  deriving (Eq,Show)     
 
 data CmdParam =
-   Path                         [String] 
+   Path                          String 
  | Formula                       String 
  | UseProver                     String
  | Goals                         [GOAL]
@@ -66,7 +66,8 @@ data Status =
  | AllGoals [GraphGoals]
  | Comorph [String]
  | Prover String
- | Address [String]
+ | Exec (String->[Status]->IO [Status]) String
+ | Address String
 
 
 
@@ -193,78 +194,96 @@ getNodeList ls =
             []               -> []
 
 
-update::([Status],[Status])->[Status]
-update (val,status)
+update::[Status] -> [Status] -> [Status]
+update val status
  = case val of
     []                  ->  status
     (Env x y):l         -> 
       case status of
-       []  -> update(l,(Env x y):[])
-       CmdInitialState:ls -> update ((Env x y):l,ls)
+       []                 -> update l [Env x y]
+       CmdInitialState:ls -> update ((Env x y):l) ls
        (OutputErr xx):_   -> (OutputErr xx):[]
-       (Env _ _):ls       -> update(l,(Env x y):ls)
-       (Selected xx):ls   -> update(l,(Selected xx):update([Env x y],ls))
-       (AllGoals xx):ls   -> update(l,(AllGoals xx):update([Env x y],ls))
-       (Comorph xx):ls    -> update(l,(Comorph xx):update([Env x y],ls))
-       (Prover xx):ls     -> update(l,(Prover xx):update([Env x y],ls))
-       (Address xx):ls    -> update(l,(Address xx):update([Env x y],ls))
+       (Env _ _):ls       -> update l ((Env x y):ls)
+       (Selected xx):ls   -> update l ((Selected xx):(update [Env x y] ls))
+       (AllGoals xx):ls   -> update l ((AllGoals xx):(update [Env x y] ls))
+       (Comorph xx):ls    -> update l ((Comorph xx):(update [Env x y] ls))
+       (Prover xx):ls     -> update l ((Prover xx):(update [Env x y] ls))
+       (Address xx):ls    -> update l ((Address xx):(update [Env x y] ls))
+       (Exec xx yy):ls       -> update l ((Exec xx yy):(update [Env x y] ls))
     (Selected x):l -> 
       case status of
-       []                 -> update (l,(Selected x):[])
-       CmdInitialState:ls -> update ((Selected x):l, ls)
+       []                 -> update l [Selected x]
+       CmdInitialState:ls -> update ((Selected x):l) ls
        (OutputErr xx):_   -> (OutputErr xx):[]
-       (Env xx yy):ls     -> update(l,(Env xx yy):update([Selected x], ls))
-       (Selected _):ls    -> update(l,(Selected x):ls)
-       (AllGoals xx):ls   -> update(l,(AllGoals xx):update([Selected x],ls))
-       (Comorph xx):ls    -> update(l,(Comorph xx):update([Selected x],ls))
-       (Prover xx):ls     -> update(l,(Prover xx):update([Selected x],ls))
-       (Address xx):ls    -> update(l,(Address xx):update([Selected x],ls))
+       (Env xx yy):ls     -> update l ((Env xx yy):(update [Selected x] ls))
+       (Selected _):ls    -> update l ((Selected x):ls)
+       (AllGoals xx):ls   -> update l ((AllGoals xx):(update [Selected x] ls))
+       (Comorph xx):ls    -> update l ((Comorph xx):(update [Selected x] ls))
+       (Prover xx):ls     -> update l ((Prover xx):(update [Selected x] ls))
+       (Address xx):ls    -> update l ((Address xx):(update [Selected x] ls))
+       (Exec xx yy):ls    -> update l ((Exec xx yy):(update [Selected x] ls))
     (AllGoals x):l -> 
       case status of
-       []                 -> update (l,(AllGoals x):[])
-       CmdInitialState:ls -> update ((AllGoals x):l,ls)
+       []                 -> update  l [AllGoals x] 
+       CmdInitialState:ls -> update  ((AllGoals x):l) ls 
        (OutputErr xx):_   -> (OutputErr xx):[]
-       (Env xx yy):ls     -> update(l,(Env xx yy):update([AllGoals x], ls))
-       (Selected xx):ls   -> update(l,(Selected xx):update([AllGoals x], ls))
-       (AllGoals _):ls    -> update(l,(AllGoals x):ls)
-       (Comorph xx):ls    -> update(l,(Comorph xx):update([AllGoals x], ls))
-       (Prover xx):ls     -> update(l,(Prover xx):update([AllGoals x], ls))
-       (Address xx):ls    -> update(l,(Address xx):update([AllGoals x], ls))
+       (Env xx yy):ls     -> update l ((Env xx yy):(update [AllGoals x] ls))
+       (Selected xx):ls   -> update l ((Selected xx):(update [AllGoals x] ls))
+       (AllGoals _):ls    -> update l ((AllGoals x):ls)
+       (Comorph xx):ls    -> update l ((Comorph xx):(update [AllGoals x] ls))
+       (Prover xx):ls     -> update l ((Prover xx): (update [AllGoals x] ls))
+       (Address xx):ls    -> update l ((Address xx):(update [AllGoals x] ls))
+       (Exec xx yy):ls    -> update l ((Exec xx yy):(update [AllGoals x] ls))
     (Comorph x):l -> 
       case status of
-       []                 -> update (l, (Comorph x):[])
-       CmdInitialState:ls -> update ((Comorph x):l, ls)
+       []                 -> update l [Comorph x]
+       CmdInitialState:ls -> update ((Comorph x):l) ls
        (OutputErr xx):_   -> (OutputErr xx):[]
-       (Env xx yy):ls     -> update (l,(Env xx yy):update([Comorph x], ls))
-       (Selected xx):ls   -> update (l,(Selected xx):update([Comorph x],ls))
-       (AllGoals xx):ls   -> update (l,(AllGoals xx):update([Comorph x],ls))
-       (Comorph _):ls     -> update (l,(Comorph x):ls)
-       (Prover xx):ls     -> update (l,(Prover xx):update([Comorph x],ls))
-       (Address xx):ls    -> update (l,(Address xx):update([Comorph x],ls))
+       (Env xx yy):ls     -> update l ((Env xx yy):(update [Comorph x] ls))
+       (Selected xx):ls   -> update l ((Selected xx):(update [Comorph x] ls))
+       (AllGoals xx):ls   -> update l ((AllGoals xx):(update [Comorph x] ls))
+       (Comorph _):ls     -> update l ((Comorph x):ls)
+       (Prover xx):ls     -> update l ((Prover xx):(update  [Comorph x] ls))
+       (Address xx):ls    -> update l ((Address xx):(update [Comorph x] ls))
+       (Exec xx yy):ls    -> update l ((Exec xx yy):(update [Comorph x] ls))
     (Prover x):l    -> 
       case status of
-       []                 -> update (l, (Prover x):[])
-       CmdInitialState:ls -> update ((Prover x):l, ls)
+       []                 -> update l [Prover x]
+       CmdInitialState:ls -> update ((Prover x):l) ls
        (OutputErr xx):_   -> (OutputErr xx):[]
-       (Env xx yy):ls     -> update (l,(Env xx yy):update([Prover x], ls))
-       (Selected xx):ls   -> update (l,(Selected xx):update([Prover x], ls))
-       (AllGoals xx):ls   -> update (l,(AllGoals xx):update([Prover x], ls))
-       (Comorph xx):ls    -> update (l,(Comorph xx):update([Prover x], ls))
-       (Prover _):ls      -> update (l,(Prover x):ls)
-       (Address xx):ls    -> update (l,(Address xx):update([Prover x], ls))
+       (Env xx yy):ls     -> update l ((Env xx yy):(update [Prover x] ls))
+       (Selected xx):ls   -> update l ((Selected xx):(update [Prover x] ls))
+       (AllGoals xx):ls   -> update l ((AllGoals xx):(update [Prover x] ls))
+       (Comorph xx):ls    -> update l ((Comorph xx):(update [Prover x] ls))
+       (Prover _):ls      -> update l ((Prover x):ls)
+       (Address xx):ls    -> update l ((Address xx):(update [Prover x] ls))
+       (Exec xx yy):ls    -> update l ((Exec xx yy):(update [Prover x] ls))
     (Address x):l   ->
       case status of
-       []                 -> update (l, (Address x):[])
-       CmdInitialState:ls -> update ((Address x):l, ls)
+       []                 -> update l [Address x]
+       CmdInitialState:ls -> update ((Address x):l) ls
        (OutputErr xx):_   -> (OutputErr xx):[]
-       (Env xx yy):ls     -> update (l,(Env xx yy):update([Address x],ls))
-       (Selected xx):ls   -> update (l,(Selected xx):update([Address x],ls))
-       (AllGoals xx):ls   -> update (l,(AllGoals xx):update([Address x],ls))
-       (Comorph xx):ls    -> update (l,(Comorph xx):update([Address x],ls))
-       (Prover xx):ls     -> update (l,(Prover xx):update ([Address x],ls))
-       (Address _):ls     -> update (l,(Address x):ls)
+       (Env xx yy):ls     -> update l ((Env xx yy):(update [Address x] ls))
+       (Selected xx):ls   -> update l ((Selected xx):(update [Address x] ls))
+       (AllGoals xx):ls   -> update l ((AllGoals xx):(update [Address x] ls))
+       (Comorph xx):ls    -> update l ((Comorph xx):(update [Address x] ls))
+       (Prover xx):ls     -> update l ((Prover xx):(update [Address x] ls))
+       (Address _):ls     -> update l ((Address x):ls)
+       (Exec xx yy):ls    -> update l ((Exec xx yy):(update [Address x] ls))
+    (Exec x y):l  ->
+      case status of
+       []                 -> update l [Exec x y]
+       CmdInitialState:ls -> update ((Exec x y):l) ls
+       (OutputErr xx):_   -> (OutputErr xx):[]
+       (Env xx yy):ls     -> update l ((Env xx yy):(update [Exec x y] ls))
+       (Selected xx):ls   -> update l ((Selected xx):(update [Exec x y] ls))
+       (AllGoals xx):ls   -> update l ((AllGoals xx):(update [Exec x y]  ls))
+       (Comorph xx):ls    -> update l ((Comorph xx):(update [Exec x y]  ls))
+       (Exec _ _):ls      -> update l ((Exec x y):ls)
+       (Address xx):ls    -> update l ((Address xx):(update [Exec x y]  ls))
+       (Prover xx):ls     -> update l ((Prover xx):(update [Exec x y] ls))
     (OutputErr x):_       -> (OutputErr x):[]
-    CmdInitialState:l     -> update (l,status)
+    CmdInitialState:l     -> update l status
 
 
 
