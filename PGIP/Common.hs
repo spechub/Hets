@@ -69,20 +69,9 @@ data Status =
  | Address String
 
 
-
-
  
-data InterpreterCmd =
-   CmdP   ([CmdParam]->IO [Status]) [CmdParam] 
- | CmdPS  (([CmdParam],[Status])-> [Status]) [CmdParam] 
- | CmdS   ([Status] -> [Status])
- | CmdT   ([CmdParam]->IO())  [CmdParam]
- | CmdSS  ([Status] -> IO())
- | CmdSIO ([Status] -> IO [Status]) 
- | CmdE   String
- | EndOfCommands
-
-
+-- The function extractGraphNode extracts the goal node defined by 
+-- the ID (String) provided from the list of goals also passed as argument
 extractGraphNode:: String->[GraphGoals]->Maybe GraphGoals
 extractGraphNode x allGoals 
     = case allGoals of
@@ -92,7 +81,8 @@ extractGraphNode x allGoals
                                           else extractGraphNode x l
        _:l                           -> extractGraphNode x l
          
-
+-- The function extractGraphEdge extracts the goal edge determined by 
+-- the two nodes given as string ID from the list of goals
 extractGraphEdge:: String -> String -> [GraphGoals] -> Maybe GraphGoals
 extractGraphEdge x y allGoals
    = case allGoals of
@@ -112,7 +102,8 @@ extractGraphEdge x y allGoals
                         _ -> extractGraphEdge x y l
                     _ -> extractGraphEdge x y l  
       _:l    -> extractGraphEdge x y l                                                             
-
+-- Same as above but it tries to extract the edge between the nodes
+-- that has the given number in the order they are found
 extractGraphLabeledEdge:: String -> Int -> String -> 
                           [GraphGoals] -> Maybe GraphGoals
 extractGraphLabeledEdge x nb y allGoals
@@ -137,6 +128,7 @@ extractGraphLabeledEdge x nb y allGoals
       _:l -> extractGraphLabeledEdge x nb y l 
 
 
+-- Given a list of GOAL (parsed goals) and the list of all possible goals
 
 getGoalList :: [GOAL] -> [GraphGoals] -> [GraphGoals]
 getGoalList goalList allg 
