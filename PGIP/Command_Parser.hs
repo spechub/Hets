@@ -172,10 +172,8 @@ shellDgHideThmAll
 shellDgBasicAll :: Sh [Status] ()
 shellDgBasicAll
    = do
-     val <- getShellSt >>= \state -> liftIO(cDgAuto input state)
+     val <- getShellSt >>= \state -> liftIO(cDgAllInferBasic "" state)
      modifyShellSt (update val)
-
- = modifyShellSt (update [Exec cDgAllInferBasic ""].deleteExec)
 
 shellShowDgGoals :: Sh [Status] ()
 shellShowDgGoals 
