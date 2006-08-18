@@ -40,7 +40,7 @@ else
     endif
 endif
 
-download : hetcats-checkout casl-lib-checkout other-download
+download : izpack_checkout hetcats-checkout casl-lib-checkout uni-checkout other-download
 
 casl-lib-checkout :
 	@echo update casl-lib 
@@ -61,6 +61,23 @@ daily-hets-download :
 	@sh utils/getDailyHets.sh
 	mv $(HOME)/bin/hets-$(ACTDATE) $(IZPACK_SAMPLE)/hets
 
+uni-checkout :
+	@echo update uni
+	@cd $(IZPACK_SAMPLE)/src ; \
+	 if [ -d uni ] ; then \
+	  cvs up -dPA uni ; \
+	 else \
+	  cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:\/repository co -P uni ; \
+	 fi
+
+izpack_checkout :
+	@echo update izpack_het
+	@if [ -d $(IZPACK_PATH) ] ; then \
+	  svn up $(IZPACK_PATH) ; \
+	 else \
+	  svn checkout https://svn-agbkb.informatik.uni-bremen.de/izpack $(IZPACK_PATH) ; \
+	fi
+
 other-download :
 	if [ $(GMPURL) != "" ]; then \
 	  wget --output-document=$(IZPACK_SAMPLE)/GMP/GMP.framework.zip $(GMPURL) ; \
@@ -72,15 +89,8 @@ other-download :
 	cd $(IZPACK_SAMPLE)/SPASS/ ; tar xvf spass.tgz ; $(RM) spass.tgz
 
 build:
-	@echo update izpack_het
-	@if [ -d $(IZPACK_PATH) ]; then \
-	  svn up $(IZPACK_PATH) ; \
-	  else \
-	    svn checkout https://svn-agbkb.informatik.uni-bremen.de/izpack \
-		$HETS_HOME/../izpack_het ; \
-        fi
 	@chmod +x $(IZPACK_PATH)/bin/compile
 	$(IZPACK_COMPILE) $(INSTALL_XML) -b $(IZPACK_SAMPLE)/ -o $(INSTALL_JAR) -k standard
 
-.PHONY : all download build casl-lib-checkout hetcats-checkout daily-hets-download daily-hets-download other-download
+.PHONY : all download build casl-lib-checkout hetcats-checkout daily-hets-download daily-hets-download other-download izpack_checkout
 
