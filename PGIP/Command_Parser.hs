@@ -16,21 +16,16 @@ Parsing the comand line script.
 
 module PGIP.Command_Parser where
 
---import Syntax.AS_Library
---import Static.DevGraph
 import Common.AnnoState
 import Common.Lexer
---import Common.Utils
 import Text.ParserCombinators.Parsec
---import PGIP.Parser_Syntax
 import PGIP.Commands
 import PGIP.Common
 import Data.Maybe
---import IO (hFlush, stdout)
 import Shell.Backend.Readline
 import Shell.ShellMonad
 import Shell
-
+import Control.Monad.Trans
 
 data OutputScan = 
     Out CmdParam String
@@ -51,119 +46,200 @@ takeName ls
       x :l  -> x:(takeName l)
       _     -> ['>']
 	
-pgipTest :: String -> Sh [Status] ()
-pgipTest str
-          = shellPutStr str
 
 
 shellUse :: File -> Sh [Status] ()
 shellUse (File filename)
-  = modifyShellSt (update [Exec cUse filename]. deleteExec)
+  = do
+       val <- getShellSt >>= \state -> liftIO (cUse filename state)
+       modifyShellSt (update val)
 
 
 shellDgAutoAll ::  Sh [Status] ()
 shellDgAutoAll 
-  = modifyShellSt (update [Exec cDgAllAuto ""]. deleteExec)
+  = do
+      val <- getShellSt >>= \state -> liftIO(cDgAllAuto "" state)
+      modifyShellSt (update val)
 
 shellDgAuto :: String -> Sh [Status] ()
 shellDgAuto input
-  = modifyShellSt (update [Exec cDgAuto input] . deleteExec)
+  = do
+     val <- getShellSt >>= \state -> liftIO(cDgAuto input state)
+     modifyShellSt (update val)
 
 shellDgGlobSubsume :: String -> Sh [Status] ()
 shellDgGlobSubsume input
-  = modifyShellSt (update [Exec cDgGlobSubsume input]. deleteExec)
+   = do
+     val <- getShellSt >>= \state -> liftIO(cDgGlobSubsume input state)
+     modifyShellSt (update val)
 
 shellDgGlobDecomp :: String -> Sh [Status] ()
 shellDgGlobDecomp input
-  = modifyShellSt (update [Exec cDgGlobDecomp input]. deleteExec)
+   = do
+     val <- getShellSt >>= \state -> liftIO(cDgGlobDecomp input state)
+     modifyShellSt (update val)
+
 
 shellDgLocInfer :: String -> Sh [Status] ()
 shellDgLocInfer input
-  = modifyShellSt (update [Exec cDgLocInfer input]. deleteExec)
+   = do
+     val <- getShellSt >>= \state -> liftIO(cDgLocInfer input state)
+     modifyShellSt (update val)
+
 
 shellDgLocDecomp :: String -> Sh [Status] ()
 shellDgLocDecomp input
-  = modifyShellSt (update [Exec cDgLocDecomp input]. deleteExec)
+   = do
+     val <- getShellSt >>= \state -> liftIO(cDgLocDecomp input state)
+     modifyShellSt (update val)
+
 
 shellDgComp :: String -> Sh [Status] ()
 shellDgComp input
-  = modifyShellSt (update [Exec cDgComp input].deleteExec)
+   = do
+     val <- getShellSt >>= \state -> liftIO(cDgComp input state)
+     modifyShellSt (update val)
 
 shellDgCompNew :: String -> Sh [Status] ()
 shellDgCompNew input
-  = modifyShellSt (update [Exec cDgCompNew input].deleteExec)
+   = do
+     val <- getShellSt >>= \state -> liftIO(cDgCompNew input state)
+     modifyShellSt (update val)
+
 
 shellDgHideThm :: String -> Sh [Status] ()
 shellDgHideThm input
-  = modifyShellSt (update [Exec cDgHideThm input].deleteExec)
+   = do
+     val <- getShellSt >>= \state -> liftIO(cDgHideThm input state)
+     modifyShellSt (update val)
+
 
 shellDgBasic :: String -> Sh [Status] ()
 shellDgBasic input
-  = modifyShellSt (update [Exec cDgInferBasic input].deleteExec)
+   = do
+     val <- getShellSt >>= \state -> liftIO(cDgInferBasic input state)
+     modifyShellSt (update val)
 
 shellDgGlobSubsumeAll :: Sh [Status] ()
 shellDgGlobSubsumeAll
-  = modifyShellSt (update [Exec cDgAllGlobSubsume ""].deleteExec)
+   = do
+     val <- getShellSt >>= \state -> liftIO(cDgAllGlobSubsume "" state)
+     modifyShellSt (update val)
+
 
 shellDgGlobDecompAll :: Sh [Status] ()
 shellDgGlobDecompAll
-  = modifyShellSt (update [Exec cDgAllGlobDecomp ""].deleteExec)
+   = do
+     val <- getShellSt >>= \state -> liftIO(cDgAllGlobDecomp "" state)
+     modifyShellSt (update val)
+
 
 shellDgLocInferAll :: Sh [Status] ()
 shellDgLocInferAll
-  = modifyShellSt (update [Exec cDgAllLocInfer ""].deleteExec)
+   = do
+     val <- getShellSt >>= \state -> liftIO(cDgAllLocInfer "" state)
+     modifyShellSt (update val)
+
 
 shellDgLocDecompAll :: Sh [Status] ()
 shellDgLocDecompAll
-  = modifyShellSt (update [Exec cDgAllLocDecomp ""].deleteExec)
+   = do
+     val <- getShellSt >>= \state -> liftIO(cDgAllLocDecomp "" state)
+     modifyShellSt (update val)
+
 
 shellDgCompAll :: Sh [Status] ()
 shellDgCompAll
-  = modifyShellSt (update [Exec cDgAllComp ""].deleteExec)
+   = do
+     val <- getShellSt >>= \state -> liftIO(cDgAllComp "" state)
+     modifyShellSt (update val)
+
 
 shellDgCompNewAll :: Sh [Status] ()
 shellDgCompNewAll
-  = modifyShellSt (update [Exec cDgAllCompNew ""].deleteExec)
+   = do
+     val <- getShellSt >>= \state -> liftIO(cDgAllCompNew "" state)
+     modifyShellSt (update val)
+
 
 shellDgHideThmAll :: Sh [Status] ()
 shellDgHideThmAll
-  = modifyShellSt (update [Exec cDgAllHideThm ""].deleteExec)
+   = do
+     val <- getShellSt >>= \state -> liftIO(cDgAllHideThm "" state)
+     modifyShellSt (update val)
+
 
 shellDgBasicAll :: Sh [Status] ()
 shellDgBasicAll
-  = modifyShellSt (update [Exec cDgAllInferBasic ""].deleteExec)
+   = do
+     val <- getShellSt >>= \state -> liftIO(cDgAuto input state)
+     modifyShellSt (update val)
+
+ = modifyShellSt (update [Exec cDgAllInferBasic ""].deleteExec)
 
 shellShowDgGoals :: Sh [Status] ()
 shellShowDgGoals 
-  = modifyShellSt (update [Exec cShowDgGoals ""].deleteExec)
+   = do
+     val <- getShellSt >>= \state -> liftIO(cDgAuto input state)
+     modifyShellSt (update val)
+
+ = modifyShellSt (update [Exec cShowDgGoals ""].deleteExec)
 
 shellShowTheoryGoals :: Sh [Status] ()
 shellShowTheoryGoals
-  = modifyShellSt (update [Exec cShowTheory ""].deleteExec)
+   = do
+     val <- getShellSt >>= \state -> liftIO(cDgAuto input state)
+     modifyShellSt (update val)
+
+ = modifyShellSt (update [Exec cShowTheory ""].deleteExec)
 
 shellShowTheory :: Sh [Status] ()
 shellShowTheory 
-  = modifyShellSt (update [Exec cShowNodeTheory ""].deleteExec)
+   = do
+     val <- getShellSt >>= \state -> liftIO(cDgAuto input state)
+     modifyShellSt (update val)
+
+ = modifyShellSt (update [Exec cShowNodeTheory ""].deleteExec)
 
 shellNodeInfo :: Sh [Status] ()
 shellNodeInfo
-  = modifyShellSt (update [Exec cShowNodeInfo ""].deleteExec)
+   = do
+     val <- getShellSt >>= \state -> liftIO(cDgAuto input state)
+     modifyShellSt (update val)
+
+ = modifyShellSt (update [Exec cShowNodeInfo ""].deleteExec)
 
 shellShowTaxonomy :: Sh [Status] ()
 shellShowTaxonomy
-  = modifyShellSt (update [Exec cShowNodeTaxonomy ""].deleteExec)
+   = do
+     val <- getShellSt >>= \state -> liftIO(cDgAuto input state)
+     modifyShellSt (update val)
+
+ = modifyShellSt (update [Exec cShowNodeTaxonomy ""].deleteExec)
 
 shellShowConcept :: Sh [Status] ()
 shellShowConcept
-  = modifyShellSt (update [Exec cShowNodeConcept "" ].deleteExec)
+   = do
+     val <- getShellSt >>= \state -> liftIO(cDgAuto input state)
+     modifyShellSt (update val)
+
+ = modifyShellSt (update [Exec cShowNodeConcept "" ].deleteExec)
 
 shellTranslate :: String -> Sh [Status] ()
 shellTranslate input
-  = modifyShellSt (update [Exec cTranslate input].deleteExec)
+   = do
+     val <- getShellSt >>= \state -> liftIO(cDgAuto input state)
+     modifyShellSt (update val)
+
+ = modifyShellSt (update [Exec cTranslate input].deleteExec)
 
 shellProver :: String -> Sh [Status] ()
 shellProver input
-  = modifyShellSt (update [Exec cProver input].deleteExec)
+   = do
+     val <- getShellSt >>= \state -> liftIO(cDgAuto input state)
+     modifyShellSt (update val)
+
+ = modifyShellSt (update [Exec cProver input].deleteExec)
 
 pgipEvalFunc :: String -> Sh [Status] ()
 pgipEvalFunc str
@@ -262,6 +338,11 @@ pgipProcessInput state
                          let _ =modifyShellSt (update val)
                          return (getFileUsed val) 
 
+--pgipUpdateState :: [Status] -> [Status]
+--pgipUpdateState state
+--                    = let val = liftIO (pgipExec state state) 
+--                      in  update val state
+
 pgipShellDescription :: ShellDescription [Status]
 pgipShellDescription =
  let wbc = "\t\n\r\v\\,;" in
@@ -270,7 +351,7 @@ pgipShellDescription =
        , commandStyle       = OnlyCommands
        , evaluateFunc       = pgipEvalFunc
        , wordBreakChars     = wbc
-       , beforePrompt       = return ()
+       , beforePrompt       = modifyShellSt (deleteExec) 
        , prompt             = pgipProcessInput 
        , exceptionHandler   = defaultExceptionHandler
        , defaultCompletions = Just (\_ _ -> return [])
