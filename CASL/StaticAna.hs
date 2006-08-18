@@ -16,9 +16,12 @@ and outputs a signature and a set of formulas, while checking that
 - all sorts, operation and predicate symbols used in formulas have
   been declared
 - formulas type-check
-The formulas are returned with fully-qualified variables, oepration
+The formulas are returned with fully-qualified variables, operation
 and predicate symbols.
 
+The static analysis functions are parameterized with functions for
+treating CASL extensions, that is, additional basic items, signature
+items and/or formulas.
 -}
 
 module CASL.StaticAna where
