@@ -234,7 +234,7 @@ shellTranslate input
 shellProver :: String -> Sh [Status] ()
 shellProver input
    = do
-     val <- getShellSt >>= \state -> liftIO(cDgProver input state)
+     val <- getShellSt >>= \state -> liftIO(cProver input state)
      modifyShellSt (update val)
 
 -- = modifyShellSt (update [Exec cProver input].deleteExec)
