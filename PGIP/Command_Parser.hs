@@ -226,9 +226,8 @@ shellProver input
 pgipEvalFunc :: String -> Sh [Status] ()
 pgipEvalFunc str
   = case str of
-     []   -> modifyShellSt deleteExec
-     x    -> do 
-              modifyShellSt deleteExec   
+     []   -> shellPutStr "" 
+     x    ->  
               (shellPutStr ("Unkown input :" ++ x ++ "\n"
                            ++ "Type \'help\' for more information\n"))
 
@@ -294,36 +293,12 @@ pgipShellCommands
                     : [] 
 
 
-deleteExec :: [Status] -> [Status]
-deleteExec ls
-   = case ls of 
-        Exec _ _:l -> deleteExec l
-        x:l      -> x:(deleteExec l)
-        []       -> []
-
-pgipExec :: [Status] -> [Status] -> IO [Status]
-pgipExec ls status
-  = case ls of 
-      (Exec fn input):l  -> 
-                  do 
-                     val <-fn input status
-                     let nwStatus = update val (deleteExec status)
-                     pgipExec l nwStatus
-                     pgipExec l nwStatus
-      _:l                  -> pgipExec l status
-      []                   -> return status
 
 pgipProcessInput :: [Status] -> IO String
 pgipProcessInput state
-                     = do
-                         val <- pgipExec state state
-                         let _ =modifyShellSt (update val)
-                         return (getFileUsed val) 
+                     = 
+                         return (getFileUsed state) 
 
---pgipUpdateState :: [Status] -> [Status]
---pgipUpdateState state
---                    = let val = liftIO (pgipExec state state) 
---                      in  update val state
 
 pgipShellDescription :: ShellDescription [Status]
 pgipShellDescription =
@@ -333,7 +308,7 @@ pgipShellDescription =
        , commandStyle       = OnlyCommands
        , evaluateFunc       = pgipEvalFunc
        , wordBreakChars     = wbc
-       , beforePrompt       = modifyShellSt (deleteExec) 
+       , beforePrompt       = return () 
        , prompt             = pgipProcessInput 
        , exceptionHandler   = defaultExceptionHandler
        , defaultCompletions = Just (\_ _ -> return [])

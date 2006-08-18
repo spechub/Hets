@@ -66,7 +66,6 @@ data Status =
  | AllGoals [GraphGoals]
  | Comorph [String]
  | Prover String
- | Exec (String->[Status]->IO [Status]) String
  | Address String
 
 
@@ -209,7 +208,6 @@ update val status
        (Comorph xx):ls    -> update l ((Comorph xx):(update [Env x y] ls))
        (Prover xx):ls     -> update l ((Prover xx):(update [Env x y] ls))
        (Address xx):ls    -> update l ((Address xx):(update [Env x y] ls))
-       (Exec xx yy):ls       -> update l ((Exec xx yy):(update [Env x y] ls))
     (Selected x):l -> 
       case status of
        []                 -> update l [Selected x]
@@ -221,7 +219,6 @@ update val status
        (Comorph xx):ls    -> update l ((Comorph xx):(update [Selected x] ls))
        (Prover xx):ls     -> update l ((Prover xx):(update [Selected x] ls))
        (Address xx):ls    -> update l ((Address xx):(update [Selected x] ls))
-       (Exec xx yy):ls    -> update l ((Exec xx yy):(update [Selected x] ls))
     (AllGoals x):l -> 
       case status of
        []                 -> update  l [AllGoals x] 
@@ -233,7 +230,6 @@ update val status
        (Comorph xx):ls    -> update l ((Comorph xx):(update [AllGoals x] ls))
        (Prover xx):ls     -> update l ((Prover xx): (update [AllGoals x] ls))
        (Address xx):ls    -> update l ((Address xx):(update [AllGoals x] ls))
-       (Exec xx yy):ls    -> update l ((Exec xx yy):(update [AllGoals x] ls))
     (Comorph x):l -> 
       case status of
        []                 -> update l [Comorph x]
@@ -245,7 +241,6 @@ update val status
        (Comorph _):ls     -> update l ((Comorph x):ls)
        (Prover xx):ls     -> update l ((Prover xx):(update  [Comorph x] ls))
        (Address xx):ls    -> update l ((Address xx):(update [Comorph x] ls))
-       (Exec xx yy):ls    -> update l ((Exec xx yy):(update [Comorph x] ls))
     (Prover x):l    -> 
       case status of
        []                 -> update l [Prover x]
@@ -257,7 +252,6 @@ update val status
        (Comorph xx):ls    -> update l ((Comorph xx):(update [Prover x] ls))
        (Prover _):ls      -> update l ((Prover x):ls)
        (Address xx):ls    -> update l ((Address xx):(update [Prover x] ls))
-       (Exec xx yy):ls    -> update l ((Exec xx yy):(update [Prover x] ls))
     (Address x):l   ->
       case status of
        []                 -> update l [Address x]
@@ -269,19 +263,6 @@ update val status
        (Comorph xx):ls    -> update l ((Comorph xx):(update [Address x] ls))
        (Prover xx):ls     -> update l ((Prover xx):(update [Address x] ls))
        (Address _):ls     -> update l ((Address x):ls)
-       (Exec xx yy):ls    -> update l ((Exec xx yy):(update [Address x] ls))
-    (Exec x y):l  ->
-      case status of
-       []                 -> update l [Exec x y]
-       CmdInitialState:ls -> update ((Exec x y):l) ls
-       (OutputErr xx):_   -> (OutputErr xx):[]
-       (Env xx yy):ls     -> update l ((Env xx yy):(update [Exec x y] ls))
-       (Selected xx):ls   -> update l ((Selected xx):(update [Exec x y] ls))
-       (AllGoals xx):ls   -> update l ((AllGoals xx):(update [Exec x y]  ls))
-       (Comorph xx):ls    -> update l ((Comorph xx):(update [Exec x y]  ls))
-       (Exec _ _):ls      -> update l ((Exec x y):ls)
-       (Address xx):ls    -> update l ((Address xx):(update [Exec x y]  ls))
-       (Prover xx):ls     -> update l ((Prover xx):(update [Exec x y] ls))
     (OutputErr x):_       -> (OutputErr x):[]
     CmdInitialState:l     -> update l status
 
