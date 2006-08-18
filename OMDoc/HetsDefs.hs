@@ -1854,25 +1854,11 @@ buildMorphismSign morphism hidingSet sign =
     msorts =  
       Set.map
         (mapSort (sort_map morphism)) 
-{-      (\s ->
-          case Map.lookup s (sort_map morphism) of
-            Nothing -> s
-            (Just ms) -> ms
-        ) -}
         sortshide
     mrel =
      Rel.fromList $
       map
         (\(a, b) ->
-{-          let
-            na = case Map.lookup a (sort_map morphism) of
-              Nothing -> a
-              (Just ma) -> ma
-            nb = case Map.lookup b (sort_map morphism) of
-              Nothing -> b
-              (Just mb) -> mb
-         in
-          (na, nb) -}
           (mapSort (sort_map morphism) a, mapSort (sort_map morphism) b)
         ) 
 
@@ -1880,26 +1866,6 @@ buildMorphismSign morphism hidingSet sign =
     mpreds =
       Map.foldWithKey
         (\pid ps mpm ->
-{-          let
-            mpreds' =
-              map
-                (\pt ->
-                  case Map.lookup (pid, pt) (pred_map morphism) of
-                    (Just mpid) -> (mpid, pt)
-                    _ -> (pid, pt)
-                )
-                (Set.toList ps)
-          in
-            foldl
-              (\mpm' (mpid, pt) ->
-                let
-                  oldset = Map.findWithDefault Set.empty mpid mpm'
-                  newset = Set.union oldset (Set.singleton pt)
-                in
-                  Map.insert mpid newset mpm'
-              )
-              mpm
-              mpreds' -}
           let
             mapped =
               map
@@ -1918,26 +1884,6 @@ buildMorphismSign morphism hidingSet sign =
     mops =
       Map.foldWithKey
         (\oid os mom ->
-{-          let
-            mops' =
-              map
-                (\ot ->
-                  case Map.lookup (oid, ot) (fun_map morphism) of
-                    (Just (moid, fk)) -> (moid, ot { opKind = fk})
-                    _ -> (oid, ot)
-                )
-                (Set.toList os)
-          in
-            foldl
-              (\mom' (moid, ot) ->
-                let
-                  oldset = Map.findWithDefault Set.empty moid mom'
-                  newset = Set.union oldset (Set.singleton ot)
-                in
-                  Map.insert moid newset mom'
-              )
-              mom
-              mops' -}
           let
             mapped =
               map
@@ -1956,26 +1902,6 @@ buildMorphismSign morphism hidingSet sign =
     mass =
       Map.foldWithKey
         (\oid os mam ->
-{-          let
-            mass' =
-              map
-                (\ot ->
-                  case Map.lookup (oid, ot) (fun_map morphism) of
-                    (Just (moid, fk)) -> (moid, ot { opKind = fk})
-                    _ -> (oid, ot)
-                )
-                (Set.toList os)
-          in
-            foldl
-              (\mam' (moid, ot) ->
-                let
-                  oldset = Map.findWithDefault Set.empty moid mam'
-                  newset = Set.union oldset (Set.singleton ot)
-                in
-                  Map.insert moid newset mam'
-              )
-              mam
-              mass' -}
           let
             mapped =
               map
@@ -2139,7 +2065,7 @@ addSignsAndHideWithMorphism dg hiding mm n1 n2 =
         }
   in
 {-    Debug.Trace.trace
-      ("--==!! Created new node from " ++ (show (dgn_name n1dgnl)) ++ " " ++ (show sign1) ++ " --==!! ##and## !!==-- " ++ (show (dgn_name n2dgnl)) ++ " " ++ (show sign2) ++ " --==!! ##--## !!==-- " ++ (show hiding) ++ " --==!! ##++## !!==-- " ++ (show msign) ++ " --==!! ##->## !!==-- " ++ (show asign) ++ " !!==-- ") -}
+      ("--==!! Created new node from " ++ (show (dgn_name n1dgnl)) ++ " " ++ (show sign1) ++ " --==!! ##and## !!==-- " ++ (show (dgn_name n2dgnl)) ++ " " ++ (show sign2) ++ " --==!! ##--## !!==-- " ++ (show hiding) ++ " --==!! ##++## !!==-- " ++ (show msign) ++ "--==!! ##by## !!==-- " ++ show mm ++ " --==!! ##->## !!==-- " ++ (show asign) ++ " !!==-- ") -}
       newnodel
 
 
