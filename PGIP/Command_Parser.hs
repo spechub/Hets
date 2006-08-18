@@ -186,7 +186,7 @@ shellShowDgGoals
 shellShowTheoryGoals :: Sh [Status] ()
 shellShowTheoryGoals
    = do
-     val <- getShellSt >>= \state -> liftIO(cDgAuto "" state)
+     val <- getShellSt >>= \state -> liftIO(cShowTheory "" state)
      modifyShellSt (update val)
 
 -- = modifyShellSt (update [Exec cShowTheory ""].deleteExec)
@@ -194,7 +194,7 @@ shellShowTheoryGoals
 shellShowTheory :: Sh [Status] ()
 shellShowTheory 
    = do
-     val <- getShellSt >>= \state -> liftIO(cDgAuto "" state)
+     val <- getShellSt >>= \state -> liftIO(cShowNodeTheory "" state)
      modifyShellSt (update val)
 
 -- = modifyShellSt (update [Exec cShowNodeTheory ""].deleteExec)
@@ -202,7 +202,7 @@ shellShowTheory
 shellNodeInfo :: Sh [Status] ()
 shellNodeInfo
    = do
-     val <- getShellSt >>= \state -> liftIO(cDgAuto "" state)
+     val <- getShellSt >>= \state -> liftIO(cShowNodeInfo "" state)
      modifyShellSt (update val)
 
 -- = modifyShellSt (update [Exec cShowNodeInfo ""].deleteExec)
@@ -210,7 +210,7 @@ shellNodeInfo
 shellShowTaxonomy :: Sh [Status] ()
 shellShowTaxonomy
    = do
-     val <- getShellSt >>= \state -> liftIO(cDgAuto "" state)
+     val <- getShellSt >>= \state -> liftIO(cShowNodeTaxonomy "" state)
      modifyShellSt (update val)
 
 -- = modifyShellSt (update [Exec cShowNodeTaxonomy ""].deleteExec)
@@ -218,7 +218,7 @@ shellShowTaxonomy
 shellShowConcept :: Sh [Status] ()
 shellShowConcept
    = do
-     val <- getShellSt >>= \state -> liftIO(cDgAuto "" state)
+     val <- getShellSt >>= \state -> liftIO(cShowNodeConcept "" state)
      modifyShellSt (update val)
 
 -- = modifyShellSt (update [Exec cShowNodeConcept "" ].deleteExec)
@@ -226,7 +226,7 @@ shellShowConcept
 shellTranslate :: String -> Sh [Status] ()
 shellTranslate input
    = do
-     val <- getShellSt >>= \state -> liftIO(cDgAuto input state)
+     val <- getShellSt >>= \state -> liftIO(cTranslate input state)
      modifyShellSt (update val)
 
 -- = modifyShellSt (update [Exec cTranslate input].deleteExec)
@@ -234,7 +234,7 @@ shellTranslate input
 shellProver :: String -> Sh [Status] ()
 shellProver input
    = do
-     val <- getShellSt >>= \state -> liftIO(cDgAuto input state)
+     val <- getShellSt >>= \state -> liftIO(cDgProver input state)
      modifyShellSt (update val)
 
 -- = modifyShellSt (update [Exec cProver input].deleteExec)
