@@ -1,3 +1,4 @@
+{-# OPTIONS -cpp #-}
 {-
  - 
  -  Copyright 2005-2006, Robert Dockins.
