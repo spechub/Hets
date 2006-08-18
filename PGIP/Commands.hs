@@ -199,16 +199,6 @@ removeSpace ls
 cUse::String->[Status] -> IO [Status]
 cUse input _
  =do
---   let r=runParser (scanCommand ["PATH"]) (emptyAnnos ()) "" input
---   case r of
---    Left _ -> do
---                putStr "\n Error parsing the argument ! \n"
---                return []
---    Right ls ->
---     case ls of
---      (Path file):_ -> 
---        do
---          let file = joinWith '/' list
           let file = removeSpace input
           let opts = defaultHetcatsOpts
           result<- anaLib opts file
@@ -219,7 +209,6 @@ cUse input _
                     return ((Address file):(Env name env):(AllGoals l):[] )
               Nothing ->  
                     return [(OutputErr "Couldn't load the file specified")]
---      _       -> return [(OutputErr "Wrong parameter")]    
 
 cDgAllAuto::String -> [Status] -> IO [Status]
 cDgAllAuto _ arg

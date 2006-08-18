@@ -32,7 +32,7 @@ import Comorphisms.LogicGraph
 
 type GDataEdge = LEdge DGLinkLab
 type GDataNode = LNode DGNodeLab
-
+    
 data GOAL = 
    Node         String   
  | Edge         String   String     
