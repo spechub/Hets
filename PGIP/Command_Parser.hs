@@ -186,7 +186,7 @@ shellShowDgGoals
 shellShowTheoryGoals :: Sh [Status] ()
 shellShowTheoryGoals
    = do
-     val <- getShellSt >>= \state -> liftIO(cDgAuto input state)
+     val <- getShellSt >>= \state -> liftIO(cDgAuto "" state)
      modifyShellSt (update val)
 
 -- = modifyShellSt (update [Exec cShowTheory ""].deleteExec)
@@ -194,7 +194,7 @@ shellShowTheoryGoals
 shellShowTheory :: Sh [Status] ()
 shellShowTheory 
    = do
-     val <- getShellSt >>= \state -> liftIO(cDgAuto input state)
+     val <- getShellSt >>= \state -> liftIO(cDgAuto "" state)
      modifyShellSt (update val)
 
 -- = modifyShellSt (update [Exec cShowNodeTheory ""].deleteExec)
@@ -202,7 +202,7 @@ shellShowTheory
 shellNodeInfo :: Sh [Status] ()
 shellNodeInfo
    = do
-     val <- getShellSt >>= \state -> liftIO(cDgAuto input state)
+     val <- getShellSt >>= \state -> liftIO(cDgAuto "" state)
      modifyShellSt (update val)
 
 -- = modifyShellSt (update [Exec cShowNodeInfo ""].deleteExec)
@@ -210,7 +210,7 @@ shellNodeInfo
 shellShowTaxonomy :: Sh [Status] ()
 shellShowTaxonomy
    = do
-     val <- getShellSt >>= \state -> liftIO(cDgAuto input state)
+     val <- getShellSt >>= \state -> liftIO(cDgAuto "" state)
      modifyShellSt (update val)
 
 -- = modifyShellSt (update [Exec cShowNodeTaxonomy ""].deleteExec)
@@ -218,7 +218,7 @@ shellShowTaxonomy
 shellShowConcept :: Sh [Status] ()
 shellShowConcept
    = do
-     val <- getShellSt >>= \state -> liftIO(cDgAuto input state)
+     val <- getShellSt >>= \state -> liftIO(cDgAuto "" state)
      modifyShellSt (update val)
 
 -- = modifyShellSt (update [Exec cShowNodeConcept "" ].deleteExec)
