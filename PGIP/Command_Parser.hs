@@ -226,7 +226,7 @@ shellProver input
 pgipEvalFunc :: String -> Sh [Status] ()
 pgipEvalFunc str
   = case str of
-     []   -> shellPutStr "" 
+     []   -> return () 
      x    ->  
               (shellPutStr ("Unkown input :" ++ x ++ "\n"
                            ++ "Type \'help\' for more information\n"))
