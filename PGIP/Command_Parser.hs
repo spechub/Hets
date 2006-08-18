@@ -181,15 +181,11 @@ shellShowDgGoals
      val <- getShellSt >>= \state -> liftIO(cShowDgGoals "" state)
      modifyShellSt (update val)
 
--- = modifyShellSt (update [Exec cShowDgGoals ""].deleteExec)
-
 shellShowTheoryGoals :: Sh [Status] ()
 shellShowTheoryGoals
    = do
      val <- getShellSt >>= \state -> liftIO(cShowTheory "" state)
      modifyShellSt (update val)
-
--- = modifyShellSt (update [Exec cShowTheory ""].deleteExec)
 
 shellShowTheory :: Sh [Status] ()
 shellShowTheory 
@@ -197,15 +193,11 @@ shellShowTheory
      val <- getShellSt >>= \state -> liftIO(cShowNodeTheory "" state)
      modifyShellSt (update val)
 
--- = modifyShellSt (update [Exec cShowNodeTheory ""].deleteExec)
-
 shellNodeInfo :: Sh [Status] ()
 shellNodeInfo
    = do
      val <- getShellSt >>= \state -> liftIO(cShowNodeInfo "" state)
      modifyShellSt (update val)
-
--- = modifyShellSt (update [Exec cShowNodeInfo ""].deleteExec)
 
 shellShowTaxonomy :: Sh [Status] ()
 shellShowTaxonomy
@@ -213,15 +205,11 @@ shellShowTaxonomy
      val <- getShellSt >>= \state -> liftIO(cShowNodeTaxonomy "" state)
      modifyShellSt (update val)
 
--- = modifyShellSt (update [Exec cShowNodeTaxonomy ""].deleteExec)
-
 shellShowConcept :: Sh [Status] ()
 shellShowConcept
    = do
      val <- getShellSt >>= \state -> liftIO(cShowNodeConcept "" state)
      modifyShellSt (update val)
-
--- = modifyShellSt (update [Exec cShowNodeConcept "" ].deleteExec)
 
 shellTranslate :: String -> Sh [Status] ()
 shellTranslate input
@@ -229,15 +217,11 @@ shellTranslate input
      val <- getShellSt >>= \state -> liftIO(cTranslate input state)
      modifyShellSt (update val)
 
--- = modifyShellSt (update [Exec cTranslate input].deleteExec)
-
 shellProver :: String -> Sh [Status] ()
 shellProver input
    = do
      val <- getShellSt >>= \state -> liftIO(cProver input state)
      modifyShellSt (update val)
-
--- = modifyShellSt (update [Exec cProver input].deleteExec)
 
 pgipEvalFunc :: String -> Sh [Status] ()
 pgipEvalFunc str
