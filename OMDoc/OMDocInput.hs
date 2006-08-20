@@ -674,6 +674,7 @@ findByNameSortPredOp
                 Just (SPOO (xnWOaToa xo, opTypeXNWONToOpType xot))
               Nothing -> Nothing
 
+{-
 {- |
   extracts morphisms from xml
 -}
@@ -781,6 +782,7 @@ xmlToMorphismMap
         ) (Map.empty, Map.empty) requations
   in
           (sortmap, opsmap, predsmap, Set.fromList hiddensyms)
+-}
 
 -- | creates a Conservativity from a String or fails with error
 stringToConservativity::String->Conservativity
@@ -1513,8 +1515,12 @@ createImportHints t =
 
 -- | extracts global and local theorem links from axiom- and theory-inclusion
 -- tags. Returns a list of (inclusion-id, from, to, DGLinkLab).
-glThmsFromXml::HXT.XmlTrees->[(XmlName, XmlName, XmlName, DGLinkLab)]
-glThmsFromXml t =
+glThmsFromXml::
+  FFXInput
+  ->(ImportGraph (HXT.XmlTrees, Maybe (DGraph, FFXInput)))
+  ->HXT.XmlTrees
+  ->[(XmlName, XmlName, XmlName, DGLinkLab)]
+glThmsFromXml ffxi ig t =
   let
     inclusions =
       applyXmlFilter (isTag "theory-inclusion" +++ isTag "axiom-inclusion") t
@@ -1525,12 +1531,31 @@ glThmsFromXml t =
         incons = consFromAttr [inx]
         inid = xshow $ applyXmlFilter (getQualValue "xml" "id") [inx]
         infrom = xshow $ applyXmlFilter (getQualValue "" "from") [inx]
+        infromid =
+          case infrom of
+            ('#':r) -> r
+            _ -> infrom
         into = xshow $ applyXmlFilter (getQualValue "" "to") [inx]
+        intoid =
+          case into of
+            ('#':r) -> r
+            _ -> into
         inmorphx = applyXmlFilter (getChildren .> isTag "morphism") [inx]
-        inmorph = case inmorphx of [] -> []; _ -> [xmlToMorphismMap inmorphx]
+        -- inmorph = case inmorphx of [] -> []; _ -> [xmlToMorphismMap inmorphx]
+        inmorph = case inmorphx of [] -> []; _ -> [fetchRequationSymbols inmorphx]
         caslGMorph = case inmorph of
           [morphismMap] ->
-            Hets.makeCASLGMorphism $ Hets.morphismMapToMorphism morphismMap
+--            Hets.makeCASLGMorphism $ Hets.morphismMapToMorphism morphismMap
+            Hets.makeCASLGMorphism
+              $
+              Hets.morphismMapToMorphism
+                $
+                requationSymbolsToIds
+                  ffxi
+                  ig
+                  infromid
+                  intoid
+                  morphismMap
           _ ->
             Hets.emptyCASLGMorphism
       in
@@ -1939,7 +1964,7 @@ importGraphToDGraphXN go ig n =
       map ( \(n' , xnnode' ) -> (xnName xnnode', n' ) ) $ lnodes
     imports' = importsFromXml omdoc
     importhints = createImportHints omdoc
-    glTheoIncs = glThmsFromXml omdoc
+    glTheoIncs = glThmsFromXml ffxi ig omdoc
     glThmLEdges =
       foldl
         (\gltle (_, efrom, eto, lnk) ->
@@ -3501,12 +3526,12 @@ quantFromName s
         | otherwise = error (s++": no such quantifier...")
 
 
+{-
 funKindFromName::String->FunKind
 funKindFromName "Total" = Total
 funKindFromName "Partial" = Total
 funKindFromName s = error ("No such function kind... \""++ s ++"\"")
-
-
+-}
 
 -- get var decls
 getVarDecls::HXT.XmlTrees->[(String, String)]
