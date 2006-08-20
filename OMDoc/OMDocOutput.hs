@@ -1152,7 +1152,7 @@ getNodeNameForXml inm ln =
       asOMDocFile $ unwrapLinkSource $ (Hets.inmGetLibName inm)
     else
       ""
-  ) ++ Hets.inmGetNodeId inm
+  ) ++ "#" ++ Hets.inmGetNodeId inm
   
 
 {- |
@@ -1720,7 +1720,10 @@ createSymbolForPredicationIN _ lenv ln nn uniqueNames fullNames
             case Hets.getNameOrigins uniqueNames uname of
               [] -> error "Whoops!"
               [o] -> (uname, getNodeNameForXml o ln)
-              (o:_) -> Debug.Trace.trace ("more than one...") $ (uname, getNodeNameForXml o ln)
+              (o:_) ->
+                Debug.Trace.trace
+                  ("more than one...")
+                  (uname, getNodeNameForXml o ln)
 
     in
       HXT.etag "OMS" +=
@@ -1755,7 +1758,11 @@ processOperatorIN _ _ ln nn uniqueNames fullNames
             case 
               find
                 (\( (uid, _), _) -> uid == op)
-                (Set.toList (Hets.inmGetIdNameOpSet currentMapping))
+                (
+                  (Set.toList (Hets.inmGetIdNameOpSet currentMapping))
+                  ++
+                  (Set.toList (Hets.inmGetIdNameConsSetLikeOps currentMapping))
+                )
             of
               Nothing -> -- error ("Unknown (unqualified) op! " ++ show op)
                 Debug.Trace.trace
@@ -1765,7 +1772,10 @@ processOperatorIN _ _ ln nn uniqueNames fullNames
                 case Hets.getNameOrigins uniqueNames uname of
                   [] -> error "Whoops!"
                   [o] -> (uname, getNodeNameForXml o ln)
-                  (o:_) -> Debug.Trace.trace ("more than one...") $ (uname, getNodeNameForXml o ln)
+                  (o:_) ->
+                    Debug.Trace.trace
+                      ("more than one...")
+                      (uname, getNodeNameForXml o ln)
     in
       HXT.etag "OMS" +=
         (HXT.sattr "cd" oporigin +++ HXT.sattr "name" opxmlid)
@@ -1791,15 +1801,24 @@ processOperatorIN _ lenv ln nn uniqueNames fullNames
                 (error "!!")
                 ln
                 lenv
-      currentSign = Hets.getJustCASLSign $ Hets.getCASLSign (dgn_sign currentNode)
+      currentSign =
+        Hets.getJustCASLSign $ Hets.getCASLSign (dgn_sign currentNode)
       currentRel = sortRel currentSign
       (opxmlid, oporigin) =
         case
           preferEqualFindCompatible
-            (Set.toList (Hets.inmGetIdNameOpSet currentMapping))
-            (\( (uid, uot), _) -> uid == op && uot == (Hets.cv_Op_typeToOpType ot))
-            (\( (uid, uot), _) -> uid == op && compatibleOperator currentRel uot (Hets.cv_Op_typeToOpType ot))
-
+            (
+              (Set.toList (Hets.inmGetIdNameOpSet currentMapping))
+              ++
+              (Set.toList (Hets.inmGetIdNameConsSetLikeOps currentMapping))
+            )
+            (\( (uid, uot), _) ->
+              uid == op && uot == (Hets.cv_Op_typeToOpType ot)
+            )
+            (\( (uid, uot), _) ->
+              uid == op
+              && compatibleOperator currentRel uot (Hets.cv_Op_typeToOpType ot)
+            )
         of
           Nothing -> -- error ("Unknown op! " ++ show op ++ " :: " ++ show ot )
             Debug.Trace.trace
@@ -1809,7 +1828,10 @@ processOperatorIN _ lenv ln nn uniqueNames fullNames
             case Hets.getNameOrigins uniqueNames uname of
               [] -> error "Whoops!"
               [o] -> (uname, getNodeNameForXml o ln)
-              (o:_) -> Debug.Trace.trace ("more than one...") $ (uname, getNodeNameForXml o ln)
+              (o:_) ->
+                Debug.Trace.trace
+                  ("more than one...")
+                  (uname, getNodeNameForXml o ln)
 
     in
       HXT.etag "OMS" +=

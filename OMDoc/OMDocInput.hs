@@ -360,18 +360,72 @@ fetchRequationSymbols t =
   in
     (hiddensyms, reqlist)
 
+getFFXIFor::
+  (ImportGraph (HXT.XmlTrees, Maybe (DGraph, FFXInput)))
+  ->String
+  ->Maybe FFXInput
+getFFXIFor
+  ig
+  theoryname
+  =
+  let
+    withffxi =
+      filter
+        (\(S _ (_, mdgffxi)) ->
+          case mdgffxi of
+            Nothing -> False
+            _ -> True
+        )
+        (map snd (Graph.labNodes ig))
+    withtheory =
+      filter
+        (\(S _ (_, (Just (_, ffxi)))) ->
+          case
+            find
+              (\t -> xnName t == theoryname)
+              (Set.toList (xnTheorySet ffxi))
+          of
+            Nothing -> False
+            _ -> True
+        )
+        withffxi
+    notref =
+      filter
+        (\(S _ (_, (Just (dg, ffxi)))) ->
+          let
+            (nodenum, _) =
+              case
+                find
+                  (\t -> xnName t == theoryname)
+                  (Set.toList (xnTheorySet ffxi))
+              of
+                Nothing -> error "!"
+                (Just x) -> xnItem x
+            node = Data.Maybe.fromMaybe (error "!") $ Graph.lab dg nodenum
+          in
+            not $ isDGRef node
+        )
+        withtheory
+  in
+    case notref of
+      [] -> Nothing
+      ((S _ (_, (Just (_, ffxi)))):_) -> Just ffxi
+  
+
 {- |
   reconstructs requation symbols used in a OMDoc-Morphism by matching them
   against known sorts, predicates and operators in the source and target sort.
 -}
 requationSymbolsToIds::
   FFXInput
+  ->(ImportGraph (HXT.XmlTrees, Maybe (DGraph, FFXInput)))
   ->String
   ->String
   ->([String], Hets.RequationList)
   ->Hets.MorphismMap
 requationSymbolsToIds
   ffxi
+  ig
   fromname
   toname
   (hiddensyms, req)
@@ -416,62 +470,102 @@ requationSymbolsToIds
                 then
                   []
                 else
-                  Set.toList $
-                    Map.findWithDefault Set.empty fromcd (xnSortsMap ffxi)
+                  (
+                    Set.toList
+                      $ Map.findWithDefault Set.empty fromcd (xnSortsMap ffxi)
+                  )
+                  ++
+                  case getFFXIFor ig fromcd of
+                    Nothing -> []
+                    (Just fromffxi) ->
+                      Set.toList $
+                        Map.findWithDefault Set.empty fromcd (xnSortsMap fromffxi)
             fpreds =
               frompreds ++
               if fromcd == fromname
                 then
                   []
                 else
-                  Set.toList $
-                    Map.findWithDefault Set.empty fromcd (xnPredsMap ffxi)
+                  (
+                    Set.toList
+                      $ Map.findWithDefault Set.empty fromcd (xnPredsMap ffxi)
+                  )
+                  ++
+                  case getFFXIFor ig fromcd of
+                    Nothing -> []
+                    (Just fromffxi) ->
+                      Set.toList $
+                        Map.findWithDefault Set.empty fromcd (xnPredsMap fromffxi)
             fops =
               fromops ++
               if fromcd == fromname
                 then
                   []
                 else
-                  Set.toList $
-                    Map.findWithDefault Set.empty fromcd (xnOpsMap ffxi)
+                  (
+                    Set.toList
+                      $ Map.findWithDefault Set.empty fromcd (xnOpsMap ffxi)
+                  )
+                  ++
+                  case getFFXIFor ig fromcd of
+                    Nothing -> []
+                    (Just fromffxi) ->
+                      Set.toList $
+                        Map.findWithDefault Set.empty fromcd (xnOpsMap fromffxi)
             tsorts =
               tosorts ++
               if tocd == toname
                 then
                   []
                 else
-                  Set.toList $
-                    Map.findWithDefault Set.empty tocd (xnSortsMap ffxi)
+                  (
+                    Set.toList
+                      $ Map.findWithDefault Set.empty tocd (xnSortsMap ffxi)
+                  )
+                  ++
+                  case getFFXIFor ig tocd of
+                    Nothing -> []
+                    (Just toffxi) ->
+                      Set.toList $
+                        Map.findWithDefault Set.empty tocd (xnSortsMap toffxi)
             tpreds =
               topreds ++
               if tocd == toname
                 then
                   []
                 else
-                  Set.toList $
-                    Map.findWithDefault Set.empty tocd (xnPredsMap ffxi)
+                  (
+                    Set.toList
+                      $ Map.findWithDefault Set.empty tocd (xnPredsMap ffxi)
+                  )
+                  ++
+                  case getFFXIFor ig tocd of
+                    Nothing -> []
+                    (Just toffxi) ->
+                      Set.toList $
+                        Map.findWithDefault Set.empty tocd (xnPredsMap toffxi)
             tops =
               toops ++
               if tocd == toname
                 then
                   []
                 else
-                  Set.toList $
-                    Map.findWithDefault Set.empty tocd (xnOpsMap ffxi)
-            {-
-            allsorts =
-              concatMap
-                (Set.toList . snd)
-                (Map.toList (xnSortsMap ffxi))
-            allpreds =
-              concatMap
-                (Set.toList . snd)
-                (Map.toList (xnPredsMap ffxi))
-            allops =
-              concatMap
-                (Set.toList . snd)
-                (Map.toList (xnOpsMap ffxi))
-            -}
+                  (
+                    Set.toList
+                      $ Map.findWithDefault Set.empty tocd (xnOpsMap ffxi)
+                  )
+                  ++
+                  case getFFXIFor ig tocd of
+                    Nothing -> []
+                    (Just toffxi) ->
+                      Set.toList $
+                        Map.findWithDefault Set.empty tocd (xnOpsMap toffxi)
+            mappedFullFSymbols =
+              (
+                fsorts
+                  ++ (map fst fpreds)
+                  ++ (map fst fops)
+              )
           in
             case
               findByNameSortPredOp
@@ -532,7 +626,7 @@ requationSymbolsToIds
                 Debug.Trace.trace
                   ("Error processing Morphism from \"" ++ fromname ++ "\" to \""
                     ++ toname ++ "\" . No Source-Mapping for \""
-                    ++ fromcd ++ "#" ++ fromid ++ "\" in " ++ show mappedFSymbols
+                    ++ fromcd ++ "#" ++ fromid ++ "\" in " ++ show mappedFullFSymbols
                   )
                   (sm', pm', om')
         )
@@ -1147,10 +1241,15 @@ predsXNWONFromXmlTheory cdmap xntheoryset xnsortset anxml =
                           allsorts
                       of
                         Nothing ->
-                          error
+{-                          error
+                            ("Sort " ++ axname ++ " not in FFXI..." ++ show (map xnName allsorts)
+                             ++ " at : " ++ (take 300 (xshow (axXml panxml)))
+                            ) -}
+                          Debug.Trace.trace
                             ("Sort " ++ axname ++ " not in FFXI..." ++ show (map xnName allsorts)
                              ++ " at : " ++ (take 300 (xshow (axXml panxml)))
                             )
+                            (XmlNamed (Hets.mkWON (Hets.stringToId axname) theonode) axname)
                         (Just s) ->
 --                          Debug.Trace.trace
 --                            ("Found sort " ++ axname  ++ " in FFXI...")
@@ -1261,7 +1360,7 @@ opsXNWONFromXmlTheory cdmap xntheoryset xnsortset anxml =
             (\(axname, acd) ->
               let
                 theonode = case getNodeForTheoryName xntheoryset acd of
-                  Nothing -> error "No Theory for Argument!"
+                  Nothing -> error ("No Theory for Argument! " ++ acd ++ "#" ++ axname)
                   (Just n) -> n
               in
                 case findByNameAndOrigin axname theonode xnsortset of
@@ -1898,6 +1997,7 @@ importGraphToDGraphXN go ig n =
                 hreqmm@(_,_,_,hidingSet) =
                  requationSymbolsToIds
                   ffxi
+                  ig
                   ni
                   nodename
                   hreq
@@ -3364,12 +3464,16 @@ predicationFromXmlXN ffxi anxml =
     symbolXml = applyXmlFilter (isTag "OMS") (axXml anxml)
     sxname = xshow $ applyXmlFilter (getValue "name") symbolXml
     sxcd = xshow $ applyXmlFilter (getValue "cd") symbolXml
+    stheoid =
+      case sxcd of
+        ('#':r) -> r
+        _ -> sxcd
     {-
     theonode = case getNodeForTheoryName (xnTheorySet ffxi) sxcd of
             Nothing -> error ("No Theory for used predicate (Node) !" ++ sxname)
             (Just n) -> n
     -}
-    theoxn = case findByName sxcd (xnTheorySet ffxi) of
+    theoxn = case findByName stheoid (xnTheorySet ffxi) of
             Nothing -> error ("No Theory for used predicate (Name) !" ++ sxname)
             (Just theoxn' ) -> theoxn'
     theopreds = Map.findWithDefault Set.empty (xnName theoxn) (xnPredsMap ffxi) 
@@ -3610,13 +3714,17 @@ operatorFromXmlXN ffxi anxml =
     symbolXml = applyXmlFilter (isTag "OMS") (axXml anxml)
     sxname = xshow $ applyXmlFilter (getValue "name") symbolXml
     scd = xshow $ applyXmlFilter (getValue "cd") symbolXml
+    stheoid =
+      case scd of
+        ('#':r) -> r
+        _ -> scd
     {-
     theonode = case getNodeForTheoryName (xnTheorySet ffxi) scd of
             Nothing -> error ("No Theory for used operator! (" ++ scd ++ ")")
             (Just n) -> n
     -}
     theoxn =
-      case findByName scd (xnTheorySet ffxi) of
+      case findByName stheoid (xnTheorySet ffxi) of
         Nothing ->
           error
             ("No Theory for used operator! (\"" 
@@ -3635,7 +3743,7 @@ operatorFromXmlXN ffxi anxml =
       Nothing -> error ("Operator not found!")
       (Just oxnwon) -> oxnwon
   in
-    if (scd==caslS) 
+    if (stheoid==caslS) 
       then -- eventually there should be an aux. casl-theory while processing...
         Op_name
           $

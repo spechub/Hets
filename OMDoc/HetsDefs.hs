@@ -2657,6 +2657,12 @@ inmGetIdNameSensSet (_, _, _, _, _, _, _, s, _) = s
 inmGetIdNameConsSet::IdNameMapping->Set.Set ((Int, Id.Id, OpType), String)
 inmGetIdNameConsSet (_, _, _, _, _, _, _, _, c) = c
 
+inmGetIdNameConsSetLikeOps::IdNameMapping->Set.Set ((Id.Id, OpType), String)
+inmGetIdNameConsSetLikeOps (_, _, _, _, _, _, _, _, c) =
+  Set.map
+    (\((_, id', ot), name) -> ((id', ot), name))
+    c
+
 inmGetIdNameAllSet::IdNameMapping->Set.Set (Id.Id, String)
 inmGetIdNameAllSet inm =
   Set.union

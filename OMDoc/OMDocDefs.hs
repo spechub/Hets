@@ -272,9 +272,14 @@ getTheoryXmlName ts n =
 -- | node by name
 getNodeForTheoryName::TheoryXNSet->XmlName->Maybe Graph.Node
 getNodeForTheoryName xntheoryset xname =
-  case find (\i -> (xnName i) == xname) $ Set.toList xntheoryset of
-    Nothing -> Nothing
-    (Just i) -> Just (fst (xnItem i))
+  let
+    searchname = case xname of
+      ('#':r) -> r
+      _ -> xname
+  in
+    case find (\i -> (xnName i) == searchname) $ Set.toList xntheoryset of
+      Nothing -> Nothing
+      (Just i) -> Just (fst (xnItem i))
 
 type XmlTaggedDevGraph =
   Map.Map
