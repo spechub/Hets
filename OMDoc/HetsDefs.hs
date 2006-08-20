@@ -2058,10 +2058,12 @@ addSignsAndHideWithMorphism dg hiding mm n1 n2 =
 
     asign = CASL.Sign.addSig (\_ _ -> ()) msign sign2
 
+    sens = getProverSentences (dgn_theory n2dgnl)
+
     newnodel =
       n2dgnl
         {
-          dgn_theory = G_theory CASL asign (Prover.toThSens [])
+          dgn_theory = G_theory CASL asign sens
         }
   in
 {-    Debug.Trace.trace
