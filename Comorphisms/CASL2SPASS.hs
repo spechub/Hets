@@ -123,7 +123,7 @@ instance Comorphism SuleCFOL2SoftFOL
                CASL.Morphism.Symbol CASL.Morphism.RawSymbol ()
                SoftFOL () () SPTerm () ()
                SPSign.Sign
-               SoftFOLMorphism () () String where
+               SoftFOLMorphism () () SPSign.ATP_ProofTree where
     sourceLogic _ = CASL
     sourceSublogic _ = SL.top
                       { sub_features = LocFilSub,

@@ -53,7 +53,7 @@ import GUI.GenericATPState
   The Prover implementation. First runs the batch prover (with graphical
   feedback), then starts the GUI prover.
 -}
-spassProver :: Prover Sign Sentence String
+spassProver :: Prover Sign Sentence ATP_ProofTree
 spassProver =
   Prover { prover_name = "SPASS",
            prover_sublogic = "SoftFOL",
@@ -67,12 +67,12 @@ spassProver =
   data type ATPFunctions.
 -}
 spassProveGUI :: String -- ^ theory name
-              -> Theory Sign Sentence String -- ^ theory consisting of a
+              -> Theory Sign Sentence ATP_ProofTree -- ^ theory consisting of a
                                              --   SPASS.Sign.Sign and a list of
                                              --   Named SPASS.Sign.Sentence
-              -> IO([Proof_status String]) -- ^ proof status for each goal
+              -> IO([Proof_status ATP_ProofTree]) -- ^ proof status for each goal
 spassProveGUI thName th =
-    genericATPgui atpFun True (prover_name spassProver) thName th ""
+    genericATPgui atpFun True (prover_name spassProver) thName th $ ATP_ProofTree ""
 
     where
       atpFun = ATPFunctions
@@ -184,11 +184,11 @@ parseSpassOutput spass = parseProtected (parseStart True) (Nothing, [], [], 0)
 runSpass :: SPASSProverState -- ^ logical part containing the input Sign and
                              --  axioms and possibly goals that have been proved
                              --  earlier as additional axioms
-         -> GenericConfig String -- ^ configuration to use
+         -> GenericConfig ATP_ProofTree -- ^ configuration to use
          -> Bool -- ^ True means save DFG file
          -> String -- ^ name of the theory in the DevGraph
          -> AS_Anno.Named SPTerm -- ^ goal to prove
-         -> IO (ATPRetval, GenericConfig String)
+         -> IO (ATPRetval, GenericConfig ATP_ProofTree)
              -- ^ (retval, configuration with proof status and complete output)
 runSpass sps cfg saveDFG thName nGoal = do
   putStrLn ("running 'SPASS" ++ (concatMap (' ':) allOptions) ++ "'")
@@ -205,10 +205,12 @@ runSpass sps cfg saveDFG thName nGoal = do
                     (ATPError ("Internal error communicating "++
                                "with SPASS.\n"++show e),
                               emptyConfig (prover_name spassProver)
-                                          (AS_Anno.senName nGoal) "")
+                                          (AS_Anno.senName nGoal) $
+                                          ATP_ProofTree "")
                 _ -> (ATPError ("Error running SPASS.\n"++show excep),
                         emptyConfig (prover_name spassProver)
-                                    (AS_Anno.senName nGoal) "")
+                                    (AS_Anno.senName nGoal) $
+                                    ATP_ProofTree "")
              ))
 
   where
@@ -219,7 +221,7 @@ runSpass sps cfg saveDFG thName nGoal = do
         then return
                  (ATPError "Could not start SPASS. Is SPASS in your $PATH?",
                   emptyConfig (prover_name spassProver)
-                              (AS_Anno.senName nGoal) "")
+                              (AS_Anno.senName nGoal) $ ATP_ProofTree "")
         else do
           prob <- showDFGProblem thName sps nGoal (createSpassOptions cfg)
           when saveDFG
@@ -235,7 +237,8 @@ runSpass sps cfg saveDFG thName nGoal = do
     allOptions = ("-Stdin"):(createSpassOptions cfg)
     extraOptions = ("-DocProof"):(cleanOptions cfg)
     defaultProof_status opts =
-        (openProof_status (AS_Anno.senName nGoal) (prover_name spassProver) "")
+        (openProof_status (AS_Anno.senName nGoal) (prover_name spassProver) $
+                           ATP_ProofTree "")
         {tacticScript = Tactic_script
           {ts_timeLimit = configTimeLimit cfg,
            ts_extraOpts = unwords opts} }
@@ -248,7 +251,7 @@ runSpass sps cfg saveDFG thName nGoal = do
                                    then Nothing
                                    else Just False
            , usedAxioms = filter (/=(AS_Anno.senName nGoal)) usedAxs
-           , proofTree = spassProof $ unlines out })
+           , proofTree = ATP_ProofTree $ spassProof $ unlines out })
       | isJust res && elem (fromJust res) disproved =
           (ATPSuccess,
            (defaultProof_status options) { goalStatus = Disproved } )
@@ -266,7 +269,7 @@ runSpass sps cfg saveDFG thName nGoal = do
   Creates a list of all options the SPASS prover runs with.
   That includes the defaults -DocProof and -Timelimit.
 -}
-createSpassOptions :: GenericConfig String -> [String]
+createSpassOptions :: GenericConfig ATP_ProofTree -> [String]
 createSpassOptions cfg = 
     (cleanOptions cfg) ++ ["-DocProof", "-TimeLimit="
                              ++ (show $ configTimeLimit cfg)]
@@ -274,7 +277,7 @@ createSpassOptions cfg =
 {- |
   Filters extra options and just returns the non standard options.
 -}    
-cleanOptions :: GenericConfig String -> [String]
+cleanOptions :: GenericConfig ATP_ProofTree -> [String]
 cleanOptions cfg = 
     filter (\ opt -> not (or (map (flip isPrefixOf opt)
                                   filterOptions)))

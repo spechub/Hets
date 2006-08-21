@@ -312,3 +312,13 @@ data SPLogState =
 data SPSetting = SPFlag String String
      deriving (Eq,Ord,Show)
 
+-- ** SoftFOL proof tree
+
+{- |
+  Datatype for storing of the proof tree. The Show class is instantiated.
+-}
+data ATP_ProofTree = ATP_ProofTree String
+       deriving (Eq, Ord)
+
+instance Show ATP_ProofTree where
+  show (ATP_ProofTree st) = st

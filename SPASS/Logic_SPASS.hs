@@ -58,7 +58,7 @@ instance Logic.Logic.Syntax SoftFOL () () ()
     -- default implementation is fine!
 
 
-instance Sentences SoftFOL Sentence String Sign SoftFOLMorphism ()  where
+instance Sentences SoftFOL Sentence ATP_ProofTree Sign SoftFOLMorphism ()  where
       map_sen SoftFOL _ s = return s
       print_named SoftFOL = printFormula
 -- the prover uses HTk and IO functions from uni
@@ -69,7 +69,7 @@ instance Sentences SoftFOL Sentence String Sign SoftFOLMorphism ()  where
 #endif
     -- other default implementations are fine
 
-instance StaticAnalysis SoftFOL () Sentence String
+instance StaticAnalysis SoftFOL () Sentence ATP_ProofTree
                () ()
                Sign
                SoftFOLMorphism () ()  where
@@ -80,6 +80,6 @@ instance StaticAnalysis SoftFOL () Sentence String
 
 instance Logic SoftFOL () () Sentence () ()
                Sign
-               SoftFOLMorphism () () String where
+               SoftFOLMorphism () () ATP_ProofTree where
          stability _ = Testing
     -- again default implementations are fine

@@ -113,7 +113,7 @@ parseSPASSCommands comLine =
   Returns the time limit from GenericConfig if available. Otherwise
   guiDefaultTimeLimit is returned.
 -}
-configTimeLimit :: GenericConfig String
+configTimeLimit :: GenericConfig ATP_ProofTree
                 -> Int
 configTimeLimit cfg = 
     maybe (guiDefaultTimeLimit) id $ timeLimit cfg

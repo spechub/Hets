@@ -40,10 +40,10 @@ brokerName = "MSBroker"
 -}
 mapMathServResponse :: Either String MathServResponse 
                   -- ^ SOAP faultstring or Parsed MathServ data
-                    -> GenericConfig String -- ^ configuration to use
+                    -> GenericConfig ATP_ProofTree -- ^ configuration to use
                     -> AS_Anno.Named SPTerm -- ^ goal to prove
                     -> String -- ^ prover name
-                    -> (ATPRetval, GenericConfig String)
+                    -> (ATPRetval, GenericConfig ATP_ProofTree)
                     -- ^ (retval, configuration with proof status and
                     --    complete output)
 mapMathServResponse eMsr cfg nGoal prName =
@@ -69,10 +69,10 @@ mapMathServResponse eMsr cfg nGoal prName =
 -}
 mapProverResult :: MWFoAtpResult -- ^ parsed FoATPResult data
                 -> MWTimeResource -- ^ global time spent
-                -> GenericConfig String -- ^ configuration to use
+                -> GenericConfig ATP_ProofTree -- ^ configuration to use
                 -> AS_Anno.Named SPTerm -- ^ goal to prove
                 -> String -- ^ prover name
-                -> (ATPRetval, GenericConfig String)
+                -> (ATPRetval, GenericConfig ATP_ProofTree)
                 -- ^ (retval, configuration with proof status, complete output)
 mapProverResult atpResult timeRes cfg nGoal prName =
     let res = mapToGoalStatus $ systemStatus atpResult
@@ -145,11 +145,11 @@ defaultProof_status :: AS_Anno.Named SPTerm -- ^ goal to prove
                     -> String -- ^ prover name
                     -> Int -- ^ time limit
                     -> [String] -- ^ list of used options
-                    -> String -- ^ proof tree
-                    -> Proof_status String
+                    -> String -- ^ proof tree (simple text)
+                    -> Proof_status ATP_ProofTree
 defaultProof_status nGoal prName tl opts pt =
   (openProof_status (AS_Anno.senName nGoal)
-                    prName pt)
+                    prName (ATP_ProofTree pt))
   {tacticScript = Tactic_script
     {ts_timeLimit = tl,
      ts_extraOpts = unwords opts} }
@@ -163,8 +163,8 @@ proof_stat :: AS_Anno.Named SPTerm -- ^ goal to prove
            -> GoalStatus -- ^ Nothing stands for prove error
            -> [String] -- ^ Used axioms in the proof
            -> Bool -- ^ Timeout status
-           -> Proof_status String -- ^ default proof status
-           -> (ATPRetval, Proof_status String)
+           -> Proof_status ATP_ProofTree -- ^ default proof status
+           -> (ATPRetval, Proof_status ATP_ProofTree)
            -- ^ General return value of a prover run, used in GUI.
            --   Detailed proof status if information is available.
 proof_stat nGoal res usedAxs timeOut defaultPrStat
