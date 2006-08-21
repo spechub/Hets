@@ -108,6 +108,9 @@ endif
 ### list of directories to run checks in
 TESTDIRS += Common CASL HasCASL test
 
+hs_clean_files = Haskell/TiATC.hs Haskell/TiDecorateATC.hs \
+    Haskell/TiPropATC.hs Haskell/ATC_Haskell.der.hs
+
 PFE_TOOLDIR = $(wildcard ../programatica/tools)
 ifneq ($(strip $(PFE_TOOLDIR)),)
 PFE_DIRS = base/AST base/TI base/parse2 base/parse2/Lexer base/parse2/Parser \
@@ -180,7 +183,7 @@ Haskell_files = $(addsuffix .hs, \
 Haskell/ATC_Haskell.der.hs: $(Haskell_files) $(GENRULES)
 	$(GENRULECALL) -i Haskell.BaseATC -o $@ $(Haskell_files)
 
-hs_der_files += Haskell/TiATC.hs Haskell/TiDecorateATC.hs Haskell/TiPropATC.hs
+hs_der_files += $(hs_clean_files)
 
 TESTDIRS += ToHaskell Haskell/test
 TESTTARGETFILES += Haskell/hana.hs Haskell/h2h.hs Haskell/h2hf.hs
@@ -542,7 +545,7 @@ OWL_DL/ATC_OWL_DL.der.hs: $(OWL_DL_files) $(GENRULES)
 
 clean_genRules:
 	$(RM) $(generated_rule_files) $(gendrifted_files) $(hspp_sources) \
-            Haskell/ATC_Haskell.der.hs
+            $(hs_clean_files)
 
 ###############
 ### clean up
