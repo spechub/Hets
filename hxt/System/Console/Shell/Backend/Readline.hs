@@ -1,3 +1,4 @@
+{-# OPTIONS -O0 #-}
 {-
  - 
  -  Copyright 2005-2006, Robert Dockins.
