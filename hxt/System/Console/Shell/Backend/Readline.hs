@@ -85,7 +85,7 @@ foreign import ccall "readline/history.h stifle_history" stifle_history :: CInt 
 foreign import ccall "readline/history.h unstifle_history" unstifle_history :: IO CInt
 foreign import ccall "readline/history.h read_history" read_history :: CString -> IO Errno
 foreign import ccall "readline/history.h write_history" write_history :: CString -> IO Errno
--- foreign import ccall "readline/history.h history_max_entries" history_max_entries :: Ptr CInt
+foreign import ccall "readline/history.h &history_max_entries" history_max_entries :: Ptr CInt
 
 doClearHistoryState :: IO ()
 doClearHistoryState = clear_history
@@ -94,7 +94,7 @@ doSetMaxHistoryEntries :: Int -> IO ()
 doSetMaxHistoryEntries m = stifle_history (fromIntegral m)
 
 doGetMaxHistoryEntries :: IO Int
-doGetMaxHistoryEntries = unstifle_history >>= return . fromIntegral
+doGetMaxHistoryEntries = peek history_max_entries >>= return . fromIntegral
 
 doReadHistory :: FilePath -> IO ()
 doReadHistory path = do
