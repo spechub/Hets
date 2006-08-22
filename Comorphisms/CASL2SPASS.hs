@@ -13,7 +13,7 @@ The translating comorphism from CASL to SPASS.
 {- todo
 
    - implement translation of Sort_gen_ax (FORMULA f) as goals
-     (s. below for a sketch)
+     (s. below for a sketch) .. Klaus Lüttich
 -}
 
 module Comorphisms.CASL2SPASS (SuleCFOL2SoftFOL(..)) where
