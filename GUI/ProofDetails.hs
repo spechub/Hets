@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  GUI for showing\/saving proof details.
+Description :  GUI for showing and saving proof details.
 Copyright   :  (c) Rainer Grabbe 2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -8,7 +8,7 @@ Maintainer  :  rainer25@tzi.de
 Stability   :  provisional
 Portability :  needs POSIX
 
-Additional window used by GUI.ProofManagement for displaying proof details.
+Additional window used by 'GUI.ProofManagement' for displaying proof details.
 -}
 
 module GUI.ProofDetails (doShowProofDetails) where
@@ -38,7 +38,7 @@ import qualified Static.DevGraph as DevGraph
 -- * record structures and basic functions for handling
 
 {- |
-  Record structure containing proof details for a goal\/prover combination.
+  Record structure containing proof details for a single proof.
 -}
 data GoalDescription = GoalDescription {
     proverInfo :: String, -- ^ standard proof details
@@ -57,7 +57,7 @@ data OpenText = OpenText {
     }
     
 {- |
-  Creates an initial GoalDescription filled with just the standard prover info.
+  Creates an initial 'GoalDescription' filled with just the standard prover info.
 -}
 emptyGoalDescription :: String -- ^ information about the used prover
                      -> GoalDescription -- ^ initiated GoalDescription
@@ -68,7 +68,7 @@ emptyGoalDescription st =
       proofTreeText = emptyOpenText }
 
 {- |
-  Creates an empty OpenText with start position (0,0).
+  Creates an empty 'OpenText' with start position (0,0).
 -}
 emptyOpenText :: OpenText
 emptyOpenText = OpenText {
@@ -89,7 +89,7 @@ numberOfLines str =
     foldr (\ch su -> su + (if ch == '\n' then 1 else 0)) 0 str
 
 {- |
-  Change the x-value of a Position by a given arithmetical function and value.
+  Change the x-value of a 'Position' by a given arithmetical function and value.
 -}
 changePosition :: (Int -> Int -> Int)  -- ^ mostly add or subtract values
                -> Int -- ^ (difference) value
@@ -99,19 +99,34 @@ changePosition f diff (Distance posX, Distance posY) =
     (Distance $ f posX diff, Distance posY)
     
 {- |
-  An item of thmStatus will be put into GoalDescription structure.
+  Indentation of a 'String' (also multiple lines) by a number of spaces.
+-}
+indent :: Int -- ^ number of spaces
+       -> String -- ^ input String
+       -> Pretty.Doc -- ^ output document
+indent numSp st =
+  Pretty.text (replicate numSp ' ') Pretty.<>
+    (Pretty.vcat . map Pretty.text . lines) st
+
+{- |
+  Standard indent width.
+-}
+stdIndent :: Int
+stdIndent = 4
+
+{- |
+  An item of thmStatus will be put into 'GoalDescription' structure.
   Pretty printing of proof details, adding additional information
   for text tags.
 -}
 fillGoalDescription :: (AnyComorphism, DevGraph.BasicProof)
                     -> GoalDescription -- ^ contents in pretty format
 fillGoalDescription (cmo, basicProof) =
-    let gd = spaces4 Pretty.<> printCmWStat (cmo, basicProof)
+    let gd = indent stdIndent $ show $ printCmWStat (cmo, basicProof)
         stat str = Pretty.text "Status:" Pretty.<+> Pretty.text str
-        spaces4 = Pretty.text "    "
         printCmWStat (c, bp) =
             Pretty.text "Com:" Pretty.<+> Pretty.text (show c)
-            Pretty.$+$ spaces4 Pretty.<> printBP bp
+            Pretty.$+$ (indent stdIndent $ show $ printBP bp)
         printBP bp = case bp of
                      DevGraph.BasicProof _ ps ->
                       stat (show $ goalStatus ps) Pretty.$+$
@@ -126,13 +141,11 @@ fillGoalDescription (cmo, basicProof) =
                      otherProof -> stat (show otherProof)
         printTS bp = case bp of
                      DevGraph.BasicProof _ ps ->
-                       spaces4 Pretty.<> (Pretty.text
-                           $ show -- \(TacticScript t) -> t)
-                           $ tacticScript ps)
+                       indent (2 * stdIndent) $ show $ tacticScript ps
                      otherProof -> Pretty.empty
         printPT bp = case bp of
                      DevGraph.BasicProof _ ps ->
-                       spaces4 Pretty.<> (Pretty.text $ show $ proofTree ps)
+                       indent (2 * stdIndent) $ show $ proofTree ps
                      otherProof -> Pretty.empty
 
     in  (emptyGoalDescription $ show gd) {
@@ -142,9 +155,9 @@ fillGoalDescription (cmo, basicProof) =
              additionalText = show $ printPT basicProof } }
 
 
-{-
-  Gets real EndOfText index at the char position after (in x-direction)
-  the last written text. This is because EndOfText only gives a value where a
+{- |
+  Gets real 'EndOfText' index at the char position after (in x-direction)
+  the last written text. This is because 'EndOfText' only gives a value where a
   text would be after an imaginary newline.
 -}  
 getRealEndOfTextIndex :: Editor -- ^ the editor whose end index is determined
@@ -156,15 +169,15 @@ getRealEndOfTextIndex ed = do
     
 
 {- |
-  For a given Map containing all goal\/prover values, this function adapts
-  the text positions lying behind after a given reference position. This is
-  called when a position in the text is moved after clicking a text tag button.
+  For a given Map containing all proof values, this function adapts the text
+  positions lying behind after a given reference position. This is called when
+  a position in the text is moved after clicking a text tag button.
 -}
 adaptTextPositions :: (Int -> Int -> Int)  -- ^ mostly add or subtract values
                    -> Int -- ^ (difference) value
                    -> Position -- ^ reference Position
                    -> Map.Map (String, Int) GoalDescription
-                      -- ^ Map for all goal\/prover combinations
+                      -- ^ Map for all proofs
                    -> Map.Map (String, Int) GoalDescription -- ^ adapted Map
 adaptTextPositions f diff pos li =
     Map.map (\ gDesc ->
@@ -185,7 +198,7 @@ adaptTextPositions f diff pos li =
 -- ** main GUI
 
 {- |
-  Called whenever the button "Show proof details" is clicked.
+  Called whenever the button /Show proof details/ is clicked.
 -}
 doShowProofDetails ::
     (Logic lid
@@ -268,20 +281,21 @@ doShowProofDetails prGUISt@(ProofGUIState { theoryName = thName }) = do
   The events for clicking on a button are set up: adding or removing
   additional text lines by alternately clicking. All positions of text lying
   behind have to be adapted.
-  The current state of text tags is stored and modified in IORef.
-  Initial call of this function returns an OpenText containing the status of
+  The current state of text tags is stored and modified in 'IORef'.
+  Initial call of this function returns an 'OpenText' containing the status of
   the added text tag button.
 -}
 addTextTagButton :: String -- ^ caption for button
                  -> OpenText -- ^ conatins text to be outfolded if clicked
                  -> Bool -- ^ true if tacticScript, false if proofTree
                  -> Editor -- ^ editor window to which button will be attached
-                 -> (String, Int) -- ^ key in goal\/prover descriptions
+                 -> (String, Int) -- ^ key in single proof descriptions
                                   -- (goal name and index)
                  -> IORef (Map.Map (String, Int) GoalDescription)
-                 -- ^ current state of all goal\/prover descriptions
+                 -- ^ current state of all proof descriptions
                  -> IO OpenText -- ^ information about OpenText status
 addTextTagButton cap addText isTactic ed (gName, ind) stateRef = do
+    appendText ed $ replicate (2 * stdIndent) ' '
     curPosStart <- getRealEndOfTextIndex ed
     appendText ed cap
     curPosEnd <- getRealEndOfTextIndex ed
