@@ -22,8 +22,10 @@ import Data.Maybe
 import System.Console.Shell.Backend.Readline
 import System.Console.Shell.ShellMonad
 import System.Console.Shell
+import System.Console.Shell.Backend
 import Control.Monad.Trans
-
+import IO
+import qualified Control.Exception as Ex
 
 -- Checks the status to see if any library was loaded and generates the
 -- corresponding prompter
@@ -50,7 +52,7 @@ shellUse (File filename)
        val <- getShellSt >>= \state -> liftIO (cUse filename state)
        modifyShellSt (update val)
 
-
+-- implements the command dg-all auto for shellac
 shellDgAutoAll ::  Sh [Status] ()
 shellDgAutoAll 
   = do
@@ -230,6 +232,16 @@ pgipEvalFunc str
               (shellPutStr ("Unkown input :" ++ x ++ "\n"
                            ++ "Type \'help\' for more information\n"))
 
+-- The evaluation function in case shellac reads from a file.
+pgipFileEvalFunc :: String -> Sh [Status] ()
+pgipFileEvalFunc str
+  = case str of
+     []   -> return () 
+     x    ->  
+              (shellPutStr ("\n\nUnkown input :" ++ x ++ "\n\n"))
+                           
+
+
 -- Generates the list of all the shell commands toghether with a small help
 -- message
 pgipShellCommands :: [ShellCommand [Status]]
@@ -294,11 +306,55 @@ pgipShellCommands
                     : [] 
 
 
+-- Creates the Backend for reading from files
+fileBackend :: String -> ShellBackend Handle
+fileBackend filename = 
+ let handle = openFile filename ReadMode in
+ ShBackend
+  { initBackend                      =  handle 
+  , outputString                     = \_ -> basicOutput
+  , flushOutput                      = \_ -> hFlush stdout
+  , getSingleChar                    = \x -> fileGetSingleChar x
+  , getInput                         = \x -> fileGetInput x
+  , addHistory                       = \_ _ -> return ()
+  , setWordBreakChars                = \_ _ -> return ()
+  , getWordBreakChars                = \_ -> return " \t\n\r\v`~!@#$%^&*()=[]{};\\\'\",<>"
+  , onCancel                         = \_ -> hPutStrLn stdout "canceled...\n"
+  , setAttemptedCompletionFunction   = \_ _ -> return ()
+  , setDefaultCompletionFunction     = \_ _ -> return ()
+  , completeFilename                 = \_ _ -> return []
+  , completeUsername                 = \_ _ -> return []
+  , clearHistoryState                = \_ -> return ()
+  , getMaxHistoryEntries             = \_ -> return 0
+  , setMaxHistoryEntries             = \_ _ -> return ()
+  , readHistory                      = \_ _ -> return ()
+  , writeHistory                     = \_ _ -> return ()
+  }
+
+-- Used to get one char from a file open for reading
+fileGetSingleChar :: Handle -> String -> IO (Maybe Char)
+fileGetSingleChar file _ = do
+   Ex.bracket (hGetBuffering file) (hSetBuffering file) $ \_ -> do
+      hSetBuffering file NoBuffering
+      c <- hGetChar file
+      hPutStrLn stdout ""
+      return (Just c)
+
+-- Used to get a line from a file open for reading
+fileGetInput :: Handle -> String -> IO (Maybe String)
+fileGetInput file _ = do
+   x <- hGetLine file
+   return (Just x)
+
+basicOutput :: BackendOutput -> IO ()
+basicOutput (RegularOutput out) = hPutStr stdout out
+basicOutput (InfoOutput out)    = hPutStr stdout out
+basicOutput (ErrorOutput out)   = hPutStr stderr out
+                                                                 
 
 
-
-pgipShellDescription :: ShellDescription [Status]
-pgipShellDescription =
+pgipInteractiveShellDescription :: ShellDescription [Status]
+pgipInteractiveShellDescription =
  let wbc = "\t\n\r\v\\,;" in
       ShDesc
        { shellCommands      = pgipShellCommands
@@ -315,11 +371,37 @@ pgipShellDescription =
        }
 
 
+pgipFileShellDescription :: ShellDescription [Status]
+pgipFileShellDescription =
+ let wbc = "\t\n\r\v\\,;" in
+      ShDesc
+       { shellCommands      = pgipShellCommands
+       , commandStyle       = OnlyCommands
+       , evaluateFunc       = pgipFileEvalFunc
+       , wordBreakChars     = wbc
+       , beforePrompt       = return () 
+       , prompt             = \_ -> return ""
+       , exceptionHandler   = defaultExceptionHandler
+       , defaultCompletions = Just (\_ _ -> return [])
+       , historyFile        = Nothing
+       , maxHistoryEntries  = 100
+       , historyEnabled     = False
+       }
+
+
+
 pgipRunShell :: IO [Status]
-pgipRunShell = runShell pgipShellDescription 
+pgipRunShell = runShell pgipInteractiveShellDescription 
                         readlineBackend 
                         []
 
+pgipProcessFile :: String -> IO [Status]
+pgipProcessFile filename = 
+        (runShell pgipFileShellDescription
+                 (fileBackend filename)
+                 []) `catch` (\_ -> return [])
+
+         
 printHelp :: String
 printHelp =
   "\n\n Hets Interactive mode. The available commads are \n\n"++

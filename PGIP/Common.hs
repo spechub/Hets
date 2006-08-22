@@ -193,17 +193,20 @@ getEdgeGoals ls =
 -- are goals of teh graph and returns them as GraphGoals
 getNodeGoals::[GDataNode] -> [GraphGoals]
 getNodeGoals ls =
-         case ls of
-               (nb,x):l  -> let labelInfo = getDGNodeType x in
-                            case labelInfo of
-                              "open_cons__spec" -> (GraphNode (nb,x)):(getNodeGoals l)
-                              "proven_cons__spec" -> (GraphNode (nb,x)):(getNodeGoals l)
-                              "locallyEmpty__open_cons__spec" -> (GraphNode (nb,x)):(getNodeGoals l)
-                              "open_cons__internal" -> (GraphNode (nb,x)):(getNodeGoals l)
-                              "proven_cons__internal" -> (GraphNode (nb,x)):(getNodeGoals l)
-                              "dg_ref"     -> (GraphNode (nb,x)):(getNodeGoals l)
-                              _            -> getNodeGoals l
-               []   -> []
+   case ls of
+     (nb,x):l  -> 
+       let labelInfo = getDGNodeType x in
+       case labelInfo of
+         "open_cons__spec" -> (GraphNode (nb,x)):(getNodeGoals l)
+         "proven_cons__spec" -> (GraphNode (nb,x)):(getNodeGoals l)
+         "locallyEmpty__open_cons__spec" -> (GraphNode (nb,x)):(getNodeGoals l)
+         "open_cons__internal" -> (GraphNode (nb,x)):(getNodeGoals l)
+         "proven_cons__internal" -> (GraphNode (nb,x)):(getNodeGoals l)
+         "dg_ref"     -> (GraphNode (nb,x)):(getNodeGoals l)
+         _            -> getNodeGoals l
+     []   -> []
+
+
 -- The function 'createAllGoalsList' given a library (defined by LIB_NAME and
 -- LibEnv) generates the list of all goals (both edges and nodes) of the graph
 -- coresponding to the library

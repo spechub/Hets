@@ -78,7 +78,7 @@ processFile opts file =
                                   return $ Just (ln, proofStatus)                                   
                           ProofCommand -> do            
                                putStr "Start processing a proof command file\n"    
---                               result <- parseScriptFile file
+                               pgipProcessFile file
                                return Nothing
                           _ -> anaLib opts file
                         case gui opts of
