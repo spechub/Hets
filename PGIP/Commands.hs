@@ -7,11 +7,14 @@ Stability   : provisional
 Portability : portable
 
 Function that executes the script commands together with the datatypes used.
+Even though there is a scanning Path function created with parsec it is not
+used, instead shellac is used so that autocomplition for path can be enabled
 
  TODO :
       - add comments
       - implement the rest of the functions 
       - delete the test function
+
 -} 
 
 module PGIP.Commands where
@@ -31,8 +34,10 @@ import PGIP.Common
 import Text.ParserCombinators.Parsec
 import Common.Lexer
 import Common.AnnoState
+import Static.DevGraph
+import Data.Graph.Inductive.Graph
 
- 
+-- Scans a word contained in a path 
 scanPathFile::CharParser st String
 scanPathFile 
      = many1 ( oneOf (caslLetters ++ ['0'..'9'] ++ ['-','_','.']))
@@ -68,7 +73,7 @@ getKeyWord wd
                            string wd
                      )
               <?> ("keyword "++wd)
-                       
+-- The function 'getGoal' parses a goal (node, edge or labeled edge) 
 getGoal::AParser st GOAL
 getGoal        
        = try ( do  v1<-scanAnyWord
@@ -90,7 +95,8 @@ getGoal
              )   
       <?>
          "goal"    
-
+-- The function 'getScript' tries to read some script commands
+-- It is not ready yet to work with shellac !
 getScript::AParser st String
 getScript 
          = try ( do  getKeyWord "end-script"
@@ -109,7 +115,8 @@ getScript
                )
         <?> 
            "some prover script"
-                                        
+
+-- The function 'getComorphis' reads a comorphism as a list of Ids
 getComorphism::AParser st [String]
 getComorphism 
              = try ( do  v<-scanAnyWord
@@ -124,6 +131,9 @@ getComorphism
             <?>
                " list of ID's separated by semicolon"
 
+-- The function 'scanCommand' given a list of string describing what 
+-- kind of parameters to expect tries to parse them and returns a 
+-- CmdParam list with the parsed parameters
 scanCommand::[String] -> AParser st [CmdParam]
 scanCommand arg  
                = case arg of
@@ -183,12 +193,16 @@ scanCommand arg
 
 
 
+-- A test function to use with shellac for the non-implemented commands
+-- should be deleted when all commands are implemented
 test::String->[Status] -> IO [Status]
 test ls _  
   = do
       putStrLn $ show ls
       return []          
 
+-- It seems that the way shellac reads the file path it adds an extra blank
+-- at the end that needs to be removed
 removeSpace :: String -> String
 removeSpace ls
   = case ls of
@@ -196,9 +210,26 @@ removeSpace ls
       _:[] -> []
       x:l  -> x:(removeSpace l)
 
+-- The function 'cUse' implements the command Use, i.e. given a path it
+-- tries to load the library at that path
 cUse::String->[Status] -> IO [Status]
-cUse input _
- =do
+cUse input state
+ = case state of
+    (Env _ libEnv):_ -> 
+       do
+        let file = removeSpace input
+        let opts = defaultHetcatsOpts
+        result <- anaLibExt opts file libEnv
+        case result of
+          Just (name , env) ->
+              do 
+                let l= createAllGoalsList name env
+                return ((Address file):(Env name env):(AllGoals l):[])
+          Nothing -> do
+              putStr "Couldn't load the new file!\n"
+              return []
+    _:list -> cUse input list
+    [] ->do   
           let file = removeSpace input
           let opts = defaultHetcatsOpts
           result<- anaLib opts file
@@ -210,6 +241,8 @@ cUse input _
               Nothing ->  
                     return [(OutputErr "Couldn't load the file specified")]
 
+
+-- The function 'cDgAllAuto' tries to implement the command dg-all auto
 cDgAllAuto::String -> [Status] -> IO [Status]
 cDgAllAuto _ arg
    = case arg of
@@ -219,6 +252,8 @@ cDgAllAuto _ arg
        _:l           -> cDgAllAuto "" l
        []            -> return ([(OutputErr "Wrong parameter")])
 
+-- The 'cDgAuto' function implements dg auto, note that the parameters
+-- are passed as string and parsed inside this function
 cDgAuto :: String -> [Status] -> IO [Status]
 cDgAuto input status
  = do 
@@ -673,12 +708,31 @@ cShowDgGoals::String -> [Status]-> IO [Status]
 cShowDgGoals  _ arg
   = do
      case arg of
-       (AllGoals allGoals):_ -> do
-         printNodeInfoFromList allGoals--putStr ("Goals:" ++ (show allGoals))
-         return []
+       (AllGoals allGoals):l -> do
+             case l of 
+               (Env x y):_ -> do
+                      let dgraph = lookupDGraph x y
+                      let allNodes = labNodes dgraph
+                      printInfoFromList allGoals allNodes
+                      return []
+               _:ll -> cShowDgGoals "" ((AllGoals allGoals):ll)
+               []   -> do 
+                        putStr "Error, no library is loaded!\n"
+                        return []
+       (Env x y):l -> do
+             case l of 
+                (AllGoals allGoals):_ -> do
+                      let dgraph = lookupDGraph x y
+                      let allNodes = labNodes dgraph
+                      printInfoFromList allGoals allNodes
+                      return []
+                _:ll  -> cShowDgGoals "" ((Env x y):ll)
+                [] -> do 
+                        putStr "Error, no library is loaded! \n"
+                        return []
        _:l -> cShowDgGoals "" l
        []  -> do
-               putStr "Error, no goal list found!\n "
+               putStr "Error, no goal list found!\n"
                return []
 
 

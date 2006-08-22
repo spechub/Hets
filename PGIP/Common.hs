@@ -6,7 +6,7 @@ Maintainer  : r.pascanu@iu-bremen.de
 Stability   : provisional
 Portability : portable
 
-Usefull function used by the parser.
+Usefull functions and datatypes for the parser.
 
 
    TODO 
@@ -20,12 +20,12 @@ module PGIP.Common where
 
 import Syntax.AS_Library
 import Static.DevGraph
-import Proofs.EdgeUtils
 import Proofs.InferBasic
 import Common.DocUtils
 import Common.Result
 import Common.Taxonomy
 import GUI.Taxonomy
+import GUI.ConvertDevToAbstractGraph
 import Data.Maybe
 import Data.Graph.Inductive.Graph
 import Comorphisms.LogicGraph
@@ -33,17 +33,26 @@ import Comorphisms.LogicGraph
 type GDataEdge = LEdge DGLinkLab
 type GDataNode = LNode DGNodeLab
     
+-- The datatype GOAL contains all the information read by the parser from the
+-- user
 data GOAL = 
    Node         String   
  | Edge         String   String     
  | LabeledEdge  String   Int     String 
  deriving (Eq,Show)
 
+
+-- The parsed goals will be converted afterwards in GraphGoals meaning they 
+-- will store the same information as a graph node or edge
 data GraphGoals =
    GraphNode  GDataNode
  | GraphEdge  GDataEdge
  deriving (Eq,Show)     
 
+
+-- The datatype CmdParam contains all the possible parameters a command of
+-- the interface might have. It is used to create one function that returns
+-- the parameters after parsing no matter what command is parsed
 data CmdParam =
    Path                          String 
  | Formula                       String 
@@ -58,20 +67,30 @@ data CmdParam =
  | NoParam
  deriving (Eq,Show)
 
+
+-- The datatype Status contains the current status of the interpeter at any
+-- moment in time
 data Status = 
    OutputErr  String
  | CmdInitialState
+-- Env stores the graph loaded 
  | Env     LIB_NAME LibEnv
+-- Selected stores the graph goals selected with Infer Basic command
  | Selected [GraphGoals]
+-- AllGoals stores all goals contained by the graph at any moment in time
  | AllGoals [GraphGoals]
+-- Comorph stores  a certain comorphism to be used
  | Comorph [String]
+-- Prover stores the Id of the prover that needs to be used
  | Prover String
+-- Address stores the current library loaded so that the correct promter can
+-- be generated
  | Address String
 
 
  
--- The function extractGraphNode extracts the goal node defined by 
--- the ID (String) provided from the list of goals also passed as argument
+-- The function 'extractGraphNode' extracts the goal node defined by 
+-- 'x' (the ID of the node as a string) from the provided list of goals  
 extractGraphNode:: String->[GraphGoals]->Maybe GraphGoals
 extractGraphNode x allGoals 
     = case allGoals of
@@ -81,8 +100,8 @@ extractGraphNode x allGoals
                                           else extractGraphNode x l
        _:l                           -> extractGraphNode x l
          
--- The function extractGraphEdge extracts the goal edge determined by 
--- the two nodes given as string ID from the list of goals
+-- The function 'extractGraphEdge' extracts the goal edge determined by 
+-- 'x' and 'y' nodes from the provided list of goals
 extractGraphEdge:: String -> String -> [GraphGoals] -> Maybe GraphGoals
 extractGraphEdge x y allGoals
    = case allGoals of
@@ -103,7 +122,7 @@ extractGraphEdge x y allGoals
                     _ -> extractGraphEdge x y l  
       _:l    -> extractGraphEdge x y l                                                             
 -- Same as above but it tries to extract the edge between the nodes
--- that has the given number in the order they are found
+-- with the given number in the order they are found
 extractGraphLabeledEdge:: String -> Int -> String -> 
                           [GraphGoals] -> Maybe GraphGoals
 extractGraphLabeledEdge x nb y allGoals
@@ -128,8 +147,10 @@ extractGraphLabeledEdge x nb y allGoals
       _:l -> extractGraphLabeledEdge x nb y l 
 
 
--- Given a list of GOAL (parsed goals) and the list of all possible goals
-
+-- The function 'getGoalList' creates a graph goal list ( a graph goal is 
+-- defined by the datatype GraphGoals) that is a part of 'allg' list passed
+-- as an argument and corresponds to goalList (a parased goal list, see
+-- GOAL datatype)
 getGoalList :: [GOAL] -> [GraphGoals] -> [GraphGoals]
 getGoalList goalList allg 
  = case goalList of
@@ -142,26 +163,50 @@ getGoalList goalList allg
     [] -> 
        []
 
-getEdgeGoals::[GDataEdge] -> [GraphGoals] 
+-- The function 'getEdgeGoals' given a list of edges selects all edges that
+-- are goals of the graph and returns them as GraphGoals
+getEdgeGoals :: [GDataEdge] -> [GraphGoals]
 getEdgeGoals ls =
-          case ls of 
-               x:l   -> if (isUnprovenGlobalThm x) 
-                         then (GraphEdge x):(getEdgeGoals l)
-                         else if (isUnprovenLocalThm x) 
-                           then (GraphEdge x):(getEdgeGoals l)
-                           else if (isUnprovenHidingThm x) 
-                               then (GraphEdge x):(getEdgeGoals l)
-                               else getEdgeGoals l
-               []    -> []
+    case ls of
+         (x,y,l):ll -> let labelInfo = getDGLinkType l in
+                       case labelInfo of
+                        "unproventhm"  -> (GraphEdge (x,y,l)):(getEdgeGoals ll)
+                        "localunproventhm" -> (GraphEdge (x,y,l)):(getEdgeGoals ll)
+                        "hetunproventhm"   -> (GraphEdge (x,y,l)):(getEdgeGoals ll)
+                        "hetlocalunproventhm" -> (GraphEdge (x,y,l)):(getEdgeGoals ll)
+                        _                     -> getEdgeGoals ll
+         []  -> []
+--getEdgeGoals::[GDataEdge] -> [GraphGoals] 
+--getEdgeGoals ls =
+--          case ls of 
+--               x:l   -> if (isUnprovenGlobalThm x) 
+--                         then (GraphEdge x):(getEdgeGoals l)
+--                         else if (isUnprovenLocalThm x) 
+--                           then (GraphEdge x):(getEdgeGoals l)
+--                           else if (isUnprovenHidingThm x) 
+--                               then (GraphEdge x):(getEdgeGoals l)
+--                               else getEdgeGoals l
+--               []    -> []
 
+
+-- The function 'getNodeGoals' given a list of nodes selects all nodes that
+-- are goals of teh graph and returns them as GraphGoals
 getNodeGoals::[GDataNode] -> [GraphGoals]
 getNodeGoals ls =
          case ls of
-               (nb,x):l  -> if (hasOpenGoals x) 
-                              then (GraphNode (nb,x)):(getNodeGoals l)
-                              else getNodeGoals l
+               (nb,x):l  -> let labelInfo = getDGNodeType x in
+                            case labelInfo of
+                              "open_cons__spec" -> (GraphNode (nb,x)):(getNodeGoals l)
+                              "proven_cons__spec" -> (GraphNode (nb,x)):(getNodeGoals l)
+                              "locallyEmpty__open_cons__spec" -> (GraphNode (nb,x)):(getNodeGoals l)
+                              "open_cons__internal" -> (GraphNode (nb,x)):(getNodeGoals l)
+                              "proven_cons__internal" -> (GraphNode (nb,x)):(getNodeGoals l)
+                              "dg_ref"     -> (GraphNode (nb,x)):(getNodeGoals l)
+                              _            -> getNodeGoals l
                []   -> []
-
+-- The function 'createAllGoalsList' given a library (defined by LIB_NAME and
+-- LibEnv) generates the list of all goals (both edges and nodes) of the graph
+-- coresponding to the library
 createAllGoalsList :: LIB_NAME->LibEnv -> [GraphGoals]
 createAllGoalsList ln libEnv
                     = let dgraph = lookupDGraph ln libEnv
@@ -169,14 +214,16 @@ createAllGoalsList ln libEnv
                           nodeGoals = getNodeGoals (labNodes dgraph)
                       in edgeGoals ++ nodeGoals
 
-
+-- The function 'getEdgeList' returns from a list of graph goals just the 
+-- edge goals as [GDataEdge]
 getEdgeList :: [GraphGoals] -> [GDataEdge]
 getEdgeList ls =
         case ls of 
              (GraphEdge x):l  -> x:(getEdgeList l)
              (GraphNode _):l  -> getEdgeList l
              []               -> []
-
+-- The function 'getNodeList' returns from a list of graph goals just
+-- the nodes as [GDataNode]
 getNodeList :: [GraphGoals] -> [GDataNode]
 getNodeList ls =
        case ls of 
@@ -184,7 +231,9 @@ getNodeList ls =
             (GraphNode x):l  -> x:(getNodeList l)
             []               -> []
 
-
+-- The function 'update' returns the updated version of 'status' with the
+-- values from 'val' (i.e replaces any value from 'status' with the one from
+-- 'val' if they are of the same type otherwise just adds the values from 'val'
 update::[Status] -> [Status] -> [Status]
 update val status
  = case val of
@@ -260,7 +309,8 @@ update val status
 
 
 
-
+-- The function 'printNodeTheoryFromList' prints on the screen the theory
+-- of all nodes in the [GraphGoals] list
 printNodeTheoryFromList :: [GraphGoals]-> IO()
 printNodeTheoryFromList ls =
                 case ls of 
@@ -273,6 +323,8 @@ printNodeTheoryFromList ls =
                                 return result
                      []    -> return ()
 
+-- The function 'printNodeTheory' given a GraphGoal prints on the screen
+-- the theory of the node if the goal is a node or 'Not a node !' otherwise
 printNodeTheory :: GraphGoals -> IO()
 printNodeTheory arg =
   case arg of
@@ -281,26 +333,66 @@ printNodeTheory arg =
    _      -> putStr "Not a node!\n" 
 
 
+-- The function 'findNode' finds to node with the number 'nb' in the goal list
+findNode :: Int -> [GDataNode] ->Maybe GraphGoals
+findNode nb ls
+ = case ls of
+           (x,labelInfo):l -> 
+                       if (x==nb) then  
+                            Just (GraphNode (x,labelInfo))
+                                  else
+                            findNode nb l
+           []  -> Nothing
+
+-- The function 'printInfoFromList' given a GraphGoal list prints the 
+-- name of all goals (node or edge)
+printInfoFromList :: [GraphGoals] ->[GDataNode]-> IO()
+printInfoFromList ls allNodes =
+   case ls of
+        (GraphNode (x1,(DGNode x2 x3 x4 x5 x6 x7 x8))):l -> do
+              printNodeInfo (GraphNode (x1,(DGNode x2 x3 x4 x5 x6 x7 x8)))
+              putStr "\n"
+              result <-printInfoFromList l allNodes
+              return result
+        (GraphEdge (x,y,_)):l      -> do 
+              let x1 = fromJust $ findNode x allNodes
+              let y1 = fromJust $ findNode y allNodes
+              printNodeInfo x1
+              putStr "  -->  " 
+              printNodeInfo y1
+              putStr "\n"
+              result<- printInfoFromList l allNodes
+              return result
+        _:l  -> printInfoFromList l allNodes
+        []              -> return ()
+
+
+
+-- The function 'printNodeInfoFromList' given a GraphGoal list prints the 
+-- name of all node goals
 printNodeInfoFromList :: [GraphGoals] -> IO()
 printNodeInfoFromList ls =
-              case ls of
-                     (GraphNode (x1,(DGNode x2 x3 x4 x5 x6 x7 x8))):l -> do
-                                          printNodeInfo (GraphNode (x1,(DGNode x2 x3 x4 x5 x6 x7 x8)))
-                                          result <-printNodeInfoFromList l
-                                          return result
-                     _:l             -> do 
-                                         result<- printNodeInfoFromList l
-                                         return result
-                     []              -> return ()
-
+   case ls of
+        (GraphNode (x1,(DGNode x2 x3 x4 x5 x6 x7 x8))):l -> do
+              printNodeInfo (GraphNode (x1,(DGNode x2 x3 x4 x5 x6 x7 x8)))
+              putStr "\n"
+              result <-printNodeInfoFromList l
+              return result
+        _:l             -> do 
+              result<- printNodeInfoFromList l
+              return result
+        []              -> return ()
+-- The function 'printNodeInfo' given a GraphGoal prints the name of the node
+-- if it is a graph node otherwise prints 'Not a node !'
 printNodeInfo :: GraphGoals -> IO()
 printNodeInfo x =
        case x of
           GraphNode (_, (DGNode tname _ _ _ _ _ _)) -> 
-                                        putStr (( showName tname)++"\n")
+                                        putStr (( showName tname))
           _                          -> putStr "Not a node!\n"
 
-
+-- The function 'printNodeTaxonomyFromList' given a GraphGoals list generates
+-- the 'kind' type of Taxonomy Graphs of all goal nodes from the list
 printNodeTaxonomyFromList :: TaxoGraphKind -> [GraphGoals]-> IO()
 printNodeTaxonomyFromList kind ls =
              case ls of
@@ -316,6 +408,9 @@ printNodeTaxonomyFromList kind ls =
                    []  -> return ()
 
 
+-- The function 'printNodeTaxonomy' given just a GraphGoal generates
+-- the 'kind' type of Taxonomy Graphs if the goal is a node otherwise
+-- it prints on the screen 'Not a node !'
 printNodeTaxonomy :: TaxoGraphKind -> GraphGoals -> IO()
 printNodeTaxonomy kind x =
    case x of 
@@ -323,7 +418,8 @@ printNodeTaxonomy kind x =
                            displayGraph kind (show tname) thTh
      _            -> putStr "Not a node!\n"
         
-
+-- The function proveNodes applies basicInferenceNode for proving to
+-- all nodes in the graph goal list
 proveNodes :: [GraphGoals] -> LIB_NAME ->LibEnv -> IO LibEnv
 proveNodes ls ln libEnv
      = case ls of

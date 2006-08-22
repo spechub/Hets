@@ -24,10 +24,9 @@ import System.Console.Shell.ShellMonad
 import System.Console.Shell
 import Control.Monad.Trans
 
-data OutputScan = 
-    Out CmdParam String
 
-
+-- Checks the status to see if any library was loaded and generates the
+-- corresponding prompter
 getFileUsed :: [Status] -> String
 getFileUsed ls
  = case ls of
@@ -35,7 +34,7 @@ getFileUsed ls
       _:l                -> getFileUsed l
       []                 -> "Hets>"
 
-
+-- Removes any file extension from the name of the file
 takeName :: String -> String
 takeName ls
   = case ls of
@@ -44,7 +43,7 @@ takeName ls
       _     -> ['>']
 	
 
-
+-- implements the command use for shellac
 shellUse :: File -> Sh [Status] ()
 shellUse (File filename)
   = do
@@ -220,6 +219,9 @@ shellProver input
      val <- getShellSt >>= \state -> liftIO(cProver input state)
      modifyShellSt (update val)
 
+-- The evaluation function is called when the input could not be parsed
+-- as a command. If the input is an empty string do nothing, otherwise 
+-- print the error message
 pgipEvalFunc :: String -> Sh [Status] ()
 pgipEvalFunc str
   = case str of
@@ -228,6 +230,8 @@ pgipEvalFunc str
               (shellPutStr ("Unkown input :" ++ x ++ "\n"
                            ++ "Type \'help\' for more information\n"))
 
+-- Generates the list of all the shell commands toghether with a small help
+-- message
 pgipShellCommands :: [ShellCommand [Status]]
 pgipShellCommands 
                     = (exitCommand "exit")
@@ -291,10 +295,6 @@ pgipShellCommands
 
 
 
-pgipProcessInput :: [Status] -> IO String
-pgipProcessInput state
-                     = 
-                         return (getFileUsed state) 
 
 
 pgipShellDescription :: ShellDescription [Status]
@@ -306,7 +306,7 @@ pgipShellDescription =
        , evaluateFunc       = pgipEvalFunc
        , wordBreakChars     = wbc
        , beforePrompt       = return () 
-       , prompt             = pgipProcessInput 
+       , prompt             = \x -> return (getFileUsed x)
        , exceptionHandler   = defaultExceptionHandler
        , defaultCompletions = Just (\_ _ -> return [])
        , historyFile        = Just ("consoleHistory.tmp")
