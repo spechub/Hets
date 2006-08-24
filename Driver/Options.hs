@@ -602,14 +602,26 @@ hetcatsOpts argv =
             do flags <- checkFlags opts
                if not $ null [ () | Interactive <- flags]
                        then do
-                             hcOpts <-return $ foldr (flip makeOpts) defaultHetcatsOpts flags
-                             seq (length $ show hcOpts) $ return $ hcOpts
+                             infs <- checkInFiles non_opts
+                             hcOpts <-return $ foldr (flip makeOpts) 
+                                              defaultHetcatsOpts flags
+                             let hcOpts' = hcOpts {infiles = infs }
+                             seq (length $ show hcOpts') $ return $ hcOpts'
                        else do
                              infs  <- checkInFiles non_opts
-                             hcOpts <- return $
-                                       foldr (flip makeOpts) defaultHetcatsOpts flags
-                             let hcOpts' = hcOpts { infiles = infs }
-                             seq (length $ show hcOpts') $ return $ hcOpts'
+                             case infs of
+                              [] -> do
+                                  hcOpts <- return $
+                                        foldr (flip makeOpts) defaultHetcatsOpts 
+                                                      (Interactive:flags)
+                                  let hcOpts' = hcOpts { infiles = infs }
+                                  seq (length $ show hcOpts') $ return $ hcOpts'
+                              _ -> do 
+                                  hcOpts <- return $
+                                        foldr (flip makeOpts) defaultHetcatsOpts
+                                                      flags
+                                  let hcOpts' = hcOpts { infiles = infs }
+                                  seq (length $ show hcOpts') $ return $ hcOpts'   
         (_,_,errs) -> hetsError (concat errs)
 
 -- | 'checkFlags' checks all parsed Flags for sanity
@@ -641,7 +653,7 @@ checkFlags fs =
 checkInFiles :: [String] -> IO [FilePath]
 checkInFiles fs =
        case fs of
-                []  -> hetsError "No valid input file specified"
+                []  -> return []--hetsError "No valid input file specified"
                 _  -> do
                    let ifs = filter (not . checkUri) fs
                        efs = filter hasExtension ifs

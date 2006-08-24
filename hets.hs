@@ -43,10 +43,9 @@ main :: IO ()
 main = do
     opts <- getArgs >>= hetcatsOpts
     if (interactive opts) 
-         then do        
---               runInteractive []
-               pgipRunShell 
-               return ()
+         then do
+            pgipRunShell (infiles opts)
+            return ()
          else do               
                putIfVerbose opts 3 ("Options: " ++ show opts)
                mapM_ (processFile opts) (infiles opts)

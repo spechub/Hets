@@ -34,15 +34,15 @@ getFileUsed ls
  = case ls of
       (Address adr):_    -> takeName adr
       _:l                -> getFileUsed l
-      []                 -> "Hets>"
+      []                 -> "Hets> "
 
 -- Removes any file extension from the name of the file
 takeName :: String -> String
 takeName ls
   = case ls of
-      '.':_ -> ['>']
-      x :l  -> x:(takeName l)
-      _     -> ['>']
+      ".casl" -> "> "
+      x :l    -> x:(takeName l)
+      _       -> "> "
 	
 
 -- implements the command use for shellac
@@ -221,6 +221,10 @@ shellProver input
      val <- getShellSt >>= \state -> liftIO(cProver input state)
      modifyShellSt (update val)
 
+shellDetails :: Sh [Status] ()
+shellDetails 
+    = shellPutStr printDetails
+
 -- The evaluation function is called when the input could not be parsed
 -- as a command. If the input is an empty string do nothing, otherwise 
 -- print the error message
@@ -303,6 +307,8 @@ pgipShellCommands
                       "translate theory goals along comorphism")
                     : (cmd "prover" shellProver
                       "selects a prover")
+                    : (cmd "details" shellDetails
+                     "view details about the gramma of this interactive mode")
                     : [] 
 
 
@@ -353,6 +359,7 @@ basicOutput (ErrorOutput out)   = hPutStr stderr out
                                                                  
 
 
+
 pgipInteractiveShellDescription :: ShellDescription [Status]
 pgipInteractiveShellDescription =
  let wbc = "\t\n\r\v\\,;" in
@@ -390,10 +397,13 @@ pgipFileShellDescription =
 
 
 
-pgipRunShell :: IO [Status]
-pgipRunShell = runShell pgipInteractiveShellDescription 
-                        readlineBackend 
-                        []
+pgipRunShell :: [String] ->IO [Status]
+pgipRunShell files 
+   = do
+      state <- getStatus files []
+      runShell pgipInteractiveShellDescription {defaultCompletions = Just pgipCompletionFn}
+              readlineBackend  
+              state
 
 pgipProcessFile :: String -> IO [Status]
 pgipProcessFile filename = 
@@ -402,44 +412,10 @@ pgipProcessFile filename =
                  []) `catch` (\_ -> return [])
 
          
-printHelp :: String
-printHelp =
-  "\n\n Hets Interactive mode. The available commads are \n\n"++
-    "   use [PATH]\n" ++
-   "   dg [DG-COMMAND] [GOAL*]\n" ++
-   "   dg-all [DG-COMMAND]\n" ++
-   "   show-dg-goals\n" ++
-   "   show-theory-goals\n" ++
-   "   show-theory\n" ++
-   "   node-info\n" ++
-   "   show-taxonomy\n" ++
-   "   show-concepts\n" ++
-   "   translate [COMORPHISM]\n" ++
-   "   prover [PROVER]\n" ++
-   "   proof-script [FORMULA] [PROOF-SCRIPT] end-script\n" ++
-   "   cons-check PROVER\n" ++
-   "   prove [FORMULA*] [AXIOM-SELECTION?]\n" ++
-   "   prove-all [AXIOM-SELECTION?]\n" ++
-   "   q/quit/exit\n\n" ++
-   " AXIOM-SELECTION ::=\n" ++
-   "   with FORMULA+\n" ++
-   "   exlcuding FORMULA+\n\n" ++
-   " DG-COMMAND ::=\n" ++
-   "     auto\n" ++
-   "     glob-subsume\n" ++
-   "     glob-decomp\n"++
-   "     loc-infer\n"++
-   "     loc-decomp\n"++
-   "     comp\n"++
-   "     comp-new\n"++
-   "     hide-thm\n"++
-   "     thm-hide\n"++
-   "     basic\n\n"++
-   " For more information type details\n\n"
 
 printDetails :: String 
 printDetails =
-   "\n\n Hets Interactive mode.The available gramma is\n\n" ++
+   "\n\n Hets Interactive mode.The available grammar is\n\n" ++
 --   " -- Commands for development graph mode\n" ++
    "   use [PATH]              -- open a file with a HetCASL library\n" ++
    "                           -- this will compute a development graph\n" ++

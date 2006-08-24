@@ -91,77 +91,127 @@ data Status =
  
 -- The function 'extractGraphNode' extracts the goal node defined by 
 -- 'x' (the ID of the node as a string) from the provided list of goals  
-extractGraphNode:: String->[GraphGoals]->Maybe GraphGoals
+extractGraphNode:: String->[GraphGoals]->IO (Maybe GraphGoals)
 extractGraphNode x allGoals 
     = case allGoals of
-       []              -> Nothing
-       (GraphNode (nb,label)):l    -> if (( getDGNodeName label)==x) 
-                                          then Just (GraphNode (nb,label))
+       []              ->do
+                           return  Nothing
+       (GraphNode (nb,label)):l    -> do
+                                        if (( getDGNodeName label)==x) 
+                                          then return (Just (GraphNode (nb,label)))
                                           else extractGraphNode x l
        _:l                           -> extractGraphNode x l
          
 -- The function 'extractGraphEdge' extracts the goal edge determined by 
 -- 'x' and 'y' nodes from the provided list of goals
-extractGraphEdge:: String -> String -> [GraphGoals] -> Maybe GraphGoals
-extractGraphEdge x y allGoals
+extractGraphEdge:: String -> String -> [GraphGoals] -> [GraphGoals]
+                    -> IO (Maybe GraphGoals)
+extractGraphEdge x y allGoals ll
    = case allGoals of
-      []             -> Nothing
-      (GraphEdge (xx,yy,label)):l -> 
-                  let t1 = fromJust $ extractGraphNode x allGoals
-                      t2 = fromJust $ extractGraphNode y allGoals
-                  in case t1 of 
+      []             -> do 
+                       return  Nothing
+      (GraphEdge (xx,yy,label)):l -> do 
+         ttt1 <- extractGraphNode x ll
+         ttt2 <- extractGraphNode y ll
+         case ttt1 of
+           Nothing -> do
+              putStr ("Couldn't find node "++x++"\n"++
+                         "when looking for edge "++x++" -> "++y++"\n")
+              return Nothing 
+           Just t1 -> do
+             case ttt2 of 
+               Nothing -> do
+                  putStr ("Couldn't find node "++y++"\n"++
+                            "when looking for edge "++x++" -> "++y++"\n")
+                  return Nothing
+               Just t2 -> do
+                  case t1 of 
                     (GraphNode (tmp1_nb, _)) ->
                        case t2 of
                         (GraphNode (tmp2_nb, _)) ->
                           if (tmp1_nb == xx) 
                             then if (tmp2_nb == yy) 
-                               then Just (GraphEdge (xx,yy,label))
-                               else extractGraphEdge x y l
-                            else extractGraphEdge x y l
-                        _ -> extractGraphEdge x y l
-                    _ -> extractGraphEdge x y l  
-      _:l    -> extractGraphEdge x y l                                                             
+                               then return (Just (GraphEdge (xx,yy,label)))
+                               else extractGraphEdge x y l ll
+                            else extractGraphEdge x y l ll
+                        _ -> extractGraphEdge x y l ll
+                    _ -> extractGraphEdge x y l  ll 
+      _:l    -> extractGraphEdge x y l ll
 -- Same as above but it tries to extract the edge between the nodes
 -- with the given number in the order they are found
 extractGraphLabeledEdge:: String -> Int -> String -> 
-                          [GraphGoals] -> Maybe GraphGoals
-extractGraphLabeledEdge x nb y allGoals
+                          [GraphGoals] -> [GraphGoals] -> IO (Maybe GraphGoals)
+extractGraphLabeledEdge x nb y allGoals ll
     = case allGoals of
-      []             -> Nothing
-      (GraphEdge (xx,yy,label)):l  -> 
-                  let t1 = fromJust $ extractGraphNode x allGoals
-                      t2 = fromJust $ extractGraphNode y allGoals
-                  in case t1 of 
+      []             ->return  Nothing
+      (GraphEdge (xx,yy,label)):l  -> do
+        ttt1<- extractGraphNode x ll
+        ttt2<- extractGraphNode y ll
+        case ttt1 of
+          Nothing -> do
+            putStr ("Couldn't find node "++x++"\n"++
+             "when looking for edge "++x++" - "++(show nb)++" -> "++y++"\n")
+            return Nothing
+          Just t1 -> do
+            case ttt2 of 
+              Nothing -> do
+               putStr ("Couldn't find node "++y++"\n"++
+                "when looking for edge "++x++" - "++(show nb)++" -> "++y++"\n")
+               return Nothing
+              Just t2 -> do
+                  case t1 of 
                     (GraphNode (tmp1_nb, _)) ->
                        case t2 of
                         (GraphNode (tmp2_nb, _)) ->
                           if (tmp1_nb == xx) 
                             then if (tmp2_nb == yy) 
                                then if (nb==0)  
-                                 then Just (GraphEdge (xx,yy,label))
-                                 else extractGraphLabeledEdge x (nb-1) y l
-                               else extractGraphLabeledEdge x nb y l
-                            else extractGraphLabeledEdge x nb y l
-                        _ -> extractGraphLabeledEdge x nb y l
-                    _ -> extractGraphLabeledEdge x nb y l  
-      _:l -> extractGraphLabeledEdge x nb y l 
+                                 then return (Just (GraphEdge (xx,yy,label)))
+                                 else extractGraphLabeledEdge x (nb-1) y l ll
+                               else extractGraphLabeledEdge x nb y l ll
+                            else extractGraphLabeledEdge x nb y l ll
+                        _ -> extractGraphLabeledEdge x nb y l ll
+                    _ -> extractGraphLabeledEdge x nb y l ll 
+      _:l -> extractGraphLabeledEdge x nb y l ll
 
 
 -- The function 'getGoalList' creates a graph goal list ( a graph goal is 
 -- defined by the datatype GraphGoals) that is a part of 'allg' list passed
 -- as an argument and corresponds to goalList (a parased goal list, see
 -- GOAL datatype)
-getGoalList :: [GOAL] -> [GraphGoals] -> [GraphGoals]
-getGoalList goalList allg 
+getGoalList :: [GOAL] -> [GraphGoals] -> [GraphGoals] -> IO [GraphGoals]
+getGoalList goalList allg ll 
  = case goalList of
-    (Node x):l -> 
-      (fromJust $ extractGraphNode x allg):(getGoalList l allg)
-    (Edge x y):l ->
-      (fromJust $ extractGraphEdge x y allg):(getGoalList l allg)
-    (LabeledEdge x nb y):l ->
-      (fromJust $ extractGraphLabeledEdge x nb y allg):(getGoalList l allg)
-    [] -> 
-       []
+    (Node x):l -> do
+      tmp <- extractGraphNode x allg
+      tmp2<- getGoalList l allg ll
+      case tmp of
+        Just smth -> return (smth:tmp2)
+        Nothing -> do
+           putStr ("Couldn't find node "++x++"\n")
+           return []
+    (Edge x y):l -> do
+      tmp <- extractGraphEdge x y allg ll
+      tmp2<- getGoalList l allg ll
+      case tmp of 
+        Just smth -> return (smth:tmp2)
+        Nothing -> return tmp2
+    (LabeledEdge x nb y):l -> do
+      tmp <- extractGraphLabeledEdge x nb y allg ll
+      tmp2<- getGoalList l allg ll
+      case tmp of
+         Just smth -> return (smth:tmp2)
+         Nothing -> return tmp2
+    [] -> return [] 
+
+
+
+
+convToGoal:: [GDataNode] -> [GraphGoals]
+convToGoal ls
+ = case ls of
+     x:l -> (GraphNode x) : (convToGoal l)
+     []  -> []
 
 -- The function 'getEdgeGoals' given a list of edges selects all edges that
 -- are goals of the graph and returns them as GraphGoals
@@ -176,18 +226,125 @@ getEdgeGoals ls =
                         "hetlocalunproventhm" -> (GraphEdge (x,y,l)):(getEdgeGoals ll)
                         _                     -> getEdgeGoals ll
          []  -> []
---getEdgeGoals::[GDataEdge] -> [GraphGoals] 
---getEdgeGoals ls =
---          case ls of 
---               x:l   -> if (isUnprovenGlobalThm x) 
---                         then (GraphEdge x):(getEdgeGoals l)
---                         else if (isUnprovenLocalThm x) 
---                           then (GraphEdge x):(getEdgeGoals l)
---                           else if (isUnprovenHidingThm x) 
---                               then (GraphEdge x):(getEdgeGoals l)
---                               else getEdgeGoals l
---               []    -> []
 
+-- The function checks if w1 is a prefix of w2
+prefix :: String -> String -> Bool
+prefix w1 w2 
+ = case w1 of 
+     x1:l1 -> case w2 of
+               x2:l2 -> if (x1==x2) then (prefix l1 l2)
+                                    else False
+               []    -> False
+     [] -> True
+
+-- The function checks if the word 'wd' is a prefix of the name of 
+-- any of the nodes in the list, if so it returns the list of the 
+-- names otherwise it returns the empty list
+checkWord :: String -> [GDataNode] -> String
+checkWord wd allNodes
+ = case allNodes of
+     (_, (DGNode thName _ _ _ _ _ _ )):l -> 
+                         if (prefix wd (showName thName))
+                                then 
+                                  if ((showName thName)=="")
+                                     then checkWord wd l
+                                     else ((showName thName)++" "++(checkWord wd l))
+                                else checkWord wd l
+     (_, (DGRef thName _ _ _ _ _)):l -> 
+                         if (prefix wd (showName thName))
+                                then 
+                                  if ((showName thName)=="")
+                                     then checkWord wd l
+                                     else ((showName thName)++" "++(checkWord wd l))
+                                else checkWord wd l
+     []                   -> [] 
+ 
+-- The function flips a string around
+reverseOrder :: String -> String -> String
+reverseOrder ls wd
+ = case ls of
+      [] ->  wd
+      x:l -> reverseOrder l (x:wd)
+
+-- The function categorizes the commands after the
+-- type of arguments it should expect
+prefixType ::String -> Int
+prefixType wd
+ = case wd of
+     "dg auto" -> 1
+     "dg glob-subsume" -> 1
+     "dg glob-decomp" -> 1
+     "dg loc-infer" -> 1
+     "dg loc-decomp" -> 1
+     "dg comp" -> 1
+     "dg comp-new" -> 1
+     "dg hide-thm" -> 1
+     "dg basic"  -> 1
+     _           -> 0
+
+-- The function checks if a word still has white spaces or not
+hasWhiteSpace :: String -> Bool
+hasWhiteSpace ls 
+ = case ls of
+       []    -> False
+       ' ':_ -> True
+       '\t':_-> True
+       '\n':_-> True
+       '\r':_-> True
+       ';':_ -> True
+       '-':_ -> True
+       '>':_ -> True
+       ',':_ -> True
+       _:l   -> hasWhiteSpace l
+
+
+-- The function tries to obtain only the incomplete word
+-- removing the command name
+getSuffix :: String -> String
+getSuffix wd
+ = if (hasWhiteSpace wd) then getSuffix (tail wd)
+                         else wd
+
+-- The function given a string tries to obtain the command
+-- name and remove the incomplete word from the end
+getPrefix :: String -> String -> IO String
+getPrefix wd tmp
+ = if (hasWhiteSpace wd) 
+         then if (hasWhiteSpace (tail wd))
+                  then do
+                        getPrefix (tail wd) ((head wd):tmp)
+                  else if ((prefixType (reverseOrder tmp [])) > 0)
+                             then return (reverseOrder tmp [])
+                             else getPrefix tmp []
+        else return []
+
+-- The function simply adds the 'wd' string as a prefix to any
+-- word from the given list
+addWords ::[String] -> String -> [String]
+addWords ls wd
+ = case ls of
+      x:l  -> (wd++x):(addWords l wd)
+      []   -> []
+
+-- The function 'pgipCompletionFn' given the current status and an incomplete
+-- word provides a list of possible words completions
+pgipCompletionFn :: [Status] -> String -> IO [String]
+pgipCompletionFn state wd
+ = case state of
+    (Env ln libEnv):_ -> do
+        let dgraph= lookupDGraph ln libEnv
+        pref <- getPrefix wd []
+--        putStr (pref++"\n")
+        if ((prefixType pref)> 0) 
+         then do
+          let list = checkWord (getSuffix wd) (labNodes dgraph)
+--          putStr ("::"++(getSuffix wd)++"\n")
+          if (list=="") then return []
+                        else return (addWords (words list) (pref++" "))
+         else
+          return []
+    _:l               ->    pgipCompletionFn l wd
+    []                -> return []
 
 -- The function 'getNodeGoals' given a list of nodes selects all nodes that
 -- are goals of teh graph and returns them as GraphGoals
@@ -333,6 +490,8 @@ printNodeTheory arg =
   case arg of
    GraphNode (_,(DGNode _ theTh _ _ _ _ _)) -> 
                     putStr  ((showDoc theTh "\n") ++ "\n")
+   GraphNode (_,(DGRef _ _ _ theTh _ _)) ->
+                    putStr  ((showDoc theTh "\n") ++ "\n")
    _      -> putStr "Not a node!\n" 
 
 
@@ -352,8 +511,8 @@ findNode nb ls
 printInfoFromList :: [GraphGoals] ->[GDataNode]-> IO()
 printInfoFromList ls allNodes =
    case ls of
-        (GraphNode (x1,(DGNode x2 x3 x4 x5 x6 x7 x8))):l -> do
-              printNodeInfo (GraphNode (x1,(DGNode x2 x3 x4 x5 x6 x7 x8)))
+        (GraphNode x):l -> do
+              printNodeInfo (GraphNode x)
               putStr "\n"
               result <-printInfoFromList l allNodes
               return result
@@ -361,12 +520,11 @@ printInfoFromList ls allNodes =
               let x1 = fromJust $ findNode x allNodes
               let y1 = fromJust $ findNode y allNodes
               printNodeInfo x1
-              putStr "  -->  " 
+              putStr " -> "
               printNodeInfo y1
               putStr "\n"
               result<- printInfoFromList l allNodes
               return result
-        _:l  -> printInfoFromList l allNodes
         []              -> return ()
 
 
@@ -376,8 +534,8 @@ printInfoFromList ls allNodes =
 printNodeInfoFromList :: [GraphGoals] -> IO()
 printNodeInfoFromList ls =
    case ls of
-        (GraphNode (x1,(DGNode x2 x3 x4 x5 x6 x7 x8))):l -> do
-              printNodeInfo (GraphNode (x1,(DGNode x2 x3 x4 x5 x6 x7 x8)))
+        (GraphNode x):l -> do
+              printNodeInfo (GraphNode x)
               putStr "\n"
               result <-printNodeInfoFromList l
               return result
@@ -391,6 +549,8 @@ printNodeInfo :: GraphGoals -> IO()
 printNodeInfo x =
        case x of
           GraphNode (_, (DGNode tname _ _ _ _ _ _)) -> 
+                                        putStr (( showName tname))
+          GraphNode (_, (DGRef tname _ _ _ _ _ )) ->
                                         putStr (( showName tname))
           _                          -> putStr "Not a node!\n"
 
@@ -418,7 +578,9 @@ printNodeTaxonomy :: TaxoGraphKind -> GraphGoals -> IO()
 printNodeTaxonomy kind x =
    case x of 
      GraphNode (_, (DGNode tname thTh _ _ _ _ _)) -> 
-                           displayGraph kind (show tname) thTh
+                           displayGraph kind (showName tname) thTh
+     GraphNode (_, (DGRef tname _ _ thTh _ _ )) ->
+                           displayGraph kind (showName tname) thTh 
      _            -> putStr "Not a node!\n"
         
 -- The function proveNodes applies basicInferenceNode for proving to

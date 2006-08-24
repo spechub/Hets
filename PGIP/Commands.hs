@@ -77,20 +77,29 @@ getKeyWord wd
 getGoal::AParser st GOAL
 getGoal        
        = try ( do  v1<-scanAnyWord
+                   try (skip)
                    getKeyWord "-"
+                   try (skip)
                    v2<-getNumber
+                   try (skip)
                    getKeyWord "->"
+                   try (skip)
                    v3<-scanAnyWord
+                   try (skip)
                    return (LabeledEdge v1 (read v2::Int) v3)
              )       
       <|> 
          try ( do  v1<-scanAnyWord
-                   getKeyWord "->"                                  
+                   try (skip)
+                   getKeyWord "->"       
+                   try (skip)
                    v2<-scanAnyWord
+                   try (skip)
                    return (Edge  v1  v2)
              )
       <|> 
          try ( do  v<-scanAnyWord
+                   try (skip)
                    return (Node  v)
              )   
       <?>
@@ -100,6 +109,7 @@ getGoal
 getScript::AParser st String
 getScript 
          = try ( do  getKeyWord "end-script"
+                     try (skip)
                      return ""
                )
         <|> 
@@ -120,7 +130,9 @@ getScript
 getComorphism::AParser st [String]
 getComorphism 
              = try ( do  v<-scanAnyWord
+                         try (skip)
                          getKeyWord ";"
+                         try (skip)
                          vs <-getComorphism
                          return ( v:vs)
                    )
@@ -207,8 +219,21 @@ removeSpace :: String -> String
 removeSpace ls
   = case ls of
       []   -> []
-      _:[] -> []
+      ' ':[] -> []
+      x:[]   -> x:[]
       x:l  -> x:(removeSpace l)
+
+
+getStatus ::[String] ->[Status]-> IO [Status]
+getStatus files state
+ = case files of
+       []  -> do
+               return state
+       f:l -> do
+              result <- cUse f state
+              let nwState =update result state
+              getStatus l nwState
+          
 
 -- The function 'cUse' implements the command Use, i.e. given a path it
 -- tries to load the library at that path
@@ -229,7 +254,7 @@ cUse input state
               putStr "Couldn't load the new file!\n"
               return []
     _:list -> cUse input list
-    [] ->do   
+    [] ->do  
           let file = removeSpace input
           let opts = defaultHetcatsOpts
           result<- anaLib opts file
@@ -269,11 +294,14 @@ cDgAuto input status
          case l of
            (AllGoals allGoals):_ ->
                case param of
-                 (Goals ls):_ -> 
-                     let ll = getEdgeList $ getGoalList ls allGoals
-                         result = automaticFromList ln ll libEnv
-                         newGoalList = createAllGoalsList ln result
-                     in return ((Env ln result):(AllGoals newGoalList):[])
+                 (Goals ls):_ -> do 
+                     let allNodes = convToGoal $ 
+                                     labNodes (lookupDGraph ln libEnv)
+                     list <- getGoalList ls allGoals allNodes
+                     let ll = getEdgeList list
+                     let result = automaticFromList ln ll libEnv
+                     let newGoalList = createAllGoalsList ln result
+                     return ((Env ln result):(AllGoals newGoalList):[])
                  _  -> return ([(OutputErr "Wrong parameters")])
            _:list -> cDgAuto input ((Env ln libEnv):list)
            _  ->return ([(OutputErr "Wrong parameters")])
@@ -281,11 +309,14 @@ cDgAuto input status
          case l of
           (Env ln libEnv):_ -> 
                case param of 
-                 (Goals ls):_ ->
-                     let ll = getEdgeList $ getGoalList ls allGoals
-                         result = automaticFromList ln ll libEnv
-                         newGoalList = createAllGoalsList ln result
-                     in return ((Env ln result):(AllGoals newGoalList):[])
+                 (Goals ls):_ -> do
+                     let allNodes = convToGoal $ 
+                                     labNodes (lookupDGraph ln libEnv)
+                     list <-getGoalList ls allGoals allNodes
+                     let ll = getEdgeList list
+                     let result = automaticFromList ln ll libEnv
+                     let newGoalList = createAllGoalsList ln result
+                     return ((Env ln result):(AllGoals newGoalList):[])
                  _ -> return [(OutputErr "Wrong parameters")]
           _:list -> cDgAuto input ((AllGoals allGoals):list)
           _      -> return [(OutputErr "Wrong parameters")]
@@ -307,11 +338,14 @@ cDgGlobSubsume input status
          case l of 
            (AllGoals allGoals):_ -> 
                case param of
-                 (Goals ls):_ -> 
-                     let ll = getEdgeList $ getGoalList ls allGoals
-                         result = globSubsumeFromList ln ll  libEnv 
-                         newGoalList = createAllGoalsList ln result
-                     in return ((Env ln result):(AllGoals newGoalList):[])
+                 (Goals ls):_ -> do
+                     let allNodes = convToGoal $ 
+                                     labNodes (lookupDGraph ln libEnv)
+                     list <- getGoalList ls allGoals allNodes
+                     let ll = getEdgeList list
+                     let result = globSubsumeFromList ln ll  libEnv 
+                     let newGoalList = createAllGoalsList ln result
+                     return ((Env ln result):(AllGoals newGoalList):[])
                  _            ->return  [(OutputErr "Wrong parameters")]
            _:ll -> cDgGlobSubsume input ((Env ln libEnv):ll)
            _    -> return [(OutputErr "Wrong parameters")]
@@ -319,11 +353,14 @@ cDgGlobSubsume input status
          case l of 
            (Env ln libEnv):_ -> 
                case param of
-                 (Goals ls):_ -> 
-                     let ll= getEdgeList $ getGoalList ls allGoals
-                         result = globSubsumeFromList ln ll libEnv
-                         newGoalList = createAllGoalsList ln result
-                     in return ((Env ln result):(AllGoals newGoalList):[])
+                 (Goals ls):_ -> do
+                     let allNodes = convToGoal $ 
+                                     labNodes (lookupDGraph ln libEnv)
+                     list <- getGoalList ls allGoals allNodes
+                     let ll= getEdgeList list
+                     let result = globSubsumeFromList ln ll libEnv
+                     let newGoalList = createAllGoalsList ln result
+                     return ((Env ln result):(AllGoals newGoalList):[])
                  _   -> return [(OutputErr "Wrong parameters")]
            _:ll -> cDgGlobSubsume input ((AllGoals allGoals):ll)
            _    -> return [(OutputErr "Wrong parameters")]
@@ -367,11 +404,14 @@ cDgGlobDecomp input status =
         case l of 
           (AllGoals allGoals):_ -> 
               case param of
-                (Goals ls):_ -> 
-                      let ll = getEdgeList $ getGoalList ls allGoals
-                          result = globDecompFromList ln ll  libEnv 
-                          newGoalList = createAllGoalsList ln result
-                      in  return ((Env ln result):(AllGoals newGoalList):[])
+                (Goals ls):_ -> do
+                      let allNodes = convToGoal $ 
+                                     labNodes (lookupDGraph ln libEnv)
+                      list <- getGoalList ls allGoals allNodes
+                      let ll = getEdgeList list
+                      let result = globDecompFromList ln ll  libEnv 
+                      let newGoalList = createAllGoalsList ln result
+                      return ((Env ln result):(AllGoals newGoalList):[])
                 _   -> return [(OutputErr "Wrong parameters")]
           _:list -> cDgGlobDecomp input  ((Env ln libEnv):list)
           _      -> return [(OutputErr "Wrong parameters")]
@@ -379,11 +419,14 @@ cDgGlobDecomp input status =
         case l of 
           (Env ln libEnv):_ -> 
               case param of
-                (Goals ls):_ -> 
-                      let ll= getEdgeList $ getGoalList ls allGoals
-                          result = globDecompFromList ln ll libEnv
-                          newGoalList = createAllGoalsList ln result
-                      in  return ((Env ln result):(AllGoals newGoalList):[])
+                (Goals ls):_ -> do
+                      let allNodes = convToGoal $ 
+                                     labNodes (lookupDGraph ln libEnv)
+                      list <- getGoalList ls allGoals allNodes
+                      let ll= getEdgeList list
+                      let result = globDecompFromList ln ll libEnv
+                      let newGoalList = createAllGoalsList ln result
+                      return ((Env ln result):(AllGoals newGoalList):[])
                 _  -> return [(OutputErr "Wrong parameters")]
           _:list -> cDgGlobDecomp input ((AllGoals allGoals):list)
           _      -> return [(OutputErr "Wrong parameters")]
@@ -415,11 +458,14 @@ cDgLocInfer input status =
           case l of 
             (AllGoals allGoals):_ ->
                  case param of
-                  (Goals ls):_ -> 
-                      let ll = getEdgeList $ getGoalList ls allGoals
-                          result = localInferenceFromList ln ll  libEnv 
-                          newGoalList = createAllGoalsList ln result
-                      in return ((Env ln result):(AllGoals newGoalList):[])
+                  (Goals ls):_ -> do
+                      let allNodes = convToGoal $ 
+                                     labNodes (lookupDGraph ln libEnv)
+                      list <- getGoalList ls allGoals allNodes
+                      let ll = getEdgeList list
+                      let result = localInferenceFromList ln ll  libEnv 
+                      let newGoalList = createAllGoalsList ln result
+                      return ((Env ln result):(AllGoals newGoalList):[])
                   _   -> return [(OutputErr "Wrong parameters")]
             _:list -> cDgLocInfer input ((Env ln libEnv):list)
             _      -> return [(OutputErr "Wrong parameters")]
@@ -427,11 +473,14 @@ cDgLocInfer input status =
           case l of 
             (Env ln libEnv):_ -> 
                 case param of
-                 (Goals ls):_ ->
-                     let ll= getEdgeList $ getGoalList ls allGoals
-                         result = localInferenceFromList ln ll libEnv
-                         newGoalList = createAllGoalsList ln result
-                     in return ((Env ln result):(AllGoals newGoalList):[])
+                 (Goals ls):_ -> do
+                     let allNodes = convToGoal $ 
+                                     labNodes (lookupDGraph ln libEnv)
+                     list <- getGoalList ls allGoals allNodes
+                     let ll= getEdgeList list
+                     let result = localInferenceFromList ln ll libEnv
+                     let newGoalList = createAllGoalsList ln result
+                     return ((Env ln result):(AllGoals newGoalList):[])
                  _    -> return [(OutputErr "Wrong parameters")]
             _:list -> cDgLocInfer input ((AllGoals allGoals):list)
             _      -> return [(OutputErr "Wrong parameters")]
@@ -464,11 +513,14 @@ cDgLocDecomp input status =
         case l of 
           (AllGoals allGoals):_ -> 
                case param of
-                 (Goals ls):_ -> 
-                      let ll = getEdgeList $ getGoalList ls allGoals
-                          result = locDecompFromList ln ll  libEnv 
-                          newGoalList = createAllGoalsList ln result
-                      in return ((Env ln result):(AllGoals newGoalList):[])
+                 (Goals ls):_ -> do
+                      let allNodes = convToGoal $ 
+                                     labNodes (lookupDGraph ln libEnv)
+                      list <- getGoalList ls allGoals allNodes
+                      let ll = getEdgeList list
+                      let result = locDecompFromList ln ll  libEnv 
+                      let newGoalList = createAllGoalsList ln result
+                      return ((Env ln result):(AllGoals newGoalList):[])
                  _  -> return [(OutputErr "Wrong parameters")]
           _:list -> cDgLocDecomp input  ((Env ln libEnv):list)
           _      -> return [(OutputErr "Wrong parameters")]
@@ -476,11 +528,14 @@ cDgLocDecomp input status =
         case l of 
           (Env ln libEnv):_ -> 
                case param of
-                    (Goals ls):_ -> 
-                       let ll= getEdgeList $ getGoalList ls allGoals
-                           result = locDecompFromList ln ll libEnv
-                           newGoalList = createAllGoalsList ln result
-                       in return ((Env ln result):(AllGoals newGoalList):[])
+                    (Goals ls):_ -> do
+                       let allNodes = convToGoal $ 
+                                     labNodes (lookupDGraph ln libEnv)
+                       list <- getGoalList ls allGoals allNodes
+                       let ll= getEdgeList list
+                       let result = locDecompFromList ln ll libEnv
+                       let newGoalList = createAllGoalsList ln result
+                       return ((Env ln result):(AllGoals newGoalList):[])
                     _  -> return [(OutputErr "Wrong parameters")]
           _:list -> cDgLocDecomp input ((AllGoals allGoals):list)
           _      -> return [(OutputErr "Wrong parameters")]
@@ -503,11 +558,14 @@ cDgComp input status =
           case l of 
             (AllGoals allGoals):_ -> 
               case param of
-                 (Goals ls):_ -> 
-                     let ll = getEdgeList $ getGoalList ls allGoals
-                         result = compositionFromList ln ll  libEnv 
-                         newGoalList = createAllGoalsList ln result
-                     in return ((Env ln result):(AllGoals newGoalList):[])
+                 (Goals ls):_ -> do
+                     let allNodes = convToGoal $ 
+                                     labNodes (lookupDGraph ln libEnv)
+                     list <- getGoalList ls allGoals allNodes
+                     let ll = getEdgeList list
+                     let result = compositionFromList ln ll  libEnv 
+                     let newGoalList = createAllGoalsList ln result
+                     return ((Env ln result):(AllGoals newGoalList):[])
                  _ -> return [(OutputErr "Wrong parameters")]
             _:list -> cDgComp input  ((Env ln libEnv):list)
             _      -> return [(OutputErr "Wrong parameters")]
@@ -515,11 +573,14 @@ cDgComp input status =
          case l of 
            (Env ln libEnv):_ -> 
               case param of
-                 (Goals ls):_ -> 
-                     let ll= getEdgeList $ getGoalList ls allGoals
-                         result = compositionFromList ln ll libEnv
-                         newGoalList = createAllGoalsList ln result
-                     in return ((Env ln result):(AllGoals newGoalList):[])
+                 (Goals ls):_ -> do
+                     let allNodes = convToGoal $ 
+                                     labNodes (lookupDGraph ln libEnv)
+                     list <-getGoalList ls allGoals allNodes
+                     let ll= getEdgeList list
+                     let result = compositionFromList ln ll libEnv
+                     let newGoalList = createAllGoalsList ln result
+                     return ((Env ln result):(AllGoals newGoalList):[])
                  _    -> return [(OutputErr "Wrong parameters")]
            _:list -> cDgComp input ((AllGoals allGoals):list)
            _      -> return [(OutputErr "Wrong parameters")]
@@ -554,11 +615,14 @@ cDgCompNew input status =
       case l of 
        (AllGoals allGoals):_ -> 
          case param of
-          (Goals ls):_ -> 
-            let ll = getEdgeList $ getGoalList ls allGoals
-                result = compositionCreatingEdgesFromList ln ll libEnv
-                newGoalList = createAllGoalsList ln result
-            in return ((Env ln result):(AllGoals newGoalList):[])
+          (Goals ls):_ -> do
+            let allNodes = convToGoal $ 
+                       labNodes (lookupDGraph ln libEnv)
+            list <- getGoalList ls allGoals allNodes
+            let ll = getEdgeList list
+            let result = compositionCreatingEdgesFromList ln ll libEnv
+            let newGoalList = createAllGoalsList ln result
+            return ((Env ln result):(AllGoals newGoalList):[])
           _   -> return [(OutputErr "Wrong parameters")]
        _:list -> cDgCompNew input ((Env ln libEnv):list)
        _      -> return [(OutputErr "Wrong parameters")]
@@ -566,11 +630,14 @@ cDgCompNew input status =
        case l of 
         (Env ln libEnv):_ -> 
            case param of
-            (Goals ls):_ -> 
-              let ll= getEdgeList $ getGoalList ls allGoals
-                  result = compositionCreatingEdgesFromList ln ll libEnv
-                  newGoalList = createAllGoalsList ln result
-              in return ((Env ln result):(AllGoals newGoalList):[])
+            (Goals ls):_ -> do
+              let allNodes = convToGoal $ 
+                         labNodes (lookupDGraph ln libEnv)
+              list <- getGoalList ls allGoals allNodes
+              let ll= getEdgeList list
+              let result = compositionCreatingEdgesFromList ln ll libEnv
+              let newGoalList = createAllGoalsList ln result
+              return ((Env ln result):(AllGoals newGoalList):[])
             _  -> return [(OutputErr "Wrong parameters")]
         _:list -> cDgCompNew input ((AllGoals allGoals):list)
         _      -> return [(OutputErr "Wrong parameters")]
@@ -604,11 +671,14 @@ cDgHideThm input status =
        case l of 
         (AllGoals allGoals):_ -> 
           case param of
-            (Goals ls):_ -> 
-               let ll = getEdgeList $ getGoalList ls allGoals
-                   result = automaticHideTheoremShiftFromList ln ll  libEnv
-                   newGoalList = createAllGoalsList ln result
-               in return ((Env ln result):(AllGoals newGoalList):[])
+            (Goals ls):_ -> do
+               let allNodes = convToGoal $ 
+                        labNodes (lookupDGraph ln libEnv)
+               list <- getGoalList ls allGoals allNodes
+               let ll = getEdgeList list
+               let result = automaticHideTheoremShiftFromList ln ll  libEnv
+               let newGoalList = createAllGoalsList ln result
+               return ((Env ln result):(AllGoals newGoalList):[])
             _   -> return [(OutputErr "Wrong parameters")]
         _:list -> cDgHideThm input ((Env ln libEnv):list)
         _      -> return [(OutputErr "Wrong parameters")]
@@ -616,11 +686,14 @@ cDgHideThm input status =
        case l of 
         (Env ln libEnv):_ -> 
            case param of
-             (Goals ls):_ -> 
-                let ll= getEdgeList $ getGoalList ls allGoals
-                    result = automaticHideTheoremShiftFromList ln ll libEnv
-                    newGoalList = createAllGoalsList ln result
-                in return ((Env ln result):(AllGoals newGoalList):[])
+             (Goals ls):_ -> do
+                let allNodes = convToGoal $ 
+                           labNodes (lookupDGraph ln libEnv)
+                list <- getGoalList ls allGoals allNodes
+                let ll= getEdgeList list 
+                let result = automaticHideTheoremShiftFromList ln ll libEnv
+                let newGoalList = createAllGoalsList ln result
+                return ((Env ln result):(AllGoals newGoalList):[])
              _   -> return [(OutputErr "Wrong parameters")]
         _:list -> cDgHideThm input ((AllGoals allGoals):list)
         _      -> return [(OutputErr "Wrong parameters")]
@@ -669,10 +742,13 @@ cDgInferBasic input status =
               return []
    Right param -> 
     case status of
-     (AllGoals allGoals):_ -> 
+     (Env ln libEnv):_ -> 
        case param of
-        (Goals ls):_ -> let ll = getGoalList ls allGoals
-                        in  return ((Selected ll):[])
+        (Goals ls):_ -> do
+                         let allNodes = convToGoal $ 
+                               labNodes (lookupDGraph ln libEnv)
+                         ll <- getGoalList ls allNodes allNodes
+                         return ((Selected ll):[])
         _            -> return [(OutputErr "Wrong parameters")]
      _:l               -> cDgInferBasic input l
      []                -> return [(OutputErr "Wrong parameters")]
