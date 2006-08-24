@@ -848,8 +848,23 @@ cShowNodeInfo _ arg
 cShowNodeConcept :: String -> [Status] -> IO [Status]
 cShowNodeConcept _ arg
   = case arg of 
-     (Selected xx):_ -> do
-                         printNodeTaxonomyFromList KConcept xx
+     (Selected xx):l -> do
+           case l of 
+              (Env ln libEnv):_ -> do
+                         printNodeTaxonomyFromList KConcept xx libEnv ln
+                         return []
+              _:ll   -> cShowNodeConcept "" ((Selected xx):ll)
+              []     -> do
+                         putStr "Error, no library loaded !\n"
+                         return []
+     (Env ln libEnv):l -> do
+           case l of
+              (Selected xx):_ -> do
+                         printNodeTaxonomyFromList KConcept xx libEnv ln
+                         return []
+              _:ll   -> cShowNodeConcept "" ((Env ln libEnv):ll)
+              []     -> do
+                         putStr "Error, no nodes selected !\n"
                          return []
      _:l             -> cShowNodeConcept "" l
      []              -> do
@@ -859,8 +874,23 @@ cShowNodeConcept _ arg
 cShowNodeTaxonomy ::String -> [Status] -> IO [Status]
 cShowNodeTaxonomy _ arg
   = case arg of
-     (Selected xx):_ -> do
-                         printNodeTaxonomyFromList KSubsort xx
+     (Selected xx):l -> do
+           case l of 
+              (Env ln libEnv):_ -> do
+                         printNodeTaxonomyFromList KSubsort xx libEnv ln
+                         return []
+              _:ll   -> cShowNodeTaxonomy "" ((Selected xx):ll)
+              []     -> do
+                         putStr "Error, no library loaded !\n"
+                         return []
+     (Env ln libEnv):l -> do
+           case l of 
+              (Selected xx):_ -> do
+                         printNodeTaxonomyFromList KSubsort xx libEnv ln
+                         return []
+              _:ll   -> cShowNodeTaxonomy "" ((Env ln libEnv):ll)
+              []     -> do 
+                         putStr "Error, no nodes selected !\n"
                          return []
      _:l             -> cShowNodeTaxonomy "" l
      []              -> do 

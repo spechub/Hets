@@ -20,6 +20,7 @@ module PGIP.Common where
 
 import Syntax.AS_Library
 import Static.DevGraph
+import Static.DGToSpec
 import Proofs.InferBasic
 import Common.DocUtils
 import Common.Result
@@ -560,17 +561,17 @@ printNodeInfo x =
 
 -- The function 'printNodeTaxonomyFromList' given a GraphGoals list generates
 -- the 'kind' type of Taxonomy Graphs of all goal nodes from the list
-printNodeTaxonomyFromList :: TaxoGraphKind -> [GraphGoals]-> IO()
-printNodeTaxonomyFromList kind ls =
+printNodeTaxonomyFromList :: TaxoGraphKind -> [GraphGoals]->LibEnv -> LIB_NAME -> IO()
+printNodeTaxonomyFromList kind ls libEnv ln =
              case ls of
                    (GraphNode x):l -> 
                        do 
-                          printNodeTaxonomy kind (GraphNode x)
-                          result <- printNodeTaxonomyFromList kind l
+                          printNodeTaxonomy kind (GraphNode x) libEnv ln
+                          result <- printNodeTaxonomyFromList kind l libEnv ln
                           return result
                    _:l -> 
                        do
-                          result <- printNodeTaxonomyFromList kind l
+                          result <- printNodeTaxonomyFromList kind l libEnv ln
                           return result
                    []  -> return ()
 
@@ -578,13 +579,23 @@ printNodeTaxonomyFromList kind ls =
 -- The function 'printNodeTaxonomy' given just a GraphGoal generates
 -- the 'kind' type of Taxonomy Graphs if the goal is a node otherwise
 -- it prints on the screen 'Not a node !'
-printNodeTaxonomy :: TaxoGraphKind -> GraphGoals -> IO()
-printNodeTaxonomy kind x =
+printNodeTaxonomy :: TaxoGraphKind -> GraphGoals -> LibEnv -> LIB_NAME ->IO()
+printNodeTaxonomy kind x libEnv ln =
    case x of 
-     GraphNode (_, (DGNode tname thTh _ _ _ _ _)) -> 
+     GraphNode (n, (DGNode tname _ _ _ _ _ _)) -> do
+             let theTh = computeTheory libEnv ln n
+             case theTh of
+                Result _ (Just thTh) ->
                            displayGraph kind (showName tname) thTh
-     GraphNode (_, (DGRef tname _ _ thTh _ _ )) ->
+                Result _ _ ->
+                           putStr "Error computing the theory of the node!\n"
+     GraphNode (n, (DGRef tname _ _ _ _ _ )) -> do
+             let theTh = computeTheory libEnv ln n
+             case theTh of 
+                Result _ (Just thTh) -> 
                            displayGraph kind (showName tname) thTh 
+                Result _ _ ->
+                           putStr "Error computing the theory of the node!\n"
      _            -> putStr "Not a node!\n"
         
 -- The function proveNodes applies basicInferenceNode for proving to
