@@ -280,7 +280,8 @@ prefixType wd
      "dg comp" -> 1
      "dg comp-new" -> 1
      "dg hide-thm" -> 1
-     "dg basic"  -> 1
+     "dg basic"  -> 2
+     "node-number" -> 2
      _           -> 0
 
 -- The function checks if a word still has white spaces or not
@@ -293,8 +294,8 @@ hasWhiteSpace ls
        '\n':_-> True
        '\r':_-> True
        ';':_ -> True
-       '-':_ -> True
-       '>':_ -> True
+--     '-':_ -> True
+--     '>':_ -> True
        ',':_ -> True
        _:l   -> hasWhiteSpace l
 
@@ -343,6 +344,10 @@ pgipCompletionFn state wd
         pref <- getShortPrefix wd []
         if ((prefixType pref)> 0) 
          then do
+          let values = if ((prefixType pref)==1)
+                                then (labNodes dgraph)
+                                else
+                                 (labNodes dgraph)
           let list = checkWord (getSuffix wd) (labNodes dgraph)
           if (list=="") then return []
                         else return (addWords (words list) (getLongPrefix wd []))
@@ -532,7 +537,27 @@ printInfoFromList ls allNodes =
               return result
         []              -> return ()
 
+printNodeNumberFromList :: [GraphGoals]-> IO()
+printNodeNumberFromList ls =
+  case ls of 
+     (GraphNode x):l -> do
+               printNodeNumber (GraphNode x)
+               putStr "\n"
+               result <- printNodeNumberFromList l
+               return result
+     _:l        -> do 
+               result <- printNodeNumberFromList l
+               return result
+     []         -> return ()
 
+printNodeNumber:: GraphGoals -> IO()
+printNodeNumber x =
+  case x of
+     GraphNode (nb, (DGNode tname _ _ _ _ _ _)) ->
+                  putStr ("Node "++(showName tname)++" has number "++(show nb))
+     GraphNode (nb, (DGRef tname _ _ _ _ _)) ->
+                  putStr ("Node "++(showName tname)++" has number "++(show nb))
+     _               -> putStr "Not a node !\n"
 
 -- The function 'printNodeInfoFromList' given a GraphGoal list prints the 
 -- name of all node goals

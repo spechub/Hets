@@ -899,7 +899,8 @@ lookupTheoryOfNode proofStatusRef descr dgAndabstrNodeMap _ = do
   gth <- computeTheory libEnv ln node
   return (node, gth)
     ) of
-   r -> return r
+   r -> do
+         return r
 
 {- | outputs the local axioms of a node in a window;
 used by the node menu defined in initializeGraph-}

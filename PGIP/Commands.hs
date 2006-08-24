@@ -738,7 +738,7 @@ cDgInferBasic input status =
   let r=runParser (scanCommand ["GOALS"]) (emptyAnnos ()) "" input
   case r of
    Left _ -> do
-              putStr "\n Error parsing the goal list ! \n"
+              putStr "\n Error parsing the node list ! \n"
               return []
    Right param -> 
     case status of
@@ -921,3 +921,26 @@ cProveAll _ arg =
          _                 -> return [OutputErr "Wrong parameters"]
     _:l                -> cProveAll "" l
     _                  -> return [OutputErr "Wrong parameters"]
+
+cViewNodeNumber :: String -> [Status] -> IO [Status]
+cViewNodeNumber input status =
+  do
+  let r=runParser (scanCommand ["GOALS"]) (emptyAnnos ()) "" input
+  case r of
+   Left _ -> do
+              putStr "\n Error parsing the node list ! \n"
+              return []
+   Right param -> 
+    case status of
+     (Env ln libEnv):_ -> 
+       case param of
+        (Goals ls):_ -> do
+                         let allNodes = convToGoal $ 
+                               labNodes (lookupDGraph ln libEnv)
+                         ll <- getGoalList ls allNodes allNodes
+                         printNodeNumberFromList ll 
+                         return []
+        _            -> return [(OutputErr "Wrong parameters")]
+     _:l               -> cViewNodeNumber input l
+     []                -> return [(OutputErr "Wrong parameters")]
+       

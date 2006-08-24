@@ -221,6 +221,13 @@ shellProver input
      val <- getShellSt >>= \state -> liftIO(cProver input state)
      modifyShellSt (update val)
 
+shellNodeNumber :: String -> Sh [Status] ()
+shellNodeNumber input
+   = do
+     val <- getShellSt >>= \state -> liftIO(cViewNodeNumber input state)
+     modifyShellSt (update val)
+
+
 shellDetails :: Sh [Status] ()
 shellDetails 
     = shellPutStr printDetails
@@ -309,6 +316,8 @@ pgipShellCommands
                       "selects a prover")
                     : (cmd "details" shellDetails
                      "view details about the gramma of this interactive mode")
+                    : (cmd "node-number" shellNodeNumber
+                      " view node number")
                     : [] 
 
 
