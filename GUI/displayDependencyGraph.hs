@@ -14,11 +14,9 @@ module Main where
 import DaVinciGraph
 import GraphDisp
 import GraphConfigure
-import qualified HTk
+import Events
+import Destructible
 
--- for windows display
-import TextDisplay
-import Configuration
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Rel as Rel
 
@@ -55,9 +53,8 @@ main = do
                           Color "green" $$$
                           emptyArcTypeParms
     subArcType <- newArcType depG subArcTypeParms
-    HTk.initHTk [HTk.withdrawMainWin]
     redraw depG
-    HTk.finishHTk
+    sync(destroyed depG)
     -- putStrLn $ show $ zip fln sss
 
 getContent3 :: String -> String
