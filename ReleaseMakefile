@@ -4,7 +4,7 @@
 # Year:   2004
 
 # This Makefile will compile the hets sources
-# note that you'll need the "uni" library residing in ".." 
+# note that you'll need the "uni" library residing in ".."
 # from http://www.informatik.uni-bremen.de/~ger/cvs/CVS.html
 
 ####################################################################
@@ -50,6 +50,13 @@ hets: critical_clean
 	$(HC) --make -O -optc-O2 -o $@ hets.hs $(HC_OPTS) -w
 	strip hets
 
+hetsOnMac:
+	$(RM) hets
+	/usr/local/bin/ghc --make -O -o hets hets.hs $(HC_OPTS) -w \
+            -optc-I/home/mac-bkb/include \
+            -optl-L/home/mac-bkb/static-lib \
+            -optl-lreadline5 -optl-lncurses
+
 hets.cgi: critical_clean
 	$(HC) --make -O -optc-O2 GUI/hets_cgi.hs -o $@ $(HC_OPTS1) -w
 	strip hets.cgi
@@ -59,17 +66,17 @@ hets.cgi: critical_clean
 ### clean up
 
 ### remove binaries
-bin_clean: 
+bin_clean:
 	$(RM) hets hets.cgi
 
 ### remove *.hi and *.o
-o_clean: 
+o_clean:
 	find . -name \*.o -o -name \*.hi | xargs $(RM) -r
 
 # cleaning needed due to recompilation problem with and without uni
-critical_clean: 
+critical_clean:
 	$(RM) ATC/AS_Structured.o ATC/AS_Architecture.o ATC/AS_Library.o \
 	     Isabelle/Logic_Isabelle.o SPASS/Logic_SPASS.o \
              Driver/WriteFn.o GUI/Utils.o GUI/ShowGraph.o
 
-clean: o_clean bin_clean 
+clean: o_clean bin_clean
