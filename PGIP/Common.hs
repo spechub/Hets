@@ -334,11 +334,11 @@ pgipCompletionFn state wd
     (Env ln libEnv):_ -> do
         let dgraph= lookupDGraph ln libEnv
         pref <- getPrefix wd []
---        putStr (pref++"\n")
+        putStr ("HERE ::"++pref++"\n")
         if ((prefixType pref)> 0) 
          then do
           let list = checkWord (getSuffix wd) (labNodes dgraph)
---          putStr ("::"++(getSuffix wd)++"\n")
+          putStr ("::"++(getSuffix wd)++"\n")
           if (list=="") then return []
                         else return (addWords (words list) (pref++" "))
          else
