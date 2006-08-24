@@ -307,17 +307,23 @@ getSuffix wd
 
 -- The function given a string tries to obtain the command
 -- name and remove the incomplete word from the end
-getPrefix :: String -> String -> IO String
-getPrefix wd tmp
+getShortPrefix :: String -> String -> IO String
+getShortPrefix wd tmp
  = if (hasWhiteSpace wd) 
          then if (hasWhiteSpace (tail wd))
                   then do
-                        getPrefix (tail wd) ((head wd):tmp)
+                        getShortPrefix (tail wd) ((head wd):tmp)
                   else if ((prefixType (reverseOrder tmp [])) > 0)
                              then return (reverseOrder tmp [])
-                             else getPrefix tmp []
+                             else getShortPrefix (reverseOrder tmp []) []
         else return []
 
+
+getLongPrefix :: String -> String -> String
+getLongPrefix wd tmp
+ = if (hasWhiteSpace wd)
+          then getLongPrefix (tail wd) ((head wd):tmp)
+          else reverseOrder tmp []
 -- The function simply adds the 'wd' string as a prefix to any
 -- word from the given list
 addWords ::[String] -> String -> [String]
@@ -333,14 +339,12 @@ pgipCompletionFn state wd
  = case state of
     (Env ln libEnv):_ -> do
         let dgraph= lookupDGraph ln libEnv
-        pref <- getPrefix wd []
-        putStr ("HERE ::"++pref++"\n")
+        pref <- getShortPrefix wd []
         if ((prefixType pref)> 0) 
          then do
           let list = checkWord (getSuffix wd) (labNodes dgraph)
-          putStr ("::"++(getSuffix wd)++"\n")
           if (list=="") then return []
-                        else return (addWords (words list) (pref++" "))
+                        else return (addWords (words list) (getLongPrefix wd []))
          else
           return []
     _:l               ->    pgipCompletionFn l wd
