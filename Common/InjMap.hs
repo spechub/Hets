@@ -9,78 +9,77 @@ Portability :  portable
 
 injective maps
 -}
+
 module Common.InjMap
-	    (	InjMap
-	      , empty
-	      , insert
-	      , delete
-	      , transpose
-	      , lookupWithA
-	      , lookupWithB
-	      , getAToB
-	      , getBToA
-	    )
-            where
+    ( InjMap
+    , empty
+    , member
+    , insert
+    , delete
+    , lookupWithA
+    , lookupWithB
+    , getAToB
+    , getBToA
+    ) where
 
 import qualified Common.Lib.Map as Map
 
--- * the data type of injective map
+-- | the data type of injective maps
+data InjMap a b = InjMap
+    { getAToB :: Map.Map a b -- ^ the part of direction a->b in the map
+    , getBToA :: Map.Map b a -- ^ the part of direction b->a in the map
+    } deriving (Show, Eq, Ord)
 
-data InjMap a b = InjMap (Map.Map a b) (Map.Map b a) deriving Show
+-- * the visible interface
 
--- * the visible interface 
-
--- | gets an empty injective map
+-- | get an empty injective map
 empty :: InjMap a b
 empty = InjMap Map.empty Map.empty
 
--- | insert a pair to the given injective map. The existed key and the corresponding content would be overridden 
+{- | insert a pair into the given injective map. An existing key and the
+corresponding content will be overridden. -}
 insert :: (Ord a, Ord b) => a -> b -> InjMap a b -> InjMap a b
---insert a b (InjMap m n) = InjMap (Map.insert a b m) (Map.insert b a n)
-insert a b (InjMap m n) = case (Map.lookup a m) of
-			       Just x -> insert a b (delete a x (InjMap m n))
-			       Nothing -> case (Map.lookup b n) of
-					     Just y -> insert a b (delete y b (InjMap m n))
-					     Nothing -> InjMap (Map.insert a b m) (Map.insert b a n)
+insert a b i@(InjMap m n) = case Map.lookup a m of
+    Just x -> insert a b $ delete a x i
+    Nothing -> case Map.lookup b n of
+        Just y -> insert a b $ delete y b i
+        Nothing -> InjMap (Map.insert a b m) (Map.insert b a n)
 
--- | delete the pair with the given keys in the injective map.
+{- | delete the pair with the given key in the injective
+map. Possibly two pairs may be deleted if the pair is not a member. -}
 delete :: (Ord a, Ord b) => a -> b -> InjMap a b -> InjMap a b
-delete a b (InjMap m n) = InjMap (Map.delete a m) (Map.delete b n) 
+delete a b i@(InjMap m n) = case Map.lookup a m of
+    Just x -> delete a b $ delete a x i
+    Nothing -> case Map.lookup b n of
+        Just y -> delete a b $ delete y b i
+        Nothing -> InjMap (Map.delete a m) (Map.delete b n)
 
--- | transposing :)
-transpose :: InjMap a b -> InjMap b a
-transpose (InjMap n m) = (InjMap m n)
+-- | check membership of an injective pair
+member :: (Ord a, Ord b) => a -> b -> InjMap a b -> Bool
+member a b (InjMap m n) = case (Map.lookup a m, Map.lookup b n) of
+   (Just x, Just y) -> if x == b && y == a then True
+                       else error "InjMap.member1"
+   (Nothing, Nothing) -> False
+   _ -> error "InjMap.member2"
 
--- | look up the content with the given key in the direction of a->b in the injective map
+{- | look up the content with the given key in the direction of a->b
+in the injective map. -}
 lookupWithA :: (Ord a, Ord b) => a -> InjMap a b -> Maybe b
-lookupWithA x (InjMap m n) = case (Map.lookup x m) of
-				Just y -> 
-				     case (Map.lookup y n) of
-					Just temp -> 
-					   if(temp==x) then Just y
-					   else error "Common.InjMap.lookupWithA: the injectivity is destroyed" 
-					Nothing -> error "Common.InjMap.lookupWithA: the inijectivity is destroyed"   
-				Nothing -> Nothing
+lookupWithA x (InjMap m n) = case Map.lookup x m of
+    Just y -> case Map.lookup y n of
+        Just temp -> if temp == x then Just y
+                     else error "InjMap.lookupWithA1"
+        Nothing -> error "InjMap.lookupWithA2"
+    Nothing -> Nothing
 
--- | look up the content with the given key in the direction of b->a in the injective map
+-- the errors indicate that the inijectivity is destroyed
+
+{- | look up the content with the given key in the direction of b->a
+in the injective map. -}
 lookupWithB :: (Ord a, Ord b) => b -> InjMap a b -> Maybe a
-lookupWithB y (InjMap m n) = case (Map.lookup y n) of
-				Just x -> 
-				     case (Map.lookup x m) of
-					Just temp ->
-					   if(temp==y) then Just x
-					   else error "InjMap.lookupWithA: the injectivity is destroyed"
-					Nothing -> error "InjMap.lookupWithB: the inijectivity is destroyed"
-				Nothing -> Nothing
-
--- | get the part of direction a->b in the map
-getAToB :: (Ord a, Ord b) => InjMap a b -> Map.Map a b
-getAToB (InjMap m n) = m
-
--- | get the part of direction b->a in the map
-getBToA :: (Ord a, Ord b) => InjMap a b -> Map.Map b a
-getBToA (InjMap m n) = n
-
--- | just for test :)
-a :: InjMap Int String
-a =  empty
+lookupWithB y (InjMap m n) = case Map.lookup y n of
+    Just x -> case Map.lookup x m of
+        Just temp -> if temp == y then Just x
+                     else error "InjMap.lookupWithB1"
+        Nothing -> error "InjMap.lookupWithB2"
+    Nothing -> Nothing
