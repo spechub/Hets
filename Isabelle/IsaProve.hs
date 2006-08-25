@@ -235,14 +235,12 @@ isSimpRuleSen sen = case sen of
 isSimpRule :: Term -> Bool
 -- only universal quantifications
 isSimpRule trm = case trm of
-    MixfixApp { funId = Const {termName = VName { new = q }}
-               , argIds = [arg@Abs{}]}
-        | q == exS || q == ex1S -> False
-        | q == allS  -> isSimpRule (termId arg)
-    MixfixApp { funId = Const {termName = VName { new = q }}
-              , argIds = [a1, a2] }
-        | q == eq -> sizeOfTerm a1 > sizeOfTerm a2
-        | q == impl -> sizeOfTerm a1 < sizeOfTerm a2
+    App (Const q _) arg@Abs{} _
+        | new q == exS || new q == ex1S -> False
+        | new q == allS  -> isSimpRule (termId arg)
+    App (App (Const q _) a1 _) a2 _
+        | new q == eq -> sizeOfTerm a1 > sizeOfTerm a2
+        | new q == impl -> sizeOfTerm a1 < sizeOfTerm a2
     Paren t -> isSimpRule t
     _ -> True
 
@@ -250,8 +248,6 @@ sizeOfTerm :: Term -> Int
 sizeOfTerm trm = case trm of
     Abs { termId = t } -> sizeOfTerm t + 1
     App { funId = t1, argId = t2 } -> sizeOfTerm t1 + sizeOfTerm t2
-    MixfixApp { funId = t1, argIds = ts } ->
-        sizeOfTerm t1 + sum (map sizeOfTerm ts)
     If { ifId = t1, thenId = t2, elseId = t3 } ->
         sizeOfTerm t1 + max (sizeOfTerm t2) (sizeOfTerm t3)
     Case { termId = t1, caseSubst = cs } ->

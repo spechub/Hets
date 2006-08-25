@@ -590,15 +590,15 @@ mkResFun c = case c of
 
 isEquallyLifted :: Isa.Term -> Isa.Term -> Maybe (Isa.Term, Isa.Term, Isa.Term)
 isEquallyLifted l r = case (l, r) of
-    (MixfixApp ft@(Const f _) [la] _,
-     MixfixApp (Const g _) [ra] _)
+    (App ft@(Const f _) la _,
+     App (Const g _) ra _)
         | f == g && elem (new f) [someS, "option2bool", "bool2option"]
             -> Just (ft, la, ra)
     _ -> Nothing
 
 isLifted :: Isa.Term -> Bool
 isLifted t = case t of
-    MixfixApp (Const f _) [_] _ | new f == someS -> True
+    App (Const f _) _ _ | new f == someS -> True
     _ -> False
 
 flipOp :: Isa.Term
@@ -606,16 +606,16 @@ flipOp = conDouble "flip"
 
 mkTermAppl :: Isa.Term -> Isa.Term -> Isa.Term
 mkTermAppl fun arg = case (fun, arg) of
-      (MixfixApp (Const uc _) [b] c, Tuplex [l, r] _)
+      (App (Const uc _) b _, Tuplex [l, r] _)
           | new uc == uncurryOpS
               -> case (isEquallyLifted l r, b) of
                    (Just (_, la, ra), Const bin _) | new bin == eq ->
-                       MixfixApp b [la, ra] c
+                       mkTermAppl (mkTermAppl b la) ra
                    _ -> mkTermAppl (mkTermAppl b l) r
-      (MixfixApp (Const mp _) [f] _, Tuplex [a, b] c)
+      (App (Const mp _) f _, Tuplex [a, b] c)
           | new mp == "mapFst" -> Tuplex [mkTermAppl f a, b] c
           | new mp == "mapSnd" -> Tuplex [a, mkTermAppl f b] c
-      (MixfixApp (Const mp1 _) [f] _, MixfixApp u@(Const mp2 _) [g] _)
+      (App (Const mp1 _) f _, App u@(Const mp2 _) g _)
           | new mp1 == "liftSnd" && new mp2 == uncurryOpS ->
               mkTermAppl u $
               mkTermAppl (mkTermAppl (conDouble "liftCurSnd") f) g
@@ -630,7 +630,7 @@ mkTermAppl fun arg = case (fun, arg) of
           | new mp == "whenElseOp" -> case isEquallyLifted a c of
               Just (f, na, nc) -> mkTermAppl f $ If b na nc d
               Nothing -> If b a c d
-      (MixfixApp (Const mp _) [f] c, _)
+      (App (Const mp _) f c, _)
           | new mp == "liftUnit2bool" -> let af = mkTermAppl f unitOp in
              case arg of
                Const ma _ | new ma == "True" -> af
@@ -641,20 +641,20 @@ mkTermAppl fun arg = case (fun, arg) of
                Const ma _ | new ma == "True" -> af
                           | new ma == "False" -> noneOp
                _ -> If arg af noneOp c
-      (MixfixApp (Const mp _) [_] _, _)
+      (App (Const mp _) _ _, _)
           | new mp == "liftUnit2unit" -> arg
           | new mp == "lift2unit" -> mkTermAppl (conDouble "option2bool") arg
-      (MixfixApp (MixfixApp (Const cmp _) [f] _) [g] c, _)
+      (App (App (Const cmp _) f _) g c, _)
           | new cmp == compS -> mkTermAppl f $ mkTermAppl g arg
           | new cmp == "curryOp" -> mkTermAppl f $ Tuplex [g, arg] c
           | new cmp == "flip" -> mkTermAppl (mkTermAppl f arg) g
-      (MixfixApp (MixfixApp (Const cmp _) [f] _) [g] _, _)
+      (App (App (Const cmp _) f _) g _, _)
           | new cmp == "liftCurFst" ->
               termAppl (termAppl compOp $ termAppl (termAppl flipOp f) arg)
                   $ termAppl flipOp g
           | new cmp == "liftCurSnd" ->
               mkTermAppl f $ mkTermAppl g arg
-      (Const d _, MixfixApp (Const sm _) [a] _)
+      (Const d _, App (Const sm _) a _)
           | new d == "defOp" && new sm == someS -> true
           | new d == "option2bool" && new sm == someS -> true
           | new d == "option2bool" && new sm == "bool2option"

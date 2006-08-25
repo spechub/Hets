@@ -107,7 +107,7 @@ isaEqPrio = 2 -- left assoc
 
 -- | function application
 termAppl :: Term -> Term -> Term
-termAppl t1 t2 = MixfixApp t1 [t2] NotCont
+termAppl t1 t2 = App t1 t2 NotCont
 
 -- | construct a constant with no type
 con :: VName -> Term
@@ -222,7 +222,7 @@ compV = VName compS $ Just $ AltSyntax "(_ o/ _)" [55, 56] 55
 
 -- | apply VName operator to two term
 binVNameAppl :: VName -> Term -> Term -> Term
-binVNameAppl v t1 t2 = MixfixApp (con v) [t1, t2] NotCont
+binVNameAppl v t1 t2 = termAppl (termAppl (con v) t1) t2
 
 -- * binary junctors
 binConj, binDisj, binImpl, binEqv, binEq :: Term -> Term -> Term

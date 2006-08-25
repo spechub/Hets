@@ -91,9 +91,6 @@ data Term =
       | App  { funId :: Term,
                argId :: Term,
                continuity   :: Continuity }    -- application
-      | MixfixApp { funId :: Term,
-                    argIds :: [Term],
-                    continuity   :: Continuity } -- mixfix application
       | If { ifId   :: Term,
              thenId :: Term,
              elseId :: Term,

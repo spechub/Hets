@@ -214,6 +214,27 @@ flatTuplex cs c = case cs of
            Tuplex rs@(_ : _ : _) d | d == c -> init cs ++ flatTuplex rs d
            _ -> cs
 
+printMixfixAppl :: Bool -> Continuity -> Term -> [Term] -> (Doc, Int)
+printMixfixAppl b c f args = case f of
+        Const (VName n (Just (AltSyntax s is i))) _ -> let l = length is in
+            case compare l $ length args of
+               EQ -> if b || n == cNot || isPrefixOf "op " n then
+                   (fsep $ replaceUnderlines s
+                     $ zipWith (printParenTerm b) is args, i)
+                   else printApp b c f args
+               LT -> let (fargs, rargs) = splitAt l args
+                         (d, p) = printMixfixAppl b c f fargs
+                         e = if p < maxPrio - 1 then parensForTerm d else d
+                     in printDocApp b c e rargs
+               GT -> printApp b c f args
+        Const vn _ | new vn `elem` [allS, exS, ex1S] -> case args of
+            [Abs v _ t _] -> (fsep [text (new vn) <+> printPlainTerm b v
+                    <> text "."
+                    , printPlainTerm b t], lowPrio)
+            _ -> printApp b c f args
+        App g a d | c == d -> printMixfixAppl b c g (a : args)
+        _ -> printApp b c f args
+
 -- | print the term using the alternative syntax (if True)
 printTrm :: Bool -> Term -> (Doc, Int)
 printTrm b trm = case trm of
@@ -260,34 +281,19 @@ printTrm b trm = case trm of
     Bottom -> (text "UU", maxPrio)
     Wildcard -> error "Isa.Term.Wildcard not used"
     Paren t -> (parensForTerm $ printPlainTerm b t, maxPrio)
-    App f a c -> printTrm b $ MixfixApp f [a] c
-    MixfixApp f args c -> case f of
-        Const (VName n (Just (AltSyntax s is i))) _ -> let l = length is in
-            case compare l $ length args of
-               EQ -> if b || n == cNot || isPrefixOf "op " n then
-                   (fsep $ replaceUnderlines s
-                     $ zipWith (printParenTerm b) is args, i)
-                   else printApp b c f args
-               LT -> let (fargs, rargs) = splitAt l args in
-                     printApp b c (MixfixApp f fargs c) rargs
-               GT -> printApp b c f args
-        Const vn _ | new vn `elem` [allS, exS, ex1S] -> case args of
-            [Abs v _ t _] -> (fsep [text (new vn) <+> printPlainTerm b v
-                    <> text "."
-                    , printPlainTerm b t], lowPrio)
-            _ -> printApp b c f args
-        MixfixApp g margs@(_ : _) d | c == d ->
-            printTrm b $ MixfixApp g (margs ++ args) d
-        App g a d | c == d -> printTrm b $ MixfixApp g (a : args) d
-        _ -> printApp b c f args
+    App f a c -> printMixfixAppl b c f [a]
 
 printApp :: Bool -> Continuity -> Term -> [Term] -> (Doc, Int)
 printApp b c t l = case l of
      [] -> printTrm b t
-     _ -> (fsep $ (case c of
+     _ -> printDocApp b c (printParenTerm b (maxPrio - 1) t) l
+
+printDocApp :: Bool -> Continuity -> Doc -> [Term] -> (Doc, Int)
+printDocApp b c d l =
+    (fsep $ (case c of
           NotCont -> id
           IsCont -> punctuate $ text " $")
-          $ printParenTerm b (maxPrio - 1) t : map (printParenTerm b maxPrio) l
+          $ d : map (printParenTerm b maxPrio) l
           , maxPrio - 1)
 
 replaceUnderlines :: String -> [Doc] -> [Doc]
