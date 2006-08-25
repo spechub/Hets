@@ -138,7 +138,7 @@ get_graphid gid gv = do
   (gs,ev_cnt) <- readIORef gv
   case lookup gid gs of
        Just g -> return $ theGraph g
-       Nothing -> error "get_graphid: graph does not exists"
+       Nothing -> error "get_graphid: graph does not exist"
 
 -- These are the operations of the interface
 
