@@ -48,19 +48,15 @@ insert a b i@(InjMap m n) = case Map.lookup a m of
 {- | delete the pair with the given key in the injective
 map. Possibly two pairs may be deleted if the pair is not a member. -}
 delete :: (Ord a, Ord b) => a -> b -> InjMap a b -> InjMap a b
-delete a b i@(InjMap m n) = case Map.lookup a m of
-    Just x -> delete a b $ delete a x i
-    Nothing -> case Map.lookup b n of
-        Just y -> delete a b $ delete y b i
-        Nothing -> InjMap (Map.delete a m) (Map.delete b n)
+delete a b (InjMap m n) =
+       InjMap (Map.delete (Map.findWithDefault a b n) $ Map.delete a m)
+              (Map.delete (Map.findWithDefault b a m) $ Map.delete b n)
 
 -- | check membership of an injective pair
 member :: (Ord a, Ord b) => a -> b -> InjMap a b -> Bool
 member a b (InjMap m n) = case (Map.lookup a m, Map.lookup b n) of
-   (Just x, Just y) -> if x == b && y == a then True
-                       else error "InjMap.member1"
-   (Nothing, Nothing) -> False
-   _ -> error "InjMap.member2"
+   (Just x, Just y) | x == b && y == a -> True
+   _ -> False
 
 {- | look up the content with the given key in the direction of a->b
 in the injective map. -}
