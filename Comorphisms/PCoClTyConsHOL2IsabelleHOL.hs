@@ -459,6 +459,9 @@ mapFun mf = case mf of
     MapSnd -> mapSnd
     MapSome -> mapSome
 
+compOp :: Isa.Term
+compOp = con compV
+
 convFun :: ConvFun -> Isa.Term
 convFun cvf = case cvf of
     IdOp -> idOp
@@ -476,17 +479,17 @@ convFun cvf = case cvf of
             PartialVal _ -> lift2option
             _ -> lift
     CompFun f1 f2 ->
-        mkTermAppl (mkTermAppl (con compV) $ convFun f1) $ convFun f2
+        mkTermAppl (mkTermAppl compOp $ convFun f1) $ convFun f2
     ConstNil -> constNil
     ConstTrue -> constTrue
     SomeOp -> conSome
     MapFun mf cv -> mkTermAppl (mapFun mf) $ convFun cv
     LiftFun lf cv -> mkTermAppl (liftFun lf) $ convFun cv
-    ArgFun cv -> mkTermAppl argFunOp $ convFun cv
-    ResFun cv -> mkTermAppl (con compV) $ convFun cv
+    ArgFun cv -> mkTermAppl (termAppl flipOp compOp) $ convFun cv
+    ResFun cv -> mkTermAppl compOp $ convFun cv
 
 liftFst, liftSnd, mapFst, mapSnd, mapSome, idOp, bool2option,
-    option2bool, constNil, constTrue, argFunOp,
+    option2bool, constNil, constTrue,
     liftUnit2unit, liftUnit2bool, liftUnit2option, liftUnit, lift2unit,
     lift2bool, lift2option, lift :: Isa.Term
 
@@ -500,7 +503,6 @@ bool2option = conDouble "bool2option"
 option2bool = conDouble "option2bool"
 constNil = conDouble "constNil"
 constTrue = conDouble "constTrue"
-argFunOp = conDouble "flipComp"
 liftUnit2unit = conDouble "liftUnit2unit"
 liftUnit2bool = conDouble "liftUnit2bool"
 liftUnit2option = conDouble "liftUnit2option"
@@ -599,6 +601,9 @@ isLifted t = case t of
     MixfixApp (Const f _) [_] _ | new f == someS -> True
     _ -> False
 
+flipOp :: Isa.Term
+flipOp = conDouble "flip"
+
 mkTermAppl :: Isa.Term -> Isa.Term -> Isa.Term
 mkTermAppl fun arg = case (fun, arg) of
       (MixfixApp (Const uc _) [b] c, Tuplex [l, r] _)
@@ -610,6 +615,13 @@ mkTermAppl fun arg = case (fun, arg) of
       (MixfixApp (Const mp _) [f] _, Tuplex [a, b] c)
           | new mp == "mapFst" -> Tuplex [mkTermAppl f a, b] c
           | new mp == "mapSnd" -> Tuplex [a, mkTermAppl f b] c
+      (MixfixApp (Const mp1 _) [f] _, MixfixApp u@(Const mp2 _) [g] _)
+          | new mp1 == "liftSnd" && new mp2 == uncurryOpS ->
+              mkTermAppl u $
+              mkTermAppl (mkTermAppl (conDouble "liftCurSnd") f) g
+          | new mp1 == "liftFst" && new mp2 == uncurryOpS ->
+              mkTermAppl u $
+              mkTermAppl (mkTermAppl (conDouble "liftCurFst") f) g
       (Const mp _, Tuplex [a, b] _)
           | new mp == "ifImplOp" -> binImpl b a
           | new mp == "exEqualOp" && (isLifted a || isLifted b) ->
@@ -634,24 +646,20 @@ mkTermAppl fun arg = case (fun, arg) of
           | new mp == "lift2unit" -> mkTermAppl (conDouble "option2bool") arg
       (MixfixApp (MixfixApp (Const cmp _) [f] _) [g] c, _)
           | new cmp == compS -> mkTermAppl f $ mkTermAppl g arg
-          | new cmp == "flipComp" -> mkTermAppl g $ mkTermAppl f arg
-          | new cmp == "flipCurryOp" -> mkTermAppl f $ Tuplex [arg, g] c
           | new cmp == "curryOp" -> mkTermAppl f $ Tuplex [g, arg] c
           | new cmp == "flip" -> mkTermAppl (mkTermAppl f arg) g
-      (MixfixApp (MixfixApp (Const cmp _) [f] _) [g] _,
-       Tuplex [a, b] _)
-          | new cmp == "liftFst" -> mkTermAppl (mkTermAppl f
-                (mkTermAppl (mkTermAppl (conDouble "flipCurryOp") g) b)) a
-          | new cmp == "liftSnd" -> mkTermAppl (mkTermAppl f
-                (mkTermAppl (mkTermAppl (conDouble "curryOp") g) a)) b
+      (MixfixApp (MixfixApp (Const cmp _) [f] _) [g] _, _)
+          | new cmp == "liftCurFst" ->
+              termAppl (termAppl compOp $ termAppl (termAppl flipOp f) arg)
+                  $ termAppl flipOp g
+          | new cmp == "liftCurSnd" ->
+              mkTermAppl f $ mkTermAppl g arg
       (Const d _, MixfixApp (Const sm _) [a] _)
           | new d == "defOp" && new sm == someS -> true
           | new d == "option2bool" && new sm == someS -> true
           | new d == "option2bool" && new sm == "bool2option"
             || new d == "bool2option" && new sm == "option2bool" -> a
           | new d == "curryOp" && new sm == uncurryOpS -> a
-          | new d == "flipCurryOp" && new sm == uncurryOpS ->
-              mkTermAppl (conDouble "flip") a
       (Const i _, _)
           | new i == "bool2option" ->
               let tc = mkTermAppl conSome $ unitOp
