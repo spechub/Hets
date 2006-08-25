@@ -33,7 +33,7 @@ import Data.Graph.Inductive.Query.DFS
 
 import qualified Taxonomy.AbstractGraphView as A
 
-displayClassGraph :: MMiSSOntology -> Maybe String -> IO ()
+displayClassGraph :: MMiSSOntology -> Maybe String -> IO A.OurGraph
 displayClassGraph onto startClass =
   do main <- H.initHTk []
      ginfo <- A.initgraphs
@@ -68,7 +68,8 @@ displayClassGraph onto startClass =
      updateDaVinciGraph classGraph gid ginfo
      setEmptyRelationSpecs gid ginfo onto
      A.Result gid _ <- A.redisplay gid ginfo
-     return()
+     graph <- A.get_graphid gid ginfo
+     return graph
 --     A.Result eid err2 <- addlink gid "relation" "RelationTitle" nid1 nid2 ginfo
 --     putStr (show ontology)
 --     getLine

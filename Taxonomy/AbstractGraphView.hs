@@ -138,6 +138,13 @@ fetch_graph gid gv delete cmd =
 
 -- These are the operations of the interface
 
+get_graphid :: Descr -> GraphInfo -> IO OurGraph
+get_graphid gid gv = do
+  (gs,ev_cnt) <- readIORef gv
+  case lookup gid gs of
+       Just g -> return $ theGraph g
+       Nothing -> error "get_graphid: graph does not exist"
+
 
 initgraphs :: IO GraphInfo
 initgraphs = do newRef <- newIORef ([],0)

@@ -22,6 +22,7 @@ import Static.DevGraph
 
 import Taxonomy.MMiSSOntology
 import Taxonomy.MMiSSOntologyGraph
+import Taxonomy.AbstractGraphView (OurGraph)
 
 import Common.Taxonomy
 import Common.Result as Res
@@ -29,16 +30,19 @@ import Common.Result as Res
 import Driver.Options
 
 displayConceptGraph :: String -> G_theory -> IO ()
-displayConceptGraph  = displayGraph KConcept
+displayConceptGraph s th = do displayGraph KConcept s th
+                              return ()
     -- putStrLn "display of Concept Graph not yet implemented"
 
 displaySubsortGraph :: String -> G_theory -> IO ()
-displaySubsortGraph = displayGraph KSubsort
+displaySubsortGraph s th = do displayGraph KSubsort s th
+                              return ()
 
-displayGraph :: TaxoGraphKind -> String -> G_theory -> IO ()
+displayGraph :: TaxoGraphKind -> String -> G_theory -> IO (Maybe OurGraph)
 displayGraph kind thyName (G_theory lid sign sens) = 
     case theory_to_taxonomy lid kind 
                        (emptyMMiSSOntology thyName AutoInsert) 
                        sign $ toNamedList sens of
-     Res.Result [] (Just taxo) -> displayClassGraph taxo Nothing
-     Res.Result dias _ -> showDiags defaultHetcatsOpts dias
+     Res.Result [] (Just taxo) -> fmap Just $ displayClassGraph taxo Nothing
+     Res.Result dias _ -> do showDiags defaultHetcatsOpts dias
+                             return Nothing

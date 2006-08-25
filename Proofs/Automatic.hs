@@ -47,6 +47,7 @@ import Proofs.StatusUtils
 import Proofs.Global
 import Proofs.Local
 import Proofs.HideTheoremShift
+import PGIP.Utils 
 
 import qualified Common.Lib.Map as Map
 import Data.Maybe (fromJust)
@@ -76,7 +77,7 @@ automatic ln = fromJust . mergeHistories 0 2 .
 
 automaticRecursiveFromList :: LIB_NAME -> Int -> LibEnv -> [LEdge DGLinkLab] -> LibEnv
 automaticRecursiveFromList ln cnt proofstatus ls =
-  let auxProofstatus = automaticApplyRulesToGoals ln ls proofstatus             
+  let auxProofstatus = automaticApplyRulesToGoals ln ls proofstatus rulesWithGoals
       finalProofstatus = mergeHistories cnt noRulesWithGoals auxProofstatus
   in case finalProofstatus of
      Nothing -> proofstatus
@@ -84,7 +85,7 @@ automaticRecursiveFromList ln cnt proofstatus ls =
 {- | applies the rules recursively until no further changes can be made -}
 automaticRecursive :: LIB_NAME -> Int -> LibEnv -> LibEnv
 automaticRecursive ln cnt proofstatus =
-  let auxProofstatus = automaticApplyRules ln proofstatus
+  let auxProofstatus = automaticApplyRules ln proofstatus 
       finalProofstatus = mergeHistories cnt noRules auxProofstatus
   in case finalProofstatus of
     Nothing -> proofstatus
@@ -116,8 +117,21 @@ rulesWithGoals =
 noRulesWithGoals :: Int
 noRulesWithGoals = length rulesWithGoals
 
-automaticApplyRulesToGoals :: LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
-automaticApplyRulesToGoals ln ls = foldl (.) id $ map (\f -> f ln ls) rulesWithGoals 
+
+
+automaticApplyRulesToGoals :: LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> 
+                 ([LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> LibEnv])
+                 ->LibEnv
+automaticApplyRulesToGoals ln ls libEnv ll= 
+ case ll of
+     [] -> libEnv
+     f:l-> let nwLibEnv= f ln ls libEnv
+               nwGoalList = createAllGoalsList ln nwLibEnv
+               updateList = extractGoals ls nwGoalList
+           in automaticApplyRulesToGoals ln updateList nwLibEnv l 
+
+  
+
 
 {- | sequentially applies all rules to the given proofstatus,
    ie to the library denoted by the library name of the proofstatus -}

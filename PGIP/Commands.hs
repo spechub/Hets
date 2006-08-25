@@ -31,6 +31,7 @@ import Proofs.TheoremHideShift
 import Common.Taxonomy
 import Data.Maybe
 import PGIP.Common
+import PGIP.Utils
 import Text.ParserCombinators.Parsec
 import Common.Lexer
 import Common.AnnoState

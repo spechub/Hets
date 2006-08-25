@@ -26,31 +26,14 @@ import Common.DocUtils
 import Common.Result
 import Common.Taxonomy
 import GUI.Taxonomy
-import GUI.ConvertDevToAbstractGraph
 import Data.Maybe
 import Data.Graph.Inductive.Graph
 import Comorphisms.LogicGraph
+import PGIP.Utils
+import Events
+import Destructible
 
-type GDataEdge = LEdge DGLinkLab
-type GDataNode = LNode DGNodeLab
     
--- The datatype GOAL contains all the information read by the parser from the
--- user
-data GOAL = 
-   Node         String   
- | Edge         String   String     
- | LabeledEdge  String   Int     String 
- deriving (Eq,Show)
-
-
--- The parsed goals will be converted afterwards in GraphGoals meaning they 
--- will store the same information as a graph node or edge
-data GraphGoals =
-   GraphNode  GDataNode
- | GraphEdge  GDataEdge
- deriving (Eq,Show)     
-
-
 -- The datatype CmdParam contains all the possible parameters a command of
 -- the interface might have. It is used to create one function that returns
 -- the parameters after parsing no matter what command is parsed
@@ -90,143 +73,8 @@ data Status =
 
 
  
--- The function 'extractGraphNode' extracts the goal node defined by 
--- 'x' (the ID of the node as a string) from the provided list of goals  
-extractGraphNode:: String->[GraphGoals]->IO (Maybe GraphGoals)
-extractGraphNode x allGoals 
-    = case allGoals of
-       []              ->do
-                           return  Nothing
-       (GraphNode (nb,label)):l    -> do
-                                        if (( getDGNodeName label)==x) 
-                                          then return (Just (GraphNode (nb,label)))
-                                          else extractGraphNode x l
-       _:l                           -> extractGraphNode x l
-         
--- The function 'extractGraphEdge' extracts the goal edge determined by 
--- 'x' and 'y' nodes from the provided list of goals
-extractGraphEdge:: String -> String -> [GraphGoals] -> [GraphGoals]
-                    -> IO (Maybe GraphGoals)
-extractGraphEdge x y allGoals ll
-   = case allGoals of
-      []             -> do 
-                       return  Nothing
-      (GraphEdge (xx,yy,label)):l -> do 
-         ttt1 <- extractGraphNode x ll
-         ttt2 <- extractGraphNode y ll
-         case ttt1 of
-           Nothing -> do
-              putStr ("Couldn't find node "++x++"\n"++
-                         "when looking for edge "++x++" -> "++y++"\n")
-              return Nothing 
-           Just t1 -> do
-             case ttt2 of 
-               Nothing -> do
-                  putStr ("Couldn't find node "++y++"\n"++
-                            "when looking for edge "++x++" -> "++y++"\n")
-                  return Nothing
-               Just t2 -> do
-                  case t1 of 
-                    (GraphNode (tmp1_nb, _)) ->
-                       case t2 of
-                        (GraphNode (tmp2_nb, _)) ->
-                          if (tmp1_nb == xx) 
-                            then if (tmp2_nb == yy) 
-                               then return (Just (GraphEdge (xx,yy,label)))
-                               else extractGraphEdge x y l ll
-                            else extractGraphEdge x y l ll
-                        _ -> extractGraphEdge x y l ll
-                    _ -> extractGraphEdge x y l  ll 
-      _:l    -> extractGraphEdge x y l ll
--- Same as above but it tries to extract the edge between the nodes
--- with the given number in the order they are found
-extractGraphLabeledEdge:: String -> Int -> String -> 
-                          [GraphGoals] -> [GraphGoals] -> IO (Maybe GraphGoals)
-extractGraphLabeledEdge x nb y allGoals ll
-    = case allGoals of
-      []             ->return  Nothing
-      (GraphEdge (xx,yy,label)):l  -> do
-        ttt1<- extractGraphNode x ll
-        ttt2<- extractGraphNode y ll
-        case ttt1 of
-          Nothing -> do
-            putStr ("Couldn't find node "++x++"\n"++
-             "when looking for edge "++x++" - "++(show nb)++" -> "++y++"\n")
-            return Nothing
-          Just t1 -> do
-            case ttt2 of 
-              Nothing -> do
-               putStr ("Couldn't find node "++y++"\n"++
-                "when looking for edge "++x++" - "++(show nb)++" -> "++y++"\n")
-               return Nothing
-              Just t2 -> do
-                  case t1 of 
-                    (GraphNode (tmp1_nb, _)) ->
-                       case t2 of
-                        (GraphNode (tmp2_nb, _)) ->
-                          if (tmp1_nb == xx) 
-                            then if (tmp2_nb == yy) 
-                               then if (nb==0)  
-                                 then return (Just (GraphEdge (xx,yy,label)))
-                                 else extractGraphLabeledEdge x (nb-1) y l ll
-                               else extractGraphLabeledEdge x nb y l ll
-                            else extractGraphLabeledEdge x nb y l ll
-                        _ -> extractGraphLabeledEdge x nb y l ll
-                    _ -> extractGraphLabeledEdge x nb y l ll 
-      _:l -> extractGraphLabeledEdge x nb y l ll
 
 
--- The function 'getGoalList' creates a graph goal list ( a graph goal is 
--- defined by the datatype GraphGoals) that is a part of 'allg' list passed
--- as an argument and corresponds to goalList (a parased goal list, see
--- GOAL datatype)
-getGoalList :: [GOAL] -> [GraphGoals] -> [GraphGoals] -> IO [GraphGoals]
-getGoalList goalList allg ll 
- = case goalList of
-    (Node x):l -> do
-      tmp <- extractGraphNode x allg
-      tmp2<- getGoalList l allg ll
-      case tmp of
-        Just smth -> return (smth:tmp2)
-        Nothing -> do
-           putStr ("Couldn't find node "++x++"\n")
-           return []
-    (Edge x y):l -> do
-      tmp <- extractGraphEdge x y allg ll
-      tmp2<- getGoalList l allg ll
-      case tmp of 
-        Just smth -> return (smth:tmp2)
-        Nothing -> return tmp2
-    (LabeledEdge x nb y):l -> do
-      tmp <- extractGraphLabeledEdge x nb y allg ll
-      tmp2<- getGoalList l allg ll
-      case tmp of
-         Just smth -> return (smth:tmp2)
-         Nothing -> return tmp2
-    [] -> return [] 
-
-
-
-
-convToGoal:: [GDataNode] -> [GraphGoals]
-convToGoal ls
- = case ls of
-     x:l -> (GraphNode x) : (convToGoal l)
-     []  -> []
-
--- The function 'getEdgeGoals' given a list of edges selects all edges that
--- are goals of the graph and returns them as GraphGoals
-getEdgeGoals :: [GDataEdge] -> [GraphGoals]
-getEdgeGoals ls =
-    case ls of
-         (x,y,l):ll -> let labelInfo = getDGLinkType l in
-                       case labelInfo of
-                        "unproventhm"  -> (GraphEdge (x,y,l)):(getEdgeGoals ll)
-                        "localunproventhm" -> (GraphEdge (x,y,l)):(getEdgeGoals ll)
-                        "hetunproventhm"   -> (GraphEdge (x,y,l)):(getEdgeGoals ll)
-                        "hetlocalunproventhm" -> (GraphEdge (x,y,l)):(getEdgeGoals ll)
-                        _                     -> getEdgeGoals ll
-         []  -> []
 
 -- The function checks if w1 is a prefix of w2
 prefix :: String -> String -> Bool
@@ -238,25 +86,25 @@ prefix w1 w2
                []    -> False
      [] -> True
 
+getNameList :: [GDataNode] -> [String]
+getNameList ls
+ = case ls of
+     (_, (DGNode thName _ _ _ _ _ _ )):l -> (showName thName):(getNameList l)
+     (_, (DGRef  thName _ _ _ _ _ )):l   -> (showName thName):(getNameList l)
+     []                                  -> []
+
 -- The function checks if the word 'wd' is a prefix of the name of 
 -- any of the nodes in the list, if so it returns the list of the 
 -- names otherwise it returns the empty list
-checkWord :: String -> [GDataNode] -> String
+checkWord :: String -> [String] -> [String]
 checkWord wd allNodes
  = case allNodes of
-     (_, (DGNode thName _ _ _ _ _ _ )):l -> 
-                         if (prefix wd (showName thName))
+     str:l -> 
+                         if (prefix wd str)
                                 then 
-                                  if ((showName thName)=="")
+                                  if (str=="")
                                      then checkWord wd l
-                                     else ((showName thName)++" "++(checkWord wd l))
-                                else checkWord wd l
-     (_, (DGRef thName _ _ _ _ _)):l -> 
-                         if (prefix wd (showName thName))
-                                then 
-                                  if ((showName thName)=="")
-                                     then checkWord wd l
-                                     else ((showName thName)++" "++(checkWord wd l))
+                                     else (str:(checkWord wd l))
                                 else checkWord wd l
      []                   -> [] 
  
@@ -284,12 +132,30 @@ prefixType wd
      "node-number" -> 2
      _           -> 0
 
+
+arrowNext :: String -> Bool 
+arrowNext ls =
+  case ls of 
+     ' ':l -> arrowNext l
+     '-':l -> case l of
+                '>':_ -> True
+                _ -> False
+     _ -> False
+
+afterArrow :: String -> String
+afterArrow ls =
+    case ls of
+      ' ':l -> afterArrow l
+      '-':l -> afterArrow l
+      '>':l -> afterArrow l
+      smth  -> smth
 -- The function checks if a word still has white spaces or not
 hasWhiteSpace :: String -> Bool
 hasWhiteSpace ls 
  = case ls of
        []    -> False
-       ' ':_ -> True
+       ' ':l -> if (arrowNext l) then hasWhiteSpace (afterArrow l)
+                                 else True
        '\t':_-> True
        '\n':_-> True
        '\r':_-> True
@@ -339,59 +205,46 @@ addWords ls wd
 pgipCompletionFn :: [Status] -> String -> IO [String]
 pgipCompletionFn state wd
  = case state of
-    (Env ln libEnv):_ -> do
+    (Env ln libEnv):rest -> 
+      case rest of
+       (AllGoals allGoals):_ -> do
         let dgraph= lookupDGraph ln libEnv
         pref <- getShortPrefix wd []
         if ((prefixType pref)> 0) 
          then do
           let values = if ((prefixType pref)==1)
-                                then (labNodes dgraph)
+                                then getGoalNameFromList allGoals (labNodes dgraph)
                                 else
-                                 (labNodes dgraph)
-          let list = checkWord (getSuffix wd) (labNodes dgraph)
-          if (list=="") then return []
-                        else return (addWords (words list) (getLongPrefix wd []))
+                                 getNameList (labNodes dgraph)
+          let list = checkWord (getSuffix wd) values
+          if (list==[]) then return []
+                        else return (addWords list (getLongPrefix wd []))
          else
           return []
+       _:l -> pgipCompletionFn ((Env ln libEnv):l) wd
+       []  -> return []
+    (AllGoals allGoals):rest -> 
+      case rest of 
+       (Env ln libEnv):_ -> do
+         let dgraph= lookupDGraph ln libEnv
+         pref <- getShortPrefix wd []
+         if ((prefixType pref)> 0) 
+          then do
+           let values = if ((prefixType pref)==1)
+                                then getGoalNameFromList allGoals (labNodes dgraph)
+                                else
+                                 getNameList (labNodes dgraph)
+           let list = checkWord (getSuffix wd) values 
+           if (list==[]) then return []
+                        else return (addWords list (getLongPrefix wd []))
+          else
+           return []
+       _:l -> pgipCompletionFn ((AllGoals allGoals):l) wd
+       []  -> return []
     _:l               ->    pgipCompletionFn l wd
     []                -> return []
 
--- The function 'getNodeGoals' given a list of nodes selects all nodes that
--- are goals of teh graph and returns them as GraphGoals
-getNodeGoals::[GDataNode] -> [GraphGoals]
-getNodeGoals ls =
-   case ls of
-     (nb,x):l  -> 
-       let labelInfo = getDGNodeType x in
-       case labelInfo of
-         "open_cons__spec" -> (GraphNode (nb,x)):(getNodeGoals l)
-         "proven_cons__spec" -> (GraphNode (nb,x)):(getNodeGoals l)
-         "locallyEmpty__open_cons__spec" -> (GraphNode (nb,x)):(getNodeGoals l)
-         "open_cons__internal" -> (GraphNode (nb,x)):(getNodeGoals l)
-         "proven_cons__internal" -> (GraphNode (nb,x)):(getNodeGoals l)
-         "dg_ref"     -> (GraphNode (nb,x)):(getNodeGoals l)
-         _            -> getNodeGoals l
-     []   -> []
 
-
--- The function 'createAllGoalsList' given a library (defined by LIB_NAME and
--- LibEnv) generates the list of all goals (both edges and nodes) of the graph
--- coresponding to the library
-createAllGoalsList :: LIB_NAME->LibEnv -> [GraphGoals]
-createAllGoalsList ln libEnv
-                    = let dgraph = lookupDGraph ln libEnv
-                          edgeGoals = getEdgeGoals (labEdges dgraph)
-                          nodeGoals = getNodeGoals (labNodes dgraph)
-                      in edgeGoals ++ nodeGoals
-
--- The function 'getEdgeList' returns from a list of graph goals just the 
--- edge goals as [GDataEdge]
-getEdgeList :: [GraphGoals] -> [GDataEdge]
-getEdgeList ls =
-        case ls of 
-             (GraphEdge x):l  -> x:(getEdgeList l)
-             (GraphNode _):l  -> getEdgeList l
-             []               -> []
 -- The function 'getNodeList' returns from a list of graph goals just
 -- the nodes as [GDataNode]
 getNodeList :: [GraphGoals] -> [GDataNode]
@@ -516,6 +369,26 @@ findNode nb ls
                             findNode nb l
            []  -> Nothing
 
+
+getGoalNameFromList :: [GraphGoals] -> [GDataNode] -> [String]
+getGoalNameFromList ls allNodes =
+  case ls of 
+       (GraphNode x):l -> (getGoalName (GraphNode x)):
+                               (getGoalNameFromList l allNodes)
+       (GraphEdge (x,y,_)):l ->
+                     let x1 = fromJust $ findNode x allNodes
+                         y1 = fromJust $ findNode y allNodes
+                     in ((getGoalName x1)++" -> "++(getGoalName y1)):
+                              (getGoalNameFromList l allNodes)
+       []              -> []
+
+getGoalName ::GraphGoals -> String
+getGoalName x 
+ = case x of 
+       (GraphNode (_,(DGNode thName _ _ _ _ _ _))) -> showName thName
+       (GraphNode (_,(DGRef  thName _ _ _ _ _)))   -> showName thName
+       _                                           -> "Not a node !"
+
 -- The function 'printInfoFromList' given a GraphGoal list prints the 
 -- name of all goals (node or edge)
 printInfoFromList :: [GraphGoals] ->[GDataNode]-> IO()
@@ -611,14 +484,20 @@ printNodeTaxonomy kind x libEnv ln =
              let theTh = computeTheory libEnv ln n
              case theTh of
                 Result _ (Just thTh) ->
-                           displayGraph kind (showName tname) thTh
+                        do graph <- displayGraph kind (showName tname) thTh
+                           case graph of
+                               Just g -> sync (destroyed g)
+                               _ -> return () 
                 Result _ _ ->
                            putStr "Error computing the theory of the node!\n"
      GraphNode (n, (DGRef tname _ _ _ _ _ )) -> do
              let theTh = computeTheory libEnv ln n
              case theTh of 
                 Result _ (Just thTh) -> 
-                           displayGraph kind (showName tname) thTh 
+                        do graph <- displayGraph kind (showName tname) thTh 
+                           case graph of
+                              Just g -> sync (destroyed g)
+                              _ -> return ()
                 Result _ _ ->
                            putStr "Error computing the theory of the node!\n"
      _            -> putStr "Not a node!\n"
