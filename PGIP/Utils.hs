@@ -173,6 +173,14 @@ convToGoal ls
      x:l -> (GraphNode x) : (convToGoal l)
      []  -> []
 
+
+convEdgeToGoal :: [GDataEdge] -> [GraphGoals]
+convEdgeToGoal ls 
+ = case ls of 
+     x:l -> (GraphEdge x): (convEdgeToGoal l)
+     []  -> []
+
+
 -- The function 'getEdgeList' returns from a list of graph goals just the 
 -- edge goals as [GDataEdge]
 getEdgeList :: [GraphGoals] -> [GDataEdge]

@@ -191,10 +191,10 @@ shellShowTheory
      val <- getShellSt >>= \state -> liftIO(cShowNodeTheory "" state)
      modifyShellSt (update val)
 
-shellNodeInfo :: Sh [Status] ()
-shellNodeInfo
+shellInfo :: Sh [Status] ()
+shellInfo
    = do
-     val <- getShellSt >>= \state -> liftIO(cShowNodeInfo "" state)
+     val <- getShellSt >>= \state -> liftIO(cShowInfo "" state)
      modifyShellSt (update val)
 
 shellShowTaxonomy :: Sh [Status] ()
@@ -227,6 +227,41 @@ shellNodeNumber input
      val <- getShellSt >>= \state -> liftIO(cViewNodeNumber input state)
      modifyShellSt (update val)
 
+shellShowTheoryP :: String -> Sh [Status] ()
+shellShowTheoryP input
+   = do
+     val <- getShellSt >>= \state -> liftIO(cShowNodeTheory input state)
+     modifyShellSt (update val)
+
+shellInfoP :: String -> Sh [Status] ()
+shellInfoP input
+   = do
+     val <- getShellSt >>= \state -> liftIO(cShowInfo input state)
+     modifyShellSt (update val)
+
+shellShowTaxonomyP ::String -> Sh [Status] ()
+shellShowTaxonomyP input
+   = do
+     val <- getShellSt >>= \state -> liftIO(cShowNodeTaxonomy input state)
+     modifyShellSt (update val)
+
+shellShowConceptP :: String -> Sh [Status] ()
+shellShowConceptP input
+   = do
+     val <- getShellSt >>= \state -> liftIO(cShowNodeConcept input state)
+     modifyShellSt (update val)
+
+shellEdges :: Sh [Status] ()
+shellEdges
+  = do 
+    val <-getShellSt >>= \state -> liftIO(cEdges "" state)
+    modifyShellSt (update val)
+
+shellNodes :: Sh [Status] ()
+shellNodes
+  = do
+    val <-getShellSt >>= \state -> liftIO(cNodes "" state)
+    modifyShellSt (update val)
 
 shellDetails :: Sh [Status] ()
 shellDetails 
@@ -304,12 +339,20 @@ pgipShellCommands
                       "shows list of theory goals")
                     : (cmd "show-theory" shellShowTheory
                       "shows current theory and proof goals")
-                    : (cmd "node-info" shellNodeInfo
-                      "shows info about current dg node")
+--                    : (cmd "show-theory" shellShowTheoryP
+--                      "shows theory of the provided node")
+                    : (cmd "info" shellInfo
+                      "shows info about current dg node or edge")
+--                    : (cmd "info" shellInfoP
+--                      "shows info about the provided dg node")
                     : (cmd "show-taxonomy" shellShowTaxonomy
                       "shows taxonomy graph")
+--                    : (cmd "show-taxonomy" shellShowTaxonomyP
+--                      "shows taxonomy graph of the provided node")
                     : (cmd "show-concept" shellShowConcept
                       "shows concept graph")
+--                    : (cmd "show-concept" shellShowConceptP
+--                      "shows concept graph of the provided node")
                     : (cmd "translate" shellTranslate
                       "translate theory goals along comorphism")
                     : (cmd "prover" shellProver
@@ -318,6 +361,10 @@ pgipShellCommands
                      "view details about the gramma of this interactive mode")
                     : (cmd "node-number" shellNodeNumber
                       " view node number")
+                    : (cmd "nodes" shellNodes
+                     "show all nodes of the development graph")
+                    : (cmd "edges" shellEdges
+                     "show all edges of the development graph")
                     : [] 
 
 

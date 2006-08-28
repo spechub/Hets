@@ -25,6 +25,8 @@ import Proofs.InferBasic
 import Common.DocUtils
 import Common.Result
 import Common.Taxonomy
+import Common.Lib.Set
+import Logic.Logic
 import GUI.Taxonomy
 import Data.Maybe
 import Data.Graph.Inductive.Graph
@@ -32,7 +34,8 @@ import Comorphisms.LogicGraph
 import PGIP.Utils
 import Events
 import Destructible
-
+import qualified Logic.Prover as P
+import qualified Common.OrderedMap as OMap
     
 -- The datatype CmdParam contains all the possible parameters a command of
 -- the interface might have. It is used to create one function that returns
@@ -391,13 +394,13 @@ getGoalName x
 
 -- The function 'printInfoFromList' given a GraphGoal list prints the 
 -- name of all goals (node or edge)
-printInfoFromList :: [GraphGoals] ->[GDataNode]-> IO()
-printInfoFromList ls allNodes =
+printNamesFromList :: [GraphGoals] ->[GDataNode]-> IO()
+printNamesFromList ls allNodes =
    case ls of
         (GraphNode x):l -> do
               printNodeInfo (GraphNode x)
               putStr "\n"
-              result <-printInfoFromList l allNodes
+              result <-printNamesFromList l allNodes
               return result
         (GraphEdge (x,y,_)):l      -> do 
               let x1 = fromJust $ findNode x allNodes
@@ -406,7 +409,7 @@ printInfoFromList ls allNodes =
               putStr " -> "
               printNodeInfo y1
               putStr "\n"
-              result<- printInfoFromList l allNodes
+              result<- printNamesFromList l allNodes
               return result
         []              -> return ()
 
@@ -427,23 +430,55 @@ printNodeNumber:: GraphGoals -> IO()
 printNodeNumber x =
   case x of
      GraphNode (nb, (DGNode tname _ _ _ _ _ _)) ->
-                  putStr ("Node "++(showName tname)++" has number "++(show nb))
+        putStr ("Node "++(showName tname)++" has number "++(show nb))
      GraphNode (nb, (DGRef tname _ _ _ _ _)) ->
                   putStr ("Node "++(showName tname)++" has number "++(show nb))
      _               -> putStr "Not a node !\n"
 
 -- The function 'printNodeInfoFromList' given a GraphGoal list prints the 
 -- name of all node goals
-printNodeInfoFromList :: [GraphGoals] -> IO()
-printNodeInfoFromList ls =
+printInfoFromList :: [GraphGoals] -> [GDataNode] -> IO()
+printInfoFromList ls allNodes=
    case ls of
         (GraphNode x):l -> do
+              putStr "Name : "
               printNodeInfo (GraphNode x)
               putStr "\n"
-              result <-printNodeInfoFromList l
+              putStr "Origin : "
+              printNodeOrigin (GraphNode x)
+              putStr "\n"
+              putStr "Sublogic : "
+              printNodeSublogic (GraphNode x)
+              putStr "\n"
+              putStr "Number of symbols in the signature : "
+              printNodeNumberSymbols (GraphNode x)
+              putStr "\n"
+              putStr "Number of unproven theorems : "
+              printNodeNumberUnprovenThm (GraphNode x)
+              putStr "\n"
+              putStr "Number of proven theorems :"
+              printNodeNumberProvenThm (GraphNode x)
+              putStr "\n\n"
+              result <-printInfoFromList l allNodes
               return result
-        _:l             -> do 
-              result<- printNodeInfoFromList l
+        (GraphEdge (x,y,labelData)):l      -> do 
+              let x1 = fromJust $ findNode x allNodes
+              let y1 = fromJust $ findNode y allNodes
+              putStr "Name : "
+              printNodeInfo x1
+              putStr " -> "
+              printNodeInfo y1
+              putStr "\n"
+              putStr "Origin : "
+              printEdgeOrigin (GraphEdge (x,y,labelData))
+              putStr "\n"
+              putStr "Sublogic of source :"
+              printNodeSublogic x1
+              putStr "\n"
+              putStr "Sublogic of target :"
+              printNodeSublogic y1
+              putStr "\n\n"
+              result<- printInfoFromList l allNodes
               return result
         []              -> return ()
 -- The function 'printNodeInfo' given a GraphGoal prints the name of the node
@@ -456,6 +491,102 @@ printNodeInfo x =
           GraphNode (_, (DGRef tname _ _ _ _ _ )) ->
                                         putStr (( showName tname))
           _                          -> putStr "Not a node!\n"
+
+
+printEdgeOrigin :: GraphGoals -> IO ()
+printEdgeOrigin x =
+  case x of 
+     GraphEdge(_, _, (DGLink _ _ tOrigin)) ->
+          putStr $ show tOrigin
+     _ -> putStr "No origin found !"
+
+printNodeOrigin :: GraphGoals -> IO()
+printNodeOrigin x =
+  case x of
+    GraphNode (_ ,(DGNode _ _ _ _ torigin _ _)) ->
+                putStr (show torigin)
+    _        -> putStr "Node does not have an origin"
+
+printNodeSublogic :: GraphGoals -> IO ()
+printNodeSublogic x =
+  case x of 
+     GraphNode (_, (DGNode _ tTh _ _ _ _ _)) ->
+              putStr (show (sublogicOfTh tTh))
+     GraphNode (_, (DGRef _ _ _ tTh _ _)) ->
+              putStr (show (sublogicOfTh tTh))
+     _ -> putStr "Node does not have a sublogic"
+
+
+printNodeNumberAxioms :: GraphGoals -> IO ()
+printNodeNumberAxioms input =
+  case input of
+    GraphNode (_, (DGNode _ (G_theory x y _) _ _ _ _ _)) ->
+         putStr $ show (size(sym_of x y))
+    GraphNode (_, (DGRef _ _ _ (G_theory x y _) _ _)) ->
+         putStr $ show (size (sym_of x y))
+    _ -> putStr "Not a node ! \n"
+
+
+emtyList :: forall a.[a] -> Bool
+emtyList ls =
+  case ls of 
+      [] -> True
+      _  -> False
+
+countSymbols :: [P.SenStatus a b]->Int -> Int
+countSymbols ls nb
+ = case ls of 
+       [] -> nb
+       x:l -> if (P.isAxiom x)  then countSymbols l (nb+1)
+                             else countSymbols l nb
+
+countUnprovenThm :: [P.SenStatus a b] -> Int -> Int
+countUnprovenThm ls nb
+ = case ls of
+       []   -> nb
+       x:l  -> if (emtyList (P.thmStatus x)) then countUnprovenThm l nb
+                                  else countUnprovenThm l (nb+1)
+
+countProvenThm :: [P.SenStatus a b] -> Int -> Int
+countProvenThm ls nb
+ = case ls of
+    []  -> nb
+    x:l -> if (emtyList (P.thmStatus x)) then countProvenThm l (nb+1)
+                                             else countProvenThm l nb
+
+extractSenStatus :: [(String, P.SenStatus a b)] -> [P.SenStatus a b]
+extractSenStatus ls =
+  case ls of
+      []       ->  []
+      (_,b):l  ->  b:(extractSenStatus l)
+
+printNodeNumberSymbols :: GraphGoals ->  IO ()
+printNodeNumberSymbols input =
+  case input of
+      GraphNode (_, (DGNode _ (G_theory _ _ x) _ _ _ _ _)) ->
+           putStr $ show (countSymbols (extractSenStatus (OMap.toList x)) 0)
+      GraphNode (_, (DGRef _ _ _ (G_theory _ _ x) _ _)) ->
+           putStr $ show (countSymbols (extractSenStatus (OMap.toList x)) 0)
+      _  -> putStr "Not a node ! \n"
+
+
+printNodeNumberUnprovenThm :: GraphGoals -> IO ()
+printNodeNumberUnprovenThm input =
+ case input of 
+     GraphNode (_, (DGNode _ (G_theory _ _ x) _ _ _ _ _)) ->
+        putStr $ show (countUnprovenThm (extractSenStatus (OMap.toList x)) 0)
+     GraphNode (_, (DGRef _ _ _ (G_theory _ _ x) _ _)) ->
+        putStr $ show (countUnprovenThm (extractSenStatus (OMap.toList x)) 0)
+     _  -> putStr "Not a node ! \n"
+
+printNodeNumberProvenThm :: GraphGoals -> IO ()
+printNodeNumberProvenThm input =
+ case input of
+     GraphNode (_, (DGNode _ (G_theory _ _ x) _ _ _ _ _))->
+        putStr $ show (countProvenThm (extractSenStatus (OMap.toList x)) 0)
+     GraphNode (_, (DGRef _ _ _ (G_theory _ _ x) _ _)) ->
+        putStr $ show (countProvenThm (extractSenStatus (OMap.toList x)) 0)
+     _  -> putStr "Not a node ! \n"
 
 -- The function 'printNodeTaxonomyFromList' given a GraphGoals list generates
 -- the 'kind' type of Taxonomy Graphs of all goal nodes from the list
