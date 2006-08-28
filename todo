@@ -450,38 +450,6 @@ Isabelle interface
 Rainer (Klaus)
 ************************************************
 
-(read documentation for XPath)
-
-use either XPath or Haifas xmlify stuff for
-  full parsing of rdf-objects returned by MathServ
-  putting this stuff into a data-structure: MathServResponse
-  map/transform MathServResponse into Proof_status
-   (intermediate datastructure makes parser independent from Proof_status)
-
-SPASS/Logic_SPASS
-  change proof_tree to String and save TSTP to it
-  SPASS proof between "^Here is a proof" and "^Formulae used"
-  later
-    SPASS Proof must be parsed and translated to TSTP
-    (Klaus checks for this functionallity in MathServ)
-
-SPASS/MathServCommunications
-  types for Service and Soap Operation instead of Strings
-
-tactic_script activities
-  parser for SPASS commandline
-    parsed into [SPASS.Sign.SPSetting]
-  format of tactic_script and parser for MathServBroker and
-    individual MathServ reasoners
-  include current options into saved DFG file (saved from GUI)
-    (s. SPASS.CreateDFG)
-  include current options as comment into saved TPTP file (saved from GUI)
-    and also the requested prover or "[via Broker]"
-
-Name of the real prover should be in the prover_name of Proof_status
-  if the Broker was used but "<name> [via MathServBroker]" should be
-  the end of the prover name
-
 SPASS encoding improvements in SPASS.Conversions/Comorphisms.CASL2SPASS
   - if there is only one sort in the signature eliminate it
     special case: (freely) generated sorts are not eliminated
@@ -490,9 +458,9 @@ SPASS encoding improvements in SPASS.Conversions/Comorphisms.CASL2SPASS
       all variable declarations have to consider the flag
          (quantified formulas) variable lists without types
        Formula/Term specific
-       - F:sort membership ==> true
-       - T:explicit cast is omitted
-       - T:explicit typing of terms is omitted
+       - F:Membership ==> true
+       - T:Cast is omitted
+       - T:Sorted_term is omitted
     typings in the signature have to be removed in SPASS.Conversions
       empty declarations list
 
@@ -503,10 +471,9 @@ SPASS encoding improvements in CASL2SPASS
       and the other side is a builtin equality application (Strong_equation)
       return the full qualified (with type) predicate(s)
       this is done before the translation of the signature/sentences happens
-    remove symbol from signature and mark it in the idMap as equality
-     (involves adding a flag to SPASS.Utils.CPred)
-
-display of tactic_scripts in GUI.ProofManagement
+    remove eqPrediate symbols from signature 
+    substitute eqPredications with Strong_equation in the Formulas
+     see CASL.Utils.codeOutConditionalF
 
 
 ************************************************
