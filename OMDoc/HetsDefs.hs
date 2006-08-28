@@ -3490,7 +3490,46 @@ createFullNameMapping
           Nothing -> error ("No unique name for " ++ (show sid) ++ "!")
           (Just uniqueName) -> uniqueName
 
+findOriginInCurrentLib::
+  forall a .
+  LIB_NAME
+  ->[IdNameMapping]
+  ->[IdNameMapping]
+  ->(IdNameMapping->Maybe a)
+  ->Maybe a
+findOriginInCurrentLib
+  _
+  []
+  []
+  _
+  =
+    Nothing
 
+findOriginInCurrentLib
+  ln
+  (inm:uniqueNames)
+  fullNames
+  check
+  =
+    let
+      nextsearch = findOriginInCurrentLib ln uniqueNames fullNames check
+    in
+      if (inmGetLibName inm == ln)
+        then
+          case check inm of
+            Nothing -> nextsearch
+            ja -> ja
+        else
+          nextsearch
 
-
-
+findOriginInCurrentLib
+  ln
+  []
+  fullNames
+  check
+  =
+    findOriginInCurrentLib
+      ln
+      fullNames
+      []
+      check

@@ -1146,13 +1146,13 @@ libEnvLibNameIdNameMappingToXmlCMPIO
 -}
 getNodeNameForXml::Hets.IdNameMapping->Hets.LIB_NAME->String
 getNodeNameForXml inm ln =
-  (
+{-(
   if Hets.inmGetLibName inm /= ln
     then
       asOMDocFile $ unwrapLinkSource $ (Hets.inmGetLibName inm)
     else
       ""
-  ) ++ "#" ++ Hets.inmGetNodeId inm
+  ) ++ -} "#" ++ Hets.inmGetNodeId inm
   
 
 {- |
@@ -1594,6 +1594,33 @@ createTypedVarIN ln nn uniqueNames fullNames sort varname =
       +++ (HXT.etag "OMV" += (HXT.sattr "name" varname))
     )
 
+
+findSortOriginCL::
+  Hets.LIB_NAME
+  ->[Hets.IdNameMapping]
+  ->[Hets.IdNameMapping]
+  ->SORT
+  ->Maybe (XmlName, Hets.IdNameMapping)
+findSortOriginCL
+  ln
+  uniqueNames
+  fullNames
+  s
+  =
+    Hets.findOriginInCurrentLib
+      ln
+      uniqueNames
+      fullNames
+      (\cm ->
+        case
+          find
+            (\( (uid), _ ) -> uid == s)
+            (Set.toList (Hets.inmGetIdNameSortSet cm))
+        of
+          Nothing -> Nothing
+          Just (_, uname) -> (Just (uname, cm))
+      )
+
 createSymbolForSortIN::
   Hets.LIB_NAME
   ->Graph.Node
@@ -1609,12 +1636,26 @@ createSymbolForSortIN
   s
   =
     let
-      currentMapping =
+{-      currentMapping =
         fromMaybe
           (error "!")
           $
-          Hets.inmFindLNNN (ln, nn) fullNames
-      sortxmlid =
+          Hets.inmFindLNNN (ln, nn) fullNames -}
+      (sortxmlid, sortorigin) =
+        case
+          findSortOriginCL
+            ln
+            uniqueNames
+            fullNames
+            s
+        of
+          Nothing -> error "!"
+          (Just (sx, so)) ->
+            (
+                sx
+              , getNodeNameForXml so ln
+            )
+{-      sortxmlid =
         case
           find
             (\(sid, _) -> s == sid)
@@ -1628,9 +1669,66 @@ createSymbolForSortIN
         of
           [] -> error "!!!"
           [o] -> getNodeNameForXml o ln
-          (o:_) -> Debug.Trace.trace ("!!!!") $ getNodeNameForXml o ln
+          (o:_) -> Debug.Trace.trace ("!!!!") $ getNodeNameForXml o ln -}
     in
       HXT.etag "OMS" += ( HXT.sattr "cd" sortorigin +++ HXT.sattr "name" sortxmlid )
+
+findPredicateOriginCL::
+  Hets.LIB_NAME
+  ->[Hets.IdNameMapping]
+  ->[Hets.IdNameMapping]
+  ->Rel.Rel SORT
+  ->PRED_SYMB
+  ->Maybe (XmlName, Hets.IdNameMapping)
+findPredicateOriginCL
+  ln
+  uniqueNames
+  fullNames
+  _
+  (Pred_name pr)
+  =
+    Hets.findOriginInCurrentLib
+      ln
+      uniqueNames
+      fullNames
+      (\cm ->
+        case
+          find
+            (\( (uid, _), _ ) -> uid == pr)
+            (Set.toList (Hets.inmGetIdNamePredSet cm))
+        of
+          Nothing -> Nothing
+          Just (_, uname) -> (Just (uname, cm))
+      )
+findPredicateOriginCL
+  ln
+  uniqueNames
+  fullNames
+  sortrel
+  (Qual_pred_name pr pt _)
+  =
+    Hets.findOriginInCurrentLib
+      ln
+      uniqueNames
+      fullNames
+      (\cm ->
+        case 
+          preferEqualFindCompatible
+            (Set.toList (Hets.inmGetIdNamePredSet cm))
+            (\( (uid, upt), _) ->
+              uid == pr && upt == (Hets.cv_Pred_typeToPredType pt)
+            )
+            (\( (uid, upt), _) ->
+              uid == pr &&
+                compatiblePredicate
+                  sortrel
+                  upt
+                  (Hets.cv_Pred_typeToPredType pt)
+            )
+        of
+          Nothing -> Nothing
+          (Just (_, uname)) -> Just (uname, cm)
+      )
 
 -- | create an xml-representation for a predication
 createSymbolForPredicationIN::
@@ -1643,45 +1741,8 @@ createSymbolForPredicationIN::
   -> PRED_SYMB -- ^ the predication to process
   -> (HXT.XmlTree -> HXT.XmlTrees) 
        -- ^ a xml-representation of the predication
--- Pred_name
-createSymbolForPredicationIN _ _ ln nn uniqueNames fullNames
-  (Pred_name pr) =
+createSymbolForPredicationIN _ lenv ln nn uniqueNames fullNames ps =
     let
-      currentMapping =
-        fromMaybe
-          (error "!")
-          $
-          Hets.inmFindLNNN (ln, nn) fullNames
-      (predxmlid, predorigin) =
-          case 
-            find
-              (\( (uid, _), _) -> uid == pr)
-              (Set.toList (Hets.inmGetIdNamePredSet currentMapping))
-          of
-            Nothing -> -- error ("Unknown (unqualified) pred! " ++ show pr)
-              Debug.Trace.trace
-                ("Unknown (unqualified) pred! " ++ show pr)
-                (show pr, getNodeNameForXml currentMapping ln)
-            (Just (_, uname)) ->
-              case Hets.getNameOrigins uniqueNames uname of
-                [] -> error "Whoops!"
-                [o] -> (uname, getNodeNameForXml o ln)
-                (o:_) ->
-                  Debug.Trace.trace
-                    ("more than one...")
-                    (uname, getNodeNameForXml o ln)
-    in
-      HXT.etag "OMS" +=
-        (HXT.sattr "cd" predorigin +++ HXT.sattr "name" predxmlid)
--- Qual_pred_name
-createSymbolForPredicationIN _ lenv ln nn uniqueNames fullNames
-  (Qual_pred_name pr pt _) =
-    let
-      currentMapping =
-        fromMaybe
-          (error "!")
-          $
-          Hets.inmFindLNNN (ln, nn) fullNames
       currentNode =
         fromMaybe
           (error "!!!")
@@ -1699,36 +1760,86 @@ createSymbolForPredicationIN _ lenv ln nn uniqueNames fullNames
       currentRel = sortRel currentSign
       (predxmlid, predorigin) =
         case
-          preferEqualFindCompatible
-            (Set.toList (Hets.inmGetIdNamePredSet currentMapping))
-            (\( (uid, upt), _) ->
-              uid == pr && upt == (Hets.cv_Pred_typeToPredType pt)
-            )
-            (\( (uid, upt), _) ->
-              uid == pr &&
-                compatiblePredicate
-                  currentRel
-                  upt
-                  (Hets.cv_Pred_typeToPredType pt)
-            )
+          findPredicateOriginCL
+            ln
+            uniqueNames
+            fullNames
+            currentRel
+            ps
         of
-          Nothing -> -- error ("Unknown pred! " ++ show pr ++ " :: " ++ show pt )
-            Debug.Trace.trace
-              ("Unknown pred! " ++ show pr ++ " :: " ++ show pt )
-              (show pr, getNodeNameForXml currentMapping ln)
-          (Just (_, uname)) ->
-            case Hets.getNameOrigins uniqueNames uname of
-              [] -> error "Whoops!"
-              [o] -> (uname, getNodeNameForXml o ln)
-              (o:_) ->
-                Debug.Trace.trace
-                  ("more than one...")
-                  (uname, getNodeNameForXml o ln)
-
+          Nothing ->
+            error "!"   
+          (Just (predx, predo)) ->
+            (   
+                predx
+              , getNodeNameForXml predo ln
+            )
     in
       HXT.etag "OMS" +=
         (HXT.sattr "cd" predorigin +++ HXT.sattr "name" predxmlid)
 
+
+findOperatorOriginCL::
+  Hets.LIB_NAME
+  ->[Hets.IdNameMapping]
+  ->[Hets.IdNameMapping]
+  ->Rel.Rel SORT
+  ->OP_SYMB
+  ->Maybe (XmlName, Hets.IdNameMapping)
+findOperatorOriginCL
+  ln
+  uniqueNames
+  fullNames
+  _
+  (Op_name op)
+  =
+    Hets.findOriginInCurrentLib
+      ln
+      uniqueNames
+      fullNames
+      (\cm ->
+        case
+          find
+            (\( (uid, _), _ ) -> uid == op)
+              (
+              (Set.toList (Hets.inmGetIdNameOpSet cm))
+              ++
+              (Set.toList (Hets.inmGetIdNameConsSetLikeOps cm))
+              )
+        of
+          Nothing -> Nothing
+          Just (_, uname) -> (Just (uname, cm))
+      )
+findOperatorOriginCL
+  ln
+  uniqueNames
+  fullNames
+  sortrel
+  (Qual_op_name op ot _)
+  =
+    Hets.findOriginInCurrentLib
+      ln
+      uniqueNames
+      fullNames
+      (\cm ->
+        case 
+          preferEqualFindCompatible
+            (
+              (Set.toList (Hets.inmGetIdNameOpSet cm))
+              ++
+              (Set.toList (Hets.inmGetIdNameConsSetLikeOps cm))
+            )
+            (\( (uid, uot), _) ->
+              uid == op && uot == (Hets.cv_Op_typeToOpType ot)
+            )
+            (\( (uid, uot), _) ->
+              uid == op
+              && compatibleOperator sortrel uot (Hets.cv_Op_typeToOpType ot)
+            )
+        of
+          Nothing -> Nothing
+          (Just (_, uname)) -> Just (uname, cm)
+      )
 
 -- | create a xml-representation of an operator
 processOperatorIN::
@@ -1742,7 +1853,7 @@ processOperatorIN::
   -> (HXT.XmlTree -> HXT.XmlTrees) 
       -- ^ the xml-representation of the operator
 -- Op_name
-processOperatorIN _ _ ln nn uniqueNames fullNames
+{- processOperatorIN _ _ ln nn uniqueNames fullNames
   (Op_name op) =
     let
       currentMapping =
@@ -1779,15 +1890,16 @@ processOperatorIN _ _ ln nn uniqueNames fullNames
     in
       HXT.etag "OMS" +=
         (HXT.sattr "cd" oporigin +++ HXT.sattr "name" opxmlid)
--- Qual_op_name
+-- Qual_op_name-}
 processOperatorIN _ lenv ln nn uniqueNames fullNames
-  (Qual_op_name op ot _) =
+--  (Qual_op_name op ot _) = 
+    os =
     let
-      currentMapping =
+      {-currentMapping =
         fromMaybe
           (error "!")
           $
-          Hets.inmFindLNNN (ln, nn) fullNames
+          Hets.inmFindLNNN (ln, nn) fullNames -}
       currentNode =
         fromMaybe
           (error "!!!")
@@ -1806,6 +1918,21 @@ processOperatorIN _ lenv ln nn uniqueNames fullNames
       currentRel = sortRel currentSign
       (opxmlid, oporigin) =
         case
+          findOperatorOriginCL
+            ln
+            uniqueNames
+            fullNames
+            currentRel
+            os
+        of
+          Nothing ->
+            error "!"   
+          (Just (opx, opo)) ->
+            (   
+                opx
+              , getNodeNameForXml opo ln
+            )
+{-      case
           preferEqualFindCompatible
             (
               (Set.toList (Hets.inmGetIdNameOpSet currentMapping))
@@ -1831,7 +1958,7 @@ processOperatorIN _ lenv ln nn uniqueNames fullNames
               (o:_) ->
                 Debug.Trace.trace
                   ("more than one...")
-                  (uname, getNodeNameForXml o ln)
+                  (uname, getNodeNameForXml o ln) -}
 
     in
       HXT.etag "OMS" +=

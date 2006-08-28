@@ -37,6 +37,9 @@ import OMDoc.KeyDebug
 import qualified System.Environment as SysEnv
 --import qualified System.IO as SysIO
 
+debugEnv::forall a . DbgKey -> String -> a -> a
+debugEnv = OMDoc.KeyDebug.debugEnv
+
 mGetEnv::String->IO (Maybe String)
 mGetEnv env = catch (SysEnv.getEnv env >>= \v -> return (Just v)) (\_ -> return Nothing)
 

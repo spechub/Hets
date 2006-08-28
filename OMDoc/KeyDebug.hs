@@ -19,6 +19,8 @@ import System.IO (putStrLn)
 import Debug.Trace (trace)
 import Char (toLower)
 import Data.List (find)
+import qualified System.Environment as SysEnv
+import qualified System.IO.Unsafe as SysUnsafe
 
 type DbgKey = String
 
@@ -137,20 +139,49 @@ isEnabledKey dbginf key =
                         || any (\p -> policyElem p (Map.findWithDefault [] p (dbgKeys dbginf)) key) (Map.keys (dbgKeys dbginf))
                 
 
+_mGetEnv::String->IO (Maybe String)
+_mGetEnv env = catch (SysEnv.getEnv env >>= \v -> return (Just v)) (\_ -> return Nothing)
+
+_getEnvDef::String->String->IO String
+_getEnvDef env def =
+  do
+    mv <- _mGetEnv env
+    return
+      (
+      case mv of
+        Nothing -> def
+        (Just v) -> v
+      )
+
+envDebug::IO DbgInf
+envDebug =
+  do
+    envdbg <- _getEnvDef "OMDOC_DEBUG" ""
+    return $
+      case trimString $ envdbg of
+        [] -> emptyDbgInf
+        _ -> mkDebugKeys envdbg
+
 debug::forall a . DbgInf->DbgKey->String->a->a
 debug dbginf dbgkey msg x =
-        if isEnabledKey dbginf dbgkey
-                        then
-                                Debug.Trace.trace (dbgkey ++ ": " ++ msg) x
-                        else
-                                x
-                                
+  let
+    envDbgInf = SysUnsafe.unsafePerformIO envDebug
+  in
+    if (isEnabledKey dbginf dbgkey) || (isEnabledKey envDbgInf dbgkey)
+      then
+        Debug.Trace.trace (dbgkey ++ ": " ++ msg) x
+      else
+        x
+
 debugIO::DbgInf->DbgKey->String->IO ()
 debugIO dbginf dbgkey msg =
-        if isEnabledKey dbginf dbgkey
-                        then
-                                putStrLn (dbgkey ++ ": " ++ msg)
-                        else
-                                return ()
+  do
+    envDbgInf <- envDebug
+    if (isEnabledKey dbginf dbgkey) || (isEnabledKey envDbgInf dbgkey)
+      then
+        putStrLn (dbgkey ++ ": " ++ msg)
+      else
+        return ()
 
-
+debugEnv::forall a . DbgKey->String->a->a
+debugEnv = debug emptyDbgInf
