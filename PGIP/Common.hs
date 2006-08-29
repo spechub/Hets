@@ -27,6 +27,7 @@ import Common.Result
 import Common.Taxonomy
 import Common.Lib.Set
 import Logic.Logic
+import Logic.Grothendieck
 import GUI.Taxonomy
 import Data.Maybe
 import Data.Graph.Inductive.Graph
@@ -131,8 +132,12 @@ prefixType wd
      "dg comp" -> 1
      "dg comp-new" -> 1
      "dg hide-thm" -> 1
-     "dg basic"  -> 2
+     "dg basic"  -> 3
      "node-number" -> 2
+     "info" -> 3
+     "show-concept" -> 2
+     "show-taxonomy" -> 2
+     "show-theory" -> 2 
      _           -> 0
 
 
@@ -163,8 +168,6 @@ hasWhiteSpace ls
        '\n':_-> True
        '\r':_-> True
        ';':_ -> True
---     '-':_ -> True
---     '>':_ -> True
        ',':_ -> True
        _:l   -> hasWhiteSpace l
 
@@ -216,9 +219,12 @@ pgipCompletionFn state wd
         if ((prefixType pref)> 0) 
          then do
           let values = if ((prefixType pref)==1)
-                                then getGoalNameFromList allGoals (labNodes dgraph)
-                                else
-                                 getNameList (labNodes dgraph)
+               then getGoalNameFromList allGoals (labNodes dgraph)
+               else
+                   if ((prefixType pref)==2)
+                    then  getNameList (labNodes dgraph)
+                    else ((getNameList (labNodes dgraph)) ++
+                           (getGoalNameFromList allGoals (labNodes dgraph)))
           let list = checkWord (getSuffix wd) values
           if (list==[]) then return []
                         else return (addWords list (getLongPrefix wd []))
@@ -450,13 +456,16 @@ printInfoFromList ls allNodes=
               putStr "Sublogic : "
               printNodeSublogic (GraphNode x)
               putStr "\n"
+              putStr "Number of axioms : "
+              printNodeNumberAxioms (GraphNode x)
+              putStr "\n"
               putStr "Number of symbols in the signature : "
               printNodeNumberSymbols (GraphNode x)
               putStr "\n"
               putStr "Number of unproven theorems : "
               printNodeNumberUnprovenThm (GraphNode x)
               putStr "\n"
-              putStr "Number of proven theorems :"
+              putStr "Number of proven theorems : "
               printNodeNumberProvenThm (GraphNode x)
               putStr "\n\n"
               result <-printInfoFromList l allNodes
@@ -472,11 +481,17 @@ printInfoFromList ls allNodes=
               putStr "Origin : "
               printEdgeOrigin (GraphEdge (x,y,labelData))
               putStr "\n"
-              putStr "Sublogic of source :"
+              putStr "Sublogic of source : "
               printNodeSublogic x1
               putStr "\n"
-              putStr "Sublogic of target :"
+              putStr "Sublogic of target : "
               printNodeSublogic y1
+              putStr "\n"
+              putStr "Homogeneous : "
+              printEdgeHomogeneous (GraphEdge (x,y,labelData))
+              putStr "\n"
+              putStr "Type : "
+              printEdgeType (GraphEdge (x,y,labelData))
               putStr "\n\n"
               result<- printInfoFromList l allNodes
               return result
@@ -493,12 +508,43 @@ printNodeInfo x =
           _                          -> putStr "Not a node!\n"
 
 
+printEdgeType :: GraphGoals -> IO()
+printEdgeType x =
+  case x of
+    GraphEdge (_,_,dglab) ->
+       case (getDGLinkType dglab) of
+           "globaldef"   -> putStr "global definition"
+           "def"         -> putStr "local definition"
+           "hidingdef"   -> putStr "hiding definitions"
+           "hetdef"      -> putStr "het definition"
+           "proventhm"   -> putStr "global proven theorem"
+           "unproventhm" -> putStr "global unproven theorem"
+           "localproventhm" ->putStr "local proven theorem"
+           "localunproventhm" -> putStr "local unproven theorem"
+           "hetproventhm"   -> putStr "het global proven theorem"
+           "hetunproventhm" -> putStr "het global unproven theorem"
+           "hetlocalproventhm" -> putStr "het local proven theorem"
+           "hetlocalunproventhm" -> putStr "het local unproven theorem"
+           "unprovenhidingthm" -> putStr "unproven hiding theorem"
+           "provenhidingthm" -> putStr "proven hiding theorem"
+           _                 -> putStr "unknown type"
+    _ -> putStr "Not an edge !"
+
+
 printEdgeOrigin :: GraphGoals -> IO ()
 printEdgeOrigin x =
   case x of 
      GraphEdge(_, _, (DGLink _ _ tOrigin)) ->
           putStr $ show tOrigin
      _ -> putStr "No origin found !"
+
+printEdgeHomogeneous :: GraphGoals -> IO()
+printEdgeHomogeneous x =
+  case x of
+     GraphEdge (_, _ ,(DGLink tmorph _ _)) ->
+            if (isHomogeneous tmorph) then putStr "True"
+                                      else putStr "False"
+     _        -> putStr "Not an edge !" 
 
 printNodeOrigin :: GraphGoals -> IO()
 printNodeOrigin x =

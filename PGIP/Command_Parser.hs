@@ -267,6 +267,13 @@ shellDetails :: Sh [Status] ()
 shellDetails 
     = shellPutStr printDetails
 
+shellDisplayGraph :: Sh [Status] ()
+shellDisplayGraph 
+  = do 
+    val <-getShellSt >>= \state -> liftIO(cShowGraph "" state)
+    modifyShellSt (update val)
+
+
 -- The evaluation function is called when the input could not be parsed
 -- as a command. If the input is an empty string do nothing, otherwise 
 -- print the error message
@@ -337,22 +344,22 @@ pgipShellCommands
                       "shows list of all open dg goals")
                     : (cmd "show-theory-goals" shellShowTheoryGoals
                       "shows list of theory goals")
-                    : (cmd "show-theory" shellShowTheory
+                    : (cmd "show-theory-current" shellShowTheory
                       "shows current theory and proof goals")
---                    : (cmd "show-theory" shellShowTheoryP
---                      "shows theory of the provided node")
-                    : (cmd "info" shellInfo
+                    : (cmd "show-theory" shellShowTheoryP
+                      "shows theory of the provided node")
+                    : (cmd "info-current" shellInfo
                       "shows info about current dg node or edge")
---                    : (cmd "info" shellInfoP
---                      "shows info about the provided dg node")
-                    : (cmd "show-taxonomy" shellShowTaxonomy
+                    : (cmd "info" shellInfoP
+                      "shows info about the provided dg node")
+                    : (cmd "show-taxonomy-current" shellShowTaxonomy
                       "shows taxonomy graph")
---                    : (cmd "show-taxonomy" shellShowTaxonomyP
---                      "shows taxonomy graph of the provided node")
-                    : (cmd "show-concept" shellShowConcept
+                    : (cmd "show-taxonomy" shellShowTaxonomyP
+                      "shows taxonomy graph of the provided node")
+                    : (cmd "show-concept-current" shellShowConcept
                       "shows concept graph")
---                    : (cmd "show-concept" shellShowConceptP
---                      "shows concept graph of the provided node")
+                    : (cmd "show-concept" shellShowConceptP
+                      "shows concept graph of the provided node")
                     : (cmd "translate" shellTranslate
                       "translate theory goals along comorphism")
                     : (cmd "prover" shellProver
@@ -365,6 +372,8 @@ pgipShellCommands
                      "show all nodes of the development graph")
                     : (cmd "edges" shellEdges
                      "show all edges of the development graph")
+                    : (cmd "show-graph" shellDisplayGraph
+                     "displays the current dg graph")
                     : [] 
 
 

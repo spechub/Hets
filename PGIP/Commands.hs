@@ -37,6 +37,7 @@ import Common.Lexer
 import Common.AnnoState
 import Static.DevGraph
 import Data.Graph.Inductive.Graph
+import GUI.ShowGraph
 
 -- Scans a word contained in a path 
 scanPathFile::CharParser st String
@@ -743,17 +744,32 @@ cDgInferBasic input status =
               return []
    Right param -> 
     case status of
-     (Env ln libEnv):_ -> 
-       case param of
-        (Goals ls):_ -> do
+     (Env ln libEnv):l ->
+      case l of
+       (AllGoals allgoals):_ -> 
+          case param of
+            (Goals ls):_ -> do
                          let allNodes = convToGoal $ 
                                labNodes (lookupDGraph ln libEnv)
-                         ll <- getGoalList ls allNodes allNodes
+                         ll <- getGoalList ls (allgoals ++ allNodes) allNodes
                          return ((Selected ll):[])
-        _            -> return [(OutputErr "Wrong parameters")]
-     _:l               -> cDgInferBasic input l
-     []                -> return [(OutputErr "Wrong parameters")]
-                                        
+            _            -> return [(OutputErr "Wrong parameters")]
+       _:ll              -> cDgInferBasic input ((Env ln libEnv):ll)
+       []                -> return [(OutputErr "Wrong parameters")]
+     (AllGoals allgoals):l ->
+      case l of 
+       (Env ln libEnv):_ ->
+           case param of
+             (Goals ls):_ -> do
+                          let allNodes = convToGoal $
+                                labNodes (lookupDGraph ln libEnv)
+                          ll <- getGoalList ls (allgoals ++ allNodes) allNodes
+                          return ((Selected ll):[])
+             _           ->  return [(OutputErr "Wrong parameters")]
+       _:ll              -> cDgInferBasic input ((AllGoals allgoals):ll)
+       []                -> return [(OutputErr "Wrong parameters")]
+     _:l                 -> cDgInferBasic input l
+     []                  -> return [(OutputErr "Wrong parameters")]                                 
 
 cTranslate::String -> [Status] -> IO [Status]
 cTranslate input _
@@ -851,7 +867,7 @@ cShowNodeTheory input arg
                         (Goals ls):_ -> do
                              let allNodes = convToGoal $ 
                                   labNodes (lookupDGraph ln libEnv)
-                             list <- getGoalList ls allGoals allNodes
+                             list <- getGoalList ls allNodes allNodes
                              printNodeTheoryFromList list
                              return []
                         _ -> do
@@ -863,12 +879,12 @@ cShowNodeTheory input arg
                            return []
              (Env ln libEnv):l ->
                  case l of 
-                   (AllGoals allGoals):_ ->
+                   (AllGoals _):_ ->
                        case param of
                           (Goals ls):_ -> do
                                let allNodes = convToGoal $ 
                                      labNodes (lookupDGraph ln libEnv)
-                               list <- getGoalList ls allGoals allNodes
+                               list <- getGoalList ls allNodes allNodes
                                printNodeTheoryFromList list
                                return []
                           _ -> do 
@@ -903,7 +919,7 @@ cShowInfo input arg
           (Selected xx):_ -> do
                      let nodeList = 
                              labNodes (lookupDGraph ln libEnv)
-                     let allNodes = convToGoal nodeList
+--                     let allNodes = convToGoal nodeList
                      printInfoFromList xx nodeList
                      return []
           _:ll -> cShowInfo "" ((Env ln libEnv):ll)
@@ -928,7 +944,7 @@ cShowInfo input arg
                         (Goals ls):_ -> do
                              let nodeList = labNodes (lookupDGraph ln libEnv)
                              let allNodes = convToGoal nodeList 
-                             list <- getGoalList ls allGoals allNodes
+                             list <- getGoalList ls (allGoals++allNodes) allNodes
                              printInfoFromList list nodeList 
                              return []
                         _ -> do
@@ -945,7 +961,7 @@ cShowInfo input arg
                           (Goals ls):_ -> do
                                let nodeList = labNodes (lookupDGraph ln libEnv)
                                let allNodes = convToGoal nodeList 
-                               list <- getGoalList ls allGoals allNodes
+                               list <- getGoalList ls (allGoals++allNodes) allNodes
                                printInfoFromList list nodeList 
                                return []
                           _ -> do 
@@ -1002,7 +1018,7 @@ cShowNodeConcept input arg
                         (Goals ls):_ -> do
                              let allNodes = convToGoal $ 
                                   labNodes (lookupDGraph ln libEnv)
-                             list <- getGoalList ls allGoals allNodes
+                             list <- getGoalList ls allNodes allNodes
                              printNodeTaxonomyFromList KConcept list libEnv ln
                              return []
                         _ -> do
@@ -1014,12 +1030,12 @@ cShowNodeConcept input arg
                            return []
              (Env ln libEnv):l ->
                  case l of 
-                   (AllGoals allGoals):_ ->
+                   (AllGoals _):_ ->
                        case param of
                           (Goals ls):_ -> do
                             let allNodes = convToGoal $ 
                                   labNodes (lookupDGraph ln libEnv)
-                            list <- getGoalList ls allGoals allNodes
+                            list <- getGoalList ls allNodes allNodes
                             printNodeTaxonomyFromList KConcept list libEnv ln
                             return []
                           _ -> do 
@@ -1076,7 +1092,7 @@ cShowNodeTaxonomy input arg
                         (Goals ls):_ -> do
                              let allNodes = convToGoal $ 
                                   labNodes (lookupDGraph ln libEnv)
-                             list <- getGoalList ls allGoals allNodes
+                             list <- getGoalList ls allNodes allNodes
                              printNodeTaxonomyFromList KSubsort list libEnv ln
                              return []
                         _ -> do
@@ -1088,12 +1104,12 @@ cShowNodeTaxonomy input arg
                            return []
              (Env ln libEnv):l ->
                  case l of 
-                   (AllGoals allGoals):_ ->
+                   (AllGoals _):_ ->
                        case param of
                           (Goals ls):_ -> do
                              let allNodes = convToGoal $ 
                                    labNodes (lookupDGraph ln libEnv)
-                             list <- getGoalList ls allGoals allNodes
+                             list <- getGoalList ls allNodes allNodes
                              printNodeTaxonomyFromList KSubsort list libEnv ln
                              return []
                           _ -> do 
@@ -1180,4 +1196,29 @@ cViewNodeNumber input status =
         _            -> return [(OutputErr "Wrong parameters")]
      _:l               -> cViewNodeNumber input l
      []                -> return [(OutputErr "Wrong parameters")]
-       
+      
+
+cShowGraph :: String -> [Status] -> IO [Status]
+cShowGraph _ status =
+  (do
+    case status of
+       (Env ln libEnv):l ->
+         case l of 
+          (Address file) :_ -> do
+               showGraph file defaultHetcatsOpts (Just (ln,libEnv))
+               return []
+          _:ll -> cShowGraph "" ((Env ln libEnv):ll) 
+          [] -> do putStr "Error, no library loaded ! \n"
+                   return []
+       (Address  file):l ->
+         case l of
+          (Env ln libEnv):_ -> do 
+               showGraph file defaultHetcatsOpts (Just (ln, libEnv))
+               return []
+          _:ll -> cShowGraph "" ((Address file):ll)
+          [] -> do putStr "Error, no library loaded ! \n"
+                   return []
+       _:l -> cShowGraph "" l
+       [] -> do putStr "Error, no library loaded ! \n"
+                return []) `catch` (\_ -> return [])
+
