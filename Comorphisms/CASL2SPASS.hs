@@ -255,9 +255,14 @@ transPredMap idMap sign =
                                        (transPredType t)
                                        (Set.union (Rel.keysSet fma)
                                            (elemsSPId_Set idMap))
-
-disSPOId :: CType -> SPIdentifier -> [SPIdentifier] ->
-            Set.Set SPIdentifier -> SPIdentifier
+-- | disambiguation of SPASS Identifiers
+disSPOId :: CType -- ^ Type of CASl identifier 
+         -> SPIdentifier -- ^ translated CASL Identifier
+         -> [SPIdentifier] -- ^ translated Sort Symbols of the profile 
+                           -- (maybe empty) 
+         -> Set.Set SPIdentifier -- ^ SPASS Idetifiers already in use
+         -> SPIdentifier -- ^ fresh Identifier generated from second argument; 
+    -- if the idetifier was not in the set this is just the sencand argument
 disSPOId cType sid ty idSet
     | checkIdentifier cType sid && not (lkup sid) = sid
     | otherwise = let nSid = disSPOId' sid
