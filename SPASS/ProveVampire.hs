@@ -40,10 +40,10 @@ import GUI.GenericATPState
   feedback), then starts the GUI prover.
 -}
 vampire :: Prover Sign Sentence ATP_ProofTree
-vampire = 
-  Prover { prover_name = "Vampire",
+vampire = emptyProverTemplate
+         { prover_name = "Vampire",
            prover_sublogic = "SoftFOL",
-           prove = vampireGUI
+           proveGUI = Just vampireGUI
          }
 
 spassHelpText :: String

@@ -17,7 +17,8 @@ comorphisms.
 -}
 module Comorphisms.KnownProvers (KnownProversMap,
                                  defaultGUIProver,
-                                 knownProvers,
+                                 knownProversGUI,
+                                 knownProversWithKind,
                                  shrinkKnownProvers,
                                  showKnownProvers,
                                  showAllKnownProvers) where
@@ -32,7 +33,7 @@ import Logic.Logic (provers) -- hiding (top)
 import Logic.Coerce()
 import Logic.Grothendieck
 import Logic.Comorphism
-import Logic.Prover (prover_name)
+import Logic.Prover (prover_name,hasProverKind,ProverKind(..))
 
 import CASL.Logic_CASL
 import CASL.Sublogic
@@ -59,9 +60,14 @@ type KnownProversMap = Map.Map String [AnyComorphism]
 defaultGUIProver :: String
 defaultGUIProver = "SPASS"
 
--- | a map of known prover names to a list of simple (composed) comorphisms
-knownProvers :: Result KnownProversMap
-knownProvers =
+-- | a map of known prover names implemanting a GUI interface
+knownProversGUI :: Result KnownProversMap
+knownProversGUI = knownProversWithKind ProveGUI
+
+-- | a map of known prover names for a specific prover kind 
+-- to a list of simple (composed) comorphisms
+knownProversWithKind :: ProverKind -> Result KnownProversMap
+knownProversWithKind pk =
     do isaCs <- isaComorphisms
        spassCs <- spassComorphisms
        return $ foldl insProvers Map.empty (isaCs++spassCs)
@@ -69,8 +75,10 @@ knownProvers =
               case cm of
               (Comorphism cid) ->
                  let prs = provers (targetLogic cid)
-                 in foldl (\ m p -> Map.insertWith mergeLists
-                                          (prover_name p) [cm] m) kpm prs
+                 in foldl (\ m p -> if hasProverKind pk p 
+                                    then Map.insertWith mergeLists
+                                          (prover_name p) [cm] m
+                                    else m) kpm prs
              mergeLists xs ys = ys++xs
 
 
@@ -128,7 +136,7 @@ spassComorphisms =
 
 showAllKnownProvers :: IO ()
 showAllKnownProvers =
-    do let Result ds mkpMap = knownProvers
+    do let Result ds mkpMap = knownProversGUI
        putStrLn "Diagnoses:"
        putStrLn $ unlines $ map show ds
        maybe exitFailure showKnownProvers mkpMap

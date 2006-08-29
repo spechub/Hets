@@ -89,8 +89,11 @@ getProvers = foldl addProvers []
     where addProvers acc cm =
               case cm of
               Comorphism cid -> acc ++
-                  map (\p -> (G_prover (targetLogic cid) p,cm))
-                      (provers $ targetLogic cid)
+                  foldl (\ l p -> if hasProverKind ProveGUI p 
+                                     then (G_prover (targetLogic cid) p,cm):l
+                                     else l)
+                        []
+                        (provers $ targetLogic cid)
 
 
 {-     [(G_prover (targetLogic cid) p, cm) |
@@ -124,7 +127,8 @@ cons_check :: Logic lid sublogics
            => lid -> ConsChecker sign sentence morphism proof_tree
            -> String -> TheoryMorphism sign sentence morphism proof_tree
            -> IO([Proof_status proof_tree])
-cons_check _ = prove
+cons_check _ c = 
+    maybe (\ _ _ -> fail "proveGUI not implemented") id (proveGUI c)
 
 proveTheory :: Logic lid sublogics
               basic_spec sentence symb_items symb_map_items
@@ -132,7 +136,9 @@ proveTheory :: Logic lid sublogics
            => lid -> Prover sign sentence proof_tree
            -> String -> Theory sign sentence proof_tree
            -> IO([Proof_status proof_tree])
-proveTheory _ = prove
+proveTheory _ p = 
+    maybe (\ _ _ -> fail "proveGUI not implemented") id (proveGUI p)
+                
 
 -- | applies basic inference to a given node
 basicInferenceNode :: Bool -> LogicGraph -> (LIB_NAME,Node) -> LIB_NAME
@@ -175,7 +181,7 @@ basicInferenceNode checkCons lg (ln, node) libname libEnv = do
             return newProofStatus
           else do -- proving
             -- get known Provers
-            kpMap <- liftR $ knownProvers
+            kpMap <- liftR $ knownProversGUI
             let kpMap' = shrinkKnownProvers sublogic kpMap
             newTh <- ResultT $
                    proofManagementGUI lid1 proveKnownPMap

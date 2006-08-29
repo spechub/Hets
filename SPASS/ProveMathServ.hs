@@ -46,10 +46,10 @@ import GUI.GenericATPState
   feedback), then starts the GUI prover.
 -}
 mathServBroker :: Prover Sign Sentence ATP_ProofTree
-mathServBroker =
-  Prover { prover_name = "MSBroker",
+mathServBroker = emptyProverTemplate
+         { prover_name = "MSBroker",
            prover_sublogic = "SoftFOL",
-           prove = mathServBrokerGUI
+           proveGUI = Just mathServBrokerGUI
          }
 
 spassHelpText :: String

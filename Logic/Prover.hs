@@ -18,17 +18,20 @@ Provide prover stuff for class Logic.Sentences
 
 module Logic.Prover where
 
+import qualified Common.OrderedMap as OMap
+import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
+
 import qualified Common.AS_Annotation as AS_Anno
 import Common.Utils
 import Common.ProofUtils
 import Common.DynamicUtils
-import qualified Common.OrderedMap as OMap
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
+import Common.Result
 import Common.Doc
 import Common.DocUtils
-import Data.List
 
+import Data.List
+import Data.Maybe (isJust)
 -- * sentence packing
 
 data SenStatus a tStatus = SenStatus
@@ -233,17 +236,45 @@ goalUsedInProof pst =
     Proved m -> maybe (fail "don't know if goal was used") return m
     _ -> fail "not a proof"
 
+-- | different kinds of prover interfaces
+data ProverKind = ProveGUI | ProveCMDLautomatic | ProveCMDLinteractive
+
+-- | determine if a prover kind is implemented
+hasProverKind :: ProverKind -> ProverTemplate x y -> Bool
+hasProverKind pk pt = 
+    case pk of
+    ProveGUI -> isJust $ proveGUI pt
+    ProveCMDLautomatic -> isJust $ proveCMDLautomatic pt
+    ProveCMDLinteractive -> isJust $ proveCMDLinteractive pt
+
 -- | prover or consistency checker
 data ProverTemplate theory proof_tree = Prover
     { prover_name :: String,
       prover_sublogic :: String,
-      prove :: String -> theory -> IO([Proof_status proof_tree])
+      proveGUI :: Maybe (String -> theory -> IO ([Proof_status proof_tree])),
       -- input: theory name, theory (incl. goals)
       -- output: proof status for goals and lemmas
+      proveCMDLautomatic :: Maybe (String -> Tactic_script
+                         -> theory -> IO (Result ([Proof_status proof_tree]))),
+      -- input: theory name, default Tactic_script,
+      --        theory (incl. goals and 
+      --                Open SenStatus for individual tactic_scripts)
+      -- output: proof status for goals and lemmas
+      proveCMDLinteractive :: Maybe (String -> Tactic_script
+                         -> theory -> IO (Result ([Proof_status proof_tree])))
+      -- input, output: see above
     }
 
 type Prover sign sentence proof_tree =
     ProverTemplate (Theory sign sentence proof_tree) proof_tree
+
+emptyProverTemplate :: ProverTemplate x y
+emptyProverTemplate = Prover 
+              { prover_name = error "Empty proverTemplate name"
+              , prover_sublogic = error "Empty proverTemplate sublogic"
+              , proveGUI = Nothing
+              , proveCMDLautomatic = Nothing
+              , proveCMDLinteractive = Nothing }
 
 type ConsChecker sign sentence morphism proof_tree =
   ProverTemplate (TheoryMorphism sign sentence morphism proof_tree) proof_tree

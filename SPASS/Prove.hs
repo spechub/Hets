@@ -54,10 +54,10 @@ import GUI.GenericATPState
   feedback), then starts the GUI prover.
 -}
 spassProver :: Prover Sign Sentence ATP_ProofTree
-spassProver =
-  Prover { prover_name = "SPASS",
+spassProver = emptyProverTemplate
+         { prover_name = "SPASS",
            prover_sublogic = "SoftFOL",
-           prove = spassProveGUI
+           proveGUI = Just spassProveGUI
          }
 
 -- * Main GUI

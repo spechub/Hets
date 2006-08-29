@@ -56,17 +56,16 @@ isabelleS :: String
 isabelleS = "Isabelle"
 
 isabelleProver :: Prover Sign Sentence ()
-isabelleProver =
-     Prover { prover_name = isabelleS,
-              prover_sublogic = isabelleS,
-              prove = isaProve
-            }
+isabelleProver = emptyProverTemplate 
+        { prover_name = isabelleS,
+          prover_sublogic = isabelleS,
+          proveGUI = Just isaProve }
 
 isabelleConsChecker :: ConsChecker Sign Sentence (DefaultMorphism Sign) ()
-isabelleConsChecker =
-     Prover { prover_name = "Isabelle-refute",
-              prover_sublogic = isabelleS,
-              prove = consCheck }
+isabelleConsChecker = emptyProverTemplate
+       { prover_name = "Isabelle-refute",
+         prover_sublogic = isabelleS,
+         proveGUI = Just consCheck }
 
 openIsaProof_status :: String -> Proof_status ()
 openIsaProof_status n = openProof_status n (prover_name isabelleProver) ()
