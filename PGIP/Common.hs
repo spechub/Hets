@@ -607,8 +607,8 @@ countUnprovenThm :: [P.SenStatus a b] -> Int -> Int
 countUnprovenThm ls nb
  = case ls of
        []   -> nb
-       x:l  -> if (emtyList (P.thmStatus x)) then countUnprovenThm l nb
-                                  else countUnprovenThm l (nb+1)
+       x:l  -> if (emtyList (P.thmStatus x)) then countUnprovenThm l (nb+1)
+                                  else countUnprovenThm l nb
 
 -- | The function adds to the given number the number of proven theorems
 -- found in the list
@@ -616,8 +616,8 @@ countProvenThm :: [P.SenStatus a b] -> Int -> Int
 countProvenThm ls nb
  = case ls of
     []  -> nb
-    x:l -> if (emtyList (P.thmStatus x)) then countProvenThm l (nb+1)
-                                             else countProvenThm l nb
+    x:l -> if (emtyList (P.thmStatus x)) then countProvenThm l nb
+                                             else countProvenThm l (nb+1)
 
 
 -- | From a list of sentences and SenStatus the function returns only 
