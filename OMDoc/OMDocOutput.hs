@@ -324,6 +324,7 @@ createXmlThmLink lenv ln (edge@(from, to, ll)) uniqueNames names =
   let
     dg = devGraph $ Map.findWithDefault (error "!") ln lenv
     fromnode = Data.Maybe.fromMaybe (error "!") $ Graph.lab dg from
+    tonode = Data.Maybe.fromMaybe (error "!") $ Graph.lab dg to
     fromname =
       case
         find
@@ -350,6 +351,12 @@ createXmlThmLink lenv ln (edge@(from, to, ll)) uniqueNames names =
           asOMDocFile $ unwrapLinkSource $ dgn_libname fromnode
         else
           ""
+    toliburl =
+      if isDGRef tonode
+        then
+          asOMDocFile $ unwrapLinkSource $ dgn_libname tonode
+        else
+          ""
     tagname =
       case dgl_type ll  of
         (Static.DevGraph.GlobalThm _ _ _) -> theoryInclusionS
@@ -371,7 +378,7 @@ createXmlThmLink lenv ln (edge@(from, to, ll)) uniqueNames names =
                 ++ "." ++ toname ++ "." ++ fromname
             )
           +++ HXT.sattr "from" (liburl ++ "#" ++ fromname) 
-          +++ HXT.sattr "to" ("#" ++ toname)
+          +++ HXT.sattr "to" (toliburl ++ "#" ++ toname)
           +++ consattr
           +++ (createXmlMorphism lenv ln edge uniqueNames names)
         )
@@ -906,7 +913,32 @@ libEnvLibNameIdNameMappingToXmlCMPIO
   =
     let
       dg = devGraph $ Map.findWithDefault (error "!") ln lenv
+      thmLinksToRefs =
+        filter
+          (\(_, to, _) ->
+            case Graph.lab dg to of
+              Nothing -> False
+              (Just n) -> isDGRef n
+          )
+          (filterThmLinks $ Graph.labEdges dg)
+      thmLinksToRefsXml =
+        foldl
+          (\t edge ->
+            t
+            +++
+            xmlNL
+            +++
+            createXmlThmLink
+              lenv
+              ln
+              edge
+              uniqueNames
+              fullNames
+          )
+          xmlNullFilter
+          thmLinksToRefs
     in
+      (
       foldl
         (\xio (nn, node) ->
           let
@@ -1138,6 +1170,7 @@ libEnvLibNameIdNameMappingToXmlCMPIO
         )
         (return xmlNullFilter)
         (Graph.labNodes dg)
+        ) >>= \x -> return (x +++ thmLinksToRefsXml +++ xmlNL)
 
 {- |
   create a xml-name for a library.

@@ -2501,6 +2501,13 @@ getImportedTheories xml =
           getValue "from"
         )
         omdoc
+    tincsrefs = map (\n -> xshow [n]) $
+      applyXmlFilter
+        (getChildren .>
+          (isTag "theory-inclusion" +++ isTag "axiom-inclusion") .>
+          getValue "to"
+        )
+        omdoc
     externalImports = foldl (\eI i ->
       let
         muri = URI.parseURIReference i
@@ -2513,7 +2520,7 @@ getImportedTheories xml =
             Map.insert fragment path eI
           else
             eI
-      ) Map.empty (timports ++ tincs)
+      ) Map.empty (timports ++ tincs ++ tincsrefs)
   in
     Map.union catmap externalImports
         
