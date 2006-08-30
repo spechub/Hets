@@ -1263,7 +1263,9 @@ predsXNWONFromXmlTheory cdmap xntheoryset xnsortset anxml =
                   (Just xnarg) ->
                     if (xnWOaToO xnarg) /= theonode
                       then
-                        error "Found Argument but in wrong Theory!"
+                        Debug.Trace.trace
+                          ("Found Argument (" ++ show xnarg ++ ") but in wrong Theory! (not theory #" ++ show theonode ++ ")")
+                          xnarg
                       else
                         xnarg
             )
@@ -1397,7 +1399,9 @@ opsXNWONFromXmlTheory cdmap xntheoryset xnsortset anxml =
                             s
                   (Just xnarg) -> if (xnWOaToO xnarg) /= theonode
                     then
-                      error "Found Argument but in wrong Theory!"
+                      Debug.Trace.trace
+                        ("Found Argument (" ++ show xnarg ++ ") but in wrong Theory! (not in theory #" ++ show theonode ++ ")")
+                        xnarg
                     else
                       xnarg
             )
@@ -2238,8 +2242,8 @@ processEdge
     -- fromnode = fromMaybe (error "No such node!") $ Graph.lab tdg from
     -- tonode = fromMaybe (error "No such node!") $ Graph.lab tdg to
     unprocessedFrom = filter (\(from', tof, _) -> (from' /= from) && (tof == from) ) edges
-    --fromxname = Map.findWithDefault (error "No such name!") from nxm
-    --toxname = Map.findWithDefault (error "No such name!") to nxm
+    fromxname = Map.findWithDefault (error "No such name!") from nxm
+    toxname = Map.findWithDefault (error "No such name!") to nxm
     (parallelImports, otherImports) =
       partition (\(_, tot, _) -> tot == to) edges
   in
@@ -2255,8 +2259,9 @@ processEdge
               ( betterEdges, rest ) ->
                 if failcount > 50
                   then
-     {-               Debug.Trace.trace
-                      ("FC!") -}
+                    Debug.Trace.trace
+                      ("Forced decision in link application from "
+                        ++ fromxname ++ " to " ++ toxname ++ "!") 
                       ( applyLink tdg tedge, edges, 0)
                   else
 {-                    Debug.Trace.trace
@@ -2759,7 +2764,7 @@ processImportGraphXN go ig =
                   (show (xnSortsMap ffxi) ++ " -> " ++ show (xnSortsMap newffxi))
                   $
                   sensXNWONFromXml go newffxi axtheoryset
-              mdg = mergeSentences nxm sensmap dg
+              mdg = fixMorphisms $ mergeSentences nxm sensmap dg
               -- name = (\(_, (S (nname,_) _)) -> nname) changednode
               -- create the altered node
               newnode = (\(nodenum, S a (omdoc,_)) ->
@@ -2774,7 +2779,51 @@ processImportGraphXN go ig =
                 (newnode:othernodes)
                 (Graph.labEdges igxmd)
 
+{- |
+  After merging all sentences for a target-node, the morphisms still
+  point to the old signature. This function updates the target-
+  signatures of all morphisms.
+-}
+fixMorphisms::DGraph->DGraph
+fixMorphisms dg =
+  let
+    labnodes = Graph.labNodes dg
+    labedges = Graph.labEdges dg
+    newedges =
+      foldl
+        (\ne (from, to, dgl) ->
+          let
+            caslmorph = Hets.getCASLMorphLL dgl
+            tonode =
+              fromMaybe
+                (error "!")
+                $
+                Graph.lab dg to
+            nodesign =
+              Hets.getJustCASLSign $ Hets.getCASLSign (dgn_sign tonode)
+            newmorph =
+              caslmorph
+                {
+                  mtarget = nodesign
+                }
+          in
+            ne ++
+              [
+                (
+                  from
+                  , to
+                  , dgl { dgl_morphism = Hets.makeCASLGMorphism newmorph }
+                )
+              ]
+        )
+        []
+        labedges
+  in
+    Graph.mkGraph labnodes newedges
 
+{- |
+  insert sentences from xml into the nodes (after all sorts are known).
+-}
 mergeSentences::
   Map.Map Graph.Node XmlName ->
   Map.Map XmlName (Set.Set (XmlNamed Hets.SentenceWO))->
