@@ -195,6 +195,59 @@ getShortPrefix wd tmp
                              else getShortPrefix (reverseOrder tmp []) []
         else return []
 
+eliminateFirst ::String -> String -> String
+eliminateFirst tmp1 tmp2 
+ = case tmp1 of 
+      []    -> tail tmp2
+      _:l   -> eliminateFirst l (tail tmp2)
+
+
+arrowType :: String -> Bool
+arrowType ls
+ = case ls of 
+     '-':l -> case l of 
+               '>':_ -> True
+               _  -> False
+     _:l -> arrowType l 
+     [] -> False  
+
+processElements :: String -> String -> IO [String]
+processElements input tmp
+  = case input of 
+      ' ':l  -> case tmp of 
+                   [] -> processElements l tmp
+                   _ -> if (arrowNext l)  
+                            then if (arrowType l) 
+                                    then processElements (afterArrow l) 
+                                                    (tmp ++ " -> ")
+                                    else processElements (afterArrow l)
+                                                    (tmp ++ " - ")
+                            else do
+                                  t<- processElements l "" 
+                                  return (tmp : t)  
+      x:l -> processElements l (tmp ++ [x])
+      []  -> return []
+
+
+getUsedElements :: String -> IO [String]
+getUsedElements input 
+ = do 
+    tmp1 <- getShortPrefix input ""
+    let tmp2 = getLongPrefix input ""
+    processElements (eliminateFirst tmp1 tmp2) ""
+
+eliminateElement ::String -> [String] -> [String]
+eliminateElement el ls
+  = case ls of 
+     x:l -> if (x==el) then eliminateElement el l
+                       else x:(eliminateElement el l)
+     [] -> []
+
+eliminateList :: [String] -> [String] -> [String]
+eliminateList ls ll
+ = case ls of 
+     x:l -> eliminateList l (eliminateElement x ll)
+     []  -> ll
 
 getLongPrefix :: String -> String -> String
 getLongPrefix wd tmp
@@ -221,13 +274,15 @@ pgipCompletionFn state wd
         pref <- getShortPrefix wd []
         if ((prefixType pref)> 0) 
          then do
-          let values = if ((prefixType pref)==1)
+          let tmp= if ((prefixType pref)==1)
                then getGoalNameFromList allGoals (labNodes dgraph)
                else
                    if ((prefixType pref)==2)
                     then  getNameList (labNodes dgraph)
                     else ((getNameList (labNodes dgraph)) ++
                            (getGoalNameFromList allGoals (labNodes dgraph)))
+          usedElem <- getUsedElements wd
+          let values = eliminateList usedElem tmp
           let list = checkWord (getSuffix wd) values
           if (list==[]) then return []
                         else return (addWords list (getLongPrefix wd []))
