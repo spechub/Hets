@@ -6,11 +6,13 @@ Maintainer  : r.pascanu@iu-bremen.de
 Stability   : provisional
 Portability : portable
 
-Usefull functions and datatypes for the parser.
+Toghether with PGIP.Utils, PGIP.Common contains all the auxiliary functions
+used throughout the interactive interface. The reason for dividing these
+functions in two files was that otherwise we would've get a circular 
+inclusion (for example Proof.Automatic requieres some of these auxiliary 
+functions, but some other functions -- that appear now in PGIP.Common -- 
+require some functions from Proof.Automatic)
 
-
-   TODO 
-       - add comment.
 
 -} 
 
@@ -38,7 +40,7 @@ import Destructible
 import qualified Logic.Prover as P
 import qualified Common.OrderedMap as OMap
     
--- The datatype CmdParam contains all the possible parameters a command of
+-- | The datatype CmdParam contains all the possible parameters a command of
 -- the interface might have. It is used to create one function that returns
 -- the parameters after parsing no matter what command is parsed
 data CmdParam =
@@ -56,7 +58,7 @@ data CmdParam =
  deriving (Eq,Show)
 
 
--- The datatype Status contains the current status of the interpeter at any
+-- | The datatype Status contains the current status of the interpeter at any
 -- moment in time
 data Status = 
    OutputErr  String
@@ -80,7 +82,7 @@ data Status =
 
 
 
--- The function checks if w1 is a prefix of w2
+-- | The function checks if the first string is a prefix of the second.
 prefix :: String -> String -> Bool
 prefix w1 w2 
  = case w1 of 
@@ -90,6 +92,7 @@ prefix w1 w2
                []    -> False
      [] -> True
 
+-- | The function returns the name of all nodes from the given list
 getNameList :: [GDataNode] -> [String]
 getNameList ls
  = case ls of
@@ -97,7 +100,7 @@ getNameList ls
      (_, (DGRef  thName _ _ _ _ _ )):l   -> (showName thName):(getNameList l)
      []                                  -> []
 
--- The function checks if the word 'wd' is a prefix of the name of 
+-- | The function checks if the word 'wd' is a prefix of the name of 
 -- any of the nodes in the list, if so it returns the list of the 
 -- names otherwise it returns the empty list
 checkWord :: String -> [String] -> [String]
@@ -112,14 +115,14 @@ checkWord wd allNodes
                                 else checkWord wd l
      []                   -> [] 
  
--- The function flips a string around
+-- | The function flips a string around
 reverseOrder :: String -> String -> String
 reverseOrder ls wd
  = case ls of
       [] ->  wd
       x:l -> reverseOrder l (x:wd)
 
--- The function categorizes the commands after the
+-- | The function categorizes the commands after the
 -- type of arguments it should expect
 prefixType ::String -> Int
 prefixType wd
@@ -157,7 +160,7 @@ afterArrow ls =
       '-':l -> afterArrow l
       '>':l -> afterArrow l
       smth  -> smth
--- The function checks if a word still has white spaces or not
+-- | The function checks if a word still has white spaces or not
 hasWhiteSpace :: String -> Bool
 hasWhiteSpace ls 
  = case ls of
@@ -172,14 +175,14 @@ hasWhiteSpace ls
        _:l   -> hasWhiteSpace l
 
 
--- The function tries to obtain only the incomplete word
+-- | The function tries to obtain only the incomplete word
 -- removing the command name
 getSuffix :: String -> String
 getSuffix wd
  = if (hasWhiteSpace wd) then getSuffix (tail wd)
                          else wd
 
--- The function given a string tries to obtain the command
+-- | The function given a string tries to obtain the command
 -- name and remove the incomplete word from the end
 getShortPrefix :: String -> String -> IO String
 getShortPrefix wd tmp
@@ -198,7 +201,7 @@ getLongPrefix wd tmp
  = if (hasWhiteSpace wd)
           then getLongPrefix (tail wd) ((head wd):tmp)
           else reverseOrder tmp []
--- The function simply adds the 'wd' string as a prefix to any
+-- | The function simply adds the string as a prefix to any
 -- word from the given list
 addWords ::[String] -> String -> [String]
 addWords ls wd
@@ -206,7 +209,7 @@ addWords ls wd
       x:l  -> (wd++x):(addWords l wd)
       []   -> []
 
--- The function 'pgipCompletionFn' given the current status and an incomplete
+-- | The function 'pgipCompletionFn' given the current status and an incomplete
 -- word provides a list of possible words completions
 pgipCompletionFn :: [Status] -> String -> IO [String]
 pgipCompletionFn state wd
@@ -254,7 +257,7 @@ pgipCompletionFn state wd
     []                -> return []
 
 
--- The function 'getNodeList' returns from a list of graph goals just
+-- | The function 'getNodeList' returns from a list of graph goals just
 -- the nodes as [GDataNode]
 getNodeList :: [GraphGoals] -> [GDataNode]
 getNodeList ls =
@@ -263,7 +266,7 @@ getNodeList ls =
             (GraphNode x):l  -> x:(getNodeList l)
             []               -> []
 
--- The function 'update' returns the updated version of 'status' with the
+-- | The function 'update' returns the updated version of 'status' with the
 -- values from 'val' (i.e replaces any value from 'status' with the one from
 -- 'val' if they are of the same type otherwise just adds the values from 'val'
 update::[Status] -> [Status] -> [Status]
@@ -341,7 +344,7 @@ update val status
 
 
 
--- The function 'printNodeTheoryFromList' prints on the screen the theory
+-- | The function 'printNodeTheoryFromList' prints on the screen the theory
 -- of all nodes in the [GraphGoals] list
 printNodeTheoryFromList :: [GraphGoals]-> IO()
 printNodeTheoryFromList ls =
@@ -355,7 +358,7 @@ printNodeTheoryFromList ls =
                                 return result
                      []    -> return ()
 
--- The function 'printNodeTheory' given a GraphGoal prints on the screen
+-- | The function 'printNodeTheory' given a GraphGoal prints on the screen
 -- the theory of the node if the goal is a node or 'Not a node !' otherwise
 printNodeTheory :: GraphGoals -> IO()
 printNodeTheory arg =
@@ -367,7 +370,7 @@ printNodeTheory arg =
    _      -> putStr "Not a node!\n" 
 
 
--- The function 'findNode' finds to node with the number 'nb' in the goal list
+-- | The function 'findNode' finds to node with the number 'nb' in the goal list
 findNode :: Int -> [GDataNode] ->Maybe GraphGoals
 findNode nb ls
  = case ls of
@@ -378,7 +381,8 @@ findNode nb ls
                             findNode nb l
            []  -> Nothing
 
-
+-- | The function returns the name of all goals from the list (it
+-- requires all the nodes from the graph as a parameter as well)
 getGoalNameFromList :: [GraphGoals] -> [GDataNode] -> [String]
 getGoalNameFromList ls allNodes =
   case ls of 
@@ -391,6 +395,7 @@ getGoalNameFromList ls allNodes =
                               (getGoalNameFromList l allNodes)
        []              -> []
 
+-- | The function returns the name of the goal if it is a node
 getGoalName ::GraphGoals -> String
 getGoalName x 
  = case x of 
@@ -398,7 +403,7 @@ getGoalName x
        (GraphNode (_,(DGRef  thName _ _ _ _ _)))   -> showName thName
        _                                           -> "Not a node !"
 
--- The function 'printInfoFromList' given a GraphGoal list prints the 
+-- | The function 'printInfoFromList' given a GraphGoal list prints the 
 -- name of all goals (node or edge)
 printNamesFromList :: [GraphGoals] ->[GDataNode]-> IO()
 printNamesFromList ls allNodes =
@@ -419,6 +424,8 @@ printNamesFromList ls allNodes =
               return result
         []              -> return ()
 
+-- | The function prints the number of all nodes provided as
+-- graph goals
 printNodeNumberFromList :: [GraphGoals]-> IO()
 printNodeNumberFromList ls =
   case ls of 
@@ -432,6 +439,7 @@ printNodeNumberFromList ls =
                return result
      []         -> return ()
 
+-- | The function prints the number of the graph goal if it is a node
 printNodeNumber:: GraphGoals -> IO()
 printNodeNumber x =
   case x of
@@ -441,7 +449,7 @@ printNodeNumber x =
                   putStr ("Node "++(showName tname)++" has number "++(show nb))
      _               -> putStr "Not a node !\n"
 
--- The function 'printNodeInfoFromList' given a GraphGoal list prints the 
+-- | The function 'printNodeInfoFromList' given a GraphGoal list prints the 
 -- name of all node goals
 printInfoFromList :: [GraphGoals] -> [GDataNode] -> IO()
 printInfoFromList ls allNodes=
@@ -496,7 +504,7 @@ printInfoFromList ls allNodes=
               result<- printInfoFromList l allNodes
               return result
         []              -> return ()
--- The function 'printNodeInfo' given a GraphGoal prints the name of the node
+-- | The function 'printNodeInfo' given a GraphGoal prints the name of the node
 -- if it is a graph node otherwise prints 'Not a node !'
 printNodeInfo :: GraphGoals -> IO()
 printNodeInfo x =
@@ -507,7 +515,7 @@ printNodeInfo x =
                                         putStr (( showName tname))
           _                          -> putStr "Not a node!\n"
 
-
+-- | The function, give an edge as a graph goal prints the type of the edge
 printEdgeType :: GraphGoals -> IO()
 printEdgeType x =
   case x of
@@ -530,7 +538,7 @@ printEdgeType x =
            _                 -> putStr "unknown type"
     _ -> putStr "Not an edge !"
 
-
+-- | The function give an edge as a graph goal prints the origin of the edge
 printEdgeOrigin :: GraphGoals -> IO ()
 printEdgeOrigin x =
   case x of 
@@ -538,6 +546,8 @@ printEdgeOrigin x =
           putStr $ show tOrigin
      _ -> putStr "No origin found !"
 
+-- | The function given an edge as a graph goal prints True if it is 
+-- homogeneaus and false otherwise
 printEdgeHomogeneous :: GraphGoals -> IO()
 printEdgeHomogeneous x =
   case x of
@@ -546,6 +556,7 @@ printEdgeHomogeneous x =
                                       else putStr "False"
      _        -> putStr "Not an edge !" 
 
+-- | The function prints the origin of the node given as graph goal
 printNodeOrigin :: GraphGoals -> IO()
 printNodeOrigin x =
   case x of
@@ -553,6 +564,7 @@ printNodeOrigin x =
                 putStr (show torigin)
     _        -> putStr "Node does not have an origin"
 
+-- | The function prints the sublogic of the node given as graph goal
 printNodeSublogic :: GraphGoals -> IO ()
 printNodeSublogic x =
   case x of 
@@ -562,7 +574,7 @@ printNodeSublogic x =
               putStr (show (sublogicOfTh tTh))
      _ -> putStr "Node does not have a sublogic"
 
-
+-- | The funcion prints the number of axioms of the node given as graph goal
 printNodeNumberAxioms :: GraphGoals -> IO ()
 printNodeNumberAxioms input =
   case input of
@@ -573,12 +585,15 @@ printNodeNumberAxioms input =
     _ -> putStr "Not a node ! \n"
 
 
+-- | The function checks if a list is emty or not (same as null)
 emtyList :: forall a.[a] -> Bool
 emtyList ls =
   case ls of 
       [] -> True
       _  -> False
 
+-- | The function adds to the given number the number of symbols found in the 
+-- given list (sentences from the theory of the node)
 countSymbols :: [P.SenStatus a b]->Int -> Int
 countSymbols ls nb
  = case ls of 
@@ -586,6 +601,8 @@ countSymbols ls nb
        x:l -> if (P.isAxiom x)  then countSymbols l (nb+1)
                              else countSymbols l nb
 
+-- | The function adds to the given number the number of unproven theorems 
+-- found in the list
 countUnprovenThm :: [P.SenStatus a b] -> Int -> Int
 countUnprovenThm ls nb
  = case ls of
@@ -593,6 +610,8 @@ countUnprovenThm ls nb
        x:l  -> if (emtyList (P.thmStatus x)) then countUnprovenThm l nb
                                   else countUnprovenThm l (nb+1)
 
+-- | The function adds to the given number the number of proven theorems
+-- found in the list
 countProvenThm :: [P.SenStatus a b] -> Int -> Int
 countProvenThm ls nb
  = case ls of
@@ -600,12 +619,18 @@ countProvenThm ls nb
     x:l -> if (emtyList (P.thmStatus x)) then countProvenThm l (nb+1)
                                              else countProvenThm l nb
 
+
+-- | From a list of sentences and SenStatus the function returns only 
+-- the list of SenStatus
 extractSenStatus :: [(String, P.SenStatus a b)] -> [P.SenStatus a b]
 extractSenStatus ls =
   case ls of
       []       ->  []
       (_,b):l  ->  b:(extractSenStatus l)
 
+
+-- | The function prints the number of symbols of the node theory given 
+-- as a graph goal
 printNodeNumberSymbols :: GraphGoals ->  IO ()
 printNodeNumberSymbols input =
   case input of
@@ -616,6 +641,8 @@ printNodeNumberSymbols input =
       _  -> putStr "Not a node ! \n"
 
 
+-- | The function prints the number of unproven theorems of the node theory
+-- given as a graph goal
 printNodeNumberUnprovenThm :: GraphGoals -> IO ()
 printNodeNumberUnprovenThm input =
  case input of 
@@ -625,6 +652,8 @@ printNodeNumberUnprovenThm input =
         putStr $ show (countUnprovenThm (extractSenStatus (OMap.toList x)) 0)
      _  -> putStr "Not a node ! \n"
 
+-- | The function prints the number of proven theorems of the node theory
+-- given as a graph goal
 printNodeNumberProvenThm :: GraphGoals -> IO ()
 printNodeNumberProvenThm input =
  case input of
@@ -634,7 +663,7 @@ printNodeNumberProvenThm input =
         putStr $ show (countProvenThm (extractSenStatus (OMap.toList x)) 0)
      _  -> putStr "Not a node ! \n"
 
--- The function 'printNodeTaxonomyFromList' given a GraphGoals list generates
+-- | The function 'printNodeTaxonomyFromList' given a GraphGoals list generates
 -- the 'kind' type of Taxonomy Graphs of all goal nodes from the list
 printNodeTaxonomyFromList :: TaxoGraphKind -> [GraphGoals]->LibEnv -> LIB_NAME -> IO()
 printNodeTaxonomyFromList kind ls libEnv ln =
@@ -651,7 +680,7 @@ printNodeTaxonomyFromList kind ls libEnv ln =
                    []  -> return ()
 
 
--- The function 'printNodeTaxonomy' given just a GraphGoal generates
+-- | The function 'printNodeTaxonomy' given just a GraphGoal generates
 -- the 'kind' type of Taxonomy Graphs if the goal is a node otherwise
 -- it prints on the screen 'Not a node !'
 printNodeTaxonomy :: TaxoGraphKind -> GraphGoals -> LibEnv -> LIB_NAME ->IO()
@@ -679,7 +708,7 @@ printNodeTaxonomy kind x libEnv ln =
                            putStr "Error computing the theory of the node!\n"
      _            -> putStr "Not a node!\n"
         
--- The function proveNodes applies basicInferenceNode for proving to
+-- | The function proveNodes applies basicInferenceNode for proving to
 -- all nodes in the graph goal list
 proveNodes :: [GraphGoals] -> LIB_NAME ->LibEnv -> IO LibEnv
 proveNodes ls ln libEnv

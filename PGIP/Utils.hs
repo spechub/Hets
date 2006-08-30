@@ -6,11 +6,13 @@ Maintainer  : r.pascanu@iu-bremen.de
 Stability   : provisional
 Portability : portable
 
-Usefull functions and datatypes for the parser.
+Toghether with PGIP.Common, PGIP.Utils contains all the auxiliary functions
+used throughout the interactive interface. The reason for dividing these
+functions in two files was that otherwise we would've get a circular 
+inclusion (for example Proof.Automatic requieres some of these auxiliary 
+functions, but some other functions -- that appear now in PGIP.Common -- 
+require some functions from Proof.Automatic)
 
-
-   TODO 
-       - add comment.
 
 -} 
 
@@ -28,7 +30,7 @@ data GraphGoals =
  | GraphEdge GDataEdge
  deriving (Eq,Show)
 
--- The datatype GOAL contains all the information read by the parser from the
+-- | The datatype GOAL contains all the information read by the parser from the
 -- user
 data GOAL = 
    Node         String   
@@ -38,7 +40,7 @@ data GOAL =
 
 
 
--- The function 'getGoalList' creates a graph goal list ( a graph goal is 
+-- | The function 'getGoalList' creates a graph goal list ( a graph goal is 
 -- defined by the datatype GraphGoals) that is a part of 'allg' list passed
 -- as an argument and corresponds to goalList (a parased goal list, see
 -- GOAL datatype)
@@ -68,7 +70,7 @@ getGoalList goalList allg ll
     [] -> return [] 
 
  
--- The function 'extractGraphNode' extracts the goal node defined by 
+-- | The function 'extractGraphNode' extracts the goal node defined by 
 -- 'x' (the ID of the node as a string) from the provided list of goals  
 extractGraphNode:: String->[GraphGoals]->IO (Maybe GraphGoals)
 extractGraphNode x allGoals 
@@ -80,8 +82,9 @@ extractGraphNode x allGoals
                                           then return (Just (GraphNode (nb,label)))
                                           else extractGraphNode x l
        _:l                           -> extractGraphNode x l
+
          
--- The function 'extractGraphEdge' extracts the goal edge determined by 
+-- | The function 'extractGraphEdge' extracts the goal edge determined by 
 -- 'x' and 'y' nodes from the provided list of goals
 extractGraphEdge:: String -> String -> [GraphGoals] -> [GraphGoals]
                     -> IO (Maybe GraphGoals)
@@ -116,7 +119,9 @@ extractGraphEdge x y allGoals ll
                         _ -> extractGraphEdge x y l ll
                     _ -> extractGraphEdge x y l  ll 
       _:l    -> extractGraphEdge x y l ll
--- Same as above but it tries to extract the edge between the nodes
+
+
+-- | Same as above but it tries to extract the edge between the nodes
 -- with the given number in the order they are found
 extractGraphLabeledEdge:: String -> Int -> String -> 
                           [GraphGoals] -> [GraphGoals] -> IO (Maybe GraphGoals)
@@ -153,7 +158,8 @@ extractGraphLabeledEdge x nb y allGoals ll
                     _ -> extractGraphLabeledEdge x nb y l ll 
       _:l -> extractGraphLabeledEdge x nb y l ll
 
--- The function 'getEdgeGoals' given a list of edges selects all edges that
+
+-- | The function 'getEdgeGoals' given a list of edges selects all edges that
 -- are goals of the graph and returns them as GraphGoals
 getEdgeGoals :: [GDataEdge] -> [GraphGoals]
 getEdgeGoals ls =
@@ -167,13 +173,16 @@ getEdgeGoals ls =
                         _                     -> getEdgeGoals ll
          []  -> []
 
+-- | The function 'convToGoal' converts a list of GDataNode 
+-- into GraphGoals list
 convToGoal:: [GDataNode] -> [GraphGoals]
 convToGoal ls
  = case ls of
      x:l -> (GraphNode x) : (convToGoal l)
      []  -> []
 
-
+-- | The function 'convEdgeToGoal' converts a list of GDataEdge 
+-- into GraphGoals list
 convEdgeToGoal :: [GDataEdge] -> [GraphGoals]
 convEdgeToGoal ls 
  = case ls of 
@@ -181,7 +190,7 @@ convEdgeToGoal ls
      []  -> []
 
 
--- The function 'getEdgeList' returns from a list of graph goals just the 
+-- | The function 'getEdgeList' returns from a list of graph goals just the 
 -- edge goals as [GDataEdge]
 getEdgeList :: [GraphGoals] -> [GDataEdge]
 getEdgeList ls =
@@ -191,7 +200,7 @@ getEdgeList ls =
              []               -> []
 
 
-
+-- | The function 'getDGLinkType' returns a String describing the type of the edge
 getDGLinkType :: DGLinkLab -> String
 getDGLinkType lnk = case dgl_morphism lnk of
  GMorphism _ _ _ -> 
@@ -215,7 +224,7 @@ getThmType thmLnkState =
     Proven _ _ -> "proven"
     LeftOpen -> "unproven"
 
--- The function 'createAllGoalsList' given a library (defined by LIB_NAME and
+-- | The function 'createAllGoalsList' given a library (defined by LIB_NAME and
 -- LibEnv) generates the list of all goals (both edges and nodes) of the graph
 -- coresponding to the library
 createAllGoalsList :: LIB_NAME->LibEnv -> [GraphGoals]
@@ -225,7 +234,7 @@ createAllGoalsList ln libEnv
                           nodeGoals = getNodeGoals (labNodes dgraph)
                       in edgeGoals ++ nodeGoals
 
--- The function 'getNodeGoals' given a list of nodes selects all nodes that
+-- | The function 'getNodeGoals' given a list of nodes selects all nodes that
 -- are goals of teh graph and returns them as GraphGoals
 getNodeGoals::[GDataNode] -> [GraphGoals]
 getNodeGoals ls =
@@ -261,7 +270,8 @@ getDGNodeType dgnodelab =
             _ -> False
 
 
-
+-- | The function 'extractGoals' given the list of GDataEdge 'ls' and
+-- the list of goals 'll' finds all elemnts of 'ls' that are also in 'll'
 extractGoals :: [GDataEdge] -> [GraphGoals] -> [GDataEdge]
 extractGoals ls ll
  = case ls of 

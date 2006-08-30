@@ -39,7 +39,7 @@ import Static.DevGraph
 import Data.Graph.Inductive.Graph
 import GUI.ShowGraph
 
--- Scans a word contained in a path 
+-- | Scans a word contained in a path 
 scanPathFile::CharParser st String
 scanPathFile 
      = many1 ( oneOf (caslLetters ++ ['0'..'9'] ++ ['-','_','.']))
@@ -49,7 +49,7 @@ scanAnyWord::CharParser st String
 scanAnyWord
      = many1 (oneOf (caslLetters ++ ['0'..'9'] ++ ['_','\'','.','-']))
 
--- |the 'getPath' function read a path as a a list of words
+-- | the 'getPath' function read a path as a a list of words
 getPath::AParser st String
 getPath 
         = try ( do  
@@ -65,7 +65,7 @@ getPath
               )
       <?> 
           "path"
--- |the 'getKeyWord' function accepts a string as argument and tries to read it
+-- | the 'getKeyWord' function accepts a string as argument and tries to read it
 getKeyWord::String -> AParser st String
 getKeyWord wd 
               =  try ( string wd
@@ -75,7 +75,7 @@ getKeyWord wd
                            string wd
                      )
               <?> ("keyword "++wd)
--- The function 'getGoal' parses a goal (node, edge or labeled edge) 
+-- | The function 'getGoal' parses a goal (node, edge or labeled edge) 
 getGoal::AParser st GOAL
 getGoal        
        = try ( do  v1<-scanAnyWord
@@ -106,7 +106,7 @@ getGoal
              )   
       <?>
          "goal"    
--- The function 'getScript' tries to read some script commands
+-- | The function 'getScript' tries to read some script commands
 -- It is not ready yet to work with shellac !
 getScript::AParser st String
 getScript 
@@ -128,7 +128,7 @@ getScript
         <?> 
            "some prover script"
 
--- The function 'getComorphis' reads a comorphism as a list of Ids
+-- | The function 'getComorphism' reads a comorphism as a list of Ids
 getComorphism::AParser st [String]
 getComorphism 
              = try ( do  v<-scanAnyWord
@@ -145,7 +145,7 @@ getComorphism
             <?>
                " list of ID's separated by semicolon"
 
--- The function 'scanCommand' given a list of string describing what 
+-- | The function 'scanCommand' given a list of string describing what 
 -- kind of parameters to expect tries to parse them and returns a 
 -- CmdParam list with the parsed parameters
 scanCommand::[String] -> AParser st [CmdParam]
@@ -207,7 +207,7 @@ scanCommand arg
 
 
 
--- A test function to use with shellac for the non-implemented commands
+-- | A test function to use with shellac for the non-implemented commands
 -- should be deleted when all commands are implemented
 test::String->[Status] -> IO [Status]
 test ls _  
@@ -215,7 +215,7 @@ test ls _
       putStrLn $ show ls
       return []          
 
--- It seems that the way shellac reads the file path it adds an extra blank
+-- | It seems that the way shellac reads the file path it adds an extra blank
 -- at the end that needs to be removed
 removeSpace :: String -> String
 removeSpace ls
@@ -225,7 +225,8 @@ removeSpace ls
       x:[]   -> x:[]
       x:l  -> x:(removeSpace l)
 
-
+-- | Loads a list of libraries and returns the status of the
+-- interpreter after those libraries were loaded
 getStatus ::[String] ->[Status]-> IO [Status]
 getStatus files state
  = case files of
@@ -237,7 +238,7 @@ getStatus files state
               getStatus l nwState
           
 
--- The function 'cUse' implements the command Use, i.e. given a path it
+-- | The function 'cUse' implements the command Use, i.e. given a path it
 -- tries to load the library at that path
 cUse::String->[Status] -> IO [Status]
 cUse input state
@@ -269,7 +270,7 @@ cUse input state
                     return [(OutputErr "Couldn't load the file specified")]
 
 
--- The function 'cDgAllAuto' tries to implement the command dg-all auto
+-- | The function 'cDgAllAuto' tries to implement the command dg-all auto
 cDgAllAuto::String -> [Status] -> IO [Status]
 cDgAllAuto _ arg
    = case arg of
@@ -279,8 +280,9 @@ cDgAllAuto _ arg
        _:l           -> cDgAllAuto "" l
        []            -> return ([(OutputErr "Wrong parameter")])
 
--- The 'cDgAuto' function implements dg auto, note that the parameters
--- are passed as string and parsed inside this function
+-- | The 'cDgAuto' function implements dg auto, note that the parameters
+-- are passed as string and parsed inside this function. All the other 
+-- function are implemented in the same manner
 cDgAuto :: String -> [Status] -> IO [Status]
 cDgAuto input status
  = do 

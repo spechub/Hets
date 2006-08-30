@@ -36,6 +36,7 @@ import GUI.ShowGraph
 #ifdef PROGRAMATICA
 import Haskell.Haskell2DG
 #endif
+import System.Exit (ExitCode(ExitSuccess), exitWith)
 
 import PGIP.Command_Parser
 
@@ -82,9 +83,10 @@ processFile opts file =
                           _ -> anaLib opts file
                         case gui opts of
                            Not -> return ()
-                           _  ->
+                           _  -> do
 #ifdef UNI_PACKAGE
                               showGraph file opts res
+                              exitWith ExitSuccess
 #else
                               fail $ "No graph display interface; \n" ++
                                      "UNI_PACKAGE option has been "++

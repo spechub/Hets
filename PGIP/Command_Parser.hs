@@ -27,7 +27,7 @@ import Control.Monad.Trans
 import IO
 import qualified Control.Exception as Ex
 
--- Checks the status to see if any library was loaded and generates the
+-- | Checks the status to see if any library was loaded and generates the
 -- corresponding prompter
 getFileUsed :: [Status] -> String
 getFileUsed ls
@@ -36,7 +36,7 @@ getFileUsed ls
       _:l                -> getFileUsed l
       []                 -> "Hets> "
 
--- Removes any file extension from the name of the file
+-- | Removes any file extension from the name of the file
 takeName :: String -> String
 takeName ls
   = case ls of
@@ -45,14 +45,14 @@ takeName ls
       _       -> "> "
 	
 
--- implements the command use for shellac
+-- | implements the command use for shellac
 shellUse :: File -> Sh [Status] ()
 shellUse (File filename)
   = do
        val <- getShellSt >>= \state -> liftIO (cUse filename state)
        modifyShellSt (update val)
 
--- implements the command dg-all auto for shellac
+-- | implements the command dg-all auto for shellac
 shellDgAutoAll ::  Sh [Status] ()
 shellDgAutoAll 
   = do
@@ -274,7 +274,7 @@ shellDisplayGraph
     modifyShellSt (update val)
 
 
--- The evaluation function is called when the input could not be parsed
+-- | The evaluation function is called when the input could not be parsed
 -- as a command. If the input is an empty string do nothing, otherwise 
 -- print the error message
 pgipEvalFunc :: String -> Sh [Status] ()
@@ -285,7 +285,7 @@ pgipEvalFunc str
               (shellPutStr ("Unkown input :" ++ x ++ "\n"
                            ++ "Type \'help\' for more information\n"))
 
--- The evaluation function in case shellac reads from a file.
+-- | The evaluation function in case shellac reads from a file.
 pgipFileEvalFunc :: String -> Sh [Status] ()
 pgipFileEvalFunc str
   = case str of
@@ -295,7 +295,7 @@ pgipFileEvalFunc str
                            
 
 
--- Generates the list of all the shell commands toghether with a small help
+-- | Generates the list of all the shell commands toghether with a small help
 -- message
 pgipShellCommands :: [ShellCommand [Status]]
 pgipShellCommands 
@@ -377,7 +377,7 @@ pgipShellCommands
                     : [] 
 
 
--- Creates the Backend for reading from files
+-- | Creates the Backend for reading from files
 fileBackend :: String -> ShellBackend Handle
 fileBackend filename = 
  let handle = openFile filename ReadMode in
@@ -402,7 +402,7 @@ fileBackend filename =
   , writeHistory                     = \_ _ -> return ()
   }
 
--- Used to get one char from a file open for reading
+-- | Used to get one char from a file open for reading
 fileGetSingleChar :: Handle -> String -> IO (Maybe Char)
 fileGetSingleChar file _ = do
    Ex.bracket (hGetBuffering file) (hSetBuffering file) $ \_ -> do
@@ -411,7 +411,7 @@ fileGetSingleChar file _ = do
       hPutStrLn stdout ""
       return (Just c)
 
--- Used to get a line from a file open for reading
+-- | Used to get a line from a file open for reading
 fileGetInput :: Handle -> String -> IO (Maybe String)
 fileGetInput file _ = do
    x <- hGetLine file
@@ -461,7 +461,7 @@ pgipFileShellDescription =
        }
 
 
-
+-- | The function runs hets in a shell
 pgipRunShell :: [String] ->IO [Status]
 pgipRunShell files 
    = do
@@ -469,7 +469,7 @@ pgipRunShell files
       runShell pgipInteractiveShellDescription {defaultCompletions = Just pgipCompletionFn}
               readlineBackend  
               state
-
+-- | The function processes the file of instruction
 pgipProcessFile :: String -> IO [Status]
 pgipProcessFile filename = 
         (runShell pgipFileShellDescription

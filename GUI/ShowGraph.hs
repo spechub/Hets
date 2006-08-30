@@ -14,7 +14,6 @@ display the final graph
 module GUI.ShowGraph
 where
 
-import System.Exit (ExitCode(ExitSuccess), exitWith)
 import Data.IORef
 
 import Driver.Options
@@ -58,4 +57,3 @@ showGraphAux file opts convFct = do
             sync(destroyed graph)
             destroy wishInst
             InfoBus.shutdown
-            exitWith ExitSuccess
