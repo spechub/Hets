@@ -32,6 +32,9 @@ import Common.DocUtils
 
 import Data.List
 import Data.Maybe (isJust)
+import Data.IORef
+import qualified Control.Concurrent as Concurrent
+
 -- * sentence packing
 
 data SenStatus a tStatus = SenStatus
@@ -244,7 +247,8 @@ hasProverKind :: ProverKind -> ProverTemplate x y -> Bool
 hasProverKind pk pt = 
     case pk of
     ProveGUI -> isJust $ proveGUI pt
-    ProveCMDLautomatic -> isJust $ proveCMDLautomatic pt
+    ProveCMDLautomatic -> isJust (proveCMDLautomatic pt) && 
+                          isJust (proveCMDLautomaticBatch pt)
     ProveCMDLinteractive -> isJust $ proveCMDLinteractive pt
 
 -- | prover or consistency checker
@@ -256,13 +260,35 @@ data ProverTemplate theory proof_tree = Prover
       -- output: proof status for goals and lemmas
       proveCMDLautomatic :: Maybe (String -> Tactic_script
                          -> theory -> IO (Result ([Proof_status proof_tree]))),
-      -- input: theory name, default Tactic_script,
-      --        theory (incl. goals and 
-      --                Open SenStatus for individual tactic_scripts)
+      -- blocks until a result is determined
+      -- input: theory name, Tactic_script,
+      --        theory (incl. goals, but only the first one is tried)
       -- output: proof status for goals and lemmas
       proveCMDLinteractive :: Maybe (String -> Tactic_script
-                         -> theory -> IO (Result ([Proof_status proof_tree])))
+                         -> theory -> IO (Result ([Proof_status proof_tree]))),
       -- input, output: see above
+      proveCMDLautomaticBatch :: 
+          Maybe (Bool -> Bool
+                 -> IORef (Result [Proof_status proof_tree]) 
+                 -> String -> Tactic_script -> theory 
+                 -> IO (Concurrent.ThreadId, 
+                        Concurrent.MVar (Maybe String)))
+      -- input: 1. True means include proven theorems in subsequent 
+      --           proof attempts;
+      --        2. True means save problem file for each goal;
+      --        2. reference to a Result with an empty list (return []),
+      --           used to store the result of the batch run;
+      --        3. theory name;
+      --        4. default Tactic_script,
+      --        5. theory (incl. goals and 
+      --                   Open SenStatus for individual tactic_scripts)
+      -- output: fst --> identifier of the batch thread for killing it,
+      --                 after each proof attempt the result is stored in the 
+      --                 IOref
+      --         snd --> MVar to wait for the end of the thread,
+      --                 Nothing --> batch mode finished 
+      --                 Just s --> batch mode aborted for some reason 
+      --                            and s is the error message.
     }
 
 type Prover sign sentence proof_tree =
@@ -274,7 +300,8 @@ emptyProverTemplate = Prover
               , prover_sublogic = error "Empty proverTemplate sublogic"
               , proveGUI = Nothing
               , proveCMDLautomatic = Nothing
-              , proveCMDLinteractive = Nothing }
+              , proveCMDLinteractive = Nothing 
+              , proveCMDLautomaticBatch = Nothing }
 
 type ConsChecker sign sentence morphism proof_tree =
   ProverTemplate (TheoryMorphism sign sentence morphism proof_tree) proof_tree
