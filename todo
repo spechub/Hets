@@ -537,6 +537,15 @@ Integration with generic prover interface?
 Till
 ************************************************
 
+translation of proofs along comorphisms
+  use inverse morphism?
+  leads to translation of G_theory along comorphism that also
+    keeps proof status info
+    this may be used in GUI prover interfaces for recovering old proof attempts
+      and offering them as default
+
+proveCMDLinteractive (PGIP)
+
 Model expansion flag for comorphisms
 
 Umlaute in daVinci anzeigen
