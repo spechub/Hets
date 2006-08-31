@@ -48,7 +48,7 @@ Bremen:
 - send example with a single sort -> RCCDagstuhl2.het
 - send ontology example (DOLCE)
 
-Questions for next meeting:
+meeting on 2006-07-13:
  - does "implied" make any difference versus "implies"?
    Ans: no difference
  - does "-interactive" works? and how does it work?
@@ -77,3 +77,6 @@ New interface to SPASS:
 
 Bremen:
 - send RCCDagstuhl.het in parts
+
+Questions for next meeting:
+
