@@ -1173,19 +1173,10 @@ libEnvLibNameIdNameMappingToXmlCMPIO
         ) >>= \x -> return (x +++ thmLinksToRefsXml +++ xmlNL)
 
 {- |
-  create a xml-name for a library.
-  this has the form of "File#Theory" for referenced libs and
-  "#Theory" for other theories.
+  alias for inmGetNodeId
 -}
-getNodeNameForXml::Hets.IdNameMapping->Hets.LIB_NAME->String
-getNodeNameForXml inm ln =
-{-(
-  if Hets.inmGetLibName inm /= ln
-    then
-      asOMDocFile $ unwrapLinkSource $ (Hets.inmGetLibName inm)
-    else
-      ""
-  ) ++ -} "#" ++ Hets.inmGetNodeId inm
+getNodeNameForXml::Hets.IdNameMapping->String
+getNodeNameForXml = Hets.inmGetNodeId
   
 
 {- |
@@ -1200,7 +1191,7 @@ predicationToXmlIN::
   ->(Id.Id, PredType)
   ->(HXT.XmlTree->HXT.XmlTrees)
 predicationToXmlIN 
-  ln
+  _ -- ln
   _ -- nn
   currentmapping
   uniqueNames
@@ -1225,12 +1216,12 @@ predicationToXmlIN
           (\argxmlid ->
             case Hets.getNameOrigins uniqueNames argxmlid of
               [] -> error ("No origin for Sort " ++ show argxmlid)
-              [o] -> getNodeNameForXml o ln
+              [o] -> getNodeNameForXml o
               (o:_) ->
                 Debug.Trace.trace
                   ("More than one origin for \"" ++ show argxmlid ++ "\"")
                   $ 
-                  getNodeNameForXml o ln
+                  getNodeNameForXml o 
           )
           argnames
       argzip =
@@ -1301,7 +1292,7 @@ operatorToXmlIN::
   ->(Id.Id, OpType)
   ->(HXT.XmlTree->HXT.XmlTrees)
 operatorToXmlIN
-  ln
+  _ -- ln
   _ -- nn
   currentmapping
   uniqueNames
@@ -1326,12 +1317,12 @@ operatorToXmlIN
           (\argxmlid ->
             case Hets.getNameOrigins uniqueNames argxmlid of
               [] -> error ("No origin for Sort " ++ show argxmlid)
-              [o] -> getNodeNameForXml o ln
+              [o] -> getNodeNameForXml o
               (o:_) ->
                 Debug.Trace.trace
                   ("More than one origin for \"" ++ show argxmlid ++ "\"")
                   $ 
-                  getNodeNameForXml o ln
+                  getNodeNameForXml o
           )
           argnames
       argzip =
@@ -1345,12 +1336,12 @@ operatorToXmlIN
       resorigin =
         case Hets.getNameOrigins uniqueNames resxmlid of
           [] -> error ("No origin for Sort " ++ show resxmlid)
-          [o] -> getNodeNameForXml o ln
+          [o] -> getNodeNameForXml o
           (o:_) ->
             Debug.Trace.trace
               ("More than one origin for \"" ++ show resxmlid ++ "\"")
               $ 
-              getNodeNameForXml o ln
+              getNodeNameForXml o
     in
       HXT.etag "symbol"
         += (
@@ -1663,17 +1654,12 @@ createSymbolForSortIN::
   ->(HXT.XmlTree->HXT.XmlTrees)
 createSymbolForSortIN
   ln
-  nn
+  _ -- nn
   uniqueNames
   fullNames
   s
   =
     let
-{-      currentMapping =
-        fromMaybe
-          (error "!")
-          $
-          Hets.inmFindLNNN (ln, nn) fullNames -}
       (sortxmlid, sortorigin) =
         case
           findSortOriginCL
@@ -1686,23 +1672,8 @@ createSymbolForSortIN
           (Just (sx, so)) ->
             (
                 sx
-              , getNodeNameForXml so ln
+              , getNodeNameForXml so
             )
-{-      sortxmlid =
-        case
-          find
-            (\(sid, _) -> s == sid)
-            (Set.toList $ Hets.inmGetIdNameSortSet currentMapping)
-        of
-          Nothing -> error "!!"
-          (Just (_, uname)) -> uname
-      sortorigin =
-        case
-          Hets.getNameOrigins uniqueNames sortxmlid
-        of
-          [] -> error "!!!"
-          [o] -> getNodeNameForXml o ln
-          (o:_) -> Debug.Trace.trace ("!!!!") $ getNodeNameForXml o ln -}
     in
       HXT.etag "OMS" += ( HXT.sattr "cd" sortorigin +++ HXT.sattr "name" sortxmlid )
 
@@ -1805,7 +1776,7 @@ createSymbolForPredicationIN _ lenv ln nn uniqueNames fullNames ps =
           (Just (predx, predo)) ->
             (   
                 predx
-              , getNodeNameForXml predo ln
+              , getNodeNameForXml predo
             )
     in
       HXT.etag "OMS" +=
@@ -1885,54 +1856,9 @@ processOperatorIN::
   -> OP_SYMB -- ^ the operator to process
   -> (HXT.XmlTree -> HXT.XmlTrees) 
       -- ^ the xml-representation of the operator
--- Op_name
-{- processOperatorIN _ _ ln nn uniqueNames fullNames
-  (Op_name op) =
-    let
-      currentMapping =
-        fromMaybe
-          (error "!")
-          $
-          Hets.inmFindLNNN (ln, nn) fullNames
-      (opxmlid, oporigin) =
-        if (show op) == "PROJ"
-          then
-            ("PROJ", "casl")
-          else
-            case 
-              find
-                (\( (uid, _), _) -> uid == op)
-                (
-                  (Set.toList (Hets.inmGetIdNameOpSet currentMapping))
-                  ++
-                  (Set.toList (Hets.inmGetIdNameConsSetLikeOps currentMapping))
-                )
-            of
-              Nothing -> -- error ("Unknown (unqualified) op! " ++ show op)
-                Debug.Trace.trace
-                  ("Unknown (unqualified) op! " ++ show op)
-                  (show op, getNodeNameForXml currentMapping ln)
-              (Just (_, uname)) ->
-                case Hets.getNameOrigins uniqueNames uname of
-                  [] -> error "Whoops!"
-                  [o] -> (uname, getNodeNameForXml o ln)
-                  (o:_) ->
-                    Debug.Trace.trace
-                      ("more than one...")
-                      (uname, getNodeNameForXml o ln)
-    in
-      HXT.etag "OMS" +=
-        (HXT.sattr "cd" oporigin +++ HXT.sattr "name" opxmlid)
--- Qual_op_name-}
 processOperatorIN _ lenv ln nn uniqueNames fullNames
---  (Qual_op_name op ot _) = 
     os =
     let
-      {-currentMapping =
-        fromMaybe
-          (error "!")
-          $
-          Hets.inmFindLNNN (ln, nn) fullNames -}
       currentNode =
         fromMaybe
           (error "!!!")
@@ -1963,35 +1889,8 @@ processOperatorIN _ lenv ln nn uniqueNames fullNames
           (Just (opx, opo)) ->
             (   
                 opx
-              , getNodeNameForXml opo ln
+              , getNodeNameForXml opo
             )
-{-      case
-          preferEqualFindCompatible
-            (
-              (Set.toList (Hets.inmGetIdNameOpSet currentMapping))
-              ++
-              (Set.toList (Hets.inmGetIdNameConsSetLikeOps currentMapping))
-            )
-            (\( (uid, uot), _) ->
-              uid == op && uot == (Hets.cv_Op_typeToOpType ot)
-            )
-            (\( (uid, uot), _) ->
-              uid == op
-              && compatibleOperator currentRel uot (Hets.cv_Op_typeToOpType ot)
-            )
-        of
-          Nothing -> -- error ("Unknown op! " ++ show op ++ " :: " ++ show ot )
-            Debug.Trace.trace
-              ("Unknown op! " ++ show op ++ " :: " ++ show ot )
-              (show op, getNodeNameForXml currentMapping ln)
-          (Just (_, uname)) ->
-            case Hets.getNameOrigins uniqueNames uname of
-              [] -> error "Whoops!"
-              [o] -> (uname, getNodeNameForXml o ln)
-              (o:_) ->
-                Debug.Trace.trace
-                  ("more than one...")
-                  (uname, getNodeNameForXml o ln) -}
 
     in
       HXT.etag "OMS" +=
