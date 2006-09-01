@@ -279,13 +279,12 @@ goalProcessed :: (Ord proof_tree, Show proof_tree) =>
               -> Int -- ^ batch time limit
               -- -> String -- ^ extra options
               -> Int -- ^ total number of goals
-              -> Label -- ^ info label
               -> String -- ^ name of the prover
               -> Int -- ^ number of goals processed so far
               -> AS_Anno.Named sentence -- ^ goal that has just been processed
               -> (ATPRetval, GenericConfig proof_tree)
               -> IO Bool
-goalProcessed stateRef tLimit numGoals label prName
+goalProcessed stateRef tLimit numGoals prName
               processedGoalsSoFar nGoal (retval, res_cfg) = do
   s <- readIORef stateRef
   let s' = s{
@@ -306,11 +305,7 @@ goalProcessed stateRef tLimit numGoals label prName
                  _ -> numGoals - processedGoalsSoFar > 0
   if mainDestroyed s
      then return False 
-     else do
-      label # text (if notReady
-                    then (batchInfoText tLimit numGoals processedGoalsSoFar)
-                    else "Batch mode finished\n\n")
-      return notReady
+     else return notReady
 
 {- |
    Updates the display of the status of the current goal.
@@ -831,12 +826,16 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                                        saveProblem_F
                           (\ gPSF nSen cfg@(retval,_) -> do
                               cont <- goalProcessed stateRef tLimit numGoals
-                                                    batchStatusLabel
                                                     prName gPSF nSen cfg
                               st <- readIORef stateRef
                               if (mainDestroyed st) 
                                  then return False
                                  else do
+                               batchStatusLabel # 
+                                  text (if cont
+                                        then (batchInfoText tLimit 
+                                                      numGoals gPSF)
+                                        else "Batch mode finished\n\n")
                                updateDisplay st True lb statusLabel timeEntry
                                             optionsEntry axiomsLb
                                case retval of
