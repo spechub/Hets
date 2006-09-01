@@ -271,8 +271,7 @@ data ProverTemplate theory proof_tree = Prover
           Maybe (Bool -> Bool
                  -> IORef (Result [Proof_status proof_tree]) 
                  -> String -> Tactic_script -> theory 
-                 -> IO (Concurrent.ThreadId, 
-                        Concurrent.MVar (Maybe String)))
+                 -> IO (Concurrent.ThreadId,Concurrent.MVar ()))
       -- input: 1. True means include proven theorems in subsequent 
       --           proof attempts;
       --        2. True means save problem file for each goal;
@@ -285,10 +284,7 @@ data ProverTemplate theory proof_tree = Prover
       -- output: fst --> identifier of the batch thread for killing it,
       --                 after each proof attempt the result is stored in the 
       --                 IOref
-      --         snd --> MVar to wait for the end of the thread,
-      --                 Nothing --> batch mode finished 
-      --                 Just s --> batch mode aborted for some reason 
-      --                            and s is the error message.
+      --         snd --> MVar to wait for the end of the thread
     }
 
 type Prover sign sentence proof_tree =
