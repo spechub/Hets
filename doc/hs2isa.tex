@@ -13,6 +13,8 @@
 \usepackage{color}
 %\usepackage{semrot}
 
+\input{newmacros}
+
 % Use \includegraphics{*.eps} for pictures
 
 % Enlarge printing area a bit:
@@ -26,7 +28,7 @@
 \begin{document}
 
 
-\title{Translating Haskell programs to Isabelle by shallow embedding}
+\title{Translating Haskell to Isabelle logics in Hets}
 
 \author{Paolo Torrini, Till Mossakowski, Christian Maeder} 
 % \\ Fachbereich Mathematik und Informatik, Universitaet Bremen}
@@ -37,23 +39,1554 @@
 
 \maketitle
 
-\abstract{\small We present a tool for the translation of simple
-  Haskell programs to Isabelle HOLCF and, under strong semantical
-  restrictions, to Isabelle HOL, based on a shallow embdedding
-  approach, implemented as part of the Hets system, on top of the
-  static analysis
-  carried out by Programatica.}\\
+\abstract{\scriptsize \bf Automated, partial translations of Haskell
+  into Isabelle higher-order logic (with or without computable
+  functions) have been implemented as functions of Hets, a
+  Haskell-based proof-management and program development system that
+  allows for integration with other tools. The application, built on
+  top of Programatica-style static analysis, can translate simple
+  Haskell programs to HOLCF and, under stronger restrictions, to HOL.
+  Both translations are based on shallow embedding and rely
+  informally on denotational semantics.}\\
 % The translation of monads uses the AWE extension of Isabelle.}\\
 
+\sloppy
 
-\noindent It has been suggested that, owing to their relative
-semantical simplicity, programs written in functional languages are a
-natural target for verification \cite{Thompson95}. Haskell is indeed a
-strongly typed, purely functional language with lazy evaluation, based
-on a type system of polymorphic types with type and type constructor
-classes, where side effects are modelled using monads (introduced as a
-type costructor class), and allowing for a pseudo-imperative
-programming style (do notation) \cite{Hudak}.
+\noindent 
+Work on the integration of compilers, analyzers and theorem-provers,
+as well as translations between programming and specification
+languages, may help on the way to making formal development and
+verification of programs more viable. In order to verify formally a
+program, we need to formulate the requirements in a logic that also
+allows for the program to be represented; to translate the program to
+the logic; finally, to carry out a proof of the correctness statement.
+Although specifications and proofs require normally the biggest amount
+of work, translations can also be a significant source of potential
+problems. For the verification to be reliable and efficient, the
+translation should rest on the definition of a formal semantics of the
+programming language in the specification logic; it should be carried
+out safely, at best automatically; it should also give program
+representations that do not make proofs more complex than necessary.
+It has long been argued that functional languages, based on notions
+closer to general, mathematical ones, can make the task of proving
+assertions about them easier, owing to the clarity and relative
+simplicity of their semantics \cite{Thompson92}.
+
+In this report we are presenting automated translations based on
+denotational semantics of Haskell programs into Isabelle higher-order
+logic. Haskell is a strongly typed, purely functional language with
+lazy evaluation. It relies on a system of polymorphic types extended
+with type constructor classes, and has a syntax for side effects and
+pseudo-imperative code based on monadic operators \cite{HaskellRep}.
+The translations are implemented as functions of Hets \cite{Hets}, an
+Haskell-based application designed to support integration of
+specification formalisms for the development of Haskell programs. Hets
+supplies with parsing, static analysis, proof management and interface
+to various language-specific tools.  From the point of view of generic
+theorem proving, Hets relies on an interface with Isabelle, a
+state-of-the-art interactive theorem-prover, written in SML, allowing
+for the formalization of a variety of logics \cite{Paulson94isa}. Hets
+relies on Programatica \cite{Prog04} for the parsing and static
+analysis of Haskell programs. Programatica is a Haskell-specific
+formal development system built at OGI, envisioned to provide more
+than analysis. Its own proof management includes a specification logic
+and translations to different proof tools, notably to Isabelle
+\cite{Huff}. In section~\ref{sec:Translations} it is going to be
+clarified how our work differs from theirs.
+
+
+\section{Isabelle}
+
+Isabelle-HOL (hereafter simply HOL) is the implementation in Isabelle
+of classical higher-order logic based on simply typed lambda calculus,
+extended with axiomatic type classes. It provides considerable support
+for reasoning about programming functions, both in terms of libraries
+and automation. Since the late nineties, it has essentially superseded
+FOL (classical first-order logic) as the logic of standard use in
+Isabelle. HOL has an implementation of recursive functions based on
+Knaster-Tarski fixed-point theorem. All functions are total;
+partiality may be dealt with by lifting types through the
+\emph{option} type constructor.
+
+HOLCF \cite{holcf} is HOL conservatively extended with the logic of
+computable functions --- a formalization of domain theory. In HOL,
+types are just sets; functions may not be computable, and a recursive
+function may require discharging proof obligations already at the
+definition stage --- in fact, a specific measure has to be given for
+the function to be proved monotonic.  In contrast, domain theory has
+each type interpreted as a \emph{pcpo} (pointed complete partially
+ordered set) that is, as a set with a partial order which is closed
+w.r.t.  $\omega$-chains and has a bottom. All functions defined over
+domains, including partial ones, are continuous, therefore computable.
+Recursion can be expressed in terms of least fixed-point operator, and
+so, in contrast with HOL, function definition is never dependant on
+proofs.
+
+The Isabelle formalization of HOLCF is based on axiomatic type classes
+\cite{Wenzel}, following an approach that makes it possible to deal
+with complete partial orders while abstracting away from any specific
+relation.  The class of types is \emph{pcpo} --- whereas in HOL it is
+\emph{type}. Domain theory offers a good basis for the semantical
+analysis of programming languages; however, it may make proofs
+comparatively hard.  After being spared the need to discharge proof
+obligations at the defining stage, one has to bear with assumptions
+over the continuity of functions while proving theorems. A standard
+strategy to get the best out of the two systems is to define as much
+as possible in HOL language, using HOLCF type constructors to lift
+types to domains only when this is needed.
+
+
+\section{Translations}
+\label{sec:Translations}
+
+A translation may be carried out relying on different semantical
+approaches and at different levels of depth, depending mainly on the
+expressiveness of the target logic. Different formalisms may make the
+embedding of certain features more or less hard. Translations into FOL
+such as those based on large-step operational semantics of Miranda
+\cite{Thompson95,Thompson89,Thompson95b} and Haskell \cite{Thompson92}
+cannot deal straightforwardly at first order with higher-order
+features such as currying.  The translation of Haskell to the Agda
+implementation of Martin-Loef type theory in \cite{Abel} gets
+complicated dealing with Haskell polymorphism. The expressiveness of
+higher-order logic help overcome more plainly most of these obstacles,
+and makes it possible to adopt a higher-level approach based on
+denotational semantics, as proposed in \cite{Huff} to translate
+Haskell to HOLCF, and used in \cite{Pollack} to translate ML to HOL.
+This approach allows for representations of programs that are closer
+to their specification as well as for proofs that are relatively more
+abstract and general.
+
+Expressiveness plays an important role in the ``depth'' issue, as
+well.  A shallow embedding is one that relies as much as possible on
+built-in features and packages provided with the implementation of the
+target language, especially with respect to general features such as
+types, classes, and recursion. The deeper the embedding, the less it
+relies on such features. This independence may be a plus from the
+point of view of semantic clarity and logical generality ---
+object-logical, ``deep'' translation can be used to overcome
+\emph{ad-hoc} limitations imposed by the built-in, meta-level
+features.  Taking advantage of those features, on the other hand, may
+help make the theorem proving less tedious and make it easier to rely
+on common proof methods.
+
+The translation of ML in \cite{Pollack} gives an example on the deep
+side --- a class of types with bottom elements is defined in HOL for
+the sake of the embedding. On the other hand, the translation of
+Haskell to HOLCF proposed in \cite{Huff} relies on a generic
+formalization of domain theory, particularly on the \emph{fixrec}
+package for recursive functions (part of HOLCF in Isabelle 2006)
+developed in order to provide with a friendly syntax that covers
+mutually recursive definitions, too. Not even this translation is
+shallow as far as types are concerned, though. In order to capture an
+important feature of the Haskell type system, notably type constructor
+classes, Haskell types are not translated to HOLCF types, rather they
+are to terms, relying on a modelling of the Haskell type system at the
+object level.  In this way it is possible to give a complete account
+of the type system. The practical drawback is that plenty of the
+automation built into the Isabelle type checking is lost, unless one
+is prepared to reimplement a lot.
+
+The translations of Haskell to HOLCF and HOL that we are presenting
+here are based on denotational semantics keeping to a shallow
+approach. The translation to HOLCF relies on the \emph{fixrec}
+package, along similar lines to those in \cite{Huff}. In contrast with
+them, we translate Haskell types to HOLCF types, quite directly, and
+Haskell classes to Isabelle axiomatic classes, wishing to take
+effectively advantage of Isabelle type checking. We rely on the
+assumption that types in HOLCF are similar enough to those in Haskell
+to allow for embedding, save for possible implementation subtleties
+that we are not going to consider. We expect that operational
+equivalence between Haskell programs and their translation to HOLCF
+holds up to the level of typeable output.  The translation covers a
+significant part of the syntax used in the Prelude, although it is
+still incomplete in one important respect --- it does not include type
+constructor classes; we have plans, however, for an extention that
+should address this aspect as well.
+
+Conceptually, type classes in Isabelle are quite different from those
+in Haskell. The formers are associated with sets of axioms, whereas
+the latters come with sets of function declarations.  Isabelle classes
+may have at most a single type parameter.  Most importantly, Isabelle
+does not allow for type constructor classes. The last limitation is
+serious, since it makes hard to cope with essential Haskell features
+such as monads and \emph{do} notation.  In alternative to the
+treatment of types proposed in \cite{Huff}, we would like to get
+around the obstacle by relying on an extension of Isabelle based on
+theory morphism (see section~ \ref{sec:Monads}). The AWE system \cite{AWE}
+is in fact an implementation of such an extension.
+
+Our translation to HOL, shallow as well, is much more limited. The
+most important restriction is related to recursion --- only primitive
+recursive functions are covered. This limitation appears relatively
+hard to overcome, given the way syntax for full recursion works in
+HOL. Operational equivalence up to typeable output for the remaining
+fragment would require using option types, but we do not pursue it
+here, rather we rely on a restriction to terminating programs for
+semantical correctness. Under such restrictions, however drastic,
+this translation gives expressions that are particularly simple and
+therefore potentially useful to verify some properties.
+
+
+\section{Haskell2Isabelle}
+
+The Hets function \emph{Haskell2Isabelle} supports the translation of
+simple Haskell programs to HOLCF and, with more restriction, to HOL.
+Not all the syntactical features used in the Prelude and main
+libraries are covered. Some of the most noticeable limitations are
+those related to built-in types, pattern-matching, local definitions,
+import and export. There are additional and more substantial
+restrictions in the case of HOL, related to termination and recursion.
+Each of the translations relies on a \emph{base theory}. These are
+Isabelle theory files, respectively \emph{HsHOLCF}, extending HOLCF,
+and \emph{HsHOL}, extending HOL, which are included in the Hets
+distribution. Each of them provides definitions and axiomatizations of
+notions that are used in the corresponding translation --- notably
+equality.
+
+Information for the use of Hets may be found in \cite{HetsUG} and a
+general outlook in \cite{HetsUG}. The Haskell-to-Isabelle translation
+requires essentially GHC, Isabelle 2006 and Programatica --- with
+respect to the latter, both analysis and translation functions in Hets
+make use of its modules.  The command to run the application is
+
+\emph{hets -v[1--5] -t Haskell2Isabelle[HOLCF | HOL] -o thy filename}
+
+\noindent where options set verbosity, target logic and name of the
+output file. The input file (last argument) must be a GHC source
+(\emph{hs} extension).  The Haskell program gets analyzed and
+translated. The result of a successful execution is an Isabelle theory
+file (\emph{thy} extension) depending on the corresponding base
+theory.
+
+%The application requires essentially Haskell GHC and Programatica. It
+%is run by the command \emph{hets -t ...  [h|hc] file.hs} where the
+%options stand for HOL and HOLCF, respectively.
+
+The internal representation of Haskell in Hets (module
+\emph{Logic\_Haskell} and particularly \emph{HatAna}) is essentially
+the same as in Programatica, whereas the internal representation of
+Isabelle (module \emph{Logic\_Isabelle} and particularly
+\emph{IsaSign}) is a Haskell reworking of the ML definition of
+Isabelle own base logic, extended in order to allow for a
+straightforward representation of HOL and HOLCF.
+
+Haskell programs as well as Isabelle theories are internally
+represented as Hets theories --- each of them a data-structures formed
+by a signature and a set of sentences, fitting a theoretical framework
+described in \cite{MossaTh}.  Each translation, defined as composition
+of the signature translation with the translation of all sentences,
+has the structure of a morphism from theories in the internal
+representation of the source language to those in the representation
+of the target language.  The distribution module
+\emph{Haskell2IsabelleHOLCF} contains the main function, dependent on
+the target logic. The module \emph{IsaPrint} provides the essential
+functions for the pretty-printing of Isabelle theories.
+
+The following gives a list of reserved names, i.e. the names that are
+used in order to either rename or name automatically variables and
+constants in the translations.  1) Type variables, in the translation
+to HOL: \emph{'vX}; any name terminating with \emph{'XXn} where $n$ is
+an integer.  2) Term variables, in both translations: \emph{pXn},
+\emph{qXn}, with $n$ integer. 3) Constants, in the translation to HOL:
+strings obtained by joining together names of defined functions, using
+\emph{\_X} as end sequence and separator.
+
+%Correspondingly, the translation function is defined as the
+%composition of signature translation with the translation of all
+%sentences. 
+%, has the
+%structure of a morphism from Hets theories written in the language of
+%the source internal representation to those in the language
+%representation of the target language.  Internally, the information
+%about types is collected into a signature, whereas datatype
+%declarations and definitions are associated with sentences.
+% For the sake of maintainance, \emph{Haskell2IsabelleHOLCF.hs} is the
+% module that contains the main translation function, carried out as
+% composition of a signature morphism and a theory morphism.
+% \emph{IsaSign.hs} contains the Hets representation of the Isabelle
+% base logic and extensions.
+
+% The general design of the translation functions, and particularly
+% the two-layered recursion adopted for them, is similar to that used
+% for the translation Haskell to Agda in Programatica.
+
+
+\subsection{HOLCF: Type signature}
+
+The translation to HOLCF keeps into account partiality, i.e. the fact
+that a function might be undefined for certain values, either because
+definition is missing, or because the program does not terminate.  It
+also keeps into account laziness, i. e.  the fact that by default
+function values in Haskell are passed by name and evaluated only when
+needed.  Essentially, we are following the main lines of the ``crude''
+denotational semantics for lazy evaluation in \cite{winskel}, pp.
+216--217.  Raising an exception is different from running forever, and
+both are different from stopping short of evaluation. However, from
+the point of view of the printable output, these behaviours are
+similar and can be treated semantically as such, i.e. using one and
+the same bottom element.
+
+% In order to ease the translation of some notions, the Isabelle
+% theory \emph{HsHOLCF.thy}, that extends HOLCF has been defined and
+% included in the Hets distribution.
+% It is often convenient to define in Isabelle notions that match the
+% translation of some itmes.
+% Haskell datatype and function declarations are translated to
+% declarations in HOLCF.  Names are translated by a function that
+% preserves them, up to avoidance of clashes with HOLCF keywords.
+
+Each type in Isabelle has a sort, defined by the set of the classes of
+which it is member.  Haskell type variables are translated to HOLCF
+ones, of class \emph{pcpo}. Each built-in type is translated to the
+lifting of its corresponding HOL type. Properly covered are Haskell
+booleans and unbounded integers, associated respectively to HOL
+booleans and integers.
+%Rationals need to be
+%imported in order to be used in Haskell, so they are not covered by
+%the translation at the present stage (import has not been dealt with
+%yet).
+%and rationals.
+Bound integers and floating point numbers would need low-level
+modelling, and have not been covered.  Bounded integers in particular
+are simply treated as unbounded in the translation. The HOLCF type
+constructor \emph{lift} is used to lift HOL types to flat domains.  In
+the case of booleans, we can use type \emph{tr}, defined as equal to
+$bool \ lift$ in HOLCF. In the case of integers, we use \emph{dInt},
+defined in \emph{HsHOLCF} to equal $int \ lift$. The types of Haskell
+functions and product are translated, respectively, to HOLCF function
+spaces and lazy product --- i.e. such that $\bot = (\bot * \bot) \neq
+(\bot*'a) \neq ('a * \bot)$, consistently with lazy evaluation. Type
+constructors are translated to corresponding HOLCF ones (noticeably,
+parameters precede type constructors in Isabelle syntax). In
+particular, lists are translated to the domain \emph{llist} defined in
+\emph{HsHOLCF}.  Function declarations are translated to HOLCF ones
+(keyword \emph{consts}). Names (for types as well as for terms) are
+translated by a function ($t$ here) that preserves them, up to
+avoidance of clashes with HOLCF keywords. Translation of types (minus
+mutual recursion) may be summed up as follows:
+
+% Haskell datatype and function declarations are translated to
+% declarations in HOLCF.  
+
+$$\begin{array}{lcl}
+  \lceil a \rceil & = & 'a_{t}::pcpo \\
+  \lceil Bool \rceil & = & tr \\
+  \lceil Integer \rceil & = & dInt \\
+  \lceil a \to b \rceil & = & \lceil a \rceil \to \lceil b \rceil \\
+  \lceil (a,b) \rceil & = & \lceil a \rceil * \lceil b \rceil \\
+  \lceil [a] \rceil & = & \lceil a \rceil \ llist \\
+  \lceil TyCons \ a_{1} \ldots a_{n} \rceil & = & \lceil a_{1} \rceil \ldots \lceil a_{n} \rceil \ TyCons_{t} 
+\end{array}$$
+
+\noindent In HOL, datatype declarations define types of class
+\emph{type} by keyword \emph{datatype}; in contrast, in HOLCF, they
+define types of class \emph{pcpo} (i.e. domains) by keyword
+\emph{domain} (so we also may call them \emph{domain declarations}).
+Each recursive datatype declaration in Haskell is translated to the
+corresponding one in HOLCF. The translation of mutually recursive
+datatypes relies on specific Isabelle syntax (keyword
+\emph{and}), as in the next example.\\
+
+$data \ AType \ a \ b \ = \ ABase \ a \ | \ AStep \ (AType \ a \ b) \ (BType \ a \ b)  $
+
+$data \ BType \ a \ b \ = \ BBase \ b \ | \ BStep \ (BType \ a \ b) \ (AType \ a \ b) $\\
+
+\noindent This translates to HOLCF as the following.
+
+$$\begin{array}{rr} domain & \ ('a::pcpo, 'b::pcpo) \ BType \ = \ BBase \ (BBase\_1::'b) \ | \\
+   & BStep \ (BStep\_1::('a, 'b) \ BType) \ (BStep\_2::('a, 'b) \ AType) \\
+   and & \ ('a::pcpo, 'b::pcpo) \ AType \ =  \ ABase \ (ABase\_1::'a) \ | \\
+   & AStep \ (AStep\_1::('a, 'b) \ AType) \ (AStep\_2::('a, 'b) \ BType) \\
+\end{array}$$
+
+\noindent Notably, domain declarations require an explicit
+introduction of destructors. Both translations (to HOL as well as to
+HOLCF) take care automatically of the order of datatype declarations
+--- this is needed, insofar as, differently from Haskell, Isabelle
+requires them to be listed according to their order of dependency.
+
+
+
+\subsection{HOLCF: Sentences}
+
+Each Haskell function definition is translated to a corresponding one.
+Non-recursive definitions are translated to standard ones (keyword
+\emph{defs}), whereas the translation of recursive definitions relies
+on the \emph{fixrec} package. Lambda abstraction is translated as
+continuous abstraction (\emph{LAM}), and function application as
+continuous application (the \emph{dot} operator) --- these notions
+coincide with the corresponding, HOL-defined ones, whenever their
+arguments are continuous.
+
+% As to the translation of terms containing either values or operators
+% of built-in type, it is often the case that we translate them to
+% lifted HOL operators. The lifting function is \emph{Def}; $\bot$ is
+% used for the undefined case.
+
+Terms of built-in type (boolean and integers) are translated to lifted
+HOL values, using the HOLCF-defined lifting function \emph{Def}.  The
+bottom element $\bot$ is used for all undefined terms.  The following
+operator, defined in \emph{HsHOLCF}, is used to map binary arithmetic
+functions to lifted functions over
+lifted integers.\\
+
+$fliftbin :: ('a \Rightarrow \ 'b \Rightarrow \ 'c) 
+  \Rightarrow ('a \ lift \to \ 'b \ lift \to \ 'c \ lift) $
+ 
+$fliftbin \ f \ == \ LAM \ y x. \ (flift1 \ (\%u. \ flift2 \ (\%v. \ f \ v \ u))) \cdot x \ \cdot y $\\
+
+\noindent Booleans are translated to values of \emph{tr} ---
+\emph{TT}, \emph{FF} and $\bot$, and boolean connectives are
+translated to the corresponding HOLCF-defined lifted operators.
+HOLCF-defined \emph{If then else fi} and \emph{case} syntax are used
+to translate, respectively, conditional and case expressions. There
+are some restrictions, however, on the latters, due to limitations in
+the translation of patterns (see section~\ref{sec:Patterns}); in
+particular, the case term should always be a variable, and no nested
+patterns are allowed.
+
+The translation of lists and list constructors relies on the
+following \emph{HsHOLCF}-defined datatype.\\
+
+$domain \ 'a\ llist \ = \ lNil \ | \ lCons \ (lazy \ lHd ::'a) \ (lazy \ lTl ::'a \ llist) $\\
+
+\noindent Under the given interpretation, a stream as well as an
+undefined list function take value $\bot$. This may be regarded as a
+semantical weakness.
+
+Haskell allows for local definitions by means of \emph{let} and
+\emph{where} expressions. The \emph{let} expressions are translated to
+similar Isabelle ones; \emph{where} expressions are not covered. The
+translation of terms (minus mutual recursion) may be summed up,
+essentially, as follows:
+
+$$\begin{array}{lcl} 
+  \lceil x::a \rceil & = & x_{t}::\lceil a \rceil \\
+  \lceil c \rceil & = & c_{t} \\
+  \lceil \backslash x \ \to \ f \rceil & = & LAM \ x_{t}. \ \lceil f \rceil \\
+  \lceil (a,b) \rceil & = & (\lceil a \rceil, \lceil b \rceil) \\
+  \lceil f \ a_{1} \ldots a_{n} \rceil & = & FIX \ f_{t}. \ f_{t} \ \cdot \ 
+  \lceil a \rceil \ldots \cdot \ \lceil a_{n} \rceil \\
+  & & \mbox{where } f::\tau, \ f_{t}::\lceil \tau \rceil \\
+  \lceil let \ exp_{1} \ \dots \ exp_{n} \ in \ exp \rceil & = 
+         & let \ \lceil exp_{1} \rceil \ \dots \ \lceil exp_{n} \rceil \ in \ \lceil exp \rceil 
+% \lceil TyCons \ a_{1} \ldots a_{n} \rceil & = & \lceil a_{1} \rceil
+% \ldots \lceil a_{n} \rceil \ TyCons_{t}
+\end{array}$$
+
+%In HOLCF, where every type is a domain and every function is
+%continuous, 
+\noindent In HOLCF all recursive functions can be defined by fixpoint
+operator --- a function that, given as argument the defining term
+abstracted of the recursive call name, returns the corresponding
+recursive function.  Coding this directly turns out to be rather
+cumbersome, particularly in the case of mutually recursive functions,
+where tuples of defining terms and tupled abstraction would be needed.
+In contrast, the \emph{fixrec} package allows us to handle fixpoint
+definitions in a way much more similar to ordinary Isabelle recursive
+definitions, providing with friendly syntax for mutual recursion,
+as well. Continuing the example,\\
+
+\noindent $ fun1 \ :: \ (a \to c) \ \to \ (b \to d) \
+\to \ AType \ a \ b \ \to \ AType \ c \ d $ 
+$$\begin{array}{lll}
+  fun1 & f \ g \ k  & = \ case \ k \ of \\
+  & ABase \ x & \to \ ABase \ (f \ x) \\
+  & AStep \ x \ y & \to \ AStep \ (fun1 \ f \ g \ x) \ (fun2 \ f \ g \
+  y)
+\end{array} $$
+$ fun2 \ :: \ (a \to c) \ \to \ (b \to d) \ \to \ BType \ a \ b \ \to \ BType \ c \ d $
+$$\begin{array}{lll}
+  fun2 & f \ g \ k & = \ case \ k \ of \\
+  & BBase \ x & \to \ BBase \ (g \ x) \\
+  & BStep \ x \ y & \to \ BStep \ (fun2 \ f \ g \ x) \ (fun1 \ f \ g \ y)
+\end{array} $$ 
+
+\noindent this code translates to HOLCF as follows:\\
+
+\noindent $consts $ 
+$$ \begin{array}{ll} fun1 \ :: & ('a::pcpo \to 'c::pcpo) \ \to \ ('b::pcpo \to 'd::pcpo) \ \to \\
+  & ('a::pcpo, 'b::pcpo) \ AType \ \to \ ('c::pcpo, 'd::pcpo) \ AType \\
+  fun2 \ :: & ('a::pcpo \to 'c::pcpo) \ \to \ ('b::pcpo \to 
+  'd::pcpo) \ \to \\ 
+  & ('a::pcpo, 'b::pcpo) \ BType \ \to \ ('c::pcpo,
+  'd::pcpo) \ BType 
+\end{array}$$
+
+$$\begin{array}{rccl} 
+  fixrec & fun1 & = & (LAM f. \ LAM g. \ LAM k. \ case \ k \ of \\
+  & & & ABase \cdot pX1 \ => \ ABase \cdot (f \cdot pX1) \ | \\
+  & & & AStep \cdot pX1 \cdot pX2 \ => \\
+  & & & \ AStep \cdot (fun1 \cdot f \cdot g \cdot pX1) \cdot (fun2 \cdot f \cdot g \cdot pX2)) \\
+  and & fun2 & = & (LAM f. \ LAM g. \ LAM k. \ case \ k \ of \\
+  & & & BBase \cdot pX1 \ => \ BBase \cdot (g \cdot pX1) \ | \\
+  & & & BStep \cdot pX1 \cdot pX2 \ => \\
+  & & & \ BStep \cdot (fun2 \cdot f \cdot g \cdot pX1) \cdot (fun1 \cdot f \cdot g \cdot pX2)) \end{array}$$
+
+\noindent The translations take care automatically of the fact that,
+in contrast with Haskell, Isabelle requires patterns in case
+expressions to follow the order of datatype declarations.
+
+In the Programatica representation of Haskell, class information about
+type parameters is given by adding dictionary parameters to normal
+ones. These are eliminated by the translation, as class information in
+Isabelle may be given by annotating arguments. In particular, each
+definition includes the type of the defined function complete with
+class annotation, in order to allow for overloading (a detail we
+omitted to show for the sake of readability in some of the examples
+here).
+
+\subsection{HOL: Type signature}
+
+The translation to HOL is semantically rather crude, it takes into
+account neither partiality nor laziness, and so, for soundness, it
+requires all functions in the program to be total ones.
+
+An account of partiality could be obtained using the \emph{option}
+type constructor to lift types, along lines similar to those followed
+in HOLCF with \emph{lift}. Here instead we are just mapping Haskell
+types to corresponding, unlifted HOL ones --- so for booleans and
+integers. Type variables are of class \emph{type}.  HOL function type,
+product and list are used to translate the corresponding Haskell
+constructors. The translation of types (minus mutual recursion) may be
+summed up as follows.
+
+% Haskell datatype and function declarations are translated to
+% declarations in HOLCF.  
+
+$$\begin{array}{lcl}
+  \lceil a \rceil & = & 'a_{t}::type \\
+  \lceil Bool \rceil & = & bool \\
+  \lceil Integer \rceil & = & int \\
+  \lceil a \to b \rceil & = & \lceil a \rceil \Rightarrow \lceil b \rceil \\
+  \lceil (a,b) \rceil & = & \lceil a \rceil * \lceil b \rceil \\
+  \lceil [a] \rceil & = & \lceil a \rceil \ list \\
+  \lceil TyCons \ a_{1} \ldots a_{n} \rceil & = & \lceil a_{1} \rceil \ldots \lceil a_{n} \rceil \ TyCons_{t} 
+\end{array}$$
+
+\noindent Recursive and mutually recursive data-types declarations are
+translated to HOL as datatype declaration.
+
+$$\begin{array}{rll} datatype & \ ('a, 'b) \ BType & = \ BBase \ 'b \ | \\
+  & & BStep \ (('a, 'b) \ BType) \ (('a, 'b) \ AType) \\
+  and & \ ('a, 'b) \ AType & =  \ ABase \ 'a \ | \\
+  & & AStep \ (('a, 'b) \ AType) \ (('a, 'b) \ BType) \\
+\end{array}$$
+
+\noindent Metalevel features are essentially shared with the HOLCF
+translation.
+
+\subsection{HOL: Sentences}
+
+Non-recursive definitions are treated in an analogous way to the
+translation into HOLCF. Standard lambda-abstraction ($\%$) and
+function application are used here instead of continuous ones. Partial
+functions, and particularly case expressions with incomplete patterns,
+are not allowed. The translation of terms (minus recursion and case
+expressions) may be summed up as follows:
+
+$$\begin{array}{lcl} 
+  \lceil x::a \rceil & = & x_{t}::\lceil a \rceil \\
+  \lceil c \rceil & = & c_{t} \\
+  \lceil \backslash x \ \to \ f \rceil & = & \% \ x_{t}. \ \lceil f \rceil \\
+  \lceil (a,b) \rceil & = & (\lceil a \rceil, \lceil b \rceil) \\
+  \lceil f \ a_{1} \ldots a_{n} \rceil & = & f_{t} \ \lceil a \rceil \ldots \  \lceil a_{n} \rceil \\
+  & & \mbox{where } f::\tau, \ f_{t}::\lceil \tau \rceil \\
+  \lceil let \ exp_{1} \ \dots \ exp_{n} \ in \ exp \rceil & = 
+  & let \ \lceil exp_{1} \rceil \ \dots \ \lceil exp_{n} \rceil \ in \ \lceil exp \rceil 
+% \lceil TyCons \ a_{1} \ldots a_{n} \rceil & = & \lceil a_{1} \rceil
+% \ldots \lceil a_{n} \rceil \ TyCons_{t}
+\end{array}$$
+
+\noindent Recursive definitions set HOL and HOLCF apart.  In HOL a
+distinction is drawn, and syntactically highlighted, between primitive
+recursive functions (introduced by keyword \emph{primrec}) and generic
+recursive ones (by keyword \emph{recdef}).  Termination is guaranteed
+for each of the formers, by the fact that recursion is based on the
+datatype structure of one of the parameters. In contrast, termination
+is not a trivial matter for the latters. A strictly decreasing measure
+must be provided, associated to the parameters of the defined
+function. This requires a degree of ingenuity that cannot be easily
+dealt with automatically. For this reason, the translation to HOL is
+restricted to primitive recursive functions.
+
+Mutual recursion is allowed for under additional restrictions --- more
+precisely: 1) all the functions involved are recursive in the first
+argument; 2) recursive arguments are of the same type in each
+function.  The translation of mutually recursive functions $a
+\rightarrow b, \ldots a \rightarrow d$ introduces a new function $a
+\rightarrow (b * \ldots * d)$ recursively defined, for each case
+pattern, as the product of the values
+correspondingly taken by the original, non-recursively defined ones. \\
+
+\noindent $ fun3 \ :: \ AType \ a \ b \to (a \to a) \to AType \ a \ b $
+$$\begin{array}{ll}
+fun3 \ k \ f & = \ case \ k \ of \\
+  & ABase \ a \to ABase \ (f \ a) \\
+  & AStep \ a \ b \to AStep \ (fun4 \ a) \ b \\
+\end{array}$$
+   
+\noindent $ fun4 \ :: \ AType \ a \ b \to AType \ a \ b $
+$$\begin{array}{ll}
+fun4 \ k & = \ case \ k \ of \\ 
+  & AStep \ x \ y \to AStep \ (fun3 \ x \ (\backslash z \to z)) \ y \\
+   & ABase \ x \to ABase \ x \\
+\end{array}$$
+
+\noindent These functions, satisfying the restrictions, will translate
+to the following.\\
+
+\noindent $consts$
+$$\begin{array}{ll}
+fun3 \ :: & ('a::type, 'b::type) AType \Rightarrow ('a::type \Rightarrow 'a::type) \Rightarrow \\ & ('a::type, 'b::type) AType \\
+fun4 \ :: & ('a::type, 'b::type) AType \Rightarrow ('a::type \Rightarrow 'a::type) \Rightarrow\\ & ('a::type, 'b::type) AType \\
+fun3\_Xfun4\_X :: & ('a::type, 'b::type) AType \Rightarrow \\ & (('aXX1::type \Rightarrow 'aXX1::type) \Rightarrow \\ & ('aXX1::type, 'bXX1::type) AType) * \\
+ & (('aXX2::type \Rightarrow 'aXX2::type) \Rightarrow \\ & ('aXX2::type, 'bXX2::type) AType) \\
+\end{array}$$
+
+\noindent $defs$
+$$\begin{array}{lll}
+fun3\_def : & fun3 \ == \ \% k \ f. \ fst \ (( fun3\_Xfun4\_X ::  \\ 
+        & \ ('a::type, 'b::type) AType \Rightarrow (('a::type \Rightarrow 'a::type) \\
+& \Rightarrow ('a::type, 'b::type) AType) * ((unit \Rightarrow unit) \Rightarrow \\ & (unit, unit) AType) ) \ k) \ f \\
+fun4\_def : & fun4 \ == \ \% k \ f. \ snd \ (( fun3\_Xfun4\_X ::  \\ 
+ & ('a::type, 'b::type) AType \Rightarrow ((unit \Rightarrow unit) \Rightarrow (unit, unit) AType) * \\ & (('a::type \Rightarrow 'a::type) \Rightarrow ('a::type, 'b::type) AType) ) \ k) \ f \\
+\end{array}$$
+
+
+\noindent $primrec$ 
+$$\begin{array}{lll}
+fun3\_Xfun4\_X & (ABase \ pX1) \ = & (\% f. \ ABase \ (f \ pX1), \\
+                           &        &  \% f. \ ABase \ pX1) \\
+fun3\_Xfun4\_X & (AStep \ pX1 \ pX2) & =  \\
+  & (\% f. \ AStep \ (snd & (fun3\_Xfun4\_X \ pX1) \ f) \ pX2, \\
+  &  \% f. \ AStep \ (fst & (fun3\_Xfun4\_X \ pX1) \ f) \ pX2) \\
+\end{array}$$
+
+\noindent Calls of the recursive functions in the non-recursive
+definitions are annotated with type where exceeding type variables are
+instantiated with the unit type, as required by Isabelle in order to
+avoid definitions from which inconsistencies are derivable.
+
+
+\subsection{Patterns}
+\label{sec:Patterns}
+
+Support of patterns in definitions and case expressions is more
+restricted in Isabelle than in Haskell. Nested patterns are overall
+disallowed. In case expressions, the case term is required to be a
+variable. Both of these restrictions apply to our translations. A
+further Isabelle limitation concerning case expressions ---
+sensitiveness to pattern order --- is dealt with automatically.
+Similarly, wildcards --- something unknown to Isabelle --- are dealt
+with, as well as, in HOLCF, incomplete patterns.  The exclusion of
+nested patterns complicate the translation of some specific ones ---
+in fact, guarded expressions and list comprehension are not covered;
+their use should be avoided here, using conditional expressions and
+\emph{map} instead.
+
+% not allowed in Isabelle with ordinary definitions (keyword
+% \emph{Defs}), but it is allowed with the syntax for recursive ones.
+
+Multiple function definitions using top level pattern matching are
+translated as definitions based on a single case expression; this is
+due to HOL more than to HOLCF. In fact, multiple definitions in
+Isabelle are only allowed with the syntax of recursive ones. However,
+in HOL primitive recursive definitions, patterns are allowed for only
+in one parameter. In order to translate definitions with more patterns
+as arguments, without resorting to tuples and to more complex syntax
+(\emph{recdef} instead of \emph{primrec}) we translate multiple
+definitions by top level pattern matching
+as definitions by case construct.\\
+
+\noindent $ctl \ :: \ Bool \to Bool \to Bool \to Bool$ \\
+$ctl \ False \ a \ False \ = \ a $\\
+$ctl \ True \ a \ False \ = \ False $\\
+$ctl \ False \ a \ True  = \ True $\\
+$ctl \ True \ a \ True \ = \ a $\\
+
+\noindent This translates to HOL as the following.\\
+
+\noindent $consts \ ctl :: \ bool \Rightarrow bool \Rightarrow bool \Rightarrow bool$\\
+
+\noindent $defs$
+$$\begin{array}{llll} 
+ctl\_def : & ctl \ == & \% qX1. \% qX2. \% qX3. & case \ qX1 \ of \\
+                                       & &  False \Rightarrow case \ qX3 & of \\
+                                       & & &  False \Rightarrow qX2 \ | \\
+                                       & & & True \Rightarrow True \ | \\
+                                       & & True \Rightarrow case \ qX3 & of \\
+                                       & & & False \Rightarrow False \ | \\
+                                       & & & True \Rightarrow qX2 \\
+\end{array}$$
+
+\noindent This example does not go through with the translation to
+HOLCF, as booleans there are translated to values of \emph{tr}, which
+is not a recursive datatype. The following gives an alternative that
+can be handled (a new datatype is used instead of booleans).\\
+
+\noindent $data \ Two \ =  Fx \ | \ Tx $\\
+\noindent $ctlx ::  \ Two \to Two \to Two \to Two $ \\
+$ctlx \ Fx \ a \ Fx \ = \ a $ \\
+$ctlx \ Tx \ a \ Fx \ = \ Fx $ \\
+$ctlx \ Fx \ a \ Tx \ = \ Tx $ \\
+$ctlx \ Tx \ a \ Tx \ = \ a $\\
+
+\noindent This translates to HOLCF as follows.\\
+
+\noindent $domain \ Two \ = \ Fx \ | \ Tx $
+
+\noindent $consts \ ctlx :: \ Two \to Two \to Two \to Two$\\
+
+\noindent $defs$
+$$\begin{array}{llll}
+ctlx\_def : & map5 \ == & LAM \ qX1 \ qX2 \ qX3. & case \ qX1 \ of \\
+                                             & & Fx \Rightarrow case \ qX3 & of \\
+                                             & & & Fx \Rightarrow qX2 \ | \\
+                                             & & & Tx \Rightarrow Tx \ | \\
+                                             & & Tx \Rightarrow case \ qX3 & of \\
+                                             & & & Fx \Rightarrow Fx \ | \\
+                                             & & & Tx \Rightarrow qX2 \\
+\end{array}$$
+
+\noindent In case expressions as well as in top level pattern matching
+definitions, wildcards may be used --- though not in nested position.
+Incomplete patterns are translated to HOLCF using $\bot$ as default
+value.
+
+\subsection{Classes}
+
+Haskell defined classes are translated to Isabelle as classes with
+empty axiomatization.  Isabelle allows classes with no more than one
+type parameter, therefore our translations can support only them ---
+it might be possible to handle more than one parameter using tuples,
+but this would surely involve considerable complications dealing with
+conditional instances.
+
+Instance declarations are translated to corresponding ones in
+Isabelle. Isabelle instances in general require proofs that class
+axioms are satisfied by the types, but as long as there are no axioms
+the proofs are trivial and can be handled automatically.  Function
+declarations associated with Haskell classes are translated as
+independent function declarations with appropriate class annotation.
+Function definitions associated with instance declarations are
+translated as overloaded function definitions,
+relying on class annotation of the typed variables.\\
+
+\noindent $class ClassA \ a \ where$
+
+$abase :: \ a \to Bool $
+ 
+$ astep :: \ a \to Bool $\\
+
+\noindent $instance \ (ClassA \ a, \ ClassA \ b) \Rightarrow ClassA \ (AType \ a \ b) \ where $
+$$\begin{array}{ll}
+abase \ x \ = & case \ x \ of \\
+           &  ABase \ u \ \to \ True \\
+            & \_ \ \to \ False \\
+\end{array}$$
+
+\noindent This code translates to HOLCF as follows.\\
+
+\noindent $axclass \ ClassA < pcpo$
+
+\noindent $instance \ AType::({pcpo, ClassA}, {pcpo, ClassA}) \ ClassA$ 
+
+$by \ intro\_classes$\\
+
+\noindent $consts$
+$$\begin{array}{ll}
+abase :: & 'a::\{ClassA, pcpo\} \to tr \\
+astep :: & 'a::\{ClassA, pcpo\} \to tr \\
+default\_abase :: & 'a::\{ClassA, pcpo\} \to tr \\
+default\_astep :: & 'a::\{ClassA, pcpo\} \to tr \\
+\end{array}$$
+
+\noindent $defs$
+$$\begin{array}{rl}
+AType\_abase\_def : & \\
+ abase :: & ('a::\{ClassA, pcpo\}, 'b::\{ClassA, pcpo\}) \ AType \to tr \\
+                                   == & LAM x. \ case \ x \ of \\
+                                  &  ABase \cdot pX1 \Rightarrow TT \ | \\
+                                  &  AStep \cdot pX2 \cdot pX1 \Rightarrow FF \\
+AType\_astep\_def : & \\
+   astep :: & ('a::\{ClassA, pcpo\}, 'b::\{ClassA, pcpo\}) \ AType \to tr \\
+                         & == default\_astep \\
+\end{array}$$ 
+
+\noindent Similarly, it translates to HOL.\\
+
+\noindent $axclass \ ClassA < type$\\
+
+\noindent $instance \ AType::(\{type, ClassA\}, \{type, ClassA\}) \ ClassA$ 
+
+$by \ intro\_classes$\\
+
+\noindent $consts$
+$$\begin{array}{ll}
+abase :: & 'a::\{ClassA, type\} \Rightarrow bool\\
+astep :: & 'a::\{ClassA, type\} \Rightarrow bool\\
+default\_abase :: & 'a::\{ClassA, type\} \Rightarrow bool\\
+default\_astep :: & 'a::\{ClassA, type\} \Rightarrow bool\\
+\end{array}$$
+
+\noindent $defs$
+$$\begin{array}{rl}
+AType\_abase\_def : & \\
+   abase :: & ('a::\{ClassA, type\}, 'b::\{ClassA, type\}) \ AType \Rightarrow bool \\
+                                   == & \% x. \ case \ x \ of \\
+                                   &  ABase \ pX1 \Rightarrow True \ | \\
+                                   &  AStep \ pX2 \ pX1 \Rightarrow False \\
+AType\_astep\_def : & \\
+      astep :: & ('a::\{ClassA, type\}, 'b::\{ClassA, type\}) \ AType \Rightarrow bool \\
+      == & default\_astep\\
+\end{array}$$
+
+\subsection{Equality}
+
+At the moment equality is the only covered built-in class.  The
+axiomatizations provided, respectively, in \emph{HsHOLCF} and
+\emph{HsHOL} are based on the abstract definition of the equality and
+inequality functions \cite{HaskellRep}. In both theories, \emph{Eq} is
+declared as a subclass of \emph{type} --- in \emph{HsHOLCF} this is
+done in order to instantiate it with lifted types.\\
+
+\noindent $consts$ 
+$$ \begin{array}{ll}
+hEq :: & ('a::Eq) lift \ \to \ 'a \ lift \ \to \ tr \\
+hNEq :: & ('a::Eq) lift \ \to \ 'a \ lift \ \to \ tr\\
+\end{array}$$
+
+\noindent $axioms$ 
+$$\begin{array}{ll}
+axEq: & ALL x. (hEq \cdot p \cdot q \ = \ Def x) \ = \\
+ & (hNEq \cdot p \cdot q \ = \ Def (\sim x)) \\
+\end{array}$$
+
+\noindent The instantiation of equality (consequently, of inequality) for
+boolean (and similarly for integer) is obtained by lifting HOL
+equality so that $\bot$ is returned whenever one of the argument is
+undefined.\\
+
+\noindent $tr\_hEq\_def: \ hEq \ == \ fliftbin \ (\% (a::bool) \ b. \ a \ = \ b)$\\
+
+
+%ax1: & hEq \cdot p \cdot p \ == \ Def \ true \\
+%ax2: & [| \ hEq \cdot q \cdot r \ = \ Def \ true; \ hEq \cdot p \cdot q \ = \ Def \ true \ |] \\
+% & ==> \ hEq \cdot p \cdot r \ = \ Def \ true \\
+
+\noindent In \emph{HsHOL} the axiomatization reflects the
+restriction to terminating programs.\\
+
+\noindent $consts$ 
+$$\begin{array}{ll}
+hEq :: & ('a::Eq) \ \Rightarrow \ 'a \ \Rightarrow \ bool \\
+hNEq :: & ('a::Eq) \ \Rightarrow \ 'a \ \Rightarrow \ bool \\
+\end{array}$$
+
+\noindent $axioms$ 
+$$\begin{array}{ll}
+ axEq: & hEq \ p \ q \ == \ \sim hNEq \ p \ q \\
+\end{array}$$
+
+\noindent The instantiation of \emph{hEq} for boolean and integer is
+simply taken to be HOL equality.
+
+% ax1: & hEq \ p \ p \\
+% ax2: & [| \ hEq \ q \ r; \ hEq \ p \ q \ |] ==> hEq \ p \ r \\
+
+\subsection{Monads}
+\label{sec:Monads}
+
+Isabelle does not allow for classes of type constructors, hence a
+problem in representing monads. We could deal with this problem
+relying on an axiomatization of monads that allows for the
+representation of monadic types as an axiomatic class, as presented in
+\cite{Lueth}. Monadic types should be translated to newly defined
+types that satisfy monadic axioms. This would involve defining a
+theory morphism, as an instantiation of type variables in the theory
+of monads. We are planning to rely on AWE \cite{AWE}, an
+implementation of theory morphism on top of Isabelle base logic that
+may be used to extend HOL as well.
+
+
+\section{Conclusion}
+
+The following is a list of features that are covered by our
+translations.
+
+\begin{itemize} 
+\item predefined types: boolean, integer.
+\item predefined type constructors: function, cartesian product, list.
+\item declaration of recursive datatype, including mutually recursive ones.
+\item predefined functions: equality, booelan constructors,
+  connectives, list constructors, head and tail list functions,
+  arithmetic operators.
+\item non-recursive functions, including conditional, case and let and
+  expressions.
+\item use of incomplete patterns (in HOLCF) and of wildcards in case
+  expressions.
+\item total primitive recursive functions (in HOL)
+and partial recursive ones (in HOLCF), including mutual ones (with
+restrictions in the HOL case).
+\item single-parameter class and instance declarations.
+% \item monad declarations and do notation.
+\end{itemize}
+
+
+The shallow embedding approach makes it possible to take the most out
+of the automation currently available on Isabelle, especially in HOL.
+Further work should include extending the translation to cover the
+whole of the Haskell Prelude. We would also be interested in carrying
+out an extension to cover P-logic \cite{KiebPl}, a specification
+formalism for Haskell programs included in the Programatica toolset.
+
+%This translation, due to the character of the P-logic
+%typing system, could be more easily carried out relying on some form
+%of universal quantification on type variables, or else further relying
+%on parametrisation.
+
+\bibliographystyle{alpha}
+\bibliography{case}
+
+\end{document}
+
+
+
+
+
+
+
+
+
+
+
+In our example,
+translation gives the
+following.\\
+
+
+
+
+
+
+\noindent $consts$
+$$ \begin{array}{ll} 
+fun1 & :: \ ('a::type \Rightarrow 'c::type) \ \Rightarrow \ ('b::type \Rightarrow 'd::type) \ \Rightarrow \\ 
+    & ('a::type, 'b::type) \ Prelude\_AType \ \Rightarrow \\ & ('c::type, 'd::type) \ Prelude\_AType \\
+fun1\_Xfun2\_X & :: \ ('a::type \Rightarrow 'c::type) \ \Rightarrow \\ 
+ & (('bXX1::type \Rightarrow 'dXX1::type) \ \Rightarrow \\ & ('aXX1::type, 'bXX1::type) \ Prelude\_AType \ \Rightarrow \\ & ('cXX1::type, 'dXX1::type) \ Prelude\_AType) * \\ 
+ &  (('bXX2::type \Rightarrow 'dXX2::type) \ \Rightarrow \\ & ('aXX2::type, 'bXX2::type) \ Prelude\_BType \ \Rightarrow \\ & ('cXX2::type, 'dXX2::type) \ Prelude\_BType) \\
+fun2 & :: \ ('a::type \Rightarrow 'c::type) \ \Rightarrow \ ('b::type \Rightarrow 'd::type) \ \Rightarrow \\ 
+  & ('a::type, 'b::type) \ Prelude\_BType \ \Rightarrow \\ & ('c::type, 'd::type) \ Prelude\_BType \\
+\end{array}$$
+
+\noindent $defs$
+$$ \begin{array}{ll}
+fun1\_def : & fun1 \ == \ \% f. \% g. \% k. \ fst (fun1\_Xfun2\_X \ f) \ g \ k \\
+fun2\_def : & fun2 \ == \ \% f. \% g. \% k. \ snd (fun1\_Xfun2\_X \ f) \ g \ k
+\end{array}$$
+
+\noindent $primrec$
+$$ \begin{array}{ll}
+ fun1\_Xfun2\_X \ (ABase \ pX1) & = \ (\% g. \% k. \ ABase \ (f \ pX1)) \\
+         fun1\_Xfun2\_X \ (BBase \ pX1) & = \ (\% g. \% k. \ BBase \ (g \ pX1)) \\
+         fun1\_Xfun2\_X \ (AStep \ pX1 \ pX2) & = \ (\% g. \% k. \ AStep \\ 
+         & (fst \ (fun1\_Xfun2\_X \ f) \ g \ pX1) \\
+         & (snd \ (fun1\_Xfun2\_X \ f) \ g \ pX2)) \\
+         fun1\_Xfun2\_X \ (BStep \ pX1 \ pX2) & = \ (\% g. \% k. \ BStep \\ 
+         & (snd \ (fun1\_Xfun2\_X \ f) \ g \ pX1) \\
+         & (fst \ (fun1\_Xfun2\_X \ f) \ g \ pX2)) \\
+\end{array}$$
+
+
+
+
+\subsection{Equality: HOLCF}
+
+
+
+\subsection{Equality: HOL}
+
+
+
+
+...
+
+...
+
+Haskell classes and instances are translated to Isabelle,
+respectively, as classes with empty axiomatisation and as instances
+with trivial instantiation proof.  The translation supports only
+single-parameter classes --- in principle, more than one parameter
+could be handled using tuples.  
+
+Built-in classes --- Eq and Ord in particular --- are translated to
+newly defined classes in Isabelle; the corresponding axiomatisation
+however here is not provided !!!
+
+...
+
+Functions declarations associated to classes are translated to
+Isabelle as independent function declarations with appropriate class
+annotation. Function definitions associated to instances are
+translated as overloaded function definitions, relying on class
+annotation of typed variables.
+
+...
+
+
+% ...xxx...!!! check out for stuff to include in Classes ---
+
+Non-recursive definitions are translated to ordinary definitions (keyword
+\emph{defs}), whereas recursive ones require specific keywords. The
+type of the function, inclusive of class annotation, is included in
+every definitions in order to allow for overloading.
+%For values of
+%built-in type, the lifting function is \emph{Def}; the undefined case
+%collapses on $\bot$.
+
+...
+
+
+...
+
+In HOLCF, where every type is a domain and every function is
+continuous, all recursive functions can be defined by fixpoint
+operator.  This is essentially a function that, given as argument the
+function definition body abstracted of the recursive call name,
+returns the corresponding recursive function. Coding this directly
+would be rather cumbersome, particularly in the case of mutually
+recursive functions, where tuples of definition bodies and tupled
+abstraction are needed. We can instead rely on the \emph{recdef}
+package, which allows to handle fixpoint definitions like ordinary
+recursive ones, offering nice syntax to deal with mutual recursion as
+well.
+
+...
+
+\subsection{HOL: Type signature}
+
+The present translation to HOL is very basic, and does take into
+account neither partiality nor laziness. Essentially, it left to the
+Haskell programmer to check that all the functions are total ones.
+
+An account of partiality -- although possibly not aof laziness ---
+could be obtained using the option type constructor to lift types,
+along a similar line to lift. Here however we are presenting just a
+plain version, mapping Haskell types in the corresponding unlifted HOL
+types. All variables belong to the class type. Recursive and mutually
+recursive data-types declarations are translated to HOL datatype
+declaration.
+
+...
+
+\subsection{HOL: Function definitions}
+
+Non-recursive definitions and let expressions are treated similarly as
+in the translation to HOLCF.  Recursive defitions is the topic that
+really sets HOL and HOLCF apart.  In HOL a distinction has to be drawn
+between primitive recursive functions and generic recursive ones. In
+the former, termination is guaranteed by the fact that recursive
+definitions are strictly associated with the datatype structure of a
+parameter. In the latter, termination needs to be proved. This must be
+done, in a \emph{recdef} definition, by providing a measure for the
+function parameter that can be proved to be strictly decreasing for
+each occurrence of a recursive call in the definition. This requires a
+degree of ingenuity that cannot be generally associated with an
+automated translation.
+
+For this reason, the translation of recursive functions to HOL is
+restricted to primitive recursive ones. Mutually recursive functions
+are allowed under additional restrictions.  These are: all the
+functions should be recursive in the first argument; this should be of
+the same type for each of them; the constructors should be listed in
+the same order in each of the case expressions; the variable names in
+the case patterns are expected to be maintained.
+
+The translation of mutually recursive functions $a \rightarrow b, \ldots a
+\rightarrow d$ introduces a new function $a \rightarrow (b * \ldots * d)$
+defined, for each case pattern, as the product of the values
+correspondingly taken by the original functions.
+
+...
+
+\subsection{Pattern matching}
+
+Support of pattern-matching in Isabelle is more restricted than in
+Haskell. Nested patterns are disallowed; case expressions are
+sensitive to the order of the constructors, which should be the same
+as in the datatype declaration. In particular, the case variable si
+required to be a variable. Translation of pattern-matching is
+potentially laborious. For this reason guarded expressions, list
+comprehension and nested pattern-matching have been left out; they
+should be replaced by the programmer, using conditional expressions
+and map functions.
+
+Function definition by top level pattern matching is not allowed in
+Isabelle with ordinary definitions, but it is with those that are
+explicitly declared to be recursive ones. However, particularly in HOL
+primitive recursive definitions patterns are allowed in one parameter
+only. In order to translate function definitions with patterns in more
+than one parameter, without resorting to using tuples and more complex
+definitions (\emph{recdef} instead of \emph{primrec}), our
+translations turn a multiple definition by top level pattern matching
+into a definition by case construct.
+
+...
+
+\subsection{Classes}
+
+
+Haskell classes and instances are translated to Isabelle,
+respectively, as classes with empty axiomatisation and as instances
+with trivial instantiation proof.  The translation supports only
+single-parameter classes --- in principle, more than one parameter
+could be handled using tuples.
+
+Built-in classes --- Eq and Ord in particular --- are translated to
+newly defined classes in Isabelle; the corresponding axiomatisation
+however here is not provided !!!
+
+...
+
+Functions declarations associated to classes are translated to
+Isabelle as independent function declarations with appropriate class
+annotation. Function definitions associated to instances are
+translated as overloaded function definitions, relying on class
+annotation of typed variables.
+
+...
+
+
+
+\section*{Haskell2Isabelle}
+
+The tool is designed to support the translation of simple but
+realistic Haskell programs to HOLCF and, with some restriction, to
+HOL.  Not all the syntactical features of Haskell are covered yet,
+although most of those used in the Prelude are. The most noticeable
+limitations are related to built-in types, pattern-matching and local
+definitions.  There are additional and more substantial restrictions
+in the case of HOL, related to termination and to recursion.
+
+The application can be installed as part of Hets. It requires Haskell
+GHC and Programatica. It is run by the command \emph{hets -t ...
+  [h|hc] file.hs} where the options stand for HOL and HOLCF,
+respectively.
+
+For the sake of maintainance, \emph{Haskell2IsabelleHOLCF.hs} is the
+module that contains the main translation function, carried out as
+composition of a signature morphism and a theory morphism.
+\emph{IsaSign.hs} contains the Hets representation of the Isabelle
+base logic and extensions. 
+
+The general design of the translation functions, and particularly the
+two-layered recursion adopted for them, is similar to that used for
+the translation Haskell to Agda in Programatica.
+
+\subsection{Monads}
+
+Isabelle does not allow for classes of type constructors, hence a
+problem in representing monads. We can deal with this problem,
+however, relying on an axiomatisation of monads that allows for the
+presentation of monadic types as an axiomatic class, as provided in
+\cite{}. Therefore, monadic types can be translated to newly defined
+types that are constrained to satisfy the monadic axioms. This
+constraining, carried out as an instantiation of type variables in the
+theory of monads, takes the form of a theory morphism, and can be
+carried out automatically by AWE, an implementation of parametrisation
+and theory morphism on top of Isabelle basic logic, that may also be
+used to extend HOL and HOLCF. The do notation can then be translated
+by unpacking it into monadic operators. Attempting to translate
+monadic notation without support AWE support will result in an error
+message.
+
+\section*{Conclusion}
+
+
+The following is a list of constructs that are covered by all the
+translations.
+
+\begin{itemize} 
+\item predefined types: boolean, integer.
+\item predifed type constructors: funtion, cartesian product, list.
+\item declaration of recursive datatype, including mutually recursive ones.
+\item predefined functions: equality, booelan constructors,
+  connectives, list constructors, head and tail list functions,
+  arithmetic operations.
+\item non-recursive functions, including conditional, 
+let and case expressions.
+\item use of incomplete patterns (HOLCF) and of wildcards in case
+  expressions.
+\item total primitive recursive functions (HOL)
+and partial recursive ones (HOLCF), including mutual ones (with
+restrictions in the HOL case).
+\item class and instance declarations. 
+\item monad declarations and do notation.
+\end{itemize}
+
+
+The shallow embedding approach used by our translations should allow
+to take as much advantage as possible of the automation currently
+available on Isabelle, particularly in HOL. 
+
+Further work should include extending the translation to cover the
+whole of the Haskell Prelude. We hope that this will make it possible
+to support the verification of functional robotics programs.
+
+A further extension, in line with the work on Programtica, would be
+the translation of P-logic. This translation, due to the character of
+the P-logic typing system, could be more easily carried out relying on
+some form of universal quantification on type variables, or else
+further relying on parametrisation.
+
+\bibliographystyle{alpha}
+\bibliography{case}
+
+\end{document}
+
+
+
+
+
+
+
+
+
+\subsection{}
+
+The translation of types is 
+
+Our general strategy for translating signatures is to map Haskell
+types to Isabelle defined types.
+
+
+ the fact that Haskell expressions are
+evaluated lazily, however it does not preserve The translation to HOL
+does not, and moreover requires that all the functions defined in the
+Haskell program are total ones...
+
+All types have a sort in Isabelle, defined by the set of the classes
+of which it is a member. In HOL, all types belong to the class type;
+in HOLCF, they belong to class pcpo (pointed complete poset).
+
+All Haskell function declarations are translated to Isabelle ones.
+Type variables are assigned default sort type in HOL and pcpo in
+HOLCF.  Names get translated by a function that preserves them, up to
+avoidance of clashes with Isabelle keywords.
+
+The only built-in types that are properly covered are booleans,
+unbounded integers and rationals. These get translated, in the case of
+HOL, to Isabelle booleans, integers and rationals, respectively. Bound
+integers and floating point numbers would require low-level modelling,
+and have not been dealt with; anyway, bounded integers are accepted
+and simply treated as unbounded by the application.
+
+In the HOLCF translation, all built-in types get lifted to the
+corresponding domains (pcpos), which by definion include the undefined
+value, by using the lift HOLCF type constructor. In particular, type
+boolean get translated to type tr (short for bool lift), and similarly
+for types integer and rational.
+
+Recursive data-types declarations can be translated to datatype
+declarations in HOL. In HOLCF they can be translated to domain
+declarations. The two structure are quite similar, except that in
+domains, which are pcpo, all the parameters are required to be pcpos
+as well. Morevover, Isabelle domain declarations require to introduce
+names for destructors. Mutually recursive Haskell datatypes can be
+translated to both logics, relying on the specific Isabelle syntax for
+them.
+
+
+A type class in Isabelle is conceptually quite different from one in
+Haskell. The former is associated to a set of axioms, whereas the
+latter is associated to a set of function declarations. Isabelle
+classes may have at most a type parameter.  Moreover, Isabelle does
+not allow for type constructor classes. The last limitation is the
+most serious of the three, since it makes quite hard to cope with
+monads.  We can get around this obstacle relying on a method for the
+axiomatic encoding of monads in HOL that uses parametrisation.
+Parametrisation based on theory morphism has been implemented, as a
+conservative extension of various Isabelle logics, in AWE, a tool
+designed to support proof reuse \cite{AWE}.
+
+
+
+
+
+
+
+
+
+...
+
+The \emph{lift} type constructor, in particular, lifts each HOL type
+to a flat domain, by adding a bottom element to them. We are going to
+use it to lift the basic types. For the product we are going to use
+non-strict product.
+
+...
+
+Its
+formalisation on Isabele relies on axiomatic type classes \cite{},
+with \emph{pcpo} (pointed complete partial order) as the default
+class, in which the type of continuous functions can be represented as
+function spaces, allowing for an elegant interpretation of recursion
+by fixpoint operator. HOL types may be lifted to \emph{pcpo} by simply
+adding a bottom element to them. This is what the type constructor
+\emph{lift} does, thus providing also a way of handling partiality ---
+undefined cases can be mapped to the bottom element. HOLCF has also a
+type constructor \emph{u} that allows to deal with laziness, by
+guaranteeing $\bot \neq \smath{up} \$ (\bot)$.
+  
+
+\subsection{}
+
+
+In the case of HOLCF, the logic provides a computational
+interpretation of function types as domains. In HOL there is no such
+facility, therefore either appropriate types for the translation are
+introduced --- as in \cite{}, or considerable semantical restrictions
+must be accepted --- this is also the case for one of the translation
+to FOL proposed in \cite{}.
+
+Depending on the expressiveness of the logic, the translation of the
+programming language may be carried out at different levels of depth.
+In general, the deeper is the embedding, the less it relies on
+meta-level features of the target language. This may be a plus, either
+from the point of view of semantic clarity, or from that of
+expressiveness. Taking advantage of meta-level feaures, on the other
+hand, may be useful in order to make the theorem proving less tedious,
+by allowing more constant use of generic proof methods. It may also
+ultimately affect positively the theorem prover economy, by
+reinforcing the bias toward the development of proof methods that,
+however specific, can be more easily integrated with generic ones.
+
+% a point made in \cite{}. for example by allowing a straightforward
+% operational interpretation ---
+
+The translations of Haskell to HOLCF and HOL that we are presenting in
+the following justify themselves in terms of denotational semantics.
+The translation to HOLCF differs from that proposed in \cite{} in the
+treatment of types. We translate Haskell types directly into HOLCF
+ones, whereas they use HOLCF terms to embed Haskell types. We assume
+that the HOLCF types are similar enough to the those of Haskell, in
+order to guarantee the semantical correctness of our translations.
+Moreover, we rely on axiomatic classes to translate Haskell types
+classes.
+
+Our approach has the advantage of giving a shallower embedding,
+however it has the drawback of not bein complete --- notably, type
+constructor classes are missing. We plan to handle in future this
+problem (see section~\ref{sec:Monads}) by relying on an extension of
+Isabelle based on morphism between theories. The translation into HOL
+is essentialy only a first experiment, it handles types very
+simplistically, relying on drastic semantical restrictions for
+correcteness. Under those restrictions, however, it gives expressions
+that are comparatively quite simple to work with.
+
+A type class in Isabelle is conceptually quite different from one in
+Haskell. The former is associated to a set of axioms, whereas the
+latter is associated to a set of function declarations. Isabelle
+classes may have at most a type parameter.  Moreover, Isabelle does
+not allow for type constructor classes. The last limitation is the
+most serious of the three, since it makes quite hard to cope with
+monads.  We can get around this obstacle relying on a method for the
+axiomatic encoding of monads in HOL that uses parametrisation.
+Parametrisation based on theory morphism has been implemented, as a
+conservative extension of various Isabelle logics, in AWE, a tool
+designed to support proof reuse \cite{AWE}.
+
+
+
+\subsection{Types}
+
+HOLCF allows has types for computable functions --- defined as sets of
+continuous functions of a type (!! fixpoints!!). It has a type
+constructor \emph{lift} that lifts HOL types to \emph{pcpo}s, thus
+providing a way of handling partiality --- undefined cases can be
+mapped to the bottom element. It has also a type constructor \emph{u}
+that allows to deal with laziness, by guaranteeing $\bot \neq
+\smath{u}(\bot)$.
+
+
+
+that can be used to embed Haskell function types.
+
+
+The translation to HOLCF differs from that to HOL insofar as only the
+first one relies on a denotational semantics for the full language,
+keeping into account partiality and lazy evaluation, and associating
+recursive functions to corresponding fixed points, using on the Fixrec
+extension of HOLCF. The translation to HOL is more restrictive; it
+does not keep into account any form of partiality, and it restricts
+translation of recursive functions to the primitive recursive ones.
+It would have been possible to give an account of partiality in HOL by
+using option types. However, we chose to keep the HOL translation as
+simple as possible for didactic purpose.
+
+
+
+\subsection{maybe}
+
+The translations of Haskell that we are presenting in the following,
+we present translations of Haskell into some of the Isabelle logics.
+These translations are implemented as part of Hets, and are based on a
+shallow embedding approach quite different from that used in
+Programatica. In our translations Haskell types are mapped to Isabelle
+types. We are assuming that the type systems of HOL and HOLCF are
+similar enough to the type system of Haskell, in order to guarantee
+the semantical correctness of our translations. Moreover, we rely on
+axiomatic classes to translate Haskell types classes.
+
+A type class in Isabelle is conceptually quite different from one in
+Haskell. The former is associated to a set of axioms, whereas the
+latter is associated to a set of function declarations. Isabelle
+classes may have at most a type parameter.  Moreover, Isabelle does
+not allow for type constructor classes. The last limitation is the
+most serious of the three, since it makes quite hard to cope with
+monads.  We can get around this obstacle relying on a method for the
+axiomatic encoding of monads in HOL that uses parametrisation.
+Parametrisation based on theory morphism has been implemented, as a
+conservative extension of various Isabelle logics, in AWE, a tool
+designed to support proof reuse \cite{AWE}.
+
+The translation to HOLCF differs from that to HOL insofar as only the
+first one relies on a denotational semantics for the full language,
+keeping into account partiality and lazy evaluation, and associating
+recursive functions to corresponding fixed points, using on the Fixrec
+extension of HOLCF. The translation to HOL is more restrictive; it
+does not keep into account any form of partiality, and it restricts
+translation of recursive functions to the primitive recursive ones.
+It would have been possible to give an account of partiality in HOL by
+using option types. However, we chose to keep the HOL translation as
+simple as possible for didactic purpose.
+
+
+
+\subsection{Type signature}
+
+Our general strategy for translating signatures is to map Haskell
+types to Isabelle defined types. The translation to HOLCF keeps into
+account the fact that Haskell expressions are evaluated lazily. The
+translation to HOL does not, and moreover requires that all the
+functions defined in the Haskell program are total ones...
+
+All types have a sort in Isabelle, defined by the set of the classes
+of which it is a member. In HOL, all types belong to the class type;
+in HOLCF, they belong to class pcpo (pointed complete poset).
+
+All Haskell function declarations are translated to Isabelle ones.
+Type variables are assigned default sort type in HOL and pcpo in
+HOLCF.  Names get translated by a function that preserves them, up to
+avoidance of clashes with Isabelle keywords.
+
+The only built-in types that are properly covered are booleans,
+unbounded integers and rationals. These get translated, in the case of
+HOL, to Isabelle booleans, integers and rationals, respectively. Bound
+integers and floating point numbers would require low-level modelling,
+and have not been dealt with; anyway, bounded integers are accepted
+and simply treated as unbounded by the application.
+
+In the HOLCF translation, all built-in types get lifted to the
+corresponding domains (pcpos), which by definion include the undefined
+value, by using the lift HOLCF type constructor. In particular, type
+boolean get translated to type tr (short for bool lift), and similarly
+for types integer and rational.
+
+Recursive data-types declarations can be translated to datatype
+declarations in HOL. In HOLCF they can be translated to domain
+declarations. The two structure are quite similar, except that in
+domains, which are pcpo, all the parameters are required to be pcpos
+as well. Morevover, Isabelle domain declarations require to introduce
+names for destructors. Mutually recursive Haskell datatypes can be
+translated to both logics, relying on the specific Isabelle syntax for
+them.
+
+
+
+
+
+
+
+
+
+we present translations of Haskell into some of the Isabelle logics.
+These translations are implemented as part of Hets, and are based on a
+shallow embedding approach quite different from that used in
+Programatica. In our translations Haskell types are mapped to Isabelle
+types. We are assuming that the type systems of HOL and HOLCF are
+similar enough to the type system of Haskell, in order to guarantee
+the semantical correctness of our translations. Moreover, we rely on
+axiomatic classes to translate Haskell types classes.
+
+
+In the following, we present translations of Haskell into some of the
+Isabelle logics. These translations are implemented as part of Hets,
+and are based on a shallow embedding approach quite different from
+that used in Programatica. In our translations Haskell types are
+mapped to Isabelle types. We are assuming that the type systems of HOL
+and HOLCF are similar enough to the type system of Haskell, in order
+to guarantee the semantical correctness of our translations. Moreover,
+we rely on axiomatic classes to translate Haskell types classes.
+
+
+
+
+ are those presented in \cite{}.
+
+
+
+as well as in \cite{}
+
+translation of Haskell
+into FOL \cite{} and that into
+
+In \cite{} Haskell is embedded in Martin-Loef
+type theory, implemented on Agda.
+
+ is indeed a general difference between a lower level
+approach based on operational semantics, followed in \cite{agda} and
+\cite{miranda}, and a higher-level one, based essentially on
+denotational semantics, followed in \cite{}
+
+
+The correctness of such embeddings
+always rests, ultimately, on the denotational semantics of Haskell,
+and on the possibility to encode it in a logic under consideration.
+
+
+\cite{Thompson95}.  Indeed, Haskell --- a strongly typed, purely
+functional language with lazy evaluation, based on a system of
+polymorphic types extended with type constructor classes, where monads
+allow for side effects and pseudo-imperative code \cite{Hudak} --- has
+already been considered several times as a target for verification
+\cite{...}.
+
+All the above-mentioned works provide embeddings of Haskell, either
+partial or total, into programming logic implemented on theorem
+provers. The correctness of such embeddings always rests, ultimately,
+on the denotational semantics of Haskell, and on the possibility to
+encode it in a logic under consideration.
+
+The tools, the logic and the ways in which the encoding can be done
+may differ quite deeply. In \cite{} Haskell is embedded in Martin-Loef
+type theory, implemented on Agda. All the other examples rely on
+Isabelle, a generic theorem-prover written in SML that allows for the
+formalisation of a variety of logics, including FOL, HOL and HOLCF
+\cite{Paulson94isa}. The embedding in \cite{} rely on FOL, the
+Isabelle implementation of classical first-order logic.
+
+All the other examples \cite{...} rely on higher-order logic. HOL is
+the implementation of classical higher-order logic based on simply
+typed lambda calculus, extended with axiomatic type classes.  HOLCF
+\cite{holcf} is the extension of HOL with a formalisation of the
+theory of computable functions (LCF) based on axiomatic type classes.
+
+
+
 
 %  In
 % other words, we need to represent the program in a mechanised logic in
@@ -65,6 +1598,7 @@ programming style (do notation) \cite{Hudak}.
 % language. 
 % In both cases however, a significant part of the work has to
 % be carried out before the actual verification may take place.
+
 In order to verify a program, we need to associate its code to a
 logical representation that allows for requirements to be expressed
 and for proofs to be carried out. There are different ways to do this.
@@ -89,7 +1623,7 @@ Isabelle is a generic theorem-prover written in SML that allows for
 the formalisation of a variety of logics \cite{Paulson94isa}.
 Isabelle-HOL is the implementation of classical higher-order logic
 based on simply typed lambda calculus, extended with axiomatic type
-classes. Isabelle-HOLCF \cite{holcf} is HOL extended with a
+classes. Isabelle-HOLCF \cite{holcf} is the extension of HOL with a
 formalisation of the theory of computable functions (LCF) based on
 axiomatic type classes.
 
@@ -100,14 +1634,15 @@ parsing and static analysis of Haskell programs Hets relies on
 Programatica \cite{PTeam}, a tool that has its own proof management,
 including a translation of Haskell to Isabelle-HOLCF.
 
-In the following, we present translations of Haskell into some of the
-Isabelle logics. These translations are implemented as part of Hets,
-and are based on a shallow embedding approach quite different from
-that used in Programatica. In our translations Haskell types are
-mapped to Isabelle types. We are assuming that the type systems of HOL
-and HOLCF are similar enough to the type system of Haskell, in order
-to guarantee the semantical correctness of our translations. Moreover,
-we rely on axiomatic classes to translate Haskell types classes.
+The translations of Haskell that we are presenting in the following,
+we present translations of Haskell into some of the Isabelle logics.
+These translations are implemented as part of Hets, and are based on a
+shallow embedding approach quite different from that used in
+Programatica. In our translations Haskell types are mapped to Isabelle
+types. We are assuming that the type systems of HOL and HOLCF are
+similar enough to the type system of Haskell, in order to guarantee
+the semantical correctness of our translations. Moreover, we rely on
+axiomatic classes to translate Haskell types classes.
 
 A type class in Isabelle is conceptually quite different from one in
 Haskell. The former is associated to a set of axioms, whereas the
@@ -164,7 +1699,7 @@ theory translation after a preliminary step of signature translation,
 and \emph{IsaSign.hs} contains the internal representation of Isabelle
 logics.
 
-\subsection*{Type signature}
+\subsection{Type signature}
 
 Our general strategy for translating signatures is to map Haskell
 types to Isabelle defined types. The translation to HOLCF keeps into
@@ -204,7 +1739,7 @@ translated to both logics, relying on the specific Isabelle syntax for
 them.
 
 
-\subsection*{Function definitions}
+\subsection{Function definitions}
 
 Haskell function definitions are translated to corresponding Isabelle
 ones. Non-recursive definitions are translated to ordinary definitions
@@ -221,7 +1756,7 @@ where expressions. Let expressions are translated to Isabelle let
 expressions, whereas where expressions are not covered.
 
 
-\subsection*{Recursive definitions}
+\subsection{Recursive definitions}
 
 Recursive defitions is the topic that really sets HOL and HOLCF apart.
 In HOLCF, where every type is a domain and every function is
@@ -261,7 +1796,7 @@ defined, for each case pattern, as the product of the values
 correspondingly taken by the original functions.
 
 
-\subsection*{Pattern matching}
+\subsection{Pattern matching}
 
 Support of pattern-matching in Isabelle is more restricted than in
 Haskell. Nested patterns are disallowed; case expressions are
@@ -283,7 +1818,7 @@ definitions (\emph{recdef} instead of \emph{primrec}), our
 translations turn a multiple definition by top level pattern matching
 into a definition by case construct.
 
-\subsection*{Classes}
+\subsection{Classes}
 
 Haskell classes and instances are translated to Isabelle,
 respectively, as classes with empty axiomatisation and as instances
@@ -302,7 +1837,8 @@ translated as overloaded function definitions, relying on class
 annotation of typed variables.
 
 
-\subsection*{Monads}
+\subsection{Monads}
+\label{sec:Monads}
 
 Isabelle does not allow for classes of type constructors, hence a
 problem in representing monads. We can deal with this problem,
@@ -366,8 +1902,34 @@ further relying on parametrisation.
 \end{document}
 
 
+%Moreover, being such languages
+%as Haskell, ML and Miranda closely modelled on typed lambda-calculus,
+%their translations to specification formalisms, particularly to
+%higher-order logics, turn out to be comparatively straighforward to be
+%defined in the main lines --- although not so to be carried out in
+%detail. 
 
+%, due to the richness in syntax, the specific way evaluation is
+%implemented, as well as to issues associated with classes (Haskell),
+%overloading and side effects.
 
+%All functions are total in HOL. Partiality may be dealt with by
+%lifting types through the \emph{option} type constructor. HOL has an
+%implementation of recursive functions based on Tarski fixed-point
+%theorem. Defining a recursive function requires giving a specific
+%measure and proving monotonicity about it. 
+
+% HOL has an implementation of recursive functions, based on Tarski
+% fixed-point theorem. Their definition in general requires specific
+% measure to be given each time, for monotonicity to be proved.
+% Moreover, partial functions are needed to programs that might not
+% terminate, but in HOL all functions are total. Partiality may be
+% dealt with by lifting types through \emph{option}, a type
+% constructor in HOL. This inevitably complicates case expressions.
+
+%There are different general approaches depending on the style of the
+%semantics. The expressiveness of the logical language may also make a
+%big difference.  
 
 
 
@@ -385,7 +1947,7 @@ for the moment are taken to be absolutely generic ones (with empty
 axiomatisation).
 
 
-\subsection*{Isabelle-HOL}
+\subsection{Isabelle-HOL}
 
 Isabelle-HOL as an implementation of classical higher-order logic
 supports the definition of datatypes and recursive functions.
@@ -418,7 +1980,7 @@ The translation of mutually recursive functions $a \rightarrow b, \ldots a
 defined, for each case pattern, as the product of the values
 correspondingly taken by the original functions.
 
-\subsection*{Isabelle-HOLCF} 
+\subsection{Isabelle-HOLCF} 
 
 Isabelle-HOLCF is the implementation of the theory of computable
 functions on top of higher-order logic, relying on axiomatic classes.
@@ -439,3 +2001,75 @@ mutually recursive ones, are covered without any essential
 restrictions, relying on the recdef package.
 
 \end{document}
+
+
+
+
+ as well as an
+operational, but is quite deep.
+
+, insofar as
+it builds into HOL a specific domain class for the interpretation of
+
+
+Higher-level approaches relying on denotational
+semantics 
+
+ propose level
+approaches based on large-step operational semantics, even if with
+some complication when dealing with higher-order programming languages
+such as those presented in \cite{} --- Miranda in FOL; \cite{} ---
+Haskell in FOL; \cite{} --- Haskell in the Agda implementation of
+Martin-Loef type theory. More expressiveness is usually required by
+high-level approaches based on denotational semantics, such as those
+presented in \cite{} --- Haskell in HOLCF and HOL; \cite{} --- ML in
+HOL.
+
+The main one, is which Depending on the
+expressiveness of the logic, the translation of the programming
+language may be carried out at different levels of depth.  In general,
+the deeper is the embedding, the less it relies on meta-level features
+of the target language. This may be a plus, either from the point of
+view of semantic clarity, or from that of expressiveness. Taking
+advantage of meta-level feaures, on the other hand, may be useful in
+order to make the theorem proving less tedious, by allowing more
+constant use of generic proof methods.  It may also ultimately affect
+positively the theorem prover economy, by reinforcing the bias toward
+the development of proof methods that, however specific, can be more
+easily integrated with generic ones.
+
+
+Some significantly different examples of functional programming
+languages embedded into the logic of a theorem prover can be found in
+\cite{} (Miranda on Isabelle), \cite{} (ML on Isabelle), \cite{}
+(Haskell on Isabelle), \cite{} (Haskell on Agda). Example of lower
+level approaches are given in \cite{}, where Haskell is translated
+into the Agda implementation of Martin-Loef theory based on
+operational rules and relies on operational semantics for correctness,
+is followed in \cite{}, where Haskell is embedded into the Agda
+implementation of Martin-Loef theory, as well as in the embeddings of
+Miranda \cite{} and Haskell \cite{} into FOL (classical first-order
+logic, until the middle of the nineties still probably the best
+supported logic on Isabelle). Higher-level approaches, such as
+presented in \cite{} (embedding ML into HOL), and in \cite{}
+(embedding Haskell into HOLCF and into HOL), rely ultimately on
+denotational semantics for correctenss. This, together with the
+expressiveness allowed by higher-order logic for the formulation of
+requirements, gives the considerable advantage of enabling proofs that
+are more abstract and closer to mathematical intuition.
+
+\subsection{}
+
+
+
+method for the
+axiomatic encoding of monads in HOL that uses parametrisation.
+Parametrisation based on theory morphism has been implemented, as a
+conservative extension of various Isabelle logics, in AWE, a tool
+designed to support proof reuse \cite{AWE}.
+
+it is not complete, and cannot be trivially completed ---
+notably, type constructor classes have not been considered, since
+Isabelle does not have them. However, we are expecting to deal with
+this problem by relying on an extension of Isabelle based on theory
+morphism (see section \ref{}) .
