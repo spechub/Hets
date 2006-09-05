@@ -150,7 +150,7 @@ defaultProof_status :: AS_Anno.Named SPTerm -- ^ goal to prove
 defaultProof_status nGoal prName tl opts pt =
   (openProof_status (AS_Anno.senName nGoal)
                     prName (ATP_ProofTree pt))
-  {tacticScript = Tactic_script
+  {tacticScript = Tactic_script $ show $ ATPTactic_script
     {ts_timeLimit = tl,
      ts_extraOpts = unwords opts} }
 

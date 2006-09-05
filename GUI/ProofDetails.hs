@@ -141,7 +141,8 @@ fillGoalDescription (cmo, basicProof) =
                      otherProof -> stat (show otherProof)
         printTS bp = case bp of
                      DevGraph.BasicProof _ ps ->
-                       indent (2 * stdIndent) $ show $ tacticScript ps
+                       indent (2 * stdIndent) $ (\(Tactic_script xs) -> xs) $
+                                                tacticScript ps
                      otherProof -> Pretty.empty
         printPT bp = case bp of
                      DevGraph.BasicProof _ ps ->

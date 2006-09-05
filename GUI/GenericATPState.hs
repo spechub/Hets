@@ -189,3 +189,15 @@ data FileExtensions = FileExtensions {
     -- | file extension for saving theory configuration
     theoryConfiguration :: String
   }
+
+{- |
+  Tactic script implementation for ATPs. Read and show functions are provided.
+-}
+data ATPTactic_script = ATPTactic_script
+    { ts_timeLimit :: Int, -- ^ used time limit
+      ts_extraOpts :: String -- ^ used extra options (if any)
+    } deriving (Eq, Ord)
+
+instance Show ATPTactic_script where
+  show ts = "Time limit: " ++ (show $ ts_timeLimit ts)
+            ++ "\nExtra options: " ++ (ts_extraOpts ts)

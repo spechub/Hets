@@ -139,8 +139,7 @@ mkProved :: String -> [String] -> Proof_status ()
 mkProved thm used = (openIsaProof_status thm)
     { goalStatus = Proved Nothing
     , usedAxioms = used
-    , tacticScript = Tactic_script { ts_timeLimit = 0,
-          ts_extraOpts = "unknown isabelle user input" }
+    , tacticScript = Tactic_script "unknown isabelle user input"
     }
 
 prepareThyFiles :: (TheoryHead, Body) -> String -> String -> IO ()

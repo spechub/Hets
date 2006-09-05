@@ -239,7 +239,7 @@ runSpass sps cfg saveDFG thName nGoal = do
     defaultProof_status opts =
         (openProof_status (AS_Anno.senName nGoal) (prover_name spassProver) $
                            ATP_ProofTree "")
-        {tacticScript = Tactic_script
+        {tacticScript = Tactic_script $ show $ ATPTactic_script
           {ts_timeLimit = configTimeLimit cfg,
            ts_extraOpts = unwords opts} }
 
