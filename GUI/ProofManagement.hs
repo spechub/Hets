@@ -364,9 +364,6 @@ proofManagementGUI lid proveF fineGrainedSelectionF
   selectOpenGoalsButton <- newButton goalsBtnFrame [text "Select Open Goals"]
   pack selectOpenGoalsButton [Expand Off, Fill None, Side AtLeft]
 
-  -- put the labels in the listbox
-  populateGoalsListBox lb (goalsView initState)
-
   -- right frame (options/results)
   right <- newFrame b2 []
   pack right [Expand On, Fill Both, Anchor NorthWest]
@@ -427,7 +424,7 @@ proofManagementGUI lid proveF fineGrainedSelectionF
   pathsLb <- newListBox pathsFrame [HTk.value $ ([]::[String]), bg "white",
                                     selectMode Single, exportSelection False,
                                     height 4, width 28] :: IO (ListBox String)
-  populatePathsListBox pathsLb knownProvers
+
   pack pathsLb [Expand On, Side AtLeft, Fill Both]
   pathsSb <- newScrollBar pathsFrame []
   pack pathsSb [Expand On, Side AtRight, Fill Y]
@@ -471,11 +468,6 @@ proofManagementGUI lid proveF fineGrainedSelectionF
             , sbf_btns = thsBtns}) lbThs)
       <- newExtSelListBoxFrame icBox "Theorems to include if proven:" 10
 
-  populateAxiomsList lbAxs initState
-  lbThs # HTk.value (OMap.keys (goalMap initState))
-  doSelectAllEntries True lbAxs
-  doSelectAllEntries True lbThs
-
   -- separator
   spac1 <- newSpace b (cm 0.15) []
   pack spac1 [Expand Off, Fill X, Side AtBottom]
@@ -491,6 +483,14 @@ proofManagementGUI lid proveF fineGrainedSelectionF
 
   closeButton <- newButton bottom [text "Close"]
   pack closeButton [Expand Off, Fill None, Side AtRight,PadX (pp 13)]
+
+  -- put the labels in the listboxes
+  populateGoalsListBox lb (goalsView initState)
+  populatePathsListBox pathsLb knownProvers
+  populateAxiomsList lbAxs initState
+  lbThs # HTk.value (OMap.keys (goalMap initState))
+  doSelectAllEntries True lbAxs
+  doSelectAllEntries True lbThs
 
   updateDisplay initState False lb pathsLb statusLabel
 
