@@ -29,7 +29,7 @@ quanti f = case f of
              Quantification _ _ f' _ -> quanti f'
              _ -> f
 
-
+-- | check whether it is a existent quantification
 is_ex_quanti :: FORMULA f -> Bool
 is_ex_quanti f = 
     case f of
@@ -41,14 +41,14 @@ is_ex_quanti f =
       Negation f' _ -> is_ex_quanti f'
       _ -> False 
 
-
+-- | get the constraint from a sort generated axiom
 constraintOfAxiom :: FORMULA f -> [Constraint]
 constraintOfAxiom f = 
     case f of
       Sort_gen_ax constrs True -> constrs
       _ ->[]
 
-                        
+-- | check whether it is a parial operation symbol                        
 partial_OpSymb :: OP_SYMB -> Maybe Bool
 partial_OpSymb os = 
     case os of
@@ -64,6 +64,7 @@ is_user_or_sort_gen ax = take 12 name == "ga_generated" ||
     where name = senName ax     
 
 
+-- | check whether it is a Membership formula
 is_Membership :: FORMULA f -> Bool
 is_Membership f =
   case f of
@@ -73,11 +74,14 @@ is_Membership f =
     _ -> False
 
 
+-- | check whether it is a sort generated formula
 is_Sort_gen_ax :: FORMULA f -> Bool
 is_Sort_gen_ax f = case f of
                      Sort_gen_ax _ _ -> True
                      _ -> False   
 
+
+-- | check whether it is a Definedness formula
 is_Def :: FORMULA f -> Bool
 is_Def f = case (quanti f) of
              Implication (Definedness _ _) _ _ _ -> True
@@ -87,6 +91,7 @@ is_Def f = case (quanti f) of
              _ -> False
 
 
+-- | check whether it is a implication
 is_impli :: FORMULA f -> Bool
 is_impli f = case (quanti f) of
                Quantification _ _ f' _ -> is_impli_equiv f'
@@ -95,6 +100,7 @@ is_impli f = case (quanti f) of
                _ -> False
 
 
+-- | check whether it is a implication or equivalence
 is_impli_equiv :: FORMULA f -> Bool
 is_impli_equiv f = case (quanti f) of
                      Quantification _ _ f' _ -> is_impli_equiv f'
@@ -104,6 +110,7 @@ is_impli_equiv f = case (quanti f) of
                      _ -> False
 
 
+-- | check whether it is a operation or predication
 isOp_Pred :: FORMULA f -> Bool
 isOp_Pred f = 
     case f of
@@ -123,6 +130,8 @@ isOp_Pred f =
                                  _ -> False 
       _ -> False
 
+
+-- | check whether it is a application term
 isApp :: TERM t -> Bool
 isApp t = case t of
             Application _ _ _->True
@@ -130,6 +139,7 @@ isApp t = case t of
             _ -> False
 
 
+-- | check whether it is a Variable
 isVar :: TERM t -> Bool
 isVar t = case t of
             Qual_var _ _ _ ->True
@@ -137,6 +147,7 @@ isVar t = case t of
             _ -> False
 
 
+-- | extract all variables of a term
 allVarOfTerm :: TERM f -> [TERM f]
 allVarOfTerm t = case t of
                    Qual_var _ _ _ -> [t]
@@ -146,6 +157,7 @@ allVarOfTerm t = case t of
                    _ -> []
 
 
+-- | extract all Argument of a term
 allArguOfTerm :: TERM f-> [TERM f]
 allArguOfTerm t = case t of
                     Qual_var _ _ _ -> [t]
@@ -155,7 +167,7 @@ allArguOfTerm t = case t of
                     _ -> [] 
 
 
--- | It filters all variables of a axiom
+-- | extract all variables of a axiom
 varOfAxiom :: FORMULA f -> [VAR]
 varOfAxiom f = 
   case f of
@@ -168,6 +180,7 @@ varOfAxiom f =
     _ -> []
 
 
+-- | extract the predication symbols from a axiom
 predSymbsOfAxiom :: (FORMULA f) -> [PRED_SYMB]
 predSymbsOfAxiom f = 
     case f of
@@ -187,6 +200,7 @@ predSymbsOfAxiom f =
       _ -> []
 
 
+-- | check whether it is a partial axiom
 partialAxiom :: FORMULA f -> Bool
 partialAxiom f = 
     case f of
@@ -224,12 +238,14 @@ partialAxiom f =
       _ -> False                    
 
 
+-- | extract the leading symbol from a formula
 leadingSym :: FORMULA f -> Maybe (Either OP_SYMB PRED_SYMB)
 leadingSym f = do
   tp<-leading_Term_Predication f
   return (extract_leading_symb tp)
  
 
+-- | extract the leading symbol with the range from a formula
 leadingSymPos :: PosItem f => FORMULA f 
               -> (Maybe (Either OP_SYMB PRED_SYMB), Range)
 leadingSymPos f = leading (f,False,False)
@@ -260,6 +276,7 @@ leadingSymPos f = leading (f,False,False)
                        _ -> (Nothing,(getRange f1)) 
 
 
+-- | extract the leading term or predication from a formula
 leading_Term_Predication :: FORMULA f -> Maybe (Either (TERM f) (FORMULA f))
 leading_Term_Predication f = leading (f,False,False)
   where 
@@ -289,6 +306,7 @@ leading_Term_Predication f = leading (f,False,False)
                        _ -> Nothing
  
 
+-- | extract the leading symbol from a term or a formula
 extract_leading_symb :: Either (TERM f) (FORMULA f) -> Either OP_SYMB PRED_SYMB
 extract_leading_symb lead = case lead of
                               Left (Application os _ _) -> Left os
@@ -308,15 +326,18 @@ opTyp_Axiom f =
     _ -> Nothing 
 
 
+-- | transform id to string
 idStr :: Id -> String
 idStr (Id ts _ _) = concat $ map tokStr ts 
 
 
+-- | each element of a list occurs only once
 everyOnce :: (Eq a) => [a] -> [a]
 everyOnce [] = []
 everyOnce (x:xs) = x:(everyOnce $ filter (\a-> a /= x ) xs)
 
 
+-- | check whether a string is a substring of another
 subStr :: String -> String -> Bool
 subStr [] _ = True
 subStr _ [] = False
@@ -325,6 +346,7 @@ subStr xs ys = if (head xs) == (head ys) &&
                else subStr xs (tail ys)
 
 
+-- | filter the element of list2 from list1, return list1
 diffList :: (Eq a) => [a] -> [a] -> [a]
 diffList [] _ = []
 diffList l [] = l
