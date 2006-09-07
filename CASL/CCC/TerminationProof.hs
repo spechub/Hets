@@ -38,7 +38,7 @@ terminationProof fsn
     | proof == "YES\n" = Just True
     | proof == "MAYBE\n" = Nothing
     | proof == "NO\n" = Just False
-    | otherwise = error "termination proof"
+    | otherwise = error "CASL.CCC.TerminationProof.<terminationProof>"
     where
     fs1 = map sentence (filter is_user_or_sort_gen fsn)
     fs = trace (showDoc fs1 "all formulars") fs1
@@ -53,19 +53,18 @@ terminationProof fsn
         | otherwise = if null str then varsStr (tail vars) (tokStr $ head vars)
                       else varsStr (tail vars) (str ++ " " ++ 
                                                 (tokStr $ head vars))
-    --  transform all axioms to string
+    --  transform all axioms except implication and equivalence to string
     axiomStr axs str
         | null axs = str
         | otherwise = 
             axiomStr (tail axs) (str ++ (axiom_str $ (head axs)) ++ "\n")
     impli_equiv = filter is_impli_equiv all_axioms
     n_impli_equiv = filter (not.is_impli_equiv) all_axioms
-    auxAxstr afs i str
+    auxAxstr afs str
         | null afs = str
         | otherwise =
-              auxAxstr (tail afs) (snd tmp) (str ++ (fst tmp))
-            where tmp = impli_equiv_str i (head afs)
-    axAux = auxAxstr impli_equiv 1 ""  
+              auxAxstr (tail afs) (str ++ (impli_equiv_str (head afs)))
+    axAux = auxAxstr impli_equiv ""  
     axhead = "(RULES\neq(t1,t1) -> true;\n" ++ 
              "eq(t1,t2) -> false;\n" ++
              "when_else(t1,true,t2) -> t1\n" ++ 
@@ -98,1552 +97,1072 @@ predSymStr ps = case ps of
                   Qual_pred_name pn _ _ -> idStr pn
 
 
-{- transform Implication to string:
-   i: (phi => f(t_1,...,t_m)=t)
-     Example: 
-                X=e => f(t_1,...,t_m)=t
-     str -->   f(t_1,...,t_m) -> U(X,t_1,...,t_m)
-                U(e,t_1,...t_m) -> t
-   P.S. Bool ignore
-
-   ii: (phi1  => p(t_1,...,t_m)<=>phi)
-     Example:
-            X=e => p(t_1,...,t_m) <=> f(tt_1,...,tt_n)=t
-     str --> X=e =>  p(t_1,...,t_m)  => f(tt_1,...,tt_n)=t  --> 
-                  f(tt_1,...,tt_n) -> U1(X,p(t_1,...,t_m),tt_1,...,tt_n)
-                  U1(e,true,tt_1,...,tt_n) -> t
-          --> X=e =>  f(tt_1,...,tt_n)=t => p(t_1,...,t_m)   --> 
-                  p(t_1,...,t_m) -> U2(X,f(tt_1,...,tt_n),t_1,...,t_m)
-                  U2(e,t,t_1,...,t_m) -> true 
--}
-impli_str :: Int -> FORMULA f -> (String,Int)
-impli_str index f =
+-- | transform Implication to string
+impli_str :: FORMULA f -> String
+impli_str f =
   case (quanti f) of
     Implication (Predication predS1 ts1 _) f1 _ _ ->
         case (quanti f1) of
           Conjunction _ _ ->
-              (((axiom_substr (quanti f1)) ++ " -> " ++ 
-              fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
-              "))\n" ++
-              fk1 ++ "(true) -> true\n"),(index+1))
+              ((axiom_substr (quanti f1)) ++ " -> true | " ++ 
+              (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ ") -> true\n")
           Negation (Conjunction _ _) _ ->
-              (((axiom_substr (quanti f1)) ++ " -> " ++ 
-              fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
-              "))\n" ++
-              fk1 ++ "(true) -> false\n"),(index+1))
+              ((axiom_substr (quanti f1)) ++ " -> false | " ++ 
+              (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ ") -> true\n")
           Disjunction _ _ ->
-              (((axiom_substr (quanti f1)) ++ " -> " ++ 
-              fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
-              "))\n" ++
-              fk1 ++ "(true) -> true\n"),(index+1))
+              ((axiom_substr (quanti f1)) ++ " -> true | " ++ 
+              (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ ") -> true\n")
           Negation (Disjunction _ _) _ ->
-              (((axiom_substr (quanti f1)) ++ " -> " ++ 
-              fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
-              "))\n" ++
-              fk1 ++ "(true) -> false\n"),(index+1))
+              ((axiom_substr (quanti f1)) ++ " -> false | " ++ 
+              (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ ") -> true\n")
           Predication predS2 ts2 _ ->
-              (((predSymStr predS2) ++ "(" ++ (terms_str ts2) ++ ") -> " ++
-              fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++
-              ")," ++ (terms_str ts2) ++ ")\n" ++
-              fk1 ++ "(true," ++ (terms_str ts2) ++ ") -> true\n" ),
-              (index+1))
+              ((predSymStr predS2) ++ "(" ++ (terms_str ts2) ++ 
+              ") -> true | " ++ (predSymStr predS1) ++ "(" ++ 
+              (terms_str ts1) ++ ") -> true\n")
           Negation (Predication predS2 ts2 _) _ ->
-              (((predSymStr predS2) ++ "(" ++ (terms_str ts2) ++ ") -> " ++
-              fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++
-              ")," ++ (terms_str ts2) ++ ")\n" ++
-              fk1 ++ "(true," ++ (terms_str ts2) ++ ") -> false\n" ),
-              (index+1))
+              ((predSymStr predS2) ++ "(" ++ (terms_str ts2) ++ 
+              ") -> false | " ++ (predSymStr predS1) ++ "(" ++ 
+              (terms_str ts1) ++ ") -> true\n")
           Strong_equation t1 t2 _ ->
-              (("eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ ") -> " ++
-              fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++
-              ")," ++ (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-              fk1 ++ "(true," ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
-              ") -> true\n"),(index + 1))
+              ("eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
+              ") -> true | " ++ (predSymStr predS1) ++ "(" ++ 
+              (terms_str ts1) ++ ") -> true\n")
           Negation (Strong_equation t1 t2 _) _ ->
-              (("eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ ") -> " ++
-              fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++
-              ")," ++ (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-              fk1 ++ "(true," ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
-              ") -> false\n"),(index + 1))
+              ("eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
+              ") -> false | " ++ (predSymStr predS1) ++ "(" ++ 
+              (terms_str ts1) ++ ") -> true\n")
           Existl_equation t1 t2 _ ->
-              (("eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ ") -> " ++
-              fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++
-              ")," ++ (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-              fk1 ++ "(true," ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
-              ") -> true\n"),(index + 1))
+              ("eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
+              ") -> true | " ++ (predSymStr predS1) ++ "(" ++ 
+              (terms_str ts1) ++ ") -> true\n")
           Negation (Existl_equation t1 t2 _) _ ->
-              (("eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ ") -> " ++
-              fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++
-              ")," ++ (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-              fk1 ++ "(true," ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
-              ") -> false\n"),(index + 1))
+              ("eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
+              ") -> false | " ++ (predSymStr predS1) ++ "(" ++ 
+              (terms_str ts1) ++ ") -> true\n")
           Equivalence (Predication predS2 ts2 _) f2 _ ->
               case (quanti f2) of
                 Conjunction _ _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (predSymStr predS2) ++ "(" ++ 
-                    (terms_str ts2) ++"))\n" ++
-                    fk1 ++ "(true,true) -> true\n"),(index+1))
+                    ((axiom_substr (quanti f2)) ++ " -> true | " ++ 
+                    (predSymStr predS1) ++ "(" ++ 
+                    (terms_str ts1) ++ ") -> true, " ++ 
+                    (predSymStr predS2) ++ "(" ++ 
+                    (terms_str ts2) ++ ") -> true\n")
                 Negation (Conjunction _ _) _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (predSymStr predS2) ++ "(" ++ 
-                    (terms_str ts2) ++"))\n" ++
-                    fk1 ++ "(true,true) -> false\n"),(index+1))
+                    ((axiom_substr (quanti f2)) ++ " -> false | " ++ 
+                    (predSymStr predS1) ++ "(" ++ 
+                    (terms_str ts1) ++ ") -> true, " ++ 
+                    (predSymStr predS2) ++ "(" ++ 
+                    (terms_str ts2) ++ ") -> true\n")
                 Disjunction _ _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (predSymStr predS2) ++ "(" ++ 
-                    (terms_str ts2) ++"))\n" ++
-                    fk1 ++ "(true,true) -> true\n"),(index+1))
+                    ((axiom_substr (quanti f2)) ++ " -> true | " ++ 
+                    (predSymStr predS1) ++ "(" ++ 
+                    (terms_str ts1) ++ ") -> true, " ++ 
+                    (predSymStr predS2) ++ "(" ++ 
+                    (terms_str ts2) ++ ") -> true\n")
                 Negation (Disjunction _ _) _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (predSymStr predS2) ++ "(" ++ 
-                    (terms_str ts2) ++"))\n" ++
-                    fk1 ++ "(true,true) -> false\n"),(index+1))
+                    ((axiom_substr (quanti f2)) ++ " -> false | " ++ 
+                    (predSymStr predS1) ++ "(" ++ 
+                    (terms_str ts1) ++ ") -> true, " ++ 
+                    (predSymStr predS2) ++ "(" ++ 
+                    (terms_str ts2) ++ ") -> true\n")
                 Predication predS3 ts3 _ ->
-                    (((predSymStr predS3)++"("++(terms_str ts3)++") -> "++
-                    fk1++"("++(predSymStr predS1)++"("++(terms_str ts1) ++ 
-                    ")," ++ (predSymStr predS2) ++ "(" ++ (terms_str ts2) ++
-                    ")," ++ (terms_str ts3) ++ ")\n" ++
-                    fk1++"(true,true,"++(terms_str ts3)++") -> true\n"),
-                    (index +1))
+                    ((predSymStr predS3) ++ "(" ++ (terms_str ts3) ++ 
+                    ") -> true | "++
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true, " ++ 
+                    (predSymStr predS2) ++ "(" ++ (terms_str ts2) ++
+                    ") -> true\n")
                 Negation (Predication predS3 ts3 _) _ ->
-                    (((predSymStr predS3)++"("++(terms_str ts3)++") -> "++
-                    fk1++"("++(predSymStr predS1)++"("++(terms_str ts1) ++ 
-                    ")," ++ (predSymStr predS2) ++ "(" ++ (terms_str ts2) ++
-                    ")," ++ (terms_str ts3) ++ ")\n" ++
-                    fk1++"(true,true,"++(terms_str ts3)++") -> false\n"),
-                    (index + 1))
+                    ((predSymStr predS3) ++ "(" ++ (terms_str ts3) ++ 
+                    ") -> false | "++
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true, " ++ 
+                    (predSymStr predS2) ++ "(" ++ (terms_str ts2) ++
+                    ") -> true\n")
                 Strong_equation t1 t2 _ ->
-                    (("eq("++(term_str t1)++","++(term_str t2)++") -> " ++
-                    fk1++"("++(predSymStr predS1)++"("++(terms_str ts1)++
-                    ")," ++ (predSymStr predS2) ++ "(" ++ (terms_str ts2) ++
-                    "),"++(term_str t1)++","++(term_str t2)++")\n" ++
-                    fk1++"(true,true,"++(term_str t1)++","++(term_str t2)++ 
-                    ") -> true\n"),(index +1))
+                    ("eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
+                    ") -> true | " ++
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++
+                    ") -> true, " ++ 
+                    (predSymStr predS2) ++ "(" ++ (terms_str ts2) ++
+                    ") -> true\n")
                 Negation (Strong_equation t1 t2 _) _ ->
-                    (("eq("++(term_str t1)++","++(term_str t2)++") -> " ++
-                    fk1++"("++(predSymStr predS1)++"("++(terms_str ts1)++
-                    ")," ++ (predSymStr predS2) ++ "(" ++ (terms_str ts2) ++
-                    "),"++(term_str t1)++","++(term_str t2)++")\n" ++
-                    fk1++"(true,true,"++(term_str t1)++","++(term_str t2)++ 
-                    ") -> false\n"),(index +1))
+                    ("eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
+                    ") -> false | " ++
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++
+                    ") -> true, " ++ 
+                    (predSymStr predS2) ++ "(" ++ (terms_str ts2) ++
+                    ") -> true\n")
                 Existl_equation t1 t2 _ ->
-                    (("eq("++(term_str t1)++","++(term_str t2)++") -> " ++
-                    fk1++"("++(predSymStr predS1)++"("++(terms_str ts1)++
-                    ")," ++ (predSymStr predS2) ++ "(" ++ (terms_str ts2) ++
-                    "),"++(term_str t1)++","++(term_str t2)++")\n" ++
-                    fk1++"(true,true,"++(term_str t1)++","++(term_str t2)++ 
-                    ") -> true\n"),(index +1))
+                    ("eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
+                    ") -> true | " ++
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++
+                    ") -> true, " ++ 
+                    (predSymStr predS2) ++ "(" ++ (terms_str ts2) ++
+                    ") -> true\n")
                 Negation (Existl_equation t1 t2 _) _ ->
-                    (("eq("++(term_str t1)++","++(term_str t2)++") -> " ++
-                    fk1++"("++(predSymStr predS1)++"("++(terms_str ts1)++
-                    ")," ++ (predSymStr predS2) ++ "(" ++ (terms_str ts2) ++
-                    "),"++(term_str t1)++","++(term_str t2)++")\n" ++
-                    fk1++"(true,true,"++(term_str t1)++","++(term_str t2)++ 
-                    ") -> false\n"),(index +1))
+                    ("eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
+                    ") -> false | " ++
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++
+                    ") -> true, " ++ 
+                    (predSymStr predS2) ++ "(" ++ (terms_str ts2) ++
+                    ") -> true\n")
                 _ -> error "CASL.CCC.TerminationProof.<impli_str_p_eq_p>"
           Equivalence (Strong_equation t1 t2 _) f2 _ ->
               case (quanti f2) of
                 Conjunction _ _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (term_str t1) ++ ")\n" ++
-                    fk1 ++ "(true," ++ (term_str t2) ++ ") -> true\n" ++
+                    ((axiom_substr (quanti f2)) ++ " -> true | " ++ 
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true, " ++ (term_str t1) ++ " -> " ++ 
+                    (term_str t2) ++ "\n" ++
                     "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++
-                    ") -> " ++ fk2 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (axiom_substr (quanti f2)) ++
-                    "," ++ (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-                    fk2 ++ "(true,true," ++ (term_str t1) ++ "," ++ 
-                    (term_str t2) ++ ") -> true\n"),(index+2))
+                    ") -> true | " ++ 
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true, " ++ (axiom_substr (quanti f2)) ++
+                    " -> true\n")
                 Negation (Conjunction _ _) _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (term_str t1) ++ ")\n" ++
-                    fk1 ++ "(true," ++ (term_str t2) ++ ") -> false\n" ++
+                    ((axiom_substr (quanti f2)) ++ " -> false | " ++ 
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true, " ++ (term_str t1) ++ " -> " ++ 
+                    (term_str t2) ++ "\n" ++
                     "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++
-                    ") -> " ++ fk2 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (axiom_substr (quanti f2)) ++
-                    "," ++ (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-                    fk2 ++ "(true,false," ++ (term_str t1) ++ "," ++ 
-                    (term_str t2) ++ ") -> true\n"),(index+2))
+                    ") -> true | " ++ 
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true, " ++ (axiom_substr (quanti f2)) ++
+                    " -> false\n")
                 Disjunction _ _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (term_str t1) ++ ")\n" ++
-                    fk1 ++ "(true," ++ (term_str t2) ++ ") -> true\n" ++
+                    ((axiom_substr (quanti f2)) ++ " -> true | " ++ 
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true, " ++ (term_str t1) ++ " -> " ++
+                    (term_str t2) ++ "\n" ++
                     "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++
-                    ") -> " ++ fk2 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (axiom_substr (quanti f2)) ++
-                    "," ++ (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-                    fk2 ++ "(true,true," ++ (term_str t1) ++ "," ++ 
-                    (term_str t2) ++ ") -> true\n"),(index+2))
+                    ") -> true | " ++ 
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true, " ++ (axiom_substr (quanti f2)) ++
+                    " -> true\n")
                 Negation (Disjunction _ _) _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (term_str t1) ++ ")\n" ++
-                    fk1 ++ "(true," ++ (term_str t2) ++ ") -> false\n" ++
+                    ((axiom_substr (quanti f2)) ++ " -> false | " ++ 
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true, " ++ (term_str t1) ++ " -> " ++ 
+                    (term_str t2) ++ "\n" ++ 
                     "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++
-                    ") -> " ++ fk2 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (axiom_substr (quanti f2)) ++
-                    "," ++ (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-                    fk2 ++ "(true,false," ++ (term_str t1) ++ "," ++ 
-                    (term_str t2) ++ ") -> true\n"),(index+2))
+                    ") -> true | " ++ 
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true, " ++ (axiom_substr (quanti f2)) ++
+                    " -> false\n")
                 Predication predS2 ts2 _ ->
-                    (((predSymStr predS2) ++ "(" ++ (terms_str ts2) ++ 
-                    ") ->" ++ fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (term_str t1) ++ "," ++
-                    (terms_str ts2) ++ ")\n" ++
-                    fk1 ++ "(true," ++ (term_str t2) ++ "," ++ 
-                    (terms_str ts2) ++ ") -> true\n" ++
+                    ((predSymStr predS2) ++ "(" ++ (terms_str ts2) ++ 
+                    ") -> true | " ++ 
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true, " ++ (term_str t1) ++ " -> " ++
+                    (term_str t2) ++ "\n" ++ 
                     "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++
-                    ") -> " ++ fk2 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (predSymStr predS2) ++ "(" ++
-                    (terms_str ts2) ++ ")," ++ (term_str t1) ++ "," ++
-                    (term_str t2) ++ ")\n" ++
-                    fk2 ++ "(true,true," ++ (term_str t1) ++ "," ++
-                    (term_str t2) ++ ") -> true\n"),(index+2))
+                    ") -> true | " ++ 
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true, " ++ (predSymStr predS2) ++ "(" ++
+                    (terms_str ts2) ++ ") -> true\n")
                 Negation (Predication predS2 ts2 _) _ ->
-                    (((predSymStr predS2) ++ "(" ++ (terms_str ts2) ++ 
-                    ") ->" ++ fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (term_str t1) ++ "," ++
-                    (terms_str ts2) ++ ")\n" ++
-                    fk1 ++ "(true," ++ (term_str t2) ++ "," ++ 
-                    (terms_str ts2) ++ ") -> false\n" ++
+                    ((predSymStr predS2) ++ "(" ++ (terms_str ts2) ++ 
+                    ") -> false | " ++ 
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true, " ++ (term_str t1) ++ " -> " ++
+                    (term_str t2) ++ "\n" ++ 
                     "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++
-                    ") -> " ++ fk2 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (predSymStr predS2) ++ "(" ++
-                    (terms_str ts2) ++ ")," ++ (term_str t1) ++ "," ++
-                    (term_str t2) ++ ")\n" ++
-                    fk2 ++ "(true,false," ++ (term_str t1) ++ "," ++
-                    (term_str t2) ++ ") -> true\n"),(index+2))
+                    ") -> true | " ++ 
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true, " ++ (predSymStr predS2) ++ "(" ++
+                    (terms_str ts2) ++ ") -> false\n")
                 Strong_equation t3 t4 _ ->
-                    (("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> " ++ fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (term_str t1) ++ "," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ")\n" ++
-                    fk1 ++ "(true," ++ (term_str t2) ++ "," ++ 
-                    (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> true\n" ++
+                    ("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+                    ") -> true | " ++ (predSymStr predS1) ++ "(" ++ 
+                    (terms_str ts1) ++ ") -> true, " ++ (term_str t1) ++ 
+                    " -> " ++ (term_str t2) ++ "\n" ++
                     "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
-                    ") -> " ++ fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (term_str t3) ++ "," ++
-                    (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-                    fk1 ++ "(true," ++ (term_str t4) ++ "," ++ 
-                    (term_str t1) ++ "," ++ (term_str t2) ++ ") -> true\n"),
-                    (index+2))
+                    ") -> true | " ++ (predSymStr predS1) ++ "(" ++ 
+                    (terms_str ts1) ++ ") -> true, " ++ (term_str t3) ++ 
+                    " -> " ++ (term_str t4) ++ "\n")
                 Negation (Strong_equation t3 t4 _) _ ->
-                    (("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> " ++ fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (term_str t1) ++ "," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ")\n" ++
-                    fk1 ++ "(true," ++ (term_str t2) ++ "," ++ 
-                    (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> false\n" ++
+                    ("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+                    ") -> false | " ++ (predSymStr predS1) ++ "(" ++ 
+                    (terms_str ts1) ++ ") -> true, " ++ (term_str t1) ++ 
+                    " -> " ++ (term_str t2) ++ "\n" ++
                     "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
-                    ") -> " ++ fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ "eq(" ++ (term_str t3) ++ 
-                    "," ++ (term_str t4) ++ ")" ++ (term_str t1) ++ "," ++ 
-                    (term_str t2) ++ ")\n" ++
-                    fk1 ++ "(true,false," ++ 
-                    (term_str t1) ++ "," ++ (term_str t2) ++ ") -> true\n"),
-                    (index+2))
+                    ") -> true | " ++ (predSymStr predS1) ++ "(" ++ 
+                    (terms_str ts1) ++ ") -> true, eq(" ++ (term_str t3) ++ 
+                    "," ++ (term_str t4) ++ ") -> false\n")
                 Existl_equation t3 t4 _ ->
-                    (("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> " ++ fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (term_str t1) ++ "," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ")\n" ++
-                    fk1 ++ "(true," ++ (term_str t2) ++ "," ++ 
-                    (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> true\n" ++
+                    ("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+                    ") -> true | " ++ (predSymStr predS1) ++ "(" ++ 
+                    (terms_str ts1) ++ ") -> true, " ++ (term_str t1) ++ 
+                    " -> " ++ (term_str t2) ++ "\n" ++
                     "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
-                    ") -> " ++ fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (term_str t3) ++ "," ++
-                    (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-                    fk1 ++ "(true," ++ (term_str t4) ++ "," ++ 
-                    (term_str t1) ++ "," ++ (term_str t2) ++ ") -> true\n"),
-                    (index+2))
+                    ") -> true | " ++ (predSymStr predS1) ++ "(" ++ 
+                    (terms_str ts1) ++ ") -> true, " ++ (term_str t3) ++ 
+                    " -> " ++ (term_str t4) ++ "\n")
                 Negation (Existl_equation t3 t4 _) _ ->
-                    (("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> " ++ fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (term_str t1) ++ "," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ")\n" ++
-                    fk1 ++ "(true," ++ (term_str t2) ++ "," ++ 
-                    (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> false\n" ++
+                    ("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+                    ") -> false | " ++ (predSymStr predS1) ++ "(" ++ 
+                    (terms_str ts1) ++ ") -> true, " ++ (term_str t1) ++ 
+                    " -> " ++ (term_str t2) ++ "\n" ++
                     "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
-                    ") -> " ++ fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ "eq(" ++ (term_str t3) ++ 
-                    "," ++ (term_str t4) ++ ")" ++ (term_str t1) ++ "," ++ 
-                    (term_str t2) ++ ")\n" ++
-                    fk1 ++ "(true,false," ++ 
-                    (term_str t1) ++ "," ++ (term_str t2) ++ ") -> true\n"),
-                    (index+2))
+                    ") -> true | " ++ (predSymStr predS1) ++ "(" ++ 
+                    (terms_str ts1) ++ ") -> true, eq(" ++ (term_str t3) ++ 
+                    "," ++ (term_str t4) ++ ") -> false\n")                   
                 _ -> error "CASL.CCC.TerminationProof.<impli_str_p_eq_str>"
           Equivalence (Existl_equation t1 t2 _) f2 _ ->
               case (quanti f2) of
                 Conjunction _ _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (term_str t1) ++ ")\n" ++
-                    fk1 ++ "(true," ++ (term_str t2) ++ ") -> true\n" ++
+                    ((axiom_substr (quanti f2)) ++ " -> true | " ++ 
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true, " ++ (term_str t1) ++ " -> " ++ 
+                    (term_str t2) ++ "\n" ++
                     "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++
-                    ") -> " ++ fk2 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (axiom_substr (quanti f2)) ++
-                    "," ++ (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-                    fk2 ++ "(true,true," ++ (term_str t1) ++ "," ++ 
-                    (term_str t2) ++ ") -> true\n"),(index+2))
+                    ") -> true | " ++ 
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true, " ++ (axiom_substr (quanti f2)) ++
+                    " -> true\n")
                 Negation (Conjunction _ _) _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (term_str t1) ++ ")\n" ++
-                    fk1 ++ "(true," ++ (term_str t2) ++ ") -> false\n" ++
+                    ((axiom_substr (quanti f2)) ++ " -> false | " ++ 
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true, " ++ (term_str t1) ++ " -> " ++ 
+                    (term_str t2) ++ "\n" ++
                     "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++
-                    ") -> " ++ fk2 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (axiom_substr (quanti f2)) ++
-                    "," ++ (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-                    fk2 ++ "(true,false," ++ (term_str t1) ++ "," ++ 
-                    (term_str t2) ++ ") -> true\n"),(index+2))
+                    ") -> true | " ++ 
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true, " ++ (axiom_substr (quanti f2)) ++
+                    " -> false\n")
                 Disjunction _ _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (term_str t1) ++ ")\n" ++
-                    fk1 ++ "(true," ++ (term_str t2) ++ ") -> true\n" ++
+                    ((axiom_substr (quanti f2)) ++ " -> true | " ++ 
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true, " ++ (term_str t1) ++ " -> " ++
+                    (term_str t2) ++ "\n" ++
                     "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++
-                    ") -> " ++ fk2 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (axiom_substr (quanti f2)) ++
-                    "," ++ (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-                    fk2 ++ "(true,true," ++ (term_str t1) ++ "," ++ 
-                    (term_str t2) ++ ") -> true\n"),(index+2))
+                    ") -> true | " ++ 
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true, " ++ (axiom_substr (quanti f2)) ++
+                    " -> true\n")
                 Negation (Disjunction _ _) _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (term_str t1) ++ ")\n" ++
-                    fk1 ++ "(true," ++ (term_str t2) ++ ") -> false\n" ++
+                    ((axiom_substr (quanti f2)) ++ " -> false | " ++ 
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true, " ++ (term_str t1) ++ " -> " ++ 
+                    (term_str t2) ++ "\n" ++ 
                     "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++
-                    ") -> " ++ fk2 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (axiom_substr (quanti f2)) ++
-                    "," ++ (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-                    fk2 ++ "(true,false," ++ (term_str t1) ++ "," ++ 
-                    (term_str t2) ++ ") -> true\n"),(index+2))
+                    ") -> true | " ++ 
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true, " ++ (axiom_substr (quanti f2)) ++
+                    " -> false\n")
                 Predication predS2 ts2 _ ->
-                    (((predSymStr predS2) ++ "(" ++ (terms_str ts2) ++ 
-                    ") ->" ++ fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (term_str t1) ++ "," ++
-                    (terms_str ts2) ++ ")\n" ++
-                    fk1 ++ "(true," ++ (term_str t2) ++ "," ++ 
-                    (terms_str ts2) ++ ") -> true\n" ++
+                    ((predSymStr predS2) ++ "(" ++ (terms_str ts2) ++ 
+                    ") -> true | " ++ 
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true, " ++ (term_str t1) ++ " -> " ++
+                    (term_str t2) ++ "\n" ++ 
                     "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++
-                    ") -> " ++ fk2 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (predSymStr predS2) ++ "(" ++
-                    (terms_str ts2) ++ ")," ++ (term_str t1) ++ "," ++
-                    (term_str t2) ++ ")\n" ++
-                    fk2 ++ "(true,true," ++ (term_str t1) ++ "," ++
-                    (term_str t2) ++ ") -> true\n"),(index+2))
+                    ") -> true | " ++ 
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true, " ++ (predSymStr predS2) ++ "(" ++
+                    (terms_str ts2) ++ ") -> true\n")
                 Negation (Predication predS2 ts2 _) _ ->
-                    (((predSymStr predS2) ++ "(" ++ (terms_str ts2) ++ 
-                    ") ->" ++ fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (term_str t1) ++ "," ++
-                    (terms_str ts2) ++ ")\n" ++
-                    fk1 ++ "(true," ++ (term_str t2) ++ "," ++ 
-                    (terms_str ts2) ++ ") -> false\n" ++
+                    ((predSymStr predS2) ++ "(" ++ (terms_str ts2) ++ 
+                    ") -> false | " ++ 
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true, " ++ (term_str t1) ++ " -> " ++
+                    (term_str t2) ++ "\n" ++ 
                     "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++
-                    ") -> " ++ fk2 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (predSymStr predS2) ++ "(" ++
-                    (terms_str ts2) ++ ")," ++ (term_str t1) ++ "," ++
-                    (term_str t2) ++ ")\n" ++
-                    fk2 ++ "(true,false," ++ (term_str t1) ++ "," ++
-                    (term_str t2) ++ ") -> true\n"),(index+2))
+                    ") -> true | " ++ 
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true, " ++ (predSymStr predS2) ++ "(" ++
+                    (terms_str ts2) ++ ") -> false\n")
                 Strong_equation t3 t4 _ ->
-                    (("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> " ++ fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (term_str t1) ++ "," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ")\n" ++
-                    fk1 ++ "(true," ++ (term_str t2) ++ "," ++ 
-                    (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> true\n" ++
+                    ("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+                    ") -> true | " ++ (predSymStr predS1) ++ "(" ++ 
+                    (terms_str ts1) ++ ") -> true, " ++ (term_str t1) ++ 
+                    " -> " ++ (term_str t2) ++ "\n" ++
                     "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
-                    ") -> " ++ fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (term_str t3) ++ "," ++
-                    (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-                    fk1 ++ "(true," ++ (term_str t4) ++ "," ++ 
-                    (term_str t1) ++ "," ++ (term_str t2) ++ ") -> true\n"),
-                    (index+2))
+                    ") -> true | " ++ (predSymStr predS1) ++ "(" ++ 
+                    (terms_str ts1) ++ ") -> true, " ++ (term_str t3) ++ 
+                    " -> " ++ (term_str t4) ++ "\n")
                 Negation (Strong_equation t3 t4 _) _ ->
-                    (("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> " ++ fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (term_str t1) ++ "," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ")\n" ++
-                    fk1 ++ "(true," ++ (term_str t2) ++ "," ++ 
-                    (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> false\n" ++
+                    ("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+                    ") -> false | " ++ (predSymStr predS1) ++ "(" ++ 
+                    (terms_str ts1) ++ ") -> true, " ++ (term_str t1) ++ 
+                    " -> " ++ (term_str t2) ++ "\n" ++
                     "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
-                    ") -> " ++ fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ "eq(" ++ (term_str t3) ++ 
-                    "," ++ (term_str t4) ++ ")" ++ (term_str t1) ++ "," ++ 
-                    (term_str t2) ++ ")\n" ++
-                    fk1 ++ "(true,false," ++ 
-                    (term_str t1) ++ "," ++ (term_str t2) ++ ") -> true\n"),
-                    (index+2))
+                    ") -> true | " ++ (predSymStr predS1) ++ "(" ++ 
+                    (terms_str ts1) ++ ") -> true, eq(" ++ (term_str t3) ++ 
+                    "," ++ (term_str t4) ++ ") -> false\n")
                 Existl_equation t3 t4 _ ->
-                    (("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> " ++ fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (term_str t1) ++ "," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ")\n" ++
-                    fk1 ++ "(true," ++ (term_str t2) ++ "," ++ 
-                    (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> true\n" ++
+                    ("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+                    ") -> true | " ++ (predSymStr predS1) ++ "(" ++ 
+                    (terms_str ts1) ++ ") -> true, " ++ (term_str t1) ++ 
+                    " -> " ++ (term_str t2) ++ "\n" ++
                     "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
-                    ") -> " ++ fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (term_str t3) ++ "," ++
-                    (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-                    fk1 ++ "(true," ++ (term_str t4) ++ "," ++ 
-                    (term_str t1) ++ "," ++ (term_str t2) ++ ") -> true\n"),
-                    (index+2))
+                    ") -> true | " ++ (predSymStr predS1) ++ "(" ++ 
+                    (terms_str ts1) ++ ") -> true, " ++ (term_str t3) ++ 
+                    " -> " ++ (term_str t4) ++ "\n")
                 Negation (Existl_equation t3 t4 _) _ ->
-                    (("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> " ++ fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ (term_str t1) ++ "," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ")\n" ++
-                    fk1 ++ "(true," ++ (term_str t2) ++ "," ++ 
-                    (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> false\n" ++
+                    ("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+                    ") -> false | " ++ (predSymStr predS1) ++ "(" ++ 
+                    (terms_str ts1) ++ ") -> true, " ++ (term_str t1) ++ 
+                    " -> " ++ (term_str t2) ++ "\n" ++
                     "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
-                    ") -> " ++ fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ 
-                    (terms_str ts1) ++ ")," ++ "eq(" ++ (term_str t3) ++ 
-                    "," ++ (term_str t4) ++ ")" ++ (term_str t1) ++ "," ++ 
-                    (term_str t2) ++ ")\n" ++
-                    fk1 ++ "(true,false," ++ 
-                    (term_str t1) ++ "," ++ (term_str t2) ++ ") -> true\n"),
-                    (index+2))
+                    ") -> true | " ++ (predSymStr predS1) ++ "(" ++ 
+                    (terms_str ts1) ++ ") -> true, eq(" ++ (term_str t3) ++ 
+                    "," ++ (term_str t4) ++ ") -> false\n")  
                 _ -> error "CASL.CCC.TerminationProof.<impli_str_p_eq_ex>"
           _ -> error "CASL.CCC.TerminationProof.<impli_str_p>"
     Implication (Strong_equation t1 t2 _) f1 _ _ ->
         case (quanti f1) of
           Conjunction _ _ ->
-              (((axiom_substr (quanti f1)) ++ " -> " ++ 
-              fk1 ++ "(" ++ (term_str t1) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ ") -> true\n"),(index+1))
+              ((axiom_substr (quanti f1)) ++ " -> true | " ++ 
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n")
           Negation (Conjunction _ _) _ ->
-              (((axiom_substr (quanti f1)) ++ " -> " ++ 
-              fk1 ++ "(" ++ (term_str t1) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ ") -> false\n"),(index+1))
+              ((axiom_substr (quanti f1)) ++ " -> false | " ++ 
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n")
           Disjunction _ _ ->
-              (((axiom_substr (quanti f1)) ++ " -> " ++ 
-              fk1 ++ "(" ++ (term_str t1) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ ") -> true\n"),(index+1))
+              ((axiom_substr (quanti f1)) ++ " -> true | " ++ 
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n")
           Negation (Disjunction _ _) _ ->
-              (((axiom_substr (quanti f1)) ++ " -> " ++ 
-              fk1 ++ "(" ++ (term_str t1) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ ") -> false\n"),(index+1))
+              ((axiom_substr (quanti f1)) ++ " -> false | " ++ 
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n")
           Predication predS ts _ ->
-              (((predSymStr predS)++"("++(terms_str ts) ++ ") -> " ++
-              fk1 ++ "(" ++ (term_str t1) ++ "," ++ (terms_str ts) ++ 
-              ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ "," ++ (terms_str ts) ++
-              ") -> true\n"),(index+1))
+              ((predSymStr predS) ++ "(" ++ (terms_str ts) ++ ") -> true | " ++
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n")
           Negation (Predication predS ts _) _ ->
-              (((predSymStr predS)++"("++(terms_str ts) ++ ") -> " ++
-              fk1 ++ "(" ++ (term_str t1) ++ "," ++ (terms_str ts) ++ 
-              ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ "," ++ (terms_str ts) ++
-              ") -> false\n"),(index+1))
+              ((predSymStr predS) ++ "(" ++ (terms_str ts) ++ ") -> false | "++
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n")
           Strong_equation t3 t4 _ ->
-              (("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ ") -> " ++
-              fk1 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t3) ++ "," ++ 
-              (term_str t4) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t3) ++ "," ++
-              (term_str t4) ++ ") -> true\n"),(index + 1))
+              ("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+              ") -> true | " ++
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n")
           Negation (Strong_equation t3 t4 _) _ ->
-              (("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ ") -> " ++
-              fk1 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t3) ++ "," ++ 
-              (term_str t4) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t3) ++ "," ++
-              (term_str t4) ++ ") -> false\n"),(index + 1))
+              ("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+              ") -> false | " ++
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n")
           Existl_equation t3 t4 _ ->
-              (("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ ") -> " ++
-              fk1 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t3) ++ "," ++ 
-              (term_str t4) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t3) ++ "," ++
-              (term_str t4) ++ ") -> true\n"),(index + 1))
+              ("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+              ") -> true | " ++
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n")
           Negation (Existl_equation t3 t4 _) _ ->
-              (("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ ") -> " ++
-              fk1 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t3) ++ "," ++ 
-              (term_str t4) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t3) ++ "," ++
-              (term_str t4) ++ ") -> false\n"),(index + 1))
+              ("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+              ") -> false | " ++
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n")
           Equivalence (Predication predS1 ts1 _) f2 _->
               case (quanti f2) of
                 Conjunction _ _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ 
-                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ "))\n"++
-                    fk1 ++ "(" ++ (term_str t2) ++ ",true) -> true\n"),
-                    (index+1))
+                    ((axiom_substr (quanti f2)) ++ " -> true | " ++ 
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true\n")
                 Negation (Conjunction _ _) _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ 
-                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ "))\n"++
-                    fk1 ++ "(" ++ (term_str t2) ++ ",true) -> false\n"),
-                    (index+1))
+                    ((axiom_substr (quanti f2)) ++ " -> false | " ++ 
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true\n")
                 Disjunction _ _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ 
-                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ "))\n"++
-                    fk1 ++ "(" ++ (term_str t2) ++ ",true) -> true\n"),
-                    (index+1))
+                    ((axiom_substr (quanti f2)) ++ " -> true | " ++ 
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true\n")
                 Negation (Disjunction _ _) _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ 
-                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ "))\n"++
-                    fk1 ++ "(" ++ (term_str t2) ++ ",true) -> false\n"),
-                    (index+1))
+                    ((axiom_substr (quanti f2)) ++ " -> false | " ++ 
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true\n")
                 Predication predS2 ts2 _ ->
-                    (((predSymStr predS2)++"("++(terms_str ts2) ++ ") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++
-                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ ")," ++
-                    (terms_str ts2) ++ ")\n" ++
-                    fk1++"("++(term_str t2)++ ",true," ++ (terms_str ts2) ++
-                    ") -> true\n"),(index + 1))
+                    ((predSymStr predS2) ++ "(" ++ (terms_str ts2) ++ 
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true\n")
                 Negation (Predication predS2 ts2 _) _ ->
-                    (((predSymStr predS2)++"("++(terms_str ts2) ++ ") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++
-                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ ")," ++
-                    (terms_str ts2) ++ ")\n" ++
-                    fk1++"("++(term_str t2)++ ",true," ++ (terms_str ts2) ++
-                    ") -> false\n"),(index + 1))
+                    ((predSymStr predS2) ++ "(" ++ (terms_str ts2) ++ 
+                    ") -> false | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true\n")
                 Strong_equation t3 t4 _ ->
-                    (("eq("++(term_str t3)++","++(term_str t4)++") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++
+                    ("eq(" ++  (term_str t3) ++ "," ++ (term_str t4) ++
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
                     (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++
-                    ")," ++ (term_str t3)++","++(term_str t4) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ ",true," ++ 
-                    (term_str t3)++ "," ++ (term_str t4) ++ ") -> " ++
-                    "true\n"),(index + 1))
+                    ") -> true\n")
                 Negation (Strong_equation t3 t4 _) _ ->
-                    (("eq("++(term_str t3)++","++(term_str t4)++") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++
+                    ("eq(" ++  (term_str t3) ++ "," ++ (term_str t4) ++
+                    ") -> false | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
                     (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++
-                    ")," ++ (term_str t3)++","++(term_str t4) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ ",true," ++ 
-                    (term_str t3)++ "," ++ (term_str t4) ++ ") -> " ++
-                    "false\n"),(index + 1))
+                    ") -> true\n")
                 Existl_equation t3 t4 _ ->
-                    (("eq("++(term_str t3)++","++(term_str t4)++") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++
+                    ("eq(" ++  (term_str t3) ++ "," ++ (term_str t4) ++
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
                     (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++
-                    ")," ++ (term_str t3)++","++(term_str t4) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ ",true," ++ 
-                    (term_str t3)++ "," ++ (term_str t4) ++ ") -> " ++
-                    "true\n"),(index + 1))
+                    ") -> true\n")
                 Negation (Existl_equation t3 t4 _) _ ->
-                    (("eq("++(term_str t3)++","++(term_str t4)++") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++
+                    ("eq(" ++  (term_str t3) ++ "," ++ (term_str t4) ++
+                    ") -> false | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
                     (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++
-                    ")," ++ (term_str t3)++","++(term_str t4) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ ",true," ++ 
-                    (term_str t3)++ "," ++ (term_str t4) ++ ") -> " ++
-                    "false\n"),(index + 1))
+                    ") -> true\n")
                 _ -> error "CASL.CCC.TerminationProof.<impli_str_str_eq_p>"
           Equivalence (Strong_equation t3 t4 _) f2 _->
               case (quanti f2) of
                 Conjunction _ _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ 
-                    (term_str t3) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ 
-                    (term_str t4) ++ ") -> true\n" ++
+                    ((axiom_substr (quanti f2)) ++ " -> true | " ++ 
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
                     "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++
-                    ") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ "," ++
-                    (axiom_substr (quanti f2)) ++ "," ++ (term_str t3) ++
-                    "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ ",true," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ") -> true\n"),
-                    (index+2))
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (axiom_substr (quanti f2)) ++ " -> true\n")
                 Negation (Conjunction _ _) _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ 
-                    (term_str t3) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ 
-                    (term_str t4) ++ ") -> false\n" ++
+                    ((axiom_substr (quanti f2)) ++ " -> false | " ++ 
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
                     "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++
-                    ") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ "," ++
-                    (axiom_substr (quanti f2)) ++ "," ++ (term_str t3) ++
-                    "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ ",false," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ") -> true\n"),
-                    (index+2))
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (axiom_substr (quanti f2)) ++ " -> false\n")
                 Disjunction _ _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ 
-                    (term_str t3) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ 
-                    (term_str t4) ++ ") -> true\n" ++
+                    ((axiom_substr (quanti f2)) ++ " -> true | " ++ 
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
                     "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++
-                    ") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ "," ++
-                    (axiom_substr (quanti f2)) ++ "," ++ (term_str t3) ++
-                    "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ ",true," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ") -> true\n"),
-                    (index+2))
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (axiom_substr (quanti f2)) ++ " -> true\n")
                 Negation (Disjunction _ _) _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ 
-                    (term_str t3) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ 
-                    (term_str t4) ++ ") -> false\n" ++
+                    ((axiom_substr (quanti f2)) ++ " -> false | " ++ 
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
                     "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++
-                    ") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ "," ++
-                    (axiom_substr (quanti f2)) ++ "," ++ (term_str t3) ++
-                    "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ ",false," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ") -> true\n"),
-                    (index+2))
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (axiom_substr (quanti f2)) ++ " -> false\n")
                 Predication predS ts _ ->
-                    (((predSymStr predS)++"("++(terms_str ts) ++ ") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t3) ++ 
-                    "," ++ (terms_str ts) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t4) ++
-                    "," ++ (terms_str ts) ++ ") -> true\n" ++
+                    ((predSymStr predS) ++ "(" ++ (terms_str ts) ++ 
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
                     "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ "," ++ 
-                    (predSymStr predS) ++ "(" ++ (terms_str ts) ++ ")," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ ",true," ++ 
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ") -> true\n"),
-                    (index + 2))
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (predSymStr predS) ++ "(" ++ (terms_str ts) ++ 
+                    ") -> true\n")
                 Negation (Predication predS ts _) _ ->
-                    (((predSymStr predS)++"("++(terms_str ts) ++ ") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t3) ++ 
-                    "," ++ (terms_str ts) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t4) ++
-                    "," ++ (terms_str ts) ++ ") -> false\n" ++
+                    ((predSymStr predS) ++ "(" ++ (terms_str ts) ++ 
+                    ") -> false | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
                     "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ "," ++ 
-                    (predSymStr predS) ++ "(" ++ (terms_str ts) ++ ")," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ ",false," ++ 
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ") -> true\n"),
-                    (index + 2))
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (predSymStr predS) ++ "(" ++ (terms_str ts) ++ 
+                    ") -> false\n")
                 Strong_equation t5 t6 _ ->
-                    (("eq("++(term_str t5)++","++(term_str t6)++") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t3) ++
-                    "," ++ (term_str t5) ++ "," ++ (term_str t6) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t4) ++
-                    "," ++ (term_str t5) ++ "," ++ (term_str t6) ++ 
-                    ") -> true\n" ++
-                    "eq("++(term_str t3)++","++(term_str t4)++") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t5) ++
-                    "," ++ (term_str t3) ++ "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t6) ++
-                    "," ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> true\n"),(index + 2))
+                    ("eq(" ++ (term_str t5) ++ "," ++ (term_str t6) ++ 
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
+                    "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t5) ++ " -> " ++ (term_str t6) ++ "\n")
                 Negation (Strong_equation t5 t6 _) _ ->
-                    (("eq("++(term_str t5)++","++(term_str t6)++") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t3) ++
-                    "," ++ (term_str t5) ++ "," ++ (term_str t6) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t4) ++
-                    "," ++ (term_str t5) ++ "," ++ (term_str t6) ++ 
-                    ") -> false\n" ++
-                    "eq("++(term_str t3)++","++(term_str t4)++") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ ",eq(" ++ (term_str t5) ++
-                    "," ++ (term_str t6) ++ ")," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ ",false," ++ 
-                    (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> true\n"),(index + 2))
+                    ("eq(" ++ (term_str t5) ++ "," ++ (term_str t6) ++ 
+                    ") -> false | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
+                    "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", eq(" ++
+                    (term_str t5) ++ "," ++ (term_str t6) ++ ") -> false\n")
                 Existl_equation t5 t6 _ ->
-                    (("eq("++(term_str t5)++","++(term_str t6)++") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t3) ++
-                    "," ++ (term_str t5) ++ "," ++ (term_str t6) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t4) ++
-                    "," ++ (term_str t5) ++ "," ++ (term_str t6) ++ 
-                    ") -> true\n" ++
-                    "eq("++(term_str t3)++","++(term_str t4)++") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t5) ++
-                    "," ++ (term_str t3) ++ "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t6) ++
-                    "," ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> true\n"),(index + 2))
+                    ("eq(" ++ (term_str t5) ++ "," ++ (term_str t6) ++ 
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
+                    "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t5) ++ " -> " ++ (term_str t6) ++ "\n")
                 Negation (Existl_equation t5 t6 _) _ ->
-                    (("eq("++(term_str t5)++","++(term_str t6)++") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t3) ++
-                    "," ++ (term_str t5) ++ "," ++ (term_str t6) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t4) ++
-                    "," ++ (term_str t5) ++ "," ++ (term_str t6) ++ 
-                    ") -> false\n" ++
-                    "eq("++(term_str t3)++","++(term_str t4)++") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ ",eq(" ++ (term_str t5) ++
-                    "," ++ (term_str t6) ++ ")," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ ",false," ++ 
-                    (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> true\n"),(index + 2))
+                    ("eq(" ++ (term_str t5) ++ "," ++ (term_str t6) ++ 
+                    ") -> false | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
+                    "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", eq(" ++
+                    (term_str t5) ++ "," ++ (term_str t6) ++ ") -> false\n")
                 _ -> error "CASL.CCC.TerminationProof.<impli_str_str_eq_str>"
           Equivalence (Existl_equation t3 t4 _) f2 _->
               case (quanti f2) of
                 Conjunction _ _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ 
-                    (term_str t3) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ 
-                    (term_str t4) ++ ") -> true\n" ++
+                    ((axiom_substr (quanti f2)) ++ " -> true | " ++ 
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
                     "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++
-                    ") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ "," ++
-                    (axiom_substr (quanti f2)) ++ "," ++ (term_str t3) ++
-                    "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ ",true," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ") -> true\n"),
-                    (index+2))
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (axiom_substr (quanti f2)) ++ " -> true\n")
                 Negation (Conjunction _ _) _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ 
-                    (term_str t3) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ 
-                    (term_str t4) ++ ") -> false\n" ++
+                    ((axiom_substr (quanti f2)) ++ " -> false | " ++ 
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
                     "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++
-                    ") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ "," ++
-                    (axiom_substr (quanti f2)) ++ "," ++ (term_str t3) ++
-                    "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ ",false," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ") -> true\n"),
-                    (index+2))
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (axiom_substr (quanti f2)) ++ " -> false\n")
                 Disjunction _ _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ 
-                    (term_str t3) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ 
-                    (term_str t4) ++ ") -> true\n" ++
+                    ((axiom_substr (quanti f2)) ++ " -> true | " ++ 
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
                     "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++
-                    ") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ "," ++
-                    (axiom_substr (quanti f2)) ++ "," ++ (term_str t3) ++
-                    "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ ",true," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ") -> true\n"),
-                    (index+2))
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (axiom_substr (quanti f2)) ++ " -> true\n")
                 Negation (Disjunction _ _) _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ 
-                    (term_str t3) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ 
-                    (term_str t4) ++ ") -> false\n" ++
+                    ((axiom_substr (quanti f2)) ++ " -> false | " ++ 
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
                     "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++
-                    ") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ "," ++
-                    (axiom_substr (quanti f2)) ++ "," ++ (term_str t3) ++
-                    "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ ",false," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ") -> true\n"),
-                    (index+2))
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (axiom_substr (quanti f2)) ++ " -> false\n")
                 Predication predS ts _ ->
-                    (((predSymStr predS)++"("++(terms_str ts) ++ ") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t3) ++ 
-                    "," ++ (terms_str ts) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t4) ++
-                    "," ++ (terms_str ts) ++ ") -> true\n" ++
+                    ((predSymStr predS) ++ "(" ++ (terms_str ts) ++ 
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
                     "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ "," ++ 
-                    (predSymStr predS) ++ "(" ++ (terms_str ts) ++ ")," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ ",true," ++ 
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ") -> true\n"),
-                    (index + 2))
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (predSymStr predS) ++ "(" ++ (terms_str ts) ++ 
+                    ") -> true\n")
                 Negation (Predication predS ts _) _ ->
-                    (((predSymStr predS)++"("++(terms_str ts) ++ ") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t3) ++ 
-                    "," ++ (terms_str ts) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t4) ++
-                    "," ++ (terms_str ts) ++ ") -> false\n" ++
+                    ((predSymStr predS) ++ "(" ++ (terms_str ts) ++ 
+                    ") -> false | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
                     "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ "," ++ 
-                    (predSymStr predS) ++ "(" ++ (terms_str ts) ++ ")," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ ",false," ++ 
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ") -> true\n"),
-                    (index + 2))
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (predSymStr predS) ++ "(" ++ (terms_str ts) ++ 
+                    ") -> false\n")
                 Strong_equation t5 t6 _ ->
-                    (("eq("++(term_str t5)++","++(term_str t6)++") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t3) ++
-                    "," ++ (term_str t5) ++ "," ++ (term_str t6) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t4) ++
-                    "," ++ (term_str t5) ++ "," ++ (term_str t6) ++ 
-                    ") -> true\n" ++
-                    "eq("++(term_str t3)++","++(term_str t4)++") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t5) ++
-                    "," ++ (term_str t3) ++ "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t6) ++
-                    "," ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> true\n"),(index + 2))
+                    ("eq(" ++ (term_str t5) ++ "," ++ (term_str t6) ++ 
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
+                    "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t5) ++ " -> " ++ (term_str t6) ++ "\n")
                 Negation (Strong_equation t5 t6 _) _ ->
-                    (("eq("++(term_str t5)++","++(term_str t6)++") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t3) ++
-                    "," ++ (term_str t5) ++ "," ++ (term_str t6) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t4) ++
-                    "," ++ (term_str t5) ++ "," ++ (term_str t6) ++ 
-                    ") -> false\n" ++
-                    "eq("++(term_str t3)++","++(term_str t4)++") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ ",eq(" ++ (term_str t5) ++
-                    "," ++ (term_str t6) ++ ")," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ ",false," ++ 
-                    (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> true\n"),(index + 2))
+                    ("eq(" ++ (term_str t5) ++ "," ++ (term_str t6) ++ 
+                    ") -> false | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
+                    "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", eq(" ++
+                    (term_str t5) ++ "," ++ (term_str t6) ++ ") -> false\n")
                 Existl_equation t5 t6 _ ->
-                    (("eq("++(term_str t5)++","++(term_str t6)++") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t3) ++
-                    "," ++ (term_str t5) ++ "," ++ (term_str t6) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t4) ++
-                    "," ++ (term_str t5) ++ "," ++ (term_str t6) ++ 
-                    ") -> true\n" ++
-                    "eq("++(term_str t3)++","++(term_str t4)++") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t5) ++
-                    "," ++ (term_str t3) ++ "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t6) ++
-                    "," ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> true\n"),(index + 2))
+                    ("eq(" ++ (term_str t5) ++ "," ++ (term_str t6) ++ 
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
+                    "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t5) ++ " -> " ++ (term_str t6) ++ "\n")
                 Negation (Existl_equation t5 t6 _) _ ->
-                    (("eq("++(term_str t5)++","++(term_str t6)++") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t3) ++
-                    "," ++ (term_str t5) ++ "," ++ (term_str t6) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t4) ++
-                    "," ++ (term_str t5) ++ "," ++ (term_str t6) ++ 
-                    ") -> false\n" ++
-                    "eq("++(term_str t3)++","++(term_str t4)++") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ ",eq(" ++ (term_str t5) ++
-                    "," ++ (term_str t6) ++ ")," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ ",false," ++ 
-                    (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> true\n"),(index + 2))
+                    ("eq(" ++ (term_str t5) ++ "," ++ (term_str t6) ++ 
+                    ") -> false | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
+                    "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", eq(" ++
+                    (term_str t5) ++ "," ++ (term_str t6) ++ ") -> false\n")
                 _ -> error "CASL.CCC.TerminationProof.<impli_str_str_eq_ex>"
           _ -> error "CASL.CCC.TerminationProof.<impli_str_str>"
     Implication (Existl_equation t1 t2 _) f1 _ _ ->
         case (quanti f1) of
           Conjunction _ _ ->
-              (((axiom_substr (quanti f1)) ++ " -> " ++ 
-              fk1 ++ "(" ++ (term_str t1) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ ") -> true\n"),(index+1))
+              ((axiom_substr (quanti f1)) ++ " -> true | " ++ 
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n")
           Negation (Conjunction _ _) _ ->
-              (((axiom_substr (quanti f1)) ++ " -> " ++ 
-              fk1 ++ "(" ++ (term_str t1) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ ") -> false\n"),(index+1))
+              ((axiom_substr (quanti f1)) ++ " -> false | " ++ 
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n")
           Disjunction _ _ ->
-              (((axiom_substr (quanti f1)) ++ " -> " ++ 
-              fk1 ++ "(" ++ (term_str t1) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ ") -> true\n"),(index+1))
+              ((axiom_substr (quanti f1)) ++ " -> true | " ++ 
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n")
           Negation (Disjunction _ _) _ ->
-              (((axiom_substr (quanti f1)) ++ " -> " ++ 
-              fk1 ++ "(" ++ (term_str t1) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ ") -> false\n"),(index+1))
+              ((axiom_substr (quanti f1)) ++ " -> false | " ++ 
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n")
           Predication predS ts _ ->
-              (((predSymStr predS)++"("++(terms_str ts) ++ ") -> " ++
-              fk1 ++ "(" ++ (term_str t1) ++ "," ++ (terms_str ts) ++ 
-              ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ "," ++ (terms_str ts) ++
-              ") -> true\n"),(index+1))
+              ((predSymStr predS) ++ "(" ++ (terms_str ts) ++ ") -> true | " ++
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n")
           Negation (Predication predS ts _) _ ->
-              (((predSymStr predS)++"("++(terms_str ts) ++ ") -> " ++
-              fk1 ++ "(" ++ (term_str t1) ++ "," ++ (terms_str ts) ++ 
-              ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ "," ++ (terms_str ts) ++
-              ") -> false\n"),(index+1))
+              ((predSymStr predS) ++ "(" ++ (terms_str ts) ++ ") -> false | "++
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n")
           Strong_equation t3 t4 _ ->
-              (("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ ") -> " ++
-              fk1 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t3) ++ "," ++ 
-              (term_str t4) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t3) ++ "," ++
-              (term_str t4) ++ ") -> true\n"),(index + 1))
+              ("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+              ") -> true | " ++
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n")
           Negation (Strong_equation t3 t4 _) _ ->
-              (("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ ") -> " ++
-              fk1 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t3) ++ "," ++ 
-              (term_str t4) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t3) ++ "," ++
-              (term_str t4) ++ ") -> false\n"),(index + 1))
+              ("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+              ") -> false | " ++
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n")
           Existl_equation t3 t4 _ ->
-              (("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ ") -> " ++
-              fk1 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t3) ++ "," ++ 
-              (term_str t4) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t3) ++ "," ++
-              (term_str t4) ++ ") -> true\n"),(index + 1))
+              ("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+              ") -> true | " ++
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n")
           Negation (Existl_equation t3 t4 _) _ ->
-              (("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ ") -> " ++
-              fk1 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t3) ++ "," ++ 
-              (term_str t4) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t3) ++ "," ++
-              (term_str t4) ++ ") -> false\n"),(index + 1))
+              ("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+              ") -> false | " ++
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n")
           Equivalence (Predication predS1 ts1 _) f2 _->
               case (quanti f2) of
                 Conjunction _ _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ 
-                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ "))\n"++
-                    fk1 ++ "(" ++ (term_str t2) ++ ",true) -> true\n"),
-                    (index+1))
+                    ((axiom_substr (quanti f2)) ++ " -> true | " ++ 
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true\n")
                 Negation (Conjunction _ _) _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ 
-                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ "))\n"++
-                    fk1 ++ "(" ++ (term_str t2) ++ ",true) -> false\n"),
-                    (index+1))
+                    ((axiom_substr (quanti f2)) ++ " -> false | " ++ 
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true\n")
                 Disjunction _ _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ 
-                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ "))\n"++
-                    fk1 ++ "(" ++ (term_str t2) ++ ",true) -> true\n"),
-                    (index+1))
+                    ((axiom_substr (quanti f2)) ++ " -> true | " ++ 
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true\n")
                 Negation (Disjunction _ _) _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ 
-                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ "))\n"++
-                    fk1 ++ "(" ++ (term_str t2) ++ ",true) -> false\n"),
-                    (index+1))
+                    ((axiom_substr (quanti f2)) ++ " -> false | " ++ 
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true\n")
                 Predication predS2 ts2 _ ->
-                    (((predSymStr predS2)++"("++(terms_str ts2) ++ ") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++
-                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ ")," ++
-                    (terms_str ts2) ++ ")\n" ++
-                    fk1++"("++(term_str t2)++ ",true," ++ (terms_str ts2) ++
-                    ") -> true\n"),(index + 1))
+                    ((predSymStr predS2) ++ "(" ++ (terms_str ts2) ++ 
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true\n")
                 Negation (Predication predS2 ts2 _) _ ->
-                    (((predSymStr predS2)++"("++(terms_str ts2) ++ ") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++
-                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ ")," ++
-                    (terms_str ts2) ++ ")\n" ++
-                    fk1++"("++(term_str t2)++ ",true," ++ (terms_str ts2) ++
-                    ") -> false\n"),(index + 1))
+                    ((predSymStr predS2) ++ "(" ++ (terms_str ts2) ++ 
+                    ") -> false | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
+                    ") -> true\n")
                 Strong_equation t3 t4 _ ->
-                    (("eq("++(term_str t3)++","++(term_str t4)++") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++
+                    ("eq(" ++  (term_str t3) ++ "," ++ (term_str t4) ++
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
                     (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++
-                    ")," ++ (term_str t3)++","++(term_str t4) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ ",true," ++ 
-                    (term_str t3)++ "," ++ (term_str t4) ++ ") -> " ++
-                    "true\n"),(index + 1))
+                    ") -> true\n")
                 Negation (Strong_equation t3 t4 _) _ ->
-                    (("eq("++(term_str t3)++","++(term_str t4)++") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++
+                    ("eq(" ++  (term_str t3) ++ "," ++ (term_str t4) ++
+                    ") -> false | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
                     (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++
-                    ")," ++ (term_str t3)++","++(term_str t4) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ ",true," ++ 
-                    (term_str t3)++ "," ++ (term_str t4) ++ ") -> " ++
-                    "false\n"),(index + 1))
+                    ") -> true\n")
                 Existl_equation t3 t4 _ ->
-                    (("eq("++(term_str t3)++","++(term_str t4)++") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++
+                    ("eq(" ++  (term_str t3) ++ "," ++ (term_str t4) ++
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
                     (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++
-                    ")," ++ (term_str t3)++","++(term_str t4) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ ",true," ++ 
-                    (term_str t3)++ "," ++ (term_str t4) ++ ") -> " ++
-                    "true\n"),(index + 1))
+                    ") -> true\n")
                 Negation (Existl_equation t3 t4 _) _ ->
-                    (("eq("++(term_str t3)++","++(term_str t4)++") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++
+                    ("eq(" ++  (term_str t3) ++ "," ++ (term_str t4) ++
+                    ") -> false | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
                     (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++
-                    ")," ++ (term_str t3)++","++(term_str t4) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ ",true," ++ 
-                    (term_str t3)++ "," ++ (term_str t4) ++ ") -> " ++
-                    "false\n"),(index + 1))
+                    ") -> true\n")
                 _ -> error "CASL.CCC.TerminationProof.<impli_str_ex_eq_p>"
           Equivalence (Strong_equation t3 t4 _) f2 _->
               case (quanti f2) of
                 Conjunction _ _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ 
-                    (term_str t3) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ 
-                    (term_str t4) ++ ") -> true\n" ++
+                    ((axiom_substr (quanti f2)) ++ " -> true | " ++ 
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
                     "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++
-                    ") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ "," ++
-                    (axiom_substr (quanti f2)) ++ "," ++ (term_str t3) ++
-                    "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ ",true," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ") -> true\n"),
-                    (index+2))
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (axiom_substr (quanti f2)) ++ " -> true\n")
                 Negation (Conjunction _ _) _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ 
-                    (term_str t3) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ 
-                    (term_str t4) ++ ") -> false\n" ++
+                    ((axiom_substr (quanti f2)) ++ " -> false | " ++ 
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
                     "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++
-                    ") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ "," ++
-                    (axiom_substr (quanti f2)) ++ "," ++ (term_str t3) ++
-                    "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ ",false," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ") -> true\n"),
-                    (index+2))
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (axiom_substr (quanti f2)) ++ " -> false\n")
                 Disjunction _ _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ 
-                    (term_str t3) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ 
-                    (term_str t4) ++ ") -> true\n" ++
+                    ((axiom_substr (quanti f2)) ++ " -> true | " ++ 
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
                     "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++
-                    ") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ "," ++
-                    (axiom_substr (quanti f2)) ++ "," ++ (term_str t3) ++
-                    "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ ",true," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ") -> true\n"),
-                    (index+2))
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (axiom_substr (quanti f2)) ++ " -> true\n")
                 Negation (Disjunction _ _) _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ 
-                    (term_str t3) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ 
-                    (term_str t4) ++ ") -> false\n" ++
+                    ((axiom_substr (quanti f2)) ++ " -> false | " ++ 
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
                     "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++
-                    ") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ "," ++
-                    (axiom_substr (quanti f2)) ++ "," ++ (term_str t3) ++
-                    "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ ",false," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ") -> true\n"),
-                    (index+2))
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (axiom_substr (quanti f2)) ++ " -> false\n")
                 Predication predS ts _ ->
-                    (((predSymStr predS)++"("++(terms_str ts) ++ ") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t3) ++ 
-                    "," ++ (terms_str ts) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t4) ++
-                    "," ++ (terms_str ts) ++ ") -> true\n" ++
+                    ((predSymStr predS) ++ "(" ++ (terms_str ts) ++ 
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
                     "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ "," ++ 
-                    (predSymStr predS) ++ "(" ++ (terms_str ts) ++ ")," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ ",true," ++ 
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ") -> true\n"),
-                    (index + 2))
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (predSymStr predS) ++ "(" ++ (terms_str ts) ++ 
+                    ") -> true\n")
                 Negation (Predication predS ts _) _ ->
-                    (((predSymStr predS)++"("++(terms_str ts) ++ ") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t3) ++ 
-                    "," ++ (terms_str ts) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t4) ++
-                    "," ++ (terms_str ts) ++ ") -> false\n" ++
+                    ((predSymStr predS) ++ "(" ++ (terms_str ts) ++ 
+                    ") -> false | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
                     "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ "," ++ 
-                    (predSymStr predS) ++ "(" ++ (terms_str ts) ++ ")," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ ",false," ++ 
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ") -> true\n"),
-                    (index + 2))
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (predSymStr predS) ++ "(" ++ (terms_str ts) ++ 
+                    ") -> false\n")
                 Strong_equation t5 t6 _ ->
-                    (("eq("++(term_str t5)++","++(term_str t6)++") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t3) ++
-                    "," ++ (term_str t5) ++ "," ++ (term_str t6) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t4) ++
-                    "," ++ (term_str t5) ++ "," ++ (term_str t6) ++ 
-                    ") -> true\n" ++
-                    "eq("++(term_str t3)++","++(term_str t4)++") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t5) ++
-                    "," ++ (term_str t3) ++ "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t6) ++
-                    "," ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> true\n"),(index + 2))
+                    ("eq(" ++ (term_str t5) ++ "," ++ (term_str t6) ++ 
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
+                    "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t5) ++ " -> " ++ (term_str t6) ++ "\n")
                 Negation (Strong_equation t5 t6 _) _ ->
-                    (("eq("++(term_str t5)++","++(term_str t6)++") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t3) ++
-                    "," ++ (term_str t5) ++ "," ++ (term_str t6) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t4) ++
-                    "," ++ (term_str t5) ++ "," ++ (term_str t6) ++ 
-                    ") -> false\n" ++
-                    "eq("++(term_str t3)++","++(term_str t4)++") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ ",eq(" ++ (term_str t5) ++
-                    "," ++ (term_str t6) ++ ")," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ ",false," ++ 
-                    (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> true\n"),(index + 2))
+                    ("eq(" ++ (term_str t5) ++ "," ++ (term_str t6) ++ 
+                    ") -> false | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
+                    "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", eq(" ++
+                    (term_str t5) ++ "," ++ (term_str t6) ++ ") -> false\n")
                 Existl_equation t5 t6 _ ->
-                    (("eq("++(term_str t5)++","++(term_str t6)++") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t3) ++
-                    "," ++ (term_str t5) ++ "," ++ (term_str t6) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t4) ++
-                    "," ++ (term_str t5) ++ "," ++ (term_str t6) ++ 
-                    ") -> true\n" ++
-                    "eq("++(term_str t3)++","++(term_str t4)++") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t5) ++
-                    "," ++ (term_str t3) ++ "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t6) ++
-                    "," ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> true\n"),(index + 2))
+                    ("eq(" ++ (term_str t5) ++ "," ++ (term_str t6) ++ 
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
+                    "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t5) ++ " -> " ++ (term_str t6) ++ "\n")
                 Negation (Existl_equation t5 t6 _) _ ->
-                    (("eq("++(term_str t5)++","++(term_str t6)++") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t3) ++
-                    "," ++ (term_str t5) ++ "," ++ (term_str t6) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t4) ++
-                    "," ++ (term_str t5) ++ "," ++ (term_str t6) ++ 
-                    ") -> false\n" ++
-                    "eq("++(term_str t3)++","++(term_str t4)++") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ ",eq(" ++ (term_str t5) ++
-                    "," ++ (term_str t6) ++ ")," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ ",false," ++ 
-                    (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> true\n"),(index + 2))
+                    ("eq(" ++ (term_str t5) ++ "," ++ (term_str t6) ++ 
+                    ") -> false | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
+                    "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", eq(" ++
+                    (term_str t5) ++ "," ++ (term_str t6) ++ ") -> false\n")
                 _ -> error "CASL.CCC.TerminationProof.<impli_str_ex_eq_str>"
           Equivalence (Existl_equation t3 t4 _) f2 _->
               case (quanti f2) of
                 Conjunction _ _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ 
-                    (term_str t3) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ 
-                    (term_str t4) ++ ") -> true\n" ++
+                    ((axiom_substr (quanti f2)) ++ " -> true | " ++ 
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
                     "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++
-                    ") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ "," ++
-                    (axiom_substr (quanti f2)) ++ "," ++ (term_str t3) ++
-                    "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ ",true," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ") -> true\n"),
-                    (index+2))
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (axiom_substr (quanti f2)) ++ " -> true\n")
                 Negation (Conjunction _ _) _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ 
-                    (term_str t3) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ 
-                    (term_str t4) ++ ") -> false\n" ++
+                    ((axiom_substr (quanti f2)) ++ " -> false | " ++ 
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
                     "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++
-                    ") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ "," ++
-                    (axiom_substr (quanti f2)) ++ "," ++ (term_str t3) ++
-                    "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ ",false," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ") -> true\n"),
-                    (index+2))
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (axiom_substr (quanti f2)) ++ " -> false\n")
                 Disjunction _ _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ 
-                    (term_str t3) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ 
-                    (term_str t4) ++ ") -> true\n" ++
+                    ((axiom_substr (quanti f2)) ++ " -> true | " ++ 
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
                     "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++
-                    ") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ "," ++
-                    (axiom_substr (quanti f2)) ++ "," ++ (term_str t3) ++
-                    "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ ",true," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ") -> true\n"),
-                    (index+2))
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (axiom_substr (quanti f2)) ++ " -> true\n")
                 Negation (Disjunction _ _) _ ->
-                    (((axiom_substr (quanti f2)) ++ " -> " ++ 
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ 
-                    (term_str t3) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ 
-                    (term_str t4) ++ ") -> false\n" ++
+                    ((axiom_substr (quanti f2)) ++ " -> false | " ++ 
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
                     "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++
-                    ") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ "," ++
-                    (axiom_substr (quanti f2)) ++ "," ++ (term_str t3) ++
-                    "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ ",false," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ") -> true\n"),
-                    (index+2))
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (axiom_substr (quanti f2)) ++ " -> false\n")
                 Predication predS ts _ ->
-                    (((predSymStr predS)++"("++(terms_str ts) ++ ") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t3) ++ 
-                    "," ++ (terms_str ts) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t4) ++
-                    "," ++ (terms_str ts) ++ ") -> true\n" ++
+                    ((predSymStr predS) ++ "(" ++ (terms_str ts) ++ 
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
                     "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ "," ++ 
-                    (predSymStr predS) ++ "(" ++ (terms_str ts) ++ ")," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ ",true," ++ 
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ") -> true\n"),
-                    (index + 2))
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (predSymStr predS) ++ "(" ++ (terms_str ts) ++ 
+                    ") -> true\n")
                 Negation (Predication predS ts _) _ ->
-                    (((predSymStr predS)++"("++(terms_str ts) ++ ") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t3) ++ 
-                    "," ++ (terms_str ts) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t4) ++
-                    "," ++ (terms_str ts) ++ ") -> false\n" ++
+                    ((predSymStr predS) ++ "(" ++ (terms_str ts) ++ 
+                    ") -> false | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
                     "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ "," ++ 
-                    (predSymStr predS) ++ "(" ++ (terms_str ts) ++ ")," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ ",false," ++ 
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ") -> true\n"),
-                    (index + 2))
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (predSymStr predS) ++ "(" ++ (terms_str ts) ++ 
+                    ") -> false\n")
                 Strong_equation t5 t6 _ ->
-                    (("eq("++(term_str t5)++","++(term_str t6)++") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t3) ++
-                    "," ++ (term_str t5) ++ "," ++ (term_str t6) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t4) ++
-                    "," ++ (term_str t5) ++ "," ++ (term_str t6) ++ 
-                    ") -> true\n" ++
-                    "eq("++(term_str t3)++","++(term_str t4)++") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t5) ++
-                    "," ++ (term_str t3) ++ "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t6) ++
-                    "," ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> true\n"),(index + 2))
+                    ("eq(" ++ (term_str t5) ++ "," ++ (term_str t6) ++ 
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
+                    "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t5) ++ " -> " ++ (term_str t6) ++ "\n")
                 Negation (Strong_equation t5 t6 _) _ ->
-                    (("eq("++(term_str t5)++","++(term_str t6)++") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t3) ++
-                    "," ++ (term_str t5) ++ "," ++ (term_str t6) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t4) ++
-                    "," ++ (term_str t5) ++ "," ++ (term_str t6) ++ 
-                    ") -> false\n" ++
-                    "eq("++(term_str t3)++","++(term_str t4)++") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ ",eq(" ++ (term_str t5) ++
-                    "," ++ (term_str t6) ++ ")," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ ",false," ++ 
-                    (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> true\n"),(index + 2))
+                    ("eq(" ++ (term_str t5) ++ "," ++ (term_str t6) ++ 
+                    ") -> false | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
+                    "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", eq(" ++
+                    (term_str t5) ++ "," ++ (term_str t6) ++ ") -> false\n")
                 Existl_equation t5 t6 _ ->
-                    (("eq("++(term_str t5)++","++(term_str t6)++") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t3) ++
-                    "," ++ (term_str t5) ++ "," ++ (term_str t6) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t4) ++
-                    "," ++ (term_str t5) ++ "," ++ (term_str t6) ++ 
-                    ") -> true\n" ++
-                    "eq("++(term_str t3)++","++(term_str t4)++") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t5) ++
-                    "," ++ (term_str t3) ++ "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t6) ++
-                    "," ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> true\n"),(index + 2))
+                    ("eq(" ++ (term_str t5) ++ "," ++ (term_str t6) ++ 
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
+                    "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t5) ++ " -> " ++ (term_str t6) ++ "\n")
                 Negation (Existl_equation t5 t6 _) _ ->
-                    (("eq("++(term_str t5)++","++(term_str t6)++") -> " ++
-                    fk1 ++ "(" ++ (term_str t1) ++ "," ++ (term_str t3) ++
-                    "," ++ (term_str t5) ++ "," ++ (term_str t6) ++ ")\n" ++
-                    fk1 ++ "(" ++ (term_str t2) ++ "," ++ (term_str t4) ++
-                    "," ++ (term_str t5) ++ "," ++ (term_str t6) ++ 
-                    ") -> false\n" ++
-                    "eq("++(term_str t3)++","++(term_str t4)++") -> " ++
-                    fk2 ++ "(" ++ (term_str t1) ++ ",eq(" ++ (term_str t5) ++
-                    "," ++ (term_str t6) ++ ")," ++
-                    (term_str t3) ++ "," ++ (term_str t4) ++ ")\n" ++
-                    fk2 ++ "(" ++ (term_str t2) ++ ",false," ++ 
-                    (term_str t3) ++ "," ++ (term_str t4) ++ 
-                    ") -> true\n"),(index + 2))
+                    ("eq(" ++ (term_str t5) ++ "," ++ (term_str t6) ++ 
+                    ") -> false | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", " ++
+                    (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n" ++
+                    "eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+                    ") -> true | " ++
+                    (term_str t1) ++ " -> " ++ (term_str t2) ++ ", eq(" ++
+                    (term_str t5) ++ "," ++ (term_str t6) ++ ") -> false\n")
                 _ -> error "CASL.CCC.TerminationProof.<impli_str_ex_eq_ex>"
           _ -> error "CASL.CCC.TerminationProof.<impli_str_ex>"
     _ -> error "CASL.CCC.TerminationProof.<impli_str>"
-  where fk1 = "af" ++ (show index)
-        fk2 = "af" ++ (show $ index +1)
 
 
-{- transform Equivalence to str: 
-   (p(t_1,...,t_m) <=> phi)
-     Example:
-             p(t_1,...,t_m) <=> f(tt_1,...,tt_n)=t
-     str --> p(t_1,...,t_m)  => f(tt_1,...,tt_n)=t --> 
-                 f(tt_1,...,tt_n) -> U1(p(t_1,...,t_m),tt_1,...,tt_n)
-                 U1(true,tt_1,...,tt_n) -> t
-          --> f(tt_1,...,tt_n)=t => p(t_1,...,t_m)  --> 
-                 p(t_1,...,t_m) -> U2(f(tt_1,...,tt_n),t_1,...,t_m)
-                 U2(t,t_1,...t_m) -> true 
--}
-equiv_str :: Int -> FORMULA f -> (String,Int)
-equiv_str index f =
+-- | transform Equivalence to string: 
+equiv_str :: FORMULA f -> String
+equiv_str f =
   case (quanti f) of
     Equivalence (Predication predS1 ts1 _) f1 _ ->
         case (quanti f1) of
           Conjunction _ _ ->
-              (((axiom_substr (quanti f1)) ++ " -> " ++ 
-              fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
-              "))\n" ++
-              fk1 ++ "(true) -> true\n"),(index+1))
+              ((axiom_substr (quanti f1)) ++ " -> true | " ++ 
+              (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ ") -> true\n")
           Negation (Conjunction _ _) _ ->
-              (((axiom_substr (quanti f1)) ++ " -> " ++ 
-              fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
-              "))\n" ++
-              fk1 ++ "(true) -> false\n"),(index+1))
+              ((axiom_substr (quanti f1)) ++ " -> false | " ++ 
+              (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ ") -> true\n")
           Disjunction _ _ ->
-              (((axiom_substr (quanti f1)) ++ " -> " ++ 
-              fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
-              "))\n" ++
-              fk1 ++ "(true) -> true\n"),(index+1))
+              ((axiom_substr (quanti f1)) ++ " -> true | " ++ 
+              (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ ") -> true\n")
           Negation (Disjunction _ _) _ ->
-              (((axiom_substr (quanti f1)) ++ " -> " ++ 
-              fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
-              "))\n" ++
-              fk1 ++ "(true) -> false\n"),(index+1))              
+              ((axiom_substr (quanti f1)) ++ " -> false | " ++ 
+              (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ ") -> true\n")
           Predication predS2 ts2 _ ->
-              (((predSymStr predS2) ++ "(" ++ (terms_str ts2) ++ ") -> " ++
-              fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
-              ")," ++ (terms_str ts2) ++ ")\n" ++
-              fk1 ++ "(true," ++ (terms_str ts2) ++ ") -> true\n"),
-              (index +1))
-          Negation (Predication predS2 ts2 _) _ ->           -- !!
-              (((predSymStr predS2) ++ "(" ++ (terms_str ts2) ++ ") -> " ++
-              fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ 
-              ")," ++ (terms_str ts2) ++ ")\n" ++
-              fk1 ++ "(true," ++ (terms_str ts2) ++ ") -> false\n"),
-              (index +1))
+              ((predSymStr predS2) ++ "(" ++ (terms_str ts2) ++ 
+              ") -> true | " ++
+              (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ ") -> true\n")
+          Negation (Predication predS2 ts2 _) _ ->
+              ((predSymStr predS2) ++ "(" ++ (terms_str ts2) ++ 
+              ") -> false | " ++
+              (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ ") -> true\n")
           Strong_equation t1 t2 _ -> 
-              (("eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ ") -> " ++
-              fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++
-              ")," ++ (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-              fk1++"(true,"++(term_str t1)++","++(term_str t2)++") -> " ++
-              "true\n"),(index + 1))
+              ("eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
+              ") -> true | " ++
+              (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ ") -> true\n")
           Negation (Strong_equation t1 t2 _) _ ->
-              (("eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ ") -> " ++
-              fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++
-              ")," ++ (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-              fk1 ++ "(true," ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
-              ") -> false\n"),(index +1))
+              ("eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
+              ") -> false | " ++
+              (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ ") -> true\n")
           Existl_equation t1 t2 _ -> 
-              (("eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ ") -> " ++
-              fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++
-              ")," ++ (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-              fk1++"(true,"++(term_str t1)++","++(term_str t2)++") -> " ++
-              "true\n"),(index + 1))
+              ("eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
+              ") -> true | " ++
+              (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ ") -> true\n")
           Negation (Existl_equation t1 t2 _) _ ->
-              (("eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ ") -> " ++
-              fk1 ++ "(" ++ (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++
-              ")," ++ (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-              fk1 ++ "(true," ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
-              ") -> false\n"),(index +1))
+              ("eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
+              ") -> false | " ++
+              (predSymStr predS1) ++ "(" ++ (terms_str ts1) ++ ") -> true\n")
           _ -> error "CASL.CCC.TerminationProof.<equiv_str_pred>"
     Equivalence (Strong_equation t1 t2 _) f1 _ ->
         case (quanti f1) of
           Conjunction _ _ ->
-              (((axiom_substr (quanti f1)) ++ " -> " ++ 
-              fk1 ++ "(" ++ (term_str t1) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ ") -> true\n" ++
-              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ ") -> " ++
-              fk2 ++ "(" ++ (axiom_substr (quanti f1)) ++ "," ++
-              (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-              fk2 ++ "(true," ++ (term_str t1) ++ "," ++
-              (term_str t2) ++ ") -> true\n"),(index+2))
+              ((axiom_substr (quanti f1)) ++ " -> true | " ++ 
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n" ++
+              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
+              ") -> true | " ++
+              (axiom_substr (quanti f1)) ++ " -> true\n")
           Negation (Conjunction _ _) _ ->
-              (((axiom_substr (quanti f1)) ++ " -> " ++ 
-              fk1 ++ "(" ++ (term_str t1) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ ") -> false\n" ++
-              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ ") -> " ++
-              fk2 ++ "(" ++ (axiom_substr (quanti f1)) ++ "," ++
-              (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-              fk2 ++ "(false," ++ (term_str t1) ++ "," ++
-              (term_str t2) ++ ") -> true\n"),(index+2))
+              ((axiom_substr (quanti f1)) ++ " -> false | " ++ 
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n" ++
+              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
+              ") -> true | " ++
+              (axiom_substr (quanti f1)) ++ " -> false\n")
           Disjunction _ _ ->
-              (((axiom_substr (quanti f1)) ++ " -> " ++ 
-              fk1 ++ "(" ++ (term_str t1) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ ") -> true\n" ++
-              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ ") -> " ++
-              fk2 ++ "(" ++ (axiom_substr (quanti f1)) ++ "," ++
-              (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-              fk2 ++ "(true," ++ (term_str t1) ++ "," ++
-              (term_str t2) ++ ") -> true\n"),(index+2))
+              ((axiom_substr (quanti f1)) ++ " -> true | " ++ 
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n" ++
+              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
+              ") -> true | " ++
+              (axiom_substr (quanti f1)) ++ " -> true\n")
           Negation (Disjunction _ _) _ ->
-              (((axiom_substr (quanti f1)) ++ " -> " ++ 
-              fk1 ++ "(" ++ (term_str t1) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ ") -> false\n" ++
-              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ ") -> " ++
-              fk2 ++ "(" ++ (axiom_substr (quanti f1)) ++ "," ++
-              (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-              fk2 ++ "(false," ++ (term_str t1) ++ "," ++
-              (term_str t2) ++ ") -> true\n"),(index+2))
+              ((axiom_substr (quanti f1)) ++ " -> false | " ++ 
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n" ++
+              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
+              ") -> true | " ++
+              (axiom_substr (quanti f1)) ++ " -> false\n")
           Predication predS ts _ ->
-              (((predSymStr predS) ++ "(" ++ (terms_str ts) ++ ") -> " ++
-              fk1 ++ "(" ++ (term_str t1) ++ "," ++ (terms_str ts) ++ 
-              ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ "," ++ (terms_str ts) ++ 
-              ") -> true\n" ++
-              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ ") -> " ++
-              fk2 ++ "(" ++ (predSymStr predS) ++ "(" ++ (terms_str ts) ++
-              ")," ++ (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-              fk2 ++ "(true," ++ (term_str t1) ++ "," ++ (term_str t2) ++
-              ") -> true\n"),(index +2))
+              ((predSymStr predS) ++ "(" ++ (terms_str ts) ++ 
+              ") -> true | " ++
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n" ++
+              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
+              ") -> true | " ++
+              (predSymStr predS) ++ "(" ++ (terms_str ts) ++ ") -> true\n")
           Negation (Predication predS ts _) _ ->
-              (((predSymStr predS) ++ "(" ++ (terms_str ts) ++ ") -> " ++
-              fk1 ++ "(" ++ (term_str t1) ++ "," ++ (terms_str ts) ++ 
-              ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ "," ++ (terms_str ts) ++ 
-              ") -> false\n" ++
-              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ ") -> " ++
-              fk2 ++ "(" ++ (predSymStr predS) ++ "(" ++ (terms_str ts) ++
-              ")," ++ (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-              fk2 ++ "(false," ++ (term_str t1) ++ "," ++ (term_str t2) ++
-              ") -> true\n"),(index +2))
+              ((predSymStr predS) ++ "(" ++ (terms_str ts) ++ 
+              ") -> false | " ++
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n" ++
+              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
+              ") -> true | " ++
+              (predSymStr predS) ++ "(" ++ (terms_str ts) ++ ") -> false\n")
           Strong_equation t3 t4 _ ->
-              (("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ ") -> " ++
-              fk1 ++ "(" ++ (term_str t1)++ "," ++ (term_str t3) ++ 
-              "," ++ (term_str t4) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ ","++ (term_str t3) ++ 
-              "," ++ (term_str t4) ++ ") -> " ++ "true\n" ++ 
-              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ ") -> " ++
-              fk1 ++ "(" ++ (term_str t3)++ "," ++ (term_str t1) ++ 
-              "," ++ (term_str t2) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t4) ++ ","++ (term_str t1) ++ 
-              "," ++ (term_str t2) ++ ") -> " ++ "true\n"),(index + 2))
+              ("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+              ") -> true | " ++
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n" ++
+              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
+              ") -> true | " ++
+              (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n")
           Negation (Strong_equation t3 t4 _) _ ->
-              (("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ ") -> " ++
-              fk1 ++ "(" ++ (term_str t1)++ "," ++ (term_str t3) ++ 
-              "," ++ (term_str t4) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ ","++ (term_str t3) ++ 
-              "," ++ (term_str t4) ++ ") -> " ++ "false\n" ++ 
-              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ ") -> " ++
-              fk1 ++ "(eq(" ++ (term_str t3)++ "," ++ (term_str t4) ++
-              ")," ++ (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-              fk1 ++ "(false," ++ (term_str t1) ++ 
-              "," ++ (term_str t2) ++ ") -> " ++ "true\n"),(index + 2))
+              ("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+              ") -> false | " ++
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n" ++
+              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
+              ") -> true | eq(" ++
+              (term_str t3) ++ "," ++ (term_str t4) ++ ") -> false\n")
           Existl_equation t3 t4 _ ->
-              (("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ ") -> " ++
-              fk1 ++ "(" ++ (term_str t1)++ "," ++ (term_str t3) ++ 
-              "," ++ (term_str t4) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ ","++ (term_str t3) ++ 
-              "," ++ (term_str t4) ++ ") -> " ++ "true\n" ++ 
-              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ ") -> " ++
-              fk1 ++ "(" ++ (term_str t3)++ "," ++ (term_str t1) ++ 
-              "," ++ (term_str t2) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t4) ++ ","++ (term_str t1) ++ 
-              "," ++ (term_str t2) ++ ") -> " ++ "true\n"),(index + 2))
+              ("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+              ") -> true | " ++
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n" ++
+              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
+              ") -> true | " ++
+              (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n")
           Negation (Existl_equation t3 t4 _) _ ->
-              (("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ ") -> " ++
-              fk1 ++ "(" ++ (term_str t1)++ "," ++ (term_str t3) ++ 
-              "," ++ (term_str t4) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ ","++ (term_str t3) ++ 
-              "," ++ (term_str t4) ++ ") -> " ++ "false\n" ++ 
-              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ ") -> " ++
-              fk1 ++ "(eq(" ++ (term_str t3)++ "," ++ (term_str t4) ++
-              ")," ++ (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-              fk1 ++ "(false," ++ (term_str t1) ++ 
-              "," ++ (term_str t2) ++ ") -> " ++ "true\n"),(index + 2))
+              ("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+              ") -> false | " ++
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n" ++
+              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
+              ") -> true | eq(" ++
+              (term_str t3) ++ "," ++ (term_str t4) ++ ") -> false\n")
           _ -> error "CASL.CCC.TerminationProof.<equiv_str_str>"
     Equivalence (Existl_equation t1 t2 _) f1 _ ->
         case (quanti f1) of
           Conjunction _ _ ->
-              (((axiom_substr (quanti f1)) ++ " -> " ++ 
-              fk1 ++ "(" ++ (term_str t1) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ ") -> true\n" ++
-              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ ") -> " ++
-              fk2 ++ "(" ++ (axiom_substr (quanti f1)) ++ "," ++
-              (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-              fk2 ++ "(true," ++ (term_str t1) ++ "," ++
-              (term_str t2) ++ ") -> true\n"),(index+2))
+              ((axiom_substr (quanti f1)) ++ " -> true | " ++ 
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n" ++
+              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
+              ") -> true | " ++
+              (axiom_substr (quanti f1)) ++ " -> true\n")
           Negation (Conjunction _ _) _ ->
-              (((axiom_substr (quanti f1)) ++ " -> " ++ 
-              fk1 ++ "(" ++ (term_str t1) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ ") -> false\n" ++
-              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ ") -> " ++
-              fk2 ++ "(" ++ (axiom_substr (quanti f1)) ++ "," ++
-              (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-              fk2 ++ "(false," ++ (term_str t1) ++ "," ++
-              (term_str t2) ++ ") -> true\n"),(index+2))
+              ((axiom_substr (quanti f1)) ++ " -> false | " ++ 
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n" ++
+              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
+              ") -> true | " ++
+              (axiom_substr (quanti f1)) ++ " -> false\n")
           Disjunction _ _ ->
-              (((axiom_substr (quanti f1)) ++ " -> " ++ 
-              fk1 ++ "(" ++ (term_str t1) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ ") -> true\n" ++
-              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ ") -> " ++
-              fk2 ++ "(" ++ (axiom_substr (quanti f1)) ++ "," ++
-              (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-              fk2 ++ "(true," ++ (term_str t1) ++ "," ++
-              (term_str t2) ++ ") -> true\n"),(index+2))
+              ((axiom_substr (quanti f1)) ++ " -> true | " ++ 
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n" ++
+              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
+              ") -> true | " ++
+              (axiom_substr (quanti f1)) ++ " -> true\n")
           Negation (Disjunction _ _) _ ->
-              (((axiom_substr (quanti f1)) ++ " -> " ++ 
-              fk1 ++ "(" ++ (term_str t1) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ ") -> false\n" ++
-              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ ") -> " ++
-              fk2 ++ "(" ++ (axiom_substr (quanti f1)) ++ "," ++
-              (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-              fk2 ++ "(false," ++ (term_str t1) ++ "," ++
-              (term_str t2) ++ ") -> true\n"),(index+2))
+              ((axiom_substr (quanti f1)) ++ " -> false | " ++ 
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n" ++
+              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
+              ") -> true | " ++
+              (axiom_substr (quanti f1)) ++ " -> false\n")
           Predication predS ts _ ->
-              (((predSymStr predS) ++ "(" ++ (terms_str ts) ++ ") -> " ++
-              fk1 ++ "(" ++ (term_str t1) ++ "," ++ (terms_str ts) ++ 
-              ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ "," ++ (terms_str ts) ++ 
-              ") -> true\n" ++
-              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ ") -> " ++
-              fk2 ++ "(" ++ (predSymStr predS) ++ "(" ++ (terms_str ts) ++
-              ")," ++ (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-              fk2 ++ "(true," ++ (term_str t1) ++ "," ++ (term_str t2) ++
-              ") -> true\n"),(index +2))
+              ((predSymStr predS) ++ "(" ++ (terms_str ts) ++ 
+              ") -> true | " ++
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n" ++
+              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
+              ") -> true | " ++
+              (predSymStr predS) ++ "(" ++ (terms_str ts) ++ ") -> true\n")
           Negation (Predication predS ts _) _ ->
-              (((predSymStr predS) ++ "(" ++ (terms_str ts) ++ ") -> " ++
-              fk1 ++ "(" ++ (term_str t1) ++ "," ++ (terms_str ts) ++ 
-              ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ "," ++ (terms_str ts) ++ 
-              ") -> false\n" ++
-              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ ") -> " ++
-              fk2 ++ "(" ++ (predSymStr predS) ++ "(" ++ (terms_str ts) ++
-              ")," ++ (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-              fk2 ++ "(false," ++ (term_str t1) ++ "," ++ (term_str t2) ++
-              ") -> true\n"),(index +2))
+              ((predSymStr predS) ++ "(" ++ (terms_str ts) ++ 
+              ") -> false | " ++
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n" ++
+              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
+              ") -> true | " ++
+              (predSymStr predS) ++ "(" ++ (terms_str ts) ++ ") -> false\n")
           Strong_equation t3 t4 _ ->
-              (("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ ") -> " ++
-              fk1 ++ "(" ++ (term_str t1)++ "," ++ (term_str t3) ++ 
-              "," ++ (term_str t4) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ ","++ (term_str t3) ++ 
-              "," ++ (term_str t4) ++ ") -> " ++ "true\n" ++ 
-              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ ") -> " ++
-              fk1 ++ "(" ++ (term_str t3)++ "," ++ (term_str t1) ++ 
-              "," ++ (term_str t2) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t4) ++ ","++ (term_str t1) ++ 
-              "," ++ (term_str t2) ++ ") -> " ++ "true\n"),(index + 2))
+              ("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+              ") -> true | " ++
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n" ++
+              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
+              ") -> true | " ++
+              (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n")
           Negation (Strong_equation t3 t4 _) _ ->
-              (("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ ") -> " ++
-              fk1 ++ "(" ++ (term_str t1)++ "," ++ (term_str t3) ++ 
-              "," ++ (term_str t4) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ ","++ (term_str t3) ++ 
-              "," ++ (term_str t4) ++ ") -> " ++ "false\n" ++ 
-              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ ") -> " ++
-              fk1 ++ "(eq(" ++ (term_str t3)++ "," ++ (term_str t4) ++
-              ")," ++ (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-              fk1 ++ "(false," ++ (term_str t1) ++ 
-              "," ++ (term_str t2) ++ ") -> " ++ "true\n"),(index + 2))
+              ("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+              ") -> false | " ++
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n" ++
+              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
+              ") -> true | eq(" ++
+              (term_str t3) ++ "," ++ (term_str t4) ++ ") -> false\n")
           Existl_equation t3 t4 _ ->
-              (("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ ") -> " ++
-              fk1 ++ "(" ++ (term_str t1)++ "," ++ (term_str t3) ++ 
-              "," ++ (term_str t4) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ ","++ (term_str t3) ++ 
-              "," ++ (term_str t4) ++ ") -> " ++ "true\n" ++ 
-              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ ") -> " ++
-              fk1 ++ "(" ++ (term_str t3)++ "," ++ (term_str t1) ++ 
-              "," ++ (term_str t2) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t4) ++ ","++ (term_str t1) ++ 
-              "," ++ (term_str t2) ++ ") -> " ++ "true\n"),(index + 2))
+              ("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+              ") -> true | " ++
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n" ++
+              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
+              ") -> true | " ++
+              (term_str t3) ++ " -> " ++ (term_str t4) ++ "\n")
           Negation (Existl_equation t3 t4 _) _ ->
-              (("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ ") -> " ++
-              fk1 ++ "(" ++ (term_str t1)++ "," ++ (term_str t3) ++ 
-              "," ++ (term_str t4) ++ ")\n" ++
-              fk1 ++ "(" ++ (term_str t2) ++ ","++ (term_str t3) ++ 
-              "," ++ (term_str t4) ++ ") -> " ++ "false\n" ++ 
-              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ ") -> " ++
-              fk1 ++ "(eq(" ++ (term_str t3)++ "," ++ (term_str t4) ++
-              ")," ++ (term_str t1) ++ "," ++ (term_str t2) ++ ")\n" ++
-              fk1 ++ "(false," ++ (term_str t1) ++ 
-              "," ++ (term_str t2) ++ ") -> " ++ "true\n"),(index + 2))
-          _ -> error "CASL.CCC.TerminationProof.<equiv_str_exi>"
+              ("eq(" ++ (term_str t3) ++ "," ++ (term_str t4) ++ 
+              ") -> false | " ++
+              (term_str t1) ++ " -> " ++ (term_str t2) ++ "\n" ++
+              "eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ 
+              ") -> true | eq(" ++
+              (term_str t3) ++ "," ++ (term_str t4) ++ ") -> false\n")
+          _ -> error "CASL.CCC.TerminationProof.<equiv_str_ex>"
     _ -> error "CASL.CCC.TerminationProof.<equiv_str>"
-  where fk1 = "af" ++ (show index)
-        fk2 = "af" ++ (show $ index + 1)
  
 
-impli_equiv_str :: Int -> FORMULA f -> (String,Int)
-impli_equiv_str index f = 
+impli_equiv_str :: FORMULA f -> String
+impli_equiv_str f = 
   case (quanti f) of
-    Implication _ _ _ _ -> impli_str index f
-    Equivalence _ _ _ -> equiv_str index f
+    Implication _ _ _ _ -> impli_str f
+    Equivalence _ _ _ -> equiv_str f
     _ -> error "CASL.CCC.TerminationProof.<impli_equiv_str2>"
 
 
-{- transform a axiom to str (f_str)
--}
+-- | transform a axiom to string
 axiom_str :: FORMULA f -> String
 axiom_str f = 
   case (quanti f) of
@@ -1679,13 +1198,9 @@ axiom_str f =
     Strong_equation t1 t2 _ -> 
         (term_str t1) ++ " -> " ++ (term_str t2)                   
     _ -> error "CASL.CCC.TerminationProof.<Axioms>"
---  where termsStr ts = if null ts 
---                    then error "CASL.CCC.TerminationProof.axiom_str"
---                    else tail $ concat $ map (\s->","++s) $ map term_str ts
 
 
-{- transform a axiom to substr
--}
+-- | transform a axiom to substr
 axiom_substr :: FORMULA f -> String
 axiom_substr f = 
   case (quanti f) of
@@ -1724,6 +1239,7 @@ axiom_substr f =
     _ -> error "CASL.CCC.TerminationProof.axiom_substr.<Axioms>"
 
 
+-- | transform the conjunctive formulas to string
 conj_str :: [FORMULA f] -> String
 conj_str fs =
   if length fs == 2 then ("and(" ++ (axiom_substr $ head fs) ++ "," ++
@@ -1731,6 +1247,8 @@ conj_str fs =
   else ("and(" ++ (axiom_str $ head fs) ++ "," ++
                   (conj_str $ tail fs) ++ ")")
 
+
+-- | transform the disjunctive formulas to string
 disj_str :: [FORMULA f] -> String
 disj_str fs =
   if length fs == 2 then ("or(" ++ (axiom_substr $ head fs) ++ "," ++
@@ -1753,14 +1271,14 @@ term_str t =
     Conditional t1 f t2 _ -> 
         ("when_else("++(term_str t1)++","++
          (t_f_str f)++","++(term_str t2)++")")  
-    _ -> error "CASL.CCC.TerminationProof.<Term>"
+    _ -> error "CASL.CCC.TerminationProof.<term_str>"
   where t_f_str f=case f of                     --  condition of term
                     Strong_equation t1 t2 _ -> 
                         ("eq("++(term_str t1)++","++(term_str t2)++")")
                     Predication ps ts _ ->
                         ((predSymStr ps) ++ "(" ++
                         (terms_str ts) ++ ")")
-                    _ -> error "CASL.CCC.TerminationProof.<Term-Formula>"
+                    _ -> error "CASL.CCC.TerminationProof.<term_str_cond>"
 
 
 -- | transform a group of terms to string
