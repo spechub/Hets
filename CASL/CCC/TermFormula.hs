@@ -238,6 +238,15 @@ partialAxiom f =
       _ -> False                    
 
 
+-- | creat the information of subsort
+infoSubsort :: FORMULA f -> FORMULA f
+infoSubsort f =
+    case f of
+      Quantification Universal v (Equivalence _ f1 _) _ ->
+          Quantification Existential v f1 nullRange
+      _ -> error "CASL.CCC.TermFormula.<infoSubsort>" 
+
+
 -- | extract the leading symbol from a formula
 leadingSym :: FORMULA f -> Maybe (Either OP_SYMB PRED_SYMB)
 leadingSym f = do

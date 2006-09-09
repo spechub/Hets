@@ -103,11 +103,12 @@ checkFreeType (osig,osens) m fsn
         warning Nothing "not terminating" nullRange
     | (not $ null fs_terminalProof) && (proof == Nothing) =
         warning Nothing "cannot prove termination" nullRange
-    | not $ ((null (overlap_query ++ ex_axioms)) &&
+    | not $ ((null (info_subsort ++ overlap_query ++ ex_axioms)) &&
              (null subSortsF)) =
         return (Just (True,(overlap_query ++
                             ex_axioms ++
-                            (concat $ map snd subSortsF))))
+                            (concat $ map snd subSortsF) ++ 
+                            info_subsort)))
     | otherwise = return (Just (True,[]))
 
 {-
@@ -162,6 +163,10 @@ checkFreeType (osig,osens) m fsn
                                                              --  f_inhabited
     axioms1 = filter (\f-> (not $ is_Sort_gen_ax f) &&
                            (not $ is_Membership f)) fs
+    memberships1 = filter (\f-> is_Membership f) fs
+    memberships = trace (showDoc memberships1 "memberships") memberships1
+    info_subsort1 = map infoSubsort memberships
+    info_subsort = trace (showDoc info_subsort1 "infoSubsort") info_subsort1
     axioms = trace (showDoc axioms1 "axioms") axioms1         --  axioms
     _axioms = map quanti axioms
     l_Syms1 = map leadingSym axioms
@@ -316,25 +321,8 @@ checkFreeType (osig,osens) m fsn
                    _ -> error "pattern overlap"
     ex_axioms = filter is_ex_quanti $
                 map sentence (filter is_user_or_sort_gen (osens ++ fsn))
-{- Termination Proof
--}
-{-
-    ipath = "/tmp/Input.hs"
-    opath = "/tmp/Result.txt"
-    casl2hs = map_theory
-                  (CompComorphism (CompComorphism CASL2HasCASL HasCASL2HasCASL)
-                   HasCASL2Haskell) (mtarget m,(osens++fsn))
-    hsdiag = concat $ map (\a->showDoc a "") $ diags casl2hs
-    proof = unsafePerformIO (do
-                writeFile ipath $ ("module Dummy where\n -- " ++ hsdiag)
-                system ("java -jar CASL/Termination/AProVE.jar -u cli -m " ++
-                        "wst -p plain " ++ 
-                        ipath ++ " > " ++ opath)
-                res <- readFile opath
-                return (head $ words res))
-       --         return (subStr "YES" res))
--}
-    proof = terminationProof (osens ++ fsn)
+    -- proof = terminationProof (osens ++ fsn)
+    proof = terminationProof fsn
 
 
 {- group the axioms according to their leading symbol
