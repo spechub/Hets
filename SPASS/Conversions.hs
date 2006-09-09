@@ -53,7 +53,9 @@ signToSPLogicalPart s =
                                      (Map.toList (predMap s)),
                          sorts = map SPSimpleSignSym $ Map.keys $ sortMap s }
 
-    decList = subsortDecl ++ termDecl ++ predDecl ++ genDecl
+    decList = if (singleSorted s &&
+                  (null . Map.elems . sortMap) s ) then []
+                else subsortDecl ++ termDecl ++ predDecl ++ genDecl 
 
     subsortDecl = map (\(a, b) -> SPSubsortDecl {sortSymA = a, sortSymB = b}) (Rel.toList (Rel.transReduce (sortRel s)))
 
@@ -101,7 +103,9 @@ insertSentence lp nSen = lp {formulaLists = fLists'}
                 else insertFormula SPOriginConjectures nSen fLists
     fLists = formulaLists lp
 
-{- | generate a SPASS problem with time stamp while maybe adding a goal.-}
+{- |
+  Generate a SPASS problem with time stamp while maybe adding a goal.
+-}
 genSPASSProblem :: String -> SPLogicalPart 
                 -> Maybe (Named SPTerm) -> IO SPProblem
 genSPASSProblem thName lp m_nGoal =

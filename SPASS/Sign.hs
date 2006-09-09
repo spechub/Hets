@@ -51,7 +51,8 @@ type PredMap = Map.Map SPIdentifier (Set.Set [SPIdentifier])
 data Sign = Sign { sortRel :: Rel.Rel SPIdentifier
                  , sortMap :: SortMap
                  , funcMap :: FuncMap
-                 , predMap :: PredMap 
+                 , predMap :: PredMap
+                 , singleSorted :: Bool
                  } deriving (Eq, Show)
 
 {- |
@@ -69,6 +70,7 @@ emptySign = Sign { sortRel = Rel.empty
                  , sortMap = Map.empty
                  , funcMap = Map.empty
                  , predMap = Map.empty
+                 , singleSorted = True
                  }
 
 {- | 
@@ -128,6 +130,14 @@ Allowed SPASS characters are letters, digits, and underscores.
 -- Data.Char.isAlphaNum includes all kinds of isolatin1 characters!!
 checkSPChar :: Char -> Bool
 checkSPChar c = (isAlphaNum c && isAscii c )|| '_' == c
+
+{- |
+  Check a Sign if it is single sorted (and the sort is non-generated).
+-}
+singleSortNotGen :: Sign -> Bool
+singleSortNotGen spSig = singleSorted spSig &&
+                  (head . Map.elems $ sortMap spSig) == Nothing
+
 
 -- * Internal data structures
 

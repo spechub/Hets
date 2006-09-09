@@ -139,7 +139,7 @@ instance Comorphism SuleCFOL2SoftFOL
     map_theory _ = transTheory sigTrCASL formTrCASL
     map_morphism = mapDefaultMorphism
     map_sentence _ sign =
-      return . mapSen formTrCASL sign
+      return . mapSen (isSingleSorted sign) formTrCASL sign
     map_symbol = errMapSymbol
 
 ---------------------------- Signature -----------------------------
@@ -281,8 +281,8 @@ disSPOId cType sid ty idSet
                             nres' = nres ++ '_':show n
                         in if nres == res
                            then if nres' == res
-                                then error ("SuleCFOL2SoftFOL: cannot calculate "
-                                            ++ "unambigous id for "
+                                then error ("SuleCFOL2SoftFOL: cannot calculate"
+                                            ++ " unambigous id for "
                                             ++ sid ++ " with type " ++ show ty
                                             ++ " and nres = "++ nres
                                             ++ "\n with idSet "
@@ -473,12 +473,13 @@ mkInjSentences idMap = Map.foldWithKey genInjs []
           newName o a r = "ga_"++o++'_':a++'_':r++"_id"
           usedIds = elemsSPId_Set idMap
 
-transSign :: CSign.Sign f e -> (SPSign.Sign, IdType_SPId_Map)
-transSign sign = (SPSign.emptySign { sortRel =
+transSign :: Bool -> CSign.Sign f e -> (SPSign.Sign, IdType_SPId_Map)
+transSign siSo sign = (SPSign.emptySign { sortRel =
                                  Rel.map transIdSort (CSign.sortRel sign)
                            , sortMap = spSortMap
                            , funcMap = fMap
                            , predMap = pMap
+                           , singleSorted = siSo
                            },idMap'')
     where (spSortMap,idMap) =
             Set.fold (\ i (sm,im) ->
@@ -511,15 +512,19 @@ transTheory :: (Pretty f, PosItem f, Eq f) =>
             -> Result SoftFOLTheory
 transTheory trSig trForm (sign,sens) =
   fmap (trSig sign (CSign.extendedInfo sign))
-    (case transSign (foldl insInjOps sign genAxs) of
+    (case transSign singleSortFlag (foldl insInjOps sign genAxs) of
      (tSign,idMap) ->
         do (idMap',tSign',sentencesAndGoals) <-
                integrateGenerated idMap genSens tSign
-           return  (tSign',
+           let tSignElim = if SPSign.singleSortNotGen tSign'
+                             then tSign' {sortMap = Map.empty} else tSign'
+           return  (tSignElim,
                     sentencesAndGoals ++
-                    nonEmptySortSens (sortMap tSign') ++
-                    map (mapNamed (transFORM sign idMap' trForm)) realSens))
-  where (genSens,realSens) =
+                    nonEmptySortSens (sortMap tSignElim) ++
+                    map (mapNamed (transFORM (singleSortNotGen tSign') sign
+                                             idMap' trForm)) realSens))
+  where singleSortFlag = isSingleSorted sign
+        (genSens,realSens) =
             partition (\ s -> case (sentence s) of
                               Sort_gen_ax _ _ -> True
                               _               -> False) sens
@@ -562,7 +567,9 @@ quantify q =
 transVarTup :: (Set.Set SPIdentifier,IdType_SPId_Map) ->
                (VAR,SORT) ->
                ((Set.Set SPIdentifier,IdType_SPId_Map),
-                (SPIdentifier,SPIdentifier)) -- ^ ((new set of used Ids,new map of Ids to original Ids),(var as sp_Id,sort as sp_Id))
+                (SPIdentifier,SPIdentifier))
+                -- ^ ((new set of used Ids,new map of Ids to original Ids),
+                --   (var as sp_Id,sort as sp_Id))
 transVarTup (usedIds,idMap) (v,s) =
     ((Set.insert sid usedIds,
       insertSPId vi (CVar s) sid $ deleteSPId vi (CVar s) idMap)
@@ -596,79 +603,88 @@ mkDisj t1 t2 = compTerm SPOr [t1,t2]
 mkEq :: SPTerm -> SPTerm -> SPTerm
 mkEq t1 t2 = compTerm SPEqual [t1,t2]
 
-mapSen :: (Eq f, Pretty f) => FormulaTranslator f e
+mapSen :: (Eq f, Pretty f) => Bool
+       -> FormulaTranslator f e
        -> CSign.Sign f e -> FORMULA f -> SPTerm
-mapSen trForm sign phi = transFORM sign (snd (transSign sign)) trForm phi
+mapSen siSo trForm sign phi = transFORM siSo sign (snd (transSign siSo sign))
+                                        trForm phi
 
-transFORM :: (Eq f, Pretty f) => CSign.Sign f e
+transFORM :: (Eq f, Pretty f) => Bool -- ^ single sorted flag
+          -> CSign.Sign f e
           -> IdType_SPId_Map -> FormulaTranslator f e
           -> FORMULA f -> SPTerm
-transFORM sign i tr phi = transFORMULA sign i tr phi'
+transFORM siSo sign i tr phi = transFORMULA siSo sign i tr phi'
     where phi' = codeOutConditionalF id
                         (codeOutUniqueExtF id id phi)
 
-transFORMULA :: Pretty f => CSign.Sign f e -> IdType_SPId_Map
+transFORMULA :: Pretty f => Bool -> CSign.Sign f e -> IdType_SPId_Map
              -> FormulaTranslator f e -> FORMULA f -> SPTerm
-transFORMULA sign idMap tr (Quantification qu vdecl phi _) =
+transFORMULA siSo sign idMap tr (Quantification qu vdecl phi _) =
     SPQuantTerm (quantify qu)
                     vList
-                    (transFORMULA sign idMap' tr phi)
+                    (transFORMULA siSo sign idMap' tr phi)
     where ((_,idMap'),vList) =
-              mapAccumL (\ acc e -> let (acc',e') = transVarTup acc e
-                                    in (acc', (uncurry typedVarTerm) e'))
+              mapAccumL (\ acc e ->
+                  let (acc',e') = transVarTup acc e
+                  in (acc', (if siSo then simpTerm . spSym . fst
+                                     else uncurry typedVarTerm)
+                            e'))
                         (sidSet,idMap) (flatVAR_DECLs vdecl)
           sidSet = elemsSPId_Set idMap
-transFORMULA sign idMap tr (Conjunction phis _) =
+transFORMULA siSo sign idMap tr (Conjunction phis _) =
   if null phis then SPSimpleTerm SPTrue
-  else foldl1 mkConj (map (transFORMULA sign idMap tr) phis)
-transFORMULA sign idMap tr (Disjunction phis _) =
+  else foldl1 mkConj (map (transFORMULA siSo sign idMap tr) phis)
+transFORMULA siSo sign idMap tr (Disjunction phis _) =
   if null phis then SPSimpleTerm SPFalse
-  else foldl1 mkDisj (map (transFORMULA sign idMap tr) phis)
-transFORMULA sign idMap tr (Implication phi1 phi2 _ _) =
-  compTerm SPImplies [transFORMULA sign idMap tr phi1,
-                           transFORMULA sign idMap tr phi2]
-transFORMULA sign idMap tr (Equivalence phi1 phi2 _) =
-  compTerm SPEquiv [transFORMULA sign idMap tr phi1,
-                    transFORMULA sign idMap tr phi2]
-transFORMULA sign idMap tr (Negation phi _) =
-  compTerm SPNot [transFORMULA sign idMap tr phi]
-transFORMULA _sign _idMap _tr (True_atom _)  = SPSimpleTerm SPTrue
-transFORMULA _sign _idMap _tr (False_atom _) = SPSimpleTerm SPFalse
-transFORMULA sign idMap tr (Predication psymb args _) =
+  else foldl1 mkDisj (map (transFORMULA siSo sign idMap tr) phis)
+transFORMULA siSo sign idMap tr (Implication phi1 phi2 _ _) =
+  compTerm SPImplies [transFORMULA siSo sign idMap tr phi1,
+                           transFORMULA siSo sign idMap tr phi2]
+transFORMULA siSo sign idMap tr (Equivalence phi1 phi2 _) =
+  compTerm SPEquiv [transFORMULA siSo sign idMap tr phi1,
+                    transFORMULA siSo sign idMap tr phi2]
+transFORMULA siSo sign idMap tr (Negation phi _) =
+  compTerm SPNot [transFORMULA siSo sign idMap tr phi]
+transFORMULA _siSo _sign _idMap _tr (True_atom _)  = SPSimpleTerm SPTrue
+transFORMULA _siSo _sign _idMap _tr (False_atom _) = SPSimpleTerm SPFalse
+transFORMULA siSo sign idMap tr (Predication psymb args _) =
   compTerm (spSym (transPRED_SYMB idMap psymb))
-           (map (transTERM sign idMap tr) args)
-transFORMULA sign idMap tr (Existl_equation t1 t2 _)
+           (map (transTERM siSo sign idMap tr) args)
+transFORMULA siSo sign idMap tr (Existl_equation t1 t2 _)
     | term_sort t1 == term_sort t2 =
-        mkEq (transTERM sign idMap tr t1) (transTERM sign idMap tr t2)
-transFORMULA sign idMap tr (Strong_equation t1 t2 _)
+        mkEq (transTERM siSo sign idMap tr t1) (transTERM siSo sign idMap tr t2)
+transFORMULA siSo sign idMap tr (Strong_equation t1 t2 _)
     | term_sort t1 == term_sort t2 =
-        mkEq (transTERM sign idMap tr t1) (transTERM sign idMap tr t2)
-transFORMULA sign idMap tr (ExtFORMULA phi) = tr sign idMap phi
-transFORMULA _ _ _ (Definedness _ _) = SPSimpleTerm SPTrue -- totality assumed
-transFORMULA sign idMap tr (Membership t s _) =
+        mkEq (transTERM siSo sign idMap tr t1) (transTERM siSo sign idMap tr t2)
+transFORMULA _siSo sign idMap tr (ExtFORMULA phi) = tr sign idMap phi
+transFORMULA _ _ _ _ (Definedness _ _) = SPSimpleTerm SPTrue -- totality assumed
+transFORMULA siSo sign idMap tr (Membership t s _) =
+  if siSo then SPSimpleTerm SPTrue
+   else
     maybe (error ("SuleCFOL2SoftFOL.tF: no SoftFOL Id found for \""++
                   showDoc s "\""))
-          (\si -> compTerm (spSym si) [transTERM sign idMap tr t])
+          (\si -> compTerm (spSym si) [transTERM siSo sign idMap tr t])
           (lookupSPId s CSort idMap)
-transFORMULA _ _ _ (Sort_gen_ax _ _) =
+transFORMULA _ _ _ _ (Sort_gen_ax _ _) =
     error "SuleCFOL2SoftFOL.transFORMULA: Sort generation constraints not\
           \ supported at this point!"
-transFORMULA _ _ _ f =
+transFORMULA _ _ _ _ f =
     error ("SuleCFOL2SoftFOL.transFORMULA: unknown FORMULA '"++showDoc f "'")
 
 
-transTERM :: Pretty f => CSign.Sign f e -> IdType_SPId_Map
+transTERM :: Pretty f => Bool -> CSign.Sign f e -> IdType_SPId_Map
           -> FormulaTranslator f e -> TERM f -> SPTerm
-transTERM _sign idMap _tr (Qual_var v s _) =
+transTERM _siSo _sign idMap _tr (Qual_var v s _) =
   maybe (error ("SuleCFOL2SoftFOL.tT: no SoftFOL Id found for \""++showDoc v "\""))
         (simpTerm . spSym) (lookupSPId (simpleIdToId v) (CVar s) idMap)
-transTERM sign idMap tr (Application opsymb args _) =
+transTERM siSo sign idMap tr (Application opsymb args _) =
     compTerm (spSym (transOP_SYMB idMap opsymb))
-             (map (transTERM sign idMap tr) args)
+             (map (transTERM siSo sign idMap tr) args)
 
-transTERM _sign _idMap _tr (Conditional _t1 _phi _t2 _) =
+transTERM _siSo _sign _idMap _tr (Conditional _t1 _phi _t2 _) =
     error "SuleCFOL2SoftFOL.transTERM: Conditional terms must be coded out."
-transTERM sign idMap tr t'@(Sorted_term t s _)
+
+transTERM siSo sign idMap tr t'@(Sorted_term t s _)
     | term_sort t == s = recRes
     | otherwise =
         assert (trace ("Please check sorted term: '"++showDoc t' ""++
@@ -676,8 +692,9 @@ transTERM sign idMap tr t'@(Sorted_term t s _)
                        "' <= '"++show s++"'")
                       (Set.member (term_sort t) (CSign.subsortsOf s sign)))
                recRes
-    where recRes = transTERM sign idMap tr t
-transTERM sign idMap tr t'@(Cast t s _)
+    where recRes = transTERM siSo sign idMap tr t
+
+transTERM siSo sign idMap tr t'@(Cast t s _)
     | term_sort t == s = recRes
     | otherwise =
           assert (trace ("Please check cast term: '"++showDoc t' ""++
@@ -685,8 +702,9 @@ transTERM sign idMap tr t'@(Cast t s _)
                          "' <= '"++show (term_sort t)++"'")
                         (Set.member s (CSign.subsortsOf (term_sort t) sign)))
                  recRes
-    where recRes = transTERM sign idMap tr t
-transTERM _sign _idMap _tr t =
+    where recRes = transTERM siSo sign idMap tr t
+transTERM _siSo _sign _idMap _tr t =
   error ("SuleCFOL2SoftFOL.transTERM: unknown TERM '"++showDoc t "'")
 
-
+isSingleSorted :: (Eq f, Pretty f) => CSign.Sign f e -> Bool
+isSingleSorted sign = (Set.size (CSign.sortSet sign)) == 1
