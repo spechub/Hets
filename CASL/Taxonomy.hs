@@ -23,7 +23,7 @@ import Taxonomy.MMiSSOntology
 
 import Common.Taxonomy
 import Common.Result
-import Common.Id
+import Common.Id ()
 import Common.AS_Annotation
 
 convTaxo :: TaxoGraphKind -> MMiSSOntology
@@ -37,13 +37,15 @@ convTaxo kind onto sign sens =
 
 convSign :: TaxoGraphKind ->
             MMiSSOntology -> Sign f e -> WithError MMiSSOntology
-convSign KConcept o s = convSign KSubsort o s
+convSign KConcept o s = 
+    case convSign KSubsort o s of
+    wOnto -> weither (const wOnto) (convPred s) wOnto 
 convSign KSubsort onto sign =
     Set.fold addSor (hasValue onto) $ sortSet sign
 -- Ausgehend von den Top-Sorten -- Rel.mostRight
 
     --Map.foldWithKey addSort (hasValue onto) $ toMap $ sortRel sign
-    where str x = showId x ""
+    where str = show 
           relMap = Rel.toMap $ Rel.intransKernel $ sortRel sign
           addSor sort weOnto =
              let sortStr = str sort
@@ -55,6 +57,26 @@ convSign KSubsort onto sign =
           insClass o nm supL =
               insertClass o nm nm supL (Just SubSort)
           toStrL = Set.fold (\ s rs -> str s : rs) []
+
+convPred :: Sign f e -> MMiSSOntology -> WithError MMiSSOntology
+convPred s o =
+    -- first only binary preds; later also unary preds
+    Map.foldWithKey addPred (hasValue o) $ predMap s
+    where addPred pn tSet wOnto =
+           weither (const wOnto) insBinaryPred wOnto
+           where insBinaryPred on =
+                  let binT = Set.filter ((==2) . length . predArgs) tSet
+                  in if Set.null binT 
+                        then hasValue on
+                        else Set.fold insType (insName on) binT
+                 insName on = insertBaseRelation on (show pn) (show pn)
+                                     Nothing Nothing
+                 insType t wOn =
+                     weither (const wOn)
+                             (\ ont -> insertRelationType ont (show pn) 
+                                       (show (predArgs t !! 0)) 
+                                       (show (predArgs t !! 1)))
+                             wOn
 
 convSen :: WithError MMiSSOntology
         -> Named (FORMULA f) -> WithError MMiSSOntology
