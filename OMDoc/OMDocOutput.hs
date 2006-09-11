@@ -17,10 +17,10 @@ Portability :  non-portable(Logic)
     - DevGraph->OMDoc conversion should be done on LibEnv-Level (for names) (done)
 -}
 module OMDoc.OMDocOutput
-  (
+{-  (
     hetsToOMDoc
-  )
-{- -- debug
+  ) -}
+{- -- debug -}
   (
     writeOMDocDTD
     -- ,showOMDoc
@@ -30,7 +30,7 @@ module OMDoc.OMDocOutput
     ,defaultDTDURI
     ,createXmlNameMapping
   )
--}
+{- -}
   where
 
 import qualified OMDoc.HetsDefs as Hets
@@ -171,10 +171,17 @@ libToOMDocIdNameMapping
   fp
   =
     let
-      tracemarks = id $! (Hets.createTraceMarks lenv)
-      minlenv = Hets.createMinimalLibEnv lenv tracemarks
-      uniqueNames = Hets.createUniqueNames minlenv tracemarks
-      fullNames = Hets.createFullNameMapping lenv tracemarks uniqueNames
+--      tracemarks = id $! (Hets.createTraceMarks lenv)
+--      (minlenv, takenMap) = Hets.createMinimalLibEnv lenv tracemarks
+--      uniqueNames = Hets.createUniqueNames minlenv tracemarks
+      flatNames = Hets.getFlatNames lenv
+      identMap = Hets.identifyFlatNames lenv flatNames
+      remMap = Hets.removeReferencedIdentifiers flatNames identMap
+      useMap = Hets.getIdUseNumber remMap
+      unnMap = Hets.makeUniqueNames useMap
+      uniqueNames = Hets.makeUniqueIdNameMapping lenv unnMap
+      fullNames = Hets.makeFullNames lenv unnMap identMap
+--      fullNames = Hets.createFullNameMapping lenv takenMap tracemarks uniqueNames
       uniqueNamesXml = id $! (createXmlNameMapping uniqueNames)
       fullNamesXml = id $! (createXmlNameMapping fullNames)
       outputio =
@@ -216,7 +223,25 @@ libToOMDocIdNameMapping
                   fullNamesXml
               writeOMDocDTD dtduri omdoc fp >> return ()
     in
-      outputio
+{-      putStrLn
+        (show
+          $
+          map
+            (\inm ->
+              (
+                  Hets.inmGetLibName inm
+                , Hets.inmGetNodeId inm
+                , Hets.inmGetIdNameSortSet inm
+              )
+            )
+            fullNames
+        ) -}
+{-        putStrLn
+          (show
+            tracemarks
+          ) -}
+        -- >> 
+        outputio
 
 -- | creates a xml structure describing a Hets-presentation for a symbol 
 makePresentationFor::XmlName->String->HXT.XmlFilter
@@ -481,7 +506,7 @@ createXmlMorphism
                     (\((oid', _), _) -> oid' == origpred)
                     (Hets.inmGetIdNamePredSet fromIdNameMapping)
               of
-               [] -> error "Pred not in From-Set!" 
+               [] -> error ("Pred not in From-Set! " ++ show origpred ++ " not in " ++ show (Hets.inmGetIdNamePredSet fromIdNameMapping))
                s:_ -> snd s
             nname =
               case

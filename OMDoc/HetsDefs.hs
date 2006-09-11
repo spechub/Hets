@@ -945,6 +945,91 @@ getRelationsWOWithNodeDGNamesWOSMDGWO dg sm =
 getPredMapsWithNodeNames::DGraph->PredsMap
 getPredMapsWithNodeNames dg = getNodeNameMapping dg getNodeDeltaPredMaps Map.null
 
+findSortOrigin::LibEnv->LIB_NAME->Graph.Node->Id.Id->Maybe (LIB_NAME, Graph.Node)
+findSortOrigin lenv ln nn sid =
+  let
+    dg =
+      devGraph
+        $
+        Map.findWithDefault (error ("No such libname : " ++ show ln)) ln lenv
+    node = Data.Maybe.fromMaybe (error ("No such node : #" ++ show nn)) $ Graph.lab dg nn
+    sortswomap = getSortsWOWithNodeDGNamesWO dg
+    nodesorts = Map.findWithDefault Set.empty (mkWON (dgn_name node) nn) sortswomap
+  in
+    if isDGRef node
+      then
+        findSortOrigin lenv (dgn_libname node) (dgn_node node) sid
+      else
+        case
+          Set.toList
+            $
+            Set.filter (\wosort -> woItem wosort == sid) nodesorts
+        of
+          [] -> Nothing
+          (wosort:_) ->
+            if woOrigin wosort == nn
+              then
+                Just (ln, nn)
+              else
+                findSortOrigin lenv ln (woOrigin wosort) sid
+
+findPredOrigin::LibEnv->LIB_NAME->Graph.Node->Id.Id->PredType->Maybe (LIB_NAME, Graph.Node)
+findPredOrigin lenv ln nn pid pt =
+  let
+    dg =
+      devGraph
+        $
+        Map.findWithDefault (error ("No such libname : " ++ show ln)) ln lenv
+    node = Data.Maybe.fromMaybe (error ("No such node : #" ++ show nn)) $ Graph.lab dg nn
+    predswomap = getPredMapsWOWithNodeDGNamesWO dg
+    nodepreds = Map.findWithDefault Map.empty (mkWON (dgn_name node) nn) predswomap
+  in
+    if isDGRef node
+      then
+        findSortOrigin lenv (dgn_libname node) (dgn_node node) pid
+      else
+        case
+          Map.toList
+            $
+            Map.filterWithKey (\wopid pts -> woItem wopid == pid && Set.member pt pts) nodepreds
+        of
+          [] -> Nothing
+          ((wopid, _):_) ->
+            if woOrigin wopid == nn
+              then
+                Just (ln, nn)
+              else
+                findSortOrigin lenv ln (woOrigin wopid) pid
+
+findOpOrigin::LibEnv->LIB_NAME->Graph.Node->Id.Id->OpType->Maybe (LIB_NAME, Graph.Node)
+findOpOrigin lenv ln nn oid ot =
+  let
+    dg =
+      devGraph
+        $
+        Map.findWithDefault (error ("No such libname : " ++ show ln)) ln lenv
+    node = Data.Maybe.fromMaybe (error ("No such node : #" ++ show nn)) $ Graph.lab dg nn
+    opswomap = getOpMapsWOWithNodeDGNamesWO dg
+    nodeops = Map.findWithDefault Map.empty (mkWON (dgn_name node) nn) opswomap
+  in
+    if isDGRef node
+      then
+        findSortOrigin lenv (dgn_libname node) (dgn_node node) oid
+      else
+        case
+          Map.toList
+            $
+            Map.filterWithKey (\wooid ots -> woItem wooid == oid && Set.member ot ots) nodeops
+        of
+          [] -> Nothing
+          ((wooid, _):_) ->
+            if woOrigin wooid == nn
+              then
+                Just (ln, nn)
+              else
+                findSortOrigin lenv ln (woOrigin wooid) oid
+    
+
 --debugging-function
 findPredsByName::PredsMap->String->[(String, (Id.Id, Set.Set PredType))]
 findPredsByName pm name =
@@ -2514,6 +2599,17 @@ defLink dgl =
     (CofreeDef {}) -> True
     _ -> False
 
+type TakenBy =
+  Map.Map
+    (LIB_NAME, Graph.Node)
+    (
+        Set.Set SORT
+      , Map.Map Id.Id (Set.Set PredType)
+      , Map.Map Id.Id (Set.Set OpType)
+    )
+
+type TakenMap = Map.Map (LIB_NAME, Graph.Node) TakenBy
+
 {- |
   Create a minimal library environment where developement graph nodes only
   contain sorts, ops and preds where they are defined (or imported via DGRefS)
@@ -2521,11 +2617,12 @@ defLink dgl =
 createMinimalLibEnv::
   LibEnv -- ^ library environment to reduce
   ->[TraceMark] -- ^ tracemarks created by 'createTraceMarks'
-  ->LibEnv
+  ->(LibEnv, TakenMap)
 createMinimalLibEnv ln tracemarks =
   foldl
-    (\ln' (libname, _, nodenum, _) ->
+    (\(ln', tm') (libname, _, nodenum, _) ->
       let
+        currentTBMap = Map.findWithDefault (Map.empty::TakenBy) (libname, nodenum) tm'
         currentLookup = Map.findWithDefault (error "This can't happen!") libname ln'
         currentDG = devGraph currentLookup
         currentNode = (\(Just a) -> a) $ Graph.lab currentDG nodenum
@@ -2534,9 +2631,9 @@ createMinimalLibEnv ln tracemarks =
           filter
             (\(_, _, ll) -> defLink ll)
             (Graph.inn currentDG nodenum)
-        strippedCASLSign =
+        (strippedCASLSign, newTBM) =
           foldl
-            (\s (from, _, ll) ->
+            (\(s, tbm'') (from, _, ll) ->
               let
                 caslmorph = getCASLMorphLL ll
                 sourcesign =
@@ -2561,6 +2658,7 @@ createMinimalLibEnv ln tracemarks =
                     _ -> msource caslmorph
                 strippedSorts =
                   Set.difference (sortSet s) (sortSet sourcesign)
+                takenSorts = Set.difference (sortSet s) strippedSorts
                 strippedRels =
                   Rel.fromList
                     $
@@ -2570,19 +2668,33 @@ createMinimalLibEnv ln tracemarks =
                       )
                       (Rel.toList (sortRel s))
                 strippedPreds = signstrip s sourcesign predMap
+                takenPreds = Map.differenceWith (\a b -> Just $ Set.difference a b) (predMap s) strippedPreds
                 strippedOps = signstrip s sourcesign opMap
+                takenOps = Map.differenceWith (\a b -> Just $ Set.difference a b) (opMap s) strippedOps
                 strippedAssocOps = signstrip s sourcesign assocOps
+                (prevTakenSortSet, prevTakenPredMap, prevTakenOpMap) =
+                  Map.findWithDefault (Set.empty, Map.empty, Map.empty) (libname, from) tbm''
               in
-                s
-                  {
-                      sortSet = strippedSorts
-                    , sortRel = strippedRels
-                    , predMap = strippedPreds
-                    , opMap = strippedOps
-                    , assocOps = strippedAssocOps
-                  }
+                (
+                    s
+                      {
+                          sortSet = strippedSorts
+                        , sortRel = strippedRels
+                        , predMap = strippedPreds
+                        , opMap = strippedOps
+                        , assocOps = strippedAssocOps
+                      }
+                  , Map.insert
+                      (libname, from)
+                      (
+                          Set.union prevTakenSortSet takenSorts
+                        , Map.unionWith (Set.union) prevTakenPredMap takenPreds
+                        , Map.unionWith (Set.union) prevTakenOpMap takenOps
+                      )
+                      tbm''
+                )
             )
-            currentCASLSign
+            (currentCASLSign, currentTBMap)
             inDefLinks
         currentSentences = getProverSentences (dgn_theory currentNode)
         newNode =
@@ -2599,9 +2711,9 @@ createMinimalLibEnv ln tracemarks =
               devGraph = newGraph
             }
       in
-        Map.insert libname newLookup ln'
+        (Map.insert libname newLookup ln', Map.insertWith (Map.union) (libname, nodenum) newTBM tm')
     )
-    ln
+    (ln, Map.empty)
     (reverse tracemarks)
   where
     signstrip::
@@ -3270,6 +3382,709 @@ createUniqueNames ln tracemarks =
               nodename
       )
 
+
+nodeNameToName::NODE_NAME->String
+nodeNameToName =
+  (\nn ->
+    let
+      nodename = showName nn
+    in
+      if (length nodename) == 0
+        then
+          "AnonNode"
+        else
+          nodename
+  )
+
+data Identifier =
+    IdNodeName Id.Id
+  | IdId Id.Id
+  | IdOp Id.Id OpType
+  | IdPred Id.Id PredType
+  | IdSens Id.Id Int
+  | IdCons Id.Id OpType Int
+  deriving Show
+
+data IdentifierType = IdTNodeName | IdTId | IdTOp | IdTPred | IdTSens | IdTCons
+  deriving (Show, Eq, Ord)
+
+getIdType::Identifier->IdentifierType
+getIdType (IdNodeName {}) = IdTNodeName
+getIdType (IdId {}) = IdTId
+getIdType (IdOp {}) = IdTOp
+getIdType (IdPred {}) = IdTPred
+getIdType (IdSens {}) = IdTSens
+getIdType (IdCons {}) = IdTCons
+
+getIdId::Identifier->Id.Id
+getIdId (IdNodeName i) = i
+getIdId (IdId i) = i
+getIdId (IdOp i _) = i
+getIdId (IdPred i _) = i
+getIdId (IdSens i _) = i
+getIdId (IdCons i _ _) = i
+
+instance Eq Identifier where
+  (IdNodeName x) == (IdNodeName y) = x == y
+  (IdId x) == (IdId y) = x == y
+  (IdOp x xt) == (IdOp y yt) = x == y && xt == yt
+  (IdPred x xt) == (IdPred y yt) = x == y && xt == yt
+  (IdSens x _) == (IdSens y _) = x == y
+  (IdCons x xt _) == (IdCons y yt _) = x == y && xt == yt
+  x == y = False
+
+instance Ord Identifier where
+  x `compare` y =
+    if (getIdType x) == (getIdType y)
+      then
+        (show x) `compare`(show y)
+      else
+        (getIdType x) `compare` (getIdType y)
+
+type IdentifierWON = WithOriginNode Identifier
+
+getFlatNames::LibEnv->Map.Map LIB_NAME (Set.Set IdentifierWON)
+getFlatNames lenv =
+  foldl
+    (\fm ln ->
+      let
+        dg = devGraph $ Map.findWithDefault (error "!") ln lenv
+        sortswomap = getSortsWOWithNodeDGNamesWO dg
+        opswomap = getOpMapsWOWithNodeDGNamesWO dg
+        predswomap = getPredMapsWOWithNodeDGNamesWO dg
+        dgnodes = filter (not . isDGRef . snd) $ Graph.labNodes dg
+        nodenameids =
+          map
+            (\(nn, node) -> (nn, stringToId $ nodeNameToName $ dgn_name node))
+            dgnodes
+        senslist =
+          concatMap
+            (\(nn, node) -> map (\x -> (nn, x)) $ zip [1..] (getNodeSentences node))
+            dgnodes
+        senscons =
+          concatMap
+            (\(nodenum, (sennum, s)) ->
+              Set.toList
+                $
+                Set.map
+                  (\(cid, ot) -> (nodenum, (sennum, cid, ot)))
+                  (extractConstructorOps s)
+            )
+            senslist
+        sorts' = foldl
+          (\fm' sortsetwo ->
+            Map.insertWith
+              Set.union
+              ln
+              (Set.map (\swo -> mkWON (IdId (woItem swo)) (woOrigin swo) ) sortsetwo)
+              fm'
+          )
+          fm
+          (Map.elems sortswomap)
+        ops' =
+          foldl
+            (\fm' opmapwo ->
+              foldl
+                (\fm'' (oid, ots) ->
+                  foldl
+                    (\fm''' ot ->
+                      Map.insertWith
+                        Set.union
+                        ln
+                        (Set.singleton (mkWON (IdOp (woItem oid) ot) (woOrigin oid)))
+                        fm'''
+                    )
+                    fm''
+                    (Set.toList ots)
+                )
+                fm'
+                (Map.toList opmapwo)
+            )
+            sorts'
+            (Map.elems opswomap)
+        preds' =
+          foldl
+            (\fm' predmapwo ->
+              foldl
+                (\fm'' (pid, pts) ->
+                  foldl
+                    (\fm''' pt ->
+                      Map.insertWith
+                        Set.union
+                        ln
+                        (Set.singleton (mkWON (IdPred (woItem pid) pt) (woOrigin pid)))
+                        fm'''
+                    )
+                    fm''
+                    (Set.toList pts)
+                )
+                fm'
+                (Map.toList predmapwo)
+            )
+            ops'
+            (Map.elems predswomap)
+        sens' =
+          foldl
+            (\fm' (nodenum, (sennum, namedsen)) ->
+              Map.insertWith
+                Set.union
+                ln
+                (Set.singleton (mkWON (IdSens (stringToId $ senName namedsen) sennum) nodenum))
+                fm'
+            )
+            preds'
+            senslist
+        cons' =
+          foldl
+            (\fm' (nodenum, (sennum, cid, cot)) ->
+              Map.insertWith
+                Set.union
+                ln
+                (Set.singleton (mkWON (IdCons cid cot sennum) nodenum))
+                fm'
+            )
+            sens'
+            senscons
+        nodes' =
+          Map.insertWith
+            Set.union
+            ln
+            (
+              Set.fromList
+                (
+                  map
+                    (\(nn, nnid)-> mkWON (IdNodeName nnid) nn)
+                    nodenameids
+                )
+            )
+            cons'
+      in
+        nodes'
+    )
+    Map.empty
+    (Map.keys lenv)
+
+identifyFlatNames::
+  LibEnv
+  ->Map.Map LIB_NAME (Set.Set IdentifierWON)
+  ->Map.Map (LIB_NAME, IdentifierWON) (LIB_NAME, IdentifierWON)
+identifyFlatNames
+  lenv
+  flatmap =
+  let
+    reflist =
+      foldl
+        (\rl ln ->
+          let
+            dg = devGraph $ Map.findWithDefault (error "!") ln lenv
+            refnodes =
+              filter
+                (\(_, node) -> isDGRef node)
+                (Graph.labNodes dg)
+          in
+            rl ++ (map (\(rnn, rnode) -> (ln, rnn, dgn_libname rnode, dgn_node rnode)) refnodes)
+        )
+        []
+        (Map.keys lenv)
+  in
+    foldl
+      (\im (refln, refnn, refedln, refednode) ->
+        let
+          reflnids = Map.findWithDefault Set.empty refln flatmap
+          refedids = Set.filter (\ws -> woOrigin ws == refnn) reflnids
+          refedlnids = Map.findWithDefault Set.empty refedln flatmap
+        in
+          Set.fold
+            (\rws im' ->
+              case
+                Set.toList
+                  $
+                  Set.filter (\x -> woItem x == woItem rws) refedlnids
+              of
+                [] -> Map.insert (refln, rws) (refedln, mkWON (IdId $ stringToId "unknown") refednode) im'
+                ws:_ -> Map.insert (refln, rws) (refedln, ws) im'
+            )
+            im
+            refedids
+      )
+      Map.empty
+      reflist
+
+removeReferencedIdentifiers::
+  Map.Map LIB_NAME (Set.Set IdentifierWON)
+  ->Map.Map (LIB_NAME, IdentifierWON) (LIB_NAME, IdentifierWON)
+  ->Map.Map LIB_NAME (Set.Set IdentifierWON)
+removeReferencedIdentifiers 
+  flatMap
+  identMap =
+  let
+    newmap =
+      foldl
+        (\nm (ln, ids) ->
+          Set.fold
+            (\idwo nm' ->
+              case Map.lookup (ln, idwo) identMap of
+                Nothing -> Map.insertWith (Set.union) ln (Set.singleton idwo) nm'
+                _ -> nm'
+            )
+            nm
+            ids
+        )
+        Map.empty
+        (Map.toList flatMap)
+  in
+    newmap
+
+getIdUseNumber::
+  Map.Map LIB_NAME (Set.Set IdentifierWON)
+  ->Map.Map LIB_NAME (Set.Set (IdentifierWON, Int))
+getIdUseNumber
+  remMap
+  =
+  foldl
+    (\cm (ln, ids) ->
+      Set.fold
+        (\idw cm' ->
+          let
+            previousUse =
+              foldl
+                (\pu (pln, pidscount) ->
+                  let
+                    sameid =
+                      Set.filter
+                        (\(pidw, _) -> getIdId (woItem pidw) == getIdId (woItem idw))
+                        pidscount
+                  in
+                    pu + (Set.size sameid)
+                )
+                0
+                (Map.toList cm')
+          in
+            Map.insertWith (Set.union) ln (Set.singleton (idw, previousUse)) cm'
+        )
+        cm
+        ids
+    )
+    Map.empty
+    (Map.toList remMap)
+
+makeUniqueNames::
+  Map.Map LIB_NAME (Set.Set (IdentifierWON, Int))
+  ->Map.Map LIB_NAME (Set.Set (IdentifierWON, String))
+makeUniqueNames
+  countMap
+  =
+  Map.map
+    (\iwons ->
+      Set.map
+        (\(iwon, c) ->
+          let
+            ext = case c of 0 -> ""; _ -> "_" ++ (show c)
+          in
+            (iwon, (show (getIdId (woItem iwon))) ++ ext)
+        )
+        iwons
+    )
+    countMap
+
+makeUniqueIdNameMapping::
+  LibEnv
+  ->Map.Map LIB_NAME (Set.Set (IdentifierWON, String)) 
+  ->[IdNameMapping]
+makeUniqueIdNameMapping
+  lenv
+  unnMap
+  =
+  foldl
+    (\unnames ln ->
+      let
+        dg = devGraph $ Map.findWithDefault (error "!") ln lenv
+        ids = Map.findWithDefault Set.empty ln unnMap
+        dgnodes = filter (not . isDGRef . snd) $ Graph.labNodes dg
+        senslist =
+          concatMap
+            (\(nn, node) -> map (\x -> (nn, x)) $ zip [0..] (getNodeSentences node))
+            dgnodes
+        senscons =
+          concatMap
+            (\(nodenum, (sennum, s)) ->
+              Set.toList
+                $
+                Set.map
+                  (\(cid, ot) -> (nodenum, (sennum, cid, ot)))
+                  (extractConstructorOps s)
+            )
+            senslist
+        sensfromunn =
+          Set.filter
+            (\(i, _) -> case woItem i of IdSens {} -> True; _ -> False)
+            ids
+        consfromunn =
+          Set.filter
+            (\(i, _) -> case woItem i of IdCons {} -> True; _ -> False)
+            ids
+      in
+        foldl
+          (\unnames' (nn, node) ->
+            let
+              nodeids =
+                Set.filter
+                  (\(i, _) -> woOrigin i == nn)
+                  ids
+              nodename =
+                if not $ isDGRef node
+                  then
+                    case
+                      Set.toList
+                        $
+                        Set.filter
+                          (\(i,_) -> i == mkWON (IdNodeName (stringToId $ nodeNameToName $ dgn_name node)) nn)
+                          ids
+                    of
+                      [] ->
+                        Debug.Trace.trace
+                          ("no node found for "
+                            ++ show (nn, nodeNameToName $ dgn_name node) ++ "..."
+                          )
+                          (getDGNodeName node)
+                      (_, unName):_ -> unName
+                  else
+                    let
+                      mln = dgn_libname node
+                      mdg = devGraph $ Map.findWithDefault (error "!") mln lenv
+                      mnn = dgn_node node
+                      mnode = (\(Just a) -> a) $ Graph.lab mdg mnn
+                    in
+                      case
+                        Set.toList
+                          $
+                          Set.filter
+                            (\(i,_) ->
+                              i ==
+                                mkWON
+                                  (IdNodeName (stringToId $ nodeNameToName $ dgn_name mnode))
+                                  mnn
+                            )
+                            (Map.findWithDefault Set.empty mln unnMap)
+                      of
+                        [] -> Debug.Trace.trace
+                          ("no refnode found... "
+                            ++ show (ln, nn, nodeNameToName $ dgn_name node)
+                            ++ " -> " ++ show (mln, mnn, nodeNameToName $ dgn_name mnode)
+                          )
+                          (nodeNameToName $ dgn_name mnode)
+                        (_, unName):_ -> unName
+              remappedsorts =
+                Set.map
+                  (\(i, uname) ->
+                    (getIdId $ woItem i, uname)
+                  )
+                  (Set.filter (\(i, _) -> case woItem i of IdId {} -> True; _ -> False) nodeids)
+              remappedops =
+                Set.map
+                  (\(i, uname) ->
+                    case woItem i of
+                      (IdOp oid ot) ->
+                        ((oid, ot), uname)
+                      _ -> error "!"
+                  )
+                  (Set.filter (\(i, _) -> case woItem i of IdOp {} -> True; _ -> False) nodeids)
+              remappedpreds =
+                Set.map
+                  (\(i, uname) ->
+                    case woItem i of
+                      (IdPred pid pt) ->
+                        ((pid, pt), uname)
+                      _ -> error "!"
+                  )
+                  (Set.filter (\(i, _) -> case woItem i of IdPred {} -> True; _ -> False) nodeids)
+              nodesensunn = Set.filter (\(i, _) -> woOrigin i == nn) sensfromunn
+              nodesens =
+                Set.map
+                  (\(i, uname) ->
+                    case woItem i of
+                      (IdSens sensid sennum) ->
+                        ((sensid, sennum), uname)
+                      _ -> error "Non-sentence found in sentence processing...."
+                  )
+                nodesensunn
+              nodeconsunn = Set.filter (\(i, _) -> woOrigin i == nn) consfromunn
+              nodecons =
+                Set.map
+                  (\(i, uname) ->
+                    case woItem i of
+                      (IdCons conid conot sennum) ->
+                        ((sennum, conid, conot), uname)
+                      _ -> error "Non-constructor found in constructor processing...."
+                  )
+                nodeconsunn
+                
+            in
+              unnames'
+                ++
+                [
+                  (
+                      ln
+                    , dgn_name node
+                    , nodename
+                    , nn
+                    , remappedsorts
+                    , remappedpreds
+                    , remappedops
+                    , nodesens
+                    , nodecons
+                  )
+                ]
+          )
+          unnames
+          (Graph.labNodes dg)
+    )
+    []
+    (Map.keys lenv)
+
+
+
+makeFullNames::
+  LibEnv
+  ->Map.Map LIB_NAME (Set.Set (IdentifierWON, String))
+  ->Map.Map (LIB_NAME, IdentifierWON) (LIB_NAME, IdentifierWON)
+  ->[IdNameMapping]
+makeFullNames
+  lenv
+  unnMap
+  identMap
+  =
+  foldl
+    (\fullnames ln ->
+      let
+        dg = devGraph $ Map.findWithDefault (error "!") ln lenv
+        sortswomap = getSortsWOWithNodeDGNamesWO dg
+        opswomap = getOpMapsWOWithNodeDGNamesWO dg
+        predswomap = getPredMapsWOWithNodeDGNamesWO dg
+        ids = Map.findWithDefault Set.empty ln unnMap
+        dgnodes = filter (not . isDGRef . snd) $ Graph.labNodes dg
+        senslist =
+          concatMap
+            (\(nn, node) -> map (\x -> (nn, x)) $ zip [0..] (getNodeSentences node))
+            dgnodes
+        senscons =
+          concatMap
+            (\(nodenum, (sennum, s)) ->
+              Set.toList
+                $
+                Set.map
+                  (\(cid, ot) -> (nodenum, (sennum, cid, ot)))
+                  (extractConstructorOps s)
+            )
+            senslist
+        sensfromunn =
+          Set.filter
+            (\(i, _) -> case woItem i of IdSens {} -> True; _ -> False)
+            ids
+        consfromunn =
+          Set.filter
+            (\(i, _) -> case woItem i of IdCons {} -> True; _ -> False)
+            ids
+      in
+        foldl
+          (\fullnames' (nn, node) ->
+            let
+              nodename =
+                if not $ isDGRef node
+                  then
+                    case
+                      Set.toList
+                        $
+                        Set.filter
+                          (\(i,_) -> i == mkWON (IdNodeName (stringToId $ nodeNameToName $ dgn_name node)) nn)
+                          ids
+                    of
+                      [] -> Debug.Trace.trace ("no node found for " ++ show (nn, nodeNameToName $ dgn_name node) ++ "...") (getDGNodeName node)
+                      (_, unName):_ -> unName
+                  else
+                    let
+                      mln = dgn_libname node
+                      mdg = devGraph $ Map.findWithDefault (error "!") mln lenv
+                      mnn = dgn_node node
+                      mnode = (\(Just a) -> a) $ Graph.lab mdg mnn
+                    in
+                      case
+                        Set.toList
+                          $
+                          Set.filter
+                            (\(i,_) -> i == mkWON (IdNodeName (stringToId $ nodeNameToName $ dgn_name mnode)) mnn)
+                            (Map.findWithDefault Set.empty mln unnMap)
+                      of
+                        [] -> Debug.Trace.trace ("no refnode found... " ++ show (ln, nn, nodeNameToName $ dgn_name node) ++ " -> " ++ show (mln, mnn, nodeNameToName $ dgn_name mnode) ) (nodeNameToName $ dgn_name mnode)
+                        (_, unName):_ -> unName
+              nodesortswo = Map.findWithDefault Set.empty (mkWON (dgn_name node) nn) sortswomap
+              remappedsorts =
+                Set.map
+                  (\swo ->
+                    let
+                      sasid = mkWON (IdId (woItem swo)) (woOrigin swo)
+                    in
+                      case Map.lookup (ln, sasid) identMap of
+                        Nothing ->
+                          case
+                            Set.toList
+                              $
+                              Set.filter
+                                (\(i, _) -> i == sasid)
+                                ids
+                          of
+                            [] ->
+                              Debug.Trace.trace
+                                ("no sort found...")
+                                ((woItem swo), show swo)
+                            (_, unName):_ -> (woItem swo, unName)
+                        (Just (mln, mid)) ->
+                          case
+                            Set.toList
+                              $
+                              Set.filter
+                                (\(i, _) -> i == mid)
+                                (Map.findWithDefault Set.empty mln unnMap)
+                          of
+                            [] ->
+                              Debug.Trace.trace
+                                ("no sort found...")
+                                ((woItem swo), show swo)
+                            (_, unName):_ -> (woItem swo, unName)
+                  )
+                  nodesortswo
+              nodeopswo = Map.findWithDefault Map.empty (mkWON (dgn_name node) nn) opswomap
+              remappedops =
+                Map.foldWithKey
+                  (\idwo ots remops ->
+                    Set.fold
+                      (\ot ro ->
+                        let
+                          opasid = mkWON (IdOp (woItem idwo) ot) (woOrigin idwo)
+                          newItem = 
+                            case Map.lookup (ln, opasid) identMap of
+                              Nothing ->
+                                case
+                                  Set.toList
+                                    $
+                                    Set.filter
+                                      (\(i, _) -> i == opasid)
+                                      ids
+                                of
+                                  [] ->
+                                    Debug.Trace.trace
+                                      ("no op found...")
+                                      (((woItem idwo), ot), show idwo)
+                                  (_, unName):_ -> (((woItem idwo), ot), unName)
+                              (Just (mln, mid)) ->
+                                case
+                                  Set.toList
+                                    $
+                                    Set.filter
+                                      (\(i, _) -> i == mid)
+                                      (Map.findWithDefault Set.empty mln unnMap)
+                                of
+                                  [] ->
+                                    Debug.Trace.trace
+                                      ("no op found (ref)")
+                                      (((woItem idwo), ot), show idwo)
+                                  (_, unName):_ -> (((woItem idwo), ot), unName)
+                        in
+                          (Set.insert newItem ro)
+                      )
+                      remops
+                      ots
+                  )
+                  Set.empty
+                  nodeopswo
+              nodepredswo = Map.findWithDefault Map.empty (mkWON (dgn_name node) nn) predswomap
+              remappedpreds =
+                Map.foldWithKey
+                  (\idwo pts rempreds ->
+                    Set.fold
+                      (\pt rp ->
+                        let
+                          predasid = mkWON (IdPred (woItem idwo) pt) (woOrigin idwo)
+                          newItem = 
+                            case Map.lookup (ln, predasid) identMap of
+                              Nothing ->
+                                case
+                                  Set.toList
+                                    $
+                                    Set.filter
+                                      (\(i, _) -> i == predasid)
+                                      ids
+                                of
+                                  [] ->
+                                    Debug.Trace.trace
+                                      ("no pred found...")
+                                      (((woItem idwo), pt), show idwo)
+                                  (_, unName):_ -> (((woItem idwo), pt), unName)
+                              (Just (mln, mid)) ->
+                                case
+                                  Set.toList
+                                    $
+                                    Set.filter
+                                      (\(i, _) -> i == mid)
+                                      (Map.findWithDefault Set.empty mln unnMap)
+                                of
+                                  [] ->
+                                    Debug.Trace.trace
+                                      ("no pred found (ref)")
+                                      (((woItem idwo), pt), show idwo)
+                                  (_, unName):_ -> (((woItem idwo), pt), unName)
+                        in
+                          (Set.insert newItem rp)
+                      )
+                      rempreds
+                      pts
+                  )
+                  Set.empty
+                  nodepredswo
+              nodesensunn = Set.filter (\(i, _) -> woOrigin i == nn) sensfromunn
+              nodesens =
+                Set.map
+                  (\(i, uname) ->
+                    case woItem i of
+                      (IdSens sensid sennum) ->
+                        ((sensid, sennum), uname)
+                      _ -> error "Non-sentence found in sentence processing...."
+                  )
+                nodesensunn
+              nodeconsunn = Set.filter (\(i, _) -> woOrigin i == nn) consfromunn
+              nodecons =
+                Set.map
+                  (\(i, uname) ->
+                    case woItem i of
+                      (IdCons conid conot sennum) ->
+                        ((sennum, conid, conot), uname)
+                      _ -> error "Non-constructor found in constructor processing...."
+                  )
+                nodeconsunn
+            in
+              fullnames'
+                ++
+                [
+                  (
+                      ln
+                    , dgn_name node
+                    , nodename
+                    , nn
+                    , remappedsorts
+                    , remappedpreds
+                    , remappedops
+                    , nodesens
+                    , nodecons
+                  )
+                ]
+          )
+          fullnames
+          (Graph.labNodes dg)
+    )
+    []
+    (Map.keys lenv)
+
+
 {- |
   Extend a list of unique names obtained from a minimal library environment
   by applying it to a full library environment and performing Id origin
@@ -3277,11 +4092,13 @@ createUniqueNames ln tracemarks =
 -}
 createFullNameMapping::
   LibEnv -- ^ full library environment
+  ->TakenMap -- ^ mapping of taken items
   ->[TraceMark] -- ^ tracemarks used in creating unique names
   ->[IdNameMapping] -- ^ unique name sets
   ->[IdNameMapping]
 createFullNameMapping
   lenv
+  takenMap
   tracemarks
   uniqueNames
   =
@@ -3295,7 +4112,8 @@ createFullNameMapping
             Set.fold
               (\sid ns->
                 Set.insert
-                  (sid, findUniqueName libname nodenum sid inSorts)
+                  --(sid, findUniqueName libname nodenum sid inSorts)
+                  (sid, findUniqueSortName libname nodenum sid)
                   ns
               )
               Set.empty
@@ -3306,7 +4124,8 @@ createFullNameMapping
                 Set.fold
                   (\pt mp' ->
                     Set.insert
-                      ((pid, pt), findUniqueName libname nodenum pid (inPreds pt))
+                      -- ((pid, pt), findUniqueName libname nodenum pid (inPreds pt))
+                      ((pid, pt), findUniquePredName libname nodenum pid pt)
                       mp'
                   )
                   mp
@@ -3320,7 +4139,8 @@ createFullNameMapping
                 Set.fold
                   (\ot mo' ->
                     Set.insert
-                      ((oid, ot), findUniqueName libname nodenum oid (inOps ot))
+                      --((oid, ot), findUniqueName libname nodenum oid (inOps ot))
+                      ((oid, ot), findUniqueOpName libname nodenum oid ot)
                       mo'
                   )
                   mo
@@ -3362,18 +4182,34 @@ createFullNameMapping
                     error ("No unique name for node " ++ (show (libname, nodename, nodenum)))
               (Just inm) -> (inmGetNodeId inm, inmGetIdNameSensSet inm, inmGetIdNameConsSet inm)
         in
-          fullnames ++
-            [(
-                libname
-              , dgn_name node
-              , uniqueNodeName
-              , nodenum
-              , mappedSorts
-              , mappedPreds
-              , mappedOps
-              , sens
-              , cons
-            )]
+          if isDGRef node 
+            then
+              let
+                reallibname = dgn_libname node
+                realnodenum = dgn_node node
+                mrealtupel =
+                  getLNGN
+                    (uniqueNames ++ fullnames)
+                    reallibname
+                    realnodenum
+              in
+                case mrealtupel of
+                  Nothing -> error "something is seriously wrong with the tracemarks..."
+                  (Just (_, dgnnn, uNN, _, mS, mP, mO, s, c)) ->
+                    fullnames ++ [(libname, dgnnn, uNN, nodenum, mS, mP, mO, s, c)]
+            else
+              fullnames ++
+                [(
+                    libname
+                  , dgn_name node
+                  , uniqueNodeName
+                  , nodenum
+                  , mappedSorts
+                  , mappedPreds
+                  , mappedOps
+                  , sens
+                  , cons
+                )]
       )
       []
       tracemarks
@@ -3404,7 +4240,225 @@ createFullNameMapping
         )
         Set.empty
         (inmGetIdNameOpSet inm)
+
+    getImportsLevelOrder::[(LIB_NAME, Graph.Node)]->LIB_NAME->Graph.Node->[(LIB_NAME, Graph.Node)]
+    getImportsLevelOrder visited ln nn =
+      let
+        dg =
+          devGraph
+            $
+            Map.findWithDefault (error "!") ln lenv
+        indefs =
+          filter
+            (\(from, _, dgl) ->
+              (defLink dgl)
+              &&
+              (from /= nn)
+              &&
+              (case
+                Data.List.find
+                  (\(ln', nn') -> ln' == ln && nn' == from)
+                  visited
+               of
+                Nothing -> True
+                _ -> False
+              ) 
+            )
+            (Graph.inn dg nn)
+        intrans =
+          map
+            (\(from, _, _) ->
+              let
+                fnode = (\(Just a) -> a) $ Graph.lab dg from
+              in
+                if isDGRef fnode
+                  then
+                    (dgn_libname fnode, dgn_node fnode)
+                  else
+                    (ln, from)
+            )
+            indefs
+        nextlevel =
+          concatMap
+            (\(ln', nn') ->
+              getImportsLevelOrder
+                ((ln, nn):visited)
+                ln'
+                nn'
+            )
+            intrans
+      in
+        (ln, nn):nextlevel
+
+    findUniqueSortName::LIB_NAME->Graph.Node->Id.Id->String
+    findUniqueSortName ln nn sid =
+      case findSortOrigin lenv ln nn sid of
+        Nothing -> Debug.Trace.trace ("huarg!") (show sid)
+        (Just (oln, onn)) ->
+          case
+            getLNGN uniqueNames oln onn
+          of
+            (Just inm) ->
+              case
+                Set.toList
+                  $
+                  Set.filter
+                    (\(uid, _) -> uid == sid)
+                    (inmGetIdNameSortSet inm)
+              of
+                (_, uniqueName):_ -> uniqueName
+                _ -> Debug.Trace.trace ("huarg2!") (show sid)
+            _ -> Debug.Trace.trace ("huarg3!") (show sid)
+    
+    findUniqueOpName::LIB_NAME->Graph.Node->Id.Id->OpType->String
+    findUniqueOpName ln nn oid ot =
+      case findOpOrigin lenv ln nn oid ot of
+        Nothing -> Debug.Trace.trace ("huarg!") (show oid)
+        (Just (oln, onn)) ->
+          case
+            getLNGN uniqueNames oln onn
+          of
+            (Just inm) ->
+              case
+                Set.toList
+                  $
+                  Set.filter
+                    (\((uid, uot), _) -> uid == oid && uot == ot)
+                    (inmGetIdNameOpSet inm)
+              of
+                (_, uniqueName):_ -> uniqueName
+                _ -> Debug.Trace.trace ("huarg2!") (show oid)
+            _ -> Debug.Trace.trace ("huarg3!") (show oid)
+    
+    findUniquePredName::LIB_NAME->Graph.Node->Id.Id->PredType->String
+    findUniquePredName ln nn pid pt =
+      case findPredOrigin lenv ln nn pid pt of
+        Nothing -> Debug.Trace.trace ("huarg!") (show pid)
+        (Just (oln, onn)) ->
+          case
+            getLNGN uniqueNames oln onn
+          of
+            (Just inm) ->
+              case
+                Set.toList
+                  $
+                  Set.filter
+                    (\((uid, upt), _) -> uid == pid && upt == pt)
+                    (inmGetIdNamePredSet inm)
+              of
+                (_, uniqueName):_ -> uniqueName
+                _ -> Debug.Trace.trace ("huarg2!") (show pid)
+            _ -> Debug.Trace.trace ("huarg3!") (show pid)
+
+
     findUniqueName::LIB_NAME->Graph.Node->Id.Id->(IdNameMapping->Set.Set (Id.Id, String))->String
+    findUniqueName ln nn sid getSet =
+      
+      case findUniqueNameM ln nn sid getSet of
+        Nothing -> Debug.Trace.trace ("Id was not taken... faking for " ++ show sid) (show sid)
+        (Just uN) -> uN
+
+    findUniqueNameM::LIB_NAME->Graph.Node->Id.Id->(IdNameMapping->Set.Set (Id.Id, String))->Maybe String
+    findUniqueNameM ln nn sid getSet =
+      let
+        takenEntry = Map.findWithDefault Map.empty (ln, nn) takenMap
+        takenByOneOf =
+          map fst $
+          filter
+            (\(_, (takenSorts, takenPreds, takenOps)) ->
+              if Set.member sid takenSorts
+                then
+                  True
+                else
+                  case Map.lookup sid takenPreds of
+                    (Just _) -> True
+                    _ ->
+                      case Map.lookup sid takenOps of
+                        (Just _) -> True
+                        _ -> False
+            )
+            (Map.toList takenEntry)
+        searchTaken =
+          (\sT ->
+            case sT of
+              Nothing ->
+                Debug.Trace.trace ("no result for " ++ show sid ++ " in " ++ show (ln, nn) ++ " with takenEntry of " ++ show takenEntry ++ " l " ++ show (length takenByOneOf)) sT
+              _ -> sT
+          ) $
+          anything $ map (\(tln, tnn) -> findUniqueNameM tln tnn sid getSet) takenByOneOf
+      in
+        case
+          getLNGN uniqueNames ln nn
+        of
+          (Just inm) ->
+            case
+              Set.toList
+                $
+                Set.filter
+                  (\(uid, _) -> uid == sid)
+                  (getSet inm)
+            of
+              (_, uniqueName):_ -> Just uniqueName
+              _ -> searchTaken
+          _ -> searchTaken
+
+{-    findUniqueName::LIB_NAME->Graph.Node->Id.Id->(IdNameMapping->Set.Set (Id.Id, String))->String
+    findUniqueName ln nn sid getSet =
+      case
+        traceUniqueName ln nn sid getSet
+      of
+        Nothing -> Debug.Trace.trace ("faking unique name for " ++ show sid) (show sid)
+        (Just uname) -> uname
+      
+    traceUniqueName::LIB_NAME->Graph.Node->Id.Id->(IdNameMapping->Set.Set (Id.Id, String))->Maybe String
+    traceUniqueName tlibname tnodenum sid getSet =
+      let
+        tdg =
+          devGraph
+            $
+            Map.findWithDefault (error "No possible!") tlibname lenv
+        tnode = (\(Just a) -> a) $ Graph.lab tdg tnodenum
+        (dg, node, nodenum, libname) =
+          if isDGRef tnode
+            then
+              let
+                rln = dgn_libname tnode
+                rnn = dgn_node tnode
+                rdg =
+                  devGraph
+                    $
+                    Map.findWithDefault (error "No possible!") rln lenv
+                rnode = (\(Just a) -> a) $ Graph.lab rdg rnn
+              in
+                (rdg, rnode, rnn, rln)
+            else
+              (tdg, tnode, tnodenum, tlibname)
+        imports = getImportsLevelOrder [] libname nodenum
+        (mUnique, _) =
+          until
+            (\(mUN, r) -> case mUN of Nothing -> null r; _ -> True)
+            (\(_, (iLN, iNN):r) ->
+              case
+                getLNGN uniqueNames iLN iNN
+              of
+                (Just inm) ->
+                  case
+                    Set.toList
+                      $
+                      Set.filter
+                        (\(uid, _) -> uid == sid)
+                        (getSet inm)
+                  of
+                    (_, uniqueName):_ -> (Just uniqueName, [])
+                    _ -> (Nothing, r)
+                _ -> (Nothing, r)
+            )
+            (Nothing, imports)
+      in
+        mUnique -}
+--    findUniqueName::LIB_NAME->Graph.Node->Id.Id->(IdNameMapping->Set.Set (Id.Id, String))->String
+--    findUniqueName = traceUniqueNameR
+ {-   findUniqueName::LIB_NAME->Graph.Node->Id.Id->(IdNameMapping->Set.Set (Id.Id, String))->String
     findUniqueName libname nodenum sid getSet =
       let
         (thePast, _) =
@@ -3484,12 +4538,12 @@ createFullNameMapping
                     [] -> (Nothing, r)
                     (_, uniqueName):_ -> (Just uniqueName, [])
             )
-            (Nothing, reverse thePast)
+            (Nothing, (reverse thePast))
       in
         case mUniqueName of
           Nothing -> error ("No unique name for " ++ (show sid) ++ "!")
-          (Just uniqueName) -> uniqueName
-
+          (Just uniqueName) -> uniqueName -}
+    
 findOriginInCurrentLib::
   forall a .
   LIB_NAME

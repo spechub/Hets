@@ -78,9 +78,9 @@ quickSetup libdir fp =
       (
         let
           tracemarks = createTraceMarks lenv
-          minlenv = createMinimalLibEnv lenv tracemarks
+          (minlenv, takenMap) = createMinimalLibEnv lenv tracemarks
           uniqueNames = createUniqueNames minlenv tracemarks
-          fullNames = createFullNameMapping lenv tracemarks uniqueNames
+          fullNames = createFullNameMapping lenv takenMap tracemarks uniqueNames
           xmlUniqueNames = OMOut.createXmlNameMapping uniqueNames
           xmlFullNames = OMOut.createXmlNameMapping fullNames
         in
