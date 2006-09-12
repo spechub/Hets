@@ -97,8 +97,8 @@ computeCompTable spName (sig,nsens) = do
            then
             Just (Cmptabentry
                    (Cmptabentry_Attrs {
-                      cmptabentryArgBaserel1 = showDoc arg1 "",
-                      cmptabentryArgBaserel2 = showDoc arg2 "" })
+                      cmptabentryArgBaserel1 = Baserel (showDoc arg1 ""),
+                      cmptabentryArgBaserel2 = Baserel (showDoc arg2 "") })
                    (extractRel cup res) )
            else Nothing
        _ -> Nothing
@@ -109,8 +109,8 @@ computeCompTable spName (sig,nsens) = do
          if i==inv
            then
             Just (Contabentry {
-                   contabentryArgBaseRel = showDoc arg "",
-                   contabentryConverseBaseRel = showDoc res "" } )
+                   contabentryArgBaseRel = Baserel (showDoc arg ""),
+                   contabentryConverseBaseRel = Baserel (showDoc res "") } )
            else Nothing
        _ -> Nothing
   let attrs = Table_Attrs {tableName = name,

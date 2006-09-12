@@ -55,7 +55,7 @@ table_dtd = DTD rootTag
 -- Create a Prolog for XML-Version 1.0 and UTF-8 encoding (or ISO ?)
 table_prolog::Prolog
 table_prolog = Prolog 
-    (Just (XMLDecl "1.0" (Just (EncodingDecl "UTF-8")) Nothing)) 
+    (Just (XMLDecl "1.0absd" (Just (EncodingDecl "UTF-8")) Nothing)) 
     $ Just table_dtd
 
 -- This function renders a Table-instance into a Doc-instance (pretty printing)
@@ -80,11 +80,13 @@ data Table = Table Table_Attrs Compositiontable Conversetable Models
 data Table_Attrs = Table_Attrs
     { tableName :: String
     , tableIdentity :: String
+    , baseRelations :: [Baserel]
     } deriving (Eq, Show)
 
 newtype Compositiontable = Compositiontable [Cmptabentry] 
     deriving (Eq, Show)
-newtype Conversetable = Conversetable [Contabentry] 
+data Conversetable = Conversetable [Contabentry] |
+	Conversetable_Ternary { inverse,shortcut,homing :: [Contabentry_Ternary]}
     deriving (Eq, Show)
 newtype Models = Models [Model]
     deriving (Eq, Show)
@@ -93,14 +95,20 @@ data Cmptabentry = Cmptabentry Cmptabentry_Attrs [Baserel]
                    deriving (Eq, Show)
 
 data Cmptabentry_Attrs = Cmptabentry_Attrs
-    { cmptabentryArgBaserel1 :: String
-    , cmptabentryArgBaserel2 :: String
+    { cmptabentryArgBaserel1 :: Baserel
+    , cmptabentryArgBaserel2 :: Baserel
     } deriving (Eq, Show)
 
 data Contabentry = Contabentry
-    { contabentryArgBaseRel :: String
-    , contabentryConverseBaseRel :: String
+    { contabentryArgBaseRel :: Baserel
+    , contabentryConverseBaseRel :: Baserel
     } deriving (Eq, Show)
+
+data Contabentry_Ternary = Contabentry_Ternary
+    { contabentry_TernaryArgBaseRel :: Baserel
+    , contabentry_TernaryConverseBaseRels :: [Baserel] 
+    } deriving (Eq, Show)
+     
 
 data Model = Model
     { modelString1 :: String
@@ -109,7 +117,7 @@ data Model = Model
 
 data Baserel = Baserel
     { baserelBaserel :: String
-    } deriving (Eq, Show)
+    } deriving (Eq,Ord,Show)
 
 {-Instance decls-}
 
@@ -176,14 +184,14 @@ instance XmlContent Cmptabentry where
 instance XmlAttributes Cmptabentry_Attrs where
     fromAttrs as =
         Cmptabentry_Attrs
-          { cmptabentryArgBaserel1 = definiteA fromAttrToStr "cmptabentry" 
-                                     "argBaserel1" as
-          , cmptabentryArgBaserel2 = definiteA fromAttrToStr "cmptabentry" 
-                                     "argBaserel2" as
+          { cmptabentryArgBaserel1 = Baserel (definiteA fromAttrToStr 
+				     "cmptabentry" "argBaserel1" as)
+          , cmptabentryArgBaserel2 = Baserel (definiteA fromAttrToStr 
+				     "cmptabentry" "argBaserel2" as)
           }
     toAttrs v = catMaybes 
-        [ toAttrFrStr "argBaserel1" (cmptabentryArgBaserel1 v)
-        , toAttrFrStr "argBaserel2" (cmptabentryArgBaserel2 v)
+        [ toAttrFrStr "argBaserel1" (baserelBaserel(cmptabentryArgBaserel1 v))
+        , toAttrFrStr "argBaserel2" (baserelBaserel(cmptabentryArgBaserel2 v))
         ]
 instance XmlContent Contabentry where
     fromElem (CElem (Elem "contabentry" as []):rest) =
@@ -195,14 +203,17 @@ instance XmlContent Contabentry where
 instance XmlAttributes Contabentry where
     fromAttrs as =
         Contabentry
-          { contabentryArgBaseRel = definiteA fromAttrToStr "contabentry"
-                                    "argBaseRel" as
-          , contabentryConverseBaseRel = definiteA fromAttrToStr "contabentry"
-                                         "converseBaseRel" as
+          { contabentryArgBaseRel = Baserel (definiteA fromAttrToStr 
+					    "contabentry"
+					    "argBaseRel" as)
+          , contabentryConverseBaseRel = Baserel (definiteA fromAttrToStr 
+						 "contabentry"
+						 "converseBaseRel" as)
           }
     toAttrs v = catMaybes 
-        [ toAttrFrStr "argBaseRel" (contabentryArgBaseRel v)
-        , toAttrFrStr "converseBaseRel" (contabentryConverseBaseRel v)
+        [ toAttrFrStr "argBaseRel" (baserelBaserel(contabentryArgBaseRel v))
+        , toAttrFrStr "converseBaseRel" (baserelBaserel
+					(contabentryConverseBaseRel v))
         ]
 instance XmlContent Model where
     fromElem (CElem (Elem "model" as []):rest) =
