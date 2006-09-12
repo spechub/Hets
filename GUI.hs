@@ -5,26 +5,38 @@ TclTk <http://www.informatik.uni-bremen.de/htk/> and uDraw(Graph)
 <http://www.informatik.uni-bremen.de/uDrawGraph/en/index.html> (see
 module "GraphDisp").
 
-"GUI.AbstractGraphView" graph interface, based on the Workbench
+"GUI.AbstractGraphView" is a graph interface, based on the Workbench
 encapsulation of uDraw(Graph). Provides additional functions
 for hiding and redisplaying (groups of) nodes and edges.
 
 "GUI.ConvertDevToAbstractGraph"
-display of development graphs, using abstract graph interface
+displays development graphs, using abstract graph interface.
 
-"GUI.HTkUtils"  some utilities for "HTk"
+"GUI.GenericATP" is a generic graphical interface for automatic theorem provers.
 
-"GUI.ConsoleUtils" similar utilities for using without "HTk"
+"GUI.GenericATPState" provides data structures and initialising functions for
+prover state and configurations.
 
-"GUI.Utils" either "GUI.HTkUtils" or "GUI.ConsoleUtils"
+"GUI.ProofManagement" is a goal management GUI for the structured level.
 
-"GUI.ShowLogicGraph" display of logic graph
+"GUI.ProofDetails" sets an additional window used by "GUI.ProofManagement" for
+displaying and saving proof details (prover output, tactic script, proof tree).
 
-"GUI.Taxonomy" display of subsort relation (taxonomy)
+"GUI.HTkUtils" provides some utilities on top of "HTk".
 
-"GUI.WebInterface" driver for web interface, 
-which is accessible through <http://www.informatik.uni-bremen.de/cgi-bin/cgiwrap/luettich/hets.cgi>
+"GUI.ConsoleUtils" are similar utilities for using without "HTk" (only console).
 
+"GUI.PrintUtils" are pretty printing functions used by "GUI.GenericATP".
+
+"GUI.Utils" are either "GUI.HTkUtils" or "GUI.ConsoleUtils".
+
+"GUI.ShowGraph" displays the final graph.
+
+"GUI.ShowLogicGraph" displays the logic graph.
+
+"GUI.DGTranslations" displays the logic graph.
+
+"GUI.Taxonomy" displays a subsort relation (taxonomy).
 -}
 
 module GUI where
