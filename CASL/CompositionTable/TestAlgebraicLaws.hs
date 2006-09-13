@@ -1,6 +1,5 @@
 {- |
-Module      :  $Header:/repository/HetCATS/CASL/CompositionTable/TestAlgebraic\
-Laws.hs,v 1.0 2006/09/12 23:38:51 2fmossa Exp $
+Module      :  $Header$
 Copyright   :  (c) Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -8,9 +7,9 @@ Maintainer  :  fmossa@tzi.de
 Stability   :  provisional
 Portability :  non-portable
 
-Tests for algebrais laws for composition tables
-
+Tests for algebraic laws for composition tables
 -}
+
 module CASL.CompositionTable.TestAlgebraicLaws where
 
 import CASL.CompositionTable.CompositionTable
