@@ -306,7 +306,7 @@ cpp_sources = Common/DynamicUtils.hs \
     Comorphisms/LogicList.hs Comorphisms/LogicGraph.hs \
     Comorphisms/KnownProvers.hs hets.hs $(happy_files) \
     hxt/Text/XML/HXT/ProtocolHandler/ProtocolHandler.hs \
-    hxt/System/Console/Shell/Regex.hs PGIP/Common.hs \
+    hxt/System/Console/Shell/Regex.hs PGIP/Common.hs PGIP/Commands.hs \
     OMDoc/HetsInterface.hs
 
 # unused, remove when header files are gone

@@ -20,7 +20,6 @@ module PGIP.Common where
 import Syntax.AS_Library
 import Static.DevGraph
 import Static.DGToSpec
-import Proofs.InferBasic
 import Common.DocUtils
 import Common.Result
 import Common.Taxonomy
@@ -28,6 +27,7 @@ import Common.Lib.Set
 import Logic.Logic
 import Logic.Grothendieck
 #ifdef UNI_PACKAGE
+import Proofs.InferBasic
 import GUI.Taxonomy
 import Events
 import Destructible
@@ -707,12 +707,12 @@ printNodeTaxonomyFromList :: TaxoGraphKind -> [GraphGoals] -> LibEnv
                           -> LIB_NAME -> IO()
 printNodeTaxonomyFromList kind ls libEnv ln =
              case ls of
-                   (GraphNode x):l ->
+                   GraphNode x : l ->
                        do
                           printNodeTaxonomy kind (GraphNode x) libEnv ln
                           result <- printNodeTaxonomyFromList kind l libEnv ln
                           return result
-                   _:l ->
+                   _ : l ->
                        do
                           result <- printNodeTaxonomyFromList kind l libEnv ln
                           return result
@@ -734,19 +734,21 @@ printNodeTaxonomy kind x libEnv ln =
                   _ -> return ()
          Result _ _ -> putStrLn "Error computing the theory of the node!"
 #endif
-     _            -> putStrLn "Not a node! (or compiled without uni)"
+     _ -> putStrLn "Not a node! (or compiled without uni)"
 
 -- | The function proveNodes applies basicInferenceNode for proving to
 -- all nodes in the graph goal list
 proveNodes :: [GraphGoals] -> LIB_NAME ->LibEnv -> IO LibEnv
 proveNodes ls ln libEnv
      = case ls of
-        (GraphNode (nb, _)):l ->
+#ifdef UNI_PACKAGE
+        GraphNode (nb, _) : l ->
            do
              result <- basicInferenceNode False logicGraph (ln,nb) ln libEnv
              case result of
                   Result _ (Just nwEnv)  -> proveNodes l ln nwEnv
                   _                      -> proveNodes l ln libEnv
-        _:l                   -> proveNodes l ln libEnv
-        []                    -> return libEnv
+#endif
+        _ : l -> proveNodes l ln libEnv
+        [] -> return libEnv
 

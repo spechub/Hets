@@ -1,3 +1,4 @@
+{-# OPTIONS -cpp #-}
 {- |
 Module      :$Header$
 Copyright   : uni-bremen and Razvan Pascanu
@@ -9,13 +10,14 @@ Portability : portable
 Function that executes the script commands together with the datatypes used.
 Even though there is a scanning Path function created with parsec it is not
 used, instead shellac is used so that autocomplition for path can be enabled
-
+-}
+{-
  TODO :
       - add comments
-      - implement the rest of the functions 
+      - implement the rest of the functions
       - delete the test function
 
--} 
+-}
 
 module PGIP.Commands where
 
@@ -37,47 +39,50 @@ import Common.Lexer
 import Common.AnnoState
 import Static.DevGraph
 import Data.Graph.Inductive.Graph
+#ifdef UNI_PACKAGE
 import GUI.ShowGraph
+#endif
 
--- | Scans a word contained in a path 
+-- | Scans a word contained in a path
 scanPathFile::CharParser st String
-scanPathFile 
+scanPathFile
      = many1 ( oneOf (caslLetters ++ ['0'..'9'] ++ ['-','_','.']))
-
 
 scanAnyWord::CharParser st String
 scanAnyWord
      = many1 (oneOf (caslLetters ++ ['0'..'9'] ++ ['_','\'','.','-']))
 
--- | the 'getPath' function read a path as a a list of words
+-- | the 'getPath' function reads a path as a list of words
 getPath::AParser st String
-getPath 
-        = try ( do  
+getPath
+        = try ( do
                     v<-sepBy1 scanPathFile (string "/")
                     let result = joinWith '/' v
                     return result
               )
-      <|> 
+      <|>
           try ( do  skip
                     v<-sepBy1 scanPathFile (string "/")
                     let result = joinWith '/' v
                     return result
               )
-      <?> 
+      <?>
           "path"
--- | the 'getKeyWord' function accepts a string as argument and tries to read it
+
+-- | the 'getKeyWord' function takes an argument string and tries to read it
 getKeyWord::String -> AParser st String
-getKeyWord wd 
+getKeyWord wd
               =  try ( string wd
-                     ) 
-              <|> 
-                 try ( do  skip 
+                     )
+              <|>
+                 try ( do  skip
                            string wd
                      )
               <?> ("keyword "++wd)
--- | The function 'getGoal' parses a goal (node, edge or labeled edge) 
+
+-- | The function 'getGoal' parses a goal (node, edge or labeled edge)
 getGoal::AParser st GOAL
-getGoal        
+getGoal
        = try ( do  v1<-scanAnyWord
                    try (skip)
                    getKeyWord "-"
@@ -89,32 +94,32 @@ getGoal
                    v3<-scanAnyWord
                    try (skip)
                    return (LabeledEdge v1 (read v2::Int) v3)
-             )       
-      <|> 
+             )
+      <|>
          try ( do  v1<-scanAnyWord
                    try (skip)
-                   getKeyWord "->"       
+                   getKeyWord "->"
                    try (skip)
                    v2<-scanAnyWord
                    try (skip)
                    return (Edge  v1  v2)
              )
-      <|> 
+      <|>
          try ( do  v<-scanAnyWord
                    try (skip)
                    return (Node  v)
-             )   
+             )
       <?>
-         "goal"    
+         "goal"
 -- | The function 'getScript' tries to read some script commands
 -- It is not ready yet to work with shellac !
 getScript::AParser st String
-getScript 
+getScript
          = try ( do  getKeyWord "end-script"
                      try (skip)
                      return ""
                )
-        <|> 
+        <|>
            try ( do  v<-scanAnyWord
                      vs <-getScript
                      return (v++" "++vs)
@@ -125,12 +130,12 @@ getScript
                      vs<-getScript
                      return (v++" "++vs)
                )
-        <?> 
+        <?>
            "some prover script"
 
 -- | The function 'getComorphism' reads a comorphism as a list of Ids
 getComorphism::AParser st [String]
-getComorphism 
+getComorphism
              = try ( do  v<-scanAnyWord
                          try (skip)
                          getKeyWord ";"
@@ -145,36 +150,36 @@ getComorphism
             <?>
                " list of ID's separated by semicolon"
 
--- | The function 'scanCommand' given a list of string describing what 
--- kind of parameters to expect tries to parse them and returns a 
+-- | The function 'scanCommand' given a list of string describing what
+-- kind of parameters to expect tries to parse them and returns a
 -- CmdParam list with the parsed parameters
 scanCommand::[String] -> AParser st [CmdParam]
-scanCommand arg  
+scanCommand arg
                = case arg of
-                          []  ->  do 
+                          []  ->  do
                                  string ""
                                  return []
 --- scanning a path
                           "PATH":ls  ->  do
-                                 v <- getPath 
+                                 v <- getPath
                                  vs<- scanCommand ls
                                  return ((Path v):vs)
 --- scanning a prover
                           "PROVER":ls  ->  do
-                                 v <- scanAnyWord 
+                                 v <- scanAnyWord
                                  vs<- scanCommand ls
                                  return ((UseProver v):vs)
 --- scanning a formula
                           "FORMULA":ls  ->  do
-                                 v <- scanAnyWord 
+                                 v <- scanAnyWord
                                  vs<- scanCommand ls
                                  return ((Formula  v):vs)
 --- scanning a comorphism
                           "COMORPHISM":ls  ->  do
-                                 v <- getComorphism 
+                                 v <- getComorphism
                                  vs<-scanCommand ls
                                  return ((ParsedComorphism v):vs)
---- scanning goals 
+--- scanning goals
                           "GOALS":ls  ->  do
                                  v<-many getGoal
 --                                 v<- getGoal
@@ -191,8 +196,8 @@ scanCommand arg
                           "FORMULA-PLUS":ls  ->  do
                                  v<- many1 ( do  tmp<-scanAnyWord
                                                  return tmp
-			                   )
-			         vs<-scanCommand ls
+                                           )
+                                 vs<-scanCommand ls
                                  return ((Formulas v):vs)
 --- scanning proof script
                           "PROOF-SCRIPT":ls  ->  do
@@ -210,10 +215,10 @@ scanCommand arg
 -- | A test function to use with shellac for the non-implemented commands
 -- should be deleted when all commands are implemented
 test::String->[Status] -> IO [Status]
-test ls _  
+test ls _
   = do
       putStrLn $ show ls
-      return []          
+      return []
 
 -- | It seems that the way shellac reads the file path it adds an extra blank
 -- at the end that needs to be removed
@@ -236,37 +241,37 @@ getStatus files state
               result <- cUse f state
               let nwState =update result state
               getStatus l nwState
-          
+
 
 -- | The function 'cUse' implements the command Use, i.e. given a path it
 -- tries to load the library at that path
 cUse::String->[Status] -> IO [Status]
 cUse input state
  = case state of
-    (Env _ libEnv):_ -> 
+    (Env _ libEnv):_ ->
        do
         let file = removeSpace input
         let opts = defaultHetcatsOpts
         result <- anaLibExt opts file libEnv
         case result of
           Just (name , env) ->
-              do 
+              do
                 let l= createAllGoalsList name env
                 return ((Address file):(Env name env):(AllGoals l):[])
           Nothing -> do
               putStr "Couldn't load the new file!\n"
               return []
     _:list -> cUse input list
-    [] ->do  
+    [] ->do
           let file = removeSpace input
           let opts = defaultHetcatsOpts
           result<- anaLib opts file
           case result of
-              Just (name,env) -> 
+              Just (name,env) ->
                   do
                     let l=createAllGoalsList name env
                     return ((Address file):(Env name env):(AllGoals l):[] )
-              Nothing ->  
+              Nothing ->
                     return [(OutputErr "Couldn't load the file specified")]
 
 
@@ -274,18 +279,18 @@ cUse input state
 cDgAllAuto::String -> [Status] -> IO [Status]
 cDgAllAuto _ arg
    = case arg of
-       (Env x y):_   -> let result= automatic x y 
+       (Env x y):_   -> let result= automatic x y
                             newGoalList = createAllGoalsList x result
                         in  return ((Env x result):(AllGoals newGoalList):[])
        _:l           -> cDgAllAuto "" l
        []            -> return ([(OutputErr "Wrong parameter")])
 
 -- | The 'cDgAuto' function implements dg auto, note that the parameters
--- are passed as string and parsed inside this function. All the other 
+-- are passed as string and parsed inside this function. All the other
 -- function are implemented in the same manner
 cDgAuto :: String -> [Status] -> IO [Status]
 cDgAuto input status
- = do 
+ = do
     let r= runParser (scanCommand ["GOALS"]) (emptyAnnos ()) "" input
     case r of
      Left _ -> do
@@ -294,12 +299,12 @@ cDgAuto input status
      Right param ->
       do
        case status of
-        (Env ln libEnv):l -> 
+        (Env ln libEnv):l ->
          case l of
            (AllGoals allGoals):_ ->
                case param of
-                 (Goals ls):_ -> do 
-                     let allNodes = convToGoal $ 
+                 (Goals ls):_ -> do
+                     let allNodes = convToGoal $
                                      labNodes (lookupDGraph ln libEnv)
                      list <- getGoalList ls allGoals allNodes
                      let ll = getEdgeList list
@@ -309,12 +314,12 @@ cDgAuto input status
                  _  -> return ([(OutputErr "Wrong parameters")])
            _:list -> cDgAuto input ((Env ln libEnv):list)
            _  ->return ([(OutputErr "Wrong parameters")])
-        (AllGoals allGoals):l -> 
+        (AllGoals allGoals):l ->
          case l of
-          (Env ln libEnv):_ -> 
-               case param of 
+          (Env ln libEnv):_ ->
+               case param of
                  (Goals ls):_ -> do
-                     let allNodes = convToGoal $ 
+                     let allNodes = convToGoal $
                                      labNodes (lookupDGraph ln libEnv)
                      list <-getGoalList ls allGoals allNodes
                      let ll = getEdgeList list
@@ -338,27 +343,27 @@ cDgGlobSubsume input status
     Right param ->
      do
       case status of
-       (Env ln libEnv):l  -> 
-         case l of 
-           (AllGoals allGoals):_ -> 
+       (Env ln libEnv):l  ->
+         case l of
+           (AllGoals allGoals):_ ->
                case param of
                  (Goals ls):_ -> do
-                     let allNodes = convToGoal $ 
+                     let allNodes = convToGoal $
                                      labNodes (lookupDGraph ln libEnv)
                      list <- getGoalList ls allGoals allNodes
                      let ll = getEdgeList list
-                     let result = globSubsumeFromList ln ll  libEnv 
+                     let result = globSubsumeFromList ln ll  libEnv
                      let newGoalList = createAllGoalsList ln result
                      return ((Env ln result):(AllGoals newGoalList):[])
                  _            ->return  [(OutputErr "Wrong parameters")]
            _:ll -> cDgGlobSubsume input ((Env ln libEnv):ll)
            _    -> return [(OutputErr "Wrong parameters")]
-       (AllGoals allGoals):l -> 
-         case l of 
-           (Env ln libEnv):_ -> 
+       (AllGoals allGoals):l ->
+         case l of
+           (Env ln libEnv):_ ->
                case param of
                  (Goals ls):_ -> do
-                     let allNodes = convToGoal $ 
+                     let allNodes = convToGoal $
                                      labNodes (lookupDGraph ln libEnv)
                      list <- getGoalList ls allGoals allNodes
                      let ll= getEdgeList list
@@ -376,18 +381,18 @@ cDgGlobSubsume input status
 cDgAllGlobSubsume::String -> [Status] -> IO [Status]
 cDgAllGlobSubsume _ arg
   = case arg of
-     (Env x y):_  -> 
-       let result =(globSubsume x) y 
+     (Env x y):_  ->
+       let result =(globSubsume x) y
            newGoalList = createAllGoalsList x result
        in  return ((Env x result):(AllGoals newGoalList):[])
      _:l          -> cDgAllGlobSubsume "" l
      []           -> return [(OutputErr "Wrong parameters")]
 
 cDgAllGlobDecomp::String -> [Status] -> IO [Status]
-cDgAllGlobDecomp _ arg 
-  = case arg of 
-     (Env x y):_ -> 
-       let result= (globDecomp x) y 
+cDgAllGlobDecomp _ arg
+  = case arg of
+     (Env x y):_ ->
+       let result= (globDecomp x) y
            newGoalList = createAllGoalsList x result
        in  return ((Env x result):(AllGoals newGoalList):[])
      _:l         -> cDgAllGlobDecomp "" l
@@ -404,27 +409,27 @@ cDgGlobDecomp input status =
               return []
    Right param ->
     case status of
-     (Env ln libEnv):l  -> 
-        case l of 
-          (AllGoals allGoals):_ -> 
+     (Env ln libEnv):l  ->
+        case l of
+          (AllGoals allGoals):_ ->
               case param of
                 (Goals ls):_ -> do
-                      let allNodes = convToGoal $ 
+                      let allNodes = convToGoal $
                                      labNodes (lookupDGraph ln libEnv)
                       list <- getGoalList ls allGoals allNodes
                       let ll = getEdgeList list
-                      let result = globDecompFromList ln ll  libEnv 
+                      let result = globDecompFromList ln ll  libEnv
                       let newGoalList = createAllGoalsList ln result
                       return ((Env ln result):(AllGoals newGoalList):[])
                 _   -> return [(OutputErr "Wrong parameters")]
           _:list -> cDgGlobDecomp input  ((Env ln libEnv):list)
           _      -> return [(OutputErr "Wrong parameters")]
-     (AllGoals allGoals):l -> 
-        case l of 
-          (Env ln libEnv):_ -> 
+     (AllGoals allGoals):l ->
+        case l of
+          (Env ln libEnv):_ ->
               case param of
                 (Goals ls):_ -> do
-                      let allNodes = convToGoal $ 
+                      let allNodes = convToGoal $
                                      labNodes (lookupDGraph ln libEnv)
                       list <- getGoalList ls allGoals allNodes
                       let ll= getEdgeList list
@@ -442,43 +447,43 @@ cDgAllLocInfer::String -> [Status] -> IO [Status]
 cDgAllLocInfer _ arg
   = case arg of
       (Env x y):_ -> let result= (localInference x) y
-                         newGoalList = createAllGoalsList x result 
+                         newGoalList = createAllGoalsList x result
                      in  return ((Env x result):(AllGoals newGoalList):[])
       _:l         -> cDgAllLocInfer "" l
       []          -> return [(OutputErr "Wrong parameters")]
 
 
-cDgLocInfer::String -> [Status] -> IO [Status] 
+cDgLocInfer::String -> [Status] -> IO [Status]
 cDgLocInfer input status =
  do
   let r=runParser (scanCommand ["GOALS"]) (emptyAnnos ()) "" input
-  case r of 
+  case r of
    Left _ -> do
               putStr "Error parsing the goal list ! \n"
               return []
    Right param ->
      case status of
-      (Env ln libEnv):l  -> 
-          case l of 
+      (Env ln libEnv):l  ->
+          case l of
             (AllGoals allGoals):_ ->
                  case param of
                   (Goals ls):_ -> do
-                      let allNodes = convToGoal $ 
+                      let allNodes = convToGoal $
                                      labNodes (lookupDGraph ln libEnv)
                       list <- getGoalList ls allGoals allNodes
                       let ll = getEdgeList list
-                      let result = localInferenceFromList ln ll  libEnv 
+                      let result = localInferenceFromList ln ll  libEnv
                       let newGoalList = createAllGoalsList ln result
                       return ((Env ln result):(AllGoals newGoalList):[])
                   _   -> return [(OutputErr "Wrong parameters")]
             _:list -> cDgLocInfer input ((Env ln libEnv):list)
             _      -> return [(OutputErr "Wrong parameters")]
-      (AllGoals allGoals):l -> 
-          case l of 
-            (Env ln libEnv):_ -> 
+      (AllGoals allGoals):l ->
+          case l of
+            (Env ln libEnv):_ ->
                 case param of
                  (Goals ls):_ -> do
-                     let allNodes = convToGoal $ 
+                     let allNodes = convToGoal $
                                      labNodes (lookupDGraph ln libEnv)
                      list <- getGoalList ls allGoals allNodes
                      let ll= getEdgeList list
@@ -494,9 +499,9 @@ cDgLocInfer input status =
 
 cDgAllLocDecomp::String -> [Status] ->IO [Status]
 cDgAllLocDecomp _ arg =
-  case arg of 
-     (Env x y):_ -> 
-           let result= (locDecomp x) y 
+  case arg of
+     (Env x y):_ ->
+           let result= (locDecomp x) y
                newGoalList = createAllGoalsList x result
            in  return ((Env x result):(AllGoals newGoalList):[])
      _:l         -> cDgAllLocDecomp "" l
@@ -508,32 +513,32 @@ cDgLocDecomp input status =
  do
   let r=runParser (scanCommand ["GOALS"]) (emptyAnnos ()) "" input
   case r of
-   Left _ -> do 
+   Left _ -> do
               putStr "Error parsing the goal list ! \n"
               return []
    Right param ->
     case status of
-     (Env ln libEnv):l  -> 
-        case l of 
-          (AllGoals allGoals):_ -> 
+     (Env ln libEnv):l  ->
+        case l of
+          (AllGoals allGoals):_ ->
                case param of
                  (Goals ls):_ -> do
-                      let allNodes = convToGoal $ 
+                      let allNodes = convToGoal $
                                      labNodes (lookupDGraph ln libEnv)
                       list <- getGoalList ls allGoals allNodes
                       let ll = getEdgeList list
-                      let result = locDecompFromList ln ll  libEnv 
+                      let result = locDecompFromList ln ll  libEnv
                       let newGoalList = createAllGoalsList ln result
                       return ((Env ln result):(AllGoals newGoalList):[])
                  _  -> return [(OutputErr "Wrong parameters")]
           _:list -> cDgLocDecomp input  ((Env ln libEnv):list)
           _      -> return [(OutputErr "Wrong parameters")]
-     (AllGoals allGoals):l -> 
-        case l of 
-          (Env ln libEnv):_ -> 
+     (AllGoals allGoals):l ->
+        case l of
+          (Env ln libEnv):_ ->
                case param of
                     (Goals ls):_ -> do
-                       let allNodes = convToGoal $ 
+                       let allNodes = convToGoal $
                                      labNodes (lookupDGraph ln libEnv)
                        list <- getGoalList ls allGoals allNodes
                        let ll= getEdgeList list
@@ -558,27 +563,27 @@ cDgComp input status =
               return []
    Right param ->
     case status of
-      (Env ln libEnv):l  -> 
-          case l of 
-            (AllGoals allGoals):_ -> 
+      (Env ln libEnv):l  ->
+          case l of
+            (AllGoals allGoals):_ ->
               case param of
                  (Goals ls):_ -> do
-                     let allNodes = convToGoal $ 
+                     let allNodes = convToGoal $
                                      labNodes (lookupDGraph ln libEnv)
                      list <- getGoalList ls allGoals allNodes
                      let ll = getEdgeList list
-                     let result = compositionFromList ln ll  libEnv 
+                     let result = compositionFromList ln ll  libEnv
                      let newGoalList = createAllGoalsList ln result
                      return ((Env ln result):(AllGoals newGoalList):[])
                  _ -> return [(OutputErr "Wrong parameters")]
             _:list -> cDgComp input  ((Env ln libEnv):list)
             _      -> return [(OutputErr "Wrong parameters")]
-      (AllGoals allGoals):l -> 
-         case l of 
-           (Env ln libEnv):_ -> 
+      (AllGoals allGoals):l ->
+         case l of
+           (Env ln libEnv):_ ->
               case param of
                  (Goals ls):_ -> do
-                     let allNodes = convToGoal $ 
+                     let allNodes = convToGoal $
                                      labNodes (lookupDGraph ln libEnv)
                      list <-getGoalList ls allGoals allNodes
                      let ll= getEdgeList list
@@ -595,10 +600,10 @@ cDgComp input status =
 
 
 cDgAllComp::String -> [Status] ->IO [Status]
-cDgAllComp _ arg 
+cDgAllComp _ arg
   = case arg of
-     (Env x y):_ -> 
-         let result= (composition x) y 
+     (Env x y):_ ->
+         let result= (composition x) y
              newGoalList = createAllGoalsList x result
          in  return ((Env x result):(AllGoals newGoalList):[])
      _:l         -> cDgAllComp "" l
@@ -607,20 +612,20 @@ cDgAllComp _ arg
 
 cDgCompNew::String -> [Status] ->IO [Status]
 cDgCompNew input status =
- do 
+ do
   let r=runParser (scanCommand ["GOALS"]) (emptyAnnos ()) "" input
   case r of
-   Left _ -> do 
+   Left _ -> do
               putStr "Error parsing the goal list ! \n"
               return []
    Right param ->
     case status of
-     (Env ln libEnv):l  -> 
-      case l of 
-       (AllGoals allGoals):_ -> 
+     (Env ln libEnv):l  ->
+      case l of
+       (AllGoals allGoals):_ ->
          case param of
           (Goals ls):_ -> do
-            let allNodes = convToGoal $ 
+            let allNodes = convToGoal $
                        labNodes (lookupDGraph ln libEnv)
             list <- getGoalList ls allGoals allNodes
             let ll = getEdgeList list
@@ -630,12 +635,12 @@ cDgCompNew input status =
           _   -> return [(OutputErr "Wrong parameters")]
        _:list -> cDgCompNew input ((Env ln libEnv):list)
        _      -> return [(OutputErr "Wrong parameters")]
-     (AllGoals allGoals):l -> 
-       case l of 
-        (Env ln libEnv):_ -> 
+     (AllGoals allGoals):l ->
+       case l of
+        (Env ln libEnv):_ ->
            case param of
             (Goals ls):_ -> do
-              let allNodes = convToGoal $ 
+              let allNodes = convToGoal $
                          labNodes (lookupDGraph ln libEnv)
               list <- getGoalList ls allGoals allNodes
               let ll= getEdgeList list
@@ -649,12 +654,12 @@ cDgCompNew input status =
      []                 -> return [(OutputErr "Wrong parameters")]
 
 
- 
+
 
 cDgAllCompNew::String -> [Status] ->IO [Status]
 cDgAllCompNew _ arg
  = case arg of
-    (Env x y):_ -> 
+    (Env x y):_ ->
        let result=(compositionCreatingEdges x) y
            newGoalList = createAllGoalsList x result
        in  return ((Env x result):(AllGoals newGoalList):[])
@@ -663,20 +668,20 @@ cDgAllCompNew _ arg
 
 cDgHideThm::String -> [Status] ->IO [Status]
 cDgHideThm input status =
- do 
+ do
   let r=runParser (scanCommand ["GOALS"]) (emptyAnnos ()) "" input
   case r of
-   Left _ -> do  
+   Left _ -> do
               putStr "Error parsing the goal list ! \n"
               return []
    Right param ->
     case status of
-     (Env ln libEnv):l  -> 
-       case l of 
-        (AllGoals allGoals):_ -> 
+     (Env ln libEnv):l  ->
+       case l of
+        (AllGoals allGoals):_ ->
           case param of
             (Goals ls):_ -> do
-               let allNodes = convToGoal $ 
+               let allNodes = convToGoal $
                         labNodes (lookupDGraph ln libEnv)
                list <- getGoalList ls allGoals allNodes
                let ll = getEdgeList list
@@ -686,15 +691,15 @@ cDgHideThm input status =
             _   -> return [(OutputErr "Wrong parameters")]
         _:list -> cDgHideThm input ((Env ln libEnv):list)
         _      -> return [(OutputErr "Wrong parameters")]
-     (AllGoals allGoals):l -> 
-       case l of 
-        (Env ln libEnv):_ -> 
+     (AllGoals allGoals):l ->
+       case l of
+        (Env ln libEnv):_ ->
            case param of
              (Goals ls):_ -> do
-                let allNodes = convToGoal $ 
+                let allNodes = convToGoal $
                            labNodes (lookupDGraph ln libEnv)
                 list <- getGoalList ls allGoals allNodes
-                let ll= getEdgeList list 
+                let ll= getEdgeList list
                 let result = automaticHideTheoremShiftFromList ln ll libEnv
                 let newGoalList = createAllGoalsList ln result
                 return ((Env ln result):(AllGoals newGoalList):[])
@@ -709,8 +714,8 @@ cDgHideThm input status =
 cDgAllHideThm::String -> [Status] ->IO [Status]
 cDgAllHideThm _ arg
   = case arg of
-     (Env x y):_ -> 
-        let result= (automaticHideTheoremShift x) y 
+     (Env x y):_ ->
+        let result= (automaticHideTheoremShift x) y
             newGoalList = createAllGoalsList x result
         in  return ((Env x result):(AllGoals newGoalList):[])
      _:l         -> cDgAllHideThm "" l
@@ -719,8 +724,8 @@ cDgAllHideThm _ arg
 cDgAllThmHide::String -> [Status] ->IO [Status]
 cDgAllThmHide _ arg
   = case arg of
-     (Env x y):_ -> 
-        let result=(theoremHideShift x) y 
+     (Env x y):_ ->
+        let result=(theoremHideShift x) y
             newGoalList = createAllGoalsList x result
         in  return ((Env x result):(AllGoals newGoalList):[])
      _:l         -> cDgAllThmHide "" l
@@ -730,7 +735,7 @@ cDgAllThmHide _ arg
 cDgAllInferBasic::String -> [Status] ->IO [Status]
 cDgAllInferBasic _ arg
  = case arg of
-    (AllGoals allGoals):_ -> return [Selected allGoals] 
+    (AllGoals allGoals):_ -> return [Selected allGoals]
     _:l         -> cDgAllInferBasic "" l
     []          -> return [(OutputErr "Wrong parameters")]
 
@@ -744,14 +749,14 @@ cDgInferBasic input status =
    Left _ -> do
               putStr "Error parsing the node list ! \n"
               return []
-   Right param -> 
+   Right param ->
     case status of
      (Env ln libEnv):l ->
       case l of
-       (AllGoals allgoals):_ -> 
+       (AllGoals allgoals):_ ->
           case param of
             (Goals ls):_ -> do
-                         let allNodes = convToGoal $ 
+                         let allNodes = convToGoal $
                                labNodes (lookupDGraph ln libEnv)
                          ll <- getGoalList ls (allgoals ++ allNodes) allNodes
                          return ((Selected ll):[])
@@ -759,7 +764,7 @@ cDgInferBasic input status =
        _:ll              -> cDgInferBasic input ((Env ln libEnv):ll)
        []                -> return [(OutputErr "Wrong parameters")]
      (AllGoals allgoals):l ->
-      case l of 
+      case l of
        (Env ln libEnv):_ ->
            case param of
              (Goals ls):_ -> do
@@ -771,7 +776,7 @@ cDgInferBasic input status =
        _:ll              -> cDgInferBasic input ((AllGoals allgoals):ll)
        []                -> return [(OutputErr "Wrong parameters")]
      _:l                 -> cDgInferBasic input l
-     []                  -> return [(OutputErr "Wrong parameters")]                                 
+     []                  -> return [(OutputErr "Wrong parameters")]
 
 cTranslate::String -> [Status] -> IO [Status]
 cTranslate input _
@@ -783,8 +788,8 @@ cTranslate input _
                 return []
      Right param ->
        case param of
-                 (ParsedComorphism ls):_ -> return [(Comorph ls)] 
-                 _                       -> return [(OutputErr "Wrong parameters")]
+         ParsedComorphism ls : _ -> return [(Comorph ls)]
+         _ -> return [(OutputErr "Wrong parameters")]
 
 cProver::String -> [Status] ->IO [Status]
 cProver input _
@@ -804,25 +809,25 @@ cShowDgGoals  _ arg
  =do
      case arg of
        (AllGoals allGoals):l -> do
-             case l of 
+             case l of
                (Env x y):_ -> do
                       let dgraph = lookupDGraph x y
                       let allNodes = labNodes dgraph
                       printNamesFromList allGoals allNodes
                       return []
                _:ll -> cShowDgGoals "" ((AllGoals allGoals):ll)
-               []   -> do 
+               []   -> do
                         putStr "Error, no library is loaded!\n"
                         return []
        (Env x y):l -> do
-             case l of 
+             case l of
                 (AllGoals allGoals):_ -> do
                       let dgraph = lookupDGraph x y
                       let allNodes = labNodes dgraph
                       printNamesFromList allGoals allNodes
                       return []
                 _:ll  -> cShowDgGoals "" ((Env x y):ll)
-                [] -> do 
+                [] -> do
                         putStr "Error, no library is loaded! \n"
                         return []
        _:l -> cShowDgGoals "" l
@@ -832,7 +837,7 @@ cShowDgGoals  _ arg
 
 cShowTheory::String -> [Status] -> IO [Status]
 cShowTheory _ arg
-  = case arg of 
+  = case arg of
      (AllGoals allGoals):_ -> do printNodeTheoryFromList allGoals
                                  return []
      _:l                        -> cShowNodeTheory "" l
@@ -843,15 +848,15 @@ cShowTheory _ arg
 
 cShowNodeTheory::String -> [Status] -> IO [Status]
 cShowNodeTheory input arg
- = 
-  case input of 
+ =
+  case input of
    "" -> do
-    case arg of 
-     (Selected xx):_ -> do 
-                         printNodeTheoryFromList xx 
+    case arg of
+     (Selected xx):_ -> do
+                         printNodeTheoryFromList xx
                          return []
      _:l                        -> cShowNodeTheory "" l
-     []                         -> do 
+     []                         -> do
                                     putStr "Error, no nodes selected ! \n"
                                     return []
    _ -> do
@@ -863,33 +868,33 @@ cShowNodeTheory input arg
          Right param -> do
           case arg of
              (AllGoals allGoals):l ->
-                case l of 
+                case l of
                   (Env ln libEnv):_ ->
                      case param of
                         (Goals ls):_ -> do
-                             let allNodes = convToGoal $ 
+                             let allNodes = convToGoal $
                                   labNodes (lookupDGraph ln libEnv)
                              list <- getGoalList ls allNodes allNodes
                              printNodeTheoryFromList list
                              return []
                         _ -> do
-                              putStr "Error parsing the node list! \n"  
+                              putStr "Error parsing the node list! \n"
                               return []
-                  _:ll -> cShowNodeTheory input ((AllGoals allGoals):ll)  
-                  []   -> do 
+                  _:ll -> cShowNodeTheory input ((AllGoals allGoals):ll)
+                  []   -> do
                            putStr "Error, no library loaded ! \n"
                            return []
              (Env ln libEnv):l ->
-                 case l of 
+                 case l of
                    (AllGoals _):_ ->
                        case param of
                           (Goals ls):_ -> do
-                               let allNodes = convToGoal $ 
+                               let allNodes = convToGoal $
                                      labNodes (lookupDGraph ln libEnv)
                                list <- getGoalList ls allNodes allNodes
                                printNodeTheoryFromList list
                                return []
-                          _ -> do 
+                          _ -> do
                                 putStr "Error parsing the node list! \n"
                                 return []
                    _:ll -> cShowNodeTheory input ((Env ln libEnv):ll)
@@ -899,7 +904,7 @@ cShowNodeTheory input arg
              _:l -> cShowNodeTheory input l
              [] -> do putStr "Error, no library loaded ! \n"
                       return []
-   
+
 cShowInfo :: String -> [Status] -> IO [Status]
 cShowInfo input arg
  =
@@ -907,19 +912,19 @@ cShowInfo input arg
    "" ->
     case arg of
      (Selected xx):l -> do
-         case l of 
-            (Env ln libEnv):_ -> do 
-                         let allNodes = 
+         case l of
+            (Env ln libEnv):_ -> do
+                         let allNodes =
                                labNodes (lookupDGraph ln libEnv)
                          printInfoFromList xx allNodes
                          return []
-            _:ll -> cShowInfo "" ((Selected xx):ll)  
+            _:ll -> cShowInfo "" ((Selected xx):ll)
             []   -> do putStr "Error, no library was loaded ! \n"
                        return []
      (Env ln libEnv):l -> do
-        case l of 
+        case l of
           (Selected xx):_ -> do
-                     let nodeList = 
+                     let nodeList =
                              labNodes (lookupDGraph ln libEnv)
 --                     let allNodes = convToGoal nodeList
                      printInfoFromList xx nodeList
@@ -928,10 +933,10 @@ cShowInfo input arg
           []   -> do putStr "Error, no nodes or edges were selected ! \n"
                      return []
      _:l             -> cShowInfo "" l
-     []              -> do 
+     []              -> do
                          putStr "Error, no nodes or edges selected ! \n"
                          return []
-   _ -> do 
+   _ -> do
       let r=runParser (scanCommand ["GOALS"]) (emptyAnnos ()) "" input
       case r of
          Left _ -> do
@@ -940,33 +945,35 @@ cShowInfo input arg
          Right param -> do
            case arg of
              (AllGoals allGoals):l ->
-                case l of 
+                case l of
                   (Env ln libEnv):_ ->
                      case param of
                         (Goals ls):_ -> do
                              let nodeList = labNodes (lookupDGraph ln libEnv)
-                             let allNodes = convToGoal nodeList 
-                             list <- getGoalList ls (allGoals++allNodes) allNodes
-                             printInfoFromList list nodeList 
+                             let allNodes = convToGoal nodeList
+                             list <- getGoalList ls (allGoals++allNodes)
+                                     allNodes
+                             printInfoFromList list nodeList
                              return []
                         _ -> do
-                              putStr "Error parsing the node list! \n"  
+                              putStr "Error parsing the node list! \n"
                               return []
-                  _:ll -> cShowInfo input ((AllGoals allGoals):ll)  
-                  []   -> do 
+                  _:ll -> cShowInfo input ((AllGoals allGoals):ll)
+                  []   -> do
                            putStr "Error, no library loaded ! \n"
                            return []
              (Env ln libEnv):l ->
-                 case l of 
+                 case l of
                    (AllGoals allGoals):_ ->
                        case param of
                           (Goals ls):_ -> do
                                let nodeList = labNodes (lookupDGraph ln libEnv)
-                               let allNodes = convToGoal nodeList 
-                               list <- getGoalList ls (allGoals++allNodes) allNodes
-                               printInfoFromList list nodeList 
+                               let allNodes = convToGoal nodeList
+                               list <- getGoalList ls (allGoals++allNodes)
+                                       allNodes
+                               printInfoFromList list nodeList
                                return []
-                          _ -> do 
+                          _ -> do
                                 putStr "Error parsing the node list! \n"
                                 return []
                    _:ll -> cShowInfo input ((Env ln libEnv):ll)
@@ -979,12 +986,12 @@ cShowInfo input arg
 
 cShowNodeConcept :: String -> [Status] -> IO [Status]
 cShowNodeConcept input arg
- = 
-  case input of 
+ =
+  case input of
    "" ->
-    case arg of 
+    case arg of
      (Selected xx):l -> do
-           case l of 
+           case l of
               (Env ln libEnv):_ -> do
                          printNodeTaxonomyFromList KConcept xx libEnv ln
                          return []
@@ -1008,39 +1015,39 @@ cShowNodeConcept input arg
    _ -> do
     let r=runParser (scanCommand ["GOALS"]) (emptyAnnos ()) "" input
     case r of
-      Left _ -> do 
+      Left _ -> do
          putStr "Error parsing the node list ! \n"
          return []
       Right param->
             case arg of
              (AllGoals allGoals):l ->
-                case l of 
+                case l of
                   (Env ln libEnv):_ ->
                      case param of
                         (Goals ls):_ -> do
-                             let allNodes = convToGoal $ 
+                             let allNodes = convToGoal $
                                   labNodes (lookupDGraph ln libEnv)
                              list <- getGoalList ls allNodes allNodes
                              printNodeTaxonomyFromList KConcept list libEnv ln
                              return []
                         _ -> do
-                              putStr "Error parsing the node list! \n"  
+                              putStr "Error parsing the node list! \n"
                               return []
-                  _:ll -> cShowNodeConcept input ((AllGoals allGoals):ll)  
-                  []   -> do 
+                  _:ll -> cShowNodeConcept input ((AllGoals allGoals):ll)
+                  []   -> do
                            putStr "Error, no library loaded ! \n"
                            return []
              (Env ln libEnv):l ->
-                 case l of 
+                 case l of
                    (AllGoals _):_ ->
                        case param of
                           (Goals ls):_ -> do
-                            let allNodes = convToGoal $ 
+                            let allNodes = convToGoal $
                                   labNodes (lookupDGraph ln libEnv)
                             list <- getGoalList ls allNodes allNodes
                             printNodeTaxonomyFromList KConcept list libEnv ln
                             return []
-                          _ -> do 
+                          _ -> do
                                 putStr "Error parsing the node list! \n"
                                 return []
                    _:ll -> cShowNodeConcept input ((Env ln libEnv):ll)
@@ -1053,12 +1060,12 @@ cShowNodeConcept input arg
 
 cShowNodeTaxonomy ::String -> [Status] -> IO [Status]
 cShowNodeTaxonomy input arg
- = 
+ =
   case input of
    "" ->
     case arg of
      (Selected xx):l -> do
-           case l of 
+           case l of
               (Env ln libEnv):_ -> do
                          printNodeTaxonomyFromList KSubsort xx libEnv ln
                          return []
@@ -1067,16 +1074,16 @@ cShowNodeTaxonomy input arg
                          putStr "Error, no library loaded !\n"
                          return []
      (Env ln libEnv):l -> do
-           case l of 
+           case l of
               (Selected xx):_ -> do
                          printNodeTaxonomyFromList KSubsort xx libEnv ln
                          return []
               _:ll   -> cShowNodeTaxonomy "" ((Env ln libEnv):ll)
-              []     -> do 
+              []     -> do
                          putStr "Error, no nodes selected !\n"
                          return []
      _:l             -> cShowNodeTaxonomy "" l
-     []              -> do 
+     []              -> do
                          putStr "Error, no nodes selected !\n"
                          return []
    _ -> do
@@ -1088,33 +1095,33 @@ cShowNodeTaxonomy input arg
       Right param ->
             case arg of
              (AllGoals allGoals):l ->
-                case l of 
+                case l of
                   (Env ln libEnv):_ ->
                      case param of
                         (Goals ls):_ -> do
-                             let allNodes = convToGoal $ 
+                             let allNodes = convToGoal $
                                   labNodes (lookupDGraph ln libEnv)
                              list <- getGoalList ls allNodes allNodes
                              printNodeTaxonomyFromList KSubsort list libEnv ln
                              return []
                         _ -> do
-                              putStr "Error parsing the node list! \n"  
+                              putStr "Error parsing the node list! \n"
                               return []
-                  _:ll -> cShowNodeTaxonomy input ((AllGoals allGoals):ll)  
-                  []   -> do 
+                  _:ll -> cShowNodeTaxonomy input ((AllGoals allGoals):ll)
+                  []   -> do
                            putStr "Error, no library loaded ! \n"
                            return []
              (Env ln libEnv):l ->
-                 case l of 
+                 case l of
                    (AllGoals _):_ ->
                        case param of
                           (Goals ls):_ -> do
-                             let allNodes = convToGoal $ 
+                             let allNodes = convToGoal $
                                    labNodes (lookupDGraph ln libEnv)
                              list <- getGoalList ls allNodes allNodes
                              printNodeTaxonomyFromList KSubsort list libEnv ln
                              return []
-                          _ -> do 
+                          _ -> do
                                 putStr "Error parsing the node list! \n"
                                 return []
                    _:ll -> cShowNodeTaxonomy input ((Env ln libEnv):ll)
@@ -1129,22 +1136,22 @@ cEdges :: String -> [Status] -> IO [Status]
 cEdges _ arg =
  case arg of
    (Env ln libEnv):_ -> do
-                 printNamesFromList ( convEdgeToGoal ( 
+                 printNamesFromList ( convEdgeToGoal (
                      labEdges (lookupDGraph ln libEnv)))
                      (labNodes (lookupDGraph ln libEnv))
                  return []
    _:l -> cEdges "" l
    [] -> do
           putStr "Error, no library loaded ! \n"
-          return [] 
+          return []
 
 
 
 cNodes :: String -> [Status] -> IO [Status]
 cNodes _ arg =
  case arg of
-   (Env ln libEnv):_ -> do 
-            printNamesFromList ( convToGoal ( 
+   (Env ln libEnv):_ -> do
+            printNamesFromList ( convToGoal (
                       labNodes (lookupDGraph ln libEnv)))
                       (labNodes (lookupDGraph ln libEnv))
             return []
@@ -1156,18 +1163,18 @@ cNodes _ arg =
 cProveAll :: String -> [Status]->IO [Status]
 cProveAll _ arg =
   case arg of
-    (Env ln libEnv):l -> 
+    (Env ln libEnv):l ->
        case l of
-         (AllGoals ls):_ -> 
-            do 
+         (AllGoals ls):_ ->
+            do
               result <- proveNodes ls ln libEnv
               let newGoalList = createAllGoalsList ln result
               return  ((AllGoals newGoalList):(Env ln result):[])
          _:ll                 -> cProveAll "" ((Env ln libEnv):ll)
          _                    -> return [OutputErr "Wrong parameters"]
-    (AllGoals ls):l -> 
+    (AllGoals ls):l ->
        case l of
-         (Env ln libEnv):_ -> 
+         (Env ln libEnv):_ ->
             do
               result <- proveNodes ls ln libEnv
               let newGoalList = createAllGoalsList ln result
@@ -1185,42 +1192,43 @@ cViewNodeNumber input status =
    Left _ -> do
               putStr "\n Error parsing the node list ! \n"
               return []
-   Right param -> 
+   Right param ->
     case status of
-     (Env ln libEnv):_ -> 
+     (Env ln libEnv):_ ->
        case param of
         (Goals ls):_ -> do
-                         let allNodes = convToGoal $ 
+                         let allNodes = convToGoal $
                                labNodes (lookupDGraph ln libEnv)
                          ll <- getGoalList ls allNodes allNodes
-                         printNodeNumberFromList ll 
+                         printNodeNumberFromList ll
                          return []
         _            -> return [(OutputErr "Wrong parameters")]
      _:l               -> cViewNodeNumber input l
      []                -> return [(OutputErr "Wrong parameters")]
-      
+
 
 cShowGraph :: String -> [Status] -> IO [Status]
 cShowGraph _ status =
   (do
     case status of
-       (Env ln libEnv):l ->
-         case l of 
-          (Address file) :_ -> do
-               showGraph file defaultHetcatsOpts (Just (ln,libEnv))
-               return []
-          _:ll -> cShowGraph "" ((Env ln libEnv):ll) 
-          [] -> do putStr "Error, no library loaded ! \n"
-                   return []
-       (Address  file):l ->
+#ifdef UNI_PACKAGE
+       Env ln libEnv : l ->
          case l of
-          (Env ln libEnv):_ -> do 
+           Address file : _ -> do
                showGraph file defaultHetcatsOpts (Just (ln, libEnv))
                return []
-          _:ll -> cShowGraph "" ((Address file):ll)
-          [] -> do putStr "Error, no library loaded ! \n"
-                   return []
-       _:l -> cShowGraph "" l
-       [] -> do putStr "Error, no library loaded ! \n"
+           _ : ll -> cShowGraph "" (Env ln libEnv : ll)
+           [] -> do putStrLn "Error, no library loaded!"
+                    return []
+       Address file : l ->
+         case l of
+           Env ln libEnv : _ -> do
+               showGraph file defaultHetcatsOpts (Just (ln, libEnv))
+               return []
+           _ : ll -> cShowGraph "" (Address file : ll)
+           [] -> do putStrLn "Error, no library loaded!"
+                    return []
+#endif
+       _ : l -> cShowGraph "" l
+       [] -> do putStrLn "Error, no library loaded! (or compiled without uni)"
                 return []) `catch` (\_ -> return [])
-
