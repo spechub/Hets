@@ -267,31 +267,54 @@ shellDetails :: Sh [Status] ()
 shellDetails 
     = shellPutStr printDetails
 
+
+
 shellDisplayGraph :: Sh [Status] ()
 shellDisplayGraph 
   = do 
     val <-getShellSt >>= \state -> liftIO(cShowGraph "" state)
     modifyShellSt (update val)
 
+-- | the 'doEvaluation' function evaluates an input which is not a command
+doEvaluation :: String -> [Status] -> IO [Status]
+doEvaluation str state 
+  = case str of
+     []     -> return []
+     _      -> case state of
+                 []  -> do putStr ("Unkown input :"++str++"\n"
+		               ++ "Type \'help\' for more information\n")
+			   return []
+	         LoadScript:_-> return ([More str])
+		 _:l  -> doEvaluation str l 
+
+-- | the 'doFileEval' function evaluates an input which is not a command
+-- in the case the input is provided as a file
+doFileEval :: String -> [Status] -> IO [Status]
+doFileEval str state 
+  = case str of
+      []        -> return []
+      _         -> case state of
+                     [] -> do
+		            putStr ("\n Unkown input :" ++ str ++ "\n")
+			    return []
+		     LoadScript:_ -> return ([More str]) 
+		     _:l   -> doFileEval str l 
 
 -- | The evaluation function is called when the input could not be parsed
 -- as a command. If the input is an empty string do nothing, otherwise 
 -- print the error message
 pgipEvalFunc :: String -> Sh [Status] ()
 pgipEvalFunc str
-  = case str of
-     []   -> return () 
-     x    ->  
-              (shellPutStr ("Unkown input :" ++ x ++ "\n"
-                           ++ "Type \'help\' for more information\n"))
+    = do   
+       val <-getShellSt >>= \state -> liftIO(doEvaluation str state)
+       modifyShellSt (update val)
 
 -- | The evaluation function in case shellac reads from a file.
 pgipFileEvalFunc :: String -> Sh [Status] ()
 pgipFileEvalFunc str
-  = case str of
-     []   -> return () 
-     x    ->  
-              (shellPutStr ("\n\nUnkown input :" ++ x ++ "\n\n"))
+  = do 
+     val <- getShellSt >>= \state -> liftIO (doFileEval str state)
+     modifyShellSt (update val)
                            
 
 
@@ -427,7 +450,7 @@ basicOutput (ErrorOutput out)   = hPutStr stderr out
 
 pgipInteractiveShellDescription :: ShellDescription [Status]
 pgipInteractiveShellDescription =
- let wbc = "\t\n\r\v\\,;" in
+ let wbc = "\n\r\v\\,;" in
       ShDesc
        { shellCommands      = pgipShellCommands
        , commandStyle       = OnlyCommands

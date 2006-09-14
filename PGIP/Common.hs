@@ -320,7 +320,7 @@ getNodeList ls =
             []               -> []
 
 -- | The function 'update' returns the updated version of the status defined in 
--- the first argument with the values from the second argument (i.e replaces 
+-- the second argument with the values from the first argument (i.e replaces 
 -- any value from status with the one from values if they are of the same type
 -- otherwise just adds the new values
 update::[Status] -> [Status] -> [Status]
@@ -470,7 +470,7 @@ printNodeTheoryFromList ls =
                                 return result
                      []    -> return ()
 
--- | The function 'printNodeTheory' given a 'GraphGoal' prints on the screen
+-- | The function 'printNodeTheory' given a 'GraphGoals' prints on the screen
 -- the theory of the node if the goal is a node or Not a node ! otherwise
 printNodeTheory :: GraphGoals -> IO()
 printNodeTheory arg =
@@ -560,7 +560,7 @@ printNodeNumber x =
                   putStr ("Node "++(showName tname)++" has number "++(show nb))
      _               -> putStr "Not a node !\n"
 
--- | The function 'printNodeInfoFromList' given a 'GraphGoal' list prints the
+-- | The function 'printInfoFromList' given a 'GraphGoal' list prints the
 -- name of all node goals
 printInfoFromList :: [GraphGoals] -> [GDataNode] -> IO()
 printInfoFromList ls allNodes=
