@@ -41,9 +41,9 @@ data GOAL =
 
 
 -- | The function 'getGoalList' creates a graph goal list ( a graph goal is 
--- defined by the datatype GraphGoals) that is a part of 'allg' list passed
--- as an argument and corresponds to goalList (a parased goal list, see
--- GOAL datatype)
+-- defined by the datatype 'GraphGoals') that is a part of the list passed
+-- as an argument that corresponds to the parsed goals ( see
+-- 'GOAL' datatype)
 getGoalList :: [GOAL] -> [GraphGoals] -> [GraphGoals] -> IO [GraphGoals]
 getGoalList goalList allg ll 
  = case goalList of
@@ -71,7 +71,7 @@ getGoalList goalList allg ll
 
  
 -- | The function 'extractGraphNode' extracts the goal node defined by 
--- 'x' (the ID of the node as a string) from the provided list of goals  
+-- the ID of the node as a string from the provided list of goals  
 extractGraphNode:: String->[GraphGoals]->IO (Maybe GraphGoals)
 extractGraphNode x allGoals 
     = case allGoals of
@@ -85,7 +85,7 @@ extractGraphNode x allGoals
 
          
 -- | The function 'extractGraphEdge' extracts the goal edge determined by 
--- 'x' and 'y' nodes from the provided list of goals
+-- the two nodes from the provided list of goals
 extractGraphEdge:: String -> String -> [GraphGoals] -> [GraphGoals]
                     -> IO (Maybe GraphGoals)
 extractGraphEdge x y allGoals ll
@@ -160,7 +160,7 @@ extractGraphLabeledEdge x nb y allGoals ll
 
 
 -- | The function 'getEdgeGoals' given a list of edges selects all edges that
--- are goals of the graph and returns them as GraphGoals
+-- are goals of the graph and returns them as 'GraphGoals'
 getEdgeGoals :: [GDataEdge] -> [GraphGoals]
 getEdgeGoals ls =
     case ls of
@@ -173,16 +173,16 @@ getEdgeGoals ls =
                         _                     -> getEdgeGoals ll
          []  -> []
 
--- | The function 'convToGoal' converts a list of GDataNode 
--- into GraphGoals list
+-- | The function 'convToGoal' converts a list of 'GDataNode' 
+-- into 'GraphGoals' list
 convToGoal:: [GDataNode] -> [GraphGoals]
 convToGoal ls
  = case ls of
      x:l -> (GraphNode x) : (convToGoal l)
      []  -> []
 
--- | The function 'convEdgeToGoal' converts a list of GDataEdge 
--- into GraphGoals list
+-- | The function 'convEdgeToGoal' converts a list of 'GDataEdge' 
+-- into 'GraphGoals' list
 convEdgeToGoal :: [GDataEdge] -> [GraphGoals]
 convEdgeToGoal ls 
  = case ls of 
@@ -191,7 +191,7 @@ convEdgeToGoal ls
 
 
 -- | The function 'getEdgeList' returns from a list of graph goals just the 
--- edge goals as [GDataEdge]
+-- edge goals as ['GDataEdge']
 getEdgeList :: [GraphGoals] -> [GDataEdge]
 getEdgeList ls =
         case ls of 
@@ -235,7 +235,7 @@ createAllGoalsList ln libEnv
                       in edgeGoals ++ nodeGoals
 
 -- | The function 'getNodeGoals' given a list of nodes selects all nodes that
--- are goals of teh graph and returns them as GraphGoals
+-- are goals of the graph and returns them as 'GraphGoals'
 getNodeGoals::[GDataNode] -> [GraphGoals]
 getNodeGoals ls =
    case ls of
@@ -270,8 +270,9 @@ getDGNodeType dgnodelab =
             _ -> False
 
 
--- | The function 'extractGoals' given the list of GDataEdge 'ls' and
--- the list of goals 'll' finds all elemnts of 'ls' that are also in 'll'
+-- | The function 'extractGoals' given the list of 'GDataEdge' and
+-- the list of goals finds all elemnts of in the first list that are
+-- also in the second
 extractGoals :: [GDataEdge] -> [GraphGoals] -> [GDataEdge]
 extractGoals ls ll
  = case ls of 

@@ -39,7 +39,7 @@ import PGIP.Utils
 import qualified Logic.Prover as P
 import qualified Common.OrderedMap as OMap
 
--- | The datatype CmdParam contains all the possible parameters a command of
+-- | The datatype 'CmdParam' contains all the possible parameters a command of
 -- the interface might have. It is used to create one function that returns
 -- the parameters after parsing no matter what command is parsed
 data CmdParam =
@@ -56,7 +56,7 @@ data CmdParam =
  | NoParam
  deriving (Eq,Show)
 
--- | The datatype Status contains the current status of the interpeter at any
+-- | The datatype 'Status' contains the current status of the interpeter at any
 -- moment in time
 data Status =
    OutputErr  String
@@ -74,6 +74,15 @@ data Status =
 -- Address stores the current library loaded so that the correct promter can
 -- be generated
  | Address String
+-- If the flag exists it means that the interpreter expects to read some
+-- script
+ | LoadScript
+-- The string send with MoreScript will be attached at the end of the
+-- current script
+ | More String
+-- The string stored as Script is the current script
+ | Script String
+
 
 -- | The function checks if the first string is a prefix of the second.
 prefix :: String -> String -> Bool
@@ -93,7 +102,7 @@ getNameList ls
      (_, (DGRef  thName _ _ _ _ _ )):l   -> (showName thName):(getNameList l)
      []                                  -> []
 
--- | The function checks if the word 'wd' is a prefix of the name of
+-- | The function checks if the word given is a prefix of the name of
 -- any of the nodes in the list, if so it returns the list of the
 -- names otherwise it returns the empty list
 checkWord :: String -> [String] -> [String]
@@ -302,7 +311,7 @@ pgipCompletionFn state wd
 
 
 -- | The function 'getNodeList' returns from a list of graph goals just
--- the nodes as [GDataNode]
+-- the nodes as ['GDataNode']
 getNodeList :: [GraphGoals] -> [GDataNode]
 getNodeList ls =
        case ls of
@@ -310,9 +319,10 @@ getNodeList ls =
             (GraphNode x):l  -> x:(getNodeList l)
             []               -> []
 
--- | The function 'update' returns the updated version of 'status' with the
--- values from 'val' (i.e replaces any value from 'status' with the one from
--- 'val' if they are of the same type otherwise just adds the values from 'val'
+-- | The function 'update' returns the updated version of the status defined in 
+-- the first argument with the values from the second argument (i.e replaces 
+-- any value from status with the one from values if they are of the same type
+-- otherwise just adds the new values
 update::[Status] -> [Status] -> [Status]
 update val status
  = case val of
@@ -328,6 +338,9 @@ update val status
        (Comorph xx):ls    -> update l ((Comorph xx):(update [Env x y] ls))
        (Prover xx):ls     -> update l ((Prover xx):(update [Env x y] ls))
        (Address xx):ls    -> update l ((Address xx):(update [Env x y] ls))
+       LoadScript:ls      -> update l (LoadScript:(update [Env x y] ls))
+       (More xx):ls       -> update l ((More xx):(update [Env x y] ls))
+       (Script xx):ls     -> update l ((Script xx):(update [Env x y] ls))
     (Selected x):l ->
       case status of
        []                 -> update l [Selected x]
@@ -339,6 +352,9 @@ update val status
        (Comorph xx):ls    -> update l ((Comorph xx):(update [Selected x] ls))
        (Prover xx):ls     -> update l ((Prover xx):(update [Selected x] ls))
        (Address xx):ls    -> update l ((Address xx):(update [Selected x] ls))
+       LoadScript:ls      -> update l (LoadScript:(update [Selected x] ls))
+       (More xx):ls       -> update l ((More xx):(update [Selected x] ls))
+       (Script xx):ls     -> update l ((Script xx):(update [Selected x] ls))
     (AllGoals x):l ->
       case status of
        []                 -> update  l [AllGoals x]
@@ -350,6 +366,9 @@ update val status
        (Comorph xx):ls    -> update l ((Comorph xx):(update [AllGoals x] ls))
        (Prover xx):ls     -> update l ((Prover xx): (update [AllGoals x] ls))
        (Address xx):ls    -> update l ((Address xx):(update [AllGoals x] ls))
+       LoadScript:ls      -> update l (LoadScript:(update [AllGoals x] ls))
+       (More xx):ls       -> update l ((More xx):(update [AllGoals x] ls))
+       (Script xx):ls     -> update l ((Script xx):(update [AllGoals x] ls))
     (Comorph x):l ->
       case status of
        []                 -> update l [Comorph x]
@@ -361,6 +380,9 @@ update val status
        (Comorph _):ls     -> update l ((Comorph x):ls)
        (Prover xx):ls     -> update l ((Prover xx):(update  [Comorph x] ls))
        (Address xx):ls    -> update l ((Address xx):(update [Comorph x] ls))
+       LoadScript:ls      -> update l (LoadScript:(update [Comorph x] ls))
+       (More xx):ls       -> update l ((More xx):(update [Comorph x] ls))
+       (Script xx):ls     -> update l ((Script xx):(update [Comorph x] ls))
     (Prover x):l    ->
       case status of
        []                 -> update l [Prover x]
@@ -372,6 +394,9 @@ update val status
        (Comorph xx):ls    -> update l ((Comorph xx):(update [Prover x] ls))
        (Prover _):ls      -> update l ((Prover x):ls)
        (Address xx):ls    -> update l ((Address xx):(update [Prover x] ls))
+       LoadScript:ls      -> update l (LoadScript:(update [Prover x] ls))
+       (More xx):ls       -> update l ((More xx):(update [Prover x] ls))
+       (Script xx):ls     -> update l ((Script xx):(update [Prover x] ls))
     (Address x):l   ->
       case status of
        []                 -> update l [Address x]
@@ -383,11 +408,56 @@ update val status
        (Comorph xx):ls    -> update l ((Comorph xx):(update [Address x] ls))
        (Prover xx):ls     -> update l ((Prover xx):(update [Address x] ls))
        (Address _):ls     -> update l ((Address x):ls)
+       LoadScript:ls      -> update l (LoadScript:(update [Address x] ls))
+       (More xx):ls       -> update l ((More xx):(update [Address x] ls))
+       (Script xx):ls     -> update l ((Script xx):(update [Address x] ls))
+    LoadScript:l   ->
+      case status of
+       []                 -> update l [LoadScript]
+       CmdInitialState:ls -> update (LoadScript:l) ls
+       (OutputErr xx):_  -> (OutputErr xx):[]
+       (Env xx yy):ls     -> update l ((Env xx yy):(update [LoadScript] ls))
+       (Selected xx):ls   -> update l ((Selected xx):(update [LoadScript] ls))
+       (AllGoals xx):ls   -> update l ((AllGoals xx):(update [LoadScript] ls))
+       (Comorph xx):ls    -> update l ((Comorph xx):(update [LoadScript] ls))
+       (Prover xx):ls     -> update l ((Prover xx):(update [LoadScript] ls))
+       (Address xx):ls    -> update l ((Address xx):(update [LoadScript] ls))
+       LoadScript:ls      -> update l ls
+       (More xx):ls       -> update l ((More xx):(update [LoadScript] ls))
+       (Script xx):ls     -> update l ((Script xx):(update [LoadScript] ls))
+    (More x):l       ->
+      case status of
+       []                 -> update l [Script x]
+       CmdInitialState:ls -> update ((More x):l) ls
+       (OutputErr xx):_  -> (OutputErr xx):[]
+       (Env xx yy):ls     -> update l ((Env xx yy):(update [More x] ls))
+       (Selected xx):ls   -> update l ((Selected xx):(update [More x] ls))
+       (AllGoals xx):ls   -> update l ((AllGoals xx):(update [More x] ls))
+       (Comorph xx):ls    -> update l ((Comorph xx):(update [More x] ls))
+       (Prover xx):ls     -> update l ((Prover xx):(update [More x] ls))
+       (Address xx):ls    -> update l ((Address xx):(update [More x] ls))
+       LoadScript:ls      -> update l (LoadScript: (update [More x] ls))
+       (More _):ls       -> update l (update [More x] ls)
+       (Script xx):ls     -> update l ((Script (xx++x)):ls)
+    (Script x):l       ->
+      case status of
+       []                 -> update l [Script x]
+       CmdInitialState:ls -> update ((Script x):l) ls
+       (OutputErr xx):_  -> (OutputErr xx):[]
+       (Env xx yy):ls     -> update l ((Env xx yy):(update [Script x] ls))
+       (Selected xx):ls   -> update l ((Selected xx):(update [Script x] ls))
+       (AllGoals xx):ls   -> update l ((AllGoals xx):(update [Script x] ls))
+       (Comorph xx):ls    -> update l ((Comorph xx):(update [Script x] ls))
+       (Prover xx):ls     -> update l ((Prover xx):(update [Script x] ls))
+       (Address xx):ls    -> update l ((Address xx):(update [Script x] ls))
+       LoadScript:ls      -> update l (LoadScript:(update [Script x] ls))
+       (More xx):ls       -> update l ((More xx):(update [Script x] ls))
+       (Script _):ls      -> update l ((Script x):ls)
     (OutputErr x):_       -> (OutputErr x):[]
     CmdInitialState:l     -> update l status
 
 -- | The function 'printNodeTheoryFromList' prints on the screen the theory
--- of all nodes in the [GraphGoals] list
+-- of all nodes in the ['GraphGoals'] list
 printNodeTheoryFromList :: [GraphGoals]-> IO()
 printNodeTheoryFromList ls =
                 case ls of
@@ -400,8 +470,8 @@ printNodeTheoryFromList ls =
                                 return result
                      []    -> return ()
 
--- | The function 'printNodeTheory' given a GraphGoal prints on the screen
--- the theory of the node if the goal is a node or 'Not a node !' otherwise
+-- | The function 'printNodeTheory' given a 'GraphGoal' prints on the screen
+-- the theory of the node if the goal is a node or Not a node ! otherwise
 printNodeTheory :: GraphGoals -> IO()
 printNodeTheory arg =
   case arg of
@@ -490,7 +560,7 @@ printNodeNumber x =
                   putStr ("Node "++(showName tname)++" has number "++(show nb))
      _               -> putStr "Not a node !\n"
 
--- | The function 'printNodeInfoFromList' given a GraphGoal list prints the
+-- | The function 'printNodeInfoFromList' given a 'GraphGoal' list prints the
 -- name of all node goals
 printInfoFromList :: [GraphGoals] -> [GDataNode] -> IO()
 printInfoFromList ls allNodes=
@@ -545,8 +615,8 @@ printInfoFromList ls allNodes=
               result<- printInfoFromList l allNodes
               return result
         []              -> return ()
--- | The function 'printNodeInfo' given a GraphGoal prints the name of the node
--- if it is a graph node otherwise prints 'Not a node !'
+-- | The function 'printNodeInfo' given a 'GraphGoal' prints the name of the
+-- node if it is a graph node otherwise prints Not a node !
 printNodeInfo :: GraphGoals -> IO()
 printNodeInfo x =
        case x of
@@ -702,7 +772,7 @@ printNodeNumberProvenThm input =
      _  -> putStr "Not a node ! \n"
 
 -- | The function 'printNodeTaxonomyFromList' given a GraphGoals list generates
--- the 'kind' type of Taxonomy Graphs of all goal nodes from the list
+-- the 'TaxoGraphKind' type of Taxonomy Graphs of all goal nodes from the list
 printNodeTaxonomyFromList :: TaxoGraphKind -> [GraphGoals] -> LibEnv
                           -> LIB_NAME -> IO()
 printNodeTaxonomyFromList kind ls libEnv ln =
@@ -718,9 +788,9 @@ printNodeTaxonomyFromList kind ls libEnv ln =
                           return result
                    []  -> return ()
 
--- | The function 'printNodeTaxonomy' given just a GraphGoal generates
--- the 'kind' type of Taxonomy Graphs if the goal is a node otherwise
--- it prints on the screen 'Not a node !'
+-- | The function 'printNodeTaxonomy' given just a 'GraphGoals' generates
+-- the 'TaxoGraphKind' type of Taxonomy Graphs if the goal is a node otherwise
+-- it prints on the screen Not a node !
 printNodeTaxonomy :: TaxoGraphKind -> GraphGoals -> LibEnv -> LIB_NAME ->IO()
 printNodeTaxonomy kind x libEnv ln =
    case x of
@@ -736,7 +806,7 @@ printNodeTaxonomy kind x libEnv ln =
 #endif
      _ -> putStrLn "Not a node! (or compiled without uni)"
 
--- | The function proveNodes applies basicInferenceNode for proving to
+-- | The function 'proveNodes' applies 'basicInferenceNode' for proving to
 -- all nodes in the graph goal list
 proveNodes :: [GraphGoals] -> LIB_NAME ->LibEnv -> IO LibEnv
 proveNodes ls ln libEnv
