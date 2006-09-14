@@ -39,11 +39,8 @@ empty = InjMap Map.empty Map.empty
 {- | insert a pair into the given injective map. An existing key and the
 corresponding content will be overridden. -}
 insert :: (Ord a, Ord b) => a -> b -> InjMap a b -> InjMap a b
-insert a b i@(InjMap m n) = case Map.lookup a m of
-    Just x -> insert a b $ delete a x i
-    Nothing -> case Map.lookup b n of
-        Just y -> insert a b $ delete y b i
-        Nothing -> InjMap (Map.insert a b m) (Map.insert b a n)
+insert a b i = let InjMap m n = delete a b i in
+    InjMap (Map.insert a b m) (Map.insert b a n)
 
 {- | delete the pair with the given key in the injective
 map. Possibly two pairs may be deleted if the pair is not a member. -}
@@ -58,24 +55,22 @@ member a b (InjMap m n) = case (Map.lookup a m, Map.lookup b n) of
    (Just x, Just y) | x == b && y == a -> True
    _ -> False
 
+-- | transpose to avoid duplicate code
+transpose :: InjMap a b -> InjMap b a
+transpose (InjMap m n) = InjMap n m
+
 {- | look up the content with the given key in the direction of a->b
 in the injective map. -}
 lookupWithA :: (Ord a, Ord b) => a -> InjMap a b -> Maybe b
 lookupWithA x (InjMap m n) = case Map.lookup x m of
     Just y -> case Map.lookup y n of
         Just temp -> if temp == x then Just y
-                     else error "InjMap.lookupWithA1"
-        Nothing -> error "InjMap.lookupWithA2"
+                     else error "InjMap.lookupWith1"
+        Nothing -> error "InjMap.lookupWith2"
     Nothing -> Nothing
-
 -- the errors indicate that the inijectivity is destroyed
 
 {- | look up the content with the given key in the direction of b->a
 in the injective map. -}
 lookupWithB :: (Ord a, Ord b) => b -> InjMap a b -> Maybe a
-lookupWithB y (InjMap m n) = case Map.lookup y n of
-    Just x -> case Map.lookup x m of
-        Just temp -> if temp == y then Just x
-                     else error "InjMap.lookupWithB1"
-        Nothing -> error "InjMap.lookupWithB2"
-    Nothing -> Nothing
+lookupWithB y = lookupWithA y . transpose
