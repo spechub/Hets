@@ -29,8 +29,6 @@ import System.Exit
 import Control.Monad.Trans
 import Data.List
 
---import PGIP.Command_Parser
-
 -- | short version without date for ATC files
 hetsVersion :: String
 hetsVersion = takeWhile (/= ',') hetcats_version
@@ -40,7 +38,8 @@ bracket s = "[" ++ s ++ "]"
 
 -- use the same strings for parsing and printing!
 verboseS, intypeS, outtypesS, rawS, skipS, structS, transS,
-     guiS, onlyGuiS, libdirS, outdirS, amalgS, specS, recursiveS, interactiveS :: String
+     guiS, onlyGuiS, libdirS, outdirS, amalgS, specS, recursiveS,
+     interactiveS :: String
 
 verboseS = "verbose"
 intypeS = "input-type"
@@ -109,7 +108,8 @@ data HetcatsOpts =        -- for comments see usage info
           , defLogic :: String
           , outputToStdout :: Bool    -- flag: output diagnostic messages?
           , caslAmalg :: [CASLAmalgOpt]
-          , interactive :: Bool -- flag telling if it should run in interactive mode
+          , interactive :: Bool
+          -- flag telling if it should run in interactive mode
           }
 
 instance Show HetcatsOpts where
@@ -117,13 +117,13 @@ instance Show HetcatsOpts where
                 ++ show (gui opts)
                 ++ show (analysis opts)
                 ++ showEqOpt libdirS (libdir opts)
+                ++ (if interactive opts then showOpt interactiveS else "")
                 ++ showEqOpt intypeS (show $ intype opts)
                 ++ showEqOpt outdirS (outdir opts)
                 ++ showEqOpt outtypesS (showOutFiles $ outtypes opts)
                 ++ (if recurse opts then showOpt recursiveS else "")
-                ++ (if interactive opts then " Interactive mode " else "")
-                ++ showEqOpt specS (joinWith ':' $ map show $ specNames opts)
-                ++ showEqOpt specS (joinWith ':' $ map show $ transNames opts)
+                ++ showEqOpt specS (joinWith ',' $ map show $ specNames opts)
+                ++ showEqOpt transS (joinWith ':' $ map show $ transNames opts)
                 ++ showRaw (rawopts opts)
                 ++ showEqOpt amalgS ( tail $ init $ show $
                                       case caslAmalg opts of
@@ -138,6 +138,7 @@ instance Show HetcatsOpts where
 -- | 'makeOpts' includes a parsed Flag in a set of HetcatsOpts
 makeOpts :: HetcatsOpts -> Flag -> HetcatsOpts
 makeOpts opts flg = case flg of
+    Interactive -> opts { interactive = True }
     Analysis x -> opts { analysis = x }
     Gui x      -> opts { gui = x }
     InType x   -> opts { intype = x }
@@ -145,7 +146,6 @@ makeOpts opts flg = case flg of
     OutDir x   -> opts { outdir = x }
     OutTypes x -> opts { outtypes = x }
     Recurse    -> opts { recurse = True }
-    Interactive-> opts { interactive = True }
     Specs x    -> opts { specNames = x }
     Trans x    -> opts { transNames = x }
     Raw x      -> opts { rawopts = x }
@@ -247,7 +247,8 @@ instance Show ATType where
                        NonBAF -> ""
 
 plainInTypes :: [InType]
-plainInTypes = [CASLIn, HetCASLIn, OWL_DLIn, HaskellIn, PrfIn, OmdocIn, ProofCommand]
+plainInTypes =
+    [CASLIn, HetCASLIn, OWL_DLIn, HaskellIn, PrfIn, OmdocIn, ProofCommand]
 
 aInTypes :: [InType]
 aInTypes = [ f x | f <- [ASTreeIn, ATermIn], x <- [BAF, NonBAF] ]
@@ -369,7 +370,7 @@ data GraphType = Dot Bool -- ^ True means show internal node labels
 
 instance Show GraphType where
     show g = case g of
-             Dot showInternalNodeLabels -> 
+             Dot showInternalNodeLabels ->
                  (if showInternalNodeLabels then "exp." else "") ++ "dot"
              PostScript -> "ps"
              Davinci -> "davinci"
@@ -410,6 +411,8 @@ options =
       "choose initial logic, the default is CASL"
     , Option ['L'] [libdirS]  (ReqArg LibDir "DIR")
       "source directory of [Het]CASL libraries"
+    , Option ['I'] [interactiveS] (NoArg Interactive)
+      "run in interactive mode"
     , Option ['i'] [intypeS]  (ReqArg parseInType "ITYPE")
       ("input file type can be one of:" ++ crS ++ joinBar
        (map show plainInTypes ++
@@ -430,8 +433,6 @@ options =
        ++ bS ++ dfgS ++ bracket cS)
     , Option ['R'] [recursiveS] (NoArg Recurse)
       "output also imported libraries"
-    , Option ['I'] [interactiveS] (NoArg Interactive)
-      " runs in interactive mode"
     , Option ['n'] [specS] (ReqArg parseSpecOpts "NSPECS")
       ("process specs option " ++ crS ++ listS ++ " SIMPLE-ID")
     , Option ['t'] [transS] (ReqArg parseTransOpt "TRANS")
@@ -555,7 +556,7 @@ parseOutTypes str = case reads $ bracket str of
 parseSpecOpts :: String -> Flag
 parseSpecOpts s = Specs $ map mkSimpleId $ splitOn ',' s
 
--- | 'parseSpecOpts' parses a 'Specs' Flag from user input
+-- | 'parseTransOpts' parses a 'Trans' Flag from user input
 parseTransOpt :: String -> Flag
 parseTransOpt s = Trans $ map mkSimpleId $ splitOn ':' s
 
@@ -587,8 +588,8 @@ parseCASLAmalg str =
     [(l, "")] -> CASLAmalg $ filter ( \ o -> case o of
                                       NoAnalysis -> False
                                       _ -> True ) l
-    _ -> hetsError (str ++
-                    " is not a valid CASL amalgamability analysis option list")
+    _ -> hetsError $ str ++
+                    " is not a valid CASL amalgamability analysis option list"
 
 -- main functions --
 
@@ -600,28 +601,11 @@ hetcatsOpts argv =
    in case (getOpt Permute options argv') of
         (opts,non_opts,[]) ->
             do flags <- checkFlags opts
-               if not $ null [ () | Interactive <- flags]
-                       then do
-                             infs <- checkInFiles non_opts
-                             hcOpts <-return $ foldr (flip makeOpts) 
-                                              defaultHetcatsOpts flags
-                             let hcOpts' = hcOpts {infiles = infs }
-                             seq (length $ show hcOpts') $ return $ hcOpts'
-                       else do
-                             infs  <- checkInFiles non_opts
-                             case infs of
-                              [] -> do
-                                  hcOpts <- return $
-                                        foldr (flip makeOpts) defaultHetcatsOpts 
-                                                      (Interactive:flags)
-                                  let hcOpts' = hcOpts { infiles = infs }
-                                  seq (length $ show hcOpts') $ return $ hcOpts'
-                              _ -> do 
-                                  hcOpts <- return $
-                                        foldr (flip makeOpts) defaultHetcatsOpts
-                                                      flags
-                                  let hcOpts' = hcOpts { infiles = infs }
-                                  seq (length $ show hcOpts') $ return $ hcOpts'   
+               infs <- checkInFiles non_opts
+               hcOpts <- return $ foldr (flip makeOpts) defaultHetcatsOpts
+                            $ if null infs then Interactive : flags else flags
+               let hcOpts' = hcOpts { infiles = infs }
+               seq (length $ show hcOpts') $ return hcOpts'
         (_,_,errs) -> hetsError (concat errs)
 
 -- | 'checkFlags' checks all parsed Flags for sanity
@@ -642,28 +626,21 @@ checkFlags fs =
              then do putStrLn ("version of hets: " ++ hetcats_version)
                      exitWith ExitSuccess
              else return [] -- fall through
---          if not $ null [ () | Interactive <- fs]
---             then do runInteractive []
---                     exitWith ExitSuccess
---             else return [] -- fall through
           fs' <- collectFlags fs
           return fs'
 
 -- | 'checkInFiles' checks all given input files for sanity
 checkInFiles :: [String] -> IO [FilePath]
-checkInFiles fs =
-       case fs of
-                []  -> return []--hetsError "No valid input file specified"
-                _  -> do
-                   let ifs = filter (not . checkUri) fs
-                       efs = filter hasExtension ifs
-                       hasExtension f = any ( \ e -> isSuffixOf e f)
+checkInFiles fs = do
+    let ifs = filter (not . checkUri) fs
+        efs = filter hasExtension ifs
+        hasExtension f = any ( \ e -> isSuffixOf e f)
                                         downloadExtensions
-                   bs <- mapM checkInFile efs
-                   if and bs
-                      then return fs
-                      else hetsError $ "invalid input files: " ++
-                        (unwords $ map snd $ filter (not . fst) $ zip bs efs)
+    bs <- mapM checkInFile efs
+    if and bs
+      then return fs
+      else hetsError $ "invalid input files: " ++
+             (unwords $ map snd $ filter (not . fst) $ zip bs efs)
 
 -- auxiliary functions: FileSystem interaction --
 
@@ -671,14 +648,14 @@ checkInFiles fs =
 checkInFile :: FilePath -> IO Bool
 checkInFile file =
     do exists <- doesFileExist file
-       perms  <- catch (getPermissions file) (\_ -> return noPerms)
+       perms  <- catch (getPermissions file) ( \ _ -> return noPerms)
        return $ exists && readable perms
 
 -- | check if infile is uri
 checkUri :: FilePath -> Bool
-checkUri file = let (_, t) = span (/=':') file in
+checkUri file = let (_, t) = span (/= ':') file in
                    if length t < 4 then False
-                      else let (_:c2:c3:_) = t in
+                      else let (_ : c2 : c3 : _) = t in
                               if c2 == '/' && c3 == '/' then True
                               -- (http://, https://, ftp://, file://, etc.)
                                  else False
