@@ -556,7 +556,7 @@ parseOutTypes str = case reads $ bracket str of
 parseSpecOpts :: String -> Flag
 parseSpecOpts s = Specs $ map mkSimpleId $ splitOn ',' s
 
--- | 'parseTransOpts' parses a 'Trans' Flag from user input
+-- | 'parseTransOpt' parses a 'Trans' Flag from user input
 parseTransOpt :: String -> Flag
 parseTransOpt s = Trans $ map mkSimpleId $ splitOn ':' s
 
