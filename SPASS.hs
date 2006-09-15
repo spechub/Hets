@@ -41,7 +41,7 @@ Prover state and configurations.
 type class 'Logic.Logic.Logic'.
 
 "SPASS.ATC_SPASS": Automatic derivation of instances via DrIFT-rule Typeable, ShATermConvertible
-  for the type(s): 'Sign' 'Generated' 'SPProblem' 'SPLogicalPart' 'SPSymbolList' 'SPSignSym' 'SPDeclaration' 'SPFormulaList' 'SPOriginType' 'SPTerm' 'SPQuantSym' 'SPSymbol' 'SPDescription' 'SPLogState' 'SPSetting'
+  for the type(s): 'SPASS.Sign.Sign' 'SPASS.Sign.Generated' 'SPASS.Sign.SPProblem' 'SPASS.Sign.SPLogicalPart' 'SPASS.Sign.SPSymbolList' 'SPASS.Sign.SPSignSym' 'SPASS.Sign.SPDeclaration' 'SPASS.Sign.SPFormulaList' 'SPASS.Sign.SPOriginType' 'SPASS.Sign.SPTerm' 'SPASS.Sign.SPQuantSym' 'SPASS.Sign.SPSymbol' 'SPASS.Sign.SPDescription' 'SPASS.Sign.SPLogState' 'SPASS.Sign.SPSetting'
 
 "SPASS.Conversions" provides functions to convert to internal SP\*
 data structures.
