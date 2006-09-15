@@ -386,10 +386,10 @@ parseTimeResource rdfTree =
           timeResXPath ++ "/mw:*[local-name()='wallClockTime']"
     
 {- |
-  Removes first part of string until '#' (including '#').
+  Removes first part of string until @#@ (including @#@).
 -}
 getAnchor :: String -- ^ in-string
-          -> String -- ^ part of string after first occurence of '#'
+          -> String -- ^ part of string after first occurence of @#@
 getAnchor s =
     let s' = dropWhile (\ch -> not $ ch == '#') s
     in  case s' of
@@ -416,7 +416,7 @@ getXText xp rdfTree =
 
 {- |
   Same as getXText, but if the element does not exist Nothing will be returned.
-  Otherwise Just 'Text' will be returned.
+  Otherwise Just /Text/ will be returned.
 -}
 getMaybeXText :: String -- ^ XPath to element containing one XText element
               -> XmlTree -- ^ XML tree to parse
@@ -428,7 +428,7 @@ getMaybeXText xp rdfTree =
           _ -> Just $ getXText xp rdfTree
 
 {- |
-  Filters '_' out of a String and uppercases each letter after a '_'.
+  Filters @_@ out of a String and uppercases each letter after a @_@.
 -}
 filterUnderline :: String -- ^ input String
                 -> String -- ^ un-dashed output String
