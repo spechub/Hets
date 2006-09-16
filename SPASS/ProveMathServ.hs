@@ -47,7 +47,7 @@ import GUI.GenericATPState
 -}
 mathServBroker :: Prover Sign Sentence ATP_ProofTree
 mathServBroker = emptyProverTemplate
-         { prover_name = "MSBroker",
+         { prover_name = brokerName,
            prover_sublogic = "SoftFOL",
            proveGUI = Just mathServBrokerGUI
          }
