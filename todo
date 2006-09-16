@@ -274,6 +274,8 @@ test development graph GUI:
    menu edit - unnamed nodes - hide/show nodes,
    node menu: show just subtree / undo
    interaction with edit - proofs - automatic?
+   use update of uDrawGraph-nodes,edges instead of erasing and adding nodes
+     for attribute changes like color
 
 restrict proofs: only one prove window per node at a given time
 
@@ -479,6 +481,13 @@ SPASS encoding improvements in CASL2SPASS
 ************************************************
 Klaus
 ************************************************
+
+for ProofManagement-GUI
+  mark imported theorems for selection
+  provide structured (based on spec-names) selection/deselection facility 
+    of axioms and theorems
+
+trace if liniarity of sentences along development is given
 
 for consistency checking with Isabelle, look at the following SAT-Solvers:
 MChaff, ZChaff, Berkmin
