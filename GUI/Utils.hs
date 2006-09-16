@@ -14,7 +14,7 @@ Utilities on top of HTk or System.IO
 module GUI.Utils (listBox, createTextSaveDisplay, askFileNameAndSave) where
 
 #ifdef UNI_PACKAGE
-import GUI.HTkUtils
+import GUI.HTkUtils (listBox, createTextSaveDisplay, askFileNameAndSave)
 #else
-import GUI.ConsoleUtils
+import GUI.ConsoleUtils (listBox, createTextSaveDisplay, askFileNameAndSave)
 #endif

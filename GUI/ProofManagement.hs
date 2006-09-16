@@ -361,7 +361,7 @@ proofManagementGUI lid proveF fineGrainedSelectionF
       <- newExtSelListBoxFrame b2 "Goals:" 14
 
   -- button to select only the open goals
-  selectOpenGoalsButton <- newButton goalsBtnFrame [text "Select Open Goals"]
+  selectOpenGoalsButton <- newButton goalsBtnFrame [text "Select open goals"]
   pack selectOpenGoalsButton [Expand Off, Fill None, Side AtLeft]
 
   -- right frame (options/results)
@@ -481,6 +481,9 @@ proofManagementGUI lid proveF fineGrainedSelectionF
   bottom <- newFrame b []
   pack bottom [Expand Off, Fill Both]
 
+  showThButton <- newButton bottom [text "Show theory"]
+  pack showThButton [Expand Off, Fill None, Side AtLeft]
+
   closeButton <- newButton bottom [text "Close"]
   pack closeButton [Expand Off, Fill None, Side AtRight,PadX (pp 13)]
 
@@ -513,6 +516,7 @@ proofManagementGUI lid proveF fineGrainedSelectionF
   doProve <- clicked proveButton
   showProofDetails <- clicked proofDetailsButton
   close <- clicked closeButton
+  showTh <- clicked showThButton
   (closeWindow,_) <- bindSimple main Destroy
 
   -- event handlers
@@ -625,6 +629,9 @@ proofManagementGUI lid proveF fineGrainedSelectionF
             s <- readIORef stateRef
             s' <- updateStateGetSelectedGoals s lb
             doShowProofDetails s'
+            done)
+      +> (showTh >>> do
+            displayTheory "Theory" thName th
             done)
       ))
   sync ( (close >>> destroy main)

@@ -21,6 +21,8 @@ import FileDialog
 import Logic.Prover hiding(value)
 import Static.DevGraph
 
+import Common.DocUtils
+
 -- | create a window with title and list of options, return selected option
 listBox :: String -> [String] -> IO (Maybe Int)
 listBox title entries =
@@ -109,6 +111,16 @@ askFileNameAndSave defFN txt =
        mfile <- sync selev
        maybe done saveFile mfile
     where saveFile fp = writeFile fp txt
+
+-- | shows a theory in a window
+displayTheory :: String -- ^ kind of theory 
+              -> String -- ^ name of theory
+              -> G_theory -> IO ()
+displayTheory kind thname gth =
+    let str = showDoc gth "\n"
+        title = kind ++ " of " ++ thname
+     in createTextSaveDisplay title (thname++".het") str
+
 
 --- added by RW
 {- |

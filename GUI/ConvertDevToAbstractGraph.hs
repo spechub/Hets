@@ -53,6 +53,7 @@ import Proofs.StatusUtils
 import GUI.AbstractGraphView as AGV
 import GUI.ShowLogicGraph
 import GUI.Utils
+import qualified GUI.HTkUtils (displayTheory)
 import GUI.Taxonomy (displayConceptGraph,displaySubsortGraph)
 
 import FileDialog
@@ -936,12 +937,9 @@ getTheoryOfNode (proofStatusRef,_,_,_,_,_,_,opts,_)
 displayTheory :: String -> Node -> DGraph -> G_theory
               -> IO ()
 displayTheory ext node dgraph gth =
-    let dgnode = lab' (context dgraph node)
-        str = showDoc gth "\n"
-        thname = showName (dgn_name dgnode)
-        title = ext ++ " of " ++ thname
-     in createTextSaveDisplay title (thname++".het") str
-
+     GUI.HTkUtils.displayTheory ext
+        (showName $ dgn_name $ lab' (context dgraph node))
+        gth
 
 {- | translate the theory of a node in a window;
 used by the node menu defined in initializeGraph-}
