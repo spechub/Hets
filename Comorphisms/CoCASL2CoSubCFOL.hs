@@ -59,8 +59,7 @@ instance Comorphism CoCASL2CoSubCFOL
         , which_logic = max Horn $ which_logic sl
         , has_eq      = True} else sl
     map_theory CoCASL2CoSubCFOL (sig, sens) =
-        let bsrts = allSortsWithBottom sig $
-                    Set.unions $ sortsWithBottom sig :
+        let bsrts = sortsWithBottom sig $ Set.unions $
                        map (botCoFormulaSorts . sentence) sens
             e = encodeSig bsrts sig
             sens1 = map (mapNamed mapSen) $ generateAxioms bsrts sig
@@ -69,15 +68,12 @@ instance Comorphism CoCASL2CoSubCFOL
         in return (e, disambiguateSens Set.empty . nameSens $ sens1 ++ sens2)
     map_morphism CoCASL2CoSubCFOL mor@Morphism{msource = src, mtarget = tar} =
         return
-        mor { msource = encodeSig (allSortsWithBottom src
-                                  $ sortsWithBottom src) src
-            , mtarget = encodeSig (allSortsWithBottom tar
-                                  $ sortsWithBottom tar) tar
+        mor { msource = encodeSig (sortsWithBottom src Set.empty) src
+            , mtarget = encodeSig (sortsWithBottom tar Set.empty) tar
             , fun_map = Map.map (\ (i, _) -> (i, Total)) $ fun_map mor }
     map_sentence CoCASL2CoSubCFOL sig  sen =
         return $ simplifyFormula simC_FORMULA $ codeCoFormula
-           (allSortsWithBottom sig $
-            Set.union (botCoFormulaSorts sen) $ sortsWithBottom sig) sen
+           (sortsWithBottom sig $ botCoFormulaSorts sen) sen
     map_symbol CoCASL2CoSubCFOL s =
       Set.singleton s { symbType = totalizeSymbType $ symbType s }
 

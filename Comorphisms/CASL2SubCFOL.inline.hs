@@ -60,8 +60,7 @@ instance Comorphism CASL2SubCFOL
         , which_logic = max Horn $ which_logic sl
         , has_eq      = True} else sl
     map_theory CASL2SubCFOL (sig, sens) =
-        let bsrts = allSortsWithBottom sig $
-                    Set.unions $ sortsWithBottom sig :
+        let bsrts = sortsWithBottom sig $ Set.unions $
                        map (botFormulaSorts . sentence) sens
             sens1 = generateAxioms bsrts sig
             sens2 = map (mapNamed (simplifyFormula id . codeFormula bsrts))
@@ -70,15 +69,12 @@ instance Comorphism CASL2SubCFOL
                         $ sens1 ++ sens2)
     map_morphism CASL2SubCFOL mor@Morphism{msource = src, mtarget = tar} =
         return
-        mor { msource = encodeSig (allSortsWithBottom src
-                                  $ sortsWithBottom src) src
-            , mtarget = encodeSig (allSortsWithBottom tar
-                                  $ sortsWithBottom tar) tar
+        mor { msource = encodeSig (sortsWithBottom src Set.empty) src
+            , mtarget = encodeSig (sortsWithBottom tar Set.empty) tar
             , fun_map = Map.map (\ (i, _) -> (i, Total)) $ fun_map mor }
     map_sentence CASL2SubCFOL sig sen =
         return $ simplifyFormula id $ codeFormula
-           (allSortsWithBottom sig $
-            Set.union (botFormulaSorts sen) $ sortsWithBottom sig) sen
+           (sortsWithBottom sig $ botFormulaSorts sen) sen
     map_symbol CASL2SubCFOL s =
       Set.singleton s { symbType = totalizeSymbType $ symbType s }
 
@@ -87,25 +83,24 @@ totalizeSymbType t = case t of
   OpAsItemType ot -> OpAsItemType ot { opKind = Total }
   _ -> t
 
-sortsWithBottom :: Sign f e -> Set.Set SORT
-sortsWithBottom sign =
+sortsWithBottom :: Sign f e -> Set.Set SORT -> Set.Set SORT
+sortsWithBottom sign formBotSrts =
     let ops = Map.elems $ opMap sign
+        -- all supersorts inherit the same bottom element
+        allSortsWithBottom s =
+            Set.unions $ s : map (flip supersortsOf sign) (Set.toList s)
         resSortsOfPartialFcts =
-            Set.unions $ map (Set.map opRes .
-                                 Set.filter ( \ t -> opKind t == Partial))
-            ops
+            allSortsWithBottom $ Set.unions $ formBotSrts :
+               map (Set.map opRes . Set.filter
+                    ( \ t -> opKind t == Partial)) ops
         collect given =
-            let more = Set.unions $ map (Set.map opRes .
+            let more = allSortsWithBottom $
+                       Set.unions $ map (Set.map opRes .
                                  Set.filter ( \ t -> any
                                  (flip Set.member given) $ opArgs t)) ops
             in if Set.isSubsetOf more given then given
                else collect $ Set.union more given
      in collect resSortsOfPartialFcts
-
--- all supersorts inherit the same bottom element
-allSortsWithBottom :: Sign f e -> Set.Set SORT -> Set.Set SORT
-allSortsWithBottom sign s =
-    Set.unions $ s : map (flip supersortsOf sign) (Set.toList s)
 
 bottom :: Id
 bottom = mkId[mkSimpleId $ genNamePrefix ++ "bottom"]
