@@ -14,6 +14,8 @@ module Main where
 import DaVinciGraph
 import GraphDisp
 import GraphConfigure
+
+-- for windows display
 import Events
 import Destructible
 
@@ -22,8 +24,6 @@ import qualified Common.Lib.Rel as Rel
 
 import System.Directory
 import Data.List
-import Text.ParserCombinators.Parsec
-
 
 main :: IO ()
 main = do
@@ -38,7 +38,8 @@ main = do
                         AllowClose (return True) $$
                         emptyGraphParms
     depG <- newGraph daVinciSort graphParms
-    let subNodeMenu = LocalMenu (Menu Nothing [])
+    let flln = fln ++ (isIn2 [] $ concat $ isIn fln sss)
+        subNodeMenu = LocalMenu (Menu Nothing [])
         subNodeTypeParms =
                          subNodeMenu $$$
                          Ellipse $$$
@@ -46,16 +47,35 @@ main = do
                          Color "yellow" $$$
                          emptyNodeTypeParms
     subNodeType <- newNodeType depG subNodeTypeParms
-    subNodeList <- mapM (newNode depG subNodeType . return) fln
-    let subArcMenu = LocalMenu( Menu Nothing [])
+    subNodeList <- mapM (newNode depG subNodeType . return) flln
+    let slAndNodes = Map.fromList $ zip flln subNodeList
+        lookup' g_sl = Map.findWithDefault 
+                              (error "lookup': node not found") 
+                              g_sl slAndNodes
+        subArcMenu = LocalMenu( Menu Nothing [])
         subArcTypeParms = subArcMenu $$$
                           ValueTitle id $$$
                           Color "green" $$$
                           emptyArcTypeParms
     subArcType <- newArcType depG subArcTypeParms
+    let insertSubArc = \ (node1, node2) ->
+                           newArc depG subArcType (return "") 
+                                  (lookup' node1) 
+                                  (lookup' node2)
+    mapM_ insertSubArc $ 
+                     Rel.toList $ Rel.intransKernel $ Rel.fromList
+                     $ getContent1 $ zipWith getContent2 fln sss
     redraw depG
     sync(destroyed depG)
-    -- putStrLn $ show $ zip fln sss
+
+
+getContent1 :: [[(String,String)]] -> [(String,String)]
+getContent1 [] = []
+getContent1 (x:xs) = x ++ getContent1 xs
+
+getContent2 :: String -> [String] -> [(String,String)]
+getContent2 _ [] =[]
+getContent2 s (x:xs) = (s,x):getContent2 s xs
 
 getContent3 :: String -> String
 getContent3 [] = ""
@@ -75,3 +95,17 @@ deletWith :: (String -> String) -> Int -> String -> String
 deletWith f n s = case n of
     0 -> s
     _ -> deletWith f (n-1) $ f s
+
+isIn :: [String] -> [[String]] -> [[String]]
+isIn l ll = map (is l) ll
+
+is :: [String] -> [String] -> [String]
+is [] l = l
+is _ [] = []
+is l' (x:xs) | elem x l' = is l' xs
+             | otherwise = x : is l' xs
+
+isIn2 :: [String] -> [String] -> [String]
+isIn2 l []  = l
+isIn2 l (x:xs) | elem x l = isIn2 l xs
+               | otherwise = isIn2 (l ++ [x]) xs 
