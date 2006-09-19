@@ -6,6 +6,10 @@ Mapping /home/linux-bkb/Isabelle/polyml-4.1.4/x86-linux/ML_dbase
 Poly/ML 4.2.0 Release
 > val it = () : unit
 Loading theory "HsHOL" (required by "ex_class_h")
+### Specification of constant HsHOL.hEq :: "bool => bool => bool"
+### is strictly less general than the declared type
+### Specification of constant HsHOL.hEq :: "int => int => bool"
+### is strictly less general than the declared type
 Loading theory "ex_class_h"
 structure Header :
   sig val initialize : string list -> unit val record : string -> unit end
@@ -230,6 +234,10 @@ Mapping /home/linux-bkb/Isabelle/polyml-4.1.4/x86-linux/ML_dbase
 Poly/ML 4.2.0 Release
 > val it = () : unit
 Loading theory "HsHOL" (required by "ex_let_h")
+### Specification of constant HsHOL.hEq :: "bool => bool => bool"
+### is strictly less general than the declared type
+### Specification of constant HsHOL.hEq :: "int => int => bool"
+### is strictly less general than the declared type
 Loading theory "ex_let_h"
 structure Header :
   sig val initialize : string list -> unit val record : string -> unit end
@@ -263,6 +271,10 @@ Mapping /home/linux-bkb/Isabelle/polyml-4.1.4/x86-linux/ML_dbase
 Poly/ML 4.2.0 Release
 > val it = () : unit
 Loading theory "HsHOL" (required by "ex_list_h")
+### Specification of constant HsHOL.hEq :: "bool => bool => bool"
+### is strictly less general than the declared type
+### Specification of constant HsHOL.hEq :: "int => int => bool"
+### is strictly less general than the declared type
 Loading theory "ex_list_h"
 structure Header :
   sig val initialize : string list -> unit val record : string -> unit end
@@ -294,6 +306,10 @@ Mapping /home/linux-bkb/Isabelle/polyml-4.1.4/x86-linux/ML_dbase
 Poly/ML 4.2.0 Release
 > val it = () : unit
 Loading theory "HsHOL" (required by "Map2_h")
+### Specification of constant HsHOL.hEq :: "bool => bool => bool"
+### is strictly less general than the declared type
+### Specification of constant HsHOL.hEq :: "int => int => bool"
+### is strictly less general than the declared type
 Loading theory "Map2_h"
 structure Header :
   sig val initialize : string list -> unit val record : string -> unit end
@@ -331,6 +347,10 @@ Mapping /home/linux-bkb/Isabelle/polyml-4.1.4/x86-linux/ML_dbase
 Poly/ML 4.2.0 Release
 > val it = () : unit
 Loading theory "HsHOL" (required by "mrec3_h")
+### Specification of constant HsHOL.hEq :: "bool => bool => bool"
+### is strictly less general than the declared type
+### Specification of constant HsHOL.hEq :: "int => int => bool"
+### is strictly less general than the declared type
 Loading theory "mrec3_h"
 structure Header :
   sig val initialize : string list -> unit val record : string -> unit end
@@ -474,6 +494,10 @@ Mapping /home/linux-bkb/Isabelle/polyml-4.1.4/x86-linux/ML_dbase
 Poly/ML 4.2.0 Release
 > val it = () : unit
 Loading theory "HsHOL" (required by "mrec_h")
+### Specification of constant HsHOL.hEq :: "bool => bool => bool"
+### is strictly less general than the declared type
+### Specification of constant HsHOL.hEq :: "int => int => bool"
+### is strictly less general than the declared type
 Loading theory "mrec_h"
 structure Header :
   sig val initialize : string list -> unit val record : string -> unit end
@@ -564,6 +588,10 @@ Mapping /home/linux-bkb/Isabelle/polyml-4.1.4/x86-linux/ML_dbase
 Poly/ML 4.2.0 Release
 > val it = () : unit
 Loading theory "HsHOL" (required by "wcard_h")
+### Specification of constant HsHOL.hEq :: "bool => bool => bool"
+### is strictly less general than the declared type
+### Specification of constant HsHOL.hEq :: "int => int => bool"
+### is strictly less general than the declared type
 Loading theory "wcard_h"
 structure Header :
   sig val initialize : string list -> unit val record : string -> unit end

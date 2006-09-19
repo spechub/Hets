@@ -10,6 +10,8 @@ constants
   fliftbin :: "('a => 'b => 'c) => 'a lift -> 'b lift -> 'c lift"
 Proving isomorphism properties of domain HsHOLCF.llist ...
 Proving induction properties of domain HsHOLCF.llist ...
+constants
+  fliftbinA :: "('a => 'b => 'c) => 'a -> 'b -> 'c lift"
 ### Specification of constant HsHOLCF.hEq :: "tr -> tr -> tr"
 ### is strictly less general than the declared type
 ### Specification of constant HsHOLCF.hEq :: "int lift -> int lift -> tr"
@@ -228,6 +230,8 @@ constants
   fliftbin :: "('a => 'b => 'c) => 'a lift -> 'b lift -> 'c lift"
 Proving isomorphism properties of domain HsHOLCF.llist ...
 Proving induction properties of domain HsHOLCF.llist ...
+constants
+  fliftbinA :: "('a => 'b => 'c) => 'a -> 'b -> 'c lift"
 ### Specification of constant HsHOLCF.hEq :: "tr -> tr -> tr"
 ### is strictly less general than the declared type
 ### Specification of constant HsHOLCF.hEq :: "int lift -> int lift -> tr"
@@ -277,6 +281,8 @@ constants
   fliftbin :: "('a => 'b => 'c) => 'a lift -> 'b lift -> 'c lift"
 Proving isomorphism properties of domain HsHOLCF.llist ...
 Proving induction properties of domain HsHOLCF.llist ...
+constants
+  fliftbinA :: "('a => 'b => 'c) => 'a -> 'b -> 'c lift"
 ### Specification of constant HsHOLCF.hEq :: "tr -> tr -> tr"
 ### is strictly less general than the declared type
 ### Specification of constant HsHOLCF.hEq :: "int lift -> int lift -> tr"
@@ -320,6 +326,8 @@ constants
   fliftbin :: "('a => 'b => 'c) => 'a lift -> 'b lift -> 'c lift"
 Proving isomorphism properties of domain HsHOLCF.llist ...
 Proving induction properties of domain HsHOLCF.llist ...
+constants
+  fliftbinA :: "('a => 'b => 'c) => 'a -> 'b -> 'c lift"
 ### Specification of constant HsHOLCF.hEq :: "tr -> tr -> tr"
 ### is strictly less general than the declared type
 ### Specification of constant HsHOLCF.hEq :: "int lift -> int lift -> tr"
@@ -365,6 +373,8 @@ constants
   fliftbin :: "('a => 'b => 'c) => 'a lift -> 'b lift -> 'c lift"
 Proving isomorphism properties of domain HsHOLCF.llist ...
 Proving induction properties of domain HsHOLCF.llist ...
+constants
+  fliftbinA :: "('a => 'b => 'c) => 'a -> 'b -> 'c lift"
 ### Specification of constant HsHOLCF.hEq :: "tr -> tr -> tr"
 ### is strictly less general than the declared type
 ### Specification of constant HsHOLCF.hEq :: "int lift -> int lift -> tr"
@@ -691,6 +701,8 @@ constants
   fliftbin :: "('a => 'b => 'c) => 'a lift -> 'b lift -> 'c lift"
 Proving isomorphism properties of domain HsHOLCF.llist ...
 Proving induction properties of domain HsHOLCF.llist ...
+constants
+  fliftbinA :: "('a => 'b => 'c) => 'a -> 'b -> 'c lift"
 ### Specification of constant HsHOLCF.hEq :: "tr -> tr -> tr"
 ### is strictly less general than the declared type
 ### Specification of constant HsHOLCF.hEq :: "int lift -> int lift -> tr"
@@ -836,6 +848,8 @@ constants
   fliftbin :: "('a => 'b => 'c) => 'a lift -> 'b lift -> 'c lift"
 Proving isomorphism properties of domain HsHOLCF.llist ...
 Proving induction properties of domain HsHOLCF.llist ...
+constants
+  fliftbinA :: "('a => 'b => 'c) => 'a -> 'b -> 'c lift"
 ### Specification of constant HsHOLCF.hEq :: "tr -> tr -> tr"
 ### is strictly less general than the declared type
 ### Specification of constant HsHOLCF.hEq :: "int lift -> int lift -> tr"
@@ -884,6 +898,8 @@ constants
   fliftbin :: "('a => 'b => 'c) => 'a lift -> 'b lift -> 'c lift"
 Proving isomorphism properties of domain HsHOLCF.llist ...
 Proving induction properties of domain HsHOLCF.llist ...
+constants
+  fliftbinA :: "('a => 'b => 'c) => 'a -> 'b -> 'c lift"
 ### Specification of constant HsHOLCF.hEq :: "tr -> tr -> tr"
 ### is strictly less general than the declared type
 ### Specification of constant HsHOLCF.hEq :: "int lift -> int lift -> tr"
@@ -1048,6 +1064,8 @@ constants
   fliftbin :: "('a => 'b => 'c) => 'a lift -> 'b lift -> 'c lift"
 Proving isomorphism properties of domain HsHOLCF.llist ...
 Proving induction properties of domain HsHOLCF.llist ...
+constants
+  fliftbinA :: "('a => 'b => 'c) => 'a -> 'b -> 'c lift"
 ### Specification of constant HsHOLCF.hEq :: "tr -> tr -> tr"
 ### is strictly less general than the declared type
 ### Specification of constant HsHOLCF.hEq :: "int lift -> int lift -> tr"
@@ -1154,6 +1172,8 @@ constants
   fliftbin :: "('a => 'b => 'c) => 'a lift -> 'b lift -> 'c lift"
 Proving isomorphism properties of domain HsHOLCF.llist ...
 Proving induction properties of domain HsHOLCF.llist ...
+constants
+  fliftbinA :: "('a => 'b => 'c) => 'a -> 'b -> 'c lift"
 ### Specification of constant HsHOLCF.hEq :: "tr -> tr -> tr"
 ### is strictly less general than the declared type
 ### Specification of constant HsHOLCF.hEq :: "int lift -> int lift -> tr"
