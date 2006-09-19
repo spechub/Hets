@@ -1,0 +1,1337 @@
+% == Definitions of frequently used symbolic terms
+
+
+
+
+% MORE MACROS
+
+% ENVIRONMENTS
+
+\newcounter{proposition}[subsection]
+\renewcommand{\theproposition}
+{\arabic{section}.\arabic{subsection}:\arabic{proposition}}
+
+\newcounter{dee}[section]
+\renewcommand{\thedee}
+{\arabic{section}.\arabic{dee}}
+
+
+
+
+
+
+\newcounter{definition}
+\renewcommand{\thedefinition}
+{\arabic{definition}}
+
+\newcounter{theorem}
+\renewcommand{\thetheorem}
+{\arabic{theorem}}
+
+\newcounter{observation}
+\renewcommand{\theobservation}
+{\arabic{observation}}
+
+\newcounter{lemma}
+\renewcommand{\thelemma}
+{\arabic{lemma}}
+
+
+% short env.s
+
+\newcounter{ShortProp}
+\renewcommand{\theShortProp}
+{\arabic{ShortProp}}
+
+%\newcommand{\sprop}{\noindent\refstepcounter{ShortProp}\textbf{Proposition\the%ShortProp}. \ }
+
+\newcommand{\sprop}{\noindent\refstepcounter{ShortProp}\textbf{Lemma\theShortProp}. \ }
+
+\newcounter{ShortDef}
+\renewcommand{\theShortDef}
+{\arabic{ShortDef}}
+
+\newcommand{\propref}[1]{\noindent Lemma \ref{#1}}
+
+\newcommand{\sdef}{\noindent\refstepcounter{ShortDef}\textbf{Definition\theShortDef}. \ }
+
+\newcounter{IntAx}
+\renewcommand{\theIntAx}
+{\arabic{IntAx}}
+
+\newcommand{\defref}[1]{\noindent Definition \ref{#1}}
+
+\newcommand{\intax}{\noindent\refstepcounter{IntAx}\textbf{A\theIntAx}. \ }
+
+\newcounter{ClAx}
+\renewcommand{\theClAx}
+{\arabic{ClAx}}
+
+\newcommand{\clax}{\noindent\refstepcounter{ClAx}\textbf{A'\theClAx}. \ }
+
+
+\newcounter{JAx}
+\renewcommand{\theJAx}
+{\arabic{JAx}}
+
+%\newcommand{\Jax}{\noindent\refstepcounter{JAx}\textbf{J\theJAx}. \ }
+\newcommand{\Jax}{\noindent\refstepcounter{JAx}\textbf{A\theJAx}. \ }
+
+
+%end short env.s
+
+
+%\newcounter{corollary}
+%\renewcommand{\thecorollary}
+%{\arabic{corollary}}
+
+\newenvironment{defn}
+{\refstepcounter{definition}%
+ \begin{description}%
+ \item[\textbf{Definition} 
+       \thedefinition] \mbox{ }}%
+{\end{description}}
+
+\newenvironment{defA}
+{\refstepcounter{definition}%
+ \begin{description}%
+ \item[\textbf{Def.} 
+       \thedefinition]}%
+{\end{description}}
+
+\newenvironment{thmA}
+{\refstepcounter{theorem}%
+ \begin{description}%
+ \item[\textbf{Theorem} 
+       \thetheorem] \mbox{ }}%
+{\end{description}}
+
+\newenvironment{obsA}
+{\refstepcounter{observation}%
+ \begin{description}%
+ \item[\textbf{Obs.} 
+       \theobservation]}%
+{\end{description}}
+
+\newenvironment{lemA}
+{\refstepcounter{lemma}%
+ \begin{description}%
+ \item[\textbf{Lem.} 
+       \thelemma]}%
+{\end{description}}
+
+
+\newenvironment{jprop}
+{\refstepcounter{lemma}%
+ \begin{description}%
+ \item[\textbf{Proposition} 
+       \thelemma] \mbox{ }}%
+{\end{description}}
+
+\newenvironment{pf}
+{\begin{description}%
+ \item[\textbf{pf: }]}%
+{\end{description}}
+
+\newenvironment{Prop}
+{\refstepcounter{proposition}%
+ \begin{description}%
+ \item[\theproposition]}%
+{\end{description}}
+
+\newenvironment{AProp}
+{\refstepcounter{proposition}%
+ \begin{description}%
+ \item[\textbf{proposition} 
+       \theproposition]}%
+{\end{description}}
+
+\newenvironment{BProp}
+{\refstepcounter{proposition}%
+ \begin{description}%
+ \item[\textbf{definition} 
+       \theproposition]}%
+{\end{description}}
+
+\newenvironment{CCProp}
+{\refstepcounter{proposition}%
+ \begin{description}%
+ \item[\theproposition]}%
+{\end{description}}
+
+
+\newenvironment{CProp}
+{\refstepcounter{dee}%
+ \begin{description}%
+ \item[\thedee]}%
+{\end{description}}
+
+\newenvironment{CdProp}
+{\refstepcounter{dee}%
+ \begin{description}%
+ \item[\thedee \ \textbf{D}]}%
+{\end{description}}
+
+
+\newenvironment{DProp}[1]
+{\refstepcounter{proposition}%
+ \begin{description}%
+ \item[\text{#1} \ ]}%
+{\end{description}}
+
+\newenvironment{FProp}[1]
+{\refstepcounter{proposition}%
+ \begin{description}%
+ \item[\textbf{#1} \theproposition]}%
+{\end{description}}
+
+
+\newcounter{Pproposition}
+
+\newenvironment{PProp}
+{\refstepcounter{Pproposition}%
+ \begin{description}%
+ \item[\thePproposition]}%
+{\end{description}}
+
+
+\newtheorem{prop}{Proposition}
+
+\newtheorem{definit}[prop]{Definition}
+
+\newtheorem{corol}[prop]{Corollary}
+
+
+% COMMANDS
+
+\newcommand{\escmathcom}[3]{ \newcommand{#1}[#2]{\mbox{#3}}}
+
+
+% OTHER MACROS
+
+% Set theory
+
+%\escmathcom{\eq}{0}{$\ \equiv \ $}
+\escmathcom{\eq}{0}{$ \ = \ $}
+
+\escmathcom{\tset}{1}{$\mathcal{#1}$}  % short version
+\escmathcom{\tindset}{2}{${\mathcal{#2}}_{#1}$}
+\escmathcom{\tindtop}{2}{${\mathcal{#1}}_{\mathcal{#2}}$}
+\escmathcom{\powerset}{1}{$\wp (#1)$}
+
+\escmathcom{\mi}{1}{$\mathit{#1}$}
+\escmathcom{\ms}{1}{$\mathsf{#1}$}
+\escmathcom{\wt}{1}{$\mathtt{#1}$}
+\escmathcom{\mcal}{1}{$\mathcal{#1}$}
+\escmathcom{\mr}{1}{$\mathcal{#1}$}
+
+
+
+% Models and Structures
+
+\escmathcom{\Struct}{1}{$\mathcal{#1}$}
+\escmathcom{\AStruct}{1}{$\mathfrak{#1}$}
+\escmathcom{\BStruct}{1}{$\mathfrak{#1}_{\rho}$}
+
+
+% Lattice theory
+
+\escmathcom{\true}{0}{$\top$}
+\escmathcom{\false}{0}{$\bot$}
+\escmathcom{\porder}{0}{$\leq$}
+\escmathcom{\sorder}{1}{$\sqsubset_{\mathcal{#1}}$}
+%\escmathcom{\specord}{0}{$\sqsubset_{\mbox{\tiny $\Opens$}}$}
+%\escmathcom{\specord}{0}{$\prec_{\mbox{\tiny $\Opens$}}$}
+\escmathcom{\specord}{0}{$\prec$} 
+\escmathcom{\rspecord}{0}{$\prec_{\mbox{\tiny $\Regions$}}$}
+\escmathcom{\finer}{0}{$\ll$}
+\escmathcom{\smeet}{0}{$ \ \sqcap \ $}
+\escmathcom{\sjoin}{0}{$ \ \sqcup \ $}
+\escmathcom{\meet}{0}{$\sqcap$}
+\escmathcom{\join}{0}{$\sqcup$}
+\escmathcom{\ameet}{0}{$\bigwedge$}
+\escmathcom{\ajoin}{0}{$\bigvee$}
+\escmathcom{\bigjoin}{0}{$\bigvee$}
+\escmathcom{\diimp}{0}{$\Leftrightarrow$}
+\escmathcom{\upclosedA}{1}{$\{ \wt{#1} \upharpoonright \}$}
+\escmathcom{\upclosed}{1}{$\{ \wt{#1} \uparrow \}$}
+\escmathcom{\pointset}{1}{$ \wt{#1} \uparrow_{\mbox{\tiny $\Regions$}}$}
+
+% Logical symbols
+
+\escmathcom{\niimp}{0}{$\nRightarrow$}
+\escmathcom{\nto}{0}{$\nrightarrow$}
+\escmathcom{\bnot}{0}{$\neg$}
+
+\escmathcom{\divc}{0}{$\Vert$}
+\escmathcom{\diva}{0}{$\Vert$}
+
+
+
+% Spatial IPL2 (heyt13)
+
+
+\escmathcom{\retre}{0}{$\mathsf{res}$}
+\escmathcom{\exte}{0}{$\mathsf{ext}$}
+\escmathcom{\inst}{0}{$\mathsf{inst}$}
+\escmathcom{\recoOne}{0}{$\mathsf{rec1}$}
+\escmathcom{\recoTwo}{0}{$\mathsf{rec2}$}
+
+\escmathcom{\wff}{0}{$\mathsf{wff}$}
+\escmathcom{\terM}{0}{$\mathsf{term}$}
+
+\escmathcom{\iovl}{0}{$\mathsf{overlap}_{i}$}
+\escmathcom{\overlapping}{0}{$\mathsf{overlap}$}
+\escmathcom{\ovl}{0}{$\mathsf{overlap}$}
+%\escmathcom{\tp}{0}{$\mathsf{tp}$}
+\escmathcom{\src}{0}{$\mathsf{ic}_{s}$}
+\escmathcom{\wrc}{0}{$\mathsf{ic}_{w}$}
+\escmathcom{\sdc}{0}{$\mathsf{ap}_{s}$}
+\escmathcom{\wdc}{0}{$\mathsf{ap}_{w}$}
+\escmathcom{\isrc}{0}{$\mathsf{ic}_{i}$}
+\escmathcom{\tp}{0}{$\mathsf{tp}$}
+\escmathcom{\stp}{0}{$\mathsf{tp}_{s}$}
+\escmathcom{\istp}{0}{$\mathsf{tp}_{i}$}
+\escmathcom{\Regular}{0}{$\mathsf{regl}$}
+
+
+
+%\escmathcom{\spc}{0}{$\mathsf{spc}$}
+%\escmathcom{\Tspc}{0}{$\mathsf{SPC}$}
+
+\escmathcom{\Models}{0}{$\mathsf{\Vdash}$}
+
+\escmathcom{\screen}{0}{$\mathsf{screen}$}
+\escmathcom{\Alpha}{0}{$\Lambda$}
+\escmathcom{\cell}{0}{$\mathsf{cell}$}
+\escmathcom{\disjoint}{0}{$\mathsf{disjoint}$}
+\escmathcom{\rprime}{0}{$\mathsf{prime}$}
+\escmathcom{\atom}{0}{$\mathsf{atmcell}$}
+
+\escmathcom{\Ascreen}{0}{$\mathsf{atoms}$}
+\escmathcom{\Aatom}{0}{$\mathsf{atom}$}
+
+
+\escmathcom{\twocover}{0}{$\mathsf{2cover}$}
+\escmathcom{\primecomp}{0}{$\mathsf{pcomp}$}
+\escmathcom{\concomp}{0}{$\mathsf{ccomp}$}
+\escmathcom{\tessel}{0}{$\mathsf{tll}$}
+\escmathcom{\diip}{0}{$\mathsf{diip}$}
+\escmathcom{\doip}{0}{$\mathsf{doip}$}
+\escmathcom{\diic}{0}{$\mathsf{diic}$}
+\escmathcom{\doic}{0}{$\mathsf{doic}$}
+
+
+\escmathcom{\spc}{0}{$\mathsf{con}_{s}$}
+\escmathcom{\Tspc}{0}{$\mathsf{SC}$}
+%\escmathcom{\mcon}{0}{$\mathsf{c}$}
+\escmathcom{\connec}{0}{$\mathsf{con}$}
+\escmathcom{\dc}{0}{$\mathsf{ap}$}
+\escmathcom{\ntp}{0}{$\mathsf{ntp}$}
+\escmathcom{\wtp}{0}{$\mathsf{tp}_{w}$}
+\escmathcom{\wntp}{0}{$\mathsf{ntp}_{w}$}
+\escmathcom{\ers}{0}{$\mathsf{ers}$}
+\escmathcom{\rc}{0}{$\mathsf{ic}$}
+\escmathcom{\cim}{0}{$\mathsf{cell\_of\_mesh}$}
+%\escmathcom{\split}{0}{$\mathsf{nspl}$}
+%\escmathcom{\Tsplit}{0}{$\mathsf{NSPL}$}
+\escmathcom{\rcon}{0}{$\mathsf{con}$}
+\escmathcom{\nsplit}{0}{$\mathsf{ndiv}$}
+\escmathcom{\srcon}{0}{$\mathsf{con}_{s}$}
+\escmathcom{\snsplit}{0}{$\mathsf{ndiv}_{s}$}
+\escmathcom{\split}{0}{$\mathsf{ndiv}$}
+\escmathcom{\regular}{0}{$\mathsf{regl}$}
+%\escmathcom{\Ttriv}{0}{$\mathsf{triv}$}
+\escmathcom{\triv}{0}{$\mathsf{degnr}$}
+%\escmathcom{\Tnemp}{0}{$\mathsf{ne}$}
+\escmathcom{\nempty}{0}{$\mathsf{nempt}$}
+\escmathcom{\nesc}{0}{$\mathsf{nesc}$}
+%\escmathcom{\pos}{0}{$\mathsf{pos}$}
+\escmathcom{\pos}{0}{$\mathsf{nempt}$}
+\escmathcom{\unispace}{0}{$\mathsf{unisp}$}
+
+
+
+\escmathcom{\comp}{0}{$\circ$}
+
+\escmathcom{\isgran}{0}{$\mathsf{is\_gran}$}
+\escmathcom{\gran}{0}{$\mathsf{gran}$}
+\escmathcom{\hasgran}{0}{$\mathsf{has\_gran}$}
+\escmathcom{\maxgran}{0}{$\mathsf{maxgran}$}
+\escmathcom{\yolk}{0}{$\mathsf{yolk}$}
+\escmathcom{\Tsplit}{0}{$\mathsf{NS}$}
+\escmathcom{\Trc}{0}{$\mathsf{RC}$}
+\escmathcom{\Ters}{0}{$\mathsf{ERS}$}
+\escmathcom{\Tntp}{0}{$\mathsf{NTP}$}
+\escmathcom{\Tdc}{0}{$\mathsf{DC}$}
+\escmathcom{\Tpos}{0}{$\mathsf{EXT}$}
+
+%\escmathcom{\white}{0}{$\mathsf{white}$}
+
+\escmathcom{\digcom}{0}{$\mathsf{dcomp}$}
+\escmathcom{\digsup}{0}{$\mathsf{dsup}$}
+\escmathcom{\inreg}{0}{$\mathsf{dint}$}
+\escmathcom{\outreg}{0}{$\mathsf{dout}$}
+\escmathcom{\digrep}{0}{$\mathsf{drep}$}
+\escmathcom{\cpd}{0}{$\mathsf{cpd}$}
+
+\escmathcom{\connectedA}{0}{$\mathsf{scon}$}
+\escmathcom{\connectedB}{0}{$\mathsf{sc}$}
+\escmathcom{\connectedC}{0}{$\mathsf{rsc}$}
+\escmathcom{\rbo}{0}{$\mathsf{rbo}$}
+\escmathcom{\rcccon}{0}{$\mathsf{RC}$}
+\escmathcom{\rccover}{0}{$\mathsf{OL}$}
+\escmathcom{\rccdisc}{0}{$\mathsf{DC}$}
+\escmathcom{\rccdisj}{0}{$\mathsf{DJ}$}
+\escmathcom{\srcccon}{0}{$\mathsf{RCsc}$}
+\escmathcom{\srccover}{0}{$\mathsf{OLsc}$}
+\escmathcom{\rccconN}{0}{$\mathsf{RCn}$}
+\escmathcom{\rccoverN}{0}{$\mathsf{OLn}$}
+
+
+% Spatial IPL2 (ARW2001)
+
+\escmathcom{\Disj}{0}{$\mathsf{DJ}$}
+
+\escmathcom{\Hpart}{0}{$\mathsf{p}$}
+\escmathcom{\Hdc}{0}{$\mathsf{wdc}$}
+\escmathcom{\Hdj}{0}{$\mathsf{dj}$}
+\escmathcom{\Hcon}{0}{$\mathsf{spc}$}
+\escmathcom{\Hsc}{0}{$\mathsf{spc}$}
+\escmathcom{\Hwc}{0}{$\mathsf{wc}$}
+\escmathcom{\Hdisc}{0}{$\mathsf{dsc}$}
+\escmathcom{\Hol}{0}{$\mathsf{cov}$}
+\escmathcom{\Hrc}{0}{$\mathsf{fmc}$}
+%\escmathcom{\nemp}{0}{$\mathsf{cpos}$}
+\escmathcom{\nemp}{0}{$\mathsf{nempty}$}
+
+\escmathcom{\Wpart}{0}{$\mathsf{Part}$}
+\escmathcom{\Wdc}{0}{$\mathsf{wDC}$}
+\escmathcom{\Wdj}{0}{$\mathsf{DJ}$}
+\escmathcom{\Wcon}{0}{$\mathsf{Con}$}
+\escmathcom{\Wsc}{0}{$\mathsf{Con}$}
+\escmathcom{\Wol}{0}{$\mathsf{OV}$}
+\escmathcom{\Wrc}{0}{$\mathsf{fmC}$}
+\escmathcom{\Wne}{0}{$\mathsf{NE}$}
+
+
+%\escmathcom{\conn}{0}{$\odot$}
+\escmathcom{\conn}{0}{$\Hcon$}
+%\escmathcom{\nemp}{0}{$\triangledown$}
+%\escmathcom{\nempt}{0}{$\triangledown$}
+
+
+
+% Spatial intuitive relations (ARW2001 slides, fig.)
+
+\escmathcom{\HHpart}{0}{$\mathsf{part\_of}$}
+\escmathcom{\HHdc}{0}{$\mathsf{r\_discon}$}
+\escmathcom{\HHdj}{0}{$\mathsf{disj}$}
+\escmathcom{\HHcon}{0}{$\mathsf{s\_con}$}
+\escmathcom{\HHdisc}{0}{$\mathsf{s\_discon}$}
+\escmathcom{\HHol}{0}{$\mathsf{overlap}$}
+\escmathcom{\HHrc}{0}{$\mathsf{r\_con}$}
+\escmathcom{\HHreg}{0}{$\mathsf{regular}$}
+\escmathcom{\HHint}{0}{$\mathsf{Int}$}
+\escmathcom{\HHclos}{0}{$\mathsf{Clos}$}
+
+\escmathcom{\horse}{0}{$\to$}
+
+% Topology
+
+
+\escmathcom{\Regions}{0}{$\mcal{R}$}
+\escmathcom{\Region}{0}{$\mcal{R}$}
+\escmathcom{\ran}{0}{$\mcal{R}$}
+\escmathcom{\Opens}{0}{$\mcal{O}$}
+\escmathcom{\Closeds}{0}{$\mcal{C}$}
+\escmathcom{\Inter}{0}{$\mathsf{i}$}
+\escmathcom{\Closure}{0}{$\mathsf{c}$}
+\escmathcom{\Int}{1}{$\mathsf{i}(#1)$}
+\escmathcom{\Clos}{1}{$\mathsf{c}(#1)$}
+\escmathcom{\Boun}{1}{$\mathsf{b}(#1)$}
+%\escmathcom{\Reg}{1}{$\mathsf{r}(#1)$}
+\escmathcom{\Reg}{0}{$\mathsf{R}$}
+\escmathcom{\Heyt}{1}{$\mathsf{h}(#1)$}
+\escmathcom{\SComp}{1}{$\ov{#1}$}
+\escmathcom{\setimp}{0}{$\iimp$}
+\escmathcom{\hcomp}{0}{$\backsim$}
+
+%\escmathcom{\atom}{0}{$\mathsf{atom}$}
+\escmathcom{\region}{0}{$\mathsf{region}$}
+\escmathcom{\Base}{1}{$\phi (\wt{#1})$}
+
+\escmathcom{\zInt}{0}{$\mathsf{I}$}
+\escmathcom{\zClos}{0}{$\mathsf{C}$}
+\escmathcom{\zBoun}{0}{$\mathsf{Bd}$}
+\escmathcom{\zRegl}{0}{$\approx$}
+\escmathcom{\Rr}{0}{$\approx$}
+\escmathcom{\zHco}{0}{$\ineg$}
+\escmathcom{\zBco}{0}{$\neg$}
+
+
+\escmathcom{\emp}{0}{$\varnothing$}
+\escmathcom{\sseq}{0}{$ \ \subseteq \ $}
+\escmathcom{\nsseq}{0}{$ \ \nsubseteq \ $}
+\escmathcom{\qsseq}{0}{$ \ \sqsubseteq \ $}
+\escmathcom{\nqsseq}{0}{$ \ \not\sqsubseteq \ $}
+\escmathcom{\qsset}{0}{$ \ \sqsubset \ $}
+\escmathcom{\sqsseq}{0}{$\sqsubseteq$}
+\escmathcom{\nqseq}{0}{$\nsqsubseteq$}
+\escmathcom{\nsqsseq}{0}{$\not\sqsubseteq$}
+
+
+% Names of Logical Systems
+
+\escmathcom{\Itwo}{0}{$\mathit{I2}$}
+\escmathcom{\Ctwo}{0}{$\mathit{C2}$}
+\escmathcom{\Dtwo}{0}{$\mathit{D2}$}
+\escmathcom{\Ctwor}{0}{$\mathit{C2}_{r}$}
+\escmathcom{\Dtwor}{0}{$\mathit{D2}_{r}$}
+\escmathcom{\Ctwoc}{0}{$\mathit{C2}_{c}$}
+\escmathcom{\Dtwoc}{0}{$\mathit{D2}_{c}$}
+\escmathcom{\Htwo}{0}{$\mathit{I2}$}
+\escmathcom{\Htwoi}{0}{$\mathit{I2}_{m}$}
+\escmathcom{\Htwor}{0}{$\mathit{I2}_{r}$}
+\escmathcom{\Htwoc}{0}{$\mathit{I2}_{c}$}
+%\escmathcom{\twoC}{0}{$\mathit{2C}$}
+%\escmathcom{\twoD}{0}{$\mathit{2D}$}
+\escmathcom{\NCtwo}{0}{$\mathit{NC2}$}
+\escmathcom{\NDtwo}{0}{$\mathit{ND2}$}
+\escmathcom{\VCtwo}{0}{$\mathit{VC2}$}
+\escmathcom{\VDtwo}{0}{$\mathit{VD2}$}
+\escmathcom{\Sfour}{0}{$\mathit{S4}$}
+\escmathcom{\Sfive}{0}{$\mathit{S5}$}
+
+
+
+
+
+\escmathcom{\IP}{0}{\emph{H}}
+%\escmathcom{\Sfour}{0}{\emph{S4}}
+%\escmathcom{\Sfive}{0}{\emph{S5}}
+\escmathcom{\Sfourfive}{0}{\emph{S4-S5}}
+\escmathcom{\IPtwo}{0}{\emph{H2}}
+\escmathcom{\IPD}{0}{\emph{D2}}
+%\escmathcom{\IPD}{0}{\emph{2tA}}
+\escmathcom{\NIPD}{0}{\emph{ND2}}
+\escmathcom{\VIPD}{0}{\emph{VD2}}
+%\escmathcom{\NIPD}{0}{\emph{N2tA}}
+%\escmathcom{\VIPD}{0}{\emph{V2tA}}
+\escmathcom{\SIPD}{0}{$\Sigma$\emph{H2D}}
+\escmathcom{\CP}{0}{\emph{C}}
+\escmathcom{\CPP}{0}{\emph{2C}}
+
+
+\escmathcom{\IPT}{0}{\emph{IPT}}
+\escmathcom{\IPC}{0}{\emph{IPC}}
+\escmathcom{\IPQ}{0}{\emph{IPC}}
+\escmathcom{\IPL}{0}{\emph{IPL}}
+\escmathcom{\IPLtwo}{0}{\emph{IP2}}
+\escmathcom{\IPLK}{0}{$\mathit{IP2N}$}
+\escmathcom{\IPCcd}{0}{$\mathit{IPC}_{D}$}
+\escmathcom{\IPCk}{0}{$\mathit{IPC}_{K}$}
+\escmathcom{\IPCcdk}{0}{$\mathit{IPC}_{DK}$}
+\escmathcom{\RCC}{0}{\emph{RCC}}
+\escmathcom{\RCCe}{0}{\emph{RCC8}}
+\escmathcom{\RCCint}{0}{$\mcal{I}_{8}$}
+\escmathcom{\CPC}{0}{\emph{CPC}}
+\escmathcom{\CPL}{0}{\emph{CPL}}
+\escmathcom{\LLAMA}{0}{\emph{LLAMA}}
+
+
+% Sets of Expressions
+
+\escmathcom{\TERM}{0}{$\mbox{\emph{Term}}$}
+\escmathcom{\SUBST}{0}{$\mbox{\emph{Subst}}$}
+\escmathcom{\PROP}{0}{$\mbox{\emph{Prop}}$}
+\escmathcom{\WFF}{0}{$\mbox{\emph{Wff}}$}
+\escmathcom{\OPER}{0}{$\mbox{\emph{Oper}}$}
+\escmathcom{\ATOM}{0}{$\mbox{\emph{PropAtom}}$}
+\escmathcom{\VAR}{0}{$\mbox{\emph{Var}}$}
+\escmathcom{\CONS}{0}{$\mbox{\emph{Cons}}$}
+\escmathcom{\CONST}{0}{$\mbox{\emph{Const}}$}
+\escmathcom{\EVAL}{0}{$\mbox{\emph{EvalExp}}$}
+\escmathcom{\FUN}{0}{$\mbox{\emph{Fun}}$}
+\escmathcom{\PRED}{0}{$\mbox{\emph{Pred}}$}
+\escmathcom{\ATOMwff}{0}{$\mbox{\emph{AtomWff}}$}
+
+
+% Semantical Symbolism
+
+\escmathcom{\vtopol}{0}{$\Vdash$}
+
+\escmathcom{\zInter}{0}{$\rho$}
+\escmathcom{\zIVal}{2}{$\Vert #1 \Vert_{#2}$}
+\escmathcom{\zVal}{1}{$\Vert #1 \Vert$}
+\escmathcom{\kVal}{1}{$\lceil #1 \rceil$}
+
+
+\escmathcom{\Root}{0}{$\textbf{0}$}
+\escmathcom{\bool}{0}{$\mbox{\emph{Bool}}$}
+\escmathcom{\Domain}{1}{$\mathcal{#1}$}  
+\escmathcom{\KDomain}{2}{\tindset{#2}{#1}}  
+\escmathcom{\FDomain}{2}{\tindset{#2}{#1}}  
+
+\escmathcom{\Th}{0}{$\Delta$}
+\escmathcom{\tModel}{0}{$\vDash \ $}
+\escmathcom{\ntModel}{0}{$\nvDash \ $}
+\escmathcom{\tpModel}{0}{$\vDash_{+} \ $}
+\escmathcom{\MODEL}{1}{$\vDash_{#1}$}
+\escmathcom{\REAL}{0}{$\rho$}
+\escmathcom{\VAL}{0}{$\mbox{\emph{VAL}}$}
+\escmathcom{\VALR}{0}{${\mbox{\emph{VAL}}}_{\rho}$}
+\escmathcom{\intt}{1}{$\Vert #1 \Vert$}
+
+\escmathcom{\ASG}{0}{$\mbox{\emph{Assg}}$}
+\escmathcom{\KASG}{1}{${\emph{Assg}}_{#1}$}
+\escmathcom{\ASSG}{0}{$\sigma$}
+\escmathcom{\eqASSG}{1}{$\sigma' =_{#1} \sigma$}  
+
+\escmathcom{\tVAL}{0}{$\mbox{\emph{Val}}$}
+\escmathcom{\tVALR}{0}{${\mbox{\emph{Val}}}_{\rho}$}
+\escmathcom{\tVALRT}{0}{${\mbox{\emph{ValSet}}}_{\rho}$}
+
+%\escmathcom{\kVAL}{1}{$\mbox{\emph{Val}}^{#1}$}
+\escmathcom{\kVALR}{0}{${\mbox{\emph{Val}}}_{\rho}$}
+\escmathcom{\kkVALR}{1}{${\mbox{\emph{Val}}}_{\rho}^{#1}$}
+
+\escmathcom{\INTa}{2}{$\vert #1 \vert_{#2}$}
+\escmathcom{\INTt}{3}{$\Vert #2 \Vert_{#3}^{#1}$}
+\escmathcom{\INTk}{3}{$\lceil #2 \rceil_{#3}^{#1}$}
+
+\escmathcom{\TSETR}{2}{$\Vert #1 \Vert_{#2}$}
+\escmathcom{\KSETR}{2}{$\lceil #1 \rceil_{#2}$}
+
+
+% Other symbols
+
+\escmathcom{\And}{0}{\textnormal{and}}
+\escmathcom{\Or}{0}{\textnormal{or}}
+\escmathcom{\If}{0}{\textnormal{if}}
+\escmathcom{\Then}{0}{\textnormal{then}}
+\escmathcom{\EX}{0}{\textnormal{exists}}
+\escmathcom{\FOR}{0}{\textnormal{for all}}
+
+
+
+% END NEW MACROS
+
+
+
+
+
+
+
+
+
+
+
+
+\def\h{\hbox}
+
+\newcommand{\mathcom}[3]{ \newcommand{#1}[#2]{\mbox{$#3$}}}
+\newcommand{\remathcom}[3]{ \renewcommand{#1}[#2]{\mbox{$#3$}}}
+
+\newcommand{\mdef}[2]{ \newcommand{#1}{\mbox{$#2$}} }
+ 
+\mathcom{\y}{0}{\ \vdash\ }               % yeilds 
+\mathcom{\ys}{0}{\vdash_{\cal S}}         % yeilds sub S
+\mathcom{\yt}{0}{\vdash_{\theta}}         % yeilds sub theta
+
+\mathcom{\absurd}{0}{\mathbf{f}}                 % absurdity
+\mathcom{\imp}{0}{\ \rightarrow\ }            % implication arrow
+\mathcom{\con}{0}{\ \wedge\ }                 % conjunction
+\mathcom{\dis}{0}{\ \vee\ }                   % disjunction
+\mathcom{\n}{0}{\neg}                     % negation
+\mathcom{\dimp}{0}{\ \leftrightarrow\ }       % mat equiv
+
+\mathcom{\corresponds}{0}{\ \Lleftarrow\! \! \Rrightarrow\ }
+
+
+%%\mathcom{\th}{0}{\theta}                  % theta
+
+
+\mathcom{\A}{0}{\forall}                  % universal quantifier
+\mathcom{\E}{0}{\exists}                  % existential quant
+
+\mathcom{\Dec}{1}{{\cal D}(#1)}           % D(#1)
+
+\mathcom{\elt}{0}{\in}
+
+\mathcom{\tuple}{1}{\langle #1 \rangle}
+
+% \mathcom{\equivdef}{0}{\equiv_{\mbox{\em \tiny def}}}
+% \mathcom{\eqdef}{0}{=_{\mbox{\em \tiny def}}}
+
+\def\equivdef{\mathrel{\ \equiv_{\mbox{\em \tiny
+def}}\ }}
+
+\def\eqdef{\mathrel{\ =_{\mbox{\em \tiny def}}\ }}
+
+
+\newtheorem{Rule}{Rule}
+\newtheorem{Lemma}{Lemma}
+\newtheorem{Theorem}{Theorem}
+
+
+% Redeclaration of symbols for intuitionistic logic
+% see Diller p.126
+\def\ineg{\mathop\sim}
+\def\iimp{\mathbin\Rightarrow}
+\def\iiff{\mathbin\Leftrightarrow}
+% new symbols from amssymb
+%\def\iimp{\mathbin\rightarrowtail}
+%\def\iiff{\mathbin\leftrightsquigarrow}
+
+\def\icon{\mathbin\curlywedge}
+\def\idis{\mathbin\curlyvee}
+
+%Definitions for RCC inserts
+\newcommand{\notch}{\Longrightarrow\kern-16pt{/}\ \ \ }
+\newcommand{\ch}{\Longrightarrow}
+\newcommand{\pr}[1]{\mbox{\sf #1}}
+
+\newcommand{\ov}[1]{\overline{#1}}
+\newcommand{\void}[0]{\emptyset}
+
+
+% RCC relations
+\mathcom{\C}{0}{\pr{C}}
+\remathcom{\P}{0}{\pr{P}}
+\remathcom{\O}{0}{\pr{O}}
+\mathcom{\PO}{0}{\pr{PO}}
+\mathcom{\PP}{0}{\pr{PP}}
+\mathcom{\NTPP}{0}{\pr{NTPP}}
+\mathcom{\NTPPI}{0}{\pr{NTPP}^{-1}}
+\mathcom{\TPP}{0}{\pr{TPP}}
+\mathcom{\TPPI}{0}{\pr{TPP}^{-1}}
+\mathcom{\TP}{0}{\pr{TP}}
+\mathcom{\NTP}{0}{\pr{NTP}}
+\mathcom{\NTPi}{0}{\pr{NTPi}}
+\mathcom{\EC}{0}{\pr{EC}}
+\mathcom{\DC}{0}{\pr{DC}}
+\mathcom{\DR}{0}{\pr{DR}}
+\mathcom{\EQ}{0}{\pr{EQ}}
+\mathcom{\CG}{0}{\pr{CG}}
+
+\mathcom{\TC}{0}{\pr{TC}}
+\mathcom{\NTC}{0}{\pr{NTC}}
+
+\mathcom{\Pin}{0}{\pr{Pi}} % \Pi is Greek letter
+\mathcom{\PPi}{0}{\pr{PPi}}
+\mathcom{\NTPPi}{0}{\pr{NTPPi}}
+
+\mathcom{\OP}{0}{\pr{OP}}
+
+\mathcom{\conv}{0}{\pr{conv}}
+\mathcom{\rsum}{0}{\pr{sum}}
+\mathcom{\rdiff}{0}{\pr{diff}}
+\mathcom{\rcompl}{0}{\pr{compl}}
+\mathcom{\rprod}{0}{\pr{prod}}
+\mathcom{\cp}{0}{\pr{cp}}
+\mathcom{\Us}{0}{\pr{Us}}
+\mathcom{\us}{0}{\pr{u}}
+\mathcom{\NULL}{0}{\pr{NULL}}
+\mathcom{\rnull}{0}{\emptyset}
+\mathcom{\CONV}{0}{\pr{CONV}}
+\mathcom{\CON}{0}{\pr{CON}}
+
+% Adaptations for new latex compatibility
+\renewcommand{\Box}{\square}
+\def\cal{\mathcal}
+
+% meta language in definitions etc
+\mathcom{\ml}{1}{\;\;\;\; \mbox{#1} \;\;\;\;}
+
+
+%-- TOPLOG SYMBOLS
+
+\mathcom{\Co}{0}{{\cal C}_{0} \ }
+\mathcom{\CoX}{0}{{\cal C}_{0}}
+\mathcom{\Cop}{0}{{\cal C}_{0}^+ \ }
+\mathcom{\CopX}{0}{{\cal C}_{0}^+}
+\mathcom{\mcop}{0}{\models_{C_o^+}}
+
+\mathcom{\Lop}{0}{{\cal L}_{0}^+ \ }
+\mathcom{\LopX}{0}{{\cal L}_{0}^+}
+\def\mlo{\models_{{\mathcal  L}_0}}
+\def\mlop{\models_{{\mathcal  L}_0^+}}
+
+\mathcom{\Ci}{0}{{\cal C}_{1} \ }
+\mathcom{\CiX}{0}{{\cal C}_{1}}
+
+\mathcom{\Io}{0}{{\cal I}_{0} \ }
+\mathcom{\IoX}{0}{{\cal I}_{0}}
+\mathcom{\Iop}{0}{{\cal I}_{0}^+ \ }
+\mathcom{\IopX}{0}{{\cal I}_{0}^+}
+
+%%\mathcom{\inter}{1}{\langle #1 \rangle}
+\mathcom{\inter}{1}{i( #1 )}
+
+\newfont{\myssfont}{cmss12}
+
+\mathcom{\Maps}{2}{\, _{#1}\!\!\!\rightleftharpoons^{#2} \ }
+
+\mathcom{\CotoST}{0}{\Maps{C_0}{ST}}
+\mathcom{\CtoST}{0}{\Maps{C\,}{ST}}
+\mathcom{\IotoST}{0}{\Maps{I_0}{ST}}
+
+\mathcom{\uni}{0}{\cal U \, }
+\mathcom{\uniX}{0}{\cal U}
+\mathcom{\U}{0}{\cal U}
+
+\mathcom{\eu}{0}{\,=\,\uni}
+
+\mathcom{\ol}{1}{\overline{#1}}
+
+\mathcom{\Lsse}{0}{{\cal L}_{sse}}
+\mathcom{\Lssei}{0}{{\cal L}_{ssei}}
+
+\mathcom{\Luse}{0}{{\cal L}_{use}}
+\mathcom{\Lusei}{0}{{\cal L}_{usei}}
+
+\mathcom{\disdots}{0}{\dis\!\!\!\ldots\!\!\dis}
+\mathcom{\condots}{0}{\con\ldots\con}
+
+
+%% Miscelleneous
+
+% Enclose arguments in square double brackets to
+% refer to semantic value of an expression
+\def\semvalue#1{[\![#1]\!]}
+
+\def\forces{\mathop{\setbox0=\hbox{$\vdash$}\ \rule{0.04em}{1\ht0}\mkern1.5mu\box0}}
+
+\mathcom{\hence}{0}{\Longrightarrow \hspace{2em}}
+
+\def\sliderule{\centerline{\rule{4in}{1mm}}}
+
+\def\Cbox{\mathop{\square\mkern-10mu
+                   \mbox{\raise0.45ex\hbox{\tiny\sf C}}
+                  \mkern2mu
+                 }
+         }
+
+\def\letterbox#1{\mathop{\square\mkern-10mu
+                   \mbox{\raise0.2ex\hbox{\small\sf #1}}
+                  \mkern2mu
+                 }
+         }
+
+%\def\tBox{\letterbox{\lower0.4ex\hbox{t}}}
+\def\sBox{\letterbox{s}}
+\def\tBox{\letterbox{t}}
+
+\def\overstrike#1#2{\mathop{%
+               \setbox1=\hbox{$#1$}%
+               \setbox2=\hbox{$#2$}%
+               \ifdim 1\wd1<1\wd2 % 
+                    { \rlap{\mbox{\kern0.5\wd2\kern-0.5\wd1 \box1}} \box2 }
+              \else {   \rlap{\mbox{$#1$}}
+                        \rlap{\mbox{\kern0.5\wd1\kern-0.5\wd2 \box2}}
+                        \phantom{#1} } 
+              \fi }}
+
+\def\rbox{\boxminus}
+\def\rdia{\overstrike{\Diamond}{-}}
+\def\cdia{\overstrike{\Diamond}{\rule{0.04em}{1.5ex}}}
+\def\cbox{\inbox{\rule{0.04em}{1.6ex}}}
+\def\cbox{\mathop{\setbox0=\hbox{$\square$}
+                  \overstrike{\square}{\hbox{\rule{0.04em}{1\ht0}}}
+             }}
+
+\def\diaplus{\overstrike{\Diamond}{+}}
+
+
+
+
+%% Make a modal box with a symbol centred inside
+\def\inbox#1{\mathop{\setbox0=\hbox{$\square$}%
+                      \setbox1=\hbox{#1}%
+                      \rlap{\hbox{$\square$}}
+                      \rlap{\mbox{\kern0.5\wd0\kern-0.5\wd1%
+                                  \box1}}%
+                      \phantom{\square}}}
+
+\def\ibox{\mathop{\square\mkern-10mu
+                   \mbox{\raise0.45ex\hbox{\tiny\em i}}
+                  \mkern7mu
+                 }
+         }
+\def\cdiamond{\mathop{\Diamond\mkern-12.7mu
+                   \mbox{\raise0.4ex\hbox{\tiny\em c}}
+                  \mkern7mu
+                 }
+         }
+
+
+\def\s5box{\mathop{\square\mkern-10mu
+                   \mbox{\raise0.45ex\hbox{\tiny 5}}
+                  \mkern7mu
+                 }
+         }
+
+\def\Fbox{\mathop{\square\mkern-11mu
+                   \mbox{\raise0.45ex\hbox{\tiny \bf F}}
+                  \mkern2mu
+                 }
+         }
+
+\def\Box{\mathop\square}
+\def\Diamond{\mathop\lozenge}
+
+\def\bigI{\mathop{%
+\hbox{%
+%%
+\def\thickness{1pt}%
+\def\width{6pt}%
+\def\height{0.6em}%
+\def\gap{0.15em}%
+%%
+\dimen0=\thickness%
+\divide\dimen0 by 2%
+\dimen1=\width%
+\divide\dimen1 by 2%
+%%
+\kern\gap%
+\rlap{\vrule width\width height\thickness depth0pt}%
+\rlap{\kern\dimen1 \kern-\dimen0%
+\vrule width\thickness height\height depth0pt}%
+\raise\height\hbox{\vrule width\width height\thickness depth0pt}%
+\kern\gap}}}
+
+\def\mconv{\mathop{% 
+      \mbox{\raise0.35ex\hbox{$\scriptstyle\bigcirc$}}
+                  }
+          }
+\def\mpconv{\circleddash}
+
+
+\def\ri{\mathclose{\raise1ex\hbox{$\smile$}}}
+
+\def\eqtag#1{\eqno ({\bf #1})}
+
+\def\mc:#1{\hbox{${\mathcal{#1}}$}}
+\def\mb#1{{\mathbf{#1}}}
+ 
+\def\ifff{\qquad \hbox{if and only if} \qquad}
+
+\def\d{\delta}
+
+\def\QED{$\blacksquare$}
+
+\def\epsrcgrant{GR/K65041}
+\def\VUGgrant{GR/M56807}
+
+\def\Boxx{\boxtimes}
+
+%% Force a math symbol to go into scriptsize
+\def\mscriptsize#1{\hbox{\scriptsize $#1$}}
+\def\mlarge#1{\hbox{\large $#1$}}
+
+\def\boxtheorem#1#2{~\\
+\centerline{\fbox{
+\parbox{5in}{
+\centerline{\bf #1}
+#2
+}}}
+\vspace{1ex}}
+
+\def\proof#1#2{
+\begin{quotation}
+\noindent {\bf Proof of #1:}
+#2
+\QED
+\end{quotation}
+}
+
+\def\proofpar{\\ \hspace*{1.5em}}
+
+
+%%%% ENVIRONMENTS
+
+%% specify my list parameters
+%% These can be overridden by declarations within
+%% a document.
+
+\def\mytopsep{1ex}
+\def\mypartopsep{0ex}
+\def\myitemsep{0.3ex}
+\def\myparsep{0ex}
+\def\mylistparindent{2em}
+\def\myleftmargin{4.5em}
+\def\mylabelwidth{4.5em}
+\def\mylabelsep{1em}
+\def\myitemindent{0em}
+
+\def\setmylistparams{%
+             \setlength{\topsep}{\mytopsep}
+             \setlength{\partopsep}{\mypartopsep}
+             \setlength{\itemsep}{\myitemsep}
+             \setlength{\parsep}{\myparsep}
+             \setlength{\listparindent}{\mylistparindent}
+             \setlength{\leftmargin}{\myleftmargin}
+             \setlength{\labelwidth}{\mylabelwidth}
+             \setlength{\labelsep}{\mylabelsep}
+             \setlength{\itemindent}{\myitemindent}
+        }
+
+
+\newcounter{tempvalue}
+% A compact list making environment
+\newenvironment{clist}
+    { %\vspace{1ex}
+      \begin{list}
+            {$\bullet$}
+            \setmylistparams
+    }
+    { \end{list}\addvspace{1ex} 
+    }
+% A compact list making environment
+% with -- as the default item tag
+\newenvironment{cdashlist}
+    { %\vspace{1ex}
+      \begin{list}
+            {--}
+            {\setlength{\topsep}{0.2ex}
+             \setlength{\partopsep}{0ex}
+             \setlength{\itemsep}{0.3ex}
+             \setlength{\parsep}{0ex}
+             \setlength{\listparindent}{2em}
+            }
+    }
+    { \end{list}\addvspace{1ex} 
+    }
+
+
+% compact list with wide labels for item tags
+\newenvironment{taglist}[1]
+    { %\vspace{1ex}
+      \begin{list}
+            {$\bullet$}
+            {\setlength{\topsep}{0.2ex}
+             \setlength{\partopsep}{0ex}
+             \setlength{\itemsep}{0.3ex}
+             \setlength{\parsep}{0ex}
+             \setlength{\listparindent}{2em}
+             \setlength{\leftmargin}{#1}
+             \setlength{\labelwidth}{#1}
+             %\addtolength{\labelwidth}{-1em}
+             \setlength{\labelsep}{0em}
+            }
+    }
+    { \end{list}\addvspace{1ex} 
+    }
+
+\newcounter{cenumcount}
+\newenvironment{cenum}
+    { %\vspace{1ex}
+      \begin{list}
+            {\arabic{cenumcount}.}
+            {\usecounter{cenumcount}
+             \setlength{\topsep}{0.2ex}
+             \setlength{\partopsep}{0ex}
+             \setlength{\itemsep}{0.3ex}
+             \setlength{\parsep}{0ex}
+             \setlength{\listparindent}{2em}
+            }
+    }
+    { \end{list}\addvspace{1ex} 
+    }
+
+%% Labelled list environment
+\newenvironment{llist}[1]{%
+\newcounter{#1}
+\begin{list}{{\bf #1\arabic{#1}})\hspace{1em}}{\usecounter{#1}}
+}
+{\end{list}}
+
+%% Labelled list continued
+%% (assumes counter already exists)
+\newenvironment{llistcont}[1]{%
+\setcounter{tempvalue}{\value{#1}}
+\begin{list}{{\bf #1\arabic{#1}})\hspace{1em}}{%
+\usecounter{#1}
+\setcounter{#1}{\value{tempvalue}}
+}
+}
+{\end{list}}
+
+%%% compact versions of llist and llistcont
+\newenvironment{cllist}[1]{%
+\newcounter{#1}
+\begin{list}{{\bf #1\arabic{#1}})}
+             { \usecounter{#1}
+               \setmylistparams
+             }
+}
+{\end{list}}
+
+%% Labelled list continued
+%% (assumes counter already exists)
+\newenvironment{cllistcont}[1]{%
+\setcounter{tempvalue}{\value{#1}}
+\begin{list}{{\bf #1\arabic{#1}})}{%
+                 \usecounter{#1}
+                 \setcounter{#1}{\value{tempvalue}}
+                \setmylistparams
+          }
+}
+{\end{list}}
+
+
+
+%% Define a labelled list type
+%% #1 name of control sequence for the list type
+%% #2 prefix for numbering
+\def\llisttype#1#2{%
+\newcounter{#2}
+\expandafter\def\csname #1list\endcsname##1{%
+\begin{cllistcont}{#2}
+##1
+\end{cllistcont}}
+\expandafter\def\csname #1\endcsname##1{%
+\begin{cllistcont}{#2}
+\item
+##1
+\end{cllistcont}}
+}
+
+\def\litem#1#2{%
+\begin{clist}
+\item[{\bf #1})] 
+#2
+\end{clist}}
+
+\newenvironment{chapabst}%
+{\begin{quotation}\small\noindent }{\end{quotation}}
+
+% Split line displayed formulae
+% (not actually an environment)
+\newcommand{\splitdismath}[4]{%
+{\setlength{\arraycolsep}{0em}
+\begin{eqnarray}
+& #1 & #2 \nonumber \\
+ &    & #3 
+\label{#4}
+\end{eqnarray}
+}
+}
+
+% Displayed equation with tabbing
+
+\newcommand{\tabmathn}[2]
+{ \begin{equation}
+\vbox{
+\vspace{-2ex}
+\begin{tabbing}
+#1
+\end{tabbing}
+\vspace{-3.5ex}
+}
+\label{#2}
+\end{equation}
+}
+
+\newcommand{\displaytab}[1]
+{ \begin{displaymath}
+\vbox{
+\vspace{-2ex}
+\begin{tabbing}
+#1
+\end{tabbing}
+\vspace{-3.5ex}
+}
+\end{displaymath}
+}
+
+\def\myeq#1{$$\eqalign{#1}$$}
+
+
+%%% Reinstate \eqalign macros removed by Lamport
+\catcode`\@=11
+\def\eqalign#1{\null \,\vcenter {\openup \jot \m@th 
+\ialign {\strut \hfil $\displaystyle{##}$&$\displaystyle {{}##}$\hfil
+ \crcr #1\crcr }}\,}
+
+\def\eqalignno#1{\displ@y \tabskip \centering 
+\halign to\displaywidth {\hfil $\@lign \displaystyle{##}$\tabskip \z@skip
+ &$\@lign \displaystyle {{}##}$\hfil \tabskip \centering 
+ &\llap {$\@lign ##$}\tabskip \z@skip \crcr 
+ #1\crcr }}
+
+\def\leqalignno#1{\displ@y \tabskip \centering
+ \halign to\displaywidth {\hfil $\@lign \displaystyle {##}$\tabskip \z@skip
+ &$\@lign \displaystyle {{}##}$\hfil \tabskip \centering
+ &\kern -\displaywidth \rlap {$\@lign ##$}\tabskip \displaywidth \crcr 
+ #1\crcr}}
+
+%%% Define something like \bibliography but only records the
+%%% bibfiles (does not input the bbl file)
+\def\bibliographyfiles#1{%
+  \if@filesw
+    \immediate\write\@auxout{\string\bibdata{#1}}%
+  \fi}
+
+%%% Define a separate command to input the bbl file.
+\def\bibliographytext{%
+  \@input@{\jobname.bbl}}
+
+%% Change indent space allocated by \thebibliography
+%% use before \bibliography or \bibliographytext 
+\def\setbibindent#1{%
+\let\oldthebibliography\thebibliography
+\def\thebibliography##1{\oldthebibliography{#1}}
+}
+
+
+
+\catcode`\@=12
+
+\long\def\skipover#1{}
+
+\long\def\correction#1{\footnote{TO CORRECT: #1}}
+\def\nocorrections{\long\def\correction##1{}}
+\def\question#1{{\bf Question:} {\em #1} }
+\long\def\todo#1{{\bf To Do:} {\em #1} }
+
+
+\def\twiddle{$\sim$}
+
+%% Macro for URLs
+%% puts them in tt format and  breaks line after dot if needed.
+
+\def\urlspace{-0.5em}
+\def\url#1{{\tt \urlsub#1\end}}
+%\def\urldot{. \hspace{-1em}\urlsub}
+\def\urldot{. \linebreak[1]\hspace\urlspace\urlsub}
+\def\urlcolon{: \linebreak[1]\hspace\urlspace\hspace\urlspace\urlsub}
+\def\urlslash{/ \linebreak[1]\hspace\urlspace\urlsub}
+\def\urltilde{\twiddle\urlsub}
+\def\urlsub#1{\ifx#1\end \let\next=\relax
+      \else \ifx#1.\let\next=\urldot
+      \else \ifx#1:\let\next=\urlcolon
+      \else \ifx#1/\let\next=\urlslash
+      \else \ifx#1~\let\next=\urltilde
+      \else#1\let\next=\urlsub\fi\fi\fi\fi\fi\next}
+
+
+% Input a file in verbatim mode (eg a program file)
+\def\verbinput#1{\expandafter\begin{verbatim}\input#1}
+%NB: usage: \verbinput{filename}\end{verbatim}
+
+
+\def\mb#1{{\mathbf{#1}}}
+
+
+%%% MACROS for SLIDES
+
+\def\headd#1{%
+\centerline{
+\begin{tabular}{|c|} \hline #1 \\ \hline \end{tabular}
+           } 
+\vspace{1ex minus 1ex}
+}
+
+\def\head1#1{%
+\centerline{
+\large \begin{tabular}{c}  #1  \end{tabular}
+           }
+\vspace{1ex minus 1ex}
+}
+
+\def\heading#1{%
+\centerline{\shadowbox{
+\large \begin{tabular}{c} #1 \end{tabular}
+           }  }
+\vspace{1ex minus 1ex}
+}
+
+\def\bheading#1{%
+\centerline{\shadowbox{
+\large\bf \begin{tabular}{c} #1 \end{tabular}
+           }  }
+\vspace{1ex minus 1ex}
+}
+
+\def\printlandscape{\special{landscape}}    % Works with dvips.
+\def\printportrait{\special{portrait}}
+
+\def\leedslogo#1{\centerline{
+\psfig{file=uol.eps,width=#1} %% May look wrong in xdvi
+}}
+
+\def\titleslide#1#2{
+\begin{slide*}
+~
+
+\vfill
+\heading{#1}
+
+\vfill
+\begin{center}
+        {\large\bf Brandon Bennett} 
+
+\vspace{3ex}
+        Division of AI \\
+        School of Computer Studies \\
+        University of Leeds\\ 
+        Leeds LS2 9JT, England \\
+        {\tt brandon@scs.leeds.ac.uk} \\
+\end{center}
+
+\vfill
+\centerline{
+\psfig{file=uol.eps,width=0.7in} %% May look wrong in xdvi
+}
+\vfill
+\centerline{#2}
+\vfill
+\end{slide*}
+}
+
+
+\def\nlf{\\ \mbox{} \hfill}
+
+%%\def\fixhyphens{\usepackage[english]{babel}}
+
+%% FIX HYPHENATION
+\lefthyphenmin=2
+\righthyphenmin=3
+
+%% special commands for spell checker
+\def\sic#1{#1}
+\def\sico!#1!{#1}
+\def\sicname#1{#1}
+\def\accept#1{}
+\def\acceptname#1{}
+
+%\newenvironment{nospell}{}{}
+\def\spelloff{}
+\def\spellon{}
+
+\def\ifundefined#1{\expandafter\ifx\csname#1\endcsname\relax}
+
+\ifundefined{pdfoutput}
+  \def\graftype{eps}
+\else
+   \def\graftype{png}
+\fi
+
+\def\graphic[#1]#2{\includegraphics[#1]{#2.\graftype}}
+
+\def\dayth{\number\day\ifcase\day \or
+st\or nd\or rd\or th\or th\or th\or th\or th\or th\or th\or 
+th\or th\or th\or th\or th\or th\or th\or th\or th\or th\or
+st\or nd\or rd\or th\or th\or th\or th\or th\or th\or th\or
+st\fi}
+
+\def\monthname{\ifcase\month \or
+January\or February\or March\or April\or May\or June\or
+July\or August\or September\or October\or November\or December\fi}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 
