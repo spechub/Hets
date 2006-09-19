@@ -238,12 +238,12 @@ printMixfixAppl b c f args = case f of
 -- | print the term using the alternative syntax (if True)
 printTrm :: Bool -> Term -> (Doc, Int)
 printTrm b trm = case trm of
-    Const vn ty -> let 
-        nvn = case ty of 
-            Type "!!!" [] [tx] -> (text lb) <+> 
-                       (text $ new vn) <+> (text ":: ") <+> 
-                            printType tx <+> (text rb)
-            _ -> text $ new vn 
+    Const vn ty -> let
+        dvn = text $ new vn
+        nvn = case ty of
+            Type "!!!" [] [tx] ->
+                parens $ dvn <+> doubleColon <+> printType tx
+            _ -> dvn
       in case altSyn vn of
           Nothing -> (nvn, maxPrio)
           Just (AltSyntax s is i) -> if b && null is then
