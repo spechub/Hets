@@ -419,7 +419,34 @@ groupInst db =
 ----------------------- getting mutually recursive domains in Isabelle --------
 
 getDepDoms :: [[IsaSign.DomainEntry]] -> IsaSign.DomainTab
-getDepDoms ls = abGetDep deDepOn ls
+getDepDoms ls = ordDoms $ abGetDep deDepOn ls   
+
+ordDoms :: [[IsaSign.DomainEntry]] -> IsaSign.DomainTab
+ordDoms ls = quickSort (orLLift deDepOn) ls
+
+quickSort :: (a -> a-> Bool) -> [a] -> [a]
+quickSort f ls = case ls of
+  [] -> []
+  a:as -> let 
+               (xs,ys) = compF f a as
+               xxs = quickSort f xs 
+               yys = quickSort f ys
+     in xxs ++ a:yys      
+  where 
+  compF g c bs = 
+        ([ b | b <- bs, g c b == True],[ b | b <- bs, g c b == False])
+
+orLLift :: (a -> a -> Bool) -> [a] -> [a] -> Bool
+orLLift f as bs = case as of
+  [] -> False
+  x:xs -> if genOr (f x) bs == True then True
+              else (orLLift f xs bs)
+
+genOr :: (a -> Bool) -> [a] -> Bool
+genOr f ys = case ys of 
+               [] -> False
+               x:xs -> if (f x) then True 
+                           else (genOr f xs)
 
 deDepOn :: DomainEntry -> DomainEntry -> Bool
 deDepOn x y = depOn subTypForm fst (concatMap snd . snd) x y
@@ -705,9 +732,11 @@ fixPoint c xs = case xs of
     NotCont -> let
          jj = joinNames (map extAxName xs)
          jn = mkVName jj
-         jt1 = unifyTVars (map extAxType xs)
-         jt = mkFunType (fst jt1)
-                (typTuple NotCont (renTVars $ snd jt1))
+         jt1 = unifyTVars (map extAxType xs) 
+         jta = fst jt1
+         jtls = snd jt1
+         jt = mkFunType jta 
+                (typTuple NotCont (renTVars jtls))
          jl = Const jn jt
          n = length xs
          rs = map extRightH xs
@@ -717,24 +746,41 @@ fixPoint c xs = case xs of
          zs = [(p,Tuplex (map (renFuns (newFCons (Const jn noType) ls)) ts)
                                                                   NotCont)
                            | (p,ts) <- Map.toList yyys]
-         os = [mkNewDef x jj n m | (x,m) <- listEnum xs]
+         os = [mkNewDef x jj n m jtls jta | (x,m) <- listEnum xs]
          ps = (NamedSen jj True False $ makeRecDef jl zs):os
-      in ps
+      in ps 
   [] -> []
+
+typeTupleTrivInst :: Int -> [Typ] -> Typ -> Typ
+typeTupleTrivInst n tls t = mkFunType t
+                (typTuple NotCont (renTrivTVars n tls))
+   
+renTrivTVars :: Int -> [Typ] -> [Typ]
+renTrivTVars m tls =  [renTVar m b a | (a, b) <- listEnum tls]
+ where 
+  renTVar x n t = if x == n then t else
+    case t of
+      TFree x s -> if (take 2 x == "vX") then t else
+                       IsaSign.Type "unit" s []
+      IsaSign.Type a b cs -> IsaSign.Type a b (map (renTVar x n) cs)
+      _ -> t
+
+mkNewDef :: Named Sentence -> String -> Int -> Int -> [Typ] -> Typ -> Named Sentence 
+mkNewDef s z x y tls t = let      -- x is the max
+       a = NotCont 
+       zt =  IsaSign.Type "!!!" [] [typeTupleTrivInst y tls t]
+  in case s of 
+    NamedSen l m n (ConstDef (IsaEq lh rh)) -> case (lh, extFBody rh) of
+      (Const nn _,(_,w:ws)) -> 
+         NamedSen l m n (ConstDef (IsaEq lh $ 
+            termMAbs a (w:ws) $ termMAppl a (tupleSelector x y 
+                  (App (Const (mkVName z) zt) w a) a) ws))
+      _ -> error "Hs2HOLCFaux.mkNewDef1"
+    _ -> error "Hs2HOLCFaux.mkNewDef2"
 
 makeRecDef :: Term -> [(Term,Term)] -> Sentence
 makeRecDef t ls =
  RecDef primrecS [map (\ (a, b) -> holEq (App t a NotCont) b) ls]
-
-mkNewDef :: Named Sentence -> String -> Int -> Int -> Named Sentence
-mkNewDef s z x y = let a = NotCont in case s of
-   NamedSen l m n (ConstDef (IsaEq lh rh)) -> case (lh, extFBody rh) of
-     (Const _ _, (_, w : ws)) ->
-        NamedSen l m n (ConstDef (IsaEq lh $
-           termMAbs a (w:ws) $ termMAppl a (tupleSelector x y
-                 (App (conDouble z) w a) a) ws))
-     _ -> error "Hs2HOLCFaux.mkNewDef1"
-   _ -> error "Hs2HOLCFaux.mkNewDef2"
 
 reassemble :: [[(Term,Term)]] -> Map.Map Term [Term] -- [(b, [c])]
 reassemble ls = foldr

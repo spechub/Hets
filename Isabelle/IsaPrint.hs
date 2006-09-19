@@ -238,10 +238,16 @@ printMixfixAppl b c f args = case f of
 -- | print the term using the alternative syntax (if True)
 printTrm :: Bool -> Term -> (Doc, Int)
 printTrm b trm = case trm of
-    Const vn _ -> case altSyn vn of
-        Nothing -> (text $ new vn, maxPrio)
-        Just (AltSyntax s is i) -> if b && null is then
-            (fsep $ replaceUnderlines s [], i) else (text $ new vn, maxPrio)
+    Const vn ty -> let 
+        nvn = case ty of 
+            Type "!!!" [] [tx] -> (text lb) <+> 
+                       (text $ new vn) <+> (text ":: ") <+> 
+                            printType tx <+> (text rb)
+            _ -> text $ new vn 
+      in case altSyn vn of
+          Nothing -> (nvn, maxPrio)
+          Just (AltSyntax s is i) -> if b && null is then
+              (fsep $ replaceUnderlines s [], i) else (nvn, maxPrio)
     Free vn _ -> (text $ new vn, maxPrio)
     Var (Indexname _ _) _ -> error "Isa.Term.Var not used"
     Bound _ -> error "Isa.Term.Bound not used"
