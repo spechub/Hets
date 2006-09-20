@@ -19,9 +19,12 @@ import Logic.Prover
 
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Lib.Map as Map
+import qualified Common.OrderedMap as OMap
 import Common.ProofUtils
 
 import Data.List
+
+import Text.Regex
 
 
 -- * Data Structures
@@ -61,6 +64,21 @@ emptyConfig prName n pt =
                    resultOutput = [],
                    timeUsed = 0
                   }
+
+{- |
+  Performs a lookup on the ConfigsMap. Returns the config for the goal or an
+  empty config if none is set yet.
+-}
+getConfig :: (Ord proof_tree) =>
+             String -- ^ name of the prover
+          -> ATPIdentifier -- ^ name of the goal
+          -> proof_tree -- ^ initial empty proof_tree
+          -> GenericConfigsMap proof_tree
+          -> GenericConfig proof_tree
+getConfig prName genid pt m = maybe (emptyConfig prName genid pt)
+                                id lookupId
+  where
+    lookupId = Map.lookup genid m
 
 {- |
   We need to store one GenericConfig per goal.
@@ -118,8 +136,9 @@ initialGenericState prName ips trSenName th pt =
                   configsMap = Map.fromList $
                                map (\ g ->
                                         let gName = AS_Anno.senName g
-                                        in (gName,
-                                            emptyConfig prName gName pt))
+                                            ec = emptyConfig prName gName pt
+                                        in (gName, ec {proof_status =
+                       updateTactic_script (proof_status ec) gName}))
                                    goals,
                   namesMap = collectNameMapping nSens oSens',
                   goalsList = goals,
@@ -128,9 +147,24 @@ initialGenericState prName ips trSenName th pt =
                   mainDestroyed = False
                  }
     where Theory sign oSens = th
+          -- Search in list of Proof_status for first occurence of an Open goal
+          -- with non-empty Tactic_script and update Tactic_script if found.
+          updateTactic_script prStat gn =
+            maybe prStat
+                  (\senSt ->
+                    let validThmStatus = filter (\tStatus ->
+                            (goalStatus tStatus == Open) &&
+                            (not $ tacticScript tStatus == Tactic_script ""))
+                                                $ thmStatus senSt
+                    in  if null validThmStatus
+                          then prStat
+                          else prStat { tacticScript = tacticScript
+                                                       $ head validThmStatus })
+                  $ OMap.lookup gn oSens
           oSens' = toNamedList oSens
           nSens = prepareSenNames trSenName oSens'
           goals = filter (not . AS_Anno.isAxiom) nSens
+          
 
 
 {- |
@@ -195,9 +229,23 @@ data FileExtensions = FileExtensions {
 -}
 data ATPTactic_script = ATPTactic_script
     { ts_timeLimit :: Int, -- ^ used time limit
-      ts_extraOpts :: String -- ^ used extra options (if any)
+      ts_extraOpts :: [String] -- ^ used extra options (if any)
     } deriving (Eq, Ord)
+
 
 instance Show ATPTactic_script where
   show ts = "Time limit: " ++ (show $ ts_timeLimit ts)
-            ++ "\nExtra options: " ++ (ts_extraOpts ts)
+            ++ "\nExtra options: " ++ (show $ ts_extraOpts ts)
+
+instance Read ATPTactic_script where
+  readsPrec _ ts =
+      let emptyATPTactic_script = ATPTactic_script {
+                                  ts_timeLimit = 0, ts_extraOpts = [] }
+          re_atp = mkRegex "Time limit: +([0-9]+).*\nExtra options: +(.*) *"
+          readMatch = matchRegex re_atp ts
+      in  maybe [(emptyATPTactic_script, "")]
+                (\sl -> [(ATPTactic_script {
+                              ts_timeLimit = (read $ sl !! 0) :: Int,
+                              ts_extraOpts = (read $ sl !! 1) :: [String]}
+                  , "")])
+                readMatch
