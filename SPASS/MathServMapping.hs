@@ -152,7 +152,7 @@ defaultProof_status nGoal prName tl opts pt =
                     prName (ATP_ProofTree pt))
   {tacticScript = Tactic_script $ show $ ATPTactic_script
     {ts_timeLimit = tl,
-     ts_extraOpts = unwords opts} }
+     ts_extraOpts = opts} }
 
 {- |
   Returns the value of a prover run used in GUI (Success or

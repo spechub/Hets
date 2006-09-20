@@ -21,7 +21,9 @@ See <http://spass.mpi-sb.mpg.de/> for details on SPASS.
       - Implement a consistency checker based on GUI
 -}
 
-module SPASS.Prove (spassProver,spassProveGUI) where
+module SPASS.Prove (spassProver,
+                    spassProveGUI,
+                    spassProveCMDLautomaticBatch) where
 
 import Logic.Prover
 
@@ -31,13 +33,16 @@ import SPASS.Translate
 import SPASS.ProverState
 
 import qualified Common.AS_Annotation as AS_Anno
+import qualified Common.Result as Result
 
 import ChildProcess
 import ProcessClasses
 
 import Text.Regex
+import Data.IORef
 import Data.List
 import Data.Maybe
+import qualified Control.Concurrent as Concurrent
 import qualified Control.Exception as Exception
 
 import System
@@ -46,6 +51,7 @@ import HTk
 
 import GUI.GenericATP
 import GUI.GenericATPState
+import Proofs.BatchProcessing
 
 -- * Prover implementation
 
@@ -57,10 +63,45 @@ spassProver :: Prover Sign Sentence ATP_ProofTree
 spassProver = emptyProverTemplate
          { prover_name = "SPASS",
            prover_sublogic = "SoftFOL",
-           proveGUI = Just spassProveGUI
+           proveGUI = Just spassProveGUI,
+           proveCMDLautomatic = Just spassProveCMDLautomatic,
+           proveCMDLautomaticBatch = Just spassProveCMDLautomaticBatch
          }
 
--- * Main GUI
+-- * Main prover functions
+
+-- ** Utility functions
+
+{- |
+  Record for prover specific functions. This is used by both GUI and command
+  line interface.
+-}
+atpFun :: String -- ^ theory name
+       -> ATPFunctions Sign Sentence ATP_ProofTree SPASSProverState
+atpFun thName = ATPFunctions
+    { initialProverState = spassProverState,
+      atpTransSenName = transSenName,
+      atpInsertSentence = insertSentenceGen,
+      goalOutput = showDFGProblem thName,
+      proverHelpText = spassHelpText,
+      batchTimeEnv = "HETS_SPASS_BATCH_TIME_LIMIT",
+      fileExtensions = FileExtensions{problemOutput = ".dfg",
+                                      proverOutput = ".spass",
+                                      theoryConfiguration = ".spcf"},
+      runProver = runSpass,
+      createProverOptions = createSpassOptions }
+
+{- |
+  Parses a given default tactic script into a
+  'GUI.GenericATPState.ATPTactic_script' if possible. Otherwise a default
+  SPASS tactic script is returned.
+-}
+parseSpassTactic_script :: Tactic_script
+                        -> ATPTactic_script
+parseSpassTactic_script =
+    parseTactic_script batchTimeLimit ["-Stdin", "-DocProof"]
+
+-- ** GUI
 
 {- |
   Invokes the generic prover GUI. SPASS specific functions are omitted by
@@ -68,26 +109,53 @@ spassProver = emptyProverTemplate
 -}
 spassProveGUI :: String -- ^ theory name
               -> Theory Sign Sentence ATP_ProofTree -- ^ theory consisting of a
-                                             --   SPASS.Sign.Sign and a list of
-                                             --   Named SPASS.Sign.Sentence
+                 --   'SPASS.Sign.Sign' and a list of Named 'SPASS.Sign.Sentence'
               -> IO([Proof_status ATP_ProofTree]) -- ^ proof status for each goal
 spassProveGUI thName th =
-    genericATPgui atpFun True (prover_name spassProver) thName th $ ATP_ProofTree ""
+    genericATPgui (atpFun thName) True (prover_name spassProver) thName th
+                  $ ATP_ProofTree ""
 
-    where
-      atpFun = ATPFunctions
-        { initialProverState = spassProverState,
-          atpTransSenName = transSenName,
-          atpInsertSentence = insertSentenceGen,
-          goalOutput = showDFGProblem thName,
-          proverHelpText = spassHelpText,
-          batchTimeEnv = "HETS_SPASS_BATCH_TIME_LIMIT",
-          fileExtensions = FileExtensions{problemOutput = ".dfg",
-                                          proverOutput = ".spass",
-                                          theoryConfiguration = ".spcf"},
-          runProver = runSpass,
-          createProverOptions = createSpassOptions}
+-- ** command line functions
 
+{- |
+  Implementation of 'Logic.Prover.proveCMDLautomatic' which provides an
+  automatic command line interface for a single goal.
+  SPASS specific functions are omitted by data type ATPFunctions.
+-}
+spassProveCMDLautomatic ::
+           String -- ^ theory name
+        -> Tactic_script -- ^ default tactic script
+        -> Theory Sign Sentence ATP_ProofTree -- ^ theory consisting of a
+                                -- signature and a list of Named sentence
+        -> IO (Result.Result ([Proof_status ATP_ProofTree]))
+           -- ^ Proof status for goals and lemmas
+spassProveCMDLautomatic thName defTS th =
+    genericCMDLautomatic (atpFun thName) (prover_name spassProver) thName
+        (parseSpassTactic_script defTS) th (ATP_ProofTree "")
+
+{- |
+  Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an
+  automatic command line interface to the SPASS prover.
+  SPASS specific functions are omitted by data type ATPFunctions.
+-}
+spassProveCMDLautomaticBatch :: 
+           Bool -- ^ True means include proved theorems
+        -> Bool -- ^ True means save problem file
+        -> IORef (Result.Result [Proof_status ATP_ProofTree])
+           -- ^ used to store the result of the batch run
+        -> String -- ^ theory name
+        -> Tactic_script -- ^ default tactic script
+        -> Theory Sign Sentence ATP_ProofTree -- ^ theory consisting of a
+           --   'SPASS.Sign.Sign' and a list of Named 'SPASS.Sign.Sentence'
+        -> IO (Concurrent.ThreadId,Concurrent.MVar ())
+           -- ^ fst: identifier of the batch thread for killing it
+           --   snd: MVar to wait for the end of the thread
+spassProveCMDLautomaticBatch inclProvedThs saveProblem_batch resultRef
+                        thName defTS th =
+    genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
+        resultRef (prover_name spassProver) thName
+        (parseSpassTactic_script defTS) th (ATP_ProofTree "")
+        
 
 -- * SPASS Interfacing Code
 
@@ -241,7 +309,7 @@ runSpass sps cfg saveDFG thName nGoal = do
                            ATP_ProofTree "")
         {tacticScript = Tactic_script $ show $ ATPTactic_script
           {ts_timeLimit = configTimeLimit cfg,
-           ts_extraOpts = unwords opts} }
+           ts_extraOpts = opts} }
 
     proof_stat res usedAxs options out
       | isJust res && elem (fromJust res) proved =

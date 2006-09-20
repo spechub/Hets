@@ -13,7 +13,7 @@ See <http://spass.mpi-sb.mpg.de/> for details on SPASS.
 
 -}
 
-module SPASS.ProveVampire (vampire,vampireGUI) where
+module SPASS.ProveVampire (vampire,vampireGUI,vampireCMDLautomaticBatch) where
 
 import Logic.Prover
 
@@ -24,14 +24,18 @@ import SPASS.MathServParsing
 import SPASS.ProverState
 
 import qualified Common.AS_Annotation as AS_Anno
+import qualified Common.Result as Result
 
-import Data.List
-import Data.Maybe
+import Data.IORef
+-- import Data.List
+-- import Data.Maybe
+import qualified Control.Concurrent as Concurrent
 
 import HTk
 
 import GUI.GenericATP
 import GUI.GenericATPState
+import Proofs.BatchProcessing
 
 -- * Prover implementation
 
@@ -43,7 +47,9 @@ vampire :: Prover Sign Sentence ATP_ProofTree
 vampire = emptyProverTemplate
          { prover_name = "Vampire",
            prover_sublogic = "SoftFOL",
-           proveGUI = Just vampireGUI
+           proveGUI = Just vampireGUI,
+           proveCMDLautomatic = Just vampireCMDLautomatic,
+           proveCMDLautomaticBatch = Just vampireCMDLautomaticBatch
          }
 
 spassHelpText :: String
@@ -52,7 +58,30 @@ spassHelpText =
   "Ask Klaus Lüttich (luettich@informatik.uni-bremen.de) for more information.\n"
 
 
--- * Main GUI
+-- * Main prover functions
+
+-- ** Utility functions
+
+{- |
+  Record for prover specific functions. This is used by both GUI and command
+  line interface.
+-}
+atpFun :: String -- ^ theory name
+       -> ATPFunctions Sign Sentence ATP_ProofTree SPASSProverState
+atpFun thName = ATPFunctions
+    { initialProverState = spassProverState,
+      atpTransSenName = transSenName,
+      atpInsertSentence = insertSentenceGen,
+      goalOutput = showTPTPProblem thName,
+      proverHelpText = spassHelpText,
+      batchTimeEnv = "HETS_SPASS_BATCH_TIME_LIMIT",
+      fileExtensions = FileExtensions{problemOutput = ".tptp",
+                                      proverOutput = ".spass",
+                                      theoryConfiguration = ".spcf"},
+      runProver = runVampire,
+      createProverOptions = extraOpts}
+
+-- ** GUI
 
 {- |
   Invokes the generic prover GUI. SPASS specific functions are omitted by
@@ -64,21 +93,49 @@ vampireGUI :: String -- ^ theory name
            --   and a list of Named SPASS.Sign.Sentence
            -> IO([Proof_status ATP_ProofTree]) -- ^ proof status for each goal
 vampireGUI thName th =
-    genericATPgui atpFun True (prover_name vampire) thName th $ ATP_ProofTree ""
+    genericATPgui (atpFun thName) True (prover_name vampire) thName th $
+                  ATP_ProofTree ""
 
-    where
-      atpFun = ATPFunctions
-        { initialProverState = spassProverState,
-          atpTransSenName = transSenName,
-          atpInsertSentence = insertSentenceGen,
-          goalOutput = showTPTPProblem thName,
-          proverHelpText = spassHelpText,
-          batchTimeEnv = "HETS_SPASS_BATCH_TIME_LIMIT",
-          fileExtensions = FileExtensions{problemOutput = ".tptp",
-                                          proverOutput = ".spass",
-                                          theoryConfiguration = ".spcf"},
-          runProver = runVampire,
-          createProverOptions = extraOpts}
+-- ** command line functions
+
+{- |
+  Implementation of 'Logic.Prover.proveCMDLautomatic' which provides an
+  automatic command line interface for a single goal.
+  Vampire specific functions are omitted by data type ATPFunctions.
+-}
+vampireCMDLautomatic ::
+           String -- ^ theory name
+        -> Tactic_script -- ^ default tactic script
+        -> Theory Sign Sentence ATP_ProofTree -- ^ theory consisting of a signature
+                                           --   and a list of Named sentence
+        -> IO (Result.Result ([Proof_status ATP_ProofTree]))
+           -- ^ Proof status for goals and lemmas
+vampireCMDLautomatic thName defTS th =
+    genericCMDLautomatic (atpFun thName) (prover_name vampire) thName
+        (parseTactic_script batchTimeLimit [] defTS) th (ATP_ProofTree "")
+
+{- |
+  Implementation of 'Logic.Prover.proveCMDLautomaticBatch' which provides an
+  automatic command line interface to the SPASS prover.
+  Vampire specific functions are omitted by data type ATPFunctions.
+-}
+vampireCMDLautomaticBatch :: 
+           Bool -- ^ True means include proved theorems
+        -> Bool -- ^ True means save problem file
+        -> IORef (Result.Result [Proof_status ATP_ProofTree])
+           -- ^ used to store the result of the batch run
+        -> String -- ^ theory name
+        -> Tactic_script -- ^ default tactic script
+        -> Theory Sign Sentence ATP_ProofTree -- ^ theory consisting of a
+           --   'SPASS.Sign.Sign' and a list of Named 'SPASS.Sign.Sentence'
+        -> IO (Concurrent.ThreadId,Concurrent.MVar ())
+           -- ^ fst: identifier of the batch thread for killing it
+           --   snd: MVar to wait for the end of the thread
+vampireCMDLautomaticBatch inclProvedThs saveProblem_batch resultRef
+                        thName defTS th =
+    genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
+        resultRef (prover_name vampire) thName
+        (parseTactic_script batchTimeLimit [] defTS) th (ATP_ProofTree "")
 
 {- |
   Runs the Vampire service.

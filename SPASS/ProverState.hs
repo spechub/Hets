@@ -14,6 +14,8 @@ Data structures and initialising functions for Prover state and configurations.
 
 module SPASS.ProverState where
 
+import Logic.Prover
+
 import SPASS.Sign
 import SPASS.Conversions
 import SPASS.Translate
@@ -26,6 +28,7 @@ import Common.Utils (splitOn)
 import Common.DocUtils
 
 import Data.Maybe
+import GHC.Read (readEither)
 
 import GUI.GenericATP (guiDefaultTimeLimit)
 import GUI.GenericATPState
@@ -117,3 +120,19 @@ configTimeLimit :: GenericConfig ATP_ProofTree
                 -> Int
 configTimeLimit cfg = 
     maybe (guiDefaultTimeLimit) id $ timeLimit cfg
+
+{- |
+  Parses a given default tactic script into a
+  'GUI.GenericATPState.ATPTactic_script' if possible. Otherwise a default
+  prover's tactic script is returned.
+-}
+parseTactic_script :: Int -- ^ default time limit (standard:
+                          -- 'Proofs.BatchProcessing.batchTimeLimit')
+                   -> [String] -- ^ default extra options (prover specific)
+                   -> Tactic_script
+                   -> ATPTactic_script
+parseTactic_script tLimit extOpts (Tactic_script ts) =
+    either (\_ -> ATPTactic_script { ts_timeLimit = tLimit,
+                                     ts_extraOpts = extOpts })
+           id
+           (readEither ts :: Either String ATPTactic_script)
