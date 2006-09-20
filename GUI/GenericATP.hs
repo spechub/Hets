@@ -50,6 +50,8 @@ import GUI.HTkUtils
 import GUI.GenericATPState
 import GUI.PrintUtils
 
+import Proofs.BatchProcessing
+
 -- debugging
 import Debug.Trace
 
@@ -78,59 +80,6 @@ setTimeLimit n c = if n > 0 then c{timeLimit = Just n}
 setExtraOpts :: [String] -> GenericConfig proof_tree -> GenericConfig proof_tree
 setExtraOpts opts c = c{extraOpts = opts}
 
-{- |
-  Checks whether an ATPRetval indicates that the time limit was
-  exceeded.
--}
-isTimeLimitExceeded :: ATPRetval -> Bool
-isTimeLimitExceeded ATPTLimitExceeded = True
-isTimeLimitExceeded _ = False
-
-
-{- |
-  Adjusts the configuration associated to a goal by applying the supplied
-  function or inserts a new emptyConfig with the function applied if there's
-  no configuration associated yet.
-
-  Uses Map.member, Map.adjust, and Map.insert for the corresponding tasks
-  internally.
--}
-adjustOrSetConfig :: (Ord proof_tree) =>
-                     (GenericConfig proof_tree -> GenericConfig proof_tree)
-                     -- ^ function to be applied against the current
-                     -- configuration or a new emptyConfig
-                  -> String -- ^ name of the prover
-                  -> ATPIdentifier -- ^ name of the goal
-                  -> proof_tree -- ^ initial empty proof_tree
-                  -> GenericConfigsMap proof_tree -- ^ current GenericConfigsMap
-                  -> GenericConfigsMap proof_tree
-                  -- ^ resulting GenericConfigsMap with the changes applied
-adjustOrSetConfig f prName k pt m = if (Map.member k m)
-                                    then Map.adjust f k m
-                                    else Map.insert k
-                                               (f $ emptyConfig prName k pt) m
-
-{- |
-  Performs a lookup on the ConfigsMap. Returns the config for the goal or an
-  empty config if none is set yet.
--}
-getConfig :: (Ord proof_tree) =>
-             String -- ^ name of the prover
-          -> ATPIdentifier -- ^ name of the goal
-          -> proof_tree -- ^ initial empty proof_tree
-          -> GenericConfigsMap proof_tree
-          -> GenericConfig proof_tree
-getConfig prName genid pt m = maybe (emptyConfig prName genid pt)
-                                id lookupId
-  where
-    lookupId = Map.lookup genid m
-
-filterOpenGoals :: GenericConfigsMap proof_tree -> GenericConfigsMap proof_tree
-filterOpenGoals = Map.filter isOpenGoal
-    where isOpenGoal cf = case (goalStatus $ proof_status cf) of
-                              Open -> True
-                              _    -> False
-
 -- ** Constants
 
 {- |
@@ -148,7 +97,7 @@ guiDefaultTimeLimit = 10
 data ProofStatusColour
   -- | Proved
   = Green
-  -- | Proved, but theory is inconsitent
+  -- | Proved, but theory is inconsistent
   | Brown
   -- | Disproved
   | Red
@@ -165,6 +114,10 @@ data ProofStatusColour
 statusProved :: (ProofStatusColour, String)
 statusProved = (Green, "Proved")
 
+{- |
+  Generates a ('ProofStatusColour', 'String') tuple representing a Proved 
+  (but inconsistent) proof status.
+-}
 statusProvedButInconsistent :: (ProofStatusColour, String)
 statusProvedButInconsistent = (Brown, "Proved (Theory inconsistent!)")
 
@@ -253,6 +206,15 @@ getValueSafe defaultTimeLimit timeEntry =
                                 (return defaultTimeLimit))
 
 {- |
+  reads passed ENV-variable and if it exists and has an Int-value this value is returned otherwise the value of 'batchTimeLimit' is returned.
+-}
+
+getBatchTimeLimit :: String -- ^ ENV-variable containing batch time limit
+                  -> IO Int
+getBatchTimeLimit env =
+    getEnvSave batchTimeLimit env readEither
+
+{- |
   Text displayed by the batch mode window.
 -}
 batchInfoText :: Int -- ^ batch time limt
@@ -269,43 +231,6 @@ batchInfoText tl gTotal gDone =
   "At most "++show hours++"h "++show mins++"m "++show secs++"s remaining."
 
 -- ** Callbacks
-
-{- |
-  Called every time a goal has been processed in the batch mode gui.
--}
-goalProcessed :: (Ord proof_tree, Show proof_tree) =>
-                 IORef (GenericState sign sentence proof_tree pst)
-               -- ^ IORef pointing to the backing State data structure
-              -> Int -- ^ batch time limit
-              -- -> String -- ^ extra options
-              -> Int -- ^ total number of goals
-              -> String -- ^ name of the prover
-              -> Int -- ^ number of goals processed so far
-              -> AS_Anno.Named sentence -- ^ goal that has just been processed
-              -> (ATPRetval, GenericConfig proof_tree)
-              -> IO Bool
-goalProcessed stateRef tLimit numGoals prName
-              processedGoalsSoFar nGoal (retval, res_cfg) = do
-  s <- readIORef stateRef
-  let s' = s{
-      configsMap = adjustOrSetConfig
-                      (\ c -> c{timeLimitExceeded =
-                                    isTimeLimitExceeded retval,
-                                timeLimit = Just tLimit,
-                                proof_status = proof_status res_cfg,
-                                resultOutput = resultOutput res_cfg,
-                                timeUsed     = timeUsed res_cfg})
-                      prName (AS_Anno.senName nGoal)
-                      (proof_tree s)
-                      (configsMap s)}
-  writeIORef stateRef s'
-
-  let notReady = case retval of 
-                 ATPError _ -> False 
-                 _ -> numGoals - processedGoalsSoFar > 0
-  if mainDestroyed s
-     then return False 
-     else return notReady
 
 {- |
    Updates the display of the status of the current goal.
@@ -810,6 +735,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
             let tLimit = if curEntTL > 0 then curEntTL else batchTLimit
             batchTimeEntry # HTk.value tLimit
             extOpts <- (getValue batchOptionsEntry) :: IO String
+            let extOpts' = words extOpts
             writeIORef stateRef (s {batchModeIsRunning = True})
             let numGoals = Map.size $ filterOpenGoals $ configsMap s
             if numGoals > 0
@@ -822,11 +748,11 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
               inclProvedThs <- readTkVariable inclProvedThsTK
               saveProblem_F <- readTkVariable saveProblem_batch
               batchProverId <- Concurrent.forkIO
-                   (do genericProveBatch tLimit extOpts inclProvedThs
-                                       saveProblem_F
+                   (do genericProveBatch False tLimit extOpts' inclProvedThs
+                                      saveProblem_F
                           (\ gPSF nSen cfg@(retval,_) -> do
-                              cont <- goalProcessed stateRef tLimit numGoals
-                                                    prName gPSF nSen cfg
+                              cont <- goalProcessed stateRef tLimit extOpts'
+                                                 numGoals prName gPSF nSen cfg
                               st <- readIORef stateRef
                               if (mainDestroyed st) 
                                  then return False
@@ -853,7 +779,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                                     cleanupThread threadStateRef)
                                return cont')
                           (atpInsertSentence atpFun) (runProver atpFun)
-                          prName thName s
+                          prName thName s Nothing
                        return ())
               modifyIORef threadStateRef
                         (\ ts -> ts{batchId = Just batchProverId})
@@ -960,110 +886,3 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
        case head ext of
             '.' -> tail ext
             _   -> ext
-
--- * Non-interactive Batch Prover
-
--- ** Constants
-
-{- |
-  Time limit used by the batch mode prover.
--}
-batchTimeLimit :: Int
-batchTimeLimit = 20
-
--- ** Utility Functions
-
-{- |
-  reads passed ENV-variable and if it exists and has an Int-value this value is returned otherwise the value of 'batchTimeLimit' is returned.
--}
-
-getBatchTimeLimit :: String -- ^ ENV-variable containing batch time limit
-                  -> IO Int
-getBatchTimeLimit env =
-    getEnvSave batchTimeLimit env readEither
-
-{- |
-  Checks whether a goal in the results map is marked as proved.
--}
-checkGoal :: GenericConfigsMap proof_tree -> ATPIdentifier -> Bool
-checkGoal cfgMap goal =
-  maybe False (isProvedStat . proof_status) $ Map.lookup goal cfgMap
-
-
--- ** Implementation
-
-{- |
-  A non-GUI batch mode prover. The list of goals is processed sequentially.
-  Proved goals are inserted as axioms.
--}
-genericProveBatch :: (Ord proof_tree) =>
-                     Int -- ^ batch time limit
-                  -> String -- ^ extra options passed
-                  -> Bool -- ^ True means include proved theorems
-                  -> Bool -- True means save problem file
-                  -> (Int
-                      -> AS_Anno.Named sentence
-                      -> (ATPRetval, GenericConfig proof_tree)
-                      -> IO Bool)
-                      -- ^ called after every prover run.
-                      -- return True if you want the prover to continue.
-                  -> (pst -> AS_Anno.Named sentence -> pst)
-                      -- ^ inserts a Namend sentence into a logicalPart
-                  -> RunProver sentence proof_tree pst -- prover to run batch
-                  -> String -- ^ prover name
-                  -> String -- ^ theory name
-                  -> GenericState sign sentence proof_tree pst
-                  -> IO ([Proof_status proof_tree]) 
-                  -- ^ proof status for each goal
-genericProveBatch tLimit extraOptions inclProvedThs saveProblem_batch f inSen
-                  runGivenProver prName thName st =
-    batchProve (proverState st) 0 [] (goalsList st)
-  {- do -- putStrLn $ showPretty initialLogicalPart ""
-     -- read batchTimeLimit from ENV variable if set otherwise use constant
-     pstl <- {- trace (showPretty initialLogicalPart (show goals)) -}
-             batchProve (initialLogicalPart st) [] (goalsList st)
-     -- putStrLn ("Outcome of proofs:\n" ++ unlines (map show pstl) ++ "\n")
-     return pstl -}
-  where
-    openGoals = filterOpenGoals (configsMap st)
-
-    addToLP g res pst =
-        if isProvedStat res && inclProvedThs
-        then inSen pst (g{AS_Anno.isAxiom = True})
-        else pst
-    batchProve _ _ resDone [] = return (reverse resDone)
-    batchProve pst goalsProcessedSoFar resDone (g:gs) =
-     let gName = AS_Anno.senName g
-         pt    = proof_tree st
-     in
-      if Map.member gName openGoals
-      then do
-        putStrLn $ "Trying to prove goal: " ++ gName
-        -- putStrLn $ show g
-        (err, res_cfg) <-
-              runGivenProver pst ((emptyConfig prName gName pt)
-                                   { timeLimit = Just tLimit
-                                   , extraOpts = words extraOptions })
-                             saveProblem_batch thName g
-        putStrLn $ prName ++ " returned: " ++ (show err)
-        -- if the batch prover runs in a separate thread
-        -- that's killed via killThread
-        -- runGivenProver will return ATPError. We have to stop the
-        -- recursion in that case
-        -- add proved goals as axioms
-        let res = proof_status res_cfg
-            pst' = addToLP g res pst
-            goalsProcessedSoFar' = goalsProcessedSoFar+1
-        cont <- f goalsProcessedSoFar' g (err, res_cfg)
-        if cont
-           then batchProve pst' goalsProcessedSoFar' (res:resDone) gs
-           else return ((reverse (res:resDone)) ++
-                             (map (\ gl -> openProof_status
-                                           (AS_Anno.senName gl) prName pt)
-                                     gs))
-      else batchProve (addToLP g (proof_status $
-                                  Map.findWithDefault 
-                                         (emptyConfig prName gName pt)
-                                         gName $ configsMap st)
-                               pst)
-                      goalsProcessedSoFar resDone gs
