@@ -377,10 +377,15 @@ isXmlLetter c
       isXmlIdeographicChar c
 
 -- |
--- checking for XML base charater
+-- checking for XML base character
 
-instance Ord (Unicode, Unicode) where
-  compare (lb1, _) (lb2, _) = compare lb1 lb2
+data UnicodePair = UnicodePair Unicode Unicode
+
+instance Ord UnicodePair where
+  compare (UnicodePair lb1 _) (UnicodePair lb2 _) = compare lb1 lb2
+
+instance Eq UnicodePair where
+  (UnicodePair lb1 _) == (UnicodePair lb2 _) = lb1 == lb2
 
 baseCharList::[(Unicode, Unicode)]
 baseCharList =
@@ -587,15 +592,15 @@ baseCharList =
       , ('\xAC00', '\xD7A3')
       ]
 
-baseCharSet::Set.Set (Unicode, Unicode)
-baseCharSet = Set.fromList baseCharList
+baseCharSet::Set.Set UnicodePair
+baseCharSet = Set.fromList $ map (\ (a, b) -> UnicodePair a b) baseCharList
 
 -- |
 -- check whether a character is in one of the ranges in the set of ranges
-charInSet::Set.Set (Unicode, Unicode)->Unicode->Bool
+charInSet::Set.Set UnicodePair -> Unicode -> Bool
 charInSet rangeset c =
   let
-    (lowerset, islb, _) = Set.splitMember (c, undefined) rangeset
+    (lowerset, islb, _) = Set.splitMember (UnicodePair c undefined) rangeset
   in
     case islb of
       True -> True
@@ -605,7 +610,7 @@ charInSet rangeset c =
             False
           else
             let
-              (lb, ub) = Set.findMax lowerset
+              (UnicodePair lb ub) = Set.findMax lowerset
             in
               (c >= lb) && (c <= ub)
 
@@ -727,8 +732,9 @@ combiningCharList =
       , ('\x309A', '\x309A')
       ]
 
-combiningCharSet::Set.Set (Unicode, Unicode)
-combiningCharSet = Set.fromList combiningCharList
+combiningCharSet::Set.Set UnicodePair
+combiningCharSet = 
+    Set.fromList $ map ( \ (a, b) -> UnicodePair a b) combiningCharList
 
 isXmlCombiningChar	:: Unicode -> Bool
 isXmlCombiningChar c
