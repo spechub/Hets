@@ -30,9 +30,9 @@
 -- write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA@
 ----------------------------------------------------------------------------
 module Org.W3.N2001.XMLSchema ( Int, Long, String, Decimal, Float, Double, Boolean, Duration, HexBinary, AnyURI, QName, XSDType(..)
-                              , Element(..), ComplexType(..), Sequence(..), Group(..), Choice(..), ComplexContent(..),
-			      , SimpleContent(..), All(..), Attribute(..), AttributeGroup(..), Schema(..), ComplexRestriction(..),
-			      , ComplexExtension(..),
+                              , Element(..), ComplexType(..), Sequence(..), Group(..), Choice(..), ComplexContent(..)
+			      , SimpleContent(..), All(..), Attribute(..), AttributeGroup(..), Schema(..), ComplexRestriction(..)
+			      , ComplexExtension(..)
 			      , simpleElement, simpleComplexType, Any
                               , xsdTypeMap, xsdNamespaceMap) where
 
