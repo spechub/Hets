@@ -1184,6 +1184,13 @@ cProveAll _ arg =
     _:l                -> cProveAll "" l
     _                  -> return [OutputErr "Wrong parameters"]
 
+
+cProve :: String -> [Status] -> IO [Status]
+cProve input arg =
+ case arg of 
+  (Env ln libEnv):l ->
+    case l of 
+      
 cViewNodeNumber :: String -> [Status] -> IO [Status]
 cViewNodeNumber input status =
   do
@@ -1232,3 +1239,6 @@ cShowGraph _ status =
        _ : l -> cShowGraph "" l
        [] -> do putStrLn "Error, no library loaded! (or compiled without uni)"
                 return []) `catch` (\_ -> return [])
+
+
+
