@@ -33,7 +33,7 @@ newtype DictT t a = DictT { dictT :: t -> a -> a }
 
 -- Apply a transformation
 
-applyT :: Sat (DictT t a) => t -> a -> a
+applyT :: forall t a . Sat (DictT t a) => t -> a -> a
 applyT (t::t) (a::a) = dictT ( dict :: DictT t a ) t a
 
 
@@ -67,7 +67,7 @@ newtype DictQ q r a = DictQ { dictQ :: q -> a -> r }
 
 -- Apply a query
 
-applyQ :: Sat (DictQ q r a) => q -> a -> r
+applyQ :: forall q r a . Sat (DictQ q r a) => q -> a -> r
 applyQ (q::q) (a::a) = r
   where
    r::r = dictQ ( dict :: DictQ q r a ) q a
@@ -96,7 +96,7 @@ newtype DictM t m a = DictM { dictM :: t -> a -> m a }
 
 -- Apply a monadic transformation
 
-applyM :: (Monad m, Sat (DictM t m a)) => t -> a -> m a
+applyM :: forall t m a . (Monad m, Sat (DictM t m a)) => t -> a -> m a
 applyM (t::t) (a::a) = r
  where
   r::m a = dictM ( dict :: DictM t m a ) t a
@@ -132,7 +132,7 @@ newtype DictR t m a = DictR { dictR :: t -> m a }
 
 -- Apply a monadic read
 
-applyR :: (Monad m, Sat (DictR t m a)) => t -> m a
+applyR :: forall t m a . (Monad m, Sat (DictR t m a)) => t -> m a
 applyR (t::t) = r
  where
   r::m a = dictR ( dict :: DictR t m a ) t

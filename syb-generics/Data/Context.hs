@@ -45,7 +45,7 @@ data PairCtx l r a
    = PairCtx { leftCtx  :: l a
              , rightCtx :: r a }
 
-pairCtx (l::l ()) (r::r ())
+pairCtx -- (l::l ()) (r::r ())
   = undefined::PairCtx l r ()
 
 instance (Sat (l a), Sat (r a))
