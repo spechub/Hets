@@ -447,10 +447,10 @@ utils/genRules: $(GENERATERULES_deps)
             $(HC) --make -i../DrIFT-src -i../.. $(HC_WARN) \
                 GenerateRules.hs -o ../genRules && strip ../genRules)
 
-# "hssource" for ghc-5.04.2
+# "-package hssource" for ghc-5.04.2
 $(INLINEAXIOMS): $(INLINEAXIOMS_deps)
 	$(HC) --make utils/InlineAxioms/InlineAxioms.hs $(HC_WARN) $(HC_PROF) \
-            -package hssource -i../.. -o $(INLINEAXIOMS)
+            -i../.. -o $(INLINEAXIOMS)
 	strip $(INLINEAXIOMS)
 
 # set this variable from the command line to i,e. RELEASETAG='-r release-0-60'
