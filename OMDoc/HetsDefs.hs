@@ -870,6 +870,7 @@ type SensMapDGWO = Map.Map NODE_NAMEWO SensWO
 
 type AllMaps = (ImportsMap, SortsMap, RelsMap, PredsMap, OpsMap, SensMap)
 
+{-
 instance Show AllMaps where
   show (imports, sorts, rels, preds, ops, sens) =
     "Imports:\n" ++ show imports ++
@@ -878,6 +879,7 @@ instance Show AllMaps where
     "\nPredicates:\n" ++ show preds ++
     "\nOperators:\n" ++ show ops ++
     "\nSentences:\n" ++ show sens
+-}
 
 diffMaps::
   (Sorts, Rels, Preds, Ops, Sens) ->
@@ -2376,8 +2378,10 @@ buildAllSortTracesFor
       )
       sorts
 
+{-
 instance Show [SortTrace] where
   show = concat . map (\st -> (show st) ++ "\n")
+-}
 
  
 showLinks::DGraph->IO ()
@@ -2469,10 +2473,11 @@ getMorphismSets dg =
 
 -- libname, node-name, node-num, trace-order
 -- | TracemarkS are the steps to take when following links
-type TraceMark = (LIB_NAME, String, Graph.Node, Int)
- 
+data TraceMark = TraceMark (LIB_NAME, String, Graph.Node, Int)
+  deriving Eq
+
 instance Ord TraceMark where
-  (_, _, _, i1) < (_, _, _, i2) = i1 < i2
+  TraceMark (_, _, _, i1) < TraceMark (_, _, _, i2) = i1 < i2
 
 {- |
   Creates a list of TraceMarkS from a library environment that show
@@ -2511,7 +2516,7 @@ createTraceMarks le =
             (cm, nn) =
               foldl
                 (\(cm', nn') (nodenum, node) ->
-                  ( cm'++[(libname, (getDGNodeName node), nodenum, nn')], nn' + 1)
+                  ( cm'++[TraceMark (libname, (getDGNodeName node), nodenum, nn')], nn' + 1)
                 )
                 ([], n)
                 ninodes
@@ -2532,7 +2537,7 @@ createTraceMarks le =
         (\(libname, nodeNum, _) ->
           case
             Data.List.find
-              (\(libname', _, nodeNum', _) ->
+              (\(TraceMark (libname', _, nodeNum', _)) ->
                 libname == libname' && nodeNum == nodeNum'
               )
               initialMarked
@@ -2567,7 +2572,7 @@ createTraceMarks le =
                 (\nn ->
                   case
                     Data.List.find
-                      (\(libname', _, nodeNum', _) ->
+                      (\(TraceMark (libname', _, nodeNum', _)) ->
                         libname' == realLibName && nodeNum' == nn
                       )
                       marked
@@ -2580,7 +2585,7 @@ createTraceMarks le =
             if and inMarked
               then
                 -- check against real, but save in context of current DG
-                (marked ++ [(libname, getDGNodeName node, nodeNum, length marked)], unmarked)
+                (marked ++ [TraceMark (libname, getDGNodeName node, nodeNum, length marked)], unmarked)
               else
                 (marked, unmarked++[current])
         )
@@ -2620,7 +2625,7 @@ createMinimalLibEnv::
   ->(LibEnv, TakenMap)
 createMinimalLibEnv ln tracemarks =
   foldl
-    (\(ln', tm') (libname, _, nodenum, _) ->
+    (\(ln', tm') (TraceMark (libname, _, nodenum, _)) ->
       let
         currentTBMap = Map.findWithDefault (Map.empty::TakenBy) (libname, nodenum) tm'
         currentLookup = Map.findWithDefault (error "This can't happen!") libname ln'
@@ -2738,11 +2743,13 @@ createMinimalLibEnv ln tracemarks =
 
 type IdNameMapping = (LIB_NAME, NODE_NAME, String, Graph.Node, Set.Set (Id.Id, String), Set.Set ((Id.Id, PredType), String), Set.Set ((Id.Id, OpType), String), Set.Set ((Id.Id, Int), String), Set.Set ((Int, Id.Id, OpType), String))
 
+{-
 instance Show IdNameMapping where
   show (ln, nn, nsn, nnum, sorts, preds, ops, sens, cons) =
     "(" ++ show ln ++ ", " ++ show nn ++ ", " ++ show nsn ++ ", "
       ++ show nnum ++ ", " ++ show sorts ++ ", " ++ show preds ++ ", "
       ++ show ops ++ ", " ++ show sens ++ ", " ++ show cons ++ ")"
+-}
 
 inmGetLibName::IdNameMapping->LIB_NAME
 inmGetLibName (ln, _, _, _, _, _, _, _, _) = ln
@@ -2959,7 +2966,7 @@ createUniqueNames::
   ->[IdNameMapping] 
 createUniqueNames ln tracemarks =
   foldl
-    (\names (libname, _, nodenum, _) ->
+    (\names (TraceMark (libname, _, nodenum, _)) ->
       let
         dg = devGraph $ Map.findWithDefault (error "This can't happen!") libname ln
         node = (\(Just a) -> a) $ Graph.lab dg nodenum
@@ -4103,7 +4110,7 @@ createFullNameMapping
   uniqueNames
   =
     foldl
-      (\fullnames (libname, nodename, nodenum, _) ->
+      (\fullnames (TraceMark (libname, nodename, nodenum, _)) ->
         let
           dg = devGraph $ Map.findWithDefault (error "This can't happen!") libname lenv
           node = (\(Just a) -> a) $ Graph.lab dg nodenum
