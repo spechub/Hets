@@ -455,23 +455,20 @@ transExp a c t = maybe xDummy id $ transMExp a c t
 transPat :: Continuity -> ConstTab -> PrPat -> IsaPattern
 transPat a c t = maybe xDummy id $ transMPat a c t
 
+liftExp :: Continuity -> String -> Typ -> IsaTerm
+liftExp c n t = case c of 
+  IsCont -> App (conDouble "Def") 
+             (Const (mkVName n) (IsaSign.Type "!!!" [] [t])) NotCont
+  NotCont -> Const (mkVName n)  (IsaSign.Type "!!!" [] [t]) 
+
 transMExp :: Continuity -> ConstTab -> PrExp -> Maybe IsaTerm
-transMExp a cs t = case t of
-    TiPropDecorate.Exp e -> case e of
-       HsLit _ (HsInt n) -> return $ case a of
-           IsCont ->
-              Const (mkVName $ "(Def (" ++ show n ++ "::int))")
-                     (IsaSign.Type "dInt" [] [])
-           NotCont ->
-              Const (mkVName $ "(" ++ show n ++ "::int)")
-                     (IsaSign.Type "int" [] [])
-       HsLit _ (HsFloatPrim n) -> return $ case a of
-           IsCont ->
-              Const (mkVName $ "(Def (" ++ show n ++ "::Rat))")
-                     (IsaSign.Type "dRat" [] [])
-           NotCont ->
-              Const (mkVName $ "(" ++ show n ++ "::Rat)")
-                     (IsaSign.Type "Rat" [] [])
+transMExp a cs t = let
+   tInt = IsaSign.Type "int" holType []
+   tRat = IsaSign.Type "Rat" holType []
+  in case t of 
+    (TiPropDecorate.Exp e) -> case e of
+       HsLit _ (HsInt n) -> return $ liftExp a (show n) tInt
+       HsLit _ (HsFloatPrim n) -> return $ liftExp a (show n) tRat
        HsList xs -> return $ case xs of
           [] -> case a of
                    IsCont -> conDouble "lNil"
