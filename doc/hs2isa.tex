@@ -456,8 +456,10 @@ undefined list function take value $\bot$. This may be regarded as a
 semantical weakness.
 
 Haskell allows for local definitions by means of \emph{let} and
-\emph{where} expressions. The \emph{let} expressions are translated to
-similar Isabelle ones; \emph{where} expressions are not covered. The
+\emph{where} expressions. The \emph{let} expressions where the
+left-hand side is a variable are translated to similar Isabelle ones;
+other \emph{let} expressions (i.e. those containing patterns on the
+left hand-side) and the \emph{where} expressions are not covered. The
 translation of terms (minus mutual recursion) may be summed up,
 essentially, as follows:
 
@@ -469,8 +471,8 @@ $$\begin{array}{lcl}
   \lceil f \ a_{1} \ldots a_{n} \rceil & = & FIX \ f_{t}. \ f_{t} \ \cdot \ 
   \lceil a \rceil \ldots \cdot \ \lceil a_{n} \rceil \\
   & & \mbox{where } f::\tau, \ f_{t}::\lceil \tau \rceil \\
-  \lceil let \ exp_{1} \ \dots \ exp_{n} \ in \ exp \rceil & = 
-         & let \ \lceil exp_{1} \rceil \ \dots \ \lceil exp_{n} \rceil \ in \ \lceil exp \rceil 
+  \lceil let \ x_{1} \ \dots \ x_{n} \ in \ exp \rceil & = 
+         & let \ \lceil x_{1} \rceil \ \dots \ \lceil x_{n} \rceil \ in \ \lceil exp \rceil
 % \lceil TyCons \ a_{1} \ldots a_{n} \rceil & = & \lceil a_{1} \rceil
 % \ldots \lceil a_{n} \rceil \ TyCons_{t}
 \end{array}$$
@@ -593,8 +595,8 @@ $$\begin{array}{lcl}
   \lceil (a,b) \rceil & = & (\lceil a \rceil, \lceil b \rceil) \\
   \lceil f \ a_{1} \ldots a_{n} \rceil & = & f_{t} \ \lceil a \rceil \ldots \  \lceil a_{n} \rceil \\
   & & \mbox{where } f::\tau, \ f_{t}::\lceil \tau \rceil \\
-  \lceil let \ exp_{1} \ \dots \ exp_{n} \ in \ exp \rceil & = 
-  & let \ \lceil exp_{1} \rceil \ \dots \ \lceil exp_{n} \rceil \ in \ \lceil exp \rceil 
+  \lceil let \ x_{1} \ \dots \ x_{n} \ in \ exp \rceil & = 
+  & let \ \lceil x_{1} \rceil \ \dots \ \lceil x_{n} \rceil \ in \ \lceil exp \rceil 
 % \lceil TyCons \ a_{1} \ldots a_{n} \rceil & = & \lceil a_{1} \rceil
 % \ldots \lceil a_{n} \rceil \ TyCons_{t}
 \end{array}$$
@@ -923,8 +925,9 @@ translations.
 \item predefined functions: equality, booelan constructors,
   connectives, list constructors, head and tail list functions,
   arithmetic operators.
-\item non-recursive functions, including conditional, case and let and
-  expressions.
+\item non-recursive functions, including conditional, \emph{case} and
+  \emph{let} and expressions (with restriction related to use of
+  patterns).
 \item use of incomplete patterns (in HOLCF) and of wildcards in case
   expressions.
 \item total primitive recursive functions (in HOL)
