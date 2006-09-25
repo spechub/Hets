@@ -1,3 +1,4 @@
+{-# OPTIONS -fglasgow-exts -fallow-undecidable-instances #-}
 {- |
 Module      :  $Header$
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2004
