@@ -1,4 +1,4 @@
-{-# OPTIONS -fglasgow-exts -fallow-undecidable-instances -fno-monomorphism-restriction #-}
+{-# OPTIONS -fglasgow-exts -fth -fallow-undecidable-instances -fno-monomorphism-restriction #-}
 ----------------------------------------------------------------------------
 -- |
 -- Module      :  Org.Xmlsoap.Schemas.Soap.Envelope
@@ -73,7 +73,7 @@ instance XMLNamespace (Body e a) where
     namespaceURI _ = tns
     defaultPrefix _ = soapPrefix
 
-data Body e a = Body (Fault e `Either` a) deriving Show
+data Body e a = Body (Fault e `Either` a) deriving (Eq, Show)
 
 fromBody (Body x) = x
 
