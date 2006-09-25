@@ -62,14 +62,14 @@ deriveTypeablePrim name nParam
 --   instance declaration for the Data class.
 --
 --   Doesn't do gunfold, dataCast1 or dataCast2
-deriveDataPrim :: Name -> [TypeQ] -> [(Name, Int)] -> [(Name, [(Maybe Name, Type)])] -> Maybe Name -> Q [Dec]
+deriveDataPrim :: Name -> [TypeQ] -> [(Name, Int)] -> [(Name, [(Maybe Name, Type)])] -> Maybe TypeQ -> Q [Dec]
 deriveDataPrim name typeQParams cons terms ctx =
   do sequence (
       conDecs ++
 
       [ dataTypeDec
       , instanceD context
-           (conT ''Data `appT` varT ctx' `appT` (foldl1 appT ([conT name] ++ typeQParams)))
+           (conT ''Data `appT` ctx' `appT` (foldl1 appT ([conT name] ++ typeQParams)))
         [ funD (unqualName 'gfoldl)
             [ clause ([wildP] ++ (map (varP . mkName) ["f", "z", "x"]))
                 (normalB $ caseE (varE (mkName "x")) (map mkMatch cons))
@@ -91,7 +91,7 @@ deriveDataPrim name typeQParams cons terms ctx =
         ]
       ])
      where
-         ctx' = fromMaybe (mkName "ctx") ctx
+         ctx' = fromMaybe (varT $ mkName "ctx") ctx
          distinctTypes = map return $ filter (\x -> case x of (VarT _) -> False; _ -> True) $ nub $ map snd $ concat $ map snd terms
          fieldNames = let fs = map (map fst.snd) terms in
 			  map (\x -> if (null x || all isNothing x) then [] else map (maybe "" show) x) fs
@@ -99,16 +99,16 @@ deriveDataPrim name typeQParams cons terms ctx =
          
 {-         paramNames = take nParam (zipWith (++) (repeat "a") (map show [0..]))
          typeQParams = map (\nm -> varT (mkName nm)) paramNames-}
-         context = cxt $ (maybe ((map (\typ -> conT ''Data `appT` varT ctx' `appT` typ) distinctTypes)   ++ 
-                                 (map (\typ -> conT ''Sat  `appT` (varT ctx' `appT` typ)) distinctTypes) ++
-                                 (map (\typ -> conT ''Data `appT` (varT ctx') `appT` typ) typeQParams)   ++ 
-                                 [conT ''Sat `appT` ((varT ctx') `appT` (foldl1 appT ([conT name] ++ typeQParams)))])
+         context = cxt $ (maybe ((map (\typ -> conT ''Data `appT` ctx' `appT` typ) distinctTypes)   ++ 
+                                 (map (\typ -> conT ''Sat  `appT` (ctx' `appT` typ)) distinctTypes) ++
+                                 (map (\typ -> conT ''Data `appT` (ctx') `appT` typ) typeQParams)   ++ 
+                                 [conT ''Sat `appT` ((ctx') `appT` (foldl1 appT ([conT name] ++ typeQParams)))])
 
                                  
                                  (const $ if (null typeQParams) 
                                             then []
-                                            else ((map (\typ -> conT ''Data `appT` (varT ctx') `appT` typ) typeQParams) ++
-                                                  [conT ''Sat `appT` ((varT ctx') `appT` (foldl1 appT ([conT name] ++ typeQParams)))]))
+                                            else ((map (\typ -> conT ''Data `appT` ctx' `appT` typ) typeQParams) ++
+                                                  [conT ''Sat `appT` (ctx' `appT` (foldl1 appT ([conT name] ++ typeQParams)))]))
 
                                  ctx)
                          
@@ -254,7 +254,8 @@ deriveOneCtx name ctx =
            TyConI d -> do
              (name, param, ca, terms) <- typeInfo ((return d) :: Q Dec)
              t <- deriveTypeablePrim name (length param)
-             d <- deriveDataPrim name (map varT param) ca terms (Just ctx)
+             d <- deriveDataPrim name (map varT param) ca terms 
+	            (Just $ conT ctx)
              return $ t ++ d
            _ -> error ("derive: can't be used on anything but a type " ++
                       "constructor of an algebraic data type")
