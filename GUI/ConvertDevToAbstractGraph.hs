@@ -25,8 +25,6 @@ Conversion of development graphs from Logic.DevGraph
 
 module GUI.ConvertDevToAbstractGraph where
 
---import Debug.Trace
-
 import Logic.Logic
 import Logic.Coerce
 import Logic.Grothendieck
@@ -93,10 +91,6 @@ correspondes with which of the development graph and vice versa and
 one Map to store which libname belongs to which development graph-}
 
 data ConversionMaps = ConversionMaps {
-                        --dg2abstrNode :: DGraphToAGraphNode,
-                        --dg2abstrEdge :: DGraphToAGraphEdge,
-                        --abstr2dgNode :: AGraphToDGraphNode,
-                        --abstr2dgEdge :: AGraphToDGraphEdge,
 			dgAndabstrNode :: DGraphAndAGraphNode,
 			dgAndabstrEdge :: DGraphAndAGraphEdge,
                         libname2dg :: LibEnv} deriving Show
@@ -119,27 +113,9 @@ data GraphMem = GraphMem {
                   graphInfo :: GraphInfo,
                   nextGraphId :: Descr}
 
--- types of the Maps above
---type DGraphToAGraphNode = Map.Map (LIB_NAME,Node) Descr
---type DGraphToAGraphEdge = Map.Map (LIB_NAME,(Descr,Descr,String)) Descr
---type AGraphToDGraphNode = Map.Map Descr (LIB_NAME,Node)
---type AGraphToDGraphEdge = Map.Map Descr (LIB_NAME,(Descr,Descr,String))
-
--- ken's stuff
 -- | types of the Maps above 
 type DGraphAndAGraphNode = InjMap.InjMap (LIB_NAME, Node) Descr
 type DGraphAndAGraphEdge = InjMap.InjMap (LIB_NAME, (Descr, Descr, String)) Descr
-
---newtype DGraphAndAGraphEdge = DGraphAndAGraphEdge (InjMap.InjMap (LIB_NAME, (Descr, Descr, String)) Descr)
-
--- only for test
-instance Show DGraphAndAGraphEdge where
-   show x = dgToAgText ++ "\n" ++ agToDgText 
-            where dgToAgEdges = map (\((ln, (d1, d2, _)), d) -> ((ln, (d1, d2, "")), d)) $ Map.toList $ InjMap.getAToB x
-                  agToDgEdges = map (\(d, (ln, (d1, d2, _))) -> (d, (ln, (d1, d2, "")))) $ Map.toList $ InjMap.getBToA x
-		  dgToAgText = "The current dgToAg: \n" ++ show dgToAgEdges
-		  agToDgText = "The current agToDg: \n" ++ show agToDgEdges
-		  
 data InternalNames =
      InternalNames { showNames :: Bool,
                      updater :: [(String,(String -> String) -> IO ())] }
