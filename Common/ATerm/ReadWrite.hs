@@ -52,7 +52,9 @@ data ReadTAFStruct = RTS ATermTable
                          Int -- length of ATerm as String
 
 readATerm :: String -> ATermTable
-readATerm = readATerm' . dropWhile ( \ c -> isSpace c || c == '!')
+readATerm = readATerm' . dropWhile ( \ c -> case c of 
+	'!' -> True
+	_ -> isSpace c)
 
 readATerm' :: String -> ATermTable
 readATerm' str =
