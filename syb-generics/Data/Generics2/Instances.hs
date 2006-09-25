@@ -8,8 +8,6 @@ import Data.Generics2.Basics
 import Data.Generics2.Derive
 
 import Data.Array
-import Data.FiniteMap
---import Data.Set
 import qualified Data.Map as Map
 import Data.Typeable
 import Data.Maybe
@@ -60,17 +58,6 @@ instance Sat (ctx Char) =>
   dataTypeOf _ _ = charType
 
 
-------------------------------------------------------------------------------
-{-
-stringType = mkStringType "Prelude.String"
-
-instance Sat (ctx String) => 
-         Data ctx String
- where
-  gfoldl _ _ z = z
-  toConstr _ x  = mkStringConstr stringType x
-  dataTypeOf _ _ = stringType
--}
 ------------------------------------------------------------------------------
 
 
@@ -296,7 +283,7 @@ instance (Sat (ctx [a]), Data ctx a) =>
   dataTypeOf _ _ = if (typeOf [undefined::a] == typeOf "") 
                      then stringType
                      else listDataType
-  dataCast1 _  = gcast1
+  dataCast1 _ f  = gcast1 f
 
 
 toConstrString _ x    = mkStringConstr stringType x
@@ -329,7 +316,7 @@ toConstrList _ (_:_)    = consConstr
 
 dataTypeOfList _ _      = listDataType
 
-dataCast1List _         = gcast1
+dataCast1List _ f       = gcast1 f
 
 ------------------------------------------------------------------------------
 
@@ -349,7 +336,7 @@ instance (Sat (ctx (Maybe a)), Data ctx a) =>
                       2 -> k (z Just)
                       _ -> error "gunfold"
   dataTypeOf _ _ = maybeDataType
-  dataCast1 _    = gcast1
+  dataCast1 _ f  = gcast1 f
 
 
 ------------------------------------------------------------------------------
@@ -394,7 +381,7 @@ instance (Sat (ctx (Either a b)), Data ctx a, Data ctx b) =>
                       2 -> k (z Right)
                       _ -> error "gunfold"
   dataTypeOf _ _ = eitherDataType
-  dataCast2 _   = gcast2
+  dataCast2 _ f  = gcast2 f
 
 
 ------------------------------------------------------------------------------
@@ -409,7 +396,7 @@ instance (Sat (ctx (a -> b)), Data ctx a, Data ctx b) =>
   toConstr _ _   = error "toConstr"
   gunfold _ _ _  = error "gunfold"
   dataTypeOf _ _ = mkNorepType "Prelude.(->)"
-  dataCast2 _    = gcast2
+  dataCast2 _ f  = gcast2 f
 
 
 ------------------------------------------------------------------------------
@@ -439,7 +426,7 @@ instance (Sat (ctx (a,b)), Data ctx a, Data ctx b) =>
   gunfold _ k z c | constrIndex c == 1 = k (k (z (,)))
   gunfold _ _ _ _ = error "gunfold"
   dataTypeOf _ _  = tuple2DataType
-  dataCast2 _     = gcast2
+  dataCast2 _ f   = gcast2 f
 
 
 ------------------------------------------------------------------------------
@@ -626,42 +613,11 @@ instance (Sat (ctx (ST s a)), Typeable s, Typeable a) =>
 
 ------------------------------------------------------------------------------
 
-{-
-instance Sat (ctx ThreadId) =>
-         Data ctx ThreadId where
-  toConstr _ _   = error "toConstr"
-  gunfold _ _ _  = error "gunfold"
-  dataTypeOf _ _ = mkNorepType "GHC.Conc.ThreadId"
-
-
-------------------------------------------------------------------------------
-
-
-instance (Sat (ctx (TVar a)), Typeable a) => 
-          Data ctx (TVar a) where
-  toConstr _ _   = error "toConstr"
-  gunfold _ _ _  = error "gunfold"
-  dataTypeOf _ _ = mkNorepType "GHC.Conc.TVar"-}
-
-
-------------------------------------------------------------------------------
-
-
 instance (Sat (ctx (MVar a)), Typeable a) => 
           Data ctx (MVar a) where
   toConstr _ _   = error "toConstr"
   gunfold _ _ _  = error "gunfold"
   dataTypeOf _ _ = mkNorepType "GHC.Conc.MVar"
-
-
-------------------------------------------------------------------------------
-
-
-{-instance (Sat (ctx (STM a)), Typeable a) => 
-          Data ctx (STM a) where
-  toConstr _ _   = error "toConstr"
-  gunfold _ _ _  = error "gunfold"
-  dataTypeOf _ _ = mkNorepType "GHC.Conc.STM"-}
 
 
 ------------------------------------------------------------------------------
@@ -678,18 +634,6 @@ instance (Sat (ctx [b]), Sat (ctx (Array a b)), Typeable a, Data ctx b, Data ctx
 
 ------------------------------------------------------------------------------
 
--- $(deriveTypeable [''FiniteMap])
-
-instance (Sat (ctx (FiniteMap a b)), Sat (ctx [(a,b)]), Sat (ctx (a,b)), Data ctx a, Data ctx b, Ord a) => 
-          Data ctx (FiniteMap a b) where
-  gfoldl _ f z fm = z listToFM `f` (fmToList fm)
-  toConstr _ _    = error "toConstr"
-  gunfold _ _ _   = error "gunfold"
-  dataTypeOf _ _  = mkNorepType "Data.Array.Array"
-
-------------------------------------------------------------------------------
-
-
 instance (Sat (ctx (Map.Map a b)), Sat (ctx [(a,b)]), Sat (ctx (a,b)), Data ctx a, Data ctx b, Ord a) => 
           Data ctx (Map.Map a b) where
   gfoldl _ f z map = z Map.fromList `f` (Map.toList map)
@@ -697,16 +641,5 @@ instance (Sat (ctx (Map.Map a b)), Sat (ctx [(a,b)]), Sat (ctx (a,b)), Data ctx 
   gunfold _ _ _    = error "gunfold"
   dataTypeOf _ _   = mkNorepType "Data.Map.Map"
 
-
-------------------------------------------------------------------------------
-
-{-
-instance (Sat (ctx (Set a)), Sat (ctx [a]), Data ctx a, Ord a) => 
-          Data ctx (Set a) where
-  gfoldl _ f z set = z fromList `f` (toList set)
-  toConstr _ _     = error "toConstr"
-  gunfold _ _ _    = error "gunfold"
-  dataTypeOf _ _   = mkNorepType "Data.Set.Set"
--}
 
 ------------------------------------------------------------------------------
