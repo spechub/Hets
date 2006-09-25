@@ -1,4 +1,4 @@
-{-# OPTIONS -fglasgow-exts -fallow-undecidable-instances #-}
+{-# OPTIONS -fglasgow-exts -fth -fallow-undecidable-instances #-}
 ----------------------------------------------------------------------------
 -- |
 -- Module      :  Text.XML.Serializer.Encoders
