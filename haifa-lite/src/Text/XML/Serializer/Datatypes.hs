@@ -1,4 +1,4 @@
-{-# OPTIONS -fglasgow-exts #-}
+{-# OPTIONS -fglasgow-exts -fth -cpp #-}
 ----------------------------------------------------------------------------
 -- |
 -- Module      :  Text.XML.Serializer.Datatypes
@@ -161,9 +161,11 @@ instance Lift URIAuth where
 instance Lift URI where
     lift (URI s a p q f) = [| URI s a p q f |]
 
+#if __GLASGOW_HASKELL__<=604
 instance Lift a => Lift (Maybe a) where
     lift (Just x) = [| Just x |]
     lift Nothing  = [| Nothing |]
+#endif
 
 instance Lift UpperBound where
     lift (Bounded x) = [| Bounded x |]
