@@ -226,7 +226,7 @@ xmlDecodeDefault (x::a) =
 	cons = dataTypeConstrs $ dataTypeOf ctx x
 
 
-        deserialize :: (Data DictXMLData b) => ReadX b
+        deserialize :: forall b . (Data DictXMLData b) => ReadX b
         deserialize = result
           where 
 
@@ -267,7 +267,7 @@ toXMLTypesA (x::a) = map toXMLTypeA ((map (fromConstr ctx) $ dataTypeConstrs $ d
 
 
 -- | Get the XML Constructor when only the dictonary is available, also handles complex-content extensions.
-toXMLTypeA :: Data DictXMLData a => a -> XMLType
+toXMLTypeA :: forall a . Data DictXMLData a => a -> XMLType
 toXMLTypeA (x::a) = 
     let sxc = gmapQ ctx toXMLTypeA ((fromConstr ctx $ head $ dataTypeConstrs $ dataTypeOf ctx x)::a)
         xcs = map (gmapQ ctx toXMLTypeA) ((map (fromConstr ctx) $ dataTypeConstrs $ dataTypeOf ctx x)::[a])
@@ -285,7 +285,7 @@ xmlEncodeA :: Data DictXMLData a => DynamicMap -> a -> SerializeTree XmlFilter
 xmlEncodeA dm (x::a) = xmlEncodeD (dict::DictXMLData a) dm x
 
 -- | Get the XML Decoder when only the dictionary is available. 
-xmlDecodeA :: Data DictXMLData a => ReadX a
+xmlDecodeA :: forall a . Data DictXMLData a => ReadX a
 xmlDecodeA = result
   where
     (result :: ReadX a)  = xmlDecodeD (dict::DictXMLData a)
@@ -371,7 +371,7 @@ applyPrefixA dm x = let nst = lookupDM_D nstIKey dm; ns = namespaceURIA x; p = n
 
 
 -- | Perform deserialization, take an XmlTrees and deserialize to a type.  
-deserializeXML :: Data DictXMLData a => XmlTrees -> Maybe a
+deserializeXML :: forall a . Data DictXMLData a => XmlTrees -> Maybe a
 deserializeXML xml = result 
     where result :: Maybe a = runReadX s xmlDecodeA
            where nst = [ (p, ns) | (p, Just ns) <- map (\(p,ns)->(p,parseURIReference ns)) $ getNamespaceTable $ mkRootTree [] xml ]
