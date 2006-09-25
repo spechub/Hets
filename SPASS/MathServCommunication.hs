@@ -1,3 +1,4 @@
+{-# OPTIONS -fth #-}
 module SPASS.MathServCommunication where
 
 import Text.XML.Serializer
