@@ -1,3 +1,4 @@
+{-# OPTIONS -fallow-undecidable-instances #-}
 module System.Console.Shell.Commands where
 
 import System.Console.Shell.Types
