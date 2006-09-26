@@ -123,7 +123,7 @@ PFE_DIRS = base/AST base/TI base/parse2 base/parse2/Lexer base/parse2/Parser \
 PFE_PATHS = $(addprefix $(PFE_TOOLDIR)/, $(PFE_DIRS))
 pfe_sources = $(wildcard $(addsuffix /*hs, $(PFE_PATHS)))
 PFE_PATH = $(addprefix -i, $(PFE_PATHS))
-PFE_FLAGS = -package data -package text $(PFE_PATH) -DPROGRAMATICA
+PFE_FLAGS = $(PFE_PATH) -DPROGRAMATICA
 happy_files += $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs
 
 LEX_DIR = $(PFE_TOOLDIR)/base/parse2/Lexer
