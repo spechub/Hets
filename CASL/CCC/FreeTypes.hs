@@ -156,8 +156,15 @@ checkFreeType (osig,osens) m fsn
     fconstrs = concat $ map constraintOfAxiom (ofs ++ fs)
     (srts1,constructors1,_) = recover_Sort_gen_ax fconstrs
     srts = trace (showDoc srts1 "srts") srts1      --   srts
-    constructors = trace (showDoc constructors1 "constrs") constructors1
+    constructors_o = trace (showDoc constructors1 "constrs_old") constructors1
                                                            -- constructors
+    op_map1 = opMap sig
+    op_map = trace (showDoc op_map1 "op_map") op_map1
+ --  tmp = trace (showDoc (last constructors_o) "  tmp") (last constructors_o) 
+    constructors2 = constructorOverload sig op_map constructors_o
+ --   constructors2 = constructorOverload sig osig constructors_o
+
+    constructors = trace (showDoc constructors2 "constrs_new") constructors2
     f_Inhabited1 = inhabited oSorts fconstrs
     f_Inhabited = trace (showDoc f_Inhabited1 "f_inhabited" ) f_Inhabited1
                                                              --  f_inhabited
@@ -381,7 +388,7 @@ checkTerm :: [OP_SYMB] -> TERM f -> Bool
 checkTerm cons t =
     case t of
       Sorted_term t' _ _ -> checkTerm cons t'
-      Qual_var _ _ _ -> True         -- sort?
+      Qual_var _ _ _ -> True   
       Application _ ts _ -> all id $ map checkT ts
       _ -> error "CASL.CCC.FreeTypes.<checkTerm>"
   where checkT (Sorted_term tt _ _) = checkT tt

@@ -11,7 +11,11 @@ Portability :  portable
 
 module CASL.CCC.TermFormula where
                         
-import CASL.AS_Basic_CASL       
+import CASL.AS_Basic_CASL
+import CASL.Overload
+import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
+import CASL.Sign       
 import Common.AS_Annotation
 import Common.Id
 
@@ -29,6 +33,7 @@ quanti f = case f of
              Quantification _ _ f' _ -> quanti f'
              _ -> f
 
+
 -- | check whether it is a existent quantification
 is_ex_quanti :: FORMULA f -> Bool
 is_ex_quanti f = 
@@ -41,12 +46,14 @@ is_ex_quanti f =
       Negation f' _ -> is_ex_quanti f'
       _ -> False 
 
+
 -- | get the constraint from a sort generated axiom
 constraintOfAxiom :: FORMULA f -> [Constraint]
 constraintOfAxiom f = 
     case f of
       Sort_gen_ax constrs True -> constrs
       _ ->[]
+
 
 -- | check whether it is a parial operation symbol                        
 partial_OpSymb :: OP_SYMB -> Maybe Bool
@@ -320,7 +327,7 @@ extract_leading_symb :: Either (TERM f) (FORMULA f) -> Either OP_SYMB PRED_SYMB
 extract_leading_symb lead = case lead of
                               Left (Application os _ _) -> Left os
                               Right (Predication p _ _) -> Right p
-                              _ -> error "CASL.CCC.FreeTypes"
+                              _ -> error "CASL.CCC.TermFormula<extract_leading_symb>"
 
 
 -- | leadingTerm is total operation : Just True
@@ -334,6 +341,50 @@ opTyp_Axiom f =
     Just (Left (Qual_op_name _ (Op_type Partial _ _ _) _)) -> Just False  
     _ -> Nothing 
 
+-- | extract the OP_SYMB from a application term
+opSymbOfTerm :: TERM f -> OP_SYMB
+opSymbOfTerm t = 
+  case t of
+    Application os _ _ -> os
+    _ -> error "CASL.CCC.TermFormula<opSymbOfTerm>"
+
+
+
+-- constructorOverload :: Sign f e -> Sign f e -> [OP_SYMB] -> [OP_SYMB]
+constructorOverload :: Sign f e -> OpMap -> [OP_SYMB] -> [OP_SYMB]
+constructorOverload s opm os = concat $ map (\ o1 -> cons_Overload o1 s) os 
+    where cons_Overload o sig1 =
+              case o of
+                Op_name _ -> [o]
+                Qual_op_name on1 ot _ ->
+                    case Map.lookup on1 opm of
+                      Nothing -> []
+                      Just x -> concat $ map (\opt->cons sig1 on1 ot opt) $ 
+                                (Set.toList x)
+                 -- concat $ map (\opt->cons sig1 on1 ot opt) $ 
+                 -- (Set.elems $ Map.findWithDefault Set.empty on1 opm)
+          cons sig on opt1 opt2 = 
+              case (leqF sig (toOpType opt1) opt2) of
+                True -> [Qual_op_name on (toOP_TYPE opt2) nullRange]
+                False -> [] 
+
+{-
+constructorOverload :: Sign f e -> [OP_SYMB] -> [TERM f] -> [OP_SYMB]
+constructorOverload s os ts = 
+    everyOnce $ foldl (\os1 t->consOverload os1 t) os ts
+    where consOverload os t = concat $ map (\o-> cons_Overload o t) os 
+          cons_Overload o t1 =
+              case o of
+                Op_name _ -> [o]
+                Qual_op_name on1 ot _ -> 
+                  case (opSymbOfTerm t1) of
+                    Op_name _ -> [o]
+                    Qual_op_name on2 ot2 _ ->
+                      case (leqF s (toOpType ot2) (toOpType ot)) && 
+                           (on1 == on2) of 
+                        True -> [o,(opSymbOfTerm t1)]
+                        False -> [o] 
+-}
 
 -- | transform id to string
 idStr :: Id -> String
