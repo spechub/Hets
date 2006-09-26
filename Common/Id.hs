@@ -278,6 +278,10 @@ getTokenList placeStr (Id ts cs ps) =
 simpleIdToId :: SIMPLE_ID -> Id
 simpleIdToId sid = Id [sid] [] (Range [])
 
+-- | a string as 'Id'
+stringToId :: String -> Id
+stringToId sid = simpleIdToId $ mkSimpleId sid
+
 -- | efficiently test for a singleton list
 isSingle :: [a] -> Bool
 isSingle [_] = True
