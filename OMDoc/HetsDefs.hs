@@ -14,6 +14,7 @@ module OMDoc.HetsDefs
       module Driver.Options
     , module OMDoc.HetsDefs
     , module Syntax.AS_Library
+    , module Common.GlobalAnnotations
   )
   where
 
@@ -834,7 +835,7 @@ getNodeDGNameMappingWONP dg mapper dispose =
     ) Map.empty $ Graph.labNodes dg
    
 -- added Integer to keep the order of imports (to OMDoc, from OMDoc)
-type Imports = Set.Set (Integer, (String, (Maybe MorphismMap), HidingAndRequationList, Bool))
+type Imports = Set.Set (Int, (String, (Maybe MorphismMap), HidingAndRequationList, Bool))
 type Sorts = Set.Set SORT
 type Rels = Rel.Rel SORT
 type Preds = Map.Map Id.Id (Set.Set PredType)
@@ -847,7 +848,7 @@ type IdWO = WithOriginNode Id.Id
 type SentenceWO = WithOriginNode (Ann.Named CASLFORMULA)
 
 
-type ImportsWO = Set.Set (Integer, (NODE_NAMEWO, (Maybe MorphismMap), HidingAndRequationList))
+type ImportsWO = Set.Set (Int, (NODE_NAMEWO, (Maybe MorphismMap), HidingAndRequationList))
 type SortsWO = Set.Set SORTWO
 type RelsWO = Rel.Rel SORTWO
 type PredsWO = Map.Map IdWO (Set.Set PredType)
@@ -868,7 +869,7 @@ type PredsMapDGWO = Map.Map NODE_NAMEWO PredsWO
 type OpsMapDGWO = Map.Map NODE_NAMEWO OpsWO
 type SensMapDGWO = Map.Map NODE_NAMEWO SensWO
 
-type AllMaps = (ImportsMap, SortsMap, RelsMap, PredsMap, OpsMap, SensMap)
+--type AllMaps = (ImportsMap, SortsMap, RelsMap, PredsMap, OpsMap, SensMap)
 
 {-
 instance Show AllMaps where
@@ -1106,7 +1107,7 @@ getSentencesWithNodeDGNames dg = getNodeDGNameMapping dg getNodeDeltaSentences S
 getSentencesWOWithNodeDGNamesWO::DGraph->SensMapDGWO
 getSentencesWOWithNodeDGNamesWO dg = getNodeDGNameMappingWO dg getSensFromNodeWithOrigins Set.null
 
-getAll::DGraph->AllMaps
+{-getAll::DGraph->AllMaps
 getAll dg = (
   getNodeImportsNodeNames dg,
   getSortsWithNodeNames dg,
@@ -1115,6 +1116,7 @@ getAll dg = (
   getOpMapsWithNodeNames dg,
   getSentencesWithNodeNames dg
   )
+-}
 
 getExternalLibNames::DGraph->(Set.Set LIB_NAME)
 getExternalLibNames =
@@ -1137,7 +1139,11 @@ isEmptyCASLMorphism m = CASL.Sign.isSubSig (\_ _ -> True) (msource m) (mtarget m
 
 isEmptyMorphismMap::MorphismMap->Bool
 isEmptyMorphismMap (sm,om,pm,hs) =
-  (Map.null sm && Map.null om && Map.null pm && Set.null hs)
+  (Map.null sm && Map.null om && Map.null pm)
+
+isNotHidingMorphismMap::MorphismMap->Bool
+isNotHidingMorphismMap (_,_,_,hs) =
+  (Set.null hs)
 
 -- fetch the names of all nodes from wich sorts,rels, etc. are imported
 -- this does not list all imports in the DGraph, just the ones that cause
@@ -1546,6 +1552,12 @@ hidingAndRequationListToMorphismMap
       , Map.empty
       , Set.fromList (map stringToId hidden)
     )
+
+isEmptyHidAndReqL::HidingAndRequationList->Bool
+isEmptyHidAndReqL (_, l) = null l
+
+isNonHidingHidAndReqL::HidingAndRequationList->Bool
+isNonHidingHidAndReqL (h, _) = null h
     
 createHidingString::CASLSign->String
 createHidingString (Sign sortset _ opmap _ predmap _ _ _ _ _) =
@@ -2157,6 +2169,29 @@ addSignsAndHideWithMorphism dg hiding mm n1 n2 =
       ("--==!! Created new node from " ++ (show (dgn_name n1dgnl)) ++ " " ++ (show sign1) ++ " --==!! ##and## !!==-- " ++ (show (dgn_name n2dgnl)) ++ " " ++ (show sign2) ++ " --==!! ##--## !!==-- " ++ (show hiding) ++ " --==!! ##++## !!==-- " ++ (show msign) ++ "--==!! ##by## !!==-- " ++ show mm ++ " --==!! ##->## !!==-- " ++ (show asign) ++ " !!==-- ") -}
       newnodel
 
+addSignsAndHideWithMorphismExt::Set.Set SORT->Morphism () () ()->DGNodeLab->DGNodeLab->DGNodeLab
+addSignsAndHideWithMorphismExt hiding mm n1dgnl n2dgnl =
+  let
+    sign1 =  getJustCASLSign $ getCASLSign (dgn_sign n1dgnl)
+
+    sign2 =  getJustCASLSign $ getCASLSign (dgn_sign n2dgnl)
+
+    msign = buildMorphismSign mm hiding sign1
+
+    asign = CASL.Sign.addSig (\_ _ -> ()) msign sign2
+
+    sens = getProverSentences (dgn_theory n2dgnl)
+
+    newnodel =
+      n2dgnl
+        {
+          dgn_theory = G_theory CASL asign sens
+        }
+  in
+{-    Debug.Trace.trace
+      ("--==!! Created new node from " ++ (show (dgn_name n1dgnl)) ++ " " ++ (show sign1) ++ " --==!! ##and## !!==-- " ++ (show (dgn_name n2dgnl)) ++ " " ++ (show sign2) ++ " --==!! ##--## !!==-- " ++ (show hiding) ++ " --==!! ##++## !!==-- " ++ (show msign) ++ "--==!! ##by## !!==-- " ++ show mm ++ " --==!! ##->## !!==-- " ++ (show asign) ++ " !!==-- ") -}
+      newnodel
+
 
 
 -- add node 1 to node 2
@@ -2254,8 +2289,8 @@ displaySortTrace
         )
     )
 
-instance Show SortTrace where
-  show = displaySortTrace ""
+--instance Show SortTrace where
+--  show = displaySortTrace ""
 
 buildSortTraceFor::
   LibEnv
@@ -2382,7 +2417,6 @@ buildAllSortTracesFor
 instance Show [SortTrace] where
   show = concat . map (\st -> (show st) ++ "\n")
 -}
-
  
 showLinks::DGraph->IO ()
 showLinks dg =
@@ -2743,6 +2777,7 @@ createMinimalLibEnv ln tracemarks =
 
 type IdNameMapping = (LIB_NAME, NODE_NAME, String, Graph.Node, Set.Set (Id.Id, String), Set.Set ((Id.Id, PredType), String), Set.Set ((Id.Id, OpType), String), Set.Set ((Id.Id, Int), String), Set.Set ((Int, Id.Id, OpType), String))
 
+
 {-
 instance Show IdNameMapping where
   show (ln, nn, nsn, nnum, sorts, preds, ops, sens, cons) =
@@ -2857,6 +2892,23 @@ getNameOrigins (o:r) name =
       else
         [o]
   ) ++ getNameOrigins r name
+
+getNameOrigin::[IdNameMapping]->LIB_NAME->Graph.Node->String->[IdNameMapping]
+getNameOrigin names ln node name =
+  case getLNGN names ln node of
+    Nothing -> []
+    (Just o) ->
+      if
+        Set.null
+          $
+          Set.filter
+            (\(_, name') -> name' == name)
+            $
+            inmGetIdNameAllSet o
+      then
+        []
+      else
+        [o]
 
 getLNGNL::[IdNameMapping]->LIB_NAME->Graph.Node->[IdNameMapping]
 getLNGNL m ln nn =
@@ -3642,38 +3694,102 @@ removeReferencedIdentifiers
   in
     newmap
 
+-- OMDoc does only enforce unique names inside a theory
 getIdUseNumber::
   Map.Map LIB_NAME (Set.Set IdentifierWON)
   ->Map.Map LIB_NAME (Set.Set (IdentifierWON, Int))
 getIdUseNumber
   remMap
   =
-  foldl
-    (\cm (ln, ids) ->
-      Set.fold
-        (\idw cm' ->
+  let
+    unnMap =
+      Map.map
+        (\idwoset ->
           let
-            previousUse =
-              foldl
-                (\pu (pln, pidscount) ->
-                  let
-                    sameid =
-                      Set.filter
-                        (\(pidw, _) -> getIdId (woItem pidw) == getIdId (woItem idw))
-                        pidscount
-                  in
-                    pu + (Set.size sameid)
+            maxorigin =
+              Set.fold
+                (\iwo mo ->
+                  max mo (woOrigin iwo)
                 )
                 0
-                (Map.toList cm')
+                idwoset
           in
-            Map.insertWith (Set.union) ln (Set.singleton (idw, previousUse)) cm'
+            foldl
+              (\newset currentOrigin ->
+                let
+                  thisSet = Set.filter (\i -> (woOrigin i) == currentOrigin) idwoset
+                  thisNewSet =
+                    Set.fold
+                      (\iwo tNS ->
+                        let
+                          usedHere =
+                            Set.fold
+                              (\(previousIWO,_) uH ->
+                                if (getIdId $ woItem previousIWO) == (getIdId $ woItem iwo)
+                                  then
+                                    uH + 1
+                                  else
+                                    uH
+                              )
+                              0
+                              tNS
+                        in
+                          Set.insert (iwo, usedHere) tNS
+                      )
+                      Set.empty
+                      thisSet
+                in
+                  Set.union newset thisNewSet
+              )
+              Set.empty
+              [0..maxorigin]
         )
-        cm
-        ids
+        remMap
+  in
+    makeUniqueNodeNames unnMap
+
+makeUniqueNodeNames::
+  Map.Map LIB_NAME (Set.Set (IdentifierWON, Int))
+  ->Map.Map LIB_NAME (Set.Set (IdentifierWON, Int))
+makeUniqueNodeNames
+  unnMap
+  =
+  Map.foldWithKey
+    (\ln idset m ->
+      let
+        newidset =
+          Set.fold
+            (\(wid, c) nis ->
+              case woItem wid of
+                IdNodeName {} ->
+                  let
+                    previousUse =
+                      Set.fold
+                        (\(wid', _) pU ->
+                          case woItem wid' of
+                            IdNodeName {} ->
+                              if (getIdId $ woItem wid') == (getIdId $ woItem wid)
+                                then
+                                  pU + 1
+                                else
+                                  pU
+                            _ ->
+                              pU
+                        )
+                        (0::Int)
+                        nis
+                  in
+                    Set.insert (wid, previousUse) nis
+                _ ->
+                  Set.insert (wid, c) nis
+            )
+            Set.empty
+            idset
+      in
+        Map.insert ln newidset m
     )
     Map.empty
-    (Map.toList remMap)
+    unnMap
 
 makeUniqueNames::
   Map.Map LIB_NAME (Set.Set (IdentifierWON, Int))
@@ -3754,7 +3870,8 @@ makeUniqueIdNameMapping
                             ++ show (nn, nodeNameToName $ dgn_name node) ++ "..."
                           )
                           (getDGNodeName node)
-                      (_, unName):_ -> unName
+                      (_, unName):_ ->
+                          unName
                   else
                     let
                       mln = dgn_libname node
@@ -3942,7 +4059,7 @@ makeFullNames
                           of
                             [] ->
                               Debug.Trace.trace
-                                ("no sort found...")
+                                ("no sort found... " ++ show swo)
                                 ((woItem swo), show swo)
                             (_, unName):_ -> (woItem swo, unName)
                         (Just (mln, mid)) ->
@@ -3955,7 +4072,7 @@ makeFullNames
                           of
                             [] ->
                               Debug.Trace.trace
-                                ("no sort found...")
+                                ("no sort found... (ref) " ++ show swo)
                                 ((woItem swo), show swo)
                             (_, unName):_ -> (woItem swo, unName)
                   )

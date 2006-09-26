@@ -17,10 +17,10 @@ Portability :  non-portable(Logic)
     - DevGraph->OMDoc conversion should be done on LibEnv-Level (for names) (done)
 -}
 module OMDoc.OMDocOutput
-{-  (
+  (
     hetsToOMDoc
-  ) -}
-{- -- debug -}
+  ) 
+{- -- debug 
   (
     writeOMDocDTD
     -- ,showOMDoc
@@ -30,7 +30,7 @@ module OMDoc.OMDocOutput
     ,defaultDTDURI
     ,createXmlNameMapping
   )
-{- -}
+ -}
   where
 
 import qualified OMDoc.HetsDefs as Hets
@@ -428,7 +428,7 @@ createXmlMorphism
   _
   ln
   (from, to, ll)
-  uniqueNames
+  {-uniqueNames-}_
   names
   =
   let
@@ -469,7 +469,7 @@ createXmlMorphism
                s:_ -> snd s
             oorigin =
               case
-                Hets.getNameOrigins uniqueNames oname
+                Hets.getNameOrigin names ln from oname
               of
                 [] -> error "!"
                 o:[] -> o
@@ -480,7 +480,7 @@ createXmlMorphism
                     o
             norigin =
               case
-                Hets.getNameOrigins uniqueNames nname
+                Hets.getNameOrigin names ln to nname
               of
                 [] -> error "!"
                 n:[] -> n
@@ -520,7 +520,7 @@ createXmlMorphism
                s:_ -> snd s
             oorigin =
               case
-                Hets.getNameOrigins uniqueNames oname
+                Hets.getNameOrigin names ln from oname
               of
                 [] -> error "!"
                 o:[] -> o
@@ -531,7 +531,7 @@ createXmlMorphism
                     o
             norigin =
               case
-                Hets.getNameOrigins uniqueNames nname
+                Hets.getNameOrigin names ln to nname
               of
                 [] -> error "!"
                 n:[] -> n
@@ -571,7 +571,7 @@ createXmlMorphism
                s:_ -> snd s
             oorigin =
               case
-                Hets.getNameOrigins uniqueNames oname
+                Hets.getNameOrigin names ln from oname
               of
                 [] -> error "!"
                 o:[] -> o
@@ -582,7 +582,7 @@ createXmlMorphism
                     o
             norigin =
               case
-                Hets.getNameOrigins uniqueNames nname
+                Hets.getNameOrigin names ln to nname
               of
                 [] -> error "!"
                 n:[] -> n
@@ -1216,11 +1216,11 @@ predicationToXmlIN::
   ->(Id.Id, PredType)
   ->(HXT.XmlTree->HXT.XmlTrees)
 predicationToXmlIN 
-  _ -- ln
-  _ -- nn
+  ln
+  nn
   currentmapping
-  uniqueNames
-  _ -- fullNames
+  {-uniqueNames-}_
+  {-fullNames-}_
   (pid, pt)
   =
     let
@@ -1239,7 +1239,7 @@ predicationToXmlIN
       argorigins =
         map
           (\argxmlid ->
-            case Hets.getNameOrigins uniqueNames argxmlid of
+            case Hets.getNameOrigin [currentmapping] ln nn argxmlid of
               [] -> error ("No origin for Sort " ++ show argxmlid)
               [o] -> getNodeNameForXml o
               (o:_) ->
@@ -1317,11 +1317,11 @@ operatorToXmlIN::
   ->(Id.Id, OpType)
   ->(HXT.XmlTree->HXT.XmlTrees)
 operatorToXmlIN
-  _ -- ln
-  _ -- nn
+  ln
+  nn
   currentmapping
-  uniqueNames
-  _ -- fullNames
+  {-uniqueNames-}_
+  {-fullNames-}_
   (oid, ot)
   =
     let
@@ -1340,7 +1340,7 @@ operatorToXmlIN
       argorigins =
         map
           (\argxmlid ->
-            case Hets.getNameOrigins uniqueNames argxmlid of
+            case Hets.getNameOrigin [currentmapping] ln nn argxmlid of
               [] -> error ("No origin for Sort " ++ show argxmlid)
               [o] -> getNodeNameForXml o
               (o:_) ->
@@ -1359,7 +1359,7 @@ operatorToXmlIN
           (error ("No name for \"" ++ show (opRes ot) ++ "\""))
           (Hets.getNameForSort [currentmapping] (opRes ot))
       resorigin =
-        case Hets.getNameOrigins uniqueNames resxmlid of
+        case Hets.getNameOrigin [currentmapping] ln nn resxmlid of
           [] -> error ("No origin for Sort " ++ show resxmlid)
           [o] -> getNodeNameForXml o
           (o:_) ->

@@ -202,11 +202,11 @@ xnWOaToWOa::XmlNamedWO a b->Hets.WithOrigin a b
 xnWOaToWOa a = xnItem a
 
 -- | a predicate with xml-name and origin
-data PredTypeXNWON = PredTypeXNWON {predArgsXNWON :: [XmlNamedWON SORT]}
+data PredTypeXNWON = PredTypeXNWON {predArgsXNWON :: [XmlNamedWONSORT]}
   deriving (Show, Eq, Ord)
-        
+
 -- | an operator with xml-name and origin
-data OpTypeXNWON = OpTypeXNWON { opKindX :: FunKind, opArgsXNWON :: [XmlNamedWON SORT], opResXNWON :: (XmlNamedWON SORT) }
+data OpTypeXNWON = OpTypeXNWON { opKindX :: FunKind, opArgsXNWON :: [XmlNamedWONSORT], opResXNWON :: XmlNamedWONSORT }
   deriving (Show, Eq, Ord)
 
 -- | tries to find the 'pure' sort among named sorts    

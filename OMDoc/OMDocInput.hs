@@ -18,11 +18,13 @@ TODO:
 module OMDoc.OMDocInput
   (
     mLibEnvFromOMDocFile
-  )
-{- -- debug 
-  (
+  ) 
+ -- debug 
+{-  (
+     Source(..)
     -- options currently for debugging, stores HetcatsOptions
-     GlobalOptions(..)
+    ,GlobalOptions(..)
+    ,FFXInput(..)
     -- reads an OMDoc-File and builds a graph of the files imported
     ,makeImportGraphFullXml
     -- transforms an import graph into a graph holding a DevGraph for
@@ -44,7 +46,6 @@ module OMDoc.OMDocInput
     -- loads an xml file via HXT and returns the 'omdoc'-tree
     -- ,loadOMDoc
     ,getImportedTheories
-    ,xmlToMorphismMap
     ,fetchRequationSymbols
     ,preprocessXml
   )
@@ -63,7 +64,6 @@ import qualified CASL.AS_Basic_CASL as ABC
 import Static.DevGraph
 import qualified Data.Graph.Inductive.Graph as Graph
 import qualified Common.Lib.Graph as CLGraph
-import CASL.Amalgamability(CASLSign)
 
 -- Often used symbols from HXT
 import Text.XML.HXT.Parser
@@ -81,7 +81,6 @@ import qualified Common.Lib.Rel as Rel
 
 import qualified Common.AS_Annotation as Ann
 
-import qualified Logic.Logic as Logic
 import qualified Logic.Prover as Prover
 
 import Data.Maybe (fromMaybe)
@@ -97,8 +96,6 @@ import Driver.Options
 
 import Control.Monad
 import Control.Exception as Control.Exception
-
-import Char (isSpace)
 
 import qualified Network.URI as URI
 
@@ -141,7 +138,9 @@ libEnvFromOMDocFile::
   ->IO (ASL.LIB_NAME, DGraph, LibEnv)
 libEnvFromOMDocFile go f =
   makeImportGraphFullXml go f >>=
-    return . dGraphGToLibEnvOMDocId go . hybridGToDGraphG go . processImportGraphXN go
+    return . importGraphToLibEnv go
+--    return . dGraphGToLibEnvOMDocId go . hybridGToDGraphG go . processImportGraphXN go
+
 
 {- -- debug
   loads an OMDoc file and returns it even if there are errors
@@ -176,60 +175,6 @@ loadOMDoc f =
       else
         ioError $ userError ("Error loading \"" ++ f ++ "\"")
 -}
-
-{- |
-  maps a set of (XmlNamedWONIdS, a) tuples to a map using the IdS
-  as key and combining a's into sets if they have the same Id
-  (ignoring xmlname and origin). A conversion function can be specified to 
-  transform a to b where b has to provide an instance of Ord.
--}
-mapSameIdToSetWith::
-  (Ord b)=>
-  (a->b) -- ^ conversion function
-  ->Set.Set (XmlNamedWONId, a) -- ^ set to make map of
-  ->Map.Map Id.Id (Set.Set b)
-mapSameIdToSetWith conv set =
-  Set.fold (\(xnwonid, a) mapping ->
-    let
-      pureid = xnWOaToa xnwonid
-      idset = Map.findWithDefault Set.empty pureid mapping
-      newset = Set.union idset (Set.singleton $ conv a)
-    in
-      Map.insert pureid newset mapping
-      ) Map.empty set
-
-{- |
-  creates a DGNodLab from sorts, relations, predicates, operators and
-  sentences
--}
-xnMapsToDGNodeLab::
-  GlobalOptions -- ^ for debugging
-  ->NODE_NAME  -- ^ name for created DGNodeLab
-  ->Set.Set XmlNamedWONId -- ^ sorts for this node
-  ->Rel.Rel XmlNamedWONId -- ^ sort-relations for this node
-  ->Set.Set (XmlNamedWONId, PredTypeXNWON) -- ^ predicates 
-  ->Set.Set (XmlNamedWONId, OpTypeXNWON) -- ^ operators
-  ->Set.Set (XmlNamed Hets.SentenceWO) -- ^ sentences
-  ->DGNodeLab
-xnMapsToDGNodeLab
-  go
-  nn
-  xnsorts
-  xnrels
-  xnpreds
-  xnops
-  xnsens =
-  let
-    sorts' = Set.map xnWOaToa xnsorts
-    rels' = Rel.fromList $ map (\(a,b) -> (xnWOaToa a, xnWOaToa b)) $
-      Rel.toList xnrels
-    preds' = mapSameIdToSetWith predTypeXNWONToPredType xnpreds
-    ops' = mapSameIdToSetWith opTypeXNWONToOpType xnops
-    sens' = Set.map xnWOaToa xnsens
-  in
-    debugGO go "xMTDGNL" "mapsNNToDGNodelab" $
-      mapsNNToDGNodeLab go (sorts' , rels' , preds' , ops' , sens' ) nn
-
 
 {- |
   extracts constructors from adt-structures
@@ -360,490 +305,6 @@ fetchRequationSymbols t =
   in
     (hiddensyms, reqlist)
 
-getFFXIFor::
-  (ImportGraph (HXT.XmlTrees, Maybe (DGraph, FFXInput)))
-  ->String
-  ->Maybe FFXInput
-getFFXIFor
-  ig
-  theoryname
-  =
-  let
-    withffxi =
-      filter
-        (\(S _ (_, mdgffxi)) ->
-          case mdgffxi of
-            Nothing -> False
-            _ -> True
-        )
-        (map snd (Graph.labNodes ig))
-    withtheory =
-      filter
-        (\(S _ (_, (Just (_, ffxi)))) ->
-          case
-            find
-              (\t -> xnName t == theoryname)
-              (Set.toList (xnTheorySet ffxi))
-          of
-            Nothing -> False
-            _ -> True
-        )
-        withffxi
-    notref =
-      filter
-        (\(S _ (_, (Just (dg, ffxi)))) ->
-          let
-            (nodenum, _) =
-              case
-                find
-                  (\t -> xnName t == theoryname)
-                  (Set.toList (xnTheorySet ffxi))
-              of
-                Nothing -> error "!"
-                (Just x) -> xnItem x
-            node = Data.Maybe.fromMaybe (error "!") $ Graph.lab dg nodenum
-          in
-            not $ isDGRef node
-        )
-        withtheory
-  in
-    case notref of
-      [] -> Nothing
-      ((S _ (_, (Just (_, ffxi)))):_) -> Just ffxi
-  
-
-{- |
-  reconstructs requation symbols used in a OMDoc-Morphism by matching them
-  against known sorts, predicates and operators in the source and target sort.
--}
-requationSymbolsToIds::
-  FFXInput
-  ->(ImportGraph (HXT.XmlTrees, Maybe (DGraph, FFXInput)))
-  ->String
-  ->String
-  ->([String], Hets.RequationList)
-  ->Hets.MorphismMap
-requationSymbolsToIds
-  ffxi
-  ig
-  fromname
-  toname
-  (hiddensyms, req)
-  =
-  let
-    fromOrigin =
-      case
-        Set.toList $ Set.filter (\t -> (xnName t) == fromname) (xnTheorySet ffxi)
-      of
-        [] -> error "no such theory!"
-        (o:_) -> fst $ xnItem o
-    fromsorts = Set.toList $ Map.findWithDefault Set.empty fromname (xnSortsMap ffxi)
-    frompreds = Set.toList $ Map.findWithDefault Set.empty fromname (xnPredsMap ffxi)
-    fromops = Set.toList $ Map.findWithDefault Set.empty fromname (xnOpsMap ffxi)
-    tosorts = Set.toList $ Map.findWithDefault Set.empty toname (xnSortsMap ffxi)
-    topreds = Set.toList $ Map.findWithDefault Set.empty toname (xnPredsMap ffxi)
-    toops = Set.toList $ Map.findWithDefault Set.empty toname (xnOpsMap ffxi)
-    mappedFSymbols =
-      (
-        fromsorts
-          ++ (map fst frompreds)
-          ++ (map fst fromops)
-      )
-    mappedhidden =
-      map
-        (\h ->
-          xnWOaToa
-            $
-            fromMaybe
-              (XmlNamed (Hets.mkWON (Hets.stringToId h) fromOrigin) h)
-              $
-              findByName h mappedFSymbols
-        )
-        hiddensyms
-    (sm, pm, om) =
-      foldl
-        (\(sm', pm', om') ( (fromcd, fromid), (tocd, toid) ) ->
-          let
-            fsorts =
-              fromsorts ++
-              if fromcd == fromname
-                then
-                  []
-                else
-                  (
-                    Set.toList
-                      $ Map.findWithDefault Set.empty fromcd (xnSortsMap ffxi)
-                  )
-                  ++
-                  case getFFXIFor ig fromcd of
-                    Nothing -> []
-                    (Just fromffxi) ->
-                      Set.toList $
-                        Map.findWithDefault Set.empty fromcd (xnSortsMap fromffxi)
-            fpreds =
-              frompreds ++
-              if fromcd == fromname
-                then
-                  []
-                else
-                  (
-                    Set.toList
-                      $ Map.findWithDefault Set.empty fromcd (xnPredsMap ffxi)
-                  )
-                  ++
-                  case getFFXIFor ig fromcd of
-                    Nothing -> []
-                    (Just fromffxi) ->
-                      Set.toList $
-                        Map.findWithDefault Set.empty fromcd (xnPredsMap fromffxi)
-            fops =
-              fromops ++
-              if fromcd == fromname
-                then
-                  []
-                else
-                  (
-                    Set.toList
-                      $ Map.findWithDefault Set.empty fromcd (xnOpsMap ffxi)
-                  )
-                  ++
-                  case getFFXIFor ig fromcd of
-                    Nothing -> []
-                    (Just fromffxi) ->
-                      Set.toList $
-                        Map.findWithDefault Set.empty fromcd (xnOpsMap fromffxi)
-            tsorts =
-              tosorts ++
-              if tocd == toname
-                then
-                  []
-                else
-                  (
-                    Set.toList
-                      $ Map.findWithDefault Set.empty tocd (xnSortsMap ffxi)
-                  )
-                  ++
-                  case getFFXIFor ig tocd of
-                    Nothing -> []
-                    (Just toffxi) ->
-                      Set.toList $
-                        Map.findWithDefault Set.empty tocd (xnSortsMap toffxi)
-            tpreds =
-              topreds ++
-              if tocd == toname
-                then
-                  []
-                else
-                  (
-                    Set.toList
-                      $ Map.findWithDefault Set.empty tocd (xnPredsMap ffxi)
-                  )
-                  ++
-                  case getFFXIFor ig tocd of
-                    Nothing -> []
-                    (Just toffxi) ->
-                      Set.toList $
-                        Map.findWithDefault Set.empty tocd (xnPredsMap toffxi)
-            tops =
-              toops ++
-              if tocd == toname
-                then
-                  []
-                else
-                  (
-                    Set.toList
-                      $ Map.findWithDefault Set.empty tocd (xnOpsMap ffxi)
-                  )
-                  ++
-                  case getFFXIFor ig tocd of
-                    Nothing -> []
-                    (Just toffxi) ->
-                      Set.toList $
-                        Map.findWithDefault Set.empty tocd (xnOpsMap toffxi)
-            mappedFullFSymbols =
-              (
-                fsorts
-                  ++ (map fst fpreds)
-                  ++ (map fst fops)
-              )
-          in
-            case
-              findByNameSortPredOp
-                fsorts
-                fpreds
-                fops
-                fromid
-            of
-              (Just (SPOS fs)) ->
-                case
-                  findByNameSortPredOp
-                    tsorts
-                    []
-                    []
-                    toid
-                of
-                  (Just (SPOS ts)) ->
-                    (Map.insert fs ts sm', pm', om')
-                  _ ->
-                    Debug.Trace.trace
-                      ("Error processing Morphism. No Target-Sort-Mapping for \""
-                        ++ tocd ++ "#" ++ toid ++ "\""
-                      )
-                      (sm', pm', om')                    
-              (Just (SPOP (fpid, fpt))) ->
-                case
-                  findByNameSortPredOp
-                    []
-                    tpreds
-                    []
-                    toid
-                of
-                  (Just (SPOP (tpid, tpt))) ->
-                    (sm', Map.insert (fpid, fpt) (tpid, tpt) pm', om')
-                  _ ->
-                    Debug.Trace.trace
-                      ("Error processing Morphism. No Target-Predicate-Mapping for \""
-                        ++ tocd ++ "#" ++ toid ++ "\""
-                      )
-                      (sm', pm', om')                    
-              (Just (SPOO (foid, fot))) ->
-                case
-                  findByNameSortPredOp
-                    []
-                    []
-                    tops
-                    toid
-                of
-                  (Just (SPOO (t_oid, tot))) ->
-                    (sm', pm', Map.insert (foid, fot) (t_oid, tot) om')
-                  _ ->
-                    Debug.Trace.trace
-                      ("Error processing Morphism. No Target-Operator-Mapping for \""
-                        ++ tocd ++ "#" ++ toid ++ "\""
-                      )
-                      (sm', pm', om')                    
-              _ ->
-                Debug.Trace.trace
-                  ("Error processing Morphism from \"" ++ fromname ++ "\" to \""
-                    ++ toname ++ "\" . No Source-Mapping for \""
-                    ++ fromcd ++ "#" ++ fromid ++ "\" in " ++ show mappedFullFSymbols
---                    ++ " " ++ show (xnTheorySet ffxi) ++ " " ++ show (xnSortsMap ffxi)
-                  )
-                  (sm', pm', om')
-        )
-        (Map.empty, Map.empty, Map.empty)
-        req
-  in
-    (sm, om, pm, Set.fromList mappedhidden)
-
-data SortPredOp = SPOS SORT | SPOP (Id.Id, PredType) | SPOO (Id.Id, OpType)
-
-findByNameSortPredOp::
-  [XmlNamedWONSORT]
-  ->[(XmlNamedWONId, PredTypeXNWON)]
-  ->[(XmlNamedWONId, OpTypeXNWON)]
-  ->String
-  ->Maybe SortPredOp
-findByNameSortPredOp
-  xmlnamedsorts
-  xmlnamedpreds
-  xmlnamedops
-  xmlname
-  =
-    case
-      find
-        (\xs -> xnName xs == xmlname)
-        xmlnamedsorts
-    of
-      (Just x) ->
-        Just (SPOS (xnWOaToa x))
-      Nothing ->
-        case
-          find
-            (\(xp, _) -> xnName xp == xmlname)
-            xmlnamedpreds
-        of
-          (Just (xp, xpt)) ->
-            Just (SPOP (xnWOaToa xp, predTypeXNWONToPredType xpt))
-          Nothing ->
-            case
-              find
-                (\(xo, _) -> xnName xo == xmlname)
-                xmlnamedops
-            of
-              (Just (xo, xot)) ->
-                Just (SPOO (xnWOaToa xo, opTypeXNWONToOpType xot))
-              Nothing -> Nothing
-
-{-
-{- |
-  extracts morphisms from xml
--}
-xmlToMorphismMap::
-  HXT.XmlTrees->
-  Hets.MorphismMap
-xmlToMorphismMap
-  t
-  =
-  let
-    hides = xshow $ applyXmlFilter (isTag "morphism" .> getQualValue "" "hiding") t
-    hiddensyms = map Hets.stringToId $ breakSepSpace hides
-    pattern = isTag "requation" .> processChildren (isTag "OMOBJ") .> getChild 1
-    value = isTag "requation" .> processChildren (isTag "OMOBJ") .> getChild 2
-    vsymbol = value .> getChildren .> isTag "OMS" .> getQualValue "" "name" 
-    psymbol = pattern .> getChildren .> isTag "OMS" .> getQualValue "" "name" 
-    requations = applyXmlFilter (isTag "morphism" .> getChildren .> isTag "requation") t
-    sortmap = foldl (\sm ts ->
-        case applyXmlFilter (value .> getChildren .> isTag "OMATTR") [ts] of
-          [] ->
-            let
-              psymbolname = xshow $ applyXmlFilter psymbol [ts]
-              vsymbolname = xshow $ applyXmlFilter vsymbol [ts]
-            in
-              if (psymbolname /= []) && (vsymbolname /= [])
-                then
-                  Map.insert (Hets.stringToId psymbolname) (Hets.stringToId vsymbolname) sm
-                else
-                  sm
-          _ -> sm
-      ) Map.empty requations
-    (opsmap, predsmap) = foldl (\(om,pm) tp ->
-      let
-        satp = applyXmlFilter (
-          pattern .> getChildren .>
-          isTag "OMATTR" .> getChildren .>
-          isTag "OMATP") [tp]
-        tatp = applyXmlFilter (
-          value .> getChildren .>
-          isTag "OMATTR" .> getChildren .>
-          isTag "OMATP") [tp]
-        satpsym = applyXmlFilter (getChildren .> isTag "OMS") satp
-        satpstr = applyXmlFilter (getChildren .> isTag "OMSTR") satp
-        satpmap = Map.fromList $ zip
-          (map (\n -> xshow $ applyXmlFilter (getQualValue "" "name") [n]) satpsym)
-          (map (\n -> xshow $ applyXmlFilter (getChildren) [n]) satpstr) 
-        tatpsym = applyXmlFilter (getChildren .> isTag "OMS") tatp
-        tatpstr = applyXmlFilter (getChildren .> isTag "OMSTR") tatp
-        tatpmap = Map.fromList $ zip
-          (map (\n -> xshow $ applyXmlFilter (getQualValue "" "name") [n]) tatpsym)
-          (map (\n -> xshow $ applyXmlFilter (getChildren) [n]) tatpstr)
-        ssymbolname = xshow $ applyXmlFilter (
-          pattern .> getChildren .>
-          isTag "OMATTR" .> getChildren .> 
-          isTag "OMS" .> getValue "name" ) [tp]
-        tsymbolname = xshow $ applyXmlFilter (
-          value .> getChildren .>
-          isTag "OMATTR" .> getChildren .> 
-          isTag "OMS" .> getValue "name" ) [tp]
-        ssorts = explode "-\\" $ Map.findWithDefault "" "type" satpmap
-        tsorts = explode "-\\" $ Map.findWithDefault "" "type" tatpmap
-        sOp = OpType
-          -- The lookup-mechanism for displaying the morphism needs
-          -- 'Partial' entries...
-          Partial -- (funKindFromName $ Map.findWithDefault "Total" "funtype" satpmap)
-          (map Hets.stringToId ( if (length ssorts) == 1 then [] else init ssorts ))
-          (Hets.stringToId $ last ssorts)
-        sPred = PredType
-          (map Hets.stringToId ssorts)
-        tOp =
-          OpType
-            (funKindFromName $ Map.findWithDefault "Total" "funtype" tatpmap)
-            (map Hets.stringToId ( if (length tsorts) == 1 then [] else init tsorts ))
-            (Hets.stringToId $ last tsorts)
-        tPred =
-          PredType
-            (map Hets.stringToId tsorts)
-      in
-        case xshow $ applyXmlFilter (
-                        pattern .> getChildren .> 
-                        isTag "OMOBJ" .> getChildren .>
-                        isTag "OMATTR" .> getChildren .>
-                        isTag "OMATP" .> getChildren .>
-                        isTag "OMS" .> withSValue "cd" "casl" .>
-                        withSValue "name" "funtype" .>
-                        getQualValue "" "name") [tp] of
-          "funtype" ->
-            (Map.insert
-              (Hets.stringToId ssymbolname, sOp)
-              (Hets.stringToId tsymbolname, tOp)
-              om, pm)
-          "" ->
-            if (ssymbolname /= []) && (tsymbolname /= [])
-              then
-                (om,
-                  Map.insert
-                    (Hets.stringToId ssymbolname, sPred)
-                    (Hets.stringToId tsymbolname, tPred)
-                    pm
-                )
-              else
-                (om, pm)
-          x ->
-            Debug.Trace.trace ("Unknown Symbol : \"" ++ x ++ "\"") (om,pm)
-        ) (Map.empty, Map.empty) requations
-  in
-          (sortmap, opsmap, predsmap, Set.fromList hiddensyms)
--}
-
--- | creates a Conservativity from a String or fails with error
-stringToConservativity::String->Conservativity
-stringToConservativity "None" = None
-stringToConservativity "Cons" = Cons
-stringToConservativity "Mono" = Mono
-stringToConservativity "Def" = Def
-stringToConservativity s = error ("Unknown Conservativity : \"" ++ s ++ "\"") 
-
--- | stringToLinkType returns a list with at most one DGLinkType
--- Unknown links result in empty list
--- Currently this does not work very well because of some formatting issues...
-stringToLinkType::String->[DGLinkType]
-stringToLinkType s =
-  if (length $ words s) == 0
-    then
-      [] -- error "Cannot determine DGLinkType from empty string!"
-    else
-      let
-        firstword = (words s)!!0
-      in
-        case firstword of
-          "LocalDef" -> [LocalDef]
-          "GlobalDef" -> [GlobalDef]
-          "HidingDef" -> [HidingDef]
-          "LocalThm" ->
-            if (length $ words s) < 3
-              then
-                Debug.Trace.trace
-                  ("No data for Conservativity in \"" ++ s ++ "\"")
-                  []
-              else
-                [
-                  LocalThm
-                    LeftOpen
-                    (stringToConservativity $ (words s)!!2)
-                    LeftOpen
-                ] 
-          "GlobalThm" ->
-            if (length $ words s) < 3
-              then
-                Debug.Trace.trace ("No data for Conservativity in \"" ++ s ++ "\"") []
-              else
-                [
-                  GlobalThm
-                    LeftOpen
-                    (stringToConservativity $ (words s)!!2)
-                    LeftOpen
-                ]
-          "HidingThm" ->
-            [HidingThm Hets.emptyCASLGMorphism LeftOpen]
-          "FreeDef" ->
-            [FreeDef (EmptyNode (Logic.Logic CASL))]
-          "CofreeDef" ->
-            [CofreeDef (EmptyNode (Logic.Logic CASL))]
-          _ ->
-            Debug.Trace.trace
-              ("Unknown DGLinkType : \"" ++ firstword ++ "\"")
-              []
-                
 defaultDGLinkType::DGLinkType
 defaultDGLinkType = GlobalDef
 
@@ -855,105 +316,6 @@ defaultDGLinkLab =
   DGLink Hets.emptyCASLGMorphism defaultDGLinkType defaultDGOrigin
 
 
--- | stringToLink returns a list with at most one DGLinkLab (empty on error)
--- error when string is empty (or whitespace only)
-stringToLink::String->[DGLinkLab]
-stringToLink s =
-  let
-    swords = separateFromColonsNoCmt $ wordsWithQuotes s
-    ltype = case getFollows (=="Type:") swords of
-      Nothing -> ""
-      (Just l) -> unquote l
-    linktypel = stringToLinkType ltype
-    lorigin = case getFollows (=="Origin:") swords of
-      Nothing -> ""
-      (Just o' ) -> unquote o'
-  in
-    if (length swords == 0)
-      then
-        [] -- error "Cannot determine DGLinkLab from empty string!"
-      else
-        if linktypel == []
-          then
-            []
-          else
-            [
-              DGLink
-                Hets.emptyCASLGMorphism
-                (head linktypel)
-                (stringToOrigin lorigin)
-            ]
-
-
--- | separates strings following colons if the string is not quoted
-separateFromColonsNoCmt::[String]->[String]
-separateFromColonsNoCmt strings =
-  separateFromColonsC strings (\s -> (head s) == '"')
-
-
--- | separates strings following colons except on strings s where cond s is True        
-separateFromColonsC::[String]->(String->Bool)->[String]
-separateFromColonsC strings cond =
-  foldl (\r s ->
-    let 
-      parts = explode ":" s
-    in
-      if cond s
-        then
-          r ++ [s]
-        else
-          r ++ if length parts == 1
-            then
-              parts
-            else
-              ( (map (++":") (init parts))
-                ++
-                case (last parts) of
-                  "" -> []
-                  _ -> [last parts]
-              )
-    ) [] strings
-      
-                
-getFollows::(a->Bool)->[a]->(Maybe a)
-getFollows _ [] = Nothing
-getFollows _ [_] = Nothing
-getFollows test (first' :second:list) =
-  if test first' then (Just second) else getFollows test (second:list)
-
-        
-unquote::String->String
-unquote [] = []
-unquote ('"':rest) = init rest
-unquote s = s
-  
-  
-wordsWithQuotes::String->[String]
-wordsWithQuotes [] = []
-wordsWithQuotes ('"':w) = quote w
-  where
-    quote::String->[String]
-    quote w' =
-      ("\""++(takeWhile (/='"') w' )++"\"")
-        :(wordsWithQuotes (drop 1 (dropWhile (/='"') w' )))
-wordsWithQuotes w =
-  let
-    word =
-      takeWhile
-        (\c -> (not $ Char.isSpace c) && (c /= '\"'))
-        (dropWhile Char.isSpace w)
-    rest =
-      dropWhile
-        Char.isSpace
-        (dropWhile
-          (\c -> (not $ Char.isSpace c) && (c /= '\"'))
-          (dropWhile Char.isSpace w)
-        )
-  in
-    word:(wordsWithQuotes rest)
-          
-    
-
 -- remove keys from a map (will result in removing double entries when merging sets)
 mapSetToSet::(Ord b)=>Map.Map a (Set.Set b)->Set.Set b
 mapSetToSet mapping =
@@ -961,11 +323,6 @@ mapSetToSet mapping =
       Set.union set s
     ) Set.empty (Map.toList mapping)
                 
--- | convert a map to lists to a map to sets
-mapListToMapSet::(Ord b)=>Map.Map a [b]->Map.Map a (Set.Set b)
-mapListToMapSet = Map.map Set.fromList
-
-
 {- |
   AnnotatedXML is a structure containing xml-trees and and annotation
   to these trees.
@@ -999,7 +356,7 @@ buildAXTheorySet t =
       (\n t' -> AXML n [t' ])
       [1..]
       theories
-                        
+
 {- |
   creates a set of theory names by examining the name of the theory and
   searching for presentation elements.
@@ -1009,7 +366,7 @@ nodeNamesXNFromXml axmlset =
   Set.fromList $ Set.fold
     (\axml txnl ->
       let
-        theoid = xshow $ applyXmlFilter (getQualValue "xml" "id") (axXml axml)
+        theoid = stripFragment $ xshow $ applyXmlFilter (getQualValue "xml" "id") (axXml axml)
         theohetsnodenames = xshow $ applyXmlFilter
           (
             getChildren .> isTag "presentation" .>
@@ -1058,34 +415,6 @@ sortsXNWONFromXmlTheory anxml =
     ) [] sortnames
                 
 
--- we need annotated xml to define an origin in term of graph-nodes
--- xml-theory-fragments are just nodes in the devgraph...
--- it does not matter if the node-numbers are the same when encoding/decoding
--- they only have to be unique (for the document)
--- the mapping is actually redundancy because the origin of the sort maps to the
--- theory (but this mapping has advantages when looking via XmlName)
-sortsXNWONFromXml::TheoryXNSet->Set.Set AnnXMLN->Map.Map XmlName (Set.Set XmlNamedWONSORT)
-sortsXNWONFromXml xntheories xmltheoryset =
-  Set.fold
-    (\anxml tsmap ->
-      let
-        theosorts = sortsXNWONFromXmlTheory anxml
-      in
-        if Set.null theosorts
-          then
-            tsmap
-          else
-            Map.insert
-              (case getTheoryXmlName xntheories (axAnn anxml) of
-                Nothing -> error "No Theory!"
-                (Just xname) -> xname)
-              (sortsXNWONFromXmlTheory anxml)
-              tsmap
-    )
-    Map.empty
-    xmltheoryset
-    
-                
 findByName::(Container b (XmlNamed a))=>String->b->Maybe (XmlNamed a)
 findByName iname icon =
   find (\i -> (xnName i) == iname) (getItems icon)
@@ -1131,41 +460,18 @@ relsXNWONFromXmlTheory xnsortset anxml =
             isTag "insort" .> getValue "for")
           [t' ]
       xnsort = case findByNameAndOrigin xnsorts (axAnn anxml) xnsortset of
-        Nothing -> error "Relation for unknown sort!"
+        Nothing -> (XmlNamed (Hets.mkWON (Hets.stringToId xnsorts) (-1)) xnsorts)
         (Just xnsort' ) -> xnsort'
       xninsorts = map (\s -> case findByNameAndOrigin s (axAnn anxml) xnsortset of
         Nothing ->
-          Debug.Trace.trace
-            ("Relation with unknown sort!" ++ (show s))
-            (XmlNamed (Hets.mkWON (Hets.stringToId s) (axAnn anxml)) s)
+--          Debug.Trace.trace
+--            ("Relation with unknown sort!" ++ (show s))
+            (XmlNamed (Hets.mkWON (Hets.stringToId s) (-1)) s)
         (Just xs' ) -> xs'
         ) xninsortss
       -- note that we restore 'CASL-Order' here
     in
       map (\n -> (n, xnsort)) xninsorts
-                
-        
-relsXNWONFromXml::TheoryXNSet->Set.Set XmlNamedWONSORT->Set.Set AnnXMLN->Map.Map XmlName (Rel.Rel XmlNamedWONSORT)
-relsXNWONFromXml theoryset xnsortset anxnset =
-  Set.fold
-    (\axml mapping ->
-      let
-        theoname = case getTheoryXmlName theoryset (axAnn axml) of
-          Nothing -> error "Theory has no name!"
-          (Just theoname' ) -> theoname' 
-        theorels = relsXNWONFromXmlTheory xnsortset axml
-      in
-        if Rel.null theorels
-          then
-            mapping
-          else
-            Map.insert
-              theoname
-              theorels
-              mapping
-      )
-    Map.empty
-    anxnset
 
 
 getPresentationString::String->HXT.XmlTrees->String
@@ -1251,11 +557,11 @@ predsXNWONFromXmlTheory cdmap xntheoryset xnsortset anxml =
                             ("Sort " ++ axname ++ " not in FFXI..." ++ show (map xnName allsorts)
                              ++ " at : " ++ (take 300 (xshow (axXml panxml)))
                             ) -}
-                          Debug.Trace.trace
-                            ("Sort " ++ axname ++ " not in FFXI..." ++ show (map xnName allsorts)
-                             ++ " at : " ++ (take 300 (xshow (axXml panxml)))
-                            )
-                            (XmlNamed (Hets.mkWON (Hets.stringToId axname) theonode) axname)
+  --                        Debug.Trace.trace
+  --                          ("Sort " ++ axname ++ " not in FFXI..." ++ show (map xnName allsorts)
+  --                           ++ " at : " ++ (take 300 (xshow (axXml panxml)))
+  --                          )
+                            (XmlNamed (Hets.mkWON (Hets.stringToId axname) (-1)) axname)
                         (Just s) ->
 --                          Debug.Trace.trace
 --                            ("Found sort " ++ axname  ++ " in FFXI...")
@@ -1264,7 +570,7 @@ predsXNWONFromXmlTheory cdmap xntheoryset xnsortset anxml =
                     if (xnWOaToO xnarg) /= theonode
                       then
                         Debug.Trace.trace
-                          ("Found Argument (" ++ show xnarg ++ ") but in wrong Theory! (not theory #" ++ show theonode ++ ")")
+                          ("Found Argument (" ++ show xnarg ++ ") but in wrong Theory! (not theory #" ++ show theonode ++ ") while processing Predicate " ++ pidxname)
                           xnarg
                       else
                         xnarg
@@ -1273,37 +579,6 @@ predsXNWONFromXmlTheory cdmap xntheoryset xnsortset anxml =
       in
         (XmlNamed (Hets.mkWON pid (axAnn anxml)) pidxname, PredTypeXNWON xnargs)
         
-                        
-predsXNWONFromXml::
-  Map.Map
-    XmlName
-    FFXInput
-  ->TheoryXNSet
-  ->Set.Set XmlNamedWONSORT
-  ->Set.Set AnnXMLN
-  ->Map.Map XmlName [(XmlNamedWONId, PredTypeXNWON)]
-predsXNWONFromXml cdmap xntheoryset xnsortset anxmlset =
-  Set.fold
-    (\anxml mapping ->
-      let
-        theopreds = predsXNWONFromXmlTheory cdmap xntheoryset xnsortset anxml
-      in
-        if null theopreds
-          then
-            mapping
-          else
-            Map.insert
-              (case getTheoryXmlName xntheoryset (axAnn anxml) of
-                      Nothing -> error "Unknown theory!"
-                      (Just xname) -> xname
-              )
-              theopreds
-              mapping
-    )
-    Map.empty
-    anxmlset
-                
-
 opsXNWONFromXmlTheory::
   Map.Map
     XmlName
@@ -1388,11 +663,11 @@ opsXNWONFromXmlTheory cdmap xntheoryset xnsortset anxml =
                           allsorts
                       of
                         Nothing ->
-                          Debug.Trace.trace
-                            ("Sort " ++ axname ++ " not in FFXI..." ++ show (map xnName allsorts)
-                             ++ " at : " ++ (take 300 (xshow (axXml oanxml)))
-                            )
-                            (XmlNamed (Hets.mkWON (Hets.stringToId axname) theonode) axname)
+--                          Debug.Trace.trace
+--                            ("Sort " ++ axname ++ " not in FFXI..." ++ show (map xnName allsorts)
+--                             ++ " at : " ++ (take 300 (xshow (axXml oanxml)))
+--                            )
+                            (XmlNamed (Hets.mkWON (Hets.stringToId axname) (-1)) axname)
                         (Just s) ->
 --                          Debug.Trace.trace
 --                            ("Found sort " ++ axname  ++ " in FFXI...")
@@ -1400,7 +675,7 @@ opsXNWONFromXmlTheory cdmap xntheoryset xnsortset anxml =
                   (Just xnarg) -> if (xnWOaToO xnarg) /= theonode
                     then
                       Debug.Trace.trace
-                        ("Found Argument (" ++ show xnarg ++ ") but in wrong Theory! (not in theory #" ++ show theonode ++ ")")
+                        ("Found Argument (" ++ show xnarg ++ ") but in wrong Theory! (not in theory #" ++ show theonode ++ ") while processing operator " ++ oidxname)
                         xnarg
                     else
                       xnarg
@@ -1417,47 +692,10 @@ opsXNWONFromXmlTheory cdmap xntheoryset xnsortset anxml =
                     xnres
         )
 
-
-opsXNWONFromXml::
-  Map.Map
-    XmlName
-    FFXInput
-  ->TheoryXNSet
-  ->Set.Set XmlNamedWONSORT
-  ->Set.Set AnnXMLN
-  ->Map.Map XmlName [(XmlNamedWONId, OpTypeXNWON)]
-opsXNWONFromXml cdmap xntheoryset xnsortset anxmlset =
-  Set.fold
-    (\anxml mapping ->
-      let
-        theoops = opsXNWONFromXmlTheory cdmap xntheoryset xnsortset anxml
-      in
-        if null theoops
-          then
-            mapping
-          else
-            Map.insert
-              (case getTheoryXmlName xntheoryset (axAnn anxml) of
-                Nothing -> error "Unknown theory!"
-                (Just xname) -> xname
-              )
-              theoops
-              mapping
-    ) Map.empty anxmlset
-                                                
-
 -- | imports lead to edges but if the information is not stored in the
 -- document there is no clue on what type of edge to create...
 data ImportHint = FromStructure (String, DGLinkLab) | FromData (String, DGLinkLab)
   deriving (Eq, Show)
-        
-fromName::ImportHint->String
-fromName (FromStructure (s,_)) = s
-fromName (FromData (s, _)) = s
-
-getIHLink::ImportHint->DGLinkLab
-getIHLink (FromStructure (_,l)) = l
-getIHLink (FromData (_,l)) = l
 
 -- simple ord-relation to make Set happy...     
 instance Ord ImportHint where
@@ -1465,132 +703,42 @@ instance Ord ImportHint where
   (FromStructure _) <= (FromData _) = True
   (FromData _) <= (FromData _) = True
   (FromData _) <= (FromStructure _) = False
-        
 
--- | create information about the imports from the private fields...
-createImportHints::HXT.XmlTrees->(Map.Map String (Set.Set ImportHint))
-createImportHints t =
-  let
-    privates = applyXmlFilter (isTag "private") t
-    theonames = map (\n -> xshow [n]) $ applyXmlFilter (getQualValue "" "for") privates
-  in
-    foldl
-      (\hints name' ->
-        let
-          pdata = xshow $ applyXmlFilter (
-            withSValue "for" name' .> getChildren .>
-            isTag "data" .> withSValue "pto" "Hets" .>
-            withSValue "format" "Hets-Imports" .> getChildren) privates
-          ldata = lines pdata
-        in
-          if ldata == []
-            then -- empty lines create no hints...
-              hints
-            else
-              foldl
-                (\h l ->
-                  let
-                    lablink = stringToLink l
-                    fromname = case getFollows
-                      (=="From:")
-                      (separateFromColonsNoCmt $ wordsWithQuotes l)
-                        of
-                          Nothing -> ""
-                          (Just n) -> unquote n
-                  in
-                    if l == []
-                      then
-                        h -- empty lines create no hints...
-                      else
-                        if lablink == []
-                          then -- error processing the line -> still create structure hint...
-                            Map.insert
-                              name'
-                              (Set.union
-                                (Map.findWithDefault Set.empty name' h)
-                                (Set.singleton
-                                  (FromStructure (fromname, defaultDGLinkLab)) )
-                              )
-                              h
-                          else -- create a hint with the parsed lablink
-                          Map.insert
-                            name'
-                            (Set.union
-                              (Map.findWithDefault Set.empty name' h)
-                              (Set.singleton (FromData (fromname, (head lablink))))
-                            )
-                            h
-                )
-                hints
-                ldata
-      ) Map.empty theonames
-
--- | extracts global and local theorem links from axiom- and theory-inclusion
--- tags. Returns a list of (inclusion-id, from, to, DGLinkLab).
-glThmsFromXml::
-  FFXInput
-  ->(ImportGraph (HXT.XmlTrees, Maybe (DGraph, FFXInput)))
-  ->HXT.XmlTrees
-  ->[(XmlName, XmlName, XmlName, DGLinkLab)]
-glThmsFromXml ffxi ig t =
+glThmsFromXmlLS::
+    HXT.XmlTrees
+  ->[(Int, XmlName, (XmlName, Hets.HidingAndRequationList, Conservativity, Bool))]
+glThmsFromXmlLS t =
   let
     inclusions =
       applyXmlFilter (isTag "theory-inclusion" +++ isTag "axiom-inclusion") t
   in
-    foldl (\glts inx ->
+    foldl (\glts (inum, inx) ->
       let
         islocal = null $ applyXmlFilter (isTag "theory-inclusion") [inx]
         incons = consFromAttr [inx]
-        inid = xshow $ applyXmlFilter (getQualValue "xml" "id") [inx]
-        infrom = xshow $ applyXmlFilter (getQualValue "" "from") [inx]
-        infromid =
-          case infrom of
-            ('#':r) -> r
-            _ -> infrom
-        into = xshow $ applyXmlFilter (getQualValue "" "to") [inx]
-        intoid =
-          case into of
-            ('#':r) -> r
-            _ -> into
-        inmorphx = applyXmlFilter (getChildren .> isTag "morphism") [inx]
+        --inid = xshow $ applyXmlFilter (getQualValue "xml" "id") [inx]
+        infromid = stripFragment $ xshow $ applyXmlFilter (getQualValue "" "from") [inx]
+        intoid = stripFragment $ xshow $ applyXmlFilter (getQualValue "" "to") [inx]
         -- inmorph = case inmorphx of [] -> []; _ -> [xmlToMorphismMap inmorphx]
-        inmorph = case inmorphx of [] -> []; _ -> [fetchRequationSymbols inmorphx]
-        caslGMorph = case inmorph of
-          [morphismMap] ->
---            Hets.makeCASLGMorphism $ Hets.morphismMapToMorphism morphismMap
-            Hets.makeCASLGMorphism
-              $
-              Hets.morphismMapToMorphism
-                $
-                requationSymbolsToIds
-                  ffxi
-                  ig
-                  infromid
-                  intoid
-                  morphismMap
-          _ ->
-            Hets.emptyCASLGMorphism
+        xmorph = applyXmlFilter (getChildren .> isTag "morphism") [inx]
+        hreq = fetchRequationSymbols xmorph
       in
         glts ++
           [
-            (  inid
-              ,infrom
-              ,into
-              ,DGLink
-                {
-                   dgl_morphism = caslGMorph
-                  ,dgl_type =
-                    (if islocal then LocalThm else GlobalThm)
-                      LeftOpen
-                      incons
-                      LeftOpen
-                  ,dgl_origin = DGBasic
-                }
+            (
+                inum
+              , intoid
+              , (
+                    infromid
+                  , hreq
+                  , incons
+                  , (not islocal)
+                )
             )
           ]
       )
       []
-      inclusions
+      (zip [1..] inclusions)
   where
   consFromAttr::HXT.XmlTrees->Conservativity
   consFromAttr t' =
@@ -1637,45 +785,26 @@ importsFromXmlTheory t =
           Set.union imps (Set.singleton (c, (fromname, {-(Just mm)-} Nothing, hreq, True)))
       ) Set.empty (zip [1..] imports')
        
--- used in edge contstruction
-importsFromXml::HXT.XmlTrees->Hets.ImportsMap
-importsFromXml t =
-  foldl (\map' theory ->
-    let
-      name' = xshow $ applyXmlFilter (getQualValue "xml" "id") [theory]
-      imports' = importsFromXmlTheory [theory]
-    in
-      Map.insert name' imports' map'
-    ) Map.empty $ applyXmlFilter (isTag "theory") t
-
+importsFromAnnXMLSet::TheoryXNSet->Set.Set AnnXMLN->Hets.ImportsMap
+importsFromAnnXMLSet txns axset =
+  Set.fold
+    (\axml i ->
+      let
+        name =
+          case getTheoryXmlName txns (axAnn axml) of
+            Nothing -> error "!"
+            (Just x) -> x
+        imports = importsFromXmlTheory (axXml axml)
+      in
+        Map.insert name imports i
+    )
+    Map.empty
+    axset
                 
 sensXNWONFromXmlTheory::FFXInput->AnnXMLN->(Set.Set (XmlNamed Hets.SentenceWO))
 sensXNWONFromXmlTheory ffxi anxml =
   Set.fromList $ unwrapFormulasXNWON ffxi anxml
         
-
-sensXNWONFromXml::
-  GlobalOptions
-  ->FFXInput
-  ->Set.Set AnnXMLN
-  ->Map.Map XmlName (Set.Set (XmlNamed Hets.SentenceWO))
-sensXNWONFromXml go ffxi anxmlset = 
-  (\smap ->
-    debugGO go "sXNWONFX" ("AllSentences : " ++ (showSenNames smap)) smap) $!
-      Set.fold (\anxml map' ->
-        let
-          theoryname = case getTheoryXmlName (xnTheorySet ffxi) (axAnn anxml) of
-            Nothing -> error "No theory found!"
-            (Just tn) -> tn
-          sens = sensXNWONFromXmlTheory ffxi anxml
-          consens = conSensXNWONFromXmlTheory ffxi anxml
-        in
-          (\smap ->
-            debugGO go "sXNWONFX" ("NewSentences : " ++ (showSenSetNames sens)
-              ++ " - ConSentences : " ++ (showSenSetNames consens)) smap) $
-                Map.insert theoryname (Set.union sens consens) map'
-        ) Map.empty anxmlset
-                
 
 conSensXNWONFromXmlTheory::FFXInput->AnnXMLN->Set.Set (XmlNamed Hets.SentenceWO) 
 conSensXNWONFromXmlTheory ffxi anxml =
@@ -1696,718 +825,1408 @@ conSensXNWONFromXmlTheory ffxi anxml =
               list ++ [consToSensXN excon exconlist] 
       ) [] adts 
 
-mapsToG_theory::
-  (
-      Set.Set SORT
-    , Rel.Rel SORT
-    , Map.Map Id.Id (Set.Set PredType)
-    , Map.Map Id.Id (Set.Set OpType)
-    , Set.Set (Ann.Named CASLFORMULA)
-  )
-  ->G_theory
-mapsToG_theory (sortset, rels' , predmap, opmap, sensmap) =
-  G_theory
-          CASL
-          (Sign
-            sortset
-            rels'
-            opmap
-            Map.empty
-            predmap
-            Map.empty
-            []
-            []
-            GA.emptyGlobalAnnos
-            ()
-          ) 
-          (Prover.toThSens $ Set.toList sensmap)
-                
--- Prover.toThSens creates named sentences on its own... trouble for xml...
-
-                
-mapsNNToDGNodeLab::
-  GlobalOptions
-  ->(
-      Set.Set SORT
-    , Rel.Rel SORT
-    , Map.Map Id.Id (Set.Set PredType)
-    , Map.Map Id.Id (Set.Set OpType)
-    , Set.Set (Ann.Named CASLFORMULA)
-    )
-  ->NODE_NAME
-  ->DGNodeLab
-mapsNNToDGNodeLab go maps@(_, _, _, _, sens) nodename =
-  DGNode
-    nodename
-    ((\x ->
-      debugGO go "mNNTDGNL" ((show (Set.map Ann.senName sens))
-        ++ " -> "
-          ++ (show (map Ann.senName (Hets.getSentencesFromG_theory x)))) x
-     ) (mapsToG_theory maps)
-    )
-    Nothing
-    Nothing
-    DGBasic
-    None
-    LeftOpen
-
-                
-showSenSetNames::Set.Set (XmlNamed Hets.SentenceWO)->String
-showSenSetNames senset =
+consXNWONFromXmlTheory::FFXInput->AnnXMLN->[(XmlNamedWONId, [(XmlNamedWONId, OpTypeXNWON)])]
+consXNWONFromXmlTheory ffxi anxml =
   let
-    senlist = Set.toList senset
-    sennamesx = map (\s -> (Ann.senName $ xnWOaToa s, xnName s)) senlist
-    senstrings = map (\(a, b) -> a ++ "(" ++ b ++ ")") sennamesx
+    adts = applyXmlFilter (getChildren .> isTag "adt") (axXml anxml)
   in
-    implode ",    " senstrings
-                
-showSenNames::Map.Map XmlName (Set.Set (XmlNamed Hets.SentenceWO))->String
-showSenNames mapping =
-  let
-    sensets = Map.elems mapping
-    senlist = concatMap Set.toList sensets
-    sennamesx = map (\s -> (Ann.senName $ xnWOaToa s, xnName s)) senlist
-    senstrings = map (\(a, b) -> a ++ "(" ++ b ++ ")") sennamesx
-  in
-    implode ", " senstrings
+    foldl
+      (\list n ->
+        let
+          (excon, exconlist) =
+            extractConsXNWONFromADT ffxi (AXML (axAnn anxml) [n]) anxml
+        in
+          if (length exconlist) == 0 -- if only the relation is expressed,
+                                     -- no constructors are specified
+            then
+              list
+            else
+              list ++ [(excon, exconlist)]
+      ) [] adts 
 
-importGraphToDGNodesXN::
+createTheorySpecifications::TheoryXNSet->String->Set.Set AnnXMLN->[TheorySpecification]
+createTheorySpecifications
+  xntheoryset
+  sourcename
+  anxmlset =
+  Set.fold
+    (\axml tsl ->
+      let
+        theoid = xshow $ applyXmlFilter (getQualValue "xml" "id") (axXml axml)
+        theohetsnodenames = xshow $ applyXmlFilter
+          (
+            getChildren .> isTag "presentation" .>
+            withSValue "for" theoid .> getChildren .>
+            isTag "use" .> withSValue "format" "Hets" .>
+            getChildren
+          ) (axXml axml)
+        theohetsnodename =
+          if (theohetsnodenames == "") || (isPrefixOf "AnonNode" theoid) 
+            then
+              idToNodeName $ read ("["++theoid++",,0]")
+            else 
+              idToNodeName $ read theohetsnodenames
+        sorts = sortsXNWONFromXmlTheory axml
+        rels = relsXNWONFromXmlTheory sorts axml
+        ops = Set.fromList $ opsXNWONFromXmlTheory Map.empty xntheoryset sorts axml
+        preds = Set.fromList $ predsXNWONFromXmlTheory Map.empty xntheoryset sorts axml
+      in
+        tsl ++
+          [
+            TheorySpecification
+              {
+                  ts_name = (stripFragment theoid)
+                , ts_source = sourcename
+                , ts_nodename = theohetsnodename
+                , ts_nodenum = (axAnn axml)
+                , ts_sorts = sorts
+                , ts_sortrelation = rels
+                , ts_predicates = preds
+                , ts_operators = ops
+                , ts_constructors = Set.empty
+              }
+          ]
+    )
+    []
+    anxmlset
+
+importGraphToSpecs::
   GlobalOptions
-  ->(ImportGraph (HXT.XmlTrees, Maybe (DGraph, FFXInput)))
-  ->Graph.Node->([XmlNamed DGNodeLab], Set.Set AnnXMLN, FFXInput)
-importGraphToDGNodesXN go ig n =
+  ->(ImportGraph (HXT.XmlTrees))
+  ->Graph.Node
+  ->([TheorySpecification], [LinkSpecification], TheoryXNSet, Set.Set AnnXMLN)
+importGraphToSpecs
+  go
+  ig
+  n
+  =
   let
-    mnode = Graph.lab ig n
-    node = case mnode of
-      Nothing -> error "node error!"
-      (Just n') -> n'
+    node =
+      case
+        Graph.lab ig n
+      of
+        Nothing -> error "node error!"
+        (Just n') -> n'
     refimports = (\x ->
       debugGO go "iGTDGNXN" ("Refimports : " ++ show x) x) $
         filter ( \(_,from,_) -> from /= n) $ Graph.out ig n
-    cdmap =
-      foldl (\cm (_, from, (TI (theoname, _))) ->
-        let
-          moriginnode = Graph.lab ig from
-          (S (slibname, _) (_,modg)) = case moriginnode of
-            Nothing -> error ("node error (Import of "
-              ++ theoname ++ " from " ++ (show from) ++ " )!")
-            (Just n' ) -> n'
-            -- the DG should have been created before accessing it (should work)
-          (odg, offxi) = case modg of
-                  Nothing -> error ("dg error (DevelopmentGraph for "
-                    ++ slibname ++ " not found)!")
-                  (Just o) -> o
-          theoid =
-            case
-              find
-                (\q -> xnName q == theoname)
-                (Set.toList (xnTheorySet offxi))
-            of
-              Nothing -> theoname
-              (Just q) -> showName $ snd $ xnItem q 
-          ({-onodenum-}_, onodedgnl) =
-            case filter
-              (\(_,node' ) -> (getDGNodeName node' ) == theoid ) $
-              Graph.labNodes odg
-                of
-                  [] -> error ("no such node in origin... 1 (for " ++ theoname ++ ")")
-                  l -> head l
-          otxn =
-            case
-              find
-                (\xno -> (snd $ xnItem xno) == (dgn_name onodedgnl))
-                  $ Set.toList (xnTheorySet offxi)
-                of
-              Nothing -> error ("No Entry for this node in the theories ffxi!")
-              (Just xno) -> xno
-          oxn = xnName otxn
-{-          otss = Map.findWithDefault Set.empty oxn (xnSortsMap offxi)
-          otsr = Map.findWithDefault Rel.empty oxn (xnRelsMap offxi)
-          otps = Map.findWithDefault Set.empty oxn (xnPredsMap offxi)
-          otos = Map.findWithDefault Set.empty oxn (xnOpsMap offxi)
-          cmv = (otss, otsr, otps, otos) -}
-        in
-          (Map.insert oxn offxi cm)
-        ) Map.empty refimports
-    (ffxi, axtheoryset) =
-      (\(f, a) -> debugGO go "iGTDGNXN" ("Preprocessed XML..." ++ show (xnSortsMap f)) (f, a) ) $
-        (\(S _ (omdoc' , _)) -> preprocessXml go cdmap omdoc' ) node
-    (theonames, sortsmap, relsmap, predsmap, opsmap) =
-      (xnTheorySet ffxi, xnSortsMap ffxi,
-        xnRelsMap ffxi, xnPredsMap ffxi, xnOpsMap ffxi)
-    (refs, newffxi) =
-      foldl (\(r, nf) (_, from, (TI (theoname, _))) ->
-        let
-          moriginnode = Graph.lab ig from
-          (S (slibname, _) (_,modg)) = case moriginnode of
-            Nothing -> error ("node error (Import of "
-              ++ theoname ++ " from " ++ (show from) ++ " )!")
-            (Just n' ) -> n'
-            -- the DG should have been created before accessing it (should work)
-          (odg, offxi) = case modg of
-                  Nothing -> error ("dg error (DevelopmentGraph for "
-                    ++ slibname ++ " not found)!")
-                  (Just o) -> o
-          theonodename =
-            case
-              find
-                (\q -> xnName q == theoname)
-                (Set.toList (xnTheorySet offxi))
-            of
-              Nothing -> (Hets.stringToSimpleId theoname, "", 0)
-              (Just q) -> snd $ xnItem q 
-          (onodenum, onodedgnl) =
-            case filter
-              (\(_,node' ) -> dgn_name node' == theonodename ) $
-              Graph.labNodes odg
-                of
-                  [] -> error ("no such node in origin... (for \"" ++ theoname ++ "\")")
-                  l -> head l
-          otxn =
-            case
-              find
-                (\xno -> (snd $ xnItem xno) == (dgn_name onodedgnl))
-                  $ Set.toList (xnTheorySet offxi)
-                of
-              Nothing -> error ("No Entry for this node in the theories ffxi!")
-              (Just xno) -> xno
-          oxn = xnName otxn
-          otss = Map.findWithDefault Set.empty oxn (xnSortsMap offxi)
-          otsr = Map.findWithDefault Rel.empty oxn (xnRelsMap offxi)
-          otps = Map.findWithDefault Set.empty oxn (xnPredsMap offxi)
-          otos = Map.findWithDefault Set.empty oxn (xnOpsMap offxi)
-          nf' =
-            nf
-              {
-                  xnTheorySet = Set.union (xnTheorySet nf) (Set.singleton otxn)
-                , xnSortsMap = Map.insertWith Set.union oxn otss (xnSortsMap nf)
-                , xnRelsMap = Map.insertWith Rel.union oxn otsr (xnRelsMap nf)
-                , xnPredsMap = Map.insertWith Set.union oxn otps (xnPredsMap nf)
-                , xnOpsMap = Map.insertWith Set.union oxn otos (xnOpsMap nf)
-              }
-        in
-          (
-            r ++
-              [
-              XmlNamed
-                (DGRef
-                  -- (Hets.stringToSimpleId theoname, "", 0)
-                  theonodename
-                  (ASL.Lib_id (ASL.Indirect_link slibname Id.nullRange))
-                  onodenum
-                  --(G_theory CASL Hets.emptyCASLSign (Prover.toThSens []))
-                  (dgn_theory onodedgnl)
-                  Nothing
-                  Nothing)
-                theoname
-              ]
-            , nf'
-          )
-        ) ([],ffxi) refimports
-    -- when extracting sentences, available sorts in the theory have to be computed...
-    -- (not yet done)
-{-    sensmap = (\smap ->
-      debugGO go "iGTDGNXN" ("Sentences extracted... : "
-        ++ (showSenNames smap)) smap) $ sensXNWONFromXml go (debugGO go "iGTDGNXN" ("sorts : " ++ show (xnSortsMap newffxi)) newffxi) axtheoryset -}
-    -- sensmap = Map.empty
-    -- psorts = mapSetToSet (debugGO go "iGTDGNXN" "at mapSetToSet(sortsmap)" sortsmap)
-    -- ppreds = mapSetToSet (debugGO go "iGTDGNXN" "at mapSetToSet(predsmap)" predsmap)
-    -- pops = mapSetToSet (debugGO go "iGTDGNXN" "at mapSetToSet(opsmap)" opsmap)
-  in   
-    (\a -> (a, axtheoryset, newffxi)) $
-    Set.fold (\xntheory dgnodelist ->
-      let
-        tsorts = Map.findWithDefault Set.empty (xnName xntheory) sortsmap
-        trels = Map.findWithDefault Rel.empty (xnName xntheory) relsmap
-        tpreds = Map.findWithDefault Set.empty (xnName xntheory) predsmap
-        tops = Map.findWithDefault Set.empty (xnName xntheory) opsmap
-        -- tsens = Map.findWithDefault Set.empty (xnName xntheory) sensmap
-      in
-        debugGO go "iGTDGNXN" ("Creating Node with NODE_NAME "
-          ++ (show (snd (xnItem xntheory))) ++ ", XmlName was "
-            ++ (xnName xntheory))
-          (dgnodelist
-            ++ [XmlNamed
-                  (xnMapsToDGNodeLab
-                    go
-                    (snd (xnItem xntheory)) tsorts trels tpreds tops Set.empty)
-                  (xnName xntheory)
-               ])
-      ) refs (debugGO go "iGTDGNXN" "at Set.fold" theonames)
-  
-
-cleanNodeName::DGNodeLab->DGNodeLab
-cleanNodeName (node@(DGNode { })) =
-  if isPrefix "AnonNode" (getDGNodeName node)
-    then
-      node { dgn_name = emptyNodeName }
-    else
-      node
-cleanNodeName ref = ref
-
--- build a DGraph-'skeleton' and attach hiding-information
-importGraphToDGraphXN::
-  GlobalOptions
-  ->(ImportGraph (HXT.XmlTrees, Maybe (DGraph, FFXInput)))
-  ->Graph.Node
-  ->(DGraph, Map.Map Graph.Node XmlName, FFXInput, Set.Set AnnXMLN)
-importGraphToDGraphXN go ig n =
-  let
-    mnode = Graph.lab ig n
-    node = case mnode of
-      Nothing -> error "node error!"
-      (Just n') -> n'
-    omdoc = (\(S _ (omdoc' , _)) ->
-      applyXmlFilter (isTag "omdoc" .> getChildren) omdoc' ) node
-    -- I have not yet found the source for the initial reversion...
-    -- Output is a candidate...
-    -- FFXInput was intended to rename symbols in formulas but this needs to
-    -- be done for morphisms also (and the structure is created anyway)
-    (nodes, axtheoryset, ffxi) =
-      (\(a, b, c) -> (reverse a, b, c))
-        $
-        importGraphToDGNodesXN go ig n
-    lnodes = (zip [0..] nodes)::[(Graph.Node, (XmlNamed DGNodeLab))]
-    --nodegraph = (Graph.mkGraph lnodes [])::DGraph
-{-    nameNodeMap = Map.fromList $
-      map ( \(n' , xnnode' ) -> (getDGNodeName (xnItem xnnode' ) , n' ) ) $ lnodes -}
-    nodeXNameMap = Map.fromList $
-      map (\(n', xnnode' ) -> (n', xnName xnnode')) lnodes
-    xmlnameNodeMap = Map.fromList $
-      map ( \(n' , xnnode' ) -> (xnName xnnode', n' ) ) $ lnodes
-    imports' = importsFromXml omdoc
-    importhints = createImportHints omdoc
-    glTheoIncs = glThmsFromXml ffxi ig omdoc
-    glThmLEdges =
+    axtheoryset = buildAXTheorySet omdoc
+    xntheoryset = 
+      nodeNamesXNFromXml
+        (debugGO go "pX" "at nodeNamedXNFromXml" axtheoryset)
+    theoryspecs = createTheorySpecifications xntheoryset sourcename axtheoryset
+    maxUsedNodeNum =
       foldl
-        (\gltle (_, efrom, eto, lnk) ->
-          let
-            fromname = getFragmentOrWarnAndString efrom
-            toname = getFragmentOrWarnAndString eto
-            fromnum = Map.findWithDefault (-1) fromname xmlnameNodeMap
-            tonum = Map.findWithDefault (-1) toname xmlnameNodeMap
-          in
-            gltle ++ [ (fromnum, tonum, lnk) ]
-        )
-        []
-        glTheoIncs
-    ledges =
-      foldl
-        (\le (nodename, nodeimports) ->
-          let     
-            nodenum = Map.findWithDefault (-1) nodename xmlnameNodeMap
-            nodeimporthints = Map.findWithDefault Set.empty nodename importhints
-            importsfrom = map (\(_, (a,_,_,_)) -> a) $ Set.toList nodeimports
-            -- the omdoc-imports have limited support for the imports
-            -- used in a dgraph. some import-hints have no import-tag in
-            -- the omdoc
-            importhintswithoutimports =
-              Set.filter
-                (\ih ->
-                  (not $ elem (fromName ih) importsfrom)
-                    &&
-                      (case (Static.DevGraph.dgl_type (getIHLink ih)) of
-                        -- filter out private data that is already covered by omdoc
-                        -- (kind of backward-compatibility, but not really)
-                        (LocalDef {}) -> False
-                        (GlobalDef {}) -> False
-                        (HidingDef {}) -> False
-                        (LocalThm {}) -> False
-                        (GlobalThm {}) -> False
-                        (HidingThm {}) -> False
-                        _ -> True
-                      )
-                )
-                nodeimporthints 
-          in
-            (foldl (\le' (_, (ni, {-mmm-}_, hreq, isGlobal)) ->
-              let
-                importnodenum = case Map.findWithDefault (-1) ni xmlnameNodeMap of
-                  (-1) ->
-                    debugGO
-                      go
-                      "iGTDGXN"
-                      ("Cannot find node for \"" ++ ni ++ "\"!")
-                      (-1)
-                  x -> x
-                filteredimporthints =
-                  Set.filter (\h -> (fromName h) == ni) importhintswithoutimports
-                hreqmm@(_,_,_,hidingSet) =
-                 requationSymbolsToIds
-                  ffxi
-                  ig
-                  ni
-                  nodename
-                  hreq
-                hreqmorph =
-                  (Hets.morphismMapToMorphism hreqmm)
-                hreqgmorph = 
-                  Hets.makeCASLGMorphism hreqmorph
-                isHiding = not $ Set.null hidingSet
-                ddgl =
-                  (if isGlobal
-                    then 
-                      if isHiding
-                        then
-                          defaultDGLinkLab { dgl_type = Static.DevGraph.HidingDef }
-                        else
-                          defaultDGLinkLab
-                    else
-                      defaultDGLinkLab { dgl_type = Static.DevGraph.LocalDef }
-                  ) {
-                        dgl_morphism = hreqgmorph
-                      , dgl_origin =
-                        if Hets.isEmptyMorphism hreqmorph
-                          then
-                            dgl_origin defaultDGLinkLab
-                          else
-                            DGTranslation
-                    }
-              in
-                le' ++
-                if Set.null filteredimporthints
-                  then
-                    [(importnodenum, nodenum, ddgl)]
-                  else
-                    map
-                      (\ih ->
-                        let
-                          ihlink = getIHLink ih
-                          link = case dgl_origin ihlink of
-                          -- this is rather ugly, but else morphisms would be lost for now...
-                            DGTranslation ->
-                              ihlink { dgl_morphism = dgl_morphism ddgl }
-                            DGHiding ->
-                              ihlink { dgl_morphism = dgl_morphism ddgl }
-                            _ -> ihlink
-                        in
-                          (importnodenum, nodenum, link)
-                      ) $ Set.toList filteredimporthints
-            ) le $ Set.toList nodeimports)
-            -- add further imports
-            ++
-            (map
-              (\ih ->
-                let
-                  ni = fromName ih
-                  importnodenum = case Map.findWithDefault (-1) ni xmlnameNodeMap of
-                          (-1) ->
-                            debugGO
-                              go
-                              "iGTDGXN"
-                              ("Cannot find node for \"" ++ ni ++ "\"!")
-                              (-1)
-                          x -> x
-                in
-                  (importnodenum, nodenum, getIHLink ih)
-              ) $
-              (\x ->
-                debugGO go "iGTDGXNimporthints"
-                  ("Importhints: " ++ (show x)) x ) $
-                  Set.toList importhintswithoutimports
-            )
-        ) [] $ Map.toList imports'
-    validedges = foldl (\e newe@(n', m, _) ->
-      if (n' ==(-1)) || (m==(-1))
-        then
-          debugGO go "iGTDGXN"
-            ("Invalid Edge found from " ++ (show n' )
-              ++ " to " ++ (show m) ++ "...")
-            e
-        else
-          e++[newe]
-        ) [] (ledges ++ glThmLEdges)
-    cleannodes =
-      map
-        (\(n' , xnnode' ) -> (n' , cleanNodeName (xnItem xnnode' ) ))
-        lnodes  
-  in
-    (Graph.mkGraph cleannodes validedges, nodeXNameMap, ffxi, axtheoryset)
-  where
-  getFragmentOrWarnAndString::String->String
-  getFragmentOrWarnAndString s =
-    case URI.parseURIReference s of
-      Nothing ->
-        Debug.Trace.trace
-          ("Please use valid URIs for local or global theorem inclusions."
-            ++ "Using \"" ++ s ++ "\".")
-          s
-      (Just anuri) ->
-        let
-          frag = URI.uriFragment anuri
-        in
-          if (length frag < 2 )
+        (\mUNN n' ->
+          if n' > mUNN
             then
-              Debug.Trace.trace
-                ("Please specify a fragment referencing the theory for "
-                  ++ "local or global theorem inclusions. Using \""
-                    ++ s ++ "\".")
-                s
+              n'
             else
-              drop 1 frag
-
-type TaggedEdgeDGraph = CLGraph.Gr DGNodeLab (Int, DGLinkLab)
-
-tagEdges::DGraph->TaggedEdgeDGraph
-tagEdges dg =
-  let
-    labNodes = Graph.labNodes dg
-    labEdges = Graph.labEdges dg
-    newLabEdges = zipWith (\a (f, t, dgl) -> (f, t, (a, dgl))) [1..] labEdges
-  in
-    Graph.mkGraph labNodes newLabEdges
-
-untagEdges::TaggedEdgeDGraph->DGraph
-untagEdges tedg =
-  let
-    labNodes = Graph.labNodes tedg
-    labEdges = Graph.labEdges tedg
-    newLabEdges = map (\(f, t, (_, dgl)) -> (f, t, dgl)) labEdges
-  in
-    Graph.mkGraph labNodes newLabEdges
-
-processImportsAndMorphisms::DGraph->Map.Map Graph.Node XmlName->FFXInput->(DGraph, FFXInput)
-processImportsAndMorphisms dg nxm ffxi =
-  let
-    taggedDG = tagEdges dg
-    allEdges = (Graph.labEdges taggedDG)
-    defEdges =
-      foldl
-        (\eC (tedge@(_,_,(_, dgl))) ->
-          eC ++
-            case dgl_type dgl of
-              (GlobalDef {}) -> [tedge] 
-              (LocalDef {}) -> [tedge]
-              (HidingDef {}) -> [tedge]
-              (FreeDef {}) -> [tedge]
-              (CofreeDef {}) -> [tedge]
-              _ -> []
+              mUNN
         )
-        []
-        allEdges
-    thmEdges =
-      foldl
-        (\eC (tedge@(_,_,(_, dgl))) ->
-          eC ++
-            case dgl_type dgl of
-              (GlobalThm {}) -> [tedge] 
-              (LocalThm {}) -> [tedge]
-              (HidingThm {}) -> [tedge]
-              _ -> []
+        0
+        (map ts_nodenum theoryspecs)
+    refspecs =
+      map
+        (\(rn, (_, from, (TI (theoname, _)))) ->
+          let
+            moriginnode = Graph.lab ig from
+            (S (slibname, _) _) = case moriginnode of
+              Nothing -> error ("node error (Import of "
+                ++ theoname ++ " from " ++ (show from) ++ " )!")
+              (Just n' ) -> n'
+          in
+            ReferenceSpecification
+              {
+                  ts_name = (stripFragment theoname)
+                , ts_nodename = (Hets.stringToSimpleId (stripFragment theoname), "", 0)
+                , ts_source = slibname
+                , ts_nodenum = rn
+                , ts_realnodenum = -1
+                , ts_sorts = Set.empty
+                , ts_sortrelation = Rel.empty
+                , ts_predicates = Set.empty
+                , ts_operators = Set.empty
+                , ts_constructors = Set.empty
+              }
         )
-        []
-        allEdges 
-    ((defdg, defffxi), _, _) =
+        (zip [(maxUsedNodeNum + 1)..] refimports)
+    refxnnames =
+      Set.fromList
+        $
+        map
+          (\ts -> XmlNamed (ts_nodenum ts, ts_nodename ts) (ts_name ts))
+          refspecs
+    allXNNames = Set.union xntheoryset refxnnames
+    (sourcename, omdoc) = (\(S (sn, _) o) -> (sn, o)) node
+    linkspecs = createLinkSpecifications go omdoc allXNNames axtheoryset
+  in
+    (theoryspecs ++ refspecs, linkspecs, allXNNames, axtheoryset)
+
+createSpecMap::
+  GlobalOptions
+  ->(ImportGraph (HXT.XmlTrees))
+  ->Map.Map String ([TheorySpecification], [LinkSpecification], TheoryXNSet, Set.Set AnnXMLN)
+createSpecMap
+  go
+  ig
+  =
+    foldl
+      (\sm (nn, (S (sourcename, _) _)) ->
+        Map.insert sourcename (importGraphToSpecs go ig nn) sm
+      )
+      Map.empty
+      (Graph.labNodes ig)
+
+
+processSpecMap::
+  Map.Map String ([TheorySpecification], [LinkSpecification], TheoryXNSet, Set.Set AnnXMLN)
+  ->Map.Map String ([TheorySpecification], [LinkSpecification], TheoryXNSet, Set.Set AnnXMLN)
+processSpecMap
+  sm
+  =
+  let
+    importsFromMap =
+      Map.foldWithKey
+        (\sourcename (ts, _ , _, _) iFM ->
+          let
+            references = filter isRefSpec ts
+            refed = map ts_source references
+          in
+            Map.insert sourcename refed iFM
+        )
+        Map.empty
+        sm
+    maxNoAction = Map.size sm
+    (processedMap, _, _) =
       until
-        (\(_, remainingEdges, _) -> null remainingEdges)
-        (\((dg', ffxi'), (edge:edges), fc) ->
-   --       Debug.Trace.trace (".") $
-            processEdge fc dg' nxm ffxi' edge edges
+        (\(_, unprocessedMap, _) -> Map.null unprocessedMap)
+        (\(pM, uM, noActionSince) ->
+          let
+            unkeys = Map.keys uM
+            unimports = map (\uk -> (uk, Map.findWithDefault (error "!") uk importsFromMap)) unkeys
+            freeun = filter (\(_, i) -> all (flip elem (Map.keys pM)) i) unimports
+          in
+            if length freeun == 0 && noActionSince <= maxNoAction
+              then
+                (pM, uM, noActionSince + 1)
+              else
+                let
+                  currentSource = fst $ head freeun
+                  (ctslist, clslist, cxntheoryset, caxmlset) =
+                    Map.findWithDefault (error "!") currentSource uM
+                  resolvedrefs =
+                    map
+                      (\ts ->
+                       if isRefSpec ts
+                        then
+                          let
+                            refsource = ts_source ts
+                            (rtslist, _, _, _) =
+                              Map.findWithDefault
+                                (
+                                  Debug.Trace.trace
+                                    ("referenced source has not been finished... (" ++ refsource ++ ")")
+                                    (
+                                      Map.findWithDefault
+                                        ([], undefined, undefined, undefined)
+                                        refsource
+                                        uM
+                                    )
+                                )
+                                refsource
+                                pM
+                            realspec =
+                              case
+                                find
+                                  (\ts' -> ts_name ts' == (ts_name ts))
+                                  rtslist
+                              of
+                                Nothing ->
+                                  Debug.Trace.trace
+                                    ("ohoh... no source for reference to " ++ (ts_name ts))
+                                    ts
+                                (Just x) -> x
+                          in
+                            adjustOriginsToRef
+                              ts
+                                {
+                                    ts_realnodenum = ts_nodenum realspec
+                                  , ts_nodename = ts_nodename realspec
+                                  , ts_sorts = ts_sorts realspec
+                                  , ts_sortrelation = ts_sortrelation realspec
+                                  , ts_predicates = ts_predicates realspec
+                                  , ts_operators  = ts_operators realspec
+                                  , ts_constructors = ts_constructors realspec
+                                }
+                        else
+                          ts
+                      )
+                      ctslist
+                  processedSpecs =
+                    processAllDefLinks
+                      resolvedrefs
+                      clslist
+                in
+                  (\x ->
+                    if noActionSince > maxNoAction
+                      then
+                        Debug.Trace.trace
+                          ("forced procession of " ++ currentSource)
+                          x
+                      else
+                        x
+                  )
+                  (
+                      Map.insert currentSource (processedSpecs, clslist, cxntheoryset, caxmlset) pM
+                    , Map.delete currentSource uM
+                    , 0
+                  )
         )
-        ((taggedDG, ffxi), defEdges, 0)
-    ((thmdg, thmffxi), _, _) =
-      until
-        (\(_, remainingEdges, _) -> null remainingEdges)
-        (\((dg', ffxi'), (edge:edges), fc) ->
-   --       Debug.Trace.trace (".") $
-            processEdge fc dg' nxm ffxi' edge edges
-        )
-        ((defdg,defffxi), thmEdges, 0)
+        (Map.empty, sm, 0)
   in
-      (untagEdges thmdg, thmffxi)
+    processedMap
 
-processEdge::
-    Int
-  ->TaggedEdgeDGraph
-  ->Map.Map Graph.Node XmlName
-  ->FFXInput
-  ->Graph.LEdge (Int, DGLinkLab)
-  ->[Graph.LEdge (Int, DGLinkLab)]
-  ->((TaggedEdgeDGraph, FFXInput), [Graph.LEdge (Int, DGLinkLab)], Int)
-processEdge
-  failcount
-  tdg
-  nxm
-  ffxi
-  (tedge@(from, to, ({-tag-}_, dgl)))
-  edges =
-  -- check if this edge is from a node that needs edge processing itself
-  -- if yes : process that node recusivly, else : apply import
-  -- local imports are always valid, unless they contain a morphism
-  -- if they contain a morphism, process last (two (depending) morphisms need
-  -- to be processed according to order (need info from previous step... not possible
-  -- here..., but when independent, processing is possible)
-  --
-  let
-    -- fromnode = fromMaybe (error "No such node!") $ Graph.lab tdg from
-    -- tonode = fromMaybe (error "No such node!") $ Graph.lab tdg to
-    unprocessedFrom = filter (\(from', tof, _) -> (from' /= from) && (tof == from) ) edges
-    fromxname = Map.findWithDefault (error "No such name!") from nxm
-    toxname = Map.findWithDefault (error "No such name!") to nxm
-    (parallelImports, otherImports) =
-      partition (\(_, tot, _) -> tot == to) edges
-  in
-    if null unprocessedFrom
-      then
-        if hasCASLMorphism dgl
-          then
-            case partition (\(_, _, (_, dgl')) -> not $ hasCASLMorphism dgl') parallelImports
-            of
-              ( [], _ ) ->
-    --            Debug.Trace.trace ("M!")
-                  ( applyLink tdg tedge, edges, 0)
-              ( betterEdges, rest ) ->
-                if failcount > 50
-                  then
-                    Debug.Trace.trace
-                      ("Forced decision in link application from "
-                        ++ fromxname ++ " to " ++ toxname ++ "!") 
-                      ( applyLink tdg tedge, edges, 0)
-                  else
-{-                    Debug.Trace.trace
-                      (
-                        "BeboM " ++ show (fromxname, toxname) 
-                          ++ show (length betterEdges) 
-                          ++ " " ++ show (length rest)  
-                      ) -}
-                      ((tdg, ffxi), betterEdges ++ [tedge] ++ rest ++ otherImports, failcount+1)
-          else
---            Debug.Trace.trace ("I!")
-              ( applyLink tdg tedge, edges, 0)
-      else
-  --      Debug.Trace.trace ("DooI" ++ show (fromxname, toxname) ++ " " ++ show (from, to) ++ " -> " ++ (show $ map (\(a,b,(_,c)) -> (a,b, dgl_type c)) unprocessedFrom) )
-          ((tdg, ffxi), edges ++ [tedge], failcount+1) -- try other edge in processImportsAndMorphisms
   where
-    hasCASLMorphism::DGLinkLab->Bool
-    hasCASLMorphism dgl' =
+    
+    adjustOriginsToRef::
+        TheorySpecification
+      ->TheorySpecification
+    adjustOriginsToRef
+      ts
+      =
       let
-        caslmorph = Hets.getCASLMorphLL dgl'
+        tso = ts_nodenum ts
       in
-        not $ and
-          [
-              (Map.null (sort_map caslmorph))
-            , (Map.null (pred_map caslmorph))
-            , (Map.null (fun_map caslmorph))
-          ]
-    applyLink::TaggedEdgeDGraph->Graph.LEdge (Int, DGLinkLab)->(TaggedEdgeDGraph, FFXInput)
-    applyLink
-      tdg'
-      (from',  to' , (tag', dgl')) =
-      let
-        fromxname = Map.findWithDefault (error "No such name!") from' nxm
-        toxname = Map.findWithDefault (error "No such name!") to' nxm
-        caslmorph = Hets.getCASLMorphLL dgl'
-        sourcesorts =
-          Map.findWithDefault
-            Set.empty
-            fromxname
-            (xnSortsMap ffxi)
-        sourcepreds =
-          Map.findWithDefault
-            Set.empty
-            fromxname
-            (xnPredsMap ffxi)
-        sourceops =
-          Map.findWithDefault
-            Set.empty
-            fromxname
-            (xnOpsMap ffxi)
-        targetsorts =
-          Map.findWithDefault
-            Set.empty
-            toxname
-            (xnSortsMap ffxi)
-        targetpreds =
-          Map.findWithDefault
-            Set.empty
-            toxname
-            (xnPredsMap ffxi)
-        targetops =
-          Map.findWithDefault
-            Set.empty
-            toxname
-            (xnOpsMap ffxi)
-        newNode =
-          Hets.addSignsAndHideWithMorphism
-            (untagEdges tdg')
-            (sortSet (msource caslmorph))
-            caslmorph
-            from' 
-            to'
-        graphEdges = Graph.labEdges tdg'
-        allButThisEdge =
-          filter 
-            (\(_, _, (tag'', _)) -> tag'' /= tag')
-            graphEdges
-        savedEdges =
-            filter
-              (\(froms, tos, _) ->
-                (froms == to') || (tos == to')
-              )
-              allButThisEdge
-        unmodifiedEdges =
-          filter
-            (\(_, _, (t, _)) ->
-              case
-                find (\(_, _, (t', _)) -> t == t') savedEdges
-              of
-                Nothing -> True
-                _ -> False
-            )
-            allButThisEdge
-        dgUnmodified =
-          Graph.mkGraph (Graph.labNodes tdg') unmodifiedEdges
-        dgWithNewNode =
-          Graph.insNode (to', newNode) $ Graph.delNode to' dgUnmodified
-        dgWithNewNodeAndOldEdges =
-          Graph.insEdges savedEdges dgWithNewNode
-        newmorphdg = case dgl_type dgl of
-          (HidingDef {}) ->
-            caslmorph
-              {
-                  msource = getSign (untagEdges dgWithNewNodeAndOldEdges) to'
-                , mtarget = getSign (untagEdges dgWithNewNodeAndOldEdges) from'
-              }
-          _ ->
-            caslmorph
-              {
-                  msource = getSign (untagEdges dgWithNewNodeAndOldEdges) from'
-                , mtarget = getSign (untagEdges dgWithNewNodeAndOldEdges) to'
-              }
-        newEdge =
-          (
-              from'
-            , to'
-            , (tag' , dgl
-                {
-                  dgl_morphism =
-                    Hets.makeCASLGMorphism
-                      newmorphdg
-                }
-              )
-          )
-        newtsorts = Set.union sourcesorts targetsorts
-        newtpreds = Set.union sourcepreds targetpreds
-        newtops = Set.union sourceops targetops
-        newffxi = 
-          ffxi
-            {
-                xnSortsMap = Map.insert toxname newtsorts (xnSortsMap ffxi)
-              , xnPredsMap = Map.insert toxname newtpreds (xnPredsMap ffxi)
-              , xnOpsMap = Map.insert toxname newtops (xnOpsMap ffxi)
-            }
-      in
-        (Graph.insEdge newEdge dgWithNewNodeAndOldEdges, newffxi)
+        ts
+          {
+              ts_sorts =
+                Set.map (setOrigin tso) (ts_sorts ts)
+            , ts_sortrelation =
+                Rel.fromList
+                  $
+                  map
+                    (\(a, b) -> (setOrigin tso a, setOrigin tso b))
+                    (Rel.toList (ts_sortrelation ts))
+            , ts_predicates =
+                Set.map
+                  (\(xnpid, xnpt) ->
+                    (
+                        xnpid
+                      , xnpt
+                        {
+                          predArgsXNWON =
+                            map (setOrigin tso) (predArgsXNWON xnpt) 
+                        }
+                    )
+                  )
+                  (ts_predicates ts)
+            , ts_operators =
+                Set.map
+                  (\(xnoid, xnot) ->
+                    (
+                        xnoid
+                      , xnot
+                        {
+                            opArgsXNWON =
+                              map (setOrigin tso) (opArgsXNWON xnot) 
+                          , opResXNWON = setOrigin tso (opResXNWON xnot)
+                        }
+                    )
+                  )
+                  (ts_operators ts)
+            , ts_constructors =
+                Set.map
+                  (\(xnforsort, conset) ->
+                    (
+                        setOrigin tso xnforsort
+                      , Set.map
+                          (\(xncid, xnct) ->
+                            (
+                                xncid
+                              , xnct
+                                {
+                                    opArgsXNWON = map (setOrigin tso) (opArgsXNWON xnct)
+                                  , opResXNWON = setOrigin tso (opResXNWON xnct)
+                                }
+                            )
+                          )
+                          conset
+                    )
+                  )
+                  (ts_constructors ts)
+          }
 
-getSign::DGraph->Graph.Node->CASLSign
-getSign dgs sn =
+    setOrigin::Graph.Node->XmlNamedWONSORT->XmlNamedWONSORT
+    setOrigin n xns = XmlNamed (Hets.mkWON (xnWOaToa xns) n) (xnName xns)   
+
+createNodeFromSpec::
+    FFXInput
+  ->AnnXMLN
+  ->TheorySpecification
+  ->Graph.LNode DGNodeLab
+createNodeFromSpec
+  ffxi
+  axml
+  ts
+  =
   let
-    snode =
-      fromMaybe
-        (error ("No such node in Graph : \"" ++ show sn ++ "\""))
-        (Graph.lab dgs sn)
+    theorysens = sensXNWONFromXmlTheory ffxi axml
+    theorycons = conSensXNWONFromXmlTheory ffxi axml
+    caslsign =
+      Sign
+        {
+            sortSet = Set.map xnWOaToa (ts_sorts ts)
+          , sortRel =
+              Rel.fromList
+                $
+                map
+                  (\(a, b) -> (xnWOaToa a, xnWOaToa b))
+                  $
+                  (Rel.toList (ts_sortrelation ts))
+          , opMap =
+              implodeSetToMap
+                opTypeXNWONToOpType
+                (ts_operators ts)
+          , predMap =
+              implodeSetToMap
+                predTypeXNWONToPredType
+                (ts_predicates ts)
+          , assocOps = Map.empty
+          , varMap = Map.empty
+          , envDiags = []
+          , globAnnos = Hets.emptyGlobalAnnos
+          , extendedInfo = ()
+          , sentences = []
+                
+        }
+    theory =
+      G_theory
+        CASL
+        caslsign
+        (
+          Prover.toThSens
+            $
+            map
+              xnWOaToa
+              (
+                (Set.toList theorysens)
+                ++ (Set.toList theorycons)
+              )
+        )
+    reftheory = G_theory CASL caslsign (Prover.toThSens [])
+    node =
+      if isRefSpec ts
+        then
+          DGRef
+            {
+                dgn_name = ts_nodename ts
+              , dgn_libname =
+                  ASL.Lib_id
+                    (ASL.Indirect_link (ts_source ts) Id.nullRange)
+              , dgn_node = ts_realnodenum ts
+              , dgn_theory = reftheory
+              , dgn_nf = Nothing
+              , dgn_sigma = Nothing
+            }
+        else
+          DGNode
+            {
+                dgn_name = ts_nodename ts
+              , dgn_theory = theory
+              , dgn_sigma = Nothing
+              , dgn_origin = DGBasic
+              , dgn_cons = None
+              , dgn_cons_status = LeftOpen
+              , dgn_nf = Nothing
+            }
   in
-    Hets.getJustCASLSign $ Hets.getCASLSign (dgn_sign snode)
+    (ts_nodenum ts, node)
+
+  where
+    
+    implodeSetToMap::
+      (Eq a, Ord a, Eq b, Ord b, Eq c, Ord c)=>
+        (b->c)
+      ->Set.Set (XmlNamedWON a, b)
+      ->Map.Map a (Set.Set c)
+    implodeSetToMap
+      convert
+      theset
+      =
+      Set.fold
+        (\(xa, b) m ->
+          Map.insertWith
+            Set.union
+            (xnWOaToa xa)
+            (Set.singleton (convert b))
+            m
+        )
+        Map.empty
+        theset
+
+processAllDefLinks::
+    [TheorySpecification]
+  ->[LinkSpecification]
+  ->[TheorySpecification]
+processAllDefLinks
+  tslist
+  lslist
+  =
+  let
+    numberOfDefLinks =
+      foldl
+        (\ndl ls ->
+          if isDefLink ls
+            then
+              ndl + 1
+            else
+              ndl
+        )
+        (0::Int)
+        lslist
+    maxNoAction = length lslist
+    ((processed, _), (final_pdl, _)) =
+      until
+        (\(_, (processedDefLinks, _)) ->
+          processedDefLinks == numberOfDefLinks
+        )
+        (\((pts, ls:r), (pdl, nas)) ->
+          if isDefLink ls
+            then
+              let
+                toname = ls_toname ls
+                otherDefsHere =
+                  filter
+                    (\ls' ->
+                      isDefLink ls'
+                      && (
+                          ls_toname ls' == toname
+                          || ls_toname ls' == (ls_fromname ls)
+                        )
+                    )
+                    r
+              in
+                if (length otherDefsHere == 0) || nas > maxNoAction
+                  then
+                    let
+                      totspec = head $ filter (\ts -> ts_name ts == toname) pts
+                      fromtspec = head $ filter (\ts -> ts_name ts == (ls_fromname ls)) pts
+                      newtotspec =
+                        (\x ->
+                          if nas > maxNoAction
+                            then
+                              Debug.Trace.trace
+                                (
+                                  "Forcing link: " ++ (ls_fromname ls)
+                                  ++ " -> " ++ toname
+                                )
+                                x
+                            else
+                              x
+                        )
+                        (
+                        performDefLinkSpecification
+                          fromtspec
+                          ls
+                          totspec
+                        )
+                      newpts =
+                        map
+                          (\ts ->
+                            if ts_name ts == ts_name newtotspec
+                              then
+                                if ts_nodenum ts /= ts_nodenum newtotspec
+                                  then
+                                    Debug.Trace.trace
+                                      (
+                                        "Warning: Same names found ! "
+                                        ++ (show (ts_nodenum ts, ts_name ts))
+                                        ++ " and "
+                                        ++ (show (ts_nodenum newtotspec, ts_name newtotspec))
+                                      )
+                                      ts
+                                  else
+                                    newtotspec
+                              else
+                                ts
+                          )
+                          pts
+                    in
+                      ( (newpts, r), (pdl + 1, 0) )
+                  else
+                    ( (pts, r++[ls]), (pdl, nas+1) )
+            else
+              ((pts, r), (pdl, nas+1))
+        )
+        ((tslist, lslist), (0::Int,0::Int))
+  in
+    if final_pdl /= numberOfDefLinks
+      then
+        Debug.Trace.trace
+          (
+            "Error while processing. Stopped after " ++ show final_pdl ++ " of "
+            ++ show numberOfDefLinks ++ " links were processed..."
+          )
+          processed
+      else
+        processed
+  where
+    
+    isDefLink::LinkSpecification->Bool
+    isDefLink ls =
+      case ls_type ls of
+        LocalDef -> True
+        GlobalDef -> True
+        HidingDef -> True
+        _ -> False
+
+performDefLinkSpecification::
+    TheorySpecification
+  ->LinkSpecification
+  ->TheorySpecification
+  ->TheorySpecification
+performDefLinkSpecification
+  tsFrom
+  ls
+  tsTo
+  =
+  let
+   newTS =
+    if isDef (ls_type ls)
+      then
+        let
+          (hidden, req) = ls_hreql ls
+          -- Sorts
+          fromSorts =
+            if isLocal (ls_type ls)
+              then
+                Set.filter
+                  (\xns -> xnWOaToO xns == ts_nodenum tsFrom)
+                  (ts_sorts tsFrom)
+              else
+                (ts_sorts tsFrom)
+          availSorts = Set.filter (\xns -> not $ elem (xnName xns) hidden) fromSorts
+          newSorts =
+            Set.fold
+              (\xns nS ->
+                case
+                  find
+                    (\((_, oldName),_) -> oldName == xnName xns)
+                    req
+                of
+                  Nothing -> nS ++ [xns]
+                  (Just (_, (_, newName))) ->
+                    case
+                      find
+                        (\to_xns -> xnName to_xns == newName)
+                        (Set.toList (ts_sorts tsTo))
+                    of
+                      Nothing ->
+                        Debug.Trace.trace
+                          (
+                            "Warning: Sort morphism not possible for "
+                            ++ (xnName xns) ++ " -> " ++ newName
+                          )
+                          nS
+                      (Just _) -> nS
+              )
+              []
+              availSorts
+          mergedSorts =
+            Set.union
+              (ts_sorts tsTo)
+              (Set.fromList newSorts)
+          -- Predicates
+          fromPreds = 
+            if isLocal (ls_type ls)
+              then
+                Set.filter
+                  (\(xnpid, _) -> xnWOaToO xnpid == ts_nodenum tsFrom)
+                  (ts_predicates tsFrom)
+              else
+                (ts_predicates tsFrom)
+          availPreds = Set.filter (\(xnpid, _) -> not $ elem (xnName xnpid) hidden) fromPreds
+          newPreds =
+            Set.fold
+              (\(xnp@(xnpid, _)) nP ->
+                case
+                  find
+                    (\((_, oldName),_) -> oldName == xnName xnpid)
+                    req
+                of
+                  Nothing -> nP ++ [xnp]
+                  (Just (_,(_,newName))) ->
+                    case
+                      find
+                        (\(to_xnpid, _) -> xnName to_xnpid == newName)
+                        (Set.toList (ts_predicates tsTo))
+                    of
+                      Nothing ->
+                        Debug.Trace.trace
+                          (
+                            "Warning: Predicate morphism not possible for "
+                            ++ (xnName xnpid) ++ " -> " ++ newName
+                          )
+                          nP
+                      (Just _) -> nP
+              )
+              []
+              availPreds
+          mergedPreds =
+            Set.union
+              (ts_predicates tsTo)
+              (Set.fromList newPreds)
+          -- Operators
+          fromOps = 
+            if isLocal (ls_type ls)
+              then
+                Set.filter
+                  (\(xnoid, _) -> xnWOaToO xnoid == ts_nodenum tsFrom)
+                  (ts_operators tsFrom)
+              else
+                (ts_operators tsFrom)
+          availOps = Set.filter (\(xnoid, _) -> not $ elem (xnName xnoid) hidden) fromOps
+          newOps =
+            Set.fold
+              (\(xno@(xnoid, _)) nO ->
+                case
+                  find
+                    (\((_, oldName),_) -> oldName == xnName xnoid)
+                    req
+                of
+                  Nothing -> nO ++ [xno]
+                  (Just (_,(_,newName))) ->
+                    case
+                      find
+                        (\(to_xnoid, _) -> xnName to_xnoid == newName)
+                        (Set.toList (ts_operators tsTo))
+                    of
+                      Nothing ->
+                        Debug.Trace.trace
+                          (
+                            "Warning: Operator morphism not possible for "
+                            ++ (xnName xnoid) ++ " -> " ++ newName
+                          )
+                          nO
+                      (Just _) -> nO
+              )
+              []
+              availOps
+          mergedOps =
+            Set.union
+              (ts_operators tsTo)
+              (Set.fromList newOps)
+          -- checks
+          checkedRels =
+            Rel.fromList
+              $
+              map
+                (\(s1, s2) ->
+                  (findRealSort mergedSorts s1, findRealSort mergedSorts s2)
+                )
+                $
+                Rel.toList (ts_sortrelation tsTo)
+          checkedPreds =
+            Set.map
+              (\(xnpid, xnpt) ->
+                (
+                    xnpid
+                  , xnpt
+                    {
+                      predArgsXNWON =
+                        map (findRealSort mergedSorts) (predArgsXNWON xnpt) 
+                    }
+                )
+              )
+              mergedPreds
+          checkedOps =
+            Set.map
+              (\(xnoid, xnot) ->
+                (
+                    xnoid
+                  , xnot
+                    {
+                        opArgsXNWON =
+                          map (findRealSort mergedSorts) (opArgsXNWON xnot) 
+                      , opResXNWON = findRealSort mergedSorts (opResXNWON xnot)
+                    }
+                )
+              )
+              mergedOps
+        in
+          tsTo
+            {
+                ts_sorts = mergedSorts
+              , ts_sortrelation = checkedRels
+              , ts_predicates = checkedPreds
+              , ts_operators = checkedOps
+            }
+      else -- Thms only affect morphisms
+        tsTo
+  in
+    if (ls_fromname ls) /= (ts_name tsFrom) || (ls_toname ls) /= (ts_name tsTo)
+      then
+        error "Wrong application!"
+      else
+        newTS
+
+  where
+
+    findRealSort::Set.Set XmlNamedWONSORT->XmlNamedWONSORT->XmlNamedWONSORT
+    findRealSort sorts s =
+      if xnWOaToO s == -1
+        then
+          let
+            tssorts = Set.toList sorts
+          in
+            case
+              find
+                (\s' -> xnName s' == xnName s)
+                tssorts                
+            of
+              Nothing -> s
+              (Just s') -> s'
+        else
+          s
+
+    isLocal::DGLinkType->Bool
+    isLocal LocalDef = True
+    isLocal (LocalThm {}) = True
+    isLocal _ = False
+
+    isDef::DGLinkType->Bool
+    isDef LocalDef = True
+    isDef GlobalDef = True
+    isDef HidingDef = True
+    isDef _ = False
+
+createDGLinkFromLinkSpecification::
+    TheorySpecification
+  ->LinkSpecification
+  ->TheorySpecification
+  ->Graph.LEdge DGLinkLab
+createDGLinkFromLinkSpecification
+  tsFrom
+  ls
+  tsTo
+  =
+  let
+   caslmorph =
+        let
+          (hidden, req) = ls_hreql ls
+          -- Sorts
+          fromSorts =
+            if isLocal (ls_type ls)
+              then
+                Set.filter
+                  (\xns -> xnWOaToO xns == ts_nodenum tsFrom)
+                  (ts_sorts tsFrom)
+              else
+                (ts_sorts tsFrom)
+          availSorts = Set.filter (\xns -> not $ elem (xnName xns) hidden) fromSorts
+          remappedSorts =
+            Set.fold
+              (\xns rS ->
+                case
+                  find
+                    (\((_, oldName),_) -> oldName == xnName xns)
+                    req
+                of
+                  Nothing -> rS
+                  (Just (_, (_, newName))) ->
+                    case
+                      find
+                        (\to_xns -> xnName to_xns == newName)
+                        (Set.toList (ts_sorts tsTo))
+                    of
+                      Nothing ->
+                        error
+                          (
+                            "Sort morphism not possible for "
+                            ++ (xnName xns) ++ " -> " ++ newName
+                          )
+                      (Just to_xns) -> rS ++ [(xns, to_xns)]
+              )
+              []
+              availSorts
+          sortmap =
+            Map.fromList
+              $
+              map
+                (\(oxns, nxns) -> (xnWOaToa oxns, xnWOaToa nxns))
+                remappedSorts
+          -- Predicates
+          fromPreds = 
+            if isLocal (ls_type ls)
+              then
+                Set.filter
+                  (\(xnpid, _) -> xnWOaToO xnpid == ts_nodenum tsFrom)
+                  (ts_predicates tsFrom)
+              else
+                (ts_predicates tsFrom)
+          availPreds = Set.filter (\(xnpid, _) -> not $ elem (xnName xnpid) hidden) fromPreds
+          remappedPreds =
+            Set.fold
+              (\(xnp@(xnpid, _)) rP ->
+                case
+                  find
+                    (\((_, oldName),_) -> oldName == xnName xnpid)
+                    req
+                of
+                  Nothing -> rP
+                  (Just (_,(_,newName))) ->
+                    case
+                      find
+                        (\(to_xnpid, _) -> xnName to_xnpid == newName)
+                        (Set.toList (ts_predicates tsTo))
+                    of
+                      Nothing ->
+                        error
+                          (
+                            "Predicate morphism not possible for "
+                            ++ (xnName xnpid) ++ " -> " ++ newName
+                          )
+                      (Just to_xnp) -> rP ++ [(xnp, to_xnp)]
+              )
+              []
+              availPreds
+          predmap =
+            Map.fromList
+              $
+              map
+                (\( (oxnpid, oxnpt), (nxnpid, _) ) ->
+                  ((xnWOaToa oxnpid, predTypeXNWONToPredType oxnpt), xnWOaToa nxnpid)
+                )
+                remappedPreds
+          -- Operators
+          fromOps = 
+            if isLocal (ls_type ls)
+              then
+                Set.filter
+                  (\(xnoid, _) -> xnWOaToO xnoid == ts_nodenum tsFrom)
+                  (ts_operators tsFrom)
+              else
+                (ts_operators tsFrom)
+          availOps = Set.filter (\(xnoid, _) -> not $ elem (xnName xnoid) hidden) fromOps
+          remappedOps =
+            Set.fold
+              (\(xno@(xnoid, _)) rO ->
+                case
+                  find
+                    (\((_, oldName),_) -> oldName == xnName xnoid)
+                    req
+                of
+                  Nothing -> rO
+                  (Just (_,(_,newName))) ->
+                    case
+                      find
+                        (\(to_xnoid, _) -> xnName to_xnoid == newName)
+                        (Set.toList (ts_operators tsTo))
+                    of
+                      Nothing ->
+                        error
+                          (
+                            "Operator morphism not possible for "
+                            ++ (xnName xnoid) ++ " -> " ++ newName
+                          )
+                      (Just to_xno) -> rO ++ [(xno, to_xno)]
+              )
+              []
+              availOps
+          opmap =
+            Map.fromList
+              $
+              map
+                (\( (oxnoid, oxnot), (nxnoid, nxnot) ) ->
+                  ((xnWOaToa oxnoid, opTypeXNWONToOpType oxnot), (xnWOaToa nxnoid, opKindX nxnot))
+                )
+                remappedOps
+        in
+          Morphism
+            {
+                msource = Hets.emptyCASLSign
+              , mtarget = Hets.emptyCASLSign
+              , sort_map = sortmap
+              , pred_map = predmap
+              , fun_map = opmap
+              , extended_map = ()
+            }
+  in
+    if (ls_fromname ls) /= (ts_name tsFrom) || (ls_toname ls) /= (ts_name tsTo)
+      then
+        error "Wrong application!"
+      else
+        (
+            ts_nodenum tsFrom
+          , ts_nodenum tsTo
+          , DGLink
+              {
+                  dgl_morphism = Hets.makeCASLGMorphism caslmorph
+                , dgl_type = ls_type ls
+                , dgl_origin = ls_origin ls
+              }
+        )
+
+  where
+
+    isLocal::DGLinkType->Bool
+    isLocal LocalDef = True
+    isLocal (LocalThm {}) = True
+    isLocal _ = False
+
+ffxiFromTheorySpecifications::
+    GlobalOptions
+  -> TheoryXNSet
+  ->[TheorySpecification]
+  ->FFXInput
+ffxiFromTheorySpecifications
+  go
+  theoryxnnames
+  tslist
+  =
+    foldl
+      (\ffxi ts ->
+        ffxi
+          {
+              xnSortsMap =
+                Map.insert (ts_name ts) (ts_sorts ts) (xnSortsMap ffxi)
+            , xnRelsMap =
+                Map.insert (ts_name ts) (ts_sortrelation ts) (xnRelsMap ffxi)
+            , xnPredsMap =
+                Map.insert (ts_name ts) (ts_predicates ts) (xnPredsMap ffxi)
+            , xnOpsMap =
+                Map.insert
+                  (ts_name ts)
+                  (
+                    Set.union
+                      (ts_operators ts)
+                      (
+                        Set.fold
+                          (\s1 s2 ->
+                            Set.union s1 s2
+                          )
+                          Set.empty
+                          (
+                            Set.map
+                              snd
+                              (ts_constructors ts)
+                          )
+                      )
+                  )
+                  (xnOpsMap ffxi)
+          }
+      )
+      emptyFFXInput { xnTheorySet = theoryxnnames, ffxiGO = go }
+      tslist
+
+createFFXIMap::
+    GlobalOptions
+  ->Map.Map String ([TheorySpecification], TheoryXNSet)
+  ->Map.Map String FFXInput
+createFFXIMap
+  go
+  tsmap
+  =
+  Map.foldWithKey
+    (\sn (tslist, txns) m ->
+      Map.insert sn (ffxiFromTheorySpecifications go txns tslist) m
+    )
+    Map.empty
+    tsmap
+
+createFinalDGraph::
+  [Graph.LNode DGNodeLab]
+  ->[Graph.LEdge DGLinkLab]
+  ->DGraph
+createFinalDGraph
+  nodes
+  edges
+  =
+  let
+    newedges =
+      map
+        (\(from, to, edge) ->
+          let
+            fromnode = 
+              case
+                filter (\(n, _) -> n == from) nodes
+              of
+                [] -> error ("Cannot make link from #" ++ (show from))
+                ((_, n):_) -> n
+            tonode =
+              case
+                filter (\(n, _) -> n == to) nodes
+              of
+                [] -> error ("Cannot make link to #" ++ (show to))
+                ((_, n):_) -> n
+            fromcaslsign = Data.Maybe.fromMaybe (error "!") (Hets.getCASLSign (dgn_sign fromnode))
+            tocaslsign = Data.Maybe.fromMaybe (error "!") (Hets.getCASLSign (dgn_sign tonode))
+            currentmorph = Hets.getCASLMorphLL edge
+            newmorph =
+              if
+                case dgl_type edge of
+                  HidingDef -> True
+                  HidingThm {} -> True
+                  _ -> False
+                then
+                  currentmorph
+                    {
+                        mtarget = fromcaslsign
+                      , msource = tocaslsign
+                    }
+                else
+                  currentmorph
+                    {
+                        mtarget = fromcaslsign
+                      , msource = tocaslsign
+                    }
+          in
+            (
+                from
+              , to
+              , edge
+                {
+                  dgl_morphism = Hets.makeCASLGMorphism newmorph 
+                }
+            )
+        )
+        edges
+  in
+    Graph.mkGraph nodes newedges
+   
+addConstructorsTheorySpecification::
+  TheorySpecification
+  ->FFXInput
+  ->AnnXMLN
+  ->TheorySpecification
+addConstructorsTheorySpecification
+  ts
+  ffxi
+  axml
+  =
+  let
+    theorycons = consXNWONFromXmlTheory ffxi axml
+    tcset =
+      foldl
+        (\s (x, xl) ->
+          Set.insert (x, Set.fromList xl) s
+        )
+        Set.empty
+        theorycons
+  in
+    ts
+      {
+        ts_constructors = tcset
+      }
+
+processConstructors::
+  Map.Map String ([TheorySpecification], b, c, Set.Set AnnXMLN)
+  ->Map.Map String FFXInput
+  ->Map.Map String ([TheorySpecification], b, c, Set.Set AnnXMLN)
+processConstructors
+  tsmap
+  ffximap
+  =
+  Map.mapWithKey
+    (\k (tslist, b, c, axmls) ->
+      let
+        thisffxi =
+          Map.findWithDefault
+            (error "error finding ffxi!")
+            k
+            ffximap
+        mappedspecs =
+          map
+            (\ts ->
+              let
+                thisaxml =
+                  case
+                    find (\axml -> axAnn axml == (ts_nodenum ts)) (Set.toList axmls)
+                  of
+                    Nothing -> error ("no xml for " ++ ts_name ts)
+                    (Just x) -> x
+              in
+                if isRefSpec ts
+                  then
+                    ts
+                  else
+                    addConstructorsTheorySpecification ts thisffxi thisaxml
+            )
+            tslist
+      in
+        (mappedspecs, b, c, axmls)
+    )
+    tsmap
+
+createGraphParts::
+  Map.Map String ([TheorySpecification], [LinkSpecification], c, Set.Set AnnXMLN)
+  ->Map.Map String FFXInput
+  ->Map.Map String ([Graph.LNode DGNodeLab], [Graph.LEdge DGLinkLab])
+createGraphParts
+  tsmap
+  ffximap
+  =
+  Map.mapWithKey
+    (\k (tslist, lslist, _, axmls) ->
+      let
+        thisffxi =
+          Map.findWithDefault
+            (error "error finding ffxi!")
+            k
+            ffximap
+        nodes =
+          map
+            (\ts ->
+              let
+                thisaxml =
+                  case
+                    find (\axml -> axAnn axml == (ts_nodenum ts)) (Set.toList axmls)
+                  of
+                    Nothing -> error ("no xml for " ++ ts_name ts)
+                    (Just x) -> x
+              in
+                createNodeFromSpec
+                  thisffxi
+                  thisaxml
+                  ts
+            )
+            tslist
+        edges =
+          map
+            (\ls ->
+              let
+                fromts =
+                  case
+                    filter (\ts -> ts_name ts == ls_fromname ls) tslist
+                  of
+                    [] -> error ("Unable to find source node " ++ (ls_fromname ls))
+                    (n:_) -> n
+                tots =
+                  case
+                    filter (\ts -> ts_name ts == ls_toname ls) tslist
+                  of
+                    [] -> error ("Unable to find target node " ++ (ls_toname ls))
+                    (n:_) -> n
+              in
+                createDGLinkFromLinkSpecification
+                  fromts
+                  ls
+                  tots
+            )
+            lslist
+      in
+        (nodes, edges)
+    )
+    tsmap
+
+importGraphToLibEnv::
+    GlobalOptions
+  ->ImportGraph (HXT.XmlTrees)
+  ->(ASL.LIB_NAME, DGraph, LibEnv)
+importGraphToLibEnv
+  go
+  ig
+  =
+  let
+    specMap = createSpecMap go ig
+    processedSpecMap = processSpecMap specMap
+    ffxiMap =
+      createFFXIMap
+        go
+        (Map.map (\(a, _, c, _) -> (a, c)) processedSpecMap)
+    conProcSpecMap = processConstructors processedSpecMap ffxiMap
+    partMap = createGraphParts conProcSpecMap ffxiMap 
+    graphMap =
+      Map.map
+        (\(nodes, edges) ->
+          fixMorphisms $ createFinalDGraph nodes edges
+        )
+        partMap
+    libenv =
+      Map.fromList
+        $
+        map
+          (\(sn, dg) ->
+            (
+                (ASL.Lib_id (ASL.Indirect_link sn Id.nullRange)) 
+              , emptyGlobalContext { devGraph = dg }
+            )
+          )
+          (Map.toList graphMap)
+    firstSourceNode = Data.Maybe.fromMaybe (error "!") $ Graph.lab ig 1
+    firstSource = (\(S (sn, _) _) -> sn) firstSourceNode
+    asKey = (ASL.Lib_id (ASL.Indirect_link firstSource Id.nullRange)) 
+    firstDG = lookupDGraph asKey libenv
+  in
+    (asKey, firstDG, libenv)
+
+data LinkSpecification =
+  LinkSpecification 
+    {
+        ls_type :: DGLinkType
+      , ls_origin :: DGOrigin
+      , ls_fromname :: XmlName
+      , ls_toname :: XmlName
+      --, ls_id :: Maybe XmlName
+      , ls_hreql :: Hets.HidingAndRequationList
+    }
+  deriving (Show, Eq)
+
+data TheorySpecification =
+  TheorySpecification
+    {
+        ts_name :: XmlName
+      , ts_source :: String
+      , ts_nodename :: NODE_NAME
+      , ts_nodenum :: Graph.Node
+      , ts_sorts :: Set.Set XmlNamedWONSORT
+      , ts_sortrelation :: Rel.Rel XmlNamedWONSORT
+      , ts_predicates :: Set.Set (XmlNamedWONId, PredTypeXNWON)
+      , ts_operators :: Set.Set (XmlNamedWONId, OpTypeXNWON)
+      , ts_constructors :: Set.Set (XmlNamedWONId, Set.Set (XmlNamedWONId, OpTypeXNWON)) -- made from sentences on writeout to OMDoc
+    }
+  | ReferenceSpecification
+    {
+        ts_name :: XmlName
+      , ts_source :: String
+      , ts_nodename :: NODE_NAME
+      , ts_nodenum :: Graph.Node
+      , ts_realnodenum :: Graph.Node
+      , ts_sorts :: Set.Set XmlNamedWONSORT
+      , ts_sortrelation :: Rel.Rel XmlNamedWONSORT
+      , ts_predicates :: Set.Set (XmlNamedWONId, PredTypeXNWON)
+      , ts_operators :: Set.Set (XmlNamedWONId, OpTypeXNWON)
+      , ts_constructors :: Set.Set (XmlNamedWONId, Set.Set (XmlNamedWONId, OpTypeXNWON)) -- made from sentences on writeout to OMDoc
+    }
+  deriving (Show, Eq)
+
+isRefSpec::TheorySpecification->Bool
+isRefSpec (ReferenceSpecification {}) = True
+isRefSpec _ = False
+
+createLinkSpecifications::
+  GlobalOptions
+  ->HXT.XmlTrees
+  ->TheoryXNSet
+  ->Set.Set AnnXMLN
+  ->[LinkSpecification]
+createLinkSpecifications {-go-}_ omdoc theoryxnset axtheoryset =
+  let
+    imports' = importsFromAnnXMLSet theoryxnset axtheoryset
+    glTheoIncs = glThmsFromXmlLS (applyXmlFilter getChildren omdoc)
+    lsedges =
+      foldl
+        (\lsle (nodename, nodeimports) ->
+          (foldl (\lsle' ({-tagnum-}_, (ni, {-mmm-}_, hreq, isGlobal)) ->
+            let
+              hreqmorph = Hets.emptyCASLMorphism
+              hreqgmorph = 
+                Hets.makeCASLGMorphism hreqmorph 
+              isHiding = not $ Hets.isNonHidingHidAndReqL hreq
+              ddgl =
+                (if isGlobal
+                  then 
+                    if isHiding
+                      then
+                        defaultDGLinkLab { dgl_type = Static.DevGraph.HidingDef }
+                      else
+                        defaultDGLinkLab
+                  else
+                    defaultDGLinkLab { dgl_type = Static.DevGraph.LocalDef }
+                ) {
+                      dgl_morphism = hreqgmorph
+                    , dgl_origin =
+                      if Hets.isEmptyHidAndReqL hreq
+                        then
+                          dgl_origin defaultDGLinkLab
+                        else
+                          DGTranslation
+                  }
+            in
+              lsle' ++
+                  [
+                    LinkSpecification
+                      {
+                          ls_type = dgl_type ddgl
+                        , ls_fromname = ni
+                        , ls_toname = nodename
+                        , ls_hreql = hreq
+                        , ls_origin = dgl_origin ddgl
+                      }
+                  ]
+                
+            ) lsle $ Set.toList nodeimports)
+        ) -- ledges fold end
+        []
+        $
+        Map.toList imports'
+    gledges =
+      foldl
+        (\lsle (_, nodename, (from, hreq, cons, isGlobal)) ->
+          let
+            hreqmorph = Hets.emptyCASLMorphism
+            hreqgmorph = 
+              Hets.makeCASLGMorphism hreqmorph 
+            isHiding = not $ Hets.isNonHidingHidAndReqL hreq
+            ddgl =
+              (if isGlobal
+                then 
+                  if isHiding
+                    then
+                      defaultDGLinkLab
+                        {
+                          dgl_type =
+                            Static.DevGraph.HidingThm
+                              Hets.emptyCASLGMorphism
+                              Static.DevGraph.LeftOpen
+                        }
+                    else
+                      defaultDGLinkLab
+                        {
+                          dgl_type =
+                            Static.DevGraph.GlobalThm
+                              Static.DevGraph.LeftOpen
+                              cons
+                              Static.DevGraph.LeftOpen
+                        }
+                else
+                  defaultDGLinkLab
+                    {
+                      dgl_type =
+                        Static.DevGraph.LocalThm
+                          Static.DevGraph.LeftOpen
+                          cons
+                          Static.DevGraph.LeftOpen
+                    }
+              ) {
+                    dgl_morphism = hreqgmorph
+                  , dgl_origin =
+                    if Hets.isEmptyHidAndReqL hreq
+                      then
+                        dgl_origin defaultDGLinkLab
+                      else
+                        DGTranslation
+                }
+          in
+            lsle ++
+                [
+                  LinkSpecification
+                    {
+                        ls_type = dgl_type ddgl
+                      , ls_fromname = from
+                      , ls_toname = nodename
+                      , ls_hreql = hreq
+                      , ls_origin = dgl_origin ddgl
+                    }
+                ]
+                
+        ) -- ledges fold end
+        []
+        $
+        glTheoIncs
+  in
+    (lsedges ++ gledges)
 
 getCatalogueInformation::HXT.XmlTrees->(Map.Map String String)
 getCatalogueInformation t =
@@ -2691,101 +2510,6 @@ makeImportGraphFullXml go source =
           Nothing -> s
           _ -> URI.uriToString id reluri ""
                                                 
-                                                
-        
--- if there is a cycle in the imports this will fail because the algorithm
--- processes only omdoc's that do import from already processed omdoc's or do
--- not import at all.
-processImportGraphXN::
-  GlobalOptions -- ^ global options for debugging
-  ->(ImportGraph HXT.XmlTrees) -- ^ initial import graph
-  ->(ImportGraph (HXT.XmlTrees, Maybe (DGraph, FFXInput))) -- ^ import graph with created DGraphs
-processImportGraphXN go ig =
-  let
-    -- create hybrid graph containing already processed DGs (none at first)
-    hybrid = Graph.mkGraph
-            (map (\(n, S a b) -> (n, S a (b, Nothing))) $ Graph.labNodes ig)
-            (Graph.labEdges ig) :: (ImportGraph (HXT.XmlTrees, (Maybe (DGraph, FFXInput))))
-    -- create all DG's
-    processed = process hybrid
-  in
-    processed
-  where
-    -- transform one node's omdoc-content to a DGraph and proceed until
-    -- no more transformations are possible
-    process ::
-      (ImportGraph (HXT.XmlTrees, (Maybe (DGraph, FFXInput)))) ->
-      (ImportGraph (HXT.XmlTrees, (Maybe (DGraph, FFXInput))))
-    process igxmd =
-      let
-        -- which nodes have no DGraph ?
-        unprocessed = filter (\(_, S _ (_, mdg)) ->
-          case mdg of
-            Nothing -> True
-            _ -> False
-          ) $ Graph.labNodes igxmd
-        -- targets are nodes that import only from processed nodes
-        -- or do not import at all
-        targets = filter (\(nodenum, _) ->
-          let
-            -- get the outgoing edges (imports) for this node
-            imports' = Graph.out ig nodenum
-            -- for all these edges, check whether it points
-            -- to an unprocessed node
-            unprocessedimports = filter (\(_,from,_) ->
-              -- but do not count a reference back to current node...
-              if null (filter (\(n,_) -> (n/=nodenum) && (from == n)) unprocessed)
-                then
-                  False
-                else
-                  True
-                ) imports'
-          in
-            -- the filter is just to check, if there
-            -- is something unprocessed 'in the way'
-            null unprocessedimports ) unprocessed
-      in
-        -- okay, have any nodes survived the filter ?
-        if null targets
-          then
-            -- no targets left
-            igxmd
-          else
-            -- okay, process a target
-            let
-              -- does not really matter what target to choose...
-              changednode = head targets
-              -- perform conversion
-              --(dg, name) = omdocToDevGraph $
-              --      (\(_, S _ (omdoc, _)) -> omdoc) changednode
-              changednodenum =
-                (\(nodenum, _) -> nodenum) changednode
-              (skeldg, nxm, ffxi, axtheoryset) = importGraphToDGraphXN go igxmd changednodenum
-{-              dg = applyGlobalImportsAndHiding
-                $ applyLocalImportsAndHiding
-                  $ fixDGMorphisms ffxi skeldg -}
-              (dg, newffxi) = processImportsAndMorphisms skeldg nxm ffxi
-              sensmap =
-                debugEnv
-                  "processImportGraph"
-                  (show (xnSortsMap ffxi) ++ " -> " ++ show (xnSortsMap newffxi))
-                  $
-                  sensXNWONFromXml go newffxi axtheoryset
-              mdg = fixMorphisms $ mergeSentences nxm sensmap dg
-              -- name = (\(_, (S (nname,_) _)) -> nname) changednode
-              -- create the altered node
-              newnode = (\(nodenum, S a (omdoc,_)) ->
-                (nodenum, S a (omdoc, Just (mdg, newffxi)))) changednode
-              -- fetch all other nodes
-              othernodes = filter
-                (\(n,_) -> n /= changednodenum) $
-                  Graph.labNodes igxmd
-            in
-              -- start the next round with the new graph
-              process $ Graph.mkGraph
-                (newnode:othernodes)
-                (Graph.labEdges igxmd)
-
 {- |
   After merging all sentences for a target-node, the morphisms still
   point to the old signature. This function updates the target-
@@ -2827,166 +2551,6 @@ fixMorphisms dg =
         labedges
   in
     Graph.mkGraph labnodes newedges
-
-{- |
-  insert sentences from xml into the nodes (after all sorts are known).
--}
-mergeSentences::
-  Map.Map Graph.Node XmlName ->
-  Map.Map XmlName (Set.Set (XmlNamed Hets.SentenceWO))->
-  DGraph->
-  DGraph
-mergeSentences
-  nodexnamemap
-  sensmap
-  dg
-  =
-  let
-    labnodes = Graph.labNodes dg
-    labedges = Graph.labEdges dg
-    newnodes =
-      foldl
-        (\nn (nodenum, dgn)->
-          case
-            Map.lookup nodenum nodexnamemap
-          of
-            Nothing -> error "!"
-            (Just nodexmlname) ->
-              let
-                sensset = Map.findWithDefault Set.empty nodexmlname sensmap
-                caslsign =
-                  Hets.getJustCASLSign $ Hets.getCASLSign (dgn_sign dgn) 
-                newdgn =
-                  dgn
-                    {
-                      dgn_theory =
-                        G_theory
-                          CASL
-                          caslsign
-                          (Prover.toThSens
-                            $
-                            map
-                              xnWOaToa
-                              (Set.toList sensset)
-                          )
-                    }
-              in
-               nn ++ [(nodenum, newdgn)]
-        )
-        []
-        labnodes
-  in
-    Graph.mkGraph newnodes labedges
-                                                                
-hybridGToDGraphG::
-  GlobalOptions
-  ->(ImportGraph (HXT.XmlTrees, Maybe (DGraph, FFXInput)))
-  ->(ImportGraph DGraph)
-hybridGToDGraphG _ ig =
-  Graph.mkGraph
-    (map
-      (\(n, (S a (_,mdg))) ->
-        let
-          dg =
-            case mdg of
-              Nothing ->
-                error
-                  "Cannot convert hybrid with unresolved DGraphs..."
-              (Just (dg', _)) -> dg'
-        in
-          (n, (S a dg))
-      )
-      $
-      Graph.labNodes ig
-    )
-    (Graph.labEdges ig)
-
-dGraphGToLibEnvOMDocId::
-  GlobalOptions
-  ->(ImportGraph DGraph)
-  ->(ASL.LIB_NAME, DGraph, LibEnv)
-dGraphGToLibEnvOMDocId _ ig =
-  let
-    nodes = map (\(_,n) -> n) $ Graph.labNodes ig
-    firstnode =
-      case nodes of
-        [] -> error "empty graph..."
-        l -> head l
-    firstsrc = (\(S (sn,_) _) -> sn) firstnode
-    firstdg = (\(S _ dg) -> dg) firstnode
-    lenv =
-      Map.fromList
-        $
-        map
-          (\(S (sn, _) dg) ->
-            (
-                (ASL.Lib_id (ASL.Indirect_link sn Id.nullRange)) 
-              , emptyGlobalContext { devGraph = dg }
-            )
-          )
-          nodes
-  in
-    (ASL.Lib_id (ASL.Indirect_link firstsrc Id.nullRange), firstdg, lenv)
-                
--- | create an origin from string.
-stringToOrigin::String->Static.DevGraph.DGOrigin
-stringToOrigin s
-  | (s == "DGBasic") = DGBasic 
-  | (s == "DGExtension") = DGExtension
-  | (s == "DGTranslation") = DGTranslation 
-  | (s == "DGUnion") = DGUnion
-  | (s == "DGHiding") = DGHiding 
-  | (s == "DGRevealing") = DGRevealing 
-  | (s == "DGRevealTranslation") = DGRevealTranslation 
-  | (s == "DGFree") = DGFree
-  | (s == "DGCofree") = DGCofree
-  | (s == "DGLocal") = DGLocal
-  | (s == "DGClosed") = DGClosed
-  | (s == "DGClosedLenv") = DGClosedLenv
-  | (s == "DGLogicQual") = DGLogicQual
-  | (s == "DGLogicQualLenv") = DGLogicQualLenv
-  | (s == "DGData") = DGData
-  | (s == "DGFormalParams") = DGFormalParams
-  | (s == "DGImports") = DGImports
-  | (s == "DGFitSpec") = DGFitSpec
-  | (s == "DGProof") = DGProof
-  | otherwise =
-    if isPrefix "DGSpecInst " s
-      then
-        DGSpecInst (Hets.stringToSimpleId (drop (length "DGSpecInst ") s))
-      else
-        if isPrefix "DGView " s
-          then
-            DGView (Hets.stringToSimpleId (drop (length "DGView ") s))
-          else
-            if isPrefix "DGFitView " s
-              then
-                DGFitView (Hets.stringToSimpleId (drop (length "DGFitView ") s))
-              else
-                if isPrefix "DGFitViewImp " s
-                  then
-                    DGFitViewImp
-                      (Hets.stringToSimpleId
-                        (drop (length "DGFitViewImp ") s)
-                      )
-                  else
-                    if isPrefix "DGFitViewA " s
-                      then
-                        DGFitViewA
-                          (Hets.stringToSimpleId
-                            (drop (length "DGFitViewA ") s)
-                          )
-                      else
-                        if isPrefix "DGFitViewAImp " s
-                          then
-                            DGFitViewAImp
-                              (Hets.stringToSimpleId
-                                (drop (length "DGFitViewAImp ") s)
-                              )
-                          --else error ("No such origin \"" ++ s ++ "\"")
-                          else
-                            DGBasic
-
 
 createQuasiMappedLists::Eq a=>[(a,a)]->[(a,[a])]
 createQuasiMappedLists = foldl (\i x -> insert x i) []
@@ -3065,62 +2629,6 @@ unwrapFormulaXNWON ffxi anxml =
       True
       False
       (formulaFromXmlXN ffxi (AXML (axAnn anxml) formtree))
-
--- create FFXInput and a set of annotated theory-fragments.
-preprocessXml::
-  GlobalOptions
-  ->Map.Map
-      XmlName
-      FFXInput
-  ->HXT.XmlTrees
-  ->(FFXInput, Set.Set AnnXMLN)
-preprocessXml go cdmap t =
-  let
-    axtheoryset =
-      buildAXTheorySet
-        (debugGO go "pX" "at buildAXTheorySet" t)
-    xntheoryset =
-      nodeNamesXNFromXml
-        (debugGO go "pX" "at nodeNamedXNFromXml" axtheoryset)
-    xnsortsmap =
-      sortsXNWONFromXml
-        xntheoryset
-        (debugGO go "pX" "at sortsXNWONFromXml" axtheoryset)
-    xnsorts =
-      mapSetToSet (debugGO go "pX" "at mapToSet" xnsortsmap)
-    xnrelsmap =
-      relsXNWONFromXml
-        xntheoryset
-        xnsorts
-        (debugGO go "pX" "at relsXNWONFromXML" axtheoryset)
-    xnpredsmap =
-      mapListToMapSet
-        $
-        predsXNWONFromXml
-          cdmap
-          xntheoryset
-          xnsorts
-          (debugGO go "pX" "at predsXNWONFromXml" axtheoryset)
-    xnopsmap =
-      mapListToMapSet
-        $
-        opsXNWONFromXml
-          cdmap
-          xntheoryset
-          xnsorts
-          (debugGO go "pX" "at opsXNWONFromXml" axtheoryset)
-  in
-    (emptyFFXInput
-      {
-          ffxiGO = go
-        , xnTheorySet = xntheoryset
-        , xnSortsMap = xnsortsmap
-        , xnRelsMap = xnrelsmap
-        , xnPredsMap = xnpredsmap
-        , xnOpsMap = xnopsmap 
-      }
-      , axtheoryset
-    )
 
 data FFXInput = FFXInput {
          ffxiGO :: GlobalOptions
@@ -3652,7 +3160,12 @@ predicationFromXmlXN ffxi anxml =
             (Just n) -> n
     -}
     theoxn = case findByName sxcd (xnTheorySet ffxi) of
-            Nothing -> error ("No Theory (" ++ sxcd ++ ") for used predicate (Name) !" ++ sxname ++ " in " ++ show (xnPredsMap ffxi))
+            Nothing ->
+              error
+                (
+                  "No Theory (" ++ sxcd ++ ") for used predicate (Name) !"
+                  ++ sxname ++ " in " ++ show (xnPredsMap ffxi)
+                )
             (Just theoxn' ) -> theoxn'
     theopreds = Map.findWithDefault Set.empty (xnName theoxn) (xnPredsMap ffxi) 
     predxnid = case findByName sxname (map fst $ Set.toList theopreds) of
@@ -3678,13 +3191,6 @@ quantFromName s
         | (s == caslSymbolQuantUnique_existentialS) = Unique_existential
         | otherwise = error (s++": no such quantifier...")
 
-
-{-
-funKindFromName::String->FunKind
-funKindFromName "Total" = Total
-funKindFromName "Partial" = Total
-funKindFromName s = error ("No such function kind... \""++ s ++"\"")
--}
 
 -- get var decls
 getVarDecls::HXT.XmlTrees->[(String, String)]
