@@ -70,8 +70,7 @@ transSentences c sign ls = do
     zw <- return $ concat zz
     zs <- return [s | s <- zw, not $
                   elem (getTermName $ extRightH s)
-                           ["DollarXMinusXMinusXSlashXEqX",
-                            "DollarXMinusXMinusXEqXEqX"]]
+                      $ map showIsaS ["$--/=", "$--=="]]
     return (nsig, ys ++ zs)
 
 transSentence :: Continuity -> IsaSign.Sign -> ExpRole -> PrDecl
