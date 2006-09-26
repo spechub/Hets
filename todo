@@ -69,6 +69,19 @@ HasCASL examples
 Florian (Till)
 ************************************************
 
+Modelchecker für algebraische Eigenschaften
+ neue Hets-Option dafür (Christian Maeder fragen)
+ hets -n NonAssocRelationAlgebra --model datei.lisp Calculi/Algebra/RelationAlgebra.casl 
+ Datenstruktur zerlegen, siehe
+ http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/debugging_e.htm
+ siehe auch CASL.CompositionTable.ComputeTable
+ Prüfung der Gültigkeit von CASL-Formel in einer Table, rekursiv:
+ Allquantoren --> all, Existenzquantor --> any
+ CASL-Junktoren --> Haskell-Junktoren
+ Terme rekursiv auswerten, Operationen aus der Table nehmen
+ (siehe CASL.AS_CASL_Basic)
+
+
 Aufgabe von Shi Hui: XML-Anfragen mit DCC-Ausdrücken an Bremer Solver schicken
  - ggf. Server nutzen
  - Vorverarbeitung für Solver (z.B. Duplikate raus)
