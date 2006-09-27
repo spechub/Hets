@@ -1641,11 +1641,12 @@ createDGLinkFromLinkSpecification
                         (Set.toList (ts_sorts tsTo))
                     of
                       Nothing ->
-                        error
+                        Debug.Trace.trace
                           (
-                            "Sort morphism not possible for "
+                            "Warning: Predicate morphism not possible for "
                             ++ (xnName xns) ++ " -> " ++ newName
                           )
+                          rS
                       (Just to_xns) -> rS ++ [(xns, to_xns)]
               )
               []
@@ -1682,11 +1683,12 @@ createDGLinkFromLinkSpecification
                         (Set.toList (ts_predicates tsTo))
                     of
                       Nothing ->
-                        error
+                        Debug.Trace.trace
                           (
-                            "Predicate morphism not possible for "
+                            "Warning: Predicate morphism not possible for "
                             ++ (xnName xnpid) ++ " -> " ++ newName
                           )
+                          rP
                       (Just to_xnp) -> rP ++ [(xnp, to_xnp)]
               )
               []
@@ -1725,11 +1727,12 @@ createDGLinkFromLinkSpecification
                         (Set.toList (ts_operators tsTo))
                     of
                       Nothing ->
-                        error
+                        Debug.Trace.trace
                           (
-                            "Operator morphism not possible for "
+                            "Warning: Operator morphism not possible for "
                             ++ (xnName xnoid) ++ " -> " ++ newName
                           )
+                          rO
                       (Just to_xno) -> rO ++ [(xno, to_xno)]
               )
               []
