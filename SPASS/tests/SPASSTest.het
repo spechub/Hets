@@ -33,7 +33,7 @@ then %implies
      . a(x,y) = c1  %(G1)%
      forall x,y : B 
      . PR(a(x,y),b2) %(G3)% 
-     . false %(is_consistent)%
+     . false %(is_inconsistent)%
 end
 
 spec Bar_Preds =
@@ -92,7 +92,7 @@ spec Sokrates =
      . Human(sokrates)         %(sokrates_is_a_human)%
 then %implies
      . Mortal(sokrates)        %(sokrates_is_mortal)%
-     . false   %(is_consistent)%
+     . false   %(is_inconsistent)%
 then %implies
      forall x,y:Top
      . Mortal(x) => Human(x) %(  )%
@@ -105,7 +105,7 @@ spec Inconsistent =
      ops a1 : A;
 	 b1 : B
 then %implies
-     . false %(is_consistent)%
+     . false %(is_inconsistent)%
      . not a1 in ill %(a1_in_ill)%
      . not b1 in ill %(b1_in_ill)%
      . forall x : C . not x in ill %(x_C_in)%
@@ -118,7 +118,7 @@ spec GenTest =
 then %implies
      forall x : A; l : List_A 
      . not (cons(x,l) = nil)         %(disjoint_constructors)%
-     . false %(is_consistent)%
+     . false %(is_inconsistent)%
 end
 
 spec GenTest2 =
