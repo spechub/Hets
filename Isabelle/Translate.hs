@@ -63,7 +63,8 @@ getAltTokenList newPlace over i@(Id ms cs qs) thy = let
             constSet || Set.member (show i) constSet
             then over + 1 else over
     newFs = if null fs || over2 < 2 then fs else
-                fs ++ [mkSimpleId $ let o1 = over2 - 1 in
+                init fs ++ [mkSimpleId $ let o1 = over2 - 1 in
+                    tokStr (last fs) ++ 
                     if over2 < 4 then replicate o1 '\'' else '_' : show o1]
     in getTokenList newPlace $ Id (newFs ++ ps) cs qs
 
@@ -73,15 +74,15 @@ toAltSyntax prd over ga n i thy = let
     (precMap, mx) = Rel.toPrecMap $ prec_annos ga
     minPrec = if prd then 42 else 52
     adjustPrec p = 2 * p + minPrec
-    newPlace = "/ _ "
+    newPlace = "/ _"
     minL = replicate n lowPrio
     minL1 = tail minL
     minL2 = tail minL1
     hd : tl = getAltTokenList newPlace over i thy
     convert = \ Token { tokStr = s } -> if s == newPlace then s
-                         else quote s
-    tts = (if endPlace i then init else id) $ concatMap convert tl
-    ht = convert hd
+                         else "/ " ++ quote s
+    tts = concatMap convert tl
+    ht = drop 2 $ convert hd
     ts = ht ++ tts
     (precList, erg) = if isInfix i then case Map.lookup i precMap of
         Just p -> let
@@ -98,46 +99,43 @@ toAltSyntax prd over ga n i thy = let
     in if n < 0 then Nothing
        else if n == 0 then Just $ AltSyntax ts [] maxPrio
        else if isMixfix i then Just $ AltSyntax
-                ('(' : (if begPlace i then "_ " else ht)
-                         ++ tts ++ ")") precList erg
+                ('(' : ts ++ ")") precList erg
        else Just $ AltSyntax
-            (ts ++ "'(" ++
+            (ts ++ "/'(" ++
                    concat (replicate (n - 1) "_,/ ")
                    ++ "_')") minL $ maxPrio - 1
 
 quote :: String -> String
 quote l = case l of
     [] -> l
-    c : r -> (if c `elem` "_/'()" then '\'' : [c]
-              else if c `elem` "\\\"" then '\\' : [c] else [c]) ++ quote r
+    c : r -> (if elem c "_/'()" then '\'' : [c]
+              else if elem c "\\\"" then '\\' : [c] else [c]) ++ quote r
 
 showIsaT1 :: (String -> String) -> Id -> String
 showIsaT1 tr ide = let
-    str = show ide
-    (lus, rstr) = span (== '_') str
-    (rus, str2) = span (== '_') $ reverse rstr
-    fstr = tr $ reverse str2
-    in map (const 'X') lus ++ fstr ++ map (const 'X') rus
+    str = tr $ show ide
+    in if null str then error "showIsaT1" else if 
+       elem (last str) "_" then str ++ "X" else str 
 
 showIsaConstT :: Id -> BaseSig -> String
 showIsaConstT ide thy = showIsaT1 (transConstStringT thy) ide
 
 -- also pass number of arguments
 mkIsaConstT :: Bool -> GlobalAnnos -> Int -> Id -> BaseSig -> VName
-mkIsaConstT prd ga n ide = mkIsaConstVName 1 showIsaConstT prd ga n ide
+mkIsaConstT prd ga n ide = mkIsaConstVName 1 showIsaConstT prd ga n ide 
 
 mkIsaConstVName :: Int -> (Id -> BaseSig -> String) -> Bool -> GlobalAnnos
                 -> Int -> Id -> BaseSig -> VName
-mkIsaConstVName over f prd ga n ide thy = VName
-    { new = f ide thy
-    , altSyn = toAltSyntax prd over ga n ide thy }
+mkIsaConstVName over f prd ga n ide thy = let s = f ide thy in VName
+  { new = (if n < 0 || isMixfix ide || s /= show ide then id else ("X_" ++)) s
+  , altSyn = toAltSyntax prd over ga n ide thy }
 
 showIsaTypeT :: Id -> BaseSig -> String
 showIsaTypeT ide thy = showIsaT1 (transTypeStringT thy) ide
 
 -- | add a number for overloading
 showIsaConstIT :: Id -> Int -> BaseSig -> String
-showIsaConstIT ide i thy = showIsaConstT ide thy ++ "_" ++ show i
+showIsaConstIT ide i thy = showIsaConstT ide thy ++ "X" ++ show i
 
 mkIsaConstIT :: Bool -> GlobalAnnos -> Int -> Id -> Int -> BaseSig -> VName
 mkIsaConstIT prd ga n ide i =
@@ -153,7 +151,7 @@ transIsaStringT :: Map.Map BaseSig (Set.Set String) -> BaseSig
 transIsaStringT m i s = let t = transString s in
   if Set.member t $ maybe (error "Isabelle.transIsaStringT") id
          $ Map.lookup i m
-  then t ++ "X" else t
+  then transIsaStringT m i $ "_" ++ t else t
 
 transConstStringT :: BaseSig -> String -> String
 transConstStringT = transIsaStringT $ preConsts isaPrelude
@@ -163,18 +161,18 @@ transTypeStringT  = transIsaStringT $ preTypes isaPrelude
 
 -- | check for legal alphanumeric isabelle characters
 isIsaChar :: Char -> Bool
-isIsaChar c = isAlphaNum c && isAscii c || c `elem` "_'"
+isIsaChar c = isAlphaNum c && isAscii c || elem c "_'"
 
 transString :: String -> String
 transString str = let
     x = 'X'
-    replaceChar1 d | d == x = "YX"  -- code out existing X!
+    replaceChar1 d | d == x = [x, x]  -- code out existing X!
                    | isIsaChar d = [d]
-                   | otherwise = replaceChar d ++ [x]
+                   | otherwise = x : replaceChar d
     in case str of
-    "" -> [x]
+    "" -> error "transString"
     c : s -> let l = replaceChar1 c in
-             (if isDigit c || c `elem` "_'" then [x, c]
+             (if isDigit c || elem c "_'" then [x, c]
              else l) ++ concatMap replaceChar1 s
 
 -- | injective replacement of special characters
