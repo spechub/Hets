@@ -280,9 +280,15 @@ look at command line interface (just call hets)
 
 implement simplified rule Theorem-Hide-Shift
 Proofs.TheoremHideShiftSimp
+If there is an open global theorem link sigma:N1->N2 and
+a hiding definition link theta:N3->N2 (i.e. the signature
+morphism theta is from Sig(N2) to Sig(N3)), then prove
+this theorem link by inserting a new global theorem link
+theta o sigma : N1->N3.
 
 try out examples
 conservativity calculus
+pushouts http://en.wikipedia.org/wiki/Pushout_%28category_theory%29
 weakly amalgamable cocones
 
 development graph calculus
