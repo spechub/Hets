@@ -623,10 +623,11 @@ mkTermAppl fun arg = case (fun, arg) of
       (App (Const mp1 _) f _, App u@(Const mp2 _) g _)
           | new mp1 == "liftSnd" && new mp2 == uncurryOpS ->
               mkTermAppl u $
-              mkTermAppl (mkTermAppl (conDouble "liftCurSnd") f) g
+              mkTermAppl (mkTermAppl compOp f) g
           | new mp1 == "liftFst" && new mp2 == uncurryOpS ->
               mkTermAppl u $
-              mkTermAppl (mkTermAppl (conDouble "liftCurFst") f) g
+              mkTermAppl flipOp $ mkTermAppl (mkTermAppl compOp f)
+                                $ mkTermAppl flipOp g
       (Const mp _, Tuplex [a, b] _)
           | new mp == "ifImplOp" -> binImpl b a
           | new mp == "exEqualOp" && (isLifted a || isLifted b) ->
@@ -653,12 +654,6 @@ mkTermAppl fun arg = case (fun, arg) of
           | new cmp == compS -> mkTermAppl f $ mkTermAppl g arg
           | new cmp == "curryOp" -> mkTermAppl f $ Tuplex [g, arg] c
           | new cmp == "flip" -> mkTermAppl (mkTermAppl f arg) g
-      (App (App (Const cmp _) f _) g _, _)
-          | new cmp == "liftCurFst" ->
-              termAppl (termAppl compOp $ termAppl (termAppl flipOp f) arg)
-                  $ termAppl flipOp g
-          | new cmp == "liftCurSnd" ->
-              mkTermAppl f $ mkTermAppl g arg
       (Const d _, App (Const sm _) a _)
           | new d == "defOp" && new sm == someS -> true
           | new d == "option2bool" && new sm == someS -> true
