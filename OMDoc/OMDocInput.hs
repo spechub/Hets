@@ -1770,7 +1770,6 @@ createDGLinkFromLinkSpecification
                 , dgl_origin = ls_origin ls
               }
         )
-
   where
 
     isLocal::DGLinkType->Bool
@@ -2536,10 +2535,21 @@ fixMorphisms dg =
             nodesign =
               Hets.getJustCASLSign $ Hets.getCASLSign (dgn_sign tonode)
             newmorph =
-              caslmorph
-                {
-                  mtarget = nodesign
-                }
+              if
+                case dgl_type dgl of
+                  HidingDef -> True
+                  HidingThm {} -> True
+                  _ -> False
+                then
+                  caslmorph
+                    {
+                      msource = nodesign
+                    }
+                else
+                  caslmorph
+                    {
+                      mtarget = nodesign
+                    }
           in
             ne ++
               [
