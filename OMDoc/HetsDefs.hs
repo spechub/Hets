@@ -3766,14 +3766,10 @@ makeUniqueNodeNames
                     previousUse =
                       Set.fold
                         (\(wid', _) pU ->
-                          case woItem wid' of
-                            IdNodeName {} ->
-                              if (getIdId $ woItem wid') == (getIdId $ woItem wid)
-                                then
-                                  pU + 1
-                                else
-                                  pU
-                            _ ->
+                          if (getIdId $ woItem wid') == (getIdId $ woItem wid)
+                            then
+                              pU + 1
+                            else
                               pU
                         )
                         (0::Int)
