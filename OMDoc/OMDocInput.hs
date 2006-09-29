@@ -1296,18 +1296,15 @@ processAllDefLinks
             then
               let
                 toname = ls_toname ls
-                otherDefsHere =
+                unprocessedPrevious =
                   filter
                     (\ls' ->
                       isDefLink ls'
-                      && (
-                          ls_toname ls' == toname
-                          || ls_toname ls' == (ls_fromname ls)
-                        )
+                      && ls_toname ls' == (ls_fromname ls)
                     )
                     r
               in
-                if (length otherDefsHere == 0) || nas > maxNoAction
+                if (length unprocessedPrevious == 0) || nas > maxNoAction
                   then
                     let
                       totspec = head $ filter (\ts -> ts_name ts == toname) pts
