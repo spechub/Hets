@@ -70,6 +70,7 @@ getDG f = do
                 Nothing -> error "Error looking op DGraph"
                 (Just gc) -> return $ devGraph gc
 
+{-
 quickSetup::FilePath->FilePath->IO (LIB_NAME, LibEnv, [IdNameMapping], [IdNameMapping])
 quickSetup libdir fp =
   do
@@ -86,4 +87,4 @@ quickSetup libdir fp =
         in
           (ln, lenv, xmlUniqueNames, xmlFullNames)
       )
-    
+-}    

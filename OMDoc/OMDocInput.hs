@@ -2039,7 +2039,7 @@ importGraphToLibEnv
     graphMap =
       Map.map
         (\(nodes, edges) ->
-          fixMorphisms $ createFinalDGraph nodes edges
+          createFinalDGraph nodes edges
         )
         partMap
     libenv =
@@ -2529,8 +2529,15 @@ fixMorphisms dg =
                 (error "!")
                 $
                 Graph.lab dg to
-            nodesign =
+            fromnode =
+              fromMaybe
+                (error "!")
+                $
+                Graph.lab dg from
+            tonodesign =
               Hets.getJustCASLSign $ Hets.getCASLSign (dgn_sign tonode)
+            fromnodesign =
+              Hets.getJustCASLSign $ Hets.getCASLSign (dgn_sign fromnode)
             newmorph =
               if
                 case dgl_type dgl of
@@ -2538,14 +2545,17 @@ fixMorphisms dg =
                   HidingThm {} -> True
                   _ -> False
                 then
+                  -- swap source and target for hiding...
                   caslmorph
                     {
-                      msource = nodesign
+                        msource = tonodesign
+                      , mtarget = fromnodesign
                     }
                 else
                   caslmorph
                     {
-                      mtarget = nodesign
+                        msource = fromnodesign
+                      , mtarget = tonodesign
                     }
           in
             ne ++

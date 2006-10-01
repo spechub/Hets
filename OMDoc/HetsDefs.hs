@@ -3646,28 +3646,58 @@ identifyFlatNames
         []
         (Map.keys lenv)
   in
-    foldl
-      (\im (refln, refnn, refedln, refednode) ->
-        let
-          reflnids = Map.findWithDefault Set.empty refln flatmap
-          refedids = Set.filter (\ws -> woOrigin ws == refnn) reflnids
-          refedlnids = Map.findWithDefault Set.empty refedln flatmap
-        in
-          Set.fold
-            (\rws im' ->
-              case
-                Set.toList
-                  $
-                  Set.filter (\x -> woItem x == woItem rws) refedlnids
-              of
-                [] -> Map.insert (refln, rws) (refedln, mkWON (IdId $ stringToId "unknown") refednode) im'
-                ws:_ -> Map.insert (refln, rws) (refedln, ws) im'
-            )
-            im
-            refedids
-      )
-      Map.empty
-      reflist
+    fixIdentMap
+      $
+      foldl
+        (\im (refln, refnn, refedln, refednode) ->
+          let
+            reflnids = Map.findWithDefault Set.empty refln flatmap
+            refedids = Set.filter (\ws -> woOrigin ws == refnn) reflnids
+            refedlnids = Map.findWithDefault Set.empty refedln flatmap
+          in
+            Set.fold
+              (\rws im' ->
+                case
+                  Set.toList
+                    $
+                    Set.filter (\x -> woItem x == woItem rws) refedlnids
+                of
+                  [] -> Map.insert (refln, rws) (refedln, mkWON (IdId $ stringToId "unknown") refednode) im'
+                  ws:_ -> Map.insert (refln, rws) (refedln, ws) im'
+              )
+              im
+              refedids
+        )
+        Map.empty
+        reflist
+
+-- find recursive identity matches and reduce targets to real identity
+fixIdentMap::
+    Map.Map (LIB_NAME, IdentifierWON) (LIB_NAME, IdentifierWON)
+  ->Map.Map (LIB_NAME, IdentifierWON) (LIB_NAME, IdentifierWON)
+fixIdentMap identMap =
+  Map.foldWithKey
+    (\key value m ->
+      let
+        value' =
+          case finalRecursiveTarget identMap key of
+            Nothing -> value
+            (Just v) -> v
+      in
+        Map.insert key value' m
+    )
+    Map.empty
+    identMap
+
+  where
+    finalRecursiveTarget::(Eq a, Ord a)=>Map.Map a a->a->Maybe a
+    finalRecursiveTarget m a =
+      case Map.lookup a m of
+        Nothing -> Nothing
+        (Just a') ->
+          case finalRecursiveTarget m a' of
+            Nothing -> Just a'
+            (Just a'') -> Just a''
 
 removeReferencedIdentifiers::
   Map.Map LIB_NAME (Set.Set IdentifierWON)
@@ -3746,12 +3776,12 @@ getIdUseNumber
         )
         remMap
   in
-    makeUniqueNodeNames unnMap
+    makeUniqueNodeNameCounts unnMap
 
-makeUniqueNodeNames::
+makeUniqueNodeNameCounts::
   Map.Map LIB_NAME (Set.Set (IdentifierWON, Int))
   ->Map.Map LIB_NAME (Set.Set (IdentifierWON, Int))
-makeUniqueNodeNames
+makeUniqueNodeNameCounts
   unnMap
   =
   Map.foldWithKey
@@ -4016,10 +4046,24 @@ makeFullNames
                       Set.toList
                         $
                         Set.filter
-                          (\(i,_) -> i == mkWON (IdNodeName (stringToId $ nodeNameToName $ dgn_name node)) nn)
+                          (\(i,_) ->
+                            i ==
+                              mkWON
+                                (IdNodeName
+                                  (stringToId $ nodeNameToName $ dgn_name node)
+                                )
+                                nn
+                          )
                           ids
                     of
-                      [] -> Debug.Trace.trace ("no node found for " ++ show (nn, nodeNameToName $ dgn_name node) ++ "...") (getDGNodeName node)
+                      [] ->
+                        Debug.Trace.trace
+                          (
+                            "no node found for "
+                            ++ show (nn, nodeNameToName $ dgn_name node)
+                            ++ "..."
+                          )
+                          (getDGNodeName node)
                       (_, unName):_ -> unName
                   else
                     let
@@ -4032,12 +4076,31 @@ makeFullNames
                         Set.toList
                           $
                           Set.filter
-                            (\(i,_) -> i == mkWON (IdNodeName (stringToId $ nodeNameToName $ dgn_name mnode)) mnn)
+                            (\(i,_) ->
+                              i ==
+                                mkWON
+                                  (IdNodeName
+                                    (stringToId $ nodeNameToName $ dgn_name mnode)
+                                  )
+                                  mnn
+                            )
                             (Map.findWithDefault Set.empty mln unnMap)
                       of
-                        [] -> Debug.Trace.trace ("no refnode found... " ++ show (ln, nn, nodeNameToName $ dgn_name node) ++ " -> " ++ show (mln, mnn, nodeNameToName $ dgn_name mnode) ) (nodeNameToName $ dgn_name mnode)
+                        [] ->
+                          Debug.Trace.trace
+                            (
+                              "no refnode found... "
+                              ++ show (ln, nn, nodeNameToName $ dgn_name node)
+                              ++ " -> "
+                              ++ show (mln, mnn, nodeNameToName $ dgn_name mnode)
+                            )
+                            (nodeNameToName $ dgn_name mnode)
                         (_, unName):_ -> unName
-              nodesortswo = Map.findWithDefault Set.empty (mkWON (dgn_name node) nn) sortswomap
+              nodesortswo =
+                Map.findWithDefault
+                  Set.empty
+                  (mkWON (dgn_name node) nn)
+                  sortswomap
               remappedsorts =
                 Set.map
                   (\swo ->
@@ -4055,22 +4118,50 @@ makeFullNames
                           of
                             [] ->
                               Debug.Trace.trace
-                                ("no sort found... " ++ show swo)
+                                (
+                                  "In Library " ++ (show ln) ++ ", Theory \""
+                                  ++ nodename ++ "\" : Sort " ++ (show swo)
+                                  ++ "\" not found!"
+                                )
                                 ((woItem swo), show swo)
                             (_, unName):_ -> (woItem swo, unName)
                         (Just (mln, mid)) ->
-                          case
-                            Set.toList
-                              $
+                          let
+                            refIds = Map.findWithDefault Set.empty mln unnMap
+                            refSorts =
                               Set.filter
-                                (\(i, _) -> i == mid)
-                                (Map.findWithDefault Set.empty mln unnMap)
-                          of
-                            [] ->
-                              Debug.Trace.trace
-                                ("no sort found... (ref) " ++ show swo)
-                                ((woItem swo), show swo)
-                            (_, unName):_ -> (woItem swo, unName)
+                                (\(s, _) -> case wonItem s of IdId {} -> True; _ -> False)
+                                refIds
+                            refMatch =
+                              Set.filter
+                                (\(s,_) -> (getIdId $ wonItem s) == (wonItem swo))
+                                refSorts
+                            refOrigin =
+                              Set.filter
+                                (\(s,_) -> (woOrigin s) == (woOrigin mid))
+                                refIds
+                          in
+                            case
+                              Set.toList
+                                $
+                                Set.filter
+                                  (\(i, _) -> i == mid)
+                                  refIds
+                            of
+                              [] ->
+                                Debug.Trace.trace
+                                  (
+                                    "In Library " ++ (show ln) ++ ", Theory \""
+                                    ++ nodename ++ "\" : Sort \"" ++ (show swo)
+                                    ++ "\" not found, when"
+                                    ++ " referencing to it as \""
+                                    ++ (show mid) ++ "\" in Library \""
+                                    ++ (show mln) ++ "\" " 
+                                    ++ "Matches by Name : " ++ (show refMatch) ++ " "
+                                    ++ "Matches by Origin : " ++ (show refOrigin)
+                                  )
+                                  ((woItem swo), show swo)
+                              (_, unName):_ -> (woItem swo, unName)
                   )
                   nodesortswo
               nodeopswo = Map.findWithDefault Map.empty (mkWON (dgn_name node) nn) opswomap
@@ -4093,20 +4184,48 @@ makeFullNames
                                 of
                                   [] ->
                                     Debug.Trace.trace
-                                      ("no op found...")
+                                      (
+                                        "In Library " ++ (show ln) ++ ", Theory \""
+                                        ++ nodename ++ "\" : Operator \"" ++ (show idwo)
+                                        ++ "\" not found!"
+                                      )
                                       (((woItem idwo), ot), show idwo)
                                   (_, unName):_ -> (((woItem idwo), ot), unName)
                               (Just (mln, mid)) ->
-                                case
-                                  Set.toList
-                                    $
+                                let
+                                  refIds = Map.findWithDefault Set.empty mln unnMap
+                                  refSorts =
                                     Set.filter
-                                      (\(i, _) -> i == mid)
-                                      (Map.findWithDefault Set.empty mln unnMap)
+                                      (\(s, _) -> case wonItem s of IdId {} -> True; _ -> False)
+                                      refIds
+                                  refMatch =
+                                    Set.filter
+                                      (\(s,_) -> (getIdId $ wonItem s) == (wonItem idwo))
+                                      refSorts
+                                  refOrigin =
+                                    Set.filter
+                                      (\(s,_) -> (woOrigin s) == (woOrigin mid))
+                                      refIds
+                                in
+                                  case
+                                    Set.toList
+                                      $
+                                      Set.filter
+                                        (\(i, _) -> i == mid)
+                                        refIds
                                 of
                                   [] ->
                                     Debug.Trace.trace
-                                      ("no op found (ref)")
+                                      (
+                                        "In Library " ++ (show ln) ++ ", Theory \""
+                                        ++ nodename ++ "\" : Operator \"" ++ (show idwo)
+                                        ++ "\" not found, when"
+                                        ++ " referencing to it as \""
+                                        ++ (show mid) ++ "\" in Library \""
+                                        ++ (show mln) ++ "\" " 
+                                        ++ "Matches by Name : " ++ (show refMatch) ++ " "
+                                        ++ "Matches by Origin : " ++ (show refOrigin)
+                                      )
                                       (((woItem idwo), ot), show idwo)
                                   (_, unName):_ -> (((woItem idwo), ot), unName)
                         in
@@ -4137,22 +4256,50 @@ makeFullNames
                                 of
                                   [] ->
                                     Debug.Trace.trace
-                                      ("no pred found...")
+                                      (
+                                        "In Library " ++ (show ln) ++ ", Theory \""
+                                        ++ nodename ++ "\" : Predicate \"" ++ (show idwo)
+                                        ++ "\" not found!"
+                                      )
                                       (((woItem idwo), pt), show idwo)
                                   (_, unName):_ -> (((woItem idwo), pt), unName)
                               (Just (mln, mid)) ->
-                                case
-                                  Set.toList
-                                    $
+                                let
+                                  refIds = Map.findWithDefault Set.empty mln unnMap
+                                  refSorts =
                                     Set.filter
-                                      (\(i, _) -> i == mid)
-                                      (Map.findWithDefault Set.empty mln unnMap)
-                                of
-                                  [] ->
-                                    Debug.Trace.trace
-                                      ("no pred found (ref)")
-                                      (((woItem idwo), pt), show idwo)
-                                  (_, unName):_ -> (((woItem idwo), pt), unName)
+                                      (\(s, _) -> case wonItem s of IdId {} -> True; _ -> False)
+                                      refIds
+                                  refMatch =
+                                    Set.filter
+                                      (\(s,_) -> (getIdId $ wonItem s) == (wonItem idwo))
+                                      refSorts
+                                  refOrigin =
+                                    Set.filter
+                                      (\(s,_) -> (woOrigin s) == (woOrigin mid))
+                                      refIds
+                                in
+                                  case
+                                    Set.toList
+                                      $
+                                      Set.filter
+                                        (\(i, _) -> i == mid)
+                                        refIds
+                                  of
+                                    [] ->
+                                      Debug.Trace.trace
+                                        (
+                                          "In Library " ++ (show ln) ++ ", Theory \""
+                                          ++ nodename ++ "\" : Predicate \"" ++ (show idwo)
+                                          ++ "\" not found, when"
+                                          ++ " referencing to it as \""
+                                          ++ (show mid) ++ "\" in Library \""
+                                          ++ (show mln) ++ "\" " 
+                                          ++ "Matches by Name : " ++ (show refMatch) ++ " "
+                                          ++ "Matches by Origin : " ++ (show refOrigin)
+                                        )
+                                        (((woItem idwo), pt), show idwo)
+                                    (_, unName):_ -> (((woItem idwo), pt), unName)
                         in
                           (Set.insert newItem rp)
                       )
