@@ -22,6 +22,7 @@ case `uname -s` in
            esac;;
     *inux) case `uname -p` in
                i*86) ARCH_DIR=linux ;;
+	       athlon) ARCH_DIR=linux ;;
 	       *) echo "Unsupported Linux processor: " `uname -p`
 	          exit 2;;
 	   esac;;
