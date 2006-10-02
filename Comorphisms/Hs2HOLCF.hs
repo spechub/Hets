@@ -564,15 +564,11 @@ transPatBind a cs s = case s of
   _ -> error "HsHOLCF.transPatBind"
 
 transMPat :: Continuity -> ConstTab -> PrPat -> Maybe IsaPattern
-transMPat a cs t = case t of
+transMPat a cs t = let
+   tInt = IsaSign.Type "int" holType []
+  in case t of 
     TiDecorate.Pat p -> case p of
-       HsPLit _ (HsInt n) -> return $ case a of
-           IsCont ->
-              Const (mkVName $ "(Def (" ++ show n ++ "::int))")
-                     (IsaSign.Type "dInt" [] [])
-           NotCont ->
-              Const (mkVName $ "(" ++ show n ++ "::int)")
-                     (IsaSign.Type "int" [] [])
+       HsPLit _ (HsInt n) -> return $ liftExp a (show n) tInt
        HsPList _ xs -> return $ case xs of
           [] -> case a of
                   IsCont -> conDouble "lNil"
