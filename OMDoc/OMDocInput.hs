@@ -2350,8 +2350,8 @@ makeImportGraphFullXml go source =
     -- trick the uri parser into faking a document to make a relative path later
     mcduri <- return $ URI.parseURIReference ("file://"++curdirs++"/a")
     alibdir <- return $ case mcduri of
-      Nothing -> (libdir (hetsOpts go))
-      (Just cduri) -> relativeSource cduri (libdir (hetsOpts go))
+      Nothing -> (fixLibDir (libdir (hetsOpts go)))
+      (Just cduri) -> relativeSource cduri (fixLibDir (libdir (hetsOpts go)))
     putIfVerbose (hetsOpts go) 0 ("Loading " ++ source ++ "...") 
     mdoc <- maybeFindXml source [alibdir]
     case mdoc of
@@ -2385,6 +2385,18 @@ makeImportGraphFullXml go source =
             ) (return initialgraph) rdocmap
         )
   where
+
+  fixLibDir::FilePath->FilePath
+  fixLibDir fp =
+    case fp of 
+      [] -> fp
+      _ ->
+        if last fp == '/'
+          then
+            init fp
+          else
+            fp
+
   buildGraph::
     ImportGraph HXT.XmlTrees
     ->Graph.Node
@@ -2405,6 +2417,10 @@ makeImportGraphFullXml go source =
         find
           (\(_, (S (_, suri) _)) -> any (\s -> suri == s) possources)
           (Graph.labNodes ig)
+      (S (curid, _) _) =
+        case Graph.lab ig n of
+          Nothing -> error "!"
+          (Just x) -> x
     in
     do
       case mimportsource of
@@ -2414,7 +2430,7 @@ makeImportGraphFullXml go source =
                 (hetsOpts go)
                 0
                 ("Loading " ++ theoname ++ " from "
-                  ++ theouri ++ " (cached)..." 
+                  ++ theouri ++ " (cached) for " ++ curid ++ "..." 
                 )
               return 
                 (if inum == n then
@@ -2431,7 +2447,7 @@ makeImportGraphFullXml go source =
             putIfVerbose
               (hetsOpts go)
               0
-              ("Loading " ++ theoname ++ " from " ++ theouri ++ "...")
+              ("Loading " ++ theoname ++ " from " ++ theouri ++ " for " ++ curid ++ "...")
             mdocR <- maybeFindXml theouri includes
             mdoc <- case mdocR of
               Nothing ->
