@@ -455,11 +455,6 @@ mkLiftFun lv c = case c of
     IdOp -> IdOp
     _ -> LiftFun lv c
 
-liftFun :: LiftFun -> Isa.Term
-liftFun lf = case lf of
-    LiftFst -> liftFst
-    LiftSnd -> liftSnd
-
 mapFun :: MapFun -> Isa.Term
 mapFun mf = case mf of
     MapFst -> mapFst
@@ -491,17 +486,23 @@ convFun cvf = case cvf of
     ConstTrue -> constTrue
     SomeOp -> conSome
     MapFun mf cv -> mkTermAppl (mapFun mf) $ convFun cv
-    LiftFun lf cv -> mkTermAppl (liftFun lf) $ convFun cv
+    LiftFun lf cv -> let ccv = convFun cv in case lf of
+        LiftFst -> mkTermAppl (mkTermAppl compOp 
+                     $ mkTermAppl (mkTermAppl compOp uncurryOp) flipOp)
+                   $ mkTermAppl (mkTermAppl compOp 
+                                $ mkTermAppl (mkTermAppl compOp 
+                                $ mkTermAppl compOp ccv) flipOp) curryOp 
+        LiftSnd -> mkTermAppl (mkTermAppl compOp uncurryOp) $ 
+                   mkTermAppl (mkTermAppl compOp $ mkTermAppl compOp ccv)
+                   curryOp
     ArgFun cv -> mkTermAppl (termAppl flipOp compOp) $ convFun cv
     ResFun cv -> mkTermAppl compOp $ convFun cv
 
-liftFst, liftSnd, mapFst, mapSnd, mapSome, idOp, bool2option,
+mapFst, mapSnd, mapSome, idOp, bool2option,
     option2bool, constNil, constTrue,
     liftUnit2unit, liftUnit2bool, liftUnit2option, liftUnit, lift2unit,
     lift2bool, lift2option, lift :: Isa.Term
 
-liftFst = conDouble "liftFst"
-liftSnd = conDouble "liftSnd"
 mapFst = conDouble "mapFst"
 mapSnd = conDouble "mapSnd"
 mapSome = conDouble "mapSome"
@@ -625,14 +626,6 @@ mkTermAppl fun arg = case (fun, arg) of
       (App (Const mp _) f _, Tuplex [a, b] c)
           | new mp == "mapFst" -> Tuplex [mkTermAppl f a, b] c
           | new mp == "mapSnd" -> Tuplex [a, mkTermAppl f b] c
-      (App (Const mp1 _) f _, _)
-          | new mp1 == "liftSnd" ->
-              mkTermAppl uncurryOp $
-              mkTermAppl (mkTermAppl compOp f) $ mkTermAppl curryOp arg
-          | new mp1 == "liftFst" ->
-              mkTermAppl uncurryOp $ mkTermAppl flipOp $
-              mkTermAppl (mkTermAppl compOp f) $ mkTermAppl flipOp $ 
-              mkTermAppl curryOp arg
       (Const mp _, Tuplex [a, b] _)
           | new mp == "ifImplOp" -> binImpl b a
           | new mp == "exEqualOp" && (isLifted a || isLifted b) ->
