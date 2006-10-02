@@ -1877,8 +1877,8 @@ createFinalDGraph
                 else
                   currentmorph
                     {
-                        mtarget = fromcaslsign
-                      , msource = tocaslsign
+                        mtarget = tocaslsign
+                      , msource = fromcaslsign
                     }
           in
             (
@@ -2514,6 +2514,7 @@ makeImportGraphFullXml go source =
   point to the old signature. This function updates the target-
   signatures of all morphisms.
 -}
+{-
 fixMorphisms::DGraph->DGraph
 fixMorphisms dg =
   let
@@ -2571,6 +2572,7 @@ fixMorphisms dg =
         labedges
   in
     Graph.mkGraph labnodes newedges
+-}
 
 createQuasiMappedLists::Eq a=>[(a,a)]->[(a,[a])]
 createQuasiMappedLists = foldl (\i x -> insert x i) []

@@ -3817,6 +3817,13 @@ makeUniqueNodeNameCounts
     Map.empty
     unnMap
 
+{-
+  name collisions are  handled by numbering names in order of
+  appereance and adding "_<number>" to their name. From this
+  a second form of collisions arises when there is a 'natural'
+  name in the form of "name_1". This algorithm uses the numbering
+  as a start and checks uniqueness per theory (and for node-names)
+-}
 makeUniqueNames::
   Map.Map LIB_NAME (Set.Set (IdentifierWON, Int))
   ->Map.Map LIB_NAME (Set.Set (IdentifierWON, String))
@@ -3825,14 +3832,41 @@ makeUniqueNames
   =
   Map.map
     (\iwons ->
-      Set.map
-        (\(iwon, c) ->
-          let
-            ext = case c of 0 -> ""; _ -> "_" ++ (show c)
-          in
-            (iwon, (show (getIdId (woItem iwon))) ++ ext)
-        )
-        iwons
+      let
+        (newiwons, _, _) =
+          Set.fold
+            (\(iwon, c) (ni, nodeNames, inTheoryNames) ->
+              let
+                previousNameSet = 
+                  case woItem iwon of
+                    (IdNodeName {}) -> nodeNames
+                    _ -> Map.findWithDefault Set.empty (woOrigin iwon) inTheoryNames
+                finalCount =
+                  until
+                    (\c' ->
+                      let
+                        ext = case c' of 0 -> ""; _ -> "_" ++ (show c')
+                        name = (show $ getIdId $ woItem iwon) ++ ext
+                      in
+                        not $ Set.member name previousNameSet
+                    )
+                    (+1)
+                    c
+                finalExt = case finalCount of 0 -> ""; _ -> "_" ++ (show finalCount)
+                finalName = (show $ getIdId $ woItem iwon) ++ finalExt
+                newSet = Set.insert (iwon, finalName) ni
+                newNameSet = Set.insert finalName previousNameSet
+              in
+                case woItem iwon of
+                  (IdNodeName {}) ->
+                    (newSet, newNameSet, inTheoryNames)
+                  _ ->
+                    (newSet, nodeNames, Map.insert (woOrigin iwon) newNameSet inTheoryNames)
+            )
+            (Set.empty, Set.empty, Map.empty)
+            iwons
+      in
+        newiwons
     )
     countMap
 
