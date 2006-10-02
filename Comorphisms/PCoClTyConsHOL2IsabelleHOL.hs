@@ -317,8 +317,14 @@ whenElseOp = conDouble "whenElseOp"
 uncurryOpS :: String
 uncurryOpS = "uncurryOp"
 
+curryOpS :: String
+curryOpS = "curryOp"
+
 uncurryOp :: Isa.Term
 uncurryOp = conDouble uncurryOpS
+
+curryOp :: Isa.Term
+curryOp = conDouble curryOpS
 
 for :: Int -> (a -> a) -> a -> a
 for n f a = if n <= 0 then a else for (n - 1) f $ f a
@@ -602,8 +608,11 @@ isLifted t = case t of
     App (Const f _) _ _ | new f == someS -> True
     _ -> False
 
+flipS :: String
+flipS = "flip"
+
 flipOp :: Isa.Term
-flipOp = conDouble "flip"
+flipOp = conDouble flipS
 
 mkTermAppl :: Isa.Term -> Isa.Term -> Isa.Term
 mkTermAppl fun arg = case (fun, arg) of
@@ -616,14 +625,14 @@ mkTermAppl fun arg = case (fun, arg) of
       (App (Const mp _) f _, Tuplex [a, b] c)
           | new mp == "mapFst" -> Tuplex [mkTermAppl f a, b] c
           | new mp == "mapSnd" -> Tuplex [a, mkTermAppl f b] c
-      (App (Const mp1 _) f _, App u@(Const mp2 _) g _)
-          | new mp1 == "liftSnd" && new mp2 == uncurryOpS ->
-              mkTermAppl u $
-              mkTermAppl (mkTermAppl compOp f) g
-          | new mp1 == "liftFst" && new mp2 == uncurryOpS ->
-              mkTermAppl u $
-              mkTermAppl flipOp $ mkTermAppl (mkTermAppl compOp f)
-                                $ mkTermAppl flipOp g
+      (App (Const mp1 _) f _, _)
+          | new mp1 == "liftSnd" ->
+              mkTermAppl uncurryOp $
+              mkTermAppl (mkTermAppl compOp f) $ mkTermAppl curryOp arg
+          | new mp1 == "liftFst" ->
+              mkTermAppl uncurryOp $ mkTermAppl flipOp $
+              mkTermAppl (mkTermAppl compOp f) $ mkTermAppl flipOp $ 
+              mkTermAppl curryOp arg
       (Const mp _, Tuplex [a, b] _)
           | new mp == "ifImplOp" -> binImpl b a
           | new mp == "exEqualOp" && (isLifted a || isLifted b) ->
@@ -648,8 +657,8 @@ mkTermAppl fun arg = case (fun, arg) of
           | new mp == "lift2unit" -> mkTermAppl (conDouble "option2bool") arg
       (App (App (Const cmp _) f _) g c, _)
           | new cmp == compS -> mkTermAppl f $ mkTermAppl g arg
-          | new cmp == "curryOp" -> mkTermAppl f $ Tuplex [g, arg] c
-          | new cmp == "flip" -> mkTermAppl (mkTermAppl f arg) g
+          | new cmp == curryOpS -> mkTermAppl f $ Tuplex [g, arg] c
+          | new cmp == flipS -> mkTermAppl (mkTermAppl f arg) g
       (Const d _, App (Const sm _) a _)
           | new d == "defOp" && new sm == someS -> true
           | new d == "option2bool" && new sm == someS -> true
