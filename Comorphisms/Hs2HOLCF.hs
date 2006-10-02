@@ -183,13 +183,13 @@ standizeVars k' = let
        (ls, y) = stdVars (as, nk) (i + 1)
      in (((mkqXVs i, a), na) : ls, y)
    sbVs a = case a of
-    (Free _ _, b) -> mkqXVs b
+    (Free _, b) -> mkqXVs b
     (Wildcard, b) -> mkqXVs b
     (f, _) -> f
  in stdVars k' 1
 
 mkVs :: String -> Int -> IsaTerm
-mkVs str n = Free (mkVName $ str ++ show n) noType
+mkVs str n = Free (mkVName $ str ++ show n)
 
 -- Forms the nested case expression, using trCase.
 formCaseExp :: Continuity
@@ -205,7 +205,7 @@ formCaseExp ct ls =
       xs = map head k1s
       xxs = remove_duplicates [((snd $ fst $ snd x, snd $ snd x),
                 [(us,t) | (u:us,t) <- ls, u == x] ++
-                     [(us,t) | ((_,(_,Free _ _)):us,t) <- ls]) | x <- xs]
+                     [(us,t) | ((_,(_,Free _)):us,t) <- ls]) | x <- xs]
       ws = remove_duplicates $ [((a,b),formCaseExp ct c) | ((a,b),c) <- xxs]
     in makeCase (fst $ fst $ snd h) $ map (\z -> trCase ct z ws) (fst h)
  where
@@ -542,7 +542,7 @@ trCase r h ys = case ys of
   repVsCPt a b n = case a of
       IsaSign.Const _ _ -> (a, b)
       IsaSign.Paren x -> repVsCPt x b n
-      IsaSign.App x y@(IsaSign.Free _ _) z -> let
+      IsaSign.App x y@(IsaSign.Free _) z -> let
              nv = mkpXVs n
              nr = renVars nv [y] b
              st = repVsCPt x nr (n-1)
@@ -608,10 +608,10 @@ transP a trId trP p =
 transCN :: Continuity -> HsScheme -> PNT -> Maybe IsaTerm
 transCN c s x = let
   y = showIsaName x
-  z = transScheme c s
+  z = noType
   f w = Const (mkVName w) z
   in return $
-  if elem pcpo (typeSort z) then case pp x of
+  if isCont c then case pp x of
       "True"   -> f "TT"
       "False"  -> f "FF"
       ":"      -> f "lCons"
@@ -625,12 +625,12 @@ transCN c s x = let
 transHV :: Continuity -> HsScheme -> PNT -> Maybe IsaTerm
 transHV a s x = let
       n = showIsaName x
-      k = maybe noType id $ transMScheme a s -- maybe fail here
-      tag = elem pcpo (typeSort k)
+      k = noType
+      tag = isCont a
       qq = pp x
       mkConst w = Const (mkVName w) k
       mkVConst v = Const v k
-      mkFree w = Free (mkVName w) k
+      mkFree w = Free (mkVName w)
    in if qq == "error" then Nothing else return $
    case qq of
    "==" -> mkConst "hEq"

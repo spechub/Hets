@@ -181,14 +181,14 @@ transPredType pt = mkCurryFunType (map transSort $ predArgs pt) boolType
 
 var :: String -> Term
 --(c) var v = IsaSign.Free v noType isaTerm
-var v = IsaSign.Free (mkVName v) noType
+var v = IsaSign.Free (mkVName v)
 
 transVar :: VAR -> String
 transVar v = showIsaConstT (simpleIdToId v) baseSign
 
 quantifyIsa :: String -> (String, Typ) -> Term -> Term
-quantifyIsa q (v,t) phi =
-  App (conDouble q) (Abs (Free (mkVName v) noType) t phi NotCont) NotCont
+quantifyIsa q (v, _) phi =
+  App (conDouble q) (Abs (var v) phi NotCont) NotCont
 --(c) App (Const q noType isaTerm) (Abs (Cont v noType isaTerm) t phi NotCont)
 --(c) NotCont
 --quantifyIsa :: String -> (String, Typ) -> Term -> Term

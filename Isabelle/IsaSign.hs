@@ -80,12 +80,10 @@ data Continuity = IsCont | NotCont deriving (Eq, Ord ,Show)
 data Term =
         Const { termName     :: VName,
                 termType     :: Typ }
-      | Free  { termName   :: VName,
-                termType     :: Typ }
+      | Free  { termName   :: VName }
       | Var  Indexname Typ
       | Bound Int
       | Abs   { absVar     :: Term,
-                termType   :: Typ,
                 termId     :: Term,
                 continuity :: Continuity }  -- lambda abstraction
       | App  { funId :: Term,

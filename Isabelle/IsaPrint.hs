@@ -228,7 +228,7 @@ printMixfixAppl b c f args = case f of
                      in printDocApp b c e rargs
                GT -> printApp b c f args
         Const vn _ | new vn `elem` [allS, exS, ex1S] -> case args of
-            [Abs v _ t _] -> (fsep [text (new vn) <+> printPlainTerm b v
+            [Abs v t _] -> (fsep [text (new vn) <+> printPlainTerm False v
                     <> text "."
                     , printPlainTerm b t], lowPrio)
             _ -> printApp b c f args
@@ -243,17 +243,18 @@ printTrm b trm = case trm of
         nvn = case ty of
             Type "!!!" [] [tx] ->
                 parens $ dvn <+> doubleColon <+> printType tx
-            _ -> dvn
+            _ | ty == noType -> dvn
+            _ -> parens $ dvn <+> doubleColon <+> printType ty
       in case altSyn vn of
           Nothing -> (nvn, maxPrio)
           Just (AltSyntax s is i) -> if b && null is then
               (fsep $ replaceUnderlines s [], i) else (nvn, maxPrio)
-    Free vn _ -> (text $ new vn, maxPrio)
+    Free vn -> (text $ new vn, maxPrio)
     Var (Indexname _ _) _ -> error "Isa.Term.Var not used"
     Bound _ -> error "Isa.Term.Bound not used"
-    Abs v _ t c -> ((text $ case c of
+    Abs v t c -> ((text $ case c of
         NotCont -> "%"
-        IsCont -> "LAM") <+> printPlainTerm b v <> text "."
+        IsCont -> "LAM") <+> printPlainTerm False v <> text "."
                     <+> printPlainTerm b t, lowPrio)
     If i t e c -> let d = fsep [printPlainTerm b i,
                         text "then" <+> printPlainTerm b t,
@@ -271,13 +272,8 @@ printTrm b trm = case trm of
                  map (\ (p, t) -> fsep [ printPlainTerm b p <+> text "="
                                        , printPlainTerm b t]) es)
            , text "in" <+> printPlainTerm b i], lowPrio)
-    IsaEq t1 t2 -> (fsep [(case t1 of
-        Const vn y -> let
-            vv = text (new vn)
-            tt = printType y
-          in if y == noType then vv else (vv <+> doubleColon <+> tt)
-        _ -> printParenTerm b (isaEqPrio + 1) t1) <+> text "=="
-                  , printParenTerm b isaEqPrio t2], isaEqPrio)
+    IsaEq t1 t2 -> (fsep [ printParenTerm b (isaEqPrio + 1) t1 <+> text "=="
+                         , printParenTerm b isaEqPrio t2], isaEqPrio)
     Tuplex cs c -> ((case c of
         NotCont -> parensForTerm
         IsCont -> \ d -> text "<" <+> d <+> text ">") $

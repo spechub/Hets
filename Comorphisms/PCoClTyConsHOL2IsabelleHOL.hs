@@ -123,9 +123,6 @@ transSignature env = do
 
 unitTyp :: Typ
 unitTyp = Type "unit" holType []
--- types
-transType :: Type -> Result Typ
-transType = fmap transPlainFunType . funType
 
 transFunType :: FunType -> Typ
 transFunType fty = case fty of
@@ -331,7 +328,7 @@ transTerm :: Env -> Set.Set String -> As.Term -> Result (FunType, Isa.Term)
 transTerm sign toks trm = case trm of
     QualVar (VarDecl var t _ _) -> do
         fTy <- funType t
-        return (fTy, Isa.Free (transVar toks var) $ transFunType fTy)
+        return (fTy, Isa.Free (transVar toks var))
     QualOp _ (InstOpId opId is _) ts@(TypeScheme targs ty _) _ -> do
         fTy <- funType ty
         instfTy <- funType $ subst (if null is then Map.empty else
@@ -364,11 +361,10 @@ transTerm sign toks trm = case trm of
                       Existential -> exS
                       Unique -> ex1S
             quantify phi' gvd = case gvd of
-                GenVarDecl (VarDecl var typ _ _) -> do
-                    ty <- transType typ
+                GenVarDecl (VarDecl var _ _ _) -> do
                     return $ termAppl (conDouble $ qname)
-                               $ Abs (con $ transVar toks var)
-                                 ty phi' NotCont
+                               $ Abs (Isa.Free $ transVar toks var)
+                                 phi' NotCont
                 GenTypeVarDecl _ ->  return phi'
         (ty, psi) <- transTerm sign toks phi
         psiR <- foldM quantify psi $ reverse varDecls
@@ -720,4 +716,4 @@ abstraction :: Env -> Set.Set String -> (FunType, Isa.Term) -> As.Term
 abstraction sign toks (ty, body) pat = do
     pTy <- getPatternType pat
     nPat <- transPattern sign toks pat
-    return (FunType pTy ty, Abs nPat (transFunType pTy) body NotCont)
+    return (FunType pTy ty, Abs nPat body NotCont)

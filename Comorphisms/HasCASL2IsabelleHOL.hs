@@ -203,8 +203,8 @@ transProgEq sign (ProgEq pat t _) =
 -- terms
 transTerm :: Env -> As.Term -> IsaSign.Term
 transTerm sign trm = case trm of
-    QualVar (VarDecl var t _ _) ->
-        termAppl conSome $ IsaSign.Free (transVar var) $ transType t
+    QualVar (VarDecl var _ _ _) ->
+        termAppl conSome $ IsaSign.Free (transVar var)
 
     QualOp _ (InstOpId opId _ _) ts _ ->
         if opId == trueId then true
@@ -213,9 +213,9 @@ transTerm sign trm = case trm of
 
     QuantifiedTerm quan varDecls phi _ ->
         let quantify q gvd phi' = case gvd of
-                GenVarDecl (VarDecl var typ _ _) ->
+                GenVarDecl (VarDecl var _ _ _) ->
                     termAppl (conDouble $ qname q)
-                    $ Abs (con $ transVar var) (transType typ) phi' NotCont
+                    $ Abs (IsaSign.Free $ transVar var) phi' NotCont
                 GenTypeVarDecl _ ->  phi'
             qname Universal   = allS
             qname Existential = exS
@@ -224,8 +224,8 @@ transTerm sign trm = case trm of
     TypedTerm t _ _ _ -> transTerm sign t
     LambdaTerm pats p body _ ->
         let lambdaAbs f = if null pats then termAppl conSome
-                           (Abs (IsaSign.Free (mkVName "dummyVar") noType)
-                                    noType (f sign body) NotCont)
+                           (Abs (IsaSign.Free $ mkVName "dummyVar")
+                                    (f sign body) NotCont)
                           else termAppl conSome (foldr (abstraction sign)
                                  (f sign body)
                                  pats)
@@ -246,11 +246,11 @@ transTerm sign trm = case trm of
         -- introduces new case statement if case variable is
         -- a term application that may evaluate to 'Some x' or 'None'
         QualVar (VarDecl decl _ _ _) ->
-            Case (IsaSign.Free (transVar decl) noType) alts
+            Case (IsaSign.Free (transVar decl)) alts
         _ -> Case (transTerm sign t)
              [(conDouble "None", conDouble "None"),
-              (App conSome (IsaSign.Free (mkVName "caseVar") noType) NotCont,
-               Case (IsaSign.Free (mkVName "caseVar") noType) alts)]
+              (App conSome (IsaSign.Free (mkVName "caseVar")) NotCont,
+               Case (IsaSign.Free (mkVName "caseVar")) alts)]
     _ -> error $ "HasCASL2IsabelleHOL.transTerm " ++ showDoc trm "\n"
                 ++ show trm
 
@@ -317,7 +317,7 @@ transWhenElse sign t =
 -- form Abs(pattern term)
 abstraction :: Env -> As.Term -> IsaSign.Term -> IsaSign.Term
 abstraction sign pat body =
-    Abs (transPattern sign pat) (getType pat) body NotCont where
+    Abs (transPattern sign pat) body NotCont where
 --    Abs (transPattern sign pat) body NotCont where
     getType t =
       case t of
@@ -331,8 +331,8 @@ abstraction sign pat body =
 -- translation of lambda patterns
 -- a pattern keeps his type 't', isn't translated to 't option'
 transPattern :: Env -> As.Term -> IsaSign.Term
-transPattern _ (QualVar (VarDecl var typ _ _)) =
-  IsaSign.Free (transVar var) $ transType typ
+transPattern _ (QualVar (VarDecl var _ _ _)) =
+  IsaSign.Free (transVar var)
 transPattern sign (TupleTerm terms@(_ : _)  _) =
     foldl1 (binConst isaPair) $ map (transPattern sign) terms
 transPattern _ (QualOp _ (InstOpId opId _ _) _ _) =
@@ -344,8 +344,8 @@ transPattern sign t = transTerm sign t
 
 -- translation of total lambda abstraction bodies
 transTotalLambda :: Env -> As.Term -> IsaSign.Term
-transTotalLambda _ (QualVar (VarDecl var typ _ _)) =
-  IsaSign.Free (transVar var) (transType typ)
+transTotalLambda _ (QualVar (VarDecl var _ _ _)) =
+  IsaSign.Free (transVar var)
 transTotalLambda sign t@(QualOp _ (InstOpId opId _ _) _ _) =
   if opId == trueId || opId == falseId then transTerm sign t
     else conDouble $ showIsaConstT opId baseSign
@@ -358,8 +358,8 @@ transTotalLambda sign (LambdaTerm pats part body _) =
     Total   -> lambdaAbs transTotalLambda
   where
     lambdaAbs f =
-      if (null pats) then Abs (IsaSign.Free (mkVName "dummyVar") noType)
-                               noType (f sign body) NotCont
+      if (null pats) then Abs (IsaSign.Free (mkVName "dummyVar"))
+                               (f sign body) NotCont
 --      if (null pats) then Abs [("dummyVar", noType)]
         else foldr (abstraction sign) (f sign body) pats
 transTotalLambda sign (TupleTerm terms@(_ : _) _) =
@@ -662,7 +662,7 @@ transCaseAlt sign (ProgEq pat trm _) =
 
 transPat :: Env -> As.Term -> IsaSign.Term
 transPat _ (QualVar (VarDecl var _ _ _)) =
-    IsaSign.Free (transVar var) noType
+    IsaSign.Free (transVar var)
 transPat sign (ApplTerm term1 term2 _) =
     termAppl (transPat sign term1) (transPat sign term2)
 transPat sign (TypedTerm trm _ _ _) = transPat sign trm

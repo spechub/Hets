@@ -62,6 +62,7 @@ module Comorphisms.Hs2HOLCFaux
     , getDepDoms
     , getDomType
     , getFieldTypes
+    , isCont
     ) where
 
 import Data.List
@@ -248,7 +249,7 @@ holEq t1 t2 = termMAppl NotCont (con eqV) [t1, t2]
 getTermName :: Term -> String
 getTermName a = case a of
   Const x _ -> new x
-  Free x _ -> new x
+  Free x -> new x
   _ -> "_"
 
 -------------------------------- Name translation ----------------------------
@@ -495,7 +496,7 @@ termMAbs c ts t =
  case ts of
    [] -> t
    v:vs -> if isDicConst v then (termMAbs c vs t) else
-      IsaSign.Abs v (termType v) (termMAbs c vs t) c
+      IsaSign.Abs v (termMAbs c vs t) c
 
 termMAppl :: Continuity -> Term -> [Term] -> Term
 termMAppl c t ts =
@@ -537,7 +538,7 @@ isDicConst t = case t of
 constFilter :: Term -> [Term]
 constFilter t = case t of
  IsaSign.Const _ _ -> [t]
- IsaSign.Abs _ _ x _ -> constFilter x
+ IsaSign.Abs _ x _ -> constFilter x
  IsaSign.App x y _ -> concatMap constFilter [x, y]
  IsaSign.If x y z _ -> concatMap constFilter [x, y, z]
  IsaSign.Case x ys -> concatMap constFilter $ x : map snd ys
@@ -557,7 +558,7 @@ extFBody :: Term -> (Term, [Term])
 extFBody t' = extFB t' []
  where
   extFB t as = case t of
-     IsaSign.Abs x _ b _ -> extFB b (x : as)
+     IsaSign.Abs x b _ -> extFB b (x : as)
      _ -> (t, reverse as)
 
 extTBody :: Term -> (Term, [Term])
@@ -583,10 +584,10 @@ destCaseU ((t,rs),ks) = case (t,rs) of
 destCase :: IsaTerm -> (VName -> VName) -> [(IsaPattern,IsaTerm)]
 destCase t f = let w = extFBody t in case w of
     (Case v ls, _ : vs) -> case v of
-          Free n tt ->
-                [(renVars (Free (f n) tt) [l] l,
+          Free n ->
+                [(renVars (Free (f n)) [l] l,
                          -- repl. l if l is a var.
-                  renVars (Free (f n) tt)
+                  renVars (Free (f n))
                          [l] (termMAbs NotCont vs m)) | (l, m) <- ls]
           _ -> [(l,termMAbs NotCont vs m) | (l, m) <- ls]
     _ -> error "Hs2HOLCFaux.destCase"
@@ -604,10 +605,10 @@ check out, there might be bugs -}
 simTerms :: Term -> Term -> Bool
 simTerms t1 t2 = case (t1, t2) of
  (IsaSign.Const x _,  IsaSign.Const y _) -> x == y
- (IsaSign.Free _ _, IsaSign.Free _ _) -> True
+ (IsaSign.Free _, IsaSign.Free _) -> True
  (IsaSign.Var _ _, IsaSign.Var _ _) -> True
  (IsaSign.Bound _, IsaSign.Bound _) -> True
- (IsaSign.Abs _ _ _ c, IsaSign.Abs _ _ _ d) -> c == d
+ (IsaSign.Abs _ _ c, IsaSign.Abs _ _ d) -> c == d
  (If _ _ _ c, If _ _ _ d) -> c == d
  (Case _ _, Case _ _) -> True
  (Let _ _, Let _ _) -> True
@@ -625,8 +626,8 @@ simTerms t1 t2 = case (t1, t2) of
 {- in term t, replaces variable f for variables in ls     -}
 renVars ::  Term -> [Term] -> Term -> Term
 renVars f ls t = case t of
- IsaSign.Free _ _ -> if elem t ls then f else t
- IsaSign.Abs v y x c -> IsaSign.Abs v y (renVars f ls x) c
+ IsaSign.Free _ -> if elem t ls then f else t
+ IsaSign.Abs v x c -> IsaSign.Abs v (renVars f ls x) c
  IsaSign.App x y c -> IsaSign.App (renVars f ls x) (renVars f ls y) c
  IsaSign.If x y z c ->
      IsaSign.If (renVars f ls x) (renVars f ls y) (renVars f ls z) c
@@ -642,7 +643,7 @@ renVars f ls t = case t of
 
 renFuns :: (Term -> Maybe Term) -> Term -> Term
 renFuns f t = case t of
- IsaSign.Abs v y x c -> IsaSign.Abs v y (renFuns f x) c
+ IsaSign.Abs v x c -> IsaSign.Abs v (renFuns f x) c
  IsaSign.App x y c -> maybe (IsaSign.App (renFuns f x) (renFuns f y) c) id
         $ f t
  IsaSign.If x y z c ->
