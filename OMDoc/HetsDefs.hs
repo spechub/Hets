@@ -3834,45 +3834,84 @@ makeUniqueNames::
 makeUniqueNames
   countMap
   =
+  let
+    unnMap =
+      Map.map
+        (\iwons ->
+          let
+            (newiwons, _, _) =
+              Set.fold
+                (\(iwon, c) (ni, nodeNames, inTheoryNames) ->
+                  let
+                    previousNameSet = 
+                      case woItem iwon of
+                        (IdNodeName {}) -> nodeNames
+                        _ -> Map.findWithDefault Set.empty (woOrigin iwon) inTheoryNames
+                    finalCount =
+                      until
+                        (\c' ->
+                          let
+                            ext = case c' of 0 -> ""; _ -> "_" ++ (show c')
+                            name = (show $ getIdId $ woItem iwon) ++ ext
+                          in
+                            not $ Set.member name previousNameSet
+                        )
+                        (+1)
+                        c
+                    finalExt = case finalCount of 0 -> ""; _ -> "_" ++ (show finalCount)
+                    finalName = (show $ getIdId $ woItem iwon) ++ finalExt
+                    newSet = Set.insert (iwon, finalName) ni
+                    newNameSet = Set.insert finalName previousNameSet
+                  in
+                    case woItem iwon of
+                      (IdNodeName {}) ->
+                        (newSet, newNameSet, inTheoryNames)
+                      _ ->
+                        (newSet, nodeNames, Map.insert (woOrigin iwon) newNameSet inTheoryNames)
+                )
+                (Set.empty, Set.empty, Map.empty)
+                iwons
+          in
+            newiwons
+        )
+        countMap
+  in
+    matchConsWithOps
+      unnMap
+
+matchConsWithOps::
+    Map.Map LIB_NAME (Set.Set (IdentifierWON, String))
+  ->Map.Map LIB_NAME (Set.Set (IdentifierWON, String))
+matchConsWithOps
+  unnMap
+  =
   Map.map
     (\iwons ->
-      let
-        (newiwons, _, _) =
-          Set.fold
-            (\(iwon, c) (ni, nodeNames, inTheoryNames) ->
-              let
-                previousNameSet = 
-                  case woItem iwon of
-                    (IdNodeName {}) -> nodeNames
-                    _ -> Map.findWithDefault Set.empty (woOrigin iwon) inTheoryNames
-                finalCount =
-                  until
-                    (\c' ->
-                      let
-                        ext = case c' of 0 -> ""; _ -> "_" ++ (show c')
-                        name = (show $ getIdId $ woItem iwon) ++ ext
-                      in
-                        not $ Set.member name previousNameSet
+      Set.map
+        (\(iwon, name) ->
+          case woItem iwon of
+            (IdCons conid cont n) ->
+              case
+                Set.toList
+                  $
+                  Set.filter
+                    (\(iwon', _) ->
+                      case woItem iwon' of
+                        (IdOp opid _) ->
+                          (opid == conid)
+                        _ -> False
                     )
-                    (+1)
-                    c
-                finalExt = case finalCount of 0 -> ""; _ -> "_" ++ (show finalCount)
-                finalName = (show $ getIdId $ woItem iwon) ++ finalExt
-                newSet = Set.insert (iwon, finalName) ni
-                newNameSet = Set.insert finalName previousNameSet
-              in
-                case woItem iwon of
-                  (IdNodeName {}) ->
-                    (newSet, newNameSet, inTheoryNames)
-                  _ ->
-                    (newSet, nodeNames, Map.insert (woOrigin iwon) newNameSet inTheoryNames)
-            )
-            (Set.empty, Set.empty, Map.empty)
-            iwons
-      in
-        newiwons
+                    iwons
+              of
+                [] -> Debug.Trace.trace ("No Operator for Constructor " ++ (show iwon)) (iwon, name)
+                ((_, name'):_) -> (iwon, name')
+            _ ->
+              (iwon, name)
+        )
+        iwons
     )
-    countMap
+    unnMap
+
 
 makeUniqueIdNameMapping::
   LibEnv
