@@ -18,7 +18,8 @@ import qualified Common.Lib.Set as Set
 import CASL.Sign       
 import Common.AS_Annotation
 import Common.Id
-
+-- import Debug.Trace
+-- import Common.DocUtils
 
 -- | Sorted_term is always ignored
 term :: TERM f -> TERM f
@@ -352,39 +353,21 @@ opSymbOfTerm t =
 
 -- constructorOverload :: Sign f e -> Sign f e -> [OP_SYMB] -> [OP_SYMB]
 constructorOverload :: Sign f e -> OpMap -> [OP_SYMB] -> [OP_SYMB]
-constructorOverload s opm os = concat $ map (\ o1 -> cons_Overload o1 s) os 
-    where cons_Overload o sig1 =
+constructorOverload s opm os = concat $ map (\ o1 -> cons_Overload o1) os 
+    where cons_Overload o =
               case o of
                 Op_name _ -> [o]
                 Qual_op_name on1 ot _ ->
                     case Map.lookup on1 opm of
                       Nothing -> []
-                      Just x -> concat $ map (\opt->cons sig1 on1 ot opt) $ 
-                                (Set.toList x)
-                 -- concat $ map (\opt->cons sig1 on1 ot opt) $ 
-                 -- (Set.elems $ Map.findWithDefault Set.empty on1 opm)
-          cons sig on opt1 opt2 = 
-              case (leqF sig (toOpType opt1) opt2) of
-                True -> [Qual_op_name on (toOP_TYPE opt2) nullRange]
+                      Just op_t -> concat $ map (\opt->cons on1 ot opt) $ 
+                                   (Set.toList $ op_t)
+          cons on opt1 opt2 = 
+              case (leqF s (toOpType opt1) opt2) of
+                True -> [(Qual_op_name on (toOP_TYPE opt2) nullRange)]
                 False -> [] 
 
-{-
-constructorOverload :: Sign f e -> [OP_SYMB] -> [TERM f] -> [OP_SYMB]
-constructorOverload s os ts = 
-    everyOnce $ foldl (\os1 t->consOverload os1 t) os ts
-    where consOverload os t = concat $ map (\o-> cons_Overload o t) os 
-          cons_Overload o t1 =
-              case o of
-                Op_name _ -> [o]
-                Qual_op_name on1 ot _ -> 
-                  case (opSymbOfTerm t1) of
-                    Op_name _ -> [o]
-                    Qual_op_name on2 ot2 _ ->
-                      case (leqF s (toOpType ot2) (toOpType ot)) && 
-                           (on1 == on2) of 
-                        True -> [o,(opSymbOfTerm t1)]
-                        False -> [o] 
--}
+
 
 -- | transform id to string
 idStr :: Id -> String

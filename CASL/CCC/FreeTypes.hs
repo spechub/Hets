@@ -158,10 +158,10 @@ checkFreeType (osig,osens) m fsn
     srts = trace (showDoc srts1 "srts") srts1      --   srts
     constructors_o = trace (showDoc constructors1 "constrs_old") constructors1
                                                            -- constructors
-    op_map1 = opMap sig
+    op_map1 = opMap $ mtarget m 
     op_map = trace (showDoc op_map1 "op_map") op_map1
  --  tmp = trace (showDoc (last constructors_o) "  tmp") (last constructors_o) 
-    constructors2 = constructorOverload sig op_map constructors_o
+    constructors2 = constructorOverload (mtarget m) op_map constructors_o
  --   constructors2 = constructorOverload sig osig constructors_o
 
     constructors = trace (showDoc constructors2 "constrs_new") constructors2
