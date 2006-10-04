@@ -1221,8 +1221,6 @@ axiom_substr f =
               "not(eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ "))"
           Strong_equation t1 t2 _ -> 
               "not(eq(" ++ (term_str t1) ++ "," ++ (term_str t2) ++ "))"
-          Definedness _ _ -> 
-              ""           -- not implement
           _ -> error "CASL.CCC.TerminationProof.str_substr.<Negation>"
     True_atom _ -> 
         "true"     
@@ -1244,7 +1242,7 @@ conj_str :: [FORMULA f] -> String
 conj_str fs =
   if length fs == 2 then ("and(" ++ (axiom_substr $ head fs) ++ "," ++
                                    (axiom_substr $ last fs) ++ ")")
-  else ("and(" ++ (axiom_str $ head fs) ++ "," ++
+  else ("and(" ++ (axiom_substr $ head fs) ++ "," ++
                   (conj_str $ tail fs) ++ ")")
 
 
@@ -1253,8 +1251,8 @@ disj_str :: [FORMULA f] -> String
 disj_str fs =
   if length fs == 2 then ("or(" ++ (axiom_substr $ head fs) ++ "," ++
                                   (axiom_substr $ last fs) ++ ")")
-  else ("or(" ++ (axiom_str $ head fs) ++ "," ++
-                 (conj_str $ tail fs) ++ ")")
+  else ("or(" ++ (axiom_substr $ head fs) ++ "," ++
+                 (disj_str $ tail fs) ++ ")")
 
 
 -- | transform a term to string
