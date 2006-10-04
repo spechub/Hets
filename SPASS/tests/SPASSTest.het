@@ -169,4 +169,15 @@ spec Keywords =
      sort s
      op status : s
 
+spec Eq_Pred =
+     sort s
+     pred __eq__ : s * s;
+	  EQUAL(x,y:s) <=> x = y %(this_axiom_should_be_removed_1)%
+     forall x,y,z:s
+     . x = y <=> y eq x %(this_axiom_should_be_removed_2)%
+
+     . EQUAL(x,z) => x=z %(this_axiom_should_be_modified_1)% %implied
+     . EQUAL(x,y) /\ y eq z => x=z %(this_axiom_should_be_modified_2)% %implied
+
+ 
 spec small = {}
