@@ -311,12 +311,14 @@ profiling for "automatic" (look at www.haskell.org/ghc)
 
 restrict proofs: only one prove window per node at a given time
 
-
-
 ************************************************
 further task 1
 ************************************************
 
+generate (x)html code from Doc  
+
+generate more readable LaTeX-code
+see listings.sty for LaTeX generation (cf. CoSiT paper)
 
 ************************************************
 further task 2
@@ -324,8 +326,7 @@ further task 2
 
 Uni-Refactoring,
 
-make modules hierarchical, change scoped type variables for ghc-6.5
-(and older ghcs), replace deprecated code (i.e. FiniteMap, hslibs),
+make modules hierarchical, replace deprecated code (i.e. FiniteMap, hslibs),
 use HaXml as a cabalized library, provide uni as (one?) cabal
 package(s), uni used to work under windows as well, watch the
 i.e. FilePath, Process discussions (libraries@haskell.org)
@@ -358,7 +359,7 @@ einfaches Merge von lokalen Beweisen eines abgespeichteren DG
 further task 4
 ************************************************
 
-graph of Haskell module dependencies
+refined graph of Haskell module dependencies
   using .import files
 
 ************************************************
@@ -374,19 +375,6 @@ Ghc, uni and uDrawGraph should work under windows. Only Isabelle does
 not exist for windows, but SPASS does. Probably only a few path
 computations need to be adapted (made modular) within hets. Also
 position computations (of Parsec) should be checked under windows.
-
-************************************************
-further task 6
-************************************************
-
-refactor pretty printing
-
-eine HetCASL spezifische PP Lib (mit neuem Doc Typ), um Text, Latex
-und andere Formate besser zu unterstützen und einheitlichen PP code
-(independent from GlobalAnnos) für die (Het-)CASL (and HasCASL!)
-Datentypen (particularly for HasCASL data types) zu bekommen.
-
-LaTeX: see listings.sty for LaTeX generation (cf. CoSiT paper)
 
 ************************************************
 remaining stuff
