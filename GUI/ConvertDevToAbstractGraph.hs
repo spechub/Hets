@@ -54,6 +54,7 @@ import GUI.ShowLogicGraph
 import GUI.Utils
 import qualified GUI.HTkUtils (displayTheory)
 import GUI.Taxonomy (displayConceptGraph,displaySubsortGraph)
+import GUI.DGTranslation
 
 import FileDialog
 import Broadcaster(newSimpleBroadcaster,applySimpleUpdate)
@@ -86,11 +87,8 @@ import Data.Maybe
 import List(nub)
 import Control.Monad
 import Control.Monad.Trans
-
 import Events
 import DialogWin (useHTk)
--- import System.Exit (ExitCode(ExitSuccess), exitWith)
--- import Destructible
 
 {- Maps used to track which node resp edge of the abstract graph
 correspondes with which of the development graph and vice versa and
@@ -186,7 +184,7 @@ convertGraph graphMem libname libEnv opts =
 initializeGraph :: IORef GraphMem -> LIB_NAME -> DGraph -> ConversionMaps
                      -> GlobalContext -> HetcatsOpts
                      -> IO (Descr,GraphInfo,IORef ConversionMaps)
-initializeGraph ioRefGraphMem ln dGraph convMaps gContext opts = do
+initializeGraph ioRefGraphMem ln dGraph convMaps _ opts = do
   graphMem <- readIORef ioRefGraphMem
   event <- newIORef 0
   convRef <- newIORef convMaps
@@ -282,8 +280,8 @@ initializeGraph ioRefGraphMem ln dGraph convMaps gContext opts = do
                   Menu (Just "Development Graph")
                   [
                    Button "Translation"
-                          (openTranslateGraph gContext ln opts 
-                                                  $ getDGLogic gContext)
+                          (openTranslateGraph (libname2dg convMaps) ln opts 
+                                $ getDGLogic (libname2dg convMaps))
                   ]
                   ])]
       -- the node types
@@ -1510,75 +1508,40 @@ applyChangesAux2 gid libname grInfo visibleNodes _ convMaps (change:changes) =
                               " of development "
                          ++ "graph does not exist in abstraction graph"
 
-getDGLogic :: GlobalContext -> Res.Result G_sublogics
-getDGLogic gc =
-    let nodesList = Graph.nodes $ devGraph gc
-    in  getDGLogicFromNodes nodesList emptyResult gc
-  where  
-    -- rekursiv translate alle nodes of DevGraph of GlobalContext
-    getDGLogicFromNodes [] result _ = result
-    getDGLogicFromNodes (h:r) (Res.Result mainDiags gSublogic) gcon  =  
-        case fst $ match h $ devGraph gcon of
-          Just (inLinks, _, nodeLab, _) ->
-            -- test if all inlinks of node are homogeneous.
-            if testHomogen inLinks 
-             then
-              let thisSublogic = sublogicOfTh $ dgn_theory nodeLab
-              in case gSublogic of
-                   Nothing ->
-                       getDGLogicFromNodes r (Res.Result mainDiags (Just thisSublogic)) gcon
-                   Just oldSublogic -> 
-                    if isProperSublogic thisSublogic oldSublogic
-                     then 
-                         let diag = Res.mkDiag Res.Hint (show thisSublogic ++ " is proper sublogic of " ++ show oldSublogic) ()
-                         in  getDGLogicFromNodes r (Res.Result (mainDiags ++ [diag]) gSublogic) gcon
-                     else let diag = Res.mkDiag Res.Hint (show thisSublogic ++ " is not proper sublogic of " ++ show oldSublogic) () 
-                          in getDGLogicFromNodes r (Res.Result (mainDiags ++ [diag]) (Just thisSublogic)) gcon
-            else let diag = Res.mkDiag Res.Error ((show $ dgn_name nodeLab) 
-                             ++ " has more than one not homogeneous edge.") ()
-                 in getDGLogicFromNodes r 
-                        (Res.Result (mainDiags ++ [diag]) Nothing) gcon
-          Nothing -> 
-              let diag = Res.mkDiag Res.Error (show h ++ " has be not found in GlobalContext.") ()
-              in getDGLogicFromNodes r (Res.Result (mainDiags ++ [diag]) gSublogic) gcon
-
-    emptyResult = Res.Result [] Nothing
-
-testHomogen :: [(DGLinkLab, Graph.Node)] -> Bool
-testHomogen [] = True
-testHomogen (((DGLink gm _ _),_):r) =
-    if isHomogeneous gm then
-        testHomogen r
-     else False
-
-openTranslateGraph :: GlobalContext 
+openTranslateGraph :: LibEnv
                    -> LIB_NAME
                    -> HetcatsOpts 
                    -> Res.Result G_sublogics
                    -> IO ()
-openTranslateGraph  gcon ln opts (Res.Result diagsSl mSublogic) =
-    if Res.hasErrors diagsSl then
+openTranslateGraph  libEnv ln opts (Res.Result diagsSl mSublogic) =
+    if hasErrors diagsSl then
         do showDiags opts diagsSl 
            return ()
        else 
-         do let paths = findComorphismPaths logicGraph (fromJust mSublogic)
-            Res.Result diagsR i <- runResultT ( do
-             -- let the user choose one
-             sel <- lift $ listBox "Choose a logic translation"
-                                 (map show paths)
-             case sel of
-               Just j -> return j
-               _ -> liftR $ fail "no logic translation chosen"
-                                          )
-            aComor <- return (paths!!(fromJust i))
-            case dg_translation gcon aComor of
-               Res.Result diagsTrans (Just newGcon) ->
-                   do -- showDiags opts (diagsSl ++ diagsR ++ diagsTrans)
-                      putStrLn $ show (diagsSl ++ diagsR ++ diagsTrans)
-                      dg_showGraphAux (\gm -> convertGraph gm ln (Map.singleton ln newGcon) opts)
-               Res.Result diagsTrans Nothing ->
-                   do showDiags opts (diagsSl ++ diagsR ++ diagsTrans)
-                      return ()
+         do case mSublogic of 
+             Just sublogic -> do
+                 let paths = findComorphismPaths logicGraph sublogic
+                 Res.Result diagsR i <- runResultT ( do
+                   -- let the user choose one
+                   sel <- lift $ listBox "Choose a logic translation"
+                              (map show paths)
+                   case sel of
+                     Just j -> return j
+                     _ -> liftR $ fail "no logic translation chosen"
+                                                   )
+                 aComor <- return (paths!!(fromJust i))
+           {-      aComor <- compComorphism (Comorphism CASL2PCFOL) 
+                                          (Comorphism CASL2SubCFOL)   -}
+                 case libEnv_translation libEnv aComor of
+                   Res.Result diagsTrans (Just newLibEnv) ->
+                       do showDiags opts (diagsSl ++ diagsR ++ diagsTrans)
+                          -- putStrLn $ show (diagsSl ++ diagsR ++ diagsTrans)
+                          dg_showGraphAux (\gm -> convertGraph gm ln newLibEnv opts)
+                   Res.Result diagsTrans Nothing ->
+                       do showDiags opts (diagsSl ++ diagsR ++ diagsTrans)
+                          return ()
+             Nothing -> do print "the maximal sublogic is not found."
+                           return ()
 
 dg_showGraphAux :: (IORef GraphMem -> IO (Descr, GraphInfo, ConversionMaps))
                 -> IO ()
@@ -1598,6 +1561,4 @@ dg_showGraphAux convFct = do
 --  InfoBus.shutdown
 --  exitWith ExitSuccess
              
-
-
 

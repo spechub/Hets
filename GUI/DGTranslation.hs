@@ -14,36 +14,71 @@ module GUI.DGTranslation where
 
 --  data structure
 import Logic.Grothendieck
-import Static.DevGraph
+
 import Syntax.AS_Library
-import Common.Result
-import qualified Common.Lib.Map as Map
-
--- import Static.DGTranslation
+import Static.DevGraph
 import Static.DGTranslation
-import Comorphisms.CASL2SubCFOL
 
-{-
-dg_translation_GUI :: (LIB_NAME, LibEnv) 
-                   -> AnyComorphism 
-                   ->IO (LIB_NAME, LibEnv)
-dg_translation_GUI (ln, libenv) comorphism = 
-    do newgc <- case Map.lookup ln libenv of
-                  Just gc -> trans gc comorphism
-                  Nothing -> error "......"
-       let newLibenv = Map.update (\_ -> Just newgc) ln libenv
-       return (ln, newLibenv)
--}
+import qualified Common.Lib.Map as Map
+import Common.Result as Res
 
-trans :: GlobalContext -> AnyComorphism -> IO GlobalContext
-trans gc comorphism= do
-    case dg_translation gc comorphism of
-      Result diagsT maybeGC ->
-          do putStrLn $ show diagsT
-             case maybeGC of
-               Just gc' -> return gc'
-               Nothing  -> return gc  
+import Data.Graph.Inductive.Graph as Graph
+import Data.Maybe
 
+getDGLogic :: LibEnv -> Res.Result G_sublogics
+getDGLogic libEnv = 
+    let sublogicsMap = map (getSublogicFromGlobalContext libEnv) (Map.keys libEnv)
+    in  foldr comSublogics (Res.Result [] Nothing) sublogicsMap
 
-trans_CASL2SubCFOL gc = trans gc (Comorphism CASL2SubCFOL)
+   where comSublogics :: Res.Result G_sublogics 
+                      -> Res.Result G_sublogics 
+                      -> Res.Result G_sublogics
+         comSublogics (Res.Result diags1 msubl1) (Res.Result diags2 msubl2) =
+            case msubl2 of
+              Nothing -> Res.Result (diags1 ++ diags2) msubl1
+              Just subl2 -> if isProperSublogic (fromJust msubl1) subl2 
+                               then Res.Result (diags1 ++ diags2) msubl2 
+                               else Res.Result (diags1 ++ diags2) msubl1
+
+getSublogicFromGlobalContext :: LibEnv -> LIB_NAME -> Res.Result G_sublogics
+getSublogicFromGlobalContext le ln =
+    let gc = lookupGlobalContext ln le
+        nodesList = Graph.nodes $ devGraph gc
+    in  getDGLogicFromNodes nodesList emptyResult gc
+  where  
+    -- rekursiv translate alle nodes of DevGraph of GlobalContext
+    getDGLogicFromNodes [] result _ = result
+    getDGLogicFromNodes (h:r) (Res.Result mainDiags gSublogic) gcon  =  
+        case fst $ match h $ devGraph gcon of
+          Just (inLinks, _, nodeLab, _) ->
+            -- test if all inlinks of node are homogeneous.
+            if testHomogen inLinks 
+             then
+              let thisSublogic = sublogicOfTh $ dgn_theory nodeLab
+              in case gSublogic of
+                   Nothing ->
+                       getDGLogicFromNodes r (Res.Result mainDiags (Just thisSublogic)) gcon
+                   Just oldSublogic -> 
+                    if isProperSublogic thisSublogic oldSublogic
+                     then 
+                         let diag = Res.mkDiag Res.Hint (show thisSublogic ++ " is proper sublogic of " ++ show oldSublogic) ()
+                         in  getDGLogicFromNodes r (Res.Result (mainDiags ++ [diag]) gSublogic) gcon
+                     else let diag = Res.mkDiag Res.Hint (show thisSublogic ++ " is not proper sublogic of " ++ show oldSublogic) () 
+                          in getDGLogicFromNodes r (Res.Result (mainDiags ++ [diag]) (Just thisSublogic)) gcon
+            else let diag = Res.mkDiag Res.Error ((show $ dgn_name nodeLab) 
+                             ++ " has more than one not homogeneous edge.") ()
+                 in getDGLogicFromNodes r 
+                        (Res.Result (mainDiags ++ [diag]) Nothing) gcon
+          Nothing -> 
+              let diag = Res.mkDiag Res.Error (show h ++ " has be not found in GlobalContext.") ()
+              in getDGLogicFromNodes r (Res.Result (mainDiags ++ [diag]) gSublogic) gcon
+
+    emptyResult = Res.Result [] Nothing
+
+testHomogen :: [(DGLinkLab, Graph.Node)] -> Bool
+testHomogen [] = True
+testHomogen (((DGLink gm _ _),_):r) =
+    if isHomogeneous gm then
+        testHomogen r
+     else False
 
