@@ -1508,12 +1508,15 @@ applyChangesAux2 gid libname grInfo visibleNodes _ convMaps (change:changes) =
                               " of development "
                          ++ "graph does not exist in abstraction graph"
 
+-- | display a window of translated graph with maximal sublogic.
 openTranslateGraph :: LibEnv
                    -> LIB_NAME
                    -> HetcatsOpts 
                    -> Res.Result G_sublogics
                    -> IO ()
 openTranslateGraph  libEnv ln opts (Res.Result diagsSl mSublogic) =
+    -- if a error existed by the search of maximal sublogicn 
+    -- (see GUI.DGTranslation.getDGLogic), the process need not to go on.
     if hasErrors diagsSl then
         do showDiags opts diagsSl 
            return ()
@@ -1530,18 +1533,18 @@ openTranslateGraph  libEnv ln opts (Res.Result diagsSl mSublogic) =
                      _ -> liftR $ fail "no logic translation chosen"
                                                    )
                  aComor <- return (paths!!(fromJust i))
-           {-      aComor <- compComorphism (Comorphism CASL2PCFOL) 
-                                          (Comorphism CASL2SubCFOL)   -}
+                 -- graph translation.
                  case libEnv_translation libEnv aComor of
                    Res.Result diagsTrans (Just newLibEnv) ->
                        do showDiags opts (diagsSl ++ diagsR ++ diagsTrans)
-                          -- putStrLn $ show (diagsSl ++ diagsR ++ diagsTrans)
                           if hasErrors (diagsR ++ diagsTrans) then
                               return ()
                             else dg_showGraphAux 
                                      (\gm -> convertGraph gm ln newLibEnv opts)
                    Res.Result diagsTrans Nothing ->
-                       do showDiags opts (diagsSl ++ diagsR ++ diagsTrans)
+                       do print ("the graph is not be translated.\n" ++
+                                   show aComor)
+                          showDiags opts (diagsSl ++ diagsR ++ diagsTrans)
                           return ()
              Nothing -> do print "the maximal sublogic is not found."
                            return ()
@@ -1558,10 +1561,6 @@ dg_showGraphAux convFct = do
   (gid, gv, _cmaps) <- convFct graphMem
   redisplay gid gv
   return ()
---  graph <- get_graphid gid gv
---  sync(destroyed graph)
---  destroy wishInst
---  InfoBus.shutdown
---  exitWith ExitSuccess
+
              
 
