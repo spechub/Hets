@@ -1536,7 +1536,10 @@ openTranslateGraph  libEnv ln opts (Res.Result diagsSl mSublogic) =
                    Res.Result diagsTrans (Just newLibEnv) ->
                        do showDiags opts (diagsSl ++ diagsR ++ diagsTrans)
                           -- putStrLn $ show (diagsSl ++ diagsR ++ diagsTrans)
-                          dg_showGraphAux (\gm -> convertGraph gm ln newLibEnv opts)
+                          if hasErrors (diagsR ++ diagsTrans) then
+                              return ()
+                            else dg_showGraphAux 
+                                     (\gm -> convertGraph gm ln newLibEnv opts)
                    Res.Result diagsTrans Nothing ->
                        do showDiags opts (diagsSl ++ diagsR ++ diagsTrans)
                           return ()
