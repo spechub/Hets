@@ -137,6 +137,34 @@ Freiburger Constraint-Solver angucken im Juli
 Hendrik (Till)
 ************************************************
 
+OmDoc-Ausgabe konform mit RelaxNG?
+OmDoc-Ausgabe Immanual zeigen
+
+Typen von gebundenen Variablen weglassen
+
+XML-Kataloge?
+
+OMDoc-Datentyp einführen
+  Hets <-> Datenstruktur <-> OMDoc
+  Namensgenerierung/rekonstruktion auf der Seite Hets <-> Datenstruktur
+
+Ursprung von Symbolen bei Hets -> OMDoc: irgendeins nehmen
+
+Ausgabe als DAG, mittels OMR oder ref
+  Sharing-Algorithmus verwenden
+
+Constraints mit Indizes: ggf. higher-order-Axiom erzeugen (Till fragen)
+
+Anzeigen von lokalen Beweiszielen bei nicht-gesetztem Cons: Till fragen
+
+OMDoc-Bug melden für
+  free type Vehicle ::= sort Boat | sort Car
+  wobei Boat und Car aus anderen Files kommen
+  S. 156: Satz einfach streichen
+
+sortdef legt bereits ein Symbol an
+
+
 werden Signatur-Symbole in OMDoc mit der Theorie versehen, in der
   sie als erstes eingeführt wurden?
    checken für Library-Importe
@@ -561,6 +589,8 @@ Integration with generic prover interface?
 ************************************************
 Till
 ************************************************
+
+duplicate referenced node in SimpleDatatypes.casl
 
 enhance Web interface with SPASS (%implied, consistency)
 
