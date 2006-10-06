@@ -599,6 +599,8 @@ createLocalMenuNodeTypeDgRef color actGraphInfo
                     createLocalMenuButtonShowTheory gInfo,
                     createLocalMenuButtonProveAtNode gInfo,
                     createLocalMenuButtonShowProofStatusOfNode gInfo,
+                    createLocalMenuButtonShowNumberOfNode,
+                    createLocalMenuButtonShowNumberOfRefNode gInfo,
                     Button "Show referenced library"
                      (\ (_, descr, gid) ->
                         do convMaps <- readIORef convRef
@@ -762,6 +764,22 @@ createLocalMenuButtonShowNumberOfNode =
   (Button "Show number of node"
     (\ (_, descr, _) ->
        getNumberOfNode descr))
+
+createLocalMenuButtonShowNumberOfRefNode :: GInfo -> ButtonMenu NodeDescr
+createLocalMenuButtonShowNumberOfRefNode =
+    createMenuButton "Show number of referenced node" getNumberOfRefNode
+
+getNumberOfRefNode :: Descr -> DGraphAndAGraphNode -> DGraph -> IO()
+getNumberOfRefNode descr dgAndabstrNodeMap dgraph =
+  case InjMap.lookupWithB descr dgAndabstrNodeMap of
+    Just (_, node) ->
+      let dgnode = lab' (context dgraph node)
+          title = "Number of node"
+       in createTextDisplay title (show (dgn_node dgnode)) [HTk.size(10,10)]
+    Nothing -> error ("node with descriptor "
+                      ++ (show descr)
+                      ++ " has no corresponding node in the development graph")
+
 
 -- -------------------------------------------------------------
 -- methods to create the local menus for the edges
