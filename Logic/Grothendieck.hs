@@ -683,3 +683,9 @@ coerceConsChecker ::
       -> ConsChecker sign1 sentence1 morphism1 proof_tree1
       -> m (ConsChecker sign2 sentence2 morphism2 proof_tree2)
 coerceConsChecker l1 l2 msg m1 = primCoerce l1 l2 msg m1
+
+coerceG_sign ::
+   (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+                sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
+   Monad m) => lid1 -> String -> G_sign -> m sign1
+coerceG_sign l1 msg (G_sign l2 sign2) = primCoerce l2 l1 msg sign2
