@@ -250,8 +250,6 @@ printTrm b trm = case trm of
           Just (AltSyntax s is i) -> if b && null is then
               (fsep $ replaceUnderlines s [], i) else (nvn, maxPrio)
     Free vn -> (text $ new vn, maxPrio)
-    Var (Indexname _ _) _ -> error "Isa.Term.Var not used"
-    Bound _ -> error "Isa.Term.Bound not used"
     Abs v t c -> ((text $ case c of
         NotCont -> "%"
         IsCont -> "LAM") <+> printPlainTerm False v <> text "."
@@ -263,10 +261,9 @@ printTrm b trm = case trm of
         NotCont -> (text "if" <+> d, lowPrio)
         IsCont -> (text "If" <+> d <+> text "fi", maxPrio)
     Case e ps -> (text "case" <+> printPlainTerm b e <+> text "of"
-                  $+$ vcat (bar $
-                         map (\ (p, t) ->
-                                  fsep [ printPlainTerm b p <+> text "=>"
-                                       , printPlainTerm b t]) ps), lowPrio)
+        $+$ vcat (bar $ map (\ (p, t) ->
+                 fsep [ printPlainTerm b p <+> text "=>"
+                      , printParenTerm b (lowPrio + 1) t]) ps), lowPrio)
     Let es i -> (fsep [text "let" <+>
            vcat (punctuate semi $
                  map (\ (p, t) -> fsep [ printPlainTerm b p <+> text "="
@@ -281,9 +278,9 @@ printTrm b trm = case trm of
                     , maxPrio)
     Fix t -> (text "fix $" <+> printParenTerm b maxPrio t, maxPrio - 1)
     Bottom -> (text "UU", maxPrio)
-    Wildcard -> error "Isa.Term.Wildcard not used"
     Paren t -> (parensForTerm $ printPlainTerm b t, maxPrio)
     App f a c -> printMixfixAppl b c f [a]
+    _ -> error "IsaPrint.printTerm"
 
 printApp :: Bool -> Continuity -> Term -> [Term] -> (Doc, Int)
 printApp b c t l = case l of
