@@ -298,6 +298,7 @@ eqSubstRecord :: Set.Set PRED_SYMB -- ^ equivalent predicates
 eqSubstRecord eqPredSet extFun =
       (mapRecord extFun) {foldPredication = foldPred}
     where foldPred pt _ _ rng = case pt of
+       -- foldPred pt psymb tList rng = if ... then Strong_eq .. else pt
             Predication psymb tList _ -> if Set.member psymb eqPredSet
                  then Strong_equation (fTerm (head tList)) (fTerm (tList !! 1)) rng
                  else pt
