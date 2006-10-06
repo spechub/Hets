@@ -34,6 +34,7 @@ import Common.Id
 import Common.Result
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
+import Common.Lib.State
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 
@@ -94,10 +95,10 @@ transAssumps ga = foldM insertOps Map.empty . Map.toList where
                          ) m $ zip [1..] infos
 
 getAssumpsToks :: Assumps -> Set.Set String
-getAssumpsToks = Map.foldWithKey (\ i ops s -> 
-    Set.union s $ Set.unions 
+getAssumpsToks = Map.foldWithKey (\ i ops s ->
+    Set.union s $ Set.unions
         (zipWith (\ o _ -> getConstIsaToks i o baseSign) [1..] $ opInfos ops)
-                                 ) Set.empty 
+                                 ) Set.empty
 
 transSignature :: Env -> Result Isa.Sign
 transSignature env = do
@@ -250,18 +251,21 @@ transAltDefn env tm args dt tyId alt = case alt of
 
 -- variables
 transVar :: Set.Set String -> Var -> VName
-transVar toks v = let 
-    s = showIsaConstT v baseSign 
+transVar toks v = let
+    s = showIsaConstT v baseSign
     renVar t = if Set.member t toks then renVar $ "X_" ++ t else t
     in mkVName $ renVar s
+
+mkSimplifiedSen :: Isa.Term -> Isa.Sentence
+mkSimplifiedSen t = mkSen $ evalState (simplify t) 0
 
 transSentence :: Env -> Le.Sentence -> Result Isa.Sentence
 transSentence sign s = case s of
     Le.Formula trm -> do
       (ty, t) <- transTerm sign (getAssumpsToks $ assumps sign) trm
       case ty of
-        BoolType -> return $ mkSen t
-        PartialVal _ -> return $ mkSen $ mkTermAppl option2bool t
+        BoolType -> return $ mkSimplifiedSen t
+        PartialVal _ -> return $ mkSimplifiedSen $ mkTermAppl option2bool t
         FunType _ _ -> error "transSentence: FunType"
         PairType _ _ -> error "transSentence: PairType"
         TupleType _ -> error "transSentence: TupleType"
@@ -284,7 +288,7 @@ transOpId sign op ts@(TypeScheme _ ty _) =
            ops <- Map.lookup op (assumps sign)
            if isSingle (opInfos ops) then return $
               mkIsaConstT (isPredType ty) ga args op baseSign
-             else do 
+             else do
                  i <- elemIndex ts (map opType (opInfos ops))
                  return $ mkIsaConstIT (isPredType ty)
                         ga args op (i+1) baseSign) of
@@ -487,12 +491,12 @@ convFun cvf = case cvf of
     SomeOp -> conSome
     MapFun mf cv -> mkTermAppl (mapFun mf) $ convFun cv
     LiftFun lf cv -> let ccv = convFun cv in case lf of
-        LiftFst -> mkTermAppl (mkTermAppl compOp 
+        LiftFst -> mkTermAppl (mkTermAppl compOp
                      $ mkTermAppl (mkTermAppl compOp uncurryOp) flipOp)
-                   $ mkTermAppl (mkTermAppl compOp 
-                                $ mkTermAppl (mkTermAppl compOp 
-                                $ mkTermAppl compOp ccv) flipOp) curryOp 
-        LiftSnd -> mkTermAppl (mkTermAppl compOp uncurryOp) $ 
+                   $ mkTermAppl (mkTermAppl compOp
+                                $ mkTermAppl (mkTermAppl compOp
+                                $ mkTermAppl compOp ccv) flipOp) curryOp
+        LiftSnd -> mkTermAppl (mkTermAppl compOp uncurryOp) $
                    mkTermAppl (mkTermAppl compOp $ mkTermAppl compOp ccv)
                    curryOp
     ArgFun cv -> mkTermAppl (termAppl flipOp compOp) $ convFun cv
@@ -672,7 +676,35 @@ mkTermAppl fun arg = case (fun, arg) of
           | new i == "option2bool" -> false
       _ -> termAppl fun arg
 
-mkApp :: Env -> Set.Set String -> As.Term -> As.Term 
+
+freshIndex :: State Int Int
+freshIndex = do
+  i <- get
+  put (i + 1)
+  return i
+
+simplify :: Isa.Term -> State Int Isa.Term
+simplify trm = case trm of
+    App (App (Const l _) f _) arg _
+        | elem (new l) ["lift2bool", "lift2option", "mapSome"] -> do
+             n <- freshIndex
+             let casevar = conDouble $ "Xc" ++ show n
+             nF <- simplify $ mkTermAppl f casevar
+             nArg <- simplify arg
+             return $ Case nArg [(noneOp,
+                 if new l == "lift2bool" then false else noneOp),
+                                 (termAppl conSome casevar,
+                 if new l == "mapSome" then mkTermAppl conSome nF else nF)]
+    App f arg c -> do
+        nF <- simplify f
+        nArg <- simplify arg
+        return $ App nF nArg c
+    Abs v t c -> do
+        nT <- simplify t
+        return $ Abs v nT c
+    _ -> return trm
+
+mkApp :: Env -> Set.Set String -> As.Term -> As.Term
       -> Result (FunType, Isa.Term)
 mkApp sg toks f arg = do
     (fTy, fTrm) <- transTerm sg toks f
