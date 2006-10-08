@@ -702,3 +702,91 @@ Modal/ModalSystems.hs: Modal/GeneratePatterns.inline.hs.in \
 	$(RM) $@
 	$(PERL) utils/genTransMFormFunc.pl $< $@
 	chmod 444 $@
+
+initialize_installer: download build
+
+ACTDATE = $(shell date +%F)
+IZPACK_PATH = $(shell echo $$HETS_IZPACK)
+ifeq ($(INSTALLER_DIR), $(empty))
+  ifeq ($(IZPACK_PATH), $(empty))     
+    IZPACK_PATH = $(PWD)/../izpack_het
+  endif
+ else
+    IZPACK_PATH = $(INSTALLER_DIR)
+endif
+
+IZPACK_COMPILE = $(IZPACK_PATH)/bin/compile
+IZPACK_SAMPLE = $(IZPACK_PATH)/sample
+
+#PLATFORM = $(shell uname -s)
+GMPURL = http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/mac/GMP.framework.zip
+INSTALL_XML_SOLARIS = $(IZPACK_SAMPLE)/pack/install-solaris.xml
+INSTALL_XML_MAC = $(IZPACK_PATH)/sample/pack/install-mac.xml
+INSTALL_XML_LINUX = $(IZPACK_PATH)/sample/pack/install-linux.xml
+
+INSTALL_JAR_SOLARIS = hets-installer-sparc-solaris.jar
+INSTALL_JAR_MAC = hets-installer-ppc-mac.jar
+INSTALL_JAR_LINUX = hets-installer-x86-linux.jar
+
+SPASSURL_SOLARIS = http://spass.mpi-sb.mpg.de/download/binaries/spass22sparc59.tgz
+SPASSURL_MAC = http://spass.mpi-sb.mpg.de/download/binaries/spass22mac.dmg
+SPASSURL_LINUX = http://spass.mpi-sb.mpg.de/download/binaries/spass22pclinux.tgz
+
+download : izpack_checkout hetcats-checkout casl-lib-checkout uni-checkout other-download
+
+casl-lib-checkout :
+	@echo update casl-lib 
+	@cd $(IZPACK_SAMPLE) ; \
+	if [ -d CASL-lib ] ; then \
+	  cvs up -dPA CASL-lib ; \
+	 else \
+	  cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:\/repository co -P CASL-lib ; \
+        fi
+
+hetcats-checkout : daily-hets-download
+	$(MAKE) release
+	mv HetCATS.tar $(IZPACK_SAMPLE)/src/
+	$(RM) -r HetCATS
+	cd $(IZPACK_SAMPLE)/src ; tar xvf HetCATS.tar ; $(RM) HetCATS.tar
+
+daily-hets-download :
+	@sh utils/getDailyHets.sh
+	mv $(HOME)/bin/hets-$(ACTDATE) $(IZPACK_SAMPLE)/hets
+
+uni-checkout :
+	@echo update uni
+	@cd $(IZPACK_SAMPLE)/src ; \
+	 if [ -d uni ] ; then \
+	  cvs up -dPA uni ; \
+	 else \
+	  cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:\/repository co -P uni ; \
+	 fi
+
+izpack_checkout :
+	@echo update izpack_het
+	@if [ -d $(IZPACK_PATH) ] ; then \
+	  svn up $(IZPACK_PATH) ; \
+	 else \
+	  svn checkout https://svn-agbkb.informatik.uni-bremen.de/izpack $(IZPACK_PATH) ; \
+	fi
+
+other-download :
+	wget --output-document=$(IZPACK_SAMPLE)/GMP/GMP.framework.zip $(GMPURL) ; \
+	cd $(IZPACK_SAMPLE)/GMP ; \
+	unzip GMP.framework.zip ; \
+	$(RM) GMP.framework.zip 
+	wget --output-document=$(IZPACK_SAMPLE)/SPASS/LINUX/spass.tgz $(SPASSURL_LINUX)
+	wget --output-document=$(IZPACK_SAMPLE)/SPASS/SOLARIS/spass.tgz $(SPASSURL_SOLARIS)
+	wget --output-document=$(IZPACK_SAMPLE)/SPASS/MAC/spass.tgz $(SPASSURL_MAC)
+	cd $(IZPACK_SAMPLE)/SPASS/LINUX/ ; tar xvf spass.tgz ; $(RM) spass.tgz
+	cd $(IZPACK_SAMPLE)/SPASS/SOLARIS/ ; tar xvf spass.tgz ; $(RM) spass.tgz
+	cd $(IZPACK_SAMPLE)/SPASS/MAC/ ; tar xvf spass.tgz ; $(RM) spass.tgz	
+
+build:
+	@chmod +x $(IZPACK_PATH)/bin/compile
+	$(IZPACK_COMPILE) $(INSTALL_XML_LINUX) -b $(IZPACK_SAMPLE)/ -o $(INSTALL_JAR_LINUX) -k standard
+	$(IZPACK_COMPILE) $(INSTALL_XML_SOLARIS) -b $(IZPACK_SAMPLE)/ -o $(INSTALL_JAR_SOLARIS) -k standard
+	$(IZPACK_COMPILE) $(INSTALL_XML_MAC) -b $(IZPACK_SAMPLE)/ -o $(INSTALL_JAR_MAC) -k standard
+
+.PHONY : all download build casl-lib-checkout hetcats-checkout daily-hets-download daily-hets-download other-download izpack_checkout
+

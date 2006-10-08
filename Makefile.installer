@@ -13,7 +13,7 @@ EMPTY =
 ACTDATE = $(shell date +%F)
 IZPACK_PATH = $(shell echo $$HETS_IZPACK)
 ifeq ($(IZPACK_PATH), $(EMPTY))     
-  IZPACK_PATH = $(shell echo $$HETS_HOME)/../izpack_het
+  IZPACK_PATH = $(PWD)/../izpack_het
 endif
 
 IZPACK_COMPILE = $(IZPACK_PATH)/bin/compile
@@ -28,7 +28,7 @@ ifeq ($(PLATFORM), SunOS)
 else 
     ifeq ($(PLATFORM), Darwin)
         INSTALL_XML = $(IZPACK_PATH)/sample/pack/install-mac.xml
-        INSTALL_JAR = hets-installer-pcc-mac.jar
+        INSTALL_JAR = hets-installer-ppc-mac.jar
 	GMPURL=http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/mac/GMP.framework.zip
 	SPASSURL = http://spass.mpi-sb.mpg.de/download/binaries/spass22mac.dmg
     else 
