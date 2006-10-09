@@ -59,12 +59,14 @@ theory2 = (LProver.Theory sign1 $ LProver.toThSens [axiom1,axiom2,axiom3,
 -- Not working though ...
 
 signExt :: SPASS.Sign.Sign
-signExt = emptySign {sortMap = Map.insert "Elem" Nothing Map.empty,
+signExt = emptySign {sortMap = {- Map.insert "Elem" Nothing -} Map.empty,
+            funcMap = Map.fromList (map (\ (x,y) -> (x, Set.singleton y))
+                                    [("gn_bottom",([],"Elem")),
+                                     ("inf",(["Elem", "Elem"],"Elem")),
+                                     ("sup",(["Elem", "Elem"],"Elem"))]),
             predMap = Map.fromList (map (\ (x,y) -> (x, Set.singleton y))
-                                        [ ("<=",["Elem", "Elem"]),
-                                          ("<",["Elem", "Elem"]),
-                                          (">=",["Elem", "Elem"]),
-                                          (">",["Elem", "Elem"])] )}
+                                        [ ("gn_defined",["Elem"]),
+                                          ("p__LtEq__",["Elem", "Elem"])] )}
 
 ga_nonEmpty :: Named SPTerm
 ga_nonEmpty = NamedSen {senName = "ga_nonEmpty", isAxiom = True, isDef = False, sentence = SPQuantTerm {quantSym = SPExists, variableList = [SPSimpleTerm (SPCustomSymbol "X")], qFormula = SPComplexTerm {symbol = SPCustomSymbol "gn_defined", arguments = [SPSimpleTerm (SPCustomSymbol "X")]}}}
@@ -130,7 +132,7 @@ runTestBatch :: String -- ^ theory name
 runTestBatch thName th = 
     do resultRef <- newIORef (Result { diags = [], maybeResult = Just [] })
        (threadID, mvar) <- spassProveCMDLautomaticBatch
-                               True False resultRef thName
+                               True True resultRef thName
                                (LProver.Tactic_script (show $ ATPTactic_script {
                                   ts_timeLimit = 20, ts_extraOpts = [] }))
                                th
