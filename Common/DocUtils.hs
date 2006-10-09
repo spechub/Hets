@@ -23,6 +23,12 @@ import Common.GlobalAnnotations
 -- * the class stuff
 class Show a => Pretty a where
     pretty :: a -> Doc
+    pretties :: [a] -> Doc
+    pretties = brackets . ppWithCommas
+
+instance Pretty Char where
+    pretty c = text [c]
+    pretties = text . take 25
 
 instance Pretty () where
     pretty () = empty
@@ -154,7 +160,7 @@ instance Pretty Int where
     pretty = sidDoc . mkSimpleId . show
 
 instance Pretty a => Pretty [a] where
-    pretty = brackets . ppWithCommas
+    pretty = pretties
 
 instance Pretty a => Pretty (Set.Set a) where
     pretty = specBraces . ppWithCommas . Set.toList

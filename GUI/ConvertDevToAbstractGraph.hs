@@ -99,9 +99,6 @@ data ConversionMaps = ConversionMaps {
 			dgAndabstrEdge :: DGraphAndAGraphEdge,
                         libname2dg :: LibEnv} deriving Show
 
-instance Pretty String where -- overlapping !
-    pretty c = text (take 25 c)
-
 instance Pretty ConversionMaps where
   pretty convMaps =
        text "dg2abstrNode"
