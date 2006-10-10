@@ -15,6 +15,8 @@ import qualified Logic.Prover as LProver
 
 import SPASS.Sign
 import SPASS.Prove
+import SPASS.ProveVampire
+import SPASS.ProveMathServ
 
 
 printStatus :: IO [LProver.Proof_status ATP_ProofTree] -> IO ()
@@ -117,7 +119,7 @@ runTest :: String -- ^ theory name
         -> LProver.Theory Sign Sentence ATP_ProofTree
         -> IO [LProver.Proof_status ATP_ProofTree]
 runTest thName th = 
-    do result <- spassProveCMDLautomatic
+    do result <- vampireCMDLautomatic
                               thName
                               (LProver.Tactic_script (show $ ATPTactic_script {
                                  ts_timeLimit = 20, ts_extraOpts = [] }))
@@ -131,12 +133,15 @@ runTestBatch :: String -- ^ theory name
         -> IO [LProver.Proof_status ATP_ProofTree]
 runTestBatch thName th = 
     do resultRef <- newIORef (Result { diags = [], maybeResult = Just [] })
-       (threadID, mvar) <- spassProveCMDLautomaticBatch
+       (threadID, mvar) <- vampireCMDLautomaticBatch
                                True True resultRef thName
                                (LProver.Tactic_script (show $ ATPTactic_script {
-                                  ts_timeLimit = 20, ts_extraOpts = [] }))
+                                  ts_timeLimit = 30, ts_extraOpts = [] }))
                                th
-       Concurrent.takeMVar mvar
+       Concurrent.threadDelay (40*1000000)
+       Concurrent.killThread threadID
+       Concurrent.threadDelay 1000000 -- waiting for SPASS error message
+
        result <- readIORef resultRef
        maybe (return [LProver.openProof_status "" "SPASS" (ATP_ProofTree "")])
              return
