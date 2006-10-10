@@ -151,7 +151,7 @@ runVampire :: SPASSProverState
            -> IO (ATPRetval, GenericConfig ATP_ProofTree)
            -- ^ (retval, configuration with proof status and complete output)
 runVampire sps cfg saveTPTP thName nGoal = do
-    putStrLn ("running MathServ VampireService...")
+--    putStrLn ("running MathServ VampireService...")
     prob <- showTPTPProblem thName sps nGoal $ extraOpts cfg ++
                                                  ["Requested prover: Vampire"]
     when saveTPTP

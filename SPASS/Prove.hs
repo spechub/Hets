@@ -260,7 +260,7 @@ runSpass :: SPASSProverState -- ^ logical part containing the input Sign and
          -> IO (ATPRetval, GenericConfig ATP_ProofTree)
              -- ^ (retval, configuration with proof status and complete output)
 runSpass sps cfg saveDFG thName nGoal = do
-  putStrLn ("running 'SPASS" ++ (concatMap (' ':) allOptions) ++ "'")
+--  putStrLn ("running 'SPASS" ++ (concatMap (' ':) allOptions) ++ "'")
   spass <- newChildProcess "SPASS" [ChildProcess.arguments allOptions]
   Exception.catch (runSpassReal spass)
     (\ excep -> do

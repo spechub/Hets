@@ -161,7 +161,7 @@ runMSBroker :: SPASSProverState
             -> IO (ATPRetval, GenericConfig ATP_ProofTree)
             -- ^ (retval, configuration with proof status and complete output)
 runMSBroker sps cfg saveTPTP thName nGoal = do
-    putStrLn ("running MathServ Broker...")
+--    putStrLn ("running MathServ Broker...")
     prob <- showTPTPProblem thName sps nGoal $ extraOpts cfg ++ ["[via Broker]"]
     when saveTPTP
         (writeFile (thName++'_':AS_Anno.senName nGoal++".tptp") prob)

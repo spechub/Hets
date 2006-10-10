@@ -168,7 +168,7 @@ genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch f
      in
       if Map.member gName openGoals
       then do
-        putStrLn $ "Trying to prove goal: " ++ gName
+--        putStrLn $ "Trying to prove goal: " ++ gName
         let initEmptyCfg = (emptyConfig prName gName pt)
             curCfg = Map.findWithDefault initEmptyCfg gName openGoals
             runConfig = initEmptyCfg
@@ -181,7 +181,7 @@ genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch f
                                  else extraOptions }
         (err, res_cfg) <-
               runGivenProver pst runConfig saveProblem_batch thName g
-        putStrLn $ prName ++ " returned: " ++ (show err)
+        -- putStrLn $ prName ++ " returned: " ++ (show err)
         -- if the batch prover runs in a separate thread
         -- that's killed via killThread
         -- runGivenProver will return ATPError. We have to stop the
@@ -201,6 +201,10 @@ genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch f
                             ATPError msg -> [Diag {
                              diagKind = Error,
                              diagString = msg,
+                             diagPos = Id.nullRange }]
+                            ATPTLimitExceeded -> [Diag {
+                             diagKind = Warning,
+                             diagString = [],
                              diagPos = Id.nullRange }]
                             _ -> [])
                            { maybeResult = Just ioProofStatus }
@@ -247,7 +251,7 @@ genericCMDLautomatic atpFun prName thName def_TS th pt = do
         let g = head goals
             gName = AS_Anno.senName g
         if Map.member gName openGoals then do
-          putStrLn $ "Trying to prove goal: " ++ gName
+--          putStrLn $ "Trying to prove goal: " ++ gName
           let initEmptyCfg = (emptyConfig prName gName pt)
               curCfg = Map.findWithDefault initEmptyCfg gName openGoals
               runConfig = initEmptyCfg
@@ -259,7 +263,7 @@ genericCMDLautomatic atpFun prName thName def_TS th pt = do
                                  else ts_extraOpts def_TS }
           (err, res_cfg) <-
                 (runProver atpFun) (proverState iGS) runConfig False thName g
-          putStrLn $ prName ++ " returned: " ++ (show err)
+--          putStrLn $ prName ++ " returned: " ++ (show err)
           return $ (appendDiags $ case err of
                                      ATPError msg -> [Diag {
                                             diagKind = Error,
