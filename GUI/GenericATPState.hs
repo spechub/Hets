@@ -177,6 +177,8 @@ data ATPRetval
   | ATPTLimitExceeded
   -- | an error occured while running the prover
   | ATPError String
+  -- | ATP batch mode was stopped with killthread
+  | ATPBatchStopped
   deriving (Eq, Show)
 
 type RunProver sentence proof_tree pst =

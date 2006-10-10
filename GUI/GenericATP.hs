@@ -765,7 +765,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                                updateDisplay st True lb statusLabel timeEntry
                                             optionsEntry axiomsLb
                                case retval of
-                                -- ATPError message -> errorMess message
+                                ATPError message -> errorMess message
                                 _ -> return ()
                                let cont' = cont && batchModeIsRunning st
                                when (not cont)
@@ -871,18 +871,19 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                    prS)
     transNames nm pStat =
       pStat { goalName = trN $ goalName pStat
-            , usedAxioms = foldr (fil $ trN $ goalName pStat) [] $
-                           usedAxioms pStat }
+            , usedAxioms = foldr fil [] $ usedAxioms pStat }
       where trN x' = Map.findWithDefault
                       (error ("Lookup of name failed: (2) "++
                               "should not happen \""++x'++"\""))
                       x' nm
-            fil g ax axs =
+            fil ax axs =
                 maybe (trace ("*** "++prName++" Warning: unknown axiom \""++
                               ax++"\" omitted from list of used\n"++
-                              "      axioms of goal \""++g++"\"")
+                              "      axioms of goal \""++
+                              trN (goalName pStat)++"\"")
                                 axs) (:axs) (Map.lookup ax nm)
-    removeFirstDot ext =
-       case head ext of
-            '.' -> tail ext
-            _   -> ext
+    removeFirstDot [] = error "GenericATP: no extension given"
+    removeFirstDot e@(h:ext) =
+       case h of
+            '.' -> ext
+            _   -> e

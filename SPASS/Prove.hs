@@ -57,8 +57,9 @@ import Proofs.BatchProcessing
 -- * Prover implementation
 
 {- |
-  The Prover implementation. First runs the batch prover (with graphical
-  feedback), then starts the GUI prover.
+  The Prover implementation. 
+
+  Implemented are: a prover GUI, and both commandline prover interfaces.
 -}
 spassProver :: Prover Sign Sentence ATP_ProofTree
 spassProver = emptyProverTemplate
@@ -276,6 +277,11 @@ runSpass sps cfg saveDFG thName nGoal = do
                               emptyConfig (prover_name spassProver)
                                           (AS_Anno.senName nGoal) $
                                           ATP_ProofTree "")
+                Exception.AsyncException Exception.ThreadKilled ->
+                    (ATPBatchStopped,
+                     emptyConfig (prover_name spassProver)
+                                    (AS_Anno.senName nGoal) $
+                                    ATP_ProofTree "")
                 _ -> (ATPError ("Error running SPASS.\n"++show excep),
                         emptyConfig (prover_name spassProver)
                                     (AS_Anno.senName nGoal) $
