@@ -133,14 +133,15 @@ runTestBatch :: String -- ^ theory name
         -> IO [LProver.Proof_status ATP_ProofTree]
 runTestBatch thName th = 
     do resultRef <- newIORef (Result { diags = [], maybeResult = Just [] })
-       (threadID, mvar) <- vampireCMDLautomaticBatch
+       (threadID, mvar) <- spassProveCMDLautomaticBatch
                                True True resultRef thName
                                (LProver.Tactic_script (show $ ATPTactic_script {
                                   ts_timeLimit = 30, ts_extraOpts = [] }))
                                th
-       Concurrent.threadDelay (40*1000000)
+       Concurrent.threadDelay (34*1000000)
        Concurrent.killThread threadID
-       Concurrent.threadDelay 1000000 -- waiting for SPASS error message
+       Concurrent.takeMVar mvar
+       -- Concurrent.threadDelay 1000000 -- waiting for SPASS error message
 
        result <- readIORef resultRef
        maybe (return [LProver.openProof_status "" "SPASS" (ATP_ProofTree "")])
