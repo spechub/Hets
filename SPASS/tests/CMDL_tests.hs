@@ -25,28 +25,28 @@ printStatus act = do st <- act
 
 sign1 :: SPASS.Sign.Sign
 sign1 = emptySign {sortMap = Map.insert "s" Nothing Map.empty,
-                  predMap = Map.fromList (map (\ (x,y) -> (x, Set.singleton y) ) [("P",["s"]),("Q",["s"]),("R",["s"]),("A",["s"])])}
+                  predMap = Map.fromList (map (\ (x,y) -> (x, Set.singleton y) ) [("p",["s"]),("q",["s"]),("r",["s"]),("a",["s"])])}
 
 term_x :: SPTerm 
-term_x = SPSimpleTerm (SPCustomSymbol "x")
+term_x = SPSimpleTerm (SPCustomSymbol "X")
 
 axiom1 :: Named SPTerm
-axiom1 = NamedSen "Ax" True False (SPQuantTerm SPForall [term_x] (SPComplexTerm SPEquiv [SPComplexTerm (SPCustomSymbol "P") [term_x],SPComplexTerm (SPCustomSymbol "Q") [term_x]]))
+axiom1 = NamedSen "ax" True False (SPQuantTerm SPForall [term_x] (SPComplexTerm SPEquiv [SPComplexTerm (SPCustomSymbol "p") [term_x],SPComplexTerm (SPCustomSymbol "q") [term_x]]))
 
 axiom2 :: Named SPTerm
-axiom2 = NamedSen "" True False (SPQuantTerm SPForall [term_x] (SPComplexTerm SPImplies [SPComplexTerm (SPCustomSymbol "Q") [term_x],SPComplexTerm (SPCustomSymbol "R") [term_x]]))
+axiom2 = NamedSen "ax2" True False (SPQuantTerm SPForall [term_x] (SPComplexTerm SPImplies [SPComplexTerm (SPCustomSymbol "q") [term_x],SPComplexTerm (SPCustomSymbol "r") [term_x]]))
 
 axiom3 :: Named SPTerm
-axiom3 = NamedSen "B$$-3" True False (SPQuantTerm SPForall [term_x] (SPComplexTerm SPImplies [SPComplexTerm (SPCustomSymbol "Q") [term_x],SPComplexTerm (SPCustomSymbol "A") [term_x]]))
+axiom3 = NamedSen "b$$-3" True False (SPQuantTerm SPForall [term_x] (SPComplexTerm SPImplies [SPComplexTerm (SPCustomSymbol "q") [term_x],SPComplexTerm (SPCustomSymbol "a") [term_x]]))
 
 goal1 :: Named SPTerm
-goal1 = NamedSen "Go" False False (SPQuantTerm SPForall [term_x] (SPComplexTerm SPImplies [SPComplexTerm (SPCustomSymbol "Q") [term_x],SPComplexTerm (SPCustomSymbol "P") [term_x] ]))
+goal1 = NamedSen "go" False False (SPQuantTerm SPForall [term_x] (SPComplexTerm SPImplies [SPComplexTerm (SPCustomSymbol "q") [term_x],SPComplexTerm (SPCustomSymbol "p") [term_x] ]))
 
 goal2 :: Named SPTerm
-goal2 = NamedSen "Go2" False False (SPQuantTerm SPForall [term_x] (SPComplexTerm SPImplies [SPComplexTerm (SPCustomSymbol "P") [term_x],SPComplexTerm (SPCustomSymbol "R") [term_x] ]))
+goal2 = NamedSen "go2" False False (SPQuantTerm SPForall [term_x] (SPComplexTerm SPImplies [SPComplexTerm (SPCustomSymbol "p") [term_x],SPComplexTerm (SPCustomSymbol "r") [term_x] ]))
 
 goal3 :: Named SPTerm
-goal3 = NamedSen "Go3" False False (SPQuantTerm SPForall [term_x] (SPComplexTerm SPImplies [SPComplexTerm (SPCustomSymbol "P") [term_x],SPComplexTerm (SPCustomSymbol "A") [term_x] ]))
+goal3 = NamedSen "go3" False False (SPQuantTerm SPForall [term_x] (SPComplexTerm SPImplies [SPComplexTerm (SPCustomSymbol "p") [term_x],SPComplexTerm (SPCustomSymbol "a") [term_x] ]))
 
 
 theory1 :: LProver.Theory SPASS.Sign.Sign SPTerm ATP_ProofTree
@@ -58,7 +58,6 @@ theory2 = (LProver.Theory sign1 $ LProver.toThSens [axiom1,axiom2,axiom3,
                          goal1,goal2,goal3])
 
 -- A more complicated theory including ExtPartialOrder from Basic/RelationsAndOrders.casl
--- Not working though ...
 
 signExt :: SPASS.Sign.Sign
 signExt = emptySign {sortMap = {- Map.insert "Elem" Nothing -} Map.empty,
@@ -119,10 +118,10 @@ runTest :: String -- ^ theory name
         -> LProver.Theory Sign Sentence ATP_ProofTree
         -> IO [LProver.Proof_status ATP_ProofTree]
 runTest thName th = 
-    do result <- vampireCMDLautomatic
+    do result <- spassProveCMDLautomatic
                               thName
                               (LProver.Tactic_script (show $ ATPTactic_script {
-                                 ts_timeLimit = 20, ts_extraOpts = [] }))
+                                 ts_timeLimit = 10, ts_extraOpts = [] }))
                               th
        maybe (return [LProver.openProof_status "" "SPASS" (ATP_ProofTree "")])
              return
@@ -136,9 +135,9 @@ runTestBatch thName th =
        (threadID, mvar) <- spassProveCMDLautomaticBatch
                                True True resultRef thName
                                (LProver.Tactic_script (show $ ATPTactic_script {
-                                  ts_timeLimit = 30, ts_extraOpts = [] }))
+                                  ts_timeLimit = 10, ts_extraOpts = [] }))
                                th
-       Concurrent.threadDelay (34*1000000)
+       Concurrent.threadDelay (12*1000000)
        Concurrent.killThread threadID
        Concurrent.takeMVar mvar
        -- Concurrent.threadDelay 1000000 -- waiting for SPASS error message
