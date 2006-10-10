@@ -13,7 +13,8 @@ See <http://spass.mpi-sb.mpg.de/> for details on SPASS.
 
 -}
 
-module SPASS.ProveVampire (vampire,vampireGUI,vampireCMDLautomaticBatch) where
+module SPASS.ProveVampire (vampire,vampireGUI,vampireCMDLautomatic,
+                           vampireCMDLautomaticBatch) where
 
 import Logic.Prover
 

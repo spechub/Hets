@@ -19,7 +19,8 @@ See <http://spass.mpi-sb.mpg.de/> for details on SPASS.
       an error window. Also the proving won't stop.
 -}
 
-module SPASS.ProveMathServ (mathServBroker,mathServBrokerGUI,mathServBrokerCMDLautomaticBatch) where
+module SPASS.ProveMathServ (mathServBroker,mathServBrokerGUI,
+            mathServBrokerCMDLautomatic,mathServBrokerCMDLautomaticBatch) where
 
 import Logic.Prover
 

@@ -23,6 +23,7 @@ See <http://spass.mpi-sb.mpg.de/> for details on SPASS.
 
 module SPASS.Prove (spassProver,
                     spassProveGUI,
+                    spassProveCMDLautomatic,
                     spassProveCMDLautomaticBatch) where
 
 import Logic.Prover
