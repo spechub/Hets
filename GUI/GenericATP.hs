@@ -765,7 +765,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                                updateDisplay st True lb statusLabel timeEntry
                                             optionsEntry axiomsLb
                                case retval of
-                                ATPError message -> errorMess message
+                                -- ATPError message -> errorMess message
                                 _ -> return ()
                                let cont' = cont && batchModeIsRunning st
                                when (not cont)
