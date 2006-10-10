@@ -297,7 +297,7 @@ transOpId sign op ts@(TypeScheme _ ty _) =
 
 transProgEq :: Env -> Set.Set String -> ProgEq -> Result (Isa.Term, Isa.Term)
 transProgEq sign toks (ProgEq pat trm r) = do
-    op <- transPattern sign toks pat
+    (_, op) <- transPattern sign toks pat
     (ty, ot) <- transTerm sign toks trm
     if isPartialVal ty then fatal_error
            ("rhs must not be partial currently: " ++ showDoc trm "") r
@@ -382,14 +382,14 @@ transTerm sign toks trm = case trm of
     TypedTerm t _q _ty _ -> transTerm sign toks t
     LambdaTerm pats q body r -> do
         p@(ty, _) <- transTerm sign toks body
-        pt <- case q of
-            Partial -> return p
+        appendDiags $ case q of
+            Partial -> []
             Total -> if isPartialVal ty
-                     then fatal_error
-                         ("partial lambda body in total abstraction: "
-                          ++ showDoc body "") r
-                     else return p
-        foldM (abstraction sign toks) pt $ reverse pats
+                     then [Diag Warning
+                           ("partial lambda body in total abstraction: "
+                          ++ showDoc body "") r]
+                     else []
+        foldM (abstraction sign toks) p $ reverse pats
     LetTerm As.Let peqs body _ -> do
         (bTy, bTrm) <- transTerm sign toks body
         nEqs <- mapM (transProgEq sign toks) peqs
@@ -725,29 +725,24 @@ mkApp sg toks f arg = do
 
 -- * translation of lambda abstractions
 
-getPatternType :: As.Term -> Result FunType
-getPatternType t =
-      case t of
-        QualVar (VarDecl _ typ _ _) -> funType typ
-        TypedTerm _ _ typ _ -> funType typ
-        TupleTerm ts _ -> do
-            ptys <- mapM getPatternType ts
-            return $ foldl1 PairType ptys
-        _ -> fatal_error ("not a pattern for Isabelle: " ++ showDoc t "")
-             $ getRange t
+isPatternType :: As.Term -> Bool
+isPatternType trm = case trm of
+    QualVar (VarDecl _ _ _ _) -> True
+    TypedTerm t _ _ _ -> isPatternType t
+    TupleTerm ts _ -> all isPatternType ts
+    _ -> False
 
-transPattern :: Env -> Set.Set String -> As.Term -> Result Isa.Term
+transPattern :: Env -> Set.Set String -> As.Term -> Result (FunType, Isa.Term)
 transPattern sign toks pat = do
-    (ty, trm) <- transTerm sign toks pat
-    if isPartialVal ty then
-        fatal_error ("pattern must not be partial: " ++ showDoc pat "")
+    p@(ty, _) <- transTerm sign toks pat
+    if not (isPatternType pat) || isPartialVal ty then
+        fatal_error ("illegal pattern for Isabelle: " ++ showDoc pat "")
              $ getRange pat
-       else return trm
+       else return p
 
 -- form Abs(pattern term)
 abstraction :: Env -> Set.Set String -> (FunType, Isa.Term) -> As.Term
             -> Result (FunType, Isa.Term)
 abstraction sign toks (ty, body) pat = do
-    pTy <- getPatternType pat
-    nPat <- transPattern sign toks pat
+    (pTy, nPat) <- transPattern sign toks pat
     return (FunType pTy ty, Abs nPat body NotCont)
