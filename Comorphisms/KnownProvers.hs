@@ -105,7 +105,7 @@ isaComorphisms = do
        -- ModalCASL
        mod2IHOL <- compComorphism (Comorphism Modal2CASL) subpc2IHOL
 #endif
-       return [Comorphism CFOL2IsabelleHOL, subpc2IHOL, subpc2IHOLviaHasCASL,
+       return [Comorphism CFOL2IsabelleHOL, subpc2IHOLviaHasCASL, subpc2IHOL,
 #ifdef CASLEXTENSIONS
                co2IHOL, mod2IHOL,
 #endif
