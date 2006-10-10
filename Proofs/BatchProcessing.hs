@@ -204,7 +204,7 @@ genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch f
                              diagPos = Id.nullRange }]
                             _ -> [])
                            { maybeResult = Just ioProofStatus }
-                  modifyIORef rr (flip (joinResultWith (++)) newResult))
+                  writeIORef rr newResult)
               resultRef
         cont <- f goalsProcessedSoFar' g (err, res_cfg)
         if cont
