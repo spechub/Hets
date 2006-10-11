@@ -53,9 +53,6 @@ printURIreference (QN prefix localpart uri)
                            else text $ show (uri ++ ":" ++ localpart)
     | otherwise =   text $ show ( prefix ++ ":" ++ localpart)
 
-instance Pretty Namespace where
-    pretty = printNamespace
-
 printNamespace :: Namespace -> Doc
 printNamespace nsMap =
     vcat $ map pp (Map.toList nsMap)
