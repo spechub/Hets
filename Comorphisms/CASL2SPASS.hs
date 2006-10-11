@@ -256,13 +256,13 @@ transPredMap idMap sign =
                                        (Set.union (Rel.keysSet fma)
                                            (elemsSPId_Set idMap))
 -- | disambiguation of SPASS Identifiers
-disSPOId :: CType -- ^ Type of CASl identifier 
+disSPOId :: CType -- ^ Type of CASl identifier
          -> SPIdentifier -- ^ translated CASL Identifier
-         -> [SPIdentifier] -- ^ translated Sort Symbols of the profile 
-                           -- (maybe empty) 
-         -> Set.Set SPIdentifier -- ^ SPASS Idetifiers already in use
-         -> SPIdentifier -- ^ fresh Identifier generated from second argument; 
-    -- if the idetifier was not in the set this is just the sencand argument
+         -> [SPIdentifier] -- ^ translated Sort Symbols of the profile
+                           -- (maybe empty)
+         -> Set.Set SPIdentifier -- ^ SPASS Identifiers already in use
+         -> SPIdentifier -- ^ fresh Identifier generated from second argument;
+    -- if the identifier was not in the set this is just the second argument
 disSPOId cType sid ty idSet
     | checkIdentifier cType sid && not (lkup sid) = sid
     | otherwise = let nSid = disSPOId' sid
@@ -365,7 +365,7 @@ only one goal, but additional symbols, axioms and a goal
 makeGens :: (Pretty f, PosItem f) =>
             IdType_SPId_Map -> [Named (FORMULA f)]
          -> Result (SortMap, FuncMap, IdType_SPId_Map,[Named SPTerm])
-            -- ^ The list of SoftFOL sentences gives exhaustiveness for 
+            -- ^ The list of SoftFOL sentences gives exhaustiveness for
             -- generated sorts with only constant constructors
 makeGens idMap fs =
     case foldl makeGen (return (Map.empty,idMap,[],[])) fs of
@@ -379,12 +379,12 @@ makeGens idMap fs =
               mv
 
 makeGen :: (Pretty f, PosItem f) =>
-           Result (FuncMap, IdType_SPId_Map, 
+           Result (FuncMap, IdType_SPId_Map,
                    [(SPIdentifier,Maybe Generated)],[Named SPTerm])
         -> Named (FORMULA f)
-        -> Result (FuncMap, IdType_SPId_Map, 
+        -> Result (FuncMap, IdType_SPId_Map,
                    [(SPIdentifier,Maybe Generated)],[Named SPTerm])
-makeGen r@(Result ods omv) nf = 
+makeGen r@(Result ods omv) nf =
     maybe (Result ods Nothing) process omv where
  process (oMap,iMap,rList,eSens) = case sentence nf of
   Sort_gen_ax constrs free ->
@@ -408,23 +408,23 @@ makeGen r@(Result ods omv) nf =
                       s' = maybe (error "SuleCFOL2SoftFOL.makeGen: No mapping \
                                         \found for '"++show s++"'") id
                                  (lookupSPId s CSort idMap)
-            eSen os s = if all nullArgs os 
+            eSen os s = if all nullArgs os
                         then [(emptyName (SPQuantTerm SPForall
-                                            [typedVarTerm var $ 
-                                             maybe (error "lookup failed") 
-                                                   id 
+                                            [typedVarTerm var $
+                                             maybe (error "lookup failed")
+                                                   id
                                                    (lookupSPId s (CSort) iMap)]
                                             (disj var os)))
                               {senName = newName s}]
                         else []
-            disj v os = case map (\x -> mkEq (varTerm v) 
+            disj v os = case map (\x -> mkEq (varTerm v)
                                         (varTerm $ transOP_SYMB iMap x) ) os of
                         [] -> error "CASL2SPASS: no constructors found"
                         [x] -> x
                         xs -> foldl1 mkDisj xs
             var = fromJust (find (\ x -> not (Set.member x usedIds))
                             ("X":["X"++show i | i <- [(1::Int)..]]))
-            varTerm v = simpTerm (spSym v) 
+            varTerm v = simpTerm (spSym v)
             newName s = "ga_exhaustive_generated_sort_"++(show $ pretty s)
             usedIds = elemsSPId_Set iMap
             nullArgs o = case o of
@@ -473,13 +473,17 @@ mkInjSentences idMap = Map.foldWithKey genInjs []
           newName o a r = "ga_"++o++'_':a++'_':r++"_id"
           usedIds = elemsSPId_Set idMap
 
-transSign :: Bool -> CSign.Sign f e -> (SPSign.Sign, IdType_SPId_Map)
-transSign siSo sign = (SPSign.emptySign { sortRel =
+{- |
+  Translate a CASL signature into SoftFOL signatur 'SPASS.Sign.Sign'.
+  Before translating, eqPredicate symbols where removed from signature.
+-}
+transSign :: CSign.Sign f e -> (SPSign.Sign, IdType_SPId_Map)
+transSign sign = (SPSign.emptySign { sortRel =
                                  Rel.map transIdSort (CSign.sortRel sign)
                            , sortMap = spSortMap
                            , funcMap = fMap
                            , predMap = pMap
-                           , singleSorted = siSo
+                           , singleSorted = isSingleSorted sign
                            },idMap'')
     where (spSortMap,idMap) =
             Set.fold (\ i (sm,im) ->
@@ -512,7 +516,7 @@ transTheory :: (Pretty f, PosItem f, Eq f) =>
             -> Result SoftFOLTheory
 transTheory trSig trForm (sign,sens) =
   fmap (trSig sign (CSign.extendedInfo sign))
-    (case transSign singleSortFlag (foldl insInjOps sign genAxs) of
+    (case transSign (filterPreds $ foldl insInjOps sign genAxs) of
      (tSign,idMap) ->
         do (idMap',tSign',sentencesAndGoals) <-
                integrateGenerated idMap genSens tSign
@@ -522,12 +526,14 @@ transTheory trSig trForm (sign,sens) =
                     sentencesAndGoals ++
                     nonEmptySortSens (sortMap tSignElim) ++
                     map (mapNamed (transFORM (singleSortNotGen tSign') sign
-                                             idMap' trForm)) realSens))
-  where singleSortFlag = isSingleSorted sign
-        (genSens,realSens) =
+                                     idMap' trForm . substEqPreds eqPreds id))
+                        realSens'))
+
+  where (genSens,realSens) =
             partition (\ s -> case (sentence s) of
                               Sort_gen_ax _ _ -> True
                               _               -> False) sens
+        (eqPreds, realSens') = foldl findEqPredicates (Set.empty, []) realSens
         (genAxs,_) = partition isAxiom genSens
         insInjOps sig s =
               case sentence s of
@@ -535,9 +541,94 @@ transTheory trSig trForm (sign,sens) =
                  case recover_Sort_gen_ax constrs of
                  (_,ops,mp) -> assert (null mp) (insertInjOps sig ops)
               f -> assert (trace ("CASL.Inject.insertInjOps: Formula: \""
-                                  ++showDoc f "\" slipped throug filter.")
+                                  ++showDoc f "\" slipped through filter.")
                                  True) sig
+        filterPreds sig =
+              sig { CSign.predMap = Map.difference
+                (CSign.predMap sig)
+                (Set.fold (\pl newMap -> case pl of
+                      Pred_name pn -> insertPredToSet pn
+                                           (Pred_type [] nullRange) newMap
+                      Qual_pred_name pn pt _ -> insertPredToSet pn pt newMap)
+                    Map.empty eqPreds) }
+        insertPredToSet pId pType pMap =
+              if (Map.member pId pMap)
+                then Map.adjust insPredSet pId pMap
+                else Map.insert pId (insPredSet Set.empty) pMap
+            where
+              insPredSet = Set.insert (CSign.toPredType pType)
 
+
+{- |
+ Finds definitions (Equivalences) where one side is a binary predicate
+ and the other side is a built-in equality application (Strong_equation).
+ The given Named (FORMULA f) is checked for this and if so, will be put
+ into the set of such predicates.
+-}
+findEqPredicates :: (Show f, Eq f) => (Set.Set PRED_SYMB, [Named (FORMULA f)])
+                    -- ^ previous list of found predicates and valid sentences
+                 -> Named (FORMULA f)
+                    -- ^ sentence to check
+                 -> (Set.Set PRED_SYMB, [Named (FORMULA f)])
+findEqPredicates (eqPreds, sens) sen =
+    case (sentence sen) of
+      Quantification Universal var_decl quantFormula _ ->
+        isEquiv (foldl (\ vList (Var_decl v s _) ->
+                          vList ++ map (\vl -> (vl, s)) v)
+                       [] var_decl)
+                quantFormula
+      _ -> validSens
+
+  where
+    validSens = (eqPreds, sens ++ [sen])
+    isEquiv vars qf =
+      -- Exact two variables are checked if they have the same Sort.
+      -- If more than two variables should be compared, use foldl.
+      if (length vars == 2) && (snd (head vars) == snd (vars !! 1))
+       then case qf of
+          Equivalence f1 f2 _-> isStrong_eq vars f1 f2
+          _                  -> validSens
+        else validSens
+    isStrong_eq vars f1 f2 =
+      let f1n = case f1 of
+                  Strong_equation _ _ _ -> f1
+                  _                     -> f2
+          f2n = case f1 of
+                  Strong_equation _ _ _ -> f2
+                  _                     -> f1
+      in  case f1n of
+            Strong_equation eq_t1 eq_t2 _ -> case f2n of
+              Predication eq_pred_symb pterms _ ->
+                if  (Map.toAscList (Map.fromList $ sortedVarTermList pterms)
+                     == Map.toAscList (Map.fromList vars))
+                 && (Map.toAscList
+                         (Map.fromList $ sortedVarTermList [eq_t1, eq_t2])
+                     == Map.toAscList (Map.fromList vars))
+                  then (Set.insert eq_pred_symb eqPreds, sens)
+                  else validSens
+              _     -> validSens
+            _       -> validSens
+
+{- |
+  Creates a list of (VAR, SORT) out of a list of TERMs. Only Qual_var TERMs
+  are inserted which will be checked using
+  'Comorphisms.CASL2SPASS.hasSortedVarTerm'.
+-}
+sortedVarTermList :: [TERM f]
+                  -> [(VAR, SORT)]
+sortedVarTermList ts = map fromJust (filter isJust (map hasSortedVarTerm ts))
+
+{- |
+  Finds a 'CASL.AS_Basic_CASL.Qual_var' term recursively if super term(s) is
+  'CASL.AS_Basic_CASL.Sorted_term' or 'CASL.AS_Basic_CASL.Cast'.
+-}
+hasSortedVarTerm :: TERM f
+                 -> Maybe (VAR, SORT)
+hasSortedVarTerm t = case t of
+    Qual_var v s _     -> Just (v,s)
+    Sorted_term tx _ _ -> hasSortedVarTerm tx
+    Cast tx _ _        -> hasSortedVarTerm tx
+    _                  -> Nothing
 
 
 ------------------------------ Formulas ------------------------------
@@ -606,7 +697,7 @@ mkEq t1 t2 = compTerm SPEqual [t1,t2]
 mapSen :: (Eq f, Pretty f) => Bool
        -> FormulaTranslator f e
        -> CSign.Sign f e -> FORMULA f -> SPTerm
-mapSen siSo trForm sign phi = transFORM siSo sign (snd (transSign siSo sign))
+mapSen siSo trForm sign phi = transFORM siSo sign (snd (transSign sign))
                                         trForm phi
 
 transFORM :: (Eq f, Pretty f) => Bool -- ^ single sorted flag
@@ -706,5 +797,5 @@ transTERM siSo sign idMap tr t'@(Cast t s _)
 transTERM _siSo _sign _idMap _tr t =
   error ("SuleCFOL2SoftFOL.transTERM: unknown TERM '"++showDoc t "'")
 
-isSingleSorted :: (Eq f, Pretty f) => CSign.Sign f e -> Bool
+isSingleSorted :: CSign.Sign f e -> Bool
 isSingleSorted sign = (Set.size (CSign.sortSet sign)) == 1
