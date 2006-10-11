@@ -89,6 +89,7 @@ import Control.Monad
 import Control.Monad.Trans
 import Events
 import DialogWin (useHTk)
+-- import Debug.Trace
 
 {- Maps used to track which node resp edge of the abstract graph
 correspondes with which of the development graph and vice versa and
@@ -278,7 +279,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts = do
                   [
                    Button "Translation"
                           (openTranslateGraph (libname2dg convMaps) ln opts 
-                                $ getDGLogic (libname2dg convMaps))
+                                $ (getDGLogic (libname2dg convMaps)))
                   ]
                   ])]
       -- the node types
@@ -1533,8 +1534,10 @@ openTranslateGraph  libEnv ln opts (Res.Result diagsSl mSublogic) =
     -- if a error existed by the search of maximal sublogicn 
     -- (see GUI.DGTranslation.getDGLogic), the process need not to go on.
     if hasErrors diagsSl then
-        do showDiags opts diagsSl 
-           return ()
+        do createTextSaveDisplay "Error Messages" "error.log"  
+                                 (unlines $ map show $ 
+                                  filter (relevantDiagKind . diagKind) diagsSl) 
+           -- return ()
        else 
          do case mSublogic of 
              Just sublogic -> do
@@ -1563,6 +1566,12 @@ openTranslateGraph  libEnv ln opts (Res.Result diagsSl mSublogic) =
                           return ()
              Nothing -> do print "the maximal sublogic is not found."
                            return ()
+  where relevantDiagKind Error = True
+        relevantDiagKind Warning = (verbose opts) >= 2
+        relevantDiagKind Hint = (verbose opts) >= 4
+        relevantDiagKind Debug  = (verbose opts) >= 5
+        relevantDiagKind MessageW = False
+
 
 dg_showGraphAux :: (IORef GraphMem -> IO (Descr, GraphInfo, ConversionMaps))
                 -> IO ()

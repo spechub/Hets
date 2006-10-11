@@ -19,7 +19,7 @@ import Logic.Logic
 import Logic.Comorphism
 import Syntax.AS_Library
 import Static.DevGraph
--- import Static.DGTranslation
+import Static.DGTranslation (showFromTo)
 
 import qualified Common.Lib.Map as Map
 import Common.Result as Res
@@ -39,68 +39,35 @@ getDGLogic libEnv =
 
 getSublogicFromGlobalContext :: LibEnv -> LIB_NAME -> Res.Result G_sublogics
 getSublogicFromGlobalContext le ln =
-    let gc = lookupGlobalContext ln le
-        nodesList = Graph.nodes $ devGraph gc
-    in  getDGLogicFromNodes nodesList emptyResult gc
-  where  
-    -- rekursiv translate alle nodes of DevGraph of GlobalContext
-    getDGLogicFromNodes [] result _ = result
-    getDGLogicFromNodes (h:r) (Res.Result mainDiags gSublogic) gcon  =  
-        case fst $ match h $ devGraph gcon of
-          Just (inLinks, _, nodeLab, _) ->
-            -- test if all inlinks of node are homogeneous.
-            case testHomogenAndGetSublogicFromEdges inLinks Nothing of
-             (_, False) ->                  
-                 let diag = Res.mkDiag Res.Error ((show $ dgn_name nodeLab) 
-                             ++ " has more than one not homogeneous edge.") ()
-                 in getDGLogicFromNodes r 
-                        (Res.Result (mainDiags ++ [diag]) Nothing) gcon
-             (Just sublogicOfEdges, _) ->
-                 let thisSublogic = sublogicOfTh $ dgn_theory nodeLab
-                 in  case gSublogic of
-                       Nothing ->
-                        getDGLogicFromNodes r (Res.Result mainDiags 
-                            (comSublogics thisSublogic sublogicOfEdges)) gcon
-                       Just oldSublogic -> 
-                        getDGLogicFromNodes r (Res.Result mainDiags 
-                          (comSublogicsList 
-                           [oldSublogic, thisSublogic, sublogicOfEdges] 
-                           Nothing)) gcon
-             (Nothing, _) -> 
-                 let thisSublogic = sublogicOfTh $ dgn_theory nodeLab
-                 in  case gSublogic of
-                       Nothing ->
-                        getDGLogicFromNodes r (Res.Result mainDiags 
-                                               (Just thisSublogic)) gcon
-                       Just oldSublogic -> 
-                        getDGLogicFromNodes r (Res.Result mainDiags 
-                          (comSublogics oldSublogic thisSublogic)) gcon
-          Nothing -> 
-              let diag = Res.mkDiag Res.Error (show h 
-                           ++ " has be not found in GlobalContext.") ()
-              in getDGLogicFromNodes r (Res.Result (mainDiags ++ [diag]) 
-                                           gSublogic) gcon
-   
-    emptyResult = Res.Result [] Nothing
+    let edgesList = Graph.labEdges $ devGraph gc
+        nodesList = Graph.labNodes $ devGraph gc
+        slList1   = map testAndGetSublogicFromEdge edgesList 
+        slList2   = getDGLogicFromNodes nodesList 
+    in  foldr comResSublogics (Res.Result [] Nothing) (slList1 ++ slList2) 
 
-testHomogenAndGetSublogicFromEdges :: 
-    [(DGLinkLab, Graph.Node)] -> Maybe G_sublogics -> (Maybe G_sublogics, Bool)
-testHomogenAndGetSublogicFromEdges [] result = (result, True)
-testHomogenAndGetSublogicFromEdges (((DGLink gm@(GMorphism cid' lsign lmorphism)
-                                                 _ _),_):r) oldSublogic 
-   =
-    if isHomogeneous gm then
-        case oldSublogic of
-          Nothing -> 
-            testHomogenAndGetSublogicFromEdges r (comSublogics g_mor g_sign) 
-          Just oSublogic ->
-              testHomogenAndGetSublogicFromEdges r (comSublogicsList
-                                          [oSublogic, g_mor, g_sign] Nothing)
-     else (Nothing, False)
+  where 
+    gc = lookupGlobalContext ln le
 
-   where g_mor = sublogicOfMor (G_morphism (targetLogic cid') lmorphism)
-         g_sign = sublogicOfSign (G_sign (sourceLogic cid') lsign)
+    testAndGetSublogicFromEdge :: LEdge DGLinkLab -> Res.Result G_sublogics
+    testAndGetSublogicFromEdge (from, to, 
+                                 DGLink gm@(GMorphism cid' lsign lmorphism) _ _) 
+        =
+          if isHomogeneous gm then
+              Result [] (comSublogics g_mor g_sign) 
+              else Result [Res.mkDiag Res.Error 
+                           ("the edge " ++ (showFromTo from to gc) ++
+                            " is not homogeneous.") () ] Nothing 
 
+         where g_mor = sublogicOfMor (G_morphism (targetLogic cid') lmorphism)
+               g_sign = sublogicOfSign (G_sign (sourceLogic cid') lsign) 
+
+    getDGLogicFromNodes :: [LNode DGNodeLab] -> [Res.Result G_sublogics]
+    getDGLogicFromNodes nodesList =
+        map getDGLogicFromNode nodesList
+              
+    getDGLogicFromNode :: LNode DGNodeLab -> Res.Result G_sublogics
+    getDGLogicFromNode (_, lnode) =
+        Res.Result [] (Just $ sublogicOfTh $ dgn_theory lnode)
 
 comResSublogics :: Res.Result G_sublogics 
                 -> Res.Result G_sublogics 
@@ -120,11 +87,12 @@ comSublogics (G_sublogics lid1 l1) (G_sublogics lid2 l2) =
       Just sl -> Just (G_sublogics lid2 (join sl l2))
       Nothing -> Nothing
 
+{-
 comSublogicsList :: [G_sublogics] -> Maybe G_sublogics -> Maybe G_sublogics
 comSublogicsList [] result = result
 comSublogicsList (sl:r) oldRes = 
     case oldRes of
       Nothing -> comSublogicsList r (Just sl)
       Just old -> comSublogicsList r (comSublogics old sl)
-
+-}
 
