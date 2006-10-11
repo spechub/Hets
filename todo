@@ -496,20 +496,6 @@ Isabelle interface
 Rainer (Klaus)
 ************************************************
 
-SPASS encoding improvements in SPASS.Conversions/Comorphisms.CASL2SPASS
-  - if there is only one sort in the signature eliminate it
-    special case: (freely) generated sorts are not eliminated
-      new flag in SPASS sign: singleSorted
-      Sentences are modified in CASL2SPASS
-      all variable declarations have to consider the flag
-         (quantified formulas) variable lists without types
-       Formula/Term specific
-       - F:Membership ==> true
-       - T:Cast is omitted
-       - T:Sorted_term is omitted
-    typings in the signature have to be removed in SPASS.Conversions
-      empty declarations list
-
 SPASS encoding improvements in CASL2SPASS
   - if there are predicates defined upon equality substitute them with equality
     and remove them from the signature
@@ -521,6 +507,16 @@ SPASS encoding improvements in CASL2SPASS
     substitute eqPredications with Strong_equation in the Formulas
      see CASL.Utils.codeOutConditionalF
 
+implement a catch for calling MathServ based on the catch in runSpass
+   write just one function that converts Exception to ATPResult
+   maybe even a specialised catch is useful
+   such functions fit into Common.Utils or Common.ProofUtils
+
+for the transition to ghc-6.6 spassProve must be corrected
+   the regexp library changed in functionality
+
+code cleanup and documentation where necessary and possilbe 
+   in SPASS/* and GUI/GenericATP*, GUI/Proofmanagement.hs
 
 ************************************************
 Klaus
