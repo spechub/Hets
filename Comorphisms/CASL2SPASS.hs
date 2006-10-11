@@ -525,8 +525,8 @@ transTheory trSig trForm (sign,sens) =
            return  (tSignElim,
                     sentencesAndGoals ++
                     nonEmptySortSens (sortMap tSignElim) ++
-                    map (mapNamed (transFORM (singleSortNotGen tSign') sign
-                                     idMap' trForm . substEqPreds eqPreds id))
+                    map (mapNamed (transFORM (singleSortNotGen tSign') eqPreds
+                                     sign idMap' trForm))
                         realSens'))
 
   where (genSens,realSens) =
@@ -697,16 +697,19 @@ mkEq t1 t2 = compTerm SPEqual [t1,t2]
 mapSen :: (Eq f, Pretty f) => Bool
        -> FormulaTranslator f e
        -> CSign.Sign f e -> FORMULA f -> SPTerm
-mapSen siSo trForm sign phi = transFORM siSo sign (snd (transSign sign))
-                                        trForm phi
+mapSen siSo trForm sign phi = transFORM siSo (Set.empty) sign
+                                        (snd (transSign sign)) trForm phi
 
 transFORM :: (Eq f, Pretty f) => Bool -- ^ single sorted flag
+          -> Set.Set PRED_SYMB -- ^ list of predicates to substitute
           -> CSign.Sign f e
           -> IdType_SPId_Map -> FormulaTranslator f e
           -> FORMULA f -> SPTerm
-transFORM siSo sign i tr phi = transFORMULA siSo sign i tr phi'
+transFORM siSo eqPreds sign i tr phi = transFORMULA siSo sign i tr phi'
     where phi' = codeOutConditionalF id
-                        (codeOutUniqueExtF id id phi)
+                     (codeOutUniqueExtF id id
+                          (substEqPreds eqPreds id phi))
+
 
 transFORMULA :: Pretty f => Bool -> CSign.Sign f e -> IdType_SPId_Map
              -> FormulaTranslator f e -> FORMULA f -> SPTerm
