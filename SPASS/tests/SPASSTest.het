@@ -171,13 +171,17 @@ spec Keywords =
 
 spec Eq_Pred =
      sort s
+     op f1,f2 : s * s -> s
      pred __eq__ : s * s;
-	  EQUAL(x,y:s) <=> x = y %(this_axiom_should_be_removed_1)%
-     forall x,y,z:s
-     . x = y <=> y eq x %(this_axiom_should_be_removed_2)%
+	  EQUAL(x,y:s) <=> x = y %(axiom_should_be_removed_1)%
+     forall x, y,z:s
+     . x = y <=> y eq x %(axiom_should_be_removed_2)%
 
-     . EQUAL(x,z) => x=z %(this_axiom_should_be_modified_1)% %implied
-     . EQUAL(x,y) /\ y eq z => x=z %(this_axiom_should_be_modified_2)% %implied
+     . EQUAL(x,z) => z=x %(axiom_should_be_modified_1)% %implied
+     . EQUAL(x,y) /\ y eq z => x=z %(axiom_should_be_modified_2)% %implied
 
- 
+     . f1(x,y) = x when EQUAL(y,x) /\ 
+                        y eq (x when exists w:s . w eq y 
+                                else f2(y,x))
+                   else y %(no predication should be there)%
 spec small = {}
