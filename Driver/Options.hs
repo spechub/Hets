@@ -39,8 +39,9 @@ bracket s = "[" ++ s ++ "]"
 -- use the same strings for parsing and printing!
 verboseS, intypeS, outtypesS, rawS, skipS, structS, transS,
      guiS, onlyGuiS, libdirS, outdirS, amalgS, specS, recursiveS,
-     interactiveS :: String
+     interactiveS, modelSparQS :: String
 
+modelSparQS = "modelSparQ"
 verboseS = "verbose"
 intypeS = "input-type"
 outtypesS = "output-types"
@@ -100,6 +101,7 @@ data HetcatsOpts =        -- for comments see usage info
           , transNames :: [SIMPLE_ID] -- comorphism to be processed
           , intype   :: InType
           , libdir   :: FilePath
+          , modelSparQ :: FilePath
           , outdir   :: FilePath
           , outtypes :: [OutType]
           , recurse  :: Bool
@@ -119,6 +121,8 @@ instance Show HetcatsOpts where
                 ++ showEqOpt libdirS (libdir opts)
                 ++ (if interactive opts then showOpt interactiveS else "")
                 ++ showEqOpt intypeS (show $ intype opts)
+                ++ (if modelSparQ opts /= "" then showEqOpt
+                       modelSparQS (modelSparQ opts) else "")
                 ++ showEqOpt outdirS (outdir opts)
                 ++ showEqOpt outtypesS (showOutFiles $ outtypes opts)
                 ++ (if recurse opts then showOpt recursiveS else "")
@@ -143,6 +147,7 @@ makeOpts opts flg = case flg of
     Gui x      -> opts { gui = x }
     InType x   -> opts { intype = x }
     LibDir x   -> opts { libdir = x }
+    ModelSparQ x -> opts { modelSparQ = x }
     OutDir x   -> opts { outdir = x }
     OutTypes x -> opts { outtypes = x }
     Recurse    -> opts { recurse = True }
@@ -167,6 +172,7 @@ defaultHetcatsOpts =
           , transNames = []
           , intype   = GuessIn
           , libdir   = ""
+          , modelSparQ = ""
           , outdir   = ""
           , outtypes = [] -- no default
           , recurse  = False
@@ -190,6 +196,7 @@ data Flag = Verbose  Int
           | InType   InType
           | LibDir   FilePath
           | OutDir   FilePath
+          | ModelSparQ FilePath
           | OutTypes [OutType]
           | Specs    [SIMPLE_ID]
           | Trans    [SIMPLE_ID]
@@ -411,6 +418,8 @@ options =
       "choose initial logic, the default is CASL"
     , Option ['L'] [libdirS]  (ReqArg LibDir "DIR")
       "source directory of [Het]CASL libraries"
+    , Option ['m'] [modelSparQS]  (ReqArg ModelSparQ "FILE")
+      "lisp file for SparQ definitions"
     , Option ['I'] [interactiveS] (NoArg Interactive)
       "run in interactive mode"
     , Option ['i'] [intypeS]  (ReqArg parseInType "ITYPE")

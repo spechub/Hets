@@ -196,11 +196,13 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
                         "Translated using comorphism " ++ tStr
                   putIfVerbose opt 4 $ "Sublogic of " ++ show i ++ ": " ++
                           (show $ sublogicOfTh gTh)
+                  if modelSparQ opt == "" then return ()
+                           else putIfVerbose opt 0 "missing implementation"
                   mapM_ ( \ ot ->
                      let f = filePrefix ++ "_" ++ show i ++ "." ++ show ot
                      in case ot of
                       ThyFile -> case printTheory (libdir opt) ln i gTh of
-                          Result ds Nothing -> do 
+                          Result ds Nothing -> do
                               putIfVerbose opt 0 $
                                   "could not translate to Isabelle file: "
                                   ++ f
@@ -263,5 +265,5 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
                              ) outTypes
         _ -> if allSpecs then return () else
                     putIfVerbose opt 0 $ "Unknown spec name: " ++ show i
-              ) $ if null outTypes then [] else
+              ) $ if null outTypes && modelSparQ opt == "" then [] else
                       if allSpecs then Map.keys gctx else ns
