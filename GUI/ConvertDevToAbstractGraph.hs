@@ -1187,7 +1187,7 @@ convertNodesAux convMaps descr grInfo ((node,dgnode) : lNodes) libname =
 -- | gets the type of a development graph edge as a string
 getDGNodeType :: DGNodeLab -> String
 getDGNodeType dgnodelab =
-    (if hasOpenGoals dgnodelab then "locallyEmpty__"  else "")
+    (if hasOpenGoals dgnodelab then ""  else "locallyEmpty__")
     ++ case isDGRef dgnodelab of
        True -> "dg_ref"
        False -> (if hasOpenConsStatus dgnodelab
