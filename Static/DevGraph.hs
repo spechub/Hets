@@ -143,6 +143,7 @@ isDGRef :: DGNodeLab -> Bool
 isDGRef (DGNode _ _ _ _ _ _ _) = False
 isDGRef (DGRef _ _ _ _ _ _) = True
 
+-- | test if a given node label has local open goals
 hasOpenGoals ::  DGNodeLab -> Bool
 hasOpenGoals dgn =
   case dgn_theory dgn of
