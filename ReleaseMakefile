@@ -42,11 +42,11 @@ HC_OPTS = $(HC_OPTS1) $(HC_PACKAGE)
 
 ####################################################################
 ### targets
-.PHONY : all clean o_clean bin_clean critical_clean
+.PHONY : all clean o_clean bin_clean
 
 all: hets
 
-hets: critical_clean
+hets:
 	$(HC) --make -O -optc-O2 -o $@ hets.hs $(HC_OPTS) -w
 	strip hets
 
@@ -58,8 +58,8 @@ hetsOnMac:
             -optl-lreadline5 -optl-lncurses
 	strip hets
 
-hets.cgi: critical_clean
-	$(HC) --make -O -optc-O2 GUI/hets_cgi.hs -o $@ $(HC_OPTS1) -w
+hets.cgi:
+	$(HC) --make -O -optc-O2 GUI/hets_cgi.hs -o $@ $(HC_OPTS) -w
 	strip hets.cgi
 
 
@@ -73,11 +73,5 @@ bin_clean:
 ### remove *.hi and *.o
 o_clean:
 	find . -name \*.o -o -name \*.hi | xargs $(RM) -r
-
-# cleaning needed due to recompilation problem with and without uni
-critical_clean:
-	$(RM) ATC/AS_Structured.o ATC/AS_Architecture.o ATC/AS_Library.o \
-	     Isabelle/Logic_Isabelle.o SPASS/Logic_SPASS.o \
-             Driver/WriteFn.o GUI/Utils.o GUI/ShowGraph.o
 
 clean: o_clean bin_clean
