@@ -71,7 +71,7 @@ Florian (Till)
 
 Modelchecker für algebraische Eigenschaften
  neue Hets-Option dafür (Christian Maeder fragen)
- hets -n NonAssocRelationAlgebra --model datei.lisp Calculi/Algebra/RelationAlgebra.casl 
+ hets -n NonAssocRelationAlgebra --modelSparQ datei.lisp Calculi/Algebra/RelationAlgebra.casl 
  siehe auch CASL.CompositionTable.ComputeTable
  modelCheck :: SIMPLE_ID -> (Sign f e, [Named (FORMULA f)])
                        -> Result Bool
