@@ -72,9 +72,16 @@ Florian (Till)
 Modelchecker für algebraische Eigenschaften
  neue Hets-Option dafür (Christian Maeder fragen)
  hets -n NonAssocRelationAlgebra --model datei.lisp Calculi/Algebra/RelationAlgebra.casl 
- Datenstruktur zerlegen, siehe
- http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/debugging_e.htm
  siehe auch CASL.CompositionTable.ComputeTable
+ modelCheck :: SIMPLE_ID -> (Sign f e, [Named (FORMULA f)])
+                       -> Result Bool
+ Funktion modelCheck ähnlich wie computeCompTable in Driver.WriteFn einbinden
+   (Christian Maeder fragen)
+ Warnung mit Gegenbspen ausgeben, wenn eine Eigenschaft nicht gilt
+   (abbrechen nach 10 Gegenbspen)
+   Warnungen erzeugen mit Funktion warning aus Common.Result
+     Range aus den CASL-FORMULAs extrahieren
+   Result ist eine Monade, ggf. mit do-Notation arbeiten
  Prüfung der Gültigkeit von CASL-Formel in einer Table, rekursiv:
  Allquantoren --> all, Existenzquantor --> any
  CASL-Junktoren --> Haskell-Junktoren
