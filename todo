@@ -70,13 +70,13 @@ Florian (Till)
 ************************************************
 
 Modelchecker für algebraische Eigenschaften
- neue Hets-Option dafür (Christian Maeder fragen)
- hets -n NonAssocRelationAlgebra --modelSparQ datei.lisp Calculi/Algebra/RelationAlgebra.casl 
+ neue Hets-Option in Driver/WriteFn.hs implementieren
+ hets -n NonAssocRelationAlgebra 
+     --modelSparQ=datei.lisp Calculi/Algebra/RelationAlgebra.casl 
+ (oder -m datei.lisp)
  siehe auch CASL.CompositionTable.ComputeTable
  modelCheck :: SIMPLE_ID -> (Sign f e, [Named (FORMULA f)])
                        -> Result Bool
- Funktion modelCheck ähnlich wie computeCompTable in Driver.WriteFn einbinden
-   (Christian Maeder fragen)
  Warnung mit Gegenbspen ausgeben, wenn eine Eigenschaft nicht gilt
    (abbrechen nach 10 Gegenbspen)
    Warnungen erzeugen mit Funktion warning aus Common.Result
