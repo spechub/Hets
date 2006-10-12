@@ -29,8 +29,9 @@ import Data.Maybe
 -- | get the maximal sublogic of a graph.
 -- | each GlobalContext and each node will be tested, in order to find
 -- | the maximal sublogic of th Graph. 
--- | All edges will be searched also in the meantime, so as to test, whether 
--- | the GMorphism of these is homogeneous.
+-- | All edges and nodes will be searched also in the meantime, so as to test, 
+-- | whether the GMorphism of edges is homogeneous, and the logics of nodes are
+-- | equal.
 getDGLogic :: LibEnv -> Res.Result G_sublogics
 getDGLogic libEnv = 
     let sublogicsMap = map (getSublogicFromGlobalContext libEnv) 
@@ -42,7 +43,8 @@ getSublogicFromGlobalContext le ln =
     let edgesList = Graph.labEdges $ devGraph gc
         nodesList = Graph.labNodes $ devGraph gc
         slList1   = map testAndGetSublogicFromEdge edgesList 
-        slList2   = getDGLogicFromNodes nodesList 
+        slList2   = map (getSubLogicsFromNodes $ getFirstLogic nodesList) 
+                        nodesList 
     in  foldr comResSublogics (Res.Result [] Nothing) (slList1 ++ slList2) 
 
   where 
@@ -60,14 +62,26 @@ getSublogicFromGlobalContext le ln =
 
          where g_mor = sublogicOfMor (G_morphism (targetLogic cid') lmorphism)
                g_sign = sublogicOfSign (G_sign (sourceLogic cid') lsign) 
-
-    getDGLogicFromNodes :: [LNode DGNodeLab] -> [Res.Result G_sublogics]
-    getDGLogicFromNodes nodesList =
-        map getDGLogicFromNode nodesList
+           
+    getSubLogicsFromNodes :: AnyLogic -> LNode DGNodeLab 
+                          -> Res.Result G_sublogics
+    getSubLogicsFromNodes logic (_, lnode) =
+        case dgn_theory lnode of
+          th@(G_theory lid _ _) ->
+              if Logic lid == logic then
+                  Res.Result [] (Just $ sublogicOfTh th)
+                 else Res.Result [Res.mkDiag Res.Error 
+                              ("the node " ++ (getDGNodeName lnode) ++ 
+                               "  has a different logic \"" ++ (show lid) ++ 
+                               "\" as the logic of Graph \"" ++ (show logic) ++
+                               " is not homogeneous.") () ] Nothing 
+    
+    getFirstLogic :: [LNode DGNodeLab] -> AnyLogic
+    getFirstLogic list =
+        case dgn_theory $ snd $ head list of
+          G_theory lid _ _ -> 
+              Logic lid
               
-    getDGLogicFromNode :: LNode DGNodeLab -> Res.Result G_sublogics
-    getDGLogicFromNode (_, lnode) =
-        Res.Result [] (Just $ sublogicOfTh $ dgn_theory lnode)
 
 comResSublogics :: Res.Result G_sublogics 
                 -> Res.Result G_sublogics 
@@ -87,12 +101,4 @@ comSublogics (G_sublogics lid1 l1) (G_sublogics lid2 l2) =
       Just sl -> Just (G_sublogics lid2 (join sl l2))
       Nothing -> Nothing
 
-{-
-comSublogicsList :: [G_sublogics] -> Maybe G_sublogics -> Maybe G_sublogics
-comSublogicsList [] result = result
-comSublogicsList (sl:r) oldRes = 
-    case oldRes of
-      Nothing -> comSublogicsList r (Just sl)
-      Just old -> comSublogicsList r (comSublogics old sl)
--}
 
