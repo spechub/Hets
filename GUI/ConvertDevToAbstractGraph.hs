@@ -1534,7 +1534,7 @@ openTranslateGraph  libEnv ln opts (Res.Result diagsSl mSublogic) =
     -- if a error existed by the search of maximal sublogicn 
     -- (see GUI.DGTranslation.getDGLogic), the process need not to go on.
     if hasErrors diagsSl then
-        do createTextSaveDisplay "Error Messages" "error.log"  
+        do createTextSaveDisplay "Error Messages" "error_trans.log"  
                                  (unlines $ map show $ 
                                   filter (relevantDiagKind . diagKind) diagsSl) 
            -- return ()
@@ -1542,28 +1542,32 @@ openTranslateGraph  libEnv ln opts (Res.Result diagsSl mSublogic) =
          do case mSublogic of 
              Just sublogic -> do
                  let paths = findComorphismPaths logicGraph sublogic
-                 Res.Result diagsR i <- runResultT ( do
-                   -- let the user choose one
-                   sel <- lift $ listBox "Choose a logic translation"
-                              (map show paths)
-                   case sel of
-                     Just j -> return j
-                     _ -> liftR $ fail "no logic translation chosen"
-                                                   )
-                 aComor <- return (paths!!(fromJust i))
-                 -- graph translation.
-                 case libEnv_translation libEnv aComor of
-                   Res.Result diagsTrans (Just newLibEnv) ->
-                       do showDiags opts (diagsSl ++ diagsR ++ diagsTrans)
-                          if hasErrors (diagsR ++ diagsTrans) then
-                              return ()
-                            else dg_showGraphAux 
-                                     (\gm -> convertGraph gm ln newLibEnv opts)
-                   Res.Result diagsTrans Nothing ->
-                       do print ("the graph is not be translated.\n" ++
+                 if null paths then
+                     do createTextSaveDisplay "Error Messages" "error_comor.log"  
+                                 "This graph has no comorphism to translation."
+                   else do
+                       Res.Result diagsR i <- runResultT ( do
+                         -- the user choose one
+                         sel <- lift $ listBox "Choose a logic translation"
+                                (map show paths)
+                         case sel of
+                           Just j -> return j
+                           _ -> liftR $ fail "no logic translation chosen"
+                                                         )
+                       aComor <- return (paths!!(fromJust i))
+                       -- graph translation.
+                       case libEnv_translation libEnv aComor of
+                         Res.Result diagsTrans (Just newLibEnv) ->
+                             do showDiags opts (diagsSl ++ diagsR ++ diagsTrans)
+                                if hasErrors (diagsR ++ diagsTrans) then
+                                    return ()
+                                  else dg_showGraphAux 
+                                       (\gm -> convertGraph gm ln newLibEnv opts)
+                         Res.Result diagsTrans Nothing ->
+                             do print ("the graph is not be translated.\n" ++
                                    show aComor)
-                          showDiags opts (diagsSl ++ diagsR ++ diagsTrans)
-                          return ()
+                                showDiags opts (diagsSl ++ diagsR ++ diagsTrans)
+                                return ()
              Nothing -> do print "the maximal sublogic is not found."
                            return ()
   where relevantDiagKind Error = True
