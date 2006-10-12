@@ -368,8 +368,7 @@ cgi:
 	$(MAKE) hets.cgi
 
 hets.cgi: $(sources) GUI/hets_cgi.hs
-	ghc --make GUI/hets_cgi.hs -o $@ $(HC_INCLUDE) \
-            $(HC_FLAGS) $(PFE_FLAGS) -O
+	ghc --make GUI/hets_cgi.hs -o $@ $(HC_OPTS) -O
 	strip hets.cgi
 
 ###############################
