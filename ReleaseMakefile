@@ -29,7 +29,7 @@ PFE_DIRS = base/AST base/TI base/parse2 base/parse2/Lexer base/parse2/Parser \
     property/syntax property/AST property/transforms \
     property/TI property/defs property/parse2 property/parse2/Parser
 PFE_PATH = $(addprefix -i$(PFE_TOOLDIR)/, $(PFE_DIRS))
-PFE_FLAGS = -package data -package text $(PFE_PATH) -DPROGRAMATICA \
+PFE_FLAGS = $(PFE_PATH) -DPROGRAMATICA \
             -fno-monomorphism-restriction -fallow-undecidable-instances
 endif
 
@@ -48,14 +48,6 @@ all: hets
 
 hets:
 	$(HC) --make -O -optc-O2 -o $@ hets.hs $(HC_OPTS) -w
-	strip hets
-
-hetsOnMac:
-	$(RM) hets
-	/usr/local/bin/ghc --make -O -o hets hets.hs $(HC_OPTS) -w \
-            -optc-I/home/mac-bkb/include \
-            -optl-L/home/mac-bkb/static-lib \
-            -optl-lreadline5 -optl-lncurses
 	strip hets
 
 hets.cgi:
