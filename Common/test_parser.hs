@@ -6,9 +6,7 @@ import Data.List
 import Text.ParserCombinators.Parsec
 import qualified Common.CaslLanguage as L(casl_id, semi, whiteSpace)
 import Common.Anno_Parser
-import Common.Doc
 import Common.DocUtils
-import Common.AS_Annotation
 import Common.Id
 import Common.Token(parseId)
 
@@ -105,9 +103,6 @@ main = do
                          "casl_id"     -> testFileC
                          "casl_id2"    -> testFileCS
                          _             -> error ("*** unknown parser " ++ s)
-
-instance Pretty [Annotation] where
-    pretty = vcat . map pretty
 
 testId = testPL (sepBy L.casl_id L.semi)
          "__++__ ; __+*[y__,a_l'__,4]__ ; {__}[__] ; __a__b[__z]"
