@@ -137,7 +137,7 @@ $(LEX_DIR)/HsLex.hs: $(LEX_DIR)Gen/HsLexerGen
 
 $(LEX_DIR)Gen/HsLexerGen: $(LEX_DIR)Gen/*.hs $(LEX_DIR)Spec/*.hs \
     $(LEX_DIR)/HsTokens.hs
-	$(HC) --make -O \
+	$(HC) --make -fno-monomorphism-restriction -O \
            -i$(PFE_TOOLDIR)/base/tests/HbcLibraries \
            -i$(PFE_TOOLDIR)/base/lib \
 	   -i$(LEX_DIR) -i$(LEX_DIR)Gen -i$(LEX_DIR)Spec \
