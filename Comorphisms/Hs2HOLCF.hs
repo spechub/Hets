@@ -530,12 +530,12 @@ trCase :: Continuity -> (String, Int) -> [((String, IsaPattern), IsaTerm)]
        -> (IsaTerm, IsaTerm)
 trCase r h ys = case ys of
     [] -> case r of
-      IsCont -> (buildPat h, IsaSign.Bottom)
+      IsCont -> (buildPat r h, IsaSign.Bottom)
       NotCont -> error "Hs2HOLCF.trCase"
     ((a, b), c) : as -> if a == fst h
        then repVsCPt b c (snd h)
        else if a == "_"
-       then (buildPat h, c)
+       then (buildPat r h, c)
        else trCase r h as
  where
   mkpXVs = mkVs "pX"
@@ -550,9 +550,11 @@ trCase r h ys = case ys of
              ns = renVars nv [y] $ snd st
            in (nf, ns)
       _ -> error "Hs2HOLCF.repVsCPt"
-  buildPat (x, n) =
-     termMAppl r (Const (mkVName $ showIsaName x) noType) $
-               reverse $ map mkpXVs [1..n]
+  buildPat r' (x, n) = let 
+     hh = stringTrans r' noType x
+     k = Const (mkVName $ showIsaName x) noType
+     j = maybe k id hh
+   in termMAppl r' j $ reverse $ map mkpXVs [1..n]
 
 transPatBind :: Continuity -> ConstTab -> PrDecl -> Maybe (IsaTerm,IsaTerm)
 transPatBind a cs s = case s of
@@ -607,63 +609,69 @@ transP a trId trP p =
 
 transCN :: Continuity -> HsScheme -> PNT -> Maybe IsaTerm
 transCN c s x = let
-  y = showIsaName x
-  z = noType
-  f w = Const (mkVName w) z
-  in return $
-  if isCont c then case pp x of
-      "True"   -> f "TT"
-      "False"  -> f "FF"
-      ":"      -> f "lCons"
-      _        -> f y
-  else case pp x of
-     "True"   -> f "True"
-     "False"  -> f "False"
-     ":"      -> f "op #"
-     _        -> f y
+    k = pp x
+    y = showIsaName x
+    z = noType 
+    w = Const (mkVName y) z
+    zz = stringTrans c z k
+  in return $ maybe w id $ zz
 
 transHV :: Continuity -> HsScheme -> PNT -> Maybe IsaTerm
 transHV a s x = let
       n = showIsaName x
-      k = noType
-      tag = isCont a
+      t = noType
       qq = pp x
-      mkConst w = Const (mkVName w) k
-      mkVConst v = Const v k
-      mkFree w = Free (mkVName w)
+      mkConst w = Const (mkVName w) t
+      mkFree w = Free (mkVName w) 
    in if qq == "error" then Nothing else return $
-   case qq of
-   "==" -> mkConst "hEq"
-   "/=" -> mkConst "hNEq"
-   "&&" -> if tag == False then mkVConst conjV
-            else mkConst "trand"
-   "||" -> if tag == False then mkVConst disjV
-            else mkConst "tror"
-   "+" -> (if tag == False then id
-           else funFliftbin) $ mkVConst plusV
-   "-" -> (if tag == False then id
-           else funFliftbin) $ mkVConst minusV
-   "*" -> (if tag == False then id
-           else funFliftbin) $ mkVConst timesV
-   "head" -> if tag == False then mkConst "hd"
-              else mkConst "lHd"
-   "tail" -> if tag == False then mkConst "tl"
-              else mkConst "lTl"
-   ":"    -> if tag == False then mkVConst consV
-              else mkConst "lCons"
-   "fst"    -> if tag == False then mkConst "fst"
-              else mkConst "cfst"
-   "snd"    -> if tag == False then mkConst "snd"
-              else mkConst "csnd"
-   ">>="    -> if tag == False then mkConst ">>="
-              else mkConst "mBind"
-   ">>"     -> if tag == False then mkConst ">>"
-              else mkConst "mSBind"
-   _ -> case x of
+   case (stringTrans a t qq) of
+   Just d -> d
+   Nothing -> case x of 
         PNT (PN _ (UniqueNames.G _ _ _)) _ _ -> mkConst n
         PNT (PN _ (UniqueNames.S _)) _ _ -> mkFree n
         PNT (PN _ (UniqueNames.Sn _ _)) _ _ -> mkFree n
         _ -> error "Hs2HOLCF.transHV"
+
+stringTrans :: Continuity -> IsaType -> String -> Maybe IsaTerm
+stringTrans a t qq = let      
+      mkConst w = Const (mkVName w) t
+      mkVConst v = Const v t
+   in if qq == "error" then Nothing else 
+   case qq of
+   "==" -> return $ mkConst "hEq"
+   "/=" -> return $ mkConst "hNEq"
+   "&&" -> return $ if a == NotCont then mkVConst conjV
+            else mkConst "trand"
+   "||" -> return $ if a == NotCont then mkVConst disjV
+            else mkConst "tror"
+   "+" -> return $ (if a == NotCont then id
+           else funFliftbin) $ mkVConst plusV
+   "-" -> return $ (if a == NotCont then id
+           else funFliftbin) $ mkVConst minusV
+   "*" -> return $ (if a == NotCont then id
+           else funFliftbin) $ mkVConst timesV
+   "head"  -> return $ if a == NotCont then mkConst "hd"
+              else mkConst "lHd"
+   "tail"  -> return $ if a == NotCont then mkConst "tl"
+              else mkConst "lTl"
+   ":"     -> return $ if a == NotCont then mkVConst consV
+              else mkConst "lCons"
+   "[]"    -> return $ if a == NotCont then mkConst "[]"
+              else mkConst "lNil"
+   "fst"   -> return $ if a == NotCont then mkConst "fst"
+              else mkConst "cfst"
+   "snd"   -> return $ if a == NotCont then mkConst "snd"
+              else mkConst "csnd"
+   ">>="   -> return $ if a == NotCont then mkConst ">>="
+              else mkConst "mBind"
+   ">>"    -> return $ if a == NotCont then mkConst ">>"
+              else mkConst "mSBind"
+   "True"  -> return $ if a == NotCont then mkConst "True"
+              else mkConst "TT"
+   "False" -> return $ if a == NotCont then mkConst "False"
+              else mkConst "FF"
+   _       -> Nothing
+
 
 ---------------------------------- auxiliary --------------------------------
 
