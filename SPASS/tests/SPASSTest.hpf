@@ -1,0 +1,6 @@
+use SPASS/tests/SPASSTest.het
+dg-all auto
+dg basic Eq_Pred
+translate SuleCFOL2SoftFOL
+prove-all
+
