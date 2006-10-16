@@ -120,6 +120,7 @@ goalProcessed stateRef tLimit extOpts numGoals prName processedGoalsSoFar
 
   let notReady = case retval of
                  ATPError _ -> False
+                 ATPBatchStopped -> False
                  _ -> numGoals - processedGoalsSoFar > 0
   if mainDestroyed s
      then return False
