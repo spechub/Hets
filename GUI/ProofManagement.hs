@@ -100,7 +100,9 @@ goalsView :: ProofGUIState lid sentence  -- ^ current global state
 goalsView = map toStatus . OMap.toList . goalMap
     where toStatus (l,st) =
               let tStatus = thmStatus st
-                  si = if null tStatus
+                  showBP = show . snd  
+                  si = if seq (length (concatMap showBP tStatus) >= 0 ) $ 
+                           null tStatus
                        then LBIndicatorOpen
                        else indicatorFromBasicProof
                                 (maximum $ map snd $ tStatus)
@@ -500,7 +502,7 @@ proofManagementGUI lid proveF fineGrainedSelectionF
   let goalSpecificWids = map EnW [displayGoalsButton,proveButton,
                                   proofDetailsButton,moreButton]
       wids = [EnW pathsLb,EnW lbThs,EnW lb,EnW lbAxs] ++
-             map EnW (selectOpenGoalsButton : closeButton :
+             map EnW (selectOpenGoalsButton : closeButton :showThButton:
                       axsBtns++goalBtns++thsBtns) ++
              goalSpecificWids
 
@@ -611,7 +613,8 @@ proofManagementGUI lid proveF fineGrainedSelectionF
             --                   ' ':show (includedTheorems prState))
             writeIORef stateRef prState
             Result.Result ds ms'' <- proveF prState
-            curSt <- readIORef stateRef
+            -- putStrLn "Prover returned"
+            curSt <-  readIORef stateRef
             if proofManagementDestroyed curSt
                then done
                else do
@@ -624,6 +627,7 @@ proofManagementGUI lid proveF fineGrainedSelectionF
              updateDisplay s''' True lb pathsLb statusLabel
              putWinOnTop main
              writeIORef stateRef s'''
+             -- putStrLn "end of doProve"
              done)
       +> (showProofDetails >>> do
             s <- readIORef stateRef

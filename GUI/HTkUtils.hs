@@ -72,6 +72,7 @@ createTextSaveDisplayExt title fname txt conf upost =
        
      ed # value txt
      ed # state Disabled
+     forceFocus ed
 
      quit <- clicked q
      save <- clicked s
