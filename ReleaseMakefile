@@ -54,6 +54,13 @@ hets.cgi:
 	$(HC) --make -O -optc-O2 GUI/hets_cgi.hs -o $@ $(HC_OPTS) -w
 	strip hets.cgi
 
+hetsOnMac:
+	$(RM) hets
+	/usr/local/bin/ghc --make -O -o hets hets.hs $(HC_OPTS) -w \
+            -optc-I/home/mac-bkb/include \
+            -optl-L/home/mac-bkb/static-lib \
+            -optl-lreadline5 -optl-lncurses
+	strip hets
 
 ###############
 ### clean up
