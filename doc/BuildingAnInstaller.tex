@@ -84,8 +84,39 @@ Makfile.installer:
   \end{itemize}
 \item GMP.framework for Mac OS X from hets homepage
 \end{itemize}
-
+\clearpage
+Directory-layout of installed directory: (dirs end with a slash)\\
+Hets/
 \begin{itemize}
-\item 
+\item bin/
+  \begin{itemize}
+  \item hets --- the shell script derived from HetCATS/hets.in with
+    properly set paths
+  \item isatool --- link to isabelle's isatool
+  \item isabelle --- link to isabelle
+  \item uDrawGraph --- link to uDrawGraph startup script
+  \item SPASS --- a link to the SPASS binary
+  \item --- a link to the OWL-DL parser script
+  \item getDailyHets.sh --- properly configured to download to Hets/lib/hets
+  \end{itemize}
+\item lib/
+  \begin{itemize}
+  \item Isabelle/ --- if installed via IzPack; properly configured
+  \item spass-XX/ --- binary and source code of SPASS
+  \item hets/ 
+    \begin{itemize}
+    \item hets-XX --- the real binary of hets with version number as extension,
+      e.g. \verb,hets-0.52,
+    \item --- OEL-DL parser startup script
+    \item --- jar-file(s) for OWL-DL parser
+    \end{itemize}
+  \item CASL-lib/ --- the CASL-lib libraries
+  \item src/
+    \begin{itemize}
+    \item HetCATS/
+    \item uni/
+    \item programmatica/
+    \end{itemize}
+  \end{itemize}
 \end{itemize}
 \end{document}
