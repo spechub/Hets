@@ -29,17 +29,20 @@ main :: IO ()
 main = do
     fs <- getDirectoryContents "."
     let fn = filter (isSuffixOf ".imports") fs
-        fln = map (deletWith init 8) fn 
+        fln = map getContent3 fn
+        fln' = isIn2 [] fln
+    --putStr $ unwords fln'
     lfs <- mapM (readFile) fn
     let ss = map (filter (isPrefixOf "import") . lines) lfs
-        sss = getContent6 ss 
+        sss = getContent6 ss
+        sss' = map (isIn2 []) sss
         graphParms = GraphTitle "Dependency Graph" $$
                         OptimiseLayout True $$
                         AllowClose (return True) $$
                         emptyGraphParms
     depG <- newGraph daVinciSort graphParms
-    let flln = fln ++ (isIn2 [] $ concat $ isIn fln sss)
-        subNodeMenu = LocalMenu (Menu Nothing [])
+    let flln = fln' ++ (isIn2 [] $ concat $ isIn fln' sss')
+        subNodeMenu = LocalMenu (Menu (Just "Info") [])
         subNodeTypeParms =
                          subNodeMenu $$$
                          Ellipse $$$
@@ -64,7 +67,7 @@ main = do
                                   (lookup' node2)
     mapM_ insertSubArc $ 
                      Rel.toList $ Rel.intransKernel $ Rel.fromList
-                     $ getContent1 $ zipWith getContent2 fln sss
+                     $ isIn2 [] $ getContent1 $ zipWith getContent2 fln sss'
     redraw depG
     sync(destroyed depG)
 
@@ -79,7 +82,7 @@ getContent2 s (x:xs) = (s,x):getContent2 s xs
 
 getContent3 :: String -> String
 getContent3 [] = ""
-getContent3 (x:xs) = if x == '(' then ""
+getContent3 (x:xs) = if x == '.' || x == '(' then ""
                       else x : getContent3 xs
 
 getContent4 :: [String] -> [String]
@@ -90,6 +93,7 @@ getContent5  = map  getContent3
 
 getContent6 :: [[String]] ->[[String]]
 getContent6 = map (getContent5 . getContent4)
+
 
 deletWith :: (String -> String) -> Int -> String -> String
 deletWith f n s = case n of
@@ -105,7 +109,7 @@ is _ [] = []
 is l' (x:xs) | elem x l' = is l' xs
              | otherwise = x : is l' xs
 
-isIn2 :: [String] -> [String] -> [String]
+isIn2 :: (Eq a)=> [a] -> [a] -> [a]
 isIn2 l []  = l
 isIn2 l (x:xs) | elem x l = isIn2 l xs
                | otherwise = isIn2 (l ++ [x]) xs 
