@@ -1,5 +1,6 @@
--- | test module similar to GUI_tests,
---   test ProveCMDL-functions
+{- |
+  test module similar to GUI_tests, but tests CMDL functions
+-}
 module CMDL_tests where 
 
 import qualified Common.Lib.Map as Map 
@@ -18,10 +19,7 @@ import SPASS.Prove
 import SPASS.ProveVampire
 import SPASS.ProveMathServ
 
-
-printStatus :: IO [LProver.Proof_status ATP_ProofTree] -> IO ()
-printStatus act = do st <- act
-                     putStrLn (show st)
+-- * Definitions of test theories
 
 sign1 :: SPASS.Sign.Sign
 sign1 = emptySign {sortMap = Map.insert "s" Nothing Map.empty,
@@ -113,51 +111,133 @@ gone = NamedSen {senName = "gone", isAxiom = False, isDef = False, sentence = SP
 theoryExt :: LProver.Theory SPASS.Sign.Sign SPTerm ATP_ProofTree
 theoryExt = (LProver.Theory signExt $ LProver.toThSens [ga_nonEmpty, ga_notDefBottom, ga_strictness, ga_strictness_one, ga_predicate_strictness, antisym, trans, refl, inf_def_ExtPartialOrder, sup_def_ExtPartialOrder, gone, ga_comm_sup, ga_comm_inf])
 
+-- * Testing functions
 
-runTest :: String -- ^ theory name
+{- |
+  Runs a CMDL automatic function (given as parameter) and returns its
+  result after being run with given test theory.
+-}
+runTest :: String -- ^ prover name for proof status in case of error
+        -> (String
+            -> LProver.Tactic_script
+            -> LProver.Theory Sign Sentence ATP_ProofTree
+            -> IO (Result ([LProver.Proof_status ATP_ProofTree]))
+           )
+        -> String -- ^ theory name
         -> LProver.Theory Sign Sentence ATP_ProofTree
         -> IO [LProver.Proof_status ATP_ProofTree]
-runTest thName th = 
-    do result <- spassProveCMDLautomatic
+runTest prName runCMDLProver thName th = 
+    do result <- runCMDLProver
                               thName
                               (LProver.Tactic_script (show $ ATPTactic_script {
-                                 ts_timeLimit = 10, ts_extraOpts = [] }))
+                                 ts_timeLimit = 20, ts_extraOpts = [] }))
                               th
-       maybe (return [LProver.openProof_status "" "SPASS" (ATP_ProofTree "")])
+       maybe (return [LProver.openProof_status "" prName (ATP_ProofTree "")])
              return
              (maybeResult result)
 
-runTestBatch :: String -- ^ theory name
+{- |
+  Runs a CMDL automatic batch function (given as parameter) and returns its
+  result after being run with given test theory.
+-}
+runTestBatch :: Maybe Int -- ^ seconds to pass before thread will be killed
+        -> String -- ^ prover name for proof status in case of error
+        -> (Bool
+            -> Bool
+            -> IORef (Result [LProver.Proof_status ATP_ProofTree])
+            -> String
+            -> LProver.Tactic_script
+            -> LProver.Theory Sign Sentence ATP_ProofTree
+            -> IO (Concurrent.ThreadId,Concurrent.MVar ())
+           )
+        -> String -- ^ theory name
         -> LProver.Theory Sign Sentence ATP_ProofTree
         -> IO [LProver.Proof_status ATP_ProofTree]
-runTestBatch thName th = 
+runTestBatch waitsec prName runCMDLProver thName th = 
     do resultRef <- newIORef (Result { diags = [], maybeResult = Just [] })
-       (threadID, mvar) <- spassProveCMDLautomaticBatch
+       (threadID, mvar) <- runCMDLProver
                                True True resultRef thName
                                (LProver.Tactic_script (show $ ATPTactic_script {
                                   ts_timeLimit = 10, ts_extraOpts = [] }))
                                th
-       Concurrent.threadDelay (12*1000000)
-       Concurrent.killThread threadID
+       maybe (return ()) (\ ws -> do
+                Concurrent.threadDelay (ws*1000000)
+                Concurrent.killThread threadID) waitsec
        Concurrent.takeMVar mvar
-       -- Concurrent.threadDelay 1000000 -- waiting for SPASS error message
 
        result <- readIORef resultRef
-       maybe (return [LProver.openProof_status "" "SPASS" (ATP_ProofTree "")])
+       maybe (return [LProver.openProof_status "" prName (ATP_ProofTree "")])
              return
              (maybeResult result)
 
-test1 :: IO ()
-test1 = printStatus (runTest "Foo1" theory1)
-test1Batch :: IO ()
-test1Batch = printStatus (runTestBatch "Foo1" theory1)
+{- |
+  Main function doing all tests (combinations of theory and prover) in a row.
+  Outputs status lines with information whether test passed or failed.
+-}
+runTests :: IO ()
+runTests = do
+    runProveTest Nothing spassProveCMDLautomaticBatch "SPASS" "Foo1" theory1
+                 [LProver.Proved (Nothing), LProver.Disproved]
+    runProveTest Nothing vampireCMDLautomaticBatch "Vampire" "Foo1" theory1
+                 [LProver.Proved (Nothing), LProver.Disproved]
+    runProveTest Nothing mathServBrokerCMDLautomaticBatch "MathServ"
+                 "Foo1" theory1
+                 [LProver.Proved (Nothing), LProver.Disproved]
 
-test2 :: IO ()
-test2 = printStatus (runTest "Foo2" theory2)
-test2Batch :: IO ()
-test2Batch = printStatus (runTestBatch "Foo2" theory2)
+    runProveTest Nothing spassProveCMDLautomaticBatch "SPASS" "Foo2" theory2
+                 [LProver.Proved (Nothing), LProver.Proved (Nothing),
+                  LProver.Proved (Nothing)]
+    runProveTest Nothing vampireCMDLautomaticBatch "Vampire" "Foo2" theory2
+                 [LProver.Proved (Nothing), LProver.Proved (Nothing),
+                  LProver.Proved (Nothing)]
+    runProveTest Nothing mathServBrokerCMDLautomaticBatch "MathServ"
+                 "Foo2" theory2
+                 [LProver.Proved (Nothing), LProver.Proved (Nothing),
+                  LProver.Proved (Nothing)]
 
-testExt :: IO ()
-testExt = printStatus (runTest "ExtPartialOrder" theoryExt)
-testExtBatch :: IO ()
-testExtBatch = printStatus (runTestBatch "ExtPartialOrder" theoryExt)
+    runProveTest (Just 12) spassProveCMDLautomaticBatch "SPASS"
+                 "ExtPartialOrder" theoryExt
+                 [LProver.Proved (Nothing), LProver.Open, LProver.Open]
+    runProveTest (Just 20) vampireCMDLautomaticBatch "Vampire"
+                 "ExtPartialOrder" theoryExt
+                 [LProver.Open, LProver.Open, LProver.Open]
+    runProveTest (Just 20) mathServBrokerCMDLautomaticBatch "MathServ"
+                 "ExtPartialOrder" theoryExt
+                 [LProver.Proved (Nothing), LProver.Open, LProver.Open]
+
+                  
+{- |
+  A single test run of a CMDL batch function running over a given theory.
+  Result will be output as status message.
+-}
+runProveTest :: Maybe Int -- ^ seconds to pass before thread will be killed
+              -> (Bool
+                  -> Bool
+                  -> IORef (Result [LProver.Proof_status ATP_ProofTree])
+                  -> String
+                  -> LProver.Tactic_script
+                  -> LProver.Theory Sign Sentence ATP_ProofTree
+                  -> IO (Concurrent.ThreadId,Concurrent.MVar ())
+                 )
+              -> String -- ^ prover name
+              -> String -- ^ theory name
+              -> LProver.Theory Sign Sentence ATP_ProofTree
+              -> [LProver.GoalStatus] -- ^ list of expected results
+              -> IO ()
+runProveTest waitsec prFun prName thName th expStatus = do
+    putStr $ "Trying " ++ thName ++ " with prover " ++ prName ++ " ... "
+    stResult <- runTestBatch waitsec prName prFun thName th
+    putStrLn $ if (succeeded stResult expStatus)
+                 then "passed" else "failed"
+    
+{- |
+  Checks if a prover run's result matches expected result.
+-}
+succeeded :: [LProver.Proof_status ATP_ProofTree]
+          -> [LProver.GoalStatus]
+          -> Bool
+succeeded stResult expStatus =
+    (length stResult == length expStatus)
+    && (foldl (\b (given, expected) -> if (given == expected) then b else False)
+              True
+              (zip (map (\s -> LProver.goalStatus s) stResult) expStatus))
