@@ -503,17 +503,6 @@ Isabelle interface
 Rainer (Klaus)
 ************************************************
 
-SPASS encoding improvements in CASL2SPASS
-  - if there are predicates defined upon equality substitute them with equality
-    and remove them from the signature
-    find definitions (Equivalences) where one side is a binary predicate
-      and the other side is a builtin equality application (Strong_equation)
-      return the full qualified (with type) predicate(s)
-      this is done before the translation of the signature/sentences happens
-    remove eqPrediate symbols from signature 
-    substitute eqPredications with Strong_equation in the Formulas
-     see CASL.Utils.codeOutConditionalF
-
 implement a catch for calling MathServ based on the catch in runSpass
    write just one function that converts Exception to ATPResult
    maybe even a specialised catch is useful
@@ -521,6 +510,21 @@ implement a catch for calling MathServ based on the catch in runSpass
 
 for the transition to ghc-6.6 spassProve must be corrected
    the regexp library changed in functionality
+   maybe the parse of the proof tree should be done without regular 
+   expressions
+
+performance improvements
+   use seq to force the evaluation of the proof trees while in
+   GenericATP window otherwise "Exit prover" takes a long time
+
+usability improvements
+  in the Proof details window (with expandable "Tactic script")
+    add two buttons to expand and hide "tactic script" and "proof
+    tree"
+    buttons shoud work like toggles and change their text upon click
+  update of goal list-boxes should not longer move visible 
+    area of the list
+    involves getting and setting of visible area
 
 code cleanup and documentation where necessary and possilbe 
    in SPASS/* and GUI/GenericATP*, GUI/Proofmanagement.hs
