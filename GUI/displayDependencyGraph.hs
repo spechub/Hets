@@ -29,19 +29,21 @@ main :: IO ()
 main = do
     fs <- getDirectoryContents "."
     let fn = filter (isSuffixOf ".imports") fs
-        fln = map getContent3 fn
+        ffn = map (deletWith init 8) fn
+        ffnn = filter (elem '.') ffn
+        fln = map (fst . break (== '.'))  ffnn 
         fln' = isIn2 [] fln
-    --putStr $ unwords fln'
-    lfs <- mapM (readFile) fn
+    lfs <- mapM (readFile . (++ ".imports")) ffnn
     let ss = map (filter (isPrefixOf "import") . lines) lfs
         sss = getContent6 ss
-        sss' = map (isIn2 []) sss
+        ssss = map (map $ fst . break (== '.')) sss
+        sss' = map (isIn2 []) ssss
         graphParms = GraphTitle "Dependency Graph" $$
                         OptimiseLayout True $$
                         AllowClose (return True) $$
                         emptyGraphParms
     depG <- newGraph daVinciSort graphParms
-    let flln = fln' ++ (isIn2 [] $ concat $ isIn fln' sss')
+    let flln = isIn2 [] $ fln' ++ concat sss'
         subNodeMenu = LocalMenu (Menu (Just "Info") [])
         subNodeTypeParms =
                          subNodeMenu $$$
@@ -67,49 +69,33 @@ main = do
                                   (lookup' node2)
     mapM_ insertSubArc $ 
                      Rel.toList $ Rel.intransKernel $ Rel.fromList
-                     $ isIn2 [] $ getContent1 $ zipWith getContent2 fln sss'
+                     $ isIn3 $ isIn2 [] $ concat $ zipWith getContent2 fln sss'
     redraw depG
     sync(destroyed depG)
 
-
-getContent1 :: [[(String,String)]] -> [(String,String)]
-getContent1 [] = []
-getContent1 (x:xs) = x ++ getContent1 xs
-
-getContent2 :: String -> [String] -> [(String,String)]
-getContent2 _ [] =[]
-getContent2 s (x:xs) = (s,x):getContent2 s xs
-
-getContent3 :: String -> String
-getContent3 [] = ""
-getContent3 (x:xs) = if x == '.' || x == '(' then ""
-                      else x : getContent3 xs
+getContent2 :: a -> [b] -> [(a, b)]
+getContent2 x  = map (\ m -> (x, m))
 
 getContent4 :: [String] -> [String]
-getContent4 s = map (!! 1) $  map  words s
+getContent4 s = map ((!! 1) .  words) s
 
 getContent5 :: [String] -> [String]
-getContent5  = map  getContent3 
+getContent5  = map $ fst . break (== '(') 
 
 getContent6 :: [[String]] ->[[String]]
-getContent6 = map (getContent5 . getContent4)
+getContent6 = map $ (filter (elem '.')) . getContent5 . getContent4
 
-
-deletWith :: (String -> String) -> Int -> String -> String
+deletWith :: ([a] -> [a]) -> Int -> [a] -> [a]
 deletWith f n s = case n of
     0 -> s
     _ -> deletWith f (n-1) $ f s
-
-isIn :: [String] -> [[String]] -> [[String]]
-isIn l ll = map (is l) ll
-
-is :: [String] -> [String] -> [String]
-is [] l = l
-is _ [] = []
-is l' (x:xs) | elem x l' = is l' xs
-             | otherwise = x : is l' xs
 
 isIn2 :: (Eq a)=> [a] -> [a] -> [a]
 isIn2 l []  = l
 isIn2 l (x:xs) | elem x l = isIn2 l xs
                | otherwise = isIn2 (l ++ [x]) xs 
+
+isIn3 :: (Eq a)=> [(a, a)] -> [(a, a)]
+isIn3 [] = []
+isIn3 ((m, n):xs) | m == n = isIn3 xs
+                    | otherwise = (m, n) : isIn3 xs
