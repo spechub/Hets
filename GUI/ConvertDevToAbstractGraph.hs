@@ -89,6 +89,7 @@ import Control.Monad
 import Control.Monad.Trans
 import Events
 import DialogWin (useHTk)
+import Messages
 -- import Debug.Trace
 
 {- Maps used to track which node resp edge of the abstract graph
@@ -146,8 +147,9 @@ initializeConverter =
 -- graph and returns the descriptor of the latter, the graphInfo it is
 -- contained in and the conversion maps (see above)
 convertGraph :: IORef GraphMem -> LIB_NAME -> LibEnv -> HetcatsOpts
+             -> String  -- ^ title of graph
              -> IO (Descr, GraphInfo, ConversionMaps)
-convertGraph graphMem libname libEnv opts =
+convertGraph graphMem libname libEnv opts title =
   do let convMaps = ConversionMaps
            {{-dg2abstrNode = Map.empty::DGraphToAGraphNode,
             abstr2dgNode = Map.empty::AGraphToDGraphNode,
@@ -162,7 +164,7 @@ convertGraph graphMem libname libEnv opts =
         do let dgraph = devGraph gctx
            (abstractGraph,grInfo,convRef) <-
                   initializeGraph graphMem libname dgraph convMaps
-                                  gctx opts
+                                  gctx opts title
            if (isEmpty dgraph) then
                 return (abstractGraph, grInfo,convMaps)
             else
@@ -181,8 +183,9 @@ convertGraph graphMem libname libEnv opts =
 -- return type equals the one of convertGraph
 initializeGraph :: IORef GraphMem -> LIB_NAME -> DGraph -> ConversionMaps
                      -> GlobalContext -> HetcatsOpts
+                     -> String    -- ^ title of graph
                      -> IO (Descr,GraphInfo,IORef ConversionMaps)
-initializeGraph ioRefGraphMem ln dGraph convMaps _ opts = do
+initializeGraph ioRefGraphMem ln dGraph convMaps _ opts title = do
   graphMem <- readIORef ioRefGraphMem
   event <- newIORef 0
   convRef <- newIORef convMaps
@@ -196,7 +199,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts = do
               , showInternalNames, opts, ioRefVisibleNodes)
   let file = libNameToFile opts ln ++ prfSuffix
   AGV.Result descr msg <-
-    makegraph ("Development graph for " ++ show ln)
+    makegraph (title ++ " for " ++ show ln)
          -- action on "open"
              (do evnt <- fileDialogStr "Open..." file
                  maybeFilePath <- HTk.sync evnt
@@ -483,6 +486,7 @@ openProofStatus ln file ioRefProofStatus convRef opts = do
                                       graphInfo = initGraphInfo})
                     (gid, actGraphInfo, convMaps)
                           <- convertGraph graphMem' ln proofStatus opts
+                                  "Proof Status "
                     writeIORef convRef convMaps
                     redisplay gid actGraphInfo
                     return (gid, actGraphInfo, convMaps)
@@ -1283,7 +1287,7 @@ showReferencedLibrary graphMem descr _ _ convMaps opts =
                case Map.lookup refLibname libname2dgMap of
                  Just _ ->
                      convertGraph graphMem refLibname (libname2dg convMaps)
-                                  opts
+                                  opts "development graph"
                  Nothing -> error ("The referenced library ("
                                      ++ (show refLibname)
                                      ++ ") is unknown")
@@ -1534,17 +1538,15 @@ openTranslateGraph  libEnv ln opts (Res.Result diagsSl mSublogic) =
     -- if a error existed by the search of maximal sublogicn 
     -- (see GUI.DGTranslation.getDGLogic), the process need not to go on.
     if hasErrors diagsSl then
-        do createTextSaveDisplay "Error Messages" "error_trans.log"  
-                                 (unlines $ map show $ 
-                                  filter (relevantDiagKind . diagKind) diagsSl) 
+        do errorMess (unlines $ map show $ 
+                           filter (relevantDiagKind . diagKind) diagsSl) 
            -- return ()
        else 
          do case mSublogic of 
              Just sublogic -> do
                  let paths = findComorphismPaths logicGraph sublogic
                  if null paths then
-                     do createTextSaveDisplay "Error Messages" "error_comor.log"  
-                                 "This graph has no comorphism to translation."
+                     do errorMess "This graph has no comorphism to translation."
                    else do
                        Res.Result diagsR i <- runResultT ( do
                          -- the user choose one
@@ -1560,15 +1562,18 @@ openTranslateGraph  libEnv ln opts (Res.Result diagsSl mSublogic) =
                          Res.Result diagsTrans (Just newLibEnv) ->
                              do showDiags opts (diagsSl ++ diagsR ++ diagsTrans)
                                 if hasErrors (diagsR ++ diagsTrans) then
-                                    return ()
+                                    errorMess (unlines $ map show $ 
+                                              filter (relevantDiagKind . diagKind)
+                                                             (diagsR ++ diagsTrans))
                                   else dg_showGraphAux 
-                                       (\gm -> convertGraph gm ln newLibEnv opts)
+                                   (\gm -> convertGraph gm ln newLibEnv opts 
+                                                    "translation Graph")
                          Res.Result diagsTrans Nothing ->
-                             do print ("the graph is not be translated.\n" ++
-                                   show aComor)
-                                showDiags opts (diagsSl ++ diagsR ++ diagsTrans)
+                             do errorMess (unlines $ map show $ 
+                                               filter  (relevantDiagKind . diagKind)
+                                                 (diagsSl ++ diagsR ++ diagsTrans))
                                 return ()
-             Nothing -> do print "the maximal sublogic is not found."
+             Nothing -> do errorMess "the maximal sublogic is not found."
                            return ()
   where relevantDiagKind Error = True
         relevantDiagKind Warning = (verbose opts) >= 2

@@ -35,7 +35,8 @@ showGraph :: FilePath -> HetcatsOpts ->
                    )  -> IO ()
 showGraph file opts env = case env of
         Just (ln, libenv) ->
-            showGraphAux file opts ( \ gm -> convertGraph gm ln libenv opts)
+            showGraphAux file opts ( \ gm -> convertGraph gm ln libenv opts
+                                               "development graph")
         Nothing -> putIfVerbose opts 1 $
             "Error: Basic Analysis is neccessary to display "
              ++ "graphs in a graphical window"
