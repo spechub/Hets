@@ -504,37 +504,59 @@ Rainer (Klaus)
 ************************************************
 
 implement a catch for calling MathServ based on the catch in runSpass
-   write just one function that converts Exception to ATPResult
-   maybe even a specialised catch is useful
-   such functions fit into Common.Utils or Common.ProofUtils
+   - write just one function that converts Exception to ATPResult
+     maybe even a specialised catch is useful
+     such functions fit into Common.Utils or Common.ProofUtils
 
 for the transition to ghc-6.6 spassProve must be corrected
-   the regexp library changed in functionality
-   maybe the parse of the proof tree should be done without regular 
-   expressions
-
-performance improvements
-   use seq to force the evaluation of the proof trees while in
-   GenericATP window otherwise "Exit prover" takes a long time
+   - the regexp library changed in functionality
+     maybe the parse of the proof tree should be done without regular 
+     expressions
+  performance improvements
+   - use seq to force the evaluation of the proof trees while in
+     GenericATP window otherwise "Exit prover" takes a long time
+     Example: seq (length $ show $ prooftree proofStatus) proofStatus 
+     in GenericATP
 
 usability improvements
-  in the Proof details window (with expandable "Tactic script")
-    add two buttons to expand and hide "tactic script" and "proof
-    tree"
-    buttons shoud work like toggles and change their text upon click
-  update of goal list-boxes should not longer move visible 
+  - in the Proof details window (with expandable "Tactic script")
+      * use OMap (OrderedMap functions) to get the same ordering 
+        of the goals as in the main Proofmanagement window
+      * add two buttons to expand and hide "tactic script" and "proof
+        tree"
+        buttons shoud work like toggles and change their text upon click
+  - forceFocus to read-only textedit widgets in textSaveDisplay windows
+    upon left mouse click
+  - update of goal list-boxes should not longer move visible 
     area of the list
     involves getting and setting of visible area
+  - show current goal name in batch mode on aditional label in extra
+    line below extra options of batch mode part.
+  - Batch mode is not "runnig"
 
 code cleanup and documentation where necessary and possilbe 
    in SPASS/* and GUI/GenericATP*, GUI/Proofmanagement.hs
+
+for ProofManagement-GUI
+  mark imported theorems for selection
+  extend Logic.Prover SenStatus with wasTheorem
+  somewhere in computeTheory implement setting of wasTheorem
+  if wasTheorem not appears with right status in ProofManagementGUI
+    add wasTheorem to Common.Result.Named, as well
+    and adapt conversion functions of SenStatus to Named and vice
+    versa in Logic.Prover
+  Mark old theorems in "Axioms to include" Listbox with prefixed
+  "(Th)"
+  add button "Deselect former Theorems"
+  test all this with CASL-lib/Calculi/Space/RCCVerification.het
+  all nodes without incoming heterogeneous edges are provable with
+  SPASS
 
 ************************************************
 Klaus
 ************************************************
 
 for ProofManagement-GUI
-  mark imported theorems for selection
   provide structured (based on spec-names) selection/deselection facility 
     of axioms and theorems
 
