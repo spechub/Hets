@@ -40,6 +40,8 @@ import qualified Control.Concurrent as Concurrent
 data SenStatus a tStatus = SenStatus
      { value :: a
      , isAxiom :: Bool
+     -- , wasTheorem :: Bool -- will be set to True when status of isAxiom 
+                             -- changes from False to True
      , isDef :: Bool
      , thmStatus :: [tStatus]
      } deriving Show
