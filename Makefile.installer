@@ -8,14 +8,14 @@
 #
 
 all: download build cleanup
-     
+
 EMPTY =
 ACTDATE = $(shell date +%F)
 TMP_PATH = $(PWD)
 IZPACK_PATH = $(TMP_PATH)/Izpack-Hets
-
 IZPACK_COMPILE = $(IZPACK_PATH)/bin/compile
 IZPACK_SAMPLE = $(IZPACK_PATH)/sample
+#HETS_BIN = $(HOME)/bin/hets-$(ACTDATE)
 
 #PLATFORM = $(shell uname -s)
 GMPURL = http://www.informatike.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/mac/GMP.framework.zip
@@ -31,7 +31,7 @@ SPASSURL_SOLARIS = http://spass.mpi-sb.mpg.de/download/binaries/spass22sparc59.t
 SPASSURL_MAC = http://spass.mpi-sb.mpg.de/download/binaries/spass22mac.dmg
 SPASSURL_LINUX = http://spass.mpi-sb.mpg.de/download/binaries/spass22pclinux.tgz
 
-download : izpack_checkout hetcats-checkout casl-lib-checkout uni-checkout other-download
+download : izpack_checkout uni-checkout hetcats-make casl-lib-checkout other-download
 
 casl-lib-checkout :
 	@echo update casl-lib 
@@ -40,20 +40,40 @@ casl-lib-checkout :
 	  cvs up -dPA CASL-lib ; \
 	 else \
 	  cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:\/repository co -P CASL-lib ; \
-        fi
+        fi ; \
+	for x in $(find CASL-lib -name "*"); do  \
+	   if [ -f $x ] ; then       \
+		POSTFIX=`ls $x | sed "s%.*\.\(.*\)%\\1%"` ; \
+		if [ $POSTFIX != "casl" ] ; then     \
+	    	     if [ $POSTFIX != "het" ] ; then  \
+		       rm $x 2>/dev/null   ; \
+	    	     fi ;  \
+	        fi ; \
+	    fi ; \
+	done 
 
-hetcats-checkout : daily-hets-download
+hetcats-make : daily-hets-download
 	cd $(TMP_PATH) ;\
 	cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:\/repository co -P HetCATS ; \
 	cd HetCATS ;\
 	$(MAKE) release ;\
-	mv HetCATS.tar $(IZPACK_SAMPLE)/src/
+	mv HetCATS.tar $(IZPACK_SAMPLE)/src/ ;\
+	cp hets.in $(IZPACK_SAMPLE)/hets/ ; \
+	mkdir $(IZPACK_SAMPLE)/hets/OWLParser ; \
+	mkdir $(IZPACK_SAMPLE)/hets/OWLParser/java ; \
+	cp OWL_DL/owl_parser $(IZPACK_SAMPLE)/hets/OWLParser ; \
+	cp OWL_DL/java/OWLParser.jar $(IZPACK_SAMPLE)/hets/OWLParser/java ; \
+	cp -r OWL_DL/java/jlib  $(IZPACK_SAMPLE)/hets/OWLParser/java
 	$(RM) -r HetCATS
 	cd $(IZPACK_SAMPLE)/src ; tar xvf HetCATS.tar ; $(RM) HetCATS.tar
 
 daily-hets-download :
 	@sh getDailyHets.sh
-	mv $(HOME)/bin/hets-$(ACTDATE) $(IZPACK_SAMPLE)/hets
+	mv getDailyHets.sh  $(IZPACK_SAMPLE)
+	mv $(HOME)/bin/hets-$(ACTDATE) $(IZPACK_SAMPLE)/hets/hets
+
+	# HETS_VER=$($(HETS_BIN) -V | sed "s%^.*[Vv]\(.*\),.*%\\1%") ; \
+	#@ln -s $(IZPACK_SAMPLE)/hets/hets-$(ACTDATE) $(IZPACK_SAMPLE)/hets
 
 uni-checkout :
 	@echo update uni
@@ -91,8 +111,7 @@ build:
 	$(IZPACK_COMPILE) $(INSTALL_XML_MAC) -b $(IZPACK_SAMPLE)/ -o $(INSTALL_JAR_MAC) -k standard
 
 cleanup:
-	$(RM) -r $(IZPACK_PATH)
-	$(RM) *.sh
-	$(RM) Makefile
+	@$(RM) -r $(IZPACK_PATH)
+	@$(RM) Makefile
 
 .PHONY : all download build casl-lib-checkout hetcats-checkout daily-hets-download daily-hets-download other-download izpack_checkout cleanup

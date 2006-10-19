@@ -703,11 +703,22 @@ Modal/ModalSystems.hs: Modal/GeneratePatterns.inline.hs.in \
 	chmod 444 $@
 
 initialize_installer:
-	  @cp Makefile.installer $(INSTALLER_DIR)/Makefile ;\
-	  cp utils/getDailyHets.sh $(INSTALLER_DIR) ;\
-	  echo Ready to create installers for Hets ;\
-	  echo Please do ;\
-	  echo "  -> cd $(INSTALLER_DIR)" ;\
-	  echo "  -> make" ;\
-	  echo and wait until it is finished ;\
+	@if [ -d $(INSTALLER_DIR) ] ; then   \
+	    echo "copy file to $(INSTALLER_DIR)" ; \
+	  else \
+	    echo "create $(INSTALLER_DIR)" ; \
+	    mkdir $(INSTALLER_DIR) ; \
+	 fi ; \
+	 cp Makefile.installer $(INSTALLER_DIR)/Makefile ; \
+	 cp utils/getDailyHets.sh $(INSTALLER_DIR) ;\
+	 echo Ready to create installers for Hets ;\
+	 echo Please do ;\
+	 echo "  -> cd $(INSTALLER_DIR)" ;\
+	 echo "  -> make" ;\
+	 echo and wait until it is finished
+
+
+
+
+
 
