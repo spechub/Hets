@@ -81,12 +81,12 @@ main =
                   if (head $ head args) == '-' then
                      showHelp
                      else if isURI $ head args then
-                             do exitCode <- system ("./processor " ++ head args)
+                             do exitCode <- system ("./owl_parser " ++ head args)
                                 run exitCode opt
                              else if (head $ head args) == '/' then
-                                     do exitCode <- system ("./processor file://" ++ head args)
+                                     do exitCode <- system ("./owl_parser file://" ++ head args)
                                         run exitCode opt
-                                     else do exitCode <- system ("./processor file://" ++ pwd ++ "/" ++ head args)
+                                     else do exitCode <- system ("./owl_parser file://" ++ pwd ++ "/" ++ head args)
                                              run exitCode opt
 
 showHelp :: IO()
