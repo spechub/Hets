@@ -17,8 +17,6 @@ module CASL.Induction where
 
 import CASL.AS_Basic_CASL
 import CASL.Fold
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
 import Common.Id
 import Common.Result
 
@@ -32,9 +30,9 @@ inductionScheme constrs =
   where predSubst constr t =
           Predication predSymb [t] nullRange
           where
-          predSymb = Qual_pred_name id typ nullRange
+          predSymb = Qual_pred_name ident typ nullRange
           s = origSort constr
-          id = Id [mkSimpleId "P"] [s] nullRange
+          ident = Id [mkSimpleId "P"] [s] nullRange
           typ = Pred_type [newSort constr] nullRange
 
 -- | Function for derivation of first-order instances of sort generation
@@ -52,7 +50,7 @@ instantiateSortGen constrs phis =
 -- | substitute a term for a variable in a formula
 substitute :: VAR -> TERM f -> FORMULA f -> FORMULA f
 substitute v t = foldFormula $
- (mapRecord id) {foldQual_var = \ t2 v2 s _ ->
+ (mapRecord id) {foldQual_var = \ t2 v2 _ _ ->
                 if v == v2 then t else t2 }
 
 -- | derive an induction scheme from a sort generation constraint
@@ -67,17 +65,35 @@ induction constrs substs =
   sortInfo = zip3 constrs substs 
                   (zip (map mkVar [1..length constrs]) (map newSort constrs))
   inductionConclusion = mkConj $ map mkConclusion sortInfo
-  mkConclusion (_,subst,(v,s)) = 
-    Quantification Universal [Var_decl [v] s nullRange] 
-                   (subst (var (v,s))) nullRange
+  mkConclusion (_,subst,v) = 
+    Quantification Universal [mkVarDecl v] (subst (var v)) nullRange
   mkVar i = mkSimpleId ("x_"++show i)
   var (v,s) = Qual_var v s nullRange
-  inductionPremises = mkConj $ map mkPrem sortInfo
+  inductionPremises = mkConj $ concatMap mkPrems sortInfo
 
--- | construct a premise for the induction scheme 
--- | (i.e. for one sort in the constraint)
-mkPrem :: (Constraint, TERM f -> FORMULA f, (VAR,SORT)) -> FORMULA f
-mkPrem (constr,subst,(v,s)) = True_atom nullRange
+-- | construct premise set for the induction scheme 
+-- | for one sort in the constraint
+mkPrems :: (Constraint, TERM f -> FORMULA f, (VAR,SORT)) -> [FORMULA f]
+mkPrems info@(constr,_,_) = map (mkPrem info) (opSymbs constr)
+
+-- | construct a premise for the induction scheme for one constructor
+mkPrem :: (Constraint, TERM f -> FORMULA f, (VAR,SORT)) -> (OP_SYMB,[Int])
+          -> FORMULA f
+mkPrem (constr,subst,(v,s)) 
+       (Qual_op_name op (Op_type _ argTypes resType _) _, idx) = 
+  if null vars then phi
+     else Quantification Universal (map mkVarDecl qVars) phi nullRange
+  where
+  vars = map mkVar [1..length argTypes]
+  mkVar i = mkSimpleId ("y_"++show i)
+  qVars = zip vars argTypes  
+  phi = if null vars then undefined else undefined
+mkPrem _ (opSym,_) = 
+  error ("CASL.Induction. mkPrems: unqualified operation symbol occuring in constraint: "++ show opSym)
+
+-- | turn sorted variable into variable delcaration
+mkVarDecl :: (VAR,SORT) -> VAR_DECL
+mkVarDecl (v,s) = Var_decl [v] s nullRange
 
 -- | optimized conjunction
 mkConj :: [FORMULA f] -> FORMULA f
