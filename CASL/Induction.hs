@@ -38,11 +38,11 @@ inductionScheme constrs =
 
 -- | Function for derivation of first-order instances of sort generation
 -- | constraints.
--- | Given a list of formulas with a free sorted variable, instantiate the 
+-- | Given a list of formulas with a free sorted variable, instantiate the
 -- | sort generation constraint for this list of formulas
 -- | It is assumed that the (original) sorts of the constraint
 -- | match the sorts of the free variables
-instantiateSortGen :: [Constraint] -> [(FORMULA f,VAR,SORT)] 
+instantiateSortGen :: [Constraint] -> [(FORMULA f,VAR,SORT)]
                         -> Result (FORMULA f)
 instantiateSortGen constrs phis =
   induction constrs (map substFormula phis)
@@ -51,8 +51,12 @@ instantiateSortGen constrs phis =
 -- | substitute a term for a variable in a formula
 substitute :: VAR -> TERM f -> FORMULA f -> FORMULA f
 substitute v t = foldFormula $
- (mapRecord id) {foldQual_var = \ t2 v2 _ _ ->
-                if v == v2 then t else t2 }
+ (mapRecord id) { foldQual_var = \ t2 v2 _ _ ->
+                  if v == v2 then t else t2
+                , foldQuantification = \ t2 q vs p r ->
+                  if elem v $ concatMap ( \ (Var_decl l _ _) -> l) vs
+                  then t2 else Quantification q vs p r
+                }
 
 -- | derive an induction scheme from a sort generation constraint
 -- | using substitutions as induction predicates
@@ -63,15 +67,15 @@ induction constrs substs =
     else return $
           Implication inductionPremises inductionConclusion True nullRange
   where
-  sortInfo = zip3 constrs substs 
+  sortInfo = zip3 constrs substs
                   (zip (map mkVar [1..length constrs]) (map newSort constrs))
   inductionConclusion = mkConj $ map mkConclusion sortInfo
-  mkConclusion (_,subst,v) = 
+  mkConclusion (_,subst,v) =
     Quantification Universal [mkVarDecl v] (subst (mkVarTerm v)) nullRange
   mkVar i = mkSimpleId ("x_"++show i)
   inductionPremises = mkConj $ concatMap mkPrems sortInfo
 
--- | construct premise set for the induction scheme 
+-- | construct premise set for the induction scheme
 -- | for one sort in the constraint
 mkPrems :: (Constraint, TERM f -> FORMULA f, (VAR,SORT)) -> [FORMULA f]
 mkPrems info@(constr,_,_) = map (mkPrem info) (opSymbs constr)
@@ -79,20 +83,20 @@ mkPrems info@(constr,_,_) = map (mkPrem info) (opSymbs constr)
 -- | construct a premise for the induction scheme for one constructor
 mkPrem :: (Constraint, TERM f -> FORMULA f, (VAR,SORT)) -> (OP_SYMB,[Int])
           -> FORMULA f
-mkPrem (constr,subst,(v,s)) 
-       (opSym@(Qual_op_name op (Op_type _ argTypes resType _) _), idx) = 
+mkPrem (constr,subst,(v,s))
+       (opSym@(Qual_op_name op (Op_type _ argTypes resType _) _), idx) =
   if null vars then phi
      else Quantification Universal (map mkVarDecl qVars) phi nullRange
   where
   vars = map mkVar [1..length argTypes]
   mkVar i = mkSimpleId ("y_"++show i)
-  qVars = zip vars argTypes  
-  phi = if null vars then indConcl 
+  qVars = zip vars argTypes
+  phi = if null vars then indConcl
            else Implication (mkConj indHyps) indConcl True nullRange
   indConcl = subst (Application opSym (map mkVarTerm qVars) nullRange)
   indHyps = mapMaybe indHyp (zip qVars idx)
   indHyp (v,i) = Just $ subst (mkVarTerm v) -- need to leave out "external" vars!
-mkPrem _ (opSym,_) = 
+mkPrem _ (opSym,_) =
   error ("CASL.Induction. mkPrems: unqualified operation symbol occuring in constraint: "++ show opSym)
 
 -- | turn sorted variable into variable delcaration
