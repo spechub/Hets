@@ -19,6 +19,7 @@ import CASL.AS_Basic_CASL
 import CASL.Fold
 import Common.Id
 import Common.Result
+import Data.List
 import Data.Maybe
 
 
@@ -28,12 +29,14 @@ import Data.Maybe
 inductionScheme :: [Constraint] -> Result (FORMULA f)
 inductionScheme constrs =
   induction constrs (map predSubst constrs)
-  where predSubst constr t =
+  where sorts = map newSort constrs
+        injective = length (nub sorts) == length sorts
+        predSubst constr t =
           Predication predSymb [t] nullRange
           where
           predSymb = Qual_pred_name ident typ nullRange
-          s = origSort constr
-          ident = Id [mkSimpleId "P"] [s] nullRange
+          s = if injective then newSort constr else origSort constr
+          ident = Id [mkSimpleId "ga_P"] [s] nullRange
           typ = Pred_type [newSort constr] nullRange
 
 -- | Function for derivation of first-order instances of sort generation
@@ -61,43 +64,51 @@ substitute v t = foldFormula $
 -- | derive an induction scheme from a sort generation constraint
 -- | using substitutions as induction predicates
 induction :: [Constraint] -> [TERM f -> FORMULA f] -> Result (FORMULA f)
-induction constrs substs =
-  if not (length constrs == length substs)
-    then fail "CASL.Induction.induction: argument lists must have equal length"
-    else return $
-          Implication inductionPremises inductionConclusion True nullRange
-  where
-  sortInfo = zip3 constrs substs
-                  (zip (map mkVar [1..length constrs]) (map newSort constrs))
-  inductionConclusion = mkConj $ map mkConclusion sortInfo
-  mkConclusion (_,subst,v) =
-    Quantification Universal [mkVarDecl v] (subst (mkVarTerm v)) nullRange
-  mkVar i = mkSimpleId ("x_"++show i)
-  inductionPremises = mkConj $ concatMap mkPrems sortInfo
+induction constrs substs = 
+ if not (length constrs == length substs)
+  then fail "CASL.Induction.induction: argument lists must have equal length"
+  else do
+   let mkVar i = mkSimpleId ("x_"++show i)
+       sortInfo = zip3 constrs substs
+                   (zip (map mkVar [1..length constrs]) (map newSort constrs))
+       mkConclusion (_,subst,v) =
+         Quantification Universal [mkVarDecl v] (subst (mkVarTerm v)) nullRange
+       inductionConclusion = mkConj $ map mkConclusion sortInfo
+   inductionPremises <- mapM (mkPrems substs) sortInfo
+   let inductionPremise = mkConj $ concat inductionPremises
+   return $ Implication inductionPremise inductionConclusion True nullRange
 
 -- | construct premise set for the induction scheme
 -- | for one sort in the constraint
-mkPrems :: (Constraint, TERM f -> FORMULA f, (VAR,SORT)) -> [FORMULA f]
-mkPrems info@(constr,_,_) = map (mkPrem info) (opSymbs constr)
+mkPrems :: [TERM f -> FORMULA f]
+            -> (Constraint, TERM f -> FORMULA f, (VAR,SORT)) 
+            -> Result [FORMULA f]
+mkPrems substs info@(constr,_,_) = mapM (mkPrem substs info) (opSymbs constr)
 
 -- | construct a premise for the induction scheme for one constructor
-mkPrem :: (Constraint, TERM f -> FORMULA f, (VAR,SORT)) -> (OP_SYMB,[Int])
-          -> FORMULA f
-mkPrem (constr,subst,(v,s))
-       (opSym@(Qual_op_name op (Op_type _ argTypes resType _) _), idx) =
-  if null vars then phi
-     else Quantification Universal (map mkVarDecl qVars) phi nullRange
+mkPrem :: [TERM f -> FORMULA f] 
+           -> (Constraint, TERM f -> FORMULA f, (VAR,SORT)) 
+           -> (OP_SYMB,[Int])
+           -> Result (FORMULA f)
+mkPrem substs (_,subst,_) 
+       (opSym@(Qual_op_name _ (Op_type _ argTypes _ _) _), idx) = 
+  return $ if null vars then phi
+            else Quantification Universal (map mkVarDecl qVars) phi nullRange
   where
   vars = map mkVar [1..length argTypes]
   mkVar i = mkSimpleId ("y_"++show i)
   qVars = zip vars argTypes
-  phi = if null vars then indConcl
+  phi = if null indHyps then indConcl
            else Implication (mkConj indHyps) indConcl True nullRange
   indConcl = subst (Application opSym (map mkVarTerm qVars) nullRange)
   indHyps = mapMaybe indHyp (zip qVars idx)
-  indHyp (v,i) = Just $ subst (mkVarTerm v) -- need to leave out "external" vars!
-mkPrem _ (opSym,_) =
-  error ("CASL.Induction. mkPrems: unqualified operation symbol occuring in constraint: "++ show opSym)
+  indHyp (v1,i) = 
+    if i<0 then Nothing -- leave out sorts from outside the constraint
+     else Just ((substs!!i) (mkVarTerm v1))
+mkPrem _ _ (opSym,_) = 
+  fail ("CASL.Induction. mkPrems: "
+        ++ "unqualified operation symbol occuring in constraint: "
+        ++ show opSym)
 
 -- | turn sorted variable into variable delcaration
 mkVarDecl :: (VAR,SORT) -> VAR_DECL
