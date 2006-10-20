@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  Abstract syntax of CASL basic specifications
 Copyright   :  (c) Klaus Lüttich, Christian Maeder, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -187,8 +188,9 @@ Constraints. The opSymbs component collects all the operation symbols
 with newSort (with that index!) as a result sort. The argument sorts
 of an operation symbol are decorated explicitly via a list [Int] of
 integers. The origSort in a Constraint is the original sort
-corresponding to the index.  Note that this representation of sort
-generation constraints is efficiently tailored towards both the use in
+corresponding to the index.  A negative index indicates a sort outside
+the constraint (i.e. a "parameter sort"). Note that this representation of 
+sort generation constraints is efficiently tailored towards both the use in
 the proof calculus (Chap. IV:2, p. 282 of the CASL Reference Manual)
 and the coding into second order logic (p. 429 of Theoret. Comp. Sci. 286).
 -}
