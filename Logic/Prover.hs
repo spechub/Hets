@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  General datastructures for theorem prover interfaces
 Copyright   :  (c) Till Mossakowski, Klaus Lüttich, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,13 +8,15 @@ Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Provide prover stuff for class Logic.Sentences
+General datastructures for theorem prover interfaces
 
 -}
 {- todo:
   - separate GoalStatus into its own Module
     and specifify the whole SZS Ontology with appropiate types and functions
     (http://www.cs.miami.edu/~tptp/cgi-bin/DVTPTP2WWW/view_file.pl?Category=Documents&File=SZSOntology)
+  - clarify how a G_theory can be fed into proveCMDLautomatic etc.
+    currently, we use mapTheoryStatus, but that is a hack
 -}
 
 module Logic.Prover where
@@ -78,6 +81,9 @@ type ThSens a b = OMap.OMap String (SenStatus a b)
 noSens :: ThSens a b
 noSens = OMap.empty
 
+mapThSensStatus :: (b->c) -> ThSens a b -> ThSens a c
+mapThSensStatus f = OMap.map (mapStatus f)
+
 -- | join and disambiguate
 --
 -- * separate Axioms from Theorems
@@ -120,6 +126,9 @@ diffSens s1 s2 = let
 mapValue :: (a -> b) -> SenStatus a c -> SenStatus b c
 mapValue f d = d { value = f $ value d }
 
+mapStatus :: (b -> c) -> SenStatus a b -> SenStatus a c
+mapStatus f d = d { thmStatus = map f $ thmStatus d }
+
 markAsAxiom :: Ord a => Bool -> ThSens a b -> ThSens a b
 markAsAxiom b = OMap.map (\d -> d { isAxiom = b})
 
@@ -148,6 +157,11 @@ toThSens = OMap.fromList . map
 -- | theories with a signature and sentences with proof states
 data Theory sign sen proof_tree =
     Theory sign (ThSens sen (Proof_status proof_tree))
+
+mapTheoryStatus :: (a->b) -> Theory sign sentence a
+                   -> Theory sign sentence b
+mapTheoryStatus f (Theory sig thSens) =
+  Theory sig (mapThSensStatus (mapProofStatus f) thSens)
 
 -- | theory morphisms between two theories
 data TheoryMorphism sign sen mor proof_tree = TheoryMorphism
@@ -203,6 +217,9 @@ openProof_status goalname provername proof_tree =
                  , proverName = provername
                  , proofTree = proof_tree
                  , tacticScript = Tactic_script ""}
+
+mapProofStatus :: (a->b) -> Proof_status a -> Proof_status b
+mapProofStatus f st = st {proofTree = f $ proofTree st}
 
 {-
 instance Eq a => Ord (Proof_status a) where
@@ -306,3 +323,4 @@ instance (Typeable a, Typeable b) => Typeable (ProverTemplate a b) where
     typeOf p = mkTyConApp proverTc
                [typeOf ((undefined :: ProverTemplate a b -> a) p),
                 typeOf ((undefined :: ProverTemplate a b -> b) p)]
+
