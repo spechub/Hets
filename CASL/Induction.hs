@@ -19,6 +19,7 @@ import CASL.AS_Basic_CASL
 import CASL.Fold
 import Common.Id
 import Common.Result
+import Data.Maybe
 
 
 -- | derive a second-order induction scheme from a sort generation constraint
@@ -66,9 +67,8 @@ induction constrs substs =
                   (zip (map mkVar [1..length constrs]) (map newSort constrs))
   inductionConclusion = mkConj $ map mkConclusion sortInfo
   mkConclusion (_,subst,v) = 
-    Quantification Universal [mkVarDecl v] (subst (var v)) nullRange
+    Quantification Universal [mkVarDecl v] (subst (mkVarTerm v)) nullRange
   mkVar i = mkSimpleId ("x_"++show i)
-  var (v,s) = Qual_var v s nullRange
   inductionPremises = mkConj $ concatMap mkPrems sortInfo
 
 -- | construct premise set for the induction scheme 
@@ -80,20 +80,28 @@ mkPrems info@(constr,_,_) = map (mkPrem info) (opSymbs constr)
 mkPrem :: (Constraint, TERM f -> FORMULA f, (VAR,SORT)) -> (OP_SYMB,[Int])
           -> FORMULA f
 mkPrem (constr,subst,(v,s)) 
-       (Qual_op_name op (Op_type _ argTypes resType _) _, idx) = 
+       (opSym@(Qual_op_name op (Op_type _ argTypes resType _) _), idx) = 
   if null vars then phi
      else Quantification Universal (map mkVarDecl qVars) phi nullRange
   where
   vars = map mkVar [1..length argTypes]
   mkVar i = mkSimpleId ("y_"++show i)
   qVars = zip vars argTypes  
-  phi = if null vars then undefined else undefined
+  phi = if null vars then indConcl 
+           else Implication (mkConj indHyps) indConcl True nullRange
+  indConcl = subst (Application opSym (map mkVarTerm qVars) nullRange)
+  indHyps = mapMaybe indHyp (zip qVars idx)
+  indHyp (v,i) = Just $ subst (mkVarTerm v) -- need to leave out "external" vars!
 mkPrem _ (opSym,_) = 
   error ("CASL.Induction. mkPrems: unqualified operation symbol occuring in constraint: "++ show opSym)
 
 -- | turn sorted variable into variable delcaration
 mkVarDecl :: (VAR,SORT) -> VAR_DECL
 mkVarDecl (v,s) = Var_decl [v] s nullRange
+
+-- | turn sorted variable into term
+mkVarTerm :: (VAR,SORT) -> TERM f
+mkVarTerm (v,s) = Qual_var v s nullRange
 
 -- | optimized conjunction
 mkConj :: [FORMULA f] -> FORMULA f
