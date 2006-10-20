@@ -62,7 +62,7 @@ mathServBroker = emptyProverTemplate
 spassHelpText :: String
 spassHelpText =
   "No help yet available.\n" ++
-  "Ask Klaus Lüttich (luettich@informatik.uni-bremen.de) for more information.\n"
+  "Ask Klaus L\252ttich (luettich@informatik.uni-bremen.de) for more information.\n"
 
 
 
