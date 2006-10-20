@@ -180,6 +180,7 @@ class (Category lid sign morphism, Ord sentence,
       conservativityCheck :: lid -> (sign, [Named sentence]) ->
                        morphism -> [Named sentence] -> Result (Maybe Bool)
       conservativityCheck l _ _ _ = statErr l "conservativityCheck"
+      empty_proof_tree :: proof_tree
 
 -- | a dummy function to allow type checking *.inline.hs files
 inlineAxioms :: StaticAnalysis lid
