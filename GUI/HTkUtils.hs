@@ -63,6 +63,7 @@ createTextSaveDisplayExt title fname txt conf upost =
      q   <- newButton b [text "Close", width 12]
      s   <- newButton b [text "Save", width 12]
      (sb, ed) <- newScrollBox b (\p-> newEditor p (state Normal:conf)) []
+     ed # state Disabled
      pack b [Side AtTop, Fill Both,Expand On]
      pack t [Side AtTop, Expand Off, PadY 10]
      pack sb [Side AtTop, Expand On,Fill Both]
@@ -70,18 +71,22 @@ createTextSaveDisplayExt title fname txt conf upost =
      pack q [Side AtRight, PadX 8, PadY 5]
      pack s [Side AtLeft, PadX 5, PadY 5]
        
+     ed # state Normal
      ed # value txt
      ed # state Disabled
      forceFocus ed
 
+     (editEntered, _) <- bindSimple ed Enter
      quit <- clicked q
      save <- clicked s
      spawnEvent (forever (quit >>> do destroy win; upost
-                           +>
-                         save >>> do disableButs q s
-                                     askFileNameAndSave fname txt
-                                     enableButs q s
-                                     done))
+                         +>
+                       save >>> do disableButs q s
+                                   askFileNameAndSave fname txt
+                                   enableButs q s
+                                   done
+                         +>
+                       editEntered >>> forceFocus ed))
      return (win, ed)
    where disableButs b1 b2 = do disable b1
                                 disable b2
