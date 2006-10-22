@@ -39,6 +39,12 @@ import Common.Lexer
 import Common.AnnoState
 import Static.DevGraph
 import Data.Graph.Inductive.Graph
+-- import Isabelle.IsaProve
+-- import SPASS.Prove
+-- import GUI.GenericATPState
+-- import Logic.Prover
+-- import Logic.Grothendieck
+-- import Logic.Coerce
 #ifdef UNI_PACKAGE
 import GUI.ShowGraph
 #endif
@@ -214,7 +220,8 @@ scanCommand arg
 
 -- | A test function to use with shellac for the non-implemented commands
 -- should be deleted when all commands are implemented
-test::String->[Status] -> IO [Status]
+test::String->[Status] 
+             -> IO [Status]
 test ls _
   = do
       putStrLn $ show ls
@@ -232,7 +239,8 @@ removeSpace ls
 
 -- | Loads a list of libraries and returns the status of the
 -- interpreter after those libraries were loaded
-getStatus ::[String] ->[Status]-> IO [Status]
+getStatus ::[String] ->[Status]
+                          -> IO [Status]
 getStatus files state
  = case files of
        []  -> do
@@ -245,7 +253,8 @@ getStatus files state
 
 -- | The function 'cUse' implements the command Use, i.e. given a path it
 -- tries to load the library at that path
-cUse::String->[Status] -> IO [Status]
+cUse::String->[Status] 
+               -> IO [Status]
 cUse input state
  = case state of
     (Env _ libEnv):_ ->
@@ -276,7 +285,8 @@ cUse input state
 
 
 -- | The function 'cDgAllAuto' tries to implement the command dg-all auto
-cDgAllAuto::String -> [Status] -> IO [Status]
+cDgAllAuto::String -> [Status] 
+                     -> IO [Status]
 cDgAllAuto _ arg
    = case arg of
        (Env x y):_   -> let result= automatic x y
@@ -288,7 +298,8 @@ cDgAllAuto _ arg
 -- | The 'cDgAuto' function implements dg auto, note that the parameters
 -- are passed as string and parsed inside this function. All the other
 -- function are implemented in the same manner
-cDgAuto :: String -> [Status] -> IO [Status]
+cDgAuto :: String -> [Status] 
+                   -> IO [Status]
 cDgAuto input status
  = do
     let r= runParser (scanCommand ["GOALS"]) (emptyAnnos ()) "" input
@@ -332,7 +343,8 @@ cDgAuto input status
         _:l       -> cDgAuto input l
         []        -> return [(OutputErr "Wrong parameters")]
 
-cDgGlobSubsume::String -> [Status] ->IO [Status]
+cDgGlobSubsume::String -> [Status] 
+                         -> IO [Status]
 cDgGlobSubsume input status
  =do
    let r = runParser (scanCommand ["GOALS"]) (emptyAnnos ()) "" input
@@ -378,7 +390,8 @@ cDgGlobSubsume input status
 
 
 
-cDgAllGlobSubsume::String -> [Status] -> IO [Status]
+cDgAllGlobSubsume::String -> [Status] 
+                            -> IO [Status]
 cDgAllGlobSubsume _ arg
   = case arg of
      (Env x y):_  ->
@@ -388,7 +401,8 @@ cDgAllGlobSubsume _ arg
      _:l          -> cDgAllGlobSubsume "" l
      []           -> return [(OutputErr "Wrong parameters")]
 
-cDgAllGlobDecomp::String -> [Status] -> IO [Status]
+cDgAllGlobDecomp::String -> [Status] 
+                           -> IO [Status]
 cDgAllGlobDecomp _ arg
   = case arg of
      (Env x y):_ ->
@@ -399,7 +413,8 @@ cDgAllGlobDecomp _ arg
      []          -> return [(OutputErr "Wrong parameters")]
 
 
-cDgGlobDecomp :: String -> [Status] -> IO [Status]
+cDgGlobDecomp :: String -> [Status] 
+                           -> IO [Status]
 cDgGlobDecomp input status =
  do
   let r=runParser (scanCommand ["GOALS"]) (emptyAnnos ()) "" input
@@ -443,7 +458,8 @@ cDgGlobDecomp input status =
      []                 -> return [(OutputErr "Wrong parameters")]
 
 
-cDgAllLocInfer::String -> [Status] -> IO [Status]
+cDgAllLocInfer::String -> [Status] 
+                          -> IO [Status]
 cDgAllLocInfer _ arg
   = case arg of
       (Env x y):_ -> let result= (localInference x) y
@@ -453,7 +469,8 @@ cDgAllLocInfer _ arg
       []          -> return [(OutputErr "Wrong parameters")]
 
 
-cDgLocInfer::String -> [Status] -> IO [Status]
+cDgLocInfer::String -> [Status] 
+                       -> IO [Status]
 cDgLocInfer input status =
  do
   let r=runParser (scanCommand ["GOALS"]) (emptyAnnos ()) "" input
@@ -497,7 +514,8 @@ cDgLocInfer input status =
       []     -> return [(OutputErr "Wrong parameters")]
 
 
-cDgAllLocDecomp::String -> [Status] ->IO [Status]
+cDgAllLocDecomp::String -> [Status] 
+                           ->IO [Status]
 cDgAllLocDecomp _ arg =
   case arg of
      (Env x y):_ ->
@@ -508,7 +526,8 @@ cDgAllLocDecomp _ arg =
      []          -> return [(OutputErr "Wrong parameters")]
 
 
-cDgLocDecomp::String-> [Status]->IO [Status]
+cDgLocDecomp::String-> [Status]
+                        ->IO [Status]
 cDgLocDecomp input status =
  do
   let r=runParser (scanCommand ["GOALS"]) (emptyAnnos ()) "" input
@@ -553,7 +572,8 @@ cDgLocDecomp input status =
 
 
 
-cDgComp::String -> [Status] -> IO [Status]
+cDgComp::String -> [Status] 
+                   -> IO [Status]
 cDgComp input status =
  do
   let r=runParser (scanCommand ["GOALS"]) (emptyAnnos ()) "" input
@@ -599,7 +619,8 @@ cDgComp input status =
 
 
 
-cDgAllComp::String -> [Status] ->IO [Status]
+cDgAllComp::String -> [Status] 
+                       ->IO [Status]
 cDgAllComp _ arg
   = case arg of
      (Env x y):_ ->
@@ -610,7 +631,8 @@ cDgAllComp _ arg
      []          -> return [(OutputErr "Wrong parameters")]
 
 
-cDgCompNew::String -> [Status] ->IO [Status]
+cDgCompNew::String -> [Status] 
+                     ->IO [Status]
 cDgCompNew input status =
  do
   let r=runParser (scanCommand ["GOALS"]) (emptyAnnos ()) "" input
@@ -656,7 +678,8 @@ cDgCompNew input status =
 
 
 
-cDgAllCompNew::String -> [Status] ->IO [Status]
+cDgAllCompNew::String -> [Status] 
+                        ->IO [Status]
 cDgAllCompNew _ arg
  = case arg of
     (Env x y):_ ->
@@ -666,7 +689,8 @@ cDgAllCompNew _ arg
     _:l         -> cDgAllCompNew "" l
     []          -> return [(OutputErr "Wrong parameters")]
 
-cDgHideThm::String -> [Status] ->IO [Status]
+cDgHideThm::String -> [Status] 
+                     ->IO [Status]
 cDgHideThm input status =
  do
   let r=runParser (scanCommand ["GOALS"]) (emptyAnnos ()) "" input
@@ -711,7 +735,8 @@ cDgHideThm input status =
 
 
 
-cDgAllHideThm::String -> [Status] ->IO [Status]
+cDgAllHideThm::String -> [Status] 
+                          ->IO [Status]
 cDgAllHideThm _ arg
   = case arg of
      (Env x y):_ ->
@@ -721,7 +746,8 @@ cDgAllHideThm _ arg
      _:l         -> cDgAllHideThm "" l
      []          -> return [(OutputErr "Wrong parameters")]
 
-cDgAllThmHide::String -> [Status] ->IO [Status]
+cDgAllThmHide::String -> [Status] 
+                          ->IO [Status]
 cDgAllThmHide _ arg
   = case arg of
      (Env x y):_ ->
@@ -732,7 +758,8 @@ cDgAllThmHide _ arg
      []          -> return [(OutputErr "Wrong parameters")]
 
 
-cDgAllInferBasic::String -> [Status] ->IO [Status]
+cDgAllInferBasic::String -> [Status] 
+                           ->IO [Status]
 cDgAllInferBasic _ arg
  = case arg of
     (AllGoals allGoals):_ -> return [Selected allGoals]
@@ -741,7 +768,8 @@ cDgAllInferBasic _ arg
 
 
 
-cDgInferBasic::String -> [Status] -> IO [Status]
+cDgInferBasic::String -> [Status] 
+                           -> IO [Status]
 cDgInferBasic input status =
  do
   let r=runParser (scanCommand ["GOALS"]) (emptyAnnos ()) "" input
@@ -778,7 +806,8 @@ cDgInferBasic input status =
      _:l                 -> cDgInferBasic input l
      []                  -> return [(OutputErr "Wrong parameters")]
 
-cTranslate::String -> [Status] -> IO [Status]
+cTranslate::String -> [Status] 
+                       -> IO [Status]
 cTranslate input _
  = do
     let r=runParser (scanCommand ["COMORPHISM"]) (emptyAnnos ()) "" input
@@ -791,7 +820,20 @@ cTranslate input _
          ParsedComorphism ls : _ -> return [(Comorph ls)]
          _ -> return [(OutputErr "Wrong parameters")]
 
-cProver::String -> [Status] ->IO [Status]
+
+
+decideProver :: String -> IO [Status]
+decideProver input 
+ = case input of
+     "SPASS"    -> return [SProver "SPASS"]
+     "Isabelle" -> return [SProver "Isabelle"]
+     _          -> do
+                    putStr "Unavailable prover"
+                    return []
+
+
+cProver::String -> [Status] 
+                    ->IO [Status]
 cProver input _
  = do
     let r=runParser (scanCommand ["PROVER"]) (emptyAnnos ()) "" input
@@ -801,10 +843,11 @@ cProver input _
                 return []
      Right param  ->
        case param of
-                 (UseProver ls ):_ -> return [(Prover ls)]
+                 (UseProver ls ):_ -> decideProver ls
                  _                 -> return [(OutputErr "Wrong parameters")]
 
-cShowDgGoals::String -> [Status]-> IO [Status]
+cShowDgGoals::String -> [Status]
+                        -> IO [Status]
 cShowDgGoals  _ arg
  =do
      case arg of
@@ -835,7 +878,8 @@ cShowDgGoals  _ arg
                putStr "Error, no goal list found!\n"
                return []
 
-cShowTheory::String -> [Status] -> IO [Status]
+cShowTheory::String -> [Status] 
+                          -> IO [Status]
 cShowTheory _ arg
   = case arg of
      (AllGoals allGoals):_ -> do printNodeTheoryFromList allGoals
@@ -846,7 +890,8 @@ cShowTheory _ arg
                                     return []
 
 
-cShowNodeTheory::String -> [Status] -> IO [Status]
+cShowNodeTheory::String -> [Status] 
+                             -> IO [Status]
 cShowNodeTheory input arg
  =
   case input of
@@ -905,7 +950,8 @@ cShowNodeTheory input arg
              [] -> do putStr "Error, no library loaded ! \n"
                       return []
 
-cShowInfo :: String -> [Status] -> IO [Status]
+cShowInfo :: String -> [Status] 
+                         -> IO [Status]
 cShowInfo input arg
  =
   case input of
@@ -984,7 +1030,8 @@ cShowInfo input arg
              [] -> do putStr "Error, no library loaded ! \n"
                       return []
 
-cShowNodeConcept :: String -> [Status] -> IO [Status]
+cShowNodeConcept :: String -> [Status] 
+                               -> IO [Status]
 cShowNodeConcept input arg
  =
   case input of
@@ -1058,7 +1105,8 @@ cShowNodeConcept input arg
              [] -> do putStr "Error, no library loaded ! \n"
                       return []
 
-cShowNodeTaxonomy ::String -> [Status] -> IO [Status]
+cShowNodeTaxonomy ::String -> [Status] 
+                                 -> IO [Status]
 cShowNodeTaxonomy input arg
  =
   case input of
@@ -1132,7 +1180,8 @@ cShowNodeTaxonomy input arg
              [] -> do putStr "Error, no library loaded ! \n"
                       return []
 
-cEdges :: String -> [Status] -> IO [Status]
+cEdges :: String -> [Status] 
+                        -> IO [Status]
 cEdges _ arg =
  case arg of
    (Env ln libEnv):_ -> do
@@ -1147,7 +1196,8 @@ cEdges _ arg =
 
 
 
-cNodes :: String -> [Status] -> IO [Status]
+cNodes :: String -> [Status] 
+                      -> IO [Status]
 cNodes _ arg =
  case arg of
    (Env ln libEnv):_ -> do
@@ -1160,7 +1210,8 @@ cNodes _ arg =
           putStr "Error, no library loaded ! \n"
           return []
 
-cProveAll :: String -> [Status]->IO [Status]
+cProveAll :: String -> [Status]
+                        ->IO [Status]
 cProveAll _ arg =
   case arg of
     (Env ln libEnv):l ->
@@ -1184,7 +1235,8 @@ cProveAll _ arg =
     _:l                -> cProveAll "" l
     _                  -> return [OutputErr "Wrong parameters"]
 
-cViewNodeNumber :: String -> [Status] -> IO [Status]
+cViewNodeNumber :: String -> [Status] 
+                              -> IO [Status]
 cViewNodeNumber input status =
   do
   let r=runParser (scanCommand ["GOALS"]) (emptyAnnos ()) "" input
@@ -1207,7 +1259,8 @@ cViewNodeNumber input status =
      []                -> return [(OutputErr "Wrong parameters")]
 
 
-cShowGraph :: String -> [Status] -> IO [Status]
+cShowGraph :: String -> [Status] 
+                          -> IO [Status]
 cShowGraph _ status =
   (do
     case status of
@@ -1234,4 +1287,54 @@ cShowGraph _ status =
                 return []) `catch` (\_ -> return [])
 
 
+{--
+spassApplyProveTo :: Bool -> [GraphGoals]  -> [String] 
+                  -> IO [Status]
+spassApplyProveTo exclTh nodelist comorph
+ = case nodelist of
+    []   -> return []
+    x:ls ->
+      case x of
+        GraphNode (_,(DGNode name gtheory _ _ _ _ _)) -> 
+          case gtheory of
+            G_theory lid sigma sens ->
+              case (do 
+                     let th = mapTheoryStatus (\_ ->empty_proof_tree)
+                                              (Theory sigma sens)
+                     th1<- coerceTheory lid lidProver "errmsg" th
+                     return (th1)) of
+               Just th1 -> do
+                             result <-  spassProveCMDLautomatic
+                                          (showName name)     
+					  (Tactic_script 
+					   (show $ ATPTactic_script {
+                                            ts_timeLimit = 20, 
+                                            ts_extraOpts = [] }))
+       					  th1
+			     putStr $ show result
+                             return [] 
+        GraphNode (_,(DGRef name _ _ gtheory _ _ )) ->
+          case gtheory of
+           G_theory lid sigma sens -> 
+            case (do
+                   let th = mapTheoryStatus (\_ -> empty_proof_tree)
+                                            (Theory sigma sens)
+                   th1<- coerceTheory lid lidProver "errmsg" th
+                   return (th1)) of
+             Just th1 -> do 
+                          result <- spassProveCMDLautomatic
+					(showName name)
+                                        (Tactic_script
+                                         (show $ ATPTactic_script {
+                                          ts_timeLimit = 20,
+                                          ts_extraOpts = [] }))
+                                        th1
+                          putStr $ show result
+                          return []
+        _ -> spassApplyProveTo exclTh ls comorph
 
+--}
+cDummy :: String -> [Status] -> IO [Status]
+cDummy _ _ 
+  = do
+        return []

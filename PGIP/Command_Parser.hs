@@ -9,7 +9,7 @@ Portability : portable
 Parsing the comand line script.
 
   TODO :
-          - add comments to the code
+          - add comments to the code 
           - delete the test functions
 
 -} 
@@ -49,7 +49,8 @@ takeName ls
 shellUse :: File -> Sh [Status] ()
 shellUse (File filename)
   = do
-       val <- getShellSt >>= \state -> liftIO (cUse filename state)
+       let f_str=stripComments filename
+       val <- getShellSt >>= \state -> liftIO (cUse f_str state)
        modifyShellSt (update val)
 
 -- | implements the command dg-all auto for shellac
@@ -62,60 +63,69 @@ shellDgAutoAll
 shellDgAuto :: String -> Sh [Status] ()
 shellDgAuto input
   = do
-     val <- getShellSt >>= \state -> liftIO(cDgAuto input state)
+     let f_str= stripComments input
+     val <- getShellSt >>= \state -> liftIO(cDgAuto f_str state)
      modifyShellSt (update val)
 
 shellDgGlobSubsume :: String -> Sh [Status] ()
 shellDgGlobSubsume input
    = do
-     val <- getShellSt >>= \state -> liftIO(cDgGlobSubsume input state)
+     let f_str = stripComments input
+     val <- getShellSt >>= \state -> liftIO(cDgGlobSubsume f_str state)
      modifyShellSt (update val)
 
 shellDgGlobDecomp :: String -> Sh [Status] ()
 shellDgGlobDecomp input
    = do
-     val <- getShellSt >>= \state -> liftIO(cDgGlobDecomp input state)
+     let f_str = stripComments input
+     val <- getShellSt >>= \state -> liftIO(cDgGlobDecomp f_str state)
      modifyShellSt (update val)
 
 
 shellDgLocInfer :: String -> Sh [Status] ()
 shellDgLocInfer input
    = do
-     val <- getShellSt >>= \state -> liftIO(cDgLocInfer input state)
+     let f_str = stripComments input
+     val <- getShellSt >>= \state -> liftIO(cDgLocInfer f_str state)
      modifyShellSt (update val)
 
 
 shellDgLocDecomp :: String -> Sh [Status] ()
 shellDgLocDecomp input
    = do
-     val <- getShellSt >>= \state -> liftIO(cDgLocDecomp input state)
+     let f_str = stripComments input
+     val <- getShellSt >>= \state -> liftIO(cDgLocDecomp f_str state)
      modifyShellSt (update val)
 
 
 shellDgComp :: String -> Sh [Status] ()
 shellDgComp input
    = do
-     val <- getShellSt >>= \state -> liftIO(cDgComp input state)
+     let f_str = stripComments input
+     val <- getShellSt >>= \state -> liftIO(cDgComp f_str state)
      modifyShellSt (update val)
 
 shellDgCompNew :: String -> Sh [Status] ()
 shellDgCompNew input
    = do
-     val <- getShellSt >>= \state -> liftIO(cDgCompNew input state)
+     let f_str = stripComments input
+     val <- getShellSt >>= \state -> liftIO(cDgCompNew f_str state)
      modifyShellSt (update val)
 
 
 shellDgHideThm :: String -> Sh [Status] ()
 shellDgHideThm input
    = do
-     val <- getShellSt >>= \state -> liftIO(cDgHideThm input state)
+     let f_str=stripComments input
+     val <- getShellSt >>= \state -> liftIO(cDgHideThm f_str state)
      modifyShellSt (update val)
 
 
 shellDgBasic :: String -> Sh [Status] ()
 shellDgBasic input
    = do
-     val <- getShellSt >>= \state -> liftIO(cDgInferBasic input state)
+     let f_str=stripComments input
+     val <- getShellSt >>= \state -> liftIO(cDgInferBasic f_str state)
      modifyShellSt (update val)
 
 shellDgGlobSubsumeAll :: Sh [Status] ()
@@ -212,43 +222,50 @@ shellShowConcept
 shellTranslate :: String -> Sh [Status] ()
 shellTranslate input
    = do
-     val <- getShellSt >>= \state -> liftIO(cTranslate input state)
+     let f_str=stripComments input
+     val <- getShellSt >>= \state -> liftIO(cTranslate f_str state)
      modifyShellSt (update val)
 
 shellProver :: String -> Sh [Status] ()
 shellProver input
    = do
-     val <- getShellSt >>= \state -> liftIO(cProver input state)
+     let f_str=stripComments input
+     val <- getShellSt >>= \state -> liftIO(cProver f_str state)
      modifyShellSt (update val)
 
 shellNodeNumber :: String -> Sh [Status] ()
 shellNodeNumber input
    = do
-     val <- getShellSt >>= \state -> liftIO(cViewNodeNumber input state)
+     let f_str=stripComments input 
+     val <- getShellSt >>= \state -> liftIO(cViewNodeNumber f_str state)
      modifyShellSt (update val)
 
 shellShowTheoryP :: String -> Sh [Status] ()
 shellShowTheoryP input
    = do
-     val <- getShellSt >>= \state -> liftIO(cShowNodeTheory input state)
+     let f_str=stripComments input
+     val <- getShellSt >>= \state -> liftIO(cShowNodeTheory f_str state)
      modifyShellSt (update val)
 
 shellInfoP :: String -> Sh [Status] ()
 shellInfoP input
    = do
-     val <- getShellSt >>= \state -> liftIO(cShowInfo input state)
+     let f_str=stripComments input
+     val <- getShellSt >>= \state -> liftIO(cShowInfo f_str state)
      modifyShellSt (update val)
 
 shellShowTaxonomyP ::String -> Sh [Status] ()
 shellShowTaxonomyP input
    = do
-     val <- getShellSt >>= \state -> liftIO(cShowNodeTaxonomy input state)
+     let f_str=stripComments input  
+     val <- getShellSt >>= \state -> liftIO(cShowNodeTaxonomy f_str state)
      modifyShellSt (update val)
 
 shellShowConceptP :: String -> Sh [Status] ()
 shellShowConceptP input
    = do
-     val <- getShellSt >>= \state -> liftIO(cShowNodeConcept input state)
+     let f_str= stripComments input
+     val <- getShellSt >>= \state -> liftIO(cShowNodeConcept f_str state)
      modifyShellSt (update val)
 
 shellEdges :: Sh [Status] ()
@@ -266,6 +283,104 @@ shellNodes
 shellDetails :: Sh [Status] ()
 shellDetails 
     = shellPutStr printDetails
+
+nothing :: [Status]->IO [Status]
+nothing x
+  = return x
+
+shellComment :: String -> Sh [Status] ()
+shellComment _
+     = 
+       do
+        val<- getShellSt >>= \state -> liftIO (nothing state)
+        modifyShellSt (update val)
+
+
+shellProve :: Sh [Status] ()
+shellProve 
+  = do
+     val <-getShellSt >>= \state -> liftIO(cDummy "" state)
+     modifyShellSt (update val)
+
+shellProveMix :: String -> Sh [Status] ()
+shellProveMix input
+  = do
+     let f_str = stripComments input
+     val <- getShellSt >>= \state -> liftIO (cDummy f_str state)
+     modifyShellSt (update val)
+
+shellProveAllMix :: String -> Sh [Status] ()
+shellProveAllMix input
+  = do 
+     let f_str = stripComments input
+     val <- getShellSt >>= \state -> liftIO (cDummy f_str state)
+     modifyShellSt (update val)
+
+shellProveAll :: Sh [Status] ()
+shellProveAll 
+  = do
+     val <-getShellSt >>= \state -> liftIO(cDummy "" state)
+     modifyShellSt (update val)
+
+shellSetAxioms :: String -> Sh [Status] ()
+shellSetAxioms input
+  = do 
+      let f_str = stripComments input
+      val <-getShellSt >>= \state -> liftIO(cDummy f_str state)
+      modifyShellSt (update val)
+
+shellSetIncludeTheoremsTrue :: Sh [Status] ()
+shellSetIncludeTheoremsTrue 
+  = do
+      val <- getShellSt >>= \state -> liftIO (cDummy "" state)
+      modifyShellSt (update val)
+
+shellSetIncludeTheoremsFalse :: Sh [Status] ()
+shellSetIncludeTheoremsFalse 
+  = do
+     val <- getShellSt >>= \state-> liftIO (cDummy "" state)
+     modifyShellSt (update val)
+
+shellSetTimeLimit :: String -> Sh [Status] ()
+shellSetTimeLimit input
+  = do 
+     let f_str = stripComments input
+     val <- getShellSt >>= \state -> liftIO (cDummy f_str state)
+     modifyShellSt (update val)
+
+shellSetAxiomsAll ::Sh [Status] ()
+shellSetAxiomsAll 
+  = do
+     val <- getShellSt >>= \state -> liftIO (cDummy "" state)
+     modifyShellSt (update val)
+
+shellAddAxioms :: String -> Sh [Status] ()
+shellAddAxioms input
+  = do 
+     let f_str = stripComments input
+     val <- getShellSt >>= \state -> liftIO (cDummy f_str state)
+     modifyShellSt (update val)
+
+shellAddAxiomsAll :: Sh [Status] ()
+shellAddAxiomsAll 
+  = do
+     val <- getShellSt >>= \state -> liftIO (cDummy "" state)
+     modifyShellSt (update val)
+
+shellDelAxioms :: String -> Sh [Status] ()
+shellDelAxioms input
+  = do
+     let f_str = stripComments input
+     val <- getShellSt >>= \state -> liftIO (cDummy f_str state)
+     modifyShellSt (update val)
+
+
+shellDelAxiomsAll :: Sh [Status] ()
+shellDelAxiomsAll
+  = do
+     val <- getShellSt >>= \state -> liftIO (cDummy "" state)
+     modifyShellSt (update val)
+
 
 
 
@@ -306,17 +421,25 @@ doFileEval str state
 pgipEvalFunc :: String -> Sh [Status] ()
 pgipEvalFunc str
     = do   
-       val <-getShellSt >>= \state -> liftIO(doEvaluation str state)
+       let f_str= stripComments str 
+       val <-getShellSt >>= \state -> liftIO(doEvaluation f_str state)
        modifyShellSt (update val)
 
 -- | The evaluation function in case shellac reads from a file.
 pgipFileEvalFunc :: String -> Sh [Status] ()
 pgipFileEvalFunc str
-  = do 
-     val <- getShellSt >>= \state -> liftIO (doFileEval str state)
+  = do
+     let f_str= stripComments str 
+     val <- getShellSt >>= \state -> liftIO (doFileEval f_str state)
      modifyShellSt (update val)
                            
-
+stripComments :: String -> String
+stripComments input 
+    = case input of
+           '#':_ -> []
+           []    -> []
+           l:ls  -> l:(stripComments ls)
+         
 
 -- | Generates the list of all the shell commands toghether with a small help
 -- message
@@ -397,6 +520,36 @@ pgipShellCommands
                      "show all edges of the development graph")
                     : (cmd "show-graph" shellDisplayGraph
                      "displays the current dg graph")
+                    : (cmd "#" shellComment
+                     "comments")
+                    : (cmd "prove" shellProve
+                     "Applies a theorem prover")
+                    : (cmd "prove-all" shellProveAll
+                     "Applies a theorem prover to all theorems")
+                    : (cmd "prove {" shellProveMix 
+                     "Applies a theorem prove with a block of rules")
+                    : (cmd "prove-all {" shellProveAllMix
+                     "Applies a theorem prover to all nodes")
+                    : (cmd "set axioms" shellSetAxioms
+                     " A set of axioms to be used")
+                    : (cmd "set axioms-all" shellSetAxiomsAll
+                     " All axioms should be used")
+                    : (cmd "set include-theorems true" 
+                        shellSetIncludeTheoremsTrue
+                     "Include previous proved theorems")
+                    : (cmd "set include-theorems false"
+                        shellSetIncludeTheoremsFalse
+                     "Do not include previous proved theorems")
+                    : (cmd "set time-limit" shellSetTimeLimit
+                     "Time limit for the prover to run before abortion")
+                    : (cmd "add axioms" shellAddAxioms
+                     "Axioms to be considered by the prover")
+                    : (cmd "add axioms-all" shellAddAxiomsAll
+                     "Axioms to be considered by the prover")
+                    : (cmd "del axioms" shellDelAxioms
+                     "Axioms that will not be considered by the prover")
+                    : (cmd "del axioms-all" shellDelAxiomsAll
+                     "Axioms that will not be considered by the prover")
                     : [] 
 
 

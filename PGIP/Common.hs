@@ -58,7 +58,7 @@ data CmdParam =
 
 -- | The datatype 'Status' contains the current status of the interpeter at any
 -- moment in time
-data Status =
+data Status =   
    OutputErr  String
  | CmdInitialState
 -- Env stores the graph loaded
@@ -69,8 +69,8 @@ data Status =
  | AllGoals [GraphGoals]
 -- Comorph stores  a certain comorphism to be used
  | Comorph [String]
--- Prover stores the Id of the prover that needs to be used
- | Prover String
+-- SProver stores the selected prover
+ | SProver  String 
 -- Address stores the current library loaded so that the correct promter can
 -- be generated
  | Address String
@@ -82,6 +82,73 @@ data Status =
  | More String
 -- The string stored as Script is the current script
  | Script String
+
+
+-- | The function returns the 'LIB_NAME' stored in the status if any
+getLIB_NAME :: [Status] -> Maybe LIB_NAME
+getLIB_NAME ls
+   = case ls of 
+        []           -> Nothing
+        (Env ln _):_ -> Just ln
+        _:l          -> getLIB_NAME l
+
+-- | The function returns the 'LibEnv' stored in the status if any
+getLibEnv :: [Status] -> Maybe LibEnv
+getLibEnv ls
+  = case ls of
+      []               -> Nothing
+      (Env _ libEnv):_ -> Just libEnv
+      _:l              -> getLibEnv l
+
+-- | The function returns the list of selected goals if any
+getSelected :: [Status] -> Maybe [GraphGoals]
+getSelected ls
+  = case ls of 
+       []                -> Nothing
+       (Selected list):_ -> Just list
+       _:l               -> getSelected l
+
+-- | The function returns the list of all goals stored in the status if any
+getAllGoals :: [Status] -> Maybe [GraphGoals]
+getAllGoals ls
+  = case ls of
+      []                -> Nothing
+      (AllGoals list):_ -> Just list
+      _:l               -> getAllGoals l
+
+-- | The function returns the text containing the comorphism if any
+getComorph :: [Status] -> Maybe [String]
+getComorph ls
+  = case ls of 
+      []                -> Nothing
+      (Comorph val):_   -> Just val
+      _:l               -> getComorph l
+
+-- | The function return the selected prover if any
+getSProver :: [Status] 
+           -> Maybe String 
+getSProver ls
+  = case ls of
+      []              -> Nothing
+      (SProver val):_ -> Just val
+      _:l             -> getSProver l
+
+-- | The function return the address of the current library loaded if any
+getAddress :: [Status] -> Maybe String
+getAddress ls
+  = case ls of
+     []                -> Nothing
+     (Address val):_   -> Just val
+     _:l               -> getAddress l
+
+-- | The function returns the current Script to use
+getScriptStatus :: [Status] -> Maybe String
+getScriptStatus ls 
+  = case ls of
+     []             -> Nothing
+     (Script val):_ -> Just val
+     _:l            -> getScriptStatus l
+
 
 
 -- | The function checks if the first string is a prefix of the second.
@@ -323,7 +390,8 @@ getNodeList ls =
 -- the second argument with the values from the first argument (i.e replaces 
 -- any value from status with the one from values if they are of the same type
 -- otherwise just adds the new values
-update::[Status] -> [Status] -> [Status]
+update::[Status] -> [Status] 
+            -> [Status]
 update val status
  = case val of
     []                  ->  status
@@ -336,7 +404,7 @@ update val status
        (Selected xx):ls   -> update l ((Selected xx):(update [Env x y] ls))
        (AllGoals xx):ls   -> update l ((AllGoals xx):(update [Env x y] ls))
        (Comorph xx):ls    -> update l ((Comorph xx):(update [Env x y] ls))
-       (Prover xx):ls     -> update l ((Prover xx):(update [Env x y] ls))
+       (SProver xx):ls    -> update l ((SProver xx):(update [Env x y] ls))
        (Address xx):ls    -> update l ((Address xx):(update [Env x y] ls))
        LoadScript:ls      -> update l (LoadScript:(update [Env x y] ls))
        (More xx):ls       -> update l ((More xx):(update [Env x y] ls))
@@ -350,7 +418,7 @@ update val status
        (Selected _):ls    -> update l ((Selected x):ls)
        (AllGoals xx):ls   -> update l ((AllGoals xx):(update [Selected x] ls))
        (Comorph xx):ls    -> update l ((Comorph xx):(update [Selected x] ls))
-       (Prover xx):ls     -> update l ((Prover xx):(update [Selected x] ls))
+       (SProver xx):ls    -> update l ((SProver xx):(update [Selected x] ls))
        (Address xx):ls    -> update l ((Address xx):(update [Selected x] ls))
        LoadScript:ls      -> update l (LoadScript:(update [Selected x] ls))
        (More xx):ls       -> update l ((More xx):(update [Selected x] ls))
@@ -364,7 +432,7 @@ update val status
        (Selected xx):ls   -> update l ((Selected xx):(update [AllGoals x] ls))
        (AllGoals _):ls    -> update l ((AllGoals x):ls)
        (Comorph xx):ls    -> update l ((Comorph xx):(update [AllGoals x] ls))
-       (Prover xx):ls     -> update l ((Prover xx): (update [AllGoals x] ls))
+       (SProver xx):ls     -> update l ((SProver xx): (update [AllGoals x] ls))
        (Address xx):ls    -> update l ((Address xx):(update [AllGoals x] ls))
        LoadScript:ls      -> update l (LoadScript:(update [AllGoals x] ls))
        (More xx):ls       -> update l ((More xx):(update [AllGoals x] ls))
@@ -378,25 +446,25 @@ update val status
        (Selected xx):ls   -> update l ((Selected xx):(update [Comorph x] ls))
        (AllGoals xx):ls   -> update l ((AllGoals xx):(update [Comorph x] ls))
        (Comorph _):ls     -> update l ((Comorph x):ls)
-       (Prover xx):ls     -> update l ((Prover xx):(update  [Comorph x] ls))
+       (SProver xx):ls    -> update l ((SProver xx):(update  [Comorph x] ls))
        (Address xx):ls    -> update l ((Address xx):(update [Comorph x] ls))
        LoadScript:ls      -> update l (LoadScript:(update [Comorph x] ls))
        (More xx):ls       -> update l ((More xx):(update [Comorph x] ls))
        (Script xx):ls     -> update l ((Script xx):(update [Comorph x] ls))
-    (Prover x):l    ->
+    (SProver x):l    ->
       case status of
-       []                 -> update l [Prover x]
-       CmdInitialState:ls -> update ((Prover x):l) ls
+       []                 -> update l [SProver x]
+       CmdInitialState:ls -> update ((SProver x):l) ls
        (OutputErr xx):_   -> (OutputErr xx):[]
-       (Env xx yy):ls     -> update l ((Env xx yy):(update [Prover x] ls))
-       (Selected xx):ls   -> update l ((Selected xx):(update [Prover x] ls))
-       (AllGoals xx):ls   -> update l ((AllGoals xx):(update [Prover x] ls))
-       (Comorph xx):ls    -> update l ((Comorph xx):(update [Prover x] ls))
-       (Prover _):ls      -> update l ((Prover x):ls)
-       (Address xx):ls    -> update l ((Address xx):(update [Prover x] ls))
-       LoadScript:ls      -> update l (LoadScript:(update [Prover x] ls))
-       (More xx):ls       -> update l ((More xx):(update [Prover x] ls))
-       (Script xx):ls     -> update l ((Script xx):(update [Prover x] ls))
+       (Env xx yy):ls     -> update l ((Env xx yy):(update [SProver x] ls))
+       (Selected xx):ls   -> update l ((Selected xx):(update [SProver x] ls))
+       (AllGoals xx):ls   -> update l ((AllGoals xx):(update [SProver x] ls))
+       (Comorph xx):ls    -> update l ((Comorph xx):(update [SProver x] ls))
+       (SProver _):ls      -> update l ((SProver x):ls)
+       (Address xx):ls    -> update l ((Address xx):(update [SProver x] ls))
+       LoadScript:ls      -> update l (LoadScript:(update [SProver x] ls))
+       (More xx):ls       -> update l ((More xx):(update [SProver x] ls))
+       (Script xx):ls     -> update l ((Script xx):(update [SProver x] ls))
     (Address x):l   ->
       case status of
        []                 -> update l [Address x]
@@ -406,7 +474,7 @@ update val status
        (Selected xx):ls   -> update l ((Selected xx):(update [Address x] ls))
        (AllGoals xx):ls   -> update l ((AllGoals xx):(update [Address x] ls))
        (Comorph xx):ls    -> update l ((Comorph xx):(update [Address x] ls))
-       (Prover xx):ls     -> update l ((Prover xx):(update [Address x] ls))
+       (SProver xx):ls    -> update l ((SProver xx):(update [Address x] ls))
        (Address _):ls     -> update l ((Address x):ls)
        LoadScript:ls      -> update l (LoadScript:(update [Address x] ls))
        (More xx):ls       -> update l ((More xx):(update [Address x] ls))
@@ -420,7 +488,7 @@ update val status
        (Selected xx):ls   -> update l ((Selected xx):(update [LoadScript] ls))
        (AllGoals xx):ls   -> update l ((AllGoals xx):(update [LoadScript] ls))
        (Comorph xx):ls    -> update l ((Comorph xx):(update [LoadScript] ls))
-       (Prover xx):ls     -> update l ((Prover xx):(update [LoadScript] ls))
+       (SProver xx):ls    -> update l ((SProver xx):(update [LoadScript] ls))
        (Address xx):ls    -> update l ((Address xx):(update [LoadScript] ls))
        LoadScript:ls      -> update l ls
        (More xx):ls       -> update l ((More xx):(update [LoadScript] ls))
@@ -434,7 +502,7 @@ update val status
        (Selected xx):ls   -> update l ((Selected xx):(update [More x] ls))
        (AllGoals xx):ls   -> update l ((AllGoals xx):(update [More x] ls))
        (Comorph xx):ls    -> update l ((Comorph xx):(update [More x] ls))
-       (Prover xx):ls     -> update l ((Prover xx):(update [More x] ls))
+       (SProver xx):ls    -> update l ((SProver xx):(update [More x] ls))
        (Address xx):ls    -> update l ((Address xx):(update [More x] ls))
        LoadScript:ls      -> update l (LoadScript: (update [More x] ls))
        (More _):ls       -> update l (update [More x] ls)
@@ -448,7 +516,7 @@ update val status
        (Selected xx):ls   -> update l ((Selected xx):(update [Script x] ls))
        (AllGoals xx):ls   -> update l ((AllGoals xx):(update [Script x] ls))
        (Comorph xx):ls    -> update l ((Comorph xx):(update [Script x] ls))
-       (Prover xx):ls     -> update l ((Prover xx):(update [Script x] ls))
+       (SProver xx):ls    -> update l ((SProver xx):(update [Script x] ls))
        (Address xx):ls    -> update l ((Address xx):(update [Script x] ls))
        LoadScript:ls      -> update l (LoadScript:(update [Script x] ls))
        (More xx):ls       -> update l ((More xx):(update [Script x] ls))
