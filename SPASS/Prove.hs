@@ -268,25 +268,7 @@ runSpass sps cfg saveDFG thName nGoal = do
       -- kill spass process
       destroy spass
       _ <- waitForChildProcess spass
-      return (case excep of
-                -- this is supposed to distinguish "fd ... vanished"
-                -- errors from other exceptions
-                Exception.IOException e ->
-                    (ATPError ("Internal error communicating "++
-                               "with SPASS.\n"++show e),
-                              emptyConfig (prover_name spassProver)
-                                          (AS_Anno.senName nGoal) $
-                                          ATP_ProofTree "")
-                Exception.AsyncException Exception.ThreadKilled ->
-                    (ATPBatchStopped,
-                     emptyConfig (prover_name spassProver)
-                                    (AS_Anno.senName nGoal) $
-                                    ATP_ProofTree "")
-                _ -> (ATPError ("Error running SPASS.\n"++show excep),
-                        emptyConfig (prover_name spassProver)
-                                    (AS_Anno.senName nGoal) $
-                                    ATP_ProofTree "")
-             ))
+      excepToATPResult (prover_name spassProver) nGoal excep)
 
   where
     runSpassReal spass = do

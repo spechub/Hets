@@ -28,9 +28,8 @@ import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Result as Result
 
 import Data.IORef
--- import Data.List
--- import Data.Maybe
 import qualified Control.Concurrent as Concurrent
+import qualified Control.Exception as Exception
 
 import HTk
 
@@ -152,6 +151,7 @@ runVampire :: SPASSProverState
            -- ^ (retval, configuration with proof status and complete output)
 runVampire sps cfg saveTPTP thName nGoal = do
 --    putStrLn ("running MathServ VampireService...")
+  Exception.catch (do
     prob <- showTPTPProblem thName sps nGoal $ extraOpts cfg ++
                                                  ["Requested prover: Vampire"]
     when saveTPTP
@@ -163,6 +163,7 @@ runVampire sps cfg saveTPTP thName nGoal = do
                       proverTimeLimit = tLimit,
                       extraOptions = Just $ unwords $ extraOpts cfg}
     msResponse <- parseMathServOut mathServOut
-    return (mapMathServResponse msResponse cfg nGoal (prover_name vampire))
-    where
-      tLimit = maybe (guiDefaultTimeLimit) id $ timeLimit cfg
+    return (mapMathServResponse msResponse cfg nGoal $ prover_name vampire))
+    (excepToATPResult (prover_name vampire) nGoal)
+  where
+    tLimit = maybe (guiDefaultTimeLimit) id $ timeLimit cfg

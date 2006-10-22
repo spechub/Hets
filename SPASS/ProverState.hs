@@ -26,6 +26,7 @@ import qualified Common.AS_Annotation as AS_Anno
 import Common.ProofUtils
 import Common.Utils (splitOn)
 import Common.DocUtils
+import qualified Control.Exception as Exception
 
 import Data.Maybe
 import GHC.Read (readEither)
@@ -136,3 +137,23 @@ parseTactic_script tLimit extOpts (Tactic_script ts) =
                                      ts_extraOpts = extOpts })
            id
            (readEither ts :: Either String ATPTactic_script)
+
+
+-- | Converts a thrown exception into an ATP result (ATPRetval and proof tree).
+excepToATPResult :: String -- ^ name of running prover
+                 -> AS_Anno.Named SPTerm -- ^ goal to prove
+                 -> Exception.Exception -- ^ occured exception
+                 -> IO (ATPRetval, GenericConfig ATP_ProofTree) -- ^ (retval,
+                    -- configuration with proof status and complete output)
+excepToATPResult prName nGoal excep = return $ case excep of
+    -- this is supposed to distinguish "fd ... vanished"
+    -- errors from other exceptions
+    Exception.IOException e ->
+        (ATPError ("Internal error communicating with " ++ prName ++ ".\n"
+                   ++ show e),
+         emptyConfig prName (AS_Anno.senName nGoal) $ ATP_ProofTree "")
+    Exception.AsyncException Exception.ThreadKilled ->
+        (ATPBatchStopped,
+         emptyConfig prName (AS_Anno.senName nGoal) $ ATP_ProofTree "")
+    _ -> (ATPError ("Error running " ++ prName ++ ".\n" ++ show excep),
+          emptyConfig prName (AS_Anno.senName nGoal) $ ATP_ProofTree "")

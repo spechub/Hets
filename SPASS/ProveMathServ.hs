@@ -34,9 +34,8 @@ import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Result as Result
 
 import Data.IORef
--- import Data.List
--- import Data.Maybe
 import qualified Control.Concurrent as Concurrent
+import qualified Control.Exception as Exception
 
 import HTk
 
@@ -162,6 +161,7 @@ runMSBroker :: SPASSProverState
             -- ^ (retval, configuration with proof status and complete output)
 runMSBroker sps cfg saveTPTP thName nGoal = do
 --    putStrLn ("running MathServ Broker...")
+  Exception.catch (do
     prob <- showTPTPProblem thName sps nGoal $ extraOpts cfg ++ ["[via Broker]"]
     when saveTPTP
         (writeFile (thName++'_':AS_Anno.senName nGoal++".tptp") prob)
@@ -172,7 +172,8 @@ runMSBroker sps cfg saveTPTP thName nGoal = do
                      proverTimeLimit = tLimit,
                      extraOptions = Nothing}
     msResponse <- parseMathServOut mathServOut
-    return (mapMathServResponse msResponse cfg nGoal
-                               (prover_name mathServBroker))
-    where
-      tLimit = maybe (guiDefaultTimeLimit) id $ timeLimit cfg
+    return (mapMathServResponse msResponse cfg nGoal $
+            prover_name mathServBroker))
+    (excepToATPResult (prover_name mathServBroker) nGoal)
+  where
+    tLimit = maybe (guiDefaultTimeLimit) id $ timeLimit cfg
