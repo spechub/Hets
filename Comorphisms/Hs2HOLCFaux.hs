@@ -420,7 +420,7 @@ groupInst db =
 ----------------------- getting mutually recursive domains in Isabelle --------
 
 getDepDoms :: [[IsaSign.DomainEntry]] -> IsaSign.DomainTab
-getDepDoms ls = ordDoms $ abGetDep deDepOn ls   
+getDepDoms ls = ordDoms $ abGetDep deDepOn ls
 
 ordDoms :: [[IsaSign.DomainEntry]] -> IsaSign.DomainTab
 ordDoms ls = quickSort (orLLift deDepOn) ls
@@ -428,13 +428,13 @@ ordDoms ls = quickSort (orLLift deDepOn) ls
 quickSort :: (a -> a-> Bool) -> [a] -> [a]
 quickSort f ls = case ls of
   [] -> []
-  a:as -> let 
+  a:as -> let
                (xs,ys) = compF f a as
-               xxs = quickSort f xs 
+               xxs = quickSort f xs
                yys = quickSort f ys
-     in xxs ++ a:yys      
-  where 
-  compF g c bs = 
+     in xxs ++ a:yys
+  where
+  compF g c bs =
         ([ b | b <- bs, g c b == True],[ b | b <- bs, g c b == False])
 
 orLLift :: (a -> a -> Bool) -> [a] -> [a] -> Bool
@@ -444,9 +444,9 @@ orLLift f as bs = case as of
               else (orLLift f xs bs)
 
 genOr :: (a -> Bool) -> [a] -> Bool
-genOr f ys = case ys of 
+genOr f ys = case ys of
                [] -> False
-               x:xs -> if (f x) then True 
+               x:xs -> if (f x) then True
                            else (genOr f xs)
 
 deDepOn :: DomainEntry -> DomainEntry -> Bool
@@ -545,8 +545,6 @@ constFilter t = case t of
  IsaSign.Let xs y -> concatMap constFilter $ y :  map snd xs
  IsaSign.IsaEq x y -> concatMap constFilter [x, y]
  IsaSign.Tuplex xs _ -> concatMap constFilter xs
- IsaSign.Fix x -> constFilter x
- IsaSign.Paren x -> constFilter x
  _ -> [t]
 
 elPos :: [Term] -> Term -> Maybe Int
@@ -606,19 +604,12 @@ simTerms :: Term -> Term -> Bool
 simTerms t1 t2 = case (t1, t2) of
  (IsaSign.Const x _,  IsaSign.Const y _) -> x == y
  (IsaSign.Free _, IsaSign.Free _) -> True
- (IsaSign.Var _ _, IsaSign.Var _ _) -> True
- (IsaSign.Bound _, IsaSign.Bound _) -> True
  (IsaSign.Abs _ _ c, IsaSign.Abs _ _ d) -> c == d
  (If _ _ _ c, If _ _ _ d) -> c == d
  (Case _ _, Case _ _) -> True
  (Let _ _, Let _ _) -> True
  (IsaEq _ _, IsaEq _ _) -> True
- (Fix _, Fix _) -> True
- (Bottom, Bottom) -> True
  (Tuplex _ _, Tuplex _ _) -> True
- (Paren x, y) -> simTerms x y
- (x, Paren y) -> simTerms x y
- (Wildcard, Wildcard) -> True
  _ -> False
 
 ------------------------ replacement functions -------------------------------
@@ -637,8 +628,6 @@ renVars f ls t = case t of
      IsaSign.Let [(a,renVars f ls b) | (a,b) <- xs] (renVars f ls y)
  IsaSign.IsaEq x y -> IsaSign.IsaEq (renVars f ls x) (renVars f ls y)
  IsaSign.Tuplex xs c -> IsaSign.Tuplex (map (renVars f ls) xs) c
- IsaSign.Fix x -> IsaSign.Fix (renVars f ls x)
- IsaSign.Paren x -> IsaSign.Paren (renVars f ls x)
  _ -> t
 
 renFuns :: (Term -> Maybe Term) -> Term -> Term
@@ -654,8 +643,6 @@ renFuns f t = case t of
      IsaSign.Let [(a,renFuns f b) | (a,b) <- xs] (renFuns f y)
  IsaSign.IsaEq x y -> IsaSign.IsaEq (renFuns f x) (renFuns f y)
  IsaSign.Tuplex xs c -> IsaSign.Tuplex (map (renFuns f) xs) c
- IsaSign.Fix x -> IsaSign.Fix (renFuns f x)
- IsaSign.Paren x -> IsaSign.Paren (renFuns f x)
  _ -> t
 
 ---------------------- SENTENCES ---------------------------------------------
@@ -733,10 +720,10 @@ fixPoint c xs = case xs of
     NotCont -> let
          jj = joinNames (map extAxName xs)
          jn = mkVName jj
-         jt1 = unifyTVars (map extAxType xs) 
+         jt1 = unifyTVars (map extAxType xs)
          jta = fst jt1
          jtls = snd jt1
-         jt = mkFunType jta 
+         jt = mkFunType jta
                 (typTuple NotCont (renTVars jtls))
          jl = Const jn jt
          n = length xs
@@ -749,32 +736,33 @@ fixPoint c xs = case xs of
                            | (p,ts) <- Map.toList yyys]
          os = [mkNewDef x jj n m jtls jta | (x,m) <- listEnum xs]
          ps = (NamedSen jj True False $ makeRecDef jl zs):os
-      in ps 
+      in ps
   [] -> []
 
 typeTupleTrivInst :: Int -> [Typ] -> Typ -> Typ
 typeTupleTrivInst n tls t = mkFunType t
                 (typTuple NotCont (renTrivTVars n tls))
-   
+
 renTrivTVars :: Int -> [Typ] -> [Typ]
 renTrivTVars m tls =  [renTVar m b a | (a, b) <- listEnum tls]
- where 
+ where
   renTVar x n t = if x == n then t else
     case t of
-      TFree x s -> if (take 2 x == "vX") then t else
+      TFree y s -> if (take 2 y == "vX") then t else
                        IsaSign.Type "unit" s []
       IsaSign.Type a b cs -> IsaSign.Type a b (map (renTVar x n) cs)
       _ -> t
 
-mkNewDef :: Named Sentence -> String -> Int -> Int -> [Typ] -> Typ -> Named Sentence 
+mkNewDef :: Named Sentence -> String -> Int -> Int -> [Typ] -> Typ
+         -> Named Sentence
 mkNewDef s z x y tls t = let      -- x is the max
-       a = NotCont 
+       a = NotCont
        zt =  IsaSign.Type "!!!" [] [typeTupleTrivInst y tls t]
-  in case s of 
+  in case s of
     NamedSen l m n (ConstDef (IsaEq lh rh)) -> case (lh, extFBody rh) of
-      (Const nn _,(_,w:ws)) -> 
-         NamedSen l m n (ConstDef (IsaEq lh $ 
-            termMAbs a (w:ws) $ termMAppl a (tupleSelector x y 
+      (Const _ _, (_, w : ws)) ->
+         NamedSen l m n (ConstDef (IsaEq lh $
+            termMAbs a (w:ws) $ termMAppl a (tupleSelector x y
                   (App (Const (mkVName z) zt) w a) a) ws))
       _ -> error "Hs2HOLCFaux.mkNewDef1"
     _ -> error "Hs2HOLCFaux.mkNewDef2"

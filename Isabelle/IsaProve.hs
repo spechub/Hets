@@ -239,7 +239,6 @@ isSimpRule trm = case trm of
     App (App (Const q _) a1 _) a2 _
         | new q == eq -> sizeOfTerm a1 > sizeOfTerm a2
         | new q == impl -> sizeOfTerm a1 < sizeOfTerm a2
-    Paren t -> isSimpRule t
     _ -> True
 
 sizeOfTerm :: Term -> Int
@@ -255,6 +254,4 @@ sizeOfTerm trm = case trm of
     IsaEq { firstTerm = t1, secondTerm = t2 } ->
         sizeOfTerm t1 + sizeOfTerm t2 + 1
     Tuplex ts _ -> sum $ map sizeOfTerm ts
-    Fix t -> sizeOfTerm t + 1
-    Paren t -> sizeOfTerm t
     _ -> 1

@@ -276,11 +276,7 @@ printTrm b trm = case trm of
         IsCont -> \ d -> text "<" <+> d <+> text ">") $
                         sepByCommas (map (printPlainTerm b) $ flatTuplex cs c)
                     , maxPrio)
-    Fix t -> (text "fix $" <+> printParenTerm b maxPrio t, maxPrio - 1)
-    Bottom -> (text "UU", maxPrio)
-    Paren t -> (parensForTerm $ printPlainTerm b t, maxPrio)
     App f a c -> printMixfixAppl b c f [a]
-    _ -> error "IsaPrint.printTerm"
 
 printApp :: Bool -> Continuity -> Term -> [Term] -> (Doc, Int)
 printApp b c t l = case l of

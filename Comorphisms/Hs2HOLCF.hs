@@ -184,7 +184,6 @@ standizeVars k' = let
      in (((mkqXVs i, a), na) : ls, y)
    sbVs a = case a of
     (Free _, b) -> mkqXVs b
-    (Wildcard, b) -> mkqXVs b
     (f, _) -> f
  in stdVars k' 1
 
@@ -379,9 +378,6 @@ transMScheme :: Continuity -> HsScheme -> Maybe IsaType
 transMScheme a s = case s of
     Forall _ _ (c TiTypes.:=> t) -> transMType a c t
 
-transScheme :: Continuity -> HsScheme -> IsaType
-transScheme c = maybe (error "HsHOLCF.transScheme") id . transMScheme c
-
 ----------------------------- translation for Classrel (from KEnv) ------------
 
 getClassrel :: Continuity -> TyMap -> IsaSign.Classrel
@@ -455,16 +451,16 @@ transPat :: Continuity -> ConstTab -> PrPat -> IsaPattern
 transPat a c t = maybe xDummy id $ transMPat a c t
 
 liftExp :: Continuity -> String -> Typ -> IsaTerm
-liftExp c n t = case c of 
-  IsCont -> App (conDouble "Def") 
+liftExp c n t = case c of
+  IsCont -> App (conDouble "Def")
              (Const (mkVName n) (IsaSign.Type "!!!" [] [t])) NotCont
-  NotCont -> Const (mkVName n)  (IsaSign.Type "!!!" [] [t]) 
+  NotCont -> Const (mkVName n)  (IsaSign.Type "!!!" [] [t])
 
 transMExp :: Continuity -> ConstTab -> PrExp -> Maybe IsaTerm
 transMExp a cs t = let
    tInt = IsaSign.Type "int" holType []
    tRat = IsaSign.Type "Rat" holType []
-  in case t of 
+  in case t of
     (TiPropDecorate.Exp e) -> case e of
        HsLit _ (HsInt n) -> return $ liftExp a (show n) tInt
        HsLit _ (HsFloatPrim n) -> return $ liftExp a (show n) tRat
@@ -483,9 +479,9 @@ transMExp a cs t = let
           return $ Case e1 bs
        _ -> transE a (mkVName . showIsaName) (transMExp a cs)
                                      (transMPat a cs) e
-    TiPropDecorate.TiSpec w s _ -> case w of
-       HsVar x -> transHV a s x
-       HsCon x -> transCN a s x
+    TiPropDecorate.TiSpec w _ _ -> case w of
+       HsVar x -> transHV a x
+       HsCon x -> transCN a x
     TiPropDecorate.TiTyped x _ -> transMExp a cs x
 
 transCases :: Continuity -> ConstTab -> [(TiPat PNT, TiPropDecorate.TiExp PNT)]
@@ -530,7 +526,7 @@ trCase :: Continuity -> (String, Int) -> [((String, IsaPattern), IsaTerm)]
        -> (IsaTerm, IsaTerm)
 trCase r h ys = case ys of
     [] -> case r of
-      IsCont -> (buildPat r h, IsaSign.Bottom)
+      IsCont -> (buildPat r h, conDouble "UU")
       NotCont -> error "Hs2HOLCF.trCase"
     ((a, b), c) : as -> if a == fst h
        then repVsCPt b c (snd h)
@@ -541,7 +537,6 @@ trCase r h ys = case ys of
   mkpXVs = mkVs "pX"
   repVsCPt a b n = case a of
       IsaSign.Const _ _ -> (a, b)
-      IsaSign.Paren x -> repVsCPt x b n
       IsaSign.App x y@(IsaSign.Free _) z -> let
              nv = mkpXVs n
              nr = renVars nv [y] b
@@ -550,7 +545,7 @@ trCase r h ys = case ys of
              ns = renVars nv [y] $ snd st
            in (nf, ns)
       _ -> error "Hs2HOLCF.repVsCPt"
-  buildPat r' (x, n) = let 
+  buildPat r' (x, n) = let
      hh = stringTrans r' noType x
      k = Const (mkVName $ showIsaName x) noType
      j = maybe k id hh
@@ -568,7 +563,7 @@ transPatBind a cs s = case s of
 transMPat :: Continuity -> ConstTab -> PrPat -> Maybe IsaPattern
 transMPat a cs t = let
    tInt = IsaSign.Type "int" holType []
-  in case t of 
+  in case t of
     TiDecorate.Pat p -> case p of
        HsPLit _ (HsInt n) -> return $ liftExp a (show n) tInt
        HsPList _ xs -> return $ case xs of
@@ -577,9 +572,9 @@ transMPat a cs t = let
                   NotCont -> conDouble "[]"
           _ -> error "Hs2HOLCF.transMPat" -- unsupported list notation
        _ -> transP a (mkVName . showIsaName) (transMPat a cs) p
-    TiDecorate.TiPSpec w s _ -> case w of
-         HsVar x -> transHV a s x
-         HsCon x -> transCN a s x
+    TiDecorate.TiPSpec w _ _ -> case w of
+         HsVar x -> transHV a x
+         HsCon x -> transCN a x
     TiDecorate.TiPTyped x _ -> transMPat a cs x
     TiDecorate.TiPApp w z -> do w1 <- transMPat a cs w
                                 z1 <- transMPat a cs z
@@ -594,7 +589,7 @@ transE c trId trE trP e =
    Just (HsLambda ps x)               -> return $ termMAbs c ps x
    Just (HsIf x y z)                  -> return $ If x y z c
    Just (HsTuple xs)                  -> return $ Tuplex xs c
-   Just (HsParen x)                   -> return $ Paren x
+   Just (HsParen x)                   -> return x
    _                                  -> Nothing
 
 transP :: IsaName i => Continuity -> (i -> VName) -> (p -> Maybe IsaPattern)
@@ -603,40 +598,40 @@ transP a trId trP p =
  case mapPI3 trId trP p of
    Just (HsPId (HsVar _))  -> return $ conDouble "DIC"
    Just (HsPTuple _ xs)    -> return $ Tuplex xs a
-   Just (HsPParen x)       -> return $ Paren x
-   Just HsPWildCard        -> return $ Wildcard
+   Just (HsPParen x)       -> return x
+   Just HsPWildCard        -> return $ Free $ mkVName "_"
    _                       -> Nothing
 
-transCN :: Continuity -> HsScheme -> PNT -> Maybe IsaTerm
-transCN c s x = let
+transCN :: Continuity -> PNT -> Maybe IsaTerm
+transCN c x = let
     k = pp x
     y = showIsaName x
-    z = noType 
+    z = noType
     w = Const (mkVName y) z
     zz = stringTrans c z k
   in return $ maybe w id $ zz
 
-transHV :: Continuity -> HsScheme -> PNT -> Maybe IsaTerm
-transHV a s x = let
+transHV :: Continuity -> PNT -> Maybe IsaTerm
+transHV a x = let
       n = showIsaName x
       t = noType
       qq = pp x
       mkConst w = Const (mkVName w) t
-      mkFree w = Free (mkVName w) 
+      mkFree w = Free (mkVName w)
    in if qq == "error" then Nothing else return $
    case (stringTrans a t qq) of
    Just d -> d
-   Nothing -> case x of 
+   Nothing -> case x of
         PNT (PN _ (UniqueNames.G _ _ _)) _ _ -> mkConst n
         PNT (PN _ (UniqueNames.S _)) _ _ -> mkFree n
         PNT (PN _ (UniqueNames.Sn _ _)) _ _ -> mkFree n
         _ -> error "Hs2HOLCF.transHV"
 
 stringTrans :: Continuity -> IsaType -> String -> Maybe IsaTerm
-stringTrans a t qq = let      
+stringTrans a t qq = let
       mkConst w = Const (mkVName w) t
       mkVConst v = Const v t
-   in if qq == "error" then Nothing else 
+   in if qq == "error" then Nothing else
    case qq of
    "==" -> return $ mkConst "hEq"
    "/=" -> return $ mkConst "hNEq"

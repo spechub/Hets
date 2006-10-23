@@ -81,8 +81,6 @@ data Term =
         Const { termName     :: VName,
                 termType     :: Typ }
       | Free  { termName   :: VName }
-      | Var  Indexname Typ
-      | Bound Int
       | Abs   { absVar     :: Term,
                 termId     :: Term,
                 continuity :: Continuity }  -- lambda abstraction
@@ -100,10 +98,6 @@ data Term =
       | IsaEq { firstTerm  :: Term,
                 secondTerm :: Term }
       | Tuplex [Term] Continuity
-      | Fix Term
-      | Bottom
-      | Paren Term
-      | Wildcard
       deriving (Eq, Ord, Show)
 
 data Sentence = Sentence { isSimp :: Bool   -- True for "[simp]"
