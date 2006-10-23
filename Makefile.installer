@@ -31,7 +31,7 @@ SPASSURL_SOLARIS = http://spass.mpi-sb.mpg.de/download/binaries/spass22sparc59.t
 SPASSURL_MAC = http://spass.mpi-sb.mpg.de/download/binaries/spass22mac.dmg
 SPASSURL_LINUX = http://spass.mpi-sb.mpg.de/download/binaries/spass22pclinux.tgz
 
-download : izpack_checkout uni-checkout hetcats-make casl-lib-checkout other-download
+download : izpack_checkout tools-checkout hetcats-make casl-lib-checkout other-download
 
 casl-lib-checkout :
 	@echo update casl-lib 
@@ -58,7 +58,6 @@ hetcats-make : daily-hets-download
 	cd HetCATS ;\
 	$(MAKE) release ;\
 	mv HetCATS.tar $(IZPACK_SAMPLE)/src/ ;\
-	cp hets.in $(IZPACK_SAMPLE)/hets/ ; \
 	mkdir $(IZPACK_SAMPLE)/hets/OWLParser ; \
 	mkdir $(IZPACK_SAMPLE)/hets/OWLParser/java ; \
 	cp OWL_DL/owl_parser $(IZPACK_SAMPLE)/hets/OWLParser ; \
@@ -71,11 +70,10 @@ daily-hets-download :
 	@sh getDailyHets.sh
 	mv getDailyHets.sh  $(IZPACK_SAMPLE)
 	mv $(HOME)/bin/hets-$(ACTDATE) $(IZPACK_SAMPLE)/hets/hets
-
 	# HETS_VER=$($(HETS_BIN) -V | sed "s%^.*[Vv]\(.*\),.*%\\1%") ; \
 	#@ln -s $(IZPACK_SAMPLE)/hets/hets-$(ACTDATE) $(IZPACK_SAMPLE)/hets
 
-uni-checkout :
+tools-checkout :
 	@echo update uni
 	@cd $(IZPACK_SAMPLE)/src ; \
 	 if [ -d uni ] ; then \
@@ -83,6 +81,9 @@ uni-checkout :
 	 else \
 	  cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:\/repository co -P uni ; \
 	 fi
+	@echo checkout programatica ; \
+	 cvs -d  :pserver:anoncvs@cvs.haskell.org:/cvs co \
+             programatica/tools/base programatica/tools/property
 
 izpack_checkout :
 	@echo update izpack_het
@@ -114,4 +115,4 @@ cleanup:
 	@$(RM) -r $(IZPACK_PATH)
 	@$(RM) Makefile
 
-.PHONY : all download build casl-lib-checkout hetcats-checkout daily-hets-download daily-hets-download other-download izpack_checkout cleanup
+.PHONY : all download build casl-lib-checkout hetcats-make daily-hets-download other-download izpack_checkout cleanup tools-checkout
