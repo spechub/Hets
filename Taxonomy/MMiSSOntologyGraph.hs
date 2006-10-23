@@ -46,7 +46,7 @@ displayClassGraph onto startClass =
                                           ((p,v,l,s):_) -> return(([],v,l,[]) & empty)
      A.Result gid err <-
        A.makegraph  (getOntologyName onto)
-           [GlobalMenu (Button "Knopf2" (putStrLn "Knopf2 wurde gedrückt"))]
+           [GlobalMenu (Button "Button2" (putStrLn "Button2 was pressed"))]
            [("class", Box $$$ Color "#e0eeee" $$$
                    createLocalMenu onto ginfo main
                    $$$ ValueTitle ( \ (name,descr,gid) -> return name) $$$
