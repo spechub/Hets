@@ -45,6 +45,7 @@ import TextDisplay
 import Separator
 import XSelection
 import Space
+import ScrollBar
 
 import GUI.HTkUtils
 import GUI.GenericATPState
@@ -115,7 +116,7 @@ statusProved :: (ProofStatusColour, String)
 statusProved = (Green, "Proved")
 
 {- |
-  Generates a ('ProofStatusColour', 'String') tuple representing a Proved 
+  Generates a ('ProofStatusColour', 'String') tuple representing a Proved
   (but inconsistent) proof status.
 -}
 statusProvedButInconsistent :: (ProofStatusColour, String)
@@ -178,17 +179,18 @@ data OpFrame = OpFrame { of_Frame :: Frame
   Generates a list of 'GUI.HTkUtils.LBGoalView' representations of all goals
   from a 'GenericATPState.GenericState'.
 -}
-goalsView :: GenericState sign sentence proof_tree pst -- ^ current global prover state
+goalsView :: GenericState sign sentence proof_tree pst -- ^ current global
+                                                       -- prover state
           -> [LBGoalView] -- ^ resulting ['LBGoalView'] list
 goalsView s = map (\ g ->
-                       let cfg = Map.lookup g (configsMap s)
-                           statind = maybe LBIndicatorOpen
-                                       (indicatorFromProof_status . proof_status)
-                                       cfg
-                        in
-                          LBGoalView {statIndicator = statind,
-                                      goalDescription = g})
-                   (map AS_Anno.senName (goalsList s))
+                      let cfg = Map.lookup g (configsMap s)
+                          statind = maybe LBIndicatorOpen
+                                     (indicatorFromProof_status . proof_status)
+                                     cfg
+                       in
+                         LBGoalView {statIndicator = statind,
+                                     goalDescription = g})
+                  (map AS_Anno.senName (goalsList s))
 
 -- * GUI Implementation
 
@@ -199,14 +201,16 @@ goalsView s = map (\ g ->
 -}
 getValueSafe :: Int -- ^ default time limt
              -> Entry Int -- ^ time limit 'Entry'
-             -> IO Int -- ^ user-requested time limit or default in case of a parse error
+             -> IO Int -- ^ user-requested time limit or default in case of a
+                       -- parse error
 getValueSafe defaultTimeLimit timeEntry =
     Exception.catchJust Exception.userErrors ((getValue timeEntry) :: IO Int)
                   (\ s -> trace ("Warning: Error "++show s++" was ignored")
                                 (return defaultTimeLimit))
 
 {- |
-  reads passed ENV-variable and if it exists and has an Int-value this value is returned otherwise the value of 'batchTimeLimit' is returned.
+  reads passed ENV-variable and if it exists and has an Int-value this value is
+  returned otherwise the value of 'batchTimeLimit' is returned.
 -}
 
 getBatchTimeLimit :: String -- ^ ENV-variable containing batch time limit
@@ -226,9 +230,10 @@ batchInfoText tl gTotal gDone =
       (remMins,secs) = divMod totalSecs 60
       (hours,mins) = divMod remMins 60
   in
-  "Batch mode runnig\n"++
+  "Batch mode running.\n"++
   show gDone ++ "/" ++ show gTotal ++ " goals processed.\n" ++
   "At most "++show hours++"h "++show mins++"m "++show secs++"s remaining."
+
 
 -- ** Callbacks
 
@@ -237,16 +242,29 @@ batchInfoText tl gTotal gDone =
 -}
 updateDisplay :: GenericState sign sentence proof_tree pst
                  -- ^ current global prover state
-              -> Bool -- ^ set to 'True' if you want the 'ListBox' to be updated
-              -> ListBox String -- ^ 'ListBox' displaying the status of all goals (see 'goalsView')
-              -> Label -- ^ 'Label' displaying the status of the currently selected goal (see 'toGuiStatus')
-              -> Entry Int -- ^ 'Entry' containing the time limit of the current goal
+              -> Bool -- ^ set to 'True' if you want the 'ListBox' to be
+                      -- updated
+              -> ListBox String -- ^ 'ListBox' displaying the status of all
+                                -- goals (see 'goalsView')
+{-
+              -> Scrollbar -- ^ 'ScrollBar' containing the current scrollbar
+                           -- status of upper 'ListBox'.
+-}
+              -> Label -- ^ 'Label' displaying the status of the currently
+                       -- selected goal (see 'toGuiStatus')
+              -> Entry Int -- ^ 'Entry' containing the time limit of the current
+                           -- goal
               -> Entry String -- ^ 'Entry' containing the extra options
-              -> ListBox String -- ^ 'ListBox' displaying all axioms used to prove a goal (if any)
+              -> ListBox String -- ^ 'ListBox' displaying all axioms used to
+                                -- prove a goal (if any)
               -> IO ()
-updateDisplay st updateLb goalsLb statusLabel timeEntry optionsEntry axiomsLb = do
-    when updateLb
-         (populateGoalsListBox goalsLb (goalsView st))
+updateDisplay st updateLb goalsLb statusLabel timeEntry optionsEntry axiomsLb =
+  do
+    when updateLb (do
+--           (offScreen, _) <- view Vertical goalsLb
+           populateGoalsListBox goalsLb (goalsView st)
+--           moveto Vertical goalsLb offScreen
+          )
     maybe (return ())
           (\ go ->
                let mprfst = Map.lookup go (configsMap st)
@@ -309,10 +327,10 @@ newOptionsFrame con updateFn isExtraOps = do
   pack timeSpinner []
 
   l3 <- newLabel opFrame2 [text "Extra Options:"]
-  when isExtraOps $ 
+  when isExtraOps $
        pack l3 [Anchor West]
   (optionsEntry :: Entry String) <- newEntry opFrame2 [width 37]
-  when isExtraOps $ 
+  when isExtraOps $
        pack optionsEntry [Fill X, PadX (cm 0.1)]
 
   return $ OpFrame { of_Frame = right
@@ -326,12 +344,14 @@ newOptionsFrame con updateFn isExtraOps = do
   Invokes the prover GUI. Users may start the batch prover run on all goals,
   or use a detailed GUI for proving each goal manually.
 -}
-genericATPgui :: (Ord proof_tree, Ord sentence, Show proof_tree, Show sentence) =>
-                 ATPFunctions sign sentence proof_tree pst -- ^ prover specific functions
+genericATPgui :: (Ord proof_tree, Ord sentence, Show proof_tree, Show sentence)
+              => ATPFunctions sign sentence proof_tree pst -- ^ prover specific
+                                                           -- functions
               -> Bool -- ^ prover supports extra options
               -> String -- ^ prover name
               -> String -- ^ theory name
-              -> Theory sign sentence proof_tree -- ^ theory consisting of a signature and a list of Named sentence
+              -> Theory sign sentence proof_tree -- ^ theory consisting of a
+                 -- signature and a list of Named sentence
               -> proof_tree -- ^ initial empty proof_tree
               -> IO([Proof_status proof_tree]) -- ^ proof status for each goal
 genericATPgui atpFun isExtraOptions prName thName th pt = do
@@ -413,7 +433,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                                                 configsMap s'))
                       done)
                      (currentGoal s)))
-                 isExtraOptions    
+                 isExtraOptions
   pack right [Expand On, Fill Both, Anchor NorthWest]
 
   -- buttons for options
@@ -484,7 +504,10 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
   batchTitle <- newLabel batch [text $ (prName)++" Batch Mode:"]
   pack batchTitle [Side AtTop]
 
-  batchRight <- newVBox batch []
+  batchIFrame <- newFrame batch []
+  pack batchIFrame [Expand On, Fill X]
+
+  batchRight <- newVBox batchIFrame []
   pack batchRight [Expand On, Fill X, Side AtRight]
 
   batchBtnBox <- newHBox batchRight []
@@ -503,7 +526,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
           , of_timeSpinner = batchTimeSpinner
           , of_timeEntry = batchTimeEntry
           , of_optionsEntry = batchOptionsEntry}
-      <- newOptionsFrame batch
+      <- newOptionsFrame batchIFrame
                  (\ tEntry sp -> synchronize main
                    (do
                     curEntTL <- getValueSafe batchTLimit tEntry
@@ -514,14 +537,22 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                     done))
                  isExtraOptions
 
-  pack batchLeft [Expand On, Fill X, Anchor NorthWest,Side AtLeft]
+  pack batchLeft [Expand On, Fill X, Anchor NorthWest, Side AtLeft]
+
+  batchGoal <- newHBox batch []
+  pack batchGoal [Expand On, Fill X, Anchor West, Side AtBottom]
+  batchCurrentGoalTitle <- newLabel batchGoal [text "Current goal:"]
+  pack batchCurrentGoalTitle []
+  batchCurrentGoalLabel <- newLabel batchGoal [text "-"]
+  pack batchCurrentGoalLabel []
+
 
   saveProblem_batch <- createTkVariable False
   saveProblem_batch_checkBox <-
          newCheckButton batchLeft
-                        [variable saveProblem_batch,
-                         text $ "Save "
-                     ++ (removeFirstDot $ problemOutput $ fileExtensions atpFun)]
+                      [variable saveProblem_batch,
+                       text $ "Save "
+                   ++ (removeFirstDot $ problemOutput $ fileExtensions atpFun)]
 
   enableSaveCheckBox <- getEnvSave False "HETS_ENABLE_BATCH_SAVE" readEither
   when enableSaveCheckBox $
@@ -700,7 +731,8 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                  let s'' = s'{
                      configsMap =
                         adjustOrSetConfig
-                           (\ c -> c {timeLimitExceeded = isTimeLimitExceeded retval,
+                           (\ c -> c {timeLimitExceeded = isTimeLimitExceeded
+                                                            retval,
                                       proof_status = proof_status cfg,
                                       resultOutput = resultOutput cfg,
                                       timeUsed     = timeUsed cfg})
@@ -741,6 +773,9 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
             if numGoals > 0
              then do
               batchStatusLabel # text (batchInfoText tLimit numGoals 0)
+              batchCurrentGoalLabel # text (
+                              if (null $ goalsList s) then "-"
+                              else AS_Anno.senName $ head $ goalsList s)
               disableWids wids
               enable stopBatchButton
               enableWidsUponSelection lb [EnW detailsButton,EnW saveProbButton]
@@ -750,18 +785,22 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
               batchProverId <- Concurrent.forkIO
                    (do genericProveBatch False tLimit extOpts' inclProvedThs
                                       saveProblem_F
-                          (\ gPSF nSen cfg@(retval,_) -> do
+                          (\ gPSF nSen nextSen cfg@(retval,_) -> do
                               cont <- goalProcessed stateRef tLimit extOpts'
                                                  numGoals prName gPSF nSen cfg
                               st <- readIORef stateRef
-                              if (mainDestroyed st) 
+                              if (mainDestroyed st)
                                  then return False
                                  else do
-                               batchStatusLabel # 
+                               batchStatusLabel #
                                   text (if cont
-                                        then (batchInfoText tLimit 
+                                        then (batchInfoText tLimit
                                                       numGoals gPSF)
                                         else "Batch mode finished\n\n")
+                               batchCurrentGoalLabel #
+                                  text (if cont
+                                        then maybe "-" AS_Anno.senName nextSen
+                                        else goalsDoneText)
                                updateDisplay st True lb statusLabel timeEntry
                                             optionsEntry axiomsLb
                                case retval of
@@ -786,17 +825,18 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
               done
              else do
               batchStatusLabel # text ("No further open goals\n\n")
+              batchCurrentGoalLabel # text goalsDoneText
               done)
       +> (stopBatch >>> do
             modifyIORef stateRef
                            (\s -> s {batchModeIsRunning = False})
             cleanupThread threadStateRef
             modifyIORef threadStateRef (\ s -> s {batchStopped = True})
-            -- putStrLn "Batch stopped"            
+            -- putStrLn "Batch stopped"
             st <- readIORef stateRef
-            if mainDestroyed st 
+            if mainDestroyed st
                then return ()
-               else do               
+               else do
                   disable stopBatchButton
                   enableWids wids
                   enableWidsUponSelection lb goalSpecificWids
@@ -850,6 +890,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                (batchId st)
 
     noGoalSelected = errorMess "Please select a goal first."
+    goalsDoneText = "all goals done"
     prepareLP prS s goal inclProvedThs =
        let (beforeThis, afterThis) =
                splitAt (fromJust $
