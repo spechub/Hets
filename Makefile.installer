@@ -7,7 +7,7 @@
 # This Makefile will generate the installer for Hets with IzPack
 #
 
-all: download build cleanup
+all: download build ## cleanup
 
 EMPTY =
 ACTDATE = $(shell date +%F)
@@ -80,8 +80,9 @@ tools-checkout :
 	  cvs up -dPA uni ; \
 	 else \
 	  cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:\/repository co -P uni ; \
-	 fi
-	@echo checkout programatica ; \
+	 fi ;  \
+	 echo checkout programatica ; \
+	 cvs -d :pserver:anoncvs@cvs.haskell.org:/cvs login ; \
 	 cvs -d  :pserver:anoncvs@cvs.haskell.org:/cvs co \
              programatica/tools/base programatica/tools/property
 
