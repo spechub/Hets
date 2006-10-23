@@ -22,29 +22,30 @@ used, instead shellac is used so that autocomplition for path can be enabled
 module PGIP.Commands where
 
 import Static.AnalysisLibrary
+import Static.DevGraph
+
 import Driver.Options
-import Common.Utils
+
 import Proofs.Automatic
 import Proofs.Global
 import Proofs.Local
 import Proofs.Composition
 import Proofs.HideTheoremShift
 import Proofs.TheoremHideShift
-import Common.Taxonomy
-import Data.Maybe
+
 import PGIP.Common
 import PGIP.Utils
-import Text.ParserCombinators.Parsec
-import Common.Lexer
+
+import Common.Utils
 import Common.AnnoState
-import Static.DevGraph
+import Common.Lexer
+import Common.Taxonomy
+
+import Text.ParserCombinators.Parsec
 import Data.Graph.Inductive.Graph
--- import Isabelle.IsaProve
--- import SPASS.Prove
--- import GUI.GenericATPState
--- import Logic.Prover
--- import Logic.Grothendieck
--- import Logic.Coerce
+import Data.Maybe
+import Data.Char
+
 #ifdef UNI_PACKAGE
 import GUI.ShowGraph
 #endif
@@ -52,11 +53,14 @@ import GUI.ShowGraph
 -- | Scans a word contained in a path
 scanPathFile::CharParser st String
 scanPathFile
-     = many1 ( oneOf (caslLetters ++ ['0'..'9'] ++ ['-','_','.']))
+     = many1 $ satisfy isPathChar
+
+isPathChar :: Char -> Bool
+isPathChar c = isAlphaNum c || elem c ['-','_','.']
 
 scanAnyWord::CharParser st String
 scanAnyWord
-     = many1 (oneOf (caslLetters ++ ['0'..'9'] ++ ['_','\'','.','-']))
+     = many1 $ satisfy isPathChar <|> prime
 
 -- | the 'getPath' function reads a path as a list of words
 getPath::AParser st String
