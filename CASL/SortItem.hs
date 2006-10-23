@@ -9,7 +9,7 @@ Portability :  portable
 
 -}
 
-{- 
+{-
    parse SORT-ITEM and "sort/sorts SORT-ITEM ; ... ; SORT-ITEM"
    parse DATATYPE-DECL
 
@@ -36,43 +36,43 @@ import CASL.Formula
 -- ------------------------------------------------------------------------
 
 commaSortDecl :: [String] -> Id -> AParser st (SORT_ITEM f)
-commaSortDecl ks s = 
+commaSortDecl ks s =
     do c <- anComma
        (is, cs) <- sortId ks `separatedBy` anComma
-       let l = s : is 
-           p = catPos (c:cs) 
+       let l = s : is
+           p = catPos (c:cs)
        subSortDecl ks (l, p) <|> return (Sort_decl l p)
 
 isoDecl :: AParsable f => [String] -> Id -> AParser st (SORT_ITEM f)
-isoDecl ks s = 
+isoDecl ks s =
     do e <- equalT
-       subSortDefn ks (s, tokPos e) <|> 
+       subSortDefn ks (s, tokPos e) <|>
            (do (l, p) <- sortId ks `separatedBy` equalT
                return (Iso_decl (s:l) (catPos (e:p))))
 
-subSortDefn :: AParsable f => [String] -> (Id, Range) 
+subSortDefn :: AParsable f => [String] -> (Id, Range)
             -> AParser st (SORT_ITEM f)
-subSortDefn ks (s, e) = 
+subSortDefn ks (s, e) =
     do a <- annos
        o <- oBraceT << addAnnos
        v <- varId ks
-       c <- colonT 
+       c <- colonT
        t <- sortId ks
        d <- dotT
        f <- formula ks
        a2 <- annos
        p <- cBraceT
-       return $ Subsort_defn s v t (Annoted f nullRange a a2) 
+       return $ Subsort_defn s v t (Annoted f nullRange a a2)
                   (e `appRange` catPos [o, c, d, p])
 
 subSortDecl :: [String] -> ([Id], Range) -> AParser st (SORT_ITEM f)
-subSortDecl ks (l, p) = 
+subSortDecl ks (l, p) =
     do t <- lessT
        s <- sortId ks
        return $ Subsort_decl l s (p `appRange` tokPos t)
 
-sortItem :: AParsable f => [String] -> AParser st (SORT_ITEM f) 
-sortItem ks = 
+sortItem :: AParsable f => [String] -> AParser st (SORT_ITEM f)
+sortItem ks =
     do s <- sortId ks
        subSortDecl ks ([s],nullRange) <|> commaSortDecl ks s
           <|> isoDecl ks s  <|> return (Sort_decl [s] nullRange)
@@ -82,50 +82,50 @@ sortItem ks =
 -- ------------------------------------------------------------------------
 
 datatype :: [String] -> AParser st DATATYPE_DECL
-datatype ks = 
+datatype ks =
     do s <- sortId ks
        e <- asKey defnS
        a <- getAnnos
        (Annoted v _ _ b:alts, ps) <- aAlternative ks `separatedBy` barT
-       return (Datatype_decl s (Annoted v nullRange a b:alts) 
+       return (Datatype_decl s (Annoted v nullRange a b:alts)
                         (catPos (e:ps)))
 
 aAlternative :: [String] -> AParser st (Annoted ALTERNATIVE)
-aAlternative ks = 
+aAlternative ks =
     do a <- alternative ks
        an <- lineAnnos
        return (Annoted a nullRange [] an)
 
 alternative :: [String] -> AParser st ALTERNATIVE
-alternative ks = 
+alternative ks =
     do s <- pluralKeyword sortS
        (ts, cs) <- sortId ks `separatedBy` anComma
        return (Subsorts ts (catPos (s:cs)))
-    <|> 
+    <|>
     do i <- consId ks
        do   o <- wrapAnnos oParenT
             (cs, ps) <- component ks `separatedBy` anSemi
             c <- addAnnos >> cParenT
-            let qs = toPos o ps c 
+            let qs = toPos o ps c
             do   q <- try (addAnnos >> quMarkT)
                  return (Alt_construct Partial i cs (qs `appRange` tokPos q))
               <|> return (Alt_construct Total i cs qs)
          <|> return (Alt_construct Total i [] nullRange)
 
 isSortId :: Id -> Bool
-isSortId (Id is _ _) = case is of 
-                       [Token (c:_) _] -> c `elem` caslLetters
+isSortId (Id is _ _) = case is of
+                       [Token (c : _) _] -> caslLetters c
                        _ -> False
 
 component :: [String] -> AParser st COMPONENTS
-component ks = 
+component ks =
     do (is, cs) <- parseId ks `separatedBy` anComma
        if isSingle is && isSortId (head is) then
           compSort ks is cs <|> return (Sort (head is))
           else compSort ks is cs
 
 compSort :: [String] -> [OP_NAME] -> [Token] -> AParser st COMPONENTS
-compSort ks is cs = 
+compSort ks is cs =
     do c <- anColon
        (b, t, qs) <- opSort ks
        let p = catPos (cs++[c]) `appRange` qs

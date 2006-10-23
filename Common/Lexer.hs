@@ -16,7 +16,7 @@ scanner for Casl tokens using Parsec <http://www.cs.uu.nl/~daan/parsec.html>
 
 module Common.Lexer where
 
-import Data.Char (digitToInt, isDigit)
+import Data.Char (digitToInt, isDigit, ord)
 import Common.Id -- (Token(..), place)
 import Text.ParserCombinators.Parsec
 import qualified Text.ParserCombinators.Parsec.Pos as Pos
@@ -26,25 +26,29 @@ import qualified Text.ParserCombinators.Parsec.Pos as Pos
 
 -- | no-bracket-signs
 signChars :: String
-signChars = "!#$&*+-./:<=>?@\\^|~" ++ "¡¢£§©¬°±²³µ¶·¹¿×÷"
+signChars = "!#$&*+-./:<=>?@\\^|~" ++ -- "¡¢£§©¬°±²³µ¶·¹¿×÷"
+    "\161\162\163\167\169\172\176\177\178\179\181\182\183\185\191\215\247"
 
--- "\161\162\163\167\169\172\176\177\178\179\181\182\183\185\191\215\247"
 -- \172 neg \183 middle dot \215 times
 
 scanAnySigns :: CharParser st String
-scanAnySigns = fmap (\ s -> if s == "×" then "*" else s)
+scanAnySigns = fmap (\ s -> if s == "\215" then "*" else s)
        (many1 (oneOf signChars <?> "casl sign")) <?> "signs"
 
 -- | casl letters
-caslLetters :: String
-caslLetters = ['A'..'Z'] ++ ['a'..'z'] ++
-              "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÑÒÓÔÕÖØÙÚÛÜÝßàáâãäåæçèéêëìíîïñòóôõöøùúûüýÿ"
+caslLetters :: Char -> Bool
+caslLetters ch = let c = ord ch in
+   if c <= 122 && c >= 65 then  c >= 97 || c <= 90
+   else c >= 192 && c <= 255 && not (elem c [208, 215, 222, 240, 247, 254])
+
+-- ['A'..'Z'] ++ ['a'..'z'] ++
+-- "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÑÒÓÔÕÖØÙÚÛÜÝßàáâãäåæçèéêëìíîïñòóôõöøùúûüýÿ"
 
 -- see <http://www.htmlhelp.com/reference/charset/> starting from \192
 -- \208 ETH \215 times \222 THORN \240 eth \247 divide \254 thorn
 
 caslLetter :: CharParser st Char
-caslLetter = oneOf caslLetters <?> "casl letter"
+caslLetter = satisfy caslLetters <?> "casl letter"
 
 prime :: CharParser st Char
 prime = char '\'' -- also used for quoted chars
