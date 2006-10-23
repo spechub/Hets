@@ -9,7 +9,7 @@ import Common.Lexer(fromSourcePos)
 
 type GParser a = forall st. GenParser Char st a
 
------- helper functions ------ 
+------ helper functions ------
 
 convToPos :: Pos.SourcePos -> Range
 convToPos p = Range [fromSourcePos p]
@@ -24,22 +24,24 @@ casl_letter = ['a'..'z'] ++ ['A'..'Z'] ++
               [toEnum(223) .. toEnum(239)] ++ -- icelandic eth
               [toEnum(241) .. toEnum(246)] ++
               [toEnum(248) .. toEnum(253)] ++ -- icelandic thorn
-              [toEnum(255)] 
+              [toEnum(255)]
 
 casl_no_bracket_sign :: [Char]
-casl_no_bracket_sign = "+-*/|\\&=`<>!?:$@#^~¡¿×÷£©±¶§¹²³¢°¬µ.·"
+casl_no_bracket_sign = "+-*/|\\&=`<>!?:$@#^~" ++
+   "\161\191\215\247\163\169\177\182\167\185\178\179\162\176\172\181.\183"
+ -- "¡¿×÷£©±¶§¹²³¢°¬µ.·"
 
 casl_reserved_words :: String
-casl_reserved_words = 
+casl_reserved_words =
     "and arch as assoc axiom axioms closed comm def else end " ++
     "exists false fit forall free from generated get given " ++
     "hide idem if in lambda library local not op ops pred preds " ++
     "result reveal sort sorts spec then to true type types " ++
-    "unit units var vars version view when with within . ·"
+    "unit units var vars version view when with within . \183"
 
 casl_reserved_ops :: String
-casl_reserved_ops = 
-    ": :? ::= = => <=> . · | |-> \\/ /\\ ¬"
+casl_reserved_ops =
+    ": :? ::= = => <=> . \183 | |-> \\/ /\\ \172"
 
 caslDef :: forall st. P.LanguageDef st
 caslDef = ( emptyDef {P.nestedComments = True
@@ -48,8 +50,8 @@ caslDef = ( emptyDef {P.nestedComments = True
                      ,P.identStart     = oneOf casl_letter
                      ,P.identLetter    = (try infix_underscore
                                           <|>
-                                          oneOf(casl_letter ++ "'") 
-                                          <|> 
+                                          oneOf(casl_letter ++ "'")
+                                          <|>
                                           digit)
                      ,P.reservedNames  = words casl_reserved_words
                      ,P.opStart = oneOf casl_no_bracket_sign
@@ -59,7 +61,7 @@ caslDef = ( emptyDef {P.nestedComments = True
 
 infix_underscore :: GParser Char
 infix_underscore = do uc <- try (char '_')
-                      notFollowedBy (oneOf(" _\n" ++ 
+                      notFollowedBy (oneOf(" _\n" ++
                                            casl_no_bracket_sign))
                       return uc
 
@@ -99,7 +101,7 @@ identifier :: forall st. CharParser st String
 identifier    = P.identifier casl_lexer
 operator :: forall st. CharParser st String
 operator      = P.operator casl_lexer
- 
+
 reserved :: forall st. String -> CharParser st ()
 reserved      = P.reserved casl_lexer
 reservedOp :: forall st. String -> CharParser st ()
@@ -107,7 +109,7 @@ reservedOp    = P.reservedOp casl_lexer
 
 charLiteral :: forall st. CharParser st Char
 charLiteral   = P.charLiteral casl_lexer
-stringLiteral :: forall st. CharParser st String 
+stringLiteral :: forall st. CharParser st String
 stringLiteral = P.stringLiteral casl_lexer
 
 
@@ -127,10 +129,10 @@ dot_words = try (do dot  <- char '.'
 -- parsers for reserved words and ops with two different signs, bat
 -- the same meaning
 reserved_dot :: GParser ()
-reserved_dot = (reserved "·") <|> (reserved ".")
+reserved_dot = (reserved "\183") <|> (reserved ".")
 
 reserved_not :: GParser ()
-reserved_not = (reservedOp "¬") <|> (reserved "not")
+reserved_not = (reservedOp "\172") <|> (reserved "not")
 
 reserved_op :: GParser ()
 reserved_op = (reserved "ops") <|> (reserved "op")
@@ -147,18 +149,18 @@ simple_id = do sp <- getPosition
                i  <- identifier
                return $ mkId [Token i (convToPos sp)]
 
-casl_id :: GParser Id          
+casl_id :: GParser Id
 casl_id = comp_id
- 
+
 token_id :: GParser Id
 token_id = do tok <- try Common.CaslLanguage.token
               return $ mkId [tok]
 
 token :: GParser Token
-token = do sp  <- getPosition 
+token = do sp  <- getPosition
            tok <-  choice [identifier,
                              lexeme dot_words,
-                             operator, 
+                             operator,
                              fmap (\x -> show x) (charLiteral),
                              fmap (:"") (digit)]
            return $ Token tok (convToPos sp)
@@ -175,14 +177,14 @@ place_token = do pla <- try Common.CaslLanguage.place
                                     return [pla,tok])
 
 mixfix_id :: [Token] -> GParser Id
-mixfix_id accum = do ts <- (try (fmap (:[]) Common.CaslLanguage.place) 
+mixfix_id accum = do ts <- (try (fmap (:[]) Common.CaslLanguage.place)
                             <|>
-                            try (fmap (:[]) Common.CaslLanguage.token) 
+                            try (fmap (:[]) Common.CaslLanguage.token)
                             <|>
-                            special_between (symbol "{") (symbol "}") 
+                            special_between (symbol "{") (symbol "}")
                             (mkTokLst (mixfix_id []))
                             <|>
-                            try (special_between (symbol "[") (symbol "]") 
+                            try (special_between (symbol "[") (symbol "]")
                                  (mkTokLst (mixfix_id [])))
                             <|>
                             bracket_pair "{" "}"
@@ -191,29 +193,29 @@ mixfix_id accum = do ts <- (try (fmap (:[]) Common.CaslLanguage.place)
                             <?> "mixfix id"
                            )
                      sqs <- option [] (lookAhead (fmap (:[]) (symbol "[")))
-                     fts <- option [] (lookAhead 
+                     fts <- option [] (lookAhead
                                          (fmap (:[]) (Common.CaslLanguage.token)))
-                     Id ats _ _ <- 
+                     Id ats _ _ <-
                          let accum_ts = accum ++ ts
                              defId = mkId accum_ts
                              optId = option defId $ mixfix_id accum_ts
-                             is_last_op = case (last accum_ts) of 
+                             is_last_op = case (last accum_ts) of
                                           t@(Token s _) -> not
                                                        ((last s) `elem` "[{}]"
                                                         ||
-                                                        isPlace (t)) 
+                                                        isPlace (t))
                          in if sqs == [] then
                                if is_last_op then
                                   if fts == [] then optId
                                   else
-                                     unexpected "token follows token" 
+                                     unexpected "token follows token"
                                else -- not is_last_op
                                   optId
                             else -- sqs \= []
                                if isPlace (last accum_ts) then optId
                                else
                                   return defId
-                     return (mkId ats)                   
+                     return (mkId ats)
     where mkTokLst p = fmap (\(Id ts _cs _pos) -> ts) p
           bracket_pair open close = do o_sp <- getPosition
                                        o <- try (symbol open)
@@ -221,7 +223,7 @@ mixfix_id accum = do ts <- (try (fmap (:[]) Common.CaslLanguage.place)
                                        c <- try (symbol close)
                                        return [Token o (convToPos o_sp),
                                                Token c (convToPos c_sp)]
-                                                
+
 special_between :: forall tok st.GenParser tok st String
                    -> GenParser tok st String
                    -> GenParser tok st [Token] -> GenParser tok st [Token]
@@ -230,13 +232,13 @@ special_between start end p = do st_sp <- getPosition
                                  res <- special_manyTill p end
                                  return ([Token st (convToPos st_sp)] ++
                                            res) -- res also contains end
-                                 
+
 special_manyTill :: forall tok st.GenParser tok st [Token]
                     -> GenParser tok st String -> GenParser tok st [Token]
 special_manyTill p end = scan
     where scan  = do sp <- getPosition
                      e <- end
-                     return [Token e (convToPos sp)] 
+                     return [Token e (convToPos sp)]
                   <|>
                   do x <- p
                      xs <- scan
@@ -244,18 +246,18 @@ special_manyTill p end = scan
 
 comp_id :: GParser Id
 comp_id = do Id ts _ _  <- test_mixfix_id (mixfix_id [])
-             Id ts' cs pos <- option (mkId ts) 
+             Id ts' cs pos <- option (mkId ts)
                                    (do cs <- squares (sepBy1 comp_id comma)
                                        return (Id ts cs nullRange)
                                        )
-             option (Id ts' cs pos) 
+             option (Id ts' cs pos)
                       (do ps <- many Common.CaslLanguage.place
                           return (Id (ts'++ps) cs nullRange))
-    where test_mixfix_id p = 
+    where test_mixfix_id p =
               do i@(Id ts _ _) <- p
                  if (case ts of []  -> False
                                 [a] -> not (isPlace a)
-                                _   -> True) 
+                                _   -> True)
                    then return i
                    else fail "only one place is not a legal mixfix id "
-                                
+
