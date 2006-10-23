@@ -7,13 +7,13 @@
 ### installation;
 ### it is post processed by some IzPack variables starting with %
 
-HETS_LIB=%INSTALL_PATH/CASL-lib
+HETS_LIB=$INSTALL_PATH/CASL-lib
 HETS_ISABELLE=
-HETS_OWL_PARSER=
+HETS_OWL_PARSER=$INSTALL_PATH/src/HetCATS/OWL_DL
 UNIWISH=/usr/bin/wish
-UNIDAVINCI=/Users/luettich/uDrawGraph-3.1/bin/uDrawGraph
+UNIDAVINCI=$INSTALL_PATH/lib/uDrawGraph-3.1/bin/uDrawGraph
 
-HETS=%INSTALL_PATH/lib/hets
+HETS=$INSTALL_PATH/lib/hets/hets
 
 export HETS_LIB HETS_ISABELLE HETS_OWL_PARSER UNIWISH UNIDAVINCI
 
