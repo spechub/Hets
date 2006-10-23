@@ -5,7 +5,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
 Stability   :  experimental
-Portability :  portable 
+Portability :  portable
 
 Translation of identifiers to Haskell.
 -}
@@ -19,16 +19,16 @@ import Data.Char
 
 -- | Converts an identifier to a valid lower or upper case Haskell name
 translateIdWithType :: IdCase -> Id -> String
-translateIdWithType ty i = 
+translateIdWithType ty i =
   let s = translateId i ""
       c = if null s then error "translateIdWithTyper" else head s
-  in case ty of 
-     UpperId -> 
+  in case ty of
+     UpperId ->
          if isLower c || c == '_' || isDigit c
-            then  "A__" ++ s else s  
-     LowerId -> 
+            then  "A__" ++ s else s
+     LowerId ->
          if isUpper c || c == '_' || isDigit c || s `Set.member` lowerCaseList
-            then "a__" ++ s  else s 
+            then "a__" ++ s  else s
 
 -- reserved Haskell keywords
 lowerCaseList :: Set.Set String
@@ -42,7 +42,7 @@ data IdCase = UpperId | LowerId
 
 -- | Converts an identifier to a valid Haskell name
 translateId :: Id -> ShowS
-translateId (Id tlist idlist _) = 
+translateId (Id tlist idlist _) =
     showSepList id translateToken tlist . translateCompound idlist
 
 -- | Translate a 'Token' according to the 'symbolMapping'.
@@ -64,7 +64,7 @@ translateCompound ids = noShow (null ids) $ showString "_F"
 -- | Converts characters to parts of Haskell identifiers
 -- thereby translating special ones
 symbolMapping :: Char -> String
-symbolMapping c = Map.findWithDefault [c] c $ Map.fromList 
+symbolMapping c = Map.findWithDefault [c] c $ Map.fromList
 -- avoid compound symbols and keep map injective
 -- Special / reserved
    [('_' , "_1"),    -- \95
@@ -93,20 +93,20 @@ symbolMapping c = Map.findWithDefault [c] c $ Map.fromList
     ('^' , "_V"),    -- \94
     ('|' , "_I"),    -- \124
     ('~' , "_N"),    -- \126
-    ('¡' , "_e"),    -- \161
-    ('¢' , "_c"),    -- \162   
-    ('£' , "_l"),    -- \163
-    ('§' , "_f"),    -- \167
-    ('©' , "_a"),    -- \169
-    ('¬' , "_n"),    -- \172
-    ('°' , "_h"),    -- \176
-    ('±' , "_k"),    -- \177
-    ('²' , "_w"),    -- \178
-    ('³' , "_t"),    -- \179
-    ('µ' , "_y"),    -- \181
-    ('¶' , "_j"),    -- \182
-    ('·' , "_i"),    -- \183
-    ('¹' , "_o"),    -- \185
-    ('¿' , "_u"),    -- \191
-    ('×' , "_m"),    -- \215
-    ('÷' , "_g")]    -- \247
+    ('\161',"_e"),
+    ('\162',"_c"),
+    ('\163',"_l"),
+    ('\167',"_f"),
+    ('\169',"_a"),
+    ('\172',"_n"),
+    ('\176',"_h"),
+    ('\177',"_k"),
+    ('\178',"_w"),
+    ('\179',"_t"),
+    ('\181',"_y"),
+    ('\182',"_j"),
+    ('\183',"_i"),
+    ('\185',"_o"),
+    ('\191',"_u"),
+    ('\215',"_m"),
+    ('\247',"_g")]
