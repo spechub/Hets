@@ -119,20 +119,6 @@ parseOptLogTarget e s l =
           return (Logic_code e s (Just t) p)
         <|> return (Logic_code e s Nothing p)
 
-------------------------------------------------------------------------
--- for parsing "," not followed by "logic" within G_mapping
-------------------------------------------------------------------------
--- ParsecCombinator.notFollowedBy only allows to check for a single "tok"
--- thus a single Char.
-
-notFollowedWith :: GenParser tok st a -> GenParser tok st b
-                -> GenParser tok st a
-p1 `notFollowedWith` p2 = try $ do pp <- (try (p1 >> p2) >> return pzero)
-                                         <|> return p1
-                                   pp
--- see http://www.mail-archive.com/haskell@haskell.org/msg14388.html
--- by Andrew Pimlott
-
 plainComma :: AParser st Token
 plainComma = anComma `notFollowedWith` asKey logicS
 

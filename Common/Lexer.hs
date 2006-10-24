@@ -339,3 +339,14 @@ placeS = try (string place) <?> place
 
 placeT :: CharParser st Token
 placeT = pToken placeS
+
+-- ParsecCombinator.notFollowedBy only allows to check for a single "tok"
+-- thus a single Char.
+
+notFollowedWith :: GenParser tok st a -> GenParser tok st b
+                -> GenParser tok st a
+p1 `notFollowedWith` p2 = try $ do pp <- (try (p1 >> p2) >> return pzero)
+                                         <|> return p1
+                                   pp
+-- see http://www.mail-archive.com/haskell@haskell.org/msg14388.html
+-- by Andrew Pimlott

@@ -20,7 +20,6 @@ import Common.Token
 import ConstraintCASL.AS_ConstraintCASL
 import Text.ParserCombinators.Parsec
 import CASL.AS_Basic_CASL
-import Syntax.Parse_AS_Structured
 
 -- ------------------------------------------------------------------------
 -- formula
