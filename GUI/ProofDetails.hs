@@ -15,7 +15,6 @@ module GUI.ProofDetails (doShowProofDetails) where
 
 import qualified Common.Doc as Pretty
 import Common.Utils
-import qualified Common.Lib.Map as Map
 import qualified Common.OrderedMap as OMap
 
 import Data.List
@@ -45,6 +44,7 @@ data GoalDescription = GoalDescription {
     tacticScriptText :: OpenText, -- ^ more details for tactic script
     proofTreeText :: OpenText -- ^ more details for proof tree
     }
+    
 
 {- |
   Current state of a text tag providing additional information. The text can be
@@ -55,7 +55,7 @@ data OpenText = OpenText {
     textShown :: Bool, -- ^ if true, text is unfolded (default: false)
     textStartPosition :: Position -- ^ start position in editor widget
     }
-    
+
 {- |
   Creates an initial 'GoalDescription' filled with just the standard prover info.
 -}
@@ -75,6 +75,8 @@ emptyOpenText = OpenText {
       additionalText = "",
       textShown = False,
       textStartPosition = (Distance 0, Distance 0) }
+
+data Content = TacticScriptText | ProofTreeText deriving Eq
 
 
 -- * GUI for show proof details
@@ -97,7 +99,7 @@ changePosition :: (Int -> Int -> Int)  -- ^ mostly add or subtract values
                -> Position -- ^ changed position with new x-value
 changePosition f diff (Distance posX, Distance posY) =
     (Distance $ f posX diff, Distance posY)
-    
+
 {- |
   Indentation of a 'String' (also multiple lines) by a number of spaces.
 -}
@@ -160,28 +162,28 @@ fillGoalDescription (cmo, basicProof) =
   Gets real 'EndOfText' index at the char position after (in x-direction)
   the last written text. This is because 'EndOfText' only gives a value where a
   text would be after an imaginary newline.
--}  
+-}
 getRealEndOfTextIndex :: Editor -- ^ the editor whose end index is determined
                       -> IO Position -- ^ position behind last char in widget
 getRealEndOfTextIndex ed = do
     (Distance eotX, _) <- getIndexPosition ed EndOfText
     lineBefore <- getTextLine ed $ IndexPos (Distance (eotX - 1), 0)
     return (Distance eotX - 1, Distance $ length lineBefore)
-    
+
 
 {- |
-  For a given Map containing all proof values, this function adapts the text
-  positions lying behind after a given reference position. This is called when
-  a position in the text is moved after clicking a text tag button.
+  For a given Ordered Map containing all proof values, this function adapts the
+  text positions lying behind after a given reference position. This is called
+  when a position in the text is moved after clicking a text tag button.
 -}
 adaptTextPositions :: (Int -> Int -> Int)  -- ^ mostly add or subtract values
                    -> Int -- ^ (difference) value
                    -> Position -- ^ reference Position
-                   -> Map.Map (String, Int) GoalDescription
+                   -> OMap.OMap (String, Int) GoalDescription
                       -- ^ Map for all proofs
-                   -> Map.Map (String, Int) GoalDescription -- ^ adapted Map
+                   -> OMap.OMap (String, Int) GoalDescription -- ^ adapted Map
 adaptTextPositions f diff pos li =
-    Map.map (\ gDesc ->
+    OMap.map (\ gDesc ->
       let tst = tacticScriptText gDesc
           ptt = proofTreeText gDesc
       in gDesc {
@@ -221,48 +223,59 @@ doShowProofDetails prGUISt@(ProofGUIState { theoryName = thName }) = do
     bFrame    <- newFrame win [relief Groove, borderwidth (cm 0.05)]
     winTitle  <- newLabel bFrame [text winTitleStr,
                                   HTk.font (Helvetica, Roman, 18::Int)]
-    qBut      <- newButton bFrame [text "Close", width 12]
-    sBut      <- newButton bFrame [text "Save", width 12]
+    btnBox    <- newHBox bFrame []
+    tsBut     <- newButton btnBox [text "Expand tactic scripts", width 18]
+    ptBut     <- newButton btnBox [text "Expand proof trees", width 18]
+    sBut      <- newButton btnBox [text "Save", width 12]
+    qBut      <- newButton btnBox [text "Close", width 12]
     pack winTitle [Side AtTop, Expand Off, PadY 10]
-    
+
     (sb, ed) <- newScrollBox bFrame (\ p ->
                                      newEditor p [state Normal, size(80,40)]) []
-    pack bFrame [Side AtTop, Fill Both,Expand On]
-    pack sb [Side AtTop, Expand On,Fill Both]
-    pack ed [Side AtTop, Expand On, Fill Both]
-    pack qBut [Side AtRight, PadX 8, PadY 5]
-    pack sBut [Side AtLeft, PadX 5, PadY 5]
+    pack bFrame [Side AtTop, Expand On, Fill Both]
+    pack sb     [Side AtTop, Expand On, Fill Both]
+    pack ed     [Side AtTop, Expand On, Fill Both]
+
+    pack btnBox [Side AtTop, Expand On, Fill X]
+    pack tsBut [PadX 5, PadY 5]
+    pack ptBut [PadX 5, PadY 5]
+    pack sBut  [PadX 5, PadY 5]
+    pack qBut  [PadX 8, PadY 5]
 
     let sttDesc = "Tactic script"
         sptDesc = "Proof tree"
-    let sens = selectedGoalMap prGUISt
-        elementList = foldr insertSenSt Map.empty
-                            $ OMap.toList sens
-        insertSenSt (gN, st) wholeMap =
-            foldr (\ (s2, ind) -> Map.insert (gN, ind) $ fillGoalDescription s2)
-              wholeMap
+        sens = selectedGoalMap prGUISt
+        elementMap = foldr insertSenSt OMap.empty (reverse $ OMap.toList sens)
+        insertSenSt (gN, st) resOMap =
+            foldl (flip $ \ (s2, ind) -> OMap.insert (gN, ind) $
+                                                     fillGoalDescription s2)
+              resOMap
               $ zip (sortBy (comparing snd) $ thmStatus st) [(0::Int)..]
 
-    stateRef <- newIORef elementList
-    
-    sequence_ $ Map.foldWithKey (\ (gName, ind) goalDesc doList -> (do
+    stateRef <- newIORef elementMap
+    sequence_ $ foldr (\ ((gName,ind), goalDesc) doList -> (do
         when (ind == 0) $
           appendText ed $ replicate 75 '-' ++ "\n" ++ gName ++ "\n"
         appendText ed $ (proverInfo goalDesc) ++ "\n"
-        opTextTS <- addTextTagButton sttDesc (tacticScriptText goalDesc) True
-                       ed (gName, ind) stateRef
-        opTextPT <- addTextTagButton sptDesc (proofTreeText goalDesc) False
-                       ed (gName, ind) stateRef
+        opTextTS <- addTextTagButton sttDesc (tacticScriptText goalDesc)
+                       TacticScriptText ed (gName, ind) stateRef
+        opTextPT <- addTextTagButton sptDesc (proofTreeText goalDesc) 
+                       ProofTreeText ed (gName, ind) stateRef
         appendText ed "\n"
         let goalDesc' = goalDesc{ tacticScriptText = opTextTS,
                                   proofTreeText    = opTextPT }
-        modifyIORef stateRef (\ref -> Map.insert (gName, ind) goalDesc' ref)
-      ):doList) [] elementList
+        modifyIORef stateRef (\ref -> OMap.update (\ _ -> Just goalDesc')
+                                                  (gName, ind) ref)
+      ):doList) [] $ OMap.toList elementMap
 
     ed # state Disabled
-    
+
     quit <- clicked qBut
     save <- clicked sBut
+    toggleTacticScript <- clicked tsBut
+    toggleProofTree <- clicked ptBut
+    btnState <- newIORef (False, False)
+
     spawnEvent (forever (
            quit >>> do destroy win
         +>
@@ -273,10 +286,94 @@ doShowProofDetails prGUISt@(ProofGUIState { theoryName = thName }) = do
                        mfile <- sync selev
                        maybe done (\fp -> writeTextToFile ed fp) mfile
                        enable qBut; enable sBut
-                       done ))
+                       done
+        +>
+           toggleTacticScript >>> do
+             (expTS, expPT) <- readIORef btnState
+             tsBut # text (if expTS then expand_tacticScripts
+                                    else hide_tacticScripts)
+             toggleMultipleTags TacticScriptText expTS ed stateRef
+             writeIORef btnState (not expTS, expPT)
+        +>
+           toggleProofTree >>> do
+             (expTS, expPT) <- readIORef btnState
+             ptBut # text (if expPT then expand_proofTrees
+                                    else hide_proofTrees)
+             toggleMultipleTags ProofTreeText expPT ed stateRef
+             writeIORef btnState (expTS, not expPT)
+        ))
     return ()
 
-        
+  where
+    expand_tacticScripts = "Expand tactic scripts"
+    expand_proofTrees = "Expand proof trees"
+    hide_tacticScripts = "Hide tactic scripts"
+    hide_proofTrees = "Hide proof trees"
+
+
+{- |
+  Toggle all 'TextTag's of one kind to the same state (visible or invisible),
+  either tactic script or proof tree.
+-}
+toggleMultipleTags :: Content -- ^ kind of text tag to toggle
+                   -> Bool -- ^ current visibility state
+                   -> Editor -- ^ editor window to which button will be attached
+                   -> IORef (OMap.OMap (String, Int) GoalDescription)
+                      -- ^ current state of all proof descriptions
+                   -> IO ()
+toggleMultipleTags content expanded ed stateRef = do
+    s <- readIORef stateRef
+    sequence_ $ foldr (\ (dKey, goalDesc) doList -> (do
+        let openText = if (content == TacticScriptText)
+                         then tacticScriptText goalDesc
+                         else proofTreeText goalDesc
+        when (textShown openText == expanded)
+             (toggleTextTag content ed dKey stateRef)
+      ):doList) [] $ OMap.toList s
+
+    done
+
+{- |
+  This functions toggles the state from a given TextTag from visible to
+  invisible or vice versa. This depends on the current state in the ordered map
+  of goal descriptions. First parameter indicates whether the tactic script
+  or the proof tree text from a goal description will be toggled.
+-}
+toggleTextTag :: Content -- ^ kind of text tag to toggle
+              -> Editor -- ^ editor window to which button will be attached
+              -> (String, Int) -- ^ key in single proof descriptions
+                               -- (goal name and index)
+              -> IORef (OMap.OMap (String, Int) GoalDescription)
+                 -- ^ current state of all proof descriptions
+              -> IO ()
+toggleTextTag content ed (gName, ind) stateRef = do
+    s <- readIORef stateRef
+    let gd = maybe (emptyGoalDescription gName) id $
+                     OMap.lookup (gName, ind) s
+        openText = if (content == TacticScriptText) then tacticScriptText gd
+                                                    else proofTreeText gd
+        tsp = textStartPosition openText
+        nol = (numberOfLines $ additionalText openText)
+    if (not $ textShown openText) then do
+        ed # state Normal
+        insertText ed tsp $ additionalText openText
+        ed # state Disabled
+        done
+      else do
+        ed # state Normal
+        deleteTextRange ed tsp $ changePosition (+) nol tsp
+        ed # state Disabled
+        done
+    let openText' = openText { textShown = not $ textShown openText }
+        s' = OMap.update 
+                 (\_ -> Just $ if (content == TacticScriptText)
+                          then gd{ tacticScriptText = openText' }
+                          else gd{ proofTreeText =  openText' } )
+                 (gName, ind) s
+    writeIORef stateRef $ adaptTextPositions
+         (if textShown openText then (-) else (+))
+         nol tsp s'
+
 {- |
   A button in form of a text tag will be added to the specified editor window.
   The events for clicking on a button are set up: adding or removing
@@ -288,56 +385,29 @@ doShowProofDetails prGUISt@(ProofGUIState { theoryName = thName }) = do
 -}
 addTextTagButton :: String -- ^ caption for button
                  -> OpenText -- ^ conatins text to be outfolded if clicked
-                 -> Bool -- ^ true if tacticScript, false if proofTree
+                 -> Content -- ^ either text from tacticScript or proofTree
                  -> Editor -- ^ editor window to which button will be attached
                  -> (String, Int) -- ^ key in single proof descriptions
                                   -- (goal name and index)
-                 -> IORef (Map.Map (String, Int) GoalDescription)
-                 -- ^ current state of all proof descriptions
+                 -> IORef (OMap.OMap (String, Int) GoalDescription)
+                    -- ^ current state of all proof descriptions
                  -> IO OpenText -- ^ information about OpenText status
-addTextTagButton cap addText isTactic ed (gName, ind) stateRef = do
+addTextTagButton cap addText content ed dKey stateRef = do
     appendText ed $ replicate (2 * stdIndent) ' '
     curPosStart <- getRealEndOfTextIndex ed
     appendText ed cap
     curPosEnd <- getRealEndOfTextIndex ed
     insertNewline ed
-    
     ttag <- createTextTag ed curPosStart curPosEnd [underlined On]
+
     (selectTextTag, _) <- bindSimple ttag (ButtonPress (Just 1))
     (enterTT, _) <- bindSimple ttag Enter
     (leaveTT, _) <- bindSimple ttag Leave
-    
-    spawnEvent ( forever ( (selectTextTag >>> do
-        s <- readIORef stateRef
-        let gd = maybe (emptyGoalDescription gName) id $ 
-                         Map.lookup (gName, ind) s
-            openText = if isTactic then tacticScriptText gd
-                          else proofTreeText gd
-            tsp = textStartPosition openText
-            nol = (numberOfLines $ additionalText openText)
-        if (not $ textShown openText) then do
-            ed # state Normal
-            insertText ed tsp $ additionalText openText
-            ed # state Disabled
-            done
-          else do
-            ed # state Normal
-            deleteTextRange ed tsp $ changePosition (+) nol tsp
-            ed # state Disabled
-            done
-        let openText' = openText { textShown = not $ textShown openText }
-            s' = Map.insert (gName, ind)
-                     ( if isTactic then gd{ tacticScriptText = openText' }
-                                   else gd{ proofTreeText =  openText' } )
-                     s
-        writeIORef stateRef $ adaptTextPositions
-             (if textShown openText then (-) else (+))
-             nol tsp s'
-        )
-      +> (enterTT >>> do ed # cursor hand2; done)
-      +> (leaveTT >>> do ed # cursor xterm; done)
-      ))
-
+    spawnEvent ( forever (
+                      selectTextTag >>> toggleTextTag content ed dKey stateRef
+                   +> enterTT >>> do ed # cursor hand2; done
+                   +> leaveTT >>> do ed # cursor xterm; done
+                ))
     return OpenText {additionalText = "\n" ++ (additionalText addText) ++ "\n",
                      textShown = False,
                      textStartPosition = curPosEnd}
