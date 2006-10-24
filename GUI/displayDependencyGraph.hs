@@ -32,18 +32,18 @@ main = do
         ffn = map (deletWith init 8) fn
         ffnn = filter (elem '.') ffn
         fln = map (fst . break (== '.'))  ffnn 
-        fln' = isIn2 [] fln
+        fln' = nub fln
     lfs <- mapM (readFile . (++ ".imports")) ffnn
     let ss = map (filter (isPrefixOf "import") . lines) lfs
         sss = getContent6 ss
         ssss = map (map $ fst . break (== '.')) sss
-        sss' = map (isIn2 []) ssss
+        sss' = map nub ssss
         graphParms = GraphTitle "Dependency Graph" $$
                         OptimiseLayout True $$
                         AllowClose (return True) $$
                         emptyGraphParms
     depG <- newGraph daVinciSort graphParms
-    let flln = isIn2 [] $ fln' ++ concat sss'
+    let flln = nub $ fln' ++ concat sss'
         subNodeMenu = LocalMenu (Menu (Just "Info") [])
         subNodeTypeParms =
                          subNodeMenu $$$
@@ -60,7 +60,7 @@ main = do
         subArcMenu = LocalMenu( Menu Nothing [])
         subArcTypeParms = subArcMenu $$$
                           ValueTitle id $$$
-                          Color "green" $$$
+                            Color "green" $$$
                           emptyArcTypeParms
     subArcType <- newArcType depG subArcTypeParms
     let insertSubArc = \ (node1, node2) ->
@@ -68,8 +68,9 @@ main = do
                                   (lookup' node1) 
                                   (lookup' node2)
     mapM_ insertSubArc $ 
-                     Rel.toList $ Rel.intransKernel $ Rel.fromList
-                     $ isIn3 $ isIn2 [] $ concat $ zipWith getContent2 fln sss'
+                     Rel.toList $ Rel.intransKernel $ Rel.transClosure $ 
+                        Rel.fromList
+                     $ isIn3 $ concat $ zipWith getContent2 fln sss'
     redraw depG
     sync(destroyed depG)
 
@@ -90,10 +91,6 @@ deletWith f n s = case n of
     0 -> s
     _ -> deletWith f (n-1) $ f s
 
-isIn2 :: (Eq a)=> [a] -> [a] -> [a]
-isIn2 l []  = l
-isIn2 l (x:xs) | elem x l = isIn2 l xs
-               | otherwise = isIn2 (l ++ [x]) xs 
 
 isIn3 :: (Eq a)=> [(a, a)] -> [(a, a)]
 isIn3 [] = []
