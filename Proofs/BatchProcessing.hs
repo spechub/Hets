@@ -140,6 +140,7 @@ genericProveBatch :: (Ord proof_tree) =>
                   -> Bool -- True means save problem file
                   -> (Int
                       -> AS_Anno.Named sentence
+                      -> Maybe (AS_Anno.Named sentence)
                       -> (ATPRetval, GenericConfig proof_tree)
                       -> IO Bool)
                       -- ^ called after every prover run.
@@ -211,7 +212,8 @@ genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch f
                            { maybeResult = Just ioProofStatus }
                   writeIORef rr newResult)
               resultRef
-        cont <- f goalsProcessedSoFar' g (err, res_cfg)
+        cont <- f goalsProcessedSoFar' g  
+                  (if (null gs) then Nothing else Just (head gs)) (err, res_cfg)
         if cont
            then batchProve pst' goalsProcessedSoFar' (res:resDone) gs
            else return ioProofStatus
@@ -307,7 +309,9 @@ genericCMDLautomaticBatch atpFun inclProvedThs saveProblem_batch resultRef
     threadID <- Concurrent.forkIO
                   (do genericProveBatch True tLimit extOpts inclProvedThs
                                       saveProblem_batch
-                        (goalProcessed stateRef tLimit extOpts numGoals prName)
+                        (\ gPSF nSen _ conf ->
+                             goalProcessed stateRef tLimit extOpts numGoals
+                                           prName gPSF nSen conf)
                         (atpInsertSentence atpFun) (runProver atpFun)
                         prName thName iGS (Just resultRef)
                       return ()
