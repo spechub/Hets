@@ -58,6 +58,7 @@ import Common.DynamicUtils
 
 import Control.Monad (foldM)
 import Control.Exception
+import Debug.Trace
 
 getNewNode :: Tree.Gr a b -> Node
 getNewNode g = case newNodes 1 g of
@@ -703,7 +704,8 @@ joinG_sentences :: Monad m => G_theory -> G_theory -> m G_theory
 joinG_sentences (G_theory lid1 sig1 sens1) (G_theory lid2 sig2 sens2) = do
   sens2' <- coerceThSens lid2 lid1 "joinG_sentences" sens2
   sig2' <- coerceSign lid2 lid1 "joinG_sentences" sig2
-  return $ assert (sig1 == sig2') $ G_theory lid1 sig1 $ joinSens sens2' sens1
+  return $ trace (if sig1 == sig2' then "" else ("sig1:\n" ++ showDoc sig1 "\n-------------------------------------\nsig2:\n" ++ showDoc sig2' "\n======================================\n\n")) (assert (sig1 == sig2'))            
+             $ G_theory lid1 sig1 $ joinSens sens2' sens1
 
 
 -- | flattening the sentences form a list of G_theories
