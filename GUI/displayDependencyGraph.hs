@@ -36,7 +36,9 @@ main = do
     lfs <- mapM (readFile . (++ ".imports")) ffnn
     let ss = map (filter (isPrefixOf "import") . lines) lfs
         sss = getContent6 ss
-        ssss = map (map $ fst . break (== '.')) sss
+        ssss' = map (filter $ not . isSublistOf ".Logic_")
+                    sss 
+        ssss = map (map $ fst . break (== '.')) ssss'
         sss' = map nub ssss
         graphParms = GraphTitle "Dependency Graph" $$
                         OptimiseLayout True $$
@@ -93,6 +95,11 @@ deletWith f n s = case n of
 
 
 isIn3 :: (Eq a)=> [(a, a)] -> [(a, a)]
-isIn3 [] = []
-isIn3 ((m, n):xs) | m == n = isIn3 xs
-                    | otherwise = (m, n) : isIn3 xs
+isIn3 = filter (\(x,y) -> x /= y) 
+
+isSublistOf :: (Eq a) => [a] -> [a] -> Bool
+isSublistOf [] _ = True
+isSublistOf _ [] = False
+isSublistOf ys l@(_:l')
+    | length ys <= length l = (ys `isPrefixOf` l) || (ys `isSublistOf` l')
+    | otherwise = False
