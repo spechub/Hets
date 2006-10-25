@@ -29,62 +29,70 @@ import SPASS.Sign
   Converts a Sign to an initial (no axioms or goals) SPLogicalPart.
 -}
 signToSPLogicalPart :: Sign -> SPLogicalPart
-signToSPLogicalPart s = 
-    assert (checkArities s) 
+signToSPLogicalPart s =
+    assert (checkArities s)
                (SPLogicalPart {symbolList = sList,
                                declarationList = decList,
                                formulaLists = []})
   where
-    sList = if Rel.null (sortRel s) && Map.null (funcMap s) && 
+    sList = if Rel.null (sortRel s) && Map.null (funcMap s) &&
                Map.null (predMap s) && Map.null (sortMap s)
               then Nothing
-              else Just emptySymbolList 
-                       { functions = 
-                             map (\(f, ts) -> 
-                                      SPSignSym {sym = f, 
-                                                 arity = length (fst (head 
-                                                            (Set.toList ts)))}) 
+              else Just emptySymbolList
+                       { functions =
+                             map (\(f, ts) ->
+                                      SPSignSym {sym = f,
+                                                 arity = length (fst (head
+                                                            (Set.toList ts)))})
                                      (Map.toList (funcMap s)),
-                         predicates = 
-                             map (\(p, ts) -> 
-                                      SPSignSym {sym = p, 
+                         predicates =
+                             map (\(p, ts) ->
+                                      SPSignSym {sym = p,
                                                  arity = length (head
-                                                          (Set.toList ts))}) 
+                                                          (Set.toList ts))})
                                      (Map.toList (predMap s)),
                          sorts = map SPSimpleSignSym $ Map.keys $ sortMap s }
 
     decList = if (singleSorted s &&
                   (null . Map.elems . sortMap) s ) then []
-                else subsortDecl ++ termDecl ++ predDecl ++ genDecl 
+                else subsortDecl ++ termDecl ++ predDecl ++ genDecl
 
-    subsortDecl = map (\(a, b) -> SPSubsortDecl {sortSymA = a, sortSymB = b}) (Rel.toList (Rel.transReduce (sortRel s)))
+    subsortDecl = map (\(a, b) -> SPSubsortDecl {sortSymA = a, sortSymB = b})
+                      (Rel.toList (Rel.transReduce (sortRel s)))
 
     termDecl = concatMap termDecls (Map.toList (funcMap s))
 
     termDecls (fsym, tset) = map (toFDecl fsym) (Set.toList tset)
-    toFDecl fsym (args, ret) = 
+    toFDecl fsym (args, ret) =
         if null args
-        then SPSimpleTermDecl 
+        then SPSimpleTermDecl
                  (SPComplexTerm {symbol = SPCustomSymbol ret,
-                                 arguments = [SPSimpleTerm 
+                                 arguments = [SPSimpleTerm
                                               (SPCustomSymbol fsym)]})
-        else SPTermDecl {termDeclTermList = 
-                             map (\(t, i) -> 
-                                      SPComplexTerm {symbol = SPCustomSymbol t,
-                                                     arguments = 
-                                                         [SPSimpleTerm (SPCustomSymbol ('X' : (show i)))]}) (zip args [(1::Int)..]),
-                       termDeclTerm = SPComplexTerm {symbol = SPCustomSymbol ret, 
-                                                     arguments = [SPComplexTerm {symbol = SPCustomSymbol fsym,
-                                                                                 arguments = map (SPSimpleTerm . SPCustomSymbol . ('X':) . show . snd) (zip args [(1::Int)..])}]}}
+        else SPTermDecl {
+               termDeclTermList =
+                 map (\(t, i) -> SPComplexTerm {symbol = SPCustomSymbol t,
+                                                arguments = [SPSimpleTerm
+                                            (SPCustomSymbol ('X' : (show i)))]})
+                     (zip args [(1::Int)..]),
+               termDeclTerm = SPComplexTerm {symbol = SPCustomSymbol ret,
+                                             arguments =
+                   [SPComplexTerm {symbol = SPCustomSymbol fsym,
+                                   arguments = map
+                           (SPSimpleTerm . SPCustomSymbol . ('X':) . show . snd)
+                           (zip args [(1::Int)..])}]}}
 
     predDecl = concatMap predDecls (Map.toList (predMap s))
 
     predDecls (p, tset) = concatMap (toPDecl p) (Set.toList tset)
-    toPDecl p t 
+    toPDecl p t
         | null t    = []
         | otherwise = [SPPredDecl {predSym = p, sortSyms = t}]
 
-    genDecl = map (\(ssym, Just gen) -> SPGenDecl {sortSym = ssym, freelyGenerated = freely gen, funcList = byFunctions gen}) (filter (isJust . snd) (Map.toList (sortMap s)))
+    genDecl = map (\(ssym, Just gen) -> SPGenDecl {sortSym = ssym,
+                                                   freelyGenerated = freely gen,
+                                                   funcList = byFunctions gen})
+                  (filter (isJust . snd) (Map.toList (sortMap s)))
 
 {- |
   Inserts a Named Sentence (axiom or goal) into an SPLogicalPart.
@@ -94,7 +102,7 @@ insertSentence lp nSen = lp {formulaLists = fLists'}
   where
     insertFormula oType x [] =
       [SPFormulaList {originType= oType, formulae= [x]}]
-    insertFormula oType x (l:ls) = 
+    insertFormula oType x (l:ls) =
       if originType l == oType
         then l{formulae= x:(formulae l)}:ls
         else l:(insertFormula oType x ls)
@@ -106,17 +114,17 @@ insertSentence lp nSen = lp {formulaLists = fLists'}
 {- |
   Generate a SPASS problem with time stamp while maybe adding a goal.
 -}
-genSPASSProblem :: String -> SPLogicalPart 
+genSPASSProblem :: String -> SPLogicalPart
                 -> Maybe (Named SPTerm) -> IO SPProblem
 genSPASSProblem thName lp m_nGoal =
     do d <- getClockTime
        return $ problem $ show d
     where
-    problem sd = SPProblem 
+    problem sd = SPProblem
         {identifier = "hets_exported",
-         description = SPDescription 
+         description = SPDescription
                        {name = thName++
-                               (maybe "" 
+                               (maybe ""
                                       (\ nGoal -> '_':senName nGoal)
                                       m_nGoal),
                         author = "hets",

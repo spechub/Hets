@@ -1,6 +1,7 @@
 {- |
 Module      :  $Header$
-Description :  Functions used by 'Comorphisms.CASL2SPASS' and 'SPASS.Prove' for the translation into valid SPASS identifiers
+Description :  Functions used by 'Comorphisms.CASL2SPASS' and 'SPASS.Prove'
+               for the translation into valid SPASS identifiers
 Copyright   :  (c) Klaus Lüttich, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -10,10 +11,10 @@ Portability :  portable
 
 collection of functions used by Comorphisms.CASL2SPASS and SPASS.Prove
  for the translation of CASL identifiers and axiom labels into
- valid SPASS identifiers 
+ valid SPASS identifiers
 -}
 
-module SPASS.Translate (reservedWords, transId, transSenName) where 
+module SPASS.Translate (reservedWords, transId, transSenName) where
 
 import Data.Char
 
@@ -29,16 +30,16 @@ import SPASS.Utils
 import Common.ProofUtils
 
 -- | collect all keywords of SPASS
-reservedWords :: Set.Set SPIdentifier 
+reservedWords :: Set.Set SPIdentifier
 reservedWords = Set.fromList (map ((flip showDoc) "") [SPEqual
-                                          , SPTrue 
-                                          , SPFalse 
-                                          , SPOr 
+                                          , SPTrue
+                                          , SPFalse
+                                          , SPOr
                                           , SPAnd
                                           , SPNot
                                           , SPImplies
                                           , SPImplied
-                                          , SPEquiv] ++ 
+                                          , SPEquiv] ++
     words "date name author status description")
 
 transSenName :: String -> String
@@ -46,13 +47,13 @@ transSenName = transId CSort . simpleIdToId . mkSimpleId
 
 
 transId :: CType -> Id -> SPIdentifier
-transId t iden 
-    | checkIdentifier t str = 
-                            if Set.member str reservedWords 
+transId t iden
+    | checkIdentifier t str =
+                            if Set.member str reservedWords
                             then changeFirstChar $ "X_"++str
                             else str
-    | otherwise = changeFirstChar $ 
-                  concatMap transToSPChar $ 
+    | otherwise = changeFirstChar $
+                  concatMap transToSPChar $
                   addChar str
     where str = changeFirstChar $ substDigits $ show iden
           addChar s =
@@ -63,8 +64,8 @@ transId t iden
                          CPred _ -> 'p':s
                          _ -> error $ "SPASS.Translate.transId: Variables "++
                                       "and Sorts don't start with '_'"
-              _ -> s                         
-          changeFirstChar s = 
+              _ -> s
+          changeFirstChar s =
               case s of
               "" -> error $ "SPASS.Translate.transId: each identifier "++
                             "must be non empty here"
@@ -75,7 +76,7 @@ transId t iden
               _ -> toLower
 
 charMap_SP :: Map.Map Char String
-charMap_SP = Map.union  
+charMap_SP = Map.union
              (Map.fromList [('\'',"Prime")
                            ,(' ',"_")])
              charMap
@@ -88,7 +89,7 @@ transToSPChar c
 
 substDigits :: String -> String
 substDigits = concatMap subst
-    where subst c     
+    where subst c
               | isDigit c = case c of
                 '0' -> "zero"
                 '1' -> "one"

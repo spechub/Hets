@@ -58,7 +58,7 @@ instance Logic.Logic.Syntax SoftFOL () () ()
     -- default implementation is fine!
 
 
-instance Sentences SoftFOL Sentence ATP_ProofTree Sign SoftFOLMorphism ()  where
+instance Sentences SoftFOL Sentence ATP_ProofTree Sign SoftFOLMorphism () where
       map_sen SoftFOL _ s = return s
       print_named SoftFOL = printFormula
 -- the prover uses HTk and IO functions from uni

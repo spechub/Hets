@@ -73,16 +73,16 @@ emptySign = Sign { sortRel = Rel.empty
                  , singleSorted = True
                  }
 
-{- | 
+{- |
 'checkArities'
 checks if the signature has only overloaded symbols with the same arity
 -}
 checkArities :: Sign -> Bool
-checkArities s = 
+checkArities s =
     checkPredArities (predMap s) && checkFuncArities (funcMap s)
 
 checkPredArities :: PredMap -> Bool
-checkPredArities = Map.fold checkSet True 
+checkPredArities = Map.fold checkSet True
     where checkSet s bv = bv && not (Set.null s) &&
                   all (\ x -> length x == length hd) tl
                       where hd : tl = Set.toList s
@@ -107,8 +107,8 @@ type SoftFOLMorphism = DefaultMorphism Sign
 type SPIdentifier = String
 
 {- |
-  SPASS Identifiers may contain letters, digits, and underscores only; but 
-  for TPTP the allowed starting letters are different for each sort of 
+  SPASS Identifiers may contain letters, digits, and underscores only; but
+  for TPTP the allowed starting letters are different for each sort of
   identifier.
 -}
 checkIdentifier :: CType -> String -> Bool
@@ -126,7 +126,7 @@ checkFirstChar t = case t of
 {- |
 Allowed SPASS characters are letters, digits, and underscores.
 -}
--- Warning: 
+-- Warning:
 -- Data.Char.isAlphaNum includes all kinds of isolatin1 characters!!
 checkSPChar :: Char -> Bool
 checkSPChar c = (isAlphaNum c && isAscii c )|| '_' == c
@@ -175,7 +175,7 @@ data SPLogicalPart =
 
 {- |
   All non-predefined signature symbols must be declared as part of a SPASS
-  symbol list. 
+  symbol list.
 -}
 data SPSymbolList =
         SPSymbolList { functions   :: [SPSignSym],
@@ -228,7 +228,7 @@ data SPDeclaration =
 {- |
   SPASS Formula List
 -}
-data SPFormulaList = 
+data SPFormulaList =
         SPFormulaList { originType :: SPOriginType,
                         formulae   :: [SPFormula] }
       deriving (Eq, Ord, Show)
@@ -252,7 +252,7 @@ type SPFormula = Named SPTerm
 {- |
   A SPASS Term.
 -}
-data SPTerm = 
+data SPTerm =
         SPQuantTerm { quantSym     :: SPQuantSym,
                       variableList :: [SPTerm],
                       qFormula     :: SPTerm }
@@ -275,9 +275,9 @@ data SPQuantSym =
 -}
 data SPSymbol =
         SPEqual
-      | SPTrue 
-      | SPFalse 
-      | SPOr 
+      | SPTrue
+      | SPFalse
+      | SPOr
       | SPAnd
       | SPNot
       | SPImplies

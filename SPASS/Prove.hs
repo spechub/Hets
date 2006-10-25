@@ -1,7 +1,8 @@
 {- |
 Module      :  $Header$
 Description :  Interface for the SPASS theorem prover.
-Copyright   :  (c) Rene Wagner, Klaus Lüttich, Rainer Grabbe, Uni Bremen 2005-2006
+Copyright   :  (c) Rene Wagner, Klaus Lüttich, Rainer Grabbe,
+                   Uni Bremen 2005-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  rainer25@tzi.de
@@ -57,7 +58,7 @@ import Proofs.BatchProcessing
 -- * Prover implementation
 
 {- |
-  The Prover implementation. 
+  The Prover implementation.
 
   Implemented are: a prover GUI, and both commandline prover interfaces.
 -}
@@ -110,9 +111,9 @@ parseSpassTactic_script =
   data type ATPFunctions.
 -}
 spassProveGUI :: String -- ^ theory name
-              -> Theory Sign Sentence ATP_ProofTree -- ^ theory consisting of a
-                 --   'SPASS.Sign.Sign' and a list of Named 'SPASS.Sign.Sentence'
-              -> IO([Proof_status ATP_ProofTree]) -- ^ proof status for each goal
+          -> Theory Sign Sentence ATP_ProofTree -- ^ theory consisting of a
+             --   'SPASS.Sign.Sign' and a list of Named 'SPASS.Sign.Sentence'
+          -> IO([Proof_status ATP_ProofTree]) -- ^ proof status for each goal
 spassProveGUI thName th =
     genericATPgui (atpFun thName) True (prover_name spassProver) thName th
                   $ ATP_ProofTree ""
@@ -140,7 +141,7 @@ spassProveCMDLautomatic thName defTS th =
   automatic command line interface to the SPASS prover.
   SPASS specific functions are omitted by data type ATPFunctions.
 -}
-spassProveCMDLautomaticBatch :: 
+spassProveCMDLautomaticBatch ::
            Bool -- ^ True means include proved theorems
         -> Bool -- ^ True means save problem file
         -> IORef (Result.Result [Proof_status ATP_ProofTree])
@@ -157,7 +158,7 @@ spassProveCMDLautomaticBatch inclProvedThs saveProblem_batch resultRef
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
         resultRef (prover_name spassProver) thName
         (parseSpassTactic_script defTS) th (ATP_ProofTree "")
-        
+
 
 -- * SPASS Interfacing Code
 
@@ -327,15 +328,15 @@ runSpass sps cfg saveDFG thName nGoal = do
   That includes the defaults -DocProof and -Timelimit.
 -}
 createSpassOptions :: GenericConfig ATP_ProofTree -> [String]
-createSpassOptions cfg = 
+createSpassOptions cfg =
     (cleanOptions cfg) ++ ["-DocProof", "-TimeLimit="
                              ++ (show $ configTimeLimit cfg)]
 
 {- |
   Filters extra options and just returns the non standard options.
--}    
+-}
 cleanOptions :: GenericConfig ATP_ProofTree -> [String]
-cleanOptions cfg = 
+cleanOptions cfg =
     filter (\ opt -> not (or (map (flip isPrefixOf opt)
                                   filterOptions)))
            (extraOpts cfg)

@@ -1,7 +1,8 @@
 {- |
 Module      :  $Header$
 Description :  Interface for the SPASS theorem prover using MathServ.
-Copyright   :  (c) Rene Wagner, Klaus Lüttich, Rainer Grabbe, Uni Bremen 2005-2006
+Copyright   :  (c) Rene Wagner, Klaus Lüttich, Rainer Grabbe,
+                   Uni Bremen 2005-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  rainer25@tzi.de
@@ -61,8 +62,8 @@ mathServBroker = emptyProverTemplate
 spassHelpText :: String
 spassHelpText =
   "No help yet available.\n" ++
-  "Ask Klaus L\252ttich (luettich@informatik.uni-bremen.de) for more information.\n"
-
+  "Ask Klaus L\252ttich (luettich@informatik.uni-bremen.de) " ++
+  "for more information.\n"
 
 
 -- * Main prover functions
@@ -114,8 +115,8 @@ mathServBrokerGUI thName th =
 mathServBrokerCMDLautomatic ::
            String -- ^ theory name
         -> Tactic_script -- ^ default tactic script
-        -> Theory Sign Sentence ATP_ProofTree -- ^ theory consisting of a signature
-                                           --   and a list of Named sentence
+        -> Theory Sign Sentence ATP_ProofTree
+           -- ^ theory consisting of a signature and a list of Named sentence
         -> IO (Result.Result ([Proof_status ATP_ProofTree]))
            -- ^ Proof status for goals and lemmas
 mathServBrokerCMDLautomatic thName defTS th =
@@ -127,7 +128,7 @@ mathServBrokerCMDLautomatic thName defTS th =
   automatic command line interface to the SPASS prover.
   MathServ specific functions are omitted by data type ATPFunctions.
 -}
-mathServBrokerCMDLautomaticBatch :: 
+mathServBrokerCMDLautomaticBatch ::
            Bool -- ^ True means include proved theorems
         -> Bool -- ^ True means save problem file
         -> IORef (Result.Result [Proof_status ATP_ProofTree])

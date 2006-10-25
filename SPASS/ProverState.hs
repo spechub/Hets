@@ -69,7 +69,8 @@ insertSentenceGen pst s = pst{initialLogicalPart =
   Pretty printing SPASS goal in DFG format.
 -}
 showDFGProblem :: String -- ^ theory name
-                  -> SPASSProverState -- ^ prover state containing initial logical part
+                  -> SPASSProverState -- ^ prover state containing
+                                      -- initial logical part
                   -> AS_Anno.Named SPTerm -- ^ goal to print
                   -> [String] -- ^ extra options
                   -> IO String -- ^ formatted output of the goal
@@ -138,7 +139,6 @@ parseTactic_script tLimit extOpts (Tactic_script ts) =
            id
            (readEither ts :: Either String ATPTactic_script)
 
-
 -- | Converts a thrown exception into an ATP result (ATPRetval and proof tree).
 excepToATPResult :: String -- ^ name of running prover
                  -> AS_Anno.Named SPTerm -- ^ goal to prove
@@ -150,10 +150,10 @@ excepToATPResult prName nGoal excep = return $ case excep of
     -- errors from other exceptions
     Exception.IOException e ->
         (ATPError ("Internal error communicating with " ++ prName ++ ".\n"
-                   ++ show e),
-         emptyConfig prName (AS_Anno.senName nGoal) $ ATP_ProofTree "")
+                   ++ show e), emptyCfg)
     Exception.AsyncException Exception.ThreadKilled ->
-        (ATPBatchStopped,
-         emptyConfig prName (AS_Anno.senName nGoal) $ ATP_ProofTree "")
+        (ATPBatchStopped, emptyCfg)
     _ -> (ATPError ("Error running " ++ prName ++ ".\n" ++ show excep),
-          emptyConfig prName (AS_Anno.senName nGoal) $ ATP_ProofTree "")
+          emptyCfg)
+  where
+    emptyCfg = emptyConfig prName (AS_Anno.senName nGoal) $ ATP_ProofTree ""
