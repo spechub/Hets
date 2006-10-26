@@ -1,3 +1,10 @@
+Models (discuss with Razvan!)
+=============================
+Integrate (presentations of) models into Hets
+ For each logic, design a description language for (relative) models
+ this should also capture solutions of constraints and
+   answer substitutions in logic programming
+
 Signatures versus theories
 ==========================
 
