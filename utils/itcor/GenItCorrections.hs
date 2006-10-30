@@ -61,6 +61,15 @@ post_proc :: String -> String
 post_proc str = '\"': '[': concatMap conv str ++ "]\""
     where conv c = case c of
                    '\"' -> "\\\""
+                   -- converting umlauts to numbers
+	           -- substitute ÄÖÜßäöü with \196\214\220\223\228\246\252
+                   'Ä' -> "\\196"
+                   'Ö' -> "\\214"
+                   'Ü' -> "\\220"
+                   'ß' -> "\\223"
+                   'ä' -> "\\228"
+                   'ö' -> "\\246"
+                   'ü' -> "\\252"
                    _ -> [c]
                    
 
