@@ -121,7 +121,9 @@ sub generate_haskell_FM {
 	print HASKELL &key_fm_header($sec);
 	my @long_words = sort (grep {length($_) > 2;} @words);
 	my $last_word = '';
-	my @first_letters = grep {my $ret = $_ ne $last_word;$last_word = $_;$ret; } (sort (map {m/^(.)/o;$1} @long_words));
+	my @first_letters = 
+	    grep {my $ret = $_ ne $last_word;$last_word = $_;$ret; } 
+	         (sort (map {m/^(.)/o;$1} @long_words));
 	print HASKELL " [", 
 	join(",",map {my $c = &escape_String($_);
 		      "('".$c."',[".
@@ -148,6 +150,10 @@ sub escape_String {
 	} elsif(m/^"$/o) { # "
 	    "\\$_";
 	} else {
+	    # substitute ÄÖÜßäöü with \196\214\220\223\228\246\252
+	    $_ =~ s/Ä/\\196/o; $_ =~ s/Ö/\\214/o; $_ =~ s/Ü/\\220/o;
+	    $_ =~ s/ß/\\223/o;
+	    $_ =~ s/ä/\\228/o; $_ =~ s/ö/\\246/o; $_ =~ s/ü/\\252/o;
 	    $_;
 	}
     } split(//o,$_[0]));
@@ -232,7 +238,7 @@ sub get_widths {
     my $txt_filename = basename($pdf_filename,'.pdf').'.txt';
     my %widths = ();
     if ($DO_PDFTOTEXT) {
-	system($PDFTOTEXT_BIN,"-layout",$pdf_filename);
+	system($PDFTOTEXT_BIN,"-raw",$pdf_filename);
     }
     #open WIDTH, "pdftotext $pdf_filename | egrep 'section: |wl: ' |"
 #	or die "cannot call pdftotext or egrep or cannot fork";
