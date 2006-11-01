@@ -37,6 +37,7 @@ module OMDoc.XmlHandling
     ,createAttributed
     ,createQAttributed
     ,module Text.XML.HXT.Parser
+    ,xpipe
   )
   where
   
@@ -50,6 +51,9 @@ import qualified Text.XML.HXT.Parser as HXT hiding (run, trace, when)
 
 import Data.List (find)
 import Char (isDigit, isAlpha, isAlphaNum, isAscii)
+
+xpipe::forall c a b . (a->[b]) -> (b->[c]) -> a -> [c]
+xpipe = (.>)
 
 -- | applys a filter to XmlTrees (returns resulting tree)
 applyXmlFilter::HXT.XmlFilter->HXT.XmlTrees->HXT.XmlTrees

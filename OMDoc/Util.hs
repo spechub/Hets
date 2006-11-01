@@ -248,3 +248,8 @@ anythingOr a l =
   case anything l of
     Nothing -> a
     (Just x) -> x
+
+makeTupel::forall a . [a]->[(a, a)]
+makeTupel [] = []
+makeTupel [_] = []
+makeTupel (a:b:r) = (a,b):(makeTupel r)

@@ -51,9 +51,9 @@ import qualified Data.Graph.Inductive.Graph as Graph
 
 -- Often used symbols from HXT
 import Text.XML.HXT.Parser
-  ( (+++), (+=)
-    , a_name, k_public, k_system, emptyRoot
-    , v_1, a_indent,{- a_issue_errors,-} a_output_file
+  ( 
+      a_name, k_public, k_system, emptyRoot
+    , v_1, a_indent, a_output_file
   )
         
 import qualified Text.XML.HXT.Parser as HXT hiding (run, trace, when)
@@ -79,6 +79,11 @@ import Char (toLower)
 import OMDoc.Util
 import OMDoc.XmlHandling
 import OMDoc.OMDocDefs
+
+import qualified OMDoc.OMDocInterface as OMDoc
+import qualified OMDoc.OMDocXml as OMDocXML
+
+import qualified Network.URI as URI
 
 -- | generate a DOCTYPE-Element for output
 mkOMDocTypeElem::
@@ -157,23 +162,20 @@ writeOMDocDTD dtd' t f = HXT.run' $
 hetsToOMDoc::HetcatsOpts->(ASL.LIB_NAME, LibEnv)->FilePath->IO ()
 hetsToOMDoc hco lnle file =
   do
-    libToOMDocIdNameMapping hco lnle file
+    --libToOMDocIdNameMapping hco lnle file
+    libToOMDoc hco lnle file
 
--- | create OMDoc (files) from a library environment
-libToOMDocIdNameMapping::
+libToOMDoc::
   HetcatsOpts
   ->(ASL.LIB_NAME, LibEnv)
   ->FilePath
   ->IO ()
-libToOMDocIdNameMapping
+libToOMDoc
   hco
   (ln, lenv)
   fp
   =
     let
---      tracemarks = id $! (Hets.createTraceMarks lenv)
---      (minlenv, takenMap) = Hets.createMinimalLibEnv lenv tracemarks
---      uniqueNames = Hets.createUniqueNames minlenv tracemarks
       flatNames = Hets.getFlatNames lenv
       identMap = Hets.identifyFlatNames lenv flatNames
       remMap = Hets.removeReferencedIdentifiers flatNames identMap
@@ -181,7 +183,6 @@ libToOMDocIdNameMapping
       unnMap = Hets.makeUniqueNames useMap
       uniqueNames = Hets.makeUniqueIdNameMapping lenv unnMap
       fullNames = Hets.makeFullNames lenv unnMap identMap
---      fullNames = Hets.createFullNameMapping lenv takenMap tracemarks uniqueNames
       uniqueNamesXml = id $! (createXmlNameMapping uniqueNames)
       fullNamesXml = id $! (createXmlNameMapping fullNames)
       outputio =
@@ -197,16 +198,17 @@ libToOMDocIdNameMapping
                   in
                     do
                       omdoc <-
-                        libEnvLibNameIdNameMappingToOMDocCMPIOIN 
+                        libEnvLibNameIdNameMappingToOMDoc
                           (emptyGlobalOptions { hetsOpts = hco })
                           lenv
                           libname
                           (createLibName libname)
                           uniqueNamesXml
                           fullNamesXml
+                      omdocxml <- return $ (OMDocXML.toXml omdoc) HXT.emptyRoot
                       putStrLn ("Writing " ++ filename ++ " to " ++ outfile)
                       System.Directory.createDirectoryIfMissing True (snd $ splitPath outfile)
-                      writeOMDocDTD dtduri omdoc outfile >> return ()
+                      writeOMDocDTD dtduri omdocxml outfile >> return ()
                 )
                 (Map.keys lenv)
               return ()
@@ -214,45 +216,22 @@ libToOMDocIdNameMapping
             do
               dtduri <- envDTDURI
               omdoc <-
-                libEnvLibNameIdNameMappingToOMDocCMPIOIN 
+                libEnvLibNameIdNameMappingToOMDoc
                   (emptyGlobalOptions { hetsOpts = hco })
                   lenv
                   ln
                   (createLibName ln)
                   uniqueNamesXml
                   fullNamesXml
-              writeOMDocDTD dtduri omdoc fp >> return ()
+              omdocxml <- return $ (OMDocXML.toXml omdoc) HXT.emptyRoot
+              writeOMDocDTD dtduri omdocxml fp >> return ()
     in
-{-      putStrLn
-        (show
-          $
-          map
-            (\inm ->
-              (
-                  Hets.inmGetLibName inm
-                , Hets.inmGetNodeId inm
-                , Hets.inmGetIdNameSortSet inm
-              )
-            )
-            fullNames
-        ) -}
-{-        putStrLn
-          (show
-            tracemarks
-          ) -}
-        -- >> 
         outputio
 
 -- | creates a xml structure describing a Hets-presentation for a symbol 
-makePresentationFor::XmlName->String->HXT.XmlFilter
-makePresentationFor xname presstring =
-  HXT.etag "presentation" += (
-    (HXT.sattr "for" xname)
-    +++ HXT.etag "use" += (
-      (HXT.sattr "format" "Hets")
-      +++ (HXT.txt presstring)
-      )
-    )
+makePresentationForOM::XmlName->String->OMDoc.Presentation
+makePresentationForOM xname presstring =
+  OMDoc.mkPresentation xname [OMDoc.mkUse "Hets" presstring]  
 
 {-
  assuming unique names in a list of 'IdNameMapping'S each id (String) is
@@ -288,19 +267,14 @@ createXmlNameMapping =
       )
     )
 
-{- |
-  creates a xml-representation of a definitional link (LocalDef, GlobalDef,
-  HidingDef [, FreeDef, CofreeDef]) using given 'IdNameMapping'S in creation
-  of morphisms
--}
-createXmlDefLink::
+createOMDefLink::
   Static.DevGraph.LibEnv
   ->Hets.LIB_NAME
   ->Graph.LEdge Static.DevGraph.DGLinkLab
   ->[Hets.IdNameMapping]
   ->[Hets.IdNameMapping]
-  ->(HXT.XmlTree->HXT.XmlTrees)
-createXmlDefLink lenv ln (from, to, ll) uniqueNames names =
+  ->OMDoc.Imports
+createOMDefLink lenv ln (from, to, ll) uniqueNames names =
   let
     dg = devGraph $ Map.findWithDefault (error "!") ln lenv
     fromnode = Data.Maybe.fromMaybe (error "!") $ Graph.lab dg from
@@ -323,29 +297,23 @@ createXmlDefLink lenv ln (from, to, ll) uniqueNames names =
     linktype =
       case dgl_type ll of
         (LocalDef {}) ->
-            qualattr "" "type" "local" 
-        _ -> xmlNullFilter
+            OMDoc.ITLocal
+        _ -> OMDoc.ITGlobal
+    mommorph = createOMMorphism lenv ln (from, to, ll) uniqueNames names
+    fromuri = case URI.parseURIReference (liburl ++ "#" ++ fromname) of
+      Nothing -> error "!"
+      (Just u) -> u
   in
-    HXT.etag "imports"
-      += (
-        qualattr "" "from" (liburl ++ "#" ++ fromname) +++ linktype
-        +++ (createXmlMorphism lenv ln (from, to, ll) uniqueNames names)
-      )
+    OMDoc.Imports fromuri [] mommorph Nothing linktype
 
-
-{- |
-  creates a xml-representation of a theorem link (LocalThm, GlobalThm,
-  HidingThm) using given 'IdNameMapping'S in creation
-  of morphisms
--}
-createXmlThmLink::
+createXmlThmLinkOM::
   Static.DevGraph.LibEnv
   ->Hets.LIB_NAME
   ->Graph.LEdge Static.DevGraph.DGLinkLab
   ->[Hets.IdNameMapping]
   ->[Hets.IdNameMapping]
-  ->(HXT.XmlTree->HXT.XmlTrees)
-createXmlThmLink lenv ln (edge@(from, to, ll)) uniqueNames names =
+  ->OMDoc.Inclusion
+createXmlThmLinkOM lenv ln (edge@(from, to, ll)) uniqueNames names =
   let
     dg = devGraph $ Map.findWithDefault (error "!") ln lenv
     fromnode = Data.Maybe.fromMaybe (error "!") $ Graph.lab dg from
@@ -382,49 +350,50 @@ createXmlThmLink lenv ln (edge@(from, to, ll)) uniqueNames names =
           asOMDocFile $ unwrapLinkSource $ dgn_libname tonode
         else
           ""
-    tagname =
-      case dgl_type ll  of
-        (Static.DevGraph.GlobalThm _ _ _) -> theoryInclusionS
-        (Static.DevGraph.LocalThm _ _ _) -> axiomInclusionS
-        _ -> error "corrupt data"
-    consattr =
+    isaxinc =
       case dgl_type ll of
-        (Static.DevGraph.GlobalThm _ c _) -> consAttr c
-        (Static.DevGraph.LocalThm _ c _) -> consAttr c
+        (Static.DevGraph.GlobalThm {}) -> False
+        (Static.DevGraph.LocalThm {}) -> True
         _ -> error "corrupt data"
+    cons =
+      case dgl_type ll of
+        (Static.DevGraph.GlobalThm _ c _) -> consConv c
+        (Static.DevGraph.LocalThm _ c _) -> consConv c
+        _ -> error "corrupt data"
+    touri = case URI.parseURIReference (toliburl ++ "#" ++ toname) of
+      Nothing -> error "!"
+      (Just u) -> u
+    fromuri = case URI.parseURIReference (liburl ++ "#" ++ fromname) of
+      Nothing -> error "!"
+      (Just u) -> u
+    iid =
+      (if isaxinc then "ai" else "ti")
+        ++ "." ++ toname ++ "." ++ fromname
+    mommorph = createOMMorphism lenv ln edge uniqueNames names
   in
-      HXT.etag tagname
-        += (
-          qualattr
-            "xml"
-            "id"
-            (
-              (if tagname == axiomInclusionS then "ai" else "ti")
-                ++ "." ++ toname ++ "." ++ fromname
-            )
-          +++ HXT.sattr "from" (liburl ++ "#" ++ fromname) 
-          +++ HXT.sattr "to" (toliburl ++ "#" ++ toname)
-          +++ consattr
-          +++ (createXmlMorphism lenv ln edge uniqueNames names)
-        )
+    if isaxinc
+      then
+        OMDoc.AxiomInclusion fromuri touri mommorph (Just iid) cons
+      else
+        OMDoc.TheoryInclusion fromuri touri mommorph (Just iid) cons
   where
-  consAttr::Static.DevGraph.Conservativity->HXT.XmlFilter
-  consAttr Static.DevGraph.None = xmlNullFilter
-  consAttr Static.DevGraph.Mono = HXT.sattr "conservativity" "monomorphism"
-  consAttr Static.DevGraph.Cons = HXT.sattr "conservativity" "conservative"
-  consAttr Static.DevGraph.Def = HXT.sattr "conservativity" "definitional"
+  consConv::Static.DevGraph.Conservativity->OMDoc.Conservativity
+  consConv Static.DevGraph.None = OMDoc.CNone
+  consConv Static.DevGraph.Mono = OMDoc.CMonomorphism
+  consConv Static.DevGraph.Cons = OMDoc.CConservative
+  consConv Static.DevGraph.Def = OMDoc.CDefinitional
 
 {- |
   create a xml-representation of a (CASL-)morphism
 -}
-createXmlMorphism::
+createOMMorphism::
   Static.DevGraph.LibEnv
   ->Hets.LIB_NAME
   ->Graph.LEdge Static.DevGraph.DGLinkLab
   ->[Hets.IdNameMapping]
   ->[Hets.IdNameMapping]
-  ->(HXT.XmlTree->HXT.XmlTrees)
-createXmlMorphism
+  ->Maybe OMDoc.Morphism
+createOMMorphism
   _
   ln
   (from, to, ll)
@@ -604,61 +573,26 @@ createXmlMorphism
         (HidingThm {}) ->
           mkHiding fromIdNameMapping toIdNameMapping allmapped
         _ -> []
-    hiddenattr = 
-      case hidden of
-        [] -> xmlNullFilter
-        _ -> qualattr "" "hiding" (implode " " hidden)
     reqs =
       foldl
         (\r ((f,fo), (t,to')) ->
           r
-          +++
-          HXT.etag "requation"
-            += (
-              HXT.etag "OMOBJ"
-                += (
-                  HXT.etag "OMS"
-                    += (
-                      qualattr "" "cd" (Hets.inmGetNodeId fo)
-                      +++
-                      qualattr "" "name" f
-                    )
-                )
-              +++
-              HXT.etag "OMOBJ"
-                += (
-                  HXT.etag "OMS"
-                    += (
-                      qualattr "" "cd" (Hets.inmGetNodeId to')
-                      +++
-                      qualattr "" "name" t
-                    )
-                )
+          ++
+          [
+            (
+                OMDoc.MTextOM $ OMDoc.mkOMOBJ $ OMDoc.mkOMS (Hets.inmGetNodeId fo) f
+              , OMDoc.MTextOM $ OMDoc.mkOMOBJ $ OMDoc.mkOMS (Hets.inmGetNodeId to') t
             )
-            +++
-            xmlNL
+          ]
         )
-        xmlNullFilter
+        []
         allmapped
   in
     if Hets.isEmptyMorphism caslmorph && null hidden
       then
-        xmlNullFilter
+        Nothing
       else
-        xmlNL +++
-        HXT.etag "morphism"
-          += (
-            hiddenattr
-              +++ (
-                if Hets.isEmptyMorphism caslmorph
-                  then
-                    xmlNullFilter
-                  else
-                    xmlNL +++ reqs
-                  )
-          )
-        +++
-        xmlNL
+        Just $ OMDoc.Morphism hidden reqs
   where
   mkHiding::Hets.IdNameMapping->Hets.IdNameMapping->[((String,a),b)]->[String]
   mkHiding fromIdNameMapping toIdNameMapping mappedIds =
@@ -688,7 +622,6 @@ createXmlMorphism
         )
         []
         idsInFrom
-    
 
 {- |
   filter definitional links (LocalDef, GlobalDef, HidingDef, FreeDef, CofreeDef)
@@ -736,91 +669,75 @@ filterSORTConstructors
     (\(ot, _) -> opRes ot == s )
     conset
 
-{- |
-  create a xml representation for a set of contructors
--}
-createConstructorsIN::
+createConstructorsOM::
   Hets.LIB_NAME
   ->Graph.Node
   ->[Hets.IdNameMapping]
   ->[Hets.IdNameMapping]
   ->Set.Set (OpType, String)
-  ->HXT.XmlFilter
-createConstructorsIN
+  ->[OMDoc.Constructor]
+createConstructorsOM
   ln
   nn
   uniqueNames
   fullNames
   conset
   =
-  if Set.null conset
-    then
-      xmlNullFilter
-    else
-      Set.fold
-        (\c x ->
-          x
-          +++
-          createConstructorIN
+    Set.fold
+      (\c cs ->
+        cs
+        ++
+        [
+          createConstructorOM 
             ln
             nn
             uniqueNames
             fullNames
             c
-          +++
-          xmlNL
-        )
-        xmlNullFilter
-        conset
+        ]
+      )
+      []
+      conset
 
-{- |
-  create a xml presentation for a constructor
--}
-createConstructorIN::
+createConstructorOM::
   Hets.LIB_NAME
   ->Graph.Node
   ->[Hets.IdNameMapping]
   ->[Hets.IdNameMapping]
   ->(OpType, String)
-  ->HXT.XmlFilter
-createConstructorIN
+  ->OMDoc.Constructor
+createConstructorOM
   ln
   nn
   uniqueNames
   fullNames
   (ot, oxmlid)
   =
-  HXT.etag "constructor"
-    += (
-      HXT.sattr "name" oxmlid
-      +++
-      xmlNL
-      +++
+  OMDoc.mkConstructor
+    oxmlid
+    (
       foldl
-        (\argx arg ->
-          argx
-          +++
-          xmlNL
-          +++
-          (
-          HXT.etag "argument"
-            += (
-              HXT.etag "type"
-                += (
-                  HXT.etag "OMOBJ"
-                    += (
-                      createSymbolForSortIN
-                        ln
-                        nn
-                        uniqueNames
-                        fullNames
-                        arg
-                    )
-                )
-            )
-          )
+        (\args arg ->
+          args
+          ++
+          [
+            OMDoc.mkType
+              Nothing
+              (
+              OMDoc.OMOMOBJ
+                $
+                OMDoc.mkOMOBJ
+                  $
+                  createSymbolForSortOM
+                    ln
+                    nn
+                    uniqueNames
+                    fullNames
+                    arg
+              )
+          ]
         )
-        xmlNullFilter
+        []
         (opArgs ot)
     )
     
@@ -831,50 +748,38 @@ emptyRelForSort::Rel.Rel SORT->SORT->Bool
 emptyRelForSort rel s =
   null $ filter (\(s', _) -> s' == s) $ Rel.toList rel
 
-{- |
-  create a xml representation of a sort relation
--}
-createInsortFor::
+createADTFor::
   Rel.Rel SORT
   ->SORT
   ->Hets.IdNameMapping
-  ->HXT.XmlFilter
-  ->HXT.XmlFilter
-createInsortFor rel s idNameMapping constructors =
-  HXT.etag "adt"
-    += (
-     xmlNL +++
-     HXT.etag "sortdef"
-      += (
-        qualattr "" "name" (getNameE s)
-        +++
-        qualattr "" "type" "free"
-        +++
-        constructors
-        +++
-        foldl
-          (\x (s'', s') ->
-            if s'' == s
-              then
-                x
-                +++
-                xmlNL
-                +++
-                HXT.etag "insort"
-                  += (
-                    qualattr "" "for" ("#" ++ getNameE s')
-                  )
-              else
-                x
-          )
-          xmlNullFilter
-          (Rel.toList rel)
-        +++
-        xmlNL
-      )
-    +++
-    xmlNL
-    )
+  ->[OMDoc.Constructor]
+  ->OMDoc.ADT
+createADTFor rel s idNameMapping constructors =
+  let
+    insorts =
+      foldl
+        (\is (s'', s') ->
+          if s'' == s
+            then
+              is
+              ++
+              [
+                OMDoc.mkInsort (OMDoc.mkSymbolRef (getNameE s'))
+              ]
+            else
+              is
+        )
+        []
+        (Rel.toList rel)
+  in
+    OMDoc.mkADT
+      $
+      [
+        OMDoc.mkSortDef
+          (getNameE s)
+          constructors
+          insorts
+      ]
   where
   lookupName::Set.Set (Id.Id, String) -> Id.Id -> Maybe String
   lookupName ss sid =
@@ -891,48 +796,20 @@ createInsortFor rel s idNameMapping constructors =
       (error "!")
       $
       lookupName (Hets.inmGetIdNameSortSet idNameMapping) sid
-  
--- | Convert a DevGraph from a library environment to OMDoc-XML with given
--- xml:id attribute
--- will also scan used (CASL-)files for CMP-generation
-libEnvLibNameIdNameMappingToOMDocCMPIOIN::
-  GlobalOptions
-  ->LibEnv
-  ->Hets.LIB_NAME
-  ->String
-  ->[Hets.IdNameMapping]
-  ->[Hets.IdNameMapping]
-  ->IO HXT.XmlTrees
-libEnvLibNameIdNameMappingToOMDocCMPIOIN go lenv ln name' uniqueNames fullNames =
-  do
-    dgx <- libEnvLibNameIdNameMappingToXmlCMPIO go lenv ln uniqueNames fullNames
-    return
-      (
-        (
-          HXT.etag "omdoc"
-            += (
-              qualattr omdocNameXMLNS omdocNameXMLAttr name'
-              +++ xmlNL
-              +++ dgx
-            )
-        )
-        emptyRoot
-      )
 
-{- |
-  create a xml representation for a DevGraph from a library environment
--}
-libEnvLibNameIdNameMappingToXmlCMPIO::
+libEnvLibNameIdNameMappingToOMDoc::
   GlobalOptions
   ->LibEnv
   ->Hets.LIB_NAME
+  ->OMDoc.XmlId
   ->[Hets.IdNameMapping]
   ->[Hets.IdNameMapping]
-  ->IO (HXT.XmlTree->HXT.XmlTrees)
-libEnvLibNameIdNameMappingToXmlCMPIO
+  ->IO OMDoc.OMDoc
+libEnvLibNameIdNameMappingToOMDoc
   go
   lenv
   ln
+  omdocId
   uniqueNames
   fullNames
   =
@@ -946,24 +823,20 @@ libEnvLibNameIdNameMappingToXmlCMPIO
               (Just n) -> isDGRef n
           )
           (filterThmLinks $ Graph.labEdges dg)
-      thmLinksToRefsXml =
-        foldl
-          (\t edge ->
-            t
-            +++
-            xmlNL
-            +++
-            createXmlThmLink
+      thmLinksToRefsOM =
+        map
+          (\edge ->
+            createXmlThmLinkOM
               lenv
               ln
               edge
               uniqueNames
               fullNames
           )
-          xmlNullFilter
           thmLinksToRefs
+      initialOMDoc =
+        OMDoc.OMDoc omdocId [] thmLinksToRefsOM  
     in
-      (
       foldl
         (\xio (nn, node) ->
           let
@@ -993,183 +866,167 @@ libEnvLibNameIdNameMappingToXmlCMPIO
               of
                 Nothing -> error "No such name..."
                 (Just a) -> a
-            theoryXml =
-              ( \sentencesXml ->
-                HXT.etag "theory"
-                  +=
-                    (
-                      qualattr "xml" "id" (Hets.inmGetNodeId idnamemapping)
-                      +++
-                      makePresentationFor
-                        (Hets.inmGetNodeId idnamemapping)
-                        (Hets.idToString $ Hets.nodeNameToId dgnodename)
-                      +++
-                      xmlNL
-                      +++
-                      foldl
-                        (\nx' edge ->
-                          nx' +++ 
-                            createXmlDefLink
-                              lenv
-                              ln
-                              edge
-                              uniqueNames
-                              fullNames
-                            +++
-                            xmlNL
-                        )
-                        xmlNullFilter
-                        (filterDefLinks (Graph.inn dg nn))
-                      +++
-                      (
-                        Set.fold
-                         (\s nx' ->
+            theoryXmlId = (Hets.inmGetNodeId idnamemapping)
+            theoryPresentation =
+              makePresentationForOM
+                theoryXmlId
+                (Hets.idToString $ Hets.nodeNameToId dgnodename)
+            theoryDefLinks =
+              map
+                (\edge ->
+                  createOMDefLink
+                    lenv
+                    ln
+                    edge
+                    uniqueNames
+                    fullNames
+                )
+                (filterDefLinks (Graph.inn dg nn))
+            (theoryADTs, theorySorts, theoryPresentations) =
+              Set.fold
+               (\s (tadts, tsorts, tpres) ->
+                let
+                  consremap =
+                    Set.map
+                      (\( (_, _, ot), uname ) -> (ot, uname))
+                      (Hets.inmGetIdNameConsSet uniqueidnamemapping)
+                  sortcons = filterSORTConstructors consremap s
+                  constructors = 
+                    createConstructorsOM
+                      ln
+                      nn
+                      uniqueNames
+                      fullNames
+                      sortcons
+                in
+                  case
+                    find
+                      (\(uid, _) -> uid == s)
+                      (Set.toList (Hets.inmGetIdNameAllSet uniqueidnamemapping))
+                  of
+                    Nothing ->
+                      if (Set.size sortcons) > 0
+                        then
                           let
-                            consremap =
-                              Set.map
-                                (\( (_, _, ot), uname ) -> (ot, uname))
-                                (Hets.inmGetIdNameConsSet uniqueidnamemapping)
-                            sortcons = filterSORTConstructors consremap s
-                            conxml = 
-                              createConstructorsIN
+                            newadt =
+                              createADTFor
+                                Rel.empty
+                                s
+                                idnamemapping
+                                constructors
+                          in
+                            (tadts ++ [newadt], tsorts, tpres)
+                        else
+                          (tadts, tsorts, tpres)
+                    (Just (uid, uname)) ->
+                      let
+                        newsort = sortToXmlOM (XmlNamed s uname)
+                        newadt =
+                          createADTFor
+                            (sortRel caslsign)
+                            uid
+                            idnamemapping
+                            constructors
+                        newpre =
+                          makePresentationForOM
+                            uname
+                            (Hets.idToString s)
+                        newsorts = tsorts ++ [newsort]
+                        newpres = tpres ++ [newpre]
+                        newadts =
+                          if (not $ emptyRelForSort (sortRel caslsign) uid)
+                            || ( (Set.size sortcons) > 0 )
+                            then
+                              tadts++[newadt]
+                            else
+                              tadts
+                      in
+                        (newadts, newsorts, newpres)
+               )
+               ([],[],[])
+               (sortSet caslsign)
+            (theoryPreds, pPres) =
+              Map.foldWithKey
+                (\pid pts (tPr, pP) ->
+                  Set.fold
+                    (\pt (tPr', pP') ->
+                      case 
+                        find
+                          (\( (uid, upt), _) -> uid == pid && upt == pt)
+                          (Set.toList (Hets.inmGetIdNamePredSet uniqueidnamemapping))
+                      of
+                        Nothing -> (tPr', pP')
+                        (Just (_, uname )) ->
+                          let
+                            newpred = 
+                              predicationToXmlOM
                                 ln
                                 nn
+                                idnamemapping
                                 uniqueNames
                                 fullNames
-                                sortcons
+                                (pid, pt)
+                            newpres =
+                              makePresentationForOM
+                                uname
+                                (Hets.idToString pid)
                           in
-                            case
-                              find
-                                (\(uid, _) -> uid == s)
-                                (Set.toList (Hets.inmGetIdNameAllSet uniqueidnamemapping))
-                            of
-                              Nothing ->
-                                nx'
-                                +++
-                                if (Set.size sortcons) > 0
-                                  then
-                                    createInsortFor
-                                      Rel.empty
-                                      s
-                                      idnamemapping
-                                      conxml
-                                  else
-                                    xmlNullFilter
-                              (Just (uid, uname)) ->
-                                nx'
-                                +++
-                                sortToXmlXN (XmlNamed s uname) +++ xmlNL +++
-                                makePresentationFor uname (Hets.idToString s) +++ xmlNL
-                                +++
-                                if (not $ emptyRelForSort (sortRel caslsign) uid)
-                                  || ( (Set.size sortcons) > 0 )
-                                  then
-                                    createInsortFor
-                                      (sortRel caslsign)
-                                      uid
-                                      idnamemapping
-                                      conxml
-                                  else
-                                    xmlNullFilter
-                         )
-                         xmlNullFilter
-                         (sortSet caslsign)
-                      )
-                      +++
-                      (
-                        Map.foldWithKey
-                          (\pid pts nx' ->
-                            Set.fold
-                              (\pt nx'' ->
-                                case 
-                                  find
-                                    (\( (uid, upt), _) -> uid == pid && upt == pt)
-                                    (Set.toList (Hets.inmGetIdNamePredSet uniqueidnamemapping))
-                                of
-                                  Nothing -> nx''
-                                  (Just (_, uname )) ->
-                                    nx''
-                                    +++ xmlNL +++
-                                    (
-                                    predicationToXmlIN
-                                      ln
-                                      nn
-                                      idnamemapping
-                                      uniqueNames
-                                      fullNames
-                                      (pid, pt)
-                                    )
-                                    +++ xmlNL +++
-                                    makePresentationFor
-                                      uname
-                                      (Hets.idToString pid)
-                              )
-                              nx'
-                              pts
-                          )
-                          xmlNullFilter
-                          (predMap caslsign)
-                      )
-                      +++
-                      (
-                        Map.foldWithKey
-                          (\oid ots nx' ->
-                            Set.fold
-                              (\ot nx'' ->
-                                case 
-                                  find
-                                    (\( (uid, uot), _) -> uid == oid && uot == ot)
-                                    (Set.toList (Hets.inmGetIdNameOpSet uniqueidnamemapping))
-                                of
-                                  Nothing -> nx''
-                                  (Just (_, uname )) ->
-                                    nx''
-                                    +++ xmlNL +++
-                                    (
-                                    operatorToXmlIN
-                                      ln
-                                      nn
-                                      idnamemapping
-                                      uniqueNames
-                                      fullNames
-                                      (oid, ot)
-                                    )
-                                    +++ xmlNL +++
-                                    makePresentationFor
-                                      uname
-                                      (Hets.idToString oid)
-                              )
-                              nx'
-                              ots
-                          )
-                          xmlNullFilter
-                          (opMap caslsign)
-                      )
-                      +++
-                      xmlNL
-                      +++ sentencesXml +++ xmlNL
+                            (tPr' ++ [newpred], pP' ++ [newpres])
                     )
-                    +++
-                    (
-                      foldl
-                        (\t edge ->
-                          t +++ xmlNL +++
-                            createXmlThmLink
-                              lenv
-                              ln
-                              edge
-                              uniqueNames
-                              fullNames
-                        )
-                        xmlNullFilter
-                        (filterThmLinks $ Graph.inn dg nn)
+                    (tPr, pP)
+                    pts
+                )
+                ([],[])
+                (predMap caslsign)
+            (theoryOps, oPres) =
+              Map.foldWithKey
+                (\oid ots (tOp, oP) ->
+                  Set.fold
+                    (\ot (tOp', oP') ->
+                      case 
+                        find
+                          (\( (uid, uot), _) -> uid == oid && uot == ot)
+                          (Set.toList (Hets.inmGetIdNameOpSet uniqueidnamemapping))
+                      of
+                        Nothing -> (tOp', oP')
+                        (Just (_, uname )) ->
+                          let
+                            newop =
+                              operatorToXmlOM
+                                ln
+                                nn
+                                idnamemapping
+                                uniqueNames
+                                fullNames
+                                (oid, ot)
+                            newpres =
+                              makePresentationForOM
+                                uname
+                                (Hets.idToString oid)
+                          in
+                            (tOp' ++ [newop], oP' ++ [newpres])
                     )
-              )
+                    (tOp, oP)
+                    ots
+                )
+                ([],[])
+                (opMap caslsign)
+            theoryThmLinks =
+              map
+                (\edge ->
+                  createXmlThmLinkOM
+                    lenv
+                    ln
+                    edge
+                    uniqueNames
+                    fullNames
+                )
+                (filterThmLinks $ Graph.inn dg nn)
           in
             do
-              x <- xio
-              sensXml <-
-                wrapFormulasCMPIOIN
+              omdoc <- xio
+              (omAxs, omPres) <-
+                wrapFormulasCMPIOOM
                   go
                   lenv
                   ln
@@ -1180,22 +1037,51 @@ libEnvLibNameIdNameMappingToXmlCMPIO
                   (Hets.getNodeSentences node)
               if isDGRef node
                 then
-                  return x
+                  return omdoc
                 else
-                  return
-                    (
-                      x
-                      +++
-                      xmlNL
-                      +++
-                      (theoryXml sensXml)
-                      +++
-                      xmlNL
-                    )
+                  let
+                    newtheory =
+                      OMDoc.Theory
+                        theoryXmlId
+                        (
+                          (map OMDoc.mkCSy theorySorts)
+                          ++
+                          (map OMDoc.mkCSy theoryOps)
+                          ++
+                          (map OMDoc.mkCSy theoryPreds)
+                          ++
+                          (map OMDoc.mkCAd theoryADTs)
+                          ++
+                          (map OMDoc.mkCAx omAxs)
+                          ++
+                          (map OMDoc.mkCIm theoryDefLinks)
+                        )
+                        (
+                          [theoryPresentation]
+                          ++
+                          theoryPresentations
+                          ++
+                          omPres
+                          ++
+                          pPres
+                          ++
+                          oPres
+                        )
+                  in
+                    return
+                      $
+                      (
+                        OMDoc.addInclusions
+                          (
+                            OMDoc.addTheories
+                              omdoc
+                              [newtheory]
+                          )
+                          theoryThmLinks
+                      )
         )
-        (return xmlNullFilter)
+        (return initialOMDoc)
         (Graph.labNodes dg)
-        ) >>= \x -> return (x +++ thmLinksToRefsXml +++ xmlNL)
 
 {- |
   alias for inmGetNodeId
@@ -1203,19 +1089,15 @@ libEnvLibNameIdNameMappingToXmlCMPIO
 getNodeNameForXml::Hets.IdNameMapping->String
 getNodeNameForXml = Hets.inmGetNodeId
   
-
-{- |
-  create a xml-representation for a predication
--}
-predicationToXmlIN::
+predicationToXmlOM::
   Hets.LIB_NAME
   ->Graph.Node
   ->Hets.IdNameMapping
   ->[Hets.IdNameMapping]
   ->[Hets.IdNameMapping]
   ->(Id.Id, PredType)
-  ->(HXT.XmlTree->HXT.XmlTrees)
-predicationToXmlIN 
+  ->OMDoc.Symbol
+predicationToXmlOM 
   ln
   nn
   currentmapping
@@ -1253,70 +1135,43 @@ predicationToXmlIN
         zip
           argnames
           argorigins
-    in
-      HXT.etag "symbol"
-        += (
-          qualattr predNameXMLNS predNameXMLAttr pidxmlid
-          +++ qualattr symbolTypeXMLNS symbolTypeXMLAttr "object"
-          +++ xmlNL
-          +++ (HXT.etag "type" += ( HXT.sattr "system" "casl" ))
-            += (
-              xmlNL
-              +++
-              HXT.etag "OMOBJ"
-                += (
-                  xmlNL
-                  +++
-                  HXT.etag "OMA"
-                    += (
-                      xmlNL
-                      +++
-                      (HXT.etag "OMS"
-                        += (
-                          HXT.sattr "cd" "casl"
-                          +++ HXT.sattr "name" "predication"
-                        )
+      typeobj =
+        OMDoc.mkType
+          (OMDoc.mkOMDocRef "casl")
+          $
+          OMDoc.OMOMOBJ
+            $
+            OMDoc.mkOMOBJ
+              $
+              OMDoc.mkOMA
+                (
+                  [
+                    OMDoc.mkOMSE "casl" "predication"
+                  ]
+                  ++
+                  (
+                    map
+                      (\(an, ao) ->
+                        OMDoc.mkOMSE ao an
                       )
-                      +++
-                      (
-                      foldl
-                        (\px (an, ao) ->
-                          px +++ xmlNL
-                          +++
-                          (HXT.etag "OMS"
-                            += (
-                              HXT.sattr "cd" ao
-                              +++ HXT.sattr "name" an
-                            )
-                          )
-                        )
-                        xmlNullFilter
-                        argzip
-                      )
-                      +++
-                      xmlNL
-                    )
-                    +++
-                xmlNL
+                      argzip
+                  )
                 )
-                +++
-                xmlNL
-            )
-            +++ xmlNL
-        )
+    in
+      OMDoc.mkSymbolE
+        pidxmlid
+        OMDoc.SRObject
+        (Just typeobj)
 
-{-
-  create a xml-representation for an operator
--}
-operatorToXmlIN::
+operatorToXmlOM::
   Hets.LIB_NAME
   ->Graph.Node
   ->Hets.IdNameMapping
   ->[Hets.IdNameMapping]
   ->[Hets.IdNameMapping]
   ->(Id.Id, OpType)
-  ->(HXT.XmlTree->HXT.XmlTrees)
-operatorToXmlIN
+  ->OMDoc.Symbol
+operatorToXmlOM
   ln
   nn
   currentmapping
@@ -1367,76 +1222,50 @@ operatorToXmlIN
               ("More than one origin for \"" ++ show resxmlid ++ "\"")
               $ 
               getNodeNameForXml o
-    in
-      HXT.etag "symbol"
-        += (
-          qualattr opNameXMLNS opNameXMLAttr oidxmlid
-          +++ qualattr symbolTypeXMLNS symbolTypeXMLAttr "object"
-          +++ xmlNL
-          +++ (HXT.etag "type" += (HXT.sattr "system" "casl"))
-            += (
-              xmlNL
-              +++ HXT.etag "OMOBJ"
-                += (
-                  xmlNL
-                  +++ HXT.etag "OMA"
-                    += (
-                      xmlNL
-                      +++ (
-                        HXT.etag "OMS"
-                          += (
-                            HXT.sattr "cd" "casl"
-                            +++ HXT.sattr "name"
-                              (if (opKind ot)==Total
-                                then
-                                  "function"
-                                else
-                                  "partial-function"
-                              )
-                          )
-                        )
-                      +++
-                      (
-                      foldl
-                        (\px (an, ao) ->
-                          px +++ xmlNL
-                          +++
-                          (HXT.etag "OMS"
-                            += (
-                              HXT.sattr "cd" ao
-                              +++ HXT.sattr "name" an
-                            )
-                          )
-                        )
-                        xmlNullFilter
-                        argzip
+      typeobj =
+        OMDoc.mkType
+          (OMDoc.mkOMDocRef "casl")
+          $
+          OMDoc.OMOMOBJ
+            $
+            OMDoc.mkOMOBJ
+              $
+              OMDoc.mkOMA
+                (
+                  [
+                    OMDoc.mkOMSE
+                      "casl"
+                      (if (opKind ot) == Total
+                        then
+                          "function"
+                        else
+                          "partial-function"
                       )
-                      +++ xmlNL
-                      +++ (
-                        HXT.etag "OMS"
-                          += (
-                            HXT.sattr "cd" resorigin
-                            +++ HXT.sattr "name" resxmlid
-                          )
+                  ]
+                  ++
+                  (
+                    map
+                      (\(an, ao) ->
+                        OMDoc.mkOMSE ao an
                       )
-                      +++ xmlNL
-                    )
-                    +++ xmlNL
+                      argzip
+                  )
+                  ++
+                  [
+                    OMDoc.mkOMSE
+                      resorigin
+                      resxmlid
+                  ]
                 )
-                +++ xmlNL
-            )
-            +++ xmlNL
-        )
+    in
+      OMDoc.mkSymbolE
+        oidxmlid
+        OMDoc.SRObject
+        (Just typeobj)
 
-{-
-  create a xml-representation for a sort
--}
-sortToXmlXN::XmlNamed SORT->HXT.XmlFilter
-sortToXmlXN xnSort =
-  ((HXT.etag "symbol" +=
-    ( qualattr symbolTypeXMLNS symbolTypeXMLAttr "sort"
-    +++ qualattr sortNameXMLNS sortNameXMLAttr (xnName xnSort)))
-  )
+sortToXmlOM::XmlNamed SORT->OMDoc.Symbol
+sortToXmlOM xnSort =
+  OMDoc.mkSymbol (xnName xnSort) OMDoc.SRSort
 
 -- | theory name, theory source (local)
 data TheoryImport = TI (String, String)
@@ -1577,71 +1406,64 @@ compatibleOperator sortrel ot1 ot2 =
   (compatibleTypes sortrel (opArgs ot1) (opArgs ot2))
 
 -- first newline needs pulling up because we have a list of lists...
-processVarDeclIN::
+processVarDeclOM::
   Hets.LIB_NAME
   ->Graph.Node
   ->[Hets.IdNameMapping]
   ->[Hets.IdNameMapping]
   ->[VAR_DECL]
-  ->(HXT.XmlTree->HXT.XmlTrees)
-processVarDeclIN ln nn uN fN vdl =
-  (
-    HXT.etag "OMBVAR"
-      += (
-        xmlNL
-        +++
-        (processVarDecls vdl)
-      )
-  )
-  +++ xmlNL
+  ->OMDoc.OMBindingVariables
+processVarDeclOM ln nn uN fN vdl =
+  OMDoc.mkOMBVAR
+    (processVarDecls vdl)
+  
   where
   processVarDecls::
     [VAR_DECL]
-    ->(HXT.XmlTree->HXT.XmlTrees)
-  processVarDecls [] = xmlNullFilter
+    ->[OMDoc.OMVariable]
+  processVarDecls [] = []
   processVarDecls ( (Var_decl vl s _):vdl' ) =
     -- <ombattr><omatp><oms>+</omatp><omv></ombattr>
     (
       foldl
         (\decls vd ->
           decls
-          +++
-          ( createTypedVarIN ln nn uN fN s (show vd) )
-          +++ xmlNL
+          ++
+          [ OMDoc.toVariable $ createTypedVarOM ln nn uN fN s (show vd) ]
         )
-        (xmlNullFilter)
+        []
         vl
     )
-    +++ (processVarDecls vdl')
+    ++ (processVarDecls vdl')
 
-createATPIN::
+createATPOM::
   Hets.LIB_NAME
   ->Graph.Node
   ->[Hets.IdNameMapping]
   ->[Hets.IdNameMapping]
   ->SORT
-  ->(HXT.XmlTree->HXT.XmlTrees)
-createATPIN ln nn uniqueNames fullNames sort =
-  HXT.etag "OMATP"
-    += (
-      (HXT.etag "OMS" += (HXT.sattr "cd" caslS +++ HXT.sattr "name" typeS ))
-      +++ createSymbolForSortIN ln nn uniqueNames fullNames sort
-    )
-                 
-createTypedVarIN::
+  ->OMDoc.OMAttributionPart
+createATPOM ln nn uniqueNames fullNames sort =
+  OMDoc.mkOMATP
+    [
+      (
+          OMDoc.mkOMS caslS typeS
+        , createSymbolForSortOM ln nn uniqueNames fullNames sort
+      )
+    ]
+
+createTypedVarOM::
   Hets.LIB_NAME
   ->Graph.Node
   ->[Hets.IdNameMapping]
   ->[Hets.IdNameMapping]
   ->SORT
   ->String
-  ->(HXT.XmlTree->HXT.XmlTrees)
-createTypedVarIN ln nn uniqueNames fullNames sort varname =
-  HXT.etag "OMATTR"
-    +=(
-      (createATPIN ln nn uniqueNames fullNames sort)
-      +++ (HXT.etag "OMV" += (HXT.sattr "name" varname))
-    )
+  ->OMDoc.OMAttribution
+createTypedVarOM ln nn uniqueNames fullNames sort varname =
+  OMDoc.mkOMATTR
+    (createATPOM ln nn uniqueNames fullNames sort)
+    (OMDoc.mkOMSimpleVar varname)
 
 
 findSortOriginCL::
@@ -1670,14 +1492,14 @@ findSortOriginCL
           Just (_, uname) -> (Just (uname, cm))
       )
 
-createSymbolForSortIN::
+createSymbolForSortOM::
   Hets.LIB_NAME
   ->Graph.Node
   ->[Hets.IdNameMapping]
   ->[Hets.IdNameMapping]
   ->SORT
-  ->(HXT.XmlTree->HXT.XmlTrees)
-createSymbolForSortIN
+  ->OMDoc.OMSymbol
+createSymbolForSortOM
   ln
   _ -- nn
   uniqueNames
@@ -1700,7 +1522,7 @@ createSymbolForSortIN
               , getNodeNameForXml so
             )
     in
-      HXT.etag "OMS" += ( HXT.sattr "cd" sortorigin +++ HXT.sattr "name" sortxmlid )
+      OMDoc.mkOMS sortorigin sortxmlid
 
 findPredicateOriginCL::
   Hets.LIB_NAME
@@ -1760,7 +1582,7 @@ findPredicateOriginCL
       )
 
 -- | create an xml-representation for a predication
-createSymbolForPredicationIN::
+createSymbolForPredicationOM::
   GlobalOptions
   ->LibEnv
   ->Hets.LIB_NAME
@@ -1768,9 +1590,8 @@ createSymbolForPredicationIN::
   ->[Hets.IdNameMapping]
   ->[Hets.IdNameMapping]
   -> PRED_SYMB -- ^ the predication to process
-  -> (HXT.XmlTree -> HXT.XmlTrees) 
-       -- ^ a xml-representation of the predication
-createSymbolForPredicationIN _ lenv ln nn uniqueNames fullNames ps =
+  ->OMDoc.OMSymbol
+createSymbolForPredicationOM _ lenv ln nn uniqueNames fullNames ps =
     let
       currentNode =
         fromMaybe
@@ -1804,9 +1625,7 @@ createSymbolForPredicationIN _ lenv ln nn uniqueNames fullNames ps =
               , getNodeNameForXml predo
             )
     in
-      HXT.etag "OMS" +=
-        (HXT.sattr "cd" predorigin +++ HXT.sattr "name" predxmlid)
-
+      OMDoc.mkOMS predorigin predxmlid
 
 findOperatorOriginCL::
   Hets.LIB_NAME
@@ -1871,17 +1690,17 @@ findOperatorOriginCL
       )
 
 -- | create a xml-representation of an operator
-processOperatorIN::
+processOperatorOM::
   GlobalOptions
   ->LibEnv
   ->Hets.LIB_NAME
   ->Graph.Node
   ->[Hets.IdNameMapping]
   ->[Hets.IdNameMapping]
-  -> OP_SYMB -- ^ the operator to process
-  -> (HXT.XmlTree -> HXT.XmlTrees) 
+  ->OP_SYMB -- ^ the operator to process
+  ->OMDoc.OMSymbol
       -- ^ the xml-representation of the operator
-processOperatorIN _ lenv ln nn uniqueNames fullNames
+processOperatorOM _ lenv ln nn uniqueNames fullNames
     os =
     let
       currentNode =
@@ -1918,8 +1737,7 @@ processOperatorIN _ lenv ln nn uniqueNames fullNames
             )
 
     in
-      HXT.etag "OMS" +=
-        (HXT.sattr "cd" oporigin +++ HXT.sattr "name" opxmlid)
+      OMDoc.mkOMS oporigin opxmlid
 
 preferEqualFindCompatible::[a]->(a->Bool)->(a->Bool)->Maybe a
 preferEqualFindCompatible l isEqual isCompatible =
@@ -1929,7 +1747,7 @@ preferEqualFindCompatible l isEqual isCompatible =
     x -> x
 
 -- | create a xml-representation from a term (in context of a theory)
-processTermIN::
+processTermOM::
   GlobalOptions
   ->LibEnv
   ->Hets.LIB_NAME
@@ -1937,66 +1755,81 @@ processTermIN::
   ->[Hets.IdNameMapping]
   ->[Hets.IdNameMapping]
   -> TERM f -- ^ the term to process
-  -> (HXT.XmlTree -> HXT.XmlTrees) -- ^ xml-representation of the term
+  ->OMDoc.OMElement
 -- Simple_id
-processTermIN _ _ _ _ _ _
+processTermOM _ _ _ _ _ _
   (Simple_id id' ) =
-    HXT.etag "OMV" +=
-      HXT.sattr "name" (show id' ) -- not needed
+  OMDoc.toElement
+    $
+    (OMDoc.mkOMSimpleVar (show id'))
 -- Qual_var
-processTermIN _ _ ln nn uniqueNames fullNames
+processTermOM _ _ ln nn uniqueNames fullNames
   (Qual_var v s _) =
-    ( createTypedVarIN ln nn uniqueNames fullNames s (show v) ) +++
-    xmlNL
+    OMDoc.toElement
+      $
+      (createTypedVarOM ln nn uniqueNames fullNames s (show v) )
 -- Application
-processTermIN go lenv ln nn uniqueNames fullNames
+processTermOM go lenv ln nn uniqueNames fullNames
   (Application op termlist _) =
-    if null termlist
-      then
-        (processOperatorIN go lenv ln nn uniqueNames fullNames op) +++
-        xmlNL
-      else
-        (HXT.etag "OMA" +=
-          (xmlNL +++
-          ( processOperatorIN go lenv ln nn uniqueNames fullNames op) +++
-          (foldl (\terms t ->
-            terms +++
-            (processTermIN go lenv ln nn uniqueNames fullNames t)
-            ) (xmlNullFilter) termlist
+    let
+      omterms = 
+        foldl
+          (\ts t ->
+            ts ++
+              [
+                OMDoc.toElement
+                  $
+                  processTermOM go lenv ln nn uniqueNames fullNames t
+              ]
           )
-          ) ) +++
-          xmlNL
+          []
+          termlist
+    in
+      if null omterms
+        then
+          OMDoc.toElement
+            $
+            (processOperatorOM go lenv ln nn uniqueNames fullNames op)
+        else
+          OMDoc.toElement
+            $
+            OMDoc.mkOMA
+              (
+                [
+                  OMDoc.toElement
+                    $
+                    processOperatorOM go lenv ln nn uniqueNames fullNames op
+                ] ++ omterms
+              )
 -- Cast
-processTermIN go lenv ln nn uniqueNames fullNames
+processTermOM go lenv ln nn uniqueNames fullNames
   (Cast t s _) =
-    processTermIN go lenv ln nn uniqueNames fullNames
+    processTermOM go lenv ln nn uniqueNames fullNames
       (Application
         (Op_name $ Hets.stringToId "PROJ")
         [t, (Simple_id $ Id.mkSimpleId (show s))]
         Id.nullRange
       )
 -- Conditional
-processTermIN go lenv ln nn uniqueNames fullNames
+processTermOM go lenv ln nn uniqueNames fullNames
   (Conditional t1 f t2 _) =
-    HXT.etag "OMA" +=
-      (xmlNL +++
-      (HXT.etag "OMS" +=
-        (HXT.sattr "cd" caslS +++
-        HXT.sattr "name" "IfThenElse"
-        )
-      ) +++
-      (processFormulaIN go lenv ln nn uniqueNames fullNames f) +++
-      (processTermIN go lenv ln nn uniqueNames fullNames t1) +++
-      (processTermIN go lenv ln nn uniqueNames fullNames t2)
-      )
+    OMDoc.toElement
+      $
+      OMDoc.mkOMA
+        [
+            OMDoc.toElement $ OMDoc.mkOMS caslS "IfThenElse"
+          , OMDoc.toElement $ processFormulaOM go lenv ln nn uniqueNames fullNames f
+          , OMDoc.toElement $ processTermOM go lenv ln nn uniqueNames fullNames t1
+          , OMDoc.toElement $ processTermOM go lenv ln nn uniqueNames fullNames t2
+        ]
 -- Sorted_term is to be ignored in OMDoc (but could be modelled...) (Sample/Simple.casl uses it...)
-processTermIN go lenv ln nn uniqueNames fullNames
+processTermOM go lenv ln nn uniqueNames fullNames
   (Sorted_term t _ _) =
-    processTermIN go lenv ln nn uniqueNames fullNames t
+    processTermOM go lenv ln nn uniqueNames fullNames t
 -- Unsupported Terms...
-processTermIN _ _ _ _ _ _ _ = error "Unsupported Term encountered..." 
+processTermOM _ _ _ _ _ _ _ = error "Unsupported Term encountered..." 
 
-processFormulaIN::
+processFormulaOM::
   GlobalOptions
   ->LibEnv
   ->Hets.LIB_NAME
@@ -2004,238 +1837,174 @@ processFormulaIN::
   ->[Hets.IdNameMapping]
   ->[Hets.IdNameMapping]
   ->FORMULA f 
-  -> (HXT.XmlTree -> HXT.XmlTrees) -- ^ xml-representation of the formula
+  ->OMDoc.OMElement
 -- Quantification
-processFormulaIN go lenv ln nn uN fN
+processFormulaOM go lenv ln nn uN fN
   (Quantification q vl f _) =
-    ( HXT.etag "OMBIND" += (
-      xmlNL +++
-      (HXT.etag "OMS" +=
-        (HXT.sattr "cd" caslS +++
-        HXT.sattr "name" (quantName q))
-      ) +++
-      (xmlNL) +++
-      (processVarDeclIN ln nn uN fN vl) +++
-      (processFormulaIN go lenv ln nn uN fN f) )
-    ) +++
-    xmlNL
+    OMDoc.mkOMBINDE
+      (OMDoc.mkOMS caslS (quantName q))
+      (processVarDeclOM ln nn uN fN vl)
+      (processFormulaOM go lenv ln nn uN fN f)
+
 -- Conjunction
-processFormulaIN go lenv ln nn uN fN
+processFormulaOM go lenv ln nn uN fN
   (Conjunction fl _) =
-    (HXT.etag "OMA" += (
-      xmlNL +++
-      ( HXT.etag "OMS" +=
-        (HXT.sattr "cd" caslS +++
-        HXT.sattr "name" caslConjunctionS)
-      ) +++
+    OMDoc.mkOMAE
       (
-        foldl
-          (\forms f ->
-            forms
-            +++
-            processFormulaIN go lenv ln nn uN fN f
-          )
-          xmlNL
-          fl
+        [ OMDoc.mkOMSE caslS caslConjunctionS ]
+        ++
+        (
+          foldl
+            (\fs f ->
+              fs ++ [ processFormulaOM go lenv ln nn uN fN f ]
+            )
+            []
+            fl
+        )
       )
-    ) ) +++
-    xmlNL
+
 -- Disjunction
-processFormulaIN go lenv ln nn uN fN
+processFormulaOM go lenv ln nn uN fN
   (Disjunction fl _) =
-    (HXT.etag "OMA" += (
-      xmlNL +++
-      ( HXT.etag "OMS" +=
-        (HXT.sattr "cd" caslS +++
-        HXT.sattr "name" caslDisjunctionS)
-      ) +++
-      (foldl (\forms f ->
-        forms +++
-        processFormulaIN go lenv ln nn uN fN f
-        ) (xmlNL) fl)
-    ) ) +++
-    xmlNL
+    OMDoc.mkOMAE
+      (
+        [ OMDoc.mkOMSE caslS caslDisjunctionS ]
+        ++
+        (
+          foldl
+            (\fs f ->
+              fs ++ [ processFormulaOM go lenv ln nn uN fN f ]
+            )
+            []
+            fl
+        )
+      )
 -- Implication
-processFormulaIN go lenv ln nn uN fN
+processFormulaOM go lenv ln nn uN fN
   (Implication f1 f2 b _) =
-    ( HXT.etag "OMA" += (
-      xmlNL +++
-      ( HXT.etag "OMS" +=
-        (HXT.sattr "cd" caslS +++
-        HXT.sattr "name" caslImplicationS)
-      ) +++
-      (xmlNL) +++
-      (processFormulaIN go lenv ln nn uN fN f1) +++
-      (processFormulaIN go lenv ln nn uN fN f2) +++
-      (processFormulaIN go lenv ln nn uN fN
-              (if b then True_atom Id.nullRange else False_atom Id.nullRange))
-    ) ) +++
-    xmlNL
+    OMDoc.mkOMAE
+      [
+          OMDoc.mkOMSE caslS caslImplicationS
+        , processFormulaOM go lenv ln nn uN fN f1
+        , processFormulaOM go lenv ln nn uN fN f2
+        , processFormulaOM go lenv ln nn uN fN 
+            (if b then True_atom Id.nullRange else False_atom Id.nullRange)
+      ]
+
 -- Equivalence
-processFormulaIN go lenv ln nn uN fN
+processFormulaOM go lenv ln nn uN fN
   (Equivalence f1 f2 _) =
-    ( HXT.etag "OMA" += (
-      xmlNL +++
-      ( HXT.etag "OMS" +=
-        (HXT.sattr "cd" caslS +++
-        HXT.sattr "name" caslEquivalenceS)
-      ) +++
-      (xmlNL) +++
-      (processFormulaIN go lenv ln nn uN fN f1) +++
-      (processFormulaIN go lenv ln nn uN fN f2)
-    ) ) +++
-    xmlNL
+    OMDoc.mkOMAE
+      [
+          OMDoc.mkOMSE caslS caslEquivalenceS
+        , processFormulaOM go lenv ln nn uN fN f1
+        , processFormulaOM go lenv ln nn uN fN f2
+      ]
 -- Negation
-processFormulaIN go lenv ln nn uN fN
+processFormulaOM go lenv ln nn uN fN
   (Negation f _) =
-    ( HXT.etag "OMA" += (
-      xmlNL +++
-      ( HXT.etag "OMS" +=
-        (HXT.sattr "cd" caslS +++
-        HXT.sattr "name" caslNegationS)
-      ) +++
-      (xmlNL) +++
-      (processFormulaIN go lenv ln nn uN fN f)
-    ) ) +++
-    xmlNL
+    OMDoc.mkOMAE
+      [
+          OMDoc.mkOMSE caslS caslNegationS
+        , processFormulaOM go lenv ln nn uN fN f
+      ]
 -- Predication
-processFormulaIN go lenv ln nn uN fN
+processFormulaOM go lenv ln nn uN fN
   (Predication p tl _) =
-    (HXT.etag "OMA" += (
-      xmlNL +++
-      (HXT.etag "OMS" +=
-        (HXT.sattr "cd" caslS +++
-        HXT.sattr "name" caslPredicationS)
-      ) +++
-      xmlNL +++
-      (xmlNL) +++
-      (createSymbolForPredicationIN go lenv ln nn uN fN p) +++
-      (foldl (\term t ->
-        term +++
-        (processTermIN go lenv ln nn uN fN t) +++
-        xmlNL
-        ) (xmlNullFilter) tl
-      ) +++
-      (xmlNL)
-    ) ) +++
-    xmlNL
+    OMDoc.mkOMAE
+      (
+        [
+            OMDoc.mkOMSE caslS caslPredicationS
+          , OMDoc.toElement $ createSymbolForPredicationOM go lenv ln nn uN fN p
+        ]
+        ++
+        (
+          foldl
+            (\ts t ->
+              ts ++ [ processTermOM go lenv ln nn uN fN t ]
+            )
+            []
+            tl
+        )
+      )
 -- Definedness
-processFormulaIN go lenv ln nn uN fN
+processFormulaOM go lenv ln nn uN fN
   (Definedness t _ ) =
-    (HXT.etag "OMA" += (
-      xmlNL +++
-      ( HXT.etag "OMS" +=
-        (HXT.sattr "cd" caslS +++
-        HXT.sattr "name" caslDefinednessS)
-      ) +++
-      (xmlNL) +++
-      (processTermIN go lenv ln nn uN fN t)
-    ) ) +++
-    xmlNL
+    OMDoc.mkOMAE
+      [
+          OMDoc.mkOMSE caslS caslDefinednessS
+        , processTermOM go lenv ln nn uN fN t
+      ]
 -- Existl_equation
-processFormulaIN go lenv ln nn uN fN
+processFormulaOM go lenv ln nn uN fN
   (Existl_equation t1 t2 _) = 
-    ( HXT.etag "OMA" += (
-      xmlNL +++
-      ( HXT.etag "OMS" +=
-        (HXT.sattr "cd" caslS +++
-        HXT.sattr "name" caslExistl_equationS)
-      ) +++
-      (xmlNL) +++
-      (processTermIN go lenv ln nn uN fN t1) +++
-      (processTermIN go lenv ln nn uN fN t2)
-    ) ) +++
-    xmlNL
+    OMDoc.mkOMAE
+      [
+          OMDoc.mkOMSE caslS caslExistl_equationS
+        , processTermOM go lenv ln nn uN fN t1
+        , processTermOM go lenv ln nn uN fN t2
+      ]
 -- Strong_equation
-processFormulaIN go lenv ln nn uN fN
+processFormulaOM go lenv ln nn uN fN
   (Strong_equation t1 t2 _) = 
-    ( HXT.etag "OMA" += (
-      xmlNL +++
-      ( HXT.etag "OMS" +=
-        (HXT.sattr "cd" caslS +++
-        HXT.sattr "name" caslStrong_equationS)
-      ) +++
-      (xmlNL) +++
-      (processTermIN go lenv ln nn uN fN t1) +++
-      (processTermIN go lenv ln nn uN fN t2)
-    ) ) +++
-    xmlNL
+    OMDoc.mkOMAE
+      [
+          OMDoc.mkOMSE caslS caslStrong_equationS
+        , processTermOM go lenv ln nn uN fN t1
+        , processTermOM go lenv ln nn uN fN t2
+      ]
 -- Membership
-processFormulaIN go lenv ln nn uN fN
+processFormulaOM go lenv ln nn uN fN
   (Membership t s _) = 
-    ( HXT.etag "OMA" += (
-      xmlNL +++
-      ( HXT.etag "OMS" +=
-        (HXT.sattr "cd" caslS +++
-        HXT.sattr "name" caslMembershipS)
-      ) +++
-      (xmlNL) +++
-      (processTermIN go lenv ln nn uN fN t) +++
-      (createSymbolForSortIN ln nn uN fN s )
-    ) ) +++
-    xmlNL
+    OMDoc.mkOMAE
+      [
+          OMDoc.mkOMSE caslS caslMembershipS
+        , processTermOM go lenv ln nn uN fN t
+        , OMDoc.toElement $ createSymbolForSortOM ln nn uN fN s
+      ]
 -- False_atom
-processFormulaIN _ _ _ _ _ _
+processFormulaOM _ _ _ _ _ _
   (False_atom _) =
-    (HXT.etag "OMS" +=
-      (HXT.sattr "cd" caslS +++
-      HXT.sattr "name" caslSymbolAtomFalseS)
-    ) +++
-    xmlNL
+    OMDoc.mkOMSE caslS caslSymbolAtomFalseS
 -- True_atom
-processFormulaIN _ _ _ _ _ _
+processFormulaOM _ _ _ _ _ _
   (True_atom _) =
-    (HXT.etag "OMS" +=
-      (HXT.sattr "cd" caslS +++
-      HXT.sattr "name" caslSymbolAtomTrueS)
-    ) +++
-    xmlNL
+    OMDoc.mkOMSE caslS caslSymbolAtomTrueS
 -- Sort_gen_ax
-processFormulaIN go lenv ln nn uN fN
+processFormulaOM go lenv ln nn uN fN
   (Sort_gen_ax constraints freetype) =
-    ( HXT.etag "OMA" +=
-      (xmlNL +++
-      ( HXT.etag "OMS" +=
-        (HXT.sattr "cd" caslS +++
-        HXT.sattr "name" caslSort_gen_axS)
-      ) +++
-      (xmlNL) +++
-      --(HXT.etag "OMBVAR" += -- ombvar not allowed in oma
-      --      ( xmlNL +++
-        (processConstraintsIN go lenv ln nn uN fN constraints) +++
-      --      )
-      --) +++
-      HXT.etag "OMS" +=
-        (HXT.sattr "cd" caslS +++
-        HXT.sattr "name"
-          (if freetype then
-              caslSymbolAtomTrueS
-            else
-              caslSymbolAtomFalseS)
-        ) +++
-        xmlNL
-      ) +++
-      xmlNL) +++
-      xmlNL
+    OMDoc.mkOMAE
+      [
+          OMDoc.mkOMSE
+            caslS
+            caslSort_gen_axS
+        , processConstraintsOM
+            go
+            lenv
+            ln
+            nn
+            uN
+            fN
+            constraints
+        , OMDoc.mkOMSE
+            caslS
+            (if freetype then caslSymbolAtomTrueS else caslSymbolAtomFalseS)
+      ]
 -- unsupported formulas
 -- Mixfix_formula
-processFormulaIN _ _ _ _ _ _
-  (Mixfix_formula _) =
-    HXT.etag unsupportedS +++
-    HXT.txt ( "<-- " ++ "Mixfix_formula" ++ " //-->")
+processFormulaOM _ _ _ _ _ _
+  (Mixfix_formula {}) =
+    OMDoc.mkOMComment "unsupported : Mixfix_formula"
 -- Unparsed_formula
-processFormulaIN _ _ _ _ _ _
-  (Unparsed_formula s _) =
-    HXT.etag unsupportedS +++
-    HXT.txt ( "<-- " ++ "Unparsed_formula \"" ++ s ++ "\" //-->")
+processFormulaOM _ _ _ _ _ _
+  (Unparsed_formula {}) =
+    OMDoc.mkOMComment "unsupported : Unparsed_formula"
 -- ExtFORMULA
-processFormulaIN _ _ _ _ _ _
-  (ExtFORMULA _) =
-    HXT.etag unsupportedS +++
-    HXT.txt ( "<-- " ++ "ExtFORMULA" ++ " //-->") 
+processFormulaOM _ _ _ _ _ _
+  (ExtFORMULA {}) =
+    OMDoc.mkOMComment "unsupported : ExtFORMULA"
 
-
-processConstraintsIN::
+processConstraintsOM::
   GlobalOptions
   ->LibEnv
   ->Hets.LIB_NAME
@@ -2243,56 +2012,47 @@ processConstraintsIN::
   ->[Hets.IdNameMapping]
   ->[Hets.IdNameMapping]
   ->[ABC.Constraint]
-  ->(HXT.XmlTree->HXT.XmlTrees)
-processConstraintsIN _ _ _ _ _ _ [] = xmlNullFilter
-processConstraintsIN go lenv ln nn uN fN ((ABC.Constraint news ops' origs):_) =
-  (HXT.etag "OMBIND" += (
-    (HXT.etag "OMS" += (HXT.sattr "cd" caslS +++ HXT.sattr "name" (show news)))
-    +++ xmlNL
-    +++ (HXT.etag "OMBVAR" +=(
-      foldl (\opsx (op, il) ->
-        opsx +++ (HXT.etag "OMATTR" += (
-          (HXT.etag "OMATP" += (
-            HXT.etag "OMS"
-              += (
-                HXT.sattr "cd" caslS
-                +++ HXT.sattr "name" "constraint-indices"
-              )
-            +++ (HXT.etag "OMSTR" += HXT.txt (
-              foldl (\s i -> (s++(show i)++"|")) "" il
-              ))
-            ))
-          +++ xmlNL
-          +++
-            processOperatorIN
-              go
-              lenv
-              ln
-              nn
-              uN
-              fN
-              (
-                debugGO
-                  go
-                  "pCXN"
-                  ("creating conop for " ++ (show op))
-                  op
-              )
-          ) ) +++ xmlNL
-        ) (xmlNullFilter) ops'
-      ) )
-    +++ xmlNL
-    +++ (
-      HXT.etag "OMS"
-        += (
-          HXT.sattr "cd" caslS +++ HXT.sattr "name" (show origs)
-        )
+  ->OMDoc.OMElement
+processConstraintsOM _ _ _ _ _ _ [] = error "!"
+processConstraintsOM go lenv ln nn uN fN ((ABC.Constraint news ops' origs):_)
+  =
+    OMDoc.mkOMBINDE
+      (OMDoc.mkOMS caslS (show news))
+      (
+        OMDoc.mkOMBVAR
+          (
+          foldl
+            (\vars (op, il) ->
+              vars
+                ++
+                  [
+                    OMDoc.mkOMATTR
+                      (
+                        OMDoc.mkOMATP
+                          [
+                            (
+                                OMDoc.mkOMS
+                                  caslS
+                                  "constraint-indices"
+                              , OMDoc.OMSTR
+                                  (foldl
+                                    (\s i -> (s++(show i)++"|"))
+                                    ""
+                                    il
+                                  )
+                            )
+                          ]
+                      )
+                      (processOperatorOM go lenv ln nn uN fN op)
+                  ]
+            )
+            []
+            ops'
+          )
       )
-    )
-  ) +++ xmlNL
+      (OMDoc.mkOMS caslS (show origs))
 
-
-wrapFormulasCMPIOIN::
+wrapFormulasCMPIOOM::
   GlobalOptions
   ->LibEnv
   ->Hets.LIB_NAME
@@ -2301,8 +2061,8 @@ wrapFormulasCMPIOIN::
   ->[Hets.IdNameMapping]
   ->[Hets.IdNameMapping]
   ->[(Ann.Named CASLFORMULA)]
-  ->IO (HXT.XmlTree->HXT.XmlTrees)
-wrapFormulasCMPIOIN go lenv ln nn cM uN fN fs =
+  ->IO ([OMDoc.Axiom], [OMDoc.Presentation])
+wrapFormulasCMPIOOM go lenv ln nn cM uN fN fs =
   let
     posLists = concatMap Id.getPosList (map Ann.sentence fs)
   in
@@ -2311,14 +2071,16 @@ wrapFormulasCMPIOIN go lenv ln nn cM uN fN fs =
     return
       $
       foldl
-        (\wrapped f ->
-          wrapped
-          +++ (wrapFormulaCMPIN go lenv ln nn cM uN fN f poslinemap)
+        (\(wax, wpr) f ->
+          let
+            (ax, pr) = wrapFormulaCMPOM go lenv ln nn cM uN fN f poslinemap
+          in
+            (wax++[ax], wpr++[pr])
         )
-        xmlNullFilter
+        ([], [])
         (zip fs [1..])
-                
-wrapFormulaCMPIN::
+
+wrapFormulaCMPOM::
   GlobalOptions
   ->LibEnv
   ->Hets.LIB_NAME
@@ -2328,8 +2090,8 @@ wrapFormulaCMPIN::
   ->[Hets.IdNameMapping]
   ->((Ann.Named CASLFORMULA), Int)
   ->(Map.Map Id.Pos String)
-  ->(HXT.XmlTree->HXT.XmlTrees)
-wrapFormulaCMPIN
+  ->(OMDoc.Axiom, OMDoc.Presentation)
+wrapFormulaCMPOM
   go
   lenv
   ln
@@ -2352,58 +2114,19 @@ wrapFormulaCMPIN
         (Just n) -> n
     sens = Ann.sentence ansen
     sposl = Id.getPosList sens
+    omformula = processFormulaOM go lenv ln nn uniqueNames fullNames sens
+    omobj = OMDoc.mkOMOBJ omformula
+    cmptext = 
+      foldl
+        (\cmpt p ->
+          cmpt ++ (Map.findWithDefault "" p poslinemap) ++ "\n"
+        )
+        ""
+        sposl
+    cmp = OMDoc.mkCMP (OMDoc.MTextText cmptext) 
+    fmp = OMDoc.FMP Nothing (Left omobj)
+    axiom = OMDoc.mkAxiom senxmlid [cmp] [fmp]
+    pres = makePresentationForOM senxmlid (Ann.senName ansen)
   in
-  (
-    (createQAttributed
-      "axiom"
-      [
-        (
-            axiomNameXMLNS
-          , axiomNameXMLAttr
-          , senxmlid
-        )
-      ]
-    ) += (
-      (xmlNL +++
-      (
-        (
-          foldl
-            (\cmpx p ->
-              cmpx
-                += (
-                  HXT.txt ("\n" ++ (Map.findWithDefault "" p poslinemap))
-                )
-            )
-            (HXT.etag "CMP")
-            sposl
-        ) += (HXT.txt "\n")
-      ) +++ 
-      xmlNL +++
-      (HXT.etag "FMP" += (
-        xmlNL +++
-        (
-         HXT.etag "OMOBJ" +++
-         xmlNL
-        ) += (
-          xmlNL +++
-          (processFormulaIN
-            go
-            lenv
-            ln
-            nn
-            uniqueNames
-            fullNames
-            sens
-          )
-          ) +++
-        xmlNL
-        )
-      ) +++
-      xmlNL
-      )
-      ) +++
-    xmlNL +++
-    makePresentationFor (senxmlid) (Ann.senName ansen)
-  ) +++ xmlNL
-
+    (axiom, pres)
 
