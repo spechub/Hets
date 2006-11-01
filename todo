@@ -504,9 +504,9 @@ Rainer (Klaus)
 ************************************************
 
 implement a catch for calling MathServ based on the catch in runSpass
-   - write just one function that converts Exception to ATPResult
-     maybe even a specialised catch is useful
-     such functions fit into Common.Utils or Common.ProofUtils
+  - a "connection refused" error should be handled differently:
+     "MathServ not running! Please contact 
+       <hets-devel@informatik.uni-bremen.de>"
 
 for the transition to ghc-6.6 spassProve must be corrected
    - the regexp library changed in functionality
@@ -519,20 +519,12 @@ for the transition to ghc-6.6 spassProve must be corrected
      in GenericATP
 
 usability improvements
-  - in the Proof details window (with expandable "Tactic script")
-      * use OMap (OrderedMap functions) to get the same ordering 
-        of the goals as in the main Proofmanagement window
-      * add two buttons to expand and hide "tactic script" and "proof
-        tree"
-        buttons shoud work like toggles and change their text upon click
   - forceFocus to read-only textedit widgets in textSaveDisplay windows
     upon left mouse click
+    also add for Details window
   - update of goal list-boxes should not longer move visible 
     area of the list
     involves getting and setting of visible area
-  - show current goal name in batch mode on aditional label in extra
-    line below extra options of batch mode part.
-  - Batch mode is not "runnig"
 
 code cleanup and documentation where necessary and possilbe 
    in SPASS/* and GUI/GenericATP*, GUI/Proofmanagement.hs
