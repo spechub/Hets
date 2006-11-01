@@ -69,7 +69,7 @@ dg_translation  gc acm@(Comorphism cidMor) =
 
  updateEdges :: LEdge DGLinkLab -> Result (LEdge DGLinkLab) 
  updateEdges 
-       ledge@(from,to,(links@(DGLink gm@(GMorphism cid' lsign lmorphism) _ _)))=
+       (from,to,(links@(DGLink { dgl_morphism= gm@(GMorphism cid' lsign lmorphism)}))) =
   if isHomogeneous gm 
    then
     let sourceLid = sourceLogic cid'
@@ -80,9 +80,17 @@ dg_translation  gc acm@(Comorphism cidMor) =
         then
            -- translate sign of GMorphism
            case fSign sourceLid lsign of
-             Result diagLs (Just (lsign', _)) -> 
+            Result diagLs maybeSTh -> 
               -- translate morphism of GMorphism
-              case fMor targetLid lmorphism of
+             case maybeSTh of
+              Nothing  -> 
+               Result (diagLs ++ 
+                         [mkDiag Error 
+                          ("sign of link " ++ (showFromTo from to gc) ++
+                                               " can not be translated.")
+                          ()]) (Nothing) 
+              (Just (lsign', _)) -> 
+               case fMor targetLid lmorphism of
                 Result diagLm (Just lmorphism') -> 
                   -- build a new GMorphism of an edge
                   case idComorphism (Logic tlid) of 
@@ -121,20 +129,14 @@ dg_translation  gc acm@(Comorphism cidMor) =
                             [mkDiag Error 
                                 ("morphism of link " ++ (showFromTo from to gc)
                                  ++ " can not be translated.") ()]) 
-                            (Just ledge)
-             Result diagLs Nothing  -> 
-                 Result (diagLs ++ 
-                         [mkDiag Error 
-                          ("sign of link " ++ (showFromTo from to gc) ++
-                                               " can not be translated.")
-                          ()]) (Just ledge) 
+                            (Nothing)
           else Result [mkDiag Error ("the sublogic of GMorphism :\""++ 
                         (show (sublogicOfMor (G_morphism targetLid lmorphism))) 
                         ++ " of edge " ++ (showFromTo from to gc) 
-                        ++ " is not less than " ++ (show acm )) ()] (Just ledge)
+                        ++ " is not less than " ++ (show acm )) ()] (Nothing)
      else Result [mkDiag Error ("Link "++ (showFromTo from to gc) ++ 
                                 " is not homogeneous.") ()]
-          (Just ledge)
+          (Nothing)
 
  updateNodes :: LNode DGNodeLab -> Result (LNode DGNodeLab) 
  updateNodes lNode@(node, dgNodeLab) =
@@ -148,6 +150,9 @@ dg_translation  gc acm@(Comorphism cidMor) =
 
  -- to translate sign
  fSign sourceID sign =
+     coerceSign sourceID slid "DGTranslation.fSign" sign >>=
+        map_sign cidMor
+{-
       case coerceSign sourceID slid "" sign of
         Just sign' -> 
             case map_sign cidMor sign' of
@@ -160,7 +165,7 @@ dg_translation  gc acm@(Comorphism cidMor) =
         Nothing  -> Result [mkDiag Error ("cannot coerce sign" ++ 
                                           showDoc sign "\n")
                             ()] Nothing 
-
+-}
  fTh node g@(G_theory lid sign thSens) =
       case coerceSign lid slid "" sign of
         Just sign' -> 
