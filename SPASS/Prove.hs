@@ -351,6 +351,9 @@ spassProof :: String -- ^ SPASS output containing proof tree
            -> String -- ^ extracted proof tree
 spassProof pr =
     let getMatch = matchRegex re_proof_tree pr
-        re_proof_tree = mkRegex $ "\nHere is a proof with depth(.*):\n"
-                               ++ "(.*)\nFormulae used in the proof"
+        re_proof_tree = mkRegexWithOpts 
+                         ("\nHere is a proof with depth(.*):\n"
+                          ++ "(.*)\nFormulae used in the proof")
+                         False -- treat String as single line
+                         True -- case sensitive matching
     in maybe [] (!!1) getMatch
