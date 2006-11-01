@@ -224,7 +224,7 @@ parseSpassOutput spass = parseProtected (parseStart True) (Nothing, [], [], 0)
           resMatch = matchRegex re_sb line'
           res' = maybe res (Just . head) resMatch
           usedAxsMatch = matchRegex re_ua line'
-          usedAxs' = maybe usedAxs (words . head) usedAxsMatch
+          usedAxs' = maybe usedAxs (\ uas -> words (uas !! 1)) usedAxsMatch
           tUsed' = maybe tUsed (calculateTime) $ matchRegex re_tu line
       if seq (length line) $ isJust (matchRegex re_stop line')
         then do
@@ -234,10 +234,10 @@ parseSpassOutput spass = parseProtected (parseStart True) (Nothing, [], [], 0)
           parseProtected parseIt (res', usedAxs', output ++ [line'], tUsed')
 
     -- regular expressions used for parsing
-    re_start = mkRegex ".*SPASS-START.*"
-    re_stop = mkRegex ".*SPASS-STOP.*"
+    re_start = mkRegex "(.*)SPASS-START(.*)"
+    re_stop = mkRegex "(.*)SPASS-STOP(.*)"
     re_sb = mkRegex "SPASS beiseite: (.*)$"
-    re_ua = mkRegex "Formulae used in the proof.*:(.*)$"
+    re_ua = mkRegex "Formulae used in the proof(.*):(.*)$"
     re_tu = mkRegex $ "SPASS spent\t([0-9]+):([0-9]+):([0-9]+)\\.([0-9]+) "
                       ++ "on the problem.$"
     calculateTime matches = if (not $ length matches == 4) then (0::Int)
@@ -351,6 +351,6 @@ spassProof :: String -- ^ SPASS output containing proof tree
            -> String -- ^ extracted proof tree
 spassProof pr =
     let getMatch = matchRegex re_proof_tree pr
-        re_proof_tree = mkRegex $ "\nHere is a proof with depth.*:\n"
+        re_proof_tree = mkRegex $ "\nHere is a proof with depth(.*):\n"
                                ++ "(.*)\nFormulae used in the proof"
-    in maybe [] head getMatch
+    in maybe [] (!!1) getMatch
