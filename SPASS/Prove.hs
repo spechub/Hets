@@ -309,7 +309,7 @@ runSpass sps cfg saveDFG thName nGoal = do
                                    then Nothing
                                    else Just False
            , usedAxioms = filter (/=(AS_Anno.senName nGoal)) usedAxs
-           , proofTree = ATP_ProofTree $ spassProof $ unlines out })
+           , proofTree = ATP_ProofTree $ spassProof out })
       | isJust res && elem (fromJust res) disproved =
           (ATPSuccess,
            (defaultProof_status options) { goalStatus = Disproved } )
@@ -347,13 +347,9 @@ cleanOptions cfg =
   Extract proof tree from SPASS output. This will be the String between
   "Here is a proof" and "Formulae used in the proof"
 -}
-spassProof :: String -- ^ SPASS output containing proof tree
+spassProof :: [String] -- ^ SPASS output containing proof tree
            -> String -- ^ extracted proof tree
-spassProof pr =
-    let getMatch = matchRegex re_proof_tree pr
-        re_proof_tree = mkRegexWithOpts 
-                         ("\nHere is a proof with depth(.*):\n"
-                          ++ "(.*)\nFormulae used in the proof")
-                         False -- treat String as single line
-                         True -- case sensitive matching
-    in maybe [] (!!1) getMatch
+spassProof =
+	unlines . fst . break (isPrefixOf "Formulae used in the proof")
+	     . (\ l -> if null l then l else tail l)
+	     . snd . break (isPrefixOf "Here is a proof with depth")
