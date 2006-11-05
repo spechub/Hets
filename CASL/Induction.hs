@@ -140,8 +140,9 @@ generateInductionLemmas sort_gen_axs goals =
                        in  (removeVarsort vs s $ sentence f, vs, s))
                     $ zip cons formulas
             
-            let sName = foldl (\ n -> (++) n . senName . fst) "" formulas
-            return $ AS_Anno.NamedSen { senName = sName, isAxiom = False,
+            let sName = (if null formulas then id else tail)
+                        (foldr ((++) . (++) "_" . senName . fst) "" formulas)
+            return $ AS_Anno.NamedSen { senName = sName, isAxiom = True,
                                         isDef = False, sentence = formula }
          )            
          -- returns big list containing tuples of constraints and a matching
