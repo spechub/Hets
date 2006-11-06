@@ -61,6 +61,7 @@ INLINEAXIOMS_deps = utils/InlineAxioms/InlineAxioms.hs \
     Modal/Parse_AS.hs Modal/ModalSign.hs Modal/Print_AS.hs Modal/StatAna.hs
 
 HC = ghc
+HCPKG = ghc-pkg
 PERL = perl
 HAPPY = happy -sga
 GENRULES = utils/genRules
@@ -70,9 +71,14 @@ DRIFT = utils/DrIFT
 INLINEAXIOMS = utils/outlineAxioms
 HADDOCK = haddock
 
+HAXMLVERSION = $(shell $(HCPKG) field HaXml version)
+ifneq ($(findstring 1.13.2, $(HAXMLVERSION)),)
+HAXML_PACKAGE = -package HaXml -DHAXML_PACKAGE
+endif
+
 # remove -fno-warn-orphans for older ghcs and add -ifgl
 HC_WARN = -Wall -fno-warn-orphans
-HC_FLAGS = -fcontext-stack60 \
+HC_FLAGS = -fcontext-stack60 $(HAXML_PACKAGE) \
     $(HC_WARN) -fglasgow-exts -fno-monomorphism-restriction \
     -fallow-overlapping-instances -fallow-undecidable-instances
 # -ddump-minimal-imports
@@ -301,7 +307,7 @@ derived_sources += $(drifted_files) Driver/Version.hs $(happy_files) \
 # sources that have {-# OPTIONS -cpp #-}
 cpp_sources = Common/DynamicUtils.hs \
     Common/Lib/Set.hs Common/Lib/Map.hs ATC/Set.hs\
-    Isabelle/CreateTheories.hs \
+    Isabelle/CreateTheories.hs CASL/CompositionTable/CompositionTable.hs \
     SPASS/Logic_SPASS.hs GUI/Utils.hs Driver/WriteFn.hs \
     Comorphisms/LogicList.hs Comorphisms/LogicGraph.hs \
     Comorphisms/KnownProvers.hs hets.hs $(happy_files) \
