@@ -39,7 +39,7 @@ import Syntax.AS_Library (LIB_DEFN(), LIB_NAME())
 import Syntax.Print_AS_Library ()
 
 import CASL.Logic_CASL
-#ifdef UNI_PACKAGE
+#if UNI_PACKAGE || HAXML_PACKAGE
 import CASL.CompositionTable.ComputeTable
 import CASL.CompositionTable.CompositionTable
 #endif
@@ -243,7 +243,7 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
                                     Just d ->
                                         writeVerbFile opt f $ shows d "\n"
 #endif
-#ifdef UNI_PACKAGE
+#if UNI_PACKAGE || HAXML_PACKAGE
                       ComptableXml -> let
                                     th = (sign0, toNamedList sens0)
                                     r1 = coerceBasicTheory lid CASL "" th
