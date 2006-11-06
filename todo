@@ -320,6 +320,8 @@ a hiding definition link theta:N3->N2 (i.e. the signature
 morphism theta is from Sig(N2) to Sig(N3)), then prove
 this theorem link by inserting a new global theorem link
 theta o sigma : N1->N3.
+use functions from Proofs.TheoremHideShift
+
 
 try out examples
 conservativity calculus
