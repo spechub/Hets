@@ -113,8 +113,11 @@ computeCompTable spName (sig,nsens) = do
                    contabentryConverseBaseRel = Baserel (showDoc res "") } )
            else Nothing
        _ -> Nothing
-  let attrs = Table_Attrs {tableName = name,
-                           tableIdentity = "id"}
+  let attrs = Table_Attrs
+              { tableName = name
+              , tableIdentity = "id"
+              , baseRelations = []
+              }
       compTable = Compositiontable (mapMaybe cmpTab sens)
       convTable = Conversetable (mapMaybe invTab sens)
       models = Models []
