@@ -16,6 +16,7 @@ instantiation to specific first-order formulas.
 module CASL.Induction where
 
 import CASL.AS_Basic_CASL
+import CASL.Sign
 import CASL.Fold
 import Common.AS_Annotation as AS_Anno
 import Common.Id
@@ -127,12 +128,25 @@ mkConj phis = Conjunction phis nullRange
 
 
 -- !! documentation is missing
-generateInductionLemmas :: [FORMULA f] -- ^ only Sort_gen_ax of a theory
-                        -> [AS_Anno.Named (FORMULA f)] -- ^ all goals of a theory
-                        -> Result ([AS_Anno.Named (FORMULA f)])
+generateInductionLemmas :: (Sign f e, [Named (FORMULA f)]) 
+                           -> (Sign f e, [Named (FORMULA f)])
+generateInductionLemmas (sig,axs) = (sig,axs++inductionAxs)
+   where 
+   sortGens = filter isSortGen (map sentence axs)
+   goals = filter isAxiom axs
+   inductionAxs = fromJust $ maybeResult $ generateInductionLemmasAux sortGens goals
+
+-- | determine whether a formula is a sort generation constraint
+isSortGen (Sort_gen_ax _ _) = True
+isSortGen _ = False
+  
+
+generateInductionLemmasAux :: [FORMULA f] -- ^ only Sort_gen_ax of a theory
+                              -> [AS_Anno.Named (FORMULA f)] -- ^ all goals of a theory
+                              -> Result ([AS_Anno.Named (FORMULA f)])
                            -- ^ all the generated induction lemmas
                            -- and the labels are derived from the goal-names
-generateInductionLemmas sort_gen_axs goals =
+generateInductionLemmasAux sort_gen_axs goals =
     mapM (\ (cons,formulas) -> do
             formula <- instantiateSortGen cons $
                 map (\ (Constraint {newSort = s},(f,varsorts)) ->

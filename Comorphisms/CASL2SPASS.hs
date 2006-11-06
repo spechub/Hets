@@ -1,13 +1,14 @@
 {- |
 Module      :  $Header$
 Copyright   :  (c) Klaus Lüttich and Uni Bremen 2005
+Description :  Coding of CASL into SoftFOL. 
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
-The translating comorphism from CASL to SPASS.
+The translating comorphism from CASL to SoftFOL.
 -}
 
 {- todo
@@ -50,6 +51,7 @@ import CASL.Quantification
 import CASL.Overload
 import CASL.Utils
 import CASL.Inject
+import CASL.Induction (generateInductionLemmas)
 
 -- SoftFOL
 import SPASS.Sign as SPSign
@@ -57,8 +59,9 @@ import SPASS.Logic_SPASS
 import SPASS.Translate
 import SPASS.Utils
 
--- | The identity of the comorphism
+-- | The identity of the comorphisms
 data SuleCFOL2SoftFOL = SuleCFOL2SoftFOL deriving (Show)
+data SuleCFOL2SoftFOLInduction = SuleCFOL2SoftFOLInduction deriving (Show)
 
 -- | SoftFOL theories
 type SoftFOLTheory = (SPSign.Sign,[Named SPTerm])
@@ -117,6 +120,7 @@ formTrCASL :: FormulaTranslator () ()
 formTrCASL _ _ = error "SuleCFOL2SoftFOL: No extended formulas allowed in CASL"
 
 instance Language SuleCFOL2SoftFOL -- default definition is okay
+instance Language SuleCFOL2SoftFOLInduction -- default definition is okay
 
 instance Comorphism SuleCFOL2SoftFOL
                CASL CASL_Sublogics
@@ -140,6 +144,33 @@ instance Comorphism SuleCFOL2SoftFOL
     targetLogic _ = SoftFOL
     mapSublogic _ _ = ()
     map_theory _ = transTheory sigTrCASL formTrCASL
+    map_morphism = mapDefaultMorphism
+    map_sentence _ sign =
+      return . mapSen (isSingleSorted sign) formTrCASL sign
+    map_symbol = errMapSymbol
+
+instance Comorphism SuleCFOL2SoftFOLInduction
+               CASL CASL_Sublogics
+               CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
+               CASLSign
+               CASLMor
+               CASL.Morphism.Symbol CASL.Morphism.RawSymbol ()
+               SoftFOL () () SPTerm () ()
+               SPSign.Sign
+               SoftFOLMorphism () () SPSign.ATP_ProofTree where
+    sourceLogic _ = CASL
+    sourceSublogic _ = SL.top
+                      { sub_features = LocFilSub,
+                        has_part = False,
+                        cons_features = SortGen { emptyMapping = True,
+                                                  onlyInjConstrs = False},
+                        has_eq = True,
+                        has_pred = True,
+                        which_logic = FOL
+                      }
+    targetLogic _ = SoftFOL
+    mapSublogic _ _ = ()
+    map_theory _ = transTheory sigTrCASL formTrCASL . generateInductionLemmas
     map_morphism = mapDefaultMorphism
     map_sentence _ sign =
       return . mapSen (isSingleSorted sign) formTrCASL sign
