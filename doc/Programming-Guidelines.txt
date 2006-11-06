@@ -448,6 +448,15 @@ because of lazy IO! (Writing is starting before reading is finished.)
 Tracing is for debugging purposes only and should not be used as
 feedback for the user. Clean code is not cluttered by trace calls.
 
+==== Undefined ====
+
+The Prelude exports a constant undefined, which can have any type and
+which raises an expection when evaluated.
+Please avoid the use of undefined; use an informative error message
+instead, which should at least tell the module, like:
+
+  error "Folder.Module.function: function not yet implemented"
+
 
 ==== Imports ====
 

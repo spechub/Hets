@@ -723,4 +723,5 @@ type GDiagram = Tree.Gr G_theory GMorphism
 gWeaklyAmalgamableCocone :: GDiagram
                          -> Result (G_theory, Map.Map Graph.Node GMorphism)
 gWeaklyAmalgamableCocone _ =
-    return (undefined, Map.empty) -- dummy implementation
+    return (error "Static.DevGraph.gWeaklyAmalgamableCocone not yet implemented", Map.empty) 
+     -- dummy implementation

@@ -321,6 +321,6 @@ proverTc = mkTyCon "Logic.Prover.ProverTemplate"
 
 instance (Typeable a, Typeable b) => Typeable (ProverTemplate a b) where
     typeOf p = mkTyConApp proverTc
-               [typeOf ((undefined :: ProverTemplate a b -> a) p),
-                typeOf ((undefined :: ProverTemplate a b -> b) p)]
+               [typeOf ((error "Logic.Prover" :: ProverTemplate a b -> a) p),
+                typeOf ((error "Logic.Prover" :: ProverTemplate a b -> b) p)]
 

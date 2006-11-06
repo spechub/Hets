@@ -23,7 +23,7 @@ setTc :: TyCon
 setTc = mkTyCon "Data.Set.Set"
 
 instance Typeable a => Typeable (Set a) where
-  typeOf s = mkTyConApp setTc [typeOf ((undefined:: Set a -> a) s)]
+  typeOf s = mkTyConApp setTc [typeOf ((error "ATC.Set.typeOf" :: Set a -> a) s)]
 
 instance (Ord a, ShATermConvertible a) => ShATermConvertible (Set a) where
     toShATermAux att set = do

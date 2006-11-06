@@ -374,7 +374,7 @@ ana_UNIT_TERM lgraph defl gctx curl opts uctx tr@(Unit_translation ut ren) =
     do (dnsig@(Diag_node_sig p _), diag, gctx1, ut') <- ana_UNIT_TERM lgraph
            defl gctx curl opts uctx (item ut)
        -- EmptyNode undefined should be replaced with local env!
-       gMorph <- ana_RENAMING lgraph (EmptyNode undefined)
+       gMorph <- ana_RENAMING lgraph (EmptyNode $ error "Static.AnalysisArchitecture")
                     (getSig (getSigFromDiag dnsig)) opts ren
        let pos = getPos_UNIT_TERM tr
            sink = [(p, gMorph)]

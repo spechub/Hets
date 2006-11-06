@@ -556,7 +556,7 @@ createLocalMenuNodeTypeSpec color ioRefSubtreeEvents actGraphInfo
                     createLocalMenuButtonUndoShowJustSubtree ioRefVisibleNodes
                               ioRefSubtreeEvents actGraphInfo
                    ]) -- ??? Should be globalized somehow
-                  -- >$$$ LocalMenu (Button "xxx" undefined)
+                  -- >$$$ LocalMenu (Button "xxx" error "GUI.ConvertAbstractToDevGraph")
                   $$$ emptyNodeTypeParms
 
 -- | local menu for the nodetypes internal and locallyEmpty_internal

@@ -1029,7 +1029,7 @@ processSpecMap
                                     ("referenced source has not been finished... (" ++ refsource ++ ")")
                                     (
                                       Map.findWithDefault
-                                        ([], undefined, undefined, undefined)
+                                        ([], error "OMDoc.OMDocInput", error "OMDoc.OMDocInput", error "OMDoc.OMDocInput")
                                         refsource
                                         uM
                                     )

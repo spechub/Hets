@@ -374,7 +374,7 @@ getFromCASLSignWithOrigins::
   ->([WithOriginNode b]->c)
   ->c
 getFromCASLSignWithOrigins dg n caslget getcomponents isorigin morph createresult =
-  getFromNodeWithOriginsM dg n (\_ -> False) (\_ -> undefined::a)
+  getFromNodeWithOriginsM dg n (\_ -> False) (\_ -> error "OMDoc.HetsDefs"::a)
     (\dg' n' -> getFromCASLSignM dg' n' caslget)
     getcomponents
     (\i dg' n' -> isorigin i (getFromCASLSignM dg' n' caslget))
@@ -459,7 +459,7 @@ getSensFromNodeWithOrigins dg n =
     n
     (\_ -> True)
     (Set.fromList . getNodeSentences)
-    (\_ _ -> undefined::Set.Set (Ann.Named CASLFORMULA))
+    (\_ _ -> error "OMDoc.HetsDefs"::Set.Set (Ann.Named CASLFORMULA))
     (\s dg' n' ->
       case lab dg' n' of
         Nothing -> False
@@ -707,7 +707,7 @@ getFromCASLSignDeltaM::DGraph->Graph.Node->(CASLSign->a)->(a->a->a)->a->a
 getFromCASLSignDeltaM dg n get' delta _ =
   getFromNodeDeltaM dg n
     (\_ -> False)
-    (\_ -> undefined::a)
+    (\_ -> error "OMDoc.HetsDefs"::a)
     (\dg' n' -> getFromCASLSignM dg' n' get' )
     delta
     
@@ -1212,7 +1212,7 @@ getNodeAllImportsNodeDGNamesWOLL dg = getNodeDGNameMappingWO dg (
       foldl
         (\imports (fn, _, iedge, inode) ->
 {-          let
-            icaslmorph = getCASLMorph (undefined, undefined, iedge)
+            icaslmorph = getCASLMorph (error "OMDoc.HetsDefs", error "OMDoc.HetsDefs", iedge)
             caslmorph = case dgl_type iedge of 
               HidingDef -> switchTargetSourceMorph icaslmorph
               _ -> icaslmorph
