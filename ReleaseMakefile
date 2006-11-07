@@ -13,14 +13,14 @@
 HC = ghc
 
 # check for the "uni" library
-UNI_PACKAGE_CONF := $(wildcard ../uni/uni-package.conf)
+UNI_PACKAGE_CONF = $(wildcard ../uni/uni-package.conf)
 ifneq ($(strip $(UNI_PACKAGE_CONF)),)
 HC_PACKAGE = -package-conf $(UNI_PACKAGE_CONF) -package uni-davinci \
              -package uni-server -DUNI_PACKAGE
 endif
 
 # check for programatica
-PFE_TOOLDIR := $(wildcard ../programatica/tools)
+PFE_TOOLDIR = $(wildcard ../programatica/tools)
 ifneq ($(strip $(PFE_TOOLDIR)),)
 PFE_DIRS = base/AST base/TI base/parse2 base/parse2/Lexer base/parse2/Parser \
     base/parse2/LexerGen base/parse2/LexerSpec base/tests/HbcLibraries \
@@ -33,12 +33,19 @@ PFE_FLAGS = $(PFE_PATH) -DPROGRAMATICA \
             -fno-monomorphism-restriction -fallow-undecidable-instances
 endif
 
+# check for new HaXml-1.13.2
+HAXMLVERSION = $(shell $(HCPKG) field HaXml version)
+ifneq ($(findstring 1.13.2, $(HAXMLVERSION)),)
+HAXML_PACKAGE = -package HaXml -DHAXML_PACKAGE
+endif
+
+
 # OPTS without uni packages
 HC_OPTS1 = -fglasgow-exts -fallow-overlapping-instances -fcontext-stack60 \
     $(PFE_FLAGS) -DCASLEXTENSIONS -ihxt -isyb-generics -ihaifa-lite/src \
     -ihcl/src
 
-HC_OPTS = $(HC_OPTS1) $(HC_PACKAGE)
+HC_OPTS = $(HAXML_PACKAGE) $(HC_OPTS1) $(HC_PACKAGE)
 
 ####################################################################
 ### targets
