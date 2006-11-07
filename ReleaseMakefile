@@ -34,7 +34,7 @@ PFE_FLAGS = $(PFE_PATH) -DPROGRAMATICA \
 endif
 
 # check for new HaXml-1.13.2
-HAXMLVERSION = $(shell $(HCPKG) field HaXml version)
+HAXMLVERSION = $(shell ghc-pkg field HaXml version)
 ifneq ($(findstring 1.13.2, $(HAXMLVERSION)),)
 HAXML_PACKAGE = -package HaXml -DHAXML_PACKAGE
 endif
