@@ -1,7 +1,7 @@
 {- |
 Module      :  $Header$
+Description :  Coding of CASL into SoftFOL
 Copyright   :  (c) Klaus Lüttich and Uni Bremen 2005
-Description :  Coding of CASL into SoftFOL. 
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  luettich@tzi.de
@@ -13,7 +13,7 @@ The translating comorphism from CASL to SoftFOL.
 
 {- todo
 
-   - elimination of single sorts is only possible while generating 
+   - elimination of single sorts is only possible while generating
      DFG or TPTP, mark the Sort/set the flag
 
    - implement translation of Sort_gen_ax (FORMULA f) as goals
