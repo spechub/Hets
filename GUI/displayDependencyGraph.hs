@@ -16,6 +16,8 @@ import GraphDisp
 import GraphConfigure
 
 -- for windows display
+import TextDisplay
+import Configuration
 import Events
 import Destructible
 
@@ -36,7 +38,7 @@ main = do
     lfs <- mapM (readFile . (++ ".imports")) ffnn
     let ss = map (filter (isPrefixOf "import") . lines) lfs
         sss = getContent6 ss
-        ssss' = map (filter $ not . isSublistOf ".Logic_")
+        ssss' = map (filter ( \ s -> all (not . (`isSublistOf` s)) excludes))
                     sss 
         ssss = map (map $ fst . break (== '.')) ssss'
         sss' = map nub ssss
@@ -46,15 +48,19 @@ main = do
                         emptyGraphParms
     depG <- newGraph daVinciSort graphParms
     let flln = nub $ fln' ++ concat sss'
-        subNodeMenu = LocalMenu (Menu (Just "Info") [])
+        subNodeMenu = LocalMenu (Menu (Just "Info") [
+                      Button "Contents" (\lg -> createTextDisplay 
+                      ("Contents of " ++ lg) 
+                       (showCon lg) [size(80,25)])])
+        showCon lg = unlines (filter (isPrefixOf (lg++".")) ffnn)
         subNodeTypeParms =
                          subNodeMenu $$$
                          Ellipse $$$
-                         ValueTitle id $$$
+                         ValueTitle return $$$
                          Color "yellow" $$$
                          emptyNodeTypeParms
     subNodeType <- newNodeType depG subNodeTypeParms
-    subNodeList <- mapM (newNode depG subNodeType . return) flln
+    subNodeList <- mapM (newNode depG subNodeType) flln
     let slAndNodes = Map.fromList $ zip flln subNodeList
         lookup' g_sl = Map.findWithDefault 
                               (error "lookup': node not found") 
@@ -72,12 +78,15 @@ main = do
     mapM_ insertSubArc $ 
                      Rel.toList $ Rel.intransKernel $ Rel.transClosure $ 
                         Rel.fromList
-                     $ isIn3 $ concat $ zipWith getContent2 fln sss'
+                     $ isIn3 $ concat $ zipWith getContent2 ffnn sss'
     redraw depG
     sync(destroyed depG)
 
-getContent2 :: a -> [b] -> [(a, b)]
-getContent2 x  = map (\ m -> (x, m))
+excludes = ["ATC", ".Logic_"]
+
+getContent2 :: String -> [String] -> [(String, String)]
+getContent2 x l = if any (`isSublistOf` x) excludes then []
+                 else map (\ m -> (fst $ break (== '.') x, m)) l
 
 getContent4 :: [String] -> [String]
 getContent4 s = map ((!! 1) .  words) s
