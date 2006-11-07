@@ -15,12 +15,16 @@ instantiation to specific first-order formulas.
 
 module CASL.Induction where
 
+--import Debug.Trace
+--import CASL.SimplifySen
+
 import CASL.AS_Basic_CASL
 import CASL.Sign
 import CASL.Fold
 import Common.AS_Annotation as AS_Anno
 import Common.Id
 import Common.Result
+import Common.DocUtils
 import Data.List
 import Data.Maybe
 
@@ -28,7 +32,7 @@ import Data.Maybe
 -- | derive a second-order induction scheme from a sort generation constraint
 -- | the second-order predicate variables are represented as predicate
 -- | symbols P[s], where s is a sort
-inductionScheme :: [Constraint] -> Result (FORMULA f)
+inductionScheme :: Pretty f =>  [Constraint] -> Result (FORMULA f)
 inductionScheme constrs =
   induction constrs (map predSubst constrs)
   where sorts = map newSort constrs
@@ -47,14 +51,14 @@ inductionScheme constrs =
 -- | sort generation constraint for this list of formulas
 -- | It is assumed that the (original) sorts of the constraint
 -- | match the sorts of the free variables
-instantiateSortGen :: [Constraint] -> [(FORMULA f,VAR,SORT)]
+instantiateSortGen :: Pretty f =>  [Constraint] -> [(FORMULA f,VAR,SORT)]
                         -> Result (FORMULA f)
 instantiateSortGen constrs phis =
   induction constrs (map substFormula phis)
   where substFormula (phi,v,_) t = substitute v t phi
 
 -- | substitute a term for a variable in a formula
-substitute :: VAR -> TERM f -> FORMULA f -> FORMULA f
+substitute :: Pretty f =>  VAR -> TERM f -> FORMULA f -> FORMULA f
 substitute v t = foldFormula $
  (mapRecord id) { foldQual_var = \ t2 v2 _ _ ->
                   if v == v2 then t else t2
@@ -65,7 +69,7 @@ substitute v t = foldFormula $
 
 -- | derive an induction scheme from a sort generation constraint
 -- | using substitutions as induction predicates
-induction :: [Constraint] -> [TERM f -> FORMULA f] -> Result (FORMULA f)
+induction :: Pretty f =>  [Constraint] -> [TERM f -> FORMULA f] -> Result (FORMULA f)
 induction constrs substs = 
  if not (length constrs == length substs)
   then fail "CASL.Induction.induction: argument lists must have equal length"
@@ -82,13 +86,13 @@ induction constrs substs =
 
 -- | construct premise set for the induction scheme
 -- | for one sort in the constraint
-mkPrems :: [TERM f -> FORMULA f]
+mkPrems :: Pretty f =>  [TERM f -> FORMULA f]
             -> (Constraint, TERM f -> FORMULA f, (VAR,SORT)) 
             -> Result [FORMULA f]
 mkPrems substs info@(constr,_,_) = mapM (mkPrem substs info) (opSymbs constr)
 
 -- | construct a premise for the induction scheme for one constructor
-mkPrem :: [TERM f -> FORMULA f] 
+mkPrem :: Pretty f =>  [TERM f -> FORMULA f] 
            -> (Constraint, TERM f -> FORMULA f, (VAR,SORT)) 
            -> (OP_SYMB,[Int])
            -> Result (FORMULA f)
@@ -117,39 +121,52 @@ mkVarDecl :: (VAR,SORT) -> VAR_DECL
 mkVarDecl (v,s) = Var_decl [v] s nullRange
 
 -- | turn sorted variable into term
-mkVarTerm :: (VAR,SORT) -> TERM f
+mkVarTerm :: Pretty f =>  (VAR,SORT) -> TERM f
 mkVarTerm (v,s) = Qual_var v s nullRange
 
 -- | optimized conjunction
-mkConj :: [FORMULA f] -> FORMULA f
+mkConj :: Pretty f =>  [FORMULA f] -> FORMULA f
 mkConj [] = False_atom nullRange
 mkConj [phi] = phi
 mkConj phis = Conjunction phis nullRange
 
 
 -- !! documentation is missing
-generateInductionLemmas :: (Sign f e, [Named (FORMULA f)]) 
+generateInductionLemmas :: Pretty f =>  (Sign f e, [Named (FORMULA f)]) 
                            -> (Sign f e, [Named (FORMULA f)])
-generateInductionLemmas (sig,axs) = (sig,axs++inductionAxs)
+generateInductionLemmas (sig,axs) = 
+   (sig,axs++ {- trace (showDoc (map (mapNamed(simplifySen 
+                 undefined undefined sig)) inductionAxs) "") -}
+        inductionAxs)
    where 
    sortGens = filter isSortGen (map sentence axs)
-   goals = filter isAxiom axs
+   goals = filter (not . isAxiom) axs
    inductionAxs = map (mapNamed stripEmptyQuant)
                    $ fromJust $ maybeResult $ generateInductionLemmasAux sortGens goals
 
+-- throw out quantifications with empty variable lists
 stripEmptyQuant :: FORMULA f -> FORMULA f
 stripEmptyQuant = foldFormula $
  (mapRecord id) { foldQuantification = \ t2 q vs p r ->
-                  if null vs then p
-                    else t2
+                  let vs' = stripVarDecls vs
+                   in if null vs' then p
+                        else Quantification q vs' p r
                 }
+
+-- throw out empty variable declarations
+stripVarDecls :: [VAR_DECL] -> [VAR_DECL]
+stripVarDecls vs = mapMaybe stripVarDecl vs
+
+stripVarDecl :: VAR_DECL -> Maybe VAR_DECL
+stripVarDecl (Var_decl [] _ _) = Nothing
+stripVarDecl vd = Just vd
 
 -- | determine whether a formula is a sort generation constraint
 isSortGen (Sort_gen_ax _ _) = True
 isSortGen _ = False
   
 
-generateInductionLemmasAux :: [FORMULA f] -- ^ only Sort_gen_ax of a theory
+generateInductionLemmasAux :: Pretty f =>  [FORMULA f] -- ^ only Sort_gen_ax of a theory
                               -> [AS_Anno.Named (FORMULA f)] -- ^ all goals of a theory
                               -> Result ([AS_Anno.Named (FORMULA f)])
                            -- ^ all the generated induction lemmas
