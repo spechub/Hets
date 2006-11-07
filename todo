@@ -322,6 +322,8 @@ this theorem link by inserting a new global theorem link
 theta o sigma : N1->N3.
 use functions from Proofs.TheoremHideShift
 
+improve dependency tracking for development graph proofs
+  display proved theorem links that depend on pending other proofs in yellow
 
 try out examples
 conservativity calculus

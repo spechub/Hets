@@ -94,7 +94,7 @@ mkPrem :: [TERM f -> FORMULA f]
            -> Result (FORMULA f)
 mkPrem substs (_,subst,_) 
        (opSym@(Qual_op_name _ (Op_type _ argTypes _ _) _), idx) = 
-  return $ if null vars then phi
+  return $ if null qVars then phi
             else Quantification Universal (map mkVarDecl qVars) phi nullRange
   where
   vars = map mkVar [1..length argTypes]
@@ -134,7 +134,15 @@ generateInductionLemmas (sig,axs) = (sig,axs++inductionAxs)
    where 
    sortGens = filter isSortGen (map sentence axs)
    goals = filter isAxiom axs
-   inductionAxs = fromJust $ maybeResult $ generateInductionLemmasAux sortGens goals
+   inductionAxs = map (mapNamed stripEmptyQuant)
+                   $ fromJust $ maybeResult $ generateInductionLemmasAux sortGens goals
+
+stripEmptyQuant :: FORMULA f -> FORMULA f
+stripEmptyQuant = foldFormula $
+ (mapRecord id) { foldQuantification = \ t2 q vs p r ->
+                  if null vs then p
+                    else t2
+                }
 
 -- | determine whether a formula is a sort generation constraint
 isSortGen (Sort_gen_ax _ _) = True

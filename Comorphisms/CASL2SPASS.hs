@@ -20,7 +20,7 @@ The translating comorphism from CASL to SoftFOL.
      (s. below for a sketch) .. Klaus Lüttich
 -}
 
-module Comorphisms.CASL2SPASS (SuleCFOL2SoftFOL(..)) where
+module Comorphisms.CASL2SPASS (SuleCFOL2SoftFOL(..), SuleCFOL2SoftFOLInduction(..)) where
 
 -- Debuging and Warning
 import Debug.Trace
