@@ -321,6 +321,10 @@ morphism theta is from Sig(N2) to Sig(N3)), then prove
 this theorem link by inserting a new global theorem link
 theta o sigma : N1->N3.
 use functions from Proofs.TheoremHideShift
+  test file: see CASL-lib/test_TheoremHideShift.casl
+
+issue warning whne displaing theories (or performing proofs) of
+nodes with ingoing hiding links.
 
 improve dependency tracking for development graph proofs
   display proved theorem links that depend on pending other proofs in yellow
