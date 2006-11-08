@@ -323,6 +323,10 @@ theta o sigma : N1->N3.
 use functions from Proofs.TheoremHideShift
   test file: see CASL-lib/test_TheoremHideShift.casl
 
+error in test_HideTheoremShift.casl
+  (when doing Automatic, HideTheoremShift, Automatic, and then
+   local proof in Target')
+
 issue warning whne displaing theories (or performing proofs) of
 nodes with ingoing hiding links.
 
@@ -355,6 +359,7 @@ test development graph GUI:
 profiling for "automatic" (look at www.haskell.org/ghc)
 
 restrict proofs: only one prove window per node at a given time
+
 
 ************************************************
 further task 1
