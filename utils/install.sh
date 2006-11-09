@@ -6,7 +6,7 @@
 
 INSTALLDIR=/home/www/agbkb/forschung/formal_methods/CoFI/hets 
 VERSION=$1
-for i in linux solaris mac
+for i in linux solaris mac pc-solaris macintel
 do
   (cd $INSTALLDIR/$i; cp -p daily/hets.bz2 versions/hets-$VERSION.bz2)
 done
