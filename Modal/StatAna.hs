@@ -208,7 +208,7 @@ ana_FORMULA b mix f =
     if isPropForm b f then do
            let ps = map (mkId . (: [])) $ Set.toList $ getFormPredToks f
            pm <- gets predMap
-           mapM_ (addPred $ PredType []) ps
+           mapM_ (addPred (emptyAnno ()) $ PredType []) ps
            newGa <- gets globAnnos
            let Result es m = resolveFormula mapM_FORMULA
                              resolveM_FORMULA newGa (mixRules mix) f

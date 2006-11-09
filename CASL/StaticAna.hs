@@ -99,8 +99,8 @@ updateExtInfo upd = do
          Just e -> put s { extendedInfo = e }
     addDiags $ diags re
 
-addPred :: PredType -> Id -> State (Sign f e) ()
-addPred ty i =
+addPred :: Annoted a -> PredType -> Id -> State (Sign f e) ()
+addPred a ty i =
     do checkSorts $ predArgs ty
        e <- get
        let m = predMap e
@@ -112,6 +112,7 @@ addPred ty i =
                            ++ checkWithOtherMap "operation" (opMap e) i
                            ++ checkWithVars (varMap e) i
                            ++ checkNamePrefix i
+       addAnnoSet a $ Symbol i $ PredAsItemType ty
 
 allOpIds :: Sign f e -> Set.Set Id
 allOpIds = Rel.keysSet . opMap
@@ -529,7 +530,7 @@ ana_PRED_ITEM :: Pretty f => Min f e -> Mix b s f e
 ana_PRED_ITEM mef mix ap =
     case item ap of
     Pred_decl preds ty _ ->
-        do mapM (addPred $ toPredType ty) preds
+        do mapM (addPred ap $ toPredType ty) preds
            return ap
     Pred_defn i phd@(Pred_head args rs) at ps ->
         do let lb = getRLabel at
@@ -538,7 +539,7 @@ ana_PRED_ITEM mef mix ap =
                vs = map (\ (Arg_decl v s qs) -> (Var_decl v s qs)) args
                arg = concatMap ( \ (Var_decl v s qs) ->
                                  map ( \ j -> Qual_var j s qs) v) vs
-           addPred (toPredType ty) i
+           addPred ap (toPredType ty) i
            e <- get -- save
            put e { varMap = Map.empty }
            mapM_ addVars vs
