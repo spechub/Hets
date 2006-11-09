@@ -60,8 +60,8 @@ checkWithVars m i@(Id ts _ _) = if isSimpleId i then
     Just _ -> alsoWarning "variable" i
     else []
 
-addOp :: OpType -> Id -> State (Sign f e) ()
-addOp ty i =
+addOp :: Annoted a -> OpType -> Id -> State (Sign f e) ()
+addOp a ty i =
     do checkSorts (opRes ty : opArgs ty)
        e <- get
        let m = opMap e
@@ -81,6 +81,7 @@ addOp ty i =
                       if Set.member ty {opKind = Partial} l then
                          addDiags [mkDiag Hint "redeclared as total" i]
                          else check
+       addAnnoSet a $ Symbol i $ OpAsItemType ty
 
 addAssocOp :: OpType -> Id -> State (Sign f e) ()
 addAssocOp ty i = do
@@ -396,7 +397,7 @@ ana_OP_ITEM mef mix aoi =
     Op_decl ops ty il ps ->
         do let oty = toOpType ty
                ni = notImplied aoi
-           mapM_ (addOp oty) ops
+           mapM_ (addOp aoi oty) ops
            ul <- mapM (ana_OP_ATTR mef mix oty ni ops) il
            if null $ filter ( \ i -> case i of
                                    Assoc_op_attr -> True
@@ -413,7 +414,7 @@ ana_OP_ITEM mef mix aoi =
                vs = map (\ (Arg_decl v s qs) -> (Var_decl v s qs)) args
                arg = concatMap ( \ (Var_decl v s qs) ->
                                  map ( \ j -> Qual_var j s qs) v) vs
-           addOp (toOpType ty) i
+           addOp aoi (toOpType ty) i
            e <- get -- save
            put e { varMap = Map.empty }
            mapM_ addVars vs
@@ -577,7 +578,7 @@ instance PosItem Component where
 -- | return list of constructors
 ana_DATATYPE_DECL :: GenKind -> DATATYPE_DECL -> State (Sign f e) [Component]
 ana_DATATYPE_DECL gk (Datatype_decl s al _) =
-    do ul <- mapM (ana_ALTERNATIVE s . item) al
+    do ul <- mapM (ana_ALTERNATIVE s) al
        let constr = catMaybes ul
            cs = map fst constr
        if null constr then return ()
@@ -742,21 +743,21 @@ selForms :: (Id, OpType, [COMPONENTS]) -> [Named (FORMULA f)]
 selForms = makeSelForms 1 . selForms1 "X"
 
 -- | return the constructor and the set of total selectors
-ana_ALTERNATIVE :: SORT -> ALTERNATIVE
+ana_ALTERNATIVE :: SORT -> Annoted ALTERNATIVE
                 -> State (Sign f e) (Maybe (Component, Set.Set Component))
 ana_ALTERNATIVE s c =
-    case c of
-    Subsorts ss _ ->
-        do mapM_ (addSubsort s) ss
-           return Nothing
-    _ -> do let cons@(i, ty, il) = getConsType s c
-            addOp ty i
-            ul <- mapM (ana_COMPONENTS s) il
-            let ts = concatMap fst ul
-            addDiags $ checkUniqueness (ts ++ concatMap snd ul)
-            addSentences $ selForms cons
-            return $ Just (Component i ty, Set.fromList ts)
-
+    case item c of
+    Subsorts ss _ -> do
+        mapM_ (addSubsort s) ss
+        return Nothing
+    ic -> do 
+        let cons@(i, ty, il) = getConsType s ic
+        addOp c ty i
+        ul <- mapM (ana_COMPONENTS s) il
+        let ts = concatMap fst ul
+        addDiags $ checkUniqueness (ts ++ concatMap snd ul)
+        addSentences $ selForms cons
+        return $ Just (Component i ty, Set.fromList ts)
 
 -- | return total and partial selectors
 ana_COMPONENTS :: SORT -> COMPONENTS
@@ -766,7 +767,7 @@ ana_COMPONENTS s c = do
     sels <- mapM ( \ (mi, ty) ->
             case mi of
             Nothing -> return Nothing
-            Just i -> do addOp ty i
+            Just i -> do addOp (emptyAnno ()) ty i
                          return $ Just $ Component i ty) cs
     return $ partition ((==Total) . opKind . compType) $ catMaybes sels
 

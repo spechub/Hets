@@ -203,7 +203,7 @@ getCoSubsorts c = case c of
 -- | return list of constructors
 ana_CODATATYPE_DECL :: GenKind -> CODATATYPE_DECL -> State CSign [Component]
 ana_CODATATYPE_DECL gk (CoDatatype_decl s al _) =
-    do ul <- mapM (ana_COALTERNATIVE s . item) al
+    do ul <- mapM (ana_COALTERNATIVE s) al
        let constr = catMaybes ul
            cs = map fst constr
        if null constr then return ()
@@ -311,22 +311,23 @@ comakeDisj a1 a2 = do
            $ mkForall (v1 ++ v2) (Negation (Strong_equation t1 t2 p) p) p
 
 -- | return the constructor and the set of total selectors
-ana_COALTERNATIVE :: SORT -> COALTERNATIVE
+ana_COALTERNATIVE :: SORT -> Annoted COALTERNATIVE
                 -> State CSign (Maybe (Component, Set.Set Component))
 ana_COALTERNATIVE s c =
-    case c of
-    CoSubsorts ss _ ->
-        do mapM_ (addSubsort s) ss
-           return Nothing
-    _ -> do let cons@(i, ty, il) = getCoConsType s c
-            ul <- mapM (ana_COCOMPONENTS s) il
-            let ts = concatMap fst ul
-            addDiags $ checkUniqueness (ts ++ concatMap snd ul)
-            addSentences $ coselForms cons
-            case i of
+    case item c of
+    CoSubsorts ss _ -> do
+        mapM_ (addSubsort s) ss
+        return Nothing
+    ci -> do 
+        let cons@(i, ty, il) = getCoConsType s ci
+        ul <- mapM (ana_COCOMPONENTS s) il
+        let ts = concatMap fst ul
+        addDiags $ checkUniqueness (ts ++ concatMap snd ul)
+        addSentences $ coselForms cons
+        case i of
               Nothing -> return Nothing
               Just i' -> do
-                addOp ty i'
+                addOp c ty i'
                 return $ Just (Component i' ty, Set.fromList ts)
 
 
@@ -336,7 +337,7 @@ ana_COCOMPONENTS :: SORT -> COCOMPONENTS
 ana_COCOMPONENTS s c = do
     let cs = getCoCompType s c
     sels <- mapM ( \ (i, ty) ->
-                   do addOp ty i
+                   do addOp (emptyAnno ()) ty i
                       return $ Just $ Component i ty) cs
     return $ partition ((==Total) . opKind . compType) $ catMaybes sels
 
