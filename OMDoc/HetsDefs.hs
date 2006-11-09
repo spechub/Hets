@@ -169,21 +169,13 @@ predMapStringsToPredMap pres = foldr (\(id' , args) m -> Map.insert
             ) Map.empty pres
 
 -- Conversion from String-Form to Sign
-stringsToCASLSign::CASLSignStrings->CASLSign
-stringsToCASLSign cs =
-  Sign {
-     sortSet = sortSetStringsToSortSet $ sortSetStrings cs
-    ,sortRel = sortRelStringsToSortRel $ sortRelStrings cs
-    ,opMap = opMapStringsToOpMap $ opMapStrings cs
-    ,assocOps = Map.empty -- ignored
-    ,predMap = predMapStringsToPredMap $ predMapStrings cs
-    ,varMap = Map.empty -- ignored
-    ,sentences = [] -- ignored
-    ,envDiags = [] -- ignored
-    ,globAnnos = emptyGlobalAnnos
-    ,extendedInfo = () -- ignored
-  }
-
+stringsToCASLSign :: CASLSignStrings -> CASLSign
+stringsToCASLSign cs = (emptySign ())
+    { sortSet = sortSetStringsToSortSet $ sortSetStrings cs
+    , sortRel = sortRelStringsToSortRel $ sortRelStrings cs
+    , opMap = opMapStringsToOpMap $ opMapStrings cs
+    , predMap = predMapStringsToPredMap $ predMapStrings cs
+    }
 
 -- Filter out links for collecting sorts, rels, preds...
 -- only four types of links are allowed (and afaik needed for this)
@@ -1433,21 +1425,26 @@ stripCASLMorphism
       mcsi = (\(G_theory _ sign _) -> (cast sign)::(Maybe CASLSign)) th
       mcse = (\(G_theory _ _ sens) -> (cast sens)::(Maybe (Prover.ThSens CASLFORMULA (AnyComorphism, BasicProof)))) th
     in case mcsi of
-      (Just (Sign ss sr om ao oldpm vm se ev ga ei)) ->
+      Just sig ->
         let
-          funlist = (map (\(_, (f, _)) -> f) $ Map.toList fm)::[Id.Id]
-          predlist = (map (\(_, p) -> p) $ Map.toList pm)::[Id.Id]
+          funlist = map (\(_, (f, _)) -> f) $ Map.toList fm :: [Id.Id]
+          predlist = map (\(_, p) -> p) $ Map.toList pm :: [Id.Id]
           newpredmap = foldl (\nmap' id' ->
             Map.filterWithKey (\k _ -> k /= id' ) nmap'
-            ) oldpm predlist
+            ) (predMap sig) predlist
           newopmap = foldl (\nmap' id' ->
             Map.filterWithKey (\k _ -> k /= id' ) nmap'
-            ) om funlist
+            ) (opMap sig) funlist
           newassocmap = foldl (\nmap' id' ->
             Map.filterWithKey (\k _ -> k /= id' ) nmap'
-            ) ao funlist
+            ) (assocOps sig) funlist
         in  case mcse of
-            (Just csens) -> n { dgn_theory = (G_theory CASL (Sign ss sr newopmap newassocmap newpredmap vm se ev ga ei) csens) }
+            Just csens -> n { dgn_theory = (G_theory CASL sig
+                                  { opMap =  newopmap
+                                  , assocOps = newassocmap
+                                  , predMap = newpredmap 
+                                  } csens)
+                            }
             _ -> error "Could not cast sentences to (ThSens CASLFORMULA) (but a CASLSign was cast... (wierd!))"
       Nothing -> n  -- maybe this node is not CASL-related... leave it as is
 stripCASLMorphism n@(DGRef {}) _ = n -- can DGRefS have a morphism from another node in the graph ?
@@ -1558,17 +1555,15 @@ isEmptyHidAndReqL (_, l) = null l
 isNonHidingHidAndReqL::HidingAndRequationList->Bool
 isNonHidingHidAndReqL (h, _) = null h
     
-createHidingString::CASLSign->String
-createHidingString (Sign sortset _ opmap _ predmap _ _ _ _ _) =
-  let
-    hidden = map show (Set.toList sortset) ++
-       map show (Map.keys opmap) ++
-       map show (Map.keys predmap)
-  in  implode ", " hidden
+createHidingString :: CASLSign -> String
+createHidingString s = implode ", " $ 
+    map show (Set.toList $ sortSet s) ++
+    map show (Map.keys $ opMap s) ++
+    map show (Map.keys $ predMap s)
 
-getSymbols::CASLSign->[Id.Id]
-getSymbols (Sign sortset _ opmap _ predmap _ _ _ _ _) =
-  (Set.toList sortset) ++ (Map.keys opmap) ++ (Map.keys predmap)
+getSymbols :: CASLSign -> [Id.Id]
+getSymbols s = 
+    Set.toList (sortSet s) ++ Map.keys (opMap s) ++ Map.keys (predMap s)
 
 -- hiding is currently wrong because this function does only check 
 -- if any symbols dissappear in the target - this happens also when renaming...
@@ -1871,64 +1866,44 @@ applyMorphHiding (sortmap, funmap, predmap, hidingset) hidings =
     ,hidingset
   )
   
-buildMorphismSignO::MorphismMap->[Id.Id]->CASLSign->CASLSign
-buildMorphismSignO
-  (mmsm, mmfm, mmpm, _) 
-  hidings
-  sourcesign =
-  let
-    (Sign
-      sortset
-      sortrel
-      opmap
-      assocops
-      predmap
-      varmap
-      sens
-      envdiags
-      ga
-      ext
-      ) = applySignHiding sourcesign hidings
-  in
-    Sign
-      (Set.map
+buildMorphismSignO :: MorphismMap -> [Id.Id] -> CASLSign -> CASLSign
+buildMorphismSignO (mmsm, mmfm, mmpm, _) hidings sourcesign =
+  case applySignHiding sourcesign hidings of
+    s -> s 
+      { sortSet = Set.map
         (\origsort ->
           Map.findWithDefault origsort origsort mmsm
-        )
-        sortset)
-      (Rel.fromList $ map (\(a, b) ->
-        (Map.findWithDefault a a mmsm
-        ,Map.findWithDefault b b mmsm)
-        ) $ Rel.toList sortrel)
-      (foldl (\mappedops (sid, sopts) ->
-        foldl (\mo sot ->
+        ) $ sortSet s
+      , sortRel = Rel.fromList $ map (\(a, b) ->
+          (Map.findWithDefault a a mmsm, Map.findWithDefault b b mmsm)
+                                     ) $ Rel.toList $ sortRel s
+      , opMap = foldl (\mappedops (sid, sopts) ->
+          foldl (\mo sot ->
           case Map.lookup (sid, sot) mmfm of
             Nothing -> mo
-            (Just (mid, mot)) ->
+            Just (mid, mot) ->
               Map.insertWith (Set.union) mid (Set.singleton mot) mo
-          ) mappedops $ Set.toList sopts
-        ) Map.empty $ Map.toList opmap)
-      (foldl (\mappedops (sid, sopts) ->
-        foldl (\mo sot ->
+                ) mappedops $ Set.toList sopts
+                      ) Map.empty $ Map.toList $ opMap s
+      , assocOps = foldl (\mappedops (sid, sopts) ->
+          foldl (\mo sot ->
           case Map.lookup (sid, sot) mmfm of
             Nothing -> mo
-            (Just (mid, mot)) ->
+            Just (mid, mot) ->
               Map.insertWith (Set.union) mid (Set.singleton mot) mo
-          ) mappedops $ Set.toList sopts
-        ) Map.empty $ Map.toList assocops)
-      (foldl (\mappedpreds (sid, sprts) ->
-        foldl (\mp spt ->
+                ) mappedops $ Set.toList sopts
+                         ) Map.empty $ Map.toList $ assocOps s
+      , predMap = foldl (\mappedpreds (sid, sprts) ->
+          foldl (\mp spt ->
           case Map.lookup (sid, spt) mmpm of
             Nothing -> mp
-            (Just (mid, mpt)) ->
+            Just (mid, mpt) ->
               Map.insertWith (Set.union) mid (Set.singleton mpt) mp
-          ) mappedpreds $ Set.toList sprts
-        ) Map.empty $ Map.toList predmap)
-      (Map.map (\vsort -> Map.findWithDefault vsort vsort mmsm) varmap)
-      sens
-      envdiags
-      ga
-      ext
+                ) mappedpreds $ Set.toList sprts
+                        ) Map.empty $ Map.toList $ predMap s
+      , varMap = Map.map (\vsort -> Map.findWithDefault vsort vsort mmsm)
+                 $ varMap s
+      }
 
 buildMorphismSign::Morphism () () ()->Set.Set SORT->CASLSign->CASLSign
 buildMorphismSign morphism hidingSet sign =
@@ -2028,21 +2003,16 @@ buildMorphismSign morphism hidingSet sign =
       msign
 
   
-applySignHiding::CASLSign->[Id.Id]->CASLSign
-applySignHiding 
-  (Sign sortset sortrel opmap assocops predmap varmap sens envdiags ga ext)
-  hidings =
-  Sign
-    (Set.filter (not . flip elem hidings) sortset)
-    (Rel.fromList $ filter (\(id' ,_) -> not $ elem id' hidings) $ Rel.toList sortrel)
-    (Map.filterWithKey (\sid _ -> not $ elem sid hidings) opmap)
-    (Map.filterWithKey (\sid _ -> not $ elem sid hidings) assocops)
-    (Map.filterWithKey (\sid _ -> not $ elem sid hidings) predmap)
-    (Map.filter (\varsort -> not $ elem varsort hidings) varmap)
-    sens
-    envdiags
-    ga
-    ext
+applySignHiding :: CASLSign -> [Id.Id] -> CASLSign
+applySignHiding s hidings = let hide = not . (`elem` hidings) in s
+    { sortSet = Set.filter hide $ sortSet s
+    , sortRel = Rel.fromList $ filter (hide . fst) $ Rel.toList $ sortRel s
+    , opMap = Map.filterWithKey (\sid _ -> hide sid) $ opMap s
+    , assocOps = Map.filterWithKey (\sid _ -> hide sid)
+                 $ assocOps s
+    , predMap = Map.filterWithKey (\sid _ -> hide sid) $ predMap s
+    , varMap = Map.filter hide $ varMap s
+    }
 
 -- | Instance of Read for IdS           
 instance Read Id.Id where
@@ -3021,7 +2991,7 @@ createUniqueNames ln tracemarks =
       let
         dg = devGraph $ Map.findWithDefault (error "This can't happen!") libname ln
         node = (\(Just a) -> a) $ Graph.lab dg nodenum
-        nodename = getNodeName node
+        nodename = nodeNameToName $ dgn_name node
         caslsign = (\(Just a) -> a) $ getCASLSign (dgn_sign node)
         previousNodeNameUse =
           foldl
@@ -3410,8 +3380,7 @@ createUniqueNames ln tracemarks =
             names
           else
             names ++
-              [(
-                  libname
+              [ ( libname
                 , dgn_name node
                 , uniqueNodeName
                 , nodenum
@@ -3420,39 +3389,15 @@ createUniqueNames ln tracemarks =
                 , uniqueOpIds
                 , uniqueSensIds
                 , uniqueConsIds
-              )]
+                ) ]
     )
     []
     tracemarks
-  where
-    getNodeName::DGNodeLab->String
-    getNodeName = nodeNameToName . dgn_name
-    nodeNameToName::NODE_NAME->String
-    nodeNameToName =
-      (\nn ->
-        let
-          nodename = showName nn
-        in
-          if (length nodename) == 0
-            then
-              "AnonNode"
-            else
-              nodename
-      )
 
-
-nodeNameToName::NODE_NAME->String
-nodeNameToName =
-  (\nn ->
-    let
-      nodename = showName nn
-    in
-      if (length nodename) == 0
-        then
-          "AnonNode"
-        else
-          nodename
-  )
+nodeNameToName :: NODE_NAME -> String
+nodeNameToName nn = case showName nn of
+    [] -> "AnonNode"
+    nodename -> nodename 
 
 data Identifier =
     IdNodeName Id.Id

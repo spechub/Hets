@@ -86,8 +86,6 @@ import qualified Logic.Prover as Prover
 import Data.Maybe (fromMaybe)
 import Data.List (isPrefixOf, find)
 
-import qualified Common.GlobalAnnotations as GA
-
 import Debug.Trace (trace)
 
 import qualified System.IO.Error as System.IO.Error
@@ -1173,10 +1171,8 @@ createNodeFromSpec
   let
     theorysens = sensXNWONFromXmlTheory ffxi axml
     theorycons = conSensXNWONFromXmlTheory ffxi axml
-    caslsign =
-      Sign
-        {
-            sortSet = Set.map xnWOaToa (ts_sorts ts)
+    caslsign = (emptySign ())
+          { sortSet = Set.map xnWOaToa (ts_sorts ts)
           , sortRel =
               Rel.fromList
                 $
@@ -1192,14 +1188,7 @@ createNodeFromSpec
               implodeSetToMap
                 predTypeXNWONToPredType
                 (ts_predicates ts)
-          , assocOps = Map.empty
-          , varMap = Map.empty
-          , envDiags = []
-          , globAnnos = Hets.emptyGlobalAnnos
-          , extendedInfo = ()
-          , sentences = []
-                
-        }
+          }
     theory =
       G_theory
         CASL

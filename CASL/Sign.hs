@@ -64,17 +64,19 @@ data Symbol = Symbol {symName :: Id, symbType :: SymbType}
 instance PosItem Symbol where
     getRange = getRange . symName
 
-data Sign f e = Sign { sortSet :: Set.Set SORT
-               , sortRel :: Rel.Rel SORT
-               , opMap :: OpMap
-               , assocOps :: OpMap
-               , predMap :: Map.Map Id (Set.Set PredType)
-               , varMap :: Map.Map SIMPLE_ID SORT
-               , sentences :: [Named (FORMULA f)]
-               , envDiags :: [Diagnosis]
-               , globAnnos :: GlobalAnnos
-               , extendedInfo :: e
-               } deriving Show
+data Sign f e = Sign 
+    { sortSet :: Set.Set SORT
+    , sortRel :: Rel.Rel SORT
+    , opMap :: OpMap
+    , assocOps :: OpMap
+    , predMap :: Map.Map Id (Set.Set PredType)
+    , varMap :: Map.Map SIMPLE_ID SORT
+    , sentences :: [Named (FORMULA f)]
+    , envDiags :: [Diagnosis]
+    , annoMap :: Map.Map Symbol (Set.Set Annotation)
+    , globAnnos :: GlobalAnnos
+    , extendedInfo :: e
+    } deriving Show
 
 -- better ignore assoc flags for equality
 instance (Eq f, Eq e) => Eq (Sign f e) where
@@ -86,16 +88,18 @@ instance (Eq f, Eq e) => Eq (Sign f e) where
         extendedInfo e1 == extendedInfo e2
 
 emptySign :: e -> Sign f e
-emptySign e = Sign { sortSet = Set.empty
-               , sortRel = Rel.empty
-               , opMap = Map.empty
-               , assocOps = Map.empty
-               , predMap = Map.empty
-               , varMap = Map.empty
-               , sentences = []
-               , envDiags = []
-               , globAnnos = emptyGlobalAnnos
-               , extendedInfo = e }
+emptySign e = Sign 
+    { sortSet = Set.empty
+    , sortRel = Rel.empty
+    , opMap = Map.empty
+    , assocOps = Map.empty
+    , predMap = Map.empty
+    , varMap = Map.empty
+    , sentences = []
+    , envDiags = []
+    , annoMap = Map.empty
+    , globAnnos = emptyGlobalAnnos
+    , extendedInfo = e }
 
 -- | proper subsorts (possibly excluding input sort)
 subsortsOf :: SORT -> Sign f e -> Set.Set SORT
