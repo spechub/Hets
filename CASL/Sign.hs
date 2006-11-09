@@ -235,14 +235,24 @@ addDiags ds =
     do e <- State.get
        State.put e { envDiags = reverse ds ++ envDiags e }
 
-addSort :: SORT -> State.State (Sign f e) ()
-addSort s =
+addAnnoSet :: Annoted a -> Symbol -> State.State (Sign f e) ()
+addAnnoSet a s = do
+    e <- State.get
+    State.put e 
+        { annoMap = Map.insertWith (Set.union) s 
+          (Set.union (Set.fromList $ l_annos a) 
+          $ Set.fromList $ r_annos a) $ annoMap e
+        }
+
+addSort :: Annoted a -> SORT -> State.State (Sign f e) ()
+addSort a s =
     do e <- State.get
        let m = sortSet e
        if Set.member s m then
           addDiags [mkDiag Hint "redeclared sort" s]
           else do State.put e { sortSet = Set.insert s m }
                   addDiags $ checkNamePrefix s
+       addAnnoSet a $ Symbol s SortAsItemType
 
 hasSort :: Sign f e -> SORT -> [Diagnosis]
 hasSort e s = if Set.member s $ sortSet e then []

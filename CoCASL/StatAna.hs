@@ -184,8 +184,8 @@ ana_C_SIG_ITEM :: Ana C_SIG_ITEM C_BASIC_ITEM C_SIG_ITEM C_FORMULA CoCASLSign
 ana_C_SIG_ITEM _ mi =
     case mi of
     CoDatatype_items al _ ->
-        do let sorts = map (( \ (CoDatatype_decl s _ _) -> s) . item) al
-           mapM_ addSort sorts
+        do mapM_ (\ i -> case item i of 
+                  CoDatatype_decl s _ _ -> addSort i s) al
            mapAnM (ana_CODATATYPE_DECL Loose) al
            closeSubsortRel
            return mi
@@ -345,8 +345,8 @@ ana_C_BASIC_ITEM
 ana_C_BASIC_ITEM mix bi = do
   case bi of
     CoFree_datatype al ps ->
-        do let sorts = map (( \ (CoDatatype_decl s _ _) -> s) . item) al
-           mapM_ addSort sorts
+        do mapM_ (\ i -> case item i of 
+                  CoDatatype_decl s _ _ -> addSort i s) al
            mapAnM (ana_CODATATYPE_DECL Free) al
            toCoSortGenAx ps True $ getCoDataGenSig al
            closeSubsortRel

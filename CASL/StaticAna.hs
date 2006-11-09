@@ -168,8 +168,8 @@ ana_BASIC_ITEMS mef ab anas mix bi =
     Sig_items sis -> fmap Sig_items $
                      ana_SIG_ITEMS mef anas mix Loose sis
     Free_datatype al ps ->
-        do let sorts = map (( \ (Datatype_decl s _ _) -> s) . item) al
-           mapM_ addSort sorts
+        do mapM_ (\ i -> case item i of 
+                  Datatype_decl s _ _ -> addSort i s) al
            mapAnM (ana_DATATYPE_DECL Free) al
            toSortGenAx ps True $ getDataGenSig al
            closeSubsortRel
@@ -281,8 +281,8 @@ ana_SIG_ITEMS mef anas mix gk si =
         do ul <- mapM (ana_PRED_ITEM mef mix) al
            return $ Pred_items ul ps
     Datatype_items al _ ->
-        do let sorts = map (( \ (Datatype_decl s _ _) -> s) . item) al
-           mapM_ addSort sorts
+        do mapM_ (\ i -> case item i of 
+                  Datatype_decl s _ _ -> addSort i s) al
            mapAnM (ana_DATATYPE_DECL gk) al
            closeSubsortRel
            return si
@@ -351,10 +351,10 @@ ana_SORT_ITEM :: Pretty f => Min f e -> Mix b s f e
 ana_SORT_ITEM mef mix asi =
     case item asi of
     Sort_decl il _ ->
-        do mapM_ addSort il
+        do mapM_ (addSort asi) il
            return asi
     Subsort_decl il i _ ->
-        do mapM_ addSort (i:il)
+        do mapM_ (addSort asi) (i:il)
            mapM_ (addSubsort i) il
            return asi
     Subsort_defn sub v super af ps ->
@@ -367,7 +367,7 @@ ana_SORT_ITEM mef mix asi =
                lb = getRLabel af
                lab = if null lb then getRLabel asi else lb
            addDiags ds
-           addSort sub
+           addSort asi sub
            addSubsort super sub
            case mf of
              Nothing -> return asi { item = Subsort_decl [sub] super ps}
@@ -382,7 +382,7 @@ ana_SORT_ITEM mef mix asi =
                return asi { item = Subsort_defn sub v super
                                    af { item = resF } ps}
     Iso_decl il _ ->
-        do mapM_ addSort il
+        do mapM_ (addSort asi) il
            case il of
                [] -> return ()
                _ : tl -> mapM_ (uncurry $ addSubsortOrIso False)
