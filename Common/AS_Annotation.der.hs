@@ -19,10 +19,11 @@ import Common.Id
 {-! global: UpPos !-}
 
 -- | start of an annote with its WORD or a comment
-data Annote_word = Annote_word String | Comment_start deriving (Show, Eq)
+data Annote_word = Annote_word String | Comment_start deriving (Show, Eq, Ord)
 
 -- | line or group for 'Unparsed_anno'
-data Annote_text = Line_anno String | Group_anno [String] deriving (Show, Eq)
+data Annote_text = Line_anno String | Group_anno [String] 
+    deriving (Show, Eq, Ord)
 
 -- | formats to be displayed (may be extended in the future).
 -- Drop 3 from the show result to get the string for parsing and printing
@@ -52,15 +53,15 @@ lookupDisplayFormat df =
 -- 'NoDirection' can also not be specified explicitly,
 -- but covers those ids that are not mentionend in precedences.
 data PrecRel = Higher | Lower | BothDirections | NoDirection
-               deriving (Show, Eq)
+               deriving (Show, Eq, Ord)
 
 -- | either left or right associative
-data AssocEither = ALeft | ARight deriving (Show, Eq)
+data AssocEither = ALeft | ARight deriving (Show, Eq, Ord)
 
 -- | semantic (line) annotations without further information.
 -- Use the same drop-3-trick as for the 'Display_format'.
 data Semantic_anno = SA_cons | SA_def | SA_implies | SA_mono | SA_implied
-                     deriving (Show, Eq)
+                     deriving (Show, Eq, Ord)
 
 -- | a lookup table for the textual representation of semantic annos
 semantic_anno_table :: [(Semantic_anno, String)]
@@ -99,7 +100,7 @@ data Annotation = -- | constructor for comments or unparsed annotes
                 | Semantic_anno Semantic_anno Range
                 -- position information for annotations is provided
                 -- by every annotation
-                  deriving (Show, Eq)
+                  deriving (Show, Eq, Ord)
 
 -- |
 -- 'isLabel' tests if the given 'Annotation' is a label
