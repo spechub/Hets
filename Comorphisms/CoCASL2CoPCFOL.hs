@@ -24,6 +24,7 @@ import CoCASL.StatAna
 import CoCASL.Sublogic
 import CASL.Sublogic as SL
 import CASL.AS_Basic_CASL
+import CASL.Sign
 import CASL.Morphism
 import CASL.Sublogic
 import CASL.Inject
@@ -41,12 +42,12 @@ instance Comorphism CoCASL2CoPCFOL
                C_BASIC_SPEC CoCASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CSign
                CoCASLMor
-               CASL.Morphism.Symbol CASL.Morphism.RawSymbol ()
+               Symbol RawSymbol ()
                CoCASL CoCASL_Sublogics
                C_BASIC_SPEC CoCASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CSign
                CoCASLMor
-               CASL.Morphism.Symbol CASL.Morphism.RawSymbol () where
+               Symbol RawSymbol () where
     sourceLogic CoCASL2CoPCFOL = CoCASL
     sourceSublogic CoCASL2CoPCFOL = SL.top
     targetLogic CoCASL2CoPCFOL = CoCASL

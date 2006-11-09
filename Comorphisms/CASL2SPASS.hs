@@ -20,7 +20,9 @@ The translating comorphism from CASL to SoftFOL.
      (s. below for a sketch) .. Klaus Lüttich
 -}
 
-module Comorphisms.CASL2SPASS (SuleCFOL2SoftFOL(..), SuleCFOL2SoftFOLInduction(..)) where
+module Comorphisms.CASL2SPASS 
+    (SuleCFOL2SoftFOL(..), SuleCFOL2SoftFOLInduction(..)) 
+    where
 
 -- Debuging and Warning
 import Debug.Trace
@@ -127,7 +129,7 @@ instance Comorphism SuleCFOL2SoftFOL
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign
                CASLMor
-               CASL.Morphism.Symbol CASL.Morphism.RawSymbol ()
+               CSign.Symbol RawSymbol ()
                SoftFOL () () SPTerm () ()
                SPSign.Sign
                SoftFOLMorphism () () SPSign.ATP_ProofTree where
@@ -154,7 +156,7 @@ instance Comorphism SuleCFOL2SoftFOLInduction
                CASLBasicSpec CASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CASLSign
                CASLMor
-               CASL.Morphism.Symbol CASL.Morphism.RawSymbol ()
+               CSign.Symbol RawSymbol ()
                SoftFOL () () SPTerm () ()
                SPSign.Sign
                SoftFOLMorphism () () SPSign.ATP_ProofTree where

@@ -28,6 +28,7 @@ import CoCASL.StatAna
 import CoCASL.Sublogic
 import CASL.Sublogic
 import CASL.AS_Basic_CASL
+import CASL.Sign
 import CASL.Morphism
 import Comorphisms.CFOL2IsabelleHOL
 
@@ -51,7 +52,7 @@ instance Comorphism CoCFOL2IsabelleHOL
                C_BASIC_SPEC CoCASLFORMULA SYMB_ITEMS SYMB_MAP_ITEMS
                CSign
                CoCASLMor
-               CASL.Morphism.Symbol CASL.Morphism.RawSymbol ()
+               Symbol RawSymbol ()
                Isabelle () () IsaSign.Sentence () ()
                IsaSign.Sign
                IsabelleMorphism () () ()  where

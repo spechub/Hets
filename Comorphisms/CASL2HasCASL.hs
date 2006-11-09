@@ -22,8 +22,8 @@ import qualified Common.Lib.Set as Set
 -- CASL
 import CASL.Logic_CASL
 import CASL.Sublogic as CasSub
-import CASL.Sign
 import qualified CASL.AS_Basic_CASL as Cas
+import qualified CASL.Sign as CasS
 import qualified CASL.Morphism as CasM
 
 import HasCASL.Logic_HasCASL
@@ -44,7 +44,7 @@ instance Comorphism CASL2HasCASL
                CASLBasicSpec CASLFORMULA Cas.SYMB_ITEMS Cas.SYMB_MAP_ITEMS
                CASLSign
                CASLMor
-               CasM.Symbol CasM.RawSymbol ()
+               CasS.Symbol CasM.RawSymbol ()
                HasCASL Sublogic
                BasicSpec Sentence SymbItems SymbMapItems
                Env Morphism Symbol RawSymbol () where
@@ -77,11 +77,11 @@ instance Comorphism CASL2HasCASL
     map_symbol CASL2HasCASL = Set.singleton . mapSym
     map_theory CASL2HasCASL = return . mapTheory
 
-fromOpType :: OpType -> Cas.FunKind -> TypeScheme
+fromOpType :: CasS.OpType -> Cas.FunKind -> TypeScheme
 fromOpType ot ok =
-    let args = map toType $ opArgs ot
+    let args = map toType $ CasS.opArgs ot
         arg = mkProductType args
-        res = toType $ opRes ot
+        res = toType $ CasS.opRes ot
     in simpleTypeScheme $
       if null args then case ok of
                 Cas.Total -> res
@@ -90,40 +90,41 @@ fromOpType ot ok =
                 Cas.Total -> FunArr
                 Cas.Partial -> PFunArr) res
 
-fromPredType :: PredType -> TypeScheme
+fromPredType :: CasS.PredType -> TypeScheme
 fromPredType pt =
-    let args = map toType $ predArgs pt
+    let args = map toType $ CasS.predArgs pt
         arg = mkProductType args
     in simpleTypeScheme $ if null args then unitType else predType arg
 
-mapTheory :: (Sign f e, [Named (Cas.FORMULA f)]) -> (Env, [Named Sentence])
+mapTheory :: (CasS.Sign f e, [Named (Cas.FORMULA f)]) 
+          -> (Env, [Named Sentence])
 mapTheory (sig, sents) =
     let constr = foldr getConstructors Set.empty sents
         env = mapSig constr sig
         newSents = map (mapNamed (toSentence sig)) sents
         in (env, newSents)
 
-getConstructors :: Named (Cas.FORMULA f) -> Set.Set (Id, OpType)
-                -> Set.Set (Id, OpType)
+getConstructors :: Named (Cas.FORMULA f) -> Set.Set (Id, CasS.OpType)
+                -> Set.Set (Id, CasS.OpType)
 getConstructors f s = case sentence f of
    Cas.Sort_gen_ax cs _ -> let
        (_, ops, _) = Cas.recover_Sort_gen_ax cs
        in foldr ( \ (Cas.Qual_op_name i t _) ->
-                      Set.insert (i, (toOpType t) { opKind = Cas.Partial }))
-                         s ops
+             Set.insert (i, (CasS.toOpType t) { CasS.opKind = Cas.Partial }))
+             s ops
    _ -> s
 
-mapSig :: Set.Set (Id, OpType) -> Sign f e -> Env
+mapSig :: Set.Set (Id, CasS.OpType) -> CasS.Sign f e -> Env
 mapSig constr sign =
     let f1 = concatMap ( \ (i, s) ->
-                   map ( \ ty -> (i, fromOpType ty $ opKind ty,
-                            if Set.member (i, ty {opKind = Cas.Partial })
-                               constr then ConstructData $ opRes ty
+                   map ( \ ty -> (i, fromOpType ty $ CasS.opKind ty,
+                            if Set.member (i, ty { CasS.opKind = Cas.Partial })
+                               constr then ConstructData $ CasS.opRes ty
                                else NoOpDefn Op))
-                         $ Set.toList s) $ Map.toList $ opMap sign
+                         $ Set.toList s) $ Map.toList $ CasS.opMap sign
         f2 = concatMap ( \ (i, s) ->
                    map ( \ ty -> (i, fromPredType ty, NoOpDefn Pred))
-                         $ Set.toList s) $ Map.toList $ predMap sign
+                         $ Set.toList s) $ Map.toList $ CasS.predMap sign
         insF (i, ty, defn) m =
             let OpInfos os = Map.findWithDefault (OpInfos []) i m
                 in Map.insert i (OpInfos $ OpInfo ty [] defn : os) m
@@ -131,14 +132,15 @@ mapSig constr sign =
      { classMap = Map.empty,
        typeMap = Map.fromList $ map
                  ( \ s -> (s, starTypeInfo
-                           { superTypes = Set.delete s $ supersortsOf s sign
-                           })) $ Set.toList $ sortSet sign,
+                           { superTypes = Set.delete s $ 
+                                          CasS.supersortsOf s sign
+                           })) $ Set.toList $ CasS.sortSet sign,
        assumps = foldr insF Map.empty (f1 ++ f2)}
 
 mapMor :: CasM.Morphism f e m -> Morphism
 mapMor m = let tm = CasM.sort_map m
                f1 = map ( \ ((i, ot), (j, t)) ->
-                          ((i, fromOpType ot (opKind ot)),
+                          ((i, fromOpType ot (CasS.opKind ot)),
                            (j, mapTypeScheme tm
                                     $ fromOpType ot t)))
                     $ Map.toList $ CasM.fun_map m
@@ -150,13 +152,14 @@ mapMor m = let tm = CasM.sort_map m
                                (mapSig Set.empty $ CasM.mtarget m))
            { typeIdMap = tm , funMap = Map.fromList (f2 ++ f1) }
 
-mapSym :: CasM.Symbol -> Symbol
-mapSym s = let i = CasM.symName s in
-    case CasM.symbType s of
-    CasM.OpAsItemType ot ->
-        idToOpSymbol initialEnv i $ fromOpType ot $ opKind ot
-    CasM.PredAsItemType pt -> idToOpSymbol initialEnv i $ fromPredType pt
-    CasM.SortAsItemType -> idToTypeSymbol initialEnv i rStar
+mapSym :: CasS.Symbol -> Symbol
+mapSym s = let i = CasS.symName s in
+    case CasS.symbType s of
+    CasS.OpAsItemType ot ->
+        idToOpSymbol initialEnv i $ fromOpType ot $ CasS.opKind ot
+    CasS.PredAsItemType pt -> idToOpSymbol initialEnv i $ fromPredType pt
+    CasS.SortAsItemType -> idToTypeSymbol initialEnv i rStar
+
 toQuant :: Cas.QUANTIFIER -> Quantifier
 toQuant Cas.Universal = Universal
 toQuant Cas.Existential = Existential
@@ -167,7 +170,7 @@ toVarDecl (Cas.Var_decl vs s ps) =
            map ( \ i -> GenVarDecl $
                  VarDecl (simpleIdToId i) (toType s) Other ps) vs
 
-toSentence :: Sign f e -> Cas.FORMULA f -> Sentence
+toSentence :: CasS.Sign f e -> Cas.FORMULA f -> Sentence
 toSentence sig f = case f of
    Cas.Sort_gen_ax cs b -> let
        (sorts, ops, smap) = Cas.recover_Sort_gen_ax cs
@@ -179,17 +182,17 @@ toSentence sig f = case f of
        in DatatypeSen
           $ map ( \ s -> DataEntry (Map.fromList smap) s genKind [] rStar
                           (map ( \ (i, t) ->
-                               let args = opArgs t in
+                               let args = CasS.opArgs t in
                                Construct (Just i)
                                  (if null args then []
                                   else [mkProductType $ map toType args])
-                               (mapPart $ opKind t) [])
-                          $ filter ( \ (_, t) -> opRes t == s)
+                               (mapPart $ CasS.opKind t) [])
+                          $ filter ( \ (_, t) -> CasS.opRes t == s)
                                 $ map ( \ (Cas.Qual_op_name i t _) ->
-                                      (i, toOpType t)) ops)) sorts
+                                      (i, CasS.toOpType t)) ops)) sorts
    _ -> Formula $ toTerm sig f
 
-toTerm :: Sign f e -> Cas.FORMULA f -> Term
+toTerm :: CasS.Sign f e -> Cas.FORMULA f -> Term
 toTerm s f = case f of
     Cas.Quantification q vs frm ps ->
         QuantifiedTerm  (toQuant q)
@@ -238,7 +241,7 @@ fromOP_TYPE ot =
            if total then resType else mkLazyType resType
            else mkFunArrType (mkProductType $ map toType args) arr resType
 
-fromTERM :: Sign f e -> Cas.TERM f -> Term
+fromTERM :: CasS.Sign f e -> Cas.TERM f -> Term
 fromTERM s t = case t of
     Cas.Qual_var v ty ps ->
         QualVar $ VarDecl (simpleIdToId v) (toType ty) Other ps

@@ -34,33 +34,6 @@ import Common.Result
 
 import Control.Exception (assert)
 
-data SymbType = OpAsItemType OpType
-                -- since symbols do not speak about totality, the totality
-                -- information in OpType has to be ignored
-              | PredAsItemType PredType
-              | SortAsItemType
-                deriving (Show)
--- Ordering and equality of symbol types has to ingore totality information
-instance Ord SymbType where
-  compare (OpAsItemType ot1) (OpAsItemType ot2) =
-    compare (opArgs ot1,opRes ot1) (opArgs ot2,opRes ot2)
-  compare (OpAsItemType _)  _ = LT
-  compare (PredAsItemType pt1) (PredAsItemType pt2) =
-    compare pt1 pt2
-  compare (PredAsItemType _) (OpAsItemType _) = GT
-  compare (PredAsItemType _) SortAsItemType = LT
-  compare SortAsItemType SortAsItemType  = EQ
-  compare SortAsItemType _  = GT
-
-instance Eq SymbType where
-  t1 == t2 = compare t1 t2 == EQ
-
-data Symbol = Symbol {symName :: Id, symbType :: SymbType}
-              deriving (Show, Eq, Ord)
-
-instance PosItem Symbol where
-    getRange = getRange . symName
-
 type SymbolSet = Set.Set Symbol
 type SymbolMap = Map.Map Symbol Symbol
 
@@ -85,13 +58,14 @@ type Sort_map = Map.Map SORT SORT
 type Fun_map =  Map.Map (Id,OpType) (Id, FunKind)
 type Pred_map = Map.Map (Id,PredType) Id
 
-data Morphism f e m = Morphism {msource :: Sign f e,
-                          mtarget :: Sign f e,
-                          sort_map :: Sort_map,
-                          fun_map :: Fun_map,
-                          pred_map :: Pred_map,
-                          extended_map :: m}
-                         deriving (Eq, Show)
+data Morphism f e m = Morphism 
+    { msource :: Sign f e
+    , mtarget :: Sign f e
+    , sort_map :: Sort_map
+    , fun_map :: Fun_map
+    , pred_map :: Pred_map
+    , extended_map :: m
+    } deriving (Eq, Show)
 
 mapSort :: Sort_map -> SORT -> SORT
 mapSort sorts s = Map.findWithDefault s s sorts
@@ -130,8 +104,7 @@ mapPredSym sMap fMap (i, pt) =
 type Ext f e m = Sign f e -> Sign f e -> m
 
 embedMorphism :: Ext f e m -> Sign f e -> Sign f e -> Morphism f e m
-embedMorphism extEm a b =
-    Morphism
+embedMorphism extEm a b = Morphism
     { msource = a
     , mtarget = b
     , sort_map = Map.empty
@@ -193,7 +166,7 @@ statSymbMapItems sl = do
                 ++ showDoc rsy2 " and " ++ showDoc rsy3 "") nullRange
 
 pairM :: Monad m => (m a,m b) -> m (a,b)
-pairM (x,y) = do
+pairM (x, y) = do
   a <- x
   b <- y
   return (a,b)
