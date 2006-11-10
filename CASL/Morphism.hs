@@ -58,7 +58,7 @@ type Sort_map = Map.Map SORT SORT
 type Fun_map =  Map.Map (Id,OpType) (Id, FunKind)
 type Pred_map = Map.Map (Id,PredType) Id
 
-data Morphism f e m = Morphism 
+data Morphism f e m = Morphism
     { msource :: Sign f e
     , mtarget :: Sign f e
     , sort_map :: Sort_map
@@ -456,19 +456,6 @@ isInjective m =
               (Map.lookup k1 symmap::Maybe Symbol)==Map.lookup k2 symmap]
    where src = Map.keys symmap
          symmap = morphismToSymbMap m
-
-
-instance Pretty Symbol where
-  pretty sy = pretty (symName sy) <>
-    case symbType sy of
-       SortAsItemType -> empty
-       st -> space <> colon <> pretty st
-
-instance Pretty SymbType where
-  pretty st = case st of
-     OpAsItemType ot -> pretty ot
-     PredAsItemType pt -> space <> pretty pt
-     SortAsItemType -> empty
 
 instance Pretty Kind where
   pretty k = keyword $ case k of

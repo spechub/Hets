@@ -64,7 +64,7 @@ data Symbol = Symbol {symName :: Id, symbType :: SymbType}
 instance PosItem Symbol where
     getRange = getRange . symName
 
-data Sign f e = Sign 
+data Sign f e = Sign
     { sortSet :: Set.Set SORT
     , sortRel :: Rel.Rel SORT
     , opMap :: OpMap
@@ -88,7 +88,7 @@ instance (Eq f, Eq e) => Eq (Sign f e) where
         extendedInfo e1 == extendedInfo e2
 
 emptySign :: e -> Sign f e
-emptySign e = Sign 
+emptySign e = Sign
     { sortSet = Set.empty
     , sortRel = Rel.empty
     , opMap = Map.empty
@@ -131,6 +131,18 @@ instance Pretty PredType where
 instance (Pretty f, Pretty e) => Pretty (Sign f e) where
     pretty = printSign pretty pretty
 
+instance Pretty Symbol where
+  pretty sy = pretty (symName sy) <>
+    case symbType sy of
+       SortAsItemType -> empty
+       st -> space <> colon <> pretty st
+
+instance Pretty SymbType where
+  pretty st = case st of
+     OpAsItemType ot -> pretty ot
+     PredAsItemType pt -> space <> pretty pt
+     SortAsItemType -> empty
+
 printSign :: (f -> Doc) -> (e -> Doc) -> Sign f e -> Doc
 printSign _ fE s = text (sortS++sS) <+>
     sepByCommas (map idDoc (Set.toList $ sortSet s)) $+$
@@ -140,6 +152,7 @@ printSign _ fE s = text (sortS++sS) <+>
                        $ Rel.toMap $ Rel.transpose $ sortRel s))
     $+$ printSetMap (text opS) empty (opMap s)
     $+$ printSetMap (text predS) space (predMap s)
+--    $+$ printSetMap (text "%%") space (annoMap s)
     $+$ fE (extendedInfo s)
     where printRel (supersort, subsorts) =
             ppWithCommas (Set.toList subsorts) <+> text lessS <+>
@@ -164,6 +177,7 @@ diffSig dif a b =
       , opMap = opMap a `diffMapSet` opMap b
       , assocOps = assocOps a `diffMapSet` assocOps b
       , predMap = predMap a `diffMapSet` predMap b
+      , annoMap = annoMap a `diffMapSet` annoMap b
       , extendedInfo = dif (extendedInfo a) $ extendedInfo b
       }
   -- transClosure needed:  {a < b < c} - {a < c; b}
@@ -190,6 +204,7 @@ addSig ad a b =
       , opMap = addOpMapSet (opMap a) $ opMap b
       , assocOps = addOpMapSet (assocOps a) $ assocOps b
       , predMap = addMapSet (predMap a) $ predMap b
+      , annoMap = addMapSet (annoMap a) $ annoMap b
       , extendedInfo = ad (extendedInfo a) $ extendedInfo b
       }
 
@@ -236,13 +251,11 @@ addDiags ds =
        State.put e { envDiags = reverse ds ++ envDiags e }
 
 addAnnoSet :: Annoted a -> Symbol -> State.State (Sign f e) ()
-addAnnoSet a s = do
+addAnnoSet a s = let v = Set.union (Set.fromList $ l_annos a)
+                         $ Set.fromList $ r_annos a
+    in if Set.null v then return () else do
     e <- State.get
-    State.put e 
-        { annoMap = Map.insertWith (Set.union) s 
-          (Set.union (Set.fromList $ l_annos a) 
-          $ Set.fromList $ r_annos a) $ annoMap e
-        }
+    State.put e { annoMap = Map.insertWith (Set.union) s v $ annoMap e }
 
 addSort :: Annoted a -> SORT -> State.State (Sign f e) ()
 addSort a s =
