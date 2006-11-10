@@ -34,7 +34,7 @@ module Org.W3.N2001.XMLSchema ( Int, Long, String, Decimal, Float, Double, Boole
 			      , SimpleContent(..), All(..), Attribute(..), AttributeGroup(..), Schema(..), ComplexRestriction(..)
 			      , ComplexExtension(..)
 			      , simpleElement, simpleComplexType, Any
-                              , xsdTypeMap, xsdNamespaceMap) where
+                              ) where
 
 import Control.Monad.State
 import Data.Typeable
@@ -58,15 +58,9 @@ import System.Time
 import Codec.Base64
 import Numeric
 import Data.DynamicMap
-import Debug.Trace as DB
-import Data.AbstractMap (mapFromList)
-import Data.HashMap
 
 tns = parseURI "http://www.w3.org/2001/XMLSchema"
 prefix = "xsd"
-
-instance Hashable TypeRep where
-    hash = hash . show
 
 class XSDType a where 
     xsdType :: a -> [String]
@@ -284,14 +278,15 @@ xsdTypes   = [(typeOf (undefined::Int)             , ["int"])
              ,(typeOf (undefined::Base64Binary)    , ["base64Binary"])
              ]
 
+{-
 -- These two maps are a hack to allow schema mapping to recognize which types are from the current schema and which ones are from
 -- XML Schema.
-xsdTypeMap :: HashMap TypeRep [String]
-xsdTypeMap      = mapFromList xsdTypes
-xsdNamespaceMap :: HashMap TypeRep URI
-xsdNamespaceMap = mapFromList $ map (\(t, _) -> (t, fromJust tns)) xsdTypes 
+xsdTypeMap :: Map.Map TypeRep [String]
+xsdTypeMap      = Map.fromList xsdTypes
+xsdNamespaceMap :: Map.Map TypeRep URI
+xsdNamespaceMap = Map.fromList $ map (\(t, _) -> (t, fromJust tns)) xsdTypes 
  
-{-
+
 3.2.19 NOTATION 
 -}
     
