@@ -464,13 +464,8 @@ CCS example: commutativity of || by coinduction
 Christian
 ************************************************
 
-Isabelle coding
-- improve display syntax in HasCASL-Isabelle coding
-- identifiers in mixfix templates must be excluded as ordinary
-identifiers (i.e. as quantified variables)
-
-
-more abstract datatypes?
+Isabelle coding (let, case, etc.)
+Coding out sub-types in HasCASL
 
 collect the patches for programatica (or create a package)
 -    conv (SN i p) = PN i (S p)
@@ -481,8 +476,6 @@ fixes translation error of Pair
 simplification of HasCASL sentences (omit types)
 
 Logic COL is a ruin
-
-logic coding from the comand line with printing of results
 
 Haskell modules: hiding, renaming
 
