@@ -652,7 +652,7 @@ findEqPredicates (eqPreds, sens) sen =
 -}
 sortedVarTermList :: [TERM f]
                   -> [(VAR, SORT)]
-sortedVarTermList ts = map fromJust (filter isJust (map hasSortedVarTerm ts))
+sortedVarTermList ts = mapMaybe hasSortedVarTerm ts
 
 {- |
   Finds a 'CASL.AS_Basic_CASL.Qual_var' term recursively if super term(s) is
