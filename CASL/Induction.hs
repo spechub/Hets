@@ -141,25 +141,8 @@ generateInductionLemmas (sig,axs) =
    where 
    sortGens = filter isSortGen (map sentence axs)
    goals = filter (not . isAxiom) axs
-   inductionAxs = map (mapNamed stripEmptyQuant)
-                   $ fromJust $ maybeResult $ generateInductionLemmasAux sortGens goals
-
--- throw out quantifications with empty variable lists
-stripEmptyQuant :: FORMULA f -> FORMULA f
-stripEmptyQuant = foldFormula $
- (mapRecord id) { foldQuantification = \ t2 q vs p r ->
-                  let vs' = stripVarDecls vs
-                   in if null vs' then p
-                        else Quantification q vs' p r
-                }
-
--- throw out empty variable declarations
-stripVarDecls :: [VAR_DECL] -> [VAR_DECL]
-stripVarDecls vs = mapMaybe stripVarDecl vs
-
-stripVarDecl :: VAR_DECL -> Maybe VAR_DECL
-stripVarDecl (Var_decl [] _ _) = Nothing
-stripVarDecl vd = Just vd
+   inductionAxs = fromJust $ maybeResult $
+                    generateInductionLemmasAux sortGens goals
 
 -- | determine whether a formula is a sort generation constraint
 isSortGen (Sort_gen_ax _ _) = True
@@ -180,7 +163,8 @@ generateInductionLemmasAux sort_gen_axs goals =
                     $ zip cons formulas
             
             let sName = (if null formulas then id else tail)
-                        (foldr ((++) . (++) "_" . senName . fst) "" formulas)
+                        (foldr ((++) . (++) "_" . senName . fst) "" formulas
+                         ++ "_induction")
             return $ AS_Anno.NamedSen { senName = sName, isAxiom = True,
                                         isDef = False, sentence = formula }
          )            
@@ -195,13 +179,17 @@ generateInductionLemmasAux sort_gen_axs goals =
                        ++ "No VAR found of SORT " ++ (show s) ++ "!")
     findVar s ((vl,sl):lst) = if s==sl then vl else findVar s lst
     removeVarsort v s f = case f of
-      Quantification Universal varDecls formula rng -> Quantification Universal
-        (foldr (\ var_decl@(Var_decl vars varsort r) ->
-                 (:) (if varsort==s
-                        then Var_decl (filter (not . (==) v) vars) s r
-                        else var_decl))
-               [] varDecls) formula rng
+      Quantification Universal varDecls formula rng ->
+        let vd' = newVarDecls varDecls
+        in  if (null vd') then formula
+            else Quantification Universal vd' formula rng
       _ -> f
+      where
+        newVarDecls = filter (\ (Var_decl vs _ _) -> not $ null vs) .
+            map (\ var_decl@(Var_decl vars varsort r) ->
+                   if varsort==s
+                     then Var_decl (filter (not . (==) v) vars) s r
+                     else var_decl)
     uniQuantGoals =
         map (\ goal@NamedSen {sentence = (Quantification _ varDecl _ _)} ->
               (goal, concatVarDecl varDecl))
