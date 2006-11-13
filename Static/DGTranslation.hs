@@ -23,8 +23,9 @@ import Common.Result
 import Maybe
 import Data.Graph.Inductive.Graph
 import Control.Exception
--- import Debug.Trace
+import Debug.Trace
 import Common.DocUtils
+-- import Common.AS_Annotation
 
 -- | translation of a LibEnv (a map of globalcontext)
 libEnv_translation :: LibEnv -> AnyComorphism -> Result LibEnv
@@ -43,25 +44,10 @@ dg_translation :: GlobalContext -> AnyComorphism -> Result GlobalContext
 dg_translation  gc acm@(Comorphism cidMor) =
     let labNodesList = labNodes $ devGraph gc
         labEdgesList = labEdges $ devGraph gc
-    in case mapR updateEdges labEdgesList of
-         Result diagsFromEdges (Just resOfEdges) ->
-             if hasErrors diagsFromEdges then
-                 Result diagsFromEdges (Just gc)    -- Nothing?
-               else
-                  case mapR updateNodes labNodesList of
-                    Result diagsFromNodes (Just resOfNodes) ->
-                        if hasErrors diagsFromNodes then
-                            Result (diagsFromEdges ++ diagsFromNodes) (Just gc)
-                          else
-                              Result (diagsFromEdges ++ diagsFromNodes)
-                                     (Just gc{devGraph=
-                                              mkGraph resOfNodes resOfEdges })
-                    Result diagsFromNodes Nothing ->
-                        -- remove warning
-                        Result (diagsFromEdges ++ diagsFromNodes) (Just gc)
-         Result diagsFromEdges Nothing ->
-             -- remove warning
-             Result diagsFromEdges (Just gc) 
+    in do
+        resOfEdges <- mapR updateEdges labEdgesList
+        resOfNodes <- mapR updateNodes labNodesList
+        return gc{devGraph= mkGraph resOfNodes resOfEdges}
 
  where
  slid = sourceLogic cidMor
@@ -78,59 +64,36 @@ dg_translation  gc acm@(Comorphism cidMor) =
              && (lessSublogicComor (sublogicOfMor (G_morphism targetLid 
                                                        lmorphism)) acm)
         then
-           -- translate sign of GMorphism
-           case fSign sourceLid lsign of
-            Result diagLs maybeSTh -> 
-              -- translate morphism of GMorphism
-             case maybeSTh of
-              Nothing  -> 
-               Result (diagLs ++ 
-                         [mkDiag Error 
-                          ("sign of link " ++ (showFromTo from to gc) ++
-                                               " can not be translated.")
-                          ()]) (Nothing) 
-              (Just (lsign', _)) -> 
-               case fMor targetLid lmorphism of
-                Result diagLm (Just lmorphism') -> 
-                  -- build a new GMorphism of an edge
-                  case idComorphism (Logic tlid) of 
-                    Comorphism cid2 ->
-                      let newSign = fromJust $ coerceSign tlid 
-                                    (sourceLogic cid2) "" lsign'
-                          newMor = fromJust $ coerceMorphism tlid 
-                                   (targetLogic cid2) "" lmorphism'
-                          slNewSign = sublogicOfSign $ 
-                                                 G_sign (sourceLogic cid2) 
-                                                        newSign
-                          slNewMor = sublogicOfMor $ 
-                                          G_morphism (targetLogic cid2) 
-                                                     newMor     
-                          domMor = sublogicOfSign $
-                                          G_sign (targetLogic cid2) 
-                                                 (dom (targetLogic cid2) newMor)
-                      in  assert (slNewSign == domMor) $ 
-                          Result (diagLs ++ diagLm ++ 
-                              [mkDiag Hint 
-                               ((getNameOfNode from gc) ++ "->" ++ 
-                                (getNameOfNode to gc) ++ ":\n\tSign    :  " ++ 
-                                (show $ sublogicOfSign (G_sign sourceLid lsign)) 
-                                ++ " --> " ++ (show slNewSign) ++ 
-                                "\n\tMorphism:  " ++ (show $ sublogicOfMor 
-                                   (G_morphism targetLid lmorphism)) ++ 
-                                " --> " ++ (show slNewMor)) () ])
-                             (Just (from, to, 
-                                        links{dgl_morphism= GMorphism cid2 
-                                                            newSign newMor
-                                             }
-                                   )
+            do -- translate sign of GMorphism
+               (lsign', _) <- fSign sourceLid lsign
+               -- translate morphism of GMorphism
+               lmorphism'  <- fMor targetLid lmorphism
+               -- build a new GMorphism of an edge
+               case idComorphism (Logic tlid) of
+                 Comorphism cid2 ->
+                   let newSign = fromJust $ coerceSign tlid 
+                                  (sourceLogic cid2) "DGTranslation.updateEdges" 
+                                  lsign'
+                       newMor = fromJust $ coerceMorphism tlid 
+                                  (targetLogic cid2) "DGTranslation.updateEdges" 
+                                  lmorphism'
+                       slNewSign = sublogicOfSign $ 
+                                    G_sign (sourceLogic cid2) 
+                                      newSign
+                       domMor = sublogicOfSign $
+                                   G_sign (targetLogic cid2) 
+                                     (dom (targetLogic cid2) newMor)
+                   in trace (if False then 
+                                 ("old:\n" ++ showDoc lsign "\nnew:\n" ++ showDoc newSign "\n\n")
+                               else "") $ 
+                       return $ assert (slNewSign == domMor) $ 
+                             (from, to, 
+                                  links{dgl_morphism= GMorphism cid2 
+                                                        newSign newMor
+                                       }
                              )
-                Result diagLm Nothing  -> 
-                    Result (diagLm ++ 
-                            [mkDiag Error 
-                                ("morphism of link " ++ (showFromTo from to gc)
-                                 ++ " can not be translated.") ()]) 
-                            (Nothing)
-          else Result [mkDiag Error ("the sublogic of GMorphism :\""++ 
+                             
+        else Result [mkDiag Error ("the sublogic of GMorphism :\""++ 
                         (show (sublogicOfMor (G_morphism targetLid lmorphism))) 
                         ++ " of edge " ++ (showFromTo from to gc) 
                         ++ " is not less than " ++ (show acm )) ()] (Nothing)
@@ -139,63 +102,42 @@ dg_translation  gc acm@(Comorphism cidMor) =
           (Nothing)
 
  updateNodes :: LNode DGNodeLab -> Result (LNode DGNodeLab) 
- updateNodes lNode@(node, dgNodeLab) =
+ updateNodes (node, dgNodeLab) =
      case fTh node $ dgn_theory dgNodeLab of
        Result diagsT maybeTh ->
-           maybe (Result diagsT (Just lNode)) 
-              (\th' -> Result diagsT (Just (node, dgNodeLab {dgn_theory = th'
-                                                            ,dgn_nf = Nothing
-                                                            ,dgn_sigma = Nothing
-                                                            }))) maybeTh
+           maybe (Result diagsT (Nothing)) 
+              (\th' -> Result diagsT 
+                       (Just (node, dgNodeLab {dgn_theory = th'
+                                              ,dgn_nf = Nothing
+                                              ,dgn_sigma = Nothing
+                                              }))) maybeTh
 
+ -- !! the sign from fSign and from fTh maybe different.
  -- to translate sign
  fSign sourceID sign =
      coerceSign sourceID slid "DGTranslation.fSign" sign >>=
         map_sign cidMor
+
+ fTh _ (G_theory lid sign thSens) = do
+   -- (sign', _) <- fSign lid sign 
+   sign' <- coerceSign lid slid "DGTranslation.fTh.sign" sign 
+   thSens' <- coerceThSens lid slid "DGTranslation.fTh.sen" thSens
 {-
-      case coerceSign sourceID slid "" sign of
-        Just sign' -> 
-            case map_sign cidMor sign' of
-              Result diagsOfcs maybeSign ->
-                  case maybeSign of
-                    Just (sign'', sens) ->
-                        Result diagsOfcs 
-                               (Just (sign'',sens))
-                    Nothing -> error "Result diagsOfcs Nothing"
-        Nothing  -> Result [mkDiag Error ("cannot coerce sign" ++ 
-                                          showDoc sign "\n")
-                            ()] Nothing 
--}
- fTh node g@(G_theory lid sign thSens) =
-      case coerceSign lid slid "" sign of
-        Just sign' -> 
-            case coerceThSens lid slid "" thSens of
-              Just thSens' -> 
-                  case map_theory cidMor (sign', toNamedList thSens') of
-                    Result diagsOfth maybeTh ->
-                      case maybeTh of
-                        Just (sign'', namedS) -> 
-                          let th = G_theory tlid sign'' 
-                                            (toThSens $ List.nub namedS)
-                              diagTrans = mkDiag Hint 
-                                          ("\n" ++ (getNameOfNode node gc) ++ 
-                                           ": " ++ (show $ sublogicOfTh g) ++ 
-                                           " -> " ++ (show $ sublogicOfTh th)) ()
-                          in Result (diagsOfth ++ [diagTrans]) (Just th)
-                        Nothing ->  error "Result diagsOfth Nothing"
-              Nothing    -> Result [(mkDiag Error 
-                                     ("cannot coerce sens" ++ show thSens)
-                                     ())] Nothing 
-        Nothing -> Result [(mkDiag Error ("cannot coerce sign" ++ show sign)
-                                     ())] Nothing 
+   namedList <- mapM (\nt -> case nt of 
+                 NamedSen p1 p2 p3 s -> 
+                     do ns <- map_sentence cidMor sign s
+                        return (NamedSen p1 p2 p3 ns)) (toNamedList thSens')
+-}  
+   (sign'', namedS) <- map_theory cidMor (sign', toNamedList thSens')
+   let th = G_theory tlid sign'' (toThSens $ List.nub namedS)
+--   let th = G_theory tlid sign' (toThSens $ List.nub namedList)
+   return th
+
 
  fMor sourceID mor =
-        case coerceMorphism sourceID slid "" mor of
-          Just mor' -> 
-              let Result diagsM res =  map_morphism cidMor mor'
-              in  Result diagsM res
-          Nothing -> Result [(mkDiag Error ("cannot coerce mor" ++ show mor)
-                              ())] Nothing  
+     coerceMorphism sourceID slid "DGTranslation.fMor" mor >>=
+                    map_morphism cidMor
+
 
 -- | get the name of a node from the number of node
 getNameOfNode :: Node -> GlobalContext -> String
