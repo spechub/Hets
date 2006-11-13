@@ -44,7 +44,6 @@ data GoalDescription = GoalDescription {
     tacticScriptText :: OpenText, -- ^ more details for tactic script
     proofTreeText :: OpenText -- ^ more details for proof tree
     }
-    
 
 {- |
   Current state of a text tag providing additional information. The text can be
@@ -76,6 +75,7 @@ emptyOpenText = OpenText {
       textShown = False,
       textStartPosition = (Distance 0, Distance 0) }
 
+-- | Determines the kind of content of a 'HTk.TextTag'.
 data Content = TacticScriptText | ProofTreeText deriving Eq
 
 
@@ -224,14 +224,15 @@ doShowProofDetails prGUISt@(ProofGUIState { theoryName = thName }) = do
     winTitle  <- newLabel bFrame [text winTitleStr,
                                   HTk.font (Helvetica, Roman, 18::Int)]
     btnBox    <- newHBox bFrame []
-    tsBut     <- newButton btnBox [text "Expand tactic scripts", width 18]
-    ptBut     <- newButton btnBox [text "Expand proof trees", width 18]
+    tsBut     <- newButton btnBox [text expand_tacticScripts, width 18]
+    ptBut     <- newButton btnBox [text expand_proofTrees, width 18]
     sBut      <- newButton btnBox [text "Save", width 12]
     qBut      <- newButton btnBox [text "Close", width 12]
     pack winTitle [Side AtTop, Expand Off, PadY 10]
 
     (sb, ed) <- newScrollBox bFrame (\ p ->
                                      newEditor p [state Normal, size(80,40)]) []
+    ed # state Disabled
     pack bFrame [Side AtTop, Expand On, Fill Both]
     pack sb     [Side AtTop, Expand On, Fill Both]
     pack ed     [Side AtTop, Expand On, Fill Both]
@@ -253,23 +254,25 @@ doShowProofDetails prGUISt@(ProofGUIState { theoryName = thName }) = do
               $ zip (sortBy (comparing snd) $ thmStatus st) [(0::Int)..]
 
     stateRef <- newIORef elementMap
-    sequence_ $ foldr (\ ((gName,ind), goalDesc) doList -> (do
+    ed # state Normal
+    mapM_ (\ ((gName,ind), goalDesc) -> do
         when (ind == 0) $
           appendText ed $ replicate 75 '-' ++ "\n" ++ gName ++ "\n"
         appendText ed $ (proverInfo goalDesc) ++ "\n"
         opTextTS <- addTextTagButton sttDesc (tacticScriptText goalDesc)
                        TacticScriptText ed (gName, ind) stateRef
-        opTextPT <- addTextTagButton sptDesc (proofTreeText goalDesc) 
+        opTextPT <- addTextTagButton sptDesc (proofTreeText goalDesc)
                        ProofTreeText ed (gName, ind) stateRef
         appendText ed "\n"
         let goalDesc' = goalDesc{ tacticScriptText = opTextTS,
                                   proofTreeText    = opTextPT }
         modifyIORef stateRef (\ref -> OMap.update (\ _ -> Just goalDesc')
                                                   (gName, ind) ref)
-      ):doList) [] $ OMap.toList elementMap
+      ) $ OMap.toList elementMap
 
     ed # state Disabled
 
+    (editClicked, _) <- bindSimple ed (ButtonPress (Just 1))
     quit <- clicked qBut
     save <- clicked sBut
     toggleTacticScript <- clicked tsBut
@@ -301,6 +304,8 @@ doShowProofDetails prGUISt@(ProofGUIState { theoryName = thName }) = do
                                     else hide_proofTrees)
              toggleMultipleTags ProofTreeText expPT ed stateRef
              writeIORef btnState (expTS, not expPT)
+        +>
+           editClicked >>> forceFocus ed
         ))
     return ()
 
@@ -323,13 +328,13 @@ toggleMultipleTags :: Content -- ^ kind of text tag to toggle
                    -> IO ()
 toggleMultipleTags content expanded ed stateRef = do
     s <- readIORef stateRef
-    sequence_ $ foldr (\ (dKey, goalDesc) doList -> (do
+    mapM_ (\ (dKey, goalDesc) -> do
         let openText = if (content == TacticScriptText)
                          then tacticScriptText goalDesc
                          else proofTreeText goalDesc
         when (textShown openText == expanded)
              (toggleTextTag content ed dKey stateRef)
-      ):doList) [] $ OMap.toList s
+      ) $ OMap.toList s
 
     done
 
@@ -365,7 +370,7 @@ toggleTextTag content ed (gName, ind) stateRef = do
         ed # state Disabled
         done
     let openText' = openText { textShown = not $ textShown openText }
-        s' = OMap.update 
+        s' = OMap.update
                  (\_ -> Just $ if (content == TacticScriptText)
                           then gd{ tacticScriptText = openText' }
                           else gd{ proofTreeText =  openText' } )

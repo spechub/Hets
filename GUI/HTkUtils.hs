@@ -76,7 +76,7 @@ createTextSaveDisplayExt title fname txt conf upost =
      ed # state Disabled
      forceFocus ed
 
-     (editEntered, _) <- bindSimple ed Enter
+     (editClicked, _) <- bindSimple ed (ButtonPress (Just 1))
      quit <- clicked q
      save <- clicked s
      spawnEvent (forever (quit >>> do destroy win; upost
@@ -86,7 +86,7 @@ createTextSaveDisplayExt title fname txt conf upost =
                                    enableButs q s
                                    done
                          +>
-                       editEntered >>> forceFocus ed))
+                       editClicked >>> forceFocus ed))
      return (win, ed)
    where disableButs b1 b2 = do disable b1
                                 disable b2
