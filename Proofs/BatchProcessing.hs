@@ -186,7 +186,7 @@ genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch f
         -- putStrLn $ prName ++ " returned: " ++ (show err)
         -- if the batch prover runs in a separate thread
         -- that's killed via killThread
-        -- runGivenProver will return ATPError. We have to stop the
+        -- runGivenProver will return ATPBatchStopped. We have to stop the
         -- recursion in that case
         -- add proved goals as axioms
         let res = proof_status res_cfg
@@ -232,13 +232,13 @@ genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch f
 -}
 genericCMDLautomatic ::
         (Ord proof_tree, Ord sentence, Show proof_tree, Show sentence)
-        => ATPFunctions sign sentence proof_tree pst -- ^ prover specific
-                                                     --   functions
+        => ATPFunctions sign sentence proof_tree pst
+           -- ^ prover specific functions
         -> String -- ^ prover name
         -> String -- ^ theory name
         -> ATPTactic_script -- ^ default prover specific tactic script
-        -> Theory sign sentence proof_tree -- ^ theory consisting of a signature
-                                           --   and a list of Named sentence
+        -> Theory sign sentence proof_tree
+           -- ^ theory consisting of a signature and a list of Named sentence
         -> proof_tree -- ^ initial empty proof_tree
         -> IO (Result ([Proof_status proof_tree]))
            -- ^ proof status for goals and lemmas
@@ -290,8 +290,8 @@ genericCMDLautomaticBatch ::
         -> String -- ^ prover name
         -> String -- ^ theory name
         -> ATPTactic_script -- ^ default prover specific tactic script
-        -> Theory sign sentence proof_tree -- ^ theory consisting of a signature
-                                           --   and a list of Named sentence
+        -> Theory sign sentence proof_tree
+           -- ^ theory consisting of a signature and a list of Named sentence
         -> proof_tree -- ^ initial empty proof_tree
         -> IO (Concurrent.ThreadId,Concurrent.MVar ())
            -- ^ fst: identifier of the batch thread for killing it
