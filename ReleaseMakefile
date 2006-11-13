@@ -54,11 +54,11 @@ HC_OPTS = $(HAXML_PACKAGE) $(HC_OPTS1) $(HC_PACKAGE)
 all: hets
 
 hets:
-	$(HC) --make -O -optc-O2 -o $@ hets.hs $(HC_OPTS) -w
+	$(HC) --make -O -o $@ hets.hs $(HC_OPTS) -w
 	strip hets
 
 hets.cgi:
-	$(HC) --make -O -optc-O2 GUI/hets_cgi.hs -o $@ $(HC_OPTS) -w
+	$(HC) --make -O GUI/hets_cgi.hs -o $@ $(HC_OPTS) -w
 	strip hets.cgi
 
 hetsOnMac:
