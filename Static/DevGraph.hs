@@ -560,6 +560,9 @@ data GlobalContext = GlobalContext
     { globalAnnos :: GlobalAnnos
     , globalEnv :: GlobalEnv
     , devGraph :: DGraph
+    , sigMap :: Map.Map Int G_sign
+    , thMap :: Map.Map Int G_theory
+    , morMap :: Map.Map Int G_morphism
     , proofHistory :: ProofHistory
     } deriving Show
 
@@ -568,6 +571,9 @@ emptyGlobalContext = GlobalContext
     { globalAnnos = emptyGlobalAnnos
     , globalEnv = Map.empty
     , devGraph = Graph.empty
+    , sigMap = Map.empty
+    , thMap = Map.empty
+    , morMap = Map.empty
     , proofHistory = [emptyHistory]
     }
 
