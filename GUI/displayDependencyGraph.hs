@@ -32,13 +32,14 @@ main = do
     fs <- getDirectoryContents "."
     let fn = filter (isSuffixOf ".imports") fs
         ffn = map (deletWith init 8) fn
-        ffnn = filter (elem '.') ffn
+        ffnn = filter (\ s -> all (not . (`isSublistOf` s)) excludes) 
+                 $ filter (elem '.') ffn
         fln = map (fst . break (== '.'))  ffnn 
         fln' = nub fln
     lfs <- mapM (readFile . (++ ".imports")) ffnn
     let ss = map (filter (isPrefixOf "import") . lines) lfs
         sss = getContent6 ss
-        ssss' = map (filter ( \ s -> all (not . (`isSublistOf` s)) excludes))
+        ssss' = map (filter (\ s -> all (not . (`isSublistOf` s)) excludes))
                     sss 
         ssss = map (map $ fst . break (== '.')) ssss'
         sss' = map nub ssss
@@ -78,15 +79,15 @@ main = do
     mapM_ insertSubArc $ 
                      Rel.toList $ Rel.intransKernel $ Rel.transClosure $ 
                         Rel.fromList
-                     $ isIn3 $ concat $ zipWith getContent2 ffnn sss'
+                     $ isIn3 $ concat $ zipWith getContent2 fln sss'
     redraw depG
     sync(destroyed depG)
 
-excludes = ["ATC", ".Logic_"]
+excludes :: [String]
+excludes = ["ATC"]
 
 getContent2 :: String -> [String] -> [(String, String)]
-getContent2 x l = if any (`isSublistOf` x) excludes then []
-                 else map (\ m -> (fst $ break (== '.') x, m)) l
+getContent2 x  = map (\ m -> (x, m)) 
 
 getContent4 :: [String] -> [String]
 getContent4 s = map ((!! 1) .  words) s
