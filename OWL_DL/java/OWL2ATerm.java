@@ -11,46 +11,21 @@
 import org.semanticweb.owl.model.OWLOntology;
 // import org.semanticweb.owl.io.Renderer;
 import org.semanticweb.owl.io.Parser;
-// import org.mindswap.pellet.utils.*;
-// import gnu.getopt.LongOpt;
-// import gnu.getopt.Getopt;
-// import org.semanticweb.owl.util.OWLConnection;
 import org.semanticweb.owl.util.OWLManager;
-// import org.semanticweb.owl.model.OWLException;
-// import org.semanticweb.owl.impl.model.*;
 import org.semanticweb.owl.model.*; // Class Axiom
-// import org.semanticweb.owl.io.simple.*;
-// import org.semanticweb.owl.io.owl_rdf.OWLRDFErrorHandler;
 import org.semanticweb.owl.io.owl_rdf.OWLRDFParser;
-// import java.io.StringWriter;
-// import java.io.Writer;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Map;
-// import java.util.HashMap;
-// import java.util.Iterator;
-// import org.apache.log4j.BasicConfigurator;
 import org.semanticweb.owl.validation.OWLValidationConstants;
 import uk.ac.man.cs.img.owl.validation.SpeciesValidator;
-// import org.semanticweb.owl.io.owl_rdf.OWLRDFErrorHandler;
 import org.semanticweb.owl.validation.*;
-// import uk.ac.man.cs.img.owl.validation.*;
-// import org.xml.sax.SAXException;
 import org.semanticweb.owl.util.URIMapper;
-// import org.xml.sax.SAXException;
-// import org.semanticweb.owl.util.PropertyBasedURIMapper;
-// import java.util.Properties;
-// import java.net.URISyntaxException;
-// import java.io.FileInputStream;
-// import java.io.IOException;
 import aterm.*;
 import aterm.pure.*;
 import java.util.*;
 import java.io.*;
-// import javax.swing.filechooser.FileFilter;
-// import org.mindswap.pellet.owlapi.*; // for PelletLoader
 import org.mindswap.pellet.*; // for KnowledgeBase
 import org.mindswap.pellet.owlapi.PelletLoader;
 
@@ -58,12 +33,11 @@ public class OWL2ATerm implements OWLValidationConstants {
 
 	static public void main(String[] args) {
 
-		if (args.length != 1) {
-			System.out.println("Usage: processor <URI>");
+		if (args.length < 1) {
+			System.out.println("Usage: processor <URI> [FILENAME]");
 			System.exit(1);
 		}
 
-		String uriMapping = "";
 		int validation = -1;
 		ATermFactory factory = new PureFactory();
 		OWLRDFParser rdfParser = null;
@@ -71,16 +45,26 @@ public class OWL2ATerm implements OWLValidationConstants {
 		OWLOntology onto = null;
 		ATermList messageList;
 		List warningList;
+		String filename;
 
 		try {
 			SpeciesValidator sv = new SpeciesValidator();
 			URI uri = new URI(args[0]);
 			URIMapper mapper = null;
+			if (args.length == 2)
+			{
+				filename = args[1];
+			}else
+			{
+				String [] uriSplit = uri.getPath().split("/");
+				String postfix = ".trm";
+				filename = uriSplit[uriSplit.length -1] + postfix;
+			}
 
 			/* Use the RDF Parser */
 			rdfParser = new OWLRDFParser();
 
-			File file = new File("./output.term");
+			File file = new File("./" + filename);
 			if (file.exists()) {
 				file.delete();
 				file.createNewFile();
@@ -180,6 +164,13 @@ public class OWL2ATerm implements OWLValidationConstants {
 			}
 			ontologyList.reverse().writeToTextFile(
 					new FileOutputStream(file, true));
+			try {
+				Runtime runtime=Runtime.getRuntime();
+				runtime.exec("cp " + file.getAbsolutePath() + "./output.term");
+				
+				} catch (Exception e) {
+				e.printStackTrace();
+				}
 
 			System.out.println("OWL parsing done!\n");
 		} catch (IOException e) {
