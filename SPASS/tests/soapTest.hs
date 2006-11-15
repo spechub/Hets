@@ -1,6 +1,8 @@
-
+{-# OPTIONS -fth #-}
 -- | simple test program that sends a file as soap message to a 
 -- MathServ Broker and to other Services like Vampire
+
+-- SPASS/tests/soapTest denebola 8080 Broker ProveProblemOpt SPASS/tests/asym.tptp 10
 
 module Main where
 
