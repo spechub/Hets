@@ -86,6 +86,12 @@ data Theory =
     }
     deriving Show
 
+instance Eq Theory where
+  t1 == t2 = (theoryId t1) == (theoryId t2)
+
+instance Ord Theory where
+  t1 `compare` t2 = (theoryId t1) `compare` (theoryId t2)
+
 -- debug
 showTheory::Theory->String
 showTheory t = show (t { theoryPresentations = [] })
@@ -219,8 +225,28 @@ mkCIm = CIm
 mkCAd::ADT->Constitutive
 mkCAd = CAd
 
+isAxiom::Constitutive->Bool
+isAxiom (CAx {}) = True
+isAxiom _ = False
+
+isDefinition::Constitutive->Bool
+isDefinition (CDe {}) = True
+isDefinition _ = False
+
+isSymbol::Constitutive->Bool
+isSymbol (CSy {}) = True
+isSymbol _ = False
+
+isImports::Constitutive->Bool
+isImports (CIm {}) = True
+isImports _ = False
+
+isADT::Constitutive->Bool
+isADT (CAd {}) = True
+isADT _ = False
+
 getIdsForPresentation::Constitutive->[XmlId]
-getIdsForPresentation (CAx a) = [axiomId a]
+getIdsForPresentation (CAx a) = [axiomName a]
 getIdsForPresentation (CDe _) = []
 getIdsForPresentation (CSy s) = [symbolId s]
 getIdsForPresentation (CIm _) = []
@@ -230,7 +256,7 @@ getIdsForPresentation (CAd a) = map sortDefName (adtSortDefs a)
 data Axiom =
   Axiom 
     {
-        axiomId :: XmlId
+        axiomName :: XmlId
       , axiomCMPs :: [CMP]
       , axiomFMPs :: [FMP]
     }

@@ -31,7 +31,7 @@ import qualified OMDoc.Util as Util
 
 import Debug.Trace (trace)
 
-{- debug
+{- debug -}
 maybeGetXml::String->IO (Maybe HXT.XmlTrees)
 maybeGetXml source =
   do
@@ -50,7 +50,7 @@ maybeGetXml source =
         result = if status < HXT.c_err then (Just xml) else Nothing
       in
         result)
--}
+{--}
 
 {- |
   this class defines functions an instance has to provide to write it to
@@ -283,11 +283,19 @@ instance XmlRepresentable Imports where
         )
         +++
         (
+          case importsMorphism imp of
+            Nothing -> XML.xmlNullFilter
+            (Just m) ->
+              case morphismHiding m of
+                [] -> XML.xmlNullFilter
+                h -> HXT.sattr "hiding" (Util.implode " " h)
+{-
           if null (importsHiding imp)
             then
               XML.xmlNullFilter
             else
               HXT.sattr "hiding" (Util.implode " " (importsHiding imp))      
+-}
         )
         +++
         (
@@ -536,7 +544,7 @@ instance XmlRepresentable Axiom where
   toXml axiom =
     HXT.etag "axiom"
       += (
-        XML.qualattr "xml" "id" (axiomId axiom)
+        XML.qualattr "xml" "id" (axiomName axiom)
         +++
         toXmlS (axiomCMPs axiom)
         +++

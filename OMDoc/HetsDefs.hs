@@ -90,46 +90,6 @@ getJustCASLSign::(Maybe CASLSign)->CASLSign
 getJustCASLSign (Just cs) = cs
 getJustCASLSign Nothing = error "Nothing"
 
--- Get a String-representation of a Set
-getSetStringList::(Show a)=>Set.Set a -> [String]
-getSetStringList s = map show $ Set.toList s
-
--- " of a Map
-getMapStringsList::(Show a, Show b)=>Map.Map a b -> [(String, String)]
-getMapStringsList s = map (\(a, b) -> (show a, show b)) $ Map.toList s
-
--- " of a Relation
-getRelStringsList::(Show a)=>Rel.Rel a -> [(String, String)]
-getRelStringsList s = map (\(a, b) -> (show a, show b)) $ Rel.toList s
-
--- Get strings to represent an operator-mapping
-getOpMapStringsList::OpMap->[(String, [(String, [String], String)])]
-getOpMapStringsList om = map (\(a, b) -> ((show a), map opTypeToStrings (Set.toList b))) (Map.toList om) where
-  opTypeToStrings::OpType->(String, [String], String)
-  opTypeToStrings (OpType {opKind=ok, opArgs=oa, opRes=or' }) = (show ok, map show oa, show or' )
-  
--- Get strings to represent a predicate-mapping
-getPredTypeStringsList::(Map.Map (Id.Id) (Set.Set PredType))->[(String, [[String]])]
-getPredTypeStringsList pm = map (\(id' , pts) -> (show id' ,
-          map (\(PredType set) -> map show set) $ Set.toList pts ) ) $ Map.toList pm
-
--- String representation of non ignored CASLSign-Components         
-data CASLSignStrings = CASLSignStrings {
-       sortSetStrings :: [String]
-      ,sortRelStrings :: [(String, String)]
-      ,opMapStrings :: [(String, [(String, [String], String)])]
-      ,predMapStrings :: [(String, [[String]])]
-      } deriving Show
-
--- Conversion from Sign to Stringrepresentation
-caslSignToStrings::CASLSign->CASLSignStrings
-caslSignToStrings cs =
-  CASLSignStrings {  sortSetStrings=( getSetStringList $ sortSet cs )
-        ,sortRelStrings=( getRelStringsList $ sortRel cs)
-        ,opMapStrings = ( getOpMapStringsList $ opMap cs)
-        ,predMapStrings = ( getPredTypeStringsList $ predMap cs )
-       }
-
 -- Create a simple id from a string
 stringToSimpleId::String->Id.SIMPLE_ID
 stringToSimpleId = Id.mkSimpleId
@@ -137,45 +97,6 @@ stringToSimpleId = Id.mkSimpleId
 -- Fast Id construction from a String
 stringToId::String->Id.Id
 stringToId = Id.simpleIdToId . Id.mkSimpleId
-
--- SORT is Id so hopefully this simple mapping does it...
-sortSetStringsToSortSet::[String]->(Set.Set Id.Id)
-sortSetStringsToSortSet sorts = Set.fromList $ map stringToId sorts
-
--- Same for Relations
-sortRelStringsToSortRel::[(String, String)]->(Rel.Rel Id.Id)
-sortRelStringsToSortRel l = Rel.fromList $ map (\(a, b) -> ((stringToId a), (stringToId b))) l
-
-{-
-This might be a source of later errors.
-FunKinds are checked against a String... needs more work.
--}
-opMapStringsToOpMap::[(String, [(String, [String], String)])]->OpMap
-opMapStringsToOpMap ops = foldr (\(id' , ops' ) m -> Map.insert (stringToId id' ) (Set.fromList $ map mkOpType ops' ) m) Map.empty ops where  
-  mkOpType::(String,[String],String)->OpType
-  mkOpType (opkind, args, res) = OpType
-          (if opkind == "Partial" then CASLBasic.Partial else CASLBasic.Total)
-          (map stringToId args)
-          (stringToId res)
-
-{-
-Predicate-mapping
--}
-predMapStringsToPredMap::[(String, [[String]])]->(Map.Map Id.Id (Set.Set PredType))
-predMapStringsToPredMap pres = foldr (\(id' , args) m -> Map.insert
-              (stringToId id' )
-              (Set.fromList $ map (\n -> PredType (map (\s -> stringToId s) n)) args)
-              m
-            ) Map.empty pres
-
--- Conversion from String-Form to Sign
-stringsToCASLSign :: CASLSignStrings -> CASLSign
-stringsToCASLSign cs = (emptySign ())
-    { sortSet = sortSetStringsToSortSet $ sortSetStrings cs
-    , sortRel = sortRelStringsToSortRel $ sortRelStrings cs
-    , opMap = opMapStringsToOpMap $ opMapStrings cs
-    , predMap = predMapStringsToPredMap $ predMapStrings cs
-    }
 
 -- Filter out links for collecting sorts, rels, preds...
 -- only four types of links are allowed (and afaik needed for this)
@@ -366,7 +287,11 @@ getFromCASLSignWithOrigins::
   ->([WithOriginNode b]->c)
   ->c
 getFromCASLSignWithOrigins dg n caslget getcomponents isorigin morph createresult =
-  getFromNodeWithOriginsM dg n (\_ -> False) (\_ -> error "OMDoc.HetsDefs"::a)
+  getFromNodeWithOriginsM
+    dg
+    n
+    (\_ -> False)
+    (\_ -> error "OMDoc.HetsDefs: getFromCASLSignWithOrigins"::a)
     (\dg' n' -> getFromCASLSignM dg' n' caslget)
     getcomponents
     (\i dg' n' -> isorigin i (getFromCASLSignM dg' n' caslget))
@@ -451,7 +376,10 @@ getSensFromNodeWithOrigins dg n =
     n
     (\_ -> True)
     (Set.fromList . getNodeSentences)
-    (\_ _ -> error "OMDoc.HetsDefs"::Set.Set (Ann.Named CASLFORMULA))
+    (\_ _ ->
+      error
+        "OMDoc.HetsDefs: getSensFromNodeWithOrigins"::Set.Set (Ann.Named CASLFORMULA)
+    )
     (\s dg' n' ->
       case lab dg' n' of
         Nothing -> False
@@ -1129,7 +1057,7 @@ isEmptyCASLMorphism::CASL.Morphism.Morphism () () ()->Bool
 isEmptyCASLMorphism m = CASL.Sign.isSubSig (\_ _ -> True) (msource m) (mtarget m)
 
 isEmptyMorphismMap::MorphismMap->Bool
-isEmptyMorphismMap (sm,om,pm,hs) =
+isEmptyMorphismMap (sm,om,pm,_) =
   (Map.null sm && Map.null om && Map.null pm)
 
 isNotHidingMorphismMap::MorphismMap->Bool
@@ -1425,26 +1353,21 @@ stripCASLMorphism
       mcsi = (\(G_theory _ sign _) -> (cast sign)::(Maybe CASLSign)) th
       mcse = (\(G_theory _ _ sens) -> (cast sens)::(Maybe (Prover.ThSens CASLFORMULA (AnyComorphism, BasicProof)))) th
     in case mcsi of
-      Just sig ->
+      (Just (Sign ss sr om ao oldpm vm se ev am ga ei)) ->
         let
-          funlist = map (\(_, (f, _)) -> f) $ Map.toList fm :: [Id.Id]
-          predlist = map (\(_, p) -> p) $ Map.toList pm :: [Id.Id]
+          funlist = (map (\(_, (f, _)) -> f) $ Map.toList fm)::[Id.Id]
+          predlist = (map (\(_, p) -> p) $ Map.toList pm)::[Id.Id]
           newpredmap = foldl (\nmap' id' ->
             Map.filterWithKey (\k _ -> k /= id' ) nmap'
-            ) (predMap sig) predlist
+            ) oldpm predlist
           newopmap = foldl (\nmap' id' ->
             Map.filterWithKey (\k _ -> k /= id' ) nmap'
-            ) (opMap sig) funlist
+            ) om funlist
           newassocmap = foldl (\nmap' id' ->
             Map.filterWithKey (\k _ -> k /= id' ) nmap'
-            ) (assocOps sig) funlist
+            ) ao funlist
         in  case mcse of
-            Just csens -> n { dgn_theory = (G_theory CASL sig
-                                  { opMap =  newopmap
-                                  , assocOps = newassocmap
-                                  , predMap = newpredmap 
-                                  } csens)
-                            }
+            (Just csens) -> n { dgn_theory = (G_theory CASL (Sign ss sr newopmap newassocmap newpredmap vm se ev am ga ei) csens) }
             _ -> error "Could not cast sentences to (ThSens CASLFORMULA) (but a CASLSign was cast... (wierd!))"
       Nothing -> n  -- maybe this node is not CASL-related... leave it as is
 stripCASLMorphism n@(DGRef {}) _ = n -- can DGRefS have a morphism from another node in the graph ?
@@ -1555,15 +1478,17 @@ isEmptyHidAndReqL (_, l) = null l
 isNonHidingHidAndReqL::HidingAndRequationList->Bool
 isNonHidingHidAndReqL (h, _) = null h
     
-createHidingString :: CASLSign -> String
-createHidingString s = implode ", " $ 
-    map show (Set.toList $ sortSet s) ++
-    map show (Map.keys $ opMap s) ++
-    map show (Map.keys $ predMap s)
+createHidingString::CASLSign->String
+createHidingString (Sign sortset _ opmap _ predmap _ _ _ _ _ _) =
+  let
+    hidden = map show (Set.toList sortset) ++
+       map show (Map.keys opmap) ++
+       map show (Map.keys predmap)
+  in  implode ", " hidden
 
-getSymbols :: CASLSign -> [Id.Id]
-getSymbols s = 
-    Set.toList (sortSet s) ++ Map.keys (opMap s) ++ Map.keys (predMap s)
+getSymbols::CASLSign->[Id.Id]
+getSymbols (Sign sortset _ opmap _ predmap _ _  _ _ _ _) =
+  (Set.toList sortset) ++ (Map.keys opmap) ++ (Map.keys predmap)
 
 -- hiding is currently wrong because this function does only check 
 -- if any symbols dissappear in the target - this happens also when renaming...
@@ -1866,44 +1791,66 @@ applyMorphHiding (sortmap, funmap, predmap, hidingset) hidings =
     ,hidingset
   )
   
-buildMorphismSignO :: MorphismMap -> [Id.Id] -> CASLSign -> CASLSign
-buildMorphismSignO (mmsm, mmfm, mmpm, _) hidings sourcesign =
-  case applySignHiding sourcesign hidings of
-    s -> s 
-      { sortSet = Set.map
+buildMorphismSignO::MorphismMap->[Id.Id]->CASLSign->CASLSign
+buildMorphismSignO
+  (mmsm, mmfm, mmpm, _) 
+  hidings
+  sourcesign =
+  let
+    (Sign
+      sortset
+      sortrel
+      opmap
+      assocops
+      predmap
+      varmap
+      sens
+      envdiags
+      annomap
+      ga
+      ext
+      ) = applySignHiding sourcesign hidings
+  in
+    Sign
+      (Set.map
         (\origsort ->
           Map.findWithDefault origsort origsort mmsm
-        ) $ sortSet s
-      , sortRel = Rel.fromList $ map (\(a, b) ->
-          (Map.findWithDefault a a mmsm, Map.findWithDefault b b mmsm)
-                                     ) $ Rel.toList $ sortRel s
-      , opMap = foldl (\mappedops (sid, sopts) ->
-          foldl (\mo sot ->
+        )
+        sortset)
+      (Rel.fromList $ map (\(a, b) ->
+        (Map.findWithDefault a a mmsm
+        ,Map.findWithDefault b b mmsm)
+        ) $ Rel.toList sortrel)
+      (foldl (\mappedops (sid, sopts) ->
+        foldl (\mo sot ->
           case Map.lookup (sid, sot) mmfm of
             Nothing -> mo
-            Just (mid, mot) ->
+            (Just (mid, mot)) ->
               Map.insertWith (Set.union) mid (Set.singleton mot) mo
-                ) mappedops $ Set.toList sopts
-                      ) Map.empty $ Map.toList $ opMap s
-      , assocOps = foldl (\mappedops (sid, sopts) ->
-          foldl (\mo sot ->
+          ) mappedops $ Set.toList sopts
+        ) Map.empty $ Map.toList opmap)
+      (foldl (\mappedops (sid, sopts) ->
+        foldl (\mo sot ->
           case Map.lookup (sid, sot) mmfm of
             Nothing -> mo
-            Just (mid, mot) ->
+            (Just (mid, mot)) ->
               Map.insertWith (Set.union) mid (Set.singleton mot) mo
-                ) mappedops $ Set.toList sopts
-                         ) Map.empty $ Map.toList $ assocOps s
-      , predMap = foldl (\mappedpreds (sid, sprts) ->
-          foldl (\mp spt ->
+          ) mappedops $ Set.toList sopts
+        ) Map.empty $ Map.toList assocops)
+      (foldl (\mappedpreds (sid, sprts) ->
+        foldl (\mp spt ->
           case Map.lookup (sid, spt) mmpm of
             Nothing -> mp
-            Just (mid, mpt) ->
+            (Just (mid, mpt)) ->
               Map.insertWith (Set.union) mid (Set.singleton mpt) mp
-                ) mappedpreds $ Set.toList sprts
-                        ) Map.empty $ Map.toList $ predMap s
-      , varMap = Map.map (\vsort -> Map.findWithDefault vsort vsort mmsm)
-                 $ varMap s
-      }
+          ) mappedpreds $ Set.toList sprts
+        ) Map.empty $ Map.toList predmap)
+      (Map.map (\vsort -> Map.findWithDefault vsort vsort mmsm) varmap)
+      sens
+      envdiags
+      annomap
+      ga
+      ext
 
 buildMorphismSign::Morphism () () ()->Set.Set SORT->CASLSign->CASLSign
 buildMorphismSign morphism hidingSet sign =
@@ -2003,16 +1950,22 @@ buildMorphismSign morphism hidingSet sign =
       msign
 
   
-applySignHiding :: CASLSign -> [Id.Id] -> CASLSign
-applySignHiding s hidings = let hide = not . (`elem` hidings) in s
-    { sortSet = Set.filter hide $ sortSet s
-    , sortRel = Rel.fromList $ filter (hide . fst) $ Rel.toList $ sortRel s
-    , opMap = Map.filterWithKey (\sid _ -> hide sid) $ opMap s
-    , assocOps = Map.filterWithKey (\sid _ -> hide sid)
-                 $ assocOps s
-    , predMap = Map.filterWithKey (\sid _ -> hide sid) $ predMap s
-    , varMap = Map.filter hide $ varMap s
-    }
+applySignHiding::CASLSign->[Id.Id]->CASLSign
+applySignHiding 
+  (Sign sortset sortrel opmap assocops predmap varmap sens envdiags am ga ext)
+  hidings =
+  Sign
+    (Set.filter (not . flip elem hidings) sortset)
+    (Rel.fromList $ filter (\(id' ,_) -> not $ elem id' hidings) $ Rel.toList sortrel)
+    (Map.filterWithKey (\sid _ -> not $ elem sid hidings) opmap)
+    (Map.filterWithKey (\sid _ -> not $ elem sid hidings) assocops)
+    (Map.filterWithKey (\sid _ -> not $ elem sid hidings) predmap)
+    (Map.filter (\varsort -> not $ elem varsort hidings) varmap)
+    sens
+    envdiags
+    am
+    ga
+    ext
 
 -- | Instance of Read for IdS           
 instance Read Id.Id where
@@ -2991,7 +2944,7 @@ createUniqueNames ln tracemarks =
       let
         dg = devGraph $ Map.findWithDefault (error "This can't happen!") libname ln
         node = (\(Just a) -> a) $ Graph.lab dg nodenum
-        nodename = nodeNameToName $ dgn_name node
+        nodename = getNodeName node
         caslsign = (\(Just a) -> a) $ getCASLSign (dgn_sign node)
         previousNodeNameUse =
           foldl
@@ -3380,7 +3333,8 @@ createUniqueNames ln tracemarks =
             names
           else
             names ++
-              [ ( libname
+              [(
+                  libname
                 , dgn_name node
                 , uniqueNodeName
                 , nodenum
@@ -3389,15 +3343,27 @@ createUniqueNames ln tracemarks =
                 , uniqueOpIds
                 , uniqueSensIds
                 , uniqueConsIds
-                ) ]
+              )]
     )
     []
     tracemarks
+  where
+    getNodeName::DGNodeLab->String
+    getNodeName = nodeNameToName . dgn_name
 
-nodeNameToName :: NODE_NAME -> String
-nodeNameToName nn = case showName nn of
-    [] -> "AnonNode"
-    nodename -> nodename 
+
+nodeNameToName::NODE_NAME->String
+nodeNameToName =
+  (\nn ->
+    let
+      nodename = showName nn
+    in
+      if (length nodename) == 0
+        then
+          "AnonNode"
+        else
+          nodename
+  )
 
 data Identifier =
     IdNodeName Id.Id
@@ -3434,7 +3400,7 @@ instance Eq Identifier where
   (IdPred x xt) == (IdPred y yt) = x == y && xt == yt
   (IdSens x _) == (IdSens y _) = x == y
   (IdCons x xt _) == (IdCons y yt _) = x == y && xt == yt
-  x == y = False
+  _ == _ = False
 
 instance Ord Identifier where
   x `compare` y =
@@ -3835,7 +3801,7 @@ matchConsWithOps
       Set.map
         (\(iwon, name) ->
           case woItem iwon of
-            (IdCons conid cont n) ->
+            (IdCons conid _ _) ->
               case
                 Set.toList
                   $
@@ -3871,12 +3837,12 @@ makeUniqueIdNameMapping
       let
         dg = devGraph $ Map.findWithDefault (error "!") ln lenv
         ids = Map.findWithDefault Set.empty ln unnMap
-        dgnodes = filter (not . isDGRef . snd) $ Graph.labNodes dg
-        senslist =
+        --dgnodes = filter (not . isDGRef . snd) $ Graph.labNodes dg
+        {-senslist =
           concatMap
             (\(nn, node) -> map (\x -> (nn, x)) $ zip [0..] (getNodeSentences node))
-            dgnodes
-        senscons =
+            dgnodes-}
+        {-senscons =
           concatMap
             (\(nodenum, (sennum, s)) ->
               Set.toList
@@ -3885,7 +3851,7 @@ makeUniqueIdNameMapping
                   (\(cid, ot) -> (nodenum, (sennum, cid, ot)))
                   (extractConstructorOps s)
             )
-            senslist
+            senslist-}
         sensfromunn =
           Set.filter
             (\(i, _) -> case woItem i of IdSens {} -> True; _ -> False)
@@ -4039,12 +4005,12 @@ makeFullNames
             $
             createNODENAMEWOMap dg
         ids = Map.findWithDefault Set.empty ln unnMap
-        dgnodes = filter (not . isDGRef . snd) $ Graph.labNodes dg
-        senslist =
+        --dgnodes = filter (not . isDGRef . snd) $ Graph.labNodes dg
+        {-senslist =
           concatMap
             (\(nn, node) -> map (\x -> (nn, x)) $ zip [0..] (getNodeSentences node))
-            dgnodes
-        senscons =
+            dgnodes-}
+        {-senscons =
           concatMap
             (\(nodenum, (sennum, s)) ->
               Set.toList
@@ -4053,7 +4019,7 @@ makeFullNames
                   (\(cid, ot) -> (nodenum, (sennum, cid, ot)))
                   (extractConstructorOps s)
             )
-            senslist
+            senslist-}
         sensfromunn =
           Set.filter
             (\(i, _) -> case woItem i of IdSens {} -> True; _ -> False)
@@ -4588,7 +4554,7 @@ createFullNameMapping
     findUniqueSortName::LIB_NAME->Graph.Node->Id.Id->String
     findUniqueSortName ln nn sid =
       case findSortOrigin lenv ln nn sid of
-        Nothing -> Debug.Trace.trace ("huarg!") (show sid)
+        Nothing -> Debug.Trace.trace ("error1") (show sid)
         (Just (oln, onn)) ->
           case
             getLNGN uniqueNames oln onn
@@ -4602,13 +4568,13 @@ createFullNameMapping
                     (inmGetIdNameSortSet inm)
               of
                 (_, uniqueName):_ -> uniqueName
-                _ -> Debug.Trace.trace ("huarg2!") (show sid)
-            _ -> Debug.Trace.trace ("huarg3!") (show sid)
+                _ -> Debug.Trace.trace ("error2!") (show sid)
+            _ -> Debug.Trace.trace ("error3!") (show sid)
     
     findUniqueOpName::LIB_NAME->Graph.Node->Id.Id->OpType->String
     findUniqueOpName ln nn oid ot =
       case findOpOrigin lenv ln nn oid ot of
-        Nothing -> Debug.Trace.trace ("huarg!") (show oid)
+        Nothing -> Debug.Trace.trace ("error1!") (show oid)
         (Just (oln, onn)) ->
           case
             getLNGN uniqueNames oln onn
@@ -4622,13 +4588,13 @@ createFullNameMapping
                     (inmGetIdNameOpSet inm)
               of
                 (_, uniqueName):_ -> uniqueName
-                _ -> Debug.Trace.trace ("huarg2!") (show oid)
-            _ -> Debug.Trace.trace ("huarg3!") (show oid)
+                _ -> Debug.Trace.trace ("error2!") (show oid)
+            _ -> Debug.Trace.trace ("error3!") (show oid)
     
     findUniquePredName::LIB_NAME->Graph.Node->Id.Id->PredType->String
     findUniquePredName ln nn pid pt =
       case findPredOrigin lenv ln nn pid pt of
-        Nothing -> Debug.Trace.trace ("huarg!") (show pid)
+        Nothing -> Debug.Trace.trace ("error!") (show pid)
         (Just (oln, onn)) ->
           case
             getLNGN uniqueNames oln onn
@@ -4642,8 +4608,8 @@ createFullNameMapping
                     (inmGetIdNamePredSet inm)
               of
                 (_, uniqueName):_ -> uniqueName
-                _ -> Debug.Trace.trace ("huarg2!") (show pid)
-            _ -> Debug.Trace.trace ("huarg3!") (show pid)
+                _ -> Debug.Trace.trace ("error2!") (show pid)
+            _ -> Debug.Trace.trace ("error3!") (show pid)
 
 
     findUniqueName::LIB_NAME->Graph.Node->Id.Id->(IdNameMapping->Set.Set (Id.Id, String))->String

@@ -38,6 +38,9 @@ module OMDoc.XmlHandling
     ,createQAttributed
     ,module Text.XML.HXT.Parser
     ,xpipe
+    , module Text.XML.HXT.RelaxNG.Validator
+    , module Text.XML.HXT.Arrow.ReadDocument
+    , module Text.XML.HXT.Arrow.XmlIOStateArrow
   )
   where
   
@@ -48,6 +51,10 @@ import OMDoc.Container
 import Text.XML.HXT.Parser ( (.>), (+=), getValue, hasAttr )
 
 import qualified Text.XML.HXT.Parser as HXT hiding (run, trace, when)
+
+import Text.XML.HXT.RelaxNG.Validator
+import Text.XML.HXT.Arrow.ReadDocument
+import Text.XML.HXT.Arrow.XmlIOStateArrow
 
 import Data.List (find)
 import Char (isDigit, isAlpha, isAlphaNum, isAscii)

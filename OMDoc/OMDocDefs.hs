@@ -5,7 +5,7 @@ License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  hiben@tzi.de
 Stability   :  provisional
-Portability :  non-portable (depends on HXT)
+Portability :  non-portable
 
   Definitions for reading/writing omdoc
 -}
@@ -30,12 +30,9 @@ import Data.List (find)
 import qualified OMDoc.HetsDefs as Hets
 
 import OMDoc.XmlHandling
-import qualified Text.XML.HXT.Parser as HXT
-import Text.XML.HXT.Parser ((+++),(+=))
 import OMDoc.KeyDebug
 
 import qualified System.Environment as SysEnv
---import qualified System.IO as SysIO
 
 debugEnv::forall a . DbgKey -> String -> a -> a
 debugEnv = OMDoc.KeyDebug.debugEnv
@@ -160,6 +157,48 @@ caslExistl_equationS = "existial-equation"
 caslStrong_equationS = "strong-equation"
 caslMembershipS = "membership"
 caslSort_gen_axS = "sort-gen-ax"
+
+data FormulaType =
+    FTConjunction
+  | FTDisjunction
+  | FTImplication
+  | FTEquivalence
+  | FTNegation
+  | FTPredication
+  | FTDefinedness
+  | FTExistl_equation
+  | FTStrong_equation
+  | FTMembership
+  | FTSort_gen_ax
+
+instance Show FormulaType where
+  show FTConjunction = caslConjunctionS
+  show FTDisjunction = caslDisjunctionS
+  show FTImplication = caslImplicationS
+  show FTEquivalence = caslEquivalenceS
+  show FTNegation = caslNegationS
+  show FTPredication = caslPredicationS
+  show FTDefinedness = caslDefinednessS
+  show FTExistl_equation = caslExistl_equationS
+  show FTStrong_equation = caslStrong_equationS
+  show FTMembership = caslMembershipS
+  show FTSort_gen_ax = caslSort_gen_axS
+
+instance Read FormulaType where
+  readsPrec _ "conjunction" = [(FTConjunction, "")]
+  readsPrec _ "disjunction" = [(FTDisjunction, "")]
+  readsPrec _ "implication" = [(FTImplication, "")]
+  readsPrec _ "implies" = [(FTImplication, "")]
+  readsPrec _ "equivalence" = [(FTEquivalence, "")]
+  readsPrec _ "equal" = [(FTEquivalence, "")]
+  readsPrec _ "neg" = [(FTNegation, "")]
+  readsPrec _ "predication" = [(FTPredication, "")]
+  readsPrec _ "definedness" = [(FTDefinedness, "")]
+  readsPrec _ "existial-equation" = [(FTExistl_equation, "")]
+  readsPrec _ "strong-equation" = [(FTStrong_equation, "")]
+  readsPrec _ "membership" = [(FTMembership, "")]
+  readsPrec _ "sort-gen-ax" = [(FTSort_gen_ax, "")]
+  readsPrec _ _ = []
 
 caslSymbolQuantUniversalS = "universal"
 caslSymbolQuantExistentialS = "existential"

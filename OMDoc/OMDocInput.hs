@@ -9,47 +9,10 @@ Portability :  non-portable(Logic)
 
 Input-methods for reading OMDoc
 -}
-{-
-TODO:
-  bug:
-    When referencing over several imports, sorts are disappearing.
-    (e.g. Basic/Graphs.casl can be converted to OMDoc but not back)
--}
 module OMDoc.OMDocInput
   (
     mLibEnvFromOMDocFile
   ) 
- -- debug 
-{-  (
-     Source(..)
-    -- options currently for debugging, stores HetcatsOptions
-    ,GlobalOptions(..)
-    ,FFXInput(..)
-    -- reads an OMDoc-File and builds a graph of the files imported
-    ,makeImportGraphFullXml
-    -- transforms an import graph into a graph holding a DevGraph for
-    -- each OMDoc-File (+ document)
-    ,processImportGraphXN
-    -- strips documents from processed import graph creating a graph of
-    -- DevGraphs
-    ,hybridGToDGraphG
-    -- converts a graph of DevGraphs into a LibEnv (using file names for
-    -- library names)
-    -- same as above but using the documents id (name) for library name
-    ,dGraphGToLibEnvOMDocId
-    -- wrapper for Hets that tries to create a LibEnv from an OMDoc file
-    -- and returns Nothing on error
-    ,mLibEnvFromOMDocFile
-    -- executes a sequence of the above functions to create a LibEnv from
-    -- an OMDoc file
-    ,libEnvFromOMDocFile
-    -- loads an xml file via HXT and returns the 'omdoc'-tree
-    -- ,loadOMDoc
-    ,getImportedTheories
-    ,fetchRequationSymbols
-    ,preprocessXml
-  )
--}
   where
 
 import qualified OMDoc.HetsDefs as Hets
@@ -67,13 +30,13 @@ import qualified Common.Lib.Graph as CLGraph
 
 -- Often used symbols from HXT
 import Text.XML.HXT.Parser
-  ( (+++), (.>), xshow, isTag, getChildren, processChildren, getValue
-    ,emptyRoot, v_1, v_0, a_issue_errors, a_source, a_validate
-    ,a_check_namespaces
+  (
+      (.>), xshow, isTag, getChildren, getValue
+    , emptyRoot, v_1, v_0, a_issue_errors, a_source, a_validate
+    , a_check_namespaces
   )
         
 import qualified Text.XML.HXT.Parser as HXT hiding (run, trace, when)
-import qualified Text.XML.HXT.DOM.XmlTreeTypes as HXTT hiding (when)
 
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
@@ -84,7 +47,9 @@ import qualified Common.AS_Annotation as Ann
 import qualified Logic.Prover as Prover
 
 import Data.Maybe (fromMaybe)
-import Data.List (isPrefixOf, find)
+import Data.List (find)
+
+import qualified Common.GlobalAnnotations as GA
 
 import Debug.Trace (trace)
 
@@ -102,6 +67,9 @@ import OMDoc.Container
 import OMDoc.XmlHandling
 
 import OMDoc.OMDocDefs
+
+import qualified OMDoc.OMDocInterface as OMDoc
+import qualified OMDoc.OMDocXml as OMDocXML
 
 import qualified System.Directory as System.Directory
 
@@ -135,16 +103,14 @@ libEnvFromOMDocFile::
   ->String -- ^ URI \/ File to load
   ->IO (ASL.LIB_NAME, DGraph, LibEnv)
 libEnvFromOMDocFile go f =
-  makeImportGraphFullXml go f >>=
-    return . importGraphToLibEnv go
+  makeImportGraphOMDoc go f >>=
+    return . importGraphToLibEnvOM go
 --    return . dGraphGToLibEnvOMDocId go . hybridGToDGraphG go . processImportGraphXN go
 
 
 {- -- debug
   loads an OMDoc file and returns it even if there are errors
   fatal errors lead to IOError
--}
-{-
 loadOMDoc ::
   String -- ^ URI \/ File to load
   ->(IO HXT.XmlTrees)
@@ -178,55 +144,73 @@ loadOMDoc f =
   extracts constructors from adt-structures
 -}
 -- i need a back-reference to the theory to get presentations for adt-constructors...
-extractConsXNWONFromADT::
+extractConsXNWONFromOMADT::
   FFXInput -- ^ current input settings
-  ->AnnXMLN -- ^ wrapped adt 
-  ->AnnXMLN -- ^ wrapped theory containing adt
+  ->(Graph.Node, OMDoc.Theory) -- ^ theory of adt
+  ->OMDoc.ADT -- ^ adt
   ->(XmlNamedWONId, [(XmlNamedWONId, OpTypeXNWON)])
-extractConsXNWONFromADT ffxi anxml anxmltheory =
+extractConsXNWONFromOMADT ffxi (origin, theory) adt =
   let
     sortdef =
-      applyXmlFilter
-        (isTag "adt" .> getChildren .> isTag "sortdef")
-        (axXml anxml)
-    sorts' = xshow $ applyXmlFilter (getValue "name") sortdef
+      case OMDoc.adtSortDefs adt of
+        [] -> error "Empty SortDefs!"
+        (sd:_) -> sd
+    sorts' = OMDoc.sortDefName sortdef
     sortid =
       case findByNameAndOrigin
             sorts'
-            (axAnn anxml)
+            origin
             (mapSetToSet $ xnSortsMap ffxi)
               of
                 Nothing -> error "No sort for ADT!"
                 (Just si) -> si
-    cons = applyXmlFilter (getChildren .> isTag "constructor") sortdef
+    cons = OMDoc.sortDefConstructors sortdef
   in
-    (sortid, map (\n -> extractConXNWON [n] sortid) cons)
+    (sortid, map (\n -> extractConXNWON n sortid) cons)
   where
     extractConXNWON::
-      HXT.XmlTrees
+        OMDoc.Constructor
       ->XmlNamedWONId
       ->(XmlNamedWONId, OpTypeXNWON) -- empty list on error
-    extractConXNWON conx sortid =
+    extractConXNWON con sortid =
       let
-        conxname = xshow $ applyXmlFilter (getValue "name") conx
-        conhpress = getPresentationString conxname (axXml anxmltheory)
-        conid = case conhpress of
-                [] -> Hets.stringToId conxname
-                _ -> read conhpress
-        conxnwonid = XmlNamed (Hets.mkWON conid  (axAnn anxml)) conxname
+        conxname = OMDoc.constructorName con
+        conid =
+          case
+            find
+              (\p ->
+                OMDoc.presentationForId p == conxname
+              )
+              (OMDoc.theoryPresentations theory)
+          of
+            Nothing -> Hets.stringToId conxname
+            (Just p) ->
+              case
+                find
+                  (\u -> OMDoc.useFormat u == "Hets")
+                  (OMDoc.presentationUses p)
+              of
+                Nothing -> Hets.stringToId conxname
+                (Just u) -> read $ (OMDoc.useValue u)
+        conxnwonid = XmlNamed (Hets.mkWON conid origin) conxname
         args =
           map
-            (\n -> xshow [n])
-            $
-            applyXmlFilter
-              (getChildren .> isTag "argument" .> getValue "sort")
-              conx
+            (\at ->
+              case OMDoc.typeOMDocMathObject at of
+                (OMDoc.OMOMOBJ (OMDoc.OMObject ome)) ->
+                  case ome of
+                    (OMDoc.OMES oms) ->
+                      OMDoc.omsName oms
+                    _ -> error "Invalid Element for SortDefArgs!"
+                _ -> error "Can't handle Argument of non-OMOBJ type!"
+            )
+            (OMDoc.constructorArguments con)
         argsxn =
           map
             (\n -> 
               case findByNameAndOrigin
                     n
-                    (axAnn anxml)
+                    origin
                     (mapSetToSet $ xnSortsMap ffxi)
                       of
                         Nothing -> error "Unknown sort in constructor..."
@@ -275,33 +259,31 @@ consToSensXN sortid conlist =
   extracts symbols used in a OMDoc-Morphism storing a mapping
   of symbols and a list of hidden symbols
 -}
-fetchRequationSymbols::HXT.XmlTrees->([String], Hets.RequationList)
-fetchRequationSymbols t =
+fetchOMRequationSymbols::OMDoc.Morphism->([String], Hets.RequationList)
+fetchOMRequationSymbols morph =
   let
-    hides = xshow $ applyXmlFilter (isTag "morphism" .> getQualValue "" "hiding") t
-    hiddensyms = breakSepSpace hides
-    pattern = isTag "requation" .> processChildren (isTag "OMOBJ") .> getChild 1
-    value = isTag "requation" .> processChildren (isTag "OMOBJ") .> getChild 2
-    vsymbol = value .> getChildren .> isTag "OMS" .> getQualValue "" "name" 
-    psymbol = pattern .> getChildren .> isTag "OMS" .> getQualValue "" "name" 
-    vcd = value .> getChildren .> isTag "OMS" .> getQualValue "" "cd" 
-    pcd = pattern .> getChildren .> isTag "OMS" .> getQualValue "" "cd" 
-    requations = applyXmlFilter (isTag "morphism" .> getChildren .> isTag "requation") t
-    reqlist = foldl (\rl ts ->
-      let
-        psymbolname = xshow $ applyXmlFilter psymbol [ts]
-        vsymbolname = xshow $ applyXmlFilter vsymbol [ts]
-        pcdname = xshow $ applyXmlFilter pcd [ts]
-        vcdname = xshow $ applyXmlFilter vcd [ts]
-      in
-        if (psymbolname /= []) && (vsymbolname /= [])
-          then
-            rl ++ [( (pcdname, psymbolname), (vcdname, vsymbolname) )]
-          else
-            rl
-      ) [] requations
+    hides = OMDoc.morphismHiding morph
+    reqlist =
+      foldl
+        (\rl req ->
+          case req of
+            (
+                (OMDoc.MTextOM (OMDoc.OMObject (OMDoc.OMES oms1)))
+              , (OMDoc.MTextOM (OMDoc.OMObject (OMDoc.OMES oms2)))) ->
+              rl ++
+                [
+                  (
+                      (OMDoc.omsCD oms1, OMDoc.omsName oms1)
+                    , (OMDoc.omsCD oms2, OMDoc.omsName oms2)
+                  )
+                ]
+            _ ->
+              rl
+        )
+        []
+        (OMDoc.morphismRequations morph)
   in
-    (hiddensyms, reqlist)
+    (hides, reqlist)
 
 defaultDGLinkType::DGLinkType
 defaultDGLinkType = GlobalDef
@@ -321,97 +303,86 @@ mapSetToSet mapping =
       Set.union set s
     ) Set.empty (Map.toList mapping)
                 
-{- |
-  AnnotatedXML is a structure containing xml-trees and and annotation
-  to these trees.
-  Used to have a reference when processing these trees.
--}
-data AnnotatedXML a = AXML { axAnn::a, axXml::HXT.XmlTrees }
-  deriving Show
-        
--- | xml-trees with Graph.Node annotation
-type AnnXMLN = AnnotatedXML Graph.Node
-
--- | equality for AnnotatedXML is determined by equality of annotations
-instance (Eq a)=>Eq (AnnotatedXML a) where
-  ax1 == ax2 = (axAnn ax1) == (axAnn ax2)
-
--- | ordering of AnnotatedXML is determined by order of annotations
-instance (Ord a)=>Ord (AnnotatedXML a) where
-  compare ax1 ax2 = compare (axAnn ax1) (axAnn ax2)
 
 {- |
-  An annotated theory set is a set of AnnotatedXML where
+  An annotated theory set is a set of (Graph.Node, Theory) where
   each element in the set contains one theory-tree and is annotated by the
   number of the theory (appearance in file) (pseudo-graph-nodes)
 -}
-buildAXTheorySet::HXT.XmlTrees->Set.Set AnnXMLN
-buildAXTheorySet t =
-  let
-    theories = applyXmlFilter (getChildren .> isTag "theory") t
-  in
-    Set.fromList $ zipWith
-      (\n t' -> AXML n [t' ])
-      [1..]
-      theories
+buildAOMTheorySet::OMDoc.OMDoc->Set.Set (Graph.Node, OMDoc.Theory)
+buildAOMTheorySet omdoc =
+  Set.fromList
+    $
+    zip [1..] (OMDoc.omdocTheories omdoc)
 
 {- |
   creates a set of theory names by examining the name of the theory and
   searching for presentation elements.
 -}
-nodeNamesXNFromXml::Set.Set AnnXMLN->TheoryXNSet
-nodeNamesXNFromXml axmlset =
-  Set.fromList $ Set.fold
-    (\axml txnl ->
-      let
-        theoid = stripFragment $ xshow $ applyXmlFilter (getQualValue "xml" "id") (axXml axml)
-        theohetsnodenames = xshow $ applyXmlFilter
-          (
-            getChildren .> isTag "presentation" .>
-            withSValue "for" theoid .> getChildren .>
-            isTag "use" .> withSValue "format" "Hets" .>
-            getChildren
-          ) (axXml axml)
-        theohetsnodename =
-          if (theohetsnodenames == "") || (isPrefixOf "AnonNode" theoid) 
-            then
-              idToNodeName $ read ("["++theoid++",,0]")
-            else 
-              idToNodeName $ read theohetsnodenames
-      in
-        txnl ++ [XmlNamed ((axAnn axml), theohetsnodename) theoid]
-    )
-    []
-    axmlset
+nodeNamesXNFromOM::Set.Set (Graph.Node, OMDoc.Theory)->TheoryXNSet
+nodeNamesXNFromOM aomset =
+  Set.fromList
+    $
+    Set.fold
+      (\(gn, omt) l ->
+        let
+          theoid = stripFragment $ OMDoc.theoryId omt
+          theoname =
+            case
+              omPresentationFor omt theoid "Hets"
+            of
+              Nothing -> idToNodeName $ read ("["++theoid++",,0]")
+              (Just x) -> idToNodeName $ read x
+        in
+          l ++ [XmlNamed (gn, theoname) theoid]
+      )
+      []
+      aomset
+                
 
-                
-sortsXNWONFromXmlTheory::AnnXMLN->(Set.Set XmlNamedWONSORT)
-sortsXNWONFromXmlTheory anxml =
-  let
-    sortnames = map (\m -> xshow [m]) $
-      applyXmlFilter
-              (
-                getChildren .> isTag "symbol" .>
-                withQualSValue symbolTypeXMLNS symbolTypeXMLAttr "sort" .>
-                getQualValue sortNameXMLNS sortNameXMLAttr
-              )
-              (axXml anxml)
-  in
-  Set.fromList $ foldl (\xnss sn ->
-    let
-      hetspress = xshow $ applyXmlFilter (
-        getChildren .> 
-        isTag "presentation" .> withSValue "for" sn .>
-        getChildren .> isTag "use" .> withSValue "format" "Hets" .>
-        getChildren) (axXml anxml)
-        -- hets presentations are optional
-      hetspres = case hetspress of
-        [] -> (Hets.stringToId sn)
-        x -> read x -- incorrect hets presentations will cause an exception here
-    in
-      xnss ++ [ XmlNamed (Hets.mkWON hetspres (axAnn anxml)) sn ]
-    ) [] sortnames
-                
+omPresentationFor::OMDoc.Theory->String->String->Maybe String
+omPresentationFor theory pid format =
+  case
+    find
+      (\p -> OMDoc.presentationForId p == pid)
+      (OMDoc.theoryPresentations theory)
+  of
+    Nothing -> Nothing
+    (Just p) ->
+      case
+        find
+          (\u -> OMDoc.useFormat u == format)
+          (OMDoc.presentationUses p)
+      of
+        Nothing -> Nothing
+        (Just u) -> Just (OMDoc.useValue u)
+
+
+sortsXNWONFromOMTheory::(Graph.Node, OMDoc.Theory)->(Set.Set XmlNamedWONSORT)
+sortsXNWONFromOMTheory (origin, theory) =
+  foldl
+    (\ss con ->
+      case con of
+        (OMDoc.CSy symbol) ->
+          if OMDoc.symbolRole symbol == OMDoc.SRSort
+            then
+              let
+                sid = OMDoc.symbolId symbol
+                sname =
+                  case 
+                    omPresentationFor theory sid "Hets"
+                  of
+                    Nothing -> Hets.stringToId sid
+                    (Just x) -> read x
+              in
+                Set.insert (XmlNamed (Hets.mkWON sname origin) sid) ss
+            else
+              ss
+        _ ->
+          ss
+    )
+    Set.empty
+    (OMDoc.theoryConstitutives theory)
 
 findByName::(Container b (XmlNamed a))=>String->b->Maybe (XmlNamed a)
 findByName iname icon =
@@ -436,210 +407,148 @@ findByNameAndOrigin iname iorig icon =
           _ -> Nothing
       i -> i
 
-relsXNWONFromXmlTheory::Set.Set XmlNamedWONSORT->AnnXMLN->Rel.Rel XmlNamedWONSORT
-relsXNWONFromXmlTheory xnsortset anxml =
-  let
-    adts = applyXmlFilter (getChildren .> isTag "adt") (axXml anxml)
-    relations = concat $ map relsFromXmlADT adts
-  in
-    Rel.fromList relations
-  where
-  relsFromXmlADT::HXT.XmlTree->[(XmlNamedWONSORT, XmlNamedWONSORT)]
-  relsFromXmlADT t' =
-    let
-      xnsorts = xshow $
-        applyXmlFilter
-          (getChildren .> isTag "sortdef" .>
-            withSValue "type" "free" .> getValue "name")
-          [t' ]
-      xninsortss = map (\n -> drop 1 $ xshow [n]) $
-        applyXmlFilter
-          (getChildren .> isTag "sortdef" .> getChildren .>
-            isTag "insort" .> getValue "for")
-          [t' ]
-      xnsort = case findByNameAndOrigin xnsorts (axAnn anxml) xnsortset of
-        Nothing -> (XmlNamed (Hets.mkWON (Hets.stringToId xnsorts) (-1)) xnsorts)
-        (Just xnsort' ) -> xnsort'
-      xninsorts = map (\s -> case findByNameAndOrigin s (axAnn anxml) xnsortset of
-        Nothing ->
---          Debug.Trace.trace
---            ("Relation with unknown sort!" ++ (show s))
-            (XmlNamed (Hets.mkWON (Hets.stringToId s) (-1)) s)
-        (Just xs' ) -> xs'
-        ) xninsortss
-      -- note that we restore 'CASL-Order' here
-    in
-      map (\n -> (n, xnsort)) xninsorts
 
-
-getPresentationString::String->HXT.XmlTrees->String
-getPresentationString for t =
-  xshow $ applyXmlFilter
-    (getChildren .> isTag "presentation" .> withSValue "for" for .>
-      getChildren .> isTag "use" .> withSValue "format" "Hets" .> 
-      getChildren) t
-        
-
-predsXNWONFromXmlTheory::
-  Map.Map
-    XmlName
-    FFXInput
-  ->TheoryXNSet
-  ->Set.Set XmlNamedWONSORT
-  ->AnnXMLN
-  ->[(XmlNamedWONId, PredTypeXNWON)]
-predsXNWONFromXmlTheory cdmap xntheoryset xnsortset anxml =
-  let
-    objsymbols = applyXmlFilter (getChildren .> isTag "symbol" .> withQualSValue symbolTypeXMLNS symbolTypeXMLAttr "object") (axXml anxml)
-    predsymbols = filter (\n -> applyXmlFilter (
-      getChildren .> isTag "type" .>
-      getChildren .> isTag "OMOBJ" .>
-      getChildren .> isTag "OMA" .>
-      getChildren .> isTag "OMS" .>
-      withSValue "cd" "casl" .>
-      withSValue "name" "predication") [n] /= []) objsymbols
-  in
-    map predFromXmlSymbol (map (\t -> AXML (axAnn anxml) [t]) predsymbols)
-  where
-    predFromXmlSymbol::AnnXMLN->(XmlNamedWONId, PredTypeXNWON)
-    predFromXmlSymbol panxml =
-      let
-        pidxname = xshow $
-          applyXmlFilter
-            (getQualValue predNameXMLNS predNameXMLAttr)
-            (axXml panxml)
-        pids = getPresentationString pidxname (axXml anxml) -- yes, reference to 'outer' xml
-        pid = case pids of
-          [] ->
-            Debug.Trace.trace
-              ("Note: No Hets-Presentation found for Predicate with Xml-ID : \""
-                ++ pidxname ++ "\"") $ Hets.stringToId pidxname
-          _ -> read pids
-        argtags = applyXmlFilter (getChildren .> isTag "type" .>
-          withSValue "system" "casl" .> getChildren .> isTag "OMOBJ" .>
-          getChildren .> isTag "OMA" .> getChildren .> isTag "OMS" .>
-          withValue "name" (/="predication") )
-          (axXml panxml)
-        argswithcds =
-          map
-            (\n ->
-              (
-                xshow $ applyXmlFilter (getValue "name") [n],
-                xshow $ applyXmlFilter (getValue "cd") [n]
-              )
-            )
-            argtags
-        xnargs =
-          map
-            (\(axname, acd) ->
+relsXNWONFromOMTheory
+  ::Set.Set XmlNamedWONSORT
+  ->(Graph.Node, OMDoc.Theory)
+  ->Rel.Rel XmlNamedWONSORT
+relsXNWONFromOMTheory xnsortset (origin, theory) =
+  foldl
+    (\r con ->
+      case con of
+        (OMDoc.CAd adt) ->
+          foldl
+            (\r' sd ->
               let
-                theonode = case getNodeForTheoryName xntheoryset (stripFragment acd) of
-                  Nothing -> error "Unknown Theory for Argument!"
-                  (Just n) -> n
-              in
-                case findByNameAndOrigin axname theonode xnsortset of
-                  Nothing ->
-                    let
-                      allffxis = Map.elems cdmap
-                      allsortmaps = map xnSortsMap allffxis
-                      allsortsets = concat (map Map.elems allsortmaps)
-                      allsorts = concat (map Set.toList allsortsets)
-                    in
+                sortname = OMDoc.sortDefName sd
+                insortnames =
+                  foldl
+                    (\innames ins ->
+                      let
+                        insortForName =
+                          case URI.uriFragment $ OMDoc.insortFor ins of
+                            [] -> OMDoc.showURI (OMDoc.insortFor ins)
+                            ('#':n) -> n
+                            x ->
+                              Debug.Trace.trace
+                                (
+                                  "relsXNWONFromOMTheory: unexpected insort : "
+                                  ++ "\"" ++ x ++ "\""
+                                )
+                                x
+                      in
+                        innames ++ [insortForName]
+                    )
+                    []
+                    (OMDoc.sortDefInsorts sd)
+                xnsort = case findByNameAndOrigin sortname origin xnsortset of
+                  Nothing -> (XmlNamed (Hets.mkWON (Hets.stringToId sortname) (-1)) sortname)
+                  (Just xnsort' ) -> xnsort'
+                xninsorts =
+                  map
+                    (\s ->
                       case
-                        find
-                          (\x -> (xnName x) == axname)
-                          allsorts
+                        findByNameAndOrigin
+                          s
+                          origin
+                          xnsortset
                       of
                         Nothing ->
-{-                          error
-                            ("Sort " ++ axname ++ " not in FFXI..." ++ show (map xnName allsorts)
-                             ++ " at : " ++ (take 300 (xshow (axXml panxml)))
-                            ) -}
-  --                        Debug.Trace.trace
-  --                          ("Sort " ++ axname ++ " not in FFXI..." ++ show (map xnName allsorts)
-  --                           ++ " at : " ++ (take 300 (xshow (axXml panxml)))
-  --                          )
-                            (XmlNamed (Hets.mkWON (Hets.stringToId axname) (-1)) axname)
-                        (Just s) ->
---                          Debug.Trace.trace
---                            ("Found sort " ++ axname  ++ " in FFXI...")
-                            s
-                  (Just xnarg) ->
-                    if (xnWOaToO xnarg) /= theonode
-                      then
-                        Debug.Trace.trace
-                          ("Found Argument (" ++ show xnarg ++ ") but in wrong Theory! (not theory #" ++ show theonode ++ ") while processing Predicate " ++ pidxname)
-                          xnarg
-                      else
-                        xnarg
+                          (XmlNamed (Hets.mkWON (Hets.stringToId s) (-1)) s)
+                        (Just xs' ) -> xs'
+                    )
+                    insortnames
+              in
+                foldl
+                  (\r'' i ->
+                    Rel.insert xnsort i r''
+                  )
+                  r'
+                  xninsorts
             )
-            argswithcds
-      in
-        (XmlNamed (Hets.mkWON pid (axAnn anxml)) pidxname, PredTypeXNWON xnargs)
-        
-opsXNWONFromXmlTheory::
-  Map.Map
-    XmlName
-    FFXInput
+            r
+            (OMDoc.adtSortDefs adt)
+        _ ->
+          r
+    )
+    Rel.empty
+    (OMDoc.theoryConstitutives theory)
+
+  
+opsXNWONFromOMTheory
+  ::Map.Map XmlName FFXInput
   ->TheoryXNSet
   ->Set.Set XmlNamedWONSORT
-  ->AnnXMLN
+  ->(Graph.Node, OMDoc.Theory)
   ->[(XmlNamedWONId, OpTypeXNWON)]
-opsXNWONFromXmlTheory cdmap xntheoryset xnsortset anxml =
-  let
-    objsymbols = applyXmlFilter (getChildren .> isTag "symbol" .> withQualSValue symbolTypeXMLNS symbolTypeXMLAttr "object") (axXml anxml)
-    opsymbols =
-      filter
-        (\n -> applyXmlFilter (
-          getChildren .> isTag "type" .>
-          getChildren .> isTag "OMOBJ" .>
-          getChildren .> isTag "OMA" .>
-          getChildren .> isTag "OMS" .>
-          withSValue "cd" "casl" .>
-          withValue "name" (\n' -> n' == "function" || n' == "partial-function")
-        )
-        [n] /= [])
-      objsymbols
-  in
-    map opFromXmlSymbol (map (\n -> AXML (axAnn anxml) [n]) opsymbols) 
+opsXNWONFromOMTheory
+  cdmap
+  xntheoryset
+  xnsortset
+  (origin, theory)
+  =
+  foldl
+    (\s' con ->
+      case con of
+        (OMDoc.CSy symbol) ->
+          if OMDoc.symbolRole symbol == OMDoc.SRObject
+            then
+              case OMDoc.symbolType symbol of
+                (Just t) ->
+                  case OMDoc.typeOMDocMathObject t of
+                    (OMDoc.OMOMOBJ (OMDoc.OMObject e)) ->
+                      case e of
+                        (OMDoc.OMEA oma) ->
+                          case OMDoc.omaElements oma of
+                            ((OMDoc.OMES oms):_) ->
+                              if
+                                elem
+                                  (OMDoc.omsName oms) 
+                                  ["function", "partial-function"]
+                                then
+                                  s' ++ [ makeOp (OMDoc.symbolId symbol) oma ]
+                                else
+                                  s'
+                            _ -> s'
+                        _ -> s'
+                    _ -> s'
+                Nothing -> s'
+            else
+              s'
+        _ -> s'
+    )
+    []
+    (OMDoc.theoryConstitutives theory)
   where
-    opFromXmlSymbol::AnnXMLN->(XmlNamedWONId, OpTypeXNWON)
-    opFromXmlSymbol oanxml =
+    makeOp::OMDoc.XmlId->OMDoc.OMApply->(XmlNamedWONId, OpTypeXNWON)
+    makeOp oidxname oma =
       let
-        oidxname = xshow $
-          applyXmlFilter (getQualValue opNameXMLNS opNameXMLAttr) (axXml oanxml)
-        oids = getPresentationString oidxname (axXml anxml)
-        oid = case oids of
-          [] ->
-            Debug.Trace.trace ("Note: No Hets-Presentation found for Operator with Xml-ID : \""
-              ++ oidxname ++ "\"") $ Hets.stringToId oidxname
-          _ -> read oids
-        isTotal = applyXmlFilter (
-          getChildren .> isTag "type" .> withSValue "system" "casl" .>
-          getChildren .> isTag "OMOBJ" .>
-          getChildren .> isTag "OMA" .>
-          getChildren .> isTag "OMS" .>
-          withSValue "name" "function") (axXml oanxml) /= []
-        argsalltags = applyXmlFilter (
-          getChildren .> isTag "type" .> withSValue "system" "casl" .>
-          getChildren .> isTag "OMOBJ" .>
-          getChildren .> isTag "OMA" .>
-          getChildren .> isTag "OMS" .>
-          withValue "name" (\n -> n /= "function" && n /= "partial-function")
-          ) (axXml oanxml)
-        argsallwithcds =
-          map
-            (\n ->
-              (
-                xshow $ applyXmlFilter (getValue "name") [n],
-                xshow $ applyXmlFilter (getValue "cd") [n]
+        oid =
+          case omPresentationFor theory oidxname "Hets" of
+            Nothing -> Hets.stringToId oidxname
+            (Just x) -> read x
+        isTotal =
+          case (OMDoc.omaElements oma) of
+            ((OMDoc.OMES oms):_) -> OMDoc.omsName oms == "function"
+            _ -> error "OMDoc.OMDocInput.opsXNWONFromOMTheory: invalid argument!"
+        args =
+          drop
+            1
+            $
+            filter
+              (\e ->
+                case e of
+                  (OMDoc.OMES {}) -> True
+                  _ -> False
               )
-            )
-            argsalltags
+              $
+              OMDoc.omaElements oma
         xnargsall =
           map
-            (\(axname, acd) ->
+            (\(OMDoc.OMES oms) ->
               let
+                axname = OMDoc.omsName oms
+                acd = OMDoc.omsCD oms
                 theonode = case getNodeForTheoryName xntheoryset (stripFragment acd) of
                   Nothing ->
                     Debug.Trace.trace
@@ -661,33 +570,148 @@ opsXNWONFromXmlTheory cdmap xntheoryset xnsortset anxml =
                           allsorts
                       of
                         Nothing ->
---                          Debug.Trace.trace
---                            ("Sort " ++ axname ++ " not in FFXI..." ++ show (map xnName allsorts)
---                             ++ " at : " ++ (take 300 (xshow (axXml oanxml)))
---                            )
-                            (XmlNamed (Hets.mkWON (Hets.stringToId axname) (-1)) axname)
+                          XmlNamed
+                            (Hets.mkWON (Hets.stringToId axname) (-1))
+                            axname
                         (Just s) ->
---                          Debug.Trace.trace
---                            ("Found sort " ++ axname  ++ " in FFXI...")
-                            s
+                          s
                   (Just xnarg) -> if (xnWOaToO xnarg) /= theonode
                     then
                       Debug.Trace.trace
-                        ("Found Argument (" ++ show xnarg ++ ") but in wrong Theory! (not in theory #" ++ show theonode ++ ") while processing operator " ++ oidxname)
+                        (
+                          "Found Argument (" ++ show xnarg
+                          ++ ") but in wrong Theory! (not in theory #"
+                          ++ show theonode
+                          ++ ") while processing operator " ++ oidxname
+                        )
                         xnarg
                     else
                       xnarg
             )
-            argsallwithcds
+            args
         xnargs = take (length(xnargsall)-1) xnargsall
         xnres = last (xnargsall)
       in
         (
-          XmlNamed (Hets.mkWON oid (axAnn anxml)) oidxname,
+          XmlNamed (Hets.mkWON oid origin) oidxname,
             OpTypeXNWON
                     (if isTotal then Total else Partial)
                     xnargs
                     xnres
+        )
+
+
+predsXNWONFromOMTheory
+  ::Map.Map XmlName FFXInput
+  ->TheoryXNSet
+  ->Set.Set XmlNamedWONSORT
+  ->(Graph.Node, OMDoc.Theory)
+  ->[(XmlNamedWONId, PredTypeXNWON)]
+predsXNWONFromOMTheory
+  cdmap
+  xntheoryset
+  xnsortset
+  (origin, theory)
+  =
+  foldl
+    (\s' con ->
+      case con of
+        (OMDoc.CSy symbol) ->
+          if OMDoc.symbolRole symbol == OMDoc.SRObject
+            then
+              case OMDoc.symbolType symbol of
+                (Just t) ->
+                  case OMDoc.typeOMDocMathObject t of
+                    (OMDoc.OMOMOBJ (OMDoc.OMObject e)) ->
+                      case e of
+                        (OMDoc.OMEA oma) ->
+                          case OMDoc.omaElements oma of
+                            ((OMDoc.OMES oms):_) ->
+                              if OMDoc.omsName oms == "predication"
+                                then
+                                  s' ++ [ makePred (OMDoc.symbolId symbol) oma ]
+                                else
+                                  s'
+                            _ -> s'
+                        _ -> s'
+                    _ -> s'
+                Nothing -> s'
+            else
+              s'
+        _ -> s'
+    )
+    []
+    (OMDoc.theoryConstitutives theory)
+  where
+    makePred::OMDoc.XmlId->OMDoc.OMApply->(XmlNamedWONId, PredTypeXNWON)
+    makePred pidxname oma =
+      let
+        pid =
+          case omPresentationFor theory pidxname "Hets" of
+            Nothing -> Hets.stringToId pidxname
+            (Just x) -> read x
+        args =
+          drop
+            1
+            $
+            filter
+              (\e ->
+                case e of
+                  (OMDoc.OMES {}) -> True
+                  _ -> False
+              )
+              $
+              OMDoc.omaElements oma
+        xnargsall =
+          map
+            (\(OMDoc.OMES oms) ->
+              let
+                axname = OMDoc.omsName oms
+                acd = OMDoc.omsCD oms
+                theonode = case getNodeForTheoryName xntheoryset (stripFragment acd) of
+                  Nothing ->
+                    Debug.Trace.trace
+                      ("No Theory for Argument! " ++ (stripFragment acd) ++ "#" ++ axname)
+                      (-1)
+                  (Just n) -> n
+              in
+                case findByNameAndOrigin axname theonode xnsortset of
+                  Nothing ->
+                    let
+                      allffxis = Map.elems cdmap
+                      allsortmaps = map xnSortsMap allffxis
+                      allsortsets = concat (map Map.elems allsortmaps)
+                      allsorts = concat (map Set.toList allsortsets)
+                    in
+                      case
+                        find
+                          (\x -> (xnName x) == axname)
+                          allsorts
+                      of
+                        Nothing ->
+                          XmlNamed
+                            (Hets.mkWON (Hets.stringToId axname) (-1))
+                            axname
+                        (Just s) ->
+                          s
+                  (Just xnarg) -> if (xnWOaToO xnarg) /= theonode
+                    then
+                      Debug.Trace.trace
+                        (
+                          "Found Argument (" ++ show xnarg
+                            ++ ") but in wrong Theory! (not in theory #"
+                            ++ show theonode ++ ") while processing predicate "
+                            ++ pidxname
+                        )
+                        xnarg
+                    else
+                      xnarg
+            )
+            args
+      in
+        (
+            XmlNamed (Hets.mkWON pid origin) pidxname
+          , PredTypeXNWON xnargsall
         )
 
 -- | imports lead to edges but if the information is not stored in the
@@ -702,172 +726,199 @@ instance Ord ImportHint where
   (FromData _) <= (FromData _) = True
   (FromData _) <= (FromStructure _) = False
 
-glThmsFromXmlLS::
-    HXT.XmlTrees
+
+glThmsFromOMIncs
+  ::OMDoc.OMDoc
   ->[(Int, XmlName, (XmlName, Hets.HidingAndRequationList, Conservativity, Bool))]
-glThmsFromXmlLS t =
-  let
-    inclusions =
-      applyXmlFilter (isTag "theory-inclusion" +++ isTag "axiom-inclusion") t
-  in
-    foldl (\glts (inum, inx) ->
+glThmsFromOMIncs
+  omdoc
+  =
+  foldl
+    (\glts (inum, incl) ->
       let
-        islocal = null $ applyXmlFilter (isTag "theory-inclusion") [inx]
-        incons = consFromAttr [inx]
-        --inid = xshow $ applyXmlFilter (getQualValue "xml" "id") [inx]
-        infromid = stripFragment $ xshow $ applyXmlFilter (getQualValue "" "from") [inx]
-        intoid = stripFragment $ xshow $ applyXmlFilter (getQualValue "" "to") [inx]
-        -- inmorph = case inmorphx of [] -> []; _ -> [xmlToMorphismMap inmorphx]
-        xmorph = applyXmlFilter (getChildren .> isTag "morphism") [inx]
-        hreq = fetchRequationSymbols xmorph
+        isLocal =
+          case incl of
+            (OMDoc.AxiomInclusion {}) -> True
+            _ -> False
+        hreq =
+          case OMDoc.inclusionMorphism incl of
+            Nothing -> ([],[])
+            (Just m) -> fetchOMRequationSymbols m
+        fromid =
+          case URI.uriFragment $ OMDoc.inclusionFrom incl of
+            [] -> OMDoc.showURI $ OMDoc.inclusionFrom incl
+            f -> stripFragment f
+        toid =
+          case URI.uriFragment $ OMDoc.inclusionTo incl of
+            [] -> OMDoc.showURI $ OMDoc.inclusionTo incl
+            f -> stripFragment f
       in
         glts ++
           [
             (
                 inum
-              , intoid
+              , toid
               , (
-                    infromid
+                    fromid
                   , hreq
-                  , incons
-                  , (not islocal)
+                  , convCons $ OMDoc.inclusionConservativity incl
+                  , (not isLocal)
                 )
             )
           ]
-      )
-      []
-      (zip [1..] inclusions)
+    )
+    []
+    $
+    zip
+      [1..]
+      $
+      OMDoc.omdocInclusions omdoc
   where
-  consFromAttr::HXT.XmlTrees->Conservativity
-  consFromAttr t' =
-    let
-      consattr = xshow $ applyXmlFilter (getValue "conservativity") t'
-    in
-      case consattr of
-        "monomorphism" -> Mono
-        "conservative" -> Cons
-        "definitional" -> Def
-        _ -> None
+  convCons::OMDoc.Conservativity->Conservativity
+  convCons OMDoc.CNone = None
+  convCons OMDoc.CMonomorphism = Mono
+  convCons OMDoc.CConservative = Cons
+  convCons OMDoc.CDefinitional = Def
 
--- used by new format (for import graph)
-importsFromXmlTheory::HXT.XmlTrees->Hets.Imports
-importsFromXmlTheory t =
-  let
-    imports' = applyXmlFilter (getChildren .> isTag "imports") t
-  in
-    foldl
-      (\imps (c, i) ->
-        let
-          from = xshow $ applyXmlFilter (getValue "from") [i]
-          mfromURI = URI.parseURIReference from
-          fromname = case mfromURI of
-            Nothing -> from
-            (Just uri) -> case URI.uriFragment uri of
-                    "" -> from
-                    f -> drop 1 f
-          xmorph = applyXmlFilter (getChildren .> isTag "morphism") [i]
-          hreq = fetchRequationSymbols xmorph
-          -- mm = xmlToMorphismMap xmorph
-          -- there is at most one morphism for each import...
-{-          mm = foldl (\(mmsm, mmfm, mmpm, mmhs) m ->
-              let
-                (nmmsm, nmmfm, nmmpm, nmmhs) = xmlToMorphismMap [m]
-                hreq = fetchRequationsSymbols [m]
-              in
-                (Map.union mmsm nmmsm,
-                  Map.union mmfm nmmfm, Map.union mmpm nmmpm,
-                    Set.union mmhs nmmhs)
-            ) (Map.empty, Map.empty, Map.empty, Set.empty) $
-              applyXmlFilter (getChildren .> isTag "morphism") [i] -}
-        in
-          Set.union imps (Set.singleton (c, (fromname, {-(Just mm)-} Nothing, hreq, True)))
-      ) Set.empty (zip [1..] imports')
+
+importsFromOMTheory::OMDoc.Theory->Hets.Imports
+importsFromOMTheory theory =
+  foldl
+    (\imps (c, i) ->
+      let
+        fromname =
+          case URI.uriFragment $ OMDoc.importsFrom i of
+            [] -> OMDoc.showURI $ OMDoc.importsFrom i
+            f -> stripFragment f
+        hreq =
+          case OMDoc.importsMorphism i of
+            Nothing -> ([],[])
+            (Just m) -> fetchOMRequationSymbols m
+      in
+        Set.union imps (Set.singleton (c, (fromname, Nothing, hreq, True)))
+    )
+    Set.empty
+    $
+    zip
+      [1..]
+      $
+      foldl
+        (\il con ->
+          case con of
+            (OMDoc.CIm imports) ->
+              il ++ [imports]
+            _ -> il
+        )
+        []
+        (OMDoc.theoryConstitutives theory)
        
-importsFromAnnXMLSet::TheoryXNSet->Set.Set AnnXMLN->Hets.ImportsMap
-importsFromAnnXMLSet txns axset =
+
+importsFromAOMSet::TheoryXNSet->Set.Set (Graph.Node, OMDoc.Theory)->Hets.ImportsMap
+importsFromAOMSet txns aomset =
   Set.fold
-    (\axml i ->
+    (\(gn, omt) i ->
       let
         name =
-          case getTheoryXmlName txns (axAnn axml) of
+          case getTheoryXmlName txns gn of
             Nothing -> error "!"
             (Just x) -> x
-        imports = importsFromXmlTheory (axXml axml)
+        imports = importsFromOMTheory omt
       in
         Map.insert name imports i
     )
     Map.empty
-    axset
+    aomset
                 
-sensXNWONFromXmlTheory::FFXInput->AnnXMLN->(Set.Set (XmlNamed Hets.SentenceWO))
-sensXNWONFromXmlTheory ffxi anxml =
-  Set.fromList $ unwrapFormulasXNWON ffxi anxml
         
+sensXNWONFromOMTheory::FFXInput->(Graph.Node, OMDoc.Theory)->(Set.Set (XmlNamed Hets.SentenceWO))
+sensXNWONFromOMTheory ffxi (origin, theory) =
+  Set.fromList $ unwrapFormulasOM ffxi (origin, theory)
 
-conSensXNWONFromXmlTheory::FFXInput->AnnXMLN->Set.Set (XmlNamed Hets.SentenceWO) 
-conSensXNWONFromXmlTheory ffxi anxml =
+
+conSensXNWONFromOMTheory::FFXInput->(Graph.Node, OMDoc.Theory)->Set.Set (XmlNamed Hets.SentenceWO) 
+conSensXNWONFromOMTheory ffxi (anxml@(_, theory)) =
   let
-    adts = applyXmlFilter (getChildren .> isTag "adt") (axXml anxml)
+    adts =
+      filter
+        (\c ->
+          case c of
+            (OMDoc.CAd {}) -> True
+            _ -> False
+        )
+        (OMDoc.theoryConstitutives theory)
   in
     Set.fromList $ foldl
-      (\list n ->
-        let
-          (excon, exconlist) =
-            extractConsXNWONFromADT ffxi (AXML (axAnn anxml) [n]) anxml
-        in
-          if (length exconlist) == 0 -- if only the relation is expressed,
-                                     -- no constructors are specified
-            then
-              list
-            else
-              list ++ [consToSensXN excon exconlist] 
-      ) [] adts 
+      (\list adt' ->
+        case adt' of
+          OMDoc.CAd adt ->
+            let
+              (excon, exconlist) =
+                extractConsXNWONFromOMADT ffxi anxml adt
+            in
+              if (length exconlist) == 0 -- if only the relation is expressed,
+                                         -- no constructors are specified
+                then
+                  list
+                else
+                  list ++ [consToSensXN excon exconlist] 
+          _ -> list
+      )
+      []
+      adts 
 
-consXNWONFromXmlTheory::FFXInput->AnnXMLN->[(XmlNamedWONId, [(XmlNamedWONId, OpTypeXNWON)])]
-consXNWONFromXmlTheory ffxi anxml =
+
+consXNWONFromOMTheory::FFXInput->(Graph.Node, OMDoc.Theory)->[(XmlNamedWONId, [(XmlNamedWONId, OpTypeXNWON)])]
+consXNWONFromOMTheory ffxi (origin, theory) =
   let
-    adts = applyXmlFilter (getChildren .> isTag "adt") (axXml anxml)
+    adts =
+      filter
+        (\c ->
+          case c of
+            (OMDoc.CAd {}) -> True
+            _ -> False
+        )
+        (OMDoc.theoryConstitutives theory)
   in
     foldl
-      (\list n ->
-        let
-          (excon, exconlist) =
-            extractConsXNWONFromADT ffxi (AXML (axAnn anxml) [n]) anxml
-        in
-          if (length exconlist) == 0 -- if only the relation is expressed,
-                                     -- no constructors are specified
-            then
-              list
-            else
-              list ++ [(excon, exconlist)]
+      (\list adt' ->
+        case adt' of
+          (OMDoc.CAd adt) ->
+            let
+              (excon, exconlist) =
+                extractConsXNWONFromOMADT ffxi (origin, theory) adt
+            in
+              if (length exconlist) == 0 -- if only the relation is expressed,
+                                         -- no constructors are specified
+                then
+                  list
+                else
+                  list ++ [(excon, exconlist)]
+          _ -> error "!"
       ) [] adts 
 
-createTheorySpecifications::TheoryXNSet->String->Set.Set AnnXMLN->[TheorySpecification]
-createTheorySpecifications
+
+createTheorySpecificationsOM
+  ::TheoryXNSet
+  ->String
+  ->Set.Set (Graph.Node, OMDoc.Theory)
+  ->[TheorySpecification]
+createTheorySpecificationsOM
   xntheoryset
   sourcename
-  anxmlset =
+  aomset 
+  =
   Set.fold
-    (\axml tsl ->
+    (\(aom@(origin, theory)) tsl ->
       let
-        theoid = xshow $ applyXmlFilter (getQualValue "xml" "id") (axXml axml)
-        theohetsnodenames = xshow $ applyXmlFilter
-          (
-            getChildren .> isTag "presentation" .>
-            withSValue "for" theoid .> getChildren .>
-            isTag "use" .> withSValue "format" "Hets" .>
-            getChildren
-          ) (axXml axml)
-        theohetsnodename =
-          if (theohetsnodenames == "") || (isPrefixOf "AnonNode" theoid) 
-            then
-              idToNodeName $ read ("["++theoid++",,0]")
-            else 
-              idToNodeName $ read theohetsnodenames
-        sorts = sortsXNWONFromXmlTheory axml
-        rels = relsXNWONFromXmlTheory sorts axml
-        ops = Set.fromList $ opsXNWONFromXmlTheory Map.empty xntheoryset sorts axml
-        preds = Set.fromList $ predsXNWONFromXmlTheory Map.empty xntheoryset sorts axml
+        theoid = OMDoc.theoryId theory
+        theonodename =
+          case omPresentationFor theory theoid "Hets" of
+            Nothing -> idToNodeName $ read ("[" ++ theoid ++ ",,0]")
+            (Just x) -> idToNodeName $ read x
+        sorts = sortsXNWONFromOMTheory aom
+        rels = relsXNWONFromOMTheory sorts aom
+        ops = Set.fromList $ opsXNWONFromOMTheory Map.empty xntheoryset sorts aom
+        preds = Set.fromList $ predsXNWONFromOMTheory Map.empty xntheoryset sorts aom
       in
         tsl ++
           [
@@ -875,8 +926,8 @@ createTheorySpecifications
               {
                   ts_name = (stripFragment theoid)
                 , ts_source = sourcename
-                , ts_nodename = theohetsnodename
-                , ts_nodenum = (axAnn axml)
+                , ts_nodename = theonodename
+                , ts_nodenum = origin
                 , ts_sorts = sorts
                 , ts_sortrelation = rels
                 , ts_predicates = preds
@@ -886,14 +937,15 @@ createTheorySpecifications
           ]
     )
     []
-    anxmlset
+    aomset
 
-importGraphToSpecs::
+
+importGraphToSpecsOM::
   GlobalOptions
-  ->(ImportGraph (HXT.XmlTrees))
+  ->(ImportGraph OMDoc.OMDoc)
   ->Graph.Node
-  ->([TheorySpecification], [LinkSpecification], TheoryXNSet, Set.Set AnnXMLN)
-importGraphToSpecs
+  ->([TheorySpecification], [LinkSpecification], TheoryXNSet, Set.Set (Graph.Node, OMDoc.Theory))
+importGraphToSpecsOM
   go
   ig
   n
@@ -905,14 +957,15 @@ importGraphToSpecs
       of
         Nothing -> error "node error!"
         (Just n') -> n'
+    (sourcename, omdoc) = (\(S (sn, _) o) -> (sn, o)) node
     refimports = (\x ->
       debugGO go "iGTDGNXN" ("Refimports : " ++ show x) x) $
         filter ( \(_,from,_) -> from /= n) $ Graph.out ig n
-    axtheoryset = buildAXTheorySet omdoc
+    axtheoryset = buildAOMTheorySet omdoc
     xntheoryset = 
-      nodeNamesXNFromXml
+      nodeNamesXNFromOM
         (debugGO go "pX" "at nodeNamedXNFromXml" axtheoryset)
-    theoryspecs = createTheorySpecifications xntheoryset sourcename axtheoryset
+    theoryspecs = createTheorySpecificationsOM xntheoryset sourcename axtheoryset
     maxUsedNodeNum =
       foldl
         (\mUNN n' ->
@@ -956,31 +1009,52 @@ importGraphToSpecs
           (\ts -> XmlNamed (ts_nodenum ts, ts_nodename ts) (ts_name ts))
           refspecs
     allXNNames = Set.union xntheoryset refxnnames
-    (sourcename, omdoc) = (\(S (sn, _) o) -> (sn, o)) node
-    linkspecs = createLinkSpecifications go omdoc allXNNames axtheoryset
+    linkspecs = createLinkSpecificationsOM go omdoc allXNNames axtheoryset
   in
     (theoryspecs ++ refspecs, linkspecs, allXNNames, axtheoryset)
 
-createSpecMap::
+
+createSpecMapOM::
   GlobalOptions
-  ->(ImportGraph (HXT.XmlTrees))
-  ->Map.Map String ([TheorySpecification], [LinkSpecification], TheoryXNSet, Set.Set AnnXMLN)
-createSpecMap
+  ->(ImportGraph OMDoc.OMDoc)
+  ->Map.Map
+      String
+      (
+          [TheorySpecification]
+        , [LinkSpecification]
+        , TheoryXNSet
+        , Set.Set (Graph.Node, OMDoc.Theory)
+      )
+createSpecMapOM
   go
   ig
   =
     foldl
       (\sm (nn, (S (sourcename, _) _)) ->
-        Map.insert sourcename (importGraphToSpecs go ig nn) sm
+        Map.insert sourcename (importGraphToSpecsOM go ig nn) sm
       )
       Map.empty
       (Graph.labNodes ig)
 
 
-processSpecMap::
-  Map.Map String ([TheorySpecification], [LinkSpecification], TheoryXNSet, Set.Set AnnXMLN)
-  ->Map.Map String ([TheorySpecification], [LinkSpecification], TheoryXNSet, Set.Set AnnXMLN)
-processSpecMap
+processSpecMapOM::
+  Map.Map
+    String
+    (
+        [TheorySpecification]
+      , [LinkSpecification]
+      , TheoryXNSet
+      , Set.Set (Graph.Node, OMDoc.Theory)
+    )
+  ->Map.Map
+      String
+      (
+          [TheorySpecification]
+        , [LinkSpecification]
+        , TheoryXNSet
+        , Set.Set (Graph.Node, OMDoc.Theory)
+      )
+processSpecMapOM
   sm
   =
   let
@@ -1002,8 +1076,12 @@ processSpecMap
         (\(pM, uM, noActionSince) ->
           let
             unkeys = Map.keys uM
-            unimports = map (\uk -> (uk, Map.findWithDefault (error "!") uk importsFromMap)) unkeys
-            freeun = filter (\(_, i) -> all (flip elem (Map.keys pM)) i) unimports
+            unimports =
+              map
+                (\uk -> (uk, Map.findWithDefault (error "!") uk importsFromMap))
+                unkeys
+            freeun =
+              filter (\(_, i) -> all (flip elem (Map.keys pM)) i) unimports
           in
             if length freeun == 0 && noActionSince <= maxNoAction
               then
@@ -1024,10 +1102,18 @@ processSpecMap
                               Map.findWithDefault
                                 (
                                   Debug.Trace.trace
-                                    ("referenced source has not been finished... (" ++ refsource ++ ")")
+                                    (
+                                      "referenced source has not been finished... ("
+                                      ++ refsource ++ ")"
+                                    )
                                     (
                                       Map.findWithDefault
-                                        ([], error "OMDoc.OMDocInput", error "OMDoc.OMDocInput", error "OMDoc.OMDocInput")
+                                        (
+                                            []
+                                          , error "OMDoc.OMDocInput"
+                                          , error "OMDoc.OMDocInput"
+                                          , error "OMDoc.OMDocInput"
+                                        )
                                         refsource
                                         uM
                                     )
@@ -1042,7 +1128,10 @@ processSpecMap
                               of
                                 Nothing ->
                                   Debug.Trace.trace
-                                    ("ohoh... no source for reference to " ++ (ts_name ts))
+                                    (
+                                      "ohoh... no source for reference to "
+                                      ++ (ts_name ts)
+                                    )
                                     ts
                                 (Just x) -> x
                           in
@@ -1070,14 +1159,19 @@ processSpecMap
                     if noActionSince > maxNoAction
                       then
                         Debug.Trace.trace
-                          ("forced procession of " ++ currentSource)
+                          ("forced processing of " ++ currentSource)
                           x
                       else
                         x
                   )
                   (
-                      Map.insert currentSource (processedSpecs, clslist, cxntheoryset, caxmlset) pM
-                    , Map.delete currentSource uM
+                      Map.insert
+                        currentSource
+                        (processedSpecs, clslist, cxntheoryset, caxmlset)
+                        pM
+                    , Map.delete
+                        currentSource
+                        uM
                     , 0
                   )
         )
@@ -1158,21 +1252,24 @@ processSpecMap
     setOrigin::Graph.Node->XmlNamedWONSORT->XmlNamedWONSORT
     setOrigin n xns = XmlNamed (Hets.mkWON (xnWOaToa xns) n) (xnName xns)   
 
-createNodeFromSpec::
+
+createNodeFromSpecOM::
     FFXInput
-  ->AnnXMLN
+  ->(Graph.Node, OMDoc.Theory)
   ->TheorySpecification
   ->Graph.LNode DGNodeLab
-createNodeFromSpec
+createNodeFromSpecOM
   ffxi
   axml
   ts
   =
   let
-    theorysens = sensXNWONFromXmlTheory ffxi axml
-    theorycons = conSensXNWONFromXmlTheory ffxi axml
-    caslsign = (emptySign ())
-          { sortSet = Set.map xnWOaToa (ts_sorts ts)
+    theorysens = sensXNWONFromOMTheory ffxi axml
+    theorycons = conSensXNWONFromOMTheory ffxi axml
+    caslsign =
+      Sign
+        {
+            sortSet = Set.map xnWOaToa (ts_sorts ts)
           , sortRel =
               Rel.fromList
                 $
@@ -1188,7 +1285,15 @@ createNodeFromSpec
               implodeSetToMap
                 predTypeXNWONToPredType
                 (ts_predicates ts)
-          }
+          , assocOps = Map.empty
+          , varMap = Map.empty
+          , envDiags = []
+          , annoMap = Map.empty
+          , globAnnos = Hets.emptyGlobalAnnos
+          , extendedInfo = ()
+          , sentences = []
+                
+        }
     theory =
       G_theory
         CASL
@@ -1883,18 +1988,19 @@ createFinalDGraph
   in
     Graph.mkGraph nodes newedges
    
-addConstructorsTheorySpecification::
+
+addConstructorsTheorySpecificationOM::
   TheorySpecification
   ->FFXInput
-  ->AnnXMLN
+  ->(Graph.Node, OMDoc.Theory)
   ->TheorySpecification
-addConstructorsTheorySpecification
+addConstructorsTheorySpecificationOM
   ts
   ffxi
-  axml
+  (origin, theory)
   =
   let
-    theorycons = consXNWONFromXmlTheory ffxi axml
+    theorycons = consXNWONFromOMTheory ffxi (origin, theory)
     tcset =
       foldl
         (\s (x, xl) ->
@@ -1908,16 +2014,17 @@ addConstructorsTheorySpecification
         ts_constructors = tcset
       }
 
-processConstructors::
-  Map.Map String ([TheorySpecification], b, c, Set.Set AnnXMLN)
+
+processConstructorsOM::
+  Map.Map String ([TheorySpecification], b, c, Set.Set (Graph.Node, OMDoc.Theory))
   ->Map.Map String FFXInput
-  ->Map.Map String ([TheorySpecification], b, c, Set.Set AnnXMLN)
-processConstructors
+  ->Map.Map String ([TheorySpecification], b, c, Set.Set (Graph.Node, OMDoc.Theory))
+processConstructorsOM
   tsmap
   ffximap
   =
   Map.mapWithKey
-    (\k (tslist, b, c, axmls) ->
+    (\k (tslist, b, c, tos) ->
       let
         thisffxi =
           Map.findWithDefault
@@ -1928,9 +2035,9 @@ processConstructors
           map
             (\ts ->
               let
-                thisaxml =
+                (thisorigin, thistheory) =
                   case
-                    find (\axml -> axAnn axml == (ts_nodenum ts)) (Set.toList axmls)
+                    find (\(nn, _) -> nn == (ts_nodenum ts)) (Set.toList tos)
                   of
                     Nothing -> error ("no xml for " ++ ts_name ts)
                     (Just x) -> x
@@ -1939,19 +2046,20 @@ processConstructors
                   then
                     ts
                   else
-                    addConstructorsTheorySpecification ts thisffxi thisaxml
+                    addConstructorsTheorySpecificationOM ts thisffxi (thisorigin, thistheory)
             )
             tslist
       in
-        (mappedspecs, b, c, axmls)
+        (mappedspecs, b, c, tos)
     )
     tsmap
 
-createGraphParts::
-  Map.Map String ([TheorySpecification], [LinkSpecification], c, Set.Set AnnXMLN)
+
+createGraphPartsOM::
+  Map.Map String ([TheorySpecification], [LinkSpecification], c, Set.Set (Graph.Node, OMDoc.Theory))
   ->Map.Map String FFXInput
   ->Map.Map String ([Graph.LNode DGNodeLab], [Graph.LEdge DGLinkLab])
-createGraphParts
+createGraphPartsOM
   tsmap
   ffximap
   =
@@ -1969,12 +2077,12 @@ createGraphParts
               let
                 thisaxml =
                   case
-                    find (\axml -> axAnn axml == (ts_nodenum ts)) (Set.toList axmls)
+                    find (\(origin, _) -> origin == (ts_nodenum ts)) (Set.toList axmls)
                   of
                     Nothing -> error ("no xml for " ++ ts_name ts)
                     (Just x) -> x
               in
-                createNodeFromSpec
+                createNodeFromSpecOM
                   thisffxi
                   thisaxml
                   ts
@@ -1994,7 +2102,13 @@ createGraphParts
                   case
                     filter (\ts -> ts_name ts == ls_toname ls) tslist
                   of
-                    [] -> error ("Unable to find target node " ++ (ls_toname ls))
+                    [] ->
+                      error
+                        (
+                          "Unable to find target node " ++ (ls_toname ls)
+                          ++ " known names : " ++
+                          (show (map ts_name tslist))
+                        )
                     (n:_) -> n
               in
                 createDGLinkFromLinkSpecification
@@ -2008,23 +2122,31 @@ createGraphParts
     )
     tsmap
 
-importGraphToLibEnv::
+
+importGraphToLibEnvOM::
     GlobalOptions
-  ->ImportGraph (HXT.XmlTrees)
+  ->ImportGraph OMDoc.OMDoc
   ->(ASL.LIB_NAME, DGraph, LibEnv)
-importGraphToLibEnv
+importGraphToLibEnvOM
   go
   ig
   =
   let
-    specMap = createSpecMap go ig
-    processedSpecMap = processSpecMap specMap
+    specMap = createSpecMapOM go ig
+    processedSpecMap =
+      (\x ->
+        Debug.Trace.trace
+          (show $ Map.map (\(ts, _, _, _) -> map ts_name ts) x)
+          x
+      )
+      $
+      processSpecMapOM specMap
     ffxiMap =
       createFFXIMap
         go
         (Map.map (\(a, _, c, _) -> (a, c)) processedSpecMap)
-    conProcSpecMap = processConstructors processedSpecMap ffxiMap
-    partMap = createGraphParts conProcSpecMap ffxiMap 
+    conProcSpecMap = processConstructorsOM processedSpecMap ffxiMap
+    partMap = createGraphPartsOM conProcSpecMap ffxiMap 
     graphMap =
       Map.map
         (\(nodes, edges) ->
@@ -2093,16 +2215,17 @@ isRefSpec::TheorySpecification->Bool
 isRefSpec (ReferenceSpecification {}) = True
 isRefSpec _ = False
 
-createLinkSpecifications::
+
+createLinkSpecificationsOM::
   GlobalOptions
-  ->HXT.XmlTrees
+  ->OMDoc.OMDoc
   ->TheoryXNSet
-  ->Set.Set AnnXMLN
+  ->Set.Set (Graph.Node, OMDoc.Theory)
   ->[LinkSpecification]
-createLinkSpecifications {-go-}_ omdoc theoryxnset axtheoryset =
+createLinkSpecificationsOM {-go-}_ omdoc theoryxnset aomset =
   let
-    imports' = importsFromAnnXMLSet theoryxnset axtheoryset
-    glTheoIncs = glThmsFromXmlLS (applyXmlFilter getChildren omdoc)
+    imports' = importsFromAOMSet theoryxnset aomset
+    glTheoIncs = glThmsFromOMIncs omdoc
     lsedges =
       foldl
         (\lsle (nodename, nodeimports) ->
@@ -2216,19 +2339,6 @@ createLinkSpecifications {-go-}_ omdoc theoryxnset axtheoryset =
   in
     (lsedges ++ gledges)
 
-getCatalogueInformation::HXT.XmlTrees->(Map.Map String String)
-getCatalogueInformation t =
-  let
-    catalogue = applyXmlFilter (getChildren .> isTag "catalogue") t
-    locs = applyXmlFilter (getChildren .> isTag "loc") catalogue
-    list = foldl (\l loc ->
-      l ++ [ (xshow $ applyXmlFilter (getValue "theory") [loc],
-              xshow $ applyXmlFilter (getValue "omdoc") [loc])
-           ]
-      ) [] locs
-  in
-    Map.fromList list
-              
 
 -- | theory name, theory source (local)
 data TheoryImport = TI (String, String)
@@ -2290,50 +2400,47 @@ maybeFindXml source includes =
           _ -> return res
                                   
 
-
-getImportedTheories::HXT.XmlTrees->Map.Map String String
-getImportedTheories xml =
+getImportedTheoriesOMDoc::OMDoc.OMDoc->Map.Map String String
+getImportedTheoriesOMDoc omdoc =
   let
-    omdoc = applyXmlFilter (getChildren .> isTag "omdoc") xml
-    catmap = getCatalogueInformation omdoc
-    timports = map (\n -> xshow [n]) $
-      applyXmlFilter
-        (getChildren .> isTag "theory" .>
-                getChildren .> isTag "imports" .> getValue "from")
-        omdoc
-    tincs = map (\n -> xshow [n]) $
-      applyXmlFilter
-        (getChildren .>
-          (isTag "theory-inclusion" +++ isTag "axiom-inclusion") .>
-          getValue "from"
+    timports =
+      foldl
+        (\ti tc ->
+          case tc of
+            (OMDoc.CIm imports) ->
+              ti ++ [OMDoc.importsFrom imports]
+            _ -> ti
         )
-        omdoc
-    tincsrefs = map (\n -> xshow [n]) $
-      applyXmlFilter
-        (getChildren .>
-          (isTag "theory-inclusion" +++ isTag "axiom-inclusion") .>
-          getValue "to"
-        )
-        omdoc
-    externalImports = foldl (\eI i ->
-      let
-        muri = URI.parseURIReference i
-        uri = fromMaybe (error "cannot parse URIReference") muri
-        path = URI.uriPath uri
-        fragment = drop 1 $ URI.uriFragment uri
-      in
-        if ((length path) > 0) && ((length fragment) > 0)
-          then
-            Map.insert fragment path eI
-          else
-            eI
-      ) Map.empty (timports ++ tincs ++ tincsrefs)
+        []
+        (concat (map OMDoc.theoryConstitutives (OMDoc.omdocTheories omdoc)))
+    cimports =
+      map OMDoc.inclusionFrom (OMDoc.omdocInclusions omdoc)
+    cexports =
+      map OMDoc.inclusionTo (OMDoc.omdocInclusions omdoc)
   in
-    Map.union catmap externalImports
-        
-                                        
-makeImportGraphFullXml::GlobalOptions->String->(IO (ImportGraph HXT.XmlTrees))
-makeImportGraphFullXml go source =
+    Map.fromList
+      $
+      foldl
+        (\l uri ->
+          let
+            path = URI.uriPath uri
+            fragment = drop 1 $ URI.uriFragment uri
+          in
+            Debug.Trace.trace
+              ("Current Path : " ++ path ++ " fragment " ++ fragment)
+              $
+              if (length path) > 0 && (length fragment) > 0
+                then
+                  l ++ [(fragment, path)]
+                else
+                  l
+        )
+        []
+        (timports ++ cimports ++ cexports)
+      
+
+makeImportGraphOMDoc::GlobalOptions->String->(IO (ImportGraph OMDoc.OMDoc))
+makeImportGraphOMDoc go source =
   do
     curdirs <- System.Directory.getCurrentDirectory
     -- trick the uri parser into faking a document to make a relative path later
@@ -2347,8 +2454,15 @@ makeImportGraphFullXml go source =
       Nothing -> ioError $ userError ("Unable to find \"" ++ source ++ "\"")
       (Just doc) ->
         (let
-          omdoc = applyXmlFilter (getChildren .> isTag "omdoc") doc
-          omdocid = xshow $ applyXmlFilter (getQualValue "xml" "id") omdoc
+          omdocxml = applyXmlFilter (getChildren .> isTag "omdoc") doc
+          omdoc =
+            case omdocxml of
+              [] -> error "Not OMDoc!"
+              (o:_) ->
+                case OMDocXML.fromXml o of
+                  Nothing -> error "Unable to read OMDoc!"
+                  (Just om) -> om
+          omdocid = OMDoc.omdocId omdoc
           mturi =
             URI.parseURIReference
               $
@@ -2364,7 +2478,7 @@ makeImportGraphFullXml go source =
             fromMaybe
               (error "Cannot create path to document...")
               muriwithoutdoc
-          docmap = getImportedTheories doc
+          docmap = getImportedTheoriesOMDoc omdoc
           rdocmap = Map.toList docmap -- Map.toList $ Map.map (\s -> relativeSource turi s) docmap
           initialgraph = Graph.mkGraph [(1, S (omdocid, (show turi)) omdoc)] []
         in
@@ -2387,12 +2501,12 @@ makeImportGraphFullXml go source =
             fp
 
   buildGraph::
-    ImportGraph HXT.XmlTrees
+    ImportGraph OMDoc.OMDoc
     ->Graph.Node
     ->URI.URI
     ->TheoryImport
     ->String
-    ->IO (ImportGraph HXT.XmlTrees)
+    ->IO (ImportGraph OMDoc.OMDoc)
   buildGraph ig n frompath ti@(TI (theoname, theouri)) alibdir =
     let
       includes = [alibdir, (show frompath)]
@@ -2444,7 +2558,7 @@ makeImportGraphFullXml go source =
                   putIfVerbose
                     (hetsOpts go)
                     0
-                    ("error at loading from " ++ (show includes))
+                    ("error at loading " ++ theouri ++ " from " ++ (show includes))
                   ioError
                     $
                     userError
@@ -2463,11 +2577,15 @@ makeImportGraphFullXml go source =
                             ++ "\"from \"" ++ theouri ++ "\"")
                         )
                         mdoc
-                    omdoc = applyXmlFilter (getChildren .> isTag "omdoc") doc
-                    omdocid =
-                      xshow
-                        $
-                        applyXmlFilter (getQualValue "xml" "id") omdoc
+                    omdocxml = applyXmlFilter (getChildren .> isTag "omdoc") doc
+                    omdoc =
+                      case omdocxml of
+                        [] -> error "No OMDoc!"
+                        (o:_) ->
+                          case OMDocXML.fromXml o of
+                            Nothing -> error "Unable to read OMDoc!"
+                            (Just om) -> om
+                    omdocid = OMDoc.omdocId omdoc
                     imturi =
                       URI.parseURIReference
                         $
@@ -2481,7 +2599,7 @@ makeImportGraphFullXml go source =
                       fromMaybe
                         (error "Cannot create path to document...")
                         miuriwithoutdoc
-                    iimports = getImportedTheories doc
+                    iimports = getImportedTheoriesOMDoc omdoc
                     irimports = Map.toList iimports
                     newnodenum = (Graph.noNodes ig) + 1
                     newsource = S (omdocid, (show ituri)) omdoc
@@ -2595,67 +2713,72 @@ isTrueAtom::(FORMULA ())->Bool
 isTrueAtom (True_atom _) = True
 isTrueAtom _ = False
 
--- X M L -> FORMULA
+-- OMDoc -> FORMULA
 
-unwrapFormulasXNWON::FFXInput->AnnXMLN->[(XmlNamed Hets.SentenceWO)]
-unwrapFormulasXNWON ffxi anxml =
+unwrapFormulasOM::FFXInput->(Graph.Node, OMDoc.Theory)->[(XmlNamed Hets.SentenceWO)]
+unwrapFormulasOM ffxi (origin, theory) =
   let
+    presentations = OMDoc.theoryPresentations theory
     axioms =
-      applyXmlFilter (getChildren .> isTag "axiom") (axXml anxml)
+      filter
+        (\c ->
+          case c of
+            (OMDoc.CAx {}) -> True
+            _ -> False
+        )
+        (OMDoc.theoryConstitutives theory)
   in
-    foldl
-      (\unwrapped axxml ->
-        let
-          ansen = unwrapFormulaXNWON ffxi (AXML (axAnn anxml) [axxml])
-          ansenname = Ann.senName ansen
-          anpress = getPresentationString ansenname (axXml anxml)
-          anname =
-            case anpress of
-              [] ->
-                debugGO
-                  (ffxiGO ffxi)
-                  "uFXNWON"
-                  ("F-Name: " ++ ansenname)
-                  ansenname
-              _ ->
-                debugGO
-                  (ffxiGO ffxi)
-                  "uFXNWON"
-                  ("F-Pres: " ++ anpress)
-                  anpress
-        in
-          (
-            unwrapped
-            ++ [
-                XmlNamed
-                  (Hets.mkWON (ansen { Ann.senName = anname }) (axAnn anxml))
-                  ansenname
-               ]
-          )
+    map
+      (\ax ->
+        case ax of
+          (con@(OMDoc.CAx axiom)) ->
+            let
+              axname = OMDoc.axiomName axiom
+              name =
+                case
+                  find
+                    (\p -> OMDoc.presentationForId p == axname)
+                    presentations
+                of
+                  Nothing -> axname
+                  (Just p) ->
+                    case
+                      find
+                        (\u -> OMDoc.useFormat u == "Hets") 
+                        (OMDoc.presentationUses p)
+                    of
+                      Nothing -> axname
+                      (Just u) -> OMDoc.useValue u
+              formula = unwrapFormulaOM ffxi origin con
+            in
+              XmlNamed
+                (Hets.mkWON (formula { Ann.senName = name }) origin)
+                axname
+          _ -> error "!"
       )
-      []
       axioms
 
-unwrapFormulaXNWON::FFXInput->AnnXMLN->(Ann.Named CASLFORMULA)
-unwrapFormulaXNWON ffxi anxml =
+
+unwrapFormulaOM::FFXInput->Graph.Node->OMDoc.Constitutive->(Ann.Named CASLFORMULA)
+unwrapFormulaOM ffxi origin (OMDoc.CAx axiom) =
   let
-    axname =
-      xshow
-        $
-        applyXmlFilter
-          (getQualValue axiomNameXMLNS axiomNameXMLAttr)
-          (axXml anxml)
-    formtree =
-      applyXmlFilter
-        (getChildren .> isTag "FMP" .> getChildren
-          .> isTag "OMOBJ" .> getChildren)
-        (axXml anxml)
+    axname = OMDoc.axiomName axiom
+    formula =
+      case OMDoc.axiomFMPs axiom of
+        [] -> error "No Formula!"
+        (fmp@(OMDoc.FMP {}):_) ->
+          case OMDoc.fmpContent fmp of
+            (Left (OMDoc.OMObject ome)) ->
+              formulaFromOM ffxi origin ome
+            _ -> error "Can only create Formula from OMOBJ!"
   in
     Ann.NamedSen
-      (axname)
+      axname
       True
       False
-      (formulaFromXmlXN ffxi (AXML (axAnn anxml) formtree))
+      formula
+
+unwrapFormulaOM _ _ _ = error "OMDoc.OMDocInput.unwrapFormulaOM: not implemented!"
 
 data FFXInput = FFXInput {
          ffxiGO :: GlobalOptions
@@ -2678,6 +2801,7 @@ emptyFFXInput =
                 Map.empty
                 Map.empty
 
+
 stripFragment::String->String
 stripFragment s =
   let
@@ -2687,482 +2811,82 @@ stripFragment s =
       [] -> file
       _ -> drop 1 theo
                 
-formulaFromXmlXN::FFXInput->AnnXMLN->FORMULA ()
-formulaFromXmlXN ffxi anxml =
-  if (applyXmlFilter (isTag "OMBIND") (axXml anxml)) /= [] then -- it's a quantifier...
-    let
-      quantTree = singleitem 1 (applyXmlFilter (isTag "OMBIND") (axXml anxml))
-      quant =
-        quantFromName $ xshow $
-          applyXmlFilter
-            (getChildren .> isTag "OMS" .> withValue "cd" (\s -> (stripFragment s) == caslS) .>
-              getValue "name")
-            quantTree
-      -- first element is the quantification-OMS
-      formula =
-        drop
-          1
-          ((applyXmlFilter
-            (getChildren .> (isTag "OMA" +++ isTag "OMATTR"
-              +++ isTag "OMBIND" +++ isTag "OMS"))
-            quantTree)::[HXT.XmlTree]
-          ) 
-      vardeclS =
-        getVarDecls
-          (applyXmlFilter
-            (getChildren .> isTag "OMBVAR")
-            quantTree
-          )
-      vardeclS2 = createQuasiMappedLists vardeclS
-    in
-      Quantification
-        quant
-        (map
-          (\(s, vl) ->
-            Var_decl
-              (map Hets.stringToSimpleId vl)
-              (case findByNameAndOrigin
-                      (stripFragment s)
-                      (axAnn anxml)
-                      (mapSetToSet $ xnSortsMap ffxi) of
-                 Nothing -> error ("No Sort for " ++ s)
-                 (Just x) -> xnWOaToa x
-              )
-              --(Hets.stringToId s)
-              Id.nullRange
-          )
-          vardeclS2
-        )
-        (formulaFromXmlXN
-          ffxi
-          (AXML (axAnn anxml) formula)
-        )
-        Id.nullRange
-  else if (applyXmlFilter (isTag "OMA") (axXml anxml)) /= [] then -- the case begins...
-    let
-      formTree = applyXmlFilter (isTag "OMA") (axXml anxml)
-      applySymXml =
-        singleitem 1 (applyXmlFilter (getChildren .> isTag "OMS") formTree)
-      applySym = xshow $ applyXmlFilter (getValue "name") applySymXml
-      --applySymCD = xshow $ applyXmlFilter (getValue "cd") applySymXml
-    in
-      let
-        formulas =
-          map
-            (\n -> formulaFromXmlXN ffxi (AXML (axAnn anxml) [n]))
-            (
-              (applyXmlFilter
-                (getChildren .>
-                  (isTag "OMA" +++ isTag "OMATTR" +++ isTag "OMBIND")
-                )
-                formTree
-              )::[HXT.XmlTree]
-            )
-        terms =
-          map
-            (\n -> termFromXmlXN ffxi (AXML (axAnn anxml) [n]))
-            (tail
-              (
-                (applyXmlFilter
-                  (getChildren .>
-                    (isTag "OMV" +++ isTag "OMATTR" +++ isTag "OMA"
-                      +++ isTag "OMS")
-                  )
-                  formTree
-                )::[HXT.XmlTree]
-              )
-            )
-      in
-        -- 'case applySym' does not work if case-strings are non fixed
-        -- (above definition is not fixed enough...) 
-        --case applySym of
-        if applySym == caslConjunctionS then
-          Conjunction formulas Id.nullRange
-          else
-            if applySym == caslDisjunctionS then
-              Disjunction formulas Id.nullRange
-              else
-                if applySym `elem` [caslImplicationS, caslImplication2S] then
-                  let
-                    boolF =
-                      formulaFromXmlXN
-                        ffxi
-                        (AXML
-                          (axAnn anxml)
-                          (applyXmlFilter
-                            (processChildren (isTag "OMS") .> getChild 2)
-                            formTree)
-                          ) 
-                  in
-                    if (length formulas) < 2
-                      then
-                        Debug.Trace.trace
-                          ("Impossible to create implication...")
-                          (False_atom Id.nullRange)
-                      else
-                        Implication
-                          (formulas!!0)
-                          (formulas!!1)
-                          (isTrueAtom(boolF))
-                          Id.nullRange
-                  else
-                    if applySym `elem` [caslEquivalenceS, caslEquivalence2S]
-                      then
-                        if (length formulas) < 2
-                          then
-                            Debug.Trace.trace
-                              ("Impossible to create equivalence...")
-                              (False_atom Id.nullRange)
-                          else
-                            Equivalence
-                              (formulas!!0)
-                              (formulas!!1)
-                              Id.nullRange
-                      else
-                        if applySym == caslNegationS
-                          then
-                            if formulas == []
-                              then
-                                Debug.Trace.trace
-                                  ("Impossible to create negation...")
-                                  (False_atom Id.nullRange)
-                              else
-                                Negation
-                                  (formulas!!0)
-                                  Id.nullRange
-                          else
-                            if applySym == caslPredicationS
-                              then
-                                let
-                                   --predxml = applyXmlFilter (processChildren (isTag "OMS" +++ isTag "OMATTR") .> getChild 2) (axXml anxml)
-                                  predxml =
-                                    applyXmlFilter
-                                      (processChildren
-                                        (isTag "OMS" +++ isTag "OMATTR") .>
-                                          getChild 2
-                                      )
-                                      formTree
-                                  pred' =
-                                    (\x ->
-                                      if (contains (show x) "predication")
-                                        then
-                                          debugGO
-                                            (ffxiGO ffxi)
-                                            "fFXXNm2"
-                                            ("predication created! from : "
-                                              ++ (xshow predxml)) x
-                                        else
-                                          x
-                                    ) $
-                                      (\x ->
-                                        debugGO
-                                          (ffxiGO ffxi)
-                                          "fFXXNm"
-                                          ("made pred : " ++ show x)
-                                          x
-                                      ) $
-                                        predicationFromXmlXN
-                                          ffxi
-                                          (AXML (axAnn anxml) predxml)
-                                  --termxml = drop 2 $ (applyXmlFilter (getChildren .> (isTag "OMATTR" +++ isTag "OMA" +++ isTag "OMS")) (axXml anxml))
-                                  termxml =
-                                    drop 2 $
-                                      (applyXmlFilter
-                                        (getChildren .>
-                                          (isTag "OMATTR" +++ isTag "OMA"
-                                            +++ isTag "OMS")
-                                        )
-                                        formTree
-                                      )
-                                  predterms =
-                                    map
-                                      (\tx ->
-                                        termFromXmlXN
-                                          ffxi
-                                          (debugGO
-                                            (ffxiGO ffxi)
-                                            "fFXXN"
-                                            ("will create term(1) from : "
-                                              ++ (take 200 $ xshow [tx])
-                                            )
-                                            (AXML (axAnn anxml) [tx])
-                                          )
-                                      )
-                                      termxml
-                                in
-                                  if predxml == []
-                                    then
-                                      Debug.Trace.trace
-                                        ("Impossible to create predication...")
-                                          (False_atom Id.nullRange)
-                                    else
-                                      Predication
-                                        pred'
-                                        predterms
-                                        Id.nullRange 
-                              else
-                                if applySym == caslDefinednessS
-                                  then
-                                    Definedness
-                                      (termFromXmlXN
-                                        ffxi
-                                        (debugGO
-                                          (ffxiGO ffxi)
-                                          "fXXN"
-                                          ((++) "About to create Definedness from "
-                                            $ take 300 $ xshow $ axXml anxml
-                                          )
-                                          (AXML
-                                            (axAnn anxml)
-                                            (drop 1 $
-                                              (applyXmlFilter
-                                                (getChildren .>
-                                                  (isTag "OMV" +++ isTag "OMATTR"
-                                                    +++ isTag "OMA" +++ isTag "OMS" )
-                                                )
-                                                (axXml anxml)
-                                              )
-                                            )
-                                          )
-                                        )
-                                      )
-                                      Id.nullRange
-                                  else
-                                    if applySym == caslExistl_equationS
-                                      then
-                                        if (length terms) < 2
-                                          then
-                                            Debug.Trace.trace
-                                              ("Impossible to create existl_equation...")
-                                              (False_atom Id.nullRange)
-                                          else
-                                            Existl_equation
-                                              (terms!!0)
-                                              (terms!!1)
-                                              Id.nullRange
-                                      else
-                                        if applySym == caslStrong_equationS
-                                          then
-                                            if (length terms) < 2
-                                              then
-                                                Debug.Trace.trace
-                                                  ("Impossible to create strong_equation... ("
-                                                    ++ (xshow formTree) ++ ")"
-                                                  )
-                                                  (False_atom Id.nullRange)
-                                              else
-                                                Strong_equation
-                                                  ((\x ->
-                                                    if (contains (show x) "predication")
-                                                      then
-                                                        debugGO
-                                                          (ffxiGO ffxi)
-                                                          "fFXXNse"
-                                                          ("predication created! from : (0)")
-                                                          x
-                                                      else
-                                                        x
-                                                    ) (terms!!0)
-                                                  )
-                                                  ((\x ->
-                                                    if (contains (show x) "predication")
-                                                      then
-                                                        debugGO
-                                                          (ffxiGO ffxi)
-                                                          "fFXXNse"
-                                                          ("predication created! from : (1)")
-                                                          x
-                                                      else
-                                                        x
-                                                      ) (terms!!1)
-                                                  )
-                                                  Id.nullRange
-                                          else
-                                            if applySym == caslMembershipS
-                                              then
-                                                let
-                                                  sortxml =
-                                                    lastorempty
-                                                      (applyXmlFilter
-                                                        (getChildren .> isTag "OMS")
-                                                        formTree
-                                                      )
-                                                  sort = xshow $ applyXmlFilter (getValue "name") sortxml
-                                                  sortcd =
-                                                    stripFragment
-                                                      $
-                                                      xshow
-                                                        $
-                                                        applyXmlFilter
-                                                          (getValue "cd")
-                                                          sortxml
-                                                  theosorts =
-                                                    Map.findWithDefault
-                                                      Set.empty
-                                                      sortcd
-                                                      (xnSortsMap ffxi) 
-                                                  sortxn =
-                                                    case findByName sort theosorts of
-                                                      Nothing ->
-                                                        error
-                                                          ("Sort not found in theory!"
-                                                            ++ "(" ++ sort ++ ", "
-                                                              ++ (show theosorts) ++ ")" 
-                                                          )
-                                                      (Just x) -> x
-                                                in
-                                                  if terms == []
-                                                    then
-                                                      Debug.Trace.trace
-                                                        ("Impossible to create Membership...")
-                                                        (False_atom Id.nullRange)
-                                                    else
-                                                      Membership
-                                                        (head terms)
-                                                        (debugGO
-                                                           (ffxiGO ffxi)
-                                                           "fFXXN"
-                                                           ("Making sort for membership "
-                                                            ++ (show $ xnWOaToa sortxn)
-                                                            ++ " from " ++ sort
-                                                           )
-                                                           (xnWOaToa sortxn)
-                                                        )
-                                                        Id.nullRange
-                                              else
-                                                if applySym == caslSort_gen_axS
-                                                  then
-                                                    let
-                                                      freeType =
-                                                        if (xshow $
-                                                          applyXmlFilter
-                                                            (getValue "name")
-                                                            [(applyXmlFilter
-                                                              (getChildren .> isTag "OMS")
-                                                              formTree)!!1
-                                                            ]
-                                                            ) == caslSymbolAtomFalseS
-                                                          then
-                                                            False
-                                                          else
-                                                            True
-                                                      constraintsx =
-                                                        applyXmlFilter
-                                                          (
-                                                          --getChildren .> isTag "OMBVAR" .> -- removed (see generation)
-                                                          getChildren .> isTag "OMBIND"
-                                                          )
-                                                          formTree
-                                                      constraints =
-                                                        xmlToConstraintsXN
-                                                          ffxi
-                                                          (AXML (axAnn anxml) constraintsx)
-                                                    in
-                                                      Sort_gen_ax constraints freeType
-                                                  else
-                                                    if applySym /= []
-                                                      then
-                                                        Debug.Trace.trace
-                                                          ("No matching casl-application found! Trying to find predicate...") $ let
-                         predterms =
-                          map (\n -> termFromXmlXN ffxi (AXML (axAnn anxml) [n])) $ ((applyXmlFilter (getChildren .> (isTag "OMATTR" +++ isTag "OMA")) (axXml anxml))::[HXT.XmlTree])
-                         possibilities = findAllByNameWithAnd id fst applySym (mapSetToSet (xnPredsMap ffxi))
-                         withThisOrigin = filter (\i -> (xnWOaToO $ fst i) == (axAnn anxml)) possibilities
-                      in
-                        case (case withThisOrigin of [] -> possibilities; _ -> withThisOrigin) of
-                          (i:_) ->
-                            Predication (Qual_pred_name (xnWOaToa (fst i)) (Hets.cv_PredTypeToPred_type $ predTypeXNWONToPredType (snd i)) Id.nullRange) predterms Id.nullRange
-                          [] ->
-                            error ("Could not find predicate for \"" ++ applySym ++ "\"")
-                                                      else
-                                                        error ("Expected a casl application symbol, but \"" ++ applySym ++ "\" was found!")
-  else if (applyXmlFilter (isTag "OMS") (axXml anxml)) /= []
-    then
-      let
-        trueOrFalse =
-          xshow $
-            singleitem
-              1
-              (applyXmlFilter
-                (isTag "OMS" .> withValue "cd" (\s -> (stripFragment s) == caslS) .>
-                  getValue "name"
-                )
-                (axXml anxml)
-              )
-      in
-        if trueOrFalse == caslSymbolAtomTrueS
-          then
-            True_atom Id.nullRange
-          else
-            if trueOrFalse == caslSymbolAtomFalseS
-              then
-                False_atom Id.nullRange
-              else
-                Debug.Trace.trace
-                  (caslSymbolAtomTrueS ++ " or "
-                    ++ caslSymbolAtomFalseS ++ " expected, but \""
-                    ++ trueOrFalse ++ "\" found!"
-                  )
-                  (False_atom Id.nullRange)
-  else
-    error ("Impossible to create formula from \"" ++ xshow (axXml anxml)++ "\"") 
 
-
-xmlToConstraintsXN::FFXInput->AnnXMLN->[ABC.Constraint]
-xmlToConstraintsXN ffxi anxml =
+omToConstraints::FFXInput->OMDoc.OMElement->[ABC.Constraint]
+omToConstraints ffxi (OMDoc.OMEA oma) =
   map
     (\n ->
-      xmlToConstraintXN
+      omToConstraint
         ffxi
-        (AXML (axAnn anxml) [n])
+        n
     )
-    ((applyXmlFilter (isTag "OMBIND") (axXml anxml))::[HXT.XmlTree])
+    $
+    filter
+      (\e ->
+        case e of
+          (OMDoc.OMEBIND {}) -> True
+          _ -> False
+      )
+      (OMDoc.omaElements oma)
+omToConstraints _ _ = []
         
 
-xmlToConstraintXN::FFXInput->AnnXMLN->ABC.Constraint
-xmlToConstraintXN ffxi anxml =
+-- this is too clumsy!
+omToConstraint::FFXInput->OMDoc.OMElement->ABC.Constraint
+omToConstraint ffxi (OMDoc.OMEBIND ombind) =
   let
-    sortsx =
-      applyXmlFilter
-        (getChildren .> isTag "OMS" .> getValue "name")
-        (axXml anxml)
-    newsort = Hets.stringToId $ xshow $ [sortsx!!0]
-    origsort = Hets.stringToId $ xshow $ [sortsx!!0]
-    indiopsx =
-      applyXmlFilter
-        (getChildren .> isTag "OMBVAR" .> getChildren .> isTag "OMATTR")
-        (axXml anxml)
+    newsort =
+      Hets.stringToId
+        $
+        case (OMDoc.ombindBinder ombind) of
+          (OMDoc.OMES oms) ->
+            OMDoc.omsName oms
+          _ -> error "Constraints only work with OMS!"
+    origsort =
+      Hets.stringToId
+        $
+        case (OMDoc.ombindExpression ombind) of
+          (OMDoc.OMES oms) ->
+            OMDoc.omsName oms
+          _ -> error "Constraints only work with OMS!"
+
+    ombvarAttrs =
+      filter
+        (\e ->
+          case e of
+            (OMDoc.OMVA {}) -> True
+            _ -> False
+        )
+        (OMDoc.ombvarVars $ OMDoc.ombindVariables ombind)
     conslist =
       foldl
-        (\cl cx ->
+        (\cl (OMDoc.OMVA omattr) ->
           let
             indices =
-              xshow
-                $
-                applyXmlFilter
-                  (getChildren .> isTag "OMATP" 
-                    .> getChildren .> isTag "OMSTR" .> getChildren
-                  )
-                  [cx]
+              case
+                filter
+                  (\(_,e) -> case e of OMDoc.OMESTR {} -> True; _ -> False)
+                  (OMDoc.omatpAttribs $ OMDoc.omattrATP omattr)
+              of
+                [] -> ""
+                ((_,(OMDoc.OMESTR omstr)):_) -> OMDoc.omstrText omstr
+                _ -> error "Unexpected this is!"
             op =
-              operatorFromXmlXN
+              operatorFromOM
                 ffxi
                 $
-                (\n -> AXML (axAnn anxml) n)
-                  $
-                  applyXmlFilter
-                    (getChildren .> (isTag "OMBIND" +++ isTag "OMS"))
-                    [cx]
+                OMDoc.omattrElem omattr
             il =
               makeIndexList indices
           in
             cl ++ [(op, il)]
         )
         ([]::[(OP_SYMB,[Int])])
-        (indiopsx::[HXT.XmlTree])
+        (ombvarAttrs)
   in
     ABC.Constraint newsort conslist origsort
-          
+omToConstraint _ _ = error "omToConstraint: invalid parameter!"
+
                 
 -- An IndexList is constructed from a String like 'n1|n2|n3...nk|'              
 makeIndexList::String->[Int]
@@ -3175,17 +2899,11 @@ makeIndexList s =
     [read number] ++ (makeIndexList (drop 1 rest))
 
 
-predicationFromXmlXN::FFXInput->AnnXMLN->PRED_SYMB
-predicationFromXmlXN ffxi anxml = 
+predicationFromOM::FFXInput->OMDoc.OMElement->PRED_SYMB
+predicationFromOM ffxi (OMDoc.OMES oms) = 
   let
-    symbolXml = applyXmlFilter (isTag "OMS") (axXml anxml)
-    sxname = xshow $ applyXmlFilter (getValue "name") symbolXml
-    sxcd = stripFragment $ xshow $ applyXmlFilter (getValue "cd") symbolXml
-    {-
-    theonode = case getNodeForTheoryName (xnTheorySet ffxi) sxcd of
-            Nothing -> error ("No Theory for used predicate (Node) !" ++ sxname)
-            (Just n) -> n
-    -}
+    sxname = OMDoc.omsName oms
+    sxcd = OMDoc.omsCD oms
     theoxn = case findByName sxcd (xnTheorySet ffxi) of
             Nothing ->
               error
@@ -3209,8 +2927,9 @@ predicationFromXmlXN ffxi anxml =
       (xnWOaToa predxnid)
       (Hets.cv_PredTypeToPred_type $ predTypeXNWONToPredType predXNWON)
       Id.nullRange
+predicationFromOM _ _ = error "predicationFromOM: Invalid OMDoc.OMElement"
                 
--- String to Quantifiert...
+-- String to Quantifier...
 quantFromName::String->QUANTIFIER
 quantFromName s
         | (s == caslSymbolQuantUniversalS) = Universal
@@ -3219,228 +2938,597 @@ quantFromName s
         | otherwise = error (s++": no such quantifier...")
 
 
--- get var decls
-getVarDecls::HXT.XmlTrees->[(String, String)]
-getVarDecls vt =
+getVarDeclsOM::OMDoc.OMBindingVariables->[(String, String)]
+getVarDeclsOM ombvar =
   map
-    (\t ->
-      (
-          xshow
-            $
-            applyXmlFilter
-              (getChildren .> isTag "OMATP" .> getChildren .>
-                isTag "OMS" .> withValue "name" (/=typeS) .>
-                getValue "name"
+    (\(OMDoc.OMVA omattr) ->
+      let
+        typename =
+          case
+            filter
+              (\e ->
+                case e of
+                  (omst, OMDoc.OMES _) ->
+                    OMDoc.omsName omst == typeS
+                  _ -> False
               )
-              [t]
-       , xshow
-          $
-            applyXmlFilter
-              (getChildren .> isTag "OMV" .> getValue "name")
-              [t]
+              $
+              OMDoc.omatpAttribs $ OMDoc.omattrATP omattr
+          of
+            [] -> error "No Type!"
+            ((_, OMDoc.OMES oms):_) -> OMDoc.omsName oms
+            _ -> error "OMDocInput.getVarDeclsOM: Unexpected!"
+        varname =
+          case OMDoc.omattrElem omattr of
+            (OMDoc.OMEV omv) ->
+              OMDoc.omvName omv
+            _ -> error "Not a simple Variable!"
+      in
+      (
+          typename
+        , varname
       )
     )
     (
-      (applyXmlFilter (isTag "OMBVAR" .> getChildren .> isTag "OMATTR") vt)
-        ::[HXT.XmlTree]
+      filter
+        (\v -> case v of OMDoc.OMVA {} -> True; _ -> False)
+        $
+        OMDoc.ombvarVars ombvar
     )
 
 
-isTermXml::HXT.XmlFilter
-isTermXml = isTag "OMV" +++ isTag "OMATTR" +++ isTag "OMA"
+isTermOM::OMDoc.OMElement->Bool
+isTermOM (OMDoc.OMEV _) = True
+isTermOM (OMDoc.OMEATTR _) = True
+isTermOM (OMDoc.OMEA _) = True
+isTermOM _ = False
 
 
-isOperatorXml::HXT.XmlFilter
-isOperatorXml = isTag "OMATTR" +++ isTag "OMS"
+isOperatorOM::OMDoc.OMElement->Bool
+isOperatorOM (OMDoc.OMEATTR _) = True
+isOperatorOM (OMDoc.OMES _) = True
+isOperatorOM _ = False
 
 
-termFromXmlXN::FFXInput->AnnXMLN->(TERM ())
-termFromXmlXN ffxi anxml =
-  if (applyXmlFilter (isTag "OMV") (axXml anxml)) /= []
-    then
-      Debug.Trace.trace
-        ("Warning: Untyped variable (TERM) from \"" 
-          ++ (xshow (axXml anxml))
-        ) 
-        $
-        Simple_id 
-          $
-          Hets.stringToSimpleId $ xshow 
-            $
-            applyXmlFilter
-              (isTag "OMV" .> getValue "name")
-              (axXml anxml)
-    else
-      if (applyXmlFilter (isTag "OMATTR") (axXml anxml)) /= []
-        then
-          if
-            applyXmlFilter
-              (isTag "OMATTR" .> getChildren .>
-                isTag "OMATP" .> getChildren .>
-                isTag "OMS" .> withSValue "name" "funtype"
-              )
-              (axXml anxml)
-            /= []
-            then
-              Application (operatorFromXmlXN ffxi anxml) [] Id.nullRange
-            else
-              Qual_var
-                (Hets.stringToSimpleId
-                  $
-                  xshow
-                    $
-                    applyXmlFilter
-                      (isTag "OMATTR" .> getChildren .>
-                        isTag "OMV" .> getValue "name"
-                      )
-                      (axXml anxml)
-                )
-                (
-                  let
-                    varxnsort =
-                      xshow
-                        $
-                        applyXmlFilter
-                          (isTag "OMATTR" .> getChildren .>
-                            isTag "OMATP" .> getChildren .>
-                            isTag "OMS" .> withValue "name" (/=typeS) .>
-                            getValue "name"
-                          )
-                          (axXml anxml)
-                    varsort =
-                      case
-                        findByNameAndOrigin
-                          varxnsort
-                          (axAnn anxml)
-                          (mapSetToSet $ xnSortsMap ffxi)
-                      of
-                        Nothing ->
-                          error
-                            ("Cannot find defined sort for \""
-                              ++ varxnsort ++"\"" )
-                        (Just x) -> xnWOaToa x
-                  in
-                     varsort
-                )
-                Id.nullRange
-        else
-          if (applyXmlFilter (isTag "OMA") (axXml anxml) ) /= []
-            then
-              let
-                operator =
-                  operatorFromXmlXN
-                    ffxi
-                    (AXML
-                      (axAnn anxml)
-                      ([head
-                        $
-                        applyXmlFilter
-                          (getChildren .> isOperatorXml)
-                          (axXml anxml)
-                       ]
-                      )
-                    )
-                terms =
-                  map
-                    (\n -> termFromXmlXN ffxi (AXML (axAnn anxml) [n]))
-                    $
-                    drop 1
-                      $ -- drop out operator
-                      applyXmlFilter
-                        (getChildren .> isTermXml)
-                        (axXml anxml) -- removed 'OrOp'
-              in
-                if (opName operator) == "PROJ"
-                  then
-                    Cast
-                      (head terms)
-                      (Hets.stringToId $ show (head $ tail terms))
-                      Id.nullRange
-                  else
-                    if (opName operator) == "IfThenElse"
-                      then
-                        let
-                          iteChildsX =
-                            applyXmlFilter
-                              (getChildren .> 
-                                (isTag "OMS" +++ isTag "OMATTR" 
-                                  +++ isTag "OMA" +++ isTag "OMV")
-                              )
-                              (axXml anxml)
-                          iteCondX = singleitem 2 iteChildsX
-                          iteThenX = singleitem 3 iteChildsX
-                          iteElseX = singleitem 4 iteChildsX
-                          iteCond =
-                            formulaFromXmlXN
-                              ffxi
-                              $
-                              debugGO
-                                (ffxiGO ffxi)
-                                "tFXXNformula"
-                                ("Creating Formula for IfThenElse from : "
-                                  ++ (xshow iteCondX)
-                                )
-                                (AXML (axAnn anxml) iteCondX)
-                          iteThen = termFromXmlXN ffxi (AXML (axAnn anxml) iteThenX)
-                          iteElse = termFromXmlXN ffxi (AXML (axAnn anxml) iteElseX)
-                        in
-                          debugGO
-                            (ffxiGO ffxi)
-                            "tFXXN"
-                            ("IfThenElse creation...")
-                            $ 
-                            Conditional
-                              iteThen
-                              iteCond
-                              iteElse
-                              Id.nullRange 
-                      else
-                        Application operator terms Id.nullRange
-            else
-              if (applyXmlFilter (isTag "OMS") (axXml anxml) ) /= []
-                then
-                  let
-                    operator = 
-                      (\x -> debugGO (ffxiGO ffxi)
-                        "tFXXNo"
-                        ("operator : " ++ (show x))
-                        x
-                      )
-                      $
-                      operatorFromXmlXN
-                        ffxi
-                        anxml
-                  in
-                    Application operator [] Id.nullRange
-                else
-                    error
-                      ("Impossible to create term from \"" 
-                        ++ xshow (axXml anxml) ++"\""
-                      ) 
-                        
-
-operatorFromXmlXN::FFXInput->AnnXMLN->OP_SYMB
-operatorFromXmlXN ffxi anxml =
+formulaFromOM::FFXInput->Graph.Node->OMDoc.OMElement->(FORMULA ())
+formulaFromOM ffxi origin (OMDoc.OMEBIND ombind) =
   let
-    symbolXml = applyXmlFilter (isTag "OMS") (axXml anxml)
-    sxname = xshow $ applyXmlFilter (getValue "name") symbolXml
-    scd = xshow $ applyXmlFilter (getValue "cd") symbolXml
+    quant =
+      case OMDoc.ombindBinder ombind of
+        (OMDoc.OMES oms) ->
+          if OMDoc.omsCD oms == caslS
+            then
+              quantFromName $ OMDoc.omsName oms
+            else
+              error "Wrong CD!"
+        _ -> error "Quantifier must be an OMS!"
+    -- first element is the quantification-OMS
+    formula =
+      formulaFromOM
+        ffxi
+        origin
+        (OMDoc.ombindExpression ombind)
+    vardeclS =
+      getVarDeclsOM
+        (OMDoc.ombindVariables ombind)
+    vardeclS2 = createQuasiMappedLists vardeclS
+  in
+    Quantification
+      quant
+      (map
+        (\(s, vl) ->
+          Var_decl
+            (map Hets.stringToSimpleId vl)
+            (case findByNameAndOrigin
+                    (stripFragment s)
+                    origin
+                    (mapSetToSet $ xnSortsMap ffxi) of
+               Nothing -> error ("No Sort for " ++ s)
+               (Just x) -> xnWOaToa x
+            )
+            --(Hets.stringToId s)
+            Id.nullRange
+        )
+        vardeclS2
+      )
+      formula
+      Id.nullRange
+formulaFromOM ffxi origin (OMDoc.OMEA oma) =
+  let
+    applySym =
+      case OMDoc.omaElements oma of
+        ((OMDoc.OMES oms):_) ->
+          OMDoc.omsName oms
+        _ -> error "No OMS First!"
+    ftr = readsPrec undefined applySym
+    formulas =
+      map
+        (formulaFromOM ffxi origin)
+        $
+        filter
+          (\e ->
+            case e of
+              (OMDoc.OMEA {}) -> True
+              (OMDoc.OMEATTR {}) -> True
+              (OMDoc.OMEBIND {}) -> True
+              _ -> False
+          )
+          (OMDoc.omaElements oma)
+    terms =
+      map
+        (termFromOM ffxi origin)
+        $
+        drop
+          1
+          $
+          filter
+            (\e ->
+              case e of
+                (OMDoc.OMEA {}) -> True
+                (OMDoc.OMEATTR {}) -> True
+                (OMDoc.OMEV {}) -> True
+                (OMDoc.OMES {}) -> True
+                _ -> False
+            )
+            (OMDoc.omaElements oma)
+  in
+    case ftr of
+      ((ft, _):_) ->
+        case ft of
+          FTConjunction ->
+            Conjunction formulas Id.nullRange
+          FTDisjunction ->
+            Disjunction formulas Id.nullRange
+          FTImplication ->
+            makeImplication formulas
+          FTEquivalence ->
+            makeEquivalence formulas
+          FTNegation ->
+            makeNegation formulas
+          FTPredication ->
+            makePredication
+          FTDefinedness ->
+            makeDefinedness
+          FTExistl_equation ->
+            makeExistl_equation terms
+          FTStrong_equation ->
+            makeStrong_equation terms
+          FTMembership ->
+            makeMembership terms
+          FTSort_gen_ax ->
+            makeSort_gen_ax
+      _ ->
+        let
+          predterms =
+            map
+              (termFromOM ffxi origin)
+              $
+              filter
+                (\e ->
+                  case e of
+                    (OMDoc.OMEA {}) -> True
+                    (OMDoc.OMEATTR {}) -> True
+                    _ -> False
+                )
+                (OMDoc.omaElements oma)
+          possibilities =
+            findAllByNameWithAnd
+              id
+              fst
+              applySym
+              (mapSetToSet (xnPredsMap ffxi))
+          withThisOrigin =
+            filter
+              (\i -> (xnWOaToO $ fst i) == origin)
+              possibilities
+        in
+          if applySym /= []
+            then
+              case
+                case withThisOrigin of
+                  [] -> possibilities
+                  _ -> withThisOrigin
+              of
+                (i:_) ->
+                  Predication
+                    (
+                      Qual_pred_name (xnWOaToa (fst i))
+                        (
+                          Hets.cv_PredTypeToPred_type
+                            $ predTypeXNWONToPredType (snd i)
+                        )
+                        Id.nullRange
+                    )
+                    predterms
+                    Id.nullRange
+                [] ->
+                  error ("Could not find predicate for \"" ++ applySym ++ "\"")
+            else
+              error "Empty application..."
+  where
+    makeImplication::[FORMULA ()]->FORMULA ()
+    makeImplication formulas =
+      let
+        boolF =
+          formulaFromOM
+            ffxi
+            origin
+            $
+            case
+              filter
+                (\e -> 
+                  case e of
+                    (OMDoc.OMES {}) -> True
+                    _ -> False
+                )
+                (OMDoc.omaElements oma)
+            of
+              [] -> error "No OMS!"
+              (_:second:_) -> second
+              _ -> error "No second OMS!"
+      in
+        if length formulas < 2
+          then
+            error "Not enough formulas for implication!"
+          else
+            Implication
+              (formulas!!0)
+              (formulas!!1)
+              (isTrueAtom boolF)
+              Id.nullRange
+
+    makeEquivalence::[FORMULA ()]->FORMULA ()
+    makeEquivalence formulas =
+      if length formulas < 2
+        then
+          error "Not enough formulas for equivalence!"
+        else
+          Equivalence
+            (formulas!!0)
+            (formulas!!1)
+            Id.nullRange
+          
+    makeNegation::[FORMULA ()]->FORMULA ()
+    makeNegation formulas =
+      if length formulas < 1
+        then
+          error "Empty formulas for negation!"
+        else
+          Negation (formulas!!0) Id.nullRange
+
+    makePredication::FORMULA ()
+    makePredication =
+      let
+        pred' =
+          case
+            filter
+              (\e -> 
+                case e of
+                  (OMDoc.OMES {}) -> True
+                  (OMDoc.OMEATTR {}) -> True
+                  _ -> False
+              )
+              (OMDoc.omaElements oma)
+          of
+            [] -> error "No Elements for Predication!"
+            (_:second:_) -> predicationFromOM ffxi second
+            _ -> error "No second matching element for Predication!"
+        predterms =
+          map
+            (termFromOM ffxi origin)
+            $
+            drop
+              2
+              $
+              filter
+                (\e ->
+                  case e of
+                    (OMDoc.OMEA {}) -> True
+                    (OMDoc.OMEATTR {}) -> True
+                    (OMDoc.OMES {}) -> True
+                    _ -> False
+                )
+                (OMDoc.omaElements oma)
+      in
+        Predication
+          pred'
+          predterms
+          Id.nullRange
+
+    makeDefinedness::FORMULA ()
+    makeDefinedness =
+      let
+        defterm =
+          case
+            drop
+              1
+              $
+              filter
+                (\e ->
+                  case e of
+                    (OMDoc.OMEA {}) -> True
+                    (OMDoc.OMEATTR {}) -> True
+                    (OMDoc.OMES {}) -> True
+                    (OMDoc.OMEV {}) -> True
+                    _ -> False
+                )
+                (OMDoc.omaElements oma)
+          of
+            [] -> error "No Term for Definedness!"
+            (t:_) -> termFromOM ffxi origin t
+      in
+        Definedness defterm Id.nullRange
+
+    makeExistl_equation::[TERM ()]->FORMULA ()
+    makeExistl_equation terms =
+      if length terms < 2
+        then
+          error "Not enough terms for Existl_equation!"
+        else
+          Existl_equation 
+            (terms!!0)
+            (terms!!1)
+            Id.nullRange
+    
+    makeStrong_equation::[TERM ()]->FORMULA ()
+    makeStrong_equation terms =
+      if length terms < 2
+        then
+          error
+            (
+              "Not enough terms for Strong_equation! ("
+                ++ show (length terms) ++ ") : "
+                ++ show oma
+            )
+        else
+          Strong_equation 
+            (terms!!0)
+            (terms!!1)
+            Id.nullRange
+
+    makeMembership::[TERM ()]->FORMULA ()
+    makeMembership terms =
+      if length terms < 1
+        then
+          error "Not enought terms for Membership!"
+        else
+          let
+            lastoms =
+              lastorempty
+                $
+                filter
+                  (\e ->
+                    case e of
+                      (OMDoc.OMES {}) -> True
+                      _ -> False
+                  )
+                  (OMDoc.omaElements oma)
+
+          in
+            case lastoms of
+              [(OMDoc.OMES oms)] ->
+                let
+                  sort = OMDoc.omsName oms
+                  sortcd = OMDoc.omsCD oms
+                  theosorts =
+                    Map.findWithDefault
+                      Set.empty
+                      sortcd
+                      (xnSortsMap ffxi) 
+                  sortxn =
+                    case findByName sort theosorts of
+                      Nothing ->
+                        error
+                          ("Sort not found in theory!"
+                            ++ "(" ++ sort ++ ", "
+                              ++ (show theosorts) ++ ")" 
+                          )
+                      (Just x) -> x
+                in
+                  Membership
+                    (head terms)
+                    (xnWOaToa sortxn)
+                    Id.nullRange
+              _ -> error "No OMS for Membership-Sort!"
+    
+    makeSort_gen_ax::FORMULA ()
+    makeSort_gen_ax =
+      let
+        freeType =
+          case
+            filter
+              (\e ->
+                case e of
+                  (OMDoc.OMES {}) -> True
+                  _ -> False
+              )
+              (OMDoc.omaElements oma)
+          of
+            (_:(OMDoc.OMES oms):_) ->
+              if OMDoc.omsName oms == caslSymbolAtomFalseS
+                then
+                  False
+                else
+                  True
+            _ -> True
+        constraints =
+          omToConstraints ffxi (OMDoc.OMEA oma)
+      in
+        Sort_gen_ax constraints freeType
+
+formulaFromOM _ _ (OMDoc.OMES oms) =
+  if OMDoc.omsName oms == caslSymbolAtomFalseS
+    then
+      False_atom Id.nullRange
+    else
+      if OMDoc.omsName oms == caslSymbolAtomTrueS
+        then
+          True_atom Id.nullRange
+        else
+          error "Expected true or false..."
+
+formulaFromOM _ _ _ = error "OMDoc.OMDocInput.formulaFromOM: Not implemented"
+
+termFromOM::FFXInput->Graph.Node->OMDoc.OMElement->(TERM ())
+termFromOM _ _ (OMDoc.OMEV omv) =
+  Debug.Trace.trace
+    (
+      "Warning: Untyped variable (TERM) from \"" 
+      ++ (show omv)
+    ) 
+    $
+    Simple_id 
+      $
+      Hets.stringToSimpleId (OMDoc.omvName omv)
+termFromOM ffxi origin (ome@(OMDoc.OMEATTR omattr)) =
+  if
+    (/=)
+      (
+      filter
+        (\(oms, _) ->
+          OMDoc.omsName oms == "funtype"
+        )
+        (OMDoc.omatpAttribs $ OMDoc.omattrATP omattr)
+      )
+      []
+    then
+      Application (operatorFromOM ffxi ome) [] Id.nullRange
+    else
+      Qual_var
+        (Hets.stringToSimpleId
+          $
+          (
+            case (OMDoc.omattrElem omattr) of
+              (OMDoc.OMEV omv) ->
+                (OMDoc.omvName omv)
+              _ ->
+                error "Expected OMV in OMATTR!"
+          )
+        )
+        (
+          let
+            varxnsort =
+              case
+                filter
+                  (\(oms, _) ->
+                    OMDoc.omsName oms == typeS
+                  )
+                  (OMDoc.omatpAttribs $ OMDoc.omattrATP omattr)
+              of
+                [] -> error ("No Name! : " ++ show ome)
+                ((_,(OMDoc.OMES typeoms)):_) -> OMDoc.omsName typeoms
+                q -> error ("Need OMS for Variable-Type... given : " ++ show q)
+            varsort =
+              case
+                findByNameAndOrigin
+                  varxnsort
+                  origin
+                  (mapSetToSet $ xnSortsMap ffxi)
+              of
+                Nothing ->
+                  error
+                    ("Cannot find defined sort for \""
+                      ++ varxnsort ++"\"" )
+                (Just x) -> xnWOaToa x
+          in
+             varsort
+        )
+        Id.nullRange
+termFromOM ffxi origin (OMDoc.OMEA oma) =
+  let
+    operator =
+      operatorFromOM
+        ffxi
+        (
+          head
+            $
+            (filter isOperatorOM $ OMDoc.omaElements oma)
+        )
+    terms =
+      map
+        (termFromOM ffxi origin)
+        $
+        drop 1
+          $ -- drop out operator
+          filter
+            isTermOM
+            $
+            OMDoc.omaElements oma
+  in
+    case (opName operator) of
+    "PROJ" ->
+        Cast
+          (head terms)
+          (Hets.stringToId $ show (head $ tail terms))
+          Id.nullRange
+    "IfThenElse" ->
+      let
+        iteChildsX =
+          filter
+            (\ome ->
+              case ome of
+                (OMDoc.OMES _) -> True
+                (OMDoc.OMEATTR _) -> True
+                (OMDoc.OMEA _) -> True
+                (OMDoc.OMEV _) -> True
+                _ -> False
+            )
+            (OMDoc.omaElements oma)
+        iteCondX = head $ singleitem 2 iteChildsX
+        iteThenX = head $ singleitem 3 iteChildsX
+        iteElseX = head $ singleitem 4 iteChildsX
+        iteCond =
+          formulaFromOM
+            ffxi
+            origin
+            iteCondX
+        iteThen = termFromOM ffxi origin (iteThenX)
+        iteElse = termFromOM ffxi origin (iteElseX)
+      in
+        Conditional
+          iteThen
+          iteCond
+          iteElse
+          Id.nullRange
+    _ ->
+      Application operator terms Id.nullRange
+termFromOM ffxi _ (ome@(OMDoc.OMES _)) =
+    let
+      operator = 
+        (\x -> debugGO (ffxiGO ffxi)
+          "tFXXNo"
+          ("operator : " ++ (show ome))
+          x
+        )
+        $
+        operatorFromOM
+          ffxi
+          ome
+    in
+      Application operator [] Id.nullRange
+termFromOM _ _ t =
+  error
+    (
+      "Impossible to create term from \"" 
+      ++ show t ++"\""
+    ) 
+
+operatorFromOM::FFXInput->OMDoc.OMElement->OP_SYMB
+operatorFromOM ffxi (OMDoc.OMES oms) =
+  let
+    sxname = OMDoc.omsName oms
+    scd = OMDoc.omsCD oms
     stheoid =
       case scd of
         ('#':r) -> r
         _ -> scd
-    {-
-    theonode = case getNodeForTheoryName (xnTheorySet ffxi) scd of
-            Nothing -> error ("No Theory for used operator! (" ++ scd ++ ")")
-            (Just n) -> n
-    -}
     theoxn =
       case findByName stheoid (xnTheorySet ffxi) of
         Nothing ->
           error
             ("No Theory for used operator! (\"" 
               ++ sxname ++ "\" in \"" ++ scd ++ "\" Context : \""
-              ++ (take 200 $ xshow (axXml anxml)) ++ "\")"
+              ++ (take 200 $ show oms) ++ "\")"
             )
         (Just theoxn' ) -> theoxn'
     theoops = Map.findWithDefault Set.empty (xnName theoxn) (xnOpsMap ffxi) 
@@ -3457,26 +3545,13 @@ operatorFromXmlXN ffxi anxml =
     if (stheoid==caslS) 
       then -- eventually there should be an aux. casl-theory while processing...
         Op_name
-          $
-          debugGO
-            (ffxiGO ffxi)
-            "oFXXN"
-            ("creating casl operator for : " ++ sxname)
-            $
-            Hets.stringToId sxname
+          (Hets.stringToId sxname)
       else
         Qual_op_name
-          ((\x ->
-            debugGO
-              (ffxiGO ffxi)
-              "oFXXN"
-              ("creating operator for : " ++ sxname ++ " (" ++ (show x) ++ ")")
-              x
-           )
-           (xnWOaToa opxnid)
-          )
+          (xnWOaToa opxnid)
           (Hets.cv_OpTypeToOp_type $ opTypeXNWONToOpType opXNWON)
           Id.nullRange
+operatorFromOM _ _ = error "operatorFromOM: wrong parameter!"
 
 opName::OP_SYMB->String
 opName (Op_name op) = (show op)
