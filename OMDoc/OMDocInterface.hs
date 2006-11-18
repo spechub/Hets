@@ -296,9 +296,14 @@ data Conclusion = Conclusion
 data Definition =
   Definition
     {
-      definitionId :: XmlId
+        definitionId :: XmlId
+      , definitionCMPs :: [CMP]
+      , definitionFMPs :: [FMP]
     }
   deriving Show
+
+mkDefinition::XmlId->[CMP]->[FMP]->Definition
+mkDefinition = Definition
 
 -- | ADT
 data ADT =

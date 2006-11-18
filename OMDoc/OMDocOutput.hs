@@ -1025,7 +1025,7 @@ libEnvLibNameIdNameMappingToOMDoc
           in
             do
               omdoc <- xio
-              (omAxs, omPres) <-
+              (omAxs, omDefs, omPres) <-
                 wrapFormulasCMPIOOM
                   go
                   lenv
@@ -1053,6 +1053,8 @@ libEnvLibNameIdNameMappingToOMDoc
                           (map OMDoc.mkCAd theoryADTs)
                           ++
                           (map OMDoc.mkCAx omAxs)
+                          ++
+                          (map OMDoc.mkCDe omDefs)
                           ++
                           (map OMDoc.mkCIm theoryDefLinks)
                         )
@@ -2061,7 +2063,7 @@ wrapFormulasCMPIOOM::
   ->[Hets.IdNameMapping]
   ->[Hets.IdNameMapping]
   ->[(Ann.Named CASLFORMULA)]
-  ->IO ([OMDoc.Axiom], [OMDoc.Presentation])
+  ->IO ([OMDoc.Axiom], [OMDoc.Definition], [OMDoc.Presentation])
 wrapFormulasCMPIOOM go lenv ln nn cM uN fN fs =
   let
     posLists = concatMap Id.getPosList (map Ann.sentence fs)
@@ -2071,13 +2073,17 @@ wrapFormulasCMPIOOM go lenv ln nn cM uN fN fs =
     return
       $
       foldl
-        (\(wax, wpr) f ->
+        (\(wax, wde, wpr) f ->
           let
-            (ax, pr) = wrapFormulaCMPOM go lenv ln nn cM uN fN f poslinemap
+            (axdef, pr) = wrapFormulaCMPOM go lenv ln nn cM uN fN f poslinemap
           in
-            (wax++[ax], wpr++[pr])
+            case axdef of
+              (Left ax) ->
+                (wax++[ax], wde, wpr++[pr])
+              (Right def) ->
+                (wax, wde++[def], wpr++[pr])
         )
-        ([], [])
+        ([], [], [])
         (zip fs [1..])
 
 wrapFormulaCMPOM::
@@ -2090,7 +2096,7 @@ wrapFormulaCMPOM::
   ->[Hets.IdNameMapping]
   ->((Ann.Named CASLFORMULA), Int)
   ->(Map.Map Id.Pos String)
-  ->(OMDoc.Axiom, OMDoc.Presentation)
+  ->(Either OMDoc.Axiom OMDoc.Definition, OMDoc.Presentation)
 wrapFormulaCMPOM
   go
   lenv
@@ -2125,7 +2131,12 @@ wrapFormulaCMPOM
         sposl
     cmp = OMDoc.mkCMP (OMDoc.MTextText cmptext) 
     fmp = OMDoc.FMP Nothing (Left omobj)
-    axiom = OMDoc.mkAxiom senxmlid [cmp] [fmp]
+    axiom =
+      if Ann.isAxiom ansen
+        then
+          Left $ OMDoc.mkAxiom senxmlid [cmp] [fmp]
+        else
+          Right $ OMDoc.mkDefinition senxmlid [cmp] [fmp]
     pres = makePresentationForOM senxmlid (Ann.senName ansen)
   in
     (axiom, pres)

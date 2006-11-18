@@ -638,6 +638,10 @@ instance XmlRepresentable Definition where
     HXT.etag "definition"
       += (
         XML.qualattr "xml" "id" (definitionId def)
+        +++
+        toXmlS (definitionCMPs def)
+        +++
+        toXmlS (definitionFMPs def)
       )
   fromXml t =
     case (HXT.isTag "definition") t of
@@ -645,10 +649,13 @@ instance XmlRepresentable Definition where
       _ ->
         let
           ids = HXT.xshow $ XML.getQualValue "xml" "id" t
+          children = HXT.getChildren t
+          cmps = getAllFromXml children
+          fmps = getAllFromXml children
         in
           case ids of
             [] -> trace "no id in definition" Nothing
-            _ -> Just $ Definition ids
+            _ -> Just $ Definition ids cmps fmps
 
 -- | SortDef
 instance XmlRepresentable SortDef where

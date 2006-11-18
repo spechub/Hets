@@ -2134,12 +2134,6 @@ importGraphToLibEnvOM
   let
     specMap = createSpecMapOM go ig
     processedSpecMap =
-      (\x ->
-        Debug.Trace.trace
-          (show $ Map.map (\(ts, _, _, _) -> map ts_name ts) x)
-          x
-      )
-      $
       processSpecMapOM specMap
     ffxiMap =
       createFFXIMap
@@ -2426,14 +2420,11 @@ getImportedTheoriesOMDoc omdoc =
             path = URI.uriPath uri
             fragment = drop 1 $ URI.uriFragment uri
           in
-            Debug.Trace.trace
-              ("Current Path : " ++ path ++ " fragment " ++ fragment)
-              $
-              if (length path) > 0 && (length fragment) > 0
-                then
-                  l ++ [(fragment, path)]
-                else
-                  l
+            if (length path) > 0 && (length fragment) > 0
+              then
+                l ++ [(fragment, path)]
+              else
+                l
         )
         []
         (timports ++ cimports ++ cexports)
@@ -2718,12 +2709,12 @@ isTrueAtom _ = False
 unwrapFormulasOM::FFXInput->(Graph.Node, OMDoc.Theory)->[(XmlNamed Hets.SentenceWO)]
 unwrapFormulasOM ffxi (origin, theory) =
   let
-    presentations = OMDoc.theoryPresentations theory
     axioms =
       filter
         (\c ->
           case c of
             (OMDoc.CAx {}) -> True
+            (OMDoc.CDe {}) -> True
             _ -> False
         )
         (OMDoc.theoryConstitutives theory)
@@ -2731,40 +2722,61 @@ unwrapFormulasOM ffxi (origin, theory) =
     map
       (\ax ->
         case ax of
-          (con@(OMDoc.CAx axiom)) ->
-            let
-              axname = OMDoc.axiomName axiom
-              name =
-                case
-                  find
-                    (\p -> OMDoc.presentationForId p == axname)
-                    presentations
-                of
-                  Nothing -> axname
-                  (Just p) ->
-                    case
-                      find
-                        (\u -> OMDoc.useFormat u == "Hets") 
-                        (OMDoc.presentationUses p)
-                    of
-                      Nothing -> axname
-                      (Just u) -> OMDoc.useValue u
-              formula = unwrapFormulaOM ffxi origin con
-            in
-              XmlNamed
-                (Hets.mkWON (formula { Ann.senName = name }) origin)
-                axname
-          _ -> error "!"
+          (con@(OMDoc.CAx {})) ->
+            processAxDef con
+          (con@(OMDoc.CDe {})) ->
+            processAxDef con
+          _ ->
+            error "!"
       )
       axioms
+  where
+    processAxDef::OMDoc.Constitutive->XmlNamed Hets.SentenceWO
+    processAxDef con =
+      let
+        presentations = OMDoc.theoryPresentations theory
+        axdefname =
+          case con of
+            (OMDoc.CAx axiom) ->
+              OMDoc.axiomName axiom
+            (OMDoc.CDe definition) ->
+              OMDoc.definitionId definition
+            _ -> error "!"
+        name =
+          case
+            find
+              (\p -> OMDoc.presentationForId p == axdefname)
+              presentations
+          of
+            Nothing -> axdefname
+            (Just p) ->
+              case
+                find
+                  (\u -> OMDoc.useFormat u == "Hets") 
+                  (OMDoc.presentationUses p)
+              of
+                Nothing -> axdefname
+                (Just u) -> OMDoc.useValue u
+        formula = unwrapFormulaOM ffxi origin con
+      in
+        XmlNamed
+          (Hets.mkWON (formula { Ann.senName = name }) origin)
+          axdefname
+
 
 
 unwrapFormulaOM::FFXInput->Graph.Node->OMDoc.Constitutive->(Ann.Named CASLFORMULA)
-unwrapFormulaOM ffxi origin (OMDoc.CAx axiom) =
+unwrapFormulaOM ffxi origin con =
   let
-    axname = OMDoc.axiomName axiom
+    (axdefname, fmps) =
+      case con of
+        (OMDoc.CAx axiom) ->
+          (OMDoc.axiomName axiom, OMDoc.axiomFMPs axiom)
+        (OMDoc.CDe definition) ->
+          (OMDoc.definitionId definition, OMDoc.definitionFMPs definition)
+        _ -> error "!"
     formula =
-      case OMDoc.axiomFMPs axiom of
+      case fmps of
         [] -> error "No Formula!"
         (fmp@(OMDoc.FMP {}):_) ->
           case OMDoc.fmpContent fmp of
@@ -2773,12 +2785,12 @@ unwrapFormulaOM ffxi origin (OMDoc.CAx axiom) =
             _ -> error "Can only create Formula from OMOBJ!"
   in
     Ann.NamedSen
-      axname
-      True
-      False
-      formula
-
-unwrapFormulaOM _ _ _ = error "OMDoc.OMDocInput.unwrapFormulaOM: not implemented!"
+      {
+          Ann.senName = axdefname
+        , Ann.isAxiom = (case con of OMDoc.CAx {} -> True; _ -> False)
+        , Ann.isDef = (case con of OMDoc.CDe {} -> True; _ -> False)
+        , Ann.sentence = formula
+      }
 
 data FFXInput = FFXInput {
          ffxiGO :: GlobalOptions
@@ -3040,7 +3052,10 @@ formulaFromOM ffxi origin (OMDoc.OMEA oma) =
         ((OMDoc.OMES oms):_) ->
           OMDoc.omsName oms
         _ -> error "No OMS First!"
-    ftr = readsPrec undefined applySym
+    ftr =
+      readsPrec
+        (error "OMDoc.OMDocInput.formulaFromOM: this argument is not used!")
+        applySym
     formulas =
       map
         (formulaFromOM ffxi origin)
