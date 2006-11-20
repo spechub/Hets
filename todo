@@ -303,9 +303,16 @@ emacs mode:
   when hets terminates abnormally (e.g. with a fail), emacs loops
   C-n jumps to the next error, but the message windows is not always scrolled
     in such a way that the error is at the top (for long error lists)
-  Version for XEamcs?
 
   should work with parser error messages as well (adapt these?)
+
+  easier setup of emacs mode
+    by just loading one file
+  integration into installer 
+    checking for emacs and offer adaption of ~/.emacs
+
+  Version for XEamcs?
+  
 
 ************************************************
 Ken (Till)
