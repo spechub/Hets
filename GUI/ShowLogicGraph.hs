@@ -239,14 +239,15 @@ showLogicGraph
                            newArc subLogicG subArcType "" 
                                   (lookupSublogic node1) 
                                   (lookupSublogic node2)
-                 mapM_ insertSubArc $ 
-                     Rel.toList $ Rel.intransKernel $ Rel.fromList
-                     [ (sublogic_names g1, sublogic_names g2)
-                     | g1 <- listG_Sublogics
-                     , g2 <- listG_Sublogics
-                     , isSubElem g1 g2
-                     , g1 /= g2
-                     ]
+                     subl_nodes = 
+                         Rel.toList $ Rel.intransKernel $ Rel.fromList
+                          [ (sublogic_names g1, sublogic_names g2)
+                            | g1 <- listG_Sublogics
+                            , g2 <- listG_Sublogics
+                            , g1 /= g2
+                            , isSubElem g1 g2
+                          ]
+                 mapM_ insertSubArc subl_nodes 
                  redraw subLogicG
 
 showLG :: IO ()
