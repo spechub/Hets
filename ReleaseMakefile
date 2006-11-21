@@ -60,8 +60,11 @@ hets: hets.o
 	$(HC) --make -O -o $@ hets.hs $(HC_OPTS) -w
 	strip hets
 
-%.o %.hi: %.hs %.o
+%.o: %.hs
 	@$(HC) -v0 -w -c -O $< $(HC_OPTS)
+
+%.hi: %.o
+	@:
 
 hets.cgi:
 	$(HC) --make -O GUI/hets_cgi.hs -o $@ $(HC_OPTS) -w
