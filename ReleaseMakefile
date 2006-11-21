@@ -63,6 +63,9 @@ hets: hets.o
 %.o: %.hs
 	@$(HC) -v0 -w -c -O $< $(HC_OPTS)
 
+%.o: %.lhs
+	@$(HC) -v0 -w -c -O $< $(HC_OPTS)
+
 %.hi: %.o
 	@:
 
