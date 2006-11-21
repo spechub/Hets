@@ -49,13 +49,19 @@ HC_OPTS = $(HAXML_PACKAGE) $(HC_OPTS1) $(HC_PACKAGE)
 
 ####################################################################
 ### targets
-.PHONY : all clean o_clean bin_clean
+.PHONY : all clean o_clean bin_clean depend
 
 all: hets
 
-hets:
+depend:
+	$(HC) -M hets.hs $(HC_OPTS)
+
+hets: hets.o
 	$(HC) --make -O -o $@ hets.hs $(HC_OPTS) -w
 	strip hets
+
+%.o %.hi: %.hs %.o
+	@$(HC) -v0 -w -c -O $< $(HC_OPTS)
 
 hets.cgi:
 	$(HC) --make -O GUI/hets_cgi.hs -o $@ $(HC_OPTS) -w
