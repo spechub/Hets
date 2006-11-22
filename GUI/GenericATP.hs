@@ -32,9 +32,8 @@ import Common.Utils (getEnvSave)
 
 import Data.List
 import Data.Maybe
-import Data.IORef
 import qualified Control.Exception as Exception
-import qualified Control.Concurrent as Concurrent
+import qualified Control.Concurrent as Conc
 
 import GHC.Read
 
@@ -55,17 +54,6 @@ import Proofs.BatchProcessing
 
 -- debugging
 import Debug.Trace
-
-
--- * Data Structures and assorted utility functions
-
-data ThreadState = TSt { batchId :: Maybe Concurrent.ThreadId
-                       , batchStopped :: Bool
-                       }
-
-initialThreadState :: ThreadState
-initialThreadState = TSt { batchId = Nothing
-                         , batchStopped = False}
 
 {- |
   Utility function to set the time limit of a Config.
@@ -359,7 +347,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
   let initState = initialGenericState prName
                                       (initialProverState atpFun)
                                       (atpTransSenName atpFun) th pt
-  stateRef <- newIORef initState
+  stateMVar <- Conc.newMVar initState
   batchTLimit <- getBatchTimeLimit $ batchTimeEnv atpFun
 
   -- main window
@@ -402,11 +390,12 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
       <- newOptionsFrame b2
                  (\ timeEntry sp -> synchronize main
                    (do
-               s <- readIORef stateRef
+               st <- Conc.readMVar stateMVar
                maybe noGoalSelected
                      (\ goal ->
                       do
                       curEntTL <- getValueSafe guiDefaultTimeLimit timeEntry
+                      s <- Conc.takeMVar stateMVar 
                       let sEnt = s {configsMap =
                                         adjustOrSetConfig
                                              (setTimeLimit curEntTL)
@@ -424,7 +413,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                                          adjustOrSetConfig
                                               (setTimeLimit t')
                                               prName goal pt (configsMap sEnt)}
-                      writeIORef stateRef s'
+                      Conc.putMVar stateMVar s'
                       timeEntry # HTk.value
                                     (maybe guiDefaultTimeLimit
                                            id
@@ -432,7 +421,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                                               getConfig prName goal pt $
                                                 configsMap s'))
                       done)
-                     (currentGoal s)))
+                     (currentGoal st)))
                  isExtraOptions
   pack right [Expand On, Fill Both, Anchor NorthWest]
 
@@ -543,7 +532,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
   pack batchGoal [Expand On, Fill X, Anchor West, Side AtBottom]
   batchCurrentGoalTitle <- newLabel batchGoal [text "Current goal:"]
   pack batchCurrentGoalTitle []
-  batchCurrentGoalLabel <- newLabel batchGoal [text "-"]
+  batchCurrentGoalLabel <- newLabel batchGoal [text "--"]
   pack batchCurrentGoalLabel []
 
 
@@ -607,9 +596,10 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
   populateGoalsListBox lb (goalsView initState)
   putWinOnTop main
 
-  -- IORef for batch thread
-  threadStateRef <- newIORef initialThreadState
-
+  -- MVars for thread-safe communication
+  mVar_batchId <- Conc.newEmptyMVar :: IO (Conc.MVar Conc.ThreadId)
+  windowDestroyedMVar <- Conc.newEmptyMVar :: IO (Conc.MVar ())
+ 
   -- events
   (selectGoal, _) <- bindSimple lb (ButtonPress (Just 1))
   doProve <- clicked proveButton
@@ -640,7 +630,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
   spawnEvent
     (forever
       ((selectGoal >>> do
-          s <- readIORef stateRef
+          s <- Conc.takeMVar stateMVar
           let oldGoal = currentGoal s
           curEntTL <- (getValueSafe guiDefaultTimeLimit timeEntry) :: IO Int
           let s' = maybe s
@@ -655,14 +645,15 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                                               Just $ AS_Anno.senName
                                                (goalsList s' !! head sg)})
                              sel
-          writeIORef stateRef s''
-          when (isJust sel && not (batchModeIsRunning s''))
+          Conc.putMVar stateMVar s''
+          batchModeRunning <- isBatchModeRunning mVar_batchId
+          when (isJust sel && not batchModeRunning)
                (enableWids goalSpecificWids)
           when (isJust sel) $ enableWids [EnW detailsButton,EnW saveProbButton]
           updateDisplay s'' False lb statusLabel timeEntry optionsEntry axiomsLb
           done)
       +> (saveProb >>> do
-            rs <- readIORef stateRef
+            rs <- Conc.readMVar stateMVar
             curEntTL <- (getValueSafe guiDefaultTimeLimit
                                       timeEntry) :: IO Int
             inclProvedThs <- readTkVariable inclProvedThsTK
@@ -693,7 +684,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                   $ currentGoal rs
             done)
       +> (doProve >>> do
-            rs <- readIORef stateRef
+            rs <- Conc.readMVar stateMVar
             if isNothing $ currentGoal rs
               then noGoalSelected
               else (do
@@ -719,11 +710,11 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                     (runProver atpFun) lp'
                           (getConfig prName goal pt $ configsMap s') False
                           thName nGoal
-                -- check if main is still there
-                curSt <- readIORef stateRef
-                if mainDestroyed curSt
-                    then done
-                    else do
+                -- check if window was closed
+                wDestroyed <- windowDestroyed windowDestroyedMVar
+                if wDestroyed
+                 then done
+                 else do
                  enableWids wids
                  case retval of
                    ATPError message -> errorMess message
@@ -737,13 +728,13 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                                       resultOutput = resultOutput cfg,
                                       timeUsed     = timeUsed cfg})
                            prName goal pt (configsMap s')}
-                 writeIORef stateRef s''
+                 Conc.modifyMVar_ stateMVar (return . const s'')
                  updateDisplay s'' True lb statusLabel timeEntry
                               optionsEntry axiomsLb
                  done)
             done)
       +> (showDetails >>> do
-            s <- readIORef stateRef
+            s <- Conc.readMVar stateMVar
             if isNothing $ currentGoal s
               then noGoalSelected
               else (do
@@ -760,38 +751,36 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                 done)
             done)
       +> (runBatch >>> do
-            cleanupThread threadStateRef
-            s <- readIORef stateRef
+            s <- Conc.readMVar stateMVar
             -- get options for this batch run
             curEntTL <- (getValueSafe batchTLimit batchTimeEntry) :: IO Int
             let tLimit = if curEntTL > 0 then curEntTL else batchTLimit
             batchTimeEntry # HTk.value tLimit
             extOpts <- (getValue batchOptionsEntry) :: IO String
             let extOpts' = words extOpts
-            writeIORef stateRef (s {batchModeIsRunning = True})
             let numGoals = Map.size $ filterOpenGoals $ configsMap s
             if numGoals > 0
              then do
-              batchStatusLabel # text (batchInfoText tLimit numGoals 0)
-              batchCurrentGoalLabel # text (
-                              if (null $ goalsList s) then "-"
-                              else AS_Anno.senName $ head $ goalsList s)
-              disableWids wids
-              enable stopBatchButton
-              enableWidsUponSelection lb [EnW detailsButton,EnW saveProbButton]
-              enable lb
-              inclProvedThs <- readTkVariable inclProvedThsTK
-              saveProblem_F <- readTkVariable saveProblem_batch
-              batchProverId <- Concurrent.forkIO
-                   (do genericProveBatch False tLimit extOpts' inclProvedThs
-                                      saveProblem_F
-                          (\ gPSF nSen nextSen cfg@(retval,_) -> do
-                              cont <- goalProcessed stateRef tLimit extOpts'
-                                                 numGoals prName gPSF nSen cfg
-                              st <- readIORef stateRef
-                              if (mainDestroyed st)
-                                 then return False
-                                 else do
+              let afterEachProofAttempt =
+                -- this function is called after the prover returns from a 
+                -- proof attempt (... -> IO Bool)
+                   (\ gPSF nSen nextSen cfg@(retval,_) -> do
+                     cont <- goalProcessed stateMVar tLimit extOpts'
+                                           numGoals prName gPSF nSen cfg
+                     mTId <- Conc.tryTakeMVar mVar_batchId
+                     (flip (maybe (return False))) mTId
+                        (\ tId -> do 
+                           stored <- Conc.tryPutMVar 
+                                                 mVar_batchId
+                                                 tId
+                           if not stored
+                              then fail $ "GenericATP: Thread "++
+                                          "run check failed"
+                              else do
+                            wDestroyed <- windowDestroyed windowDestroyedMVar
+                            if wDestroyed
+                              then return False
+                              else do
                                batchStatusLabel #
                                   text (if cont
                                         then (batchInfoText tLimit
@@ -799,48 +788,61 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                                         else "Batch mode finished\n\n")
                                batchCurrentGoalLabel #
                                   text (if cont
-                                        then maybe "-" AS_Anno.senName nextSen
-                                        else goalsDoneText)
+                                        then maybe "--" AS_Anno.senName nextSen
+                                        else "--")
+                               st <- Conc.readMVar stateMVar
                                updateDisplay st True lb statusLabel timeEntry
                                             optionsEntry axiomsLb
                                case retval of
                                 ATPError message -> errorMess message
                                 _ -> return ()
-                               let cont' = cont && batchModeIsRunning st
+                               batchModeRunning <- 
+                                   isBatchModeRunning mVar_batchId
+                               let cont' = cont && batchModeRunning 
                                when (not cont)
                                    (do
-                                    -- putStrLn "Batch ended"
                                     disable stopBatchButton
                                     enableWids wids
                                     enableWidsUponSelection lb goalSpecificWids
-                                    writeIORef stateRef
-                                            (st {batchModeIsRunning = False})
-                                    cleanupThread threadStateRef)
-                               return cont')
+                                    cleanupThread mVar_batchId)
+                               return cont'))
+                    -- END of afterEachProofAttempt
+              batchStatusLabel # text (batchInfoText tLimit numGoals 0)
+              batchCurrentGoalLabel # text (
+                              if (null $ goalsList s) then "--"
+                              else AS_Anno.senName $ head $ goalsList s)
+              disableWids wids
+              enable stopBatchButton
+              enableWidsUponSelection lb [EnW detailsButton,EnW saveProbButton]
+              enable lb
+              inclProvedThs <- readTkVariable inclProvedThsTK
+              saveProblem_F <- readTkVariable saveProblem_batch
+              batchProverId <- Conc.forkIO
+                   (do genericProveBatch False tLimit extOpts' inclProvedThs
+                                      saveProblem_F
+                          afterEachProofAttempt
                           (atpInsertSentence atpFun) (runProver atpFun)
                           prName thName s Nothing
                        return ())
-              modifyIORef threadStateRef
-                        (\ ts -> ts{batchId = Just batchProverId})
-              done
+              stored <- Conc.tryPutMVar mVar_batchId batchProverId
+              if stored 
+                 then done
+                 else fail "GenericATP: MVar for batchProverId already taken!!"
              else do
               batchStatusLabel # text ("No further open goals\n\n")
-              batchCurrentGoalLabel # text goalsDoneText
+              batchCurrentGoalLabel # text "--"
               done)
       +> (stopBatch >>> do
-            modifyIORef stateRef
-                           (\s -> s {batchModeIsRunning = False})
-            cleanupThread threadStateRef
-            modifyIORef threadStateRef (\ s -> s {batchStopped = True})
-            -- putStrLn "Batch stopped"
-            st <- readIORef stateRef
-            if mainDestroyed st
-               then return ()
+            cleanupThread mVar_batchId
+            wDestroyed <- windowDestroyed windowDestroyedMVar
+            if wDestroyed
+               then done
                else do
                   disable stopBatchButton
                   enableWids wids
                   enableWidsUponSelection lb goalSpecificWids
                   batchStatusLabel # text "Batch mode stopped\n\n"
+                  st <- Conc.readMVar stateMVar
                   updateDisplay st True lb statusLabel timeEntry
                                 optionsEntry axiomsLb
                   done)
@@ -850,7 +852,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                               [size (80, 30)]
             done)
       +> (saveConfiguration >>> do
-            s <- readIORef stateRef
+            s <- Conc.readMVar stateMVar
             let cfgText = show $ printCfgText $ configsMap s
             createTextSaveDisplay
                 (prName ++ " Configuration for Theory " ++ thName)
@@ -859,12 +861,12 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
             done)
       ))
   sync ( (exit >>> destroy main)
-      +> (closeWindow >>> do cleanupThread threadStateRef
-                             modifyIORef stateRef
-                                         (\ s -> s{mainDestroyed = True})
-                             destroy main)
+      +> (closeWindow >>> do 
+                 Conc.putMVar windowDestroyedMVar ()
+                 cleanupThread mVar_batchId
+                 destroy main)
        )
-  s <- readIORef stateRef
+  s <- Conc.takeMVar stateMVar
   let proof_stats = map (\g -> let res = Map.lookup g (configsMap s)
                                    g' = Map.findWithDefault
                                         (error ("Lookup of name failed: (1) "
@@ -880,17 +882,19 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
   return proof_stats
 
   where
-    cleanupThread tRef = do
-         st <- readIORef tRef
-         -- cleaning up
-         maybe (return ())
-               (\ tId -> do
-                   Concurrent.killThread tId
-                   writeIORef tRef initialThreadState)
-               (batchId st)
+    cleanupThread mVar_TId = 
+         Conc.tryTakeMVar mVar_TId >>= maybe (return ()) Conc.killThread 
+
+    windowDestroyed sMVar = 
+       Conc.yield >>
+       Conc.tryTakeMVar sMVar >>= 
+         maybe (return False)  (\ un -> Conc.putMVar sMVar un >> return True)
+
+    isBatchModeRunning tIdMVar =
+       Conc.tryTakeMVar tIdMVar >>=
+        maybe (return False) (\ tId -> Conc.putMVar tIdMVar tId >> return True)
 
     noGoalSelected = errorMess "Please select a goal first."
-    goalsDoneText = "all goals done"
     prepareLP prS s goal inclProvedThs =
        let (beforeThis, afterThis) =
                splitAt (fromJust $

@@ -108,9 +108,7 @@ data GenericState sign sentence proof_tree pst = GenericState {
     -- | list of all goals
     goalsList :: [AS_Anno.Named sentence],
     -- | logical part without theorems
-    proverState :: pst,
-    batchModeIsRunning :: Bool,
-    mainDestroyed :: Bool
+    proverState :: pst
   }
 
 {- |
@@ -142,9 +140,7 @@ initialGenericState prName ips trSenName th pt =
                                    goals,
                   namesMap = collectNameMapping nSens oSens',
                   goalsList = goals,
-                  proverState = ips sign oSens',
-                  batchModeIsRunning = False,
-                  mainDestroyed = False
+                  proverState = ips sign oSens'
                  }
     where Theory sign oSens = th
           -- Search in list of Proof_status for first occurence of an Open goal

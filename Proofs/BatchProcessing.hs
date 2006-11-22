@@ -24,7 +24,7 @@ import Data.List
 import Data.Maybe
 import Data.IORef
 import qualified Control.Exception as Exception
-import qualified Control.Concurrent as Concurrent
+import qualified Control.Concurrent as Conc
 
 import GUI.GenericATPState
 
@@ -91,7 +91,7 @@ checkGoal cfgMap goal =
   Called every time a goal has been processed in the batch mode gui.
 -}
 goalProcessed :: (Ord proof_tree, Show proof_tree) =>
-                 IORef (GenericState sign sentence proof_tree pst)
+                 Conc.MVar (GenericState sign sentence proof_tree pst)
                -- ^ IORef pointing to the backing State data structure
               -> Int -- ^ batch time limit
               -> [String] -- ^ extra options
@@ -101,10 +101,9 @@ goalProcessed :: (Ord proof_tree, Show proof_tree) =>
               -> AS_Anno.Named sentence -- ^ goal that has just been processed
               -> (ATPRetval, GenericConfig proof_tree)
               -> IO Bool
-goalProcessed stateRef tLimit extOpts numGoals prName processedGoalsSoFar
+goalProcessed stateMVar tLimit extOpts numGoals prName processedGoalsSoFar
               nGoal (retval, res_cfg) = do
-  s <- readIORef stateRef
-  let s' = s{
+  Conc.modifyMVar_ stateMVar (\s -> return (s{
       configsMap = adjustOrSetConfig
                       (\ c -> c{timeLimitExceeded =
                                 isTimeLimitExceeded retval,
@@ -115,16 +114,12 @@ goalProcessed stateRef tLimit extOpts numGoals prName processedGoalsSoFar
                                 timeUsed     = timeUsed res_cfg})
                       prName (AS_Anno.senName nGoal)
                       (proof_tree s)
-                      (configsMap s)}
-  writeIORef stateRef s'
+                      (configsMap s)}))
 
-  let notReady = case retval of
+  return (case retval of
                  ATPError _ -> False
                  ATPBatchStopped -> False
-                 _ -> numGoals - processedGoalsSoFar > 0
-  if mainDestroyed s
-     then return False
-     else return notReady
+                 _ -> numGoals - processedGoalsSoFar > 0)
 
 -- ** Implementation
 
@@ -293,7 +288,7 @@ genericCMDLautomaticBatch ::
         -> Theory sign sentence proof_tree
            -- ^ theory consisting of a signature and a list of Named sentence
         -> proof_tree -- ^ initial empty proof_tree
-        -> IO (Concurrent.ThreadId,Concurrent.MVar ())
+        -> IO (Conc.ThreadId,Conc.MVar ())
            -- ^ fst: identifier of the batch thread for killing it
            --   snd: MVar to wait for the end of the thread
 genericCMDLautomaticBatch atpFun inclProvedThs saveProblem_batch resultRef
@@ -301,19 +296,19 @@ genericCMDLautomaticBatch atpFun inclProvedThs saveProblem_batch resultRef
     let iGS = initialGenericState prName
                                   (initialProverState atpFun)
                                   (atpTransSenName atpFun) th pt
-    stateRef <- newIORef iGS
+    stateMVar <- Conc.newMVar iGS
     let tLimit  = ts_timeLimit defaultTactic_script
         extOpts = ts_extraOpts defaultTactic_script
         numGoals = Map.size $ filterOpenGoals $ configsMap iGS
-    mvar <- Concurrent.newEmptyMVar
-    threadID <- Concurrent.forkIO
+    mvar <- Conc.newEmptyMVar
+    threadID <- Conc.forkIO
                   (do genericProveBatch True tLimit extOpts inclProvedThs
                                       saveProblem_batch
                         (\ gPSF nSen _ conf ->
-                             goalProcessed stateRef tLimit extOpts numGoals
+                             goalProcessed stateMVar tLimit extOpts numGoals
                                            prName gPSF nSen conf)
                         (atpInsertSentence atpFun) (runProver atpFun)
                         prName thName iGS (Just resultRef)
                       return ()
-                   `Exception.finally` Concurrent.putMVar mvar ())
+                   `Exception.finally` Conc.putMVar mvar ())
     return (threadID, mvar)
