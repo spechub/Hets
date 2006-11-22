@@ -38,6 +38,9 @@ import Logic.Prover (prover_name,hasProverKind,ProverKind(..))
 import CASL.Logic_CASL
 import CASL.Sublogic
 
+import SPASS.Logic_SPASS (SoftFOL(..))
+import Isabelle.Logic_Isabelle (Isabelle(..))
+
 import Comorphisms.CASL2SubCFOL
 import Comorphisms.CASL2PCFOL
 import Comorphisms.CASL2HasCASL
@@ -105,7 +108,8 @@ isaComorphisms = do
        -- ModalCASL
        mod2IHOL <- compComorphism (Comorphism Modal2CASL) subpc2IHOL
 #endif
-       return [Comorphism CFOL2IsabelleHOL, subpc2IHOLviaHasCASL, subpc2IHOL,
+       return [Comorphism (IdComorphism Isabelle ()),
+               Comorphism CFOL2IsabelleHOL, subpc2IHOLviaHasCASL, subpc2IHOL,
 #ifdef CASLEXTENSIONS
                co2IHOL, mod2IHOL,
 #endif
@@ -132,7 +136,8 @@ spassComorphisms =
                       >>= (compComorphism idCASL_nosub)
                       >>= compSPASS)
        -- mod2SPASS <- compComorphism (Comorphism Modal2CASL) partOut
-       return [Comorphism SuleCFOL2SoftFOL,partOut,partSubOut]
+       return [Comorphism (IdComorphism SoftFOL ()),
+               Comorphism SuleCFOL2SoftFOL,partOut,partSubOut]
 
 showAllKnownProvers :: IO ()
 showAllKnownProvers =
