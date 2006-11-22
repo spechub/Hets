@@ -60,6 +60,9 @@ isXTextNode _			= False
 
 -- -----------------------------------------------------------------------------
 
+isRootNode			:: XNode -> Bool
+isRootNode			= isTagNode t_root
+
 isTagNode			:: String -> XNode -> Bool
 isTagNode n			= isOfTagNode ((== n) . tName)
 
@@ -112,8 +115,6 @@ isErrorNode _ _  = False
 --    - 3.parameter cs :  the list of children
 --
 --    - returns : the new tree
---
---  see also: 'mkXTag', 'mkXnsTagTree'
 
 mkXTagTree		:: String -> XmlTrees -> XmlTrees -> XmlTree
 mkXTagTree n al cs	= mkNode (XTag (mkName n) al) cs
@@ -186,8 +187,6 @@ newDocument' al
 --    - 2.parameter cs :  the list for the document content
 --
 --    - returns : the document root
---
--- see also : 'mkEmptyRootTree'
 
 mkRootTree		:: XmlTrees -> XmlTrees -> XmlTree
 mkRootTree al cs	= mkXTagTree t_root al cs
@@ -272,7 +271,7 @@ mkQAttrTree aq av	= mkNode (XAttr aq) av
 --
 --    - 3.parameter av : the attribute value as tree list, usually containing a single text node
 --
--- see also: 'mkXAttrTree', 'mkXNsTagTree', 'mkXNsAttr'
+-- see also: 'mkXAttrTree', 'mkXNsTagTree'
 
 mkXNsAttrTree		:: String -> String -> XmlTrees -> XmlTree
 mkXNsAttrTree an ns av	= mkNode (XAttr (mkNsName an ns)) av
@@ -377,7 +376,7 @@ showXErrors
 -- |
 -- convert the result of a filter into a string
 --
--- see also : 'xmlTreesToText' for filter version, 'xread' for the inverse operation 
+-- see also : 'xmlTreesToText' for filter version, 'Text.XML.HXT.Parser.XmlParsec.xread' for the inverse operation 
 
 xshow	:: XmlTrees -> String
 xshow [(NTree (XText s) _)]	= s			-- special case optimisation

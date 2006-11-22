@@ -28,6 +28,9 @@ where
 import Control.Arrow
 import Control.Arrow.ArrowList
 
+import Data.List
+    ( partition )
+
 -- ------------------------------------------------------------
 
 -- | The interface for arrows as conditionals.
@@ -109,9 +112,37 @@ class ArrowList a => ArrowIf a where
 			  where
 			  ifA' (g :-> f) = ifA g f
 
+
     -- | tag a value with Left or Right, if arrow has success, input is tagged with Left, else with Right
     tagA		:: a b c -> a b (Either b b)
     tagA p		= ifA p (arr Left) (arr Right)
+
+
+    -- | split a list value with an arrow and returns a pair of lists.
+    -- This is the arrow version of 'span'. The arrow is deterministic.
+    --
+    -- example: @ runLA (spanA (isA (\/= \'-\'))) \"abc-def\" @ gives @ [(\"abc\",\"-def\")] @ as result
+
+    spanA		:: a b b -> a [b] ([b],[b])
+    spanA p		= ifA ( arrL (take 1) >>> p )
+			  ( arr head &&& (arr tail >>> spanA p)
+			    >>>
+			    arr (\ ~(x, ~(xs,ys)) -> (x : xs, ys))
+			  )
+                          ( arr (\ l -> ([],l)) )
+
+    -- | partition a list of values into a pair of lists
+    --
+    -- This is the arrow Version of 'Data.List.partition'
+
+    partitionA		:: a b b -> a [b] ([b],[b])
+    partitionA	p	= listA ( arrL id >>> tagA p )
+			  >>^
+			  ( (\ ~(l1, l2) -> (unTag l1, unTag l2) ) . partition (isLeft) )
+	                  where
+			  isLeft (Left _) = True
+			  isLeft _        = False
+			  unTag	= map (either id id)
 
 -- ------------------------------------------------------------
 

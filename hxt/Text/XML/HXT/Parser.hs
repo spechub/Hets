@@ -18,7 +18,6 @@ module Text.XML.HXT.Parser
     , module Text.XML.HXT.Parser.XmlOutput
     , module Text.XML.HXT.Parser.DTDProcessing
     , module Text.XML.HXT.Parser.MainFunctions
-    , module Text.XML.HXT.Parser.XmlOptions
 
     , module Text.XML.HXT.Validator.Validation
     )
@@ -32,7 +31,6 @@ import Text.XML.HXT.Parser.XmlInput
 import Text.XML.HXT.Parser.XmlOutput
 import Text.XML.HXT.Parser.DTDProcessing
 import Text.XML.HXT.Parser.MainFunctions
-import Text.XML.HXT.Parser.XmlOptions
 
 import Text.XML.HXT.Validator.Validation
 

@@ -5,11 +5,14 @@ module Text.XML.HXT.RelaxNG.DataTypeLibUtils
   ( checkString
   , checkNumeric
   , errorMsgEqual
+  , module Text.XML.HXT.DOM.Util
   , module Text.XML.HXT.RelaxNG.Utils
   , module Text.XML.HXT.RelaxNG.DataTypes  
   )
 
 where
+
+import Text.XML.HXT.DOM.Util
 
 import Text.XML.HXT.RelaxNG.DataTypes
 import Text.XML.HXT.RelaxNG.Utils

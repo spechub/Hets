@@ -21,7 +21,7 @@ formatXmlContents t
 
 formatXmlTree		:: XmlTree  -> String
 formatXmlTree
-    = formatNTree xnode2String
+    = formatTree xnode2String
 
 xnode2String	:: XNode -> String
 xnode2String (XTag n al)

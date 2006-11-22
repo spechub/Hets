@@ -21,6 +21,7 @@ with these arrows.
 
 module Control.Arrow.ArrowTree
     ( ArrowTree(..)
+    , Tree
     )
 where
 
@@ -30,6 +31,8 @@ import qualified Data.Tree.Class as T hiding (Tree)
 import Control.Arrow
 import Control.Arrow.ArrowList
 import Control.Arrow.ArrowIf
+
+infixl 5 />, </
 
 -- ------------------------------------------------------------
 
@@ -71,7 +74,7 @@ class (ArrowPlus a, ArrowIf a) => ArrowTree a where
 
 								-- compound arrows
 
-    -- | apply an arrow elementwise to all children of the root of a tree
+    -- | apply an arrow element wise to all children of the root of a tree
     -- collect these results and substitute the children with this result
     --
     -- example: @ processChildren isText @ deletes all subtrees, for which isText does not hold
@@ -98,52 +101,24 @@ class (ArrowPlus a, ArrowIf a) => ArrowTree a where
 			  >>>
 			  arr2 T.setChildren
 
-    -- | computes a list of trees by applying an arrow to the input
-    -- and inserts this list in front of index i in the list of children
+    -- |
+    -- pronounced \"slash\", meaning g inside f
     --
-    -- example: @ insertChildrenAt 0 (deep isCmt) @ selects all subtrees for which isCmt holds
-    -- and copies theses in front of the existing children
+    -- defined as @ f \/> g = f >>> getChildren >>> g @
 
-    insertChildrenAt	:: Tree t =>           Int -> a (t b) (t b) -> a (t b) (t b)
-    insertChildrenAt i f
-			= listA f &&& this >>> arr2 insertAt
-			  where
-			  insertAt newcs
-			      = T.changeChildren (\ cs -> let
-						          (cs1, cs2) = splitAt i cs
-						          in
-						          cs1 ++ newcs ++ cs2
-						 )
+    (/>)		:: Tree t => a (t b) (t b) -> a (t b) (t b) -> a (t b) (t b)
+    f /> g		= f >>> getChildren >>> g
 
-    -- | similar to 'insertChildrenAt', but the insertion position is searched with a predicate
 
-    insertChildrenAfter	:: Tree t => a (t b) (t c) -> a (t b) (t b) -> a (t b) (t b)
-    insertChildrenAfter p f
-			= replaceChildren
-			  ( ( listA (getChildren >>> tagA p)
-			      &&&
-			      listA f
-			    )
-			    >>> arr2L insert
-			  )
-	                where
-			insert taggedChildren newChildren
-			    = let
-			      (cs1, cs2) = span (either (const True) (const False)) taggedChildren
-			      in
-			      map (either id id) cs1 ++ newChildren ++ map (either id id) cs2
-{-
-    insertChildrenAfter	:: Tree t => (t b -> Bool) -> a (t b) (t b) -> a (t b) (t b)
-    insertChildrenAfter p f
-			= listA f &&& this >>> arr2 insertAfter
-			  where
-			  insertAfter newcs
-			      = T.changeChildren (\ cs -> let
-						          (cs1, cs2) = span p cs
-						          in
-						          cs1 ++ newcs ++ cs2
-						 )
--}
+    -- |
+    -- pronounced \"outside\" meaning f containing g
+    --
+    -- defined as @ f <\/ g = f \`containing\` (getChildren >>> g) @
+
+    (</)		:: Tree t => a (t b) (t b) -> a (t b) (t b) -> a (t b) (t b)
+    f </ g		= f `containing` (getChildren >>> g)
+
+
     -- | recursively searches a whole tree for subtrees, for which a predicate holds.
     -- The search is performed top down and stops when a tree is found.
     --
@@ -172,7 +147,7 @@ class (ArrowPlus a, ArrowIf a) => ArrowTree a where
     --
     -- example: @ multy isHtmlTable @ selects all table elements, even nested ones.
 
-    multi		:: Tree t => a (t b) (t b) -> a (t b) (t b)
+    multi		:: Tree t => a (t b) c -> a (t b) c
     multi f		= f					-- combine result for root
 			  <+>
 			  (getChildren >>> multi f)		-- with result for all descendants
@@ -223,3 +198,84 @@ class (ArrowPlus a, ArrowIf a) => ArrowTree a where
 			  `orElse`
 			  processChildren (processTopDownUntil f)
 
+    -- | computes a list of trees by applying an arrow to the input
+    -- and inserts this list in front of index i in the list of children
+    --
+    -- example: @ insertChildrenAt 0 (deep isCmt) @ selects all subtrees for which isCmt holds
+    -- and copies theses in front of the existing children
+
+    insertChildrenAt	:: Tree t =>           Int -> a (t b) (t b) -> a (t b) (t b)
+    insertChildrenAt i f
+			= listA f &&& this >>> arr2 insertAt
+			  where
+			  insertAt newcs
+			      = T.changeChildren (\ cs -> let
+						          (cs1, cs2) = splitAt i cs
+						          in
+						          cs1 ++ newcs ++ cs2
+						 )
+
+    -- | similar to 'insertChildrenAt', but the insertion position is searched with a predicate
+
+    insertChildrenAfter	:: Tree t => a (t b) (t b) -> a (t b) (t b) -> a (t b) (t b)
+    insertChildrenAfter p f
+			= replaceChildren
+			  ( ( ( listA getChildren
+				>>>
+				spanA p
+			      )
+			      &&&
+			      listA f
+			    )
+			    >>> arr2L (\ (xs1, xs2) xs -> xs1 ++ xs ++ xs2)
+			  )
+			  
+    -- | an arrow for inserting a whole subtree with some holes in it (a template)
+    -- into a document. The holes can be filled with contents from the input.
+    --
+    -- Example
+    --
+    -- > insertTreeTemplateTest	:: ArrowXml a => a b XmlTree
+    -- > insertTreeTemplateTest
+    -- >     = doc
+    -- >       >>>
+    -- >       insertTemplate template pattern
+    -- >     where
+    -- >     doc								-- the input data
+    -- > 	= constA "<x><y>The Title</y><z>The content</z></x>"
+    -- > 	  >>> xread
+    -- >     template								-- the output template with 2 holes: xxx and yyy
+    -- > 	= constA "<html><head><title>xxx</title></head><body><h1>yyy</h1></body></html>"
+    -- > 	  >>> xread
+    -- >     pattern
+    -- > 	= [ hasText (== "xxx")						-- fill the xxx hole with the input contents from element "x/y"
+    -- > 	    :-> ( getChildren >>> hasName "y" >>> deep isText )
+    -- > 
+    -- > 	  , hasText (== "yyy")						-- fill the yyy hole with the input contents from element "x/z"
+    -- > 	    :-> ( getChildren >>> hasName "z" >>> getChildren )
+    -- > 	  ]
+    --
+    -- computes the XML tree for the following document
+    --
+    -- > "<html><head><title>The Title</title></head><body><h1>The content</h1></body></html>"
+
+    insertTreeTemplate	:: (ArrowTree a, Tree t) =>
+			   a (t b) (t b) ->					-- the the template
+			   [IfThen (a (t b) c) (a (t b) (t b))] ->		-- the list of nodes in the template to be substituted
+			   a (t b) (t b)
+    insertTreeTemplate template choices
+	= insertTree $< this
+	  where
+	  insertTree t
+	      = template					-- swap input and template
+		>>>
+		processTemplate
+	      where
+	      processTemplate
+		  = choiceA choices'				-- check whether node is a "hole" within the template
+		    `orElse`
+		    processChildren processTemplate		-- else descent into template tree
+	      choices'
+		  = map feedTree choices			-- modify choices, such that the input is feed into the action arrows
+	      feedTree (cond :-> action)
+		  = cond :-> (constA t >>> action)		-- the real input becomes the input at the holes

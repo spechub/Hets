@@ -831,7 +831,7 @@ f `whenNotM` g	= ifM g thisM f
 --
 --    - returns : the conditional filter
 --
--- see also : 'iffM', 'guards', 'whenM'
+-- see also : 'ifM', 'guards', 'whenM'
 
 guardsM		:: Monad m => (a -> [b]) -> (a -> m [c]) -> (a -> m [c])
 g `guardsM` f	= ifM g f noneM

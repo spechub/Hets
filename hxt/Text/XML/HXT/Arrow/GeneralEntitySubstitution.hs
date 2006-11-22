@@ -23,31 +23,24 @@ where
 import Control.Arrow				-- arrow classes
 import Control.Arrow.ArrowList
 import Control.Arrow.ArrowIf
-import Control.Arrow.ArrowState
 import Control.Arrow.ArrowTree
 
-import Control.Arrow.IOStateListArrow
-
-import Text.XML.HXT.DOM.XmlKeywords
-    ( a_default
-    , a_name
-    , a_source
-    , a_url
-    , k_ndata
-    , k_system
-    )
-
-import Text.XML.HXT.DOM.TypeDefs
-
+import Text.XML.HXT.Arrow.DOMInterface
 import Text.XML.HXT.Arrow.XmlArrow
-import Text.XML.HXT.Arrow.XmlFilterInterface
+import Text.XML.HXT.Arrow.XmlIOStateArrow
+
+import Text.XML.HXT.Arrow.ParserInterface
     ( parseXmlAttrValue
     , parseXmlGeneralEntityValue
-    , transfCharRef
     )
-import Text.XML.HXT.Arrow.XmlIOStateArrow
+
+import Text.XML.HXT.Arrow.Edit
+    ( transfCharRef
+    )
+
 import Text.XML.HXT.Arrow.DocumentInput
-    ( getXmlEntityContents )
+    ( getXmlEntityContents
+    )
 
 import Data.Maybe
 
@@ -68,7 +61,7 @@ data GEContext
 
 type GESubstArrow	= GEContext -> RecList -> GEArrow XmlTree XmlTree
 
-type GEArrow b c	= IOSLA (XIOS, GEEnv) b c
+type GEArrow b c	= IOStateArrow GEEnv b c
 
 type RecList		= [String]
 
@@ -94,11 +87,11 @@ addGeEntry k a (GEEnv env)
 --
 -- input: a complete document tree including root node
 
-processGeneralEntities	:: IOSArrow XmlTree XmlTree
+processGeneralEntities	:: IOStateArrow s XmlTree XmlTree
 processGeneralEntities
     = ( traceMsg 1 "processGeneralEntities: collect and substitute general enities"
 	>>>
-	runSt emptyGeEnv (processChildren (processGeneralEntity ReferenceInContent []))
+	withOtherUserState emptyGeEnv (processChildren (processGeneralEntity ReferenceInContent []))
 	>>>
 	setDocumentStatusFromSystemState "in general entity processing"
 	>>>
@@ -139,21 +132,21 @@ processGeneralEntity context recl
     addInternalEntity
 	= ( ( getDTDAttrValue a_name
 	      >>>
-	      liftSt (traceString 2 (("processGeneralEntity: general entity definition for " ++) . show))
+	      traceString 2 (("processGeneralEntity: general entity definition for " ++) . show)
 	    )
 	    &&&
-	    xshow getChildren
+	    xshow (getChildren >>> isText)
 	  )
           >>>
 	  applyA ( arr2 $ \ entity str ->
-		   listA ( liftSt ( ( txt str
-				      >>>
-				      parseXmlGeneralEntityValue ("general internal entity" ++ show entity)
-				      >>>
-				      filterErrorMsg
-				    )
-				    `orElse` txt ""
-				  )
+		   listA ( ( ( txt str
+			       >>>
+			       parseXmlGeneralEntityValue ("general internal entity" ++ show entity)
+			       >>>
+			       filterErrorMsg
+			     )
+			     `orElse` txt ""
+			   )
 			   >>>
 			   processGeneralEntity ReferenceInEntityValue (entity : recl)
 			 )
@@ -167,7 +160,7 @@ processGeneralEntity context recl
     addExternalEntity
 	= ( ( getDTDAttrValue a_name
 	      >>>
-	      liftSt (traceString 2 (("processGeneralEntity: external entity definition for " ++) . show))
+	      traceString 2 (("processGeneralEntity: external entity definition for " ++) . show)
             )
 	    &&&
 	    getDTDAttrValue a_url 			-- the absolute URL, not the relative in attr: k_system
@@ -181,7 +174,7 @@ processGeneralEntity context recl
     addUnparsedEntity
 	= getDTDAttrValue a_name
 	  >>>
-	  liftSt (traceString 2 (("processGeneralEntity: unparsed entity definition for " ++) . show))
+	  traceString 2 (("processGeneralEntity: unparsed entity definition for " ++) . show)
           >>>
 	  applyA (arr (insertEntity substUnparsed))
 	  >>>
@@ -189,9 +182,9 @@ processGeneralEntity context recl
 
     insertEntity	:: (String -> GESubstArrow) -> String -> GEArrow b b
     insertEntity fct entity
-	= ( getState
+	= ( getUserState
 	    >>>
-	    applyA (arr $ checkDefined . snd)
+	    applyA (arr checkDefined)
 	  )
 	  `guards`
 	  addEntity fct entity
@@ -201,25 +194,23 @@ processGeneralEntity context recl
 	    where
 	    ok	= this
 	    alreadyDefined _
-		= liftSt $
-		  issueWarn ("entity " ++ show entity ++ " already defined, repeated definition ignored")
+		= issueWarn ("entity " ++ show entity ++ " already defined, repeated definition ignored")
 
     addEntity	:: (String -> GESubstArrow) -> String -> GEArrow b b
     addEntity fct entity
-	= changeState ins
+	= changeUserState ins
 	where
-	ins (s1, geEnv) _x = (s1, addGeEntry entity (fct entity) geEnv)
+	ins _ geEnv = addGeEntry entity (fct entity) geEnv
 
     substEntitiesInAttrDefaultValue	:: GEArrow XmlTree XmlTree
     substEntitiesInAttrDefaultValue
-	= applyA ( xshow ( liftSt ( getDTDAttrValue a_default			-- parse the default value
-				    >>>						-- substitute enities
-				    mkText					-- and convert value into a string
-				    >>>
-				    parseXmlAttrValue "default value of attribute"
-				    >>>
-				    filterErrorMsg
-				  )
+	= applyA ( xshow ( getDTDAttrValue a_default			-- parse the default value
+			   >>>						-- substitute enities
+			   mkText					-- and convert value into a string
+			   >>>
+			   parseXmlAttrValue "default value of attribute"
+			   >>>
+			   filterErrorMsg
 			   >>>
 			   substEntitiesInAttrValue
 			 )
@@ -245,13 +236,12 @@ processGeneralEntity context recl
     substEntityRef
 	= applyA ( ( ( getEntityRef				-- get the entity name and the env
 		       >>>					-- and compute the arrow to be applied
-		       liftSt ( traceString 2 (("processGeneralEntity: entity reference for entity " ++) . show)
-				>>>
-				traceMsg 3 ("recursion list = " ++ show recl)
-			      )
+		       traceString 2 (("processGeneralEntity: entity reference for entity " ++) . show)
+		       >>>
+		       traceMsg 3 ("recursion list = " ++ show recl)
 		     )
 		     &&&
-		     (getState >>> arr snd)
+		     getUserState
 		   ) >>>
 		   arr2 substA
 		 )
@@ -262,7 +252,7 @@ processGeneralEntity context recl
 	      = maybe entityNotFound entityFound . lookupGeEnv entity $ geEnv
 	      where
 	      errMsg msg
-		  = liftSt (issueErr msg)
+		  = issueErr msg
 
 	      entityNotFound
 		  = errMsg ("general entity reference \"&" ++ entity ++ ";\" not processed, no definition found, (forward reference?)")
@@ -275,23 +265,22 @@ processGeneralEntity context recl
 
     substExternalParsed1Time				:: String -> String -> GESubstArrow
     substExternalParsed1Time uri entity cx rl
- 	= perform ( liftSt ( traceMsg 2 ("substExternalParsed1Time: read and parse external parsed entity " ++ show entity)
-			     >>>
-			     runInLocalURIContext ( root [sattr a_source uri] []	-- uri must be an absolute uri
-						    >>>					-- abs uri is computed during parameter entity handling
-						    listA ( getXmlEntityContents
-							    >>>
-							    processExternalEntityContents
-							  )
-						  )
-			   )
+ 	= perform ( traceMsg 2 ("substExternalParsed1Time: read and parse external parsed entity " ++ show entity)
+		    >>>
+		    runInLocalURIContext ( root [sattr a_source uri] []		-- uri must be an absolute uri
+					   >>>					-- abs uri is computed during parameter entity handling
+					   listA ( getXmlEntityContents
+						   >>>
+						   processExternalEntityContents
+						 )
+					 )
 		    >>>
 		    applyA ( arr $ \ ts -> addEntity (substExternalParsed ts) entity )
 		  )
 	  >>>
 	  processGeneralEntity cx rl
 	where
-	processExternalEntityContents	:: IOSArrow XmlTree XmlTree
+	processExternalEntityContents	:: IOStateArrow s XmlTree XmlTree
 	processExternalEntityContents
 	    = ( ( documentStatusOk				-- reading entity succeeded
 		  >>>						-- with content stored in a text node
@@ -340,7 +329,7 @@ processGeneralEntity context recl
 									-- XML 1.0 chapter 4.4.4
     forbidden		:: String -> String -> String -> GEArrow XmlTree XmlTree
     forbidden entity msg cx
- 	= liftSt (issueErr ("reference of " ++ msg ++ show entity ++ " forbidden in " ++ cx))
+ 	= issueErr ("reference of " ++ msg ++ show entity ++ " forbidden in " ++ cx)
 
 									-- XML 1.0 chapter 4.4.5
     includedInLiteral		:: XmlTrees -> RecList -> String -> GEArrow XmlTree XmlTree

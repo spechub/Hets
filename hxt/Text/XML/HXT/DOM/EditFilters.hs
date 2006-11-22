@@ -427,13 +427,13 @@ escapeText _ t
 -- see also 'escapeXmlDoc'
  
 escapeXmlText		:: XmlFilter
-escapeXmlText		= escapeText (`elem` "<>\"\'&")
+escapeXmlText		= escapeText (`elem` "<&")	-- no escape for ", ' and > required: XML standard 2.4
 
 -- |
 -- convert the special XML chars in an attribute value into
 -- charachter references. Not only the XML specials but also \\n, \\r and \\t are converted
 --
--- see also: 'excapeXmlDoc', 'escapeXmlText'
+-- see also: 'escapeXmlDoc', 'escapeXmlText'
 
 escapeXmlAttrValue	:: XmlFilter
 escapeXmlAttrValue	= escapeText (`elem` "<>\"\'&\n\r\t")
@@ -451,7 +451,7 @@ escapeXmlDoc
 			    processAttr escVal
 			   )
 	     , isXText :-> escapeXmlText
-	     , isXCmt  :-> escapeXmlText
+	     -- , isXCmt  :-> escapeXmlText -- no escape in comments reqired: XML standard 2.4
 	     , isXDTD  :-> processTopDown escDTD
 	     , this    :-> this
 	     ]

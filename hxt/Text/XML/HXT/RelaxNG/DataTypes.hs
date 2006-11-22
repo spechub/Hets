@@ -27,7 +27,7 @@ defineOrigName               = "RelaxDefineOriginalName"
 type Env = [(String, XmlTree)]
 
 -- | Start of a context attribute value 
--- (see also: 'simplificationStep1' in "Text.XML.HXT.RelaxNG.Simplification")
+-- (see also: 'Text.XML.HXT.RelaxNG.Simplification.simplificationStep1')
 --
 -- The value is always followed by the original attribute name and value
 

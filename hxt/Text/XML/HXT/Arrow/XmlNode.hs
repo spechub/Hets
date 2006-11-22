@@ -23,13 +23,12 @@ module Text.XML.HXT.Arrow.XmlNode
     )
 where
 
+import Control.Monad
+
 import Data.Tree.NTree.TypeDefs
 import Data.Maybe
 
-import Control.Monad
-
-import Text.XML.HXT.DOM.XmlKeywords
-import Text.XML.HXT.DOM.TypeDefs
+import Text.XML.HXT.Arrow.DOMInterface
 
 class XmlNode a where
     -- discriminating predicates
@@ -86,16 +85,20 @@ class XmlNode a where
 
     changeText		:: (String   -> String)   -> a -> a
     changeCmt		:: (String   -> String)   -> a -> a
+    changeName		:: (QName    -> QName)    -> a -> a
     changeElemName	:: (QName    -> QName)    -> a -> a
     changeAttrl		:: (XmlTrees -> XmlTrees) -> a -> a
     changeAttrName	:: (QName    -> QName)    -> a -> a
+    changePiName	:: (QName    -> QName)    -> a -> a
     changeDTDAttrl	:: (Attributes -> Attributes) -> a -> a
 
     setText		:: String   -> a -> a
     setCmt		:: String   -> a -> a
+    setName		:: QName    -> a -> a
     setElemName		:: QName    -> a -> a
-    setElemAttrl		:: XmlTrees -> a -> a
+    setElemAttrl	:: XmlTrees -> a -> a
     setAttrName		:: QName    -> a -> a
+    setPiName		:: QName    -> a -> a
     setDTDAttrl		:: Attributes -> a -> a
 
     -- default implementations
@@ -110,9 +113,11 @@ class XmlNode a where
 
     setText t		= changeText     (const t)
     setCmt c		= changeCmt      (const c)
-    setElemName n	= changeElemName  (const n)
+    setName n		= changeName     (const n)
+    setElemName n	= changeElemName (const n)
     setElemAttrl al	= changeAttrl    (const al)
     setAttrName	n	= changeAttrName (const n)
+    setPiName	n	= changePiName   (const n)
     setDTDAttrl	al	= changeDTDAttrl (const al)
 
 -- XNode and XmlTree are instances of XmlNode
@@ -207,6 +212,11 @@ instance XmlNode XNode where
     changeCmt cf (XCmt c)		= XCmt (cf c)
     changeCmt _ _			= error "changeCmt undefined"
 
+    changeName cf (XTag n al)		= XTag (cf n) al
+    changeName cf (XAttr n)		= XAttr (cf n)
+    changeName cf (XPi n al)		= XPi (cf n) al
+    changeName _ _			= error "changeName undefined"
+
     changeElemName cf (XTag n al)	= XTag (cf n) al
     changeElemName _ _			= error "changeElemName undefined"
 
@@ -216,6 +226,9 @@ instance XmlNode XNode where
 
     changeAttrName cf (XAttr n)		= XAttr (cf n)
     changeAttrName _ _			= error "changeAttrName undefined"
+
+    changePiName cf (XPi n al)		= XPi (cf n) al
+    changePiName _ _			= error "changeAttrName undefined"
 
     changeDTDAttrl cf (XDTD p al)	= XDTD p (cf al)
     changeDTDAttrl _ _			= error "changeDTDAttrl undefined"
@@ -266,9 +279,11 @@ instance XmlNode a => XmlNode (NTree a) where
 
     changeText cf	= changeNode (changeText cf)
     changeCmt cf	= changeNode (changeCmt  cf)
+    changeName cf	= changeNode (changeName cf)
     changeElemName cf	= changeNode (changeElemName cf)
     changeAttrl cf	= changeNode (changeAttrl cf)
     changeAttrName cf	= changeNode (changeAttrName cf)
+    changePiName cf	= changeNode (changePiName cf)
     changeDTDAttrl cf	= changeNode (changeDTDAttrl cf)
 
 mkElement	:: QName -> XmlTrees -> XmlTrees -> XmlTree
@@ -298,3 +313,5 @@ addAttr a al
 
 mergeAttrl	:: XmlTrees -> XmlTrees -> XmlTrees
 mergeAttrl 	= foldr addAttr
+
+-- ------------------------------------------------------------

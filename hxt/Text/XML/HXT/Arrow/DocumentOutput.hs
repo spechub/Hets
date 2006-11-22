@@ -13,15 +13,14 @@ import Control.Arrow.ArrowIf
 import Control.Arrow.ArrowTree
 import Control.Arrow.ArrowIO
 
-import Text.XML.HXT.DOM.XmlKeywords
-import Text.XML.HXT.DOM.TypeDefs
-
 import Text.XML.HXT.DOM.Unicode
     ( getOutputEncodingFct )
 
+import Text.XML.HXT.Arrow.DOMInterface
 import Text.XML.HXT.Arrow.XmlArrow
 import Text.XML.HXT.Arrow.XmlIOStateArrow
-import Text.XML.HXT.Arrow.XmlFilterInterface
+
+import Text.XML.HXT.Arrow.Edit
     ( addHeadlineToXmlDoc
     , addXmlPi
     , addXmlPiEncoding
@@ -48,7 +47,7 @@ import System.IO.Error
 --
 -- output arrows
 
-putXmlDocument	:: String -> IOSArrow XmlTree XmlTree
+putXmlDocument	:: String -> IOStateArrow s XmlTree XmlTree
 putXmlDocument dst
     = perform ( xshow getChildren
 		>>>
@@ -87,7 +86,7 @@ putXmlDocument dst
 -- |
 -- write the tree representation of a document to a file
 
-putXmlTree	:: String -> IOSArrow XmlTree XmlTree
+putXmlTree	:: String -> IOStateArrow s XmlTree XmlTree
 putXmlTree dst
     = perform ( treeRepOfXmlDoc
 		>>>
@@ -99,7 +98,7 @@ putXmlTree dst
 -- |
 -- write a document with indentaion and line numers
 
-putXmlSource	:: String -> IOSArrow XmlTree XmlTree
+putXmlSource	:: String -> IOStateArrow s XmlTree XmlTree
 putXmlSource dst
     = perform ( (this ) `whenNot` isRoot
 		>>>
@@ -114,7 +113,7 @@ putXmlSource dst
 
 -- ------------------------------------------------------------
 
-getOutputEncoding	:: String -> IOSArrow XmlTree String
+getOutputEncoding	:: String -> IOStateArrow s XmlTree String
 getOutputEncoding defaultEnc
     =  catA [ getChildren			-- 1. guess: evaluate <?xml ... encoding="..."?>
 	      >>>
@@ -126,12 +125,12 @@ getOutputEncoding defaultEnc
 	    , getAttrValue a_output_encoding	-- 3. guess: take output encoding parameter in root node
 	    , getParamString a_output_encoding	-- 4. guess: take output encoding parameter in global state
 	    , getParamString a_encoding		-- 5. guess: take encoding parameter in global state
-	    , constA utf8				-- default : utf8
+	    , constA utf8			-- default : utf8
 	    ]
       >. (head . filter (not . null))		-- make the filter deterministic: take 1. entry from list of guesses
 
-encodeDocument	:: String -> IOSArrow XmlTree XmlTree
-encodeDocument defaultEnc
+encodeDocument	:: Bool -> String -> IOStateArrow s XmlTree XmlTree
+encodeDocument supressXmlPi defaultEnc
     = applyA ( getOutputEncoding defaultEnc
 	       >>>
 	       arr encArr
@@ -139,14 +138,18 @@ encodeDocument defaultEnc
       `when`
       isRoot
     where
-    encArr	:: String -> IOSArrow XmlTree XmlTree
+    encArr	:: String -> IOStateArrow s XmlTree XmlTree
     encArr enc	= maybe notFound found . getOutputEncodingFct $ enc
 	where
 	found ef = traceMsg 2 ("encodeDocument: encoding is " ++ show enc)
 		   >>>
-		   addXmlPi
-		   >>>
-		   addXmlPiEncoding enc
+		   ( if supressXmlPi
+		     then processChildren (none `when` isXmlPi)
+		     else ( addXmlPi
+			    >>>
+			    addXmlPiEncoding enc
+			  )
+		   )
 		   >>>
 		   replaceChildren ( xshow getChildren
 				     >>>

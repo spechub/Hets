@@ -23,7 +23,8 @@ import System.Directory
 
 import Network.URI
     ( URI
-    , path
+    , unEscapeString
+    , uriPath
     )
 
 import System.IO
@@ -65,7 +66,14 @@ getFileContents uri n
 		 else readErr ("file " ++ show source ++ " not readable")
          else readErr ("file " ++ show source ++ " not found")
     where
-    source	= path uri
+    source	= fileUriPath . unEscapeString . uriPath $ uri
     readErr msg	= addFatal msg n
+
+    -- remove leading / if file starts with windows drive letter, e.g. /c:/windows -> c:/windows
+    fileUriPath ('/' : file@(d : ':' : _more))
+	| d `elem` ['A'..'Z'] || d `elem` ['a'..'z']
+	    = file
+    fileUriPath file
+	= file
 
 -- ------------------------------------------------------------

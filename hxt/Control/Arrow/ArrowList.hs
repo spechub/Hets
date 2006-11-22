@@ -83,6 +83,11 @@ class (Arrow a, ArrowPlus a, ArrowZero a, ArrowApply a) => ArrowList a where
     constA		:: c -> a b c
     constA		= arr . const
 
+    -- | constructor for a const arrow: @ constL = arrL . const @
+
+    constL		:: [c] -> a b c
+    constL		= arrL . const
+
     -- | builds an arrow from a predicate.
     -- If the predicate holds, the single list containing the input is returned, else the empty list
 

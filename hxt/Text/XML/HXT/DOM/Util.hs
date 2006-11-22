@@ -6,7 +6,11 @@
 module Text.XML.HXT.DOM.Util
     ( stringTrim
     , stringToUpper
+    , normalizeNumber
+    , normalizeWhitespace
 
+    , escapeURI
+    , textEscapeXml
     , stringEscapeXml
     , attrEscapeXml
 
@@ -25,6 +29,7 @@ where
 
 import Data.Char
 
+-- ------------------------------------------------------------
 -- |
 -- remove leading and trailing whitespace with standard Haskell predicate isSpace
 
@@ -38,6 +43,44 @@ stringTrim
 stringToUpper	:: String -> String
 stringToUpper
     = map toUpper
+
+-- | Removes leading \/ trailing whitespaces and leading zeros
+
+normalizeNumber :: String -> String
+normalizeNumber
+    = reverse . dropWhile (== ' ') . reverse . 
+      dropWhile (\x -> x == '0' || x == ' ')
+
+
+-- | Reduce whitespace sequences to a single whitespace
+
+normalizeWhitespace :: String -> String
+normalizeWhitespace
+    = unwords . words
+
+-- ------------------------------------------------------------
+
+-- | Escape all disallowed characters in URI 
+-- references (see <http://www.w3.org/TR/xlink/#link-locators>)
+
+escapeURI :: String -> String
+escapeURI ref
+    = concatMap replace ref
+      where
+      notAllowed	:: Char -> Bool
+      notAllowed c
+	  = c < '\31'
+	    ||
+	    c `elem` ['\DEL', ' ', '<', '>', '\"', '{', '}', '|', '\\', '^', '`' ]
+
+      replace :: Char -> String
+      replace c
+	  | notAllowed c
+	      = '%' : charToHexString c
+	  | otherwise
+	      = [c]
+
+-- ------------------------------------------------------------
 
 escapeXml	:: String -> String -> String
 escapeXml escSet
@@ -58,6 +101,14 @@ stringEscapeXml	:: String -> String
 stringEscapeXml	= escapeXml "<>\"\'&"
 
 -- |
+-- escape XML chars &lt;  and ampercent by transforming them into character references, used for escaping text nodes
+--
+-- see also : 'attrEscapeXml'
+
+textEscapeXml	:: String -> String
+textEscapeXml	= escapeXml "<&"
+
+-- |
 -- escape XML chars in attribute values, same as stringEscapeXml, but none blank whitespace
 -- is also escaped
 --
@@ -76,7 +127,7 @@ stringToInt base digits
       (sign, digits1)      = splitSign digits
       digToInt c
 	  | c >= '0' && c <= '9'
-	    = [ord c - ord '0']
+	      = [ord c - ord '0']
 	  | c >= 'A' && c <= 'Z'
 	      =  [ord c - ord 'A' + 10]
 	  | c >= 'a' && c <= 'z'

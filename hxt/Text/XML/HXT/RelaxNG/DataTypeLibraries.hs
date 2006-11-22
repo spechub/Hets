@@ -9,13 +9,20 @@ module Text.XML.HXT.RelaxNG.DataTypeLibraries
   )
 where
 
-import Text.XML.HXT.DOM.XmlKeywords             ( relaxNamespace )
+import Text.XML.HXT.Arrow.DOMInterface
+    ( relaxNamespace
+    )
+
 import Text.XML.HXT.RelaxNG.DataTypeLibUtils  
-import Text.XML.HXT.RelaxNG.DataTypeLibMysql	( mysqlDatatypeLib )
-import Text.XML.HXT.RelaxNG.DataTypeLibW3C	( w3cDatatypeLib )
+
+import Text.XML.HXT.RelaxNG.DataTypeLibMysql
+    ( mysqlDatatypeLib )
+
+import Text.XML.HXT.RelaxNG.DataTypeLibW3C
+    ( w3cDatatypeLib )
 
 import Maybe
-  ( fromJust )
+    ( fromJust )
 
     
 -- ------------------------------------------------------------

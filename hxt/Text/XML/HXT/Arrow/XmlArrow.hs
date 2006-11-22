@@ -113,6 +113,12 @@ class (Arrow a, ArrowList a, ArrowTree a) => ArrowXml a where
     hasText p		= (isText >>> getText >>> isA p) `guards` this
 
     -- |
+    -- test whether a node (element, attribute, pi) has a name with a special property
+
+    hasNameWith		:: (QName  -> Bool) -> a XmlTree XmlTree
+    hasNameWith p	= (getQName        >>> isA p) `guards` this
+
+    -- |
     -- test whether a node (element, attribute, pi) has a specific qualified name
     -- useful only after namespace propagation
     hasQName		:: QName  -> a XmlTree XmlTree
@@ -383,10 +389,18 @@ class (Arrow a, ArrowList a, ArrowTree a) => ArrowXml a where
     getAttrValue	:: String -> a XmlTree String
     getAttrValue n	= xshow (getAttrl >>> hasName n >>> getChildren)
 
+    -- | like 'getAttrValue', but fails if the attribute does not exist
+    getAttrValue0	:: String -> a XmlTree String
+    getAttrValue0 n	= getAttrl >>> hasName n >>> xshow getChildren
+
     -- | like 'getAttrValue', but select the value of an attribute given by a qualified name,
     -- always succeeds with empty string as default value \"\"
     getQAttrValue	:: QName -> a XmlTree String
     getQAttrValue n	= xshow (getAttrl >>> hasQName n >>> getChildren)
+
+    -- | like 'getQAttrValue', but fails if attribute does not exist
+    getQAttrValue0	:: QName -> a XmlTree String
+    getQAttrValue0 n	= getAttrl >>> hasQName n >>> xshow getChildren
 
     -- edit arrows --------------------------------------------------
 
@@ -398,13 +412,21 @@ class (Arrow a, ArrowList a, ArrowTree a) => ArrowXml a where
     changeCmt		:: (String -> String) -> a XmlTree XmlTree
     changeCmt  cf	= arr (XN.changeCmt      cf) `when` isCmt
 
-    -- | edit a tag name
+    -- | edit an element-, attribute- or pi- name
+    changeQName		:: (QName  -> QName) -> a XmlTree XmlTree
+    changeQName cf	= arr (XN.changeName  cf) `when` getQName
+
+    -- | edit an element name
     changeElemName	:: (QName  -> QName) -> a XmlTree XmlTree
     changeElemName cf	= arr (XN.changeElemName  cf) `when` isElem
 
     -- | edit an attribute name
     changeAttrName	:: (QName  -> QName) -> a XmlTree XmlTree
     changeAttrName cf	= arr (XN.changeAttrName cf) `when` isAttr
+
+    -- | edit a pi name
+    changePiName	:: (QName  -> QName) -> a XmlTree XmlTree
+    changePiName cf	= arr (XN.changePiName  cf) `when` isPi
 
     -- | edit an attribute value
     changeAttrValue	:: (String -> String) -> a XmlTree XmlTree
@@ -426,6 +448,10 @@ class (Arrow a, ArrowList a, ArrowTree a) => ArrowXml a where
 			where
 			changeAL as x = XN.changeAttrl (\ xs -> cf xs as) x
 
+    -- | replace an element, attribute or pi name
+    setQName		:: QName -> a XmlTree XmlTree
+    setQName  n		= changeQName  (const n)
+
     -- | replace an element name
     setElemName		:: QName -> a XmlTree XmlTree
     setElemName  n	= changeElemName  (const n)
@@ -433,6 +459,10 @@ class (Arrow a, ArrowList a, ArrowTree a) => ArrowXml a where
     -- | replace an attribute name
     setAttrName		:: QName -> a XmlTree XmlTree
     setAttrName n	= changeAttrName (const n)
+
+    -- | replace an element name
+    setPiName		:: QName -> a XmlTree XmlTree
+    setPiName  n	= changePiName  (const n)
 
     -- | replace an atribute list of an element node
     setAttrl		:: a XmlTree XmlTree -> a XmlTree XmlTree
@@ -574,6 +604,9 @@ class (ArrowXml a) => ArrowDTD a where
 
     mkDTDEntity		:: Attributes -> a n XmlTree
     mkDTDEntity al	= mkDTDElem ENTITY al none
+
+    mkDTDPEntity	:: Attributes -> a n XmlTree
+    mkDTDPEntity al	= mkDTDElem PENTITY al none
 
 instance ArrowXml LA
 instance ArrowXml (SLA s)

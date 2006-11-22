@@ -24,7 +24,7 @@ import Data.Maybe
 
 import Network.URI
     ( URI
-    , scheme
+    , uriScheme
     )
 
 import Text.XML.HXT.Parser.ProtocolHandlerFile
@@ -71,7 +71,7 @@ getProtocolHandler proto
 getUnsupported	:: URI -> XmlStateFilter a
 getUnsupported uri
     = addFatal ( "unsupported protocol "
-		 ++ show (scheme uri)
+		 ++ show (uriScheme uri)
 		 ++ " in URI: "
 		 ++ show uri
 	       )

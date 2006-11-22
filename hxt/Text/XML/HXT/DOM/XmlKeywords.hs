@@ -54,10 +54,12 @@ a_canonicalize,
  a_module,
  a_modifier,
  a_name,
+ a_no_xml_pi,
  a_options_curl,
  a_output_encoding,
  a_output_file,
  a_output_xml,
+ a_output_html,
  a_parse_html,
  a_parse_xml,
  a_peref,
@@ -153,9 +155,11 @@ a_line				= "line"
 a_module			= "module"
 a_modifier			= "modifier"
 a_name				= "name"
+a_no_xml_pi                     = "no-xml-pi"
 a_options_curl			= "options-curl"
 a_output_file			= "output-file"
 a_output_encoding		= "output-encoding"
+a_output_html			= "output-html"
 a_output_xml			= "output-xml"
 a_parse_html			= "parse-html"
 a_parse_xml			= "parse-xml"
@@ -258,11 +262,14 @@ transferURI		= transferPrefix ++ "URI"
 httpPrefix	:: String
 httpPrefix	= "http-"
 
+stringProtocol	:: String
+stringProtocol	= "string:"
+
 -- ------------------------------------------------------------
 --
 -- encoding names
 
-isoLatin1, usAscii, ucs2, utf8, utf16, utf16be, utf16le	:: String
+isoLatin1, usAscii, ucs2, utf8, utf16, utf16be, utf16le, unicodeString	:: String
 
 isoLatin1	= "ISO-8859-1"
 usAscii		= "US-ASCII"
@@ -271,6 +278,7 @@ utf8		= "UTF-8"
 utf16		= "UTF-16"
 utf16be		= "UTF-16BE"
 utf16le		= "UTF-16LE"
+unicodeString	= "UNICODE"
 
 -- ------------------------------------------------------------
 --

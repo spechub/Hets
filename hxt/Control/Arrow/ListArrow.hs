@@ -27,6 +27,9 @@ import Control.Arrow.ArrowList
 import Control.Arrow.ArrowIf
 import Control.Arrow.ArrowTree
 
+import Data.List
+    ( partition )
+
 -- ------------------------------------------------------------
 
 -- | pure list arrow data type
@@ -71,10 +74,23 @@ instance ArrowList LA where
 
 
 instance ArrowIf LA where
-    ifA (LA p) t e	= LA $ \x -> runLA (if null (p x) then e else t) x
+    ifA (LA p) t e	= LA $ \ x -> runLA ( if null (p x)
+					      then e
+					      else t
+					    ) x
+
     (LA f) `orElse` (LA g)
-			= LA $ \x -> let res = f x in
-				     if null res then g x else res
+			= LA $ \ x -> ( let
+					res = f x
+					in
+					if null res
+					then g x
+					else res
+				      )
+
+    spanA p             = LA $ (:[]) . span (not . null . runLA p)
+
+    partitionA	p	= LA $ (:[]) . partition (not . null . runLA p)
 
 instance ArrowTree LA
 

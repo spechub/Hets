@@ -5,15 +5,6 @@
 
 -- Module: $Id$
 
-{-
-  The Unicode-Module uses sorted lists when matching characters but
-  does not take advantage of this.
-  For the two very large lists I replaced the list-search by a Set-search
-  that performs searching in logarithmic time. This seems to achieve a
-  time saving of about 1/3 in processing documents.
-  - Hendrik
--}
-
 module Text.XML.HXT.DOM.Unicode
     (
      -- * Unicode Type declarations
@@ -81,7 +72,6 @@ where
 import Text.XML.HXT.DOM.XmlKeywords
 
 import Data.Char( toUpper )
-import qualified Data.Set as Set
 
 import Text.XML.HXT.DOM.Util( intToHexString )
 
@@ -377,18 +367,11 @@ isXmlLetter c
       isXmlIdeographicChar c
 
 -- |
--- checking for XML base character
+-- checking for XML base charater
 
-data UnicodePair = UnicodePair Unicode Unicode
-
-instance Ord UnicodePair where
-  compare (UnicodePair lb1 _) (UnicodePair lb2 _) = compare lb1 lb2
-
-instance Eq UnicodePair where
-  (UnicodePair lb1 _) == (UnicodePair lb2 _) = lb1 == lb2
-
-baseCharList::[(Unicode, Unicode)]
-baseCharList =
+isXmlBaseChar		:: Unicode -> Bool
+isXmlBaseChar c
+    = isInList c
       [ ('\x0041', '\x005A')
       , ('\x0061', '\x007A')
       , ('\x00C0', '\x00D6')
@@ -592,33 +575,6 @@ baseCharList =
       , ('\xAC00', '\xD7A3')
       ]
 
-baseCharSet::Set.Set UnicodePair
-baseCharSet = Set.fromList $ map (\ (a, b) -> UnicodePair a b) baseCharList
-
--- |
--- check whether a character is in one of the ranges in the set of ranges
-charInSet::Set.Set UnicodePair -> Unicode -> Bool
-charInSet rangeset c =
-  let
-    (lowerset, islb, _) = Set.splitMember (UnicodePair c undefined) rangeset
-  in
-    case islb of
-      True -> True
-      _ ->
-        if Set.null lowerset
-          then
-            False
-          else
-            let
-              (UnicodePair lb ub) = Set.findMax lowerset
-            in
-              (c >= lb) && (c <= ub)
-
-isXmlBaseChar		:: Unicode -> Bool
-isXmlBaseChar c
---    = isInList c baseCharList
-  = charInSet baseCharSet c
-
 -- |
 -- checking for XML ideographic charater
 
@@ -633,8 +589,9 @@ isXmlIdeographicChar c
 -- |
 -- checking for XML combining charater
 
-combiningCharList::[(Unicode, Unicode)]
-combiningCharList =
+isXmlCombiningChar	:: Unicode -> Bool
+isXmlCombiningChar c
+    = isInList c
       [ ('\x0300', '\x0345')
       , ('\x0360', '\x0361')
       , ('\x0483', '\x0486')
@@ -731,15 +688,6 @@ combiningCharList =
       , ('\x3099', '\x3099')
       , ('\x309A', '\x309A')
       ]
-
-combiningCharSet::Set.Set UnicodePair
-combiningCharSet = 
-    Set.fromList $ map ( \ (a, b) -> UnicodePair a b) combiningCharList
-
-isXmlCombiningChar	:: Unicode -> Bool
-isXmlCombiningChar c
---  = isInList c combiningCharList
-  = charInSet combiningCharSet c
 
 -- |
 -- checking for XML digit
@@ -1046,6 +994,7 @@ encodingTable
       , (utf16,		ucs2ToUnicode		)
       , (utf16be,	utf16beToUnicode	)
       , (utf16le,	utf16leToUnicode	)
+      , (unicodeString,	id			)
       , ("",		id			)	-- default
       ]
 

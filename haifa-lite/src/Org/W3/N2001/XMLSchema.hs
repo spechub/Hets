@@ -29,12 +29,12 @@
 -- @You should have received a copy of the GNU General Public License along with HAIFA; if not, 
 -- write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA@
 ----------------------------------------------------------------------------
-module Org.W3.N2001.XMLSchema ( Int, Long, String, Decimal, Float, Double, Boolean, Duration, HexBinary, AnyURI, QName, XSDType(..)
+module Org.W3.N2001.XMLSchema ( Int, Long, String, Decimal, Float, Double, Boolean, Duration, HexBinary, AnyURI, QName, XSDType(..), Base64Binary(..)
                               , Element(..), ComplexType(..), Sequence(..), Group(..), Choice(..), ComplexContent(..)
 			      , SimpleContent(..), All(..), Attribute(..), AttributeGroup(..), Schema(..), ComplexRestriction(..)
 			      , ComplexExtension(..)
 			      , simpleElement, simpleComplexType, Any
-                              ) where
+                              , deriveXSDType) where
 
 import Control.Monad.State
 import Data.Typeable
@@ -55,7 +55,7 @@ import Data.Int
 import Data.Word
 import Data.Dynamic
 import System.Time
-import Codec.Base64
+import qualified Network.HTTP.Base64 as Base64
 import Numeric
 import Data.DynamicMap
 
@@ -210,7 +210,7 @@ type Date     = System.Time.CalendarTime
 -}
 
 data HexBinary    = Hex{fromHex::Int} deriving (Show)
-data Base64Binary = Base64{fromBase64::Prelude.String} deriving Show
+data Base64Binary = Base64{fromBase64::[Word8]} deriving Show
 $(qualifyP [''HexBinary, ''URI, ''URIAuth, ''Base64Binary] "http://www.w3.org/2001/XMLSchema" "xsd")
 $(derive [''HexBinary, ''Base64Binary])
 $(deriveData [''URI, ''URIAuth])
@@ -258,11 +258,11 @@ instance XMLData QName where
 instance XSDType Base64Binary where xsdType _ = ["base64Binary"]
 
 instance XMLData Base64Binary where
-    xmlEncode dm x = [SLeaf $ txt $ Codec.Base64.encode $ fromBase64 x]
+    xmlEncode dm x = [SLeaf $ txt $ Base64.encode $ fromBase64 x]
     toXMLType    = deriveXSDType "base64Binary"
-    -- FIXME: Codec.Base64's decode really should be done in a monad to make it safer.
+    -- FIXME: Base64's decode really should be done in a monad to make it safer.
     xmlDecode      = do t <- readText
-		        return $ Base64 $ Codec.Base64.decode t
+		        return $ Base64 $ Base64.decode t
 
 xsdTypes   = [(typeOf (undefined::Int)             , ["int"])
              ,(typeOf (undefined::String)          , ["string"])
@@ -279,14 +279,6 @@ xsdTypes   = [(typeOf (undefined::Int)             , ["int"])
              ]
 
 {-
--- These two maps are a hack to allow schema mapping to recognize which types are from the current schema and which ones are from
--- XML Schema.
-xsdTypeMap :: Map.Map TypeRep [String]
-xsdTypeMap      = Map.fromList xsdTypes
-xsdNamespaceMap :: Map.Map TypeRep URI
-xsdNamespaceMap = Map.fromList $ map (\(t, _) -> (t, fromJust tns)) xsdTypes 
- 
-
 3.2.19 NOTATION 
 -}
     

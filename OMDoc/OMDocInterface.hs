@@ -572,24 +572,24 @@ data OMBase64 =
   OMB
     {
       -- decoded Content
-      ombContent :: [Char]
+      ombContent :: [Word.Word8]
     }
     deriving (Show, Eq)
 
-mkOMB::[Char]->OMBase64
+mkOMB::[Word.Word8]->OMBase64
 mkOMB = OMB
 
-mkOMBE::[Char]->OMElement
+mkOMBE::[Word.Word8]->OMElement
 mkOMBE = toElement . mkOMB
 
-mkOMBWords::[Word.Word]->OMBase64
-mkOMBWords = OMB . map (Char.chr . fromEnum)
+mkOMBWords::[Word.Word8]->OMBase64
+mkOMBWords = OMB
 
-mkOMBWordsE::[Word.Word]->OMElement
+mkOMBWordsE::[Word.Word8]->OMElement
 mkOMBWordsE = toElement . mkOMBWords
 
-getOMBWords::OMBase64->[Word.Word]
-getOMBWords omb = map (toEnum . Char.ord) $ ombContent omb
+getOMBWords::OMBase64->[Word.Word8]
+getOMBWords omb = ombContent omb
 
 -- | OMSTR
 data OMString =

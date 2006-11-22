@@ -61,7 +61,7 @@ hasPrefix px		= isOf ((== px) . prefixOf)
 
 -- |
 -- test whether the root of a tree belongs to a given namespace
--- see also : 'isTag', 'isAttr', 'isLocalName', 'hasLocalPart', 'hasPrefix'
+-- see also : 'isTag', 'isAttr', 'hasLocalPart', 'hasPrefix'
 
 hasNamespace		:: String -> XmlFilter
 hasNamespace ns		= isOf ((== ns) . namespaceOf)
@@ -551,7 +551,7 @@ getValue a		= xmlTreesToText . (getAttrl .> isAttr a .> getChildren)
 -- filter for selecting the value of an attribute with namespace in a tag node.
 -- Result of the filter is a single element list with a text node or the empty list
 --
--- see also : 'getValue', 'hasNsValue', 'isNsAttr'
+-- see also : 'getValue', 'isNsAttr'
 
 getNsValue		:: String -> String -> XmlFilter
 getNsValue lp ns	= xmlTreesToText . (getAttrl .> isNsAttr lp ns .> getChildren)

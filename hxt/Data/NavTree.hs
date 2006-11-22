@@ -36,24 +36,35 @@ data NavTree a = NT
 
 -- |
 -- converts a n-ary tree in a navigable tree
-ntree :: NTree a -> NavTree a
-ntree nd = NT nd [] [] []
+
+ntree	:: NTree a -> NavTree a
+ntree nd
+    = NT nd [] [] []
 
 -- |
 -- converts a navigable tree in a n-ary tree
-subtreeNT :: NavTree a -> NTree a
-subtreeNT (NT nd         _ _ _)	= nd
+
+subtreeNT	:: NavTree a -> NTree a
+subtreeNT (NT nd _ _ _)
+    = nd
 
 
 -- |
 -- function for selecting the value of the current fragment tree
-dataNT :: NavTree a -> a
-dataNT    (NT (NTree a _) _ _ _)	= a
+
+dataNT	:: NavTree a -> a
+dataNT (NT (NTree a _) _ _ _)
+    = a
 
 
 -- -----------------------------------------------------------------------------
+
 -- functions for traversing up, down, left and right in a navigable tree
-upNT, downNT, leftNT, rightNT :: NavTree a -> Maybe (NavTree a)
+
+upNT
+ , downNT
+ , leftNT
+ , rightNT :: NavTree a -> Maybe (NavTree a)
 
 upNT	  (NT _ (p:_) _ _)		= Just p
 upNT	  (NT _ [] _ _) 		= Nothing
@@ -65,29 +76,42 @@ rightNT   (NT s u l (r:rs))		= Just (NT r u (s:l) rs)
 rightNT   (NT _ _ _ []    ) 		= Nothing
 
 
-
 -- preorderNT t = t : concatMap preorderNT (children t)
 -- where children = maybe [] (maybeStar rightNT) . downNT
 
-preorderNT :: NavTree a -> [NavTree a]
-preorderNT = visit [] where
+preorderNT	:: NavTree a -> [NavTree a]
+preorderNT
+    = visit []
+    where
     visit  k t = t : maybe k (visit' k) (downNT t)
     visit' k t = visit (maybe k (visit' k) (rightNT t)) t
 
-revPreorderNT :: NavTree a -> [NavTree a]
-revPreorderNT t = t : concatMap revPreorderNT (reverse (children t))
-	where children = maybe [] (maybeStar rightNT) . downNT
+revPreorderNT	:: NavTree a -> [NavTree a]
+revPreorderNT t
+    = t : concatMap revPreorderNT (reverse (children t))
+      where
+      children = maybe [] (maybeStar rightNT) . downNT
+
+getChildrenNT	:: NavTree a -> [NavTree a]
+getChildrenNT node
+    = maybe [] follow (downNT node)
+      where
+      follow n = n : maybe [] follow (rightNT n)
 
 -- -----------------------------------------------------------------------------
 -- Miscellaneous useful combinators
 
 -- |
 -- Kleisli composition:
+
 o' :: (Monad m) => (b -> m c) -> (a -> m b) -> (a -> m c)
 f `o'` g = \x -> g x >>= f
 
 
 -- Some useful anamorphisms:
+
 maybeStar, maybePlus :: (a -> Maybe a) -> a -> [a]
 maybeStar f a = a : maybe [] (maybeStar f) (f a)
 maybePlus f a =     maybe [] (maybeStar f) (f a)
+
+-- -----------------------------------------------------------------------------

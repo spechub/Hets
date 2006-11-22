@@ -20,20 +20,30 @@ import System.Directory
     ( getCurrentDirectory
     )
 
-setDefaultURI	:: XState state ()
+import Network.URI
+    ( escapeURIChar
+    , isUnescapedInURI
+    )
+
+setDefaultURI   :: XState state ()
 setDefaultURI
-    = do
-      wd <- io getCurrentDirectory
-      setSysParam transferDefaultURI ("file://" ++ editCWD wd ++ "/")
-    where
-    -- under Windows getCurrentDirectory returns something like: "c:\path\to\file"
-    -- backslaches are not allowed in URIs and paths must start with a /
-    -- so this is transformed into "/c:/path/to/file"
+     = do
+       wd <- io getCurrentDirectory
+       setSysParam transferDefaultURI ("file://" ++ normalize wd ++ "/")
 
-    editCWD = addLeadingSlash . map backslash2slash
+       where
 
-    addLeadingSlash s@('/' : _) = s
-    addLeadingSlash s           = '/':s
+       -- under Windows getCurrentDirectory returns something like: "c:\path\to\file"
+       -- backslaches are not allowed in URIs and paths must start with a /
+       -- so this is transformed into "/c:/path/to/file"
 
-    backslash2slash '\\' = '/'
-    backslash2slash c    = c
+       normalize wd'@(d : ':' : _)
+	   | d `elem` ['A'..'Z'] || d `elem` ['a'..'z']
+	       = '/' : concatMap win32ToUriChar wd'
+       normalize wd'
+	   = concatMap escapeNonUriChar wd'
+				 
+       win32ToUriChar '\\' = "/"
+       win32ToUriChar c    = escapeNonUriChar c
+
+       escapeNonUriChar c  = escapeURIChar isUnescapedInURI c   -- from Network.URI

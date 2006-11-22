@@ -13,24 +13,36 @@ where
 
 import Control.Arrow.ListArrows
 
-import Text.XML.HXT.DOM.XmlKeywords					-- constants
-import Text.XML.HXT.DOM.TypeDefs					-- XML Tree types
-import Text.XML.HXT.DOM.Util			( noDoubles )
+import Text.XML.HXT.Arrow.DOMInterface
+import Text.XML.HXT.Arrow.XmlArrow
+    hiding
+    ( mkText
+    , mkError
+    , mkElement
+    , hasName
+    )
 
-import Text.XML.HXT.Arrow.XmlArrow hiding	( mkText, mkError, mkElement, hasName )
-import qualified
-       Text.XML.HXT.Arrow.XmlArrow as A		( mkElement, hasName )
+import qualified Text.XML.HXT.Arrow.XmlArrow as A
+    ( mkElement
+    , hasName
+    )
+
 import Text.XML.HXT.Arrow.XmlIOStateArrow
-import Text.XML.HXT.Arrow.Namespace		( processWithNsEnv, propagateNamespaces )
-import Text.XML.HXT.Arrow.XmlFilterInterface	( removeWhiteSpace )
+
+import Text.XML.HXT.Arrow.Namespace
+    ( processWithNsEnv
+    , propagateNamespaces
+    )
+
+import Text.XML.HXT.Arrow.Edit
+    ( removeWhiteSpace
+    )
 
 
-{-
-import           Text.XML.HXT.Arrow         hiding 
-import qualified Text.XML.HXT.Arrow         as A   
--}
-
-import qualified Text.XML.HXT.Arrow.XmlNode as XN  ( mkAttr, mkText )
+import qualified Text.XML.HXT.Arrow.XmlNode as XN
+    ( mkAttr
+    , mkText
+    )
 
 import Text.XML.HXT.RelaxNG.DataTypes
 import Text.XML.HXT.RelaxNG.CreatePattern

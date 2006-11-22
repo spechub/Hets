@@ -92,7 +92,7 @@ import qualified Data.Map as M
 -- and attributes 'a_status' and 'a_module' for error level and the module,
 -- where the error occured.
 --
--- this is a shortcut for 'getXmlContent' .\>\> 'checkWellformedDoc'
+-- this is a shortcut for 'getXmlContents' .\>\> 'checkWellformedDoc'
 --
 -- example for a main program:
 --

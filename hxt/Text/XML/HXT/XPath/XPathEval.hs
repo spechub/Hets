@@ -1,10 +1,29 @@
--- |
--- The core functions for evaluating the different types of XPath expressions.
--- Each 'Expr'-constructor is mapped to an evaluation function.
+-- ------------------------------------------------------------
 
+{- |
+   Module     : Text.XML.HXT.XPath.XPathEval
+   Copyright  : Copyright (C) 2006 Uwe Schmidt
+   License    : MIT
+
+   Maintainer : Uwe Schmidt (uwe\@fh-wedel.de)
+   Stability  : experimental
+   Portability: portable
+   Version    : $Id$
+
+   The core functions for evaluating the different types of XPath expressions.
+   Each 'Expr'-constructor is mapped to an evaluation function.
+
+-}
+
+-- ------------------------------------------------------------
 
 module Text.XML.HXT.XPath.XPathEval
     ( getXPath
+    , getXPathWithNsEnv
+    , getXPathSubTrees
+    , getXPathSubTreesWithNsEnv
+    , getXPathNodeSet
+    , getXPathNodeSetWithNsEnv
     , evalExpr
     )
 where
@@ -22,13 +41,19 @@ import Text.XML.HXT.XPath.XPathParser
     ( parseXPath )
 
 import Text.XML.HXT.XPath.XPathToString
+    ( xPValue2XmlTrees )
+
+import Text.XML.HXT.XPath.XPathToNodeSet
+    ( xPValue2NodeSet
+    , emptyNodeSet
+    )
 
 import Text.XML.HXT.DOM.XmlTree
 import Text.XML.HXT.DOM.EditFilters
     ( canonicalizeForXPath )
 
 import Text.ParserCombinators.Parsec
-    ( parse )
+    ( runParser )
 
 import Data.Maybe
     ( fromJust )
@@ -36,29 +61,87 @@ import Data.Maybe
 -- -----------------------------------------------------------------------------
 
 -- |
--- Select parts of a document by a XPath expression.
+-- Select parts of a document by an XPath expression.
 --
 -- The main filter for selecting parts of a document via XPath.
--- The string argument must be a XPath expression with an absolut location path,
+-- The string argument must be a XPath expression with an absolute location path,
 -- the argument tree must be a complete document tree.
 -- Result is a possibly empty list of XmlTrees forming the set of selected XPath values.
 -- XPath values other than XmlTrees (numbers, attributes, tagnames, ...)
 -- are convertet to text nodes.
 
-getXPath	:: String -> XmlFilter
-getXPath xpStr t
-    = case (parse parseXPath "" xpStr) of
+getXPath		:: String -> XmlFilter
+getXPath		= getXPathWithNsEnv []
+
+-- |
+-- Select parts of a document by a namespace aware XPath expression.
+--
+-- Works like 'getXPath' but the prefix:localpart names in the XPath expression
+-- are interpreted with respect to the given namespace environment
+
+getXPathWithNsEnv	:: NsEnv -> String -> XmlFilter
+getXPathWithNsEnv	= getXPathValues xPValue2XmlTrees xPathErr canonicalizeForXPath
+
+-- |
+-- Select parts of an XML tree by a XPath expression.
+--
+-- The main filter for selecting parts of an arbitrary XML tree via XPath.
+-- The string argument must be a XPath expression with an absolute location path,
+-- There are no restrictions on the arument tree.
+--
+-- No canonicalization is performed before evaluating the query
+--
+-- Result is a possibly empty list of XmlTrees forming the set of selected XPath values.
+-- XPath values other than XmlTrees (numbers, attributes, tagnames, ...)
+-- are convertet to text nodes.
+
+getXPathSubTrees	:: String -> XmlFilter
+getXPathSubTrees	= getXPathSubTreesWithNsEnv []
+
+-- | Same as 'getXPathSubTrees' but with namespace aware XPath expression
+
+getXPathSubTreesWithNsEnv	:: NsEnv -> String -> XmlFilter
+getXPathSubTreesWithNsEnv nsEnv xpStr t
+    = getXPathValues xPValue2XmlTrees xPathErr this nsEnv xpStr $ addRoot t
+
+-- | compute the node set of an XPath query
+
+getXPathNodeSet		:: String -> XmlTree -> XmlNodeSet
+getXPathNodeSet		= getXPathNodeSetWithNsEnv []
+
+-- | compute the node set of a namespace aware XPath query
+
+getXPathNodeSetWithNsEnv	:: NsEnv -> String -> XmlTree -> XmlNodeSet
+getXPathNodeSetWithNsEnv nsEnv xpStr t
+    = getXPathValues xPValue2NodeSet (const (const emptyNodeSet)) this nsEnv xpStr $ addRoot t
+
+-- | parse xpath, evaluate xpath expr and prepare results
+
+getXPathValues	:: (XPathValue -> a) -> (String -> String -> a) -> XmlFilter -> NsEnv -> String -> XmlTree -> a
+getXPathValues cvRes cvErr canonicalize nsEnv xpStr t
+    = case (runParser parseXPath nsEnv "" xpStr) of
       Left parseError
-	  -> xerr ("Syntax error in XPath expression " ++ show xpStr ++ ": " ++ show parseError)
+	  -> cvErr xpStr (show parseError)
       Right xpExpr
 	  -> evalXP xpExpr
     where
     evalXP xpe
-	= xPValue2XmlTrees xpRes
+	= cvRes xpRes
 	where
 	idAttr	= (("", "idAttr"), idAttributesToXPathValue . getIdAttributes $ t)
-	navTD	= (ntree . head . canonicalizeForXPath) t
+	navTD	= (ntree . head . canonicalize) t
 	xpRes	= evalExpr (idAttr:(getVarTab varEnv),[]) (1, 1, navTD) xpe (XPVNode [navTD])
+
+addRoot	:: XmlTree -> XmlTree
+addRoot t
+    | null . isRoot $ t
+	= head . rootTag [] [this] $ t
+    | otherwise
+	= t
+
+xPathErr	:: String -> String -> [XmlTree]
+xPathErr xpStr parseError
+    = xerr ("Syntax error in XPath expression " ++ show xpStr ++ ": " ++ show parseError)
 
 -- |
 -- The main evaluation entry point. 
@@ -343,16 +426,14 @@ evalAttr _ _
 
 
 evalAttrNodeTest :: NodeTest -> NavXmlTree -> NavXmlTrees
-evalAttrNodeTest (NameTest (QN pre local "")) ns@(NT (NTree (XAttr (QN pre1 local1 _)) _) _ _ _)
-    = if ( ( pre == pre1               && local == local1) || 
-           ((pre == "" || pre == pre1) && local == "*") 
+evalAttrNodeTest (NameTest (QN _pre local uri)) ns@(NT (NTree (XAttr (QN _pre1 local1 uri1)) _) _ _ _)
+    = if ( ( uri == uri1               && local == local1) || 
+           ((uri == "" || uri == uri1) && local == "*") 
          ) then [ns] else [] 
 evalAttrNodeTest (TypeTest XPNode) ns@(NT (NTree (XAttr _) _) _ _ _)
     = [ns]
 evalAttrNodeTest _ _
     = []
-
-
 
 evalStep' :: Env -> [Expr] -> NodeTest -> XPathFilter
 evalStep' env pr nt
@@ -391,24 +472,65 @@ testPredicate env context@(pos, _, _) ex ns
 -- |
 -- filter for selecting a special type of nodes from the current fragment tree
 --
+-- the filter works with namespace activated and without namespaces.
+-- If namespaces occur in XPath names, the uris are used for matching,
+-- else the name prefix
+--
+--    Bugfix : "*" (or any other name-test) must not match the root node
+
 nodeTest :: NodeTest -> XPathFilter
 
-nodeTest (NameTest (QN _ "*" ""))  = filterNodes isXTagNode
-nodeTest (NameTest (QN _ "*" uri)) = filterNodes (filterd uri)
-nodeTest (NameTest q)              = filterNodes (isOfTagNode1 q)
+-- nodeTest (NameTest (QN "" "*" ""))      = filterNodes (\n -> isXTagNode n && not (isRootNode n))
+-- nodeTest (NameTest (QN _ "*" uri))      = filterNodes (filterd uri)
 
-nodeTest (PI s)         = filterNodes (isPiNode s)
-nodeTest (TypeTest t)   = typeTest t
+nodeTest (NameTest q)
+    | isWildcardTest
+	= filterNodes (wildcardTest q)
+    | otherwise
+        = filterNodes (nameTest q)		-- old: (isOfTagNode1 q)
+      where
+      isWildcardTest = localPart q == "*"
 
+nodeTest (PI s)                         = filterNodes (isPiNode s)
+nodeTest (TypeTest t)                   = typeTest t
+
+nameTest	:: QName -> XNode -> Bool
+nameTest xpName (XTag elemName _)
+    | namespaceAware
+	= localPart xpName == localPart elemName
+	  &&
+	  namespaceUri xpName == namespaceUri elemName
+    | otherwise
+	= qualifiedName xpName == qualifiedName elemName
+    where
+    namespaceAware = not . null . namespaceUri $ xpName
+
+nameTest _ _ = False
+
+wildcardTest	:: QName -> XNode -> Bool
+wildcardTest xpName (XTag elemName _)
+    | namespaceAware
+	= namespaceUri xpName == namespaceUri elemName
+    | prefixMatch
+	= namePrefix xpName == namePrefix elemName
+    | otherwise
+	= localPart elemName /= t_root			-- all names except the root name "/"
+    where
+    namespaceAware = not . null . namespaceUri $ xpName
+    prefixMatch    = not . null . namePrefix   $ xpName
+
+wildcardTest _ _ = False
+  
+{- old stuff
 
 filterd :: String -> XNode -> Bool
 filterd uri (XTag a _) = uri == namespaceUri a
 filterd _   _          = False
 
 isOfTagNode1 :: QName -> XNode -> Bool
-isOfTagNode1 (QN _ local uri) (XTag (QN _ local1 uri1) _) = local == local1 && uri1 == uri
-isOfTagNode1 _                _                           = False
-
+isOfTagNode1 (QN _prefix local uri) (XTag (QN _prefix1 local1 uri1) _) = local == local1 && uri1 == uri -- is this the better variant?:  prefix == prefix1 && local == local1
+isOfTagNode1 _                      _                                  = False
+-}
 
 -- |
 -- tests whether a node is of a special type

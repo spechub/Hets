@@ -38,11 +38,11 @@ import Text.XML.HXT.Parser.XmlOutput
 -- |
 -- read a document and parse it with 'parseHtmlDoc'. The main entry point of this module
 --
--- The input tree must be a root tree like in 'getXmlDoc'. The content is read with 'getXmlContents',
+-- The input tree must be a root tree like in '	Text.XML.HXT.Parser.MainFunctions.getXmlDoc'. The content is read with 'Text.XML.HXT.Parser.XmlInput.getXmlContents',
 -- is parsed with 'parseHtmlDoc' and canonicalized (char refs are substituted in content and attributes,
 -- but comment is preserved)
 --
--- see also : 'getWellformedDoc'
+-- see also : 'Text.XML.HXT.Parser.DTDProcessing.getWellformedDoc'
 
 getHtmlDoc	:: XmlStateFilter state
 getHtmlDoc

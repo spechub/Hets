@@ -23,7 +23,7 @@ import qualified Data.List as List
 
 import Char
 
-import qualified Codec.Base64 as Base64
+import qualified Network.HTTP.Base64 as Base64
 
 import qualified Numeric as Numeric
 

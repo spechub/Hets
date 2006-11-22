@@ -58,7 +58,7 @@ import Text.XML.HXT.Parser.ProtocolHandler
 import Network.URI
     ( parseURIReference
     , relativeTo
-    , scheme
+    , uriScheme
     )
 
 -- ------------------------------------------------------------
@@ -322,7 +322,7 @@ getUrlContents
 	     then urlErr ( "illegal URI for input: " ++ show src )
 	     else let
 		  uri'     = fromJust $ parseURIReference uri
-		  proto    = scheme uri'
+		  proto    = init . uriScheme $ uri'
 		  handler  = getProtocolHandler proto
 		  in
 		  ( liftMf (addAttr transferProtocol proto

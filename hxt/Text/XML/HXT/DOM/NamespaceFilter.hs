@@ -118,7 +118,7 @@ propagateNamespaceEnv env n
 -- validate the namespace constraints in a whole tree.
 -- result is the list of errors concerning namespaces.
 -- Work is done by applying 'validate1Namespaces' to all nodes.
--- Predicates 'isWellformedQName', 'isWellformedQualifiedName', 'isDeclaredNamespaces'
+-- Predicates 'isWellformedQName', 'isWellformedQualifiedName', 'isDeclaredNamespace'
 -- and 'isWellformedNSDecl' are applied to the appropriate tags and attributes.
 
 validateNamespaces	:: XmlFilter

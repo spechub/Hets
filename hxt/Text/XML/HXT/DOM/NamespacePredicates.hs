@@ -9,20 +9,13 @@ module Text.XML.HXT.DOM.NamespacePredicates
     )
 where
 
-import Text.XML.HXT.DOM.XmlTree
+import Text.XML.HXT.DOM.XmlTreeTypes		-- NTree and XNode types
+import Text.XML.HXT.DOM.XmlKeywords		-- keywords for DTD
 
 import Text.XML.HXT.DOM.Unicode
     ( isXmlNCNameStartChar
     , isXmlNCNameChar
     )
-
--- -----------------------------------------------------------------------------
---
--- |
--- Type for the namespace association list, used when propagating namespaces by
--- modifying the 'QName' values in a tree
-
-type NsEnv = AssocList String String
 
 -- -----------------------------------------------------------------------------
 --
@@ -67,7 +60,6 @@ xmlnsQN	= QN { namePrefix	= ""
 
 -- |
 -- test for wellformed NCName, rule [4] XML Namespaces
--- predicate is used in filter 'valdateNamespaces'.
 
 isNCName	:: String -> Bool
 isNCName []

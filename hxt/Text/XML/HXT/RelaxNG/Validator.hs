@@ -18,9 +18,7 @@ where
 
 import Control.Arrow.ListArrows
 
-import Text.XML.HXT.DOM.XmlKeywords					-- constants
-import Text.XML.HXT.DOM.TypeDefs					-- XML Tree types
-
+import Text.XML.HXT.Arrow.DOMInterface
 import Text.XML.HXT.Arrow.XmlArrow
 import Text.XML.HXT.Arrow.XmlIOStateArrow
 
@@ -58,9 +56,11 @@ example:
 
 -}
 
-validateDocumentWithRelaxSchema	:: Attributes -> String -> IOSArrow XmlTree XmlTree
+validateDocumentWithRelaxSchema	:: Attributes -> String -> IOStateArrow s XmlTree XmlTree
 validateDocumentWithRelaxSchema userOptions relaxSchema
-    = ( ( validate' $< validSchema )	-- try to validate, only possible if schema is o.k.
+    = withOtherUserState ()
+      $
+      ( ( validate' $< validSchema )	-- try to validate, only possible if schema is o.k.
 	`orElse`
 	this
       )
@@ -97,7 +97,7 @@ validateDocumentWithRelaxSchema userOptions relaxSchema
 		    handleSimplificationErrors
 		  )
     hasOption n
-	= (`elem` ["1", "True", "true", "Yes", "yes"]) . lookupDef "" n $ options
+	= optionIsSet n options
 
     options = addEntries userOptions defaultOptions
 
@@ -187,7 +187,7 @@ available options:
     
     - 'a_do_not_collect_errors' : stop Relax NG simplification after the first error has occurred
     
-    - all 'readDocument' options
+    - all 'Text.XML.HXT.Arrow.ReadDocument.readDocument' options
 
 example:
 

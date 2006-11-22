@@ -16,6 +16,7 @@ module Text.XML.HXT.Parser.HtmlParsec
     , parseHtmlText
     , parseHtmlDocument
     , parseHtmlContent
+    , xhtmlEntities
     )
 
 where
@@ -34,6 +35,7 @@ import Text.ParserCombinators.Parsec
     , noneOf
     , option
     , parse
+    , satisfy
     , string
     , try
     , (<|>)
@@ -44,7 +46,6 @@ import Text.XML.HXT.Parser.XmlTokenParser
     , dq
     , eq
     , gt
-    , keyword
     , name
     , pubidLiteral
     , skipS
@@ -63,6 +64,7 @@ import Text.XML.HXT.Parser.XmlParsec
     , parseXmlText
     , pI
     , xMLDecl'
+    , xmlEntities
     )
 
 import Text.XML.HXT.Parser.XmlCharParser
@@ -72,8 +74,10 @@ import Text.XML.HXT.Parser.XmlCharParser
 import Data.Maybe
     ( fromMaybe
     )
+
 import Data.Char
     ( toLower
+    , toUpper
     )
 
 -- ------------------------------------------------------------
@@ -122,7 +126,7 @@ htmlProlog
 		   <|>
 		   ( do
 		     pos <- getPosition
-		     try (string "<!DOCTYPE")
+		     try (upperCaseString "<!DOCTYPE")
 		     return $ xwarn (show pos ++ " HTML DOCTYPE declaration ignored")
 		   )
 		 )
@@ -130,7 +134,7 @@ htmlProlog
 
 doctypedecl	:: Parser XmlTrees
 doctypedecl
-    = between (try $ string "<!DOCTYPE") (char '>')
+    = between (try $ upperCaseString "<!DOCTYPE") (char '>')
       ( do
 	skipS
 	n <- name
@@ -145,7 +149,7 @@ doctypedecl
 externalID	:: Parser Attributes
 externalID
     = do
-      keyword k_public
+      try (upperCaseString k_public)
       skipS
       pl <- pubidLiteral
       sl <- option "" $ try ( do
@@ -263,9 +267,13 @@ hOpenTagRest pos (tn, al) context
       <|>
       ( do
 	context1 <- checkSymbol gt ("closing > in tag \"<" ++ tn ++ "...\" expected") context
-	if isEmptyTag tn
-	   then return (addHtmlTag tn al [] context1)
-	   else return (openTag tn al . closePrevTag pos tn $ context1)
+	return ( let context2 = closePrevTag pos tn context1
+		 in
+		 ( if isEmptyTag tn
+		   then addHtmlTag tn al []
+		   else openTag tn al
+		 ) context2
+	       )
       )
 
 hAttrList	:: Parser XmlTrees
@@ -344,6 +352,10 @@ lowerCaseName
     = do
       n <- name
       return (map toLower n)
+
+upperCaseString	:: String -> Parser String
+upperCaseString
+    = sequence . map (\ c -> satisfy (( == c) . toUpper))
 
 -- ------------------------------------------------------------
 
@@ -458,6 +470,7 @@ closes :: String -> String -> Bool
 "tr"	`closes`  t    | t `elem` ["th","td","tr"]	= True
 "dt"	`closes`  t    | t `elem` ["dt","dd"]		= True
 "dd"	`closes`  t    | t `elem` ["dt","dd"]		= True
+"hr"	`closes`  "p"                                   = True
 "colgroup" 
 	`closes` "colgroup"				= True
 "form"	`closes` "form"					= True
@@ -488,7 +501,7 @@ t	`closes` t2 | t `elem` ["h1","h2","h3"
 		      &&
                       t2 `elem` ["h1","h2","h3"
 				,"h4","h5","h6"
-				,"p","div"
+				,"p"			-- not "div"
 				]			= True
 _	`closes` _					= False
 
@@ -516,13 +529,9 @@ substHtmlEntities
 	  = error "substHtmlEntities: illegal argument"
 
 xhtmlEntities	:: [(String, Int)]
-xhtmlEntities	= [ ("quot",	34)
-		  , ("amp",	38)
-		  , ("lt",	60)
-		  , ("gt",	62)
-		  , ("apos",	39)
-
-		  , ("nbsp",	160)
+xhtmlEntities	= xmlEntities
+		  ++
+		  [ ("nbsp",	160)
 		  , ("iexcl",	161)
 		  , ("cent",	162)
 		  , ("pound",	163)

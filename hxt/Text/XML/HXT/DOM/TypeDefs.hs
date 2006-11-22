@@ -93,14 +93,14 @@ data DTDElem	= DOCTYPE	-- ^ attr: name, system, public,	XDTD elems as children
 
 -- | Attribute list
 --
--- used for storing features of DTD parts
+-- used for storing option lists and features of DTD parts
 
 type Attributes	= AssocList String String
 
 -- -----------------------------------------------------------------------------
 --
 -- |
--- Namespace support for tag names and attribute names.
+-- Namespace support for element and attribute names.
 --
 -- A qualified name consists of a name prefix, a local name
 -- and a namespace uri.
@@ -181,7 +181,7 @@ mkPrefixLocalPart p l
 -- |
 -- constructs a simple, namespace aware name, with prefix:localPart as first parameter, namspace uri as second.
 --
--- see also 'mkName', mkPrefixLocalPart
+-- see also 'mkName', 'mkPrefixLocalPart'
 
 mkNsName	:: String -> String -> QName
 mkNsName n ns
@@ -254,6 +254,15 @@ normalizeNsUri
 
 -- -----------------------------------------------------------------------------
 --
+
+-- |
+-- Type for the namespace association list, used when propagating namespaces by
+-- modifying the 'QName' values in a tree
+
+type NsEnv = AssocList String String
+
+-- -----------------------------------------------------------------------------
+--
 -- Constants for error levels
 
 -- | no error, everything is ok
@@ -274,3 +283,18 @@ c_fatal = c_err + 1
 
 -- -----------------------------------------------------------------------------
 
+-- | data type for representing a set of nodes as a tree structure
+--
+-- this structure is e.g. used to repesent the result of an XPath query
+-- such that the selected nodes can be processed or selected later in
+-- processing a document tree
+
+data XmlNodeSet	= XNS { thisNode	:: Bool		-- ^ is this node part of the set ?
+		      , attrNodes	:: [QName]	-- ^ the set of attribute nodes
+		      , childNodes	:: ChildNodes	-- ^ the set of child nodes, a list of pairs of index and node set 
+		      }
+		  deriving (Show)
+
+type ChildNodes	= [(Int, XmlNodeSet)]
+
+-- -----------------------------------------------------------------------------

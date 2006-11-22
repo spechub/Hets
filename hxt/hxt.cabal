@@ -1,38 +1,12 @@
 -- arch-tag: Haskell XML Toolbox main description file
-name: hxt-ext
-version: 5.4
--- license: MIT
+name: hxt
+version: 7.0
 license-file: LICENCE
 maintainer: Uwe Schmidt <uwe@fh-wedel.de>
 stability:
 homepage: http://www.fh-wedel.de/~si/HXmlToolbox/index.html
 copyright: Copyright (c) 2005 Uwe Schmidt
--- tested-with: ghc-6.4.1
--- exposed: True
 exposed-modules:
--- modules from Http and Crypto essential for hxt
--- HTTP
-  Network.HTTP, Network.TCP, Network.Stream, Network.Browser, 
-  Codec.Base64,
--- Crypto
-  Codec.ASN1,
-  Codec.ASN1.BER,
-  Codec.ASN1.X509,
-  Codec.ASN1.PKCS8,
-  Codec.Binary.Base64,
-  Codec.Encryption.RSA,
-  Codec.Encryption.RSA.EMEOAEP,
-  Codec.Encryption.RSA.MGF,
-  Codec.Encryption.RSA.NumberTheory,
-  Codec.Encryption.DES,
-  Codec.Encryption.AES,
-  Codec.Encryption.Blowfish,
-  Codec.Encryption.Modes,
-  Codec.Encryption.Padding,
-  Codec.Utils,
-  Data.Digest.MD5,
-  Data.LargeWord,
--- original hxt modules
   Control.Arrow.ArrowIf,
   Control.Arrow.ArrowIO,
   Control.Arrow.ArrowList,
@@ -53,15 +27,19 @@ exposed-modules:
   Text.XML.HXT.Arrow,
   Text.XML.HXT.Arrow.DocumentInput,
   Text.XML.HXT.Arrow.DocumentOutput,
+  Text.XML.HXT.Arrow.DOMInterface,
+  Text.XML.HXT.Arrow.DTDProcessing,
+  Text.XML.HXT.Arrow.Edit,
   Text.XML.HXT.Arrow.GeneralEntitySubstitution,
   Text.XML.HXT.Arrow.Namespace,
+  Text.XML.HXT.Arrow.ParserInterface
+  Text.XML.HXT.Arrow.ProcessDocument,
   Text.XML.HXT.Arrow.ReadDocument,
   Text.XML.HXT.Arrow.WriteDocument,
   Text.XML.HXT.Arrow.XmlArrow,
-  Text.XML.HXT.Arrow.XmlFilterInterface,
   Text.XML.HXT.Arrow.XmlIOStateArrow,
   Text.XML.HXT.Arrow.XmlNode,
-  Text.XML.HXT.Arrow.XmlStateFilterInterface,
+  Text.XML.HXT.Arrow.XmlNodeSet,
   Text.XML.HXT.DOM,
   Text.XML.HXT.DOM.EditFilters,
   Text.XML.HXT.DOM.FormatXmlTree,
@@ -72,6 +50,7 @@ exposed-modules:
   Text.XML.HXT.DOM.Unicode,
   Text.XML.HXT.DOM.Util,
   Text.XML.HXT.DOM.XmlKeywords,
+  Text.XML.HXT.DOM.XmlOptions,
   Text.XML.HXT.DOM.XmlState,
   Text.XML.HXT.DOM.XmlTree,
   Text.XML.HXT.DOM.XmlTreeFilter,
@@ -96,7 +75,6 @@ exposed-modules:
   Text.XML.HXT.Parser.XmlDTDParser,
   Text.XML.HXT.Parser.XmlDTDTokenParser,
   Text.XML.HXT.Parser.XmlInput,
-  Text.XML.HXT.Parser.XmlOptions,
   Text.XML.HXT.Parser.XmlOutput,
   Text.XML.HXT.Parser.XmlParsec,
   Text.XML.HXT.Parser.XmlParser,
@@ -118,7 +96,14 @@ exposed-modules:
   Text.XML.HXT.XPath.XPathFct,
   Text.XML.HXT.XPath.XPathKeywords,
   Text.XML.HXT.XPath.XPathParser,
+  Text.XML.HXT.XPath.XPathToNodeSet,
   Text.XML.HXT.XPath.XPathToString,
+  Text.XML.HXT.XSLT.Application,
+  Text.XML.HXT.XSLT.Common,
+  Text.XML.HXT.XSLT.Compilation,
+  Text.XML.HXT.XSLT.CompiledStylesheet,
+  Text.XML.HXT.XSLT.Names,
+  Text.XML.HXT.XSLT.XsltArrows,
   Text.XML.HXT.RelaxNG,
   Text.XML.HXT.RelaxNG.CreatePattern,
   Text.XML.HXT.RelaxNG.DataTypeLibMysql,
@@ -134,14 +119,5 @@ exposed-modules:
   Text.XML.HXT.RelaxNG.Utils,
   Text.XML.HXT.RelaxNG.Validation,
   Text.XML.HXT.RelaxNG.Validator
--- Other modules section from Crypto
-Other-modules:   Codec.Encryption.BlowfishAux,
-                 Codec.Encryption.DESAux,
-                 Codec.Encryption.AESAux,
-                 Data.Digest.MD5Aux
-hs-source-dir: .
-ghc-options: -Wall -O2 -fglasgow-exts 
--- import-dirs: /usr/lib/ghc-6.4/hxt/imports
--- library-dirs: /usr/lib/ghc-6.4/hxt
--- hs-libraries: HShxt
-build-depends: base, haskell98, parsec, HUnit, network 
+ghc-options: -Wall -O2 -fglasgow-exts
+build-depends: base, haskell98, parsec, HTTP, HUnit, network

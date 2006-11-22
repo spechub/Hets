@@ -17,11 +17,17 @@
 -- ------------------------------------------------------------
 
 module Text.XML.HXT.Arrow.Namespace
-    ( NsEnv
+    ( attachNsEnv
+    , cleanupNamespaces
+    , collectNamespaceDecl
+    , collectPrefixUriPairs
     , isNamespaceDeclAttr
     , getNamespaceDecl
     , processWithNsEnv
+    , processWithNsEnvWithoutAttrl
     , propagateNamespaces
+    , uniqueNamespaces
+    , uniqueNamespacesFromDeclAndQNames
     , validateNamespaces
     )
 where
@@ -32,12 +38,16 @@ import Control.Arrow.ArrowIf
 import Control.Arrow.ArrowTree
 import Control.Arrow.ListArrow
 
-import Text.XML.HXT.DOM.NamespacePredicates
-import Text.XML.HXT.DOM.TypeDefs
-import Text.XML.HXT.DOM.Util		( doubles )
-import Text.XML.HXT.DOM.XmlKeywords
-
+import Text.XML.HXT.Arrow.DOMInterface
 import Text.XML.HXT.Arrow.XmlArrow
+
+import Data.Maybe
+    ( isNothing
+    , fromJust
+    )
+
+import Data.List
+    ( nub )
 
 -- ------------------------------------------------------------
 
@@ -45,7 +55,8 @@ import Text.XML.HXT.Arrow.XmlArrow
 
 isNamespaceDeclAttr	:: ArrowXml a => a XmlTree XmlTree
 isNamespaceDeclAttr
-    = (getAttrName >>> isA isNsQName) `guards` this
+    = fromLA $
+      (getAttrName >>> isA isNsQName) `guards` this
       where
       isNsQName n
 	  = px == a_xmlns
@@ -60,7 +71,8 @@ isNamespaceDeclAttr
 
 getNamespaceDecl	:: ArrowXml a => a XmlTree (String, String)
 getNamespaceDecl
-    = isNamespaceDeclAttr
+    = fromLA $
+      isNamespaceDeclAttr
       >>>
       ( ( getAttrName
 	  >>>
@@ -73,12 +85,128 @@ getNamespaceDecl
 
 -- ------------------------------------------------------------
 
--- | process a document tree with an arrow, containing always the
--- valid namespace environment as extra parameter.
--- The namespace environment is implemented as an 'Data.AssocList'
+-- | collect all namespace declarations contained in a document
+--
+-- apply 'getNamespaceDecl' to a whole XmlTree
 
-processWithNsEnv	:: ArrowXml a => (NsEnv -> a XmlTree XmlTree) -> NsEnv -> a XmlTree XmlTree
-processWithNsEnv f env
+collectNamespaceDecl	:: LA XmlTree (String, String)
+collectNamespaceDecl    = multi getAttrl >>> getNamespaceDecl
+
+-- | collect all (namePrefix, namespaceUri) pairs from a tree
+--
+-- all qualified names are inspected, whether a namespace uri is defined,
+-- for these uris the prefix and uri is returned. This arrow is useful for
+-- namespace cleanup, e.g. for documents generated with XSLT. It can be used
+-- together with 'collectNamespaceDecl' to 'cleanupNamespaces'
+
+collectPrefixUriPairs	:: LA XmlTree (String, String)
+collectPrefixUriPairs
+    = multi (isElem <+> getAttrl <+> isPi)
+      >>>
+      getQName
+      >>>
+      arrL getPrefixUri
+    where
+    getPrefixUri	:: QName -> [(String, String)]
+    getPrefixUri n
+	| null uri	= []
+	| px == a_xmlns
+	  ||
+	  px == a_xml	= []				-- these ones are reserved an predefined
+	| otherwise	= [(namePrefix n, uri)]
+	where
+	uri = namespaceUri n
+	px  = namePrefix   n
+
+-- ------------------------------------------------------------
+
+-- | generate unique namespaces and add all namespace declarations to the root element
+--
+-- Calls 'cleanupNamespaces' with 'collectNamespaceDecl'
+
+uniqueNamespaces		:: ArrowXml a => a XmlTree XmlTree
+uniqueNamespaces
+    = fromLA $
+      cleanupNamespaces collectNamespaceDecl
+
+-- | generate unique namespaces and add all namespace declarations for all prefix-uri pairs in all qualified names
+--
+-- useful for cleanup of namespaces in generated documents.
+-- Calls 'cleanupNamespaces' with @ collectNamespaceDecl <+> collectPrefixUriPairs @
+
+uniqueNamespacesFromDeclAndQNames	:: ArrowXml a => a XmlTree XmlTree
+uniqueNamespacesFromDeclAndQNames
+    = fromLA $
+      cleanupNamespaces (collectNamespaceDecl <+> collectPrefixUriPairs)
+
+-- | does the real work for namespace cleanup.
+--
+-- The parameter is used for collecting namespace uris and prefixes from the input tree
+
+cleanupNamespaces	:: LA XmlTree (String, String) -> LA XmlTree XmlTree
+cleanupNamespaces collectNamespaces
+    = renameNamespaces $< (listA collectNamespaces >>^ nub)
+    where
+    renameNamespaces :: NsEnv -> LA XmlTree XmlTree
+    renameNamespaces env
+	= processBottomUp
+	  ( processAttrl
+	    ( ( none `when` isNamespaceDeclAttr )	-- remove all namespace declarations
+	      >>>
+	      changeQName renamePrefix			-- update namespace prefix of attribute names, if namespace uri is set
+	    )
+	    >>>
+	    changeQName renamePrefix			-- update namespace prefix of element names
+	  )
+	  >>>
+	  attachEnv env1				-- all all namespaces as attributes to the root node attribute list
+	where
+	renamePrefix	:: QName -> QName
+	renamePrefix n
+	    | null uri		= n
+	    | isNothing newPx	= n
+	    | otherwise		= n {namePrefix = fromJust newPx}
+	    where
+	    uri   = namespaceUri n
+	    newPx = lookup uri revEnv1
+	    
+        revEnv1 = map (\ (x, y) -> (y, x)) env1
+
+	env1 :: NsEnv
+	env1 = newEnv [] uris
+
+	uris :: [String]
+	uris = nub . map snd $ env
+
+	genPrefixes :: [String]
+        genPrefixes = map (("ns" ++) . show) [(0::Int)..]
+
+        newEnv	:: NsEnv -> [String] -> NsEnv
+	newEnv env' []
+	    = env'
+
+	newEnv env' (uri:rest)
+	    = newEnv env'' rest
+	    where
+	    env''    = (prefix, uri) : env'
+	    prefix
+		= head (filter notAlreadyUsed $ preferedPrefixes ++ genPrefixes)
+	    preferedPrefixes
+		= map fst . filter ((==uri).snd) $ env
+	    notAlreadyUsed s
+		= isNothing . lookup s $ env'
+
+-- ------------------------------------------------------------
+
+-- | auxiliary arrow for processing with a namespace environment
+--
+-- process a document tree with an arrow, containing always the
+-- valid namespace environment as extra parameter.
+-- The namespace environment is implemented as a 'Data.AssocList.AssocList'.
+-- Processing of attributes can be controlled by a boolean parameter
+
+processWithNsEnv1	:: ArrowXml a => Bool -> (NsEnv -> a XmlTree XmlTree) -> NsEnv -> a XmlTree XmlTree
+processWithNsEnv1 withAttr f env
     = ifA isElem						-- the test is just an optimization
       ( processWithExtendedEnv $< arr (extendEnv env) )		-- only element nodes contain namespace declarations
       ( processWithExtendedEnv env )
@@ -86,7 +214,10 @@ processWithNsEnv f env
     processWithExtendedEnv env'
 	= f env'						-- apply the env filter
 	  >>>
-	  ( processAttrl (f env')				-- apply the env to all attributes
+	  ( ( if withAttr
+	      then processAttrl (f env')			-- apply the env to all attributes
+	      else this
+	    )
 	    >>>
 	    processChildren (processWithNsEnv f env')		-- apply the env recursively to all children
 	  )
@@ -98,16 +229,63 @@ processWithNsEnv f env
 	where
 	newDecls = runLA ( getAttrl >>> getNamespaceDecl ) t'
 
+-- ------------------------------------------------------------
+
+-- | process a document tree with an arrow, containing always the
+-- valid namespace environment as extra parameter.
+--
+-- The namespace environment is implemented as a 'Data.AssocList.AssocList'
+
+processWithNsEnv		:: ArrowXml a => (NsEnv -> a XmlTree XmlTree) -> NsEnv -> a XmlTree XmlTree
+processWithNsEnv		= processWithNsEnv1 True
+
+-- | process all element nodes of a document tree with an arrow, containing always the
+-- valid namespace environment as extra parameter. Attribute lists are not processed.
+--
+-- See also: 'processWithNsEnv'
+
+processWithNsEnvWithoutAttrl	:: ArrowXml a => (NsEnv -> a XmlTree XmlTree) -> NsEnv -> a XmlTree XmlTree
+processWithNsEnvWithoutAttrl	= processWithNsEnv1 False
+
+-- -----------------------------------------------------------------------------
+
+-- | attach all valid namespace declarations to the attribute list of element nodes.
+--
+-- This arrow is useful for document processing, that requires access to all namespace
+-- declarations at any element node, but which cannot be done with a simple 'processWithNsEnv'.
+
+attachNsEnv	:: ArrowXml a => NsEnv -> a XmlTree XmlTree
+attachNsEnv initialEnv
+    = fromLA $ processWithNsEnvWithoutAttrl attachEnv initialEnv
+    where
+
+attachEnv	:: NsEnv -> LA XmlTree XmlTree
+attachEnv env
+    = ( processAttrl (none `when` isNamespaceDeclAttr)
+	>>>
+	addAttrl (catA nsAttrl)
+      )
+      `when` isElem
+    where
+    nsAttrl		:: [LA XmlTree XmlTree]
+    nsAttrl		= map nsDeclToAttr env
+
+    nsDeclToAttr	:: (String, String) -> LA XmlTree XmlTree
+    nsDeclToAttr (n, uri)
+	= mkAttr qn (txt uri)
+	where
+	qn :: QName
+	qn = mkNsName (a_xmlns ++ (if null n then "" else ':' : n)) xmlnsNamespace
+
 -- -----------------------------------------------------------------------------
 
 -- |
--- propagate all namespace declarations \"xmlns:ns=...\" to all
--- tag and attribute nodes of a document.
+-- propagate all namespace declarations \"xmlns:ns=...\" to all element and attribute nodes of a document.
 --
--- This filter does not check for illegal use of namespaces.
+-- This arrow does not check for illegal use of namespaces.
 -- The real work is done by 'propagateNamespaceEnv'.
 --
--- The filter may be applied repeatedly if neccessary.
+-- The arrow may be applied repeatedly if neccessary.
 
 propagateNamespaces	:: ArrowXml a => a XmlTree XmlTree
 propagateNamespaces	= fromLA $ propagateNamespaceEnv [ (a_xml, xmlNamespace), (a_xmlns, xmlnsNamespace) ]
@@ -124,6 +302,7 @@ propagateNamespaceEnv
     addNamespaceUri env'
 	= choiceA [ isElem :-> changeElemName (setNamespace env')
 		  , isAttr :-> attachNamespaceUriToAttr env'
+		  , isPi   :-> changePiName   (setNamespace env')
 		  , this   :-> this
 		  ]
 
@@ -153,10 +332,10 @@ propagateNamespaceEnv
 
 -- |
 -- validate the namespace constraints in a whole tree.
--- result is the list of errors concerning namespaces.
--- Work is done by applying 'validate1Namespaces' to all nodes.
+--
+-- Result is the list of errors concerning namespaces.
 -- Predicates 'isWellformedQName', 'isWellformedQualifiedName', 'isDeclaredNamespaces'
--- and 'isWellformedNSDecl' are applied to the appropriate tags and attributes.
+-- and 'isWellformedNSDecl' are applied to the appropriate elements and attributes.
 
 validateNamespaces	:: ArrowXml a => a XmlTree XmlTree
 validateNamespaces	= fromLA validateNamespaces1

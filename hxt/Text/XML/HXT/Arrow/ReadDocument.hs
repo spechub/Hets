@@ -10,26 +10,47 @@
    Portability: portable
    Version    : $Id$
 
-Compound arrows for reading a document
+Compound arrows for reading an XML\/HTML document or an XML\/HTML string
 
 -}
 
 -- ------------------------------------------------------------
 
 module Text.XML.HXT.Arrow.ReadDocument
-    ( readDocument )
+    ( readDocument
+    , readFromDocument
+    , readString
+    , readFromString
+    , hread
+    , xread
+    )
 where
 
 import Control.Arrow.ListArrows
 
-import Text.XML.HXT.DOM.XmlKeywords
-import Text.XML.HXT.DOM.TypeDefs
-
+import Text.XML.HXT.Arrow.DOMInterface
+import Text.XML.HXT.Arrow.XmlArrow
 import Text.XML.HXT.Arrow.XmlIOStateArrow
-import Text.XML.HXT.Arrow.XmlFilterInterface
-import Text.XML.HXT.Arrow.XmlStateFilterInterface
 
-import Text.XML.HXT.RelaxNG.Validator	( validateDocumentWithRelaxSchema )
+import Text.XML.HXT.Arrow.Edit
+    ( canonicalizeAllNodes
+    , canonicalizeForXPath
+    , canonicalizeContents
+    , removeDocWhiteSpace
+    )
+
+import Text.XML.HXT.Arrow.ParserInterface
+    
+import Text.XML.HXT.Arrow.ProcessDocument
+    ( getDocumentContents
+    , parseXmlDocument
+    , parseHtmlDocument
+    , propagateAndValidateNamespaces
+    )
+
+import Text.XML.HXT.RelaxNG.Validator
+    ( validateDocumentWithRelaxSchema
+    )
 
 -- ------------------------------------------------------------
 
@@ -42,7 +63,7 @@ available options:
 
 * 'a_parse_html': use HTML parser, else use XML parser (default)
 
-- 'a_validate' : validate document againsd DTD, else skip validation (default)
+- 'a_validate' : validate document againsd DTD (default), else skip validation
 
 - 'a_relax_schema' : validate document with Relax NG, the options value is the schema URI
                      this implies using XML parser, no validation against DTD, and canonicalisation
@@ -71,20 +92,29 @@ available options:
 
 - 'a_encoding' : default document encoding ('utf8', 'isoLatin1', 'usAscii', ...)
 
-all attributes not evaluated by readDocument are stored in the created document root node for easy access of the various
+All attributes not evaluated by readDocument are stored in the created document root node for easy access of the various
 options in e.g. the input\/output modules
+
+If the document name is the empty string or an uri of the form \"stdin:\", the document is read from standard input.
 
 examples:
 
 > readDocument [ ] "test.xml"
 
-reads document, no validation, no namespace propagation, only canonicalization is performed 
+reads and validates a document \"test.xml\", no namespace propagation, only canonicalization is performed 
 
-> readDocument [ (a_validate, "1")
+> readDocument [ (a_validate, "0")
 >              , (a_encoding, isoLatin1)
 >              ] "test.xml"
 
-reads document \"test.xml\" with validation, default encoding 'isoLatin1'
+reads document \"test.xml\" without validation, default encoding 'isoLatin1'.
+
+
+> readDocument [ (a_parse_html, "1")
+>              , (a_encoding, isoLatin1)
+>              ] ""
+
+reads a HTML document from standard input, no validation is done when parsing HTML, default encoding is 'isoLatin1'
 
 > readDocument [ (a_parse_html,     "1")
 >              , (a_proxy,          "www-cache:3128")
@@ -102,10 +132,10 @@ reads Haskell homepage with HTML parser ignoring any warnings, with http access 
 
 read w3c home page (xhtml), validate and check namespaces, remove whitespace between tags, trace activities with level 2
 
-for minimal complete examples see 'writeDocument' and 'runX', the main starting point for running an XML arrow.
+for minimal complete examples see 'Text.XML.HXT.Arrow.WriteDocument.writeDocument' and 'runX', the main starting point for running an XML arrow.
 -}
 
-readDocument	:: Attributes -> String -> IOSArrow b XmlTree
+readDocument	:: Attributes -> String -> IOStateArrow s b XmlTree
 readDocument userOptions src
     = traceLevel
       >>>
@@ -162,19 +192,19 @@ readDocument userOptions src
 	= maybe this (setTraceLevel . read) . lookup a_trace $ options
 
     validateWithRelax
-	= hasEntry a_relax_schema $ options
+	= hasEntry a_relax_schema options
 
     relaxSchema
-	= lookup1 a_relax_schema $ options
+	= lookup1 a_relax_schema options
 
     hasOption n
-	= (`elem` ["1", "True", "true", "Yes", "yes"]) . lookupDef "" n $ options
+	= optionIsSet n options
 
     options = addEntries userOptions defaultOptions
 
     defaultOptions
 	= [ ( a_parse_html,		v_0 )
-	  , ( a_validate,		v_0 )
+	  , ( a_validate,		v_1 )
 	  , ( a_issue_warnings,		v_1 )
 	  , ( a_check_namespaces,	v_0 )
 	  , ( a_canonicalize,		v_1 )
@@ -186,3 +216,67 @@ readDocument userOptions src
 	 = filter (not . flip hasEntry defaultOptions . fst) options
 
 -- ------------------------------------------------------------
+
+-- |
+-- the arrow version of 'readDocument', the arrow input is the source URI
+
+readFromDocument	:: Attributes -> IOStateArrow s String XmlTree
+readFromDocument userOptions
+    = applyA ( arr $ \ s -> readDocument userOptions s )
+
+-- ------------------------------------------------------------
+
+-- |
+-- read a document that is stored in a normal Haskell String
+--
+-- the same fünction as readDocument, but the parameter forms the input.
+-- All options available for 'readDocument' are applicable for readString.
+--
+-- Default encoding: No encoding is done, the String argument is taken as Unicode string
+
+readString	:: Attributes -> String -> IOStateArrow s b XmlTree
+readString userOptions content
+    = readDocument ( (a_encoding, unicodeString) : userOptions ) (stringProtocol ++ content)
+
+-- ------------------------------------------------------------
+
+-- |
+-- the arrow version of 'readString', the arrow input is the source URI
+
+readFromString	:: Attributes -> IOStateArrow s String XmlTree
+readFromString userOptions
+    = applyA ( arr $ \ s -> readString userOptions s )
+
+-- ------------------------------------------------------------
+
+-- |
+-- parse a string as HTML content, substitute all HTML entity refs and canonicalize tree
+-- (substitute char refs, ...). Errors are ignored.
+-- 
+-- A simpler version of 'readFromString' but with less functionality.
+-- Does not run in the IO monad
+
+hread			:: ArrowXml a => a String XmlTree
+hread
+    = parseHtmlContent
+      >>>
+      processTopDown substHtmlEntityRefs
+      >>>
+      processTopDown ( none `when` isError )
+      >>>
+      canonicalizeContents
+
+-- |
+-- parse a string as XML content, substitute all predefined XML entity refs and canonicalize tree
+-- (substitute char refs, ...)
+
+xread			:: ArrowXml a => a String XmlTree
+xread
+    = parseXmlContent
+      >>>
+      processTopDown substXmlEntityRefs
+      >>>
+      canonicalizeContents
+
+-- ------------------------------------------------------------
+

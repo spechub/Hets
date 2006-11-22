@@ -13,18 +13,22 @@ where
 
 import Control.Arrow.ListArrows
 
-import Text.XML.HXT.DOM.XmlKeywords		-- constants
-import Text.XML.HXT.DOM.TypeDefs		-- XML Tree types
+import Text.XML.HXT.Arrow.DOMInterface
 
-import Text.XML.HXT.Arrow.XmlArrow hiding ( hasName )
-import qualified
-       Text.XML.HXT.Arrow.XmlArrow as A   ( hasName )
+import Text.XML.HXT.Arrow.XmlArrow hiding
+    ( hasName )
+
+import qualified Text.XML.HXT.Arrow.XmlArrow as A
+    ( hasName )
 
 import Text.XML.HXT.RelaxNG.DataTypes
 import Text.XML.HXT.RelaxNG.PatternFunctions
 
-import Data.Maybe ( fromMaybe )
-import Data.List  ( isPrefixOf )
+import Data.Maybe
+    ( fromMaybe )
+
+import Data.List
+    ( isPrefixOf )
 
 -- ------------------------------------------------------------
 
