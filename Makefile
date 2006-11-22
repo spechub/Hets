@@ -81,7 +81,7 @@ endif
 
 # remove -fno-warn-orphans for older ghcs and add -ifgl
 HC_WARN = -Wall -fno-warn-orphans
-HC_FLAGS = -v -fcontext-stack60 $(HAXML_PACKAGE) \
+HC_FLAGS = -fcontext-stack60 $(HAXML_PACKAGE) \
     $(HC_WARN) -fglasgow-exts -fno-monomorphism-restriction \
     -fallow-overlapping-instances -fallow-undecidable-instances
 # -ddump-minimal-imports
