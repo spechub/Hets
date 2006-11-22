@@ -14,14 +14,7 @@ all: patch hets
 ####################################################################
 ## Some varibles, which control the compilation
 
-INCLUDE_PATH = hxt syb-generics haifa-lite/src hcl/src
-HXT_PATHS = Data Data/Tree Data/Tree/NTree Data/Digest Text Text/XML \
-    Text/XML/HXT Text/XML/HXT/IO Text/XML/HXT/DOM Text/XML/HXT/Arrow \
-    Text/XML/HXT/XPath Text/XML/HXT/Validator Text/XML/HXT/Parser \
-    Text/XML/HXT/RelaxNG Text/XML/HXT/ProtocolHandler Codec Codec/ASN1 \
-    Codec/Binary Codec/Encryption Codec/Encryption/RSA Network \
-    Control Control/Arrow Control/Monad System \
-    System/Console System/Console/Shell System/Console/Shell/Backend
+INCLUDE_PATH = haifa-lite/src
 HAIFA_PATHS = Network Network/Server Org Org/W3 Org/W3/N2001 \
     Org/Xmlsoap Org/Xmlsoap/Schemas Org/Xmlsoap/Schemas/Soap \
     Text Text/XML Text/XML/HXT Text/XML/Schema Text/XML/Schema/TypeMapper \
@@ -32,10 +25,8 @@ CLEAN_PATH = . utils/itcor \
     Common/Lib Common/ATerm Logic CASL CASL/CCC CASL/CompositionTable \
     Syntax Static GUI HasCASL Haskell Modal CoCASL COL ConstraintCASL \
     CspCASL ATC Proofs Comorphisms Isabelle Driver \
-    Taxonomy CASL_DL SPASS OWL_DL OMDoc $(PFE_PATHS) \
-    $(addprefix hxt/, $(HXT_PATHS)) \
-    hcl/src/Data syb-generics/Data syb-generics/Data/Generics2 \
-    $(addprefix haifa-lite/src/, $(HAIFA_PATHS)) PGIP
+    Taxonomy CASL_DL SPASS OWL_DL OMDoc PGIP $(PFE_PATHS) \
+    $(addprefix haifa-lite/src/, $(HAIFA_PATHS))
 
 # the 'replacing spaces' example was taken from the (GNU) Make info manual
 empty =
@@ -70,6 +61,17 @@ GENRULECALL = $(GENRULES) -r Typeable -r ShATermConvertible \
 DRIFT = utils/DrIFT
 INLINEAXIOMS = utils/outlineAxioms
 HADDOCK = haddock
+
+TAR = tar
+OSBYUNAME = `uname`
+ifneq ($(findstring SunOS, $(OSBYUNAME)),)
+TAR = gtar
+endif
+
+RUNHASKELL = runhaskell ../utils/Setup.hs
+SETUPPACKAGE = $(RUNHASKELL) clean; \
+    $(RUNHASKELL) configure --prefix=`pwd`/../packages; \
+    $(RUNHASKELL) build; $(RUNHASKELL) install --user
 
 HAXMLVERSION = $(shell $(HCPKG) field HaXml version)
 ifneq ($(findstring 1.13.2, $(HAXMLVERSION)),)
@@ -344,12 +346,46 @@ tax_objects = $(patsubst %.hs, %.o, $(tax_sources))
 ### targets
 
 .PHONY : all hets-opt hets-optimized clean o_clean clean_pretty \
-    real_clean bin_clean distclean \
+    real_clean bin_clean package_clean distclean packages \
+    http_pkg syb_pkg shellac_pkg shread_pkg hxt_pkg \
     check capa hacapa h2h h2hf showKP clean_genRules genRules \
     count doc apache_doc post_doc4apache fromKif \
     derivedSources install_hets install release cgi patch ghci
 
 .SECONDARY : %.hs %.d $(generated_rule_files) $(gen_inline_axiom_files)
+
+packages: http_pkg syb_pkg shellac_pkg shread_pkg hxt_pkg
+ 
+http_pkg: utils/http.tgz
+	@if $(HCPKG) field HTTP version; then \
+          echo "of HTTP package found"; else \
+          $(RM) -r http; \
+          $(TAR) zxf utils/http.tgz; \
+          (cd http; $(SETUPPACKAGE)) fi
+
+syb_pkg:
+	@if $(HCPKG) field syb-generics version; then \
+          echo "of syb-generics package found"; else \
+          (cd syb-generics; $(SETUPPACKAGE)) fi
+
+shellac_pkg: utils/shellac.tgz
+	@if $(HCPKG) field Shellac version; then \
+          echo "of shellac package found"; else \
+	  $(RM) -r shellac; \
+	  $(TAR) zxf utils/shellac.tgz; \
+	  (cd shellac; $(SETUPPACKAGE)) fi 
+
+shread_pkg: utils/shread.tgz
+	@if $(HCPKG) field Shellac-readline version; then \
+          echo "of shellac-readline package found"; else \
+          $(RM) -rf shread; \
+	  $(TAR) zxf utils/shread.tgz; \
+	  (cd shread; $(SETUPPACKAGE)) fi
+
+hxt_pkg:
+	@if $(HCPKG) field hxt version; then \
+          echo "of hxt package found"; else \
+          (cd hxt; $(SETUPPACKAGE)) fi
 
 patch:
 
@@ -477,7 +513,7 @@ release:
             ./clean.sh; \
             find . -name CVS -o -name \*.o -o -name \*.hi | xargs $(RM) -r; \
             $(RM) clean.*)
-	tar cvf HetCATS.tar HetCATS
+	$(TAR) cvf HetCATS.tar HetCATS
 
 install-hets:
 	chmod g+w hets
@@ -575,6 +611,15 @@ clean_pretty:
 ### additionally removes the library files
 real_clean: clean
 
+### clean user packages
+package_clean:
+	$(HCPKG) unregister hxt --user || exit 0
+	$(HCPKG) unregister Shellac-readline --user || exit 0
+	$(HCPKG) unregister HTTP --user || exit 0
+	$(HCPKG) unregister syb-generics --user || exit 0
+	$(HCPKG) unregister Shellac --user || exit 0
+	$(RM) -rf packages
+
 ### additionally removes generated files not in the CVS tree
 distclean: clean clean_genRules
 	$(RM) $(derived_sources)
@@ -644,7 +689,7 @@ $(CASL_DEPENDENT_BINARIES): $(sources) $(derived_sources)
 ## rules for DrIFT
 .SUFFIXES:
 
-%: %.hs
+%: %.hs packages
 	$(HC) --make -o $@ $< $(HC_OPTS)
 
 %.hs: %.y
