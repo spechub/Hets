@@ -62,10 +62,11 @@ DRIFT = utils/DrIFT
 INLINEAXIOMS = utils/outlineAxioms
 HADDOCK = haddock
 
-TAR = tar
-OSBYUNAME = `uname`
+OSBYUNAME = $(shell uname)
 ifneq ($(findstring SunOS, $(OSBYUNAME)),)
 TAR = gtar
+else 
+TAR = tar
 endif
 
 RUNHASKELL = runhaskell ../utils/Setup.hs
