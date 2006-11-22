@@ -71,7 +71,7 @@ endif
 
 RUNHASKELL = runhaskell ../utils/Setup.hs
 SETUPPACKAGE = $(RUNHASKELL) clean; \
-    $(RUNHASKELL) configure --prefix=`pwd`/../../packages; \
+    $(RUNHASKELL) configure --prefix=$(HOME)/.ghc/hets-packages; \
     $(RUNHASKELL) build; $(RUNHASKELL) install --user
 
 HAXMLVERSION = $(shell $(HCPKG) field HaXml version)
@@ -81,7 +81,7 @@ endif
 
 # remove -fno-warn-orphans for older ghcs and add -ifgl
 HC_WARN = -Wall -fno-warn-orphans
-HC_FLAGS = -fcontext-stack60 $(HAXML_PACKAGE) \
+HC_FLAGS = -v -fcontext-stack60 $(HAXML_PACKAGE) \
     $(HC_WARN) -fglasgow-exts -fno-monomorphism-restriction \
     -fallow-overlapping-instances -fallow-undecidable-instances
 # -ddump-minimal-imports
@@ -619,7 +619,6 @@ package_clean:
 	$(HCPKG) unregister HTTP --user || exit 0
 	$(HCPKG) unregister syb-generics --user || exit 0
 	$(HCPKG) unregister Shellac --user || exit 0
-	$(RM) -rf packages
 
 ### additionally removes generated files not in the CVS tree
 distclean: clean clean_genRules
