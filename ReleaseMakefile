@@ -42,8 +42,7 @@ endif
 
 # OPTS without uni packages
 HC_OPTS1 = -fglasgow-exts -fallow-overlapping-instances -fcontext-stack60 \
-    $(PFE_FLAGS) -DCASLEXTENSIONS -ihxt -isyb-generics -ihaifa-lite/src \
-    -ihcl/src
+    $(PFE_FLAGS) -DCASLEXTENSIONS -ihaifa-lite/src
 
 HC_OPTS = $(HAXML_PACKAGE) $(HC_OPTS1) $(HC_PACKAGE)
 
