@@ -1,0 +1,13 @@
+name:		syb-generics
+version:	2.9
+license:	BSD3
+maintainer:	libraries@haskell.org
+exposed-modules:
+	Data.Generics2,
+	Data.Generics2.Basics,
+	Data.Generics2.Instances,
+	Data.Generics2.CtxSchemes,
+        Data.Generics2.IfTypeThen,
+	Data.Generics2.Derive,
+	Data.Context
+build-depends:	base, template-haskell, haskell98
