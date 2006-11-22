@@ -119,5 +119,5 @@ exposed-modules:
   Text.XML.HXT.RelaxNG.Utils,
   Text.XML.HXT.RelaxNG.Validation,
   Text.XML.HXT.RelaxNG.Validator
-ghc-options: -Wall -O2 -fglasgow-exts
+ghc-options: -Wall -O -fglasgow-exts
 build-depends: base, haskell98, parsec, HTTP, HUnit, network
