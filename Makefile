@@ -71,7 +71,7 @@ endif
 
 RUNHASKELL = runhaskell ../utils/Setup.hs
 SETUPPACKAGE = $(RUNHASKELL) clean; \
-    $(RUNHASKELL) configure --prefix=`pwd`/../packages; \
+    $(RUNHASKELL) configure --prefix=`pwd`/../../packages; \
     $(RUNHASKELL) build; $(RUNHASKELL) install --user
 
 HAXMLVERSION = $(shell $(HCPKG) field HaXml version)
