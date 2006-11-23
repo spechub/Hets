@@ -27,7 +27,8 @@ import qualified Common.OrderedMap as OMap
 
 import Data.List
 import Data.Maybe
-import Data.IORef
+
+import qualified Control.Concurrent as Conc
 
 import HTk
 import Separator
@@ -165,16 +166,6 @@ updateDisplay st updateLb goalsLb pathsLb statusLabel = do
     statusLabel # text label
     statusLabel # foreground (show color)
     return ()
-
-updateStateSelectAllAxs ::
-    (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
-            sign1 morphism1 symbol1 raw_symbol1 proof_tree1) =>
-           IORef (ProofGUIState lid1 sentence1)
-        -> IO ()
-updateStateSelectAllAxs stateRef =
-    do s <- readIORef stateRef
-       aM' <- axiomMap s
-       writeIORef stateRef (s{includedAxioms = OMap.keys aM' })
 
 updateStateGetSelectedGoals ::
     (Logic  lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -341,7 +332,7 @@ proofManagementGUI lid proveF fineGrainedSelectionF
   -- KnownProvers.showKnownProvers knownProvers
   -- initial backing data structure
   initState <- initialState lid thName th knownProvers comorphList
-  stateRef <- newIORef initState
+  stateMVar <- Conc.newMVar initState
 
   -- main window
   main <- createToplevel [text $ thName ++ " - Select Goal(s) and Prove"]
@@ -528,7 +519,7 @@ proofManagementGUI lid proveF fineGrainedSelectionF
              enableWidsUponSelection lb goalSpecificWids
              done)
       +> (selectOpenGoals >>> do
-             s <- readIORef stateRef
+             s <- Conc.readMVar stateMVar
              clearSelection lb
              let isOpenGoal (_,st) =
                      let thst = thmStatus st
@@ -547,50 +538,40 @@ proofManagementGUI lid proveF fineGrainedSelectionF
       +> (deselectAllGoals >>> do
             doSelectAllEntries False lb
             disableWids goalSpecificWids
-            modifyIORef stateRef (\s -> s{selectedGoals = []})
             done)
       +> (selectAllGoals >>> do
             doSelectAllEntries True lb
             enableWids goalSpecificWids
-            modifyIORef stateRef
-                            (\s -> s{selectedGoals = OMap.keys (goalMap s)})
             done)
       +> (selectAllAxs >>> do
             doSelectAllEntries True lbAxs
-            updateStateSelectAllAxs stateRef
             done)
       +> (selectAllThs >>> do
             doSelectAllEntries True lbThs
-            modifyIORef stateRef
-                        (\s -> s{includedTheorems =
-                                     OMap.keys (goalMap s)})
             done)
       +> (deselectAllAxs >>> do
             doSelectAllEntries False lbAxs
-            modifyIORef stateRef (\s -> s{includedAxioms = []})
             done)
       +> (deselectAllThs >>> do
             doSelectAllEntries False lbThs
-            modifyIORef stateRef (\s -> s{includedTheorems = []})
             done)
       +> (displayGoals >>> do
-            s <- readIORef stateRef
+            s <- Conc.readMVar stateMVar
             s' <- updateStateGetSelectedGoals s lb
             doDisplayGoals s'
             done)
       +> (selectProverPath>>> do
-            s <- readIORef stateRef
-            s' <- doSelectProverPath s pathsLb
-            writeIORef stateRef s'
+            Conc.modifyMVar_ stateMVar (\ s -> 
+                       doSelectProverPath s pathsLb)
             done)
       +> (moreProverPaths >>> do
-            s <- readIORef stateRef
+            s <- Conc.readMVar stateMVar
             let s' = s{proverRunning = True}
             updateDisplay s' True lb pathsLb statusLabel
             disableWids wids
             prState <- (updateStateGetSelectedSens s' lbAxs lbThs >>=
                         (\ si -> updateStateGetSelectedGoals si lb))
-            writeIORef stateRef prState
+            -- writeIORef stateRef prState
             Result.Result ds ms'' <- fineGrainedSelectionF prState
             s'' <- case ms'' of
                    Nothing -> fail "fineGrainedSelection returned Nothing"
@@ -600,10 +581,11 @@ proofManagementGUI lid proveF fineGrainedSelectionF
             enableWids wids
             updateDisplay s''' True lb pathsLb statusLabel
             putWinOnTop main
-            writeIORef stateRef s'''
+            Conc.tryTakeMVar stateMVar -- ensure that MVar is empty
+            Conc.putMVar stateMVar s'''
             done)
       +> (doProve >>> do
-            s <- readIORef stateRef
+            s <- Conc.readMVar stateMVar
             let s' = s{proverRunning = True}
             updateDisplay s' True lb pathsLb statusLabel
             disableWids wids
@@ -611,10 +593,11 @@ proofManagementGUI lid proveF fineGrainedSelectionF
                         (\ si -> updateStateGetSelectedGoals si lb))
             -- putStrLn (show (includedAxioms prState)++
             --                   ' ':show (includedTheorems prState))
-            writeIORef stateRef prState
+            -- writeIORef stateRef prState
             Result.Result ds ms'' <- proveF prState
             -- putStrLn "Prover returned"
-            curSt <-  readIORef stateRef
+            Conc.yield
+            curSt <-  Conc.takeMVar stateMVar
             if proofManagementDestroyed curSt
                then done
                else do
@@ -626,11 +609,11 @@ proofManagementGUI lid proveF fineGrainedSelectionF
              enableWids wids
              updateDisplay s''' True lb pathsLb statusLabel
              putWinOnTop main
-             writeIORef stateRef s'''
+             Conc.putMVar stateMVar s'''
              -- putStrLn "end of doProve"
              done)
       +> (showProofDetails >>> do
-            s <- readIORef stateRef
+            s <- Conc.readMVar stateMVar
             s' <- updateStateGetSelectedGoals s lb
             doShowProofDetails s'
             done)
@@ -639,12 +622,13 @@ proofManagementGUI lid proveF fineGrainedSelectionF
             done)
       ))
   sync ( (close >>> destroy main)
-      +> (closeWindow >>> do modifyIORef stateRef
-                                (\ s -> s {proofManagementDestroyed = True})
-                             destroy main))
+      +> (closeWindow >>> do 
+                 Conc.modifyMVar_ stateMVar
+                       (\ s -> return (s {proofManagementDestroyed = True}))
+                 destroy main))
 
   -- read the global state back in
-  s <- readIORef stateRef
+  s <- Conc.takeMVar stateMVar
   case theory s of
    DevGraph.G_theory lidT sigT sensT ->
     do gMap <- DevGraph.coerceThSens (logicId s) lidT 
