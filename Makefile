@@ -213,7 +213,7 @@ HC_OPTS = $(HC_FLAGS) $(HC_INCLUDE) $(HC_PACKAGE) $(PFE_FLAGS) $(HC_PROF) \
 ####################################################################
 ## sources for hets
 
-non_sources = Common/LaTeX_maps.svmono.hs CspCASL/Main.hs \
+non_sources = utils/Setup.hs Common/LaTeX_maps.svmono.hs CspCASL/Main.hs \
     Common/CaslLanguage.hs ./Test.hs Static/LogicStructured.hs \
     $(wildcard syb-generics/Data/Generics2/*.hs) \
     haifa-lite/src/Network/Server/HTTP.hs \
