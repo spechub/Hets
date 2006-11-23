@@ -69,7 +69,7 @@
    ;; Library and Logic name
    '("\\(\\<\\|\\s-+\\)\\(library\\|logic\\)\\s-+\\(\\(\\w\\|/\\)+\\)[ \t\n]*"  
      (3 casl-library-name-face keep t))
-   ;; name of from get and given
+   ;; name of from, get and given
    '("\\(\\<\\|[ \t]+\\)\\(get\\|given\\)[ \t\n]+\\(\\(\\sw+\\s-*\\(,\\|$\\)[ \t\n]*\\)+\\)"  
      (3 casl-name-face keep t))
    '("\\(\\<\\|\\s-+\\)from\\([ \t]+\\)\\(.+\\)\\(get\\|\\s-*\\)" 
@@ -87,10 +87,10 @@
    '("\\<spec.+=\\s-*\\(%\\sw+\\s-*\\)?[ \t\n]*\\([A-Z]\\sw*\\)\\s-*\\(\\[\\([A-Z]\\w*\\).*\\]\\)?"
      (2 casl-name-face keep t) (4 casl-name-face keep t))
    ;; Basic signature: sort X, Y, Z  
-   '("\\(\\<\\|\\s-+\\)sorts?[ \t]+\\(\\(\\sw+\\s-*\\(\\[\\(\\sw\\|,\\)+\\]\\s-*\\)?\\(,\\|$\\|<\\|;\\|=\\)\\(\\sw\\|=\\|<\\|;\\|,\\)*[ \t\n]*\\)+\\)" 
+   '("\\(\\<\\|\\s-+\\)sorts?[ \t]+\\(\\(\\sw+\\s-*\\(\\[\\(\\sw\\|,\\)+\\]\\s-*\\)?\\(,\\(\\s-\\)*\\|$\\|<\\|;\\|=\\)\\(\\sw\\|=\\|<\\|;\\|,\\)*[ \t\n]*\\)+\\)" 
      (2 casl-other-name-face keep t))
    ;; Basic signature: op ,pred and var name
-   '("\\(^\\|\\bops?\\|\\bpreds?\\|\\bvars?\\)\\s-+\\([^.]\\(\\sw\\|\\s_\\|\\s(\\|\\s)\\)*\\)\\s-*\\(\(.*\)\\)?\\s-*\\(:\\??\\|<=>\\)[^:\n]*;?[ \t]*$"
+   '("\\(^\\|\\bops?\\|\\bpreds?\\|\\bvars?\\)\\s-+\\([^.]\\(,\\s-*\\)?\\(\\sw\\(,\\s-*\\)?\\|\\s_\\(,\\s-*\\)?\\|\\s(\\|\\s)\\)*\\)\\s-*\\(\(.*\)\\)?\\s-*\\(:\\??\\|<=>\\)[^:\n]*;?[ \t]*$"
      (2 casl-other-name-face keep t))
    ;; type name
    '("\\s-+\\(\\sw+\\)[ \t\n]*::?=\\s-*\\(\\sw*\\).*"
@@ -446,14 +446,14 @@
 (defun casl-parse-error ()
   "Error Parser"
   (interactive)
+  (setq casl-error-list nil)
   ;;;(pop-to-buffer compiler-buffer)
   (pop-to-buffer "*hets-run*")
   (goto-char (point-min))
   (while (not (eobp))
     (if (not (or (looking-at "Fail") (looking-at "\\*\\*\\*")))
 	(forward-line 1)
-      (skip-chars-forward "a-zA-Z* ")
-      (forward-char 1)
+      (skip-chars-forward "a-zA-Z*,/. ")
       (if (not (search-forward ":" (save-excursion (end-of-line) (point)) t 1))
 	  (forward-line 1)
 	(re-search-backward "\\(\(\\|\\s-+\\)\\([^.]+\\.\\(casl\\|het\\)\\)" nil t 1)
@@ -471,6 +471,7 @@
 (defun casl-compile-goto-next-error ()
   "search the next error position from error-list, and move to it."
   (interactive)
+  (casl-parse-error)
   ;; if error-list is empty ...
   (if (null casl-error-list)
       (if (member (get-buffer "*hets-run*") (buffer-list))
