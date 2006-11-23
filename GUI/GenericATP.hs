@@ -758,7 +758,12 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
             batchTimeEntry # HTk.value tLimit
             extOpts <- (getValue batchOptionsEntry) :: IO String
             let extOpts' = words extOpts
-            let numGoals = Map.size $ filterOpenGoals $ configsMap s
+                openGoalsMap =  filterOpenGoals $ configsMap s
+                numGoals = Map.size openGoalsMap
+                firstGoalName = head $ 
+                                filter ((flip Map.member) openGoalsMap) $ 
+                                map AS_Anno.senName (goalsList s)
+
             if numGoals > 0
              then do
               let afterEachProofAttempt =
@@ -808,9 +813,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                                return cont'))
                     -- END of afterEachProofAttempt
               batchStatusLabel # text (batchInfoText tLimit numGoals 0)
-              batchCurrentGoalLabel # text (
-                              if (null $ goalsList s) then "--"
-                              else AS_Anno.senName $ head $ goalsList s)
+              batchCurrentGoalLabel # text firstGoalName
               disableWids wids
               enable stopBatchButton
               enableWidsUponSelection lb [EnW detailsButton,EnW saveProbButton]
@@ -828,7 +831,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
               if stored 
                  then done
                  else fail "GenericATP: MVar for batchProverId already taken!!"
-             else do
+             else {- numGoals < 1 -} do
               batchStatusLabel # text ("No further open goals\n\n")
               batchCurrentGoalLabel # text "--"
               done)
@@ -842,6 +845,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                   enableWids wids
                   enableWidsUponSelection lb goalSpecificWids
                   batchStatusLabel # text "Batch mode stopped\n\n"
+                  batchCurrentGoalLabel # text "--"
                   st <- Conc.readMVar stateMVar
                   updateDisplay st True lb statusLabel timeEntry
                                 optionsEntry axiomsLb
