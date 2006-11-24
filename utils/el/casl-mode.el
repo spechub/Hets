@@ -208,8 +208,8 @@
 
 ;; ======================= R U N   H E T S =======================
 (require 'compile)
-(setq casl-error-list nil)
 
+(setq casl-error-list nil)
 (defvar hets-program nil)
 (defvar old-buffer nil)
 
@@ -261,32 +261,6 @@
 	    (set-process-filter proc 'casl-compilation-filter)
 	    
 	    (set-marker (process-mark proc) (point) outbuf))
-	
-        ;; this part is not useful 
-	;; force to redisplay
-
-;; 	(message "Executing...")
-;; 	(setq mode-line-process ":run")
-;; 	(force-mode-line-update)
-;; 	(sit-for 0)
-;; 	(let ((status 
-;; 	       (call-process shell-file-name nil outbuf t "-c" hets-command)))
-;; 	  (cond ((numberp status)
-;; 		 (casl-compilation-handle-exit 'exit status
-;; 					  (if (zerop status)
-;; 					      "finished\n"
-;; 					    (format "exited abnormally with code %d\n" status))))
-;; 		((stringp status)
-;; 		 (casl-compilation-handle-exit 'signal status
-;; 					  (concat status "\n")))
-;; 		(t
-;; 		 (casl-compilation-handle-exit 'bizarre status status)))
-;; 	  (if (zerop status)
-;; 	      (setq casl-error-list nil)
-;; 	    (setq casl-error-list nil)
-;; 	    (casl-parse-error)
-;; 	    (message "%s errors have been found." (length casl-error-list)))
-;; 	  )
 	))
       (pop-to-buffer old-buffer)))
 
@@ -339,28 +313,6 @@
 	    (set-process-filter proc 'casl-compilation-filter)
 	    
 	    (set-marker (process-mark proc) (point) outbuf))
-	;; force to redisplay
-;; 	(message "Executing...")
-;; 	(setq mode-line-process ":run")
-;; 	(force-mode-line-update)
-;; 	(sit-for 0)
-;; 	(let ((status 
-;; 	       (call-process shell-file-name nil outbuf t "-c" hets-command)))
-;; 	  (cond ((numberp status)
-;; 		 (casl-compilation-handle-exit 'exit status
-;; 					  (if (zerop status)
-;; 					      "finished\n"
-;; 					    (format "exited abnormally with code %d\n" status))))
-;; 		((stringp status)
-;; 		 (casl-compilation-handle-exit 'signal status
-;; 					  (concat status "\n")))
-;; 		(t
-;; 		 (casl-compilation-handle-exit 'bizarre status status)))
-;; 	  (if (zerop status)
-;; 	      (setq casl-error-list nil)
-;; 	    (setq casl-error-list nil)
-;; 	    (casl-parse-error)
-;; 	    (message "%s errors have been found." (length casl-error-list)))
 	  )))
       (pop-to-buffer old-buffer))
 
@@ -471,7 +423,6 @@
 (defun casl-compile-goto-next-error ()
   "search the next error position from error-list, and move to it."
   (interactive)
-  (casl-parse-error)
   ;; if error-list is empty ...
   (if (null casl-error-list)
       (if (member (get-buffer "*hets-run*") (buffer-list))
@@ -528,7 +479,7 @@
 	      (define-key compilation-minor-mode-map [mouse-2]
 		'casl-compile-mouse-goto-error)
 	      (define-key compilation-minor-mode-map "\C-m"
-		'casl-compile-goto-error)))
+		'casl-compile-goto-next-error)))
 
 
   (run-hooks 'casl-mode-hook)
