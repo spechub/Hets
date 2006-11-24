@@ -205,7 +205,7 @@ soapHTTP r =
 soapCall :: (Data DictXMLData (Envelope String String a), Data DictXMLData a, XMLNamespace a,
              Data DictXMLData (Envelope String String b), Data DictXMLData b, XMLNamespace b, ServiceTransport t) 
 	    => t -> a -> IO (Either SimpleFault b)
-soapCall t x = do let inEnv = toXMLString (simpleEnvelope [] (Body $ Right x) Nothing) True
+soapCall t x = do let inEnv = toXMLString (simpleEnvelope [] (Body $ Right x) (Just "http://schemas.xmlsoap.org/soap/encoding/")) True
                   soapTrace "== Input Envelope ========================================"
                   soapTrace inEnv
                   soapTrace "=========================================================="                  
