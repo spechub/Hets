@@ -604,35 +604,25 @@ basicOutput (ErrorOutput out)   = hPutStr stderr out
 pgipInteractiveShellDescription :: ShellDescription [Status]
 pgipInteractiveShellDescription =
  let wbc = "\n\r\v\\,;" in
-      ShDesc
+      initialShellDescription
        { shellCommands      = pgipShellCommands
        , commandStyle       = OnlyCommands
        , evaluateFunc       = pgipEvalFunc
        , wordBreakChars     = wbc
-       , beforePrompt       = return () 
        , prompt             = \x -> return (getFileUsed x)
-       , exceptionHandler   = defaultExceptionHandler
-       , defaultCompletions = Just (\_ _ -> return [])
        , historyFile        = Just ("consoleHistory.tmp")
-       , maxHistoryEntries  = 100
-       , historyEnabled     = True
        }
 
 
 pgipFileShellDescription :: ShellDescription [Status]
 pgipFileShellDescription =
  let wbc = "\t\n\r\v\\,;" in
-      ShDesc
+      initialShellDescription
        { shellCommands      = pgipShellCommands
        , commandStyle       = OnlyCommands
        , evaluateFunc       = pgipFileEvalFunc
        , wordBreakChars     = wbc
-       , beforePrompt       = return () 
        , prompt             = \_ -> return ""
-       , exceptionHandler   = defaultExceptionHandler
-       , defaultCompletions = Just (\_ _ -> return [])
-       , historyFile        = Nothing
-       , maxHistoryEntries  = 100
        , historyEnabled     = False
        }
 
