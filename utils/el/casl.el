@@ -11,9 +11,11 @@
 (setq hets-home-directory (hets-home-directory-fn))
 (setq hets-program (concat hets-home-directory "hets"))
 (setq load-path
-      (append (list (concat hets-home-directory "utils/el")) load-path))
+      (append (list (concat hets-home-directory "utils/el/")) load-path))
 (setq auto-mode-alist
       (append
        '(("\\.casl\\'" . casl-mode))
        '(("\\.het\\'"  . casl-mode))
        auto-mode-alist))
+(autoload 'casl-mode "casl-mode" "Entering CASL mode..." t)
+(add-hook 'casl-mode-hook 'turn-on-casl-indent)
