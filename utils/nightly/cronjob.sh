@@ -34,7 +34,7 @@ time $MAKE
 time $MAKE check
 $MAKE release
 date
-(cd HetCATS; time $MAKE)
+(cd HetCATS; $MAKE depend; time $MAKE)
 cd ..
 }
 
