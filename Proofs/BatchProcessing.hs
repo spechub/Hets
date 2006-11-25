@@ -22,7 +22,7 @@ import Common.Result
 
 import Data.List
 import Data.Maybe
-import Data.IORef
+
 import qualified Control.Exception as Exception
 import qualified Control.Concurrent as Conc
 
@@ -146,11 +146,11 @@ genericProveBatch :: (Ord proof_tree) =>
                   -> String -- ^ prover name
                   -> String -- ^ theory name
                   -> GenericState sign sentence proof_tree pst
-                  -> Maybe (IORef (Result [Proof_status proof_tree]))
+                  -> Maybe (Conc.MVar (Result [Proof_status proof_tree]))
                   -> IO ([Proof_status proof_tree])
                   -- ^ proof status for each goal
 genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch f
-                  inSen runGivenProver prName thName st resultRef = do
+                  inSen runGivenProver prName thName st resultMVar = do
     batchProve (proverState st) 0 [] (goalsList st)
   where
     openGoals = filterOpenGoals (configsMap st)
@@ -205,8 +205,9 @@ genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch f
                              diagPos = Id.nullRange }]
                             _ -> [])
                            { maybeResult = Just ioProofStatus }
-                  writeIORef rr newResult)
-              resultRef
+                  Conc.tryTakeMVar rr -- ensure that MVar is empty
+                  Conc.putMVar rr newResult)
+              resultMVar
         cont <- f goalsProcessedSoFar' g  
                   (if (null gs) then Nothing else Just (head gs)) (err, res_cfg)
         if cont
@@ -280,7 +281,7 @@ genericCMDLautomaticBatch ::
                                                      --   functions
         -> Bool -- ^ True means include proved theorems
         -> Bool -- ^ True means save problem file
-        -> IORef (Result [Proof_status proof_tree])
+        -> Conc.MVar (Result [Proof_status proof_tree])
            -- ^ used to store the result of the batch run
         -> String -- ^ prover name
         -> String -- ^ theory name
@@ -291,7 +292,7 @@ genericCMDLautomaticBatch ::
         -> IO (Conc.ThreadId,Conc.MVar ())
            -- ^ fst: identifier of the batch thread for killing it
            --   snd: MVar to wait for the end of the thread
-genericCMDLautomaticBatch atpFun inclProvedThs saveProblem_batch resultRef
+genericCMDLautomaticBatch atpFun inclProvedThs saveProblem_batch resultMVar
                           prName thName defaultTactic_script th pt = do
     let iGS = initialGenericState prName
                                   (initialProverState atpFun)
@@ -308,7 +309,7 @@ genericCMDLautomaticBatch atpFun inclProvedThs saveProblem_batch resultRef
                              goalProcessed stateMVar tLimit extOpts numGoals
                                            prName gPSF nSen conf)
                         (atpInsertSentence atpFun) (runProver atpFun)
-                        prName thName iGS (Just resultRef)
+                        prName thName iGS (Just resultMVar)
                       return ()
                    `Exception.finally` Conc.putMVar mvar ())
     return (threadID, mvar)

@@ -41,7 +41,6 @@ import ChildProcess
 import ProcessClasses
 
 import Text.Regex
-import Data.IORef
 import Data.List
 import Data.Maybe
 import qualified Control.Concurrent as Concurrent
@@ -144,7 +143,7 @@ spassProveCMDLautomatic thName defTS th =
 spassProveCMDLautomaticBatch ::
            Bool -- ^ True means include proved theorems
         -> Bool -- ^ True means save problem file
-        -> IORef (Result.Result [Proof_status ATP_ProofTree])
+        -> Concurrent.MVar (Result.Result [Proof_status ATP_ProofTree])
            -- ^ used to store the result of the batch run
         -> String -- ^ theory name
         -> Tactic_script -- ^ default tactic script
@@ -153,10 +152,10 @@ spassProveCMDLautomaticBatch ::
         -> IO (Concurrent.ThreadId,Concurrent.MVar ())
            -- ^ fst: identifier of the batch thread for killing it
            --   snd: MVar to wait for the end of the thread
-spassProveCMDLautomaticBatch inclProvedThs saveProblem_batch resultRef
+spassProveCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
                         thName defTS th =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
-        resultRef (prover_name spassProver) thName
+        resultMVar (prover_name spassProver) thName
         (parseSpassTactic_script defTS) th (ATP_ProofTree "")
 
 

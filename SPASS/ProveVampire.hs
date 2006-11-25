@@ -28,7 +28,6 @@ import SPASS.ProverState
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Result as Result
 
-import Data.IORef
 import qualified Control.Concurrent as Concurrent
 import qualified Control.Exception as Exception
 
@@ -124,7 +123,7 @@ vampireCMDLautomatic thName defTS th =
 vampireCMDLautomaticBatch ::
            Bool -- ^ True means include proved theorems
         -> Bool -- ^ True means save problem file
-        -> IORef (Result.Result [Proof_status ATP_ProofTree])
+        -> Concurrent.MVar (Result.Result [Proof_status ATP_ProofTree])
            -- ^ used to store the result of the batch run
         -> String -- ^ theory name
         -> Tactic_script -- ^ default tactic script
@@ -133,10 +132,10 @@ vampireCMDLautomaticBatch ::
         -> IO (Concurrent.ThreadId,Concurrent.MVar ())
            -- ^ fst: identifier of the batch thread for killing it
            --   snd: MVar to wait for the end of the thread
-vampireCMDLautomaticBatch inclProvedThs saveProblem_batch resultRef
+vampireCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
                         thName defTS th =
     genericCMDLautomaticBatch (atpFun thName) inclProvedThs saveProblem_batch
-        resultRef (prover_name vampire) thName
+        resultMVar (prover_name vampire) thName
         (parseTactic_script batchTimeLimit [] defTS) th (ATP_ProofTree "")
 
 {- |

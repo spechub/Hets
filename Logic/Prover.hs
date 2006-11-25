@@ -35,7 +35,7 @@ import Common.DocUtils
 
 import Data.List
 import Data.Maybe (isJust)
-import Data.IORef
+
 import qualified Control.Concurrent as Concurrent
 
 -- * sentence packing
@@ -283,7 +283,7 @@ data ProverTemplate theory proof_tree = Prover
       -- input, output: see above
       proveCMDLautomaticBatch :: 
           Maybe (Bool -> Bool
-                 -> IORef (Result [Proof_status proof_tree]) 
+                 -> Concurrent.MVar (Result [Proof_status proof_tree]) 
                  -> String -> Tactic_script -> theory 
                  -> IO (Concurrent.ThreadId,Concurrent.MVar ()))
       -- input: 1. True means include proven theorems in subsequent 
