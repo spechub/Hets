@@ -1,13 +1,12 @@
 {- |
   test module similar to GUI_tests, but tests CMDL functions
 -}
-module CMDL_tests where 
+module Main where 
 
 import qualified Common.Lib.Map as Map 
 import qualified Common.Lib.Set as Set 
 import Common.Result
 import qualified Control.Concurrent as Concurrent
-import Data.IORef
 
 import GUI.GenericATPState
 
@@ -112,6 +111,8 @@ theoryExt :: LProver.Theory SPASS.Sign.Sign SPTerm ATP_ProofTree
 theoryExt = (LProver.Theory signExt $ LProver.toThSens [ga_nonEmpty, ga_notDefBottom, ga_strictness, ga_strictness_one, ga_predicate_strictness, antisym, trans, refl, inf_def_ExtPartialOrder, sup_def_ExtPartialOrder, gone, ga_comm_sup, ga_comm_inf])
 
 -- * Testing functions
+main :: IO ()
+main = runTests
 
 {- |
   Main function doing all tests (combinations of theory and prover) in a row.
@@ -119,17 +120,26 @@ theoryExt = (LProver.Theory signExt $ LProver.toThSens [ga_nonEmpty, ga_notDefBo
 -}
 runTests :: IO ()
 runTests = do
-    runTest spassProveCMDLautomatic "SPASS" "Foo1" theory1 [LProver.Proved (Nothing)]
-    runTest spassProveCMDLautomatic "Vampire" "Foo1" theory1 [LProver.Proved (Nothing)]
-    runTest spassProveCMDLautomatic "MathServ" "Foo1" theory1 [LProver.Proved (Nothing)]
+    runTest spassProveCMDLautomatic "SPASS" "Foo1" theory1 
+                [LProver.Proved (Nothing)]
+    runTest vampireCMDLautomatic "Vampire" "Foo1" theory1 
+                [LProver.Proved (Nothing)]
+    runTest mathServBrokerCMDLautomatic "MathServ" "Foo1" theory1 
+                [LProver.Proved (Nothing)]
 
-    runTest spassProveCMDLautomatic "SPASS" "Foo2" theory2 [LProver.Proved (Nothing)]
-    runTest spassProveCMDLautomatic "Vampire" "Foo2" theory2 [LProver.Proved (Nothing)]
-    runTest spassProveCMDLautomatic "MathServ" "Foo2" theory2 [LProver.Proved (Nothing)]
+    runTest spassProveCMDLautomatic "SPASS" "Foo2" theory2 
+                [LProver.Proved (Nothing)]
+    runTest vampireCMDLautomatic "Vampire" "Foo2" theory2 
+                [LProver.Proved (Nothing)]
+    runTest mathServBrokerCMDLautomatic "MathServ" "Foo2" theory2 
+                [LProver.Proved (Nothing)]
 
-    runTest spassProveCMDLautomatic "SPASS" "ExtPartialOrder" theoryExt [LProver.Proved (Nothing)]
-    runTest spassProveCMDLautomatic "Vampire" "ExtPartialOrder" theoryExt [LProver.Proved (Nothing)]
-    runTest spassProveCMDLautomatic "MathServ" "ExtPartialOrder" theoryExt [LProver.Proved (Nothing)]
+    runTest spassProveCMDLautomatic "SPASS" "ExtPartialOrder" theoryExt
+                [LProver.Proved (Nothing)]
+    runTest vampireCMDLautomatic "Vampire" "ExtPartialOrder" theoryExt
+                [LProver.Open]
+    runTest mathServBrokerCMDLautomatic "MathServ" "ExtPartialOrder" theoryExt
+                [LProver.Proved (Nothing)]
     
     runTestBatch Nothing spassProveCMDLautomaticBatch "SPASS" "Foo1" theory1
                  [LProver.Proved (Nothing), LProver.Disproved]
@@ -194,7 +204,8 @@ runTest runCMDLProver prName thName th expStatus = do
 runTestBatch :: Maybe Int -- ^ seconds to pass before thread will be killed
               -> (Bool
                   -> Bool
-                  -> IORef (Result [LProver.Proof_status ATP_ProofTree])
+                  -> Concurrent.MVar 
+                       (Result [LProver.Proof_status ATP_ProofTree])
                   -> String
                   -> LProver.Tactic_script
                   -> LProver.Theory Sign Sentence ATP_ProofTree
@@ -206,10 +217,12 @@ runTestBatch :: Maybe Int -- ^ seconds to pass before thread will be killed
               -> [LProver.GoalStatus] -- ^ list of expected results
               -> IO ()
 runTestBatch waitsec runCMDLProver prName thName th expStatus = do
-    putStr $ "Trying " ++ thName ++ "(automaticBatch) with prover " ++ prName ++ " ... "
-    resultRef <- newIORef (Result { diags = [], maybeResult = Just [] })
+    putStr $ "Trying " ++ thName ++ "(automaticBatch) with prover " ++ 
+             prName ++ " ... "
+    resultMVar <- Concurrent.newMVar 
+                    (Result { diags = [], maybeResult = Just [] })
     (threadID, mvar) <- runCMDLProver
-                            True True resultRef thName
+                            True True resultMVar thName
                             (LProver.Tactic_script (show $ ATPTactic_script {
                                ts_timeLimit = 10, ts_extraOpts = [] }))
                             th
@@ -218,7 +231,7 @@ runTestBatch waitsec runCMDLProver prName thName th expStatus = do
              Concurrent.killThread threadID) waitsec
     Concurrent.takeMVar mvar
 
-    result <- readIORef resultRef
+    result <- Concurrent.takeMVar resultMVar
     stResult <- maybe (return [LProver.openProof_status ""
                                          prName (ATP_ProofTree "")])
                       return (maybeResult result)
