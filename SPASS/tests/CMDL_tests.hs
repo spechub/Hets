@@ -18,6 +18,8 @@ import SPASS.Prove
 import SPASS.ProveVampire
 import SPASS.ProveMathServ
 
+import System.IO (stdout, hSetBuffering, BufferMode(NoBuffering))
+
 -- * Definitions of test theories
 
 sign1 :: SPASS.Sign.Sign
@@ -112,7 +114,7 @@ theoryExt = (LProver.Theory signExt $ LProver.toThSens [ga_nonEmpty, ga_notDefBo
 
 -- * Testing functions
 main :: IO ()
-main = runTests
+main = hSetBuffering stdout NoBuffering >> runTests
 
 {- |
   Main function doing all tests (combinations of theory and prover) in a row.
@@ -195,7 +197,8 @@ runTest runCMDLProver prName thName th expStatus = do
                                          prName (ATP_ProofTree "")])
                       return (maybeResult result)
     putStrLn $ if (succeeded stResult expStatus)
-                 then "passed" else "failed"
+                 then "passed" 
+                 else ("failed"++ (unlines $ map show $ diags result))
 
 {- |
   Runs a CMDL automatic batch function (given as parameter) over a given
@@ -236,7 +239,8 @@ runTestBatch waitsec runCMDLProver prName thName th expStatus = do
                                          prName (ATP_ProofTree "")])
                       return (maybeResult result)
     putStrLn $ if (succeeded stResult expStatus)
-                 then "passed" else "failed"
+                 then "passed" 
+                 else ("failed\n" ++ (unlines $ map show $ diags result))
 
 {- |
   Checks if a prover run's result matches expected result.
