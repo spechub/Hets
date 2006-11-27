@@ -69,10 +69,12 @@ else
 TAR = tar
 endif
 
-RUNHASKELL = runhaskell ../utils/Setup.hs
-SETUPPACKAGE = $(RUNHASKELL) clean; \
-    $(RUNHASKELL) configure --prefix=$(HOME)/.ghc/hets-packages; \
-    $(RUNHASKELL) build; $(RUNHASKELL) install --user
+ARCH = $(shell uname -p)
+SETUP = utils/Setup
+SETUPPACKAGE = ../$(SETUP) clean; \
+    ../$(SETUP) configure \
+        --prefix=$(HOME)/.ghc/$(ARCH)-$(OSBYUNAME)-hets-packages; \
+    ../$(SETUP) build; ../$(SETUP) install --user
 
 HAXMLVERSION = $(shell $(HCPKG) field HaXml version)
 ifneq ($(findstring 1.13.2, $(HAXMLVERSION)),)
@@ -356,35 +358,38 @@ tax_objects = $(patsubst %.hs, %.o, $(tax_sources))
 
 .SECONDARY : %.hs %.d $(generated_rule_files) $(gen_inline_axiom_files)
 
+$(SETUP): utils/Setup.hs
+	$(HC) --make -O -o $@ $<
+
 packages: http_pkg syb_pkg shellac_pkg shread_pkg hxt_pkg
  
-http_pkg: utils/http.tgz
+http_pkg: utils/http.tgz $(SETUP)
 	@if $(HCPKG) field HTTP version; then \
           echo "of HTTP package found"; else \
           $(RM) -r http; \
           $(TAR) zxf utils/http.tgz; \
           (cd http; $(SETUPPACKAGE)) fi
 
-syb_pkg:
+syb_pkg: $(SETUP)
 	@if $(HCPKG) field syb-generics version; then \
           echo "of syb-generics package found"; else \
           (cd syb-generics; $(SETUPPACKAGE)) fi
 
-shellac_pkg: utils/shellac.tgz
+shellac_pkg: utils/shellac.tgz $(SETUP)
 	@if $(HCPKG) field Shellac version; then \
           echo "of shellac package found"; else \
 	  $(RM) -r shellac; \
 	  $(TAR) zxf utils/shellac.tgz; \
 	  (cd shellac; $(SETUPPACKAGE)) fi 
 
-shread_pkg: utils/shread.tgz
+shread_pkg: utils/shread.tgz $(SETUP)
 	@if $(HCPKG) field Shellac-readline version; then \
           echo "of shellac-readline package found"; else \
           $(RM) -rf shread; \
 	  $(TAR) zxf utils/shread.tgz; \
 	  (cd shread; $(SETUPPACKAGE)) fi
 
-hxt_pkg:
+hxt_pkg: $(SETUP)
 	@if $(HCPKG) field hxt version; then \
           echo "of hxt package found"; else \
           (cd hxt; $(SETUPPACKAGE)) fi
@@ -604,6 +609,7 @@ o_clean:
 bin_clean:
 	$(RM) hets
 	$(RM) hets.cgi
+	$(RM) utils/Setup
 	$(RM) $(TESTTARGETS)
 
 clean_pretty:
