@@ -97,7 +97,8 @@ TESTTARGETFILES += CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
     ATC/ATCTest.hs ATC/ATCTest2.hs Common/ATerm/ATermLibTest.hs \
     Common/ATerm/ATermDiffMain.hs Common/annos.hs Common/test_parser.hs \
-    SPASS/tests/PrintTPTPTests.hs Comorphisms/test/showKP.hs
+    SPASS/tests/PrintTPTPTests.hs Comorphisms/test/showKP.hs \
+    SPASS/tests/soapTest.hs SPASS/tests/soapTest.hs SPASS/tests/CMDL_tests.hs
 
 UNI_PACKAGE_CONF = $(wildcard ../uni/uni-package.conf)
 ifneq ($(strip $(UNI_PACKAGE_CONF)),)
