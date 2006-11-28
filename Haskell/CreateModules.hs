@@ -14,7 +14,6 @@ module Haskell.CreateModules where
 
 import Common.Result
 import Common.Doc
-import Common.DocUtils
 
 import Logic.Coerce
 import Logic.Logic
