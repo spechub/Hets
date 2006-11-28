@@ -405,7 +405,7 @@
   (while (not (eobp))
     (if (not (or (looking-at "Fail") (looking-at "\\*\\*\\*")))
 	(forward-line 1)
-      (skip-chars-forward "a-zA-Z*,/. ")
+      (skip-chars-forward "a-zA-Z*,/._\\- ")
       (if (not (search-forward ":" (save-excursion (end-of-line) (point)) t 1))
 	  (forward-line 1)
 	(re-search-backward "\\(\(\\|\\s-+\\)\\([^.]+\\.\\(casl\\|het\\)\\)" nil t 1)
@@ -424,6 +424,8 @@
   "search the next error position from error-list, and move to it."
   (interactive)
   ;; if error-list is empty ...
+  (if (null casl-error-list)
+      (casl-parse-error))
   (if (null casl-error-list)
       (if (member (get-buffer "*hets-run*") (buffer-list))
 	  (message "no error.")
