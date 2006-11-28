@@ -17,6 +17,7 @@ import Common.Doc
 import Common.DocUtils
 
 import Logic.Coerce
+import Logic.Logic
 import Logic.Comorphism
 
 import Static.DevGraph
@@ -24,6 +25,7 @@ import Logic.Prover
 
 import CASL.Logic_CASL
 import HasCASL.Logic_HasCASL
+import Haskell.Logic_Haskell
 
 import Comorphisms.HasCASL2Haskell
 import Comorphisms.CASL2HasCASL
@@ -47,5 +49,6 @@ printModule (G_theory lid sign0 sens0) =
                 in case maybeResult r3 of
                    Nothing -> Nothing
                    Just (_, sens) -> Just $
-                       vcat $ map pretty $ toNamedList $ toThSens sens
+                       vcat $ map (print_named Haskell) 
+                                $ toNamedList $ toThSens sens
 
