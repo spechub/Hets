@@ -190,6 +190,10 @@ singleitem 0 _ = []
 singleitem 1 (i:_) = [i]
 singleitem n (_:r) = singleitem (n-1) r
 
+ehead::forall a . String->[a]->a
+ehead s [] = error ("ehead : " ++ s)
+ehead _ l = head l
+
 headorempty::forall a . [[a]]->[a]
 headorempty [] = []
 headorempty x = head x

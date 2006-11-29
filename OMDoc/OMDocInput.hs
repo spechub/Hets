@@ -1088,7 +1088,7 @@ processSpecMapOM
                 (pM, uM, noActionSince + 1)
               else
                 let
-                  currentSource = fst $ head freeun
+                  currentSource = fst $ ehead "processSpecMapOM, currentSource" freeun
                   (ctslist, clslist, cxntheoryset, caxmlset) =
                     Map.findWithDefault (error "!") currentSource uM
                   resolvedrefs =
@@ -1359,6 +1359,28 @@ createNodeFromSpecOM
         Map.empty
         theset
 
+-- | Each of these items represents information from
+-- a link that has *not* yet been processed (due to error, or
+-- because there was ne processing at all)
+data UnprocessedItem = UISorts | UIPreds | UIOps
+  deriving (Show, Eq)
+
+-- Debug-Info of what was done when processing links
+data Did =
+    DidForce String String -- link made, even with problems
+  | DidLink String String -- link made, no problems
+  -- link made partially (or not at all), last parameter appropriate msg
+  | DidPartly String String String
+
+-- ANSI-coloured output to aid debugging (the lists get large)
+instance Show Did where
+  show (DidForce s1 s2) =
+    "\ESC[1;34m" ++ s1 ++ "\ESC[1;31m -force-> \ESC[1;34m" ++ s2 ++ "\ESC[0;30m"
+  show (DidLink s1 s2) =
+    "\ESC[1;34m" ++ s1 ++ "\ESC[1;32m -link-> \ESC[1;34m" ++ s2 ++ "\ESC[0;30m"
+  show (DidPartly s1 s2 p) =
+    "\ESC[1;34m" ++ s1 ++ "\ESC[1;35m -" ++ p ++ "-> \ESC[1;34m" ++ s2 ++ "\ESC[0;30m"
+
 processAllDefLinks::
     [TheorySpecification]
   ->[LinkSpecification]
@@ -1379,20 +1401,21 @@ processAllDefLinks
         )
         (0::Int)
         lslist
-    maxNoAction = length lslist
-    ((processed, _), (final_pdl, _)) =
+--    maxNoAction = length lslist
+    ((processed, _), (final_pdl, _), didlist) =
       until
-        (\(_, (processedDefLinks, _)) ->
+        (\(_, (processedDefLinks, _), _) ->
           processedDefLinks == numberOfDefLinks
         )
-        (\((pts, ls:r), (pdl, nas)) ->
+        (\((pts, (lsui@(ls, uil)):r), (pdl, nas), didl) ->
           if isDefLink ls
             then
               let
+                maxNoAction = (length r)+1
                 toname = ls_toname ls
                 unprocessedPrevious =
                   filter
-                    (\ls' ->
+                    (\(ls', _) ->
                       isDefLink ls'
                       && ls_toname ls' == (ls_fromname ls)
                     )
@@ -1401,56 +1424,121 @@ processAllDefLinks
                 if (length unprocessedPrevious == 0) || nas > maxNoAction
                   then
                     let
-                      totspec = head $ filter (\ts -> ts_name ts == toname) pts
-                      fromtspec = head $ filter (\ts -> ts_name ts == (ls_fromname ls)) pts
-                      newtotspec =
+                      totspec = ehead "processAllDefLink, totspec" $ filter (\ts -> ts_name ts == toname) pts
+                      fromtspec = ehead "processAllDefLinks, fromtspec" $ filter (\ts -> ts_name ts == (ls_fromname ls)) pts
+                      ((newtotspec, unprocessedItems), wasForced) =
                         (\x ->
                           if nas > maxNoAction
                             then
                               Debug.Trace.trace
                                 (
-                                  "Forcing link: " ++ (ls_fromname ls)
-                                  ++ " -> " ++ toname
+                                  "\ESC[1;31mForcing link:\ESC[1;34m "
+                                  ++ (ls_fromname ls)
+                                  ++ "\ESC[0;30m -> \ESC[1;34m"
+                                  ++ toname ++ "\ESC[0;30m"
                                 )
-                                x
+                                (x, True)
                             else
-                              x
+                              (x, False)
                         )
                         (
                         performDefLinkSpecification
+                          uil
                           fromtspec
                           ls
                           totspec
                         )
+                      unforcedResult =
+                        newtotspec
+                          {
+                              ts_sorts =
+                                if UISorts `elem` unprocessedItems
+                                  then
+                                    ts_sorts totspec
+                                  else
+                                    ts_sorts newtotspec
+                            , ts_predicates =
+                                if UIPreds `elem` unprocessedItems
+                                  then
+                                    ts_predicates totspec
+                                  else
+                                    ts_predicates newtotspec
+                            , ts_operators =
+                                if UIOps `elem` unprocessedItems
+                                  then
+                                    ts_operators totspec
+                                  else
+                                    ts_operators newtotspec
+                          }
+                      resspec =
+                        if wasForced
+                          then
+                            newtotspec
+                          else
+                            unforcedResult
                       newpts =
                         map
                           (\ts ->
-                            if ts_name ts == ts_name newtotspec
+                            if ts_name ts == ts_name resspec
                               then
-                                if ts_nodenum ts /= ts_nodenum newtotspec
+                                if ts_nodenum ts /= ts_nodenum resspec
                                   then
                                     Debug.Trace.trace
                                       (
-                                        "Warning: Same names found ! "
+                                        "\ESC[1;31mWarning:\ESC[0;30m Same names found ! "
                                         ++ (show (ts_nodenum ts, ts_name ts))
                                         ++ " and "
                                         ++ (show (ts_nodenum newtotspec, ts_name newtotspec))
                                       )
                                       ts
                                   else
-                                    newtotspec
+                                    resspec
                               else
                                 ts
                           )
                           pts
                     in
-                      ( (newpts, r), (pdl + 1, 0) )
+                      if null unprocessedItems || wasForced
+                        then
+                          (
+                              (newpts, r)
+                            , (pdl + 1, 0)
+                            , didl ++ [if wasForced
+                                then
+                                  Debug.Trace.trace
+                                    ("")
+                                  DidForce (ts_name fromtspec) (ts_name totspec)
+                                else
+                                  DidLink (ts_name fromtspec) (ts_name totspec)]
+                          )
+                        else
+                          debugEnv
+                            "devLinksMorphism"
+                            (
+                              "\ESC[1;31m!\ESC[0;30mMorphism in \ESC[1;34m"
+                              ++ (show (ts_name fromtspec)) ++ "\ESC[0;30m -> \ESC[1;34m"
+                              ++ (show (ts_name totspec))
+                              ++ "\ESC[0;30m failed " ++ (show unprocessedItems)
+                              ++ ", processing later..."
+                            )
+                            (
+                                (pts, r++[(ls, unprocessedItems)])
+                                  -- honor reducement
+                              , (pdl, nas+(if length unprocessedItems < length uil then 0 else 1))
+                              , didl
+                                  ++ [
+                                        DidPartly
+                                          (ts_name fromtspec)
+                                          (ts_name totspec)
+                                          (show unprocessedItems)
+                                    ]
+                            )
                   else
-                    ( (pts, r++[ls]), (pdl, nas+1) )
+                    ( (pts, r++[lsui]), (pdl, nas+1), didl )
             else
-              ((pts, r), (pdl, nas+1))
+              ((pts, r), (pdl, nas), didl) -- don't count as no action if not def link
         )
-        ((tslist, lslist), (0::Int,0::Int))
+        ((tslist, map (\l -> (l, [UISorts, UIPreds, UIOps])) lslist), (0::Int,0::Int), [])
   in
     if final_pdl /= numberOfDefLinks
       then
@@ -1461,7 +1549,10 @@ processAllDefLinks
           )
           processed
       else
-        processed
+        debugEnv
+          "devLinksDid"
+          ("Did: " ++ show didlist)
+          processed
   where
     
     isDefLink::LinkSpecification->Bool
@@ -1473,17 +1564,19 @@ processAllDefLinks
         _ -> False
 
 performDefLinkSpecification::
-    TheorySpecification
+    [UnprocessedItem]
+  ->TheorySpecification
   ->LinkSpecification
   ->TheorySpecification
-  ->TheorySpecification
+  ->(TheorySpecification, [UnprocessedItem])
 performDefLinkSpecification
+  uilist
   tsFrom
   ls
   tsTo
   =
   let
-   newTS =
+   r@(newTS, _) =
     if isDef (ls_type ls)
       then
         let
@@ -1498,32 +1591,46 @@ performDefLinkSpecification
               else
                 (ts_sorts tsFrom)
           availSorts = Set.filter (\xns -> not $ elem (xnName xns) hidden) fromSorts
-          newSorts =
-            Set.fold
-              (\xns nS ->
-                case
-                  find
-                    (\((_, oldName),_) -> oldName == xnName xns)
-                    req
-                of
-                  Nothing -> nS ++ [xns]
-                  (Just (_, (_, newName))) ->
+          (newSorts, sortSuccess) =
+            if UISorts `elem` uilist
+              then
+                Set.fold
+                  (\xns same@(nS, s) ->
                     case
                       find
-                        (\to_xns -> xnName to_xns == newName)
-                        (Set.toList (ts_sorts tsTo))
+                        (\((_, oldName),_) -> oldName == xnName xns)
+                        req
                     of
-                      Nothing ->
-                        Debug.Trace.trace
-                          (
-                            "Warning: Sort morphism not possible for "
-                            ++ (xnName xns) ++ " -> " ++ newName
-                          )
-                          nS
-                      (Just _) -> nS
-              )
-              []
-              availSorts
+                      Nothing -> (nS ++ [xns], s)
+                      (Just (_, (_, newName))) ->
+                        case
+                          find
+                            (\to_xns -> xnName to_xns == newName)
+                            (Set.toList (ts_sorts tsTo))
+                        of
+                          Nothing ->
+                            {-
+                            Debug.Trace.trace
+                              (
+                                "\ESC[1;31mWarning:\ESC[0;30m " ++ (show count) ++ " "
+                                ++ "In Morphism from " ++ (ts_name tsFrom)
+                                ++ "(" ++ (ts_source tsFrom) ++ ")"
+                                ++ " to " ++ (ts_name tsTo)
+                                ++ "(" ++ (ts_source tsTo) ++ ")"
+                                ++ ": Sort morphism not possible for "
+                                ++ (xnName xns) ++ " -> " ++ newName
+                                ++ " because there is no such sort in the target!"
+                                ++ " sorts in target : " 
+                                ++ (Set.fold (\se s' -> s' ++ " " ++ (show se)) "" (ts_sorts tsTo))
+                              )
+                            -}
+                            (nS, False)
+                          (Just _) -> same
+                  )
+                  ([], True)
+                  availSorts
+              else
+                ([], True) -- fast merge...
           mergedSorts =
             Set.union
               (ts_sorts tsTo)
@@ -1538,32 +1645,38 @@ performDefLinkSpecification
               else
                 (ts_predicates tsFrom)
           availPreds = Set.filter (\(xnpid, _) -> not $ elem (xnName xnpid) hidden) fromPreds
-          newPreds =
-            Set.fold
-              (\(xnp@(xnpid, _)) nP ->
-                case
-                  find
-                    (\((_, oldName),_) -> oldName == xnName xnpid)
-                    req
-                of
-                  Nothing -> nP ++ [xnp]
-                  (Just (_,(_,newName))) ->
+          (newPreds, predSuccess) =
+            if UIPreds `elem` uilist
+              then
+                Set.fold
+                  (\(xnp@(xnpid, _)) same@(nP,s) ->
                     case
                       find
-                        (\(to_xnpid, _) -> xnName to_xnpid == newName)
-                        (Set.toList (ts_predicates tsTo))
+                        (\((_, oldName),_) -> oldName == xnName xnpid)
+                        req
                     of
-                      Nothing ->
-                        Debug.Trace.trace
-                          (
-                            "Warning: Predicate morphism not possible for "
-                            ++ (xnName xnpid) ++ " -> " ++ newName
-                          )
-                          nP
-                      (Just _) -> nP
-              )
-              []
-              availPreds
+                      Nothing -> (nP ++ [xnp], s)
+                      (Just (_,(_,newName))) ->
+                        case
+                          find
+                            (\(to_xnpid, _) -> xnName to_xnpid == newName)
+                            (Set.toList (ts_predicates tsTo))
+                        of
+                          Nothing ->
+                            {-
+                            Debug.Trace.trace
+                              (
+                                "\ESC[1;31mWarning:\ESC[0;30m Predicate morphism not possible for "
+                                ++ (xnName xnpid) ++ " -> " ++ newName
+                              )
+                            -}
+                            (nP, False)
+                          (Just _) -> same
+                  )
+                  ([], True)
+                  availPreds
+              else
+                ([], True) -- will be fast on merge...
           mergedPreds =
             Set.union
               (ts_predicates tsTo)
@@ -1578,32 +1691,38 @@ performDefLinkSpecification
               else
                 (ts_operators tsFrom)
           availOps = Set.filter (\(xnoid, _) -> not $ elem (xnName xnoid) hidden) fromOps
-          newOps =
-            Set.fold
-              (\(xno@(xnoid, _)) nO ->
-                case
-                  find
-                    (\((_, oldName),_) -> oldName == xnName xnoid)
-                    req
-                of
-                  Nothing -> nO ++ [xno]
-                  (Just (_,(_,newName))) ->
+          (newOps, opSuccess) =
+            if UIOps `elem` uilist
+              then
+                Set.fold
+                  (\(xno@(xnoid, _)) same@(nO,s) ->
                     case
                       find
-                        (\(to_xnoid, _) -> xnName to_xnoid == newName)
-                        (Set.toList (ts_operators tsTo))
+                        (\((_, oldName),_) -> oldName == xnName xnoid)
+                        req
                     of
-                      Nothing ->
-                        Debug.Trace.trace
-                          (
-                            "Warning: Operator morphism not possible for "
-                            ++ (xnName xnoid) ++ " -> " ++ newName
-                          )
-                          nO
-                      (Just _) -> nO
-              )
-              []
-              availOps
+                      Nothing -> (nO ++ [xno], s)
+                      (Just (_,(_,newName))) ->
+                        case
+                          find
+                            (\(to_xnoid, _) -> xnName to_xnoid == newName)
+                            (Set.toList (ts_operators tsTo))
+                        of
+                          Nothing ->
+                            {-
+                            Debug.Trace.trace
+                              (
+                                "\ESC[1;31mWarning:\ESC[0;30m Operator morphism not possible for "
+                                ++ (xnName xnoid) ++ " -> " ++ newName
+                              )
+                            -}
+                            (nO, False)
+                          (Just _) -> same
+                  )
+                  ([], True)
+                  availOps
+              else
+                ([], True) -- superfast merging...
           mergedOps =
             Set.union
               (ts_operators tsTo)
@@ -1646,21 +1765,39 @@ performDefLinkSpecification
               )
               mergedOps
         in
-          tsTo
-            {
-                ts_sorts = mergedSorts
-              , ts_sortrelation = checkedRels
-              , ts_predicates = checkedPreds
-              , ts_operators = checkedOps
-            }
+          (
+              tsTo
+                {
+                    ts_sorts = mergedSorts
+                  , ts_sortrelation = checkedRels
+                  , ts_predicates = checkedPreds
+                  , ts_operators = checkedOps
+                }
+            ,
+              (
+                (if sortSuccess then [] else [UISorts])
+                ++
+                (if predSuccess then [] else [UIPreds])
+                ++
+                (if opSuccess then [] else [UIOps])
+              )
+          )
       else -- Thms only affect morphisms
-        tsTo
+        (tsTo, [])
   in
     if (ls_fromname ls) /= (ts_name tsFrom) || (ls_toname ls) /= (ts_name tsTo)
       then
         error "Wrong application!"
       else
-        newTS
+      {-
+        Debug.Trace.trace
+          (
+            "\ESC[1;32mSortMerge\ESC[0;30m " ++ (show count) ++ " "
+            ++ (ts_name tsFrom) ++ " -> " ++ (ts_name tsTo)
+            ++ " : " ++ (Set.fold (\se s -> s ++ " " ++ (show se)) "" (ts_sorts newTS))
+          )
+      -}
+          r
 
   where
 
@@ -2364,7 +2501,7 @@ maybeGetXml source =
         HXT.emptyRoot
     return
       (let
-        status = (read $ HXT.xshow $ getValue "status" (head xml))::Int
+        status = (read $ HXT.xshow $ getValue "status" (ehead "maybeGetXml" xml))::Int
         result = if status < HXT.c_err then (Just xml) else Nothing
       in
         result)
@@ -2376,7 +2513,7 @@ maybeFindXml source includes =
     uri = fromMaybe (error "cannot parse URIReference") muri
     isFile = (length (URI.uriScheme $ uri)) == 0
     filePath = URI.uriPath uri
-    isAbsolute = (isFile && ( (head filePath) == '/')) || (URI.isAbsoluteURI source)
+    isAbsolute = (isFile && ( (ehead "maybeFindXml" filePath) == '/')) || (URI.isAbsoluteURI source)
     possibilities = source:(if not isAbsolute then map (++"/"++source) includes else [])
   in
     do
@@ -2459,7 +2596,7 @@ makeImportGraphOMDoc go source =
               $
               xshow
                 $
-                getValue "transfer-URI" (head doc)
+                getValue "transfer-URI" (ehead "makeImportGraphOMDoc" doc)
           turi = fromMaybe (error "Cannot parse URIReference...") mturi
           muriwithoutdoc =
             URI.parseURIReference
@@ -2580,7 +2717,7 @@ makeImportGraphOMDoc go source =
                     imturi =
                       URI.parseURIReference
                         $
-                        xshow $ getValue "transfer-URI" (head doc)
+                        xshow $ getValue "transfer-URI" (ehead "buildGraph" doc)
                     ituri = fromMaybe (error "Cannot parse URIReference...") imturi
                     miuriwithoutdoc =
                       URI.parseURIReference
@@ -2916,29 +3053,58 @@ predicationFromOM ffxi (OMDoc.OMES oms) =
   let
     sxname = OMDoc.omsName oms
     sxcd = OMDoc.omsCD oms
-    theoxn = case findByName sxcd (xnTheorySet ffxi) of
+    mtheoxn = findByName sxcd (xnTheorySet ffxi)
+    theoxn = case mtheoxn of
             Nothing ->
               error
                 (
                   "No Theory (" ++ sxcd ++ ") for used predicate (Name) !"
-                  ++ sxname ++ " in " ++ show (xnPredsMap ffxi)
+                  ++ sxname ++ " in " ++ (take 1000 $ show (xnPredsMap ffxi))
                 )
             (Just theoxn' ) -> theoxn'
-    theopreds = Map.findWithDefault Set.empty (xnName theoxn) (xnPredsMap ffxi) 
-    predxnid = case findByName sxname (map fst $ Set.toList theopreds) of
+    theopreds = Map.findWithDefault Set.empty (xnName theoxn) (xnPredsMap ffxi)
+    mpredxnid = findByName sxname (map fst $ Set.toList theopreds)
+    predxnid = case mpredxnid of
             Nothing ->
               error
                 ("No such predicate in Theory! (" ++ show sxname 
-                  ++ " in " ++ (show theopreds) ++ ")") 
+                  ++ " in " ++ (take 1000 $ (show theopreds)) ++ ")") 
             (Just predxnid' ) -> predxnid'
     predXNWON = case lookup predxnid $ Set.toList theopreds of
             Nothing -> error "Predicate not found!"
             (Just pxnwon) -> pxnwon
+    doFake =
+      (
+          (
+            case mtheoxn of
+              Nothing ->
+                Debug.Trace.trace
+                  ("Faking Predicate for " ++ show oms ++ " (not found, unknown theory)")
+                  True
+              _ -> False
+          )
+        ||
+          (
+            case mpredxnid of
+              Nothing ->
+                Debug.Trace.trace
+                  ("Faking Predicate for " ++ show oms ++ " (not found)")
+                  True
+              _ -> False
+          )
+      )
   in
-    Qual_pred_name
-      (xnWOaToa predxnid)
-      (Hets.cv_PredTypeToPred_type $ predTypeXNWONToPredType predXNWON)
-      Id.nullRange
+    if doFake
+      then
+        Qual_pred_name
+          (Hets.stringToId sxname)
+          (Pred_type [] Id.nullRange)
+          Id.nullRange
+      else
+        Qual_pred_name
+          (xnWOaToa predxnid)
+          (Hets.cv_PredTypeToPred_type $ predTypeXNWONToPredType predXNWON)
+          Id.nullRange
 predicationFromOM _ _ = error "predicationFromOM: Invalid OMDoc.OMElement"
                 
 -- String to Quantifier...
@@ -3157,7 +3323,25 @@ formulaFromOM ffxi origin (OMDoc.OMEA oma) =
                     predterms
                     Id.nullRange
                 [] ->
-                  error ("Could not find predicate for \"" ++ applySym ++ "\"")
+                  Debug.Trace.trace
+                    (
+                      "Faking Predicate for \"" ++ applySym ++ "\" : "
+                      ++ (take 1000 $ (show oma))
+                    )
+                    (
+                      Predication
+                        (
+                          Qual_pred_name
+                            (Hets.stringToId applySym)
+                            (
+                              Pred_type [] Id.nullRange
+                            )
+                            Id.nullRange
+                        )
+                        predterms
+                        Id.nullRange
+                    )
+--                  error ("Could not find predicate for \"" ++ applySym ++ "\"")
             else
               error "Empty application..."
   where
@@ -3293,7 +3477,7 @@ formulaFromOM ffxi origin (OMDoc.OMEA oma) =
             (
               "Not enough terms for Strong_equation! ("
                 ++ show (length terms) ++ ") : "
-                ++ show oma
+                ++ (take 1000 (show oma))
             )
         else
           Strong_equation 
@@ -3336,12 +3520,12 @@ formulaFromOM ffxi origin (OMDoc.OMEA oma) =
                         error
                           ("Sort not found in theory!"
                             ++ "(" ++ sort ++ ", "
-                              ++ (show theosorts) ++ ")" 
+                              ++ (take 1000 $ (show theosorts)) ++ ")" 
                           )
                       (Just x) -> x
                 in
                   Membership
-                    (head terms)
+                    (ehead "Membership" terms)
                     (xnWOaToa sortxn)
                     Id.nullRange
               _ -> error "No OMS for Membership-Sort!"
@@ -3455,7 +3639,8 @@ termFromOM ffxi origin (OMDoc.OMEA oma) =
       operatorFromOM
         ffxi
         (
-          head
+          ehead
+            "termFromOM, operator"
             $
             (filter isOperatorOM $ OMDoc.omaElements oma)
         )
@@ -3473,8 +3658,8 @@ termFromOM ffxi origin (OMDoc.OMEA oma) =
     case (opName operator) of
     "PROJ" ->
         Cast
-          (head terms)
-          (Hets.stringToId $ show (head $ tail terms))
+          (ehead "termFromOM, PROJ" terms)
+          (Hets.stringToId $ show (ehead "termFromOM, PROJ, tail" $ tail terms))
           Id.nullRange
     "IfThenElse" ->
       let
@@ -3483,15 +3668,37 @@ termFromOM ffxi origin (OMDoc.OMEA oma) =
             (\ome ->
               case ome of
                 (OMDoc.OMES _) -> True
+                (OMDoc.OMEBIND _) -> True
                 (OMDoc.OMEATTR _) -> True
                 (OMDoc.OMEA _) -> True
                 (OMDoc.OMEV _) -> True
                 _ -> False
             )
             (OMDoc.omaElements oma)
-        iteCondX = head $ singleitem 2 iteChildsX
-        iteThenX = head $ singleitem 3 iteChildsX
-        iteElseX = head $ singleitem 4 iteChildsX
+        iteCondX =
+          ehead
+            (
+              "Missing condition in conditional term : "
+              ++(take 1000 (show oma))
+            )
+            $
+            singleitem 2 iteChildsX
+        iteThenX =
+          ehead
+            (
+              "Missing 'then'-part in conditional term : "
+              ++ (take 1000 (show oma))
+            )
+            $
+            singleitem 3 iteChildsX
+        iteElseX =
+          ehead
+            (
+              "Missing 'else'-part in conditional term : "
+              ++ (take 1000 (show oma))
+            )
+            $
+            singleitem 4 iteChildsX
         iteCond =
           formulaFromOM
             ffxi
@@ -3537,30 +3744,67 @@ operatorFromOM ffxi (OMDoc.OMES oms) =
       case scd of
         ('#':r) -> r
         _ -> scd
+    mtheo = findByName stheoid (xnTheorySet ffxi)
     theoxn =
-      case findByName stheoid (xnTheorySet ffxi) of
+      case mtheo of
         Nothing ->
           error
-            ("No Theory for used operator! (\"" 
+            (
+              "No Theory for used operator! (\"" 
               ++ sxname ++ "\" in \"" ++ scd ++ "\" Context : \""
-              ++ (take 200 $ show oms) ++ "\")"
+              ++ (show oms) ++ "\")"
             )
         (Just theoxn' ) -> theoxn'
-    theoops = Map.findWithDefault Set.empty (xnName theoxn) (xnOpsMap ffxi) 
-    opxnid = case findByName sxname (map fst $ Set.toList theoops) of
+    theoops = Map.findWithDefault Set.empty (xnName theoxn) (xnOpsMap ffxi)
+    mopxnid = findByName sxname (map fst $ Set.toList theoops)
+    opxnid = case mopxnid of
       Nothing ->
         error
           ("No such operator in Theory! (" ++ sxname ++ " in "
-            ++ (show theoops) ++ ")")
+            ++ (take 1000 (show theoops)) ++ ")")
       (Just opxnid' ) -> opxnid'
     opXNWON = case lookup opxnid $ Set.toList theoops of
       Nothing -> error ("Operator not found!")
       (Just oxnwon) -> oxnwon
+    doFake =
+      (
+          (stheoid /= caslS)
+        &&
+          (
+            (
+              case mtheo of
+                Nothing ->
+                  Debug.Trace.trace
+                    ("Faking Operator for " ++ (show oms) ++ " (not found, unknown theory)")
+                    True
+                _ -> False
+            )
+          ||
+            (
+              case mopxnid of
+                Nothing ->
+                  Debug.Trace.trace
+                    ("Faking Operator for " ++ (show oms) ++ " (not found)")
+                    True
+                _ -> False
+            )
+          )
+      )
   in
-    if (stheoid==caslS) 
+    if
+      ( (stheoid==caslS) || doFake )
       then -- eventually there should be an aux. casl-theory while processing...
-        Op_name
-          (Hets.stringToId sxname)
+        if doFake 
+          then
+            -- faking Op_name's causes errors in MapSentence later
+            -- so this clumsy Qual_op_name is constructed...
+            Qual_op_name
+              (Hets.stringToId sxname)
+              (Op_type Total [] (Hets.stringToId "fakeT") Id.nullRange)
+              Id.nullRange
+          else
+            Op_name
+              (Hets.stringToId sxname)
       else
         Qual_op_name
           (xnWOaToa opxnid)
