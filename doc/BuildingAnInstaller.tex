@@ -6,7 +6,7 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newcommand{\Hets}{\textmd{\textsc{Hets}}\xspace}
-\newcommand{\HetsInstallDir}{hets-install}
+\newcommand{\HetsInstallDir}{/tmp/hets-install}
 
 \title{How to build an installer for \Hets}
 \author{Klaus L\"uttich}
@@ -42,26 +42,33 @@ system (linux,solaris,macosx). Note, not all combinations are available.
 A typical genration process involves these steps:
 \begin{enumerate}
 \item create a directory: \texttt{mkdir \HetsInstallDir}
-\item copy XML files from the HetCATS working directory to the new
-  directory: \texttt{cp -r HetCATS/pack \HetsInstallDir}
-\item 
+\item change into your HetCATS directory: \texttt{cd <your path>/HetCATS}
+\item run initilization step: \\
+\texttt{INSTALLER\_DIR=\HetsInstallDir~make initialize\_installer}
+\item follow these instructions:
+{\tt  \begin{tabbing}
+ Ready to create installers for Hets\\
+Please do\\
+~~\=-> cd \HetsInstallDir\\
+\>-> make\\
+and wait until it is finished 
+\end{tabbing} }
+\item find the installers in these files:
+  \begin{itemize}
+  \item hets-installer-ppc-mac.jar
+  \item hets-installer-x86-linux.jar
+  \item hets-installer-sparc-solaris.jar
+  \end{itemize}
 \end{enumerate}
 \clearpage
 
-\section{Detailed List of Steps Performend for the Generation of Installers}
+\section{List of Steps Performend for the Generation of Installers}
 
 \begin{itemize}
 \item use HetCATS/Makefile.installer for the generation of platform dependent
   Hets installers
 \item a new directory (main) is created with platform dependent
   subdirectories and a platform independent directory tree
-\item the installers will end up in the main directory with specific
-  suffixes showing their platform
-  \begin{itemize}
-  \item hets-installer-ppc-mac.jar
-  \item hets-installer-x86-linux.jar
-  \item hets-installer-sparc-solaris.jar
-  \end{itemize}
 \end{itemize}
 
 Makfile.installer:
@@ -83,33 +90,51 @@ Makfile.installer:
   \item getDailyHets.sh
   \end{itemize}
 \item GMP.framework for Mac OS X from hets homepage
+\item GNUreadline.framework for Mac OS X from hets homepage
 \end{itemize}
+
+\subsection{Some steps performend by the installer}
+
+\begin{itemize}
+\item recommends an installed emacs in the first place
+\item generate directory structure according to structure on the
+  following page.
+\item setup of scripts and other files
+\item offer adaption of .emacs file (adding ProofGeneral and casl-mode
+  setup lines); if adaption is denied still display in text-field for
+  copying the appropiate lines to add
+\item installs an uninstaller.jar which removes everything including Isabelle
+\end{itemize}
+
 \clearpage
-Directory-layout of installed directory: (dirs end with a slash)\\
+\subsection{Directory-layout of installed directory} (directories end with a slash)\\
 Hets/
 \begin{itemize}
 \item bin/
   \begin{itemize}
   \item hets --- the shell script derived from HetCATS/hets.in with
     properly set paths
-  \item isatool --- link to isabelle's isatool
-  \item isabelle --- link to isabelle
-  \item uDrawGraph --- link to uDrawGraph startup script
+  \item uDrawGraph --- link to uDrawGraph startup script; setup this
+    link even if uDrawGraph was found on the system
   \item SPASS --- a link to the SPASS binary
-  \item --- a link to the OWL-DL parser script
+  \item owlParser --- a link to the OWL-DL parser script which should
+    run properly
   \item getDailyHets.sh --- properly configured to download to Hets/lib/hets
   \end{itemize}
 \item lib/
   \begin{itemize}
-  \item Isabelle/ --- if installed via IzPack; properly configured
+  \item Isabelle/ --- if installed via IzPack; properly configured with\\
+        \texttt{isatool install -p <path to Isabelle directory>}
   \item spass-XX/ --- binary and source code of SPASS
   \item hets/ 
     \begin{itemize}
     \item hets-XX --- the real binary of hets with version number as extension,
       e.g. \verb,hets-0.52,
-    \item --- OEL-DL parser startup script
+    \item --- OWL-DL parser startup script
     \item --- jar-file(s) for OWL-DL parser
     \end{itemize}
+  \item el/ --- HetCATS/utils/el/ with properly configured casl.el to
+    find the installed bin/hets
   \item CASL-lib/ --- the CASL-lib libraries
   \item src/
     \begin{itemize}
