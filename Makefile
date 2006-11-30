@@ -352,7 +352,7 @@ tax_objects = $(patsubst %.hs, %.o, $(tax_sources))
 
 .PHONY : all hets-opt hets-optimized clean o_clean clean_pretty \
     real_clean bin_clean package_clean distclean packages \
-    http_pkg syb_pkg shellac_pkg shread_pkg hxt_pkg \
+    http_pkg syb_pkg shellac_pkg shread_pkg hxt_pkg haifa_pkg \
     check capa hacapa h2h h2hf showKP clean_genRules genRules \
     count doc apache_doc post_doc4apache fromKif \
     derivedSources install_hets install release cgi patch ghci
@@ -394,6 +394,11 @@ hxt_pkg: $(SETUP)
 	@if $(HCPKG) field hxt version; then \
           echo "of hxt package found"; else \
           (cd hxt; $(SETUPPACKAGE)) fi
+
+haifa_pkg: $(SETUP)
+	@if $(HCPKG) field HAIFA version; then \
+          echo "of HAIFA package found"; else \
+          (cd haifa-lite; $(SETUPPACKAGE)) fi
 
 patch:
 
@@ -612,14 +617,17 @@ real_clean: clean
 
 ### clean user packages
 package_clean:
+	$(HCPKG) unregister HAIFA --user || exit 0
 	$(HCPKG) unregister hxt --user || exit 0
 	$(HCPKG) unregister Shellac-readline --user || exit 0
 	$(HCPKG) unregister HTTP --user || exit 0
 	$(HCPKG) unregister syb-generics --user || exit 0
 	$(HCPKG) unregister Shellac --user || exit 0
+	$(RM) -r $(HOME)/.ghc/hets-packages
+	$(RM) -r $(HOME)/.ghc/$(ARCH)-$(OSBYUNAME)-hets-packages
 
 ### additionally removes generated files not in the CVS tree
-distclean: clean clean_genRules
+distclean: clean clean_genRules package_clean
 	$(RM) $(derived_sources)
 	$(RM) Modal/GeneratePatterns.inline.hs utils/appendHaskellPreludeString
 	$(RM) utils/DrIFT utils/genRules $(INLINEAXIOMS)
