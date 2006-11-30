@@ -420,16 +420,6 @@ hets.cgi: $(sources) GUI/hets_cgi.hs
 	ghc --make GUI/hets_cgi.hs -o $@ $(HC_OPTS) -O
 	strip hets.cgi
 
-###############################
-### TAGS files for (x)emacs
-# load them with "M-x" "visit-tags-table" from
-# "HetCATS/hetcats.TAGS"
-# use "M-." to search for a tag
-# !!Beware this is somewhat instable, because it uses an absolute path!!
-hetcats.TAGS: $(sources)
-	/home/ger/linux/ghc-5.04.2/bin/i386-unknown-linux/hasktags \
-	    $(sources); mv TAGS $@; mv tags hetcats.tags
-
 hets_maintainers.txt: $(sources)
 	@echo 'File : Maintainer' > $@
 	@echo -n Generating $@ " "
