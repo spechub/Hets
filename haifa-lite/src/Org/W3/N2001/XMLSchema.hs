@@ -1,4 +1,4 @@
-{-# OPTIONS -fglasgow-exts -fth -fallow-undecidable-instances -fcontext-stack60 #-}
+{-# OPTIONS -fglasgow-exts -fth -fallow-undecidable-instances #-}
 ----------------------------------------------------------------------------
 -- |
 -- Module      :  Org.W3.N2001.XMLSchema
