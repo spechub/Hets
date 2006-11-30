@@ -23,5 +23,5 @@ extensions:
         FunctionalDependencies,
 	UndecidableInstances,
         TemplateHaskell
-ghc-options: -O
+ghc-options: -O -fcontext-stack60
 hs-source-dirs: src
