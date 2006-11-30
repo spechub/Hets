@@ -259,7 +259,7 @@ class (ArrowPlus a, ArrowIf a) => ArrowTree a where
     --
     -- > "<html><head><title>The Title</title></head><body><h1>The content</h1></body></html>"
 
-    insertTreeTemplate	:: (ArrowTree a, Tree t) =>
+    insertTreeTemplate	:: Tree t =>
 			   a (t b) (t b) ->					-- the the template
 			   [IfThen (a (t b) c) (a (t b) (t b))] ->		-- the list of nodes in the template to be substituted
 			   a (t b) (t b)
