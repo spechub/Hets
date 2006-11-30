@@ -84,8 +84,9 @@ endif
 # remove -fno-warn-orphans for older ghcs and add -ifgl
 HC_WARN = -Wall -fno-warn-orphans
 HC_FLAGS = $(HAXML_PACKAGE) \
-    $(HC_WARN) -fglasgow-exts -fno-monomorphism-restriction \
-    -fallow-overlapping-instances -fallow-undecidable-instances
+    $(HC_WARN) -fglasgow-exts -fno-monomorphism-restriction -fcontext-stack60 \
+    -fallow-overlapping-instances -fallow-undecidable-instances 
+
 # -ddump-minimal-imports
 # flags also come in via  ../uni/uni-package.conf
 # but added it here in case of compilation without uni
