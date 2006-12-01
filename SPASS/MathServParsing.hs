@@ -15,6 +15,7 @@ Functions for parsing MathServ output into a MathServResponse structure.
 module SPASS.MathServParsing where
 
 import SPASS.MathServCommunication
+import Common.Utils (getEnvSave)
 
 import Network.URI
 import Network.Service
@@ -25,13 +26,42 @@ import Text.XML.HXT.Aliases
 import Text.XML.HXT.Parser hiding (when)
 import Text.XML.HXT.XPath
 
-import Data.Char (toUpper)
+import Data.Char (toUpper,isDigit)
 import Data.List
 import Data.Maybe
 
 import GHC.Read
 
 -- * Datatypes for MathServ services
+
+data ServerAddr = ServerAddr {
+     serverName :: String,
+     portNumber :: Int
+                             }
+
+instance Show ServerAddr where
+    showsPrec _ sAdd = 
+        (serverName sAdd++) . showChar ':' . (shows $ portNumber sAdd)
+
+instance Read ServerAddr where
+    readsPrec _ s = let (n,portRest) = span (/=':') s
+                        (port,rest) = if null portRest 
+                                      then ("","")
+                                      else span isDigit $ tail portRest
+                        portN = if null port 
+                                then 8080 
+                                else either (const 8080) id 
+                                         (readEither port)
+                    in [(ServerAddr {serverName = n, 
+                                   portNumber = portN },
+                        rest)]
+
+defaultServer :: ServerAddr 
+defaultServer = ServerAddr {
+        serverName = "denebola.informatik.uni-bremen.de",
+        portNumber = 8080
+                           }
+
 
 {- |
   Record type for all needed data to do a MathServ call.
@@ -207,6 +237,7 @@ callMathServ :: MathServCall -- ^ needed data to do a MathServ call
              -- ^ Left (SOAP error) or Right (MathServ output or error message)
 callMathServ call =
     do
+       serverPort <- getEnvSave defaultServer "HETS_MATH_SERV" readEither
        maybe (do
                 return $ Left $ "Could not start MathServ.")
              (\ endPoint -> do
@@ -220,13 +251,8 @@ callMathServ call =
                     return $ Right $ getResponse resp
              )
              (makeEndPoint $
-                "http://"++server++':':port++"/axis/services/"++
+                "http://"++show serverPort++"/axis/services/"++
                   (show $ mathServService call))
-    where
-    -- server data
-        server = "denebola.informatik.uni-bremen.de"
-        port = "8080"
-
 
 {- |
   Full parsing of RDF-objects returned by MathServ and putting the results
