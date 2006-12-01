@@ -30,6 +30,7 @@ rm -rf HetCATS
 cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:/repository \
     co -P HetCATS
 cd HetCATS
+$MAKE package_clean
 time $MAKE
 time $MAKE check
 $MAKE release
