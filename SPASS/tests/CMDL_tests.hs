@@ -6,7 +6,6 @@ module Main where
 import qualified Common.Lib.Map as Map 
 import qualified Common.Lib.Set as Set 
 import Common.Result
-import qualified Control.Concurrent as Concurrent
 
 import GUI.GenericATPState
 
@@ -19,6 +18,8 @@ import SPASS.ProveVampire
 import SPASS.ProveMathServ
 
 import System.IO (stdout, hSetBuffering, BufferMode(NoBuffering))
+import System.Environment (getArgs)
+import qualified Control.Concurrent as Concurrent
 
 -- * Definitions of test theories
 
@@ -114,7 +115,18 @@ theoryExt = (LProver.Theory signExt $ LProver.toThSens [ga_nonEmpty, ga_notDefBo
 
 -- * Testing functions
 main :: IO ()
-main = hSetBuffering stdout NoBuffering >> runTests
+main = do
+     args <- getArgs
+     if null args 
+        then hSetBuffering stdout NoBuffering >> runTests
+        else runMathServTest
+
+runMathServTest :: IO ()
+runMathServTest = do
+    runTest mathServBrokerCMDLautomatic "MathServ" "Foo1" theory1 
+                [LProver.Proved (Nothing)]
+    runTest vampireCMDLautomatic "Vampire" "Foo1" theory1 
+                [LProver.Proved (Nothing)]
 
 {- |
   Main function doing all tests (combinations of theory and prover) in a row.
@@ -198,7 +210,7 @@ runTest runCMDLProver prName thName th expStatus = do
                       return (maybeResult result)
     putStrLn $ if (succeeded stResult expStatus)
                  then "passed" 
-                 else ("failed"++ (unlines $ map show $ diags result))
+                 else ("failed\n"++ (unlines $ map show $ diags result))
 
 {- |
   Runs a CMDL automatic batch function (given as parameter) over a given
