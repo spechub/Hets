@@ -20,6 +20,9 @@ import Org.Xmlsoap.Schemas.Soap.Envelope as ENV
 
 import Data.Generics2
 import Data.Typeable
+import Data.List (intersperse)
+
+import Control.Monad (mapM_)
 
 data MathServServices = 
     ProveProblemOpt { in0 :: String
@@ -70,27 +73,35 @@ mkProveProblem :: Maybe String -- ^ extra options
                -> String -> Int -> MathServServices
 mkProveProblem mopts service operation = 
     case service of 
-     "VampireService" -> 
-         case operation of 
-          "ProveTPTPProblem" -> maybe ProveTPTPProblem
-                                      (\ opts -> \ x y -> 
-                                          ProveTPTPProblemWithOptions x y opts)
-                                      mopts
-          "ProveProblem" -> ProveProblem
-          _ -> fail $ "unknown Operation for service Broker\n"++
-                  "known operations: ProveProblem, ProveTPTPProblem"
      "Broker" -> case operation of 
                  "ProveProblemOpt" -> ProveProblemOpt
                  "ProveProblemChoice" -> ProveProblemChoice
                  _ -> fail $ "unknown Operation for service Broker\n"++
                        "known operations: ProveProblemOpt, ProveProblemChoice"
-     _ -> fail $ "unknown Service\nknown services: "++
-                          "VampireService, Broker"
+     x 
+         | x `elem` services -> singleATP
+         | otherwise -> fail $ "unknown Service\nknown services: "++
+                          "Broker,"++concat (intersperse "," services)
+    where singleATP =
+           case operation of 
+            "ProveTPTPProblem" -> maybe ProveTPTPProblem
+                                      (\ opts -> \ x y -> 
+                                          ProveTPTPProblemWithOptions x y opts)
+                                      mopts
+            "ProveProblem" -> ProveProblem
+            _ -> fail $ "unknown Operation for service \""++service++"\"\n"++
+                  "known operations: ProveProblem, ProveTPTPProblem"
+
+services :: [String]
+services = ["EService","SpassService","VampireService","WaldmeisterService",
+            "ParadoxService","DctpService","OtterService"]
 
 usage :: String -> IO ()
 usage m = do hPutStrLn stderr $
                  "Usage: soapTest <server-name> <port> <service-name> "++
-                 "<operation> <problem-file> <timeout> [<options>]\n"++m
+                 "<operation> <problem-file> <timeout> [<options>]\n"++
+                 "       soapTest --all <server-name> <port> "++
+                 "<operation> <problem-file> <timeout>\n"++m
              exitWith (ExitFailure 2)
 
 makeEndPoint :: String -> Maybe HTTPTransport
@@ -104,10 +115,21 @@ main :: IO ()
 main = do
    args <- getArgs
    if length args == 6
-      then doSoapCall Nothing args
+      then if head args == "--all" 
+              then allServices (tail args) 
+              else doSoapCall Nothing args
       else if length args == 7 
            then doSoapCall (Just $ last args) $ init args
            else usage "too few arguments"
+
+allServices :: [String] -> IO ()
+allServices args 
+    | length args == 5 = mapM_ doCall services
+    | otherwise = usage "somthing went wrong with allServices"
+    where doCall s = do
+             putStrLn $ "soapTest: Trying Service "++show s++"..."
+             doSoapCall Nothing (take 2 args ++ s: drop 2 args)
+             putStrLn "----------------\n"
 
 doSoapCall :: Maybe String -> [String] -> IO ()
 doSoapCall mopts (server:port:service:operation:problemFile:timeoutStr:[]) =
