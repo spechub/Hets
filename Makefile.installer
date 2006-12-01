@@ -18,7 +18,8 @@ IZPACK_SAMPLE = $(IZPACK_PATH)/sample
 #HETS_BIN = $(HOME)/bin/hets-$(ACTDATE)
 
 #PLATFORM = $(shell uname -s)
-GMPURL = http://www.informatike.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/mac/GMP.framework.zip
+GMPURL = http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/mac/GMP.framework.zip
+GNUreadline = http://www..informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/mac/GNUreadline-framework.zip
 INSTALL_XML_SOLARIS = $(IZPACK_SAMPLE)/pack/install-solaris.xml
 INSTALL_XML_MAC = $(IZPACK_PATH)/sample/pack/install-mac.xml
 INSTALL_XML_LINUX = $(IZPACK_PATH)/sample/pack/install-linux.xml
@@ -56,6 +57,8 @@ hetcats-make : daily-hets-download
 	cd $(TMP_PATH) ;\
 	cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:\/repository co -P HetCATS ; \
 	cd HetCATS ;\
+	cp LICENCE.txt $(IZPACK_SAMPLE)/pack/LICENCE.txt ;\
+	cp README  $(IZPACK_SAMPLE)/pack/README ;\
 	$(MAKE) release ;\
 	mv HetCATS.tar $(IZPACK_SAMPLE)/src/ ;\
 	mkdir $(IZPACK_SAMPLE)/hets/OWLParser ; \
@@ -99,6 +102,10 @@ other-download :
 	cd $(IZPACK_SAMPLE)/GMP ; \
 	unzip GMP.framework.zip ; \
 	$(RM) GMP.framework.zip 
+	wget --output-document=$(IZPACK_SAMPLE)/GNUreadline/GNUreadline-framework.zip $(GNUreadlineURL) ; \
+	cd $(IZPACK_SAMPLE)/GNUreadline ; \
+	unzip GNUreadline-framework.zip ; \
+	$(RM) GNUreadline-framework.zip 
 	wget --output-document=$(IZPACK_SAMPLE)/SPASS/LINUX/spass.tgz $(SPASSURL_LINUX)
 	wget --output-document=$(IZPACK_SAMPLE)/SPASS/SOLARIS/spass.tgz $(SPASSURL_SOLARIS)
 	wget --output-document=$(IZPACK_SAMPLE)/SPASS/MAC/spass.tgz $(SPASSURL_MAC)
