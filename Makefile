@@ -74,7 +74,7 @@ SETUP = utils/Setup
 SETUPPACKAGE = ../$(SETUP) clean; \
     ../$(SETUP) configure \
         --prefix=$(HOME)/.ghc/$(ARCH)-$(OSBYUNAME)-hets-packages; \
-    ../$(SETUP) build; ../$(SETUP) install --user
+    ../$(SETUP) build; ../$(SETUP) haddock; ../$(SETUP) install --user
 
 HAXMLVERSION = $(shell $(HCPKG) field HaXml version)
 ifneq ($(findstring 1.13.2, $(HAXMLVERSION)),)
@@ -219,7 +219,6 @@ HC_OPTS = $(HC_FLAGS) $(HC_INCLUDE) $(HC_PACKAGE) $(PFE_FLAGS) $(HC_PROF) \
 
 non_sources = utils/Setup.hs Common/LaTeX_maps.svmono.hs CspCASL/Main.hs \
     Common/CaslLanguage.hs ./Test.hs Static/LogicStructured.hs \
-    $(wildcard syb-generics/Data/Generics2/*.hs) \
     haifa-lite/src/Network/Server/HTTP.hs \
     $(wildcard haifa-lite/src/Org/W3/N2001/*.hs) \
     $(wildcard haifa-lite/src/Org/Xmlsoap/Schemas/Soap/*.hs) \
