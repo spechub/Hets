@@ -766,7 +766,16 @@ initialize_installer:
 	    mkdir $(INSTALLER_DIR) ; \
 	 fi ; \
 	 cp Makefile.installer $(INSTALLER_DIR)/Makefile ; \
-	 cp utils/getDailyHets.sh $(INSTALLER_DIR) ;\
+	 cp utils/getAllHets.sh $(INSTALLER_DIR) ;\
+	 echo ================================================  ; \
+	 echo If you have not logged in \'cvs.haskell.org\'  ;\
+	 echo then please \"cvs -d :pserver:anoncvs@cvs.haskell.org:/cvs login\" ;\
+	 echo the password is \"cvn\" ;\
+	 echo ------------------------------------------------   ;\
+	 echo If you have not logged in \'cvs-agbkb.informatik.uni-bremen.de\' ;\
+	 echo then please \"cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:/repository login\"  ;\
+	 echo the password is \"cvsread\" ;\
+	 echo ================================================    ;\
 	 echo Ready to create installers for Hets ;\
 	 echo Please do ;\
 	 echo "  -> cd $(INSTALLER_DIR)" ;\

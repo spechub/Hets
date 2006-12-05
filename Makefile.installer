@@ -19,7 +19,7 @@ IZPACK_SAMPLE = $(IZPACK_PATH)/sample
 
 #PLATFORM = $(shell uname -s)
 GMPURL = http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/mac/GMP.framework.zip
-GNUreadline = http://www..informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/mac/GNUreadline-framework.zip
+GNUreadlineURL = http://www..informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/mac/GNUreadline-framework.zip
 INSTALL_XML_SOLARIS = $(IZPACK_SAMPLE)/pack/install-solaris.xml
 INSTALL_XML_MAC = $(IZPACK_PATH)/sample/pack/install-mac.xml
 INSTALL_XML_LINUX = $(IZPACK_PATH)/sample/pack/install-linux.xml
@@ -57,6 +57,10 @@ hetcats-make : daily-hets-download
 	cd $(TMP_PATH) ;\
 	cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:\/repository co -P HetCATS ; \
 	cd HetCATS ;\
+	export HETS_VERSION=`cat version_nr` ;\
+	sed -e "s/^\(.*<appversion>\)[0-9.]*\(.*$\)/\1$(HETS_VERSION)\2/" $(IZPACK_SAMPLE)/pack/install-linux.xml > $(IZPACK_SAMPLE)/pack/install-linux.xml ;\
+	sed -e "s/^\(.*<appversion>\)[0-9.]*\(.*$\)/\1$(HETS_VERSION)\2/" $(IZPACK_SAMPLE)/pack/install-mac.xml > $(IZPACK_SAMPLE)/pack/install-mac.xml ;\
+	sed -e "s/^\(.*<appversion>\)[0-9.]*\(.*$\)/\1$(HETS_VERSION)\2/" $(IZPACK_SAMPLE)/pack/install-solaris.xml > $(IZPACK_SAMPLE)/pack/install-solaris.xml ;\
 	cp LICENCE.txt $(IZPACK_SAMPLE)/pack/LICENCE.txt ;\
 	cp README  $(IZPACK_SAMPLE)/pack/README ;\
 	$(MAKE) release ;\
@@ -70,9 +74,9 @@ hetcats-make : daily-hets-download
 	cd $(IZPACK_SAMPLE)/src ; tar xvf HetCATS.tar ; $(RM) HetCATS.tar
 
 daily-hets-download :
-	@sh getDailyHets.sh
-	mv getDailyHets.sh  $(IZPACK_SAMPLE)
-	mv $(HOME)/bin/hets-$(ACTDATE) $(IZPACK_SAMPLE)/hets/hets
+	@sh getAllHets.sh $(HETS_VERSION)
+	mv getAllHets.sh  $(IZPACK_SAMPLE)
+	mv $(HOME)/bin/hets/* $(IZPACK_SAMPLE)/hets/
 	# HETS_VER=$($(HETS_BIN) -V | sed "s%^.*[Vv]\(.*\),.*%\\1%") ; \
 	#@ln -s $(IZPACK_SAMPLE)/hets/hets-$(ACTDATE) $(IZPACK_SAMPLE)/hets
 
@@ -85,7 +89,6 @@ tools-checkout :
 	  cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:\/repository co -P uni ; \
 	 fi ;  \
 	 echo checkout programatica ; \
-	 cvs -d :pserver:anoncvs@cvs.haskell.org:/cvs login ; \
 	 cvs -d  :pserver:anoncvs@cvs.haskell.org:/cvs co \
              programatica/tools/base programatica/tools/property
 
@@ -116,8 +119,7 @@ other-download :
 build:
 	@chmod +x $(IZPACK_PATH)/bin/compile
 	$(IZPACK_COMPILE) $(INSTALL_XML_LINUX) -b $(IZPACK_SAMPLE)/ -o $(INSTALL_JAR_LINUX) -k standard
-	$(IZPACK_COMPILE) $(INSTALL_XML_SOLARIS) -b $(IZPACK_SAMPLE)/ -o $(INSTALL_JAR_SOLARIS) -k standard
-	$(IZPACK_COMPILE) $(INSTALL_XML_MAC) -b $(IZPACK_SAMPLE)/ -o $(INSTALL_JAR_MAC) -k standard
+
 
 cleanup:
 	@$(RM) -r $(IZPACK_PATH)
