@@ -1,6 +1,6 @@
 {-# OPTIONS -fglasgow-exts #-}
 {-# OPTIONS -fallow-undecidable-instances #-}
-{-# OPTIONS -fth #-}
+{-# OPTIONS -fth -cpp #-}
 
 module Data.Generics2.Instances where 
 
@@ -532,7 +532,9 @@ instance Sat (ctx TyCon) =>
 
 
 -- INSTANCE_TYPEABLE0(DataType,dataTypeTc,"DataType")
+#ifndef __HADDOCK__
 $(deriveTypeable [''DataType])
+#endif
 
 instance Sat (ctx DataType) =>
          Data ctx DataType where

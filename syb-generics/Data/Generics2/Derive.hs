@@ -1,4 +1,4 @@
-{-# OPTIONS -fglasgow-exts -fth -fallow-overlapping-instances #-}
+{-# OPTIONS -fglasgow-exts -fth -cpp -fallow-overlapping-instances #-}
 --
 -- The bulk of this module was shamelessly ripped from Ulf Norell,
 -- winner of the  Succ-zeroth International Obfuscated Haskell Code Contest. I
@@ -35,6 +35,7 @@ unqualName n = mkName $ nameBase n
 -- | Takes the name of an algebraic data type, the number of type parameters
 --   it has and creates a Typeable instance for it.
 deriveTypeablePrim :: Name -> Int -> Q [Dec]
+#ifndef __HADDOCK__
 deriveTypeablePrim name nParam
   | nParam <= maxTypeParams =
      sequence
@@ -53,6 +54,7 @@ deriveTypeablePrim name nParam
     typeOfName
       | nParam == 0  = mkName "typeOf"
       | otherwise    = mkName ("typeOf" ++ show nParam)
+#endif
 
 --
 -- | Takes a name of a algebraic data type, the number of parameters it
@@ -63,6 +65,7 @@ deriveTypeablePrim name nParam
 --
 --   Doesn't do gunfold, dataCast1 or dataCast2
 deriveDataPrim :: Name -> [TypeQ] -> [(Name, Int)] -> [(Name, [(Maybe Name, Type)])] -> Maybe TypeQ -> Q [Dec]
+#ifndef __HADDOCK__
 deriveDataPrim name typeQParams cons terms ctx =
   do sequence (
       conDecs ++
@@ -161,8 +164,10 @@ deriveDataPrim name typeQParams cons terms ctx =
 
          mkSel (c,n) e = match  (conP c $ replicate n wildP)
                          (normalB e) []
+#endif
 
 deriveMinimalData :: Name -> Int  -> Q [Dec]
+#ifndef __HADDOCK__
 deriveMinimalData name nParam  = do
    decs <- qOfDecs
    let listOfDecQ = map return decs
@@ -183,6 +188,7 @@ deriveMinimalData name nParam  = do
                             show (typeOf x))
            gfoldl f z x = z x
         |]
+#endif
 
 {- instance Data NameSet where
    gunfold _ _ _ = error ("gunfold not implemented")

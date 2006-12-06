@@ -1,4 +1,4 @@
-{-# OPTIONS -fglasgow-exts #-}
+{-# OPTIONS -fglasgow-exts -cpp #-}
 {-# OPTIONS -fallow-undecidable-instances #-}
 {-# OPTIONS -fallow-overlapping-instances #-}
 
@@ -68,10 +68,11 @@ newtype DictQ q r a = DictQ { dictQ :: q -> a -> r }
 -- Apply a query
 
 applyQ :: forall q r a . Sat (DictQ q r a) => q -> a -> r
+#ifndef __HADDOCK__
 applyQ (q::q) (a::a) = r
   where
    r::r = dictQ ( dict :: DictQ q r a ) q a
-
+#endif
 
 -- Map queries to functions
 
@@ -97,10 +98,11 @@ newtype DictM t m a = DictM { dictM :: t -> a -> m a }
 -- Apply a monadic transformation
 
 applyM :: forall t m a . (Monad m, Sat (DictM t m a)) => t -> a -> m a
+#ifndef __HADDOCK__
 applyM (t::t) (a::a) = r
  where
   r::m a = dictM ( dict :: DictM t m a ) t a
-
+#endif
 
 -- Map monadic transformations to functions
 
@@ -133,10 +135,11 @@ newtype DictR t m a = DictR { dictR :: t -> m a }
 -- Apply a monadic read
 
 applyR :: forall t m a . (Monad m, Sat (DictR t m a)) => t -> m a
+#ifndef __HADDOCK__
 applyR (t::t) = r
  where
   r::m a = dictR ( dict :: DictR t m a ) t
-
+#endif
 
 -- Map monadic read to functions
 
