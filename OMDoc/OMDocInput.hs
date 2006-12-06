@@ -2310,7 +2310,11 @@ importGraphToLibEnvOM
         go
         (Map.map (\(a, _, c, _) -> (a, c)) processedSpecMap)
     conProcSpecMap = processConstructorsOM processedSpecMap ffxiMap
-    partMap = createGraphPartsOM conProcSpecMap ffxiMap 
+    ffxiWithConsMap =
+      createFFXIMap
+        go
+        (Map.map (\(a, _, c, _) -> (a, c)) conProcSpecMap)
+    partMap = createGraphPartsOM conProcSpecMap ffxiWithConsMap 
     graphMap =
       Map.map
         (\(nodes, edges) ->

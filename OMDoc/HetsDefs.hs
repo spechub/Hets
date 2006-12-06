@@ -3814,7 +3814,10 @@ matchConsWithOps
                     )
                     iwons
               of
-                [] -> Debug.Trace.trace ("No Operator for Constructor " ++ (show iwon)) (iwon, name)
+                [] ->
+--                 Debug.Trace.trace
+--                    ("No Operator for Constructor " ++ (show (iwon, name)))
+                    (iwon, name)
                 ((_, name'):_) -> (iwon, name')
             _ ->
               (iwon, name)
