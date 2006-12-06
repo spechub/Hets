@@ -276,8 +276,13 @@ createOMDefLink::
   ->OMDoc.Imports
 createOMDefLink lenv ln (from, to, ll) uniqueNames names =
   let
-    dg = devGraph $ Map.findWithDefault (error "!") ln lenv
-    fromnode = Data.Maybe.fromMaybe (error "!") $ Graph.lab dg from
+    e_fname = "OMDoc.OMDocOutput.createOMDefLink: "
+    dg = lookupDGraph ln lenv
+    fromnode =
+      Data.Maybe.fromMaybe
+        (error (e_fname ++ "No such node!"))
+        $
+        Graph.lab dg from
     fromname =
       case
         find
@@ -286,7 +291,8 @@ createOMDefLink lenv ln (from, to, ll) uniqueNames names =
           )
           names
       of
-        Nothing -> error "No such node in names!"
+        Nothing ->
+          error (e_fname ++ "No such node in names!")
         (Just inm) -> Hets.inmGetNodeId inm
     liburl =
       if isDGRef fromnode
@@ -301,7 +307,8 @@ createOMDefLink lenv ln (from, to, ll) uniqueNames names =
         _ -> OMDoc.ITGlobal
     mommorph = createOMMorphism lenv ln (from, to, ll) uniqueNames names
     fromuri = case URI.parseURIReference (liburl ++ "#" ++ fromname) of
-      Nothing -> error "!"
+      Nothing ->
+        error (e_fname ++ "Error parsing URI!")
       (Just u) -> u
   in
     OMDoc.Imports fromuri [] mommorph Nothing linktype
@@ -315,9 +322,18 @@ createXmlThmLinkOM::
   ->OMDoc.Inclusion
 createXmlThmLinkOM lenv ln (edge@(from, to, ll)) uniqueNames names =
   let
-    dg = devGraph $ Map.findWithDefault (error "!") ln lenv
-    fromnode = Data.Maybe.fromMaybe (error "!") $ Graph.lab dg from
-    tonode = Data.Maybe.fromMaybe (error "!") $ Graph.lab dg to
+    e_fname = "OMDoc.OMDocOutput.createXmlThmLinkOM: "
+    dg = lookupDGraph ln lenv
+    fromnode =
+      Data.Maybe.fromMaybe
+        (error (e_fname ++ "No such node (from)!"))
+        $
+        Graph.lab dg from
+    tonode =
+      Data.Maybe.fromMaybe
+        (error (e_fname ++ "No such node (to)!"))
+        $
+        Graph.lab dg to
     fromname =
       case
         find
@@ -326,7 +342,8 @@ createXmlThmLinkOM lenv ln (edge@(from, to, ll)) uniqueNames names =
           )
           names
       of
-        Nothing -> error "No such node in names!"
+        Nothing ->
+          error (e_fname ++ "No such node in names!")
         (Just inm) -> Hets.inmGetNodeId inm
     toname =
       case
@@ -336,7 +353,8 @@ createXmlThmLinkOM lenv ln (edge@(from, to, ll)) uniqueNames names =
           )
           names
       of
-        Nothing -> error "No such node in names!"
+        Nothing ->
+          error (e_fname ++ "No such node in names!")
         (Just inm) -> Hets.inmGetNodeId inm
     liburl =
       if isDGRef fromnode
@@ -354,17 +372,17 @@ createXmlThmLinkOM lenv ln (edge@(from, to, ll)) uniqueNames names =
       case dgl_type ll of
         (Static.DevGraph.GlobalThm {}) -> False
         (Static.DevGraph.LocalThm {}) -> True
-        _ -> error "corrupt data"
+        _ -> error (e_fname ++ "corrupt data!")
     cons =
       case dgl_type ll of
         (Static.DevGraph.GlobalThm _ c _) -> consConv c
         (Static.DevGraph.LocalThm _ c _) -> consConv c
-        _ -> error "corrupt data"
+        _ -> error (e_fname ++ "corrupt data!")
     touri = case URI.parseURIReference (toliburl ++ "#" ++ toname) of
-      Nothing -> error "!"
+      Nothing -> error (e_fname ++ "Error parsing URI (to)!")
       (Just u) -> u
     fromuri = case URI.parseURIReference (liburl ++ "#" ++ fromname) of
-      Nothing -> error "!"
+      Nothing -> error (e_fname ++ "Error parsing URI (from)!")
       (Just u) -> u
     iid =
       (if isaxinc then "ai" else "ti")
@@ -401,15 +419,16 @@ createOMMorphism
   names
   =
   let
+    e_fname = "OMDoc.OMDocOutput.createOMMorphism: "
     caslmorph = Hets.getCASLMorphLL ll
     fromIdNameMapping =
       Data.Maybe.fromMaybe
-        (error "!")
+        (error (e_fname ++ "Cannot find Id-Name-Mapping (from)!"))
         $
         Hets.inmFindLNNN (ln, from) names
     toIdNameMapping =
       Data.Maybe.fromMaybe
-        (error "!")
+        (error (e_fname ++ "Cannot find Id-Name-Mapping (to)!"))
         $
         Hets.inmFindLNNN (ln, to) names
     mappedsorts =
@@ -424,7 +443,7 @@ createOMMorphism
                     (\(oid', _) -> oid' == origsort)
                     (Hets.inmGetIdNameSortSet fromIdNameMapping)
               of
-               [] -> error "Sort not in From-Set!" 
+               [] -> error (e_fname ++ "Sort not in From-Set!")
                s:_ -> snd s
             nname =
               case
@@ -434,13 +453,13 @@ createOMMorphism
                     (\(nid', _) -> nid' == newsort)
                     (Hets.inmGetIdNameSortSet toIdNameMapping)
               of
-               [] -> error "Sort not in To-Set!" 
+               [] -> error (e_fname ++ "Sort not in To-Set!")
                s:_ -> snd s
             oorigin =
               case
                 Hets.getNameOrigin names ln from oname
               of
-                [] -> error "!"
+                [] -> error (e_fname ++ "Cannot find origin of name (from)!")
                 o:[] -> o
                 o:_ ->
                   Debug.Trace.trace
@@ -451,7 +470,7 @@ createOMMorphism
               case
                 Hets.getNameOrigin names ln to nname
               of
-                [] -> error "!"
+                [] -> error (e_fname ++ "Cannot find origin of name (to)!")
                 n:[] -> n
                 n:_ ->
                   Debug.Trace.trace
@@ -475,7 +494,14 @@ createOMMorphism
                     (\((oid', _), _) -> oid' == origpred)
                     (Hets.inmGetIdNamePredSet fromIdNameMapping)
               of
-               [] -> error ("Pred not in From-Set! " ++ show origpred ++ " not in " ++ show (Hets.inmGetIdNamePredSet fromIdNameMapping))
+               [] ->
+                error 
+                  (
+                    e_fname
+                    ++ "Pred not in From-Set! " ++ show origpred
+                    ++ " not in "
+                    ++ show (Hets.inmGetIdNamePredSet fromIdNameMapping)
+                  )
                s:_ -> snd s
             nname =
               case
@@ -485,13 +511,13 @@ createOMMorphism
                     (\((nid', _), _) -> nid' == newpred)
                     (Hets.inmGetIdNamePredSet toIdNameMapping)
               of
-               [] -> error "Pred not in To-Set!" 
+               [] -> error (e_fname ++ "Pred not in To-Set!")
                s:_ -> snd s
             oorigin =
               case
                 Hets.getNameOrigin names ln from oname
               of
-                [] -> error "!"
+                [] -> error (e_fname ++ "No origin for predicate (from)!")
                 o:[] -> o
                 o:_ ->
                   Debug.Trace.trace
@@ -502,7 +528,7 @@ createOMMorphism
               case
                 Hets.getNameOrigin names ln to nname
               of
-                [] -> error "!"
+                [] -> error (e_fname ++ "No origin for predicate (to)!")
                 n:[] -> n
                 n:_ ->
                   Debug.Trace.trace
@@ -526,7 +552,7 @@ createOMMorphism
                     (\((oid', _), _) -> oid' == origop)
                     (Hets.inmGetIdNameOpSet fromIdNameMapping)
               of
-               [] -> error "Op not in From-Set!" 
+               [] -> error (e_fname ++ "Op not in From-Set!")
                s:_ -> snd s
             nname =
               case
@@ -536,13 +562,13 @@ createOMMorphism
                     (\((nid', _), _) -> nid' == newop)
                     (Hets.inmGetIdNameOpSet toIdNameMapping)
               of
-               [] -> error "Op not in To-Set!" 
+               [] -> error (e_fname ++ "Op not in To-Set!")
                s:_ -> snd s
             oorigin =
               case
                 Hets.getNameOrigin names ln from oname
               of
-                [] -> error "!"
+                [] -> error (e_fname ++ "No origin for operator (from)!")
                 o:[] -> o
                 o:_ ->
                   Debug.Trace.trace
@@ -553,7 +579,7 @@ createOMMorphism
               case
                 Hets.getNameOrigin names ln to nname
               of
-                [] -> error "!"
+                [] -> error (e_fname ++ "No origin for operator (to)!")
                 n:[] -> n
                 n:_ ->
                   Debug.Trace.trace
@@ -793,7 +819,7 @@ createADTFor rel s idNameMapping constructors =
   getNameE::Id.Id->String
   getNameE sid =
     Data.Maybe.fromMaybe
-      (error "!")
+      (error "OMDoc.OMDocOutput.createADTFor#getNameE: Cannot find name!")
       $
       lookupName (Hets.inmGetIdNameSortSet idNameMapping) sid
 
@@ -814,7 +840,8 @@ libEnvLibNameIdNameMappingToOMDoc
   fullNames
   =
     let
-      dg = devGraph $ Map.findWithDefault (error "!") ln lenv
+      e_fname = "OMDoc.OMDocOutput.libEnvLibNameIdNameMappingToOMDoc: "
+      dg = lookupDGraph ln lenv
       thmLinksToRefs =
         filter
           (\(_, to, _) ->
@@ -852,7 +879,7 @@ libEnvLibNameIdNameMappingToOMDoc
                   )
                   fullNames
               of
-                Nothing -> error "No such name..."
+                Nothing -> error (e_fname ++ "No such name...")
                 (Just a) -> a
             uniqueidnamemapping =
               case
@@ -864,7 +891,7 @@ libEnvLibNameIdNameMappingToOMDoc
                   )
                   uniqueNames
               of
-                Nothing -> error "No such name..."
+                Nothing -> error (e_fname ++ "No such name...")
                 (Just a) -> a
             theoryXmlId = (Hets.inmGetNodeId idnamemapping)
             theoryPresentation =
@@ -1108,15 +1135,16 @@ predicationToXmlOM
   (pid, pt)
   =
     let
+      e_fname = "OMDoc.OMDocOutput.predicationToXmlOM: "
       pidxmlid =
         Data.Maybe.fromMaybe
-          (error ("No name for \"" ++ show pid ++ "\""))
+          (error (e_fname ++ "No name for \"" ++ show pid ++ "\""))
           (Hets.getNameForPred [currentmapping] (pid, pt))
       argnames =
         map
           (\args ->
             Data.Maybe.fromMaybe
-              (error ("No name for \"" ++ show args ++ "\""))
+              (error (e_fname ++ "No name for \"" ++ show args ++ "\""))
               (Hets.getNameForSort [currentmapping] args)
           )
           (predArgs pt)
@@ -1124,7 +1152,7 @@ predicationToXmlOM
         map
           (\argxmlid ->
             case Hets.getNameOrigin [currentmapping] ln nn argxmlid of
-              [] -> error ("No origin for Sort " ++ show argxmlid)
+              [] -> error (e_fname ++ "No origin for Sort " ++ show argxmlid)
               [o] -> getNodeNameForXml o
               (o:_) ->
                 Debug.Trace.trace
@@ -1182,15 +1210,16 @@ operatorToXmlOM
   (oid, ot)
   =
     let
+      e_fname = "OMDoc.OMDocOutput.operatorToXmlOM: "
       oidxmlid =
         Data.Maybe.fromMaybe
-          (error ("No name for \"" ++ show oid ++ "\""))
+          (error (e_fname ++ "No name for \"" ++ show oid ++ "\""))
           (Hets.getNameForOp [currentmapping] (oid, ot))
       argnames =
         map
           (\args ->
             Data.Maybe.fromMaybe
-              (error ("No name for \"" ++ show args ++ "\""))
+              (error (e_fname ++ "No name for \"" ++ show args ++ "\""))
               (Hets.getNameForSort [currentmapping] args)
           )
           (opArgs ot)
@@ -1198,7 +1227,7 @@ operatorToXmlOM
         map
           (\argxmlid ->
             case Hets.getNameOrigin [currentmapping] ln nn argxmlid of
-              [] -> error ("No origin for Sort " ++ show argxmlid)
+              [] -> error (e_fname ++ "No origin for Sort " ++ show argxmlid)
               [o] -> getNodeNameForXml o
               (o:_) ->
                 Debug.Trace.trace
@@ -1213,11 +1242,11 @@ operatorToXmlOM
           argorigins
       resxmlid =
         Data.Maybe.fromMaybe
-          (error ("No name for \"" ++ show (opRes ot) ++ "\""))
+          (error (e_fname ++ "No name for \"" ++ show (opRes ot) ++ "\""))
           (Hets.getNameForSort [currentmapping] (opRes ot))
       resorigin =
         case Hets.getNameOrigin [currentmapping] ln nn resxmlid of
-          [] -> error ("No origin for Sort " ++ show resxmlid)
+          [] -> error (e_fname ++ "No origin for Sort " ++ show resxmlid)
           [o] -> getNodeNameForXml o
           (o:_) ->
             Debug.Trace.trace
@@ -1517,7 +1546,9 @@ createSymbolForSortOM
             fullNames
             s
         of
-          Nothing -> error "!"
+          Nothing ->
+            error "OMDoc.OMDocOutput.createSymbolForSortOM: \
+              \Cannot find sort origin!"
           (Just (sx, so)) ->
             (
                 sx
@@ -1595,19 +1626,15 @@ createSymbolForPredicationOM::
   ->OMDoc.OMSymbol
 createSymbolForPredicationOM _ lenv ln nn uniqueNames fullNames ps =
     let
+      e_fname = "OMDoc.OMDocOutput.createSymbolForPredicationOM: "
       currentNode =
         fromMaybe
-          (error "!!!")
+          (error (e_fname ++ "No such node!"))
           $
           (flip Graph.lab)
             nn
             $
-            devGraph
-              $
-              Map.findWithDefault
-                (error "!!")
-                ln
-                lenv
+            lookupDGraph ln lenv
       currentSign = Hets.getJustCASLSign $ Hets.getCASLSign (dgn_sign currentNode)
       currentRel = sortRel currentSign
       (predxmlid, predorigin) =
@@ -1620,7 +1647,7 @@ createSymbolForPredicationOM _ lenv ln nn uniqueNames fullNames ps =
             ps
         of
           Nothing ->
-            error "!"   
+            error (e_fname ++ "No origin for predicate!")   
           (Just (predx, predo)) ->
             (   
                 predx
@@ -1705,19 +1732,15 @@ processOperatorOM::
 processOperatorOM _ lenv ln nn uniqueNames fullNames
     os =
     let
+      e_fname = "OMDoc.OMDocOutput.processOperatorOM: "
       currentNode =
         fromMaybe
-          (error "!!!")
+          (error (e_fname ++ "No such node!"))
           $
           (flip Graph.lab)
             nn
             $
-            devGraph
-              $
-              Map.findWithDefault
-                (error "!!")
-                ln
-                lenv
+            lookupDGraph ln lenv
       currentSign =
         Hets.getJustCASLSign $ Hets.getCASLSign (dgn_sign currentNode)
       currentRel = sortRel currentSign
@@ -1731,7 +1754,7 @@ processOperatorOM _ lenv ln nn uniqueNames fullNames
             os
         of
           Nothing ->
-            error "!"   
+            error (e_fname ++ "No origin for operator!")
           (Just (opx, opo)) ->
             (   
                 opx
@@ -1829,7 +1852,8 @@ processTermOM go lenv ln nn uniqueNames fullNames
   (Sorted_term t _ _) =
     processTermOM go lenv ln nn uniqueNames fullNames t
 -- Unsupported Terms...
-processTermOM _ _ _ _ _ _ _ = error "Unsupported Term encountered..." 
+processTermOM _ _ _ _ _ _ _ =
+  error "OMDoc.OMDocOutput.processTermOM: Unsupported Term encountered..." 
 
 processFormulaOM::
   GlobalOptions
@@ -2015,7 +2039,8 @@ processConstraintsOM::
   ->[Hets.IdNameMapping]
   ->[ABC.Constraint]
   ->OMDoc.OMElement
-processConstraintsOM _ _ _ _ _ _ [] = error "!"
+processConstraintsOM _ _ _ _ _ _ [] =
+  error "OMDoc.OMDocOutput.processConstraintsOM: No constraints!"
 processConstraintsOM go lenv ln nn uN fN ((ABC.Constraint news ops' origs):_)
   =
     OMDoc.mkOMBINDE
@@ -2116,7 +2141,10 @@ wrapFormulaCMPOM
       of
         Nothing ->
           error
-            ("No unique name for Sentence \"" ++ Ann.senName ansen ++ "\"")
+            (
+              "OMDoc.OMDocOutput.wrapFormulaCMPOM: \
+              \No unique name for Sentence \"" ++ Ann.senName ansen ++ "\""
+            )
         (Just n) -> n
     sens = Ann.sentence ansen
     sposl = Id.getPosList sens
