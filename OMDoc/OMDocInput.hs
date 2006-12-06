@@ -151,9 +151,10 @@ extractConsXNWONFromOMADT::
   ->(XmlNamedWONId, [(XmlNamedWONId, OpTypeXNWON)])
 extractConsXNWONFromOMADT ffxi (origin, theory) adt =
   let
+    e_fname = "OMDoc.OMDocInput.extractConsXNWONFromOMADT: "
     sortdef =
       case OMDoc.adtSortDefs adt of
-        [] -> error "Empty SortDefs!"
+        [] -> error (e_fname ++ "Empty SortDefs!")
         (sd:_) -> sd
     sorts' = OMDoc.sortDefName sortdef
     sortid =
@@ -162,7 +163,7 @@ extractConsXNWONFromOMADT ffxi (origin, theory) adt =
             origin
             (mapSetToSet $ xnSortsMap ffxi)
               of
-                Nothing -> error "No sort for ADT!"
+                Nothing -> error (e_fname ++ "No sort for ADT!")
                 (Just si) -> si
     cons = OMDoc.sortDefConstructors sortdef
   in
@@ -174,6 +175,8 @@ extractConsXNWONFromOMADT ffxi (origin, theory) adt =
       ->(XmlNamedWONId, OpTypeXNWON) -- empty list on error
     extractConXNWON con sortid =
       let
+        e_fname =
+          "OMDoc.OMDocInput.extractConsXNWONFromOMADT#extractConXNWON: "
         conxname = OMDoc.constructorName con
         conid =
           case
@@ -201,8 +204,8 @@ extractConsXNWONFromOMADT ffxi (origin, theory) adt =
                   case ome of
                     (OMDoc.OMES oms) ->
                       OMDoc.omsName oms
-                    _ -> error "Invalid Element for SortDefArgs!"
-                _ -> error "Can't handle Argument of non-OMOBJ type!"
+                    _ -> error (e_fname ++ "Invalid Element for SortDefArgs!")
+                _ -> error (e_fname ++ "Can't handle Argument of non-OMOBJ type!")
             )
             (OMDoc.constructorArguments con)
         argsxn =
@@ -213,7 +216,7 @@ extractConsXNWONFromOMADT ffxi (origin, theory) adt =
                     origin
                     (mapSetToSet $ xnSortsMap ffxi)
                       of
-                        Nothing -> error "Unknown sort in constructor..."
+                        Nothing -> error (e_fname ++ "Unknown sort in constructor...")
                         (Just x) -> x
             )
             args
@@ -820,7 +823,8 @@ importsFromAOMSet txns aomset =
       let
         name =
           case getTheoryXmlName txns gn of
-            Nothing -> error "!"
+            Nothing ->
+              error "OMDoc.OMDocInput.importsFromAOMSet: Theory has no name!"
             (Just x) -> x
         imports = importsFromOMTheory omt
       in
@@ -893,7 +897,7 @@ consXNWONFromOMTheory ffxi (origin, theory) =
                   list
                 else
                   list ++ [(excon, exconlist)]
-          _ -> error "!"
+          _ -> error "OMDoc.OMDocInput.consXNWONFromOMTheory: This should not happen!"
       ) [] adts 
 
 
@@ -951,11 +955,12 @@ importGraphToSpecsOM
   n
   =
   let
+    e_fname = "OMDoc.OMDocInput.importGraphToSpecsOM: "
     node =
       case
         Graph.lab ig n
       of
-        Nothing -> error "node error!"
+        Nothing -> error (e_fname ++ "node error!")
         (Just n') -> n'
     (sourcename, omdoc) = (\(S (sn, _) o) -> (sn, o)) node
     refimports = (\x ->
@@ -983,8 +988,13 @@ importGraphToSpecsOM
           let
             moriginnode = Graph.lab ig from
             (S (slibname, _) _) = case moriginnode of
-              Nothing -> error ("node error (Import of "
-                ++ theoname ++ " from " ++ (show from) ++ " )!")
+              Nothing ->
+                error
+                  (
+                    e_fname
+                    ++ "node error (Import of "
+                    ++ theoname ++ " from " ++ (show from) ++ " )!"
+                  )
               (Just n' ) -> n'
           in
             ReferenceSpecification
@@ -1058,6 +1068,7 @@ processSpecMapOM
   sm
   =
   let
+    e_fname = "OMDoc.OMDocInput.processSpecMapOM: "
     importsFromMap =
       Map.foldWithKey
         (\sourcename (ts, _ , _, _) iFM ->
@@ -1078,7 +1089,15 @@ processSpecMapOM
             unkeys = Map.keys uM
             unimports =
               map
-                (\uk -> (uk, Map.findWithDefault (error "!") uk importsFromMap))
+                (\uk ->
+                  (
+                      uk
+                    , Map.findWithDefault
+                        (error (e_fname ++ "No Imports for Key!"))
+                        uk
+                        importsFromMap
+                  )
+                )
                 unkeys
             freeun =
               filter (\(_, i) -> all (flip elem (Map.keys pM)) i) unimports
@@ -1088,9 +1107,13 @@ processSpecMapOM
                 (pM, uM, noActionSince + 1)
               else
                 let
-                  currentSource = fst $ ehead "processSpecMapOM, currentSource" freeun
+                  currentSource =
+                    fst $ ehead (e_fname ++ "currentSource") freeun
                   (ctslist, clslist, cxntheoryset, caxmlset) =
-                    Map.findWithDefault (error "!") currentSource uM
+                    Map.findWithDefault
+                      (error (e_fname ++ "No Entry for currentSource!"))
+                      currentSource
+                      uM
                   resolvedrefs =
                     map
                       (\ts ->
@@ -1110,9 +1133,9 @@ processSpecMapOM
                                       Map.findWithDefault
                                         (
                                             []
-                                          , error "OMDoc.OMDocInput"
-                                          , error "OMDoc.OMDocInput"
-                                          , error "OMDoc.OMDocInput"
+                                          , error (e_fname ++ "ref-lookup")
+                                          , error (e_fname ++ "ref-lookup")
+                                          , error (e_fname ++ "ref-lookup")
                                         )
                                         refsource
                                         uM
@@ -1576,7 +1599,7 @@ performDefLinkSpecification
   tsTo
   =
   let
-   r@(newTS, _) =
+   r@(_{-newTS-}, _) =
     if isDef (ls_type ls)
       then
         let
@@ -1787,7 +1810,7 @@ performDefLinkSpecification
   in
     if (ls_fromname ls) /= (ts_name tsFrom) || (ls_toname ls) /= (ts_name tsTo)
       then
-        error "Wrong application!"
+        error "OMDoc.OMDocInput.performDefLinkSpecification: Wrong application!"
       else
       {-
         Debug.Trace.trace
@@ -1986,7 +2009,7 @@ createDGLinkFromLinkSpecification
   in
     if (ls_fromname ls) /= (ts_name tsFrom) || (ls_toname ls) /= (ts_name tsTo)
       then
-        error "Wrong application!"
+        error "OMDoc.OMDocInput.createDGLinkFromLinkSpecification: Wrong application!"
       else
         (
             ts_nodenum tsFrom
@@ -2074,6 +2097,7 @@ createFinalDGraph
   edges
   =
   let
+    e_fname = "OMDoc.OMDocInput.createFinalDGraph: "
     newedges =
       map
         (\(from, to, edge) ->
@@ -2082,16 +2106,22 @@ createFinalDGraph
               case
                 filter (\(n, _) -> n == from) nodes
               of
-                [] -> error ("Cannot make link from #" ++ (show from))
+                [] -> error (e_fname ++ "Cannot make link from #" ++ (show from))
                 ((_, n):_) -> n
             tonode =
               case
                 filter (\(n, _) -> n == to) nodes
               of
-                [] -> error ("Cannot make link to #" ++ (show to))
+                [] -> error (e_fname ++ "Cannot make link to #" ++ (show to))
                 ((_, n):_) -> n
-            fromcaslsign = Data.Maybe.fromMaybe (error "!") (Hets.getCASLSign (dgn_sign fromnode))
-            tocaslsign = Data.Maybe.fromMaybe (error "!") (Hets.getCASLSign (dgn_sign tonode))
+            fromcaslsign =
+              Data.Maybe.fromMaybe
+                (error (e_fname ++ "Unable to get CASL-Sign from node (from)!"))
+                (Hets.getCASLSign (dgn_sign fromnode))
+            tocaslsign =
+              Data.Maybe.fromMaybe
+                (error (e_fname ++ "Unable to get CASL-Sign from node (to)!"))
+                (Hets.getCASLSign (dgn_sign tonode))
             currentmorph = Hets.getCASLMorphLL edge
             newmorph =
               if
@@ -2163,9 +2193,10 @@ processConstructorsOM
   Map.mapWithKey
     (\k (tslist, b, c, tos) ->
       let
+        e_fname = "OMDoc.OMDocInput.processConstructorsOM: "
         thisffxi =
           Map.findWithDefault
-            (error "error finding ffxi!")
+            (error (e_fname ++ "error finding ffxi!"))
             k
             ffximap
         mappedspecs =
@@ -2176,7 +2207,7 @@ processConstructorsOM
                   case
                     find (\(nn, _) -> nn == (ts_nodenum ts)) (Set.toList tos)
                   of
-                    Nothing -> error ("no xml for " ++ ts_name ts)
+                    Nothing -> error (e_fname ++ "no xml for " ++ ts_name ts)
                     (Just x) -> x
               in
                 if isRefSpec ts
@@ -2203,9 +2234,10 @@ createGraphPartsOM
   Map.mapWithKey
     (\k (tslist, lslist, _, axmls) ->
       let
+        e_fname = "OMDoc.OMDocInput.createGraphPartsOM: "
         thisffxi =
           Map.findWithDefault
-            (error "error finding ffxi!")
+            (error (e_fname ++ "error finding ffxi!"))
             k
             ffximap
         nodes =
@@ -2216,7 +2248,7 @@ createGraphPartsOM
                   case
                     find (\(origin, _) -> origin == (ts_nodenum ts)) (Set.toList axmls)
                   of
-                    Nothing -> error ("no xml for " ++ ts_name ts)
+                    Nothing -> error (e_fname ++ "no xml for " ++ ts_name ts)
                     (Just x) -> x
               in
                 createNodeFromSpecOM
@@ -2233,7 +2265,7 @@ createGraphPartsOM
                   case
                     filter (\ts -> ts_name ts == ls_fromname ls) tslist
                   of
-                    [] -> error ("Unable to find source node " ++ (ls_fromname ls))
+                    [] -> error (e_fname ++ "Unable to find source node " ++ (ls_fromname ls))
                     (n:_) -> n
                 tots =
                   case
@@ -2242,7 +2274,8 @@ createGraphPartsOM
                     [] ->
                       error
                         (
-                          "Unable to find target node " ++ (ls_toname ls)
+                          e_fname
+                          ++ "Unable to find target node " ++ (ls_toname ls)
                           ++ " known names : " ++
                           (show (map ts_name tslist))
                         )
@@ -2295,7 +2328,11 @@ importGraphToLibEnvOM
             )
           )
           (Map.toList graphMap)
-    firstSourceNode = Data.Maybe.fromMaybe (error "!") $ Graph.lab ig 1
+    firstSourceNode =
+      Data.Maybe.fromMaybe
+        (error "OMDoc.OMDocInput.importGraphToLibEnvOM: No first node!")
+        $
+        Graph.lab ig 1
     firstSource = (\(S (sn, _) _) -> sn) firstSourceNode
     asKey = (ASL.Lib_id (ASL.Indirect_link firstSource Id.nullRange)) 
     firstDG = lookupDGraph asKey libenv
@@ -2509,11 +2546,15 @@ maybeGetXml source =
 maybeFindXml::String->[String]->IO (Maybe HXT.XmlTrees)
 maybeFindXml source includes =
   let
+    e_fname = "OMDoc.OMDocInput.maybeFindXml: "
     muri = URI.parseURIReference source
-    uri = fromMaybe (error "cannot parse URIReference") muri
+    uri = fromMaybe (error (e_fname ++ "cannot parse URIReference")) muri
     isFile = (length (URI.uriScheme $ uri)) == 0
     filePath = URI.uriPath uri
-    isAbsolute = (isFile && ( (ehead "maybeFindXml" filePath) == '/')) || (URI.isAbsoluteURI source)
+    isAbsolute =
+        (isFile && ( (ehead (e_fname ++ "maybeFindXml") filePath) == '/'))
+      ||
+        (URI.isAbsoluteURI source)
     possibilities = source:(if not isAbsolute then map (++"/"++source) includes else [])
   in
     do
@@ -2570,6 +2611,7 @@ getImportedTheoriesOMDoc omdoc =
 makeImportGraphOMDoc::GlobalOptions->String->(IO (ImportGraph OMDoc.OMDoc))
 makeImportGraphOMDoc go source =
   do
+    e_fname <- return "OMDoc.OMDocInput.makeImportGraphOMDoc: "
     curdirs <- System.Directory.getCurrentDirectory
     -- trick the uri parser into faking a document to make a relative path later
     mcduri <- return $ URI.parseURIReference ("file://"++curdirs++"/a")
@@ -2585,10 +2627,10 @@ makeImportGraphOMDoc go source =
           omdocxml = applyXmlFilter (getChildren .> isTag "omdoc") doc
           omdoc =
             case omdocxml of
-              [] -> error "Not OMDoc!"
+              [] -> error (e_fname ++ "Not OMDoc!")
               (o:_) ->
                 case OMDocXML.fromXml o of
-                  Nothing -> error "Unable to read OMDoc!"
+                  Nothing -> error (e_fname ++ "Unable to read OMDoc!")
                   (Just om) -> om
           omdocid = OMDoc.omdocId omdoc
           mturi =
@@ -2597,14 +2639,15 @@ makeImportGraphOMDoc go source =
               xshow
                 $
                 getValue "transfer-URI" (ehead "makeImportGraphOMDoc" doc)
-          turi = fromMaybe (error "Cannot parse URIReference...") mturi
+          turi =
+            fromMaybe (error (e_fname ++ "Cannot parse URIReference...")) mturi
           muriwithoutdoc =
             URI.parseURIReference
               $
               (reverse $ dropWhile (/='/') $ reverse (show turi))
           uriwithoutdoc =
             fromMaybe
-              (error "Cannot create path to document...")
+              (error (e_fname ++ "Cannot create path to document..."))
               muriwithoutdoc
           docmap = getImportedTheoriesOMDoc omdoc
           rdocmap = Map.toList docmap -- Map.toList $ Map.map (\s -> relativeSource turi s) docmap
@@ -2637,6 +2680,7 @@ makeImportGraphOMDoc go source =
     ->IO (ImportGraph OMDoc.OMDoc)
   buildGraph ig n frompath ti@(TI (theoname, theouri)) alibdir =
     let
+      e_fname= "OMDoc.OMDocInput.makeImportGraphOMDoc#buildGraph: "
       includes = [alibdir, (show frompath)]
       possources =
         theouri:(
@@ -2650,7 +2694,7 @@ makeImportGraphOMDoc go source =
           (Graph.labNodes ig)
       (S (curid, _) _) =
         case Graph.lab ig n of
-          Nothing -> error "!"
+          Nothing -> error (e_fname ++ "No such node!")
           (Just x) -> x
     in
     do
@@ -2701,31 +2745,37 @@ makeImportGraphOMDoc go source =
                     doc =
                       fromMaybe
                         (error
-                          ("Unable to import \""++ theoname 
-                            ++ "\"from \"" ++ theouri ++ "\"")
+                          (
+                            e_fname
+                            ++ "Unable to import \""++ theoname 
+                            ++ "\"from \"" ++ theouri ++ "\""
+                          )
                         )
                         mdoc
                     omdocxml = applyXmlFilter (getChildren .> isTag "omdoc") doc
                     omdoc =
                       case omdocxml of
-                        [] -> error "No OMDoc!"
+                        [] -> error (e_fname ++ "No OMDoc!")
                         (o:_) ->
                           case OMDocXML.fromXml o of
-                            Nothing -> error "Unable to read OMDoc!"
+                            Nothing -> error (e_fname ++ "Unable to read OMDoc!")
                             (Just om) -> om
                     omdocid = OMDoc.omdocId omdoc
                     imturi =
                       URI.parseURIReference
                         $
                         xshow $ getValue "transfer-URI" (ehead "buildGraph" doc)
-                    ituri = fromMaybe (error "Cannot parse URIReference...") imturi
+                    ituri =
+                      fromMaybe
+                        (error (e_fname ++ "Cannot parse URIReference..."))
+                        imturi
                     miuriwithoutdoc =
                       URI.parseURIReference
                         $
                         (reverse $ dropWhile (/='/') $ reverse (show ituri))
                     iuriwithoutdoc =
                       fromMaybe
-                        (error "Cannot create path to document...")
+                        (error (e_fname ++ "Cannot create path to document..."))
                         miuriwithoutdoc
                     iimports = getImportedTheoriesOMDoc omdoc
                     irimports = Map.toList iimports
@@ -2749,10 +2799,12 @@ makeImportGraphOMDoc go source =
   relativeSource::URI.URI->String->String
   relativeSource uri s =
     let
+      e_fname= "OMDoc.OMDocInput.makeImportGraphOMDoc#relativeSource: "
       msuri = URI.parseURIReference s
-      suri = fromMaybe (error "Cannot parse URIReference") msuri
+      suri = fromMaybe (error (e_fname ++ "Cannot parse URIReference")) msuri
       mreluri = URI.relativeTo suri uri
-      reluri = fromMaybe (error "Cannot create relative URI...") mreluri
+      reluri =
+        fromMaybe (error (e_fname ++ "Cannot create relative URI...")) mreluri
     in
       case msuri of
         Nothing -> s
@@ -2864,7 +2916,7 @@ unwrapFormulasOM ffxi (origin, theory) =
           (con@(OMDoc.CDe {})) ->
             processAxDef con
           _ ->
-            error "!"
+            error "OMDoc.OMDocInput.unwrapFormulasOM: This should not happen!"
       )
       axioms
   where
@@ -2878,7 +2930,8 @@ unwrapFormulasOM ffxi (origin, theory) =
               OMDoc.axiomName axiom
             (OMDoc.CDe definition) ->
               OMDoc.definitionId definition
-            _ -> error "!"
+            _ -> error "OMDoc.OMDocInput.unwrapFormulasOM#processAxDef: \
+                       \This should not happen!"
         name =
           case
             find
@@ -2905,21 +2958,22 @@ unwrapFormulasOM ffxi (origin, theory) =
 unwrapFormulaOM::FFXInput->Graph.Node->OMDoc.Constitutive->(Ann.Named CASLFORMULA)
 unwrapFormulaOM ffxi origin con =
   let
+    e_fname = "OMDoc.OMDocInput.unwrapFormulaOM: "
     (axdefname, fmps) =
       case con of
         (OMDoc.CAx axiom) ->
           (OMDoc.axiomName axiom, OMDoc.axiomFMPs axiom)
         (OMDoc.CDe definition) ->
           (OMDoc.definitionId definition, OMDoc.definitionFMPs definition)
-        _ -> error "!"
+        _ -> error (e_fname ++ "This should not happen!")
     formula =
       case fmps of
-        [] -> error "No Formula!"
+        [] -> error (e_fname ++ "No Formula!")
         (fmp@(OMDoc.FMP {}):_) ->
           case OMDoc.fmpContent fmp of
             (Left (OMDoc.OMObject ome)) ->
               formulaFromOM ffxi origin ome
-            _ -> error "Can only create Formula from OMOBJ!"
+            _ -> error (e_fname ++ "Can only create Formula from OMOBJ!")
   in
     Ann.NamedSen
       {
@@ -2984,20 +3038,21 @@ omToConstraints _ _ = []
 omToConstraint::FFXInput->OMDoc.OMElement->ABC.Constraint
 omToConstraint ffxi (OMDoc.OMEBIND ombind) =
   let
+    e_fname = "OMDoc.OMDocInput.omToConstraint: "
     newsort =
       Hets.stringToId
         $
         case (OMDoc.ombindBinder ombind) of
           (OMDoc.OMES oms) ->
             OMDoc.omsName oms
-          _ -> error "Constraints only work with OMS!"
+          _ -> error (e_fname ++ "Constraints only work with OMS!")
     origsort =
       Hets.stringToId
         $
         case (OMDoc.ombindExpression ombind) of
           (OMDoc.OMES oms) ->
             OMDoc.omsName oms
-          _ -> error "Constraints only work with OMS!"
+          _ -> error (e_fname ++ "Constraints only work with OMS!")
 
     ombvarAttrs =
       filter
@@ -3019,7 +3074,7 @@ omToConstraint ffxi (OMDoc.OMEBIND ombind) =
               of
                 [] -> ""
                 ((_,(OMDoc.OMESTR omstr)):_) -> OMDoc.omstrText omstr
-                _ -> error "Unexpected this is!"
+                _ -> error (e_fname ++ "Unexpected this is!")
             op =
               operatorFromOM
                 ffxi
@@ -3034,7 +3089,11 @@ omToConstraint ffxi (OMDoc.OMEBIND ombind) =
         (ombvarAttrs)
   in
     ABC.Constraint newsort conslist origsort
-omToConstraint _ _ = error "omToConstraint: invalid parameter!"
+omToConstraint _ _ =
+  let
+    e_fname = "OMDoc.OMDocInput.omToConstraint: "
+  in
+    error (e_fname ++ "invalid parameter!")
 
                 
 -- An IndexList is constructed from a String like 'n1|n2|n3...nk|'              
@@ -3051,6 +3110,7 @@ makeIndexList s =
 predicationFromOM::FFXInput->OMDoc.OMElement->PRED_SYMB
 predicationFromOM ffxi (OMDoc.OMES oms) = 
   let
+    e_fname = "OMDoc.OMDocInput.predicationFromOM: "
     sxname = OMDoc.omsName oms
     sxcd = OMDoc.omsCD oms
     mtheoxn = findByName sxcd (xnTheorySet ffxi)
@@ -3058,7 +3118,8 @@ predicationFromOM ffxi (OMDoc.OMES oms) =
             Nothing ->
               error
                 (
-                  "No Theory (" ++ sxcd ++ ") for used predicate (Name) !"
+                  e_fname
+                  ++ "No Theory (" ++ sxcd ++ ") for used predicate (Name) !"
                   ++ sxname ++ " in " ++ (take 1000 $ show (xnPredsMap ffxi))
                 )
             (Just theoxn' ) -> theoxn'
@@ -3067,11 +3128,14 @@ predicationFromOM ffxi (OMDoc.OMES oms) =
     predxnid = case mpredxnid of
             Nothing ->
               error
-                ("No such predicate in Theory! (" ++ show sxname 
-                  ++ " in " ++ (take 1000 $ (show theopreds)) ++ ")") 
+                ( 
+                  e_fname
+                  ++ "No such predicate in Theory! (" ++ show sxname 
+                  ++ " in " ++ (take 1000 $ (show theopreds)) ++ ")"
+                ) 
             (Just predxnid' ) -> predxnid'
     predXNWON = case lookup predxnid $ Set.toList theopreds of
-            Nothing -> error "Predicate not found!"
+            Nothing -> error (e_fname ++ "Predicate not found!")
             (Just pxnwon) -> pxnwon
     doFake =
       (
@@ -3105,7 +3169,11 @@ predicationFromOM ffxi (OMDoc.OMES oms) =
           (xnWOaToa predxnid)
           (Hets.cv_PredTypeToPred_type $ predTypeXNWONToPredType predXNWON)
           Id.nullRange
-predicationFromOM _ _ = error "predicationFromOM: Invalid OMDoc.OMElement"
+predicationFromOM _ _ =
+  let
+    e_fname = "OMDoc.OMDocInput.predicationFromOM: "
+  in
+    error (e_fname ++ "Invalid OMDoc.OMElement")
                 
 -- String to Quantifier...
 quantFromName::String->QUANTIFIER
@@ -3113,7 +3181,12 @@ quantFromName s
         | (s == caslSymbolQuantUniversalS) = Universal
         | (s == caslSymbolQuantExistentialS) = Existential
         | (s == caslSymbolQuantUnique_existentialS) = Unique_existential
-        | otherwise = error (s++": no such quantifier...")
+        | otherwise =
+          error
+            (
+              "OMDoc.OMDocInput.quantFromName: "
+              ++ s ++": no such quantifier..."
+            )
 
 
 getVarDeclsOM::OMDoc.OMBindingVariables->[(String, String)]
@@ -3121,6 +3194,7 @@ getVarDeclsOM ombvar =
   map
     (\(OMDoc.OMVA omattr) ->
       let
+        e_fname = "OMDoc.OMDocInput.getVarDeclsOM: "
         typename =
           case
             filter
@@ -3133,14 +3207,14 @@ getVarDeclsOM ombvar =
               $
               OMDoc.omatpAttribs $ OMDoc.omattrATP omattr
           of
-            [] -> error "No Type!"
+            [] -> error (e_fname ++ "No Type!")
             ((_, OMDoc.OMES oms):_) -> OMDoc.omsName oms
-            _ -> error "OMDocInput.getVarDeclsOM: Unexpected!"
+            _ -> error (e_fname ++ "Unexpected!")
         varname =
           case OMDoc.omattrElem omattr of
             (OMDoc.OMEV omv) ->
               OMDoc.omvName omv
-            _ -> error "Not a simple Variable!"
+            _ -> error (e_fname ++ "Not a simple Variable!")
       in
       (
           typename
@@ -3167,10 +3241,10 @@ isOperatorOM (OMDoc.OMEATTR _) = True
 isOperatorOM (OMDoc.OMES _) = True
 isOperatorOM _ = False
 
-
 formulaFromOM::FFXInput->Graph.Node->OMDoc.OMElement->(FORMULA ())
 formulaFromOM ffxi origin (OMDoc.OMEBIND ombind) =
   let
+    e_fname = "OMDoc.OMDocInput.formulaFromOM: @ombind : "
     quant =
       case OMDoc.ombindBinder ombind of
         (OMDoc.OMES oms) ->
@@ -3178,8 +3252,8 @@ formulaFromOM ffxi origin (OMDoc.OMEBIND ombind) =
             then
               quantFromName $ OMDoc.omsName oms
             else
-              error "Wrong CD!"
-        _ -> error "Quantifier must be an OMS!"
+              error (e_fname ++ "Wrong CD!")
+        _ -> error (e_fname ++ "Quantifier must be an OMS!")
     -- first element is the quantification-OMS
     formula =
       formulaFromOM
@@ -3201,7 +3275,7 @@ formulaFromOM ffxi origin (OMDoc.OMEBIND ombind) =
                     (stripFragment s)
                     origin
                     (mapSetToSet $ xnSortsMap ffxi) of
-               Nothing -> error ("No Sort for " ++ s)
+               Nothing -> error (e_fname ++ "No Sort for " ++ s)
                (Just x) -> xnWOaToa x
             )
             --(Hets.stringToId s)
@@ -3213,14 +3287,15 @@ formulaFromOM ffxi origin (OMDoc.OMEBIND ombind) =
       Id.nullRange
 formulaFromOM ffxi origin (OMDoc.OMEA oma) =
   let
+    e_fname = "OMDoc.OMDocInput.formulaFromOM: @oma : "
     applySym =
       case OMDoc.omaElements oma of
         ((OMDoc.OMES oms):_) ->
           OMDoc.omsName oms
-        _ -> error "No OMS First!"
+        _ -> error (e_fname ++ "No OMS First!")
     ftr =
       readsPrec
-        (error "OMDoc.OMDocInput.formulaFromOM: this argument is not used!")
+        (error (e_fname ++ "this argument is not used!"))
         applySym
     formulas =
       map
@@ -3343,11 +3418,12 @@ formulaFromOM ffxi origin (OMDoc.OMEA oma) =
                     )
 --                  error ("Could not find predicate for \"" ++ applySym ++ "\"")
             else
-              error "Empty application..."
+              error (e_fname ++ "Empty application...")
   where
     makeImplication::[FORMULA ()]->FORMULA ()
     makeImplication formulas =
       let
+        e_fname = "OMDoc.OMDocInput.formulaFromOM#makeImplication: "
         boolF =
           formulaFromOM
             ffxi
@@ -3362,13 +3438,13 @@ formulaFromOM ffxi origin (OMDoc.OMEA oma) =
                 )
                 (OMDoc.omaElements oma)
             of
-              [] -> error "No OMS!"
+              [] -> error (e_fname ++ "No OMS!")
               (_:second:_) -> second
-              _ -> error "No second OMS!"
+              _ -> error (e_fname ++ "No second OMS!")
       in
         if length formulas < 2
           then
-            error "Not enough formulas for implication!"
+            error (e_fname ++ "Not enough formulas for implication!")
           else
             Implication
               (formulas!!0)
@@ -3380,7 +3456,9 @@ formulaFromOM ffxi origin (OMDoc.OMEA oma) =
     makeEquivalence formulas =
       if length formulas < 2
         then
-          error "Not enough formulas for equivalence!"
+          error
+            "OMDoc.OMDocInput.formulaFromOM#makeEquivalence: \
+            \Not enough formulas for equivalence!"
         else
           Equivalence
             (formulas!!0)
@@ -3391,13 +3469,16 @@ formulaFromOM ffxi origin (OMDoc.OMEA oma) =
     makeNegation formulas =
       if length formulas < 1
         then
-          error "Empty formulas for negation!"
+          error
+            "OMDoc.OMDocInput.formulaFromOM#makeNegation: \
+            \Empty formulas for negation!"
         else
           Negation (formulas!!0) Id.nullRange
 
     makePredication::FORMULA ()
     makePredication =
       let
+        e_fname = "OMDoc.OMDocInput.formulaFromOM#makePredication: "
         pred' =
           case
             filter
@@ -3409,9 +3490,12 @@ formulaFromOM ffxi origin (OMDoc.OMEA oma) =
               )
               (OMDoc.omaElements oma)
           of
-            [] -> error "No Elements for Predication!"
-            (_:second:_) -> predicationFromOM ffxi second
-            _ -> error "No second matching element for Predication!"
+            [] ->
+              error (e_fname ++ "No Elements for Predication!")
+            (_:second:_) ->
+              predicationFromOM ffxi second
+            _ ->
+              error (e_fname ++ "No second matching element for Predication!")
         predterms =
           map
             (termFromOM ffxi origin)
@@ -3462,7 +3546,9 @@ formulaFromOM ffxi origin (OMDoc.OMEA oma) =
     makeExistl_equation terms =
       if length terms < 2
         then
-          error "Not enough terms for Existl_equation!"
+          error
+            "OMDoc.OMDocInput.formulaFromOM#makeExistl_equation: \
+            \Not enough terms for Existl_equation!"
         else
           Existl_equation 
             (terms!!0)
@@ -3475,7 +3561,8 @@ formulaFromOM ffxi origin (OMDoc.OMEA oma) =
         then
           error
             (
-              "Not enough terms for Strong_equation! ("
+              "OMDoc.OMDocInput.formulaFromOM#makeStrong_equation: \
+              \Not enough terms for Strong_equation! ("
                 ++ show (length terms) ++ ") : "
                 ++ (take 1000 (show oma))
             )
@@ -3487,48 +3574,53 @@ formulaFromOM ffxi origin (OMDoc.OMEA oma) =
 
     makeMembership::[TERM ()]->FORMULA ()
     makeMembership terms =
-      if length terms < 1
-        then
-          error "Not enought terms for Membership!"
-        else
-          let
-            lastoms =
-              lastorempty
-                $
-                filter
-                  (\e ->
-                    case e of
-                      (OMDoc.OMES {}) -> True
-                      _ -> False
-                  )
-                  (OMDoc.omaElements oma)
+      let
+        e_fname = "OMDoc.OMDocInput.formulaFromOM#makeMembership: "
+      in
+        if length terms < 1
+          then
+            error (e_fname ++ "Not enought terms for Membership!")
+          else
+            let
+              lastoms =
+                lastorempty
+                  $
+                  filter
+                    (\e ->
+                      case e of
+                        (OMDoc.OMES {}) -> True
+                        _ -> False
+                    )
+                    (OMDoc.omaElements oma)
 
-          in
-            case lastoms of
-              [(OMDoc.OMES oms)] ->
-                let
-                  sort = OMDoc.omsName oms
-                  sortcd = OMDoc.omsCD oms
-                  theosorts =
-                    Map.findWithDefault
-                      Set.empty
-                      sortcd
-                      (xnSortsMap ffxi) 
-                  sortxn =
-                    case findByName sort theosorts of
-                      Nothing ->
-                        error
-                          ("Sort not found in theory!"
-                            ++ "(" ++ sort ++ ", "
+            in
+              case lastoms of
+                [(OMDoc.OMES oms)] ->
+                  let
+                    sort = OMDoc.omsName oms
+                    sortcd = OMDoc.omsCD oms
+                    theosorts =
+                      Map.findWithDefault
+                        Set.empty
+                        sortcd
+                        (xnSortsMap ffxi) 
+                    sortxn =
+                      case findByName sort theosorts of
+                        Nothing ->
+                          error
+                            (
+                              e_fname
+                              ++ "Sort not found in theory!"
+                              ++ "(" ++ sort ++ ", "
                               ++ (take 1000 $ (show theosorts)) ++ ")" 
-                          )
-                      (Just x) -> x
-                in
-                  Membership
-                    (ehead "Membership" terms)
-                    (xnWOaToa sortxn)
-                    Id.nullRange
-              _ -> error "No OMS for Membership-Sort!"
+                            )
+                        (Just x) -> x
+                  in
+                    Membership
+                      (ehead (e_fname ++ "Membership") terms)
+                      (xnWOaToa sortxn)
+                      Id.nullRange
+                _ -> error (e_fname ++ "No OMS for Membership-Sort!")
     
     makeSort_gen_ax::FORMULA ()
     makeSort_gen_ax =
@@ -3564,9 +3656,11 @@ formulaFromOM _ _ (OMDoc.OMES oms) =
         then
           True_atom Id.nullRange
         else
-          error "Expected true or false..."
+          error
+            "OMDoc.OMDocInput.formulaFromOM: @oms : Expected true or false..."
 
-formulaFromOM _ _ _ = error "OMDoc.OMDocInput.formulaFromOM: Not implemented"
+formulaFromOM _ _ _ =
+  error "OMDoc.OMDocInput.formulaFromOM: @_ : Not implemented"
 
 termFromOM::FFXInput->Graph.Node->OMDoc.OMElement->(TERM ())
 termFromOM _ _ (OMDoc.OMEV omv) =
@@ -3580,67 +3674,74 @@ termFromOM _ _ (OMDoc.OMEV omv) =
       $
       Hets.stringToSimpleId (OMDoc.omvName omv)
 termFromOM ffxi origin (ome@(OMDoc.OMEATTR omattr)) =
-  if
-    (/=)
-      (
-      filter
-        (\(oms, _) ->
-          OMDoc.omsName oms == "funtype"
-        )
-        (OMDoc.omatpAttribs $ OMDoc.omattrATP omattr)
-      )
-      []
-    then
-      Application (operatorFromOM ffxi ome) [] Id.nullRange
-    else
-      Qual_var
-        (Hets.stringToSimpleId
-          $
-          (
-            case (OMDoc.omattrElem omattr) of
-              (OMDoc.OMEV omv) ->
-                (OMDoc.omvName omv)
-              _ ->
-                error "Expected OMV in OMATTR!"
-          )
-        )
+  let
+    e_fname = "OMDoc.OMDocInput.termFromOM: @omattr : "
+  in
+    if
+      (/=)
         (
-          let
-            varxnsort =
-              case
-                filter
-                  (\(oms, _) ->
-                    OMDoc.omsName oms == typeS
-                  )
-                  (OMDoc.omatpAttribs $ OMDoc.omattrATP omattr)
-              of
-                [] -> error ("No Name! : " ++ show ome)
-                ((_,(OMDoc.OMES typeoms)):_) -> OMDoc.omsName typeoms
-                q -> error ("Need OMS for Variable-Type... given : " ++ show q)
-            varsort =
-              case
-                findByNameAndOrigin
-                  varxnsort
-                  origin
-                  (mapSetToSet $ xnSortsMap ffxi)
-              of
-                Nothing ->
-                  error
-                    ("Cannot find defined sort for \""
-                      ++ varxnsort ++"\"" )
-                (Just x) -> xnWOaToa x
-          in
-             varsort
+        filter
+          (\(oms, _) ->
+            OMDoc.omsName oms == "funtype"
+          )
+          (OMDoc.omatpAttribs $ OMDoc.omattrATP omattr)
         )
-        Id.nullRange
+        []
+      then
+        Application (operatorFromOM ffxi ome) [] Id.nullRange
+      else
+        Qual_var
+          (Hets.stringToSimpleId
+            $
+            (
+              case (OMDoc.omattrElem omattr) of
+                (OMDoc.OMEV omv) ->
+                  (OMDoc.omvName omv)
+                _ ->
+                  error (e_fname ++ "Expected OMV in OMATTR!")
+            )
+          )
+          (
+            let
+              varxnsort =
+                case
+                  filter
+                    (\(oms, _) ->
+                      OMDoc.omsName oms == typeS
+                    )
+                    (OMDoc.omatpAttribs $ OMDoc.omattrATP omattr)
+                of
+                  [] -> error (e_fname ++ "No Name! : " ++ show ome)
+                  ((_,(OMDoc.OMES typeoms)):_) -> OMDoc.omsName typeoms
+                  q -> error (e_fname ++ "Need OMS for Variable-Type... given : " ++ show q)
+              varsort =
+                case
+                  findByNameAndOrigin
+                    varxnsort
+                    origin
+                    (mapSetToSet $ xnSortsMap ffxi)
+                of
+                  Nothing ->
+                    error
+                      (
+                        e_fname
+                        ++ "Cannot find defined sort for \""
+                        ++ varxnsort ++"\"" 
+                      )
+                  (Just x) -> xnWOaToa x
+            in
+               varsort
+          )
+          Id.nullRange
 termFromOM ffxi origin (OMDoc.OMEA oma) =
   let
+    e_fname = "OMDoc.OMDocInput.termFromOM: @oma : "
     operator =
       operatorFromOM
         ffxi
         (
           ehead
-            "termFromOM, operator"
+            (e_fname ++ "operator")
             $
             (filter isOperatorOM $ OMDoc.omaElements oma)
         )
@@ -3658,8 +3759,8 @@ termFromOM ffxi origin (OMDoc.OMEA oma) =
     case (opName operator) of
     "PROJ" ->
         Cast
-          (ehead "termFromOM, PROJ" terms)
-          (Hets.stringToId $ show (ehead "termFromOM, PROJ, tail" $ tail terms))
+          (ehead (e_fname ++ "PROJ") terms)
+          (Hets.stringToId $ show (ehead (e_fname ++ "PROJ, tail") $ tail terms))
           Id.nullRange
     "IfThenElse" ->
       let
@@ -3678,15 +3779,17 @@ termFromOM ffxi origin (OMDoc.OMEA oma) =
         iteCondX =
           ehead
             (
-              "Missing condition in conditional term : "
-              ++(take 1000 (show oma))
+              e_fname
+              ++ "Missing condition in conditional term : "
+              ++ (take 1000 (show oma))
             )
             $
             singleitem 2 iteChildsX
         iteThenX =
           ehead
             (
-              "Missing 'then'-part in conditional term : "
+              e_fname
+              ++ "Missing 'then'-part in conditional term : "
               ++ (take 1000 (show oma))
             )
             $
@@ -3694,7 +3797,8 @@ termFromOM ffxi origin (OMDoc.OMEA oma) =
         iteElseX =
           ehead
             (
-              "Missing 'else'-part in conditional term : "
+              e_fname 
+              ++ "Missing 'else'-part in conditional term : "
               ++ (take 1000 (show oma))
             )
             $
@@ -3731,13 +3835,15 @@ termFromOM ffxi _ (ome@(OMDoc.OMES _)) =
 termFromOM _ _ t =
   error
     (
-      "Impossible to create term from \"" 
+      "OMDoc.OMDocInput.termFromOM: @_ : \
+      \Impossible to create term from \"" 
       ++ show t ++"\""
     ) 
 
 operatorFromOM::FFXInput->OMDoc.OMElement->OP_SYMB
 operatorFromOM ffxi (OMDoc.OMES oms) =
   let
+    e_fname = "OMDoc.OMDocInput.operatorFromOM: @oms : "
     sxname = OMDoc.omsName oms
     scd = OMDoc.omsCD oms
     stheoid =
@@ -3750,7 +3856,8 @@ operatorFromOM ffxi (OMDoc.OMES oms) =
         Nothing ->
           error
             (
-              "No Theory for used operator! (\"" 
+              e_fname
+              ++ "No Theory for used operator! (\"" 
               ++ sxname ++ "\" in \"" ++ scd ++ "\" Context : \""
               ++ (show oms) ++ "\")"
             )
@@ -3760,11 +3867,14 @@ operatorFromOM ffxi (OMDoc.OMES oms) =
     opxnid = case mopxnid of
       Nothing ->
         error
-          ("No such operator in Theory! (" ++ sxname ++ " in "
-            ++ (take 1000 (show theoops)) ++ ")")
+          (
+            e_fname
+            ++ "No such operator in Theory! (" ++ sxname ++ " in "
+            ++ (take 1000 (show theoops)) ++ ")"
+          )
       (Just opxnid' ) -> opxnid'
     opXNWON = case lookup opxnid $ Set.toList theoops of
-      Nothing -> error ("Operator not found!")
+      Nothing -> error (e_fname ++ "Operator not found!")
       (Just oxnwon) -> oxnwon
     doFake =
       (
@@ -3810,7 +3920,8 @@ operatorFromOM ffxi (OMDoc.OMES oms) =
           (xnWOaToa opxnid)
           (Hets.cv_OpTypeToOp_type $ opTypeXNWONToOpType opXNWON)
           Id.nullRange
-operatorFromOM _ _ = error "operatorFromOM: wrong parameter!"
+operatorFromOM _ _ =
+  error "OMDoc.OMDocInput.operatorFromOM: @_ : wrong parameter!"
 
 opName::OP_SYMB->String
 opName (Op_name op) = (show op)
@@ -3821,7 +3932,13 @@ idToNodeName::Id.Id->NODE_NAME
 idToNodeName (Id.Id toks _ _) =
   if (length toks) < 3
     then
-      error ("Malformed NODE_NAME-Id : " ++ (show toks))
+      error
+        (
+          "OMDoc.OMDocInput.idToNodeName: Malformed NODE_NAME-Id : "
+          ++ (show toks)
+        )
     else
       (toks!!0, show (toks!!1), read (show (toks!!2)))
+
+
 
