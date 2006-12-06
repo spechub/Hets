@@ -15,6 +15,7 @@ TMP_PATH = $(PWD)
 IZPACK_PATH = $(TMP_PATH)/Izpack-Hets
 IZPACK_COMPILE = $(IZPACK_PATH)/bin/compile
 IZPACK_SAMPLE = $(IZPACK_PATH)/sample
+HETS_VERSION=0.66
 #HETS_BIN = $(HOME)/bin/hets-$(ACTDATE)
 
 #PLATFORM = $(shell uname -s)
@@ -57,10 +58,6 @@ hetcats-make : daily-hets-download
 	cd $(TMP_PATH) ;\
 	cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:\/repository co -P HetCATS ; \
 	cd HetCATS ;\
-	export HETS_VERSION=`cat version_nr` ;\
-	sed -e "s/^\(.*<appversion>\)[0-9.]*\(.*$\)/\1$(HETS_VERSION)\2/" $(IZPACK_SAMPLE)/pack/install-linux.xml > $(IZPACK_SAMPLE)/pack/install-linux.xml ;\
-	sed -e "s/^\(.*<appversion>\)[0-9.]*\(.*$\)/\1$(HETS_VERSION)\2/" $(IZPACK_SAMPLE)/pack/install-mac.xml > $(IZPACK_SAMPLE)/pack/install-mac.xml ;\
-	sed -e "s/^\(.*<appversion>\)[0-9.]*\(.*$\)/\1$(HETS_VERSION)\2/" $(IZPACK_SAMPLE)/pack/install-solaris.xml > $(IZPACK_SAMPLE)/pack/install-solaris.xml ;\
 	cp LICENCE.txt $(IZPACK_SAMPLE)/pack/LICENCE.txt ;\
 	cp README  $(IZPACK_SAMPLE)/pack/README ;\
 	$(MAKE) release ;\
@@ -76,9 +73,7 @@ hetcats-make : daily-hets-download
 daily-hets-download :
 	@sh getAllHets.sh $(HETS_VERSION)
 	mv getAllHets.sh  $(IZPACK_SAMPLE)
-	mv $(HOME)/bin/hets/* $(IZPACK_SAMPLE)/hets/
-	# HETS_VER=$($(HETS_BIN) -V | sed "s%^.*[Vv]\(.*\),.*%\\1%") ; \
-	#@ln -s $(IZPACK_SAMPLE)/hets/hets-$(ACTDATE) $(IZPACK_SAMPLE)/hets
+	mv $(HOME)/tmp/hets/* $(IZPACK_SAMPLE)/hets/
 
 tools-checkout :
 	@echo update uni
@@ -119,6 +114,8 @@ other-download :
 build:
 	@chmod +x $(IZPACK_PATH)/bin/compile
 	$(IZPACK_COMPILE) $(INSTALL_XML_LINUX) -b $(IZPACK_SAMPLE)/ -o $(INSTALL_JAR_LINUX) -k standard
+	$(IZPACK_COMPILE) $(INSTALL_XML_MAC) -b $(IZPACK_SAMPLE)/ -o $(INSTALL_JAR_MAC) -k standard
+	$(IZPACK_COMPILE) $(INSTALL_XML_SOLARIS) -b $(IZPACK_SAMPLE)/ -o $(INSTALL_JAR_SOLARIS) -k standard
 
 
 cleanup:
@@ -126,3 +123,8 @@ cleanup:
 	@$(RM) Makefile
 
 .PHONY : all download build casl-lib-checkout hetcats-make daily-hets-download other-download izpack_checkout cleanup tools-checkout
+
+
+##sed "s/^\(.*<appversion>\)[0-9.]*\(.*$\)/\1\$(HETS_VERSION)\2/" $(IZPACK_SAMPLE)/pack/install-linux.xml > $(IZPACK_SAMPLE)/pack/install-linux.xml ;\
+##sed "s/^\(.*<appversion>\)[0-9.]*\(.*$\)/\1\$(HETS_VERSION)\2/" $(IZPACK_SAMPLE)/pack/install-mac.xml > $(IZPACK_SAMPLE)/pack/install-mac.xml ;\
+##sed "s/^\(.*<appversion>\)[0-9.]*\(.*$\)/\1\$(HETS_VERSION)\2/" $(IZPACK_SAMPLE)/pack/install-solaris.xml > $(IZPACK_SAMPLE)/pack/install-solaris.xml ;
