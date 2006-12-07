@@ -765,18 +765,18 @@ initialize_installer:
 	    echo "create $(INSTALLER_DIR)" ; \
 	    mkdir $(INSTALLER_DIR) ; \
 	 fi ; \
-	 sed "s/^\(HETS_VERSION=\).*$/\1 `cat version_nr`/" Makefile.installer ;\
-	 cp Makefile.installer $(INSTALLER_DIR)/Makefile ; \
+	 sed "s/^\(HETS_VERSION=\).*/\1`cat version_nr`/" Makefile.installer > Makefile.inst  ;\
+	 cp Makefile.inst $(INSTALLER_DIR)/Makefile ; \
 	 cp utils/getAllHets.sh $(INSTALLER_DIR) ;\
-	 echo ================================================  ; \
+	 echo ==========================================================  ; \
 	 echo If you have not logged in \'cvs.haskell.org\'  ;\
 	 echo then please \"cvs -d :pserver:anoncvs@cvs.haskell.org:/cvs login\" ;\
 	 echo the password is \"cvn\" ;\
-	 echo ------------------------------------------------   ;\
+	 echo ----------------------------------------------------------   ;\
 	 echo If you have not logged in \'cvs-agbkb.informatik.uni-bremen.de\' ;\
 	 echo then please \"cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:/repository login\"  ;\
 	 echo the password is \"\" ;\
-	 echo ================================================    ;\
+	 echo ==========================================================    ;\
 	 echo Ready to create installers for Hets ;\
 	 echo Please do ;\
 	 echo "  -> cd $(INSTALLER_DIR)" ;\

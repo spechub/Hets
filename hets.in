@@ -8,10 +8,10 @@
 ### it is post processed by some IzPack variables starting with %
 
 HETS_LIB=$INSTALL_PATH/CASL-lib
-HETS_ISABELLE=
 HETS_OWL_PARSER=$INSTALL_PATH/src/HetCATS/OWL_DL
 UNIWISH=/usr/bin/wish
 UNIDAVINCI=$INSTALL_PATH/lib/uDrawGraph-3.1/bin/uDrawGraph
+ISABELLE_HOME=$$INSTALL_PATH/lib/Isabelle/Isabelle
 
 HETS=$INSTALL_PATH/lib/hets/hets-$APP_VER
 

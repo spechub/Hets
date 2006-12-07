@@ -7,7 +7,7 @@
 # This Makefile will generate the installer for Hets with IzPack
 #
 
-all: download build ## cleanup
+all: download build cleanup
 
 EMPTY =
 ACTDATE = $(shell date +%F)
@@ -69,7 +69,6 @@ hetcats-make : daily-hets-download
 	cp -r OWL_DL/java/jlib  $(IZPACK_SAMPLE)/hets/OWLParser/java
 	$(RM) -r HetCATS
 	cd $(IZPACK_SAMPLE)/src ; tar xvf HetCATS.tar ; $(RM) HetCATS.tar
-
 daily-hets-download :
 	@sh getAllHets.sh $(HETS_VERSION)
 	mv getAllHets.sh  $(IZPACK_SAMPLE)
@@ -94,6 +93,18 @@ izpack_checkout :
 	 else \
 	  svn checkout https://svn-agbkb.informatik.uni-bremen.de/izpack $(IZPACK_PATH) ; \
 	fi
+	@sed -e "s/^\(.*<appversion>\)[0-9. ]*\(<.*$$\)/\1$$HETS_VERSION\2/" \
+              $(IZPACK_SAMPLE)/pack/install-linux.xml > \
+              hets_inst_tmp 2>/dev/null  ; \
+	mv hets_inst_tmp $(IZPACK_SAMPLE)/pack/install-linux.xml
+	@sed -e "s/^\(.*<appversion>\)[0-9. ]*\(<.*$$\)/\1$$HETS_VERSION\2/" \
+              $(IZPACK_SAMPLE)/pack/install-mac.xml >    \
+              hets_inst_tmp 2>/dev/null ; \
+	mv hets_inst_tmp $(IZPACK_SAMPLE)/pack/install-mac.xml
+	@sed -e "s/^\(.*<appversion>\)[0-9. ]*\(<.*$$\)/\1$$HETS_VERSION\2/" \
+              $(IZPACK_SAMPLE)/pack/install-solaris.xml > \
+              hets_inst_tmp 2>/dev/null  ; \
+	mv hets_inst_tmp $(IZPACK_SAMPLE)/pack/install-solaris.xml   
 
 other-download :
 	wget --output-document=$(IZPACK_SAMPLE)/GMP/GMP.framework.zip $(GMPURL) ; \
@@ -119,12 +130,8 @@ build:
 
 
 cleanup:
-	@$(RM) -r $(IZPACK_PATH)
+	@$(RM) -r $(IZPACK_PATH) hets
 	@$(RM) Makefile
 
 .PHONY : all download build casl-lib-checkout hetcats-make daily-hets-download other-download izpack_checkout cleanup tools-checkout
 
-
-##sed "s/^\(.*<appversion>\)[0-9.]*\(.*$\)/\1\$(HETS_VERSION)\2/" $(IZPACK_SAMPLE)/pack/install-linux.xml > $(IZPACK_SAMPLE)/pack/install-linux.xml ;\
-##sed "s/^\(.*<appversion>\)[0-9.]*\(.*$\)/\1\$(HETS_VERSION)\2/" $(IZPACK_SAMPLE)/pack/install-mac.xml > $(IZPACK_SAMPLE)/pack/install-mac.xml ;\
-##sed "s/^\(.*<appversion>\)[0-9.]*\(.*$\)/\1\$(HETS_VERSION)\2/" $(IZPACK_SAMPLE)/pack/install-solaris.xml > $(IZPACK_SAMPLE)/pack/install-solaris.xml ;
