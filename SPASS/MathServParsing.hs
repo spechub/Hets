@@ -58,7 +58,7 @@ instance Read ServerAddr where
 
 defaultServer :: ServerAddr 
 defaultServer = ServerAddr {
-        serverName = "denebola.informatik.uni-bremen.de",
+        serverName = "mathserv.informatik.uni-bremen.de",
         portNumber = 8080
                            }
 
