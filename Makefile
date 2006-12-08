@@ -69,7 +69,7 @@ else
 TAR = tar
 endif
 
-ARCH = $(shell uname -p)
+ARCH = $(subst $(space),,$(shell uname -m))
 SETUP = utils/Setup
 SETUPPACKAGE = ../$(SETUP) clean; \
     ../$(SETUP) configure \
