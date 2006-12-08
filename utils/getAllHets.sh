@@ -4,23 +4,23 @@
 ## afterwards it adds excutable permissions for everyone
 
 HETS_VER=$1
+HETS_TMP=$HOME/tmp
+HETS_DOWNLOAD=$HETS_TMP/hets
 
-HETS_LINUX=$HOME/bin/hets/linux/hets-$HETS_VER
-HETS_MAC=$HOME/bin/hets/mac/hets-$HETS_VER
-HETS_SOL=$HOME/bin/hets/solaris/hets-$HETS_VER
+HETS_LINUX=$HETS_DOWNLOAD/linux/hets-$HETS_VER
+HETS_MAC=$HETS_DOWNLOAD/mac/hets-$HETS_VER
+HETS_SOL=$HETS_DOWNLOAD/solaris/hets-$HETS_VER
 
 DAILY_HETS_LINUX=$HETS_LINUX.bz2
 DAILY_HETS_MAC=$HETS_MAC.bz2
 DAILY_HETS_SOL=$HETS_SOL.bz2
 
+if [ -d $HETS_DOWNLOAD ] ;
+then rm -fr $HETS_DOWNLOAD/* 2>/dev/null ; 
+fi ;
 
-
-if [ -d $HOME/bin/hets ] ; 
-then rm $HETS_LINUX $HETS_MAC $HETS_SOL \
-        $DAILY_HETS_TARGET_L $DAILY_HETS_TARGET_M $DAILY_HETS_TARGET_S 2>/dev/null ; 
-else mkdir $HOME/bin/hets ; mkdir $HOME/bin/hets/linux ; \
-     mkdir $HOME/bin/hets/mac ; mkdir $HOME/bin/hets/solaris     ;
-fi
+mkdir -p $HETS_DOWNLOAD/linux ; mkdir $HETS_DOWNLOAD/mac; \
+                                mkdir $HETS_DOWNLOAD/solaris
 
 ARCH_DIR=""
 DOWNLOADCMD_L="wget --output-document=$DAILY_HETS_LINUX"
@@ -40,10 +40,11 @@ case `uname -s` in
 	          exit 2;;
 	   esac;;
     Darwin) case `uname -p` in
-               powerpc) ARCH_DIR=mac 
-	                DOWNLOADCMD_L="ftp -o $DAILY_HETS_TARGET_L"
-			DOWNLOADCMD_M="ftp -o $DAILY_HETS_TARGET_M"
-			DOWNLOADCMD_S="ftp -o $DAILY_HETS_TARGET_S" ;;
+               powerpc) ARCH_DIR=mac ;;
+	                #### ftp does not install at some MAC-PC
+	                ## DOWNLOADCMD_L="ftp -o $DAILY_HETS_TARGET_L"
+			## DOWNLOADCMD_M="ftp -o $DAILY_HETS_TARGET_M"
+			## DOWNLOADCMD_S="ftp -o $DAILY_HETS_TARGET_S" ;;
 	       *86) ARCH_DIR=mac ;;
 	       *) echo "Unsupported Mac OS X processor: " `uname -p`
 	          exit 2;;
@@ -57,15 +58,14 @@ DAILY_HETS_URL_SOLARIS="http://www.informatik.uni-bremen.de/agbkb/forschung/form
 
 # main
 $DOWNLOADCMD_L $DAILY_HETS_URL_LINUX
-$DOWNLOADCMD_M $DAILY_HETS_URL_MAC
-$DOWNLOADCMD_S $DAILY_HETS_URL_SOLARIS
-
 bunzip2 $DAILY_HETS_LINUX
 chmod a+x $HETS_LINUX 
 
+$DOWNLOADCMD_M $DAILY_HETS_URL_MAC
 bunzip2 $DAILY_HETS_MAC
 chmod a+x $HETS_MAC 
 
+$DOWNLOADCMD_S $DAILY_HETS_URL_SOLARIS
 bunzip2 $DAILY_HETS_SOL
 chmod a+x $HETS_SOL
 
