@@ -7,7 +7,7 @@
 # This Makefile will generate the installer for Hets with IzPack
 #
 
-all: download build cleanup
+all: download build ## cleanup
 
 EMPTY =
 ACTDATE = $(shell date +%F)
@@ -15,7 +15,8 @@ TMP_PATH = $(PWD)
 IZPACK_PATH = $(TMP_PATH)/Izpack-Hets
 IZPACK_COMPILE = $(IZPACK_PATH)/bin/compile
 IZPACK_SAMPLE = $(IZPACK_PATH)/sample
-HETS_VERSION=0.66
+HETS_VERSION=0.61
+SED_COMMAND="s/^\(.*<appversion>\)[0-9. ]*\(<.*$$\)/\1$(HETS_VERSION)\2/"
 #HETS_BIN = $(HOME)/bin/hets-$(ACTDATE)
 
 #PLATFORM = $(shell uname -s)
@@ -93,15 +94,15 @@ izpack_checkout :
 	 else \
 	  svn checkout https://svn-agbkb.informatik.uni-bremen.de/izpack $(IZPACK_PATH) ; \
 	fi
-	@sed -e "s/^\(.*<appversion>\)[0-9. ]*\(<.*$$\)/\1$$HETS_VERSION\2/" \
+	@sed -e $(SED_COMMAND) \
               $(IZPACK_SAMPLE)/pack/install-linux.xml > \
               hets_inst_tmp 2>/dev/null  ; \
 	mv hets_inst_tmp $(IZPACK_SAMPLE)/pack/install-linux.xml
-	@sed -e "s/^\(.*<appversion>\)[0-9. ]*\(<.*$$\)/\1$$HETS_VERSION\2/" \
+	@sed -e $(SED_COMMAND) \
               $(IZPACK_SAMPLE)/pack/install-mac.xml >    \
               hets_inst_tmp 2>/dev/null ; \
 	mv hets_inst_tmp $(IZPACK_SAMPLE)/pack/install-mac.xml
-	@sed -e "s/^\(.*<appversion>\)[0-9. ]*\(<.*$$\)/\1$$HETS_VERSION\2/" \
+	@sed -e $(SED_COMMAND) \
               $(IZPACK_SAMPLE)/pack/install-solaris.xml > \
               hets_inst_tmp 2>/dev/null  ; \
 	mv hets_inst_tmp $(IZPACK_SAMPLE)/pack/install-solaris.xml   
