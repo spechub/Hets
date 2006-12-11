@@ -791,10 +791,10 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                                         then (batchInfoText tLimit
                                                       numGoals gPSF)
                                         else "Batch mode finished\n\n")
-                               batchCurrentGoalLabel #
-                                  text (if cont
-                                        then maybe "--" AS_Anno.senName nextSen
-                                        else "--")
+                               setCurrentGoalLabel batchCurrentGoalLabel
+                                  (if cont
+                                      then maybe "--" AS_Anno.senName nextSen
+                                      else "--")
                                st <- Conc.readMVar stateMVar
                                updateDisplay st True lb statusLabel timeEntry
                                             optionsEntry axiomsLb
@@ -813,7 +813,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                                return cont'))
                     -- END of afterEachProofAttempt
               batchStatusLabel # text (batchInfoText tLimit numGoals 0)
-              batchCurrentGoalLabel # text firstGoalName
+              setCurrentGoalLabel batchCurrentGoalLabel firstGoalName
               disableWids wids
               enable stopBatchButton
               enableWidsUponSelection lb [EnW detailsButton,EnW saveProbButton]
@@ -931,6 +931,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                               "      axioms of goal \""++
                               trN (goalName pStat)++"\"")
                                 axs) (:axs) (Map.lookup ax nm)
+    setCurrentGoalLabel batchLabel s = batchLabel # text (take 65 s)
     removeFirstDot [] = error "GenericATP: no extension given"
     removeFirstDot e@(h:ext) =
        case h of

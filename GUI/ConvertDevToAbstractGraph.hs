@@ -1076,7 +1076,7 @@ showMorphismOfEdge :: Descr -> Maybe (LEdge DGLinkLab) -> IO()
 showMorphismOfEdge _ (Just (_,_,linklab)) =
       createTextDisplay "Signature morphism"
            ((showDoc (dgl_morphism linklab) "")++hidingMorph)
-           [HTk.size(150,50)]
+           [HTk.size(100,40)]
   where
     hidingMorph = case (dgl_type linklab) of
                     (HidingThm morph _) -> "\n ++++++ \n"
