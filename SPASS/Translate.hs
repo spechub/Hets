@@ -78,7 +78,8 @@ transId t iden
 charMap_SP :: Map.Map Char String
 charMap_SP = Map.union
              (Map.fromList [('\'',"Prime")
-                           ,(' ',"_")])
+                           ,(' ',"_")
+                           ,('\n',"_")])
              charMap
 
 transToSPChar :: Char -> SPIdentifier
