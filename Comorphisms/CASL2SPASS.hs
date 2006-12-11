@@ -16,9 +16,6 @@ The translating comorphism from CASL to SoftFOL.
    - elimination of single sorts is only possible while generating
      DFG or TPTP, mark the Sort/set the flag
 
-   - disambiguation of sentence labels is needed after translation of 
-     sentence labels; but how?
-
    - implement translation of Sort_gen_ax (FORMULA f) as goals
      (s. below for a sketch) .. Klaus Lüttich
 -}

@@ -19,6 +19,7 @@ import Logic.Prover
 
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Lib.Map as Map
+import qualified Common.Lib.Set as Set
 import qualified Common.OrderedMap as OMap
 import Common.ProofUtils
 
@@ -158,7 +159,7 @@ initialGenericState prName ips trSenName th pt =
                                                        $ head validThmStatus })
                   $ OMap.lookup gn oSens
           oSens' = toNamedList oSens
-          nSens = prepareSenNames trSenName oSens'
+          nSens = disambiguateSens Set.empty $ prepareSenNames trSenName oSens'
           goals = filter (not . AS_Anno.isAxiom) nSens
           
 
