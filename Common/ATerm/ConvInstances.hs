@@ -98,7 +98,7 @@ instance (Ord a,ShATermConvertible a) => ShATermConvertible (Set.Set a) where
             u -> fromShATermError "Set.Set" u
 
 relTc :: TyCon
-relTc = mkTyCon "Rel.Rel"
+relTc = mkTyCon "Common.Lib.Rel.Rel"
 
 instance (Typeable a) => Typeable (Rel.Rel a) where
   typeOf s = mkTyConApp relTc
@@ -205,22 +205,22 @@ instance (ShATermConvertible a, ShATermConvertible b, ShATermConvertible c,
             u -> fromShATermError "(,,,)" u
 
 _tc_PosTc :: TyCon
-_tc_PosTc = mkTyCon "Pos"
+_tc_PosTc = mkTyCon "Common.Id.Pos"
 instance Typeable Pos where
     typeOf _ = mkTyConApp _tc_PosTc []
 
 _tc_RangeTc :: TyCon
-_tc_RangeTc = mkTyCon "Range"
+_tc_RangeTc = mkTyCon "Common.Id.Range"
 instance Typeable Range where
     typeOf _ = mkTyConApp _tc_RangeTc []
 
 _tc_TokenTc :: TyCon
-_tc_TokenTc = mkTyCon "Token"
+_tc_TokenTc = mkTyCon "Common.Id.Token"
 instance Typeable Token where
     typeOf _ = mkTyConApp _tc_TokenTc []
 
 _tc_IdTc :: TyCon
-_tc_IdTc = mkTyCon "Id"
+_tc_IdTc = mkTyCon "Common.Id.Id"
 instance Typeable Id where
     typeOf _ = mkTyConApp _tc_IdTc []
 
@@ -279,12 +279,12 @@ instance ShATermConvertible Id where
             u -> fromShATermError "Id" u
 
 _tc_DiagKindTc :: TyCon
-_tc_DiagKindTc = mkTyCon "DiagKind"
+_tc_DiagKindTc = mkTyCon "Common.Result.DiagKind"
 instance Typeable DiagKind where
     typeOf _ = mkTyConApp _tc_DiagKindTc []
 
 _tc_DiagnosisTc :: TyCon
-_tc_DiagnosisTc = mkTyCon "Diagnosis"
+_tc_DiagnosisTc = mkTyCon "Common.Result.Diagnosis"
 instance Typeable Diagnosis where
     typeOf _ = mkTyConApp _tc_DiagnosisTc []
 
