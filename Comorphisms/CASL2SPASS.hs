@@ -16,6 +16,9 @@ The translating comorphism from CASL to SoftFOL.
    - elimination of single sorts is only possible while generating
      DFG or TPTP, mark the Sort/set the flag
 
+   - disambiguation of sentence labels is needed after translation of 
+     sentence labels; but how?
+
    - implement translation of Sort_gen_ax (FORMULA f) as goals
      (s. below for a sketch) .. Klaus Lüttich
 -}
@@ -187,33 +190,17 @@ transFuncMap idMap sign =
     Map.foldWithKey toSPOpType (Map.empty,idMap) (CSign.opMap sign)
     where toSPOpType iden typeSet (fm,im) =
               if Set.null typeSet then
-                  error ("SuleCFOL2SoftFOL: empty sets are not allowed in OpMaps: "
-                         ++ show iden)
+                  error ("SuleCFOL2SoftFOL: empty sets are not "++
+                         "allowed in OpMaps: " ++ show iden)
               else case Set.lookupSingleton typeSet of
               Just oType ->
                   let sid' = sid fm oType
                   in (Map.insert sid' (Set.singleton (transOpType oType)) fm,
                       insertSPId iden (COp oType) sid' im)
-              Nothing ->
-                  case partOverload (leqF sign)
-                           (partArities (length . CSign.opArgs) typeSet) of
-                  (overl,diffs) ->
-                      Set.fold insOIdSet
-                             (Set.fold insOId (fm,im) diffs)
-                             overl
-                            -- 2.a with the union of all singleton sets
-                            -- and those that are not in overloading
-                            -- relation use old strategy
-                            -- 2.b check the other sets with overloadRelation
-                            -- those with overloadRelation stay in one set
-                            -- with one identifier
-         -- leqF :: Sign f e -> OpType -> OpType -> Bool
-              where insOId typ (fm',im') =
-                        let sid' = sid fm' typ
-                        in (Map.insert sid'
-                                   (Set.singleton (transOpType typ)) fm',
-                            insertSPId iden (COp typ) sid' im')
-                    insOIdSet tset (fm',im') =
+              Nothing -> Set.fold insOIdSet (fm,im) $
+                         partOverload (leqF sign)
+                           (partArities (length . CSign.opArgs) typeSet) 
+              where insOIdSet tset (fm',im') =
                         let sid' = sid fm' (Set.findMax tset)
                         in (Map.insert sid' (Set.map transOpType tset) fm',
                             Set.fold (\ x y ->
@@ -237,22 +224,11 @@ partArities len = part 0 Set.empty
                                   then acc
                                   else Set.insert ar_i acc) rest
 
-partOverload :: (Ord a) => (a -> a -> Bool)
+partOverload :: (Show a,Ord a) => (a -> a -> Bool)
              -> Set.Set (Set.Set a)
-             -> (Set.Set (Set.Set a), Set.Set a)
-partOverload leq = Set.fold part (Set.empty,Set.empty)
-    where part s (overl,diffs) =
-              if Set.null s then (overl, diffs)
-              else if Set.isSingleton s then (overl, Set.union diffs s)
-              else case Set.deleteFindMin s of
-                  (x,s') ->
-                      case Set.partition (\ y -> leq x y) s' of
-                      (ov,rest) ->
-                          if Set.null ov
-                          then part rest (overl,Set.insert x diffs)
-                          else part rest
-                                   (Set.insert (Set.insert x ov) overl,
-                                    diffs)
+             -> Set.Set (Set.Set a)
+partOverload leq = Set.fold part Set.empty
+    where part s = Set.union (Set.fromList $ Rel.partSet leq s) 
 
 transPredMap :: IdType_SPId_Map ->
                 CSign.Sign e f ->
@@ -261,27 +237,18 @@ transPredMap idMap sign =
     Map.foldWithKey toSPPredType (Map.empty,idMap) (CSign.predMap sign)
     where toSPPredType iden typeSet (fm,im) =
               if Set.null typeSet then
-                  error ("SuleCFOL2SoftFOL: empty sets are not allowed in PredMaps: "
-                         ++ show iden)
+                  error ("SuleCFOL2SoftFOL: empty sets are not "++
+                         "allowed in PredMaps: " ++ show iden)
               else case Set.lookupSingleton typeSet of
               Just pType ->
                   let sid' = sid fm pType
                   in (Map.insert sid' (Set.singleton (transPredType pType)) fm,
                       insertSPId iden (CPred pType) sid' im)
-              Nothing ->
-                  case partOverload (leqP sign)
-                           (partArities (length . CSign.predArgs) typeSet) of
-                  (overl,diffs) ->
-                      Set.fold insOIdSet
-                             (Set.fold insOId (fm,im) diffs)
-                             overl
+              Nothing -> Set.fold insOIdSet (fm,im) $
+                         partOverload (leqP sign)
+                            (partArities (length . CSign.predArgs) typeSet) 
 
-              where insOId pType (fm',im') =
-                        let sid' = sid fm' pType
-                            predType = transPredType pType
-                        in (Map.insert sid' (Set.singleton predType) fm',
-                            insertSPId iden (CPred pType) sid' im')
-                    insOIdSet tset (fm',im') =
+              where insOIdSet tset (fm',im') =
                         let sid' = sid fm' (Set.findMax tset)
                         in (Map.insert sid' (Set.map transPredType tset) fm',
                             Set.fold (\ x y ->
