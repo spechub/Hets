@@ -89,8 +89,22 @@ flat = fmap concat
 -- * ParsecCombinator extension
 -- ----------------------------------------------
 
+lookaheadPosition :: String
+lookaheadPosition = "lookahead position "
+
+myLookAhead :: GenParser tok st a -> GenParser tok st a
+myLookAhead parser = do
+    state <- getParserState
+    x <- fmap Just parser <|> return Nothing
+    p <- getPosition
+    setParserState state
+    case x of 
+      Nothing -> fail $ lookaheadPosition ++ showPos 
+                 (fromSourcePos p) {Common.Id.sourceName = ""} ")"
+      Just y -> return y
+
 followedWith :: GenParser tok st a -> GenParser tok st b -> GenParser tok st a
-p `followedWith` q = try (p << lookAhead q)
+p `followedWith` q = try (p << myLookAhead q)
 
 begDoEnd :: (Monad f, Functor f) => f a -> f [a] -> f a -> f [a]
 begDoEnd open p close = open <:> p <++> single close
@@ -185,7 +199,7 @@ isString t = take 1 (tokStr t) == "\""
 
 parseString :: Parser a -> String -> a
 parseString p s = case parse p "" s of
-                  Left _ -> error "parseString"
+                  Left _ -> error $ "parseString: " ++ s
                   Right x -> x
 
 splitString :: Parser a -> String -> (a, String)

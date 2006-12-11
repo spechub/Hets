@@ -30,7 +30,7 @@ parse error at 8.1:
 unexpected ")"
 expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", exists, "\\", "case" or "let"
 
-parse error at 9.1:
+parse error at 9.1-9.2:
 unexpected "."
 expecting "%", "=e=", "=", id/literal, "{", "[", "(", "if", "when", "forall", exists, "\\", "case" or "let"
 

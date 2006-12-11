@@ -19,7 +19,9 @@ import Common.DocUtils
 import Common.GlobalAnnotations
 import Data.List
 import Text.ParserCombinators.Parsec.Error
-import Common.Lexer (fromSourcePos)
+import Text.ParserCombinators.Parsec.Char (char)
+import Text.ParserCombinators.Parsec (parse)
+import Common.Lexer
 
 -- | severness of diagnostic messages
 data DiagKind = Error | Warning | Hint | Debug
@@ -164,7 +166,7 @@ adjustPos p r =
 propagateErrors :: Result a -> a
 propagateErrors r =
   case (hasErrors $ diags r, maybeResult r) of
-    (False,Just x) -> x
+    (False, Just x) -> x
     _ -> error $ unlines $ map show $ diags r
 
 -- ---------------------------------------------------------------------
@@ -173,11 +175,37 @@ propagateErrors r =
 
 -- | showing (Parsec) parse errors using our own 'showPos' function
 showErr :: ParseError -> String
-showErr err
-    = showPos (fromSourcePos $ errorPos err) ":" ++
-      showErrorMessages "or" "unknown parse error"
-                        "expecting" "unexpected" "end of input"
-                       (errorMessages err)
+showErr err = let 
+    (lookAheads, msgs) = partition ( \ m -> case m of 
+                     Message str -> isPrefixOf lookaheadPosition str
+                     _ -> False) $ errorMessages err
+    pos = fromSourcePos (errorPos err)
+    poss = pos : foldr (\ s l -> case readPos $ 
+                                 drop (length lookaheadPosition) 
+                                 $ messageString s of 
+                        Just p -> p {sourceName = sourceName pos} : l
+                        _ -> l) [] lookAheads
+    in shows (prettyPoss poss) ":" ++
+       showErrorMessages "or" "unknown parse error"
+           "expecting" "unexpected" "end of input" msgs
+
+readPos :: String -> Maybe Pos
+readPos s = case parse (do
+            ls <- getNumber
+            char '.'
+            cs <- getNumber
+            return $ newPos "" (value 10 ls) (value 10 cs)) "" s of
+                  Left _ -> Nothing 
+                  Right x -> Just x
+
+prettyPoss :: [Pos] -> Doc
+prettyPoss sp = let
+    mi = minimumBy comparePos sp
+    ma = maximumBy comparePos sp
+    in case comparePos mi ma of
+          EQ -> text (showPos ma "")
+          _ -> text $ showPos mi "-"
+               ++ showPos ma {sourceName = ""} ""
 
 instance Show Diagnosis where
     showsPrec _ = shows . pretty
@@ -192,13 +220,7 @@ instance Pretty Diagnosis where
         <> (case sp of
              [] | isMessageW -> empty
                 | otherwise  -> comma
-             _ -> space <> let
-                      mi = minimumBy comparePos sp
-                      ma = maximumBy comparePos sp
-                  in case comparePos mi ma of
-                     EQ -> text (showPos ma ",")
-                     _ -> text $ showPos mi "-"
-                          ++ showPos ma {sourceName = ""} "," )
+             _ -> space <> prettyPoss sp <> comma)
         <+> text s
         where isMessageW = case k of
                            MessageW -> True
