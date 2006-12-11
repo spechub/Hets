@@ -273,7 +273,8 @@ ATC/GlobalAnnotations.der.hs: Common/GlobalAnnotations.hs $(GENRULES)
 	$(GENRULECALL) -i ATC.AS_Annotation -o $@ $<
 
 ATC/Prover.der.hs: Logic/Prover.hs $(GENRULES)
-	$(GENRULECALL) -x ProverTemplate -i ATC.AS_Annotation -o $@ $<
+	$(GENRULECALL) -x Logic.Prover.ProverTemplate \
+            -i ATC.AS_Annotation -o $@ $<
 
 CASL_files = CASL/Sublogic.hs CASL/Morphism.hs CASL/Sign.hs \
     CASL/AS_Basic_CASL.der.hs

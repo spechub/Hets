@@ -59,13 +59,15 @@ commentBlock x = text "{-" <+> x <+> text "-}"
 
 -- Instances
 
+strippedName = reverse . takeWhile (/= '.') . reverse . name
+
 -- instance header, handling class constraints etc.
 simpleInstance :: Class -> Data -> Doc
 simpleInstance s d = hsep [text "instance" 
 		, opt1 constr (\ x -> parenList x <+> text "=>")
                        ( \ x -> x <+> text "=>")
 		, text s
-		, opt1 (texts (name d : vars d)) parenSpace id]
+		, opt1 (texts (strippedName d : vars d)) parenSpace id]
    where
    constr = map (\(c,v) -> text c <+> text v) (constraints d) ++
 		      map (\x -> text s <+> text x) (vars d)	

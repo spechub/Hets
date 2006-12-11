@@ -56,7 +56,7 @@ chaseImports' text dats =
              mp <- ioM $ getEnv "DERIVEPATH"
              let paths = maybe [] breakPaths mp 
              c <- findModule paths m
-             let (found,rest) = scanModule dats c
+             let (found,rest) = scanModule m dats c
              return (rest, done ++ found) -- finished
              -- only one level of imports is now supported for more speed!
                         
@@ -93,21 +93,25 @@ combine paths modname = [p++'/':f| f <- toFile modname, p <- ("." :paths)]
              toFile l = [l++".hs",l++".lhs",l++".hi"] 
 
 -- pluck out the bits of interest
-scanModule :: ToDo -> String -> (ToDo,ToDo)
-scanModule dats txt = let 
+scanModule :: String -> ToDo -> String -> (ToDo,ToDo)
+scanModule modname dats txt = let 
         newDats = filter isData . parse $ txt
         parse l = map snd . parser $ l
-        in (resolve newDats dats ([],[]))
+        in (resolve modname newDats dats ([],[]))
 
 -- update what's still missing
-resolve :: [Data] -> ToDo -> (ToDo,ToDo) -> (ToDo,ToDo)
-resolve _ [] acc = acc
-resolve parsed (tv:tt) p@(local, imports) = 
+resolve :: String -> [Data] -> ToDo -> (ToDo,ToDo) -> (ToDo,ToDo)
+resolve _ _ [] acc = acc
+resolve modname parsed (tv:tt) p@(local, imports) = 
     case tv of
-    (tags, TypeName t) -> case filter ((== t) . name) parsed of
-                [x] -> resolve parsed tt ((tags, x) : local, imports)
-                _ -> resolve parsed tt (local, tv : imports)
-    _ -> resolve parsed tt p
+    (tags, TypeName t) ->
+        case filter ( \ d -> name d == t || 
+                             modname ++ "." ++ name d == t) parsed of
+          [x] -> resolve modname parsed tt 
+                 ( (tags, x { name = modname ++ "." ++ name x }) : local
+                 , imports)
+          _ -> resolve modname parsed tt (local, tv : imports)
+    _ -> resolve modname parsed tt p
 
 -- utils -- this should be the sort of thing automatically generated !!
 isData D{} = True

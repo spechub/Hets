@@ -20,12 +20,14 @@ import ParseLib2
 type Import = String
 
 -- result: (datas,imports)
-parseInputFile :: FilePath -> String -> Either String ([String],[Import])
-parseInputFile fp inp = case (ds,is) of
+parseInputFile :: FilePath -> String -> Either String ([String], [Import])
+parseInputFile fp inp = case (ds, is) of
                         (Left s, Left s2) -> Left (s++"\n"++s2)
                         (Left s,Right _)  -> Left s
                         (Right _, Left s) -> Left s
-                        (Right x, Right y) -> Right (x,y)
+                        (Right x, Right y) -> case y of 
+                             [] -> Right (x, y)
+                             m : _ -> Right (map ((m ++ ".") ++) x, y)
     where datParser = skipUntilOff $ datadecl +++ newtypedecl
           ds = case papply (parse datParser) (0,0) ((0,0),inp) of
                [(x,_)] -> Right $ map name x

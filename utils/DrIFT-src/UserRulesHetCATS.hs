@@ -80,7 +80,7 @@ makeFromShATermFn dat =
         where
         fnstart     = text "case getShATerm ix att0 of"
         cases       = map makeFromShATerm (body dat)
-        typename    = name dat
+        typename    = strippedName dat
         u           = text "u"
         def_case    = u <+> rArrow <+> text "fromShATermError" <+>
                       doubleQuotes (text typename) <+> u
@@ -114,9 +114,10 @@ typeablefn  dat
     where
       tvars = vars dat
       dc = text "::"
-      tcname = text $ "_tc_" ++ name dat  ++ "Tc"
+      tcname = text $ "_tc_" ++ strippedName dat  ++ "Tc"
       wheres = where_decls $ map getV tvars
-      tpe    = text (name dat) <+> hcat (sepWith space $ map text tvars)
+      tpe    = text (strippedName dat) <+> 
+               hcat (sepWith space $ map text tvars)
       getV' var
         = text "typeOf" <+> parens (text "get" <> text var <+> text "x")
       getV var
