@@ -623,7 +623,6 @@ package_clean:
 	$(HCPKG) unregister HTTP --user || exit 0
 	$(HCPKG) unregister syb-generics --user || exit 0
 	$(HCPKG) unregister Shellac --user || exit 0
-	$(RM) -r $(HOME)/.ghc/hets-packages
 	$(RM) -r $(HOME)/.ghc/$(ARCH)-$(OSBYUNAME)-hets-packages
 
 ### additionally removes generated files not in the CVS tree
