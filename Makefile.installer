@@ -21,7 +21,7 @@ SED_COMMAND="s/^\(.*<appversion>\)[0-9. ]*\(<.*$$\)/\1$(HETS_VERSION)\2/"
 
 #PLATFORM = $(shell uname -s)
 GMPURL = http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/mac/GMP.framework.zip
-GNUreadlineURL = http://www..informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/mac/GNUreadline-framework.zip
+GNUreadlineURL = http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/mac/GNUreadline-framework.zip
 INSTALL_XML_SOLARIS = $(IZPACK_SAMPLE)/pack/install-solaris.xml
 INSTALL_XML_MAC = $(IZPACK_PATH)/sample/pack/install-mac.xml
 INSTALL_XML_LINUX = $(IZPACK_PATH)/sample/pack/install-linux.xml
