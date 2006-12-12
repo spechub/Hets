@@ -72,8 +72,8 @@ hetcats-make : daily-hets-download
 	cd $(IZPACK_SAMPLE)/src ; tar xvf HetCATS.tar ; $(RM) HetCATS.tar
 daily-hets-download :
 	@sh getAllHets.sh $(HETS_VERSION)
-	mv getAllHets.sh  $(IZPACK_SAMPLE)
-	mv $(HOME)/tmp/hets/* $(IZPACK_SAMPLE)/hets/
+	mv getAllHets.sh hets.in $(IZPACK_SAMPLE)
+	mv $(HOME)/tmp/hets_installer/hets/* $(IZPACK_SAMPLE)/hets/
 
 tools-checkout :
 	@echo update uni
@@ -118,10 +118,9 @@ other-download :
 	$(RM) GNUreadline-framework.zip 
 	wget --output-document=$(IZPACK_SAMPLE)/SPASS/LINUX/spass.tgz $(SPASSURL_LINUX)
 	wget --output-document=$(IZPACK_SAMPLE)/SPASS/SOLARIS/spass.tgz $(SPASSURL_SOLARIS)
-	wget --output-document=$(IZPACK_SAMPLE)/SPASS/MAC/spass.tgz $(SPASSURL_MAC)
-	cd $(IZPACK_SAMPLE)/SPASS/LINUX/ ; tar xvf spass.tgz ; $(RM) spass.tgz
-	cd $(IZPACK_SAMPLE)/SPASS/SOLARIS/ ; tar xvf spass.tgz ; $(RM) spass.tgz
-	cd $(IZPACK_SAMPLE)/SPASS/MAC/ ; tar xvf spass.tgz ; $(RM) spass.tgz	
+	wget --output-document=$(IZPACK_SAMPLE)/SPASS/MAC/spass_mac.dmg $(SPASSURL_MAC)
+	cd $(IZPACK_SAMPLE)/SPASS/LINUX/ ; tar xvfz spass.tgz ; $(RM) spass.tgz
+	cd $(IZPACK_SAMPLE)/SPASS/SOLARIS/ ; tar xvfz spass.tgz ; $(RM) spass.tgz
 
 build:
 	@chmod +x $(IZPACK_PATH)/bin/compile

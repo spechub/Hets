@@ -762,26 +762,25 @@ initialize_installer:
 	@if [ -d $(INSTALLER_DIR) ] ; then   \
 	    echo "copy file to $(INSTALLER_DIR)" ; \
 	  else \
-	    echo "create $(INSTALLER_DIR)" ; \
-	    mkdir $(INSTALLER_DIR) ; \
-	 fi ; \
-	 sed "s/^\(HETS_VERSION=\).*/\1`cat version_nr`/" Makefile.installer > Makefile.inst  ;\
+	    echo "create $(INSTALLER_DIR)"  ;\
+	    mkdir -p $(INSTALLER_DIR) ; \
+	 fi 
+	@sed "s/^\(HETS_VERSION=\).*/\1`cat version_nr`/" Makefile.installer > Makefile.inst  ;\
 	 mv Makefile.inst $(INSTALLER_DIR)/Makefile ; \
-	 cp utils/getAllHets.sh $(INSTALLER_DIR) ;\
-	 echo ==========================================================  ; \
-	 echo If you have not logged in \'cvs.haskell.org\'  ;\
-	 echo then please \"cvs -d :pserver:anoncvs@cvs.haskell.org:/cvs login\" ;\
-	 echo the password is \"cvn\" ;\
-	 echo ----------------------------------------------------------   ;\
-	 echo If you have not logged in \'cvs-agbkb.informatik.uni-bremen.de\' ;\
-	 echo then please \"cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:/repository login\"  ;\
-	 echo the password is \"\" ;\
-	 echo ==========================================================    ;\
-	 echo Ready to create installers for Hets ;\
-	 echo Please do ;\
-	 echo "  -> cd $(INSTALLER_DIR)" ;\
-	 echo "  -> make" ;\
-	 echo and wait until it is finished
+	 cp utils/getAllHets.sh hets.in $(INSTALLER_DIR) 
+	@echo =========================================================================  
+	@echo If you have not logged in \'cvs.haskell.org\' and \'cvs-agbkb.informatik.uni-bremen.de\'  
+	@echo "then please first login:"  
+	@echo  "   cvs -d :pserver:anoncvs@cvs.haskell.org:/cvs login"   
+	@echo  "    the password is cvn "   
+	@echo  "   cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:/repository login "  
+	@echo  "    the password is "  
+	@echo =========================================================================    
+	@echo Ready to create installers for Hets 
+	@echo Please do 
+	@echo "  -> cd $(INSTALLER_DIR)" 
+	@echo "  -> make"  
+	@echo and wait until it is finished
 
 
 
