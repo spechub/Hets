@@ -236,11 +236,11 @@ parse error at 82.1:
 unexpected "_"
 expecting words
 
-parse error at 83.2:
+parse error at 83.2-83.3:
 unexpected "_"
 expecting casl char, "[" or end of input
 
-parse error at 84.2:
+parse error at 84.2-84.3:
 unexpected "_"
 expecting casl char, "[" or end of input
 

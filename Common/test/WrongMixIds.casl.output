@@ -64,7 +64,7 @@ parse error at 17.1:
 unexpected "_"
 expecting id
 
-parse error at 18.4:
+parse error at 18.4-18.5:
 unexpected "_"
 expecting casl char, "{", "[", __ or end of input
 
@@ -72,7 +72,7 @@ parse error at 19.3:
 unexpected end of input
 expecting simple-id, "{", "[" or __
 
-parse error at 20.1:
+parse error at 20.1-20.2:
 unexpected "."
 expecting id
 
@@ -108,11 +108,11 @@ parse error at 28.1:
 unexpected "%"
 expecting id
 
-parse error at 29.1:
+parse error at 29.1-29.2:
 unexpected "."
 expecting id
 
-parse error at 30.1:
+parse error at 30.1-30.2:
 unexpected "."
 expecting id
 
