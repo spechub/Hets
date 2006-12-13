@@ -8,10 +8,10 @@ The subject of this release is a binary "hets" that is able to analyse
 heterogeneous and in particular CASL specifications.
 
 The sources need to be compiled with ghc Glasgow Haskell Compiler
-(www.haskell.org/ghc). Haskell is also a part of Hets via
+(www.haskell.org/ghc) version 6.6! Haskell is also a part of Hets via
 "Programatica" (www.cse.ogi.edu/PacSoft/projects/programatica).
 
-Beside output written to the console (stdout) or to files hets can
+Beside output written to the console (stdout) or to files hets, can
 display graphs using "uDraw(Graph)", formerly "daVinci"  
 (www.informatik.uni-bremen.de/uDrawGraph)
 
@@ -28,51 +28,5 @@ If you need to rebuild the hets binary follow the instructions in INSTALL
 that you obtained the HetCATS sources as CVS tree)
 
 The heterogeneous tool set (Hets) is mainly maintained by
-Christian Maeder (maeder@tzi.de, initials CM) and Till Mossakowski
-(till@tzi.de, initials TM). The mailing list is hets-devel@tzi.de.
-
-Overview of source modules, with maintainers:
-For more details, see the Haddock documentation in docs/
-(after generation with "make doc") 
---------------------------------------------------------
-
-LICENCE.txt                 Licence information (english) (TM)
-LIZENZ.txt                  Licence information (german)  (TM)
-INSTALL                     Installation and compilation instructions (CM)
-Makefile                    GNU-Makefile to compile sources (Klaus Luettich)
-README                      This file (TM/CM)
-hets.hs                     Top-level Haskell module for hets (TM)
-version_nr                  Current version (TM)
-ATC/                        Conversion from and to ATerms (Klaus Luettich)
-CASL/                       Instance of Logic: CASL (TM/CM/Martin Kuehl)
-CoCASL/                     Instance of Logic: CoCASL (CM/TM)
-COL/                        Instance of Logic: COL (TM)
-Common/                     Modules common to all logics
-Common/ATerm/                 Conversion from and to ATerms (CM)
-Common/Lib/                   Set, Map, Graph, Rel modules (CM)
-Common/PrettyPrint.hs       pretty printing (Klaus Luettich)
-                               pretty printing should get an own directory
-Comorphisms/                Comorphisms of the logic graph (TM)
-CspCASL/                    Instance of Logic: CspCASL (Markus Roggenbach)
-doc/                        Documentation (TM)
-docs/                       Haddock generated documentation (Klaus Luettich)
-GUI/                        GUI for displaying development graphs  
-                                (TM/Jorina Gerken)
-HasCASL/                    Instance of Logic: HasCASL (CM)
-Haskell/                    Instance of Logic: Haskell 
-                                based on Programatica (CM)
-Hatchet/                    old Haskell Logic (CM)
-Driver/                     Command line interface (Klaus Luettich)
-Isabelle/                   Instance of Logic: Isabelle (CM)
-Logic/                      Infrastructure for logic independence (TM)
-Modal/                      Instance of Logic: ModalCASL (TM)
-Proofs/                     Heterogeneous proof engine (TM/Jorina Gerken)
-Static/                     Heterogeneous development graphs and 
-                                static analysis  (TM/Maciek Makowski)
-Syntax/                     Heterogeneous syntax and parsing (TM/CM)
-ToHaskell/                  translation to Haskell (CM)
-utils/                      Utilities
-utils/DrIFT-src/              DrIFT for polytpyic conversion functions
-                                  (Klaus Luettich)
-utils/GenerateRules/          generate files to be DRIFTed (Klaus Luettich)
-utils/InlineAxioms            parse inline axioms (TM/CM)
+Christian Maeder (maeder@tzi.de) and Till Mossakowski
+(till@tzi.de). The mailing list is hets-devel@tzi.de.
