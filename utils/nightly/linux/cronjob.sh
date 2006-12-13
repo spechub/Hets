@@ -8,7 +8,6 @@ HETS_LIB=/local/home/maeder/haskell/CASL-lib
 export PATH
 export MAKE
 export HETS_LIB
-export GHCRTS
 
 hetsdir=/home/www/agbkb/forschung/formal_methods/CoFI/hets
 destdir=$hetsdir/src-distribution/daily
