@@ -1,20 +1,19 @@
 #!/bin/bash -x
 
-PATH=/usr/local/bin:/usr/bin/:/usr/local/X11/bin:/home/pub-bkb/bin:/usr/ccs/bin
+PATH=/home/maeder/bin:/home/pub-bkb/bin:/usr/local/bin:/usr/bin/:/usr/local/X11/bin:/usr/ccs/bin
 MAKE=gmake
 UDG_HOME=/home/pub-bkb/uDrawGraph-3.1
-HETS_LIB=/local/home/maeder/haskell/CASL-lib
+HETS_LIB=/home/maeder/haskell/V240-solaris/haskell/CASL-lib
 
 export PATH
 export MAKE
 export UDG_HOME
 export HETS_LIB
 
-cd /local/home/maeder/haskell
+cd /home/maeder/haskell/V240-solaris/haskell
 
 . ../cronjob.sh
 
-makeProgramatica
 makeHets
 makeLibCheck
 
