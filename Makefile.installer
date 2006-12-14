@@ -17,9 +17,7 @@ IZPACK_COMPILE = $(IZPACK_PATH)/bin/compile
 IZPACK_SAMPLE = $(IZPACK_PATH)/sample
 HETS_VERSION=0.61
 SED_COMMAND="s/^\(.*<appversion>\)[0-9. ]*\(<.*$$\)/\1$(HETS_VERSION)\2/"
-#HETS_BIN = $(HOME)/bin/hets-$(ACTDATE)
 
-#PLATFORM = $(shell uname -s)
 GMPURL = http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/mac/GMP.framework.zip
 GNUreadlineURL = http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/mac/GNUreadline-framework.zip
 INSTALL_XML_SOLARIS = $(IZPACK_SAMPLE)/pack/install-solaris.xml
@@ -33,6 +31,7 @@ INSTALL_JAR_LINUX = hets-installer-x86-linux.jar
 SPASSURL_SOLARIS = http://spass.mpi-sb.mpg.de/download/binaries/spass22sparc59.tgz
 SPASSURL_MAC = http://spass.mpi-sb.mpg.de/download/binaries/spass22mac.dmg
 SPASSURL_LINUX = http://spass.mpi-sb.mpg.de/download/binaries/spass22pclinux.tgz
+SPASS_SRC = http://spass.mpi-sb.mpg.de/download/sources/spass22.tgz
 
 download : izpack_checkout tools-checkout hetcats-make casl-lib-checkout other-download
 
@@ -61,6 +60,8 @@ hetcats-make : daily-hets-download
 	cd HetCATS ;\
 	cp LICENCE.txt $(IZPACK_SAMPLE)/pack/LICENCE.txt ;\
 	cp README  $(IZPACK_SAMPLE)/pack/README ;\
+	cp utils/SPASS-ppc-mac/* $(IZPACK_SAMPLE)/SPASS/MAC/ ;\
+	cp hets.in $(IZPACK_SAMPLE)/hets ;\
 	$(MAKE) release ;\
 	mv HetCATS.tar $(IZPACK_SAMPLE)/src/ ;\
 	mkdir $(IZPACK_SAMPLE)/hets/OWLParser ; \
@@ -72,7 +73,7 @@ hetcats-make : daily-hets-download
 	cd $(IZPACK_SAMPLE)/src ; tar xvf HetCATS.tar ; $(RM) HetCATS.tar
 daily-hets-download :
 	@sh getAllHets.sh $(HETS_VERSION)
-	mv getAllHets.sh hets.in $(IZPACK_SAMPLE)
+	mv getAllHets.sh $(IZPACK_SAMPLE)
 	mv $(HOME)/tmp/hets_installer/hets/* $(IZPACK_SAMPLE)/hets/
 
 tools-checkout :
@@ -118,16 +119,19 @@ other-download :
 	$(RM) GNUreadline-framework.zip 
 	wget --output-document=$(IZPACK_SAMPLE)/SPASS/LINUX/spass.tgz $(SPASSURL_LINUX)
 	wget --output-document=$(IZPACK_SAMPLE)/SPASS/SOLARIS/spass.tgz $(SPASSURL_SOLARIS)
-	wget --output-document=$(IZPACK_SAMPLE)/SPASS/MAC/spass_mac.dmg $(SPASSURL_MAC)
-	cd $(IZPACK_SAMPLE)/SPASS/LINUX/ ; tar xvfz spass.tgz ; $(RM) spass.tgz
-	cd $(IZPACK_SAMPLE)/SPASS/SOLARIS/ ; tar xvfz spass.tgz ; $(RM) spass.tgz
+	wget --output-document=$(IZPACK_SAMPLE)/SPASS/spass-src.tgz $(SPASS_SRC)
+	cd $(IZPACK_SAMPLE)/SPASS/LINUX/ ; tar xvfz spass.tgz ; \
+		$(RM) spass.tgz ; mv SPASS*/SPASS . ; $(RM) -r SPASS*/* ; \
+		mv SPASS SPASS*/ ; chmod a+x SPASS*/SPASS
+	cd $(IZPACK_SAMPLE)/SPASS/SOLARIS/ ; tar xvfz spass.tgz ; \
+	        $(RM) spass.tgz ; mv SPASS*/SPASS . ; $(RM) -r SPASS*/* ; \
+		mv SPASS SPASS*/ ; chmod a+x SPASS*/SPASS
 
 build:
 	@chmod +x $(IZPACK_PATH)/bin/compile
 	$(IZPACK_COMPILE) $(INSTALL_XML_LINUX) -b $(IZPACK_SAMPLE)/ -o $(INSTALL_JAR_LINUX) -k standard
 	$(IZPACK_COMPILE) $(INSTALL_XML_MAC) -b $(IZPACK_SAMPLE)/ -o $(INSTALL_JAR_MAC) -k standard
 	$(IZPACK_COMPILE) $(INSTALL_XML_SOLARIS) -b $(IZPACK_SAMPLE)/ -o $(INSTALL_JAR_SOLARIS) -k standard
-
 
 cleanup:
 	@$(RM) -r $(IZPACK_PATH) hets
