@@ -46,7 +46,8 @@ import Proofs.Global
 import Proofs.Local
 import Proofs.Composition
 import Proofs.HideTheoremShift
-import Proofs.TheoremHideShift
+import Proofs.SimpleTheoremHideShift
+--import Proofs.TheoremHideShift
 import Proofs.StatusUtils
 
 import GUI.AbstractGraphView as AGV
