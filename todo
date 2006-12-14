@@ -318,56 +318,8 @@ emacs mode:
 Ken (Till)
 ************************************************
 
-look at command line interface (just call hets)
+see http://trac.informatik.uni-bremen.de:8080/hets
 
-implement simplified rule Theorem-Hide-Shift
-Proofs.TheoremHideShiftSimp
-If there is an open global theorem link sigma:N1->N2 and
-a hiding definition link theta:N3->N2 (i.e. the signature
-morphism theta is from Sig(N2) to Sig(N3)), then prove
-this theorem link by inserting a new global theorem link
-theta o sigma : N1->N3.
-use functions from Proofs.TheoremHideShift
-  test file: see CASL-lib/test_TheoremHideShift.casl
-
-error in test_HideTheoremShift.casl
-  (when doing Automatic, HideTheoremShift, Automatic, and then
-   local proof in Target')
-
-issue warning whne displaing theories (or performing proofs) of
-nodes with ingoing hiding links.
-
-improve dependency tracking for development graph proofs
-  display proved theorem links that depend on pending other proofs in yellow
-  (other proofs = proofs of other links or %implied theorems - 
-   track which of the latter are actually used)
-
-display normal form of nodes with ingoing hiding links
-
-try out examples
-conservativity calculus
-pushouts http://en.wikipedia.org/wiki/Pushout_%28category_theory%29
-weakly amalgamable cocones
-
-development graph calculus
-(see Sect. IV:4.4 of the CASL Reference Manual)
-
-look at Static/DevGraph.hs
-look at Proofs/EdgeUtils.hs Proofs/StatusUtils.hs Proofs/Global.hs
-
-test command line interface (just call hets)
-
-test development graph GUI:
-   global decomposition
-   menu edit - unnamed nodes - hide/show nodes,
-   node menu: show just subtree / undo
-   interaction with edit - proofs - automatic?
-   use update of uDrawGraph-nodes,edges instead of erasing and adding nodes
-     for attribute changes like color
-
-profiling for "automatic" (look at www.haskell.org/ghc)
-
-restrict proofs: only one prove window per node at a given time
 
 
 ************************************************
@@ -566,7 +518,13 @@ Martin
 ************************************************
 
 Maude as logic in Hets
+  ask Maude developers for API for parsing and static analysis
 Use Maude for CASL rewriting
+
+************************************************
+
+************************************************
+
 Use Maude as a model description language for modal logic,
   integrate Maude model cheker (connection with ModalCASL)
   Also integrate other model checkers (SMV, SPIN)?
@@ -639,6 +597,8 @@ Integration with generic prover interface?
 ************************************************
 Till
 ************************************************
+
+archive mailing lists with internet service
 
 duplicate referenced node in SimpleDatatypes.casl
 
@@ -963,4 +923,25 @@ Aufbau des Graphen selbst
 ------------------------
 addnode
 addlink
+
+
+
+Trac modules
+------------
+
+basic-library		CASL-lib
+development-graph	Static Proofs
+driver			ATC, Driver, GUI, Taxonomy, pretty
+hets			Common, doc, test, utils
+logic-casl		CASL
+casl-ext		CASL_DL, CoCASL, COL, ConstraintCASL, Modal, OWL_DL
+logic-hascasl		HasCASL, Haskell
+
+logic			Logic Syntax
+csp-casl		CspCASL
+provers			Isabelle, SPASS
+comorphisms		Comorphisms, ToHaskell
+omdoc			OMDoc
+pgip			PGIP
+third-party		fgl, haifa-lite, hcl, hxt, syb-generics, uni
 
