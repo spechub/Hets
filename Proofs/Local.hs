@@ -162,7 +162,8 @@ localInferenceAux libEnv ln dgraph (rules, changes)
     Just thSrc ->
       case (maybeResult (computeTheory libEnv ln tgt),
                         maybeResult (translateG_theory morphism thSrc)) of
-        (Just (G_theory lidTgt _ sensTgt), Just (G_theory lidSrc _ sensSrc)) ->
+        (Just (G_theory lidTgt _ _ sensTgt _), 
+              Just (G_theory lidSrc _ _ sensSrc _)) ->
           case maybeResult (coerceThSens lidTgt lidSrc "" sensTgt) of
             Nothing -> localInferenceAux libEnv ln dgraph (rules,changes) list
             Just sentencesTgt ->
@@ -171,11 +172,12 @@ localInferenceAux libEnv ln dgraph (rules, changes)
                            `diffSens` sentencesTgt
                   goals' = markAsGoal goals
                   newTh = case (dgn_theory oldContents) of
-                          G_theory lid sig sens ->
+                          G_theory lid sig ind sens ind' ->
                            case coerceThSens lidSrc lid "" goals' of
-                             Nothing -> G_theory lid sig sens
+                             Nothing -> G_theory lid sig ind sens ind'
                              Just goals'' ->
-                                 G_theory lid sig (sens `joinSens` goals'')
+                                 G_theory lid sig ind 
+                                              (sens `joinSens` goals'') 0
              in if OMap.null goals
                 then
                  let newEdge = (src, tgt, newLab)

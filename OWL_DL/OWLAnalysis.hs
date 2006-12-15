@@ -203,7 +203,7 @@ simpleLibEnv filename dg =
                          (SpecEntry ((JustNode nodeSig), [], g_sign, nodeSig))
            , devGraph = dg }
        where nodeSig = NodeSig 0 g_sign
-             g_sign = G_sign OWL_DL emptySign
+             g_sign = G_sign OWL_DL emptySign 0
 
 simpleLibName :: FilePath -> LIB_NAME
 simpleLibName s = Lib_id (Direct_link ("library_" ++ s) (Range []))
@@ -304,8 +304,8 @@ nodeStaticAna
                  -- showTheory (see GUI) 
                  newLNode = 
                	     (n, topNode {dgn_theory = 
-				  G_theory OWL_DL newSig (toThSens newSent)
-				 }) 
+				  G_theory OWL_DL newSig 0 (toThSens newSent)
+				 0}) 
                  -- by remove of an node all associated edges are also deleted
                  -- so the deges must be saved before remove the node, then
                  -- appended again.
@@ -326,7 +326,8 @@ nodeStaticAna
       where changeGMorOfEdges :: Sign -> LEdge DGLinkLab -> LEdge DGLinkLab
             changeGMorOfEdges newSign (n1, n2, edge) = 
                 let newCMor = idComorphism (Logic OWL_DL) 
-                    Result _ newGMor = gEmbedComorphism newCMor (G_sign OWL_DL newSign)
+                    Result _ newGMor = gEmbedComorphism newCMor 
+                                       (G_sign OWL_DL newSign 0)
                 in  (n1, n2, edge {dgl_morphism = fromJust newGMor})
 
 -- The other nodes in list are examined whether they were already analyzed.

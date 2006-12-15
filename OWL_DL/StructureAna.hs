@@ -73,7 +73,7 @@ graphFromMap uri onto (ontoMap, dg) =
 
         morphism = idComorphism (Logic OWL_DL) 
         Result _ (Just comorphism) = 
-             gEmbedComorphism morphism (G_sign OWL_DL currentSign) 
+             gEmbedComorphism morphism (G_sign OWL_DL currentSign 0) 
         -- TODO: check if gEmbed (Logic.Grothendieck) and G_morphism 
         -- works better:
         --   gEmbed :: G_morphism -> GMorphism
@@ -183,7 +183,7 @@ buildLNodeFromStr uri i =
         nodeName = makeName $ mkSimpleId name
         currentSign = simpleSign $ QN "" uri ""
     in  (i+1, DGNode { dgn_name = nodeName,
-                       dgn_theory = G_theory OWL_DL currentSign noSens,
+                       dgn_theory = G_theory OWL_DL currentSign 0 noSens 0,
                        -- lass erstmal kein Signatur.
                        -- dgn_sens = G_l_sentence_list OWL_DL [],
                        dgn_nf = Prelude.Nothing,
@@ -250,8 +250,8 @@ integrateTheory theories =
   foldl assembleTheories emptyOWL_DLTheory theories
    where
     assembleTheories :: G_theory -> G_theory -> G_theory
-    assembleTheories (G_theory lid1 sign1 theSen1) 
-                     (G_theory lid2 sign2 theSen2) =
+    assembleTheories (G_theory lid1 sign1 _ theSen1 _) 
+                     (G_theory lid2 sign2 _ theSen2 _) =
               let thSen2' = maybe (error "could not coerce sentences") 
                         id (coerceThSens lid2 lid1 "" theSen2)
                   sign2' = maybe (error "could not coerce sign") 
@@ -259,7 +259,7 @@ integrateTheory theories =
                   csign = case signature_union lid1 sign2' sign1 of
                           Result dgs mv -> 
                               maybe (error ("sig_union"++show dgs)) id mv
-              in G_theory lid1 csign (joinSens theSen1 thSen2')
+              in G_theory lid1 csign 0 (joinSens theSen1 thSen2') 0 
 
 
 
@@ -287,7 +287,7 @@ changeEdges ((fromNodes, n, _, toNodes):r) newNode dg =
             | otherwise = changeTo rf dg2
 
 emptyOWL_DLTheory:: G_theory
-emptyOWL_DLTheory = G_theory OWL_DL emptySign noSens
+emptyOWL_DLTheory = G_theory OWL_DL emptySign 0 noSens 0
 
 
 

@@ -33,7 +33,7 @@ dgToSpec dg node = do
   let apredSps = map emptyAnno predSps
       pos = nullRange
   case n of
-    DGNode _ (G_theory lid1 sigma sen') _ _ DGBasic _ _ ->
+    DGNode _ (G_theory lid1 sigma _ sen' _) _ _ DGBasic _ _ ->
       do let b = Basic_spec $ G_basic_spec lid1 $
                  sign_to_basic_spec lid1 sigma $ toNamedList sen'
          if null apredSps
@@ -141,5 +141,5 @@ computePathTheory libEnv ln e@(src, _, link) = do
   translateG_theory (dgl_morphism link) $ theoremsToAxioms th
 
 theoremsToAxioms :: G_theory -> G_theory
-theoremsToAxioms (G_theory lid sign sens) =
-   G_theory lid sign $ markAsAxiom True sens
+theoremsToAxioms (G_theory lid sign ind1 sens ind2) =
+   G_theory lid sign ind1 (markAsAxiom True sens) ind2

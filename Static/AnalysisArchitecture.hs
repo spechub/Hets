@@ -437,8 +437,8 @@ ana_UNIT_TERM lgraph defl gctx curl opts uctx@(buc, diag)
                        (toMaybeNode pI : (map (JustNode . second) morphSigs))
                               DGFitSpec
                    -- compute morphA (\sigma^A)
-                   G_sign lidI sigI <- return (getMaybeSig (toMaybeNode pI))
-                   let idI = G_morphism lidI (ide lidI sigI)
+                   G_sign lidI sigI _ <- return (getMaybeSig (toMaybeNode pI))
+                   let idI = G_morphism lidI (ide lidI sigI) 0
                    morphA <- homogeneousMorManyUnion
                              (idI : (map first morphSigs))
                    -- compute sigMorExt (\sigma^A(\Delta))
@@ -528,8 +528,8 @@ ana_FIT_ARG_UNIT lgraph defl gctx curl opts uctx nsig
            gsigmaS = getSig nsig
            gsigmaT = getSig (getSigFromDiag p)
            dg' = devGraph gctx'
-       G_sign lidS sigmaS <- return gsigmaS
-       G_sign lidT sigmaT <- return gsigmaT
+       G_sign lidS sigmaS _ <- return gsigmaS
+       G_sign lidT sigmaT _ <- return gsigmaT
        G_symb_map_items_list lid sis <- adj $ homogenizeGM (Logic lidS) symbMap
        sigmaT' <- adj $ coerceSign lidT lidS "" sigmaT
        mor <- if isStructured opts then return (ide lidS sigmaS)
@@ -537,7 +537,7 @@ ana_FIT_ARG_UNIT lgraph defl gctx curl opts uctx nsig
                          rmap' <- adj $ coerceRawSymbolMap lid lidS "" rmap
                          adj $ induced_from_to_morphism lidS rmap'
                              sigmaS sigmaT'
-       let gMorph = G_morphism lidS mor
+       let gMorph = G_morphism lidS mor 0
        (nsig', dg'') <- extendDGraph dg' nsig (gEmbed gMorph) DGFitSpec
        return (gMorph, nsig', p, gctx' { devGraph = dg'' }, diag')
 
@@ -653,7 +653,7 @@ homogeneousEnsuresAmalgamability opts pos diag sink =
                        "homogeneousEnsuresAmalgamability: Empty sink" pos
                  lab:_ -> do let (_, mor) = lab
                                  sig = cod Grothendieck mor
-                             G_sign lid _ <- return sig
+                             G_sign lid _ _<- return sig
                              hDiag <- homogeniseDiagram lid diag
                              hSink <- homogeniseSink lid sink
                              ensures_amalgamability lid (caslAmalg opts,

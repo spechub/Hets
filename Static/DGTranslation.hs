@@ -55,14 +55,14 @@ dg_translation  gc acm@(Comorphism cidMor) =
 
  updateEdges :: LEdge DGLinkLab -> Result (LEdge DGLinkLab) 
  updateEdges 
-       (from,to,(links@(DGLink { dgl_morphism= gm@(GMorphism cid' lsign lmorphism)}))) =
+       (from,to,(links@(DGLink { dgl_morphism= gm@(GMorphism cid' lsign ind1 lmorphism ind2)}))) =
   if isHomogeneous gm 
    then
     let sourceLid = sourceLogic cid'
         targetLid = targetLogic cid'
-    in if (lessSublogicComor (sublogicOfSign (G_sign sourceLid lsign)) acm) 
+    in if (lessSublogicComor (sublogicOfSign (G_sign sourceLid lsign ind1)) acm) 
              && (lessSublogicComor (sublogicOfMor (G_morphism targetLid 
-                                                       lmorphism)) acm)
+                                                       lmorphism ind2)) acm)
         then
             do -- translate sign of GMorphism
                (lsign', _) <- fSign sourceLid lsign
@@ -79,22 +79,22 @@ dg_translation  gc acm@(Comorphism cidMor) =
                                   lmorphism'
                        slNewSign = sublogicOfSign $ 
                                     G_sign (sourceLogic cid2) 
-                                      newSign
+                                      newSign ind1
                        domMor = sublogicOfSign $
                                    G_sign (targetLogic cid2) 
-                                     (dom (targetLogic cid2) newMor)
+                                     (dom (targetLogic cid2) newMor) ind2
                    in trace (if False then 
                                  ("old:\n" ++ showDoc lsign "\nnew:\n" ++ showDoc newSign "\n\n")
                                else "") $ 
                        return $ assert (slNewSign == domMor) $ 
                              (from, to, 
                                   links{dgl_morphism= GMorphism cid2 
-                                                        newSign newMor
+                                                        newSign ind1 newMor ind2
                                        }
                              )
                              
         else Result [mkDiag Error ("the sublogic of GMorphism :\""++ 
-                        (show (sublogicOfMor (G_morphism targetLid lmorphism))) 
+                        (show (sublogicOfMor (G_morphism targetLid lmorphism ind2))) 
                         ++ " of edge " ++ (showFromTo from to gc) 
                         ++ " is not less than " ++ (show acm )) ()] (Nothing)
      else Result [mkDiag Error ("Link "++ (showFromTo from to gc) ++ 
@@ -118,7 +118,7 @@ dg_translation  gc acm@(Comorphism cidMor) =
      coerceSign sourceID slid "DGTranslation.fSign" sign >>=
         map_sign cidMor
 
- fTh _ (G_theory lid sign thSens) = do
+ fTh _ (G_theory lid sign _ thSens _) = do
    -- (sign', _) <- fSign lid sign 
    sign' <- coerceSign lid slid "DGTranslation.fTh.sign" sign 
    thSens' <- coerceThSens lid slid "DGTranslation.fTh.sen" thSens
@@ -129,7 +129,7 @@ dg_translation  gc acm@(Comorphism cidMor) =
                         return (NamedSen p1 p2 p3 ns)) (toNamedList thSens')
 -}  
    (sign'', namedS) <- map_theory cidMor (sign', toNamedList thSens')
-   let th = G_theory tlid sign'' (toThSens $ List.nub namedS)
+   let th = G_theory tlid sign'' 0 (toThSens $ List.nub namedS) 0
 --   let th = G_theory tlid sign' (toThSens $ List.nub namedList)
    return th
 

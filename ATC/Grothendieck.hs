@@ -89,7 +89,7 @@ instance ShATermConvertible G_basic_spec where
             u -> fromShATermError "G_basic_spec" u
 
 instance ShATermConvertible G_sign where
-     toShATermAux att0 (G_sign lid sign) = do
+     toShATermAux att0 (G_sign lid sign _) = do
          (att1,i1) <- toShATerm' att0 (language_name lid)
          (att2,i2) <- toShATerm' att1 sign
          return $ addATerm (ShAAppl "G_sign" [i1,i2] []) att2
@@ -99,7 +99,7 @@ instance ShATermConvertible G_sign where
                 case fromShATerm' i1 att of { (att1, i1') ->
                 case atcLogicLookup "G_sign" i1' of { Logic lid ->
                 case fromShATerm' i2 att1 of { (att2, i2') ->
-                (att2, G_sign lid i2') }}}
+                (att2, G_sign lid i2' 0) }}}
             u -> fromShATermError "G_sign" u
 
 instance ShATermConvertible G_ext_sign where
@@ -202,7 +202,7 @@ instance ShATermConvertible G_sublogics where
             u -> fromShATermError "G_sublogics" u
 
 instance ShATermConvertible G_morphism where
-     toShATermAux att0 (G_morphism lid morphism) = do
+     toShATermAux att0 (G_morphism lid morphism _) = do
          (att1,i1) <- toShATerm' att0 (language_name lid)
          (att2,i2) <- toShATerm' att1 morphism
          return $ addATerm (ShAAppl "G_morphism" [i1,i2] []) att2
@@ -212,7 +212,7 @@ instance ShATermConvertible G_morphism where
                 case fromShATerm' i1 att of { (att1, i1') ->
                 case atcLogicLookup "G_morphism" i1' of { Logic lid ->
                 case fromShATerm' i2 att1 of { (att2, i2') ->
-                (att2, G_morphism lid i2') }}}
+                (att2, G_morphism lid i2' 0) }}}
             u -> fromShATermError "G_morphism" u
 
 instance ShATermConvertible AnyComorphism where
@@ -227,7 +227,7 @@ instance ShATermConvertible AnyComorphism where
             u -> fromShATermError "AnyComorphism" u
 
 instance ShATermConvertible GMorphism where
-     toShATermAux att0 (GMorphism cid sign1 morphism2) = do
+     toShATermAux att0 (GMorphism cid sign1 _ morphism2 _) = do
          (att1,i1) <- toShATerm' att0 (language_name cid)
          (att2,i2) <- toShATerm' att1 sign1
          (att3,i3) <- toShATerm' att2 morphism2
@@ -240,7 +240,7 @@ instance ShATermConvertible GMorphism where
                 of { Comorphism cid ->
                 case fromShATerm' i2 att1 of { (att2, i2') ->
                 case fromShATerm' i3 att2 of { (att3, i3') ->
-                (att3, GMorphism cid i2' i3') }}}}
+                (att3, GMorphism cid i2' 0 i3' 0) }}}}
             u -> fromShATermError "GMorphism" u
 
 instance ShATermConvertible Grothendieck where

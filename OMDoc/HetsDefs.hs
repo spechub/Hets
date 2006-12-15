@@ -84,7 +84,8 @@ getPureFormulas ((_, f):rest) = [f] ++ getPureFormulas rest
 
 -- Cast Signature to CASLSignature if possible
 getCASLSign::G_sign->(Maybe CASLSign)
-getCASLSign (G_sign _ sign) = cast sign -- sign is of class Typeable -> cast -> (Typeable a, Typeable b)->(Maybe b)
+getCASLSign (G_sign _ sign _) = cast sign 
+-- sign is of class Typeable -> cast -> (Typeable a, Typeable b)->(Maybe b)
 
 getJustCASLSign::(Maybe CASLSign)->CASLSign
 getJustCASLSign (Just cs) = cs
@@ -135,13 +136,18 @@ innNodes dg n =
 
 getCASLMorphLL::DGLinkLab->(CASL.Morphism.Morphism () () ())
 getCASLMorphLL edge =
-  fromMaybe (error "cannot cast morphism to CASL.Morphism")  $ (\(Logic.Grothendieck.GMorphism _ _ morph) -> Data.Typeable.cast morph :: (Maybe (CASL.Morphism.Morphism () () ()))) $ dgl_morphism edge
+  fromMaybe (error "cannot cast morphism to CASL.Morphism")  
+                $ (\(Logic.Grothendieck.GMorphism _ _ _ morph _) -> 
+                   Data.Typeable.cast morph :: (Maybe 
+                                                (CASL.Morphism.Morphism 
+                                                         () () ()))) 
+                      $ dgl_morphism edge
 
 getCASLMorph::(Graph.LEdge DGLinkLab)->(CASL.Morphism.Morphism () () ())
 getCASLMorph (_,_,edge) = getCASLMorphLL edge
 
 getMCASLMorph::(Graph.LEdge DGLinkLab)->(Maybe (CASL.Morphism.Morphism () () ()))
-getMCASLMorph (_,_,edge) = (\(Logic.Grothendieck.GMorphism _ _ morph) -> Data.Typeable.cast morph :: (Maybe (CASL.Morphism.Morphism () () ()))) $ dgl_morphism edge
+getMCASLMorph (_,_,edge) = (\(Logic.Grothendieck.GMorphism _ _ _ morph _) -> Data.Typeable.cast morph :: (Maybe (CASL.Morphism.Morphism () () ()))) $ dgl_morphism edge
 
 signViaMorphism::DGraph->Graph.Node->CASLSign
 signViaMorphism dg n =
@@ -677,18 +683,20 @@ getNodeDeltaPredMaps dg n = getFromCASLSignDeltaM dg n predMap
 -- extract all operands from a node that are not imported from other nodes
 getNodeDeltaOpMaps::DGraph->Graph.Node->(Map.Map Id.Id (Set.Set OpType))
 getNodeDeltaOpMaps dg n = getFromCASLSignDeltaM dg n opMap
-  (Map.differenceWith (\a b -> let diff = Set.difference a b in if Set.null diff then Nothing else Just diff))
+  (Map.differenceWith (\a b -> let diff 
+                                       = Set.difference a b in 
+                               if Set.null diff then Nothing else Just diff))
   Map.empty
   
 getProverSentences::G_theory->Prover.ThSens CASLFORMULA (AnyComorphism, BasicProof)
-getProverSentences (G_theory _ _ thsens) =
+getProverSentences (G_theory _ _ _ thsens _) =
   let
     (Just csen) = ((cast thsens)::(Maybe (Prover.ThSens CASLFORMULA (AnyComorphism, BasicProof))))
   in
     csen
 
 getSentencesFromG_theory::G_theory->[Ann.Named CASLFORMULA]
-getSentencesFromG_theory (G_theory _ _ thsens) =
+getSentencesFromG_theory (G_theory _ _ _ thsens _) =
   let
     (Just csen) = ((cast thsens)::(Maybe (Prover.ThSens CASLFORMULA (AnyComorphism, BasicProof))))
   in Prover.toNamedList csen
@@ -698,7 +706,10 @@ getNodeSentences::DGNodeLab->[Ann.Named CASLFORMULA]
 getNodeSentences (DGRef {}) = []
 getNodeSentences node =
   let
-    (Just csen) = (\(G_theory _ _ thsens) -> (cast thsens)::(Maybe (Prover.ThSens CASLFORMULA (AnyComorphism, BasicProof)))) $ dgn_theory node
+    (Just csen) = (\(G_theory _ _ _ thsens _) -> 
+                       (cast thsens)::(Maybe (Prover.ThSens CASLFORMULA 
+                                               (AnyComorphism, BasicProof)))) 
+                                                 $ dgn_theory node
   in Prover.toNamedList csen
 
 -- extract the sentences from a node that are not imported from other nodes       
@@ -1312,10 +1323,10 @@ emptyCASLMorphism::(CASL.Morphism.Morphism () () ())
 emptyCASLMorphism = CASL.Morphism.Morphism (emptySign ()) (emptySign ()) Map.empty Map.empty Map.empty ()
     
 emptyCASLGMorphism::Logic.Grothendieck.GMorphism
-emptyCASLGMorphism = Logic.Grothendieck.gEmbed (Logic.Grothendieck.G_morphism CASL emptyCASLMorphism)
+emptyCASLGMorphism = Logic.Grothendieck.gEmbed (Logic.Grothendieck.G_morphism CASL emptyCASLMorphism 0)
 
 makeCASLGMorphism::(CASL.Morphism.Morphism () () ())->Logic.Grothendieck.GMorphism
-makeCASLGMorphism m = Logic.Grothendieck.gEmbed (Logic.Grothendieck.G_morphism CASL m)
+makeCASLGMorphism m = Logic.Grothendieck.gEmbed (Logic.Grothendieck.G_morphism CASL m 0)
 
 emptyCASLSign::CASLSign
 emptyCASLSign = emptySign ()
@@ -1328,17 +1339,17 @@ buildCASLNodeDiff
   node1@(DGNode { dgn_theory = th1})
   (DGNode { dgn_theory = th2}) =
   let
-    sens1 = (\(G_theory _ _ sens) -> (cast sens)::(Maybe (Prover.ThSens CASLFORMULA (AnyComorphism, BasicProof)))) th1
-    sens2 = (\(G_theory _ _ sens) -> (cast sens)::(Maybe (Prover.ThSens CASLFORMULA (AnyComorphism, BasicProof)))) th2
-    sign1 = (\(G_theory _ sign _) -> (cast sign)::(Maybe CASLSign)) th1
-    sign2 = (\(G_theory _ sign _) -> (cast sign)::(Maybe CASLSign)) th2
+    sens1 = (\(G_theory _ _ _ sens _) -> (cast sens)::(Maybe (Prover.ThSens CASLFORMULA (AnyComorphism, BasicProof)))) th1
+    sens2 = (\(G_theory _ _ _ sens _) -> (cast sens)::(Maybe (Prover.ThSens CASLFORMULA (AnyComorphism, BasicProof)))) th2
+    sign1 = (\(G_theory _ sign _ _ _) -> (cast sign)::(Maybe CASLSign)) th1
+    sign2 = (\(G_theory _ sign _ _ _) -> (cast sign)::(Maybe CASLSign)) th2
   in
     case (sens1, sens2, sign1, sign2) of
       (Just se1, Just se2, Just si1, Just si2) ->
         let
           sediff = buildCASLSentenceDiff se1 se2
           sidiff = buildCASLSignDiff si1 si2
-          theo = G_theory CASL sidiff sediff
+          theo = G_theory CASL sidiff 0 sediff 0
         in
           node1 { dgn_theory = theo }
       _ ->
@@ -1350,8 +1361,8 @@ stripCASLMorphism
   n@(DGNode { dgn_theory = th } )
   (CASL.Morphism.Morphism { CASL.Morphism.fun_map = fm, CASL.Morphism.pred_map = pm }) =
     let
-      mcsi = (\(G_theory _ sign _) -> (cast sign)::(Maybe CASLSign)) th
-      mcse = (\(G_theory _ _ sens) -> (cast sens)::(Maybe (Prover.ThSens CASLFORMULA (AnyComorphism, BasicProof)))) th
+      mcsi = (\(G_theory _ sign _ _ _) -> (cast sign)::(Maybe CASLSign)) th
+      mcse = (\(G_theory _ _ _ sens _) -> (cast sens)::(Maybe (Prover.ThSens CASLFORMULA (AnyComorphism, BasicProof)))) th
     in case mcsi of
       (Just (Sign ss sr om ao oldpm vm se ev am ga ei)) ->
         let
@@ -1367,7 +1378,7 @@ stripCASLMorphism
             Map.filterWithKey (\k _ -> k /= id' ) nmap'
             ) ao funlist
         in  case mcse of
-            (Just csens) -> n { dgn_theory = (G_theory CASL (Sign ss sr newopmap newassocmap newpredmap vm se ev am ga ei) csens) }
+            (Just csens) -> n { dgn_theory = (G_theory CASL (Sign ss sr newopmap newassocmap newpredmap vm se ev am ga ei) 0 csens 0) }
             _ -> error "Could not cast sentences to (ThSens CASLFORMULA) (but a CASLSign was cast... (wierd!))"
       Nothing -> n  -- maybe this node is not CASL-related... leave it as is
 stripCASLMorphism n@(DGRef {}) _ = n -- can DGRefS have a morphism from another node in the graph ?
@@ -1393,7 +1404,7 @@ stripCASLMorphisms dg (n, node) =
       in (n,
         foldl (\newnode gmorph ->
           let
-            mcaslmorph = (\(GMorphism _ _ morph) -> (cast morph)::(Maybe (CASL.Morphism.Morphism () () ()))) gmorph
+            mcaslmorph = (\(GMorphism _ _ _ morph _) -> (cast morph)::(Maybe (CASL.Morphism.Morphism () () ()))) gmorph
           in  case mcaslmorph of
             (Just caslmorph) -> stripCASLMorphism newnode caslmorph
             _ -> newnode
@@ -2055,7 +2066,7 @@ addSignsAndHideSet dg hidingSetForSource n1 n2 =
     newnodel =
       n2dgnl
         {
-          dgn_theory = G_theory CASL signhide (Prover.toThSens [])
+          dgn_theory = G_theory CASL signhide 0 (Prover.toThSens []) 0
         }
   in
 {-    Debug.Trace.trace
@@ -2084,7 +2095,7 @@ addSignsAndHideWithMorphism dg hiding mm n1 n2 =
     newnodel =
       n2dgnl
         {
-          dgn_theory = G_theory CASL asign sens
+          dgn_theory = G_theory CASL asign 0 sens 0
         }
   in
 {-    Debug.Trace.trace
@@ -2107,7 +2118,7 @@ addSignsAndHideWithMorphismExt hiding mm n1dgnl n2dgnl =
     newnodel =
       n2dgnl
         {
-          dgn_theory = G_theory CASL asign sens
+          dgn_theory = G_theory CASL asign 0 sens 0
         }
   in
 {-    Debug.Trace.trace
@@ -2156,7 +2167,7 @@ addSignsAndHide dg hidingMap n1 n2 =
     newnodel =
       n2dgnl
         {
-          dgn_theory = G_theory CASL signhide (Prover.toThSens [])
+          dgn_theory = G_theory CASL signhide 0 (Prover.toThSens []) 0
         }
   in
     Debug.Trace.trace ("HidingSet for " ++ show n1 ++ " -> "  ++ show n2 ++ " : " ++ show hidingSetForSource) $ Graph.insNode (n2, newnodel) (Graph.delNode n2 dg)
@@ -2176,7 +2187,8 @@ addSigns dg n1 n2 =
     asign = CASL.Sign.addSig (\_ _ -> ()) sign1 sign2
     newnodel = n2dgnl {
       dgn_theory =
-        (\(G_theory _ _ {-thsens-} _) -> G_theory CASL asign (Prover.toThSens [])) (dgn_theory n2dgnl)
+        (\(G_theory _ _ _ {-thsens-} _ _) -> G_theory CASL asign 0 
+                                             (Prover.toThSens []) 0) (dgn_theory n2dgnl)
       }
       
   in
@@ -2661,7 +2673,7 @@ createMinimalLibEnv ln tracemarks =
         newNode =
           currentNode
             {
-              dgn_theory = G_theory CASL strippedCASLSign currentSentences
+              dgn_theory = G_theory CASL strippedCASLSign 0 currentSentences 0
             }
         oldEdges = Graph.labEdges currentDG
         oldNodes = filter (\(n,_) -> n /= nodenum) $ Graph.labNodes currentDG

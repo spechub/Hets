@@ -757,9 +757,9 @@ printNodeSublogic x =
 printNodeNumberAxioms :: GraphGoals -> IO ()
 printNodeNumberAxioms input =
   case input of
-    GraphNode (_, (DGNode _ (G_theory x y _) _ _ _ _ _)) ->
+    GraphNode (_, (DGNode _ (G_theory x y _ _ _) _ _ _ _ _)) ->
          putStr $ show (size(sym_of x y))
-    GraphNode (_, (DGRef _ _ _ (G_theory x y _) _ _)) ->
+    GraphNode (_, (DGRef _ _ _ (G_theory x y _ _ _) _ _)) ->
          putStr $ show (size (sym_of x y))
     _ -> putStr "Not a node ! \n"
 
@@ -811,9 +811,9 @@ extractSenStatus ls =
 printNodeNumberSymbols :: GraphGoals ->  IO ()
 printNodeNumberSymbols input =
   case input of
-      GraphNode (_, (DGNode _ (G_theory _ _ x) _ _ _ _ _)) ->
+      GraphNode (_, (DGNode _ (G_theory _ _ _ x _) _ _ _ _ _)) ->
            putStr $ show (countSymbols (extractSenStatus (OMap.toList x)) 0)
-      GraphNode (_, (DGRef _ _ _ (G_theory _ _ x) _ _)) ->
+      GraphNode (_, (DGRef _ _ _ (G_theory _ _ _ x _) _ _)) ->
            putStr $ show (countSymbols (extractSenStatus (OMap.toList x)) 0)
       _  -> putStr "Not a node ! \n"
 
@@ -822,9 +822,9 @@ printNodeNumberSymbols input =
 printNodeNumberUnprovenThm :: GraphGoals -> IO ()
 printNodeNumberUnprovenThm input =
  case input of
-     GraphNode (_, (DGNode _ (G_theory _ _ x) _ _ _ _ _)) ->
+     GraphNode (_, (DGNode _ (G_theory _ _ _ x _) _ _ _ _ _)) ->
         putStr $ show (countUnprovenThm (extractSenStatus (OMap.toList x)) 0)
-     GraphNode (_, (DGRef _ _ _ (G_theory _ _ x) _ _)) ->
+     GraphNode (_, (DGRef _ _ _ (G_theory _ _ _ x _) _ _)) ->
         putStr $ show (countUnprovenThm (extractSenStatus (OMap.toList x)) 0)
      _  -> putStr "Not a node ! \n"
 
@@ -833,9 +833,9 @@ printNodeNumberUnprovenThm input =
 printNodeNumberProvenThm :: GraphGoals -> IO ()
 printNodeNumberProvenThm input =
  case input of
-     GraphNode (_, (DGNode _ (G_theory _ _ x) _ _ _ _ _))->
+     GraphNode (_, (DGNode _ (G_theory _ _ _ x _) _ _ _ _ _))->
         putStr $ show (countProvenThm (extractSenStatus (OMap.toList x)) 0)
-     GraphNode (_, (DGRef _ _ _ (G_theory _ _ x) _ _)) ->
+     GraphNode (_, (DGRef _ _ _ (G_theory _ _ _ x _) _ _)) ->
         putStr $ show (countProvenThm (extractSenStatus (OMap.toList x)) 0)
      _  -> putStr "Not a node ! \n"
 

@@ -190,7 +190,7 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
                    putIfVerbose opt 0 $ unlines $ map show es
              Result _ (Just (raw_gTh, tStr)) ->
               case theoremsToAxioms raw_gTh of
-                gTh@(G_theory lid sign0 sens0) -> do
+                gTh@(G_theory lid sign0 _ sens0 _) -> do
                   if null tStr then return () else
                      putIfVerbose opt 2 $
                         "Translated using comorphism " ++ tStr

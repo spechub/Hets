@@ -88,7 +88,7 @@ instance ShATermConvertible BasicProof where
             u -> fromShATermError "BasicProof" u
 
 instance ShATermConvertible G_theory where
-    toShATermAux att0 (G_theory lid sign sens) = do
+    toShATermAux att0 (G_theory lid sign _ sens _) = do
          (att1,i1) <- toShATerm' att0 (language_name lid)
          (att2,i2) <- toShATerm' att1 sign
          (att3,i3) <- toShATerm' att2 sens
@@ -100,5 +100,5 @@ instance ShATermConvertible G_theory where
                 case atcLogicLookup "G_theory" i1' of { Logic lid ->
                 case fromShATerm' i2 att1 of { (att2, i2') ->
                 case fromShATerm' i3 att2 of { (att3, i3') ->
-                (att3, G_theory lid i2' i3') }}}}
+                (att3, G_theory lid i2' 0 i3' 0) }}}}
             u -> fromShATermError "G_theory" u

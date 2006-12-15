@@ -52,7 +52,7 @@ getSublogicFromGlobalContext le ln =
 
     testAndGetSublogicFromEdge :: LEdge DGLinkLab -> Res.Result G_sublogics
     testAndGetSublogicFromEdge (from, to, 
-                                 DGLink gm@(GMorphism cid' lsign lmorphism) _ _) 
+                    DGLink gm@(GMorphism cid' lsign si lmorphism mi) _ _) 
         =
           if isHomogeneous gm then
               Result [] (comSublogics g_mor g_sign) 
@@ -60,14 +60,16 @@ getSublogicFromGlobalContext le ln =
                            ("the edge " ++ (showFromTo from to gc) ++
                             " is not homogeneous.") () ] Nothing 
 
-         where g_mor = sublogicOfMor (G_morphism (targetLogic cid') lmorphism)
-               g_sign = sublogicOfSign (G_sign (sourceLogic cid') lsign) 
+         where g_mor = sublogicOfMor 
+                       (G_morphism (targetLogic cid') lmorphism mi)
+               g_sign = sublogicOfSign 
+                        (G_sign (sourceLogic cid') lsign si) 
            
     getSubLogicsFromNodes :: AnyLogic -> LNode DGNodeLab 
                           -> Res.Result G_sublogics
     getSubLogicsFromNodes logic (_, lnode) =
         case dgn_theory lnode of
-          th@(G_theory lid _ _) ->
+          th@(G_theory lid _ _ _ _) ->
               if Logic lid == logic then
                   Res.Result [] (Just $ sublogicOfTh th)
                  else Res.Result [Res.mkDiag Res.Error 
@@ -79,7 +81,7 @@ getSublogicFromGlobalContext le ln =
     getFirstLogic :: [LNode DGNodeLab] -> AnyLogic
     getFirstLogic list =
         case dgn_theory $ snd $ head list of
-          G_theory lid _ _ -> 
+          G_theory lid _ _ _ _ -> 
               Logic lid
               
 

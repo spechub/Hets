@@ -203,7 +203,7 @@ getEdgeList ls =
 -- | The function 'getDGLinkType' returns a String describing the type of the edge
 getDGLinkType :: DGLinkLab -> String
 getDGLinkType lnk = case dgl_morphism lnk of
- GMorphism _ _ _ -> 
+ GMorphism _ _ _ _ _-> 
   {- if not (is_injective (targetLogic cid) mor) then trace "noninjective morphism found" "hetdef" 
   else -}
    case dgl_type lnk of

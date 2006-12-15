@@ -54,7 +54,7 @@ printTheoryAsDFG :: LIB_NAME -> SIMPLE_ID
             -- ^ if True a conjecture false is added otherwise 
             -- its a theory without a conjecture.
          -> G_theory -> IO (Maybe Doc)
-printTheoryAsDFG ln sn checkConsistency gth@(G_theory lid sign thSens) = 
+printTheoryAsDFG ln sn checkConsistency gth@(G_theory lid sign _ thSens _) = 
     maybe (return Nothing)
           (\ (sign1,sens1) ->
                do prob <- genSPASSProblem 

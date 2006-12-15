@@ -148,7 +148,7 @@ basicInferenceNode checkCons lg (ln, node) libname libEnv = do
       runResultT $ do
         -- compute the theory of the node, and its name
         -- may contain proved theorems
-        thForProof@(G_theory lid1 sign axs) <-
+        thForProof@(G_theory lid1 sign _ axs _) <-
              liftR $ computeTheory libEnv ln node
         ctx <- liftR
                     $ maybeToMonad ("Could not find node "++show node)
@@ -252,7 +252,7 @@ callProver :: (Logic lid sublogics1
     -> (G_prover,AnyComorphism) -> IO (Result (ProofGUIState lid sentence))
 callProver st (G_prover lid4 p, Comorphism cid) =
     case theory st of
-    G_theory lid1 sign sens ->
+    G_theory lid1 sign _ sens _ ->
         runResultT $ do
           -- coerce goalMap
         ths <- coerceThSens (logicId st) lid1

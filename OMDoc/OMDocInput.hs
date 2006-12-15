@@ -1320,7 +1320,7 @@ createNodeFromSpecOM
     theory =
       G_theory
         CASL
-        caslsign
+        caslsign 0
         (
           Prover.toThSens
             $
@@ -1330,8 +1330,8 @@ createNodeFromSpecOM
                 (Set.toList theorysens)
                 ++ (Set.toList theorycons)
               )
-        )
-    reftheory = G_theory CASL caslsign (Prover.toThSens [])
+        ) 0
+    reftheory = G_theory CASL caslsign 0 (Prover.toThSens []) 0
     node =
       if isRefSpec ts
         then

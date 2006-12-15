@@ -375,8 +375,8 @@ ana_VIEW_DEFN lgraph _defl libenv gctx l opts
   let gsigmaS = getSig src
       gsigmaT = getSig tar
       dg'' = devGraph gctx''
-  G_sign lidS sigmaS <- return gsigmaS
-  G_sign lidT sigmaT <- return gsigmaT
+  G_sign lidS sigmaS _ <- return gsigmaS
+  G_sign lidT sigmaT _ <- return gsigmaT
   gsis1 <- adj $ homogenizeGM (Logic lidS) gsis
   G_symb_map_items_list lid sis <- return gsis1
   sigmaS' <- adj $ coerceSign lidS lid "" sigmaS
@@ -387,7 +387,7 @@ ana_VIEW_DEFN lgraph _defl libenv gctx l opts
              adj $ induced_from_to_morphism lid rmap sigmaS' sigmaT'
   let nodeS = getNode src
       nodeT = getNode tar
-      gmor = gEmbed (G_morphism lid mor)
+      gmor = gEmbed (G_morphism lid mor 0)
       link = (nodeS,nodeT,DGLink {
                dgl_morphism = gmor,
                dgl_type = GlobalThm LeftOpen None LeftOpen,
@@ -435,12 +435,12 @@ ana_ITEM_NAME_OR_MAP1 ln genv' res old new = do
 
 refNodesig :: LIB_NAME -> DGraph -> (Maybe SIMPLE_ID, NodeSig)
            -> (DGraph, NodeSig)
-refNodesig ln dg (name, NodeSig n sigma@(G_sign lid sig)) =
+refNodesig ln dg (name, NodeSig n sigma@(G_sign lid sig ind)) =
   let node_contents = DGRef {
         dgn_name = makeMaybeName name,
         dgn_libname = ln,
         dgn_node = n,
-        dgn_theory = G_theory lid sig noSens,
+        dgn_theory = G_theory lid sig ind noSens 0,
         dgn_nf = Nothing,
         dgn_sigma = Nothing
         }

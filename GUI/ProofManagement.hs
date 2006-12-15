@@ -216,7 +216,7 @@ doDisplayGoals ::
        ProofGUIState lid1 sentence1
     -> IO ()
 doDisplayGoals s@(ProofGUIState { theoryName = thName
-                                , theory=DevGraph.G_theory lid1 sig1 _}) =
+                                , theory=DevGraph.G_theory lid1 sig1 _ _ _}) =
     do sens' <- DevGraph.coerceThSens (logicId s) lid1 "" sens
        createTextSaveDisplay ("Selected Goals from Theory " ++ thName)
                           (thName ++ "-goals.txt") (goalsText sens')
@@ -630,13 +630,13 @@ proofManagementGUI lid proveF fineGrainedSelectionF
   -- read the global state back in
   s <- Conc.takeMVar stateMVar
   case theory s of
-   DevGraph.G_theory lidT sigT sensT ->
+   DevGraph.G_theory lidT sigT indT sensT _ ->
     do gMap <- DevGraph.coerceThSens (logicId s) lidT 
                                "ProofManagement last coerce" (goalMap s)
        return (Result.Result {Result.diags = accDiags s,
                               Result.maybeResult =
-                                  Just (DevGraph.G_theory lidT sigT
-                                                    (Map.union sensT gMap))
+                                  Just (DevGraph.G_theory lidT sigT indT
+                                                    (Map.union sensT gMap) 0)
                              }
               )
   -- TODO: do something with the resulting G_theory before returning it?

@@ -962,7 +962,7 @@ translateTheoryOfNode (proofStatusRef,_,_,_,_,_,_,opts,_)
    return (node,th) ) of
   Res.Result [] (Just (node,th)) -> do
     Res.Result ds _ <-  runResultT(
-      do G_theory lid sign sens <- return th
+      do G_theory lid sign _ sens _ <- return th
          -- find all comorphism paths starting from lid
          let paths = findComorphismPaths logicGraph (sublogicOfTh th)
          -- let the user choose one
@@ -981,7 +981,7 @@ translateTheoryOfNode (proofStatusRef,_,_,_,_,_,_,opts,_)
          (sign'',sens1) <-
              liftR $ map_theory cid (sign', toNamedList sens')
          lift $ displayTheory "Translated theory" node dgraph
-            (G_theory lidT sign'' $ toThSens sens1)
+            (G_theory lidT sign'' 0 (toThSens sens1) 0)
      )
     showDiags opts ds
     return ()
@@ -1044,7 +1044,7 @@ showProofStatusOfNode _ descr dgAndabstrNodeMap dgraph =
 showStatusAux :: DGNodeLab -> String
 showStatusAux dgnode =
   case dgn_theory dgnode of
-  G_theory _ _ sens ->
+  G_theory _ _ _ sens _ ->
      let goals = OMap.filter (not . isAxiom) sens
          (proven,open) = OMap.partition isProvenSenStatus goals
       in "Proven proof goals:\n"
@@ -1116,15 +1116,15 @@ checkconservativityOfEdge _ (ref,_,_,_,ln,_,_,_,_)
   let dgraph = lookupDGraph ln libEnv
       dgtar = lab' (context dgraph target)
   case dgtar of
-    DGNode _ (G_theory lid _ sens) _ _ _ _ _ ->
+    DGNode _ (G_theory lid _ _ sens _) _ _ _ _ _ ->
      case dgl_morphism linklab of
-     GMorphism cid _ morphism2 -> do
+     GMorphism cid _ _ morphism2 _ -> do
       morphism2' <- coerceMorphism (targetLogic cid) lid
                    "checkconservativityOfEdge" morphism2
       let th = case computeTheory libEnv ln source of
                 Res.Result _ (Just th1) -> th1
                 _ -> error "checkconservativityOfEdge: computeTheory"
-      G_theory lid1 sign1 sens1 <- return th
+      G_theory lid1 sign1 _ sens1 _ <- return th
       sign2 <- coerceSign lid1 lid "checkconservativityOfEdge.coerceSign" sign1
       sens2 <- coerceThSens lid1 lid "" sens1
       let Res.Result ds res =
@@ -1209,7 +1209,7 @@ getDGNodeType dgnodelab =
 
 getDGLinkType :: DGLinkLab -> String
 getDGLinkType lnk = case dgl_morphism lnk of
- GMorphism _ _ _ -> 
+ GMorphism _ _ _ _ _ -> 
   {- if not (is_injective (targetLogic cid) mor) then trace "noninjective morphism found" "hetdef" 
   else -}
    case dgl_type lnk of

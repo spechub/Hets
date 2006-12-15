@@ -247,10 +247,11 @@ diagram; then copy all the edges from the original to new diagram
 (coercing the morphisms). -}
 homogeniseDiagram targetLid diag =
     do let convertNode (n, dn) =
-               do G_sign srcLid sig <- return $ getSig $ dn_sig dn
+               do G_sign srcLid sig _ <- return $ getSig $ dn_sig dn
                   sig' <- coerceSign srcLid targetLid "" sig
                   return (n, sig')
-           convertEdge (n1, n2, DiagLink { dl_morphism = GMorphism cid _ mor })
+           convertEdge (n1, n2, DiagLink { dl_morphism = 
+                                               GMorphism cid _ _ mor _})
                = if isIdComorphism (Comorphism cid) then
                  do mor' <- coerceMorphism (targetLogic cid) targetLid "" mor
                     return (n1, n2, mor')
@@ -285,7 +286,7 @@ homogeniseSink :: Logic lid sublogics
                 -> Result [(Node, morphism)]
 homogeniseSink targetLid dEdges =
     -- See homogeniseDiagram for comments on implementation.
-    do let convertMorphism (n, GMorphism cid _ mor) =
+    do let convertMorphism (n, GMorphism cid _ _ mor _) =
                if isIdComorphism (Comorphism cid) then
                   do mor' <- coerceMorphism (targetLogic cid) targetLid "" mor
                      return (n, mor')

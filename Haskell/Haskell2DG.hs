@@ -53,7 +53,7 @@ anaHaskellFile opts file = do
               name = makeName $ mName
               node_contents = DGNode
                  { dgn_name = name
-                 , dgn_theory = G_theory Haskell sig $ toThSens sens
+                 , dgn_theory = G_theory Haskell sig 0 (toThSens sens) 0
                  , dgn_nf = Nothing
                  , dgn_sigma = Nothing
                  , dgn_origin = DGBasic
@@ -68,7 +68,7 @@ anaHaskellFile opts file = do
               ln = Lib_id (Direct_link moduleS (Range []))
               gEnv = Map.singleton mName
                       $ SpecEntry ( EmptyNode $ Logic Haskell, []
-                                  , G_sign Haskell emptySign, nodeSig)
+                                  , G_sign Haskell emptySign 0, nodeSig)
               ctxt = emptyGlobalContext
                 { globalEnv = gEnv
                 , devGraph = dg' }
