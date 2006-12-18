@@ -228,7 +228,7 @@ nodeStaticAna ((n,topNode):[]) (inSig, _, oldDiags) signMap ontoMap dg =
         in  case res of
             Just (_, accSig, sent) ->
              let newLNode = (n, topNode {dgn_theory = G_theory OWL_DL accSig
-                                         (toThSens sent)})
+                                         0 (toThSens sent) 0})
                  ledges = (inn dg n) ++ (out dg n)
              in  Result (oldDiags ++ diag)
                         $ Just (Map.insert n (accSig, sent) signMap,
@@ -405,7 +405,7 @@ simpleLibEnv filename dg =
              (SpecEntry ((JustNode nodeSig), [], g_sign, nodeSig))
            , devGraph = dg }
        where nodeSig = NodeSig 0 g_sign
-             g_sign = G_sign OWL_DL emptySign
+             g_sign = G_sign OWL_DL emptySign 0
 
 simpleLibName :: String -> LIB_NAME
 simpleLibName s = Lib_id (Direct_link ("library_" ++ s) (Range []))
