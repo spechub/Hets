@@ -14,6 +14,8 @@ import Network.URI
 import Network.Service
 
 import Text.XML.HXT.Aliases
+import Text.XML.HXT.DOM hiding (when)
+import Text.Regex
 
 import Text.XML.Serializer
 import Org.Xmlsoap.Schemas.Soap.Envelope as ENV
@@ -22,7 +24,7 @@ import Data.Generics2
 import Data.Typeable
 import Data.List (intersperse)
 
-import Control.Monad (mapM_)
+import Control.Monad (mapM_,when)
 
 data MathServServices = 
     ProveProblemOpt { in0 :: String
@@ -101,7 +103,7 @@ usage m = do hPutStrLn stderr $
                  "Usage: soapTest <server-name> <port> <service-name> "++
                  "<operation> <problem-file> <timeout> [<options>]\n"++
                  "       soapTest --all <server-name> <port> "++
-                 "<operation> <problem-file> <timeout>\n"++m
+                 "<problem-file> <timeout>\n"++m
              exitWith (ExitFailure 2)
 
 makeEndPoint :: String -> Maybe HTTPTransport
@@ -114,25 +116,38 @@ makeEndPoint uriStr = maybe Nothing
 main :: IO ()
 main = do
    args <- getArgs
-   if length args == 6
-      then if head args == "--all" 
-              then allServices (tail args) 
-              else doSoapCall Nothing args
-      else if length args == 7 
-           then doSoapCall (Just $ last args) $ init args
-           else usage "too few arguments"
+   case args of
+    x | length args == 5 -> if head args == "--all" 
+                               then allServices (tail args)
+                               else usage "too few arguments"
+      | length args == 6 -> doSoapCall False Nothing args
+      | length args == 7 -> doSoapCall False (Just $ last args) $ init args
+      | otherwise -> usage "too few arguments"
 
 allServices :: [String] -> IO ()
 allServices args 
-    | length args == 5 = mapM_ doCall services
+    | length args == 4 = 
+        do putStrLn $ "soapTest: Trying Broker..."             
+           doSoapCall True Nothing 
+                      (take 2 args ++ "Broker":"ProveProblemOpt":drop 2 args)
+           mapM_ doCall services
+
     | otherwise = usage "somthing went wrong with allServices"
     where doCall s = do
              putStrLn $ "soapTest: Trying Service "++show s++"..."
-             doSoapCall Nothing (take 2 args ++ s: drop 2 args)
+             doSoapCall True Nothing (take 2 args ++ s:"ProveTPTPProblem":
+                                 drop 2 args)
              putStrLn "----------------\n"
 
-doSoapCall :: Maybe String -> [String] -> IO ()
-doSoapCall mopts (server:port:service:operation:problemFile:timeoutStr:[]) =
+statusRegex :: Regex
+statusRegex = mkRegexWithOpts 
+              "\"http://www\\.mathweb\\.org/owl/status\\.owl#([^\"]*)\" ?/>" 
+              False False
+
+doSoapCall :: Bool -- ^ True means grep for status
+           -> Maybe String -> [String] -> IO ()
+doSoapCall grepForStatus mopts 
+           (server:port:service:operation:problemFile:timeoutStr:[]) =
     do problem <- readFile problemFile
        let (timeout :: Int) = read timeoutStr
            -- problem = "Egal"
@@ -147,11 +162,20 @@ doSoapCall mopts (server:port:service:operation:problemFile:timeoutStr:[]) =
                       writeFile (problemFile++".xml") $ getResponse resp
                       let xmlCont = getResponse resp
                       mtrees <- parseXML xmlCont
-                      maybe (putStrLn $ "no parse of:\n"++xmlCont)
-                            putXML
-                            mtrees   
+                      let xmlStatus = maybe ("no parse")
+                                            (const "valid xml") 
+                                            mtrees
+                      when grepForStatus $ 
+                           putStrLn ("Status: " ++ 
+                                     maybe ">>not found" 
+                                          (\ sl -> if null sl 
+                                                   then ">>>not found"
+                                                   else head sl)
+                                          (matchRegex statusRegex xmlCont))
+                      putStrLn $ "XMLStatus: "++xmlStatus
+                      putStrLn xmlCont
              )
              (makeEndPoint $ 
                 "http://"++server++':':port++"/axis/services/"++service)
-doSoapCall _ _ = fail $ "wrong number of arguments:\n" ++ 
+doSoapCall _ _ _ = fail $ "wrong number of arguments:\n" ++ 
               " ./soapTest <server> <port> <service> <problemFile> <timelimit>"
