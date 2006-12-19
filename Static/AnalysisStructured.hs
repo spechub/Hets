@@ -143,7 +143,9 @@ ana_SPEC :: LogicGraph -> GlobalContext -> MaybeNode -> NODE_NAME ->
 ana_SPEC lg gctx nsig name opts sp =
  let dg = devGraph gctx 
      sgMap = sigMap gctx
+     mrMap = morMap gctx
      k = if Map.null sgMap then 0 else fst $ Map.findMax sgMap
+     j = if Map.null mrMap then 0 else fst $ Map.findMax mrMap
  in case sp of
   Basic_spec (G_basic_spec lid bspec) ->
     do G_sign lid' sigma' i1 <- return (getMaybeSig nsig)
@@ -170,8 +172,9 @@ ana_SPEC lg gctx nsig name opts sp =
              dgn_cons_status = LeftOpen }
            node = getNewNode dg
            dg' = insNode (node,node_contents) dg
+           incl' = updateMorIndex (j+1) incl
            link = DGLink {
-                    dgl_morphism = incl,
+                    dgl_morphism = incl',
                     dgl_type = GlobalDef,
                     dgl_origin = DGExtension }
            dg'' = case nsig of
@@ -180,9 +183,9 @@ ana_SPEC lg gctx nsig name opts sp =
        return (Basic_spec (G_basic_spec lid bspec'),
                NodeSig node $ G_sign lid sigma_complete (k+1),
                gctx { devGraph = dg'' 
-                    , sigMap = Map.insert (k+1) 
-                               (G_sign lid sigma_complete (k+1))
-                               $ sigMap gctx})
+                    , sigMap = Map.insert (k+1)
+                               (G_sign lid sigma_complete (k+1)) sgMap
+                    , morMap = Map.insert (j+1) (toG_morphism incl') mrMap})
   Translation asp ren ->
    do let sp1 = item asp
       (sp1', NodeSig n' gsigma, gctx') <-
