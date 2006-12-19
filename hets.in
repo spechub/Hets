@@ -7,15 +7,11 @@
 ### installation;
 ### it is post processed by some IzPack variables starting with %
 
-TESTDVC=`echo $UNIDAVINCI`
-TESTUDG=`echo $UDG_HOME`
-TESTISA=`echo $ISABELL_HOME`
-
-if [ -z $TESTUDG -a -z $TESTDVC ] ; then
+if [ -d $INSTALL_PATH/lib/uDrawGraph* ] ; then
     UNIDAVINCI=$INSTALL_PATH/lib/uDrawGraph-3.1/bin/uDrawGraph
 fi
-if [ -z $TESTISA ] ; then
-    ISABELLE_HOME=$$INSTALL_PATH/lib/Isabelle/Isabelle
+if [ -d $$INSTALL_PATH/lib/Isabelle* ] ; then
+    ISABELLE_HOME=$INSTALL_PATH/lib/Isabelle/Isabelle
 fi
 
 HETS_LIB=$INSTALL_PATH/CASL-lib
