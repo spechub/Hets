@@ -500,7 +500,7 @@ instance Category Grothendieck G_sign GMorphism where
            else return (GMorphism (CompComorphism r1 r2) sigma1 ind1 mor 0)
   dom _ (GMorphism r sigma ind _mor _) =
     G_sign (sourceLogic r) sigma ind
-  cod _ (GMorphism r _sigma ind mor _) =
+  cod _ (GMorphism r _sigma _ mor _) =
     G_sign lid2 (cod lid2 mor) 0
     where lid2 = targetLogic r
   legal_obj _ (G_sign lid sigma _) = legal_obj lid sigma
@@ -511,6 +511,12 @@ instance Category Grothendieck G_sign GMorphism where
       Nothing -> False
     where lid2 = targetLogic r
 
+-- | Embedding of homogeneous signature morphisms as Grothendieck sig mors
+gEmbed2 :: G_sign -> G_morphism -> GMorphism
+gEmbed2 (G_sign lid2 sig si) (G_morphism lid mor ind) =
+  let cid = IdComorphism lid (top_sublogic lid)
+      Just sig1 = coerceSign lid2 (sourceLogic cid) "gEmbed2" sig
+  in GMorphism cid sig1 si mor ind
 
 -- | Embedding of homogeneous signature morphisms as Grothendieck sig mors
 gEmbed :: G_morphism -> GMorphism
