@@ -501,7 +501,7 @@ instance Category Grothendieck G_sign GMorphism where
   dom _ (GMorphism r sigma ind _mor _) =
     G_sign (sourceLogic r) sigma ind
   cod _ (GMorphism r _sigma ind mor _) =
-    G_sign lid2 (cod lid2 mor) ind
+    G_sign lid2 (cod lid2 mor) 0
     where lid2 = targetLogic r
   legal_obj _ (G_sign lid sigma _) = legal_obj lid sigma
   legal_mor _ (GMorphism r sigma _ mor _) =
