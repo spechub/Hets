@@ -582,6 +582,12 @@ logicInclusion logicGraph l1@(Logic lid1) (Logic lid2) =
            Nothing ->
                fail ("No inclusion from "++ln1++" to "++ln2++" found")
 
+updateMorIndex :: Int -> GMorphism -> GMorphism
+updateMorIndex i (GMorphism cid sign si mor _) = GMorphism cid sign si mor i
+
+toG_morphism :: GMorphism -> G_morphism
+toG_morphism (GMorphism cid _ _ mor i) = G_morphism (targetLogic cid) mor i
+
 -- | inclusion morphism between two Grothendieck signatures
 ginclusion :: LogicGraph -> G_sign -> G_sign -> Result GMorphism
 ginclusion logicGraph (G_sign lid1 sigma1 ind) (G_sign lid2 sigma2 _) = do
