@@ -483,7 +483,7 @@ ana_SPEC lg gctx nsig name opts sp =
             dgn_cons_status = LeftOpen }
           node = getNewNode dg''
           link = (n'',node,DGLink {
-            dgl_morphism = gEmbed (G_morphism lid mor3 0),
+            dgl_morphism = gEmbed2 gsigma3 (G_morphism lid mor3 0),
             dgl_type = HidingDef,
             dgl_origin = DGLocal })
       return (Local_spec (replaceAnnoted sp2 asp)
