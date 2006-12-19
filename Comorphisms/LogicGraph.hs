@@ -102,8 +102,9 @@ inclusionList = [Comorphism CASL2HasCASL, Comorphism HasCASL2HasCASL,
                  Comorphism CASL2CspCASL,
                  Comorphism CspCASL2Modal,
 #endif
-                 Comorphism HasCASL2IsabelleHOL,
-                 Comorphism PCoClTyConsHOL2IsabelleHOL]
+                 Comorphism PCoClTyConsHOL2IsabelleHOL,
+                 Comorphism HasCASL2IsabelleHOL]
+
 
 normalList :: [AnyComorphism]
 normalList = [Comorphism SuleCFOL2SoftFOLInduction,
