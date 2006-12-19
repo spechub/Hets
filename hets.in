@@ -7,14 +7,18 @@
 ### installation;
 ### it is post processed by some IzPack variables starting with %
 
-if [ -d $INSTALL_PATH/lib/uDrawGraph* ] ; then
-    UNIDAVINCI=$INSTALL_PATH/lib/uDrawGraph-3.1/bin/uDrawGraph
+if [ -d $INSTALL_PATH/lib/uDrawGraph ] ; then
+    UDG_PATH_NAME=`ls $INSTALL_PATH/lib/uDrawGraph | grep uDrawGraph` 
+    UDG_PATH=$INSTALL_PATH/lib/uDrawGraph/$UDG_PATH_NAME
+    UNIDAVINCI=$UDG_PATH/bin/uDrawGraph
 fi
 if [ -d $$INSTALL_PATH/lib/Isabelle* ] ; then
     ISABELLE_HOME=$INSTALL_PATH/lib/Isabelle/Isabelle
 fi
+if [ -d $INSTALL_PATH/CASL-lib ] ; then
+    HETS_LIB=$INSTALL_PATH/CASL-lib
+fi
 
-HETS_LIB=$INSTALL_PATH/CASL-lib
 HETS_OWL_PARSER=$INSTALL_PATH/src/HetCATS/OWL_DL
 UNIWISH=/usr/bin/wish
 HETS=$INSTALL_PATH/lib/hets/hets-$APP_VER

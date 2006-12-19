@@ -7,7 +7,7 @@
 # This Makefile will generate the installer for Hets with IzPack
 #
 
-all: download build ## cleanup
+all: download build ##cleanup
 
 EMPTY =
 ACTDATE = $(shell date +%F)
@@ -134,7 +134,7 @@ build:
 	$(IZPACK_COMPILE) $(INSTALL_XML_SOLARIS) -b $(IZPACK_SAMPLE)/ -o $(INSTALL_JAR_SOLARIS) -k standard
 
 cleanup:
-	@$(RM) -r $(IZPACK_PATH) hets
+	@$(RM) -r $(IZPACK_PATH) hets_installer
 	@$(RM) Makefile
 
 .PHONY : all download build casl-lib-checkout hetcats-make daily-hets-download other-download izpack_checkout cleanup tools-checkout
