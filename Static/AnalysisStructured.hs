@@ -144,8 +144,10 @@ ana_SPEC lg gctx nsig name opts sp =
  let dg = devGraph gctx 
      sgMap = sigMap gctx
      mrMap = morMap gctx
+     tMap = thMap gctx
      k = if Map.null sgMap then 0 else fst $ Map.findMax sgMap
      j = if Map.null mrMap then 0 else fst $ Map.findMax mrMap
+     t = if Map.null tMap then 0 else fst $ Map.findMax tMap
  in case sp of
   Basic_spec (G_basic_spec lid bspec) ->
     do G_sign lid' sigma' i1 <- return (getMaybeSig nsig)
@@ -158,12 +160,13 @@ ana_SPEC lg gctx nsig name opts sp =
                                          ++ language_name lid)
                           (basic_analysis lid)
                    b (bspec, sigma, globalAnnos gctx)
-       incl <- ginclusion lg
-                      (G_sign lid sigma i1) (G_sign lid sigma_complete (k+1))
-       let node_contents =
+       let gsig = G_sign lid sigma_complete (k+1)
+       incl <- ginclusion lg (G_sign lid sigma i1) gsig
+       let gTh = G_theory lid sigma_complete (k+1) (toThSens ax) (t+1)
+           node_contents =
             DGNode {
              dgn_name = name,
-             dgn_theory = G_theory lid sigma_complete (k+1) (toThSens ax) 0,
+             dgn_theory = gTh,
                        -- no, not only the delta
              dgn_nf = Nothing,
              dgn_sigma = Nothing,
@@ -181,10 +184,10 @@ ana_SPEC lg gctx nsig name opts sp =
                     EmptyNode _ -> dg'
                     JustNode (NodeSig n _) -> insEdgeNub (n,node,link) dg'
        return (Basic_spec (G_basic_spec lid bspec'),
-               NodeSig node $ G_sign lid sigma_complete (k+1),
+               NodeSig node gsig,
                gctx { devGraph = dg'' 
-                    , sigMap = Map.insert (k+1)
-                               (G_sign lid sigma_complete (k+1)) sgMap
+                    , sigMap = Map.insert (k+1) gsig sgMap
+                    , thMap = Map.insert (t+1) gTh tMap
                     , morMap = Map.insert (j+1) (toG_morphism incl') mrMap})
   Translation asp ren ->
    do let sp1 = item asp
