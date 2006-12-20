@@ -23,7 +23,9 @@ Conversion of development graphs from Logic.DevGraph
    different linktypes for local and hiding definition links
 -}
 
-module GUI.ConvertDevToAbstractGraph where
+module GUI.ConvertDevToAbstractGraph 
+    (convertGraph,GraphMem,ConversionMaps,initializeConverter)
+    where
 
 import Logic.Logic
 import Logic.Coerce
@@ -124,16 +126,17 @@ data InternalNames =
      InternalNames { showNames :: Bool,
                      updater :: [(String,(String -> String) -> IO ())] }
 
-type GInfo = (IORef LibEnv,
-              IORef Descr,
-              IORef ConversionMaps,
-              Descr,
-              LIB_NAME,
-              GraphInfo,
-              IORef InternalNames, -- show internal names?
-              HetcatsOpts,
-              IORef [[Node]]
-             )
+data GInfo = GInfo 
+             { libEnvIORef :: IORef LibEnv
+             , descrIORef :: IORef Descr
+             , conversionMapsIORef :: IORef ConversionMaps
+             , descr :: Descr -- better name here?
+             , gi_LIB_NAME :: LIB_NAME
+             , gi_GraphInfo :: GraphInfo
+             , internalNamesIORef :: IORef InternalNames -- show internal names?
+             , gi_hetcatsOpts :: HetcatsOpts
+             , visibleNodesIORef :: IORef [[Node]]
+             }
 
 initializeConverter :: IO (IORef GraphMem,HTk.HTk)
 initializeConverter =
@@ -196,8 +199,15 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts title = do
   ioRefVisibleNodes <- newIORef [(Graph.nodes dGraph)]
   let gid = nextGraphId graphMem
       actGraphInfo = graphInfo graphMem
-  let gInfo = (ioRefProofStatus, event, convRef, gid, ln, actGraphInfo
-              , showInternalNames, opts, ioRefVisibleNodes)
+  let gInfo = GInfo {libEnvIORef = ioRefProofStatus, 
+                     descrIORef = event, 
+                     conversionMapsIORef = convRef, 
+                     descr = gid, 
+                     gi_LIB_NAME = ln, 
+                     gi_GraphInfo = actGraphInfo,
+                     internalNamesIORef = showInternalNames, 
+                     gi_hetcatsOpts = opts, 
+                     visibleNodesIORef = ioRefVisibleNodes}
   let file = libNameToFile opts ln ++ prfSuffix
   AGV.Result descr msg <-
     makegraph (title ++ " for " ++ show ln)
@@ -496,8 +506,14 @@ openProofStatus ln file ioRefProofStatus convRef opts = do
 proofMenu :: GInfo
              -> (LibEnv -> IO (Res.Result LibEnv))
              -> IO ()
-proofMenu (ioRefProofStatus, event, convRef, gid, ln, actGraphInfo, _
-          , hOpts, ioRefVisibleNodes) proofFun = do
+proofMenu (GInfo {libEnvIORef = ioRefProofStatus, 
+                  descrIORef = event, 
+                  conversionMapsIORef = convRef, 
+                  descr = gid, 
+                  gi_LIB_NAME = ln, 
+                  gi_GraphInfo = actGraphInfo,
+                  gi_hetcatsOpts = hOpts, 
+                  visibleNodesIORef = ioRefVisibleNodes}) proofFun = do
   proofStatus <- readIORef ioRefProofStatus
   putIfVerbose hOpts 4 "Proof started via \"Proofs\" menu"
   Res.Result ds res <- proofFun proofStatus
@@ -535,7 +551,9 @@ createLocalMenuNodeTypeSpec :: String -> IORef (Map.Map Descr Descr)
                             -> GraphInfo -> IORef GraphMem -> GInfo
                             -> DaVinciNodeTypeParms NodeDescr
 createLocalMenuNodeTypeSpec color ioRefSubtreeEvents actGraphInfo
-             ioRefGraphMem gInfo@(_,_,convRef,_,_,_,_,_,ioRefVisibleNodes) =
+             ioRefGraphMem 
+             gInfo@(GInfo {conversionMapsIORef = convRef,
+                           visibleNodesIORef = ioRefVisibleNodes}) =
                  Ellipse $$$ Color color
                  $$$ ValueTitle (\ (s,_,_) -> return s)
                  $$$ LocalMenu (Menu (Just "node menu")
@@ -564,7 +582,7 @@ createLocalMenuNodeTypeSpec color ioRefSubtreeEvents actGraphInfo
 createLocalMenuNodeTypeInternal :: String -> GInfo
                                 -> DaVinciNodeTypeParms NodeDescr
 createLocalMenuNodeTypeInternal color
-                          gInfo@(_,_,_,_,_,_,showInternalNames,_,_) =
+               gInfo@(GInfo {internalNamesIORef = showInternalNames}) =
                  Ellipse $$$ Color color
                  $$$ ValueTitleSource (\ (s,_,_) -> do
                        b <- newSimpleBroadcaster ""
@@ -594,7 +612,7 @@ createLocalMenuNodeTypeDgRef :: String -> GraphInfo -> IORef GraphMem
                              -> DaVinciNodeTypeParms NodeDescr
 createLocalMenuNodeTypeDgRef color actGraphInfo
                              ioRefGraphMem graphMem
-                             gInfo@(_,_,convRef,_,_,_,_,opts,_) =
+                             gInfo =
                  Box $$$ Color color
                  $$$ ValueTitle (\ (s,_,_) -> return s)
                  $$$ LocalMenu (Menu (Just "node menu")
@@ -606,13 +624,13 @@ createLocalMenuNodeTypeDgRef color actGraphInfo
                     createLocalMenuButtonShowNumberOfRefNode gInfo,
                     Button "Show referenced library"
                      (\ (_, descr, gid) ->
-                        do convMaps <- readIORef convRef
+                        do convMaps <- readIORef $ conversionMapsIORef gInfo
                            (refDescr, newGraphInfo, _) <-
                                 showReferencedLibrary ioRefGraphMem descr
                                               gid
                                               actGraphInfo
                                               convMaps
-                                              opts
+                                              (gi_hetcatsOpts gInfo)
 --writeIORef convRef newConvMaps
                            writeIORef ioRefGraphMem
                                       graphMem{graphInfo = newGraphInfo,
@@ -627,12 +645,12 @@ type ButtonMenu a = MenuPrim (Maybe String) (a -> IO ())
 -- | menu button for local menus
 createMenuButton :: String -> (Descr -> DGraphAndAGraphNode -> DGraph -> IO ())
                  -> GInfo -> ButtonMenu NodeDescr
-createMenuButton title menuFun (ioProofStatus,_,convRef,_,ln,_,_,_,_) =
+createMenuButton title menuFun gInfo =
                     (Button title
                       (\ (_, descr, _) ->
-                        do convMaps <- readIORef convRef
-                           ps <- readIORef ioProofStatus
-                           let dGraph = lookupDGraph ln ps
+                        do convMaps <- readIORef $ conversionMapsIORef gInfo
+                           ps <- readIORef $ libEnvIORef gInfo
+                           let dGraph = lookupDGraph (gi_LIB_NAME gInfo) ps
                            menuFun descr
                                    (dgAndabstrNode convMaps)
                                    dGraph
@@ -664,14 +682,14 @@ createLocalMenuButtonTranslateTheory gInfo =
    (added by KL)
 -}
 createLocalMenuTaxonomy :: GInfo -> ButtonMenu NodeDescr
-createLocalMenuTaxonomy ginfo@(proofStatus,_,_,_,_,_,_,_,_) =
+createLocalMenuTaxonomy ginfo =
       (Menu (Just "Taxonomy graphs")
        [createMenuButton "Subsort graph"
                (passTh displaySubsortGraph) ginfo,
         createMenuButton "Concept graph"
                (passTh displayConceptGraph) ginfo])
     where passTh displayFun descr ab2dgNode dgraph =
-              do r <- lookupTheoryOfNode proofStatus
+              do r <- lookupTheoryOfNode (libEnvIORef ginfo)
                                          descr ab2dgNode dgraph
                  case r of
                   Res.Result [] (Just (n, gth)) ->
@@ -680,8 +698,9 @@ createLocalMenuTaxonomy ginfo@(proofStatus,_,_,_,_,_,_,_,_) =
                      showDiags defaultHetcatsOpts ds
 
 createLocalMenuButtonShowSublogic :: GInfo -> ButtonMenu NodeDescr
-createLocalMenuButtonShowSublogic gInfo@(proofStatus,_,_,_,_,_,_,_,_) =
-  createMenuButton "Show sublogic" (getSublogicOfNode proofStatus) gInfo
+createLocalMenuButtonShowSublogic gInfo =
+  createMenuButton "Show sublogic" 
+                   (getSublogicOfNode $ libEnvIORef gInfo) gInfo
 
 createLocalMenuButtonShowNodeOrigin :: GInfo -> ButtonMenu NodeDescr
 createLocalMenuButtonShowNodeOrigin  =
@@ -931,12 +950,11 @@ getLocalAxOfNode _ descr dgAndabstrNodeMap dgraph = do
 {- | outputs the theory of a node in a window;
 used by the node menu defined in initializeGraph-}
 getTheoryOfNode :: GInfo -> Descr -> DGraphAndAGraphNode -> DGraph -> IO()
-getTheoryOfNode (proofStatusRef,_,_,_,_,_,_,opts,_)
-                descr dgAndabstrNodeMap dgraph = do
- r <- lookupTheoryOfNode proofStatusRef descr dgAndabstrNodeMap dgraph
+getTheoryOfNode gInfo descr dgAndabstrNodeMap dgraph = do
+ r <- lookupTheoryOfNode (libEnvIORef gInfo) descr dgAndabstrNodeMap dgraph
  case r of
   Res.Result ds res -> do
-    showDiags opts ds
+    showDiags (gi_hetcatsOpts gInfo) ds
     case res of
       (Just (n, gth)) -> displayTheory "Theory" n dgraph gth
       _ -> return ()
@@ -951,9 +969,9 @@ displayTheory ext node dgraph gth =
 {- | translate the theory of a node in a window;
 used by the node menu defined in initializeGraph-}
 translateTheoryOfNode :: GInfo -> Descr -> DGraphAndAGraphNode -> DGraph -> IO()
-translateTheoryOfNode (proofStatusRef,_,_,_,_,_,_,opts,_)
+translateTheoryOfNode gInfo@(GInfo {gi_hetcatsOpts = opts})
                       descr dgAndabstrNodeMap dgraph = do
- libEnv <- readIORef proofStatusRef
+ libEnv <- readIORef $ libEnvIORef gInfo
  case (do
    (ln, node) <-
         maybeToResult nullRange ("Node "++show descr++" not found")
@@ -1064,7 +1082,8 @@ showStatusAux dgnode =
 
 -- | start local theorem proving or consistency checking at a node
 proveAtNode :: Bool -> GInfo -> Descr -> DGraphAndAGraphNode -> DGraph -> IO()
-proveAtNode checkCons gInfo@(_,_,_,_,ln,_,_,_,_) descr dgAndabstrNodeMap _ =
+proveAtNode checkCons 
+            gInfo@(GInfo {gi_LIB_NAME = ln}) descr dgAndabstrNodeMap _ =
   case InjMap.lookupWithB descr dgAndabstrNodeMap of
     Just libNode ->
          proofMenu gInfo (basicInferenceNode checkCons logicGraph libNode ln)
@@ -1110,10 +1129,10 @@ showProofStatusOfThm descr Nothing =
 
 -- | check conservativity of the edge
 checkconservativityOfEdge :: Descr -> GInfo -> Maybe (LEdge DGLinkLab) -> IO()
-checkconservativityOfEdge _ (ref,_,_,_,ln,_,_,_,_)
+checkconservativityOfEdge _ gInfo
                            (Just (source,target,linklab)) = do
-  libEnv <- readIORef ref
-  let dgraph = lookupDGraph ln libEnv
+  libEnv <- readIORef $ libEnvIORef gInfo
+  let dgraph = lookupDGraph (gi_LIB_NAME gInfo) libEnv
       dgtar = lab' (context dgraph target)
   case dgtar of
     DGNode _ (G_theory lid _ _ sens _) _ _ _ _ _ ->
@@ -1121,7 +1140,7 @@ checkconservativityOfEdge _ (ref,_,_,_,ln,_,_,_,_)
      GMorphism cid _ _ morphism2 _ -> do
       morphism2' <- coerceMorphism (targetLogic cid) lid
                    "checkconservativityOfEdge" morphism2
-      let th = case computeTheory libEnv ln source of
+      let th = case computeTheory libEnv (gi_LIB_NAME gInfo) source of
                 Res.Result _ (Just th1) -> th1
                 _ -> error "checkconservativityOfEdge: computeTheory"
       G_theory lid1 sign1 _ sens1 _ <- return th
