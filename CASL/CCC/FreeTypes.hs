@@ -151,8 +151,10 @@ checkFreeType (osig,osens) m fsn
                                                           -- new sorts
     newSorts = trace (showDoc newSorts1 "new sorts") newSorts1
     nSorts = Set.toList newSorts
-    oldOpMap = opMap sig
-    oldPredMap = predMap sig
+    oldOpMap1 = opMap sig
+    oldOpMap = trace (showDoc oldOpMap1 "oldOPMap") oldOpMap1
+    oldPredMap1 = predMap sig
+    oldPredMap = trace (showDoc oldPredMap1 "oldPredMap") oldPredMap1
     fconstrs = concat $ map constraintOfAxiom (ofs ++ fs)
     (srts1,constructors1,_) = recover_Sort_gen_ax fconstrs
     srts = trace (showDoc srts1 "srts") srts1      --   srts
