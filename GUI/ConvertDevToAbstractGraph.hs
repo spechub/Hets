@@ -56,6 +56,7 @@ import GUI.AbstractGraphView as AGV
 import GUI.ShowLogicGraph
 import GUI.Utils
 import qualified GUI.HTkUtils (displayTheory)
+import GUI.ProofManagement (GUIMVar)
 import GUI.Taxonomy (displayConceptGraph,displaySubsortGraph)
 import GUI.DGTranslation
 
@@ -90,6 +91,7 @@ import Data.Maybe
 import List(nub)
 import Control.Monad
 import Control.Monad.Trans
+import Control.Concurrent.MVar
 import Events
 import DialogWin (useHTk)
 import Messages
@@ -130,12 +132,13 @@ data GInfo = GInfo
              { libEnvIORef :: IORef LibEnv
              , descrIORef :: IORef Descr
              , conversionMapsIORef :: IORef ConversionMaps
-             , descr :: Descr -- better name here?
+             , graphId :: Descr 
              , gi_LIB_NAME :: LIB_NAME
              , gi_GraphInfo :: GraphInfo
              , internalNamesIORef :: IORef InternalNames -- show internal names?
              , gi_hetcatsOpts :: HetcatsOpts
              , visibleNodesIORef :: IORef [[Node]]
+             , proofGUIMVar :: GUIMVar
              }
 
 initializeConverter :: IO (IORef GraphMem,HTk.HTk)
@@ -197,18 +200,20 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts title = do
   ioRefProofStatus <- newIORef $ libname2dg convMaps
   ioRefSubtreeEvents <- newIORef (Map.empty::(Map.Map Descr Descr))
   ioRefVisibleNodes <- newIORef [(Graph.nodes dGraph)]
+  guiMVar <- newEmptyMVar 
   let gid = nextGraphId graphMem
       actGraphInfo = graphInfo graphMem
-  let gInfo = GInfo {libEnvIORef = ioRefProofStatus, 
+      gInfo = GInfo {libEnvIORef = ioRefProofStatus, 
                      descrIORef = event, 
                      conversionMapsIORef = convRef, 
-                     descr = gid, 
+                     graphId = gid, 
                      gi_LIB_NAME = ln, 
                      gi_GraphInfo = actGraphInfo,
                      internalNamesIORef = showInternalNames, 
                      gi_hetcatsOpts = opts, 
-                     visibleNodesIORef = ioRefVisibleNodes}
-  let file = libNameToFile opts ln ++ prfSuffix
+                     visibleNodesIORef = ioRefVisibleNodes,
+                     proofGUIMVar = guiMVar}
+      file = libNameToFile opts ln ++ prfSuffix
   AGV.Result descr msg <-
     makegraph (title ++ " for " ++ show ln)
          -- action on "open"
@@ -509,33 +514,48 @@ proofMenu :: GInfo
 proofMenu (GInfo {libEnvIORef = ioRefProofStatus, 
                   descrIORef = event, 
                   conversionMapsIORef = convRef, 
-                  descr = gid, 
+                  graphId = gid, 
                   gi_LIB_NAME = ln, 
                   gi_GraphInfo = actGraphInfo,
                   gi_hetcatsOpts = hOpts, 
+                  proofGUIMVar = guiMVar,
                   visibleNodesIORef = ioRefVisibleNodes}) proofFun = do
-  proofStatus <- readIORef ioRefProofStatus
-  putIfVerbose hOpts 4 "Proof started via \"Proofs\" menu"
-  Res.Result ds res <- proofFun proofStatus
-  putIfVerbose hOpts 4 "Analyzing result of proof"
-  case res of
-    Nothing -> mapM_ (putStrLn . show) ds
-    Just newProofStatus -> do
-      let newGlobContext = lookupGlobalContext ln newProofStatus
-          history = proofHistory newGlobContext
-      writeIORef ioRefProofStatus newProofStatus
-      descr <- readIORef event
-      convMaps <- readIORef convRef
-      (newDescr,convMapsAux)
-         <- applyChanges gid ln actGraphInfo descr ioRefVisibleNodes
-            convMaps history
-      let newConvMaps =
-              convMapsAux {libname2dg =
+  filled <- tryPutMVar guiMVar Nothing
+  if not filled
+     then readMVar guiMVar >>=
+                  (maybe (putIfVerbose hOpts 4 "proofMenu: ignored Nothing") 
+                         (\ w -> do 
+                             putIfVerbose hOpts 4 $ 
+                                  "proofMenu: Ignored Proof command; "++
+                                  "maybe a proof window is still open?"
+                             HTk.putWinOnTop w))
+     else do
+        proofStatus <- readIORef ioRefProofStatus
+        putIfVerbose hOpts 4 "Proof started via \"Proofs\" menu"
+        Res.Result ds res <- proofFun proofStatus
+        putIfVerbose hOpts 4 "Analyzing result of proof"
+        case res of
+          Nothing -> mapM_ (putStrLn . show) ds
+          Just newProofStatus -> do
+             let newGlobContext = lookupGlobalContext ln newProofStatus
+                 history = proofHistory newGlobContext
+             writeIORef ioRefProofStatus newProofStatus
+             descr <- readIORef event
+             convMaps <- readIORef convRef
+             (newDescr,convMapsAux)
+                 <- applyChanges gid ln actGraphInfo descr ioRefVisibleNodes
+                                 convMaps history
+             let newConvMaps =
+                   convMapsAux {libname2dg =
                         Map.insert ln newGlobContext (libname2dg convMapsAux)}
-      writeIORef event newDescr
-      writeIORef convRef newConvMaps
-      redisplay gid actGraphInfo
-      return ()
+             writeIORef event newDescr
+             writeIORef convRef newConvMaps
+             redisplay gid actGraphInfo
+             mGUIMVar <- tryTakeMVar guiMVar
+             maybe (fail $ "should be filled with Nothing after "++
+                        "proof attempt")
+                   (const $ return ())
+                   mGUIMVar
 
 proofMenuSef :: GInfo -> (LibEnv -> LibEnv) -> IO ()
 proofMenuSef gInfo proofFun = proofMenu gInfo (return . return . proofFun)
@@ -1083,10 +1103,11 @@ showStatusAux dgnode =
 -- | start local theorem proving or consistency checking at a node
 proveAtNode :: Bool -> GInfo -> Descr -> DGraphAndAGraphNode -> DGraph -> IO()
 proveAtNode checkCons 
-            gInfo@(GInfo {gi_LIB_NAME = ln}) descr dgAndabstrNodeMap _ =
+            gInfo@(GInfo {gi_LIB_NAME = ln,
+                         proofGUIMVar = guiMVar}) descr dgAndabstrNodeMap _ =
   case InjMap.lookupWithB descr dgAndabstrNodeMap of
-    Just libNode ->
-         proofMenu gInfo (basicInferenceNode checkCons logicGraph libNode ln)
+    Just libNode -> proofMenu gInfo (basicInferenceNode checkCons logicGraph 
+                                                        libNode ln guiMVar)
     Nothing -> error ("node with descriptor "
                       ++ (show descr)
                       ++ " has no corresponding node in the development graph")

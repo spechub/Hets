@@ -17,7 +17,7 @@ works for SPASS.
       after the last pack
 -}
 
-module GUI.ProofManagement (proofManagementGUI) where
+module GUI.ProofManagement (proofManagementGUI,GUIMVar) where
 
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Doc as Pretty
@@ -49,6 +49,11 @@ import qualified Static.DevGraph as DevGraph
 -- import Debug.Trace
 
 -- * Proof Management GUI
+
+-- ** some types
+
+-- | Type for storing the proof management window
+type GUIMVar = Conc.MVar (Maybe Toplevel)
 
 -- ** Defining the view
 
@@ -324,10 +329,12 @@ proofManagementGUI ::
     -> KnownProvers.KnownProversMap -- ^ map of known provers
     -> [(G_prover,AnyComorphism)] -- ^ list of suitable comorphisms to provers
                        -- for sublogic of G_theory
+    -> GUIMVar -- ^ allows only one Proof window per graph; 
+               -- must be filled with Nothing and is filled with Nothing after closing the window; while the window is open it is filled with the Toplevel
     -> IO (Result.Result DevGraph.G_theory)
 proofManagementGUI lid proveF fineGrainedSelectionF
                    thName th
-                   knownProvers comorphList =
+                   knownProvers comorphList guiMVar =
   do
   -- KnownProvers.showKnownProvers knownProvers
   -- initial backing data structure
@@ -336,6 +343,14 @@ proofManagementGUI lid proveF fineGrainedSelectionF
 
   -- main window
   main <- createToplevel [text $ thName ++ " - Select Goal(s) and Prove"]
+  Conc.tryTakeMVar guiMVar >>= (\ mmt -> 
+         let err s = fail $ "ProofManagementGUI: ("++s++") MVar must be "++
+                      "filled with Nothing when entering proofManagementGUI"
+         in do
+            maybe (err "not filled")
+                  (maybe (Conc.putMVar guiMVar $ Just main)
+                         (const $ err "filled with (Just x)")) 
+                  mmt)
   pack main [Expand On, Fill Both]
 
   -- VBox for the whole window
@@ -626,6 +641,16 @@ proofManagementGUI lid proveF fineGrainedSelectionF
                  Conc.modifyMVar_ stateMVar
                        (\ s -> return (s {proofManagementDestroyed = True}))
                  destroy main))
+
+  -- clean up locking of window
+  Conc.tryTakeMVar guiMVar >>= (\ mmt -> 
+         let err s = fail $ "ProofManagementGUI: ("++s++") MVar must be "++
+                      "filled with Nothing when entering proofManagementGUI"
+         in do
+            maybe (err "not filled")
+                  (maybe (err "filled with Nothing")
+                         (const $ Conc.putMVar guiMVar Nothing)) 
+                  mmt)
 
   -- read the global state back in
   s <- Conc.takeMVar stateMVar

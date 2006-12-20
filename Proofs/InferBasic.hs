@@ -142,8 +142,8 @@ proveTheory _ p =
 
 -- | applies basic inference to a given node
 basicInferenceNode :: Bool -> LogicGraph -> (LIB_NAME,Node) -> LIB_NAME
-                   -> LibEnv -> IO (Result LibEnv)
-basicInferenceNode checkCons lg (ln, node) libname libEnv = do
+                   -> GUIMVar -> LibEnv -> IO (Result LibEnv)
+basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv = do
       let dGraph = lookupDGraph libname libEnv
       runResultT $ do
         -- compute the theory of the node, and its name
@@ -190,6 +190,7 @@ basicInferenceNode checkCons lg (ln, node) libname libEnv = do
                                            thForProof
                                            kpMap'
                                            (getProvers cms)
+                                           guiMVar
             -- update the development graph
             -- todo: throw out the stuff about edges
             -- instead, mark proven things as proven in the node
