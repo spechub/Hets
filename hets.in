@@ -14,6 +14,7 @@ if [ -d $INSTALL_PATH/lib/uDrawGraph ] ; then
 fi
 if [ -d $$INSTALL_PATH/lib/Isabelle* ] ; then
     ISABELLE_HOME=$INSTALL_PATH/lib/Isabelle/Isabelle
+    HETS_ISABELLE=$ISABELLE_HOME/bin/isabelle-interface
 fi
 if [ -d $INSTALL_PATH/CASL-lib ] ; then
     HETS_LIB=$INSTALL_PATH/CASL-lib
@@ -23,6 +24,6 @@ HETS_OWL_PARSER=$INSTALL_PATH/src/HetCATS/OWL_DL
 UNIWISH=/usr/bin/wish
 HETS=$INSTALL_PATH/lib/hets/hets-$APP_VER
 
-export HETS_LIB HETS_ISABELLE HETS_OWL_PARSER UNIWISH UNIDAVINCI
+export HETS_LIB ISABELLE_HOME HETS_ISABELLE HETS_OWL_PARSER UNIWISH UNIDAVINCI
 
 exec $HETS $@
