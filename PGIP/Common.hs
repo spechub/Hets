@@ -28,6 +28,7 @@ import Logic.Logic
 import Logic.Grothendieck
 #ifdef UNI_PACKAGE
 import Proofs.InferBasic
+import GUI.ProofManagement (GUIMVar)
 import GUI.Taxonomy
 import Events
 import Destructible
@@ -39,6 +40,7 @@ import PGIP.Utils
 import qualified Logic.Prover as P
 import qualified Common.OrderedMap as OMap
 
+import Control.Concurrent.MVar
 -- | The datatype 'CmdParam' contains all the possible parameters a command of
 -- the interface might have. It is used to create one function that returns
 -- the parameters after parsing no matter what command is parsed
@@ -882,7 +884,9 @@ proveNodes ls ln libEnv
 #ifdef UNI_PACKAGE
         GraphNode (nb, _) : l ->
            do
-             result <- basicInferenceNode False logicGraph (ln,nb) ln libEnv
+             mv <- (newMVar Nothing :: IO GUIMVar)
+             result <- basicInferenceNode False logicGraph (ln,nb) ln mv libEnv
+             tryTakeMVar mv
              case result of
                   Result _ (Just nwEnv)  -> proveNodes l ln nwEnv
                   _                      -> proveNodes l ln libEnv
