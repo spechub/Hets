@@ -101,6 +101,8 @@ predSymStr ps = case ps of
 impli_str :: FORMULA f -> String
 impli_str f =
   case (quanti f) of
+    Implication f1 f2 False _ -> (axiom_substr (quanti f2)) ++ " -> true | " ++
+                                 (axiom_substr (quanti f1)) ++ " -> true\n"
     Implication (Predication predS1 ts1 _) f1 _ _ ->
         case (quanti f1) of
           Conjunction _ _ ->
