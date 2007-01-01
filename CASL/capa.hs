@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable 
 
-test some parsers (and printers)
+Description :  test some parsers (and printers)
 -}
 
 module Main where

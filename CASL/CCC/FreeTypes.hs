@@ -7,7 +7,7 @@ Maintainer  :  xinga@tzi.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
-consistency checking of free types
+Description :  consistency checking of free types
 -}
 
 

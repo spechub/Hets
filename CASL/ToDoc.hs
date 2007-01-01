@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable
 
-pretty printing data types of 'BASIC_SPEC'
+Description :  pretty printing data types of 'BASIC_SPEC'
 -}
 
 module CASL.ToDoc where

@@ -7,7 +7,8 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-CASL static analysis for basic specifications
+Description :  CASL static analysis for basic specifications
+
 Follows Chaps. III:2 and III:3 of the CASL Reference Manual.
 
 The static analysis takes an abstract syntax tree of a basic specification

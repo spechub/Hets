@@ -7,7 +7,7 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-module to store utilities for CASL and its comorphisms
+Description :  module to store utilities for CASL and its comorphisms
 
 -}
 

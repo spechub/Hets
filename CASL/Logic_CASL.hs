@@ -8,7 +8,8 @@ Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
-Here is the place where the class Logic is instantiated for CASL.
+Description :  Instance of class Logic for the CASL logic
+
    Also the instances for Syntax an Category.
 -}
 

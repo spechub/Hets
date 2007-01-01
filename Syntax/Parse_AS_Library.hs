@@ -2,12 +2,12 @@
 Module      :  $Header$
 Copyright   :  (c) Maciek Makowski, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
-
 Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Grothendieck)
 
-Parsing the specification library.
+Description :  parser for CASL specification librariess
+
    Follows Sect. II:3.1.5 of the CASL Reference Manual.
 -}
 

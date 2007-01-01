@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Parsing lists of lists being MILO (MId-Level Ontology) .kif files
+Description :  Parser for SUMO (suggested upper merged ontology) .kif files
 -}
 
 module CASL.Kif2CASL where

@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Free variables; getting rid of superfluous quantifications
+Description :  Free variables; getting rid of superfluous quantifications
     
 -}
 module CASL.Quantification where

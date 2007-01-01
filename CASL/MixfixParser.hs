@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable
 
-Mixfix analysis of terms
+Description :  Mixfix analysis of terms
 -}
 
 module CASL.MixfixParser

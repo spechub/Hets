@@ -7,6 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
+Description :  Parser for OP-ITEMs (operation declarations and definitions) 
 -}
 
 {-

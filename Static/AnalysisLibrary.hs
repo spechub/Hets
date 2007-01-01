@@ -2,12 +2,12 @@
 Module      :  $Header$
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
-
 Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-Analysis of libraries
+Description :  static analysis of CASL specification libraries
+
    Follows the verification semantics sketched in Chap. IV:6
    of the CASL Reference Manual.
 -}

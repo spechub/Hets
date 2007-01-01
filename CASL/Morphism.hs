@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Symbols and signature morphisms for the CASL logic
+Description :  Symbols and signature morphisms for the CASL logic
 -}
 
 {-

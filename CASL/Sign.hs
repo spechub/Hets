@@ -7,8 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-This module provides CASL signatures that also serve as local
-  environments for the basic static analysis.
+Description :  CASL signatures (serve as local environments for the basic static analysis)
 -}
 
 module CASL.Sign where

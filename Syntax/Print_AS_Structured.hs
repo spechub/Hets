@@ -2,7 +2,7 @@
 Module      :  $Header$
 Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
-
+Description :  pretty printing of CASL structured specifications
 Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Grothendieck)

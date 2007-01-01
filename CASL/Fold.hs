@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-supply folding on CASL terms and formulas
+Description :  folding functions for CASL terms and formulas
 
 -}
 

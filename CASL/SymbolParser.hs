@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-parsing symbols for translations and reductions
+Description :  parsing symbols for translations and reductions
 -}
 
 module CASL.SymbolParser where

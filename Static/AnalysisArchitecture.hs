@@ -2,12 +2,12 @@
 Module      :  $Header$
 Copyright   :  (c) Maciek Makowski, Warsaw University, C. Maeder 2004-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
-
 Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable (via imports)
 
-Analysis of architectural specifications.
+Description :  static analysis of CASL architectural specifications
+
    Follows the extended static semantics sketched in Chap. III:5.6
    of the CASL Reference Manual.
 -}

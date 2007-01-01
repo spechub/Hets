@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-simplification of formulas and terms for output after analysis
+Description : simplification of formulas and terms for output after analysis
 
 -}
 

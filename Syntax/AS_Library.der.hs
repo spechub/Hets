@@ -2,10 +2,11 @@
 Module      :  $Header$
 Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
-
 Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Grothendieck)
+
+Description :  abstract syntax of CASL specification libraries
 
 These data structures describe the abstract syntax tree for heterogenous
    libraries in HetCASL.

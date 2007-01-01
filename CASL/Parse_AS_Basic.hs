@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-parse SIG-ITEMS, BASIC-ITEMS, BASIC-SPEC 
+Description :  parse CASL basic specifications (SIG-ITEMS, BASIC-ITEMS, BASIC-SPEC)
    Follows Sect. II:3.1 of the CASL Reference Manual.
 -}
 

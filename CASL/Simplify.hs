@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-resolve empty conjunctions and other trivial cases
+Description :  resolve empty conjunctions and other trivial cases
 -}
 
 module CASL.Simplify where

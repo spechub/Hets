@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable
 
-make mixfix analysis checkable by RunParsers
+Description :  make mixfix analysis checkable by RunParsers
 
 -}
 

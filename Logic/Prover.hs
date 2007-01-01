@@ -3,7 +3,7 @@ Module      :  $Header$
 Description :  General datastructures for theorem prover interfaces
 Copyright   :  (c) Till Mossakowski, Klaus Lüttich, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
-
+Description :  central interface for theorem provers
 Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  portable

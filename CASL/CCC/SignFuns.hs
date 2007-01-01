@@ -8,6 +8,7 @@
     Stability   :  provisional
     Portability :  portable
 
+    Description :  auxiliary functions on signatures and morphisms
 -}
 
 module CASL.CCC.SignFuns where

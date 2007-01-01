@@ -1,4 +1,6 @@
 {- |
+Description : infrastructure needed for presenting a logic to Hets
+
 The folder "Logic" contains the infrastructure needed for
 presenting a logic to Hets. A logic here is understood in
 the theory of institutions. More precisely, a logic is

@@ -3,10 +3,11 @@
 Module      :  $Header$
 Copyright   :  (c) Till Mossakowski, and Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
-
 Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable (various -fglasgow-exts extensions)
+
+Description :  central interface (type class) for logics in Hets 
 
 Provides data structures for logics (with symbols). Logics are
    a type class with an /identity/ type (usually interpreted

@@ -7,7 +7,8 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-The symbol map analysis for the CASL logic.
+Description :  symbol map analysis for the CASL logic.
+
   Follows Sect. III:4.1 of the CASL Reference Manual.
 -}
 

@@ -7,7 +7,8 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  non-portable(DevGraph)
 
-pretty printing (parts of) a LibEnv
+Description :  pretty printing (parts of) a LibEnv
+
 -}
 
 module Static.PrintDevGraph where

@@ -8,7 +8,7 @@
     Stability   :  provisional
     Portability :  portable
 
-Check for truth in one-point model
+    Description :  Check for truth in one-point model
        with all predicates true, all functions total
 
 -}

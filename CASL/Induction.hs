@@ -8,7 +8,8 @@ Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Derivation of induction schemes from sort generation constraints.
+Description :  Derivation of induction schemes from sort generation constraints.
+
 We provide both second-order induction schemes as well as their
 instantiation to specific first-order formulas.
 -}

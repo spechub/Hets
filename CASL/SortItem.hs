@@ -7,6 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
+Description :  parser for SORT-ITEMs (sort and subsort declarations and definitions)
 -}
 
 {-

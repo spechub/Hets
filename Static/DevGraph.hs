@@ -1,14 +1,13 @@
 {- |
 Module      :  $Header$
-Description :  Central datastructures for development graphs
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
-
 Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-Central data structure for development graphs.
+Description :  Central datastructures for development graphs
+
    Follows Sect. IV:4.2 of the CASL Reference Manual.
 -}
 

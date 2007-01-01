@@ -7,6 +7,9 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
+Description :  replace casts with explicit projection functions
+
+
 This module replaces Cast(s) with explicit projection
    functions.  Don't do this after simplification since crucial sort
    information may be missing

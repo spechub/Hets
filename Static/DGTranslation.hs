@@ -2,9 +2,12 @@
 Module      :  $Header$
 Copyright   :  Heng Jiang, Uni Bremen 2004-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+Maintainer  :  jiang@tzi.de
+Stability   :  provisional
+Portability :  non-portable(Logic)
+Description :  Translation of development graphs along comorphisms
 
-Central data structure for development graphs.
-   Follows Sect. IV:4.2 of the CASL Reference Manual.
+   Follows Sect. IV:4.3 of the CASL Reference Manual.
 -}
 
 module Static.DGTranslation (libEnv_translation, dg_translation,showFromTo) where

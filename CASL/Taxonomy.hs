@@ -7,7 +7,7 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-This module provides converters for theories to MMiSSOntology
+Description :  converters for theories to MMiSSOntology (subsorting and concept taxonomies)
 -}
 
 module CASL.Taxonomy (convTaxo) where

@@ -7,7 +7,7 @@ Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Amalgamability analysis for CASL.
+Description :  Amalgamability analysis for CASL.
 
   Follows the algorithm outlined in MFCS 2001 (LNCS 2136, pp. 451-463,
   Springer 2001) paper.

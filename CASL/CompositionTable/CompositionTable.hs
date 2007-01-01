@@ -8,7 +8,7 @@ Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable(uni-HaXml package)
 
-XML output for composition tables
+Description :  XML output for composition tables
 
 -}
 module CASL.CompositionTable.CompositionTable where

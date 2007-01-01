@@ -3,10 +3,11 @@
 Module      :  $Header$
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
-
 Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable (via Logic)
+
+Description :  interface (type class) for logic projections (morphisms) in Hets 
 
 Provides data structures for institution morphisms.
    These are just collections of

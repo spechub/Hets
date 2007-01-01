@@ -2,7 +2,7 @@
 Module      :  $Header$
 Copyright   :  (c) Maciek Makowski, Warsaw University 2004-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
-
+Description :  Data types and functions for architectural diagrams
 Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable (Logic)

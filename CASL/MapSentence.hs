@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-rename symbols of sentences according to a signature morphisms
+Description :  rename symbols of sentences according to a signature morphisms
 -}
 
 module CASL.MapSentence where

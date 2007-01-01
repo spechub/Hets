@@ -7,6 +7,8 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
+Description :  alpha-conversion (renaming of bound variables) for CASL formulas
+
 uniquely rename variables in quantified formulas to allow for 
 a formula equality modulo alpha conversion
 -}

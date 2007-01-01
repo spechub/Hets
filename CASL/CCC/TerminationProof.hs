@@ -7,6 +7,7 @@ Maintainer  :  xinga@tzi.de
 Stability   :  provisional
 Portability :  portable
 
+Description :  termination proofs for equation systems, using AProve
 -}
 
 module CASL.CCC.TerminationProof where

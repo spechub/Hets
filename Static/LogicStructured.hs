@@ -8,6 +8,8 @@ Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
+Description :  calculate sublogic of structured items
+
 This module provides routines to calculate the sublogic of a structured
    item - a structured specification, a view, an architectural
    specification, or a library. The calculation succeeds for homogenous

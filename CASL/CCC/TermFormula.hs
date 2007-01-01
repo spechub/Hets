@@ -7,6 +7,7 @@ Maintainer  :  xinga@tzi.de
 Stability   :  provisional
 Portability :  portable
 
+Description :  auxiliary functions on terms and formulas
 -}
 
 module CASL.CCC.TermFormula where

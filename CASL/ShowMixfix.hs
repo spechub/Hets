@@ -7,8 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-This module puts parenthesis around mixfix terms for 
-   unambiguous pretty printing
+Description :  put parenthesis around mixfix terms, for unambiguous pretty printing
 -}
 
 module CASL.ShowMixfix where
