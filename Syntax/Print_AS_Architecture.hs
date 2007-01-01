@@ -2,12 +2,12 @@
 Module      :  $Header$
 Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
-Description :  pretty printing of CASL architectural specifications
 Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Grothendieck)
 
-Printing the Architechture stuff of HetCASL.
+Description :  pretty printing of CASL architectural specifications
+
 -}
 
 module Syntax.Print_AS_Architecture where
