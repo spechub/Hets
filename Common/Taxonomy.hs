@@ -8,6 +8,8 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  portable 
 
+Description :  type for selecting different kinds of taxonomy graphs
+
 This module only provides a small type for selecting different kinds
 of taxonomy graphs.
 

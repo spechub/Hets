@@ -8,6 +8,8 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  non-portable (does -cpp on __GLASGOW_HASKELL__)
 
+Description :  utils for creating instances of Dynamic.Typeable
+
 mkAppTy was renamed to mkTyConApp in ghc version 6.3 upwards
 -}
 

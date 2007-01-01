@@ -7,6 +7,8 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  portable
 
+Description :  ordered maps (these keep insertion order)
+
 ordered maps keep the ordering if converted from a list and of all
 insert operations which are implemented; toList uses the
 insertion\/conversion order for the creation of the new list

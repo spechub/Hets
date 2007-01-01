@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-converting (ie. kif) strings to CASL identifiers
+Description :  converting (ie. kif) strings to CASL identifiers
 -}
 
 module Common.ToId where

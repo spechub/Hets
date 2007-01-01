@@ -7,8 +7,8 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-This module provides a 'Result' type and some monadic functions
-   for accumulating 'Diagnosis' messages during analysis phases.
+Description :  'Result' monadic for accumulating 'Diagnosis' messages 
+               during analysis phases.
 -}
 
 module Common.Result where

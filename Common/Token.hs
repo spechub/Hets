@@ -8,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-parser for CASL 'Id's based on "Common.Lexer"
+Description :  parser for CASL 'Id's based on "Common.Lexer"
 
 -}
 {- http://www.cofi.info/Documents/CASL/Summary/

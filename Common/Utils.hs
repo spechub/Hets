@@ -7,8 +7,8 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-utility functions that can't be found in the libraries,
-   but should be shared across Hets.
+Description :  utility functions that can't be found in the libraries
+               but should be shared across Hets.
 -}
 {-
    Todo:

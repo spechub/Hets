@@ -7,6 +7,8 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
+Description :  document data type 'Doc' for (pretty) printing in various formats
+
 This module contains a document data type 'Doc' for displaying
 (heterogenous) CASL specifications at least as plain text and latex
 (and maybe html as well)

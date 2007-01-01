@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-supply a default morphism for a given signature
+Description :  supply a default morphism for a given signature type
 -}
 
 -- due to functional deps the instance for Logic.Category cannot be supplied

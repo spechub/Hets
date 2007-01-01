@@ -1,3 +1,16 @@
+{- |
+Module      :  $Header$
+Copyright   :  (c) Christian Maeder and Uni Bremen 2006
+License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
+
+Maintainer  :  maeder@tzi.de
+Stability   :  provisional
+Portability :  portable
+
+Description :  lexical matters
+
+-}
+
 module Common.CaslLanguage where
 import Text.ParserCombinators.Parsec
 import qualified Text.ParserCombinators.Parsec.Token as P

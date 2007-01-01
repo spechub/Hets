@@ -7,8 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Some functions for building and accessing the datastructures
-   of GlobalAnnotations.
+Description : Some functions for building and accessing the datastructures of GlobalAnnotations
 -}
 
 module Common.AnalyseAnnos where

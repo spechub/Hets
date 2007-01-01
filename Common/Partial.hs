@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-support for partial orders
+Description :  support for partial orders
 
 -}
 

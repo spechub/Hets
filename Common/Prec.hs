@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable
 
-precedence checking
+Description :  precedence checking
 -}
 
 module Common.Prec where

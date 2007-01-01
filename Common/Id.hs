@@ -7,6 +7,8 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
+Description :  positions, simple and mixfix identifiers
+
 This module supplies positions, simple and mixfix identifiers.
 A simple identifier is a lexical token given by a string and a start position.
 

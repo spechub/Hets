@@ -7,8 +7,7 @@ Maintainer  :  wjch868@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-This module introduces a 'Pretty' class for pretty printing and
-supplies a couple of instances and other utility functions
+Description : 'Pretty' class for pretty printing, some instances and other utility functions
 -}
 
 module Common.DocUtils where

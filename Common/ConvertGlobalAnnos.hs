@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-convert global annotations to a list of annotations
+Description :  convert global annotations to a list of annotations
 -}
 
 module Common.ConvertGlobalAnnos where

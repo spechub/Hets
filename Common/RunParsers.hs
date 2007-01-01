@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-test some parsers (and printers)
+Description :  test some parsers (and printers)
 -}
 
 module Common.RunParsers (exec, StringParser, toStringParser, fromAParser)

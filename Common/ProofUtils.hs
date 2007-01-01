@@ -7,7 +7,8 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-this module collects functions useful for all prover connections in Hets.
+Description:   functions useful for all prover connections in Hets
+
 Some were moved from Isabelle.Translate and some others from
 Isabelle.IsaProve.
 -}

@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-This module provides a 'ResultT' type and a monadic transformer instance
+Description :  'ResultT' type and a monadic transformer instance
 -}
 
 module Common.ResultT where

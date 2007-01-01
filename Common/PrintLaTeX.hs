@@ -7,8 +7,8 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-This class needs to be instantiated for every datastructure in AS_*
-   for LaTeX pretty printing.
+Description :  functions for LaTeX pretty printing
+
 -}
 
 module Common.PrintLaTeX

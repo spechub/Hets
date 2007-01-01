@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-injective maps
+Description :  injective maps
 -}
 
 module Common.InjMap

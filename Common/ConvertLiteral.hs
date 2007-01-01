@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable
 
-generically converting literals
+Description :  generically converting literals
 -}
 
 module Common.ConvertLiteral

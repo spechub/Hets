@@ -7,11 +7,15 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-scanner for Casl tokens using Parsec <http://www.cs.uu.nl/~daan/parsec.html>
+Description :  scanner for Casl tokens using Parsec 
+
+   for Parsec see <http://www.cs.uu.nl/~daan/parsec.html>
 
    <http://www.cofi.info/Documents/CASL/Summary/>
    from 25 March 2001
    C.4 Lexical Syntax
+
+   todo: check with chapter II.4 of CASL reference manual
 -}
 
 module Common.Lexer where

@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable
 
-data structures for global annotations
+Description :  data structures for global annotations
 -}
 
 module Common.GlobalAnnotations (module Common.GlobalAnnotations,

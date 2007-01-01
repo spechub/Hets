@@ -7,7 +7,7 @@ Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-data types for amalgamability options and analysis
+Description :  data types for amalgamability options and analysis
 
 -}
 

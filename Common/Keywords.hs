@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-String constants for CASL keywords to be used for parsing and printing
+Description :  String constants for CASL keywords to be used for parsing and printing
 
 - all identifiers are mixed case (i.e. the keyword followed by  a capital S)
 

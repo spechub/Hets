@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-parsing of interspersed annotations
+Description :  parsing of interspersed annotations
 
 - a parser state to collect annotations
 

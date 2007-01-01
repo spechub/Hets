@@ -7,7 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable
 
-generic mixfix analysis
+Description :  generic mixfix analysis, using eht Early parser
 -}
 
 module Common.Earley (Rule, Rules, partitionRules

@@ -7,6 +7,8 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
+Description :  pretty printing combinators
+
 A very simplified version of John Hughes's
    and Simon Peyton Jones's Pretty Printer Combinators. Only catenable
    string sequences are left over
