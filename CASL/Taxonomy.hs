@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  converters for theories to MMiSSOntology (subsorting and concept taxonomies)
 Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  converters for theories to MMiSSOntology (subsorting and concept taxonomies)
+Converters for theories to MMiSSOntology (subsorting and concept taxonomies)
 -}
 
 module CASL.Taxonomy (convTaxo) where

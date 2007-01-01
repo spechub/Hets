@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  several tables needed for LaTeX formatting
 Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 

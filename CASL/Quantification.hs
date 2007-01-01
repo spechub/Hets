@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  Free variables; getting rid of superfluous quantifications
 Copyright   :  (c) Till Mossakowski and Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  Free variables; getting rid of superfluous quantifications
+Free variables; getting rid of superfluous quantifications
     
 -}
 module CASL.Quantification where

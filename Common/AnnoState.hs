@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  parsing of interspersed annotations
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  parsing of interspersed annotations
+Parsing of interspersed annotations
 
 - a parser state to collect annotations
 

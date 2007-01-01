@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  'ResultT' type and a monadic transformer instance
 Copyright   :  (c) T. Mossakowski, C. Maeder, Uni Bremen 2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  'ResultT' type and a monadic transformer instance
+'ResultT' type and a monadic transformer instance
 -}
 
 module Common.ResultT where

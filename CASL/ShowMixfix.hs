@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  put parenthesis around mixfix terms, for unambiguous pretty printing
 Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  put parenthesis around mixfix terms, for unambiguous pretty printing
+Put parenthesis around mixfix terms, for unambiguous pretty printing
 -}
 
 module CASL.ShowMixfix where

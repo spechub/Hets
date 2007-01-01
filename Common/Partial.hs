@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  support for partial orders
 Copyright   :  (c) Keith Wansbrough 200 and Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  support for partial orders
+Support for partial orders
 
 -}
 

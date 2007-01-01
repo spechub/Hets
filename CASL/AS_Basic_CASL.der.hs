@@ -8,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  Abstract Syntax of CASL Basic_specs, Symb_items and Symb_map_items.
+Abstract Syntax of CASL Basic_specs, Symb_items and Symb_map_items.
 
    Follows Sect. II:2.2 of the CASL Reference Manual.
 -}

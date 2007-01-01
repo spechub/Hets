@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  Parser for symbols in translations and reductions
 Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  parsing symbols for translations and reductions
+Parsing symbols for translations and reductions
 -}
 
 module CASL.SymbolParser where

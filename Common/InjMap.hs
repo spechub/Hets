@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  injective maps
 Copyright   :  (c) Uni Bremen 2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  injective maps
+Injective maps
 -}
 
 module Common.InjMap

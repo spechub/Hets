@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  sublogic analysis for CASL
 Copyright   :  (c) Pascal Schmidt, C. Maeder, and Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable
 
-Description :  sublogic analysis for CASL
+Sublogic analysis for CASL
 
 This module provides the sublogic functions (as required by Logic.hs)
   for CASL. The functions allow to compute the minimal sublogics needed

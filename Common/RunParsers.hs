@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  test some parsers (and printers)
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2003
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  test some parsers (and printers)
+test some parsers (and printers)
 -}
 
 module Common.RunParsers (exec, StringParser, toStringParser, fromAParser)

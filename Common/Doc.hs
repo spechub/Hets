@@ -1,13 +1,12 @@
 {- |
 Module      :  $Header$
+Description :  document data type 'Doc' for (pretty) printing in various formats
 Copyright   :  (c) Christian Maeder and Uni Bremen 2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
-
-Description :  document data type 'Doc' for (pretty) printing in various formats
 
 This module contains a document data type 'Doc' for displaying
 (heterogenous) CASL specifications at least as plain text and latex

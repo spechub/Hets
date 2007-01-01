@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  datastructures for annotations of (Het)CASL.
 Copyright   :  (c) Klaus Lüttich, Christian Maeder, and Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  datastructures for annotations of (Het)CASL.
+Datastructures for annotations of (Het)CASL.
    There is also a paramterized data type for an 'Annoted' 'item'.
    See also chapter II.5 of the CASL Reference Manual.
 -}

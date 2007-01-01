@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  convert global annotations to a list of annotations
 Copyright   :  (c) Carsten Fischer and Uni Bremen 2003-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  convert global annotations to a list of annotations
+Convert global annotations to a list of annotations
 -}
 
 module Common.ConvertGlobalAnnos where

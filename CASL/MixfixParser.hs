@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  Mixfix analysis of terms
 Copyright   :  Christian Maeder and Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable
 
-Description :  Mixfix analysis of terms
+Mixfix analysis of terms
 -}
 
 module CASL.MixfixParser

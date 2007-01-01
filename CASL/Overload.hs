@@ -1,13 +1,12 @@
 {- |
  Module      :  $Header$
+ Description :  Overload resolution 
  Copyright   :  (c) Martin Kuehl, T. Mossakowski, C. Maeder, Uni Bremen 2004-2005
  License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
  Maintainer  :  maeder@tzi.de
  Stability   :  provisional
  Portability :  portable
-
- Description :  Overload resolution 
 
 Overload resolution (injections are inserted separately)
     Follows Sect. III:3.3 of the CASL Reference Manual.

@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  reading and parsing ATerms, CASL, HetCASL files
 Copyright   :  (c) Klaus Lüttich, C. Maeder, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,8 +8,7 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  non-portable(DevGraph)
 
-reading ATerms, CASL, HetCASL files and parsing them into an
-   appropriate data structure
+reading and parsing ATerms, CASL, HetCASL files
 -}
 
 module Driver.ReadFn where

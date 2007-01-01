@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  resolve empty conjunctions and other trivial cases
 Copyright   :  (c) Christian Maeder, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  resolve empty conjunctions and other trivial cases
+Resolve empty conjunctions and other trivial cases
 -}
 
 module CASL.Simplify where

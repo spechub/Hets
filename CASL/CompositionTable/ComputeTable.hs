@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  Compute the composition table of a relational algebra 
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  Compute the composition table of a relational algebra 
+Compute the composition table of a relational algebra 
   that isspecified in a particular way in a CASL theory.
 -}
 

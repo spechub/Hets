@@ -2,6 +2,7 @@
 ----------------------------------------------------------------------------- 
 -- |
 -- Module      :  Common.Lib.Map
+-- Description :  standard implementation of maps using balanced binary trees
 -- Copyright   :  (c) Daan Leijen 2002
 -- License     :  BSD-style
 -- Maintainer  :  libraries@haskell.org

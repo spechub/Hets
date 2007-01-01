@@ -1,5 +1,6 @@
 {- | 
 Module      :  $Header$
+Description :  termination proofs for equation systems, using AProve
 Copyright   :  (c) Mingyi Liu and Till Mossakowski and Uni Bremen 2004-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  xinga@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  termination proofs for equation systems, using AProve
+Termination proofs for equation systems, using AProve
 -}
 
 module CASL.CCC.TerminationProof where

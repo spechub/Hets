@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  John Hughes's and Simon Peyton Jones's Pretty Printer Combinators
 Copyright   :  (c) Hughes, Peyton Jones, K. Lüttich, C. Maeder 1996-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 

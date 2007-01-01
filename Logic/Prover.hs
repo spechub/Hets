@@ -7,7 +7,7 @@ Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  General datastructures for theorem prover interfaces
+General datastructures for theorem prover interfaces
 
 -}
 {- todo:

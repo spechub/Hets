@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  Tree-based implementation of 'Graph' and 'DynGraph' using Common.Lib.Map
 Copyright   :  (c) Martin Erwig, Christian Maeder and Uni Bremen 1999-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 

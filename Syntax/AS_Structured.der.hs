@@ -1,15 +1,13 @@
 {- |
 Module      :  $Header$
+Description :  abstract syntax of CASL structured specifications
 Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Grothendieck)
 
-Description :  abstract syntax of CASL structured specifications
-
-These data structures describe the abstract syntax tree for heterogenous
-   structured specifications in HetCASL.
+Abstract syntax of HetCASL (heterogeneous) structured specifications
    Follows Sect. II:2.2.3 of the CASL Reference Manual.
 -}
 

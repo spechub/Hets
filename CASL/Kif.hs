@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  Parsing lists of lists with SUMO (suggested upper merged ontology) .kif files
 Copyright   :  (c) T.Mossakowski, C.Maeder and Uni Bremen 2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  Parsing lists of lists with SUMO (suggested upper merged ontology) .kif files
+Parsing lists of lists with SUMO (suggested upper merged ontology) .kif files
 -}
 
 module CASL.Kif where

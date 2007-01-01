@@ -1,6 +1,7 @@
 {- | 
    
     Module      :  $Header$
+    Description :  auxiliary functions on signatures and morphisms
     Copyright   :  (c) Mingyi Liu and Till Mossakowski and Uni Bremen 2004
     License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -8,7 +9,7 @@
     Stability   :  provisional
     Portability :  portable
 
-    Description :  auxiliary functions on signatures and morphisms
+Auxiliary functions on signatures and morphisms
 -}
 
 module CASL.CCC.SignFuns where

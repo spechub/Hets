@@ -1,6 +1,7 @@
 {-# OPTIONS -fallow-undecidable-instances #-}
 {- |
 Module      :  $Header$
+Description :  Instance of class Logic for the CASL logic
 Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -8,9 +9,8 @@ Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
-Description :  Instance of class Logic for the CASL logic
-
-   Also the instances for Syntax an Category.
+Instance of class Logic for the CASL logic
+   Also the instances for Syntax and Category.
 -}
 
 module CASL.Logic_CASL(module CASL.Logic_CASL, CASLSign, CASLMor) where

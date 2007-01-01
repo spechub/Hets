@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  Central GUI for Hets, with display of development graph
 Copyright   :  (c) Jorina Freya Gerken, Till Mossakowski, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 

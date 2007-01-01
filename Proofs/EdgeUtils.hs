@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  utility functions for edges of development graphs
 Copyright   :  (c) Jorina F. Gerken, Till Mossakowski, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  jfgerken@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-utility functions for edges of a development graphs.
+utility functions for edges of development graphs
 -}
 
 {- todo: also treat conservativity proof status in computation of proof basis

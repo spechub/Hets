@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  pretty printing combinators
 Copyright   :  (c) Klaus Lüttich, C. Maeder Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  pretty printing combinators
+Pretty printing combinators
 
 A very simplified version of John Hughes's
    and Simon Peyton Jones's Pretty Printer Combinators. Only catenable

@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  parsers for annotations and annoted items
 Copyright   :  (c) Klaus Lüttich, Christian Maeder and Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  parsers for annotations and annoted items
+Parsers for annotations and annoted items
 
    Follows Chap. II:5 of the CASL Reference Manual.
 

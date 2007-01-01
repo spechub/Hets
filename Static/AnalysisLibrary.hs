@@ -1,13 +1,13 @@
 {- |
 Module      :  $Header$
+Description :  static analysis of CASL specification libraries
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-Description :  static analysis of CASL specification libraries
-
+Static analysis of CASL specification libraries
    Follows the verification semantics sketched in Chap. IV:6
    of the CASL Reference Manual.
 -}

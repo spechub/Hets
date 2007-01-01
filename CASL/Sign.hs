@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  CASL signatures (serve as local environments for the basic static analysis)
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  CASL signatures (serve as local environments for the basic static analysis)
+CASL signatures (serve as local environments for the basic static analysis)
 -}
 
 module CASL.Sign where

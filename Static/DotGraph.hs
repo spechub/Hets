@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  Display of development graphs using Graphviz\/dot
 Copyright   :  (c) Till Mossakowski, Klaus Lüttich Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-Description :  Display of development graphs using Graphviz\/dot
+Display of development graphs using Graphviz\/dot
 -}
 
 module Static.DotGraph(dotGraph) where

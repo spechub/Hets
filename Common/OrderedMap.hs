@@ -1,5 +1,6 @@
 {- | 
 Module      :  $Header$
+Description :  ordered maps (these keep insertion order)
 Copyright   :  (c)  Klaus Lüttich and Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  ordered maps (these keep insertion order)
+Ordered maps (these keep insertion order)
 
 ordered maps keep the ordering if converted from a list and of all
 insert operations which are implemented; toList uses the

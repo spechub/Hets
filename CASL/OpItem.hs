@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  Parser for OP-ITEMs (operation declarations and definitions) 
 Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  Parser for OP-ITEMs (operation declarations and definitions) 
+Parser for OP-ITEMs (operation declarations and definitions) 
 -}
 
 {-

@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  Relations, based on maps
 Copyright   :  (c) Uni Bremen 2003-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 

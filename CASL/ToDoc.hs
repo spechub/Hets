@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  pretty printing data types of 'BASIC_SPEC'
 Copyright   :  (c) Christian Maeder and Uni Bremen 2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable
 
-Description :  pretty printing data types of 'BASIC_SPEC'
+Pretty printing data types of 'BASIC_SPEC'
 -}
 
 module CASL.ToDoc where

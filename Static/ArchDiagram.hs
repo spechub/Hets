@@ -1,13 +1,13 @@
 {- |
 Module      :  $Header$
+Description :  Data types and functions for architectural diagrams
 Copyright   :  (c) Maciek Makowski, Warsaw University 2004-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable (Logic)
 
-Description :  Data types and functions for architectural diagrams
-
+   Data types and functions for architectural diagrams
    Follows the CASL Reference Manual, section III.5.6.
 
 -}

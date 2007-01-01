@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description : Some functions for building and accessing the datastructures of GlobalAnnotations
 Copyright   :  (c) Christian Maeder, Klaus Lüttich and Uni Bremen 2002-2003
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description : Some functions for building and accessing the datastructures of GlobalAnnotations
+Some functions for building and accessing the datastructures of GlobalAnnotations
 -}
 
 module Common.AnalyseAnnos where

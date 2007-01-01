@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  parser for SORT-ITEMs (sort and subsort declarations and definitions)
 Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  parser for SORT-ITEMs (sort and subsort declarations and definitions)
+Parser for SORT-ITEMs (sort and subsort declarations and definitions)
 -}
 
 {-

@@ -1,13 +1,13 @@
 {- |
 Module      :  $Header$
+Description :  static analysis of CASL (heterogeneous) structured specifications
 Copyright   :  (c) Till Mossakowski and Uni Bremen 2003-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Grothendieck)
 
-Description :  static analysis of CASL (heterogeneous) structured specifications
-
+Static analysis of CASL (heterogeneous) structured specifications
    Follows the verfication semantic rules in Chap. IV:4.7
    of the CASL Reference Manual.
 -}

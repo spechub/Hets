@@ -1,12 +1,13 @@
 {- |
 Module      :  $Header$
+Description :  devGraph rule that calls provers for specific logics
 Copyright   :  (c) J. Gerken, T. Mossakowski, K. Lüttich, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-Description :  inference with a prover in a specific logic
+devGraph rule that calls provers for specific logics
 
 Proof rule "basic inference" in the development graphs calculus.
    Follows Sect. IV:4.4 of the CASL Reference Manual.

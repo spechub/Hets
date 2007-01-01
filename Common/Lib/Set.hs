@@ -2,6 +2,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Common.Lib.Set
+-- Description :  An efficient implementation of sets using balanced trees
 -- Copyright   :  (c) Daan Leijen 2002
 -- License     :  BSD-style
 -- Maintainer  :  libraries@haskell.org

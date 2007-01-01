@@ -1,15 +1,14 @@
 {-# OPTIONS -fglasgow-exts -fallow-undecidable-instances #-}
 {- |
 Module      :  $Header$
+Description :  central interface (type class) for logic translations (comorphisms) in Hets 
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable (via Logic)
 
-Description :  central interface (type class) for logic translations (comorphisms) in Hets 
-
-Provides data structures for institution comorphisms.
+Central interface (type class) for logic translations (comorphisms) in Hets 
    These are just collections of
    functions between (some of) the types of logics.
 -}

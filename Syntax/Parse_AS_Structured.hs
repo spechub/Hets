@@ -1,13 +1,13 @@
 {- |
 Module      :  $Header$
+Description :  parser for CASL (heterogeneous) structured specifications
 Copyright   :  (c) Till Mossakowski, Christian Maeder, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Grothendieck)
 
-Description :  parser for CASL (heterogeneous) structured specifications
-
+Parser for CASL (heterogeneous) structured specifications
    Concerning the homogeneous syntax, this follows Sect II:3.1.3
    of the CASL Reference Manual.
 

@@ -1,6 +1,7 @@
 {- | 
    
     Module      :  $Header$
+    Description :  Check for truth in one-point model
     Copyright   :  (c) Mingyi Liu and Till Mossakowski and Uni Bremen 2004
     License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -8,8 +9,8 @@
     Stability   :  provisional
     Portability :  portable
 
-    Description :  Check for truth in one-point model
-       with all predicates true, all functions total
+Check for truth in one-point model 
+   with all predicates true, all functions total
 
 -}
 {-

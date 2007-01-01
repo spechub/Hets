@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  utility functions that can't be found in the libraries
 Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  utility functions that can't be found in the libraries
+Utility functions that can't be found in the libraries
                but should be shared across Hets.
 -}
 {-

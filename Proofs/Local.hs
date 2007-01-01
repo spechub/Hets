@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  local proof rukes for development graphs
 Copyright   :  (c) Jorina F. Gerken, Till Mossakowski, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-local proofs in development graphs.
+local proof rukes for development graphs
    Follows Sect. IV:4.4 of the CASL Reference Manual.
 -}
 

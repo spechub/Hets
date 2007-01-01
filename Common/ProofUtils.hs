@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description:   functions useful for all prover connections in Hets
 Copyright   :  (c) Klaus Lüttich, C. Maeder, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description:   functions useful for all prover connections in Hets
+Functions useful for all prover connections in Hets
 
 Some were moved from Isabelle.Translate and some others from
 Isabelle.IsaProve.

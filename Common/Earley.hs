@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  generic mixfix analysis, using the Early parser
 Copyright   :  Christian Maeder and Uni Bremen 2003-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable
 
-Description :  generic mixfix analysis, using eht Early parser
+Generic mixfix analysis, using the Early parser
 -}
 
 module Common.Earley (Rule, Rules, partitionRules

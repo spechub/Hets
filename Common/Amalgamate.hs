@@ -1,5 +1,6 @@
 {- | 
 Module      :  $Header$
+Description :  data types for amalgamability options and analysis
 Copyright   :  (c) Christian Maeder, Uni Bremen 2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  data types for amalgamability options and analysis
+Data types for amalgamability options and analysis
 
 -}
 

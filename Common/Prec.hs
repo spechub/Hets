@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  precedence checking
 Copyright   :  Christian Maeder and Uni Bremen 2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable
 
-Description :  precedence checking
+Precedence checking
 -}
 
 module Common.Prec where

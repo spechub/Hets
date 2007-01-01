@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  generic conversion of mixfix tokens
 Copyright   :  Christian Maeder and Uni Bremen 2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,8 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable
 
-Description :  generically converting literals
+generic conversion of mixfix tokens
+
 -}
 
 module Common.ConvertMixfixToken

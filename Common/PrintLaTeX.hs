@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  functions for LaTeX pretty printing
 Copyright   :  (c) Klaus Lüttich, Christian Maeder and Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  functions for LaTeX pretty printing
+Functions for LaTeX pretty printing
 
 -}
 

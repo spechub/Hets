@@ -1,6 +1,7 @@
 {-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
+Description :  XML output for composition tables of qualitative calculi
 Copyright   :  (c) Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -8,7 +9,7 @@ Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable(uni-HaXml package)
 
-Description :  XML output for composition tables
+XML output for composition tables
 
 -}
 module CASL.CompositionTable.CompositionTable where

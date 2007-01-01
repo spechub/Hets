@@ -1,6 +1,7 @@
 
 {- | 
 Module      :  $Header$
+Description :  parser for CASL 'Id's based on "Common.Lexer"
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -8,7 +9,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  parser for CASL 'Id's based on "Common.Lexer"
+Parser for CASL 'Id's based on "Common.Lexer"
 
 -}
 {- http://www.cofi.info/Documents/CASL/Summary/

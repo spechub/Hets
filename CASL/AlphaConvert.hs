@@ -1,13 +1,12 @@
 {- |
 Module      :  $Header$
+Description :  alpha-conversion (renaming of bound variables) for CASL formulas
 Copyright   :  (c) Christian Maeder, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
-
-Description :  alpha-conversion (renaming of bound variables) for CASL formulas
 
 uniquely rename variables in quantified formulas to allow for 
 a formula equality modulo alpha conversion

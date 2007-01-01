@@ -1,5 +1,6 @@
 {- |
 Module      :$Header$
+Description : parser for Hets command line interface
 Copyright   : uni-bremen and Razvan Pascanu
 Licence     : similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  : r.pascanu@iu-bremen.de

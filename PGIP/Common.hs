@@ -1,6 +1,7 @@
 {-# OPTIONS -cpp #-}
 {- |
 Module      :$Header$
+Description : abstract syntax and utilities for Hets commands
 Copyright   : uni-bremen and Razvan Pascanu
 Licence     : similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  : r.pascanu@iu-bremen.de

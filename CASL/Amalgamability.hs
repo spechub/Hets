@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  Amalgamability analysis for CASL.
 Copyright   :  (c) Maciek Makowski, Warsaw University 2004-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  Amalgamability analysis for CASL.
+Amalgamability analysis for CASL.
 
   Follows the algorithm outlined in MFCS 2001 (LNCS 2136, pp. 451-463,
   Springer 2001) paper.

@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  folding functions for CASL terms and formulas
 Copyright   :  (c) Christian Maeder, Uni Bremen 2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  folding functions for CASL terms and formulas
+folding functions for CASL terms and formulas
 
 -}
 

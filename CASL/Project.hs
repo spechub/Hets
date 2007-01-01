@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  replace casts with explicit projection functions
 Copyright   :  (c) Christian Maeder, Uni Bremen 2005-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  replace casts with explicit projection functions
+Replace casts with explicit projection functions
 
 
 This module replaces Cast(s) with explicit projection

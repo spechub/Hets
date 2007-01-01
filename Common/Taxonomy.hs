@@ -1,6 +1,7 @@
 
 {- |
 Module      :  $Header$
+Description :  type for selecting different kinds of taxonomy graphs
 Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -8,7 +9,7 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  portable 
 
-Description :  type for selecting different kinds of taxonomy graphs
+Type for selecting different kinds of taxonomy graphs
 
 This module only provides a small type for selecting different kinds
 of taxonomy graphs.

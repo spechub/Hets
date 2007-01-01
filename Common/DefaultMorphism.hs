@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  supply a default morphism for a given signature type
 Copyright   :  (c) C. Maeder, and Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  supply a default morphism for a given signature type
+Supply a default morphism for a given signature type
 -}
 
 -- due to functional deps the instance for Logic.Category cannot be supplied

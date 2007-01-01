@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  scanner for Casl tokens using Parsec 
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,9 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  scanner for Casl tokens using Parsec 
-
-   for Parsec see <http://www.cs.uu.nl/~daan/parsec.html>
+Scanner for Casl tokens using Parsec <http://www.cs.uu.nl/~daan/parsec.html>
 
    <http://www.cofi.info/Documents/CASL/Summary/>
    from 25 March 2001

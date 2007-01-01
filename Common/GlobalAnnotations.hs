@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  data structures for global annotations
 Copyright   :  (c) Klaus Lüttich, Christian Maeder and Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable
 
-Description :  data structures for global annotations
+Data structures for global annotations
 -}
 
 module Common.GlobalAnnotations (module Common.GlobalAnnotations,

@@ -1,12 +1,13 @@
 {- |
 Module      :  $Header$
+Description :  Grothendieck logic (flattening of logic graph to a single logic)
 Copyright   :  (c) Till Mossakowski, and Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable (overlapping instances, dynamics, existentials)
 
-Description :  Grothendieck logic (flattening of logic graph to a single logic)
+Grothendieck logic (flattening of logic graph to a single logic)
 
 The Grothendieck logic is defined to be the
    heterogeneous logic over the logic graph.

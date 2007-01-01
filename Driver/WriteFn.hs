@@ -1,6 +1,7 @@
 {-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
+Description :  Writing various formats, according to Hets options
 Copyright   :  (c) Klaus L�ttich, C.Maeder, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -8,8 +9,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  non-portable(DevGraph)
 
-This module provides functions to write a pretty printed abstract
-  syntax and all the other formats.
+Writing various formats, according to Hets options
 -}
 
 module Driver.WriteFn where

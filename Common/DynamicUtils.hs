@@ -1,6 +1,7 @@
 {-# OPTIONS -cpp #-}
 {- |
 Module      :  $Header$
+Description :  utils for creating instances of Dynamic.Typeable
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -8,7 +9,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  non-portable (does -cpp on __GLASGOW_HASKELL__)
 
-Description :  utils for creating instances of Dynamic.Typeable
+Utils for creating instances of Dynamic.Typeable
 
 mkAppTy was renamed to mkTyConApp in ghc version 6.3 upwards
 -}

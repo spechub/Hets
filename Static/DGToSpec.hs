@@ -1,13 +1,14 @@
 {- |
 Module      :  $Header$
+Description :  Conversion of development graph back to structured specification
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-Description :  Conversion of development graph back to structured specification
-               and compute theory
+Convert development graph back to structured specification
+  and compute theory
 
 -}
 

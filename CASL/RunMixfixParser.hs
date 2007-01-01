@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  make mixfix analysis checkable by RunParsers
 Copyright   :  (c) Klaus Lüttich, Christian Maeder and Uni Bremen 2002-2003
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  experimental
 Portability :  portable
 
-Description :  make mixfix analysis checkable by RunParsers
+Make mixfix analysis checkable by RunParsers
 
 -}
 

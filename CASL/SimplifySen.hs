@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description : simplification of formulas and terms for output after analysis
 Copyright   :  (c) Heng Jiang, C. Maeder, Uni Bremen 2004-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description : simplification of formulas and terms for output after analysis
+Simplification of formulas and terms for output after analysis
 
 -}
 

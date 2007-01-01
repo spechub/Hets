@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  'Result' monad for accumulating 'Diagnosis' messages 
 Copyright   :  (c) K. Lüttich, T. Mossakowski, C. Maeder, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  'Result' monadic for accumulating 'Diagnosis' messages 
+Description :  'Result' monad for accumulating 'Diagnosis' messages 
                during analysis phases.
 -}
 

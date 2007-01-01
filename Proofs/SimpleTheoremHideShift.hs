@@ -1,13 +1,14 @@
 {- |
 Module      :  
 Copyright   :  (c) Cui Jian, Till Mossakowski, Uni Bremen 2002-2006
+Description :  simple version of theorem hide shift proof rule
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  ken@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-theorem hide shift proof in development graphs.
+simple version of theorem hide shift proof rule for development graphs.
    Follows Sect. IV:4.4 of the CASL Reference Manual.
 -}
 

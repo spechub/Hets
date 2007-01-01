@@ -1,13 +1,12 @@
 {- |
 Module      :  $Header$
+Description :  positions, simple and mixfix identifiers
 Copyright   :  (c) Klaus Lüttich and Christian Maeder and Uni Bremen 2002-2003
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
-
-Description :  positions, simple and mixfix identifiers
 
 This module supplies positions, simple and mixfix identifiers.
 A simple identifier is a lexical token given by a string and a start position.

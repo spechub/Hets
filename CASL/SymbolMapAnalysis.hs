@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  symbol map analysis for the CASL logic.
 Copyright   :  (c) Till Mossakowski, C. Maeder and Uni Bremen 2002-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,8 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  symbol map analysis for the CASL logic.
-
+Symbol map analysis for the CASL logic.
   Follows Sect. III:4.1 of the CASL Reference Manual.
 -}
 

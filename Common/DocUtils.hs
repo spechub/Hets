@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description : 'Pretty' class for pretty printing, some instances and other utility functions
 Copyright   :  (c) jianchun wang and Uni Bremen 2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  wjch868@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description : 'Pretty' class for pretty printing, some instances and other utility functions
+'Pretty' class for pretty printing, some instances and other utility functions
 -}
 
 module Common.DocUtils where

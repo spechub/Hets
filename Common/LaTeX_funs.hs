@@ -1,5 +1,6 @@
 {- |
 Module      :  $Header$
+Description :  auxiliary functions for LaTeX printing
 Copyright   :  (c) Klaus Lüttich, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  luettich@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  auxiliary functions for LaTeX printing
+Auxiliary functions for LaTeX printing
 
 Functions to calculate the length of a given word as it would be
    printed with LaTeX according to one of four categories of words

@@ -1,5 +1,6 @@
 {- | 
 Module      :  $Header$
+Description :  auxiliary functions on terms and formulas
 Copyright   :  (c) Mingyi Liu and Till Mossakowski and Uni Bremen 2004-2005
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -7,7 +8,7 @@ Maintainer  :  xinga@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  auxiliary functions on terms and formulas
+Aauxiliary functions on terms and formulas
 -}
 
 module CASL.CCC.TermFormula where
