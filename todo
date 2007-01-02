@@ -3,44 +3,14 @@ Plan and priority list for CoFI tool activities
 ************************************************
 Immanuel
 ************************************************
-Suchfunktion für einen Knoten im DG:
-  welche anderen Knoten sind hier mit Theoriemorphismus abbildbar?
-  erstmal auf eine Logik (z.B. CASL) beschränken
-  - Funktion für Morphismus-Suche zwischen Theorien
-    - evtl. angucken: CASL.SymbolMapAnalysis, inducedFromToMorphism Map.empty
-      RawSymbolMap als "Suche-Guide" wird erestzt durch Axiome/Theoreme
-  - Einbindung ins GUI (GUI.ConvertAbstractToDevGraph)
 
-BasicProof in Proofs.Proofs: sind Datenstrukturen für informelle Beweise OK?
-Konfidenzgrade von Beweisen?
-
-von Till/HiWi zu erledigen:
-Repräsentation ändern:
-  Beweisobjekte an DGs, nicht an Regeln -- done
-  Für Theoreme in Theorien an Beweisobjekte -- done
-  BasicProof mit Liste von Beweisobjekten -- überflüssig
-  Definitionen auszeichnen -- done
-    Für alles siehe G_theory, ThSens und SenStatus.
-  Isabelles Beweisobjekte einbinden
-
+see http://trac.informatik.uni-bremen.de:8080/hets
 
 ************************************************
 Razvan (Till)
 ************************************************
 
-Integration with PGIP
-  Hets needs to be equipped with a command-line interface that reads in
-    specification libraries and proof commands
-  Proof commands are special annotations in the libraries
-  All menu commands of the development graph interface (GUI/...) should become (proof) commands
-  when stepping through the specs, dg calculus generates proof obligations
-    (for the current dg node only),
-    which then can be discharged by Isabelle, SPASS etc.
-    That is, the proof commands always occur at the position in the text
-      that generates the dg node?!? or should they occur after each specification?
-  needs incremental parsing and static analysis for Hets libraries
-    easy: parse and analyse one specification at a time, and then process it with proof commands
-    more challenging: incrementally parse and analyse also individual specifications
+see http://trac.informatik.uni-bremen.de:8080/hets
 
 ************************************************
 Anton (Till)
