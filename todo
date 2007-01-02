@@ -5,34 +5,26 @@ Immanuel
 ************************************************
 
 see http://trac.informatik.uni-bremen.de:8080/hets
+user normann
 
 ************************************************
 Razvan (Till)
 ************************************************
 
 see http://trac.informatik.uni-bremen.de:8080/hets
+user rpascanu
 
 ************************************************
 Anton (Till)
 ************************************************
 
-Modal-CASL <-> CASL-DL
-  see Chapter 4 of "The Description Logic Handbook"
-      and ask Klaus for a print out of it
-
-improve Modal-CASL
-  possibly also modal logic in CoCASL
+see http://trac.informatik.uni-bremen.de:8080/hets
+user luecke
 
 **************** task A ************************
 
-Proofs with Isabelle and SPASS
-CASL basic datatypes
-HasCASL examples
-- improve simplifier for partiality in Isabelle coding
-  program interaction between solver, subgoaler and simplifier in such a way
-  that proofs of definedness conditions are postponed
-
-
+see http://trac.informatik.uni-bremen.de:8080/hets
+user maeder
 
 
 ************************************************
@@ -114,149 +106,19 @@ Freiburger Constraint-Solver angucken im Juli
 Hendrik (Till)
 ************************************************
 
-OmDoc-Ausgabe konform mit RelaxNG?
-OmDoc-Ausgabe Immanual zeigen
-
-Typen von gebundenen Variablen weglassen
-
-XML-Kataloge?
-
-OMDoc-Datentyp einführen
-  Hets <-> Datenstruktur <-> OMDoc
-  Namensgenerierung/rekonstruktion auf der Seite Hets <-> Datenstruktur
-
-Ursprung von Symbolen bei Hets -> OMDoc: irgendeins nehmen
-
-Ausgabe als DAG, mittels OMR oder ref
-  Sharing-Algorithmus verwenden
-
-Constraints mit Indizes: ggf. higher-order-Axiom erzeugen (Till fragen)
+see http://trac.informatik.uni-bremen.de:8080/hets
+user hiben
 
 Anzeigen von lokalen Beweiszielen bei nicht-gesetztem Cons: Till fragen
-
-OMDoc-Bug melden für
-  free type Vehicle ::= sort Boat | sort Car
-  wobei Boat und Car aus anderen Files kommen
-  S. 156: Satz einfach streichen
-
-sortdef legt bereits ein Symbol an
-
-
-werden Signatur-Symbole in OMDoc mit der Theorie versehen, in der
-  sie als erstes eingeführt wurden?
-   checken für Library-Importe
-
-OMDoc/OpenMath-Formeln als Haskell-Datentyp formulieren; diesen als Zwischendatentyp verwenden
-
-Hiding: unterschiedlich in OMDoc und Hets
-ein Hets-Hiding-Link mit einer Inklusion Sigma_1->Sigma_2 als
-  Signaturmorphismus
-  wird übersetzt in einen OMDoc-Theoriemorphismus
-  mit leerer/identischer Abbildung, bei dem die Symbole aus
-  Sigma_2 \ Sigma_1 versteckt werden
-  Wenn der Signaturmorphismus keine Inklusion ist, ist keine
-   Übersetzung möglich -> Fehler
-ein OMDoc-Theoriemorphismus mit Hiding, der eine Inklusion ist
-   (also leere bzw. identische Abbildung) wird übersetzt
-   in einen Hets-Hiding-Link, mit Inklusion als Signaturmorphismus
-  falls der OMDoc-Theoriemorphismus keine Inklusion ist, muss
-  ein Hets-Hiding-Link, gefolgt von einem normalen (globalen) Link,
-  der dann die Umbenennung macht, erzeugt werden
-
-Logiken: über verschiedene OMDoc-Theorien mit URI
-
 
 
 ************************************************
 Mingyi (Till)
 ************************************************
 
-Diplomarbeit
-- CASL-Logik: "Relating CASL with other specification languages", S.401-408
-- Konservative, definitionale und monomorphe Erweiterungen, Konsistenz
-  siehe CASL reference manual (suche nach conservative)
-- warum sind konservative Erweiterungen wichtig?
-  - um zu prüfen, ob Spezifikationen konsistent sind, also implementiert
-    werden können
-  - für Refinement-Beweise
-- Algorithmen zur Prüfung von Erweiterungen, ob diese konservativ,
-  definitional oder monomorph sind
-  - Beschreibung des Algorithmus in Pseudocode
-  - Korrektheitsbeweis, d.h. für die Erweiterungen, die der Algorithmus
-    als konservativ erkennt, muss für jedes Modell der kleineren
-    Spezifikation eine Modellerweiterung zur größeren Spezifikation
-    gefunden werden. Z.B. im Falle von free types kann dies eine
-    Termalgebra-Konstruktion sein.
-    SP1 -- \sigma --> SP2
-    konservativ: jedes SP_1-Modell M1 hat eine Erweiterung zu einem
-    SP2-Modell M2 mit M2|_\sigma=M1.
+see http://trac.informatik.uni-bremen.de:8080/hets
+user xinga
 
-port CCC to Haskell
-
-Funktionen imageOfMorphism und inhabited
-  von OnePoint.hs in eigenes Modul verschieben: Modul SignFuns.hs
-  mit "cvs add SigFuns.hs" einchecken
-
-New module FreeTypes.hs:
-
-"free datatypes and recursive equations are consistent"
-
-checkFreeType :: Morphism f e m -> [FORMULA f] -> Maybe Bool
-Just True => Yes, is consistent
-Just False => No, is inconsistent
-Nothing => don't know
-
-call the symbols in the image of the signature morphism "new"
-
-- each new sort must be a free type,
-  i.e. it must occur in a sort generation constraint that is marked as free
-     (Sort_gen_ax constrs True)
-     such that the sort is in srts, where (srts,ops,_)=recover_Sort_gen_ax constrs
-    if not, output "don't know"
-  and there must be one term of that sort (inhabited)
-    if not, output "no"
-- group the axioms according to their leading operation/predicate symbol,
-  i.e. the f resp. the p in
-  forall x_1:s_n .... x_n:s_n .                  f(t_1,...,t_m)=t
-  forall x_1:s_n .... x_n:s_n .       phi =>      f(t_1,...,t_m)=t
-                                  Implication  Application  Strong_equation
-  forall x_1:s_n .... x_n:s_n .                  p(t_1,...,t_m)<=>phi
-  forall x_1:s_n .... x_n:s_n .    phi1  =>      p(t_1,...,t_m)<=>phi
-                                 Implication   Predication    Equivalence
-  if there are axioms not being of this form, output "don't know"
-
-
-
-
-check' :: [EquationInfo] -> ([ExhaustivePat],EqnSet)
-check' []                                              = ([([],[])],emptyUniqSet)
-
--- nur ein Pattern, bestehend aus nur Variablen? fertig, True
-check' [EqnInfo n ctx ps (MatchResult CanFail _)]
-   | all_vars ps  = ([(takeList ps (repeat new_wild_pat),[])],  unitUniqSet n)
-
--- besteht das erste Pattern nur aus Variablen? dann darf es kein zweites geben!
-check' qs@((EqnInfo n ctx ps (MatchResult CanFail _)):rs)
-   | all_vars ps  = (pats,  addOneToUniqSet indexs n)
-  where
-    (pats,indexs) = check' rs
-
--- falls ein Konstruktor dabei ist: split_by_constructor
--- wenn die ersten Argument nur Variablen sind: first_column_only_vars
-check' qs@((EqnInfo n ctx ps result):_)
-   | all_vars ps  = ([],  unitUniqSet n)
-   | constructors = split_by_constructor qs
-   | only_vars    = first_column_only_vars qs
-   | otherwise    = panic "Check.check': Not implemented :-("
-  where
-     -- Note: RecPats will have been simplified to ConPats
-     --       at this stage.
-    constructors = or (map is_con qs)
-    only_vars    = and (map is_var qs)
-
-
-subsort definitions: are conservative if formula is satisfiable
-  (generate proof obligation)
 
 ************************************************
 Heng (Klaus)
