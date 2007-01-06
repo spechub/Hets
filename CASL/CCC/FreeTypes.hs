@@ -391,10 +391,12 @@ checkTerm :: [OP_SYMB] -> TERM f -> Bool
 checkTerm cons t =
     case t of
       Sorted_term t' _ _ -> checkTerm cons t'
+      Simple_id _ -> True
       Qual_var _ _ _ -> True   
       Application _ ts _ -> all id $ map checkT ts
       _ -> error "CASL.CCC.FreeTypes.<checkTerm>"
   where checkT (Sorted_term tt _ _) = checkT tt
+        checkT (Simple_id _) = True 
         checkT (Qual_var _ _ _) = True
         checkT (Application subop subts _) = (elem subop cons) &&
                                              (all id $ map checkT subts)
