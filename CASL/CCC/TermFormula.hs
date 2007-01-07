@@ -17,6 +17,7 @@ import CASL.AS_Basic_CASL
 import CASL.Overload
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
+import qualified Common.Lib.Rel as Rel
 import CASL.Sign       
 import Common.AS_Annotation
 import Common.Id
@@ -248,7 +249,7 @@ partialAxiom f =
       _ -> False                    
 
 
--- | creat the information of subsort
+-- | create the information of subsort
 infoSubsort :: FORMULA f -> FORMULA f
 infoSubsort f =
     case f of
@@ -327,10 +328,11 @@ leading_Term_Predication f = leading (f,False,False)
 
 -- | extract the leading symbol from a term or a formula
 extract_leading_symb :: Either (TERM f) (FORMULA f) -> Either OP_SYMB PRED_SYMB
-extract_leading_symb lead = case lead of
-                              Left (Application os _ _) -> Left os
-                              Right (Predication p _ _) -> Right p
-                              _ -> error "CASL.CCC.TermFormula<extract_leading_symb>"
+extract_leading_symb lead = 
+    case lead of
+      Left (Application os _ _) -> Left os
+      Right (Predication p _ _) -> Right p
+      _ -> error "CASL.CCC.TermFormula<extract_leading_symb>"
 
 
 -- | leadingTerm is total operation : Just True
@@ -344,6 +346,7 @@ opTyp_Axiom f =
     Just (Left (Qual_op_name _ (Op_type Partial _ _ _) _)) -> Just False  
     _ -> Nothing 
 
+
 -- | extract the OP_SYMB from a application term
 opSymbOfTerm :: TERM f -> OP_SYMB
 opSymbOfTerm t = 
@@ -352,8 +355,7 @@ opSymbOfTerm t =
     _ -> error "CASL.CCC.TermFormula<opSymbOfTerm>"
 
 
-
--- constructorOverload :: Sign f e -> Sign f e -> [OP_SYMB] -> [OP_SYMB]
+-- | extract the overloaded constructors
 constructorOverload :: Sign f e -> OpMap -> [OP_SYMB] -> [OP_SYMB]
 constructorOverload s opm os = concat $ map (\ o1 -> cons_Overload o1) os 
     where cons_Overload o =
@@ -369,6 +371,38 @@ constructorOverload s opm os = concat $ map (\ o1 -> cons_Overload o1) os
                 True -> [(Qual_op_name on (toOP_TYPE opt2) nullRange)]
                 False -> [] 
 
+
+-- | check whether the operation symbol is a constructor 
+isCons :: Sign f e -> [OP_SYMB] -> OP_SYMB -> Bool
+isCons s cons os =
+    case cons of
+      [] -> False
+      _ -> if is_Cons (head cons) os then True
+           else isCons s (tail cons) os
+    where is_Cons (Qual_op_name on1 ot1 _) (Qual_op_name on2 ot2 _) 
+            | on1 /= on2 = False 
+            | not $ isSupersort s (res_OP_TYPE ot2) (res_OP_TYPE ot1) = False
+            | otherwise = isSupersortS s (args_OP_TYPE ot2) (args_OP_TYPE ot1)
+              
+
+-- | check whether a sort is the others super sort
+isSupersort :: Sign f e -> SORT -> SORT -> Bool
+isSupersort sig s1 s2 = elem s1 slist 
+    where sM = Rel.toMap $ sortRel $ sig
+          slist = case Map.lookup s2 sM of
+                    Nothing -> [s2]
+                    Just sts -> [s2] ++ (Set.toList $ sts)
+
+
+-- | check whether all sorts of a set are another sets super sort
+isSupersortS :: Sign f e -> [SORT] -> [SORT] -> Bool
+isSupersortS sig s1 s2 
+    | length s1 /= length s2 = False 
+    | otherwise = supS s1 s2
+    where supS [] [] = True
+          supS sts1 sts2 = if isSupersort sig (head sts1) (head sts2) 
+                           then supS (tail sts1) (tail sts2)
+                           else False
 
 
 -- | transform id to string

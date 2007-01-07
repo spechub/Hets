@@ -29,6 +29,7 @@ import CASL.Morphism
 import CASL.AS_Basic_CASL       -- FORMULA, OP_{NAME,SYMB}, TERM, SORT, VAR
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
+import qualified Common.Lib.Rel as Rel
 import CASL.CCC.SignFuns
 import CASL.CCC.TermFormula
 import CASL.CCC.TerminationProof
@@ -111,6 +112,8 @@ checkFreeType (osig,osens) m fsn
                             (concat $ map snd subSortsF) ++ 
                             info_subsort)))
     | otherwise = return (Just (True,[]))
+    -- tmp
+    --    | not $ Map.null sortR = return (Just (True,[]))
 
 {-
   call the symbols in the image of the signature morphism "new"
@@ -163,9 +166,7 @@ checkFreeType (osig,osens) m fsn
                                                            -- constructors
     op_map1 = opMap $ mtarget m 
     op_map = trace (showDoc op_map1 "op_map") op_map1
- --  tmp = trace (showDoc (last constructors_o) "  tmp") (last constructors_o) 
     constructors2 = constructorOverload (mtarget m) op_map constructors_o
- --   constructors2 = constructorOverload sig osig constructors_o
 
     constructors = trace (showDoc constructors2 "constrs_new") constructors2
     f_Inhabited1 = inhabited oSorts fconstrs
@@ -333,6 +334,9 @@ checkFreeType (osig,osens) m fsn
                 map sentence (filter is_user_or_sort_gen (osens ++ fsn))
     -- proof = terminationProof (osens ++ fsn)
     proof = terminationProof fsn
+    -- tmp
+    sortR1 = Rel.toMap $ sortRel $ mtarget m
+    sortR = trace (showDoc sortR1 "sortRel") sortR1
 
 
 {- group the axioms according to their leading symbol
