@@ -379,7 +379,9 @@ isCons s cons os =
       [] -> False
       _ -> if is_Cons (head cons) os then True
            else isCons s (tail cons) os
-    where is_Cons (Qual_op_name on1 ot1 _) (Qual_op_name on2 ot2 _) 
+    where is_Cons (Op_name _) _ = False
+          is_Cons _ (Op_name _) = False 
+          is_Cons (Qual_op_name on1 ot1 _) (Qual_op_name on2 ot2 _) 
             | on1 /= on2 = False 
             | not $ isSupersort s (res_OP_TYPE ot2) (res_OP_TYPE ot1) = False
             | otherwise = isSupersortS s (args_OP_TYPE ot2) (args_OP_TYPE ot1)
