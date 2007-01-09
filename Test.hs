@@ -12,7 +12,6 @@ import Proofs.Global
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
 import Data.Graph.Inductive.Graph
-import GUI.ConvertDevToAbstractGraph
 import Static.DGToSpec
 
 process :: FilePath -> IO (Maybe (LIB_NAME, LibEnv))
