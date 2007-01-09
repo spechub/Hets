@@ -106,6 +106,29 @@ isRefNode :: DGNodeLab -> Bool
 isRefNode (DGNode {}) = False
 isRefNode _ = True
 
+-- | test for 'LeftOpen', return input for refs or no conservativity 
+hasOpenConsStatus :: Bool -> DGNodeLab -> Bool
+hasOpenConsStatus b dgn = case dgn of 
+    DGRef {} -> b
+    _ -> case dgn_cons dgn of 
+           None -> b
+           _ -> case dgn_cons_status dgn of
+                  LeftOpen -> True
+                  _ -> False
+
+-- | gets the type of a development graph edge as a string
+getDGNodeType :: DGNodeLab -> String
+getDGNodeType dgnodelab =
+    (if hasOpenGoals dgnodelab then id else ("locallyEmpty__" ++))
+    $ case isDGRef dgnodelab of
+       True -> "dg_ref"
+       False -> (if hasOpenConsStatus False dgnodelab
+                 then "open_cons__"
+                 else "proven_cons__")
+                ++ if isInternalNode dgnodelab
+                   then "internal"
+                   else "spec"
+
 -- gets the name of a development graph node as a string
 getDGNodeName :: DGNodeLab -> String
 getDGNodeName dgn  = showName $ dgn_name dgn
@@ -242,6 +265,23 @@ instance Pretty DGLinkType where
 			      LeftOpen -> "HidingThmUnproven"
 			      _ -> "HidingThmProven"
         FreeThm _ _ -> "FreeThm"
+
+-- | describe the link type of the label
+getDGLinkType :: DGLinkLab -> String
+getDGLinkType lnk = let 
+    isHom = isHomogeneous $ dgl_morphism lnk
+    het = if isHom then id else ("het" ++)
+    in case dgl_morphism lnk of
+ GMorphism _ _ _ _ _ -> 
+   case dgl_type lnk of
+    GlobalDef -> if isHom then "globaldef"
+          else "hetdef"
+    HidingDef -> "hidingdef"
+    LocalThm thmLnkState _ _ -> het "local" ++ getThmType thmLnkState ++ "thm"
+    GlobalThm thmLnkState _ _ -> het $ getThmType thmLnkState ++ "thm"
+    HidingThm _ thmLnkState -> getThmType thmLnkState ++ "hidingthm"
+    FreeThm _ bool -> if bool then "proventhm" else "unproventhm"
+    _  -> "def" -- LocalDef, FreeDef, CofreeDef
 
 -- | Conservativity annotations. For compactness, only the greatest
 -- | applicable value is used in a DG
@@ -384,6 +424,13 @@ instance Pretty ThmLinkStatus where
                             , pretty r
                             , text "Proof based on links:"
                             ] $+$ vcat(map printLEdgeInProof ls)
+
+-- | shows short theorem link status
+getThmType :: ThmLinkStatus -> String
+getThmType thmLnkState =
+  case thmLnkState of
+    Proven _ _ -> "proven"
+    LeftOpen -> "unproven"
 
 -- | Data type indicating the origin of nodes and edges in the input language
 -- | This is not used in the DG calculus, only may be used in the future

@@ -1088,15 +1088,13 @@ showStatusAux dgnode =
          (proven,open) = OMap.partition isProvenSenStatus goals
       in "Proven proof goals:\n"
          ++ showDoc proven ""
-         ++ if not (isRefNode dgnode) && dgn_cons dgnode /= None
-                && dgn_cons_status dgnode /= LeftOpen
+         ++ if not $ hasOpenConsStatus True dgnode
              then showDoc (dgn_cons_status dgnode)
                       "is the conservativity status of this node"
              else ""
          ++ "\nOpen proof goals:\n"
          ++ showDoc open ""
-         ++ if not (isRefNode dgnode) && dgn_cons dgnode /= None
-                && dgn_cons_status dgnode == LeftOpen
+         ++ if hasOpenConsStatus False dgnode
              then showDoc (dgn_cons_status dgnode)
                       "should be the conservativity status of this node"
              else ""
@@ -1222,54 +1220,10 @@ convertNodesAux convMaps descr grInfo ((node,dgnode) : lNodes) libname =
                                 nodetype
                                 (getDGNodeName dgnode)
                                 grInfo
-     convertNodesAux convMaps {{-dg2abstrNode = Map.insert (libname, node)
-                                       newDescr (dg2abstrNode convMaps),
-                                 abstr2dgNode = Map.insert newDescr
-                                      (libname, node) (abstr2dgNode convMaps),-}
-			       dgAndabstrNode = InjMap.insert (libname, node) newDescr (dgAndabstrNode convMaps)}
-                                       descr grInfo lNodes libname
-
-
--- | gets the type of a development graph edge as a string
-getDGNodeType :: DGNodeLab -> String
-getDGNodeType dgnodelab =
-    (if hasOpenGoals dgnodelab then ""  else "locallyEmpty__")
-    ++ case isDGRef dgnodelab of
-       True -> "dg_ref"
-       False -> (if hasOpenConsStatus dgnodelab
-                 then "open_cons__"
-                 else "proven_cons__")
-                ++ if isInternalNode dgnodelab
-                   then "internal"
-                   else "spec"
-    where
-      hasOpenConsStatus dgn = dgn_cons dgn /= None &&
-          case dgn_cons_status dgn of
-            LeftOpen -> True
-            _ -> False
-
-getDGLinkType :: DGLinkLab -> String
-getDGLinkType lnk = case dgl_morphism lnk of
- GMorphism _ _ _ _ _ -> 
-  {- if not (is_injective (targetLogic cid) mor) then trace "noninjective morphism found" "hetdef" 
-  else -}
-   case dgl_type lnk of
-    GlobalDef ->
-      if isHomogeneous $ dgl_morphism lnk then "globaldef"
-          else "hetdef"
-    HidingDef -> "hidingdef"
-    LocalThm thmLnkState _ _ -> het++"local" ++ getThmType thmLnkState ++ "thm"
-    GlobalThm thmLnkState _ _ -> het++getThmType thmLnkState ++ "thm"
-    HidingThm _ thmLnkState -> getThmType thmLnkState ++ "hidingthm"
-    FreeThm _ bool -> if bool then "proventhm" else "unproventhm"
-    _  -> "def" -- LocalDef, FreeDef, CofreeDef
- where het = if isHomogeneous $ dgl_morphism lnk then "" else "het"
-
-getThmType :: ThmLinkStatus -> String
-getThmType thmLnkState =
-  case thmLnkState of
-    Proven _ _ -> "proven"
-    LeftOpen -> "unproven"
+     convertNodesAux convMaps 
+       { dgAndabstrNode = InjMap.insert (libname, node) newDescr 
+                          (dgAndabstrNode convMaps)
+       } descr grInfo lNodes libname
 
 {- | converts the edges of the development graph
 works the same way as convertNods does-}
@@ -1298,19 +1252,11 @@ convertEdgesAux convMaps descr grInfo (ledge@(src,tar,edgelab) : lEdges)
         case msg of
           Nothing -> return ()
           Just err -> fail err
-        newConvMaps <- (convertEdgesAux
-                       convMaps {
-				{-dg2abstrEdge = Map.insert
-                                     (libname, (src,tar,showDoc edgelab ""))
-                                     newDescr
-                                     (dg2abstrEdge convMaps),
-                                 abstr2dgEdge = Map.insert newDescr
-                                     (libname, (src,tar,showDoc edgelab ""))
-                                     (abstr2dgEdge convMaps),-} 
-				 dgAndabstrEdge = InjMap.insert (libname,
-				 (src, tar, showDoc edgelab "")) newDescr (dgAndabstrEdge convMaps)
-				}
-                                         descr grInfo lEdges libname)
+        newConvMaps <- convertEdgesAux convMaps 
+            { dgAndabstrEdge = InjMap.insert (libname,
+				              (src, tar, showDoc edgelab ""))
+                  newDescr (dgAndabstrEdge convMaps)
+	    } descr grInfo lEdges libname
         return newConvMaps
       _ -> error "Cannot find nodes"
 
