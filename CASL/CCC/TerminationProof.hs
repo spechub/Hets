@@ -1197,10 +1197,22 @@ axiom_str f =
         ((predSymStr p_s) ++ "(" ++ (terms_str ts) ++ ") -> true")
     Definedness _ _ -> 
         error "CASL.CCC.TerminationProof.<Axioms_Definedness>"
-    Existl_equation t1 t2 _ -> 
-        (term_str t1) ++ " -> " ++ (term_str t2)
+    Existl_equation t1 t2 _ ->
+        case t2 of
+          Conditional tt1 ff tt2 _ ->
+              (term_str t1) ++ " -> " ++ (term_str tt1) ++ " | " ++
+              (axiom_substr ff) ++ " -> true\n" ++  
+              (term_str t1) ++ " -> " ++ (term_str tt2) ++ " | " ++
+              (axiom_substr ff) ++ " -> false\n"  
+          _ -> (term_str t1) ++ " -> " ++ (term_str t2)
     Strong_equation t1 t2 _ -> 
-        (term_str t1) ++ " -> " ++ (term_str t2)                   
+        case t2 of
+          Conditional tt1 ff tt2 _ ->
+              (term_str t1) ++ " -> " ++ (term_str tt1) ++ " | " ++
+              (axiom_substr ff) ++ " -> true\n" ++  
+              (term_str t1) ++ " -> " ++ (term_str tt2) ++ " | " ++
+              (axiom_substr ff) ++ " -> false\n"  
+          _ -> (term_str t1) ++ " -> " ++ (term_str t2)              
     _ -> error "CASL.CCC.TerminationProof.<Axioms>"
 
 

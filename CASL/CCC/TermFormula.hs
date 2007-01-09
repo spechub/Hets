@@ -24,6 +24,7 @@ import Common.Id
 -- import Debug.Trace
 -- import Common.DocUtils
 
+
 -- | Sorted_term is always ignored
 term :: TERM f -> TERM f
 term t = case t of
@@ -434,4 +435,19 @@ diffList l [] = l
 diffList (l:ls) a = if elem l a
                     then diffList ls a
                     else l:(diffList ls a)
+
+
+-- | get the axiom range of a term 
+axiomRangeforTerm ::  (PosItem f, Eq f) => [FORMULA f] -> TERM f -> Range
+axiomRangeforTerm [] _ = nullRange
+axiomRangeforTerm fs t = 
+    case leading_Term_Predication (head fs) of 
+      Just (Left tt) -> case (tt==t) of
+                          True -> getRange $ quanti $ head fs
+                          False -> axiomRangeforTerm (tail fs) t
+      _ -> axiomRangeforTerm (tail fs) t
+
+
+
+
 

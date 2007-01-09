@@ -29,7 +29,7 @@ import CASL.Morphism
 import CASL.AS_Basic_CASL       -- FORMULA, OP_{NAME,SYMB}, TERM, SORT, VAR
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
-import qualified Common.Lib.Rel as Rel
+-- import qualified Common.Lib.Rel as Rel
 import CASL.CCC.SignFuns
 import CASL.CCC.TermFormula
 import CASL.CCC.TerminationProof
@@ -91,14 +91,17 @@ checkFreeType (osig,osens) m fsn
     | any id $ map find_pt id_pts =
         let pos = old_pred_ps
         in warning Nothing ("Predication: " ++old_pred_id++ " is not new") pos
-    | not $ and $ map (checkTerm constructors) leadingTerms=
-        let (Application os _ pos) =
-                head $ filter (\t->not $ checkTerm constructors t) leadingTerms
+    | not $ and $ map (checkTerm tsig constructors) leadingTerms=
+        let (Application os _ _) = tt
+            tt= head $ filter (\t->not $ checkTerm tsig constructors t) 
+                       leadingTerms
+            pos = axiomRangeforTerm _axioms tt 
         in warning Nothing ("a leading term of " ++ (opSymStr os) ++
            " consist of not only variables and constructors") pos
     | not $ and $ map checkVar_App leadingTerms =
-        let (Application os _ pos) =
-                head $ filter (\t->not $ checkVar_App t) leadingTerms
+        let (Application os _ _) = tt
+            tt = head $ filter (\t->not $ checkVar_App t) leadingTerms
+            pos = axiomRangeforTerm _axioms tt
         in warning Nothing ("a variable occurs twice in a leading term of " ++
                             opSymStr os) pos
     | (not $ null fs_terminalProof) && (proof == Just False) =
@@ -112,9 +115,6 @@ checkFreeType (osig,osens) m fsn
                             (concat $ map snd subSortsF) ++ 
                             info_subsort)))
     | otherwise = return (Just (True,[]))
-    -- tmp
-    --    | not $ Map.null sortR = return (Just (True,[]))
-
 {-
   call the symbols in the image of the signature morphism "new"
 
@@ -146,10 +146,11 @@ checkFreeType (osig,osens) m fsn
                                    (not $ is_Def f)) fs
     ofs = map sentence (filter is_user_or_sort_gen osens)
     sig = imageOfMorphism m
+    tsig = mtarget m
     oldSorts1 = Set.union (sortSet sig) (sortSet osig)
     oldSorts = trace (showDoc oldSorts1 "old sorts") oldSorts1  -- old sorts
     oSorts = Set.toList oldSorts
-    allSorts1 = sortSet $ mtarget m
+    allSorts1 = sortSet $ tsig
     allSorts = trace (showDoc allSorts1 "all sorts") allSorts1
     newSorts1 = Set.filter (\s-> not $ Set.member s oldSorts) allSorts
                                                           -- new sorts
@@ -164,9 +165,9 @@ checkFreeType (osig,osens) m fsn
     srts = trace (showDoc srts1 "srts") srts1      --   srts
     constructors_o = trace (showDoc constructors1 "constrs_old") constructors1
                                                            -- constructors
-    op_map1 = opMap $ mtarget m 
+    op_map1 = opMap $ tsig 
     op_map = trace (showDoc op_map1 "op_map") op_map1
-    constructors2 = constructorOverload (mtarget m) op_map constructors_o
+    constructors2 = constructorOverload tsig op_map constructors_o
 
     constructors = trace (showDoc constructors2 "constrs_new") constructors2
     f_Inhabited1 = inhabited oSorts fconstrs
@@ -334,9 +335,6 @@ checkFreeType (osig,osens) m fsn
                 map sentence (filter is_user_or_sort_gen (osens ++ fsn))
     -- proof = terminationProof (osens ++ fsn)
     proof = terminationProof fsn
-    -- tmp
-    sortR1 = Rel.toMap $ sortRel $ mtarget m
-    sortR = trace (showDoc sortR1 "sortRel") sortR1
 
 
 {- group the axioms according to their leading symbol
@@ -391,10 +389,10 @@ filterPred symb = case symb of
 
 
 -- | the leading terms consist of variables and constructors only
-checkTerm :: [OP_SYMB] -> TERM f -> Bool
-checkTerm cons t =
+checkTerm :: Sign f e -> [OP_SYMB] -> TERM f -> Bool
+checkTerm sig cons t =
     case t of
-      Sorted_term t' _ _ -> checkTerm cons t'
+      Sorted_term t' _ _ -> checkTerm sig cons t'
       Simple_id _ -> True
       Qual_var _ _ _ -> True   
       Application _ ts _ -> all id $ map checkT ts
@@ -402,8 +400,11 @@ checkTerm cons t =
   where checkT (Sorted_term tt _ _) = checkT tt
         checkT (Simple_id _) = True 
         checkT (Qual_var _ _ _) = True
-        checkT (Application subop subts _) = (elem subop cons) &&
-                                             (all id $ map checkT subts)
+        checkT (Application subop subts _) = 
+            (isCons sig cons subop) &&
+            (all id $ map checkT subts)
+                                        --(elem subop cons) &&
+                                        --(all id $ map checkT subts)
         checkT _ = False
 
 
