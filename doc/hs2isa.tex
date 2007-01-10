@@ -2,7 +2,11 @@
 % Author:  Paolo Torrini <paolot@helios.dai.ed.ac.uk>
 % Created: Mon Feb 15 1999
 
-\documentclass[a4paper,12pt]{article}
+\documentclass{llncs}
+%%\documentclass{/home/polh/Documents/Hs2Isa/llcns}
+%%\documentstyle{/home/polh/Documents/Hs2Isa/llcns}
+%%\documentclass[a4paper,12pt]{article}
+
 \usepackage[dvips]{graphics}
 \usepackage{amsfonts}
 \usepackage{amssymb}
@@ -13,219 +17,186 @@
 \usepackage{color}
 %\usepackage{semrot}
 
-\input{newmacros}
+%\input{newmacros}
 
 % Use \includegraphics{*.eps} for pictures
-
-% Enlarge printing area a bit:
-
-\setlength{\textwidth}{16cm}
-\setlength{\oddsidemargin}{0cm}
-\setlength{\evensidemargin}{0cm}
-\setlength{\topmargin}{-0.94cm}
-\setlength{\textheight}{23cm}
 
 \begin{document}
 
 
-\title{Translating Haskell to Isabelle logics in Hets}
+\title{Translating Haskell into Isabelle}
 
 \author{Paolo Torrini, Till Mossakowski, Christian Maeder} 
-% \\ Fachbereich Mathematik und Informatik, Universitaet Bremen}
-
+\institute {Informatik, Universitaet Bremen}
 
 \date{}
 
-
 \maketitle
 
-\abstract{\scriptsize \bf Automated, partial translations of Haskell
-  into Isabelle higher-order logic (with or without computable
-  functions) have been implemented as functions of Hets, a
-  Haskell-based proof-management and program development system that
-  allows for integration with other tools. The application, built on
-  top of Programatica-style static analysis, can translate simple
-  Haskell programs to HOLCF and, under stronger restrictions, to HOL.
-  Both translations are based on shallow embedding and rely
-  informally on denotational semantics.}\\
+\abstract{\scriptsize \bf We have defined and implemented as functions
+  of Hets two partial translations of Haskell into Isabelle
+  higher-order logics. Hets is a Haskell-based proof-management and
+  program development system that allows for integration with other
+  verification tools.  Our application can translate simple Haskell
+  programs to HOLCF and, under stronger restrictions, to HOL.  Both
+  translations use the static analysis of Programatica, are
+  based on shallow embedding and rely on denotational semantics.}\\
 % The translation of monads uses the AWE extension of Isabelle.}\\
 
 \sloppy
 
 \noindent 
-Work on the integration of compilers, analyzers and theorem-provers,
-as well as translations between programming and specification
-languages, may help on the way to making formal development and
-verification of programs more viable. In order to verify formally a
-program, we need to formulate the requirements in a logic that also
-allows for the program to be represented; to translate the program to
-the logic; finally, to carry out a proof of the correctness statement.
-Although specifications and proofs require normally the biggest amount
-of work, translations can also be a significant source of potential
-problems. For the verification to be reliable and efficient, the
-translation should rest on the definition of a formal semantics of the
-programming language in the specification logic; it should be carried
-out safely, at best automatically; it should also give program
-representations that do not make proofs more complex than necessary.
-It has long been argued that functional languages, based on notions
-closer to general, mathematical ones, can make the task of proving
-assertions about them easier, owing to the clarity and relative
-simplicity of their semantics \cite{Thompson92}.
+Translations between programming and specification languages, as well
+as the corresponding integration of compilers, analyzers and
+theorem-provers, can provide useful support to the formal development
+and verification of programs.  Verifying a program involves a
+formulation of the requirements in a logic, a translattion of the
+program to the logic, and a proof of the correctness statement. The
+translation must rest on a formal semantics of the programming
+language given in the logic. It should allow for representations of
+programs that make proofs as easy as possible. And, not the least on
+account of safety, it should be carried out automatically. It has long
+been argued that functional languages, based on notions closer to
+general, mathematical ones, can make the task of proving assertions
+about them easier, owing to the clarity and relative simplicity of
+their semantics \cite{Thompson92}.
 
-In this report we are presenting automated translations based on
-denotational semantics of Haskell programs into Isabelle higher-order
-logic. Haskell is a strongly typed, purely functional language with
-lazy evaluation. It relies on a system of polymorphic types extended
-with type constructor classes, and has a syntax for side effects and
-pseudo-imperative code based on monadic operators \cite{HaskellRep}.
-The translations are implemented as functions of Hets \cite{Hets}, an
-Haskell-based application designed to support integration of
-specification formalisms for the development of Haskell programs. Hets
-supplies with parsing, static analysis, proof management and interface
-to various language-specific tools.  From the point of view of generic
-theorem proving, Hets relies on an interface with Isabelle, a
-state-of-the-art interactive theorem-prover, written in SML, allowing
-for the formalization of a variety of logics \cite{Paulson94isa}. Hets
-relies on Programatica \cite{Prog04} for the parsing and static
-analysis of Haskell programs. Programatica is a Haskell-specific
-formal development system built at OGI, envisioned to provide more
-than analysis. Its own proof management includes a specification logic
-and translations to different proof tools, notably to Isabelle
-\cite{Huff}. In section~\ref{sec:Translations} it is going to be
-clarified how our work differs from theirs.
+In the following we present automated translations of Haskell programs
+into Isabelle higher-order logic based on a denotational semantics.
+Haskell is a strongly typed, purely functional language with lazy
+evaluation, polymorphic types extended with type constructor classes,
+and a syntax for side effects and pseudo-imperative code based on
+monadic operators \cite{HaskellRep}.  The translations are implemented
+as functions of Hets \cite{Hets}, an Haskell-based application
+designed to support heterogeneous specification and formal development
+of programs. Hets supplies with parsing, static analysis, proof
+management and interface to various language-specific tools.  Hets
+relies for interactive proofs on an interface with Isabelle, a generic
+theorem-prover written in SML that includes the formalization of many
+logics \cite{Paulson94isa}. Hets uses Programatica \cite{Prog04} for
+the parsing and the static analysis of Haskell programs.
+Programatica, a Haskell-specific formal development system built at
+OGI, has a proof management on its own that includes a specification
+logic and translations to different proof tools, notably to Isabelle
+\cite{Huff}, albeit following a different approach from ours (see
+section~\ref{sec:Translations}).
 
 
 \section{Isabelle}
 
 Isabelle-HOL (hereafter simply HOL) is the implementation in Isabelle
-of classical higher-order logic based on simply typed lambda calculus,
-extended with axiomatic type classes. It provides considerable support
-for reasoning about programming functions, both in terms of libraries
-and automation. Since the late nineties, it has essentially superseded
-FOL (classical first-order logic) as the logic of standard use in
-Isabelle. HOL has an implementation of recursive functions based on
-Knaster-Tarski fixed-point theorem. All functions are total;
+of classical higher-order logic based on simply typed lambda calculus
+and extended with axiomatic type classes. It provides considerable
+support for reasoning about programming functions, both in terms of
+rich libraries and efficient automation. Since the late nineties, it
+has essentially superseded FOL (classical first-order logic) as an
+Isabelle standard. HOL has an implementation of recursive functions
+based on Knaster-Tarski fixed-point theorem. All functions are total;
 partiality may be dealt with by lifting types through the
 \emph{option} type constructor.
 
 HOLCF \cite{holcf} is HOL conservatively extended with the logic of
 computable functions --- a formalization of domain theory. In HOL,
-types are just sets; functions may not be computable, and a recursive
-function may require discharging proof obligations already at the
-definition stage --- in fact, a specific measure has to be given for
-the function to be proved monotonic.  In contrast, domain theory has
-each type interpreted as a \emph{pcpo} (pointed complete partially
-ordered set) that is, as a set with a partial order which is closed
-w.r.t.  $\omega$-chains and has a bottom. All functions defined over
-domains, including partial ones, are continuous, therefore computable.
+types --- elements of class \emph{type} --- are just sets; functions
+may not be computable, and a recursive function may require
+discharging proof obligations already at the definition stage --- in
+fact, a specific measure has to be given for the function to be proved
+monotonic.  In contrast, domain theory has each type interpreted as an
+element of class \emph{pcpo} (pointed complete partially ordered sets)
+i.e. as a set with a partial order which is closed w.r.t.
+$\omega$-chains and has a bottom. All functions defined over domains,
+including partial ones, are continuous, therefore computable.
 Recursion can be expressed in terms of least fixed-point operator, and
-so, in contrast with HOL, function definition is never dependant on
-proofs.
+so, in contrast with HOL, function definition never depends on proofs.
 
 The Isabelle formalization of HOLCF is based on axiomatic type classes
-\cite{Wenzel}, following an approach that makes it possible to deal
-with complete partial orders while abstracting away from any specific
-relation.  The class of types is \emph{pcpo} --- whereas in HOL it is
-\emph{type}. Domain theory offers a good basis for the semantical
-analysis of programming languages; however, it may make proofs
+\cite{Wenzel} so to deal with complete partial orders in a totally
+abstract way. Domain theory offers a good basis for the semantical
+analysis of programming languages; nevertheless, it may make proofs
 comparatively hard.  After being spared the need to discharge proof
 obligations at the defining stage, one has to bear with assumptions
 over the continuity of functions while proving theorems. A standard
 strategy to get the best out of the two systems is to define as much
-as possible in HOL language, using HOLCF type constructors to lift
-types to domains only when this is needed.
+as possible in HOL, using HOLCF type constructors to lift types only
+when this is needed.
 
 
 \section{Translations}
 \label{sec:Translations}
 
-A translation may be carried out relying on different semantical
-approaches and at different levels of depth, depending mainly on the
-expressiveness of the target logic. Different formalisms may make the
-embedding of certain features more or less hard. Translations into FOL
-such as those based on large-step operational semantics of Miranda
-\cite{Thompson95,Thompson89,Thompson95b} and Haskell \cite{Thompson92}
-cannot deal straightforwardly at first order with higher-order
-features such as currying.  The translation of Haskell to the Agda
-implementation of Martin-Loef type theory in \cite{Abel} gets
-complicated dealing with Haskell polymorphism. The expressiveness of
-higher-order logic help overcome more plainly most of these obstacles,
-and makes it possible to adopt a higher-level approach based on
-denotational semantics, as proposed in \cite{Huff} to translate
-Haskell to HOLCF, and used in \cite{Pollack} to translate ML to HOL.
-This approach allows for representations of programs that are closer
-to their specification as well as for proofs that are relatively more
-abstract and general.
+Translations depend first of all on the expressiveness of the target
+logic. Those into FOL based on large-step operational semantics of
+Miranda \cite{Thompson95,Thompson89,Thompson95b} and Haskell
+\cite{Thompson92} struggle with higher-order features such as
+currying.  The Haskell translation to the Agda implementation of
+Martin-Loef type theory in \cite{Abel} struggles with Haskell
+polymorphism. Higher-order logic helps overcome such obstacles. It
+also allows for higher-level approaches based on denotational
+semantics, such as proposed in \cite{Huff} to translate Haskell to
+HOLCF and in \cite{Pollack} to translate ML to HOL. Denotational
+semantics makes it possible to give representations of programs that
+are closer to their specification as well as to give proofs that are
+relatively more abstract and general.
 
-Expressiveness plays an important role in the ``depth'' issue, as
-well.  A shallow embedding is one that relies as much as possible on
-built-in features and packages provided with the implementation of the
-target language, especially with respect to general features such as
-types, classes, and recursion. The deeper the embedding, the less it
-relies on such features. This independence may be a plus from the
-point of view of semantic clarity and logical generality ---
-object-logical, ``deep'' translation can be used to overcome
-\emph{ad-hoc} limitations imposed by the built-in, meta-level
-features.  Taking advantage of those features, on the other hand, may
-help make the theorem proving less tedious and make it easier to rely
-on common proof methods.
+A shallow embedding into a logical language is one that relies quite
+radically on its extra-logical features, possibly taking advantage of
+built-in packages provided with the implementation of that language,
+particularly with respect to features such as types, classes, and
+recursion. On the contrary, a deep embedding relies on the logical
+definition of all the relevant notions. This may give a plus in
+semantic clarity and, if the logic is expressive enough, in generality
+as well. Taking advantage of built-in features, on the other hand, may
+help rely on standard proof methods to make theorem proving less
+tedious.
 
-The translation of ML in \cite{Pollack} gives an example on the deep
-side --- a class of types with bottom elements is defined in HOL for
-the sake of the embedding. On the other hand, the translation of
-Haskell to HOLCF proposed in \cite{Huff} relies on a generic
-formalization of domain theory, particularly on the \emph{fixrec}
-package for recursive functions (part of HOLCF in Isabelle 2006)
-developed in order to provide with a friendly syntax that covers
-mutually recursive definitions, too. Not even this translation is
-shallow as far as types are concerned, though. In order to capture an
-important feature of the Haskell type system, notably type constructor
-classes, Haskell types are not translated to HOLCF types, rather they
-are to terms, relying on a modelling of the Haskell type system at the
-object level.  In this way it is possible to give a complete account
-of the type system. The practical drawback is that plenty of the
-automation built into the Isabelle type checking is lost, unless one
-is prepared to reimplement a lot.
+The translation of ML in \cite{Pollack} based on the definition of a
+class of types with bottom elements in HOL gives an example of the
+deep sort. The translation of Haskell to HOLCF proposed in \cite{Huff}
+relies on a generic formalization of domain theory and particularly on
+the \emph{fixrec} package for recursive functions, created to provide
+a friendly syntax covering mutually recursive definitions as well.  In
+order to capture type constructor classes --- an important feature of
+the Haskell type system --- a deep embedding approach is used there as
+well.  Haskell types are translated to terms, relying on a
+domain-theoretic modelling of the type system at the object level. The
+practical drawback of this approach is that plenty of the automation
+built into Isabelle type checking either needs to be reimplemented or
+is lost.
 
 The translations of Haskell to HOLCF and HOL that we are presenting
-here are based on denotational semantics keeping to a shallow
-approach. The translation to HOLCF relies on the \emph{fixrec}
-package, along similar lines to those in \cite{Huff}. In contrast with
-them, we translate Haskell types to HOLCF types, quite directly, and
-Haskell classes to Isabelle axiomatic classes, wishing to take
-effectively advantage of Isabelle type checking. We rely on the
-assumption that types in HOLCF are similar enough to those in Haskell
-to allow for embedding, save for possible implementation subtleties
-that we are not going to consider. We expect that operational
-equivalence between Haskell programs and their translation to HOLCF
-holds up to the level of typeable output.  The translation covers a
-significant part of the syntax used in the Prelude, although it is
-still incomplete in one important respect --- it does not include type
-constructor classes; we have plans, however, for an extention that
-should address this aspect as well.
+here are based on denotational semantics and on a shallow embedding
+approach.  The translation to HOLCF relies on the \emph{fixrec}
+package. In contrast with \cite{Huff}, we rely on the similarity
+between type systems, translating Haskell types to HOLCF types, in a
+comparatively direct way, and Haskell classes to Isabelle axiomatic
+classes. The modelling we are relying on is a simplified one, and we
+expect operational equivalence between Haskell programs and their
+translation to HOLCF up to the level of typeable output.  The
+translation covers a significant part of the Prelude syntax, although
+it is still incomplete in one important respect --- it does not
+include type constructor classes; we have plans for an extention that
+should address this aspect.
 
 Conceptually, type classes in Isabelle are quite different from those
-in Haskell. The formers are associated with sets of axioms, whereas
-the latters come with sets of function declarations.  Isabelle classes
-may have at most a single type parameter.  Most importantly, Isabelle
-does not allow for type constructor classes. The last limitation is
-serious, since it makes hard to cope with essential Haskell features
-such as monads and \emph{do} notation.  In alternative to the
-treatment of types proposed in \cite{Huff}, we would like to get
-around the obstacle by relying on an extension of Isabelle based on
-theory morphism (see section~ \ref{sec:Monads}). The AWE system \cite{AWE}
-is in fact an implementation of such an extension.
+in Haskell. Where the former ones are associated with sets of axioms,
+the latter ones come with sets of function declarations. Moreover,
+Isabelle classes may have at most a single type parameter.  Most
+importantly, Isabelle does not allow for type constructor classes. The
+last limitation is serious, since it makes hard to cope with essential
+Haskell features such as monads and the \emph{do} notation.  In
+alternative to the method proposed in \cite{Huff}, we would like to
+get around the obstacle by relying on an extension of Isabelle based
+on theory morphism (see section~ \ref{sec:Monads}). The AWE system
+\cite{AWE} is in fact an implementation of such an extension.
 
-Our translation to HOL, shallow as well, is much more limited. The
-most important restriction is related to recursion --- only primitive
-recursive functions are covered. This limitation appears relatively
-hard to overcome, given the way syntax for full recursion works in
-HOL. Operational equivalence up to typeable output for the remaining
-fragment would require using option types, but we do not pursue it
-here, rather we rely on a restriction to terminating programs for
-semantical correctness. Under such restrictions, however drastic,
-this translation gives expressions that are particularly simple and
-therefore potentially useful to verify some properties.
+The translation to HOL, similar in respect of shallow approach,
+nevertheless is much more limited. An important restriction has to do
+with recursion --- only primitive recursive functions are covered.
+This limitation appears relatively hard to overcome, given the way
+syntax for full recursion is defined for HOL. Moreover, we have to
+restrict to total functions. Operational equivalence for a larger
+fragment could be obtained using option types, but it is not pursued
+here.
 
 
 \section{Haskell2Isabelle}
