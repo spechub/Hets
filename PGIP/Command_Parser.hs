@@ -556,14 +556,13 @@ pgipShellCommands
 
 -- | Creates the Backend for reading from files
 fileBackend :: String -> ShellBackend Handle
-fileBackend filename = 
- let handle = openFile filename ReadMode in
- ShBackend
-  { initBackend                      =  handle 
+fileBackend filename = ShBackend
+  { initBackend                      = openFile filename ReadMode
+  , shutdownBackend                  = hClose
   , outputString                     = \_ -> basicOutput
   , flushOutput                      = \_ -> hFlush stdout
-  , getSingleChar                    = \x -> fileGetSingleChar x
-  , getInput                         = \x -> fileGetInput x
+  , getSingleChar                    = fileGetSingleChar
+  , getInput                         = fileGetInput
   , addHistory                       = \_ _ -> return ()
   , setWordBreakChars                = \_ _ -> return ()
   , getWordBreakChars                = \_ -> return " \t\n\r\v`~!@#$%^&*()=[]{};\\\'\",<>"
