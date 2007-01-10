@@ -80,9 +80,9 @@ tools-checkout :
 	@echo update uni
 	@cd $(IZPACK_SAMPLE)/src ; \
 	 if [ -d uni ] ; then \
-	  cvs up -dPA uni ; \
+	  cvs up -dPA -r ghc-6-06 uni ; \
 	 else \
-	  cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:\/repository co -P uni ; \
+	  cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:\/repository co -P -r ghc-6-06 uni ; \
 	 fi ;  \
 	 echo checkout programatica ; \
 	 cvs -d  :pserver:anoncvs@cvs.haskell.org:/cvs co \
