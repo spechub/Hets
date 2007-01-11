@@ -148,7 +148,7 @@ extractGraphLabeledEdge x nb y allGoals ll
 -- are goals of the graph and returns them as 'GraphGoals'
 getEdgeGoals :: [GDataEdge] -> [GraphGoals]
 getEdgeGoals = map GraphEdge .
-    filter ( \ (_, _, l) -> case thmLinkStatsus $ dgl_type l of
+    filter ( \ (_, _, l) -> case thmLinkStatus $ dgl_type l of
         Just LeftOpen -> True
         _ -> False)
 
