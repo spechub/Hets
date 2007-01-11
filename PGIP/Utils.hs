@@ -148,10 +148,8 @@ extractGraphLabeledEdge x nb y allGoals ll
 -- are goals of the graph and returns them as 'GraphGoals'
 getEdgeGoals :: [GDataEdge] -> [GraphGoals]
 getEdgeGoals = map GraphEdge .
-    filter ( \ (_, _, l) -> case dgl_type l of
-        FreeThm _ False -> True  -- is this really indented? 
-        LocalThm LeftOpen _ _ -> True
-        GlobalThm LeftOpen _ _ -> True
+    filter ( \ (_, _, l) -> case thmLinkStatsus $ dgl_type l of
+        Just LeftOpen -> True
         _ -> False)
 
 -- | The function 'convToGoal' converts a list of 'GDataNode' 

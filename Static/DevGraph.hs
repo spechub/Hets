@@ -57,6 +57,7 @@ import Common.DynamicUtils
 
 import Control.Monad (foldM)
 import Control.Exception
+import Data.Char (toLower)
 
 getNewNode :: Tree.Gr a b -> Node
 getNewNode g = case newNodes 1 g of
@@ -225,7 +226,7 @@ data DGLinkType = LocalDef
                -- (proof tree, ...)
             | GlobalThm ThmLinkStatus Conservativity ThmLinkStatus
             | HidingThm GMorphism ThmLinkStatus
-            | FreeThm GMorphism Bool
+            | FreeThm GMorphism ThmLinkStatus
               -- DGLink S1 S2 m2 (DGLinkType m1 p) n
               -- corresponds to a span of morphisms
               -- S1 <--m1-- S --m2--> S2
@@ -235,6 +236,7 @@ thmLinkStatus :: DGLinkType -> Maybe ThmLinkStatus
 thmLinkStatus (LocalThm s _ _) = Just s
 thmLinkStatus (GlobalThm s _ _) = Just s
 thmLinkStatus (HidingThm _ s) = Just s
+thmLinkStatus (FreeThm _ s) = Just s
 thmLinkStatus _ = Nothing
 
 -- | Coarser equality ignoring the proof status
@@ -255,16 +257,10 @@ instance Pretty DGLinkType where
         HidingDef -> "HidingDef"
         FreeDef _ -> "FreeDef"
         CofreeDef _ -> "CofreeDef"
-        LocalThm s _ _ -> case s of
-			        (Proven _ _) -> "LocalThmProven"
-			        _ -> "LocalThmUnproven"
-        GlobalThm s _ _ -> case s of 
-			        (Proven _ _) -> "GlobalThmProven"
-				_ -> "GlobalThmUnproven"
-        HidingThm _ s -> case s of
-			      LeftOpen -> "HidingThmUnproven"
-			      _ -> "HidingThmProven"
-        FreeThm _ _ -> "FreeThm"
+        LocalThm s _ _ -> "LocalThm" ++ getThmTypeAux s
+        GlobalThm s _ _ -> "GlobalThm" ++ getThmTypeAux s
+        HidingThm _ s -> "HidingThm" ++ getThmTypeAux s
+        FreeThm _ s -> "FreeThm" ++ getThmTypeAux s
 
 -- | describe the link type of the label
 getDGLinkType :: DGLinkLab -> String
@@ -277,14 +273,14 @@ getDGLinkType lnk = let
     GlobalDef -> if isHom then "globaldef"
           else "hetdef"
     HidingDef -> "hidingdef"
-    LocalThm thmLnkState _ _ -> het "local" ++ getThmType thmLnkState ++ "thm"
-    GlobalThm thmLnkState _ _ -> het $ getThmType thmLnkState ++ "thm"
-    HidingThm _ thmLnkState -> getThmType thmLnkState ++ "hidingthm"
-    FreeThm _ bool -> if bool then "proventhm" else "unproventhm"
+    LocalThm s _ _ -> het "local" ++ getThmType s ++ "thm"
+    GlobalThm s _ _ -> het $ getThmType s ++ "thm"
+    HidingThm _ s -> getThmType s ++ "hidingthm"
+    FreeThm _ s -> getThmType s ++ "thm"
     _  -> "def" -- LocalDef, FreeDef, CofreeDef
 
 -- | Conservativity annotations. For compactness, only the greatest
--- | applicable value is used in a DG
+--   applicable value is used in a DG
 data Conservativity = None | Cons | Mono | Def
               deriving (Eq,Ord)
 instance Show Conservativity where
@@ -293,8 +289,8 @@ instance Show Conservativity where
   show Mono = "Mono"
   show Def = "Def"
 
--- | Rules in the development graph calculus
--- | Sect. IV:4.4 of the CASL Reference Manual explains them in depth
+-- | Rules in the development graph calculus,
+--   Sect. IV:4.4 of the CASL Reference Manual explains them in depth
 data DGRule =
    TheoremHideShift
  | HideTheoremShift (LEdge DGLinkLab)
@@ -312,8 +308,8 @@ data DGRule =
  | GlobSubsumption (LEdge DGLinkLab)
  | Composition [LEdge DGLinkLab]
  | LocalInference
- | BasicInference AnyComorphism BasicProof -- coding and proof tree. obsolete ?!?
-  | BasicConsInference Edge BasicConsProof
+ | BasicInference AnyComorphism BasicProof -- coding and proof tree. obsolete?
+ | BasicConsInference Edge BasicConsProof
    deriving (Show, Eq)
 
 instance Pretty DGRule where
@@ -427,10 +423,12 @@ instance Pretty ThmLinkStatus where
 
 -- | shows short theorem link status
 getThmType :: ThmLinkStatus -> String
-getThmType thmLnkState =
-  case thmLnkState of
-    Proven _ _ -> "proven"
-    LeftOpen -> "unproven"
+getThmType = map toLower . getThmTypeAux
+
+getThmTypeAux :: ThmLinkStatus -> String
+getThmTypeAux s = case s of
+    LeftOpen -> "Unproven"
+    _ -> "Proven"
 
 -- | Data type indicating the origin of nodes and edges in the input language
 -- | This is not used in the DG calculus, only may be used in the future
