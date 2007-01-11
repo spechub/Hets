@@ -158,69 +158,37 @@ user ken
 further task 1
 ************************************************
 see http://trac.informatik.uni-bremen.de:8080/hets
-user student
 
 ************************************************
 further task 2
 ************************************************
 
 see http://trac.informatik.uni-bremen.de:8080/hets
-user student
 
 ************************************************
 further task 3
 ************************************************
 
 see http://trac.informatik.uni-bremen.de:8080/hets
-user student
 
 ************************************************
 further task 4
 ************************************************
 
-refined graph of Haskell module dependencies
-  using .import files
+done
 
 ************************************************
 further task 5
 ************************************************
 
-port hets to windows. -- costs too much energy at this stage! Till
+see http://trac.informatik.uni-bremen.de:8080/hets
 
-If hets should become successful then requests for support under
-windows will surely follow.
-
-Ghc, uni and uDrawGraph should work under windows. Only Isabelle does
-not exist for windows, but SPASS does. Probably only a few path
-computations need to be adapted (made modular) within hets. Also
-position computations (of Parsec) should be checked under windows.
 
 ************************************************
 remaining stuff
 ************************************************
 
-set up a ticket and tracking systems (for bugs and features) instead
-of this messy todo list
---> sourceforge???
-
-refactoring of dgraphs: add unique tags + hashes (but no table)
-  how to compare complex datastructures:
-     tag x1==tag x2 || (hash x1==hash x2 && x1==x2)
-
-display library graph
-
-
-unify GUI/AbstractGraphView.hs and Taxonomy/AbstractGraphView.hs
-and uni/appl/ontologytool/AbstractGraphView.hs
-(make it really abstract), possibly contact amahnke@tzi.de regarding
-Taxonomy, possibly use uni/appl/ontologytool instead of Taxonomy!
-
-
-set up default simplifier
-set up default tactics using axioms
-  (see DOLCE sample files)
-
-improve efficiency (e.g. of UserManual/Sbcs.casl), using profiling
+see http://trac.informatik.uni-bremen.de:8080/hets
 
 ************************************************
 Daniel
