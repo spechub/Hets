@@ -151,52 +151,28 @@ Ken (Till)
 ************************************************
 
 see http://trac.informatik.uni-bremen.de:8080/hets
-
+user ken
 
 
 ************************************************
 further task 1
 ************************************************
-
-generate (x)html code from Doc  
-
-generate more readable LaTeX-code
-see listings.sty for LaTeX generation (cf. CoSiT paper)
+see http://trac.informatik.uni-bremen.de:8080/hets
+user student
 
 ************************************************
 further task 2
 ************************************************
 
-Uni-Refactoring,
-
-make modules hierarchical, replace deprecated code (i.e. FiniteMap, hslibs),
-use HaXml as a cabalized library, provide uni as (one?) cabal
-package(s), uni used to work under windows as well, watch the
-i.e. FilePath, Process discussions (libraries@haskell.org)
-
-possibly switch to a subversion repository, talk to Achim
-(amahnke@tzi.de)
+see http://trac.informatik.uni-bremen.de:8080/hets
+user student
 
 ************************************************
 further task 3
 ************************************************
-look fgl/Data/Graph/Inductive/Graph.hs
-look at Static/DevGraph.hs
 
-change management
-  reload button im Edit-Menü hinzufügen (GUI/ConvertAbstractToDevgraph.hs)
-  reload macht folgendes:
-    lade CASL-Datei neu ==> neuer Entwicklungsgraph
-    vergleiche alten+neuen Entwicklungsgraph, konstruiere eine
-      Abbildung (Common/Lib/Map.hs) von alt nach neu
-      (jeweils eine Abblidung für Knoten und eine für Kanten)
-   Kriterien für Finden der Knotenabbildung:
-   - Namen
-   - DGOrigin
-   - Signatur
-
-einfaches Merge von lokalen Beweisen eines abgespeichteren DG
-  in aktuellen DG
+see http://trac.informatik.uni-bremen.de:8080/hets
+user student
 
 ************************************************
 further task 4
