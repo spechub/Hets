@@ -31,7 +31,7 @@ import GUI.GenericATPState
   Name of the prover if MathServ was called via Broker.
 -}
 brokerName :: String
-brokerName = "MathServ Broker"
+brokerName = "MathServe Broker"
 
 {- |
   Maps a MathServResponse record into a GenericConfig with Proof_status.
@@ -51,10 +51,10 @@ mapMathServResponse eMsr cfg nGoal prName =
            (\msr -> 
             either 
               (\failure -> 
-                (ATPError ("MathServ Error: " ++
+                (ATPError ("MathServe Error: " ++
                    if (null failure) then [] else head $ lines failure),
                  cfg { proof_status = defaultProof_status nGoal
-                         (prName ++ " [via MathServ]") (configTimeLimit cfg)
+                         (prName ++ " [via MathServe]") (configTimeLimit cfg)
                          (extraOpts cfg) "",
                        resultOutput = lines failure,
                        timeUsed = globalTime $ timeResource msr }))
@@ -97,7 +97,7 @@ mapProverResult atpResult timeRes cfg nGoal prName =
         prName' = if (prName == brokerName)
                      then (usedProverName $ systemStr atpResult)
                           ++ " [via "++brokerName++"]"
-                     else prName ++ " [via MathServ]"
+                     else prName ++ " [via MathServe]"
         usedAxs = if (null $ axioms $ proof atpResult)
                     then [AS_Anno.senName nGoal]
                     else words $ axioms $ proof atpResult

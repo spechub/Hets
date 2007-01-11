@@ -162,7 +162,8 @@ runMSBroker :: SPASSProverState
 runMSBroker sps cfg saveTPTP thName nGoal = do
 --    putStrLn ("running MathServ Broker...")
   Exception.catch (do
-    prob <- showTPTPProblem thName sps nGoal $ extraOpts cfg ++ ["[via Broker]"]
+    prob <- showTPTPProblem thName sps nGoal $ extraOpts cfg 
+            ++ ['[':brokerName++"]"]
     when saveTPTP
         (writeFile (thName++'_':AS_Anno.senName nGoal++".tptp") prob)
     mathServOut <- callMathServ

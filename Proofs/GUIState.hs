@@ -54,8 +54,6 @@ data ProofGUIState lid sentence =
         includedTheorems :: [String],
         -- | whether a prover is running or not
         proverRunning :: Bool,
-        -- | just for the prove event handler to not kill the wish
-        proofManagementDestroyed :: Bool,
         -- | accumulated Diagnosis during Proofs
         accDiags :: [Diagnosis],
         -- | which prover (if any) is currently selected
@@ -80,7 +78,7 @@ initialState lid1 thN th@(G_theory lid2 sig ind thSens ind') pm cms =
        gMap' <- coerceThSens lid2 lid1 "creating initial GUI State" gMap
        return $ 
            ProofGUIState { theoryName = thN,
-                           theory = G_theory lid2 sig ind  aMap 0,
+                           theory = G_theory lid2 sig ind aMap 0,
                            sublogicOfTheory = sublogicOfTh th,
                            logicId = lid1,
                            goalMap = gMap',
@@ -91,7 +89,6 @@ initialState lid1 thN th@(G_theory lid2 sig ind thSens ind') pm cms =
                            includedTheorems = OMap.keys gMap,
                            accDiags = [],
                            proverRunning = False,
-                           proofManagementDestroyed = False,
                            selectedProver =
                                let prvs = Map.keys pm
                                in if null prvs

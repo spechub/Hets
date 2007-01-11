@@ -728,7 +728,8 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                                       resultOutput = resultOutput cfg,
                                       timeUsed     = timeUsed cfg})
                            prName goal pt (configsMap s')}
-                 Conc.modifyMVar_ stateMVar (return . const s'')
+                 seq (length $ show cfg) $
+                     Conc.modifyMVar_ stateMVar (return . const s'')
                  updateDisplay s'' True lb statusLabel timeEntry
                               optionsEntry axiomsLb
                  done)
@@ -760,10 +761,9 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
             let extOpts' = words extOpts
                 openGoalsMap =  filterOpenGoals $ configsMap s
                 numGoals = Map.size openGoalsMap
-                firstGoalName = head $ 
-                                filter ((flip Map.member) openGoalsMap) $ 
+                firstGoalName = maybe "--" id $
+                                find ((flip Map.member) openGoalsMap) $ 
                                 map AS_Anno.senName (goalsList s)
-
             if numGoals > 0
              then do
               let afterEachProofAttempt =

@@ -103,7 +103,8 @@ goalProcessed :: (Ord proof_tree, Show proof_tree) =>
               -> IO Bool
 goalProcessed stateMVar tLimit extOpts numGoals prName processedGoalsSoFar
               nGoal (retval, res_cfg) = do
-  Conc.modifyMVar_ stateMVar (\s -> return (s{
+  seq (length $ show res_cfg) $
+    Conc.modifyMVar_ stateMVar (\s -> return (s{
       configsMap = adjustOrSetConfig
                       (\ c -> c{timeLimitExceeded =
                                 isTimeLimitExceeded retval,
@@ -149,7 +150,8 @@ genericProveBatch :: (Ord proof_tree) =>
                   -> Maybe (Conc.MVar (Result [Proof_status proof_tree]))
                   -> IO ([Proof_status proof_tree])
                   -- ^ proof status for each goal
-genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch f
+genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch 
+                  afterEachProofAttempt
                   inSen runGivenProver prName thName st resultMVar = do
     batchProve (proverState st) 0 [] (goalsList st)
   where
@@ -208,8 +210,10 @@ genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch f
                   Conc.tryTakeMVar rr -- ensure that MVar is empty
                   Conc.putMVar rr newResult)
               resultMVar
-        cont <- f goalsProcessedSoFar' g  
-                  (if (null gs) then Nothing else Just (head gs)) (err, res_cfg)
+        cont <- afterEachProofAttempt goalsProcessedSoFar' g  
+                         (find ((flip Map.member) openGoals . 
+                                AS_Anno.senName) gs) 
+                         (err, res_cfg)
         if cont
            then batchProve pst' goalsProcessedSoFar' (res:resDone) gs
            else return ioProofStatus

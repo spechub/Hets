@@ -340,6 +340,7 @@ proofManagementGUI lid proveF fineGrainedSelectionF
   -- initial backing data structure
   initState <- initialState lid thName th knownProvers comorphList
   stateMVar <- Conc.newMVar initState
+  lockMVar <- Conc.newMVar ()
 
   -- main window
   main <- createToplevel [text $ thName ++ " - Select Goal(s) and Prove"]
@@ -526,13 +527,13 @@ proofManagementGUI lid proveF fineGrainedSelectionF
   close <- clicked closeButton
   showTh <- clicked showThButton
   (closeWindow,_) <- bindSimple main Destroy
-
   -- event handlers
   spawnEvent
     (forever
       (  (selectGoals >>> do
              enableWidsUponSelection lb goalSpecificWids
              done)
+
       +> (selectOpenGoals >>> do
              s <- Conc.readMVar stateMVar
              clearSelection lb
@@ -550,35 +551,44 @@ proofManagementGUI lid proveF fineGrainedSelectionF
                    (findIndices isOpenGoal $ OMap.toList $ goalMap s )
              enableWidsUponSelection lb goalSpecificWids
              done)
+
       +> (deselectAllGoals >>> do
             doSelectAllEntries False lb
             disableWids goalSpecificWids
             done)
+
       +> (selectAllGoals >>> do
             doSelectAllEntries True lb
             enableWids goalSpecificWids
             done)
+
       +> (selectAllAxs >>> do
             doSelectAllEntries True lbAxs
             done)
+
       +> (selectAllThs >>> do
             doSelectAllEntries True lbThs
             done)
+
       +> (deselectAllAxs >>> do
             doSelectAllEntries False lbAxs
             done)
+
       +> (deselectAllThs >>> do
             doSelectAllEntries False lbThs
             done)
+
       +> (displayGoals >>> do
             s <- Conc.readMVar stateMVar
             s' <- updateStateGetSelectedGoals s lb
             doDisplayGoals s'
             done)
+
       +> (selectProverPath>>> do
             Conc.modifyMVar_ stateMVar (\ s -> 
                        doSelectProverPath s pathsLb)
             done)
+
       +> (moreProverPaths >>> do
             s <- Conc.readMVar stateMVar
             let s' = s{proverRunning = True}
@@ -599,6 +609,7 @@ proofManagementGUI lid proveF fineGrainedSelectionF
             Conc.tryTakeMVar stateMVar -- ensure that MVar is empty
             Conc.putMVar stateMVar s'''
             done)
+
       +> (doProve >>> do
             s <- Conc.readMVar stateMVar
             let s' = s{proverRunning = True}
@@ -608,39 +619,41 @@ proofManagementGUI lid proveF fineGrainedSelectionF
                         (\ si -> updateStateGetSelectedGoals si lb))
             -- putStrLn (show (includedAxioms prState)++
             --                   ' ':show (includedTheorems prState))
-            -- writeIORef stateRef prState
             Result.Result ds ms'' <- proveF prState
-            -- putStrLn "Prover returned"
-            Conc.yield
-            curSt <-  Conc.takeMVar stateMVar
-            if proofManagementDestroyed curSt
-               then done
-               else do
-             s'' <- case ms'' of
+            Conc.takeMVar stateMVar
+            s'' <- case ms'' of
                    Nothing -> fail "proveF returned Nothing"
                    Just res -> return res
-             let s''' = s''{proverRunning = False,
+            let s''' = s''{proverRunning = False,
                            accDiags = accDiags s'' ++ ds}
-             enableWids wids
-             updateDisplay s''' True lb pathsLb statusLabel
-             putWinOnTop main
-             Conc.putMVar stateMVar s'''
-             -- putStrLn "end of doProve"
-             done)
+            seq (length $ show $ goalMap s''') $
+                Conc.putMVar stateMVar s'''
+            Conc.yield
+            mv <- Conc.tryTakeMVar lockMVar
+            case mv of
+                Nothing -> done
+                Just _  -> do
+                  enable lb
+                  updateDisplay s''' True lb pathsLb statusLabel
+                  enableWids wids
+                  putWinOnTop main
+                  Conc.tryPutMVar lockMVar ()
+                  done)
+
       +> (showProofDetails >>> do
             s <- Conc.readMVar stateMVar
             s' <- updateStateGetSelectedGoals s lb
             doShowProofDetails s'
             done)
+
       +> (showTh >>> do
             displayTheory "Theory" thName th
             done)
       ))
+
   sync ( (close >>> destroy main)
-      +> (closeWindow >>> do 
-                 Conc.modifyMVar_ stateMVar
-                       (\ s -> return (s {proofManagementDestroyed = True}))
-                 destroy main))
+      +> (closeWindow >>> Conc.takeMVar lockMVar)
+       )
 
   -- clean up locking of window
   Conc.tryTakeMVar guiMVar >>= (\ mmt -> 
