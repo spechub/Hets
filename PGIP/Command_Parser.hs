@@ -10,10 +10,10 @@ Portability : portable
 Parsing the comand line script.
 
   TODO :
-          - add comments to the code 
+          - add comments to the code
           - delete the test functions
 
--} 
+-}
 
 module PGIP.Command_Parser where
 
@@ -25,7 +25,7 @@ import System.Console.Shell.ShellMonad
 import System.Console.Shell
 import System.Console.Shell.Backend
 import Control.Monad.Trans
-import IO
+import System.IO
 import qualified Control.Exception as Ex
 
 -- | Checks the status to see if any library was loaded and generates the
@@ -44,7 +44,7 @@ takeName ls
       ".casl" -> "> "
       x :l    -> x:(takeName l)
       _       -> "> "
-	
+
 
 -- | implements the command use for shellac
 shellUse :: File -> Sh [Status] ()
@@ -56,7 +56,7 @@ shellUse (File filename)
 
 -- | implements the command dg-all auto for shellac
 shellDgAutoAll ::  Sh [Status] ()
-shellDgAutoAll 
+shellDgAutoAll
   = do
       val <- getShellSt >>= \state -> liftIO(cDgAllAuto "" state)
       modifyShellSt (update val)
@@ -185,7 +185,7 @@ shellDgBasicAll
      modifyShellSt (update val)
 
 shellShowDgGoals :: Sh [Status] ()
-shellShowDgGoals 
+shellShowDgGoals
    = do
      val <- getShellSt >>= \state -> liftIO(cShowDgGoals "" state)
      modifyShellSt (update val)
@@ -197,7 +197,7 @@ shellShowTheoryGoals
      modifyShellSt (update val)
 
 shellShowTheory :: Sh [Status] ()
-shellShowTheory 
+shellShowTheory
    = do
      val <- getShellSt >>= \state -> liftIO(cShowNodeTheory "" state)
      modifyShellSt (update val)
@@ -237,7 +237,7 @@ shellProver input
 shellNodeNumber :: String -> Sh [Status] ()
 shellNodeNumber input
    = do
-     let f_str=stripComments input 
+     let f_str=stripComments input
      val <- getShellSt >>= \state -> liftIO(cViewNodeNumber f_str state)
      modifyShellSt (update val)
 
@@ -258,7 +258,7 @@ shellInfoP input
 shellShowTaxonomyP ::String -> Sh [Status] ()
 shellShowTaxonomyP input
    = do
-     let f_str=stripComments input  
+     let f_str=stripComments input
      val <- getShellSt >>= \state -> liftIO(cShowNodeTaxonomy f_str state)
      modifyShellSt (update val)
 
@@ -271,7 +271,7 @@ shellShowConceptP input
 
 shellEdges :: Sh [Status] ()
 shellEdges
-  = do 
+  = do
     val <-getShellSt >>= \state -> liftIO(cEdges "" state)
     modifyShellSt (update val)
 
@@ -282,7 +282,7 @@ shellNodes
     modifyShellSt (update val)
 
 shellDetails :: Sh [Status] ()
-shellDetails 
+shellDetails
     = shellPutStr printDetails
 
 nothing :: [Status]->IO [Status]
@@ -291,14 +291,14 @@ nothing x
 
 shellComment :: String -> Sh [Status] ()
 shellComment _
-     = 
+     =
        do
         val<- getShellSt >>= \state -> liftIO (nothing state)
         modifyShellSt (update val)
 
 
 shellProve :: Sh [Status] ()
-shellProve 
+shellProve
   = do
      val <-getShellSt >>= \state -> liftIO(cDummy "" state)
      modifyShellSt (update val)
@@ -312,58 +312,58 @@ shellProveMix input
 
 shellProveAllMix :: String -> Sh [Status] ()
 shellProveAllMix input
-  = do 
+  = do
      let f_str = stripComments input
      val <- getShellSt >>= \state -> liftIO (cDummy f_str state)
      modifyShellSt (update val)
 
 shellProveAll :: Sh [Status] ()
-shellProveAll 
+shellProveAll
   = do
      val <-getShellSt >>= \state -> liftIO(cDummy "" state)
      modifyShellSt (update val)
 
 shellSetAxioms :: String -> Sh [Status] ()
 shellSetAxioms input
-  = do 
+  = do
       let f_str = stripComments input
       val <-getShellSt >>= \state -> liftIO(cDummy f_str state)
       modifyShellSt (update val)
 
 shellSetIncludeTheoremsTrue :: Sh [Status] ()
-shellSetIncludeTheoremsTrue 
+shellSetIncludeTheoremsTrue
   = do
       val <- getShellSt >>= \state -> liftIO (cDummy "" state)
       modifyShellSt (update val)
 
 shellSetIncludeTheoremsFalse :: Sh [Status] ()
-shellSetIncludeTheoremsFalse 
+shellSetIncludeTheoremsFalse
   = do
      val <- getShellSt >>= \state-> liftIO (cDummy "" state)
      modifyShellSt (update val)
 
 shellSetTimeLimit :: String -> Sh [Status] ()
 shellSetTimeLimit input
-  = do 
+  = do
      let f_str = stripComments input
      val <- getShellSt >>= \state -> liftIO (cDummy f_str state)
      modifyShellSt (update val)
 
 shellSetAxiomsAll ::Sh [Status] ()
-shellSetAxiomsAll 
+shellSetAxiomsAll
   = do
      val <- getShellSt >>= \state -> liftIO (cDummy "" state)
      modifyShellSt (update val)
 
 shellAddAxioms :: String -> Sh [Status] ()
 shellAddAxioms input
-  = do 
+  = do
      let f_str = stripComments input
      val <- getShellSt >>= \state -> liftIO (cDummy f_str state)
      modifyShellSt (update val)
 
 shellAddAxiomsAll :: Sh [Status] ()
-shellAddAxiomsAll 
+shellAddAxiomsAll
   = do
      val <- getShellSt >>= \state -> liftIO (cDummy "" state)
      modifyShellSt (update val)
@@ -386,43 +386,43 @@ shellDelAxiomsAll
 
 
 shellDisplayGraph :: Sh [Status] ()
-shellDisplayGraph 
-  = do 
+shellDisplayGraph
+  = do
     val <-getShellSt >>= \state -> liftIO(cShowGraph "" state)
     modifyShellSt (update val)
 
 -- | the 'doEvaluation' function evaluates an input which is not a command
 doEvaluation :: String -> [Status] -> IO [Status]
-doEvaluation str state 
+doEvaluation str state
   = case str of
      []     -> return []
      _      -> case state of
                  []  -> do putStr ("Unkown input :"++str++"\n"
-		               ++ "Type \'help\' for more information\n")
-			   return []
-	         LoadScript:_-> return ([More str])
-		 _:l  -> doEvaluation str l 
+                               ++ "Type \'help\' for more information\n")
+                           return []
+                 LoadScript:_-> return ([More str])
+                 _:l  -> doEvaluation str l
 
 -- | the 'doFileEval' function evaluates an input which is not a command
 -- in the case the input is provided as a file
 doFileEval :: String -> [Status] -> IO [Status]
-doFileEval str state 
+doFileEval str state
   = case str of
       []        -> return []
       _         -> case state of
                      [] -> do
-		            putStr ("\n Unkown input :" ++ str ++ "\n")
-			    return []
-		     LoadScript:_ -> return ([More str]) 
-		     _:l   -> doFileEval str l 
+                            putStr ("\n Unkown input :" ++ str ++ "\n")
+                            return []
+                     LoadScript:_ -> return ([More str])
+                     _:l   -> doFileEval str l
 
 -- | The evaluation function is called when the input could not be parsed
--- as a command. If the input is an empty string do nothing, otherwise 
+-- as a command. If the input is an empty string do nothing, otherwise
 -- print the error message
 pgipEvalFunc :: String -> Sh [Status] ()
 pgipEvalFunc str
-    = do   
-       let f_str= stripComments str 
+    = do
+       let f_str= stripComments str
        val <-getShellSt >>= \state -> liftIO(doEvaluation f_str state)
        modifyShellSt (update val)
 
@@ -430,28 +430,28 @@ pgipEvalFunc str
 pgipFileEvalFunc :: String -> Sh [Status] ()
 pgipFileEvalFunc str
   = do
-     let f_str= stripComments str 
+     let f_str= stripComments str
      val <- getShellSt >>= \state -> liftIO (doFileEval f_str state)
      modifyShellSt (update val)
-                           
+
 stripComments :: String -> String
-stripComments input 
+stripComments input
     = case input of
            '#':_ -> []
            []    -> []
            l:ls  -> l:(stripComments ls)
-         
+
 
 -- | Generates the list of all the shell commands toghether with a small help
 -- message
 pgipShellCommands :: [ShellCommand [Status]]
-pgipShellCommands 
+pgipShellCommands
                     = (exitCommand "exit")
                     : (helpCommand "help")
                     : (cmd "use" shellUse "open a file with HetCASL library")
-                    : (cmd "dg auto" shellDgAuto 
+                    : (cmd "dg auto" shellDgAuto
                       "apply automatic tactic to a list of goals")
-                    : (cmd "dg glob-subsume" shellDgGlobSubsume 
+                    : (cmd "dg glob-subsume" shellDgGlobSubsume
                       "apply global subsumption to a list of goals")
                     : (cmd "dg glob-decomp" shellDgGlobDecomp
                       "apply global decomposition to a list of goals")
@@ -468,9 +468,9 @@ pgipShellCommands
                       "apply hide theorem shift to a list of goals")
                     : (cmd "dg basic" shellDgBasic
                       "select a list of goals for proving")
-                    : (cmd "dg-all auto" shellDgAutoAll 
+                    : (cmd "dg-all auto" shellDgAutoAll
                       "apply automatic tactic to all goals")
-                    : (cmd "dg-all glob-subsume" shellDgGlobSubsumeAll 
+                    : (cmd "dg-all glob-subsume" shellDgGlobSubsumeAll
                       "apply global subsumption to all goals")
                     : (cmd "dg-all glob-decomp" shellDgGlobDecompAll
                       "apply global decomposition to all goals")
@@ -527,7 +527,7 @@ pgipShellCommands
                      "Applies a theorem prover")
                     : (cmd "prove-all" shellProveAll
                      "Applies a theorem prover to all theorems")
-                    : (cmd "prove {" shellProveMix 
+                    : (cmd "prove {" shellProveMix
                      "Applies a theorem prove with a block of rules")
                     : (cmd "prove-all {" shellProveAllMix
                      "Applies a theorem prover to all nodes")
@@ -535,7 +535,7 @@ pgipShellCommands
                      " A set of axioms to be used")
                     : (cmd "set axioms-all" shellSetAxiomsAll
                      " All axioms should be used")
-                    : (cmd "set include-theorems true" 
+                    : (cmd "set include-theorems true"
                         shellSetIncludeTheoremsTrue
                      "Include previous proved theorems")
                     : (cmd "set include-theorems false"
@@ -551,7 +551,7 @@ pgipShellCommands
                      "Axioms that will not be considered by the prover")
                     : (cmd "del axioms-all" shellDelAxiomsAll
                      "Axioms that will not be considered by the prover")
-                    : [] 
+                    : []
 
 
 -- | Creates the Backend for reading from files
@@ -565,7 +565,8 @@ fileBackend filename = ShBackend
   , getInput                         = fileGetInput
   , addHistory                       = \_ _ -> return ()
   , setWordBreakChars                = \_ _ -> return ()
-  , getWordBreakChars                = \_ -> return " \t\n\r\v`~!@#$%^&*()=[]{};\\\'\",<>"
+  , getWordBreakChars                = \_ -> return
+    " \t\n\r\v`~!@#$%^&*()=[]{};\\\'\",<>"
   , onCancel                         = \_ -> hPutStrLn stdout "canceled...\n"
   , setAttemptedCompletionFunction   = \_ _ -> return ()
   , setDefaultCompletionFunction     = \_ _ -> return ()
@@ -597,8 +598,6 @@ basicOutput :: BackendOutput -> IO ()
 basicOutput (RegularOutput out) = hPutStr stdout out
 basicOutput (InfoOutput out)    = hPutStr stdout out
 basicOutput (ErrorOutput out)   = hPutStr stderr out
-                                                                 
-
 
 
 pgipInteractiveShellDescription :: ShellDescription [Status]
@@ -613,7 +612,6 @@ pgipInteractiveShellDescription =
        , historyFile        = Just ("consoleHistory.tmp")
        }
 
-
 pgipFileShellDescription :: ShellDescription [Status]
 pgipFileShellDescription =
  let wbc = "\t\n\r\v\\,;" in
@@ -626,25 +624,23 @@ pgipFileShellDescription =
        , historyEnabled     = False
        }
 
-
 -- | The function runs hets in a shell
 pgipRunShell :: [String] ->IO [Status]
-pgipRunShell files 
+pgipRunShell files
    = do
       state <- getStatus files []
-      runShell pgipInteractiveShellDescription {defaultCompletions = Just pgipCompletionFn}
-              readlineBackend  
+      runShell pgipInteractiveShellDescription
+                   { defaultCompletions = Just pgipCompletionFn }
+              readlineBackend
               state
 -- | The function processes the file of instruction
 pgipProcessFile :: String -> IO [Status]
-pgipProcessFile filename = 
+pgipProcessFile filename =
         (runShell pgipFileShellDescription
                  (fileBackend filename)
                  []) `catch` (\_ -> return [])
 
-         
-
-printDetails :: String 
+printDetails :: String
 printDetails =
    "\n\n Hets Interactive mode.The available grammar is\n\n" ++
 --   " -- Commands for development graph mode\n" ++
@@ -698,5 +694,3 @@ printDetails =
    " PROVER ::= ID                   -- name of prover\n\n"++
    " FORMULA ::= ID                  -- label of formula\n\n"++
    " ID ::=                          -- identifier (String)\n\n"
-
-	
