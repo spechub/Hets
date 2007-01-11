@@ -33,7 +33,7 @@ SPASSURL_MAC = http://spass.mpi-sb.mpg.de/download/binaries/spass22mac.dmg
 SPASSURL_LINUX = http://spass.mpi-sb.mpg.de/download/binaries/spass22pclinux.tgz
 SPASS_SRC = http://spass.mpi-sb.mpg.de/download/sources/spass22.tgz
 
-download : izpack_checkout tools-checkout hetcats-make casl-lib-checkout other-download
+download : izpack_checkout hetcats-make casl-lib-checkout other-download
 
 casl-lib-checkout :
 	@echo update casl-lib 
@@ -54,8 +54,8 @@ casl-lib-checkout :
 	    fi ; \
 	done 
 
-hetcats-make : daily-hets-download
-	cd $(TMP_PATH) ;\
+hetcats-make : tools-checkout daily-hets-download
+	cd $(IZPACK_SAMPLE)/src ;\
 	cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:\/repository co -P HetCATS ; \
 	cd HetCATS ;\
 	cp LICENCE.txt $(IZPACK_SAMPLE)/pack/LICENCE.txt ;\
@@ -71,6 +71,7 @@ hetcats-make : daily-hets-download
 	cp -r OWL_DL/java/jlib  $(IZPACK_SAMPLE)/hets/OWLParser/java
 	$(RM) -r HetCATS
 	cd $(IZPACK_SAMPLE)/src ; tar xvf HetCATS.tar ; $(RM) HetCATS.tar
+
 daily-hets-download :
 	@sh getAllHets.sh $(HETS_VERSION)
 	mv getAllHets.sh $(IZPACK_SAMPLE)
