@@ -9,12 +9,7 @@ Stability   :  provisional
 Portability :  portable
 
 Scanner for Casl tokens using Parsec <http://www.cs.uu.nl/~daan/parsec.html>
-
-   <http://www.cofi.info/Documents/CASL/Summary/>
-   from 25 March 2001
-   C.4 Lexical Syntax
-
-   todo: check with chapter II.4 of CASL reference manual
+according to chapter II.4 (Lexical Symbols) of the CASL reference manual
 -}
 
 module Common.Lexer where
@@ -25,7 +20,6 @@ import Text.ParserCombinators.Parsec
 import qualified Text.ParserCombinators.Parsec.Pos as Pos
 
 -- * positions from "Text.ParserCombinators.Parsec.Pos" starting at (1,1)
-
 
 -- | no-bracket-signs
 signChars :: String
