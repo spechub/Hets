@@ -7,13 +7,16 @@ Maintainer  : r.pascanu@iu-bremen.de
 Stability   : provisional
 Portability : portable
 
-Toghether with PGIP.Common, PGIP.Utils contains all the auxiliary functions
+Together with "PGIP.Common", "PGIP.Utils" contains all the auxiliary functions
 used throughout the interactive interface. The reason for dividing these
 functions in two files was that otherwise we would had circular 
-imports (for example Proof.Automatic requires some of these auxiliary 
-functions, but some other functions -- that appear now in PGIP.Common -- 
-require some functions from Proof.Automatic)
+imports (for example "Proofs.Automatic" requires some of these auxiliary 
+functions, but some other functions -- that appear now in "PGIP.Common" -- 
+require some functions from "Proofs.Automatic")
 -} 
+
+{- todo: refactor getGoalList, extractGraphEdge, extractGraphLabeledEdge
+to pure functions with less duplicate code! -}
 
 module PGIP.Utils where
 import Data.Graph.Inductive.Graph
