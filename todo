@@ -293,19 +293,9 @@ for ProofManagement-GUI
 Martin
 ************************************************
 
-Maude as logic in Hets
-  ask Maude developers for API for parsing and static analysis
-Use Maude for CASL rewriting
+see http://trac.informatik.uni-bremen.de:8080/hets
+user mkhl
 
-************************************************
-
-************************************************
-
-Use Maude as a model description language for modal logic,
-  integrate Maude model cheker (connection with ModalCASL)
-  Also integrate other model checkers (SMV, SPIN)?
-  Translations between model description languages?
-  Run model checkers in parallel?
 
 ************************************************
 Klaus
@@ -351,23 +341,6 @@ Recognize guarded fragment of CASL:
 
 Joost Visser wg. ATerms in Haskell => neues Repository
 
-************************************************
-Markus, Lutz
-************************************************
-
-Beweise in Isabelle
-CASL consistency checker
-Weitere %implies-Annotationen zu den Basic Datatypes hinzufuegen
-  (Vorbild: Larch-Handbuch)
-Simpsets/Taktiken fuer Minimierung der ueberladenen Typen entwickeln
-Parser and static analysis for CSP-CASL
-
-************************************************
-Christoph
-************************************************
-
-CASL consistency checker
-Integration with generic prover interface?
 
 
 ************************************************
