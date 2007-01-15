@@ -347,22 +347,6 @@ Joost Visser wg. ATerms in Haskell => neues Repository
 Till
 ************************************************
 
-archive mailing lists with internet service
-
-duplicate referenced node in SimpleDatatypes.casl
-
-enhance Web interface with SPASS (%implied, consistency)
-
-translation of proofs along comorphisms (it this necessary at all???)
-  use inverse morphism?
-  leads to translation of G_theory along comorphism that also
-    keeps proof status info
-    this may be used in GUI prover interfaces for recovering old proof attempts
-      and offering them as default
-
-proveCMDLinteractive (PGIP)
-
-Model expansion flag for comorphisms
 
 Umlaute in daVinci anzeigen
 
