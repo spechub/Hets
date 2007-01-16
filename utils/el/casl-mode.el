@@ -257,6 +257,7 @@
 		     (cons "EMACS=t" process-environment))))
 		 (proc (start-process-shell-command "hets-compile" outbuf
 						    hets-command)))
+	    (setq buffer-read-only nil)
 	    (set-process-sentinel proc 'casl-compilation-sentinel)
 	    (set-process-filter proc 'casl-compilation-filter)
 	    
@@ -309,6 +310,7 @@
 		     (cons "EMACS=t" process-environment))))
 		 (proc (start-process-shell-command "hets-compile" outbuf
 						    hets-command)))
+	    (setq buffer-read-only nil)
 	    (set-process-sentinel proc 'casl-compilation-sentinel)
 	    (set-process-filter proc 'casl-compilation-filter)
 	    
