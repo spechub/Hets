@@ -144,8 +144,8 @@ ana_SPEC lg gctx nsig name opts sp =
      sgMap = sigMap gctx
      mrMap = morMap gctx
      tMap = thMap gctx
-     k = if Map.null sgMap then 0 else fst $ Map.findMax sgMap
-     j = if Map.null mrMap then 0 else fst $ Map.findMax mrMap
+     s = if Map.null sgMap then 0 else fst $ Map.findMax sgMap
+     m = if Map.null mrMap then 0 else fst $ Map.findMax mrMap
      t = if Map.null tMap then 0 else fst $ Map.findMax tMap
  in case sp of
   Basic_spec (G_basic_spec lid bspec) ->
@@ -159,9 +159,9 @@ ana_SPEC lg gctx nsig name opts sp =
                                          ++ language_name lid)
                           (basic_analysis lid)
                    b (bspec, sigma, globalAnnos gctx)
-       let gsig = G_sign lid sigma_complete (k+1)
+       let gsig = G_sign lid sigma_complete (s+1)
        incl <- ginclusion lg (G_sign lid sigma i1) gsig
-       let gTh = G_theory lid sigma_complete (k+1) (toThSens ax) (t+1)
+       let gTh = G_theory lid sigma_complete (s+1) (toThSens ax) (t+1)
            node_contents =
             DGNode {
              dgn_name = name,
@@ -174,7 +174,7 @@ ana_SPEC lg gctx nsig name opts sp =
              dgn_cons_status = LeftOpen }
            node = getNewNode dg
            dg' = insNode (node,node_contents) dg
-           incl' = updateMorIndex (j+1) incl
+           incl' = updateMorIndex (m+1) incl
            link = DGLink {
                     dgl_morphism = incl',
                     dgl_type = GlobalDef,
@@ -185,9 +185,9 @@ ana_SPEC lg gctx nsig name opts sp =
        return (Basic_spec (G_basic_spec lid bspec'),
                NodeSig node gsig,
                gctx { devGraph = dg'' 
-                    , sigMap = Map.insert (k+1) gsig sgMap
+                    , sigMap = Map.insert (s+1) gsig sgMap
                     , thMap = Map.insert (t+1) gTh tMap
-                    , morMap = Map.insert (j+1) (toG_morphism incl') mrMap})
+                    , morMap = Map.insert (m+1) (toG_morphism incl') mrMap})
   Translation asp ren ->
    do let sp1 = item asp
       (sp1', NodeSig n' gsigma, gctx') <-
@@ -207,14 +207,16 @@ ana_SPEC lg gctx nsig name opts sp =
             dgn_cons_status = LeftOpen }
           dg' = devGraph gctx'
           node = getNewNode dg'
+          mor' = updateMorIndex (m+1) mor
           link = (n',node,DGLink {
-            dgl_morphism = mor,
+            dgl_morphism = mor',
             dgl_type = GlobalDef,
             dgl_origin = DGTranslation })
+          dg'' = insNode (node,node_contents) dg'
       return (Translation (replaceAnnoted sp1' asp) ren,
               NodeSig node gsigma',
-              gctx' { devGraph = insEdgeNub link $
-              insNode (node,node_contents) dg' })
+              gctx' { devGraph = insEdgeNub link dg''
+                    , morMap = Map.insert (m+1) (toG_morphism mor') mrMap})
   Reduction asp restr ->
    do let sp1 = item asp
       (sp1', NodeSig n' gsigma', gctx') <-
@@ -224,6 +226,7 @@ ana_SPEC lg gctx nsig name opts sp =
       (hmor,tmor) <- ana_RESTRICTION dg gsigma gsigma' opts restr
       -- we treat hiding and revealing differently
       -- in order to keep the dg as simple as possible
+      let hmor' = updateMorIndex (m+1) hmor
       case tmor of
        Nothing ->
         do let gsigma'' = dom Grothendieck hmor
@@ -239,13 +242,14 @@ ana_SPEC lg gctx nsig name opts sp =
                  dgn_cons_status = LeftOpen }
                node = getNewNode dg'
                link = (n',node,DGLink {
-                  dgl_morphism = hmor,
+                  dgl_morphism = hmor',
                   dgl_type = HidingDef,
                   dgl_origin = DGHiding })
+               dg'' = insNode (node,node_contents) dg'
            return (Reduction (replaceAnnoted sp1' asp) restr,
                    NodeSig node gsigma'',
-                   gctx' { devGraph = insEdgeNub link $
-                   insNode (node,node_contents) dg' })
+                   gctx' { devGraph = insEdgeNub link dg'' 
+                         , morMap = Map.insert (m+1) (toG_morphism hmor') mrMap})
        Just tmor' -> do
         let gsigma1 = dom Grothendieck tmor'
             gsigma'' = cod Grothendieck tmor'
@@ -265,13 +269,14 @@ ana_SPEC lg gctx nsig name opts sp =
                  dgn_cons = None,
                  dgn_cons_status = LeftOpen }
                link1 = (n',node1,DGLink {
-                 dgl_morphism = hmor,
+                 dgl_morphism = hmor',
                  dgl_type = HidingDef,
                  dgl_origin = DGRevealing })
+               dg'' = insNode (node1,node_contents1) dg'
            return (Reduction (replaceAnnoted sp1' asp) restr,
                    NodeSig node1 gsigma1,
-                   gctx' { devGraph = insEdgeNub link1 $
-                   insNode (node1,node_contents1) dg' } )
+                   gctx' { devGraph = insEdgeNub link1 dg'' 
+                         , morMap = Map.insert (m+1) (toG_morphism hmor') mrMap} )
          else do
            let [node1,node''] = newNodes 2 dg'
                node_contents1 = DGNode {
@@ -283,7 +288,7 @@ ana_SPEC lg gctx nsig name opts sp =
                  dgn_cons = None,
                  dgn_cons_status = LeftOpen }
                link1 = (n',node1,DGLink {
-                 dgl_morphism = hmor,
+                 dgl_morphism = hmor',
                  dgl_type = HidingDef,
                  dgl_origin = DGRevealing })
                node_contents'' = DGNode {
@@ -303,7 +308,8 @@ ana_SPEC lg gctx nsig name opts sp =
                    gctx' { devGraph = insEdgeNub link'' $
                    insNode (node'',node_contents'') $
                    insEdgeNub link1 $
-                   insNode (node1,node_contents1) dg' })
+                   insNode (node1,node_contents1) dg' 
+                   , morMap = Map.insert (m+1) (toG_morphism hmor') mrMap})
   Union [] pos -> adjustPos pos $ fail $ "empty union"
   Union asps pos ->
    do let sps = map item asps
@@ -317,30 +323,38 @@ ana_SPEC lg gctx nsig name opts sp =
           dg' = devGraph gctx'
           adj = adjustPos pos
       gbigSigma <- adj $ gsigManyUnion lg (map getSig nsigs')
-      G_sign lid' gsig ind <- return gbigSigma
+      G_sign lid' gsig _ <- return gbigSigma
+      gbigSigma' <- return $ G_sign lid' gsig (s+1)
       let node_contents = DGNode {
             dgn_name = name,
-            dgn_theory = G_theory lid' gsig ind noSens 0,
+            dgn_theory = G_theory lid' gsig (s+1) noSens 0,
             dgn_nf = Nothing,
             dgn_sigma = Nothing,
             dgn_origin = DGUnion,
             dgn_cons = None,
             dgn_cons_status = LeftOpen }
           node = getNewNode dg'
-          insE dgres (NodeSig n gsigma) = do
-            dg1 <- dgres
+          dg1 = insNode (node, node_contents) dg'
+          gctx1 = gctx' { devGraph = dg1
+                        , sigMap = Map.insert (s+1) gbigSigma' sgMap }
+          insE gctxres (NodeSig n gsigma) = do
+            gctxl <- gctxres
+            let mrMapl = morMap gctxl
+                dgl = devGraph gctxl 
             incl <- adj $ ginclusion lg gsigma gbigSigma
-            let link = DGLink {
-              dgl_morphism = incl,
-              dgl_type = GlobalDef,
-              dgl_origin = DGUnion }
-            return (insEdgeNub (n,node,link) dg1)
-      dg'' <- foldl insE (return (insNode (node,node_contents) dg')) nsigs'
+            let incl' = updateMorIndex (m+1) incl
+                link = DGLink {
+                  dgl_morphism = incl',
+                  dgl_type = GlobalDef,
+                  dgl_origin = DGUnion }
+            return (gctxl { devGraph = insEdgeNub (n,node,link) dgl
+                          , morMap = Map.insert (m+1) 
+                                     (toG_morphism incl') mrMapl})
+      gctx2 <- foldl insE (return gctx1) nsigs'
       return (Union (map (uncurry replaceAnnoted)
                          (zip (reverse sps') asps))
                     pos,
-              NodeSig node gbigSigma,
-              gctx' { devGraph = dg'' })
+              NodeSig node gbigSigma', gctx2)
   Extension asps pos -> do
    (sps',nsig1',dg1) <- foldl ana (return ([], nsig, gctx)) namedSps
    case nsig1' of
@@ -361,7 +375,7 @@ ana_SPEC lg gctx nsig name opts sp =
      let anno = find isSemanticAnno $ l_annos asp'
          dg1 = devGraph gctx1
      -- is the extension going between real nodes?
-     dg2 <- case (anno, nsig') of
+     gctx2 <- case (anno, nsig') of
        (Just anno0@(Semantic_anno anno1 _), JustNode (NodeSig n' sig')) -> do
          -- any other semantic annotation? that's an error
          when (any (\an -> isSemanticAnno an && an/=anno0) $ l_annos asp')
@@ -377,10 +391,10 @@ ana_SPEC lg gctx nsig name opts sp =
              "Signature must not be extended in presence of %implies"
              pos)
    -- insert a theorem link according to p. 319 of the CASL Reference Manual
-           return $ insEdgeNub (n1,n',DGLink {
+           return (gctx1 {devGraph = insEdgeNub (n1,n',DGLink {
              dgl_morphism = ide Grothendieck sig1,
              dgl_type = GlobalThm LeftOpen None LeftOpen,
-             dgl_origin = DGExtension }) dg1
+             dgl_origin = DGExtension }) dg1})
           else do
            let anno2 = case anno1 of
                 SA_cons -> Cons
@@ -392,12 +406,15 @@ ana_SPEC lg gctx nsig name opts sp =
            -- but for clarity, we leave it open here
            -- the interesting open proof obligation is anno2, of course
            incl <- ginclusion lg sig' sig1
-           return $ insEdgeNub (n',n1,DGLink {
-             dgl_morphism = incl,
+           let incl' = updateMorIndex (m+1) incl
+           return (gctx1 {devGraph = insEdgeNub (n',n1,DGLink {
+             dgl_morphism = incl',
              dgl_type = GlobalThm LeftOpen anno2 LeftOpen,
              dgl_origin = DGExtension }) dg1
-       _ -> return dg1
-     return (sp1':sps', JustNode nsig1, gctx1 { devGraph = dg2 })
+                  , morMap = Map.insert (m+1) (toG_morphism incl') mrMap})
+       _ -> return gctx1 
+     return (sp1':sps', JustNode nsig1, 
+             gctx2 )
   Free_spec asp poss ->
    do let sp1 = item asp
       (sp', NodeSig n' gsigma'@(G_sign lid' gsig ind), gctx') <-
@@ -405,7 +422,8 @@ ana_SPEC lg gctx nsig name opts sp =
       let pos = poss
           dg' = devGraph gctx'
       incl <- adjustPos pos $ ginclusion lg (getMaybeSig nsig) gsigma'
-      let node_contents = DGNode {
+      let incl' = updateMorIndex (m+1) incl
+          node_contents = DGNode {
             dgn_name = name,
             dgn_theory = G_theory lid' gsig ind noSens 0, -- delta is empty
             dgn_nf = Nothing,
@@ -415,13 +433,14 @@ ana_SPEC lg gctx nsig name opts sp =
             dgn_cons_status = LeftOpen }
           node = getNewNode dg'
           link = (n',node,DGLink {
-            dgl_morphism = incl,
+            dgl_morphism = incl',
             dgl_type = FreeDef nsig,
             dgl_origin = DGFree })
       return (Free_spec (replaceAnnoted sp' asp) poss,
               NodeSig node gsigma',
               gctx' { devGraph = insEdgeNub link $
-              insNode (node,node_contents) dg' })
+              insNode (node,node_contents) dg' 
+              , morMap = Map.insert (m+1) (toG_morphism incl') mrMap})
   Cofree_spec asp poss ->
    do let sp1 = item asp
       (sp', NodeSig n' gsigma'@(G_sign lid' gsig ind), gctx') <-
@@ -429,7 +448,8 @@ ana_SPEC lg gctx nsig name opts sp =
       let pos = poss
           dg' = devGraph gctx'
       incl <- adjustPos pos $ ginclusion lg (getMaybeSig nsig) gsigma'
-      let node_contents = DGNode {
+      let incl' = updateMorIndex (m+1) incl
+          node_contents = DGNode {
             dgn_name = name,
             dgn_theory = G_theory lid' gsig ind noSens 0, -- delta is empty
             dgn_nf = Nothing,
@@ -439,13 +459,14 @@ ana_SPEC lg gctx nsig name opts sp =
             dgn_cons_status = LeftOpen }
           node = getNewNode dg'
           link = (n',node,DGLink {
-            dgl_morphism = incl,
+            dgl_morphism = incl',
             dgl_type = CofreeDef nsig,
             dgl_origin = DGCofree })
       return (Cofree_spec (replaceAnnoted sp' asp) poss,
               NodeSig node gsigma',
               gctx' { devGraph = insEdgeNub link $
-              insNode (node,node_contents) dg' })
+              insNode (node,node_contents) dg' 
+              , morMap = Map.insert (m+1) (toG_morphism incl') mrMap})
   Local_spec asp asp' poss ->
    do let sp1 = item asp
           sp1' = item asp'
@@ -467,7 +488,7 @@ ana_SPEC lg gctx nsig name opts sp =
                       (sys1 `Set.difference` sys) sigma2
       let sigma3 = dom lid mor3
           -- gsigma2 = G_sign lid sigma2
-          gsigma3 = G_sign lid sigma3 0
+          gsigma3 = G_sign lid sigma3 (s+1)
           sys3 = sym_of lid sigma3
       when (not( isStructured opts ||
                  sys2 `Set.difference` sys1 `Set.isSubsetOf` sys3))
@@ -477,7 +498,7 @@ ana_SPEC lg gctx nsig name opts sp =
          pos
       let node_contents = DGNode {
             dgn_name = name,
-            dgn_theory = G_theory lid sigma3 0 noSens 0,
+            dgn_theory = G_theory lid sigma3 (s+1) noSens 0,
             dgn_nf = Nothing,
             dgn_sigma = Nothing,
             dgn_origin = DGLocal,
@@ -485,7 +506,7 @@ ana_SPEC lg gctx nsig name opts sp =
             dgn_cons_status = LeftOpen }
           node = getNewNode dg''
           link = (n'',node,DGLink {
-            dgl_morphism = gEmbed2 gsigma3 (G_morphism lid mor3 0),
+            dgl_morphism = gEmbed2 gsigma3 (G_morphism lid mor3 (m+1)),
             dgl_type = HidingDef,
             dgl_origin = DGLocal })
       return (Local_spec (replaceAnnoted sp2 asp)
@@ -493,7 +514,9 @@ ana_SPEC lg gctx nsig name opts sp =
                          poss,
               NodeSig node gsigma3,
               gctx'' { devGraph = insEdgeNub link $
-              insNode (node,node_contents) dg'' })
+              insNode (node,node_contents) dg'' 
+              , sigMap = Map.insert (s+1) gsigma3 sgMap
+              , morMap = Map.insert (m+1) (G_morphism lid mor3 (m+1)) mrMap})
   Closed_spec asp pos ->
    do let sp1 = item asp
           l = getLogic nsig
@@ -504,34 +527,41 @@ ana_SPEC lg gctx nsig name opts sp =
           adj = adjustPos pos
           dg' = devGraph gctx'
       gsigma'' <- adj $ gsigUnion lg gsigma gsigma'
-      G_sign lid'' gsig'' ind <- return gsigma''
-      incl1 <- adj $ ginclusion lg gsigma gsigma''
-      incl2 <- adj $ ginclusion lg gsigma' gsigma''
-      let node = getNewNode dg'
+      G_sign lid'' gsig'' _ <- return gsigma''
+      gsigma2 <- return $ G_sign lid'' gsig'' (s+1)
+      incl1 <- adj $ ginclusion lg gsigma gsigma2
+      incl2 <- adj $ ginclusion lg gsigma' gsigma2
+      let incl1' = updateMorIndex (m+1) incl1
+          incl2' = updateMorIndex (m+2) incl2
+          node = getNewNode dg'
           node_contents = DGNode {
             dgn_name = name,
-            dgn_theory = G_theory lid'' gsig'' ind noSens 0,
+            dgn_theory = G_theory lid'' gsig'' (s+1) noSens 0,
             dgn_nf = Nothing,
             dgn_sigma = Nothing,
             dgn_origin = DGClosed,
             dgn_cons = None,
             dgn_cons_status = LeftOpen }
           link1 = DGLink {
-            dgl_morphism = incl1,
+            dgl_morphism = incl1',
             dgl_type = GlobalDef,
             dgl_origin = DGClosedLenv }
           link2 = (n',node,DGLink {
-            dgl_morphism = incl2,
+            dgl_morphism = incl2',
             dgl_type = GlobalDef,
             dgl_origin = DGClosed })
           insLink1 = case nsig of
                        EmptyNode _ -> id
                        JustNode (NodeSig n _) -> insEdgeNub (n, node, link1)
+          morMap1 = Map.insert (m+1) (toG_morphism incl1') mrMap
+          morMap2 = Map.insert (m+2) (toG_morphism incl2') morMap1
       return (Closed_spec (replaceAnnoted sp' asp) pos,
-              NodeSig node gsigma'',
+              NodeSig node gsigma2,
               gctx' { devGraph = insLink1 $
               insEdgeNub link2 $
-              insNode (node,node_contents) dg' })
+              insNode (node,node_contents) dg'
+              , sigMap = Map.insert (s+1) gsigma2 sgMap 
+              , morMap = morMap2})
   Qualified_spec (Logic_name ln sublog) asp pos -> do
       l <- lookupLogic "Static analysis: " (tokStr ln) lg
       -- analyse spec with empty local env
@@ -542,35 +572,42 @@ ana_SPEC lg gctx nsig name opts sp =
           dg' = devGraph gctx'
           adj = adjustPos pos
       gsigma'' <- adj $ gsigUnion lg gsigma gsigma'
-      G_sign lid'' gsig'' ind <- return gsigma''
-      incl1 <- adj $ ginclusion lg gsigma gsigma''
-      incl2 <- adj $ ginclusion lg gsigma' gsigma''
-      let node = getNewNode dg'
+      G_sign lid'' gsig'' _ <- return gsigma''
+      gsigma2 <- return $ G_sign lid'' gsig'' (s+1)
+      incl1 <- adj $ ginclusion lg gsigma gsigma2
+      incl2 <- adj $ ginclusion lg gsigma' gsigma2
+      let incl1' = updateMorIndex (m+1) incl1
+          incl2' = updateMorIndex (m+2) incl2
+          node = getNewNode dg'
           node_contents = DGNode {
             dgn_name = name,
-            dgn_theory = G_theory lid'' gsig'' ind noSens 0,
+            dgn_theory = G_theory lid'' gsig'' (s+1) noSens 0,
             dgn_nf = Nothing,
             dgn_sigma = Nothing,
             dgn_origin = DGLogicQual,
             dgn_cons = None,
             dgn_cons_status = LeftOpen }
           link1 = DGLink {
-            dgl_morphism = incl1,
+            dgl_morphism = incl1',
             dgl_type = GlobalDef,
             dgl_origin = DGLogicQualLenv }
           link2 = (n',node,DGLink {
-            dgl_morphism = incl2,
+            dgl_morphism = incl2',
             dgl_type = GlobalDef,
             dgl_origin = DGLogicQual })
           insLink1 = case nsig of
                        EmptyNode _ -> id
                        JustNode (NodeSig n _) -> insEdgeNub (n, node, link1)
+          morMap1 = Map.insert (m+1) (toG_morphism incl1') mrMap
+          morMap2 = Map.insert (m+2) (toG_morphism incl2') morMap1
       return (Qualified_spec (Logic_name ln sublog)
                                  (replaceAnnoted sp' asp) pos,
-              NodeSig node gsigma'',
+              NodeSig node gsigma2,
               gctx' { devGraph = insLink1 $
               insEdgeNub link2 $
-              insNode (node,node_contents) dg' })
+              insNode (node,node_contents) dg' 
+              , sigMap = Map.insert (s+1) gsigma2 sgMap 
+              , morMap = morMap2})
   Group asp pos -> do
    (sp',nsig',dg') <- ana_SPEC lg gctx nsig name opts (item asp)
    return (Group (replaceAnnoted sp' asp) pos,nsig',dg')
@@ -599,61 +636,71 @@ ana_SPEC lg gctx nsig name opts sp =
      case (\x y -> (x,x-y)) (length afitargs) (length params) of
       -- the case without parameters leads to a simpler dg
       (0,0) -> do
-       gsigma@(G_sign lid gsig ind) <-
+       gsigma@(G_sign lid gsig _) <-
            adj $ gsigUnion lg (getMaybeSig nsig) gsigmaB
+       let gsigma' = G_sign lid gsig (s+1) 
        case nsig of
          -- the subcase with empty local env leads to an even simpler dg
          EmptyNode _ ->
           -- if the node shall not be named and the logic does not change,
-          if isInternal name && langNameSig gsigma==langNameSig gsigmaB
+          if isInternal name && langNameSig gsigma'==langNameSig gsigmaB
             -- then just return the body
            then return (sp, body, gctx)
             -- otherwise, we need to create a new one
            else do
-             incl <- adj $ ginclusion lg gsigmaB gsigma
-             let node = getNewNode dg
+             incl <- adj $ ginclusion lg gsigmaB gsigma'
+             let incl' = updateMorIndex (m+1) incl
+                 node = getNewNode dg
                  node_contents = DGNode {
                    dgn_name = name,
-                   dgn_theory = G_theory lid gsig ind noSens 0,
+                   dgn_theory = G_theory lid gsig (s+1) noSens 0,
                    dgn_nf = Nothing,
                    dgn_sigma = Nothing,
                    dgn_origin = DGSpecInst spname,
                    dgn_cons = None,
                    dgn_cons_status = LeftOpen}
                  link = (nB,node,DGLink {
-                   dgl_morphism = incl,
+                   dgl_morphism = incl',
                    dgl_type = GlobalDef,
                    dgl_origin = DGSpecInst spname})
              return (sp,
-                     NodeSig node gsigma,
+                     NodeSig node gsigma',
                      gctx { devGraph = insEdgeNub link $
-                     insNode (node,node_contents) dg })
+                     insNode (node,node_contents) dg 
+                     , sigMap = Map.insert (s+1) gsigma' sgMap
+                     , morMap = Map.insert (m+1) (toG_morphism incl') mrMap})
          -- the subcase with nonempty local env
          JustNode (NodeSig n sigma) -> do
-           incl1 <- adj $ ginclusion lg sigma gsigma
-           incl2 <- adj $ ginclusion lg gsigmaB gsigma
-           let node = getNewNode dg
+           incl1 <- adj $ ginclusion lg sigma gsigma'
+           incl2 <- adj $ ginclusion lg gsigmaB gsigma'
+           let incl1' = updateMorIndex (m+1) incl1
+               incl2' = updateMorIndex (m+2) incl2
+               node = getNewNode dg
                node_contents = DGNode {
                  dgn_name = name,
-                 dgn_theory = G_theory lid gsig ind noSens 0,
+                 dgn_theory = G_theory lid gsig (s+1) noSens 0,
                  dgn_nf = Nothing,
                  dgn_sigma = Nothing,
                  dgn_origin = DGSpecInst spname,
                  dgn_cons = None,
                  dgn_cons_status = LeftOpen}
                link1 = (n,node,DGLink {
-                 dgl_morphism = incl1,
+                 dgl_morphism = incl1',
                  dgl_type = GlobalDef,
                  dgl_origin = DGSpecInst spname})
                link2 = (nB,node,DGLink {
-                 dgl_morphism = incl2,
+                 dgl_morphism = incl2',
                  dgl_type = GlobalDef,
                  dgl_origin = DGSpecInst spname})
+               morMap1 = Map.insert (m+1) (toG_morphism incl1') mrMap
+               morMap2 = Map.insert (m+2) (toG_morphism incl2') morMap1
            return (sp,
-                   NodeSig node gsigma,
+                   NodeSig node gsigma',
                    gctx { devGraph = insEdgeNub link1 $
                    insEdgeNub link2 $
-                   insNode (node,node_contents) dg })
+                   insNode (node,node_contents) dg 
+                   , sigMap = Map.insert (s+1) gsigma' sgMap
+                   , morMap = morMap2})
       -- now the case with parameters
       (_,0) -> do
        let fitargs = map item afitargs
@@ -664,21 +711,24 @@ ana_SPEC lg gctx nsig name opts sp =
            dg' = devGraph gctx'
        (gsigma',morDelta) <- adj $ apply_GS lg gs actualargs
        gsigmaRes <- adj $ gsigUnion lg (getMaybeSig nsig) gsigma'
-       G_sign lidRes gsigRes ind <- return gsigmaRes
-       incl1 <- adj $ ginclusion lg (getMaybeSig nsig) gsigmaRes
-       incl2 <- adj $ ginclusion lg gsigma' gsigmaRes
-       morDelta' <- comp Grothendieck (gEmbed morDelta) incl2
+       G_sign lidRes gsigRes _ <- return gsigmaRes
+       gsigmaRes' <- return $ G_sign lidRes gsigRes (s+1)
+       incl1 <- adj $ ginclusion lg (getMaybeSig nsig) gsigmaRes'
+       incl2 <- adj $ ginclusion lg gsigma' gsigmaRes'
+       let incl1' = updateMorIndex (m+1) incl1
+           incl2' = updateMorIndex (m+2) incl2
+       morDelta' <- comp Grothendieck (gEmbed morDelta) incl2'
        let node = getNewNode dg'
            node_contents = DGNode {
              dgn_name = name,
-             dgn_theory = G_theory lidRes gsigRes ind noSens 0,
+             dgn_theory = G_theory lidRes gsigRes (s+1) noSens 0,
              dgn_nf = Nothing,
              dgn_sigma = Nothing,
              dgn_origin = DGSpecInst spname,
              dgn_cons = None,
              dgn_cons_status = LeftOpen}
            link1 = DGLink {
-             dgl_morphism = incl1,
+             dgl_morphism = incl1',
              dgl_type = GlobalDef,
              dgl_origin = DGSpecInst spname}
            insLink1 = case nsig of
@@ -688,17 +738,21 @@ ana_SPEC lg gctx nsig name opts sp =
              dgl_morphism = morDelta',
              dgl_type = GlobalDef,
              dgl_origin = DGSpecInst spname})
-           parLinks = catMaybes (map (parLink gsigmaRes node) actualargs)
+           parLinks = catMaybes (map (parLink gsigmaRes' node) actualargs)
+           morMap1 = Map.insert (m+1) (toG_morphism incl1') mrMap
+           morMap2 = Map.insert (m+2) (toG_morphism incl2') morMap1
        return (Spec_inst spname
                          (map (uncurry replaceAnnoted)
                               (zip (reverse fitargs') afitargs))
                          pos,
-               NodeSig node gsigmaRes ,
+               NodeSig node gsigmaRes' ,
                gctx' { devGraph = foldr insEdgeNub
                   (insLink1 $
                    insEdgeNub link2 $
                    insNode (node,node_contents) dg')
-                parLinks })
+                parLinks 
+                , sigMap = Map.insert (s+1) gsigmaRes' sgMap
+                , morMap = morMap2})
        where
        anaFitArg res (nsig',fa) = do
          (fas',dg1,args,name') <- res
