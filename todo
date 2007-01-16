@@ -347,11 +347,6 @@ Joost Visser wg. ATerms in Haskell => neues Repository
 Till
 ************************************************
 
-Markus' Bsp:
-Isabelle: use meta-quantifiers
-local subsumption ?
-better syntax (Tina)
-check for proved theorems
 
 AbstractGraphView: switch to Result monad
 
