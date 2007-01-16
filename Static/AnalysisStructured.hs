@@ -340,15 +340,16 @@ ana_SPEC lg gctx nsig name opts sp =
           insE gctxres (NodeSig n gsigma) = do
             gctxl <- gctxres
             let mrMapl = morMap gctxl
+                ml = if Map.null mrMapl then 0 else fst $ Map.findMax mrMapl
                 dgl = devGraph gctxl 
             incl <- adj $ ginclusion lg gsigma gbigSigma
-            let incl' = updateMorIndex (m+1) incl
+            let incl' = updateMorIndex (ml+1) incl
                 link = DGLink {
                   dgl_morphism = incl',
                   dgl_type = GlobalDef,
                   dgl_origin = DGUnion }
             return (gctxl { devGraph = insEdgeNub (n,node,link) dgl
-                          , morMap = Map.insert (m+1) 
+                          , morMap = Map.insert (ml+1) 
                                      (toG_morphism incl') mrMapl})
       gctx2 <- foldl insE (return gctx1) nsigs'
       return (Union (map (uncurry replaceAnnoted)
@@ -374,6 +375,8 @@ ana_SPEC lg gctx nsig name opts sp =
      -- take the first semantic annotation
      let anno = find isSemanticAnno $ l_annos asp'
          dg1 = devGraph gctx1
+         mrMapl = morMap gctx1
+         ml = if Map.null mrMapl then 0 else fst $ Map.findMax mrMapl
      -- is the extension going between real nodes?
      gctx2 <- case (anno, nsig') of
        (Just anno0@(Semantic_anno anno1 _), JustNode (NodeSig n' sig')) -> do
@@ -406,12 +409,12 @@ ana_SPEC lg gctx nsig name opts sp =
            -- but for clarity, we leave it open here
            -- the interesting open proof obligation is anno2, of course
            incl <- ginclusion lg sig' sig1
-           let incl' = updateMorIndex (m+1) incl
+           let incl' = updateMorIndex (ml+1) incl
            return (gctx1 {devGraph = insEdgeNub (n',n1,DGLink {
              dgl_morphism = incl',
              dgl_type = GlobalThm LeftOpen anno2 LeftOpen,
              dgl_origin = DGExtension }) dg1
-                  , morMap = Map.insert (m+1) (toG_morphism incl') mrMap})
+                  , morMap = Map.insert (ml+1) (toG_morphism incl') mrMapl})
        _ -> return gctx1 
      return (sp1':sps', JustNode nsig1, 
              gctx2 )
@@ -636,7 +639,7 @@ ana_SPEC lg gctx nsig name opts sp =
      case (\x y -> (x,x-y)) (length afitargs) (length params) of
       -- the case without parameters leads to a simpler dg
       (0,0) -> do
-       gsigma@(G_sign lid gsig _) <-
+       G_sign lid gsig _ <-
            adj $ gsigUnion lg (getMaybeSig nsig) gsigmaB
        let gsigma' = G_sign lid gsig (s+1) 
        case nsig of
