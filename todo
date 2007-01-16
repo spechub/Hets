@@ -347,9 +347,6 @@ Joost Visser wg. ATerms in Haskell => neues Repository
 Till
 ************************************************
 
-Regulate concurrent proving
-.dg files: store only current library; import .dg files for other libraries
-
 Markus' Bsp:
 Isabelle: use meta-quantifiers
 local subsumption ?
