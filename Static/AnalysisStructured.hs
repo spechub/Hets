@@ -141,12 +141,6 @@ ana_SPEC :: LogicGraph -> GlobalContext -> MaybeNode -> NODE_NAME ->
             HetcatsOpts -> SPEC -> Result (SPEC, NodeSig, GlobalContext)
 ana_SPEC lg gctx nsig name opts sp =
  let dg = devGraph gctx 
-     sgMap = sigMap gctx
-     mrMap = morMap gctx
-     tMap = thMap gctx
-     s = if Map.null sgMap then 0 else fst $ Map.findMax sgMap
-     m = if Map.null mrMap then 0 else fst $ Map.findMax mrMap
-     t = if Map.null tMap then 0 else fst $ Map.findMax tMap
  in case sp of
   Basic_spec (G_basic_spec lid bspec) ->
     do G_sign lid' sigma' i1 <- return (getMaybeSig nsig)
@@ -159,7 +153,13 @@ ana_SPEC lg gctx nsig name opts sp =
                                          ++ language_name lid)
                           (basic_analysis lid)
                    b (bspec, sigma, globalAnnos gctx)
-       let gsig = G_sign lid sigma_complete (s+1)
+       let sgMap = sigMap gctx
+           mrMap = morMap gctx
+           tMap = thMap gctx
+           s = if Map.null sgMap then 0 else fst $ Map.findMax sgMap
+           m = if Map.null mrMap then 0 else fst $ Map.findMax mrMap
+           t = if Map.null tMap then 0 else fst $ Map.findMax tMap
+           gsig = G_sign lid sigma_complete (s+1)
        incl <- ginclusion lg (G_sign lid sigma i1) gsig
        let gTh = G_theory lid sigma_complete (s+1) (toThSens ax) (t+1)
            node_contents =
@@ -192,6 +192,12 @@ ana_SPEC lg gctx nsig name opts sp =
    do let sp1 = item asp
       (sp1', NodeSig n' gsigma, gctx') <-
           ana_SPEC lg gctx nsig (inc name) opts sp1
+      let  sgMap = sigMap gctx'
+           mrMap = morMap gctx'
+           tMap = thMap gctx'
+           s = if Map.null sgMap then 0 else fst $ Map.findMax sgMap
+           m = if Map.null mrMap then 0 else fst $ Map.findMax mrMap
+           t = if Map.null tMap then 0 else fst $ Map.findMax tMap
       mor <- ana_RENAMING lg nsig gsigma opts ren
       -- ??? check that mor is identity on local env
       let gsigma' = cod Grothendieck mor
@@ -223,6 +229,12 @@ ana_SPEC lg gctx nsig name opts sp =
           ana_SPEC lg gctx nsig (inc name) opts sp1
       let gsigma = getMaybeSig nsig
           dg' = devGraph gctx'
+      let  sgMap = sigMap gctx'
+           mrMap = morMap gctx'
+           tMap = thMap gctx'
+           s = if Map.null sgMap then 0 else fst $ Map.findMax sgMap
+           m = if Map.null mrMap then 0 else fst $ Map.findMax mrMap
+           t = if Map.null tMap then 0 else fst $ Map.findMax tMap
       (hmor,tmor) <- ana_RESTRICTION dg gsigma gsigma' opts restr
       -- we treat hiding and revealing differently
       -- in order to keep the dg as simple as possible
@@ -322,6 +334,8 @@ ana_SPEC lg gctx nsig name opts sp =
       let nsigs' = reverse nsigs
           dg' = devGraph gctx'
           adj = adjustPos pos
+      let  sgMap = sigMap gctx'
+           s = if Map.null sgMap then 0 else fst $ Map.findMax sgMap
       gbigSigma <- adj $ gsigManyUnion lg (map getSig nsigs')
       G_sign lid' gsig _ <- return gbigSigma
       gbigSigma' <- return $ G_sign lid' gsig (s+1)
@@ -424,6 +438,12 @@ ana_SPEC lg gctx nsig name opts sp =
           ana_SPEC lg gctx nsig (inc name) opts sp1
       let pos = poss
           dg' = devGraph gctx'
+      let  sgMap = sigMap gctx'
+           mrMap = morMap gctx'
+           tMap = thMap gctx'
+           s = if Map.null sgMap then 0 else fst $ Map.findMax sgMap
+           m = if Map.null mrMap then 0 else fst $ Map.findMax mrMap
+           t = if Map.null tMap then 0 else fst $ Map.findMax tMap
       incl <- adjustPos pos $ ginclusion lg (getMaybeSig nsig) gsigma'
       let incl' = updateMorIndex (m+1) incl
           node_contents = DGNode {
@@ -450,6 +470,12 @@ ana_SPEC lg gctx nsig name opts sp =
            ana_SPEC lg gctx nsig (inc name) opts sp1
       let pos = poss
           dg' = devGraph gctx'
+      let  sgMap = sigMap gctx'
+           mrMap = morMap gctx'
+           tMap = thMap gctx'
+           s = if Map.null sgMap then 0 else fst $ Map.findMax sgMap
+           m = if Map.null mrMap then 0 else fst $ Map.findMax mrMap
+           t = if Map.null tMap then 0 else fst $ Map.findMax tMap
       incl <- adjustPos pos $ ginclusion lg (getMaybeSig nsig) gsigma'
       let incl' = updateMorIndex (m+1) incl
           node_contents = DGNode {
@@ -479,6 +505,12 @@ ana_SPEC lg gctx nsig name opts sp =
           ana_SPEC lg dg' (JustNode nsig') (inc name) opts sp1'
       let gsigma = getMaybeSig nsig
           dg'' = devGraph gctx''
+      let  sgMap = sigMap gctx''
+           mrMap = morMap gctx''
+           tMap = thMap gctx''
+           s = if Map.null sgMap then 0 else fst $ Map.findMax sgMap
+           m = if Map.null mrMap then 0 else fst $ Map.findMax mrMap
+           t = if Map.null tMap then 0 else fst $ Map.findMax tMap
       G_sign lid sigma _<- return gsigma
       sigma1 <- coerceSign lid' lid "Analysis of local spec" sigma'
       sigma2 <- coerceSign lid'' lid "Analysis of local spec" sigma''
@@ -529,6 +561,10 @@ ana_SPEC lg gctx nsig name opts sp =
       let gsigma = getMaybeSig nsig
           adj = adjustPos pos
           dg' = devGraph gctx'
+      let  sgMap = sigMap gctx'
+           mrMap = morMap gctx'
+           s = if Map.null sgMap then 0 else fst $ Map.findMax sgMap
+           m = if Map.null mrMap then 0 else fst $ Map.findMax mrMap
       gsigma'' <- adj $ gsigUnion lg gsigma gsigma'
       G_sign lid'' gsig'' _ <- return gsigma''
       gsigma2 <- return $ G_sign lid'' gsig'' (s+1)
@@ -574,6 +610,10 @@ ana_SPEC lg gctx nsig name opts sp =
       let gsigma = getMaybeSig nsig
           dg' = devGraph gctx'
           adj = adjustPos pos
+      let  sgMap = sigMap gctx'
+           mrMap = morMap gctx'
+           s = if Map.null sgMap then 0 else fst $ Map.findMax sgMap
+           m = if Map.null mrMap then 0 else fst $ Map.findMax mrMap
       gsigma'' <- adj $ gsigUnion lg gsigma gsigma'
       G_sign lid'' gsig'' _ <- return gsigma''
       gsigma2 <- return $ G_sign lid'' gsig'' (s+1)
@@ -617,6 +657,10 @@ ana_SPEC lg gctx nsig name opts sp =
   Spec_inst spname afitargs pos -> do
    let adj = adjustPos pos
        spstr = tokStr spname
+   let     sgMap = sigMap gctx
+           mrMap = morMap gctx
+           s = if Map.null sgMap then 0 else fst $ Map.findMax sgMap
+           m = if Map.null mrMap then 0 else fst $ Map.findMax mrMap
    case Map.lookup spname $ globalEnv gctx of
     Nothing -> fatal_error
                  ("Specification " ++ spstr ++ " not found") pos
