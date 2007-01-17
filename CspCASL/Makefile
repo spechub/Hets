@@ -9,7 +9,7 @@ GHCINCLUDES	=	..:../ghc:../Common:../CASL
 
 GHCOPTS		=	--make -fglasgow-exts -Wall -i$(GHCINCLUDES)
 
-BINS		=	c3po print
+BINS		=	c3po print ccparse
 
 SOURCES		=	Main.hs AS_CSP_CASL.hs CCKeywords.hs CCLexer.hs \
                         CCToken.hs Parse_hugo.hs

@@ -31,9 +31,9 @@ Here is the place where the class Logic is instantiated for CspCASL.
 
 module CspCASL.Logic_CspCASL(CspCASL(CspCASL)) where
 
+import CspCASL.CspCASL_Keywords (csp_casl_keywords)
+
 import CspCASL.AS_CspCASL
-import CspCASL.CCKeywords (csp_casl_keywords)
-import CspCASL.Parse_AS_CSP_CASL (basicCspCaslCSpec)
 import CspCASL.ATC_CspCASL()
 import CspCASL.SignCSP
 import CspCASL.StatAnaCSP --(basicAnalysisCspCASL, Basic_CSP_CASL_C_SPEC)

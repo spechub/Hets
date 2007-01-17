@@ -13,10 +13,17 @@ abstract syntax of CSP-CASL
 
 module CspCASL.AS_CSP_CASL where
 
+import Text.ParserCombinators.Parsec
+
+import CASL.AS_Basic_CASL (SORT)
+import Common.AnnoState
 import Common.Doc
 import Common.DocUtils
-import CASL.AS_Basic_CASL (SORT)
 import Common.Id
+
+basicCspCaslCSpec :: AParser st Basic_CSP_CASL_C_SPEC
+basicCspCaslCSpec = do { return (Basic_csp_casl_c_spec (Channel_items []) (Basic Skip))
+                       }
 
 data Basic_CSP_CASL_C_SPEC = Basic_csp_casl_c_spec CHANNEL_DECL PROCESS_DEFN
                            deriving Show
@@ -37,3 +44,4 @@ data PROCESS_DEFN = Basic PROCESS
 
 data PROCESS = Skip
              deriving Show
+
