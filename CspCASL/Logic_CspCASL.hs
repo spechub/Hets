@@ -31,13 +31,13 @@ Here is the place where the class Logic is instantiated for CspCASL.
 
 module CspCASL.Logic_CspCASL(CspCASL(CspCASL)) where
 
-import CspCASL.AS_CSP_CASL
-import CspCASL.CCKeywords
-import CspCASL.Parse_AS_CSP_CASL
-import CspCASL.Print_AS_CSP_CASL()
+import CspCASL.AS_CspCASL
+import CspCASL.CCKeywords (csp_casl_keywords)
+import CspCASL.Parse_AS_CSP_CASL (basicCspCaslCSpec)
 import CspCASL.ATC_CspCASL()
 import CspCASL.SignCSP
-import CspCASL.StatAnaCSP
+import CspCASL.StatAnaCSP --(basicAnalysisCspCASL, Basic_CSP_CASL_C_SPEC)
+import CspCASL.AS_CSP_CASL
 
 import CASL.AS_Basic_CASL
 import CASL.SymbolParser
@@ -91,7 +91,7 @@ instance Sentences CspCASL () () CSPSign CSPMorphism () where
 instance StaticAnalysis CspCASL Basic_CSP_CASL_C_SPEC () ()
                SYMB_ITEMS SYMB_MAP_ITEMS
                CSPSign CSPMorphism () ()  where
-         basic_analysis CspCASL = Just basicAnalysisCspCASL
+         basic_analysis CspCASL = Just basicAnalysisCspCASLOld
          stat_symb_map_items CspCASL = error "Logic_CspCASL.hs"
          stat_symb_items CspCASL = error "Logic_CspCASL.hs"
          empty_signature CspCASL = emptyCSPSign

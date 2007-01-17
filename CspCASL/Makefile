@@ -29,6 +29,12 @@ clean:
 			@rm -vf $(BINS)
 
 
+ccparse:
+			ghc -o ccparse $(GHCOPTS) ccparse.hs
+
+StatAnaCSP.o:
+			ghc $(GHCOPTS) StatAnaCSP.hs
+
 c3po:			$(SOURCES)
 			ghc $(GHCOPTS) -o c3po Main.hs #MixfixParser.hs 
 

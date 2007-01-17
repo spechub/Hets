@@ -32,11 +32,7 @@ reveal R should keep CASL data part, and reveal process R
 
 module CspCASL.StatAnaCSP where
 
-import CspCASL.AS_CSP_CASL
-import CspCASL.SignCSP
 import CASL.Sign
-import CASL.StaticAna
-import CASL.MixfixParser
 import Common.Result
 import Common.GlobalAnnotations
 import qualified Common.Lib.Map as Map
@@ -44,24 +40,28 @@ import Common.Lib.State
 import Common.Id
 import Common.AS_Annotation
 
--- | static analysis for standalone tool
-statAna :: C3PO -> Result CSPSign
-statAna (Named_c3po (Named_csp_casl_spec _ sp)) = statBasicSpec sp
+import CspCASL.AS_CspCASL
+import CspCASL.SignCSP
+import CspCASL.AS_CSP_CASL
 
-statAna (C3po sp) = statBasicSpec sp
-
-statBasicSpec :: CSP_CASL_C_SPEC -> Result CSPSign
-statBasicSpec (Csp_casl_c_spec sp ch p) =
-  do (_sp', sig ,_) <- basicAnalysis
-         (const return) (const return) (const return)
-         emptyMix (sp, emptyCSPSign, emptyGlobalAnnos)
-     let (_, accSig) = runState (ana_BASIC_CSP (ch,p)) sig
-     return accSig
-
--- | static analysis for Hets
-basicAnalysisCspCASL :: (Basic_CSP_CASL_C_SPEC,CSPSign,GlobalAnnos)
+basicAnalysisCspCASL :: (BASIC_CSP_CASL_SPEC, CSPSign, GlobalAnnos)
         -> Result (Basic_CSP_CASL_C_SPEC, CSPSign, [Named ()])
-basicAnalysisCspCASL (Basic_csp_casl_c_spec ch p,sigma, _ga) =
+
+basicAnalysisCspCASL (Basic_Csp_Casl_Spec _ _, sign, annos)
+    = basicAnalysisCspCASLOld (Basic_csp_casl_c_spec (Channel_items []) (Basic Skip), sign, annos)
+
+
+
+
+
+
+
+
+basicAnalysisCspCASLOld ::
+    (Basic_CSP_CASL_C_SPEC, CSPSign, GlobalAnnos)
+        -> Result (Basic_CSP_CASL_C_SPEC, CSPSign, [Named ()])
+basicAnalysisCspCASLOld
+    (Basic_csp_casl_c_spec ch p, sigma, _ga) =
   do let ((ch',p'), accSig) = runState (ana_BASIC_CSP (ch,p)) sigma
          ds = reverse $ envDiags accSig
      Result ds (Just ()) -- insert diags
@@ -92,3 +92,6 @@ anaChannel chdecl@(Channel_decl newnames s) = do
 
 anaProcesses :: PROCESS_DEFN -> State CSPSign PROCESS_DEFN
 anaProcesses p = return p
+
+
+

@@ -38,12 +38,20 @@ add line numbers (using Annoted)
 module CspCASL.Parse_AS_CSP_CASL where
 
 import CspCASL.AS_CSP_CASL
+
+import Text.ParserCombinators.Parsec
+import Common.AnnoState
+
+basicCspCaslCSpec :: AParser st Basic_CSP_CASL_C_SPEC
+basicCspCaslCSpec = do { return (Basic_csp_casl_c_spec (Channel_items []) (Basic Skip))
+                       }
+
+{-
+
 import CASL.AS_Basic_CASL(OP_NAME)
 import CspCASL.CCToken
 import CspCASL.CCLexer
 import CspCASL.CCKeywords
-
-import Text.ParserCombinators.Parsec
 
 import Common.Id (Token(..))
 import Common.Token
@@ -51,7 +59,6 @@ import Common.Lexer(separatedBy)
 import CASL.Parse_AS_Basic
 import CASL.Formula
 
-import Common.AnnoState
 
 ----------------------------------------------------------------------------
 -- Parsers for CSP-CASL-specifications
@@ -459,7 +466,7 @@ event = try (do { ci <- channelId
                       ; return (Term t)
                       }
 
-
+-}
 
 {-
 namedProcess :: GenParser Char st PROCESS

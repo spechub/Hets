@@ -12,6 +12,8 @@ printing abstract syntax of CSP-CASL
 -}
 module CspCASL.Print_AS_CSP_CASL where
 
+{-
+
 import CspCASL.AS_CSP_CASL
 import Common.Doc
 import Common.DocUtils
@@ -45,3 +47,6 @@ instance Pretty Basic_CSP_CASL_C_SPEC where
 printBasic_CSP_CASL_C_SPEC :: Basic_CSP_CASL_C_SPEC -> Doc
 printBasic_CSP_CASL_C_SPEC (Basic_csp_casl_c_spec _cd _pd) =
     text "<not printable yet>"
+
+-}
+

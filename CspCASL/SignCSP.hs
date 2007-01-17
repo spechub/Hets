@@ -14,7 +14,7 @@ signatures for CSP-CASL
 
 module CspCASL.SignCSP where
 
-import CASL.AS_Basic_CASL
+import CASL.AS_Basic_CASL (SORT)
 import CASL.Sign
 import CASL.Morphism
 import Common.Id
