@@ -31,30 +31,6 @@ user maeder
 Florian (Till)
 ************************************************
 
-Modelchecker für algebraische Eigenschaften
- neue Hets-Option in Driver/WriteFn.hs implementieren
- hets -n NonAssocRelationAlgebra 
-     --modelSparQ=datei.lisp Calculi/Algebra/RelationAlgebra.casl 
- (oder -m datei.lisp)
- siehe auch CASL.CompositionTable.ComputeTable
- modelCheck :: SIMPLE_ID -> (Sign f e, [Named (FORMULA f)])
-                       -> Result Bool
- Warnung mit Gegenbspen ausgeben, wenn eine Eigenschaft nicht gilt
-   (abbrechen nach 10 Gegenbspen)
-   Warnungen erzeugen mit Funktion warning aus Common.Result
-     Range aus den CASL-FORMULAs extrahieren
-   Result ist eine Monade, ggf. mit do-Notation arbeiten
- Prüfung der Gültigkeit von CASL-Formel in einer Table, rekursiv:
- Allquantoren --> all, Existenzquantor --> any
- CASL-Junktoren --> Haskell-Junktoren
- Terme rekursiv auswerten, Operationen aus der Table nehmen
- (siehe CASL.AS_CASL_Basic)
-
-
-Aufgabe von Shi Hui: XML-Anfragen mit DCC-Ausdrücken an Bremer Solver schicken
- - ggf. Server nutzen
- - Vorverarbeitung für Solver (z.B. Duplikate raus)
- - Shi soll auf Freiburger XML-Format umsteigen (ggf. mit XSLT)
 
 Applikation1  ---
                    |      | -- Freibuger Solver
