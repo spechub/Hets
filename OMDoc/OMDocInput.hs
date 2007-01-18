@@ -3019,97 +3019,176 @@ stripFragment s =
       _ -> drop 1 theo
                 
 
-omToConstraints::FFXInput->OMDoc.OMElement->[ABC.Constraint]
-omToConstraints ffxi (OMDoc.OMEA oma) =
-  map
-    (\n ->
-      omToConstraint
-        ffxi
-        n
-    )
-    $
-    filter
-      (\e ->
-        case e of
-          (OMDoc.OMEBIND {}) -> True
-          _ -> False
-      )
-      (OMDoc.omaElements oma)
-omToConstraints _ _ = []
-        
-
--- this is too clumsy!
-omToConstraint::FFXInput->OMDoc.OMElement->ABC.Constraint
-omToConstraint ffxi (OMDoc.OMEBIND ombind) =
+omToSort_gen_ax::FFXInput->OMDoc.OMElement->FORMULA ()
+omToSort_gen_ax ffxi (OMDoc.OMEA oma') =
   let
-    e_fname = "OMDoc.OMDocInput.omToConstraint: "
-    newsort =
-      Hets.stringToId
-        $
-        case (OMDoc.ombindBinder ombind) of
-          (OMDoc.OMES oms) ->
-            OMDoc.omsName oms
-          _ -> error (e_fname ++ "Constraints only work with OMS!")
-    origsort =
-      Hets.stringToId
-        $
-        case (OMDoc.ombindExpression ombind) of
-          (OMDoc.OMES oms) ->
-            OMDoc.omsName oms
-          _ -> error (e_fname ++ "Constraints only work with OMS!")
-
-    ombvarAttrs =
-      filter
-        (\e ->
-          case e of
-            (OMDoc.OMVA {}) -> True
-            _ -> False
-        )
-        (OMDoc.ombvarVars $ OMDoc.ombindVariables ombind)
-    conslist =
-      foldl
-        (\cl (OMDoc.OMVA omattr) ->
-          let
-            indices =
-              case
-                filter
-                  (\(_,e) -> case e of OMDoc.OMESTR {} -> True; _ -> False)
-                  (OMDoc.omatpAttribs $ OMDoc.omattrATP omattr)
-              of
-                [] -> ""
-                ((_,(OMDoc.OMESTR omstr)):_) -> OMDoc.omstrText omstr
-                _ -> error (e_fname ++ "Unexpected this is!")
-            op =
-              operatorFromOM
-                ffxi
-                $
-                OMDoc.omattrElem omattr
-            il =
-              makeIndexList indices
-          in
-            cl ++ [(op, il)]
-        )
-        ([]::[(OP_SYMB,[Int])])
-        (ombvarAttrs)
+    e_fname = "OMDoc.OMDocInput.omToConstraints: "
+    (result, _) =
+      case OMDoc.omaElements oma' of
+        ( (OMDoc.OMES omssga):(OMDoc.OMEA oma):(OMDoc.OMES omsft):_) ->
+          if OMDoc.omsName omssga == "sort-gen-ax"
+            then
+              let
+                freetype =
+                  if OMDoc.omsName omsft == caslSymbolAtomFalseS
+                    then
+                      False
+                    else
+                      True
+                constraints = fetchConstraints oma
+              in
+                (
+                    Sort_gen_ax
+                      (
+                        map
+                          (\(ns, os, cons') ->
+                            ABC.Constraint ns cons' os
+                          )
+                          constraints
+                      )
+                      freetype
+                  , constraints
+                )
+            else
+              error (e_fname ++ "Input is no sort-gen-ax! " ++ (show oma'))
+        _ ->
+          error (e_fname ++ "Malformed sort-gen-ax! : " ++ (show oma'))
   in
-    ABC.Constraint newsort conslist origsort
-omToConstraint _ _ =
-  let
-    e_fname = "OMDoc.OMDocInput.omToConstraint: "
-  in
-    error (e_fname ++ "invalid parameter!")
-
-                
--- An IndexList is constructed from a String like 'n1|n2|n3...nk|'              
-makeIndexList::String->[Int]
-makeIndexList [] = []
-makeIndexList s =
-  let
-    (number, rest) =
-      (takeWhile (\x -> x /= '|') s, dropWhile (\x -> x /= '|') s)
-  in
-    [read number] ++ (makeIndexList (drop 1 rest))
-
+    result
+  where
+    fetchConstraints::OMDoc.OMApply->[(SORT, SORT, [(OP_SYMB, [Int])])]
+    fetchConstraints oma =
+      let
+        e_fname = "OMDoc.OMDocInput.omToConstraints#fetchConstraints: "
+      in
+      case OMDoc.omaElements oma of
+        ( (OMDoc.OMES omsConDef):contextsE ) ->
+          if OMDoc.omsName omsConDef == "constraint-definitions"
+            then
+              let
+                omaCCs =
+                  foldl
+                    (\omaCCs' e ->
+                      case e of
+                        (OMDoc.OMEA ccoma) ->
+                          omaCCs' ++ [ccoma]
+                        _ -> omaCCs'
+                    )
+                    []
+                    contextsE
+                contexts = fetchContexts omaCCs
+              in
+                contexts
+            else
+              error (e_fname ++ "Malformed sort-gen-ax")
+        _ ->
+          error (e_fname ++ "Malformed sort-gen-ax")
+    fetchContexts::[OMDoc.OMApply]->[(SORT, SORT, [(OP_SYMB, [Int])])]
+    fetchContexts omaCCs =
+      let
+        e_fname = "OMDoc.OMDocInput.omToConstraints#fetchContexts: "
+      in
+        foldl
+          (\contexts' ccoma ->
+            case OMDoc.omaElements ccoma of
+              ((OMDoc.OMES omsConCon)
+               :(OMDoc.OMES omsNS)
+               :(OMDoc.OMES omsOS)
+               :(OMDoc.OMEA omaConLis)
+               :_) ->
+                if OMDoc.omsName omsConCon == "constraint-context"
+                  then
+                    let
+                      (ns, os) =
+                        (
+                            Hets.stringToId $ OMDoc.omsName omsNS
+                          , Hets.stringToId $ OMDoc.omsName omsOS
+                        )
+                      conlist =
+                        case OMDoc.omaElements omaConLis of
+                          ((OMDoc.OMES omsConLis):cons') ->
+                            if OMDoc.omsName omsConLis == "constraint-list"
+                              then
+                                processConstraintList cons'
+                              else
+                                []
+                          _ ->
+                            []
+                    in
+                      contexts' ++ [(ns, os, conlist)]
+                  else
+                    contexts'
+              _ ->
+                Debug.Trace.trace
+                  (
+                    e_fname
+                    ++ "Ignoring unexpected elements in constraint-\
+                    \definition"
+                  )
+                  contexts'
+          )
+          []
+          omaCCs
+    processConstraintList::[OMDoc.OMElement]->[(OP_SYMB, [Int])]
+    processConstraintList cons' =
+      let
+        e_fname = "OMDoc.OMDocInput.omToConstraints#processConstraintList: "
+      in
+        foldl
+          (\conlist' e ->
+            case e of
+              (OMDoc.OMEA omaCon) ->
+                case OMDoc.omaElements omaCon of
+                  ((OMDoc.OMES omsCon):(OMDoc.OMEA omaConInd):ope:_) ->
+                    if OMDoc.omsName omsCon == "constraint"
+                      then
+                        let
+                          op = operatorFromOM ffxi ope
+                          indices =
+                            case OMDoc.omaElements omaConInd of
+                              ((OMDoc.OMES omsConInd):il) ->
+                                if
+                                  (==)
+                                    (OMDoc.omsName omsConInd)
+                                    "constraint-indices"
+                                  then
+                                    foldl
+                                      (\il' e' ->
+                                        case e' of
+                                          (OMDoc.OMEI omi) ->
+                                            il' ++ [OMDoc.omiInt omi]
+                                          _ -> il'
+                                      )
+                                      []
+                                      il
+                                  else
+                                    []
+                              _ ->
+                                []
+                        in 
+                          conlist' ++ [(op, indices)]
+                      else
+                        Debug.Trace.trace
+                          (
+                            e_fname
+                            ++ "Ignoring unexpected OMS in constraint-list :"
+                            ++ " \"" ++ (show omsCon) ++ "\""
+                          )
+                          conlist'
+                  _ ->
+                    conlist'
+              x ->
+                Debug.Trace.trace
+                  (
+                    e_fname
+                    ++ "Ignoring unexpected element in constraint-list :"
+                    ++ " \"" ++ (show x) ++ "\""
+                  )
+                  conlist'
+          )
+          []
+          cons'
+omToSort_gen_ax _ _ = error "Wrong application!"
 
 predicationFromOM::FFXInput->OMDoc.OMElement->PRED_SYMB
 predicationFromOM ffxi (OMDoc.OMES oms) = 
@@ -3628,28 +3707,7 @@ formulaFromOM ffxi origin (OMDoc.OMEA oma) =
     
     makeSort_gen_ax::FORMULA ()
     makeSort_gen_ax =
-      let
-        freeType =
-          case
-            filter
-              (\e ->
-                case e of
-                  (OMDoc.OMES {}) -> True
-                  _ -> False
-              )
-              (OMDoc.omaElements oma)
-          of
-            (_:(OMDoc.OMES oms):_) ->
-              if OMDoc.omsName oms == caslSymbolAtomFalseS
-                then
-                  False
-                else
-                  True
-            _ -> True
-        constraints =
-          omToConstraints ffxi (OMDoc.OMEA oma)
-      in
-        Sort_gen_ax constraints freeType
+      omToSort_gen_ax ffxi (OMDoc.OMEA oma)
 
 formulaFromOM _ _ (OMDoc.OMES oms) =
   if OMDoc.omsName oms == caslSymbolAtomFalseS

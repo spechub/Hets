@@ -183,8 +183,8 @@ libToOMDoc
       unnMap = Hets.makeUniqueNames useMap
       uniqueNames = Hets.makeUniqueIdNameMapping lenv unnMap
       fullNames = Hets.makeFullNames lenv unnMap identMap
-      uniqueNamesXml = id $! (createXmlNameMapping uniqueNames)
-      fullNamesXml = id $! (createXmlNameMapping fullNames)
+      uniqueNamesXml = (createXmlNameMapping uniqueNames)
+      fullNamesXml = (createXmlNameMapping fullNames)
       outputio =
         if recurse hco
           then
@@ -311,7 +311,7 @@ createOMDefLink lenv ln (from, to, ll) uniqueNames names =
         error (e_fname ++ "Error parsing URI!")
       (Just u) -> u
   in
-    OMDoc.Imports fromuri [] mommorph Nothing linktype
+    OMDoc.Imports fromuri mommorph Nothing linktype
 
 createXmlThmLinkOM::
   Static.DevGraph.LibEnv
@@ -798,7 +798,7 @@ createADTFor rel s idNameMapping constructors =
         []
         (Rel.toList rel)
   in
-    OMDoc.mkADT
+    OMDoc.mkADTEx (Just ((getNameE s) ++ "-adt"))
       $
       [
         OMDoc.mkSortDef
@@ -947,7 +947,16 @@ libEnvLibNameIdNameMappingToOMDoc
                           (tadts, tsorts, tpres)
                     (Just (uid, uname)) ->
                       let
-                        newsort = sortToXmlOM (XmlNamed s uname)
+                        newsort =
+                          genSortToXmlOM
+                            (
+                              case OMDoc.adtId newadt of
+                                Nothing ->
+                                  Debug.Trace.trace "ADT without ID..."
+                                  (show uid)
+                                (Just aid) -> aid
+                            )
+                            (XmlNamed s uname)
                         newadt =
                           createADTFor
                             (sortRel caslsign)
@@ -1189,6 +1198,7 @@ predicationToXmlOM
                 )
     in
       OMDoc.mkSymbolE
+        Nothing
         pidxmlid
         OMDoc.SRObject
         (Just typeobj)
@@ -1290,13 +1300,20 @@ operatorToXmlOM
                 )
     in
       OMDoc.mkSymbolE
+        Nothing
         oidxmlid
         OMDoc.SRObject
         (Just typeobj)
 
+{-
 sortToXmlOM::XmlNamed SORT->OMDoc.Symbol
 sortToXmlOM xnSort =
   OMDoc.mkSymbol (xnName xnSort) OMDoc.SRSort
+-}
+
+genSortToXmlOM::String->XmlNamed SORT->OMDoc.Symbol
+genSortToXmlOM genFrom xnSort =
+  OMDoc.mkSymbolE (Just genFrom) (xnName xnSort) OMDoc.SRSort Nothing
 
 -- | theory name, theory source (local)
 data TheoryImport = TI (String, String)
@@ -2000,22 +2017,30 @@ processFormulaOM _ _ _ _ _ _
 processFormulaOM go lenv ln nn uN fN
   (Sort_gen_ax constraints freetype) =
     OMDoc.mkOMAE
+      (
       [
-          OMDoc.mkOMSE
-            caslS
-            caslSort_gen_axS
-        , processConstraintsOM
-            go
-            lenv
-            ln
-            nn
-            uN
-            fN
-            constraints
-        , OMDoc.mkOMSE
-            caslS
-            (if freetype then caslSymbolAtomTrueS else caslSymbolAtomFalseS)
+        OMDoc.mkOMSE
+          caslS
+          caslSort_gen_axS
       ]
+      ++
+      (
+        processConstraintsOM
+          go
+          lenv
+          ln
+          nn
+          uN
+          fN
+          constraints
+      )
+      ++
+      [
+        OMDoc.mkOMSE
+          caslS
+          (if freetype then caslSymbolAtomTrueS else caslSymbolAtomFalseS)
+      ]
+      )
 -- unsupported formulas
 -- Mixfix_formula
 processFormulaOM _ _ _ _ _ _
@@ -2038,46 +2063,80 @@ processConstraintsOM::
   ->[Hets.IdNameMapping]
   ->[Hets.IdNameMapping]
   ->[ABC.Constraint]
-  ->OMDoc.OMElement
-processConstraintsOM _ _ _ _ _ _ [] =
-  error "OMDoc.OMDocOutput.processConstraintsOM: No constraints!"
-processConstraintsOM go lenv ln nn uN fN ((ABC.Constraint news ops' origs):_)
+  ->[OMDoc.OMElement]
+processConstraintsOM _ _ _ _ _ _ [] = []
+--  error "OMDoc.OMDocOutput.processConstraintsOM: No constraints!"
+processConstraintsOM go lenv ln nn uN fN constraints
   =
-    OMDoc.mkOMBINDE
-      (OMDoc.mkOMS caslS (show news))
-      (
-        OMDoc.mkOMBVAR
+    [
+        OMDoc.mkOMAE
           (
-          foldl
-            (\vars (op, il) ->
-              vars
-                ++
+            [
+              OMDoc.mkOMSE caslS "constraint-definitions"
+            ]
+            ++
+            (
+              foldl
+                (\celems (ABC.Constraint news ops' origs) ->
+                  celems ++
                   [
-                    OMDoc.mkOMATTR
-                      (
-                        OMDoc.mkOMATP
-                          [
+                    OMDoc.mkOMAE
+                      [
+                          OMDoc.mkOMSE caslS "constraint-context"
+                        , OMDoc.mkOMSE caslS (show news)
+                        , OMDoc.mkOMSE caslS (show origs)
+                        , OMDoc.mkOMAE
                             (
-                                OMDoc.mkOMS
-                                  caslS
-                                  "constraint-indices"
-                              , OMDoc.OMSTR
-                                  (foldl
-                                    (\s i -> (s++(show i)++"|"))
-                                    ""
-                                    il
+                              [
+                                  OMDoc.mkOMSE caslS "constraint-list"
+                              ]
+                              ++
+                              (
+                                foldl
+                                  (\vars (op, il) ->
+                                    vars ++
+                                    [
+                                      OMDoc.mkOMAE
+                                        [
+                                            OMDoc.mkOMSE caslS "constraint"
+                                          , OMDoc.mkOMAE
+                                              (
+                                                [
+                                                    OMDoc.mkOMSE
+                                                      caslS
+                                                      "constraint-indices"
+                                                ]
+                                                ++
+                                                (
+                                                  map OMDoc.mkOMIE il
+                                                )
+                                              )
+                                          , OMDoc.toElement
+                                              (
+                                              processOperatorOM
+                                                go
+                                                lenv
+                                                ln
+                                                nn
+                                                uN
+                                                fN
+                                                op
+                                              )
+                                        ]
+                                    ]
                                   )
+                                  []
+                                  ops'
+                              )
                             )
-                          ]
-                      )
-                      (processOperatorOM go lenv ln nn uN fN op)
+                      ]
                   ]
+                )
+                []
+                constraints
             )
-            []
-            ops'
           )
-      )
-      (OMDoc.mkOMS caslS (show origs))
+    ]
 
 wrapFormulasCMPIOOM::
   GlobalOptions
@@ -2157,12 +2216,18 @@ wrapFormulaCMPOM
         )
         ""
         sposl
-    cmp = OMDoc.mkCMP (OMDoc.MTextText cmptext) 
+    cmp = OMDoc.mkCMP (OMDoc.MTextText cmptext)
+    cmpl =
+      if null $ trimString cmptext
+        then
+          []
+        else
+          [cmp]
     fmp = OMDoc.FMP Nothing (Left omobj)
     axiom =
       if Ann.isAxiom ansen
         then
-          Left $ OMDoc.mkAxiom senxmlid [cmp] [fmp]
+          Left $ OMDoc.mkAxiom senxmlid cmpl [fmp]
         else
           Right $ OMDoc.mkDefinition senxmlid [cmp] [fmp]
     pres = makePresentationForOM senxmlid (Ann.senName ansen)

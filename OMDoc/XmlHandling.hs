@@ -145,7 +145,7 @@ adjustStringForXmlName s@(firstChar:_) =
           (\c ->
             -- xml-names may contain letters, digits and
             -- the symbols shown below
-            (isAscii c) && ((isAlphaNum c) || (elem c [':','_','.','-']))
+            (isAscii c) && ((isAlphaNum c) || (elem c ['_','.','-'])) -- removed ':'
           )
           -- remove everything until a letter or ':' or '_' is found
           (dropWhile
@@ -164,6 +164,7 @@ adjustStringForXmlName s@(firstChar:_) =
         '*' -> "Ast"
         '<' -> "Lower"
         '>' -> "Greater"
+        ':' -> "Colon"
         ';' -> "SemiColon"
         '/' -> "Division"
         '+' -> "Plus"

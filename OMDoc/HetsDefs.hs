@@ -3674,7 +3674,10 @@ getIdUseNumber
             foldl
               (\newset currentOrigin ->
                 let
-                  thisSet = Set.filter (\i -> (woOrigin i) == currentOrigin) idwoset
+                  thisSet =
+                    Set.filter
+                      (\i -> (woOrigin i) == currentOrigin)
+                      idwoset
                   thisNewSet =
                     Set.fold
                       (\iwo tNS ->
@@ -3682,7 +3685,10 @@ getIdUseNumber
                           usedHere =
                             Set.fold
                               (\(previousIWO,_) uH ->
-                                if (getIdId $ woItem previousIWO) == (getIdId $ woItem iwo)
+                                if 
+                                  (==)
+                                    (getIdId $ woItem previousIWO)
+                                    (getIdId $ woItem iwo)
                                   then
                                     uH + 1
                                   else
@@ -3703,12 +3709,14 @@ getIdUseNumber
         )
         remMap
   in
-    makeUniqueNodeNameCounts unnMap
+    makeUniqueGlobalCounts unnMap
 
-makeUniqueNodeNameCounts::
+-- NodeNames and Sentences (Axioms / Definitions) need
+-- to be unique in the whole document
+makeUniqueGlobalCounts::
   Map.Map LIB_NAME (Set.Set (IdentifierWON, Int))
   ->Map.Map LIB_NAME (Set.Set (IdentifierWON, Int))
-makeUniqueNodeNameCounts
+makeUniqueGlobalCounts
   unnMap
   =
   Map.foldWithKey
@@ -3723,7 +3731,28 @@ makeUniqueNodeNameCounts
                     previousUse =
                       Set.fold
                         (\(wid', _) pU ->
-                          if (getIdId $ woItem wid') == (getIdId $ woItem wid)
+                          if
+                            (==)
+                              (getIdId $ woItem wid')
+                              (getIdId $ woItem wid)
+                            then
+                              pU + 1
+                            else
+                              pU
+                        )
+                        (0::Int)
+                        nis
+                  in
+                    Set.insert (wid, previousUse) nis
+                IdSens {} ->
+                  let
+                    previousUse =
+                      Set.fold
+                        (\(wid', _) pU ->
+                          if
+                            (==)
+                              (getIdId $ woItem wid')
+                              (getIdId $ woItem wid)
                             then
                               pU + 1
                             else
@@ -3769,7 +3798,11 @@ makeUniqueNames
                     previousNameSet = 
                       case woItem iwon of
                         (IdNodeName {}) -> nodeNames
-                        _ -> Map.findWithDefault Set.empty (woOrigin iwon) inTheoryNames
+                        _ ->
+                          Map.findWithDefault
+                            Set.empty
+                            (woOrigin iwon)
+                            inTheoryNames
                     finalCount =
                       until
                         (\c' ->
@@ -3781,7 +3814,10 @@ makeUniqueNames
                         )
                         (+1)
                         c
-                    finalExt = case finalCount of 0 -> ""; _ -> "_" ++ (show finalCount)
+                    finalExt =
+                      case finalCount of
+                        0 -> ""
+                        _ -> "_" ++ (show finalCount)
                     finalName = (show $ getIdId $ woItem iwon) ++ finalExt
                     newSet = Set.insert (iwon, finalName) ni
                     newNameSet = Set.insert finalName previousNameSet
@@ -3790,7 +3826,11 @@ makeUniqueNames
                       (IdNodeName {}) ->
                         (newSet, newNameSet, inTheoryNames)
                       _ ->
-                        (newSet, nodeNames, Map.insert (woOrigin iwon) newNameSet inTheoryNames)
+                        (
+                            newSet
+                          , nodeNames
+                          , Map.insert (woOrigin iwon) newNameSet inTheoryNames
+                        )
                 )
                 (Set.empty, Set.empty, Map.empty)
                 iwons
@@ -3890,13 +3930,24 @@ makeUniqueIdNameMapping
                       Set.toList
                         $
                         Set.filter
-                          (\(i,_) -> i == mkWON (IdNodeName (stringToId $ nodeNameToName $ dgn_name node)) nn)
+                          (\(i,_) ->
+                            i == mkWON
+                                  (IdNodeName
+                                    (stringToId
+                                      $
+                                      nodeNameToName $ dgn_name node
+                                    )
+                                  )
+                                  nn
+                          )
                           ids
                     of
                       [] ->
                         Debug.Trace.trace
-                          ("no node found for "
-                            ++ show (nn, nodeNameToName $ dgn_name node) ++ "..."
+                          (
+                            "no node found for "
+                            ++ show (nn, nodeNameToName $ dgn_name node)
+                            ++ "..."
                           )
                           (getDGNodeName node)
                       (_, unName):_ ->
@@ -3915,7 +3966,12 @@ makeUniqueIdNameMapping
                             (\(i,_) ->
                               i ==
                                 mkWON
-                                  (IdNodeName (stringToId $ nodeNameToName $ dgn_name mnode))
+                                  (IdNodeName
+                                    (stringToId
+                                      $
+                                      nodeNameToName $ dgn_name mnode
+                                    )
+                                  )
                                   mnn
                             )
                             (Map.findWithDefault Set.empty mln unnMap)
@@ -3923,7 +3979,8 @@ makeUniqueIdNameMapping
                         [] -> Debug.Trace.trace
                           ("no refnode found... "
                             ++ show (ln, nn, nodeNameToName $ dgn_name node)
-                            ++ " -> " ++ show (mln, mnn, nodeNameToName $ dgn_name mnode)
+                            ++ " -> "
+                            ++ show (mln, mnn, nodeNameToName $ dgn_name mnode)
                           )
                           (nodeNameToName $ dgn_name mnode)
                         (_, unName):_ -> unName
@@ -3932,7 +3989,10 @@ makeUniqueIdNameMapping
                   (\(i, uname) ->
                     (getIdId $ woItem i, uname)
                   )
-                  (Set.filter (\(i, _) -> case woItem i of IdId {} -> True; _ -> False) nodeids)
+                  (Set.filter
+                    (\(i, _) -> case woItem i of IdId {} -> True; _ -> False)
+                    nodeids
+                  )
               remappedops =
                 Set.map
                   (\(i, uname) ->
@@ -3941,7 +4001,14 @@ makeUniqueIdNameMapping
                         ((oid, ot), uname)
                       _ -> error "!"
                   )
-                  (Set.filter (\(i, _) -> case woItem i of IdOp {} -> True; _ -> False) nodeids)
+                  (
+                    Set.filter
+                      (\(i, _) -> case woItem i of
+                        IdOp {} -> True
+                        _ -> False
+                      )
+                      nodeids
+                  )
               remappedpreds =
                 Set.map
                   (\(i, uname) ->
@@ -3950,7 +4017,10 @@ makeUniqueIdNameMapping
                         ((pid, pt), uname)
                       _ -> error "!"
                   )
-                  (Set.filter (\(i, _) -> case woItem i of IdPred {} -> True; _ -> False) nodeids)
+                  (Set.filter
+                    (\(i, _) ->
+                      case woItem i of IdPred {} -> True; _ -> False) nodeids
+                  )
               nodesensunn = Set.filter (\(i, _) -> woOrigin i == nn) sensfromunn
               nodesens =
                 Set.map

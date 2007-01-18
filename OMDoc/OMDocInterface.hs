@@ -105,7 +105,7 @@ data Imports =
   Imports
     {
         importsFrom :: OMDocRef
-      , importsHiding :: [XmlId]
+     -- , importsHiding :: [XmlId]
       , importsMorphism :: Maybe Morphism
       , importsId :: Maybe XmlId
       , importsType :: ImportsType
@@ -179,17 +179,18 @@ instance Read SymbolRole where
 data Symbol =
   Symbol
     {
-        symbolId :: XmlId
+        symbolGeneratedFrom :: Maybe XmlId
+      , symbolId :: XmlId
       , symbolRole :: SymbolRole
       , symbolType :: Maybe Type
     }
     deriving (Show)
 
-mkSymbolE::XmlId->SymbolRole->Maybe Type->Symbol
+mkSymbolE::Maybe XmlId->XmlId->SymbolRole->Maybe Type->Symbol
 mkSymbolE = Symbol
 
 mkSymbol::XmlId->SymbolRole->Symbol
-mkSymbol xid sr = mkSymbolE xid sr Nothing
+mkSymbol xid sr = mkSymbolE Nothing xid sr Nothing
 
 -- | Type
 data Type =
@@ -309,14 +310,18 @@ mkDefinition = Definition
 data ADT =
   ADT
     {
-      adtSortDefs::[SortDef]
+        adtId :: Maybe XmlId
+      , adtSortDefs::[SortDef]
     }
   deriving Show
 
 data SortType = STFree | STGenerated | STLoose
 
 mkADT::[SortDef]->ADT
-mkADT = ADT
+mkADT = ADT Nothing
+
+mkADTEx::Maybe XmlId->[SortDef]->ADT
+mkADTEx = ADT 
 
 instance Show SortType where
   show STFree = "free"
@@ -355,7 +360,7 @@ mkSortDefE::XmlId->SymbolRole->SortType->[Constructor]->[Insort]->SortDef
 mkSortDefE = SortDef
 
 mkSortDef::XmlId->[Constructor]->[Insort]->SortDef
-mkSortDef xid cons ins = mkSortDefE xid SRObject STFree cons ins
+mkSortDef xid cons ins = mkSortDefE xid SRSort STFree cons ins
 
 -- | Constructor
 data Constructor =

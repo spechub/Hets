@@ -170,6 +170,8 @@ instance XmlRepresentable OMDoc where
   toXml o =
     HXT.etag "omdoc" 
       += (
+        HXT.sattr "xmlns" "http://www.mathweb.org/omdoc"
+        +++
         XML.qualattr "xml" "id" (omdocId o)
         +++
         foldl
@@ -281,7 +283,7 @@ instance XmlRepresentable Imports where
             (Just i) -> XML.qualattr "xml" "id" i
             _ -> XML.xmlNullFilter
         )
-        +++
+{-        +++
         (
           case importsMorphism imp of
             Nothing -> XML.xmlNullFilter
@@ -296,7 +298,7 @@ instance XmlRepresentable Imports where
             else
               HXT.sattr "hiding" (Util.implode " " (importsHiding imp))      
 -}
-        )
+        )-}
         +++
         (
           HXT.sattr
@@ -327,7 +329,7 @@ instance XmlRepresentable Imports where
                 Nothing
               else
                 URI.parseURIReference froms
-          hidings =
+{-          hidings =
             filter
               (not . null)
               $
@@ -339,7 +341,7 @@ instance XmlRepresentable Imports where
                     $
                     HXT.xshow
                       $
-                      HXT.getValue "hiding" t
+                      HXT.getValue "hiding" t -}
           mid = 
             case HXT.xshow $ XML.getQualValue "xml" "id" t of
               [] -> Nothing
@@ -359,7 +361,7 @@ instance XmlRepresentable Imports where
             Nothing ->
               trace ("No 'from' in Imports!") Nothing
             (Just u) ->
-              Just $ Imports u hidings mm mid itype
+              Just $ Imports u mm mid itype
 
 -- | Use
 instance XmlRepresentable Use where
@@ -398,7 +400,7 @@ instance XmlRepresentable Presentation where
     in
       HXT.etag "presentation"
         += (
-          HXT.sattr "for" (presentationForId pres)
+          HXT.sattr "for" ("#" ++ (presentationForId pres))
           +++
           (
             case (presentationSystem pres) of
@@ -413,7 +415,12 @@ instance XmlRepresentable Presentation where
       [] -> Nothing
       _ ->
         let
-          fors = HXT.xshow $ HXT.getValue "for" t
+          fors' = HXT.xshow $ HXT.getValue "for" t
+          fors =
+            case fors' of
+              [] -> trace ("Missing 'for' attribute in presentation...") ""
+              ('#':rid) -> rid
+              s -> trace ("Presentation 'for' attribute is no omdocref...") s
           systems = case HXT.xshow $ HXT.getValue "system" t of
             [] -> Nothing
             s -> Just s
@@ -430,6 +437,13 @@ instance XmlRepresentable Symbol where
         HXT.sattr "role" (show $ symbolRole s) 
         +++
         HXT.sattr "name" (symbolId s)
+        +++
+        (
+          case (symbolGeneratedFrom s) of
+            Nothing -> XML.xmlNullFilter
+            (Just g) ->
+              HXT.sattr "generated-from" g
+        )
         +++
         (
           case (symbolType s) of
@@ -449,6 +463,10 @@ instance XmlRepresentable Symbol where
         let
           roles = HXT.xshow $ HXT.getValue "role" t
           names = HXT.xshow $ HXT.getValue "name" t
+          mgf =
+            case HXT.xshow $ HXT.getValue "generated-from" t of
+              [] -> Nothing
+              gf -> Just gf
         in
           case readsPrec 0 roles of
             [] -> trace ("Unknown role \"" ++ roles ++ "\" for symbol " ++ names) Nothing
@@ -457,11 +475,11 @@ instance XmlRepresentable Symbol where
                 typechilds = (HXT.getChildren .> HXT.isTag "type") t
               in
                 case typechilds of
-                  [] -> Just $ Symbol names sr Nothing
+                  [] -> Just $ Symbol mgf names sr Nothing
                   _ ->
                     case fromXml (head typechilds) of
                       Nothing -> trace ("cant parse type...") Nothing
-                      jty -> Just $ Symbol names sr jty
+                      jty -> Just $ Symbol mgf names sr jty
 
 -- | Type
 instance XmlRepresentable Type where
@@ -546,9 +564,21 @@ instance XmlRepresentable Axiom where
       += (
         XML.qualattr "xml" "id" (axiomName axiom)
         +++
-        toXmlS (axiomCMPs axiom)
+        (
+          if null $ axiomCMPs axiom
+            then
+              XML.xmlNullFilter
+            else
+              toXmlS (axiomCMPs axiom)
+        )
         +++
-        toXmlS (axiomFMPs axiom)
+        (
+          if null $ axiomFMPs axiom
+            then
+              XML.xmlNullFilter
+            else
+              toXmlS (axiomFMPs axiom)
+        )
       )
   fromXml t = 
     case (HXT.isTag "axiom") t of
@@ -639,9 +669,14 @@ instance XmlRepresentable Definition where
       += (
         XML.qualattr "xml" "id" (definitionId def)
         +++
+        HXT.sattr "for" ((++) "#" $ definitionId def)
+        +++
+        HXT.sattr "type" "implicit"
+        +++
         toXmlS (definitionCMPs def)
         +++
         toXmlS (definitionFMPs def)
+
       )
   fromXml t =
     case (HXT.isTag "definition") t of
@@ -649,13 +684,18 @@ instance XmlRepresentable Definition where
       _ ->
         let
           ids = HXT.xshow $ XML.getQualValue "xml" "id" t
+          fors =
+            case HXT.xshow $ HXT.getValue "for" t of
+              '#':r -> r
+              r -> r
+          ids' = case ids of [] -> fors; _ -> ids
           children = HXT.getChildren t
           cmps = getAllFromXml children
           fmps = getAllFromXml children
         in
-          case ids of
+          case ids' of
             [] -> trace "no id in definition" Nothing
-            _ -> Just $ Definition ids cmps fmps
+            _ -> Just $ Definition ids' cmps fmps
 
 -- | SortDef
 instance XmlRepresentable SortDef where
@@ -682,10 +722,10 @@ instance XmlRepresentable SortDef where
           sdTypeS = HXT.xshow $ HXT.getValue "type" t
           sdRole =
             case sdRoleS of
-              [] -> SRObject
+              [] -> SRSort
               _ ->
                 case readsPrec 0 sdRoleS of
-                  [] -> trace ("Invalid Role : \"" ++ sdRoleS ++ "\"") SRObject
+                  [] -> trace ("Invalid Role : \"" ++ sdRoleS ++ "\"") SRSort
                   ((sdR,_):_) -> sdR
           sdType =
             case sdTypeS of
@@ -790,7 +830,15 @@ instance XmlRepresentable ADT where
   toXml adt =
     HXT.etag "adt"
       += (
-        toXmlS (adtSortDefs adt)
+        (
+          case adtId adt of
+            Nothing -> XML.xmlNullFilter
+            (Just aid) -> XML.qualattr "xml" "id" aid
+        )
+        +++
+        (
+          toXmlS (adtSortDefs adt)
+        )
       )
   fromXml t = 
     case (HXT.isTag "adt") t of
@@ -798,9 +846,13 @@ instance XmlRepresentable ADT where
       _ ->
         let
           xchildren = HXT.getChildren t
+          maid =
+            case HXT.xshow $ XML.getQualValue "xml" "id" t of
+              [] -> Nothing
+              s -> Just s
           sds = getAllFromXml xchildren
         in
-          Just $ ADT sds
+          Just $ ADT maid sds
 
 -- | Inclusion
 instance XmlRepresentable Inclusion where
@@ -868,12 +920,13 @@ incBody tinc =
         (Just i) -> XML.qualattr "xml" "id" i
         _ -> XML.xmlNullFilter
     )
-    +++
+-- conservativity has been removed from OMDoc-RNG
+{-    +++
     (
       case (inclusionConservativity tinc) of
         CNone -> XML.xmlNullFilter
         c -> HXT.sattr "conservativity" (show c)
-    )
+    ) -}
     +++
     (
       case (inclusionMorphism tinc) of
@@ -926,6 +979,8 @@ instance XmlRepresentable OMObject where
   toXml (OMObject e) = 
     HXT.etag "OMOBJ"
       +=(
+        HXT.sattr "xmlns" "http://www.openmath.org/OpenMath"
+        +++
         XML.xmlNL
         +++
         toXml e
