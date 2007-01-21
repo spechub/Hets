@@ -571,22 +571,3 @@ addlink
 
 
 
-Trac modules
-------------
-
-basic-library		CASL-lib
-development-graph	Static Proofs
-driver			ATC, Driver, GUI, Taxonomy, pretty
-hets			Common, doc, test, utils
-logic-casl		CASL
-casl-ext		CASL_DL, CoCASL, COL, ConstraintCASL, Modal, OWL_DL
-logic-hascasl		HasCASL, Haskell
-
-logic			Logic Syntax
-csp-casl		CspCASL
-provers			Isabelle, SPASS
-comorphisms		Comorphisms, ToHaskell
-omdoc			OMDoc
-pgip			PGIP
-third-party		fgl, haifa-lite, hcl, hxt, syb-generics, uni
-
