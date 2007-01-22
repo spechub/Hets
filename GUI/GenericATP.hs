@@ -31,7 +31,7 @@ import qualified Common.Lib.Map as Map
 import Common.Utils (getEnvSave)
 
 import Data.List
-import Data.Maybe
+import Data.Maybe (isJust)
 import qualified Control.Exception as Exception
 import qualified Control.Concurrent as Conc
 
@@ -685,14 +685,13 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
             done)
       +> (doProve >>> do
             rs <- Conc.readMVar stateMVar
-            if isNothing $ currentGoal rs
-              then noGoalSelected
-              else (do
+            case currentGoal rs of
+              Nothing -> noGoalSelected >> done
+              Just goal -> do
                 curEntTL <- (getValueSafe guiDefaultTimeLimit
                                           timeEntry) :: IO Int
                 inclProvedThs <- readTkVariable inclProvedThsTK
-                let goal = fromJust $ currentGoal rs
-                    s = rs {configsMap = adjustOrSetConfig
+                let s = rs {configsMap = adjustOrSetConfig
                                             (setTimeLimit curEntTL)
                                             prName goal pt
                                             (configsMap rs)}
@@ -733,24 +732,22 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                  updateDisplay s'' True lb statusLabel timeEntry
                               optionsEntry axiomsLb
                  done)
-            done)
       +> (showDetails >>> do
+            Conc.yield
             s <- Conc.readMVar stateMVar
-            if isNothing $ currentGoal s
-              then noGoalSelected
-              else (do
-                let goal = fromJust $ currentGoal s
+            case currentGoal s of
+              Nothing -> noGoalSelected >> done
+              Just goal -> do
                 let result = Map.lookup goal (configsMap s)
-                let output = if isJust result
-                               then resultOutput (fromJust result)
-                               else ["This goal hasn't been run through "++
-                                     "the prover yet."]
-                let detailsText = concatMap ('\n':) output
+                    output = maybe ["This goal hasn't been run through "++
+                                     "the prover yet."] 
+                                   resultOutput 
+                                   result
+                    detailsText = concatMap ('\n':) output
                 createTextSaveDisplay (prName ++ " Output for Goal "++goal)
                         (goal ++ (proverOutput $ fileExtensions atpFun))
                         (seq (length detailsText) detailsText)
                 done)
-            done)
       +> (runBatch >>> do
             s <- Conc.readMVar stateMVar
             -- get options for this batch run
@@ -877,11 +874,10 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                                                 ++"should not happen \""
                                                 ++g++"\""))
                                         g (namesMap s)
-                                   pStat = proof_status $ fromJust res
-                               in if isJust res
-                                  then transNames (namesMap s) pStat
-                                  else openProof_status g' prName $
-                                       proof_tree s)
+                               in maybe (openProof_status g' prName $
+                                         proof_tree s)
+                                        (transNames (namesMap s) . proof_status)
+                                        res)
                     (map AS_Anno.senName $ goalsList s)
   return proof_stats
 
@@ -901,7 +897,7 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
     noGoalSelected = errorMess "Please select a goal first."
     prepareLP prS s goal inclProvedThs =
        let (beforeThis, afterThis) =
-               splitAt (fromJust $
+               splitAt (maybe (error "GUI.GenericATP: goal shoud be found") id $
                         findIndex (\sen -> AS_Anno.senName sen == goal)
                                   (goalsList s))
                        (goalsList s)
