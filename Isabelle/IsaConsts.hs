@@ -342,6 +342,9 @@ fixrecS = "fixrec"
 primrecS :: String
 primrecS = "primrec"
 
+declareS :: String
+declareS = "declare"
+
 simpS :: String
 simpS = "simp"
 
@@ -353,7 +356,7 @@ markups =
 -- | toplevel keys that are currently ignored
 ignoredKeys :: [String]
 ignoredKeys =
-    [ domainS, oopsS, refuteS, fixrecS, primrecS
+    [ domainS, oopsS, refuteS, fixrecS, primrecS, declareS
     , "sorry", "done", "by", "proof", "apply", "qed"
     , "classrel", "defaultsort", "nonterminls", "arities"
     , "syntax", "no_syntax", "translations"
@@ -362,7 +365,7 @@ ignoredKeys =
     , "fix", "assume", "presume", "def", "note", "then", "from", "with"
     , "using", "have", "show", "hence", "thus", "shows", ".", ".."
 --    , "rule", "iprover","OF", "of", "where", "assumption", "this", "-"
-    , "let", "is", "next", "apply_end", "defer", "prefer", "back", "declare"
+    , "let", "is", "next", "apply_end", "defer", "prefer", "back"
     , "pr", "thm", "prf", "term", "prop", "typ", "full_prf"
     , "undo", "redo", "kill", "thms_containing", "thms_deps"
     , "cd", "pwd", "use_thy", "use_thy_only", "update_thy", "update_thy_only"

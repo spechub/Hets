@@ -65,14 +65,17 @@ printTheoryBody sig sens =
         vsep (map printNamedSen axs)) $++$
     (if null defs then empty else text defsS $+$
         vsep (map printNamedSen defs)) $++$
-    (if null rdefs then empty else
-        vsep (map printNamedSen rdefs)) $++$
-    (if null ts then empty else
-        vsep (map ( \ t -> printNamedSen t $+$
+    vsep (map printNamedSen rdefs) $++$
+    vcat (map ( \ a -> text declareS <+> text (senName a) 
+                       <+> brackets (text simpS)) 
+         $ filter ( \ a -> case sentence a of 
+                      b@Sentence{} -> isSimp b
+                      _ -> False) axs) $++$
+    vsep (map ( \ t -> printNamedSen t $+$
                    text (case sentence t of
                          Sentence { thmProof = Just s } -> s
                          _ -> oopsS)
-                  $++$ callML "record" (text $ show $ Quote $ senName t)) ts))
+                  $++$ callML "record" (text $ show $ Quote $ senName t)) ts)
 
 callML :: String -> Doc -> Doc
 callML fun args =
@@ -174,10 +177,9 @@ printNamedSen NamedSen { senName = lab, sentence = s, isAxiom = b } =
               <+> dd $+$ text refuteS
        else if null lab then dd else fsep[ (case s of
     ConstDef {} -> text $ lab ++ "_def"
-    Sentence {isSimp = c} ->
+    Sentence {} ->
         (if b then empty else text theoremS)
-        <+> text lab <+>
-        (if c && b then brackets $ text simpS else empty)
+        <+> text lab
     _ -> error "printNamedSen") <+> colon, dd]
 
 -- | sentence printing
