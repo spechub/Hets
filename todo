@@ -279,11 +279,6 @@ Joost Visser wg. ATerms in Haskell => neues Repository
 Till
 ************************************************
 
-
-AbstractGraphView: switch to Result monad
-
-unite or rename consCheck and cons_checkers
-
 BinInt.casl: revealing in Int1 does not work correctly
 
 from Stefan Wölfl:
