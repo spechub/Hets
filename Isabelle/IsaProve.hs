@@ -128,7 +128,7 @@ checkFinalThyFile (ho, bo) thyFile = do
   case parse parseTheory thyFile s of
     Right (hb, b) -> do
             let ds = compatibleBodies bo b
-            mapM_ (\ d -> putStrLn $ showDoc d "") ds
+            mapM_ (\ d -> putStrLn $ showDoc d "") $ ds ++ warnSimpAttr b 
             if hb /= ho then do
                   putStrLn "illegal change of theory header"
                   return False

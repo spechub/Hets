@@ -15,6 +15,7 @@ module Isabelle.IsaParse
     (parseTheory
     , Body(..)
     , TheoryHead(..)
+    , warnSimpAttr
     , compatibleBodies) where
 
 import Data.List
@@ -199,8 +200,10 @@ atom = var <|> typefree <|> typevar <|> nameref
 args :: Parser [Token]
 args = many $ lexP atom
 
-attributes :: Parser ()
-attributes = forget . bracketsP . commalist $ namerefP >> args
+-- | look for the simp attribute
+attributes :: Parser [Bool]
+attributes = bracketsP . commalist $ 
+             bind (\ n l -> null l && show n == simpS) namerefP args
 
 lessOrEq :: Parser String
 lessOrEq = lexS "<" <|> lexS "\\<subseteq>"
@@ -272,13 +275,19 @@ constdefs :: Parser [[Const]]
 constdefs = lexS constdefsS >> option () structs >>
             many1 (option [] constdecl << constdef)
 
-axmdecl :: Parser Token
-axmdecl = (nameP << option () attributes) << lexS ":"
+-- | the sentence name plus simp attribute (if True)
+data SenDecl = SenDecl Token Bool
+
+optAttributes :: Parser Bool
+optAttributes = fmap or $ option [] attributes
+
+axmdecl :: Parser SenDecl
+axmdecl = (bind SenDecl nameP optAttributes) << lexS ":"
 
 prop :: Parser Token
 prop = lexP $ reserved isaKeywords term
 
-data Axiom = Axiom Token Token
+data Axiom = Axiom SenDecl Token
 
 axiomsP :: Parser [Axiom]
 axiomsP = many1 (bind Axiom axmdecl prop)
@@ -291,7 +300,8 @@ axioms :: Parser [Axiom]
 axioms = lexS axiomsS >> axiomsP
 
 thmbind :: Parser Token
-thmbind = (nameP << option () attributes) <|> (attributes >> lexP (string ""))
+thmbind = (nameP << option [] attributes) 
+          <|> (attributes >> lexP (string ""))
 
 selection :: Parser ()
 selection = forget . parensP . commalist $
@@ -299,7 +309,7 @@ selection = forget . parensP . commalist $
   where natP = lexP nat
 
 thmref :: Parser Token
-thmref = namerefP << (option () selection >> option () attributes)
+thmref = namerefP << (option () selection >> option [] attributes)
 
 thmrefs :: Parser [Token]
 thmrefs = many1 thmref
@@ -401,14 +411,14 @@ theoryBody = many $
 
 -- | The axioms, goals, constants and data types of a theory
 data Body = Body
-    { axiomsF :: Map.Map Token Token
+    { axiomsF :: Map.Map Token (Bool, Token)
     , goalsF :: Map.Map Token [Token]
     , constsF :: Map.Map Token Token
     , datatypesF :: Map.Map Token ([Token], [[Token]])
     } deriving Show
 
-addAxiom :: Axiom -> Map.Map Token Token -> Map.Map Token Token
-addAxiom (Axiom n a) m = Map.insert n a m
+addAxiom :: Axiom -> Map.Map Token (Bool, Token) -> Map.Map Token (Bool, Token)
+addAxiom (Axiom (SenDecl n b) a) m = Map.insert n (b, a) m
 
 addGoal :: Goal -> Map.Map Token [Token] -> Map.Map Token [Token]
 addGoal (Goal n a) m = Map.insert n a m
@@ -450,6 +460,11 @@ compatibleBodies b1 b2 =
     ++ diffMap "constant" EQ (constsF b2) (constsF b1)
     ++ diffMap "datatype" EQ (datatypesF b2) (datatypesF b1)
     ++ diffMap "goal" GT (goalsF b2) (goalsF b1)
+
+warnSimpAttr :: Body -> [Diagnosis]
+warnSimpAttr = 
+    map (mkDiag Warning "use 'declare ...' instead of a simp attribute for: ")
+        . Map.keys . Map.filter fst . axiomsF
 
 diffMap :: (Ord a, Pretty a, PosItem a, Eq b, Show b)
           => String -> Ordering -> Map.Map a b -> Map.Map a b -> [Diagnosis]
