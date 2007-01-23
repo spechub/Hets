@@ -11,13 +11,13 @@ These guidelines have been originally set up for the hets-project
 [http://www.informatik.uni-bremen.de/cofi/hets/ hets-project] and are
 now put on the [http://haskell.org/haskellwiki/ HaskellWiki] gradually
 integrating parts of [http://haskell.org/hawiki the old hawiki]
-entries [http://haskell.org/hawiki/ThinksToAvoid ThinksToAvoid] and
+entries [http://haskell.org/haskellwiki/Things_to_avoid ThingsToAvoid] and
 [http://haskell.org/hawiki/HaskellStyle HaskellStyle] (hopefully not
 hurting someone's copyrights). The other related entry
 [http://haskell.org/hawiki/TipsAndTricks TipsAndTricks] treats more
 specific points that are left out here,
 
-Surely same style choices are a bit arbitrary (or "religious") and
+Surely some style choices are a bit arbitrary (or "religious") and
 too restrictive with respect to language extensions. Nevertheless I hope
 to keep up these guidelines (at least as a basis) for our project
 in order to avoid maintaining diverging guidelines. Of course I want
@@ -130,7 +130,7 @@ Also in the standard libraries, function names with multiple words are
 written using the camelCase convention. Similarly, type, typeclass and
 constructor names are written using the StudlyCaps convention.
 
-Some parts of our code use underlimes (without unnecessary uppercase
+Some parts of our code use underlines (without unnecessary uppercase
 letters) for long identifiers to better reflect names given with
 hyphens in the requirement documentation. Also such names should be
 transliterated to camlCase identifiers possibly adding a (consistent)
@@ -230,7 +230,7 @@ previous test). Particularly the call of "head" should be used with
 care or (even better) be made obsolete by a case statement.
 
 Usually a case statement (and the import of isJust and fromJust from
-Data.Maybe) can be avoided by using the "maybe" function:
+Data.[[Maybe]]) can be avoided by using the "maybe" function:
 
     maybe (error "<ModuleName>.<function>") id $ Map.lookup key map
 
@@ -238,7 +238,6 @@ Generally we require you to be more explicit about failure
 cases. Surely a missing (or an irrefutable) pattern would precisely
 report the position of a runtime error, but these are not so obvious
 when reading the code.
-
 
 ==== Let or where expressions ====
 
@@ -290,9 +289,9 @@ But the scope of an expression is also limited by the layout rule, so
 it is usually save to use "$" on right hand sides.
 
 Ok:
-        do y <- f $ l
+        do f $ l
         ++
-        do y <- g $ l
+        do g $ l
 
 Of course "$" can not be used in types. GHC has also some primitive
 functions involving the kind "#" that cannot be applied using "$".
@@ -366,15 +365,15 @@ Good (to handle arguments only once):
 
 Consider (bad):
 
-  data Tupel a b = Tupel a b | Undefined
+  data Tuple a b = Tuple a b | Undefined
 
 versus (better):
 
-  data Tupel a b = Tupel a b
+  data Tuple a b = Tuple a b
 
 and using:
 
-   Maybe (Tupel a b)
+   Maybe (Tuple a b)
 
 (or another monad) whenever an undefined result needs to be propagated
 
@@ -448,15 +447,6 @@ because of lazy IO! (Writing is starting before reading is finished.)
 Tracing is for debugging purposes only and should not be used as
 feedback for the user. Clean code is not cluttered by trace calls.
 
-==== Undefined ====
-
-The Prelude exports a constant undefined, which can have any type and
-which raises an expection when evaluated.
-Please avoid the use of undefined; use an informative error message
-instead, which should at least tell the module, like:
-
-  error "Folder.Module.function: function not yet implemented"
-
 
 ==== Imports ====
 
@@ -482,6 +472,9 @@ and strings) may arise. Then you may want MPTC (multi-parameter type
 classes), functional dependencies (FD), undecidable and possibly incoherent
 instances and then you are "in the wild" (according to SPJ).
 
+=== Style in other languages ===
+
+* [http://www.cs.caltech.edu/~cs20/a/style.html OCaml style]
 
 === Final remarks ===
 
@@ -518,4 +511,6 @@ Bad Points:
 
 * people ignore standards anyway
 
-[[Category:Idioms]]
+
+
+[[Category:Style]]

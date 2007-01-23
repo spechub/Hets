@@ -278,6 +278,9 @@ constdefs = lexS constdefsS >> option () structs >>
 -- | the sentence name plus simp attribute (if True)
 data SenDecl = SenDecl Token Bool
 
+emptySen :: SenDecl
+emptySen = SenDecl (mkSimpleId "") False
+
 optAttributes :: Parser Bool
 optAttributes = fmap or $ option [] attributes
 
@@ -299,9 +302,9 @@ defs = lexS defsS >> option "" (parensP $ lexS "overloaded") >>
 axioms :: Parser [Axiom]
 axioms = lexS axiomsS >> axiomsP
 
-thmbind :: Parser Token
-thmbind = (nameP << option [] attributes) 
-          <|> (attributes >> lexP (string ""))
+thmbind :: Parser SenDecl
+thmbind = (bind SenDecl nameP optAttributes)
+          <|> (attributes >> return emptySen)
 
 selection :: Parser ()
 selection = forget . parensP . commalist $
@@ -314,10 +317,10 @@ thmref = namerefP << (option () selection >> option [] attributes)
 thmrefs :: Parser [Token]
 thmrefs = many1 thmref
 
-thmdef :: Parser Token
+thmdef :: Parser SenDecl
 thmdef = try $ thmbind << lexS "="
 
-thmdecl :: Parser Token
+thmdecl :: Parser SenDecl
 thmdecl = try $ thmbind << lexS ":"
 
 theorems :: Parser ()
@@ -328,10 +331,10 @@ theorems = forget $ (lexS theoremsS <|> lexS lemmasS)
 proppat :: Parser ()
 proppat = forget . parensP . many1 $ lexP term
 
-data Goal = Goal Token [Token]
+data Goal = Goal SenDecl [Token]
 
 props :: Parser Goal
-props = bind Goal (option (mkSimpleId "") thmdecl)
+props = bind Goal (option (emptySen) thmdecl)
         $ many1 (prop << option () proppat)
 
 goal :: Parser [Goal]
@@ -409,19 +412,32 @@ theoryBody = many $
     <|> ignore (choice (map lexS ignoredKeys) >> skipMany unknown)
     <|> ignore unknown
 
+data SimpValue a = SimpValue Bool a
+
+hasSimp :: SimpValue a -> Bool
+hasSimp (SimpValue b _) = b
+
+instance Show a => Show (SimpValue a) where
+    show (SimpValue _ a) = show a
+
+instance Eq a => Eq (SimpValue a) where
+    SimpValue _ a == SimpValue _ b = a == b
+
 -- | The axioms, goals, constants and data types of a theory
 data Body = Body
-    { axiomsF :: Map.Map Token (Bool, Token)
-    , goalsF :: Map.Map Token [Token]
+    { axiomsF :: Map.Map Token (SimpValue Token)
+    , goalsF :: Map.Map Token (SimpValue [Token])
     , constsF :: Map.Map Token Token
     , datatypesF :: Map.Map Token ([Token], [[Token]])
     } deriving Show
 
-addAxiom :: Axiom -> Map.Map Token (Bool, Token) -> Map.Map Token (Bool, Token)
-addAxiom (Axiom (SenDecl n b) a) m = Map.insert n (b, a) m
+addAxiom :: Axiom -> Map.Map Token (SimpValue Token) 
+         -> Map.Map Token (SimpValue Token)
+addAxiom (Axiom (SenDecl n b) a) m = Map.insert n (SimpValue b a) m
 
-addGoal :: Goal -> Map.Map Token [Token] -> Map.Map Token [Token]
-addGoal (Goal n a) m = Map.insert n a m
+addGoal :: Goal -> Map.Map Token (SimpValue [Token]) 
+        -> Map.Map Token (SimpValue [Token])
+addGoal (Goal (SenDecl n b) a) m = Map.insert n (SimpValue b a) m
 
 addConst :: Const -> Map.Map Token Token -> Map.Map Token Token
 addConst (Const n a) m = Map.insert n a m
@@ -462,9 +478,12 @@ compatibleBodies b1 b2 =
     ++ diffMap "goal" GT (goalsF b2) (goalsF b1)
 
 warnSimpAttr :: Body -> [Diagnosis]
-warnSimpAttr = 
-    map (mkDiag Warning "use 'declare ...' instead of a simp attribute for: ")
-        . Map.keys . Map.filter fst . axiomsF
+warnSimpAttr b = 
+    map ( \ a -> Diag Warning 
+         ("use 'declare " ++ tokStr a 
+          ++ " [simp]' for proper Isabelle proof details") $ tokPos a)
+        $ (Map.keys . Map.filter hasSimp) (axiomsF b)
+          ++ (Map.keys . Map.filter hasSimp) (goalsF b)
 
 diffMap :: (Ord a, Pretty a, PosItem a, Eq b, Show b)
           => String -> Ordering -> Map.Map a b -> Map.Map a b -> [Diagnosis]
