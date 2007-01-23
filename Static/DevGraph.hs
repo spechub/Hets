@@ -190,10 +190,9 @@ instance Pretty DGLinkLab where
 
 -- | coarser equality, ignoring the proof status
 eqDGLinkLab :: DGLinkLab -> DGLinkLab -> Bool
-eqDGLinkLab l1 l2 =
-  dgl_morphism l1 == dgl_morphism l2
+eqDGLinkLab l1 l2 = dgl_origin l1 == dgl_origin l2
+  && dgl_morphism l1 == dgl_morphism l2
   && eqDGLinkType (dgl_type l1) (dgl_type l2)
-  && dgl_origin l1 == dgl_origin l2
 
 eqLEdgeDGLinkLab :: LEdge DGLinkLab -> LEdge DGLinkLab -> Bool
 eqLEdgeDGLinkLab (m1,n1,l1) (m2,n2,l2) =

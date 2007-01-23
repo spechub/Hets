@@ -58,12 +58,12 @@ interactiveHideTheoremShift =
     hideTheoremShift hideTheoremShift_selectProofBase
 
 automaticHideTheoremShift :: LIB_NAME -> LibEnv -> LibEnv
-automaticHideTheoremShift ln libEnv= 
-                let dgraph = lookupDGraph ln libEnv
-                    ls     = filter isUnprovenHidingThm (labEdges dgraph)
-                in automaticHideTheoremShiftFromList ln ls libEnv
-  
-  
+automaticHideTheoremShift ln libEnv =
+    let dgraph = lookupDGraph ln libEnv
+        ls = filter (liftE isUnprovenHidingThm) $ labEdges dgraph
+    in automaticHideTheoremShiftFromList ln ls libEnv
+
+
 
 automaticHideTheoremShiftFromList :: LIB_NAME -> [LEdge DGLinkLab]-> LibEnv -> LibEnv
 automaticHideTheoremShiftFromList ln ls = runIdentity. hideTheoremShiftFromList
@@ -73,24 +73,23 @@ automaticHideTheoremShiftFromList ln ls = runIdentity. hideTheoremShiftFromList
 
 hideTheoremShiftFromList :: Monad m => ProofBaseSelector m -> LIB_NAME
                      -> [LEdge DGLinkLab] -> LibEnv  -> m LibEnv
-hideTheoremShiftFromList proofBaseSel ln hidingThmEdges proofStatus= do
-      let dgraph = lookupDGraph ln proofStatus
-          finalHidingThmEdges = filter isUnprovenHidingThm hidingThmEdges     
-      result <- hideTheoremShiftAux dgraph ([],[]) finalHidingThmEdges proofBaseSel
-      let nextDGraph = fst result
-          nextHistoryElem = snd result
-          newProofStatus 
+hideTheoremShiftFromList proofBaseSel ln hidingThmEdges proofStatus = do
+    let dgraph = lookupDGraph ln proofStatus
+        finalHidingThmEdges = filter (liftE isUnprovenHidingThm) hidingThmEdges
+    result <- hideTheoremShiftAux dgraph ([],[])
+              finalHidingThmEdges proofBaseSel
+    let (nextDGraph, nextHistoryElem) = result
+        newProofStatus
                = mkResultProofStatus ln proofStatus nextDGraph nextHistoryElem
-      return newProofStatus
+    return newProofStatus
 
 
 hideTheoremShift :: Monad m => ProofBaseSelector m -> LIB_NAME
                  -> LibEnv -> m LibEnv
-hideTheoremShift proofBaseSel ln proofStatus 
-                        = 
-                         let dgraph = lookupDGraph ln proofStatus
-                             hidingThmEdges = filter isUnprovenHidingThm (labEdges dgraph)
-                         in hideTheoremShiftFromList proofBaseSel ln hidingThmEdges proofStatus 
+hideTheoremShift proofBaseSel ln proofStatus =
+    let dgraph = lookupDGraph ln proofStatus
+        hidingThmEdges = filter (liftE isUnprovenHidingThm) $ labEdges dgraph
+    in hideTheoremShiftFromList proofBaseSel ln hidingThmEdges proofStatus
 
 --hideTheoremShift :: Monad m => ProofBaseSelector m -> LIB_NAME
 --                 -> LibEnv -> m LibEnv

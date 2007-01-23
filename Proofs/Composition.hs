@@ -39,7 +39,7 @@ compositionCreatingEdgesFromList libname ls proofStatus =
 compositionCreatingEdges :: LIB_NAME -> LibEnv -> LibEnv
 compositionCreatingEdges libname proofStatus =
     let dgraph = lookupDGraph libname proofStatus
-        allEdges = filter isGlobalThm (labEdges dgraph)
+        allEdges = filter (liftE isGlobalThm) $ labEdges dgraph
     in compositionCreatingEdgesFromList libname allEdges proofStatus 
 --compositionCreatingEdges :: LIB_NAME -> LibEnv -> LibEnv
 --compositionCreatingEdges libname proofStatus =
@@ -88,7 +88,7 @@ deleteRedundantEdges dgraph (src,tgt,labl) =
   where
     redundantEdges = [e | e@(_,t,l) <- out dgraph src,
                       t == tgt &&
-                      isUnprovenGlobalThm e &&
+                      liftE isUnprovenGlobalThm e &&
                       dgl_morphism l == dgl_morphism labl &&
                       haveSameCons l labl]
     haveSameCons :: DGLinkLab -> DGLinkLab -> Bool
@@ -125,7 +125,7 @@ compositionFromList libname glbThmEdge proofStatus
 composition :: LIB_NAME -> LibEnv -> LibEnv
 composition libname proofStatus =
   let dgraph = lookupDGraph libname proofStatus
-      globalThmEdges = filter isGlobalThm (labEdges dgraph)
+      globalThmEdges = filter (liftE isGlobalThm) $ labEdges dgraph
   in compositionFromList libname globalThmEdges proofStatus
 
 {- | auxiliary method for composition -}

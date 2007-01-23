@@ -79,8 +79,8 @@ hasIngoingHidingDef libEnv ln node =
    || or [hasIngoingHidingDef libEnv ln' nod | (ln',nod) <- next]
   where
     inGoingEdges = getAllIngoingEdges libEnv ln node
-    hidingDefEdges = [tuple| tuple@(_, n) <- inGoingEdges, isHidingDef n]
-    globalDefEdges = [tuple| tuple@(_, n) <- inGoingEdges, isGlobalDef n]
+    hidingDefEdges = [tuple| tuple@(_, n) <- inGoingEdges, liftE isHidingDef n]
+    globalDefEdges = [tuple| tuple@(_, n) <- inGoingEdges, liftE isGlobalDef n]
     next = [ (l,getSourceNode e) | (l,e) <- globalDefEdges ]
 
 getAllIngoingEdges :: LibEnv -> LIB_NAME -> Node
@@ -223,7 +223,7 @@ handleNonLeaves ln ps (node:list) =
           let auxProofstatus = createNfsForPredecessors ln ps node
               auxGraph = lookupDGraph ln auxProofstatus
               defInEdges = [edge| edge <- inn auxGraph node,
-                           isGlobalDef edge || isHidingDef edge]
+                           liftE (liftOr isGlobalDef isHidingDef) edge]
               predecessors = [src| (src,_,_) <- defInEdges]
               diagram = makeDiagram auxGraph (node:predecessors) defInEdges
               Result _ds res = gWeaklyAmalgamableCocone diagram
@@ -250,7 +250,7 @@ createNfsForPredecessors ln proofstatus node =
   where
     dgraph = lookupDGraph ln proofstatus
     defInEdges =  [edge| edge@(src,_,_) <- inn dgraph node,
-                   (isGlobalDef edge || isHidingDef edge)
+                   liftE (liftOr isGlobalDef isHidingDef) edge
                    && node /= src]
     predecessors = [src| (src,_,_) <- defInEdges]
 
@@ -267,8 +267,9 @@ makeDiagramAux :: GDiagram -> DGraph -> [Node] -> [LEdge DGLinkLab] -> GDiagram
 makeDiagramAux diagram _ [] [] = diagram
 makeDiagramAux diagram dgraph [] (edge@(src,tgt,labl):list) =
   makeDiagramAux (insEdge morphEdge diagram) dgraph [] list
-    where morphEdge = if isHidingDef edge then (tgt,src,dgl_morphism labl)
-                       else (src,tgt,dgl_morphism labl)
+    where morphEdge = if liftE isHidingDef edge 
+                      then (tgt,src,dgl_morphism labl)
+                      else (src,tgt,dgl_morphism labl)
 makeDiagramAux diagram dgraph (node:list) es =
   makeDiagramAux (insNode sigNode diagram) dgraph list es
     where sigNode = (node, dgn_theory $ lab' $ safeContext

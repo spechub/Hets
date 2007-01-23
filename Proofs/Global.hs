@@ -51,25 +51,20 @@ import Proofs.StatusUtils
 {- applies global decomposition to the list of edges given (global theorem edges)
    if possible, if empty list is given then to all unproven global theorems -}
 globDecompFromList :: LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
-globDecompFromList ln globalThmEdges proofStatus  =
-            let dgraph = lookupDGraph ln proofStatus
-                finalGlobalThmEdges = filter isUnprovenGlobalThm globalThmEdges
-                (newDGraph, newHistoryElem)= globDecompAux dgraph finalGlobalThmEdges ([],[])
-            in mkResultProofStatus ln proofStatus newDGraph newHistoryElem
-
+globDecompFromList ln globalThmEdges proofStatus =
+    let dgraph = lookupDGraph ln proofStatus
+        finalGlobalThmEdges = filter (liftE isUnprovenGlobalThm) globalThmEdges
+        (newDGraph, newHistoryElem)= globDecompAux dgraph finalGlobalThmEdges 
+                                     ([],[])
+    in mkResultProofStatus ln proofStatus newDGraph newHistoryElem
 
 {- applies global decomposition to all unproven global theorem edges
    if possible -}
 globDecomp ::LIB_NAME -> LibEnv -> LibEnv
 globDecomp ln proofStatus =
-                         let dgraph = lookupDGraph ln proofStatus
-                             globalThmEdges  = filter isUnprovenGlobalThm (labEdges dgraph)
-                         in globDecompFromList ln globalThmEdges proofStatus 
-                            
-                
-
-
-
+    let dgraph = lookupDGraph ln proofStatus
+        globalThmEdges = filter (liftE isUnprovenGlobalThm) $ labEdges dgraph
+    in globDecompFromList ln globalThmEdges proofStatus 
 
 {- applies global decomposition to all unproven global theorem edges
    if possible -}
@@ -117,7 +112,7 @@ globDecompForOneEdge dgraph edge =
   where
     source = getSourceNode edge
     defEdgesToSource = [e | e <- labEdges dgraph,
-                                 isDefEdge e && (getTargetNode e) == source]
+                        liftE isDefEdge e && getTargetNode e == source]
     paths = map (\e -> [e,edge]) defEdgesToSource ++ [[edge]]
     --getAllLocOrHideGlobDefPathsTo dgraph (getSourceNode edge) []
 --    paths = [(node, path++(edge:[]))| (node,path) <- pathsToSource]
@@ -155,14 +150,14 @@ globDecompForOneEdgeAux dgraph edge@(_,target,_) changes
    else globDecompForOneEdgeAux newGraph edge newChanges list
   where
     hd = head path
-    isHiding = not (null path) && isHidingDef hd
+    isHiding = not (null path) && liftE isHidingDef hd
     morphismPath = if isHiding then tail path else path
     morphism = case calculateMorphismOfPath morphismPath of
                  Just morph -> morph
                  Nothing ->
                    error "globDecomp: could not determine morphism of new edge"
     newEdge = if isHiding then hidingEdge
-               else if isGlobalDef hd then globalEdge else localEdge
+               else if liftE isGlobalDef hd then globalEdge else localEdge
     node = getSourceNode hd
     hidingEdge =
        (node,
@@ -194,19 +189,19 @@ globDecompForOneEdgeAux dgraph edge@(_,target,_) changes
 
 
 globSubsumeFromList :: LIB_NAME -> [LEdge DGLinkLab] -> LibEnv -> LibEnv
-globSubsumeFromList ln globalThmEdges libEnv=
-           let dgraph = lookupDGraph ln libEnv
-               finalGlobalThmEdges = filter isUnprovenGlobalThm globalThmEdges
-               (nextDGraph, nextHistoryElem) =
-                           globSubsumeAux libEnv dgraph ([],[]) finalGlobalThmEdges
-           in mkResultProofStatus ln libEnv nextDGraph nextHistoryElem
+globSubsumeFromList ln globalThmEdges libEnv =
+    let dgraph = lookupDGraph ln libEnv
+        finalGlobalThmEdges = filter (liftE isUnprovenGlobalThm) globalThmEdges
+        (nextDGraph, nextHistoryElem) =
+            globSubsumeAux libEnv dgraph ([],[]) finalGlobalThmEdges
+    in mkResultProofStatus ln libEnv nextDGraph nextHistoryElem
 
 
 globSubsume :: LIB_NAME -> LibEnv -> LibEnv
 globSubsume ln libEnv =
-              let dgraph = lookupDGraph ln libEnv
-                  globalThmEdges  = filter isUnprovenGlobalThm (labEdges dgraph)
-              in globSubsumeFromList ln globalThmEdges libEnv
+    let dgraph = lookupDGraph ln libEnv
+        globalThmEdges  = filter (liftE isUnprovenGlobalThm) $ labEdges dgraph
+    in globSubsumeFromList ln globalThmEdges libEnv
 
 -- applies global subsumption to all unproven global theorem edges if possible
 --globSubsume :: LIB_NAME -> LibEnv -> LibEnv
@@ -238,7 +233,7 @@ globSubsumeAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
   where
     morphism = dgl_morphism edgeLab
     allPaths = getAllGlobPathsOfMorphismBetween dgraph morphism src tgt
-    filteredPaths = [path| path <- allPaths, notElem ledge path]
+    filteredPaths = filter (notElem ledge) allPaths
     proofBasis = selectProofBasis dgraph ledge filteredPaths
     (GlobalThm _ conservativity conservStatus) = dgl_type edgeLab
     newEdge = (src,
@@ -345,5 +340,5 @@ removeSuperfluousEdgesAux dgraph ((edge@(src,tgt,edgeLab)):list)
 isLocalThmInsertion :: DGChange -> Bool
 isLocalThmInsertion change
   = case change of
-      InsertEdge edge -> isLocalThm edge
+      InsertEdge edge -> liftE isLocalThm edge
       _ -> False

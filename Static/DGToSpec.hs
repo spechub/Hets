@@ -104,15 +104,16 @@ getSourceNode (source,_,_) = source
 getTargetNode :: LEdge DGLinkLab -> Node
 getTargetNode (_,target,_) = target
 
-isGlobalDef :: LEdge DGLinkLab -> Bool
-isGlobalDef (_,_,edgeLab) =
-  case dgl_type edgeLab of
+liftE :: (DGLinkType -> Bool) -> LEdge DGLinkLab -> Bool
+liftE f (_,_,edgeLab) = f $ dgl_type edgeLab
+
+isGlobalDef :: DGLinkType -> Bool
+isGlobalDef lt = case lt of
     GlobalDef -> True
     _ -> False
 
-isLocalDef :: LEdge DGLinkLab -> Bool
-isLocalDef (_,_,edgeLab) =
-  case dgl_type edgeLab of
+isLocalDef :: DGLinkType -> Bool
+isLocalDef lt = case lt of
     LocalDef -> True
     _ -> False
 
@@ -125,7 +126,7 @@ computeTheory :: LibEnv -> LIB_NAME -> Node -> Result G_theory
 computeTheory libEnv ln n =
   let dg = lookupDGraph ln libEnv
       nodeLab = lab' $ safeContext "Static.DGToSpec.computeTheory" dg n
-      inEdges = filter (liftOr isLocalDef isGlobalDef) $ inn dg n
+      inEdges = filter (liftE $ liftOr isLocalDef isGlobalDef) $ inn dg n
       localTh = dgn_theory nodeLab
   in if isDGRef nodeLab then let refLn = dgn_libname nodeLab in do
           refTh <- computeTheory libEnv refLn $ dgn_node nodeLab
@@ -136,7 +137,7 @@ computeTheory libEnv ln n =
 
 computePathTheory :: LibEnv -> LIB_NAME -> LEdge DGLinkLab -> Result G_theory
 computePathTheory libEnv ln e@(src, _, link) = do
-  th <- if isLocalDef e then computeLocalTheory libEnv ln src
+  th <- if liftE isLocalDef e then computeLocalTheory libEnv ln src
           else computeTheory libEnv ln src
   -- translate theory and turn all imported theorems into axioms
   translateG_theory (dgl_morphism link) $ theoremsToAxioms th

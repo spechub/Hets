@@ -21,6 +21,7 @@ import Static.DevGraph
 import Static.DGToSpec
 import Data.Graph.Inductive.Graph
 import Data.List
+import Debug.Trace
 
 deLLEdge :: LEdge DGLinkLab -> DGraph -> DGraph
 deLLEdge e@(v, _, _) g = case match v g of
@@ -72,72 +73,65 @@ applyProofHistory h c = c { devGraph = changesDG (devGraph c) $ concatMap snd
 -- -------------------------------------
 -- methods to check the type of an edge
 -- -------------------------------------
-isProven :: LEdge DGLinkLab -> Bool
+isProven :: DGLinkType -> Bool
 isProven edge = isGlobalDef edge || isLocalDef edge
                 || isProvenGlobalThm edge || isProvenLocalThm edge
                 || isProvenHidingThm edge
 
-isDefEdge :: LEdge DGLinkLab -> Bool
+isDefEdge :: DGLinkType -> Bool
 isDefEdge edge = isGlobalDef edge || isLocalDef edge || isHidingDef edge
 
-isGlobalEdge :: LEdge DGLinkLab -> Bool
+isGlobalEdge :: DGLinkType -> Bool
 isGlobalEdge edge = isGlobalDef edge || isGlobalThm edge
 
-isLocalEdge :: LEdge DGLinkLab -> Bool
+isLocalEdge :: DGLinkType -> Bool
 isLocalEdge edge = isLocalDef edge || isLocalThm edge
 
-isGlobalThm :: LEdge DGLinkLab -> Bool
+isGlobalThm :: DGLinkType -> Bool
 isGlobalThm edge = isProvenGlobalThm edge || isUnprovenGlobalThm edge
 
-isLocalThm :: LEdge DGLinkLab -> Bool
+isLocalThm :: DGLinkType -> Bool
 isLocalThm edge = isProvenLocalThm edge || isUnprovenLocalThm edge
 
-isProvenGlobalThm :: LEdge DGLinkLab -> Bool
-isProvenGlobalThm (_,_,edgeLab) =
-  case dgl_type edgeLab of
-    (GlobalThm (Proven _ _) _ _) -> True
+isProvenGlobalThm :: DGLinkType -> Bool
+isProvenGlobalThm lt = case lt of
+    GlobalThm (Proven _ _) _ _ -> True
     _ -> False
 
-isUnprovenGlobalThm :: LEdge DGLinkLab -> Bool
-isUnprovenGlobalThm (_,_,edgeLab) =
-  case dgl_type edgeLab of
-    (GlobalThm LeftOpen _ _) -> True
+isUnprovenGlobalThm :: DGLinkType -> Bool
+isUnprovenGlobalThm lt = case lt of
+    GlobalThm LeftOpen _ _ -> True
     _ -> False
 
-isProvenLocalThm :: LEdge DGLinkLab -> Bool
-isProvenLocalThm (_,_,edgeLab) =
-  case dgl_type edgeLab of
-    (LocalThm (Proven _ _) _ _) -> True
+isProvenLocalThm :: DGLinkType -> Bool
+isProvenLocalThm lt = case lt of
+    LocalThm (Proven _ _) _ _ -> True
     _ -> False
 
-isUnprovenLocalThm :: LEdge DGLinkLab -> Bool
-isUnprovenLocalThm (_,_,edgeLab) =
-  case dgl_type edgeLab of
-    (LocalThm LeftOpen _ _) -> True
+isUnprovenLocalThm :: DGLinkType -> Bool
+isUnprovenLocalThm lt = case lt of
+    LocalThm LeftOpen _ _ -> True
     _ -> False
 
-isHidingEdge :: LEdge DGLinkLab -> Bool
+isHidingEdge :: DGLinkType -> Bool
 isHidingEdge edge = isHidingDef edge || isHidingThm edge
 
-isHidingDef :: LEdge DGLinkLab -> Bool
-isHidingDef (_,_,edgeLab) =
-  case dgl_type edgeLab of
+isHidingDef :: DGLinkType -> Bool
+isHidingDef lt = case lt of
     HidingDef -> True
     _ -> False
 
-isHidingThm :: LEdge DGLinkLab -> Bool
+isHidingThm :: DGLinkType -> Bool
 isHidingThm edge = isProvenHidingThm edge || isUnprovenHidingThm edge
 
-isProvenHidingThm :: LEdge DGLinkLab -> Bool
-isProvenHidingThm (_,_,edgeLab) =
-  case dgl_type edgeLab of
-    (HidingThm _ (Proven _ _)) -> True
+isProvenHidingThm :: DGLinkType -> Bool
+isProvenHidingThm lt = case lt of
+    HidingThm _ Proven{} -> True
     _ -> False
 
-isUnprovenHidingThm :: LEdge DGLinkLab -> Bool
-isUnprovenHidingThm (_,_,edgeLab) =
-  case dgl_type edgeLab of
-    (HidingThm _ LeftOpen) -> True
+isUnprovenHidingThm :: DGLinkType -> Bool
+isUnprovenHidingThm lt = case lt of
+    HidingThm _ LeftOpen -> True
     _ -> False
 
 -- ----------------------------------------------------------------------------
@@ -158,9 +152,8 @@ getLabelOfEdge (_,_,label) = label
 -- methods that calculate paths of certain types
 -- ----------------------------------------------
 
-
-
-getAllPathsOfTypeFromGoalList :: DGraph -> (LEdge DGLinkLab -> Bool) ->[LEdge DGLinkLab] -> [[LEdge DGLinkLab]]
+getAllPathsOfTypeFromGoalList :: DGraph -> (DGLinkType -> Bool) 
+                              -> [LEdge DGLinkLab] -> [[LEdge DGLinkLab]]
 getAllPathsOfTypeFromGoalList dgraph isType ls =
     concat
     [concat (map (getAllPathsOfTypeBetween dgraph isType source) targets) |
@@ -173,13 +166,13 @@ getAllPathsOfTypeFromGoalList dgraph isType ls =
 
 {- | returns all paths consisting of edges of the given type in the given
    development graph-}
-getAllPathsOfType :: DGraph -> (LEdge DGLinkLab -> Bool) -> [[LEdge DGLinkLab]]
+getAllPathsOfType :: DGraph -> (DGLinkType -> Bool) -> [[LEdge DGLinkLab]]
 getAllPathsOfType dgraph isType =
   concat
   [concat (map (getAllPathsOfTypeBetween dgraph isType source) targets) |
    source <- sources]
   where
-    edgesOfType = [edge | edge <- filter isType (labEdges dgraph)]
+    edgesOfType = [edge | edge <- filter (liftE isType) (labEdges dgraph)]
     sources = nub (map getSourceNode edgesOfType)
     targets = nub (map getTargetNode edgesOfType)
 
@@ -208,7 +201,7 @@ getAllLocGlobPathsBetween dgraph src tgt =
   where
     outEdges = out dgraph src
     locEdges = [(edge,target)|edge@(_,target,_) <-
-                (filter isLocalEdge outEdges)]
+                (filter (liftE isLocalEdge) outEdges)]
     locGlobPaths = concat
                    [map ([edge]++)
                    $ getAllPathsOfTypesBetween dgraph isGlobalEdge node tgt []
@@ -223,14 +216,14 @@ getAllGlobPathsBetween dgraph src tgt =
 
 {- | returns all paths consiting of edges of the given type between the
    given node -}
-getAllPathsOfTypeBetween :: DGraph -> (LEdge DGLinkLab -> Bool) -> Node
+getAllPathsOfTypeBetween :: DGraph -> (DGLinkType -> Bool) -> Node
                             -> Node -> [[LEdge DGLinkLab]]
 getAllPathsOfTypeBetween dgraph isType src tgt =
   getAllPathsOfTypesBetween dgraph isType src tgt []
 
 {- | returns all paths consisting of edges of the given types between
    the given nodes -}
-getAllPathsOfTypesBetween :: DGraph -> (LEdge DGLinkLab -> Bool) -> Node
+getAllPathsOfTypesBetween :: DGraph -> (DGLinkType -> Bool) -> Node
                              -> Node -> [LEdge DGLinkLab]
                              -> [[LEdge DGLinkLab]]
 getAllPathsOfTypesBetween dgraph types src tgt path =
@@ -241,7 +234,7 @@ getAllPathsOfTypesBetween dgraph types src tgt path =
   where
     inGoingEdges = inn dgraph tgt
     edgesOfTypes =
-        [edge| edge <- filter types inGoingEdges, notElem edge path]
+        [edge| edge <- filter (liftE types) inGoingEdges, notElem edge path]
     edgesFromSrc =
         [edge| edge@(source,_,_) <- edgesOfTypes, source == src]
     nextStep =
@@ -285,7 +278,7 @@ getInsertedEdges (change:list) =
    for the unproven ones -}
 selectProofBasis :: DGraph -> LEdge DGLinkLab -> [[LEdge DGLinkLab]]
                  -> [LEdge DGLinkLab]
-selectProofBasis dg ledge paths =
+selectProofBasis dg ledge paths = trace (show $ length paths) $
   if null provenProofBasis then selectProofBasisAux dg ledge unprovenPaths
      else provenProofBasis
   where
@@ -336,7 +329,7 @@ oneStepProofBasis label =
 
 {- | returns all proven paths from the given list -}
 filterProvenPaths :: [[LEdge DGLinkLab]] -> [[LEdge DGLinkLab]]
-filterProvenPaths = filter (all isProven)
+filterProvenPaths = filter (all $ liftE isProven)
 
 {- | adopts the edges of the old node to the new node -}
 adoptEdges :: DGraph -> Node -> Node -> (DGraph, [DGChange])
