@@ -132,40 +132,40 @@ getDGNodeType dgnodelab =
 
 -- gets the name of a development graph node as a string
 getDGNodeName :: DGNodeLab -> String
-getDGNodeName dgn  = showName $ dgn_name dgn
+getDGNodeName dgn = showName $ dgn_name dgn
 
 emptyNodeName :: NODE_NAME
-emptyNodeName = (mkSimpleId "","",0)
+emptyNodeName = (mkSimpleId "", "", 0)
 
 showInt :: Int -> String
-showInt i = if i==0 then "" else show i
+showInt i = if i == 0 then "" else show i
 
 showName :: NODE_NAME -> String
-showName (n,s,i) = show n ++ if ext=="" then "" else "_"++ext
+showName (n, s, i) = show n ++ if ext == "" then "" else "_" ++ ext
                    where ext = s ++ showInt i
 
 makeName :: SIMPLE_ID -> NODE_NAME
-makeName n = (n,"",0)
+makeName n = (n, "", 0)
 
 getName :: NODE_NAME -> SIMPLE_ID
-getName (n,_,_) = n
+getName (n, _, _) = n
 
 makeMaybeName :: Maybe SIMPLE_ID -> NODE_NAME
 makeMaybeName Nothing = emptyNodeName
 makeMaybeName (Just n) = makeName n
 
 inc :: NODE_NAME -> NODE_NAME
-inc (n,s,i) = (n,s,i+1)
+inc (n, s, i) = (n, s, i+1)
 
 isInternal :: NODE_NAME ->  Bool
-isInternal (_,s,i) = (i/=0) || s/=""
+isInternal (_, s, i) = i /= 0 || s /= ""
 
 extName :: String -> NODE_NAME -> NODE_NAME
-extName s (n,s1,i) = (n,s1++showInt i++s,0)
+extName s (n, s1, i) = (n, s1 ++ showInt i ++ s, 0)
 
 isDGRef :: DGNodeLab -> Bool
-isDGRef (DGNode _ _ _ _ _ _ _) = False
-isDGRef (DGRef _ _ _ _ _ _) = True
+isDGRef (DGNode {}) = False
+isDGRef (DGRef {}) = True
 
 -- | test if a given node label has local open goals
 hasOpenGoals ::  DGNodeLab -> Bool
