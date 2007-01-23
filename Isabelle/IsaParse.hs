@@ -15,6 +15,7 @@ module Isabelle.IsaParse
     (parseTheory
     , Body(..)
     , TheoryHead(..)
+    , SimpValue(..)
     , warnSimpAttr
     , compatibleBodies) where
 
@@ -412,13 +413,13 @@ theoryBody = many $
     <|> ignore (choice (map lexS ignoredKeys) >> skipMany unknown)
     <|> ignore unknown
 
-data SimpValue a = SimpValue Bool a
-
-hasSimp :: SimpValue a -> Bool
-hasSimp (SimpValue b _) = b
+data SimpValue a = SimpValue { hasSimp :: Bool, simpValue :: a }
 
 instance Show a => Show (SimpValue a) where
     show (SimpValue _ a) = show a
+
+instance Pretty a => Pretty (SimpValue a) where
+    pretty (SimpValue _ a) = pretty a
 
 instance Eq a => Eq (SimpValue a) where
     SimpValue _ a == SimpValue _ b = a == b
