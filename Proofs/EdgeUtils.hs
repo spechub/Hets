@@ -21,7 +21,6 @@ import Static.DevGraph
 import Static.DGToSpec
 import Data.Graph.Inductive.Graph
 import Data.List
-import Debug.Trace
 
 deLLEdge :: LEdge DGLinkLab -> DGraph -> DGraph
 deLLEdge e@(v, _, _) g = case match v g of
@@ -278,7 +277,7 @@ getInsertedEdges (change:list) =
    for the unproven ones -}
 selectProofBasis :: DGraph -> LEdge DGLinkLab -> [[LEdge DGLinkLab]]
                  -> [LEdge DGLinkLab]
-selectProofBasis dg ledge paths = trace (show $ length paths) $
+selectProofBasis dg ledge paths =
   if null provenProofBasis then selectProofBasisAux dg ledge unprovenPaths
      else provenProofBasis
   where
