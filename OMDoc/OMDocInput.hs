@@ -3316,6 +3316,7 @@ isTermOM::OMDoc.OMElement->Bool
 isTermOM (OMDoc.OMEV _) = True
 isTermOM (OMDoc.OMEATTR _) = True
 isTermOM (OMDoc.OMEA _) = True
+isTermOM (OMDoc.OMES _) = True
 isTermOM _ = False
 
 
@@ -3812,7 +3813,7 @@ termFromOM ffxi origin (OMDoc.OMEA oma) =
         (termFromOM ffxi origin)
         $
         drop 1
-          $ -- drop out operator
+          $
           filter
             isTermOM
             $

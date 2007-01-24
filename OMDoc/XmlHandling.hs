@@ -179,7 +179,8 @@ adjustStringForXmlName s@(firstChar:_) =
         '=' -> "Equals"
         ',' -> "Comma"
         '#' -> "Hash"
-        '\'' -> "SQuote"
+--        '\'' -> "SQuote"
+        '\'' -> "-prime" -- more apropriate ?
         '"' -> "Quote"
         '~' -> "Tilde"
         '`' -> "AccGrav"

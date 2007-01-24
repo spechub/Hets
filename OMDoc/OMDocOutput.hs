@@ -15,6 +15,7 @@ Portability :  non-portable(Logic)
     - there is a problem with finding constructors that use tricky names,
       currently working on debuggin this
     - DevGraph->OMDoc conversion should be done on LibEnv-Level (for names) (done)
+    - Symbols created by OMDoc-ADTs currently don't reference to them (generated-from)
 -}
 module OMDoc.OMDocOutput
   (
@@ -314,13 +315,14 @@ createOMDefLink lenv ln (from, to, ll) uniqueNames names =
     OMDoc.Imports fromuri mommorph Nothing linktype
 
 createXmlThmLinkOM::
-  Static.DevGraph.LibEnv
+    Int
+  ->Static.DevGraph.LibEnv
   ->Hets.LIB_NAME
   ->Graph.LEdge Static.DevGraph.DGLinkLab
   ->[Hets.IdNameMapping]
   ->[Hets.IdNameMapping]
   ->OMDoc.Inclusion
-createXmlThmLinkOM lenv ln (edge@(from, to, ll)) uniqueNames names =
+createXmlThmLinkOM lnum lenv ln (edge@(from, to, ll)) uniqueNames names =
   let
     e_fname = "OMDoc.OMDocOutput.createXmlThmLinkOM: "
     dg = lookupDGraph ln lenv
@@ -386,7 +388,7 @@ createXmlThmLinkOM lenv ln (edge@(from, to, ll)) uniqueNames names =
       (Just u) -> u
     iid =
       (if isaxinc then "ai" else "ti")
-        ++ "." ++ toname ++ "." ++ fromname
+        ++ "." ++ toname ++ "." ++ fromname ++ "_" ++ (show lnum)
     mommorph = createOMMorphism lenv ln edge uniqueNames names
   in
     if isaxinc
@@ -775,12 +777,13 @@ emptyRelForSort rel s =
   null $ filter (\(s', _) -> s' == s) $ Rel.toList rel
 
 createADTFor::
-  Rel.Rel SORT
+    String
+  ->Rel.Rel SORT
   ->SORT
   ->Hets.IdNameMapping
   ->[OMDoc.Constructor]
   ->OMDoc.ADT
-createADTFor rel s idNameMapping constructors =
+createADTFor theoname rel s idNameMapping constructors =
   let
     insorts =
       foldl
@@ -790,7 +793,7 @@ createADTFor rel s idNameMapping constructors =
               is
               ++
               [
-                OMDoc.mkInsort (OMDoc.mkSymbolRef (getNameE s'))
+                OMDoc.mkInsort (OMDoc.mkSymbolRef (getSortIdName idNameMapping s'))
               ]
             else
               is
@@ -798,30 +801,31 @@ createADTFor rel s idNameMapping constructors =
         []
         (Rel.toList rel)
   in
-    OMDoc.mkADTEx (Just ((getNameE s) ++ "-adt"))
+    OMDoc.mkADTEx (Just (theoname ++ "-" ++ (getSortIdName idNameMapping s) ++ "-adt"))
       $
       [
         OMDoc.mkSortDef
-          (getNameE s)
+          (getSortIdName idNameMapping s)
           constructors
           insorts
       ]
-  where
-  lookupName::Set.Set (Id.Id, String) -> Id.Id -> Maybe String
-  lookupName ss sid =
-    case
-      find
-        (\(sid', _) -> sid' == sid)
-        (Set.toList ss)
-    of
-      Nothing -> Nothing
-      (Just x) -> Just (snd x)
-  getNameE::Id.Id->String
-  getNameE sid =
-    Data.Maybe.fromMaybe
-      (error "OMDoc.OMDocOutput.createADTFor#getNameE: Cannot find name!")
-      $
-      lookupName (Hets.inmGetIdNameSortSet idNameMapping) sid
+  
+lookupIdName::Set.Set (Id.Id, String) -> Id.Id -> Maybe String
+lookupIdName ss sid =
+  case
+    find
+      (\(sid', _) -> sid' == sid)
+      (Set.toList ss)
+  of
+    Nothing -> Nothing
+    (Just x) -> Just (snd x)
+
+getSortIdName::Hets.IdNameMapping->Id.Id->String
+getSortIdName idNameMapping sid =
+  Data.Maybe.fromMaybe
+    (error "OMDoc.OMDocOutput.createADTFor#getNameE: Cannot find name!")
+    $
+    lookupIdName (Hets.inmGetIdNameSortSet idNameMapping) sid
 
 libEnvLibNameIdNameMappingToOMDoc::
   GlobalOptions
@@ -852,15 +856,16 @@ libEnvLibNameIdNameMappingToOMDoc
           (filterThmLinks $ Graph.labEdges dg)
       thmLinksToRefsOM =
         map
-          (\edge ->
+          (\(lnum, edge) ->
             createXmlThmLinkOM
+              lnum
               lenv
               ln
               edge
               uniqueNames
               fullNames
           )
-          thmLinksToRefs
+          (zip [1..] thmLinksToRefs)
       initialOMDoc =
         OMDoc.OMDoc omdocId [] thmLinksToRefsOM  
     in
@@ -937,6 +942,7 @@ libEnvLibNameIdNameMappingToOMDoc
                           let
                             newadt =
                               createADTFor
+                                theoryXmlId
                                 Rel.empty
                                 s
                                 idnamemapping
@@ -959,6 +965,7 @@ libEnvLibNameIdNameMappingToOMDoc
                             (XmlNamed s uname)
                         newadt =
                           createADTFor
+                            theoryXmlId
                             (sortRel caslsign)
                             uid
                             idnamemapping
@@ -1049,15 +1056,16 @@ libEnvLibNameIdNameMappingToOMDoc
                 (opMap caslsign)
             theoryThmLinks =
               map
-                (\edge ->
+                (\(lnum, edge) ->
                   createXmlThmLinkOM
+                    lnum
                     lenv
                     ln
                     edge
                     uniqueNames
                     fullNames
                 )
-                (filterThmLinks $ Graph.inn dg nn)
+                (zip [1..] (filterThmLinks $ Graph.inn dg nn))
           in
             do
               omdoc <- xio
@@ -1477,7 +1485,7 @@ processVarDeclOM ln nn uN fN vdl =
         (\decls vd ->
           decls
           ++
-          [ OMDoc.toVariable $ createTypedVarOM ln nn uN fN s (show vd) ]
+          [ OMDoc.toVariable $ createTypedVarOM ln nn uN fN s (adjustStringForXmlName (show vd)) ]
         )
         []
         vl
@@ -1511,7 +1519,7 @@ createTypedVarOM::
 createTypedVarOM ln nn uniqueNames fullNames sort varname =
   OMDoc.mkOMATTR
     (createATPOM ln nn uniqueNames fullNames sort)
-    (OMDoc.mkOMSimpleVar varname)
+    (OMDoc.mkOMSimpleVar (adjustStringForXmlName varname))
 
 
 findSortOriginCL::
@@ -2068,6 +2076,20 @@ processConstraintsOM _ _ _ _ _ _ [] = []
 --  error "OMDoc.OMDocOutput.processConstraintsOM: No constraints!"
 processConstraintsOM go lenv ln nn uN fN constraints
   =
+    let
+      e_fname = "OMDoc.OMDocOutput.processConstraintsOM: "
+      idnamemapping =
+        case
+          find
+            (\inm ->
+              (Hets.inmGetLibName inm) == ln
+              && (Hets.inmGetNodeNum inm) == nn
+            )
+            fN
+        of
+          Nothing -> error (e_fname ++ "No such name...")
+          (Just a) -> a
+    in
     [
         OMDoc.mkOMAE
           (
@@ -2083,8 +2105,8 @@ processConstraintsOM go lenv ln nn uN fN constraints
                     OMDoc.mkOMAE
                       [
                           OMDoc.mkOMSE caslS "constraint-context"
-                        , OMDoc.mkOMSE caslS (show news)
-                        , OMDoc.mkOMSE caslS (show origs)
+                        , OMDoc.mkOMSE caslS (getSortIdName idnamemapping news)
+                        , OMDoc.mkOMSE caslS (getSortIdName idnamemapping origs)
                         , OMDoc.mkOMAE
                             (
                               [
