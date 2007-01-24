@@ -80,10 +80,11 @@ myTest = do
 			     --putStrLn "aaa"
 
 myPrintEdges :: [LEdge DGLinkLab] -> [String]
-myPrintEdges edges = [edgesAux edge|edge<-edges]
+myPrintEdges = map edgesAux
 
 edgesAux :: LEdge DGLinkLab -> String
-edgesAux edge@(s, t, l) = ((show source) ++ "->" ++ (show target) ++ " with type" ++ (show $ dgl_type l)) 
+edgesAux edge@(_, _, l) = show source ++ "->" ++ show target 
+                          ++ " with type" ++ show (dgl_type l) 
 	 where source = getSourceNode edge
 	       target = getTargetNode edge
 
@@ -103,21 +104,24 @@ countD (x:xs) n = if show x == "DeleteEdge 3->15" then countD xs (n+1)
 -- my simulated execusion of globDecomp
 myGlobal :: LIB_NAME -> Int -> LibEnv -> IO ([LEdge DGLinkLab], [DGChange])
 myGlobal ln n lenv = 
-    let newLenv = executeGlobalDecompByNTimes n ln lenv -- try to do n times globDecomp
+    let newLenv = executeGlobalDecompByNTimes n ln lenv 
+        -- try to do n times globDecomp
 	dgraph = lookupDGraph ln newLenv
-	globalThmEdges = filter isUnprovenGlobalThm (labEdges dgraph)
-	(newDGraph, newHistoryElem) = globDecompAux dgraph globalThmEdges ([], [])
+	globalThmEdges = filter (liftE isUnprovenGlobalThm) (labEdges dgraph)
+	(newDGraph, newHistoryElem) = globDecompAux dgraph globalThmEdges 
+                                      ([], [])
 	defEdgesToSource = myGoingIntoGTE dgraph globalThmEdges []
-    in --do putStrLn $ show (labEdges dgraph)
-       do putStrLn "all the edges going into global Thm Edges"
+    in do putStrLn "all the edges going into global Thm Edges"
 	  putStrLn $ show defEdgesToSource
-          return (globalThmEdges , snd newHistoryElem) -- get the DGChanges by the fourth time executing globDecomp
+          return (globalThmEdges , snd newHistoryElem) 
+            -- get the DGChanges by the fourth time executing globDecomp
 
 myGoingIntoGTE :: DGraph -> [LEdge DGLinkLab] -> [String]->[String]
 myGoingIntoGTE dgraph [] res = res
 myGoingIntoGTE dgraph (gte:ys) res = 
     let source = getSourceNode gte
-        defEdgesToSource = [e | e <- labEdges dgraph, isDefEdge e && (getTargetNode e)==source]
+        defEdgesToSource = [e | e <- labEdges dgraph, 
+                            liftE isDefEdge e && getTargetNode e == source]
 	
     in  myGoingIntoGTE dgraph ys (res++(myPrintEdges defEdgesToSource)) 
 
