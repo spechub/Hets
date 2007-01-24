@@ -10,12 +10,11 @@
   :group 'languages
   :prefix "casl-")
 
-;; casl major mode setup
 (defvar casl-mode-hook nil)
 (defvar casl-mode-map (let ((keymap (make-keymap)))
 			(define-key keymap "\C-c\C-c" 'comment-region)
 			(define-key keymap "\C-c\C-r" 'casl-run-hets)
-			(define-key keymap "\C-c\C-g" 'casl-run-hetsg)
+			(define-key keymap "\C-c\C-g" 'casl-run-hets-g)
 			(define-key keymap "\C-c\C-n" 'casl-compile-goto-next-error)
 			keymap) 
   "Keymap for CASL major mode")
@@ -213,7 +212,7 @@
 (defvar hets-program nil)
 (defvar old-buffer nil)
 
-(defun casl-run-hets ()
+(defun casl-run-hets (&optional opt)
   "Run hets process to compile the current CASL file."
   (interactive)
   (save-buffer nil)
@@ -223,7 +222,9 @@
     (if hets-program 
 	(setq casl-hets-program hets-program)
       (setq casl-hets-program "hets"))
-    (setq hets-command (concat casl-hets-program " " casl-hets-file-name))
+    (if opt
+	(setq hets-command (concat casl-hets-program " -" opt  " " casl-hets-file-name))
+      (setq hets-command (concat casl-hets-program " " casl-hets-file-name)))
 
     ;; Pop up the compilation buffer.
     (set-buffer outbuf)
@@ -265,58 +266,11 @@
 	))
       (pop-to-buffer old-buffer)))
 
-
-(defun casl-run-hetsg ()
+(defun casl-run-hets-g ()
   "Run hets process with -g to compile the current CASL file."
   (interactive)
-  (save-buffer nil)
-  (setq old-buffer (current-buffer))
-  (let* ((casl-hets-file-name (buffer-file-name))
-	 (outbuf (get-buffer-create "*hets-run*")))
-    (if hets-program 
-	(setq casl-hets-program hets-program)
-      (setq casl-hets-program "hets"))
-    (setq hets-command (concat casl-hets-program " -g " casl-hets-file-name))
-
-    ;; Pop up the compilation buffer.
-    (set-buffer outbuf)
-    (setq buffer-read-only nil)
-    (buffer-disable-undo (current-buffer))
-    (erase-buffer)
-    (buffer-enable-undo (current-buffer))
-    (set-buffer-modified-p nil)
-    (insert hets-command "\n")
-    (pop-to-buffer outbuf)
-    (goto-char (point-max))
-    ;; (display-buffer outbuf nil t)
-    (save-excursion
-      (set-buffer outbuf)
-      (compilation-mode "hets-compile")
-      ;; Start the compilation.
-      (if (fboundp 'start-process)
-	  (let* ((process-environment
-		  (append
-		   (if (and (boundp 'system-uses-terminfo)
-			    system-uses-terminfo)
-		       (list "TERM=dumb" "TERMCAP="
-			     (format "COLUMNS=%d" (window-width)))
-		     (list "TERM=emacs"
-			   (format "TERMCAP=emacs:co#%d:tc=unknown:"
-				   (window-width))))
-		   ;; Set the EMACS variable, but
-		   ;; don't override users' setting of $EMACS.
-		   (if (getenv "EMACS")
-		       process-environment
-		     (cons "EMACS=t" process-environment))))
-		 (proc (start-process-shell-command "hets-compile" outbuf
-						    hets-command)))
-	    (setq buffer-read-only nil)
-	    (set-process-sentinel proc 'casl-compilation-sentinel)
-	    (set-process-filter proc 'casl-compilation-filter)
-	    
-	    (set-marker (process-mark proc) (point) outbuf))
-	  )))
-      (pop-to-buffer old-buffer))
+  (casl-run-hets "g")
+)
 
 ;; sentinel and filter of asynchronous process of hets
 ;; Called when compilation process changes state.
@@ -361,6 +315,7 @@
         ;; Insert the text, advancing the process marker.
         (goto-char (process-mark proc))
         (insert string)
+
         (set-marker (process-mark proc) (point)))
       (if moving (goto-char (process-mark proc)))))
   (pop-to-buffer old-buffer))
@@ -395,7 +350,6 @@
     (pop-to-buffer old-buffer)
     ))
 
-
 ;; also functions with old hets-program?
 (defun casl-parse-error ()
   "Error Parser"
@@ -412,7 +366,7 @@
 	  (forward-line 1)
 	(re-search-backward "\\(\(\\|\\s-+\\)\\([^.]+\\.\\(casl\\|het\\)\\)" nil t 1)
 	(setq file-name (match-string-no-properties 2))
-	(re-search-forward ":\\([0-9]+\\)\\.\\([0-9]+\\)[:,]" (save-excursion (end-of-line) (point)) t 1)
+	(re-search-forward ":\\([0-9]+\\)\\.\\([0-9]+\\)\\(-[0-9]+\\.[0-9]*\\)?[:,]" (save-excursion (end-of-line) (point)) t 1)
 	(when (not (string= (match-string-no-properties  0) ""))
 	  (setq error-line (match-string-no-properties 1))
 	  (setq error-colnum (match-string-no-properties 2))
@@ -458,6 +412,7 @@
       )))
 
 ;; ================= C A S L   M A J O R   M O D E ===============
+;; casl major mode setup
 ;; Definition of CASL major mode
 (defun casl-mode ()
   "Major mode for editing CASL models"
