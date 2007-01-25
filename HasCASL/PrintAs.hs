@@ -67,8 +67,7 @@ bracket b = case b of
 
 -- | print a 'Kind' plus a preceding colon (or nothing)
 printKind :: Kind -> Doc
-printKind k = if k == universe then empty else
-                 printVarKind InVar (VarKind k)
+printKind k = noPrint (k == universe) $ printVarKind InVar (VarKind k)
 
 -- | print the kind of a variable with its variance and a preceding colon
 printVarKind :: Variance -> VarKind -> Doc
@@ -132,7 +131,6 @@ toMixType typ = case typ of
 printType :: Type -> Doc
 printType ty = case ty of
         TypeName name _ _ -> pretty name
-          -- if i == 0 then empty else text ("_v"++ show i)
         TypeAppl t1 t2 -> fcat [parens (printType t1),
                                 parens (printType t2)]
         ExpandedType t1 t2 -> fcat [printType t1, text asP, printType t2]
@@ -277,7 +275,7 @@ instance Pretty TypeArg where
 
 -- | don't print an empty list and put parens around longer lists
 printList0 :: (Pretty a) => [a] -> Doc
-printList0 l =  case l of
+printList0 l = case l of
     []  -> empty
     [x] -> pretty x
     _   -> parens $ ppWithCommas l
@@ -331,9 +329,8 @@ instance Pretty SigItems where
                           mapAnM ((:[]) . mapOpItem) l else l)
 
 instance Pretty ClassItem where
-    pretty (ClassItem d l _) = pretty d $+$
-                                   if null l then empty
-                                      else specBraces (semiAnnoted l)
+    pretty (ClassItem d l _) = 
+        pretty d $+$ noNullPrint l (specBraces $ semiAnnoted l)
 
 instance Pretty ClassDecl where
     pretty (ClassDecl l k _) = fsep [ppWithCommas l, less, pretty k]
@@ -345,10 +342,9 @@ instance Pretty Vars where
 
 instance Pretty TypeItem where
     pretty ti = case ti of
-        TypeDecl l k _ -> if null l then error "pretty TypeDecl" else
-                          ppWithCommas l <> printKind k
-        SubtypeDecl l t _ -> if null l then error "pretty SubtypeDecl"
-            else fsep [ppWithCommas l, less, pretty t]
+        TypeDecl l k _ -> noNullPrint l $ ppWithCommas l <> printKind k
+        SubtypeDecl l t _ -> 
+            noNullPrint l $ fsep [ppWithCommas l, less, pretty t]
         IsoDecl l _ -> fsep $ punctuate (space <> equals) $ map pretty l
         SubtypeDefn p v t f _ ->
             fsep [pretty p, equals,
@@ -370,7 +366,7 @@ instance Pretty OpItem where
     pretty oi = case oi of
         OpDecl l t attrs _ -> if null l then error "pretty OpDecl" else
             ppWithCommas l <+> colon <+> (pretty t
-                 <> (if null attrs then empty else comma <> space)
+                 <> (noNullPrint attrs $ comma <> space)
                  <> ppWithCommas attrs)
         OpDefn n ps s p t _ ->
             fsep [fcat $ pretty n : (map (parens . semiDs) ps)
@@ -394,14 +390,13 @@ instance Pretty DatatypeDecl where
                       $ map pretty alts)
              , case d of 
                  [] -> empty
-                 _ -> keyword derivingS
-             , ppWithCommas d]
+                 _ -> keyword derivingS <+> ppWithCommas d]
 
 instance Pretty Alternative where
     pretty alt = case alt of
         Constructor n cs p _ ->
-            pretty n <+> fsep (map ( \ l -> case l of 
-                              [NoSelector t] -> pretty t
+            pretty n <+> fsep (map ( \ l -> case (l, p) of 
+                              ([NoSelector t], Total) -> pretty t
                               _ -> parens $ semiDs l) cs)
                        <> pretty p
         Subtype l _ -> noNullPrint l $ text typeS <+> ppWithCommas l
@@ -423,7 +418,7 @@ instance Pretty Symb where
         pretty i <> (case mt of
                        Nothing -> empty
                        Just (SymbType t) ->
-                           empty <+> colon <+> pretty t)
+                           space <> colon <+> pretty t)
 
 instance Pretty SymbItems where
     pretty (SymbItems k syms _ _) =
@@ -434,7 +429,7 @@ instance Pretty SymbOrMap where
         pretty s <> (case mt of
                        Nothing -> empty
                        Just t ->
-                           empty <+> mapsto <+> pretty t)
+                           space <> mapsto <+> pretty t)
 
 instance Pretty SymbMapItems where
     pretty (SymbMapItems k syms _ _) =
