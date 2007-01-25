@@ -356,9 +356,9 @@ instance Pretty TypeItem where
                   [pretty v, colon, pretty t, bullet, pretty f]]
         AliasType p k t _ ->
             fsep $ pretty p : (case k of
-                     Nothing -> []
-                     Just j -> [colon, pretty j])
-                  ++ [text assignS, printPseudoType t]
+                     Just j | j /= universe -> [colon <+> pretty j]
+                     _ -> [])
+                  ++ [text assignS <+> printPseudoType t]
         Datatype t -> pretty t
 
 mapOpItem :: OpItem -> OpItem
@@ -388,18 +388,21 @@ instance Pretty OpAttr where
         UnitOpAttr t _ -> text unitS <+> pretty t
 
 instance Pretty DatatypeDecl where
-    pretty (DatatypeDecl p k alts d _) = (pretty p <> printKind k)
-                                  <+> defn
-                                  <+> vcat(punctuate (space <> bar <> space)
-                                           $ map pretty alts)
-                                  <+> case d of [] -> empty
-                                                _ -> keyword derivingS
-                                                          <+> ppWithCommas d
+    pretty (DatatypeDecl p k alts d _) = 
+        fsep [ pretty p <> printKind k, defn
+              <+> sep (punctuate (space <> bar <> space) 
+                      $ map pretty alts)
+             , case d of 
+                 [] -> empty
+                 _ -> keyword derivingS
+             , ppWithCommas d]
 
 instance Pretty Alternative where
     pretty alt = case alt of
         Constructor n cs p _ ->
-            pretty n <+> fsep (map (parens . semiDs) cs)
+            pretty n <+> fsep (map ( \ l -> case l of 
+                              [NoSelector t] -> pretty t
+                              _ -> parens $ semiDs l) cs)
                        <> pretty p
         Subtype l _ -> noNullPrint l $ text typeS <+> ppWithCommas l
 
