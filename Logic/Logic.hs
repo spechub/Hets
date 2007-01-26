@@ -39,18 +39,18 @@ Provides data structures for logics (with symbols). Logics are
    J. A. Goguen and R. M. Burstall
    Institutions: Abstract Model Theory for Specification and
      Programming
-   JACM 39, p. 95--146, 1992
+   JACM 39, p. 95-146, 1992
    (general notion of logic - model theory only)
 
    J. Meseguer
    General Logics
-   Logic Colloquium 87, p. 275--329, North Holland, 1989
-   (general notion of logic - also entailment\/proof theory;
+   Logic Colloquium 87, p. 275-329, North Holland, 1989
+   (general notion of logic - also proof theory;
     notion of logic representation, called map there)
 
    T. Mossakowski:
    Specification in an arbitrary institution with symbols
-   14th WADT 1999, LNCS 1827, p. 252--270
+   14th WADT 1999, LNCS 1827, p. 252-270
    (treatment of symbols and raw symbols, see also CASL semantics
     in the CASL reference manual)
 
