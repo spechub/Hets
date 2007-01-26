@@ -55,28 +55,8 @@ user xinga
 ************************************************
 Heng (Klaus)
 ************************************************
-
-OWL-DL logic
-OWL-DL (<)-> CASL-DL
-
-emacs mode:
-  highlight does not work properly for HasCASL/Set.het or UserManual/Sbcs.casl
-     some operation symbols
-  show hets output immediately
-  C-c C-g for hets -g
-  when hets terminates abnormally (e.g. with a fail), emacs loops
-  C-n jumps to the next error, but the message windows is not always scrolled
-    in such a way that the error is at the top (for long error lists)
-
-  should work with parser error messages as well (adapt these?)
-
-  easier setup of emacs mode
-    by just loading one file
-  integration into installer 
-    checking for emacs and offer adaption of ~/.emacs
-
-  Version for XEamcs?
-  
+see http://trac.informatik.uni-bremen.de:8080/hets
+user jiang
 
 ************************************************
 Ken (Till)
@@ -180,32 +160,6 @@ Isabelle interface
 Rainer (Klaus)
 ************************************************
 
-implement a catch for calling MathServ based on the catch in runSpass
-  - a "connection refused" error should be handled differently:
-     "MathServ not running! Please contact 
-       <hets-devel@informatik.uni-bremen.de>"
-
-for the transition to ghc-6.6 spassProve must be corrected
-   - the regexp library changed in functionality
-     maybe the parse of the proof tree should be done without regular 
-     expressions
-  performance improvements
-   - use seq to force the evaluation of the proof trees while in
-     GenericATP window otherwise "Exit prover" takes a long time
-     Example: seq (length $ show $ prooftree proofStatus) proofStatus 
-     in GenericATP
-
-usability improvements
-  - forceFocus to read-only textedit widgets in textSaveDisplay windows
-    upon left mouse click
-    also add for Details window
-  - update of goal list-boxes should not longer move visible 
-    area of the list
-    involves getting and setting of visible area
-
-code cleanup and documentation where necessary and possilbe 
-   in SPASS/* and GUI/GenericATP*, GUI/Proofmanagement.hs
-
 for ProofManagement-GUI
   mark imported theorems for selection
   extend Logic.Prover SenStatus with wasTheorem
@@ -238,9 +192,6 @@ for ProofManagement-GUI
     of axioms and theorems
 
 trace if liniarity of sentences along development is given
-
-for consistency checking with Isabelle, look at the following SAT-Solvers:
-MChaff, ZChaff, Berkmin
 
 Consistency checker interface
   via global interface, accessible from global and node menus
