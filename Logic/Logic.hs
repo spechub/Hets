@@ -45,13 +45,14 @@ Provides data structures for logics (with symbols). Logics are
    J. Meseguer
    General Logics
    Logic Colloquium 87, p. 275--329, North Holland, 1989
-   (general notion of logic - also proof theory;
+   (general notion of logic - also entailment/proof theory;
     notion of logic representation, called map there)
 
    T. Mossakowski:
    Specification in an arbitrary institution with symbols
    14th WADT 1999, LNCS 1827, p. 252--270
-   (treatment of symbols and raw symbols, see also CASL semantics)
+   (treatment of symbols and raw symbols, see also CASL semantics
+    in the CASL reference manual)
 
    T. Mossakowski, B. Klin:
    Institution Independent Static Analysis for CASL
@@ -63,10 +64,13 @@ Provides data structures for logics (with symbols). Logics are
    FroCoS 2002, LNCS 2309, p. 2-17, 2002.
    (interface to provers)
 
+   CoFI (ed.): CASL Reference Manual, LNCS 2960, Springer Verlag, 2004.
+   (static semantics of CASL structured and architectural specifications)
+
    T. Mossakowski
    Heterogeneous specification and the heterogeneous tool set
    Habilitation thesis, University of Bremen, 2005
-   (the general picture)
+   (the general picture of heterogeneous specification)
 
 -}
 
@@ -206,7 +210,7 @@ class (Category lid sign morphism, Ord sentence,
       sym_name :: lid -> symbol -> Id
 
       ----------------------- provers ---------------------------
-      -- | several provers can be provided. See module Logic.Prover
+      -- | several provers can be provided. See module "Logic.Prover"
       provers :: lid -> [Prover sign sentence proof_tree]
       provers _ = [] -- default implementation
       -- | consistency checkers
