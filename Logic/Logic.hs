@@ -60,16 +60,14 @@ Provides data structures for logics (with symbols). Logics are
 
    S. Autexier and T. Mossakowski
    Integrating HOLCASL into the Development Graph Manager MAYA
-   FroCoS 2002, to appear
+   FroCoS 2002, LNCS 2309, p. 2-17, 2002.
    (interface to provers)
 
-   Todo:
-   ATerm, XML
-   Weak amalgamability
-   Metavars
-   raw symbols are now symbols, symbols are now signature symbols
-   provide both signature symbol set and symbol set of a signature
-   introduce coercion safer functions (separately for each type)
+   T. Mossakowski
+   Heterogeneous specification and the heterogeneous tool set
+   Habilitation thesis, University of Bremen, 2005
+   (the general picture)
+
 -}
 
 module Logic.Logic where
@@ -108,6 +106,7 @@ instance (Show a, Pretty a, Typeable a,
           ShATermConvertible a) => PrintTypeConv a
 instance (Eq a, PrintTypeConv a) => EqPrintTypeConv a
 
+-- | maps from a to a
 type EndoMap a = Map.Map a a
 
 -- languages, define like "data CASL = CASL deriving Show"
@@ -119,28 +118,36 @@ class Show lid => Language lid where
     -- default implementation
     description _ = "No description available"
 
--- Categories are given by a quotient,
--- i.e. we need equality
--- Should we allow arbitrary composition graphs and build paths?
-
+{- | Categories are given as usual: objects, morphisms, identities,
+     domain, codomain and composition.
+     The types for objects and morphisms may be restricted to
+     subtypes, using legal_obj and legal_mor. For example, for the
+     category of sets and injective maps, legal_mor would check
+     injectivity. Since Eq is a subclass of Category, it is also
+     possible to impose a quotient on the types for objects and morphisms
+-}
 class (Language lid, Eq sign, Eq morphism)
     => Category lid sign morphism | lid -> sign morphism where
          ide :: lid -> sign -> morphism
          comp :: lid -> morphism -> morphism -> Result morphism
-           -- diagrammatic order
+           -- diagrammatic order of composition
          dom, cod :: lid -> morphism -> sign
          legal_obj :: lid -> sign -> Bool
          legal_mor :: lid -> morphism -> Bool
 
--- abstract syntax, parsing and printing
-
+{- | abstract syntax, parsing and printing
+     there are three types for abstract syntax:
+     basic_spec is for basic specifications (see CASL RefMan p. 5ff.),
+     symb_items is for symbol lists (see CASL RefMan p. 35ff.),
+     symb_map_items is for symbol maps (see CASL RefMan p. 35ff.).
+-}
 class (Language lid, PrintTypeConv basic_spec,
        EqPrintTypeConv symb_items,
        EqPrintTypeConv symb_map_items)
     => Syntax lid basic_spec symb_items symb_map_items
         | lid -> basic_spec symb_items symb_map_items
       where
-         -- parsing
+         -- parsers
          parse_basic_spec :: lid -> Maybe(AParser st basic_spec)
          parse_symb_items :: lid -> Maybe(AParser st symb_items)
          parse_symb_map_items :: lid -> Maybe(AParser st symb_map_items)
@@ -149,10 +156,15 @@ class (Language lid, PrintTypeConv basic_spec,
          parse_symb_items _ = Nothing
          parse_symb_map_items _ = Nothing
 
--- sentences (plus prover stuff and "symbol" with "Ord" for efficient lookup)
-
+{- | sentences, provers and symbols
+     Provers capture the entailment relation between sets of sentences
+     and sentences. They may return proof trees witnessing proofs.
+     Signatures are equipped with underlying sets of symbols
+     (such that the category of signatures becomes a concrete category),
+     see CASL RefMan p. 191ff.
+-}
 class (Category lid sign morphism, Ord sentence,
-       Ord symbol,
+       Ord symbol, --  for efficient lookup
        PrintTypeConv sign, PrintTypeConv morphism,
        PrintTypeConv sentence, PrintTypeConv symbol,
        Eq proof_tree, Show proof_tree, ShATermConvertible proof_tree,
@@ -160,7 +172,9 @@ class (Category lid sign morphism, Ord sentence,
     => Sentences lid sentence proof_tree sign morphism symbol
         | lid -> sentence proof_tree sign morphism symbol
       where
-         -- sentence translation
+
+      ----------------------- sentences ---------------------------
+         -- sentence translation along a signature morphism
       map_sen :: lid -> morphism -> sentence -> Result sentence
       map_sen l _ _ = statErr l "map_sen"
          -- simplification of sentences (leave out qualifications)
@@ -169,31 +183,53 @@ class (Category lid sign morphism, Ord sentence,
          -- parsing of sentences
       parse_sentence :: lid -> Maybe (AParser st sentence)
       parse_sentence _ = Nothing
-           -- print a sentence with comments
+          -- print a sentence with comments
       print_named :: lid -> Named sentence -> Doc
       print_named _ = printAnnoted (addBullet . pretty) . fromLabelledSen
+
+      ----------------------- symbols ---------------------------
+         -- set of symbols for a signature
       sym_of :: lid -> sign -> Set.Set symbol
+         -- symbol map for a signature morphism
       symmap_of :: lid -> morphism -> EndoMap symbol
+         -- symbols have a name, see CASL RefMan p. 192
       sym_name :: lid -> symbol -> Id
+
+      ----------------------- provers ---------------------------
+         -- several provers can be provided. See module Logic.Prover
       provers :: lid -> [Prover sign sentence proof_tree]
-      provers _ = []
+      provers _ = [] -- default implementation
+         -- consistency checkers
       cons_checkers :: lid -> [ConsChecker sign sentence morphism proof_tree]
-      cons_checkers _ = []
+      cons_checkers _ = [] -- default implementation
+         -- conservativity checkers
       conservativityCheck :: lid -> (sign, [Named sentence]) ->
                        morphism -> [Named sentence] -> Result (Maybe Bool)
       conservativityCheck l _ _ _ = statErr l "conservativityCheck"
+         -- the empty proof tree
       empty_proof_tree :: proof_tree
 
--- | a dummy function to allow type checking *.inline.hs files
+-- | a dummy static analysis function to allow type checking *.inline.hs files
 inlineAxioms :: StaticAnalysis lid
         basic_spec sentence proof_tree symb_items symb_map_items
         sign morphism symbol raw_symbol => lid -> String -> [Named sentence]
 inlineAxioms _ _ = error "inlineAxioms"
 
--- static analysis
+-- error function for static analysis
 statErr :: (Language lid, Monad m) => lid -> String -> m a
 statErr lid str = fail ("Logic." ++ str ++ " nyi for: " ++ language_name lid)
 
+{- static analysis
+   This type class provides the data needed for an institution with symbols,
+   as explained in the structured specification semantics in the CASL
+   reference manual, chapter III.4.
+   The static analysis computes signatures from basic specifications, 
+   and signature morphisms from symbol lists and symbol maps. The latter
+   needs an intermediate stage, so-called raw symbols, which are possibly
+   unqualified symbols. Normal symbols are always fully qualified.
+   In the CASL reference manual, our symbols are called "signature symbols",
+   and our raw symbols are called "symbols". (Terminology should be adapted.)
+-}
 class ( Syntax lid basic_spec symb_items symb_map_items
       , Sentences lid sentence proof_tree sign morphism symbol
       , Ord raw_symbol, Pretty raw_symbol, Typeable raw_symbol)
@@ -203,29 +239,41 @@ class ( Syntax lid basic_spec symb_items symb_map_items
         | lid -> basic_spec sentence proof_tree symb_items symb_map_items
                  sign morphism symbol raw_symbol
       where
+         ----------------------- static analysis ---------------------------
          {- static analysis of basic specifications and symbol maps.
             The resulting bspec has analyzed axioms in it.
-            The resulting sign is an extension of the input sign -}
+            The resulting sign is an extension of the input sign.
+            See CASL RefMan p. 138 ff. -}
          basic_analysis :: lid ->
                            Maybe((basic_spec,  -- abstract syntax tree
-                            sign,   -- efficient table for env signature
+                            sign, -- input signature, for the local 
+                                  -- environment, carrying the previously
+                                  -- declared symbols
                             GlobalAnnos) ->   -- global annotations
                            Result (basic_spec, sign, [Named sentence]))
          -- default implementation
          basic_analysis _ = Nothing
 
-         -- Shouldn't the following deliver Maybes???
+         -- one-sided inverse for static analysis
          sign_to_basic_spec :: lid -> sign -> [Named sentence] -> basic_spec
+         -- static analysis of symbol maps, see CASL RefMan p. 222f.
          stat_symb_map_items ::
              lid -> [symb_map_items] -> Result (EndoMap raw_symbol)
          stat_symb_map_items l _ = statErr l "stat_symb_map_items"
+         -- static analysis of symbol lists, see CASL RefMan p. 221f.
          stat_symb_items :: lid -> [symb_items] -> Result [raw_symbol]
          stat_symb_items l _ = statErr l "stat_symb_items"
-         -- amalgamation
+
+         ------------------------- amalgamation ---------------------------
+         -- computation of colimits of signature diagram
+         -- indeed, it suffices to compute a coconce that is weakly amalgamable
+         -- see Till Mossakowski, 
+         -- Heterogeneous specification and the heterogeneous tool set
+         -- p. 25ff.
          weaklyAmalgamableCocone :: lid -> Tree.Gr sign morphism
                                      -> Result (sign, Map.Map Int morphism)
          weaklyAmalgamableCocone l _ = statErr l "weaklyAmalgamableCocone"
-         -- architectural sharing analysis
+         -- architectural sharing analysis, see CASL RefMan p. 247ff.
          ensures_amalgamability :: lid ->
               ([CASLAmalgOpt],        -- the program options
                Tree.Gr sign morphism, -- the diagram to be analyzed
@@ -233,16 +281,26 @@ class ( Syntax lid basic_spec symb_items symb_map_items
                Tree.Gr String String) -- the descriptions of nodes and edges
                   -> Result Amalgamates
          ensures_amalgamability l _ = statErr l "ensures_amalgamability"
-         -- symbols and symbol maps
+
+         -------------------- symbols and raw symbols ---------------------
+         -- construe a symbol, like f:->t, as a raw symbol
+         -- This is a one-sided inverse to the function SymSySigSym
+         -- in the CASL RefMan p. 192.
          symbol_to_raw :: lid -> symbol -> raw_symbol
+         -- construe an identifier, like f, as a raw symbol. 
+         -- See CASL RefMan p. 192, function IDAsSym
          id_to_raw :: lid -> Id -> raw_symbol
+         -- check wether a symbol matches a raw symbol, for
+         -- example, f:s->t matches f. See CASL RefMan p. 192
          matches :: lid -> symbol -> raw_symbol -> Bool
 
-         -- operations on signatures and morphisms
+         --------------- operations on signatures and morphisms -----------
+         -- the empty (initial) signature, see CASL RefMan p. 193
          empty_signature :: lid -> sign
+         -- union of signatures, see CASL RefMan p. 193
          signature_union :: lid -> sign -> sign -> Result sign
          signature_union l _ _ = statErr l "signature_union"
-            {- computing the difference of signatures. The first
+         {- compute the difference of signatures. The first
             signature must be an inclusion of the second. The resulting
             signature might be an unclosed signature that should only be
             used with care, though the following property should hold: 
@@ -250,31 +308,50 @@ class ( Syntax lid basic_spec symb_items symb_map_items
             (Unions are supposed to be symmetric and associative.) -}
          signature_difference :: lid -> sign -> sign -> Result sign
          signature_difference l _ _ = statErr l "signature_difference"
-         morphism_union :: lid -> morphism -> morphism -> Result morphism
-         morphism_union l _ _ = statErr l "morphism_union"
+         -- subsignatures, see CASL RefMan p. 194
+         is_subsig :: lid -> sign -> sign -> Bool
+         -- final union of signatures, see CASL RefMan p. 194
          final_union :: lid -> sign -> sign -> Result sign
          final_union l _ _ = statErr l "final_union"
-         is_transportable :: lid -> morphism -> Bool
-         is_transportable _ _ = False -- save default
-         is_injective :: lid -> morphism -> Bool
-         is_injective _ _ = False -- save default
-
-           -- see CASL reference manual, III.4.1.2
-         is_subsig :: lid -> sign -> sign -> Bool
+         -- union of signature morphims, see CASL RefMan p. 196
+         morphism_union :: lid -> morphism -> morphism -> Result morphism
+         morphism_union l _ _ = statErr l "morphism_union"
+         -- construct the inclusion morphisms between subsignatures, 
+         -- see CASL RefMan p. 194
          inclusion :: lid -> sign -> sign -> Result morphism
          inclusion l _ _ = statErr l "inclusion"
+         -- the signature (co)generated by a set of symbols in another
+         -- signature is the smallest (largest) signature containing
+         -- (excluding) the set of symbols. Needed for revealing and
+         -- hiding, see CASL RefMan p. 197ff.
          generated_sign, cogenerated_sign ::
              lid -> Set.Set symbol -> sign -> Result morphism
          generated_sign l _ _ = statErr l "generated_sign"
          cogenerated_sign l _ _ = statErr l "cogenerated_sign"
+         -- induce a signature morphism from a source signature and
+         -- a raw symbol map. Needed for translation (SP with SM).
+         -- See CASL RefMan p. 198
          induced_from_morphism ::
              lid -> EndoMap raw_symbol -> sign -> Result morphism
          induced_from_morphism l _ _ = statErr l "induced_from_morphism"
+         -- induce a signature morphism between two signatures by a 
+         -- raw symbol map. Needed for instantiation and views.
+         -- See CASL RefMan p. 198f.
          induced_from_to_morphism ::
              lid -> EndoMap raw_symbol -> sign -> sign -> Result morphism
          induced_from_to_morphism l _ _ _ =
              statErr l "induced_from_to_morphism"
-         -- generate taxonomy from theory
+         -- check whether a signature morphism is transportable.
+         -- See CASL RefMan p. 304f.
+         is_transportable :: lid -> morphism -> Bool
+         is_transportable _ _ = False -- safe default
+         -- check whether the underlying symbol map of a signature morphism 
+         -- is injective
+         is_injective :: lid -> morphism -> Bool
+         is_injective _ _ = False -- safe default
+
+         ------------------- generate taxonomy from theory ----------------
+         -- generate an ontological taxonomy, if this makes sense
          theory_to_taxonomy :: lid
                             -> TaxoGraphKind
                             -> MMiSSOntology
@@ -282,8 +359,7 @@ class ( Syntax lid basic_spec symb_items symb_map_items
                             -> Result MMiSSOntology
          theory_to_taxonomy l _ _ _ _ = statErr l "theory_to_taxonomy"
 
--- sublogics
-
+-- | semi lattices with top (needed for sublogics)
 class (Eq l, Show l) => SemiLatticeWithTop l where
   join :: l -> l -> l
   top :: l
@@ -292,9 +368,11 @@ instance SemiLatticeWithTop () where
   join _ _ = ()
   top = ()
 
+-- | less or equal for semi lattices
 isSubElem :: SemiLatticeWithTop l => l -> l -> Bool
 isSubElem a b = join a b == b
 
+-- | class providing the minimal sublogic of an item
 class MinSublogic sublogic item where
     minSublogic :: item -> sublogic
 
@@ -307,6 +385,7 @@ instance SemiLatticeWithTop s => MinSublogic s a where
     minSublogic _ = top
 -}
 
+-- | class providing also the projection of an item to a sublogic
 class MinSublogic sublogic item => ProjectSublogic sublogic item where
     projectSublogic :: sublogic -> item -> item
 
@@ -319,6 +398,7 @@ instance MinSublogic a b => ProjectSublogic a b where
     projectSublogic _ = id
 -}
 
+-- | like ProjectSublogic, but providing a partial projection
 class MinSublogic sublogic item => ProjectSublogicM sublogic item where
     projectSublogicM :: sublogic -> item -> Maybe item
 
@@ -332,14 +412,26 @@ instance (SemiLatticeWithTop a, MinSublogic a b) => ProjectSublogicM a b where
                            then Just i else Nothing
 -}
 
+-- | class for providing a list of sublogic names
 class Sublogics l where
     sublogic_names :: l -> [String]
 
 instance Sublogics () where
     sublogic_names () = [""]
 
--- logics
-
+{- Type class logic. The central type class of Hets, providing the
+   interface for logics. This type class is instantiated for many logics,
+   and it is used for the logic independent parts of Hets.
+   It hence provides an sbatraction barrier between logic specific and
+   logic indepdendent code.
+   This type class extends the class StaticAnalysis by a sublogic mechanism.
+   Sublogics are important since they avoid the need to provide an own
+   instance of the class logic for each sublogic. Instead, the sublogic
+   can use the datastructures and operations of the main logic, and
+   functions are provided to test whether a given item lies within the
+   sublogic. Also, projection functions from a super-logic to a sublogic
+   are provided. 
+-}
 class (StaticAnalysis lid
         basic_spec sentence proof_tree symb_items symb_map_items
         sign morphism symbol raw_symbol,
@@ -371,12 +463,16 @@ class (StaticAnalysis lid
          data_logic :: lid -> Maybe AnyLogic
          data_logic _ = Nothing
 
+         -- the top sublogic, corresponding to the whole logic
          top_sublogic :: lid -> sublogics
          top_sublogic _ = top
 
+         -- list all the sublogics of the current logic
          all_sublogics :: lid -> [sublogics]
          all_sublogics li = [top_sublogic li]
 
+         -- provide the embedding of a projected signature into the
+         -- original signature
          proj_sublogic_epsilon :: lid -> sublogics -> sign -> morphism
          proj_sublogic_epsilon li _ s = ide li s
 
@@ -384,6 +480,7 @@ class (StaticAnalysis lid
 -- Derived functions
 ----------------------------------------------------------------
 
+-- | the empty theory
 empty_theory :: StaticAnalysis lid
         basic_spec sentence proof_tree symb_items symb_map_items
         sign morphism symbol raw_symbol =>
@@ -394,6 +491,7 @@ empty_theory lid = Theory (empty_signature lid) Map.empty
 -- Existential type covering any logic
 ----------------------------------------------------------------
 
+-- | the disjoint union of all logics
 data AnyLogic = forall lid sublogics
         basic_spec sentence symb_items symb_map_items
         sign morphism symbol raw_symbol proof_tree .
