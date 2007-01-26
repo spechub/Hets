@@ -45,7 +45,7 @@ Provides data structures for logics (with symbols). Logics are
    J. Meseguer
    General Logics
    Logic Colloquium 87, p. 275--329, North Holland, 1989
-   (general notion of logic - also entailment/proof theory;
+   (general notion of logic - also entailment\/proof theory;
     notion of logic representation, called map there)
 
    T. Mossakowski:
