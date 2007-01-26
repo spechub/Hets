@@ -1,5 +1,4 @@
-type  bool ::= True | 
-               False
+type  bool ::= True | False
 op    a : bool = (op True : bool) as bool
 op    notA : bool =
       case (op a : bool) of

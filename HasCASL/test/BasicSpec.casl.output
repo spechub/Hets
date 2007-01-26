@@ -1,6 +1,4 @@
-free type
-Nat ::= 0 | 
-        suc (pre :? Nat)
+free type Nat ::= 0 | suc (pre :? Nat)
 pred  __<=__, __<__, __>=__, __>__ : Nat * Nat;
       odd, even : Nat
 op    min, max : Nat * Nat ->? Nat
@@ -200,31 +198,23 @@ var   a : t; a : s; b : s
 . a = a
 . a = a
 . a = a
-type  s ::= type s2, s1 | 
-            c | 
-            c (a; a : t; b : t; a : t; d : t) | 
-            c (a)?
+type  s
+      ::= type s2, s1 | c | c (a; a : t; b : t; a : t; d : t) | c (a)?
 free type
-s ::= type s2, s1 | 
-      c | 
-      c (a; a : t; b : t; d : t) | 
-      c (a)?
+s ::= type s2, s1 | c | c (a; a : t; b : t; d : t) | c (a)?
 generated
-{type  s ::= type s2, s1 | 
-             c | 
-             c (a; a : t; b : t; d : t) | 
-             c (a)?
-}
+{type  s ::= type s2, s1 | c | c (a; a : t; b : t; d : t) | c (a)?}
 generated
 {pred  __<__ : a * a;
 op    a : b;
       c : b;
 type  s, t < s;
-type  s ::= type s2, s1 | 
-            c | 
-            c (a) | 
-            c (a; a : t; b : t; d : t) | 
-            c (a)? %(bla1)%
+type  s
+      ::= type s2, s1 | 
+          c | 
+          c a | 
+          c (a; a : t; b : t; d : t) | 
+          c (a)? %(bla1)%
 }
 
 %(sort)%
@@ -242,12 +232,13 @@ var   a : t; a : s; b : s
 
 %(bla8-ignored)%
 %(type)%
-type  t ::= 
-            %(c)%
-            c %(c)% | 
-            e %(e)% | 
-            d %(9)%
-            %(axiom)%
+type  t
+      ::= 
+          %(c)%
+          c %(c)% | 
+          e %(e)% | 
+          d %(9)%
+          %(axiom)%
 . a = a %(a1)%
 . a = a %(a2)%
 
@@ -310,32 +301,21 @@ pred  b : s
 pred  c : s * s;
       c : s * s * s
 pred  c(x : s; y : s; z : t) :? Unit = false
-type  Data1 ::= a | 
-                b | 
-                c
-type  Data2 ::= Cons21 (Data1; Data2) | 
-                Cons22 (Data2; Data1) | 
-                type Data1
-type  Data3 ::= Cons31 (sel1 :? Data1; sel2 :? Data2) | 
-                Cons32 (sel2 :? Data2; sel1 :? Data1)
-type  Data4 ::= Cons41 (sel1 :? Data1; sel2 :? Data2)? | 
-                Cons42 (sel2 :? Data2; sel1 : ? Data1)?
+type  Data1 ::= a | b | c
+type  Data2
+      ::= Cons21 (Data1; Data2) | Cons22 (Data2; Data1) | type Data1
+type  Data3
+      ::= Cons31 (sel1 :? Data1; sel2 :? Data2) | 
+          Cons32 (sel2 :? Data2; sel1 :? Data1)
+type  Data4
+      ::= Cons41 (sel1 :? Data1; sel2 :? Data2)? | 
+          Cons42 (sel2 :? Data2; sel1 : ? Data1)?
 type  Data1, Data2, Data3
-type  Tree ::= Leaf (Data1) | 
-               Forest;
-      Forest ::= Nil | 
-                 Cons (Tree; Forest)
-free type
-List ::= Nil | 
-         Cons (Data1; List)
-generated
-{type  Set ::= Mt | 
-               Add (Data1; Set)
-}
-generated
-{type  Set ::= Mt | 
-               Add (Data1; Set)
-}
+type  Tree ::= Leaf Data1 | Forest;
+      Forest ::= Nil | Cons (Tree; Forest)
+free type List ::= Nil | Cons (Data1; List)
+generated {type  Set ::= Mt | Add (Data1; Set)}
+generated {type  Set ::= Mt | Add (Data1; Set)}
 generated
 {type  nat;
 op    0 : nat;
@@ -384,9 +364,7 @@ var   x : s
 . exists! x : s . e
 forall x : s
 . e
-free type
-Boolean ::= True | 
-            False
+free type Boolean ::= True | False
 op    Not__ : Boolean -> Boolean;
       __And__, __Or__ : Boolean * Boolean -> Boolean
 forall x : Boolean; y : Boolean; z : Boolean

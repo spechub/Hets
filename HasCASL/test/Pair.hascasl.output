@@ -1,5 +1,5 @@
 var   a : Type; b : Type
-free type Pair(a : Type)(b : Type) ::= Pair (fst : a; snd : b)
+free type Pair a b ::= Pair (fst : a; snd : b)
 op    f : forall a : Type; b : Type . a * b -> Pair a b =
       \ ((var a : a), (var b : b)) .!
       (op Pair[a; b] : forall a : Type; b : Type . a * b -> Pair a b)

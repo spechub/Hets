@@ -2,9 +2,7 @@ type  Nat
 op    0, 1 : Nat
 op    __+__, __-__, min : Nat * Nat -> Nat
 pred  __>=__, __<=__, __>__ : Nat * Nat
-free type
-Boolean ::= True | 
-            False
+free type Boolean ::= True | False
 var   S : Type; V : Type
 type  Set : Type -> Type := \ S : Type . S ->? Unit
 op    emptySet : Set S;
@@ -43,8 +41,8 @@ forall B : MultiSet Elem; S : Set Elem
    ((var x : Elem), (var B : MultiSet Elem)),
    (op 0 : Nat))
 var   S : Type
-type  MapMultiSet : Type -> Type :=
-      \ S : Type . MultiSet S ->? MultiSet S
+type  MapMultiSet : Type -> Type
+      := \ S : Type . MultiSet S ->? MultiSet S
 var   a : Type
 op    sumN : (Nat ->? Nat) -> Nat -> Nat;
       sumSet : Set Nat ->? Nat;
@@ -150,7 +148,7 @@ op    dom : HomNet -> Net;
       id : Net ->? HomNet;
       __o__ : HomNet * HomNet ->? HomNet
 pred  injective : HomNet
-type  Marking : Type := MultiSet P
+type  Marking := MultiSet P
 type  System =
       {(n, m) : Net * Marking .
       let ((var p : P ->? Unit), (var pre1 : T ->? P ->? Nat),

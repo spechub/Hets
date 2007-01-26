@@ -386,7 +386,7 @@ instance Pretty OpAttr where
 instance Pretty DatatypeDecl where
     pretty (DatatypeDecl p k alts d _) = 
         fsep [ pretty p <> printKind k, defn
-              <+> sep (punctuate (space <> bar <> space) 
+              <+> cat (punctuate (space <> bar <> space) 
                       $ map pretty alts)
              , case d of 
                  [] -> empty
@@ -396,7 +396,8 @@ instance Pretty Alternative where
     pretty alt = case alt of
         Constructor n cs p _ ->
             pretty n <+> fsep (map ( \ l -> case (l, p) of 
-                              ([NoSelector t], Total) -> pretty t
+                              ([NoSelector (TypeToken t)], Total) 
+                                  -> pretty t
                               _ -> parens $ semiDs l) cs)
                        <> pretty p
         Subtype l _ -> noNullPrint l $ text typeS <+> ppWithCommas l

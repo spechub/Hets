@@ -1,12 +1,12 @@
 var   s : Type
 type  MyPred : Type -> Type := \ s : Type . s ->? Unit
 type  MyAlias : Type -> Type := \ t : Type . t ->? Unit
-type  a1 : Type -> Type -> Type :=
-      \ (a : Type)(b : Type) . a -> b -> Unit
-type  a1 : Type -> Type -> Type :=
-      \ (a : Type)(b : Type) . a -> b -> Unit
-type  a1 : Type -> Type -> Type :=
-      \ (a : Type)(b : Type) . a -> b -> Unit
+type  a1 : Type -> Type -> Type
+      := \ (a : Type)(b : Type) . a -> b -> Unit
+type  a1 : Type -> Type -> Type
+      := \ (a : Type)(b : Type) . a -> b -> Unit
+type  a1 : Type -> Type -> Type
+      := \ (a : Type)(b : Type) . a -> b -> Unit
 type  a2 : Type -> Type -> Type := \ a : Type . a -> Unit
 type  a3 : Type -> Type -> Type := \ a : Type . a -> Unit
 type  a4 : Type -> Type -> Type := \ a : Type . a -> Unit
