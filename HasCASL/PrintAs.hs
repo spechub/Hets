@@ -185,7 +185,12 @@ parenTermDoc trm = if isSimpleTerm trm then id else parens
 
 printTermRec :: FoldRec Doc (Doc, Doc)
 printTermRec = FoldRec
-    { foldQualVar = \ _ vd -> parens $ keyword varS <+> pretty vd
+    { foldQualVar = \ _ vd@(VarDecl v ty _ _) -> 
+         case ty of 
+           TypeName t _ _ 
+             | isSimpleId v && take 2 (show t) == "_v" 
+             -> pretty v
+           _ -> parens $ keyword varS <+> pretty vd
     , foldQualOp = \ _ br n t _ ->
           parens $ fsep [pretty br, pretty n, colon, pretty $
                          if isPred br then unPredTypeScheme t else t]
@@ -202,7 +207,12 @@ printTermRec = FoldRec
               idApplDoc n [parenTermDoc o2 t2]
           _ -> idApplDoc applId [parenTermDoc o1 t1, parenTermDoc o2 t2]
      , foldTupleTerm = \ _ ts _ -> parens $ sepByCommas ts
-     , foldTypedTerm = \ _ t q typ _ -> fsep [t, pretty q, pretty typ]
+     , foldTypedTerm = \ (TypedTerm ot _ _ _) t q typ _ -> fsep [(case ot of 
+           LambdaTerm {} -> parens
+           LetTerm {} -> parens
+           CaseTerm {} -> parens
+           QuantifiedTerm {} -> parens
+           _ -> id) t, pretty q, pretty typ]
      , foldQuantifiedTerm = \ _ q vs t _ ->
            fsep [pretty q, semiDs vs, bullet, t]
      , foldLambdaTerm = \ _ ps q t _ ->
@@ -216,10 +226,10 @@ printTermRec = FoldRec
                  , t]
      , foldCaseTerm = \ _ t es _  ->
             fsep [text caseS, t, text ofS,
-                  vcat $ punctuate (space <> bar <> space) $
+                  cat $ punctuate (space <> bar <> space) $
                        map (printEq0 funArrow) es]
      , foldLetTerm = \ _ br es t _ ->
-            let des = vcat $ punctuate semi $ map (printEq0 equals) es
+            let des = sep $ punctuate semi $ map (printEq0 equals) es
                 in case br of
                 Let -> fsep [sep [text letS <+> des, text inS], t]
                 Where -> fsep [sep [t, text whereS], des]

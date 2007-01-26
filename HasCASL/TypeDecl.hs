@@ -7,8 +7,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-analyse type decls
-
+analyse type declarations
 -}
 
 module HasCASL.TypeDecl where
@@ -32,16 +31,23 @@ import HasCASL.DataAna
 import HasCASL.Unify
 import HasCASL.VarDecl
 import HasCASL.SubtypeDecl
+import HasCASL.MixAna
 import HasCASL.TypeCheck
 
 toTypePattern :: (Id, [TypeArg]) -> TypePattern
 toTypePattern (i, tArgs) = TypePattern i tArgs nullRange
 
-anaFormula :: GlobalAnnos -> Annoted Term -> State Env (Maybe (Annoted Term))
+anaFormula :: GlobalAnnos -> Annoted Term 
+           -> State Env (Maybe (Annoted Term, Annoted Term))
 anaFormula ga at = 
-    do mt <- resolveTerm ga (Just unitType) $ item at 
-       return $ case mt of Nothing -> Nothing
-                           Just e -> Just at { item = e }
+    do rt <- resolve ga $ item at 
+       case rt of 
+         Nothing -> return Nothing 
+         Just t -> do 
+           mt <- typeCheck (Just unitType) t
+           return $ case mt of 
+             Nothing -> Nothing
+             Just e -> Just (at { item = t }, at { item = e }) 
 
 anaVars :: TypeEnv -> Vars -> Type -> Result [VarDecl]
 anaVars _ (Var v) t = return [VarDecl v t Other nullRange]
@@ -187,7 +193,7 @@ anaTypeItem ga _ inst _ (SubtypeDefn pat v t f ps) =
                                putLocalVars vs
                                case mf of 
                                    Nothing -> altAct
-                                   Just newF -> do 
+                                   Just (newF, _) -> do 
                                        addTypeId True NoTypeDefn
  --  (Supertype v newPty  $ item newF)
                                            inst rk fullKind i
@@ -261,7 +267,8 @@ ana1Datatype (DatatypeDecl pat kind alts derivs ps) =
                   frk <- anaKind fullKind
                   b <- addTypeId False PreDatatype Plain frk fullKind i
                   return $ if b then Just $ DatatypeDecl 
-                      (TypePattern i nAs nullRange) k alts newDerivs ps else Nothing
+                    (TypePattern i nAs nullRange) k alts newDerivs ps 
+                    else Nothing
 
 dataPatToType :: DatatypeDecl -> State Env DataPat
 dataPatToType (DatatypeDecl (TypePattern i nAs _) k _ _ _) = do

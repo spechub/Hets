@@ -1,24 +1,10 @@
 var   a : Type; b < a
-op    twice2 : forall a : Type; b < a : Type . (a ->? b) -> a ->? b
-      =
-      \ ((var f : a ->? b))((var x : a)) .
-      (var f : a ->? b) ((var f : a ->? b) (var x : a)) as b
-op    twice3 : forall a : Type; b < a : Type . (a ->? b) * a ->? b
-      =
-      \ ((var f : a ->? b), (var x : a)) .
-      (var f : a ->? b) ((var f : a ->? b) (var x : a))
-      as (a ->? b) * a ->? b
-op    twice : forall a : Type; b < a : Type . (a ->? b) -> a ->? b
-      =
-      \ ((var f : a ->? a))((var x : a)) .
-      (var f : a ->? a) ((var f : a ->? a) (var x : a))
-      as (a ->? b) -> a ->? b
+op    twice2(f : a ->? b)(x : a) :? b = f (f x)
+op    twice3 : (a ->? b) * a ->? b =
+      \ (f : a ->? b, x : a) . f (f x)
+op    twice : (a ->? b) -> a ->? b = \ (f)(x : a) . f (f x)
 var   f : a ->? b; x : a
-. (op twice[a; b] :
-   forall a : Type; b < a : Type . (a ->? b) -> a ->? b)
-  (var f : a ->? b)
-  (var x : a)
-  = (var f : a ->? b) ((var f : a ->? b) (var x : a))
+. twice f x = f (f x)
 %% Type Variables --------------------------------------------------------
 a  : Type %(var_1)%
 b  < a : Type %(var_2)%
@@ -26,8 +12,8 @@ b  < a : Type %(var_2)%
 twice
 : forall a : Type; b < a : Type . (a ->? b) -> a ->? b
 %(op)% =
-\ ((var f : a ->? a))((var x : a)) .
-(var f : a ->? a) ((var f : a ->? a) (var x : a))
+(\ ((var f : a ->? a))((var x : a)) .
+ (var f : a ->? a) ((var f : a ->? a) (var x : a)))
 as (a ->? b) -> a ->? b
 twice2
 : forall a : Type; b < a : Type . (a ->? b) -> a ->? b
@@ -37,8 +23,8 @@ twice2
 twice3
 : forall a : Type; b < a : Type . (a ->? b) * a ->? b
 %(op)% =
-\ ((var f : a ->? b), (var x : a)) .
-(var f : a ->? b) ((var f : a ->? b) (var x : a))
+(\ ((var f : a ->? b), (var x : a)) .
+ (var f : a ->? b) ((var f : a ->? b) (var x : a)))
 as (a ->? b) * a ->? b
 %% Variables -------------------------------------------------------------
 f : a ->? b
@@ -46,9 +32,10 @@ x : a
 %% Sentences -------------------------------------------------------------
 forall f : a ->? b; x : a . twice2 f x = (f (f x) as b)
                                                     %(def_twice2)%
-twice3 = (\ (f : a ->? b, x : a) . f (f x) as (a ->? b) * a ->? b)
+twice3 =
+((\ (f : a ->? b, x : a) . f (f x)) as (a ->? b) * a ->? b)
                                                     %(def_twice3)%
-twice = (\ (f)(x : a) . f (f x) as (a ->? b) -> a ->? b)
+twice = ((\ (f)(x : a) . f (f x)) as (a ->? b) -> a ->? b)
                                                      %(def_twice)%
 twice f x = f (f x)
 %% Diagnostics -----------------------------------------------------------

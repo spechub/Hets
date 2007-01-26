@@ -5,10 +5,7 @@ type  Graph : Type -> Type -> Type
 op    __union__ : Graph N E * Graph N E -> Graph N E;
       __union__, __intersection__, __\\__ : Set S * Set S -> Set S
 forall g : Graph N E; g' : Graph N E
-. (op __union__[N; E] :
-   forall N : Type; E : Type . Graph N E * Graph N E -> Graph N E)
-  ((var g : Graph N E), (var g' : Graph N E))
-  = (var g : Graph N E)
+. (g union g') = g
 %% Type Constructors -----------------------------------------------------
 Graph
 : Type -> Type -> Type

@@ -30,12 +30,10 @@ type  __*__ : +Type -> +Type -> Type
 op    def, tt : Pred s
 var   x : s
 program
-(op def[s] : forall s : Type . Pred s) : Pred s =
-\ (var x : s) . () : s ->? Unit
+def = \ x : s . ()
 %% def is also total (identical to tt)
 program
-(op tt[s] : forall s : Type . Pred s) : Pred s =
-\ (var x : s) . () : s ->? Unit
+tt = \ x : s . ()
 %% tt is total "op tt(x: s): unit = ()"
 
 %% total function type
@@ -43,35 +41,21 @@ type  __->__ : -Type -> +Type -> Type
 type  __->__ < __->?__
 
 %% total functions
-op    __res__ : forall s : Type; t : Type . s * t -> s =
-      \ ((var x : s), (var y : t)) .! (var x : s) as s
-op    fst : forall s : Type; t : Type . s * t -> s =
-      \ ((var x : s), (var y : t)) .! (var x : s) as s
-program
-(var snd : s * t ->? t) ((var x : s), (var y : t) : t) : t =
-(var y : t)
+op    __res__(x : s; y : t) : s = x
+op    fst(x : s; y : t) : s = x
+program snd (x : s, y : t) : t = y
 
 %% trivial because its the strict function property
-. (\ ((var x : s), (var y : t)) . def (x res y)) =
-  (\ ((var x : s), (var y : t)) . (def y) und (def x))
-. (op fst[_v90; _v88] : forall s : Type; t : Type . s * t -> s) =
-  (op __res__[_v90; _v88] : forall s : Type; t : Type . s * t -> s)
+. (\ (x : s, y : t) . def (x res y)) =
+  (\ (x : s, y : t) . (def y) und (def x))
+. fst = __res__
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal Logic
 pred  eq : s * s
-. (\ (var x : s) .
-   (pred eq[s] : forall s : Type . s * s) ((var x : s), (var x : s)))
-  = (op tt[s] : forall s : Type . Pred s)
-. (\ ((var x : s), (var y : s)) .
-   (op __res__[s; Unit] : forall s : Type; t : Type . s * t -> s)
-   ((var x : s),
-    (pred eq[s] : forall s : Type . s * s) ((var x : s), (var y : s))))
-  =
-  (\ ((var x : s), (var y : s)) .
-   (op __res__[s; Unit] : forall s : Type; t : Type . s * t -> s)
-   ((var y : s),
-    (pred eq[s] : forall s : Type . s * s) ((var x : s), (var y : s))))
+. (\ x : s . eq (x, x)) = tt
+. (\ (x, y : s) . x res (eq (x, y))) =
+  (\ (x, y : s) . y res (eq (x, y)))
 
 %% then %def
 %% notation "\ ."  abbreviates "\bla:unit."
@@ -121,18 +105,10 @@ var   f : c --> d; g : c --> d
 type instance __-->__ : -Cpo -> +Pcpo -> Pcpo
 fun   Y : (p --> p) --> p
 var   f : p --> p; x : p
-. (var f : p --> p)
-  ((fun Y[p] : forall p : Pcpo . (p --> p) --> p) (var f : p --> p))
-  = (fun Y[p] : forall p : Pcpo . (p --> p) --> p) (var f : p --> p)
-. (var f : p --> p) (var x : p) = (var x : p) =>
-  (pred __<<=__[p] : forall c : Cpo . c * c)
-  ((fun Y[p] : forall p : Pcpo . (p --> p) --> p) (var f : p --> p),
-   (var x : p))
-op    undefined : forall p : Pcpo; c : Cpo . c --> p =
-      (fun Y[c --> p] : forall p : Pcpo . (p --> p) --> p)
-      (\ (var x' : c --> p) . (var x' : c --> p) as
-       (c --> p) --> c --> p)
-      as c --> p
+. f (Y f) = Y f
+. f x = x => ((Y f) <<= x)
+op    undefined : c --> p =
+      Y ((\ x' : c --> p . x') as (c --> p) --> c --> p)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% user stuff
@@ -178,7 +154,7 @@ undefined
 : forall p : Pcpo; c : Cpo . c --> p
 %(op)% =
 (fun Y[c --> p] : forall p : Pcpo . (p --> p) --> p)
-(\ (var x' : c --> p) . (var x' : c --> p) as
+((\ (var x' : c --> p) . (var x' : c --> p)) as
  (c --> p) --> c --> p)
 as c --> p
 %% Variables -------------------------------------------------------------
@@ -190,8 +166,8 @@ x2 : c
 y1 : d
 y2 : d
 %% Sentences -------------------------------------------------------------
-program def : Pred s = \ x . () : s ->? Unit %(pe_def)%
-program tt : Pred s = \ x . () : s ->? Unit %(pe_tt)%
+program def : Pred s = (\ x . ()) : s ->? Unit %(pe_def)%
+program tt : Pred s = (\ x . ()) : s ->? Unit %(pe_tt)%
 forall x : s; y : t . (x res y) = (x as s) %(def___res__)%
 forall x : s; y : t . fst (x, y) = (x as s) %(def_fst)%
 program (var snd : s * t ->? t) (x, y : t) : t = y %(pe_snd)%
@@ -204,7 +180,7 @@ fst = __res__
 f (Y f) = Y f
 f x = x => ((Y f) <<= x)
 undefined =
-(Y (\ x' : c --> p . x' as (c --> p) --> c --> p) as c --> p)
+(Y ((\ x' : c --> p . x') as (c --> p) --> c --> p) as c --> p)
                                                  %(def_undefined)%
 free type bool ::=
           true : bool
@@ -264,8 +240,7 @@ free type bool ::=
 
 ### Hint 87.40-87.46, untypable application (with result type: Pred Unit)
  'eq (p, tt)'
-*** Error 87.38, no typing for 'program (var all : _v206) ((var p : _v207) : Pred s) : Pred Unit
-          = eq (p, tt)'
+*** Error 87.38, no typing for 'program all (p : Pred s) : Pred Unit = eq (p, tt)'
 ### Hint 90.14, rebound variable 'x'
 ### Hint 90.45, no type match for: t1
   with (maximal) type: _v265 ->? _v264 ->? _v263 ->? _v262 ->? Pred Unit
@@ -279,9 +254,7 @@ free type bool ::=
  't1 und t2'
 ### Hint 90.45-90.57, untypable application (with result type: Pred Unit)
  't1 und t2 ()'
-*** Error 90.43, no typing for 'program (var And : _v231) (x, (var y : _v232) : Pred Unit) :
-          Pred Unit
-          = t1 und t2 ()'
+*** Error 90.43, no typing for 'program And (x, y : Pred Unit) : Pred Unit = t1 und t2 ()'
 *** Error 93.11, unexpected mixfix token: impl
 *** Error 95.11, unexpected mixfix token: or
 ### Hint 98.39, no type match for: all
@@ -289,21 +262,16 @@ free type bool ::=
   known types:
     
 ### Hint 98.39-99.45, untypable application (with result type: Pred Unit)
- 'all
-  (\ (var r : _v269) : Pred Unit .
-   all (\ x : s . p x impl r) impl r)'
-*** Error 98.37, no typing for 'program (var ex : _v267) ((var p : _v268) : Pred s) : Pred Unit =
-          all
-          (\ (var r : _v269) : Pred Unit .
-           all (\ x : s . p x impl r) impl r)'
+ 'all (\ r : Pred Unit . all (\ x : s . p x impl r) impl r)'
+*** Error 98.37, no typing for 'program ex (p : Pred s) : Pred Unit =
+          all (\ r : Pred Unit . all (\ x : s . p x impl r) impl r)'
 ### Hint 101.29, no type match for: all
   with (maximal) type: _v303 ->? Pred Unit
   known types:
     
 ### Hint 101.29-101.50, untypable application (with result type: Pred Unit)
- 'all (\ (var r : _v293) : Pred Unit . r)'
-*** Error 101.27, no typing for 'program (var ff : _v292) () : Pred Unit =
-          all (\ (var r : _v293) : Pred Unit . r)'
+ 'all (\ r : Pred Unit . r)'
+*** Error 101.27, no typing for 'program ff () : Pred Unit = all (\ r : Pred Unit . r)'
 ### Hint 103.44, no type match for: impl
   with (maximal) type: _v328
   known types:
@@ -312,19 +280,17 @@ free type bool ::=
  'r impl'
 ### Hint 103.42-103.49, untypable application (with result type: Pred Unit)
  'r impl ff'
-*** Error 103.40, no typing for 'program (var neg : _v304) ((var r : _v305) : Pred Unit) :
-          Pred Unit
-          = r impl ff'
+*** Error 103.40, no typing for 'program neg (r : Pred Unit) : Pred Unit = r impl ff'
 ### Hint 108.3, no type match for: all
   with (maximal) type: _v339 ->? Unit
   known types:
     
 ### Hint 108.3-108.63, untypable application (with result type: Unit)
  'all
-  (\ ((var f : _v337), (var g : _v338)) : s ->? t .
+  (\ (f, g) : s ->? t .
    all (\ x : s . eq (\ () . f x, g x) impl eq (f, g)))'
 *** Error 108.3-108.63, no typing for 'all
-  (\ ((var f : _v337), (var g : _v338)) : s ->? t .
+  (\ (f, g) : s ->? t .
    all (\ x : s . eq (\ () . f x, g x) impl eq (f, g)))'
 ### Hint 117.5, is type variable 'c'
 ### Hint 121.3, no type match for: all
@@ -339,36 +305,28 @@ free type bool ::=
   known types:
     
 ### Hint 122.3-122.44, untypable application (with result type: Unit)
- 'all
-  (\ (x, (var y : _v342), (var z : _v343) : c) .
-   ((x <<= y) und (y <<= z) impl x) <<= z)'
-*** Error 122.3-122.44, no typing for 'all
-  (\ (x, (var y : _v342), (var z : _v343) : c) .
-   ((x <<= y) und (y <<= z) impl x) <<= z)'
+ 'all (\ (x, y, z : c) . ((x <<= y) und (y <<= z) impl x) <<= z)'
+*** Error 122.3-122.44, no typing for 'all (\ (x, y, z : c) . ((x <<= y) und (y <<= z) impl x) <<= z)'
 ### Hint 123.3, no type match for: all
   with (maximal) type: _v347 ->? Unit
   known types:
     
 ### Hint 123.3-123.57, untypable application (with result type: Unit)
- 'all
-  (\ (x, (var y : _v345), (var z : _v346) : c) .
-   (x <<= y) und (y <<= x) impl eq (x, y))'
-*** Error 123.3-123.57, no typing for 'all
-  (\ (x, (var y : _v345), (var z : _v346) : c) .
-   (x <<= y) und (y <<= x) impl eq (x, y))'
+ 'all (\ (x, y, z : c) . (x <<= y) und (y <<= x) impl eq (x, y))'
+*** Error 123.3-123.57, no typing for 'all (\ (x, y, z : c) . (x <<= y) und (y <<= x) impl eq (x, y))'
 ### Hint 125.32, no type match for: all
   with (maximal) type: _v350 ->? _v351
   known types:
     
-### Hint 125.32-125.46, untypable application 'all (\ (var n : _v348) : nat . (s n) <<= (s (Suc n)))'
-*** Error 125.14-125.46, no typing for 'all (\ (var n : _v348) : nat . (s n) <<= (s (Suc n))) as Unit'
+### Hint 125.32-125.46, untypable application 'all (\ n : nat . (s n) <<= (s (Suc n)))'
+*** Error 125.14-125.46, no typing for 'all (\ n : nat . (s n) <<= (s (Suc n))) as Unit'
 ### Hint 126.15, rebound variable 'x'
 ### Hint 126.38, no type match for: all
   with (maximal) type: _v354 ->? _v355
   known types:
     
-### Hint 126.38-126.52, untypable application 'all (\ (var n : _v352) : nat . (s n) <<= x)'
-*** Error 126.14-126.52, no typing for 'all (\ (var n : _v352) : nat . (s n) <<= x) as Unit'
+### Hint 126.38-126.52, untypable application 'all (\ n : nat . (s n) <<= x)'
+*** Error 126.14-126.52, no typing for 'all (\ n : nat . (s n) <<= x) as Unit'
 *** Error 130.21-131.74, ambiguous mixfix term
   def
 (((sup s) impl)
@@ -383,12 +341,12 @@ free type bool ::=
     
 ### Hint 130.3-131.74, untypable application (with result type: Unit)
  'all
-  (\ (var s : _v356) : nat -> c .
+  (\ s : nat -> c .
    def (sup s) impl
    (isBound (sup s, s) und all
     (\ x : c . isBound (x, s) impl sup (s) <<= x)))'
 *** Error 130.3-131.74, no typing for 'all
-  (\ (var s : _v356) : nat -> c .
+  (\ s : nat -> c .
    def (sup s) impl
    (isBound (sup s, s) und all
     (\ x : c . isBound (x, s) impl sup (s) <<= x)))'
@@ -397,8 +355,8 @@ free type bool ::=
   known types:
     
 ### Hint 134.3-134.46, untypable application (with result type: Unit)
- 'all (\ (var s : _v358) : nat -> c . isChain s impl def (sup s))'
-*** Error 134.3-134.46, no typing for 'all (\ (var s : _v358) : nat -> c . isChain s impl def (sup s))'
+ 'all (\ s : nat -> c . isChain s impl def (sup s))'
+*** Error 134.3-134.46, no typing for 'all (\ s : nat -> c . isChain s impl def (sup s))'
 ### Hint 139.5, is type variable 'p'
 ### Warning 141.4, ignoring declaration for builtin identifier 'bottom'
 ### Hint 143.3, no type match for: all
@@ -441,9 +399,9 @@ free type bool ::=
 *** Error 173.28-174.61, ambiguous mixfix term
   def
 ((((f (s m)) und) eq)
- (sup (\ (var n : _v392) : nat .! f (s (n + m))), f (sup s)))
+ (sup (\ n : nat .! f (s (n + m))), f (sup s)))
   ((((def f) (s m)) und) eq)
-(sup (\ (var n : _v392) : nat .! f (s (n + m))), f (sup s))
+(sup (\ n : nat .! f (s (n + m))), f (sup s))
 *** Error 170.7, unexpected mixfix token: :
 *** Error 176.19, unexpected mixfix token: -->?
 *** Error 176.41-176.68, ambiguous mixfix term

@@ -3,12 +3,10 @@ class Ord < Eq
 type  a : Ord
 op    f : forall e : Ord . e -> e
 op    c : a
-. (op f[a] : forall e : Ord . e -> e)
-  ((op f[a] : forall e : Ord . e -> e) (op c : a))
-  = (op c : a)
+. f (f c) = c
 type  t : Eq
 op    b : t
-. (op f[t] : forall e : Ord . e -> e) (op b : t) = (op b : t)
+. f b = b
 %% Classes ---------------------------------------------------------------
 Eq < Type
 Ord < Eq

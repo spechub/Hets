@@ -26,6 +26,7 @@ import HasCASL.VarDecl
 import HasCASL.Le
 import HasCASL.Builtin
 import HasCASL.AsUtils
+import HasCASL.MixAna
 import HasCASL.TypeCheck
 import HasCASL.ProgEq
 
@@ -86,7 +87,7 @@ anaOpItem ga br (OpDecl is sc attr ps) = do
             Just $ OpDecl us sc attr ps
 
 anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
-    do let (op@(OpId i _ _), TypeScheme tArgs scTy qs) =
+    do let (OpId i _ _, TypeScheme tArgs scTy qs) =
                getUninstOpId sc o
        checkUniqueVars $ concat oldPats
        tvs <- gets localTypeVars
@@ -99,9 +100,10 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
        mapM (mapM $ addLocalVar True) monoPats
        let newArgs = catMaybes mArgs
        mty <- anaStarType scTy
-       case mty of
-           Just ty -> do
-               mt <- resolveTerm ga Nothing $ TypedTerm trm AsType ty ps
+       mtrm <- resolve ga trm
+       case (mty, mtrm) of
+           (Just ty, Just rTrm) -> do
+               mt <- typeCheck Nothing $ TypedTerm rTrm AsType ty ps
                newSc <- generalizeS $ TypeScheme newArgs
                       (getFunType ty partial
                        $ map tuplePatternToType newPats) qs
@@ -112,7 +114,8 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
                        let lamTrm = case (pats, partial) of
                                     ([], Total) -> lastTrm
                                     _ -> LambdaTerm pats partial lastTrm ps
-                           ot = QualOp br (InstOpId i [] nullRange) newSc nullRange
+                           ot = QualOp br (InstOpId i [] nullRange) 
+                                newSc nullRange
                            lhs = mkApplTerm ot pats
                            ef = mkEqTerm eqId ps lhs lastTrm
                            f = mkForall (map GenTypeVarDecl newArgs
@@ -122,12 +125,11 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
                        appendSentences [NamedSen
                                         ("def_" ++ showId i "")
                                         True False $ Formula f]
-                       return $ Just $ OpDefn op [] newSc Total lamTrm ps
+                       return $ Just $ OpDefn o oldPats sc partial rTrm ps
                    Nothing -> do
                        addOpId i newSc [] $ NoOpDefn br
                        return $ Just $ OpDecl [OpId i [] ps] newSc [] ps
-           Nothing -> do
-               resolveTerm ga Nothing trm -- get a view more diags
+           _ -> do
                putLocalVars vs
                putLocalTypeVars tvs
                return Nothing
@@ -138,10 +140,12 @@ anaOpItem ga br (OpDefn o oldPats sc partial trm ps) =
 
 anaProgEq :: GlobalAnnos -> ProgEq -> State Env (Maybe ProgEq)
 anaProgEq ga pe@(ProgEq _ _ q) =
-    do mp <- resolveTerm ga Nothing (LetTerm Program [pe]
-                                     (BracketTerm Parens [] q) q)
-       case mp of
-           Just (LetTerm _ (newPrg@(ProgEq newPat _ _) : _) _ _) ->
+    do rp <- resolve ga (LetTerm Program [pe] (BracketTerm Parens [] q) q)
+       case rp of 
+         Just t@(LetTerm _ (rpe@(ProgEq _ _ _) : _) _ _) -> do
+           mp <- typeCheck Nothing t
+           case mp of
+             Just (LetTerm _ (newPrg@(ProgEq newPat _ _) : _) _ _) ->
                case getAppl newPat of
                Just (i, sc, _) -> do
                            addOpId i sc [] $ NoOpDefn Op
@@ -152,12 +156,13 @@ anaProgEq ga pe@(ProgEq _ _ q) =
                               else addDiags [mkNiceDiag ga Warning
                                          "illegal lhs pattern"
                                          newPat]
-                           return $ Just newPrg
+                           return $ Just rpe
                Nothing -> do addDiags [mkNiceDiag ga Error
                                          "illegal toplevel pattern"
                                          newPat]
                              return Nothing
-           _ -> return Nothing
+             _ -> return Nothing
+         _ -> return Nothing
 
 getApplConstr :: Pattern -> (Pattern, [Pattern])
 getApplConstr pat =

@@ -3,7 +3,7 @@ type  Nat < Int;
 op    0 : Nat
 op    0 : Rat
 forall y : Rat
-. (var y : Rat) = (op 0 : Nat) %(divide_def2_Rat)%
+. y = 0 %(divide_def2_Rat)%
 %% Type Constructors -----------------------------------------------------
 Int : Type < Rat
 Nat : Type < Int

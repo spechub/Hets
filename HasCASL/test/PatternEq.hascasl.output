@@ -1,26 +1,18 @@
 type  s, t
 op    snd : s * t -> t
-program
-(op snd : s * t -> t) ((var x : s), (var y : t)) : t = (var y : t)
-program
-(op snd : s * t -> t) ((var x : s), (var y : t)) : t = (var y : t)
-program
-(op snd : s * t -> t) ((var x : s), (var y : t)) : t =
-(var y : t) : t
-program
-(op snd : s * t -> t) ((var x : s), (var y : t)) : t = (var y : t)
-program
-(op snd : s * t -> t) ((var x : s), (var y : t)) : t = (var y : t)
-program
-(op snd : s * t -> t) ((var x : s) : s, (var y : t) : t) : t =
-(var y : t)
+program snd (x, y) = y
+program snd (x, y) = y
+program snd (x, y) = y : t
+program snd (x, y) : t = y
+program snd (x, y) : t = y
+program snd (x : s, y : t) : t = y
 op    a : s
-program (var b : s) : s = (op a : s)
+program b : s = a
 op    b : s
-program (op b : s) = (op a : s)
+program b : s = a
 op    x : s;
       y : t
-op    c : t = (op snd : s * t -> t) ((op x : s), (op y : t)) as t
+op    c : t = snd (x : s, y : t)
 %% Type Constructors -----------------------------------------------------
 s : Type
 t : Type

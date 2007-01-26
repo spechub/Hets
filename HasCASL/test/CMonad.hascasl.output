@@ -10,32 +10,14 @@ op    fmap : (a -> b) -> f a -> f b
 op    empty : List a
 type  Set : Functor
 op    emptySet : Set a
-. (op fail[_v12; Set] : forall a : Type; m : Monad . m a) =
-  (op emptySet[_v12] : forall a : Type . Set a)
-. (op fail[_v27; List] : forall a : Type; m : Monad . m a) =
-  (op empty[_v27] : forall a : Type . List a)
+. fail = emptySet
+. fail = ""
 op    map : (a -> b) -> List a -> List b
 op    __bind__ : m a * (a -> m b) -> m b
 var   g : a -> b
 var   x : m a
-. (op fmap[a; b; List] :
-   forall a : Type; b : Type; f : Functor . (a -> b) -> f a -> f b)
-  (var g : a -> b)
-  =
-  (op map[a; b] :
-   forall a : Type; b : Type . (a -> b) -> List a -> List b)
-  (var g : a -> b)
-. (op fmap[a; b; m] :
-   forall a : Type; b : Type; f : Functor . (a -> b) -> f a -> f b)
-  (var g : a -> b)
-  (var x : m a)
-  =
-  (op __bind__[a; b; m] :
-   forall a : Type; b : Type; m : Monad . m a * (a -> m b) -> m b)
-  ((var x : m a),
-   \ (var y : a) .!
-   (op return[b; m] : forall a : Type; m : Monad . a -> m a)
-   ((var g : a -> b) (var y : a)))
+. fmap g = map g
+. fmap g x = (x bind (\ y : a .! return (g y)))
 %% Classes ---------------------------------------------------------------
 Functor < Type -> Type
 Monad < Functor
