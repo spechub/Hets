@@ -57,7 +57,7 @@ import Text.XML.HXT.Arrow.ReadDocument
 import Text.XML.HXT.Arrow.XmlIOStateArrow
 
 import Data.List (find)
-import Char (isDigit, isAlpha, isAlphaNum, isAscii)
+import Char (isDigit, isAlpha, isAlphaNum, isAscii, isControl, ord)
 
 xpipe::forall c a b . (a->[b]) -> (b->[c]) -> a -> [c]
 xpipe = (.>)
@@ -157,7 +157,7 @@ adjustStringForXmlName s@(firstChar:_) =
   where
     replaceSpecial::String->String
     replaceSpecial [] = []
-    replaceSpecial ('\194':r) = replaceSpecial r -- Unicode (�Â in ISO-8859-15...)
+--  replaceSpecial ('\194':r) = replaceSpecial r -- Unicode (�Â in ISO-8859-15...)
     replaceSpecial (c:r) =
       case c of
         ' ' -> "_"
@@ -193,7 +193,12 @@ adjustStringForXmlName s@(firstChar:_) =
         '^' -> "Power"
         '\167' -> "Para"
         '\176' -> "Degree"
-        _ -> [c]
+        _ ->
+          if isAscii c && (not $ isControl c)
+            then
+              [c]
+            else
+              ("c" ++ (show $ ord c))
       ++ replaceSpecial r
     preventEmpty::String->String
     preventEmpty [] = "Empty"

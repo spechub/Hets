@@ -244,32 +244,41 @@ instance XmlRepresentable Theory where
           (XML.xmlNullFilter, trempres)
           (theoryConstitutives the)
     in
-    HXT.etag "theory"
-      += (
-        XML.qualattr "xml" "id" (theoryId the)
-        +++ 
-        (
-          case mTheoryPres of
+      HXT.etag "theory"
+        += (
+          XML.qualattr "xml" "id" (theoryId the)
+          +++ 
+          case theoryComment the of
             Nothing -> XML.xmlNullFilter
-            (Just p) -> toXml p
+            (Just s) -> HXT.cmt s +++ XML.xmlNL
+          +++
+          (
+            case mTheoryPres of
+              Nothing -> XML.xmlNullFilter
+              (Just p) -> toXml p
+          )
+          +++
+          conx
+          +++
+          toXmlS conrempres
         )
-        +++
-        conx
-        +++
-        toXmlS conrempres
-      )
   fromXml t =
     case (HXT.isTag "theory") t of
       [] -> Nothing
       _ ->
         let
+          comments = HXT.getXCmt t
+          tcom =
+            case Util.trimString (HXT.xshow comments) of
+              [] -> Nothing
+              cs -> Just cs
           children = HXT.getChildren t
           ids = HXT.xshow $ XML.getQualValue "xml" "id" t
           cons = getAllFromXml children
           pres =
             getAllFromXml children
         in
-          Just $ (Theory ids cons pres)
+          Just $ (Theory ids cons pres tcom)
 
 -- | Imports
 instance XmlRepresentable Imports where
@@ -308,6 +317,12 @@ instance XmlRepresentable Imports where
                 ITLocal -> "local"
                 ITGlobal -> "global"
             )
+        )
+        +++
+        (
+          case (importsConservativity imp) of
+            CNone -> XML.xmlNullFilter
+            c -> HXT.sattr "conservativity" (show c)
         )
         +++
         (
@@ -356,12 +371,17 @@ instance XmlRepresentable Imports where
             case (HXT.getChildren .> HXT.isTag "morphism") t of
               [] -> Nothing
               (xm:_) -> fromXml xm
+          conss = HXT.xshow $ HXT.getValue "conservativity" t
+          cons =
+            case readsPrec 0 conss of
+              [] -> CNone
+              ((c,_):_) -> c
         in
           case mfromuri of
             Nothing ->
               trace ("No 'from' in Imports!") Nothing
             (Just u) ->
-              Just $ Imports u mm mid itype
+              Just $ Imports u mm mid itype cons
 
 -- | Use
 instance XmlRepresentable Use where
@@ -463,23 +483,34 @@ instance XmlRepresentable Symbol where
         let
           roles = HXT.xshow $ HXT.getValue "role" t
           names = HXT.xshow $ HXT.getValue "name" t
+          ids = HXT.xshow $ XML.getQualValue "xml" "id" t
+          sname =
+            case names of
+              [] -> ids
+              _ -> names
           mgf =
             case HXT.xshow $ HXT.getValue "generated-from" t of
               [] -> Nothing
               gf -> Just gf
         in
           case readsPrec 0 roles of
-            [] -> trace ("Unknown role \"" ++ roles ++ "\" for symbol " ++ names) Nothing
+            [] ->
+              if Util.isPrefix "ymmud" (reverse sname)
+                then
+                  Nothing
+                else
+                  trace ("Unknown role \"" ++ roles ++ "\" for symbol " ++ sname)
+              Nothing
             (sr,_):_ ->
               let
                 typechilds = (HXT.getChildren .> HXT.isTag "type") t
               in
                 case typechilds of
-                  [] -> Just $ Symbol mgf names sr Nothing
+                  [] -> Just $ Symbol mgf sname sr Nothing
                   _ ->
                     case fromXml (head typechilds) of
                       Nothing -> trace ("cant parse type...") Nothing
-                      jty -> Just $ Symbol mgf names sr jty
+                      jty -> Just $ Symbol mgf sname sr jty
 
 -- | Type
 instance XmlRepresentable Type where
@@ -540,6 +571,8 @@ instance XmlRepresentable Constitutive where
   toXml (CSy sy) = toXml sy
   toXml (CIm im) = toXml im
   toXml (CAd ad) = toXml ad
+  toXml (CCo { conComCmt = cmt, conComCon = con }) =
+    HXT.cmt cmt +++ XML.xmlNL +++ (toXml con)
   fromXml t =
     case fromXml t of
       (Just a) -> Just $ CAx a
@@ -665,11 +698,18 @@ instance XmlRepresentable Conclusion where
 -- | Definition
 instance XmlRepresentable Definition where
   toXml def =
+    HXT.etag "symbol"
+      += (
+        XML.qualattr "xml" "id" ((definitionId def) ++ "-dummy")
+      )
+    +++
+    XML.xmlNL
+    +++
     HXT.etag "definition"
       += (
         XML.qualattr "xml" "id" (definitionId def)
         +++
-        HXT.sattr "for" ((++) "#" $ definitionId def)
+        HXT.sattr "for" ((++) "#" $ (++) (definitionId def) "-dummy" )
         +++
         HXT.sattr "type" "implicit"
         +++
@@ -921,12 +961,14 @@ incBody tinc =
         _ -> XML.xmlNullFilter
     )
 -- conservativity has been removed from OMDoc-RNG
-{-    +++
+{-    
+    +++
     (
       case (inclusionConservativity tinc) of
         CNone -> XML.xmlNullFilter
         c -> HXT.sattr "conservativity" (show c)
-    ) -}
+    )
+-}
     +++
     (
       case (inclusionMorphism tinc) of
@@ -1398,12 +1440,22 @@ instance XmlRepresentable OMElement where
 instance XmlRepresentable Morphism where
   toXml morphism =
     let
+      idattr =
+        case morphismId morphism of
+          Nothing -> XML.xmlNullFilter
+          (Just mid) -> XML.qualattr "xml" "id" mid
       hidingattr =
         if null (morphismHiding morphism)
           then
             XML.xmlNullFilter
           else
-            HXT.sattr "hiding" (Util.implode " " (morphismHiding morphism))
+            HXT.sattr "hiding" (Util.implode " " (map (\h -> '#':h) (morphismHiding morphism)))
+      baseattr =
+        if null (morphismBase morphism)
+          then
+            XML.xmlNullFilter
+          else
+            HXT.sattr "base" (Util.implode " " (map (\h -> '#':h) (morphismBase morphism)))
       requations = 
         if null (morphismRequations morphism)
           then
@@ -1423,6 +1475,10 @@ instance XmlRepresentable Morphism where
     in
       HXT.etag "morphism"
         += (
+          idattr
+          +++
+          baseattr
+          +++
           hidingattr
           +++
           requations
@@ -1432,19 +1488,31 @@ instance XmlRepresentable Morphism where
       [] -> Nothing
       _ ->
         let
-          hiding =
-            filter
-              (not . null)
-                $
-                map
-                  Util.trimString
+          reconstructIds =
+            (\idstring ->
+              filter
+                (not . null)
                   $
-                  Util.explodeNonEsc
-                    " "
+                  map
+                    (\s ->
+                      case s of
+                        '#':r -> r
+                        _ -> s
+                    )
                     $
-                    HXT.xshow
+                    map
+                      Util.trimString
                       $
-                      getValue "hiding" t
+                      Util.explodeNonEsc
+                        " "
+                        idstring
+            )
+          mid =
+            case HXT.xshow $ XML.getQualValue "xml" "id" t of
+              [] -> Nothing
+              mids -> Just mids
+          hiding = reconstructIds $ HXT.xshow $ getValue "hiding" t
+          base = reconstructIds $ HXT.xshow $ getValue "base" t
           xrequations = (HXT.getChildren .> HXT.isTag "requation") t
           requations =
             foldl
@@ -1459,6 +1527,6 @@ instance XmlRepresentable Morphism where
               )
               []
               xrequations
-          morphism = Morphism hiding requations
+          morphism = Morphism mid hiding base requations
         in
           Just morphism

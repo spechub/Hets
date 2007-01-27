@@ -71,6 +71,8 @@ import OMDoc.OMDocDefs
 import qualified OMDoc.OMDocInterface as OMDoc
 import qualified OMDoc.OMDocXml as OMDocXML
 
+import qualified OMDoc.Util as Util
+
 import qualified System.Directory as System.Directory
 
 {- |
@@ -731,9 +733,11 @@ instance Ord ImportHint where
 
 
 glThmsFromOMIncs
-  ::OMDoc.OMDoc
+  ::[OMDoc.Imports]
+  ->OMDoc.OMDoc
   ->[(Int, XmlName, (XmlName, Hets.HidingAndRequationList, Conservativity, Bool))]
 glThmsFromOMIncs
+  omimports
   omdoc
   =
   foldl
@@ -755,6 +759,35 @@ glThmsFromOMIncs
           case URI.uriFragment $ OMDoc.inclusionTo incl of
             [] -> OMDoc.showURI $ OMDoc.inclusionTo incl
             f -> stripFragment f
+        conservativity =
+          case OMDoc.inclusionMorphism incl of
+            Nothing -> None
+            (Just m) ->
+              case OMDoc.morphismBase m of
+                [] -> None
+                baselist ->
+                  let
+                    baseid = last baselist
+                  in
+                    case
+                      filter
+                        (\omimp ->
+                          case OMDoc.importsMorphism omimp of
+                            Nothing -> False
+                            (Just im) ->
+                              case OMDoc.morphismId im of
+                                Nothing -> False
+                                (Just mid) -> mid == baseid
+                        )
+                        omimports
+                    of
+                      [] -> None
+                      [bmorphimp] ->
+                        convCons $ OMDoc.importsConservativity bmorphimp
+                      (bmorphimp):_ ->
+                        Debug.Trace.trace
+                          ("More than one matching reference for Morphism-base...")
+                          convCons $ OMDoc.importsConservativity bmorphimp
       in
         glts ++
           [
@@ -764,7 +797,7 @@ glThmsFromOMIncs
               , (
                     fromid
                   , hreq
-                  , convCons $ OMDoc.inclusionConservativity incl
+                  , conservativity
                   , (not isLocal)
                 )
             )
@@ -783,9 +816,44 @@ glThmsFromOMIncs
   convCons OMDoc.CConservative = Cons
   convCons OMDoc.CDefinitional = Def
 
+omdocImportsMapFromAOMSet
+  ::TheoryXNSet
+  ->Set.Set (Graph.Node, OMDoc.Theory)
+  ->Map.Map String [(Int, OMDoc.Imports)]
+omdocImportsMapFromAOMSet
+  txns aomset =
+  Set.fold
+    (\(gm, omt) i ->
+      let
+        name =
+          case getTheoryXmlName txns gm of
+            Nothing ->
+              error "OMDoc.OMDocInput.omdocImportsFromAOMSet: Theory has no name!"
+            (Just x) -> x
+        imports =
+          zip
+            [1..]
+            $
+            foldl
+              (\il con ->
+                case con of
+                  (OMDoc.CIm im) ->
+                    il ++ [im]
+                  _ -> il
+              )
+              []
+              (OMDoc.theoryConstitutives omt)
+      in
+        Map.insert name imports i
+    )
+    Map.empty
+    aomset
 
-importsFromOMTheory::OMDoc.Theory->Hets.Imports
-importsFromOMTheory theory =
+omdocImportsToHetsImports
+  ::[(Int, OMDoc.Imports)]
+  ->Hets.Imports
+omdocImportsToHetsImports
+  omimports =
   foldl
     (\imps (c, i) ->
       let
@@ -798,41 +866,19 @@ importsFromOMTheory theory =
             Nothing -> ([],[])
             (Just m) -> fetchOMRequationSymbols m
       in
-        Set.union imps (Set.singleton (c, (fromname, Nothing, hreq, True)))
+        Set.insert (c, (fromname, Nothing, hreq, True)) imps
     )
     Set.empty
-    $
-    zip
-      [1..]
-      $
-      foldl
-        (\il con ->
-          case con of
-            (OMDoc.CIm imports) ->
-              il ++ [imports]
-            _ -> il
-        )
-        []
-        (OMDoc.theoryConstitutives theory)
-       
+    omimports
 
-importsFromAOMSet::TheoryXNSet->Set.Set (Graph.Node, OMDoc.Theory)->Hets.ImportsMap
-importsFromAOMSet txns aomset =
-  Set.fold
-    (\(gn, omt) i ->
-      let
-        name =
-          case getTheoryXmlName txns gn of
-            Nothing ->
-              error "OMDoc.OMDocInput.importsFromAOMSet: Theory has no name!"
-            (Just x) -> x
-        imports = importsFromOMTheory omt
-      in
-        Map.insert name imports i
-    )
-    Map.empty
-    aomset
-                
+omdocImportsMapToHetsImportsMap
+  ::Map.Map String [(Int, OMDoc.Imports)]
+  ->Hets.ImportsMap
+omdocImportsMapToHetsImportsMap
+  omimportsmap =
+  Map.map
+    omdocImportsToHetsImports
+    omimportsmap
         
 sensXNWONFromOMTheory::FFXInput->(Graph.Node, OMDoc.Theory)->(Set.Set (XmlNamed Hets.SentenceWO))
 sensXNWONFromOMTheory ffxi (origin, theory) =
@@ -924,21 +970,25 @@ createTheorySpecificationsOM
         ops = Set.fromList $ opsXNWONFromOMTheory Map.empty xntheoryset sorts aom
         preds = Set.fromList $ predsXNWONFromOMTheory Map.empty xntheoryset sorts aom
       in
-        tsl ++
-          [
-            TheorySpecification
-              {
-                  ts_name = (stripFragment theoid)
-                , ts_source = sourcename
-                , ts_nodename = theonodename
-                , ts_nodenum = origin
-                , ts_sorts = sorts
-                , ts_sortrelation = rels
-                , ts_predicates = preds
-                , ts_operators = ops
-                , ts_constructors = Set.empty
-              }
-          ]
+        if Util.isPrefix "ymmud-" (reverse theoid)
+          then
+            tsl
+          else
+            tsl ++
+              [
+                TheorySpecification
+                  {
+                      ts_name = (stripFragment theoid)
+                    , ts_source = sourcename
+                    , ts_nodename = theonodename
+                    , ts_nodenum = origin
+                    , ts_sorts = sorts
+                    , ts_sortrelation = rels
+                    , ts_predicates = preds
+                    , ts_operators = ops
+                    , ts_constructors = Set.empty
+                  }
+              ]
     )
     []
     aomset
@@ -1447,7 +1497,7 @@ processAllDefLinks
                 if (length unprocessedPrevious == 0) || nas > maxNoAction
                   then
                     let
-                      totspec = ehead "processAllDefLink, totspec" $ filter (\ts -> ts_name ts == toname) pts
+                      totspec = ehead ("processAllDefLink, totspec : " ++ toname) $ filter (\ts -> ts_name ts == toname) pts
                       fromtspec = ehead "processAllDefLinks, fromtspec" $ filter (\ts -> ts_name ts == (ls_fromname ls)) pts
                       ((newtotspec, unprocessedItems), wasForced) =
                         (\x ->
@@ -2396,8 +2446,31 @@ createLinkSpecificationsOM::
   ->[LinkSpecification]
 createLinkSpecificationsOM {-go-}_ omdoc theoryxnset aomset =
   let
-    imports' = importsFromAOMSet theoryxnset aomset
-    glTheoIncs = glThmsFromOMIncs omdoc
+    omimportsmap = omdocImportsMapFromAOMSet theoryxnset aomset
+    noDummyMap =
+      Map.filterWithKey
+        (\k _ ->
+          not $ Util.isPrefix "ymmud-" (reverse k)
+        )
+        omimportsmap
+    imports' = omdocImportsMapToHetsImportsMap noDummyMap
+    flatOMDocImports = map snd $ concat $ Map.elems omimportsmap
+    -- filter out uninteresting imports (for performance)
+    flatOMDocImportsWithMorphCons =
+      filter
+        (\omimp ->
+          case OMDoc.importsConservativity omimp of
+            OMDoc.CNone -> False
+            _ ->
+              case OMDoc.importsMorphism omimp of
+                Nothing -> False
+                (Just im) ->
+                  case OMDoc.morphismId im of
+                    Nothing -> False
+                    _ -> True
+        )
+        flatOMDocImports
+    glTheoIncs = glThmsFromOMIncs flatOMDocImportsWithMorphCons omdoc
     lsedges =
       foldl
         (\lsle (nodename, nodeimports) ->

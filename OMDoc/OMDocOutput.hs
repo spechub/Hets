@@ -15,7 +15,7 @@ Portability :  non-portable(Logic)
     - there is a problem with finding constructors that use tricky names,
       currently working on debuggin this
     - DevGraph->OMDoc conversion should be done on LibEnv-Level (for names) (done)
-    - Symbols created by OMDoc-ADTs currently don't reference to them (generated-from)
+    - Symbols created by OMDoc-ADTs currently don't reference to them (generated-from) (done)
 -}
 module OMDoc.OMDocOutput
   (
@@ -312,8 +312,14 @@ createOMDefLink lenv ln (from, to, ll) uniqueNames names =
         error (e_fname ++ "Error parsing URI!")
       (Just u) -> u
   in
-    OMDoc.Imports fromuri mommorph Nothing linktype
+    OMDoc.Imports fromuri mommorph Nothing linktype OMDoc.CNone
 
+{-
+  since 'conservativity' has been dropped from
+  x-inclusionS, it should be carried by an
+  imports element that refers to the x-inclusion
+  via 'base'
+-}
 createXmlThmLinkOM::
     Int
   ->Static.DevGraph.LibEnv
@@ -321,7 +327,7 @@ createXmlThmLinkOM::
   ->Graph.LEdge Static.DevGraph.DGLinkLab
   ->[Hets.IdNameMapping]
   ->[Hets.IdNameMapping]
-  ->OMDoc.Inclusion
+  ->(OMDoc.Inclusion, Maybe OMDoc.Imports)
 createXmlThmLinkOM lnum lenv ln (edge@(from, to, ll)) uniqueNames names =
   let
     e_fname = "OMDoc.OMDocOutput.createXmlThmLinkOM: "
@@ -389,13 +395,49 @@ createXmlThmLinkOM lnum lenv ln (edge@(from, to, ll)) uniqueNames names =
     iid =
       (if isaxinc then "ai" else "ti")
         ++ "." ++ toname ++ "." ++ fromname ++ "_" ++ (show lnum)
-    mommorph = createOMMorphism lenv ln edge uniqueNames names
+    mommorph' = createOMMorphism lenv ln edge uniqueNames names
+    mommorph =
+      case helpimports of
+        Nothing -> mommorph'
+        _ ->
+          case mommorph' of
+            Nothing ->
+              Just
+                $
+                OMDoc.Morphism
+                  {
+                      OMDoc.morphismId = Nothing
+                    , OMDoc.morphismHiding = []
+                    , OMDoc.morphismBase = [iid ++ "-base"]
+                    , OMDoc.morphismRequations = []
+                  }
+            (Just mm') ->
+              Just (mm' { OMDoc.morphismBase = (OMDoc.morphismBase mm') ++ [iid ++ "-base"] })
+    helpimports =
+      case cons of
+        OMDoc.CNone -> Nothing
+        _ ->
+          Just $
+            OMDoc.Imports
+              fromuri
+              (
+                Just
+                  $
+                  OMDoc.Morphism
+                    (Just (iid ++ "-base"))
+                    []
+                    []
+                    []
+              )
+              Nothing
+              (if isaxinc then OMDoc.ITLocal else OMDoc.ITGlobal)
+              cons
   in
     if isaxinc
       then
-        OMDoc.AxiomInclusion fromuri touri mommorph (Just iid) cons
+        (OMDoc.AxiomInclusion fromuri touri mommorph (Just iid) cons, helpimports)
       else
-        OMDoc.TheoryInclusion fromuri touri mommorph (Just iid) cons
+        (OMDoc.TheoryInclusion fromuri touri mommorph (Just iid) cons, helpimports)
   where
   consConv::Static.DevGraph.Conservativity->OMDoc.Conservativity
   consConv Static.DevGraph.None = OMDoc.CNone
@@ -620,7 +662,7 @@ createOMMorphism
       then
         Nothing
       else
-        Just $ OMDoc.Morphism hidden reqs
+        Just $ OMDoc.Morphism Nothing hidden [] reqs
   where
   mkHiding::Hets.IdNameMapping->Hets.IdNameMapping->[((String,a),b)]->[String]
   mkHiding fromIdNameMapping toIdNameMapping mappedIds =
@@ -845,6 +887,11 @@ libEnvLibNameIdNameMappingToOMDoc
   =
     let
       e_fname = "OMDoc.OMDocOutput.libEnvLibNameIdNameMappingToOMDoc: "
+      dummyTheoryComment =
+        (
+          Just "This theory is not used. It serves only as a semantic\
+            \ 'anchor' for theory- and axiom-inclusions."
+        )
       dg = lookupDGraph ln lenv
       thmLinksToRefs =
         filter
@@ -854,20 +901,37 @@ libEnvLibNameIdNameMappingToOMDoc
               (Just n) -> isDGRef n
           )
           (filterThmLinks $ Graph.labEdges dg)
-      thmLinksToRefsOM =
-        map
-          (\(lnum, edge) ->
-            createXmlThmLinkOM
-              lnum
-              lenv
-              ln
-              edge
-              uniqueNames
-              fullNames
+      (thmLinksToRefsOM, dummyImports) =
+        foldl
+          (\(tL, dI) (lnum, edge) ->
+            let
+              (newTL, mDI) =
+                createXmlThmLinkOM
+                  lnum
+                  lenv
+                  ln
+                  edge
+                  uniqueNames
+                  fullNames
+            in
+              case mDI of
+                Nothing -> (tL ++ [newTL], dI)
+                (Just newDI) -> (tL ++ [newTL], dI ++ [newDI])
           )
+          ([], [])
           (zip [1..] thmLinksToRefs)
+      dummyTheory =
+        OMDoc.Theory
+          "import-dummy-for-hets"
+          (map OMDoc.CIm dummyImports)
+          []
+          dummyTheoryComment
+      initTheories =
+        case dummyImports of
+          [] -> []
+          _ -> [dummyTheory]
       initialOMDoc =
-        OMDoc.OMDoc omdocId [] thmLinksToRefsOM  
+        OMDoc.OMDoc omdocId initTheories thmLinksToRefsOM  
     in
       foldl
         (\xio (nn, node) ->
@@ -1054,17 +1118,24 @@ libEnvLibNameIdNameMappingToOMDoc
                 )
                 ([],[])
                 (opMap caslsign)
-            theoryThmLinks =
-              map
-                (\(lnum, edge) ->
-                  createXmlThmLinkOM
-                    lnum
-                    lenv
-                    ln
-                    edge
-                    uniqueNames
-                    fullNames
+            (theoryThmLinks, theoryDummyImports) =
+              foldl
+                (\(tTL, tDI) (lnum, edge) ->
+                  let
+                    (newtTL, mtDI) =
+                      createXmlThmLinkOM
+                        lnum
+                        lenv
+                        ln
+                        edge
+                        uniqueNames
+                        fullNames
+                  in
+                    case mtDI of
+                      Nothing -> (tTL ++ [newtTL], tDI)
+                      (Just newtDI) -> (tTL ++ [newtTL], tDI ++ [newtDI])
                 )
+                ([],[])
                 (zip [1..] (filterThmLinks $ Graph.inn dg nn))
           in
             do
@@ -1084,6 +1155,17 @@ libEnvLibNameIdNameMappingToOMDoc
                   return omdoc
                 else
                   let
+                    mDummyTheory =
+                      case theoryDummyImports of
+                        [] -> Nothing
+                        _ ->
+                          Just
+                            $
+                            OMDoc.Theory
+                              (theoryXmlId ++ "-dummy")
+                              (map OMDoc.mkCIm theoryDummyImports)
+                              []
+                              dummyTheoryComment
                     newtheory =
                       OMDoc.Theory
                         theoryXmlId
@@ -1113,6 +1195,11 @@ libEnvLibNameIdNameMappingToOMDoc
                           ++
                           oPres
                         )
+                        Nothing
+                    newTheories =
+                      case mDummyTheory of
+                        Nothing -> [newtheory]
+                        (Just dt) -> [dt, newtheory]
                   in
                     return
                       $
@@ -1121,7 +1208,7 @@ libEnvLibNameIdNameMappingToOMDoc
                           (
                             OMDoc.addTheories
                               omdoc
-                              [newtheory]
+                              newTheories
                           )
                           theoryThmLinks
                       )

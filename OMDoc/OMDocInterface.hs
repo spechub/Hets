@@ -83,6 +83,7 @@ data Theory =
         theoryId :: XmlId
       , theoryConstitutives :: [Constitutive]
       , theoryPresentations :: [Presentation]
+      , theoryComment :: Maybe String
     }
     deriving Show
 
@@ -105,10 +106,10 @@ data Imports =
   Imports
     {
         importsFrom :: OMDocRef
-     -- , importsHiding :: [XmlId]
       , importsMorphism :: Maybe Morphism
       , importsId :: Maybe XmlId
       , importsType :: ImportsType
+      , importsConservativity :: Conservativity
     }
     deriving Show
 
@@ -213,6 +214,7 @@ data Constitutive =
   | CSy Symbol
   | CIm Imports
   | CAd ADT
+  | CCo { conComCmt::String, conComCon::Constitutive }
   deriving Show
 
 mkCAx::Axiom->Constitutive
@@ -225,6 +227,8 @@ mkCIm::Imports->Constitutive
 mkCIm = CIm
 mkCAd::ADT->Constitutive
 mkCAd = CAd
+mkCCo::String->Constitutive->Constitutive
+mkCCo = CCo
 
 isAxiom::Constitutive->Bool
 isAxiom (CAx {}) = True
@@ -245,6 +249,10 @@ isImports _ = False
 isADT::Constitutive->Bool
 isADT (CAd {}) = True
 isADT _ = False
+
+isCommented::Constitutive->Bool
+isCommented (CCo {}) = True
+isCommented _ = False
 
 getIdsForPresentation::Constitutive->[XmlId]
 getIdsForPresentation (CAx a) = [axiomName a]
@@ -432,7 +440,9 @@ data Inclusion =
 data Morphism =
   Morphism
     {
-        morphismHiding :: [XmlId]
+        morphismId :: Maybe XmlId
+      , morphismHiding :: [XmlId]
+      , morphismBase  :: [XmlId]
       , morphismRequations :: [ ( MText, MText ) ]
     }
     deriving Show
