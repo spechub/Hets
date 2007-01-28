@@ -190,7 +190,7 @@ localInferenceAux libEnv ln dgraph (rules, changes)
                 else
                  let newNodeLab = oldContents{dgn_theory = newTh}
                      (newGraph,changes') =
-                           adjustNode auxGraph oldNode newNodeLab
+                           adjustNode auxGraph (oldNode, newNodeLab)
                      newEdge = (src, tgt, newLab)
                      newGraph' = insEdge newEdge newGraph
                      newLibEnv = Map.adjust adjMap ln libEnv
@@ -212,8 +212,9 @@ localInferenceAux libEnv ln dgraph (rules, changes)
                           conservativity conservStatus),
                        dgl_origin = DGProof}
     newRules = LocInference ledge : rules
-    oldNode = labNode' (safeContext "localInferenceAux" dgraph tgt)
-    (_,oldContents) = oldNode
+    (oldNode, oldContents) = labNode' (safeContext "localInferenceAux" dgraph tgt)
+    {-
     replaceNode from to (src',tgt',labl) =
        (replaceNodeAux from to src', replaceNodeAux from to tgt',labl)
     replaceNodeAux from to n = if n==from then to else n
+    -}

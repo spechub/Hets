@@ -60,6 +60,8 @@ changeDG g c = case c of
     DeleteNode n -> delLNode n g
     InsertEdge e -> insLEdge e g
     DeleteEdge e -> deLLEdge e g
+    SetNodeLab (node, newLab) -> gmap (\(p, name, label, s) -> if name==node then (p, name, newLab, s) 
+							                     else (p, name, label, s)) g
 
 changesDG :: DGraph -> [DGChange] -> DGraph
 changesDG = foldl' changeDG
@@ -350,12 +352,17 @@ adoptEdgesAux node areIngoingEdges (src,tgt,edgelab) =
      else (node, newTgt, edgelab)
 
 {- | adjusts a node whose label is changed -}
-adjustNode :: DGraph -> (Node, DGNodeLab) -> DGNodeLab -> (DGraph, [DGChange])
-adjustNode dgraph (node,oldLab) newLab =
-  let es = inn dgraph node ++ out dgraph node
+adjustNode :: DGraph -> LNode DGNodeLab -> (DGraph, [DGChange])
+adjustNode dgraph newNode = 
+  let {-
+      es = inn dgraph node ++ out dgraph node
       changes = map DeleteEdge es ++ [DeleteNode (node, oldLab),
                 InsertNode (node, newLab)] ++ map InsertEdge es
-   in (changesDG dgraph changes, changes)
+      -}
+      changes = [SetNodeLab newNode]
+  in (changesDG dgraph changes, changes)
+
+
 
 --getAllNodeGoals :: LIB_NAME -> LibEnv -> [DGNodeLab]
 --getAllNodeGoals ln libEnv =

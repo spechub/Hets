@@ -96,7 +96,6 @@ import Control.Concurrent.MVar
 import Events
 import DialogWin (useHTk)
 import Messages
--- import Debug.Trace
 
 {- Maps used to track which node resp edge of the abstract graph
 correspondes with which of the development graph and vice versa and
@@ -1390,14 +1389,40 @@ applyChangesAux gid libname grInfo  ioRefVisibleNodes
 applyChangesAux2 :: Descr -> LIB_NAME -> GraphInfo -> [[Node]] -> Descr
                   -> ConversionMaps -> [DGChange]
                   -> IO ([[Node]], Descr, ConversionMaps)
-applyChangesAux2 _ _ _ visibleNodes eventDescr convMaps [] =
-    return (visibleNodes, eventDescr+1, convMaps)
+applyChangesAux2  _ _ _ visibleNodes eventDescr convMaps [] =
+  return (visibleNodes, eventDescr+1, convMaps)
 applyChangesAux2 gid libname grInfo visibleNodes _ convMaps (change:changes) =
   case change of
+    SetNodeLab (node, newLab) -> do
+      let nodetype = getDGNodeType newLab
+	  nodename = getDGNodeName newLab
+	  dgNode = (libname, node)
+      case InjMap.lookupWithA dgNode (dgAndabstrNode convMaps) of
+	   Just abstrNode -> do
+		AGV.Result descr err <- 
+		     changeNodeType gid abstrNode nodetype grInfo
+		case err of
+		     Nothing -> do
+			 let newConvMaps = convMaps {dgAndabstrNode = InjMap.updateBWithA dgNode descr (dgAndabstrNode convMaps)}
+			       {-
+				dg2abstrNode =
+				       Map.insert dgNode descr (dg2abstrNode convMaps),
+				abstr2dgNode =
+				       Map.insert descr dgNode (abstr2dgNode convMaps),
+				dgAndabstrNode = InjMap.insert dgNode descr (dgAndabstrNode convMaps)
+				-}     
+		         applyChangesAux2 gid libname grInfo visibleNodes (descr+1) newConvMaps changes
+		     Just msg ->
+			  error ("applyChangesAux2: could not set node " ++ (show node)
+			  ++" with name " ++ (show (nodename)) ++ "\n"
+			  ++ msg)
+	   Nothing -> error ("applyChangesAux2: could not set node "
+                          ++ (show node) ++ " with name "
+                          ++ (show nodename) ++": " ++
+                          "node does not exist in abstraction graph")    
     InsertNode (node, nodelab) -> do
       let nodetype = getDGNodeType nodelab
           nodename = getDGNodeName nodelab
-   -- putStrLn ("inserting node "++show nodename++" of type "++show nodetype)
       AGV.Result descr err <-
           addnode gid nodetype nodename grInfo
       case err of
@@ -1420,9 +1445,7 @@ applyChangesAux2 gid libname grInfo visibleNodes _ convMaps (change:changes) =
     DeleteNode (node, nodelab) -> do
       let nodename = getDGNodeName nodelab
           dgnode = (libname,node)
-      -- putStrLn ("inserting node "++show nodename)
       case InjMap.lookupWithA dgnode (dgAndabstrNode convMaps) of
-      --case Map.lookup dgnode (dg2abstrNode convMaps) of
         Just abstrNode -> do
           AGV.Result descr err <- delnode gid abstrNode grInfo
           case err of
@@ -1487,6 +1510,7 @@ applyChangesAux2 gid libname grInfo visibleNodes _ convMaps (change:changes) =
     DeleteEdge (src,tgt,edgelab) ->
       do let dgEdge = (libname, (src,tgt,showDoc edgelab ""))
 	     dgAndabstrEdgeMap = dgAndabstrEdge convMaps
+ --trace (show $ InjMap.getAToB dgAndabstrEdgeMap) $ 
 	 case (InjMap.lookupWithA dgEdge dgAndabstrEdgeMap) of
 	 --  dg2abstrEdgeMap = dg2abstrEdge convMaps
          --case Map.lookup dgEdge dg2abstrEdgeMap of
@@ -1583,5 +1607,4 @@ dg_showGraphAux convFct = do
   redisplay gid gv
   return ()
 
-             
 

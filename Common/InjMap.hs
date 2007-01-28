@@ -19,6 +19,8 @@ module Common.InjMap
     , delete
     , lookupWithA
     , lookupWithB
+    , updateBWithA
+    , updateAWithB
     , getAToB
     , getBToA
     ) where
@@ -75,3 +77,21 @@ lookupWithA x (InjMap m n) = case Map.lookup x m of
 in the injective map. -}
 lookupWithB :: (Ord a, Ord b) => b -> InjMap a b -> Maybe a
 lookupWithB y = lookupWithA y . transpose
+
+{- | update the b injMap with a ;) -}
+updateBWithA :: (Ord a, Ord b) => a  -> b -> InjMap a b -> InjMap a b
+updateBWithA a newB injMap = 
+    case (lookupWithA a injMap) of
+       Nothing -> error "error: InjMap.updateBWithA -> the b relating to the given a doesn't exist in the injMap."
+       Just oldB -> insert a newB $ delete a oldB injMap
+
+{- | update the a injMap with b ;) -}
+updateAWithB :: (Ord a, Ord b) => b  -> a -> InjMap a b -> InjMap a b
+updateAWithB b newA injMap = 
+    case (lookupWithB b injMap) of
+       Nothing -> error "error: InjMap.updateAWithB -> the a relating to the given b doesn't exist in the injMap."
+       Just oldA -> insert newA b $ delete oldA b injMap
+
+
+
+

@@ -198,13 +198,13 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv = do
             -- todo: throw out the stuff about edges
             -- instead, mark proven things as proven in the node
             -- TODO: Reimplement stuff
-            let oldNode@(_,oldContents) =
+            let (_,oldContents) =
                     labNode' (safeContext
                               "Proofs.InferBasic.basicInferenceNode"
                               dGraph node)
                 newNodeLab = oldContents{dgn_theory = newTh}
                 (nextDGraph,changes) =
-                    adjustNode dGraph oldNode newNodeLab
+                    adjustNode dGraph (node, newNodeLab)
                 rules = [] -- map (\s -> BasicInference (Comorphism cid)
                            --     (BasicProof lidT s))
                          -- FIXME: [Proof_status] not longer available

@@ -214,19 +214,36 @@ delallgraphs gv = do
          (_,ev_cnt') <- readIORef gv
          destroy_all gs ev_cnt'
 
+
 addnode :: Descr -> String -> String -> GraphInfo -> IO Result
 addnode gid nodetype name gv =
    fetch_graph gid gv False (\(g,ev_cnt) ->
+------------------------------ wieso muss nodetype zuerst abgefragt werden?
       do case lookup nodetype (nodeTypes g) of
           Nothing -> return (g,0,ev_cnt,Just ("addnode: illegal node type: "++nodetype))
           Just nt ->
-            do existingNodesOfSameType <- sequence [(getNodeValue (theGraph g) davinciNode)|(descr,(tp,davinciNode)) <- (nodes g), tp == nodetype]
+            do {-existingNodesOfSameType <- sequence [(getNodeValue (theGraph g) davinciNode)|(descr,(tp,davinciNode)) <- (nodes g), tp == nodetype]
                case elem name [existingName| (existingName, _,_) <- existingNodesOfSameType] of
-                 _ ->     do node <- newNode (theGraph g) nt (name,ev_cnt,gid)
-                             return (g{nodes = (ev_cnt,(nodetype,node)):nodes g},ev_cnt,ev_cnt+1,Nothing)
+                 _ ->     do-} 
+               node <- newNode (theGraph g) nt (name,ev_cnt,gid)
+               return (g{nodes = (ev_cnt,(nodetype,node)):nodes g},ev_cnt,ev_cnt+1,Nothing)
 --               True -> do return (g,0,ev_cnt, Just("addnode: node \"" ++ name ++ "\" of type " ++ nodetype ++ " already exists in graph " ++ (show gid)))
    )
 
+changeNodeType :: Descr -> Descr -> String -> GraphInfo -> IO Result
+changeNodeType gid node nodetype graph = 
+   fetch_graph gid graph False (\(g, ev_cnt) ->
+      case lookup node (nodes g) of
+         Nothing -> return (g, 0, ev_cnt, Just ("changeNodeType: illegal node: "++ show node))
+	 Just n -> 
+             case lookup nodetype (nodeTypes g) of 
+		 Nothing -> return (g, 0, ev_cnt, Just ("changeNodeType: illegal node type: "++nodetype))
+                 Just nt -> do
+                      setNodeType (theGraph g) (snd n) nt
+		      let newnodes = map (\x@(descr, (_, davinciNode)) -> if descr == node then (descr, (nodetype, davinciNode))
+											    else x) $ nodes g
+		      return (g{nodes = newnodes}, node, ev_cnt+1, Nothing)
+   )
 
 delnode :: Descr -> Descr -> GraphInfo -> IO Result
 delnode gid node gv =
