@@ -72,7 +72,7 @@ getNewNode g = case newNodes 1 g of
 -- what about open theorems of a node???
 
 -- | name of a node in a DG; auxiliary nodes may have extension string
--- | and non-zero number (for these, names are usually hidden)
+--   and non-zero number (for these, names are usually hidden)
 type NODE_NAME = (SIMPLE_ID, String, Int)
 
 -- | node inscriptions in development graphs
@@ -206,7 +206,6 @@ data DGChange = InsertNode (LNode DGNodeLab)
               | InsertEdge (LEdge DGLinkLab)
               | DeleteEdge (LEdge DGLinkLab)
 	      | SetNodeLab (LNode DGNodeLab)
-              -- | SetNodeLab (LNode DGNodeLab) DGNodeLab
               deriving Eq
 
 instance Show DGChange where
@@ -214,11 +213,10 @@ instance Show DGChange where
   show (DeleteNode (n, _)) = "DeleteNode "++show n -- ++show l
   show (InsertEdge (n,m, _)) = "InsertEdge "++show n++"->"++show m -- ++show l
   show (DeleteEdge (n,m, _)) = "DeleteEdge "++show n++"->"++show m -- ++show l
-  --show (SetNodeLab (n, _) _) = "SetNodeLab of " ++ show n 
   show (SetNodeLab (n, _)) = "SetNodeLab of " ++ show n 
 
 -- | Link types of development graphs
--- | Sect. IV:4.2 of the CASL Reference Manual explains them in depth
+--  Sect. IV:4.2 of the CASL Reference Manual explains them in depth
 data DGLinkType = LocalDef
             | GlobalDef
             | HidingDef
@@ -433,9 +431,9 @@ getThmTypeAux s = case s of
     LeftOpen -> "Unproven"
     _ -> "Proven"
 
--- | Data type indicating the origin of nodes and edges in the input language
--- | This is not used in the DG calculus, only may be used in the future
--- | for reconstruction of input and management of change.
+{- | Data type indicating the origin of nodes and edges in the input language
+     This is not used in the DG calculus, only may be used in the future
+     for reconstruction of input and management of change. -}
 data DGOrigin = DGBasic | DGExtension | DGTranslation | DGUnion | DGHiding
               | DGRevealing | DGRevealTranslation | DGFree | DGCofree
               | DGLocal | DGClosed | DGClosedLenv | DGLogicQual
@@ -455,9 +453,9 @@ type DGraph = Tree.Gr DGNodeLab DGLinkLab
 -- | Node with signature in a DG
 data NodeSig = NodeSig Node G_sign deriving (Show, Eq)
 
--- | NodeSig or possibly the empty sig in a logic
--- | (but since we want to avoid lots of vacuous nodes with empty sig,
--- |  we do not assign a real node in the DG here)
+{- | NodeSig or possibly the empty sig in a logic 
+     (but since we want to avoid lots of vacuous nodes with empty sig,
+     we do not assign a real node in the DG here) -}
 data MaybeNode = JustNode NodeSig | EmptyNode AnyLogic deriving (Show, Eq)
 
 instance Pretty NodeSig where
