@@ -74,39 +74,48 @@ applyProofHistory h c = c { devGraph = changesDG (devGraph c) $ concatMap snd
 -- -------------------------------------
 -- methods to check the type of an edge
 -- -------------------------------------
+
 isProven :: DGLinkType -> Bool
-isProven edge = isGlobalDef edge || isLocalDef edge
-                || isProvenGlobalThm edge || isProvenLocalThm edge
-                || isProvenHidingThm edge
+isProven edge = case edge of
+    GlobalDef -> True
+    LocalDef  -> True
+    GlobalThm Proven{} _ _ -> True
+    LocalThm Proven{} _ _ -> True
+    HidingThm _ Proven{} -> True
+    _ -> False
 
 isDefEdge :: DGLinkType -> Bool
-isDefEdge edge = isGlobalDef edge || isLocalDef edge || isHidingDef edge
-
+isDefEdge edge = case edge of
+    GlobalDef -> True
+    LocalDef  -> True
+    HidingDef -> True
+    _ -> False
+ 
 isGlobalEdge :: DGLinkType -> Bool
-isGlobalEdge edge = isGlobalDef edge || isGlobalThm edge
+isGlobalEdge edge = case edge of
+    GlobalDef -> True
+    GlobalThm _ _ _ -> True
+    _ -> False
 
 isLocalEdge :: DGLinkType -> Bool
-isLocalEdge edge = isLocalDef edge || isLocalThm edge
+isLocalEdge edge = case edge of
+    LocalDef  -> True
+    LocalThm _ _ _ -> True
+    _ -> False
 
 isGlobalThm :: DGLinkType -> Bool
-isGlobalThm edge = isProvenGlobalThm edge || isUnprovenGlobalThm edge
+isGlobalThm edge = case edge of
+    GlobalThm _ _ _ -> True
+    _ -> False
 
 isLocalThm :: DGLinkType -> Bool
-isLocalThm edge = isProvenLocalThm edge || isUnprovenLocalThm edge
-
-isProvenGlobalThm :: DGLinkType -> Bool
-isProvenGlobalThm lt = case lt of
-    GlobalThm (Proven _ _) _ _ -> True
+isLocalThm edge = case edge of
+    LocalThm _ _ _ -> True
     _ -> False
 
 isUnprovenGlobalThm :: DGLinkType -> Bool
 isUnprovenGlobalThm lt = case lt of
     GlobalThm LeftOpen _ _ -> True
-    _ -> False
-
-isProvenLocalThm :: DGLinkType -> Bool
-isProvenLocalThm lt = case lt of
-    LocalThm (Proven _ _) _ _ -> True
     _ -> False
 
 isUnprovenLocalThm :: DGLinkType -> Bool
@@ -115,7 +124,10 @@ isUnprovenLocalThm lt = case lt of
     _ -> False
 
 isHidingEdge :: DGLinkType -> Bool
-isHidingEdge edge = isHidingDef edge || isHidingThm edge
+isHidingEdge edge = case edge of
+    HidingDef -> True
+    HidingThm _ _ -> True  
+    _ -> False
 
 isHidingDef :: DGLinkType -> Bool
 isHidingDef lt = case lt of
@@ -123,11 +135,8 @@ isHidingDef lt = case lt of
     _ -> False
 
 isHidingThm :: DGLinkType -> Bool
-isHidingThm edge = isProvenHidingThm edge || isUnprovenHidingThm edge
-
-isProvenHidingThm :: DGLinkType -> Bool
-isProvenHidingThm lt = case lt of
-    HidingThm _ Proven{} -> True
+isHidingThm edge = case edge of
+    HidingThm _ _ -> True  
     _ -> False
 
 isUnprovenHidingThm :: DGLinkType -> Bool
