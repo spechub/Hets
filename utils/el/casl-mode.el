@@ -13,7 +13,7 @@
 (defvar casl-mode-hook nil)
 (defvar casl-mode-map (let ((keymap (make-keymap)))
 			(define-key keymap "\C-c\C-c" 'comment-region)
-			(define-key keymap "\C-c\C-r" 'casl-run-hets)
+			(define-key keymap "\C-c\C-r" 'casl-run-hets-r)
 			(define-key keymap "\C-c\C-g" 'casl-run-hets-g)
 			(define-key keymap "\C-c\C-n" 'casl-compile-goto-next-error)
 			keymap) 
@@ -23,6 +23,62 @@
 (defvar casl-running-xemacs
   (string-match "Lucid\\|XEmacs" emacs-version)
   "non-nil if we are running XEmacs, nil otherwise.")
+
+;; ====================== S Y N T A X   T A B L E ==================
+;; Syntax table for CASL major mode
+(defvar casl-mode-syntax-table nil
+  "Syntax table for CASL mode.")
+
+(if casl-mode-syntax-table
+    ()
+  (let ((table (make-syntax-table)))
+    ;; Indicate that underscore may be part of a word
+    (modify-syntax-entry ?_ "w" table)
+    (modify-syntax-entry ?\t " " table)
+    (modify-syntax-entry ?\" "\"" table)
+    (modify-syntax-entry ?\' "\'" table)
+    ;; Commnets
+    (if casl-running-xemacs
+	((modify-syntax-entry ?% ". 58" table)
+	 (modify-syntax-entry ?\[ "(] 6" table)
+	 (modify-syntax-entry ?\] ")[ 7" table))
+      (modify-syntax-entry ?% ". 14nb" table)
+      (modify-syntax-entry ?\[ "(] 2n" table)
+      (modify-syntax-entry ?\] ")[ 3n" table))
+    ;; commenting-out plus including other kinds of comment
+    (modify-syntax-entry ?\( "()" table)
+    (modify-syntax-entry ?\) ")(" table)
+    (modify-syntax-entry ?{ "(}" table)
+    (modify-syntax-entry ?} "){" table)
+    (mapcar (lambda (x)
+	      (modify-syntax-entry x "_" table))
+	    ;; Some of these are actually OK by default.
+	    "!#$&*+.,/\\\\:<=>?@^|~()[]{}")
+    (setq casl-mode-syntax-table table))
+  )
+
+;; Various mode variables.
+(defun casl-vars ()
+  (kill-all-local-variables)
+  (make-local-variable 'comment-start)
+  (setq comment-start "%[")
+  (make-local-variable 'comment-padding)
+  (setq comment-padding 0)
+  (make-local-variable 'comment-start-skip)
+  (setq comment-start-skip "%[%{[] *")
+  (make-local-variable 'comment-column)
+  (setq comment-column 40)
+  (make-local-variable 'comment-indent-function)
+  (setq comment-indent-function 'casl-comment-indent)
+  (make-local-variable 'comment-end)
+  (setq comment-end "]%"))
+
+;; Find the indentation level for a comment.
+(defun casl-comment-indent ()
+  (skip-chars-backward " \t")
+  ;; if the line is blank, put the comment at the beginning,
+  ;; else at comment-column
+  (if (bolp) 0 (max (1+ (current-column)) comment-column)))
 
 ;; ============= K E Y W O R D   H I G H L I G H T I N G ============
 (defface casl-black-komma-face
@@ -36,14 +92,14 @@
    "CASL mode face for Annotations")
 (setq casl-annotation-face 'font-lock-constant-face)
 
+(defvar casl-name-face 'casl-name-face)
+(setq casl-name-face 'font-lock-variable-name-face)
+
 (defvar casl-keyword-face 'casl-keyword-face)
 (setq casl-keyword-face 'font-lock-keyword-face)
 
 (defvar casl-library-name-face 'casl-library-name-face)
 (setq casl-library-name-face 'font-lock-type-face)
-
-(defvar casl-name-face 'casl-name-face)
-(setq casl-name-face 'font-lock-variable-name-face)
 
 (defvar casl-builtin-face 'casl-builtin-face)
 (setq casl-builtin-face 'font-lock-builtin-face)
@@ -69,48 +125,49 @@
    '("\\(\\<\\|\\s-+\\)\\(library\\|logic\\)\\s-+\\(\\(\\w\\|/\\)+\\)[ \t\n]*"  
      (3 casl-library-name-face keep t))
    ;; name of from, get and given
-   '("\\(\\<\\|[ \t]+\\)\\(get\\|given\\)[ \t\n]+\\(\\(\\sw+\\s-*\\(,\\|$\\)[ \t\n]*\\)+\\)"  
-     (3 casl-name-face keep t))
+   '("\\(\\<\\|[ \t]+\\)\\(get\\|given\\)[ \t\n]+\\(\\(\\(\\sw+\\)\\s-*,?[ \t\n]*\\)+\\)\\(=\\|:\\|$\\)"  
+     (3 casl-name-face t t))
    '("\\(\\<\\|\\s-+\\)from\\([ \t]+\\)\\(.+\\)\\(get\\|\\s-*\\)" 
      (3 casl-library-name-face keep t))
    ;; the name of specification and view
-   '("\\(\\<\\|\\[\\)\\(spec\\|view\\)\\s-+\\(\\w+\\)[ \t]*\\(\\[\\([A-Z]\\w*\\).*\\]\\)?\\s-*.*\\([]=:]\\|::=\\)"
+   '("\\(\\<\\|\\[\\)\\(spec\\|view\\)\\s-+\\(\\w+\\)[ \t]*\\(\\[\\s-*\\([A-Z]\\w*\\).*\\s-*\\]\\)?\\s-*.*\\([]=:]\\|::=\\)"
      (3 casl-name-face keep t) (5 casl-name-face keep t))
    ;; then, and + name
-   '("\\(\\<\\|\\s-+\\)\\(and\\|then\\)[ \t\n]*\\([A-Z]\\w*\\)\\s-*\\(\\[\\([A-Z]\\w*\\).*\\]\\)?" 
+   '("\\(\\<\\|\\s-+\\)\\(and\\|then\\)[ \t\n]*\\([A-Z]\\w*\\)\\s-*\\(\\[\\([A-Z]\\sw*\\).*\\]\\)?" 
      (3 casl-name-face keep t) (5 casl-name-face keep t))
    ;; names before and after to 
-   '("[ \t\n]*\\(\\w+\\)[ \t\n]+to[ \t\n]+\\(\\(\\w+\\)\\s-*\\(\\[\\([A-Z]\\w*\\).*\\]\\)?[, \t]*\\)?" 
+   '("[ \t\n]*\\(\\sw+\\)[ \t\n]+to[ \t\n]+\\(\\(\\sw+\\)\\s-*\\(\\[\\([A-Z]\\sw*\\).*\\]\\)?[, \t]*\\)?" 
      (1 casl-name-face keep t) (3 casl-name-face keep t) (5 casl-name-face keep t))
    ;; instance name of specification 
-   '("\\<spec.+=\\s-*\\(%\\sw+\\s-*\\)?[ \t\n]*\\([A-Z]\\sw*\\)\\s-*\\(\\[\\([A-Z]\\w*\\).*\\]\\)?"
+   '("\\<spec.+=\\s-*\\(%\\sw+\\s-*\\)?[ \t\n]*\\([A-Z]\\w*\\)\\s-*\\(\\[\\s-*\\([A-Z]\\w*\\).*\\s-*\\]\\)?"
      (2 casl-name-face keep t) (4 casl-name-face keep t))
    ;; Basic signature: sort X, Y, Z  
-   '("\\(\\<\\|\\s-+\\)sorts?[ \t]+\\(\\(\\sw+\\s-*\\(\\[\\(\\sw\\|,\\)+\\]\\s-*\\)?\\(,\\(\\s-\\)*\\|$\\|<\\|;\\|=\\)\\(\\sw\\|=\\|<\\|;\\|,\\)*[ \t\n]*\\)+\\)" 
+   '("\\(\\<\\|\\s-+\\)sorts?[ \t]+\\(\\(\\sw+\\s-*\\(\\[\\s-*\\(\\sw\\|,\\)+\\s-*\\]\\s-*\\)?\\(,\\(\\s-\\)*\\|$\\|<\\|;\\|=\\)\\(=\\|<\\|;\\|,\\)*[ \t\n]*\\)+\\)" 
      (2 casl-other-name-face keep t))
    ;; Basic signature: op ,pred and var name
-   '("\\(^\\|\\bops?\\|\\bpreds?\\|\\bvars?\\)\\s-+\\([^.]\\(,\\s-*\\)?\\(\\sw\\(,\\s-*\\)?\\|\\(\\s_\\|\\s_+::?\\s_+\\)\\(,\\s-*\\)?\\|\\s(\\|\\s)\\)*\\)\\s-*\\(\(.*\)\\)?\\s-*\\(:\\??\\|<=>\\)[^:\n]*;?[ \t]*$"
+   '("\\(\\bops?\\|\\bpreds?\\|\\bvars?\\|^\\)[ \t\n]+\\([^.]\\(,[ \t\n]*\\)?\\(\\sw\\(,[ \t\n]*\\)?\\|\\s-*__\\s-*\\(,[ \t\n]*\\)?\\|\\(\\s_\\|__::?__\\)\\(,[ \t\n]*\\)?\\|\\s\(\\|\\s\)\\)*\\)\\s-*\\(\(.*\)\\)?\\s-*\\(:\\??\\|<=>\\)[^:=][^:\n]*;?[ \t]*$"
      (2 casl-other-name-face keep t))
+   ;; names before and after '|->'
+   '("[ \t\n]*\\(__[^|_]+__\\|[^[ \t\n]+\\)\\s-*\\(\\[\\([A-Z]\\w*\\).*\\]\\)?[ \t\n]*|->[ \t\n]*\\(__[^|_]+__\\|[^[ \t\n]+\\)\\s-*\\(\\[\\([A-Z]\\w*\\).*\\]\\)?[, \t]*" 
+     (1 casl-other-name-face keep t) (3 casl-other-name-face keep t) 
+     (4 casl-other-name-face keep t) (6 casl-other-name-face keep t)) 
    ;; type name
-   '("\\s-+\\(\\sw+\\)[ \t\n]*::?=\\s-*\\(\\sw*\\).*"
-     (1 casl-other-name-face keep t) (2 casl-other-name-face keep t)  )
+   '("\\(\\btype\\|\\bfree type\\)?\\s-+\\(\\sw+\\)\\s-+\\(\\sw*\\|\\[\\(\\s-*\\sw+\\s-*\\)\\]\\)[ \t\n]*::?=[ \t\n]*\\(\\(\_\_[^_]+\_\_\\|[^|][^(|]+\\)\\s-*\\(\(.*\)\\)?\\)"
+     (2 casl-other-name-face keep t) (4 casl-other-name-face keep t)
+     (6 casl-other-name-face keep t))
    ;; constructor
-   '("\\(\\sw+\\)?\\s-*|\\s-*\\(\\sw+\\)\\s-*[|(]?\\([ \t\n]*\\|$\\)"
-     (1 casl-other-name-face keep t) (2 casl-other-name-face keep t))
+   '("\|\\s-+\\(\_\_[^|_]+\_\_\\|[^|][^(|]+\\)\\s-*\\(\([^|]+\)\\)?[ \t\n]*"
+     (1 casl-other-name-face keep t))
    ;; in ()1
    '("\(\\(\\(\\sw\\|,\\)*\\)\\s-*:\\??[^)]*\)"
      (1 casl-other-name-face keep t))
    ;; in ()2
    '("\([^;]*;\\s-*\\(\\sw+\\)\\s-*:\\??.*\)"
      (1 casl-other-name-face keep t))
-   ;; names before and after '|->'
-   '("[ \t\n]*\\([^[ \t\n]+\\)\\s-*\\(\\[\\([A-Z]\\w*\\).*\\]\\)?[ \t\n]+|->[ \t\n]+\\([^[ \t\n]+\\)\\s-*\\(\\[\\([A-Z]\\w*\\).*\\]\\)?[, \t]*" 
-     (1 casl-other-name-face keep t) (3 casl-other-name-face keep t) 
-     (4 casl-other-name-face keep t) (6 casl-other-name-face keep t)) 
    ;; reserved keyword
    '("\\(\\<\\|\\s-+\\)\\(/\\\\\\|\\\\/\\|=>\\|<=>\\|and\\|arch\\|assoc\\|behaviourally\\|closed\\|comm\\|else\\|end\\|exists\\|fit\\|forall\\|free\\|generated\\|given\\|hide\\|idem\\|if\\|local\\|not\\|refined\\|refinement\\|reveal\\|spec\\|then\\|to\\|unit\\|via\\|view\\|when\\|within\\|with\\|\\(\\(op\\|pred\\|var\\|type\\|sort\\)s?\\)\\)[,;]?[ \t\n]"  
-     (2 casl-keyword-face keep t))
-   '("[,;]" (0 casl-black-komma-face t t))
+     (2 casl-keyword-face t t))
+   '("[][,;=.]" (0 casl-black-komma-face t t))
   )	
   "Reserved keywords highlighting")
 
@@ -149,82 +206,30 @@
 (defvar casl-font-lock-syntax-highligthing casl-font-lock-specialcomment
   "Default syntax highlighting level in CASL mode")
 
-;; ====================== S Y N T A X   T A B L E ==================
-;; Syntax table for CASL major mode
-(defvar casl-mode-syntax-table nil
-  "Syntax table for CASL mode.")
-
-(if casl-mode-syntax-table
-    ()
-  (let ((table (make-syntax-table)))
-    ;; Indicate that underscore may be part of a word
-    (modify-syntax-entry ?_ "w" table)
-    (modify-syntax-entry ?\t " " table)
-    (modify-syntax-entry ?\" "\"" table)
-    (modify-syntax-entry ?\' "\'" table)
-    ;; Commnets
-    (if casl-running-xemacs
-	((modify-syntax-entry ?% ". 58" table)
-	 (modify-syntax-entry ?\[ "(] 6" table)
-	 (modify-syntax-entry ?\] ")[ 7" table))
-      (modify-syntax-entry ?% ". 14nb" table)
-      (modify-syntax-entry ?\[ "(] 2n" table)
-      (modify-syntax-entry ?\] ")[ 3n" table))
-    ;; commenting-out plus including other kinds of comment
-    (modify-syntax-entry ?\( "()" table)
-    (modify-syntax-entry ?\) ")(" table)
-    (modify-syntax-entry ?{ "(}" table)
-    (modify-syntax-entry ?} "){" table)
-    (mapcar (lambda (x)
-	      (modify-syntax-entry x "_" table))
-	    ;; Some of these are actually OK by default.
-	    "!#$&*+.,/\\\\:<=>?@^|~")
-    (setq casl-mode-syntax-table table))
-  )
-
-;; Various mode variables.
-(defun casl-vars ()
-  (kill-all-local-variables)
-  (make-local-variable 'comment-start)
-  (setq comment-start "%[")
-  (make-local-variable 'comment-padding)
-  (setq comment-padding 0)
-  (make-local-variable 'comment-start-skip)
-  (setq comment-start-skip "%[%{[] *")
-  (make-local-variable 'comment-column)
-  (setq comment-column 40)
-  (make-local-variable 'comment-indent-function)
-  (setq comment-indent-function 'casl-comment-indent)
-  (make-local-variable 'comment-end)
-  (setq comment-end "]%"))
-
-;; Find the indentation level for a comment.
-(defun casl-comment-indent ()
-  (skip-chars-backward " \t")
-  ;; if the line is blank, put the comment at the beginning,
-  ;; else at comment-column
-  (if (bolp) 0 (max (1+ (current-column)) comment-column)))
-
 ;; ======================= R U N   H E T S =======================
 (require 'compile)
 
 (setq casl-error-list nil)
 (defvar hets-program nil)
 (defvar old-buffer nil)
+(defvar casl-hets-options '()
+  "*the options of run hets.")
 
-(defun casl-run-hets (&optional opt)
+(defun casl-run-hets (&rest opt)
   "Run hets process to compile the current CASL file."
   (interactive)
   (save-buffer nil)
   (setq old-buffer (current-buffer))
-  (let* ((casl-hets-file-name (buffer-file-name))
+  (let* ((option " ")
+	 (casl-hets-file-name (buffer-file-name))
 	 (outbuf (get-buffer-create "*hets-run*")))
     (if hets-program 
 	(setq casl-hets-program hets-program)
       (setq casl-hets-program "hets"))
     (if opt
-	(setq hets-command (concat casl-hets-program " -" opt  " " casl-hets-file-name))
-      (setq hets-command (concat casl-hets-program " " casl-hets-file-name)))
+	(dolist (current opt option)
+	  (setq option (concat option current " "))))
+    (setq hets-command (concat casl-hets-program option casl-hets-file-name))
 
     ;; Pop up the compilation buffer.
     (set-buffer outbuf)
@@ -266,10 +271,29 @@
 	))
       (pop-to-buffer old-buffer)))
 
-(defun casl-run-hets-g ()
-  "Run hets process with -g to compile the current CASL file."
+(defun casl-run-hets-r (&rest opt)
+  "Run hets process with options (from casl-hets-options) to compile the 
+   current CASL file."
   (interactive)
-  (casl-run-hets "g")
+  (setq option1 nil)
+  (setq option2 nil)
+  (if casl-hets-options
+      (dolist (current casl-hets-options option1)
+	(setq option1 (concat option1 current " ")))
+    )
+  (if opt
+      (dolist (current opt option2)
+	(setq option2 (concat option2 current " ")))
+    )
+  (setq option (concat option1 " " option2))
+  (casl-run-hets option)
+)
+
+(defun casl-run-hets-g ()
+  "Run hets process with -g and other options (from variable casl-hets-options)
+   to compile the current CASL file."
+  (interactive)
+  (casl-run-hets-r "-g")
 )
 
 ;; sentinel and filter of asynchronous process of hets
