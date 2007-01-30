@@ -341,8 +341,7 @@ ana_SPEC lg gctx nsig name opts sp =
       let nsigs' = reverse nsigs
           dg' = devGraph gctx'
           adj = adjustPos pos
-          sgMap = sigMap gctx'
-          s = if Map.null sgMap then 0 else fst $ Map.findMax sgMap
+          (sgMap, s) = sigMapI gctx'
       gbigSigma <- adj $ gsigManyUnion lg (map getSig nsigs')
       G_sign lid' gsig _ <- return gbigSigma
       gbigSigma' <- return $ G_sign lid' gsig (s+1)
@@ -360,8 +359,7 @@ ana_SPEC lg gctx nsig name opts sp =
                         , sigMap = Map.insert (s+1) gbigSigma' sgMap }
           insE gctxres (NodeSig n gsigma) = do
             gctxl <- gctxres
-            let mrMapl = morMap gctxl
-                ml = if Map.null mrMapl then 0 else fst $ Map.findMax mrMapl
+            let (mrMapl, ml) = morMapI gctxl
                 dgl = devGraph gctxl
             incl <- adj $ ginclusion lg gsigma gbigSigma
             let incl' = updateMorIndex (ml+1) incl
@@ -396,8 +394,7 @@ ana_SPEC lg gctx nsig name opts sp =
           ana_SPEC lg gctx nsig (inc name) opts sp1
       let pos = poss
           dg' = devGraph gctx'
-          mrMap = morMap gctx'
-          m = if Map.null mrMap then 0 else fst $ Map.findMax mrMap
+          (mrMap, m) = morMapI gctx'
       incl <- adjustPos pos $ ginclusion lg (getMaybeSig nsig) gsigma'
       let incl' = updateMorIndex (m+1) incl
           node_contents = DGNode {
@@ -424,8 +421,7 @@ ana_SPEC lg gctx nsig name opts sp =
            ana_SPEC lg gctx nsig (inc name) opts sp1
       let pos = poss
           dg' = devGraph gctx'
-          mrMap = morMap gctx'
-          m = if Map.null mrMap then 0 else fst $ Map.findMax mrMap
+          (mrMap, m) = morMapI gctx'
       incl <- adjustPos pos $ ginclusion lg (getMaybeSig nsig) gsigma'
       let incl' = updateMorIndex (m+1) incl
           node_contents = DGNode {
@@ -455,10 +451,8 @@ ana_SPEC lg gctx nsig name opts sp =
           ana_SPEC lg dg' (JustNode nsig') (inc name) opts sp1'
       let gsigma = getMaybeSig nsig
           dg'' = devGraph gctx''
-          sgMap = sigMap gctx''
-          mrMap = morMap gctx''
-          s = if Map.null sgMap then 0 else fst $ Map.findMax sgMap
-          m = if Map.null mrMap then 0 else fst $ Map.findMax mrMap
+          (sgMap, s) = sigMapI gctx''
+          (mrMap, m) = morMapI gctx''
       G_sign lid sigma _<- return gsigma
       sigma1 <- coerceSign lid' lid "Analysis of local spec" sigma'
       sigma2 <- coerceSign lid'' lid "Analysis of local spec" sigma''
@@ -511,10 +505,8 @@ ana_SPEC lg gctx nsig name opts sp =
       let gsigma = getMaybeSig nsig
           adj = adjustPos pos
           dg' = devGraph gctx'
-          sgMap = sigMap gctx'
-          mrMap = morMap gctx'
-          s = if Map.null sgMap then 0 else fst $ Map.findMax sgMap
-          m = if Map.null mrMap then 0 else fst $ Map.findMax mrMap
+          (sgMap, s) = sigMapI gctx'
+          (mrMap, m) = morMapI gctx'
       gsigma'' <- adj $ gsigUnion lg gsigma gsigma'
       G_sign lid'' gsig'' _ <- return gsigma''
       gsigma2 <- return $ G_sign lid'' gsig'' (s+1)
@@ -560,10 +552,8 @@ ana_SPEC lg gctx nsig name opts sp =
       let gsigma = getMaybeSig nsig
           dg' = devGraph gctx'
           adj = adjustPos pos
-          sgMap = sigMap gctx'
-          mrMap = morMap gctx'
-          s = if Map.null sgMap then 0 else fst $ Map.findMax sgMap
-          m = if Map.null mrMap then 0 else fst $ Map.findMax mrMap
+          (sgMap, s) = sigMapI gctx'
+          (mrMap, m) = morMapI gctx'
       gsigma'' <- adj $ gsigUnion lg gsigma gsigma'
       G_sign lid'' gsig'' _ <- return gsigma''
       gsigma2 <- return $ G_sign lid'' gsig'' (s+1)
@@ -606,10 +596,8 @@ ana_SPEC lg gctx nsig name opts sp =
   Spec_inst spname afitargs pos -> do
    let adj = adjustPos pos
        spstr = tokStr spname
-       sgMap = sigMap gctx
-       mrMap = morMap gctx
-       s = if Map.null sgMap then 0 else fst $ Map.findMax sgMap
-       m = if Map.null mrMap then 0 else fst $ Map.findMax mrMap
+       (sgMap, s) = sigMapI gctx
+       (mrMap, m) = morMapI gctx
    case Map.lookup spname $ globalEnv gctx of
     Nothing -> fatal_error
                  ("Specification " ++ spstr ++ " not found") pos
