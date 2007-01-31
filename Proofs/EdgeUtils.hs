@@ -23,9 +23,9 @@ import Data.Graph.Inductive.Graph
 import Data.List
 
 deLLEdge :: LEdge DGLinkLab -> DGraph -> DGraph
-deLLEdge e@(v, _, _) g = case match v g of
+deLLEdge e@(v, w, l) g = case match v g of
     (Just(p, v', l', s), g') ->
-        let (ls, rs) = partition (\ (k, n) -> e == (v, n, k)) s in
+        let (ls, rs) = partition ((l, w) ==) s in
         case ls of
           [] -> error $ "deLLEdge no edge: " ++ show e
           [_] -> (p, v', l', rs) & g'
@@ -35,7 +35,7 @@ deLLEdge e@(v, _, _) g = case match v g of
 insLEdge :: LEdge DGLinkLab -> DGraph -> DGraph
 insLEdge e@(v, w, l) g = case match v g of
     (Just(p, v', l', s), g') ->
-        let ls = filter (\ (k, n) -> e == (v, n, k)) s in
+        let ls = filter ((l, w) ==) s in
         case ls of
           [] -> (p, v', l', (l, w) : s) & g'
           _ -> error $ "insLEdge multiple edge: " ++ show e
@@ -52,7 +52,12 @@ delLNode n@(v, l) g = case match v g of
 
 insLNode :: LNode DGNodeLab -> DGraph -> DGraph
 insLNode n@(v, _) g =
-    if gelem v g then error $ "insLNode " ++ show n else insNode n g
+    if gelem v g then error $ "insLNode " ++ show v else insNode n g
+
+labelNode :: LNode DGNodeLab -> DGraph -> DGraph
+labelNode (v, l) g = case match v g of
+    (Just(p, _, _, s), g') -> (p, v, l, s) & g'
+    _ -> error $ "labelNode no such node: " ++ show v
 
 changeDG :: DGraph -> DGChange -> DGraph
 changeDG g c = case c of
@@ -60,8 +65,7 @@ changeDG g c = case c of
     DeleteNode n -> delLNode n g
     InsertEdge e -> insLEdge e g
     DeleteEdge e -> deLLEdge e g
-    SetNodeLab (node, newLab) -> gmap (\(p, name, label, s) -> if name==node then (p, name, newLab, s) 
-							                     else (p, name, label, s)) g
+    SetNodeLab n -> labelNode n g
 
 changesDG :: DGraph -> [DGChange] -> DGraph
 changesDG = foldl' changeDG
@@ -79,10 +83,9 @@ isProven :: DGLinkType -> Bool
 isProven edge = case edge of
     GlobalDef -> True
     LocalDef  -> True
-    GlobalThm Proven{} _ _ -> True
-    LocalThm Proven{} _ _ -> True
-    HidingThm _ Proven{} -> True
-    _ -> False
+    _ -> case thmLinkStatus edge of 
+           Just Proven{} -> True
+           _ -> False
 
 isDefEdge :: DGLinkType -> Bool
 isDefEdge edge = case edge of
@@ -365,13 +368,6 @@ adjustNode dgraph newNode =
       -}
       changes = [SetNodeLab newNode]
   in (changesDG dgraph changes, changes)
-
-
-
---getAllNodeGoals :: LIB_NAME -> LibEnv -> [DGNodeLab]
---getAllNodeGoals ln libEnv =
---                          let dgraph = lookupDgraph ln  libEnv
---                          in nodes dgraph
 
 getAllOpenNodeGoals :: [DGNodeLab] -> [DGNodeLab]
 getAllOpenNodeGoals = filter hasOpenGoals

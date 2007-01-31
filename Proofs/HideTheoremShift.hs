@@ -208,8 +208,9 @@ hideTheoremShift_selectProofBase dgraph basisList =
                                -- "selection of proof basis failed")
                   -- failing or outputting something here may be a bad idea
 
-{- returns a string representation of the given paths:
-   for each path a tuple of the names of its nodes is shown, the two are combined by an 'and' -}
+{- returns a string representation of the given paths: for each path a
+   tuple of the names of its nodes is shown, the two are combined by
+   an \'and\' -}
 prettyPrintPathTuple :: DGraph -> ([LEdge DGLinkLab],[LEdge DGLinkLab])
                      -> String
 prettyPrintPathTuple dgraph (p1,p2) =
@@ -248,22 +249,26 @@ prettyPrintTargetNode dgraph (_,tgt,_) =
      safeContext "Proofs.HideTheoremShift.prettyPrintTargetNode"  dgraph tgt
 
 
-{- creates a unproven global thm edge for the given path, i.e. with the same source and target nodes and the same morphism as the path -}
+{- creates a unproven global thm edge for the given path, i.e. with
+the same source and target nodes and the same morphism as the path -}
 createEdgeForPath :: [LEdge DGLinkLab] -> LEdge DGLinkLab
-createEdgeForPath path@((s, _, _) : _) =
-  case (calculateMorphismOfPath path) of
-    Just morphism -> let (_, t, _) = last path in 
-                     (s, t,
+createEdgeForPath path =
+  case (calculateMorphismOfPath path, path) of
+    (Just morphism, (s, _, _) : _) -> 
+        let (_, t, _) = last path 
+        in (s, t,
                       DGLink {dgl_morphism = morphism,
                               dgl_type = (GlobalThm LeftOpen None
                                           LeftOpen),
                               dgl_origin = DGProof}
                      )
-    Nothing -> error "createEdgeForPath"
+    _ -> error "createEdgeForPath"
 
 
-{- returns a list of path pairs, as shorthand the pairs are not returned as path-path tuples but as path-<list of path> tuples. Every path in the list is a pair of the single path.
-The path pairs are selected by having the same target node. -}
+{- returns a list of path pairs, as shorthand the pairs are not
+returned as path-path tuples but as path-<list of path> tuples. Every
+path in the list is a pair of the single path.  The path pairs are
+selected by having the same target node. -}
 selectPathPairs :: [[LEdge DGLinkLab]] -> [[LEdge DGLinkLab]]
                 -> [([LEdge DGLinkLab],[[LEdge DGLinkLab]])]
 selectPathPairs [] _ = []

@@ -48,7 +48,7 @@ theoremHideShift ln proofStatus =
 -- | apply the theorem hide shift with a list of hiding definition links
 theoremHideShiftFromList :: DGraph -> [LEdge DGLinkLab] -> ([DGRule], [DGChange]) -> (DGraph, ([DGRule], [DGChange]))
 theoremHideShiftFromList dgraph [] history = (dgraph, history)
-theoremHideShiftFromList dgraph ((e@(_, _, elab)):hidingDefEdges) history =
+theoremHideShiftFromList dgraph ((e@(_, _, _)) : hidingDefEdges) history =
     theoremHideShiftFromList newDGraph hidingDefEdges newHistory
     where
     (newDGraph, newChanges) = theoremHideShiftWithOneHidingDefEdge dgraph e
@@ -73,7 +73,8 @@ theoremHideShiftWithOneHidingDefEdgeAux :: DGraph -> LEdge DGLinkLab -> [LEdge D
 theoremHideShiftWithOneHidingDefEdgeAux dgraph _ [] changes =
     if(null changes) then (dgraph, changes)
                      else (dgraph, changes)
-theoremHideShiftWithOneHidingDefEdgeAux dgraph (hd@(hds, _, _)) (x@(s,t,lab):xs) changes =
+theoremHideShiftWithOneHidingDefEdgeAux dgraph (hd@(hds, _, _)) 
+    (x@(s, t, lbl) : xs) changes =
     theoremHideShiftWithOneHidingDefEdgeAux finalDGraph hd xs finalChanges
     where
     ---------------------------------------------------------------
@@ -93,13 +94,13 @@ theoremHideShiftWithOneHidingDefEdgeAux dgraph (hd@(hds, _, _)) (x@(s,t,lab):xs)
     ---------------------------------------------------------------
     -------- to insert a proven global theorem link ---------------
     ---------------------------------------------------------------
-    (GlobalThm _ conservativity conservStatus) = dgl_type lab
+    (GlobalThm _ conservativity conservStatus) = dgl_type lbl
     proofBasis = [newGlobalEdge] --selectProof newDGraph x [[]]
     provenEdge = (
                  s,
                  t,
                  DGLink {
-                        dgl_morphism = dgl_morphism lab,
+                        dgl_morphism = dgl_morphism lbl,
                         dgl_type = (GlobalThm (Proven TheoremHideShift proofBasis) conservativity conservStatus),
                         dgl_origin = DGProof
                         }
