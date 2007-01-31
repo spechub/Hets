@@ -250,10 +250,10 @@ prettyPrintTargetNode dgraph (_,tgt,_) =
 
 {- creates a unproven global thm edge for the given path, i.e. with the same source and target nodes and the same morphism as the path -}
 createEdgeForPath :: [LEdge DGLinkLab] -> LEdge DGLinkLab
-createEdgeForPath path =
+createEdgeForPath path@((s, _, _) : _) =
   case (calculateMorphismOfPath path) of
-    Just morphism -> (getSourceNode (head path),
-                      getTargetNode (last path),
+    Just morphism -> let (_, t, _) = last path in 
+                     (s, t,
                       DGLink {dgl_morphism = morphism,
                               dgl_type = (GlobalThm LeftOpen None
                                           LeftOpen),

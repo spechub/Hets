@@ -154,10 +154,6 @@ isDuplicate :: LEdge DGLinkLab -> DGraph -> [DGChange] -> Bool
 isDuplicate newEdge dgraph changes =
     elem (InsertEdge newEdge) changes || elem newEdge (labEdges dgraph)
 
-{- | returns the DGLinkLab of the given LEdge -}
-getLabelOfEdge :: (LEdge b) -> b
-getLabelOfEdge (_,_,label) = label
-
 -- ----------------------------------------------
 -- methods that calculate paths of certain types
 -- ----------------------------------------------
@@ -169,9 +165,8 @@ getAllPathsOfTypeFromGoalList dgraph isType ls =
     [concat (map (getAllPathsOfTypeBetween dgraph isType source) targets) |
      source <- sources]
     where
-      edgesOfType = [edge | edge <- ls]
-      sources = nub (map getSourceNode edgesOfType)
-      targets = nub (map getTargetNode edgesOfType)
+      sources = nub $ map (\ (s, _, _) -> s) ls
+      targets = nub $ map (\ (_, t, _) -> t) ls
 
 
 {- | returns all paths consisting of edges of the given type in the given
@@ -183,8 +178,8 @@ getAllPathsOfType dgraph isType =
    source <- sources]
   where
     edgesOfType = [edge | edge <- filter (liftE isType) (labEdges dgraph)]
-    sources = nub (map getSourceNode edgesOfType)
-    targets = nub (map getTargetNode edgesOfType)
+    sources = nub (map (\ (s, _, _) -> s) edgesOfType)
+    targets = nub (map (\ (_, t, _) -> t) edgesOfType)
 
 {- | returns a list of all proven global paths of the given morphism between
    the given source and target node-}
@@ -224,7 +219,7 @@ getAllGlobPathsBetween :: DGraph -> Node -> Node -> [[LEdge DGLinkLab]]
 getAllGlobPathsBetween dgraph src tgt =
   getAllPathsOfTypesBetween dgraph (liftOr isGlobalDef isGlobalThm) src tgt []
 
-{- | returns all paths consiting of edges of the given type between the
+{- | returns all paths consisting of edges of the given type between the
    given node -}
 getAllPathsOfTypeBetween :: DGraph -> (DGLinkType -> Bool) -> Node
                             -> Node -> [[LEdge DGLinkLab]]

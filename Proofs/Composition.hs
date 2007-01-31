@@ -61,8 +61,8 @@ compositionCreatingEdgesAux dgraph (path:paths) (rules,changes) =
              (Composition path : rules,
               InsertEdge newEdge : newChanges++changes)
   where
-    src = getSourceNode (head path)
-    tgt = getTargetNode (last path)
+    (src, _, _) = head path
+    (_, tgt, _) = last path
     Just morph = calculateMorphismOfPath path
     cons = case getConservativityOfPath path of
              Mono -> if isTransportable morph then Mono else Cons

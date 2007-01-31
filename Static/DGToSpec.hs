@@ -32,20 +32,19 @@ dgToSpec dg node = do
   let (_,_,n,preds) = safeContext "Static.DGToSpec.dgToSpec" dg node
   predSps <- sequence (map (dgToSpec dg . snd) preds)
   let apredSps = map emptyAnno predSps
-      pos = nullRange
   case n of
     DGNode _ (G_theory lid1 sigma _ sen' _) _ _ DGBasic _ _ ->
       do let b = Basic_spec $ G_basic_spec lid1 $
                  sign_to_basic_spec lid1 sigma $ toNamedList sen'
          if null apredSps
           then return b
-          else return (Extension (apredSps++[emptyAnno b]) pos)
-    DGRef name _ _ _ _ _ -> return (Spec_inst (getName name) [] pos)
+          else return (Extension (apredSps++[emptyAnno b]) nullRange)
+    DGRef name _ _ _ _ _ -> return (Spec_inst (getName name) [] nullRange)
     _ -> case dgn_origin n of
         DGExtension ->
-         return (Extension apredSps pos)
+         return (Extension apredSps nullRange)
         DGUnion ->
-         return (Union apredSps pos)
+         return (Union apredSps nullRange)
         DGTranslation ->
          return (Translation (head apredSps) (Renaming [] nullRange))
         DGHiding ->
@@ -53,12 +52,12 @@ dgToSpec dg node = do
         DGRevealing ->
          return (Reduction (head apredSps) (Hidden [] nullRange))
         DGFree ->
-         return (Free_spec (head apredSps) pos)
+         return (Free_spec (head apredSps) nullRange)
         DGCofree ->
-         return (Cofree_spec (head apredSps) pos)
+         return (Cofree_spec (head apredSps) nullRange)
         DGSpecInst name ->
-         return (Spec_inst name [] pos)
-        _ -> return (Extension apredSps pos)
+         return (Spec_inst name [] nullRange)
+        _ -> return (Extension apredSps nullRange)
 
 {- compute the theory of a given node.
    If this node is a DGRef, the referenced node is looked up first. -}
@@ -85,27 +84,17 @@ computeLocalTheory libEnv ln node =
 -- determines the morphism of a given path
 calculateMorphismOfPath :: [LEdge DGLinkLab] -> Maybe GMorphism
 calculateMorphismOfPath [] = Nothing
-calculateMorphismOfPath ((_src,_tgt,edgeLab):furtherPath) =
+calculateMorphismOfPath ((_src, _tgt, edgeLab) : furtherPath) =
   case maybeMorphismOfFurtherPath of
     Nothing -> if null furtherPath then Just morphism else Nothing
     Just morphismOfFurtherPath ->
       resultToMaybe $ compHomInclusion morphism morphismOfFurtherPath
-
   where
     morphism = dgl_morphism edgeLab
     maybeMorphismOfFurtherPath = calculateMorphismOfPath furtherPath
 
--- ------------------------------------
--- methods to get the nodes of an edge
--- ------------------------------------
-getSourceNode :: LEdge DGLinkLab -> Node
-getSourceNode (source,_,_) = source
-
-getTargetNode :: LEdge DGLinkLab -> Node
-getTargetNode (_,target,_) = target
-
 liftE :: (DGLinkType -> Bool) -> LEdge DGLinkLab -> Bool
-liftE f (_,_,edgeLab) = f $ dgl_type edgeLab
+liftE f (_, _, edgeLab) = f $ dgl_type edgeLab
 
 isGlobalDef :: DGLinkType -> Bool
 isGlobalDef lt = case lt of

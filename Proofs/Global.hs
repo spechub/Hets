@@ -107,12 +107,11 @@ globDecompAux dgraph (edge:list) historyElem =
 
 -- applies global decomposition to a single edge
 globDecompForOneEdge :: DGraph -> LEdge DGLinkLab -> (DGraph,[DGChange])
-globDecompForOneEdge dgraph edge =
+globDecompForOneEdge dgraph edge@(source, _, _) =
   globDecompForOneEdgeAux dgraph edge [] paths
   where
-    source = getSourceNode edge
-    defEdgesToSource = [e | e <- labEdges dgraph,
-                        liftE isDefEdge e && getTargetNode e == source]
+    defEdgesToSource = [e | e@(_, tgt, lab) <- labEdges dgraph,
+                        isDefEdge (dgl_type lab) && tgt == source]
     paths = map (\e -> [e,edge]) defEdgesToSource ++ [[edge]]
     --getAllLocOrHideGlobDefPathsTo dgraph (getSourceNode edge) []
 --    paths = [(node, path++(edge:[]))| (node,path) <- pathsToSource]
@@ -149,7 +148,7 @@ globDecompForOneEdgeAux dgraph edge@(_,target,_) changes
     then globDecompForOneEdgeAux dgraph edge changes list
    else globDecompForOneEdgeAux newGraph edge newChanges list
   where
-    hd = head path
+    hd@(node, _, lab) = head path
     isHiding = not (null path) && liftE isHidingDef hd
     morphismPath = if isHiding then tail path else path
     morphism = case calculateMorphismOfPath morphismPath of
@@ -157,14 +156,14 @@ globDecompForOneEdgeAux dgraph edge@(_,target,_) changes
                  Nothing ->
                    error "globDecomp: could not determine morphism of new edge"
     newEdge = if isHiding then hidingEdge
-               else if liftE isGlobalDef hd then globalEdge else localEdge
-    node = getSourceNode hd
+              else if isGlobalDef $ dgl_type lab 
+                   then globalEdge 
+                   else localEdge
     hidingEdge =
        (node,
         target,
         DGLink {dgl_morphism = morphism,
-                dgl_type = HidingThm (dgl_morphism $
-                                      getLabelOfEdge hd) LeftOpen,
+                dgl_type = HidingThm (dgl_morphism $ lab) LeftOpen,
                 dgl_origin = DGProof})
     globalEdge = (node,
                   target,
@@ -278,7 +277,8 @@ combinePathsWithEdge [] _ = []
 combinePathsWithEdge (path:paths) edge@(src,_,_) =
   case path of
     [] -> combinePathsWithEdge paths edge
-    _ :_ -> if getTargetNode (last path) == src
+    _ :_ -> let (_, tgt, _) = last path in
+            if tgt == src
               then (path ++ [edge]) : combinePathsWithEdge paths edge
                 else combinePathsWithEdge paths edge
 
@@ -294,14 +294,12 @@ calculateResultingEdges [] = []
 calculateResultingEdges (path : paths) =
   case path of
     [] -> calculateResultingEdges paths
-    hd : _ ->
+    hd@(src, _, _) : _ ->
        case calculateMorphismOfPath path of
          Nothing -> calculateResultingEdges paths
          Just morphism -> (lst, (src, tgt, morphism)) :
                           calculateResultingEdges paths
-       where lst = last path
-             src = getSourceNode hd
-             tgt = getTargetNode lst
+       where lst@(_, tgt, _) = last path
 
 {- removes from the given list every edge for which there is already an
    equivalent edge or path (i.e. an edge or path with the same src, tgt and
@@ -314,7 +312,7 @@ removeSuperfluousEdges dgraph es
         (calculateResultingEdges combinedPaths) []
   where
     localThmPaths
-        = localThmPathsBetweenNodes dgraph (map (getSourceNode) es)
+        = localThmPathsBetweenNodes dgraph (map ( \ (s, _, _) -> s) es)
     combinedPaths = combinePathsWithEdges localThmPaths es
 
 {- auxiliary method for removeSuperfluousEdges -}

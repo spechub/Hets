@@ -57,17 +57,16 @@ theoremHideShiftFromList dgraph ((e@(_, _, elab)):hidingDefEdges) history =
 
 -- | apply the rule with one hiding definition link
 theoremHideShiftWithOneHidingDefEdge :: DGraph -> LEdge DGLinkLab -> (DGraph, [DGChange])
-theoremHideShiftWithOneHidingDefEdge dgraph e =
+theoremHideShiftWithOneHidingDefEdge dgraph e@(_, n, _) =
     let
-    n = getTargetNode e
     globalUnprovenEdges = getInComingGlobalUnprovenEdges dgraph n
     in
     theoremHideShiftWithOneHidingDefEdgeAux dgraph e globalUnprovenEdges []
 
 -- | get all the global unproven threorem links which go into the given node in the given dgraph
 getInComingGlobalUnprovenEdges :: DGraph -> Node -> [LEdge DGLinkLab]
-getInComingGlobalUnprovenEdges dgraph n = filter ( \ e ->
-    getTargetNode e == n && liftE isUnprovenGlobalThm e) $ labEdges dgraph
+getInComingGlobalUnprovenEdges dgraph n = filter ( \ (_, t, l) ->
+    t == n && isUnprovenGlobalThm (dgl_type l)) $ labEdges dgraph
 
 -- | apply the rule to a list of global unproven threorem links with the related hiding definition link
 theoremHideShiftWithOneHidingDefEdgeAux :: DGraph -> LEdge DGLinkLab -> [LEdge DGLinkLab] -> [DGChange] -> (DGraph, [DGChange])

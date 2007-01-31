@@ -81,7 +81,7 @@ hasIngoingHidingDef libEnv ln node =
     inGoingEdges = getAllIngoingEdges libEnv ln node
     hidingDefEdges = [tuple| tuple@(_, n) <- inGoingEdges, liftE isHidingDef n]
     globalDefEdges = [tuple| tuple@(_, n) <- inGoingEdges, liftE isGlobalDef n]
-    next = [ (l,getSourceNode e) | (l,e) <- globalDefEdges ]
+    next = [ (l, s) | (l, (s, _, _)) <- globalDefEdges ]
 
 getAllIngoingEdges :: LibEnv -> LIB_NAME -> Node
                    -> [(LIB_NAME, LEdge DGLinkLab)]
