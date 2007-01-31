@@ -110,8 +110,8 @@ globDecompForOneEdge :: DGraph -> LEdge DGLinkLab -> (DGraph,[DGChange])
 globDecompForOneEdge dgraph edge@(source, _, _) =
   globDecompForOneEdgeAux dgraph edge [] paths
   where
-    defEdgesToSource = [e | e@(_, tgt, lab) <- labEdges dgraph,
-                        isDefEdge (dgl_type lab) && tgt == source]
+    defEdgesToSource = [e | e@(_, tgt, lbl) <- labEdges dgraph,
+                        isDefEdge (dgl_type lbl) && tgt == source]
     paths = map (\e -> [e,edge]) defEdgesToSource ++ [[edge]]
     --getAllLocOrHideGlobDefPathsTo dgraph (getSourceNode edge) []
 --    paths = [(node, path++(edge:[]))| (node,path) <- pathsToSource]
@@ -148,22 +148,23 @@ globDecompForOneEdgeAux dgraph edge@(_,target,_) changes
     then globDecompForOneEdgeAux dgraph edge changes list
    else globDecompForOneEdgeAux newGraph edge newChanges list
   where
-    hd@(node, _, lab) = head path
-    isHiding = not (null path) && liftE isHidingDef hd
+    (node, _, lbl) = head path
+    lbltype = dgl_type lbl
+    isHiding = not (null path) && isHidingDef lbltype
     morphismPath = if isHiding then tail path else path
     morphism = case calculateMorphismOfPath morphismPath of
                  Just morph -> morph
                  Nothing ->
                    error "globDecomp: could not determine morphism of new edge"
     newEdge = if isHiding then hidingEdge
-              else if isGlobalDef $ dgl_type lab 
+              else if isGlobalDef lbltype
                    then globalEdge 
                    else localEdge
     hidingEdge =
        (node,
         target,
         DGLink {dgl_morphism = morphism,
-                dgl_type = HidingThm (dgl_morphism $ lab) LeftOpen,
+                dgl_type = HidingThm (dgl_morphism $ lbl) LeftOpen,
                 dgl_origin = DGProof})
     globalEdge = (node,
                   target,
@@ -294,7 +295,7 @@ calculateResultingEdges [] = []
 calculateResultingEdges (path : paths) =
   case path of
     [] -> calculateResultingEdges paths
-    hd@(src, _, _) : _ ->
+    (src, _, _) : _ ->
        case calculateMorphismOfPath path of
          Nothing -> calculateResultingEdges paths
          Just morphism -> (lst, (src, tgt, morphism)) :
