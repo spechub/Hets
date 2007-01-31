@@ -113,48 +113,7 @@ CCS example: commutativity of || by coinduction
 Christian
 ************************************************
 
-Isabelle coding (let, case, etc.)
-Coding out sub-types in HasCASL
-
-collect the patches for programatica (or create a package)
--    conv (SN i p) = PN i (S p)
-+    conv (SN i p) = PN i (Sn (show i) p)
-in programatica/tools/base/parse2/NumberNames.hs
-fixes translation error of Pair
-
-simplification of HasCASL sentences (omit types)
-
-Logic COL is a ruin
-
-Haskell modules: hiding, renaming
-
-- group the axioms according to their leading operation/predicate symbol,
-  i.e. the f resp. the p in
-  forall x_1:s_n .... x_n:s_n .       phi =>      f(t_1,...,t_m)=t
-  forall x_1:s_n .... x_n:s_n .    phi1  =>      p(t_1,...,t_m)<=>phi
-  if there are axioms not being of this form, output error
-
-
-Static analysis for HasCASL
-  pattern analysis for program equations
-  implemented only atomic subtyping
-
-Weak amalgamation analysis?
-
-Instantiate Transformation Application system for HasCASL?
-Automatic generation of Haskell (for a HasCASL subset)
-Proofs in HasCASL
-Case study
-
-
-Coding HasCASL -> Isabelle with definedness axioms
-  only strict functions are defined
-
-Isabelle interface
-  One emacs with spec and proof buffer
-  Reload button should rebuild buffers while keeping as much as possible
-  keep structuring of Hets theories
-
+see http://trac.informatik.uni-bremen.de:8080/hets
 
 ************************************************
 Rainer (Klaus)
