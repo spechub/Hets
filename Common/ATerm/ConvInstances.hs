@@ -70,10 +70,10 @@ instance (ShATermConvertible a)
     => ShATermConvertible (IntMap.IntMap a) where
     toShATermAux att fm = do
       (att1, i) <- toShATerm' att $ IntMap.toList fm
-      return $ addATerm (ShAAppl "IntMap" [i] []) att1
+      return $ addATerm (ShAAppl "Map" [i] []) att1
     fromShATermAux ix att0 =
         case getShATerm ix att0 of
-            ShAAppl "IntMap" [a] _ ->
+            ShAAppl "Map" [a] _ ->
                     case fromShATerm' a att0 of { (att1, a') ->
                     (att1, IntMap.fromDistinctAscList a') }
             u -> fromShATermError "IntMap.IntMap" u
