@@ -21,6 +21,7 @@ import Common.ATerm.Conversion
 import Common.ATerm.AbstractSyntax
 import qualified Common.Lib.Graph as Graph
 import qualified Common.Lib.Map as Map
+import qualified Data.IntMap as IntMap
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
 import qualified Common.OrderedMap as OMap
@@ -64,6 +65,18 @@ instance (Ord a, ShATermConvertible a, ShATermConvertible b)
                     case fromShATerm' a att0 of { (att1, a') ->
                     (att1, Map.fromDistinctAscList a') }
             u -> fromShATermError "Map.Map" u
+
+instance (ShATermConvertible a)
+    => ShATermConvertible (IntMap.IntMap a) where
+    toShATermAux att fm = do
+      (att1, i) <- toShATerm' att $ IntMap.toList fm
+      return $ addATerm (ShAAppl "IntMap" [i] []) att1
+    fromShATermAux ix att0 =
+        case getShATerm ix att0 of
+            ShAAppl "IntMap" [a] _ ->
+                    case fromShATerm' a att0 of { (att1, a') ->
+                    (att1, IntMap.fromDistinctAscList a') }
+            u -> fromShATermError "IntMap.IntMap" u
 
 elemWOrdTc :: TyCon
 elemWOrdTc = mkTyCon "Common.OrderedMap.ElemWOrd"

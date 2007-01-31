@@ -15,15 +15,15 @@ instead of Data.Graph.Inductive.Internal.FiniteMap
 module Common.Lib.Graph (Gr, convertToMap, unsafeConstructGr) where
 
 import Data.Graph.Inductive.Graph
-import qualified Common.Lib.Map as Map
+import qualified Data.IntMap as Map
 
 -- | the graph type constructor
-newtype Gr a b = Gr { convertToMap :: Map.Map Node (Adj b, a, Adj b) }
+newtype Gr a b = Gr { convertToMap :: Map.IntMap (Adj b, a, Adj b) }
 
-unsafeConstructGr :: Map.Map Node (Adj b, a, Adj b) -> Gr a b
+unsafeConstructGr :: Map.IntMap (Adj b, a, Adj b) -> Gr a b
 unsafeConstructGr = Gr
 
-type GraphRep a b = Map.Map Node (Context' a b)
+type GraphRep a b = Map.IntMap (Context' a b)
 type Context' a b = (Adj b, a, Adj b)
 
 instance (Show a,Show b) => Show (Gr a b) where
@@ -38,10 +38,10 @@ instance Graph Gr where
   -- more efficient versions of derived class members
   --
   matchAny (Gr g) = if Map.null g then error "Match Exception, Empty Graph"
-      else (c,g') where (Just c,g') = matchGr (fst $ Map.findMin g) (Gr g)
+      else (c,g') where (Just c,g') = matchGr (head $ Map.keys g) (Gr g)
   noNodes   (Gr g) = Map.size g
   nodeRange (Gr g) = if Map.null g then (0, -1)
-                     else (fst $ Map.findMin g, fst $ Map.findMax g)
+                     else (head $ Map.keys g, last $ Map.keys g)
   labEdges  (Gr g) =
       concatMap (\(v,(_,_,s))->map (\(l,w)->(v,w,l)) s) (Map.toList g)
 
