@@ -1,8 +1,8 @@
 var   a : Type; b : Type
-free type Pair a b ::= Pair (fst : a; snd : b)
-op    f(a : a; b : b) : Pair a b = Pair (a, b)
-op    g : Pair a b ->? a
-program g (Pair (a, b)) = a
+free type Pair a b ::= Pair (fst : a; snd : b);
+op    f(a : a; b : b) : Pair a b = Pair (a, b);
+op    g : Pair a b ->? a;
+program g (Pair (a, b)) = a;
 %% Type Constructors -----------------------------------------------------
 Pair
 : Type -> Type -> Type

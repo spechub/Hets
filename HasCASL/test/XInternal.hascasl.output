@@ -1,7 +1,7 @@
 internal
-{type  s, t;
-fun   o, q : s -> t;
-. o = q
+{sort  s, t;;
+fun   o, q : s -> t;;
+. o = q;
 }
 %% Type Constructors -----------------------------------------------------
 s : Type

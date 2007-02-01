@@ -1,10 +1,10 @@
-type  Nat
-op    0, 1 : Nat
-op    __+__, __-__, min : Nat * Nat -> Nat
-pred  __>=__, __<=__, __>__ : Nat * Nat
-free type Boolean ::= True | False
+sort  Nat;
+op    0, 1 : Nat;
+op    __+__, __-__, min : Nat * Nat -> Nat;
+pred  __>=__, __<=__, __>__ : Nat * Nat;
+free type Boolean ::= True | False;
 var   S : Type; V : Type
-type  Set : Type -> Type := \ S : Type . S ->? Unit
+type  Set : Type -> Type := \ S : Type . S ->? Unit;
 op    emptySet : Set S;
       {__} : S -> Set S;
       __isIn__ : S * Set S ->? Unit;
@@ -13,31 +13,31 @@ op    emptySet : Set S;
       __disjoint__ : Pred (Set (S) * Set (S));
       __*__ : Set S * Set V -> Set (S * V);
       __disjointUnion__ : Set S * Set S -> Set (S * Boolean);
-      injl, injr : S -> S * Boolean
+      injl, injr : S -> S * Boolean;
 var   Elem : Type
-type  MultiSet : Type -> Type := \ Elem : Type . Elem ->? Nat
+type  MultiSet : Type -> Type := \ Elem : Type . Elem ->? Nat;
 op    __isIn__ : Pred (Elem * MultiSet Elem);
       __<=__ : Pred (MultiSet Elem * MultiSet Elem);
       {} : MultiSet Elem;
       {__} : Elem -> MultiSet Elem;
-      __+__, __-__, __intersection__ : MultiSet Elem * MultiSet Elem ->
-                                       MultiSet Elem;
+      __+__, __-__, __intersection__
+      : MultiSet Elem * MultiSet Elem -> MultiSet Elem;
       freq : Elem * MultiSet Elem -> Nat;
-      setToMultiSet : Set Elem -> MultiSet Elem
+      setToMultiSet : Set Elem -> MultiSet Elem;
 var   Elem : Type
-op    MultiSetToSet : MultiSet Elem -> Set Elem
+op    MultiSetToSet : MultiSet Elem -> Set Elem;
 forall B : MultiSet Elem; S : Set Elem
 . let S = MultiSetToSet B in
   forall x : Elem . (x isIn S) <=> ((freq (x, B)) > 0)
 var   S : Type
 type  MapMultiSet : Type -> Type
-      := \ S : Type . MultiSet S ->? MultiSet S
+      := \ S : Type . MultiSet S ->? MultiSet S;
 var   a : Type
 op    sumN : (Nat ->? Nat) -> Nat -> Nat;
       sumSet : Set Nat ->? Nat;
-      sum : (a ->? Nat) -> Pred a ->? Nat
+      sum : (a ->? Nat) -> Pred a ->? Nat;
 var   S : Type; V : Type; U : Type
-type  Map : Type -> Type := \ S : Type . S ->? S
+type  Map : Type -> Type := \ S : Type . S ->? S;
 op    dom : (S ->? V) -> Set S;
       range : (S ->? V) -> Set V;
       image : (S ->? V) -> Set S -> Set V;
@@ -50,16 +50,17 @@ op    dom : (S ->? V) -> Set S;
       undef__ : S ->? V;
       ker : (S ->? V) -> Pred (S * S);
       injective : Pred (S ->? V);
-      __intersectionMap__, __unionMap__ : (S ->? V) * (S ->? V) ->
-                                          (S ->? V);
-      __restrict__ : (S ->? V) * Set S -> (S ->? V)
+      __intersectionMap__, __unionMap__
+      : (S ->? V) * (S ->? V) -> (S ->? V);
+      __restrict__ : (S ->? V) * Set S -> (S ->? V);
 var   S : Type; V : Type
 op    __::__-->__ : Pred ((S ->? MultiSet V) * Set S * Set V);
       freeMap : Map S -> MapMultiSet S;
-      linMap : (S ->? MultiSet V) -> (MultiSet S ->? MultiSet V)
-op    __intersection__ : MultiSet Elem * MultiSet Elem ->
-                         MultiSet Elem, assoc, comm, idem
-type  P, T
+      linMap : (S ->? MultiSet V) -> (MultiSet S ->? MultiSet V);
+op    __intersection__
+      : MultiSet Elem * MultiSet Elem -> MultiSet Elem, assoc, comm,
+      idem;
+sort  P, T;
 type  Net =
       {(p, pre, post) : Set P * (T ->? MultiSet P) * (T ->? MultiSet P) .
       dom pre = dom post /\
@@ -68,10 +69,10 @@ type  Net =
       /\
       (forall p1 : MultiSet P .
        (p1 isIn (range pre)) => ((MultiSetToSet p1) subset p))
-      }
+      };
 op    places : Net -> Set P;
       transitions : Net -> Set T;
-      preMap, postMap : Net -> (T ->? MultiSet P)
+      preMap, postMap : Net -> (T ->? MultiSet P);
 type  HomNet =
       {(n1, hp, ht, n2) : Net * (P ->? P) * (T ->? T) * Net .
       (hp :: places n1 --> (places n2)) /\
@@ -81,37 +82,37 @@ type  HomNet =
        (t isIn (transitions n1)) =>
        freeMap hp (preMap n1 t) = preMap n2 (ht t) /\
        freeMap hp (postMap n1 t) = postMap n2 (ht t))
-      }
+      };
 op    dom : HomNet -> Net;
       cod : HomNet -> Net;
       placesMap : HomNet -> (P ->? P);
       transitionsMap : HomNet -> (T ->? T);
       id : Net ->? HomNet;
-      __o__ : HomNet * HomNet ->? HomNet
-pred  injective : HomNet
-type  Marking := MultiSet P
+      __o__ : HomNet * HomNet ->? HomNet;
+pred  injective : HomNet;
+type  Marking := MultiSet P;
 type  System =
       {(n, m) : Net * Marking .
       let (p, pre1, post1) = n in forall x : P . (x isIn m) => (x isIn p)
-      }
+      };
 op    marking : System -> Marking;
       net : System -> Net;
       empty : Marking;
       __|<__> : System * T -> System;
-      __|<__> : System * MultiSet T ->? System
+      __|<__> : System * MultiSet T ->? System;
 type  HomSys =
       {(sys1, hp, ht, sys2) : System * (P ->? P) * (T ->? T) * System .
       ((net sys1, hp, ht, net sys2) in HomNet) /\
       (forall p : P .
        (freq (p, marking sys1)) <= (freq (hp p, marking sys2)))
-      }
+      };
 op    dom : HomSys -> System;
       cod : HomSys -> System;
       placesMap : HomSys -> (P ->? P);
       transitionsMap : HomSys -> (T ->? T);
       id : System ->? HomSys;
-      __o__ : HomSys * HomSys ->? HomSys
-pred  injective : HomSys
+      __o__ : HomSys * HomSys ->? HomSys;
+pred  injective : HomSys;
 forall h1 : HomSys; h2 : HomSys
 . def (h2 o h1) =>
   (h2 o h1) =

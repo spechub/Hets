@@ -1,9 +1,9 @@
-class Cpo < Type
-class Cppo < Cpo
-type instance __-->__ : -Cpo -> +Cpo -> Cpo
-type instance __-->__ : -Cpo -> +Cppo -> Cppo
+class Cpo < Type;
+class Cppo < Cpo;
+type instance __-->__ : -Cpo -> +Cpo -> Cpo;
+type instance __-->__ : -Cpo -> +Cppo -> Cppo;
 var   c : Cppo
-fun   Y : (c --> c) --> c
+fun   Y : (c --> c) --> c;
 %% Classes ---------------------------------------------------------------
 Cpo < Type
 Cppo < Cpo

@@ -1,34 +1,34 @@
-class Type < Type
+class Type < Type;
 var   t : Type
-class TYPE < Type
-type  Unit : TYPE
-class a, b, c < Type
+class TYPE < Type;
+type  Unit : TYPE;
 class a, b, c < Type;
-      a < b
-type  s : c
-pred  tt : s
+class a, b, c < Type;
+      a < b;
+type  s : c;
+pred  tt : s;
 var   x : s
-program tt = \ x : s . ()
+program tt = \ x : s . ();
 program
 fst (x : s, y : t) : s = x;
-snd (x : s, y : t) : t = y
-pred  eq : s * s
-type  s < ? s
+snd (x : s, y : t) : t = y;
+pred  eq : s * s;
+type  s < ? s;
 forall x : t; y : t
-. 
-  %(..)%
-  x = y
-type  s
-op    a : (? s)
-type  Data1 ::= a | b | c
+
+%(..)%
+. x = y
+sort  s;
+op    a : (? s);
+type  Data1 ::= a | b | c;
 type  Data2
-      ::= Cons21 (Data1; Data2) | Cons22 (Data2; Data1) | type Data1
+      ::= Cons21 (Data1; Data2) | Cons22 (Data2; Data1) | type Data1;
 type  Data3
       ::= Cons31 (sel1 :? Data1; sel2 :? Data2) | 
-          Cons32 (sel2 :? Data2; sel1 :? Data1)
+          Cons32 (sel2 :? Data2; sel1 :? Data1);
 type  Data4
       ::= Cons41 (sel1 :? Data1; sel2 :? Data2)? | 
-          Cons42 (sel2 :? Data2; sel1 :? Data1)?
+          Cons42 (sel2 :? Data2; sel1 :? Data1)?;
 . true
 forall x : s
 forall x : s

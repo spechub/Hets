@@ -1,5 +1,5 @@
-type  s
-op    f : s --> s
+sort  s;
+op    f : s --> s;
 . f = ((\ x : s . x) as s --> s)
 %% Type Constructors -----------------------------------------------------
 s : Type

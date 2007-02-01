@@ -1,19 +1,19 @@
-class a < Type
-class b < a
+class a < Type;
+class b < a;
       %% cycle
-class c < Type
-class d < Type
-class e < c
+class c < Type;
+class d < Type;
+class e < c;
       %% indirect cycle
-class h < Type
+class h < Type;
       %% no implicit declaration
-class g < Type
-class g < a
+class g < Type;
+class g < a;
       %% g is already real class
-class i < g
-class g < i
+class i < g;
+class g < i;
       %% cycle via i = g
-class i < Type
+class i < Type;
       %% i is already alias class
 %% Classes ---------------------------------------------------------------
 a < Type

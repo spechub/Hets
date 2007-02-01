@@ -1,8 +1,8 @@
 var   a : Type
-type  List(a : Type)
-op    nil : List a
-op    head : List a -> a
-op    snoc : List a -> a --> List a
+type  List(a : Type);
+op    nil : List a;
+op    head : List a -> a;
+op    snoc : List a -> a --> List a;
 forall x : a
 . snoc nil x = snoc nil x
 . head nil x = x

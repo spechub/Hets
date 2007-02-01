@@ -1,18 +1,18 @@
-type  s, t
-op    snd : s * t -> t
-program snd (x, y) = y
-program snd (x, y) = y
-program snd (x, y) = y : t
-program snd (x, y) : t = y
-program snd (x, y) : t = y
-program snd (x : s, y : t) : t = y
-op    a : s
-program b : s = a
-op    b : s
-program b : s = a
+sort  s, t;
+op    snd : s * t -> t;
+program snd (x, y) = y;
+program snd (x, y) = y;
+program snd (x, y) = y : t;
+program snd (x, y) : t = y;
+program snd (x, y) : t = y;
+program snd (x : s, y : t) : t = y;
+op    a : s;
+program b : s = a;
+op    b : s;
+program b : s = a;
 op    x : s;
-      y : t
-op    c : t = snd (x : s, y : t)
+      y : t;
+op    c : t = snd (x : s, y : t);
 %% Type Constructors -----------------------------------------------------
 s : Type
 t : Type

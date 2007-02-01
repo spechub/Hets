@@ -55,7 +55,7 @@ a = e =< b
 ys as b
 ((pred y : bb))
 ((pred y : bb))
-((pred y : Unit))
+((pred y : ()))
 (predy y : bb)
 (predy : bb)
 (predy : bb)

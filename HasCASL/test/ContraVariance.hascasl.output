@@ -1,6 +1,6 @@
-type  p : +Type -> Type := \ a : +Type . Pred (Pred a)
+type  p : +Type -> Type := \ a : +Type . Pred (Pred a);
       %% should be correct
-type  m : +Type -> Type := \ b : +Type . b
+type  m : +Type -> Type := \ b : +Type . b;
       %% should be correct
 %% Type Constructors -----------------------------------------------------
 m : +Type -> Type := \ b : +Type . b

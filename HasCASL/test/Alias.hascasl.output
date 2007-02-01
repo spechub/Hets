@@ -1,23 +1,23 @@
 var   s : Type
-type  MyPred : Type -> Type := \ s : Type . s ->? Unit
-type  MyAlias : Type -> Type := \ t : Type . t ->? Unit
+type  MyPred : Type -> Type := \ s : Type . s ->? Unit;
+type  MyAlias : Type -> Type := \ t : Type . t ->? Unit;
 type  a1 : Type -> Type -> Type
-      := \ (a : Type)(b : Type) . a -> b -> Unit
+      := \ (a : Type) (b : Type) . a -> b -> Unit;
 type  a1 : Type -> Type -> Type
-      := \ (a : Type)(b : Type) . a -> b -> Unit
+      := \ (a : Type) (b : Type) . a -> b -> Unit;
 type  a1 : Type -> Type -> Type
-      := \ (a : Type)(b : Type) . a -> b -> Unit
-type  a2 : Type -> Type -> Type := \ a : Type . a -> Unit
-type  a3 : Type -> Type -> Type := \ a : Type . a -> Unit
-type  a4 : Type -> Type -> Type := \ a : Type . a -> Unit
-type  a5(a : Type)
-type  a6(a : Type)
-type  a7 : Type -> Type := \ a : Type . a6 a -> Unit
+      := \ (a : Type) (b : Type) . a -> b -> Unit;
+type  a2 : Type -> Type -> Type := \ a : Type . a -> Unit;
+type  a3 : Type -> Type -> Type := \ a : Type . a -> Unit;
+type  a4 : Type -> Type -> Type := \ a : Type . a -> Unit;
+type  a5(a : Type);
+type  a6(a : Type);
+type  a7 : Type -> Type := \ a : Type . a6 a -> Unit;
 %% Type Constructors -----------------------------------------------------
 MyAlias : Type -> Type := \ t : Type . t ->? Unit
 MyPred : Type -> Type := \ s : Type . s ->? Unit
 a1
-: Type -> Type -> Type := \ (a : Type)(b : Type) . a -> b -> Unit
+: Type -> Type -> Type := \ (a : Type) (b : Type) . a -> b -> Unit
 a2 : Type -> Type -> Type := \ a : Type . a -> Unit
 a3 : Type -> Type -> Type := \ a : Type . a -> Unit
 a4 : Type -> Type -> Type := \ a : Type . a -> Unit

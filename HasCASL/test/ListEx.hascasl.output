@@ -1,23 +1,23 @@
 var   b : Type
 var   a : +Type
-type  List(a : +Type)
-free type List a ::= Nil | Cons (head : a; tail : List a)
-free type List a ::= Nil | Cons (head : a; tail : List b)
-free type List a ::= Nil | Cons (head : a; tail : List a b)
-free type List a ::= Nil | Cons (head : a; tail : List (List a))
-free type Tree a ::= Leaf | Branch (head : Tree a; tail : Tree a)
+type  List(a : +Type);
+free type List a ::= Nil | Cons (head : a; tail : List a);
+free type List a ::= Nil | Cons (head : a; tail : List b);
+free type List a ::= Nil | Cons (head : a; tail : List a b);
+free type List a ::= Nil | Cons (head : a; tail : List (List a));
+free type Tree a ::= Leaf | Branch (head : Tree a; tail : Tree a);
 generated
 {type  Tree1(a : +Type)
-       ::= Leaf | Branch (head : Tree a; tail : Tree1 a)
+       ::= Leaf | Branch (head : Tree a; tail : Tree1 a);
 }
 type  Tree2(a : +Type)
-      ::= Leaf | Branch (head : Tree a; tail : Tree2 a)
+      ::= Leaf | Branch (head : Tree a; tail : Tree2 a);
 free type
 even a ::= rek (odd a);
-odd a ::= rek (even a)
+odd a ::= rek (even a);
 free type
 even2 a ::= rek (odd2 (odd2 a));
-odd2 a ::= rek (even2 a)
+odd2 a ::= rek (even2 a);
 %% Type Constructors -----------------------------------------------------
 List
 : +Type -> Type
