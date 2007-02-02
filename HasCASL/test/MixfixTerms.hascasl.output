@@ -21,3 +21,4 @@ def a = b
 not if if a then b else c then b else c
 a when (exists . true) else b
 ((a * b) ::: (a b)) = (a ::: b)
+f - b

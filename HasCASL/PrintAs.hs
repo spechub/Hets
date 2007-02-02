@@ -178,7 +178,7 @@ instance Pretty TypeQual where
         Inferred -> colon
 
 instance Pretty Term where
-    pretty = printTerm . rmSomeTypes
+    pretty = printTerm . rmSomeTypes 
 
 isSimpleTerm :: Term -> Bool
 isSimpleTerm trm = case trm of
@@ -261,8 +261,7 @@ printTerm = foldTerm printTermRec
 
 rmTypeRec :: MapRec
 rmTypeRec = mapRec
-    { -- foldQualVar = \ _ (VarDecl v _ _ ps) -> ResolvedMixTerm v [] ps
-      foldQualOp = \ t _ (InstOpId i _ _) _ ps ->
+    { foldQualOp = \ t _ (InstOpId i _ _) _ ps ->
                    if elem i $ map fst bList then
                      ResolvedMixTerm i [] ps else t
     , foldTypedTerm = \ _ nt q ty ps ->
@@ -276,6 +275,31 @@ rmTypeRec = mapRec
 
 rmSomeTypes :: Term -> Term
 rmSomeTypes = foldTerm rmTypeRec
+
+-- | put parenthesis around applications
+parenTermRec :: MapRec
+parenTermRec = let
+     addParAppl t = case t of
+           ResolvedMixTerm _ [] _ -> t
+           QualVar _ -> t
+           QualOp _ _ _ _ -> t
+           TermToken _ -> t
+           BracketTerm _ _ _ -> t
+           TupleTerm _ _ -> t
+           _ -> TupleTerm [t] nullRange
+     in mapRec
+    { foldApplTerm = \ _ t1 t2 ps -> 
+         ApplTerm (addParAppl t1) (addParAppl t2) ps
+    , foldResolvedMixTerm = \ _ n ts ps ->
+        ResolvedMixTerm n (map addParAppl ts) ps
+    , foldTypedTerm = \ _ t q typ ps ->
+        TypedTerm (addParAppl t) q typ ps
+    , foldMixfixTerm = \ _ ts -> MixfixTerm $ map addParAppl ts
+    , foldAsPattern = \ _ v p ps -> AsPattern v (addParAppl p) ps
+    }
+
+parenTerm :: Term -> Term
+parenTerm = foldTerm parenTermRec
 
 -- | print an equation with different symbols between 'Pattern' and 'Term'
 printEq0 :: Doc -> (Doc, Doc) -> Doc

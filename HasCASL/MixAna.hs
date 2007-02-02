@@ -25,7 +25,7 @@ import qualified Common.Lib.Set as Set
 
 import HasCASL.As
 import HasCASL.AsUtils
-import HasCASL.PrintAs()
+import HasCASL.PrintAs
 import HasCASL.Unify
 import HasCASL.VarDecl
 import HasCASL.Le
@@ -277,40 +277,3 @@ anaPattern s pat =
                 (tvar, c) <- toEnvState $ freshVar $ posOfId v
                 return $ VarDecl v (TypeName tvar rStar c) ok ps
             _ -> return vd
-
--- | put parenthesis around applications
-parenTerm :: Term -> Term
-parenTerm trm = case trm of
-    ResolvedMixTerm n ts ps ->
-        ResolvedMixTerm n (map addParAppl ts) ps
-    ApplTerm t1 t2 ps ->
-        ApplTerm (addParAppl t1) (addParAppl t2) ps
-    TupleTerm ts ps -> TupleTerm (map parenTerm ts) ps
-    TypedTerm t q typ ps ->
-        TypedTerm (addParAppl t) q typ ps
-    QuantifiedTerm q vs t ps -> QuantifiedTerm q vs (parenTerm t) ps
-    LambdaTerm ps q t qs ->
-        LambdaTerm (map parenTerm ps) q (parenTerm t) qs
-    CaseTerm t es ps -> CaseTerm (parenTerm t) (map parenProgEq es) ps
-    LetTerm br es t ps ->
-        LetTerm br (map parenProgEq es) (parenTerm t) ps
-    MixfixTerm ts -> MixfixTerm $ map addParAppl ts
-    BracketTerm k ts ps -> BracketTerm k (map parenTerm ts) ps
-    AsPattern v p ps -> AsPattern v (addParAppl p) ps
-    TermToken _ -> trm
-    MixTypeTerm _ _ _ -> trm
-    QualVar _ -> trm
-    QualOp _ _ _ _ -> trm
-    where addPar t = TupleTerm [t] nullRange
-          addParAppl t' = let t = parenTerm t' in case t of
-           ResolvedMixTerm _ [] _ -> t
-           QualVar _ -> t
-           QualOp _ _ _ _ -> t
-           TermToken _ -> t
-           BracketTerm _ _ _ -> t
-           TupleTerm _ _ -> t
-           _ -> addPar t
-
--- | put parenthesis around applications in equations
-parenProgEq :: ProgEq -> ProgEq
-parenProgEq (ProgEq p t q) = ProgEq (parenTerm p) (parenTerm t) q
