@@ -13,7 +13,10 @@ use strict;
 my $DEBUG = 0; # if set to > 0 no Mail is generated
                # if set to 0 no messages go to STDERR
 # close STDERR
-close STDERR unless $DEBUG;
+unless ($DEBUG) {
+    close STDERR;
+    close STDOUT;
+}
 
 
 if(@ARGV < 2) {
@@ -25,7 +28,7 @@ my $restart_script = shift @ARGV;
 my $email_address = join(" ",@ARGV);
 
 ## config
-my $run_dir = "/Users/luettich/CASL/HetCATS/SPASS/tests";
+my $run_dir = "/local/home/luettich/mathServ/";
 my $stderr_log_file = "/tmp/checkMathServe_errors.log";
 
 # status variable
