@@ -237,7 +237,7 @@ callMathServ :: MathServCall -- ^ needed data to do a MathServ call
              -- ^ Left (SOAP error) or Right (MathServ output or error message)
 callMathServ call =
     do
-       serverPort <- getEnvSave defaultServer "HETS_MATH_SERV" readEither
+       serverPort <- getEnvSave defaultServer "HETS_MATHSERVE" readEither
        maybe (do
                 return $ Left $ "Could not start MathServ.")
              (\ endPoint -> do
