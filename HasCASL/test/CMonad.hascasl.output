@@ -1,23 +1,23 @@
 class Functor < Type -> Type;
 class Monad < Functor;
-type  List : Monad;
+type  List : Monad
 var   a : Type; b : Type
 var   m : Monad
-op    fail : m a;
-op    return : a -> m a;
+op    fail : m a
+op    return : a -> m a
 var   f : Functor
-op    fmap : (a -> b) -> f a -> f b;
-op    empty : List a;
-type  Set : Functor;
-op    emptySet : Set a;
+op    fmap : (a -> b) -> f a -> f b
+op    empty : List a
+type  Set : Functor
+op    emptySet : Set a
 . fail = emptySet
-. fail = ""
-op    map : (a -> b) -> List a -> List b;
-op    __bind__ : m a * (a -> m b) -> m b;
+. fail = "";
+op    map : (a -> b) -> List a -> List b
+op    __bind__ : m a * (a -> m b) -> m b
 var   g : a -> b
 var   x : m a
 . fmap g = map g
-. fmap g x = (x bind (\ y : a .! return (g y)))
+. fmap g x = (x bind (\ y : a .! return (g y)));
 %% Classes ---------------------------------------------------------------
 Functor < Type -> Type
 Monad < Functor

@@ -1,5 +1,5 @@
-sort  a;
-op    f : a -> a;
+sort  a
+op    f : a -> a
 program f (v @ (var _ : _v1) : a) = v;
 %% Type Constructors -----------------------------------------------------
 a : Type

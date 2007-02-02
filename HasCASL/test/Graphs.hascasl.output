@@ -1,8 +1,8 @@
 var   S : Type; T : Type
 type  Bool;
       Pred : -Type -> Type := \ S : -Type . S ->? Unit;
-      Set : Type -> Type := \ S : Type . S ->? Unit;
-op    True, False : Bool;
+      Set : Type -> Type := \ S : Type . S ->? Unit
+op    True, False : Bool
 op    emptySet : Set S;
       {__} : S -> Set S;
       __isIn__ : S * Set S ->? Unit;
@@ -11,7 +11,7 @@ op    emptySet : Set S;
       __disjoint__ : Pred (Set (S) * Set (S));
       __*__ : Set S * Set T -> Set (S * T);
       __disjointUnion__ : Set S * Set S -> Set (S * Bool);
-      inl, inr : S -> S * Bool;
+      inl, inr : S -> S * Bool
 forall x : S; x' : S; y : T; s : Set S; s' : Set S; t : Set T
 . not (x isIn emptySet)
 . (x isIn { x' }) <=> x = x'
@@ -23,7 +23,7 @@ forall x : S; x' : S; y : T; s : Set S; s' : Set S; t : Set T
 . (s disjoint s') <=> (s intersection s') = emptySet
 . ((x, y) isIn (s * t)) <=> (x isIn s) /\ (y isIn t)
 . inl x = (x, False)
-. inr x = (x, True)
+. inr x = (x, True);
 %% Type Constructors -----------------------------------------------------
 Bool : Type
 Set : Type -> Type := \ S : Type . S ->? Unit

@@ -1,7 +1,7 @@
 free type Nat ::= 0 | suc (pre :? Nat);
 pred  __<=__, __<__, __>=__, __>__ : Nat * Nat;
-      odd, even : Nat;
-op    min, max : Nat * Nat ->? Nat;
+      odd, even : Nat
+op    min, max : Nat * Nat ->? Nat
 op    __+__, __*__ : Nat * Nat -> Nat;
       __^__ : Nat * Nat -> Nat;
       min, max : Nat * Nat -> Nat;
@@ -14,7 +14,7 @@ op    __+__, __*__ : Nat * Nat -> Nat;
       
       %%   Operations to represent natural numbers with digits:
       1, 2, 3, 4, 5, 6, 7, 8, 9 : Nat;
-      __@@__ : Nat * Nat -> Nat;
+      __@@__ : Nat * Nat -> Nat
 forall m : Nat; n : Nat; r : Nat; s : Nat
 . 0 <= n %(Nat_leq_def1)%
 . not (suc (n) <= 0) %(Nat_leq_def2)%
@@ -55,18 +55,18 @@ forall m : Nat; n : Nat; r : Nat; s : Nat
 . 7 = suc (6) %(Nat_7_def)%
 . 8 = suc (7) %(Nat_8_def)%
 . 9 = suc (8) %(Nat_9_def)%
-. m @@ n = (m * suc (9)) + n %(Nat_decimal_def)%
+. m @@ n = (m * suc (9)) + n; %(Nat_decimal_def)%
 
 %% then %def
-type  Pos = {p : Nat . p > 0};
+type  Pos = {p : Nat . p > 0}
 op    1 : Pos = suc (0); %(Nat_1_as_Pos_def)%
       __*__ : Pos * Pos -> Pos;
       __+__ : Pos * Nat -> Pos;
       __+__ : Nat * Pos -> Pos;
-      suc : Nat -> Pos;
+      suc : Nat -> Pos
 
 %% then %implies
-op    min, max : Nat * Nat -> Nat, comm, assoc;
+op    min, max : Nat * Nat -> Nat, comm, assoc
 forall x : Nat; m : Nat; n : Nat; r : Nat; s : Nat; t : Nat;
        p : Pos
 . def (m -? n) <=> m >= n %(Nat_sub_dom)%
@@ -77,18 +77,18 @@ forall x : Nat; m : Nat; n : Nat; r : Nat; s : Nat; t : Nat;
 . def (m rem n) <=> not (n = 0) %(Nat_rem_dom)%
 . (r + s) * t = (r * t) + (s * t) %(Nat_distr)%
 . max (m, 0) = m %(Nat_max_unit)%
-. min (m, 0) = 0 %(Nat_min_0)%
+. min (m, 0) = 0; %(Nat_min_0)%
 %% end
-generated {type  Int ::= __-__ (Nat; Nat);}
+generated {type  Int ::= __-__ (Nat; Nat)}
 forall a : Nat; b : Nat; c : Nat; d : Nat
-. a - b = c - d <=> a + d = c + b %(Int_equality)%
+. a - b = c - d <=> a + d = c + b; %(Int_equality)%
 
 %% then
-type  Nat < Int;
+type  Nat < Int
 forall a : Nat
-. a = a - 0 %(Int_Nat_embedding)%
+. a = a - 0; %(Int_Nat_embedding)%
 pred  __<=__, __<__, __>=__, __>__ : Int * Int;
-      odd, even : Int;
+      odd, even : Int
 op    0, 1 : Int;
       __+__, __-__, __*__ : Int * Int -> Int;
       __^__ : Int * Nat -> Int;
@@ -96,7 +96,7 @@ op    0, 1 : Int;
       min, max : Int * Int -> Int;
       abs : Int -> Nat;
       __/?__, __div__, __quot__, __rem__ : Int * Int ->? Int;
-      __mod__ : Int * Int ->? Nat;
+      __mod__ : Int * Int ->? Nat
 forall m : Int; n : Int; r : Int; s : Int; a : Nat; b : Nat;
        c : Nat; d : Nat
 . (a - b) + (c - d) = (a + c) - (b + d) %(Int_add_def)%
@@ -140,23 +140,23 @@ forall m : Int; n : Int; r : Int; s : Int; a : Nat; b : Nat;
 . def (m div n) <=> not n = 0 %(Int_div_dom)%
 . def (m quot n) <=> not n = 0 %(Int_quot_dom)%
 . def (m rem n) <=> not n = 0 %(Int_rem_dom)%
-. m = (m quot n) * n + (m rem n) if not n = 0 %(Int_quot_rem)%
+. m = (m quot n) * n + (m rem n) if not n = 0; %(Int_quot_rem)%
 %% end
-generated {type  Rat ::= __/__ (Int; Pos);}
+generated {type  Rat ::= __/__ (Int; Pos)}
 forall i : Int; j : Int; p : Pos; q : Pos
-. i / p = j / q <=> i * q = j * p %(Rat_equality)%
-type  Int < Rat;
+. i / p = j / q <=> i * q = j * p; %(Rat_equality)%
+type  Int < Rat
 forall i : Int
-. i / 1 = i %(embeddingIntToRat)%
+. i / 1 = i; %(embeddingIntToRat)%
 
 %% then
-pred  __<=__, __<__, __>=__, __>__ : Rat * Rat;
+pred  __<=__, __<__, __>=__, __>__ : Rat * Rat
 op    0, 1 : Rat;
       __+__, __-__, __*__ : Rat * Rat -> Rat;
       __/__ : Rat * Rat ->? Rat;
       +__, -__, abs : Rat -> Rat;
       __^__ : Rat * Int -> Rat;
-      min, max : Rat * Rat -> Rat;
+      min, max : Rat * Rat -> Rat
 forall p : Pos; q : Pos; n : Nat; i : Int; j : Int; x : Rat;
        y : Rat; z : Rat
 . (i / p <= j / q <=> i * q <= j * p) %(Rat_leq_def)%
@@ -182,51 +182,50 @@ forall p : Pos; q : Pos; n : Nat; i : Int; j : Int; x : Rat;
   (i / p) - (j / q) = (i * q - j * p) / (p * q)    %(Rat_max_def)%
 %% then %implies
 %(Rat_sub_rule)%
-. (i / p) / (j / q) = (i / p) * (q / j) if not j = 0
+. (i / p) / (j / q) = (i / p) * (q / j) if not j = 0;
                                                %(Rat_divide_rule)%
-pred  __<__ : a * a;
+pred  __<__ : a * a
 op    __a : b;
-      c : b;
-type  s, t < s;
-. a = a
+      c : b
+type  s, t < s
+. a = a;
 var   a : t; a : s; b : s
 var   a : t; a : s; b : s
 . a = a
 . a = a forall a : t; a : s; b : s . a = a
+. a = a;
 . a = a
+. a = a;
 . a = a
-. a = a
-. a = a
-. a = a
+. a = a;
 type  s
-      ::= type s2, s1 | c | c (a; a : t; b : t; a : t; d : t) | c (a)?;
+      ::= type s2, s1 | c | c (a; a : t; b : t; a : t; d : t) | c (a)?
 free type
 s ::= type s2, s1 | c | c (a; a : t; b : t; d : t) | c (a)?;
 generated
-{type  s ::= type s2, s1 | c | c (a; a : t; b : t; d : t) | c (a)?;
-}
+{type  s ::= type s2, s1 | c | c (a; a : t; b : t; d : t) | c (a)?}
 generated
-{pred  __<__ : a * a;
+{pred  __<__ : a * a
 op    a : b;
-      c : b;
-type  s, t < s;
+      c : b
+type  s, t < s
 type  s
       ::= type s2, s1 | 
           c | 
           c a | 
           c (a; a : t; b : t; d : t) | 
-          c (a)? %(bla1)%;
+          c (a)? %(bla1)%
 }
 
 %(sort)%
 type  
       %(after-sort)%
       s; %(bla2)%
-      t;
+      t
 
 %(op)%
 op    a : b; %(bla4)%
-      c : d; %(bla5)%
+      c : d %(bla5)%
 
 %(bla6)%
 var   a : t; a : s; b : s
@@ -239,27 +238,27 @@ type  t
           c %(c)% | 
           e %(e)% | 
           d %(9)%
-          %(axiom)%;
+          %(axiom)%
 . a = a %(a1)%
-. a = a %(a2)%
+. a = a; %(a2)%
 
 %(formula)%
 . a = a %(f1)%
-. a = a %(f1)%
-type  s;
+. a = a; %(f1)%
+type  s
 type  s, abcdefghijlklmnopqrstuvwxyz, ABCDEFGHIJKLMONOPQRSTUVWXYZ,
       x0123456789,
       ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÑÒÓÔÕÖØÙÚÛÜÝßàáâãäåæçèéêëìíîïñòóôõöøùúûüýÿ, abc,
-      a_b_c, ab2, ab_2_3_a, a', a'b''2;
-op    __+-*/\&=<>!?:.$@#^~¡¿×÷£©±¶§¹²³·¢¬°µ|__ : s * s -> s;
+      a_b_c, ab2, ab_2_3_a, a', a'b''2
+op    __+-*/\&=<>!?:.$@#^~¡¿×÷£©±¶§¹²³·¢¬°µ|__ : s * s -> s
       %% NO-BRACKET-SIGNs
 op    'a', '\"', '\\', '\n', '\000', '\255', '\x00', '\xFF',
       '\o000', '\o377', '^', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-      '0', 'ß', '!', '§', '$', '&', '/', '(', ')', '=', '?', '\\' : s;
+      '0', 'ß', '!', '§', '$', '&', '/', '(', ')', '=', '?', '\\' : s
       %%characters
 op    1, 2, 3, 4 : s;
       - : s -> s;
-      __@@__, __exp__, __frac__ : s * s -> s;
+      __@@__, __exp__, __frac__ : s * s -> s
 . def 12
 . def 12E34
 . def 12E-34
@@ -270,68 +269,68 @@ op    1, 2, 3, 4 : s;
 . def 12.34E-34
 %%fractions
 . true %(The true formula)%
-. true
+. true;
 %(and this
            also goes
            along several lines! 
            and with special stuff: -*/\&=<>BCDEFGHIJKLM!% )%
-type  s;
-op    __and'__ : s;
-type  a;
-type  a, b, c;
-type  a < b;
-type  a, b, c, d < e;
-type  a = b = c = d = e;
-type  a = {x : b . true};
-type  s, t;
-op    a : s;
-op    b : s -> s;
+type  s
+op    __and'__ : s
+type  a
+type  a, b, c
+type  a < b
+type  a, b, c, d < e
+type  a = b = c = d = e
+type  a = {x : b . true}
+type  s, t
+op    a : s
+op    b : s -> s
 op    c : s * s -> s, assoc, comm, idem, unit a;
-      c : s * s * s -> s;
-op    a : ? s;
-op    b : s ->? s;
+      c : s * s * s -> s
+op    a : ? s
+op    b : s ->? s
 op    c : s * s ->? s, assoc, comm, idem, unit a;
-op    c : s * s * s ->? s;
+op    c : s * s * s ->? s
 op    a : s = a;
 op    c(x : s; y : s; z : t) : s = a;
 op    a :? s = a;
 op    c(x : s; y : s; z : t) :? s = a;
-type  s, t;
-pred  a : ();
-pred  b : s;
+type  s, t
+pred  a : ()
+pred  b : s
 pred  c : s * s;
-      c : s * s * s;
+      c : s * s * s
 pred  c(x : s; y : s; z : t) <=> false;
-type  Data1 ::= a | b | c;
+type  Data1 ::= a | b | c
 type  Data2
-      ::= Cons21 (Data1; Data2) | Cons22 (Data2; Data1) | type Data1;
+      ::= Cons21 (Data1; Data2) | Cons22 (Data2; Data1) | type Data1
 type  Data3
       ::= Cons31 (sel1 :? Data1; sel2 :? Data2) | 
-          Cons32 (sel2 :? Data2; sel1 :? Data1);
+          Cons32 (sel2 :? Data2; sel1 :? Data1)
 type  Data4
       ::= Cons41 (sel1 :? Data1; sel2 :? Data2)? | 
-          Cons42 (sel2 :? Data2; sel1 : ? Data1)?;
-type  Data1, Data2, Data3;
+          Cons42 (sel2 :? Data2; sel1 : ? Data1)?
+type  Data1, Data2, Data3
 type  Tree ::= Leaf Data1 | Forest;
-      Forest ::= Nil | Cons (Tree; Forest);
+      Forest ::= Nil | Cons (Tree; Forest)
 free type List ::= Nil | Cons (Data1; List);
-generated {type  Set ::= Mt | Add (Data1; Set);}
-generated {type  Set ::= Mt | Add (Data1; Set);}
+generated {type  Set ::= Mt | Add (Data1; Set)}
+generated {type  Set ::= Mt | Add (Data1; Set)}
 generated
-{type  nat;
+{type  nat
 op    0 : nat;
-      succ : nat -> nat;
+      succ : nat -> nat
 }
-type  s < t;
+type  s < t
 op    f, g : s ->? s;
       g : s -> t;
       __+__, __-__, __*__, __/__ : s * s -> s;
       {} : s;
-      {__} : s -> s;
+      {__} : s -> s
 pred  p : ();
-      q : s;
+      q : s
 var   x : s; y : s; z : s; r1 : t; r2 : t
-. false
+. false;
 var   x : s
 . true
 . not p /\ not q (x) /\ q (x)
@@ -360,14 +359,14 @@ var   x : s
 . ((pred q : s)) (x)
 . def x * y * z + z * y * x
 . def {}
-. def {x}
+. def {x};
 . true
-. exists! x : s . e
+. exists! x : s . e;
 forall x : s
-. e
+. e;
 free type Boolean ::= True | False;
 op    Not__ : Boolean -> Boolean;
-      __And__, __Or__ : Boolean * Boolean -> Boolean;
+      __And__, __Or__ : Boolean * Boolean -> Boolean
 forall x : Boolean; y : Boolean; z : Boolean
 . Not (False) = True %(Not_False)%
 . Not (True) = False %(Not_True)%
@@ -375,14 +374,14 @@ forall x : Boolean; y : Boolean; z : Boolean
 . False And True = False %(And_def2)%
 . True And False = False %(And_def3)%
 . True And True = True %(And_def4)%
-. x Or y = Not (Not (x) And Not (y)) %(Or_def)%
-type  Char;
+. x Or y = Not (Not (x) And Not (y)); %(Or_def)%
+type  Char
 op    chr : Nat ->? Char;
-      ord : Char -> Nat;
+      ord : Char -> Nat
 forall n : Nat; c : Char
 . def chr (n) <=> n <= 255 %(chr_dom)%
 . chr (ord (c)) = c %(chr_def)%
-. ord (chr (n)) = n if n <= 255 %(ord_def)%
+. ord (chr (n)) = n if n <= 255; %(ord_def)%
 
 %% definition of individual characters:
 op    '\000' : Char = chr (0); %(slash_000)%
@@ -1411,7 +1410,7 @@ op    '\n' : Char = NL; %(slash_n)%
       '\f' : Char = FF; %(slash_f)%
       '\a' : Char = BEL; %(slash_a)%
       '\?' : Char = '?'; %(slash_quest)%
-type  a;
-op    __||__ : a * a -> a, assoc;
-op    b : a;
-. b || b || b = b
+type  a
+op    __||__ : a * a -> a, assoc
+op    b : a
+. b || b || b = b;

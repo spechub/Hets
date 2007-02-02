@@ -1,7 +1,7 @@
-sort  s;
-op    a : s;
-op    __=[s]__ : forall a . a * a -> Unit;
-. (op __=[s]__[s] : forall a : Type . a * a -> Unit) (a, a)
+sort  s
+op    a : s
+op    __=[s]__ : forall a . a * a -> Unit
+. (op __=[s]__[s] : forall a : Type . a * a -> Unit) (a, a);
 %% Type Constructors -----------------------------------------------------
 s : Type
 %% Assumptions -----------------------------------------------------------

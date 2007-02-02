@@ -6,28 +6,31 @@ var   s : Type; t : Type
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% invisible type "Unit" for formulae
-sort  Unit;
+sort  Unit
       %% flat cpo with bottom
 
 %% type aliases
-pred  true, false : Unit;
-pred  __/\__, __\/__, __=>__, __if__, __<=>__ : Unit * Unit;
-pred  not : Unit;
-pred  __=__ : s * s;
+sort 
+sort 
+pred  true, false : Unit
+pred  __/\__, __\/__, __=>__, __if__, __<=>__ : Unit * Unit
+pred  not : Unit
+pred  __=__ : s * s
       %% =e=
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% (builtin) type (constructors)
-type  __->?__ : -Type -> +Type -> Type;
+type  __->?__ : -Type -> +Type -> Type
 
 %% nested pairs are different from n-tupels (n > 2)
-type  __*__ : +Type -> +Type -> Type;
+type  __*__ : +Type -> +Type -> Type
+sort 
 
 %% ...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% "pred p args = e" abbreviates "op p args :? unit = e"
 %% CASL requires "<=>" for pred-defn and disallows "()" as result
-op    def, tt : Pred s;
+op    def, tt : Pred s
 var   x : s
 program
 def = \ x : s . ();
@@ -35,10 +38,11 @@ def = \ x : s . ();
 program
 tt = \ x : s . ();
 %% tt is total "op tt(x: s): unit = ()"
+program
 
 %% total function type
-type  __->__ : -Type -> +Type -> Type;
-type  __->__ < __->?__;
+type  __->__ : -Type -> +Type -> Type
+type  __->__ < __->?__
 
 %% total functions
 op    __res__(x : s; y : t) : s = x;
@@ -48,77 +52,88 @@ program snd (x : s, y : t) : t = y;
 %% trivial because its the strict function property
 . (\ (x : s, y : t) . def (x res y)) =
   (\ (x : s, y : t) . (def y) und (def x))
-. fst = __res__
+. fst = __res__;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal Logic
-pred  eq : s * s;
+pred  eq : s * s
 . (\ x : s . eq (x, x)) = tt
 . (\ (x, y : s) . x res (eq (x, y))) =
-  (\ (x, y : s) . y res (eq (x, y)))
+  (\ (x, y : s) . y res (eq (x, y)));
 
 %% then %def
 %% notation "\ ."  abbreviates "\bla:unit."
 %% where "bla" is never used, but only "()" instead
 %% for type inference
 %% an implicit cast from s to ?s of a term "e" yields the term "\ . e"
-type  s < ? s;
+type  s < ? s
+program
 
 %% the cast from ?s to s is still done manually here (for the strict "und")
+program
 
 %% use "And" instead of "und" to avoid cast from "?unit" to "unit"
+program
+program
+program
+program
+program
 
 %% the type instance for the first "eq" should be "?t"
 %% this is explicitely enforced by "\ .f(x)"
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Recursion (requires "free type nat ::= 0 | Suc(nat)" and "+"
-sort  nat;
+sort  nat
 class Cpo < Type
       {var   c : Cpo;
-      pred  __<<=__ : c * c;;
+      pred  __<<=__ : c * c;
       ;
-      pred  isChain : forall c : Cpo . nat -> c;;
-      pred  isBound : forall c : Cpo . c * (nat -> c);;
-      op    sup : (nat -> c) ->? c;;
+      pred  isChain : forall c : Cpo . nat -> c;
+      pred  isBound : forall c : Cpo . c * (nat -> c);
+      op    sup : (nat -> c) ->? c;
       ;
       };
 class Pcpo < Cpo
       {var   p : Pcpo;
-      op    bottom : p;;
+      op    bottom : p;
       ;
       };
 class instance
 Flatcpo < Cpo
 {var   f : Flatcpo;
-;
+program;
 };
 var   c : Cpo; d : Cpo
-type instance __*__ : +Cpo -> +Cpo -> Cpo;
+type instance __*__ : +Cpo -> +Cpo -> Cpo
 var   x1 : c; x2 : c; y1 : d; y2 : d
-type instance __*__ : +Pcpo -> +Pcpo -> Pcpo;
-type  Unit : Pcpo;
+program
+type instance __*__ : +Pcpo -> +Pcpo -> Pcpo
+type  Unit : Pcpo
 
 %% Pcont
-type instance __-->?__ : -Cpo -> +Cpo -> Pcpo;
-type  __-->?__ < __->?__;
+type instance __-->?__ : -Cpo -> +Cpo -> Pcpo
+type  __-->?__ < __->?__
+program
 
 %% Tcont
-type instance __-->__ : -Cpo -> +Cpo -> Cpo;
+type instance __-->__ : -Cpo -> +Cpo -> Cpo
+sort 
 var   f : c --> d; g : c --> d
-type instance __-->__ : -Cpo -> +Pcpo -> Pcpo;
-fun   Y : (p --> p) --> p;
+program
+type instance __-->__ : -Cpo -> +Pcpo -> Pcpo
+fun   Y : (p --> p) --> p
 var   f : p --> p; x : p
 . f (Y f) = Y f
-. f x = x => ((Y f) <<= x)
+. f x = x => ((Y f) <<= x);
 op    undefined : c --> p =
       Y ((\ x' : c --> p . x') as (c --> p) --> c --> p);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% user stuff
 free type bool ::= true | false;
-type  bool : Flatcpo;
-type  nat : Flatcpo;
+type  bool : Flatcpo
+type  nat : Flatcpo
 %% Classes ---------------------------------------------------------------
 Cpo < Type
 Flatcpo < Cpo

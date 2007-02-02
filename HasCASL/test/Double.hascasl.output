@@ -4,7 +4,7 @@ op    twice3 : (a ->? b) * a ->? b =
       \ (f : a ->? b, x : a) . f (f x);
 op    twice : (a ->? b) -> a ->? b = \ (f)(x : a) . f (f x);
 var   f : a ->? b; x : a
-. twice f x = f (f x)
+. twice f x = f (f x);
 %% Type Variables --------------------------------------------------------
 a  : Type %(var_1)%
 b  < a : Type %(var_2)%

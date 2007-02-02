@@ -1,1 +1,1 @@
-. f = g forall x : s . x = x %()%
+. f = g forall x : s . x = x; %()%

@@ -1,10 +1,10 @@
-sort  s, t < t;
-op    a, b : s;
+sort  s, t < t
+op    a, b : s
 
 %% op __ + __ : s  -> s -> s, idem, assoc, comm;
-op    __+__ : s * s -> s;
-op    __+__ : t * t -> t;
-op    a, b : t;
+op    __+__ : s * s -> s
+op    __+__ : t * t -> t
+op    a, b : t
 op    c : s = a + b;
 op    d : s = a + a;
 op    e : s * s -> s = __+__;
@@ -12,21 +12,21 @@ op    f : s * s -> s = __+__;
 op    g : s * s = (a, b);
 op    h : s = a + b;
 op    i : s = (a : s) + (b : s);
-op    incr : s -> s;
+op    incr : s -> s
 op    i1 : s = incr a;
 op    i2 : s = incr a;
 op    i3 : s = incr a;
-op    __<=__<=__ : s * s * s -> s;
+op    __<=__<=__ : s * s * s -> s
 op    l1 : s = a <= b <= c;
 op    l2 : s * s * s -> s = __<=__<=__;
 op    l3 : s = a <= b <= c;
 op    l4 : s = a <= b <= c;
 op    l5 : s * s * s = (a, b, c);
-op    x : s;
+op    x : s
 op    y : s = (op a : s) <= (var x : s) <= (a : s);
 op    z : s = (x as s) + (x as t as s);
 . x in s %(bla_label)%
-. x in t
+. x in t;
 %% Type Constructors -----------------------------------------------------
 s : Type < t
 t : Type

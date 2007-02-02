@@ -9,13 +9,15 @@ class a < b;
 class b < d;
 class d < d;
 class d < a;
-type  t : a;
+type  t : a
 class h < a;
 class h < c;
-type  [__] : a -> b;
+type  [__] : a -> b
 var   x : a; y : Type; x : y
+var  
 var   x : b
 var   x < t
+sort 
 %% Classes ---------------------------------------------------------------
 a < (b, d)
 b < d
