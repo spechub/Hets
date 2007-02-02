@@ -366,12 +366,13 @@ def (op __o__ : HomSys * HomSys ->? HomSys) (h2, h1) =>
     = (var n : Net)
 in
 forall x : P .
-(op __isIn__[P] : forall Elem : Type . Pred (Elem * MultiSet Elem))
-((var x : P), (var m : Marking))
+((op __isIn__[P] :
+  forall Elem : Type . Pred (Elem * MultiSet Elem))
+ ((var x : P), (var m : Marking)))
 =>
-(op __isIn__[_v1069] :
- forall Elem : Type . Pred (Elem * MultiSet Elem))
-((var x : P), (var p : _v1024 _v1025 _v1023))'
+((op __isIn__[_v1069] :
+  forall Elem : Type . Pred (Elem * MultiSet Elem))
+ ((var x : P), (var p : _v1024 _v1025 _v1023)))'
 
 ### Hint 104.19, not a class 'P'
 ### Hint 104.24-104.74, in type of '((op freq[P] : forall Elem : Type . Elem * MultiSet Elem -> Nat)

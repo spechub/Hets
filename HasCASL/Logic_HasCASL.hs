@@ -15,6 +15,7 @@ Here is the place where the class Logic is instantiated for HasCASL.
 module HasCASL.Logic_HasCASL(HasCASL(HasCASL)) where
 
 import HasCASL.As
+import HasCASL.Builtin
 import HasCASL.Le
 import HasCASL.AsToLe
 import HasCASL.RawSym
@@ -28,6 +29,8 @@ import HasCASL.Sublogic
 import HasCASL.SimplifyTerm
 import HasCASL.Merge
 import Logic.Logic
+import Common.Doc
+import Common.DocUtils
 
 data HasCASL = HasCASL deriving (Show)
 instance Language HasCASL where
@@ -57,6 +60,11 @@ instance Category HasCASL Env Morphism where
 instance Sentences HasCASL Sentence () Env Morphism Symbol where
     map_sen HasCASL = mapSentence
     simplify_sen HasCASL = simplifySentence
+    print_named _ = printAnnoted ( \ s -> case s of
+        Formula t -> addBullet . changeGlobalAnnos addBuiltins $ pretty t
+        DatatypeSen _ -> pretty s
+        ProgEqSen _ _ _ -> changeGlobalAnnos addBuiltins $ pretty s)
+        . fromLabelledSen                                                 
     sym_name HasCASL = symName
     sym_of HasCASL = symOf
     symmap_of HasCASL = morphismToSymbMap

@@ -178,7 +178,7 @@ instance Pretty TypeQual where
         Inferred -> colon
 
 instance Pretty Term where
-    pretty = changeGlobalAnnos addBuiltins . printTerm . rmSomeTypes
+    pretty = printTerm . rmSomeTypes
 
 isSimpleTerm :: Term -> Bool
 isSimpleTerm trm = case trm of
@@ -315,7 +315,7 @@ printPseudoType (TypeScheme l t _) = noNullPrint l (lambda
             <+> bullet <> space) <> pretty t
 
 instance Pretty BasicSpec where
-    pretty (BasicSpec l) = vcat $ map pretty l
+    pretty (BasicSpec l) = changeGlobalAnnos addBuiltins . vcat $ map pretty l
 
 instance Pretty ProgEq where
     pretty = printEq0 equals . foldEq printTermRec
