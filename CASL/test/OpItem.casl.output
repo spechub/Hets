@@ -1,7 +1,7 @@
 op    a : bc
 op    a : b -> c
-op    a : s = e
-op    a :? s = e
+op    a : s = e;
+op    a :? s = e;
 ops   __<__ : a * a -> b;
       a : b -> c
 op    a :? b %(opbla)%
@@ -14,7 +14,7 @@ op    a : b -> c
 op    __<__ : a * a -> b
 op    a : b -> c
 op    a : b, assoc, comm, idem, assoc, unit 1, unit -, assoc
-op    a(a : b; a : b; a, b : c) :? b = e
+op    a(a : b; a : b; a, b : c) :? b = e;
 ops   a, bc, d, e : a ->? b, assoc, idem, comm
 op    a :? b
-op    e : a = e == e
+op    e : a = e == e;

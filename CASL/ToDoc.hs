@@ -57,8 +57,11 @@ printBASIC_ITEMS fB fS fF sis = case sis of
     Ext_BASIC_ITEMS b -> fB b
 
 printAnnotedBulletFormulas :: (f -> Doc) -> [Annoted (FORMULA f)] -> Doc
-printAnnotedBulletFormulas fF = vcat . map
-    (printAnnoted $ addBullet . printFormula fF)
+printAnnotedBulletFormulas fF l = vcat $ case l of
+    [] -> []
+    _ -> let pp = addBullet . printFormula fF in 
+         map (printAnnoted pp) (init l)
+         ++ [printSemiAnno pp True $ last l]
 
 instance (Pretty s, Pretty f) => Pretty (SIG_ITEMS s f) where
     pretty = printSIG_ITEMS pretty pretty
@@ -68,9 +71,20 @@ printSIG_ITEMS fS fF sis = case sis of
     Sort_items l _ -> topSigKey (sortS ++ pluralS l) <+>
          semiAnnos (printSortItem fF) l
     Op_items l _  -> topSigKey (opS ++ pluralS l) <+>
-             semiAnnos (printOpItem fF) l
+        let pp = printOpItem fF in
+        if null l then empty else if case item $ last l of 
+            Op_decl _ _ a@(_ : _) _ -> case last a of 
+                Unit_op_attr {} -> True
+                _ -> False
+            Op_defn {} -> True
+            _ -> False 
+        then vcat $ map (printSemiAnno pp True) l else semiAnnos pp l
     Pred_items l _ -> topSigKey (predS ++ pluralS l) <+>
-             semiAnnos (printPredItem fF) l
+        let pp = printPredItem fF in
+        if null l then empty else if case item $ last l of 
+            Pred_defn {} -> True
+            _ -> False 
+        then vcat $ map (printSemiAnno pp True) l else semiAnnos pp l
     Datatype_items l _ -> topSigKey (typeS ++ pluralS l) <+>
              semiAnnos printDATATYPE_DECL l
     Ext_SIG_ITEMS s -> fS s

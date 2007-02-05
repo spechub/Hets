@@ -55,7 +55,7 @@ forall m, n, r, s : Nat
 . 7 = suc(6) %(Nat_7_def)%
 . 8 = suc(7) %(Nat_8_def)%
 . 9 = suc(8) %(Nat_9_def)%
-. m @@ n = (m * suc (9)) + n %(Nat_decimal_def)%
+. m @@ n = (m * suc (9)) + n; %(Nat_decimal_def)%
 
 %% then %def
 sort  Pos = {p : Nat . p > 0}
@@ -76,15 +76,15 @@ forall x, m, n, r, s, t : Nat; p : Pos
 . def (m rem n) <=> not n = 0 %(Nat_rem_dom)%
 . (r + s) * t = (r * t) + (s * t) %(Nat_distr)%
 . max(m, 0) = m %(Nat_max_unit)%
-. min(m, 0) = 0 %(Nat_min_0)%
+. min(m, 0) = 0; %(Nat_min_0)%
 %% end
 generated type Int ::= __-__(Nat; Nat)
 forall a, b, c, d : Nat
-. a - b = c - d <=> a + d = c + b %(Int_equality)%
+. a - b = c - d <=> a + d = c + b; %(Int_equality)%
 
 %% then
 sort  Nat < Int
-forall a : Nat . a = a - 0 %(Int_Nat_embedding)%
+forall a : Nat . a = a - 0; %(Int_Nat_embedding)%
 preds __<=__, __<__, __>=__, __>__ : Int * Int;
       odd, even : Int
 ops   0, 1 : Int;
@@ -123,7 +123,7 @@ forall m, n, r, s : Int; a, b, c, d : Nat
 . not def m div 0 %(Int_div_zero)%
 . m quot n = sign (m) * sign (n) * (abs (m) quot abs (n))
                                                   %(Int_quot_def)%
-. m rem n = sign (m) * sign (n) * (abs (m) rem abs (n))
+. m rem n = sign (m) * sign (n) * (abs (m) rem abs (n));
                                                    %(Int_rem_def)%
 
 %% then %implies
@@ -138,13 +138,13 @@ forall m, n, r : Int; a, b : Nat
 . def (m div n) <=> not n = 0 %(Int_div_dom)%
 . def (m quot n) <=> not n = 0 %(Int_quot_dom)%
 . def (m rem n) <=> not n = 0 %(Int_rem_dom)%
-. m = (m quot n) * n + (m rem n) if not n = 0 %(Int_quot_rem)%
+. m = (m quot n) * n + (m rem n) if not n = 0; %(Int_quot_rem)%
 %% end
 generated type Rat ::= __/__(Int; Pos)
 forall i, j : Int; p, q : Pos
-. i / p = j / q <=> i * q = j * p %(Rat_equality)%
+. i / p = j / q <=> i * q = j * p; %(Rat_equality)%
 sort  Int < Rat
-forall i : Int . i / 1 = i %(embeddingIntToRat)%
+forall i : Int . i / 1 = i; %(embeddingIntToRat)%
 
 %% then
 preds __<=__, __<__, __>=__, __>__ : Rat * Rat
@@ -171,29 +171,29 @@ forall p, q : Pos; n : Nat; i, j : Int; x, y, z : Rat
 . x ^ suc (n) = x * x ^ n %(Rat_power_suc)%
 . x ^ (- p) = 1 / (x ^ p) %(Rat_power_neg)%
 . min(x, y) = x when x <= y else y %(Rat_min_def)%
-. max(x, y) = y when x <= y else x %(Rat_max_def)%
+. max(x, y) = y when x <= y else x; %(Rat_max_def)%
 
 %% then %implies
 forall i, j : Int; p, q : Pos
 . (i / p) - (j / q) = (i * q - j * p) / (p * q) %(Rat_sub_rule)%
-. (i / p) / (j / q) = (i / p) * (q / j) if not j = 0
+. (i / p) / (j / q) = (i / p) * (q / j) if not j = 0;
                                                %(Rat_divide_rule)%
 pred  __<__ : a * a
 ops   __a : b;
       c : b
 sorts s, t < s
-. a = a
+. a = a;
 vars  a : t; a, b : s
 vars  a : t; a, b : s
 . a = a
-. a = a
+. a = a;
 forall a : t; a, b : s
 . a = a
+. a = a;
 . a = a
+. a = a;
 . a = a
-. a = a
-. a = a
-. a = a
+. a = a;
 type  s ::= sorts s2, s1 | c | c(a; a, b : t; a, d : t) | c(a)?
 free type s ::= sorts s2, s1 | c | c(a; a, b : t; d : t) | c(a)?
 generated type
@@ -235,11 +235,11 @@ type  t
 
 %(axiom)%
 . a = a %(a1)%
-. a = a %(a2)%
+. a = a; %(a2)%
 
 %(formula)%
 . a = a %(f1)%
-. a = a %(f1)%
+. a = a; %(f1)%
 sort  s
 sorts s, abcdefghijlklmnopqrstuvwxyz, ABCDEFGHIJKLMONOPQRSTUVWXYZ,
       x0123456789,
@@ -264,7 +264,7 @@ ops   1, 2, 3, 4 : s;
 . def 12.34E-34
 %%fractions
 . true %(The true formula)%
-. true
+. true;
 %(and this
            also goes
            along several lines! 
@@ -284,18 +284,18 @@ ops   c : s * s -> s, assoc, comm, idem, unit a;
       c : s * s * s -> s
 op    a :? s
 op    b : s ->? s
-op    c : s * s ->? s, assoc, comm, idem, unit a
+op    c : s * s ->? s, assoc, comm, idem, unit a;
 op    c : s * s * s ->? s
-op    a : s = a
-op    c(x, y : s; z : t) : s = a
-op    a :? s = a
-op    c(x, y : s; z : t) :? s = a
+op    a : s = a;
+op    c(x, y : s; z : t) : s = a;
+op    a :? s = a;
+op    c(x, y : s; z : t) :? s = a;
 sorts s, t
 pred  a : ()
 pred  b : s
 preds c : s * s;
       c : s * s * s
-pred  c(x, y : s; z : t) <=> false
+pred  c(x, y : s; z : t) <=> false;
 type  Data1 ::= a | b | c
 type  Data2
       ::= Cons21(Data1; Data2) | Cons22(Data2; Data1) | sort Data1
@@ -325,7 +325,7 @@ ops   f, g : s ->? s;
 preds p : ();
       q : s
 vars  x, y, z : s; r1, r2 : t
-. false
+. false;
 var   x : s
 . true
 . not p /\ not q(x) /\ q(x)
@@ -333,7 +333,7 @@ var   x : s
 . not p /\ not q(x) /\ q(x)
   => not p \/ not q(x) \/ q(x) => not p /\ not q(x) /\ q(x)
 . not p /\ not q(x) /\ q(x) if not p \/ not q(x) \/ q(x)
-  if not p /\ not q(x) /\ q(x)
+  if not p /\ not q(x) /\ q(x);
 forall x : s
 . not p /\ not q(x) /\ q(x)
   <=> exists x : s
@@ -351,10 +351,10 @@ forall x : s
 . (pred q : s)(x)
 . def x * y * z + z * y * x
 . def {}
-. def {x}
+. def {x};
 . true
-. exists! x : s . e
-forall x : s . e
+. exists! x : s . e;
+forall x : s . e;
 free type Boolean ::= True | False
 ops   Not__ : Boolean -> Boolean;
       __And__, __Or__ : Boolean * Boolean -> Boolean
@@ -365,14 +365,14 @@ forall x, y, z : Boolean
 . False And True = False %(And_def2)%
 . True And False = False %(And_def3)%
 . True And True = True %(And_def4)%
-. x Or y = Not(Not (x) And Not (y)) %(Or_def)%
+. x Or y = Not(Not (x) And Not (y)); %(Or_def)%
 sort  Char
 ops   chr : Nat ->? Char;
       ord : Char -> Nat
 forall n : Nat; c : Char
 . def chr(n) <=> n <= 255 %(chr_dom)%
 . chr(ord(c)) = c %(chr_def)%
-. ord(chr(n)) = n if n <= 255 %(ord_def)%
+. ord(chr(n)) = n if n <= 255; %(ord_def)%
 
 %% definition of individual characters:
 ops   '\000' : Char = chr(0); %(slash_000)%
@@ -630,7 +630,7 @@ ops   '\000' : Char = chr(0); %(slash_000)%
       '\252' : Char = chr(252); %(slash_252)%
       '\253' : Char = chr(253); %(slash_253)%
       '\254' : Char = chr(254); %(slash_254)%
-      '\255' : Char = chr(255) %(slash_255)%
+      '\255' : Char = chr(255); %(slash_255)%
 
 %% definition of the printable characters:
 ops   ' ' : Char = '\032'; %(printable_32)%
@@ -823,7 +823,7 @@ ops   ' ' : Char = '\032'; %(printable_32)%
       'ü' : Char = '\252'; %(printable_252)%
       'ý' : Char = '\253'; %(printable_253)%
       'þ' : Char = '\254'; %(printable_254)%
-      'ÿ' : Char = '\255' %(printable_255)%
+      'ÿ' : Char = '\255'; %(printable_255)%
 preds isLetter(c : Char) <=> 
       (ord ('A') <= ord (c) /\ ord (c) <= ord ('Z'))
       \/ (ord ('a') <= ord (c) /\ ord (c) <= ord ('z'));
@@ -832,7 +832,7 @@ preds isLetter(c : Char) <=>
                                                          %(isDigit_def)%
       isPrintable(c : Char) <=> 
       (ord (' ') <= ord (c) /\ ord (c) <= ord ('~'))
-      \/ (ord (' ') <= ord (c) /\ ord (c) <= ord ('ÿ'))
+      \/ (ord (' ') <= ord (c) /\ ord (c) <= ord ('ÿ'));
                                                      %(isPrintable_def)%
 
 %% alternative definition of characters as '\o ppp',
@@ -1092,7 +1092,7 @@ ops   '\o000' : Char = '\000'; %(slash_o000)%
       '\o374' : Char = '\252'; %(slash_o374)%
       '\o375' : Char = '\253'; %(slash_o375)%
       '\o376' : Char = '\254'; %(slash_o376)%
-      '\o377' : Char = '\255' %(slash_o377)%
+      '\o377' : Char = '\255'; %(slash_o377)%
 
 %% alternative definition of characters as '\xhh',
 %% where h in {0,1,..., F} :
@@ -1351,7 +1351,7 @@ ops   '\x00' : Char = '\000'; %(slash_x00)%
       '\xFC' : Char = '\252'; %(slash_xFC)%
       '\xFD' : Char = '\253'; %(slash_xFD)%
       '\xFE' : Char = '\254'; %(slash_xFE)%
-      '\xFF' : Char = '\255' %(slash_xFF)%
+      '\xFF' : Char = '\255'; %(slash_xFF)%
 
 %% special characters:
 ops   NUL : Char = '\000'; %(NUL_def)%
@@ -1387,11 +1387,11 @@ ops   NUL : Char = '\000'; %(NUL_def)%
       RS : Char = '\030'; %(RS_def)%
       US : Char = '\031'; %(US_def)%
       SP : Char = '\032'; %(SP_def)%
-      DEL : Char = '\127' %(DEL_def)%
+      DEL : Char = '\127'; %(DEL_def)%
 
 %% alternative names for special charcters:
 ops   NL : Char = LF; %(NL_def)%
-      NP : Char = FF %(NP_def)%
+      NP : Char = FF; %(NP_def)%
 
 %% character constants:
 ops   '\n' : Char = NL; %(slash_n)%
@@ -1401,8 +1401,8 @@ ops   '\n' : Char = NL; %(slash_n)%
       '\r' : Char = CR; %(slash_r)%
       '\f' : Char = FF; %(slash_f)%
       '\a' : Char = BEL; %(slash_a)%
-      '\?' : Char = '?' %(slash_quest)%
+      '\?' : Char = '?'; %(slash_quest)%
 sort  a
 op    __||__ : a * a -> a, assoc
 op    b : a
-. b || b || b = b
+. b || b || b = b;
