@@ -233,7 +233,10 @@ getBrackets b = case b of
                        Braces -> ("{", "}")
                        NoBrackets -> ("", "") -- for printing only
 
-{- | The possible terms and patterns. Formulas are also kept as terms. Local variables and constants are kept separatetly. The variant 'ResolvedMixTerm' is an intermediate representation for type checking only. -}
+{- | The possible terms and patterns. Formulas are also kept as
+terms. Local variables and constants are kept separatetly. The variant
+'ResolvedMixTerm' is an intermediate representation for type checking
+only. -}
 data Term = QualVar VarDecl
           -- pos "(", "var", ":", ")"
           | QualOp OpBrand InstOpId TypeScheme Range
@@ -344,9 +347,7 @@ data SymbOrMap = SymbOrMap Symb (Maybe Symb) Range
                    -- pos: "|->" (or empty)
                    deriving (Show, Eq)
 
--- ----------------------------------------------------------------------------
--- equality instances ignoring positions
--- ----------------------------------------------------------------------------
+-- * equality instances ignoring positions
 
 instance Eq Type where
     TypeName i1 k1 v1 == TypeName i2 k2 v2 =
@@ -427,7 +428,7 @@ instance PosItem Type where
 instance PosItem Term where
    getRange trm = case trm of
     QualVar v -> getRange v
-    QualOp _ (InstOpId i _ ps) _ qs -> firstPos [i] (ps `appRange` qs)
+    QualOp _ (InstOpId i _ ps) _ qs -> firstPos [i] $ appRange ps qs
     ResolvedMixTerm i _ _ -> posOfId i
     ApplTerm t1 t2 ps -> firstPos [t1, t2] ps
     TupleTerm ts ps -> firstPos ts ps
