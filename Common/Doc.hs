@@ -832,7 +832,9 @@ codeOutAppl ga precs md m origDoc args = case origDoc of
         pa = prec_annos ga
         assocs = assoc_annos ga
         mx = maxWeight precs
-        p = Map.findWithDefault (mx + 1) i $ precMap precs
+        pm = precMap precs
+        p = Map.findWithDefault (if isInfix i then 
+               Map.findWithDefault mx eqId pm else mx) i pm
         doSplit = maybe (error "doSplit") id . splitDoc
         mkList op largs cl = fsep $ codeOutId IdAppl m op : punctuate comma
                              (map (codeOut ga precs md m) largs)
@@ -894,7 +896,8 @@ getWeight ga precs d = let
     in case d of
     IdApplDoc _ i aas@(hd : _) ->
         let p = Map.findWithDefault
-              (if begPlace i || endPlace i then 0 else maxWeight precs + 1)
+              (if begPlace i || endPlace i then Map.findWithDefault 0 eqId m 
+               else maxWeight precs)
               i m in
         if isGenLiteral splitDoc ga i aas then Nothing else
         let lw = case getWeight ga precs hd of
