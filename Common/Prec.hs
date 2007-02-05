@@ -23,15 +23,13 @@ import qualified Common.Lib.Rel as Rel
 -- | a precedence map using numbers for faster lookup
 data PrecMap = PrecMap
     { precMap :: Map.Map Id Int
-    , relWeight :: Int
     , maxWeight :: Int
     } deriving Show
 
 emptyPrecMap :: PrecMap
 emptyPrecMap = PrecMap
     { precMap = Map.empty
-    , relWeight = 0
-    , maxWeight = maxBound
+    , maxWeight = 0
     }
 
 mkPrecIntMap :: Rel.Rel Id -> PrecMap
@@ -39,17 +37,16 @@ mkPrecIntMap r =
     let (m, t) = Rel.toPrecMap r
         in emptyPrecMap
                { precMap = m
-               , relWeight = Map.findWithDefault (div t 2) eqId m
                , maxWeight = t
                }
 
 getIdPrec :: PrecMap -> Set.Set Id -> Id -> Int
-getIdPrec p ps i = let m = maxWeight p in
-    if i == applId then m + 1
+getIdPrec p ps i = let PrecMap m mx = p in
+    if i == applId then mx + 1
     else Map.findWithDefault
     (if begPlace i || endPlace i then
-         if Set.member i ps then relWeight p else m
-     else m + 2) i $ precMap p
+         if Set.member i ps then Map.findWithDefault (div mx 2) eqId m else mx
+     else mx + 2) i m
 
 getSimpleIdPrec :: PrecMap -> Id -> Int
 getSimpleIdPrec p = getIdPrec p Set.empty
