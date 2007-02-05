@@ -18,8 +18,6 @@ import Common.Id
 import Common.Keywords
 import Common.AS_Annotation
 
-{-! for VarDecl derive: UpPos !-}
-
 -- * abstract syntax entities with small utility functions
 
 -- | annotated basic items
@@ -451,3 +449,6 @@ instance PosItem TypePattern where
     MixfixTypePattern ts -> posOf ts
     BracketTypePattern _ ts ps -> firstPos ts ps
     TypePatternArg (TypeArg t _ _ _ _ _ _) ps -> firstPos [t] ps
+
+instance PosItem VarDecl where
+    getRange (VarDecl _ _ _ p) = p

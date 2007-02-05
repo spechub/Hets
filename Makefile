@@ -235,7 +235,7 @@ objects = $(sources:%.hs=%.o)
 
 drifted_files = Syntax/AS_Architecture.hs Syntax/AS_Library.hs \
     Common/AS_Annotation.hs CASL/AS_Basic_CASL.hs Syntax/AS_Structured.hs \
-    HasCASL/As.hs ATC/DevGraph.hs \
+    ATC/DevGraph.hs \
     Modal/AS_Modal.hs CoCASL/AS_CoCASL.hs COL/AS_COL.hs CASL_DL/AS_CASL_DL.hs\
     ConstraintCASL/AS_ConstraintCASL.hs\
     $(gendrifted_files)
