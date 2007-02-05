@@ -1,0 +1,26 @@
+#!/bin/bash -x
+
+PATH=/home/maeder/bin:/usr/local/lang/haskell/bin:/usr/local/bin:/usr/bin/:/usr/local/X11/bin:/usr/ccs/bin
+MAKE=gmake
+UDG_HOME=/home/pub-bkb/uDrawGraph-3.1
+HETS_LIB=/home/maeder/haskell/pc-solaris/haskell/CASL-lib
+
+export PATH
+export MAKE
+export UDG_HOME
+export HETS_LIB
+
+cd /home/maeder/haskell/pc-solaris/haskell
+
+. ../cronjob.sh
+
+#makeProgramatica
+makeHets
+makeLibCheck
+
+cd CASL-lib
+chmod 775 hets
+chgrp wwwbkb hets
+bzip2 hets
+\cp -fp hets.bz2 \
+    /home/www/agbkb/forschung/formal_methods/CoFI/hets/pc-solaris/daily/
