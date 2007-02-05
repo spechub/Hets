@@ -191,6 +191,16 @@ isSimpleTerm trm = case trm of
     BracketTerm _ _ _ -> True
     _ -> False
 
+-- | used only to produce CASL applications
+isSimpleArgTerm :: Term -> Bool
+isSimpleArgTerm trm = case trm of
+    QualVar vd -> not (isPatVarDecl vd)
+    QualOp _ _ _ _ -> True
+    ResolvedMixTerm n l _ -> placeCount n /= 0 || not (null l)
+    TupleTerm _ _ -> True
+    BracketTerm _ _ _ -> True
+    _ -> False
+
 isPatVarDecl :: VarDecl -> Bool
 isPatVarDecl (VarDecl v ty _ _) = case ty of 
            TypeName t _ _ -> isSimpleId v && take 2 (show t) == "_v" 
@@ -218,7 +228,8 @@ printTermRec = FoldRec
                   idApplDoc n $ zipWith parenTermDoc ts $ map printTerm ts
           (ResolvedMixTerm n [] _, _) | placeCount n == 1 ->
               idApplDoc n [parenTermDoc o2 t2]
-          _ -> idApplDoc applId [parenTermDoc o1 t1, parenTermDoc o2 t2]
+          _ -> idApplDoc applId [parenTermDoc o1 t1, parenTermDoc o2 t2] 
+-- use  "if isSimpleArgTerm o2 then t2 else parens t2" to output real CASL
      , foldTupleTerm = \ _ ts _ -> parens $ sepByCommas ts
      , foldTypedTerm = \ (TypedTerm ot _ _ _) t q typ _ -> fsep [(case ot of 
            LambdaTerm {} -> parens
@@ -353,7 +364,7 @@ instance Pretty BasicItem where
             Instance -> sep [keyword classS <+> keyword instanceS, b]
         GenVarItems l _ -> topSigKey varS <+> semiDs l
         FreeDatatype l _ -> 
-            sep [keyword freeS <+> keyword typeS, semiAnnoted l]
+            sep [keyword freeS <+> keyword typeS, semiAnnos pretty l]
         GenItems l _ -> sep [ keyword generatedS
                             , specBraces . vcat $ map (printAnnoted pretty) l]
         AxiomItems vs fs _ ->
@@ -388,14 +399,22 @@ instance Pretty SigItems where
 isSimpleTypeItem :: TypeItem -> Bool
 isSimpleTypeItem ti = case ti of
     TypeDecl l k _ -> k == universe && all isSimpleTypePat l
-    SubtypeDecl l (TypeName i _ _) _ -> isSimpleId i && all isSimpleTypePat l
-    SubtypeDefn p (Var _) (TypeName i _ _) _ _ -> 
-        isSimpleTypePat p && isSimpleId i
+    SubtypeDecl l (TypeName i _ _) _ -> 
+        not (isMixfix i) && all isSimpleTypePat l
+    SubtypeDefn p (Var _) t _ _ -> 
+        isSimpleTypePat p && isSimpleType t
     _ -> False
 
 isSimpleTypePat :: TypePattern -> Bool
 isSimpleTypePat tp = case tp of
-    TypePattern i [] _ -> isSimpleId i
+    TypePattern i [] _ -> not $ isMixfix i
+    _ -> False
+
+isSimpleType :: Type -> Bool
+isSimpleType t = case t of
+    TypeName i _ _ -> not $ isMixfix i
+    TypeToken _ -> True
+    MixfixType[TypeToken _, BracketType Squares (_ : _) _] -> True
     _ -> False
 
 instance Pretty ClassItem where
@@ -465,13 +484,13 @@ instance Pretty DatatypeDecl where
 
 instance Pretty Alternative where
     pretty alt = case alt of
-        Constructor n cs p _ ->
-            pretty n <+> fsep (map ( \ l -> case (l, p) of 
-                              ([NoSelector (TypeToken t)], Total) 
-                                  -> pretty t
-                              _ -> parens $ semiDs l) cs)
-                       <> pretty p
-        Subtype l _ -> noNullPrint l $ text typeS <+> ppWithCommas l
+        Constructor n cs p _ -> pretty n <+> fsep 
+          (map ( \ l -> case (l, p) of 
+-- comment out the following line to output real CASL
+            ([NoSelector (TypeToken t)], Total) -> pretty t
+            _ -> parens $ semiDs l) cs) <> pretty p
+        Subtype l _ -> text (if all isSimpleType l then sortS else typeS) 
+                       <+> ppWithCommas l
 
 instance Pretty Component where
     pretty sel = case sel of
@@ -511,4 +530,4 @@ instance Pretty SymbMapItems where
 printSK :: SymbKind -> Doc
 printSK k =
     case k of Implicit -> empty
-              _ -> text (drop 3 $ show k) <> space
+              _ -> keyword (drop 3 $ show k) <> space

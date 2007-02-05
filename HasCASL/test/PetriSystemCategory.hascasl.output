@@ -2,7 +2,7 @@ sort  Nat
 op    0, 1 : Nat
 op    __+__, __-__, min : Nat * Nat -> Nat
 pred  __>=__, __<=__, __>__ : Nat * Nat
-free type Boolean ::= True | False;
+free type Boolean ::= True | False
 var   S : Type; V : Type
 type  Set : Type -> Type := \ S : Type . S ->? Unit
 op    emptySet : Set S;

@@ -131,7 +131,7 @@ op    undefined : c --> p =
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% user stuff
-free type bool ::= true | false;
+free type bool ::= true | false
 type  bool : Flatcpo
 type  nat : Flatcpo
 %% Classes ---------------------------------------------------------------
