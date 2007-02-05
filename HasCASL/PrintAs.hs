@@ -21,6 +21,7 @@ import Common.Keywords
 import Common.DocUtils
 import Common.Doc
 import Common.AS_Annotation
+import Data.List (groupBy)
 
 -- | short cut for: if b then empty else d
 noPrint :: Bool -> Doc -> Doc
@@ -238,7 +239,7 @@ printTermRec = FoldRec
            QuantifiedTerm {} -> parens
            _ -> id) t, pretty q, pretty typ]
      , foldQuantifiedTerm = \ _ q vs t _ ->
-           fsep [pretty q, semiDs vs, bullet, t]
+           fsep [pretty q, printGenVarDecls vs, bullet, t]
      , foldLambdaTerm = \ _ ps q t _ ->
             fsep [ lambda
                  , case ps of
@@ -316,11 +317,33 @@ parenTerm = foldTerm parenTermRec
 printEq0 :: Doc -> (Doc, Doc) -> Doc
 printEq0 s (p, t) = fsep [p, s, t]
 
-instance Pretty VarDecl where
-    pretty (VarDecl v t _ _) = pretty v <>
-       case t of
+printGenVarDecls :: [GenVarDecl] -> Doc
+printGenVarDecls = fsep . punctuate semi . map 
+  ( \ l -> case l of 
+     [x] -> pretty x
+     GenVarDecl (VarDecl _ t _ _) : _ -> 
+       ppWithCommas (map ( \ (GenVarDecl (VarDecl v _ _ _)) -> v) l)
+       <> printVarDeclType t 
+     GenTypeVarDecl (TypeArg _ e c _ _ _ _) : _ -> 
+       ppWithCommas (map ( \ (GenTypeVarDecl (TypeArg v _ _ _ _ _ _)) -> v) l)
+       <> printVarKind e c 
+     _ -> error "printGenVarDecls") . groupBy sameType
+
+sameType :: GenVarDecl -> GenVarDecl -> Bool
+sameType g1 g2 = case (g1, g2) of 
+    (GenVarDecl (VarDecl _ t1 Comma _), GenVarDecl (VarDecl _ t2 _ _))
+      | t1 == t2 -> True
+    (GenTypeVarDecl (TypeArg _ e1 c1 _ _ Comma _), 
+     GenTypeVarDecl (TypeArg _ e2 c2 _ _ _ _)) | e1 == e2 && c1 == c2 -> True
+    _ -> False
+    
+printVarDeclType :: Type -> Doc
+printVarDeclType t =  case t of
        MixfixType [] -> empty
        _ -> space <> colon <+> pretty t
+
+instance Pretty VarDecl where
+    pretty (VarDecl v t _ _) = pretty v <> printVarDeclType t
 
 instance Pretty GenVarDecl where
     pretty gvd = case gvd of
@@ -362,14 +385,14 @@ instance Pretty BasicItem where
         ClassItems i l _ -> let b = semiAnnoted l in case i of 
             Plain -> topSigKey classS <+>b
             Instance -> sep [keyword classS <+> keyword instanceS, b]
-        GenVarItems l _ -> topSigKey varS <+> semiDs l
+        GenVarItems l _ -> topSigKey varS <+> printGenVarDecls l
         FreeDatatype l _ -> 
             sep [keyword freeS <+> keyword typeS, semiAnnos pretty l]
         GenItems l _ -> sep [ keyword generatedS
                             , specBraces . vcat $ map (printAnnoted pretty) l]
         AxiomItems vs fs _ ->
             vcat $ (if null vs then [] else
-                    [forallDoc <+> semiDs vs])
+                    [forallDoc <+> printGenVarDecls vs])
                   ++ case fs of 
                        [] -> []
                        _ -> map (printAnnoted $ addBullet . pretty) (init fs)
