@@ -452,7 +452,8 @@ anyRecord = DocRecord
 
 -- | simple conversion to a standard text document
 toText :: GlobalAnnos -> Doc -> Pretty.Doc
-toText ga = toTextAux . codeOut ga Nothing Map.empty
+toText ga = toTextAux . codeOut ga (mkPrecIntMap $ prec_annos ga)
+            Nothing Map.empty
 
 toTextAux :: Doc -> Pretty.Doc
 toTextAux = foldDoc anyRecord
@@ -487,7 +488,8 @@ toLatex ga d = let dm = Map.map (Map.! DF_LATEX) .
                       Map.filter (Map.member DF_LATEX) $ display_annos ga
                    dis = getDeclIds d
     in foldDoc (toLatexRecord dis False)
-           . makeSmallMath False False $ codeOut ga (Just DF_LATEX) dm d
+           . makeSmallMath False False $ codeOut ga
+                 (mkPrecIntMap $ prec_annos ga) (Just DF_LATEX) dm d
 
 -- avoid too many tabs
 toLatexRecord :: Set.Set Id -> Bool -> DocRecord Pretty.Doc
@@ -687,14 +689,14 @@ latexSymbols = Map.union (Map.fromList
 {- | transform document according to a specific display map and other
 global annotations like precedences, associativities, and literal
 annotations. -}
-codeOut :: GlobalAnnos -> Maybe Display_format -> Map.Map Id [Token] -> Doc
-        -> Doc
-codeOut ga d m = foldDoc idRecord
+codeOut :: GlobalAnnos -> PrecMap -> Maybe Display_format
+        -> Map.Map Id [Token] -> Doc -> Doc
+codeOut ga precs d m = foldDoc idRecord
     { foldAnnoDoc = \ _ -> small . codeOutAnno d m
     , foldIdDoc = \ _ lk -> codeOutId lk m
-    , foldIdApplDoc = \ o _ _ -> codeOutAppl ga d m o
+    , foldIdApplDoc = \ o _ _ -> codeOutAppl ga precs d m o
     , foldChangeGlobalAnnos = \ (ChangeGlobalAnnos fg e) _ _ ->
-          let ng = fg ga in codeOut ng d
+          let ng = fg ga in codeOut ng (mkPrecIntMap $ prec_annos ng) d
              (maybe m (\ f -> Map.map (Map.! f) .
                       Map.filter (Map.member f) $ display_annos ng) d) e
     }
@@ -822,18 +824,18 @@ sepByCommas = fsep . punctuate comma
 data Weight = Weight Int Id Id Id -- top, left, right
 
 -- print literal terms and mixfix applications
-codeOutAppl :: GlobalAnnos -> Maybe Display_format -> Map.Map Id [Token]
-            -> Doc -> [Doc] -> Doc
-codeOutAppl ga md m origDoc args = case origDoc of
+codeOutAppl :: GlobalAnnos -> PrecMap -> Maybe Display_format
+            -> Map.Map Id [Token] -> Doc -> [Doc] -> Doc
+codeOutAppl ga precs md m origDoc args = case origDoc of
   IdApplDoc isPred i@(Id ts cs _) aas ->
     let mk t = codeToken $ tokStr t
         pa = prec_annos ga
         assocs = assoc_annos ga
-        precs = mkPrecIntMap pa
-        p = Map.findWithDefault maxBound i $ precMap precs
+        mx = maxWeight precs
+        p = Map.findWithDefault (mx + 1) i $ precMap precs
         doSplit = maybe (error "doSplit") id . splitDoc
         mkList op largs cl = fsep $ codeOutId IdAppl m op : punctuate comma
-                             (map (codeOut ga md m) largs)
+                             (map (codeOut ga precs md m) largs)
                              ++ [codeOutId IdAppl m cl]
     in if isGenNumber splitDoc ga i aas then
              mk $ toNumber doSplit i aas
@@ -850,7 +852,7 @@ codeOutAppl ga md m origDoc args = case origDoc of
                                   parens (sepByCommas args)
          else let
              parArgs = reverse $ foldl ( \ l (arg, dc) ->
-                case getWeight ga arg of
+                case getWeight ga precs arg of
                 Nothing -> dc : l
                 Just (Weight q ta la ra) ->
                     let pArg = parens dc
@@ -859,11 +861,13 @@ codeOutAppl ga md m origDoc args = case origDoc of
                     in (if isLeftArg i l then
                        if checkArg ARight ga (i, p) (ta, q) ra
                        then oArg
-                       else if isPred || isSafeLhs i ta then d else pArg
+                       else if isPred || isSafeLhs i ta
+                                && applId /= i then d else pArg
                     else if isRightArg i l then
                        if checkArg ALeft ga (i, p) (ta, q) la
                        then oArg
-                       else if isInfix ta && not isPred then pArg else d
+                       else if (applId == i || isInfix ta)
+                                && not isPred then pArg else d
                     else d) : l) [] $ zip aas args
              (fts, ncs, cFun, hFun) = case Map.lookup i m of
                             Nothing ->
@@ -884,20 +888,19 @@ codeOutAppl ga md m origDoc args = case origDoc of
 makeIdApplLabel :: TextKind -> String -> Id -> Doc
 makeIdApplLabel k s i = Text (IdLabel IdAppl k i) s
 
-getWeight :: GlobalAnnos -> Doc -> Maybe Weight
-getWeight ga d = let
-    pa = prec_annos ga
-    precs = mkPrecIntMap pa
+getWeight :: GlobalAnnos -> PrecMap -> Doc -> Maybe Weight
+getWeight ga precs d = let
     m = precMap precs
     in case d of
     IdApplDoc _ i aas@(hd : _) ->
         let p = Map.findWithDefault
-              (if begPlace i || endPlace i then 0 else maxBound) i m in
+              (if begPlace i || endPlace i then 0 else maxWeight precs + 1)
+              i m in
         if isGenLiteral splitDoc ga i aas then Nothing else
-        let lw = case getWeight ga hd of
+        let lw = case getWeight ga precs hd of
                    Just (Weight _ _ l _) -> nextWeight ALeft ga i l
                    Nothing -> i
-            rw = case getWeight ga $ last aas of
+            rw = case getWeight ga precs $ last aas of
                    Just (Weight _ _ _ r) -> nextWeight ARight ga i r
                    Nothing -> i
             in Just $ Weight p i lw rw
