@@ -2,8 +2,7 @@ sort  Nat < Int;
       Int < Rat
 op    0 : Nat
 op    0 : Rat
-forall y : Rat
-. y = 0; %(divide_def2_Rat)%
+forall y : Rat . y = 0; %(divide_def2_Rat)%
 %% Type Constructors -----------------------------------------------------
 Int : Type < Rat
 Nat : Type < Int

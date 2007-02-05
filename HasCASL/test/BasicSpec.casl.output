@@ -15,7 +15,7 @@ op    __+__, __*__ : Nat * Nat -> Nat;
       %%   Operations to represent natural numbers with digits:
       1, 2, 3, 4, 5, 6, 7, 8, 9 : Nat;
       __@@__ : Nat * Nat -> Nat
-forall m : Nat; n : Nat; r : Nat; s : Nat
+forall m, n, r, s : Nat
 . 0 <= n %(Nat_leq_def1)%
 . not (suc (n) <= 0) %(Nat_leq_def2)%
 . suc (m) <= suc (n) <=> m <= n %(Nat_leq_def3)%
@@ -67,8 +67,7 @@ op    1 : Pos = suc (0); %(Nat_1_as_Pos_def)%
 
 %% then %implies
 op    min, max : Nat * Nat -> Nat, comm, assoc
-forall x : Nat; m : Nat; n : Nat; r : Nat; s : Nat; t : Nat;
-       p : Pos
+forall x, m, n, r, s, t : Nat; p : Pos
 . def (m -? n) <=> m >= n %(Nat_sub_dom)%
 . def (m /? n) <=> m mod n = 0 %(Nat_divide_dom)%
 . def (m div n) <=> not (n = 0) %(Nat_div_dom)%
@@ -80,13 +79,12 @@ forall x : Nat; m : Nat; n : Nat; r : Nat; s : Nat; t : Nat;
 . min (m, 0) = 0; %(Nat_min_0)%
 %% end
 generated {type  Int ::= __-__ (Nat; Nat)}
-forall a : Nat; b : Nat; c : Nat; d : Nat
+forall a, b, c, d : Nat
 . a - b = c - d <=> a + d = c + b; %(Int_equality)%
 
 %% then
 type  Nat < Int
-forall a : Nat
-. a = a - 0; %(Int_Nat_embedding)%
+forall a : Nat . a = a - 0; %(Int_Nat_embedding)%
 pred  __<=__, __<__, __>=__, __>__ : Int * Int;
       odd, even : Int
 op    0, 1 : Int;
@@ -97,8 +95,7 @@ op    0, 1 : Int;
       abs : Int -> Nat;
       __/?__, __div__, __quot__, __rem__ : Int * Int ->? Int;
       __mod__ : Int * Int ->? Nat
-forall m : Int; n : Int; r : Int; s : Int; a : Nat; b : Nat;
-       c : Nat; d : Nat
+forall m, n, r, s : Int; a, b, c, d : Nat
 . (a - b) + (c - d) = (a + c) - (b + d) %(Int_add_def)%
 . (a - b) * (c - d) = (a * c + b * d) - (b * c + a * d)
                                                   %(Int_mult_def)%
@@ -127,8 +124,8 @@ forall m : Int; n : Int; r : Int; s : Int; a : Nat; b : Nat;
 . m quot n = sign (m) * sign (n) * (abs (m) quot abs (n))
                                                   %(Int_quot_def)%
 . m rem n = sign (m) * sign (n) * (abs (m) rem abs (n))
-  forall m : Int; n : Int; r : Int; a : Nat; b : Nat .
-  def (a -? b) => a -? b = a - b                   %(Int_rem_def)%
+  forall m, n, r : Int; a, b : Nat . def (a -? b) => a -? b = a - b
+                                                   %(Int_rem_def)%
 %% then %implies
 %(Int_Nat_sub_compat)%
 . m = sign (m) * abs (m) %(Int_abs_decomp)%
@@ -143,11 +140,10 @@ forall m : Int; n : Int; r : Int; s : Int; a : Nat; b : Nat;
 . m = (m quot n) * n + (m rem n) if not n = 0; %(Int_quot_rem)%
 %% end
 generated {type  Rat ::= __/__ (Int; Pos)}
-forall i : Int; j : Int; p : Pos; q : Pos
+forall i, j : Int; p, q : Pos
 . i / p = j / q <=> i * q = j * p; %(Rat_equality)%
 type  Int < Rat
-forall i : Int
-. i / 1 = i; %(embeddingIntToRat)%
+forall i : Int . i / 1 = i; %(embeddingIntToRat)%
 
 %% then
 pred  __<=__, __<__, __>=__, __>__ : Rat * Rat
@@ -157,8 +153,7 @@ op    0, 1 : Rat;
       +__, -__, abs : Rat -> Rat;
       __^__ : Rat * Int -> Rat;
       min, max : Rat * Rat -> Rat
-forall p : Pos; q : Pos; n : Nat; i : Int; j : Int; x : Rat;
-       y : Rat; z : Rat
+forall p, q : Pos; n : Nat; i, j : Int; x, y, z : Rat
 . (i / p <= j / q <=> i * q <= j * p) %(Rat_leq_def)%
 . x >= y <=> y <= x %(Rat_geq_def)%
 . x < y <=> (x <= y /\ not (x = y)) %(Rat_less_def)%
@@ -178,7 +173,7 @@ forall p : Pos; q : Pos; n : Nat; i : Int; j : Int; x : Rat;
 . max (x, y) = y
   when x <= y else
   x
-  forall i : Int; j : Int; p : Pos; q : Pos .
+  forall i, j : Int; p, q : Pos .
   (i / p) - (j / q) = (i * q - j * p) / (p * q)    %(Rat_max_def)%
 %% then %implies
 %(Rat_sub_rule)%
@@ -189,10 +184,10 @@ op    __a : b;
       c : b
 type  s, t < s
 . a = a;
-var   a : t; a : s; b : s
-var   a : t; a : s; b : s
+var   a : t; a, b : s
+var   a : t; a, b : s
 . a = a
-. a = a forall a : t; a : s; b : s . a = a
+. a = a forall a : t; a, b : s . a = a
 . a = a;
 . a = a
 . a = a;
@@ -228,7 +223,7 @@ op    a : b; %(bla4)%
       c : d %(bla5)%
 
 %(bla6)%
-var   a : t; a : s; b : s
+var   a : t; a, b : s
 
 %(bla8-ignored)%
 %(type)%
@@ -329,7 +324,7 @@ op    f, g : s ->? s;
       {__} : s -> s
 pred  p : ();
       q : s
-var   x : s; y : s; z : s; r1 : t; r2 : t
+var   x, y, z : s; r1, r2 : t
 . false;
 var   x : s
 . true
@@ -362,12 +357,11 @@ var   x : s
 . def {x};
 . true
 . exists! x : s . e;
-forall x : s
-. e;
+forall x : s . e;
 free type Boolean ::= True | False
 op    Not__ : Boolean -> Boolean;
       __And__, __Or__ : Boolean * Boolean -> Boolean
-forall x : Boolean; y : Boolean; z : Boolean
+forall x, y, z : Boolean
 . Not (False) = True %(Not_False)%
 . Not (True) = False %(Not_True)%
 . False And False = False %(And_def1)%

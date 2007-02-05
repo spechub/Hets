@@ -2,7 +2,7 @@
 %% predefined universe containing all types,
 %% superclass of all other classes
 class Type < Type;
-var   s : Type; t : Type
+var   s, t : Type
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% invisible type "Unit" for formulae
@@ -104,9 +104,9 @@ Flatcpo < Cpo
 {var   f : Flatcpo;
 program;
 };
-var   c : Cpo; d : Cpo
+var   c, d : Cpo
 type instance __*__ : +Cpo -> +Cpo -> Cpo
-var   x1 : c; x2 : c; y1 : d; y2 : d
+var   x1, x2 : c; y1, y2 : d
 program
 type instance __*__ : +Pcpo -> +Pcpo -> Pcpo
 type  Unit : Pcpo
@@ -119,7 +119,7 @@ program
 %% Tcont
 type instance __-->__ : -Cpo -> +Cpo -> Cpo
 sort 
-var   f : c --> d; g : c --> d
+var   f, g : c --> d
 program
 type instance __-->__ : -Cpo -> +Pcpo -> Pcpo
 fun   Y : (p --> p) --> p

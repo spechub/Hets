@@ -1,11 +1,10 @@
-var   S : Type; N : Type; E : Type
+var   S, N, E : Type
 type  Set : Type -> Type := \ S : Type . S ->? Unit
 type  Graph : Type -> Type -> Type
       := \ (N : Type) (E : Type) . Set N * (E ->? N) * (E ->? N)
 op    __union__ : Graph N E * Graph N E -> Graph N E;
       __union__, __intersection__, __\\__ : Set S * Set S -> Set S
-forall g : Graph N E; g' : Graph N E
-. (g union g') = g;
+forall g, g' : Graph N E . (g union g') = g;
 %% Type Constructors -----------------------------------------------------
 Graph
 : Type -> Type -> Type

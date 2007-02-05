@@ -1,7 +1,7 @@
 class Functor < Type -> Type;
 class Monad < Functor;
 type  List : Monad
-var   a : Type; b : Type
+var   a, b : Type
 var   m : Monad
 op    fail : m a
 op    return : a -> m a

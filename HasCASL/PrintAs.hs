@@ -391,12 +391,13 @@ instance Pretty BasicItem where
         GenItems l _ -> sep [ keyword generatedS
                             , specBraces . vcat $ map (printAnnoted pretty) l]
         AxiomItems vs fs _ ->
-            vcat $ (if null vs then [] else
-                    [forallDoc <+> printGenVarDecls vs])
-                  ++ case fs of 
-                       [] -> []
-                       _ -> map (printAnnoted $ addBullet . pretty) (init fs)
-                         ++ [printSemiAnno (addBullet . pretty) True $ last fs]
+            sep [ if null vs then empty else
+                    forallDoc <+> printGenVarDecls vs
+                , case fs of 
+                    [] -> empty
+                    _ -> let pp = addBullet . pretty in 
+                            vcat $ map (printAnnoted pp) (init fs)
+                                     ++ [printSemiAnno pp True $ last fs]]
         Internal l _ -> sep [keyword internalS, specBraces $ semiAnnoted l]
 
 instance Pretty OpBrand where

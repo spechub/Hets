@@ -3,7 +3,7 @@ op    0, 1 : Nat
 op    __+__, __-__, min : Nat * Nat -> Nat
 pred  __>=__, __<=__, __>__ : Nat * Nat
 free type Boolean ::= True | False
-var   S : Type; V : Type
+var   S, V : Type
 type  Set : Type -> Type := \ S : Type . S ->? Unit
 op    emptySet : Set S;
       {__} : S -> Set S;
@@ -36,7 +36,7 @@ var   a : Type
 op    sumN : (Nat ->? Nat) -> Nat -> Nat;
       sumSet : Set Nat ->? Nat;
       sum : (a ->? Nat) -> Pred a ->? Nat
-var   S : Type; V : Type; U : Type
+var   S, V, U : Type
 type  Map : Type -> Type := \ S : Type . S ->? S
 op    dom : (S ->? V) -> Set S;
       range : (S ->? V) -> Set V;
@@ -53,7 +53,7 @@ op    dom : (S ->? V) -> Set S;
       __intersectionMap__, __unionMap__
       : (S ->? V) * (S ->? V) -> (S ->? V);
       __restrict__ : (S ->? V) * Set S -> (S ->? V)
-var   S : Type; V : Type
+var   S, V : Type
 op    __::__-->__ : Pred ((S ->? MultiSet V) * Set S * Set V);
       freeMap : Map S -> MapMultiSet S;
       linMap : (S ->? MultiSet V) -> (MultiSet S ->? MultiSet V)
@@ -112,7 +112,7 @@ op    dom : HomSys -> System;
       id : System ->? HomSys;
       __o__ : HomSys * HomSys ->? HomSys
 pred  injective : HomSys
-forall h1 : HomSys; h2 : HomSys
+forall h1, h2 : HomSys
 . def (h2 o h1) =>
   (h2 o h1) =
   ((dom h1, (placesMap h2) o (placesMap h1),
