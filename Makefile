@@ -65,7 +65,7 @@ HADDOCK = haddock
 OSBYUNAME = $(shell uname)
 ifneq ($(findstring SunOS, $(OSBYUNAME)),)
 TAR = gtar
-else 
+else
 TAR = tar
 endif
 
@@ -85,7 +85,7 @@ endif
 HC_WARN = -Wall -fno-warn-orphans
 HC_FLAGS = $(HAXML_PACKAGE) \
     $(HC_WARN) -fglasgow-exts -fno-monomorphism-restriction -fcontext-stack60 \
-    -fallow-overlapping-instances -fallow-undecidable-instances 
+    -fallow-overlapping-instances -fallow-undecidable-instances
 
 # -ddump-minimal-imports
 # flags also come in via  ../uni/uni-package.conf
@@ -363,7 +363,7 @@ $(SETUP): utils/Setup.hs
 	$(HC) --make -O -o $@ $<
 
 packages: http_pkg syb_pkg shellac_pkg shread_pkg hxt_pkg
- 
+
 http_pkg: utils/http.tgz $(SETUP)
 	@if $(HCPKG) field HTTP version; then \
           echo "of HTTP package found"; else \
@@ -381,7 +381,7 @@ shellac_pkg: utils/shellac.tgz $(SETUP)
           echo "of shellac package found"; else \
 	  $(RM) -r shellac; \
 	  $(TAR) zxf utils/shellac.tgz; \
-	  (cd shellac; $(SETUPPACKAGE)) fi 
+	  (cd shellac; $(SETUPPACKAGE)) fi
 
 shread_pkg: utils/shread.tgz $(SETUP)
 	@if $(HCPKG) field Shellac-readline version; then \
@@ -764,22 +764,22 @@ initialize_installer:
 	  else \
 	    echo "create $(INSTALLER_DIR)"  ;\
 	    mkdir -p $(INSTALLER_DIR) ; \
-	 fi 
+	 fi
 	@sed "s/^\(HETS_VERSION=\).*/\1`cat version_nr`/" Makefile.installer > Makefile.inst  ;\
 	 mv Makefile.inst $(INSTALLER_DIR)/Makefile ; \
-	 cp utils/getAllHets.sh $(INSTALLER_DIR) 
-	@echo =========================================================================  
-	@echo If you have not logged in \'cvs.haskell.org\' and \'cvs-agbkb.informatik.uni-bremen.de\'  
-	@echo "then please first login:"  
-	@echo  "   cvs -d :pserver:anoncvs@cvs.haskell.org:/cvs login"   
-	@echo  "    the password is cvn "   
-	@echo  "   cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:/repository login "  
-	@echo  "    the password is "  
-	@echo =========================================================================    
-	@echo Ready to create installers for Hets 
-	@echo Please do 
-	@echo "  -> cd $(INSTALLER_DIR)" 
-	@echo "  -> make"  
+	 cp utils/getAllHets.sh $(INSTALLER_DIR)
+	@echo =========================================================================
+	@echo If you have not logged in \'cvs.haskell.org\' and \'cvs-agbkb.informatik.uni-bremen.de\'
+	@echo "then please first login:"
+	@echo  "   cvs -d :pserver:anoncvs@cvs.haskell.org:/cvs login"
+	@echo  "    the password is cvn "
+	@echo  "   cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:/repository login "
+	@echo  "    the password is "
+	@echo =========================================================================
+	@echo Ready to create installers for Hets
+	@echo Please do
+	@echo "  -> cd $(INSTALLER_DIR)"
+	@echo "  -> make"
 	@echo and wait until it is finished
 
 
