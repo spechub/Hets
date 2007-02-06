@@ -189,55 +189,6 @@ Joost Visser wg. ATerms in Haskell => neues Repository
 Till
 ************************************************
 
-BinInt.casl: revealing in Int1 does not work correctly
-
-from Stefan Wölfl:
-computeTheory does not work across library imports
-local theorems
-all nodes named
-hierarchical Isabelle theories
-daVinci printing is not adequate
-hiding of internal nodes does not work
-
-CSPs
-----
-FOL without quantifiers and with uniform disjunctions
-  (i.e.  x R1 y \/ x R2 y)
- (with and without =)
-algorithmic path consistency over a relation algebra
-  plug in reasoner for this
-  develop correctness results (algorithmic path consistency=path consistency)
-    within CASL
-
-CASL sublogics:
----------------
-FOL without quantifiers (with and without =)
-guarded fragment
-Prop
-
-
-[from DOLCE cooperation:
-quit wish!
-ontology mediation via pushouts/pullbacks/pulations
-Robinson consistency with shared theory constructed via pre-image?
-show theorem links between same instances of different parameterized
-  specs (where one is an extension of the other one)
-link menu for %implies, $def, %cons, even without open proof obligation
-for a proved theorem, show minimal part of DG needed for proof
-cons, def, mono for nodes
-Isabelle interface: each qed should write proof info into file
-globally display nodes containing symbols mapped "twice" (i.e. via
-  different signature morphisms)
-  and add a menu for each node allowing for tracking the different
-    uses of the symbols/concepts
-topsort coding: partial functions as relations?
-]
-
-theorem link menu for proof obligations
-
-UserManual/Chapter7.casl: local thm link starting from Monoid leads to type error
-in Isabelle. Reason: Inlineaxioms does not translate ga_totality axioms
-correctly.
 
 Buffer.het, sublogic of node Buffer:
 Fail: illegal node type in sublogic computation
@@ -367,6 +318,8 @@ Logic graph window
 Input text window
 Development graph window
 Prover windows
+
+BinInt.casl: revealing in Int1 does not work correctly
 
 
 ************************************************
