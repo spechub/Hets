@@ -189,21 +189,6 @@ Joost Visser wg. ATerms in Haskell => neues Repository
 Till
 ************************************************
 
-
-Buffer.het, sublogic of node Buffer:
-Fail: illegal node type in sublogic computation
-
-
-Jürgen Zimmer, Saarbrücken+Edinburgh, Beweiserkennung für versch. Logiken im MathWeb
-
-for CSP-CASL example: with logic
-heterogeneous static ana
-
-theorem links between nodes in different libraries
-
-basicProofs: use info about used axioms
-             ensure that axiom/thm names are unique
-
 Overload / inlineAxioms: injections
 
 
