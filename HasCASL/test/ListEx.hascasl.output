@@ -7,9 +7,8 @@ free type List a ::= Nil | Cons (head : a; tail : List a b)
 free type List a ::= Nil | Cons (head : a; tail : List (List a))
 free type Tree a ::= Leaf | Branch (head : Tree a; tail : Tree a)
 generated
-{type  Tree1(a : +Type)
-       ::= Leaf | Branch (head : Tree a; tail : Tree1 a)
-}
+type  Tree1(a : +Type)
+      ::= Leaf | Branch (head : Tree a; tail : Tree1 a)
 type  Tree2(a : +Type)
       ::= Leaf | Branch (head : Tree a; tail : Tree2 a)
 free type

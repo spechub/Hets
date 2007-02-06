@@ -78,7 +78,7 @@ forall x, m, n, r, s, t : Nat; p : Pos
 . max (m, 0) = m %(Nat_max_unit)%
 . min (m, 0) = 0; %(Nat_min_0)%
 %% end
-generated {type  Int ::= __-__ (Nat; Nat)}
+generated type  Int ::= __-__ (Nat; Nat)
 forall a, b, c, d : Nat
 . a - b = c - d <=> a + d = c + b; %(Int_equality)%
 
@@ -139,7 +139,7 @@ forall m, n, r, s : Int; a, b, c, d : Nat
 . def (m rem n) <=> not n = 0 %(Int_rem_dom)%
 . m = (m quot n) * n + (m rem n) if not n = 0; %(Int_quot_rem)%
 %% end
-generated {type  Rat ::= __/__ (Int; Pos)}
+generated type  Rat ::= __/__ (Int; Pos)
 forall i, j : Int; p, q : Pos
 . i / p = j / q <=> i * q = j * p; %(Rat_equality)%
 type  Int < Rat
@@ -198,7 +198,7 @@ type  s
 free type
 s ::= sort s2, s1 | c | c (a; a : t; b : t; d : t) | c (a)?
 generated
-{type  s ::= sort s2, s1 | c | c (a; a : t; b : t; d : t) | c (a)?}
+type  s ::= sort s2, s1 | c | c (a; a : t; b : t; d : t) | c (a)?
 generated
 {pred  __<__ : a * a
 op    a : b;
@@ -309,8 +309,8 @@ type  Data1, Data2, Data3
 type  Tree ::= Leaf Data1 | Forest;
       Forest ::= Nil | Cons (Tree; Forest)
 free type List ::= Nil | Cons (Data1; List)
-generated {type  Set ::= Mt | Add (Data1; Set)}
-generated {type  Set ::= Mt | Add (Data1; Set)}
+generated type  Set ::= Mt | Add (Data1; Set)
+generated type  Set ::= Mt | Add (Data1; Set)
 generated
 {type  nat
 op    0 : nat;
