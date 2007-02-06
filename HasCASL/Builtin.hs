@@ -100,39 +100,37 @@ addBuiltins ga =
         opIs = Set.toList ((((Set.filter isInfix opIds)
                 Set.\\ builtinRelIds) Set.\\ builtinLogIds)
                 Set.\\ Set.fromList [applId, whenElse])
-
         logs = [(eqvId, implId), (implId, andId), (implId, orId),
                 (eqvId, infixIf), (infixIf, andId), (infixIf, orId),
                  (andId, notId), (orId, notId),
                 (andId, negId), (orId, negId)]
-
         rels1 = map ( \ i -> (notId, i)) $ Set.toList builtinRelIds
         rels1b = map ( \ i -> (negId, i)) $ Set.toList builtinRelIds
         rels2 = map ( \ i -> (i, whenElse)) $ Set.toList builtinRelIds
         ops1 = map ( \ i -> (whenElse, i)) (applId : opIs)
-        ops2 = map ( \ i -> (i, applId)) (whenElse : opIs)
-        newPrecs = foldr (\ (a, b) p -> if Rel.path b a p then p else
-                         Rel.insert a b p) precs $
-                  concat [logs, rels1, rels1b, rels2, ops1, ops2]
+        ops2 = map ( \ i -> (i, applId)) opIs
+        newPrecs = foldl (\ p (a, b) -> if Rel.path b a p then p else
+                         Rel.insert a b p) precs $ 
+                   concat [logs, rels1, rels1b, rels2, ops1, ops2]
     in case addGlobalAnnos ga { assoc_annos = newAss
-          , prec_annos = Rel.transClosure newPrecs } $ 
-            map parseDAnno displayStrings of 
+          , prec_annos = Rel.transClosure newPrecs } $
+            map parseDAnno displayStrings of
          Result _ (Just newGa) -> newGa
          _ -> error "addBuiltins"
 
 displayStrings :: [String]
-displayStrings = 
-  [ "%display __\\/__ %LATEX __\\vee__" 
+displayStrings =
+  [ "%display __\\/__ %LATEX __\\vee__"
   , "%display __/\\__ %LATEX __\\wedge__"
   , "%display __=>__ %LATEX __\\Rightarrow__"
   , "%display __<=>__ %LATEX __\\Leftrightarrow__"
   , "%display not__ %LATEX \\neg__"
-  ] 
+  ]
 
 parseDAnno :: String -> Annotation
 parseDAnno str = case parse annotationL "" str of
                    Left _ -> error "parseDAnno"
-                   Right a -> a 
+                   Right a -> a
 
 aVar :: Id
 aVar = simpleIdToId $ mkSimpleId "a"
@@ -161,13 +159,13 @@ aPredType =
     aBindWithKind ContraVar universe $ mkFunArrType aType PFunArr unitType
 
 eqType, logType, notType, whenType, unitTypeScheme :: TypeScheme
-eqType = bindA $ mkFunArrType (mkProductType [lazyAType, lazyAType]) 
+eqType = bindA $ mkFunArrType (mkProductType [lazyAType, lazyAType])
          PFunArr unitType
 logType = simpleTypeScheme $
           mkFunArrType (mkProductType [lazyLog, lazyLog]) PFunArr unitType
 notType = simpleTypeScheme $ mkFunArrType lazyLog PFunArr unitType
 whenType =
-    bindA $ mkFunArrType (mkProductType [lazyAType, lazyLog, lazyAType]) 
+    bindA $ mkFunArrType (mkProductType [lazyAType, lazyLog, lazyAType])
           PFunArr aType
 unitTypeScheme = simpleTypeScheme lazyLog
 
