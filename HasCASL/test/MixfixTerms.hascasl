@@ -22,3 +22,4 @@ not if if a then b else c then b else c
 a when exists a:T. true else b
 (a * b) ::: a b = a ::: b
 f (- b) 
+a = b <=> b = a

@@ -15,12 +15,6 @@ module HasCASL.RunMixfixParser where
 import Common.AnnoState
 import Common.Earley
 import Common.Prec
-import HasCASL.Builtin
-import HasCASL.MixAna
-import HasCASL.As
-import HasCASL.PrintAs
-import HasCASL.ParseTerm
-import HasCASL.Le
 import Common.GlobalAnnotations
 import Common.Id
 import Common.Anno_Parser
@@ -29,6 +23,12 @@ import Common.Lexer
 import Common.Lib.State
 import Common.Doc
 import qualified Common.Lib.Set as Set
+
+import HasCASL.MixAna
+import HasCASL.As
+import HasCASL.PrintAs
+import HasCASL.ParseTerm
+import HasCASL.Le
 
 -- start testing
 stdOpsL, stdPredsL :: [String]
@@ -64,11 +64,10 @@ resolveTerm :: GlobalAnnos -> AParser () (Result Term)
 resolveTerm ga = do
        trm <- term
        let ids = stdOps `Set.union` stdPreds
-           newGa = addBuiltins ga
-           ps = (mkPrecIntMap $ prec_annos newGa, stdPreds)
-           (addRule, ruleS, _) = makeRules newGa ps ids
-           chart = evalState (iterateCharts newGa [trm]
+           ps = (mkPrecIntMap $ prec_annos ga, stdPreds)
+           (addRule, ruleS, _) = makeRules ga ps ids
+           chart = evalState (iterateCharts ga [trm]
                              $ initChart addRule ruleS)
-                   initialEnv { preIds = ps, globAnnos = newGa }
-       return $ getResolved (shows . toText newGa . printTerm . parenTerm)
+                   initialEnv { preIds = ps, globAnnos = ga }
+       return $ getResolved (shows . toText ga . printTerm . parenTerm)
                   (getRange trm) toMixTerm chart

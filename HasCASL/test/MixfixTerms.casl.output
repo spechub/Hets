@@ -68,5 +68,5 @@ RS3
 a * (b * c)
 c * (a + b)
 a * b * c
-(s n) * c
+s n * c
 (- a) !

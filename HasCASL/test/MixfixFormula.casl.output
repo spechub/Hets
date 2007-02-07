@@ -1,11 +1,11 @@
 forall . aa <= ab => p
-not ((s n) <= 0)
-not ((s n) <= 0)
+not (s n) <= 0
+not (s n) <= 0
 (s n) <= 0
 (i * q) <= (j * p)
 (i * q) <= (j * p)
-(c * (a + b)) = (c * a + c * b)
-((a + b) * c) = (a * c + b * c)
+c * (a + b) = c * a + c * b
+(a + b) * c = a * c + b * c
 *** Error 9.1-9.11, ambiguous mixfix term
   a <= (b <= c)
   (a <= b) <= c
