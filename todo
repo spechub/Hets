@@ -115,24 +115,13 @@ Christian
 
 see http://trac.informatik.uni-bremen.de:8080/hets
 
+Joost Visser wg. ATerms in Haskell => neues Repository
+
 ************************************************
 Rainer (Klaus)
 ************************************************
-
-for ProofManagement-GUI
-  mark imported theorems for selection
-  extend Logic.Prover SenStatus with wasTheorem
-  somewhere in computeTheory implement setting of wasTheorem
-  if wasTheorem not appears with right status in ProofManagementGUI
-    add wasTheorem to Common.Result.Named, as well
-    and adapt conversion functions of SenStatus to Named and vice
-    versa in Logic.Prover
-  Mark old theorems in "Axioms to include" Listbox with prefixed
-  "(Th)"
-  add button "Deselect former Theorems"
-  test all this with CASL-lib/Calculi/Space/RCCVerification.het
-  all nodes without incoming heterogeneous edges are provable with
-  SPASS
+see http://trac.informatik.uni-bremen.de:8080/hets
+user rainer25
 
 ************************************************
 Martin
@@ -160,14 +149,6 @@ Consistency checker interface
   batch mode for automatic provers such as SPASS
     (use automatic flag for provers)
 
-batch interface for Isabelle
-  each goal is proved separatedly, with a time limit enforced
-    by killing the process
-  the tactic is
-   "using Ax1 ... Axn by auto"
-  where Ax1 ... Axn is the list of all axioms.
-  "auto" could be replaced with "best", "blast" etc. (user selection)
-
 Ignore axiom selection for interactive provers
 
 Translation between Achim's ontology data structure and CASL (in Hets)
@@ -181,7 +162,6 @@ Recognize guarded fragment of CASL:
   G ::= forall x . At(x) => G      where At is a conjunction of atoms
       | exists x . At(x) /\ G
 
-Joost Visser wg. ATerms in Haskell => neues Repository
 
 
 
