@@ -98,9 +98,6 @@ printTypeToken t = let
 toMixType :: Type -> (TypePrec, Doc)
 toMixType typ = case typ of
     ExpandedType t1 _ -> toMixType t1
-    {- (Prefix, ExpandedType
-                      (parenPrec Prefix $ toMixType t1)
-                         $ parenPrec Prefix $ toMixType t2) -}
     BracketType k l _ -> (Outfix, bracket k $ sepByCommas $ map
                              (snd . toMixType) l)
     KindedType t kind _ -> (Prefix,
