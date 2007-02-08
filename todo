@@ -169,90 +169,7 @@ Recognize guarded fragment of CASL:
 Till
 ************************************************
 
-Overload / inlineAxioms: injections
-
-
-remove "prove" menu in abstracted dg
-
-better sublogic analysis in codings
-
-thy files in subdir
-adjust path for thy files, such that hets can also be started from subdirs
-
-Restrict Sonjas simplifications to HasCASL
-add suitable axioms to simplifier and CR
-computeTheory: remove double axioms
-add suitable axioms to simplifier and classical reasoner
-
-better display of internal nodes (use tooltip?)
-
-update Hets, CASL, daVinci on web page
-
-
-CASL2PCFOL: x_i -> t_i, t=[inj(x_i)] (and what not!)
-
-packing of binaries: add hets-update, refer to TclTk
-
-CCC interface
-
-test for sublogic before applying comorphism
-
-Missing points for heterogeneous WADT 04 example:
-- coding to Isabelle: translate sort gen constraints
-
-- Improve adapation to Isabelle's lexis
-
-Isabelle: (ask Christoph)
-   remove datatypes from sort list
-   prove local thm link (=> green)
-
-   "prove" menu with choice windows
-   incorporate sublogics
-   sublogic translation table
-
-   better interaction between Isabelle instance (for one node)
-    + selection of single goals that are proved
-    => use PGIP interface (Christoph, David)
-
-   correct show theory
-   Keep proofs and lemmas in .thy files (kind of merge)
-   CASL-like syntax
-   CASL annotation for lemmas that should be used in proof
-   inherit CASL's mixfix syntax
-
-Signatures versus theories: where to store additional infos?
-
-comp(id,x)=x for comorphism names
-
-Generalise CASL2Modal
-Mixfix analysis + typecheck for modality axiomatizations
-Modal logics: modal logic, temporal logic, mu calculus
-+ translations (e.g. modal to FOL)
-
-CASL->Haskell with free DTs (mark sortgens) + recursion
-
-
-- List[Dec] wird List[Pos]
-
-- node numbers do not match
-- thm links with external target should be provable as well
-
-
-Remove warnings
-
-Different types of logic translations
-Improve Static analysis of structured specs
-Development graph calculus, Strategies for DG rules
-  use graph grammars to model rules? transformation units?
-Management of change
-
 Integrate provers
-  Otter model checker
-  FOL-prover by Uli Furhbach
-  modal logic: IRIT, Toulouse. Tableaux prover LOTREC, Andreas Herzig
-               Isabelle codings: www.inf.ethz.ch/~vigano
-  Renate Schmidt, Manchester: uses FOL prover for description logic
-                              (as efficient as DL-specific tools!)
   Look at PROSPER toolkit
   consistency: see IJCAR-workshop on non-provability in Cork
   IJCAR workshop about logical frameworks and meta-languages
@@ -263,7 +180,6 @@ Encodings
 Errors:
 Klaus' wayfinding example
 
-ask Detlef: critical pairs, Fossacs paper by Francesco
 
 UniForM workbench:
 first steps towards CASL instance, using ATerms and re-using MMISS instance
