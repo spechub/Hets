@@ -140,9 +140,15 @@ isPlace (Token t _) = t == place
 placeTok :: Token
 placeTok = mkSimpleId place
 
+-- * equality symbols
+
 -- | also a definition indicator
 equalS :: String
 equalS  = "="
+
+-- | mind spacing i.e. in @e =e= e@
+exEqual :: String
+exEqual  = "=e="
 
 -- | token for type annotations
 typeTok :: Token
@@ -184,6 +190,9 @@ applId = mkId [placeTok, placeTok]
 -- | the infix equality identifier
 eqId :: Id
 eqId = mkInfix equalS
+
+exEq :: Id
+exEq = mkInfix exEqual
 
 -- ** show stuff
 

@@ -46,9 +46,6 @@ whenElse = mkId (map mkSimpleId [place, whenS, place, elseS, place])
 infixIf :: Id
 infixIf = mkInfix ifS
 
-exEq :: Id
-exEq = mkInfix exEqual
-
 andId :: Id
 andId = mkInfix lAnd
 
@@ -110,7 +107,7 @@ addBuiltins ga =
         ops1 = map ( \ i -> (whenElse, i)) (applId : opIs)
         ops2 = map ( \ i -> (i, applId)) opIs
         newPrecs = foldl (\ p (a, b) -> if Rel.path b a p then p else
-                         Rel.insert a b p) precs $ 
+                         Rel.insert a b p) precs $
                    concat [logs, rels1, rels1b, rels2, ops1, ops2]
     in case addGlobalAnnos ga { assoc_annos = newAss
           , prec_annos = Rel.transClosure newPrecs } $

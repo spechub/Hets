@@ -833,8 +833,8 @@ codeOutAppl ga precs md m origDoc args = case origDoc of
         assocs = assoc_annos ga
         mx = maxWeight precs
         pm = precMap precs
-        p = Map.findWithDefault (if isInfix i then 
-               Map.findWithDefault mx eqId pm else mx) i pm
+        e = Map.findWithDefault mx eqId pm
+        p = Map.findWithDefault (if isInfix i then e else mx) i pm
         doSplit = maybe (error "doSplit") id . splitDoc
         mkList op largs cl = fsep $ codeOutId IdAppl m op : punctuate comma
                              (map (codeOut ga precs md m) largs)
@@ -859,12 +859,15 @@ codeOutAppl ga precs md m origDoc args = case origDoc of
                 Just (Weight q ta la ra) ->
                     let pArg = parens dc
                         d = if isBoth pa i ta then pArg else dc
-                        oArg = if isDiffAssoc assocs pa i ta then pArg else d
+                        oArg = if q >= e &&
+                               (p < e || elem i [eqId, exEq]
+                                      && notElem ta [eqId, exEq])
+                               then d else if isDiffAssoc assocs pa i ta
+                               then pArg else d
                     in (if isLeftArg i l then
                        if checkArg ARight ga (i, p) (ta, q) ra
                        then oArg
-                       else if isPred || isSafeLhs i ta
-                                && applId /= i then d else pArg
+                       else if isPred || isSafeLhs i ta then d else pArg
                     else if isRightArg i l then
                        if checkArg ALeft ga (i, p) (ta, q) la
                        then oArg
@@ -896,7 +899,7 @@ getWeight ga precs d = let
     in case d of
     IdApplDoc _ i aas@(hd : _) ->
         let p = Map.findWithDefault
-              (if begPlace i || endPlace i then Map.findWithDefault 0 eqId m 
+              (if begPlace i || endPlace i then Map.findWithDefault 0 eqId m
                else maxWeight precs)
               i m in
         if isGenLiteral splitDoc ga i aas then Nothing else
@@ -909,15 +912,21 @@ getWeight ga precs d = let
             in Just $ Weight p i lw rw
     _ -> Nothing
 
+{- checkArg allows any nested infixes that are not listed in the
+   precedence graph in order to report ambiguities when parsed. The
+   following case require parens when printed. -}
 isDiffAssoc :: AssocMap -> PrecedenceGraph -> Id -> Id -> Bool
-isDiffAssoc assocs precs op arg =
-    isInfix op && isInfix arg &&
-           case precRel precs op arg of
+isDiffAssoc assocs precs op arg = isInfix op && isInfix arg &&
+            if op /= arg then
+               arg /= applId && case precRel precs op arg of
                Lower -> False
-               _ -> op /= arg || not (Map.member arg assocs)
+               _ -> True
+            else not $ Map.member arg assocs
 
+-- no need for parens in the following cases
 isSafeLhs :: Id -> Id -> Bool
-isSafeLhs op arg = isPostfix arg || endPlace op && not (isInfix arg)
+isSafeLhs op arg = applId /= op &&
+    (isPostfix arg || endPlace op && not (isInfix arg))
 
 isBoth :: PrecedenceGraph -> Id -> Id -> Bool
 isBoth precs op arg = case precRel precs op arg of

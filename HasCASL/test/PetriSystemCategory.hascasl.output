@@ -28,7 +28,7 @@ var   Elem : Type
 op    MultiSetToSet : MultiSet Elem -> Set Elem
 forall B : MultiSet Elem; S : Set Elem
 . let S = MultiSetToSet B in
-  forall x : Elem . (x isIn S) <=> ((freq (x, B)) > 0);
+  forall x : Elem . x isIn S <=> freq (x, B) > 0;
 var   S : Type
 type  MapMultiSet : Type -> Type
       := \ S : Type . MultiSet S ->? MultiSet S
@@ -64,21 +64,21 @@ type  Net =
       {(p, pre, post) : Set P * (T ->? MultiSet P) * (T ->? MultiSet P) .
       dom pre = dom post /\
       (forall p1 : MultiSet P .
-       (p1 isIn (range pre)) => ((MultiSetToSet p1) subset p))
+       p1 isIn range pre => MultiSetToSet p1 subset p)
       /\
       (forall p1 : MultiSet P .
-       (p1 isIn (range pre)) => ((MultiSetToSet p1) subset p))
+       p1 isIn range pre => MultiSetToSet p1 subset p)
       }
 op    places : Net -> Set P;
       transitions : Net -> Set T;
       preMap, postMap : Net -> (T ->? MultiSet P)
 type  HomNet =
       {(n1, hp, ht, n2) : Net * (P ->? P) * (T ->? T) * Net .
-      (hp :: places n1 --> (places n2)) /\
-      (ht :: transitions n1 --> (transitions n2))
+      hp :: places n1 --> places n2 /\
+      ht :: transitions n1 --> transitions n2
       /\
       (forall t : T .
-       (t isIn (transitions n1)) =>
+       t isIn transitions n1 =>
        freeMap hp (preMap n1 t) = preMap n2 (ht t) /\
        freeMap hp (postMap n1 t) = postMap n2 (ht t))
       }
@@ -92,7 +92,7 @@ pred  injective : HomNet
 type  Marking := MultiSet P
 type  System =
       {(n, m) : Net * Marking .
-      let (p, pre1, post1) = n in forall x : P . (x isIn m) => (x isIn p)
+      let (p, pre1, post1) = n in forall x : P . x isIn m => x isIn p
       }
 op    marking : System -> Marking;
       net : System -> Net;
@@ -103,7 +103,7 @@ type  HomSys =
       {(sys1, hp, ht, sys2) : System * (P ->? P) * (T ->? T) * System .
       ((net sys1, hp, ht, net sys2) in HomNet) /\
       (forall p : P .
-       (freq (p, marking sys1)) <= (freq (hp p, marking sys2)))
+       freq (p, marking sys1) <= freq (hp p, marking sys2))
       }
 op    dom : HomSys -> System;
       cod : HomSys -> System;
@@ -114,9 +114,9 @@ op    dom : HomSys -> System;
 pred  injective : HomSys
 forall h1, h2 : HomSys
 . def (h2 o h1) =>
-  (h2 o h1) =
-  ((dom h1, (placesMap h2) o (placesMap h1),
-    (transitionsMap h2) o (transitionsMap h1), cod h2)
+  h2 o h1 =
+  ((dom h1, placesMap h2 o placesMap h1,
+    transitionsMap h2 o transitionsMap h1, cod h2)
    as HomSys);
 %% Type Constructors -----------------------------------------------------
 Boolean
@@ -289,8 +289,7 @@ free type Boolean ::=
           False : Boolean                           %(ga_Boolean)%
 let S = MultiSetToSet B in
 forall x : Elem .
-(__isIn__ : Elem * Set Elem ->? Unit) (x, S) <=>
-((freq (x, B)) > 0)
+(__isIn__ : Elem * Set Elem ->? Unit) (x, S) <=> freq (x, B) > 0
 def (op __o__ : HomSys * HomSys ->? HomSys) (h2, h1) =>
 (op __o__ : HomSys * HomSys ->? HomSys) (h2, h1) =
 (((op dom : HomSys -> System) h1,

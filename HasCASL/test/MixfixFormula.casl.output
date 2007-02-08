@@ -1,7 +1,10 @@
 forall . aa <= ab => p
-not (s n) <= 0
-not (s n) <= 0
-(s n) <= 0
+*** Error 1.21, unexpected mixfix token: <=
+*** Error 1.14, unknown type 's'
+*** Error 1.14, unknown type 's'
+not s n <= 0
+not s n <= 0
+s n <= 0
 (i * q) <= (j * p)
 (i * q) <= (j * p)
 c * (a + b) = c * a + c * b

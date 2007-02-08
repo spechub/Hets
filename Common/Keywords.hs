@@ -8,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-String constants for CASL keywords to be used for parsing and printing
+String constants for keywords to be used for parsing and printing
 
 - all identifiers are mixed case (i.e. the keyword followed by  a capital S)
 
@@ -32,7 +32,7 @@ exMark  = "!"
 quMark :: String
 quMark  = "?"
 
--- ** type constructors
+-- * type constructors
 timesS,
   prodS,
   funS :: String
@@ -74,13 +74,7 @@ stringS = "string"
 listS = "list"
 floatingS = "floating"
 
--- ** equality symbols
-
--- | mind spacing i.e. in @e =e= e@
-exEqual :: String
-exEqual  = "=e="
-
--- ** formula symbols
+-- * formula symbols
 lOr,
   lAnd,
   negS,

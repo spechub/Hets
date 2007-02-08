@@ -4,13 +4,15 @@
 12.1
 1E1
 1.0E2
-1.0 E (- (23))
+1.0 E - (23)
 12 + 34 * "afa"
 "" + ""
 (op x : a) (a, b)
+*** Error 10.8, unknown type 'a'
 a
 a + b
 a (: (s + b) : s)
+*** Error 13.3-13.9, not a class 's'
 parse error at 14.12:
 unexpected "as" or "a"
 expecting "[", "%", "->", cross, ->, "=e=", "=", id/literal, "{", "(", "if", "when", "forall", exists, "\\", "case", "let", "where" or end of input
@@ -24,6 +26,7 @@ expecting "[", "%", "->", cross, ->, "=e=", "=", id/literal, "{", "(", "if", "wh
 a + b
 a when a < b else b
 a when (pred a : b) else b
+*** Error 20.16, unknown type 'b'
 { a b }
 *** Error 22.1-22.5, ambiguous mixfix term
   (a b) p

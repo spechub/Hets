@@ -29,6 +29,7 @@ import HasCASL.As
 import HasCASL.PrintAs
 import HasCASL.ParseTerm
 import HasCASL.Le
+import HasCASL.AsToLe
 
 -- start testing
 stdOpsL, stdPredsL :: [String]
@@ -66,8 +67,10 @@ resolveTerm ga = do
        let ids = stdOps `Set.union` stdPreds
            ps = (mkPrecIntMap $ prec_annos ga, stdPreds)
            (addRule, ruleS, _) = makeRules ga ps ids
-           chart = evalState (iterateCharts ga [trm]
+           (chart, finalEnv) = runState (iterateCharts ga [trm]
                              $ initChart addRule ruleS)
-                   initialEnv { preIds = ps, globAnnos = ga }
-       return $ getResolved (shows . toText ga . printTerm . parenTerm)
-                  (getRange trm) toMixTerm chart
+                   (addPreDefs initialEnv) { preIds = ps, globAnnos = ga }
+       return $ do
+           Result (filter isErrorDiag $ envDiags finalEnv) $ Just ()
+           getResolved (shows . toText ga . printTerm . parenTerm)
+                    (getRange trm) toMixTerm chart

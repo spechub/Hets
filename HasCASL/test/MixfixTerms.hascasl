@@ -19,7 +19,7 @@ f a one a done
 f a --> f a
 s(a) <= 0 
 not if if a then b else c then b else c
-a when exists a:T. true else b
+a when exists a:(). true else b
 (a * b) ::: a b = a ::: b
 f (- b) 
 a = b <=> b = a
