@@ -1,5 +1,5 @@
-class Cpo < Type;
-class Cppo < Cpo;
+class Cpo < Type
+class Cppo < Cpo
 type instance __-->__ : -Cpo -> +Cpo -> Cpo
 type instance __-->__ : -Cpo -> +Cppo -> Cppo
 var   c : Cppo

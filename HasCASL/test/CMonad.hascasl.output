@@ -1,5 +1,5 @@
-class Functor < Type -> Type;
-class Monad < Functor;
+class Functor < Type -> Type
+class Monad < Functor
 type  List : Monad
 var   a, b : Type
 var   m : Monad

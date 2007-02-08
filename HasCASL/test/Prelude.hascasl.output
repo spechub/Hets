@@ -1,7 +1,7 @@
 
 %% predefined universe containing all types,
 %% superclass of all other classes
-class Type < Type;
+class Type < Type
 var   s, t : Type
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -86,24 +86,21 @@ program
 %% Recursion (requires "free type nat ::= 0 | Suc(nat)" and "+"
 sort  nat
 class Cpo < Type
-      {var   c : Cpo;
-      pred  __<<=__ : c * c;
-      ;
-      pred  isChain : forall c : Cpo . nat -> c;
-      pred  isBound : forall c : Cpo . c * (nat -> c);
-      op    sup : (nat -> c) ->? c;
-      ;
-      };
+      {var   c : Cpo
+      pred  __<<=__ : c * c
+      pred  isChain : forall c : Cpo . nat -> c
+      pred  isBound : forall c : Cpo . c * (nat -> c)
+      op    sup : (nat -> c) ->? c
+      }
 class Pcpo < Cpo
-      {var   p : Pcpo;
-      op    bottom : p;
-      ;
-      };
+      {var   p : Pcpo
+      op    bottom : p
+      }
 class instance
 Flatcpo < Cpo
-{var   f : Flatcpo;
-program;
-};
+{var   f : Flatcpo
+program
+}
 var   c, d : Cpo
 type instance __*__ : +Cpo -> +Cpo -> Cpo
 var   x1, x2 : c; y1, y2 : d

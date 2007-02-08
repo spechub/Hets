@@ -1,17 +1,17 @@
-class b, c, d, e, f, g < Type;
-class Type < Type;
-class Type < Type;
-class Type < Type;
-class d < Type;
-class a < d;
-class a < a;
-class a < b;
-class b < d;
-class d < d;
-class d < a;
+class b, c, d, e, f, g < Type
+class Type < Type
+class Type < Type
+class Type < Type
+class d < Type
+class a < d
+class a < a
+class a < b
+class b < d
+class d < d
+class d < a
 type  t : a
-class h < a;
-class h < c;
+class h < a
+class h < c
 type  [__] : a -> b
 var   x : a; y : Type; x : y
 var  

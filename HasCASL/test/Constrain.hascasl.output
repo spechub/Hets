@@ -1,5 +1,5 @@
-class Eq < Type;
-class Ord < Eq;
+class Eq < Type
+class Ord < Eq
 type  a : Ord
 op    f : forall e : Ord . e -> e
 op    c : a

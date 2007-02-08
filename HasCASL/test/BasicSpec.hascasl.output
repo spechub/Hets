@@ -1,10 +1,10 @@
-class Type < Type;
+class Type < Type
 var   t : Type
-class TYPE < Type;
+class TYPE < Type
 type  Unit : TYPE
+class a, b, c < Type
 class a, b, c < Type;
-class a, b, c < Type;
-      a < b;
+      a < b
 type  s : c
 pred  tt : s
 var   x : s

@@ -373,7 +373,8 @@ printPseudoType (TypeScheme l t _) = noNullPrint l (lambda
             <+> bullet <> space) <> pretty t
 
 instance Pretty BasicSpec where
-    pretty (BasicSpec l) = changeGlobalAnnos addBuiltins . vcat $ map pretty l
+    pretty (BasicSpec l) = if null l then specBraces empty else
+        changeGlobalAnnos addBuiltins . vcat $ map pretty l
 
 instance Pretty ProgEq where
     pretty = printEq0 equals . foldEq printTermRec
@@ -382,8 +383,8 @@ instance Pretty BasicItem where
     pretty bi = case bi of
         SigItems s -> pretty s
         ProgItems l _ -> sep [keyword programS, semiAnnoted l]
-        ClassItems i l _ -> let b = semiAnnoted l in case i of
-            Plain -> topSigKey classS <+>b
+        ClassItems i l _ -> let b = semiAnnos pretty l in case i of
+            Plain -> topSigKey classS <+> b
             Instance -> sep [keyword classS <+> keyword instanceS, b]
         GenVarItems l _ -> topSigKey varS <+> printGenVarDecls l
         FreeDatatype l _ ->
@@ -400,7 +401,8 @@ instance Pretty BasicItem where
                     _ -> let pp = addBullet . pretty in
                             vcat $ map (printAnnoted pp) (init fs)
                                      ++ [printSemiAnno pp True $ last fs]]
-        Internal l _ -> sep [keyword internalS, specBraces $ semiAnnoted l]
+        Internal l _ -> sep [keyword internalS, 
+                             specBraces $ vcat $ map (printAnnoted pretty) l]
 
 isDatatype :: SigItems -> Bool
 isDatatype si = case si of
@@ -451,8 +453,8 @@ isSimpleType t = case t of
     _ -> False
 
 instance Pretty ClassItem where
-    pretty (ClassItem d l _) =
-        pretty d $+$ noNullPrint l (specBraces $ semiAnnoted l)
+    pretty (ClassItem d l _) = pretty d $+$ noNullPrint l 
+                   (specBraces $ vcat $ map (printAnnoted pretty) l)
 
 instance Pretty ClassDecl where
     pretty (ClassDecl l k _) = fsep [ppWithCommas l, less, pretty k]
