@@ -199,6 +199,31 @@ isSimpleArgTerm trm = case trm of
     BracketTerm _ _ _ -> True
     _ -> False
 
+hasRightQuant :: Term -> Bool
+hasRightQuant t = case t of
+    QuantifiedTerm {} -> True
+    LambdaTerm {} -> True
+    CaseTerm {} -> True
+    LetTerm {} -> True
+    ResolvedMixTerm n ts _ | endPlace n && placeCount n == length ts
+        -> hasRightQuant (last ts)
+    ApplTerm (ResolvedMixTerm n [] _) t2 _ | endPlace n ->
+        case t2 of
+          TupleTerm ts _ | placeCount n == length ts -> hasRightQuant (last ts)
+          _ -> hasRightQuant t2
+    ApplTerm _ t2 _ -> hasRightQuant t2
+    _ -> False
+
+zipArgs :: Id -> [Term] -> [Doc] -> [Doc]
+zipArgs n ts ds = case (ts, ds) of
+    (t : r, d : s) -> let
+        p = parenTermDoc t d
+        e = if hasRightQuant t then parens d else p
+        in if null r && null s && endPlace n then
+               [if hasRightQuant t then d else p]
+           else e : zipArgs n r s
+    _ -> []
+
 isPatVarDecl :: VarDecl -> Bool
 isPatVarDecl (VarDecl v ty _ _) = case ty of
            TypeName t _ _ -> isSimpleId v && take 2 (show t) == "_v"
@@ -217,16 +242,16 @@ printTermRec = FoldRec
                          if isPred br then unPredTypeScheme t else t]
     , foldResolvedMixTerm = \ (ResolvedMixTerm _ os _) n ts _ ->
           if placeCount n == length ts || null ts then
-          idApplDoc n $ zipWith parenTermDoc os ts
+          idApplDoc n $ zipArgs n os ts
           else idApplDoc applId [idDoc n, parens $ sepByCommas ts]
     , foldApplTerm = \ (ApplTerm o1 o2 _) t1 t2 _ ->
         case (o1, o2) of
           (ResolvedMixTerm n [] _, TupleTerm ts _)
               | placeCount n == length ts ->
-                  idApplDoc n $ zipWith parenTermDoc ts $ map printTerm ts
+                  idApplDoc n $ zipArgs n ts $ map printTerm ts
           (ResolvedMixTerm n [] _, _) | placeCount n == 1 ->
-              idApplDoc n [parenTermDoc o2 t2]
-          _ -> idApplDoc applId [parenTermDoc o1 t1, parenTermDoc o2 t2]
+              idApplDoc n $ zipArgs n [o2] [t2]
+          _ -> idApplDoc applId $ zipArgs applId [o1, o2] [t1, t2]
 -- use  "if isSimpleArgTerm o2 then t2 else parens t2" to output real CASL
      , foldTupleTerm = \ _ ts _ -> parens $ sepByCommas ts
      , foldTypedTerm = \ (TypedTerm ot _ _ _) t q typ _ -> fsep [(case ot of

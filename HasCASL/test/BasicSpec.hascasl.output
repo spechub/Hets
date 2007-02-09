@@ -196,16 +196,16 @@ true
   known types:
     
 ### Hint 37.27-38.45, untypable application (with result type: ? Unit)
- 'all (\ r : ? Unit . all (\ x : s . p x impl r) impl r)'
+ 'all \ r : ? Unit . (all \ x : s . p x impl r) impl r'
 *** Error 37.25, no typing for 'program ex (p : ? s) : ? Unit =
-          all (\ r : ? Unit . all (\ x : s . p x impl r) impl r)'
+          all \ r : ? Unit . (all \ x : s . p x impl r) impl r'
 ### Hint 40.20, no type match for: all
   with (maximal) type: _v82 ->? ? Unit
   known types:
     
 ### Hint 40.20-40.38, untypable application (with result type: ? Unit)
- 'all (\ r : ? Unit . r)'
-*** Error 40.18, no typing for 'program ff () : ? Unit = all (\ r : ? Unit . r)'
+ 'all \ r : ? Unit . r'
+*** Error 40.18, no typing for 'program ff () : ? Unit = all \ r : ? Unit . r'
 ### Hint 45.9, not a class 't'
 ### Hint 45.8, rebound variable 'x'
 ### Hint 45.16, not a class 't'

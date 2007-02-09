@@ -30,4 +30,4 @@ a - b = b - a
 a =e= b
 (a =e= b) = (a =e= b)
 (a = b) =e= (a = b)
-- (forall a : Unit . true /\ (exists b : Unit . false))
+- forall a : Unit . true /\ exists b : Unit . false

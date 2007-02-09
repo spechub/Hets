@@ -62,12 +62,12 @@ op    __intersection__
 sort  P, T
 type  Net =
       {(p, pre, post) : Set P * (T ->? MultiSet P) * (T ->? MultiSet P) .
-      dom pre = dom post /\
-      (forall p1 : MultiSet P .
+      (dom pre = dom post /\
+       forall p1 : MultiSet P .
        p1 isIn range pre => MultiSetToSet p1 subset p)
       /\
-      (forall p1 : MultiSet P .
-       p1 isIn range pre => MultiSetToSet p1 subset p)
+      forall p1 : MultiSet P .
+      p1 isIn range pre => MultiSetToSet p1 subset p
       }
 op    places : Net -> Set P;
       transitions : Net -> Set T;
@@ -77,10 +77,10 @@ type  HomNet =
       hp :: places n1 --> places n2 /\
       ht :: transitions n1 --> transitions n2
       /\
-      (forall t : T .
-       t isIn transitions n1 =>
-       freeMap hp (preMap n1 t) = preMap n2 (ht t) /\
-       freeMap hp (postMap n1 t) = postMap n2 (ht t))
+      forall t : T .
+      t isIn transitions n1 =>
+      freeMap hp (preMap n1 t) = preMap n2 (ht t) /\
+      freeMap hp (postMap n1 t) = postMap n2 (ht t)
       }
 op    dom : HomNet -> Net;
       cod : HomNet -> Net;
@@ -102,8 +102,7 @@ op    marking : System -> Marking;
 type  HomSys =
       {(sys1, hp, ht, sys2) : System * (P ->? P) * (T ->? T) * System .
       ((net sys1, hp, ht, net sys2) in HomNet) /\
-      (forall p : P .
-       freq (p, marking sys1) <= freq (hp p, marking sys2))
+      forall p : P . freq (p, marking sys1) <= freq (hp p, marking sys2)
       }
 op    dom : HomSys -> System;
       cod : HomSys -> System;
