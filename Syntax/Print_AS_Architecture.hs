@@ -43,9 +43,10 @@ instance Pretty UNIT_DECL_DEFN where
 instance Pretty UNIT_SPEC where
     pretty u = case u of
         Unit_type aa ab _ ->
-          let ab' = pretty ab
+          let ab' = printGroupSpec ab
           in if null aa then ab' else fsep $
-             punctuate (space <> cross) (map pretty aa) ++ [funArrow, ab']
+             punctuate (space <> cross) (map printGroupSpec aa)
+                      ++ [funArrow, ab']
         Spec_name aa -> pretty aa
         Closed_unit_spec aa _ -> fsep [keyword closedS, pretty aa]
 
