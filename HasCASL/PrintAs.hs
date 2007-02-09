@@ -398,7 +398,7 @@ instance Pretty BasicItem where
                     _ -> let pp = addBullet . pretty in
                             vcat $ map (printAnnoted pp) (init fs)
                                      ++ [printSemiAnno pp True $ last fs]]
-        Internal l _ -> sep [keyword internalS, 
+        Internal l _ -> sep [keyword internalS,
                              specBraces $ vcat $ map (printAnnoted pretty) l]
 
 isDatatype :: SigItems -> Bool
@@ -450,7 +450,7 @@ isSimpleType t = case t of
     _ -> False
 
 instance Pretty ClassItem where
-    pretty (ClassItem d l _) = pretty d $+$ noNullPrint l 
+    pretty (ClassItem d l _) = pretty d $+$ noNullPrint l
                    (specBraces $ vcat $ map (printAnnoted pretty) l)
 
 instance Pretty ClassDecl where
@@ -519,7 +519,7 @@ instance Pretty Alternative where
         Constructor n cs p _ -> pretty n <+> fsep
           (map ( \ l -> case (l, p) of
 -- comment out the following line to output real CASL
-            ([NoSelector (TypeToken t)], Total) -> pretty t
+            ([NoSelector (TypeToken t)], Total) | isSimpleId n -> pretty t
             _ -> parens $ semiDs l) cs) <> pretty p
         Subtype l _ -> text (if all isSimpleType l then sortS else typeS)
                        <+> ppWithCommas l
