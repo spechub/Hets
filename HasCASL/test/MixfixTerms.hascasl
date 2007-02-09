@@ -23,3 +23,11 @@ a when exists a:(). true else b
 (a * b) ::: a b = a ::: b
 f (- b) 
 a = b <=> b = a
+a - b = b - a
+(a => b) = (b if a)
+(a ::: b) + (a ::: b)
+(a + b) ::: (a + b)
+a =e= b
+(a =e= b) = (a =e= b)
+(a = b) =e= (a = b)
+- forall a:() . true /\ exists b:() . false

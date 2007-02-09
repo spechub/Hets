@@ -23,6 +23,7 @@ import Common.Lexer
 import Common.Lib.State
 import Common.Doc
 import qualified Common.Lib.Set as Set
+import qualified Common.Lib.Rel as Map
 
 import HasCASL.MixAna
 import HasCASL.As
@@ -45,10 +46,7 @@ stdOpsL = ["__^__", "__*__", "__+__", "[__]","__div__","__mod__", "__rem__",
          ++ ["A[a[c,d],b]", "B[a[c,d],b]", "__B[a[c,d],b]__",
              "a[c,d]", "__a[c,d]__", "A[a]", "A__B",
              "A__", "__[a]", "__p", "__#", "D__",
-             "__[__]__", "[__]__", "__[__]",
-             "not__", "def__", "__if__",
-             "__=__", "__=>__", "__/\\__", "__\\/__", "__<=>__",
-             "__when__else__", "if__then__else__"]
+             "__[__]__", "[__]__", "__[__]", "if__then__else__"]
 
 stdPredsL = ["__<__", "__<=__", "__>__", "__>=__", "__!=__", "__<>__",
              "__/=__", "even__", "odd__", "__isEmpty",
@@ -64,13 +62,14 @@ stdPreds = mkIds stdPredsL
 resolveTerm :: GlobalAnnos -> AParser () (Result Term)
 resolveTerm ga = do
        trm <- term
-       let ids = stdOps `Set.union` stdPreds
-           ps = (mkPrecIntMap $ prec_annos ga, stdPreds)
+       let ps = (mkPrecIntMap $ prec_annos ga, stdPreds)
+           iEnv = (addPreDefs initialEnv) { preIds = ps, globAnnos = ga }
+           ids = Set.union stdPreds $ Set.union stdOps
+                 $ Map.keysSet $ assumps iEnv
            (addRule, ruleS, _) = makeRules ga ps ids
-           (chart, finalEnv) = runState (iterateCharts ga [trm]
-                             $ initChart addRule ruleS)
-                   (addPreDefs initialEnv) { preIds = ps, globAnnos = ga }
+           (chart, fEnv) = runState (iterateCharts ga [trm]
+                             $ initChart addRule ruleS) iEnv
        return $ do
-           Result (filter isErrorDiag $ envDiags finalEnv) $ Just ()
+           Result (filter isErrorDiag $ envDiags fEnv) $ Just ()
            getResolved (shows . toText ga . printTerm . parenTerm)
                     (getRange trm) toMixTerm chart
