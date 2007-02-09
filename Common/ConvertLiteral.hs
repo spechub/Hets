@@ -74,9 +74,9 @@ isGenSignedNumber splt ga i trs =
 
 isSign :: Id -> Bool
 isSign i = case i of
-           Id [tok] [] _ -> let ts = tokStr tok
-                            in ts == "-" || ts == "+"
-           _             -> False
+           Id [tok, p] [] _ | isPlace p ->
+              let ts = tokStr tok in ts == "-" || ts == "+"
+           _ -> False
 
 isGenString :: SplitM a -> GlobalAnnos -> Id -> [a] -> Bool
 isGenString splt ga i trs = case getLiteralType ga i of
@@ -139,9 +139,9 @@ joinToken (Token s1 _) (Token s2 _) =
     Token (s1 ++ s2) nullRange -- forget the range
 
 toSignedNumber :: (a -> (Id, [a])) -> Id -> [a] -> Token
-toSignedNumber splt (Id [sign] [] _) [hd] = case splt hd of
+toSignedNumber splt (Id [sign, p] [] _) [hd] | isPlace p = case splt hd of
   (i, ts) -> joinToken sign $ toNumber splt i ts
-toSignedNumber _ _ _ = error "toSignedNumber2"
+toSignedNumber _ _ _ = error "toSignedNumber"
 
 toNumber :: (a -> (Id, [a])) -> Id -> [a] -> Token
 toNumber splt i ts = if null ts then case i of

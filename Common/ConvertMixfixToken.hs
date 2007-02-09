@@ -68,7 +68,7 @@ makeSignedNumber f asAppl t@(Token n p) =
   [] -> error "makeSignedNumber"
   hd:tl ->
     if hd == '-' || hd == '+' then
-       asAppl (Id [Token [hd] p] [] nullRange)
+       asAppl (Id [Token [hd] p, placeTok ] [] nullRange)
                   [makeNumberTerm f asAppl $ Token tl
                                          $ inc 1 p] p
     else makeNumberTerm f asAppl t
