@@ -209,21 +209,28 @@ inducedFromToMorphism rmap1 sigma1 sigma2 = do
   --debug 3 ("mtarget mor1",mtarget mor1)
   --debug 3 ("sigma2",sigma2)
   if isSubEnv (mtarget mor1) sigma2
-   -- yes => we are done
-   then return $ mor1 { mtarget = sigma2 }
-   -- no => OK, we've to take the hard way
-   else let s1 = symOf sigma1
-            s2 = symOf sigma2
-            Symbol n1 t1 _  = Set.findMin s1
-            Symbol n2 t2 _  = Set.findMin s2
-        in if Set.isSingleton s1 && Set.isSingleton s2
-              && symbTypeToKind t1 == SK_type
-              && symbTypeToKind t2 == SK_type then
-          return mor1 { typeIdMap = Map.singleton n1 n2 }
-          else Result [Diag Error ("No symbol mapping found for:\n"
-           ++ shows (printMap1 rmap) "\nOrignal Signature1:\n"
-           ++ showDoc sigma1 "\nInduced "
-           ++ showEnvDiff (mtarget mor1) sigma2) nullRange] Nothing
+    -- yes => we are done
+    then return mor1 { mtarget = sigma2 }
+    -- no => OK, we've to take the hard way
+    else do
+        let ft = Set.filter ( \ (Symbol _ t _) -> case t of
+                        TypeAsItemType _ -> True
+                        _ -> False)
+            s1 = ft $ symOf sigma1
+            s2 = ft $ symOf sigma2
+            err = Result [Diag Error ("No symbol mapping found for:\n"
+                 ++ shows (printMap1 rmap) "\nOrignal Signature1:\n"
+                 ++ showDoc sigma1 "\nInduced "
+                 ++ showEnvDiff (mtarget mor1) sigma2) nullRange] Nothing
+        if Set.isSingleton s1 && Set.isSingleton s2 then do
+          let Symbol n1 _ _ = Set.findMin s1
+              Symbol n2 _ _ = Set.findMin s2
+          mor2 <- inducedFromMorphism (Map.insert (AKindedId SK_type n1)
+                                       (AKindedId SK_type n2) rmap) sigma1
+          if isSubEnv (mtarget mor2) sigma2
+            then return mor2 { mtarget = sigma2 }
+            else err
+          else err
 
 -- | reveal the symbols in the set
 generatedSign :: SymbolSet -> Env -> Result Morphism
