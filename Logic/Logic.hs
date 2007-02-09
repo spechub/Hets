@@ -1,14 +1,14 @@
 {-# OPTIONS -fallow-undecidable-instances #-}
 {- |
 Module      :  $Header$
-Description :  central interface (type class) for logics in Hets 
+Description :  central interface (type class) for logics in Hets
 Copyright   :  (c) Till Mossakowski, and Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable (various -fglasgow-exts extensions)
 
-Central interface (type class) for logics in Hets 
+Central interface (type class) for logics in Hets
 
 Provides data structures for logics (with symbols). Logics are
    a type class with an /identity/ type (usually interpreted
@@ -237,7 +237,7 @@ statErr lid str = fail ("Logic." ++ str ++ " nyi for: " ++ language_name lid)
    This type class provides the data needed for an institution with symbols,
    as explained in the structured specification semantics in the CASL
    reference manual, chapter III.4.
-   The static analysis computes signatures from basic specifications, 
+   The static analysis computes signatures from basic specifications,
    and signature morphisms from symbol lists and symbol maps. The latter
    needs an intermediate stage, so-called raw symbols, which are possibly
    unqualified symbols. Normal symbols are always fully qualified.
@@ -260,7 +260,7 @@ class ( Syntax lid basic_spec symb_items symb_map_items
             See CASL RefMan p. 138 ff. -}
          basic_analysis :: lid ->
                            Maybe((basic_spec,  -- abstract syntax tree
-                            sign, -- input signature, for the local 
+                            sign, -- input signature, for the local
                                   -- environment, carrying the previously
                                   -- declared symbols
                             GlobalAnnos) ->   -- global annotations
@@ -281,7 +281,7 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          ------------------------- amalgamation ---------------------------
          {- | Computation of colimits of signature diagram.
             Indeed, it suffices to compute a coconce that is weakly amalgamable
-            see Till Mossakowski, 
+            see Till Mossakowski,
             Heterogeneous specification and the heterogeneous tool set
             p. 25ff. -}
          weaklyAmalgamableCocone :: lid -> Tree.Gr sign morphism
@@ -294,14 +294,16 @@ class ( Syntax lid basic_spec symb_items symb_map_items
                [(Int, morphism)],     -- the sink
                Tree.Gr String String) -- the descriptions of nodes and edges
                   -> Result Amalgamates
-         ensures_amalgamability l _ = statErr l "ensures_amalgamability"
+         ensures_amalgamability l _ = warning Amalgamates
+           ("amalgamability test not implemented for logic " ++ show l)
+           nullRange
 
          -------------------- symbols and raw symbols ---------------------
          {- | Construe a symbol, like f:->t, as a raw symbol.
             This is a one-sided inverse to the function SymSySigSym
             in the CASL RefMan p. 192. -}
          symbol_to_raw :: lid -> symbol -> raw_symbol
-         {- | Construe an identifier, like f, as a raw symbol. 
+         {- | Construe an identifier, like f, as a raw symbol.
             See CASL RefMan p. 192, function IDAsSym -}
          id_to_raw :: lid -> Id -> raw_symbol
          {- | Check wether a symbol matches a raw symbol, for
@@ -317,7 +319,7 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          {- | Compute the difference of signatures. The first
             signature must be an inclusion of the second. The resulting
             signature might be an unclosed signature that should only be
-            used with care, though the following property should hold: 
+            used with care, though the following property should hold:
               is_subsig s1 s2 => union s1 (difference s2 s1) = s2
             (Unions are supposed to be symmetric and associative.) -}
          signature_difference :: lid -> sign -> sign -> Result sign
@@ -330,7 +332,7 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          -- | union of signature morphims, see CASL RefMan p. 196
          morphism_union :: lid -> morphism -> morphism -> Result morphism
          morphism_union l _ _ = statErr l "morphism_union"
-         {- | construct the inclusion morphisms between subsignatures, 
+         {- | construct the inclusion morphisms between subsignatures,
               see CASL RefMan p. 194 -}
          inclusion :: lid -> sign -> sign -> Result morphism
          inclusion l _ _ = statErr l "inclusion"
@@ -348,7 +350,7 @@ class ( Syntax lid basic_spec symb_items symb_map_items
          induced_from_morphism ::
              lid -> EndoMap raw_symbol -> sign -> Result morphism
          induced_from_morphism l _ _ = statErr l "induced_from_morphism"
-         {- | Induce a signature morphism between two signatures by a 
+         {- | Induce a signature morphism between two signatures by a
             raw symbol map. Needed for instantiation and views.
             See CASL RefMan p. 198f. -}
          induced_from_to_morphism ::
@@ -359,7 +361,7 @@ class ( Syntax lid basic_spec symb_items symb_map_items
             See CASL RefMan p. 304f. -}
          is_transportable :: lid -> morphism -> Bool
          is_transportable _ _ = False -- safe default
-         {- | Check whether the underlying symbol map of a signature morphism 
+         {- | Check whether the underlying symbol map of a signature morphism
             is injective -}
          is_injective :: lid -> morphism -> Bool
          is_injective _ _ = False -- safe default
@@ -444,7 +446,7 @@ instance Sublogics () where
    can use the datastructures and operations of the main logic, and
    functions are provided to test whether a given item lies within the
    sublogic. Also, projection functions from a super-logic to a sublogic
-   are provided. 
+   are provided.
 -}
 class (StaticAnalysis lid
         basic_spec sentence proof_tree symb_items symb_map_items
