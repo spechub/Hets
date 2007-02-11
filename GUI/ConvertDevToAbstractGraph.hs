@@ -915,7 +915,8 @@ showSpec descr dgAndabstrNodeMap dgraph =
 getNumberOfNode :: Descr -> IO()
 getNumberOfNode descr =
   let title = "Number of node"
-    in createTextDisplay title (showDoc descr "") [HTk.size(10,10)]
+-- make the node number consistent
+    in createTextDisplay title (showDoc (descr-1) "") [HTk.size(10,10)]
 
 {- | outputs the signature of a node in a window;
 used by the node menu defined in initializeGraph -}
@@ -1362,9 +1363,32 @@ applyChanges :: Descr -> LIB_NAME -> GraphInfo -> Descr -> IORef [[Node]]
 applyChanges _ _ _ eventDescr _ convMaps [] = return (eventDescr,convMaps)
 applyChanges gid libname grInfo eventDescr ioRefVisibleNodes
              convMaps (historyElem:_) =
-  applyChangesAux gid libname grInfo ioRefVisibleNodes
+  --trace (concat $ map showDGRule (fst historyElem)) $ 
+	applyChangesAux gid libname grInfo ioRefVisibleNodes
         (eventDescr, convMaps) changes
   where changes = removeContraryChanges (snd historyElem)
+
+{-
+showDGRule :: DGRule -> String
+showDGRule TheoremHideShift = "TheoremHideShift "
+showDGRule (HideTheoremShift _) = "HideTheoremShift "
+showDGRule Borrowing = "Borrowing "
+showDGRule ConsShift = "ConsShift "
+showDGRule DefShift = "DefShift "
+showDGRule MonoShift = "MonoShift "
+showDGRule DefToMono = "DefToMono "
+showDGRule MonoToCons = "MonoToCons "
+showDGRule FreeIsMono = "FreeIsMono "
+showDGRule MonoIsFree = "MonoIsFree "
+showDGRule (GlobDecomp _) = "GlobDecomp "
+showDGRule (LocDecomp _) = "LocalDecomp "
+showDGRule (LocInference _) = "LocInference "
+showDGRule (GlobSubsumption _) = "GlobSubsumption "
+showDGRule (Composition _) = "Composition "
+showDGRule LocalInference = "LocalInference "
+showDGRule (BasicInference _ _) = "BasicInference "
+showDGRule (BasicConsInference _ _) = "BasicConsInference "
+-}
 
 -- | auxiliary function for applyChanges
 applyChangesAux :: Descr -> LIB_NAME -> GraphInfo -> IORef [[Node]]
