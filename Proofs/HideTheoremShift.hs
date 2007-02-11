@@ -151,7 +151,7 @@ findProofBaseForHideTheoremShift
     -> ProofBaseSelector m -> m [LEdge DGLinkLab]
 findProofBaseForHideTheoremShift dgraph (ledge@(src,tgt,edgelab))
                                   proofBaseSel =
-     do pb <- proofBaseSel dgraph pathPairsFilteredByConservativity
+     do pb <- proofBaseSel dgraph pathPairsFilteredByProveStatus
         case pb of
           Nothing -> return []
           Just proofBasis -> do let fstPath = fst proofBasis
@@ -170,7 +170,20 @@ findProofBaseForHideTheoremShift dgraph (ledge@(src,tgt,edgelab))
           hidingMorphism morphism
     pathPairsFilteredByConservativity
         = filterPairsByConservativityOfSecondPath pathPairsFilteredByMorphism
+    -- advoiding duplicate to be selected proofbasis. 
+    pathPairsFilteredByProveStatus
+        = filterPairsByProveStatus pathPairsFilteredByConservativity
 
+-- advoiding duplicate to be selected proofbasis.
+filterPairsByProveStatus :: [([LEdge DGLinkLab], [LEdge DGLinkLab])] -> [([LEdge DGLinkLab], [LEdge DGLinkLab])]
+filterPairsByProveStatus = filter bothAreProven
+              where
+	      bothAreProven (pb1,pb2) = (allAreProven pb1) && (allAreProven pb2)
+	      allAreProven = all $ liftE isProven
+
+--filterPairsByProveStatus [] = = []
+--filterPairsByProveStatus (pb@(pb1, pb2):xs) = if((hasUnproven pb1)||(hasUnproven pb2)) then filterPairsByProveStatus xs
+	--									    else pb:filterPairsByProveStatus xs 
 
 {- removes all pairs from the given list whose second path does not have a
    conservativity greater than or equal to Cons -}
@@ -207,6 +220,30 @@ hideTheoremShift_selectProofBase dgraph basisList =
              _ -> return Nothing -- error ("Proofs.Proofs: " ++
                                -- "selection of proof basis failed")
                   -- failing or outputting something here may be a bad idea
+
+{-
+
+-- ken's debugging function
+
+debug_show :: [([LEdge DGLinkLab], [LEdge DGLinkLab])] -> String
+--debug_show ((a, b):((c, d):_)) = show (debug_show_edge b==debug_show_edge d)
+debug_show [] = ""
+debug_show ((a, b):xs) = "("++(debug_show_edge a)++", "++(debug_show_edge b)++") "++(debug_show xs) 
+
+debug_show_edge :: [LEdge DGLinkLab] -> String
+debug_show_edge [] = ""
+debug_show_edge ((src, tgt, lab):xs) = "("++(show src)++"->"++(show tgt)++" with prove status: "++(debug_show_pro_sta lab)++") -> " ++debug_show_edge xs 
+
+debug_show_pro_sta :: DGLinkLab -> String
+debug_show_pro_sta lab = 
+    case (dgl_type lab) of 
+       (GlobalThm (Proven _ _) _ _) -> "global proven"
+       (LocalThm (Proven _ _) _ _) -> "local proven"
+       (HidingThm _ (Proven _ _)) -> "hiding proven"
+       (LocalThm LeftOpen _ _) -> "local unproven"
+       _ -> "other unproven"
+-}
+
 
 {- returns a string representation of the given paths: for each path a
    tuple of the names of its nodes is shown, the two are combined by
