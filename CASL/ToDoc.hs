@@ -273,7 +273,7 @@ printType :: TYPE -> Doc
 printType t = case t of
     O_type ot -> printOpType ot
     P_type pt -> space <> printPredType pt
-    A_type s  -> idDoc s
+    A_type s  -> space <> idDoc s
 
 print_kind_text :: SYMB_KIND -> [a] -> Doc
 print_kind_text k l = case k of
