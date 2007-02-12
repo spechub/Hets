@@ -875,10 +875,10 @@ codeOutAppl ga precs md m origDoc args = case origDoc of
                        else if (applId == i || isInfix ta)
                                 && not isPred then pArg else d
                     else d) : l) [] $ zip aas args
-             (fts, ncs, cFun, hFun) = case Map.lookup i m of
+             (fts, ncs, cFun) = case Map.lookup i m of
                             Nothing ->
-                                (fst $ splitMixToken ts, cs, IdSymb, fsep)
-                            Just nts -> (nts, [], Native, fsep)
+                                (fst $ splitMixToken ts, cs, IdSymb)
+                            Just nts -> (nts, [], Native)
              ((_, rArgs), fArgs) = mapAccumL ( \ (b, ac) t ->
                if isPlace t then case ac of
                  hd : tl -> ((b, tl), hd)
@@ -887,7 +887,7 @@ codeOutAppl ga precs md m origDoc args = case origDoc of
                        let s = tokStr t in
                        if b then Text cFun s else makeIdApplLabel cFun s i))
                                                   (False, parArgs) fts
-            in hFun $ fArgs ++ (if null ncs then [] else [codeCompIds m cs])
+            in fsep $ fArgs ++ (if null ncs then [] else [codeCompIds m cs])
                                                  ++ rArgs
   _ -> error "Common.Doc.codeOutAppl"
 
