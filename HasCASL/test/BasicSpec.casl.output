@@ -173,8 +173,8 @@ forall p, q : Pos; n : Nat; i, j : Int; x, y, z : Rat
 . max (x, y) = y
   when x <= y else
   x
-  forall i, j : Int; p, q : Pos .
-  (i / p) - (j / q) = (i * q - j * p) / (p * q)    %(Rat_max_def)%
+  forall i, j : Int; p, q : Pos
+  . (i / p) - (j / q) = (i * q - j * p) / (p * q)  %(Rat_max_def)%
 %% then %implies
 %(Rat_sub_rule)%
 . (i / p) / (j / q) = (i / p) * (q / j) if not j = 0;
@@ -337,11 +337,11 @@ var   x : s
   not p \/ not q (x) \/ q (x)
   if
   not p /\ not q (x) /\ q (x)
-  forall x : s .
-  not p /\ not q (x) /\ q (x) <=>
-  exists x : s .
-  not p \/ not q (x) \/ q (x) <=>
-  exists! x : s . not p /\ not q (x) /\ q (x)
+  forall x : s
+  . not p /\ not q (x) /\ q (x) <=>
+    exists x : s
+    . not p \/ not q (x) \/ q (x) <=>
+      exists! x : s . not p /\ not q (x) /\ q (x)
 . def f (x)
 . f (x) =e= g (x)
 . f (x) = g (x)

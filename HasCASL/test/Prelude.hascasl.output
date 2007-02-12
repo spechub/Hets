@@ -301,11 +301,11 @@ free type bool ::=
     
 ### Hint 108.3-108.63, untypable application (with result type: Unit)
  'all
-  \ (f, g) : s ->? t .
-  all \ x : s . eq (\ () . f x, g x) impl eq (f, g)'
+  \ (f, g) : s ->? t
+  . all \ x : s . eq (\ () . f x, g x) impl eq (f, g)'
 *** Error 108.3-108.63, no typing for 'all
-  \ (f, g) : s ->? t .
-  all \ x : s . eq (\ () . f x, g x) impl eq (f, g)'
+  \ (f, g) : s ->? t
+  . all \ x : s . eq (\ () . f x, g x) impl eq (f, g)'
 ### Hint 117.5, is type variable 'c'
 ### Hint 121.3, no type match for: all
   with (maximal) type: _v341 ->? Unit
@@ -355,15 +355,15 @@ free type bool ::=
     
 ### Hint 130.3-131.74, untypable application (with result type: Unit)
  'all
-  \ s : nat -> c .
-  def (sup s) impl
-  (isBound (sup s, s) und all
-   (\ x : c . isBound (x, s) impl sup (s) <<= x))'
+  \ s : nat -> c
+  . def (sup s) impl
+    (isBound (sup s, s) und all
+     (\ x : c . isBound (x, s) impl sup (s) <<= x))'
 *** Error 130.3-131.74, no typing for 'all
-  \ s : nat -> c .
-  def (sup s) impl
-  (isBound (sup s, s) und all
-   (\ x : c . isBound (x, s) impl sup (s) <<= x))'
+  \ s : nat -> c
+  . def (sup s) impl
+    (isBound (sup s, s) und all
+     (\ x : c . isBound (x, s) impl sup (s) <<= x))'
 ### Hint 134.3, no type match for: all
   with (maximal) type: _v359 ->? Unit
   known types:
@@ -435,11 +435,11 @@ free type bool ::=
     
 ### Hint 192.3-193.47, untypable application (with result type: Unit)
  'all
-  \ f : p -->? p .
-  eq (f (Y f), Y f) und all \ x : p . eq (f x, x) impl Y f <<= x'
+  \ f : p -->? p
+  . eq (f (Y f), Y f) und all \ x : p . eq (f x, x) impl Y f <<= x'
 *** Error 192.3-193.47, no typing for 'all
-  \ f : p -->? p .
-  eq (f (Y f), Y f) und all \ x : p . eq (f x, x) impl Y f <<= x'
+  \ f : p -->? p
+  . eq (f (Y f), Y f) und all \ x : p . eq (f x, x) impl Y f <<= x'
 ### Hint 195.7, not a kind 'p --> p'
 ### Hint 195.5, rebound variable 'f'
 ### Hint 195.20, not a class 'p'

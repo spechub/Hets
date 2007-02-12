@@ -155,7 +155,7 @@ instance Pretty Type where
 instance Pretty TypeScheme where
     pretty (TypeScheme vs t _) = let tdoc = pretty t in
         if null vs then tdoc else
-           fsep [forallDoc, semiDs vs, bullet, tdoc]
+           fsep [forallDoc, semiDs vs, bullet <+> tdoc]
 
 instance Pretty Partiality where
     pretty p = case p of
@@ -260,16 +260,15 @@ printTermRec = FoldRec
            QuantifiedTerm {} -> parens
            _ -> id) t, pretty q, pretty typ]
      , foldQuantifiedTerm = \ _ q vs t _ ->
-           fsep [pretty q, printGenVarDecls vs, bullet, t]
+           fsep [pretty q, printGenVarDecls vs, bullet <+> t]
      , foldLambdaTerm = \ _ ps q t _ ->
             fsep [ lambda
                  , case ps of
                       [p] -> p
                       _ -> fcat $ map parens ps
-                 , case q of
+                 , (case q of
                      Partial -> bullet
-                     Total -> bullet <> text exMark
-                 , t]
+                     Total -> bullet <> text exMark) <+> t]
      , foldCaseTerm = \ _ t es _  ->
             fsep [text caseS, t, text ofS,
                   cat $ punctuate (space <> bar <> space) $
@@ -509,7 +508,7 @@ instance Pretty TypeItem where
         SubtypeDefn p v t f _ ->
             fsep [pretty p, equals,
                   specBraces $ fsep
-                  [pretty v, colon, pretty t, bullet, pretty f]]
+                  [pretty v, colon <+> pretty t, bullet <+> pretty f]]
         AliasType p k t _ ->
             fsep $ pretty p : (case k of
                      Just j | j /= universe -> [colon <+> pretty j]
@@ -565,22 +564,18 @@ instance Pretty Alternative where
 
 instance Pretty Component where
     pretty sel = case sel of
-        Selector n p t _ _ -> pretty n
-                              <+> colon <> pretty p
-                                      <+> pretty t
+        Selector n p t _ _ -> sep [pretty n, colon <> pretty p <+> pretty t]
         NoSelector t -> pretty t
 
 instance Pretty OpId where
-    pretty (OpId n ts _) = pretty n
-                                  <+> noNullPrint ts
-                                      (brackets $ ppWithCommas ts)
+    pretty (OpId n ts _) =
+        sep $ pretty n : if null ts then [] else [brackets $ ppWithCommas ts]
 
 instance Pretty Symb where
     pretty (Symb i mt _) =
-        pretty i <> (case mt of
-                       Nothing -> empty
-                       Just (SymbType t) ->
-                           space <> colon <+> pretty t)
+        sep $ pretty i : case mt of
+                       Nothing -> []
+                       Just (SymbType t) -> [colon <+> pretty t]
 
 instance Pretty SymbItems where
     pretty (SymbItems k syms _ _) =
@@ -588,10 +583,9 @@ instance Pretty SymbItems where
 
 instance Pretty SymbOrMap where
     pretty (SymbOrMap s mt _) =
-        pretty s <> (case mt of
-                       Nothing -> empty
-                       Just t ->
-                           space <> mapsto <+> pretty t)
+        sep $ pretty s : case mt of
+                       Nothing -> []
+                       Just t -> [mapsto <+> pretty t]
 
 instance Pretty SymbMapItems where
     pretty (SymbMapItems k syms _ _) =
