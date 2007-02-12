@@ -7,3 +7,10 @@ a + def a
 f a <= f a <= f a
 m # #
 D A b
+a if b then c else d
+a when b
+a then b
+a else b
+a when
+a then
+a else
