@@ -273,6 +273,7 @@ specBraces d = cat [addLBrace d, rbrace]
 addLBrace :: Doc -> Doc
 addLBrace d = case d of
     Cat k (e : r) -> Cat k $ addLBrace e : r
+    ChangeGlobalAnnos f e -> ChangeGlobalAnnos f $ addLBrace e
     _ -> lbrace <> d
 
 quotes :: Doc -> Doc     -- ^ Wrap document in @\'...\'@
