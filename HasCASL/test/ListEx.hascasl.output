@@ -11,10 +11,10 @@ type Tree1(a : +Type)
      ::= Leaf | Branch (head : Tree a; tail : Tree1 a)
 type  Tree2(a : +Type)
       ::= Leaf | Branch (head : Tree a; tail : Tree2 a)
-free type
+free types
 even a ::= rek (odd a);
 odd a ::= rek (even a)
-free type
+free types
 even2 a ::= rek (odd2 (odd2 a));
 odd2 a ::= rek (even2 a)
 %% Type Constructors -----------------------------------------------------

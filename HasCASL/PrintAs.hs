@@ -408,7 +408,9 @@ instance Pretty BasicItem where
             Instance -> sep [keyword classS <+> keyword instanceS, b]
         GenVarItems l _ -> topSigKey varS <+> printGenVarDecls l
         FreeDatatype l _ ->
-            sep [keyword freeS <+> keyword typeS, semiAnnos pretty l]
+            sep [keyword freeS <+> keyword (typeS ++ case l of 
+              _ : _ : _ -> sS
+              _ -> ""), semiAnnos pretty l]
         GenItems l _ -> sep [ keyword generatedS
                             , (if all (isDatatype . item) l then rmTopKey
                               else specBraces)
