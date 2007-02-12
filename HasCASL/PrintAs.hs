@@ -455,14 +455,16 @@ instance Pretty SigItems where
 
 plTypes :: [Annoted TypeItem] -> String
 plTypes l = case map item l of
-   [TypeDecl (_ : _ : _) _ _] -> sS
    _ : _ : _ -> sS
+   [TypeDecl (_ : _ : _) _ _] -> sS
+   [SubtypeDecl (_ : _ : _) _ _] -> sS
+   [IsoDecl (_ : _ : _) _] -> sS
    _ -> ""
 
 plOps :: [Annoted OpItem] -> String
 plOps l = case map item l of
-   [OpDecl (_ : _ : _) _ _ _] -> sS
    _ : _ : _ -> sS
+   [OpDecl (_ : _ : _) _ _ _] -> sS
    _ -> ""
 
 isSimpleTypeItem :: TypeItem -> Bool

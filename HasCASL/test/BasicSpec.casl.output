@@ -182,7 +182,7 @@ forall p, q : Pos; n : Nat; i, j : Int; x, y, z : Rat
 pred  __<__ : a * a
 ops   __a : b;
       c : b
-type  s, t < s
+types s, t < s
 . a = a;
 var   a : t; a, b : s
 var   a : t; a, b : s
@@ -203,7 +203,7 @@ generated
 {pred  __<__ : a * a
 ops   a : b;
       c : b
-type  s, t < s
+types s, t < s
 type  s
       ::= sort s2, s1 | 
           c | 
@@ -274,8 +274,8 @@ op    __and'__ : s
 type  a
 types a, b, c
 type  a < b
-type  a, b, c, d < e
-type  a = b = c = d = e
+types a, b, c, d < e
+types a = b = c = d = e
 type  a = {x : b . true}
 types s, t
 op    a : s
