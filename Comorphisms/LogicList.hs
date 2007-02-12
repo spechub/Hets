@@ -41,7 +41,6 @@ import qualified Common.Lib.Map as Map
 import Logic.Logic 
 import Logic.Grothendieck
 import CASL.Logic_CASL  -- also serves as default logic
-import Propositional.Logic_Propositional
 import HasCASL.Logic_HasCASL
 #ifdef PROGRAMATICA
 import Haskell.Logic_Haskell
