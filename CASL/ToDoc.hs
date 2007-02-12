@@ -59,7 +59,7 @@ printBASIC_ITEMS fB fS fF sis = case sis of
 printAnnotedBulletFormulas :: (f -> Doc) -> [Annoted (FORMULA f)] -> Doc
 printAnnotedBulletFormulas fF l = vcat $ case l of
     [] -> []
-    _ -> let pp = addBullet . printFormula fF in 
+    _ -> let pp = addBullet . printFormula fF in
          map (printAnnoted pp) (init l)
          ++ [printSemiAnno pp True $ last l]
 
@@ -72,18 +72,18 @@ printSIG_ITEMS fS fF sis = case sis of
          semiAnnos (printSortItem fF) l
     Op_items l _  -> topSigKey (opS ++ pluralS l) <+>
         let pp = printOpItem fF in
-        if null l then empty else if case item $ last l of 
-            Op_decl _ _ a@(_ : _) _ -> case last a of 
+        if null l then empty else if case item $ last l of
+            Op_decl _ _ a@(_ : _) _ -> case last a of
                 Unit_op_attr {} -> True
                 _ -> False
             Op_defn {} -> True
-            _ -> False 
+            _ -> False
         then vcat $ map (printSemiAnno pp True) l else semiAnnos pp l
     Pred_items l _ -> topSigKey (predS ++ pluralS l) <+>
         let pp = printPredItem fF in
-        if null l then empty else if case item $ last l of 
+        if null l then empty else if case item $ last l of
             Pred_defn {} -> True
-            _ -> False 
+            _ -> False
         then vcat $ map (printSemiAnno pp True) l else semiAnnos pp l
     Datatype_items l _ -> topSigKey (typeS ++ pluralS l) <+>
              semiAnnos printDATATYPE_DECL l
@@ -132,7 +132,7 @@ printSortItem mf si = case si of
     Subsort_decl sl sup _ -> fsep $ (punctuate comma $ map idDoc sl)
                                      ++ [less, idDoc sup]
     Subsort_defn s v sup af _ -> fsep [idLabelDoc s, equals,
-              specBraces $ fsep [sidDoc v, colon, idDoc sup,
+              specBraces $ fsep [sidDoc v, colon <+> idDoc sup,
                              printAnnoted (addBullet . printFormula mf) af]]
     Iso_decl sl _ -> fsep $ punctuate (space <> equals) $ map idDoc sl
 
@@ -147,7 +147,7 @@ printQuant q = case q of
 
 printSortedVars :: [VAR] -> SORT -> Doc
 printSortedVars l s =
-    fsep $ (punctuate comma $ map sidDoc l) ++ [colon, idDoc s]
+    fsep $ (punctuate comma $ map sidDoc l) ++ [colon <+> idDoc s]
 
 printVarDecl :: VAR_DECL -> Doc
 printVarDecl (Var_decl l s _) = printSortedVars l s
@@ -164,7 +164,7 @@ printPredHead (Pred_head l _) = printArgDecls l
 printPredItem :: (f -> Doc) -> PRED_ITEM f -> Doc
 printPredItem mf p = case p of
     Pred_decl l t _ -> fsep $ (punctuate comma $ map idLabelDoc l)
-                       ++ [colon, printPredType t]
+                       ++ [colon <+> printPredType t]
     Pred_defn i h f _ ->
         fcat [idLabelDoc i, printPredHead h <> space, equiv <> space,
               printAnnoted (printFormula mf) f]
@@ -359,7 +359,7 @@ printRecord mf = Record
     , foldExtFORMULA = \ _ f -> mf f
     , foldSimpleId = \ _ s -> idApplDoc (simpleIdToId s) []
     , foldQual_var = \ _ v s _ ->
-          parens $ fsep [text varS, sidDoc v, colon, idDoc s]
+          parens $ fsep [text varS, sidDoc v, colon <+> idDoc s]
     , foldApplication = \ _ o l _ -> case o of
           Op_name i -> idApplDoc i l
           Qual_op_name _ _ _ -> let d = parens $ printOpSymb o in
