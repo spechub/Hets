@@ -178,7 +178,7 @@ instance Pretty Symbol where
 instance Pretty RawSymbol where
   pretty rs = case rs of
       AnID i -> pretty i
-      AKindedId k i -> printSK k <> pretty i
-      AQualId i t -> printSK (symbTypeToKind t) <> pretty i <+> colon
+      AKindedId k i -> printSK k [i] <> pretty i
+      AQualId i t -> printSK (symbTypeToKind t) [i] <> pretty i <+> colon
                        <+> pretty t
       ASymbol s -> pretty s

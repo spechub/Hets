@@ -1,10 +1,10 @@
 sort  s, t < t
-op    a, b : s
+ops   a, b : s
 
 %% op __ + __ : s  -> s -> s, idem, assoc, comm;
 op    __+__ : s * s -> s
 op    __+__ : t * t -> t
-op    a, b : t
+ops   a, b : t
 op    c : s = a + b;
 op    d : s = a + a;
 op    e : s * s -> s = __+__;

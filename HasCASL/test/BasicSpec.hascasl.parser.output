@@ -1,7 +1,7 @@
 class Type < Type
 var   t : Type
 class TYPE < Type
-type  Pred __ : -Type -> Type;
+types Pred __ : -Type -> Type;
       Unit : TYPE
 class a, b, c < Type
 class a, b, c < d;
@@ -20,10 +20,10 @@ program all (p : (? s)) : (? Unit) = eq (p, tt);
 program And (x, y : (? Unit)) : (? Unit) = t1 () res t2 ();
 program __ impl __ (x, y : (? Unit)) = eq (x, x And y);
 program
-__ or __ (x, y : (? Unit)) : (? Unit) =
-all (\ r : (? Unit) . ((x impl r) res (y impl r)) impl r);
-ex (p : (? s)) : (? Unit) =
-all (\ r : (? Unit) . all (\ x : s . p (x) impl r) impl r);
+__ or __ (x, y : (? Unit)) : (? Unit)
+= all (\ r : (? Unit) . ((x impl r) res (y impl r)) impl r);
+ex (p : (? s)) : (? Unit)
+= all (\ r : (? Unit) . all (\ x : s . p (x) impl r) impl r);
 ff () : (? Unit) = all (\ r : (? Unit) . r ());
 forall x : t; y : t
 

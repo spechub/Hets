@@ -1,9 +1,9 @@
 class a, b, c, d < Type
-type  r : a;
+types r : a;
       s : a;
       s : b;
       t : c
-type  [__], {__} : a -> b
+types [__], {__} : a -> b
 var   u : [ r ]; v : { s }
 type  tuple3 : a -> b -> c -> d
 var   x : tuple3 r s t

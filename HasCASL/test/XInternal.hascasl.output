@@ -1,6 +1,6 @@
 internal
-{sort  s, t
-fun   o, q : s -> t
+{sorts s, t
+funs  o, q : s -> t
 . o = q;
 }
 %% Type Constructors -----------------------------------------------------

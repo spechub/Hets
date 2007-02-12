@@ -246,13 +246,12 @@ printTermRec = FoldRec
           else idApplDoc applId [idDoc n, parens $ sepByCommas ts]
     , foldApplTerm = \ (ApplTerm o1 o2 _) t1 t2 _ ->
         case (o1, o2) of
-          (ResolvedMixTerm n [] _, TupleTerm ts _)
-              | placeCount n == length ts ->
-                  idApplDoc n $ zipArgs n ts $ map printTerm ts
-          (ResolvedMixTerm n [] _, _) | placeCount n == 1 ->
-              idApplDoc n $ zipArgs n [o2] [t2]
+          -- comment out the following two guards for CASL applications
+          (ResolvedMixTerm n [] _, TupleTerm ts _) | placeCount n == length ts
+            -> idApplDoc n $ zipArgs n ts $ map printTerm ts
+          (ResolvedMixTerm n [] _, _) | placeCount n == 1
+            -> idApplDoc n $ zipArgs n [o2] [t2]
           _ -> idApplDoc applId $ zipArgs applId [o1, o2] [t1, t2]
--- use  "if isSimpleArgTerm o2 then t2 else parens t2" to output real CASL
      , foldTupleTerm = \ _ ts _ -> parens $ sepByCommas ts
      , foldTypedTerm = \ (TypedTerm ot _ _ _) t q typ _ -> fsep [(case ot of
            LambdaTerm {} -> parens
@@ -337,7 +336,7 @@ parenTerm = foldTerm parenTermRec
 
 -- | print an equation with different symbols between 'Pattern' and 'Term'
 printEq0 :: Doc -> (Doc, Doc) -> Doc
-printEq0 s (p, t) = fsep [p, s, t]
+printEq0 s (p, t) = sep [p, hsep [s, t]]
 
 printGenVarDecls :: [GenVarDecl] -> Doc
 printGenVarDecls = fsep . punctuate semi . map
@@ -412,7 +411,7 @@ instance Pretty BasicItem where
         FreeDatatype l _ ->
             sep [keyword freeS <+> keyword typeS, semiAnnos pretty l]
         GenItems l _ -> sep [ keyword generatedS
-                            , (if all (isDatatype . item) l then id
+                            , (if all (isDatatype . item) l then rmTopKey
                               else specBraces)
                               . vcat $ map (printAnnoted pretty) l]
         AxiomItems vs fs _ ->
@@ -439,10 +438,11 @@ instance Pretty OpBrand where
 instance Pretty SigItems where
     pretty si = case si of
         TypeItems i l _ -> let b = semiAnnos pretty l in case i of
-            Plain -> topSigKey (if all (isSimpleTypeItem . item) l
-                                then sortS else typeS) <+> b
-            Instance -> sep [keyword typeS <+> keyword instanceS, b]
-        OpItems b l _ -> noNullPrint l $ topSigKey (show b)
+            Plain -> topSigKey ((if all (isSimpleTypeItem . item) l
+                                then sortS else typeS) ++ plTypes l) <+> b
+            Instance ->
+              sep [keyword typeS <+> keyword (instanceS ++ plTypes l), b]
+        OpItems b l _ -> noNullPrint l $ topSigKey (show b ++ plOps l)
             <+> let po = (prettyOpItem $ isPred b) in
                 if case item $ last l of
                   OpDecl _ _ a@(_ : _) _ -> case last a of
@@ -452,6 +452,18 @@ instance Pretty SigItems where
                   _ -> False
                 then vcat (map (printSemiAnno po True) l)
                 else semiAnnos po l
+
+plTypes :: [Annoted TypeItem] -> String
+plTypes l = case map item l of
+   [TypeDecl (_ : _ : _) _ _] -> sS
+   _ : _ : _ -> sS
+   _ -> ""
+
+plOps :: [Annoted OpItem] -> String
+plOps l = case map item l of
+   [OpDecl (_ : _ : _) _ _ _] -> sS
+   _ : _ : _ -> sS
+   _ -> ""
 
 isSimpleTypeItem :: TypeItem -> Bool
 isSimpleTypeItem ti = case ti of
@@ -570,7 +582,7 @@ instance Pretty Symb where
 
 instance Pretty SymbItems where
     pretty (SymbItems k syms _ _) =
-        printSK k <> ppWithCommas syms
+        printSK k syms <> ppWithCommas syms
 
 instance Pretty SymbOrMap where
     pretty (SymbOrMap s mt _) =
@@ -581,10 +593,12 @@ instance Pretty SymbOrMap where
 
 instance Pretty SymbMapItems where
     pretty (SymbMapItems k syms _ _) =
-        printSK k <> ppWithCommas syms
+        printSK k syms <> ppWithCommas syms
 
 -- | print symbol kind
-printSK :: SymbKind -> Doc
-printSK k =
+printSK :: SymbKind -> [a] -> Doc
+printSK k l =
     case k of Implicit -> empty
-              _ -> keyword (drop 3 $ show k) <> space
+              _ -> keyword (drop 3 (show k) ++ case l of
+                    _ : _ : _ -> sS
+                    _ -> "") <> space

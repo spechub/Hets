@@ -12,8 +12,8 @@ sort  Unit
 %% type aliases
 sort 
 sort 
-pred  true, false : Unit
-pred  __/\__, __\/__, __=>__, __if__, __<=>__ : Unit * Unit
+preds true, false : Unit
+preds __/\__, __\/__, __=>__, __if__, __<=>__ : Unit * Unit
 pred  not : Unit
 pred  __=__ : s * s
       %% =e=
@@ -30,7 +30,7 @@ sort
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% "pred p args = e" abbreviates "op p args :? unit = e"
 %% CASL requires "<=>" for pred-defn and disallows "()" as result
-op    def, tt : Pred s
+ops   def, tt : Pred s
 var   x : s
 program
 def = \ x : s . ();
@@ -277,8 +277,8 @@ free type bool ::=
     
 ### Hint 98.39-99.45, untypable application (with result type: Pred Unit)
  'all \ r : Pred Unit . (all \ x : s . p x impl r) impl r'
-*** Error 98.37, no typing for 'program ex (p : Pred s) : Pred Unit =
-          all \ r : Pred Unit . (all \ x : s . p x impl r) impl r'
+*** Error 98.37, no typing for 'program ex (p : Pred s) : Pred Unit
+          = all \ r : Pred Unit . (all \ x : s . p x impl r) impl r'
 ### Hint 101.29, no type match for: all
   with (maximal) type: _v303 ->? Pred Unit
   known types:
