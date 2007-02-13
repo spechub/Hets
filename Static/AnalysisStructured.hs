@@ -820,7 +820,7 @@ ana_ren1 _ lenv _pos (GMorphism r sigma ind1 mor ind2)
              ++ showDoc forbiddenSys "") pos
 -}
   mor2 <- comp lid2 mor mor1
-  return $ GMorphism r sigma ind1 mor2 ind2
+  return $ GMorphism r sigma ind1 mor2 0
 
 ana_ren1 lg _ _ mor (G_logic_translation (Logic_code tok src tar pos1)) = do
   let adj = adjustPos pos1
