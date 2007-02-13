@@ -133,14 +133,16 @@ anaCompType tys (DataPat _ tArgs _ _) t te = do
 
 checkMonomorphRecursion :: Type -> TypeEnv -> DataPat -> Result ()
 checkMonomorphRecursion t te (DataPat i _ _ rt) =
-    if occursIn (typeMap te) i t then
-       if lesserType te t rt || lesserType te rt t then return ()
+    if all (\ ty -> lesserType te ty rt || lesserType te rt ty)
+       $ findSubTypes (typeMap te) i t then return ()
        else Result [Diag Error  ("illegal polymorphic recursion"
                                  ++ expected rt t) $ getRange t] Nothing
-    else return ()
 
-occursIn :: TypeMap -> TypeId -> Type -> Bool
-occursIn tm i = any (relatedTypeIds tm i) . Set.toList . idsOf (const True)
+findSubTypes :: TypeMap -> TypeId -> Type -> [Type]
+findSubTypes tm i t = case getTypeAppl t of
+    (TypeName j _ _, args) -> if relatedTypeIds tm i j then [t]
+                              else concatMap (findSubTypes tm i) args
+    (topTy, args) -> concatMap (findSubTypes tm i) $ topTy : args
 
 relatedTypeIds :: TypeMap -> TypeId -> TypeId -> Bool
 relatedTypeIds tm i1 i2 =
