@@ -8,65 +8,6 @@ Integrate (presentations of) models into Hets
 Signatures versus theories
 ==========================
 
-some notions:
-
-a simple theoroidal comorphism maps
-  signatures to theories
-  sentences to sentences
-  the mapping of theories is induced by these maps
-
-an arbitrary theoroidal comorphism maps
-  theories to theories
-  sentences to sentences
-  problem here: is doable, but more complicated than the simple case.
-    do we really need it?
-
-a specification frame morphism maps
-  theories to theories
-  problem here: how to translate goals? 
-    we need some awful theory difference computations
-
-general questions:
-- can we stay with simple theoroidal comorphisms, 
-  or do we need non-simple ones?
-- can we stay with sentence-to-sentence translation,
-  or do we need something else?
-
-
-problems with simple theoroidal comorphisms:
-- CASL to Isabelle: free types are axioms in CASL, sig elements in Isabelle
-  solution 1
-    free types are signature elements in CASL
-    two-level construction of CASL:
-    plain CASL sigs as in RefMan
-    CASL sig = plain CASL theory = plain CASL sig + set of sort gen axioms
-    CASL theory = CASL sig + set of axioms
-  solution 2
-    free types are axioms in Isabelle
-  solution 3
-    non-simple theoroidal comorphisms
-- CASL to HasCASL
-  In HasCASL, datatypes must be parts of the signature
-    (needed for analysis of program blocks)
-  If CASL adopts the same solution, we get a simple theoroidal comorphism
-  If CASL does not so, we get a non-simple theoroidal comorphism
-- HasCASL to Haskell
-  no problem, since constructors are already determined by signature
-  and program blocks lead to complete definition of a function
-- CASLtoTopSort: needs derived sig mors
-    s<t  included in s<t<u is mapped to
-    sort t; pred s:t  "included in"  sort u; preds s,t:u
-   This "included" is only a derived signature morphism
-   It would be nice to have an institution independent notion
-     of derived sig mor here
-- CASLtoSPASS:
-  sort gen axioms need to become signature parts
-  they cannot be translated to axioms!  => semi-comorphism
-     better would be a kind of partial comorphism 
-       (after all, some sentences *can* be translated)
-
-problems with theoroidal comorphisms (i.e. sentence to sentence translation)
-- ?
 
 
 Heterogeneous Theory
