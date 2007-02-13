@@ -1,4 +1,4 @@
-sorts Nat < Int;
+types Nat < Int;
       Int < Rat
 op    0 : Nat
 op    0 : Rat

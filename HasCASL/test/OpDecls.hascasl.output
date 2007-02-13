@@ -1,4 +1,4 @@
-sorts s, t < t
+types s, t < t
 ops   a, b : s
 
 %% op __ + __ : s  -> s -> s, idem, assoc, comm;

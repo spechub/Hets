@@ -1,4 +1,4 @@
-sort  a
+type  a
 op    f : a -> a
 program f (v @ (var _ : _v1) : a) = v;
 %% Type Constructors -----------------------------------------------------

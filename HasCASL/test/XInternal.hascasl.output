@@ -1,5 +1,5 @@
 internal
-{sorts s, t
+{types s, t
 funs  o, q : s -> t
 . o = q;
 }

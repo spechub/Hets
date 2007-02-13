@@ -1,4 +1,4 @@
-sort  t
+type  t
 op    f : ? t -> t
 op    g : t -> (? t)
 ops   a, b : t

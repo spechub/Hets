@@ -22,11 +22,11 @@ forall x : t; y : t
 
 %(..)%
 . x = y;
-sort  s
+type  s
 op    a : (? s)
 type  Data1 ::= a | b | c
 type  Data2
-      ::= Cons21 (Data1; Data2) | Cons22 (Data2; Data1) | sort Data1
+      ::= Cons21 (Data1; Data2) | Cons22 (Data2; Data1) | type Data1
 type  Data3
       ::= Cons31 (sel1 :? Data1; sel2 :? Data2) | 
           Cons32 (sel2 :? Data2; sel1 :? Data1)

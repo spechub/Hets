@@ -17,7 +17,7 @@ var   x : a; y : Type; x : y
 var  
 var   x : b
 var   x < t
-sort 
+type 
 %% Classes ---------------------------------------------------------------
 a < (b, d)
 b < d

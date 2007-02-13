@@ -1,7 +1,7 @@
 type  p : +Type -> Type := \ a : +Type . Pred (Pred a)
       %% should be correct
-sort 
-sort 
+type 
+type 
 type  m : +Type -> Type := \ b : +Type . b
       %% should be correct
 %% Type Constructors -----------------------------------------------------

@@ -1,4 +1,4 @@
-sorts s, t
+types s, t
 op    snd : s * t -> t
 program snd (x, y) = y;
 program snd (x, y) = y;

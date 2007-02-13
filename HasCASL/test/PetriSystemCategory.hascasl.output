@@ -1,4 +1,4 @@
-sort  Nat
+type  Nat
 ops   0, 1 : Nat
 ops   __+__, __-__, min : Nat * Nat -> Nat
 preds __>=__, __<=__, __>__ : Nat * Nat
@@ -59,7 +59,7 @@ ops   __::__-->__ : Pred ((S ->? MultiSet V) * Set S * Set V);
       linMap : (S ->? MultiSet V) -> (MultiSet S ->? MultiSet V)
 op    __intersection__
       : MultiSet Elem * MultiSet Elem -> MultiSet Elem, assoc, comm, idem
-sorts P, T
+types P, T
 type  Net =
       {(p, pre, post) : Set P * (T ->? MultiSet P) * (T ->? MultiSet P)
       . (dom pre = dom post /\

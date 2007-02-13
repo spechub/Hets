@@ -18,9 +18,9 @@ var   o2 : m tuple1
 var   o3 : m tuple3
 var   nt : a -> (b -> c) -> c -> d
 var   o4 : nt r List s
-sorts s1, r1, t1 < t
+types s1, r1, t1 < t
 types s2 = r2 = t2
-sort  s3 = {x : t . x = x}
+type  s3 = {x : t . x = x}
 %% Classes ---------------------------------------------------------------
 a < Type
 b < Type
