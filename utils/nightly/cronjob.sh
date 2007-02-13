@@ -1,5 +1,8 @@
 #!/bin/bash -xe
 
+GHCRTS='-H300m -M1g'
+export GHCRTS
+
 makeUni ()
 {
 date
@@ -30,7 +33,7 @@ rm -rf HetCATS
 cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:/repository \
     co -P HetCATS
 cd HetCATS
-$MAKE package_clean
+##$MAKE package_clean
 time $MAKE
 time $MAKE check
 $MAKE release
