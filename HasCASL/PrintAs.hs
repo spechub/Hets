@@ -204,7 +204,7 @@ hasRightQuant t = case t of
     QuantifiedTerm {} -> True
     LambdaTerm {} -> True
     CaseTerm {} -> True
-    LetTerm {} -> True
+    LetTerm Let _ _ _ -> True
     ResolvedMixTerm n ts _ | endPlace n && placeCount n == length ts
         -> hasRightQuant (last ts)
     ApplTerm (ResolvedMixTerm n [] _) t2 _ | endPlace n ->
@@ -408,7 +408,7 @@ instance Pretty BasicItem where
             Instance -> sep [keyword classS <+> keyword instanceS, b]
         GenVarItems l _ -> topSigKey varS <+> printGenVarDecls l
         FreeDatatype l _ ->
-            sep [keyword freeS <+> keyword (typeS ++ case l of 
+            sep [keyword freeS <+> keyword (typeS ++ case l of
               _ : _ : _ -> sS
               _ -> ""), semiAnnos pretty l]
         GenItems l _ -> sep [ keyword generatedS
