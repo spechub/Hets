@@ -169,52 +169,13 @@ Recognize guarded fragment of CASL:
 Till
 ************************************************
 
-Integrate provers
-  Look at PROSPER toolkit
-  consistency: see IJCAR-workshop on non-provability in Cork
-  IJCAR workshop about logical frameworks and meta-languages
-Integrate CCC
-Encodings
-
-
-Errors:
-Klaus' wayfinding example
-
-
-UniForM workbench:
-first steps towards CASL instance, using ATerms and re-using MMISS instance
-variants for specs (needed for DOLCE: CASL variant, DL variant, ...)
-
-Integration of MAYA and Isabelle/HOL (global HOL-Coding of
-  Grothendieck logic)
-  + for TAS: reflection of HOL in HOL, to be composed with encodings
-    (i.e. signatures, axioms, signature morphisms in HOL,
-          re-use ML signatures) (Einar)
-
-Display Specs as daVinci subgraphs
-
-User interface
---------------
-Logic graph window
-Input text window
-Development graph window
-Prover windows
-
-BinInt.casl: revealing in Int1 does not work correctly
+see http://trac.informatik.uni-bremen.de:8080/hets
+user till
 
 
 ************************************************
 FOR STUDENTS
 ************************************************
-
-Hets interactive (provide cmd line interface, but hold loaded libraries in memory, provide switch to context of spec, and type checking of expressions, interaction with emacs mode)
-Packaging of installation
-
-GUI (vgl. VSE)
-  with Eclipse, WXHaskell or GTk?
-  how to integrate with event system of UniForM workbench?
-integrate graphviz (or use Java interface for racer? or Isabelle browser? or...?)
-  this interacts with GUI!
 
 Data.Serizable (only when ghc supports it) better: rely on pointer equality
 XML interface
