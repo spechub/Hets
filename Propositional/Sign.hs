@@ -5,9 +5,9 @@ Description :  Instance of class Logic for propositional logic
 Copyright   :  (c) Dominik Luecke, Uni Bremen 2007
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  till@tzi.de
-Stability   :  provisional
-Portability :  non-portable (imports Logic.Logic)
+Maintainer  :  luecke@tzi.de
+Stability   :  experimental
+Portability :  portable
 
 Definition of signatures for propositional logic
 -}
