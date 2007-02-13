@@ -440,7 +440,7 @@ instance Pretty SigItems where
     pretty si = case si of
         TypeItems i l _ -> let b = semiAnnos pretty l in case i of
             Plain -> topSigKey ((if all (isSimpleTypeItem . item) l
-                                then sortS else typeS) ++ plTypes l) <+> b
+                                then typeS else typeS) ++ plTypes l) <+> b
             Instance ->
               sep [keyword typeS <+> keyword (instanceS ++ plTypes l), b]
         OpItems b l _ -> noNullPrint l $ topSigKey (show b ++ plOps l)
@@ -561,7 +561,7 @@ instance Pretty Alternative where
 -- comment out the following line to output real CASL
             ([NoSelector (TypeToken t)], Total) | isSimpleId n -> pretty t
             _ -> parens $ semiDs l) cs) <> pretty p
-        Subtype l _ -> text (if all isSimpleType l then sortS else typeS)
+        Subtype l _ -> text (if all isSimpleType l then typeS else typeS)
                        <+> ppWithCommas l
 
 instance Pretty Component where
