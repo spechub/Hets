@@ -25,7 +25,7 @@ CLEAN_PATH = . utils/itcor \
     Common/Lib Common/ATerm Logic CASL CASL/CCC CASL/CompositionTable \
     Syntax Static GUI HasCASL Haskell Modal CoCASL COL ConstraintCASL \
     CspCASL ATC Proofs Comorphisms Isabelle Driver \
-    Taxonomy CASL_DL SPASS OWL_DL OMDoc PGIP $(PFE_PATHS) \
+    Taxonomy CASL_DL SPASS OWL_DL OMDoc PGIP Propositional $(PFE_PATHS) \
     $(addprefix haifa-lite/src/, $(HAIFA_PATHS))
 
 # the 'replacing spaces' example was taken from the (GNU) Make info manual
