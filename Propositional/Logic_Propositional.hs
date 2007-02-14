@@ -31,15 +31,15 @@ instance Language Propositional where
          \http://en.wikipedia.org/w/index.php?title=Propositional_logic"
 
 instance Category Propositional Sign Morphism where
-    -- | Identity morhpism
+    -- Identity morhpism
     ide Propositional = idMor
-    -- | Returns the domain of a morphism
+    -- Returns the domain of a morphism
     dom Propositional = source
-    -- | Returns the codomain of a morphism
+    -- Returns the codomain of a morphism
     cod Propositional = target
-    -- | all sets are legal objects
+    -- all sets are legal objects
     legal_obj Propositional s = isLegalSignature s
-    -- | tests if the morphism is ok
+    -- tests if the morphism is ok
     legal_mor Propositional f = isLegalMorphism f
-    -- | composition of morphisms
+    -- composition of morphisms
     comp Propositional f g = composeMor f g
