@@ -186,12 +186,12 @@ anaddTypeVarDecl (TypeArg i v vk _ _ s ps) = do
         tvs <- gets localTypeVars
         case Map.lookup i tvs of
             Nothing -> do
-                addDiags [mkDiag Warning "missing kind for type variable " i]
+                addDiags [mkDiag Error "unknown type variable " i]
                 let dvk = VarKind universe
                 addLocalTypeVar True (TypeVarDefn v dvk rStar c) i
                 return $ Just $ TypeArg i v dvk rStar c s ps
             Just (TypeVarDefn v0 dvk rk _) -> do
-                addLocalTypeVar True (TypeVarDefn v0 dvk rk c) i
+                addLocalTypeVar False (TypeVarDefn v0 dvk rk c) i
                 return $ Just $ TypeArg i v0 dvk rk c s ps
 
 -- | add an analysed type argument (warn on redeclared types)

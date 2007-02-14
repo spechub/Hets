@@ -22,4 +22,3 @@ generated type CTree(a : Type) ::=
                                                       %(ga_CTree)%
 %% Diagnostics -----------------------------------------------------------
 ### Hint 2.5, is type variable 'a'
-### Hint 3.22, rebound type variable 'a'
