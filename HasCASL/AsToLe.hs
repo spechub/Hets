@@ -173,9 +173,9 @@ anaBasicItem ga (ProgItems l ps) =
 anaBasicItem _ (FreeDatatype l ps) =
     do al <- mapAnMaybe ana1Datatype l
        tys <- mapM (dataPatToType . item) al
-       mapAnMaybe (anaDatatype Free Plain tys) al
+       ul <- mapAnMaybe (anaDatatype Free Plain tys) al
        addDataSen tys
-       return $ FreeDatatype l ps
+       return $ FreeDatatype ul ps
 anaBasicItem ga (GenItems l ps) =
     do ul <- mapAnM (anaSigItems ga Generated) l
        return $ GenItems ul ps
