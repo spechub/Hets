@@ -19,3 +19,8 @@ import Common.Id
 
 data Sign = Sign {items :: Set.Set Id}
           deriving (Eq, Show)
+
+-- | determines whether a signature is vaild
+-- all sets are ok, so glued to true
+isLegalSignature :: Sign -> Bool
+isLegalSignature _ = True

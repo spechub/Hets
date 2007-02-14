@@ -38,5 +38,8 @@ instance Category Propositional Sign Morphism where
     -- | Returns the codomain of a morphism
     cod Propositional = target
     -- | all sets are legal objects
-    legal_obj _ _ = True
-    
+    legal_obj Propositional s = isLegalSignature s
+    -- | tests if the morphism is ok
+    legal_mor Propositional f = isLegalMorphism f
+    -- | composition of morphisms
+    comp Propositional f g = composeMor f g
