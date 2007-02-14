@@ -378,15 +378,17 @@ makeVarDecls vs ps t q = zipWith (\ v p -> VarDecl v t Comma $ tokPos p)
 -- | either like 'varDecls' or declared type variables.
 -- A 'GenVarDecl' may later become a 'GenTypeVarDecl'.
 genVarDecls:: AParser st [GenVarDecl]
-genVarDecls = do (vs, ps) <- extVar var `separatedBy` anComma
-                 if allIsInVar vs then
-                    fmap (map GenVarDecl)
-                             (varDeclType
-                              (map ( \ (i, _) -> i) vs) ps)
-                      <|> fmap (map GenTypeVarDecl)
-                               (typeKind vs ps)
-                     else fmap (map GenTypeVarDecl)
-                               (typeKind vs ps)
+genVarDecls = fmap (map (\ g -> case g of
+                    GenTypeVarDecl (TypeArg i v MissingKind _ n s ps) ->
+                      GenTypeVarDecl (TypeArg i v (VarKind universe)
+                                              rStar n s ps)
+                    _ -> g)) $ do
+   (vs, ps) <- extVar var `separatedBy` anComma
+   let other = fmap (map GenTypeVarDecl) (typeKind vs ps)
+   if allIsInVar vs then fmap (map GenVarDecl)
+          (varDeclType (map ( \ (i, _) -> i) vs) ps)
+          <|> other
+     else other
 
 -- * patterns
 
@@ -401,7 +403,7 @@ primPattern :: TokenMode -> AParser st Pattern
 primPattern b = tokenPattern b
                 <|> mkBrackets pattern (BracketTerm Squares)
                 <|> mkBraces pattern (BracketTerm Braces)
-                <|> bracketParser 
+                <|> bracketParser
                         (pattern <|> varTerm <|> qualOpName)
                         oParenT cParenT anComma (BracketTerm Parens)
 

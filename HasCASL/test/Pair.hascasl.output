@@ -43,6 +43,3 @@ program (g : Pair _v25 _v27 ->? _v25)
         ((Pair : _v25 * _v27 -> Pair _v25 _v27) (a, b) : Pair _v25 _v27)
         : _v25
         = a                                               %(pe_g)%
-%% Diagnostics -----------------------------------------------------------
-*** Error 1.5, unknown type variable  'a'
-*** Error 1.8, unknown type variable  'b'
