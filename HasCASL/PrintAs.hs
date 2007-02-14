@@ -49,12 +49,15 @@ instance Pretty a => Pretty (AnyKind a) where
                           , funArrow
                           , pretty k2]
 
+varOfTypeArg :: TypeArg -> Id
+varOfTypeArg (TypeArg i _ _ _ _ _ _) = i
+
 instance Pretty TypePattern where
     pretty tp = case tp of
         TypePattern name args _ -> pretty name
-                                 <> fsep (map (parens . pretty) args)
+            <+> fsep (map (pretty . varOfTypeArg) args)
         TypePatternToken t -> pretty t
-        MixfixTypePattern ts -> fsep (map (pretty) ts)
+        MixfixTypePattern ts -> fsep $ map pretty ts
         BracketTypePattern k l _ -> bracket k $ ppWithCommas l
         TypePatternArg t _ -> parens $ pretty t
 
@@ -345,7 +348,7 @@ printGenVarDecls = fsep . punctuate semi . map
        ppWithCommas (map ( \ (GenVarDecl (VarDecl v _ _ _)) -> v) l)
        <> printVarDeclType t
      GenTypeVarDecl (TypeArg _ e c _ _ _ _) : _ ->
-       ppWithCommas (map ( \ (GenTypeVarDecl (TypeArg v _ _ _ _ _ _)) -> v) l)
+       ppWithCommas (map ( \ (GenTypeVarDecl v) -> varOfTypeArg v) l)
        <> printVarKind e c
      _ -> error "printGenVarDecls") . groupBy sameType
 
@@ -413,10 +416,10 @@ instance Pretty BasicItem where
             sep [keyword freeS <+> keyword (typeS ++ case l of
               _ : _ : _ -> sS
               _ -> ""), semiAnnos pretty l]
-        GenItems l _ -> sep [ keyword generatedS
-                            , (if all (isDatatype . item) l then rmTopKey
-                              else specBraces)
-                              . vcat $ map (printAnnoted pretty) l]
+        GenItems l _ -> let gkw = keyword generatedS in
+            (if all (isDatatype . item) l then \ i -> gkw <+> rmTopKey i
+             else \ i -> sep [gkw, specBraces i])
+             $ vcat $ map (printAnnoted pretty) l
         AxiomItems vs fs _ ->
             sep [ if null vs then empty else
                     forallDoc <+> printGenVarDecls vs
@@ -513,11 +516,9 @@ instance Pretty TypeItem where
             fsep [pretty p, equals,
                   specBraces $ fsep
                   [pretty v, colon <+> pretty t, bullet <+> pretty f]]
-        AliasType p k t _ ->
-            fsep $ pretty p : (case k of
-                     Just j | j /= universe -> [colon <+> pretty j]
-                     _ -> [])
-                  ++ [text assignS <+> printPseudoType t]
+        AliasType p _ (TypeScheme l t _) _ ->
+            fsep $ pretty p : map (pretty . varOfTypeArg) l
+                  ++ [text assignS <+> pretty t]
         Datatype t -> pretty t
 
 prettyTypeScheme :: Bool -> TypeScheme -> Doc
