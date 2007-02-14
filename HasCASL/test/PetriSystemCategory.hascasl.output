@@ -3,7 +3,7 @@ ops   0, 1 : Nat
 ops   __+__, __-__, min : Nat * Nat -> Nat
 preds __>=__, __<=__, __>__ : Nat * Nat
 free type Boolean ::= True | False
-var   S, V : Type
+vars  S, V : Type
 type  Set : Type -> Type := \ S : Type . S ->? Unit
 ops   emptySet : Set S;
       {__} : S -> Set S;
@@ -36,7 +36,7 @@ var   a : Type
 ops   sumN : (Nat ->? Nat) -> Nat -> Nat;
       sumSet : Set Nat ->? Nat;
       sum : (a ->? Nat) -> Pred a ->? Nat
-var   S, V, U : Type
+vars  S, V, U : Type
 type  Map : Type -> Type := \ S : Type . S ->? S
 ops   dom : (S ->? V) -> Set S;
       range : (S ->? V) -> Set V;
@@ -53,7 +53,7 @@ ops   dom : (S ->? V) -> Set S;
       __intersectionMap__, __unionMap__
       : (S ->? V) * (S ->? V) -> (S ->? V);
       __restrict__ : (S ->? V) * Set S -> (S ->? V)
-var   S, V : Type
+vars  S, V : Type
 ops   __::__-->__ : Pred ((S ->? MultiSet V) * Set S * Set V);
       freeMap : Map S -> MapMultiSet S;
       linMap : (S ->? MultiSet V) -> (MultiSet S ->? MultiSet V)

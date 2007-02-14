@@ -13,7 +13,7 @@ type  t : a
 class h < a
 class h < c
 type  [__] : a -> b
-var   x : a; y : Type; x : y
+vars  x : a; y : Type; x : y
 var  
 var   x : b
 var   x < t

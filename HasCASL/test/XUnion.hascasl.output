@@ -1,4 +1,4 @@
-var   S, N, E : Type
+vars  S, N, E : Type
 type  Set : Type -> Type := \ S : Type . S ->? Unit
 type  Graph : Type -> Type -> Type
       := \ (N : Type) (E : Type) . Set N * (E ->? N) * (E ->? N)

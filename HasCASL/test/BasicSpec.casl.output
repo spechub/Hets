@@ -184,8 +184,8 @@ ops   __a : b;
       c : b
 types s, t < s
 . a = a;
-var   a : t; a, b : s
-var   a : t; a, b : s
+vars  a : t; a, b : s
+vars  a : t; a, b : s
 . a = a
 . a = a forall a : t; a, b : s . a = a
 . a = a;
@@ -223,7 +223,7 @@ ops   a : b; %(bla4)%
       c : d %(bla5)%
 
 %(bla6)%
-var   a : t; a, b : s
+vars  a : t; a, b : s
 
 %(bla8-ignored)%
 %(type)%
@@ -324,7 +324,7 @@ ops   f, g : s ->? s;
       {__} : s -> s
 preds p : ();
       q : s
-var   x, y, z : s; r1, r2 : t
+vars  x, y, z : s; r1, r2 : t
 . false;
 var   x : s
 . true

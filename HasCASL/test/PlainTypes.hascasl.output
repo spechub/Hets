@@ -4,7 +4,7 @@ types r : a;
       s : b;
       t : c
 types [__], {__} : a -> b
-var   u : [ r ]; v : { s }
+vars  u : [ r ]; v : { s }
 type  tuple3 : a -> b -> c -> d
 var   x : tuple3 r s t
 var   y : tuple3 r s

@@ -406,7 +406,9 @@ instance Pretty BasicItem where
         ClassItems i l _ -> let b = semiAnnos pretty l in case i of
             Plain -> topSigKey classS <+> b
             Instance -> sep [keyword classS <+> keyword instanceS, b]
-        GenVarItems l _ -> topSigKey varS <+> printGenVarDecls l
+        GenVarItems l _ -> topSigKey (varS ++ case l of
+            _ : _ : _ -> sS
+            _ -> "") <+> printGenVarDecls l
         FreeDatatype l _ ->
             sep [keyword freeS <+> keyword (typeS ++ case l of
               _ : _ : _ -> sS
