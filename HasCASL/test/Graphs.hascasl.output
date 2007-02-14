@@ -1,7 +1,7 @@
 vars  S, T : Type
 types Bool;
-      Pred : -Type -> Type := \ S : -Type . S ->? Unit;
-      Set : Type -> Type := \ S : Type . S ->? Unit
+      Pred S := S ->? Unit;
+      Set S := S ->? Unit
 ops   True, False : Bool
 ops   emptySet : Set S;
       {__} : S -> Set S;

@@ -197,8 +197,8 @@ type  s
       ::= type s2, s1 | c | c (a; a : t; b : t; a : t; d : t) | c (a)?
 free type
 s ::= type s2, s1 | c | c (a; a : t; b : t; d : t) | c (a)?
-generated
-type s ::= type s2, s1 | c | c (a; a : t; b : t; d : t) | c (a)?
+generated type s
+               ::= type s2, s1 | c | c (a; a : t; b : t; d : t) | c (a)?
 generated
 {pred  __<__ : a * a
 ops   a : b;

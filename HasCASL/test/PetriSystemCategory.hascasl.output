@@ -4,7 +4,7 @@ ops   __+__, __-__, min : Nat * Nat -> Nat
 preds __>=__, __<=__, __>__ : Nat * Nat
 free type Boolean ::= True | False
 vars  S, V : Type
-type  Set : Type -> Type := \ S : Type . S ->? Unit
+type  Set S := S ->? Unit
 ops   emptySet : Set S;
       {__} : S -> Set S;
       __isIn__ : S * Set S ->? Unit;
@@ -15,7 +15,7 @@ ops   emptySet : Set S;
       __disjointUnion__ : Set S * Set S -> Set (S * Boolean);
       injl, injr : S -> S * Boolean
 var   Elem : Type
-type  MultiSet : Type -> Type := \ Elem : Type . Elem ->? Nat
+type  MultiSet Elem := Elem ->? Nat
 ops   __isIn__ : Pred (Elem * MultiSet Elem);
       __<=__ : Pred (MultiSet Elem * MultiSet Elem);
       {} : MultiSet Elem;
@@ -30,14 +30,13 @@ forall B : MultiSet Elem; S : Set Elem
 . let S = MultiSetToSet B in
   forall x : Elem . x isIn S <=> freq (x, B) > 0;
 var   S : Type
-type  MapMultiSet : Type -> Type
-      := \ S : Type . MultiSet S ->? MultiSet S
+type  MapMultiSet S := MultiSet S ->? MultiSet S
 var   a : Type
 ops   sumN : (Nat ->? Nat) -> Nat -> Nat;
       sumSet : Set Nat ->? Nat;
       sum : (a ->? Nat) -> Pred a ->? Nat
 vars  S, V, U : Type
-type  Map : Type -> Type := \ S : Type . S ->? S
+type  Map S := S ->? S
 ops   dom : (S ->? V) -> Set S;
       range : (S ->? V) -> Set V;
       image : (S ->? V) -> Set S -> Set V;

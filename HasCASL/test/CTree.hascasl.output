@@ -1,7 +1,6 @@
 type  Nat
 var   a : Type
-generated
-type CTree(a : Type) ::= leaf a | branch (Nat ->? CTree a)
+generated type CTree a ::= leaf a | branch (Nat ->? CTree a)
 %% Type Constructors -----------------------------------------------------
 CTree
 : Type -> Type
