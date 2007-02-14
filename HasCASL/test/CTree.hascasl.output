@@ -1,0 +1,26 @@
+type  Nat
+var   a : Type
+generated
+type CTree(a : Type) ::= leaf a | branch (Nat ->? CTree a)
+%% Type Constructors -----------------------------------------------------
+CTree
+: Type -> Type
+ %[generated type CTree(a : Type) ::=
+                  leaf : a -> CTree a(a)
+                  branch : (Nat ->? CTree a) -> CTree a(Nat ->? CTree a)]%
+Nat : Type
+%% Type Variables --------------------------------------------------------
+a  : Type %(var_1)%
+%% Assumptions -----------------------------------------------------------
+branch
+: forall a : Type . (Nat ->? CTree a) -> CTree a
+%(construct CTree)%
+leaf : forall a : Type . a -> CTree a %(construct CTree)%
+%% Sentences -------------------------------------------------------------
+generated type CTree(a : Type) ::=
+               leaf : a -> CTree a(a)
+               branch : (Nat ->? CTree a) -> CTree a(Nat ->? CTree a)
+                                                      %(ga_CTree)%
+%% Diagnostics -----------------------------------------------------------
+### Hint 2.5, is type variable 'a'
+### Hint 3.22, rebound type variable 'a'

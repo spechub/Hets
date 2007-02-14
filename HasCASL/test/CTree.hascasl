@@ -1,0 +1,3 @@
+type Nat
+var a: Type
+generated type CTree a ::= leaf a | branch (Nat ->? CTree a)
