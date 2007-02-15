@@ -287,7 +287,7 @@ Modal_files = Modal/AS_Modal.hs Modal/ModalSign.hs
 ConstraintCASL_files = ConstraintCASL/AS_ConstraintCASL.hs
 CoCASL_files = CoCASL/AS_CoCASL.hs CoCASL/CoCASLSign.hs
 COL_files = COL/AS_COL.hs COL/COLSign.hs
-CspCASL_files = CspCASL/AS_CSP_CASL.hs CspCASL/SignCSP.hs
+CspCASL_files = CspCASL/AS_CspCASL_Process.hs CspCASL/AS_CSP_CASL.hs CspCASL/SignCSP.hs 
 
 CASL_DL_files = CASL_DL/AS_CASL_DL.hs CASL_DL/Sign.hs
 

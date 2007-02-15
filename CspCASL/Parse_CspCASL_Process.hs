@@ -286,7 +286,7 @@ event = do t <- CASL.Formula.term csp_casl_keywords
 -- Formulas are CASL formulas.  We make our own wrapper around them
 -- however.
 
-formula :: AParser st FORMULA
+formula :: AParser st CSP_FORMULA
 formula = do f <- CASL.Formula.formula csp_casl_keywords
              return (Formula f)
 

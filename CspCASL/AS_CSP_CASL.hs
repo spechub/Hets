@@ -13,16 +13,17 @@ abstract syntax of CSP-CASL
 
 module CspCASL.AS_CSP_CASL where
 
-import Text.ParserCombinators.Parsec
-
-import CASL.AS_Basic_CASL (SORT)
 import Common.AnnoState
 import Common.Doc
 import Common.DocUtils
-import Common.Id
+
+import CspCASL.AS_CspCASL_Process (PROCESS (..),
+                                   PROCESS_DEFN (..),
+                                   CHANNEL_DECL(..),
+                                  )
 
 basicCspCaslCSpec :: AParser st Basic_CSP_CASL_C_SPEC
-basicCspCaslCSpec = do { return (Basic_csp_casl_c_spec (Channel_items []) (Basic Skip))
+basicCspCaslCSpec = do { return (Basic_csp_casl_c_spec (Channel_items []) (Process Skip))
                        }
 
 data Basic_CSP_CASL_C_SPEC = Basic_csp_casl_c_spec CHANNEL_DECL PROCESS_DEFN
@@ -30,18 +31,4 @@ data Basic_CSP_CASL_C_SPEC = Basic_csp_casl_c_spec CHANNEL_DECL PROCESS_DEFN
 
 instance Pretty Basic_CSP_CASL_C_SPEC where
     pretty _ = text ""
-
-data CHANNEL_DECL = Channel_items [CHANNEL_ITEM]
-                   deriving Show
-
-data CHANNEL_ITEM = Channel_decl [CHANNEL_NAME] SORT
-                   deriving Show
-
-type CHANNEL_NAME = SIMPLE_ID
-
-data PROCESS_DEFN = Basic PROCESS
-                  deriving Show
-
-data PROCESS = Skip
-             deriving Show
 

@@ -7,16 +7,19 @@ Abstract syntax of CSP-CASL processes.
 module CspCASL.AS_CspCASL_Process (
     EVENT(..),
     EVENT_SET(..),
-    FORMULA(..),
+    CSP_FORMULA(..),
     PRIMITIVE_RENAMING,
     PROCESS(..),
     PROCESS_DEFN(..),
     PROCESS_NAME,
     REC_PROCESS(..),
-    REC_PROCESS_DEFN(..)
+    REC_PROCESS_DEFN(..),
+    CHANNEL_DECL(..),
+    CHANNEL_ITEM(..),
+    CHANNEL_NAME
 ) where
 
-import Common.Id (Id)
+import Common.Id (Id, SIMPLE_ID)
 import CASL.AS_Basic_CASL (SORT, TERM, VAR, VAR_DECL)
 import qualified CASL.AS_Basic_CASL
 
@@ -74,7 +77,7 @@ data EVENT_SET
 
 -- |Formulas.  These are basically just CASL formulas.
 
-data FORMULA
+data CSP_FORMULA
     = Formula (CASL.AS_Basic_CASL.FORMULA ())
     deriving (Show,Eq)
 
@@ -131,6 +134,18 @@ data PROCESS
     -- | @p [[r]]@ - Renaming
     | Renaming PROCESS PRIMITIVE_RENAMING
     -- | @if f then p else q@ - Conditional
-    | ConditionalProcess FORMULA PROCESS PROCESS
+    | ConditionalProcess CSP_FORMULA PROCESS PROCESS
     --  | CSPSeq [PROCESS]
     deriving (Eq, Show)
+
+
+-- We don't do anything with channels yet, but we need their
+-- declaration to fit in with hets machinery, for now at least.
+
+data CHANNEL_DECL = Channel_items [CHANNEL_ITEM]
+                   deriving Show
+
+data CHANNEL_ITEM = Channel_decl [CHANNEL_NAME] SORT
+                   deriving Show
+
+type CHANNEL_NAME = SIMPLE_ID
