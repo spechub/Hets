@@ -40,6 +40,8 @@ import Common.Lib.State
 import Common.Id
 import Common.AS_Annotation
 
+import CspCASL.AS_CspCASL (BASIC_CSP_CASL_SPEC(..) )
+
 import CspCASL.SignCSP
 
 import CspCASL.AS_CSP_CASL (Basic_CSP_CASL_C_SPEC(..)
@@ -56,6 +58,10 @@ basicAnalysisCspCASL :: (BASIC_CSP_CASL_SPEC, CSPSign, GlobalAnnos)
 
 basicAnalysisCspCASL (Basic_Csp_Casl_Spec _ _, sign, annos)
     = basicAnalysisCspCASLOld (Basic_csp_casl_c_spec (Channel_items []) (Process Skip), sign, annos)
+
+
+
+
 
 
 
@@ -95,3 +101,6 @@ anaChannel chdecl@(Channel_decl newnames s) = do
 
 anaProcesses :: PROCESS_DEFN -> State CSPSign PROCESS_DEFN
 anaProcesses p = return p
+
+
+
