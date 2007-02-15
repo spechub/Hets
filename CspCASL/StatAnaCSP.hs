@@ -33,23 +33,22 @@ reveal R should keep CASL data part, and reveal process R
 module CspCASL.StatAnaCSP where
 
 import CASL.Sign
+import Common.AS_Annotation
 import Common.Result
 import Common.GlobalAnnotations
+import Common.Id
 import qualified Common.Lib.Map as Map
 import Common.Lib.State
-import Common.Id
-import Common.AS_Annotation
 
-import CspCASL.AS_CspCASL (BASIC_CSP_CASL_SPEC(..) )
-
-import CspCASL.SignCSP
-
+import CspCASL.AS_CspCASL (BASIC_CSP_CASL_SPEC(..),
+                           Basic_CSP_CASL_C_SPEC(..)
+                          )
 import CspCASL.AS_CspCASL_Process (PROCESS(..),
                                    PROCESS_DEFN(..),
                                    CHANNEL_DECL(..),
-                                   CHANNEL_ITEM(..),
-                                   Basic_CSP_CASL_C_SPEC(..)
+                                   CHANNEL_ITEM(..)
                                   )
+import CspCASL.SignCSP
 
 basicAnalysisCspCASL :: (BASIC_CSP_CASL_SPEC, CSPSign, GlobalAnnos)
         -> Result (Basic_CSP_CASL_C_SPEC, CSPSign, [Named ()])
@@ -73,6 +72,8 @@ basicAnalysisCspCASLOld
          ds = reverse $ envDiags accSig
      Result ds (Just ()) -- insert diags
      return (Basic_csp_casl_c_spec ch' p', accSig, [])
+
+
 
 -- | the main CspCASL analysis function
 ana_BASIC_CSP :: (CHANNEL_DECL, PROCESS_DEFN)

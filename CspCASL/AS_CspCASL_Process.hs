@@ -17,14 +17,11 @@ module CspCASL.AS_CspCASL_Process (
     CHANNEL_DECL(..),
     CHANNEL_ITEM(..),
     CHANNEL_NAME,
-    Basic_CSP_CASL_C_SPEC (..),
 ) where
 
 import CASL.AS_Basic_CASL (FORMULA, SORT, TERM, VAR, VAR_DECL)
 
 import Common.Id (Id, SIMPLE_ID)
-import Common.Doc
-import Common.DocUtils
 
 
 
@@ -153,16 +150,3 @@ data CHANNEL_ITEM = Channel_decl [CHANNEL_NAME] SORT
                    deriving Show
 
 type CHANNEL_NAME = SIMPLE_ID
-
-
-
--- More hets compatability machinery, to be removed when I've
--- completely disentangled it.
-
-data Basic_CSP_CASL_C_SPEC = Basic_csp_casl_c_spec CHANNEL_DECL PROCESS_DEFN
-                           deriving Show
-
-instance Pretty Basic_CSP_CASL_C_SPEC where
-    pretty _ = text ""
-
-

@@ -31,26 +31,21 @@ Here is the place where the class Logic is instantiated for CspCASL.
 
 module CspCASL.Logic_CspCASL(CspCASL(CspCASL)) where
 
-import CspCASL.CspCASL_Keywords (csp_casl_keywords)
-
-import CspCASL.AS_CspCASL
-import CspCASL.ATC_CspCASL()
-import CspCASL.SignCSP
-import CspCASL.StatAnaCSP --(basicAnalysisCspCASL, Basic_CSP_CASL_C_SPEC)
-
 import CASL.AS_Basic_CASL
-import CASL.SymbolParser
 import CASL.Logic_CASL(CASL(CASL))
-import CASL.Sign
 import CASL.Morphism
-
-import Logic.Logic
+import CASL.Sign
+import CASL.SymbolParser
 import Common.Lib.Map as Map
+import Logic.Logic
 
-import CspCASL.AS_CspCASL_Process (Basic_CSP_CASL_C_SPEC(..)
-                                  )
-import CspCASL.Parse_CspCASL_Process (basicCspCaslCSpec
-                                  )
+--import CspCASL.AS_CspCASL
+import CspCASL.AS_CspCASL (Basic_CSP_CASL_C_SPEC(..))
+import CspCASL.ATC_CspCASL()
+import CspCASL.CspCASL_Keywords (csp_casl_keywords)
+import CspCASL.Parse_CspCASL (basicCspCaslCSpec)
+import CspCASL.SignCSP
+import CspCASL.StatAnaCSP
 
 
 
