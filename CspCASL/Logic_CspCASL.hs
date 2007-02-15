@@ -40,10 +40,10 @@ import Common.Lib.Map as Map
 import Logic.Logic
 
 --import CspCASL.AS_CspCASL
-import CspCASL.AS_CspCASL (OLD_CSP_CASL_SPEC(..))
+import CspCASL.AS_CspCASL (BASIC_CSP_CASL_SPEC(..))
 import CspCASL.ATC_CspCASL()
 import CspCASL.CspCASL_Keywords (csp_casl_keywords)
-import CspCASL.Parse_CspCASL (old_parse_CspCASL_C_Spec)
+import CspCASL.Parse_CspCASL (basicCspCaslSpec)
 import CspCASL.SignCSP
 import CspCASL.StatAnaCSP
 
@@ -75,10 +75,10 @@ instance Category CspCASL CSPSign CSPMorphism
 
 -- abstract syntax, parsing (and printing)
 
-instance Syntax CspCASL OLD_CSP_CASL_SPEC
+instance Syntax CspCASL BASIC_CSP_CASL_SPEC
                 SYMB_ITEMS SYMB_MAP_ITEMS
       where 
-         parse_basic_spec CspCASL = Just old_parse_CspCASL_C_Spec
+         parse_basic_spec CspCASL = Just basicCspCaslSpec
          parse_symb_items CspCASL = Just $ symbItems csp_casl_keywords
          parse_symb_map_items CspCASL = Just $ symbMapItems csp_casl_keywords
 
@@ -89,10 +89,10 @@ instance Syntax CspCASL OLD_CSP_CASL_SPEC
 instance Sentences CspCASL () () CSPSign CSPMorphism () where
   parse_sentence CspCASL = Nothing
 
-instance StaticAnalysis CspCASL OLD_CSP_CASL_SPEC () ()
+instance StaticAnalysis CspCASL BASIC_CSP_CASL_SPEC () ()
                SYMB_ITEMS SYMB_MAP_ITEMS
                CSPSign CSPMorphism () ()  where
-         basic_analysis CspCASL = Just old_basic_analysis_CspCASL
+         basic_analysis CspCASL = Just basicAnalysisCspCASL
          stat_symb_map_items CspCASL = error "Logic_CspCASL.hs"
          stat_symb_items CspCASL = error "Logic_CspCASL.hs"
          empty_signature CspCASL = emptyCSPSign
@@ -102,7 +102,7 @@ instance StaticAnalysis CspCASL OLD_CSP_CASL_SPEC () ()
          signature_difference CspCASL s = return . diffSig diffCSPAddSign s
 
 instance Logic CspCASL ()
-               OLD_CSP_CASL_SPEC () SYMB_ITEMS SYMB_MAP_ITEMS
+               BASIC_CSP_CASL_SPEC () SYMB_ITEMS SYMB_MAP_ITEMS
                CSPSign
                CSPMorphism
                () () () where

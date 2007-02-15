@@ -27,7 +27,7 @@ import CASL.Morphism
 -- CspCASL
 import CspCASL.Logic_CspCASL
 import CspCASL.SignCSP
-import CspCASL.AS_CspCASL (OLD_CSP_CASL_SPEC (..))
+import CspCASL.AS_CspCASL (BASIC_CSP_CASL_SPEC (..))
 
 -- ModalCASL
 import Modal.Logic_Modal
@@ -41,7 +41,7 @@ instance Language CspCASL2Modal -- default definition is okay
 
 instance Comorphism CspCASL2Modal
                CspCASL ()
-               OLD_CSP_CASL_SPEC () SYMB_ITEMS SYMB_MAP_ITEMS
+               BASIC_CSP_CASL_SPEC () SYMB_ITEMS SYMB_MAP_ITEMS
                CSPSign
                CSPMorphism
                () () ()

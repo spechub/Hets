@@ -19,7 +19,6 @@ CSP-CASL.
 
 module CspCASL.Parse_CspCASL (
     basicCspCaslSpec,
-    old_parse_CspCASL_C_Spec
 ) where
 
 import Text.ParserCombinators.Parsec
@@ -69,13 +68,3 @@ dataDefn = do d <- basicSpec csp_casl_keywords
 processDefn :: AParser st PROCESS
 processDefn = do p <- csp_casl_process
                  return p
-
-
-
--- Hets compatability machinery, to be removed when I've completely
--- disentangled it.
-
-old_parse_CspCASL_C_Spec :: AParser st OLD_CSP_CASL_SPEC
-old_parse_CspCASL_C_Spec = do { return (Old_CspCASL_Spec (Channel_items []) (Process Skip))
-                       }
-

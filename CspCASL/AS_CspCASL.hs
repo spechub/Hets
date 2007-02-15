@@ -34,17 +34,3 @@ instance Pretty BASIC_CSP_CASL_SPEC where
 data DATA_DEFN
     = Spec (BASIC_SPEC () () ())
     deriving (Show)
-
-
-
-
--- Hets compatability machinery, to be removed when I've completely
--- disentangled it.
-
-data OLD_CSP_CASL_SPEC = Old_CspCASL_Spec CHANNEL_DECL PROCESS_DEFN
-                         deriving Show
-
-instance Pretty OLD_CSP_CASL_SPEC where
-    pretty _ = text ""
-
-
