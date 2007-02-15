@@ -95,12 +95,6 @@ lesserKind cm k1 k2 = case k1 of
             _ -> v1 == v2) && lesserKind cm r1 r2 && lesserKind cm a2 a1
         _ -> False
 
-invertVariance :: Variance -> Variance
-invertVariance v = case v of
-    CoVar -> ContraVar
-    ContraVar -> CoVar
-    _ -> v
-
 rawToKind :: RawKind -> Kind
 rawToKind = mapKind (const universeId)
 
