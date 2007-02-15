@@ -41,10 +41,10 @@ data DATA_DEFN
 -- Hets compatability machinery, to be removed when I've completely
 -- disentangled it.
 
-data Basic_CSP_CASL_C_SPEC = Basic_csp_casl_c_spec CHANNEL_DECL PROCESS_DEFN
-                                 deriving Show
+data OLD_CSP_CASL_SPEC = Old_CspCASL_Spec CHANNEL_DECL PROCESS_DEFN
+                         deriving Show
 
-instance Pretty Basic_CSP_CASL_C_SPEC where
+instance Pretty OLD_CSP_CASL_SPEC where
     pretty _ = text ""
 
 

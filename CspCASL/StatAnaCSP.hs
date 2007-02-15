@@ -41,7 +41,7 @@ import qualified Common.Lib.Map as Map
 import Common.Lib.State
 
 import CspCASL.AS_CspCASL (BASIC_CSP_CASL_SPEC(..),
-                           Basic_CSP_CASL_C_SPEC(..)
+                           OLD_CSP_CASL_SPEC(..)
                           )
 import CspCASL.AS_CspCASL_Process (PROCESS(..),
                                    PROCESS_DEFN(..),
@@ -51,10 +51,10 @@ import CspCASL.AS_CspCASL_Process (PROCESS(..),
 import CspCASL.SignCSP
 
 basicAnalysisCspCASL :: (BASIC_CSP_CASL_SPEC, CSPSign, GlobalAnnos)
-        -> Result (Basic_CSP_CASL_C_SPEC, CSPSign, [Named ()])
+        -> Result (OLD_CSP_CASL_SPEC, CSPSign, [Named ()])
 
 basicAnalysisCspCASL (Basic_Csp_Casl_Spec _ _, sign, annos)
-    = basicAnalysisCspCASLOld (Basic_csp_casl_c_spec (Channel_items []) (Process Skip), sign, annos)
+    = old_basic_analysis_CspCASL (Old_CspCASL_Spec (Channel_items []) (Process Skip), sign, annos)
 
 
 
@@ -63,15 +63,15 @@ basicAnalysisCspCASL (Basic_Csp_Casl_Spec _ _, sign, annos)
 
 
 
-basicAnalysisCspCASLOld ::
-    (Basic_CSP_CASL_C_SPEC, CSPSign, GlobalAnnos)
-        -> Result (Basic_CSP_CASL_C_SPEC, CSPSign, [Named ()])
-basicAnalysisCspCASLOld
-    (Basic_csp_casl_c_spec ch p, sigma, _ga) =
+old_basic_analysis_CspCASL ::
+    (OLD_CSP_CASL_SPEC, CSPSign, GlobalAnnos)
+        -> Result (OLD_CSP_CASL_SPEC, CSPSign, [Named ()])
+old_basic_analysis_CspCASL
+    (Old_CspCASL_Spec ch p, sigma, _ga) =
   do let ((ch',p'), accSig) = runState (ana_BASIC_CSP (ch,p)) sigma
          ds = reverse $ envDiags accSig
      Result ds (Just ()) -- insert diags
-     return (Basic_csp_casl_c_spec ch' p', accSig, [])
+     return (Old_CspCASL_Spec ch' p', accSig, [])
 
 
 
