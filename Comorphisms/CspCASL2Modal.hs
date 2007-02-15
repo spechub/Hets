@@ -27,7 +27,7 @@ import CASL.Morphism
 -- CspCASL
 import CspCASL.Logic_CspCASL
 import CspCASL.SignCSP
-import CspCASL.AS_CSP_CASL
+import CspCASL.AS_CspCASL_Process (Basic_CSP_CASL_C_SPEC (..))
 
 -- ModalCASL
 import Modal.Logic_Modal

@@ -37,7 +37,6 @@ import CspCASL.AS_CspCASL
 import CspCASL.ATC_CspCASL()
 import CspCASL.SignCSP
 import CspCASL.StatAnaCSP --(basicAnalysisCspCASL, Basic_CSP_CASL_C_SPEC)
-import CspCASL.AS_CSP_CASL
 
 import CASL.AS_Basic_CASL
 import CASL.SymbolParser
@@ -47,6 +46,13 @@ import CASL.Morphism
 
 import Logic.Logic
 import Common.Lib.Map as Map
+
+import CspCASL.AS_CspCASL_Process (Basic_CSP_CASL_C_SPEC(..)
+                                  )
+import CspCASL.Parse_CspCASL_Process (basicCspCaslCSpec
+                                  )
+
+
 
 -- a dummy datatype for the LogicGraph and for identifying the right
 -- instances

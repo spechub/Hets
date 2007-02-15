@@ -17,6 +17,7 @@ module CspCASL.Parse_CspCASL_Process (
     process_name,
     recProcess,
     recProcessDefn,
+    basicCspCaslCSpec,
 ) where
 
 import Text.ParserCombinators.Parsec (sepBy, try, (<|>), chainl1)
@@ -304,3 +305,13 @@ primitive_renaming = do { rid <- parseId csp_casl_keywords
 
 var :: AParser st VAR
 var = varId csp_casl_keywords
+
+
+
+-- Hets compatability machinery, to be removed when I've completely
+-- disentangled it.
+
+basicCspCaslCSpec :: AParser st Basic_CSP_CASL_C_SPEC
+basicCspCaslCSpec = do { return (Basic_csp_casl_c_spec (Channel_items []) (Process Skip))
+                       }
+

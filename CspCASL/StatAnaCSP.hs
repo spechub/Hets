@@ -44,13 +44,11 @@ import CspCASL.AS_CspCASL (BASIC_CSP_CASL_SPEC(..) )
 
 import CspCASL.SignCSP
 
-import CspCASL.AS_CSP_CASL (Basic_CSP_CASL_C_SPEC(..)
-                           )
-
 import CspCASL.AS_CspCASL_Process (PROCESS(..),
                                    PROCESS_DEFN(..),
                                    CHANNEL_DECL(..),
-                                   CHANNEL_ITEM(..)
+                                   CHANNEL_ITEM(..),
+                                   Basic_CSP_CASL_C_SPEC(..)
                                   )
 
 basicAnalysisCspCASL :: (BASIC_CSP_CASL_SPEC, CSPSign, GlobalAnnos)
