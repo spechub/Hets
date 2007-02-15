@@ -125,10 +125,10 @@
    '("\\(\\<\\|\\s-+\\)\\(library\\|logic\\)\\s-+\\(\\(\\w\\|/\\)+\\)[ \t\n]*"  
      (3 casl-library-name-face keep t))
    ;; name of from, get and given
-   '("\\(\\<\\|[ \t]+\\)\\(get\\|given\\)[ \t\n]+\\(\\(\\(\\sw+\\)\\s-*,?[ \t\n]*\\)+\\)\\(=\\|:\\|$\\)"  
+   '("\\(\\<\\|[ \t]+\\)\\(get\\|given\\)[ \t\n]+\\(\\(\\sw+\\s-*\\(,[ \t\n]*\\|$\\)\\)+\\)\\(=\\|:\\|$\\)"  
      (3 casl-name-face t t))
-   '("\\(\\<\\|\\s-+\\)from\\([ \t]+\\)\\(.+\\)\\(get\\|\\s-*\\)" 
-     (3 casl-library-name-face keep t))
+   '("\\(\\<\\|\\s-+\\)from[ \t]+\\(.+\\)\\(get\\|$\\)" 
+     (2 casl-library-name-face keep t))
    ;; the name of specification and view
    '("\\(\\<\\|\\[\\)\\(spec\\|view\\)\\s-+\\(\\w+\\)[ \t]*\\(\\[\\s-*\\([A-Z]\\w*\\).*\\s-*\\]\\)?\\s-*.*\\([]=:]\\|::=\\)"
      (3 casl-name-face keep t) (5 casl-name-face keep t))
@@ -167,7 +167,7 @@
    ;; reserved keyword
    '("\\(\\<\\|\\s-+\\)\\(/\\\\\\|\\\\/\\|=>\\|<=>\\|and\\|arch\\|assoc\\|behaviourally\\|closed\\|comm\\|else\\|end\\|exists\\|fit\\|forall\\|free\\|generated\\|given\\|hide\\|idem\\|if\\|local\\|not\\|refined\\|refinement\\|reveal\\|spec\\|then\\|to\\|unit\\|via\\|view\\|when\\|within\\|with\\|\\(\\(op\\|pred\\|var\\|type\\|sort\\)s?\\)\\)[,;]?[ \t\n]"  
      (2 casl-keyword-face t t))
-   '("[][,;=.]" (0 casl-black-komma-face t t))
+   '("[][,;.]" (0 casl-black-komma-face t t))
   )	
   "Reserved keywords highlighting")
 
