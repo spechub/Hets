@@ -78,9 +78,6 @@ newSubTypeIdentifier i = do
    n <- toEnvState inc
    return $ simpleIdToId $ Token ("_t" ++ show n) $ posOfId i
 
-rawToKind :: RawKind -> Kind
-rawToKind = mapKind (const universeId)
-
 addSuperId :: Id -> Id -> State Env ()
 addSuperId j i =
     do tm <- gets typeMap

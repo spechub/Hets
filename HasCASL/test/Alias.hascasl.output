@@ -12,6 +12,7 @@ type
 type  a6 a
 type  a7 a := a6 a -> Unit
 type 
+type  a2 : Type -> Type
 %% Type Constructors -----------------------------------------------------
 MyAlias : Type -> Type := \ t : Type . t ->? Unit
 MyPred : Type -> Type := \ s : Type . s ->? Unit
@@ -49,3 +50,7 @@ s  : Type %(var_1)%
 *** Error 21.9, unknown type variable  'a'
 *** Error 23.9, unknown type variable  'a'
 *** Error 21.14-23.22, illegal recursive type synonym 'a7 a -> Unit'
+*** Error 25.6, incompatible kind of: a2
+  expected: Type -> Type -> Type
+     found: Type -> Type
+
