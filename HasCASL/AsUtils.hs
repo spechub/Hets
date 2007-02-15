@@ -85,11 +85,15 @@ isProductId (Id ts cs _) = null cs && length ts > 2 && altPlaceProd ts
                [] -> True
                t : r -> tokStr t == prodS && altPlaceProd r
 
--- | map a kind
-mapKind :: (a -> b) -> AnyKind a -> AnyKind b
-mapKind f k = case k of
+-- | map a kind and its variance
+mapKindV :: (Variance -> Variance) -> (a -> b) -> AnyKind a -> AnyKind b
+mapKindV g f k = case k of
     ClassKind a -> ClassKind $ f a
-    FunKind v a b r -> FunKind v (mapKind f a) (mapKind f b) r
+    FunKind v a b r -> FunKind (g v) (mapKind f a) (mapKind f b) r
+
+-- | map a kind and keep variance the same
+mapKind :: (a -> b) -> AnyKind a -> AnyKind b
+mapKind = mapKindV id
 
 -- | compute raw kind (if class ids or no higher kinds)
 toRaw :: Kind -> RawKind
@@ -149,8 +153,8 @@ unPredType :: Type -> (Bool, Type)
 unPredType t = case getTypeAppl t of
     (TypeName at _ 0, [ty, TypeName ut (ClassKind _) 0]) |
          ut == unitTypeId && at == arrowId PFunArr -> (True, ty)
-    (TypeName ut (ClassKind _) 0, []) | ut == unitTypeId -> 
-         (True, BracketType Parens [] nullRange) -- for printing only 
+    (TypeName ut (ClassKind _) 0, []) | ut == unitTypeId ->
+         (True, BracketType Parens [] nullRange) -- for printing only
     _ -> (False, t)
 
 -- | test if type is a predicate type
