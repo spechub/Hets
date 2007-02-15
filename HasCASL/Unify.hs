@@ -94,9 +94,13 @@ type Subst = Map.Map Int Type
 eps :: Subst
 eps = Map.empty
 
+flatKind :: Type -> RawKind
+flatKind = mapKindV (const InVar) id . rawKindOfType
+
 match :: TypeMap -> (TypeId -> TypeId -> Bool)
           -> (Bool, Type) -> (Bool, Type) -> Result Subst
-match tm rel p1@(b1, ty1) p2@(b2, ty2) = case (ty1, ty2) of
+match tm rel p1@(b1, ty1) p2@(b2, ty2) = if flatKind ty1 == flatKind ty2
+  then case (ty1, ty2) of
     (_, ExpandedType _ t2) -> match tm rel p1 (b2, t2)
     (ExpandedType _ t1, _) -> match tm rel (b1, t1) p2
     (_, TypeAppl (TypeName l _ _) t2) | l == lazyTypeId ->
@@ -132,6 +136,7 @@ match tm rel p1@(b1, ty1) p2@(b2, ty2) = case (ty1, ty2) of
                   (b2, if b2 then subst s1 a2 else a2)
         return $ compSubst s1 s2
     _ -> uniResult "type" ty1 "is not unifiable with type" ty2
+  else uniResult "type" ty1 "is not unifiable with differently kinded type" ty2
 
 -- | most general unifier via 'match'
 -- where both sides may contribute substitutions
@@ -145,7 +150,8 @@ mguList tm l1 l2 = case (l1, l2) of
        s1 <- mgu tm h1 h2
        s2 <- mguList tm (map (subst s1) t1) $ map (subst s1) t2
        return $ compSubst s1 s2
-    _ -> mkError "no unification with empty list" (head $ l1 ++ l2)
+    _ -> mkError "no unification of differently long argument lists"
+         (head $ l1 ++ l2)
 
 shapeMatch :: TypeMap -> Type -> Type -> Result Subst
 shapeMatch tm a b = match tm (const $ const True) (True, a) (True, b)
