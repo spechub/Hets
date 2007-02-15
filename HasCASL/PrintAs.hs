@@ -41,7 +41,8 @@ instance Pretty Variance where
 
 instance Pretty a => Pretty (AnyKind a) where
     pretty knd = case knd of
-        ClassKind ci -> pretty ci
+        ClassKind ci -> let d = pretty ci in
+          if null $ show d then text typeUniverseS else d
         FunKind v k1 k2 _ -> fsep [pretty v <>
                           (case k1 of
                                   FunKind _ _ _ _ -> parens
