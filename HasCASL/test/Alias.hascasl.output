@@ -4,9 +4,9 @@ type  MyAlias t := t ->? Unit
 type  a1 a b := a -> b -> Unit
 type  a1 a b := a -> b -> Unit
 type  a1 a b := a -> b -> Unit
-type  a2 a := a -> Unit
-type  a3 a := a -> Unit
-type  a4 a := a -> Unit
+type  a2 a b := a -> Unit
+type  a3 a a := a -> Unit
+type  a4 a a := a -> Unit
 type  a5 a
 type 
 type  a6 a
@@ -17,9 +17,9 @@ MyAlias : Type -> Type := \ t : Type . t ->? Unit
 MyPred : Type -> Type := \ s : Type . s ->? Unit
 a1
 : Type -> Type -> Type := \ (a : Type) (b : Type) . a -> b -> Unit
-a2 : Type -> Type -> Type := \ a : Type . a -> Unit
-a3 : Type -> Type -> Type := \ a : Type . a -> Unit
-a4 : Type -> Type -> Type := \ a : Type . a -> Unit
+a2 : Type -> Type -> Type := \ (a : Type) (b : Type) . a -> Unit
+a3 : Type -> Type -> Type := \ (a : Type) (a : Type) . a -> Unit
+a4 : Type -> Type -> Type := \ (a : Type) (a : Type) . a -> Unit
 a5 : Type -> Type
 a6 : Type -> Type
 a7 : Type -> Type := \ a : Type . a6 a -> Unit
@@ -38,15 +38,9 @@ s  : Type %(var_1)%
 ### Hint 7.6, redeclared type 'a1'
 *** Error 9.15, unknown type variable  'a'
 *** Error 9.19, unknown type variable  'b'
-### Warning 9.24-9.29, ignoring unused variable(s)
-  b in 'a -> Unit'
 *** Error 11.15, unknown type variable  'a'
-### Warning 11.24-11.29, ignoring unused variable(s)
-  a in 'a -> Unit'
 *** Error 11.15, duplicates at '(11,19)' for 'a'
 *** Error 13.9, unknown type variable  'a'
-### Warning 13.16-13.21, ignoring unused variable(s)
-  a in 'a -> Unit'
 *** Error 13.9, duplicates at '(13,11)' for 'a'
 *** Error 15.9, unknown type variable  'a'
 *** Error 17.9, unknown type variable  'a'
