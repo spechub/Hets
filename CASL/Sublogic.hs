@@ -1015,7 +1015,4 @@ pr_fun_map_entry l (_, t) (_, b) =
 -- and the projected signature
 --
 pr_epsilon :: Ext f e m -> CASL_SL a -> Sign f e -> Morphism f e m
-pr_epsilon extEm l s = let
-                    new = pr_sign l s
-                  in
-                    embedMorphism extEm new s
+pr_epsilon extEm l s = embedMorphism extEm s $ pr_sign l s
