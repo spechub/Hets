@@ -107,11 +107,11 @@ isRefNode :: DGNodeLab -> Bool
 isRefNode (DGNode {}) = False
 isRefNode _ = True
 
--- | test for 'LeftOpen', return input for refs or no conservativity 
+-- | test for 'LeftOpen', return input for refs or no conservativity
 hasOpenConsStatus :: Bool -> DGNodeLab -> Bool
-hasOpenConsStatus b dgn = case dgn of 
+hasOpenConsStatus b dgn = case dgn of
     DGRef {} -> b
-    _ -> case dgn_cons dgn of 
+    _ -> case dgn_cons dgn of
            None -> b
            _ -> case dgn_cons_status dgn of
                   LeftOpen -> True
@@ -213,7 +213,7 @@ instance Show DGChange where
   show (DeleteNode (n, _)) = "DeleteNode "++show n -- ++show l
   show (InsertEdge (n,m, _)) = "InsertEdge "++show n++"->"++show m -- ++show l
   show (DeleteEdge (n,m, _)) = "DeleteEdge "++show n++"->"++show m -- ++show l
-  show (SetNodeLab (n, _)) = "SetNodeLab of " ++ show n 
+  show (SetNodeLab (n, _)) = "SetNodeLab of " ++ show n
 
 -- | Link types of development graphs
 --  Sect. IV:4.2 of the CASL Reference Manual explains them in depth
@@ -265,11 +265,11 @@ instance Pretty DGLinkType where
 
 -- | describe the link type of the label
 getDGLinkType :: DGLinkLab -> String
-getDGLinkType lnk = let 
+getDGLinkType lnk = let
     isHom = isHomogeneous $ dgl_morphism lnk
     het = if isHom then id else ("het" ++)
     in case dgl_morphism lnk of
- GMorphism _ _ _ _ _ -> 
+ GMorphism _ _ _ _ _ ->
    case dgl_type lnk of
     GlobalDef -> if isHom then "globaldef"
           else "hetdef"
@@ -453,7 +453,7 @@ type DGraph = Tree.Gr DGNodeLab DGLinkLab
 -- | Node with signature in a DG
 data NodeSig = NodeSig Node G_sign deriving (Show, Eq)
 
-{- | NodeSig or possibly the empty sig in a logic 
+{- | NodeSig or possibly the empty sig in a logic
      (but since we want to avoid lots of vacuous nodes with empty sig,
      we do not assign a real node in the DG here) -}
 data MaybeNode = JustNode NodeSig | EmptyNode AnyLogic deriving (Show, Eq)
@@ -695,7 +695,7 @@ coerceThSens l1 l2 msg t1 = primCoerce l1 l2 msg t1
 
 instance Eq G_theory where
   G_theory l1 sig1 ind1 sens1 ind1'== G_theory l2 sig2 ind2 sens2 ind2'=
-     G_sign l1 sig1 ind1 == G_sign l2 sig2 ind2 
+     G_sign l1 sig1 ind1 == G_sign l2 sig2 ind2
      && (ind1' > 0 && ind2' > 0 && ind1'==ind2'
          || coerceThSens l1 l2 "" sens1 == Just sens2)
 
@@ -719,17 +719,9 @@ sublogicOfTh (G_theory lid sigma _ sens _) =
                        sens)
    in G_sublogics lid sub
 
-sublogicOfSign :: G_sign -> G_sublogics
-sublogicOfSign (G_sign lid sign _) =
-    G_sublogics lid (minSublogic sign)
-
-sublogicOfMor :: G_morphism -> G_sublogics
-sublogicOfMor (G_morphism lid morphism _) =
-    G_sublogics lid (minSublogic morphism)
-
 -- | simplify a theory (throw away qualifications)
 simplifyTh :: G_theory -> G_theory
-simplifyTh (G_theory lid sigma ind1 sens ind2) = G_theory lid sigma ind1 
+simplifyTh (G_theory lid sigma ind1 sens ind2) = G_theory lid sigma ind1
       (OMap.map (mapValue $ simplify_sen lid sigma) sens) ind2
 
 -- | apply a comorphism to a theory
@@ -742,7 +734,7 @@ mapG_theory (Comorphism cid) (G_theory lid sign ind1 sens ind2) = do
 
 -- | Translation of a G_theory along a GMorphism
 translateG_theory :: GMorphism -> G_theory -> Result G_theory
-translateG_theory (GMorphism cid _ _ morphism2 _) 
+translateG_theory (GMorphism cid _ _ morphism2 _)
                       (G_theory lid sign _ sens ind)  = do
   let tlid = targetLogic cid
   bTh <- coerceBasicTheory lid (sourceLogic cid)
@@ -753,11 +745,11 @@ translateG_theory (GMorphism cid _ _ morphism2 _)
 
 -- | Join the sentences of two G_theories
 joinG_sentences :: Monad m => G_theory -> G_theory -> m G_theory
-joinG_sentences (G_theory lid1 sig1 ind sens1 _) 
+joinG_sentences (G_theory lid1 sig1 ind sens1 _)
                     (G_theory lid2 sig2 _ sens2 _) = do
   sens2' <- coerceThSens lid2 lid1 "joinG_sentences" sens2
   sig2' <- coerceSign lid2 lid1 "joinG_sentences" sig2
-  return $ assert (sig1 == sig2') 
+  return $ assert (sig1 == sig2')
              $ G_theory lid1 sig1 ind (joinSens sens2' sens1) 0
 
 
@@ -778,5 +770,5 @@ type GDiagram = Tree.Gr G_theory GMorphism
 gWeaklyAmalgamableCocone :: GDiagram
                          -> Result (G_theory, Map.Map Graph.Node GMorphism)
 gWeaklyAmalgamableCocone _ =
-    return (error "Static.DevGraph.gWeaklyAmalgamableCocone not yet implemented", Map.empty) 
+    return (error "Static.DevGraph.gWeaklyAmalgamableCocone not yet implemented", Map.empty)
      -- dummy implementation

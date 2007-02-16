@@ -28,13 +28,13 @@ import Data.Maybe
 
 -- | get the maximal sublogic of a graph.
 -- | each GlobalContext and each node will be tested, in order to find
--- | the maximal sublogic of th Graph. 
--- | All edges and nodes will be searched also in the meantime, so as to test, 
+-- | the maximal sublogic of th Graph.
+-- | All edges and nodes will be searched also in the meantime, so as to test,
 -- | whether the GMorphism of edges is homogeneous, and the logics of nodes are
 -- | equal.
 getDGLogic :: LibEnv -> Res.Result G_sublogics
-getDGLogic libEnv = 
-    let sublogicsMap = map (getSublogicFromGlobalContext libEnv) 
+getDGLogic libEnv =
+    let sublogicsMap = map (getSublogicFromGlobalContext libEnv)
                            (Map.keys libEnv)
     in  foldr comResSublogics (Res.Result [] Nothing) sublogicsMap
 
@@ -42,57 +42,56 @@ getSublogicFromGlobalContext :: LibEnv -> LIB_NAME -> Res.Result G_sublogics
 getSublogicFromGlobalContext le ln =
     let edgesList = Graph.labEdges $ devGraph gc
         nodesList = Graph.labNodes $ devGraph gc
-        slList1   = map testAndGetSublogicFromEdge edgesList 
-        slList2   = map (getSubLogicsFromNodes $ getFirstLogic nodesList) 
-                        nodesList 
-    in  foldr comResSublogics (Res.Result [] Nothing) (slList1 ++ slList2) 
+        slList1   = map testAndGetSublogicFromEdge edgesList
+        slList2   = map (getSubLogicsFromNodes $ getFirstLogic nodesList)
+                        nodesList
+    in  foldr comResSublogics (Res.Result [] Nothing) (slList1 ++ slList2)
 
-  where 
+  where
     gc = lookupGlobalContext ln le
 
     testAndGetSublogicFromEdge :: LEdge DGLinkLab -> Res.Result G_sublogics
-    testAndGetSublogicFromEdge (from, to, 
-                    DGLink gm@(GMorphism cid' lsign si lmorphism mi) _ _) 
+    testAndGetSublogicFromEdge (from, to,
+                    DGLink gm@(GMorphism cid' lsign _ lmorphism _) _ _)
         =
           if isHomogeneous gm then
-              Result [] (comSublogics g_mor g_sign) 
-              else Result [Res.mkDiag Res.Error 
+              Result [] (comSublogics g_mor g_sign)
+              else Result [Res.mkDiag Res.Error
                            ("the edge " ++ (showFromTo from to gc) ++
-                            " is not homogeneous.") () ] Nothing 
+                            " is not homogeneous.") () ] Nothing
 
-         where g_mor = sublogicOfMor 
-                       (G_morphism (targetLogic cid') lmorphism mi)
-               g_sign = sublogicOfSign 
-                        (G_sign (sourceLogic cid') lsign si) 
-           
-    getSubLogicsFromNodes :: AnyLogic -> LNode DGNodeLab 
+         where g_mor = G_sublogics (targetLogic cid') $ minSublogic lmorphism
+               g_sign = G_sublogics (sourceLogic cid') $ minSublogic lsign
+
+
+    getSubLogicsFromNodes :: AnyLogic -> LNode DGNodeLab
                           -> Res.Result G_sublogics
     getSubLogicsFromNodes logic (_, lnode) =
         case dgn_theory lnode of
           th@(G_theory lid _ _ _ _) ->
               if Logic lid == logic then
                   Res.Result [] (Just $ sublogicOfTh th)
-                 else Res.Result [Res.mkDiag Res.Error 
-                              ("the node " ++ (getDGNodeName lnode) ++ 
-                               "  has a different logic \"" ++ (show lid) ++ 
+                 else Res.Result [Res.mkDiag Res.Error
+                              ("the node " ++ (getDGNodeName lnode) ++
+                               "  has a different logic \"" ++ (show lid) ++
                                "\" as the logic of Graph \"" ++ (show logic) ++
-                               " is not homogeneous.") () ] Nothing 
-    
+                               " is not homogeneous.") () ] Nothing
+
     getFirstLogic :: [LNode DGNodeLab] -> AnyLogic
     getFirstLogic list =
         case dgn_theory $ snd $ head list of
-          G_theory lid _ _ _ _ -> 
+          G_theory lid _ _ _ _ ->
               Logic lid
-              
 
-comResSublogics :: Res.Result G_sublogics 
-                -> Res.Result G_sublogics 
+
+comResSublogics :: Res.Result G_sublogics
                 -> Res.Result G_sublogics
-comResSublogics (Res.Result diags1 msubl1@(Just subl1)) 
+                -> Res.Result G_sublogics
+comResSublogics (Res.Result diags1 msubl1@(Just subl1))
                     (Res.Result diags2 msubl2) =
                case msubl2 of
                  Nothing -> Res.Result (diags1 ++ diags2) msubl1
-                 Just subl2 -> 
+                 Just subl2 ->
                      Res.Result (diags1 ++ diags2) $ comSublogics subl1 subl2
 comResSublogics (Res.Result diags1 Nothing) (Res.Result diags2 _) =
     Result (diags1 ++ diags2) Nothing

@@ -66,9 +66,9 @@ dg_translation  gc acm@(Comorphism cidMor) =
    then
     let sourceLid = sourceLogic cid'
         targetLid = targetLogic cid'
-    in if (lessSublogicComor (sublogicOfSign (G_sign sourceLid lsign ind1)) acm)
-             && (lessSublogicComor (sublogicOfMor (G_morphism targetLid
-                                                       lmorphism ind2)) acm)
+        minTargetSublogic = G_sublogics targetLid $ minSublogic lmorphism
+    in if lessSublogicComor (G_sublogics sourceLid $ minSublogic lsign) acm
+        && lessSublogicComor minTargetSublogic acm
         then
             do -- translate sign of GMorphism
                (lsign', _) <- fSign sourceLid lsign
@@ -83,23 +83,22 @@ dg_translation  gc acm@(Comorphism cidMor) =
                        newMor = fromJust $ coerceMorphism tlid
                                   (targetLogic cid2) "DGTranslation.updateEdges"
                                   lmorphism'
-                       slNewSign = sublogicOfSign $
-                                    G_sign (sourceLogic cid2)
-                                      newSign ind1
-                       domMor = sublogicOfSign $
-                                   G_sign (targetLogic cid2)
-                                     (dom (targetLogic cid2) newMor) ind2
+                       slNewSign = G_sublogics (sourceLogic cid2)
+                                   $ minSublogic newSign
+                       targetLogic2 = targetLogic cid2
+                       domMor = G_sublogics targetLogic2
+                                   $ minSublogic $ dom targetLogic2 newMor
                    in
 -- ("old:\n" ++ showDoc lsign "\nnew:\n" ++ showDoc newSign "\n\n")
                        return $ assert (slNewSign == domMor) $
                              (from, to,
                                   links{dgl_morphism= GMorphism cid2
-                                                        newSign ind1 newMor ind2
+                                                       newSign ind1 newMor ind2
                                        }
                              )
 
         else Result [mkDiag Error ("the sublogic of GMorphism :\"" ++
-                     show (sublogicOfMor (G_morphism targetLid lmorphism ind2))
+                     show minTargetSublogic
                      ++ " of edge " ++ showFromTo from to gc
                      ++ " is not less than " ++ show acm) ()] Nothing
      else Result [mkDiag Error ("Link "++ showFromTo from to gc ++
