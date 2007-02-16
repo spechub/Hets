@@ -1,14 +1,14 @@
 {-# OPTIONS -fglasgow-exts -fallow-undecidable-instances #-}
 {- |
 Module      :  $Header$
-Description :  central interface (type class) for logic translations (comorphisms) in Hets 
+Description :  central interface (type class) for logic translations (comorphisms) in Hets
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  non-portable (via Logic)
 
-Central interface (type class) for logic translations (comorphisms) in Hets 
+Central interface (type class) for logic translations (comorphisms) in Hets
    These are just collections of
    functions between (some of) the types of logics.
 -}
@@ -32,6 +32,8 @@ import qualified Common.Lib.Set as Set
 import Common.Result
 import Common.ProofUtils
 import Common.AS_Annotation
+import Common.Doc
+import Common.DocUtils
 
 class (Language cid,
        Logic lid1 sublogics1
@@ -78,13 +80,14 @@ targetSublogic :: Comorphism cid
          => cid -> sublogics2
 targetSublogic cid = mapSublogic cid $ sourceSublogic cid
 
+-- | this function is base on 'map_theory' using no sentences as input
 map_sign :: Comorphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2
          => cid -> sign1 -> Result (sign2,[Named sentence2])
-map_sign cid sign = map_theory cid (sign,[])
+map_sign cid sign = wrapMapTheory cid (sign,[])
 
 mapDefaultMorphism :: Comorphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -115,6 +118,7 @@ errMapSymbol :: Comorphism cid
          => cid -> symbol1 -> Set.Set symbol2
 errMapSymbol cid _ = error $ "no symbol mapping for " ++ show cid
 
+-- | use this function instead of 'map_theory'
 wrapMapTheory :: Comorphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
@@ -124,11 +128,11 @@ wrapMapTheory :: Comorphism cid
                    -> Result (sign2, [Named sentence2])
 wrapMapTheory cid (sign, sens) =
       case sourceSublogic cid of
-        sub -> case minSublogic sign of 
-          sigLog -> case foldl join sigLog 
-                    $ map (minSublogic . sentence) sens of 
-            senLog -> 
-              if join sub senLog == sub
+        sub -> case minSublogic sign of
+          sigLog -> case foldl join sigLog
+                    $ map (minSublogic . sentence) sens of
+            senLog ->
+              if isSubElem senLog sub
                  then map_theory cid (sign, sens)
                  else fail $ "for '" ++ language_name cid ++
                            "' expected sublogic '" ++
@@ -136,7 +140,9 @@ wrapMapTheory cid (sign, sens) =
                            "'\n but found sublogic '" ++
                            concat (sublogic_names senLog) ++
                            "' with signature sublogic '" ++
-                           concat (sublogic_names sigLog) ++ "'"
+                           concat (sublogic_names sigLog) ++ "'\n" ++
+                 show (vcat $ pretty sign : map
+                                (print_named $ sourceLogic cid) sens)
 
 simpleTheoryMapping :: (sign1 -> sign2) -> (sentence1 -> sentence2)
                     -> (sign1, [Named sentence1])
@@ -224,7 +230,7 @@ instance (Comorphism cid1
      sourceSublogic cid1
    mapSublogic (CompComorphism cid1 cid2) =
      mapSublogic cid2
-     . forceCoerceSublogic (targetLogic cid1) (sourceLogic cid2) 
+     . forceCoerceSublogic (targetLogic cid1) (sourceLogic cid2)
      . mapSublogic cid1
    map_sentence (CompComorphism cid1 cid2) =
        \si1 se1 ->
