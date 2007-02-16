@@ -1018,7 +1018,7 @@ translateTheoryOfNode gInfo@(GInfo {gi_hetcatsOpts = opts})
          sens' <- coerceThSens lid lidS "" sens
          -- translate theory along chosen comorphism
          (sign'',sens1) <-
-             liftR $ map_theory cid (sign', toNamedList sens')
+             liftR $ wrapMapTheory cid (sign', toNamedList sens')
          lift $ displayTheory "Translated theory" node dgraph
             (G_theory lidT sign'' 0 (toThSens sens1) 0)
      )

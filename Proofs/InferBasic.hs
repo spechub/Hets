@@ -168,7 +168,7 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv = do
             bTh' <- coerceBasicTheory lid1 (sourceLogic cid) ""
                    (sign, toNamedList axs)
             -- Borrowing: translate theory
-            (sign'', sens'') <- liftR $ map_theory cid bTh'
+            (sign'', sens'') <- liftR $ wrapMapTheory cid bTh'
             let lidT = targetLogic cid
             incl <- liftR $ inclusion lidT (empty_signature lidT) sign''
             let mor = TheoryMorphism
@@ -282,7 +282,7 @@ callProver st (G_prover lid4 p, Comorphism cid) =
                    (sign, toNamedList $
                           Map.union sel_sens $
                           Map.union sel_provenThs sel_goals)
-        (sign'',sens'') <- liftR $ map_theory cid bTh'
+        (sign'',sens'') <- liftR $ wrapMapTheory cid bTh'
         -- call the prover
         p' <- coerceProver lid4 lidT "" p
         ps <- lift (proveTheory lidT p' (theoryName st)

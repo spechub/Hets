@@ -35,13 +35,13 @@ printModule (G_theory lid sign0 _ sens0 _) =
                 let th = (sign0, toNamedList sens0)
                     r1 = do
                       th0 <- coerceBasicTheory lid CASL "" th
-                      th1 <- map_theory CASL2HasCASL th0
-                      th2 <- map_theory HasCASL2HasCASL th1
-                      map_theory HasCASL2Haskell th2
+                      th1 <- wrapMapTheory CASL2HasCASL th0
+                      th2 <- wrapMapTheory HasCASL2HasCASL th1
+                      wrapMapTheory HasCASL2Haskell th2
                     r2 = do
                       th0 <- coerceBasicTheory lid HasCASL "" th
-                      th2 <- map_theory HasCASL2HasCASL th0
-                      map_theory HasCASL2Haskell th2
+                      th2 <- wrapMapTheory HasCASL2HasCASL th0
+                      wrapMapTheory HasCASL2Haskell th2
                     r3 = case maybeResult r1 of
                          Nothing -> r2
                          _ -> r1

@@ -70,22 +70,22 @@ printTheoryAsDFG ln sn checkConsistency gth@(G_theory lid sign _ thSens _) =
           Comorphism SuleCFOL2SoftFOL
        then resultToMaybe  
              (coerceBasicTheory lid CASL "" (sign,sens)
-              >>= map_theory SuleCFOL2SoftFOL)
+              >>= wrapMapTheory SuleCFOL2SoftFOL)
        else
         if lessSublogicComor (sublogicOfTh gth) $ Comorphism idCASL
         then resultToMaybe  
              (coerceBasicTheory lid CASL "" (sign,sens)
-              >>= map_theory idCASL
-              >>= map_theory CASL2SubCFOL
-              >>= map_theory SuleCFOL2SoftFOL)
+              >>= wrapMapTheory idCASL
+              >>= wrapMapTheory CASL2SubCFOL
+              >>= wrapMapTheory SuleCFOL2SoftFOL)
         else if lessSublogicComor (sublogicOfTh gth) $ 
                 Comorphism idCASL_nosub
              then resultToMaybe  
                      (coerceBasicTheory lid CASL "" (sign,sens)
-                      >>= map_theory idCASL_nosub
-                      >>= map_theory CASL2PCFOL
-                      >>= map_theory CASL2SubCFOL
-                      >>= map_theory SuleCFOL2SoftFOL)
+                      >>= wrapMapTheory idCASL_nosub
+                      >>= wrapMapTheory CASL2PCFOL
+                      >>= wrapMapTheory CASL2SubCFOL
+                      >>= wrapMapTheory SuleCFOL2SoftFOL)
              else resultToMaybe $
                  coerceBasicTheory lid SoftFOL "" (sign,sens))
 

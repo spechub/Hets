@@ -747,7 +747,7 @@ translateG_theory (GMorphism cid _ _ morphism2 _)
   let tlid = targetLogic cid
   bTh <- coerceBasicTheory lid (sourceLogic cid)
                     "translateG_theory" (sign, toNamedList sens)
-  (_, sens'') <- map_theory cid bTh
+  (_, sens'') <- wrapMapTheory cid bTh
   sens''' <- mapM (mapNamedM $ map_sen tlid morphism2) sens''
   return $ G_theory tlid (cod tlid morphism2) 0 (toThSens sens''') ind
 
