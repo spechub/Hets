@@ -106,8 +106,7 @@ see http://trac.informatik.uni-bremen.de:8080/hets
 Daniel
 ************************************************
 
-generate infrastructure for circular coinduction
-CCS example: commutativity of || by coinduction
+see http://trac.informatik.uni-bremen.de:8080/hets
 
 ************************************************
 Christian
@@ -168,103 +167,6 @@ Till
 
 see http://trac.informatik.uni-bremen.de:8080/hets
 user till
-
-
-************************************************
-FOR STUDENTS
-************************************************
-
-Data.Serizable (only when ghc supports it) better: rely on pointer equality
-XML interface
-increase performance
-
-integrate QuickCheck: come to lecture!
-
-++++++++++++++++++++++++++++++++++++++++++++++++
-Remaining things
-++++++++++++++++++++++++++++++++++++++++++++++++
-
-Mark-Oliver Stehr, Hamburg cf. HOL-Nurpl-Translation in Maude
-    Coq, PTT in Maude
-
-
-Proofs with basic datatypes
-
-Verbesserung der Fehlermeldungen
-
-Improve encoding: CATS/basic_encode.sml (3 days)
-More HOL-theories: CATS/HOL-CASL/struct_encode.sml (2 days)
-Renamings in hide-elimination: CATS/struct_encode.sml, CATS//flatten.sml (1 week)
-Example of Agnes und Frank: proofs in HOL-CASL (2 days)
-Term input+errors in cmd line interface: CATS/casl/casl.sml (1 day)
-Examples for cond rewriting -> Christophe
-Doku: VSE-Prover, VSE-Method VSE-demo in Bremen?
-Adapt more stuff from isabelle/src/HOL/Tools/datatype_package.ML (2 weeks)
-Eigene IsaWin-Instanz mit CASL-RS statt HOL-RS
-HOL-CASL Simplifier: CATS/HOL-CASL/simplifier.sml (1 week)
-HOL-CASL tactics: CATS/HOL-CALS/tactic.sml (2 days)
-HOL-CASL encoding: CATS/HOL-CASL/basic_encode.sml (1 day)
-Encoding of structured free (3 days)
-Encoding of structured cofree (2 weeks)
-Eingabesyntax als Mix zwischen CASL und HOL (3 days)
-Adapt Isabelle unions to CASL unions (1 week)
-IsaWin git/src/isa_ext/casl_thy.sml (1 week)
-Generate Proof obligations (1 week)
-Add renaming to Isabelle kernel (2 months)
-
-Basic datatypes CASL-lib/Basic/basic.casl
-Repository mit korrekten und fehlerhaften Specs
-
-HetCATS User manual, Doku fuer Environments (2 weeks)
-
-Conversion ASF/SDF-Parser -> abstract syntax (in Haskell)
-Comparsion of parsers (ML-yacc parser, SDF-Parser)
-
-Conversion-Tool CASL 1.0 => CASL 1.0.1 komplettieren
-PVS anbinden (Kooperation mit Cachan?)
-
-Portations: Intel-Solaris, Mac OS-10 (2 weeks)
-(X)Emacs mode for CASL, hide Display Annotations (2 weeks) -> Raffael Sturm
-
-Views on CASL specs: CATS/viewer.sml (2 weeks)
-Uebersetzung von CASL-LaTeX-Spezifikationen nach ASCII
-Module graph CATS/module_graph.sml (1 week) -> Maya?
-ATerms via XML: CATS/aterms.sml (2 weeks)
-
-Neues Tool-Schaubild auf Web-Seiten veröffentlichen
-
-Library management: CATS/lib_ana.sml (2 weeks)
-Version management/Uniform Workbench: CATS/lib_ana.sml (2 months)
-
-
-
-
-{- This does not work due to needed ordering:
-instance Functor Set where
-  fmap = mapSet
-instance Monad Set where
-  return = unitSet
-  m >>= k          = unionManySets (setToList (fmap k m))
--}
-
-
-
-
-Aufbau von comptable
---------------------
-[("normal","normal","normal"),
- ("normal","inclusion","normal"),
- ("inclusion","normal","normal"),
- ("inclusion","inclusion","inclusion")]
-
-Aufbau von ginfo
---------------------
-Mit initgraphs erzeugen
-
-Aufbau des Graphen selbst
-------------------------
-addnode
-addlink
 
 
 
