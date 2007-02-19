@@ -10,14 +10,14 @@ Stability   :  experimental
 Portability :  portable
 
 Definition of morphisms for propositional logic
+-}
+{-
+  Ref.
 
-Ref.
-
-Till Mossakowski, Joseph Goguen, Razvan Diaconescu, Andrzej Tarlecki.
-What is a Logic?.
-In Jean-Yves Beziau (Ed.), Logica Universalis, pp. 113-@133. Birkhäuser.
-2005.
-
+  Till Mossakowski, Joseph Goguen, Razvan Diaconescu, Andrzej Tarlecki.
+  What is a Logic?.
+  In Jean-Yves Beziau (Ed.), Logica Universalis, pp. 113-@133. Birkhäuser.
+  2005.
 -}
 
 module Propositional.Morphism where 

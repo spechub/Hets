@@ -11,16 +11,17 @@ Portability :  non-portable (imports Logic.Logic)
 
 Instance of class Logic for the propositional logic
    Also the instances for Syntax and Category.
+-}
 
-Ref.
+{-
+  Ref.
 
-http://en.wikipedia.org/wiki/Propositional_logic
+  http://en.wikipedia.org/wiki/Propositional_logic
 
-Till Mossakowski, Joseph Goguen, Razvan Diaconescu, Andrzej Tarlecki.
-What is a Logic?.
-In Jean-Yves Beziau (Ed.), Logica Universalis, pp. 113-@133. Birkhäuser.
-2005.
-
+  Till Mossakowski, Joseph Goguen, Razvan Diaconescu, Andrzej Tarlecki.
+  What is a Logic?.
+  In Jean-Yves Beziau (Ed.), Logica Universalis, pp. 113-@133. Birkhäuser.
+  2005.
 -}
 
 module Propositional.Logic_Propositional 

@@ -10,10 +10,11 @@ Stability   :  experimental
 Portability :  portable
 
 Definition of abstract syntax for propositional logic
+-}
 
-Ref.
-http://en.wikipedia.org/wiki/Propositional_logic
-
+{-
+  Ref.
+  http://en.wikipedia.org/wiki/Propositional_logic
 -}
 
 module Propositional.AS_BASIC_Propositional where
