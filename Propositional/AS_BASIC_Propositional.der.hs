@@ -10,6 +10,10 @@ Stability   :  experimental
 Portability :  portable
 
 Definition of abstract syntax for propositional logic
+
+Ref.
+http://en.wikipedia.org/wiki/Propositional_logic
+
 -}
 
 module Propositional.AS_BASIC_Propositional where
@@ -32,22 +36,17 @@ data Formula f = Negation (Formula f) Range
                | True_atom Range
                  -- pos: "True"
                | False_atom Range
-                 -- pos "False
-               | Term f
-                 -- Propositional \"terms\"
-               | Unparsed_formula String Range
-                 -- pos: First char in a String
+                 -- pos: "False
+               | Predication Common.Id.Id
+                 -- pos: Propositional Identifiers
                  deriving (Show, Eq, Ord)
- 
 
-data Term f = Prop_Var Common.Id.Id
-              -- pos: Propositional Varibles... \Alpha-Set
-              deriving (Show, Eq, Ord)
-
+-- True is always true -P
 is_True_atom :: Formula f -> Bool
 is_True_atom (True_atom _) = True
 is_True_atom _             = False
 
+-- and False if always false 
 is_False_atom :: Formula f -> Bool
 is_False_atom (False_atom _) = False
 is_False_atom _              = False

@@ -238,6 +238,7 @@ drifted_files = Syntax/AS_Architecture.hs Syntax/AS_Library.hs \
     ATC/DevGraph.hs \
     Modal/AS_Modal.hs CoCASL/AS_CoCASL.hs COL/AS_COL.hs CASL_DL/AS_CASL_DL.hs\
     ConstraintCASL/AS_ConstraintCASL.hs\
+    Propositional/AS_BASIC_Propositional.hs\
     $(gendrifted_files)
 
 atc_files = Common/AS_Annotation.der.hs Common/DefaultMorphism.hs \

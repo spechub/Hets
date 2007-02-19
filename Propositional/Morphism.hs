@@ -10,6 +10,14 @@ Stability   :  experimental
 Portability :  portable
 
 Definition of morphisms for propositional logic
+
+Ref.
+
+Till Mossakowski, Joseph Goguen, Razvan Diaconescu, Andrzej Tarlecki.
+What is a Logic?.
+In Jean-Yves Beziau (Ed.), Logica Universalis, pp. 113-@133. Birkhäuser.
+2005.
+
 -}
 
 module Propositional.Morphism where 
@@ -20,6 +28,9 @@ import Propositional.Sign as Sign
 import Common.Id
 import Common.Result
 
+-- Maps are simple maps between elements of sets
+-- By the definition of maps in Common.Lib.Map
+-- these maps are injective
 type PropMap = Map.Map Id Id
 
 -- | The datatype for morphisms in propositional logic as 

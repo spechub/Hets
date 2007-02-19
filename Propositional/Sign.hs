@@ -10,6 +10,14 @@ Stability   :  experimental
 Portability :  portable
 
 Definition of signatures for propositional logic
+
+Ref.
+
+Till Mossakowski, Joseph Goguen, Razvan Diaconescu, Andrzej Tarlecki.
+What is a Logic?.
+In Jean-Yves Beziau (Ed.), Logica Universalis, pp. 113-@133. Birkhäuser.
+2005.
+
 -}
 
 module Propositional.Sign where
@@ -17,6 +25,7 @@ module Propositional.Sign where
 import qualified Common.Lib.Set as Set
 import Common.Id
 
+-- Signatures are just sets
 data Sign = Sign {items :: Set.Set Id}
           deriving (Eq, Show)
 
