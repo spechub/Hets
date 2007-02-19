@@ -47,7 +47,6 @@ import Debug.Trace as DB
 
 -- A note to the world - no it isn't nice to have to declare XSD Types here as we shouldn't depend on XSD. But I've no choice, the alternative is
 -- to use a bizarre hook system which I tried in haifa previously, and was rather difficult to use.
-$(derive [''QName])
 xsdTypeKey = newDynamicKey "xsdTypeKey" (undefined::QName)
 
 instance XMLNamespace XmlTree where
@@ -62,8 +61,8 @@ instance XMLNamespace XmlTree where
 instance XMLNamespace DTDElem
 instance XMLNamespace XNode
 
-$(deriveData [''NTree, ''XNode])
-$(derive [''AttrSet, ''ElemSet, ''DTDElem])
+$(deriveData [''QName, ''NTree, ''XNode])
+$(derive [''AttrSet, ''ElemSet])
 
 {-
 instance XMLData XNode

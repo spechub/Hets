@@ -319,7 +319,6 @@ cpp_sources = Common/DynamicUtils.hs \
     SPASS/Logic_SPASS.hs GUI/Utils.hs Driver/WriteFn.hs \
     Comorphisms/LogicList.hs Comorphisms/LogicGraph.hs \
     Comorphisms/KnownProvers.hs hets.hs $(happy_files) \
-    hxt/Text/XML/HXT/ProtocolHandler/ProtocolHandler.hs \
     PGIP/Common.hs PGIP/Commands.hs \
     OMDoc/HetsInterface.hs
 
@@ -380,20 +379,22 @@ syb_pkg: $(SETUP)
 shellac_pkg: utils/shellac.tgz $(SETUP)
 	@if $(HCPKG) field Shellac version; then \
           echo "of shellac package found"; else \
-	  $(RM) -r shellac; \
-	  $(TAR) zxf utils/shellac.tgz; \
-	  (cd shellac; $(SETUPPACKAGE)) fi
+          $(RM) -r shellac; \
+          $(TAR) zxf utils/shellac.tgz; \
+          (cd shellac; $(SETUPPACKAGE)) fi
 
 shread_pkg: utils/shread.tgz $(SETUP)
 	@if $(HCPKG) field Shellac-readline version; then \
           echo "of shellac-readline package found"; else \
           $(RM) -rf shread; \
-	  $(TAR) zxf utils/shread.tgz; \
-	  (cd shread; $(SETUPPACKAGE)) fi
+          $(TAR) zxf utils/shread.tgz; \
+          (cd shread; $(SETUPPACKAGE)) fi
 
 hxt_pkg: $(SETUP)
 	@if $(HCPKG) field hxt version; then \
           echo "of hxt package found"; else \
+          $(RM) -rf hxt; \
+          $(TAR) zxf utils/hxt.tgz; \
           (cd hxt; $(SETUPPACKAGE)) fi
 
 haifa_pkg: $(SETUP)
