@@ -22,11 +22,15 @@ In Jean-Yves Beziau (Ed.), Logica Universalis, pp. 113-@133. Birkhäuser.
 
 module Propositional.Morphism where 
 
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Propositional.Sign as Sign
 import Common.Id
 import Common.Result
+import Common.Doc
+import Common.DocUtils
+import Data.Typeable
+import Common.ATerm.Conversion
 
 -- Maps are simple maps between elements of sets
 -- By the definition of maps in Common.Lib.Map
@@ -42,6 +46,11 @@ data Morphism = Morphism
      , target :: Sign
      , propMap :: PropMap
     } deriving (Eq, Show)
+
+instance Pretty Morphism where
+    pretty = printMorphism
+instance Typeable Morphism
+instance ShATermConvertible Morphism
 
 -- | Constructs an id-morphism as the diagonal 
 
@@ -89,3 +98,7 @@ composeMor f g
           case Map.lookup a h of
             Nothing -> composeHelper xs h newMor
             Just v  -> composeHelper xs h (Map.insert k v newMor)
+
+-- | Pretty printing for Morphisms
+printMorphism :: Morphism -> Doc
+printMorphism m = (pretty $ (source m)) <> text "-->" <> (pretty $ (target m)) <> (vcat $ map (\(x,y) -> lparen <> (idDoc x) <> text "," <> (idDoc y) <> rparen) (Map.assocs $propMap m))

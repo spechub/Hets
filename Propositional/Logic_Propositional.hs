@@ -54,3 +54,5 @@ instance Category Propositional Sign Morphism where
     legal_mor Propositional f = isLegalMorphism f
     -- composition of morphisms
     comp Propositional f g = composeMor f g
+
+instance Sentences Propositional Formula () Sign Morphism ()
