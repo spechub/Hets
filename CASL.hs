@@ -9,6 +9,10 @@ represented by type variables, that can be instantiated later on.
 This is needed by CASL extensions, which typically extend
 abstract syntax, signatures and signature morphisms.
 For CASL, these holes are just filled with the unit tpye ().
+However, many pieces of code can be written for any type f
+instead of (), and thus be suitable also for CASL extensions.
+It may be necessary to constrain these type variables in your
+code, e.g. for pretty printing prefix your types with 'Pretty f =>'.
 
 /Abstract Syntax/
 

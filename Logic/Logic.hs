@@ -27,12 +27,15 @@ Provides data structures for logics (with symbols). Logics are
    are needed because no operation will involve all types of
    the multiparameter type class; hence we need a method to derive
    the missing types. We chose an easy way: for each logic, we
-   introduce a new singleton type that constitutes the identity
+   introduce a new singleton type that is the name, or constitutes the identity
    of the logic. All other types of the multiparameter type class
-   depend on this 'identy constituting' type, and all operations take
+   depend on this 'identity constituting' type, and all operations take
    the 'identity constituting' type as first arguments. The value
    of the argument of the 'identity constituting' type is irrelevant
    (note that there is only one value of such a type anyway).
+
+   Note that we tend to use 'lid' both for the 'identity type'
+   of a logic, as well as for its unique inhabitant, i.e. 'lid::lid'.
 
    References:
 
