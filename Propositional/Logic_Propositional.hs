@@ -21,6 +21,7 @@ module Propositional.Logic_Propositional
 import Logic.Logic
 import Propositional.Sign as Sign
 import Propositional.Morphism as Morphism
+import Propositional.AS_BASIC_Propositional
 
 data Propositional = Propositional deriving Show --lid
 
