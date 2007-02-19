@@ -1,132 +1,8 @@
 Plan and priority list for CoFI tool activities
 
-************************************************
-Immanuel
-************************************************
+most things have been moved to the new bug tracking system
 
 see http://trac.informatik.uni-bremen.de:8080/hets
-user normann
-
-************************************************
-Razvan (Till)
-************************************************
-
-see http://trac.informatik.uni-bremen.de:8080/hets
-user rpascanu
-
-************************************************
-Anton (Till)
-************************************************
-
-see http://trac.informatik.uni-bremen.de:8080/hets
-user luecke
-
-**************** task A ************************
-
-see http://trac.informatik.uni-bremen.de:8080/hets
-user maeder
-
-
-************************************************
-Florian (Till)
-************************************************
-
-see http://trac.informatik.uni-bremen.de:8080/hets
-user fmossa
-
-************************************************
-Hendrik (Till)
-************************************************
-
-see http://trac.informatik.uni-bremen.de:8080/hets
-user hiben
-
-Anzeigen von lokalen Beweiszielen bei nicht-gesetztem Cons: Till fragen
-
-
-************************************************
-Mingyi (Till)
-************************************************
-
-see http://trac.informatik.uni-bremen.de:8080/hets
-user xinga
-
-
-************************************************
-Heng (Klaus)
-************************************************
-see http://trac.informatik.uni-bremen.de:8080/hets
-user jiang
-
-************************************************
-Ken (Till)
-************************************************
-
-see http://trac.informatik.uni-bremen.de:8080/hets
-user ken
-
-
-************************************************
-further task 1
-************************************************
-see http://trac.informatik.uni-bremen.de:8080/hets
-
-************************************************
-further task 2
-************************************************
-
-see http://trac.informatik.uni-bremen.de:8080/hets
-
-************************************************
-further task 3
-************************************************
-
-see http://trac.informatik.uni-bremen.de:8080/hets
-
-************************************************
-further task 4
-************************************************
-
-done
-
-************************************************
-further task 5
-************************************************
-
-see http://trac.informatik.uni-bremen.de:8080/hets
-
-
-************************************************
-remaining stuff
-************************************************
-
-see http://trac.informatik.uni-bremen.de:8080/hets
-
-************************************************
-Daniel
-************************************************
-
-see http://trac.informatik.uni-bremen.de:8080/hets
-
-************************************************
-Christian
-************************************************
-
-see http://trac.informatik.uni-bremen.de:8080/hets
-
-************************************************
-Rainer (Klaus)
-************************************************
-see http://trac.informatik.uni-bremen.de:8080/hets
-user rainer25
-
-************************************************
-Martin
-************************************************
-
-see http://trac.informatik.uni-bremen.de:8080/hets
-user mkhl
-
 
 ************************************************
 Klaus
@@ -159,14 +35,6 @@ Recognize guarded fragment of CASL:
       | exists x . At(x) /\ G
 
 
-
-
-************************************************
-Till
-************************************************
-
-see http://trac.informatik.uni-bremen.de:8080/hets
-user till
 
 
 
