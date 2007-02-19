@@ -139,15 +139,13 @@ for ProofManagement-GUI
 
 trace if liniarity of sentences along development is given
 
-Consistency checker interface
-  via global interface, accessible from global and node menus
-  use falseSentence from Logic.Logic (property: holds in no model)
-    proved -> inconsistent
-    disproved -> consistent (assuming completeness)
-  batch mode for automatic provers such as SPASS
-    (use automatic flag for provers)
-
 Ignore axiom selection for interactive provers
+
+((
+Improvements:
+ * display node name (instead of number) in uDrawGraph widow title
+ * add conversion of equivalent sorts into special arrow
+    * needs modification of Taxnomy Graph 
 
 Translation between Achim's ontology data structure and CASL (in Hets)
 
@@ -155,6 +153,7 @@ visualization of "taxonomy" of CASL signatures
   (subsorts = inheritance, unary preds = concepts, binary preds = relations)
 
  last two ... partially done
+))
 
 Recognize guarded fragment of CASL:
   G ::= forall x . At(x) => G      where At is a conjunction of atoms
