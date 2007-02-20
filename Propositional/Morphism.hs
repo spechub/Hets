@@ -92,7 +92,8 @@ composeMor f g
       fMap    = propMap f
       gMap    = propMap g
       fassoc  = Map.assocs fMap
-      composeHelper :: (Ord a, Ord k, Ord b) => [(k, a)] -> Map.Map a b -> Map.Map k b -> Map.Map k b
+      composeHelper :: (Ord a, Ord k, Ord b) => [(k, a)] -> Map.Map a b 
+                    -> Map.Map k b -> Map.Map k b
       composeHelper [] _ newMor          = newMor
       composeHelper ((k, a):xs) h newMor =
           case Map.lookup a h of
@@ -101,4 +102,6 @@ composeMor f g
 
 -- | Pretty printing for Morphisms
 printMorphism :: Morphism -> Doc
-printMorphism m = (pretty $ (source m)) <> text "-->" <> (pretty $ (target m)) <> (vcat $ map (\(x,y) -> lparen <> (idDoc x) <> text "," <> (idDoc y) <> rparen) (Map.assocs $propMap m))
+printMorphism m = pretty (source m) <> text "-->" <> pretty (target m)
+  <> vcat (map ( \ (x, y) -> lparen <> idDoc x <> text "," 
+  <> idDoc y <> rparen) $ Map.assocs $ propMap m)
