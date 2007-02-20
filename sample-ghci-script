@@ -1,0 +1,33 @@
+:l Test.hs
+:m +Common.Id
+:m +Logic.Grothendieck
+:m +Logic.Coerce
+:m +CASL.Logic_CASL
+:m +CASL.Sign
+:m +Static.DevGraph
+:m +Data.Graph.Inductive.Graph
+:set +t
+-- show all types
+Just (ln,libenv)<-process "../CASL-lib/Basic/Numbers.casl" -- load CASL library
+let Just libNumbers = Map.lookup ln libenv -- get library Numbers
+let Just entryNat = Map.lookup (mkSimpleId "Nat") (globalEnv libNumbers) -- get entry for "Nat" in global environment
+let SpecEntry gensigNat = entryNat -- Nat is a specification...
+let (_,_,_,nodeSigNat) = gensigNat -- extract the nodeSig for the body
+let gSignNat = getSig nodeSigNat -- get the Grothendieck signature
+let Just sigNat = case gSignNat of (G_sign lid x _) -> coerceSign lid CASL "" x
+-- coerce the Grothendieck signature to be a CASL signature
+let opsNat = opMap sigNat -- extract the operation symbols
+let Just zeroProfile = Map.lookup (stringToId "0") opsNat -- lookup the type of 0
+zeroProfile -- and print it
+
+let nodeNat = getNode nodeSigNat -- get development graph node index for Nat
+let dgNodeLabNat = lab' $ context (devGraph libNumbers) nodeNat -- get node label for Nat
+let gtheoryNat = dgn_theory dgNodeLabNat -- get G_theory for Nat
+let Just sensNat = case gtheoryNat of G_theory lid _ _ s _ -> coerceThSens lid CASL "" s
+-- extract CASL sentences from theory
+let Just power_Nat = Map.lookup "power_Nat" sensNat -- get formula named power_Nat
+:m +Common.OrderedMap
+:m +Logic.Prover
+:m +Common.DocUtils
+let power_Nat' = value $ ele power_Nat -- get the sentences
+putStrLn $ showDoc power_Nat' "" -- and pretty print it (well, with all the profiles...)
