@@ -55,17 +55,6 @@ SPASS/PrintTPTP.hs:{- todo:
 Taxonomy/MMiSSOntology.hs:   todo: add a new edge type for equivalence which should be visited only once
 
 ************************************************
-Christian
-************************************************
-
-Bitte auch aus folgenden Files die todo-Listen nach Trac verschieben:
-
-Comorphisms/CoCFOL2IsabelleHOL.hs:{- todo:
-HasCASL/Sublogic.hs:{- todo: test computations
-CASL/Sublogic.hs:-- to do: implement pr_sign
-
-
-************************************************
 Till
 ************************************************
 

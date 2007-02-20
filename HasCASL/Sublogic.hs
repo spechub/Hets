@@ -12,8 +12,6 @@ This module provides the sublogic functions (as required by Logic.hs) for
   given element, to check whether an item is part of a given sublogic, and --
   not yet -- to project an element into a given sublogic.
 -}
-{- todo: test computations
--}
 
 module HasCASL.Sublogic
     ( -- * datatypes
@@ -88,20 +86,6 @@ data Sublogic = Sublogic
     , has_type_constructors :: Bool
     , which_logic :: Formulas
     } deriving (Show, Eq)
-
-{-
-instance Ord Sublogic where
--- this is only a partial order! 
-    a <= b = sublogic_max a b == b
-    a < b = a <= b && a /= b
-    a >= b = sublogic_max a b == a
-    a > b = a >= b && a /= b
-    compare a b = let c = sublogic_max a b in
-         if a == b then EQ
-         else if a == c then GT
-         else if b == c then LT
-         else error "instance Ord HasCASL.Sublogic"
--}
 
 -- * special sublogic elements
 

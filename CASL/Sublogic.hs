@@ -16,8 +16,6 @@ This module provides the sublogic functions (as required by Logic.hs)
   sublogic, and to project an element into a given sublogic.
 -}
 
--- to do: implement pr_sign
-
 module CASL.Sublogic
     ( -- * types
       CASL_Sublogics

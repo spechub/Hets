@@ -8,12 +8,6 @@ Stability   :  provisional
 Portability :  non-portable (imports Logic.Logic)
 
 The embedding comorphism from CoCASL to Isabelle-HOL.
-
--}
-
-{- todo:
-    encoding of cofreeness
-    modal formulas
 -}
 
 module Comorphisms.CoCFOL2IsabelleHOL (CoCFOL2IsabelleHOL(..)) where
