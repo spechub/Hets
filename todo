@@ -52,12 +52,14 @@ OWL_DL/ReadWrite.hs:{- todo:
 OWL_DL/StructureAna.hs:        -- TODO: check if gEmbed (Logic.Grothendieck) and G_morphism
 GUI/ProofManagement.hs:  todo:
 GUI/ProofManagement.hs:  -- TODO: do something with the resulting G_theory before returning it?
+GUI/hets_cgi.hs:   todo:
 SPASS/DFGParser.hs:quantification s = do (ts',t') <- parens (do ts <- squares (commaSep1 term) -- todo: var binding should allow only simple terms
 SPASS/PrintTPTP.hs:{- todo:
 SPASS/Logic_SPASS.hs:         is_subsig SoftFOL = const $ const True -- TODO!!
 Taxonomy/MMiSSOntology.hs:   todo: add a new edge type for equivalence which should be visited only once
 Common/LaTeX_funs.hs:   TODO:
 Common/LaTeX_funs.hs:          -- TODO: Build a nice correction map
+Logic/Prover.hs:{- todo:
 
 ************************************************
 Christian
@@ -67,6 +69,9 @@ Bitte auch aus folgenden Files die todo-Listen nach Trac verschieben:
 
 Driver/Options.hs:-- | 'Flattening' describes how flat the Earth really is (TODO: add comment)
 Isabelle/Logic_Isabelle.hs:         is_subsig Isabelle = const $ const True -- TODO!!
+CASL/Morphism.hs:todo:
+Isabelle/IsaPrint.hs:  todo: brackets in (? x . p x) ==> q
+Isabelle/IsaProve.hs:  todo: thy files in subdir, check of legal changes in thy file
 
 ************************************************
 Till
@@ -74,23 +79,6 @@ Till
 
 Bitte auch aus folgenden Files die todo-Listen nach Trac verschieben:
 
-CASL/Morphism.hs:todo:
-CASL/SymbolMapAnalysis.hs:todo:
-CoCASL/Logic_CoCASL.hs:{- todo:
-CoCASL/StatAna.hs:{- todo:
-ConstraintCASL/Logic_ConstraintCASL.hs:{- todo:
-ConstraintCASL/StaticAna.hs:{- todo: check formulas -}
-CspCASL/Logic_CspCASL.hs:   todo:
-CspCASL/SignCSP.hs:-- todo:  implement isInclusion, computeExt
-CspCASL/StatAnaCSP.hs:{- todo:
-GUI/ConvertDevToAbstractGraph.hs:   todo:
-GUI/hets_cgi.hs:   todo:
-Isabelle/IsaPrint.hs:  todo: brackets in (? x . p x) ==> q
-Isabelle/IsaProve.hs:  todo: thy files in subdir, check of legal changes in thy file
-Logic/Grothendieck.hs:{- todo: somthing like the following...
-Logic/Prover.hs:{- todo:
-Modal/Logic_Modal.hs:{- todo:
-PGIP/Utils.hs:{- todo: refactor getGoalList, extractGraphEdge, extractGraphLabeledEdge
 Proofs/Automatic.hs:todo in general:
 Proofs/Automatic.hs:{- todo: implement apply for GlobDecomp and Subsumption
 Proofs/EdgeUtils.hs:{- todo: also treat conservativity proof status in computation of proof basis
@@ -103,10 +91,6 @@ Static/DevGraph.hs:todo:
 Syntax/Parse_AS_Structured.hs:   todo:
 CASL/Amalgamability.hs:TODO:
 CASL/Amalgamability.hs:                          -- TODO: generate proof obligations
-OMDoc/OMDocOutput.hs:  BUGS/TODO:
-OMDoc/Util.hs:-- TODO : this looks very slow...
-PGIP/Command_Parser.hs:  TODO :
-PGIP/Commands.hs: TODO :
 Proofs/InferBasic.hs:            -- TODO: Reimplement stuff
 Static/DevGraph.hs:                               dgl_type = GlobalDef, -- TODO: other type
 Static/DevGraph.hs:                               dgl_type = GlobalDef, -- TODO: other type
@@ -114,3 +98,16 @@ Static/LogicStructured.hs:   TODO
 Static/LogicStructured.hs:-- see TODO section for possible extensions for (isJust enc) and
 Syntax/Parse_AS_Architecture.hs:   TODO:
 Syntax/Parse_AS_Library.hs:   TODO:
+
+an Hiwis delegiert:
+ConstraintCASL/Logic_ConstraintCASL.hs:{- todo:
+ConstraintCASL/StaticAna.hs:{- todo: check formulas -}
+OMDoc/OMDocOutput.hs:  BUGS/TODO:
+OMDoc/Util.hs:-- TODO : this looks very slow...
+PGIP/Utils.hs:{- todo: refactor getGoalList, extractGraphEdge, extractGraphLabeledEdge
+PGIP/Command_Parser.hs:  TODO :
+PGIP/Commands.hs: TODO :
+
+CspCASL/Logic_CspCASL.hs:   todo:
+CspCASL/SignCSP.hs:-- todo:  implement isInclusion, computeExt
+CspCASL/StatAnaCSP.hs:{- todo:
