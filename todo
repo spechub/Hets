@@ -49,10 +49,24 @@ OWL_DL/Logic_OWL_DL.hs:{- todo:
 OWL_DL/Print.hs:    todo:
 OWL_DL/ReadWrite.der.hs:{- todo:
 OWL_DL/ReadWrite.hs:{- todo:
+OWL_DL/StructureAna.hs:        -- TODO: check if gEmbed (Logic.Grothendieck) and G_morphism
 GUI/ProofManagement.hs:  todo:
+GUI/ProofManagement.hs:  -- TODO: do something with the resulting G_theory before returning it?
 SPASS/DFGParser.hs:quantification s = do (ts',t') <- parens (do ts <- squares (commaSep1 term) -- todo: var binding should allow only simple terms
 SPASS/PrintTPTP.hs:{- todo:
+SPASS/Logic_SPASS.hs:         is_subsig SoftFOL = const $ const True -- TODO!!
 Taxonomy/MMiSSOntology.hs:   todo: add a new edge type for equivalence which should be visited only once
+Common/LaTeX_funs.hs:   TODO:
+Common/LaTeX_funs.hs:          -- TODO: Build a nice correction map
+
+************************************************
+Christian
+************************************************
+
+Bitte auch aus folgenden Files die todo-Listen nach Trac verschieben:
+
+Driver/Options.hs:-- | 'Flattening' describes how flat the Earth really is (TODO: add comment)
+Isabelle/Logic_Isabelle.hs:         is_subsig Isabelle = const $ const True -- TODO!!
 
 ************************************************
 Till
@@ -87,6 +101,16 @@ Proofs/InferBasic.hs:todo:
 Static/AnalysisArchitecture.hs:{-  todo:
 Static/DevGraph.hs:todo:
 Syntax/Parse_AS_Structured.hs:   todo:
-
-
-
+CASL/Amalgamability.hs:TODO:
+CASL/Amalgamability.hs:                          -- TODO: generate proof obligations
+OMDoc/OMDocOutput.hs:  BUGS/TODO:
+OMDoc/Util.hs:-- TODO : this looks very slow...
+PGIP/Command_Parser.hs:  TODO :
+PGIP/Commands.hs: TODO :
+Proofs/InferBasic.hs:            -- TODO: Reimplement stuff
+Static/DevGraph.hs:                               dgl_type = GlobalDef, -- TODO: other type
+Static/DevGraph.hs:                               dgl_type = GlobalDef, -- TODO: other type
+Static/LogicStructured.hs:   TODO
+Static/LogicStructured.hs:-- see TODO section for possible extensions for (isJust enc) and
+Syntax/Parse_AS_Architecture.hs:   TODO:
+Syntax/Parse_AS_Library.hs:   TODO:
