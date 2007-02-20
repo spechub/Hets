@@ -224,7 +224,7 @@ class (Category lid sign morphism, Ord sentence,
                        morphism -> [Named sentence] -> Result (Maybe Bool)
       conservativityCheck l _ _ _ = statErr l "conservativityCheck"
       -- | the empty proof tree
-      empty_proof_tree :: proof_tree
+      empty_proof_tree :: lid -> proof_tree
 
 -- | a dummy static analysis function to allow type checking *.inline.hs files
 inlineAxioms :: StaticAnalysis lid
