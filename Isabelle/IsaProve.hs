@@ -11,11 +11,6 @@ Portability :  portable
 Interface for Isabelle theorem prover.
 -}
 {-
-  todo: thy files in subdir, check of legal changes in thy file
-   consistency check
-   check if (goalStatus = Proved (Just True)) (was goalUsedInProof)
-    can be derived from isabelle's proof tree
-
   Interface between Isabelle and Hets:
    Hets writes Isabelle .thy file and starts Isabelle
    User extends .thy file with proofs

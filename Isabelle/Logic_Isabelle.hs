@@ -61,7 +61,7 @@ instance StaticAnalysis Isabelle () Sentence ()
          sign_to_basic_spec Isabelle _sigma _sens = ()
          empty_signature Isabelle = emptySign
          inclusion Isabelle = defaultInclusion (is_subsig Isabelle)
-         is_subsig Isabelle = const $ const True -- TODO!!
+         is_subsig Isabelle = const $ const True
 
 instance Logic Isabelle () () Sentence () ()
                Sign

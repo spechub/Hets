@@ -10,10 +10,6 @@ Portability :  portable
 
 Printing functions for Isabelle logic.
 -}
-{-
-  todo: brackets in (? x . p x) ==> q
-  properly construct docs
--}
 
 module Isabelle.IsaPrint
     ( showBaseSig

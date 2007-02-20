@@ -66,14 +66,6 @@ Common/Utils.hs:   Todo:
 Christian
 ************************************************
 
-Bitte auch aus folgenden Files die todo-Listen nach Trac verschieben:
-
-Driver/Options.hs:-- | 'Flattening' describes how flat the Earth really is (TODO: add comment)
-Isabelle/Logic_Isabelle.hs:         is_subsig Isabelle = const $ const True -- TODO!!
-CASL/Morphism.hs:todo:
-Isabelle/IsaPrint.hs:  todo: brackets in (? x . p x) ==> q
-Isabelle/IsaProve.hs:  todo: thy files in subdir, check of legal changes in thy file
-
 ************************************************
 Till
 ************************************************

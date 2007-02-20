@@ -349,7 +349,7 @@ instance Show HetOutType where
 hetOutTypeList :: [HetOutType]
 hetOutTypeList = [ OutDGraph f False | f <- [ Flattened, HidingOutside, Full]]
 
--- | 'Flattening' describes how flat the Earth really is (TODO: add comment)
+-- | 'Flattening' describes how flat the Earth really is
 data Flattening = Flattened | HidingOutside | Full
 
 instance Show Flattening where
