@@ -9,7 +9,7 @@
 # !!! Note: This makefile is written for GNU make !!!
 #           (gmake on solaris)
 
-all: patch hets
+all: programatica_pkg hets
 
 ####################################################################
 ## Some varibles, which control the compilation
@@ -136,13 +136,24 @@ PFE_DIRS = base/AST base/TI base/parse2 base/parse2/Lexer base/parse2/Parser \
 PFE_PATHS = $(addprefix $(PFE_TOOLDIR)/, $(PFE_DIRS))
 pfe_sources = $(wildcard $(addsuffix /*hs, $(PFE_PATHS)))
 PFE_PATH = $(addprefix -i, $(PFE_PATHS))
-PFE_FLAGS = $(PFE_PATH) -DPROGRAMATICA
+PFE_FLAGS = -DPROGRAMATICA
 happy_files += $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs
 
 LEX_DIR = $(PFE_TOOLDIR)/base/parse2/Lexer
 
 patch: Haskell/Programatica.patch
 	patch -usNlp0 -d $(PFE_TOOLDIR) -i `pwd`/$< || exit 0
+
+programatica_pkg: patch $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs \
+            $(LEX_DIR)/HsLex.hs
+	@if $(HCPKG) field programatica version; then \
+          echo "of programatica package found"; else \
+          cp -f utils/programatica.cabal ../programatica/tools; \
+          cp -f utils/Setup ../programatica/tools; \
+          (cd ../programatica/tools; \
+           ./Setup configure \
+              --prefix=$(HOME)/.ghc/$(ARCH)-$(OSBYUNAME)-hets-packages; \
+           ./Setup build; ./Setup install --user) fi
 
 $(LEX_DIR)/HsLex.hs: $(LEX_DIR)Gen/HsLexerGen
 	echo "{-# OPTIONS -w #-}" > $@
@@ -402,6 +413,8 @@ haifa_pkg: $(SETUP)
           echo "of HAIFA package found"; else \
           (cd haifa-lite; $(SETUPPACKAGE)) fi
 
+programatica_pkg:
+
 patch:
 
 hets-opt:
@@ -620,6 +633,7 @@ real_clean: clean
 ### clean user packages
 package_clean:
 	$(HCPKG) unregister HAIFA --user || exit 0
+	$(HCPKG) unregister programatica --user || exit 0
 	$(HCPKG) unregister hxt --user || exit 0
 	$(HCPKG) unregister Shellac-readline --user || exit 0
 	$(HCPKG) unregister HTTP --user || exit 0
