@@ -397,10 +397,11 @@ trace_edge_status lab =
        _ -> "other unproven or proven"
 -}
 
-
+{- | update both the given devgraph and the changelist with a given change -}
 updateWithOneChange :: DGChange -> DGraph -> [DGChange] -> (DGraph, [DGChange])
 updateWithOneChange change dgraph changeList = (changeDG dgraph change, change:changeList)
 
+{- | update both the given devgraph and the changelist with a list of given changes -}
 updateWithChanges :: [DGChange] -> DGraph -> [DGChange] -> (DGraph, [DGChange])
 updateWithChanges changes dgraph changeList = (changesDG dgraph changes, changes++changeList)
 
