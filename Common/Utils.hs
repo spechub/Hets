@@ -96,15 +96,6 @@ stripSuffix suf fp = case filter justs $ map (stripSuf fp) suf of
           justs (Nothing) = False
           justs (Just _)  = True
 
--- |
--- like the chomp from Perl
--- but this chomp removes trailing newlines AND trailing spaces if any
-chomp :: String -> String
-chomp = reverse . chomp' . reverse
-    where chomp' [] = []
-          chomp' xs@(x:xs') | x == '\n' || x == ' ' = chomp' xs'
-                            | otherwise = xs
-
 isSublistOf :: (Eq a) => [a] -> [a] -> Bool
 isSublistOf [] _ = True
 isSublistOf _ [] = False

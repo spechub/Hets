@@ -32,8 +32,6 @@ import qualified Common.Lib.Map as Map
 import Common.ATerm.AbstractSyntax
 import Common.ATerm.ReadWrite
 
-import Common.Utils
-
 import Common.Id
 import Common.AS_Annotation
 
@@ -50,6 +48,16 @@ import Syntax.AS_Library
 import Text.ParserCombinators.Parsec (parse)
 import qualified Common.Anno_Parser (annotations,parse_anno)
 import Common.Lexer(skip)
+
+-- |
+-- like the chomp from Perl
+-- but this chomp removes trailing newlines AND trailing spaces if any
+chomp :: String -> String
+chomp = reverse . chomp' . reverse
+    where chomp' [] = []
+          chomp' xs@(x:xs') | x == '\n' || x == ' ' = chomp' xs'
+                            | otherwise = xs
+
 
 read_sml_ATerm :: FilePath -> IO LIB_DEFN
 read_sml_ATerm fn = readFile fn >>= return . from_sml_ATermString
