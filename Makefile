@@ -145,11 +145,11 @@ patch: Haskell/Programatica.patch
 	patch -usNlp0 -d $(PFE_TOOLDIR) -i `pwd`/$< || exit 0
 
 programatica_pkg: patch $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs \
-            $(LEX_DIR)/HsLex.hs
+            $(LEX_DIR)/HsLex.hs $(SETUP)
 	@if $(HCPKG) field programatica version; then \
           echo "of programatica package found"; else \
           cp -f utils/programatica.cabal ../programatica/tools; \
-          cp -f utils/Setup ../programatica/tools; \
+          cp -f $(SETUP) ../programatica/tools; \
           (cd ../programatica/tools; \
            ./Setup configure \
               --prefix=$(HOME)/.ghc/$(ARCH)-$(OSBYUNAME)-hets-packages; \
@@ -366,6 +366,7 @@ tax_objects = $(patsubst %.hs, %.o, $(tax_sources))
     http_pkg syb_pkg shellac_pkg shread_pkg hxt_pkg haifa_pkg \
     check capa hacapa h2h h2hf showKP clean_genRules genRules \
     count doc apache_doc post_doc4apache fromKif \
+    programatica_pkg \
     derivedSources install_hets install release cgi patch ghci
 
 .SECONDARY : %.hs %.d $(generated_rule_files) $(gen_inline_axiom_files)
