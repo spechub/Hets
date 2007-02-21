@@ -9,7 +9,7 @@
 # !!! Note: This makefile is written for GNU make !!!
 #           (gmake on solaris)
 
-all: programatica_pkg hets
+all: hets
 
 ####################################################################
 ## Some varibles, which control the compilation
@@ -25,8 +25,7 @@ CLEAN_PATH = . utils/itcor \
     Common/Lib Common/ATerm Logic CASL CASL/CCC CASL/CompositionTable \
     Syntax Static GUI HasCASL Haskell Modal CoCASL COL ConstraintCASL \
     CspCASL ATC Proofs Comorphisms Isabelle Driver \
-    Taxonomy CASL_DL SPASS OWL_DL OMDoc PGIP Propositional $(PFE_PATHS) \
-    $(addprefix haifa-lite/src/, $(HAIFA_PATHS))
+    Taxonomy CASL_DL SPASS OWL_DL OMDoc PGIP Propositional
 
 # the 'replacing spaces' example was taken from the (GNU) Make info manual
 empty =
@@ -56,7 +55,7 @@ PERL = perl
 HAPPY = happy -sga
 GENRULES = utils/genRules
 GENRULECALL = $(GENRULES) -r Typeable -r ShATermConvertible \
-    -i Data.Dynamic -i Common.ATerm.Lib
+    -i Data.Typeable -i Common.ATerm.Lib
 DRIFT = utils/DrIFT
 INLINEAXIOMS = utils/outlineAxioms
 HADDOCK = haddock
@@ -70,9 +69,10 @@ endif
 
 ARCH = $(subst $(space),,$(shell uname -m))
 SETUP = utils/Setup
+SETUPPREFIX = --prefix=$(HOME)/.ghc/$(ARCH)-$(OSBYUNAME)-hets-packages
+
 SETUPPACKAGE = ../$(SETUP) clean; \
-    ../$(SETUP) configure \
-        --prefix=$(HOME)/.ghc/$(ARCH)-$(OSBYUNAME)-hets-packages; \
+    ../$(SETUP) configure $(SETUPPREFIX); \
     ../$(SETUP) build; ../$(SETUP) haddock; ../$(SETUP) install --user
 
 HAXMLVERSION = $(shell $(HCPKG) field HaXml version)
@@ -150,8 +150,7 @@ programatica_pkg: patch $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs \
           cp -f utils/programatica.cabal ../programatica/tools; \
           cp -f $(SETUP) ../programatica/tools; \
           (cd ../programatica/tools; \
-           ./Setup configure \
-              --prefix=$(HOME)/.ghc/$(ARCH)-$(OSBYUNAME)-hets-packages; \
+           ./Setup configure $(SETUPPREFIX); \
            ./Setup build; ./Setup install --user) fi
 
 $(LEX_DIR)/HsLex.hs: $(LEX_DIR)Gen/HsLexerGen
@@ -300,7 +299,7 @@ Modal_files = Modal/AS_Modal.hs Modal/ModalSign.hs
 ConstraintCASL_files = ConstraintCASL/AS_ConstraintCASL.hs
 CoCASL_files = CoCASL/AS_CoCASL.hs CoCASL/CoCASLSign.hs
 COL_files = COL/AS_COL.hs COL/COLSign.hs
-CspCASL_files = CspCASL/AS_CspCASL.hs CspCASL/AS_CspCASL_Process.hs CspCASL/SignCSP.hs 
+CspCASL_files = CspCASL/AS_CspCASL.hs CspCASL/AS_CspCASL_Process.hs CspCASL/SignCSP.hs
 
 CASL_DL_files = CASL_DL/AS_CASL_DL.hs CASL_DL/Sign.hs
 
@@ -325,8 +324,7 @@ derived_sources += $(drifted_files) Driver/Version.hs $(happy_files) \
     OWL_DL/ReadWrite.hs ConstraintCASL/AS_ConstraintCASL.hs
 
 # sources that have {-# OPTIONS -cpp #-}
-cpp_sources = Common/DynamicUtils.hs \
-    Common/Lib/Set.hs Common/Lib/Map.hs ATC/Set.hs\
+cpp_sources = \
     Isabelle/CreateTheories.hs CASL/CompositionTable/CompositionTable.hs \
     SPASS/Logic_SPASS.hs GUI/Utils.hs Driver/WriteFn.hs \
     Comorphisms/LogicList.hs Comorphisms/LogicGraph.hs \
@@ -375,7 +373,8 @@ tax_objects = $(patsubst %.hs, %.o, $(tax_sources))
 $(SETUP): utils/Setup.hs
 	$(HC) --make -O -o $@ $<
 
-packages: http_pkg syb_pkg shellac_pkg shread_pkg hxt_pkg
+packages: http_pkg syb_pkg shellac_pkg shread_pkg hxt_pkg haifa_pkg \
+  programatica_pkg
 
 http_pkg: utils/http.tgz $(SETUP)
 	@if $(HCPKG) field HTTP version; then \
@@ -396,24 +395,25 @@ shellac_pkg: utils/shellac.tgz $(SETUP)
           $(TAR) zxf utils/shellac.tgz; \
           (cd shellac; $(SETUPPACKAGE)) fi
 
-shread_pkg: utils/shread.tgz $(SETUP)
+shread_pkg: utils/shread.tgz $(SETUP) shellac_pkg
 	@if $(HCPKG) field Shellac-readline version; then \
           echo "of shellac-readline package found"; else \
           $(RM) -rf shread; \
           $(TAR) zxf utils/shread.tgz; \
           (cd shread; $(SETUPPACKAGE)) fi
 
-hxt_pkg: $(SETUP)
+hxt_pkg: $(SETUP) http_pkg
 	@if $(HCPKG) field hxt version; then \
           echo "of hxt package found"; else \
           $(RM) -rf hxt; \
           $(TAR) zxf utils/hxt.tgz; \
           (cd hxt; $(SETUPPACKAGE)) fi
 
-haifa_pkg: $(SETUP)
+haifa_pkg: $(SETUP) hxt_pkg syb_pkg
 	@if $(HCPKG) field HAIFA version; then \
           echo "of HAIFA package found"; else \
-          (cd haifa-lite; $(SETUPPACKAGE)) fi
+          (cd haifa-lite; ../$(SETUP) configure $(SETUPPREFIX); \
+           ../$(SETUP) build; ../$(SETUP) install --user) fi
 
 programatica_pkg:
 
@@ -574,7 +574,7 @@ CASL/ATC_CASL.der.hs: $(CASL_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.GlobalAnnotations -o $@ $(CASL_files)
 
 Propositional/ATC_Propositional.der.hs: $(Propositional_files) \
-       $(GENRULES) 
+       $(GENRULES)
 	$(GENRULECALL) -i ATC.GlobalAnnotations -o $@ \
        $(Propositional_files)
 
