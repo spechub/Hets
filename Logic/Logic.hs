@@ -91,7 +91,7 @@ import Common.Doc
 import Common.DocUtils
 import Logic.Prover -- for one half of class Sentences
 
-import Data.Dynamic
+import Data.Typeable
 import Common.ATerm.Lib -- (ShATermConvertible)
 import ATC.DefaultMorphism()
 import Common.Amalgamate -- passed to ensures_amalgamability

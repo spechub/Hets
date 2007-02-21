@@ -53,7 +53,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Common.Result
 import Common.Utils
-import Data.Dynamic
+import Data.Typeable
 import Data.List (nub)
 import Data.Maybe (catMaybes)
 import Control.Monad (foldM, unless)
@@ -92,13 +92,13 @@ instance Typeable G_sign where
   typeOf _ = mkTyConApp tyconG_sign []
 
 instance Eq G_sign where
-  G_sign l1 sigma1 i1 == G_sign l2 sigma2 i2 = 
-    (i1 > 0 && i2 > 0 && i1 == i2) ||  
+  G_sign l1 sigma1 i1 == G_sign l2 sigma2 i2 =
+    (i1 > 0 && i2 > 0 && i1 == i2) ||
      coerceSign l1 l2 "Eq G_sign" sigma1 == Just sigma2
 
 -- | prefer a faster subsignature test if possible
 isHomSubGsign :: G_sign -> G_sign -> Bool
-isHomSubGsign (G_sign i1 sigma1 s1) (G_sign i2 sigma2 s2) = 
+isHomSubGsign (G_sign i1 sigma1 s1) (G_sign i2 sigma2 s2) =
     if s1 == s2 then True else
     maybe False (is_subsig i1 sigma1) $ coerceSign i2 i1 "is_subgsign" sigma2
 
@@ -435,9 +435,9 @@ data GMorphism = forall cid lid1 sublogics1
 instance Eq GMorphism where
   GMorphism cid1 sigma1 in1 mor1 in1' == GMorphism cid2 sigma2 in2 mor2 in2'
      = Comorphism cid1 == Comorphism cid2
-       && G_sign (sourceLogic cid1) sigma1 in1 == 
-          G_sign (sourceLogic cid2) sigma2 in2 
-       && (in1' > 0 && in2' > 0 && in1' == in2' 
+       && G_sign (sourceLogic cid1) sigma1 in1 ==
+          G_sign (sourceLogic cid2) sigma2 in2
+       && (in1' > 0 && in2' > 0 && in1' == in2'
           || coerceMorphism (targetLogic cid1) (targetLogic cid2)
                    "Eq GMorphism.coerceMorphism" mor1 == Just mor2)
 
@@ -450,7 +450,7 @@ data Grothendieck = Grothendieck deriving Show
 instance Language Grothendieck
 
 instance Show GMorphism where
-    show (GMorphism cid s _ m _) = 
+    show (GMorphism cid s _ m _) =
       show (normalize (Comorphism cid)) ++ "(" ++ show s ++ ")" ++ show m
 
 instance Pretty GMorphism where
@@ -487,17 +487,17 @@ instance Category Grothendieck G_sign GMorphism where
            lid4 = targetLogic r2
        mor1' <- coerceMorphism lid2 lid3 "Grothendieck.comp" mor1
        mor1'' <- map_morphism r2 mor1'
-       mor <- comp lid4 mor1'' mor2 
-       if isIdComorphism (Comorphism r1) && 
-          case coerceSublogic lid2 lid3 "Grothendieck.comp" 
+       mor <- comp lid4 mor1'' mor2
+       if isIdComorphism (Comorphism r1) &&
+          case coerceSublogic lid2 lid3 "Grothendieck.comp"
                               (targetSublogic r1) of
-            Just sl1 -> isSubElem (targetSublogic r2) (mapSublogic r2 sl1) 
+            Just sl1 -> isSubElem (targetSublogic r2) (mapSublogic r2 sl1)
             _ -> False
          then do sigma1' <- coerceSign lid1 lid3 "Grothendieck.comp" sigma1
                  return (GMorphism r2 sigma1' ind1 mor 0)
-         else if isIdComorphism (Comorphism r2) 
+         else if isIdComorphism (Comorphism r2)
            then do mor2' <- coerceMorphism lid4 lid2 "Grothendieck.comp" mor2
-                   mor' <- comp lid2 mor1 mor2' 
+                   mor' <- comp lid2 mor1 mor2'
                    return (GMorphism r1 sigma1 ind1 mor' 0)
            else return (GMorphism (CompComorphism r1 r2) sigma1 ind1 mor 0)
   dom _ (GMorphism r sigma ind _mor _) =

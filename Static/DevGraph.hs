@@ -53,7 +53,7 @@ import Common.Id
 import Common.Doc
 import Common.DocUtils
 import Common.Result
-import Data.Dynamic
+import Data.Typeable
 
 import Control.Monad (foldM)
 import Control.Exception

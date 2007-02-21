@@ -21,7 +21,7 @@ module OWL_DL.ReadWrite where
 import qualified Data.Map as Map
 import OWL_DL.AS
 import Common.ATerm.Lib
-import Data.Dynamic
+import Data.Typeable
 import Data.Char
 import Data.List
 import Control.Monad

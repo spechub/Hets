@@ -27,7 +27,7 @@ import qualified Common.Lib.Rel as Rel
 import qualified Common.OrderedMap as OMap
 import Common.Id
 import Common.Result
-import Data.Dynamic
+import Data.Typeable
 
 grTc :: TyCon
 grTc = mkTyCon "Common.Lib.Graph.Gr"

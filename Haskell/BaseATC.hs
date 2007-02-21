@@ -13,7 +13,7 @@ a few basic 'ShATermConvertible' instances needed by "Haskell.ATC_Haskell"
 module Haskell.BaseATC where
 
 import Common.ATerm.Lib
-import Data.Dynamic
+import Data.Typeable
 import SrcLoc
 
 _tc_SrcLocTc :: TyCon

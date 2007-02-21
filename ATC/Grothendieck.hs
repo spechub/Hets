@@ -14,7 +14,7 @@ module ATC.Grothendieck where
 
 import Logic.Grothendieck
 import Common.ATerm.Lib
-import Data.Dynamic
+import Data.Typeable
 import Common.Result
 import Comorphisms.LogicList
 import Comorphisms.LogicGraph
