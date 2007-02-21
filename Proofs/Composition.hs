@@ -57,9 +57,9 @@ compositionCreatingEdgesAux dgraph [] historyElem = (dgraph,historyElem)
 compositionCreatingEdgesAux dgraph (path:paths) (rules,changes) =
  case calculateMorphismOfPath path of
    Nothing -> compositionCreatingEdgesAux dgraph paths (rules,changes)
-   Just _ -> compositionCreatingEdgesAux (insEdge newEdge newDGraph) paths
+   Just _ -> compositionCreatingEdgesAux newDGraph2 paths
              (Composition path : rules,
-              InsertEdge newEdge : newChanges++changes)
+              newChanges2)
   where
     (src, _, _) = head path
     (_, tgt, _) = last path
@@ -76,6 +76,7 @@ compositionCreatingEdgesAux dgraph (path:paths) (rules,changes) =
                        dgl_origin = DGProof}
               )
     (newDGraph,newChanges) = deleteRedundantEdges dgraph newEdge
+    (newDGraph2, newChanges2) = updateWithOneChange (InsertEdge newEdge) newDGraph (newChanges++changes)
 
 {- | this method is used by compositionCreatingEdgesAux.  It selects
 all unproven global theorem edges in the given development graph that
@@ -103,8 +104,12 @@ deleteRedundantEdgesAux :: DGraph -> [LEdge DGLinkLab] -> [DGChange]
              -> (DGraph,[DGChange])
 deleteRedundantEdgesAux dgraph [] changes =  (dgraph,changes)
 deleteRedundantEdgesAux dgraph (edge : list) changes =
-  deleteRedundantEdgesAux (deLLEdge edge dgraph) list
-                              $ DeleteEdge edge : changes
+  let
+  (newDGraph, newChanges) = updateWithOneChange (DeleteEdge edge) dgraph changes
+  in
+  deleteRedundantEdgesAux newDGraph list newChanges
+			  --(deLLEdge edge dgraph) list
+                            --  $ DeleteEdge edge : changes
 
 -- ---------------------------------------------------------------------------
 -- composition without creating new new edges
@@ -136,10 +141,15 @@ compositionAux dgraph (edge:edgs) (rules,changes) =
   case compositionForOneEdge dgraph edge of
     Nothing -> compositionAux dgraph edgs (rules,changes)
     Just (newEdge,proofBasis) ->
-        compositionAux (insEdge newEdge $ deLLEdge edge dgraph)
-                       edgs
-                       (Composition proofBasis : rules,
-                        InsertEdge newEdge : DeleteEdge edge : changes)
+	let
+	(newDGraph, newChanges) = 
+	    updateWithChanges [DeleteEdge edge, InsertEdge newEdge] dgraph changes
+	in
+        compositionAux newDGraph edgs (Composition proofBasis : rules, newChanges)
+		       --(insEdge newEdge $ deLLEdge edge dgraph)
+                       --edgs
+                       --(Composition proofBasis : rules,
+                        --InsertEdge newEdge : DeleteEdge edge : changes)
 
 {- | checks for the given edges, if there is a path in the given
 development graph that it is a composition of. If so, it is replaced

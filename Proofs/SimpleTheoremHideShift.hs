@@ -70,9 +70,7 @@ getInComingGlobalUnprovenEdges dgraph n = filter ( \ (_, t, l) ->
 
 -- | apply the rule to a list of global unproven threorem links with the related hiding definition link
 theoremHideShiftWithOneHidingDefEdgeAux :: DGraph -> LEdge DGLinkLab -> [LEdge DGLinkLab] -> [DGChange] -> (DGraph, [DGChange])
-theoremHideShiftWithOneHidingDefEdgeAux dgraph _ [] changes =
-    if(null changes) then (dgraph, changes)
-                     else (dgraph, changes)
+theoremHideShiftWithOneHidingDefEdgeAux dgraph _ [] changes = (dgraph, changes)
 theoremHideShiftWithOneHidingDefEdgeAux dgraph (hd@(hds, _, _)) 
     (x@(s, t, lbl) : xs) changes =
     theoremHideShiftWithOneHidingDefEdgeAux finalDGraph hd xs finalChanges
@@ -109,14 +107,16 @@ theoremHideShiftWithOneHidingDefEdgeAux dgraph (hd@(hds, _, _))
     --------------------------------------------------------------------------------
     -------- delete the being processed unproven global theorem link ---------------
     --------------------------------------------------------------------------------
-    (finalDGraph, finalChanges) = (deLLEdge x newDGraph2, (DeleteEdge x):newChanges2)
+    (finalDGraph, finalChanges) = updateWithOneChange (DeleteEdge x) newDGraph2 newChanges2
+				  --(deLLEdge x newDGraph2, (DeleteEdge x):newChanges2)
 
 -- | try to insert an edge to the given dgraph. If the to be inserted edge exists, do nothing ;)
 tryToInsertEdge :: DGraph -> LEdge DGLinkLab -> [DGChange] -> (DGraph, [DGChange])
 tryToInsertEdge dgraph newEdge changes =
         case isDuplicate newEdge dgraph changes of
              True -> (dgraph, changes)
-             False -> ((insEdge newEdge dgraph), (InsertEdge newEdge):changes)
+             False -> updateWithOneChange (InsertEdge newEdge) dgraph changes
+	     --((insEdge newEdge dgraph), (InsertEdge newEdge):changes)
 
 
 

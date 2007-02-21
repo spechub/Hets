@@ -115,19 +115,21 @@ hideTheoremShiftAux dgraph (rules,changes) (ledge:list) proofBaseSel =
       then hideTheoremShiftAux dgraph (rules,changes) list proofBaseSel
        else do
          let newEdge = makeProvenHidingThmEdge proofBasis ledge
-             auxDGraph = insEdge newEdge (deLLEdge ledge dgraph)
-             auxChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
+	     (auxDGraph, auxChanges) = updateWithChanges [DeleteEdge ledge, InsertEdge newEdge] dgraph changes
+             -- auxDGraph = insEdge newEdge (deLLEdge ledge dgraph)
+             -- auxChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
              (newDGraph,newChanges) =
-                 insertNewEdges auxDGraph auxChanges proofBasis
+                 insertNewEdges (auxDGraph, auxChanges) proofBasis
              newRules = (HideTheoremShift ledge):rules
          hideTheoremShiftAux newDGraph (newRules,newChanges) list proofBaseSel
 
 {- inserts the given edges into the development graph and adds a corresponding entry to the changes -}
-insertNewEdges :: DGraph -> [DGChange] -> [LEdge DGLinkLab] -> (DGraph,[DGChange])
-insertNewEdges dgraph changes [] = (dgraph,changes)
-insertNewEdges dgraph changes (edge:list) =
-  if isDuplicate edge dgraph changes then insertNewEdges dgraph changes list
-   else insertNewEdges (insEdge edge dgraph) ((InsertEdge edge):changes) list
+insertNewEdges :: (DGraph, [DGChange]) -> [LEdge DGLinkLab] -> (DGraph,[DGChange])
+insertNewEdges res [] = res
+insertNewEdges (dgraph, changes) (edge:list) =
+  if isDuplicate edge dgraph changes then insertNewEdges (dgraph, changes) list
+   else insertNewEdges (updateWithOneChange (InsertEdge edge) dgraph changes) list
+	--insertNewEdges (insEdge edge dgraph) ((InsertEdge edge):changes) list
 
 
 {- creates a new proven HidingThm edge from the given HidingThm edge using the edge list as the proofBasis -}
@@ -243,6 +245,8 @@ debug_show_pro_sta lab =
        (LocalThm LeftOpen _ _) -> "local unproven"
        _ -> "other unproven"
 -}
+
+
 
 
 {- returns a string representation of the given paths: for each path a

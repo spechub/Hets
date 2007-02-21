@@ -81,7 +81,8 @@ locDecompAux libEnv ln dgraph (rules,changes)
      else
        if isDuplicate newEdge dgraph changes
           then locDecompAux libEnv ln auxGraph
-                 (newRules, DeleteEdge ledge : changes) list
+                 (newRules, auxChanges) list	       
+                 --(newRules, DeleteEdge ledge : changes) list
        else locDecompAux libEnv ln newGraph (newRules,newChanges) list
   where
     morphism = dgl_morphism edgeLab
@@ -90,7 +91,8 @@ locDecompAux libEnv ln dgraph (rules,changes)
     pathsWithoutEdgeItself = filter (notElem ledge) allPaths
     filteredPaths = filterByTranslation th morphism pathsWithoutEdgeItself
     proofBasis = selectProofBasis dgraph ledge filteredPaths
-    auxGraph = deLLEdge ledge dgraph
+    --auxGraph = deLLEdge ledge dgraph
+    (auxGraph, auxChanges) = updateWithOneChange (DeleteEdge ledge) dgraph changes
     LocalThm _ conservativity conservStatus = dgl_type edgeLab
     newEdge = (src,
                tgt,
@@ -100,9 +102,11 @@ locDecompAux libEnv ln dgraph (rules,changes)
                           conservativity conservStatus),
                        dgl_origin = DGProof}
                )
-    newGraph = insEdge newEdge auxGraph
+    (newGraph, newChanges) = 
+        updateWithChanges [DeleteEdge ledge, InsertEdge newEdge] dgraph changes
+    --newGraph = insEdge newEdge auxGraph
     newRules =  LocDecomp ledge : rules
-    newChanges = DeleteEdge ledge : InsertEdge newEdge : changes
+    --newChanges = DeleteEdge ledge : InsertEdge newEdge : changes
 
 {- | removes all paths from the given list of paths whose morphism does
 not translate the given sentence list to the same resulting sentence
@@ -181,36 +185,45 @@ localInferenceAux libEnv ln dgraph (rules, changes)
                                               (sens `joinSens` goals'') 0
              in if OMap.null goals
                 then
-                 let newEdge = (src, tgt, newLab)
+                 let {-newEdge = (src, tgt, newLab)
                      newGraph = insEdge newEdge auxGraph
                      newChanges = changes ++
-                                  [DeleteEdge ledge, InsertEdge newEdge]
+                                  [DeleteEdge ledge, InsertEdge newEdge]-}
+		     (newGraph, newChanges) =
+                        updateWithChanges [DeleteEdge ledge, InsertEdge newEdge] dgraph changes
                  in localInferenceAux libEnv ln newGraph
                         (newRules,newChanges) list
                 else
                  let newNodeLab = oldContents{dgn_theory = newTh}
-                     (newGraph,changes') =
+                     {-
+		     (newGraph,changes') =
                            adjustNode auxGraph (oldNode, newNodeLab)
                      newEdge = (src, tgt, newLab)
                      newGraph' = insEdge newEdge newGraph
-                     newLibEnv = Map.adjust adjMap ln libEnv
-                     adjMap ge = ge { devGraph = newGraph'}
-                     newChanges = changes ++ DeleteEdge ledge :
-                                  changes' ++ [InsertEdge newEdge]
-                 in localInferenceAux newLibEnv ln newGraph'
+		     newChanges = changes ++ DeleteEdge ledge :
+                     changes' ++ [InsertEdge newEdge]
+		     -}
+		     (newGraph, newChanges) =
+		        updateWithChanges 
+			[DeleteEdge ledge, SetNodeLab(oldNode, newNodeLab), InsertEdge newEdge] 
+			dgraph changes
+		     newLibEnv = Map.adjust adjMap ln libEnv
+                     adjMap ge = ge { devGraph = newGraph}
+                 in localInferenceAux newLibEnv ln newGraph
                         (newRules,newChanges) list
         _ -> localInferenceAux libEnv ln dgraph (rules,changes) list
     _ -> localInferenceAux libEnv ln dgraph (rules,changes) list
   where
     morphism = dgl_morphism edgeLab
     maybeThSrc = computeLocalTheory libEnv ln src
-    auxGraph = deLLEdge ledge dgraph
+    --auxGraph = deLLEdge ledge dgraph
     (LocalThm _ conservativity conservStatus) = (dgl_type edgeLab)
     newLab = DGLink {dgl_morphism = morphism,
                        dgl_type =
                          (LocalThm (Proven (LocInference ledge) [])
                           conservativity conservStatus),
                        dgl_origin = DGProof}
+    newEdge = (src, tgt, newLab)
     newRules = LocInference ledge : rules
     (oldNode, oldContents) = labNode' (safeContext "localInferenceAux" dgraph tgt)
     {-
@@ -218,3 +231,4 @@ localInferenceAux libEnv ln dgraph (rules, changes)
        (replaceNodeAux from to src', replaceNodeAux from to tgt',labl)
     replaceNodeAux from to n = if n==from then to else n
     -}
+

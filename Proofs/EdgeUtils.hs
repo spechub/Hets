@@ -22,6 +22,8 @@ import Static.DGToSpec
 import Data.Graph.Inductive.Graph
 import Data.List
 
+--import Debug.Trace
+
 deLLEdge :: LEdge DGLinkLab -> DGraph -> DGraph
 deLLEdge e@(v, w, l) g = case match v g of
     (Just(p, v', l', s), g') ->
@@ -361,13 +363,48 @@ adoptEdgesAux node areIngoingEdges (src,tgt,edgelab) =
 {- | adjusts a node whose label is changed -}
 adjustNode :: DGraph -> LNode DGNodeLab -> (DGraph, [DGChange])
 adjustNode dgraph newNode = 
-  let {-
+  updateWithOneChange (SetNodeLab newNode) dgraph []    
+  {-
+  let
       es = inn dgraph node ++ out dgraph node
       changes = map DeleteEdge es ++ [DeleteNode (node, oldLab),
                 InsertNode (node, newLab)] ++ map InsertEdge es
-      -}
+      
       changes = [SetNodeLab newNode]
   in (changesDG dgraph changes, changes)
+  -}
 
 getAllOpenNodeGoals :: [DGNodeLab] -> [DGNodeLab]
 getAllOpenNodeGoals = filter hasOpenGoals
+
+{-
+--debugging functions
+
+trace_edge :: LEdge DGLinkLab -> String
+trace_edge (src, tgt, lab) = "("++(show src)++"->"++(show tgt)++" with prove status: "++(trace_edge_status lab)++") ->"
+
+trace_path :: [LEdge DGLinkLab] -> String
+trace_path = concat . map trace_edge 
+
+trace_edge_status :: DGLinkLab -> String
+trace_edge_status lab = 
+    case (dgl_type lab) of 
+       (GlobalThm (Proven _ _) _ _) -> "global proven"
+       (LocalThm (Proven _ _) _ _) -> "local proven"
+       (HidingThm _ (Proven _ _)) -> "hiding proven"
+       (LocalThm LeftOpen _ _) -> "local unproven"
+       (GlobalThm LeftOpen _ _) -> "global unproven"
+       _ -> "other unproven or proven"
+-}
+
+
+updateWithOneChange :: DGChange -> DGraph -> [DGChange] -> (DGraph, [DGChange])
+updateWithOneChange change dgraph changeList = (changeDG dgraph change, change:changeList)
+
+updateWithChanges :: [DGChange] -> DGraph -> [DGChange] -> (DGraph, [DGChange])
+updateWithChanges changes dgraph changeList = (changesDG dgraph changes, changes++changeList)
+
+
+
+
+
