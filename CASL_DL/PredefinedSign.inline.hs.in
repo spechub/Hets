@@ -21,12 +21,6 @@ object file cannot be generated. It yields this error:
 
 -}
 
-{- 
-
- todo:
-
--}
-
 module CASL_DL.PredefinedSign(predefinedSign,topSort,topSortD) where
 
 import CASL_DL.AS_CASL_DL
@@ -34,9 +28,9 @@ import CASL_DL.Sign
 
 import Common.Id
 
-import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Rel as Rel
-import qualified Common.Lib.Set as Set
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 import CASL.AS_Basic_CASL
 import CASL.Sign
@@ -46,13 +40,13 @@ import Control.Exception
 predefinedSign :: Sign DL_FORMULA CASL_DLSign
 predefinedSign = toCASL_DL_Sign $
    assert (Set.member topSortD $ sortSet dataSig_CASL) $
-   foldl (addSig (\ _ _ -> ())) (emptySign ()) 
-           [dataSig_CASL,predefined_symbols] 
+   foldl (addSig (\ _ _ -> ())) (emptySign ())
+           [dataSig_CASL,predefined_symbols]
 
-toCASL_DL_Sign :: Sign (FORMULA ()) () 
+toCASL_DL_Sign :: Sign (FORMULA ()) ()
                -> Sign DL_FORMULA CASL_DLSign
-toCASL_DL_Sign sig = 
-    (emptySign emptyCASL_DLSign) 
+toCASL_DL_Sign sig =
+    (emptySign emptyCASL_DLSign)
       { sortSet = sortSet sig
       , sortRel = sortRel sig
       , opMap = opMap sig
@@ -67,14 +61,14 @@ topSortD :: SORT
 topSortD = Id [Token "DATA" nullRange] [] nullRange
 
 predefined_symbols :: Sign (FORMULA ()) ()
-predefined_symbols = 
-    ((emptySign ()){ sortSet = Set.singleton topSort                        
-                   , predMap = 
-                       Map.singleton (Id [Token "Nothing" nullRange] [] 
-                                         nullRange) 
+predefined_symbols =
+    ((emptySign ()){ sortSet = Set.singleton topSort
+                   , predMap =
+                       Map.singleton (Id [Token "Nothing" nullRange] []
+                                         nullRange)
                            (Set.singleton (PredType  [topSort]))
                    })
 
 dataSig_CASL :: Sign (FORMULA ()) ()
-dataSig_CASL = 
-  (inlineSign CASL 
+dataSig_CASL =
+  (inlineSign CASL
