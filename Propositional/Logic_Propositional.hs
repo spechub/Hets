@@ -27,13 +27,15 @@ Instance of class Logic for the propositional logic
 module Propositional.Logic_Propositional 
     (module Propositional.Logic_Propositional
             , Sign
-            , Morphism) where
-
+            , Morphism
+    ) where
+    
 import Logic.Logic
 import Propositional.Sign as Sign
 import Propositional.Morphism as Morphism
 import Propositional.AS_BASIC_Propositional
 
+-- | Lid for propositional logic
 data Propositional = Propositional deriving Show --lid
 
 instance Language Propositional where
@@ -42,6 +44,7 @@ instance Language Propositional where
          \for more information please refer to\n\
          \http://en.wikipedia.org/wiki/Propositional_logic"
 
+-- | Instance of Category for propositional logic
 instance Category Propositional Sign Morphism where
     -- Identity morhpism
     ide Propositional = idMor

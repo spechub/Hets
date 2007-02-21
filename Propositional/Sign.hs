@@ -20,7 +20,12 @@ Definition of signatures for propositional logic
   2005.
 -}
 
-module Propositional.Sign where
+module Propositional.Sign 
+    (
+     Sign (..)                     -- Propositional Signatures
+    ,pretty                        -- pretty printing
+    ,isLegalSignature              -- is a signature ok?
+    ) where
 
 import qualified Data.Set as Set
 import Common.Id
@@ -29,6 +34,7 @@ import Common.DocUtils
 import Data.Typeable
 import Common.ATerm.Conversion
 
+-- | Datatype for propositional Signatures
 -- Signatures are just sets
 data Sign = Sign {items :: Set.Set Id}
           deriving (Eq, Show)
@@ -45,4 +51,4 @@ isLegalSignature :: Sign -> Bool
 isLegalSignature _ = True
 
 printSign :: Sign -> Doc
-printSign s = text "{" <+> (sepByCommas $ map idDoc (Set.toList $ items s)) <+> text "}"
+printSign s = specBraces $ (sepByCommas $ map idDoc (Set.toList $ items s))

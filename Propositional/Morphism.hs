@@ -20,7 +20,14 @@ Definition of morphisms for propositional logic
   2005.
 -}
 
-module Propositional.Morphism where 
+module Propositional.Morphism 
+    (
+     Morphism (..)               -- datatype for Morphisms
+    ,pretty                      -- pretty printing
+    ,idMor                       -- identity morphism
+    ,isLegalMorphism             -- check if morhpism is ok
+    ,composeMor                  -- composition
+    ) where
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
