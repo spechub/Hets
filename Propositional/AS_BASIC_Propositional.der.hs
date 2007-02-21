@@ -28,8 +28,6 @@ module Propositional.AS_BASIC_Propositional
 import Common.Id
 import Common.Doc
 import Common.DocUtils
-import Data.Typeable
-import Common.ATerm.Conversion
 
 -- DrIFT command
 {-! global: UpPos !-}
@@ -55,8 +53,6 @@ data Formula = Negation Formula Range
 
 instance Pretty Formula where
     pretty = printFormula
-instance Typeable Formula
-instance ShATermConvertible Formula
 
 -- | Value of the true atom
 -- True is always true -P

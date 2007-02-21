@@ -36,8 +36,6 @@ import Common.Id
 import Common.Result
 import Common.Doc
 import Common.DocUtils
-import Data.Typeable
-import Common.ATerm.Conversion
 
 -- Maps are simple maps between elements of sets
 -- By the definition of maps in Data.Map

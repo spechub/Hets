@@ -31,8 +31,6 @@ import qualified Data.Set as Set
 import Common.Id
 import Common.Doc
 import Common.DocUtils
-import Data.Typeable
-import Common.ATerm.Conversion
 
 -- | Datatype for propositional Signatures
 -- Signatures are just sets
