@@ -11,10 +11,6 @@ Portability :  portable
 Utility functions that can't be found in the libraries
                but should be shared across Hets.
 -}
-{-
-   Todo:
-     - Add your own functions.
--}
 
 module Common.Utils where
 
