@@ -19,8 +19,8 @@ import HasCASL.AsUtils
 import HasCASL.RawSym
 import Common.Id
 import Common.Result
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 instance PosItem Symbol where
     getRange = getRange . symName 

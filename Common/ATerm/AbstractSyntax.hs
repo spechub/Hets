@@ -22,8 +22,8 @@ module Common.ATerm.AbstractSyntax
      getATermByIndex1, str2Char, integer2Int
     ) where
 
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Map as IntMap
+import qualified Data.Map as Map
+import qualified Data.Map as IntMap
 import Data.Dynamic
 import Data.Array
 import System.Mem.StableName

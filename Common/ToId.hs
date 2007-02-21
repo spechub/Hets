@@ -16,7 +16,7 @@ import Common.Id
 import Common.ProofUtils
 import Common.Token
 import Common.Lexer
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import Text.ParserCombinators.Parsec
 
 -- | convert a string to a legal simple CASL identifier

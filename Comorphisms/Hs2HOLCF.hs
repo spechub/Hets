@@ -12,7 +12,7 @@ theory translation for the embedding comorphism from Haskell to Isabelle.
 
 module Comorphisms.Hs2HOLCF (transTheory) where
 
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import Common.Result
 import Common.AS_Annotation
 import Comorphisms.Hs2HOLCFaux

@@ -4,7 +4,7 @@
 
 module AllTypes where
 
-{-| Module      :  Common.Lib.Map
+{-| Module      :  Data.Map
 
   An efficient implementation of maps from keys to values (dictionaries). 
 -}
@@ -21,7 +21,7 @@ type EndoMap a = Map a a
 type Size     = Int
 
 
-{-| Module      :  Common.Lib.Set
+{-| Module      :  Data.Set
 
   An efficient implementation of sets. 
 

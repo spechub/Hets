@@ -14,7 +14,7 @@ Data structures for Isabelle signatures and theories.
 
 module Isabelle.IsaSign where
 
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 
 -------------------- not quite from src/Pure/term.ML ------------------------
 ----------------------------- Names -----------------------------------------

@@ -16,7 +16,7 @@ obtained by manually taking @lexicon@ and @consts@ from
 
 module Isabelle.IsaStrings where
 
-import qualified Common.Lib.Set as Set
+import qualified Data.Set as Set
 
 -- | convert pasted strings to a relevant set of strings
 mkIsaSet :: [String] -> Set.Set String

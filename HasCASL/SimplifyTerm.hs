@@ -18,7 +18,7 @@ import HasCASL.AsUtils
 import HasCASL.VarDecl
 import HasCASL.Le
 import HasCASL.FoldTerm
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import Common.Lib.State
 
 simplifyRec :: Env -> MapRec

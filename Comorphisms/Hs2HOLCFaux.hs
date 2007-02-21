@@ -66,7 +66,7 @@ module Comorphisms.Hs2HOLCFaux
     ) where
 
 import Data.List
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import Common.AS_Annotation
 
 -- Haskell (Programatica)

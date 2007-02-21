@@ -27,7 +27,7 @@ import Common.Token
 import Common.Id as Id
 import Common.Keywords
 import Common.AS_Annotation
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 
 comment :: GenParser Char st Annotation
 comment = commentLine <|> commentGroup

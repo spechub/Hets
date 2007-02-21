@@ -8,7 +8,7 @@ Maintainer  :  maeders@tzi.de
 Stability   :  provisional
 Portability :  non-portable (cpp)
 
-Data.Set and Common.Lib.Set are different types for ghc-6.2.2 but
+Data.Set and Data.Set are different types for ghc-6.2.2 but
 identical in ghc-6.4
 -}
 
@@ -17,7 +17,7 @@ module ATC.Set() where
 #if __GLASGOW_HASKELL__<=602
 import Data.Set
 import Common.ATerm.Lib
-import Common.DynamicUtils
+import Data.Dynamic
 
 setTc :: TyCon
 setTc = mkTyCon "Data.Set.Set"

@@ -40,7 +40,7 @@ import Data.Typeable
 import Common.ATerm.Conversion
 
 -- Maps are simple maps between elements of sets
--- By the definition of maps in Common.Lib.Map
+-- By the definition of maps in Data.Map
 -- these maps are injective
 type PropMap = Map.Map Id Id
 

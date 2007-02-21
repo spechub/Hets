@@ -37,7 +37,7 @@ import Common.AS_Annotation
 import Common.Result
 import Common.GlobalAnnotations
 import Common.Id
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import Common.Lib.State
 
 import CspCASL.AS_CspCASL (BASIC_CSP_CASL_SPEC(..))

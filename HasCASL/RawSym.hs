@@ -24,7 +24,7 @@ import Common.DocUtils
 import Common.Id
 import Common.Result
 import Common.Lib.State
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 
 statSymbMapItems :: [SymbMapItems] -> Result RawSymbolMap
 statSymbMapItems sl = do 

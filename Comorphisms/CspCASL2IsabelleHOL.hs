@@ -27,7 +27,7 @@ sublanguage of CASL: FinCommSubPCFOL=
 translation FinCommSubPCFOL= to CASL (comorphism FinCommSubPCFOL2CASL)
   signature translation: 
     FinCommSubPFOL=-signature to CASL signature (construction of alphabet, see paper)
-              see CASL.Sign, Common.Lib.Set, Common.Lib.Map, Common.Lib.Rel
+              see CASL.Sign, Data.Set, Data.Map, Common.Lib.Rel
        + axioms (see paper p. 28f.) for construction of quotient of sum of types
               see CASL.AS_BASIC_CASL.hs, datatype FORMULA
   sentence translation: identity

@@ -18,8 +18,8 @@ import COL.COLSign
 import CASL.StaticAna
 
 import Common.AS_Annotation
-import qualified Common.Lib.Set as Set
-import qualified Common.Lib.Map as Map
+import qualified Data.Set as Set
+import qualified Data.Map as Map
 import Common.Id
 import Common.Result
 

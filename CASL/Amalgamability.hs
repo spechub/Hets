@@ -33,9 +33,9 @@ import CASL.AS_Basic_CASL
 import Common.Id
 import Data.Graph.Inductive.Graph
 import qualified Common.Lib.Graph as Tree
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import qualified Common.Lib.Rel as Rel
-import qualified Common.Lib.Set as Set
+import qualified Data.Set as Set
 import Common.Doc
 import Common.DocUtils
 import Common.Result

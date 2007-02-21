@@ -16,8 +16,8 @@ module Common.DocUtils where
 import Common.AS_Annotation
 import Common.Doc
 import Common.Id
-import qualified Common.Lib.Set as Set
-import qualified Common.Lib.Map as Map
+import qualified Data.Set as Set
+import qualified Data.Map as Map
 import Common.GlobalAnnotations
 
 -- * the class stuff

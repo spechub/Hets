@@ -21,9 +21,9 @@ import qualified Data.Graph.Inductive.Graph as Graph
 
 import Driver.Options
 
-import qualified Common.Lib.Set as Set
+import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 
 import Data.List (find)
 

@@ -22,7 +22,7 @@ module Isabelle.IsaParse
 import Data.List
 import Common.Lexer
 import Text.ParserCombinators.Parsec
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import Isabelle.IsaConsts
 import Common.Id
 import Common.Result

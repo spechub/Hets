@@ -14,12 +14,12 @@ module ATC.Grothendieck where
 
 import Logic.Grothendieck
 import Common.ATerm.Lib
-import Common.DynamicUtils
+import Data.Dynamic
 import Common.Result
 import Comorphisms.LogicList
 import Comorphisms.LogicGraph
 import Logic.Logic
-import qualified Common.Lib.Set as Set
+import qualified Data.Set as Set
 
 _tc_G_basic_specTc :: TyCon
 _tc_G_basic_specTc = mkTyCon "G_basic_spec"

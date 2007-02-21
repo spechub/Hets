@@ -18,7 +18,7 @@ import CASL.AS_Basic_CASL
 import CASL.Fold
 import CASL.Utils
 import CASL.Quantification
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import Common.Id
 
 convertRecord :: Int -> (f -> f) -> Record f (FORMULA f) (TERM f)

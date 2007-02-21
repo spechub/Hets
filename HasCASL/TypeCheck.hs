@@ -31,8 +31,8 @@ import HasCASL.Constrain
 import HasCASL.ProgEq
 import HasCASL.MinType
 
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 import Common.Id
 import Common.Result

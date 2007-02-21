@@ -125,7 +125,7 @@ import Data.List
 import Data.Graph.Inductive.Graph
 import Data.Graph.Inductive.Basic
 import Common.Lib.Graph
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 
 type ClassName = String
 type ObjectName = String

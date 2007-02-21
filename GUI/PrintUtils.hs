@@ -16,7 +16,7 @@ module GUI.PrintUtils where
 import Logic.Prover
 
 import Common.Doc
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 
 import GUI.GenericATPState
 

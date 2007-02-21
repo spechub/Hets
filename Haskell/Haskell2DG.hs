@@ -15,7 +15,7 @@ module Haskell.Haskell2DG (anaHaskellFile) where
 
 import Data.Graph.Inductive.Graph
 import Text.ParserCombinators.Parsec
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import Common.Result
 import Common.Id
 import Common.GlobalAnnotations

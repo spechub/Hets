@@ -31,7 +31,7 @@ import Static.DGToSpec
 import Syntax.AS_Library
 import Common.Result
 import Common.Utils
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import qualified Common.OrderedMap as OMap
 import Data.Graph.Inductive.Graph
 import Data.Maybe

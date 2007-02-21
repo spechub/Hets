@@ -12,8 +12,8 @@ Signatures of COL as extension of CASL signatures.
 
 module COL.COLSign where
 
-import qualified Common.Lib.Set as Set
-import qualified Common.Lib.Map as Map
+import qualified Data.Set as Set
+import qualified Data.Map as Map
 import Common.Id
                        
 data COLSign = COLSign { constructors :: Set.Set Id

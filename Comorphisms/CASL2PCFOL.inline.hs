@@ -16,8 +16,8 @@ module Comorphisms.CASL2PCFOL where
 import Logic.Logic
 import Logic.Comorphism
 import Common.Id
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 import Common.AS_Annotation
 import Data.List

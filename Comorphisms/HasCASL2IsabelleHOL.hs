@@ -30,7 +30,7 @@ import Isabelle.Translate
 import Common.DocUtils
 import Common.Id
 import Common.Result
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import Common.AS_Annotation (Named(..))
 
 import Data.List (elemIndex, nub)

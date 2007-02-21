@@ -17,8 +17,8 @@ module Common.Utils where
 import Data.List
 import Data.Graph.Inductive.Graph
 
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 import System.Posix.Process
 import System.Time

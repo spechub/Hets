@@ -36,7 +36,7 @@ import CASL.Fold
 
 import Common.AS_Annotation
 import Common.GlobalAnnotations
-import qualified Common.Lib.Set as Set
+import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 import Common.Lib.State
 import Common.Id

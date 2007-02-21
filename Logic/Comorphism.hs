@@ -28,7 +28,7 @@ module Logic.Comorphism where
 
 import Logic.Logic
 import Logic.Coerce
-import qualified Common.Lib.Set as Set
+import qualified Data.Set as Set
 import Common.Result
 import Common.ProofUtils
 import Common.AS_Annotation

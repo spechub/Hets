@@ -27,7 +27,7 @@ import Logic.Grothendieck
 import Logic.Logic
 import Logic.Comorphism
 import Logic.Prover
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import qualified Common.Lib.Rel as Rel
 
 

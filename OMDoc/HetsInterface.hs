@@ -33,7 +33,7 @@ import Static.AnalysisLibrary
 
 import Static.DevGraph
 
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 
 import qualified OMDoc.OMDocOutput as OMOut
 

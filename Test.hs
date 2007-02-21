@@ -3,7 +3,7 @@ import Static.AnalysisLibrary
 import Static.DevGraph
 import Static.PrintDevGraph
 import Driver.Options
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import Common.Doc
 import System.Environment
 

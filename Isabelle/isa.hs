@@ -16,7 +16,7 @@ import System.Environment
 import Text.ParserCombinators.Parsec
 import Isabelle.IsaParse
 import Isabelle.IsaConsts
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import Common.Doc as Doc
 import Common.DocUtils
 

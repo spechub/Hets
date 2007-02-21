@@ -49,11 +49,11 @@ import Logic.Coerce
 import Common.Doc
 import Common.DocUtils
 import qualified Common.Lib.Graph as Tree
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Common.Result
 import Common.Utils
-import Common.DynamicUtils
+import Data.Dynamic
 import Data.List (nub)
 import Data.Maybe (catMaybes)
 import Control.Monad (foldM, unless)

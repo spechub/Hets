@@ -13,7 +13,7 @@ the class ShATermConvertible and a few instances
 module Common.ATerm.Conversion where
 
 import Common.ATerm.AbstractSyntax
-import Common.DynamicUtils
+import Data.Dynamic
 import Data.List (mapAccumL)
 import Data.Ratio
 import Control.Monad

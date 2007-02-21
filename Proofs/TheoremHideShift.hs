@@ -33,7 +33,7 @@ import Static.DGToSpec
 import Common.Result
 import Common.Utils
 import Data.Graph.Inductive.Graph
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import Syntax.AS_Library
 import Proofs.EdgeUtils
 import Proofs.StatusUtils

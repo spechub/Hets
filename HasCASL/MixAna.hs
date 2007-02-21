@@ -21,7 +21,7 @@ import Common.Prec
 import Common.ConvertMixfixToken
 import Common.Lib.State
 import qualified Common.Lib.Rel as Rel
-import qualified Common.Lib.Set as Set
+import qualified Data.Set as Set
 
 import HasCASL.As
 import HasCASL.AsUtils

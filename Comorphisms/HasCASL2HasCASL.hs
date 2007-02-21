@@ -21,7 +21,7 @@ import HasCASL.As
 import HasCASL.Le
 import HasCASL.ProgEq
 
-import qualified Common.Lib.Set as Set
+import qualified Data.Set as Set
 import Common.AS_Annotation
 
 -- | The identity of the comorphism

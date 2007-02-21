@@ -15,7 +15,7 @@ away by allowing callback function to use it as the sole input and output.
 module Proofs.GUIState where
 
 import qualified Common.OrderedMap as OMap
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import Common.Result
 import Common.Utils
 

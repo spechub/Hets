@@ -15,7 +15,7 @@ module Common.GlobalAnnotations (module Common.GlobalAnnotations,
                                  Display_format(..))
     where
 
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import qualified Common.Lib.Rel as Rel
 import Common.AS_Annotation
 import Common.Id

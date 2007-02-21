@@ -24,7 +24,7 @@ import Common.ATerm.Unshared
 import System(system)
 import System.Exit
 import System.Environment(getEnv)
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import qualified List as List
 import Data.Graph.Inductive.Graph
 import Static.DevGraph

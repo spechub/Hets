@@ -38,7 +38,7 @@ import Common.Id
 import Common.Result
 import Common.Amalgamate
 import Common.DocUtils
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 
 import Data.Graph.Inductive.Graph as Graph(Node)
 

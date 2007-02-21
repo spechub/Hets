@@ -17,7 +17,7 @@ module Static.PrintDevGraph where
 import Syntax.AS_Library
 import Syntax.Print_AS_Library()
 import Common.GlobalAnnotations
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import Common.Id
 import Common.Doc as Doc
 import Common.DocUtils

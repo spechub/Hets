@@ -17,7 +17,7 @@ import CASL.Sign
 import CASL.Morphism
 import CASL.AS_Basic_CASL
 import CASL.Fold
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 
 mapSrt :: Morphism f e m -> SORT -> SORT
 mapSrt m = mapSort (sort_map m)

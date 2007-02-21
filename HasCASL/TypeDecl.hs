@@ -18,7 +18,7 @@ import Common.Lexer
 import Common.Id
 import Common.AS_Annotation
 import Common.Lib.State
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import Common.Result
 import Common.GlobalAnnotations
 

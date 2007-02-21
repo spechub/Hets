@@ -18,8 +18,8 @@ import Data.List as List
 import Control.Monad
 import Text.ParserCombinators.Parsec (runParser, eof)
 
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Common.Id
 import Common.Lib.State
 import Common.Result

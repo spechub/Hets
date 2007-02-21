@@ -81,8 +81,8 @@ module Logic.Logic where
 
 import Common.Id
 import Common.GlobalAnnotations
-import qualified Common.Lib.Set as Set
-import qualified Common.Lib.Map as Map
+import qualified Data.Set as Set
+import qualified Data.Map as Map
 import Common.Lib.Graph as Tree
 import Common.AnnoState
 import Common.Result
@@ -91,7 +91,7 @@ import Common.Doc
 import Common.DocUtils
 import Logic.Prover -- for one half of class Sentences
 
-import Common.DynamicUtils
+import Data.Dynamic
 import Common.ATerm.Lib -- (ShATermConvertible)
 import ATC.DefaultMorphism()
 import Common.Amalgamate -- passed to ensures_amalgamability

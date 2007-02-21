@@ -21,8 +21,8 @@ import CASL.StaticAna
 import CASL.Sign
 import CASL.Morphism
 import CASL.MixfixParser
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 import Common.Result
 import Common.AS_Annotation

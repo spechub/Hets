@@ -14,7 +14,7 @@ module Comorphisms.CASL2CspCASL where
 
 import Logic.Logic
 import Logic.Comorphism
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 
 -- CASL
 import CASL.Logic_CASL

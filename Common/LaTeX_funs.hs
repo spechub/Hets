@@ -52,7 +52,7 @@ module Common.LaTeX_funs
     , escapeLatex
     ) where
 
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import Data.Char
 import Data.List (isPrefixOf)
 

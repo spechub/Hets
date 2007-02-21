@@ -14,7 +14,7 @@ module OMDoc.KeyDebug where
 
 import OMDoc.Util
 
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import System.IO (putStrLn)
 import Debug.Trace (trace)
 import Char (toLower)

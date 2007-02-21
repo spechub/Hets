@@ -22,7 +22,7 @@ import Logic.Coerce
 import Data.Graph.Inductive.Graph as Graph
 import qualified Common.Lib.Graph as Tree
 
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import Common.Doc
 import Common.DocUtils
 import Common.Result

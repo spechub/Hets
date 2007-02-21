@@ -18,7 +18,7 @@ import CASL.AS_Basic_CASL (SORT)
 import CASL.Sign
 import CASL.Morphism
 import Common.Id
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import Common.Doc
 import Common.DocUtils
 

@@ -19,8 +19,8 @@ import qualified Syntax.AS_Library as ASL
 import Static.DevGraph
 import qualified Data.Graph.Inductive.Graph as Graph
 
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 import qualified Common.Result as Result
 

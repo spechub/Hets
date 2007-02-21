@@ -83,7 +83,7 @@ import TextDisplay
 import qualified HTk
 import InfoBus
 
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import qualified Common.OrderedMap as OMap
 import Common.Id
 import Common.DocUtils

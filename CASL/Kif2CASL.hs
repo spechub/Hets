@@ -13,18 +13,15 @@ Parser for SUMO (suggested upper merged ontology) .kif files
 
 module CASL.Kif2CASL where
 
-import Debug.Trace
 import Common.Id
 import Common.AS_Annotation
 import Common.ToId
 import qualified Data.List as List
-import qualified Common.Lib.Set as Set
-import qualified Common.Lib.Map as Map
+import qualified Data.Set as Set
 import qualified Text.PrettyPrint.HughesPJ as Doc
 import CASL.Kif
 import CASL.AS_Basic_CASL
 import CASL.Fold
-import CASL.Sign
 import CASL.Logic_CASL
 
 -- | the universal sort
@@ -68,10 +65,14 @@ kif2CASLFormula (Literal QWord v) =
 kif2CASLFormula x = error ("kif2CASLFormula : cannot translate" ++
                        show (ppListOfList x))
 
+trueTerm :: TERM ()
 trueTerm = Application (Op_name $ toId "True") [] nullRange
+
+falseTerm :: TERM ()
 falseTerm = Application (Op_name $ toId "False") [] nullRange
 
-toVar v = toSimpleId ('v':tail v)
+toVar :: String -> Token
+toVar v = toSimpleId $ 'v' : tail v
 
 kif2CASLTerm :: ListOfList -> TERM ()
 kif2CASLTerm ll = case ll of
@@ -104,6 +105,7 @@ kif2CASLpass1 (phi:rest) =
         (annos,rest') = skipComments [] rest
 
 -- | chech for comment
+isKifComment :: ListOfList -> Bool
 isKifComment (List (Literal KToken "documentation":_)) = True
 isKifComment _ = False
 
@@ -197,9 +199,9 @@ kif2CASL l = Basic_spec $ filter nonEmpty
         opsyms = Set.toList $ Set.unions $ map (collectOps . item) phis
         opdecls = map (emptyAnno . mkOpdecl) (List.groupBy sameOpArity opsyms)
         mkOpdecl [] = error "kif2CASL: this cannot happen"
-        mkOpdecl opsyms@(Opsym arity _:_) = 
-           Op_decl (map getOpName opsyms) 
-                   (Op_type Total (replicate arity universe) universe nullRange)
+        mkOpdecl opsms@(Opsym arity _ : _) = 
+           Op_decl (map getOpName opsms) 
+             (Op_type Total (replicate arity universe) universe nullRange)
                    [] nullRange
         usedVars = Set.toList $ Set.unions $ map (collectVars . item) phis
         vars = Var_items (if null usedVars then []

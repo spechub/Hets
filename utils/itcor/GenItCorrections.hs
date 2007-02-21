@@ -1,11 +1,10 @@
 module Main where
 
 import Text.ParserCombinators.Parsec
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import System
 import System.Cmd
 import Control.Monad
-import Common.Utils
 
 usage :: IO ()
 usage = putStrLn

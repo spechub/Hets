@@ -13,7 +13,7 @@ Here is the place where the class Logic is instantiated for CASL.
 
 module OWL_DL.AS where
 
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
  
 -- QName copied from Text/XML/HXT/DOM/XmlTreeTypes.hs
 data QName = QN { namePrefix    :: String -- ^ the name prefix part

@@ -25,9 +25,9 @@ module Logic.Morphism where
 
 import Logic.Logic
 import Logic.Comorphism
-import qualified Common.Lib.Set as Set
+import qualified Data.Set as Set
 import Data.Maybe
-import Common.DynamicUtils
+import Data.Dynamic
 
 class (Language cid,
        Logic lid1 sublogics1

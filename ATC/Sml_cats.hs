@@ -27,7 +27,7 @@ module ATC.Sml_cats ( ATermConvertibleSML
 
 import Data.List (isPrefixOf)
 
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 -- better recompilation checking without 'import Common.ATerm.Lib'
 import Common.ATerm.AbstractSyntax
 import Common.ATerm.ReadWrite

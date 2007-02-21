@@ -31,8 +31,8 @@ import Common.DocUtils
 import Common.Id
 import Common.Result
 import Common.Lib.State
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Common.SetUtils
 
 import Data.List (intersperse)

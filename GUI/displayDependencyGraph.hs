@@ -22,7 +22,7 @@ import Events
 import Destructible
 import qualified HTk
 
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import qualified Common.Lib.Rel as Rel
 
 import System.Directory

@@ -16,7 +16,7 @@ module Proofs.StatusUtils where
 import Static.DevGraph
 import Data.Graph.Inductive.Graph
 import Common.DocUtils
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import Syntax.AS_Library
 import Logic.Grothendieck
 import Logic.Logic

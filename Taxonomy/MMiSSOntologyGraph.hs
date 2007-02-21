@@ -24,7 +24,7 @@ import qualified HTk as H
 import qualified SimpleForm as S
 import Taxonomy.MMiSSOntology
 
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import Common.Lib.Graph
 import Data.Graph.Inductive.Graph
 import Data.Graph.Inductive.Basic

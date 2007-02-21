@@ -16,7 +16,7 @@ module Common.ConvertGlobalAnnos where
 import Common.Id
 import Common.GlobalAnnotations
 import Common.AS_Annotation
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import qualified Common.Lib.Rel as Rel
 import Common.AnalyseAnnos
 import Common.Result

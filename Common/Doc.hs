@@ -158,8 +158,8 @@ import Common.Id
 import Common.Keywords
 import Common.AS_Annotation
 import Common.GlobalAnnotations
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 import qualified Common.Lib.Pretty as Pretty
 import Common.LaTeX_funs
 import Common.ConvertLiteral

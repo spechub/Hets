@@ -16,7 +16,7 @@ import Syntax.AS_Library
 import Static.AnalysisLibrary
 import Static.DevGraph
 import Driver.Options
--- import qualified Common.Lib.Map as Map
+-- import qualified Data.Map as Map
 -- import qualified List as List
 import System.Environment
 import Comorphisms.CASL2PCFOL

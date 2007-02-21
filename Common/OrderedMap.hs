@@ -33,7 +33,7 @@ module Common.OrderedMap ( OMap
 
 import Prelude hiding (lookup,map,filter,foldr,foldl,null)
 
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import qualified Common.Lib.Rel as Rel
 import qualified Data.List as List
 import Data.Maybe

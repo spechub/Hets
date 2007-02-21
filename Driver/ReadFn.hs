@@ -28,7 +28,7 @@ import ATC.Sml_cats
 
 import Common.ATerm.Lib
 import Common.ATerm.ReadWrite
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import Common.AnnoState
 import Common.Id
 import Common.Result

@@ -38,8 +38,8 @@ import CASL.Sign
 import CASL.AS_Basic_CASL
 import CASL.Morphism
 
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 import Common.SetUtils
 import Common.Doc

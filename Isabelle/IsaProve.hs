@@ -31,8 +31,8 @@ import Common.AS_Annotation
 import Common.DocUtils
 import Common.DefaultMorphism
 import Common.ProofUtils
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 import Text.ParserCombinators.Parsec
 

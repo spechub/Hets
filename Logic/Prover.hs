@@ -21,13 +21,13 @@ General datastructures for theorem prover interfaces
 module Logic.Prover where
 
 import qualified Common.OrderedMap as OMap
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 import qualified Common.AS_Annotation as AS_Anno
 import Common.Utils
 import Common.ProofUtils
-import Common.DynamicUtils
+import Data.Dynamic
 import Common.Result
 import Common.Doc
 import Common.DocUtils

@@ -28,7 +28,7 @@ import Common.Result
 import Common.GlobalAnnotations
 import Common.AS_Annotation
 import Common.Prec
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import Data.List
 import Control.Exception
 

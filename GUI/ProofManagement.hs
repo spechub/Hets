@@ -22,7 +22,7 @@ module GUI.ProofManagement (proofManagementGUI,GUIMVar) where
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Doc as Pretty
 import qualified Common.Result as Result
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import qualified Common.OrderedMap as OMap
 
 import Data.List

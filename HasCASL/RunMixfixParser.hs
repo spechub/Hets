@@ -22,7 +22,7 @@ import Common.Result
 import Common.Lexer
 import Common.Lib.State
 import Common.Doc
-import qualified Common.Lib.Set as Set
+import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Map
 
 import HasCASL.MixAna

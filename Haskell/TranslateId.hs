@@ -13,8 +13,8 @@ Translation of identifiers to Haskell.
 module Haskell.TranslateId (IdCase(..), translateIdWithType) where
 
 import Common.Id
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Data.Char
 
 -- | Converts an identifier to a valid lower or upper case Haskell name

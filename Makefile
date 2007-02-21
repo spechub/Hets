@@ -45,8 +45,7 @@ INSTALLDIR = \
 
 DRIFT_deps = utils/DrIFT-src/*hs
 GENERATERULES_deps = utils/GenerateRules/*hs $(DRIFT_deps)
-GENITCORRECTIONS_deps = utils/itcor/GenItCorrections.hs Common/Utils.hs \
-    Common/Lib/Map.hs Common/Lib/Set.hs
+GENITCORRECTIONS_deps = utils/itcor/GenItCorrections.hs
 INLINEAXIOMS_deps = utils/InlineAxioms/InlineAxioms.hs \
     Common/Doc.hs CASL/ToDoc.hs Modal/AS_Modal.hs \
     Modal/Parse_AS.hs Modal/ModalSign.hs Modal/Print_AS.hs Modal/StatAna.hs

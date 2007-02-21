@@ -48,8 +48,8 @@ import Common.Result
 import Common.ResultT
 import Common.Utils
 
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 import qualified Common.OrderedMap as OMap
 
 import Control.Monad.Trans

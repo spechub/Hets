@@ -18,8 +18,8 @@ import HasCASL.PrintAs ()
 import HasCASL.TypeAna
 import HasCASL.Le
 
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Common.DocUtils
 import Common.Id
 import Common.Lib.State

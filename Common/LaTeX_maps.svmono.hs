@@ -11,7 +11,7 @@
 
 module Common.LaTeX_maps where
 
-import Common.Lib.Map(fromList,Map)
+import Data.Map(fromList,Map)
 
 
 keyword_map :: Map String Int

@@ -22,7 +22,7 @@ import Isabelle.IsaSign
 import Isabelle.IsaConsts
 
 import Common.AS_Annotation
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import Common.Doc hiding (bar)
 import Common.DocUtils
 

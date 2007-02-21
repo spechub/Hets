@@ -44,7 +44,7 @@ import Common.Result
 import Common.ResultT
 import Common.Id
 import Common.DocUtils
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import Driver.Options
 import Driver.ReadFn
 import Driver.WriteFn

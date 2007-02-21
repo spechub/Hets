@@ -14,7 +14,7 @@ module Modal.Print_AS where
 
 import Common.Id
 import Common.Keywords
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils

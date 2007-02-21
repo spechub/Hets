@@ -36,7 +36,7 @@ import CASL.Logic_CASL(CASL(CASL))
 import CASL.Morphism
 import CASL.Sign
 import CASL.SymbolParser
-import Common.Lib.Map as Map
+import Data.Map as Map
 import Logic.Logic
 
 --import CspCASL.AS_CspCASL

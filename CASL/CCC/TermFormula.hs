@@ -15,8 +15,8 @@ module CASL.CCC.TermFormula where
                         
 import CASL.AS_Basic_CASL
 import CASL.Overload
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 import CASL.Sign       
 import Common.AS_Annotation

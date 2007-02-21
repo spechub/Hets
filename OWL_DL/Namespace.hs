@@ -15,8 +15,8 @@ module OWL_DL.Namespace where
 
 import OWL_DL.AS
 import OWL_DL.Sign
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 import qualified Common.AS_Annotation as Common.Annotation
 import List(find, nub)
 import Maybe(fromJust)

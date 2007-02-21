@@ -16,8 +16,8 @@ import Logic.Logic
 import Logic.Comorphism
 import Common.Id
 import Common.AS_Annotation
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 -- CASL
 import CASL.Logic_CASL

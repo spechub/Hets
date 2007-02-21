@@ -23,7 +23,7 @@ import Haskell.HatParser(HsDecls(..))
 import Haskell.HatAna(Sign(..))
 import Haskell.ATC_Haskell()
 import ATC.Set()
-import Common.DynamicUtils
+import Data.Dynamic
 
 {-! for Qual derive : Typeable !-}
 {-! for Scheme derive : Typeable !-}

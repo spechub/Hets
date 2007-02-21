@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Description :  Tree-based implementation of 'Graph' and 'DynGraph' using Common.Lib.Map
+Description :  Tree-based implementation of 'Graph' and 'DynGraph' using Data.Map
 Copyright   :  (c) Martin Erwig, Christian Maeder and Uni Bremen 1999-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
@@ -8,7 +8,7 @@ Maintainer  :  maeder@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Tree-based implementation of 'Graph' and 'DynGraph' using Common.Lib.Map
+Tree-based implementation of 'Graph' and 'DynGraph' using Data.IntMap
 instead of Data.Graph.Inductive.Internal.FiniteMap
 -}
 

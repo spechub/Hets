@@ -50,7 +50,7 @@ import Proofs.Local
 import Proofs.HideTheoremShift
 import PGIP.Utils 
 
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import Data.Maybe (fromJust)
 
 {- todo: implement apply for GlobDecomp and Subsumption

@@ -20,14 +20,14 @@ module Common.ATerm.ConvInstances() where
 import Common.ATerm.Conversion
 import Common.ATerm.AbstractSyntax
 import qualified Common.Lib.Graph as Graph
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import qualified Data.IntMap as IntMap
-import qualified Common.Lib.Set as Set
+import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 import qualified Common.OrderedMap as OMap
 import Common.Id
 import Common.Result
-import Common.DynamicUtils
+import Data.Dynamic
 
 grTc :: TyCon
 grTc = mkTyCon "Common.Lib.Graph.Gr"

@@ -25,7 +25,7 @@ module Common.InjMap
     , getBToA
     ) where
 
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 
 -- | the data type of injective maps
 data InjMap a b = InjMap

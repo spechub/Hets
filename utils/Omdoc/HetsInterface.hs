@@ -38,8 +38,8 @@ import CASL.Morphism
 import qualified CASL.AS_Basic_CASL as CASLBasic
 import Data.Typeable
 import qualified Common.Id as Id
-import qualified Common.Lib.Set as Set
-import qualified Common.Lib.Map as Map
+import qualified Data.Set as Set
+import qualified Data.Map as Map
 import qualified Common.Lib.Rel as Rel
 import qualified Logic.Grothendieck as Gro
 import qualified Common.AS_Annotation as Ann

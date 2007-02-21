@@ -24,7 +24,7 @@ import HasCASL.Merge
 import Common.DocUtils
 import Common.Id
 import Common.Result
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import Data.List ((\\))
 
 instance Eq Morphism where

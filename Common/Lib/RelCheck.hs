@@ -17,8 +17,8 @@ module Common.Lib.RelCheck where
 
 import Test.QuickCheck
 import Common.Lib.Rel
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 instance Arbitrary (Rel Int) where
     arbitrary = do l0 <- arbitrary

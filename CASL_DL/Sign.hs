@@ -21,7 +21,7 @@ Signatures for DL logics, as extension of CASL signatures.
 
 module CASL_DL.Sign where
 
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import Common.Id
 import Common.Utils
 import Common.Doc

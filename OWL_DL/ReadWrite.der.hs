@@ -18,10 +18,10 @@ manual instance for 'Ontology'
 -}
 module OWL_DL.ReadWrite where
 
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import OWL_DL.AS
 import Common.ATerm.Lib
-import Common.DynamicUtils
+import Data.Dynamic
 import Data.Char
 import Data.List
 import Control.Monad

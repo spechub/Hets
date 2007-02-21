@@ -53,9 +53,9 @@ import Language.Haskell.Pretty as HP
 import Language.Haskell.Syntax
 import Language.Haskell.Parser
 
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import qualified Common.Lib.Rel as Rel
-import qualified Common.Lib.Set as Set
+import qualified Data.Set as Set
 import Common.GlobalAnnotations
 import Common.AnnoState
 import Text.ParserCombinators.Parsec

@@ -38,8 +38,8 @@ import qualified Text.XML.HXT.Parser as HXT hiding (run, trace, when)
 import qualified Text.XML.HXT.DOM.XmlTreeTypes as HXTT hiding (when)
 import qualified Text.XML.HXT.XPath as XPath
 
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 
 import qualified Common.Result as Result

@@ -23,8 +23,8 @@ module CASL.CCC.OnePoint where
 import CASL.Sign                -- Sign, OpType
 import CASL.Morphism              
 import CASL.AS_Basic_CASL       -- FORMULA, OP_{NAME,SYMB}, TERM, SORT, VAR
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 
 

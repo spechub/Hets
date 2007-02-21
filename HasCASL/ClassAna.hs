@@ -17,7 +17,7 @@ import HasCASL.AsUtils
 import HasCASL.PrintAs ()
 import Common.Id
 import HasCASL.Le
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import Common.Lib.State
 import Common.Result
 import Common.DocUtils

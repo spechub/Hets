@@ -27,8 +27,8 @@ import CASL.Inject
 
 import Common.AS_Annotation
 import Common.GlobalAnnotations
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Common.Lib.State
 import Common.Id
 import Common.Result

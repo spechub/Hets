@@ -42,8 +42,8 @@ module Common.Lib.Rel
     ) where
 
 import Prelude hiding (map, null)
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 import qualified Data.List as List
 
 data Rel a = Rel { toMap :: Map.Map a (Set.Set a) } deriving Eq

@@ -6,7 +6,7 @@ import Common.SimpPretty
 import Common.ATerm.Lib
 import Common.ATerm.ReadWrite
 import Common.ATerm.Unshared
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import Data.List (isPrefixOf)
 import GHC.Read
 

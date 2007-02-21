@@ -13,8 +13,8 @@ Signatures for modal logic, as extension of CASL signatures.
 module Modal.ModalSign where
 
 import CASL.Sign
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Common.Id
 import Modal.AS_Modal
 import qualified Data.List as List

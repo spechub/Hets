@@ -15,8 +15,8 @@ module CASL.Sign where
 
 import CASL.AS_Basic_CASL
 import CASL.ToDoc
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.State as State
 import Common.Keywords

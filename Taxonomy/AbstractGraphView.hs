@@ -31,7 +31,7 @@ import Taxonomy.MMiSSOntology
 
 import qualified Data.Graph.Inductive.Graph as Graph
 import Common.Lib.Graph as Tree
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 
 {- methods using fetch_graph return a quadruple containing the modified graph, a descriptor of the last modification (e.g. a new node), the descriptor that can be used for the next modification and a possible error message-}
 

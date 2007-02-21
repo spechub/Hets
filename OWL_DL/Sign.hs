@@ -13,8 +13,8 @@ Signatures and sentences for OWL_DL.
 module OWL_DL.Sign where
 
 import OWL_DL.AS
-import qualified Common.Lib.Set as Set
-import qualified Common.Lib.Map as Map
+import qualified Data.Set as Set
+import qualified Data.Map as Map
 
 type ID = URIreference          -- for universal ID
 data Sign = Sign

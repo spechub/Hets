@@ -39,7 +39,7 @@ import Driver.Options
 import Driver.WriteFn
 import Driver.ReadFn
 import Driver.Version
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import qualified Common.Result as CRes
 import Common.Doc (toText)
 import Common.DocUtils (pretty)

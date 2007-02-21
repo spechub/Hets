@@ -17,7 +17,7 @@ import CASL.AS_Basic_CASL
 import CASL.Fold
 import Common.Id
 import Data.List
-import qualified Common.Lib.Set as Set
+import qualified Data.Set as Set
 
 flatVAR_DECLs :: [VAR_DECL] -> [(VAR, SORT)]
 flatVAR_DECLs = concatMap (\ (Var_decl vs s _) -> map (\ v -> (v, s)) vs)

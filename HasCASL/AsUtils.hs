@@ -17,7 +17,7 @@ import HasCASL.As
 import Common.Id
 import Common.Keywords
 import Common.DocUtils
-import qualified Common.Lib.Set as Set
+import qualified Data.Set as Set
 
 -- | the string for the universe type
 typeUniverseS :: String

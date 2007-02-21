@@ -17,7 +17,7 @@ import Logic.Prover
 
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Id as Id
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import Common.Result
 
 import Data.List

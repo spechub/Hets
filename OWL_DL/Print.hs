@@ -25,8 +25,8 @@ import Common.DocUtils
 import OWL_DL.Sign
 import OWL_DL.AS
 
-import qualified Common.Lib.Set as Set
-import qualified Common.Lib.Map as Map
+import qualified Data.Set as Set
+import qualified Data.Map as Map
 
 instance Pretty Sign where
     pretty = printSign

@@ -25,7 +25,7 @@ import Common.PrintLaTeX
 import Common.Result
 import Common.GlobalAnnotations (GlobalAnnos)
 import Common.ConvertGlobalAnnos()
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import Common.SimpPretty (writeFileSDoc)
 
 import Common.ATerm.Lib

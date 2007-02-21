@@ -19,7 +19,7 @@ module ATC.DevGraph where
 import Static.DevGraph
 import Logic.Logic
 import Common.ATerm.Lib
-import Common.DynamicUtils
+import Data.Dynamic
 import ATC.AS_Library()
 import ATC.Prover()
 import ATC.Grothendieck

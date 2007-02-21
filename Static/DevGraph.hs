@@ -44,7 +44,7 @@ import Syntax.AS_Library
 import Data.Graph.Inductive.Graph as Graph
 import qualified Common.Lib.Graph as Tree
 
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import qualified Common.OrderedMap as OMap
 
 import Common.AS_Annotation
@@ -53,7 +53,7 @@ import Common.Id
 import Common.Doc
 import Common.DocUtils
 import Common.Result
-import Common.DynamicUtils
+import Data.Dynamic
 
 import Control.Monad (foldM)
 import Control.Exception

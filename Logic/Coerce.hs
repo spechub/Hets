@@ -20,8 +20,8 @@ import Logic.Prover
 import Common.Id
 import Common.Result
 import Common.AS_Annotation
-import qualified Common.Lib.Set as Set
-import Common.DynamicUtils
+import qualified Data.Set as Set
+import Data.Dynamic
 import ATC.Prover()
 
 -- coercion using the language name

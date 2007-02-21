@@ -37,7 +37,7 @@ module Comorphisms.LogicList
     ) where
 
 import Common.Result
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import Logic.Logic 
 import Logic.Grothendieck
 import CASL.Logic_CASL  -- also serves as default logic

@@ -24,7 +24,7 @@ import Static.DGToSpec
 import Common.DocUtils
 import Common.Result
 import Common.Taxonomy
-import Common.Lib.Set
+import Data.Set
 import Logic.Logic
 import Logic.Grothendieck
 #ifdef UNI_PACKAGE

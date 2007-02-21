@@ -23,8 +23,8 @@ import CASL.AS_Basic_CASL
 import Common.GlobalAnnotations
 import Common.Result
 import Common.Id
-import qualified Common.Lib.Set as Set
-import qualified Common.Lib.Map as Map
+import qualified Data.Set as Set
+import qualified Data.Map as Map
 import Common.Earley
 import Common.ConvertMixfixToken
 import Common.DocUtils

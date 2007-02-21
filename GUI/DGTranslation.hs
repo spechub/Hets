@@ -21,7 +21,7 @@ import Syntax.AS_Library
 import Static.DevGraph
 import Static.DGTranslation (showFromTo)
 
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import Common.Result as Res
 import Data.Graph.Inductive.Graph as Graph
 import Data.Maybe

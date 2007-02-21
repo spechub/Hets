@@ -14,7 +14,7 @@ module HasCASL.ProgEq where
 
 import Common.Result
 import Common.Id
-import qualified Common.Lib.Set as Set
+import qualified Data.Set as Set
 
 import HasCASL.As
 import HasCASL.AsUtils

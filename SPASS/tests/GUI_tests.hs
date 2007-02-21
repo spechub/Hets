@@ -2,8 +2,8 @@
 -- | some GUI tests to use from ghci
 module GUI_tests where 
 
-import qualified Common.Lib.Map as Map 
-import qualified Common.Lib.Set as Set 
+import qualified Data.Map as Map 
+import qualified Data.Set as Set 
 
 import HTk (initHTk, withdrawMainWin,destroy)
 import InfoBus (shutdown)

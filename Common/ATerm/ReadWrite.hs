@@ -39,7 +39,7 @@ module Common.ATerm.ReadWrite (
 import Common.ATerm.AbstractSyntax
 
 import Data.Char
-import qualified Common.Lib.Map as Map -- used with Int keys only
+import qualified Data.Map as Map -- used with Int keys only
 import Common.SimpPretty
 
 --- From String to ATerm ------------------------------------------------------

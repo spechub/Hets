@@ -17,8 +17,8 @@ import HasCASL.AsUtils
 import HasCASL.Le
 import HasCASL.ClassAna
 import HasCASL.TypeMixAna
-import qualified Common.Lib.Map as Map
-import qualified Common.Lib.Set as Set
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Common.DocUtils
 import Common.Id
 import Common.Result

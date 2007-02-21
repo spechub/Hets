@@ -27,7 +27,7 @@ module GUI.GenericATP (genericATPgui,guiDefaultTimeLimit) where
 import Logic.Prover
 
 import qualified Common.AS_Annotation as AS_Anno
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import Common.Utils (getEnvSave)
 
 import Data.List

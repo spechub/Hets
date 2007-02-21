@@ -14,7 +14,7 @@ module CoCASL.CoCASLSign where
 
 import CASL.Sign
 import CASL.AS_Basic_CASL (SORT)
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import qualified Common.Lib.Rel as Rel
                        
 data CoCASLSign = CoCASLSign { sees :: Rel.Rel SORT

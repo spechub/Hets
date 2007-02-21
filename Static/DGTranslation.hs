@@ -25,7 +25,7 @@ import Logic.Prover
 import Syntax.AS_Library
 import Static.DevGraph
 
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 import qualified List as List (nub)
 import Common.Result
 import Data.Maybe

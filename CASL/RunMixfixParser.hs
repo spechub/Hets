@@ -18,7 +18,7 @@ import Common.AnnoState
 import CASL.MixfixParser
 import CASL.AS_Basic_CASL
 import Common.GlobalAnnotations
-import qualified Common.Lib.Set as Set
+import qualified Data.Set as Set
 import Common.Id
 import Common.Result
 import Common.Lexer

@@ -16,7 +16,7 @@ module Comorphisms.CspCASL2Modal where
 
 import Logic.Logic
 import Logic.Comorphism
-import qualified Common.Lib.Set as Set
+import qualified Data.Set as Set
 import Common.Id
 
 -- CASL

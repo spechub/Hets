@@ -38,8 +38,6 @@ identifiers and annotations as well as their parsing and printing.
 
  * "Common.DocUtils"             further utilities for pretty documents
 
- * "Common.DynamicUtils"         only a wrapper for Data.Dynamic.mkTyConApp
-
  * "Common.Earley"
         the mixfix resolution engine used for CASL and HasCASL
 
@@ -82,6 +80,8 @@ identifiers and annotations as well as their parsing and printing.
 
  * "Common.RunParsers"           support for test drivers
 
+ * "Common.SetUtils"             utilities for singleton sets
+
  * "Common.SimpPretty"           printing aterms
 
  * "Common.Taxonomy"             Taxonomy options
@@ -100,13 +100,9 @@ identifiers and annotations as well as their parsing and printing.
 
  * "Common.ATerm.ReadWrite"      reading and writing aterms
 
- * "Common.Lib.Map"              see Data.Map
-
  * "Common.Lib.Pretty"           adapted printer for latex
 
  * "Common.Lib.Rel"              relations as special graphs
-
- * "Common.Lib.Set"              see Data.Set
 
  * "Common.Lib.State"            a portable state monad
 

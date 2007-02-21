@@ -23,7 +23,7 @@ module Comorphisms.KnownProvers (KnownProversMap,
                                  showKnownProvers,
                                  showAllKnownProvers) where
 
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 
 import System.Exit (exitFailure)
 

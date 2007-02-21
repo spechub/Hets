@@ -25,7 +25,7 @@ import Common.Lexer (bind)
 import Data.List(partition)
 
 import qualified Common.Lib.Rel as Rel
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 
 -- | add global annotations
 addGlobalAnnos :: GlobalAnnos -> [Annotation] -> Result GlobalAnnos

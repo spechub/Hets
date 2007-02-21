@@ -63,7 +63,7 @@ import Comorphisms.Haskell2IsabelleHOLCF
 #endif
 
 
-import qualified Common.Lib.Map as Map
+import qualified Data.Map as Map
 
 -- This needs to be seperated for utils/InlineAxioms/InlineAxioms.hs
 import Comorphisms.LogicList
