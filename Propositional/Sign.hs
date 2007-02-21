@@ -42,9 +42,6 @@ data Sign = Sign {items :: Set.Set Id}
 instance Pretty Sign where
     pretty = printSign
 
-instance Typeable Sign
-instance ShATermConvertible Sign
-
 -- | determines whether a signature is vaild
 -- all sets are ok, so glued to true
 isLegalSignature :: Sign -> Bool

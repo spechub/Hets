@@ -56,8 +56,6 @@ data Formula = Negation Formula Range
 
 instance Pretty Formula where
     pretty = printFormula
-instance Typeable Formula
-instance ShATermConvertible Formula
 
 -- | Value of the true atom
 -- True is always true -P

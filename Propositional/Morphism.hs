@@ -56,8 +56,6 @@ data Morphism = Morphism
 
 instance Pretty Morphism where
     pretty = printMorphism
-instance Typeable Morphism
-instance ShATermConvertible Morphism
 
 -- | Constructs an id-morphism as the diagonal 
 

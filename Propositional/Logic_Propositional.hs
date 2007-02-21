@@ -34,6 +34,8 @@ import Logic.Logic
 import Propositional.Sign as Sign
 import Propositional.Morphism as Morphism
 import Propositional.AS_BASIC_Propositional
+import Propositional.ATC_Propositional()
+import Propositional.Symbol
 
 -- | Lid for propositional logic
 data Propositional = Propositional deriving Show --lid
@@ -59,4 +61,5 @@ instance Category Propositional Sign Morphism where
     -- composition of morphisms
     comp Propositional f g = composeMor f g
 
-instance Sentences Propositional Formula () Sign Morphism ()
+instance Sentences Propositional Formula () Sign Morphism Symbol where
+    sym_of Propositional = symOf
