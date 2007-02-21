@@ -22,8 +22,7 @@ import PropSyntaxRec
 import Haskell.HatParser(HsDecls(..))
 import Haskell.HatAna(Sign(..))
 import Haskell.ATC_Haskell()
-import ATC.Set()
-import Data.Dynamic
+import Data.Typeable
 
 {-! for Qual derive : Typeable !-}
 {-! for Scheme derive : Typeable !-}

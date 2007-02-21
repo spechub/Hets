@@ -16,8 +16,7 @@ import Common.ATerm.Lib
 import TiDecorate
 import Haskell.ATC_Haskell()
 import Haskell.TiATC()
-import ATC.Set()
-import Data.Dynamic
+import Data.Typeable
 
 {-! for TiDecls derive : Typeable !-}
 {-! for TiDecl derive : Typeable !-}
