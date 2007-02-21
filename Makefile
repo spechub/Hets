@@ -56,7 +56,7 @@ PERL = perl
 HAPPY = happy -sga
 GENRULES = utils/genRules
 GENRULECALL = $(GENRULES) -r Typeable -r ShATermConvertible \
-    -i Common.DynamicUtils -i Common.ATerm.Lib
+    -i Data.Dynamic -i Common.ATerm.Lib
 DRIFT = utils/DrIFT
 INLINEAXIOMS = utils/outlineAxioms
 HADDOCK = haddock
