@@ -41,6 +41,7 @@ import CASL.Morphism
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Rel as Rel
+import Common.SetUtils
 import Common.Doc
 import Common.DocUtils
 import Common.Id
@@ -179,7 +180,7 @@ sortFun :: RawSymbolMap -> Id -> Result Id
 sortFun rmap s =
     -- rsys contains the raw symbols to which s is mapped to
     if Set.null rsys then return s -- use default = identity mapping
-    else case Set.lookupSingleton rsys of
+    else case lookupSingleton rsys of
           Just rsy -> return $ rawSymName rsy -- take the unique rsy
           Nothing -> plain_error s  -- ambiguity! generate an error
                  ("Sort " ++ showId s
@@ -499,8 +500,7 @@ type PosMap = (Map.Map Symbol (SymbolSet,(Bool,Int)),
 -- postpone entries with no default mapping and size > 1
 postponeEntry :: Symbol -> SymbolSet -> Bool
 postponeEntry sym symset =
-  (not $ any (preservesName sym) $ Set.toList symset) &&
-         Set.compareSize 1 symset == LT
+  (not $ any (preservesName sym) $ Set.toList symset) && hasMany symset
 
 removeFromPosmap :: Symbol -> (Bool,Int) -> PosMap -> PosMap
 removeFromPosmap sym card (posmap1,posmap2) =
@@ -598,7 +598,7 @@ inducedFromToMorphism extEm isSubExt rmap sigma1 sigma2 = do
    then return (mor1 {mtarget = sigma2})
    -- no => OK, we've to take the hard way
    else let sortSet2 = sortSet sigma2 in
-        if Map.null rmap && Set.isSingleton symset1 && Set.isSingleton sortSet2
+        if Map.null rmap && isSingleton symset1 && isSingleton sortSet2
            then return mor1
                     { mtarget = sigma2
                     , sort_map = Map.singleton (symName $ Set.findMin symset1)

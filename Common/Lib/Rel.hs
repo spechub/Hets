@@ -31,7 +31,7 @@ for plain maps involving sets.
 
 -}
 
-module Common.Lib.Rel 
+module Common.Lib.Rel
     ( Rel(), empty, null, insert, member, toMap, map
     , union , isSubrelOf, difference, path, delete
     , succs, predecessors, irreflex, sccOfClosure
@@ -326,7 +326,7 @@ flatSet = Set.fromList . List.map (\s -> if Set.null s
 locallyFiltered :: (Ord a) => Rel a -> Bool
 locallyFiltered rel = (check . flatSet . partSet iso . mostRight) rel
     where iso x y = member x y rel && member y x rel
-          check s = Set.null s || Set.isSingleton s ||
+          check s = Set.null s ||
                   Set.fold (\y rs -> rs &&
                                      not (haveCommonLeftElem x y rel)) True s'
                   && check s'

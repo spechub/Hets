@@ -44,6 +44,7 @@ import Common.Id
 import Common.Result
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
+import Common.SetUtils
 
 import qualified Data.List as List
 import Data.Maybe (mapMaybe)
@@ -121,7 +122,7 @@ transTheory trSig trForm (sign, sens) =
                 _ -> True) sens
     dtDefs = makeDtDefs sign sort_gen_axs
     ga = globAnnos sign
-    insertOps op ts m = case Set.lookupSingleton ts of
+    insertOps op ts m = case lookupSingleton ts of
       Just t ->
            Map.insert (mkIsaConstT False ga (length $ opArgs t) op baseSign)
                (transOpType t) m
@@ -130,7 +131,7 @@ transTheory trSig trForm (sign, sens) =
                          (length $ opArgs t) op i baseSign)
                     (transOpType t) m1) m
                 (zip (Set.toList ts) [1..])
-    insertPreds pre ts m = case Set.lookupSingleton ts of
+    insertPreds pre ts m = case lookupSingleton ts of
       Just t ->
            Map.insert (mkIsaConstT True ga (length $ predArgs t) pre baseSign)
                (transPredType (Set.findMin ts)) m
@@ -208,7 +209,7 @@ transOP_SYMB sign (Qual_op_name op ot _) = let
   ga = globAnnos sign
   l = length $ args_OP_TYPE ot in
   case (do ots <- Map.lookup op (opMap sign)
-           if Set.isSingleton ots
+           if isSingleton ots
              then return $ mkIsaConstT False ga l op baseSign
              else do
                    i <- List.elemIndex (toOpType ot) (Set.toList ots)
@@ -222,7 +223,7 @@ transPRED_SYMB sign (Qual_pred_name p pt@(Pred_type args _) _) = let
   ga = globAnnos sign
   l = length args in
   case (do pts <- Map.lookup p (predMap sign)
-           if Set.isSingleton pts
+           if isSingleton pts
              then return $ mkIsaConstT True ga l p baseSign
              else do
                    i <- List.elemIndex (toPredType pt) (Set.toList pts)

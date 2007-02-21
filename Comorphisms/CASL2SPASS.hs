@@ -20,8 +20,8 @@ The translating comorphism from CASL to SoftFOL.
      (s. below for a sketch) .. Klaus Lüttich
 -}
 
-module Comorphisms.CASL2SPASS 
-    (SuleCFOL2SoftFOL(..), SuleCFOL2SoftFOLInduction(..)) 
+module Comorphisms.CASL2SPASS
+    (SuleCFOL2SoftFOL(..), SuleCFOL2SoftFOLInduction(..))
     where
 
 -- Debuging and Warning
@@ -189,14 +189,14 @@ transFuncMap idMap sign =
               if Set.null typeSet then
                   error ("SuleCFOL2SoftFOL: empty sets are not "++
                          "allowed in OpMaps: " ++ show iden)
-              else case Set.lookupSingleton typeSet of
-              Just oType ->
-                  let sid' = sid fm oType
-                  in (Map.insert sid' (Set.singleton (transOpType oType)) fm,
+              else if Set.null $ Set.deleteMin typeSet then
+                 let oType = Set.findMin typeSet
+                     sid' = sid fm oType
+                 in (Map.insert sid' (Set.singleton (transOpType oType)) fm,
                       insertSPId iden (COp oType) sid' im)
-              Nothing -> Set.fold insOIdSet (fm,im) $
+              else Set.fold insOIdSet (fm,im) $
                          partOverload (leqF sign)
-                           (partArities (length . CSign.opArgs) typeSet) 
+                           (partArities (length . CSign.opArgs) typeSet)
               where insOIdSet tset (fm',im') =
                         let sid' = sid fm' (Set.findMax tset)
                         in (Map.insert sid' (Set.map transOpType tset) fm',
@@ -225,7 +225,7 @@ partOverload :: (Show a,Ord a) => (a -> a -> Bool)
              -> Set.Set (Set.Set a)
              -> Set.Set (Set.Set a)
 partOverload leq = Set.fold part Set.empty
-    where part s = Set.union (Set.fromList $ Rel.partSet leq s) 
+    where part s = Set.union (Set.fromList $ Rel.partSet leq s)
 
 transPredMap :: IdType_SPId_Map ->
                 CSign.Sign e f ->
@@ -236,14 +236,14 @@ transPredMap idMap sign =
               if Set.null typeSet then
                   error ("SuleCFOL2SoftFOL: empty sets are not "++
                          "allowed in PredMaps: " ++ show iden)
-              else case Set.lookupSingleton typeSet of
-              Just pType ->
-                  let sid' = sid fm pType
-                  in (Map.insert sid' (Set.singleton (transPredType pType)) fm,
+              else if Set.null $ Set.deleteMin typeSet then
+                let pType = Set.findMin typeSet
+                    sid' = sid fm pType
+                in (Map.insert sid' (Set.singleton (transPredType pType)) fm,
                       insertSPId iden (CPred pType) sid' im)
-              Nothing -> Set.fold insOIdSet (fm,im) $
+              else Set.fold insOIdSet (fm,im) $
                          partOverload (leqP sign)
-                            (partArities (length . CSign.predArgs) typeSet) 
+                            (partArities (length . CSign.predArgs) typeSet)
 
               where insOIdSet tset (fm',im') =
                         let sid' = sid fm' (Set.findMax tset)

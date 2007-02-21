@@ -33,6 +33,7 @@ import Common.Result
 import Common.Lib.State
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Set as Set
+import Common.SetUtils
 
 import Data.List (intersperse)
 
@@ -111,7 +112,7 @@ typeFun e rmap s k = do
                [ASymbol $ idToTypeSymbol e s k, AnID s, AKindedId SK_type s]
     -- rsys contains the raw symbols to which s is mapped to
     if Set.null rsys then return s -- use default = identity mapping
-       else case Set.lookupSingleton rsys of
+       else case lookupSingleton rsys of
        Just rsy -> return $ rawSymName rsy
        Nothing -> Result [mkDiag Error ("type: " ++ showDoc s
                        " mapped ambiguously") rsys] Nothing
@@ -222,7 +223,7 @@ inducedFromToMorphism rmap1 sigma1 sigma2 = do
                  ++ shows (printMap1 rmap) "\nOrignal Signature1:\n"
                  ++ showDoc sigma1 "\nInduced "
                  ++ showEnvDiff (mtarget mor1) sigma2) nullRange] Nothing
-        if Set.isSingleton s1 && Set.isSingleton s2 then do
+        if isSingleton s1 && isSingleton s2 then do
           let Symbol n1 _ _ = Set.findMin s1
               Symbol n2 _ _ = Set.findMin s2
           mor2 <- inducedFromMorphism (Map.insert (AKindedId SK_type n1)

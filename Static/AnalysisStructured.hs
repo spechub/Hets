@@ -106,23 +106,23 @@ module Static.AnalysisStructured (ana_SPEC, ana_GENERICITY,
 where
 
 import Driver.Options
-import Data.Maybe
 import Logic.Logic
 import Logic.Coerce
 import Logic.Comorphism
 import Logic.Grothendieck
+import Logic.Prover
 import Static.DevGraph
 import Syntax.AS_Structured
-import Common.AS_Annotation hiding (isAxiom,isDef)
-import Logic.Prover
 import Common.Result
 import Common.Id
-import Data.Graph.Inductive.Graph
+import Common.AS_Annotation hiding (isAxiom,isDef)
 import qualified Common.Lib.Set as Set
 import qualified Common.Lib.Map as Map
 import qualified Common.Lib.Rel as Rel(image, setInsert)
-import Data.List hiding (union)
 import Common.DocUtils
+import Data.Graph.Inductive.Graph
+import Data.Maybe
+import Data.List hiding (union)
 import Control.Monad
 
 getMapAndMaxIndex :: (GlobalContext -> Map.Map Int a) -> GlobalContext
@@ -491,8 +491,8 @@ ana_SPEC lg gctx nsig name opts sp =
               gctx'' { devGraph = insEdgeNub link $
                                   insNode (node,node_contents) dg''
                      , sigMap = Map.insert (s+1) gsigma3 sgMap
-                     , morMap = Map.insert (m+1) (G_morphism lid mor3 (m+1)) 
-                                mrMap 
+                     , morMap = Map.insert (m+1) (G_morphism lid mor3 (m+1))
+                                mrMap
                      })
   Closed_spec asp pos ->
    do let sp1 = item asp
@@ -650,7 +650,7 @@ ana_SPEC lg gctx nsig name opts sp =
                      gctx { devGraph = insEdgeNub link $
                                        insNode (node,node_contents) dg
                           , sigMap = Map.insert (s+1) gsigma' sgMap
-                          , morMap = Map.insert (m+1) (toG_morphism incl') 
+                          , morMap = Map.insert (m+1) (toG_morphism incl')
                                      mrMap})
          -- the subcase with nonempty local env
          JustNode (NodeSig n sigma) -> do
@@ -793,7 +793,7 @@ ana_SPEC lg gctx nsig name opts sp =
 
 ana_ren1 :: LogicGraph -> MaybeNode -> Range -> GMorphism -> G_mapping
              -> Result GMorphism
-ana_ren1 _ lenv _pos (GMorphism r sigma ind1 mor ind2)
+ana_ren1 _ lenv _pos (GMorphism r sigma ind1 mor _)
            (G_symb_map (G_symb_map_items_list lid sis)) = do
   let lid2 = targetLogic r
   sis1 <- coerceSymbMapItemsList lid lid2 "Analysis of renaming" sis
@@ -1195,9 +1195,8 @@ mapID idmap i@(Id toks comps pos1) =
       compsnew <- sequence $ map (mapID idmap) comps
       return (Id toks compsnew pos1)
     Just ids -> if Set.null ids then return i else
-      case Set.lookupSingleton ids of
-        Just j -> return j
-        Nothing -> plain_error i
+      if Set.null $ Set.deleteMin ids then return $ Set.findMin ids else
+         plain_error i
              ("Identifier component " ++ showId i
               " can be mapped in various ways:\n"
               ++ showDoc ids "") $ getRange i
@@ -1405,10 +1404,10 @@ isStructured a = case analysis a of
 ana_err :: String -> a
 ana_err f = error $ "*** Analysis of " ++ f ++ " is not yet implemented!"
 
-ana_Extension :: Result ([SPEC],MaybeNode, GlobalContext, 
+ana_Extension :: Result ([SPEC],MaybeNode, GlobalContext,
                                LogicGraph, HetcatsOpts, Range)
               -> (NODE_NAME, Annoted SPEC) ->
-                 Result ([SPEC], MaybeNode, GlobalContext, 
+                 Result ([SPEC], MaybeNode, GlobalContext,
                                 LogicGraph, HetcatsOpts, Range)
 ana_Extension res (name',asp') = do
   (sps', nsig', dg',lg,opts, pos) <- res
@@ -1435,7 +1434,7 @@ ana_Extension res (name',asp') = do
              "Signature must not be extended in presence of %implies"
              pos)
    -- insert a theorem link according to p. 319 of the CASL Reference Manual
-           return gctx1 { devGraph = insEdgeNub (n1, n', DGLink 
+           return gctx1 { devGraph = insEdgeNub (n1, n', DGLink
                               { dgl_morphism = ide Grothendieck sig1,
                                 dgl_type = GlobalThm LeftOpen None LeftOpen,
                                 dgl_origin = DGExtension }) dg1 }
@@ -1451,7 +1450,7 @@ ana_Extension res (name',asp') = do
            -- the interesting open proof obligation is anno2, of course
            incl <- ginclusion lg sig' sig1
            let incl' = updateMorIndex (ml+1) incl
-           return gctx1 { devGraph = insEdgeNub (n', n1, DGLink 
+           return gctx1 { devGraph = insEdgeNub (n', n1, DGLink
                               { dgl_morphism = incl'
                               , dgl_type = GlobalThm LeftOpen anno2 LeftOpen
                               , dgl_origin = DGExtension }) dg1
