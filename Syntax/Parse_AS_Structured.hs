@@ -12,12 +12,6 @@ Parser for CASL (heterogeneous) structured specifications
    of the CASL Reference Manual.
 
 -}
-{-
-   todo:
-    logic translations and implicit coercions
-    "and" should do union of involved logics
-
--}
 
 module Syntax.Parse_AS_Structured where
 

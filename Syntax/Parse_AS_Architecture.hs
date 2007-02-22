@@ -11,8 +11,6 @@ Parser for CASL architectural specifications
    Follows Sect. II:3.1.4 of the CASL Reference Manual plus refinement
    extensions
 
-   TODO:
-    check UNIT-BINDING
 -}
 
 module Syntax.Parse_AS_Architecture where

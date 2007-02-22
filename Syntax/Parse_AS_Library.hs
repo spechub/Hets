@@ -9,17 +9,7 @@ Portability :  non-portable(Grothendieck)
 
 Parser for CASL specification librariess
    Follows Sect. II:3.1.5 of the CASL Reference Manual.
--}
 
-{-
-   www.cofi.info
-   from 25 March 2001
-
-   C.2.4 Specification Libraries
-
-   TODO:
-   - architectural specs
-   - move structured parsing from libItem to Parse_AS_Structured (?)
 -}
 
 module Syntax.Parse_AS_Library where

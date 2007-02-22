@@ -24,11 +24,6 @@ Central datastructures for development graphs
    CASL Proof calculus. In: CASL reference manual, part IV.
    Available from http://www.cofi.info
 
-todo:
-
-Integrate stuff from Saarbrücken
-Should AS be stored in GloblaContext as well?
-simplifyTh should be removed from instance Pretty G_theory
 -}
 
 module Static.DevGraph where

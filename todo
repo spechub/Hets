@@ -72,28 +72,11 @@ Till
 
 Bitte auch aus folgenden Files die todo-Listen nach Trac verschieben:
 
-Proofs/EdgeUtils.hs:{- todo: also treat conservativity proof status in computation of proof basis
-Proofs/EdgeUtils.hs:    _ -> Right False  -- todo: also treat conservativity proof status
-Proofs/Global.hs:todo for Jorina:
-Proofs/HideTheoremShift.hs: todo: use compInclusion instead of compHomInclusion
-Proofs/InferBasic.hs:todo:
-Static/AnalysisArchitecture.hs:{-  todo:
-Static/DevGraph.hs:todo:
-Syntax/Parse_AS_Structured.hs:   todo:
 CASL/Amalgamability.hs:TODO:
 CASL/Amalgamability.hs:                          -- TODO: generate proof obligations
 Proofs/InferBasic.hs:            -- TODO: Reimplement stuff
 Logic/Comorphism.hs:   Todo:
 Logic/Morphism.hs:   Todo:
-Static/AnalysisLibrary.hs:   Todo:
-Static/AnalysisStructured.hs:   Todo:
-Static/DevGraph.hs:                               dgl_type = GlobalDef, -- TODO: other type
-Static/DevGraph.hs:                               dgl_type = GlobalDef, -- TODO: other type
-Static/LogicStructured.hs:   TODO
-Static/LogicStructured.hs:-- see TODO section for possible extensions for (isJust enc) and
-Syntax/Parse_AS_Architecture.hs:   TODO:
-Syntax/Parse_AS_Library.hs:   TODO:
-CoCASL/Sublogic.hs:-- Todo: add projection functions when those for CASL are settled
 
 an Hiwis delegiert:
 ConstraintCASL/Logic_ConstraintCASL.hs:{- todo:

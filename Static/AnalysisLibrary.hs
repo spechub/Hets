@@ -12,12 +12,6 @@ Static analysis of CASL specification libraries
    of the CASL Reference Manual.
 -}
 
-{-
-   Todo:
-   Generalization to heterogeneous views
-   check that libname coincides with filename (otherwise internal error occurs)
--}
-
 module Static.AnalysisLibrary
     ( anaLib
     , anaLibExt

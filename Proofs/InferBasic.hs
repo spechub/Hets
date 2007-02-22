@@ -12,9 +12,6 @@ devGraph rule that calls provers for specific logics
 Proof rule "basic inference" in the development graphs calculus.
    Follows Sect. IV:4.4 of the CASL Reference Manual.
 
--}
-
-{-
    References:
 
    T. Mossakowski, S. Autexier and D. Hutter:
@@ -22,12 +19,6 @@ Proof rule "basic inference" in the development graphs calculus.
    H. Hussmann (ed.): Fundamental Approaches to Software Engineering 2001,
    Lecture Notes in Computer Science 2029, p. 269-283,
    Springer-Verlag 2001.
-
-todo:
-
-do not add new dg nodes, but just change the old one
-
-Integrate stuff from Saarbrücken (what exactly?)
 
 -}
 

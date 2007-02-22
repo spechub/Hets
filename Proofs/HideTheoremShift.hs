@@ -22,10 +22,6 @@ hide theorem shift proof rule for development graphs
    Springer-Verlag 2001.
 -}
 
-{-
- todo: use compInclusion instead of compHomInclusion
--}
-
 module Proofs.HideTheoremShift
     ( interactiveHideTheoremShift
     , automaticHideTheoremShift

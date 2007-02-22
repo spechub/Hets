@@ -11,8 +11,6 @@ This module provides the sublogic functions (as required by Logic.hs)
   for CoCASL. It is based on the respective functions for CASL.
 -}
 
--- Todo: add projection functions when those for CASL are settled
-
 module CoCASL.Sublogic
     ( CoCASL_Sublogics
     , minFormSublogic

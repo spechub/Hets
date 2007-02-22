@@ -11,9 +11,6 @@ Portability :  non-portable(Logic)
 utility functions for edges of development graphs
 -}
 
-{- todo: also treat conservativity proof status in computation of proof basis
--}
-
 module Proofs.EdgeUtils where
 
 import Logic.Grothendieck

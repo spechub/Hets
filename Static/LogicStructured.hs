@@ -16,28 +16,6 @@ This module provides routines to calculate the sublogic of a structured
    items (only one language occuring inside) and returns Nothing otherwise.
 
 -}
-{------------------------------------------------------------------------------
-   TODO
-
-   IMAGINABLE FUTURE EXTENSIONS:
-
-   sl_logic_code could be extended to do some extra checking for encodings
-     and logic projections/translations that only change the encoding if,
-     maybe only in some languages, the encoding implies a specific
-     sublanguage (i.e. in CASL one could encode partial functions by
-     introducing supersorts with bottom element so that functions are
-     then total with the supersort as the result sort, in that case, the 
-     encoding implies a CASL_sublogics with has_part = False. Similar
-     for encoding out subsorts with normal sorts and projection functions,
-     that kind of encoding would imply a CASL_sublogics with has_sub
-     set to False).
-
-   evaluate logic_code/name should functions that can turn a language and/or
-     encoding name into an id or even sublogics be implemented
-
-   arch_spec_name/spec_name G_sublogics could perhaps be computed if
-     the named spec is also in the given lib_defn or spec_defn
--------------------------------------------------------------------------- -}
 
 -----------------------------------------------------------------------------
 -- Export declarations
@@ -168,7 +146,7 @@ sl_g_hiding (G_symb_list l) = toIgnore $ sl_g_symb_items_list l
 sl_g_hiding (G_logic_projection c) = sl_logic_code c
 
 -- find out whether a Logic_code really changes the language
--- see TODO section for possible extensions for (isJust enc) and
+-- see Trac for possible extensions for (isJust enc) and
 -- (try!=src) cases
 --
 sl_logic_code :: Logic_code -> IgnoreMaybe G_sublogics

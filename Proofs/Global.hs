@@ -12,19 +12,6 @@ global proof rules for development graphs.
    Follows Sect. IV:4.4 of the CASL Reference Manual.
 -}
 
-{-
-todo for Jorina:
-
-   - bei GlobDecomp hinzufügen:
-     zusätzlich alle Pfade K<--theta-- M --sigma-->N in den aktuellen
-     Knoten N, die mit einem HidingDef anfangen, und danach nur GlobalDef
-     theta ist der Signaturmorphismus des HidingDef's (geht "falsch rum")
-     sigma ist die Komposition der Signaturmorphismen auf dem restl. Pfad
-     für jeden solchen Pfad: einen HidingThm theta einfügen. sigma ist
-     der normale Morphismus (wie bei jedem anderen Link)
-     siehe auch Seite 302 des CASL Reference Manual
--}
-
 module Proofs.Global (globSubsume, globDecomp, globDecompAux, globDecompFromList, globSubsumeFromList) where
 
 import Data.Graph.Inductive.Graph
