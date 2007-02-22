@@ -102,7 +102,7 @@ exclude s = not $
     , "GUI.GenericATP", "SPASS.CreateDFGDoc" -- SPASS
  --   , "GUI.Taxonomy", "GUI.ShowGraph" -- PGIP
     , "Static.DevGraph", "Syntax.AS_Library", "Static.AnalysisLibrary"
-    , "OMDoc.HetsInterface", "OMDoc.OMDocOutput"
+    , "OMDoc.HetsInterface", "OMDoc.OMDocOutput", "Debug.Trace"
     ])
 
 getContent2 :: String -> [String] -> [(String, String)]
