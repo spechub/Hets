@@ -51,7 +51,7 @@ isabelleS :: String
 isabelleS = "Isabelle"
 
 isabelleProver :: Prover Sign Sentence ()
-isabelleProver = emptyProverTemplate 
+isabelleProver = emptyProverTemplate
         { prover_name = isabelleS,
           prover_sublogic = isabelleS,
           proveGUI = Just isaProve }
@@ -123,7 +123,7 @@ checkFinalThyFile (ho, bo) thyFile = do
   case parse parseTheory thyFile s of
     Right (hb, b) -> do
             let ds = compatibleBodies bo b
-            mapM_ (\ d -> putStrLn $ showDoc d "") $ ds ++ warnSimpAttr b 
+            mapM_ (\ d -> putStrLn $ showDoc d "") $ ds ++ warnSimpAttr b
             if hb /= ho then do
                   putStrLn "illegal change of theory header"
                   return False
@@ -191,16 +191,16 @@ isaProve thName th = do
   hlibdir <- getEnv "HETS_LIB"
   let thBaseName = reverse . takeWhile (/= '/') $ reverse thName
       thy = shows (printIsaTheory thBaseName hlibdir sig $ axs ++ ths) "\n"
-      thyFile = thName ++ ".thy"
+      thyFile = thBaseName ++ ".thy"
   case parse parseTheory thyFile thy of
     Right (ho, bo) -> do
       prepareThyFiles (ho, bo) thyFile thy
-      removeDepFiles thName thms
+      removeDepFiles thBaseName thms
       isabelleEnv <- getEnv "HETS_ISABELLE"
       let isabelle = if null isabelleEnv then "Isabelle" else isabelleEnv
       callSystem $ isabelle ++ " " ++ thyFile
       ok <- checkFinalThyFile (ho, bo) thyFile
-      if ok then getAllProofDeps m thName thms
+      if ok then getAllProofDeps m thBaseName thms
           else return []
     Left err -> do
       putStrLn $ show err
