@@ -205,7 +205,7 @@ transFuncMap idMap sign =
                                      im' tset)
                     sid fma t = disSPOId (COp t) (transId (COp t) iden)
                                        (uType (transOpType t))
-                                       (Set.union (Rel.keysSet fma)
+                                       (Set.union (Map.keysSet fma)
                                            (elemsSPId_Set idMap))
                     uType t = fst t ++ [snd t]
 
@@ -253,7 +253,7 @@ transPredMap idMap sign =
                                      im' tset)
                     sid fma t = disSPOId (CPred t) (transId (CPred t) iden)
                                        (transPredType t)
-                                       (Set.union (Rel.keysSet fma)
+                                       (Set.union (Map.keysSet fma)
                                            (elemsSPId_Set idMap))
 -- | disambiguation of SPASS Identifiers
 disSPOId :: CType -- ^ Type of CASl identifier
@@ -448,7 +448,7 @@ mkInjOp (opMap,idMap) qo@(Qual_op_name i ot _) =
                         (utype (transOpType ot')) usedNames
           ot' = CSign.toOpType ot
           lsid = lookupSPId i (COp ot') idMap
-          usedNames = Rel.keysSet opMap
+          usedNames = Map.keysSet opMap
           err = error ("SuleCFOL2SoftFOL.mkInjOp: Cannot find SPId for '"++
                        show qo++"'")
           utype t = fst t ++ [snd t]
@@ -489,7 +489,7 @@ transSign sign = (SPSign.emptySign { sortRel =
             Set.fold (\ i (sm,im) ->
                           let sid = disSPOId CSort (transIdSort i)
                                        [take 20 (cycle "So")]
-                                       (Rel.keysSet sm)
+                                       (Map.keysSet sm)
                           in (Map.insert sid Nothing sm,
                               insertSPId i CSort sid im))
                                         (Map.empty,Map.empty)

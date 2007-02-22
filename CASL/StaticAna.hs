@@ -117,7 +117,7 @@ addPred a ty i =
        addAnnoSet a $ Symbol i $ PredAsItemType ty
 
 allOpIds :: Sign f e -> Set.Set Id
-allOpIds = Rel.keysSet . opMap
+allOpIds = Map.keysSet . opMap
 
 addAssocs :: Sign f e -> GlobalAnnos -> GlobalAnnos
 addAssocs e = updAssocMap (\ m -> foldr addAssocId m $ Map.keys $ assocOps e)
@@ -136,7 +136,7 @@ formulaIds e = let ops = allOpIds e in
                `Set.union` ops
 
 allPredIds :: Sign f e -> Set.Set Id
-allPredIds = Rel.keysSet . predMap
+allPredIds = Map.keysSet . predMap
 
 addSentences :: [Named (FORMULA f)] -> State (Sign f e) ()
 addSentences ds =

@@ -26,7 +26,7 @@ Checking for a 'path' corresponds to checking for a member in the
 transitive (possibly non-reflexive) closure. A further 'insert', however,
 may destroy the closedness property of a relation.
 
-The functions 'image', 'keysSet' and 'setInsert' are utility functions
+The functions 'image', and 'setInsert' are utility functions
 for plain maps involving sets.
 
 -}
@@ -37,7 +37,7 @@ module Common.Lib.Rel
     , succs, predecessors, irreflex, sccOfClosure
     , transClosure, fromList, toList, image, toPrecMap
     , intransKernel, mostRight, restrict, toSet, fromSet, topSort, nodes
-    , transpose, transReduce, setInsert, keysSet
+    , transpose, transReduce, setInsert
     , haveCommonLeftElem, fromDistinctMap, locallyFiltered, flatSet, partSet
     ) where
 
@@ -102,7 +102,7 @@ preds r a = Set.filter ( \ s -> member s a r)
 
 -- | get direct predecessors inefficiently
 predecessors :: Ord a => Rel a -> a -> Set.Set a
-predecessors r@(Rel m) a = preds r a $ keysSet m
+predecessors r@(Rel m) a = preds r a $ Map.keysSet m
 
 -- | test for 'member' or transitive membership (non-empty path)
 path :: Ord a => a -> a -> Rel a -> Bool
@@ -209,11 +209,7 @@ fromAscList = Rel . Map.fromDistinctAscList
 
 -- | all nodes of the edges
 nodes :: Ord a => Rel a -> Set.Set a
-nodes (Rel m) = Set.union (keysSet m) $ elemsSet m
-
--- | The set of all keys of the map
-keysSet :: Ord a => Map.Map a b -> Set.Set a
-keysSet = Set.fromDistinctAscList . Map.keys
+nodes (Rel m) = Set.union (Map.keysSet m) $ elemsSet m
 
 elemsSet :: Ord a => Map.Map a (Set.Set a) -> Set.Set a
 elemsSet = Set.unions . Map.elems
@@ -228,9 +224,9 @@ toPrecMap r = foldl ( \ (m1, c) s -> let n = c + 1 in
 topSortDAG :: Ord a => Rel a -> [Set.Set a]
 topSortDAG r@(Rel m) = if Map.null m then [] else
     let es = elemsSet m
-        ml = keysSet m Set.\\ es -- most left
+        ml = Map.keysSet m Set.\\ es -- most left
         Rel m2 = delSet ml r
-        rs = es Set.\\ keysSet m2 -- re-insert loose ends
+        rs = es Set.\\ Map.keysSet m2 -- re-insert loose ends
     in ml : topSortDAG (Rel $ Set.fold (flip Map.insert Set.empty) m2 rs)
 
 -- | topologically sort a closed relation (ignore isolated cycles)
@@ -250,8 +246,8 @@ expandCycle (c : r) s = if Set.null c then error "expandCycle" else
 mostRightOfCollapsed :: Ord a => Rel a -> Set.Set a
 mostRightOfCollapsed r@(Rel m) = if Map.null m then Set.empty
     else let Rel im = irreflex r
-             mr = elemsSet im Set.\\ keysSet im
-         in if Set.null mr then keysSet $ Map.filterWithKey (\ k v ->
+             mr = elemsSet im Set.\\ Map.keysSet im
+         in if Set.null mr then Map.keysSet $ Map.filterWithKey (\ k v ->
                                            Set.singleton k == v) m
             else mr
 

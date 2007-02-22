@@ -28,13 +28,12 @@ module Common.OrderedMap ( OMap
                          , filter, filterWithKey
                          , partition, partitionWithKey
                          , fromList, toList
-                         , keys, Rel.keysSet
+                         , keys, Map.keysSet
                          ) where
 
 import Prelude hiding (lookup,map,filter,foldr,foldl,null)
 
 import qualified Data.Map as Map
-import qualified Common.Lib.Rel as Rel
 import qualified Data.List as List
 import Data.Maybe
 import Control.Monad

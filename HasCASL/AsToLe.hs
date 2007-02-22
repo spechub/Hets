@@ -18,7 +18,6 @@ import Common.Id
 import Common.Result
 import Common.Prec
 import Common.Lib.State
-import qualified Common.Lib.Rel as Rel
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -145,7 +144,7 @@ anaBasicSpec :: GlobalAnnos -> BasicSpec -> State Env BasicSpec
 anaBasicSpec ga b@(BasicSpec l) = do
     e <- get
     let newAs = assumps e
-        preds = Rel.keysSet $ Map.filter (any ( \ oi ->
+        preds = Map.keysSet $ Map.filter (any ( \ oi ->
                                  case opDefn oi of
                                  NoOpDefn Pred -> True
                                  Definition Pred _ -> True

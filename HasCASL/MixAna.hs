@@ -20,7 +20,7 @@ import Common.Earley
 import Common.Prec
 import Common.ConvertMixfixToken
 import Common.Lib.State
-import qualified Common.Lib.Rel as Rel
+import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import HasCASL.As
@@ -200,7 +200,7 @@ resolver isPat ga trm =
        vs <- gets localVars
        ps <- gets preIds
        let (addRule, ruleS, sIds) = makeRules ga ps
-                 $ Set.union (Rel.keysSet ass) $ Rel.keysSet vs
+                 $ Set.union (Map.keysSet ass) $ Map.keysSet vs
        chart <- iterateCharts ga [trm] $ initChart addRule ruleS
        let Result ds mr = getResolved
               (showDoc . parenTerm) (getRange trm)

@@ -93,7 +93,7 @@ addBuiltins ga =
                   (whenElse, ARight)]
         precs = prec_annos ga
         pMap = Rel.toMap precs
-        opIds = Set.unions (Rel.keysSet pMap : Map.elems pMap)
+        opIds = Set.unions (Map.keysSet pMap : Map.elems pMap)
         opIs = Set.toList ((((Set.filter isInfix opIds)
                 Set.\\ builtinRelIds) Set.\\ builtinLogIds)
                 Set.\\ Set.fromList [applId, whenElse])

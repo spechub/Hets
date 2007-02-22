@@ -171,7 +171,7 @@ transSig sig
                                                 (Map.elems subSortMap))
                               `Set.union`
                               (sortSet sig `Set.difference`
-                               Rel.keysSet subSortMap)
+                               Map.keysSet subSortMap)
                         , sortRel = Rel.empty
                         , opMap   = transOpMap subSortMap (opMap sig)
                         , assocOps= transOpMap subSortMap (assocOps sig)

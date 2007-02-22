@@ -37,6 +37,7 @@ import CASL.Fold
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import qualified Data.Set as Set
+import qualified Data.Map as Map
 import qualified Common.Lib.Rel as Rel
 import Common.Lib.State
 import Common.Id
@@ -60,7 +61,7 @@ ana_CMix :: Mix C_BASIC_ITEM C_SIG_ITEM C_FORMULA CoCASLSign
 ana_CMix = emptyMix
     { getBaseIds = ids_C_BASIC_ITEM
     , getSigIds = ids_C_SIG_ITEM
-    , getExtIds = \ e -> mkIdSets (Rel.keysSet $ constructors e) Set.empty
+    , getExtIds = \ e -> mkIdSets (Map.keysSet $ constructors e) Set.empty
     , putParen = mapC_FORMULA
     , mixResolve = resolveC_FORMULA
     , checkMix = noExtMixfixCo
