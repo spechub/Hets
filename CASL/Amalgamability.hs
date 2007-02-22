@@ -13,15 +13,6 @@ Amalgamability analysis for CASL.
   Follows the algorithm outlined in MFCS 2001 (LNCS 2136, pp. 451-463,
   Springer 2001) paper.
 -}
-{-
-TODO:
-* generalize for CASL extensions (at least for formulas. this is easy)
-
-* optimisations in congruenceClosure (Nelson-Oppen algorithm?)
-* optimisation in colimitIsThin (fixUpdRule)
-* optimisations in the whole algorithm
-
--}
 
 module CASL.Amalgamability(-- * Types
                            CASLSign, CASLMor, CASLDiag,

@@ -11,17 +11,8 @@ Portability :  non-portable (via Logic)
 Central interface (type class) for logic translations (comorphisms) in Hets
    These are just collections of
    functions between (some of) the types of logics.
--}
 
-{-   References: see Logic.hs
-
-   Todo:
-   Flag for model expansion property
-   Weak amalgamability, also for comorphisms
-   comorphism modifications
-   comorphisms out of sublogic relationships
-   restrictions of comorphisms to sublogics
-   morphisms and other translations via spans
+   References: see Logic.hs
 -}
 
 module Logic.Comorphism where

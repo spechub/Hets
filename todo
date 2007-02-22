@@ -72,12 +72,6 @@ Till
 
 Bitte auch aus folgenden Files die todo-Listen nach Trac verschieben:
 
-CASL/Amalgamability.hs:TODO:
-CASL/Amalgamability.hs:                          -- TODO: generate proof obligations
-Proofs/InferBasic.hs:            -- TODO: Reimplement stuff
-Logic/Comorphism.hs:   Todo:
-Logic/Morphism.hs:   Todo:
-
 an Hiwis delegiert:
 ConstraintCASL/Logic_ConstraintCASL.hs:{- todo:
 ConstraintCASL/StaticAna.hs:{- todo: check formulas -}

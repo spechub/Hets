@@ -13,12 +13,8 @@ Interface (type class) for logic projections (morphisms) in Hets
 Provides data structures for institution morphisms.
    These are just collections of
    functions between (some of) the types of logics.
--}
 
-{-   References: see Logic.hs
-
-   Todo:
-   morphism modifications / representation maps
+   References: see Logic.hs
 -}
 
 module Logic.Morphism where
