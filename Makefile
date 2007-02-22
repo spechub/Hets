@@ -14,13 +14,13 @@ all: hets
 ####################################################################
 ## Some varibles, which control the compilation
 
-INCLUDE_PATH = haifa-lite/src
+INCLUDE_PATH =
 HAIFA_PATHS = Network Network/Server Org Org/W3 Org/W3/N2001 \
     Org/Xmlsoap Org/Xmlsoap/Schemas Org/Xmlsoap/Schemas/Soap \
     Text Text/XML Text/XML/HXT Text/XML/Schema Text/XML/Schema/TypeMapper \
     Text/XML/Serializer
 
-CLEAN_PATH = . utils/itcor \
+SOURCE_PATHS = . utils/itcor \
     utils utils/DrIFT-src utils/GenerateRules utils/InlineAxioms Common \
     Common/Lib Common/ATerm Logic CASL CASL/CCC CASL/CompositionTable \
     Syntax Static GUI HasCASL Haskell Modal CoCASL COL ConstraintCASL \
@@ -232,8 +232,6 @@ non_sources = utils/Setup.hs Common/LaTeX_maps.svmono.hs CspCASL/Main.hs \
     $(wildcard haifa-lite/src/Org/Xmlsoap/Schemas/Soap/*.hs) \
     $(wildcard haifa-lite/src/Text/XML/*/*.hs)
 
-SOURCE_PATHS = $(CLEAN_PATH)
-
 sources = hets.hs $(filter-out $(non_sources), \
     $(wildcard $(addsuffix /[A-Z]*hs, $(SOURCE_PATHS))))
 
@@ -364,7 +362,7 @@ tax_objects = $(patsubst %.hs, %.o, $(tax_sources))
     http_pkg syb_pkg shellac_pkg shread_pkg hxt_pkg haifa_pkg \
     check capa hacapa h2h h2hf showKP clean_genRules genRules \
     count doc apache_doc post_doc4apache fromKif \
-    programatica_pkg \
+    programatica_pkg maintainer-clean \
     derivedSources install_hets install release cgi ghci
 
 .SECONDARY : %.hs %.d $(generated_rule_files) $(gen_inline_axiom_files)
@@ -617,8 +615,7 @@ clean: bin_clean o_clean clean_pretty
 
 ### removes *.hi and *.o in all include directories
 o_clean:
-	for p in $(CLEAN_PATH) ; do \
-	    (cd $$p ; $(RM) *.hi *.o) ; done
+	find . -name \*.o -o -name \*.hi | xargs $(RM) -r
 
 ### remove binaries
 bin_clean:
@@ -646,11 +643,13 @@ package_clean:
 	$(RM) -r $(HOME)/.ghc/$(ARCH)-$(OSBYUNAME)-hets-packages
 
 ### additionally removes generated files not in the CVS tree
-distclean: clean clean_genRules package_clean
+distclean: clean clean_genRules
 	$(RM) $(derived_sources)
 	$(RM) Modal/GeneratePatterns.inline.hs utils/appendHaskellPreludeString
 	$(RM) utils/DrIFT utils/genRules $(INLINEAXIOMS)
 	$(RM) utils/genItCorrections pretty/LaTeX_maps.hs pretty/words.pl.log
+
+maintainer-clean: distclean package_clean
 
 ####################################################################
 ### test targets
