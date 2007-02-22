@@ -11,8 +11,6 @@ static analysis for ConstraintCASL specifications
  Follows Chaps. III:2 and III:3 of the CASL Reference Manual.
 -}
 
-{- todo: check formulas -}
-
 module ConstraintCASL.StaticAna where
 
 import ConstraintCASL.AS_ConstraintCASL

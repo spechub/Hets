@@ -11,10 +11,6 @@ Here is the place where the class Logic is instantiated for CASL.
    Also the instances for Syntax an Category.
 -}
 
-{- todo:
-  real implementation for map_sen
--}
-
 module ConstraintCASL.Logic_ConstraintCASL
     ( module ConstraintCASL.Logic_ConstraintCASL
     , CASLSign

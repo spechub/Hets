@@ -62,27 +62,5 @@ Common/LaTeX_funs.hs:          -- TODO: Build a nice correction map
 Common/Utils.hs:   Todo:
 Logic/Prover.hs:{- todo:
 
-************************************************
-Christian
-************************************************
-
-************************************************
-Till
-************************************************
-
-Bitte auch aus folgenden Files die todo-Listen nach Trac verschieben:
-
-an Hiwis delegiert:
-ConstraintCASL/Logic_ConstraintCASL.hs:{- todo:
-ConstraintCASL/StaticAna.hs:{- todo: check formulas -}
-OMDoc/OMDocOutput.hs:  BUGS/TODO:
-OMDoc/Util.hs:-- TODO : this looks very slow...
-PGIP/Utils.hs:{- todo: refactor getGoalList, extractGraphEdge, extractGraphLabeledEdge
-PGIP/Command_Parser.hs:  TODO :
-PGIP/Commands.hs: TODO :
-
-CspCASL/Logic_CspCASL.hs:   todo:
-CspCASL/SignCSP.hs:-- todo:  implement isInclusion, computeExt
-CspCASL/StatAnaCSP.hs:{- todo:
 
 
