@@ -27,37 +27,42 @@ import Common.Id
 import Common.Utils
 import Data.Graph.Inductive.Graph
 
-dgToSpec :: DGraph -> Node -> Result SPEC
-dgToSpec dg node = do
-  let (_,_,n,preds) = safeContext "Static.DGToSpec.dgToSpec" dg node
-  predSps <- sequence (map (dgToSpec dg . snd) preds)
-  let apredSps = map emptyAnno predSps
-  case n of
+dgToSpec :: Monad m => DGraph -> Node -> m SPEC
+dgToSpec dg = return . dgToSpec0 dg
+
+dgToSpec0 :: DGraph -> Node -> SPEC
+dgToSpec0 dg node = case match node dg of
+  (Just (preds, _, n, _), subdg) ->
+   let apredSps = map (emptyAnno . dgToSpec0 subdg . snd) preds
+       myhead l = case l of
+                    [x] -> x
+                    _ -> error "dgToSpec0.myhead"
+   in case n of
     DGNode _ (G_theory lid1 sigma _ sen' _) _ _ DGBasic _ _ ->
-      do let b = Basic_spec $ G_basic_spec lid1 $
+      let b = Basic_spec $ G_basic_spec lid1 $
                  sign_to_basic_spec lid1 sigma $ toNamedList sen'
-         if null apredSps
-          then return b
-          else return (Extension (apredSps++[emptyAnno b]) nullRange)
-    DGRef name _ _ _ _ _ -> return (Spec_inst (getName name) [] nullRange)
+      in if null apredSps then b
+          else (Extension (apredSps ++ [emptyAnno b]) nullRange)
+    DGRef name _ _ _ _ _ -> (Spec_inst (getName name) [] nullRange)
     _ -> case dgn_origin n of
         DGExtension ->
-         return (Extension apredSps nullRange)
+         (Extension apredSps nullRange)
         DGUnion ->
-         return (Union apredSps nullRange)
+         (Union apredSps nullRange)
         DGTranslation ->
-         return (Translation (head apredSps) (Renaming [] nullRange))
+         (Translation (myhead apredSps) (Renaming [] nullRange))
         DGHiding ->
-         return (Reduction (head apredSps) (Hidden [] nullRange))
+         (Reduction (myhead apredSps) (Hidden [] nullRange))
         DGRevealing ->
-         return (Reduction (head apredSps) (Hidden [] nullRange))
+         (Reduction (myhead apredSps) (Hidden [] nullRange))
         DGFree ->
-         return (Free_spec (head apredSps) nullRange)
+         (Free_spec (myhead apredSps) nullRange)
         DGCofree ->
-         return (Cofree_spec (head apredSps) nullRange)
+         (Cofree_spec (myhead apredSps) nullRange)
         DGSpecInst name ->
-         return (Spec_inst name [] nullRange)
-        _ -> return (Extension apredSps nullRange)
+         (Spec_inst name [] nullRange)
+        _ -> (Extension apredSps nullRange)
+  _ -> error "dgToSpec0"
 
 {- compute the theory of a given node.
    If this node is a DGRef, the referenced node is looked up first. -}
