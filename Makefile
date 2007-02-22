@@ -140,13 +140,12 @@ happy_files += $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs
 
 LEX_DIR = $(PFE_TOOLDIR)/base/parse2/Lexer
 
-patch: Haskell/Programatica.patch
-	patch -usNlp0 -d $(PFE_TOOLDIR) -i `pwd`/$< || exit 0
-
-programatica_pkg: patch $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs \
+programatica_pkg: $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs \
             $(LEX_DIR)/HsLex.hs $(SETUP)
 	@if $(HCPKG) field programatica version; then \
           echo "of programatica package found"; else \
+          (patch -usNlp0 -d $(PFE_TOOLDIR) \
+            -i `pwd`/Haskell/Programatica.patch || exit 0); \
           cp -f utils/programatica.cabal ../programatica/tools; \
           cp -f $(SETUP) ../programatica/tools; \
           (cd ../programatica/tools; \
@@ -366,7 +365,7 @@ tax_objects = $(patsubst %.hs, %.o, $(tax_sources))
     check capa hacapa h2h h2hf showKP clean_genRules genRules \
     count doc apache_doc post_doc4apache fromKif \
     programatica_pkg \
-    derivedSources install_hets install release cgi patch ghci
+    derivedSources install_hets install release cgi ghci
 
 .SECONDARY : %.hs %.d $(generated_rule_files) $(gen_inline_axiom_files)
 
@@ -416,8 +415,6 @@ haifa_pkg: $(SETUP) hxt_pkg syb_pkg
            ../$(SETUP) build; ../$(SETUP) install --user) fi
 
 programatica_pkg:
-
-patch:
 
 hets-opt:
 	$(MAKE) distclean
