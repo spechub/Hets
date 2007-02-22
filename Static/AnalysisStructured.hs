@@ -591,8 +591,9 @@ ana_SPEC lg gctx nsig name opts sp =
   Group asp pos -> do
    (sp',nsig',dg') <- ana_SPEC lg gctx nsig name opts (item asp)
    return (Group (replaceAnnoted sp' asp) pos,nsig',dg')
-  Spec_inst spname afitargs pos -> do
-   let adj = adjustPos pos
+  Spec_inst spname afitargs pos0 -> do
+   let pos = if null afitargs then tokPos spname else pos0
+       adj = adjustPos pos
        spstr = tokStr spname
        (sgMap, s) = sigMapI gctx
        (mrMap, m) = morMapI gctx
