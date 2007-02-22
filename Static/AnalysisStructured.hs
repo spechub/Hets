@@ -688,7 +688,7 @@ ana_SPEC lg gctx nsig name opts sp =
       (_,0) -> do
        let fitargs = map item afitargs
        (fitargs', gctx', args, _) <-
-          foldl anaFitArg (return ([], gctx, [], extName "A" name))
+          adj $ foldl anaFitArg (return ([], gctx, [], extName "A" name))
                           (zip params fitargs)
        let actualargs = reverse args
            dg' = devGraph gctx'
