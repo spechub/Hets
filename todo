@@ -59,8 +59,8 @@ SPASS/Logic_SPASS.hs:         is_subsig SoftFOL = const $ const True -- TODO!!
 Taxonomy/MMiSSOntology.hs:   todo: add a new edge type for equivalence which should be visited only once
 Common/LaTeX_funs.hs:   TODO:
 Common/LaTeX_funs.hs:          -- TODO: Build a nice correction map
-Logic/Prover.hs:{- todo:
 Common/Utils.hs:   Todo:
+Logic/Prover.hs:{- todo:
 
 ************************************************
 Christian

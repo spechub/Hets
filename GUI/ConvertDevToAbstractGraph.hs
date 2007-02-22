@@ -24,17 +24,6 @@ addnode and addlink.
 
 -}
 
-{-
-   todo:
-   share strings to avoid typos
-   hiding of internal nodes:
-    internal nodes that are not between named nodes should be kept
-   display inclusions and inter-logic links in special colour
-   try different graph layout algorithms for daVinci (dot?)
-   close program when all windows are closed
-   issue warning when theory cannot be flattened
-   different linktypes for local and hiding definition links
--}
 
 module GUI.ConvertDevToAbstractGraph 
     (convertGraph,GraphMem,ConversionMaps,initializeConverter)

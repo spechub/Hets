@@ -34,8 +34,6 @@ The Grothendieck logic is defined to be the
    T. Mossakowski:
    Heterogeneous specification and the heterogeneous tool set.
 
-   Todo:
-   gWeaklyAmalgamableCocone
    Transportability for heterogeneous morphisms
 -}
 

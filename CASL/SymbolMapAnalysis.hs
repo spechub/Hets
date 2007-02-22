@@ -12,20 +12,6 @@ Symbol map analysis for the CASL logic.
   Follows Sect. III:4.1 of the CASL Reference Manual.
 -}
 
-{-
-todo:
-
-shorted warning about (non)intended maps
-
-remove identity subsort relations resulting from non-injective renaming
-(or add them to ALL signatures)
-
-overloading stuff (leqF and leqP) is missing
-
-introduce symbol functor (additionally to signature symbol functor)
-
--}
-
 module CASL.SymbolMapAnalysis
     ( inducedFromMorphism
     , inducedFromToMorphism

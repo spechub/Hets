@@ -4,7 +4,7 @@ Description :  Interface for graph viewing and abstraction
 Copyright   :  (c) Jorina Freya Gerken, Till Mossakowski, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  jfgerken@tzi.de
+Maintainer  :  ken@tzi.de
 Stability   :  provisional
 Portability :  non-portable (relies on Logic via DevGraph)
 

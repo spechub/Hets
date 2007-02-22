@@ -10,9 +10,6 @@ Portability :  portable
 Instance of class Logic for CoCASL.
 -}
 
-{- todo:
--}
-
 module CoCASL.Logic_CoCASL where
 
 import CoCASL.AS_CoCASL

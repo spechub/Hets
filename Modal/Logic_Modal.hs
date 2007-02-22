@@ -10,10 +10,6 @@ Portability :  portable
 Instance of class Logic for modal logic.
 -}
 
-{- todo:
-   check preservation of rigidity of morphisms
--}
-
 module Modal.Logic_Modal where
 
 import Modal.AS_Modal
