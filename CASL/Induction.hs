@@ -8,16 +8,11 @@ Maintainer  :  till@tzi.de
 Stability   :  provisional
 Portability :  portable
 
-Description :  Derivation of induction schemes from sort generation constraints.
-
 We provide both second-order induction schemes as well as their
 instantiation to specific first-order formulas.
 -}
 
 module CASL.Induction where
-
---import Debug.Trace
---import CASL.SimplifySen
 
 import CASL.AS_Basic_CASL
 import CASL.Sign
@@ -70,8 +65,9 @@ substitute v t = foldFormula $
 
 -- | derive an induction scheme from a sort generation constraint
 -- | using substitutions as induction predicates
-induction :: Pretty f =>  [Constraint] -> [TERM f -> FORMULA f] -> Result (FORMULA f)
-induction constrs substs = 
+induction :: Pretty f =>  [Constraint] -> [TERM f -> FORMULA f]
+          -> Result (FORMULA f)
+induction constrs substs =
  if not (length constrs == length substs)
   then fail "CASL.Induction.induction: argument lists must have equal length"
   else do
@@ -88,17 +84,17 @@ induction constrs substs =
 -- | construct premise set for the induction scheme
 -- | for one sort in the constraint
 mkPrems :: Pretty f =>  [TERM f -> FORMULA f]
-            -> (Constraint, TERM f -> FORMULA f, (VAR,SORT)) 
+            -> (Constraint, TERM f -> FORMULA f, (VAR,SORT))
             -> Result [FORMULA f]
 mkPrems substs info@(constr,_,_) = mapM (mkPrem substs info) (opSymbs constr)
 
 -- | construct a premise for the induction scheme for one constructor
-mkPrem :: Pretty f =>  [TERM f -> FORMULA f] 
-           -> (Constraint, TERM f -> FORMULA f, (VAR,SORT)) 
+mkPrem :: Pretty f =>  [TERM f -> FORMULA f]
+           -> (Constraint, TERM f -> FORMULA f, (VAR,SORT))
            -> (OP_SYMB,[Int])
            -> Result (FORMULA f)
-mkPrem substs (_,subst,_) 
-       (opSym@(Qual_op_name _ (Op_type _ argTypes _ _) _), idx) = 
+mkPrem substs (_,subst,_)
+       (opSym@(Qual_op_name _ (Op_type _ argTypes _ _) _), idx) =
   return $ if null qVars then phi
             else Quantification Universal (map mkVarDecl qVars) phi nullRange
   where
@@ -109,10 +105,10 @@ mkPrem substs (_,subst,_)
            else Implication (mkConj indHyps) indConcl True nullRange
   indConcl = subst (Application opSym (map mkVarTerm qVars) nullRange)
   indHyps = mapMaybe indHyp (zip qVars idx)
-  indHyp (v1,i) = 
+  indHyp (v1,i) =
     if i<0 then Nothing -- leave out sorts from outside the constraint
      else Just ((substs!!i) (mkVarTerm v1))
-mkPrem _ _ (opSym,_) = 
+mkPrem _ _ (opSym,_) =
   fail ("CASL.Induction. mkPrems: "
         ++ "unqualified operation symbol occuring in constraint: "
         ++ show opSym)
@@ -133,28 +129,30 @@ mkConj phis = Conjunction phis nullRange
 
 
 -- !! documentation is missing
-generateInductionLemmas :: Pretty f =>  (Sign f e, [Named (FORMULA f)]) 
+generateInductionLemmas :: Pretty f =>  (Sign f e, [Named (FORMULA f)])
                            -> (Sign f e, [Named (FORMULA f)])
-generateInductionLemmas (sig,axs) = 
-   (sig,axs++ {- trace (showDoc (map (mapNamed(simplifySen 
+generateInductionLemmas (sig,axs) =
+   (sig,axs++ {- trace (showDoc (map (mapNamed(simplifySen
                  undefined undefined sig)) inductionAxs) "") -}
         inductionAxs)
-   where 
+   where
    sortGens = filter isSortGen (map sentence axs)
    goals = filter (not . isAxiom) axs
    inductionAxs = fromJust $ maybeResult $
                     generateInductionLemmasAux sortGens goals
 
 -- | determine whether a formula is a sort generation constraint
+isSortGen :: FORMULA a -> Bool
 isSortGen (Sort_gen_ax _ _) = True
 isSortGen _ = False
-  
 
-generateInductionLemmasAux :: Pretty f =>  [FORMULA f] -- ^ only Sort_gen_ax of a theory
-                              -> [AS_Anno.Named (FORMULA f)] -- ^ all goals of a theory
-                              -> Result ([AS_Anno.Named (FORMULA f)])
-                           -- ^ all the generated induction lemmas
-                           -- and the labels are derived from the goal-names
+
+generateInductionLemmasAux
+  :: Pretty f =>  [FORMULA f] -- ^ only Sort_gen_ax of a theory
+  -> [AS_Anno.Named (FORMULA f)] -- ^ all goals of a theory
+  -> Result ([AS_Anno.Named (FORMULA f)])
+-- ^ all the generated induction lemmas
+-- and the labels are derived from the goal-names
 generateInductionLemmasAux sort_gen_axs goals =
     mapM (\ (cons,formulas) -> do
             formula <- instantiateSortGen cons $
@@ -162,13 +160,13 @@ generateInductionLemmasAux sort_gen_axs goals =
                        let vs = findVar s varsorts
                        in  (removeVarsort vs s $ sentence f, vs, s))
                     $ zip cons formulas
-            
+
             let sName = (if null formulas then id else tail)
                         (foldr ((++) . (++) "_" . senName . fst) "" formulas
                          ++ "_induction")
             return $ AS_Anno.NamedSen { senName = sName, isAxiom = True,
                                         isDef = False, sentence = formula }
-         )            
+         )
          -- returns big list containing tuples of constraints and a matching
          -- combination (list) of goals. The list is from the following type:
          -- ( [Constraint], [ (FORMULA, [(VAR,SORT)]) ] )
@@ -203,7 +201,7 @@ generateInductionLemmasAux sort_gen_axs goals =
     -- which contain the constraint's newSort. Afterwards all combinations
     -- are created.
     constraintGoals cons = combination [] $
-              map (\ c -> filter (or . map ((==) (newSort c) . snd) . snd)
+              map (\ c -> filter (or . map ((newSort c ==) . snd) . snd)
                                  uniQuantGoals) (sort cons)
 
 {- | A common type list combinator. Given a list of x elements where each
