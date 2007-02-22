@@ -4,7 +4,7 @@ Description :  automatic proofs in the development graph calculus
 Copyright   :  (c) Jorina F. Gerken, Mossakowski, Lüttich, Uni Bremen 2002-2006
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
-Maintainer  :  jfgerken@tzi.de
+Maintainer  :  ken@tzi.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
@@ -20,20 +20,6 @@ automatic proofs in development graphs.
    H. Hussmann (ed.): Fundamental Approaches to Software Engineering 2001,
    Lecture Notes in Computer Science 2029, p. 269-283,
    Springer-Verlag 2001.
-
-todo in general:
-
-Order of rule application: try to use local links induced by %implies
-for subsumption proofs (such that the %implied formulas need not be
-re-proved)
-
-Integrate stuff from Saarbrücken
-Add proof status information
-
- what should be in proof status:
-
-- proofs of thm links according to rules
-- cons, def and mono annos, and their proofs
 
 -}
 
@@ -52,12 +38,6 @@ import PGIP.Utils
 
 import qualified Data.Map as Map
 import Data.Maybe (fromJust)
-
-{- todo: implement apply for GlobDecomp and Subsumption
-   the list of DGChage must be constructed in parallel to the
-   new DGraph -}
-applyRule :: DGRule -> DGraph -> Maybe ([DGChange],DGraph)
-applyRule = error "Proofs.hs:applyRule"
 
 
 automaticFromList :: LIB_NAME ->  [LEdge DGLinkLab] -> LibEnv -> LibEnv
