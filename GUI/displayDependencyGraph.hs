@@ -23,27 +23,25 @@ import Destructible
 import qualified HTk
 
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 
 import System.Directory
 import Data.List
-import Common.Utils
 
 main :: IO ()
 main = do
     fs <- getDirectoryContents "."
     let suf = ".imports"
         fn = filter (isSuffixOf suf) fs
-        ffn = map (fst . stripSuffix [suf]) fn
-        ffnn = filter (\ s -> all (not . (`isSublistOf` s)) excludes) 
-                 $ filter (elem '.') ffn
-        fln = map (fst . break (== '.'))  ffnn 
+        ffn = map ( \ s -> take (length s - length suf) s) fn
+        ffnn = filter exclude $ filter (elem '.') ffn
+        fln = map (fst . break (== '.'))  ffnn
         fln' = nub fln
     lfs <- mapM (readFile . (++ suf)) ffnn
     let ss = map (filter (isPrefixOf "import") . lines) lfs
         sss = getContent6 ss
-        ssss' = map (filter (\ s -> all (not . (`isSublistOf` s)) excludes))
-                    sss 
+        ssss' = map (filter exclude) sss
         ssss = map (map $ fst . break (== '.')) ssss'
         sss' = map nub ssss
         graphParms = GraphTitle "Dependency Graph" $$
@@ -54,8 +52,8 @@ main = do
     depG <- newGraph daVinciSort graphParms
     let flln = nub $ fln' ++ concat sss'
         subNodeMenu = LocalMenu (Menu (Just "Info") [
-                      Button "Contents" (\lg -> createTextDisplay 
-                      ("Contents of " ++ lg) 
+                      Button "Contents" (\lg -> createTextDisplay
+                      ("Contents of " ++ lg)
                        (showCon lg) [size(80,25)])])
         showCon lg = unlines (filter (isPrefixOf (lg++".")) ffnn)
         subNodeTypeParms =
@@ -67,8 +65,8 @@ main = do
     subNodeType <- newNodeType depG subNodeTypeParms
     subNodeList <- mapM (newNode depG subNodeType) flln
     let slAndNodes = Map.fromList $ zip flln subNodeList
-        lookup' g_sl = Map.findWithDefault 
-                              (error "lookup': node not found") 
+        lookup' g_sl = Map.findWithDefault
+                              (error "lookup': node not found")
                               g_sl slAndNodes
         subArcMenu = LocalMenu( Menu Nothing [])
         subArcTypeParms = subArcMenu $$$
@@ -77,11 +75,11 @@ main = do
                           emptyArcTypeParms
     subArcType <- newArcType depG subArcTypeParms
     let insertSubArc = \ (node1, node2) ->
-                           newArc depG subArcType (return "") 
-                                  (lookup' node1) 
+                           newArc depG subArcType (return "")
+                                  (lookup' node1)
                                   (lookup' node2)
-    mapM_ insertSubArc $ 
-                     Rel.toList $ Rel.intransKernel $ Rel.transClosure $ 
+    mapM_ insertSubArc $
+                     Rel.toList $ Rel.intransKernel $ Rel.transClosure $
                         Rel.fromList
                      $ isIn3 $ concat $ zipWith getContent2 fln sss'
     redraw depG
@@ -89,33 +87,35 @@ main = do
     destroy wishInst
     HTk.finishHTk
 
-excludes :: [String]
-excludes = 
-    [ "ATC", ".CreateTheories" -- Isabelle
-    ,".ToHaskellAS", ".StructureAna", ".OWLAnalysis" -- OWL_DL
-    , ".Haskell2DG", ".CreateModules"  -- Haskell
+exclude :: String -> Bool
+exclude s = not $
+    isPrefixOf "ATC." s || isPrefixOf ".ATC_" (dropWhile (/= '.') s)
+    || Set.member s (Set.fromList
+    [ "Isabelle.CreateTheories"
+    , "OWL_DL.ToHaskellAS", "OWL_DL.StructureAna", "OWL_DL.OWLAnalysis"
+    , "Haskell.Haskell2DG", "Haskell.CreateModules"
     , "Comorphisms.KnownProvers", "GUI.GenericATPState", "PGIP.Utils"
-    , "GUI.Utils", "GUI.ProofManagement" -- Proofs 
+    , "GUI.Utils", "GUI.ProofManagement" -- Proofs
     , "Proofs.Automatic", "Driver.Options" -- Static
     , "Proofs.EdgeUtils", "Proofs.StatusUtils" -- Driver
     , "SPASS.Utils", "Proofs.BatchProcessing", "GUI.GenericATPState"
     , "GUI.GenericATP", "SPASS.CreateDFGDoc" -- SPASS
  --   , "GUI.Taxonomy", "GUI.ShowGraph" -- PGIP
     , "Static.DevGraph", "Syntax.AS_Library", "Static.AnalysisLibrary"
-    , "OMDoc.HetsInterface", "OMDoc.OMDocOutput" -- OMDOC
-    ] 
+    , "OMDoc.HetsInterface", "OMDoc.OMDocOutput"
+    ])
 
 getContent2 :: String -> [String] -> [(String, String)]
-getContent2 x  = map (\ m -> (x, m)) 
+getContent2 x  = map (\ m -> (x, m))
 
 getContent4 :: [String] -> [String]
 getContent4 s = map ((!! 1) .  words) s
 
 getContent5 :: [String] -> [String]
-getContent5  = map $ fst . break (== '(') 
+getContent5  = map $ fst . break (== '(')
 
 getContent6 :: [[String]] ->[[String]]
 getContent6 = map $ (filter (elem '.')) . getContent5 . getContent4
 
 isIn3 :: (Eq a)=> [(a, a)] -> [(a, a)]
-isIn3 = filter (\(x,y) -> x /= y) 
+isIn3 = filter (\(x,y) -> x /= y)
