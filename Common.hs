@@ -80,8 +80,6 @@ identifiers and annotations as well as their parsing and printing.
 
  * "Common.RunParsers"           support for test drivers
 
- * "Common.SetUtils"             utilities for singleton sets
-
  * "Common.SimpPretty"           printing aterms
 
  * "Common.Taxonomy"             Taxonomy options

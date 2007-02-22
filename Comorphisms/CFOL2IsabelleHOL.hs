@@ -44,10 +44,12 @@ import Common.Id
 import Common.Result
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import Common.SetUtils
 
 import qualified Data.List as List
 import Data.Maybe (mapMaybe)
+
+isSingleton :: Set.Set a -> Bool
+isSingleton s = Set.size s == 1
 
 -- | The identity of the comorphism
 data CFOL2IsabelleHOL = CFOL2IsabelleHOL deriving (Show)
@@ -122,20 +124,20 @@ transTheory trSig trForm (sign, sens) =
                 _ -> True) sens
     dtDefs = makeDtDefs sign sort_gen_axs
     ga = globAnnos sign
-    insertOps op ts m = case lookupSingleton ts of
-      Just t ->
+    insertOps op ts m = if isSingleton ts then
+      let t = Set.findMin ts in
            Map.insert (mkIsaConstT False ga (length $ opArgs t) op baseSign)
                (transOpType t) m
-      Nothing -> foldl (\m1 (t,i) ->
+      else foldl (\m1 (t,i) ->
              Map.insert (mkIsaConstIT False ga
                          (length $ opArgs t) op i baseSign)
                     (transOpType t) m1) m
                 (zip (Set.toList ts) [1..])
-    insertPreds pre ts m = case lookupSingleton ts of
-      Just t ->
+    insertPreds pre ts m = if isSingleton ts then
+      let t = Set.findMin ts in
            Map.insert (mkIsaConstT True ga (length $ predArgs t) pre baseSign)
-               (transPredType (Set.findMin ts)) m
-      Nothing ->  foldl (\m1 (t,i) ->
+               (transPredType t) m
+      else foldl (\m1 (t,i) ->
              Map.insert (mkIsaConstIT True ga
                          (length $ predArgs t) pre i baseSign)
                     (transPredType t) m1) m

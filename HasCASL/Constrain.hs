@@ -22,7 +22,6 @@ import HasCASL.ClassAna
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import qualified Common.Lib.Rel as Rel
-import Common.SetUtils
 import Common.Lib.State
 import Common.Id
 import Common.Result
@@ -33,6 +32,19 @@ import Control.Exception(assert)
 
 import Data.List
 import Data.Maybe
+
+{- utils for singleton sets that could also be part of "Data.Set". These
+functions rely on 'Data.Set.size' being computable in constant time and
+would need to be rewritten for set implementations with a size
+function that is only linear. -}
+
+-- | /O(1)/ test if the set's size is one
+isSingleton :: Set.Set a -> Bool
+isSingleton s = Set.size s == 1
+
+-- | /O(1)/ test if the set's size is greater one
+hasMany :: Set.Set a -> Bool
+hasMany s = Set.size s > 1
 
 data Constrain = Kinding Type Kind
                | Subtyping Type Type

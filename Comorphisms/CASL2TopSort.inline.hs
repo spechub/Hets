@@ -27,7 +27,6 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 import Common.AS_Annotation
-import Common.SetUtils
 
 -- CASL
 import CASL.Logic_CASL
@@ -127,8 +126,10 @@ generateSubSortMap sortRels pMap =
                                     Rel.member y x sortRels))
              (Rel.mostRight sortRels)
         toPredInfo k e =
-            let ts = case Set.filter (\pts -> Rel.member k pts sortRels) mR of
-                     s -> assert (isSingleton s) (head (Set.toList s))
+            let ts = case filter (\pts -> Rel.member k pts sortRels) 
+                     $ Set.toList mR of
+                     [x] -> x
+                     _ -> error "CASL2TopSort.generateSubSortMap.toPredInfo"
             in PredInfo { topSort_PI = ts
                         , directSuperSorts_PI = Set.difference e mR
                         , predicate_PI = k }
@@ -434,7 +435,7 @@ genDisjunction :: [TERM f] -- ^ Qual_vars
                   -> (Set.Set [Maybe PRED_NAME])
                   -> Maybe (FORMULA f)
 genDisjunction vars spn
-    | isSingleton spn =
+    | Set.size spn == 1 =
         case disjs of
         []  -> Nothing
         [x] -> Just x
