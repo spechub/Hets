@@ -19,29 +19,44 @@ Definition of abstract syntax for propositional logic
 
 module Propositional.AS_BASIC_Propositional 
     (
-      Formula (..)             -- datatype for Propositional Formulas
+      FORMULA (..)             -- datatype for Propositional Formulas
     , pretty                   -- pretty printing
     , is_True_atom             -- True?
     , is_False_atom            -- False?
+    , BASIC_ITEMS (..)         -- Items of a Basic Spec
+    , BASIC_SPEC (..)          -- Basic Spec
+    , SYMB_ITEMS (..)          -- List of symbols
+    , SYMB (..)                -- Symbols
+    , SYMB_MAP_ITEMS (..)      -- Symbol map
+    , SYMB_OR_MAP (..)         -- Symbol or symbol map
     ) where
 
 import qualified Common.Id as Id
 import Common.Doc
 import Common.DocUtils
+import qualified Common.AS_Annotation as AS_Anno
 
 -- DrIFT command
 {-! global: UpPos !-}
 
+data BASIC_SPEC = Basic_spec [AS_Anno.Annoted (BASIC_ITEMS)]
+                  deriving Show
+
+data BASIC_ITEMS = 
+                 Axiom_items [AS_Anno.Annoted (FORMULA)] Id.Range
+                 -- pos: dots
+                 deriving Show
+
 -- | Datatype for propositional formulas
-data Formula = Negation Formula Id.Range
+data FORMULA = Negation FORMULA Id.Range
              -- pos: not
-             | Conjunction [Formula] Id.Range
+             | Conjunction [FORMULA] Id.Range
              -- pos: "/\"s
-             | Disjunction [Formula] Id.Range
+             | Disjunction [FORMULA] Id.Range
              -- pos: "\/"s
-             | Implication Formula Formula Bool Id.Range
+             | Implication FORMULA FORMULA Bool Id.Range
              -- pos: "=>"
-             | Equivalence Formula Formula Bool Id.Range
+             | Equivalence FORMULA FORMULA Bool Id.Range
              -- pos: "<=>"
              | True_atom Id.Range
              -- pos: "True"
@@ -51,23 +66,54 @@ data Formula = Negation Formula Id.Range
              -- pos: Propositional Identifiers
                deriving (Show, Eq, Ord)
 
-instance Pretty Formula where
-    pretty = printFormula
-
 -- | Value of the true atom
 -- True is always true -P
-is_True_atom :: Formula -> Bool
+is_True_atom :: FORMULA -> Bool
 is_True_atom (True_atom _) = True
 is_True_atom _             = False
 
 -- | Value of the false atom
 -- and False if always false 
-is_False_atom :: Formula -> Bool
+is_False_atom :: FORMULA -> Bool
 is_False_atom (False_atom _) = False
 is_False_atom _              = False
 
+data SYMB_ITEMS = Symb_items [SYMB] Id.Range
+                  -- pos: SYMB_KIND, commas
+                  deriving (Show, Eq)
+
+data SYMB = Symb_id Id.Id
+            -- pos: colon
+            deriving (Show, Eq)
+
+data SYMB_MAP_ITEMS = Symb_map_items [SYMB_OR_MAP] Id.Range
+                      -- pos: SYMB_KIND, commas
+                      deriving (Show, Eq)
+
+data SYMB_OR_MAP = Symb SYMB
+                 | Symb_map SYMB SYMB Id.Range
+                   -- pos: "|->"
+                   deriving (Show, Eq)
+
+-- All about pretty printing
+-- we chose the easy way here :)
+instance Pretty FORMULA where
+    pretty = printFormula
+instance Pretty BASIC_SPEC where
+    pretty = printBasicSpec
+instance Pretty SYMB where
+    pretty = printSymbol
+instance Pretty SYMB_ITEMS where
+    pretty = printSymbItems
+instance Pretty SYMB_MAP_ITEMS where
+    pretty = printSymbMapItems
+instance Pretty BASIC_ITEMS where
+    pretty = printBasicItems
+instance Pretty SYMB_OR_MAP where 
+    pretty = printSymbOrMap
+
 -- Pretty printing for formulas
-printFormula :: Formula -> Doc 
+printFormula :: FORMULA -> Doc 
 printFormula (Negation f _) = notDoc
                             <> lparen <> printFormula f <> rparen
 printFormula (Conjunction xs _) = parens $
@@ -90,3 +136,22 @@ sepByArbitrary _ [] = text ""
 sepByArbitrary _ (x:[]) = x
 sepByArbitrary separator (x:xs) = x <> separator 
                                   <> (sepByArbitrary separator xs)
+
+printBasicSpec :: BASIC_SPEC -> Doc
+printBasicSpec (Basic_spec xs) = hsep $ map (pretty) xs
+
+printBasicItems :: BASIC_ITEMS -> Doc
+printBasicItems (Axiom_items xs _) = hsep $ map pretty xs
+
+printSymbol :: SYMB -> Doc
+printSymbol (Symb_id sym) = idDoc sym
+
+printSymbItems :: SYMB_ITEMS -> Doc
+printSymbItems (Symb_items xs _) = hsep $ map pretty xs
+
+printSymbOrMap :: SYMB_OR_MAP -> Doc
+printSymbOrMap (Symb sym) = pretty sym
+printSymbOrMap (Symb_map source dest  _) = pretty source <> mapsto <> pretty dest 
+
+printSymbMapItems :: SYMB_MAP_ITEMS -> Doc
+printSymbMapItems (Symb_map_items xs _) = hsep $ map pretty xs

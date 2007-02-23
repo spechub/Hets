@@ -62,7 +62,7 @@ instance Category Propositional Sign.Sign Morphism.Morphism where
     comp Propositional f g = Morphism.composeMor f g
 
 -- | Instance of Sentences for propositional logic
-instance Sentences Propositional AS_BASIC.Formula () 
+instance Sentences Propositional AS_BASIC.FORMULA () 
     Sign.Sign Morphism.Morphism Symbol.Symbol where
     -- returns the set of symbols
     sym_of Propositional = Symbol.symOf
@@ -72,3 +72,10 @@ instance Sentences Propositional AS_BASIC.Formula ()
     sym_name Propositional = Symbol.getSymbolName
     -- default entry
     empty_proof_tree Propositional = error "Not yet implemented"
+
+-- | Syntax of Propositional logic
+instance Syntax Propositional AS_BASIC.BASIC_SPEC 
+    AS_BASIC.SYMB_ITEMS AS_BASIC.SYMB_MAP_ITEMS where
+         parse_basic_spec _ = Nothing
+         parse_symb_items _ = Nothing
+         parse_symb_map_items _ = Nothing
