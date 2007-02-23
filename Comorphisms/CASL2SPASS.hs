@@ -11,15 +11,6 @@ Portability :  non-portable (imports Logic.Logic)
 The translating comorphism from CASL to SoftFOL.
 -}
 
-{- todo
-
-   - elimination of single sorts is only possible while generating
-     DFG or TPTP, mark the Sort/set the flag
-
-   - implement translation of Sort_gen_ax (FORMULA f) as goals
-     (s. below for a sketch) .. Klaus Lüttich
--}
-
 module Comorphisms.CASL2SPASS
     (SuleCFOL2SoftFOL(..), SuleCFOL2SoftFOLInduction(..))
     where

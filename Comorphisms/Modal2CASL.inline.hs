@@ -12,11 +12,6 @@ The possible world encoding comorphism from ModalCASL to CASL.
    We use the Relational Translation by adding one extra parameter of
    type world to each predicate.
 
-   todo:
-     - translate / generate formulas from modality formulas .. done
-     - correct the overloaded flexible Ops / Preds lookup
-     - add a place to mixfix identifiers
-
 -}
 
 module Comorphisms.Modal2CASL (Modal2CASL(..)) where

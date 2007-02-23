@@ -12,9 +12,6 @@ This module provides a map of provers to their most useful composed
 comorphisms.
 -}
 
-{- todo:
-    - add more known paths to SPASS; the commented out versions don't work
--}
 module Comorphisms.KnownProvers (KnownProversMap,
                                  defaultGUIProver,
                                  knownProversGUI,
