@@ -11,11 +11,6 @@ Here is the place where the class Logic is instantiated for OWL DL.
    Also the instances for Syntax an Category.
 -}
 
-{- todo:
-    - fill instance StaticAna with life
-
--}
-
 module OWL_DL.Logic_OWL_DL where
 
 import Common.AS_Annotation

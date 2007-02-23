@@ -10,13 +10,6 @@ Portability :  non-portable(instances for URIreference and Namespace)
 Pretty printing for OWL DL theories.
 -}
 
-{-
-    todo:
-     - invent ASCII display syntax for OWL_DL theories (Klaus)
-     - implement printing of a theory
-     - shorten lines longer than 80 cpl
--}
-
 module OWL_DL.Print where
 
 import Common.Doc
