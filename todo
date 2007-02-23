@@ -4,36 +4,9 @@ most things have been moved to the new bug tracking system
 
 see http://trac.informatik.uni-bremen.de:8080/hets
 
-************************************************
-Klaus
-************************************************
-
-trace if liniarity of sentences along development is given
 
 
 
-
-Bitte auch aus folgenden Files die todo-Listen nach Trac verschieben:
-
-Comorphisms/CASL2SPASS.hs:{- todo
-Comorphisms/KnownProvers.hs:{- todo:
-Comorphisms/Modal2CASL.inline.hs:   todo:
-OWL_DL/Logic_OWL_DL.hs:{- todo:
-OWL_DL/Print.hs:    todo:
-OWL_DL/ReadWrite.der.hs:{- todo:
-OWL_DL/ReadWrite.hs:{- todo:
-OWL_DL/StructureAna.hs:        -- TODO: check if gEmbed (Logic.Grothendieck) and G_morphism
-GUI/ProofManagement.hs:  todo:
-GUI/ProofManagement.hs:  -- TODO: do something with the resulting G_theory before returning it?
-GUI/hets_cgi.hs:   todo:
-SPASS/DFGParser.hs:quantification s = do (ts',t') <- parens (do ts <- squares (commaSep1 term) -- todo: var binding should allow only simple terms
-SPASS/PrintTPTP.hs:{- todo:
-SPASS/Logic_SPASS.hs:         is_subsig SoftFOL = const $ const True -- TODO!!
-Taxonomy/MMiSSOntology.hs:   todo: add a new edge type for equivalence which should be visited only once
-Common/LaTeX_funs.hs:   TODO:
-Common/LaTeX_funs.hs:          -- TODO: Build a nice correction map
-Common/Utils.hs:   Todo:
-Logic/Prover.hs:{- todo:
 
 
 
