@@ -11,11 +11,6 @@ Portability :  needs POSIX
 Goal management GUI for the structured level similar to how 'SPASS.Prove'
 works for SPASS.
 -}
-{-
-  todo:
-    - move populate list boxes calls towards the event section 
-      after the last pack
--}
 
 module GUI.ProofManagement (proofManagementGUI,GUIMVar) where
 
@@ -352,7 +347,6 @@ proofManagementGUI lid proveF fineGrainedSelectionF
                   (maybe (Conc.putMVar guiMVar $ Just main)
                          (const $ err "filled with (Just x)")) 
                   mmt)
-  pack main [Expand On, Fill Both]
 
   -- VBox for the whole window
   b <- newVBox main []
@@ -514,6 +508,7 @@ proofManagementGUI lid proveF fineGrainedSelectionF
              goalSpecificWids
 
   disableWids goalSpecificWids
+  pack main [Expand On, Fill Both]
   putWinOnTop main
 
   -- events
@@ -677,5 +672,4 @@ proofManagementGUI lid proveF fineGrainedSelectionF
                                                     (Map.union sensT gMap) 0)
                              }
               )
-  -- TODO: do something with the resulting G_theory before returning it?
 
