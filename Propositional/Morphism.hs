@@ -108,3 +108,4 @@ printMorphism :: Morphism -> Doc
 printMorphism m = pretty (source m) <> text "-->" <> pretty (target m)
   <> vcat (map ( \ (x, y) -> lparen <> idDoc x <> text "," 
   <> idDoc y <> rparen) $ Map.assocs $ propMap m)
+

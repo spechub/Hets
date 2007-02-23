@@ -25,7 +25,7 @@ module Propositional.AS_BASIC_Propositional
     , is_False_atom            -- False?
     ) where
 
-import Common.Id
+import qualified Common.Id as Id
 import Common.Doc
 import Common.DocUtils
 
@@ -33,21 +33,21 @@ import Common.DocUtils
 {-! global: UpPos !-}
 
 -- | Datatype for propositional formulas
-data Formula = Negation Formula Range
+data Formula = Negation Formula Id.Range
              -- pos: not
-             | Conjunction [Formula] Range
+             | Conjunction [Formula] Id.Range
              -- pos: "/\"s
-             | Disjunction [Formula] Range
+             | Disjunction [Formula] Id.Range
              -- pos: "\/"s
-             | Implication Formula Formula Bool Range
+             | Implication Formula Formula Bool Id.Range
              -- pos: "=>"
-             | Equivalence Formula Formula Bool Range
+             | Equivalence Formula Formula Bool Id.Range
              -- pos: "<=>"
-             | True_atom Range
+             | True_atom Id.Range
              -- pos: "True"
-             | False_atom Range
+             | False_atom Id.Range
              -- pos: "False
-             | Predication Common.Id.Id
+             | Predication Id.Id
              -- pos: Propositional Identifiers
                deriving (Show, Eq, Ord)
 
