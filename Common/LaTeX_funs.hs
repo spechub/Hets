@@ -22,11 +22,6 @@ Functions to calculate the length of a given word as it would be
 
    * axiom -- identifiers in math mode for CASL Basic specs
 -}
-{-
-   TODO:
-     - itCorrection should be based on a map of character pairs to
-       corrections and not on one fixed value for every pair
--}
 
 module Common.LaTeX_funs
     ( calc_line_length
@@ -149,7 +144,6 @@ itCorrection s
           itCorrection' _ _ = error ("itCorrection' doesn't work with " ++ s)
           lookupCorrection str = Map.findWithDefault def_cor str
                                  italiccorrection_map
-          -- TODO: Build a nice correction map
           def_cor = 610
 
 sum_char_width_deb :: (String -> String) -- only used for an hackie debug thing
