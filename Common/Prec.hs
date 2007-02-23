@@ -75,11 +75,12 @@ checkArg :: AssocEither -> GlobalAnnos -> (Id, Int) -> (Id, Int) -> Id -> Bool
 checkArg side ga (op, opPrec) (arg, argPrec) weight =
     let precs = prec_annos ga
         assocs = assoc_annos ga
+        junction = joinPlace side arg
     in if argPrec <= 0 then False
        else case compare argPrec opPrec of
-           LT -> False
+           LT -> not junction && op /= applId
            GT -> True
-           EQ -> if joinPlace side arg then
+           EQ -> if junction then
                case precRel precs op weight of
                Lower -> True
                Higher -> False

@@ -34,3 +34,7 @@ a =e= b
 if exists a:(). 1 then exists a:(). 1 else 0
 exists a:(). (true if true)
 (exists a:(). true) if true
+not p = not q
+def not a = a 
+a = not a
+a + def a
