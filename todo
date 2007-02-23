@@ -8,40 +8,13 @@ see http://trac.informatik.uni-bremen.de:8080/hets
 Klaus
 ************************************************
 
-for ProofManagement-GUI
-  provide structured (based on spec-names) selection/deselection facility 
-    of axioms and theorems
-
 trace if liniarity of sentences along development is given
 
-Ignore axiom selection for interactive provers
 
-((
-Improvements:
- * display node name (instead of number) in uDrawGraph widow title
- * add conversion of equivalent sorts into special arrow
-    * needs modification of Taxnomy Graph 
-
-Translation between Achim's ontology data structure and CASL (in Hets)
-
-visualization of "taxonomy" of CASL signatures
-  (subsorts = inheritance, unary preds = concepts, binary preds = relations)
-
- last two ... partially done
-))
-
-Recognize guarded fragment of CASL:
-  G ::= forall x . At(x) => G      where At is a conjunction of atoms
-      | exists x . At(x) /\ G
 
 
 Bitte auch aus folgenden Files die todo-Listen nach Trac verschieben:
 
-CASL_DL/AS_CASL_DL.der.hs:{- todo:
-CASL_DL/PredefinedGlobalAnnos.hs:  todo:
-CASL_DL/PredefinedSign.inline.hs: todo:
-CASL_DL/Sign.hs:  todo:
-CASL_DL/StatAna.hs:{- todo:
 Comorphisms/CASL2SPASS.hs:{- todo
 Comorphisms/KnownProvers.hs:{- todo:
 Comorphisms/Modal2CASL.inline.hs:   todo:
