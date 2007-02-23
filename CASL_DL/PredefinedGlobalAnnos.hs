@@ -9,10 +9,7 @@ Portability :  portable
 
 Predefined global annotations for CASL_DL.
 -}
-{-
-  todo:
 
--}
 module CASL_DL.PredefinedGlobalAnnos (caslDLGlobalAnnos) where
 
 import Text.ParserCombinators.Parsec
