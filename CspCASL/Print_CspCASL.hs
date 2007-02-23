@@ -10,12 +10,12 @@ Portability :  portable
 Printing abstract syntax of CSP-CASL
 
 -}
-module Print_CspCASL where
+module CspCASL.Print_CspCASL where
 
 import Common.Doc
 import Common.DocUtils
 
-import AS_CspCASL
+import CspCASL.AS_CspCASL
 
 instance Pretty BASIC_CSP_CASL_SPEC where
     pretty = printBasic_Csp_Casl_Spec

@@ -3,17 +3,13 @@
 Abstract syntax of CSP-CASL (part thereof, at least).
 
 -}
-
 module CspCASL.AS_CspCASL where
 
 import CASL.AS_Basic_CASL (BASIC_SPEC)
-import Common.Doc
-import Common.DocUtils
+--import Common.Doc
+--import Common.DocUtils
 
-import CspCASL.AS_CspCASL_Process (CHANNEL_DECL,
-                                   PROCESS,
-                                   PROCESS_DEFN
-                                  )
+import CspCASL.AS_CspCASL_Process (PROCESS)
 
 
 
@@ -21,8 +17,8 @@ data BASIC_CSP_CASL_SPEC
     = Basic_Csp_Casl_Spec DATA_DEFN PROCESS
     deriving (Show)
 
-instance Pretty BASIC_CSP_CASL_SPEC where
-    pretty _ = text ""
+--instance Pretty BASIC_CSP_CASL_SPEC where
+--    pretty _ = text ""
 
 
 {- First line only of:

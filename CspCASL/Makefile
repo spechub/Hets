@@ -5,18 +5,26 @@
 ## Keywords: 
 ## X-URL: 
 
-GHCINCLUDES	=	..:../ghc:../Common:../CASL
+GHCINCLUDES	=	..
 
-GHCOPTS		=	--make -fglasgow-exts -Wall -i$(GHCINCLUDES)
+GHCOPTS		=	-Wall -fglasgow-exts -package base -package parsec -package fgl -i$(GHCINCLUDES)
 
-BINS		=	c3po print ccparse
+BINS		=	testwrap
 
-SOURCES		=	Main.hs AS_CSP_CASL.hs CCKeywords.hs CCLexer.hs \
-                        CCToken.hs Parse_hugo.hs
+SOURCES		=	AS_CspCASL.hs \
+			AS_CspCASL_Process.hs \
+			CspCASL_Keywords.hs \
+			Logic_CspCASL.hs \
+			Parse_CspCASL.hs \
+			Parse_CspCASL_Process.hs \
+			Print_CspCASL.hs \
+			SignCSP.hs \
+			StatAnaCSP.hs \
+			testwrap.hs
 
 .PHONY:			test
 
-default:		c3po
+default:		test
 
 all:			$(BINS)
 
@@ -28,21 +36,10 @@ clean:
 			@find . -name 'ATC*.hs' -exec rm -vf {} ';'
 			@rm -vf $(BINS)
 
+nuke:			clean
 
-ccparse:
-			ghc -o ccparse $(GHCOPTS) ccparse.hs
+testwrap:		$(SOURCES)
+			gmake -C .. CspCASL/testwrap
 
-StatAnaCSP.o:
-			ghc $(GHCOPTS) StatAnaCSP.hs
-
-c3po:			$(SOURCES)
-			ghc $(GHCOPTS) -o c3po Main.hs #MixfixParser.hs 
-
-print:			print_csp.hs
-			ghc $(GHCOPTS) -o print print_csp.hs
-
-test:			c3po
-			./c3po test/amg.csp-casl
-#			./c3po test/*.csp-casl
-
-### Makefile ends here
+test:			testwrap
+			./testwrap test/amg.csp-casl
