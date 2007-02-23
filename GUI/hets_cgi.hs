@@ -10,28 +10,6 @@ Portability  : non-portable(imports Logic.Logic)
 Interface for web page with WASH/CGI
 -}
 
-{-
-   todo:
-     - default for checkbox regarding logging of input must be "selected"
-       .. done
-     - temporary files should be created with these permissions:
-        -rw-rw-r-- (than every member of grp agcofi can remove
-                    temporary files)
-       .. done
-     - LaTeX code should only be available as download  .. done
-     - ASCII code should also be available as download  .. done
-     - additionally to (show random) the temporary file names
-       should contain a fraction of the seconds since epoch and/or
-       the ProcessID
-       .. done
-     - english sentences in the output need corrections
-       .. done
-     - when the HTML-PrettyPrinting is available: generated HTML-Code
-       instead of poorly rendered ASCII has to be inserted as response
-       .. ???
-     - a handler for warning message
--}
-
 module Main where
 
 import WASH.CGI.CGI as CGI
