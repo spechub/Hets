@@ -32,10 +32,6 @@ provides a fresh, clean ontology labeld with the delivered name. After
 creating an empty ontology, the insertion functions () should be used
 to fill the ontology.  --}
 
-{-
-   todo: add a new edge type for equivalence which should be visited only once
--}
-
 module Taxonomy.MMiSSOntology (
   MMiSSOntology,
   ClassName,

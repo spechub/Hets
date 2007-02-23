@@ -10,13 +10,6 @@ Portability :  portable
 General datastructures for theorem prover interfaces
 
 -}
-{- todo:
-  - separate GoalStatus into its own Module
-    and specifify the whole SZS Ontology with appropiate types and functions
-    (http://www.cs.miami.edu/~tptp/cgi-bin/DVTPTP2WWW/view_file.pl?Category=Documents&File=SZSOntology)
-  - clarify how a G_theory can be fed into proveCMDLautomatic etc.
-    currently, we use mapTheoryStatus, but that is a hack
--}
 
 module Logic.Prover where
 
