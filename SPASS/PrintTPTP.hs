@@ -14,8 +14,6 @@ Pretty printing for SPASS signatures in TPTP syntax.
 
 -}
 
-{- todo:
--}
 module SPASS.PrintTPTP where
 
 import Maybe
