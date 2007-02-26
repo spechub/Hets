@@ -34,7 +34,7 @@ instance Pretty LIB_DEFN where
 
 instance Pretty LIB_ITEM where
     pretty li = case li of
-        Spec_defn si (Genericity aa ab _) ac' _ ->
+        Spec_defn si (Genericity aa@(Params pl) ab@(Imported il) _) ac' _ ->
             let las = l_annos ac'
                 (sa, ac) = if startsWithSemanticAnno las then
                                (equals <+> annoDoc (head las),
@@ -46,37 +46,42 @@ instance Pretty LIB_ITEM where
                           Union u@(_ : _) _ ->
                               printUnion $ moveAnnos ac u
                           _ -> [pretty ac]
-                sphead = fsep [ cat [ indexed (tokStr si)
-                                    , printPARAMS aa]
-                              , printIMPORTED ab
-                              , sa]
+                spid = indexed (tokStr si)
+                sphead = if null il then
+                             if null pl then spid <+> sa
+                             else cat [spid, printPARAMS aa <+> sa]
+                         else sep [ cat [spid, printPARAMS aa]
+                                  , printIMPORTED ab <+> sa]
              in vcat $ (topKey specS <+> vcat [sphead, x]) : r
                     ++ [keyword endS]
-        View_defn si (Genericity aa ab _) (View_type frm to _) ad _ ->
-            let sphead = fsep [ cat [ structSimpleId si
-                                    , printPARAMS aa]
-                              , printIMPORTED ab
-                              , colon]
+        View_defn si (Genericity aa@(Params pl) ab@(Imported il) _)
+                      (View_type frm to _) ad _ ->
+            let spid = structSimpleId si
+                sphead = if null il then
+                             if null pl then spid <+> colon
+                             else cat [spid, printPARAMS aa <+> colon]
+                         else sep [ cat [spid, printPARAMS aa]
+                                  , printIMPORTED ab <+> colon]
             in topKey viewS <+>
-                 fsep ([sphead, fsep [printGroupSpec frm,
-                              keyword toS, printGroupSpec to]]
-                       ++ (if null ad then id else (equals :))
-                           [ppWithCommas ad])
+               sep ([sphead, sep [ printGroupSpec frm <+> keyword toS
+                                  , (if null ad then id else (<+> equals))
+                                    $ printGroupSpec to]]
+                       ++ [ppWithCommas ad])
                           $+$ keyword endS
         Arch_spec_defn si ab _ ->
             topKey archS <+>
-                    fsep[keyword specS, structSimpleId si, equals, pretty ab]
-                            $+$ keyword endS
+                   fsep[keyword specS, structSimpleId si <+> equals, pretty ab]
+                           $+$ keyword endS
         Unit_spec_defn si ab _ ->
             topKey unitS <+>
-                    fsep[keyword specS, structSimpleId si, equals, pretty ab]
-                            $+$ keyword endS
+                   fsep[keyword specS, structSimpleId si <+> equals, pretty ab]
+                           $+$ keyword endS
         Ref_spec_defn si ab _ ->
             keyword refinementS <+>
-                    fsep[structSimpleId si, equals, pretty ab]
+                    fsep[structSimpleId si <+> equals, pretty ab]
                             $+$ keyword endS
         Download_items l ab _ ->
-            topKey fromS <+> fsep ([pretty l, keyword getS] ++
+            topKey fromS <+> fsep ([pretty l <+> keyword getS] ++
                                    punctuate comma (map pretty ab))
         Syntax.AS_Library.Logic_decl aa _ ->
             keyword logicS <+> pretty aa
