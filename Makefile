@@ -296,7 +296,8 @@ Modal_files = Modal/AS_Modal.hs Modal/ModalSign.hs
 ConstraintCASL_files = ConstraintCASL/AS_ConstraintCASL.hs
 CoCASL_files = CoCASL/AS_CoCASL.hs CoCASL/CoCASLSign.hs
 COL_files = COL/AS_COL.hs COL/COLSign.hs
-CspCASL_files = CspCASL/AS_CspCASL.hs CspCASL/AS_CspCASL_Process.hs CspCASL/SignCSP.hs
+CspCASL_files = CspCASL/AS_CspCASL.hs CspCASL/AS_CspCASL_Process.hs \
+             CspCASL/SignCSP.hs
 
 CASL_DL_files = CASL_DL/AS_CASL_DL.hs CASL_DL/Sign.hs
 
@@ -362,7 +363,7 @@ tax_objects = $(patsubst %.hs, %.o, $(tax_sources))
     http_pkg syb_pkg shellac_pkg shread_pkg hxt_pkg haifa_pkg \
     check capa hacapa h2h h2hf showKP clean_genRules genRules \
     count doc apache_doc post_doc4apache fromKif \
-    programatica_pkg maintainer-clean \
+    programatica_pkg maintainer-clean annos \
     derivedSources install_hets install release cgi ghci
 
 .SECONDARY : %.hs %.d $(generated_rule_files) $(gen_inline_axiom_files)
@@ -662,6 +663,9 @@ ghci: $(derived_sources)
 ### christian's target
 ### CASL parser
 fromKif: CASL/fromKif
+
+### Annos parser
+annos: Common/annos
 
 ### CASL parser
 capa: CASL/capa
