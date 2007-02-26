@@ -31,10 +31,10 @@ module Propositional.AS_BASIC_Propositional
     , SYMB_OR_MAP (..)         -- Symbol or symbol map
     ) where
 
-import qualified Common.Id as Id
+import Common.Id as Id
 import Common.Doc
 import Common.DocUtils
-import qualified Common.AS_Annotation as AS_Anno
+import Common.AS_Annotation as AS_Anno
 
 -- DrIFT command
 {-! global: UpPos !-}

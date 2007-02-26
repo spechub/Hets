@@ -36,6 +36,7 @@ import Propositional.Morphism as Morphism
 import qualified Propositional.AS_BASIC_Propositional as AS_BASIC
 import qualified Propositional.ATC_Propositional()
 import qualified Propositional.Symbol as Symbol
+import Propositional.Parse_AS_Basic 
 
 -- | Lid for propositional logic
 data Propositional = Propositional deriving Show --lid
