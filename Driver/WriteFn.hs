@@ -156,6 +156,14 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
     let ns = specNames opt
         filePrefix = snd $ getFilePrefix opt file
         outTypes = outtypes opt
+        specOutTypes = filter ( \ ot -> case ot of
+            ThyFile -> True
+            DfgFile _  -> True
+            TheoryFile _ -> True
+            SigFile _ -> True
+            HaskellOut -> True
+            ComptableXml -> True
+            _ -> False) outTypes
         allSpecs = null ns
     mapM_ ( \ ot -> let f = filePrefix ++ "." ++ show ot in
         case ot of
@@ -262,8 +270,8 @@ writeSpecFiles opt file lenv ga (ln, gctx) = do
                                                 Nothing -> return ()
 #endif
                       _ -> return () -- ignore other file types
-                             ) outTypes
+                             ) specOutTypes
         _ -> if allSpecs then return () else
                     putIfVerbose opt 0 $ "Unknown spec name: " ++ show i
-              ) $ if null outTypes && modelSparQ opt == "" then [] else
+              ) $ if null specOutTypes && modelSparQ opt == "" then [] else
                       if allSpecs then Map.keys gctx else ns
