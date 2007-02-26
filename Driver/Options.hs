@@ -399,7 +399,7 @@ instance Show RawOpt where
 -- information
 options :: [OptDescr Flag]
 options =
-    [ Option ['v'] [verboseS] (OptArg parseVerbosity "Int")
+    [ Option ['v'] [verboseS] (OptArg parseVerbosity "0-5")
       "set verbosity level, -v1 is the default"
     , Option ['q'] ["quiet"] (NoArg Quiet)
       "same as -v0, no output at all to stdout"
