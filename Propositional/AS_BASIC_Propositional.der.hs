@@ -56,7 +56,7 @@ data FORMULA = Negation FORMULA Id.Range
              -- pos: "\/"s
              | Implication FORMULA FORMULA Bool Id.Range
              -- pos: "=>"
-             | Equivalence FORMULA FORMULA Bool Id.Range
+             | Equivalence FORMULA FORMULA Id.Range
              -- pos: "<=>"
              | True_atom Id.Range
              -- pos: "True"
@@ -124,7 +124,7 @@ printFormula (Disjunction xs _) = parens $
                                   $ map printFormula xs
 printFormula (Implication x y _ _) = parens $ printFormula x <> 
                                    implies <> printFormula y
-printFormula (Equivalence x y _ _) = parens $ printFormula x <> 
+printFormula (Equivalence x y _) = parens $ printFormula x <> 
                                    equiv <> printFormula y
 printFormula (True_atom  _) = text "True"
 printFormula (False_atom _) = text "False"
