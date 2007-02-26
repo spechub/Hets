@@ -369,7 +369,7 @@ printRecord mf = Record
           fsep[idApplDoc (mkId [placeTok, mkSimpleId asS]) [r], idDoc t]
     , foldConditional = \ (Conditional ol _ _ _) l f r _ ->
           fsep [if isCond ol then parens l else l,
-                text whenS, f, text elseS, r]
+                text whenS <+> f, text elseS <+> r]
     , foldMixfix_qual_pred = \ _ p -> printPredSymb p
     , foldMixfix_term = \ (Mixfix_term ol) l -> case ol of
           [_, Mixfix_parenthesized _ _] -> fcat l
