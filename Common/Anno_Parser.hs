@@ -57,19 +57,24 @@ dec :: Pos -> Pos
 dec p = Id.incSourceColumn p (-2)
 
 mylines :: String -> [String]
-mylines s = case lines s ++
+mylines s = let strip = unwords . words in case lines s ++
     if drop (length s - 1) s == "\n" then [""] else [] of
   [] -> []
-  l@(x : _) ->
-    let strip r0 = let r = unwords $ words r0 in
-                   (if not (null r) && take 1 x == " "
-                   then " " else "") ++ r
-        e0 = last l
-        e1 = strip e0
-    in map strip (init l)
-       ++ [e1 ++ if not (null e1) && e1 /= " " &&
-                    drop (length e0 - 1) e0 == " "
-                 then " " else ""]
+  [x] -> let x0 = strip x in
+         [if null x0 then x0
+          else (if head x == ' ' then " " else "")  ++ x0
+                   ++ if last x == ' ' then " " else ""]
+  (x : r) ->
+     let x0 = strip x
+         e = last r
+         e0 = strip e
+         needsBlank = not (null x0) && head x == ' '
+         addBlank y = (if not (null y) && needsBlank
+                       then " " else "") ++ y
+     in addBlank x0 : map (addBlank . strip) (init r)
+        ++ [if null e then e
+            else if null e0 then if needsBlank then " " else ""
+            else addBlank e0 ++ if last e == ' ' then " " else ""]
 
 commentGroup :: GenParser Char st Annotation
 commentGroup = do
