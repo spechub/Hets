@@ -41,4 +41,46 @@ instance Pretty PROCESS where
     pretty = printProcess
 
 printProcess :: PROCESS -> Doc
-printProcess _ = text "?"
+printProcess Skip = text "SKIP"
+printProcess Stop = text "STOP"
+printProcess Div = text "Div"
+printProcess (Run es) = (text "Run") <+> (pretty es)
+printProcess (Chaos es) = (text "Chaos") <+> (pretty es)
+printProcess (PrefixProcess ev p) = (pretty ev) <+> (text "->") <+> (pretty p)
+printProcess (InternalPrefixProcess v es p) =
+    (text "|~|") <+> (pretty v) <+> (text ":") <+> (pretty es) <+> (text "->") <+> (pretty p)
+printProcess (ExternalPrefixProcess v es p) =
+    (text "[]") <+> (pretty v) <+> (text ":") <+> (pretty es) <+> (text "->") <+> (pretty p)
+printProcess (Sequential p q) = (pretty p)  <+> (text ";") <+> (pretty q)
+printProcess (ExternalChoice p q) = (pretty p)  <+> (text "[]") <+> (pretty q)
+printProcess (InternalChoice p q) = (pretty p)  <+> (text "|~|") <+> (pretty q)
+printProcess (Interleaving p q) = (pretty p)  <+> (text "|||") <+> (pretty q)
+printProcess (SynchronousParallel p q) = (pretty p)  <+> (text "||") <+> (pretty q)
+printProcess (GeneralisedParallel p es q) =
+    (pretty p) <+> (text "[|") <+> (pretty es) <+> (text "|]") <+> (pretty q)
+printProcess (AlphabetisedParallel p les res q) =
+    (pretty p) <+> (text "[") <+>
+    (pretty les) <+> (text "||") <+> (pretty res) <+>
+    (text "]") <+> (pretty q)
+printProcess (Hiding p es) = (pretty p) <+> (text "\\") <+> (pretty es)
+printProcess (Renaming p r) = (pretty p) <+> (text "[[") <+> (pretty r) <+> (text "]]")
+printProcess (ConditionalProcess f p q) =
+    (text "if") <+> (pretty f) <+> (text "then") <+> (pretty p) <+> (text "else") <+> (pretty q)
+
+instance Pretty EVENT where
+    pretty = printEvent
+
+printEvent :: EVENT -> Doc
+printEvent (Event t) = pretty t
+
+instance Pretty EVENT_SET where
+    pretty = printEventSet
+
+printEventSet :: EVENT_SET -> Doc
+printEventSet (EventSet s) = pretty s
+
+instance Pretty CSP_FORMULA where
+    pretty = printCspFormula
+
+printCspFormula :: CSP_FORMULA -> Doc
+printCspFormula (Formula f) = pretty f

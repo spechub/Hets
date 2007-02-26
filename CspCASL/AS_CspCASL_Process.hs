@@ -112,9 +112,9 @@ data PROCESS
     | Chaos EVENT_SET
     -- | @es -> p@ - Prefix process
     | PrefixProcess EVENT PROCESS
-    -- | @[] var : es -> p@ - Internal nondeterministic prefix choice
+    -- | @|~| var : es -> p@ - Internal nondeterministic prefix choice
     | InternalPrefixProcess VAR EVENT_SET PROCESS
-    -- | @|~| var : es -> p@ - External nondeterministic prefix choice
+    -- | @[] var : es -> p@ - External nondeterministic prefix choice
     | ExternalPrefixProcess VAR EVENT_SET PROCESS
     -- | @p ; q@ - Sequential process
     | Sequential PROCESS PROCESS
