@@ -45,7 +45,7 @@ a when (pred a : b) else b
 *** Error 27.1-27.10, ambiguous mixfix term
   (a (c :: ([ d ]))) :: ([ b ])
   a[c,d] :: ([ b ])
-a B [a[c,d],b] b
+a B[a[c,d],b] b
 while while a do b od do c od
 while while a do b od do while c do d od od
 { a { b c } }
@@ -64,8 +64,8 @@ while while a do b od do while c do d od od
   - (A (0 B))
   - ((A 0) B)
 a ! ! !
-Pl7 { nicht_wenden } -- folge_dem_Gang --> { nicht_wenden } Pl3 -->
-RS3
+Pl7 { nicht_wenden } -- folge_dem_Gang --> { nicht_wenden } Pl3
+--> RS3
 --> RS6
 (a + b) * c
 a * (b * c)

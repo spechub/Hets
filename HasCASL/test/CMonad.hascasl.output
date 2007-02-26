@@ -57,8 +57,8 @@ fmap g x = x bind \ y : a .! return (g y)
 ### Hint 15.5, is type variable 'f'
 ### Hint 25.8, constrain 'Set : Monad' is unprovable
   known kinds are: Functor
-*** Error 25.8, in term '(op fail[_v12; Set] : forall a : Type; m : Monad . m a) =
-(op emptySet[_v12] : forall a : Type . Set a)' of type 'Unit'
+*** Error 25.8, in term '(op fail[_v12; Set] : forall a : Type; m : Monad . m a)
+= (op emptySet[_v12] : forall a : Type . Set a)' of type 'Unit'
  unresolved constraints '{Set : Monad}'
 ### Hint 33.7, not a class 'a'
 ### Hint 33.7, not a class 'b'

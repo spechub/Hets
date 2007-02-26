@@ -2,13 +2,13 @@ free type Tree a ::= Leaf a | Node (Tree a) a | EmptyLeaf
 free type Nat ::= Zero | Suc Nat
 op    caseTree : forall a . Tree Nat -> Tree Nat
 forall h : Tree Nat; n : Nat; t : Tree Nat
-. caseTree t =
-  case t of
-  EmptyLeaf -> EmptyLeaf | 
-  Leaf n -> EmptyLeaf | 
-  Node EmptyLeaf n -> EmptyLeaf | 
-  Node (Node h n) n -> h | 
-  Node (Leaf n) n -> Leaf n;
+. caseTree t
+  = case t of
+    EmptyLeaf -> EmptyLeaf | 
+    Leaf n -> EmptyLeaf | 
+    Node EmptyLeaf n -> EmptyLeaf | 
+    Node (Node h n) n -> h | 
+    Node (Leaf n) n -> Leaf n;
 %% Type Constructors -----------------------------------------------------
 Nat
 : Type
@@ -40,13 +40,13 @@ free type Tree(a : Type) ::=
 free type Nat ::=
           Zero : Nat
           Suc : Nat -> Nat(Nat)                         %(ga_Nat)%
-caseTree t =
-case t of
-EmptyLeaf -> EmptyLeaf | 
-Leaf n -> EmptyLeaf | 
-Node EmptyLeaf n -> EmptyLeaf | 
-Node (Node h n) n -> h | 
-Node (Leaf n) n -> Leaf n
+caseTree t
+= case t of
+  EmptyLeaf -> EmptyLeaf | 
+  Leaf n -> EmptyLeaf | 
+  Node EmptyLeaf n -> EmptyLeaf | 
+  Node (Node h n) n -> h | 
+  Node (Leaf n) n -> Leaf n
 %% Diagnostics -----------------------------------------------------------
 *** Error 1.18, unknown type variable  'a'
 *** Error 4.23, unknown type variable  'a'

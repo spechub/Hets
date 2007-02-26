@@ -61,25 +61,23 @@ op    __intersection__
 types P, T
 type  Net =
       {(p, pre, post) : Set P * (T ->? MultiSet P) * (T ->? MultiSet P)
-      . (dom pre = dom post /\
-         forall p1 : MultiSet P
-         . p1 isIn range pre => MultiSetToSet p1 subset p)
-        /\
-        forall p1 : MultiSet P
-        . p1 isIn range pre => MultiSetToSet p1 subset p
+      . (dom pre = dom post
+         /\ forall p1 : MultiSet P
+            . p1 isIn range pre => MultiSetToSet p1 subset p)
+        /\ forall p1 : MultiSet P
+           . p1 isIn range pre => MultiSetToSet p1 subset p
       }
 ops   places : Net -> Set P;
       transitions : Net -> Set T;
       preMap, postMap : Net -> (T ->? MultiSet P)
 type  HomNet =
       {(n1, hp, ht, n2) : Net * (P ->? P) * (T ->? T) * Net
-      . hp :: places n1 --> places n2 /\
-        ht :: transitions n1 --> transitions n2
-        /\
-        forall t : T
-        . t isIn transitions n1 =>
-          freeMap hp (preMap n1 t) = preMap n2 (ht t) /\
-          freeMap hp (postMap n1 t) = postMap n2 (ht t)
+      . hp :: places n1 --> places n2
+        /\ ht :: transitions n1 --> transitions n2
+        /\ forall t : T
+           . t isIn transitions n1
+             => freeMap hp (preMap n1 t) = preMap n2 (ht t)
+                /\ freeMap hp (postMap n1 t) = postMap n2 (ht t)
       }
 ops   dom : HomNet -> Net;
       cod : HomNet -> Net;
@@ -100,8 +98,9 @@ ops   marking : System -> Marking;
       __|<__> : System * MultiSet T ->? System
 type  HomSys =
       {(sys1, hp, ht, sys2) : System * (P ->? P) * (T ->? T) * System
-      . ((net sys1, hp, ht, net sys2) in HomNet) /\
-        forall p : P . freq (p, marking sys1) <= freq (hp p, marking sys2)
+      . ((net sys1, hp, ht, net sys2) in HomNet)
+        /\ forall p : P
+           . freq (p, marking sys1) <= freq (hp p, marking sys2)
       }
 ops   dom : HomSys -> System;
       cod : HomSys -> System;
@@ -111,11 +110,11 @@ ops   dom : HomSys -> System;
       __o__ : HomSys * HomSys ->? HomSys
 pred  injective : HomSys
 forall h1, h2 : HomSys
-. def (h2 o h1) =>
-  h2 o h1 =
-  ((dom h1, placesMap h2 o placesMap h1,
-    transitionsMap h2 o transitionsMap h1, cod h2)
-   as HomSys);
+. def (h2 o h1)
+  => h2 o h1
+     = ((dom h1, placesMap h2 o placesMap h1,
+         transitionsMap h2 o transitionsMap h1, cod h2)
+        as HomSys);
 %% Type Constructors -----------------------------------------------------
 Boolean
 : Type
@@ -288,17 +287,17 @@ free type Boolean ::=
 let S = MultiSetToSet B in
 forall x : Elem
 . (__isIn__ : Elem * Set Elem ->? Unit) (x, S) <=> freq (x, B) > 0
-def (op __o__ : HomSys * HomSys ->? HomSys) (h2, h1) =>
-(op __o__ : HomSys * HomSys ->? HomSys) (h2, h1) =
-(((op dom : HomSys -> System) h1,
-  (__o__ : (P ->? P) * (P ->? P) -> P ->? P)
-  ((op placesMap : HomSys -> P ->? P) h2,
-   (op placesMap : HomSys -> P ->? P) h1),
-  (__o__ : (T ->? T) * (T ->? T) -> T ->? T)
-  ((op transitionsMap : HomSys -> T ->? T) h2,
-   (op transitionsMap : HomSys -> T ->? T) h1),
-  (op cod : HomSys -> System) h2)
- as HomSys)
+def (op __o__ : HomSys * HomSys ->? HomSys) (h2, h1)
+=> (op __o__ : HomSys * HomSys ->? HomSys) (h2, h1)
+   = (((op dom : HomSys -> System) h1,
+       (__o__ : (P ->? P) * (P ->? P) -> P ->? P)
+       ((op placesMap : HomSys -> P ->? P) h2,
+        (op placesMap : HomSys -> P ->? P) h1),
+       (__o__ : (T ->? T) * (T ->? T) -> T ->? T)
+       ((op transitionsMap : HomSys -> T ->? T) h2,
+        (op transitionsMap : HomSys -> T ->? T) h1),
+       (op cod : HomSys -> System) h2)
+      as HomSys)
 %% Diagnostics -----------------------------------------------------------
 ### Hint 7.7, is type variable 'S'
 ### Hint 7.9, is type variable 'V'
@@ -362,10 +361,9 @@ forall x : P
 . ((op __isIn__[P] :
     forall Elem : Type . Pred (Elem * MultiSet Elem))
    ((var x : P), (var m : Marking)))
-  =>
-  ((op __isIn__[_v1069] :
-    forall Elem : Type . Pred (Elem * MultiSet Elem))
-   ((var x : P), (var p : _v1024 _v1025 _v1023)))'
+  => ((op __isIn__[_v1069] :
+       forall Elem : Type . Pred (Elem * MultiSet Elem))
+      ((var x : P), (var p : _v1024 _v1025 _v1023)))'
 
 ### Hint 104.19, not a class 'P'
 ### Hint 104.24-104.74, in type of '((op freq[P] : forall Elem : Type . Elem * MultiSet Elem -> Nat)

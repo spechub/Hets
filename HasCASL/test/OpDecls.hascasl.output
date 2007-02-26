@@ -1,7 +1,7 @@
 types s, t < t
 ops   a, b : s
 
-%% op __ + __ : s  -> s -> s, idem, assoc, comm;
+%% op __ + __ : s -> s -> s, idem, assoc, comm;
 op    __+__ : s * s -> s
 op    __+__ : t * t -> t
 ops   a, b : t

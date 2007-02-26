@@ -50,19 +50,19 @@ op    fst(x : s; y : t) : s = x;
 program snd (x : s, y : t) : t = y;
 
 %% trivial because its the strict function property
-. (\ (x : s, y : t) . def (x res y)) =
-  \ (x : s, y : t) . (def y) und (def x)
+. (\ (x : s, y : t) . def (x res y))
+  = \ (x : s, y : t) . (def y) und (def x)
 . fst = __res__;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Internal Logic
 pred  eq : s * s
 . (\ x : s . eq (x, x)) = tt
-. (\ (x, y : s) . x res eq (x, y)) =
-  \ (x, y : s) . y res eq (x, y);
+. (\ (x, y : s) . x res eq (x, y))
+  = \ (x, y : s) . y res eq (x, y);
 
 %% then %def
-%% notation "\ ."  abbreviates "\bla:unit."
+%% notation "\ ." abbreviates "\bla:unit."
 %% where "bla" is never used, but only "()" instead
 %% for type inference
 %% an implicit cast from s to ?s of a term "e" yields the term "\ . e"
@@ -193,8 +193,8 @@ fst = __res__
 (\ (x, y : s) . x res eq (x, y)) = \ (x, y : s) . y res eq (x, y)
 f (Y f) = Y f
 f x = x => Y f <<= x
-undefined =
-(Y ((\ x' : c --> p . x') as (c --> p) --> c --> p) as c --> p)
+undefined
+= (Y ((\ x' : c --> p . x') as (c --> p) --> c --> p) as c --> p)
                                                  %(def_undefined)%
 free type bool ::=
           true : bool
@@ -342,10 +342,9 @@ free type bool ::=
 ### Hint 126.38-126.52, untypable application 'all \ n : nat . s n <<= x'
 *** Error 126.14-126.52, no typing for 'all \ n : nat . s n <<= x as Unit'
 *** Error 130.21-131.74, ambiguous mixfix term
-  def
-(((sup s) impl)
- ((((isBound (sup s, s)) und) all)
-  (\ x : c . ((((isBound (x, s)) impl) sup) s) <<= x)))
+  def (((sup s) impl)
+     ((((isBound (sup s, s)) und) all)
+      (\ x : c . ((((isBound (x, s)) impl) sup) s) <<= x)))
   ((def (sup s)) impl)
 ((((isBound (sup s, s)) und) all)
  (\ x : c . ((((isBound (x, s)) impl) sup) s) <<= x))
@@ -411,9 +410,8 @@ free type bool ::=
   (((def (f x)) und) x) <<= y
 *** Error 174.45, unexpected mixfix token: +
 *** Error 173.28-174.61, ambiguous mixfix term
-  def
-((((f (s m)) und) eq)
- (sup (\ n : nat .! f (s (n + m))), f (sup s)))
+  def ((((f (s m)) und) eq)
+     (sup (\ n : nat .! f (s (n + m))), f (sup s)))
   ((((def f) (s m)) und) eq)
 (sup (\ n : nat .! f (s (n + m))), f (sup s))
 *** Error 170.7, unexpected mixfix token: :

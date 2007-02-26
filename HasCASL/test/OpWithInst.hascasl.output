@@ -8,7 +8,7 @@ s : Type
 __=[s]__ : forall a : Type . a * a -> Unit %(op)%
 a : s %(op)%
 %% Sentences -------------------------------------------------------------
-a = [s] a
+a =[s] a
 %% Diagnostics -----------------------------------------------------------
 *** Error 4.22, unknown type variable  'a'
 *** Error 6.28, unknown type variable  'a'
