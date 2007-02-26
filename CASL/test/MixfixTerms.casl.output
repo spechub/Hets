@@ -25,7 +25,7 @@ B [ b ]
 B[a[c,d],b]
 [ a, [ c, d ], b ]
 [ a[c,d], b ]
-a B [a[c,d],b] b
+a B[a[c,d],b] b
 while while a do b od do c od
 while while a do b od do while c do d od od
 { a { b c } }
@@ -34,8 +34,8 @@ A A 0 B B
 b + A 0 B + b
 - A 0 B
 a ! ! !
-Pl7 { nicht_wenden } -- folge_dem_Gang --> { nicht_wenden } Pl3 -->
-RS3
+Pl7 { nicht_wenden } -- folge_dem_Gang --> { nicht_wenden } Pl3
+--> RS3
 --> RS6
 (a + b) * c
 a * (b * c)

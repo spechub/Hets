@@ -12,7 +12,7 @@ ops   __+__, __*__ : Nat * Nat -> Nat;
       __/?__ : Nat * Nat ->? Nat;
       __div__, __mod__, __quot__, __rem__ : Nat * Nat ->? Nat; %()%
       
-      %%   Operations to represent natural numbers with digits:
+      %% Operations to represent natural numbers with digits:
       1, 2, 3, 4, 5, 6, 7, 8, 9 : Nat;
       __@@__ : Nat * Nat -> Nat
 forall m, n, r, s : Nat
@@ -266,9 +266,9 @@ ops   1, 2, 3, 4 : s;
 . true %(The true formula)%
 . true;
 %(and this
-           also goes
-           along several lines! 
-           and with special stuff: -*/\&=<>BCDEFGHIJKLM!% )%
+  also goes
+  along several lines!
+  and with special stuff: -*/\&=<>BCDEFGHIJKLM!% )%
 sort  s
 op    __and'__ : s
 sort  a
@@ -824,15 +824,15 @@ ops   ' ' : Char = '\032'; %(printable_32)%
       'ý' : Char = '\253'; %(printable_253)%
       'þ' : Char = '\254'; %(printable_254)%
       'ÿ' : Char = '\255'; %(printable_255)%
-preds isLetter(c : Char) <=> 
-      (ord ('A') <= ord (c) /\ ord (c) <= ord ('Z'))
-      \/ (ord ('a') <= ord (c) /\ ord (c) <= ord ('z'));
+preds isLetter(c : Char)
+      <=> (ord ('A') <= ord (c) /\ ord (c) <= ord ('Z'))
+          \/ (ord ('a') <= ord (c) /\ ord (c) <= ord ('z'));
                                                         %(isLetter_def)%
       isDigit(c : Char) <=> ord ('0') <= ord (c) /\ ord (c) <= ord ('9');
                                                          %(isDigit_def)%
-      isPrintable(c : Char) <=> 
-      (ord (' ') <= ord (c) /\ ord (c) <= ord ('~'))
-      \/ (ord (' ') <= ord (c) /\ ord (c) <= ord ('ÿ'));
+      isPrintable(c : Char)
+      <=> (ord (' ') <= ord (c) /\ ord (c) <= ord ('~'))
+          \/ (ord (' ') <= ord (c) /\ ord (c) <= ord ('ÿ'));
                                                      %(isPrintable_def)%
 
 %% alternative definition of characters as '\o ppp',
