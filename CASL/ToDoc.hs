@@ -166,8 +166,8 @@ printPredItem mf p = case p of
     Pred_decl l t _ -> fsep $ (punctuate comma $ map idLabelDoc l)
                        ++ [colon <+> printPredType t]
     Pred_defn i h f _ ->
-        fcat [idLabelDoc i, printPredHead h <> space, equiv <> space,
-              printAnnoted (printFormula mf) f]
+        sep[ cat [idLabelDoc i, printPredHead h]
+           , equiv <+> printAnnoted (printFormula mf) f]
 
 instance Pretty f => Pretty (PRED_ITEM f) where
     pretty = printPredItem pretty
@@ -185,11 +185,10 @@ instance Pretty f => Pretty (OP_ATTR f) where
 
 printOpHead :: OP_HEAD -> Doc
 printOpHead (Op_head k l r _) =
-    fcat $ (if null l then [] else [printArgDecls l <> space]) ++
+    sep $ (if null l then [] else [printArgDecls l]) ++
          [ (case k of
              Total -> colon
-             Partial -> text colonQuMark) <> space
-         , idDoc r]
+             Partial -> text colonQuMark) <+> idDoc r]
 
 instance Pretty OP_HEAD where
     pretty = printOpHead
@@ -200,9 +199,8 @@ printOpItem mf p = case p of
         ++ [colon <> (if null a then id else (<> comma))(printOpType t)]
         ++ punctuate comma (map (printAttr mf) a)
     Op_defn i h@(Op_head _ l _ _) t _ ->
-        fcat [(if null l then (<> space) else id) $ idLabelDoc i
-             , printOpHead h <> space, equals <> space
-             , printAnnoted (printTerm mf) t]
+        sep [ (if null l then sep else cat) [idLabelDoc i, printOpHead h]
+            , equals <+> printAnnoted (printTerm mf) t]
 
 instance Pretty f => Pretty (OP_ITEM f) where
     pretty = printOpItem pretty
