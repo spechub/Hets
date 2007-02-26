@@ -195,10 +195,17 @@ mkDGRefNfNode ln nodelab newNode isLeave proofstatus =
    to the given library name and updates the proofstatus -}
 insertNfNode :: LIB_NAME -> LibEnv -> LNode DGNodeLab -> LibEnv
 insertNfNode ln proofstatus dgnode =
+  updateProofStatus ln newDGraph newChange proofstatus
+  where
+  (newDGraph, newChange) = updateWithOneChange (InsertNode dgnode) 
+					       (lookupDGraph ln proofstatus) 
+					       []
+{-
   updateProofStatus ln
                     (insNode dgnode (lookupDGraph ln proofstatus))
                     [InsertNode dgnode]
                     proofstatus
+-}
 
 {- | handles all nodes that are no leaves
    (ie nodes that have ingoing edges of type HidingDef) -}
@@ -325,6 +332,17 @@ insertEdgesToNf dgraph nfNode mmap =
 {- | auxiliary method for insertEdgesToNf -}
 insertEdgesToNfAux :: DGraph -> Node -> [(Node,GMorphism)]
                    -> (DGraph,[DGChange])
+insertEdgesToNfAux dgraph nfNode list =
+       updateWithChanges [InsertEdge $ makeEdge node nfNode morph|(node, morph)<-list] dgraph []
+       where
+       makeEdge src tgt m = (src, tgt, DGLink {
+					      dgl_morphism = m,
+					      dgl_type = GlobalDef,
+					      dgl_origin = DGProof,
+					      dgl_id = defaultEdgeID
+					      })
+
+{-
 insertEdgesToNfAux dgraph _ [] = (dgraph,[])
 insertEdgesToNfAux dgraph nfNode ((node,morph):list) =
   (finalGraph, (InsertEdge ledge):changes)
@@ -335,3 +353,4 @@ insertEdgesToNfAux dgraph nfNode ((node,morph):list) =
                                   })
     auxGraph = insEdge ledge dgraph
     (finalGraph,changes) = insertEdgesToNfAux auxGraph nfNode list
+-}

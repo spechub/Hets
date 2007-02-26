@@ -52,7 +52,7 @@ getSublogicFromGlobalContext le ln =
 
     testAndGetSublogicFromEdge :: LEdge DGLinkLab -> Res.Result G_sublogics
     testAndGetSublogicFromEdge (from, to,
-                    DGLink gm@(GMorphism cid' lsign _ lmorphism _) _ _)
+                    DGLink gm@(GMorphism cid' lsign _ lmorphism _) _ _ _)
         =
           if isHomogeneous gm then
               Result [] (comSublogics g_mor g_sign)

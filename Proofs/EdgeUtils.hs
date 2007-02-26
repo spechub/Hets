@@ -62,9 +62,12 @@ changeDG :: DGraph -> DGChange -> DGraph
 changeDG g c = case c of
     InsertNode n -> insLNode n g
     DeleteNode n -> delLNode n g
-    InsertEdge e -> insLEdge e g
+    InsertEdge e -> insLEdge (initEdgeID e g) g
     DeleteEdge e -> deLLEdge e g
     SetNodeLab n -> labelNode n g
+    
+initEdgeID :: LEdge DGLinkLab -> DGraph -> LEdge DGLinkLab
+initEdgeID (src, tgt, linklab) g = (src, tgt, linklab{dgl_id = getNewEdgeID g})
 
 changesDG :: DGraph -> [DGChange] -> DGraph
 changesDG = foldl' changeDG

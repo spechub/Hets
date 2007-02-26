@@ -32,7 +32,7 @@ import Maybe(fromJust)
 import Char(isDigit)
 import OWL_DL.Namespace
 
-import Debug.Trace
+--import Debug.Trace
 
 type OntologyMap = Map.Map String Ontology
 
@@ -74,13 +74,25 @@ graphFromMap uri onto (ontoMap, dg) =
         morphism = idComorphism (Logic OWL_DL) 
         Result _ (Just comorphism) = 
              gEmbedComorphism morphism (G_sign OWL_DL currentSign 0) 
-        ledgeList = map (\y -> 
+
+	-- to add ids into edges
+	ledgeList = zipWith (\(indT, _) n ->
+				(ind, indT, DGLink{ dgl_morphism = comorphism,
+						    dgl_type = GlobalDef,
+						    dgl_origin = DGImports,
+						    dgl_id = n						   
+						  })) 
+			    tagLNodes 
+			    (getNewEdgeIDs (length tagLNodes) dg)
+	{- 
+	ledgeList = map (\y -> 
                              let (indT, _) = y
                              in (ind, indT, DGLink { dgl_morphism = comorphism,
                                                      dgl_type = GlobalDef,
                                                      dgl_origin = DGImports
                                                    })
                         ) tagLNodes
+	-}
     in  if isEmpty dg then
              (ontoMap2, (mkGraph newLNodes ledgeList))
            else 

@@ -46,6 +46,8 @@ import Data.List
 import Control.Monad
 import Control.Monad.Trans
 
+--import Debug.Trace
+
 -- | lookup an env or read and analyze a file
 anaLib :: HetcatsOpts -> FilePath -> IO (Maybe (LIB_NAME, LibEnv))
 anaLib opts file = anaLibExt opts file emptyLibEnv
@@ -386,7 +388,8 @@ ana_VIEW_DEFN lgraph _defl libenv gctx l opts
                dgl_morphism = gmor,
                dgl_type = GlobalThm LeftOpen None LeftOpen,
                    -- 'LeftOpen' for conserv correct?
-               dgl_origin = DGView vn})
+               dgl_origin = DGView vn,
+	       dgl_id = getNewEdgeID dg''})
       vsig = (src,gmor,(imp,params,getMaybeSig allparams,tar))
       genv = globalEnv gctx''
   if Map.member vn genv
@@ -395,7 +398,9 @@ ana_VIEW_DEFN lgraph _defl libenv gctx l opts
                     pos
    else return (View_defn vn gen' vt' gsis pos,
                 gctx'' { globalEnv = Map.insert vn (ViewEntry vsig) genv
-                       , devGraph = insEdge link dg''}, l, libenv)
+                       , devGraph = insEdge link dg''}
+		       , l
+		       , libenv)
 
 ana_ITEM_NAME_OR_MAP :: LIB_NAME -> GlobalEnv -> Result (GlobalEnv, DGraph)
                      -> ITEM_NAME_OR_MAP -> Result (GlobalEnv, DGraph)

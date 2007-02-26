@@ -55,7 +55,7 @@ thMapI = getMapAndMaxIndex thMap
 insEdgeNub :: LEdge DGLinkLab -> DGraph -> DGraph
 insEdgeNub (v, w, l) g =
    if (l, w) `elem` s then g
-      else (p, v, l', (l, w) : s) & g'
+      else (p, v, l', (l{dgl_id=getNewEdgeID g}, w) : s) & g'
    where (Just (p, _, l', s), g') = match v g
 
 -- | analyze a SPEC
@@ -100,7 +100,8 @@ ana_SPEC lg gctx nsig name opts sp =
            link = DGLink {
                     dgl_morphism = incl',
                     dgl_type = GlobalDef,
-                    dgl_origin = DGExtension }
+                    dgl_origin = DGExtension,
+		    dgl_id = defaultEdgeID}
            dg'' = case nsig of
                     EmptyNode _ -> dg'
                     JustNode (NodeSig n _) -> insEdgeNub (n,node,link) dg'
@@ -134,7 +135,8 @@ ana_SPEC lg gctx nsig name opts sp =
           link = (n',node,DGLink {
             dgl_morphism = mor',
             dgl_type = GlobalDef,
-            dgl_origin = DGTranslation })
+            dgl_origin = DGTranslation,
+	    dgl_id = defaultEdgeID})
           dg'' = insNode (node,node_contents) dg'
       return (Translation (replaceAnnoted sp1' asp) ren,
               NodeSig node gsigma',
@@ -168,7 +170,8 @@ ana_SPEC lg gctx nsig name opts sp =
                link = (n',node,DGLink {
                   dgl_morphism = hmor',
                   dgl_type = HidingDef,
-                  dgl_origin = DGHiding })
+                  dgl_origin = DGHiding,
+		  dgl_id = defaultEdgeID})
                dg'' = insNode (node,node_contents) dg'
            return (Reduction (replaceAnnoted sp1' asp) restr,
                    NodeSig node gsigma'',
@@ -197,7 +200,8 @@ ana_SPEC lg gctx nsig name opts sp =
                link1 = (n',node1,DGLink {
                  dgl_morphism = hmor',
                  dgl_type = HidingDef,
-                 dgl_origin = DGRevealing })
+                 dgl_origin = DGRevealing,
+		 dgl_id = defaultEdgeID})
                dg'' = insNode (node1,node_contents1) dg'
            return (Reduction (replaceAnnoted sp1' asp) restr,
                    NodeSig node1 gsigma1,
@@ -215,10 +219,11 @@ ana_SPEC lg gctx nsig name opts sp =
                  dgn_origin = DGRevealing,
                  dgn_cons = None,
                  dgn_cons_status = LeftOpen }
-               link1 = (n',node1,DGLink {
+	       link1 = (n',node1,DGLink {
                  dgl_morphism = hmor',
                  dgl_type = HidingDef,
-                 dgl_origin = DGRevealing })
+                 dgl_origin = DGRevealing,
+		 dgl_id = defaultEdgeID})
                node_contents'' = DGNode {
                 dgn_name = name,
                  dgn_theory = G_theory lid'' gsig'' ind'' noSens 0,
@@ -230,7 +235,8 @@ ana_SPEC lg gctx nsig name opts sp =
                link'' = (node1,node'',DGLink {
                  dgl_morphism = tmor',
                  dgl_type = GlobalDef,
-                 dgl_origin = DGRevealTranslation })
+                 dgl_origin = DGRevealTranslation,
+		 dgl_id = defaultEdgeID})
            return (Reduction (replaceAnnoted sp1' asp) restr,
                    NodeSig node'' gsigma'',
                    gctx' { devGraph = insEdgeNub link'' $
@@ -277,7 +283,8 @@ ana_SPEC lg gctx nsig name opts sp =
                 link = DGLink {
                   dgl_morphism = incl',
                   dgl_type = GlobalDef,
-                  dgl_origin = DGUnion }
+                  dgl_origin = DGUnion,
+		  dgl_id = defaultEdgeID}
             return (gctxl { devGraph = insEdgeNub (n,node,link) dgl
                           , morMap = Map.insert (ml+1)
                                      (toG_morphism incl') mrMapl})
@@ -320,7 +327,8 @@ ana_SPEC lg gctx nsig name opts sp =
           link = (n',node,DGLink {
             dgl_morphism = incl',
             dgl_type = FreeDef nsig,
-            dgl_origin = DGFree })
+            dgl_origin = DGFree,
+	    dgl_id = defaultEdgeID})
       return (Free_spec (replaceAnnoted sp' asp) poss,
               NodeSig node gsigma',
               gctx' { devGraph = insEdgeNub link $
@@ -347,7 +355,8 @@ ana_SPEC lg gctx nsig name opts sp =
           link = (n',node,DGLink {
             dgl_morphism = incl',
             dgl_type = CofreeDef nsig,
-            dgl_origin = DGCofree })
+            dgl_origin = DGCofree,
+	    dgl_id = defaultEdgeID})
       return (Cofree_spec (replaceAnnoted sp' asp) poss,
               NodeSig node gsigma',
               gctx' { devGraph = insEdgeNub link $
@@ -396,7 +405,8 @@ ana_SPEC lg gctx nsig name opts sp =
           link = (n'', node, DGLink {
             dgl_morphism = gEmbed2 gsigma3 (G_morphism lid mor3 (m+1)),
             dgl_type = HidingDef,
-            dgl_origin = DGLocal })
+            dgl_origin = DGLocal,
+	    dgl_id = defaultEdgeID})
       return (Local_spec (replaceAnnoted sp2 asp)
                          (replaceAnnoted sp2' asp')
                          poss,
@@ -437,11 +447,13 @@ ana_SPEC lg gctx nsig name opts sp =
           link1 = DGLink {
             dgl_morphism = incl1',
             dgl_type = GlobalDef,
-            dgl_origin = DGClosedLenv }
+            dgl_origin = DGClosedLenv,
+	    dgl_id = defaultEdgeID}
           link2 = (n',node,DGLink {
             dgl_morphism = incl2',
             dgl_type = GlobalDef,
-            dgl_origin = DGClosed })
+            dgl_origin = DGClosed,
+	    dgl_id = defaultEdgeID})
           insLink1 = case nsig of
                        EmptyNode _ -> id
                        JustNode (NodeSig n _) -> insEdgeNub (n, node, link1)
@@ -484,11 +496,13 @@ ana_SPEC lg gctx nsig name opts sp =
           link1 = DGLink {
             dgl_morphism = incl1',
             dgl_type = GlobalDef,
-            dgl_origin = DGLogicQualLenv }
+            dgl_origin = DGLogicQualLenv,
+	    dgl_id = defaultEdgeID}
           link2 = (n',node,DGLink {
             dgl_morphism = incl2',
             dgl_type = GlobalDef,
-            dgl_origin = DGLogicQual })
+            dgl_origin = DGLogicQual,
+	    dgl_id = defaultEdgeID})
           insLink1 = case nsig of
                        EmptyNode _ -> id
                        JustNode (NodeSig n _) -> insEdgeNub (n, node, link1)
@@ -558,7 +572,8 @@ ana_SPEC lg gctx nsig name opts sp =
                  link = (nB,node,DGLink {
                    dgl_morphism = incl',
                    dgl_type = GlobalDef,
-                   dgl_origin = DGSpecInst spname})
+                   dgl_origin = DGSpecInst spname,
+		   dgl_id = defaultEdgeID})
              return (sp,
                      NodeSig node gsigma',
                      gctx { devGraph = insEdgeNub link $
@@ -584,11 +599,13 @@ ana_SPEC lg gctx nsig name opts sp =
                link1 = (n,node,DGLink {
                  dgl_morphism = incl1',
                  dgl_type = GlobalDef,
-                 dgl_origin = DGSpecInst spname})
+                 dgl_origin = DGSpecInst spname,
+		 dgl_id = defaultEdgeID})
                link2 = (nB,node,DGLink {
                  dgl_morphism = incl2',
                  dgl_type = GlobalDef,
-                 dgl_origin = DGSpecInst spname})
+                 dgl_origin = DGSpecInst spname,
+		 dgl_id = defaultEdgeID})
                morMap1 = Map.insert (m+1) (toG_morphism incl1') mrMap
                morMap2 = Map.insert (m+2) (toG_morphism incl2') morMap1
            return (sp,
@@ -627,16 +644,18 @@ ana_SPEC lg gctx nsig name opts sp =
            link1 = DGLink {
              dgl_morphism = incl1',
              dgl_type = GlobalDef,
-             dgl_origin = DGSpecInst spname}
+             dgl_origin = DGSpecInst spname,
+	     dgl_id = defaultEdgeID}
            insLink1 = case nsig of
                         EmptyNode _ -> id
                         JustNode (NodeSig n _) -> insEdgeNub (n, node, link1)
            link2 = (nB,node,DGLink {
              dgl_morphism = morDelta',
              dgl_type = GlobalDef,
-             dgl_origin = DGSpecInst spname})
+             dgl_origin = DGSpecInst spname,
+	     dgl_id = defaultEdgeID})
            parLinks = catMaybes (map (parLink gsigmaRes' node) actualargs)
-           morMap1 = Map.insert (m+1) (toG_morphism incl1') mrMap
+	   morMap1 = Map.insert (m+1) (toG_morphism incl1') mrMap
            morMap2 = Map.insert (m+2) (toG_morphism incl2') morMap1
        return (Spec_inst spname
                          (map (uncurry replaceAnnoted)
@@ -659,7 +678,8 @@ ana_SPEC lg gctx nsig name opts sp =
         let link = DGLink {
              dgl_morphism = incl,
              dgl_type = GlobalDef,
-             dgl_origin = DGFitSpec }
+             dgl_origin = DGFitSpec,
+	     dgl_id = defaultEdgeID}
         return (nA_i,node,link)
  -- finally the case with conflicting numbers of formal and actual parameters
       _ ->
@@ -691,7 +711,8 @@ ana_SPEC lg gctx nsig name opts sp =
           link = (n',node,DGLink {
             dgl_morphism = GMorphism cid sigmaD 0 (ide lidP' sigmaD') 0,
             dgl_type = GlobalDef,
-            dgl_origin = DGData })
+            dgl_origin = DGData,
+	    dgl_id = defaultEdgeID})
           dg2 = insEdgeNub link $
                 insNode (node,node_contents) dg1
           nsig2 = NodeSig node gsigmaD'
@@ -880,7 +901,8 @@ ana_FIT_ARG lg gctx spname nsigI
    let link = (nP,nA,DGLink {
          dgl_morphism = gEmbed (G_morphism lidP mor 0),
          dgl_type = GlobalThm LeftOpen None LeftOpen,
-         dgl_origin = DGSpecInst spname})
+         dgl_origin = DGSpecInst spname,
+	 dgl_id = defaultEdgeID})
    return (Fit_spec (replaceAnnoted sp' asp) gsis pos,
            gctx { devGraph = insEdgeNub link $ devGraph dg' },
            (G_morphism lidP mor 0,nsigA)
@@ -929,7 +951,8 @@ ana_FIT_ARG lg gctx spname nsigI (NodeSig nP gsigmaP)
            let link = (nP,nSrc,DGLink {
                  dgl_morphism = ide Grothendieck gsigmaP,
                  dgl_type = GlobalThm LeftOpen None LeftOpen,
-                 dgl_origin = DGFitView spname})
+                 dgl_origin = DGFitView spname, 
+		 dgl_id = defaultEdgeID})
            return (fv, gctx { devGraph = insEdgeNub link dg },
                          (G_morphism lid morHom ind, target))
          -- the subcase with nonempty import
@@ -973,23 +996,28 @@ ana_FIT_ARG lg gctx spname nsigI (NodeSig nP gsigmaP)
                link = (nP,n',DGLink {
                  dgl_morphism = ide Grothendieck gsigmaP,
                  dgl_type = GlobalThm LeftOpen None LeftOpen,
-                 dgl_origin = DGFitView spname})
+                 dgl_origin = DGFitView spname,
+		 dgl_id = defaultEdgeID})
                link1 = (nSrc,n',DGLink {
                  dgl_morphism = incl4,
                  dgl_type = GlobalDef,
-                 dgl_origin = DGFitView spname})
+                 dgl_origin = DGFitView spname,
+		 dgl_id = defaultEdgeID})
                link2 = (nTar,nA,DGLink {
                  dgl_morphism = incl2,
                  dgl_type = GlobalDef,
-                 dgl_origin = DGFitViewA spname})
+                 dgl_origin = DGFitViewA spname,
+		 dgl_id = defaultEdgeID})
                link3 = (nI,n',DGLink {
                  dgl_morphism = incl3,
                  dgl_type = GlobalDef,
-                 dgl_origin = DGFitViewImp spname})
+                 dgl_origin = DGFitViewImp spname,
+		 dgl_id = defaultEdgeID})
                link4 = (nI,nA,DGLink {
                  dgl_morphism = incl1,
                  dgl_type = GlobalDef,
-                 dgl_origin = DGFitViewAImp spname})
+                 dgl_origin = DGFitViewAImp spname,
+		 dgl_id = defaultEdgeID})
            return (fv, gctx { devGraph =
                    insEdgeNub link $
                    insEdgeNub link1 $
@@ -1048,26 +1076,31 @@ ana_FIT_ARG lg gctx spname nsigI (NodeSig nP gsigmaP)
            link = (nP,n',DGLink {
              dgl_morphism = ide Grothendieck gsigmaP,
              dgl_type = GlobalThm LeftOpen None LeftOpen,
-             dgl_origin = DGFitView spname})
+             dgl_origin = DGFitView spname,
+	     dgl_id = defaultEdgeID})
            link1 = (nSrc,n',DGLink {
              dgl_morphism = incl4,
              dgl_type = GlobalDef,
-             dgl_origin = DGFitView spname})
+             dgl_origin = DGFitView spname,
+	     dgl_id = defaultEdgeID})
            link2 = (nTar,nA,DGLink {
              dgl_morphism = mor',
              dgl_type = GlobalDef,
-             dgl_origin = DGFitViewA spname})
+             dgl_origin = DGFitViewA spname,
+	     dgl_id = defaultEdgeID})
            fitLinks = [link,link1,link2] ++ case nsigI of
                          EmptyNode _ -> []
                          JustNode (NodeSig nI _) -> let
                            link3 = (nI,n',DGLink {
                                      dgl_morphism = incl3,
                                      dgl_type = GlobalDef,
-                                     dgl_origin = DGFitViewImp spname})
+                                     dgl_origin = DGFitViewImp spname,
+				     dgl_id = defaultEdgeID})
                            link4 = (nI,nA,DGLink {
                                      dgl_morphism = incl2,
                                      dgl_type = GlobalDef,
-                                     dgl_origin = DGFitViewAImp spname})
+                                     dgl_origin = DGFitViewAImp spname,
+				     dgl_id = defaultEdgeID})
                            in [link3,link4]
            parLinks = catMaybes (map (parLink gsigmaRes nA) actualargs)
        return (Fit_view vn
@@ -1091,7 +1124,8 @@ ana_FIT_ARG lg gctx spname nsigI (NodeSig nP gsigmaP)
         let link = DGLink {
              dgl_morphism = incl,
              dgl_type = GlobalDef,
-             dgl_origin = DGFitView spname }
+             dgl_origin = DGFitView spname,
+	     dgl_id = defaultEdgeID }
         return (nA_i,node,link)
 -- finally the case with conflicting numbers of formal and actual parameters
       _ ->
@@ -1242,7 +1276,8 @@ ana_GENERICITY lg gctx l opts name
            return (insEdgeNub (n,node,DGLink {
                      dgl_morphism = incl,
                      dgl_type = GlobalDef,
-                     dgl_origin = DGFormalParams }) dg)
+                     dgl_origin = DGFormalParams,
+		     dgl_id = defaultEdgeID}) dg)
   dg4 <- foldl inslink (return dg''') nsigPs
   return (Genericity params' imps' pos,
           (nsigI, nsigPs, JustNode $ NodeSig node gsigmaP),
@@ -1351,7 +1386,8 @@ ana_Extension res (name',asp') = do
            return gctx1 { devGraph = insEdgeNub (n1, n', DGLink
                               { dgl_morphism = ide Grothendieck sig1,
                                 dgl_type = GlobalThm LeftOpen None LeftOpen,
-                                dgl_origin = DGExtension }) dg1 }
+                                dgl_origin = DGExtension, 
+				dgl_id = defaultEdgeID}) dg1 }
           else do
            let anno2 = case anno1 of
                 SA_cons -> Cons
@@ -1367,7 +1403,8 @@ ana_Extension res (name',asp') = do
            return gctx1 { devGraph = insEdgeNub (n', n1, DGLink
                               { dgl_morphism = incl'
                               , dgl_type = GlobalThm LeftOpen anno2 LeftOpen
-                              , dgl_origin = DGExtension }) dg1
+                              , dgl_origin = DGExtension
+			      , dgl_id = defaultEdgeID }) dg1
                          , morMap = Map.insert (ml+1) (toG_morphism incl')
                                     mrMapl }
      _ -> return gctx1

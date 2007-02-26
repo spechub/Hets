@@ -54,10 +54,28 @@ import Control.Monad (foldM)
 import Control.Exception
 import Data.Char (toLower)
 
+import Data.List(sort)
+
 getNewNode :: Tree.Gr a b -> Node
 getNewNode g = case newNodes 1 g of
                [n] -> n
                _ -> error "Static.DevGraph.getNewNode"
+
+getNewEdgeIDs :: Int -> DGraph -> [Int]
+getNewEdgeIDs count g = getAvailableID count 0 sortedIDs
+			where
+			ids = map (\(_, _, l) -> dgl_id l) $ labEdges g
+			sortedIDs = sort ids
+			getAvailableID :: Int -> Int -> [Int] -> [Int]
+			getAvailableID 0 _ _ = []
+			getAvailableID c n [] = take c [n..]
+			getAvailableID c n (x:xs) | n==x = getAvailableID c (n+1) xs
+						  | otherwise = n:(getAvailableID (c-1) (n+1) (x:xs))
+
+getNewEdgeID :: DGraph -> Int
+getNewEdgeID g = case getNewEdgeIDs 1 g of
+		 [n] -> n
+		 _ -> error "Static.DevGraph.getNewEdgeID"
 
 -- * Types for structured specification analysis
 
@@ -175,8 +193,18 @@ data DGLinkLab = DGLink {
               dgl_morphism :: GMorphism,  -- signature morphism of link
               dgl_type :: DGLinkType,     -- type: local, global, def, thm?
               -- dgl_depends :: [Int],
-              dgl_origin :: DGOrigin }    -- origin in input language
-              deriving (Show, Eq)
+              dgl_origin :: DGOrigin,  -- origin in input language
+	      dgl_id :: !Int }   
+              deriving (Show)
+
+-- | to create a default ID which has to be changed by inserting of a certain edge.
+defaultEdgeID :: Int
+defaultEdgeID = -1
+
+instance Eq DGLinkLab where
+  l1 == l2 = (dgl_morphism l1 == dgl_morphism l2) 
+	     && (dgl_type l1 == dgl_type l2) 
+	     && (dgl_origin l1 == dgl_origin l2)
 
 instance Pretty DGLinkLab where
   pretty l = fsep [ pretty (dgl_morphism l)
@@ -194,7 +222,8 @@ eqLEdgeDGLinkLab (m1,n1,l1) (m2,n2,l2) =
    m1==m2 && n1==n2 && eqDGLinkLab l1 l2
 
 roughElem :: LEdge DGLinkLab -> [LEdge DGLinkLab] -> Bool
-roughElem x = any (`eqLEdgeDGLinkLab` x)
+--roughElem x = any (`eqLEdgeDGLinkLab` x)
+roughElem (_, _, label) = any (\(_, _, l) -> dgl_id l == dgl_id label)
 
 data DGChange = InsertNode (LNode DGNodeLab)
               | DeleteNode (LNode DGNodeLab)
@@ -501,7 +530,8 @@ nodeSigUnion lgraph dg nodeSigs orig =
                      return $ insEdge (n, node, DGLink
                          {dgl_morphism = incl,
                           dgl_type = GlobalDef,
-                          dgl_origin = orig }) dgv
+                          dgl_origin = orig, 
+			  dgl_id = getNewEdgeID dgv}) dgv
      dg'' <- foldl inslink (return dg') nodeSigs
      return (NodeSig node sigUnion, dg'')
 
@@ -524,7 +554,8 @@ extendDGraph dg (NodeSig n _) morph orig = case cod Grothendieck morph of
                                dgn_cons_status = LeftOpen}
         linkContents = DGLink {dgl_morphism = morph,
                                dgl_type = GlobalDef, -- TODO: other type
-                               dgl_origin = orig}
+                               dgl_origin = orig,
+			       dgl_id = getNewEdgeID dg'}
         node = getNewNode dg
         dg' = insNode (node, nodeContents) dg
         dg'' = insEdge (n, node, linkContents) dg'
@@ -549,7 +580,8 @@ extendDGraphRev dg (NodeSig n _) morph orig = case dom Grothendieck morph of
                                dgn_cons_status = LeftOpen}
         linkContents = DGLink {dgl_morphism = morph,
                                dgl_type = GlobalDef, -- TODO: other type
-                               dgl_origin = orig}
+                               dgl_origin = orig,
+			       dgl_id = getNewEdgeID dg'}
         node = getNewNode dg
         dg' = insNode (node, nodeContents) dg
         dg'' = insEdge (node, n, linkContents) dg'

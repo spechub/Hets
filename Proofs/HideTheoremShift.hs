@@ -136,7 +136,8 @@ makeProvenHidingThmEdge proofBasisEdges ledge@(src,tgt,edgeLab) =
    DGLink {dgl_morphism = morphism,
            dgl_type = (HidingThm hidingMorphism
                        (Proven (HideTheoremShift ledge) proofBasisEdges)),
-           dgl_origin = DGProof}
+           dgl_origin = DGProof,
+	   dgl_id = defaultEdgeID}
   )
   where
     morphism = dgl_morphism edgeLab
@@ -153,7 +154,7 @@ findProofBaseForHideTheoremShift dgraph (ledge@(src,tgt,edgelab))
         case pb of
           Nothing -> return []
           Just proofBasis -> do let fstPath = fst proofBasis
-                                    sndPath = snd proofBasis
+				    sndPath = snd proofBasis
                                 return [createEdgeForPath fstPath,
                                         createEdgeForPath sndPath]
 
@@ -297,7 +298,8 @@ createEdgeForPath path =
                       DGLink {dgl_morphism = morphism,
                               dgl_type = (GlobalThm LeftOpen None
                                           LeftOpen),
-                              dgl_origin = DGProof}
+                              dgl_origin = DGProof,
+			      dgl_id = defaultEdgeID}
                      )
     _ -> error "createEdgeForPath"
 

@@ -73,7 +73,8 @@ compositionCreatingEdgesAux dgraph (path:paths) (rules,changes) =
                DGLink {dgl_morphism = morph,
                        dgl_type = (GlobalThm (Proven (Composition path) path))
                        cons consStatus,
-                       dgl_origin = DGProof}
+                       dgl_origin = DGProof,
+		       dgl_id = defaultEdgeID}
               )
     (newDGraph,newChanges) = deleteRedundantEdges dgraph newEdge
     (newDGraph2, newChanges2) = updateWithOneChange (InsertEdge newEdge) newDGraph (newChanges++changes)
@@ -183,7 +184,8 @@ compositionForOneEdgeAux edge@(src,tgt,labl) (path:paths)
                DGLink {dgl_morphism = dgl_morphism labl,
                        dgl_type = (GlobalThm (Proven (Composition path) path))
                        cons consStatus,
-                       dgl_origin = DGProof}
+                       dgl_origin = DGProof,
+		       dgl_id = defaultEdgeID}
               )
 
 {- | checks if the morphism of the given path is transportable. This

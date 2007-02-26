@@ -724,7 +724,7 @@ printEdgeType x =
 printEdgeOrigin :: GraphGoals -> IO ()
 printEdgeOrigin x =
   case x of
-     GraphEdge(_, _, (DGLink _ _ tOrigin)) ->
+     GraphEdge(_, _, (DGLink _ _ tOrigin _)) ->
           putStr $ show tOrigin
      _ -> putStr "No origin found !"
 
@@ -733,7 +733,7 @@ printEdgeOrigin x =
 printEdgeHomogeneous :: GraphGoals -> IO()
 printEdgeHomogeneous x =
   case x of
-     GraphEdge (_, _ ,(DGLink tmorph _ _)) ->
+     GraphEdge (_, _ ,(DGLink tmorph _ _ _)) ->
             if (isHomogeneous tmorph) then putStr "True"
                                       else putStr "False"
      _        -> putStr "Not an edge !"

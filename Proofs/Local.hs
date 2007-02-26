@@ -100,7 +100,8 @@ locDecompAux libEnv ln dgraph (rules,changes)
                        dgl_type =
                          (LocalThm (Proven (LocDecomp ledge) proofBasis)
                           conservativity conservStatus),
-                       dgl_origin = DGProof}
+                       dgl_origin = DGProof,
+		       dgl_id = defaultEdgeID}
                )
     (newGraph, newChanges) = 
         updateWithChanges [DeleteEdge ledge, InsertEdge newEdge] dgraph changes
@@ -222,7 +223,8 @@ localInferenceAux libEnv ln dgraph (rules, changes)
                        dgl_type =
                          (LocalThm (Proven (LocInference ledge) [])
                           conservativity conservStatus),
-                       dgl_origin = DGProof}
+                       dgl_origin = DGProof,
+		       dgl_id = defaultEdgeID}
     newEdge = (src, tgt, newLab)
     newRules = LocInference ledge : rules
     (oldNode, oldContents) = labNode' (safeContext "localInferenceAux" dgraph tgt)

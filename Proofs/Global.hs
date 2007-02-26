@@ -127,7 +127,8 @@ globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes [] =
                           dgl_type =
                             (GlobalThm (Proven (GlobDecomp edge) proofBasis)
                              conservativity conservStatus),
-                          dgl_origin = DGProof}
+                          dgl_origin = DGProof,
+			  dgl_id = defaultEdgeID}
                   )
 -- for each path an unproven localThm edge is inserted
 globDecompForOneEdgeAux dgraph edge@(_,target,_) changes
@@ -153,20 +154,23 @@ globDecompForOneEdgeAux dgraph edge@(_,target,_) changes
         target,
         DGLink {dgl_morphism = morphism,
                 dgl_type = HidingThm (dgl_morphism $ lbl) LeftOpen,
-                dgl_origin = DGProof})
+                dgl_origin = DGProof,
+		dgl_id = defaultEdgeID})
     globalEdge = (node,
                   target,
                   DGLink {dgl_morphism = morphism,
                           dgl_type = (GlobalThm LeftOpen
                                       None LeftOpen),
-                          dgl_origin = DGProof}
+                          dgl_origin = DGProof,
+			  dgl_id = defaultEdgeID}
                  )
     localEdge = (node,
                  target,
                  DGLink {dgl_morphism = morphism,
                          dgl_type = (LocalThm LeftOpen
                                      None LeftOpen),
-                         dgl_origin = DGProof}
+                         dgl_origin = DGProof,
+			 dgl_id = defaultEdgeID}
                )
     (newGraph, newChanges) = updateWithOneChange (InsertEdge newEdge) dgraph changes
     -- newGraph = insEdge newEdge dgraph
@@ -239,7 +243,8 @@ globSubsumeAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
                        dgl_type = (GlobalThm (Proven (GlobSubsumption ledge)
                                               proofBasis)
                                    conservativity conservStatus),
-                       dgl_origin = DGProof}
+                       dgl_origin = DGProof,
+		       dgl_id = defaultEdgeID}
                )
     newRules = (GlobSubsumption ledge):rules
 
