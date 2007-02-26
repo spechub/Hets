@@ -3,7 +3,7 @@
 %prec({b} < {c})%
 %left_assoc(a, b, c)%
 %right_assoc(d)%
-*** Error 3.16, prec_anno conflict: c < a
+*** Error 3.14, prec_anno conflict: c < a
 a,b
 b,c 'a'
 *** Error 5.14, identifier has already other associativity 'b'

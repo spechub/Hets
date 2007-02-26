@@ -1,13 +1,15 @@
 %% many legal annotations for testing purposes
-%{group comment 
-%{
+%{group comment
+  %{
   over many lines
-%% } % }%
+  %% } %
+}%
 %%line comment starting immidiately after %%containing %{ }% , ending in %%
 %(one_line_label)%
-%(multi 
-line
-label)%
+%(multi
+  line
+  label
+)%
 %prec({a__, __**__} < {p, 'e', 6})%
 %prec({a__, 0} <> {__k_h__, .f'____})%
 %% one word annotes
