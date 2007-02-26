@@ -693,7 +693,7 @@ annotations. -}
 codeOut :: GlobalAnnos -> PrecMap -> Maybe Display_format
         -> Map.Map Id [Token] -> Doc -> Doc
 codeOut ga precs d m = foldDoc idRecord
-    { foldAnnoDoc = \ _ -> small . codeOutAnno d m
+    { foldAnnoDoc = \ _ -> small . codeOutAnno m
     , foldIdDoc = \ _ lk -> codeOutId lk m
     , foldIdApplDoc = \ o _ _ -> codeOutAppl ga precs d m o
     , foldChangeGlobalAnnos = \ (ChangeGlobalAnnos fg e) _ _ ->
@@ -743,19 +743,27 @@ annoLparen w = percent <> keyword w <> lparen
 revDropSpaces :: String -> String
 revDropSpaces = reverse . dropWhile isSpace
 
-strip :: String -> String
-strip = revDropSpaces . revDropSpaces
-
-wrapLines :: TextKind -> Maybe Display_format -> Doc -> [String] -> Doc -> Doc
-wrapLines k d a l b = case map (Text k .
-          maybe id (const strip) d) l of
+wrapLines :: TextKind -> Doc -> [String] -> Doc -> Doc
+wrapLines k a l b = let p = (null (head l), null (last l)) in
+  case map (Text k) l of
     [] -> a <> b
     [x] -> hcat [a, x, b]
-    ds@(x : r) -> case d of
-        Nothing -> vcat $ fcat [a, x] : init r ++ [fcat [last r, b]]
-        Just _ -> a <+> vcat ds <> b
+    [x, y] -> case p of
+        (True, c) -> a $+$ if c then b else y <> b
+        (False, True) -> a <> x $+$ b
+        _ -> a <> (x $+$ y <> b)
+    x : r -> let
+      m = init r
+      y = last r
+      xm = x : m
+      am = a : m
+      yb = [y <> b]
+      in case p of
+        (True, c) -> vcat $ am ++ if c then [b] else yb
+        (False, True) -> a <> vcat xm $+$ b
+        _ -> a <> vcat (xm ++ yb)
 
-wrapAnnoLines :: Maybe Display_format -> Doc -> [String] -> Doc -> Doc
+wrapAnnoLines :: Doc -> [String] -> Doc -> Doc
 wrapAnnoLines = wrapLines Comment
 
 percent :: Doc
@@ -770,17 +778,17 @@ hCommaT m = hsep . cCommaT m
 fCommaT :: Map.Map Id [Token] -> [Id] -> Doc
 fCommaT m = fsep . cCommaT m
 
-codeOutAnno :: Maybe Display_format -> Map.Map Id [Token] -> Annotation -> Doc
-codeOutAnno d m a = case a of
+codeOutAnno :: Map.Map Id [Token] -> Annotation -> Doc
+codeOutAnno m a = case a of
     Unparsed_anno aw at _ -> case at of
         Line_anno s -> (case aw of
             Annote_word w -> annoLine w
             Comment_start -> symbol percents)
                              <> commentText (revDropSpaces $ reverse s)
         Group_anno l -> case aw of
-            Annote_word w -> wrapAnnoLines d (annoLparen w) l annoRparen
-            Comment_start -> wrapAnnoLines d (percent <> lbrace) l
-                             (rbrace <> percent)
+            Annote_word w -> wrapAnnoLines (annoLparen w) l annoRparen
+            Comment_start -> wrapAnnoLines (percent <> lbrace) l
+                             $ rbrace <> percent
     Display_anno i ds _ -> annoLparen displayS <> fsep
         ( fcat (codeOrigId IdAppl m i) :
           map ( \ (df, s) -> percent <> commentText (lookupDisplayFormat df)
@@ -804,11 +812,10 @@ codeOutAnno d m a = case a of
                           ARight -> right_assocS)
                         <> fCommaT m l <> annoRparen
     Label l _ -> wrapLines (case l of
-                  [x] -> let r = strip x in
-                         if isLegalLabel r
+                  [x] -> if isLegalLabel x
                             then HetsLabel
                             else Comment
-                  _ -> Comment) d (percent <> lparen) l annoRparen
+                  _ -> Comment) (percent <> lparen) l annoRparen
     Semantic_anno sa _ -> annoLine $ lookupSemanticAnno sa
 
 isLegalLabel :: String -> Bool
@@ -881,15 +888,25 @@ codeOutAppl ga precs md m origDoc args = case origDoc of
                             Just nts -> (nts, [], Native)
              ((_, rArgs), fArgs) = mapAccumL ( \ (b, ac) t ->
                if isPlace t then case ac of
-                 hd : tl -> ((b, tl), hd)
-                 _ -> error "addPlainArg"
-                 else ((True, ac),
+                 hd : tl -> ((b, tl), (False, hd))
+                 _ -> error "Common.Doc.codeOutAppl1"
+                 else ((True, ac), (True,
                        let s = tokStr t in
-                       if b then Text cFun s else makeIdApplLabel cFun s i))
+                       if b then Text cFun s else makeIdApplLabel cFun s i)))
                                                   (False, parArgs) fts
-            in fsep $ fArgs ++ (if null ncs then [] else [codeCompIds m cs])
-                                                 ++ rArgs
-  _ -> error "Common.Doc.codeOutAppl"
+            in fsep $ hgroup $
+               (if null ncs then fArgs
+                else if null fArgs then error "Common.Doc.codeOutAppl2"
+                     else init fArgs ++
+                              [(True, snd (last fArgs) <> codeCompIds m cs)])
+               ++ map ( \ d -> (False, d)) rArgs
+  _ -> error "Common.Doc.codeOutAppl2"
+
+hgroup :: [(Bool, Doc)] -> [Doc]
+hgroup l = case l of
+  (True, d1) : (False, d2) : r -> hsep [d1, d2] : hgroup r
+  (_, d) : r -> d : hgroup r
+  [] -> []
 
 makeIdApplLabel :: TextKind -> String -> Id -> Doc
 makeIdApplLabel k s i = Text (IdLabel IdAppl k i) s
