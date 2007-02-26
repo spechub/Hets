@@ -96,7 +96,9 @@ latex_txt (PStr s1) cont
                                           then (showChar '}',
                                                 showString startAnno)
                                           else (id,id)
-                          return (eAn. (if onlyTabs state then
+                          return (eAn. (if indentTabsWritten state
+                                           + setTabsThisLine state > 12 ||
+                                           onlyTabs state then
                                            id else showString s1) . sAn. s2)
     | setTabWSp
       `isPrefixOf`
