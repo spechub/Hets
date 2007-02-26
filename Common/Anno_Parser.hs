@@ -57,7 +57,8 @@ dec :: Pos -> Pos
 dec p = Id.incSourceColumn p (-2)
 
 mylines :: String -> [String]
-mylines s = case lines s ++ if last s == '\n' then [""] else [] of
+mylines s = case lines s ++
+    if drop (length s - 1) s == "\n" then [""] else [] of
   [] -> []
   l@(x : _) ->
     let strip r0 = let r = unwords $ words r0 in
