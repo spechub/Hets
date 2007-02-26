@@ -171,14 +171,14 @@ findProofBaseForHideTheoremShift dgraph (ledge@(src,tgt,edgelab))
         = filterPairsByConservativityOfSecondPath pathPairsFilteredByMorphism
     -- advoiding duplicate to be selected proofbasis. 
     pathPairsFilteredByProveStatus
-        = filterPairsByProveStatus pathPairsFilteredByConservativity
+        = filterPairsByGlobalProveStatus pathPairsFilteredByConservativity
 
 -- advoiding duplicate to be selected proofbasis.
-filterPairsByProveStatus :: [([LEdge DGLinkLab], [LEdge DGLinkLab])] -> [([LEdge DGLinkLab], [LEdge DGLinkLab])]
-filterPairsByProveStatus = filter bothAreProven
+filterPairsByGlobalProveStatus :: [([LEdge DGLinkLab], [LEdge DGLinkLab])] -> [([LEdge DGLinkLab], [LEdge DGLinkLab])]
+filterPairsByGlobalProveStatus = filter bothAreProven
               where
 	      bothAreProven (pb1,pb2) = (allAreProven pb1) && (allAreProven pb2)
-	      allAreProven = all $ liftE isProven
+	      allAreProven = all $ liftE (\l -> (isProven l) && (isGlobalEdge l))
 
 --filterPairsByProveStatus [] = = []
 --filterPairsByProveStatus (pb@(pb1, pb2):xs) = if((hasUnproven pb1)||(hasUnproven pb2)) then filterPairsByProveStatus xs
