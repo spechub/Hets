@@ -41,16 +41,34 @@ charOrEof c = (char c >> return ()) <|> eof
 newlineOrEof :: GenParser Char st ()
 newlineOrEof = lookAhead $ charOrEof '\n'
 
+mkLineAnno :: String -> Annote_text
+mkLineAnno s = let r = unwords $ words s in Line_anno $
+  (if not (null r) && take 1 s == " " then " " else "") ++ r
+
 commentLine :: GenParser Char st Annotation
 commentLine = do
     p <- getPos
     try $ string percents
     line <- manyTill anyChar newlineOrEof
     q <- getPos
-    return $ Unparsed_anno Comment_start (Line_anno line) (Range [p, q])
+    return $ Unparsed_anno Comment_start (mkLineAnno line) (Range [p, q])
 
 dec :: Pos -> Pos
 dec p = Id.incSourceColumn p (-2)
+
+mylines :: String -> [String]
+mylines s = case lines s ++ if last s == '\n' then [""] else [] of
+  [] -> []
+  l@(x : _) ->
+    let strip r0 = let r = unwords $ words r0 in
+                   (if not (null r) && take 1 x == " "
+                   then " " else "") ++ r
+        e0 = last l
+        e1 = strip e0
+    in map strip (init l)
+       ++ [e1 ++ if not (null e1) && e1 /= " " &&
+                    drop (length e0 - 1) e0 == " "
+                 then " " else ""]
 
 commentGroup :: GenParser Char st Annotation
 commentGroup = do
@@ -58,7 +76,7 @@ commentGroup = do
     text_lines <- plainBlock "%{" "}%"
     q <- getPos
     return $ Unparsed_anno Comment_start
-               (Group_anno $ lines text_lines) (Range [p, dec q])
+               (Group_anno $ mylines text_lines) (Range [p, dec q])
 
 annote :: GenParser Char st Annotation
 annote = anno_label <|> do
@@ -78,7 +96,7 @@ anno_label = do
     p <- getPos
     label_lines <- plainBlock "%(" ")%"
     q <- getPos
-    return $ Label (lines label_lines) $ Range [p, dec q]
+    return $ Label (mylines label_lines) $ Range [p, dec q]
 
 anno_ident :: GenParser Char st Annote_word
 anno_ident = fmap Annote_word $ string percentS >> casl_words
@@ -87,14 +105,14 @@ annote_group :: Pos -> Annote_word -> GenParser Char st Annotation
 annote_group p s = do
     annote_lines <- plainBlock "(" ")%"
     q <- getPos
-    return $ Unparsed_anno s (Group_anno $ lines annote_lines)
+    return $ Unparsed_anno s (Group_anno $ mylines annote_lines)
                $ Range [p, dec q]
 
 annote_line :: Pos -> Annote_word -> GenParser Char st Annotation
 annote_line p s = do
     line <- manyTill anyChar newlineOrEof
     q <- getPos
-    return $ Unparsed_anno s (Line_anno line) $ Range [p, q]
+    return $ Unparsed_anno s (mkLineAnno line) $ Range [p, q]
 
 annotationL :: GenParser Char st Annotation
 annotationL = comment <|> annote <?> "\"%\""
