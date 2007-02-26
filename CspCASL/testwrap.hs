@@ -24,17 +24,17 @@ import Common.AnnoState (emptyAnnos)
 import Common.DocUtils
 
 import CspCASL.Parse_CspCASL
-import CspCASL.Print_CspCASL
+import CspCASL.Print_CspCASL()
 
 prettyCspCASLFromFile :: FilePath -> IO ()
 prettyCspCASLFromFile fname
   = do input <- readFile fname
-       putStr ("Input:\n" ++ input ++ "Parse tree:\n")
+       putStr ("Input:\n" ++ input ++ "Pretty print:\n")
        case (runParser basicCspCaslSpec (emptyAnnos ()) fname input) of
            Left err -> do putStr "parse error at "
                           print err
-           Right x  -> do print x
-                          putStrLn $ showDoc x ""
+           Right x  -> do putStrLn $ showDoc x ""
+                          -- print x -- print parse tree
 
 -- parseFiles: Given a list of filenames, parse each file in turn.
 
