@@ -2,7 +2,7 @@
 library CASL_DL_Datatypes version 0.1
 
 %date 09.02.2006
-%author Klaus Lüttich <luettich@tzi.de>
+%authors Klaus Lüttich <luettich@tzi.de>
 
 %number __@@__
 %string emptyString, __:@:__
@@ -234,5 +234,6 @@ end
 spec DL_Literal = StringLiteral 
 and IntegerLiteral 
 and BooleanLiteral
+then free type DATA ::= sorts string,integer,boolean
 end
 
