@@ -17,7 +17,7 @@ Parser for abstract syntax for propositional logic
 
 module Propositional.Parse_AS_Basic 
     (
-     module Propositional.Parse_AS_Basic
+     basicSpec                      -- Parser for basic specs
     ) 
     where
 

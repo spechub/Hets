@@ -77,6 +77,31 @@ instance Sentences Propositional AS_BASIC.FORMULA ()
 -- | Syntax of Propositional logic
 instance Syntax Propositional AS_BASIC.BASIC_SPEC 
     AS_BASIC.SYMB_ITEMS AS_BASIC.SYMB_MAP_ITEMS where
-         parse_basic_spec _ = Just Parse_AS.basicSpec
+         parse_basic_spec Propositional = Just Parse_AS.basicSpec
          parse_symb_items _ = Nothing
          parse_symb_map_items _ = Nothing
+
+-- | Instance of Logic for propositional logc
+instance Logic Propositional 
+    ()                                 -- Sublogics
+    AS_BASIC.BASIC_SPEC                -- basic_spec
+    AS_BASIC.FORMULA                   -- sentence
+    AS_BASIC.SYMB_ITEMS                -- symb_items
+    AS_BASIC.SYMB_MAP_ITEMS            -- symb_map_items
+    Sign.Sign                          -- sign
+    Morphism.Morphism                  -- morphism
+    Symbol.Symbol                      -- symbol
+    ()                                 -- raw_symbol
+    ()                                 -- proof_tree
+
+-- | Static Analysis for propositional logic
+instance StaticAnalysis Propositional
+    AS_BASIC.BASIC_SPEC                -- basic_spec
+    AS_BASIC.FORMULA                   -- sentence
+    ()                                 -- proff_tree
+    AS_BASIC.SYMB_ITEMS                -- symb_items
+    AS_BASIC.SYMB_MAP_ITEMS            -- symb_map_items
+    Sign.Sign                          -- sign
+    Morphism.Morphism                  -- morphism
+    Symbol.Symbol                      -- symbol
+    ()                                 -- raw_symbol

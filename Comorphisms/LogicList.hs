@@ -67,7 +67,8 @@ logicList = [Logic CASL, Logic HasCASL,
              Logic CoCASL, Logic Modal, Logic CspCASL, -- Logic COL,
              Logic OWL_DL, Logic CASL_DL, Logic ConstraintCASL, 
 #endif
-             Logic Isabelle,Logic SoftFOL]
+             Logic Isabelle,Logic SoftFOL,
+            Logic Propositional]
 
 addLogicName :: AnyLogic -> (String,AnyLogic)
 addLogicName l@(Logic lid) = (language_name lid, l)

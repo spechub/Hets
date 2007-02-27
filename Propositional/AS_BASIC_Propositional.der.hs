@@ -116,6 +116,8 @@ instance Pretty BASIC_ITEMS where
     pretty = printBasicItems
 instance Pretty SYMB_OR_MAP where 
     pretty = printSymbOrMap
+instance Pretty PRED_ITEM where
+    pretty = printPredItem
 
 -- Pretty printing for formulas
 printFormula :: FORMULA -> Doc 
@@ -142,11 +144,15 @@ sepByArbitrary _ (x:[]) = x
 sepByArbitrary separator (x:xs) = x <> separator 
                                   <> (sepByArbitrary separator xs)
 
+printPredItem :: PRED_ITEM -> Doc
+printPredItem (Pred_item xs _) = hsep $ map pretty xs
+
 printBasicSpec :: BASIC_SPEC -> Doc
-printBasicSpec (Basic_spec xs) = hsep $ map (pretty) xs
+printBasicSpec (Basic_spec xs) = hsep $ map pretty xs
 
 printBasicItems :: BASIC_ITEMS -> Doc
 printBasicItems (Axiom_items xs) = hsep $ map pretty xs
+printBasicItems (Pred_decl x) = pretty x
 
 printSymbol :: SYMB -> Doc
 printSymbol (Symb_id sym) = pretty sym
