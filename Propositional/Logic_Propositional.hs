@@ -36,7 +36,7 @@ import Propositional.Morphism as Morphism
 import qualified Propositional.AS_BASIC_Propositional as AS_BASIC
 import qualified Propositional.ATC_Propositional()
 import qualified Propositional.Symbol as Symbol
-import Propositional.Parse_AS_Basic 
+import qualified Propositional.Parse_AS_Basic as Parse_AS
 
 -- | Lid for propositional logic
 data Propositional = Propositional deriving Show --lid
@@ -77,6 +77,6 @@ instance Sentences Propositional AS_BASIC.FORMULA ()
 -- | Syntax of Propositional logic
 instance Syntax Propositional AS_BASIC.BASIC_SPEC 
     AS_BASIC.SYMB_ITEMS AS_BASIC.SYMB_MAP_ITEMS where
-         parse_basic_spec _ = Nothing
+         parse_basic_spec _ = Just Parse_AS.basicSpec
          parse_symb_items _ = Nothing
          parse_symb_map_items _ = Nothing

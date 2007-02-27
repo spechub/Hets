@@ -182,7 +182,8 @@ withinS,
   ifS,
   falseS,
   elseS,
-  defS :: String
+  defS,
+  propS :: String
 
 defS  = "def"
 elseS  = "else"
@@ -234,6 +235,7 @@ versionS  = "version"
 viewS  = "view"
 withS  = "with"
 withinS  = "within"
+propS = "prop"
 
 refinementS, refinedS, behaviourallyS :: String
 refinementS = "refinement"

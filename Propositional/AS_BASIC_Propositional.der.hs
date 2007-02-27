@@ -20,7 +20,6 @@ Definition of abstract syntax for propositional logic
 module Propositional.AS_BASIC_Propositional 
     (
       FORMULA (..)             -- datatype for Propositional Formulas
-    , pretty                   -- pretty printing
     , is_True_atom             -- True?
     , is_False_atom            -- False?
     , BASIC_ITEMS (..)         -- Items of a Basic Spec
@@ -29,6 +28,7 @@ module Propositional.AS_BASIC_Propositional
     , SYMB (..)                -- Symbols
     , SYMB_MAP_ITEMS (..)      -- Symbol map
     , SYMB_OR_MAP (..)         -- Symbol or symbol map
+    , PRED_ITEM (..)           -- Predicates
     ) where
 
 import Common.Id as Id
@@ -39,13 +39,18 @@ import Common.AS_Annotation as AS_Anno
 -- DrIFT command
 {-! global: UpPos !-}
 
+-- | predicates = propotions
+data PRED_ITEM = Pred_item [Id.Token] Id.Range
+               deriving Show
+
 data BASIC_SPEC = Basic_spec [AS_Anno.Annoted (BASIC_ITEMS)]
                   deriving Show
 
 data BASIC_ITEMS = 
-                 Axiom_items [AS_Anno.Annoted (FORMULA)] Id.Range
-                 -- pos: dots
-                 deriving Show
+    Pred_decl PRED_ITEM
+    | Axiom_items [AS_Anno.Annoted (FORMULA)]
+    -- pos: dots
+    deriving Show
 
 -- | Datatype for propositional formulas
 data FORMULA = Negation FORMULA Id.Range
@@ -54,7 +59,7 @@ data FORMULA = Negation FORMULA Id.Range
              -- pos: "/\"s
              | Disjunction [FORMULA] Id.Range
              -- pos: "\/"s
-             | Implication FORMULA FORMULA Bool Id.Range
+             | Implication FORMULA FORMULA Id.Range
              -- pos: "=>"
              | Equivalence FORMULA FORMULA Id.Range
              -- pos: "<=>"
@@ -62,7 +67,7 @@ data FORMULA = Negation FORMULA Id.Range
              -- pos: "True"
              | False_atom Id.Range
              -- pos: "False
-             | Predication Id.Id
+             | Predication Id.Token
              -- pos: Propositional Identifiers
                deriving (Show, Eq, Ord)
 
@@ -82,7 +87,7 @@ data SYMB_ITEMS = Symb_items [SYMB] Id.Range
                   -- pos: SYMB_KIND, commas
                   deriving (Show, Eq)
 
-data SYMB = Symb_id Id.Id
+data SYMB = Symb_id Id.Token
             -- pos: colon
             deriving (Show, Eq)
 
@@ -122,13 +127,13 @@ printFormula (Conjunction xs _) = parens $
 printFormula (Disjunction xs _) = parens $
                                   sepByArbitrary orDoc  
                                   $ map printFormula xs
-printFormula (Implication x y _ _) = parens $ printFormula x <> 
+printFormula (Implication x y _) = parens $ printFormula x <> 
                                    implies <> printFormula y
 printFormula (Equivalence x y _) = parens $ printFormula x <> 
                                    equiv <> printFormula y
 printFormula (True_atom  _) = text "True"
 printFormula (False_atom _) = text "False"
-printFormula (Predication x) = idDoc x
+printFormula (Predication x) = pretty x
 
 -- Extended version of vcat
 sepByArbitrary :: Doc -> [Doc] -> Doc
@@ -141,10 +146,10 @@ printBasicSpec :: BASIC_SPEC -> Doc
 printBasicSpec (Basic_spec xs) = hsep $ map (pretty) xs
 
 printBasicItems :: BASIC_ITEMS -> Doc
-printBasicItems (Axiom_items xs _) = hsep $ map pretty xs
+printBasicItems (Axiom_items xs) = hsep $ map pretty xs
 
 printSymbol :: SYMB -> Doc
-printSymbol (Symb_id sym) = idDoc sym
+printSymbol (Symb_id sym) = pretty sym
 
 printSymbItems :: SYMB_ITEMS -> Doc
 printSymbItems (Symb_items xs _) = hsep $ map pretty xs
