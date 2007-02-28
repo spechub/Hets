@@ -790,7 +790,8 @@ initialize_installer:
 	 fi
 	@sed "s/^\(HETS_VERSION=\).*/\1`cat version_nr`/" Makefile.installer > Makefile.inst  ;\
 	 mv Makefile.inst $(INSTALLER_DIR)/Makefile ; \
-	 cp utils/getAllHets.sh $(INSTALLER_DIR)
+	 cp utils/getAllHets.sh $(INSTALLER_DIR) ;\
+	 cp utils/getDailyHets-installer.sh $(INSTALLER_DIR)\getDailyHets.sh
 	@echo =========================================================================
 	@echo If you have not logged in \'cvs.haskell.org\' and \'cvs-agbkb.informatik.uni-bremen.de\'
 	@echo "then please first login:"

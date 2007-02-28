@@ -75,7 +75,8 @@ hetcats-make : tools-checkout daily-hets-download
 
 daily-hets-download :
 	@sh getAllHets.sh $(HETS_VERSION)  ;\
-	rm getAllHets.sh   ;\
+	rm getAllHets.sh  ;\
+	mv getDailyHets.sh $(IZPACK_SAMPLE)  ;\
 	mv $(HOME)/tmp/hets_installer/hets/* $(IZPACK_SAMPLE)/hets/
 
 tools-checkout :
