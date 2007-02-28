@@ -64,7 +64,7 @@ getAltTokenList newPlace over i@(Id ms cs qs) thy = let
             then over + 1 else over
     newFs = if null fs || over2 < 2 then fs else
                 init fs ++ [mkSimpleId $ let o1 = over2 - 1 in
-                    tokStr (last fs) ++ 
+                    tokStr (last fs) ++
                     if over2 < 4 then replicate o1 '\'' else '_' : show o1]
     in getTokenList newPlace $ Id (newFs ++ ps) cs qs
 
@@ -114,15 +114,15 @@ quote l = case l of
 showIsaT1 :: (String -> String) -> Id -> String
 showIsaT1 tr ide = let
     str = tr $ show ide
-    in if null str then error "showIsaT1" else if 
-       elem (last str) "_" then str ++ "X" else str 
+    in if null str then error "showIsaT1" else if
+       elem (last str) "_" then str ++ "X" else str
 
 showIsaConstT :: Id -> BaseSig -> String
 showIsaConstT ide thy = showIsaT1 (transConstStringT thy) ide
 
 -- also pass number of arguments
 mkIsaConstT :: Bool -> GlobalAnnos -> Int -> Id -> BaseSig -> VName
-mkIsaConstT prd ga n ide = mkIsaConstVName 1 showIsaConstT prd ga n ide 
+mkIsaConstT prd ga n ide = mkIsaConstVName 1 showIsaConstT prd ga n ide
 
 mkIsaConstVName :: Int -> (Id -> BaseSig -> String) -> Bool -> GlobalAnnos
                 -> Int -> Id -> BaseSig -> VName
@@ -142,13 +142,13 @@ mkIsaConstIT prd ga n ide i =
     mkIsaConstVName i ( \ ide' -> showIsaConstIT ide' i) prd ga n ide
 
 getConstIsaToks :: Id -> Int -> BaseSig -> Set.Set String
-getConstIsaToks ide i thy = -- some stupid strings could be filtered out
-   foldr (\ Token { tokStr = s } -> Set.insert s)
+getConstIsaToks ide i thy =
+   foldr (Set.insert . tokStr)
              Set.empty $ getAltTokenList "" i ide thy
 
 transIsaStringT :: Map.Map BaseSig (Set.Set String) -> BaseSig
                 -> String -> String
-transIsaStringT m i s = let t = transString s in
+transIsaStringT m i s = let t = transStringAux False s in
   if Set.member t $ maybe (error "Isabelle.transIsaStringT") id
          $ Map.lookup i m
   then transIsaStringT m i $ "_" ++ t else t
@@ -159,14 +159,20 @@ transConstStringT = transIsaStringT $ preConsts isaPrelude
 transTypeStringT :: BaseSig -> String -> String
 transTypeStringT  = transIsaStringT $ preTypes isaPrelude
 
--- | check for legal alphanumeric isabelle characters
+-- | check for legal alphanumeric Isabelle characters
 isIsaChar :: Char -> Bool
 isIsaChar c = isAlphaNum c && isAscii c || elem c "_'"
 
+-- | translate to a valid Isabelle string possibly non-injectively
 transString :: String -> String
-transString str = let
+transString = transStringAux True
+
+-- | if true don't try to be injective
+transStringAux :: Bool -> String -> String
+transStringAux b str = let
     x = 'X'
-    replaceChar1 d | d == x = [x, x]  -- code out existing X!
+    replaceChar1 d | not b && d == x = [x, x]  -- code out existing X!
+                   | b && d == ' ' = "_"
                    | isIsaChar d = [d]
                    | otherwise = x : replaceChar d
     in case str of
