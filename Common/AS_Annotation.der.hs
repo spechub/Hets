@@ -23,7 +23,7 @@ import Common.Id
 data Annote_word = Annote_word String | Comment_start deriving (Show, Eq, Ord)
 
 -- | line or group for 'Unparsed_anno'
-data Annote_text = Line_anno String | Group_anno [String] 
+data Annote_text = Line_anno String | Group_anno [String]
     deriving (Show, Eq, Ord)
 
 -- | formats to be displayed (may be extended in the future).
@@ -203,9 +203,7 @@ emptyAnno = addLeftAnno []
 
 -- | get the label following (or to the right of) an 'item'
 getRLabel :: Annoted a -> String
-getRLabel a = let ls = filter isLabel (r_annos a) in
-                  if null ls then "" else
-                     let Label l _ = head ls
-                         in if null l then "" else head l
-                            -- might be a multiline label
-                            -- maybe remove white spaces
+getRLabel a =
+    case filter isLabel (r_annos a) of
+      [] -> ""
+      Label l _ : _ -> unwords $ concatMap words l
