@@ -7,7 +7,7 @@
 # This Makefile will generate the installer for Hets with IzPack
 #
 
-all: download build ##cleanup
+all: download build cleanup
 
 EMPTY =
 ACTDATE = $(shell date +%F)
@@ -15,7 +15,7 @@ TMP_PATH = $(PWD)
 IZPACK_PATH = $(TMP_PATH)/Izpack-Hets
 IZPACK_COMPILE = $(IZPACK_PATH)/bin/compile
 IZPACK_SAMPLE = $(IZPACK_PATH)/sample
-HETS_VERSION=0.61
+HETS_VERSION=0.66
 SED_COMMAND="s/^\(.*<appversion>\)[0-9. ]*\(<.*$$\)/\1$(HETS_VERSION)\2/"
 
 GMPURL = http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/mac/GMP.framework.zip
@@ -61,7 +61,8 @@ hetcats-make : tools-checkout daily-hets-download
 	cp LICENCE.txt $(IZPACK_SAMPLE)/pack/LICENCE.txt ;\
 	cp README  $(IZPACK_SAMPLE)/pack/README ;\
 	cp utils/SPASS-ppc-mac/* $(IZPACK_SAMPLE)/SPASS/MAC/ ;\
-	cp hets.in $(IZPACK_SAMPLE)/hets ;\
+	cp utils/el/*.el  $(IZPACK_SAMPLE)/hets  ;\
+	cp hets.in $(IZPACK_SAMPLE)/hets/hets ;\
 	$(MAKE) release ;\
 	mv HetCATS.tar $(IZPACK_SAMPLE)/src/ ;\
 	mkdir $(IZPACK_SAMPLE)/hets/OWLParser ; \
@@ -73,8 +74,8 @@ hetcats-make : tools-checkout daily-hets-download
 	cd $(IZPACK_SAMPLE)/src ; tar xvf HetCATS.tar ; $(RM) HetCATS.tar
 
 daily-hets-download :
-	@sh getAllHets.sh $(HETS_VERSION)
-	mv getAllHets.sh $(IZPACK_SAMPLE)
+	@sh getAllHets.sh $(HETS_VERSION)  ;\
+	rm getAllHets.sh   ;\
 	mv $(HOME)/tmp/hets_installer/hets/* $(IZPACK_SAMPLE)/hets/
 
 tools-checkout :
