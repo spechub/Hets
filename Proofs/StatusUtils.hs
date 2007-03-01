@@ -19,6 +19,7 @@ module Proofs.StatusUtils
     , reviseProofStatus
     , removeContraryChanges
     , isIdentityEdge
+    , showChanges
     ) where
 
 import Static.DevGraph
@@ -118,7 +119,8 @@ showChanges (change:changes) =
                        ++ (showChanges changes)
     DeleteNode node -> "DeleteNode " ++ (showNodeChange node)
                        ++ (showChanges changes)
-    SetNodeLab (node, newLab) -> "SetNodeLab of node "++(show node)++" with new lab: "++ (show newLab)
+    SetNodeLab (node, newLab) -> "SetNodeLab of node " ++ show node ++
+                                 " with new lab: " ++ show newLab
 
 showEdgeChange :: LEdge DGLinkLab -> String
 showEdgeChange (src,tgt,edgelab) =
