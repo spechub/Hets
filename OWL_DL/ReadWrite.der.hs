@@ -12,10 +12,7 @@ Automatic derivation of instances via DrIFT-rule Typeable, ShATermConvertible
 
 manual instance for 'Ontology'
 -}
-{- todo:
-    - implement test programms to check if
-      input and output ATerms are equivalent.
--}
+
 module OWL_DL.ReadWrite where
 
 import qualified Data.Map as Map
