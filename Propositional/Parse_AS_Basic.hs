@@ -13,6 +13,10 @@ Parser for abstract syntax for propositional logic
 
   Ref.
   <http://en.wikipedia.org/wiki/Propositional_logic>
+
+Acknowledgements:
+I'd like to thank Christian Maeder for his help and advice. 
+
 -}
 
 module Propositional.Parse_AS_Basic 

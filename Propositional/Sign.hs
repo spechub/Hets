@@ -25,16 +25,17 @@ module Propositional.Sign
      Sign (..)                     -- Propositional Signatures
     ,pretty                        -- pretty printing
     ,isLegalSignature              -- is a signature ok?
+    ,addToSig                      -- adds an id to the given Signature
     ) where
 
 import qualified Data.Set as Set
-import Common.Id
+import qualified Common.Id as Id
 import Common.Doc
 import Common.DocUtils
 
 -- | Datatype for propositional Signatures
 -- Signatures are just sets
-data Sign = Sign {items :: Set.Set Id}
+data Sign = Sign {items :: Set.Set Id.Id}
           deriving (Eq, Show)
 
 instance Pretty Sign where
@@ -46,4 +47,8 @@ isLegalSignature :: Sign -> Bool
 isLegalSignature _ = True
 
 printSign :: Sign -> Doc
-printSign s = specBraces $ (sepByCommas $ map idDoc (Set.toList $ items s))
+printSign s = specBraces $ (sepByCommas $ map pretty (Set.toList $ items s))
+
+-- | Adds an Id to the signature
+addToSig :: Sign -> Id.Id -> Sign 
+addToSig sig tok = Sign {items = Set.insert tok $ items sig}

@@ -38,7 +38,7 @@ instance Pretty Symbol where
     pretty = printSymbol
 
 printSymbol :: Symbol -> Doc
-printSymbol x = idDoc $ symName x
+printSymbol x = pretty $ symName x
 
 -- | Extraction of symbols from a signature
 symOf :: Sign.Sign -> Set.Set Symbol

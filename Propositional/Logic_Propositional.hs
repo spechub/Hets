@@ -37,6 +37,7 @@ import qualified Propositional.AS_BASIC_Propositional as AS_BASIC
 import qualified Propositional.ATC_Propositional()
 import qualified Propositional.Symbol as Symbol
 import qualified Propositional.Parse_AS_Basic as Parse_AS
+import qualified Propositional.Analysis as Analysis
 
 -- | Lid for propositional logic
 data Propositional = Propositional deriving Show --lid
@@ -93,6 +94,8 @@ instance Logic Propositional
     Symbol.Symbol                      -- symbol
     ()                                 -- raw_symbol
     ()                                 -- proof_tree
+    where
+      stability Propositional = Experimental
 
 -- | Static Analysis for propositional logic
 instance StaticAnalysis Propositional
@@ -105,3 +108,6 @@ instance StaticAnalysis Propositional
     Morphism.Morphism                  -- morphism
     Symbol.Symbol                      -- symbol
     ()                                 -- raw_symbol
+        where
+          basic_analysis Propositional = Just $ Analysis.basicPropositionalAnalysis
+          inclusion Propositional _ _ = statErr Propositional "inclusion: I am a lazy bastard and so inclusion still has to be defined for propositional logic :)"

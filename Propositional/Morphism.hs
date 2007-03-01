@@ -40,7 +40,7 @@ import Common.DocUtils
 -- Maps are simple maps between elements of sets
 -- By the definition of maps in Data.Map
 -- these maps are injective
-type PropMap = Map.Map Id Id
+type PropMap = Map.Map Id Id 
 
 -- | The datatype for morphisms in propositional logic as 
 -- | simple injective maps of sets
@@ -106,6 +106,6 @@ composeMor f g
 -- | Pretty printing for Morphisms
 printMorphism :: Morphism -> Doc
 printMorphism m = pretty (source m) <> text "-->" <> pretty (target m)
-  <> vcat (map ( \ (x, y) -> lparen <> idDoc x <> text "," 
-  <> idDoc y <> rparen) $ Map.assocs $ propMap m)
+  <> vcat (map ( \ (x, y) -> lparen <> pretty x <> text "," 
+  <> pretty y <> rparen) $ Map.assocs $ propMap m)
 
