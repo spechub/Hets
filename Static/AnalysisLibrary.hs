@@ -108,10 +108,10 @@ anaString lgraph defl opts libenv input file =
       _ -> do
           if ln == fileToLibName opts file
              then return ()
-             else showDiags1 opts $ liftR $ Result [mkDiag Warning
-                      ("file name '" ++ file
-                       ++ "' does not match library name") $ getLIB_ID ln]
-                       $ Just ()
+             else lift $ putIfVerbose opts 1 $
+                       "### file name '" ++ file
+                       ++ "' does not match library name '" ++
+                          shows (getLIB_ID ln) "'"
           lift $ putIfVerbose opts 1 $ "Analyzing library " ++ show ln
           (_,ld,_,lenv) <-
               ana_LIB_DEFN lgraph defl opts libenv ast
