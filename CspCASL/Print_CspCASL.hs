@@ -41,31 +41,53 @@ instance Pretty PROCESS where
     pretty = printProcess
 
 printProcess :: PROCESS -> Doc
-printProcess Skip = text "SKIP"
-printProcess Stop = text "STOP"
-printProcess Div = text "Div"
-printProcess (Run es) = (text "Run") <+> (pretty es)
-printProcess (Chaos es) = (text "Chaos") <+> (pretty es)
-printProcess (PrefixProcess ev p) = (pretty ev) <+> (text "->") <+> (pretty p)
-printProcess (InternalPrefixProcess v es p) =
-    (text "|~|") <+> (pretty v) <+> (text ":") <+> (pretty es) <+> (text "->") <+> (pretty p)
-printProcess (ExternalPrefixProcess v es p) =
-    (text "[]") <+> (pretty v) <+> (text ":") <+> (pretty es) <+> (text "->") <+> (pretty p)
-printProcess (Sequential p q) = (pretty p)  <+> (text ";") <+> (pretty q)
-printProcess (ExternalChoice p q) = (pretty p)  <+> (text "[]") <+> (pretty q)
-printProcess (InternalChoice p q) = (pretty p)  <+> (text "|~|") <+> (pretty q)
-printProcess (Interleaving p q) = (pretty p)  <+> (text "|||") <+> (pretty q)
-printProcess (SynchronousParallel p q) = (pretty p)  <+> (text "||") <+> (pretty q)
-printProcess (GeneralisedParallel p es q) =
-    (pretty p) <+> (text "[|") <+> (pretty es) <+> (text "|]") <+> (pretty q)
-printProcess (AlphabetisedParallel p les res q) =
-    (pretty p) <+> (text "[") <+>
-    (pretty les) <+> (text "||") <+> (pretty res) <+>
-    (text "]") <+> (pretty q)
-printProcess (Hiding p es) = (pretty p) <+> (text "\\") <+> (pretty es)
-printProcess (Renaming p r) = (pretty p) <+> (text "[[") <+> (pretty r) <+> (text "]]")
-printProcess (ConditionalProcess f p q) =
-    (text "if") <+> (pretty f) <+> (text "then") <+> (pretty p) <+> (text "else") <+> (pretty q)
+printProcess  process = case process of
+    Skip -> text "SKIP"
+    Stop -> text "STOP"
+    Div -> text "Div"
+    Run es -> (text "Run") <+> (pretty es)
+    Chaos es -> (text "Chaos") <+> (pretty es)
+    PrefixProcess ev p ->
+        (pretty ev) <+> (text "->") <+> (pretty p)
+    InternalPrefixProcess v es p ->
+        ((text "|~|") <+> (pretty v) <+>
+         (text ":") <+> (pretty es) <+>
+         (text "->") <+> (pretty p)
+        )
+    ExternalPrefixProcess v es p ->
+        ((text "[]") <+> (pretty v) <+>
+         (text ":") <+> (pretty es) <+>
+         (text "->") <+> (pretty p)
+        )
+    Sequential p q ->
+        (pretty p)  <+> (text ";") <+> (pretty q)
+    ExternalChoice p q ->
+        (pretty p) <+> (text "[]") <+> (pretty q)
+    InternalChoice p q ->
+        (pretty p) <+> (text "|~|") <+> (pretty q)
+    Interleaving p q ->
+        (pretty p) <+> (text "|||") <+> (pretty q)
+    SynchronousParallel p q ->
+        (pretty p) <+> (text "||") <+> (pretty q)
+    GeneralisedParallel p es q ->
+        ((pretty p) <+>
+         (text "[|") <+> (pretty es) <+> (text "|]") <+>
+         (pretty q)
+        )
+    AlphabetisedParallel p les res q ->
+        ((pretty p) <+> (text "[") <+>
+         (pretty les) <+> (text "||") <+> (pretty res) <+>
+         (text "]") <+> (pretty q)
+        )
+    Hiding p es ->
+        (pretty p) <+> (text "\\") <+> (pretty es)
+    Renaming p r ->
+        (pretty p) <+> (text "[[") <+> (pretty r) <+> (text "]]")
+    ConditionalProcess f p q ->
+        ((text "if") <+> (pretty f) <+>
+         (text "then") <+> (pretty p) <+>
+         (text "else") <+> (pretty q)
+        )
 
 instance Pretty EVENT where
     pretty = printEvent
