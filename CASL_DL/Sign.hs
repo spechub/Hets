@@ -14,7 +14,6 @@ module CASL_DL.Sign where
 
 import qualified Data.Map as Map
 import Common.Id
-import Common.Utils
 import Common.Doc
 import Common.DocUtils
 
@@ -73,3 +72,10 @@ isSubCASL_DLSign a b =
 
 instance Pretty CASL_DLSign where
     pretty = text . show
+
+isSublistOf :: (Eq a) => [a] -> [a] -> Bool
+isSublistOf [] _ = True
+isSublistOf _ [] = False
+isSublistOf ys l@(_:l')
+    | length ys <= length l = (ys `isPrefixOf` l) || (ys `isSublistOf` l')
+    | otherwise = False
