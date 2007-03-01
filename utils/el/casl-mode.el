@@ -129,6 +129,9 @@
      (3 casl-name-face t t))
    '("\\(\\<\\|\\s-+\\)from[ \t]+\\(.+\\)\\(get\\|$\\)" 
      (2 casl-library-name-face keep t))
+   ;; after forall don't highlight
+   '("\\bforall\\b\\(.*\\)"
+     (1 casl-black-komma-face t t))
    ;; the name of specification and view
    '("\\(\\<\\|\\[\\)\\(spec\\|view\\)\\s-+\\(\\w+\\)[ \t]*\\(\\[\\s-*\\([A-Z]\\w*\\).*\\s-*\\]\\)?\\s-*.*\\([]=:]\\|::=\\)"
      (3 casl-name-face keep t) (5 casl-name-face keep t))
@@ -142,11 +145,14 @@
    '("\\<spec.+=\\s-*\\(%\\sw+\\s-*\\)?[ \t\n]*\\([A-Z]\\w*\\)\\s-*\\(\\[\\s-*\\([A-Z]\\w*\\).*\\s-*\\]\\)?"
      (2 casl-name-face keep t) (4 casl-name-face keep t))
    ;; Basic signature: sort X, Y, Z  
-   '("\\(\\<\\|\\s-+\\)sorts?[ \t]+\\(\\(\\sw+\\s-*\\(\\[\\s-*\\(\\sw\\|,\\)+\\s-*\\]\\s-*\\)?\\(,\\(\\s-\\)*\\|$\\|<\\|;\\|=\\)\\(=\\|<\\|;\\|,\\)*[ \t\n]*\\)+\\)" 
+   '("\\(\\<\\|\\s-+\\)sorts?[ \t\n]+\\(\\(\\sw+\\s-*\\(\\[\\s-*\\(\\sw\\|,\\)+\\s-*\\]\\s-*\\)?\\(,\\(\\s-\\)*\\|$\\|<\\|;\\|=\\)\\(=\\|<\\|;\\|,\\)*[ \t\n]*\\)+\\)" 
      (2 casl-other-name-face keep t))
    ;; Basic signature: op ,pred and var name
-   '("\\(\\bops?\\b\\|\\bpreds?\\b\\|\\bvars?\\b\\|\\(^__\\|^[^.{%]\\)\\(,[ \t\n]*\\)?\\)[ \t\n]*\\(\\(\\sw\\(,[ \t\n]*\\)?\\|\\s-*__\\s-*\\(,[ \t\n]*\\)?\\|\\(\\s_\\|__::?__\\)\\(,[ \t\n]*\\)?\\|\\s\(\\|\\s\)\\)*\\)\\s-*\\(\(.*\)\\)?\\s-*\\(:\\??\\|<=>\\)[^.:=][^:.\n]*;?[ \t]*$"
-     (2 casl-other-name-face keep t) (4 casl-other-name-face keep t))
+   '("\\(\\(^[^.{%]\\)\\s-*\\|\\bops?\\b\\|\\bpreds?\\b\\|\\bvars?\\b\\)\\([^:{()]*\\)\\(\(.*\)\\)?:\\??[^?.:=%].*;?[ \t]*$"
+     (2 casl-other-name-face keep t) (3 casl-other-name-face keep t))
+   ;; highlight a line with , an end
+   '("^\\(\\(\\(__\\s-*[^_\n]+\\s-*__\\|[^.,:\n]+\\)\\s-*,\\s-*\\)+\\)$"
+     (0 casl-other-name-face keep t))
    ;; names before and after '|->'
    '("[ \t\n]*\\(__[^|_]+__\\|[^[ \t\n]+\\)\\s-*\\(\\[\\([A-Z]\\w*\\).*\\]\\)?[ \t\n]*|->[ \t\n]*\\(__[^|_]+__\\|[^[ \t\n]+\\)\\s-*\\(\\[\\([A-Z]\\w*\\).*\\]\\)?[, \t]*" 
      (1 casl-other-name-face keep t) (3 casl-other-name-face keep t) 
@@ -184,12 +190,22 @@
 	  (list 
 	   ;; %word(...)\n
 	   '("%\\sw+\([^%\n]+\)$" (0 casl-annotation-face t t))
+	   ;; %word{...}\n
+	   '("%\\sw+{[^%\n]+}$" (0 casl-annotation-face t t))
 	   ;; %words \n
 	   '("%\\w+[^\n]*$" (0 casl-annotation-face t t))
 	   ;; %( ... )% 
-	   '("%\([^)%]*\)%[ \t\n]*" (0 casl-annotation-face t t))
+	   '("%\(\\([^%]\\|[\t\n]\\)*\)%[ \t\n]*" (0 casl-annotation-face t t))
+	   ;; %{ ... }% 
+	   '("%{\\(.\\|[\t\n]\\)*}%[ \t\n]*" (0 casl-annotation-face t t))
+	   ;; %[ ... ]% 
+	   '("%\\[\\(.\\|[\t\n]\\)*\\]%[ \t\n]*" (0 casl-annotation-face t t))
 	   ;; %word( ... )%
-	   '("%\\sw+\([^)%]*\)%[ \t\n]*" (0 casl-annotation-face t t))
+	   '("%\\sw+\(\\(.\\|[\t\n]\\)*\)%[ \t\n]*" (0 casl-annotation-face t t))
+	   ;; %word{ ... }%
+	   '("%\\sw+{\\(.\\|[\t\n]\\)*}%[ \t\n]*" (0 casl-annotation-face t t))
+	   ;; %word[ ... ]%
+	   '("%\\sw+\\[\\(.\\|[\t\n]\\)*\\]%[ \t\n]*" (0 casl-annotation-face t t))
 	   ))
   "Annotation")
 
@@ -197,7 +213,7 @@
 (defconst casl-font-lock-specialcomment
   (append casl-font-lock-annotations
 	  (list '("\\(%%.*$\\)" (0 casl-comment-face t t))
-		'("\\(%{[^}%]*}%\\)[ \t\n]*" (1 casl-comment-face t t))
+		'("\\(%{\\(.\\|[\t\n]\\)*}%\\)[ \t\n]*" (1 casl-comment-face t t))
 		))
   "Special Comment")
 
