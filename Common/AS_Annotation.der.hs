@@ -205,5 +205,5 @@ emptyAnno = addLeftAnno []
 getRLabel :: Annoted a -> String
 getRLabel a =
     case filter isLabel (r_annos a) of
-      [] -> ""
       Label l _ : _ -> unwords $ concatMap words l
+      _ -> ""
