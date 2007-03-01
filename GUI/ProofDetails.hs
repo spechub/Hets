@@ -14,7 +14,6 @@ Additional window used by 'GUI.ProofManagement' for displaying proof details.
 module GUI.ProofDetails (doShowProofDetails) where
 
 import qualified Common.Doc as Pretty
-import Common.Utils
 import qualified Common.OrderedMap as OMap
 
 import Data.List
@@ -251,7 +250,7 @@ doShowProofDetails prGUISt@(ProofGUIState { theoryName = thName }) = do
             foldl (flip $ \ (s2, ind) -> OMap.insert (gN, ind) $
                                                      fillGoalDescription s2)
               resOMap
-              $ zip (sortBy (comparing snd) $ thmStatus st) [(0::Int)..]
+              $ zip (sortBy compareSnd $ thmStatus st) [(0::Int)..]
 
     stateRef <- newIORef elementMap
     ed # state Normal

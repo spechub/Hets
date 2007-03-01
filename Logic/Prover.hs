@@ -18,7 +18,6 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import qualified Common.AS_Annotation as AS_Anno
-import Common.Utils
 import Common.ProofUtils
 import Data.Typeable
 import Common.Result
@@ -76,18 +75,21 @@ noSens = OMap.empty
 mapThSensStatus :: (b->c) -> ThSens a b -> ThSens a c
 mapThSensStatus f = OMap.map (mapStatus f)
 
+compareSnd :: Ord b => (a, b) -> (a, b) -> Ordering
+compareSnd (_, a) (_, b) = compare a b
+
 -- | join and disambiguate
 --
 -- * separate Axioms from Theorems
 --
 -- * don't merge sentences with same key but different contents?
 joinSens :: (Ord a,Eq b) => ThSens a b -> ThSens a b -> ThSens a b
-joinSens s1 s2 = let l1 = sortBy (comparing snd) $ Map.toList s1
+joinSens s1 s2 = let l1 = sortBy compareSnd $ Map.toList s1
                      updN n (_, e) = (n, e)
                      m = OMap.size s1
                      l2 = map (\ (x,e) ->
                                     (x,e {OMap.order = m + OMap.order e })) $
-                          sortBy (comparing snd) $ Map.toList s2
+                          sortBy compareSnd $ Map.toList s2
                  in Map.fromList $ mergeSens l1 $
                          genericDisambigSens fst updN (OMap.keysSet s1) l2
     where mergeSens [] l2 = l2
@@ -104,8 +106,8 @@ joinSens s1 s2 = let l1 = sortBy (comparing snd) $ Map.toList s1
 
 diffSens :: (Ord a,Eq b) => ThSens a b -> ThSens a b -> ThSens a b
 diffSens s1 s2 = let
-    l1 = sortBy (comparing snd) $ Map.toList s1
-    l2 = sortBy (comparing snd) $ Map.toList s2
+    l1 = sortBy compareSnd $ Map.toList s1
+    l2 = sortBy compareSnd $ Map.toList s2
     in Map.fromList $ diffS l1 l2
     where diffS [] _ = []
           diffS l1 [] = l1
