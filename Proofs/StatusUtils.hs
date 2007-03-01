@@ -11,16 +11,24 @@ Portability :  non-portable(Logic)
 the proof status with manipulating functions
 -}
 
-module Proofs.StatusUtils where
+module Proofs.StatusUtils
+    ( lookupHistory
+    , mkResultProofStatus
+    , updateProofStatus
+    , prepareProofStatus
+    , reviseProofStatus
+    , removeContraryChanges
+    , isIdentityEdge
+    ) where
 
 import Static.DevGraph
+import Static.DGToSpec (safeContext)
 import Data.Graph.Inductive.Graph
 import Common.DocUtils
 import qualified Data.Map as Map
 import Syntax.AS_Library
 import Logic.Grothendieck
 import Logic.Logic
-import Common.Utils
 
 {-
    proof status = (DG0,[(R1,DG1),...,(Rn,DGn)])

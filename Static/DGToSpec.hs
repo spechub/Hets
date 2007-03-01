@@ -13,7 +13,17 @@ Convert development graph back to structured specification
 -}
 
 module Static.DGToSpec
-where
+    ( safeContext
+    , dgToSpec
+    , liftE
+    , liftOr
+    , isGlobalDef
+    , isLocalDef
+    , calculateMorphismOfPath
+    , computeLocalTheory
+    , computeTheory
+    , theoremsToAxioms
+    ) where
 
 import Logic.Logic
 import Logic.Grothendieck
@@ -24,9 +34,19 @@ import Common.AS_Annotation
 import Logic.Prover
 import Common.Result
 import Common.Id
-import Common.Utils
 import Data.Graph.Inductive.Graph
 
+-- | safe context for graphs
+safeContext :: (Show a, Show b, Graph gr) => String -> gr a b -> Node
+            -> Context a b
+safeContext err g v =
+  case match v g of
+    (Nothing,_) -> error (err++": Match Exception, Node: "++show v++
+                          " not present in graph with nodes:\n"++
+                          show (nodes g)++"\nand edges:\n"++show (edges g))
+    (Just c,_)  -> c
+
+-- | convert a node of a development graph back into a specification
 dgToSpec :: Monad m => DGraph -> Node -> m SPEC
 dgToSpec dg = return . dgToSpec0 dg
 

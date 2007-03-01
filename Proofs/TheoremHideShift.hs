@@ -31,7 +31,6 @@ import Logic.Grothendieck
 import Static.DevGraph
 import Static.DGToSpec
 import Common.Result
-import Common.Utils
 import Data.Graph.Inductive.Graph
 import qualified Data.Map as Map
 import Syntax.AS_Library

@@ -20,13 +20,11 @@ module Common.Utils
         , fileparse
         , stripDir
         , stripSuffix
-        , safeContext
         , getEnvSave
         , filterMapWithList
         ) where
 
 import Data.List
-import Data.Graph.Inductive.Graph
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -99,34 +97,21 @@ stripSuffix suf fp = case filter justs $ map (stripSuf fp) suf of
           justs (Nothing) = False
           justs (Just _)  = True
 
--- safe context for graphs
-safeContext :: (Show a, Show b,Graph gr) => String -> gr a b -> Node
-            -> Context a b
-safeContext err g v =
-  case match v g of
-    (Nothing,_) -> error (err++": Match Exception, Node: "++show v++
-                          " not present in graph with nodes:\n"++
-                          show (nodes g)++"\nand edges:\n"++show (edges g))
-    (Just c,_)  -> c
-
-{- |
-   filter a map according to a given list of keys (it dosen't hurt if a key is not present in the map)
--}
+{- | filter a map according to a given list of keys (it dosen't hurt
+   if a key is not present in the map) -}
 filterMapWithList :: Ord k => [k] -> Map.Map k e -> Map.Map k e
 filterMapWithList l = filterMapWithSet sl
     where sl = Set.fromList l
 
-{- |
-   filter a map according to a given set of keys (it dosen't hurt if a key is not present in the map)
--}
+{- | filter a map according to a given set of keys (it dosen't hurt if
+   a key is not present in the map) -}
 filterMapWithSet :: Ord k => Set.Set k -> Map.Map k e -> Map.Map k e
 filterMapWithSet s = Map.filterWithKey selected
     where selected k _ = Set.member k s
 
 {- | get, parse and check an environment variable; provide the default
   value, only if the envionment variable is not set or the
-  parse-check-function returns a Left value
--}
+  parse-check-function returns a Left value -}
 getEnvSave :: a -- ^ default value
            -> String -- ^ name of environment variable
            -> (String -> Either b a) -- ^ parse and check value of variable;

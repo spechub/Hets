@@ -20,7 +20,12 @@ re-proved)
 
 -}
 
-module Proofs.Local (localInference, locDecomp, locDecompFromList, localInferenceFromList) where
+module Proofs.Local 
+    ( localInference
+    , locDecomp
+    , locDecompFromList
+    , localInferenceFromList
+    ) where
 
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
@@ -30,7 +35,6 @@ import Static.DevGraph
 import Static.DGToSpec
 import Syntax.AS_Library
 import Common.Result
-import Common.Utils
 import qualified Data.Map as Map
 import qualified Common.OrderedMap as OMap
 import Data.Graph.Inductive.Graph
