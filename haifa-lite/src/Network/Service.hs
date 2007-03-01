@@ -29,25 +29,22 @@
 -- @You should have received a copy of the GNU General Public License along with HAIFA; if not, 
 -- write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA@
 ----------------------------------------------------------------------------
-module Network.Service where
+module Network.Service (HTTPTransport(..), soapCall) where
 
 import Text.XML.Serializer
 import Text.XML.HXT.Parser hiding (io)
 import Text.XML.HXT.Aliases
-import Text.Html (Html, renderHtml)
 import Org.Xmlsoap.Schemas.Soap.Envelope
 import Network.HTTP
 import Network.TCP
-import Network.Server.HTTP (Config)
 import Data.Maybe
+import qualified Data.Map
 import Data.Generics2
 import Data.Dynamic
-import Control.Monad.Trans
-import Control.Monad.Error
-import Control.Exception as CE
 import Control.Monad.State
 import Network.URI
-import Debug.Trace as DB
+
+type Config = Data.Map.Map String Dynamic
 
 data PubFunc m = forall s . Service s m => PubFunc (s m)
 
@@ -55,52 +52,6 @@ soapTraceOn :: Bool
 soapTraceOn = False
 
 soapTrace x = (if soapTraceOn then putStrLn x else return ())
-
-
--- | Does the SOAP Message inside the given XML Tree have the given name?
-isMessageName :: XmlTrees -> String -> Bool
-isMessageName xml n = not $ null $ (hasLP "Envelope" .> getChildren .> hasLP "Body" .> getChildren .> hasLP n) (head xml)
-
-getMessageName xml = xmlTreesToString $ (hasLP "Envelope" .> getChildren .> hasLP "Body" .> getChildren .> getName) xml
-
--- FIXME : SOAP Faults should be qualified, not simple string codes.
-buildWS :: (MonadUnIO i m o, MonadIO m) => [(String, PubFunc m)] -> Maybe Html -> (Config -> [String] -> Request -> m (Either String Response))
-buildWS fs h c x r = case (rqMethod r) of
-                         POST -> post c x r
-			 _    -> return $ (Right . Response (2,0,0) "OK" [Header HdrContentType "text/html"]) $ maybe ("This service supports only POST SOAP requests") renderHtml h
-
-  where
-  post c _ r = do {-let-} 
-                 mx <- liftIO $ parseXML (rqBody r)
-                 case mx of
-                     Nothing -> return $ mkFault (simpleFault ("Parse Error") 
-			        	               ("Could not parse supplied envelope.")::SimpleEnvelope String)
-                     Just [NTree (XError n s) _] -> 
-	    	         return $ mkFault (simpleFault ("Parse Error ("++show n++")") 
-			        	               ("Could not parse supplied envelope. HXT Parser said : "++s)::SimpleEnvelope String)
-                     Just [] -> return $ mkFault (simpleFault "No data" ("Envelope contains no data")::SimpleEnvelope String)
-                     Just xml -> 
-                              do let vs = [ q | (n, q) <- fs, isMessageName xml n ]
-	                         if (null vs) 
-                                   then return $ mkFault $ (simpleFault "Invalid operation" 
-							   ("This service does not contain operation " 
-							          ++ getMessageName (head xml))::SimpleEnvelope String)
-		                   else do let (f:_) = vs
-					       env   = publish c f xml >>= liftIO . evaluate 
-						                       >>= return . Right . Response (2,0,0) "OK" hdrs . xshow
-                                           --env
-                                           catchIO env (return . mkFault . exceptionToFault)
-
-  hdrs = [Header HdrContentType "text/xml"]
-  mkFault e = Right $ Response (5,0,0) "Internal Server Error" hdrs $ xmlTreesToString $ toXML e True
-
--- | Convert a Haskell Exception to a Fault Envelope.
-exceptionToFault :: Exception -> SimpleEnvelope String
-exceptionToFault e =
-    case e of
-        DynException d -> maybe (simpleFault "DynException" "Unknown Dynamic Exception") 
-			        (\x -> Envelope [] (Body $ Left x) Nothing) (fromDynamic d)
-        x              -> (simpleFault "Internal Haskell Exception" (show x))
 
 instance Service PubFunc m where
     publish c (PubFunc x) = publish c x
@@ -149,12 +100,6 @@ instance MonadUnIO () IO () where
     reliftIO m = do (x, _) <- m
 		    return x
     getMonadInput = return ()
-
-catchIO :: MonadUnIO i m o => m a -> (Exception -> m a)-> m a
-catchIO (o::m a) h = do i <- getMonadInput 
-                        let f = (return . Left) :: Exception -> m (Either Exception a)
-	         	x <- reliftIO $ CE.catch (unliftIO i (o >>= return . Right)) (unliftIO i . f)
-                        either h return x
 
 -- Client side service access
 

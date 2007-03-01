@@ -12,7 +12,6 @@ exposed-modules:
          Text.XML.Serializer.Encoders,
          Text.XML.Serializer.Derive,
          Network.Service,
-         Network.Server.HTTP,
          Org.W3.N2001.XMLSchema,
          Org.W3.N2001.XMLSchema_instance,
          Org.Xmlsoap.Schemas.Soap.Envelope,
