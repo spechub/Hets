@@ -783,7 +783,9 @@ initialize_installer:
 	    mkdir -p $(INSTALLER_DIR) ; \
 	 fi
 	@sed "s/^\(HETS_VERSION=\).*/\1`cat version_nr`/" Makefile.installer > Makefile.inst  ;\
-	 mv Makefile.inst $(INSTALLER_DIR)/Makefile ; \
+	 sed "s/^\(SPASS_DIR_MAC=\).*/\1`ls utils/SPASS-ppc-mac/ | grep SPASS`/"  Makefile.inst > Makefile.inst2 ;\
+	 rm Makefile.inst ;\
+	 mv Makefile.inst2 $(INSTALLER_DIR)/Makefile ; \
 	 cp utils/getAllHets.sh $(INSTALLER_DIR) ;\
 	 cp utils/getDailyHets-installer.sh $(INSTALLER_DIR)\getDailyHets.sh
 	@echo =========================================================================

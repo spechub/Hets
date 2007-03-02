@@ -17,6 +17,7 @@ IZPACK_COMPILE = $(IZPACK_PATH)/bin/compile
 IZPACK_SAMPLE = $(IZPACK_PATH)/sample
 HETS_VERSION=0.66
 SED_COMMAND="s/^\(.*<appversion>\)[0-9. ]*\(<.*$$\)/\1$(HETS_VERSION)\2/"
+SPASS_DIR_MAC=SPASS-2.2
 
 GMPURL = http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/mac/GMP.framework.zip
 GNUreadlineURL = http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/mac/GNUreadline-framework.zip
@@ -56,11 +57,12 @@ casl-lib-checkout :
 
 hetcats-make : tools-checkout daily-hets-download
 	cd $(IZPACK_SAMPLE)/src ;\
-	cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:\/repository co -P HetCATS ; \
-	cd HetCATS ;\
+	cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:\/repository co -P HetCATS 
+	cd $(IZPACK_SAMPLE)/src/HetCATS ;\
 	cp LICENCE.txt $(IZPACK_SAMPLE)/pack/LICENCE.txt ;\
 	cp README  $(IZPACK_SAMPLE)/pack/README ;\
-	cp utils/SPASS-ppc-mac/* $(IZPACK_SAMPLE)/SPASS/MAC/ ;\
+	mkdir -p $(IZPACK_SAMPLE)/SPASS/MAC/$(SPASS_DIR_MAC) ;\
+	cp utils/SPASS-ppc-mac/SPASS* $(IZPACK_SAMPLE)/SPASS/MAC/$(SPASS_DIR_MAC)/SPASS ;\
 	cp utils/el/*.el  $(IZPACK_SAMPLE)/hets  ;\
 	cp hets.in $(IZPACK_SAMPLE)/hets/hets ;\
 	$(MAKE) release ;\
