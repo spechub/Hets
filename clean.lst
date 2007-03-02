@@ -31,14 +31,6 @@ Common/test
 
 Comorphisms/test
 
-CspCASL/Main.hs
-CspCASL/Makefile
-CspCASL/print_csp.hs
-CspCASL/test
-
-GUI/hetdg.hs
-GUI/todo
-
 HasCASL/Makefile
 HasCASL/RunMixfixParser.hs
 HasCASL/RunStaticAna.hs
@@ -69,14 +61,6 @@ Modal/Basic.mod
 
 SPASS/tests
 
-Static/LogicStructured.hs
-Static/hetana.hs
-
-Syntax/hetpa.hs
-
-Taxonomy/taxonomyTool.hs
-
-Test.hs
 ToHaskell
 aterm_conv
 distribution
