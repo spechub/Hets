@@ -231,8 +231,6 @@ non_sources = Common/LaTeX_maps.svmono.hs Common/CaslLanguage.hs ./Test.hs \
 sources = hets.hs $(filter-out $(non_sources), \
     $(wildcard $(addsuffix /[A-Z]*hs, $(SOURCE_PATHS))))
 
-#endif
-
 objects = $(sources:%.hs=%.o)
 
 drifted_files = Syntax/AS_Architecture.hs Syntax/AS_Library.hs \
