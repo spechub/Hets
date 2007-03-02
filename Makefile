@@ -225,8 +225,8 @@ HC_OPTS = $(HC_FLAGS) $(HC_INCLUDE) $(HC_PACKAGE) $(PFE_FLAGS) $(HC_PROF) \
 ####################################################################
 ## sources for hets
 
-non_sources = Common/LaTeX_maps.svmono.hs \
-    Common/CaslLanguage.hs ./Test.hs 
+non_sources = Common/LaTeX_maps.svmono.hs Common/CaslLanguage.hs ./Test.hs \
+    $(SETUP).hs
 
 sources = hets.hs $(filter-out $(non_sources), \
     $(wildcard $(addsuffix /[A-Z]*hs, $(SOURCE_PATHS))))
