@@ -373,7 +373,7 @@ ana_SPEC lg gctx nsig name opts sp =
           dg'' = devGraph gctx''
           (sgMap, s) = sigMapI gctx''
           (mrMap, m) = morMapI gctx''
-      G_sign lid sigma _<- return gsigma
+      G_sign lid sigma _ <- return gsigma
       sigma1 <- coerceSign lid' lid "Analysis of local spec" sigma'
       sigma2 <- coerceSign lid'' lid "Analysis of local spec" sigma''
       let sys = sym_of lid sigma
@@ -390,8 +390,8 @@ ana_SPEC lg gctx nsig name opts sp =
       when (not( isStructured opts ||
                  sys2 `Set.difference` sys1 `Set.isSubsetOf` sys3))
         $ plain_error () (
-          "attempt to hide the following symbols from the local environment:\n"
-          ++ showDoc ((sys2 `Set.difference` sys1) `Set.difference` sys3) "")
+          "illegal use of locally declared symbols: "
+          ++ showDoc ((sys2 `Set.intersection` sys1) `Set.difference` sys3) "")
          pos
       let node_contents = DGNode {
             dgn_name = name,
@@ -951,7 +951,7 @@ ana_FIT_ARG lg gctx spname nsigI (NodeSig nP gsigmaP)
            let link = (nP,nSrc,DGLink {
                  dgl_morphism = ide Grothendieck gsigmaP,
                  dgl_type = GlobalThm LeftOpen None LeftOpen,
-                 dgl_origin = DGFitView spname, 
+                 dgl_origin = DGFitView spname,
 		 dgl_id = defaultEdgeID})
            return (fv, gctx { devGraph = insEdgeNub link dg },
                          (G_morphism lid morHom ind, target))
@@ -1386,7 +1386,7 @@ ana_Extension res (name',asp') = do
            return gctx1 { devGraph = insEdgeNub (n1, n', DGLink
                               { dgl_morphism = ide Grothendieck sig1,
                                 dgl_type = GlobalThm LeftOpen None LeftOpen,
-                                dgl_origin = DGExtension, 
+                                dgl_origin = DGExtension,
 				dgl_id = defaultEdgeID}) dg1 }
           else do
            let anno2 = case anno1 of
