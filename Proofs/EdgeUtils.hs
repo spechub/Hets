@@ -19,6 +19,8 @@ import Static.DGToSpec
 import Data.Graph.Inductive.Graph
 import Data.List
 
+import Debug.Trace
+
 --import Debug.Trace
 
 deLLEdge :: LEdge DGLinkLab -> DGraph -> DGraph
@@ -62,15 +64,37 @@ changeDG :: DGraph -> DGChange -> DGraph
 changeDG g c = case c of
     InsertNode n -> insLNode n g
     DeleteNode n -> delLNode n g
-    InsertEdge e -> insLEdge (initEdgeID e g) g
+    InsertEdge e -> let 
+		    l@(_, _, edgelab) = initEdgeID e g 
+		    in 
+		    trace (show $ dgl_id edgelab) $ insLEdge l g
     DeleteEdge e -> deLLEdge e g
-    SetNodeLab n -> labelNode n g
-    
+    SetNodeLab n -> labelNode n g    
+
 initEdgeID :: LEdge DGLinkLab -> DGraph -> LEdge DGLinkLab
 initEdgeID (src, tgt, linklab) g = (src, tgt, linklab{dgl_id = getNewEdgeID g})
 
 changesDG :: DGraph -> [DGChange] -> DGraph
 changesDG = foldl' changeDG
+
+updateDGAndChange :: DGraph -> DGChange -> (DGraph, DGChange)
+updateDGAndChange g c = case c of
+    InsertNode n -> (insLNode n g, InsertNode n)
+    DeleteNode n -> (delLNode n g, DeleteNode n)
+    InsertEdge e -> let
+		    newEdge = initEdgeID e g
+		    in 
+		    (insLEdge newEdge g, InsertEdge newEdge)
+    DeleteEdge e -> (deLLEdge e g, DeleteEdge e)
+    SetNodeLab n -> (labelNode n g, SetNodeLab n)
+
+updateDGAndChanges :: DGraph -> [DGChange] -> (DGraph, [DGChange])
+updateDGAndChanges g [] = (g, [])
+updateDGAndChanges g (x:xs) = (auxGraph, newChange:auxChanges)
+	where 
+	(newGraph, newChange) = updateDGAndChange g x
+	(auxGraph, auxChanges) = updateDGAndChanges newGraph xs
+    
 
 applyProofHistory :: ProofHistory  -> GlobalContext -> GlobalContext
 applyProofHistory h c = c { devGraph = changesDG (devGraph c) $ concatMap snd
@@ -399,12 +423,15 @@ trace_edge_status lab =
 
 {- | update both the given devgraph and the changelist with a given change -}
 updateWithOneChange :: DGChange -> DGraph -> [DGChange] -> (DGraph, [DGChange])
-updateWithOneChange change dgraph changeList = (changeDG dgraph change, change:changeList)
+updateWithOneChange change dgraph changeList = (newGraph, newChange:changeList)
+                    where
+		    (newGraph, newChange) = updateDGAndChange dgraph change
 
 {- | update both the given devgraph and the changelist with a list of given changes -}
 updateWithChanges :: [DGChange] -> DGraph -> [DGChange] -> (DGraph, [DGChange])
-updateWithChanges changes dgraph changeList = (changesDG dgraph changes, changes++changeList)
-
+updateWithChanges changes dgraph changeList = (newGraph, newChanges++changeList)
+                  where
+		  (newGraph, newChanges) = updateDGAndChanges dgraph changes
 
 
 
