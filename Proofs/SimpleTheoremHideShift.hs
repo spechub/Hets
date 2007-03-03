@@ -48,7 +48,7 @@ theoremHideShift ln proofStatus =
 -- | apply the theorem hide shift with a list of hiding definition links
 theoremHideShiftFromList :: DGraph -> [LEdge DGLinkLab] -> ([DGRule], [DGChange]) -> (DGraph, ([DGRule], [DGChange]))
 theoremHideShiftFromList dgraph [] history = (dgraph, history)
-theoremHideShiftFromList dgraph ((e@(_, _, _)) : hidingDefEdges) history =
+theoremHideShiftFromList dgraph (e : hidingDefEdges) history =
     theoremHideShiftFromList newDGraph hidingDefEdges newHistory
     where
     (newDGraph, newChanges) = theoremHideShiftWithOneHidingDefEdge dgraph e
