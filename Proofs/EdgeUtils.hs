@@ -433,6 +433,14 @@ updateWithChanges changes dgraph changeList = (newGraph, newChanges++changeList)
                   where
 		  (newGraph, newChanges) = updateDGAndChanges dgraph changes
 
-
+{- | check in the given dgraph if the given node has incoming hiding edges -}
+hasIncomingHidingEdge :: DGraph -> Node -> Bool
+hasIncomingHidingEdge dgraph node = any (isIncomingEdgeOfNode node) hidingEdges
+      where
+      hidingEdges = filter (liftE isHidingEdge) $ labEdges dgraph
+      
+{- | check if the given edge is an incoming edge of the given node -}
+isIncomingEdgeOfNode :: Node -> LEdge DGLinkLab -> Bool
+isIncomingEdgeOfNode n (_, tgt, _) = n==tgt
 
 

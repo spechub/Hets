@@ -988,7 +988,7 @@ getTheoryOfNode gInfo descr dgAndabstrNodeMap dgraph = do
   Res.Result ds res -> do
     showDiags (gi_hetcatsOpts gInfo) ds
     case res of
-      (Just (n, gth)) -> displayTheory "Theory" n dgraph gth
+      (Just (n, gth)) -> displayTheory ((addHasInHidingWarning dgraph n)++"Theory") n dgraph gth
       _ -> return ()
 
 displayTheory :: String -> Node -> DGraph -> G_theory
@@ -997,6 +997,12 @@ displayTheory ext node dgraph gth =
      GUI.HTkUtils.displayTheory ext
         (showName $ dgn_name $ lab' (context dgraph node))
         gth
+
+addHasInHidingWarning :: DGraph -> Node -> String
+addHasInHidingWarning dgraph n 
+     | hasIncomingHidingEdge dgraph n =
+           "< Warning: this node has incoming hiding links ! >\n"
+     | otherwise = ""      
 
 {- | translate the theory of a node in a window;
 used by the node menu defined in initializeGraph-}
