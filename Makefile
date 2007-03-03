@@ -691,7 +691,8 @@ check: $(TESTTARGETS)
 ## Preparing the version of HetCATS
 Driver/Version.hs: Driver/Version.in version_nr
 	$(RM) $@
-	$(PERL) utils/build_version.pl version_nr < Driver/Version.in > $@
+	LANG=C $(PERL) utils/build_version.pl version_nr \
+            < Driver/Version.in > $@
 	chmod 444 $@
 
 ## two hardcoded dependencies for a correct generation of Version.hs
