@@ -80,7 +80,6 @@ import Common.Doc
 import Common.Result as Res
 import Common.ResultT
 
---ken's stuff
 import qualified Common.InjMap as InjMap
 
 import Driver.Options
@@ -802,6 +801,15 @@ createLocalMenuButtonUndoShowJustSubtree ioRefVisibleNodes
                     )
 
 -- | for debugging
+
+createLocalMenuButtonShowIDOfEdge :: GInfo -> ButtonMenu EdgeValue
+createLocalMenuButtonShowIDOfEdge _ =
+  (Button "Show ID of this edge"
+                      (\ (_,descr,maybeLEdge)  ->
+                        do showIDOfEdge descr maybeLEdge
+                           return ()
+                       ))
+
 createLocalMenuButtonShowNumberOfNode :: ButtonMenu NodeDescr
 createLocalMenuButtonShowNumberOfNode =
   (Button "Show number of node"
@@ -831,7 +839,8 @@ getNumberOfRefNode descr dgAndabstrNodeMap dgraph =
 createLocalEdgeMenu :: GInfo -> LocalMenu EdgeValue
 createLocalEdgeMenu gInfo =
     LocalMenu (Menu (Just "edge menu")
-               [createLocalMenuButtonShowMorphismOfEdge gInfo,
+               [createLocalMenuButtonShowIDOfEdge gInfo,
+		createLocalMenuButtonShowMorphismOfEdge gInfo,
                 createLocalMenuButtonShowOriginOfEdge gInfo,
                 createLocalMenuButtonCheckconservativityOfEdge gInfo]
               )
@@ -839,7 +848,8 @@ createLocalEdgeMenu gInfo =
 createLocalEdgeMenuThmEdge :: GInfo -> LocalMenu EdgeValue
 createLocalEdgeMenuThmEdge gInfo =
    LocalMenu (Menu (Just "thm egde menu")
-              [createLocalMenuButtonShowMorphismOfEdge gInfo,
+              [	createLocalMenuButtonShowIDOfEdge gInfo,
+		createLocalMenuButtonShowMorphismOfEdge gInfo,
                 createLocalMenuButtonShowOriginOfEdge gInfo,
                 createLocalMenuButtonShowProofStatusOfThm gInfo,
                 createLocalMenuButtonCheckconservativityOfEdge gInfo]
@@ -1111,6 +1121,15 @@ proveAtNode checkCons
     Nothing -> error ("node with descriptor "
                       ++ (show descr)
                       ++ " has no corresponding node in the development graph")
+
+-- | print the id of the edge
+showIDOfEdge :: Descr -> Maybe (LEdge DGLinkLab) -> IO()
+showIDOfEdge _ (Just (_, _, linklab)) =
+      createTextDisplay "ID of Edge" (show $ dgl_id linklab) [HTk.size(30,10)] 
+showIDOfEdge descr Nothing =
+      createTextDisplay "Error"
+          ("edge "++(show descr)++" has no corresponding edge"
+                ++ "in the development graph") [HTk.size(30,10)]
 
 -- | print the morphism of the edge
 showMorphismOfEdge :: Descr -> Maybe (LEdge DGLinkLab) -> IO()
