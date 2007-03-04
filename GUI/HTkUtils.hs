@@ -43,6 +43,23 @@ listBox title entries =
        Just [i] -> Just i
        _ -> Nothing)
 
+-- | create a window which displays the given text and pass the given action on
+createInfoDisplay :: String -- ^ title of the window
+		     -> String -- ^ text to be displayed
+		     -> IO a
+		     -> IO ()
+createInfoDisplay title txt next = 
+  do 
+    win <- createToplevel [text title]
+    frame <- newFrame win [relief Groove, borderwidth (cm 0.05)]      
+    label <- newLabel frame [text txt, HTk.font (Helvetica, Roman, 18::Int)]
+    closeButton <- newButton frame [text "Close", width 12]    
+    pack frame [Side AtTop, Fill Both, Expand On]    
+    pack label [Side AtTop, Expand Off, PadY 10]
+    pack closeButton [Side AtTop, PadX 8, PadY 5]
+    quit <- clicked closeButton
+    spawnEvent (forever (quit >>> do destroy win; next))    
+    return ()
 
 -- |
 -- Display some (longish) text in an uneditable, scrollable editor.
@@ -127,6 +144,17 @@ displayTheory kind thname gth =
         title = kind ++ " of " ++ thname
      in createTextSaveDisplay title (thname++".het") str
 
+
+displayTheoryWithWarning :: String -- ^ kind of theory
+			 -> String -- ^ name of theory
+			 -> String -- ^ warning text
+			 -> G_theory -- ^ to be shown theory
+			 -> IO ()
+displayTheoryWithWarning kind thname warningTxt gth =
+    let str = warningTxt ++ (showDoc gth "\n")
+        title = kind ++ " of " ++ thname
+     in createTextSaveDisplay title (thname++".het") str
+			 
 
 --- added by RW
 {- |

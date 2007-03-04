@@ -177,10 +177,11 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv = do
             -- get known Provers
             kpMap <- liftR $ knownProversGUI
             let kpMap' = shrinkKnownProvers sublogic kpMap
-            newTh <- ResultT $
+	    newTh <- ResultT $
                    proofManagementGUI lid1 proveKnownPMap
                                            proveFineGrainedSelect
                                            thName
+					   (addHasInHidingWarning dGraph node)
                                            thForProof
                                            kpMap'
                                            (getProvers cms)
@@ -200,7 +201,7 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv = do
                 rules = [] -- map (\s -> BasicInference (Comorphism cid)
                            --     (BasicProof lidT s))
                          -- FIXME: [Proof_status] not longer available
-                nextHistoryElem = (rules,changes)
+                nextHistoryElem = (rules,changes)	
             return $ mkResultProofStatus libname libEnv
                    nextDGraph nextHistoryElem
 

@@ -57,7 +57,9 @@ import Proofs.StatusUtils
 import GUI.AbstractGraphView as AGV
 import GUI.ShowLogicGraph
 import GUI.Utils
-import qualified GUI.HTkUtils (displayTheory)
+import qualified GUI.HTkUtils (displayTheory, 
+			       displayTheoryWithWarning, 
+			       createInfoDisplay)
 import GUI.ProofManagement (GUIMVar)
 import GUI.Taxonomy (displayConceptGraph,displaySubsortGraph)
 import GUI.DGTranslation
@@ -988,8 +990,14 @@ getTheoryOfNode gInfo descr dgAndabstrNodeMap dgraph = do
   Res.Result ds res -> do
     showDiags (gi_hetcatsOpts gInfo) ds
     case res of
-      (Just (n, gth)) -> displayTheory ((addHasInHidingWarning dgraph n)++"Theory") n dgraph gth
+      (Just (n, gth)) -> 
+	    GUI.HTkUtils.displayTheoryWithWarning 
+		"Theory" 
+		(showName $ dgn_name $ lab' (context dgraph n))
+		(addHasInHidingWarning dgraph n) 
+		gth
       _ -> return ()
+				
 
 displayTheory :: String -> Node -> DGraph -> G_theory
               -> IO ()
@@ -997,12 +1005,6 @@ displayTheory ext node dgraph gth =
      GUI.HTkUtils.displayTheory ext
         (showName $ dgn_name $ lab' (context dgraph node))
         gth
-
-addHasInHidingWarning :: DGraph -> Node -> String
-addHasInHidingWarning dgraph n 
-     | hasIncomingHidingEdge dgraph n =
-           "< Warning: this node has incoming hiding links ! >\n"
-     | otherwise = ""      
 
 {- | translate the theory of a node in a window;
 used by the node menu defined in initializeGraph-}
@@ -1119,11 +1121,22 @@ showStatusAux dgnode =
 -- | start local theorem proving or consistency checking at a node
 proveAtNode :: Bool -> GInfo -> Descr -> DGraphAndAGraphNode -> DGraph -> IO()
 proveAtNode checkCons 
-            gInfo@(GInfo {gi_LIB_NAME = ln,
-                         proofGUIMVar = guiMVar}) descr dgAndabstrNodeMap _ =
+            gInfo@(GInfo {gi_LIB_NAME = ln, proofGUIMVar = guiMVar}) 
+	    descr 
+	    dgAndabstrNodeMap 
+	    dgraph =
   case InjMap.lookupWithB descr dgAndabstrNodeMap of
-    Just libNode -> proofMenu gInfo (basicInferenceNode checkCons logicGraph 
-                                                        libNode ln guiMVar)
+    Just libNode -> if (checkCons 
+		        || not (hasIncomingHidingEdge dgraph $ snd libNode)) 
+		       then  
+		       proofMenu gInfo (basicInferenceNode checkCons 
+					logicGraph libNode ln guiMVar)
+		       else 
+		       GUI.HTkUtils.createInfoDisplay 
+			   "Warning"
+			    "This node has incoming hiding links"
+			   (proofMenu gInfo (basicInferenceNode checkCons 
+					    logicGraph libNode ln guiMVar))		       
     Nothing -> error ("node with descriptor "
                       ++ (show descr)
                       ++ " has no corresponding node in the development graph")

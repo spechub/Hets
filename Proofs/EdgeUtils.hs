@@ -440,5 +440,12 @@ hasIncomingHidingEdge dgraph node = any (\(_, tgt, _) -> node == tgt) hidingEdge
       hidingEdges = filter (liftE isHidingEdge) $ labEdges dgraph
       
 
+addHasInHidingWarning :: DGraph -> Node -> String
+addHasInHidingWarning dgraph n 
+     | hasIncomingHidingEdge dgraph n =
+           "< Warning: this node has incoming hiding links ! >\n"
+     | otherwise = ""      
+
+
 
 

@@ -320,6 +320,7 @@ proofManagementGUI ::
         -> IO (Result.Result (ProofGUIState lid sentence)))
     -- ^ called whenever the "More fine grained selection" button is clicked
     -> String -- ^ theory name
+    -> String -- ^ warning information
     -> DevGraph.G_theory -- ^ theory
     -> KnownProvers.KnownProversMap -- ^ map of known provers
     -> [(G_prover,AnyComorphism)] -- ^ list of suitable comorphisms to provers
@@ -328,7 +329,7 @@ proofManagementGUI ::
                -- must be filled with Nothing and is filled with Nothing after closing the window; while the window is open it is filled with the Toplevel
     -> IO (Result.Result DevGraph.G_theory)
 proofManagementGUI lid proveF fineGrainedSelectionF
-                   thName th
+                   thName warningTxt th
                    knownProvers comorphList guiMVar =
   do
   -- KnownProvers.showKnownProvers knownProvers
@@ -642,8 +643,9 @@ proofManagementGUI lid proveF fineGrainedSelectionF
             done)
 
       +> (showTh >>> do
-            displayTheory "Theory" thName th
-            done)
+            --displayTheory "Theory" thName th
+            displayTheoryWithWarning "Theory" thName warningTxt th
+	    done)
       ))
 
   sync ( (close >>> destroy main)
