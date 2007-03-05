@@ -83,8 +83,7 @@ endif
 # remove -fno-warn-orphans for older ghcs and add -ifgl
 HC_WARN = -Wall -fno-warn-orphans
 HC_FLAGS = $(HAXML_PACKAGE) \
-    $(HC_WARN) -fglasgow-exts -fno-monomorphism-restriction -fcontext-stack60 \
-    -fallow-overlapping-instances -fallow-undecidable-instances
+    $(HC_WARN) -fglasgow-exts -fallow-overlapping-instances
 
 # -ddump-minimal-imports
 # flags also come in via  ../uni/uni-package.conf
@@ -135,7 +134,7 @@ PFE_DIRS = base/AST base/TI base/parse2 base/parse2/Lexer base/parse2/Parser \
 PFE_PATHS = $(addprefix $(PFE_TOOLDIR)/, $(PFE_DIRS))
 pfe_sources = $(wildcard $(addsuffix /*hs, $(PFE_PATHS)))
 PFE_PATH = $(addprefix -i, $(PFE_PATHS))
-PFE_FLAGS = -DPROGRAMATICA
+PFE_FLAGS = -package programatica -DPROGRAMATICA
 happy_files += $(PFE_TOOLDIR)/property/parse2/Parser/PropParser.hs
 
 LEX_DIR = $(PFE_TOOLDIR)/base/parse2/Lexer

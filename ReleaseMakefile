@@ -29,7 +29,7 @@ PFE_DIRS = base/AST base/TI base/parse2 base/parse2/Lexer base/parse2/Parser \
     property/syntax property/AST property/transforms \
     property/TI property/defs property/parse2 property/parse2/Parser
 PFE_PATH = $(addprefix -i$(PFE_TOOLDIR)/, $(PFE_DIRS))
-PFE_FLAGS = -DPROGRAMATICA
+PFE_FLAGS = -package programatica -DPROGRAMATICA
 endif
 
 # check for new HaXml-1.13.2
@@ -40,7 +40,7 @@ endif
 
 
 # OPTS without uni packages
-HC_OPTS1 = -fglasgow-exts -fallow-overlapping-instances -fcontext-stack60 \
+HC_OPTS1 = -fglasgow-exts -fallow-overlapping-instances \
     $(PFE_FLAGS) -DCASLEXTENSIONS
 
 HC_OPTS = $(HAXML_PACKAGE) $(HC_OPTS1) $(HC_PACKAGE)
