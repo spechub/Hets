@@ -24,6 +24,8 @@ import Syntax.AS_Library
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
 
+import Debug.Trace
+
 -- ---------------------
 -- global decomposition
 -- ---------------------
@@ -95,7 +97,7 @@ globDecompAux dgraph (edge:list) historyElem =
 -- applies global decomposition to a single edge
 globDecompForOneEdge :: DGraph -> LEdge DGLinkLab -> (DGraph,[DGChange])
 globDecompForOneEdge dgraph edge@(source, _, _) =
-  globDecompForOneEdgeAux dgraph edge [] paths
+  globDecompForOneEdgeAux dgraph edge [] paths []
   where
     defEdgesToSource = [e | e@(_, tgt, lbl) <- labEdges dgraph,
                         isDefEdge (dgl_type lbl) && tgt == source]
@@ -106,10 +108,12 @@ globDecompForOneEdge dgraph edge@(source, _, _) =
 {- auxiliary funktion for globDecompForOneEdge (above)
    actual implementation -}
 globDecompForOneEdgeAux :: DGraph -> LEdge DGLinkLab -> [DGChange] ->
-                           [[LEdge DGLinkLab]] -> (DGraph,[DGChange])
+                           [[LEdge DGLinkLab]] -> [LEdge DGLinkLab] -> 
+			   (DGraph,[DGChange])
 {- if the list of paths is empty from the beginning, nothing is done
    otherwise the unprovenThm edge is replaced by a proven one -}
-globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes [] =
+globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes 
+			[] proof_basis =
 --  if null changes then (dgraph, changes)
   -- else
      if isDuplicate provenEdge dgraph changes
@@ -120,7 +124,7 @@ globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes [] =
            --((DeleteEdge edge):((InsertEdge provenEdge):changes)))
   where
     (GlobalThm _ conservativity conservStatus) = (dgl_type edgeLab)
-    proofBasis = getInsertedEdges changes
+    proofBasis = proof_basis
     provenEdge = (source,
                   target,
                   DGLink {dgl_morphism = dgl_morphism edgeLab,
@@ -132,10 +136,17 @@ globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes [] =
                   )
 -- for each path an unproven localThm edge is inserted
 globDecompForOneEdgeAux dgraph edge@(_,target,_) changes
- (path:list) =
+ (path:list)  proof_basis =
+  case (tryToGetEdge newEdge dgraph changes) of
+       Nothing -> globDecompForOneEdgeAux newGraph edge newChanges list
+					  (newEdge:proof_basis)
+       Just e -> globDecompForOneEdgeAux dgraph edge changes list 
+					 (e:proof_basis)
+{-
   if isDuplicate newEdge dgraph changes-- list
     then globDecompForOneEdgeAux dgraph edge changes list
    else globDecompForOneEdgeAux newGraph edge newChanges list
+-}
   where
     (node, _, lbl) = head path
     lbltype = dgl_type lbl

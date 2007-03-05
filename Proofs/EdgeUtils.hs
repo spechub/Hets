@@ -19,10 +19,6 @@ import Static.DGToSpec
 import Data.Graph.Inductive.Graph
 import Data.List
 
-import Debug.Trace
-
---import Debug.Trace
-
 deLLEdge :: LEdge DGLinkLab -> DGraph -> DGraph
 deLLEdge e@(v, w, l) g = case match v g of
     (Just(p, v', l', s), g') ->
@@ -65,9 +61,9 @@ changeDG g c = case c of
     InsertNode n -> insLNode n g
     DeleteNode n -> delLNode n g
     InsertEdge e -> let 
-		    l@(_, _, edgelab) = initEdgeID e g 
+		    l = initEdgeID e g 
 		    in 
-		    trace (show $ dgl_id edgelab) $ insLEdge l g
+		    insLEdge l g
     DeleteEdge e -> deLLEdge e g
     SetNodeLab n -> labelNode n g    
 
@@ -183,6 +179,20 @@ isDuplicate :: LEdge DGLinkLab -> DGraph -> [DGChange] -> Bool
 isDuplicate newEdge dgraph changes =
     elem (InsertEdge newEdge) changes || elem newEdge (labEdges dgraph)
 
+tryToGetEdge :: LEdge DGLinkLab -> DGraph -> 
+		[DGChange] -> Maybe (LEdge DGLinkLab)
+tryToGetEdge newEdge dgraph changes =
+      case tryToGetEdgeFromChanges of 
+	   (Just e) -> Just e
+	   Nothing -> case tryToGetEdgeFromDGraph of
+			   (Just e) -> Just e
+			   Nothing -> Nothing
+      where
+      tryToGetEdgeFromChanges =
+		find (\e -> e==newEdge) (getInsertedEdges changes)
+      tryToGetEdgeFromDGraph = 
+		find (\e -> e==newEdge) (labEdges dgraph)
+      
 -- ----------------------------------------------
 -- methods that calculate paths of certain types
 -- ----------------------------------------------
@@ -401,25 +411,36 @@ adjustNode dgraph newNode =
 getAllOpenNodeGoals :: [DGNodeLab] -> [DGNodeLab]
 getAllOpenNodeGoals = filter hasOpenGoals
 
-{-
+
 --debugging functions
 
 trace_edge :: LEdge DGLinkLab -> String
-trace_edge (src, tgt, lab) = "("++(show src)++"->"++(show tgt)++" with prove status: "++(trace_edge_status lab)++") ->"
+trace_edge (src, tgt, label) = "("++(show src)++"->"++(show tgt)++" with prove status: "++(trace_edge_status label)++") ->"
 
 trace_path :: [LEdge DGLinkLab] -> String
 trace_path = concat . map trace_edge 
 
 trace_edge_status :: DGLinkLab -> String
-trace_edge_status lab = 
-    case (dgl_type lab) of 
+trace_edge_status label = 
+    case (dgl_type label) of 
        (GlobalThm (Proven _ _) _ _) -> "global proven"
        (LocalThm (Proven _ _) _ _) -> "local proven"
        (HidingThm _ (Proven _ _)) -> "hiding proven"
        (LocalThm LeftOpen _ _) -> "local unproven"
        (GlobalThm LeftOpen _ _) -> "global unproven"
+       GlobalDef -> "global def"
+       LocalDef  -> "local def"
+       HidingDef -> "hiding def" 
        _ -> "other unproven or proven"
--}
+
+trace_paths :: [[LEdge DGLinkLab]] -> String
+trace_paths = pathWithNum 1 
+	    where
+	    pathWithNum :: Int -> [[LEdge DGLinkLab]] -> String
+	    pathWithNum _ [] = ""
+	    pathWithNum n (x:xs) = (show n ++ trace_path x++"\n") 
+				++ pathWithNum (n+1) xs 
+
 
 {- | update both the given devgraph and the changelist with a given change -}
 updateWithOneChange :: DGChange -> DGraph -> [DGChange] -> (DGraph, [DGChange])
