@@ -34,7 +34,7 @@ SPASSURL_MAC = http://spass.mpi-sb.mpg.de/download/binaries/spass22mac.dmg
 SPASSURL_LINUX = http://spass.mpi-sb.mpg.de/download/binaries/spass22pclinux.tgz
 SPASS_SRC = http://spass.mpi-sb.mpg.de/download/sources/spass22.tgz
 
-download : izpack_checkout hetcats-make casl-lib-checkout other-download
+download : izpack_checkout hetcats-make daily-hets-download other-download
 
 casl-lib-checkout :
 	@echo update casl-lib 
@@ -55,7 +55,7 @@ casl-lib-checkout :
 	    fi ; \
 	done 
 
-hetcats-make : tools-checkout daily-hets-download
+hetcats-make : tools-checkout
 	cd $(IZPACK_SAMPLE)/src ;\
 	cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:\/repository co -P HetCATS 
 	cd $(IZPACK_SAMPLE)/src/HetCATS ;\
@@ -65,6 +65,8 @@ hetcats-make : tools-checkout daily-hets-download
 	cp utils/SPASS-ppc-mac/SPASS* $(IZPACK_SAMPLE)/SPASS/MAC/$(SPASS_DIR_MAC)/SPASS ;\
 	cp utils/el/*.el  $(IZPACK_SAMPLE)/hets  ;\
 	cp hets.in $(IZPACK_SAMPLE)/hets/hets ;\
+	cp utils/getAllHets.sh $(IZPACK_SAMPLE) ;\
+	cp utils/getDailyHets-installer.sh $(IZPACK_SAMPLE)/getDailyHets.sh ;\
 	$(MAKE) release ;\
 	mv HetCATS.tar $(IZPACK_SAMPLE)/src/ ;\
 	mkdir $(IZPACK_SAMPLE)/hets/OWLParser ; \
@@ -76,9 +78,8 @@ hetcats-make : tools-checkout daily-hets-download
 	cd $(IZPACK_SAMPLE)/src ; tar xvf HetCATS.tar ; $(RM) HetCATS.tar
 
 daily-hets-download :
-	@sh getAllHets.sh $(HETS_VERSION)  ;\
-	rm getAllHets.sh  ;\
-	mv getDailyHets.sh $(IZPACK_SAMPLE)  ;\
+	@sh $(IZPACK_SAMPLE)/getAllHets.sh $(HETS_VERSION)  ;\
+	rm $(IZPACK_SAMPLE)/getAllHets.sh  ;\
 	mv $(HOME)/tmp/hets_installer/hets/* $(IZPACK_SAMPLE)/hets/
 
 tools-checkout :
@@ -113,7 +114,7 @@ izpack_checkout :
               hets_inst_tmp 2>/dev/null  ; \
 	mv hets_inst_tmp $(IZPACK_SAMPLE)/pack/install-solaris.xml   
 
-other-download :
+other-download : casl-lib-checkout
 	wget --output-document=$(IZPACK_SAMPLE)/GMP/GMP.framework.zip $(GMPURL) ; \
 	cd $(IZPACK_SAMPLE)/GMP ; \
 	unzip GMP.framework.zip ; \

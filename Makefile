@@ -785,9 +785,7 @@ initialize_installer:
 	@sed "s/^\(HETS_VERSION=\).*/\1`cat version_nr`/" Makefile.installer > Makefile.inst  ;\
 	 sed "s/^\(SPASS_DIR_MAC=\).*/\1`ls utils/SPASS-ppc-mac/ | grep SPASS`/"  Makefile.inst > Makefile.inst2 ;\
 	 rm Makefile.inst ;\
-	 mv Makefile.inst2 $(INSTALLER_DIR)/Makefile ; \
-	 cp utils/getAllHets.sh $(INSTALLER_DIR) ;\
-	 cp utils/getDailyHets-installer.sh $(INSTALLER_DIR)\getDailyHets.sh
+	 mv Makefile.inst2 $(INSTALLER_DIR)/Makefile
 	@echo =========================================================================
 	@echo If you have not logged in \'cvs.haskell.org\' and \'cvs-agbkb.informatik.uni-bremen.de\'
 	@echo "then please first login:"
