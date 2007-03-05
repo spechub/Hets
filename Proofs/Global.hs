@@ -24,7 +24,7 @@ import Syntax.AS_Library
 import Proofs.EdgeUtils
 import Proofs.StatusUtils
 
-import Debug.Trace
+--import Debug.Trace
 
 -- ---------------------
 -- global decomposition
