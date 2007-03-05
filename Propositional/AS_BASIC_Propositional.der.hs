@@ -43,7 +43,7 @@ import Common.AS_Annotation as AS_Anno
 data PRED_ITEM = Pred_item [Id.Token] Id.Range
                deriving Show
 
-data BASIC_SPEC = Basic_spec [AS_Anno.Annoted (BASIC_ITEMS)]
+newtype BASIC_SPEC = Basic_spec [AS_Anno.Annoted (BASIC_ITEMS)]
                   deriving Show
 
 data BASIC_ITEMS = 
@@ -87,7 +87,7 @@ data SYMB_ITEMS = Symb_items [SYMB] Id.Range
                   -- pos: SYMB_KIND, commas
                   deriving (Show, Eq)
 
-data SYMB = Symb_id Id.Token
+newtype SYMB = Symb_id Id.Token
             -- pos: colon
             deriving (Show, Eq)
 

@@ -27,74 +27,94 @@ import qualified Common.GlobalAnnotations as GlobalAnnos
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.Result as Result
 import qualified Common.Id as Id
+import qualified Data.List as List
+import qualified Data.Set as Set
 
 -- | Retrieves the signature out of a basic spec
 makeSig :: 
     AS_BASIC.BASIC_SPEC                  -- Input SPEC
     -> Sign.Sign                         -- Input Signature
     -> Sign.Sign                         -- Output Signature
-makeSig (AS_BASIC.Basic_spec spec) sig = retrieveBasicItems spec sig
+makeSig (AS_BASIC.Basic_spec spec) sig = List.foldl retrieveBasicItem sig spec
 
 -- Helper for makeSig
-retrieveBasicItems ::
-    [AS_Anno.Annoted (AS_BASIC.BASIC_ITEMS)]      -- Input Items
-    -> Sign.Sign                                  -- Input Signature
-    -> Sign.Sign                                  -- OutputSignature
-retrieveBasicItems [] sig = sig
-retrieveBasicItems (x:xs) sig = 
-    case (AS_Anno.item x) of 
-      (AS_BASIC.Pred_decl pred) -> retrieveBasicItems xs $ addPred sig $ unwrapPred pred
-      (AS_BASIC.Axiom_items _) -> retrieveBasicItems xs sig
-
-unwrapPred :: AS_BASIC.PRED_ITEM -> [Id.Token]
-unwrapPred (AS_BASIC.Pred_item xs _) = xs
-
--- adds a predicate = prop to an signature
-addPred :: Sign.Sign -> [Id.Token] -> Sign.Sign
-addPred sig [] = sig
-addPred sig (x:xs) = addPred (Sign.addToSig sig (Id.simpleIdToId x)) xs
+retrieveBasicItem :: 
+    Sign.Sign                                     -- Input Signature
+    -> AS_Anno.Annoted (AS_BASIC.BASIC_ITEMS)     -- Input Item
+    -> Sign.Sign                                  -- Output Signature
+retrieveBasicItem sig x = 
+    case (AS_Anno.item x) of
+      (AS_BASIC.Pred_decl apred) -> List.foldl 
+                                    (\asig ax-> Sign.addToSig asig $ Id.simpleIdToId ax) 
+                                    sig $ (\(AS_BASIC.Pred_item xs _)-> xs) apred
+      (AS_BASIC.Axiom_items _)   -> sig
 
 -- | Retrieve the formulas out of a basic spec
 makeFormulas :: 
     AS_BASIC.BASIC_SPEC
+    -> Sign.Sign
     -> [AS_Anno.Named (AS_BASIC.FORMULA)]
-makeFormulas (AS_BASIC.Basic_spec bspec) = retrieveFormulaItems bspec []
+makeFormulas (AS_BASIC.Basic_spec bspec) sig = List.foldl (\xs bs -> retrieveFormulaItem xs bs sig) []  bspec
 
 -- Helper for makeFormulas
-retrieveFormulaItems ::
-    [AS_Anno.Annoted (AS_BASIC.BASIC_ITEMS)]
+retrieveFormulaItem :: 
+    [AS_Anno.Named (AS_BASIC.FORMULA)]
+    -> AS_Anno.Annoted (AS_BASIC.BASIC_ITEMS)
+    -> Sign.Sign
     -> [AS_Anno.Named (AS_BASIC.FORMULA)]
-    -> [AS_Anno.Named (AS_BASIC.FORMULA)]
-retrieveFormulaItems (x:xs) axs = 
+retrieveFormulaItem axs x sig = 
     case (AS_Anno.item x) of 
-      (AS_BASIC.Pred_decl _) -> retrieveFormulaItems xs axs 
-      (AS_BASIC.Axiom_items ax) -> retrieveFormulaItems xs $ recurseIntoAxioms ax axs
-retrieveFormulaItems [] axs = axs
-
--- Recursion into the Axioms
-recurseIntoAxioms :: [AS_Anno.Annoted (AS_BASIC.FORMULA)] 
-                     -> [AS_Anno.Named (AS_BASIC.FORMULA)]
-                     -> [AS_Anno.Named (AS_BASIC.FORMULA)]
-recurseIntoAxioms [] formulae = formulae
-recurseIntoAxioms (x:xs) formulae = recurseIntoAxioms xs $ addFormula x formulae
+      (AS_BASIC.Pred_decl _)    -> axs 
+      (AS_BASIC.Axiom_items ax) -> List.foldl (\xs bs -> addFormula xs bs sig) axs ax
 
 --  Add a formula to a named list of formulas
-addFormula :: AS_Anno.Annoted (AS_BASIC.FORMULA) 
-           -> [AS_Anno.Named (AS_BASIC.FORMULA)]
+addFormula :: [AS_Anno.Named (AS_BASIC.FORMULA)]
+           -> AS_Anno.Annoted (AS_BASIC.FORMULA) 
+           -> Sign.Sign
            -> [AS_Anno.Named (AS_BASIC.FORMULA)]             
-addFormula f formulae = formulae ++ [AS_Anno.emptyName $ AS_Anno.item f] 
+addFormula formulae f sign
+    | isLegal = formulae ++ [AS_Anno.emptyName nakedFormula] 
+    | otherwise = error "Unknown proposition"
+    where
+      nakedFormula  = AS_Anno.item f
+      varsOfFormula = propsOfFormula nakedFormula
+      isLegal       = Sign.isSubSigOf varsOfFormula sign
+      difference    = Sign.sigDiff varsOfFormula sign
 
+propsOfFormula :: AS_BASIC.FORMULA -> Sign.Sign
+propsOfFormula (AS_BASIC.Negation form _) = propsOfFormula form
+propsOfFormula (AS_BASIC.Implication form1 form2 _) = Sign.unite (propsOfFormula form1)
+                                           (propsOfFormula form2)
+propsOfFormula (AS_BASIC.Equivalence form1 form2 _) = Sign.unite (propsOfFormula form1)
+                                           (propsOfFormula form2)
+propsOfFormula (AS_BASIC.True_atom _)  = Sign.emptySig
+propsOfFormula (AS_BASIC.False_atom _) = Sign.emptySig
+propsOfFormula (AS_BASIC.Predication x) = Sign.Sign{Sign.items = Set.singleton $ 
+                                                                 Id.simpleIdToId x }
+propsOfFormula (AS_BASIC.Conjunction xs _) = List.foldl (\ sig frm -> Sign.unite sig $ 
+                                                                      propsOfFormula frm) 
+                                             Sign.emptySig xs
+propsOfFormula (AS_BASIC.Disjunction xs _) = List.foldl (\ sig frm -> Sign.unite sig $ 
+                                                                      propsOfFormula frm) 
+                                             Sign.emptySig xs
+
+-- Basic analysis for propostional logic
 basicAnalysis :: AS_BASIC.BASIC_SPEC 
               -> Sign.Sign
               -> GlobalAnnos.GlobalAnnos
               -> Result.Result (
                                 AS_BASIC.BASIC_SPEC
                                ,Sign.Sign
-                               ,[AS_Anno.Named (AS_BASIC.FORMULA)]                              
+                               ,[AS_Anno.Named (AS_BASIC.FORMULA)]
                                )
-basicAnalysis bs sig ga = Result.Result [] $ Just (bs, makeSig bs sig, makeFormulas bs)
+basicAnalysis bs sig _ = 
+    let 
+        bsSig = makeSig bs sig
+        bsForm = makeFormulas bs bsSig
+    in
+    Result.Result [] $ Just (bs, bsSig, bsForm)
 
--- Wrapper for the interface defined in Logic.Logic
+-- | Wrapper for the interface defined in Logic.Logic
 basicPropositionalAnalysis :: (
                                AS_BASIC.BASIC_SPEC
                               , Sign.Sign

@@ -68,24 +68,37 @@ idMor a = Morphism
       makeIdMor b = Set.fold (\x -> Map.insert x x) Map.empty b
 
 -- | Determines whether a morphism is valid
--- since all maps from sets to sets are ok,
--- this value is glued to true
-
 isLegalMorphism :: Morphism -> Bool
-isLegalMorphism _ = True
+isLegalMorphism pmor = 
+    let
+        psource = items $ source pmor
+        ptarget = items $ target pmor
+        pdom    = Map.keysSet $ propMap pmor
+        pcodom  = Set.map (applyMorphism pmor) $ psource
+    in
+      Set.isSubsetOf pcodom ptarget && Set.isSubsetOf pdom psource
+
+-- | Application funtion for morphisms
+applyMorphism :: Morphism -> Id -> Id
+applyMorphism mor idt = Map.findWithDefault idt idt $ propMap mor
+
+-- | Application function for propMaps
+applyMap :: PropMap -> Id -> Id
+applyMap pmap idt = Map.findWithDefault idt idt pmap
 
 -- | Composition of morphisms in propositional Logic
--- possibly there are far better way to solve this,
--- but I am jsut a n00b :)
-
 composeMor :: Morphism -> Morphism -> Result Morphism
 composeMor f g
     | fTarget /= gSource = fail "Morphisms are not composable"
     | otherwise = return Morphism
                   {
-                   source = fSource
+                    source = fSource
                   , target = gTarget
-                  , propMap = composeHelper fassoc gMap Map.empty
+                  , propMap = if Map.null gMap then fMap else
+                                  Set.fold ( \ i ->
+                                                 let j = applyMap gMap (applyMap fMap i) in
+                                                 if i == j then id else Map.insert i j)
+                                  Map.empty $ items fSource
                   }
     where
       fSource = source f
@@ -94,14 +107,6 @@ composeMor f g
       gTarget = target g
       fMap    = propMap f
       gMap    = propMap g
-      fassoc  = Map.assocs fMap
-      composeHelper :: (Ord a, Ord k, Ord b) => [(k, a)] -> Map.Map a b 
-                    -> Map.Map k b -> Map.Map k b
-      composeHelper [] _ newMor          = newMor
-      composeHelper ((k, a):xs) h newMor =
-          case Map.lookup a h of
-            Nothing -> composeHelper xs h newMor
-            Just v  -> composeHelper xs h (Map.insert k v newMor)
 
 -- | Pretty printing for Morphisms
 printMorphism :: Morphism -> Doc

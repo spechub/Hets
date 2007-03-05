@@ -31,7 +31,7 @@ import qualified Propositional.Sign as Sign
 import qualified Propositional.Morphism as Morphism
 
 -- | Datatype for symbols
-data Symbol = Symbol {symName :: Id.Id}
+newtype Symbol = Symbol {symName :: Id.Id}
             deriving (Show, Eq, Ord)
 
 instance Pretty Symbol where
@@ -42,15 +42,14 @@ printSymbol x = pretty $ symName x
 
 -- | Extraction of symbols from a signature
 symOf :: Sign.Sign -> Set.Set Symbol
-symOf  x = foldr (\y -> Set.insert $ Symbol {symName = y}) Set.empty $ 
-           Set.toList $ Sign.items x
+symOf  x = Set.fold (\y -> Set.insert Symbol{symName = y}) Set.empty $ 
+           Sign.items x
 
 -- | Determines the symbol map of a morhpism
 getSymbolMap :: Morphism.Morphism -> Map.Map Symbol Symbol
-getSymbolMap f = foldr 
-                 (\(x,y) -> Map.insert Symbol{symName = x} 
-                            Symbol{symName = y}) 
-                 Map.empty $ Map.assocs $ Morphism.propMap f
+getSymbolMap f = Map.foldWithKey 
+                 (\ k a -> Map.insert Symbol{symName=k} Symbol{symName=a}) 
+                 Map.empty $ Morphism.propMap f
 
 -- | Determines the name of a symbol
 getSymbolName :: Symbol -> Id.Id
