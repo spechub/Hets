@@ -1,4 +1,5 @@
-{-# OPTIONS -fglasgow-exts -fallow-incoherent-instances #-}
+{-# OPTIONS -fglasgow-exts -fallow-undecidable-instances #-}
+{-# OPTIONS -fallow-incoherent-instances #-}
 {- |
 Module      :  $Header$
 Description :  interface (type class) for logic projections (morphisms) in Hets
@@ -213,7 +214,7 @@ instance Morphism cid
  parse_symb_items _ = Nothing
  parse_symb_map_items _ = Nothing
 
-newtype S2 s = S2 { s2 :: s } deriving (Eq, Ord, Show, Typeable)
+newtype S2 s = S2 { sentence2 :: s } deriving (Eq, Ord, Show, Typeable)
 
 instance Pretty s => Pretty (S2 s)
 instance ShATermConvertible s => ShATermConvertible (S2 s)
@@ -243,7 +244,7 @@ instance Morphism cid
  parse_sentence (SpanDomain cid) = fmap (fmap S2) $
                                    parse_sentence (morTargetLogic cid)
  print_named (SpanDomain cid) = print_named (morTargetLogic cid)
-     . mapNamed s2
+     . mapNamed sentence2
  sym_of (SpanDomain cid) = sym_of (morSourceLogic cid)
  symmap_of (SpanDomain cid) = symmap_of (morSourceLogic cid)
  sym_name (SpanDomain cid) = sym_name (morSourceLogic cid)
@@ -340,10 +341,10 @@ instance ( MinSublogic sublogics1 ()
          ) => Logic (SpanDomain cid) (SublogicsPair sublogics1 sublogics2) ()
           (S2 sentence2) () () sign1 morphism1 sign_symbol1 symbol1 proof_tree2
     where
-      stability (SpanDomain cid) = Experimental
-      data_logic (SpanDomain cid) = Nothing
+      stability (SpanDomain _) = Experimental
+      data_logic (SpanDomain _) = Nothing
       top_sublogic (SpanDomain cid) = SublogicsPair
-         (top_sublogic $ morSourceLogic cid) $ top_sublogic $ morTargetLogic cid
+        (top_sublogic $ morSourceLogic cid) $ top_sublogic $ morTargetLogic cid
       all_sublogics (SpanDomain cid) =
           [ SublogicsPair x y
           | x <- all_sublogics (morSourceLogic cid)
