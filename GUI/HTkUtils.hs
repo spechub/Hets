@@ -46,19 +46,25 @@ listBox title entries =
 -- | create a window which displays the given text and pass the given action on
 createInfoDisplay :: String -- ^ title of the window
 		     -> String -- ^ text to be displayed
-		     -> IO a
+		     -> String -- ^ text to be shown on button 2
+		     -> IO a -- ^ action to be performed if button 2 is clicked
 		     -> IO ()
-createInfoDisplay title txt next = 
+createInfoDisplay title txt bt_txt next = 
   do 
     win <- createToplevel [text title]
     frame <- newFrame win [relief Groove, borderwidth (cm 0.05)]      
     label <- newLabel frame [text txt, HTk.font (Helvetica, Roman, 18::Int)]
     closeButton <- newButton frame [text "Close", width 12]    
+    goOnButton <- newButton frame [text bt_txt, width 12]
     pack frame [Side AtTop, Fill Both, Expand On]    
     pack label [Side AtTop, Expand Off, PadY 10]
     pack closeButton [Side AtTop, PadX 8, PadY 5]
+    pack goOnButton [Side AtTop, PadX 8, PadY 5]
     quit <- clicked closeButton
-    spawnEvent (forever (quit >>> do destroy win; next))    
+    goon <- clicked goOnButton
+    spawnEvent (forever ((quit >>> (do destroy win; return ()))
+			+>
+		       (goon >>> (do destroy win; next; return ()))))
     return ()
 
 -- |

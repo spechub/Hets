@@ -99,6 +99,8 @@ import Events
 import DialogWin (useHTk)
 import Messages
 
+--import Debug.Trace
+
 {- Maps used to track which node resp edge of the abstract graph
 correspondes with which of the development graph and vice versa and
 one Map to store which libname belongs to which development graph-}
@@ -1038,8 +1040,14 @@ translateTheoryOfNode gInfo@(GInfo {gi_hetcatsOpts = opts})
          -- translate theory along chosen comorphism
          (sign'',sens1) <-
              liftR $ wrapMapTheory cid (sign', toNamedList sens')
-         lift $ displayTheory "Translated theory" node dgraph
-            (G_theory lidT sign'' 0 (toThSens sens1) 0)
+         lift $ GUI.HTkUtils.displayTheoryWithWarning 
+		"Translated Theory" 
+		(showName $ dgn_name $ lab' (context dgraph node))
+		(addHasInHidingWarning dgraph node) 
+		(G_theory lidT sign'' 0 (toThSens sens1) 0)
+	      {-
+	      $ displayTheory "Translated theory" node dgraph
+            (G_theory lidT sign'' 0 (toThSens sens1) 0)-}
      )
     showDiags opts ds
     return ()
@@ -1134,7 +1142,8 @@ proveAtNode checkCons
 		       else 
 		       GUI.HTkUtils.createInfoDisplay 
 			   "Warning"
-			    "This node has incoming hiding links"
+			   "This node has incoming hiding links!!!"
+			   "Prove anyway"
 			   (proofMenu gInfo (basicInferenceNode checkCons 
 					    logicGraph libNode ln guiMVar))		       
     Nothing -> error ("node with descriptor "
@@ -1402,7 +1411,7 @@ applyChanges :: Descr -> LIB_NAME -> GraphInfo -> Descr -> IORef [[Node]]
 applyChanges _ _ _ eventDescr _ convMaps [] = return (eventDescr,convMaps)
 applyChanges gid libname grInfo eventDescr ioRefVisibleNodes
              convMaps (historyElem:_) =
-  --trace (concat $ map showDGRule (fst historyElem)) $ 
+--  trace (concat $ map showDGRule (fst historyElem)) $ 
 	applyChangesAux gid libname grInfo ioRefVisibleNodes
         (eventDescr, convMaps) changes
   where changes = removeContraryChanges (snd historyElem)
