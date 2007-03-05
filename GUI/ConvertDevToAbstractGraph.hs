@@ -63,6 +63,7 @@ import qualified GUI.HTkUtils (displayTheory,
 import GUI.ProofManagement (GUIMVar)
 import GUI.Taxonomy (displayConceptGraph,displaySubsortGraph)
 import GUI.DGTranslation
+import GUI.ShowLibGraph
 
 import FileDialog
 import Broadcaster(newSimpleBroadcaster,applySimpleUpdate)
@@ -303,6 +304,13 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts title = do
                    Button "Translation"
                           (openTranslateGraph (libname2dg convMaps) ln opts 
                                 $ (getDGLogic (libname2dg convMaps)))
+                  ],
+                  Menu (Just "Library Graph")
+                  [
+                   Button "show"
+                          (do
+			     le <- readIORef (libEnvIORef gInfo)
+                             showLibGraph opts le)
                   ]
                   ])]
       -- the node types
