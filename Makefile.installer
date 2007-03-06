@@ -101,6 +101,7 @@ izpack_checkout :
 	 else \
 	  svn checkout https://svn-agbkb.informatik.uni-bremen.de/izpack $(IZPACK_PATH) ; \
 	fi
+	@mv $(IZPACK_SAMPLE)/pack/scripts/uninstall.sh $(IZPACK_SAMPLE)/pack/scripts/.uninstall.sh
 	@sed -e $(SED_COMMAND) \
               $(IZPACK_SAMPLE)/pack/install-linux.xml > \
               hets_inst_tmp 2>/dev/null  ; \
