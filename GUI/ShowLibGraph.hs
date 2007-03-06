@@ -89,7 +89,7 @@ showSpec le ln =
   do
     let
       ge = globalEnv $ lookupGlobalContext ln le
-      sp = unlines $ map (show) (Map.elems ge)
+      sp = unlines $ map show $ Map.keys $ ge
     createTextDisplay ("Contents of " ++ (show ln)) sp [size(80,25)]
 
 -- | Runs the showGraph function
