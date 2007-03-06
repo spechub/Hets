@@ -28,12 +28,14 @@ module Propositional.Morphism
     ,isLegalMorphism             -- check if morhpism is ok
     ,composeMor                  -- composition
     ,inclusionMap                -- inclusion map
+    ,mapSentence                 -- map of sentences
     ) where
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Propositional.Sign as Sign
 import qualified Common.Result as Result
+import qualified Propositional.AS_BASIC_Propositional as AS_BASIC
 import Common.Id as Id
 import Common.Result
 import Common.Doc
@@ -149,3 +151,34 @@ inclusionMap s1 s2
     where
       isSub = Sign.isSubSigOf s1 s2
       errorStr = (show $ pretty s1) ++ " is not subset of " ++ (show $ pretty s2)
+
+-- | gets simple Id
+getSimpleId :: Id.Id -> [Id.Token]
+getSimpleId (Id toks _ _) = toks
+
+-- | sentence translation along signature morphism
+-- here just the renaming of formulae
+mapSentence :: Morphism -> AS_BASIC.FORMULA -> Result.Result AS_BASIC.FORMULA
+mapSentence mor form = Result.Result
+                       {
+                         diags = [Diag
+                                  {
+                                    Result.diagKind   = Result.Debug
+                                  , Result.diagString = "All fine mapSentence"
+                                  , diagPos           = Id.nullRange
+                                  }]
+                       , maybeResult = Just $ mapSentenceH mor form                          
+                       }
+
+mapSentenceH :: Morphism -> AS_BASIC.FORMULA -> AS_BASIC.FORMULA
+mapSentenceH mor (AS_BASIC.Negation form rn) = AS_BASIC.Negation (mapSentenceH mor form) rn
+mapSentenceH mor (AS_BASIC.Conjunction form rn) = AS_BASIC.Conjunction (map (mapSentenceH mor) form) rn
+mapSentenceH mor (AS_BASIC.Disjunction form rn) = AS_BASIC.Disjunction (map (mapSentenceH mor) form) rn
+mapSentenceH mor (AS_BASIC.Implication form1 form2 rn) = AS_BASIC.Implication (mapSentenceH mor form1) 
+                                                        (mapSentenceH mor form2) rn
+mapSentenceH mor (AS_BASIC.Equivalence form1 form2 rn) = AS_BASIC.Equivalence (mapSentenceH mor form1) 
+                                                        (mapSentenceH mor form2) rn
+mapSentenceH _ (AS_BASIC.True_atom rn) = AS_BASIC.True_atom rn
+mapSentenceH _ (AS_BASIC.False_atom rn) = AS_BASIC.False_atom rn
+mapSentenceH mor (AS_BASIC.Predication predH) = AS_BASIC.Predication (head $ getSimpleId $ 
+                                                                             (applyMorphism mor $ Id.simpleIdToId predH))

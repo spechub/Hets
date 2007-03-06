@@ -38,6 +38,7 @@ import qualified Propositional.ATC_Propositional()
 import qualified Propositional.Symbol as Symbol
 import qualified Propositional.Parse_AS_Basic as Parse_AS
 import qualified Propositional.Analysis as Analysis
+import qualified Common.Id as Id
 
 -- | Lid for propositional logic
 data Propositional = Propositional deriving Show --lid
@@ -63,7 +64,7 @@ instance Category Propositional Sign.Sign Morphism.Morphism where
     -- composition of morphisms
     comp Propositional f g = Morphism.composeMor f g
 
--- | Instance of Sentences for propositional logic
+-- | Instance of Sentences for propoooositional logic
 instance Sentences Propositional AS_BASIC.FORMULA () 
     Sign.Sign Morphism.Morphism Symbol.Symbol where
     -- returns the set of symbols
@@ -74,6 +75,11 @@ instance Sentences Propositional AS_BASIC.FORMULA ()
     sym_name Propositional = Symbol.getSymbolName
     -- default entry
     empty_proof_tree Propositional = error "Not yet implemented"
+    -- translation of sentences along signature morphism
+    map_sen Propositional = Morphism.mapSentence
+    -- there is nothing to leave out
+    simplify_sen Propositional _ form = form 
+    
 
 -- | Syntax of Propositional logic
 instance Syntax Propositional AS_BASIC.BASIC_SPEC 
@@ -101,7 +107,7 @@ instance Logic Propositional
 instance StaticAnalysis Propositional
     AS_BASIC.BASIC_SPEC                -- basic_spec
     AS_BASIC.FORMULA                   -- sentence
-    ()                                 -- proff_tree
+    ()                                 -- proof_tree
     AS_BASIC.SYMB_ITEMS                -- symb_items
     AS_BASIC.SYMB_MAP_ITEMS            -- symb_map_items
     Sign.Sign                          -- sign
@@ -109,6 +115,11 @@ instance StaticAnalysis Propositional
     Symbol.Symbol                      -- symbol
     ()                                 -- raw_symbol
         where
-          basic_analysis Propositional  = Just $ Analysis.basicPropositionalAnalysis
-          empty_signature Propositional = Sign.emptySig
-          inclusion Propositional = Morphism.inclusionMap 
+          basic_analysis Propositional       = Just $ 
+                                               Analysis.basicPropositionalAnalysis
+          empty_signature Propositional        = Sign.emptySig
+          inclusion Propositional              = Morphism.inclusionMap 
+          signature_union Propositional        = Sign.sigUnion
+          is_subsig Propositional              = Sign.isSubSigOf
+          signature_difference Propositional   = Sign.diffOfSigs
+          sign_to_basic_spec Propositional _ _ = AS_BASIC.Basic_spec []

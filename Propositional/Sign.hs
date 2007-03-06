@@ -29,11 +29,14 @@ module Propositional.Sign
     ,unite                         -- union of sigantures
     ,emptySig                      -- empty signature
     ,isSubSigOf                    -- is subsiganture?
-    , sigDiff                      -- Difference of Signatures
+    ,sigDiff                       -- Difference of Signatures
+    ,sigUnion                      -- Union for Logic.Logic
+    ,diffOfSigs                    -- Difference for Logic.Logic
     ) where
 
 import qualified Data.Set as Set
 import qualified Common.Id as Id
+import qualified Common.Result as Result
 import Common.Doc
 import Common.DocUtils
 
@@ -50,6 +53,7 @@ instance Pretty Sign where
 isLegalSignature :: Sign -> Bool
 isLegalSignature _ = True
 
+-- | pretty printing for Signatures
 printSign :: Sign -> Doc
 printSign s = specBraces $ (sepByCommas $ map pretty (Set.toList $ items s))
 
@@ -75,3 +79,44 @@ isSubSigOf sig1 sig2 = Set.isSubsetOf (items sig1) (items sig2)
 -- | difference of Signatures
 sigDiff :: Sign -> Sign -> Sign
 sigDiff sig1 sig2 = Sign{items = Set.difference (items sig1) (items sig2)}
+
+-- | union of Signatures
+-- or do I have to care about more things here?
+sigUnion :: Sign -> Sign -> Result.Result Sign
+sigUnion s1 s2 = Result.Result 
+                 {
+                   Result.diags = [Result.Diag
+                            {
+                              Result.diagKind   = Result.Debug
+                            , Result.diagString = "All fine sigUnion"
+                            , Result.diagPos    = Id.nullRange
+                            }]
+                 , Result.maybeResult = Just $ unite s1 s2
+                 }
+
+-- | difference of signatures for Logic.Logic
+-- uses sigDiff
+diffOfSigs :: Sign -> Sign -> Result.Result Sign
+diffOfSigs s1 s2 
+    | isSubSigOf s1 s2 = Result.Result 
+                         {
+                           Result.diags = [Result.Diag
+                                           {
+                                             Result.diagKind   = Result.Debug
+                                           , Result.diagString = "All fine diffOfSigs"
+                                           , Result.diagPos    = Id.nullRange
+                                           }]
+                         , Result.maybeResult = Just $ sigDiff s1 s2
+                         }
+    | otherwise         = Result.Result 
+                         {
+                           Result.diags = [Result.Diag
+                                           {
+                                             Result.diagKind   = Result.Debug
+                                           , Result.diagString = (show $ pretty s1) ++
+                                                                 " not subsignatue of " ++
+                                                                 (show $ pretty s2)
+                                           , Result.diagPos    = Id.nullRange
+                                           }]
+                         , Result.maybeResult = Nothing
+                         }
