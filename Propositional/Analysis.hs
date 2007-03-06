@@ -32,10 +32,18 @@ import qualified Data.Set as Set
 import Common.Doc()
 import Common.DocUtils
 
+-- | Datatype for formulas with diagnosis data
 data DIAG_FORM = DiagForm 
     {
       formula :: AS_Anno.Named (AS_BASIC.FORMULA),
       diagnosis :: Result.Diagnosis
+    }
+
+-- | Formula annotated with a number
+data NUM_FORM = NumForm
+    {
+      nfformula :: AS_Anno.Annoted (AS_BASIC.FORMULA)
+    , nfnum     :: Integer
     }
 
 -- | Retrieves the signature out of a basic spec
@@ -76,20 +84,20 @@ retrieveFormulaItem axs x sig =
       (AS_BASIC.Axiom_items ax) -> List.foldl (\xs bs -> addFormula xs bs sig) axs $ numberFormulae ax 0
 
 -- Number formulae
-numberFormulae :: [AS_Anno.Annoted (AS_BASIC.FORMULA)] -> Integer -> [(AS_Anno.Annoted (AS_BASIC.FORMULA), Integer)]
+numberFormulae :: [AS_Anno.Annoted (AS_BASIC.FORMULA)] -> Integer -> [NUM_FORM]
 numberFormulae [] _ = []
 numberFormulae (x:xs) i 
-    | label == "" =  (x, i) : (numberFormulae xs $ i + 1)
-    | otherwise   =  (x, 0) : (numberFormulae xs $ i)
+    | label == "" =  NumForm{nfformula = x, nfnum = i} : (numberFormulae xs $ i + 1)
+    | otherwise   =  NumForm{nfformula = x, nfnum = 0} : (numberFormulae xs $ i)
     where
       label = AS_Anno.getRLabel x
 
 --  Add a formula to a named list of formulas
 addFormula :: [DIAG_FORM]
-           -> (AS_Anno.Annoted (AS_BASIC.FORMULA), Integer) 
+           -> NUM_FORM
            -> Sign.Sign
            -> [DIAG_FORM]             
-addFormula formulae (f, i) sign
+addFormula formulae nf sign
     | isLegal == True = formulae ++ [DiagForm
                                      {
                                        formula   = makeNamed f i
@@ -108,12 +116,14 @@ addFormula formulae (f, i) sign
                                                      Result.diagKind = Result.Error
                                                    , Result.diagString = "Unknown propositions "
                                                      ++ (show $ pretty difference)
-                                                     ++ "in formula "
+                                                     ++ " in formula "
                                                      ++ (show $ pretty nakedFormula)
                                                    , Result.diagPos    = Id.nullRange
                                                    }
                                      }] 
     where
+      f             = nfformula nf
+      i             = nfnum nf
       nakedFormula  = AS_Anno.item f
       varsOfFormula = propsOfFormula nakedFormula
       isLegal       = Sign.isSubSigOf varsOfFormula sign

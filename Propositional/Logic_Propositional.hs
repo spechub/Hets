@@ -109,5 +109,6 @@ instance StaticAnalysis Propositional
     Symbol.Symbol                      -- symbol
     ()                                 -- raw_symbol
         where
-          basic_analysis Propositional = Just $ Analysis.basicPropositionalAnalysis
-          inclusion Propositional _ _ = statErr Propositional "inclusion: I am a lazy bastard and so inclusion still has to be defined for propositional logic :)"
+          basic_analysis Propositional  = Just $ Analysis.basicPropositionalAnalysis
+          empty_signature Propositional = Sign.emptySig
+          inclusion Propositional _ _  = statErr Propositional "inclusion: I am a lazy bastard and so inclusion still has to be defined for propositional logic :)"
