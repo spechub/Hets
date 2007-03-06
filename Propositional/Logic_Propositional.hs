@@ -111,4 +111,4 @@ instance StaticAnalysis Propositional
         where
           basic_analysis Propositional  = Just $ Analysis.basicPropositionalAnalysis
           empty_signature Propositional = Sign.emptySig
-          inclusion Propositional _ _  = statErr Propositional "inclusion: I am a lazy bastard and so inclusion still has to be defined for propositional logic :)"
+          inclusion Propositional = Morphism.inclusionMap 

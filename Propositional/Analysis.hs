@@ -105,7 +105,7 @@ addFormula formulae nf sign
                                                    {
                                                      Result.diagKind = Result.Hint
                                                    , Result.diagString = "All fine"
-                                                   , Result.diagPos    = Id.nullRange
+                                                   , Result.diagPos    = lnum
                                                    }
                                      }] 
     | otherwise       = formulae ++ [DiagForm
@@ -118,7 +118,7 @@ addFormula formulae nf sign
                                                      ++ (show $ pretty difference)
                                                      ++ " in formula "
                                                      ++ (show $ pretty nakedFormula)
-                                                   , Result.diagPos    = Id.nullRange
+                                                   , Result.diagPos    = lnum
                                                    }
                                      }] 
     where
@@ -128,6 +128,7 @@ addFormula formulae nf sign
       varsOfFormula = propsOfFormula nakedFormula
       isLegal       = Sign.isSubSigOf varsOfFormula sign
       difference    = Sign.sigDiff varsOfFormula sign
+      lnum          = AS_Anno.opt_pos f
 
 -- generates a named formula
 makeNamed :: AS_Anno.Annoted (AS_BASIC.FORMULA) -> Integer -> AS_Anno.Named (AS_BASIC.FORMULA)

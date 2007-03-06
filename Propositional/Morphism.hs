@@ -27,12 +27,14 @@ module Propositional.Morphism
     ,idMor                       -- identity morphism
     ,isLegalMorphism             -- check if morhpism is ok
     ,composeMor                  -- composition
+    ,inclusionMap                -- inclusion map
     ) where
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Propositional.Sign as Sign
-import Common.Id
+import qualified Common.Result as Result
+import Common.Id as Id
 import Common.Result
 import Common.Doc
 import Common.DocUtils
@@ -114,3 +116,36 @@ printMorphism m = pretty (source m) <> text "-->" <> pretty (target m)
   <> vcat (map ( \ (x, y) -> lparen <> pretty x <> text "," 
   <> pretty y <> rparen) $ Map.assocs $ propMap m)
 
+-- | Inclusion map of a subsig into a supersig
+inclusionMap :: Sign.Sign -> Sign.Sign -> Result Morphism
+inclusionMap s1 s2 
+    |isSub = Result.Result 
+             {
+               diags = [Diag
+                        {
+                          Result.diagKind   = Result.Debug
+                        , Result.diagString = "All fine"
+                        , diagPos           = Id.nullRange
+                        }]
+             , maybeResult = Just $ Morphism 
+               {
+                 source = s1
+               , target = s2
+               , propMap = Set.fold (\x -> Map.insert x x) 
+                           Map.empty (Sign.items s1) 
+               }
+             }
+    | otherwise = Result.Result 
+             {
+               diags = [Diag
+                        {
+                          Result.diagKind   = Result.Error
+                        , Result.diagString = errorStr
+                        , diagPos           = Id.nullRange
+                        }]
+             , maybeResult = Nothing
+             }
+
+    where
+      isSub = Sign.isSubSigOf s1 s2
+      errorStr = (show $ pretty s1) ++ " is not subset of " ++ (show $ pretty s2)
