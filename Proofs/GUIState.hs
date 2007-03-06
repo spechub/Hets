@@ -73,7 +73,7 @@ initialState ::
              -> KnownProversMap
              -> [(G_prover,AnyComorphism)]
              -> m (ProofGUIState lid1 sentence1)
-initialState lid1 thN th@(G_theory lid2 sig ind thSens ind') pm cms = 
+initialState lid1 thN th@(G_theory lid2 sig ind thSens _) pm cms = 
     do let (aMap,gMap) = Map.partition (isAxiom . OMap.ele) thSens
        gMap' <- coerceThSens lid2 lid1 "creating initial GUI State" gMap
        return $ 
