@@ -34,7 +34,7 @@ The Grothendieck logic is defined to be the
    T. Mossakowski:
    Heterogeneous specification and the heterogeneous tool set.
 
-   Transportability for heterogeneous morphisms
+   Transportability for heterogeneous morphisms -solved
 -}
 
 module Logic.Grothendieck where
@@ -291,6 +291,11 @@ idComorphism (Logic lid) = Comorphism (IdComorphism lid (top_sublogic lid))
 isIdComorphism :: AnyComorphism -> Bool
 isIdComorphism (Comorphism cid) =
   constituents cid == []
+
+-- Properties of comorphisms
+-- | Test whether a comorphism is model-transportable
+isModelTransportable :: AnyComorphism -> Bool
+isModelTransportable (Comorphism cid) = is_model_transportable cid
 
 -- | Compose comorphisms
 compComorphism :: Monad m => AnyComorphism -> AnyComorphism -> m AnyComorphism
@@ -656,9 +661,10 @@ findComorphism gsl@(G_sublogics lid sub) ((Comorphism cid):rest) =
 -- | check transpotability of Grothendieck signature morphisms
 -- | (currently returns false for heterogeneous morphisms)
 isTransportable :: GMorphism -> Bool
-isTransportable (GMorphism cid _ ind1 mor ind2) =ind1 > 0 && ind2 > 0 &&
-  isIdComorphism (Comorphism cid) && is_transportable (targetLogic cid) mor
-
+--isTransportable (GMorphism cid _ ind1 mor ind2) =ind1 > 0 && ind2 > 0 &&
+--  isIdComorphism (Comorphism cid) && is_transportable (targetLogic cid) mor
+isTransportable (GMorphism cid sigma ind1 mor ind2) = ind1 >0 && ind2 >0 &&
+    isModelTransportable(Comorphism cid) && is_transportable (targetLogic cid) mor
 ------------------------------------------------------------------
 -- Provers
 ------------------------------------------------------------------
@@ -704,3 +710,4 @@ coerceG_sign ::
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
    Monad m) => lid1 -> String -> G_sign -> m sign1
 coerceG_sign l1 msg (G_sign l2 sign2 _) = primCoerce l2 l1 msg sign2
+

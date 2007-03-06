@@ -115,11 +115,9 @@ instance Logic lid sublogics
            morTargetLogic (IdMorphism lid _sub) = lid
            morSourceSublogic (IdMorphism _lid sub) = sub
            morTargetSublogic (IdMorphism _lid sub) = sub
-           --change to identities!
-           morMapSublogicSign _ _ =
-               error "Logic.Morphism.IdMorphism.morMapSublogicSign"
-           morMapSublogicSen _ _ =
-               error "Logic.Morphism.IdMorphism.morMapSublogicSen"
+           --changed to identities!
+           morMapSublogicSign _ x = x
+           morMapSublogicSen _ x = x
            morMap_sign _ = Just
            morMap_morphism _ = Just
            morMap_sentence _ = \_ -> Just
@@ -161,7 +159,7 @@ class Comorphism cid
 --         * the name (SpanDomain cid) where cid is the name of the morphism
 --         * sublogics - pairs (s1, s2) with s1 being a sublogic of I and s2 being a sublogic of J; the lattice is the product lattice of the two existing lattices
 --         * basic_spec will be () - the unit type, because we mix signatures with sentences in specifications
---         * sentence - sentences of J
+--         * sentence - sentences of J, wrapped
 --         * symb_items - ()
 --         * symb_map_items - ()
 --         * sign - signatures of I
@@ -169,9 +167,6 @@ class Comorphism cid
 --         * sign_symbol - sign_symbols of I
 --         * symbol - symbols of I
 --         * proof_tree - proof_tree of J
-
-
---   wrap the types sentence, morphism, signatures and sign_symbol?
 
 data SpanDomain cid = SpanDomain cid
      deriving (Eq, Show)
@@ -216,7 +211,9 @@ instance Morphism cid
 
 newtype S2 s = S2 { sentence2 :: s } deriving (Eq, Ord, Show, Typeable)
 
-instance Pretty s => Pretty (S2 s)
+instance Pretty s => Pretty (S2 s) where
+    pretty (S2 x) = pretty x
+
 instance ShATermConvertible s => ShATermConvertible (S2 s)
 
 instance Morphism cid
@@ -293,9 +290,9 @@ instance (SemiLatticeWithTop sublogics1, MinSublogic sublogics2 sentence2)
 {- just a dummy implementation, it should be the sublogic of sen2 in J
 paired with its image through morMapSublogicSen? -}
 
-instance (MinSublogic sublogics1 sign1, SemiLatticeWithTop sublogics2)
-         => MinSublogic (SublogicsPair sublogics1 sublogics2) sign1 where
-  minSublogic sign1 = SublogicsPair (minSublogic sign1) top
+instance (MinSublogic sublogics1 alpha, SemiLatticeWithTop sublogics2)
+         => MinSublogic (SublogicsPair sublogics1 sublogics2) alpha where
+  minSublogic x = SublogicsPair (minSublogic x) top
 
 {- also should have instances of MinSublogic class for Sublogics-pair
 and morphism1, sign_symbol1, sign1 this is why the wrapping is needed -}
@@ -303,12 +300,10 @@ and morphism1, sign_symbol1, sign1 this is why the wrapping is needed -}
 -- instance SemiLatticeWithTop sublogics => MinSublogic sublogics () where
 --     minSublogic _ = top
 
-instance (MinSublogic sublogics1 sign1, SemiLatticeWithTop sublogics2)
-          => ProjectSublogic (SublogicsPair sublogics1 sublogics2) sign1 where
+instance (MinSublogic sublogics1 alpha, SemiLatticeWithTop sublogics2)
+          => ProjectSublogic (SublogicsPair sublogics1 sublogics2) alpha where
       projectSublogic _ x = x
--- it should be used for (), morphism1, sign_symbol1
--- after the wrapping will change
-
+-- it should be used for (), morphism1, sign_symbol1, sign1
 
 instance (MinSublogic sublogics1 sign1, SemiLatticeWithTop sublogics2)
          => ProjectSublogicM (SublogicsPair sublogics1 sublogics2) sign1 where
@@ -328,9 +323,9 @@ instance (ShATermConvertible sublogics1, ShATermConvertible sublogics2)
 instance (Sublogics sublogics1, Sublogics sublogics2)
          => Sublogics (SublogicsPair sublogics1 sublogics2) where
        sublogic_names (SublogicsPair sub1 sub2) =
-           [ s1 ++ " " ++ s2
-           | s1 <- sublogic_names sub1
-           , s2 <- sublogic_names sub2 ]
+           [ x1 ++ " " ++ x2
+           | x1 <- sublogic_names sub1
+           , x2 <- sublogic_names sub2 ]
 
 instance ( MinSublogic sublogics1 ()
          , Morphism cid

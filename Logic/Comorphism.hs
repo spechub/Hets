@@ -59,6 +59,12 @@ class (Language cid,
           -- with no sentence translation
           -- - but these are spans!
     map_symbol :: cid -> symbol1 -> Set.Set symbol2
+    --properties of comorphisms
+    is_model_transportable :: cid -> Bool
+    -- a comorphism (\phi, \alpha, \beta) is model-transportable
+    -- if for any signature \Sigma, any \Sigma-model M and any \phi(\Sigma)-model N
+    -- for any isomorphism           h : \beta_\Sigma(N) -> M
+    -- there exists an isomorphism   h': N -> M' such that \beta_\Sigma(h') = h
     constituents :: cid -> [String]
     -- default implementation
     constituents cid = [language_name cid]
@@ -189,6 +195,7 @@ instance Logic lid sublogics
            map_sentence _ = \_ -> return
            map_symbol _ = Set.singleton
            constituents _ = []
+           is_model_transportable _ = True
 
 data CompComorphism cid1 cid2 = CompComorphism cid1 cid2 deriving Show
 
@@ -254,3 +261,8 @@ instance (Comorphism cid1
                  (Set.toList (map_symbol cid1 s1)))
    constituents (CompComorphism cid1 cid2) =
       constituents cid1 ++ constituents cid2
+
+   is_model_transportable (CompComorphism cid1 cid2) = 
+       is_model_transportable cid1 && is_model_transportable cid2
+
+
