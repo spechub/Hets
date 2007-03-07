@@ -53,7 +53,7 @@
     (mapcar (lambda (x)
 	      (modify-syntax-entry x "_" table))
 	    ;; Some of these are actually OK by default.
-	    "!#$&*+.,/\\\\:<=>?@^|~()[]{}")
+	    "!#$&*+.,/\\\\:<=>?@^|~")
     (setq casl-mode-syntax-table table))
   )
 
