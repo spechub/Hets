@@ -38,7 +38,8 @@ import qualified Propositional.ATC_Propositional()
 import qualified Propositional.Symbol as Symbol
 import qualified Propositional.Parse_AS_Basic as Parse_AS
 import qualified Propositional.Analysis as Analysis
-import qualified Common.Id as Id
+import qualified Propositional.InverseAnalysis as IAna
+import qualified Common.Id as Id()
 
 -- | Lid for propositional logic
 data Propositional = Propositional deriving Show --lid
@@ -122,4 +123,8 @@ instance StaticAnalysis Propositional
           signature_union Propositional        = Sign.sigUnion
           is_subsig Propositional              = Sign.isSubSigOf
           signature_difference Propositional   = Sign.diffOfSigs
-          sign_to_basic_spec Propositional _ _ = AS_BASIC.Basic_spec []
+          sign_to_basic_spec Propositional     = IAna.signToBasicSpec
+          -- Default implementations since we are having no raw_symbols
+          symbol_to_raw Propositional _        = ()
+          id_to_raw     Propositional _        = ()
+          matches       Propositional _ _      = False
