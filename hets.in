@@ -11,10 +11,12 @@ if [ -d $INSTALL_PATH/lib/uDrawGraph ] ; then
     UDG_PATH=$INSTALL_PATH/lib/uDrawGraph
     UNIDAVINCI=$UDG_PATH/bin/uDrawGraph
 fi
-if [ -d $$INSTALL_PATH/lib/Isabelle* ] ; then
+
+if [ -d $INSTALL_PATH/lib/Isabelle* ] ; then
     ISABELLE_HOME=$INSTALL_PATH/lib/Isabelle/Isabelle
-    HETS_ISABELLE=$ISABELLE_HOME/bin/isabelle-interface
 fi
+HETS_ISABELLE=$ISABELLE_HOME/bin/isabelle-interface
+
 if [ -d $INSTALL_PATH/CASL-lib ] ; then
     HETS_LIB=$INSTALL_PATH/CASL-lib
 fi
