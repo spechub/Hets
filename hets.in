@@ -8,8 +8,8 @@
 ### it is post processed by some IzPack variables starting with %
 
 if [ -d $INSTALL_PATH/lib/uDrawGraph ] ; then
-    UDG_PATH=$INSTALL_PATH/lib/uDrawGraph
-    UNIDAVINCI=$UDG_PATH/bin/uDrawGraph
+    UDG_HOME=$INSTALL_PATH/lib/uDrawGraph
+    UNIDAVINCI=$UDG_HOME/bin/uDrawGraph
 fi
 
 if [ -d $INSTALL_PATH/lib/Isabelle* ] ; then
@@ -25,7 +25,8 @@ HETS_OWL_PARSER=$INSTALL_PATH/src/HetCATS/OWL_DL
 UNIWISH=/usr/bin/wish
 HETS=$INSTALL_PATH/lib/hets/hets-$APP_VER
 
-export HETS_LIB ISABELLE_HOME HETS_ISABELLE HETS_OWL_PARSER UNIWISH UNIDAVINCI
+export HETS_LIB ISABELLE_HOME HETS_ISABELLE HETS_OWL_PARSER \
+    UNIWISH UNIDAVINCI UDG_HOME
 export PATH=$PATH:$INSTALL_PATH/bin
 
 exec $HETS $@
