@@ -39,6 +39,7 @@ import Proofs.StatusUtils
 import GUI.Utils
 
 import Control.Monad.Identity
+--import Debug.Trace
 
 -- ----------------------------------------------
 -- hide theorem shift
@@ -109,21 +110,40 @@ hideTheoremShiftAux dgraph (rules,changes) (ledge:list) proofBaseSel =
      if (null proofBasis)
       then hideTheoremShiftAux dgraph (rules,changes) list proofBaseSel
        else do
-         let newEdge = makeProvenHidingThmEdge proofBasis ledge
-	     (auxDGraph, auxChanges) = updateWithChanges [DeleteEdge ledge, InsertEdge newEdge] dgraph changes
+         let ((auxDGraph,auxChanges), finalProofBasis) =
+		   insertNewEdges (dgraph, changes) proofBasis []
+	     newEdge = makeProvenHidingThmEdge finalProofBasis ledge
+	     (newDGraph, newChanges) = updateWithChanges [DeleteEdge ledge, InsertEdge newEdge] auxDGraph auxChanges
              -- auxDGraph = insEdge newEdge (deLLEdge ledge dgraph)
              -- auxChanges = (DeleteEdge ledge):((InsertEdge newEdge):changes)
-             (newDGraph,newChanges) =
-                 insertNewEdges (auxDGraph, auxChanges) proofBasis
              newRules = (HideTheoremShift ledge):rules
          hideTheoremShiftAux newDGraph (newRules,newChanges) list proofBaseSel
 
-{- inserts the given edges into the development graph and adds a corresponding entry to the changes -}
-insertNewEdges :: (DGraph, [DGChange]) -> [LEdge DGLinkLab] -> (DGraph,[DGChange])
-insertNewEdges res [] = res
-insertNewEdges (dgraph, changes) (edge:list) =
+{- inserts the given edges into the development graph and adds a corresponding
+   entry to the changes, while getting the proofbasis -}
+insertNewEdges :: (DGraph, [DGChange]) -> [LEdge DGLinkLab] -> 
+		  [LEdge DGLinkLab] -> ((DGraph,[DGChange]), [LEdge DGLinkLab])
+insertNewEdges res [] proofbasis = (res, proofbasis)
+insertNewEdges (dgraph, changes) (edge:list) proofbasis =
+  case (tryToGetEdge edge dgraph changes) of
+       Just e -> insertNewEdges (dgraph, changes) list (e:proofbasis)
+       Nothing -> let
+		  (tempDGraph, tempChanges) =
+		       (updateWithOneChange (InsertEdge edge) dgraph changes)
+		  tempProofBasis = case (head tempChanges) of
+				     (InsertEdge tempE) -> (tempE:proofbasis)
+				     _ -> error ("Proofs"++
+						".HideTheoremShift"++
+						".insertNewEdges")
+		  in
+		  insertNewEdges (tempDGraph, tempChanges)
+				 list
+				 tempProofBasis
+{-
   if isDuplicate edge dgraph changes then insertNewEdges (dgraph, changes) list
-   else insertNewEdges (updateWithOneChange (InsertEdge edge) dgraph changes) list
+   else insertNewEdges (updateWithOneChange (InsertEdge edge) dgraph changes) 
+		       list
+-}
 	--insertNewEdges (insEdge edge dgraph) ((InsertEdge edge):changes) list
 
 
@@ -136,7 +156,7 @@ makeProvenHidingThmEdge proofBasisEdges ledge@(src,tgt,edgeLab) =
            dgl_type = (HidingThm hidingMorphism
                        (Proven (HideTheoremShift ledge) proofBasisEdges)),
            dgl_origin = DGProof,
-	   dgl_id = defaultEdgeID}
+	   dgl_id = dgl_id edgeLab}
   )
   where
     morphism = dgl_morphism edgeLab

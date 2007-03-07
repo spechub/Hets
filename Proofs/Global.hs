@@ -132,14 +132,14 @@ globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes
                             (GlobalThm (Proven (GlobDecomp edge) proofBasis)
                              conservativity conservStatus),
                           dgl_origin = DGProof,
-			  dgl_id = defaultEdgeID}
+			  dgl_id = dgl_id edgeLab}
                   )
 -- for each path an unproven localThm edge is inserted
 globDecompForOneEdgeAux dgraph edge@(_,target,_) changes
  (path:list)  proof_basis =
   case (tryToGetEdge newEdge dgraph changes) of
        Nothing -> globDecompForOneEdgeAux newGraph edge newChanges list
-					  (newEdge:proof_basis)
+					 (finalEdge:proof_basis)
        Just e -> globDecompForOneEdgeAux dgraph edge changes list 
 					 (e:proof_basis)
 {-
@@ -183,7 +183,11 @@ globDecompForOneEdgeAux dgraph edge@(_,target,_) changes
                          dgl_origin = DGProof,
 			 dgl_id = defaultEdgeID}
                )
-    (newGraph, newChanges) = updateWithOneChange (InsertEdge newEdge) dgraph changes
+    (newGraph, newChanges) = updateWithOneChange (InsertEdge newEdge) 
+						 dgraph changes
+    finalEdge = case (head newChanges) of
+		     (InsertEdge final_e) -> final_e
+		     _ -> error "Proofs.Global.globDecompForOneEdgeAux"						 
     -- newGraph = insEdge newEdge dgraph
     -- newChanges = ((InsertEdge newEdge):changes)
 
@@ -255,7 +259,7 @@ globSubsumeAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
                                               proofBasis)
                                    conservativity conservStatus),
                        dgl_origin = DGProof,
-		       dgl_id = defaultEdgeID}
+		       dgl_id = dgl_id edgeLab}
                )
     newRules = (GlobSubsumption ledge):rules
 

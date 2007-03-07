@@ -19,6 +19,8 @@ import Static.DGToSpec
 import Data.Graph.Inductive.Graph
 import Data.List
 
+--import Debug.Trace
+
 deLLEdge :: LEdge DGLinkLab -> DGraph -> DGraph
 deLLEdge e@(v, w, l) g = case match v g of
     (Just(p, v', l', s), g') ->
@@ -68,7 +70,9 @@ changeDG g c = case c of
     SetNodeLab n -> labelNode n g    
 
 initEdgeID :: LEdge DGLinkLab -> DGraph -> LEdge DGLinkLab
-initEdgeID (src, tgt, linklab) g = (src, tgt, linklab{dgl_id = getNewEdgeID g})
+initEdgeID (src, tgt, linklab) g 
+    | dgl_id linklab == defaultEdgeID = (src, tgt, linklab{dgl_id = getNewEdgeID g})
+    | otherwise = (src, tgt, linklab)    
 
 changesDG :: DGraph -> [DGChange] -> DGraph
 changesDG = foldl' changeDG
@@ -347,10 +351,15 @@ selectProofBasisAux dg ledge (path:list) =
 calculateProofBasis :: DGraph -> [LEdge DGLinkLab] -> [LEdge DGLinkLab]
                         -> [LEdge DGLinkLab]
 calculateProofBasis _ [] acc = acc
-calculateProofBasis dg (ledge@(src,tgt,label):list) acc =
+calculateProofBasis dg (ledge@(_,_,label):list) acc =
   if roughElem ledge acc
     then calculateProofBasis dg list acc
     else
+     case (getOneStepProofBasis dg label) of
+       Just proof_basis -> calculateProofBasis dg (proof_basis++list) (ledge:acc)
+       Nothing -> calculateProofBasis dg list (ledge:acc)
+
+{-
      case oneStepProofBasis label of
       Left proofBasis -> calculateProofBasis dg (proofBasis++list) (ledge:acc)
       Right True -> calculateProofBasis dg (curProofBasis++list) (ledge:acc)
@@ -359,7 +368,27 @@ calculateProofBasis dg (ledge@(src,tgt,label):list) acc =
          case lookup tgt (lsuc dg src) >>= (thmLinkStatus . dgl_type) of
            Just (Proven _ proofBasis) -> proofBasis
            _ -> []
+-}
 
+getOneStepProofBasis :: DGraph -> DGLinkLab -> Maybe [LEdge DGLinkLab]
+getOneStepProofBasis dgraph label =
+  case (getDGLinkLabWithID (dgl_id label) dgraph) of
+       Nothing -> error "Proofs.EdgeUtils.getOneStepProofBasis"
+       Just e -> tryToGetProofBasis e
+
+tryToGetProofBasis :: DGLinkLab -> Maybe [LEdge DGLinkLab]
+tryToGetProofBasis label = 
+  case dgl_type label of
+    (GlobalThm (Proven _ proofBasis) _ _) -> Just proofBasis
+    (LocalThm (Proven _ proofBasis) _ _) -> Just proofBasis
+    (HidingThm _ (Proven _ proofBasis)) -> Just proofBasis
+    _ -> Nothing
+
+{-
+{- | calculate proof basis of a single edge
+   Return either Left proof_basis, if there is one,
+   or Right flag, where flag=True indicates a theorem link
+-}
 oneStepProofBasis :: DGLinkLab -> Either [LEdge DGLinkLab] Bool
 oneStepProofBasis label =
   case dgl_type label of
@@ -370,6 +399,7 @@ oneStepProofBasis label =
     (LocalThm LeftOpen _ _) -> Right True
     (HidingThm _ LeftOpen) -> Right True
     _ -> Right False  -- todo: also treat conservativity proof status
+-}
 
 {- | returns all proven paths from the given list -}
 filterProvenPaths :: [[LEdge DGLinkLab]] -> [[LEdge DGLinkLab]]
@@ -415,7 +445,10 @@ getAllOpenNodeGoals = filter hasOpenGoals
 --debugging functions
 
 trace_edge :: LEdge DGLinkLab -> String
-trace_edge (src, tgt, label) = "("++(show src)++"->"++(show tgt)++" with prove status: "++(trace_edge_status label)++") ->"
+trace_edge (src, tgt, label) = " ("++(show src)++"->"++(show tgt)
+			       ++" of id "++ (show $ dgl_id label)
+			       ++" with prove status: "
+			       ++(trace_edge_status label)++") ->"
 
 trace_path :: [LEdge DGLinkLab] -> String
 trace_path = concat . map trace_edge 

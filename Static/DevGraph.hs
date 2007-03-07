@@ -69,13 +69,21 @@ getNewEdgeIDs count g = getAvailableID count 0 sortedIDs
 			getAvailableID :: Int -> Int -> [Int] -> [Int]
 			getAvailableID 0 _ _ = []
 			getAvailableID c n [] = take c [n..]
-			getAvailableID c n (x:xs) | n==x = getAvailableID c (n+1) xs
-						  | otherwise = n:(getAvailableID (c-1) (n+1) (x:xs))
+			getAvailableID c n (x:xs) 
+			   | n==x = getAvailableID c (n+1) xs
+			   | otherwise = n:(getAvailableID (c-1) (n+1) (x:xs))
 
 getNewEdgeID :: DGraph -> Int
 getNewEdgeID g = case getNewEdgeIDs 1 g of
 		 [n] -> n
 		 _ -> error "Static.DevGraph.getNewEdgeID"
+
+getDGLinkLabWithID :: Int -> DGraph -> Maybe DGLinkLab
+getDGLinkLabWithID edge_id dgraph = 
+   case [label|(_, _, label)<-labEdges dgraph, dgl_id label == edge_id] of
+	[n] -> Just n
+	_ -> Nothing 
+
 
 -- * Types for structured specification analysis
 
