@@ -19,6 +19,13 @@ HETS_VERSION=0.66
 SED_COMMAND="s/^\(.*<appversion>\)[0-9. ]*\(<.*$$\)/\1$(HETS_VERSION)\2/"
 SPASS_DIR_MAC=SPASS-2.2
 
+OSBYUNAME = $(shell uname)
+ifneq ($(findstring SunOS, $(OSBYUNAME)),)
+TAR = gtar
+else
+TAR = tar
+endif
+
 GMPURL = http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/mac/GMP.framework.zip
 GNUreadlineURL = http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/mac/GNUreadline-framework.zip
 INSTALL_XML_SOLARIS = $(IZPACK_SAMPLE)/pack/install-solaris.xml
@@ -43,7 +50,7 @@ casl-lib-checkout :
 	  cvs up -dPA CASL-lib ; \
 	 else \
 	  cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:\/repository co -P CASL-lib ; \
-        fi ; \
+        fi ; 
 	for x in $(find CASL-lib -name "*"); do  \
 	   if [ -f $x ] ; then       \
 		POSTFIX=`ls $x | sed "s%.*\.\(.*\)%\\1%"` ; \
@@ -54,9 +61,12 @@ casl-lib-checkout :
 	        fi ; \
 	    fi ; \
 	done 
+	@cd $(IZPACK_SAMPLE) ;\
+	$(TAR) cvfj CASL-lib.tar.bz2 CASL-lib/* ; \
+	$(RM) -r CASL-lib/* ; mv CASL-lib.tar.bz2 CASL-lib/
 
 hetcats-make : tools-checkout
-	cd $(IZPACK_SAMPLE)/src ;\
+	@cd $(IZPACK_SAMPLE)/src ;\
 	cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:\/repository co -P HetCATS 
 	cd $(IZPACK_SAMPLE)/src/HetCATS ;\
 	cp LICENCE.txt $(IZPACK_SAMPLE)/pack/LICENCE.txt ;\
@@ -74,8 +84,8 @@ hetcats-make : tools-checkout
 	cp OWL_DL/owl_parser.installer $(IZPACK_SAMPLE)/hets/OWLParser/owl_parser ; \
 	cp OWL_DL/java/OWLParser.jar $(IZPACK_SAMPLE)/hets/OWLParser/java ; \
 	cp -r OWL_DL/java/jlib  $(IZPACK_SAMPLE)/hets/OWLParser/java
-	$(RM) -r HetCATS
-	cd $(IZPACK_SAMPLE)/src ; tar xvf HetCATS.tar ; $(RM) HetCATS.tar
+	@cd $(IZPACK_SAMPLE)/src/ ; $(RM) -f HetCATS ; $(TAR) xvf HetCATS.tar ; $(TAR) cvfj HetCATS.tar.bz2 HetCATS  ;\
+	$(RM) -r HetCATS.tar HetCATS programatica uni
 
 daily-hets-download :
 	@sh $(IZPACK_SAMPLE)/getAllHets.sh $(HETS_VERSION)  ;\
@@ -90,9 +100,11 @@ tools-checkout :
 	 else \
 	  cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:\/repository co -P -r ghc-6-06 uni ; \
 	 fi ;  \
+	 $(TAR) cvfj uni.tar.bz2 uni ;\
 	 echo checkout programatica ; \
 	 cvs -d  :pserver:anoncvs@cvs.haskell.org:/cvs co \
-             programatica/tools/base programatica/tools/property
+             programatica/tools/base programatica/tools/property  ;\
+	 $(TAR) cvfj programatica.tar.bz2 programatica 
 
 izpack_checkout :
 	@echo update izpack_het
