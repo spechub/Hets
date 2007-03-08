@@ -38,7 +38,6 @@ structure:
 module Main where
 
 import Directory
-import Monad (liftM)
 import System.Environment
 import System.IO
 import Text.ParserCombinators.Parsec
@@ -95,32 +94,18 @@ listTestCases path = let
 
 readOneFile :: FilePath -> IO String
 readOneFile tc = do hdl <- openFile tc ReadMode
-                    contents <- hGetContents hdl
-                    hClose hdl
-                    return contents
+                    hGetContents hdl
 
-oneTrans :: FilePath -> String
-oneTrans a = a
-
-lTrans :: [FilePath] -> [String]
-lTrans fii = map oneTrans fii
-
-readEm :: IO [FilePath] -> IO [String]
-readEm paths = liftM lTrans paths
-
-{-
-getTestCases :: FilePath -> IO [String]
-getTestCases path = do tcs <- (listTestCases path)
-                       let foo = map gogo tcs
-                       return foo
--}
+readAllTests :: FilePath -> IO [String]
+readAllTests path = do tests <- listTestCases path
+                       mapM readOneFile tests
 
 main :: IO ()
-main = do fuck <- readEm (listTestCases "test")
-          print (show fuck)
+main = do contents <- readAllTests "test"
+          print (show contents)
 
 
--- Old Main: - calls parser for each file passed in.
+
 
 oldmain :: IO ()
 oldmain = do filenames <- getArgs
