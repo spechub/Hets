@@ -178,32 +178,32 @@ ana_form ps f =
                                     sublogics_max need_PF $
                                     sublogics_max (ana_form ps l)
                                                      (ana_form ps m)
-      AS_BASIC.Negation l _      -> ana_negation ps l
-      AS_BASIC.Disjunction _ _   -> ps
+      AS_BASIC.Negation l _      -> if (isLiteral l)
+                                    then
+                                        ps
+                                    else
+                                        sublogics_max need_PF $ ana_form ps l
+      AS_BASIC.Disjunction l _   -> if (foldl (&&) True $ map isLiteral l)
+                                     then
+                                         ps
+                                     else
+                                         sublogics_max need_PF
+                                         (comp_list $ map (ana_form ps) l)     
       AS_BASIC.True_atom  _      -> ps
       AS_BASIC.False_atom _      -> ps
       AS_BASIC.Predication _     -> ps
 
--- nagation needs extra treatment for CNF
-ana_negation :: PropSL -> AS_BASIC.FORMULA -> PropSL
-ana_negation ps f =
-    case f of
-      AS_BASIC.Predication _     -> ps
-      AS_BASIC.True_atom  _      -> ps
-      AS_BASIC.False_atom _      -> ps
-      AS_BASIC.Conjunction l _   -> sublogics_max need_PF
-                                    (comp_list $ map (ana_form ps) l) 
-      AS_BASIC.Disjunction _ _   -> ps 
-      AS_BASIC.Implication l m _ -> sublogics_max need_imp $ 
-                                    sublogics_max need_PF $
-                                    sublogics_max (ana_form ps l)
-                                                     (ana_form ps m)
-      AS_BASIC.Equivalence l m _  -> sublogics_max need_equiv $ 
-                                     sublogics_max need_PF $
-                                     sublogics_max (ana_form ps l)
-                                                       (ana_form ps m)
-      AS_BASIC.Negation l _       ->  sublogics_max need_PF $
-                                      (ana_form ps l)
+-- determines wheter a Formula is a literal
+isLiteral :: AS_BASIC.FORMULA -> Bool
+isLiteral (AS_BASIC.Predication _)       = True
+isLiteral (AS_BASIC.Negation (AS_BASIC.Predication _) _) = True
+isLiteral (AS_BASIC.Negation _ _) = False
+isLiteral (AS_BASIC.Conjunction _ _) = False
+isLiteral (AS_BASIC.Implication _ _ _) = False
+isLiteral (AS_BASIC.Equivalence _ _ _) = False
+isLiteral (AS_BASIC.Disjunction _ _) = False
+isLiteral (AS_BASIC.True_atom  _ ) = True
+isLiteral (AS_BASIC.False_atom _) = True
 
 -- | determines subloig for basic items
 sl_basic_items :: PropSL -> AS_BASIC.BASIC_ITEMS -> PropSL
