@@ -791,7 +791,7 @@ initialize_installer:
 	@echo If you have not logged in \'cvs.haskell.org\' and \'cvs-agbkb.informatik.uni-bremen.de\'
 	@echo "then please first login:"
 	@echo  "   cvs -d :pserver:anoncvs@cvs.haskell.org:/cvs login"
-	@echo  "    the password is cvn "
+	@echo  "    the password is cvs"
 	@echo  "   cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:/repository login "
 	@echo  "    the password is "
 	@echo =========================================================================
