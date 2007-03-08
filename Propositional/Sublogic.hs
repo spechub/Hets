@@ -183,12 +183,14 @@ ana_form ps f =
                                         ps
                                     else
                                         sublogics_max need_PF $ ana_form ps l
-      AS_BASIC.Disjunction l _   -> if (foldl (&&) True $ map isLiteral l)
-                                     then
-                                         ps
-                                     else
-                                         sublogics_max need_PF
-                                         (comp_list $ map (ana_form ps) l)     
+      AS_BASIC.Disjunction l _   -> 
+           let lprime = concat $ map Tools.flattenDis l in
+           if (foldl (&&) True $ map isLiteral lprime)
+           then
+               ps
+           else
+               sublogics_max need_PF
+               (comp_list $ map (ana_form ps) lprime)     
       AS_BASIC.True_atom  _      -> ps
       AS_BASIC.False_atom _      -> ps
       AS_BASIC.Predication _     -> ps
@@ -196,7 +198,7 @@ ana_form ps f =
 -- determines wheter a Formula is a literal
 isLiteral :: AS_BASIC.FORMULA -> Bool
 isLiteral (AS_BASIC.Predication _)       = True
-isLiteral (AS_BASIC.Negation (AS_BASIC.Predication _) _) = True
+isLiteral (AS_BASIC.Negation (AS_BASIC.Predication _) _ ) = True
 isLiteral (AS_BASIC.Negation _ _) = False
 isLiteral (AS_BASIC.Conjunction _ _) = False
 isLiteral (AS_BASIC.Implication _ _ _) = False
