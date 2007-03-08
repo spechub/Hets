@@ -284,7 +284,8 @@ HasCASL_files = Common/Prec.hs HasCASL/As.hs HasCASL/Le.hs HasCASL/Sublogic.hs
 Isabelle_files = Isabelle/IsaSign.hs
 
 Propositional_files = Propositional/Sign.hs Propositional/Morphism.hs \
-            Propositional/AS_BASIC_Propositional.hs Propositional/Symbol.hs
+            Propositional/AS_BASIC_Propositional.hs Propositional/Symbol.hs\
+            Propositional/Sublogic.hs
 Modal_files = Modal/AS_Modal.hs Modal/ModalSign.hs
 ConstraintCASL_files = ConstraintCASL/AS_ConstraintCASL.hs
 CoCASL_files = CoCASL/AS_CoCASL.hs CoCASL/CoCASLSign.hs

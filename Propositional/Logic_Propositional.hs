@@ -39,6 +39,7 @@ import qualified Propositional.Symbol as Symbol
 import qualified Propositional.Parse_AS_Basic as Parse_AS
 import qualified Propositional.Analysis as Analysis
 import qualified Propositional.InverseAnalysis as IAna
+import qualified Propositional.Sublogic as Sublogic
 import qualified Common.Id as Id()
 
 -- | Lid for propositional logic
@@ -65,7 +66,7 @@ instance Category Propositional Sign.Sign Morphism.Morphism where
     -- composition of morphisms
     comp Propositional f g = Morphism.composeMor f g
 
--- | Instance of Sentences for propoooositional logic
+-- | Instance of Sentences for propositional logic
 instance Sentences Propositional AS_BASIC.FORMULA () 
     Sign.Sign Morphism.Morphism Symbol.Symbol where
     -- returns the set of symbols
@@ -91,7 +92,7 @@ instance Syntax Propositional AS_BASIC.BASIC_SPEC
 
 -- | Instance of Logic for propositional logc
 instance Logic Propositional 
-    ()                                 -- Sublogics
+    Sublogic.PropSL                    -- Sublogics
     AS_BASIC.BASIC_SPEC                -- basic_spec
     AS_BASIC.FORMULA                   -- sentence
     AS_BASIC.SYMB_ITEMS                -- symb_items
@@ -128,3 +129,49 @@ instance StaticAnalysis Propositional
           symbol_to_raw Propositional _        = ()
           id_to_raw     Propositional _        = ()
           matches       Propositional _ _      = False
+
+-- | Sublogics
+instance SemiLatticeWithTop Sublogic.PropSL where
+    join = Sublogic.sublogics_max
+    top  = Sublogic.top
+
+instance MinSublogic Sublogic.PropSL AS_BASIC.BASIC_SPEC where
+     minSublogic it = Sublogic.sl_basic_spec Sublogic.bottom it
+
+instance MinSublogic Sublogic.PropSL Sign.Sign where
+    minSublogic si = Sublogic.sl_sig Sublogic.bottom si
+
+instance Sublogics Sublogic.PropSL where
+    sublogic_names = Sublogic.sublogics_name
+
+instance MinSublogic Sublogic.PropSL AS_BASIC.FORMULA where
+    minSublogic frm = Sublogic.sl_form Sublogic.bottom frm
+
+instance MinSublogic Sublogic.PropSL Symbol.Symbol where
+    minSublogic sym = Sublogic.sl_sym Sublogic.bottom sym
+
+instance MinSublogic Sublogic.PropSL AS_BASIC.SYMB_ITEMS where
+    minSublogic symit = Sublogic.sl_symit Sublogic.bottom symit
+
+instance MinSublogic Sublogic.PropSL Morphism.Morphism where
+    minSublogic symor = Sublogic.sl_mor Sublogic.bottom symor
+
+instance MinSublogic Sublogic.PropSL AS_BASIC.SYMB_MAP_ITEMS where
+    minSublogic sm = Sublogic.sl_symmap Sublogic.bottom sm
+
+instance ProjectSublogicM Sublogic.PropSL Symbol.Symbol
+
+instance ProjectSublogic Sublogic.PropSL Sign.Sign
+
+instance ProjectSublogic Sublogic.PropSL Morphism.Morphism
+
+instance ProjectSublogicM Sublogic.PropSL AS_BASIC.SYMB_MAP_ITEMS
+
+instance ProjectSublogicM Sublogic.PropSL AS_BASIC.SYMB_ITEMS
+
+instance ProjectSublogic Sublogic.PropSL AS_BASIC.BASIC_SPEC
+
+instance ProjectSublogic Sublogic.PropSL AS_BASIC.FORMULA
+
+
+
