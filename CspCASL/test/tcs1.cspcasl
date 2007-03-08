@@ -1,3 +1,3 @@
-data sorts S, T
+cdata sorts S, T
      ops c: S; d: T
 process c -> SKIP || d -> SKIP

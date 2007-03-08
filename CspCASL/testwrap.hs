@@ -12,10 +12,33 @@ Test case wrapper for CspCASL specs and fragments.
 This is a standalone `main' wrapper for CspCASL-related tests
 performed locally to the CspCASL codebase.  It's probably only of
 interest to the CspCASL maintainers.
+
+The "test" directory contains (negative & positive) test cases.  Each
+test case is identified by a *.testcase file, with the following
+structure:
+
+  - The first line is the name of the file containing the input source
+    to use for this test case (also in the test directory).
+
+  - The second line identifies which parser is being tested (eg
+    "Process", "Core-CspCASL").
+
+  - The third line identifies whether this is a positive (++) or
+    negative (--) test case.
+
+  - If it's a positive test case, the remaining lines contain the
+    expected output of the pretty printer.
+
+  - If it's a negative test case, the remaining lines contain
+    information about the expected error.  (Not yet
+    implemented/defined.)
+
 -}
 
 module Main where
 
+import Directory
+import Monad (liftM)
 import System.Environment
 import System.IO
 import Text.ParserCombinators.Parsec
@@ -24,7 +47,9 @@ import Common.AnnoState (emptyAnnos)
 import Common.DocUtils
 
 import CspCASL.Parse_CspCASL
+import CspCASL.Parse_CspCASL_Process()
 import CspCASL.Print_CspCASL()
+
 
 prettyCspCASLFromFile :: FilePath -> IO ()
 prettyCspCASLFromFile fname
@@ -44,8 +69,60 @@ parseFiles arg = case arg of
     (path:others) -> do prettyCspCASLFromFile path
 			parseFiles others
 
--- Main: - calls parser for each file passed in.
+testOne :: IO()
+testOne
+    = do case (runParser dataDefn (emptyAnnos ()) "" "SKIP") of
+           Left err -> do putStr "parse error at "
+                          print err
+           Right x  -> do putStrLn $ showDoc x ""
+                          print x
+
+
+
+
+
+
+-- List every file in the test directory ending with '.testcase'
+listTestCases :: FilePath -> IO [FilePath]
+listTestCases path = let
+    endswith :: String -> String -> Bool
+    endswith subject target = drop (length subject - length target) subject == target
+    isTestCase :: String -> Bool
+    isTestCase f = endswith f ".testcase"
+    in do contents <- getDirectoryContents path
+          let testcases = (map (\x -> path ++ "/" ++ x) (filter isTestCase contents))
+          return testcases
+
+readOneFile :: FilePath -> IO String
+readOneFile tc = do hdl <- openFile tc ReadMode
+                    contents <- hGetContents hdl
+                    hClose hdl
+                    return contents
+
+oneTrans :: FilePath -> String
+oneTrans a = a
+
+lTrans :: [FilePath] -> [String]
+lTrans fii = map oneTrans fii
+
+readEm :: IO [FilePath] -> IO [String]
+readEm paths = liftM lTrans paths
+
+{-
+getTestCases :: FilePath -> IO [String]
+getTestCases path = do tcs <- (listTestCases path)
+                       let foo = map gogo tcs
+                       return foo
+-}
 
 main :: IO ()
-main = do filenames <- getArgs
-          parseFiles filenames
+main = do fuck <- readEm (listTestCases "test")
+          print (show fuck)
+
+
+-- Old Main: - calls parser for each file passed in.
+
+oldmain :: IO ()
+oldmain = do filenames <- getArgs
+             parseFiles filenames
+             --testOne

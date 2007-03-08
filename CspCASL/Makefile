@@ -42,4 +42,4 @@ testwrap:		$(SOURCES)
 			gmake -C .. CspCASL/testwrap
 
 test:			testwrap
-			./testwrap test/tcs3.cspcasl
+			./testwrap test/borked.cspcasl
