@@ -90,6 +90,14 @@ toGuiStatus st = if proverRunning st
   then statusRunning
   else statusNotRunning
 
+-- | constant label
+sublogicTheoryLabel :: String
+sublogicTheoryLabel = "Sublogic of Theory:"
+
+-- | constant label
+sublogicSelectedTheoryLabel :: String
+sublogicSelectedTheoryLabel = "Sublogic of Currently Selected Theory:"
+
 {- |
   Generates a list of 'GUI.HTkUtils.LBGoalView' representations of all goals
   from a 'SPASS.Prove.State'.
@@ -414,7 +422,7 @@ proofManagementGUI lid proveF fineGrainedSelectionF
   vsp2 <- newSpace rvb vspacing []
   pack vsp2 []
 
-  l3 <- newLabel rvb [text "Pick Theorem Prover:"]
+  l3 <- newLabel rvb [text sublogicTheoryLabel]
   pack l3 [Anchor NorthWest]
 
   rhb3 <- newHBox rvb []
@@ -423,7 +431,22 @@ proofManagementGUI lid proveF fineGrainedSelectionF
   hsp3 <- newLabel rhb3 [text hindent]
   pack hsp3 []
 
-  pathsFrame <- newFrame rhb3 []
+  sublogicLabel <- newLabel rhb3 [text $ show $ sublogicOfTheory initState]
+  pack sublogicLabel []
+
+  vsp3 <- newSpace rvb vspacing []
+  pack vsp3 []
+
+  l4 <- newLabel rvb [text "Pick Theorem Prover:"]
+  pack l4 [Anchor NorthWest]
+
+  rhb4 <- newHBox rvb []
+  pack rhb4 [Expand On, Fill Both]
+
+  hsp4 <- newLabel rhb4 [text hindent]
+  pack hsp4 []
+
+  pathsFrame <- newFrame rhb4 []
   pack pathsFrame []
   pathsLb <- newListBox pathsFrame [HTk.value $ ([]::[String]), bg "white",
                                     selectMode Single, exportSelection False,
