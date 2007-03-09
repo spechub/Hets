@@ -53,9 +53,9 @@ insLNode :: LNode DGNodeLab -> DGraph -> DGraph
 insLNode n@(v, _) g =
     if gelem v g then error $ "insLNode " ++ show v else insNode n g
 
-labelNode :: LNode DGNodeLab -> DGraph -> DGraph
+labelNode :: LNode DGNodeLab -> DGraph -> (DGraph, DGNodeLab)
 labelNode (v, l) g = case match v g of
-    (Just(p, _, _, s), g') -> (p, v, l, s) & g'
+    (Just(p, _, o, s), g') -> ((p, v, l, s) & g', o)
     _ -> error $ "labelNode no such node: " ++ show v
 
 changeDG :: DGraph -> DGChange -> DGraph
@@ -67,7 +67,7 @@ changeDG g c = case c of
 		    in 
 		    insLEdge l g
     DeleteEdge e -> deLLEdge e g
-    SetNodeLab n -> labelNode n g    
+    SetNodeLab _ n -> fst $ labelNode n g    
 
 initEdgeID :: LEdge DGLinkLab -> DGraph -> LEdge DGLinkLab
 initEdgeID (src, tgt, linklab) g 
@@ -86,7 +86,7 @@ updateDGAndChange g c = case c of
 		    in 
 		    (insLEdge newEdge g, InsertEdge newEdge)
     DeleteEdge e -> (deLLEdge e g, DeleteEdge e)
-    SetNodeLab n -> (labelNode n g, SetNodeLab n)
+    SetNodeLab _ n -> let (newG, o) = labelNode n g in (newG, SetNodeLab o n)
 
 updateDGAndChanges :: DGraph -> [DGChange] -> (DGraph, [DGChange])
 updateDGAndChanges g [] = (g, [])
@@ -427,7 +427,7 @@ adoptEdgesAux node areIngoingEdges (src,tgt,edgelab) =
 {- | adjusts a node whose label is changed -}
 adjustNode :: DGraph -> LNode DGNodeLab -> (DGraph, [DGChange])
 adjustNode dgraph newNode = 
-  updateWithOneChange (SetNodeLab newNode) dgraph []    
+  updateWithOneChange (SetNodeLab (error "adjustNode") newNode) dgraph []    
   {-
   let
       es = inn dgraph node ++ out dgraph node

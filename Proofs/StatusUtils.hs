@@ -119,7 +119,7 @@ showChanges (change:changes) =
                        ++ (showChanges changes)
     DeleteNode node -> "DeleteNode " ++ (showNodeChange node)
                        ++ (showChanges changes)
-    SetNodeLab (node, newLab) -> "SetNodeLab of node " ++ show node ++
+    SetNodeLab _ (node, newLab) -> "SetNodeLab of node " ++ show node ++
                                  " with new lab: " ++ show newLab
 
 showEdgeChange :: LEdge DGLinkLab -> String
@@ -156,7 +156,7 @@ getContraryChange change = case change of
     -- ... although this should be recognized ... a bit strange ...
     DeleteEdge _ -> Nothing
     DeleteNode _ -> Nothing -- Just $ InsertNode node
-    SetNodeLab _ -> Nothing
+    SetNodeLab _ _ -> Nothing
 
 removeChange :: DGChange -> [DGChange] -> [DGChange]
 removeChange _ [] = []

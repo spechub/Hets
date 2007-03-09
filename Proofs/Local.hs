@@ -210,7 +210,10 @@ localInferenceAux libEnv ln dgraph (rules, changes)
 		     -}
 		     (newGraph, newChanges) =
 		        updateWithChanges 
-			[DeleteEdge ledge, SetNodeLab(oldNode, newNodeLab), InsertEdge newEdge] 
+			[ DeleteEdge ledge
+                        , SetNodeLab (error "localInferenceAux") 
+                                         (oldNode, newNodeLab)
+                        , InsertEdge newEdge] 
 			dgraph changes
 		     newLibEnv = Map.adjust adjMap ln libEnv
                      adjMap ge = ge { devGraph = newGraph}

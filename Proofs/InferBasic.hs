@@ -196,7 +196,9 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv = do
                               dGraph node)
                 newNodeLab = oldContents{dgn_theory = newTh}
                 (nextDGraph,changes) =
-		    updateWithOneChange (SetNodeLab (node, newNodeLab)) dGraph []
+		    updateWithOneChange (SetNodeLab
+                                      (error "basicInferenceNode")
+                                         (node, newNodeLab)) dGraph []
                     --adjustNode dGraph (node, newNodeLab)
                 rules = [] -- map (\s -> BasicInference (Comorphism cid)
                            --     (BasicProof lidT s))

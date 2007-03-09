@@ -1473,7 +1473,7 @@ applyChangesAux2  _ _ _ visibleNodes eventDescr convMaps [] =
   return (visibleNodes, eventDescr+1, convMaps)
 applyChangesAux2 gid libname grInfo visibleNodes _ convMaps (change:changes) =
   case change of
-    SetNodeLab (node, newLab) -> do
+    SetNodeLab _ (node, newLab) -> do
       let nodetype = getDGNodeType newLab
 	  nodename = getDGNodeName newLab
 	  dgNode = (libname, node)
