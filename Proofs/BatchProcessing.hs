@@ -103,8 +103,7 @@ goalProcessed :: (Ord proof_tree, Show proof_tree) =>
               -> IO Bool
 goalProcessed stateMVar tLimit extOpts numGoals prName processedGoalsSoFar
               nGoal (retval, res_cfg) = do
-  seq (length $ show res_cfg) $
-    Conc.modifyMVar_ stateMVar (\s -> return (s{
+  Conc.modifyMVar_ stateMVar (\s -> return (s{
       configsMap = adjustOrSetConfig
                       (\ c -> c{timeLimitExceeded =
                                 isTimeLimitExceeded retval,

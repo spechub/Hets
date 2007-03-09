@@ -12,16 +12,6 @@ Generic GUI for automatic theorem provers. Based upon former SPASS Prover GUI.
 
 -}
 
-{- ToDo:
-      - window opens too small on linux; why? ... maybe fixed
-      --> failure still there, opens sometimes too small (using KDE),
-          but not twice in a row
-
-      - keep focus of listboxes if updated (also relevant
-        in GUI.ProofManagement)
-
--}
-
 module GUI.GenericATP (genericATPgui,guiDefaultTimeLimit) where
 
 import Logic.Prover
@@ -714,7 +704,6 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                 if wDestroyed
                  then done
                  else do
-                 enableWids wids
                  case retval of
                    ATPError message -> errorMess message
                    _ -> return ()
@@ -727,10 +716,17 @@ genericATPgui atpFun isExtraOptions prName thName th pt = do
                                       resultOutput = resultOutput cfg,
                                       timeUsed     = timeUsed cfg})
                            prName goal pt (configsMap s')}
-                 seq (length $ show cfg) $
-                     Conc.modifyMVar_ stateMVar (return . const s'')
-                 updateDisplay s'' True lb statusLabel timeEntry
-                              optionsEntry axiomsLb
+                 Conc.modifyMVar_ stateMVar (return . const s'')
+                -- check again if window was closed
+                 wDestroyed2 <- windowDestroyed windowDestroyedMVar
+                 if wDestroyed2
+                  then done
+                  else do
+                    enable lb
+                    enable axiomsLb
+                    updateDisplay s'' True lb statusLabel timeEntry
+                                  optionsEntry axiomsLb
+                    enableWids wids
                  done)
       +> (showDetails >>> do
             Conc.yield

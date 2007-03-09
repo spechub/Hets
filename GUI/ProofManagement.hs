@@ -109,9 +109,7 @@ goalsView :: ProofGUIState lid sentence  -- ^ current global state
 goalsView = map toStatus . OMap.toList . goalMap
     where toStatus (l,st) =
               let tStatus = thmStatus st
-                  showBP = show . snd  
-                  si = if seq (length (concatMap showBP tStatus) >= 0 ) $ 
-                           null tStatus
+                  si = if null tStatus
                        then LBIndicatorOpen
                        else indicatorFromBasicProof
                                 (maximum $ map snd $ tStatus)
@@ -645,8 +643,7 @@ proofManagementGUI lid proveF fineGrainedSelectionF
                    Just res -> return res
             let s''' = s''{proverRunning = False,
                            accDiags = accDiags s'' ++ ds}
-            seq (length $ show $ goalMap s''') $
-                Conc.putMVar stateMVar s'''
+            Conc.putMVar stateMVar s'''
             Conc.yield
             mv <- Conc.tryTakeMVar lockMVar
             case mv of
