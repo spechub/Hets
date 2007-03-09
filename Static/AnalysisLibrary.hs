@@ -383,7 +383,7 @@ ana_VIEW_DEFN lgraph _defl libenv gctx l opts
              adj $ induced_from_to_morphism lid rmap sigmaS' sigmaT'
   let nodeS = getNode src
       nodeT = getNode tar
-      gmor = gEmbed (G_morphism lid mor 0)
+      gmor = gEmbed (G_morphism lid 0 mor 0 0)
       link = (nodeS,nodeT,DGLink {
                dgl_morphism = gmor,
                dgl_type = GlobalThm LeftOpen None LeftOpen,

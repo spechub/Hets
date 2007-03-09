@@ -1323,10 +1323,10 @@ emptyCASLMorphism::(CASL.Morphism.Morphism () () ())
 emptyCASLMorphism = CASL.Morphism.Morphism (emptySign ()) (emptySign ()) Map.empty Map.empty Map.empty ()
     
 emptyCASLGMorphism::Logic.Grothendieck.GMorphism
-emptyCASLGMorphism = Logic.Grothendieck.gEmbed (Logic.Grothendieck.G_morphism CASL emptyCASLMorphism 0)
+emptyCASLGMorphism = Logic.Grothendieck.gEmbed (Logic.Grothendieck.G_morphism CASL  0 emptyCASLMorphism 0 0)
 
 makeCASLGMorphism::(CASL.Morphism.Morphism () () ())->Logic.Grothendieck.GMorphism
-makeCASLGMorphism m = Logic.Grothendieck.gEmbed (Logic.Grothendieck.G_morphism CASL m 0)
+makeCASLGMorphism m = Logic.Grothendieck.gEmbed (Logic.Grothendieck.G_morphism CASL 0 m 0 0)
 
 emptyCASLSign::CASLSign
 emptyCASLSign = emptySign ()

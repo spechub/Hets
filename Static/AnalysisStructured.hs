@@ -403,7 +403,7 @@ ana_SPEC lg gctx nsig name opts sp =
             dgn_cons_status = LeftOpen }
           node = getNewNode dg''
           link = (n'', node, DGLink {
-            dgl_morphism = gEmbed2 gsigma3 (G_morphism lid mor3 (m+1)),
+            dgl_morphism = gEmbed2 gsigma3 (G_morphism lid 0 mor3 (m+1) 0),
             dgl_type = HidingDef,
             dgl_origin = DGLocal,
 	    dgl_id = defaultEdgeID})
@@ -414,7 +414,7 @@ ana_SPEC lg gctx nsig name opts sp =
               gctx'' { devGraph = insEdgeNub link $
                                   insNode (node,node_contents) dg''
                      , sigMap = Map.insert (s+1) gsigma3 sgMap
-                     , morMap = Map.insert (m+1) (G_morphism lid mor3 (m+1))
+                     , morMap = Map.insert (m+1) (G_morphism lid 0 mor3 (m+1) 0)
                                 mrMap
                      })
   Closed_spec asp pos ->
@@ -848,7 +848,7 @@ ana_RESTRICTION' dg gSigma gSigma' False (Hidden restr pos) =
                   restr
      return (mor,Nothing)
   -- ??? Need to check that local env is not affected !
-ana_RESTRICTION' _ (G_sign lid sigma _) (G_sign lid' sigma' _)
+ana_RESTRICTION' _ (G_sign lid sigma _) (G_sign lid' sigma' si')
      False (Revealed (G_symb_map_items_list lid1 sis) pos) =
   do let sys = sym_of lid sigma -- local env
          sys' = sym_of lid' sigma' -- "big" signature
@@ -867,8 +867,8 @@ ana_RESTRICTION' _ (G_sign lid sigma _) (G_sign lid' sigma' _)
         -- to a different logic
      mor1 <- adj $ generated_sign lid' (sys1 `Set.union` sys'') sigma'
      mor2 <- adj $ induced_from_morphism lid' rmap (dom lid' mor1)
-     return (gEmbed (G_morphism lid' mor1 0),
-             Just (gEmbed (G_morphism lid' mor2 0)))
+     return (gEmbed (G_morphism lid' si' mor1 0 0),
+             Just (gEmbed (G_morphism lid' 0 mor2 0 0)))
 
 
 ana_FIT_ARG :: LogicGraph -> GlobalContext -> SPEC_NAME -> MaybeNode
@@ -899,13 +899,13 @@ ana_FIT_ARG lg gctx spname nsigI
    -} -- ??? does not work
       -- ??? also output some symbol that is affected
    let link = (nP,nA,DGLink {
-         dgl_morphism = gEmbed (G_morphism lidP mor 0),
+         dgl_morphism = gEmbed (G_morphism lidP 0 mor 0 0),
          dgl_type = GlobalThm LeftOpen None LeftOpen,
          dgl_origin = DGSpecInst spname,
 	 dgl_id = defaultEdgeID})
    return (Fit_spec (replaceAnnoted sp' asp) gsis pos,
            gctx { devGraph = insEdgeNub link $ devGraph dg' },
-           (G_morphism lidP mor 0,nsigA)
+           (G_morphism lidP 0 mor 0 0,nsigA)
            )
 
 ana_FIT_ARG lg gctx spname nsigI (NodeSig nP gsigmaP)
@@ -954,7 +954,7 @@ ana_FIT_ARG lg gctx spname nsigI (NodeSig nP gsigmaP)
                  dgl_origin = DGFitView spname,
 		 dgl_id = defaultEdgeID})
            return (fv, gctx { devGraph = insEdgeNub link dg },
-                         (G_morphism lid morHom ind, target))
+                         (G_morphism lid 0 morHom ind 0, target))
          -- the subcase with nonempty import
          JustNode (NodeSig nI _) -> do
            gsigmaIS <- adj $ gsigUnion lg gsigmaI gsigmaS
@@ -1026,7 +1026,7 @@ ana_FIT_ARG lg gctx spname nsigI (NodeSig nP gsigmaP)
                    insEdgeNub link4 $
                    insNode (nA,node_contentsA) $
                    insNode (n',node_contents') dg },
-                   (G_morphism lid mor_I 0, NodeSig nA gsigmaA))
+                   (G_morphism lid 0 mor_I 0 0, NodeSig nA gsigmaA))
       -- now the case with parameters
       (_,0) -> do
        let fitargs = map item afitargs
@@ -1111,7 +1111,7 @@ ana_FIT_ARG lg gctx spname nsigI (NodeSig nP gsigmaP)
                  (insNode (nA,node_contentsA) $
                   insNode (n',node_contents') dg')
                  (fitLinks ++ parLinks) },
-               (G_morphism lid1 theta 0, NodeSig nA gsigmaRes))
+               (G_morphism lid1 0 theta 0 0, NodeSig nA gsigmaRes))
        where
        anaFitArg res (nsig',fa) = do
          (fas',dg1,args,name') <- res
@@ -1167,7 +1167,7 @@ extendMorphism :: G_sign      -- ^ formal parameter
                -> G_morphism  -- ^ fitting morphism
                -> Result(G_sign,G_morphism)
 extendMorphism (G_sign lid sigmaP _) (G_sign lidB sigmaB1 _)
-                   (G_sign lidA sigmaA1 _) (G_morphism lidM fittingMor1 _) = do
+                   (G_sign lidA sigmaA1 _) (G_morphism lidM _ fittingMor1 _ _) = do
   -- for now, only homogeneous instantiations....
   sigmaB <- coerceSign lidB lid "Extension of symbol map" sigmaB1
   sigmaA <- coerceSign lidA lid "Extension of symbol map" sigmaA1
@@ -1215,7 +1215,7 @@ extendMorphism (G_sign lid sigmaP _) (G_sign lidB sigmaB1 _)
      ++ showDoc newIdentifications "") nullRange)
   incl <- inclusion lid sigmaAD sigma
   mor1 <- comp lid mor incl
-  return (G_sign lid sigma 0, G_morphism lid mor1 0)
+  return (G_sign lid sigma 0, G_morphism lid 0 mor1 0 0)
 
 apply_GS :: LogicGraph -> ExtGenSig -> [(G_morphism,NodeSig)]
              -> Result(G_sign,G_morphism)
@@ -1227,7 +1227,7 @@ apply_GS lg (nsigI,_params,gsigmaP,nsigB) args = do
   G_sign lidI sigmaI _<- return gsigmaI
   let idI = ide lidI sigmaI
   gsigmaA <- gsigManyUnion lg gsigmaA_i
-  mor_f <- homogeneousMorManyUnion (G_morphism lidI idI 0:mor_i)
+  mor_f <- homogeneousMorManyUnion (G_morphism lidI 0 idI 0 0:mor_i)
   extendMorphism gsigmaP gsigmaB gsigmaA mor_f
 
 -- | analyze a GENERICITY
