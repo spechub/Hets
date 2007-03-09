@@ -39,6 +39,13 @@ module Propositional.Sublogic
     , sl_symit                      -- sublogic for symbol items
     , sl_mor                        -- sublogic for morphisms
     , sl_symmap                     -- sublogic for symbol map items
+    , prSymbolM                     -- projection of symbols
+    , prSig                         -- projections of signatures
+    , prMor                         -- projections of morphisms
+    , prSymMapM                     -- projections of symbol maps
+    , prSymM                        -- projections of SYMB_ITEMS
+    , prFormulaM                    -- projections of formulae 
+    , prBasicSpec                   -- projections of basic specs
     )
     where
 
@@ -80,6 +87,19 @@ data PropSL = PropSL
     , has_imp      :: Bool             -- Implication ?
     , has_equiv    :: Bool             -- Equivalence ?
     } deriving (Show, Eq)
+
+-- | comparison of sublogics
+compareLE :: PropSL -> PropSL -> Bool
+compareLE sl1 sl2 = bothCNF || pfLE
+    where 
+      form1   = format sl1
+      form2   = format sl2
+      i1      = has_imp sl1
+      i2      = has_imp sl2
+      e1      = has_equiv sl1
+      e2      = has_equiv sl2
+      bothCNF = (form1 == form2) && (form1 == CNF)
+      pfLE    = (not bothCNF) && (i1 <= i2) && (e1 <= e2)
 
 ------------------------------------------------------------------------------
 -- Special elements in the Lattice of logics                                --
@@ -223,22 +243,38 @@ sl_basic_spec ps (AS_BASIC.Basic_spec spec) =
 
 -- | all sublogics
 sublogics_all :: [PropSL]
-sublogics_all = let bools = [True, False] in
+sublogics_all = 
     [PropSL
      {
        format    = CNF
      , has_imp   = False
      , has_equiv = False 
      }
-    ] ++ [ PropSL 
-           {
-             format = PlainFormula
-           , has_imp = imps
-           , has_equiv = equivs
-           }
-           | imps <- bools
-           , equivs <- bools
-         ]
+    ,PropSL
+     {
+       format    = PlainFormula
+     , has_imp   = False
+     , has_equiv = False 
+     }
+    ,PropSL
+     {
+       format    = PlainFormula
+     , has_imp   = True
+     , has_equiv = False 
+     }
+    ,PropSL
+     {
+       format    = PlainFormula
+     , has_imp   = False
+     , has_equiv = True
+     }
+    ,PropSL
+     {
+       format    = PlainFormula
+     , has_imp   = True
+     , has_equiv = True 
+     }
+    ]
 
 -------------------------------------------------------------------------------
 -- Conversion functions to String                                            --
@@ -258,3 +294,69 @@ sublogics_name f =
     where formType = format f
           imp      = has_imp f
           equ      = has_equiv f
+
+-------------------------------------------------------------------------------
+-- Projections to sublogics                                                  --
+-------------------------------------------------------------------------------
+
+prSymbolM :: PropSL -> Symbol.Symbol -> Maybe Symbol.Symbol
+prSymbolM _ sym = Just sym
+
+prSig :: PropSL -> Sign.Sign -> Sign.Sign
+prSig _ sig = sig
+
+prMor :: PropSL -> Morphism.Morphism -> Morphism.Morphism
+prMor _ mor = mor
+
+prSymMapM :: PropSL 
+          -> AS_BASIC.SYMB_MAP_ITEMS 
+          -> Maybe AS_BASIC.SYMB_MAP_ITEMS
+prSymMapM _ sMap = Just sMap
+
+prSymM :: PropSL -> AS_BASIC.SYMB_ITEMS -> Maybe AS_BASIC.SYMB_ITEMS
+prSymM _ sym = Just sym
+
+-- keep an element if its computed sublogic is in the given sublogic
+--
+
+prFormulaM :: PropSL -> AS_BASIC.FORMULA -> Maybe AS_BASIC.FORMULA
+prFormulaM sl form 
+           | compareLE (sl_form bottom form) sl = Just form
+           | otherwise                          = Nothing
+
+prPredItem :: PropSL -> AS_BASIC.PRED_ITEM -> AS_BASIC.PRED_ITEM
+prPredItem _ prI = prI
+
+prBASIC_items :: PropSL -> AS_BASIC.BASIC_ITEMS -> AS_BASIC.BASIC_ITEMS
+prBASIC_items pSL bI =
+    case bI of
+      AS_BASIC.Pred_decl pI -> AS_BASIC.Pred_decl $ prPredItem pSL pI
+      AS_BASIC.Axiom_items aIS -> AS_BASIC.Axiom_items $ concat $ map mapH aIS 
+    where 
+      mapH :: AS_Anno.Annoted (AS_BASIC.FORMULA) 
+           -> [(AS_Anno.Annoted (AS_BASIC.FORMULA))]
+      mapH annoForm = let formP = prFormulaM pSL $ AS_Anno.item annoForm in
+                      case formP of
+                        Nothing -> []
+                        Just f  -> [ AS_Anno.Annoted
+                                   {
+                                     AS_Anno.item = f
+                                   , AS_Anno.opt_pos = AS_Anno.opt_pos annoForm
+                                   , AS_Anno.l_annos = AS_Anno.l_annos annoForm
+                                   , AS_Anno.r_annos = AS_Anno.r_annos annoForm
+                                   }
+                                   ]
+
+prBasicSpec :: PropSL -> AS_BASIC.BASIC_SPEC -> AS_BASIC.BASIC_SPEC
+prBasicSpec pSL (AS_BASIC.Basic_spec bS) =  
+    AS_BASIC.Basic_spec $ map mapH bS
+    where
+      mapH :: AS_Anno.Annoted (AS_BASIC.BASIC_ITEMS)
+           -> AS_Anno.Annoted (AS_BASIC.BASIC_ITEMS)
+      mapH aBI = AS_Anno.Annoted
+                 {
+                   AS_Anno.item = prBASIC_items pSL $ AS_Anno.item aBI
+                 , AS_Anno.opt_pos = AS_Anno.opt_pos aBI
+                 , AS_Anno.l_annos = AS_Anno.l_annos aBI
+                 , AS_Anno.r_annos = AS_Anno.r_annos aBI
+                 }

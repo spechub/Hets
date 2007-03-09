@@ -40,6 +40,7 @@ import qualified Propositional.Parse_AS_Basic as Parse_AS
 import qualified Propositional.Analysis as Analysis
 import qualified Propositional.InverseAnalysis as IAna
 import qualified Propositional.Sublogic as Sublogic
+import qualified Propositional.Rules as Rules
 import qualified Common.Id as Id()
 
 -- | Lid for propositional logic
@@ -159,19 +160,23 @@ instance MinSublogic Sublogic.PropSL Morphism.Morphism where
 instance MinSublogic Sublogic.PropSL AS_BASIC.SYMB_MAP_ITEMS where
     minSublogic sm = Sublogic.sl_symmap Sublogic.bottom sm
 
-instance ProjectSublogicM Sublogic.PropSL Symbol.Symbol
+instance ProjectSublogicM Sublogic.PropSL Symbol.Symbol where
+    projectSublogicM = Sublogic.prSymbolM
 
-instance ProjectSublogic Sublogic.PropSL Sign.Sign
+instance ProjectSublogic Sublogic.PropSL Sign.Sign where
+    projectSublogic = Sublogic.prSig
 
-instance ProjectSublogic Sublogic.PropSL Morphism.Morphism
+instance ProjectSublogic Sublogic.PropSL Morphism.Morphism where
+    projectSublogic = Sublogic.prMor
 
-instance ProjectSublogicM Sublogic.PropSL AS_BASIC.SYMB_MAP_ITEMS
+instance ProjectSublogicM Sublogic.PropSL AS_BASIC.SYMB_MAP_ITEMS where
+    projectSublogicM = Sublogic.prSymMapM
 
-instance ProjectSublogicM Sublogic.PropSL AS_BASIC.SYMB_ITEMS
+instance ProjectSublogicM Sublogic.PropSL AS_BASIC.SYMB_ITEMS where
+    projectSublogicM = Sublogic.prSymM
 
-instance ProjectSublogic Sublogic.PropSL AS_BASIC.BASIC_SPEC
+instance ProjectSublogic Sublogic.PropSL AS_BASIC.BASIC_SPEC where 
+    projectSublogic = Sublogic.prBasicSpec
 
-instance ProjectSublogic Sublogic.PropSL AS_BASIC.FORMULA
-
-
-
+instance ProjectSublogicM Sublogic.PropSL AS_BASIC.FORMULA where
+    projectSublogicM = Sublogic.prFormulaM
