@@ -49,6 +49,59 @@ import CspCASL.Parse_CspCASL
 import CspCASL.Parse_CspCASL_Process()
 import CspCASL.Print_CspCASL()
 
+data TestCase = TestCase String String String String
+
+instance Show TestCase where show = showTC
+
+showTC :: TestCase -> String
+showTC (TestCase src parser sense _)
+    = "TestCase " ++ src ++ "(" ++ parser ++ ")" ++ sense
+
+main :: IO ()
+main = do contents <- readAllTests "test"
+          print (show contents)
+
+-- Given path to directory containing test cases, return list of test
+-- cases.
+readAllTests :: FilePath -> IO [TestCase]
+readAllTests path = do tests <- listTestCases path
+                       mapM readOneTestCase tests
+
+-- List every file in the test directory ending with '.testcase'
+listTestCases :: FilePath -> IO [FilePath]
+listTestCases path = let
+    endswith :: String -> String -> Bool
+    endswith subject target = drop (length subject - length target) subject == target
+    isTestCase :: String -> Bool
+    isTestCase f = endswith f ".testcase"
+    in do contents <- getDirectoryContents path
+          let testcases = (map (\x -> path ++ "/" ++ x) (filter isTestCase contents))
+          return testcases
+
+-- Given the path to a .testcase file, return TestCase described therein.
+readOneTestCase :: FilePath -> IO TestCase
+readOneTestCase tc = do hdl <- openFile tc ReadMode
+                        contents <- hGetContents hdl
+                        return (interpret contents)
+
+interpret :: String -> TestCase
+interpret s = TestCase source parser sense output
+    where ls = lines s
+          source = head ls
+          parser = head (tail ls)
+          sense = head (tail (tail ls))
+          output = unlines (tail (tail (tail ls)))
+
+
+
+
+
+
+
+
+
+
+
 
 prettyCspCASLFromFile :: FilePath -> IO ()
 prettyCspCASLFromFile fname
@@ -81,28 +134,6 @@ testOne
 
 
 
--- List every file in the test directory ending with '.testcase'
-listTestCases :: FilePath -> IO [FilePath]
-listTestCases path = let
-    endswith :: String -> String -> Bool
-    endswith subject target = drop (length subject - length target) subject == target
-    isTestCase :: String -> Bool
-    isTestCase f = endswith f ".testcase"
-    in do contents <- getDirectoryContents path
-          let testcases = (map (\x -> path ++ "/" ++ x) (filter isTestCase contents))
-          return testcases
-
-readOneFile :: FilePath -> IO String
-readOneFile tc = do hdl <- openFile tc ReadMode
-                    hGetContents hdl
-
-readAllTests :: FilePath -> IO [String]
-readAllTests path = do tests <- listTestCases path
-                       mapM readOneFile tests
-
-main :: IO ()
-main = do contents <- readAllTests "test"
-          print (show contents)
 
 
 
