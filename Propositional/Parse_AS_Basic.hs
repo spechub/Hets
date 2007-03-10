@@ -50,9 +50,17 @@ basicSpec = (fmap AS_BASIC.Basic_spec $ AnnoState.annosParser $ parseBasicItems)
 -- | Parser for basic items
 parseBasicItems :: AnnoState.AParser st AS_BASIC.BASIC_ITEMS
 parseBasicItems =
-   fmap AS_BASIC.Pred_decl predItem
+   parsePredDecl
    <|> 
-   fmap AS_BASIC.Axiom_items ( many1 $ AnnoState.dotT >> aFormula )
+   parseAxItems
+
+-- | parser for predicate declarations
+parsePredDecl :: AnnoState.AParser st AS_BASIC.BASIC_ITEMS
+parsePredDecl = fmap AS_BASIC.Pred_decl predItem
+
+-- | parser for Axiom_items
+parseAxItems :: AnnoState.AParser st AS_BASIC.BASIC_ITEMS
+parseAxItems = fmap AS_BASIC.Axiom_items ( many1 $ AnnoState.dotT >> aFormula )
 
 -- | Any word to token   
 propId :: GenParser Char st Id.Token
