@@ -149,7 +149,6 @@ data GInfo = GInfo
 initializeConverter :: IO (IORef GraphMem,HTk.HTk)
 initializeConverter =
     do wishInst <- HTk.initHTk [HTk.withdrawMainWin]
-       showLogicGraph daVinciSort
        initGraphInfo <- initgraphs
        graphMem <- (newIORef GraphMem{nextGraphId = 0,
                                       graphInfo = initGraphInfo})
@@ -299,19 +298,18 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts title = do
                           (proofMenu gInfo (return . return .
                                                    theoremHideShift ln))
                     ],
-                  Menu (Just "Development Graph")
-                  [
-                   Button "Translation"
-                          (openTranslateGraph (libname2dg convMaps) ln opts 
-                                $ (getDGLogic (libname2dg convMaps)))
-                  ],
-                  Menu (Just "Library Graph")
-                  [
-                   Button "show"
-                          (do
-			     le <- readIORef (libEnvIORef gInfo)
-                             showLibGraph opts le)
-                  ]
+                  Button "Development Graph Translation"
+                         (openTranslateGraph (libname2dg convMaps) ln opts 
+                               $ (getDGLogic (libname2dg convMaps)))
+                  ,
+                  Button "Show Logic Graph"
+                         (showLogicGraph daVinciSort)
+                  ,
+                  Button "Show Library Graph"
+                         (do
+			    le <- readIORef (libEnvIORef gInfo)
+                            showLibGraph opts le
+                         )
                   ])]
       -- the node types
                [("open_cons__spec",
