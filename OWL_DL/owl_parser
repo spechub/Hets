@@ -4,6 +4,6 @@
 
 ## cd $HETS_OWL_PARSER
 rm output.term 2>/dev/null
-java -jar java/OWLParser.jar $* || exit $?   
+java -jar $HETS_OWL_PARSER/java/OWLParser.jar $* || exit $?   
 # mv output.term $HETS_OWL_PARSER
 # cd -
