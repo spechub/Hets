@@ -51,7 +51,7 @@ parseOWL filename  =
     if null filename 
        then
          error "empty file name!"
-       else if checkUri $ filename 
+       else if checkUri  filename 
                then
                  do exitCode <- 
                         system ("$HETS_OWL_PARSER/owl_parser " ++ filename)
@@ -74,8 +74,11 @@ parseOWL filename  =
 
        where run :: ExitCode  -> IO OntologyMap
              run exitCode 
-                 | exitCode == ExitSuccess =  
-                     parseProc "./OWL_DL/output.term"
+                 | exitCode == ExitSuccess = 
+                     do
+                       ioHandler <- openFile ".outputFilename" WriteMode
+                       outFile <- hGetContents ioHandler
+                       parserProc outFile
                  | otherwise =  error ("process stop! " ++ (show exitCode))
 
 -- | parse the file "output.term" from java-owl-parser
