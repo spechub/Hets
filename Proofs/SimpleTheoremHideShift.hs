@@ -110,7 +110,8 @@ theoremHideShiftWithOneHidingDefEdgeAux dgraph (hd@(hds, _, _))
 			dgl_id = dgl_id lbl
                         }
                  )
-    (newDGraph2, newChanges2) = tryToInsertEdge newDGraph provenEdge newChanges
+    (newDGraph2, newChanges2) = --tryToInsertEdge newDGraph provenEdge newChanges
+        insertDGLEdge provenEdge newDGraph newChanges
     --------------------------------------------------------------------------------
     -------- delete the being processed unproven global theorem link ---------------
     --------------------------------------------------------------------------------
@@ -137,6 +138,7 @@ tryToInsertEdgeAndSelectProofBasis dgraph newEdge changes proofbasis =
 		   in
 		   ((tempDGraph, tempChanges), tempPB)	
 
+{-
 -- | try to insert an edge to the given dgraph. If the to be inserted edge exists, do nothing ;)
 tryToInsertEdge :: DGraph -> LEdge DGLinkLab -> [DGChange] -> (DGraph, [DGChange])
 tryToInsertEdge dgraph newEdge changes =
@@ -144,7 +146,7 @@ tryToInsertEdge dgraph newEdge changes =
              True -> (dgraph, changes)
              False -> updateWithOneChange (InsertEdge newEdge) dgraph changes
 	     --((insEdge newEdge dgraph), (InsertEdge newEdge):changes)
-
+-}
 
 
 

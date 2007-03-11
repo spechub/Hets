@@ -83,11 +83,14 @@ locDecompAux libEnv ln dgraph (rules,changes)
      then
        locDecompAux libEnv ln dgraph (rules, changes) list
      else
+       locDecompAux libEnv ln newGraph (newRules,newChanges) list
+       {-
        if isDuplicate newEdge dgraph changes
           then locDecompAux libEnv ln auxGraph
                  (newRules, auxChanges) list	       
                  --(newRules, DeleteEdge ledge : changes) list
        else locDecompAux libEnv ln newGraph (newRules,newChanges) list
+       -}
   where
     morphism = dgl_morphism edgeLab
     allPaths = getAllLocGlobPathsBetween dgraph src tgt
@@ -107,8 +110,9 @@ locDecompAux libEnv ln dgraph (rules,changes)
                        dgl_origin = DGProof,
 		       dgl_id = dgl_id edgeLab}
                )
-    (newGraph, newChanges) = 
-        updateWithChanges [DeleteEdge ledge, InsertEdge newEdge] dgraph changes
+    (newGraph, newChanges) =
+	insertDGLEdge newEdge auxGraph auxChanges      
+        --updateWithChanges [DeleteEdge ledge, InsertEdge newEdge] dgraph changes
     --newGraph = insEdge newEdge auxGraph
     newRules =  LocDecomp ledge : rules
     --newChanges = DeleteEdge ledge : InsertEdge newEdge : changes

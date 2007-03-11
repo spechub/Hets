@@ -198,7 +198,39 @@ tryToGetEdge newEdge dgraph changes =
 		find (\e -> e==newEdge) (getInsertedEdges changes)
       tryToGetEdgeFromDGraph = 
 		find (\e -> e==newEdge) (labEdges dgraph)
-      
+
+{- | try to insert an edge into the given dgraph, if the edge exists, the to
+be inserted edge's id would be added into the existing edge.-}
+insertDGLEdge :: LEdge DGLinkLab -> -- ^ the to be inserted edge
+		      DGraph ->
+		      [DGChange] -> 
+		      (DGraph, [DGChange])
+insertDGLEdge edge@(_, _, edgeLab) dgraph changes =
+      case (tryToGetEdge edge dgraph changes) of
+	   Nothing -> updateWithChanges [InsertEdge edge] 
+					dgraph
+					changes  
+	   Just e@(src, tgt, label) -> 
+	     if (withoutValidID edge) 
+	      then
+		(dgraph, changes)
+	      else
+		let
+		newEdge = (src, tgt, 
+			   label{
+				 dgl_id=((dgl_id label)++
+				         (dgl_id edgeLab))
+				})  
+	        in
+		updateWithChanges [DeleteEdge e, InsertEdge newEdge]
+				   dgraph
+				   changes
+
+{- | check if the given edge doesn't contain valid id -}
+withoutValidID :: LEdge DGLinkLab -> Bool
+withoutValidID (_, _, label) = null $ dgl_id label
+
+	    
 -- ----------------------------------------------
 -- methods that calculate paths of certain types
 -- ----------------------------------------------
@@ -501,6 +533,7 @@ addHasInHidingWarning dgraph n
      | hasIncomingHidingEdge dgraph n =
            "< Warning: this node has incoming hiding links ! >\n"
      | otherwise = ""      
+
 
 
 

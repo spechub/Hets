@@ -116,24 +116,22 @@ globDecompForOneEdgeAux dgraph edge@(source,target,edgeLab) changes
 			[] proof_basis =
 --  if null changes then (dgraph, changes)
   -- else
-     if isDuplicate provenEdge dgraph changes
-            then updateWithOneChange (DeleteEdge edge) dgraph changes
-	    --(deLLEdge edge dgraph, ((DeleteEdge edge):changes))
-      else updateWithChanges [DeleteEdge edge, InsertEdge provenEdge] dgraph changes
-	   --((insEdge provenEdge (deLLEdge edge dgraph)),
-           --((DeleteEdge edge):((InsertEdge provenEdge):changes)))
+  insertDGLEdge provenEdge auxDGraph auxChanges   
   where
     (GlobalThm _ conservativity conservStatus) = (dgl_type edgeLab)
-    proofBasis = proof_basis
     provenEdge = (source,
                   target,
                   DGLink {dgl_morphism = dgl_morphism edgeLab,
                           dgl_type =
-                            (GlobalThm (Proven (GlobDecomp edge) proofBasis)
+                            (GlobalThm (Proven (GlobDecomp edge) proof_basis)
                              conservativity conservStatus),
                           dgl_origin = DGProof,
 			  dgl_id = dgl_id edgeLab}
                   )
+    (auxDGraph, auxChanges) = 
+	updateWithOneChange (DeleteEdge edge) dgraph changes
+
+
 -- for each path an unproven localThm edge is inserted
 globDecompForOneEdgeAux dgraph edge@(_,target,_) changes
  (path:list)  proof_basis =
@@ -229,21 +227,14 @@ globSubsumeAux :: LibEnv ->  DGraph -> ([DGRule],[DGChange]) ->
 globSubsumeAux _ dgraph historyElement [] = (dgraph, historyElement)
 globSubsumeAux libEnv dgraph (rules,changes) ((ledge@(src,tgt,edgeLab)):list) =
   if not (null proofBasis) || isIdentityEdge ledge libEnv dgraph
-   then
-     if isDuplicate newEdge dgraph changes then
-	let
-	(newGraph, newChanges) = updateWithOneChange (DeleteEdge ledge) dgraph changes
-	in
-	globSubsumeAux libEnv newGraph (newRules, newChanges) list 
-        --globSubsumeAux libEnv (deLLEdge ledge dgraph)
-        --  (newRules,(DeleteEdge ledge):changes) list
-      else
-	let
-	(newGraph, newChanges) = updateWithChanges [DeleteEdge ledge, InsertEdge newEdge] dgraph changes
-	in
-	globSubsumeAux libEnv newGraph (newRules, newChanges) list
-        -- globSubsumeAux libEnv (insEdge newEdge (deLLEdge ledge dgraph))
-        --  (newRules,(DeleteEdge ledge):((InsertEdge newEdge):changes)) list
+   then 
+     let
+     (auxDGraph, auxChanges) = 
+          updateWithOneChange (DeleteEdge ledge) dgraph changes
+     (newDGraph, newChanges) = 
+          insertDGLEdge newEdge auxDGraph auxChanges
+     in
+     globSubsumeAux libEnv newDGraph (newRules, newChanges) list   
    else
      globSubsumeAux libEnv dgraph (rules,changes) list
   where
