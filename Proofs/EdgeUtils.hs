@@ -69,9 +69,11 @@ changeDG g c = case c of
     DeleteEdge e -> deLLEdge e g
     SetNodeLab _ n -> fst $ labelNode n g    
 
+{- | initialize the edge id before it's inserted, but if it already contains
+     valid id, then do nothing -}
 initEdgeID :: LEdge DGLinkLab -> DGraph -> LEdge DGLinkLab
 initEdgeID (src, tgt, linklab) g 
-    | dgl_id linklab == defaultEdgeID = (src, tgt, linklab{dgl_id = getNewEdgeID g})
+    | dgl_id linklab == defaultEdgeID = (src, tgt, linklab{dgl_id = [getNewEdgeID g]})
     | otherwise = (src, tgt, linklab)    
 
 changesDG :: DGraph -> [DGChange] -> DGraph
@@ -372,7 +374,7 @@ calculateProofBasis dg (ledge@(_,_,label):list) acc =
 
 getOneStepProofBasis :: DGraph -> DGLinkLab -> Maybe [LEdge DGLinkLab]
 getOneStepProofBasis dgraph label =
-  case (getDGLinkLabWithID (dgl_id label) dgraph) of
+  case (getDGLinkLabWithIDs (dgl_id label) dgraph) of
        Nothing -> error "Proofs.EdgeUtils.getOneStepProofBasis"
        Just e -> tryToGetProofBasis e
 

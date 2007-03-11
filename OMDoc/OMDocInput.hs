@@ -2342,7 +2342,7 @@ createGraphPartsOM
 	---------------- add IDs into edges -------------------
 	-------------------------------------------------------
 	edgesWithIDs = 
-            zipWith (\(src,tgt,lab) n -> (src, tgt, lab{dgl_id=n}))
+            zipWith (\(src,tgt,lab) n -> (src, tgt, lab{dgl_id=[n]}))
 		    edges
 		    [0..(length edges)]    
       in

@@ -55,7 +55,7 @@ thMapI = getMapAndMaxIndex thMap
 insEdgeNub :: LEdge DGLinkLab -> DGraph -> DGraph
 insEdgeNub (v, w, l) g =
    if (l, w) `elem` s then g
-      else (p, v, l', (l{dgl_id=getNewEdgeID g}, w) : s) & g'
+      else (p, v, l', (l{dgl_id=[getNewEdgeID g]}, w) : s) & g'
    where (Just (p, _, l', s), g') = match v g
 
 -- | analyze a SPEC

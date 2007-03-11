@@ -389,7 +389,7 @@ ana_VIEW_DEFN lgraph _defl libenv gctx l opts
                dgl_type = GlobalThm LeftOpen None LeftOpen,
                    -- 'LeftOpen' for conserv correct?
                dgl_origin = DGView vn,
-	       dgl_id = getNewEdgeID dg''})
+	       dgl_id = [getNewEdgeID dg'']})
       vsig = (src,gmor,(imp,params,getMaybeSig allparams,tar))
       genv = globalEnv gctx''
   if Map.member vn genv

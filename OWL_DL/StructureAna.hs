@@ -80,7 +80,7 @@ graphFromMap uri onto (ontoMap, dg) =
 				(ind, indT, DGLink{ dgl_morphism = comorphism,
 						    dgl_type = GlobalDef,
 						    dgl_origin = DGImports,
-						    dgl_id = n						   
+						    dgl_id = [n]						   
 						  })) 
 			    tagLNodes 
 			    (getNewEdgeIDs (length tagLNodes) dg)
