@@ -121,16 +121,18 @@ theoremHideShiftWithOneHidingDefEdgeAux dgraph (hd@(hds, _, _))
 -- | as the function name already tells ;)
 tryToInsertEdgeAndSelectProofBasis :: DGraph -> LEdge DGLinkLab -> 
 				      [DGChange] -> 
-				      [LEdge DGLinkLab] ->
-				      ((DGraph, [DGChange]), [LEdge DGLinkLab])
+				      [EdgeID] ->
+				      --[LEdge DGLinkLab] ->
+				      ((DGraph, [DGChange]), [EdgeID])
+				      --((DGraph, [DGChange]), [LEdge DGLinkLab])
 tryToInsertEdgeAndSelectProofBasis dgraph newEdge changes proofbasis =
    case (tryToGetEdge newEdge dgraph changes) of
-        Just tempE -> ((dgraph, changes), (tempE:proofbasis))
+        Just tempE -> ((dgraph, changes), ((getEdgeID tempE):proofbasis))
 	Nothing -> let
 		   (tempDGraph, tempChanges) = 
 		       updateWithOneChange (InsertEdge newEdge) dgraph changes
 		   tempPB = case (head tempChanges) of
-			       (InsertEdge tempE) -> (tempE:proofbasis)
+			       (InsertEdge tempE) -> ((getEdgeID tempE):proofbasis)
 			       _ -> error ("Proofs"++
 				           ".SimpleTheoremHideShift"++
 					   ".tryToInsertEdge"++

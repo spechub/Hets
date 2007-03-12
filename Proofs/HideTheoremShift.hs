@@ -125,17 +125,18 @@ hideTheoremShiftAux dgraph (rules,changes) (ledge:list) proofBaseSel =
 
 {- inserts the given edges into the development graph and adds a corresponding
    entry to the changes, while getting the proofbasis -}
-insertNewEdges :: (DGraph, [DGChange]) -> [LEdge DGLinkLab] -> 
-		  [LEdge DGLinkLab] -> ((DGraph,[DGChange]), [LEdge DGLinkLab])
+insertNewEdges :: (DGraph, [DGChange]) -> [LEdge DGLinkLab] ->
+		  [EdgeID] -> ((DGraph,[DGChange]), [EdgeID]) 
+		  --[LEdge DGLinkLab] -> ((DGraph,[DGChange]), [LEdge DGLinkLab])
 insertNewEdges res [] proofbasis = (res, proofbasis)
 insertNewEdges (dgraph, changes) (edge:list) proofbasis =
   case (tryToGetEdge edge dgraph changes) of
-       Just e -> insertNewEdges (dgraph, changes) list (e:proofbasis)
+       Just e -> insertNewEdges (dgraph, changes) list (getEdgeID e:proofbasis)
        Nothing -> let
 		  (tempDGraph, tempChanges) =
 		       (updateWithOneChange (InsertEdge edge) dgraph changes)
 		  tempProofBasis = case (head tempChanges) of
-				     (InsertEdge tempE) -> (tempE:proofbasis)
+				     (InsertEdge tempE) -> (getEdgeID tempE:proofbasis)
 				     _ -> error ("Proofs"++
 						".HideTheoremShift"++
 						".insertNewEdges")
@@ -152,7 +153,8 @@ insertNewEdges (dgraph, changes) (edge:list) proofbasis =
 
 
 {- creates a new proven HidingThm edge from the given HidingThm edge using the edge list as the proofBasis -}
-makeProvenHidingThmEdge :: [LEdge DGLinkLab] -> LEdge DGLinkLab -> LEdge DGLinkLab
+--makeProvenHidingThmEdge :: [LEdge DGLinkLab] -> LEdge DGLinkLab -> LEdge DGLinkLab
+makeProvenHidingThmEdge :: [EdgeID] -> LEdge DGLinkLab -> LEdge DGLinkLab
 makeProvenHidingThmEdge proofBasisEdges ledge@(src,tgt,edgeLab) =
   (src,
    tgt,

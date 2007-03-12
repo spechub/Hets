@@ -108,7 +108,9 @@ globDecompForOneEdge dgraph edge@(source, _, _) =
 {- auxiliary funktion for globDecompForOneEdge (above)
    actual implementation -}
 globDecompForOneEdgeAux :: DGraph -> LEdge DGLinkLab -> [DGChange] ->
-                           [[LEdge DGLinkLab]] -> [LEdge DGLinkLab] -> 
+                           [[LEdge DGLinkLab]] -> 
+			   [EdgeID] -> 
+			   --[LEdge DGLinkLab] -> 
 			   (DGraph,[DGChange])
 {- if the list of paths is empty from the beginning, nothing is done
    otherwise the unprovenThm edge is replaced by a proven one -}
@@ -137,9 +139,9 @@ globDecompForOneEdgeAux dgraph edge@(_,target,_) changes
  (path:list)  proof_basis =
   case (tryToGetEdge newEdge dgraph changes) of
        Nothing -> globDecompForOneEdgeAux newGraph edge newChanges list
-					 (finalEdge:proof_basis)
+					 (getEdgeID finalEdge:proof_basis)
        Just e -> globDecompForOneEdgeAux dgraph edge changes list 
-					 (e:proof_basis)
+					 (getEdgeID e:proof_basis)
 {-
   if isDuplicate newEdge dgraph changes-- list
     then globDecompForOneEdgeAux dgraph edge changes list

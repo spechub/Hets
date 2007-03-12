@@ -228,6 +228,10 @@ insertDGLEdge edge@(_, _, edgeLab) dgraph changes =
 withoutValidID :: LEdge DGLinkLab -> Bool
 withoutValidID (_, _, label) = null $ dgl_id label
 
+{- | get the edge id out of a given edge -}
+getEdgeID :: LEdge DGLinkLab -> EdgeID
+getEdgeID (_, _, label) = dgl_id label
+
             
 -- ----------------------------------------------
 -- methods that calculate paths of certain types
@@ -357,7 +361,7 @@ getInsertedEdges (change:list) =
    if this fails the same is done for the rest of the given paths, i.e.
    for the unproven ones -}
 selectProofBasis :: DGraph -> LEdge DGLinkLab -> [[LEdge DGLinkLab]]
-                 -> [LEdge DGLinkLab]
+                 -> [EdgeID]
 selectProofBasis dg ledge paths =
   if null provenProofBasis then selectProofBasisAux dg ledge unprovenPaths
      else provenProofBasis
@@ -369,7 +373,7 @@ selectProofBasis dg ledge paths =
 {- | selects the first path that does not form a proof cycle with the given
  label (if such a path exits) and returns the labels of its edges -}
 selectProofBasisAux :: DGraph -> LEdge DGLinkLab -> [[LEdge DGLinkLab]]
-                    -> [LEdge DGLinkLab]
+                    -> [EdgeID]
 selectProofBasisAux _ _ [] = []
 selectProofBasisAux dg ledge (path:list) =
     if not (roughElem ledge b) then {- OK, no cyclic proof -} b
@@ -380,17 +384,25 @@ selectProofBasisAux dg ledge (path:list) =
  i.e. (recursively) close the list of DGLinkLabs under the relation
  'is proved using'. If a DGLinkLab has proof status LeftOpen,
  look up in the development graph for its current status -}
-calculateProofBasis :: DGraph -> [LEdge DGLinkLab] -> [LEdge DGLinkLab]
-                        -> [LEdge DGLinkLab]
+calculateProofBasis :: DGraph -> [LEdge DGLinkLab] -> [EdgeID]
+                        -> [EdgeID]
 calculateProofBasis _ [] acc = acc
 calculateProofBasis dg (ledge@(_,_,label):list) acc =
   if roughElem ledge acc
     then calculateProofBasis dg list acc
     else
      case (getOneStepProofBasis dg label) of
-       Just proof_basis -> calculateProofBasis dg (proof_basis++list) (ledge:acc)
+       Just proof_basis -> 
+	    let
+	    pbEdges = map (\edge_id->getDGLEdgeWithIDsForSure edge_id dg) 
+			  proof_basis
+	    in
+	    calculateProofBasis dg (pbEdges++list) ((dgl_id label):acc)
+       Nothing -> calculateProofBasis dg list ((dgl_id label):acc)
+{-
+	    calculateProofBasis dg (proof_basis++list) (ledge:acc)
        Nothing -> calculateProofBasis dg list (ledge:acc)
-
+-}
 {-
      case oneStepProofBasis label of
       Left proofBasis -> calculateProofBasis dg (proofBasis++list) (ledge:acc)
@@ -402,13 +414,15 @@ calculateProofBasis dg (ledge@(_,_,label):list) acc =
            _ -> []
 -}
 
-getOneStepProofBasis :: DGraph -> DGLinkLab -> Maybe [LEdge DGLinkLab]
+--getOneStepProofBasis :: DGraph -> DGLinkLab -> Maybe [LEdge DGLinkLab]
+getOneStepProofBasis :: DGraph -> DGLinkLab -> Maybe [EdgeID]
 getOneStepProofBasis dgraph label =
   case (getDGLinkLabWithIDs (dgl_id label) dgraph) of
-       Nothing -> error "Proofs.EdgeUtils.getOneStepProofBasis"
+       Nothing -> error ((show $ dgl_id label) ++ "Proofs.EdgeUtils.getOneStepProofBasis")
        Just e -> tryToGetProofBasis e
 
-tryToGetProofBasis :: DGLinkLab -> Maybe [LEdge DGLinkLab]
+--tryToGetProofBasis :: DGLinkLab -> Maybe [LEdge DGLinkLab]
+tryToGetProofBasis :: DGLinkLab -> Maybe [EdgeID]
 tryToGetProofBasis label = 
   case dgl_type label of
     (GlobalThm (Proven _ proofBasis) _ _) -> Just proofBasis

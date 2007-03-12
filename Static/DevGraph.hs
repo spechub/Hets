@@ -53,8 +53,7 @@ import Data.Typeable
 import Control.Monad (foldM)
 import Control.Exception
 import Data.Char (toLower)
-
---import Data.List(sort)
+import Data.List(nub, intersect)
 
 getNewNode :: Tree.Gr a b -> Node
 getNewNode g = case newNodes 1 g of
@@ -85,13 +84,31 @@ getNewEdgeID g = case getNewEdgeIDs 1 g of
 		 [n] -> n
 		 _ -> error "Static.DevGraph.getNewEdgeID"
 
-getDGLinkLabWithIDs :: [Int] -> DGraph -> Maybe DGLinkLab
+getDGLinkLabWithIDs :: EdgeID -> DGraph -> Maybe DGLinkLab
 getDGLinkLabWithIDs ids dgraph = 
+   case getDGLEdgeWithIDs ids dgraph of
+	Just (_, _, label) -> Just label
+	Nothing -> Nothing
+{-
    case [label|(_, _, label)<-labEdges dgraph, edge_id <- ids, 
 	       elem edge_id $ dgl_id label] of
 	[n] -> Just n
 	_ -> Nothing 
+-}
 
+getDGLEdgeWithIDs :: EdgeID -> DGraph -> Maybe (LEdge DGLinkLab)
+getDGLEdgeWithIDs ids dgraph = 
+   case nub [ledge|ledge@(_, _, label)<-labEdges dgraph, edge_id <- ids, 
+		   elem edge_id $ dgl_id label] of
+	[n] -> Just n
+	_ -> Nothing
+
+getDGLEdgeWithIDsForSure :: EdgeID -> DGraph -> (LEdge DGLinkLab)
+getDGLEdgeWithIDsForSure ids dgraph = 
+   case [ledge|ledge@(_, _, label)<-labEdges dgraph, edge_id <- ids, 
+	       elem edge_id $ dgl_id label] of
+	[n] -> n
+	_ -> error "Static.DevGraph.getDGLEdgeWithIDsForSure"
 
 -- * Types for structured specification analysis
 
@@ -210,11 +227,11 @@ data DGLinkLab = DGLink {
               dgl_type :: DGLinkType,     -- type: local, global, def, thm?
               -- dgl_depends :: [Int],
               dgl_origin :: DGOrigin,  -- origin in input language
-	      dgl_id :: [Int] }   
+	      dgl_id :: EdgeID }   
               deriving (Show)
 
 -- | to create a default ID which has to be changed by inserting of a certain edge.
-defaultEdgeID :: [Int]
+defaultEdgeID :: EdgeID
 defaultEdgeID = []
 
 instance Eq DGLinkLab where
@@ -237,9 +254,12 @@ eqLEdgeDGLinkLab :: LEdge DGLinkLab -> LEdge DGLinkLab -> Bool
 eqLEdgeDGLinkLab (m1,n1,l1) (m2,n2,l2) =
    m1==m2 && n1==n2 && eqDGLinkLab l1 l2
 
-roughElem :: LEdge DGLinkLab -> [LEdge DGLinkLab] -> Bool
+--roughElem :: LEdge DGLinkLab -> [LEdge DGLinkLab] -> Bool
 --roughElem x = any (`eqLEdgeDGLinkLab` x)
-roughElem (_, _, label) = any (\(_, _, l) -> dgl_id l == dgl_id label)
+--roughElem (_, _, label) = any (\(_, _, l) -> dgl_id l == dgl_id label)
+roughElem :: LEdge DGLinkLab -> [EdgeID] -> Bool
+roughElem (_, _, label) = any (\edgeID -> not $ null $ intersect edgeID $ dgl_id label)
+
 
 data DGChange = InsertNode (LNode DGNodeLab)
               | DeleteNode (LNode DGNodeLab)
@@ -450,8 +470,11 @@ instance Typeable BasicProof where
 data BasicConsProof = BasicConsProof -- more detail to be added ...
      deriving (Show, Eq)
 
+type EdgeID = [Int] -- more to be added...
+
 data ThmLinkStatus = LeftOpen
-                   | Proven DGRule [LEdge DGLinkLab]  -- Proven DGRule Int
+                   | Proven DGRule [EdgeID]
+   --[LEdge DGLinkLab]  -- Proven DGRule Int
                      deriving (Show, Eq)
 
 instance Pretty ThmLinkStatus where
@@ -460,7 +483,11 @@ instance Pretty ThmLinkStatus where
         Proven r ls -> fsep [ text "Proven with rule"
                             , pretty r
                             , text "Proof based on links:"
-                            ] $+$ vcat(map printLEdgeInProof ls)
+			    ] $+$ vcat(map printOneProofBasis ls)
+                            --] $+$ vcat(map printLEdgeInProof ls)
+
+printOneProofBasis :: EdgeID -> Doc
+printOneProofBasis pb = pretty pb
 
 -- | shows short theorem link status
 getThmType :: ThmLinkStatus -> String
