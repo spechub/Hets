@@ -19,7 +19,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Common.AS_Annotation as Common.Annotation
 import List(find, nub)
-import Maybe(fromJust)
+import Data.Maybe(fromJust)
 import Char(isDigit, isAlpha)
 
 

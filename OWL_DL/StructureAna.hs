@@ -28,7 +28,7 @@ import List
 import Logic.Prover
 import qualified Data.Map as Map
 -- import qualified Data.Set as Set
-import Maybe(fromJust)
+import Data.Maybe(fromJust)
 import Char(isDigit)
 import OWL_DL.Namespace
 
