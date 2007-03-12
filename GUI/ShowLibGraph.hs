@@ -20,7 +20,7 @@ import Driver.Options(HetcatsOpts)
 import Syntax.AS_Library
 import ATC.AS_Library()
 import Static.DevGraph
---import GUI.ShowGraph
+--import GUI.ConvertDevToAbstractGraph
 
 -- for graph display
 import DaVinciGraph
@@ -40,8 +40,8 @@ import Data.List
 
 {- | Creates a  new uDrawGraph Window and shows the Library Dependency Graph of
      the given LibEnv.-}
-showLibGraph :: HetcatsOpts -> LibEnv -> IO ()
-showLibGraph opts le =
+showLibGraph :: HetcatsOpts -> LibEnv -> (String -> LIB_NAME -> IO()) -> IO ()
+showLibGraph opts le showGraph =
   do
     let
       lookup' x y = Map.findWithDefault
@@ -55,7 +55,8 @@ showLibGraph opts le =
     let 
       keys = Map.keys le
       subNodeMenu = LocalMenu( Menu Nothing [
-        Button "Show Graph" (runShowGraph opts le), 
+        Button "Show Graph" $
+          showGraph "Development Graph", 
         Button "Show spec/View Names" (showSpec le)])
       subNodeTypeParms = subNodeMenu $$$
 			 Box $$$
@@ -91,18 +92,6 @@ showSpec le ln =
       ge = globalEnv $ lookupGlobalContext ln le
       sp = unlines $ map show $ Map.keys $ ge
     createTextDisplay ("Contents of " ++ (show ln)) sp [size(80,25)]
-
--- | Runs the showGraph function
-runShowGraph :: HetcatsOpts -> LibEnv -> LIB_NAME -> IO()
-runShowGraph opts le ln = 
-  do
-    let
-      -- | Returns the filepath
-      file :: LIB_NAME -> FilePath
-      file (Lib_version x _) = show x
-      file (Lib_id x) = show x
-    --showGraph (file ln) opts (Just (ln, le))
-    return ()
 
 -- | Creates a list of all LIB_NAME pairs, which have a dependency
 getLibDeps :: LibEnv -> [(LIB_NAME, LIB_NAME)]
