@@ -63,9 +63,9 @@ changeDG g c = case c of
     InsertNode n -> insLNode n g
     DeleteNode n -> delLNode n g
     InsertEdge e -> let 
-		    l = initEdgeID e g 
-		    in 
-		    insLEdge l g
+                    l = initEdgeID e g 
+                    in 
+                    insLEdge l g
     DeleteEdge e -> deLLEdge e g
     SetNodeLab _ n -> fst $ labelNode n g    
 
@@ -84,18 +84,18 @@ updateDGAndChange g c = case c of
     InsertNode n -> (insLNode n g, InsertNode n)
     DeleteNode n -> (delLNode n g, DeleteNode n)
     InsertEdge e -> let
-		    newEdge = initEdgeID e g
-		    in 
-		    (insLEdge newEdge g, InsertEdge newEdge)
+                    newEdge = initEdgeID e g
+                    in 
+                    (insLEdge newEdge g, InsertEdge newEdge)
     DeleteEdge e -> (deLLEdge e g, DeleteEdge e)
     SetNodeLab _ n -> let (newG, o) = labelNode n g in (newG, SetNodeLab o n)
 
 updateDGAndChanges :: DGraph -> [DGChange] -> (DGraph, [DGChange])
 updateDGAndChanges g [] = (g, [])
 updateDGAndChanges g (x:xs) = (auxGraph, newChange:auxChanges)
-	where 
-	(newGraph, newChange) = updateDGAndChange g x
-	(auxGraph, auxChanges) = updateDGAndChanges newGraph xs
+        where 
+        (newGraph, newChange) = updateDGAndChange g x
+        (auxGraph, auxChanges) = updateDGAndChanges newGraph xs
     
 
 applyProofHistory :: ProofHistory  -> GlobalContext -> GlobalContext
@@ -186,51 +186,49 @@ isDuplicate newEdge dgraph changes =
     elem (InsertEdge newEdge) changes || elem newEdge (labEdges dgraph)
 
 tryToGetEdge :: LEdge DGLinkLab -> DGraph -> 
-		[DGChange] -> Maybe (LEdge DGLinkLab)
+                [DGChange] -> Maybe (LEdge DGLinkLab)
 tryToGetEdge newEdge dgraph changes =
       case tryToGetEdgeFromChanges of 
-	   (Just e) -> Just e
-	   Nothing -> case tryToGetEdgeFromDGraph of
-			   (Just e) -> Just e
-			   Nothing -> Nothing
+           (Just e) -> Just e
+           Nothing -> case tryToGetEdgeFromDGraph of
+                           (Just e) -> Just e
+                           Nothing -> Nothing
       where
       tryToGetEdgeFromChanges =
-		find (\e -> e==newEdge) (getInsertedEdges changes)
+                find (\e -> e==newEdge) (getInsertedEdges changes)
       tryToGetEdgeFromDGraph = 
-		find (\e -> e==newEdge) (labEdges dgraph)
+                find (\e -> e==newEdge) (labEdges dgraph)
 
 {- | try to insert an edge into the given dgraph, if the edge exists, the to
 be inserted edge's id would be added into the existing edge.-}
-insertDGLEdge :: LEdge DGLinkLab -> -- ^ the to be inserted edge
-		      DGraph ->
-		      [DGChange] -> 
-		      (DGraph, [DGChange])
+insertDGLEdge :: LEdge DGLinkLab -- ^ the to be inserted edge
+              -> DGraph -> [DGChange] -> (DGraph, [DGChange])
 insertDGLEdge edge@(_, _, edgeLab) dgraph changes =
       case (tryToGetEdge edge dgraph changes) of
-	   Nothing -> updateWithChanges [InsertEdge edge] 
-					dgraph
-					changes  
-	   Just e@(src, tgt, label) -> 
-	     if (withoutValidID edge) 
-	      then
-		(dgraph, changes)
-	      else
-		let
-		newEdge = (src, tgt, 
-			   label{
-				 dgl_id=((dgl_id label)++
-				         (dgl_id edgeLab))
-				})  
-	        in
-		updateWithChanges [DeleteEdge e, InsertEdge newEdge]
-				   dgraph
-				   changes
+           Nothing -> updateWithChanges [InsertEdge edge] 
+                                        dgraph
+                                        changes  
+           Just e@(src, tgt, label) -> 
+             if (withoutValidID edge) 
+              then
+                (dgraph, changes)
+              else
+                let
+                newEdge = (src, tgt, 
+                           label{
+                                 dgl_id=((dgl_id label)++
+                                         (dgl_id edgeLab))
+                                })  
+                in
+                updateWithChanges [DeleteEdge e, InsertEdge newEdge]
+                                   dgraph
+                                   changes
 
 {- | check if the given edge doesn't contain valid id -}
 withoutValidID :: LEdge DGLinkLab -> Bool
 withoutValidID (_, _, label) = null $ dgl_id label
 
-	    
+            
 -- ----------------------------------------------
 -- methods that calculate paths of certain types
 -- ----------------------------------------------
@@ -480,9 +478,9 @@ getAllOpenNodeGoals = filter hasOpenGoals
 
 trace_edge :: LEdge DGLinkLab -> String
 trace_edge (src, tgt, label) = " ("++(show src)++"->"++(show tgt)
-			       ++" of id "++ (show $ dgl_id label)
-			       ++" with prove status: "
-			       ++(trace_edge_status label)++") ->"
+                               ++" of id "++ (show $ dgl_id label)
+                               ++" with prove status: "
+                               ++(trace_edge_status label)++") ->"
 
 trace_path :: [LEdge DGLinkLab] -> String
 trace_path = concat . map trace_edge 
@@ -502,24 +500,24 @@ trace_edge_status label =
 
 trace_paths :: [[LEdge DGLinkLab]] -> String
 trace_paths = pathWithNum 1 
-	    where
-	    pathWithNum :: Int -> [[LEdge DGLinkLab]] -> String
-	    pathWithNum _ [] = ""
-	    pathWithNum n (x:xs) = (show n ++ trace_path x++"\n") 
-				++ pathWithNum (n+1) xs 
+            where
+            pathWithNum :: Int -> [[LEdge DGLinkLab]] -> String
+            pathWithNum _ [] = ""
+            pathWithNum n (x:xs) = (show n ++ trace_path x++"\n") 
+                                ++ pathWithNum (n+1) xs 
 
 
 {- | update both the given devgraph and the changelist with a given change -}
 updateWithOneChange :: DGChange -> DGraph -> [DGChange] -> (DGraph, [DGChange])
 updateWithOneChange change dgraph changeList = (newGraph, newChange:changeList)
                     where
-		    (newGraph, newChange) = updateDGAndChange dgraph change
+                    (newGraph, newChange) = updateDGAndChange dgraph change
 
 {- | update both the given devgraph and the changelist with a list of given changes -}
 updateWithChanges :: [DGChange] -> DGraph -> [DGChange] -> (DGraph, [DGChange])
 updateWithChanges changes dgraph changeList = (newGraph, newChanges++changeList)
                   where
-		  (newGraph, newChanges) = updateDGAndChanges dgraph changes
+                  (newGraph, newChanges) = updateDGAndChanges dgraph changes
 
 {- | check in the given dgraph if the given node has incoming hiding edges -}
 hasIncomingHidingEdge :: DGraph -> Node -> Bool
