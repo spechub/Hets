@@ -41,7 +41,7 @@ import Logic.Grothendieck
 import Logic.Prover
 import Data.Graph.Inductive.Query.DFS
 import Data.Graph.Inductive.Query.BFS
-import Maybe(fromJust)
+import Data.Maybe(fromJust)
 import System.IO
 import System.Time
 
