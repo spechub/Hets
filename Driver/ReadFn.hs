@@ -50,7 +50,7 @@ read_LIB_DEFN_M lgraph defl opts file input =
     _ -> case runParser (library (defl, lgraph)) (emptyAnnos defl)
               file input of
          Left err  -> fail (showErr err)
-         Right ast -> return ast
+         Right ast -> return $ setFilePath file ast
 
 readShATermFile :: ShATermConvertible a => FilePath -> IO (Result a)
 readShATermFile fp = do
