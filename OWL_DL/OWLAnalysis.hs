@@ -24,12 +24,14 @@ import Common.ATerm.Unshared
 import System(system)
 import System.Exit
 import System.Environment(getEnv)
+import System.Posix.Process
 import qualified Data.Map as Map
 import qualified List as List
 import Data.Graph.Inductive.Graph
 import Static.DevGraph
 import Common.GlobalAnnotations
 import Common.Result
+import Common.Utils
 import Common.AS_Annotation hiding (isAxiom,isDef)
 import Syntax.AS_Library
 import Driver.Options
@@ -39,46 +41,56 @@ import Logic.Grothendieck
 import Logic.Prover
 import Data.Graph.Inductive.Query.DFS
 import Data.Graph.Inductive.Query.BFS
-import Data.Maybe(fromJust)
+import Maybe(fromJust)
 import System.IO
+import System.Time
 
 -- | call for owl parser (env. variable $HETS_OWL_PARSER muss be defined)
 parseOWL :: FilePath              -- ^ local filepath or uri
          -> IO OntologyMap        -- ^ map: uri -> Ontology  
 parseOWL filename  = 
   do
-    pwd <- getEnv "PWD" 
+    pwd <- getEnv "PWD"        
     if null filename 
        then
          error "empty file name!"
-       else if checkUri  filename 
+       else do
+           pid <- getProcessID
+           currTime <- getClockTime
+           calend <- toCalendarTime currTime
+           let tmpFile = "/tmp/" ++ (basename filename) ++ "-" ++ (show pid) 
+                         ++ "-" ++ (buildTime calend) ++ ".term"
+           if checkUri filename 
                then
                  do exitCode <- 
-                        system ("$HETS_OWL_PARSER/owl_parser " ++ filename)
-                        -- system ("./OWL_DL/owl_parser " ++ filename)
-                    run exitCode 
+                        system ("$HETS_OWL_PARSER/owl_parser " ++ filename ++
+                               " " ++ tmpFile)
+                    run exitCode tmpFile 
                else if (head filename) == '/' 
                        then
-                         do exitCode <-
+                         do
+                           exitCode <-
                                 system ("$HETS_OWL_PARSER/owl_parser file://"
-                                        ++ filename)
-                                -- system ("./OWL_DL/owl_parser file://"
-                                --      ++ filename)
-                            run exitCode 
+                                        ++ filename ++ " " ++ tmpFile)
+                           run exitCode tmpFile 
                        else do exitCode <- 
                                  system ("$HETS_OWL_PARSER/owl_parser file://"
-                                         ++ pwd ++ "/" ++ filename)
-                                 -- system ("./OWL_DL/owl_parser file://"
-                                 --      ++ pwd ++ "/" ++ filename)
-                               run exitCode 
+                                         ++ pwd ++ "/" ++ filename ++
+                                        " " ++ tmpFile)
+                               run exitCode tmpFile
 
-       where run :: ExitCode  -> IO OntologyMap
-             run exitCode 
+       where buildTime cTime =
+                 (show $ ctYear cTime) ++ (show $ ctMonth cTime) ++
+                 (show $ ctDay cTime) ++ (show $ ctHour cTime) ++
+                 (show $ ctMin cTime) ++ (show $ ctSec cTime)
+
+             run :: ExitCode -> FilePath -> IO OntologyMap
+             run exitCode tmpFile
                  | exitCode == ExitSuccess = 
                      do
-                       ioHandler <- openFile ".outputFilename" WriteMode
-                       outFile <- hGetContents ioHandler
-                       parseProc outFile
+                       t <- parseProc tmpFile
+                       system ("rm -f " ++ tmpFile)
+                       return t
                  | otherwise =  error ("process stop! " ++ (show exitCode))
 
 -- | parse the file "output.term" from java-owl-parser
