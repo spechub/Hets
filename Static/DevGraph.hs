@@ -652,6 +652,7 @@ data GlobalContext = GlobalContext
     , thMap :: Map.Map Int G_theory
     , morMap :: Map.Map Int G_morphism
     , proofHistory :: ProofHistory
+    , redoHistory :: ProofHistory
     } deriving Show
 
 emptyGlobalContext :: GlobalContext
@@ -663,6 +664,7 @@ emptyGlobalContext = GlobalContext
     , thMap = Map.empty
     , morMap = Map.empty
     , proofHistory = [emptyHistory]
+    , redoHistory = []
     }
 
 type LibEnv = Map.Map LIB_NAME GlobalContext
