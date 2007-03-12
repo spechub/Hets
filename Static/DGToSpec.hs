@@ -35,6 +35,7 @@ import Logic.Prover
 import Common.Result
 import Common.Id
 import Data.Graph.Inductive.Graph
+import Data.List (sortBy)
 
 -- | safe context for graphs
 safeContext :: (Show a, Show b, Graph gr) => String -> gr a b -> Node
@@ -140,7 +141,12 @@ computeTheory :: LibEnv -> LIB_NAME -> Node -> Result G_theory
 computeTheory libEnv ln n =
   let dg = lookupDGraph ln libEnv
       nodeLab = lab' $ safeContext "Static.DGToSpec.computeTheory" dg n
-      inEdges = filter (liftE $ liftOr isLocalDef isGlobalDef) $ inn dg n
+      inEdges' = filter (liftE $ liftOr isLocalDef isGlobalDef) $ inn dg n
+      inEdges = sortBy ( \ (_, _, l1) (_, _, l2) ->
+                 case (dgl_origin l1, dgl_origin l2) of
+                   (DGFitSpec, DGSpecInst _) -> GT
+                   (DGSpecInst _, DGFitSpec) -> LT
+                   _ -> EQ) inEdges'
       localTh = dgn_theory nodeLab
   in if isDGRef nodeLab then let refLn = dgn_libname nodeLab in do
           refTh <- computeTheory libEnv refLn $ dgn_node nodeLab
