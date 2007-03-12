@@ -308,7 +308,13 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts title = do
                   Button "Show Library Graph"
                          (do
 			    le <- readIORef (libEnvIORef gInfo)
-                            showLibGraph opts le
+                            showLibGraph opts le $
+                              (\ str ln -> do
+                                (gid, gv, _) <- convertGraph ioRefGraphMem
+                                  ln le opts str
+			        redisplay gid gv
+                                return ()
+                              )
                          )
                   ])]
       -- the node types
