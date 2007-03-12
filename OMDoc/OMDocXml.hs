@@ -21,7 +21,7 @@ import qualified Network.URI as URI
 
 import qualified Data.List as List
 
-import Char
+import Data.Char
 
 import qualified Network.HTTP.Base64 as Base64
 
@@ -362,7 +362,7 @@ instance XmlRepresentable Imports where
               [] -> Nothing
               s -> Just s
           itype =
-            case map Char.toLower $ HXT.xshow $ HXT.getValue "type" t of
+            case map toLower $ HXT.xshow $ HXT.getValue "type" t of
               [] -> ITGlobal
               "global" -> ITGlobal
               "local" -> ITLocal

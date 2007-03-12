@@ -416,14 +416,135 @@ findByNameAndOrigin iname iorig icon =
 relsXNWONFromOMTheory
   ::Set.Set XmlNamedWONSORT
   ->(Graph.Node, OMDoc.Theory)
-  ->Rel.Rel XmlNamedWONSORT
+  ->(Rel.Rel XmlNamedWONSORT, Set.Set ((String, String), [(String, String)]))
 relsXNWONFromOMTheory xnsortset (origin, theory) =
   foldl
-    (\r con ->
+    (\prev@(r, l) con ->
       case con of
+        (OMDoc.CAx ax) ->
+          case OMDoc.axiomFMPs ax of
+            ((OMDoc.FMP { OMDoc.fmpContent = Left omobj } ):_) ->
+              case omobj of
+                (OMDoc.OMObject (OMDoc.OMEA seapp)) ->
+                  case OMDoc.omaElements seapp of
+                    ((OMDoc.OMES sesym):t1:_) ->
+                      if OMDoc.omsName sesym == "strong-equation"
+                        then
+                          case t1 of
+                            (OMDoc.OMEA liapp) ->
+                              case OMDoc.omaElements liapp of
+                                ((OMDoc.OMES lisym):(OMDoc.OMEATTR base):isorts) ->
+                                  if OMDoc.omsName lisym == "late-insort" 
+                                    then
+                                      let
+                                        basetype =
+                                          case OMDoc.omattrATP base of
+                                            OMDoc.OMATP
+                                              {
+                                                OMDoc.omatpAttribs = (_, OMDoc.OMES ssym):_
+                                              } ->
+                                                ssym
+                                                --OMDoc.omsName ssym
+                                            _ ->
+                                              error "Malformed late-insort!"
+                                        xnbase = (OMDoc.omsCD basetype, OMDoc.omsName basetype)
+{-                                        case
+                                            findByNameAndOrigin
+                                              basetype
+                                              origin
+                                              xnsortset
+                                          of
+                                            Nothing ->
+                                              XmlNamed
+                                                (Hets.mkWON (Hets.stringToId basetype) (-1))
+                                                basetype
+                                            (Just xnsort') -> xnsort'
+-}
+                                        rinsorts =
+                                          foldl
+                                            (\ri s ->
+                                              case s of
+                                                (OMDoc.OMEATTR s') ->
+                                                  let
+                                                    stype =
+                                                      case OMDoc.omattrATP s' of
+                                                        OMDoc.OMATP
+                                                          {
+                                                            OMDoc.omatpAttribs = (_, OMDoc.OMES ssym):_
+                                                          } ->
+                                                            ssym
+                                                        _ ->
+                                                          error "Malformed late-insort!"
+                                                  in
+                                                    ri ++ [(OMDoc.omsCD stype, OMDoc.omsName stype)]
+                                                _ ->
+                                                  ri
+                                            )
+                                            []
+                                            isorts
+{-                                          foldl
+                                            (\ri s ->
+                                              case s of
+                                                (OMDoc.OMEATTR s') ->
+                                                  let
+                                                    stype =
+                                                      case OMDoc.omattrATP s' of
+                                                        OMDoc.OMATP
+                                                          {
+                                                            OMDoc.omatpAttribs = (_, OMDoc.OMES ssym):_
+                                                          } ->
+                                                          OMDoc.omsName ssym
+                                                        _ ->
+                                                          error "Malformed late-insort!"
+                                                  in
+                                                    case
+                                                      findByNameAndOrigin
+                                                        stype
+                                                        origin
+                                                        xnsortset
+                                                    of
+                                                      Nothing ->
+                                                        ri
+                                                        ++
+                                                        [
+                                                        XmlNamed
+                                                          (Hets.mkWON (Hets.stringToId stype) (-1))
+                                                          stype
+                                                        ]
+                                                      (Just xnsort') -> ri ++ [xnsort']
+                                                _ ->
+                                                  ri
+                                            )
+                                            []
+                                            isorts
+-}                                          
+                                      in
+                                        (r, Set.insert (xnbase, rinsorts) l)
+{-                                      foldl
+                                          (\(r'' i ->
+                                            Debug.Trace.trace
+                                              ("Reverse-Insort " ++ (show xnbase) ++ " in " ++ (show i))                                            
+                                              Rel.insert xnbase i r''
+                                          )
+                                          prev
+                                          rinsorts-}
+                                    else
+                                      prev
+                                _ ->
+                                  prev
+                            _ ->
+                              prev
+                        else
+                          prev
+                    _ ->
+                      prev
+                _ ->
+                  prev
+            _ ->
+              prev
         (OMDoc.CAd adt) ->
           foldl
-            (\r' sd ->
+            (\(r', l') sd ->
               let
                 sortname = OMDoc.sortDefName sd
                 insortnames =
@@ -464,19 +585,22 @@ relsXNWONFromOMTheory xnsortset (origin, theory) =
                     )
                     insortnames
               in
-                foldl
-                  (\r'' i ->
-                    Rel.insert xnsort i r''
-                  )
-                  r'
-                  xninsorts
+                (
+                    foldl
+                      (\r'' i ->
+                        Rel.insert i xnsort r''
+                      )
+                      r'
+                      xninsorts
+                  , l'
+                )
             )
-            r
+            prev
             (OMDoc.adtSortDefs adt)
         _ ->
-          r
+          prev
     )
-    Rel.empty
+    (Rel.empty, Set.empty)
     (OMDoc.theoryConstitutives theory)
 
   
@@ -966,7 +1090,7 @@ createTheorySpecificationsOM
             Nothing -> idToNodeName $ read ("[" ++ theoid ++ ",,0]")
             (Just x) -> idToNodeName $ read x
         sorts = sortsXNWONFromOMTheory aom
-        rels = relsXNWONFromOMTheory sorts aom
+        (rels, late) = relsXNWONFromOMTheory sorts aom
         ops = Set.fromList $ opsXNWONFromOMTheory Map.empty xntheoryset sorts aom
         preds = Set.fromList $ predsXNWONFromOMTheory Map.empty xntheoryset sorts aom
       in
@@ -987,6 +1111,7 @@ createTheorySpecificationsOM
                     , ts_predicates = preds
                     , ts_operators = ops
                     , ts_constructors = Set.empty
+                    , ts_late_insorts = late
                   }
               ]
     )
@@ -1325,7 +1450,6 @@ processSpecMapOM
     setOrigin::Graph.Node->XmlNamedWONSORT->XmlNamedWONSORT
     setOrigin n xns = XmlNamed (Hets.mkWON (xnWOaToa xns) n) (xnName xns)   
 
-
 createNodeFromSpecOM::
     FFXInput
   ->(Graph.Node, OMDoc.Theory)
@@ -1338,6 +1462,66 @@ createNodeFromSpecOM
   =
   let
     theorysens = sensXNWONFromOMTheory ffxi axml
+    -- filter out late-insort kludges
+    (tsens, _) =
+      Set.partition
+        (\senwon ->
+          case Ann.sentence $ xnWOaToa senwon of
+            (Strong_equation t1 _ _) ->
+              case t1 of
+                (Application op _ _) ->
+                  if opName op == "late-insort"
+                    then
+                      False
+                    else
+                      True
+                _ -> True
+            _ -> True
+        )
+        theorysens
+    {-
+    lateinrel =
+      Set.fold
+        (\lif lir ->
+          case Ann.sentence $ xnWOaToa lif of
+            (Strong_equation (Application _ syms _) _ _) ->
+              case syms of
+                (base:rest) ->
+                  let
+                    sbase = 
+                      case base of
+                        (Qual_var _ s _) ->
+                          s
+                        _ ->
+                          error "Malformed late-insort!"
+                    isorts =
+                      foldl
+                        (\is' fs ->
+                          case fs of
+                            (Qual_var _ s _) ->
+                              is' ++ [s]
+                            _ -> is'
+                        )
+                        []
+                        rest
+                  in
+                    Rel.union
+                      lir
+                      $
+                      Rel.fromList
+                        (map (\s -> (sbase, s)) isorts)
+                _ ->
+                  Debug.Trace.trace
+                    ("late-insort: Wrong Form... " ++ (show syms))
+                    lir
+            _ ->
+              Debug.Trace.trace
+                ("late-insort: Not a Strong_equation...")
+                lir
+        )
+        Rel.empty
+        lateinaxs
+      -}
     theorycons = conSensXNWONFromOMTheory ffxi axml
     caslsign =
       Sign
@@ -1377,7 +1561,7 @@ createNodeFromSpecOM
             map
               xnWOaToa
               (
-                (Set.toList theorysens)
+                (Set.toList tsens)
                 ++ (Set.toList theorycons)
               )
         ) 0
@@ -1801,6 +1985,7 @@ performDefLinkSpecification
               (ts_operators tsTo)
               (Set.fromList newOps)
           -- checks
+          -- why did I omit the from relation here first ?
           checkedRels =
             Rel.fromList
               $
@@ -1809,7 +1994,49 @@ performDefLinkSpecification
                   (findRealSort mergedSorts s1, findRealSort mergedSorts s2)
                 )
                 $
-                Rel.toList (ts_sortrelation tsTo)
+                Rel.toList
+                  (Rel.union
+                    (ts_sortrelation tsFrom)
+                    (
+                      Rel.union
+                        (ts_sortrelation tsTo)
+                        (
+                          (\x ->
+                            if Set.null $ ts_late_insorts tsTo 
+                              then
+                                x
+                              else
+                                Debug.Trace.trace
+                                ("Late-insort: merging " ++ (show $ ts_late_insorts tsTo))
+                                x
+                          )
+                          Rel.fromList
+                            (
+                              foldl
+                                (\l ((_, a), bl) ->
+                                  l
+                                  ++
+                                  (
+                                  map
+                                    (\(_, b) ->
+                                      (
+                                          XmlNamed
+                                            (Hets.mkWON (Hets.stringToId a) (-1))
+                                            a
+                                        , XmlNamed
+                                            (Hets.mkWON (Hets.stringToId b) (-1))
+                                            b
+                                      )
+                                    )
+                                    bl
+                                  )
+                                )
+                                []
+                                (Set.toList $ ts_late_insorts tsTo)
+                            )
+                        )
+                    )
+                  )
           checkedPreds =
             Set.map
               (\(xnpid, xnpt) ->
@@ -2425,6 +2652,7 @@ data TheorySpecification =
       , ts_predicates :: Set.Set (XmlNamedWONId, PredTypeXNWON)
       , ts_operators :: Set.Set (XmlNamedWONId, OpTypeXNWON)
       , ts_constructors :: Set.Set (XmlNamedWONId, Set.Set (XmlNamedWONId, OpTypeXNWON)) -- made from sentences on writeout to OMDoc
+      , ts_late_insorts :: Set.Set ((String, String), [(String, String)])
     }
   | ReferenceSpecification
     {
@@ -3057,7 +3285,7 @@ unwrapFormulaOM ffxi origin con =
         (fmp@(OMDoc.FMP {}):_) ->
           case OMDoc.fmpContent fmp of
             (Left (OMDoc.OMObject ome)) ->
-              formulaFromOM ffxi origin ome
+              formulaFromOM ffxi origin [] ome
             _ -> error (e_fname ++ "Can only create Formula from OMOBJ!")
   in
     Ann.NamedSen
@@ -3106,7 +3334,7 @@ omToSort_gen_ax ffxi (OMDoc.OMEA oma') =
     e_fname = "OMDoc.OMDocInput.omToConstraints: "
     (result, _) =
       case OMDoc.omaElements oma' of
-        ( (OMDoc.OMES omssga):(OMDoc.OMEA oma):(OMDoc.OMES omsft):_) ->
+        ( (OMDoc.OMES omssga):(OMDoc.OMEA oma):_:(OMDoc.OMES omsft):_) ->
           if OMDoc.omsName omssga == "sort-gen-ax"
             then
               let
@@ -3406,8 +3634,194 @@ isOperatorOM (OMDoc.OMEATTR _) = True
 isOperatorOM (OMDoc.OMES _) = True
 isOperatorOM _ = False
 
-formulaFromOM::FFXInput->Graph.Node->OMDoc.OMElement->(FORMULA ())
-formulaFromOM ffxi origin (OMDoc.OMEBIND ombind) =
+{-
+scanForVarTypesF::forall q . Set.Set Id.Id -> FORMULA q -> Map.Map Id.Id (Set.Set Id.Id)
+scanForVarTypesF vids (Predication prs terms _) =
+  let
+    subInfo =
+      foldl (\m t -> Map.unionWith Set.union m $ scanForVarTypesT vids t) Map.empty terms
+    newInfo =
+      case prs of
+        (Pred_name {}) -> Map.empty
+        (Qual_pred_name _ (Pred_type psorts _) _) ->
+          foldl
+            (\nI (os, t) ->
+              case t of
+                (Simple_id id') ->
+                  if Set.member (Id.simpleIdToId id') vids
+                    then
+                      Map.insertWith Set.union (Id.simpleIdToId id') (Set.singleton os) nI
+                    else
+                      nI
+                (Qual_var v s _) ->
+                  if Set.member (Id.simpleIdToId v) vids 
+                    then
+                      let
+                        nI' = Map.insertWith Set.union (Id.simpleIdToId v) (Set.singleton os) nI
+                      in
+{-                        if s /= os
+                          then
+                            Debug.Trace.trace
+                              (
+                                "(possible) Sort mismatch : wanted " 
+                                ++ (show os) ++ "; got " ++ (show s)
+                              )
+                              nI'
+                          else
+                            nI' -}
+                        nI'
+                    else
+                      nI
+                otherTerm ->
+                  foldl
+                    (\nI' oTt ->
+                      Map.unionWith Set.union nI' (scanForVarTypesT vids oTt)
+                    )
+                    nI
+                    (getSubterms otherTerm)
+            )
+            Map.empty
+            (zip psorts terms)
+  in
+    Map.unionWith Set.union subInfo newInfo
+scanForVarTypesF  vids otherF = 
+  let
+    subTerms = getSubtermsF otherF
+    subFormulas = getSubformulas otherF
+    tInfo =
+      foldl
+        (\m t ->
+          Map.unionWith Set.union m $ scanForVarTypesT vids t
+        )
+        Map.empty
+        subTerms
+    fInfo =
+      foldl
+        (\m f ->
+          Map.unionWith Set.union m $ scanForVarTypesF vids f
+        )
+        tInfo
+        subFormulas
+  in
+    fInfo
+
+
+getSubtermsF::forall q . FORMULA q->[TERM q]
+getSubtermsF (Definedness t _) = [t]
+getSubtermsF (Existl_equation t1 t2 _) = [t1, t2] 
+getSubtermsF (Strong_equation t1 t2 _) = [t1, t2] 
+getSubtermsF (Membership t _ _) = [t]
+getSubtermsF (Mixfix_formula t) = [t]
+getSubtermsF _ = []
+
+getSubformulas::forall q . FORMULA q->[FORMULA q]
+getSubformulas (Quantification _ _ f _) = [f]
+getSubformulas (Conjunction ts _) = ts
+getSubformulas (Disjunction ts _) = ts
+getSubformulas (Implication f1 f2 _ _) = [f1, f2]
+getSubformulas (Equivalence f1 f2 _) = [f1, f2]
+getSubformulas (Negation f _) = [f]
+getSubformulas _ = []
+
+scanForVarTypesT::forall f . Set.Set Id.Id -> TERM f -> Map.Map Id.Id (Set.Set Id.Id)
+scanForVarTypesT vids (Qual_var v s _) =
+  if Set.member (Id.simpleIdToId v) vids
+    then
+      Map.fromList [(Id.simpleIdToId v, Set.singleton s)]
+    else
+      Map.empty
+scanForVarTypesT vids (Application ops terms _) =
+  let
+    subInfo =
+      foldl (\m t -> Map.unionWith Set.union m $ scanForVarTypesT vids t) Map.empty terms
+    newInfo =
+      case ops of
+        (Op_name {}) -> Map.empty
+        (Qual_op_name _ otype _) ->
+          foldl
+            (\nI (os, t) ->
+              case t of
+                (Simple_id id') ->
+                  if Set.member (Id.simpleIdToId id') vids
+                    then
+                      Map.insertWith Set.union (Id.simpleIdToId id') (Set.singleton os) nI
+                    else
+                      nI
+                (Qual_var v s _) ->
+                  if Set.member (Id.simpleIdToId v) vids 
+                    then
+                      let
+                        nI' = Map.insertWith Set.union (Id.simpleIdToId v) (Set.singleton os) nI
+                      in
+{-                        if s /= os
+                          then
+                            Debug.Trace.trace
+                              (
+                                "(possible) Sort mismatch : wanted " 
+                                ++ (show os) ++ "; got " ++ (show s)
+                              )
+                              nI'
+                          else -}
+                            nI'
+                    else
+                      nI
+                otherTerm ->
+                  foldl
+                    (\nI' oTt ->
+                      Map.unionWith Set.union nI' (scanForVarTypesT vids oTt)
+                    )
+                    nI
+                    (getSubterms otherTerm)
+            )
+            Map.empty
+            (zip (args_OP_TYPE otype) terms)
+  in
+    Map.unionWith Set.union subInfo newInfo
+scanForVarTypesT vids otherT =
+  let
+    subTerms = getSubterms otherT
+    subFormulas = getSubformulasT otherT
+    tInfo =
+      foldl
+        (\m t ->
+          Map.unionWith Set.union m $ scanForVarTypesT vids t
+        )
+        Map.empty
+        subTerms
+    fInfo =
+      foldl
+        (\m f ->
+          Map.unionWith Set.union m $ scanForVarTypesF vids f
+        )
+        tInfo
+        subFormulas
+  in
+    fInfo
+
+getSubterms::forall q . TERM q -> [TERM q]
+getSubterms (Sorted_term t _ _) = [t]
+getSubterms (Cast t _ _) = [t]
+getSubterms (Conditional t1 _ t2 _) = [t1, t2]
+getSubterms (Application _ terms' _) = terms'
+getSubterms _ = []
+
+getSubformulasT::forall q . TERM q -> [FORMULA q]
+getSubformulasT (Conditional _ f _ _) = [f]
+getSubformulasT _ = []
+
+unifyWithRelation::(Ord a)=>Rel.Rel a->[a]->[a]->Maybe a
+unifyWithRelation _ [x] [] = Just x
+unifyWithRelation _ [] _ = Nothing
+unifyWithRelation rel (x:r) q =
+  if all (\y -> Rel.path x y rel) (r++q)
+    then
+      Just x
+    else
+      unifyWithRelation rel r (x:q)
+-}
+
+formulaFromOM::FFXInput->Graph.Node->[(String, String)]->OMDoc.OMElement->(FORMULA ())
+formulaFromOM ffxi origin varbindings (OMDoc.OMEBIND ombind) =
   let
     e_fname = "OMDoc.OMDocInput.formulaFromOM: @ombind : "
     quant =
@@ -3424,33 +3838,155 @@ formulaFromOM ffxi origin (OMDoc.OMEBIND ombind) =
       formulaFromOM
         ffxi
         origin
+        newBindings
         (OMDoc.ombindExpression ombind)
     vardeclS =
       getVarDeclsOM
         (OMDoc.ombindVariables ombind)
+    currentVarNames = map snd varbindings
+    newBindings =
+      foldl
+        (\nb c@(vtn, vnn) ->
+          if elem vnn currentVarNames
+            then
+              map
+                (\o@(vto, vno) ->
+                  if vno == vnn
+                    then
+                      if vto == vtn
+                        then
+                          Debug.Trace.trace
+                            (
+                              "Warning: Variable " ++ vtn ++
+                              " has been bound a second time (same type)"
+                            )
+                            o
+                        else
+                          Debug.Trace.trace
+                            (
+                              "Warning: Variable " ++ vtn ++ "::" ++ vtn ++ 
+                              " shadows existing variable of type " ++ vto
+                            )
+                            c
+                    else
+                      o
+                )
+                nb
+            else
+              nb ++ [c]
+        )
+        varbindings
+        vardeclS
+  {-
+    scanShadow =
+      foldl
+        (\vb (vt, vn) ->
+          let
+            mprevious =
+              case
+                filter (\(_, ovn) -> ovn == vn) varbindings
+              of
+                [] -> Nothing
+                (o:_) -> Just o
+          in
+            case mprevious of
+              Nothing -> vb ++ [(vt, vn)]
+              (Just (ovt, _)) ->
+                if ovt == vt
+                  then
+                    vb
+                  else
+                    Debug.Trace.trace
+                      (
+                        "Warning: Variable \"" ++ vn ++ "\" of type \"" ++ vt ++ "\"\
+                         \ shadows existing variable of type \"" ++ ovt ++ "\""
+                      )
+                      (
+                        map
+                          (\(old@(_, ovn)) ->
+                            if ovn == vn 
+                              then
+                                (vt, vn)
+                              else
+                                old
+                          )
+                          vb
+                      )
+        )
+        varbindings
+        vardeclS
+    -}
+    {-
+    varInfo = scanForVarTypesF (Set.fromList (map (Id.stringToId . snd) vardeclS)) formula
+    unifiedVars =
+      Map.map
+        (\sortset ->
+          let
+            candidates = (Map.elems $ xnRelsMap ffxi)
+--              filter
+--               (\rel ->
+--                  Set.isSubsetOf sortset (Rel.nodes (Rel.map xnWOaToa rel))
+--                )
+--                (Map.elems $ xnRelsMap ffxi)
+            muni =
+              if Set.size sortset < 2
+                then
+                  Just $ head $ Set.toList sortset
+                else
+                  Util.anything
+                    (
+                      map
+                        (\r ->
+                          unifyWithRelation
+                            (Rel.map xnWOaToa r)
+                            (Set.toList sortset)
+                            []
+                        )
+                        candidates
+                    )
+          in
+            case muni of
+              Nothing ->
+{-                Debug.Trace.trace
+                  (
+                    "Cannot unify... please yourself... (" ++ (show sortset) ++ ") "
+                    ++ (show candidates)
+                  ) -}
+                  (head $ Set.toList sortset)
+              (Just u) -> u
+        )
+        varInfo 
+    -}
     vardeclS2 = createQuasiMappedLists vardeclS
   in
-    Quantification
-      quant
-      (map
-        (\(s, vl) ->
-          Var_decl
-            (map Hets.stringToSimpleId vl)
-            (case findByNameAndOrigin
-                    (stripFragment s)
-                    origin
-                    (mapSetToSet $ xnSortsMap ffxi) of
-               Nothing -> error (e_fname ++ "No Sort for " ++ s)
-               (Just x) -> xnWOaToa x
-            )
-            --(Hets.stringToId s)
-            Id.nullRange
-        )
-        vardeclS2
+{-    Debug.Trace.trace
+      (
+        "Varinfo : " ++ (show vardeclS)
+        ++ " raw : " ++ (show varInfo)
+        ++ " : unified " ++ (show unifiedVars)
       )
-      formula
-      Id.nullRange
-formulaFromOM ffxi origin (OMDoc.OMEA oma) =
+      $ -}
+      Quantification
+        quant
+        (map
+          (\(s, vl) ->
+            Var_decl
+              (map Hets.stringToSimpleId vl)
+              (case findByNameAndOrigin
+                      (stripFragment s)
+                      origin
+                      (mapSetToSet $ xnSortsMap ffxi) of
+                 Nothing -> error (e_fname ++ "No Sort for " ++ s)
+                 (Just x) -> xnWOaToa x
+              )
+              --(Hets.stringToId s)
+              Id.nullRange
+          )
+          vardeclS2
+        )
+        formula
+        Id.nullRange
+formulaFromOM ffxi origin varbindings (OMDoc.OMEA oma) =
   let
     e_fname = "OMDoc.OMDocInput.formulaFromOM: @oma : "
     applySym =
@@ -3464,7 +4000,7 @@ formulaFromOM ffxi origin (OMDoc.OMEA oma) =
         applySym
     formulas =
       map
-        (formulaFromOM ffxi origin)
+        (formulaFromOM ffxi origin varbindings)
         $
         filter
           (\e ->
@@ -3477,21 +4013,33 @@ formulaFromOM ffxi origin (OMDoc.OMEA oma) =
           (OMDoc.omaElements oma)
     terms =
       map
-        (termFromOM ffxi origin)
+        (\termc ->
+          case termc of
+            (Simple_id {}) ->
+              Debug.Trace.trace
+                (
+                  "Created Simple_id : " ++ (show oma)
+                )
+                termc
+            _ -> termc
+        )
         $
-        drop
-          1
+        map
+          (termFromOM ffxi origin varbindings)
           $
-          filter
-            (\e ->
-              case e of
-                (OMDoc.OMEA {}) -> True
-                (OMDoc.OMEATTR {}) -> True
-                (OMDoc.OMEV {}) -> True
-                (OMDoc.OMES {}) -> True
-                _ -> False
-            )
-            (OMDoc.omaElements oma)
+          drop
+            1
+            $
+            filter
+              (\e ->
+                case e of
+                  (OMDoc.OMEA {}) -> True
+                  (OMDoc.OMEATTR {}) -> True
+                  (OMDoc.OMEV {}) -> True
+                  (OMDoc.OMES {}) -> True
+                  _ -> False
+              )
+              (OMDoc.omaElements oma)
   in
     case ftr of
       ((ft, _):_) ->
@@ -3522,7 +4070,7 @@ formulaFromOM ffxi origin (OMDoc.OMEA oma) =
         let
           predterms =
             map
-              (termFromOM ffxi origin)
+              (termFromOM ffxi origin varbindings)
               $
               filter
                 (\e ->
@@ -3585,6 +4133,8 @@ formulaFromOM ffxi origin (OMDoc.OMEA oma) =
             else
               error (e_fname ++ "Empty application...")
   where
+
+
     makeImplication::[FORMULA ()]->FORMULA ()
     makeImplication formulas =
       let
@@ -3593,6 +4143,7 @@ formulaFromOM ffxi origin (OMDoc.OMEA oma) =
           formulaFromOM
             ffxi
             origin
+            varbindings
             $
             case
               filter
@@ -3663,7 +4214,7 @@ formulaFromOM ffxi origin (OMDoc.OMEA oma) =
               error (e_fname ++ "No second matching element for Predication!")
         predterms =
           map
-            (termFromOM ffxi origin)
+            (termFromOM ffxi origin varbindings)
             $
             drop
               2
@@ -3703,7 +4254,7 @@ formulaFromOM ffxi origin (OMDoc.OMEA oma) =
                 (OMDoc.omaElements oma)
           of
             [] -> error "No Term for Definedness!"
-            (t:_) -> termFromOM ffxi origin t
+            (t:_) -> termFromOM ffxi origin varbindings t
       in
         Definedness defterm Id.nullRange
 
@@ -3791,7 +4342,7 @@ formulaFromOM ffxi origin (OMDoc.OMEA oma) =
     makeSort_gen_ax =
       omToSort_gen_ax ffxi (OMDoc.OMEA oma)
 
-formulaFromOM _ _ (OMDoc.OMES oms) =
+formulaFromOM _ _ _ (OMDoc.OMES oms) =
   if OMDoc.omsName oms == caslSymbolAtomFalseS
     then
       False_atom Id.nullRange
@@ -3803,61 +4354,41 @@ formulaFromOM _ _ (OMDoc.OMES oms) =
           error
             "OMDoc.OMDocInput.formulaFromOM: @oms : Expected true or false..."
 
-formulaFromOM _ _ _ =
+formulaFromOM _ _ _ _ =
   error "OMDoc.OMDocInput.formulaFromOM: @_ : Not implemented"
 
-termFromOM::FFXInput->Graph.Node->OMDoc.OMElement->(TERM ())
-termFromOM _ _ (OMDoc.OMEV omv) =
-  Debug.Trace.trace
-    (
-      "Warning: Untyped variable (TERM) from \"" 
-      ++ (show omv)
-    ) 
-    $
-    Simple_id 
-      $
-      Hets.stringToSimpleId (OMDoc.omvName omv)
-termFromOM ffxi origin (ome@(OMDoc.OMEATTR omattr)) =
+termFromOM::FFXInput->Graph.Node->[(String, String)]->OMDoc.OMElement->(TERM ())
+termFromOM ffxi origin vb (OMDoc.OMEV omv) =
   let
-    e_fname = "OMDoc.OMDocInput.termFromOM: @omattr : "
-  in
-    if
-      (/=)
-        (
+    e_fname = "OMDoc.OMDocInput.termFromOM: @omv : "
+    varname = OMDoc.omvName omv
+    mvartypexn =
+      case
         filter
-          (\(oms, _) ->
-            OMDoc.omsName oms == "funtype"
-          )
-          (OMDoc.omatpAttribs $ OMDoc.omattrATP omattr)
-        )
-        []
-      then
-        Application (operatorFromOM ffxi ome) [] Id.nullRange
-      else
-        Qual_var
-          (Hets.stringToSimpleId
+          (\(_, vn) -> vn == varname)
+          vb
+      of
+        [] ->
+          Nothing
+        ((vt,_):_) ->
+          Just vt
+  in
+    case mvartypexn of
+      Nothing ->
+        Debug.Trace.trace
+          (
+            "Warning: Untyped variable (TERM) from \"" 
+            ++ (show omv) ++ " Bindings " ++ (show vb)
+          ) 
+          $
+          Simple_id 
             $
-            (
-              case (OMDoc.omattrElem omattr) of
-                (OMDoc.OMEV omv) ->
-                  (OMDoc.omvName omv)
-                _ ->
-                  error (e_fname ++ "Expected OMV in OMATTR!")
-            )
-          )
+            Hets.stringToSimpleId (OMDoc.omvName omv)
+      (Just varxnsort) ->
+        Qual_var
+          (Hets.stringToSimpleId varname)
           (
             let
-              varxnsort =
-                case
-                  filter
-                    (\(oms, _) ->
-                      OMDoc.omsName oms == typeS
-                    )
-                    (OMDoc.omatpAttribs $ OMDoc.omattrATP omattr)
-                of
-                  [] -> error (e_fname ++ "No Name! : " ++ show ome)
-                  ((_,(OMDoc.OMES typeoms)):_) -> OMDoc.omsName typeoms
-                  q -> error (e_fname ++ "Need OMS for Variable-Type... given : " ++ show q)
               varsort =
                 case
                   findByNameAndOrigin
@@ -3877,7 +4408,94 @@ termFromOM ffxi origin (ome@(OMDoc.OMEATTR omattr)) =
                varsort
           )
           Id.nullRange
-termFromOM ffxi origin (OMDoc.OMEA oma) =
+      
+
+termFromOM ffxi origin vb (ome@(OMDoc.OMEATTR omattr)) =
+  let
+    e_fname = "OMDoc.OMDocInput.termFromOM: @omattr : "
+  in
+    if
+      (/=)
+        (
+        filter
+          (\(oms, _) ->
+            OMDoc.omsName oms == "funtype"
+          )
+          (OMDoc.omatpAttribs $ OMDoc.omattrATP omattr)
+        )
+        []
+      then
+        Application (operatorFromOM ffxi ome) [] Id.nullRange
+      else
+        let
+          varname =
+            case (OMDoc.omattrElem omattr) of
+              (OMDoc.OMEV omv) ->
+                (OMDoc.omvName omv)
+              _ ->
+                error (e_fname ++ "Expected OMV in OMATTR!")
+          varxnsort =
+            case
+              filter
+                (\(oms, _) ->
+                  OMDoc.omsName oms == typeS
+                )
+                (OMDoc.omatpAttribs $ OMDoc.omattrATP omattr)
+            of
+              [] -> error (e_fname ++ "No Name! : " ++ show ome)
+              ((_,(OMDoc.OMES typeoms)):_) -> OMDoc.omsName typeoms
+              q -> error (e_fname ++ "Need OMS for Variable-Type... given : " ++ show q)
+          shadowCheck =
+            filter
+              (\(vt, vn) ->
+                if vn == varname
+                  then
+                    if vt /= varxnsort
+                      then
+                        Debug.Trace.trace
+                          (
+                            "Warning: " ++ varname ++ "::" ++ varxnsort ++
+                            " shadows existing variable of type " ++ vt
+                          )
+                          False
+                      else
+                        False
+                  else
+                    False
+              )
+              vb
+        in
+          (
+            if null shadowCheck
+              then
+                id
+              else
+                id
+          )
+          Qual_var
+            (Hets.stringToSimpleId varname)
+            (
+              let
+                varsort =
+                  case
+                    findByNameAndOrigin
+                      varxnsort
+                      origin
+                      (mapSetToSet $ xnSortsMap ffxi)
+                  of
+                    Nothing ->
+                      error
+                        (
+                          e_fname
+                          ++ "Cannot find defined sort for \""
+                          ++ varxnsort ++"\"" 
+                        )
+                    (Just x) -> xnWOaToa x
+              in
+                 varsort
+            )
+            Id.nullRange
+termFromOM ffxi origin vb (OMDoc.OMEA oma) =
   let
     e_fname = "OMDoc.OMDocInput.termFromOM: @oma : "
     operator =
@@ -3891,7 +4509,7 @@ termFromOM ffxi origin (OMDoc.OMEA oma) =
         )
     terms =
       map
-        (termFromOM ffxi origin)
+        (termFromOM ffxi origin vb)
         $
         drop 1
           $
@@ -3951,9 +4569,10 @@ termFromOM ffxi origin (OMDoc.OMEA oma) =
           formulaFromOM
             ffxi
             origin
+            vb
             iteCondX
-        iteThen = termFromOM ffxi origin (iteThenX)
-        iteElse = termFromOM ffxi origin (iteElseX)
+        iteThen = termFromOM ffxi origin vb (iteThenX)
+        iteElse = termFromOM ffxi origin vb (iteElseX)
       in
         Conditional
           iteThen
@@ -3962,7 +4581,7 @@ termFromOM ffxi origin (OMDoc.OMEA oma) =
           Id.nullRange
     _ ->
       Application operator terms Id.nullRange
-termFromOM ffxi _ (ome@(OMDoc.OMES _)) =
+termFromOM ffxi _ _ (ome@(OMDoc.OMES _)) =
     let
       operator = 
         (\x -> debugGO (ffxiGO ffxi)
@@ -3976,7 +4595,7 @@ termFromOM ffxi _ (ome@(OMDoc.OMES _)) =
           ome
     in
       Application operator [] Id.nullRange
-termFromOM _ _ t =
+termFromOM _ _ _ t =
   error
     (
       "OMDoc.OMDocInput.termFromOM: @_ : \
@@ -4070,6 +4689,12 @@ operatorFromOM _ _ =
 opName::OP_SYMB->String
 opName (Op_name op) = (show op)
 opName (Qual_op_name op _ _) = (show op)
+
+{-
+opNameId::OP_SYMB->Id.Id
+opNameId (Op_name op) = op
+opNameId (Qual_op_name op _ _) = op
+-}
 
 -- this reads back an encapsulated node_name
 idToNodeName::Id.Id->NODE_NAME

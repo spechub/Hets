@@ -10,12 +10,12 @@ Portability :  non-portable(Logic)
   Output-methods for writing OMDoc
 
   BUGS/TODO:
-    - better interpretation of imports
+    - better interpretation of imports (partly done, not-portable)
     - existings files should not be overwritten everytime...
-    - there is a problem with finding constructors that use tricky names,
-      currently working on debuggin this
     - DevGraph->OMDoc conversion should be done on LibEnv-Level (for names) (done)
     - Symbols created by OMDoc-ADTs currently don't reference to them (generated-from) (done)
+    - generated predicates (constraints) are currently not well implemented
+    - omit variable types (done)
 -}
 module OMDoc.OMDocOutput
   (
@@ -43,6 +43,10 @@ import qualified Common.Id as Id
 import qualified Syntax.AS_Library as ASL
 import qualified CASL.AS_Basic_CASL as ABC
 
+import qualified CASL.Induction as Induction
+import qualified Common.Result as Result
+import qualified Common.DocUtils as Pretty
+
 import Driver.Options
 
 import Common.Utils (joinWith)
@@ -53,7 +57,7 @@ import qualified Data.Graph.Inductive.Graph as Graph
 -- Often used symbols from HXT
 import Text.XML.HXT.Parser
   ( 
-      a_name, k_public, k_system, emptyRoot
+      {- a_name, k_public, k_system, -} emptyRoot
     , v_1, a_indent, a_output_file
   )
         
@@ -75,7 +79,7 @@ import qualified System.Directory as System.Directory
 
 import Control.Monad
 
-import Char (toLower)
+import Data.Char (toLower)
 
 import OMDoc.Util
 import OMDoc.XmlHandling
@@ -86,6 +90,9 @@ import qualified OMDoc.OMDocXml as OMDocXML
 
 import qualified Network.URI as URI
 
+
+-- DTD is currently suspended in favor of RelaxNG (DTD violates RNG)
+{-
 -- | generate a DOCTYPE-Element for output
 mkOMDocTypeElem::
   String -- ^ URI for DTD
@@ -98,7 +105,7 @@ mkOMDocTypeElem system =
         ,(k_public, "-//OMDoc//DTD OMDoc V1.2//EN")
         ,(k_system, system)
       ]
-
+-}
 {- |
         default OMDoc-DTD-URI
         www.mathweb.org does not provide the dtd anymore (or it is hidden..)
@@ -109,12 +116,14 @@ mkOMDocTypeElem system =
         defaultDTDURI = </home/hendrik/Dokumente/Studium/Hets/cvs/HetCATScopy/utils/Omdoc/dtd/omdoc.dtd>
         until dtd-retrieving issues are solved I put the dtd online...
 -}
+{-
 defaultDTDURI::String
 defaultDTDURI = "http://www.tzi.de/~hiben/omdoc/dtd/omdoc.dtd"
 
 envDTDURI::IO String
 envDTDURI = getEnvDef "OMDOC_DTD_URI" defaultDTDURI
-
+-}
+{-
 -- | this function wraps trees into a form that can be written by HXT
 writeableTreesDTD::String->HXT.XmlTrees->HXT.XmlTree
 writeableTreesDTD dtd' t =
@@ -123,6 +132,15 @@ writeableTreesDTD dtd' t =
     ((HXT.NTree (mkOMDocTypeElem dtd' ) [])
       :(HXT.NTree (HXT.XText "\n")[])
       :t)
+  )
+-}
+
+-- | this function wraps trees into a form that can be written by HXT
+writeableTrees::HXT.XmlTrees->HXT.XmlTree
+writeableTrees t =
+  (HXT.NTree
+    ((\(HXT.NTree a _) -> a) emptyRoot)
+    t
   )
 
 {- -- debug
@@ -143,21 +161,21 @@ showOMDocDTD dtd' t = HXT.run' $
     writeableTreesDTD dtd' t
 -}
 
-{- -- debug
 -- | this function writes Xml with indention to a file
 writeOMDoc::HXT.XmlTrees->String->IO HXT.XmlTrees
 writeOMDoc t f = HXT.run' $
   HXT.writeDocument
     [(a_indent, v_1), (a_output_file, f)] $
     writeableTrees t
--}
 
 -- | this function writes Xml with indention to a file
+{-
 writeOMDocDTD::String->HXT.XmlTrees->String->IO HXT.XmlTrees
 writeOMDocDTD dtd' t f = HXT.run' $
   HXT.writeDocument
     [(a_indent, v_1), (a_output_file, f)] $
     writeableTreesDTD dtd' t
+-}
 
 -- | Hets interface for writing OMDoc files
 hetsToOMDoc::HetcatsOpts->(ASL.LIB_NAME, LibEnv)->FilePath->IO ()
@@ -190,7 +208,7 @@ libToOMDoc
         if recurse hco
           then
             do
-              dtduri <- envDTDURI
+              -- dtduri <- envDTDURI
               mapM
                 (\libname ->
                   let
@@ -209,13 +227,14 @@ libToOMDoc
                       omdocxml <- return $ (OMDocXML.toXml omdoc) HXT.emptyRoot
                       putStrLn ("Writing " ++ filename ++ " to " ++ outfile)
                       System.Directory.createDirectoryIfMissing True (snd $ splitPath outfile)
-                      writeOMDocDTD dtduri omdocxml outfile >> return ()
+                      --writeOMDocDTD dtduri omdocxml outfile >> return ()
+                      writeOMDoc omdocxml outfile >> return ()
                 )
                 (Map.keys lenv)
               return ()
           else
             do
-              dtduri <- envDTDURI
+              -- dtduri <- envDTDURI
               omdoc <-
                 libEnvLibNameIdNameMappingToOMDoc
                   (emptyGlobalOptions { hetsOpts = hco })
@@ -225,7 +244,8 @@ libToOMDoc
                   uniqueNamesXml
                   fullNamesXml
               omdocxml <- return $ (OMDocXML.toXml omdoc) HXT.emptyRoot
-              writeOMDocDTD dtduri omdocxml fp >> return ()
+              --writeOMDocDTD dtduri omdocxml fp >> return ()
+              writeOMDoc omdocxml fp >> return ()
     in
         outputio
 
@@ -824,33 +844,48 @@ createADTFor::
   ->SORT
   ->Hets.IdNameMapping
   ->[OMDoc.Constructor]
-  ->OMDoc.ADT
-createADTFor theoname rel s idNameMapping constructors =
+  ->[SORT]
+  ->(OMDoc.ADT, [SORT])
+createADTFor theoname rel s idNameMapping constructors fixed =
   let
-    insorts =
+    (insorts, pins) =
       foldl
-        (\is (s'', s') ->
-          if s'' == s
+        (\(is, pins') (s'', s') ->
+          if s' == s
             then
-              is
-              ++
-              [
-                OMDoc.mkInsort (OMDoc.mkSymbolRef (getSortIdName idNameMapping s'))
-              ]
+              (
+                  is
+                  ++
+                  [
+                    OMDoc.mkInsort
+                      (OMDoc.mkSymbolRef (getSortIdName idNameMapping s''))
+                  ]
+                , pins'
+              )
             else
-              is
+              if s'' == s && elem s' fixed
+                then
+                  Debug.Trace.trace
+                    ("New insort for " ++ (show s) ++ " in " ++ (show s'))
+                    (is, pins' ++ [s'])
+                else
+                  (is, pins')
         )
-        []
+        ([], [])
         (Rel.toList rel)
   in
-    OMDoc.mkADTEx (Just (theoname ++ "-" ++ (getSortIdName idNameMapping s) ++ "-adt"))
-      $
-      [
-        OMDoc.mkSortDef
-          (getSortIdName idNameMapping s)
-          constructors
-          insorts
-      ]
+    (
+        OMDoc.mkADTEx
+          (Just (theoname ++ "-" ++ (getSortIdName idNameMapping s) ++ "-adt"))
+          $
+          [
+            OMDoc.mkSortDef
+              (getSortIdName idNameMapping s)
+              constructors
+              insorts
+          ]
+      , pins
+    )
   
 lookupIdName::Set.Set (Id.Id, String) -> Id.Id -> Maybe String
 lookupIdName ss sid =
@@ -932,290 +967,370 @@ libEnvLibNameIdNameMappingToOMDoc
           _ -> [dummyTheory]
       initialOMDoc =
         OMDoc.OMDoc omdocId initTheories thmLinksToRefsOM  
-    in
-      foldl
-        (\xio (nn, node) ->
-          let
-            dgnodename = dgn_name node
-            caslsign = (\(Just a) -> a) $ Hets.getCASLSign (dgn_sign node)
-            idnamemapping =
-              case
-                find
-                  (\inm ->
-                    (Hets.inmGetLibName inm) == ln
-                    && (Hets.inmGetNodeName inm) == dgnodename
-                    && (Hets.inmGetNodeNum inm) == nn
-                  )
-                  fullNames
-              of
-                Nothing -> error (e_fname ++ "No such name...")
-                (Just a) -> a
-            uniqueidnamemapping =
-              case
-                find
-                  (\inm ->
-                    (Hets.inmGetLibName inm) == ln
-                    && (Hets.inmGetNodeName inm) == dgnodename
-                    && (Hets.inmGetNodeNum inm) == nn
-                  )
-                  uniqueNames
-              of
-                Nothing -> error (e_fname ++ "No such name...")
-                (Just a) -> a
-            theoryXmlId = (Hets.inmGetNodeId idnamemapping)
-            theoryPresentation =
-              makePresentationForOM
-                theoryXmlId
-                (Hets.idToString $ Hets.nodeNameToId dgnodename)
-            theoryDefLinks =
-              map
-                (\edge ->
-                  createOMDefLink
-                    lenv
-                    ln
-                    edge
-                    uniqueNames
-                    fullNames
-                )
-                (filterDefLinks (Graph.inn dg nn))
-            (theoryADTs, theorySorts, theoryPresentations) =
-              Set.fold
-               (\s (tadts, tsorts, tpres) ->
+      omdocio =
+        foldl
+          (\xio (nn, node) ->
+            do
+              (omdoc, fixedADTs) <- xio
+              res <-
                 let
-                  consremap =
-                    Set.map
-                      (\( (_, _, ot), uname ) -> (ot, uname))
-                      (Hets.inmGetIdNameConsSet uniqueidnamemapping)
-                  sortcons = filterSORTConstructors consremap s
-                  constructors = 
-                    createConstructorsOM
-                      ln
-                      nn
-                      uniqueNames
-                      fullNames
-                      sortcons
-                in
-                  case
-                    find
-                      (\(uid, _) -> uid == s)
-                      (Set.toList (Hets.inmGetIdNameAllSet uniqueidnamemapping))
-                  of
-                    Nothing ->
-                      if (Set.size sortcons) > 0
-                        then
-                          let
-                            newadt =
-                              createADTFor
-                                theoryXmlId
-                                Rel.empty
-                                s
-                                idnamemapping
-                                constructors
-                          in
-                            (tadts ++ [newadt], tsorts, tpres)
-                        else
-                          (tadts, tsorts, tpres)
-                    (Just (uid, uname)) ->
+                  dgnodename = dgn_name node
+                  caslsign = (\(Just a) -> a) $ Hets.getCASLSign (dgn_sign node)
+                  idnamemapping =
+                    case
+                      find
+                        (\inm ->
+                          (Hets.inmGetLibName inm) == ln
+                          && (Hets.inmGetNodeName inm) == dgnodename
+                          && (Hets.inmGetNodeNum inm) == nn
+                        )
+                        fullNames
+                    of
+                      Nothing -> error (e_fname ++ "No such name...")
+                      (Just a) -> a
+                  uniqueidnamemapping =
+                    case
+                      find
+                        (\inm ->
+                          (Hets.inmGetLibName inm) == ln
+                          && (Hets.inmGetNodeName inm) == dgnodename
+                          && (Hets.inmGetNodeNum inm) == nn
+                        )
+                        uniqueNames
+                    of
+                      Nothing -> error (e_fname ++ "No such name...")
+                      (Just a) -> a
+                  theoryXmlId = (Hets.inmGetNodeId idnamemapping)
+                  theoryPresentation =
+                    makePresentationForOM
+                      theoryXmlId
+                      (Hets.idToString $ Hets.nodeNameToId dgnodename)
+                  theoryDefLinks =
+                    map
+                      (\edge ->
+                        createOMDefLink
+                          lenv
+                          ln
+                          edge
+                          uniqueNames
+                          fullNames
+                      )
+                      (filterDefLinks (Graph.inn dg nn))
+                  (theoryADTs, theoryLateInsorts, theorySorts, theoryPresentations, adtList) =
+                    Set.fold
+                     (\s (tadts, tlis, tsorts, tpres, adtl) ->
                       let
-                        newsort =
-                          genSortToXmlOM
-                            (
-                              case OMDoc.adtId newadt of
-                                Nothing ->
-                                  Debug.Trace.trace "ADT without ID..."
-                                  (show uid)
-                                (Just aid) -> aid
-                            )
-                            (XmlNamed s uname)
-                        newadt =
-                          createADTFor
-                            theoryXmlId
-                            (sortRel caslsign)
-                            uid
-                            idnamemapping
-                            constructors
-                        newpre =
-                          makePresentationForOM
-                            uname
-                            (Hets.idToString s)
-                        newsorts = tsorts ++ [newsort]
-                        newpres = tpres ++ [newpre]
-                        newadts =
-                          if (not $ emptyRelForSort (sortRel caslsign) uid)
-                            || ( (Set.size sortcons) > 0 )
-                            then
-                              tadts++[newadt]
-                            else
-                              tadts
+                        consremap =
+                          Set.map
+                            (\( (_, _, ot), uname ) -> (ot, uname))
+                            (Hets.inmGetIdNameConsSet uniqueidnamemapping)
+                        sortcons = filterSORTConstructors consremap s
+                        constructors = 
+                          createConstructorsOM
+                            ln
+                            nn
+                            uniqueNames
+                            fullNames
+                            sortcons
                       in
-                        (newadts, newsorts, newpres)
-               )
-               ([],[],[])
-               (sortSet caslsign)
-            (theoryPreds, pPres) =
-              Map.foldWithKey
-                (\pid pts (tPr, pP) ->
-                  Set.fold
-                    (\pt (tPr', pP') ->
-                      case 
-                        find
-                          (\( (uid, upt), _) -> uid == pid && upt == pt)
-                          (Set.toList (Hets.inmGetIdNamePredSet uniqueidnamemapping))
-                      of
-                        Nothing -> (tPr', pP')
-                        (Just (_, uname )) ->
-                          let
-                            newpred = 
-                              predicationToXmlOM
-                                ln
-                                nn
-                                idnamemapping
-                                uniqueNames
-                                fullNames
-                                (pid, pt)
-                            newpres =
-                              makePresentationForOM
-                                uname
-                                (Hets.idToString pid)
-                          in
-                            (tPr' ++ [newpred], pP' ++ [newpres])
-                    )
-                    (tPr, pP)
-                    pts
-                )
-                ([],[])
-                (predMap caslsign)
-            (theoryOps, oPres) =
-              Map.foldWithKey
-                (\oid ots (tOp, oP) ->
-                  Set.fold
-                    (\ot (tOp', oP') ->
-                      case 
-                        find
-                          (\( (uid, uot), _) -> uid == oid && uot == ot)
-                          (Set.toList (Hets.inmGetIdNameOpSet uniqueidnamemapping))
-                      of
-                        Nothing -> (tOp', oP')
-                        (Just (_, uname )) ->
-                          let
-                            newop =
-                              operatorToXmlOM
-                                ln
-                                nn
-                                idnamemapping
-                                uniqueNames
-                                fullNames
-                                (oid, ot)
-                            newpres =
-                              makePresentationForOM
-                                uname
-                                (Hets.idToString oid)
-                          in
-                            (tOp' ++ [newop], oP' ++ [newpres])
-                    )
-                    (tOp, oP)
-                    ots
-                )
-                ([],[])
-                (opMap caslsign)
-            (theoryThmLinks, theoryDummyImports) =
-              foldl
-                (\(tTL, tDI) (lnum, edge) ->
-                  let
-                    (newtTL, mtDI) =
-                      createXmlThmLinkOM
-                        lnum
+                        case
+                          find
+                            (\(uid, _) -> uid == s)
+                            (Set.toList (Hets.inmGetIdNameAllSet uniqueidnamemapping))
+                        of
+                          Nothing ->
+                            if (Set.size sortcons) > 0
+                              then
+                                let
+                                  (newadt, adtlis) =
+                                    createADTFor
+                                      theoryXmlId
+                                      (sortRel caslsign)
+                                      s
+                                      idnamemapping
+                                      constructors
+                                      adtl
+                                  newlis =
+                                    case adtlis of
+                                      [] -> []
+                                      _ ->
+                                        [
+                                          (
+                                              getSortIdName idnamemapping s
+                                            , createTypedVarOM ln nn uniqueNames fullNames s (show s)
+                                            , map (\s' -> createTypedVarOM ln nn uniqueNames fullNames s' (show s')) adtlis
+                                          )
+                                        ]
+                                in
+                                  (tadts ++ [newadt], tlis ++ newlis, tsorts, tpres, adtl ++ [s])
+                              else
+                                (tadts, tlis, tsorts, tpres, adtl)
+                          (Just (uid, uname)) ->
+                            let
+                              newsort =
+                                genSortToXmlOM
+                                  (
+                                    case OMDoc.adtId newadt of
+                                      Nothing ->
+                                        Debug.Trace.trace "ADT without ID..."
+                                        (show uid)
+                                      (Just aid) -> aid
+                                  )
+                                  (XmlNamed s uname)
+                              (newadt, adtlis) =
+                                createADTFor
+                                  theoryXmlId
+                                  (sortRel caslsign)
+                                  uid
+                                  idnamemapping
+                                  constructors
+                                  adtl
+                              newpre =
+                                makePresentationForOM
+                                  uname
+                                  (Hets.idToString s)
+                              newsorts = tsorts ++ [newsort]
+                              newpres = tpres ++ [newpre]
+                              (newadts, newlis) =
+                                if (not $ emptyRelForSort (sortRel caslsign) uid)
+                                  || ( (Set.size sortcons) > 0 )
+                                  then
+                                    (
+                                        tadts++[newadt]
+                                      , tlis
+                                        ++
+                                        [
+                                          (
+                                              uname
+                                            , createTypedVarOM ln nn uniqueNames fullNames s uname
+                                            , map
+                                                (\s' -> createTypedVarOM ln nn uniqueNames fullNames s' (show s'))
+                                                adtlis
+                                          )
+                                        ]
+                                    )
+                                  else
+                                    (tadts, tlis)
+                            in
+                              (newadts, newlis, newsorts, newpres, adtl ++ [uid])
+                     )
+                     ([],[],[],[],fixedADTs)
+                     (sortSet caslsign)
+                  (theoryPreds, pPres) =
+                    Map.foldWithKey
+                      (\pid pts (tPr, pP) ->
+                        Set.fold
+                          (\pt (tPr', pP') ->
+                            case 
+                              find
+                                (\( (uid, upt), _) -> uid == pid && upt == pt)
+                                (Set.toList (Hets.inmGetIdNamePredSet uniqueidnamemapping))
+                            of
+                              Nothing -> (tPr', pP')
+                              (Just (_, uname )) ->
+                                let
+                                  newpred = 
+                                    predicationToXmlOM
+                                      ln
+                                      nn
+                                      idnamemapping
+                                      uniqueNames
+                                      fullNames
+                                      (pid, pt)
+                                  newpres =
+                                    makePresentationForOM
+                                      uname
+                                      (Hets.idToString pid)
+                                in
+                                  (tPr' ++ [newpred], pP' ++ [newpres])
+                          )
+                          (tPr, pP)
+                          pts
+                      )
+                      ([],[])
+                      (predMap caslsign)
+                  (theoryOps, oPres) =
+                    Map.foldWithKey
+                      (\oid ots (tOp, oP) ->
+                        Set.fold
+                          (\ot (tOp', oP') ->
+                            case 
+                              find
+                                (\( (uid, uot), _) -> uid == oid && uot == ot)
+                                (Set.toList (Hets.inmGetIdNameOpSet uniqueidnamemapping))
+                            of
+                              Nothing -> (tOp', oP')
+                              (Just (_, uname )) ->
+                                let
+                                  newop =
+                                    operatorToXmlOM
+                                      ln
+                                      nn
+                                      idnamemapping
+                                      uniqueNames
+                                      fullNames
+                                      (oid, ot)
+                                  newpres =
+                                    makePresentationForOM
+                                      uname
+                                      (Hets.idToString oid)
+                                in
+                                  (tOp' ++ [newop], oP' ++ [newpres])
+                          )
+                          (tOp, oP)
+                          ots
+                      )
+                      ([],[])
+                      (opMap caslsign)
+                  (theoryThmLinks, theoryDummyImports) =
+                    foldl
+                      (\(tTL, tDI) (lnum, edge) ->
+                        let
+                          (newtTL, mtDI) =
+                            createXmlThmLinkOM
+                              lnum
+                              lenv
+                              ln
+                              edge
+                              uniqueNames
+                              fullNames
+                        in
+                          case mtDI of
+                            Nothing -> (tTL ++ [newtTL], tDI)
+                            (Just newtDI) -> (tTL ++ [newtTL], tDI ++ [newtDI])
+                      )
+                      ([],[])
+                      (zip [1..] (filterThmLinks $ Graph.inn dg nn))
+                  omLateInsorts =
+                    foldl
+                      (\oLI (lateSort, sSym, insortSyms) ->
+                        if null insortSyms 
+                          then
+                            {- Debug.Trace.trace
+                              ("No syms for " ++ show sSym) -}
+                              oLI
+                          else 
+                            oLI ++
+                            [
+                              OMDoc.mkAxiom
+                                ("late-insort-" ++ lateSort)
+                                []
+                                [
+                                  OMDoc.FMP
+                                    {
+                                        OMDoc.fmpLogic = Nothing
+                                      , OMDoc.fmpContent =
+                                          Left
+                                            $
+                                            OMDoc.mkOMOBJ
+                                              $
+                                              OMDoc.mkOMAE
+                                                (
+                                                  [
+                                                      OMDoc.mkOMSE "casl" "strong-equation"
+                                                    , OMDoc.mkOMAE
+                                                        (
+                                                        [
+                                                            OMDoc.mkOMSE "casl" "late-insort"
+                                                          , OMDoc.toElement sSym
+                                                        ]
+                                                        ++
+                                                        (map OMDoc.toElement insortSyms)
+                                                        )
+                                                    , OMDoc.mkOMSE "casl" "true"
+                                                  ]
+                                                )
+                                    }
+                                ]
+                            ]
+                      )
+                      []
+                      theoryLateInsorts
+                in
+                  do
+  --                  omdoc <- xio
+                    (omAxs, omDefs, omPres) <-
+                      wrapFormulasCMPIOOM
+                        go
                         lenv
                         ln
-                        edge
+                        nn
+                        idnamemapping
                         uniqueNames
                         fullNames
-                  in
-                    case mtDI of
-                      Nothing -> (tTL ++ [newtTL], tDI)
-                      (Just newtDI) -> (tTL ++ [newtTL], tDI ++ [newtDI])
-                )
-                ([],[])
-                (zip [1..] (filterThmLinks $ Graph.inn dg nn))
-          in
-            do
-              omdoc <- xio
-              (omAxs, omDefs, omPres) <-
-                wrapFormulasCMPIOOM
-                  go
-                  lenv
-                  ln
-                  nn
-                  idnamemapping
-                  uniqueNames
-                  fullNames
-                  (Hets.getNodeSentences node)
-              if isDGRef node
-                then
-                  return omdoc
-                else
-                  let
-                    mDummyTheory =
-                      case theoryDummyImports of
-                        [] -> Nothing
-                        _ ->
-                          Just
-                            $
+                        (Hets.getNodeSentences node)
+                    if isDGRef node
+                      then
+                        return (omdoc, adtList)
+                      else
+                        let
+                          mDummyTheory =
+                            case theoryDummyImports of
+                              [] -> Nothing
+                              _ ->
+                                Just
+                                  $
+                                  OMDoc.Theory
+                                    (theoryXmlId ++ "-dummy")
+                                    (map OMDoc.mkCIm theoryDummyImports)
+                                    []
+                                    dummyTheoryComment
+                          newtheory =
                             OMDoc.Theory
-                              (theoryXmlId ++ "-dummy")
-                              (map OMDoc.mkCIm theoryDummyImports)
-                              []
-                              dummyTheoryComment
-                    newtheory =
-                      OMDoc.Theory
-                        theoryXmlId
-                        (
-                          (map OMDoc.mkCSy theorySorts)
-                          ++
-                          (map OMDoc.mkCSy theoryOps)
-                          ++
-                          (map OMDoc.mkCSy theoryPreds)
-                          ++
-                          (map OMDoc.mkCAd theoryADTs)
-                          ++
-                          (map OMDoc.mkCAx omAxs)
-                          ++
-                          (map OMDoc.mkCDe omDefs)
-                          ++
-                          (map OMDoc.mkCIm theoryDefLinks)
-                        )
-                        (
-                          [theoryPresentation]
-                          ++
-                          theoryPresentations
-                          ++
-                          omPres
-                          ++
-                          pPres
-                          ++
-                          oPres
-                        )
-                        Nothing
-                    newTheories =
-                      case mDummyTheory of
-                        Nothing -> [newtheory]
-                        (Just dt) -> [dt, newtheory]
-                  in
-                    return
-                      $
-                      (
-                        OMDoc.addInclusions
+                              theoryXmlId
+                              (
+                                (map OMDoc.mkCSy theorySorts)
+                                ++
+                                (map OMDoc.mkCSy theoryOps)
+                                ++
+                                (map OMDoc.mkCSy theoryPreds)
+                                ++
+                                (map OMDoc.mkCAd theoryADTs)
+                                ++
+                                (map OMDoc.mkCAx omLateInsorts)
+                                ++
+                                (map OMDoc.mkCAx omAxs)
+                                ++
+                                (map OMDoc.mkCDe omDefs)
+                                ++
+                                (map OMDoc.mkCIm theoryDefLinks)
+                              )
+                              (
+                                [theoryPresentation]
+                                ++
+                                theoryPresentations
+                                ++
+                                omPres
+                                ++
+                                pPres
+                                ++
+                                oPres
+                              )
+                              Nothing
+                          newTheories =
+                            case mDummyTheory of
+                              Nothing -> [newtheory]
+                              (Just dt) -> [dt, newtheory]
+                        in
+                          return
                           (
-                            OMDoc.addTheories
-                              omdoc
-                              newTheories
+                              (
+                                OMDoc.addInclusions
+                                  (
+                                    OMDoc.addTheories
+                                      omdoc
+                                      newTheories
+                                  )
+                                  theoryThmLinks
+                              )
+                            , adtList
                           )
-                          theoryThmLinks
-                      )
-        )
-        (return initialOMDoc)
-        (Graph.labNodes dg)
-
+              return res
+          )
+          (return (initialOMDoc, []))
+          (Graph.labNodes dg)
+    in
+      omdocio >>= \(om, _) -> return om
 {- |
   alias for inmGetNodeId
 -}
@@ -1548,6 +1663,36 @@ compatibleOperator sortrel ot1 ot2 =
   &&
   (compatibleTypes sortrel (opArgs ot1) (opArgs ot2))
 
+makeVarDeclList::
+  Hets.LIB_NAME
+  ->Graph.Node
+  ->[Hets.IdNameMapping]
+  ->[Hets.IdNameMapping]
+  ->[VAR_DECL]
+  ->[(String, String)]
+makeVarDeclList ln _ uN fN vdl =
+  process vdl
+  where
+  process::[VAR_DECL]->[(String, String)]
+  process [] = []
+  process ( (Var_decl vl s _):vdl' ) =
+    let
+      msxn = findSortOriginCL ln uN fN s
+    in
+      (
+        case msxn of
+          Just (sxid, _) ->
+            map
+              (\vd ->
+                (sxid, adjustStringForXmlName (show vd))
+              )
+              vl
+          Nothing ->
+            []
+      )
+      ++ process vdl'
+
+
 -- first newline needs pulling up because we have a list of lists...
 processVarDeclOM::
   Hets.LIB_NAME
@@ -1759,7 +1904,11 @@ createSymbolForPredicationOM _ lenv ln nn uniqueNames fullNames ps =
             ps
         of
           Nothing ->
-            error (e_fname ++ "No origin for predicate!")   
+            Debug.Trace.trace
+              (e_fname ++ "No origin for predicate! (" ++ (show ps) ++ ")")
+              (adjustStringForXmlName (predName ps), "casl")
+            
+--            error (e_fname ++ "No origin for predicate! (" ++ (show ps) ++ ")")   
           (Just (predx, predo)) ->
             (   
                 predx
@@ -1767,6 +1916,10 @@ createSymbolForPredicationOM _ lenv ln nn uniqueNames fullNames ps =
             )
     in
       OMDoc.mkOMS predorigin predxmlid
+    where
+      predName::PRED_SYMB->String
+      predName (Pred_name s) = show s
+      predName (Qual_pred_name s _ _) = show s
 
 findOperatorOriginCL::
   Hets.LIB_NAME
@@ -1885,28 +2038,37 @@ preferEqualFindCompatible l isEqual isCompatible =
 
 -- | create a xml-representation from a term (in context of a theory)
 processTermOM::
-  GlobalOptions
+  forall f .
+  (Pretty.Pretty f)
+  =>GlobalOptions
   ->LibEnv
   ->Hets.LIB_NAME
   ->Graph.Node
   ->[Hets.IdNameMapping]
   ->[Hets.IdNameMapping]
+  ->[(String, String)]
   -> TERM f -- ^ the term to process
   ->OMDoc.OMElement
 -- Simple_id
-processTermOM _ _ _ _ _ _
+processTermOM _ _ _ _ _ _ _
   (Simple_id id' ) =
   OMDoc.toElement
     $
     (OMDoc.mkOMSimpleVar (show id'))
 -- Qual_var
-processTermOM _ _ ln nn uniqueNames fullNames
+processTermOM _ _ ln nn uniqueNames fullNames vb
   (Qual_var v s _) =
-    OMDoc.toElement
-      $
-      (createTypedVarOM ln nn uniqueNames fullNames s (show v) )
+    if elem (show v) (map snd vb)
+      then
+        OMDoc.toElement
+          $
+          (OMDoc.mkOMSimpleVar (show v))
+      else
+        OMDoc.toElement
+          $
+          (createTypedVarOM ln nn uniqueNames fullNames s (show v) )
 -- Application
-processTermOM go lenv ln nn uniqueNames fullNames
+processTermOM go lenv ln nn uniqueNames fullNames vb
   (Application op termlist _) =
     let
       omterms = 
@@ -1916,7 +2078,7 @@ processTermOM go lenv ln nn uniqueNames fullNames
               [
                 OMDoc.toElement
                   $
-                  processTermOM go lenv ln nn uniqueNames fullNames t
+                  processTermOM go lenv ln nn uniqueNames fullNames vb t
               ]
           )
           []
@@ -1939,53 +2101,93 @@ processTermOM go lenv ln nn uniqueNames fullNames
                 ] ++ omterms
               )
 -- Cast
-processTermOM go lenv ln nn uniqueNames fullNames
+processTermOM go lenv ln nn uniqueNames fullNames vb
   (Cast t s _) =
-    processTermOM go lenv ln nn uniqueNames fullNames
+    processTermOM go lenv ln nn uniqueNames fullNames vb
       (Application
         (Op_name $ Hets.stringToId "PROJ")
         [t, (Simple_id $ Id.mkSimpleId (show s))]
         Id.nullRange
       )
 -- Conditional
-processTermOM go lenv ln nn uniqueNames fullNames
+processTermOM go lenv ln nn uniqueNames fullNames vb
   (Conditional t1 f t2 _) =
     OMDoc.toElement
       $
       OMDoc.mkOMA
         [
             OMDoc.toElement $ OMDoc.mkOMS caslS "IfThenElse"
-          , OMDoc.toElement $ processFormulaOM go lenv ln nn uniqueNames fullNames f
-          , OMDoc.toElement $ processTermOM go lenv ln nn uniqueNames fullNames t1
-          , OMDoc.toElement $ processTermOM go lenv ln nn uniqueNames fullNames t2
+          , OMDoc.toElement $ processFormulaOM go lenv ln nn uniqueNames fullNames vb f
+          , OMDoc.toElement $ processTermOM go lenv ln nn uniqueNames fullNames vb t1
+          , OMDoc.toElement $ processTermOM go lenv ln nn uniqueNames fullNames vb t2
         ]
 -- Sorted_term is to be ignored in OMDoc (but could be modelled...) (Sample/Simple.casl uses it...)
-processTermOM go lenv ln nn uniqueNames fullNames
+processTermOM go lenv ln nn uniqueNames fullNames vb
   (Sorted_term t _ _) =
-    processTermOM go lenv ln nn uniqueNames fullNames t
+    processTermOM go lenv ln nn uniqueNames fullNames vb t
 -- Unsupported Terms...
-processTermOM _ _ _ _ _ _ _ =
+processTermOM _ _ _ _ _ _ _ _ =
   error "OMDoc.OMDocOutput.processTermOM: Unsupported Term encountered..." 
 
 processFormulaOM::
-  GlobalOptions
+  forall f .
+  (Pretty.Pretty f)
+  =>GlobalOptions
   ->LibEnv
   ->Hets.LIB_NAME
   ->Graph.Node
   ->[Hets.IdNameMapping]
   ->[Hets.IdNameMapping]
+  ->[(String, String)]
   ->FORMULA f 
   ->OMDoc.OMElement
 -- Quantification
-processFormulaOM go lenv ln nn uN fN
+processFormulaOM go lenv ln nn uN fN vb
   (Quantification q vl f _) =
-    OMDoc.mkOMBINDE
-      (OMDoc.mkOMS caslS (quantName q))
-      (processVarDeclOM ln nn uN fN vl)
-      (processFormulaOM go lenv ln nn uN fN f)
+    let
+      currentVarNames = map snd vb
+      varbindings = makeVarDeclList ln nn uN fN vl
+      newBindings =
+        foldl
+          (\nb c@(vtn, vnn) ->
+            if elem vnn currentVarNames
+              then
+                map
+                  (\o@(vto, vno) ->
+                    if vno == vnn
+                      then
+                        if vto == vtn
+                          then
+                            Debug.Trace.trace
+                              (
+                                "Warning: Variable " ++ vtn ++
+                                " has been bound a second time (same type)"
+                              )
+                              o
+                          else
+                            Debug.Trace.trace
+                              (
+                                "Warning: Variable " ++ vtn ++ "::" ++ vtn ++ 
+                                " shadows existing variable of type " ++ vto
+                              )
+                              c
+                      else
+                        o
+                  )
+                  nb
+              else
+                nb ++ [c]
+          )
+          vb
+          varbindings
+    in
+      OMDoc.mkOMBINDE
+        (OMDoc.mkOMS caslS (quantName q))
+        (processVarDeclOM ln nn uN fN vl)
+        (processFormulaOM go lenv ln nn uN fN newBindings f)
 
 -- Conjunction
-processFormulaOM go lenv ln nn uN fN
+processFormulaOM go lenv ln nn uN fN vb
   (Conjunction fl _) =
     OMDoc.mkOMAE
       (
@@ -1994,7 +2196,7 @@ processFormulaOM go lenv ln nn uN fN
         (
           foldl
             (\fs f ->
-              fs ++ [ processFormulaOM go lenv ln nn uN fN f ]
+              fs ++ [ processFormulaOM go lenv ln nn uN fN vb f ]
             )
             []
             fl
@@ -2002,7 +2204,7 @@ processFormulaOM go lenv ln nn uN fN
       )
 
 -- Disjunction
-processFormulaOM go lenv ln nn uN fN
+processFormulaOM go lenv ln nn uN fN vb
   (Disjunction fl _) =
     OMDoc.mkOMAE
       (
@@ -2011,43 +2213,43 @@ processFormulaOM go lenv ln nn uN fN
         (
           foldl
             (\fs f ->
-              fs ++ [ processFormulaOM go lenv ln nn uN fN f ]
+              fs ++ [ processFormulaOM go lenv ln nn uN fN vb f ]
             )
             []
             fl
         )
       )
 -- Implication
-processFormulaOM go lenv ln nn uN fN
+processFormulaOM go lenv ln nn uN fN vb
   (Implication f1 f2 b _) =
     OMDoc.mkOMAE
       [
           OMDoc.mkOMSE caslS caslImplicationS
-        , processFormulaOM go lenv ln nn uN fN f1
-        , processFormulaOM go lenv ln nn uN fN f2
-        , processFormulaOM go lenv ln nn uN fN 
-            (if b then True_atom Id.nullRange else False_atom Id.nullRange)
+        , processFormulaOM go lenv ln nn uN fN vb f1
+        , processFormulaOM go lenv ln nn uN fN vb f2
+        , processFormulaOM go lenv ln nn uN fN vb 
+            ((if b then True_atom Id.nullRange else False_atom Id.nullRange)::(FORMULA f))
       ]
 
 -- Equivalence
-processFormulaOM go lenv ln nn uN fN
+processFormulaOM go lenv ln nn uN fN vb
   (Equivalence f1 f2 _) =
     OMDoc.mkOMAE
       [
           OMDoc.mkOMSE caslS caslEquivalenceS
-        , processFormulaOM go lenv ln nn uN fN f1
-        , processFormulaOM go lenv ln nn uN fN f2
+        , processFormulaOM go lenv ln nn uN fN vb f1
+        , processFormulaOM go lenv ln nn uN fN vb f2
       ]
 -- Negation
-processFormulaOM go lenv ln nn uN fN
+processFormulaOM go lenv ln nn uN fN vb
   (Negation f _) =
     OMDoc.mkOMAE
       [
           OMDoc.mkOMSE caslS caslNegationS
-        , processFormulaOM go lenv ln nn uN fN f
+        , processFormulaOM go lenv ln nn uN fN vb f
       ]
 -- Predication
-processFormulaOM go lenv ln nn uN fN
+processFormulaOM go lenv ln nn uN fN vb
   (Predication p tl _) =
     OMDoc.mkOMAE
       (
@@ -2059,58 +2261,61 @@ processFormulaOM go lenv ln nn uN fN
         (
           foldl
             (\ts t ->
-              ts ++ [ processTermOM go lenv ln nn uN fN t ]
+              ts ++ [ processTermOM go lenv ln nn uN fN vb t ]
             )
             []
             tl
         )
       )
 -- Definedness
-processFormulaOM go lenv ln nn uN fN
+processFormulaOM go lenv ln nn uN fN vb
   (Definedness t _ ) =
     OMDoc.mkOMAE
       [
           OMDoc.mkOMSE caslS caslDefinednessS
-        , processTermOM go lenv ln nn uN fN t
+        , processTermOM go lenv ln nn uN fN vb t
       ]
 -- Existl_equation
-processFormulaOM go lenv ln nn uN fN
+processFormulaOM go lenv ln nn uN fN vb
   (Existl_equation t1 t2 _) = 
     OMDoc.mkOMAE
       [
           OMDoc.mkOMSE caslS caslExistl_equationS
-        , processTermOM go lenv ln nn uN fN t1
-        , processTermOM go lenv ln nn uN fN t2
+        , processTermOM go lenv ln nn uN fN vb t1
+        , processTermOM go lenv ln nn uN fN vb t2
       ]
 -- Strong_equation
-processFormulaOM go lenv ln nn uN fN
+processFormulaOM go lenv ln nn uN fN vb
   (Strong_equation t1 t2 _) = 
     OMDoc.mkOMAE
       [
           OMDoc.mkOMSE caslS caslStrong_equationS
-        , processTermOM go lenv ln nn uN fN t1
-        , processTermOM go lenv ln nn uN fN t2
+        , processTermOM go lenv ln nn uN fN vb t1
+        , processTermOM go lenv ln nn uN fN vb t2
       ]
 -- Membership
-processFormulaOM go lenv ln nn uN fN
+processFormulaOM go lenv ln nn uN fN vb
   (Membership t s _) = 
     OMDoc.mkOMAE
       [
           OMDoc.mkOMSE caslS caslMembershipS
-        , processTermOM go lenv ln nn uN fN t
+        , processTermOM go lenv ln nn uN fN vb t
         , OMDoc.toElement $ createSymbolForSortOM ln nn uN fN s
       ]
 -- False_atom
-processFormulaOM _ _ _ _ _ _
+processFormulaOM _ _ _ _ _ _ _
   (False_atom _) =
     OMDoc.mkOMSE caslS caslSymbolAtomFalseS
 -- True_atom
-processFormulaOM _ _ _ _ _ _
+processFormulaOM _ _ _ _ _ _ _
   (True_atom _) =
     OMDoc.mkOMSE caslS caslSymbolAtomTrueS
 -- Sort_gen_ax
-processFormulaOM go lenv ln nn uN fN
+processFormulaOM go lenv ln nn uN fN vb
   (Sort_gen_ax constraints freetype) =
+  let
+    soCon = Induction.inductionScheme constraints 
+  in
     OMDoc.mkOMAE
       (
       [
@@ -2130,6 +2335,12 @@ processFormulaOM go lenv ln nn uN fN
           constraints
       )
       ++
+      (
+        case Result.resultToMaybe soCon of
+          Nothing -> []
+          (Just (cf::(FORMULA f))) -> [processFormulaOM go lenv ln nn uN fN vb cf]
+      )
+      ++
       [
         OMDoc.mkOMSE
           caslS
@@ -2138,15 +2349,15 @@ processFormulaOM go lenv ln nn uN fN
       )
 -- unsupported formulas
 -- Mixfix_formula
-processFormulaOM _ _ _ _ _ _
+processFormulaOM _ _ _ _ _ _ _
   (Mixfix_formula {}) =
     OMDoc.mkOMComment "unsupported : Mixfix_formula"
 -- Unparsed_formula
-processFormulaOM _ _ _ _ _ _
+processFormulaOM _ _ _ _ _ _ _
   (Unparsed_formula {}) =
     OMDoc.mkOMComment "unsupported : Unparsed_formula"
 -- ExtFORMULA
-processFormulaOM _ _ _ _ _ _
+processFormulaOM _ _ _ _ _ _ _
   (ExtFORMULA {}) =
     OMDoc.mkOMComment "unsupported : ExtFORMULA"
 
@@ -2316,7 +2527,7 @@ wrapFormulaCMPOM
         (Just n) -> n
     sens = Ann.sentence ansen
     sposl = Id.getPosList sens
-    omformula = processFormulaOM go lenv ln nn uniqueNames fullNames sens
+    omformula = processFormulaOM go lenv ln nn uniqueNames fullNames [] sens
     omobj = OMDoc.mkOMOBJ omformula
     cmptext = 
       foldl

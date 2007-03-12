@@ -11,7 +11,7 @@ Portability :  portable
 -}
 module OMDoc.Util (module OMDoc.Util, module Data.List) where
 
-import Char (isSpace)
+import Data.Char (isSpace)
 import Data.List (isSuffixOf, partition)
 
 listStart::forall a . Eq a => [a]->[a]->Bool
@@ -150,8 +150,8 @@ breakSepSpace::String->[String]
 breakSepSpace =
   filter (not .null) . map trimString .
       breakIfExt
-        (\c -> (Char.isSpace c, True))
-        (\c1 c2 -> ((c1 /= '\\') && (Char.isSpace c2), False, True))
+        (\c -> (isSpace c, True))
+        (\c1 c2 -> ((c1 /= '\\') && (isSpace c2), False, True))
 
 breakOnce::forall a . (a->a->(Bool, Bool, Bool))->[a]->([a],[a]) 
 breakOnce _ [] = ([],[])
@@ -210,7 +210,7 @@ trim::(a->Bool)->[a]->[a]
 trim test list = dropWhile test (reverse (dropWhile test (reverse list)))
 
 trimString::String->String
-trimString = trim (Char.isSpace)
+trimString = trim (isSpace)
 
 spanEsc::(Char->Bool)->String->(String, String)
 spanEsc _  [] = ([],[])

@@ -13,7 +13,7 @@ module OMDoc.OMDocInterface where
 
 import qualified Network.URI as URI
 
-import Char
+import Data.Char
 
 import qualified Data.Word as Word
 
@@ -166,7 +166,7 @@ instance Show SymbolRole where
 
 instance Read SymbolRole where
   readsPrec _ s =
-    case map Char.toLower s of
+    case map toLower s of
       "type" -> [(SRType, [])]
       "sort" -> [(SRSort, [])]
       "object" -> [(SRObject, [])]
@@ -260,6 +260,7 @@ getIdsForPresentation (CDe _) = []
 getIdsForPresentation (CSy s) = [symbolId s]
 getIdsForPresentation (CIm _) = []
 getIdsForPresentation (CAd a) = map sortDefName (adtSortDefs a)
+getIdsForPresentation (CCo {}) = []
 
 -- | Axiom
 data Axiom =

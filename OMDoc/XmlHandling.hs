@@ -57,7 +57,7 @@ import Text.XML.HXT.Arrow.ReadDocument
 import Text.XML.HXT.Arrow.XmlIOStateArrow
 
 import Data.List (find)
-import Char (isDigit, isAlpha, isAlphaNum, isAscii, isControl, ord)
+import Data.Char (isDigit, isAlpha, isAlphaNum, isAscii, isControl, ord)
 
 xpipe::forall c a b . (a->[b]) -> (b->[c]) -> a -> [c]
 xpipe = (.>)
@@ -137,7 +137,7 @@ adjustStringForXmlName::String->XmlName
 adjustStringForXmlName [] = "Empty"
 adjustStringForXmlName s@(firstChar:_) =
   preventEmpty $
-    if (Char.isDigit firstChar)
+    if (isDigit firstChar)
       then
         adjustStringForXmlName ("N"++s)
       else

@@ -19,8 +19,6 @@ import qualified CASL.AS_Basic_CASL as ABC
 import Static.DevGraph
 import qualified Data.Graph.Inductive.Graph as Graph
 
-import Driver.Options
-
 import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 import qualified Data.Map as Map
@@ -57,7 +55,7 @@ data GlobalOptions =
   GOpts
     {
         dbgInf :: DbgInf
-      , hetsOpts :: HetcatsOpts
+      , hetsOpts :: Hets.HetcatsOpts
     }
   deriving Show
                 
@@ -71,8 +69,8 @@ emptyGlobalOptions::GlobalOptions
 emptyGlobalOptions =
   GOpts
     {
-       dbgInf = (simpleDebug [])
-			,hetsOpts = defaultHetcatsOpts
+        dbgInf = (simpleDebug [])
+      , hetsOpts = Hets.dho
     }
                         
 -- OMDoc definitions
