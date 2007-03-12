@@ -92,7 +92,7 @@ import Driver.ReadFn
 import Data.Graph.Inductive.Graph as Graph
 import Data.IORef
 import Data.Maybe
-import List(nub)
+import Data.List(nub)
 import Control.Monad
 import Control.Monad.Trans
 import Control.Concurrent.MVar
