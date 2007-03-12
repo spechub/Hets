@@ -298,7 +298,7 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts title = do
                           (proofMenu gInfo (return . return .
                                                    theoremHideShift ln))
                     ],
-                  Button "Development Graph Translation"
+                  Button "Translate Graph"
                          (openTranslateGraph (libname2dg convMaps) ln opts 
                                $ (getDGLogic (libname2dg convMaps)))
                   ,
