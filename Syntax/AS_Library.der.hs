@@ -62,7 +62,7 @@ data LIB_NAME = Lib_version LIB_ID VERSION_NUMBER
 
 data LIB_ID = Direct_link URL Range
               -- pos: start of URL
-            | Indirect_link PATH Range
+            | Indirect_link PATH Range FilePath
               -- pos: start of PATH
 
 
@@ -76,7 +76,7 @@ type PATH = String
 
 instance Show LIB_ID where
   show (Direct_link s1 _) = s1
-  show (Indirect_link s1 _) = s1
+  show (Indirect_link s1 _ _) = s1
 
 instance Show LIB_NAME where
   show (Lib_version libid (Version_number vs _)) = 
@@ -84,15 +84,15 @@ instance Show LIB_NAME where
   show (Lib_id libid) = show libid
 
 instance Eq LIB_ID where
-  Direct_link s1 _ == Direct_link s2 _ = s1==s2
-  Indirect_link s1 _ == Indirect_link s2 _ = s1==s2
+  Direct_link s1 _ == Direct_link s2 _ = s1 == s2
+  Indirect_link s1 _ _ == Indirect_link s2 _ _ = s1 == s2
   _ == _ = False
 
 instance Ord LIB_ID where
-  Direct_link s1 _ <= Direct_link s2 _ = s1<=s2
-  Indirect_link s1 _ <= Indirect_link s2 _ = s1<=s2
+  Direct_link s1 _ <= Direct_link s2 _ = s1 <= s2
+  Indirect_link s1 _ _ <= Indirect_link s2 _ _ = s1 <= s2
   Direct_link _ _ <= _ = True
-  Indirect_link _ _ <= _ = False
+  Indirect_link _ _ _ <= _ = False
 
 getLIB_ID :: LIB_NAME -> LIB_ID
 getLIB_ID (Lib_version libid _) = libid

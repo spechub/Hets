@@ -98,10 +98,10 @@ readVerbose opts ln file = do
 libNameToFile :: HetcatsOpts -> LIB_NAME -> FilePath
 libNameToFile opts ln =
            case getLIB_ID ln of
-                Indirect_link file _ ->
+                Indirect_link file _ ofile ->
                   let path = libdir opts
                      -- add trailing "/" if necessary
-                  in pathAndBase path file
+                  in if null ofile then pathAndBase path file else ofile
                 Direct_link _ _ -> error "libNameToFile"
 
 -- | convert a file name that may have a suffix to a library name
@@ -113,7 +113,7 @@ fileToLibName opts efile =
                 if isPrefixOf path file
                 then drop (length path) file -- cut off libdir prefix
                 else file
-    in Lib_id $ Indirect_link nfile nullRange
+    in Lib_id $ Indirect_link nfile nullRange efile
 
 readPrfFile :: HetcatsOpts -> LibEnv -> LIB_NAME -> IO LibEnv
 readPrfFile opts ps ln = do

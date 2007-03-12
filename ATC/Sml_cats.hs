@@ -1796,8 +1796,6 @@ skipPosFlag mcon att   =
                     b     = from_sml_ShATerm $ getATermByIndex1 b_i att
     _  -> (nullRange,False,att)
 
------------------------------------------------------------------------
-
 instance ATermConvertibleSML ITEM_NAME_OR_MAP where
     from_sml_ShATerm att =
         case aterm of
@@ -1853,7 +1851,7 @@ instance ATermConvertibleSML LIB_ID where
                 let
                 aa' = from_sml_ShATerm (getATermByIndex1 aa att)
                 ab' = pos_l
-                in (Indirect_link aa' ab')
+                in (Indirect_link aa' ab' "")
             _ -> from_sml_ShATermError "LIB_NAME" aterm
         where
             aterm = getATerm att'
