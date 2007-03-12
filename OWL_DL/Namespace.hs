@@ -18,9 +18,9 @@ import OWL_DL.Sign
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Common.AS_Annotation as Common.Annotation
-import List(find, nub)
+import Data.List(find, nub)
 import Data.Maybe(fromJust)
-import Char(isDigit, isAlpha)
+import Data.Char(isDigit, isAlpha)
 
 
 type TranslationMap = Map.Map String String  -- ^ OldPrefix -> NewPrefix

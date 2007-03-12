@@ -24,12 +24,12 @@ import Logic.Logic
 import Logic.Coerce
 import Common.Id
 import Common.Result
-import List
+import Data.List
 import Logic.Prover
 import qualified Data.Map as Map
 -- import qualified Data.Set as Set
 import Data.Maybe(fromJust)
-import Char(isDigit)
+import Data.Char(isDigit)
 import OWL_DL.Namespace
 
 --import Debug.Trace
