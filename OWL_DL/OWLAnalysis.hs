@@ -39,8 +39,8 @@ import Logic.Grothendieck
 import Logic.Prover
 import Data.Graph.Inductive.Query.DFS
 import Data.Graph.Inductive.Query.BFS
-import Maybe(fromJust)
-import List
+import Data.Maybe(fromJust)
+import System.IO
 
 -- | call for owl parser (env. variable $HETS_OWL_PARSER muss be defined)
 parseOWL :: FilePath              -- ^ local filepath or uri
@@ -78,7 +78,7 @@ parseOWL filename  =
                      do
                        ioHandler <- openFile ".outputFilename" WriteMode
                        outFile <- hGetContents ioHandler
-                       parserProc outFile
+                       parseProc outFile
                  | otherwise =  error ("process stop! " ++ (show exitCode))
 
 -- | parse the file "output.term" from java-owl-parser
