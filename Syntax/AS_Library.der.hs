@@ -57,15 +57,24 @@ data ITEM_NAME_OR_MAP = Item_name ITEM_NAME
 
 type ITEM_NAME = SIMPLE_ID
 
-data LIB_NAME = Lib_version LIB_ID VERSION_NUMBER
-              | Lib_id LIB_ID
+data LIB_NAME = Lib_version
+    { getLIB_ID :: LIB_ID
+    , libVersion :: VERSION_NUMBER }
+    | Lib_id { getLIB_ID :: LIB_ID }
 
 data LIB_ID = Direct_link URL Range
               -- pos: start of URL
             | Indirect_link PATH Range FilePath
               -- pos: start of PATH
 
+updFilePathOfLibId :: FilePath -> LIB_ID -> LIB_ID
+updFilePathOfLibId fp li = case li of
+  Direct_link _ _ -> li
+  Indirect_link p r _ -> Indirect_link p r fp
 
+setFilePath :: FilePath -> LIB_DEFN -> LIB_DEFN
+setFilePath fp (Lib_defn ln lis r as) =
+    Lib_defn ln { getLIB_ID = updFilePathOfLibId fp $ getLIB_ID ln } lis r as
 
 data VERSION_NUMBER = Version_number [String] Range
                       -- pos: "version", start of first string
@@ -79,7 +88,7 @@ instance Show LIB_ID where
   show (Indirect_link s1 _ _) = s1
 
 instance Show LIB_NAME where
-  show (Lib_version libid (Version_number vs _)) = 
+  show (Lib_version libid (Version_number vs _)) =
       shows libid " version " ++ concat (intersperse "." vs)
   show (Lib_id libid) = show libid
 
@@ -93,10 +102,6 @@ instance Ord LIB_ID where
   Indirect_link s1 _ _ <= Indirect_link s2 _ _ = s1 <= s2
   Direct_link _ _ <= _ = True
   Indirect_link _ _ _ <= _ = False
-
-getLIB_ID :: LIB_NAME -> LIB_ID
-getLIB_ID (Lib_version libid _) = libid
-getLIB_ID (Lib_id libid) = libid
 
 instance Eq LIB_NAME where
   ln1 == ln2 = getLIB_ID ln1 == getLIB_ID ln2
