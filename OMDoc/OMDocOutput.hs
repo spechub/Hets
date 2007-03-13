@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Hendrik Iben, Uni Bremen 2005-2006
+Copyright   :  (c) Hendrik Iben, Uni Bremen 2005-2007
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  hiben@tzi.de
@@ -8,30 +8,11 @@ Stability   :  provisional
 Portability :  non-portable(Logic)
 
   Output-methods for writing OMDoc
-
-  BUGS/TODO:
-    - better interpretation of imports (partly done, not-portable)
-    - existings files should not be overwritten everytime...
-    - DevGraph->OMDoc conversion should be done on LibEnv-Level (for names) (done)
-    - Symbols created by OMDoc-ADTs currently don't reference to them (generated-from) (done)
-    - generated predicates (constraints) are currently not well implemented
-    - omit variable types (done)
 -}
 module OMDoc.OMDocOutput
   (
     hetsToOMDoc
   ) 
-{- -- debug 
-  (
-    writeOMDocDTD
-    -- ,showOMDoc
-    -- ,showOMDocDTD
-    -- ,writeOMDoc
-    ,hetsToOMDoc
-    ,defaultDTDURI
-    ,createXmlNameMapping
-  )
- -}
   where
 
 import qualified OMDoc.HetsDefs as Hets

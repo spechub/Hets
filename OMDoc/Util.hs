@@ -1,6 +1,6 @@
 {- |
 Module      :  $Header$
-Copyright   :  (c) Hendrik Iben, Uni Bremen 2005-2006
+Copyright   :  (c) Hendrik Iben, Uni Bremen 2005-2007
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
 
 Maintainer  :  hiben@tzi.de
@@ -34,8 +34,7 @@ implode _ [] = []
 implode _ [last' ] = last'
 implode with (item:rest) = item ++ with ++ (implode with rest)
 
--- explode byWhat list
--- TODO : this looks very slow...
+-- explode a list by the occurence of a sublist
 explode::forall a . Eq a => [a]->[a]->[[a]]
 explode by list =
   (\(p,q) -> p++[q]) $ foldl (\(exploded, current) newchar ->
