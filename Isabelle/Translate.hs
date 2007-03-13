@@ -126,9 +126,15 @@ mkIsaConstT prd ga n ide = mkIsaConstVName 1 showIsaConstT prd ga n ide
 
 mkIsaConstVName :: Int -> (Id -> BaseSig -> String) -> Bool -> GlobalAnnos
                 -> Int -> Id -> BaseSig -> VName
-mkIsaConstVName over f prd ga n ide thy = let s = f ide thy in VName
+mkIsaConstVName over f prd ga n ide thy =
+  let s = f ide thy
+      a = toAltSyntax prd over ga n ide thy
+ in if n == 0 && case a of
+      Just (AltSyntax as [] _) -> as == s
+      _ -> False then VName { new = s, altSyn = Nothing }
+    else VName
   { new = (if n < 0 || isMixfix ide || s /= show ide then id else ("X_" ++)) s
-  , altSyn = toAltSyntax prd over ga n ide thy }
+  , altSyn = a }
 
 showIsaTypeT :: Id -> BaseSig -> String
 showIsaTypeT ide thy = showIsaT1 (transTypeStringT thy) ide
