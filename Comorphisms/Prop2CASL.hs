@@ -175,7 +175,7 @@ trNamedForm form =
                  , AS_Anno.isAxiom = isAxiom
                  }
 
--- | Helper for map sentence / map theory
+-- | Helper for map sentence and map theory
 trForm :: PBasic.FORMULA 
        -> CLogic.CASLFORMULA
 trForm form = 
