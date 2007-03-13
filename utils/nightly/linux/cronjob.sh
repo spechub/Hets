@@ -132,3 +132,7 @@ for i in */*.env; \
 date
 for i in */*.prf; do ./hets -v2 -o th $i; done
 date
+
+# check out CASL-lib in /home/cofi/CASL-lib for hets.cgi
+cd /home/cofi/CASL-lib
+cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:/repository up -dPA
