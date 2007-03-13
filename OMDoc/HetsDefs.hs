@@ -35,6 +35,8 @@ import Static.DevGraph
 import CASL.AS_Basic_CASL
 import CASL.Logic_CASL
 
+import qualified CASL.Induction as Induction
+
 import CASL.Sign
 import CASL.Morphism
 import qualified CASL.AS_Basic_CASL as CASLBasic
@@ -50,6 +52,8 @@ import qualified Data.Maybe as Data.Maybe
 import qualified Logic.Prover as Prover
 
 import qualified Common.OrderedMap as OMap
+
+import qualified Common.Result as Result
 
 import qualified Debug.Trace as Debug.Trace
 
@@ -2709,7 +2713,19 @@ createMinimalLibEnv ln tracemarks =
         (selector tosign)
       )
 
-type IdNameMapping = (LIB_NAME, NODE_NAME, String, Graph.Node, Set.Set (Id.Id, String), Set.Set ((Id.Id, PredType), String), Set.Set ((Id.Id, OpType), String), Set.Set ((Id.Id, Int), String), Set.Set ((Int, Id.Id, OpType), String))
+type IdNameMapping =
+  (
+      LIB_NAME
+    , NODE_NAME
+    , String
+    , Graph.Node
+    , Set.Set (Id.Id, String)
+    , Set.Set ((Id.Id, PredType), String)
+    , Set.Set ((Id.Id, OpType), String)
+    , Set.Set ((Id.Id, Int), String)
+    , Set.Set ((Int, Id.Id, OpType), String)
+    , Set.Set ((Id.Id, PredType), String)
+  )
 
 
 {-
@@ -2721,37 +2737,41 @@ instance Show IdNameMapping where
 -}
 
 inmGetLibName::IdNameMapping->LIB_NAME
-inmGetLibName (ln, _, _, _, _, _, _, _, _) = ln
+inmGetLibName (ln, _, _, _, _, _, _, _, _, _) = ln
 
 inmGetNodeName::IdNameMapping->NODE_NAME
-inmGetNodeName (_, nn, _, _, _, _, _, _, _) = nn
+inmGetNodeName (_, nn, _, _, _, _, _, _, _, _) = nn
 
 inmGetNodeId::IdNameMapping->String
-inmGetNodeId (_, _, id', _, _, _, _, _, _) = id'
+inmGetNodeId (_, _, id', _, _, _, _, _, _, _) = id'
 
 inmGetNodeNum::IdNameMapping->Graph.Node
-inmGetNodeNum (_, _, _, nn, _, _, _, _, _) = nn
+inmGetNodeNum (_, _, _, nn, _, _, _, _, _, _) = nn
 
 inmGetIdNameSortSet::IdNameMapping->Set.Set (Id.Id, String)
-inmGetIdNameSortSet (_, _, _, _, s, _, _, _, _) = s
+inmGetIdNameSortSet (_, _, _, _, s, _, _, _, _, _) = s
 
 inmGetIdNamePredSet::IdNameMapping->Set.Set ((Id.Id, PredType), String)
-inmGetIdNamePredSet (_, _, _, _, _, s, _, _, _) = s
+inmGetIdNamePredSet (_, _, _, _, _, s, _, _, _, _) = s
 
 inmGetIdNameOpSet::IdNameMapping->Set.Set ((Id.Id, OpType), String)
-inmGetIdNameOpSet (_, _, _, _, _, _, s, _, _) = s
+inmGetIdNameOpSet (_, _, _, _, _, _, s, _, _, _) = s
 
 inmGetIdNameSensSet::IdNameMapping->Set.Set ((Id.Id, Int), String)
-inmGetIdNameSensSet (_, _, _, _, _, _, _, s, _) = s
+inmGetIdNameSensSet (_, _, _, _, _, _, _, s, _, _) = s
 
 inmGetIdNameConsSet::IdNameMapping->Set.Set ((Int, Id.Id, OpType), String)
-inmGetIdNameConsSet (_, _, _, _, _, _, _, _, c) = c
+inmGetIdNameConsSet (_, _, _, _, _, _, _, _, c, _) = c
 
 inmGetIdNameConsSetLikeOps::IdNameMapping->Set.Set ((Id.Id, OpType), String)
-inmGetIdNameConsSetLikeOps (_, _, _, _, _, _, _, _, c) =
+inmGetIdNameConsSetLikeOps (_, _, _, _, _, _, _, _, c, _) =
   Set.map
     (\((_, id', ot), name) -> ((id', ot), name))
     c
+
+inmGetIdNameGaPredSet::IdNameMapping->Set.Set ((Id.Id, PredType), String)
+inmGetIdNameGaPredSet (_, _, _, _, _, _, _, _, _, s) = s
+
 
 inmGetIdNameAllSet::IdNameMapping->Set.Set (Id.Id, String)
 inmGetIdNameAllSet inm =
@@ -2881,7 +2901,11 @@ getNameForPred::[IdNameMapping]->(Id.Id, PredType)->Maybe String
 getNameForPred mapping (pid, pt) =
   getNameFor
     mapping
-    inmGetIdNamePredSet
+    (\nm ->
+      Set.union
+        (inmGetIdNameGaPredSet nm)
+        (inmGetIdNamePredSet nm)
+    )
     (Set.filter (\((pid', pt'), _) -> pid' == pid && pt' == pt))
     (not . Set.null)
     (snd . head . Set.toList)
@@ -2942,6 +2966,7 @@ extractConstructorOps ansen =
         cons
     _ -> Set.empty
 
+{-
 {- |
   Create a list of SetS of tuples of an Id and a unique String for the Id.
   Each Set is annotated with it's node number, node name and library name.
@@ -3362,7 +3387,7 @@ createUniqueNames ln tracemarks =
   where
     getNodeName::DGNodeLab->String
     getNodeName = nodeNameToName . dgn_name
-
+-}
 
 nodeNameToName::NODE_NAME->String
 nodeNameToName =
@@ -3384,9 +3409,10 @@ data Identifier =
   | IdPred Id.Id PredType
   | IdSens Id.Id Int
   | IdCons Id.Id OpType Int
+  | IdGaPred Id.Id PredType
   deriving Show
 
-data IdentifierType = IdTNodeName | IdTId | IdTOp | IdTPred | IdTSens | IdTCons
+data IdentifierType = IdTNodeName | IdTId | IdTOp | IdTPred | IdTSens | IdTCons | IdTGaPred
   deriving (Show, Eq, Ord)
 
 getIdType::Identifier->IdentifierType
@@ -3396,6 +3422,7 @@ getIdType (IdOp {}) = IdTOp
 getIdType (IdPred {}) = IdTPred
 getIdType (IdSens {}) = IdTSens
 getIdType (IdCons {}) = IdTCons
+getIdType (IdGaPred {}) = IdTGaPred
 
 getIdId::Identifier->Id.Id
 getIdId (IdNodeName i) = i
@@ -3404,6 +3431,7 @@ getIdId (IdOp i _) = i
 getIdId (IdPred i _) = i
 getIdId (IdSens i _) = i
 getIdId (IdCons i _ _) = i
+getIdId (IdGaPred i _) = i
 
 instance Eq Identifier where
   (IdNodeName x) == (IdNodeName y) = x == y
@@ -3412,6 +3440,7 @@ instance Eq Identifier where
   (IdPred x xt) == (IdPred y yt) = x == y && xt == yt
   (IdSens x _) == (IdSens y _) = x == y
   (IdCons x xt _) == (IdCons y yt _) = x == y && xt == yt
+  (IdGaPred x xt) == (IdGaPred y yt) = x == y && xt == yt
   _ == _ = False
 
 instance Ord Identifier where
@@ -3423,6 +3452,52 @@ instance Ord Identifier where
         (getIdType x) `compare` (getIdType y)
 
 type IdentifierWON = WithOriginNode Identifier
+
+getRecursivePredicates::FORMULA f->[PRED_SYMB]
+getRecursivePredicates (Quantification _ _ f _) =
+  getRecursivePredicates f
+getRecursivePredicates (Conjunction fs _) =
+  concatMap getRecursivePredicates fs
+getRecursivePredicates (Disjunction fs _) =
+  concatMap getRecursivePredicates fs
+getRecursivePredicates (Implication f1 f2 _ _) =
+  (getRecursivePredicates f1) ++ (getRecursivePredicates f2)
+getRecursivePredicates (Equivalence f1 f2 _) =
+  (getRecursivePredicates f1) ++ (getRecursivePredicates f2)
+getRecursivePredicates (Negation f _) =
+  getRecursivePredicates f
+getRecursivePredicates (Predication ps t _) =
+  [ps] ++ (concatMap getRecursivePredicatesT t)
+getRecursivePredicates (Definedness t _) =
+  getRecursivePredicatesT t
+getRecursivePredicates (Existl_equation t1 t2 _) =
+  (getRecursivePredicatesT t1) ++ (getRecursivePredicatesT t2)
+getRecursivePredicates (Strong_equation t1 t2 _) =
+  (getRecursivePredicatesT t1) ++ (getRecursivePredicatesT t2)
+getRecursivePredicates (Membership t _ _) =
+  getRecursivePredicatesT t
+getRecursivePredicates _ =
+  []
+
+getRecursivePredicatesT::TERM f->[PRED_SYMB]
+getRecursivePredicatesT (Application _ ts _) =
+  concatMap getRecursivePredicatesT ts
+getRecursivePredicatesT (Sorted_term t _ _) =
+  getRecursivePredicatesT t
+getRecursivePredicatesT (Cast t _ _) =
+  getRecursivePredicatesT t
+getRecursivePredicatesT (Conditional t1 f t2 _) =
+  (getRecursivePredicatesT t1)
+  ++
+  (getRecursivePredicates f)
+  ++
+  (getRecursivePredicatesT t2)
+getRecursivePredicatesT _ =
+  [] 
+
+getPredName::PRED_SYMB->Id.Id
+getPredName (Pred_name i) = i
+getPredName (Qual_pred_name i _ _) = i
 
 getFlatNames::LibEnv->Map.Map LIB_NAME (Set.Set IdentifierWON)
 getFlatNames lenv =
@@ -3457,6 +3532,50 @@ getFlatNames lenv =
                   (extractConstructorOps s)
             )
             senslist
+        sortgenpreds =
+          Map.insertWith
+            Set.union
+            ln
+            (
+              Set.fromList
+                $
+                Data.List.nub
+                  $
+                  foldl
+                    (\sgp (nn, (_, s)) ->
+                      case Ann.sentence s of
+                        (Sort_gen_ax constraints _) ->
+                          let
+                            soCon = Induction.inductionScheme constraints 
+                            ps =
+                              case Result.resultToMaybe soCon of
+                                Nothing ->
+                                  []
+                                (Just (cf::FORMULA ())) -> 
+                                  getRecursivePredicates cf
+                          in
+                            sgp
+                            ++
+                            (
+                              map
+                                (\psym ->
+                                  case psym of
+                                    (Pred_name pn) ->
+                                      mkWON (IdGaPred pn (PredType [])) nn
+                                    (Qual_pred_name pn pt _) ->
+                                      mkWON
+                                        (IdGaPred pn (cv_Pred_typeToPredType pt))
+                                        nn
+                                )
+                                ps
+                            )
+                        _ ->
+                          sgp
+                    )
+                    []
+                    senslist
+            )
+            fm
         sorts' = foldl
           (\fm' sortsetwo ->
             Map.insertWith
@@ -3465,7 +3584,7 @@ getFlatNames lenv =
               (Set.map (\swo -> mkWON (IdId (woItem swo)) (woOrigin swo) ) sortsetwo)
               fm'
           )
-          fm
+          sortgenpreds
           (Map.elems sortswomap)
         ops' =
           foldl
@@ -3915,6 +4034,10 @@ makeUniqueIdNameMapping
           Set.filter
             (\(i, _) -> case woItem i of IdCons {} -> True; _ -> False)
             ids
+        gapredsfromunn =
+          Set.filter
+            (\(i, _) -> case woItem i of IdGaPred {} -> True; _ -> False)
+            ids
       in
         foldl
           (\unnames' (nn, node) ->
@@ -4041,7 +4164,17 @@ makeUniqueIdNameMapping
                       _ -> error "Non-constructor found in constructor processing...."
                   )
                 nodeconsunn
-                
+              nodegapredsunn =
+                Set.filter (\(i, _) -> woOrigin i == nn) gapredsfromunn
+              nodegapreds =
+                Set.map
+                  (\(i, uname) ->
+                    case woItem i of
+                      (IdGaPred gapredid gapt) ->
+                        ((gapredid, gapt), uname)
+                      _ -> error "Non-ga_pred found in ga_pred processing..."
+                  )
+                  nodegapredsunn
             in
               unnames'
                 ++
@@ -4056,6 +4189,7 @@ makeUniqueIdNameMapping
                     , remappedops
                     , nodesens
                     , nodecons
+                    , nodegapreds
                   )
                 ]
           )
@@ -4112,6 +4246,10 @@ makeFullNames
         consfromunn =
           Set.filter
             (\(i, _) -> case woItem i of IdCons {} -> True; _ -> False)
+            ids
+        gapredsfromunn =
+          Set.filter
+            (\(i, _) -> case woItem i of IdGaPred {} -> True; _ -> False)
             ids
       in
         foldl
@@ -4393,7 +4531,7 @@ makeFullNames
                     case woItem i of
                       (IdSens sensid sennum) ->
                         ((sensid, sennum), uname)
-                      _ -> error "Non-sentence found in sentence processing...."
+                      _ -> error "Non-sentence found in sentence processing..."
                   )
                 nodesensunn
               nodeconsunn = Set.filter (\(i, _) -> woOrigin i == nn) consfromunn
@@ -4403,9 +4541,20 @@ makeFullNames
                     case woItem i of
                       (IdCons conid conot sennum) ->
                         ((sennum, conid, conot), uname)
-                      _ -> error "Non-constructor found in constructor processing...."
+                      _ -> error "Non-constructor found in constructor processing..."
                   )
-                nodeconsunn
+                  nodeconsunn
+              nodegapredsunn =
+                Set.filter (\(i, _) -> woOrigin i == nn) gapredsfromunn
+              nodegapreds =
+                Set.map
+                  (\(i, uname) ->
+                    case woItem i of
+                      (IdGaPred gapredid gapt) ->
+                        ((gapredid, gapt), uname)
+                      _ -> error "Non-ga_pred found in ga_pred processing..."
+                  )
+                  nodegapredsunn
             in
               fullnames'
                 ++
@@ -4420,6 +4569,7 @@ makeFullNames
                     , remappedops
                     , nodesens
                     , nodecons
+                    , nodegapreds
                   )
                 ]
           )

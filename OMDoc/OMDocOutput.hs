@@ -255,6 +255,7 @@ createXmlNameMapping =
       , idNameOpSet
       , idNameSensSet
       , idNameConsSet
+      , idNameGaPredSet
       ) ->
       (
           libName
@@ -266,6 +267,7 @@ createXmlNameMapping =
         , Set.map (\(a, uN) -> (a, adjustStringForXmlName uN)) idNameOpSet
         , Set.map (\(a, uN) -> (a, adjustStringForXmlName uN)) idNameSensSet
         , Set.map (\(a, uN) -> (a, adjustStringForXmlName uN)) idNameConsSet
+        , Set.map (\(a, uN) -> (a, adjustStringForXmlName uN)) idNameGaPredSet
       )
     )
 
@@ -1097,6 +1099,22 @@ libEnvLibNameIdNameMappingToOMDoc
                      )
                      ([],[],[],[],fixedADTs)
                      (sortSet caslsign)
+                  gapreds = Hets.inmGetIdNameGaPredSet uniqueidnamemapping
+                  gapredadd =
+                    Set.fold
+                      (\((gapid, gapt), _) m ->
+                        Map.insertWith
+                          Set.union
+                          gapid
+                          (Set.singleton gapt)
+                          m
+                      )
+                      Map.empty
+                      gapreds
+                  morepreds =
+                    Map.union
+                      gapredadd
+                      (predMap caslsign)
                   (theoryPreds, pPres) =
                     Map.foldWithKey
                       (\pid pts (tPr, pP) ->
@@ -1105,7 +1123,19 @@ libEnvLibNameIdNameMappingToOMDoc
                             case 
                               find
                                 (\( (uid, upt), _) -> uid == pid && upt == pt)
-                                (Set.toList (Hets.inmGetIdNamePredSet uniqueidnamemapping))
+                                (
+                                  Set.toList
+                                    $
+                                    Set.union
+                                      (
+                                        Hets.inmGetIdNamePredSet
+                                          uniqueidnamemapping
+                                      )
+                                      (
+                                        Hets.inmGetIdNameGaPredSet
+                                          uniqueidnamemapping
+                                      )
+                                )
                             of
                               Nothing -> (tPr', pP')
                               (Just (_, uname )) ->
@@ -1129,7 +1159,7 @@ libEnvLibNameIdNameMappingToOMDoc
                           pts
                       )
                       ([],[])
-                      (predMap caslsign)
+                      morepreds
                   (theoryOps, oPres) =
                     Map.foldWithKey
                       (\oid ots (tOp, oP) ->
@@ -1817,7 +1847,13 @@ findPredicateOriginCL
         case
           find
             (\( (uid, _), _ ) -> uid == pr)
-            (Set.toList (Hets.inmGetIdNamePredSet cm))
+            (Set.toList
+              (
+                Set.union
+                  (Hets.inmGetIdNameGaPredSet cm)
+                  (Hets.inmGetIdNamePredSet cm)
+              )
+            )
         of
           Nothing -> Nothing
           Just (_, uname) -> (Just (uname, cm))
@@ -1836,7 +1872,13 @@ findPredicateOriginCL
       (\cm ->
         case 
           preferEqualFindCompatible
-            (Set.toList (Hets.inmGetIdNamePredSet cm))
+            (Set.toList
+              (
+                Set.union
+                  (Hets.inmGetIdNameGaPredSet cm)
+                  (Hets.inmGetIdNamePredSet cm)
+              )
+            )
             (\( (uid, upt), _) ->
               uid == pr && upt == (Hets.cv_Pred_typeToPredType pt)
             )
