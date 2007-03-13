@@ -1,0 +1,20 @@
+
+library IsabelleCodingErrors
+
+spec Options [sort s] = 
+     free type Opt[s] ::=  Nothing | Just(s)
+end
+
+spec OptionsModel =
+     Options [free type A ::= A]
+then %implies
+     forall x : A; y:Opt[A]
+     . x = A %(only one element in Ann)%
+     . y = Nothing \/ y = Just(A) %(all elements of Opt[Ann])%
+
+spec OptionsModel2 =
+     Options [free type Sing ::= #]
+then %implies
+     forall x : Sing; y:Opt[Sing]
+     . x = # %(only one element in Ann)%
+     . y = Nothing \/ y = Just(#) %(all elements of Opt[Ann])%
