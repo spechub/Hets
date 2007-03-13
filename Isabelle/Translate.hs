@@ -151,7 +151,7 @@ transIsaStringT :: Map.Map BaseSig (Set.Set String) -> BaseSig
 transIsaStringT m i s = let t = transStringAux False s in
   if Set.member t $ maybe (error "Isabelle.transIsaStringT") id
          $ Map.lookup i m
-  then transIsaStringT m i $ "_" ++ t else t
+  then transIsaStringT m i $ "_" ++ s else t
 
 transConstStringT :: BaseSig -> String -> String
 transConstStringT = transIsaStringT $ preConsts isaPrelude
