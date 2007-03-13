@@ -153,9 +153,9 @@ mapSentence _ form = Result.Result
                          , Result.maybeResult = Just $ trForm form
                          }
 
----------------------------------------------------------------------------------------------------
--- Helpers                                                                                       --
----------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-- Helpers                                                                   --
+-------------------------------------------------------------------------------
 
 -- | Helper for map theory
 trNamedForm :: AS_Anno.Named (PBasic.FORMULA) 
@@ -190,7 +190,10 @@ trForm form =
         PBasic.True_atom rn -> CBasic.True_atom rn
         PBasic.False_atom rn -> CBasic.False_atom rn
         PBasic.Predication pid -> CBasic.Predication 
-                                 (CBasic.Pred_name $ Id.simpleIdToId pid) 
+                                 (CBasic.Qual_pred_name (Id.simpleIdToId pid)
+                                        (CBasic.Pred_type [] Id.nullRange)
+                                        Id.nullRange
+                                 ) 
                                  [] Id.nullRange
 
 -- | Helper for map mor
