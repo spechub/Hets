@@ -17,10 +17,10 @@ import OWL_DL.Logic_OWL_DL
 import Common.ATerm.ReadWrite
 import Common.ATerm.Unshared
 import System.Exit
-import System(getArgs, system)
-import System.Environment(getEnv)
+import System.Cmd (system)
+import System.Environment(getEnv, getArgs)
 import qualified Data.Map as Map
-import qualified List as List
+import qualified Date.List as List
 import OWL_DL.StructureAna
 import Data.Graph.Inductive.Graph
 import Static.DevGraph

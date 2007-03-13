@@ -21,12 +21,12 @@ import OWL_DL.StructureAna
 
 import Common.ATerm.ReadWrite
 import Common.ATerm.Unshared
-import System(system)
+import System.Cmd(system)
 import System.Exit
 import System.Environment(getEnv)
 import System.Posix.Process
 import qualified Data.Map as Map
-import qualified List as List
+import qualified Data.List as List
 import Data.Graph.Inductive.Graph
 import Static.DevGraph
 import Common.GlobalAnnotations
