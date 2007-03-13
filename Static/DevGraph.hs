@@ -105,10 +105,16 @@ getDGLEdgeWithIDs ids dgraph =
 
 getDGLEdgeWithIDsForSure :: EdgeID -> DGraph -> (LEdge DGLinkLab)
 getDGLEdgeWithIDsForSure ids dgraph = 
+   case getDGLEdgeWithIDs ids dgraph of
+	Just e -> e
+	Nothing -> error ("ID: "++show ids ++ 
+			 "not found. Static.DevGraph.getDGLEdgeWithIDsForSure")
+   {-
    case [ledge|ledge@(_, _, label)<-labEdges dgraph, edge_id <- ids, 
 	       elem edge_id $ dgl_id label] of
 	[n] -> n
-	_ -> error "Static.DevGraph.getDGLEdgeWithIDsForSure"
+	_ -> error (show ids ++ "Static.DevGraph.getDGLEdgeWithIDsForSure")
+   -}
 
 -- * Types for structured specification analysis
 
