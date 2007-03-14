@@ -53,7 +53,7 @@ import Data.Typeable
 import Control.Monad (foldM)
 import Control.Exception
 import Data.Char (toLower)
-import Data.List(nub, intersect)
+import Data.List(intersect)
 
 getNewNode :: Tree.Gr a b -> Node
 getNewNode g = case newNodes 1 g of
@@ -63,21 +63,10 @@ getNewNode g = case newNodes 1 g of
 getNewEdgeIDs :: Int -> DGraph -> [Int]
 getNewEdgeIDs count g = take count [maxIDBound..]
 		        where
-			ids = concat $ map (\(_, _, l) -> dgl_id l) $ labEdges g
+			ids = map (\(_, _, l) -> maximum $ dgl_id l) 
+                              $ labEdges g
 			maxIDBound = if null ids then 0
 				     else (maximum ids)+1
-{-
-getNewEdgeIDs count g = getAvailableID count 0 sortedIDs
-			where
-			ids = map (\(_, _, l) -> dgl_id l) $ labEdges g
-			sortedIDs = sort $ concat ids
-			getAvailableID :: Int -> Int -> [Int] -> [Int]
-			getAvailableID 0 _ _ = []
-			getAvailableID c n [] = take c [n..]
-			getAvailableID c n (x:xs) 
-			   | n==x = getAvailableID c (n+1) xs
-			   | otherwise = n:(getAvailableID (c-1) (n+1) (x:xs))
--}
 
 getNewEdgeID :: DGraph -> Int
 getNewEdgeID g = case getNewEdgeIDs 1 g of
@@ -89,18 +78,12 @@ getDGLinkLabWithIDs ids dgraph =
    case getDGLEdgeWithIDs ids dgraph of
 	Just (_, _, label) -> Just label
 	Nothing -> Nothing
-{-
-   case [label|(_, _, label)<-labEdges dgraph, edge_id <- ids, 
-	       elem edge_id $ dgl_id label] of
-	[n] -> Just n
-	_ -> Nothing 
--}
 
 getDGLEdgeWithIDs :: EdgeID -> DGraph -> Maybe (LEdge DGLinkLab)
 getDGLEdgeWithIDs ids dgraph = 
-   case nub [ledge|ledge@(_, _, label)<-labEdges dgraph, edge_id <- ids, 
+   case [ledge|ledge@(_, _, label)<-labEdges dgraph, edge_id <- ids, 
 		   elem edge_id $ dgl_id label] of
-	[n] -> Just n
+	n : _ -> Just n
 	_ -> Nothing
 
 getDGLEdgeWithIDsForSure :: EdgeID -> DGraph -> (LEdge DGLinkLab)
@@ -109,12 +92,6 @@ getDGLEdgeWithIDsForSure ids dgraph =
 	Just e -> e
 	Nothing -> error ("ID: "++show ids ++ 
 			 "not found. Static.DevGraph.getDGLEdgeWithIDsForSure")
-   {-
-   case [ledge|ledge@(_, _, label)<-labEdges dgraph, edge_id <- ids, 
-	       elem edge_id $ dgl_id label] of
-	[n] -> n
-	_ -> error (show ids ++ "Static.DevGraph.getDGLEdgeWithIDsForSure")
-   -}
 
 -- * Types for structured specification analysis
 
