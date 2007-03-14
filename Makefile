@@ -72,12 +72,12 @@ SETUP = utils/Setup
 SETUPPREFIX = --prefix=$(HOME)/.ghc/$(ARCH)-$(OSBYUNAME)-hets-packages
 
 SETUPPACKAGE = ../$(SETUP) clean; \
-    ../$(SETUP) configure $(SETUPPREFIX); \
+    ../$(SETUP) configure -p $(SETUPPREFIX); \
     ../$(SETUP) build; ../$(SETUP) haddock; ../$(SETUP) install --user
 
 HAXMLVERSION = $(shell $(HCPKG) field HaXml version)
 ifneq ($(findstring 1.13.2, $(HAXMLVERSION)),)
-HAXML_PACKAGE = -package HaXml -DHAXML_PACKAGE
+# HAXML_PACKAGE = -package HaXml -DHAXML_PACKAGE
 endif
 
 # remove -fno-warn-orphans for older ghcs and add -ifgl
@@ -219,10 +219,10 @@ TESTTARGETS = Test.o $(subst .hs,,$(TESTTARGETFILES))
 ### cannot link the various .o files properly. So after switching on
 ### Profiling, do an 'gmake real_clean; gmake'
 ### Comment in the following line for switching on profiling.
-#HC_PROF = -prof -auto-all -fignore-asserts
+HC_PROF = -prof -auto-all -fignore-asserts
 
 HC_OPTS = $(HC_FLAGS) $(HC_INCLUDE) $(HC_PACKAGE) $(PFE_FLAGS) $(HC_PROF) \
-    -DCASLEXTENSIONS $(HC_OPTS_MAC)
+#    -DCASLEXTENSIONS $(HC_OPTS_MAC)
 
 ####################################################################
 ## sources for hets
@@ -407,7 +407,7 @@ hxt_pkg: $(SETUP) http_pkg
 haifa_pkg: $(SETUP) hxt_pkg syb_pkg
 	@if $(HCPKG) field HAIFA version; then \
           echo "of HAIFA package found"; else \
-          (cd haifa-lite; ../$(SETUP) configure $(SETUPPREFIX); \
+          (cd haifa-lite; ../$(SETUP) configure -p $(SETUPPREFIX); \
            ../$(SETUP) build; ../$(SETUP) install --user) fi
 
 programatica_pkg:

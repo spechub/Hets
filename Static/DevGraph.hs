@@ -53,7 +53,7 @@ import Data.Typeable
 import Control.Monad (foldM)
 import Control.Exception
 import Data.Char (toLower)
-import Data.List(intersect)
+import Data.List(find, intersect)
 
 getNewNode :: Tree.Gr a b -> Node
 getNewNode g = case newNodes 1 g of
@@ -80,11 +80,18 @@ getDGLinkLabWithIDs ids dgraph =
 	Nothing -> Nothing
 
 getDGLEdgeWithIDs :: EdgeID -> DGraph -> Maybe (LEdge DGLinkLab)
-getDGLEdgeWithIDs ids dgraph = 
+getDGLEdgeWithIDs ids dgraph =
+   find (\(_, _, label) -> isIdenticalEdgeID ids $ dgl_id label) $ labEdges dgraph
+   
+{- 
    case [ledge|ledge@(_, _, label)<-labEdges dgraph, edge_id <- ids, 
 		   elem edge_id $ dgl_id label] of
 	n : _ -> Just n
 	_ -> Nothing
+-}
+
+isIdenticalEdgeID :: EdgeID -> EdgeID -> Bool
+isIdenticalEdgeID id1 id2 = not $ null $ intersect id1 id2
 
 getDGLEdgeWithIDsForSure :: EdgeID -> DGraph -> (LEdge DGLinkLab)
 getDGLEdgeWithIDsForSure ids dgraph = 
@@ -241,7 +248,7 @@ eqLEdgeDGLinkLab (m1,n1,l1) (m2,n2,l2) =
 --roughElem x = any (`eqLEdgeDGLinkLab` x)
 --roughElem (_, _, label) = any (\(_, _, l) -> dgl_id l == dgl_id label)
 roughElem :: LEdge DGLinkLab -> [EdgeID] -> Bool
-roughElem (_, _, label) = any (\edgeID -> not $ null $ intersect edgeID $ dgl_id label)
+roughElem (_, _, label) = any (\edgeID -> isIdenticalEdgeID  edgeID $ dgl_id label)
 
 
 data DGChange = InsertNode (LNode DGNodeLab)
