@@ -42,8 +42,8 @@
     (modify-syntax-entry ?\[ "(] 2n" table)
     (modify-syntax-entry ?\] ")[ 3n" table)
     ;; commenting-out plus including other kinds of comment
-    (modify-syntax-entry ?\( "() 2n" table)
-    (modify-syntax-entry ?\) ")( 3n" table)
+    (modify-syntax-entry ?\( "()" table)
+    (modify-syntax-entry ?\) ")(" table)
     (modify-syntax-entry ?{ "(} 2n" table)
     (modify-syntax-entry ?} "){ 3n" table)
     (mapcar (lambda (x)
@@ -57,17 +57,19 @@
 (defun casl-vars ()
   (kill-all-local-variables)
   (make-local-variable 'comment-start)
-  (setq comment-start "%{")
+  (setq comment-start "%[")
   (make-local-variable 'comment-padding)
   (setq comment-padding 0)
   (make-local-variable 'comment-start-skip)
-  (setq comment-start-skip "%[%{[]() *")
+  (setq comment-start-skip "[%{[(]%[ \t]*")      ;; %[%{[]() *")
   (make-local-variable 'comment-column)
   (setq comment-column 40)
   (make-local-variable 'comment-indent-function)
   (setq comment-indent-function 'casl-comment-indent)
   (make-local-variable 'comment-end)
-  (setq comment-end "}%"))
+  (setq comment-end "]%")
+  (set (make-local-variable 'comment-end-skip) "[ \t]*\\(%}\\|\\s>\\)")
+)
 
 ;; Find the indentation level for a comment.
 (defun casl-comment-indent ()
@@ -110,8 +112,20 @@
 (setq casl-string-char-face 'font-lock-string-face)
 
 ;; Syntax highlighting of CASL
+;; "Warning: Do not design an element of font-lock-keywords to match 
+;;  text which spans lines; this does not work reliably. While 
+;;  font-lock-fontify-buffer handles multi-line patterns correctly, 
+;;  updating when you edit the buffer does not, since it considers 
+;;  text one line at a time." (from the GNU Emacs Lisp Reference Manual)
 (defconst casl-font-lock-keywords
   (list
+   ;; reserved keyword
+   '("\\(\\<\\|\\s-+\\)\\(/\\\\\\|\\\\/\\|=>\\|<=>\\|and\\|arch\\|assoc\\|behaviourally\\|closed\\|comm\\|else\\|end\\|exists\\|fit\\|forall\\|free\\|generated\\|given\\|hide\\|idem\\|if\\|local\\|not\\|refined\\|refinement\\|reveal\\|spec\\|then\\|to\\|unit\\|via\\|view\\|when\\|within\\|with\\|\\(\\(op\\|pred\\|var\\|type\\|sort\\)s?\\)\\)[,;]?[ \t\n]"  
+     (2 casl-keyword-face keep t))
+   '("[,;.]" (0 casl-black-komma-face t t))
+   ;; after forall don't highlight
+   '("\\bforall\\b\\(.*\\)"
+     (1 casl-black-komma-face keep t))
    ;; Keywords of loading Library 
    '("\\(\\<\\|\\s-+\\)\\(logic\\|from\\|get\\|library\\|version\\)[ :\t\n]+"  
      (2 casl-builtin-face keep t))
@@ -125,9 +139,6 @@
      (3 casl-name-face t t))
    '("\\(\\<\\|\\s-+\\)from[ \t]+\\(.+\\)\\(get\\|$\\)" 
      (2 casl-library-name-face keep t))
-   ;; after forall don't highlight
-   '("\\bforall\\b\\(.*\\)"
-     (1 casl-black-komma-face t t))
    ;; the name of specification and view
    '("\\(\\<\\|\\[\\)\\(spec\\|view\\)\\s-+\\(\\w+\\)[ \t]*\\(\\[\\s-*\\([A-Z]\\w*\\).*\\s-*\\]\\)?\\s-*.*\\([]=:]\\|::=\\)"
      (3 casl-name-face keep t) (5 casl-name-face keep t))
@@ -147,7 +158,7 @@
    '("\\(\\(^[^.{%]\\)\\s-*\\|\\bops?\\b\\|\\bpreds?\\b\\|\\bvars?\\b\\)\\([^:{()\n]*\\)\\(\(.*\)\\)?:\\??[^?.:=%].*;?[ \t]*$"
      (2 casl-other-name-face keep t) (3 casl-other-name-face keep t))
    ;; highlight a line with , an end
-   '("^\\(\\(\\(__\\s-*[^_\n]+\\s-*__\\|[^.,:\n]+\\)\\s-*,\\s-*\\)+\\)$"
+   '("^\\(\\(\\(__\\s-*[^_\n]+\\s-*__\\|[^.,:>\n]+\\)\\s-*,\\s-*\\)+\\)$"
      (0 casl-other-name-face keep t))
    ;; names before and after '|->'
    '("[ \t\n]*\\(__[^|_]+__\\|[^[ \t\n]+\\)\\s-*\\(\\[\\([A-Z]\\w*\\).*\\]\\)?[ \t\n]*|->[ \t\n]*\\(__[^|_]+__\\|[^[ \t\n]+\\)\\s-*\\(\\[\\([A-Z]\\w*\\).*\\]\\)?[, \t]*" 
@@ -166,10 +177,6 @@
    ;; in ()2
    '("\([^;]*;\\s-*\\(\\sw+\\)\\s-*:\\??.*\)"
      (1 casl-other-name-face keep t))
-   ;; reserved keyword
-   '("\\(\\<\\|\\s-+\\)\\(/\\\\\\|\\\\/\\|=>\\|<=>\\|and\\|arch\\|assoc\\|behaviourally\\|closed\\|comm\\|else\\|end\\|exists\\|fit\\|forall\\|free\\|generated\\|given\\|hide\\|idem\\|if\\|local\\|not\\|refined\\|refinement\\|reveal\\|spec\\|then\\|to\\|unit\\|via\\|view\\|when\\|within\\|with\\|\\(\\(op\\|pred\\|var\\|type\\|sort\\)s?\\)\\)[,;]?[ \t\n]"  
-     (2 casl-keyword-face t t))
-   '("[][,;.]" (0 casl-black-komma-face t t))
   )	
   "Reserved keywords highlighting")
 
@@ -190,6 +197,8 @@
 	   '("%\\sw+{[^%\n]+}$" (0 casl-annotation-face t t))
 	   ;; %words \n
 	   '("%\\w+[^\n]*$" (0 casl-annotation-face t t))
+	   ;; %(.....)%
+	   '("%\(.*\)%[ \t\n]*" (0 casl-annotation-face t t)) 
 	   ;; %word( ... )%
 	   '("%\\sw+\(\\(.\\|[\t\n]\\)*\)%[ \t\n]*" (0 casl-annotation-face t t))
 	   ;; %word{ ... }%
@@ -458,6 +467,8 @@
   (make-local-variable 'font-lock-defaults)
   (setq font-lock-defaults
 	'(casl-font-lock-syntax-highligthing))
+  (make-local-variable 'font-lock-keywords-only)
+  (setq font-lock-keywords-only nil)
   ;; Support for compile.el
   ;; We just substitute our own functions to go to the error.
   (add-hook 'compilation-mode-hook
@@ -468,8 +479,6 @@
 		'casl-compile-mouse-goto-error)
 	      (define-key compilation-minor-mode-map "\C-m"
 		'casl-compile-goto-next-error)))
-
-
   (run-hooks 'casl-mode-hook)
   )
 
