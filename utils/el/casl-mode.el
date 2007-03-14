@@ -38,18 +38,14 @@
     (modify-syntax-entry ?\" "\"" table)
     (modify-syntax-entry ?\' "\'" table)
     ;; Commnets
-    (if casl-running-xemacs
-	((modify-syntax-entry ?% ". 58" table)
-	 (modify-syntax-entry ?\[ "(] 6" table)
-	 (modify-syntax-entry ?\] ")[ 7" table))
-      (modify-syntax-entry ?% ". 14nb" table)
-      (modify-syntax-entry ?\[ "(] 2n" table)
-      (modify-syntax-entry ?\] ")[ 3n" table))
+    (modify-syntax-entry ?% ". 14nb" table)
+    (modify-syntax-entry ?\[ "(] 2n" table)
+    (modify-syntax-entry ?\] ")[ 3n" table)
     ;; commenting-out plus including other kinds of comment
-    (modify-syntax-entry ?\( "()" table)
-    (modify-syntax-entry ?\) ")(" table)
-    (modify-syntax-entry ?{ "(}" table)
-    (modify-syntax-entry ?} "){" table)
+    (modify-syntax-entry ?\( "() 2n" table)
+    (modify-syntax-entry ?\) ")( 3n" table)
+    (modify-syntax-entry ?{ "(} 2n" table)
+    (modify-syntax-entry ?} "){ 3n" table)
     (mapcar (lambda (x)
 	      (modify-syntax-entry x "_" table))
 	    ;; Some of these are actually OK by default.
@@ -61,17 +57,17 @@
 (defun casl-vars ()
   (kill-all-local-variables)
   (make-local-variable 'comment-start)
-  (setq comment-start "%[")
+  (setq comment-start "%{")
   (make-local-variable 'comment-padding)
   (setq comment-padding 0)
   (make-local-variable 'comment-start-skip)
-  (setq comment-start-skip "%[%{[] *")
+  (setq comment-start-skip "%[%{[]() *")
   (make-local-variable 'comment-column)
   (setq comment-column 40)
   (make-local-variable 'comment-indent-function)
   (setq comment-indent-function 'casl-comment-indent)
   (make-local-variable 'comment-end)
-  (setq comment-end "]%"))
+  (setq comment-end "}%"))
 
 ;; Find the indentation level for a comment.
 (defun casl-comment-indent ()
@@ -148,7 +144,7 @@
    '("\\(\\<\\|\\s-+\\)sorts?[ \t\n]+\\(\\(\\sw+\\s-*\\(\\[\\s-*\\(\\sw\\|,\\)+\\s-*\\]\\s-*\\)?\\(,\\(\\s-\\)*\\|$\\|<\\|;\\|=\\)\\(=\\|<\\|;\\|,\\)*[ \t\n]*\\)+\\)" 
      (2 casl-other-name-face keep t))
    ;; Basic signature: op ,pred and var name
-   '("\\(\\(^[^.{%]\\)\\s-*\\|\\bops?\\b\\|\\bpreds?\\b\\|\\bvars?\\b\\)\\([^:{()]*\\)\\(\(.*\)\\)?:\\??[^?.:=%].*;?[ \t]*$"
+   '("\\(\\(^[^.{%]\\)\\s-*\\|\\bops?\\b\\|\\bpreds?\\b\\|\\bvars?\\b\\)\\([^:{()\n]*\\)\\(\(.*\)\\)?:\\??[^?.:=%].*;?[ \t]*$"
      (2 casl-other-name-face keep t) (3 casl-other-name-face keep t))
    ;; highlight a line with , an end
    '("^\\(\\(\\(__\\s-*[^_\n]+\\s-*__\\|[^.,:\n]+\\)\\s-*,\\s-*\\)+\\)$"
@@ -194,12 +190,6 @@
 	   '("%\\sw+{[^%\n]+}$" (0 casl-annotation-face t t))
 	   ;; %words \n
 	   '("%\\w+[^\n]*$" (0 casl-annotation-face t t))
-	   ;; %( ... )% 
-	   '("%\(\\([^%]\\|[\t\n]\\)*\)%[ \t\n]*" (0 casl-annotation-face t t))
-	   ;; %{ ... }% 
-	   '("%{\\(.\\|[\t\n]\\)*}%[ \t\n]*" (0 casl-annotation-face t t))
-	   ;; %[ ... ]% 
-	   '("%\\[\\(.\\|[\t\n]\\)*\\]%[ \t\n]*" (0 casl-annotation-face t t))
 	   ;; %word( ... )%
 	   '("%\\sw+\(\\(.\\|[\t\n]\\)*\)%[ \t\n]*" (0 casl-annotation-face t t))
 	   ;; %word{ ... }%
@@ -213,7 +203,6 @@
 (defconst casl-font-lock-specialcomment
   (append casl-font-lock-annotations
 	  (list '("\\(%%.*$\\)" (0 casl-comment-face t t))
-		'("\\(%{\\(.\\|[\t\n]\\)*}%\\)[ \t\n]*" (1 casl-comment-face t t))
 		))
   "Special Comment")
 
