@@ -1,17 +1,29 @@
-(defun hets-home-directory-fn ()
-  "Used to find hets-home-directory"
+(defun casl-mode-directory-fn ()
+  "Used to find casl-mode directory"
   (let ((curdir 
 	 (or
 	  (and load-in-progress (file-name-directory load-file-name))
 	  (file-name-directory (buffer-file-name)))))
-    (file-name-directory (substring curdir 0 -9)))  
+    (file-name-directory curdir))  
 )
 
+(setq casl-mode-directory (casl-mode-directory-fn))
+(let ((hets-base-dir (expand-file-name 
+		     (concat casl-mode-directory "/../.."))))
+  (if (file-executable-p (concat hets-base-dir "/hets"))
+	(setq hets-program (concat hets-base-dir "/hets"))
+    (progn
+      (if (file-executable-p (concat hets-base-dir "/bin/hets"))
+	  (setq hets-program (concat hets-base-dir "/bin/hets"))
+	(progn
+	  (message (concat "no hets found in " hets-base-dir)))
+	)
+      )
+    )
+)
+
+(add-to-list 'load-path casl-mode-directory)
 ;; Files whose extension is .casl or .het will be edited in CASL mode
-(setq hets-home-directory (hets-home-directory-fn))
-(setq hets-program (concat hets-home-directory "hets"))
-(setq load-path
-      (append (list (concat hets-home-directory "utils/el/")) load-path))
 (setq auto-mode-alist
       (append
        '(("\\.casl\\'" . casl-mode))

@@ -15,7 +15,10 @@ fi
 if [ -d $INSTALL_PATH/lib/Isabelle* ] ; then
     ISABELLE_HOME=$INSTALL_PATH/lib/Isabelle/Isabelle
 fi
-HETS_ISABELLE=$ISABELLE_HOME/bin/isabelle-interface
+
+if [ -z "$HETS_ISABELLE" ] ; then
+    HETS_ISABELLE=$ISABELLE_HOME/bin/isabelle-interface
+fi
 
 if [ -d $INSTALL_PATH/CASL-lib ] ; then
     HETS_LIB=$INSTALL_PATH/CASL-lib
