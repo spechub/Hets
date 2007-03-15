@@ -18,6 +18,10 @@ Basic and static analysis for propositional logic
 module Propositional.Analysis 
     (
      basicPropositionalAnalysis
+    ,mkStatSymbItems
+    ,mkStatSymbMapItem
+    ,inducedFromMorphism
+    ,inducedFromToMorphism
     )
     where
 
@@ -29,6 +33,9 @@ import qualified Common.Result as Result
 import qualified Common.Id as Id
 import qualified Data.List as List
 import qualified Data.Set as Set
+import qualified Data.Map as Map
+import qualified Propositional.Symbol as Symbol
+import qualified Propositional.Morphism as Morphism
 import Common.Doc()
 import Common.DocUtils
 
@@ -199,3 +206,144 @@ basicPropositionalAnalysis :: (
                                             ,[AS_Anno.Named (AS_BASIC.FORMULA)]
                                             )
 basicPropositionalAnalysis (bs, sig, ga) = basicAnalysis bs sig ga
+
+-- | Static analysis for symbol maps
+mkStatSymbMapItem :: [AS_BASIC.SYMB_MAP_ITEMS] 
+                  -> Result.Result (Map.Map Symbol.Symbol Symbol.Symbol)
+mkStatSymbMapItem xs =
+    Result.Result
+    {
+      Result.diags = []
+    , Result.maybeResult = Just $ 
+                           foldl 
+                           (
+                            \ smap x ->
+                                case x of
+                                  AS_BASIC.Symb_map_items sitem _ -> 
+                                       Map.union smap $ statSymbMapItem sitem
+                           )
+                           Map.empty
+                           xs
+    }
+
+statSymbMapItem :: [AS_BASIC.SYMB_OR_MAP]
+                 -> Map.Map Symbol.Symbol Symbol.Symbol
+statSymbMapItem xs = 
+    foldl 
+    (
+     \ mmap x ->
+         case x of
+           AS_BASIC.Symb sym -> Map.insert (symbToSymbol sym) (symbToSymbol sym) mmap
+           AS_BASIC.Symb_map s1 s2 _ 
+             -> Map.insert (symbToSymbol s1) (symbToSymbol s2) mmap
+    )
+    Map.empty
+    xs
+                 
+-- | Retrieve raw symbols
+mkStatSymbItems :: [AS_BASIC.SYMB_ITEMS] -> Result.Result [Symbol.Symbol]
+mkStatSymbItems a = Result.Result
+                    {
+                      Result.diags = []
+                    , Result.maybeResult = Just $ statSymbItems a
+                    }
+
+statSymbItems :: [AS_BASIC.SYMB_ITEMS] -> [Symbol.Symbol]
+statSymbItems si = concat $ map symbItemsToSymbol si
+
+symbItemsToSymbol :: AS_BASIC.SYMB_ITEMS -> [Symbol.Symbol]
+symbItemsToSymbol (AS_BASIC.Symb_items syms _) = map symbToSymbol syms
+    
+symbToSymbol :: AS_BASIC.SYMB -> Symbol.Symbol
+symbToSymbol (AS_BASIC.Symb_id tok) = 
+    Symbol.Symbol{Symbol.symName = Id.simpleIdToId tok}
+
+-- | Induce a signature morphism from a source signature and a raw symbol map
+inducedFromMorphism :: Map.Map Symbol.Symbol Symbol.Symbol 
+                    -> Sign.Sign 
+                    -> Result.Result Morphism.Morphism
+inducedFromMorphism imap sig =
+    Result.Result
+          {
+            Result.diags = []
+          , Result.maybeResult = 
+              let 
+                  sigItems = Sign.items sig
+                  pMap:: Map.Map Id.Id Id.Id 
+                  pMap =
+                      Set.fold (
+                                \ x ->
+                                    let 
+                                        symOf = Symbol.Symbol { Symbol.symName = x }
+                                        y = Symbol.symName $ Symbol.applySymMap imap symOf
+                                    in
+                                      Map.insert x y
+                               ) 
+                               Map.empty sigItems
+              in
+              Just 
+              Morphism.Morphism
+                          {
+                            Morphism.source  = sig
+                          , Morphism.propMap = pMap
+                          , Morphism.target  = Sign.Sign
+                                               {Sign.items = 
+                                                    Set.map (Morphism.applyMap pMap) $ 
+                                                       Sign.items sig
+                                               }
+                          }
+          }
+
+-- | Induce a signature morphism from a source signature and a raw symbol map
+inducedFromToMorphism :: Map.Map Symbol.Symbol Symbol.Symbol 
+                    -> Sign.Sign 
+                    -> Sign.Sign
+                    -> Result.Result Morphism.Morphism
+inducedFromToMorphism imap sig tSig =
+              let 
+                  sigItems = Sign.items sig
+                  pMap:: Map.Map Id.Id Id.Id 
+                  pMap =
+                      Set.fold (
+                                \ x ->
+                                    let 
+                                        symOf = Symbol.Symbol { Symbol.symName = x }
+                                        y = Symbol.symName $ Symbol.applySymMap imap symOf
+                                    in
+                                      Map.insert x y
+                               ) 
+                               Map.empty sigItems
+                  targetSig = Sign.Sign
+                                               {Sign.items = 
+                                                    Set.map (Morphism.applyMap pMap) $ 
+                                                       Sign.items sig
+                                               }
+                  isSub = (Sign.items targetSig) `Set.isSubsetOf` (Sign.items tSig)
+              in
+                case isSub of 
+                     True ->     Result.Result
+                                 {
+                                   Result.diags = []
+                                 , Result.maybeResult = 
+                                     Just 
+                                     Morphism.Morphism
+                                                 {
+                                                   Morphism.source  = sig
+                                                 , Morphism.propMap = pMap
+                                                 , Morphism.target  = tSig
+                                                 }
+                                 }
+                     False -> Result.Result
+                              {
+                                Result.diags = 
+                                [
+                                 Result.Diag
+                                       {
+                                         Result.diagKind   = Result.Error
+                                       , Result.diagString = "Incompatible mapping"
+                                       , Result.diagPos    = Id.nullRange
+                                       }
+                                ]
+                              , Result.maybeResult = Nothing
+                              }
+

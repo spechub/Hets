@@ -20,6 +20,10 @@ module Propositional.Symbol
     , symOf                -- Extracts the symbols out of a signature
     , getSymbolMap         -- Determines the symbol map
     , getSymbolName        -- Determines the name of a symbol
+    , idToRaw              -- Creates a raw symbol
+    , symbolToRaw          -- Convert symbol to raw symbol
+    , matches              -- does a symbol match a raw symbol?
+    , applySymMap          -- application function for symbol maps
     ) where
 
 import qualified Common.Id as Id
@@ -54,3 +58,19 @@ getSymbolMap f = Map.foldWithKey
 -- | Determines the name of a symbol
 getSymbolName :: Symbol -> Id.Id
 getSymbolName sym = symName sym
+
+-- | make a raw_symbol
+idToRaw :: Id.Id -> Symbol
+idToRaw mid = Symbol {symName = mid}
+
+-- | convert to raw symbol
+symbolToRaw :: Symbol -> Symbol
+symbolToRaw = id
+
+-- | does a smybol match a raw symbol?
+matches :: Symbol -> Symbol -> Bool
+matches s1 s2 = s1 == s2
+
+-- | application function for Symbol Maps
+applySymMap :: Map.Map Symbol Symbol -> Symbol -> Symbol
+applySymMap smap idt = Map.findWithDefault idt idt $ smap

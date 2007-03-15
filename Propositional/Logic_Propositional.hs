@@ -101,7 +101,7 @@ instance Logic Propositional
     Sign.Sign                          -- sign
     Morphism.Morphism                  -- morphism
     Symbol.Symbol                      -- symbol
-    ()                                 -- raw_symbol
+    Symbol.Symbol                      -- raw_symbol
     ()                                 -- proof_tree
     where
       stability Propositional = Experimental
@@ -116,20 +116,23 @@ instance StaticAnalysis Propositional
     Sign.Sign                          -- sign
     Morphism.Morphism                  -- morphism
     Symbol.Symbol                      -- symbol
-    ()                                 -- raw_symbol
+    Symbol.Symbol                      -- raw_symbol
         where
-          basic_analysis Propositional       = Just $ 
-                                               Analysis.basicPropositionalAnalysis
-          empty_signature Propositional        = Sign.emptySig
-          inclusion Propositional              = Morphism.inclusionMap 
-          signature_union Propositional        = Sign.sigUnion
-          is_subsig Propositional              = Sign.isSubSigOf
-          signature_difference Propositional   = Sign.diffOfSigs
-          sign_to_basic_spec Propositional     = IAna.signToBasicSpec
-          -- Default implementations since we are having no raw_symbols
-          symbol_to_raw Propositional _        = ()
-          id_to_raw     Propositional _        = ()
-          matches       Propositional _ _      = False
+          basic_analysis Propositional           = Just $ 
+                                                     Analysis.basicPropositionalAnalysis
+          empty_signature Propositional          = Sign.emptySig
+          inclusion Propositional                = Morphism.inclusionMap 
+          signature_union Propositional          = Sign.sigUnion
+          is_subsig Propositional                = Sign.isSubSigOf
+          signature_difference Propositional     = Sign.diffOfSigs
+          sign_to_basic_spec Propositional       = IAna.signToBasicSpec
+          symbol_to_raw Propositional            = Symbol.symbolToRaw
+          id_to_raw     Propositional            = Symbol.idToRaw
+          matches       Propositional            = Symbol.matches
+          stat_symb_items Propositional          = Analysis.mkStatSymbItems
+          stat_symb_map_items Propositional      = Analysis.mkStatSymbMapItem
+          induced_from_morphism Propositional    = Analysis.inducedFromMorphism
+          induced_from_to_morphism Propositional = Analysis.inducedFromToMorphism
 
 -- | Sublogics
 instance SemiLatticeWithTop Sublogic.PropSL where

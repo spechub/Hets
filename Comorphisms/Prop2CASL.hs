@@ -57,7 +57,7 @@ instance Comorphism Prop2CASL
     PSign.Sign
     PMor.Morphism
     PSymbol.Symbol
-    ()
+    PSymbol.Symbol
     ()
     CLogic.CASL 
     CSL.CASL_Sublogics
