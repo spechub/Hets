@@ -237,3 +237,11 @@ and BooleanLiteral
 then free type DATA ::= sorts string,integer,boolean
 end
 
+from Basic/Numbers get Int
+view Int_implements_IntegerLiteral : IntegerLiteral to 
+     { Int
+       then %def
+       sort nonPositiveInteger = {i:Int . i <= 0};
+            negativeInteger = {i : nonPositiveInteger . i < 0}
+       } =
+     integer |-> Int, positiveInteger |-> Pos, nonNegativeInteger |-> Nat
