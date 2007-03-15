@@ -23,7 +23,7 @@ spec IntegerLiteral =
 	        -> nonNegativeInteger;
 	 - __ : integer -> integer
      sort positiveInteger = { y : nonNegativeInteger 
-			      . not y = 0};
+			      . not y = 0}; %(posInt_def)%
 	  nonPositiveInteger < integer;
 	  negativeInteger < nonPositiveInteger
      ops 0 : nonPositiveInteger     
