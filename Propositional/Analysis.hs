@@ -53,31 +53,85 @@ data NUM_FORM = NumForm
     , nfnum     :: Integer
     }
 
+data TEST_SIG = TestSig
+    {
+      msign :: Sign.Sign
+    , occurence :: Int
+    , tdiagnosis :: [Result.Diagnosis]
+    }
+
 -- | Retrieves the signature out of a basic spec
 makeSig :: 
     AS_BASIC.BASIC_SPEC                  -- Input SPEC
     -> Sign.Sign                         -- Input Signature
-    -> Sign.Sign                         -- Output Signature
-makeSig (AS_BASIC.Basic_spec spec) sig = List.foldl retrieveBasicItem sig spec
+    -> TEST_SIG                          -- Output Signature
+makeSig (AS_BASIC.Basic_spec spec) sig = List.foldl retrieveBasicItem 
+                                         (TestSig{ msign=sig
+                                                 , occurence=0
+                                                 , tdiagnosis = []
+                                                 }) 
+                                         spec
 
 -- Helper for makeSig
 retrieveBasicItem :: 
-    Sign.Sign                                     -- Input Signature
+    TEST_SIG                                      -- Input Signature
     -> AS_Anno.Annoted (AS_BASIC.BASIC_ITEMS)     -- Input Item
-    -> Sign.Sign                                  -- Output Signature
-retrieveBasicItem sig x = 
+    -> TEST_SIG                                   -- Output Signature
+retrieveBasicItem tsig x = 
+    let
+        occ = occurence tsig
+    in
     case (AS_Anno.item x) of
-      (AS_BASIC.Pred_decl apred) -> List.foldl 
-                                    (\asig ax-> Sign.addToSig asig $ Id.simpleIdToId ax) 
-                                    sig $ (\(AS_BASIC.Pred_item xs _)-> xs) apred
-      (AS_BASIC.Axiom_items _)   -> sig
+      (AS_BASIC.Pred_decl apred) -> 
+          if (occ == 0)
+          then
+              List.foldl 
+                      (\asig ax-> TestSig{ 
+                                   msign = Sign.addToSig (msign asig) $ Id.simpleIdToId ax 
+                                 , occurence = occ
+                                 , tdiagnosis = tdiagnosis tsig ++ 
+                                   [Result.Diag
+                                    {
+                                      Result.diagKind   = Result.Hint
+                                    , Result.diagString = "All fine"
+                                    , Result.diagPos    = AS_Anno.opt_pos x
+                                    }]
+                                 }) 
+                      tsig $ (\(AS_BASIC.Pred_item xs _)-> xs) apred
+          else
+              List.foldl 
+                      (\asig ax-> TestSig{ 
+                                   msign = Sign.addToSig (msign asig) $ Id.simpleIdToId ax 
+                                 , occurence = occ
+                                 , tdiagnosis = tdiagnosis tsig ++ 
+                                   [Result.Diag
+                                    {
+                                      Result.diagKind   = Result.Error
+                                    , Result.diagString = "Definition of proposition " ++
+                                                          (show $ pretty ax) ++
+                                                          " after first axiom"
+                                    , Result.diagPos    = AS_Anno.opt_pos x
+                                    }]
+                                 }) 
+                          tsig $ (\(AS_BASIC.Pred_item xs _)-> xs) apred                                     
+      (AS_BASIC.Axiom_items _)   -> TestSig { msign = msign tsig
+                                          , occurence = occ + 1
+                                          , tdiagnosis = tdiagnosis tsig ++ 
+                                              [Result.Diag
+                                               {
+                                                 Result.diagKind   = Result.Hint
+                                               , Result.diagString = "First axiom"
+                                               , Result.diagPos    = AS_Anno.opt_pos x
+                                               }]
+                                            }
 
 -- | Retrieve the formulas out of a basic spec
 makeFormulas :: 
     AS_BASIC.BASIC_SPEC
     -> Sign.Sign
     -> [DIAG_FORM]
-makeFormulas (AS_BASIC.Basic_spec bspec) sig = List.foldl (\xs bs -> retrieveFormulaItem xs bs sig) []  bspec
+makeFormulas (AS_BASIC.Basic_spec bspec) sig = 
+    List.foldl (\xs bs -> retrieveFormulaItem xs bs sig) []  bspec
 
 -- Helper for makeFormulas
 retrieveFormulaItem :: 
@@ -88,7 +142,8 @@ retrieveFormulaItem ::
 retrieveFormulaItem axs x sig = 
     case (AS_Anno.item x) of 
       (AS_BASIC.Pred_decl _)    -> axs 
-      (AS_BASIC.Axiom_items ax) -> List.foldl (\xs bs -> addFormula xs bs sig) axs $ numberFormulae ax 0
+      (AS_BASIC.Axiom_items ax) -> 
+          List.foldl (\xs bs -> addFormula xs bs sig) axs $ numberFormulae ax 0
 
 -- Number formulae
 numberFormulae :: [AS_Anno.Annoted (AS_BASIC.FORMULA)] -> Integer -> [NUM_FORM]
@@ -105,29 +160,31 @@ addFormula :: [DIAG_FORM]
            -> Sign.Sign
            -> [DIAG_FORM]             
 addFormula formulae nf sign
-    | isLegal == True = formulae ++ [DiagForm
-                                     {
-                                       formula   = makeNamed f i
-                                     , diagnosis = Result.Diag 
-                                                   {
-                                                     Result.diagKind = Result.Hint
-                                                   , Result.diagString = "All fine"
-                                                   , Result.diagPos    = lnum
-                                                   }
-                                     }] 
-    | otherwise       = formulae ++ [DiagForm
-                                     {
-                                       formula   = makeNamed f i
-                                     , diagnosis = Result.Diag 
-                                                   {
-                                                     Result.diagKind = Result.Error
-                                                   , Result.diagString = "Unknown propositions "
-                                                     ++ (show $ pretty difference)
-                                                     ++ " in formula "
-                                                     ++ (show $ pretty nakedFormula)
-                                                   , Result.diagPos    = lnum
-                                                   }
-                                     }] 
+    | isLegal == True = formulae ++ 
+                        [DiagForm
+                         {
+                           formula   = makeNamed f i
+                         , diagnosis = Result.Diag 
+                           {
+                             Result.diagKind = Result.Hint
+                           , Result.diagString = "All fine"
+                           , Result.diagPos    = lnum
+                           }
+                         }] 
+    | otherwise       = formulae ++ 
+                        [DiagForm
+                         {
+                           formula   = makeNamed f i
+                         , diagnosis = Result.Diag 
+                                       {
+                                         Result.diagKind = Result.Error
+                                       , Result.diagString = "Unknown propositions "
+                                         ++ (show $ pretty difference)
+                                         ++ " in formula "
+                                         ++ (show $ pretty nakedFormula)
+                                       , Result.diagPos    = lnum
+                                       }
+                         }] 
     where
       f             = nfformula nf
       i             = nfnum nf
@@ -143,19 +200,23 @@ makeNamed f i
     | label == "" = AS_Anno.NamedSen
                     {
                       AS_Anno.senName = "Ax_" ++ show i
-                    , AS_Anno.isAxiom = True
+                    , AS_Anno.isAxiom = not isTheorem
                     , AS_Anno.isDef   = False
                     , AS_Anno.sentence = AS_Anno.item f
                     }
     | otherwise   = AS_Anno.NamedSen
                     {
                       AS_Anno.senName = label
-                    , AS_Anno.isAxiom = True
+                    , AS_Anno.isAxiom = not isTheorem
                     , AS_Anno.isDef   = False
                     , AS_Anno.sentence = AS_Anno.item f
                     }
     where 
       label = AS_Anno.getRLabel f
+      annos = AS_Anno.r_annos f
+      isImplies = foldl (\y x -> AS_Anno.isImplies x || y) False annos
+      isImplied = foldl (\y x -> AS_Anno.isImplied x || y) False annos
+      isTheorem = isImplies || isImplied
 
 -- Retrives the signature of a formula
 propsOfFormula :: AS_BASIC.FORMULA -> Sign.Sign
@@ -185,13 +246,14 @@ basicAnalysis :: AS_BASIC.BASIC_SPEC
                                ,[AS_Anno.Named (AS_BASIC.FORMULA)]
                                )
 basicAnalysis bs sig _ 
-    | exErrs == False =  Result.Result diags $ Just (bs, bsSig, formulae)
+    | exErrs == False =  Result.Result diags $ Just (bs, sigItems, formulae)
     | otherwise       =  Result.Result diags $ Nothing
     where 
       bsSig     = makeSig bs sig
-      bsForm    = makeFormulas bs bsSig
+      sigItems  = msign bsSig
+      bsForm    = makeFormulas bs sigItems
       formulae  = map (\x -> formula x) bsForm
-      diags     = map (\x -> diagnosis x) bsForm   
+      diags     = map (\x -> diagnosis x) bsForm ++ tdiagnosis bsSig
       exErrs    = Result.hasErrors diags
 
 -- | Wrapper for the interface defined in Logic.Logic

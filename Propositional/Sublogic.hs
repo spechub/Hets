@@ -46,6 +46,11 @@ module Propositional.Sublogic
     , prSymM                        -- projections of SYMB_ITEMS
     , prFormulaM                    -- projections of formulae 
     , prBasicSpec                   -- projections of basic specs
+    , isPropIE
+    , isPropI
+    , isPropE
+    , isProp
+    , isCNF
     )
     where
 
@@ -87,6 +92,26 @@ data PropSL = PropSL
     , has_imp      :: Bool             -- Implication ?
     , has_equiv    :: Bool             -- Equivalence ?
     } deriving (Show, Eq)
+
+-- | Check for particular sublogics
+isPropIE :: PropSL -> Bool
+isPropIE sl = format sl == PlainFormula && has_equiv sl && has_imp sl
+
+isPropI :: PropSL -> Bool
+isPropI sl = format sl == PlainFormula && not ( has_equiv sl ) && has_imp sl
+
+isPropE :: PropSL -> Bool
+isPropE sl = format sl == PlainFormula && has_equiv sl && not ( has_imp sl )
+
+isProp :: PropSL -> Bool
+isProp sl = format sl == PlainFormula && 
+            not ( has_equiv sl ) && 
+            not ( has_imp sl )
+
+isCNF :: PropSL -> Bool
+isCNF sl = format sl == CNF && 
+            not ( has_equiv sl ) && 
+            not ( has_imp sl )
 
 -- | comparison of sublogics
 compareLE :: PropSL -> PropSL -> Bool

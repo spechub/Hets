@@ -45,6 +45,7 @@ import Comorphisms.HasCASL2HasCASL
 import Comorphisms.CFOL2IsabelleHOL
 import Comorphisms.CASL2SPASS
 import Comorphisms.Prop2CASL
+import Comorphisms.Prop2Prop
 #ifdef CASLEXTENSIONS
 import Comorphisms.CoCFOL2IsabelleHOL
 import Comorphisms.CoCASL2CoPCFOL
@@ -92,6 +93,9 @@ inclusionList = [Comorphism CASL2HasCASL, Comorphism HasCASL2HasCASL,
                  Comorphism CFOL2IsabelleHOL,
                  Comorphism SuleCFOL2SoftFOL,
                  Comorphism Prop2CASL,
+                 Comorphism PropIE2PropE,
+                 Comorphism PropIE2PropI,
+                 Comorphism PropIE2Prop,
 #ifdef PROGRAMATICA
                  Comorphism HasCASL2Haskell,
                  Comorphism Haskell2IsabelleHOLCF,

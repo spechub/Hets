@@ -21,6 +21,9 @@ Simple rules for propositional logic
 module Propositional.Rules
     (
      transForm                     -- Transforms a formula to a spec sublogic
+    ,matImpl
+    ,matEquiv
+    ,matEquivImpl
     )
     where
 
@@ -33,6 +36,14 @@ matImpl (AS_BASIC.Implication f1 f2 rn) =
     AS_BASIC.Disjunction [
                  (AS_BASIC.Negation (matImpl f1) Id.nullRange)
                 , (matImpl f2)] rn
+matImpl (AS_BASIC.Predication tok) = AS_BASIC.Predication tok
+matImpl (AS_BASIC.Negation f rn)   = AS_BASIC.Negation (matImpl f) rn
+matImpl (AS_BASIC.Conjunction f rn)   = AS_BASIC.Conjunction 
+                                         (map matImpl f) rn
+matImpl (AS_BASIC.Disjunction f rn)   = AS_BASIC.Disjunction 
+                                         (map matImpl f) rn
+matImpl (AS_BASIC.Equivalence f1 f2 rn) = 
+    AS_BASIC.Equivalence (matImpl f1) (matImpl f2) rn
 matImpl f = f
 
 matEquiv :: AS_BASIC.FORMULA -> AS_BASIC.FORMULA
@@ -49,6 +60,14 @@ matEquiv (AS_BASIC.Equivalence f1 f2 rn) =
              ] Id.nullRange
             ]
     rn
+matEquiv (AS_BASIC.Predication tok) = AS_BASIC.Predication tok
+matEquiv (AS_BASIC.Negation f rn)   = AS_BASIC.Negation (matImpl f) rn
+matEquiv (AS_BASIC.Conjunction f rn)   = AS_BASIC.Conjunction 
+                                         (map matImpl f) rn
+matEquiv (AS_BASIC.Disjunction f rn)   = AS_BASIC.Disjunction 
+                                         (map matImpl f) rn
+matEquiv (AS_BASIC.Implication f1 f2 rn) = 
+    AS_BASIC.Implication (matImpl f1) (matImpl f2) rn
 matEquiv f = f
 
 matEquivImpl :: AS_BASIC.FORMULA -> AS_BASIC.FORMULA
@@ -69,6 +88,12 @@ matEquivImpl (AS_BASIC.Equivalence f1 f2 rn) =
              ] Id.nullRange
             ]
     rn
+matEquivImpl (AS_BASIC.Predication tok) = AS_BASIC.Predication tok
+matEquivImpl (AS_BASIC.Negation f rn)   = AS_BASIC.Negation (matImpl f) rn
+matEquivImpl (AS_BASIC.Conjunction f rn)   = AS_BASIC.Conjunction 
+                                         (map matImpl f) rn
+matEquivImpl (AS_BASIC.Disjunction f rn)   = AS_BASIC.Disjunction 
+                                         (map matImpl f) rn
 matEquivImpl f = f
 
 -- | Transforms a formula to the specified sublogic...
