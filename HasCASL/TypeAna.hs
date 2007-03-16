@@ -197,7 +197,14 @@ expand = mapTypeOfScheme . expandAlias
 -- | expand aliases in a type 
 expandAlias :: TypeMap -> Type -> Type
 expandAlias tm t = 
-    let (ps, ts, ta, b) = expandAliases tm t in
+  let tam = Map.filter ( \ ti -> case typeDefn ti of 
+         AliasTypeDefn {} -> True
+         _ -> False) tm 
+  in if Map.null tam then t else expandAliase tam t
+
+expandAliase :: TypeMap -> Type -> Type
+expandAliase tam t = 
+    let (ps, ts, ta, b) = expandAliases tam t in
        if b && length ps == length ts then
           ExpandedType t $ repl (Map.fromList (zip 
                              (map getTypeVar ps) $ reverse ts)) ta
@@ -215,12 +222,12 @@ expandAliases tm t = case t of
             _ -> wrap t
     TypeAppl t1 t2 -> 
         let (ps, ts, ta, b) = expandAliases tm t1 
-            t3 = expandAlias tm t2
+            t3 = expandAliase tm t2
         in if b && length ps > length ts then 
           (ps, t3 : ts, ta, b)  -- reverse later on
-          else wrap $ TypeAppl (expandAlias tm t1) t3
-    ExpandedType t1 t2 -> wrap $ ExpandedType t1 $ expandAlias tm t2
-    KindedType ty k ps -> wrap $ KindedType (expandAlias tm ty) k ps
+          else wrap $ TypeAppl (expandAliase tm t1) t3
+    ExpandedType t1 t2 -> wrap $ ExpandedType t1 $ expandAliase tm t2
+    KindedType ty k ps -> wrap $ KindedType (expandAliase tm ty) k ps
     _ -> wrap t
     where wrap ty = ([], [], ty, False)
 
