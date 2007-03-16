@@ -98,7 +98,7 @@ diffEnv e1 e2 = let tm = typeMap e2 in
     initialEnv
        { classMap = Map.differenceWith diffClass (classMap e1) (classMap e2)
        , typeMap = Map.differenceWith diffType (typeMap e1) tm
-       , assumps = Map.differenceWith (diffAss $ addUnit tm)
+       , assumps = Map.differenceWith (diffAss (filterAliases tm) $ addUnit tm)
                    (assumps e1) (assumps e2)
        }
 
@@ -111,15 +111,15 @@ diffType :: TypeInfo -> TypeInfo -> Maybe TypeInfo
 diffType _ _ = Nothing
 
 -- | compute difference of overloaded operations
-diffAss :: TypeMap -> OpInfos -> OpInfos -> Maybe OpInfos
-diffAss tm (OpInfos l1) (OpInfos l2) =
+diffAss :: TypeMap -> TypeMap -> OpInfos -> OpInfos -> Maybe OpInfos
+diffAss tAs tm (OpInfos l1) (OpInfos l2) =
     let l3 = diffOps l1 l2 in
         if null l3 then Nothing else Just (OpInfos l3)
     where diffOps [] _ = []
           diffOps (o:os) ps =
               let rs = diffOps os ps
-                  n = mapOpInfo (id, expandAlias tm) o
-              in if any (instScheme tm 1 (opType n) . expand tm . opType) ps
+                  n = mapOpInfo (id, expandAliases tAs) o
+              in if any (instScheme tm 1 (opType n) . expand tAs . opType) ps
                  then rs else n:rs
 
 -- | environment with predefined types and operations

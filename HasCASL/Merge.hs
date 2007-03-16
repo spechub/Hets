@@ -195,11 +195,13 @@ instance Mergeable Env where
         do cMap <- merge (classMap e1) $ classMap e2
            tMap <- mergeMap id mergeTypeInfo
                    (typeMap e1) $ typeMap e2
-           as <- mergeMap (OpInfos .
-                           map (mapOpInfo (id, expandAlias tMap)) . opInfos)
+           case filterAliases tMap of 
+             tAs -> do 
+               as <- mergeMap (OpInfos .
+                 map (mapOpInfo (id, expandAliases tAs)) . opInfos)
                  (mergeOpInfos tMap)
                  (assumps e1) $ assumps e2
-           return initialEnv { classMap = cMap
+               return initialEnv { classMap = cMap
                              , typeMap = tMap
                              , assumps = as }
 

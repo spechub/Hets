@@ -165,6 +165,8 @@ morphismUnion m1 m2 =
            fml = fm1 ++ fm2 ++ mkP (uf1 ++ uf2)
        s <- merge s1 s2
        t <- merge (mtarget m1) $ mtarget m2
+       let sAs = filterAliases $ typeMap s
+           tAs = filterAliases $ typeMap t
        tm <- foldr ( \ (i, j) rm ->
                      do m <- rm
                         case Map.lookup i m of
@@ -175,8 +177,8 @@ morphismUnion m1 m2 =
                                        ++ showId k ""))
              (return Map.empty) tml
        fm <- foldr ( \ (isc@(i, sc), jsc@(j, sc1)) rm -> do
-                     let nsc = expand (typeMap t) sc1
-                         nisc = (i, expand (typeMap s) sc)
+                     let nsc = expand sAs sc1
+                         nisc = (i, expand tAs sc)
                      m <- rm
                      case Map.lookup nisc m of
                        Nothing -> return $ Map.insert nisc
