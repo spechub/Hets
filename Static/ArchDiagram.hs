@@ -153,10 +153,10 @@ extendDiagramIncl lgraph diag srcNodes newNodeSig desc =
      diag'' <- insInclusionEdges lgraph diag' srcNodes newDiagNode
      printDiag (newDiagNode, diag'') "extendDiagramIncl" diag''
 
-{- | Build a diagram that extends given diagram with a node and an
-edge to that node. The edge is labelled with given signature morphism
+{- | Build a diagram that extends the given diagram with a node and an
+edge to that node. The edge is labelled with a given signature morphism
 and the node contains the target of this morphism. Extends the
-development graph with given morphis as well. -}
+development graph with the given morphism as well. -}
 extendDiagramWithMorphism :: Range         -- ^ the position (for diagnostics)
                           -> LogicGraph
                           -> Diag          -- ^ the diagram to be extended
@@ -183,10 +183,10 @@ extendDiagramWithMorphism pos _ diag dg (Diag_node_sig n nsig) mor desc orig =
       "\n the morphism domain differs from the signature in given source node")
                          pos
 
-{- | Build a diagram that extends given diagram with a node and an
-edge from that node. The edge is labelled with given signature
+{- | Build a diagram that extends a given diagram with a node and an
+edge from that node. The edge is labelled with a given signature
 morphism and the node contains the source of this morphism. Extends
-the development graph with given morphis as well. -}
+the development graph with the given morphism as well. -}
 extendDiagramWithMorphismRev :: Range       -- ^ the position (for diagnostics)
                              -> LogicGraph
                              -> Diag          -- ^ the diagram to be extended

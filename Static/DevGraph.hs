@@ -586,7 +586,7 @@ extendDGraph dg (NodeSig n _) morph orig = case cod Grothendieck morph of
                                dgn_cons = None,
                                dgn_cons_status = LeftOpen}
         linkContents = DGLink {dgl_morphism = morph,
-                               dgl_type = GlobalDef, -- TODO: other type
+                               dgl_type = GlobalDef,
                                dgl_origin = orig,
 			       dgl_id = [getNewEdgeID dg']}
         node = getNewNode dg
@@ -612,7 +612,7 @@ extendDGraphRev dg (NodeSig n _) morph orig = case dom Grothendieck morph of
                                dgn_cons = None,
                                dgn_cons_status = LeftOpen}
         linkContents = DGLink {dgl_morphism = morph,
-                               dgl_type = GlobalDef, -- TODO: other type
+                               dgl_type = GlobalDef,
                                dgl_origin = orig,
 			       dgl_id = [getNewEdgeID dg']}
         node = getNewNode dg

@@ -83,7 +83,7 @@ ana_UNIT_DECL_DEFNS' :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic
     -> HetcatsOpts -> ExtStUnitCtx -> [Annoted UNIT_DECL_DEFN]
     -> Result (ExtStUnitCtx, GlobalContext, [Annoted UNIT_DECL_DEFN])
 ana_UNIT_DECL_DEFNS' _ _ gctx _ _ uctx [] =
-    do return (uctx, gctx, [])
+    return (uctx, gctx, [])
 ana_UNIT_DECL_DEFNS' lgraph defl gctx curl opts uctx (udd : udds) =
     do (uctx', dg', udd') <- ana_UNIT_DECL_DEFN lgraph defl
                              gctx curl opts uctx (item udd)
@@ -199,7 +199,7 @@ ana_UNIT_IMPORTED :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic
     -> HetcatsOpts -> ExtStUnitCtx -> Range -> [Annoted UNIT_TERM]
     -> Result (MaybeDiagNode, Diag, GlobalContext, [Annoted UNIT_TERM])
 ana_UNIT_IMPORTED _ _ gctx curl _ (_, diag) _ [] =
-    do return (EmptyDiagNode curl, diag, gctx, [])
+    return (EmptyDiagNode curl, diag, gctx, [])
 ana_UNIT_IMPORTED lgraph defl gctx curl opts uctx poss terms =
     do (dnsigs, diag', gctx', terms') <- ana_UNIT_IMPORTED' lgraph defl
                                        gctx curl opts uctx terms
@@ -220,7 +220,7 @@ ana_UNIT_IMPORTED' :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic
     -> HetcatsOpts -> ExtStUnitCtx -> [Annoted UNIT_TERM]
     -> Result ([DiagNodeSig], Diag, GlobalContext, [Annoted UNIT_TERM])
 ana_UNIT_IMPORTED' _ _ gctx _ _ (_, diag) [] =
-    do return ([], diag, gctx, [])
+    return ([], diag, gctx, [])
 ana_UNIT_IMPORTED' lgraph defl gctx curl opts uctx@(buc, _) (ut : uts) =
     do (dnsig, diag', dg', ut') <- ana_UNIT_TERM lgraph defl
                                    gctx curl opts uctx (item ut)
@@ -246,7 +246,7 @@ ana_UNIT_EXPRESSION lgraph defl gctx curl opts
                            (map (JustNode . snd) args) DGFormalParams
        -- build the extended diagram and new based unit context
        let dexp = showDoc uexp ""
-           insNodes diag0 [] buc0 = do return ([], diag0, buc0)
+           insNodes diag0 [] buc0 = return ([], diag0, buc0)
            insNodes diag0 ((un, nsig) : args0) buc0 =
                do (dnsig, diag') <- extendDiagramIncl lgraph diag0 []
                            nsig dexp
@@ -290,7 +290,7 @@ ana_UNIT_BINDINGS :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic
     -> HetcatsOpts -> ExtStUnitCtx -> [UNIT_BINDING]
     -> Result ([(SIMPLE_ID, NodeSig)], GlobalContext, [UNIT_BINDING])
 ana_UNIT_BINDINGS _ _ gctx _ _ _ [] =
-    do return ([], gctx, [])
+    return ([], gctx, [])
 ana_UNIT_BINDINGS lgraph defl gctx curl opts uctx@(buc, _)
                   ((Unit_binding un@(Token ustr unpos) usp poss) : ubs) =
     do (usig, dg', usp') <- ana_UNIT_SPEC lgraph defl
@@ -318,7 +318,7 @@ ana_UNIT_TERMS :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic
     -> HetcatsOpts -> ExtStUnitCtx -> [Annoted UNIT_TERM]
     -> Result ([DiagNodeSig], Diag, GlobalContext, [Annoted UNIT_TERM])
 ana_UNIT_TERMS _ _ gctx _ _ (_, diag) [] =
-    do return ([], diag, gctx, [])
+    return ([], diag, gctx, [])
 ana_UNIT_TERMS lgraph defl gctx curl opts uctx@(buc, _) (ut : uts) =
     do (dnsig, diag', dg', ut') <- ana_UNIT_TERM lgraph defl
                                    gctx curl opts uctx (item ut)
@@ -349,7 +349,7 @@ ana_UNIT_TERM lgraph defl gctx curl opts uctx red@(Unit_reduction ut restr) =
                   Nothing ->
                   {- the renaming morphism is just identity, so
                   there's no need to extend the diagram -}
-                      do return (q, diag', gctx1 { devGraph = dg' },
+                      return (q, diag', gctx1 { devGraph = dg' },
                                   Unit_reduction (replaceAnnoted ut' ut) restr)
                   Just sigma ->
                       do
@@ -450,7 +450,7 @@ ana_UNIT_TERM lgraph defl gctx curl opts uctx@(buc, diag)
                    (qB@(Diag_node_sig nqB _), diag') <-
                        extendDiagramIncl lgraph diagA pIL resultSig ""
                    -- insert nodes p^F_i and appropriate edges to the diagram
-                   let ins diag0 dg0 [] = do return (diag0, dg0)
+                   let ins diag0 dg0 [] = return (diag0, dg0)
                        ins diag0 dg0 ((morph, _, targetNode) : morphNodes) =
                            do (dnsig, diag1, dg1) <-
                                 extendDiagramWithMorphismRev pos lgraph diag0
@@ -491,7 +491,7 @@ ana_FIT_ARG_UNITS :: LogicGraph -> AnyLogic -> GlobalContext -> AnyLogic
     -> [FIT_ARG_UNIT] -- ^ the arguments for the unit
     -> Result ([(G_morphism, NodeSig, DiagNodeSig)], GlobalContext, Diag)
 ana_FIT_ARG_UNITS _ _ gctx _ _ (_, diag) _ _ [] [] =
-    do return ([], gctx, diag)
+    return ([], gctx, diag)
 ana_FIT_ARG_UNITS lgraph defl gctx curl opts uctx@(buc, _)
                   appl pos (nsig : nsigs) (fau : faus) =
     do (gmorph, nsig', dnsig, dg, diag) <- ana_FIT_ARG_UNIT lgraph defl
@@ -612,7 +612,7 @@ ana_argSpecs :: LogicGraph -> AnyLogic -> GlobalContext -> HetcatsOpts
              -> [Annoted SPEC]
              -> Result ([NodeSig], GlobalContext, [Annoted SPEC])
 ana_argSpecs _ _ gctx _ [] =
-    do return ([], gctx, [])
+    return ([], gctx, [])
 ana_argSpecs lgraph defl gctx opts (argSpec : argSpecs) =
     do (argSpec', argSig, dg') <- ana_SPEC lgraph
                                   gctx (EmptyNode defl) emptyNodeName
