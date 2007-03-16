@@ -103,14 +103,24 @@ mapSig sign = CSign.Sign
 
 -- | Which is the target sublogic?
 mapSub :: PSL.PropSL -> CSL.CASL_Sublogics
-mapSub _ = CSL.bottom
-           {
-             CSL.cons_features = CSL.NoSortGen
-           , CSL.sub_features = CSL.NoSub
-           , CSL.has_pred = True
-           , CSL.has_eq = False
-           , CSL.which_logic = CSL.FOL
-           }
+mapSub sl = 
+    case (PSL.isHC sl) of
+      True -> CSL.bottom
+              {
+                CSL.cons_features = CSL.NoSortGen
+              , CSL.sub_features = CSL.NoSub
+              , CSL.has_pred = True
+              , CSL.has_eq = False
+              , CSL.which_logic = CSL.Horn
+              }
+      False -> CSL.bottom
+              {
+                CSL.cons_features = CSL.NoSortGen
+              , CSL.sub_features = CSL.NoSub
+              , CSL.has_pred = True
+              , CSL.has_eq = False
+              , CSL.which_logic = CSL.FOL
+              }
 
 -- | Translation of morphisms
 mapMor :: PMor.Morphism -> Result.Result CLogic.CASLMor 

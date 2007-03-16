@@ -177,6 +177,12 @@ mapSubPropIE2PropI sl
                         , PSL.has_imp   = False
                         , PSL.has_equiv = False
                         }
+    | PSL.isHC sl = PSL.PropSL
+                        {
+                          PSL.format    = PSL.HornClause
+                        , PSL.has_imp   = False
+                        , PSL.has_equiv = False
+                        }
     | otherwise    = error "Impossible case"
 
 -- | determination of target sublogic
@@ -212,6 +218,12 @@ mapSubPropIE2PropE sl
                         , PSL.has_imp   = False
                         , PSL.has_equiv = False
                         }
+    | PSL.isHC sl = PSL.PropSL
+                        {
+                          PSL.format    = PSL.HornClause
+                        , PSL.has_imp   = False
+                        , PSL.has_equiv = False
+                        }
     | otherwise    = error "Impossible case"
 
 -- | determination of target sublogic
@@ -244,6 +256,12 @@ mapSubPropIE2Prop sl
     | PSL.isCNF sl = PSL.PropSL
                         {
                           PSL.format    = PSL.CNF
+                        , PSL.has_imp   = False
+                        , PSL.has_equiv = False
+                        }
+    | PSL.isHC sl = PSL.PropSL
+                        {
+                          PSL.format    = PSL.HornClause
                         , PSL.has_imp   = False
                         , PSL.has_equiv = False
                         }

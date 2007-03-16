@@ -40,7 +40,6 @@ import qualified Propositional.Parse_AS_Basic as Parse_AS
 import qualified Propositional.Analysis as Analysis
 import qualified Propositional.InverseAnalysis as IAna
 import qualified Propositional.Sublogic as Sublogic
-import qualified Propositional.Rules as Rules
 import qualified Common.Id as Id()
 
 -- | Lid for propositional logic

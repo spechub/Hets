@@ -50,6 +50,7 @@ module Propositional.Sublogic
     , isPropI
     , isPropE
     , isProp
+    , isHC
     , isCNF
     )
     where
@@ -60,6 +61,7 @@ import qualified Common.AS_Annotation as AS_Anno
 import qualified Propositional.Sign as Sign
 import qualified Propositional.Symbol as Symbol
 import qualified Propositional.Morphism as Morphism
+import Common.Lib.State
 
 class (Eq l, Show l) => Lattice l where
   cjoin :: l -> l -> l
@@ -83,6 +85,7 @@ instance Lattice Bool where
 -- | types of propositional formulae
 data PropFormulae = PlainFormula      -- Formula without structural constraints
                   | CNF               -- CNF (implies restriction on ops)
+                  | HornClause        -- Horn Clause Formulae
                   deriving (Show, Eq, Ord)
 
 -- | sublogics for propositional logic
@@ -113,9 +116,14 @@ isCNF sl = format sl == CNF &&
             not ( has_equiv sl ) && 
             not ( has_imp sl )
 
+isHC :: PropSL -> Bool
+isHC sl = format sl == HornClause && 
+            not ( has_equiv sl ) && 
+            not ( has_imp sl )
+
 -- | comparison of sublogics
 compareLE :: PropSL -> PropSL -> Bool
-compareLE sl1 sl2 = bothCNF || pfLE
+compareLE sl1 sl2 = bothHC || bothCNF || pfLE
     where 
       form1   = format sl1
       form2   = format sl2
@@ -123,6 +131,7 @@ compareLE sl1 sl2 = bothCNF || pfLE
       i2      = has_imp sl2
       e1      = has_equiv sl1
       e2      = has_equiv sl2
+      bothHC = (form1 == form2) && (form1 == HornClause)
       bothCNF = (form1 == form2) && (form1 == CNF)
       pfLE    = (not bothCNF) && (i1 <= i2) && (e1 <= e2)
 
@@ -134,7 +143,7 @@ top :: PropSL
 top = PropSL PlainFormula True True
 
 bottom :: PropSL
-bottom = PropSL CNF False False 
+bottom = PropSL HornClause False False 
 
 need_PF :: PropSL
 need_PF = bottom { format = PlainFormula }
@@ -144,6 +153,9 @@ need_imp = bottom { has_imp = True }
 
 need_equiv :: PropSL
 need_equiv = bottom { has_equiv = True }
+
+need_CNF :: PropSL
+need_CNF   = bottom { format = CNF }
 
 -------------------------------------------------------------------------------
 -- join and max                                                              --
@@ -162,6 +174,9 @@ sublogics_join pfF imF eqF a b = PropSL
 
 joinType :: PropFormulae -> PropFormulae -> PropFormulae
 joinType CNF CNF = CNF
+joinType HornClause HornClause = HornClause
+joinType HornClause CNF = CNF
+joinType CNF HornClause = CNF
 joinType _   _   = PlainFormula
 
 sublogics_max :: PropSL -> PropSL -> PropSL
@@ -207,38 +222,79 @@ sl_form ps f = sl_fl_form ps $ Tools.flatten f
 
 -- | determines sublogic for flattened formula
 sl_fl_form :: PropSL -> [AS_BASIC.FORMULA] -> PropSL
-sl_fl_form ps f = foldl (sublogics_max) ps $ map (ana_form ps) f 
+sl_fl_form ps f = foldl (sublogics_max) ps $ map (\x -> evalState (ana_form ps x) 0) f 
 
 -- analysis of single "clauses"
-ana_form :: PropSL -> AS_BASIC.FORMULA -> PropSL
+ana_form :: PropSL -> AS_BASIC.FORMULA -> State Int PropSL
 ana_form ps f = 
     case f of
-      AS_BASIC.Conjunction l _ -> sublogics_max need_PF
-                                  (comp_list $ map (ana_form ps) l) 
-      AS_BASIC.Implication l m _ -> sublogics_max need_imp $ 
-                                    sublogics_max need_PF $
-                                    sublogics_max (ana_form ps l)
-                                                     (ana_form ps m)
-      AS_BASIC.Equivalence l m _ -> sublogics_max need_equiv $ 
-                                    sublogics_max need_PF $
-                                    sublogics_max (ana_form ps l)
-                                                     (ana_form ps m)
-      AS_BASIC.Negation l _      -> if (isLiteral l)
-                                    then
-                                        ps
-                                    else
-                                        sublogics_max need_PF $ ana_form ps l
+      AS_BASIC.Conjunction l _   -> 
+          do 
+            st <- get
+            return $ sublogics_max need_PF 
+                       (comp_list $ map (\x -> (evalState (ana_form ps x) (st + 1))) l) 
+      AS_BASIC.Implication l m _ -> 
+           do 
+             st <- get
+             return $ 
+                    if st < 1 
+                    then
+                        if (format ps == HornClause) 
+                        then
+                            -- insert Horn Analysis
+                            sublogics_max need_imp $ 
+                            sublogics_max need_PF $
+                            sublogics_max ((\x -> evalState (ana_form ps x) (st+1)) l)
+                                              ((\x -> evalState (ana_form ps x) (st+1)) m)
+                        else
+                            sublogics_max need_imp $ 
+                            sublogics_max need_PF $
+                            sublogics_max ((\x -> evalState (ana_form ps x) (st+1)) l)
+                                              ((\x -> evalState (ana_form ps x) (st+1)) m)
+                    else
+                        sublogics_max need_imp $ 
+                        sublogics_max need_PF $
+                        sublogics_max ((\x -> evalState (ana_form ps x) (st+1)) l)
+                                          ((\x -> evalState (ana_form ps x) (st+1)) m)                    
+      AS_BASIC.Equivalence l m _ -> 
+           do 
+             st <- get
+             return $ sublogics_max need_equiv $ 
+                    sublogics_max need_PF $
+                    sublogics_max ((\x -> evalState (ana_form ps x) (st+1)) l)
+                                      ((\x -> evalState (ana_form ps x) (st+1)) m)
+      AS_BASIC.Negation l _      -> 
+          if (isLiteral l)
+          then
+              do 
+                return ps
+          else
+              do 
+                st <- get 
+                return $ sublogics_max need_PF $ (\x -> evalState (ana_form ps x) (st+1)) l
       AS_BASIC.Disjunction l _   -> 
-           let lprime = concat $ map Tools.flattenDis l in
-           if (foldl (&&) True $ map isLiteral lprime)
-           then
-               ps
-           else
-               sublogics_max need_PF
-               (comp_list $ map (ana_form ps) lprime)     
-      AS_BASIC.True_atom  _      -> ps
-      AS_BASIC.False_atom _      -> ps
-      AS_BASIC.Predication _     -> ps
+                    let lprime = concat $ map Tools.flattenDis l in
+                    if (foldl (&&) True $ map isLiteral lprime)
+                    then
+                        do 
+                          if moreThanNLit lprime 1
+                             then
+                                 return $ sublogics_max need_CNF ps
+                             else
+                                 return ps
+                    else
+                        do 
+                          st <- get 
+                          return $ sublogics_max need_PF
+                                     (comp_list $ map 
+                                      (\x -> evalState (ana_form ps x) (st+1)) 
+                                      lprime)     
+      AS_BASIC.True_atom  _      -> do return ps
+      AS_BASIC.False_atom _      -> do return ps
+      AS_BASIC.Predication _     -> do return ps
+
+moreThanNLit :: [AS_BASIC.FORMULA] -> Int -> Bool
+moreThanNLit form n = (foldl (\y x -> if (x == True) then y + 1 else y) 0 $ map isPosLiteral form) > n
 
 -- determines wheter a Formula is a literal
 isLiteral :: AS_BASIC.FORMULA -> Bool
@@ -251,6 +307,17 @@ isLiteral (AS_BASIC.Equivalence _ _ _) = False
 isLiteral (AS_BASIC.Disjunction _ _) = False
 isLiteral (AS_BASIC.True_atom  _ ) = True
 isLiteral (AS_BASIC.False_atom _) = True
+
+-- determines wheter a Formula is a positive literal
+isPosLiteral :: AS_BASIC.FORMULA -> Bool
+isPosLiteral (AS_BASIC.Predication _)       = True
+isPosLiteral (AS_BASIC.Negation _ _) = False
+isPosLiteral (AS_BASIC.Conjunction _ _) = False
+isPosLiteral (AS_BASIC.Implication _ _ _) = False
+isPosLiteral (AS_BASIC.Equivalence _ _ _) = False
+isPosLiteral (AS_BASIC.Disjunction _ _) = False
+isPosLiteral (AS_BASIC.True_atom  _ ) = True
+isPosLiteral (AS_BASIC.False_atom _) = True
 
 -- | determines subloig for basic items
 sl_basic_items :: PropSL -> AS_BASIC.BASIC_ITEMS -> PropSL
@@ -272,6 +339,12 @@ sublogics_all =
     [PropSL
      {
        format    = CNF
+     , has_imp   = False
+     , has_equiv = False 
+     }
+    , PropSL
+     {
+       format    = HornClause
      , has_imp   = False
      , has_equiv = False 
      }
@@ -309,6 +382,7 @@ sublogics_name :: PropSL -> [String]
 sublogics_name f =
     case formType of
       CNF -> ["CNF"]
+      HornClause -> ["HornClause"]
       PlainFormula -> ["Prop" ++ 
                       (
                        if (imp) then "I" else ""
