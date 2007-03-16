@@ -234,28 +234,26 @@ ana_form ps f =
             return $ sublogics_max need_PF 
                        (comp_list $ map (\x -> (evalState (ana_form ps x) (st + 1))) l) 
       AS_BASIC.Implication l m _ -> 
-           do 
+          do 
              st <- get
+             let analyze = sublogics_max need_imp $ 
+                        sublogics_max need_PF $
+                        sublogics_max ((\x -> evalState (ana_form ps x) (st+1)) l)
+                                          ((\x -> evalState (ana_form ps x) (st+1)) m)
              return $ 
                     if st < 1 
                     then
                         if (format ps == HornClause) 
                         then
-                            -- insert Horn Analysis
-                            sublogics_max need_imp $ 
-                            sublogics_max need_PF $
-                            sublogics_max ((\x -> evalState (ana_form ps x) (st+1)) l)
-                                              ((\x -> evalState (ana_form ps x) (st+1)) m)
+                            if (checkHornPos l m)
+                            then
+                                ps
+                            else
+                                analyze
                         else
-                            sublogics_max need_imp $ 
-                            sublogics_max need_PF $
-                            sublogics_max ((\x -> evalState (ana_form ps x) (st+1)) l)
-                                              ((\x -> evalState (ana_form ps x) (st+1)) m)
+                            analyze
                     else
-                        sublogics_max need_imp $ 
-                        sublogics_max need_PF $
-                        sublogics_max ((\x -> evalState (ana_form ps x) (st+1)) l)
-                                          ((\x -> evalState (ana_form ps x) (st+1)) m)                    
+                        analyze
       AS_BASIC.Equivalence l m _ -> 
            do 
              st <- get
@@ -459,3 +457,11 @@ prBasicSpec pSL (AS_BASIC.Basic_spec bS) =
                  , AS_Anno.l_annos = AS_Anno.l_annos aBI
                  , AS_Anno.r_annos = AS_Anno.r_annos aBI
                  }
+
+checkHornPos :: AS_BASIC.FORMULA -> AS_BASIC.FORMULA -> Bool
+checkHornPos fc fl = 
+    case fc of
+      AS_BASIC.Conjunction _ _ -> foldl (&&) True $ map isPosLiteral $ Tools.flatten fc
+      _                        -> False
+    &&
+    isPosLiteral fl
