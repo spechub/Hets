@@ -20,7 +20,7 @@ import System.Exit
 import System.Cmd (system)
 import System.Environment(getEnv, getArgs)
 import qualified Data.Map as Map
-import qualified Date.List as List
+import qualified Data.List as List
 import OWL_DL.StructureAna
 import Data.Graph.Inductive.Graph
 import Static.DevGraph
