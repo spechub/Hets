@@ -132,7 +132,8 @@ spassComorphisms =
                                      (Comorphism CASL2SubCFOL)
                       >>= (compComorphism idCASL_nosub)
                       >>= compSPASS)
-       -- mod2SPASS <- compComorphism (Comorphism Modal2CASL) partOut
+       -- Fixme: constraint empty mapping is not available after Modal2CASL
+       -- mod2SPASS <- compComorphism (Comorphism Modal2CASL) partSubOut
        return [Comorphism (IdComorphism SoftFOL ()),
                Comorphism SuleCFOL2SoftFOL,partOut,partSubOut]
 
