@@ -602,7 +602,7 @@ basicOutput (ErrorOutput out)   = hPutStr stderr out
 
 pgipInteractiveShellDescription :: ShellDescription [Status]
 pgipInteractiveShellDescription =
- let wbc = "\n\r\v\\,;" in
+ let wbc = "\n\r\v\\" in
       initialShellDescription
        { shellCommands      = pgipShellCommands
        , commandStyle       = OnlyCommands
@@ -614,7 +614,7 @@ pgipInteractiveShellDescription =
 
 pgipFileShellDescription :: ShellDescription [Status]
 pgipFileShellDescription =
- let wbc = "\t\n\r\v\\,;" in
+ let wbc = "\t\n\r\v\\" in
       initialShellDescription
        { shellCommands      = pgipShellCommands
        , commandStyle       = OnlyCommands

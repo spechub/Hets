@@ -27,6 +27,7 @@ import Common.Taxonomy
 import Data.Set
 import Logic.Logic
 import Logic.Grothendieck
+import Logic.Comorphism
 #ifdef UNI_PACKAGE
 import Proofs.InferBasic
 import GUI.ProofManagement (GUIMVar)
@@ -71,9 +72,9 @@ data Status =
 -- AllGoals stores all goals contained by the graph at any moment in time
  | AllGoals [GraphGoals]
 -- Comorph stores  a certain comorphism to be used
- | Comorph [String]
+ | Comorph AnyComorphism
 -- SProver stores the selected prover
- | SProver  String 
+ | SProver  G_prover
 -- Address stores the current library loaded so that the correct promter can
 -- be generated
  | Address String
@@ -120,7 +121,7 @@ getAllGoals ls
       _:l               -> getAllGoals l
 
 -- | The function returns the text containing the comorphism if any
-getComorph :: [Status] -> Maybe [String]
+getComorph :: [Status] -> Maybe AnyComorphism
 getComorph ls
   = case ls of 
       []                -> Nothing
@@ -129,7 +130,7 @@ getComorph ls
 
 -- | The function return the selected prover if any
 getSProver :: [Status] 
-           -> Maybe String 
+           -> Maybe G_prover 
 getSProver ls
   = case ls of
       []              -> Nothing
@@ -213,6 +214,7 @@ prefixType wd
      "show-concept" -> 2
      "show-taxonomy" -> 2
      "show-theory" -> 2
+     "prover" -> 4
      _           -> 0
 
 arrowNext :: String -> Bool
@@ -331,53 +333,81 @@ addWords ls wd
       x:l  -> (wd++x):(addWords l wd)
       []   -> []
 
+solveNode::[GraphGoals] -> Maybe [AnyComorphism]
+solveNode input
+ = case input of
+    (GraphNode (_,x)):_ ->
+        case x of
+           DGNode _ th _ _ _ _ _ -> Just (findComorphismPaths
+                                           logicGraph (sublogicOfTh th))
+           DGRef _ _ _ th _ _ ->    Just (findComorphismPaths
+                                           logicGraph (sublogicOfTh th))
+    _:ls -> solveNode ls
+    []   -> Nothing
+
+solveComorph::[Status] -> Maybe [AnyComorphism]
+solveComorph state
+  = case getComorph state of
+      Just smth  -> Just [smth]
+      Nothing    -> case getSelected state of
+                      Nothing  -> Nothing
+		      Just ls  -> solveNode ls
+
+createProverList :: [(G_prover, AnyComorphism)] -> [String]
+createProverList ls
+ = 
+   case ls of
+     (x,_):l -> ((getPName x): (createProverList l))
+     []      ->  []
+
+
+getProversCMDLautomatic::[AnyComorphism]->[(G_prover,AnyComorphism)]
+getProversCMDLautomatic = foldl addProvers []
+     where addProvers acc cm =
+             case cm of 
+	     Comorphism cid -> acc ++
+	         foldl (\ l p -> if P.hasProverKind P.ProveCMDLautomatic p
+		                    then (G_prover (targetLogic cid) p,cm):l
+				    else l)
+		       []
+		       (provers $ targetLogic cid)
+
+
 -- | The function 'pgipCompletionFn' given the current status and an incomplete
 -- word provides a list of possible words completions
 pgipCompletionFn :: [Status] -> String -> IO [String]
 pgipCompletionFn state wd
- = case state of
-    (Env ln libEnv):rest ->
-      case rest of
-       (AllGoals allGoals):_ -> do
-        let dgraph= lookupDGraph ln libEnv
-        pref <- getShortPrefix wd []
-        if ((prefixType pref)> 0)
-         then do
-          let tmp= if ((prefixType pref)==1)
-               then getGoalNameFromList allGoals (labNodes dgraph)
-               else
-                   if ((prefixType pref)==2)
-                    then  getNameList (labNodes dgraph)
-                    else ((getNameList (labNodes dgraph)) ++
-                           (getGoalNameFromList allGoals (labNodes dgraph)))
+ = 
+   case getLIB_NAME state of
+    Nothing -> return []
+    Just ln ->
+     case getLibEnv state of
+      Nothing -> return []
+      Just libEnv ->
+       case getAllGoals state of
+        Nothing -> return []
+	Just allGoals ->
+	 do
+	  let dgraph = lookupDGraph ln libEnv
+	  pref <- getShortPrefix wd []
+          let tmp = case (prefixType pref) of 
+                       1 -> getGoalNameFromList allGoals (labNodes dgraph)
+                       2 -> getNameList (labNodes dgraph)
+                       3 -> (getNameList (labNodes dgraph)) ++ 
+		             (getGoalNameFromList allGoals (labNodes dgraph))
+                       4 -> case solveComorph state of
+		             Nothing   -> []
+			     Just smth -> createProverList 
+			        (getProversCMDLautomatic smth)  
+                       _ -> []
           usedElem <- getUsedElements wd
           let values = eliminateList usedElem tmp
           let list = checkWord (getSuffix wd) values
-          if (list==[]) then return []
-                        else return (addWords list (getLongPrefix wd []))
-         else
-          return []
-       _:l -> pgipCompletionFn ((Env ln libEnv):l) wd
-       []  -> return []
-    (AllGoals allGoals):rest ->
-      case rest of
-       (Env ln libEnv):_ -> do
-         let dgraph= lookupDGraph ln libEnv
-         pref <- getShortPrefix wd []
-         if ((prefixType pref)> 0)
-          then do
-           let values = if prefixType pref == 1
-                        then getGoalNameFromList allGoals (labNodes dgraph)
-                        else getNameList (labNodes dgraph)
-           let list = checkWord (getSuffix wd) values
-           if (list==[]) then return []
-                        else return (addWords list (getLongPrefix wd []))
-          else
-           return []
-       _:l -> pgipCompletionFn ((AllGoals allGoals):l) wd
-       []  -> return []
-    _:l               ->    pgipCompletionFn l wd
-    []                -> return []
+          if (list == []) 
+	       then return []
+               else return (addWords list (getLongPrefix wd []))
+          
+
 
 
 -- | The function 'getNodeList' returns from a list of graph goals just

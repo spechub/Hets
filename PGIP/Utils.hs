@@ -41,6 +41,16 @@ data GOAL =
  deriving (Eq,Show)
 
 
+-- | The function 'unite_semicolon' unites a list of strings into one string
+-- using a semicolon as separetor
+unite_semicolon :: [String] -> String
+unite_semicolon input
+  = case input of
+      x:[] -> x
+      x:ls -> x++";"++(unite_semicolon ls)
+      []   -> []
+
+
 
 -- | The function 'getGoalList' creates a graph goal list ( a graph goal is 
 -- defined by the datatype 'GraphGoals') that is a part of the list passed

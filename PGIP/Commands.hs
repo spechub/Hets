@@ -41,6 +41,12 @@ import Common.Utils
 import Common.AnnoState
 import Common.Lexer
 import Common.Taxonomy
+import Common.Result
+
+import Comorphisms.LogicGraph
+import Logic.Grothendieck
+
+import Proofs.InferBasic
 
 import Text.ParserCombinators.Parsec
 import Data.Graph.Inductive.Graph
@@ -814,42 +820,35 @@ cDgInferBasic input status =
 cTranslate::String -> [Status] 
                        -> IO [Status]
 cTranslate input _
+ = do case lookupComorphism_in_LG input of
+         Result _ (Just smth) -> return [Comorph smth]
+         _                    -> return [OutputErr "Wrong parameters"]
+
+
+
+
+decideProver :: String ->[(G_prover,AnyComorphism)] -> IO [Status]
+decideProver input ls
  = do
-    let r=runParser (scanCommand ["COMORPHISM"]) (emptyAnnos ()) "" input
-    case r of
-     Left _ -> do
-                putStr "Error parsing the comorphism ! \n"
-                return []
-     Right param ->
-       case param of
-         ParsedComorphism ls : _ -> return [(Comorph ls)]
-         _ -> return [(OutputErr "Wrong parameters")]
+   case ls of
+    (x,_):l -> case ((getPName x)== input) of
+                 True -> return [SProver x] 
+		 False-> decideProver input l
+    _       -> return [OutputErr "Wrong parameters"]
 
 
 
-decideProver :: String -> IO [Status]
-decideProver input 
- = case input of
-     "SPASS"    -> return [SProver "SPASS"]
-     "Isabelle" -> return [SProver "Isabelle"]
-     _          -> do
-                    putStr "Unavailable prover"
-                    return []
-
+	     
 
 cProver::String -> [Status] 
                     ->IO [Status]
-cProver input _
+cProver input state
  = do
-    let r=runParser (scanCommand ["PROVER"]) (emptyAnnos ()) "" input
-    case r of
-     Left _ -> do
-                putStr "Error parsing the prover id \n"
-                return []
-     Right param  ->
-       case param of
-                 (UseProver ls ):_ -> decideProver ls
-                 _                 -> return [(OutputErr "Wrong parameters")]
+    case solveComorph state of 
+       Nothing   -> return [OutputErr "Wrong parameters"]
+       Just smth -> decideProver input
+                       (getProversCMDLautomatic smth)
+
 
 cShowDgGoals::String -> [Status]
                         -> IO [Status]
