@@ -116,10 +116,9 @@
 \begin{document}
 
 \title{{\bf \protect{\LARGEHets} User Guide}\\ 
--- Version 0.5 --}
+-- Version 0.7 --}
 \author{Till Mossakowski\\[1em]
-Department of Computer Science\\ and Bremen
-Institute for Safe Systems,\\ University of Bremen, Germany.\\[1em]
+DFKI Lab Bremen, Bremen, Germany.\\[1em]
 Comments to: hets-devel@tzi.de
 }
 
@@ -182,7 +181,7 @@ Haskell & x & x & -\\\hline
 \CASLDL & x & - & - \\\hline
 OWL DL basic & x & (x) & - \\\hline
 OWL DL structure & x & (x) & - \\\hline
-SPASS & - & - & x \\\hline
+SoftFOL & - & - & x \\\hline
 \Isabelle & - & - & x \\\hline
 \end{tabular}
 \end{center}
@@ -213,7 +212,8 @@ integration of \CASL extensions and keeps the effort of integrating
 suited for the specification of process types and reactive system.
 The central proof method is coinduction.
 
-\item[ModalCASL] is an extension of \CASL with multi-modalities and
+\item[ModalCASL] \cite{ModalCASL}
+ is an extension of \CASL with multi-modalities and
 term modalities. It allows the specification of modal systems with 
 Kripke's possible worlds semantics. It is also possible to express
 certain forms of dynamic logic. 
@@ -223,9 +223,8 @@ certain forms of dynamic logic.
   programming language Haskell and allows program constructs being
   embedded in the specification. 
   An overview of \HasCASL is given in \cite{Schroeder:2002:HIS};
-the language is summarized in \cite{HasCASL/Summary}.
-The latter document is also available on the CD-ROM 
-in \texttt{Tools/Hets/doc}.
+the language is summarized in \cite{HasCASL/Summary}, the semantics
+in \cite{Schroder05b,Schroder-habil}.
 
 \item[Haskell] is a modern, pure and strongly typed functional
   programming language. It simultaneously is the implementation
@@ -250,7 +249,8 @@ Hets calls an external OWL DL parser
 The
   structuring of the OWL imports is displayed as Development Graph.
 
-\item[CASL-DL] is an extension of a restriction of \CASL, realizing
+\item[CASL-DL] \cite{OWL-CASL-WADT2004} 
+is an extension of a restriction of \CASL, realizing
 a strongly typed variant of OWL DL in \CASL syntax.
 It extends
   \CASL with cardinality restrictions for the description of sorts and
@@ -260,15 +260,20 @@ It extends
   of the topsort Thing) are allowed. It is used to bring OWL DL and
   \CASL closer together.
 
-\item[SPASS] \cite{WeidenbachEtAl02} is an automatic theorem prover for first-order logic
-with equality.
+\item[SoftFOL] \cite{LuettichEA06a} offers three automated theorem
+  proving systems (ATP) for first-order logic with equality: (1) SPASS
+  \cite{WeidenbachEtAl02}; (2) Vampire \cite{RiazanovV02}; and (3)
+  MathServ Broker\footnote{which chooses an appropiate ATP upon a
+    classification of the FOL problem} \cite{ZimmerAutexier06}.
+  These together comprise some of the most advanced theorem provers
+  for first-order logic.
 
 \item[\Isabelle] \cite{NipPauWen02} is an interactive theorem prover for higher-order
 logic.
 \end{description}
-SPASS and \Isabelle are the only logics coming with a prover. Proof
-support for the other logics can be obtained by using logic translations
-to a prover-supported logic.
+SoftFOL and \Isabelle are currently the only logics coming with a
+prover. Proof support for the other logics can be obtained by using
+logic translations to a prover-supported logic.
 
 
 An introduction to \CASL can be found in the \CASL User Manual
@@ -288,7 +293,7 @@ in Sect.~\ref{sec:HetSpec} below.
 The latest \Hets version can be obtained from the
 \Hets tools home page
 \begin{quote}
-\texttt{http://www.tzi.de/cofi/hets}
+\texttt{http://www.dfki.de/sks/hets}
 \end{quote}
  Since \Hets is being
 improved constantly, it is recommended always to use the latest version.
@@ -296,69 +301,28 @@ improved constantly, it is recommended always to use the latest version.
 \Hets currently is available for Linux, Solaris and
 Mac OS-X. 
 
-MacIntosh users need to install some libraries, which can be found
-at the \Hets download page.
+The \Hets installer will automatically download and install further
+software (if not already installed on your computer):
+
+\medskip
+{\small
+\begin{tabular}{|l|l|l|}\hline
+CASL-lib & specification library & \url{http://www.cofi.info/Libraries}\\\hline
+uDraw(Graph) & graph drawing & \url{http://www.tzi.de/uDrawGraph/en/}\\\hline
+Tcl/Tk & graphics widget system & \url{http://www.scriptics.com/software/tcltk/} \\\hline
+SPASS & theorem prover & \texttt{http://spass.mpi-sb.mpg.de/}\\\hline
+\Isabelle & theorem prover & \url{http://www.cl.cam.ac.uk/Research/HVG/Isabelle/}\\\hline
+(X)Emacs & editor (for Isabelle) & (must be installed manually)\\\hline
+\end{tabular}
+}
+\medskip
+
 
 If you want to compile \Hets from the sources, please follow the
 link ``Hets: source code and information for developers''
 on teh \Hets web page, download the sources (as tarball or from
 cvs), and follow the
 instructions in the \texttt{INSTALL} file.
-
-\subsection*{uDraw(Graph)}
-For the display of development graphs (with the -g option), \Hets uses
-uDraw(Graph), formerly known as daVinci.
-You can get uDraw(Graph) freely from 
-\begin{quote}
-\url{http://www.tzi.de/uDrawGraph/en/}.
-\end{quote}
-Moreover, you need Tcl/Tk as well, available freely from
-\begin{quote}
-\url{http://www.scriptics.com/software/tcltk/}.
-\end{quote}
-But Tcl/Tk probably has been already installed
-on your computer anyway.
-
-Set the environment variable \texttt{\$UNIWISH} to the wish binary
-(which is part of Tcl/Tk), and \texttt{\$UNIDAVINCI} to the
-uDraw(Graph) binary. Furthermore, uDraw(Graph) requires that
-\texttt{DAVINCIHOME} is set to the installation directory of
-uDraw(Graph).
-
-\subsection*{Isabelle}
-
-For theorem proving with \Isabelle, you need to install \Isabelle,
-which is available freely from 
-\begin{quote}
-\url{http://www.cl.cam.ac.uk/Research/HVG/Isabelle/}.
-\end{quote}
-We recommend to use the latest version (\Isabelle 2005), together
-with Proof General, a proof interface that comes with the \Isabelle
-distribution. Proof General uses the Eamcs or Xemacs editor.
-
-Set the environment variable
-\texttt{\$HETS\_ISABELLE} to the \Isabelle (or Emacs, for use with proof general) binary, and set \texttt{\$LC\_CTYPE} to \texttt{C}.
-
-Some \Isabelle theories generated by \Hets may need to have libraries
-available, see the paragraph `Libraries` below.
-
-\subsection*{SPASS}
-
-For theorem proving with SPASS, obtain SPASS freely from 
-\begin{quote}
-\texttt{http://spass.mpi-sb.mpg.de/}.
-\end{quote}
-
-\subsection*{Libraries of specifications}
-
-A repository of libraries of specifications for use with \Hets
-is available under \url{http://www.cofi.info/Libraries}.
-
-The environment variable \texttt{HETS\_LIB} should be set to
-a location where the specification libraries are stored. 
-
-%\QUERY{This should be done by the install script!}
-
 
 
 \section{Analysis of Specifications}
@@ -474,9 +438,8 @@ The subsequent specifications are then parsed and analysed as
 it is possible to use references to named \CASL specifications;
 these are then automatically translated along the default
 embedding of \CASL into \HasCASL (cf.\ Fig.~\ref{fig:LogicGraph}). 
-(Heterogeneous constructs
-for explicit translations between logics will be made available
-in the future.)
+(There are also heterogeneous constructs
+for explicit translations between logics.)
 
 \eat{
 A \CspCASL specification consists of a \CASL specification
@@ -738,14 +701,21 @@ development graphs:
 \item[Rectangular nodes] are external nodes corresponding
  to a specification downloaded from
 another library.
+\item[Red nodes] have open proof obligations.
+\item[Green nodes] have all proof obligations resolved.
 \item[Black links] correspond to reference to other specifications
 (definition links in the sense of \cite[IV:4]{CASL/RefManual}).
 \item[Blue links] correspond to hiding (hiding definition links).
 \item[Red links] correspond to open proof obligations (theorem links).
 \item[Green links] correspond to proved proof obligations (theorem links).
+\item[Yellow links] correspond to open proof obligations involving hiding (hiding theorem links).
 \item[Solid links] correspond to global (definition or theorem) 
 links in the sense of \cite[IV:4]{CASL/RefManual}.
 \item[Dashed links] correspond to local (definition or theorem) links in the sense of \cite[IV:4]{CASL/RefManual}.
+\item[Single links] have homogeneous signature morphisms (staying within
+one and the same logic).
+\item[Double links] have heterogeneous signature morphisms (moving between
+logics).
 \end{description}
 
 We now explain the menus of the development graph window.
@@ -757,7 +727,7 @@ of the graph have attached pop-up menus, which appear when
 clicking with the right mouse button.
  
 \begin{description}
-\item[Edit] This menu has two submenus:
+\item[Edit] This menu has the following submenus:
 \begin{description}
 \item[Unnamed nodes] 
 The ``Hide/show names'' menu is a toggle:
@@ -782,6 +752,15 @@ nodes re-appear.
   become green, and instead, some of the node will get red, indicating
   open local proof goals.
 
+\item[Translate Graph] translates the whole development graph
+along a logic comorphism.
+\item[Show Logic Graph] shows the graph of logics and logic comorphisms
+currently supported by \Hets.
+\item[Show Library Graph] shows the graph of libraries that have
+been loaded into \Hets, and their dependencies. For library,
+the corresponding development graphs can be shown using its node menu.
+Also, a list of specifications and views can be shown.
+
 \end{description}
 \item[Pop-up menu for nodes]
 Here, the number of submenus depends on the type of the node:
@@ -794,20 +773,23 @@ are not part of the theory; they can be made visible only by re-adding
 the hidden symbols, using the proof rule \emph{Theorem-Hide-Shift}.
 \item[Translate theory] Translates the theory of a node to another logic.
 A menu with the possible translation paths will be displayed.
-\item[Show taxonomy graphs] (Only available for some logics) Shows the subsort graph of the signature of the node.
+\item[Taxonomy graphs] (Only available for some logics) Shows the subsort graph of the signature of the node.
 \item[Show sublogic] Shows the logic and, within that logic, the minimal sublogic
 for the signature and the axioms of the node.
 \item[Show origin] Shows the kind of \CASL structuring construct that
 led to the node.
+\item[Show proof status] Show open and proven local proof goals.
 \item[Prove] Try to prove the local proof goals. See Section~\ref{sec:Proofs} 
 for details.
-\item[Show proof status] Show open and proven local proof goals.
 \item[Check consistency] Check the consistency of the theory of the node.
 \item[Show just subtree] (Only for named nodes) Reduce the complexity
 of the graph by just showing the subtree below the current node.
 \item[Undo show just subtree] (Only for named nodes) Undo the reduction.
 \item[Show referenced library] (Only for external nodes) Open a new window
 showing the development graph for the library the external node refers to.
+%\item[Show spec] Show the structured specification of the node.
+% (not fully implemented yet)
+\item[Show number of node] Show the internal number of the node.
 \end{description}
 \item[Pop-up menu for links]
 Again, the number of submenus depends on the type of the node:
@@ -824,6 +806,9 @@ led to the link.
 \item[Check conservativity] (Experimental) Check whether the  
 theory of the target node of the link
 is a conservative extension of the theory of the source node.
+\item[Show ID of this edge] Shows the internal number of the edge.
+These numbers are also used in the proof status information for
+edges.
 \end{description}
 \end{description}
 
@@ -894,33 +879,36 @@ XML file.
 chooses a translation option. \texttt{TRANS} is a colon-separated list 
 without blanks of one or more from:
 
-CASL2CoCASL,
-CASL2CspCASL,
-CASL2HasCASL,\\
-CASL2Modal,
-CASL2PCFOL,
-CASL2PCFOL,\\
-CASL2SPASS,
-CASL2SubCFOL,
-CASL2SubCFOL,\\
-CASL2TopSort,
-CFOL2IsabelleHOL,
-CoCASL2CoPCFOL,\\
-CoCFOL2IsabelleHOL,
-CoPCFOL2CoCFOL,
-CspCASL2IsabelleHOL,\\
-CspCASL2Modal,
-HasCASL2HasCASL,
-HasCASL2Haskell,\\
-HasCASL2IsabelleHOL,
-Haskell2IsabelleHOLCF,
-Hs2HOLCF,\\
-Modal2CASL,
-Modal2CASL,
-PCFOL2CFOL,\\
-PCFOL2CFOL,
-PCFOL2FOL.
-
+\begin{tabular}{|l|l|}\hline
+CASL2CoCASL &  inclusion \\\hline
+CASL2CspCASL & inclusion \\\hline
+CASL2HasCASL & inclusion \\\hline
+CASL2Modal & inclusion \\\hline
+CASL2PCFOL &  coding of subsorting by injections\\\hline
+CASL2SPASS &  \\\hline
+CASL2SubCFOL & coding of partial functions by error supersorts \\\hline
+CASL2TopSort & coding of subsorting by a top sort \\\hline
+CFOL2IsabelleHOL &  coding of \CASL to Isabelle\\\hline
+CoCASL2CoPCFOL & coding of subsorting by injections \\\hline
+CoCASL2CoSubCFOL & coding of partial functions by error supersorts  \\\hline
+CoCFOL2IsabelleHOL & coding of \CoCASL to Isabelle \\\hline
+CoPCFOL2CoCFOL & coding of partial functions by ??? \\\hline
+%%CspCASL2IsabelleHOL &  \\\hline
+%%CspCASL2Modal &  \\\hline
+HasCASL2HasCASL &  \\\hline
+HasCASL2Haskell & translation of executable subset to Haskell \\\hline
+HasCASL2IsabelleHOL & coding to Isabelle/HOL \\\hline
+Haskell2IsabelleHOLCF & coding to Isabelle/HOLCF \\\hline
+Modal2CASL & standard translation \\\hline
+PCFOL2CFOL & ? \\\hline
+PCFOL2FOL & ? \\\hline
+SuleCFOL2SoftFOL &  \\\hline
+PCoClTyConsHOL2IsabelleHOL &  \\\hline
+Prop2CASL &  \\\hline
+PropIE2PropE &  \\\hline
+PropIE2PropI &  \\\hline
+PropIE2Prop &  \\\hline
+\end{tabular}
 
 
 
@@ -1122,13 +1110,13 @@ to be provided.
 The architecture of \Hets is shown in Fig.~\ref{fig:hets}. 
 
 If your favourite logic is missing in \Hets, please tell us
-(hets@tzi.de). We will take account your feedback when deciding which
+(hets-devel@tzi.de). We will take account your feedback when deciding which
 logics and proof tools to integrate next into \Hets. Help with
 integration of more logics and proof tools into \Hets is also welcome.
 
 \Hets is mainly maintained by
-Christian Maeder (maeder@tzi.de) and Till Mossakowski
-(till@tzi.de). The mailing list is \url{hets@tzi.de},
+Christian Maeder (Christian.Maeder@dfki.de) and Till Mossakowski
+(Till.Mossakowski@dfki.de). The mailing list is \url{hets-devel@tzi.de},
 the homepage is
 \url{http://www.informatik.uni-bremen.de/mailman/listinfo/hets-devel}.
 
