@@ -21,10 +21,8 @@ import qualified Data.Map as Map
 import qualified Common.OrderedMap as OMap
 
 import Data.List
-import Data.Maybe
 
 import qualified Control.Concurrent as Conc
-
 import HTk
 import Separator
 import Space
@@ -138,10 +136,9 @@ setSelectedProver :: ListBox String
                   -> ProofGUIState lid1 sentence1
                   -> IO ()
 setSelectedProver lb st = do
-    let ind = if (isJust $ selectedProver st)
-              then findIndex (==(fromJust $ selectedProver st))
-                       $ Map.keys (proversMap st)
-              else Nothing
+    let ind = case selectedProver st of
+              Just sp -> findIndex (==sp) $ Map.keys (proversMap st)
+              Nothing -> Nothing
     maybe (return ()) (\i -> selection i lb >> return ()) ind
 
 -- *** Callbacks
@@ -539,9 +536,13 @@ proofManagementGUI lid prGuiAcs -- proveF fineGrainedSelectionF recalculateSublo
                      (\ si -> updateStateGetSelectedGoals si lb))
         s' <- recalculateSublogicF prGuiAcs $
                 (sWithSel {proversMap = knownProvers})
-        sublogicLabel # text (show $ sublogicOfTheory s')
-        populatePathsListBox pathsLb (proversMap s')
-        setSelectedProver pathsLb s'
+        let newSublogicText = show $ sublogicOfTheory s'
+        sublogicText <- getText sublogicLabel
+        when (sublogicText /= newSublogicText)
+             (sublogicLabel # text newSublogicText >> return ())
+        when (Map.keys (proversMap s) /= Map.keys (proversMap s'))
+             (do populatePathsListBox pathsLb (proversMap s')
+                 setSelectedProver pathsLb s')
         return s'{ selectedProver = 
                        maybe Nothing
                              (\ sp -> find (==sp) $ Map.keys (proversMap s'))
