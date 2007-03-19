@@ -50,7 +50,11 @@ read_LIB_DEFN_M lgraph defl opts file input =
     _ -> case runParser (library (defl, lgraph)) (emptyAnnos defl)
               file input of
          Left err  -> fail (showErr err)
-         Right ast -> return $ setFilePath file ast
+         Right ast -> return ast
+
+{- if I try to store the filenname in the LIB_DEFN, then open, save,
+save-as does no longer work -}
+
 
 readShATermFile :: ShATermConvertible a => FilePath -> IO (Result a)
 readShATermFile fp = do
@@ -118,7 +122,7 @@ fileToLibName opts efile =
 readPrfFile :: HetcatsOpts -> LibEnv -> LIB_NAME -> IO LibEnv
 readPrfFile opts ps ln = do
     let fname = libNameToFile opts ln
-        prfFile = rmSuffix fname ++ prfSuffix
+        prfFile = fname ++ prfSuffix
     recent <- checkRecentEnv opts prfFile fname
     h <- if recent then
           fmap (maybe [emptyHistory] id) $ readVerbose opts ln prfFile
