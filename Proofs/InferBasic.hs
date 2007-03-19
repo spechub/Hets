@@ -57,7 +57,6 @@ import Comorphisms.KnownProvers
 
 import GUI.Utils
 import GUI.ProofManagement
-import GUI.ProofManagementTypes
 
 import Data.Maybe
 -- ---------------

@@ -32,7 +32,6 @@ import XSelection
 
 import GUI.HTkUtils
 import GUI.ProofDetails
-import GUI.ProofManagementTypes
 
 import Proofs.GUIState
 import Logic.Logic
