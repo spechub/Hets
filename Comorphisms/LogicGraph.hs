@@ -93,7 +93,6 @@ inclusionList = [Comorphism CASL2HasCASL, Comorphism HasCASL2HasCASL,
                  Comorphism CFOL2IsabelleHOL,
                  Comorphism SuleCFOL2SoftFOL,
                  Comorphism Prop2CASL,
-                 Comorphism Prop2CNF,
 #ifdef PROGRAMATICA
                  Comorphism HasCASL2Haskell,
                  Comorphism Haskell2IsabelleHOLCF,
@@ -112,6 +111,7 @@ inclusionList = [Comorphism CASL2HasCASL, Comorphism HasCASL2HasCASL,
 
 normalList :: [AnyComorphism]
 normalList = [Comorphism SuleCFOL2SoftFOLInduction,
+              Comorphism Prop2CNF,
 #ifdef CASLEXTENSIONS
                  Comorphism CoCASL2CoPCFOL,
                  Comorphism CoCASL2CoSubCFOL,

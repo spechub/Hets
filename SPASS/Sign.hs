@@ -165,8 +165,8 @@ data SPProblem =
 data SPLogicalPart =
         SPLogicalPart { symbolList      :: Maybe SPSymbolList,
                         declarationList :: [SPDeclaration],
-                        formulaLists    :: [SPFormulaList] --,
---                        clauseLists :: [SPClauseList],
+                        formulaLists    :: [SPFormulaList],
+                        clauseLists :: [SPClauseList]
 --                        proofLists :: [SPProofList]
                         }
       deriving (Eq, Ord, Show)
@@ -233,6 +233,17 @@ data SPFormulaList =
                         formulae   :: [SPFormula] }
       deriving (Eq, Ord, Show)
 
+-- *** Clause List
+{- |
+  SPASS Clause List
+-}
+
+data SPClauseList =
+        SPClauseList  { coriginType :: SPOriginType,
+                        clauseType  :: SPClauseType,
+                        clauses     :: [SPFormula] }
+      deriving (Eq, Ord, Show)
+
 {- |
   There are axiom formulae and conjecture formulae.
 -}
@@ -240,6 +251,15 @@ data SPOriginType =
         SPOriginAxioms
       | SPOriginConjectures
       deriving (Eq, Ord, Show)
+
+{- |
+   Formulae can be in cnf or dnf
+-}
+
+data SPClauseType =
+     SPCNF
+   | SPDNF
+    deriving (Eq, Ord, Show)
 
 -- *** Formulae And Terms
 
