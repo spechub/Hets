@@ -40,6 +40,8 @@ data ProofGUIState lid sentence =
         logicId :: lid,
         -- | sublogic of initial G_theory
         sublogicOfTheory :: G_sublogics,
+        -- | last used sublogic to determine fitting comorphisms
+        lastSublogic :: G_sublogics,
         -- | goals are stored in a separate map
         goalMap :: ThSens sentence (AnyComorphism,BasicProof),
         -- | currently known provers
@@ -57,7 +59,10 @@ data ProofGUIState lid sentence =
         -- | accumulated Diagnosis during Proofs
         accDiags :: [Diagnosis],
         -- | which prover (if any) is currently selected
-        selectedProver :: Maybe String
+        selectedProver :: Maybe String,
+        -- | Grothendieck theory based upon currently selected goals, axioms
+        --   and proven theorems
+        selectedTheory :: G_theory
       }
 
 {- |
@@ -75,16 +80,19 @@ initialState ::
              -> m (ProofGUIState lid1 sentence1)
 initialState lid1 thN th@(G_theory lid2 sig ind thSens _) pm cms = 
     do let (aMap,gMap) = Map.partition (isAxiom . OMap.ele) thSens
+           g_th = G_theory lid2 sig ind aMap 0
+           sublTh = sublogicOfTh th
        gMap' <- coerceThSens lid2 lid1 "creating initial GUI State" gMap
        return $ 
            ProofGUIState { theoryName = thN,
-                           theory = G_theory lid2 sig ind aMap 0,
-                           sublogicOfTheory = sublogicOfTh th,
+                           theory = g_th,
+                           sublogicOfTheory = sublTh,
+                           lastSublogic = sublTh,
                            logicId = lid1,
                            goalMap = gMap',
                            proversMap = pm,
                            comorphismsToProvers = cms,
-                           selectedGoals = [],
+                           selectedGoals = OMap.keys gMap',
                            includedAxioms = OMap.keys aMap,
                            includedTheorems = OMap.keys gMap,
                            accDiags = [],
@@ -97,6 +105,7 @@ initialState lid1 thN th@(G_theory lid2 sig ind thSens _) pm cms =
                                     if defaultGUIProver `elem` prvs
                                        then Just defaultGUIProver
                                        else Nothing
+                          ,selectedTheory = g_th
                          }
 
 

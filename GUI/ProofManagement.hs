@@ -32,6 +32,7 @@ import XSelection
 
 import GUI.HTkUtils
 import GUI.ProofDetails
+import GUI.ProofManagementTypes
 
 import Proofs.GUIState
 import Logic.Logic
@@ -90,14 +91,6 @@ toGuiStatus st = if proverRunning st
   then statusRunning
   else statusNotRunning
 
--- | constant label
-sublogicTheoryLabel :: String
-sublogicTheoryLabel = "Sublogic of Theory:"
-
--- | constant label
-sublogicSelectedTheoryLabel :: String
-sublogicSelectedTheoryLabel = "Sublogic of Currently Selected Theory:"
-
 {- |
   Generates a list of 'GUI.HTkUtils.LBGoalView' representations of all goals
   from a 'SPASS.Prove.State'.
@@ -142,6 +135,16 @@ populateAxiomsList lbAxs s =
        lbAxs # HTk.value (OMap.keys aM')
        return ()
 
+setSelectedProver :: ListBox String
+                  -> ProofGUIState lid1 sentence1
+                  -> IO ()
+setSelectedProver lb st = do
+    let ind = if (isJust $ selectedProver st)
+              then findIndex (==(fromJust $ selectedProver st))
+                       $ Map.keys (proversMap st)
+              else Nothing
+    maybe (return ()) (\i -> selection i lb >> return ()) ind
+
 -- *** Callbacks
 
 {- |
@@ -161,12 +164,7 @@ updateDisplay st updateLb goalsLb pathsLb statusLabel = do
     -- update goals listbox
     when updateLb
          (populateGoalsListBox goalsLb (goalsView st))
-    -- set selected Prover
-    let ind = if (isJust $ selectedProver st)
-              then findIndex (==(fromJust $ selectedProver st))
-                       $ Map.keys (proversMap st)
-              else Nothing
-    maybe (return ()) (\i -> selection i pathsLb >> return ()) ind
+    setSelectedProver pathsLb st
     -- update status label
     let (color, label) = toGuiStatus st
     statusLabel # text label
@@ -203,14 +201,14 @@ updateStateGetSelectedSens s lbAxs lbThs =
  Depending on the first argument all entries in a ListBox are selected
   or deselected
 -}
+
 doSelectAllEntries :: Bool -- ^ indicates wether all entries should be selected
                          -- or deselected
                  -> ListBox a
                  -> IO ()
 doSelectAllEntries selectAll lb =
   if selectAll
-     then selectionRange (0::Int) EndOfText lb
-              >> return ()
+     then selectionRange (0::Int) EndOfText lb >> return ()
      else clearSelection lb
 
 {- |
@@ -319,12 +317,7 @@ proofManagementGUI ::
                raw_symbol1
                proof_tree1) =>
        lid
-    -> (   ProofGUIState lid sentence
-        -> IO (Result.Result (ProofGUIState lid sentence)))
-    -- ^ called whenever the "Prove" button is clicked
-    -> (   ProofGUIState lid sentence
-        -> IO (Result.Result (ProofGUIState lid sentence)))
-    -- ^ called whenever the "More fine grained selection" button is clicked
+    -> ProofGUIActions lid sentence -- ^ record of possible GUI actions 
     -> String -- ^ theory name
     -> String -- ^ warning information
     -> DevGraph.G_theory -- ^ theory
@@ -334,13 +327,14 @@ proofManagementGUI ::
     -> GUIMVar -- ^ allows only one Proof window per graph; 
                -- must be filled with Nothing and is filled with Nothing after closing the window; while the window is open it is filled with the Toplevel
     -> IO (Result.Result DevGraph.G_theory)
-proofManagementGUI lid proveF fineGrainedSelectionF
+proofManagementGUI lid prGuiAcs -- proveF fineGrainedSelectionF recalculateSublogicF
                    thName warningTxt th
                    knownProvers comorphList guiMVar =
   do
   -- KnownProvers.showKnownProvers knownProvers
   -- initial backing data structure
-  initState <- initialState lid thName th knownProvers comorphList
+  initState <- (initialState lid thName th knownProvers comorphList
+                >>= recalculateSublogicF prGuiAcs)
   stateMVar <- Conc.newMVar initState
   lockMVar <- Conc.newMVar ()
 
@@ -420,7 +414,7 @@ proofManagementGUI lid proveF fineGrainedSelectionF
   vsp2 <- newSpace rvb vspacing []
   pack vsp2 []
 
-  l3 <- newLabel rvb [text sublogicTheoryLabel]
+  l3 <- newLabel rvb [text "Sublogic of Currently Selected Theory:"]
   pack l3 [Anchor NorthWest]
 
   rhb3 <- newHBox rvb []
@@ -429,7 +423,7 @@ proofManagementGUI lid proveF fineGrainedSelectionF
   hsp3 <- newLabel rhb3 [text hindent]
   pack hsp3 []
 
-  sublogicLabel <- newLabel rhb3 [text $ show $ sublogicOfTheory initState]
+  sublogicLabel <- newLabel rhb3 [text (show $ sublogicOfTheory initState)]
   pack sublogicLabel []
 
   vsp3 <- newSpace rvb vspacing []
@@ -506,36 +500,59 @@ proofManagementGUI lid proveF fineGrainedSelectionF
   bottom <- newFrame b []
   pack bottom [Expand Off, Fill Both]
 
-  showThButton <- newButton bottom [text "Show theory"]
+  bottomThFrame <- newFrame bottom []
+  pack bottomThFrame [Expand Off, Fill Both, Side AtLeft]
+  
+  showThButton <- newButton bottomThFrame [text "Show theory"]
   pack showThButton [Expand Off, Fill None, Side AtLeft]
+
+  showSelThButton <- newButton bottomThFrame [text "Show selected theory"]
+  pack showSelThButton [Expand Off, Fill None, Side AtRight]
 
   closeButton <- newButton bottom [text "Close"]
   pack closeButton [Expand Off, Fill None, Side AtRight,PadX (pp 13)]
 
   -- put the labels in the listboxes
   populateGoalsListBox lb (goalsView initState)
-  populatePathsListBox pathsLb knownProvers
   populateAxiomsList lbAxs initState
+  populatePathsListBox pathsLb (proversMap initState)
   lbThs # HTk.value (OMap.keys (goalMap initState))
+  doSelectAllEntries True lb
   doSelectAllEntries True lbAxs
   doSelectAllEntries True lbThs
+
 
   updateDisplay initState False lb pathsLb statusLabel
 
   let goalSpecificWids = map EnW [displayGoalsButton,proveButton,
                                   proofDetailsButton,moreButton]
       wids = [EnW pathsLb,EnW lbThs,EnW lb,EnW lbAxs] ++
-             map EnW (selectOpenGoalsButton : closeButton :showThButton:
-                      axsBtns++goalBtns++thsBtns) ++
+             map EnW (selectOpenGoalsButton : closeButton : showThButton :
+                      showSelThButton : axsBtns++goalBtns++thsBtns) ++
              goalSpecificWids
 
-  disableWids goalSpecificWids
+  enableWidsUponSelection lb goalSpecificWids
   pack main [Expand On, Fill Both]
   putWinOnTop main
+
+  let updateStatusSublogic s = do
+        sWithSel <- (updateStateGetSelectedSens s lbAxs lbThs >>=
+                     (\ si -> updateStateGetSelectedGoals si lb))
+        s' <- recalculateSublogicF prGuiAcs $
+                (sWithSel {proversMap = knownProvers})
+        sublogicLabel # text (show $ sublogicOfTheory s')
+        populatePathsListBox pathsLb (proversMap s')
+        setSelectedProver pathsLb s'
+        return s'{ selectedProver = 
+                       maybe Nothing
+                             (\ sp -> find (==sp) $ Map.keys (proversMap s'))
+                             (selectedProver s')}
 
   -- events
   (selectProverPath, _) <- bindSimple pathsLb (ButtonPress (Just 1))
   (selectGoals, _) <- bindSimple lb (ButtonPress (Just 1))
+  (selectAxioms, _) <- bindSimple lbAxs (ButtonPress (Just 1))
+  (selectTheorems, _) <- bindSimple lbThs (ButtonPress (Just 1))
   selectOpenGoals <- clicked selectOpenGoalsButton
   displayGoals <- clicked displayGoalsButton
   moreProverPaths <- clicked moreButton
@@ -543,16 +560,26 @@ proofManagementGUI lid proveF fineGrainedSelectionF
   showProofDetails <- clicked proofDetailsButton
   close <- clicked closeButton
   showTh <- clicked showThButton
+  showSelTh <- clicked showSelThButton
   (closeWindow,_) <- bindSimple main Destroy
   -- event handlers
   spawnEvent
     (forever
       (  (selectGoals >>> do
-             enableWidsUponSelection lb goalSpecificWids
-             done)
+            Conc.modifyMVar_ stateMVar updateStatusSublogic
+            enableWidsUponSelection lb goalSpecificWids
+            done)
+
+      +> (selectAxioms >>> do
+            Conc.modifyMVar_ stateMVar updateStatusSublogic
+            done)
+
+      +> (selectTheorems >>> do
+            Conc.modifyMVar_ stateMVar updateStatusSublogic
+            done)
 
       +> (selectOpenGoals >>> do
-             s <- Conc.readMVar stateMVar
+             s <- Conc.takeMVar stateMVar
              clearSelection lb
              let isOpenGoal (_,st) =
                      let thst = thmStatus st
@@ -567,32 +594,40 @@ proofManagementGUI lid proveF fineGrainedSelectionF
              mapM_ (\ i -> selection i lb)
                    (findIndices isOpenGoal $ OMap.toList $ goalMap s )
              enableWidsUponSelection lb goalSpecificWids
+             s' <- updateStatusSublogic s
+             Conc.putMVar stateMVar s'
              done)
 
       +> (deselectAllGoals >>> do
             doSelectAllEntries False lb
             disableWids goalSpecificWids
+            Conc.modifyMVar_ stateMVar updateStatusSublogic
             done)
 
       +> (selectAllGoals >>> do
             doSelectAllEntries True lb
             enableWids goalSpecificWids
+            Conc.modifyMVar_ stateMVar updateStatusSublogic
             done)
 
       +> (selectAllAxs >>> do
             doSelectAllEntries True lbAxs
+            Conc.modifyMVar_ stateMVar updateStatusSublogic
             done)
 
       +> (selectAllThs >>> do
             doSelectAllEntries True lbThs
+            Conc.modifyMVar_ stateMVar updateStatusSublogic
             done)
 
       +> (deselectAllAxs >>> do
             doSelectAllEntries False lbAxs
+            Conc.modifyMVar_ stateMVar updateStatusSublogic
             done)
 
       +> (deselectAllThs >>> do
             doSelectAllEntries False lbThs
+            Conc.modifyMVar_ stateMVar updateStatusSublogic
             done)
 
       +> (displayGoals >>> do
@@ -611,10 +646,8 @@ proofManagementGUI lid proveF fineGrainedSelectionF
             let s' = s{proverRunning = True}
             updateDisplay s' True lb pathsLb statusLabel
             disableWids wids
-            prState <- (updateStateGetSelectedSens s' lbAxs lbThs >>=
-                        (\ si -> updateStateGetSelectedGoals si lb))
-            -- writeIORef stateRef prState
-            Result.Result ds ms'' <- fineGrainedSelectionF prState
+            prState <- updateStatusSublogic s'
+            Result.Result ds ms'' <- (fineGrainedSelectionF prGuiAcs) prState
             s'' <- case ms'' of
                    Nothing -> fail "fineGrainedSelection returned Nothing"
                    Just res -> return res
@@ -632,11 +665,10 @@ proofManagementGUI lid proveF fineGrainedSelectionF
             let s' = s{proverRunning = True}
             updateDisplay s' True lb pathsLb statusLabel
             disableWids wids
-            prState <- (updateStateGetSelectedSens s' lbAxs lbThs >>=
-                        (\ si -> updateStateGetSelectedGoals si lb))
+            prState <- updateStatusSublogic s'
             -- putStrLn (show (includedAxioms prState)++
             --                   ' ':show (includedTheorems prState))
-            Result.Result ds ms'' <- proveF prState
+            Result.Result ds ms'' <- proveF prGuiAcs $ prState
             Conc.takeMVar stateMVar
             s'' <- case ms'' of
                    Nothing -> fail "proveF returned Nothing"
@@ -665,8 +697,15 @@ proofManagementGUI lid proveF fineGrainedSelectionF
       +> (showTh >>> do
             --displayTheory "Theory" thName th
             displayTheoryWithWarning "Theory" thName warningTxt th
-	    done)
+            done)
+
+      +> (showSelTh >>> do
+            s <- Conc.readMVar stateMVar
+            displayTheoryWithWarning "Selected Theory" thName warningTxt
+              (selectedTheory s)
+            done)
       ))
+
 
   sync ( (close >>> destroy main)
       +> (closeWindow >>> Conc.takeMVar lockMVar)
@@ -694,4 +733,3 @@ proofManagementGUI lid proveF fineGrainedSelectionF
                                                     (Map.union sensT gMap) 0)
                              }
               )
-

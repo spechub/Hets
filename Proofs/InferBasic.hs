@@ -57,7 +57,9 @@ import Comorphisms.KnownProvers
 
 import GUI.Utils
 import GUI.ProofManagement
+import GUI.ProofManagementTypes
 
+import Data.Maybe
 -- ---------------
 -- basic inference
 -- ---------------
@@ -176,14 +178,16 @@ basicInferenceNode checkCons lg (ln, node) libname guiMVar libEnv = do
           else do -- proving
             -- get known Provers
             kpMap <- liftR $ knownProversGUI
-            let kpMap' = shrinkKnownProvers sublogic kpMap
 	    newTh <- ResultT $
-                   proofManagementGUI lid1 proveKnownPMap
-                                           proveFineGrainedSelect
+                   proofManagementGUI lid1 ProofGUIActions {
+                       proveF = (proveKnownPMap lg),
+                       fineGrainedSelectionF = (proveFineGrainedSelect lg),
+                       recalculateSublogicF  =
+                                     recalculateSublogicAndSelectedTheory }
                                            thName
 					   (addHasInHidingWarning dGraph node)
                                            thForProof
-                                           kpMap'
+                                           kpMap
                                            (getProvers cms)
                                            guiMVar
             -- update the development graph
@@ -217,8 +221,9 @@ proveKnownPMap :: (Logic lid sublogics1
                symbol1
                raw_symbol1
                proof_tree1) =>
-       ProofGUIState lid sentence -> IO (Result (ProofGUIState lid sentence))
-proveKnownPMap st =
+       LogicGraph
+    -> ProofGUIState lid sentence -> IO (Result (ProofGUIState lid sentence))
+proveKnownPMap lg st =
     let mt = do
            pr_s <- selectedProver st
            ps <- Map.lookup pr_s (proversMap st)
@@ -227,7 +232,7 @@ proveKnownPMap st =
         matchingPr s (gp,_) = case gp of
                                G_prover _ p -> prover_name p == s
     in case mt of
-       Nothing -> proveFineGrainedSelect st
+       Nothing -> proveFineGrainedSelect lg st
        Just (pr_n,cm) ->
            callProver st
                       (case filter (matchingPr pr_n) $
@@ -250,33 +255,14 @@ callProver :: (Logic lid sublogics1
        ProofGUIState lid sentence
     -> (G_prover,AnyComorphism) -> IO (Result (ProofGUIState lid sentence))
 callProver st (G_prover lid4 p, Comorphism cid) =
-    case theory st of
+    case selectedTheory st of
     G_theory lid1 sign _ sens _ ->
         runResultT $ do
-          -- coerce goalMap
-        ths <- coerceThSens (logicId st) lid1
-                            "Proofs.InferBasic.callProver: selected goals"
-                            (goalMap st)
           -- partition goalMap
-        let (sel_goals,other_goals) =
-                let selected k _ = Set.member k s
-                    s = Set.fromList (selectedGoals st)
-                in Map.partitionWithKey selected ths
-            provenThs =
-                   Map.filter (\x -> (isProvenSenStatus $ OMap.ele x))
-                   other_goals
-          -- select goals from goalMap
-            -- sel_goals = filterMapWithList (selectedGoals st) goals
-          -- select proven theorems from goalMap
-            sel_provenThs = OMap.map (\ x -> x{isAxiom = True}) $
-                            filterMapWithList (includedTheorems st) provenThs
-            sel_sens = filterMapWithList (includedAxioms st) sens
-            lidT = targetLogic cid
+        let lidT = targetLogic cid
         bTh' <- coerceBasicTheory lid1 (sourceLogic cid)
                    "Proofs.InferBasic.callProver: basic theory"
-                   (sign, toNamedList $
-                          Map.union sel_sens $
-                          Map.union sel_provenThs sel_goals)
+                   (sign, toNamedList $ sens)
         (sign'',sens'') <- liftR $ wrapMapTheory cid bTh'
         -- call the prover
         p' <- coerceProver lid4 lidT "" p
@@ -307,11 +293,17 @@ proveFineGrainedSelect ::
                symbol1
                raw_symbol1
                proof_tree1) =>
-       ProofGUIState lid sentence -> IO (Result (ProofGUIState lid sentence))
-proveFineGrainedSelect st =
+       LogicGraph
+    -> ProofGUIState lid sentence -> IO (Result (ProofGUIState lid sentence))
+proveFineGrainedSelect lg st =
     runResultT $ do
-       pr <- selectProver $ comorphismsToProvers st
-       ResultT $ callProver st pr
+       let cmsToProvers = 
+             if (sublogicOfTheory st == lastSublogic st)
+               then comorphismsToProvers st
+               else getProvers $ findComorphismPaths lg $ sublogicOfTheory st
+       pr <- selectProver cmsToProvers
+       ResultT $ callProver st{lastSublogic = sublogicOfTheory st,
+                               comorphismsToProvers = cmsToProvers} pr
 
 -- | mark all newly proven goals with their proof tree
 markProved :: (Ord a, Logic lid sublogics
@@ -325,3 +317,46 @@ markProved c lid status thSens = foldl upd thSens status
           updStat ps s = Just $
                 s { thmStatus = (c, BasicProof lid ps) : thmStatus s}
 
+{- |
+  recalculation of sublogic upon (de)selection of goals, axioms and
+  proven theorems
+-}
+recalculateSublogicAndSelectedTheory :: (Logic lid sublogics1
+                   basic_spec1
+                   sentence
+                   symb_items1
+                   symb_map_items1
+                   sign1
+                   morphism1
+                   symbol1
+                   raw_symbol1
+                   proof_tree1) =>
+       ProofGUIState lid sentence -> IO (ProofGUIState lid sentence)
+recalculateSublogicAndSelectedTheory st =
+  case theory st of
+    G_theory lid1 sign _ sens _ -> do
+          -- coerce goalMap
+        ths <- coerceThSens (logicId st) lid1
+                            "Proofs.InferBasic.recalculateSublogic: selected goals"
+                            (goalMap st)
+          -- partition goalMap
+        let (sel_goals,other_goals) =
+                let selected k _ = Set.member k s
+                    s = Set.fromList (selectedGoals st)
+                in Map.partitionWithKey selected ths
+            provenThs =
+                   Map.filter (\x -> (isProvenSenStatus $ OMap.ele x))
+                   other_goals
+          -- select goals from goalMap
+            -- sel_goals = filterMapWithList (selectedGoals st) goals
+          -- select proven theorems from goalMap
+            sel_provenThs = OMap.map (\ x -> x{isAxiom = True}) $
+                            filterMapWithList (includedTheorems st) provenThs
+            sel_sens = filterMapWithList (includedAxioms st) sens
+            currentThSens = Map.union sel_sens $
+                              Map.union sel_provenThs sel_goals
+            sTh = G_theory lid1 sign 0 currentThSens 0
+            sLo = sublogicOfTh sTh
+        return $ st { sublogicOfTheory = sLo,
+                      selectedTheory = sTh,
+                      proversMap = shrinkKnownProvers sLo (proversMap st) }
