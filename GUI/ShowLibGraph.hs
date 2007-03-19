@@ -17,10 +17,14 @@ module GUI.ShowLibGraph
 where
 
 import Driver.Options(HetcatsOpts)
+import Driver.ReadFn
+
 import Syntax.AS_Library
+
 import ATC.AS_Library()
+
 import Static.DevGraph
---import GUI.ConvertDevToAbstractGraph
+import Static.AnalysisLibrary
 
 -- for graph display
 import DaVinciGraph
@@ -31,6 +35,7 @@ import GraphConfigure
 import TextDisplay
 import Configuration
 
+import Data.IORef
 import qualified Data.Map as Map
 import qualified Data.IntMap as IntMap
 import qualified Common.Lib.Rel as Rel
@@ -38,21 +43,65 @@ import qualified Common.Lib.Graph as Tree
 
 import Data.List
 
+type DaVinciGraphTypeSyn = Graph DaVinciGraph 
+   DaVinciGraphParms DaVinciNode DaVinciNodeType DaVinciNodeTypeParms
+   DaVinciArc DaVinciArcType DaVinciArcTypeParms
+
+type NodeArcList = ([DaVinciNode LIB_NAME],[DaVinciArc (IO String)])
+
 {- | Creates a  new uDrawGraph Window and shows the Library Dependency Graph of
      the given LibEnv.-}
-showLibGraph :: HetcatsOpts -> LibEnv -> (String -> LIB_NAME -> IO()) -> IO ()
-showLibGraph opts le showGraph =
+showLibGraph :: HetcatsOpts -> LIB_NAME ->  LibEnv
+             -> (String -> LIB_NAME -> IO()) -> IO ()
+showLibGraph opts ln le showGraph =
+  do
+    depGRef <- newIORef daVinciSort
+    nodeArcRef <- newIORef (([],[])::NodeArcList)
+    let
+      globalMenu = GlobalMenu (Menu Nothing [
+                     Button "Reload Libraries" 
+                       (reload opts ln showGraph depGRef nodeArcRef)
+                     ])
+      graphParms = globalMenu $$
+                   GraphTitle "Library Graph" $$
+		   OptimiseLayout True $$
+		   AllowClose (return True) $$
+		   emptyGraphParms
+    depG <- newGraph daVinciSort graphParms
+    addNodesAndArcs le showGraph depG nodeArcRef
+    writeIORef depGRef depG
+    redraw depG
+
+-- | Reloads all Libraries and the Library Dependency Graph
+reload :: HetcatsOpts -> LIB_NAME -> (String -> LIB_NAME -> IO())
+       -> IORef DaVinciGraphTypeSyn -> IORef NodeArcList -> IO()
+reload opts ln showGraph depGRef nodeArcRef = 
+  do
+    depG <- readIORef depGRef
+    (nodes, arcs) <- readIORef nodeArcRef
+    let
+      libfile = libNameToFile opts ln
+    m <- anaLib opts libfile
+    case m of
+      Nothing -> fail
+        $ "Could not read original development graph from '"
+        ++ libfile ++  "'"
+      Just (_, le) -> do
+        mapM_ (deleteArc depG) arcs
+        mapM_ (deleteNode depG) nodes
+        addNodesAndArcs le showGraph depG nodeArcRef
+        writeIORef depGRef depG
+        redraw depG
+
+-- | Adds the Librarys and the Dependencies to the Graph
+addNodesAndArcs :: LibEnv -> (String -> LIB_NAME -> IO())
+                -> DaVinciGraphTypeSyn -> IORef NodeArcList -> IO ()
+addNodesAndArcs le showGraph depG nodeArcRef =
   do
     let
       lookup' x y = Map.findWithDefault
                     (error "lookup': node not found")
                     y x
-      graphParms = GraphTitle "Library Graph" $$
-		   OptimiseLayout True $$
-		   AllowClose (return True) $$
-		   emptyGraphParms
-    depG <- newGraph daVinciSort graphParms
-    let 
       keys = Map.keys le
       subNodeMenu = LocalMenu( Menu Nothing [
         Button "Show Graph" $
@@ -78,11 +127,10 @@ showLibGraph opts le showGraph =
                           newArc depG subArcType (return "")
                             (lookup' nodes node1)
                             (lookup' nodes node2)
-    mapM_ insertSubArc $
+    subArcList <- mapM insertSubArc $
       Rel.toList $ Rel.intransKernel $ Rel.transClosure $
       Rel.fromList $ getLibDeps le
-    redraw depG
-    return ()
+    writeIORef nodeArcRef (subNodeList, subArcList)
 
 -- | Displays the Specs of a Library in a Textwindow
 showSpec :: LibEnv -> LIB_NAME -> IO()
