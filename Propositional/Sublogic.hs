@@ -46,9 +46,6 @@ module Propositional.Sublogic
     , prSymM                        -- projections of SYMB_ITEMS
     , prFormulaM                    -- projections of formulae 
     , prBasicSpec                   -- projections of basic specs
-    , isPropIE
-    , isPropI
-    , isPropE
     , isProp
     , isHC
     , isCNF
@@ -92,67 +89,42 @@ data PropFormulae = PlainFormula      -- Formula without structural constraints
 data PropSL = PropSL
     {
       format       :: PropFormulae     -- Structural restrictions
-    , has_imp      :: Bool             -- Implication ?
-    , has_equiv    :: Bool             -- Equivalence ?
     } deriving (Show, Eq)
 
--- | Check for particular sublogics
-isPropIE :: PropSL -> Bool
-isPropIE sl = format sl == PlainFormula && has_equiv sl && has_imp sl
-
-isPropI :: PropSL -> Bool
-isPropI sl = format sl == PlainFormula && not ( has_equiv sl ) && has_imp sl
-
-isPropE :: PropSL -> Bool
-isPropE sl = format sl == PlainFormula && has_equiv sl && not ( has_imp sl )
-
 isProp :: PropSL -> Bool
-isProp sl = format sl == PlainFormula && 
-            not ( has_equiv sl ) && 
-            not ( has_imp sl )
+isProp sl = format sl == PlainFormula 
 
 isCNF :: PropSL -> Bool
-isCNF sl = format sl == CNF && 
-            not ( has_equiv sl ) && 
-            not ( has_imp sl )
+isCNF sl = format sl == CNF 
 
 isHC :: PropSL -> Bool
-isHC sl = format sl == HornClause && 
-            not ( has_equiv sl ) && 
-            not ( has_imp sl )
+isHC sl = format sl == HornClause 
 
 -- | comparison of sublogics
 compareLE :: PropSL -> PropSL -> Bool
-compareLE sl1 sl2 = bothHC || bothCNF || pfLE
-    where 
-      form1   = format sl1
-      form2   = format sl2
-      i1      = has_imp sl1
-      i2      = has_imp sl2
-      e1      = has_equiv sl1
-      e2      = has_equiv sl2
-      bothHC = (form1 == form2) && (form1 == HornClause)
-      bothCNF = (form1 == form2) && (form1 == CNF)
-      pfLE    = (not bothCNF) && (i1 <= i2) && (e1 <= e2)
+compareLE p1 p2 = 
+    let f1 = format p1
+        f2 = format p2
+    in
+      case (f1, f2) of
+        (_,            PlainFormula) -> True
+        (PlainFormula, CNF)          -> False
+        (_,            CNF)          -> True
+        (HornClause,   HornClause)   -> True
+        (_,            HornClause)   -> False
 
 ------------------------------------------------------------------------------
 -- Special elements in the Lattice of logics                                --
 ------------------------------------------------------------------------------
 
 top :: PropSL
-top = PropSL PlainFormula True True
+top = PropSL PlainFormula
 
 bottom :: PropSL
-bottom = PropSL HornClause False False 
+bottom = PropSL HornClause
 
 need_PF :: PropSL
 need_PF = bottom { format = PlainFormula }
-
-need_imp :: PropSL
-need_imp = bottom { has_imp = True }
-
-need_equiv :: PropSL
-need_equiv = bottom { has_equiv = True }
 
 need_CNF :: PropSL
 need_CNF   = bottom { format = CNF }
@@ -162,15 +134,11 @@ need_CNF   = bottom { format = CNF }
 -------------------------------------------------------------------------------
 
 sublogics_join :: (PropFormulae -> PropFormulae -> PropFormulae)
-                  -> (Bool -> Bool -> Bool)
-                  -> (Bool -> Bool -> Bool)
                   -> PropSL -> PropSL -> PropSL
-sublogics_join pfF imF eqF a b = PropSL
-                                 {
-                                   format    = pfF (format a) (format b)
-                                 , has_imp   = imF (has_imp a) (has_imp b)
-                                 , has_equiv = eqF (has_equiv a) (has_equiv b) 
-                                 }
+sublogics_join pfF a b = PropSL
+                         {
+                           format    = pfF (format a) (format b)
+                         }
 
 joinType :: PropFormulae -> PropFormulae -> PropFormulae
 joinType CNF CNF = CNF
@@ -180,7 +148,7 @@ joinType CNF HornClause = CNF
 joinType _   _   = PlainFormula
 
 sublogics_max :: PropSL -> PropSL -> PropSL
-sublogics_max = sublogics_join joinType max max 
+sublogics_max = sublogics_join joinType
 
 -------------------------------------------------------------------------------
 -- Helpers                                                                   --
@@ -236,9 +204,8 @@ ana_form ps f =
       AS_BASIC.Implication l m _ -> 
           do 
              st <- get
-             let analyze = sublogics_max need_imp $ 
-                        sublogics_max need_PF $
-                        sublogics_max ((\x -> evalState (ana_form ps x) (st+1)) l)
+             let analyze =  sublogics_max need_PF $
+                            sublogics_max ((\x -> evalState (ana_form ps x) (st+1)) l)
                                           ((\x -> evalState (ana_form ps x) (st+1)) m)
              return $ 
                     if st < 1 
@@ -257,8 +224,7 @@ ana_form ps f =
       AS_BASIC.Equivalence l m _ -> 
            do 
              st <- get
-             return $ sublogics_max need_equiv $ 
-                    sublogics_max need_PF $
+             return $ sublogics_max need_PF $
                     sublogics_max ((\x -> evalState (ana_form ps x) (st+1)) l)
                                       ((\x -> evalState (ana_form ps x) (st+1)) m)
       AS_BASIC.Negation l _      -> 
@@ -269,7 +235,7 @@ ana_form ps f =
           else
               do 
                 st <- get 
-                return $ sublogics_max need_PF $ (\x -> evalState (ana_form ps x) (st+1)) l
+                return $ (\x -> evalState (ana_form ps x) (st+1)) l
       AS_BASIC.Disjunction l _   -> 
                     let lprime = concat $ map Tools.flattenDis l in
                     if (foldl (&&) True $ map isLiteral lprime)
@@ -337,38 +303,14 @@ sublogics_all =
     [PropSL
      {
        format    = CNF
-     , has_imp   = False
-     , has_equiv = False 
      }
     , PropSL
      {
        format    = HornClause
-     , has_imp   = False
-     , has_equiv = False 
      }
     ,PropSL
      {
-       format    = PlainFormula
-     , has_imp   = False
-     , has_equiv = False 
-     }
-    ,PropSL
-     {
-       format    = PlainFormula
-     , has_imp   = True
-     , has_equiv = False 
-     }
-    ,PropSL
-     {
-       format    = PlainFormula
-     , has_imp   = False
-     , has_equiv = True
-     }
-    ,PropSL
-     {
-       format    = PlainFormula
-     , has_imp   = True
-     , has_equiv = True 
+       format    = PlainFormula 
      }
     ]
 
@@ -381,16 +323,8 @@ sublogics_name f =
     case formType of
       CNF -> ["CNF"]
       HornClause -> ["HornClause"]
-      PlainFormula -> ["Prop" ++ 
-                      (
-                       if (imp) then "I" else ""
-                      ) ++
-                     (
-                      if (equ) then "E" else ""
-                     )]
+      PlainFormula -> ["Prop"]
     where formType = format f
-          imp      = has_imp f
-          equ      = has_equiv f
 
 -------------------------------------------------------------------------------
 -- Projections to sublogics                                                  --

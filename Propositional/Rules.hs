@@ -20,8 +20,7 @@ Simple rules for propositional logic
 
 module Propositional.Rules
     (
-     transForm                     -- Transforms a formula to a spec sublogic
-    ,matImpl
+     matImpl
     ,matEquiv
     ,matEquivImpl
     )
@@ -96,14 +95,4 @@ matEquivImpl (AS_BASIC.Disjunction f rn)   = AS_BASIC.Disjunction
                                          (map matImpl f) rn
 matEquivImpl f = f
 
--- | Transforms a formula to the specified sublogic...
-transForm :: PropSL -> AS_BASIC.FORMULA -> AS_BASIC.FORMULA
-transForm sl form = f form
-    where 
-      imp   = Sublogic.has_imp sl
-      equiv = Sublogic.has_equiv sl
-      f ::  AS_BASIC.FORMULA -> AS_BASIC.FORMULA
-      f | imp && equiv = id
-        | imp && not equiv = matEquiv
-        | not imp && equiv = matImpl
-        | otherwise        = matEquivImpl
+

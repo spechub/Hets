@@ -103,7 +103,9 @@ instance Logic Propositional
     Symbol.Symbol                      -- raw_symbol
     ()                                 -- proof_tree
     where
-      stability Propositional = Experimental
+      stability Propositional     = Experimental
+      top_sublogic Propositional  = Sublogic.top
+      all_sublogics Propositional = Sublogic.sublogics_all
 
 -- | Static Analysis for propositional logic
 instance StaticAnalysis Propositional
