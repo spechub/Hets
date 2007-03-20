@@ -144,15 +144,15 @@ instance Pretty SymbType where
      SortAsItemType -> empty
 
 printSign :: (f -> Doc) -> (e -> Doc) -> Sign f e -> Doc
-printSign _ fE s = text (sortS++sS) <+>
-    sepByCommas (map idDoc (Set.toList $ sortSet s)) $+$
+printSign _ fE s = 
+    (if Set.null (sortSet s) then empty else text (sortS++sS) <+>
+       sepByCommas (map idDoc (Set.toList $ sortSet s))) $+$
     (if Rel.null (sortRel s) then empty
       else text (sortS++sS) <+>
        (fsep $ punctuate semi $ map printRel $ Map.toList
                        $ Rel.toMap $ Rel.transpose $ sortRel s))
     $+$ printSetMap (text opS) empty (opMap s)
     $+$ printSetMap (text predS) space (predMap s)
---    $+$ printSetMap (text "%%") space (annoMap s)
     $+$ fE (extendedInfo s)
     where printRel (supersort, subsorts) =
             ppWithCommas (Set.toList subsorts) <+> text lessS <+>
