@@ -239,7 +239,7 @@ callMathServ call =
     do
        serverPort <- getEnvSave defaultServer "HETS_MATHSERVE" readEither
        maybe (do
-                return $ Left $ "Could not start MathServ.")
+                return $ Left $ "MathServe not running!")
              (\ endPoint -> do
                  (res::Either SimpleFault MathServOutput)
                     <- soapCall endPoint $
@@ -265,9 +265,9 @@ parseMathServOut :: Either String String
 parseMathServOut eMathServOut = 
    case eMathServOut of
    Left errStr -> return $ 
-                  Left ("MathServ/SOAP Error:\n" ++ errStr++
-                        "\nplease report this error to "++
-                        "cofi@informatik.uni-bremen.de")
+                  Left ("MathServ/SOAP Error:\n" ++ errStr ++
+                        "\nPlease contact " ++
+                        "<hets-devel@informatik.uni-bremen.de>")
    Right mathServOut -> do
     mtrees <- parseXML mathServOut
     let rdfTree = maybe emptyRoot head mtrees
