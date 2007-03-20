@@ -61,6 +61,8 @@ class (Language cid,
     map_symbol :: cid -> symbol1 -> Set.Set symbol2
     --properties of comorphisms
     is_model_transportable :: cid -> Bool
+    -- default implementation
+    is_model_transportable _ = False
     -- a comorphism (\phi, \alpha, \beta) is model-transportable
     -- if for any signature \Sigma, any \Sigma-model M and any \phi(\Sigma)-model N
     -- for any isomorphism           h : \beta_\Sigma(N) -> M
