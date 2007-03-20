@@ -31,10 +31,10 @@ import SPASS.Sign
 signToSPLogicalPart :: Sign -> SPLogicalPart
 signToSPLogicalPart s =
     assert (checkArities s)
-               (SPLogicalPart {symbolList = sList,
-                               declarationList = decList,
-                               clauseLists = [],
-                               formulaLists = []})
+               (emptySPLogicalPart {symbolList = sList,
+                                    declarationList = decList
+                                   }
+               )
   where
     sList = if Rel.null (sortRel s) && Map.null (funcMap s) &&
                Map.null (predMap s) && Map.null (sortMap s)

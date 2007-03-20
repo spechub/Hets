@@ -166,10 +166,18 @@ data SPLogicalPart =
         SPLogicalPart { symbolList      :: Maybe SPSymbolList,
                         declarationList :: [SPDeclaration],
                         formulaLists    :: [SPFormulaList],
-                        clauseLists :: [SPClauseList]
+                        clauseLists     :: [SPClauseList]
 --                        proofLists :: [SPProofList]
                         }
       deriving (Eq, Ord, Show)
+
+emptySPLogicalPart :: SPLogicalPart
+emptySPLogicalPart = SPLogicalPart { symbolList      = Nothing,
+                                     declarationList = [],
+                                     formulaLists    = [],
+                                     clauseLists     = []
+           --                        proofLists :: [SPProofList]
+                                   }
 
 -- *** Symbol Lists
 
