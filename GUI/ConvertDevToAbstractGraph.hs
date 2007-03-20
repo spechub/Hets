@@ -424,55 +424,22 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts title = do
                    Dotted $$$ Color "Grey"
                    $$$ createLocalEdgeMenu gInfo
                    $$$ emptyArcTypeParms :: DaVinciArcTypeParms EdgeValue)]
-                 [("globaldef","globaldef","globaldef"),
-                  ("globaldef","def","def"),
-                  ("globaldef","hidingdef","hidingdef"),
-                  ("globaldef","hetdef","hetdef"),
-                  ("globaldef","proventhm","proventhm"),
-                  ("globaldef","unproventhm","unproventhm"),
-                  ("globaldef","localunproventhm","localunproventhm"),
-                  ("def","globaldef","def"),
-                  ("def","def","def"),
-                  ("def","hidingdef","hidingdef"),
-                  ("def","hetdef","hetdef"),
-                  ("def","proventhm","proventhm"),
-                  ("def","unproventhm","unproventhm"),
-                  ("def","localunproventhm","localunproventhm"),
-                  ("hidingdef","globaldef","hidingdef"),
-                  ("hidingdef","def","def"),
-                  ("hidingdef","hidingdef","hidingdef"),
-                  ("hidingdef","hetdef","hetdef"),
-                  ("hidingdef","proventhm","proventhm"),
-                  ("hidingdef","unproventhm","unproventhm"),
-                  ("hidingdef","localunproventhm","localunproventhm"),
-                  ("hetdef","globaldef","hetdef"),
-                  ("hetdef","def","hetdef"),
-                  ("hetdef","hidingdef","hetdef"),
-                  ("hetdef","hetdef","hetdef"),
-                  ("hetdef","proventhm","proventhm"),
-                  ("hetdef","unproventhm","unproventhm"),
-                  ("hetdef","localunproventhm","localunproventhm"),
-                  ("proventhm","globaldef","proventhm"),
-                  ("proventhm","def","proventhm"),
-                  ("proventhm","hidingdef","proventhm"),
-                  ("proventhm","hetdef","proventhm"),
-                  ("proventhm","proventhm","proventhm"),
-                  ("proventhm","unproventhm","unproventhm"),
-                  ("proventhm","localunproventhm","localunproventhm"),
-                  ("unproventhm","globaldef","unproventhm"),
-                  ("unproventhm","def","unproventhm"),
-                  ("unproventhm","hidingdef","unproventhm"),
-                  ("unproventhm","hetdef","unproventhm"),
-                  ("unproventhm","proventhm","unproventhm"),
-                  ("unproventhm","unproventhm","unproventhm"),
-                  ("unproventhm","localunproventhm","localunproventhm"),
-                  ("localunproventhm","globaldef","localunproventhm"),
-                  ("localunproventhm","def","localunproventhm"),
-                  ("localunproventhm","hidingdef","localunproventhm"),
-                  ("localunproventhm","hetdef","localunproventhm"),
-                  ("localunproventhm","proventhm","localunproventhm"),
-                  ("localunproventhm","unproventhm","localunproventhm"),
-                  ("localunproventhm","localunproventhm","localunproventhm")]
+                 (makeCompTable 
+                   ["globaldef",
+                    "def",
+                    "hidingdef",
+                    "hetdef",
+                    "proventhm",
+                    "unproventhm",
+                    "localproventhm",
+                    "localunproventhm",
+                    "hetproventhm",
+                    "hetunproventhm",
+                    "hetlocalproventhm",
+                    "hetlocalunproventhm",
+                    "unprovenhidingthm",
+                    "provenhidingthm",
+                    "reference"])
                  actGraphInfo
   case msg of
     Nothing -> return ()
@@ -480,6 +447,17 @@ initializeGraph ioRefGraphMem ln dGraph convMaps _ opts title = do
   writeIORef ioRefGraphMem graphMem{nextGraphId = gid+1}
   graphMem'<- readIORef ioRefGraphMem
   return (descr,graphInfo graphMem',convRef)
+
+-- | Generates the CompTable
+makeCompTable :: [String] -> CompTable
+makeCompTable ls =
+  concat $ map (\ x -> makeComp x ls False ) ls
+  where
+    makeComp :: String -> [String] -> Bool -> CompTable
+    makeComp _ [] _ = []
+    makeComp s (xs:r) b = case b of
+      True -> (s, xs, xs) : makeComp s r b
+      False -> (s, xs, s) : makeComp s r (s == xs)
 
 saveProofStatus :: LIB_NAME -> FilePath -> IORef LibEnv -> HetcatsOpts -> IO ()
 saveProofStatus ln file ioRefProofStatus opts = encapsulateWaitTermAct $ do
