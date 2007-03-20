@@ -53,6 +53,7 @@ import Data.Graph.Inductive.Graph
 import Data.Maybe
 import Data.Char
 
+
 #ifdef UNI_PACKAGE
 import GUI.ShowGraph
 #endif
@@ -258,7 +259,7 @@ getStatus files state
                return state
        f:l -> do
               result <- cUse f state
-              let nwState =update result state
+              nwState <- update result state
               getStatus l nwState
 
 
@@ -817,10 +818,17 @@ cDgInferBasic input status =
      _:l                 -> cDgInferBasic input l
      []                  -> return [(OutputErr "Wrong parameters")]
 
+trimSpace:: String -> String
+trimSpace ls
+ = case ls of
+   ' ':l  -> trimSpace l
+   x:l    -> x:(trimSpace l)
+   []     -> []
+
 cTranslate::String -> [Status] 
                        -> IO [Status]
 cTranslate input _
- = do case lookupComorphism_in_LG input of
+ = do case lookupComorphism_in_LG (trimSpace input) of
          Result _ (Just smth) -> return [Comorph smth]
          _                    -> return [OutputErr "Wrong parameters"]
 
@@ -885,13 +893,17 @@ cShowDgGoals  _ arg
 cShowTheory::String -> [Status] 
                           -> IO [Status]
 cShowTheory _ arg
-  = case arg of
-     (AllGoals allGoals):_ -> do printNodeTheoryFromList allGoals
-                                 return []
-     _:l                        -> cShowNodeTheory "" l
-     []                         -> do
-                                    putStr "Error, no goal list found ! \n"
-                                    return []
+  = do
+     let allGoals = getAllGoals arg
+     let comorph = getComorph arg
+     case allGoals of
+       Nothing -> do
+                   putStr "Error, not goal list found ! \n"
+		   return []
+       Just val -> do
+                    printNodeTheoryFromList val comorph
+		    return []
+  
 
 
 cShowNodeTheory::String -> [Status] 
@@ -900,14 +912,15 @@ cShowNodeTheory input arg
  =
   case input of
    "" -> do
-    case arg of
-     (Selected xx):_ -> do
-                         printNodeTheoryFromList xx
-                         return []
-     _:l                        -> cShowNodeTheory "" l
-     []                         -> do
-                                    putStr "Error, no nodes selected ! \n"
-                                    return []
+          let xx = getSelected arg
+          let comorph = getComorph arg
+          case xx of
+	    Nothing -> do
+	                putStr "Error, no nodes selected ! \n"
+			return []
+	    Just val -> do
+	                printNodeTheoryFromList val comorph
+			return []
    _ -> do
       let r=runParser (scanCommand ["GOALS"]) (emptyAnnos ()) "" input
       case r of
@@ -915,44 +928,35 @@ cShowNodeTheory input arg
               putStr "Error parsing the node list ! \n"
               return []
          Right param -> do
-          case arg of
-             (AllGoals allGoals):l ->
-                case l of
-                  (Env ln libEnv):_ ->
+	  let t_allGoals = getAllGoals arg
+	  let t_ln = getLIB_NAME arg
+	  let t_libEnv = getLibEnv arg
+	  let comorph = getComorph arg
+	  case t_allGoals of
+	   Nothing -> do
+	               putStr "No library loaded !\n"
+		       return []
+           Just allGoals ->
+	      case t_ln of
+	        Nothing -> do
+	                putStr "No library loaded !\n"
+			return []
+	        Just ln ->
+	          case t_libEnv of
+	           Nothing -> do
+	                  putStr "No library loaded !\n"
+			  return []
+	           Just libEnv ->
                      case param of
                         (Goals ls):_ -> do
                              let allNodes = convToGoal $
                                   labNodes (lookupDGraph ln libEnv)
                              list <- getGoalList ls allNodes allNodes
-                             printNodeTheoryFromList list
+                             printNodeTheoryFromList list comorph
                              return []
                         _ -> do
                               putStr "Error parsing the node list! \n"
                               return []
-                  _:ll -> cShowNodeTheory input ((AllGoals allGoals):ll)
-                  []   -> do
-                           putStr "Error, no library loaded ! \n"
-                           return []
-             (Env ln libEnv):l ->
-                 case l of
-                   (AllGoals _):_ ->
-                       case param of
-                          (Goals ls):_ -> do
-                               let allNodes = convToGoal $
-                                     labNodes (lookupDGraph ln libEnv)
-                               list <- getGoalList ls allNodes allNodes
-                               printNodeTheoryFromList list
-                               return []
-                          _ -> do
-                                putStr "Error parsing the node list! \n"
-                                return []
-                   _:ll -> cShowNodeTheory input ((Env ln libEnv):ll)
-                   []    -> do
-                             putStr "Error, no library loaded ! \n"
-                             return []
-             _:l -> cShowNodeTheory input l
-             [] -> do putStr "Error, no library loaded ! \n"
-                      return []
 
 cShowInfo :: String -> [Status] 
                          -> IO [Status]
