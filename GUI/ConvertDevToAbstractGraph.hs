@@ -593,9 +593,7 @@ createLocalMenuNodeTypeSpec color ioRefSubtreeEvents actGraphInfo
                  Ellipse $$$ Color color
                  $$$ ValueTitle (\ (s,_,_) -> return s)
                  $$$ LocalMenu (Menu (Just "node menu")
-                   [createLocalMenuButtonShowSpec gInfo,
-                    createLocalMenuButtonShowNumberOfNode,
-                    createLocalMenuButtonShowSignature gInfo,
+                   [createLocalMenuButtonShowSignature gInfo,
                     createLocalMenuButtonShowLocalAx gInfo,
                     createLocalMenuButtonShowTheory gInfo,
                     createLocalMenuButtonTranslateTheory gInfo,
@@ -609,7 +607,9 @@ createLocalMenuNodeTypeSpec color ioRefSubtreeEvents actGraphInfo
                                      convRef ioRefVisibleNodes ioRefGraphMem
                                                          actGraphInfo,
                     createLocalMenuButtonUndoShowJustSubtree ioRefVisibleNodes
-                              ioRefSubtreeEvents actGraphInfo
+                              ioRefSubtreeEvents actGraphInfo,
+                    -- createLocalMenuButtonShowSpec gInfo,  -- not fully implemented yet!
+                    createLocalMenuButtonShowNumberOfNode
                    ]) -- ??? Should be globalized somehow
                   -- >$$$ LocalMenu (Button "xxx" error "GUI.ConvertAbstractToDevGraph")
                   $$$ emptyNodeTypeParms
@@ -855,20 +855,20 @@ getNumberOfRefNode descr dgAndabstrNodeMap dgraph =
 createLocalEdgeMenu :: GInfo -> LocalMenu EdgeValue
 createLocalEdgeMenu gInfo =
     LocalMenu (Menu (Just "edge menu")
-               [createLocalMenuButtonShowIDOfEdge gInfo,
-		createLocalMenuButtonShowMorphismOfEdge gInfo,
+               [createLocalMenuButtonShowMorphismOfEdge gInfo,
                 createLocalMenuButtonShowOriginOfEdge gInfo,
-                createLocalMenuButtonCheckconservativityOfEdge gInfo]
+                createLocalMenuButtonCheckconservativityOfEdge gInfo,
+                createLocalMenuButtonShowIDOfEdge gInfo]
               )
 
 createLocalEdgeMenuThmEdge :: GInfo -> LocalMenu EdgeValue
 createLocalEdgeMenuThmEdge gInfo =
    LocalMenu (Menu (Just "thm egde menu")
-              [	createLocalMenuButtonShowIDOfEdge gInfo,
-		createLocalMenuButtonShowMorphismOfEdge gInfo,
+              [	createLocalMenuButtonShowMorphismOfEdge gInfo,
                 createLocalMenuButtonShowOriginOfEdge gInfo,
                 createLocalMenuButtonShowProofStatusOfThm gInfo,
-                createLocalMenuButtonCheckconservativityOfEdge gInfo]
+                createLocalMenuButtonCheckconservativityOfEdge gInfo,
+                createLocalMenuButtonShowIDOfEdge gInfo]
               )
 
 createLocalMenuButtonShowMorphismOfEdge :: GInfo -> ButtonMenu EdgeValue
