@@ -273,7 +273,9 @@ getShortPrefix wd tmp
 eliminateFirst ::String -> String -> String
 eliminateFirst tmp1 tmp2
  = case tmp1 of
-      []    -> tail tmp2
+      []    -> case tmp2 of
+                [] -> []
+		t  -> tail t
       _:l   -> eliminateFirst l (tail tmp2)
 
 arrowType :: String -> Bool
@@ -338,7 +340,7 @@ addWords ls wd
 solveNode::[GraphGoals] -> Maybe [AnyComorphism]
 solveNode input
  = case input of
-    (GraphNode (_,x)):_ ->
+    (GraphNode (_,x) _ _):_ ->
         case x of
            DGNode _ th _ _ _ _ _ -> Just (findComorphismPaths
                                            logicGraph (sublogicOfTh th))
@@ -431,7 +433,7 @@ getNodeList :: [GraphGoals] -> [GDataNode]
 getNodeList ls =
        case ls of
             (GraphEdge _):l  -> getNodeList l
-            (GraphNode x):l  -> x:(getNodeList l)
+            (GraphNode x _ _):l  -> x:(getNodeList l)
             []               -> []
 
 
@@ -750,8 +752,8 @@ update val status
 printNodeTheoryFromList :: [GraphGoals]-> Maybe AnyComorphism -> IO()
 printNodeTheoryFromList ls comorph =
     case ls of
-       (GraphNode x):l -> do
-                           printNodeTheory (GraphNode x) comorph
+       (GraphNode x y z):l -> do
+                           printNodeTheory (GraphNode x y z) comorph
                            result<- printNodeTheoryFromList l comorph
                            return result
        _:l   -> do
@@ -764,7 +766,7 @@ printNodeTheoryFromList ls comorph =
 printNodeTheory :: GraphGoals -> Maybe AnyComorphism -> IO()
 printNodeTheory arg comorph =
   case arg of
-   GraphNode (_,(DGNode _ theTh _ _ _ _ _)) ->
+   GraphNode (_,(DGNode _ theTh _ _ _ _ _)) name othTh ->
          case comorph of
 	      Nothing ->
                     putStr  ((showDoc theTh "\n") ++ "\n")
@@ -774,7 +776,7 @@ printNodeTheory arg comorph =
 	              putStr ((showDoc th "\n") ++ "\n")
 		_ ->
 		      putStr ((showDoc theTh "\n") ++ "\n")
-   GraphNode (_,(DGRef _ _ _ theTh _ _)) ->
+   GraphNode (_,(DGRef _ _ _ theTh _ _)) name othTh ->
          case comorph of
 	     Nothing ->
                     putStr  ((showDoc theTh "\n") ++ "\n")
@@ -792,7 +794,7 @@ findNode nb ls
  = case ls of
            (x,labelInfo):l ->
                        if (x==nb) then
-                            Just (GraphNode (x,labelInfo))
+                            Just (GraphNode (x,labelInfo) "" Nothing)
                                   else
                             findNode nb l
            []  -> Nothing
@@ -802,7 +804,7 @@ findNode nb ls
 getGoalNameFromList :: [GraphGoals] -> [GDataNode] -> [String]
 getGoalNameFromList ls allNodes =
   case ls of
-       (GraphNode x):l -> (getGoalName (GraphNode x)):
+       (GraphNode x y z):l -> (getGoalName (GraphNode x y z)):
                                (getGoalNameFromList l allNodes)
        (GraphEdge (x,y,_)):l ->
                      let x1 = fromJust $ findNode x allNodes
@@ -815,8 +817,8 @@ getGoalNameFromList ls allNodes =
 getGoalName ::GraphGoals -> String
 getGoalName x
  = case x of
-       (GraphNode (_,(DGNode thName _ _ _ _ _ _))) -> showName thName
-       (GraphNode (_,(DGRef  thName _ _ _ _ _)))   -> showName thName
+       (GraphNode (_,(DGNode thName _ _ _ _ _ _)) _ _) -> showName thName
+       (GraphNode (_,(DGRef  thName _ _ _ _ _)) _ _)   -> showName thName
        _                                           -> "Not a node !"
 
 -- | The function 'printInfoFromList' given a GraphGoal list prints the
@@ -824,8 +826,8 @@ getGoalName x
 printNamesFromList :: [GraphGoals] ->[GDataNode]-> IO()
 printNamesFromList ls allNodes =
    case ls of
-        (GraphNode x):l -> do
-              printNodeInfo (GraphNode x)
+        (GraphNode x y z):l -> do
+              printNodeInfo (GraphNode x y z)
               putStr "\n"
               result <-printNamesFromList l allNodes
               return result
@@ -845,8 +847,8 @@ printNamesFromList ls allNodes =
 printNodeNumberFromList :: [GraphGoals]-> IO()
 printNodeNumberFromList ls =
   case ls of
-     (GraphNode x):l -> do
-               printNodeNumber (GraphNode x)
+     (GraphNode x y z):l -> do
+               printNodeNumber (GraphNode x y z)
                putStr "\n"
                result <- printNodeNumberFromList l
                return result
@@ -859,9 +861,9 @@ printNodeNumberFromList ls =
 printNodeNumber:: GraphGoals -> IO()
 printNodeNumber x =
   case x of
-     GraphNode (nb, (DGNode tname _ _ _ _ _ _)) ->
+     GraphNode (nb, (DGNode tname _ _ _ _ _ _)) _ _ ->
         putStr ("Node "++(showName tname)++" has number "++(show nb))
-     GraphNode (nb, (DGRef tname _ _ _ _ _)) ->
+     GraphNode (nb, (DGRef tname _ _ _ _ _)) _ _ ->
                   putStr ("Node "++(showName tname)++" has number "++(show nb))
      _               -> putStr "Not a node !\n"
 
@@ -870,27 +872,27 @@ printNodeNumber x =
 printInfoFromList :: [GraphGoals] -> [GDataNode] -> IO()
 printInfoFromList ls allNodes=
    case ls of
-        (GraphNode x):l -> do
+        (GraphNode x y z):l -> do
               putStr "Name : "
-              printNodeInfo (GraphNode x)
+              printNodeInfo (GraphNode x y z)
               putStr "\n"
               putStr "Origin : "
-              printNodeOrigin (GraphNode x)
+              printNodeOrigin (GraphNode x y z)
               putStr "\n"
               putStr "Sublogic : "
-              printNodeSublogic (GraphNode x)
+              printNodeSublogic (GraphNode x y z)
               putStr "\n"
               putStr "Number of axioms : "
-              printNodeNumberAxioms (GraphNode x)
+              printNodeNumberAxioms (GraphNode x y z)
               putStr "\n"
               putStr "Number of symbols in the signature : "
-              printNodeNumberSymbols (GraphNode x)
+              printNodeNumberSymbols (GraphNode x y z)
               putStr "\n"
               putStr "Number of unproven theorems : "
-              printNodeNumberUnprovenThm (GraphNode x)
+              printNodeNumberUnprovenThm (GraphNode x y z)
               putStr "\n"
               putStr "Number of proven theorems : "
-              printNodeNumberProvenThm (GraphNode x)
+              printNodeNumberProvenThm (GraphNode x y z)
               putStr "\n\n"
               result <-printInfoFromList l allNodes
               return result
@@ -925,9 +927,9 @@ printInfoFromList ls allNodes=
 printNodeInfo :: GraphGoals -> IO()
 printNodeInfo x =
        case x of
-          GraphNode (_, (DGNode tname _ _ _ _ _ _)) ->
+          GraphNode (_, (DGNode tname _ _ _ _ _ _)) _ _ ->
                                         putStr (( showName tname))
-          GraphNode (_, (DGRef tname _ _ _ _ _ )) ->
+          GraphNode (_, (DGRef tname _ _ _ _ _ )) _ _ ->
                                         putStr (( showName tname))
           _                          -> putStr "Not a node!\n"
 
@@ -976,7 +978,7 @@ printEdgeHomogeneous x =
 printNodeOrigin :: GraphGoals -> IO()
 printNodeOrigin x =
   case x of
-    GraphNode (_ ,(DGNode _ _ _ _ torigin _ _)) ->
+    GraphNode (_ ,(DGNode _ _ _ _ torigin _ _)) _ _ ->
                 putStr (show torigin)
     _        -> putStr "Node does not have an origin"
 
@@ -984,9 +986,9 @@ printNodeOrigin x =
 printNodeSublogic :: GraphGoals -> IO ()
 printNodeSublogic x =
   case x of
-     GraphNode (_, (DGNode _ tTh _ _ _ _ _)) ->
+     GraphNode (_, (DGNode _ tTh _ _ _ _ _)) _ _->
               putStr (show (sublogicOfTh tTh))
-     GraphNode (_, (DGRef _ _ _ tTh _ _)) ->
+     GraphNode (_, (DGRef _ _ _ tTh _ _)) _ _->
               putStr (show (sublogicOfTh tTh))
      _ -> putStr "Node does not have a sublogic"
 
@@ -994,9 +996,9 @@ printNodeSublogic x =
 printNodeNumberAxioms :: GraphGoals -> IO ()
 printNodeNumberAxioms input =
   case input of
-    GraphNode (_, (DGNode _ (G_theory x y _ _ _) _ _ _ _ _)) ->
+    GraphNode (_, (DGNode _ (G_theory x y _ _ _) _ _ _ _ _)) _ _ ->
          putStr $ show (size(sym_of x y))
-    GraphNode (_, (DGRef _ _ _ (G_theory x y _ _ _) _ _)) ->
+    GraphNode (_, (DGRef _ _ _ (G_theory x y _ _ _) _ _)) _ _ ->
          putStr $ show (size (sym_of x y))
     _ -> putStr "Not a node ! \n"
 
@@ -1048,9 +1050,9 @@ extractSenStatus ls =
 printNodeNumberSymbols :: GraphGoals ->  IO ()
 printNodeNumberSymbols input =
   case input of
-      GraphNode (_, (DGNode _ (G_theory _ _ _ x _) _ _ _ _ _)) ->
+      GraphNode (_, (DGNode _ (G_theory _ _ _ x _) _ _ _ _ _)) _ _ ->
            putStr $ show (countSymbols (extractSenStatus (OMap.toList x)) 0)
-      GraphNode (_, (DGRef _ _ _ (G_theory _ _ _ x _) _ _)) ->
+      GraphNode (_, (DGRef _ _ _ (G_theory _ _ _ x _) _ _)) _ _->
            putStr $ show (countSymbols (extractSenStatus (OMap.toList x)) 0)
       _  -> putStr "Not a node ! \n"
 
@@ -1059,9 +1061,9 @@ printNodeNumberSymbols input =
 printNodeNumberUnprovenThm :: GraphGoals -> IO ()
 printNodeNumberUnprovenThm input =
  case input of
-     GraphNode (_, (DGNode _ (G_theory _ _ _ x _) _ _ _ _ _)) ->
+     GraphNode (_, (DGNode _ (G_theory _ _ _ x _) _ _ _ _ _)) _ _->
         putStr $ show (countUnprovenThm (extractSenStatus (OMap.toList x)) 0)
-     GraphNode (_, (DGRef _ _ _ (G_theory _ _ _ x _) _ _)) ->
+     GraphNode (_, (DGRef _ _ _ (G_theory _ _ _ x _) _ _)) _ _->
         putStr $ show (countUnprovenThm (extractSenStatus (OMap.toList x)) 0)
      _  -> putStr "Not a node ! \n"
 
@@ -1070,9 +1072,9 @@ printNodeNumberUnprovenThm input =
 printNodeNumberProvenThm :: GraphGoals -> IO ()
 printNodeNumberProvenThm input =
  case input of
-     GraphNode (_, (DGNode _ (G_theory _ _ _ x _) _ _ _ _ _))->
+     GraphNode (_, (DGNode _ (G_theory _ _ _ x _) _ _ _ _ _)) _ _->
         putStr $ show (countProvenThm (extractSenStatus (OMap.toList x)) 0)
-     GraphNode (_, (DGRef _ _ _ (G_theory _ _ _ x _) _ _)) ->
+     GraphNode (_, (DGRef _ _ _ (G_theory _ _ _ x _) _ _)) _ _->
         putStr $ show (countProvenThm (extractSenStatus (OMap.toList x)) 0)
      _  -> putStr "Not a node ! \n"
 
@@ -1082,9 +1084,9 @@ printNodeTaxonomyFromList :: TaxoGraphKind -> [GraphGoals] -> LibEnv
                           -> LIB_NAME -> IO()
 printNodeTaxonomyFromList kind ls libEnv ln =
              case ls of
-                   GraphNode x : l ->
+                   (GraphNode x y z): l ->
                        do
-                          printNodeTaxonomy kind (GraphNode x) libEnv ln
+                          printNodeTaxonomy kind (GraphNode x y z) libEnv ln
                           result <- printNodeTaxonomyFromList kind l libEnv ln
                           return result
                    _ : l ->
@@ -1100,7 +1102,7 @@ printNodeTaxonomy :: TaxoGraphKind -> GraphGoals -> LibEnv -> LIB_NAME ->IO()
 printNodeTaxonomy kind x libEnv ln =
    case x of
 #ifdef UNI_PACKAGE
-     GraphNode (n, dgn) -> do
+     GraphNode (n, dgn) _ _ -> do
        case computeTheory libEnv ln n of
          Result _ (Just thTh) ->
              do graph <- displayGraph kind (showName $ dgn_name dgn) thTh
@@ -1117,7 +1119,7 @@ proveNodes :: [GraphGoals] -> LIB_NAME ->LibEnv -> IO LibEnv
 proveNodes ls ln libEnv
      = case ls of
 #ifdef UNI_PACKAGE
-        GraphNode (nb, _) : l ->
+        (GraphNode (nb, _) _ _): l ->
            do
              mv <- (newMVar Nothing :: IO GUIMVar)
              result <- basicInferenceNode False logicGraph (ln,nb) ln mv libEnv

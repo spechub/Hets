@@ -28,7 +28,7 @@ type GDataEdge = LEdge DGLinkLab
 type GDataNode = LNode DGNodeLab
 
 data GraphGoals =
-   GraphNode GDataNode
+   GraphNode GDataNode String (Maybe G_theory)
  | GraphEdge GDataEdge
  deriving (Eq,Show)
 
@@ -85,7 +85,7 @@ getGoalList goalList allg ll
 -- the ID of the node as a string from the provided list of goals  
 extractGraphNode :: String -> [GraphGoals] -> Maybe GraphGoals
 extractGraphNode x = find ( \ g -> case g of 
-    GraphNode (_, label) -> getDGNodeName label == x
+    GraphNode (_, label) _ _ -> getDGNodeName label == x
     _ -> False)
          
 -- | The function 'extractGraphEdge' extracts the goal edge determined by 
@@ -109,9 +109,9 @@ extractGraphEdge x y allGoals ll
                   return Nothing
                Just t2 ->
                   case t1 of 
-                    (GraphNode (tmp1_nb, _)) ->
+                    (GraphNode (tmp1_nb, _) _ _) ->
                        case t2 of
-                        (GraphNode (tmp2_nb, _)) ->
+                        (GraphNode (tmp2_nb, _) _ _) ->
                           if (tmp1_nb == xx) 
                             then if (tmp2_nb == yy) 
                                then return (Just (GraphEdge (xx,yy,label)))
@@ -142,9 +142,9 @@ extractGraphLabeledEdge x nb y allGoals ll
                return Nothing
               Just t2 -> do
                   case t1 of 
-                    (GraphNode (tmp1_nb, _)) ->
+                    (GraphNode (tmp1_nb, _) _ _) ->
                        case t2 of
-                        (GraphNode (tmp2_nb, _)) ->
+                        (GraphNode (tmp2_nb, _) _ _) ->
                           if (tmp1_nb == xx) 
                             then if (tmp2_nb == yy) 
                                then if (nb==0)  
@@ -168,7 +168,7 @@ getEdgeGoals = map GraphEdge .
 -- | The function 'convToGoal' converts a list of 'GDataNode' 
 -- into 'GraphGoals' list
 convToGoal:: [GDataNode] -> [GraphGoals]
-convToGoal = map GraphNode
+convToGoal = map (\x -> GraphNode x "" Nothing)
 
 -- | The function 'convEdgeToGoal' converts a list of 'GDataEdge' 
 -- into 'GraphGoals' list
@@ -195,7 +195,7 @@ createAllGoalsList ln libEnv
 -- | The function 'getNodeGoals' given a list of nodes selects all nodes that
 -- are goals of the graph and returns them as 'GraphGoals'
 getNodeGoals::[GDataNode] -> [GraphGoals]
-getNodeGoals = map GraphNode . 
+getNodeGoals = map (\x -> GraphNode x "" Nothing) . 
     filter ( \ (_, x) -> isDGRef x || not (hasOpenGoals x) || 
            not (isInternalNode x) && hasOpenConsStatus False x)
 
