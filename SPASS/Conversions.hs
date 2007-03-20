@@ -33,6 +33,7 @@ signToSPLogicalPart s =
     assert (checkArities s)
                (SPLogicalPart {symbolList = sList,
                                declarationList = decList,
+                               clauseLists = [],
                                formulaLists = []})
   where
     sList = if Rel.null (sortRel s) && Map.null (funcMap s) &&

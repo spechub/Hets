@@ -107,7 +107,7 @@ spProblemTest = SPProblem {identifier= "testproblem", description= descr, logica
   where
   descr = SPDescription {name="testdesc", author="testauthor", version=Nothing, logic=Nothing, status=SPStateUnknown, desc="Just a test.", date=Nothing}
   logical_part = SPLogicalPart {symbolList= Nothing,
-    declarationList= [spDeclTest, spDeclTest2],
+    declarationList= [spDeclTest, spDeclTest2], clauseLists = [],
     formulaLists= [SPFormulaList {originType= SPOriginAxioms, formulae= [(emptyName SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}) {senName= "testformula"}]},SPFormulaList {originType= SPOriginConjectures, formulae= [(emptyName SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}) {senName= "testformula"}, (emptyName SPComplexTerm {symbol= SPEqual, arguments= [SPSimpleTerm (SPCustomSymbol "a"), SPSimpleTerm (SPCustomSymbol "a")]}) {senName= "testformula"}]}]}
 
 spDeclTest :: SPDeclaration
