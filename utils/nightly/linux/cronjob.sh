@@ -72,16 +72,15 @@ cats -input=nobin -output=nobin -spec=gen_aterm Basic/SimpleDatatypes.casl
 
 # build user guide
 cd ../HetCATS/doc
-latex UserGuide
+pdflatex UserGuide
 bibtex UserGuide
-latex UserGuide
-latex UserGuide
-dvips UserGuide.dvi -o UserGuide.ps
+pdflatex UserGuide
+pdflatex UserGuide
 cd ..
 
 # move docs and release sources to destination
 make doc
-\cp doc/UserGuide.ps docs
+\cp doc/UserGuide.pdf docs
 \cp doc/Programming-Guidelines.txt docs
 \cp ../CASL-lib/Basic-Libraries.pdf docs
 chgrp -R wwwbkb docs
@@ -127,7 +126,7 @@ tar zcf Hets-src.tgz HetCATS
 # a few more tests
 cd $HETS_LIB
 date
-for i in */*.env; \
+for i in Basic/*.env; \
    do ./hets -v2 -o prf $i; done
 date
 for i in */*.prf; do ./hets -v2 -o th $i; done
