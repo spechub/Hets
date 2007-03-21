@@ -15,7 +15,7 @@ TMP_PATH = $(PWD)
 IZPACK_PATH = $(TMP_PATH)/Izpack-Hets
 IZPACK_COMPILE = $(IZPACK_PATH)/bin/compile
 IZPACK_SAMPLE = $(IZPACK_PATH)/sample
-HETS_VERSION=0.66
+HETS_VERSION=0.7
 SED_COMMAND="s/^\(.*<appversion>\)[0-9. ]*\(<.*$$\)/\1$(HETS_VERSION)\2/"
 SPASS_DIR_MAC=SPASS-2.2
 
@@ -70,8 +70,11 @@ hetcats-make : tools-checkout
 	cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:\/repository co -P HetCATS 
 	cd $(IZPACK_SAMPLE)/src/HetCATS ;\
 	cp LICENCE.txt $(IZPACK_SAMPLE)/pack/LICENCE.txt ;\
+	cp LIZENZ.txt $(IZPACK_SAMPLE)/pack/LIZENZ.txt ;\
 	cp README  $(IZPACK_SAMPLE)/pack/README ;\
 	mkdir -p $(IZPACK_SAMPLE)/SPASS/MAC/$(SPASS_DIR_MAC) ;\
+	mkdir -p $(IZPACK_SAMPLE)/hets/doc ; \
+	mkdir -p $(IZPACK_SAMPLE)/hets/java ; \
 	cp utils/SPASS-ppc-mac/SPASS* $(IZPACK_SAMPLE)/SPASS/MAC/$(SPASS_DIR_MAC)/SPASS ;\
 	cp utils/el/*.el  $(IZPACK_SAMPLE)/hets  ;\
 	cp hets.in $(IZPACK_SAMPLE)/hets/hets ;\
@@ -79,11 +82,12 @@ hetcats-make : tools-checkout
 	cp utils/getDailyHets-installer.sh $(IZPACK_SAMPLE)/getDailyHets.sh ;\
 	$(MAKE) release ;\
 	mv HetCATS.tar $(IZPACK_SAMPLE)/src/ ;\
-	mkdir $(IZPACK_SAMPLE)/hets/OWLParser ; \
-	mkdir $(IZPACK_SAMPLE)/hets/OWLParser/java ; \
-	cp OWL_DL/owl_parser.installer $(IZPACK_SAMPLE)/hets/OWLParser/owl_parser ; \
-	cp OWL_DL/java/OWLParser.jar $(IZPACK_SAMPLE)/hets/OWLParser/java ; \
-	cp -r OWL_DL/java/jlib $(IZPACK_SAMPLE)/hets/OWLParser/java
+	cp OWL_DL/owl_parser.installer $(IZPACK_SAMPLE)/hets/owl_parser ; \
+	cp OWL_DL/java/OWLParser.jar $(IZPACK_SAMPLE)/hets/java ; \
+	cp -r OWL_DL/java/jlib CASL/Termination/AProVE.jar \
+	                   $(IZPACK_SAMPLE)/hets/java ;\
+	cd $(IZPACK_SAMPLE)/src/HetCATS/doc ; pdflatex UserGuide.tex ; cd - \
+	cp utils/hetcasl.sty  doc/UserGuide.pdf $(IZPACK_SAMPLE)/hets/doc
 	@cd $(IZPACK_SAMPLE)/src/ ; $(RM) -r HetCATS ; \
 	$(TAR) xvf HetCATS.tar ; $(TAR) cvfj HetCATS.tar.bz2 HetCATS  ;\
 	$(RM) -r HetCATS.tar HetCATS programatica uni
