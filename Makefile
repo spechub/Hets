@@ -508,7 +508,7 @@ $(INLINEAXIOMS): $(INLINEAXIOMS_deps)
 	strip $(INLINEAXIOMS)
 
 # set this variable from the command line to i,e. RELEASETAG='-r release-0-60'
-RELEASETAG =
+RELEASETAG = '-r release-0-7'
 
 release:
 	$(RM) -r HetCATS
