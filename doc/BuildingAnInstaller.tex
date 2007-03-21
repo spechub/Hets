@@ -110,6 +110,9 @@ Makfile.installer:
 \subsection{Directory-layout of installed directory} (directories end with a slash)\\
 Hets/
 \begin{itemize}
+  \item README
+  \item LICENCE.txt
+  \item LIZENZ.txt
 \item bin/
   \begin{itemize}
   \item hets --- the shell script derived from HetCATS/hets.in with
@@ -121,6 +124,12 @@ Hets/
     run properly
   \item getDailyHets.sh --- properly configured to download to Hets/lib/hets
   \end{itemize}
+\item doc/
+  \begin{itemize}
+  \item UserGuide.pdf --- generated with \verb,pdflatex, from
+    \verb,HetCATS/doc/UserGuide.tex,
+  \item hetcasl.sty --- the LaTeX style file
+  \end{itemize}
 \item lib/
   \begin{itemize}
   \item Isabelle/ --- if installed via IzPack; properly configured with\\
@@ -130,8 +139,13 @@ Hets/
     \begin{itemize}
     \item hets-XX --- the real binary of hets with version number as extension,
       e.g. \verb,hets-0.52,
-    \item --- OWL-DL parser startup script
-    \item --- jar-file(s) for OWL-DL parser
+    \item owl_parser --- OWL-DL parser startup script
+    \item java/ --- all jar files needed by hets
+      \begin{itemize}
+      \item OWLparser.jar --- jar-file(s) for OWL-DL parser
+      \item jlib/ --- additional jar files for the OWLparser
+      \item AProVE.jar --- CASL Termination proof tool
+      \end{itemize}
     \end{itemize}
   \item el/ --- HetCATS/utils/el/ with properly configured casl.el to
     find the installed bin/hets
