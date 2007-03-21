@@ -117,9 +117,9 @@
 
 \title{{\bf \protect{\LARGEHets} User Guide}\\ 
 -- Version 0.7 --}
-\author{Till Mossakowski\\[1em]
+\author{Till Mossakowski, Christian Maeder, Klaus Lüttich\\[1em]
 DFKI Lab Bremen, Bremen, Germany.\\[1em]
-Comments to: hets-devel@informatik.uni-bremen.de
+Comments to: hets-users@informatik.uni-bremen.de
 }
 
 \maketitle
@@ -129,7 +129,8 @@ Comments to: hets-devel@informatik.uni-bremen.de
 
 The Heterogeneous Tool Set (\protect\Hets) is the main analysis tool
 for the specification language heterogeneous \CASL. Heterogeneous
-\CASL (\HetCASL) combines the specification language \CASL with \CASL extensions
+\CASL (\HetCASL) combines the specification language \CASL
+\cite{CASL-UM,CASL/RefManual} with \CASL extensions
 and sublanguages, as well as completely different logics and even
 programming languages such as Haskell. \HetCASL
 extends the structuring mechanisms of \CASL:
@@ -154,14 +155,22 @@ architectural specifications and libraries. The latter of course needs
 to call the logic-specific tools whenever a basic specification is
 encountered.
 
-\section{Logics supported by \Hets}
+\Hets is based on the theory of institutions \cite{GoguenBurstall92},
+which formalize the notion of a logic. The theory behind \Hets is
+laid out in \cite{Habil}. A short overview is given in \cite{MossakowskiEA06}.
+
+
+\section{Logics supported by Hets}
+
+The following list of logics (formalized as so-called institutions
+\cite{GoguenBurstall92}) is currently supported by \Hets:
 
 \begin{figure}
   \begin{center}
     \includegraphics[scale=0.4]{LogicGraph}
   \end{center}
 \caption{Graph of logics currently supported by \Hets. The more an 
-ellipse is filled, the more stable is the implementation of the logic.}
+ellipse is filled with green, the more stable is the implementation of the logic. Blue indicates a prover-supported logic.}
 \label{fig:LogicGraph}
 \end{figure}
 
@@ -176,11 +185,13 @@ Language & Parser & Static Analysis & Prover \\\hline
 \HasCASL & x & x & - \\\hline
 Haskell & x & x & -\\\hline
 \CspCASL & (x) & - & - \\\hline
+Constraint\CASL & x & (x) & - \\\hline
 %Structured specifications & x & x & (x) \\\hline
 %Architectural specifications & x & x & -\\\hline
 \CASLDL & x & - & - \\\hline
 OWL DL basic & x & (x) & - \\\hline
 OWL DL structure & x & (x) & - \\\hline
+Propositional & x & x & - \\\hline
 SoftFOL & - & - & x \\\hline
 \Isabelle & - & - & x \\\hline
 \end{tabular}
@@ -236,6 +247,9 @@ see also \url{www.haskell.org}.
 \item[CspCASL] \cite{Roggenbach:2003:C-CN} is a combination of \CASL
   with the process algebra CSP.
 
+\item[ConstraintCASL] is an experimental logic for the specification
+of qualitative constraint calculi.
+
 \item[OWL DL] is the Web Ontology Language (OWL) recommended by the
   World Wide Web Consortium (W3C, \texttt{http://www.w3c.org}). It is
   used for knowledge representation and the Semantic Web
@@ -260,10 +274,13 @@ It extends
   of the topsort Thing) are allowed. It is used to bring OWL DL and
   \CASL closer together.
 
+\item[Propositional] is classical propositional logic, which will
+be connected to SAT solvers in the near future.
+
 \item[SoftFOL] \cite{LuettichEA06a} offers three automated theorem
   proving systems (ATP) for first-order logic with equality: (1) SPASS
   \cite{WeidenbachEtAl02}; (2) Vampire \cite{RiazanovV02}; and (3)
-  MathServ Broker\footnote{which chooses an appropiate ATP upon a
+  MathServ Broker\footnote{which chooses an appropriate ATP upon a
     classification of the FOL problem} \cite{ZimmerAutexier06}.
   These together comprise some of the most advanced theorem provers
   for first-order logic.
@@ -286,6 +303,51 @@ architectural specifications.  Corresponding documents explaining the
 are forthcoming, until then, \cite{Mossakowski:2003:FHS} may serve as a short
 introduction. Moreover, the main heterogeneous constructs will be illustrated 
 in Sect.~\ref{sec:HetSpec} below.
+
+\section{Logic translations supported
+by Hets}
+\label{comorphisms}
+
+The following list of logic translations (formalized as institution
+comorphisms \cite{GoguenRosu02}) is currently supported by \Hets:
+
+\begin{tabular}{|l|p{5cm}|}\hline
+CASL2CoCASL &  inclusion \\\hline
+CASL2CspCASL & inclusion \\\hline
+CASL2HasCASL & inclusion \\\hline
+CASL2Modal & inclusion \\\hline
+CASL2PCFOL &  coding of subsorting by injections, see Chap. III:3.1 of the CASL Reference Manual \cite{CASL/RefManual}\\\hline
+CASL2SPASS & coding of CASL to SoftFOL \cite{LuettichEA06a},
+based on SuleCFOL2SoftFOL, but with SPASS syntax as output \\\hline
+CASL2SubCFOL & coding of partial functions by error elements
+(translation $(4a')$ of \cite{Mossakowski02}, but extended to subsorting) \\\hline
+CASL2TopSort & coding of subsorting by a top sort and unary
+predicates for the subsorts \\\hline
+CFOL2IsabelleHOL &  coding of \CASL to Isabelle
+(translation $(7)$ of \cite{Mossakowski02}) \\\hline
+CoCASL2CoPCFOL & coding of subsorting by injections, similar to CASL2PCFOL \\\hline
+CoCASL2CoSubCFOL & coding of partial functions by error supersorts, similar to  CASL2SubCFOL \\\hline
+CoCFOL2IsabelleHOL & coding of \CoCASL to Isabelle, similar to CFOL2IsabelleHOL \\\hline
+%CoPCFOL2CoCFOL & coding of partial functions by error elements,
+%similar to PCFOL2CFOL \\\hline
+%%CspCASL2IsabelleHOL &  \\\hline
+%%CspCASL2Modal &  \\\hline
+HasCASL2HasCASL & coding of \HasCASL axiomatic recursive definitions
+as \HasCASL recursive program definitions   \\\hline
+HasCASL2Haskell & translation of \HasCASL recursive program definitions to Haskell \\\hline
+HasCASL2IsabelleHOL & coding to Isabelle/HOL \\\hline
+Haskell2IsabelleHOLCF & coding to Isabelle/HOLCF \\\hline
+Modal2CASL & the standard translation of modal logic
+to first-order logic \cite{blackburn_p-etal:2001a} \\\hline
+%PCFOL2CFOL & coding of partial functions by error elements
+%(translation $(4a')$ of \cite{Mossakowski02}) \\\hline
+SuleCFOL2SoftFOL & coding of CASL to SoftFOL \cite{LuettichEA06a},
+mapping types to soft types \\\hline
+PCoClTyConsHOL2IsabelleHOL &  coding of \HasCASL to Isabelle/HOL\\\hline
+Prop2CASL &  inclusion \\\hline
+Prop2CNF &  conversion of propositional formulas to conjunctive normal form\\\hline
+\end{tabular}
+
 
 
 \section{Getting started}
@@ -320,7 +382,7 @@ SPASS & theorem prover & \texttt{http://spass.mpi-sb.mpg.de/}\\\hline
 
 If you want to compile \Hets from the sources, please follow the
 link ``Hets: source code and information for developers''
-on teh \Hets web page, download the sources (as tarball or from
+on the \Hets web page, download the sources (as tarball or from
 cvs), and follow the
 instructions in the \texttt{INSTALL} file.
 
@@ -507,7 +569,8 @@ specifications or parts thereof), and a set of arrows called
 definition links, indicating the dependency of each involved
 structured specification on its subparts.  Arising proof obligations
 are attached as so-called theorem links to this graph.
-Details can be found in the \CASL Reference Manual \cite[IV:4]{CASL/RefManual}.
+Details can be found in the \CASL Reference Manual \cite[IV:4]{CASL/RefManual}
+and in \cite{Habil,MossakowskiEtAl05}.
 
 The following options let \Hets show the development graph of
 a specification library:
@@ -731,7 +794,7 @@ clicking with the right mouse button.
 \begin{description}
 \item[Unnamed nodes] 
 The ``Hide/show names'' menu is a toggle:
-you can switcn on or off the display of names for nodes that
+you can switch on or off the display of names for nodes that
 are initially unnamed. The newly named nodes get names that
 are derived from named neighbour nodes.
 
@@ -877,46 +940,13 @@ XML file.
 
 \item[\texttt{-t TRANS}, \texttt{--translation=TRANS}]
 chooses a translation option. \texttt{TRANS} is a colon-separated list 
-without blanks of one or more from:
-
-\begin{tabular}{|l|p{5cm}|}\hline
-CASL2CoCASL &  inclusion \\\hline
-CASL2CspCASL & inclusion \\\hline
-CASL2HasCASL & inclusion \\\hline
-CASL2Modal & inclusion \\\hline
-CASL2PCFOL &  coding of subsorting by injections\\\hline
-CASL2SPASS &  \\\hline
-CASL2SubCFOL & coding of partial functions by error supersorts \\\hline
-CASL2TopSort & coding of subsorting by a top sort \\\hline
-CFOL2IsabelleHOL &  coding of \CASL to Isabelle\\\hline
-CoCASL2CoPCFOL & coding of subsorting by injections \\\hline
-CoCASL2CoSubCFOL & coding of partial functions by error supersorts  \\\hline
-CoCFOL2IsabelleHOL & coding of \CoCASL to Isabelle \\\hline
-CoPCFOL2CoCFOL & coding of partial functions by ??? \\\hline
-%%CspCASL2IsabelleHOL &  \\\hline
-%%CspCASL2Modal &  \\\hline
-HasCASL2HasCASL &  \\\hline
-HasCASL2Haskell & translation of executable subset to Haskell \\\hline
-HasCASL2IsabelleHOL & coding to Isabelle/HOL \\\hline
-Haskell2IsabelleHOLCF & coding to Isabelle/HOLCF \\\hline
-Modal2CASL & standard translation \\\hline
-PCFOL2CFOL & ? \\\hline
-PCFOL2FOL & ? \\\hline
-SuleCFOL2SoftFOL &  \\\hline
-PCoClTyConsHOL2IsabelleHOL &  \\\hline
-Prop2CASL &  \\\hline
-PropIE2PropE &  \\\hline
-PropIE2PropI &  \\\hline
-PropIE2Prop &  \\\hline
-\end{tabular}
-
-
+without blanks of one or more comorphism names (see Sect.~\ref{comorphisms}).
 
 \item[\texttt{-r RAW} or \texttt{--raw=RAW}] This option  allows one
 to influence the formatting in more detail.
 Here, \texttt{RAW} is \texttt{(ascii|text|(la)?tex)=STRING},
 and \texttt{STRING} is passed to the appropriate pretty-printer.
-The deatils of these options are to be fixed in the future only.
+The details of these options are to be fixed in the future only.
 
 The other output formats are for future usage.
 \end{description}
@@ -935,12 +965,12 @@ Print usage information and exit.
  \texttt{Int} megabytes (needed in case of a stack overflow). 
 This must be the first option.
 \item[\texttt{-l LOGIC}, \texttt{--logic=LOGIC}] chooses the initial logic, which is used for processing the specifications before the first \textbf{logic L}
-decelation. The default is \CASL.
+declaration. The default is \CASL.
 \item[\texttt{-n SPECS}, \texttt{--spec=SPECS}] 
 chooses a list of named specifications for processing
 \end{description}
 
-\section{Proofs with \Hets}\label{sec:Proofs}
+\section{Proofs with Hets}\label{sec:Proofs}
 
 
 The graphical user interface (GUI) for calling a prover
@@ -955,7 +985,7 @@ disproved goal and a space denotes an open goal.
 \caption{Hets Goal and Prover Interface\label{fig:proof_window}}
 \end{figure}
 
-If you open this GUI processing the goals of one node for the first
+If you open this GUI when processing the goals of one node for the first
 time, it will show all goals as open. Within this list you can select
 those goals that should be inspected or proved. The button 'Display'
 shows the selected goals in the ASCII syntax of this theory's logic in
@@ -966,14 +996,14 @@ opened where for each proved goal the used axioms are shown. The
 'Status:' shows either 'No prover running' or 'Waiting for prover' in
 black or blue. If you press the 'Close' button the window is closed
 and the status of the goals' list is integrated into the
-DevelopmentGraph. If all goals have been proved, the selected node
+development graph. If all goals have been proved, the selected node
 turns from red into green.
 
 The list 'Pick Theorem Prover:' lets you choose one of the connected
 provers (currently, these are SPASS and \Isabelle, described below). By
 pressing 'Prove' the selected prover is launched and the theory along
 with the selected goals is translated via the shortest possible path
-of comorphims into the provers logic. The button 'More fine grained
+of comorphisms into the provers logic. The button 'More fine grained
 selection...' lets you pick a (composed) comorphism in a separate
 window from where the prover is launched then.
 
@@ -988,22 +1018,22 @@ window from where the prover is launched then.
 \end{figure}
 
 The automatic theorem prover SPASS
-\cite{WeidenbachEtAl02} is a resultion-based prover for first-order logic
+\cite{WeidenbachEtAl02} is a resolution-based prover for first-order logic
 with equality. 
-If you have choosen SPASS, initially, all selected goals are tried in a
+If you have chosen SPASS, initially, all selected goals are tried in a
 row. After this so called batch mode the results are displayed in a
 window which is shown in Fig. \ref{fig:SPASS_GUI}. This GUI for the
-theorem prover SPASS is very similiar to the 'Select Goal(s) and
+theorem prover SPASS is very similar to the 'Select Goal(s) and
 Prove' GUI which lets you choose a prover for some goals. But with the
 SPASS GUI, the actual SPASS prover is launched with the selected
-goal. Further it is possible to set a time-limt and some options for
+goal. Further it is possible to set a time-limit and some options for
 SPASS. The available options are shown in separate window by pressing
 the 'Help' button. The status of the selected goal is shown in the
 'Status:' line with either 'Proved', 'Disproved', 'Open' or 'Open Time
 (Time is up!)'. If a goal has been proved the labels of the used
 axioms are shown in the list on the right. The button 'Show Details'
 shows the whole output of SPASS. 'Save Prover Configuration allows you
-to save the configuation and status of each proof for
+to save the configuration and status of each proof for
 documentation. By pressing the button 'Exit Prover' the status of
 these proofs and goals is transferred back to the main 'Select Goal(s)
 and Prove' window.
@@ -1055,7 +1085,7 @@ The \Isabelle theory file conforms to the Isabelle/Isar syntax
  key sequence), and pressing a button in a small pop-up window
  generated by \Hets.
 
-\section{Limits of \Hets}
+\section{Limits of Hets}
 
 \Hets is still intensively under development. In particular, the
 following points are still missing:
@@ -1070,7 +1100,7 @@ support for hiding links and for conservativity.
 \end{itemize}
 
 
-\section{Architecture of \Hets}
+\section{Architecture of Hets}
 
 \Hets is written in Haskell. Its parser uses combinator 
                 \index{parsing}%
@@ -1100,9 +1130,11 @@ to be provided.
 
 
 \begin{figure}
-%\includegraphics[scale=0.5]{hets}
-\vspace{1em}
-\input{hets.tex}
+\begin{center}
+\includegraphics[scale=0.4]{hets2007}
+\end{center}
+%\vspace{1em}
+%\input{hets.tex}
 \caption{Architecture of the heterogeneous tool set.
 \label{fig:hets}}
 \end{figure}
@@ -1110,41 +1142,57 @@ to be provided.
 The architecture of \Hets is shown in Fig.~\ref{fig:hets}. 
 
 If your favourite logic is missing in \Hets, please tell us
-(hets-devel@informatik.uni-bremen.de). We will take account your feedback when deciding which
+(hets-users@informatik.uni-bremen.de). We will take account your feedback when deciding which
 logics and proof tools to integrate next into \Hets. Help with
 integration of more logics and proof tools into \Hets is also welcome.
 
 \Hets is mainly maintained by
 Christian Maeder (Christian.Maeder@dfki.de) and Till Mossakowski
-(Till.Mossakowski@dfki.de). The mailing list is \url{hets-devel@informatik.uni-bremen.de},
+(Till.Mossakowski@dfki.de). The mailing list is
+\begin{quote}
+ \url{hets-users@informatik.uni-bremen.de}
+\end{quote}
 the homepage is
-\url{http://www.informatik.uni-bremen.de/mailman/listinfo/hets-devel}.
+\begin{quote}
+\url{http://www.informatik.uni-bremen.de/mailman/listinfo/hets-users}.
+\end{quote}
 
 \paragraph{Acknowledgement}
 The heterogeneous tool set \Hets, which shows that the theory outlined
 in this work can also be brought to practice, would not have possible
-without cooperation with Christian Maeder and Klaus L\"uttich.
-Besides the author, the following people have been involved
+without cooperation with many people.
+%Christian Maeder and Klaus L\"uttich.
+Besides the authors, the following people have been involved
 in the implementation of \Hets:
 Katja Abu-Dib,
+Mihai Codescu,
 Carsten Fischer,
 Jorina Freya Gerken,
+Rainer Grabbe,
 Sonja Gr\"{o}ning,
+Daniel Hausmann,
 Wiebke Herding,
+Hendrik Iben,
+Cui ``Ken'' Jian,
 Heng Jiang,
 Anton Kirilov,
 Tina Krausser,
 Martin K\"{u}hl,
 Mingyi Liu,
-Klaus L\"{u}ttich,
-Christian Maeder,
+Dominik L\"{u}cke,
+%Klaus L\"{u}ttich,
+%Christian Maeder,
 Maciek Makowski,
+Immanuel Normann,
 Razvan Pascanu,
 Daniel Pratsch,
 Felix Reckers,
 Markus Roggenbach, 
-Pascal Schmidt and
-Paolo Torrini.
+Pascal Schmidt, 
+Paolo Torrini,
+Ren\'{e} Wagner,
+Jian Chun Wang and
+Thiemo Wiedemeyer.
 
 \Hets has been built based on experiences with its
 precursors, 
@@ -1164,8 +1212,9 @@ tool based on development graphs.  \MAYA only supports development
 graphs without hiding and without logic translations.  \MAYA has been
 developed by Serge Autexier and Dieter Hutter.
 
-I also want to thank Agn\`es Arnould, Thibaud Brunet, Pascale LeGall,
-Kathrin Hoffmann, Katiane Lopes, Klaus L\"uttich, Christian Maeder,
+We also want to thank Agn\`es Arnould, Thibaud Brunet, Pascale LeGall,
+Kathrin Hoffmann, Katiane Lopes, 
+%Klaus L\"uttich, Christian Maeder,
 Stefan Merz, Maria Martins Moreira, Christophe 
 Ringeissen, Markus Roggenbach, Dmitri Schamschurko, Lutz Schr\"oder,
 Konstantin Tchekine and Stefan W\"olfl 
