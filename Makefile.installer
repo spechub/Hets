@@ -83,8 +83,9 @@ hetcats-make : tools-checkout
 	mkdir $(IZPACK_SAMPLE)/hets/OWLParser/java ; \
 	cp OWL_DL/owl_parser.installer $(IZPACK_SAMPLE)/hets/OWLParser/owl_parser ; \
 	cp OWL_DL/java/OWLParser.jar $(IZPACK_SAMPLE)/hets/OWLParser/java ; \
-	cp -r OWL_DL/java/jlib  $(IZPACK_SAMPLE)/hets/OWLParser/java
-	@cd $(IZPACK_SAMPLE)/src/ ; $(RM) -f HetCATS ; $(TAR) xvf HetCATS.tar ; $(TAR) cvfj HetCATS.tar.bz2 HetCATS  ;\
+	cp -r OWL_DL/java/jlib $(IZPACK_SAMPLE)/hets/OWLParser/java
+	@cd $(IZPACK_SAMPLE)/src/ ; $(RM) -r HetCATS ; \
+	$(TAR) xvf HetCATS.tar ; $(TAR) cvfj HetCATS.tar.bz2 HetCATS  ;\
 	$(RM) -r HetCATS.tar HetCATS programatica uni
 
 daily-hets-download :
