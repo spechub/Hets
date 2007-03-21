@@ -80,14 +80,14 @@ hetcats-make : tools-checkout
 	cp hets.in $(IZPACK_SAMPLE)/hets/hets ;\
 	cp utils/getAllHets.sh $(IZPACK_SAMPLE) ;\
 	cp utils/getDailyHets-installer.sh $(IZPACK_SAMPLE)/getDailyHets.sh ;\
-	$(MAKE) release ;\
-	mv HetCATS.tar $(IZPACK_SAMPLE)/src/ ;\
 	cp OWL_DL/owl_parser.installer $(IZPACK_SAMPLE)/hets/owl_parser ; \
 	cp OWL_DL/java/OWLParser.jar $(IZPACK_SAMPLE)/hets/java ; \
 	cp -r OWL_DL/java/jlib CASL/Termination/AProVE.jar \
 	                   $(IZPACK_SAMPLE)/hets/java ;\
-	cd $(IZPACK_SAMPLE)/src/HetCATS/doc ; pdflatex UserGuide.tex ; cd - ;\
-	cp utils/hetcasl.sty  doc/UserGuide.pdf $(IZPACK_SAMPLE)/hets/doc
+	cd doc ; pdflatex UserGuide.tex ; cd - ;\
+	cp utils/hetcasl.sty doc/UserGuide.pdf $(IZPACK_SAMPLE)/hets/doc/  ;\
+	$(MAKE) release ;\
+	mv HetCATS.tar $(IZPACK_SAMPLE)/src/ ;\
 	@cd $(IZPACK_SAMPLE)/src/ ; $(RM) -r HetCATS ; \
 	$(TAR) xvf HetCATS.tar ; $(TAR) cvfj HetCATS.tar.bz2 HetCATS  ;\
 	$(RM) -r HetCATS.tar HetCATS programatica uni
