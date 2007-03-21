@@ -41,10 +41,10 @@ system (linux,solaris,macosx). Note, not all combinations are available.
 
 A typical genration process involves these steps:
 \begin{enumerate}
-\item create a directory: \texttt{mkdir \HetsInstallDir}
+\item create a directory: \texttt{mkdir \HetsInstallDir}  (this step can be ignore, because the Makefile can create the \texttt{\HetsInstallDir})
 \item change into your HetCATS directory: \texttt{cd <your path>/HetCATS}
 \item run initilization step: \\
-\texttt{INSTALLER\_DIR=\HetsInstallDir~make initialize\_installer}
+\texttt{make initialize\_installer INSTALLER\_DIR=\HetsInstallDir}
 \item follow these instructions:
 {\tt  \begin{tabbing}
  Ready to create installers for Hets\\
@@ -87,7 +87,7 @@ Makfile.installer:
 \item SPASS binaries are obtained from the SPASS-web-site
 \item scripts from the utils directory
   \begin{itemize}
-  \item getDailyHets.sh
+  \item getDailyHets-installer.sh
   \end{itemize}
 \item GMP.framework for Mac OS X from hets homepage
 \item GNUreadline.framework for Mac OS X from hets homepage
@@ -139,8 +139,8 @@ Hets/
     \begin{itemize}
     \item hets-XX --- the real binary of hets with version number as extension,
       e.g. \verb,hets-0.52,
-    \item owl\_parser --- OWL-DL parser startup script
-    \item java/ --- all jar files needed by hets
+    \item OWLParser/owl\_parser --- OWL-DL parser startup script
+    \item OWLParser/java/ --- all jar files needed by hets
       \begin{itemize}
       \item OWLparser.jar --- jar-file(s) for OWL-DL parser
       \item jlib/ --- additional jar files for the OWLparser
