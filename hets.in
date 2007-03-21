@@ -24,7 +24,7 @@ if [ -d $INSTALL_PATH/CASL-lib ] ; then
     HETS_LIB=$INSTALL_PATH/CASL-lib
 fi
 
-HETS_OWL_PARSER=$INSTALL_PATH/lib/hets/OWLParser
+HETS_OWL_PARSER=$INSTALL_PATH/lib/hets/
 UNIWISH=/usr/bin/wish
 HETS=$INSTALL_PATH/lib/hets/hets-$APP_VER
 

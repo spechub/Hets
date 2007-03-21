@@ -86,7 +86,7 @@ hetcats-make : tools-checkout
 	cp OWL_DL/java/OWLParser.jar $(IZPACK_SAMPLE)/hets/java ; \
 	cp -r OWL_DL/java/jlib CASL/Termination/AProVE.jar \
 	                   $(IZPACK_SAMPLE)/hets/java ;\
-	cd $(IZPACK_SAMPLE)/src/HetCATS/doc ; pdflatex UserGuide.tex ; cd - \
+	cd $(IZPACK_SAMPLE)/src/HetCATS/doc ; pdflatex UserGuide.tex ; cd - ;\
 	cp utils/hetcasl.sty  doc/UserGuide.pdf $(IZPACK_SAMPLE)/hets/doc
 	@cd $(IZPACK_SAMPLE)/src/ ; $(RM) -r HetCATS ; \
 	$(TAR) xvf HetCATS.tar ; $(TAR) cvfj HetCATS.tar.bz2 HetCATS  ;\
