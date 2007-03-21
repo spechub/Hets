@@ -1,0 +1,49 @@
+This README belongs to a "The Heterogeneous Tool Set" (Hets) release
+(and does not apply to sources directly obtained via cvs).
+
+Information not contained here can be found in the Hets user guide
+(doc/UserGuide.pdf) or on the Hets web page (www.dfki.de/sks/hets).
+
+The subject of this release is a binary "hets" that is able to analyse
+heterogeneous and in particular CASL specifications.
+
+The sources need to be compiled with ghc Glasgow Haskell Compiler
+(www.haskell.org/ghc) version 6.6! Haskell is also a part of Hets via
+"Programatica" (www.cse.ogi.edu/PacSoft/projects/programatica).
+
+Beside output written to the console (stdout) or to files hets, can
+display graphs using "uDraw(Graph)", formerly "daVinci"  
+(www.informatik.uni-bremen.de/uDrawGraph)
+
+This Installer will put all tools and the library of CASL
+specification (CASL-lib) into a single directory (`Hets' in this
+example) with the following layout:
+
+  Hets/bin          ---  contains the hets startup script and links to
+                      	 some tools; you may put this directory into
+                      	 your PATH environment variable 
+
+  Hets/doc          ---  useful documentation on hets
+
+  Hets/CASL-lib     ---  the library of CASL specifications; also obtained
+  		      	 from http://www.cofi.info/Libraries
+
+  Hets/lib          ---  all the installed tools needed to run hets
+
+  Hets/src          ---  if you request to install the hets sources, they
+  		      	 reside here
+
+  Hets/Uninstaller  ---  use the uninstaller with 
+  		    	 "java -jar Hets/Uninstaller/uninstaller.jar"
+			 if you really want to uninstall hets (-;
+
+A typical call of hets is then (with Hets/bin in your PATH variable
+and current directory "Hets/CASL-lib"): 
+   hets -g Basic/Numbers.casl
+
+If you install the emacs casl-mode you can also run hets from within
+emacs with C-c C-r and with graphical interface C-c C-g.
+
+The heterogeneous tool set (Hets) is mainly maintained by
+Christian Maeder (Christian.Maeder@dfki.de) and Till Mossakowski
+(Till.Mossakowski@dfki.de). The mailing list is hets-devel@tzi.de.
