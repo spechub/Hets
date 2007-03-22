@@ -69,9 +69,9 @@ hetcats-make : tools-checkout
 	@cd $(IZPACK_SAMPLE)/src ;\
 	cvs -d :pserver:cvsread@cvs-agbkb.informatik.uni-bremen.de:\/repository co -P HetCATS 
 	cd $(IZPACK_SAMPLE)/src/HetCATS ;\
-	cp LICENCE.txt $(IZPACK_SAMPLE)/pack/LICENCE.txt ;\
+	cp LICENSE.txt $(IZPACK_SAMPLE)/pack/LICENCE.txt ;\
 	cp LIZENZ.txt $(IZPACK_SAMPLE)/pack/LIZENZ.txt ;\
-	cp README  $(IZPACK_SAMPLE)/pack/README ;\
+	cp README.installer  $(IZPACK_SAMPLE)/pack/README ;\
 	mkdir -p $(IZPACK_SAMPLE)/SPASS/MAC/$(SPASS_DIR_MAC) ;\
 	mkdir -p $(IZPACK_SAMPLE)/hets/doc ; \
 	mkdir -p $(IZPACK_SAMPLE)/hets/java ; \
