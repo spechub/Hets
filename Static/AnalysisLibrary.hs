@@ -81,9 +81,8 @@ anaSourceFile lgraph defl opts libenv fname = ResultT $ do
         return $ fail $ "a file for input '" ++ fname ++ "' not found."
     Just file ->
         if any (flip isSuffixOf file) [envSuffix, prfSuffix] then
-            let file' = rmSuffix file in
-            runResultT $ anaLibFileOrGetEnv lgraph defl opts libenv
-                   (fileToLibName opts file') file'
+          return $ fail $ "no proper source file for input '" 
+                     ++ fname ++ "' found."
         else do
         input <- readFile file
         putIfVerbose opts 2 $ "Reading file " ++ file
