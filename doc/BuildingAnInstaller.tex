@@ -10,7 +10,7 @@
 
 \title{How to build an installer for \Hets}
 \author{Klaus L\"uttich}
-\date{last update: August 2006}
+\date{last update: March 2007}
 
 \begin{document}
 \maketitle
@@ -41,7 +41,6 @@ system (linux,solaris,macosx). Note, not all combinations are available.
 
 A typical genration process involves these steps:
 \begin{enumerate}
-\item create a directory: \texttt{mkdir \HetsInstallDir}  (this step can be ignore, because the Makefile can create the \texttt{\HetsInstallDir})
 \item change into your HetCATS directory: \texttt{cd <your path>/HetCATS}
 \item run initilization step: \\
 \texttt{make initialize\_installer INSTALLER\_DIR=\HetsInstallDir}
@@ -60,7 +59,6 @@ and wait until it is finished
   \item hets-installer-sparc-solaris.jar
   \end{itemize}
 \end{enumerate}
-\clearpage
 
 \section{List of Steps Performend for the Generation of Installers}
 
@@ -110,8 +108,8 @@ Makfile.installer:
 \subsection{Directory-layout of installed directory} (directories end with a slash)\\
 Hets/
 \begin{itemize}
-  \item README
-  \item LICENCE.txt
+  \item README --- HetCATS/README.installer
+  \item LICENSE.txt
   \item LIZENZ.txt
 \item bin/
   \begin{itemize}
