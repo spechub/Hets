@@ -87,7 +87,7 @@ hetcats-make : tools-checkout
 	cd doc ; pdflatex UserGuide.tex ; cd - ;\
 	cp utils/hetcasl.sty doc/UserGuide.pdf $(IZPACK_SAMPLE)/hets/doc/  ;\
 	$(MAKE) release ;\
-	mv HetCATS.tar $(IZPACK_SAMPLE)/src/ ;\
+	mv HetCATS.tar $(IZPACK_SAMPLE)/src/
 	@cd $(IZPACK_SAMPLE)/src/ ; $(RM) -r HetCATS ; \
 	$(TAR) xvf HetCATS.tar ; $(TAR) cvfj HetCATS.tar.bz2 HetCATS  ;\
 	$(RM) -r HetCATS.tar HetCATS programatica uni
