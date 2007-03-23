@@ -1988,7 +1988,7 @@ instance Read Id.Id where
     let
       (tokens, rest) = spanEsc (not . (flip elem "[]")) s
       tokenl = breakIfNonEsc "," tokens
-      token = map (\str -> Id.Token (trimString str) Id.nullRange) tokenl
+      token = map (\str -> Id.Token (trimString $ unesc str) Id.nullRange) tokenl
       idl = breakIfNonEsc "," rest
       ids = foldl (\ids' str ->
         case ((readsPrec 0 (trimString str))::[(Id.Id, String)]) of
